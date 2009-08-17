@@ -22,7 +22,7 @@ install:
 
 uninstall:
 	-rm -f $(SBINDIR)/xbps-*
-	-rm -f $(LIBDIR)/libxbps.so*
+	-rm -f $(LIBDIR)/libxbps.*
 
 .PHONY: clean
 clean:
