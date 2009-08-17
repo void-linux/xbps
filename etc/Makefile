@@ -1,6 +1,6 @@
 include ../vars.mk
 
-CONF_FILE = xbps.conf
+CONF_FILE = xbps-src.conf
 
 .PHONY: all
 all:

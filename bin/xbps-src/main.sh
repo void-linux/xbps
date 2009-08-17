@@ -27,7 +27,7 @@
 #-
 trap "echo && exit 1" INT QUIT
 
-: ${XBPS_CONFIG_FILE:=@@XBPS_INSTALL_ETCDIR@@/xbps.conf}
+: ${XBPS_CONFIG_FILE:=@@XBPS_INSTALL_ETCDIR@@/xbps-src.conf}
 
 : ${progname:=$(basename $0)}
 : ${fakeroot_cmd:=fakeroot}
@@ -63,7 +63,7 @@ Targets:
 Options:
  -C     Do not remove build directory after successful installation.
  -c     Path to global configuration file:
-        if not specified @@XBPS_INSTALL_ETCDIR@@/xbps.conf is used.
+        if not specified @@XBPS_INSTALL_ETCDIR@@/xbps-src.conf is used.
  -u	Update the checksum in template file if used in 'fetch' target.
 _EOF
 	exit 1
@@ -123,7 +123,7 @@ check_config_vars()
 	local f=
 
 	if [ -z "$config_file_specified" ]; then
-		config_file_paths="$XBPS_CONFIG_FILE ./etc/xbps.conf"
+		config_file_paths="$XBPS_CONFIG_FILE ./etc/xbps-src.conf"
 		for f in $config_file_paths; do
 			[ -f $f ] && XBPS_CONFIG_FILE=$f && \
 				cffound=yes && break
