@@ -1,8 +1,9 @@
 # Common variables.
 
-PREFIX	?= /usr/local
+PREFIX	?=
 SBINDIR	?= $(DESTDIR)$(PREFIX)/sbin
 LIBDIR	?= $(DESTDIR)$(PREFIX)/lib
+SHAREDIR ?= $(PREFIX)/usr/share/xbps/shutils
 ETCDIR	?= $(PREFIX)/etc
 TOPDIR	?= ..
 INSTALL_STRIPPED ?= -s

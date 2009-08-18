@@ -7,6 +7,7 @@ BIN = xbps-src
 all:
 	sed -e	"s|@@XBPS_INSTALL_PREFIX@@|$(PREFIX)|g"	\
 	    -e	"s|@@XBPS_INSTALL_ETCDIR@@|$(ETCDIR)|g"	\
+	    -e  "s|@@XBPS_INSTALL_SHAREDIR@@|$(SHAREDIR)|g" \
 		main.sh > xbps-src
 
 .PHONY: clean

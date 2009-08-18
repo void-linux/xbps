@@ -1,8 +1,6 @@
 #!/bin/sh
 #
-# xbps - A simple, minimal, fast and uncomplete build package system.
-#-
-# Copyright (c) 2008 Juan Romero Pardines.
+# Copyright (c) 2008-2009 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -100,7 +98,7 @@ set_defvars()
 	: ${XBPS_DBDIR:=$XBPS_MASTERDIR/var/db/xbps}
 	: ${XBPS_META_PATH:=$XBPS_DBDIR/}
 	: ${XBPS_PKGMETADIR:=$XBPS_DBDIR/metadata}
-	: ${XBPS_SHUTILSDIR:=$XBPS_DISTRIBUTIONDIR/shutils}
+	: ${XBPS_SHUTILSDIR:=@@XBPS_INSTALL_SHAREDIR@@}
 
 	DDIRS="XBPS_TEMPLATESDIR XBPS_TRIGGERSDIR"
 	DDIRS="$DDIRS XBPS_HELPERSDIR XBPS_SHUTILSDIR"

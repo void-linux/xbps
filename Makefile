@@ -1,6 +1,6 @@
 include vars.mk
 
-SUBDIRS	= lib bin etc
+SUBDIRS	= lib bin etc shutils
 
 .PHONY: all
 all:
