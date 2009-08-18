@@ -89,23 +89,23 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 	 * If installation of package was successful, make sure the package
 	 * is really on storage (if possible).
 	 */
-	if (rv == 0)
-		if (fdatasync(pkg_fd) == -1)
-			rv = errno;
-out3:
-	archive_read_finish(ar);
-out2:
-	(void)close(pkg_fd);
-out:
-	free(binfile);
-
 	if (rv == 0) {
+		if (fsync(pkg_fd) == -1) {
+			rv = errno;
+			goto out3;
+		}
 		/*
 		 * Set package state to unpacked.
 		 */
 		rv = xbps_set_pkg_state_installed(pkgname,
 		    XBPS_PKG_STATE_UNPACKED);
 	}
+out3:
+	archive_read_finish(ar);
+out2:
+	(void)close(pkg_fd);
+out:
+	free(binfile);
 
 	return rv;
 }
