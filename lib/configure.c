@@ -76,13 +76,13 @@ xbps_configure_pkg(const char *pkgname)
 	if (buf == NULL)
 		return errno;
 
+	if (strcmp(rootdir, "") == 0)
+		rootdir = "/";
+
+	if (chdir(rootdir) == -1)
+		return errno;
+
 	if (access(buf, R_OK) == 0) {
-		if (strcmp(rootdir, "") == 0)
-			rootdir = "/";
-
-		if (chdir(rootdir) == -1)
-			return errno;
-
 		if ((rv = xbps_file_chdir_exec(rootdir, buf, "post",
 		     pkgname, version, NULL)) != 0) {
 			free(buf);
