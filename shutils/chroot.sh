@@ -120,9 +120,16 @@ install_xbps_utils()
 		echo "=> Building and installing xbps utils."
 		chroot $XBPS_MASTERDIR sh -c \
 			"echo /usr/local/lib > /etc/ld.so.conf"
-		chroot $XBPS_MASTERDIR make -C /xbps
-		chroot $XBPS_MASTERDIR make -C /xbps install
-		chroot $XBPS_MASTERDIR make -C /xbps clean
+		for f in bin src cmpver digest pkgdb repo; do
+			cp -f $XBPS_INSTALLDIR/sbin/xbps-$f $xbps_prefix/sbin
+		done
+		cp -a $XBPS_INSTALLDIR/lib/libxbps.so* $xbps_prefix/lib
+		if [ -z $XBPS_INSTALLDIR ]; then
+			installdir=/usr/share/xbps
+		else
+			installdir=$XBPS_INSTALLDIR/share/xbps
+		fi
+		cp -a $installdir $xbps_prefix/share
 		rebuild_ldso_cache
 	fi
 }
@@ -265,21 +272,22 @@ for f in ${REQDIRS}; do
 done
 unset f REQDIRS
 
-echo "XBPS_DISTRIBUTIONDIR=/xbps" > $XBPS_MASTERDIR/usr/local/etc/xbps.conf
-echo "XBPS_MASTERDIR=/" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
-echo "XBPS_DESTDIR=/xbps_destdir" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
-echo "XBPS_PACKAGESDIR=/xbps_packagesdir" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
-echo "XBPS_BUILDDIR=/xbps_builddir" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
-echo "XBPS_SRCDISTDIR=/xbps_srcdistdir" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
-echo "XBPS_CFLAGS=\"$XBPS_CFLAGS\"" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
-echo "XBPS_CXXFLAGS=\"\$XBPS_CFLAGS\"" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
+XBPSSRC_CF=$XBPS_MASTERDIR/usr/local/etc/xbps-src.conf
+
+echo "XBPS_DISTRIBUTIONDIR=/xbps" > $XBPSSRC_CF
+echo "XBPS_MASTERDIR=/" >> $XBPSSRC_CF
+echo "XBPS_DESTDIR=/xbps_destdir" >> $XBPSSRC_CF
+echo "XBPS_PACKAGESDIR=/xbps_packagesdir" >> $XBPSSRC_CF
+echo "XBPS_BUILDDIR=/xbps_builddir" >> $XBPSSRC_CF
+echo "XBPS_SRCDISTDIR=/xbps_srcdistdir" >> $XBPSSRC_CF
+echo "XBPS_CFLAGS=\"$XBPS_CFLAGS\"" >> $XBPSSRC_CF
+echo "XBPS_CXXFLAGS=\"\$XBPS_CFLAGS\"" >> $XBPSSRC_CF
 if [ -n "$XBPS_MAKEJOBS" ]; then
-	echo "XBPS_MAKEJOBS=$XBPS_MAKEJOBS" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
+	echo "XBPS_MAKEJOBS=$XBPS_MAKEJOBS" >> $XBPSSRC_CF
 fi
 if [ -n "$XBPS_CROSS_TARGET" -a -d "$XBPS_CROSS_DIR" ]; then
-	echo "XBPS_CROSS_TARGET=$XBPS_CROSS_TARGET" >> \
-		$XBPS_MASTERDIR/usr/local/etc/xbps.conf
-	echo "XBPS_CROSS_DIR=/xbps_crossdir" >> $XBPS_MASTERDIR/usr/local/etc/xbps.conf
+	echo "XBPS_CROSS_TARGET=$XBPS_CROSS_TARGET" >> $XBPSSRC_CF
+	echo "XBPS_CROSS_DIR=/xbps_crossdir" >> $XBPSSRC_CF
 fi
 
 

@@ -4,6 +4,8 @@ CONF_FILE = xbps-src.conf
 
 .PHONY: all
 all:
+	sed -e "s|@@XBPS_INSTALL_PREFIX@@|$(PREFIX)|g" \
+		$(CONF_FILE) > $(CONF_FILE).new
 
 .PHONY: clean
 clean:
@@ -13,6 +15,7 @@ install:
 		install -d $(DESTDIR)$(ETCDIR);		\
 	fi
 
-	if [ ! -f $(DESTDIR)$(ETCDIR)/$(CONF_FILE) ]; then		\
-		install -m 644 $(CONF_FILE) $(DESTDIR)$(ETCDIR);	\
+	if [ ! -f $(DESTDIR)$(ETCDIR)/$(CONF_FILE) ]; then	\
+		install -m 644 $(CONF_FILE).new 		\
+			$(DESTDIR)$(ETCDIR)/$(CONF_FILE);	\
 	fi
