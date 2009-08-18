@@ -75,7 +75,7 @@ out:
 }
 
 int
-xbps_repo_addpkg_index(const char *file, const char *pkgdir)
+xbps_repo_addpkg_index(const char *pkgdir, const char *file)
 {
 	prop_dictionary_t newpkgd, idxdict, curpkgd;
 	prop_array_t pkgar;
@@ -283,7 +283,7 @@ xbps_repo_genindex(const char *pkgdir)
 				free(path);
 				return errno;
 			}
-			rv = xbps_repo_addpkg_index(binfile, pkgdir);
+			rv = xbps_repo_addpkg_index(pkgdir, binfile);
 			free(binfile);
 			if (rv != 0) {
 				(void)closedir(dirp);
