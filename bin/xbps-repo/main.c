@@ -51,9 +51,10 @@ usage(void)
 {
 	printf("Usage: xbps-repo [options] [action] [arguments]\n\n"
 	" Available actions:\n"
-        "    add, genindex, list, remove, search, show\n"
+        "    add, add-pkgidx, genindex, list, remove, search, show\n"
 	" Actions with arguments:\n"
 	"    add\t\t<URI>\n"
+	"    add-pkgidx\t<repo> <binpkg>\n"
 	"    genindex\t<path>\n"
 	"    remove\t<URI>\n"
 	"    search\t<string>\n"
@@ -68,7 +69,8 @@ usage(void)
 	"    $ xbps-repo remove /path/to/directory\n"
 	"    $ xbps-repo search klibc\n"
 	"    $ xbps-repo show klibc\n"
-	"    $ xbps-repo genindex /path/to/packages/dir\n");
+	"    $ xbps-repo add-pkgidx /pkgdir /pkgdir/noarch/foo.xbps\n"
+	"    $ xbps-repo genindex /pkgdir\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -279,6 +281,15 @@ main(int argc, char **argv)
 
 		rv = xbps_repo_genindex(argv[1]);
 		exit(rv);
+
+	} else if (strcasecmp(argv[0], "add-pkgidx") == 0) {
+		/* Add a binary package into a package repository. */
+		if (argc != 3)
+			usage();
+
+		rv = xbps_repo_addpkg_index(argv[1], argv[2]);
+		if (rv != 0)
+			exit(rv);
 
 	} else {
 		usage();

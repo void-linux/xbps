@@ -74,8 +74,8 @@ out:
 	return dict;
 }
 
-static int
-repoidx_addpkg(const char *file, const char *filename, const char *pkgdir)
+int
+xbps_repo_addpkg_index(const char *file, const char *pkgdir)
 {
 	prop_dictionary_t newpkgd, idxdict, curpkgd;
 	prop_array_t pkgar;
@@ -83,8 +83,21 @@ repoidx_addpkg(const char *file, const char *filename, const char *pkgdir)
 	struct archive_entry *entry;
 	struct stat st;
 	const char *pkgname, *version, *regver;
-	char *sha256, *plist;
+	char *sha256, *plist, *filen = NULL, *tmpfilen = NULL;
 	int rv = 0;
+
+	assert(file != NULL);
+	assert(pkgdir != NULL);
+
+	tmpfilen = strdup(file);
+	if (tmpfilen == NULL)
+		return errno;
+
+	filen = basename(tmpfilen);
+	if (strcmp(tmpfilen, filen) == 0) {
+		free(tmpfilen);
+		return EINVAL;
+	}
 
 	ar = archive_read_new();
 	if (ar == NULL) {
@@ -146,7 +159,7 @@ repoidx_addpkg(const char *file, const char *filename, const char *pkgdir)
 			    "version", &regver);
 			if (xbps_cmpver(version, regver) <= 0) {
 				printf("Skipping %s. Version %s already "
-				    "registered.\n", filename, regver);
+				    "registered.\n", filen, regver);
 				prop_object_release(newpkgd);
 				archive_read_data_skip(ar);
 				break;
@@ -168,16 +181,14 @@ repoidx_addpkg(const char *file, const char *filename, const char *pkgdir)
 		 * We have the dictionary now, add the required
 		 * objects for the index.
 		 */
-		prop_dictionary_set_cstring_nocopy(newpkgd, "filename",
-		    filename);
+		prop_dictionary_set_cstring_nocopy(newpkgd, "filename", filen);
 		sha256 = xbps_get_file_hash(file);
 		if (sha256 == NULL) {
 			prop_object_release(newpkgd);
 			rv = errno;
 			break;
 		}
-		prop_dictionary_set_cstring(newpkgd, "filename-sha256",
-		    sha256);
+		prop_dictionary_set_cstring(newpkgd, "filename-sha256", sha256);
 		free(sha256);
 
 		if (stat(file, &st) == -1) {
@@ -219,6 +230,8 @@ out2:
 out1:
 	archive_read_finish(ar);
 out:
+	free(tmpfilen);
+
 	return rv;
 }
 
@@ -270,7 +283,7 @@ xbps_repo_genindex(const char *pkgdir)
 				free(path);
 				return errno;
 			}
-			rv = repoidx_addpkg(binfile, dp->d_name, pkgdir);
+			rv = xbps_repo_addpkg_index(binfile, pkgdir);
 			free(binfile);
 			if (rv != 0) {
 				(void)closedir(dirp);
