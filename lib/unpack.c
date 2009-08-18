@@ -324,8 +324,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		    strcmp("./REMOVE", archive_entry_pathname(entry)) &&
 		    strcmp("./files.plist", archive_entry_pathname(entry)) &&
 		    strcmp("./props.plist", archive_entry_pathname(entry))) {
-			if (((flags & XBPS_FLAG_FORCE) == 0) ||
-			      essential == false) {
+			if (((flags & XBPS_FLAG_FORCE) == 0) && !essential) {
 				eflags |= ARCHIVE_EXTRACT_NO_OVERWRITE;
 				eflags |= ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
 			}
