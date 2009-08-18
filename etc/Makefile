@@ -9,10 +9,10 @@ all:
 clean:
 
 install:
-	if [ ! -d $(ETCDIR) ]; then		\
-		install -d $(ETCDIR);		\
+	if [ ! -d $(DESTDIR)$(ETCDIR) ]; then		\
+		install -d $(DESTDIR)$(ETCDIR);		\
 	fi
 
-	if [ ! -f $(ETCDIR)/$(CONF_FILE) ]; then	\
-		install -m 644 $(CONF_FILE) $(ETCDIR);	\
+	if [ ! -f $(DESTDIR)$(ETCDIR)/$(CONF_FILE) ]; then		\
+		install -m 644 $(CONF_FILE) $(DESTDIR)$(ETCDIR);	\
 	fi

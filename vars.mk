@@ -3,7 +3,7 @@
 PREFIX	?= /usr/local
 SBINDIR	?= $(DESTDIR)$(PREFIX)/sbin
 LIBDIR	?= $(DESTDIR)$(PREFIX)/lib
-ETCDIR	?= $(DESTDIR)$(PREFIX)/etc
+ETCDIR	?= $(PREFIX)/etc
 TOPDIR	?= ..
 INSTALL_STRIPPED ?= -s
 
