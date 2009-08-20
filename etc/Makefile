@@ -9,6 +9,7 @@ all:
 
 .PHONY: clean
 clean:
+	-rm -f $(CONF_FILE).new
 
 install:
 	if [ ! -d $(DESTDIR)$(ETCDIR) ]; then		\
