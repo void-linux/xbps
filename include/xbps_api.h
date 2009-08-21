@@ -68,7 +68,8 @@
 #endif
 
 /* From lib/configure.c */
-int		xbps_configure_pkg(const char *);
+int		xbps_configure_pkg(const char *, bool);
+int		xbps_configure_all_pkgs(void);
 
 /* from lib/cmpver.c */
 int		xbps_cmpver(const char *, const char *);
@@ -145,7 +146,8 @@ int		xbps_remove_pkg_from_dict(prop_dictionary_t, const char *,
 int		xbps_remove_string_from_array(prop_array_t, const char *);
 
 /* From lib/purge.c */
-int		xbps_purge_pkg(const char *);
+int		xbps_purge_pkg(const char *, bool);
+int		xbps_purge_all_pkgs(void);
 
 /* From lib/register.c */
 int		xbps_register_pkg(prop_dictionary_t, bool);

@@ -31,12 +31,47 @@
 #include <xbps_api.h>
 
 /*
- * Configure a package that is currently unpacked. This
- * runs the post INSTALL action if required and updates the
- * package state to installed.
+ * Configure all packages currently in unpacked state.
  */
 int
-xbps_configure_pkg(const char *pkgname)
+xbps_configure_all_pkgs(void)
+{
+	prop_dictionary_t d;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	const char *pkgname;
+	int rv = 0;
+	pkg_state_t state = 0;
+
+	d = xbps_prepare_regpkgdb_dict();
+	if (d == NULL)
+		return ENODEV;
+
+	iter = xbps_get_array_iter_from_dict(d, "packages");
+	if (iter == NULL)
+		return ENOENT;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
+			break;
+		if (state != XBPS_PKG_STATE_UNPACKED)
+			continue;
+		if ((rv = xbps_configure_pkg(pkgname, false)) != 0)
+			break;
+	}
+	prop_object_iterator_release(iter);
+
+	return rv;
+}
+
+/*
+ * Configure a package that is in unpacked state. This runs the
+ * post INSTALL action if required and updates package state to
+ * to installed.
+ */
+int
+xbps_configure_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t pkgd;
 	const char *rootdir, *version;
@@ -50,16 +85,18 @@ xbps_configure_pkg(const char *pkgname)
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
-	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0)
-		return rv;
+	if (check_state) {
+		if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0)
+			return rv;
 
-	if (state == XBPS_PKG_STATE_INSTALLED) {
-		if ((flags & XBPS_FLAG_FORCE) == 0)
-			return 0;
+		if (state == XBPS_PKG_STATE_INSTALLED) {
+			if ((flags & XBPS_FLAG_FORCE) == 0)
+				return 0;
 
-		reconfigure = true;
-	} else if (state != XBPS_PKG_STATE_UNPACKED)
-		return EINVAL;
+			reconfigure = true;
+		} else if (state != XBPS_PKG_STATE_UNPACKED)
+			return EINVAL;
+	}
 
 	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
 	if (pkgd == NULL)

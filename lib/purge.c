@@ -33,13 +33,46 @@
 
 static int	remove_pkg_metadata(const char *);
 
+int
+xbps_purge_all_pkgs(void)
+{
+
+	prop_dictionary_t d;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	const char *pkgname;
+	int rv = 0;
+	pkg_state_t state = 0;
+
+	d = xbps_prepare_regpkgdb_dict();
+	if (d == NULL)
+		return ENODEV;
+
+	iter = xbps_get_array_iter_from_dict(d, "packages");
+	if (iter == NULL)
+		return ENOENT;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
+			break;
+		if (state != XBPS_PKG_STATE_CONFIG_FILES)
+			continue;
+		if ((rv = xbps_purge_pkg(pkgname, false)) != 0)
+			break;
+	}
+	prop_object_iterator_release(iter);
+
+	return rv;
+}
+
 /*
  * Purge a package that is currently in "config-files" state.
  * This removes configuration files if they weren't modified,
  * removes metadata files and fully unregisters the package.
  */
 int
-xbps_purge_pkg(const char *pkgname)
+xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
@@ -54,14 +87,16 @@ xbps_purge_pkg(const char *pkgname)
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
-	/*
-	 * Skip packages that aren't in "config-files" state.
-	 */
-	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0)
-		return rv;
+	if (check_state) {
+		/*
+		 * Skip packages that aren't in "config-files" state.
+		 */
+		if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0)
+			return rv;
 
-	if (state != XBPS_PKG_STATE_CONFIG_FILES)
-		return 0;
+		if (state != XBPS_PKG_STATE_CONFIG_FILES)
+			return 0;
+	}
 
 	/*
 	 * Iterate over the pkg file list dictionary and remove all

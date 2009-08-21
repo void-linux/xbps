@@ -87,9 +87,6 @@ int
 main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	const char *curpkgname;
 	int c, flags = 0, rv = 0;
 	bool force = false, verbose = false;
 
@@ -224,21 +221,10 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		if (strcasecmp(argv[1], "all") == 0) {
-			iter = xbps_get_array_iter_from_dict(dict, "packages");
-			if (iter == NULL)
-				goto out;
-
-			while ((obj = prop_object_iterator_next(iter))) {
-				prop_dictionary_get_cstring_nocopy(obj,
-				    "pkgname", &curpkgname);
-				if ((rv = xbps_purge_pkg(curpkgname)) != 0)
-					break;
-			}
-			prop_object_iterator_release(iter);
-		} else {
-			rv = xbps_purge_pkg(argv[1]);
-		}
+		if (strcasecmp(argv[1], "all") == 0)
+			rv = xbps_purge_all_pkgs();
+		else
+			rv = xbps_purge_pkg(argv[1], true);
 
 	} else if (strcasecmp(argv[0], "reconfigure") == 0) {
 		/*
@@ -247,21 +233,10 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		if (strcasecmp(argv[1], "all") == 0) {
-			iter = xbps_get_array_iter_from_dict(dict, "packages");
-			if (iter == NULL)
-				goto out;
-
-			while ((obj = prop_object_iterator_next(iter))) {
-				prop_dictionary_get_cstring_nocopy(obj,
-				    "pkgname", &curpkgname);
-				if ((rv = xbps_configure_pkg(curpkgname)) != 0)
-					break;
-			}
-			prop_object_iterator_release(iter);
-		} else {
-			rv = xbps_configure_pkg(argv[1]);
-		}
+		if (strcasecmp(argv[1], "all") == 0)
+			rv = xbps_configure_all_pkgs();
+		else
+			rv = xbps_configure_pkg(argv[1], true);
 
 	} else {
 		usage();
