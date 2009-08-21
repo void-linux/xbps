@@ -94,7 +94,10 @@ stow_pkg_real()
 
 	# Copy files into masterdir.
 	for i in $(echo *); do
-		[ "$i" = "INSTALL" ] && continue
+		if [ "$i" = "INSTALL" -o "$i" = "REMOVE" -o \
+		     "$i" = "files.plist" -o "$i" = "props.plist" ]; then
+		     continue
+		fi
 		cp -a ${i} $XBPS_MASTERDIR
 	done
 
