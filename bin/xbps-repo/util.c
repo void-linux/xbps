@@ -97,14 +97,6 @@ show_pkg_info(prop_dictionary_t dict)
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("SHA256: %s\n", prop_string_cstring_nocopy(obj));
 
-	obj = prop_dictionary_get(dict, "run_depends");
-	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {
-		printf("Dependencies:\n");
-		(void)xbps_callback_array_iter_in_dict(dict, "run_depends",
-		    list_strings_in_array, NULL);
-		printf("\n\n");
-	}
-
 	obj = prop_dictionary_get(dict, "conf_files");
 	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {
 		printf("Configuration files:\n");

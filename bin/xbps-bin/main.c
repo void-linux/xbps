@@ -42,7 +42,7 @@ usage(void)
 	printf("Usage: xbps-bin [options] [target] [arguments]\n\n"
 	" Available targets:\n"
         "    autoremove, autoupdate, check, files, install, list\n"
-	"    purge, remove, show, update\n"
+	"    purge, remove, show, show-deps, show-revdeps, update\n"
 	" Targets with arguments:\n"
 	"    check\t<pkgname>\n"
 	"    files\t<pkgname>\n"
@@ -51,6 +51,8 @@ usage(void)
 	"    reconfigure\t[<pkgname>|<all>]\n"
 	"    remove\t<pkgname>\n"
 	"    show\t<pkgname>\n"
+	"    show-deps\t<pkgname>\n"
+	"    show-revdeps\t<pkgname>\n"
 	"    update\t<pkgname>\n"
 	" Options shared by all targets:\n"
 	"    -r\t\t<rootdir>\n"
@@ -237,6 +239,24 @@ main(int argc, char **argv)
 			rv = xbps_configure_all_pkgs();
 		else
 			rv = xbps_configure_pkg(argv[1], true);
+
+	} else if (strcasecmp(argv[0], "show-deps") == 0) {
+		/*
+		 * Show dependencies for a package.
+		 */
+		if (argc != 2)
+			usage();
+
+		rv = xbps_show_pkg_deps(argv[1]);
+
+	} else if (strcasecmp(argv[0], "show-revdeps") == 0) {
+		/*
+		 * Show reverse dependencies for a package.
+		 */
+		if (argc != 2)
+			usage();
+
+		rv = xbps_show_pkg_reverse_deps(argv[1]);
 
 	} else {
 		usage();

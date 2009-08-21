@@ -31,5 +31,7 @@ void	xbps_autoremove_pkgs(void);
 void	xbps_remove_installed_pkg(const char *, bool);
 void	xbps_autoupdate_pkgs(bool);
 int	xbps_check_pkg_integrity(const char *);
+int	xbps_show_pkg_deps(const char *);
+int	xbps_show_pkg_reverse_deps(const char *);
 
 #endif /* !_XBPS_BIN_DEFS_H_ */
