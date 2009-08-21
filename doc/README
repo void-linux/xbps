@@ -2,19 +2,16 @@
  WHAT IS IT?
 -----------------------------------------------------------------------------
 
-xbps - xtraeme's build package system.
+xbps - xtraeme's binary package ystem.
 
-It is a simple build package system that installs packages inside of
-a chroot in a destination directory. Once the package has been installed
-into this directory, you can make it appear/unappear at the master directory
-at any time. It's in spirit the same than GNU stow, but the files are just
-copied (there are no soft/hard links).
+xbps is a new binary package system, taken ideas from other free available
+implementations, such as dpkg/apt, RPM, pacman and others. Metadata handling
+as package databases are handled by proplib. Multiple compression formats
+are supported in binary packages thanks to libarchive.
 
 xbps has been designed for Linux, and for the moment I'm not interested to
-make it work on any other random OS. I've been a NetBSD developer for some
-years and I do not want to come back... also the experience has helped to
-me to start xbps and not to use pkgsrc, which is very portable but also
-not so fast.
+make it work on any other random OS. xbps is the base to create a basic
+Linux system.
 
 -----------------------------------------------------------------------------
  REQUIREMENTS
@@ -29,11 +26,12 @@ http://code.google.com/p/portableproplib/
 I'm also the human maintaining the portable proplib package. I'd suggest you
 to install it into /usr/local to avoid issues with your distribution packages.
 
-Additionally the following software is required to be able to build and install
-xbps binary/source packages:
+Additionally the following software is required in the host system to build
+and install xbps binary packages:
 
 	* GNU GCC C++
 	* GNU Make
+	* GNU Bison
 	* fakeroot
 	* wget
 	* libarchive (development package)

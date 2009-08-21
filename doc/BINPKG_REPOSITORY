@@ -83,6 +83,10 @@ setting in the configuration file:
 
 	$ xbps-repo genindex /path/to/dir
 
+Alternatively if you only want to register a single package:
+
+	$ xbps-repo add-pkgidx /package/repo /package/repo/<arch>/foo-1.2.xbps
+
 After this you can add your own local repository with binary packages:
 
 	$ xbps-repo add /path/to/dir
@@ -108,9 +112,9 @@ To show information about available packages in the repository pool:
 
 	$ xbps-repo show package
 
-To search for binary packages by specifying a string:
+To search for binary packages by specifying a shell pattern (see fnmatch(3)):
 
-	$ xbps-repo search mypkg
+	$ xbps-repo search 'foo*'
 
 ------------------------------------------------------------------------------
 	Juan Romero Pardines <xtraeme@gmail.com>

@@ -1,22 +1,3 @@
------------------------------------------------------------------------------
- REQUIREMENTS
------------------------------------------------------------------------------
-
-To be able to build packages from source the following software is required
-in the host system:
-
-	* GNU GCC C++
-	* GNU Make
-	* fakeroot
-	* wget
-	* libarchive (development package)
-	* perl
-	* sudo
-
-Super-user privileges are required as well, because all packages are built
-in a chroot (except the ones that are included in a virtual package to be
-able to build a minimal system for the chroot).
-
 ------------------------------------------------------------------------------
  HOW TO BUILD/HANDLE PACKAGES FROM SOURCE
 ------------------------------------------------------------------------------
@@ -28,7 +9,7 @@ level directory.
 
 If configuration file is not specified from the command line with the
 -c flag, it will first try to use the default location at
-/usr/local/etc/xbps.conf (or the installation prefix that was specified
+/usr/local/etc/xbps-src.conf (or the installation prefix that was specified
 to the make(1) command), and as last resort in the etc directory of the
 current directory.
 
@@ -59,7 +40,7 @@ installing packages you should use the install target:
 	$ sudo xbps-src install glib
 
 If the package is properly installed, it will be "stowned" automatically.
-``stowned´´ means that this package is available in the master directory,
+``stowned'' means that this package is available in the master directory,
 on which xpbs has copied all files from DESTDIR/<pkgname>.
 
 To remove a currently installed (and stowned) package, you can use:
