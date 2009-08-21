@@ -1,0 +1,9 @@
+xbps-bin
+xbps-cmpver
+xbps-digest
+xbps-repo
+xbps-src
+xbps-pkgdb
+*.so*
+*.a
+*.new
