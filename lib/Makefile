@@ -26,6 +26,7 @@ $(LIBXBPS_STATIC): $(OBJECTS)
 	$(AR) rcs $@ $^
 	ranlib $@
 
+.PHONY: install
 install: $(LIBXBPS) $(LIBXBPS_STATIC)
 	install -d $(LIBDIR)
 	install -m 644 $(LIBXBPS_STATIC) $(LIBDIR)

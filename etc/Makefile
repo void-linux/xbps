@@ -11,6 +11,7 @@ all:
 clean:
 	-rm -f $(CONF_FILE).new
 
+.PHONY: install
 install:
 	if [ ! -d $(DESTDIR)$(ETCDIR) ]; then		\
 		install -d $(DESTDIR)$(ETCDIR);		\

@@ -17,6 +17,7 @@ clean-bins:
 clean-objs:
 	-rm -f $(OBJS)
 
+.PHONY: install
 install: $(BIN)
 	install -d $(SBINDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(SBINDIR)

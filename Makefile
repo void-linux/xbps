@@ -20,6 +20,7 @@ install:
 	@echo "WARNING: Don't forget to rerun ldconfig(1)."
 	@echo
 
+.PHONY: uninstall
 uninstall:
 	-rm -f $(SBINDIR)/xbps-*
 	-rm -f $(LIBDIR)/libxbps.*

@@ -6,6 +6,7 @@ all:
 .PHONY: clean
 clean:
 
+.PHONY: install
 install:
 	if [ ! -d $(DESTDIR)$(SHAREDIR) ]; then		\
 		install -d $(DESTDIR)$(SHAREDIR);	\
