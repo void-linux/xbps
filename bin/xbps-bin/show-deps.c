@@ -91,6 +91,9 @@ xbps_show_pkg_deps(const char *pkgname)
 
 	rv = xbps_callback_array_iter_in_dict(propsd, "run_depends",
 	     list_deps, NULL);
+	prop_object_release(propsd);
+	prop_object_release(pkgd);
+
 	xbps_release_regpkgdb_dict();
 
 	return rv;
@@ -110,6 +113,8 @@ xbps_show_pkg_reverse_deps(const char *pkgname)
 
 	rv = xbps_callback_array_iter_in_dict(pkgd, "requiredby",
 	    list_strings_sep_in_array, NULL);
+	prop_object_release(pkgd);
+	xbps_release_regpkgdb_dict();
 
 	return rv;
 }
