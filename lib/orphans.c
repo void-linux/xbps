@@ -50,6 +50,8 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 	char *pkgname;
 	unsigned int ndep = 0, cnt = 0;
 	bool automatic = false;
+	pkg_state_t state = 0;
+	int rv = 0;
 
 	(void)arg;
 	(void)loop_done;
@@ -58,6 +60,12 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 		return EINVAL;
 
 	if (!automatic)
+		return 0;
+
+	if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
+		return rv;
+
+	if (state != XBPS_PKG_STATE_INSTALLED)
 		return 0;
 
 	reqby = prop_dictionary_get(obj, "requiredby");
