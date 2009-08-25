@@ -215,7 +215,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	/*
 	 * Find out if the REMOVE file exists.
 	 */
-	if (access(buf, R_OK) == 0) {
+	if (access(buf, X_OK) == 0) {
 		/*
 		 * Run the pre remove action.
 		 */

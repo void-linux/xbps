@@ -122,7 +122,7 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
 	if (chdir(rootdir) == -1)
 		return errno;
 
-	if (access(buf, R_OK) == 0) {
+	if (access(buf, X_OK) == 0) {
 		if ((rv = xbps_file_chdir_exec(rootdir, buf, "post",
 		     pkgname, version, NULL)) != 0) {
 			free(buf);
