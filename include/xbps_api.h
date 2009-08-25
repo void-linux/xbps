@@ -68,7 +68,7 @@
 #endif
 
 /* From lib/configure.c */
-int		xbps_configure_pkg(const char *, bool);
+int		xbps_configure_pkg(const char *, const char *, bool);
 int		xbps_configure_all_pkgs(void);
 
 /* from lib/cmpver.c */

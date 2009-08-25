@@ -39,7 +39,7 @@ xbps_configure_all_pkgs(void)
 	prop_dictionary_t d;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pkgname;
+	const char *pkgname, *version;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -53,11 +53,12 @@ xbps_configure_all_pkgs(void)
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
 			break;
 		if (state != XBPS_PKG_STATE_UNPACKED)
 			continue;
-		if ((rv = xbps_configure_pkg(pkgname, false)) != 0)
+		if ((rv = xbps_configure_pkg(pkgname, version, false)) != 0)
 			break;
 	}
 	prop_object_iterator_release(iter);
@@ -71,10 +72,10 @@ xbps_configure_all_pkgs(void)
  * to installed.
  */
 int
-xbps_configure_pkg(const char *pkgname, bool check_state)
+xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
 {
 	prop_dictionary_t pkgd;
-	const char *rootdir, *version;
+	const char *rootdir, *lver;
 	char *buf;
 	int rv = 0, flags = 0;
 	pkg_state_t state = 0;
@@ -96,17 +97,19 @@ xbps_configure_pkg(const char *pkgname, bool check_state)
 			reconfigure = true;
 		} else if (state != XBPS_PKG_STATE_UNPACKED)
 			return EINVAL;
+	
+		pkgd = xbps_find_pkg_installed_from_plist(pkgname);
+		if (pkgd == NULL)
+			return ENOENT;
+
+		prop_dictionary_get_cstring_nocopy(pkgd, "version", &lver);
+		prop_object_release(pkgd);
+	} else {
+		lver = version;
 	}
 
-	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
-	if (pkgd == NULL)
-		return ENOENT;
-
-	prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
-	prop_object_release(pkgd);
-
 	printf("%sonfiguring package %s-%s...\n",
-	    reconfigure ? "Rec" : "C", pkgname, version);
+	    reconfigure ? "Rec" : "C", pkgname, lver);
 
 	buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
 	    XBPS_META_PATH, pkgname);
