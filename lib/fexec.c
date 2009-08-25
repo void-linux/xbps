@@ -60,7 +60,7 @@ pfcexec(const char *path, const char *file, const char **argv)
 			 * destdir and exec the command. Otherwise
 			 * just change CWD to destdir.
 			 */
-			if (getuid() == 0 && access("./bin/sh", R_OK) == 0) {
+			if (getuid() == 0 && access("./bin/sh", X_OK) == 0) {
 				if (chroot(path) == -1)
 					_exit(127);
 				if (chdir("/") == -1)
