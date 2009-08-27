@@ -124,7 +124,7 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
 
 	if (access(buf, X_OK) == 0) {
 		if ((rv = xbps_file_chdir_exec(rootdir, buf, "post",
-		     pkgname, version, NULL)) != 0) {
+		     pkgname, lver, NULL)) != 0) {
 			free(buf);
 			printf("%s: post INSTALL action returned: %s\n",
 			    pkgname, strerror(errno));
