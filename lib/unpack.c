@@ -33,7 +33,7 @@
 #include <xbps_api.h>
 
 static int unpack_archive_fini(struct archive *, prop_dictionary_t, bool);
-static void set_extract_flags(int);
+static void set_extract_flags(int *);
 
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
@@ -122,17 +122,17 @@ out:
 			ARCHIVE_EXTRACT_TIME | EXTRACT_FLAGS
 
 static void
-set_extract_flags(int flags)
+set_extract_flags(int *flags)
 {
 	if (getuid() == 0)
-		flags = FEXTRACT_FLAGS;
+		*flags = FEXTRACT_FLAGS;
 	else
-		flags = EXTRACT_FLAGS;
+		*flags = EXTRACT_FLAGS;
 }
 
 static int
 install_config_file(prop_dictionary_t d, struct archive_entry *entry,
-		    const char *pkgname, int flags, bool skip)
+		    const char *pkgname, int *flags, bool skip)
 {
 	prop_dictionary_t forigd;
 	prop_object_t obj, obj2;
@@ -292,7 +292,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 	struct archive_entry *entry;
 	const char *pkgname, *version, *rootdir;
 	char *buf, *buf2;
-	int rv = 0, flags, lflags, eflags;
+	int rv = 0, flags, lflags;
 	bool actgt = false, skip_entry = false;
 
 	assert(ar != NULL);
@@ -309,24 +309,22 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 	prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkg, "version", &version);
 
-	set_extract_flags(lflags);
-
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
+		lflags = 0;
+		set_extract_flags(&lflags);
 		/*
 		 * Always overwrite pkg metadata files. Other files
 		 * in the archive aren't overwritten unless a package
 		 * defines the "essential" boolean obj, or the
 		 * XBPS_FLAG_FORCE is specified.
 		 */
-		eflags = 0;
-		eflags = lflags;
 		if (strcmp("./INSTALL", archive_entry_pathname(entry)) &&
 		    strcmp("./REMOVE", archive_entry_pathname(entry)) &&
 		    strcmp("./files.plist", archive_entry_pathname(entry)) &&
 		    strcmp("./props.plist", archive_entry_pathname(entry))) {
 			if (((flags & XBPS_FLAG_FORCE) == 0) && !essential) {
-				eflags |= ARCHIVE_EXTRACT_NO_OVERWRITE;
-				eflags |= ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
+				lflags |= ARCHIVE_EXTRACT_NO_OVERWRITE;
+				lflags |= ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
 			}
 		}
 
@@ -342,7 +340,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 			actgt = true;
 			archive_entry_set_pathname(entry, buf);
 
-			if (archive_read_extract(ar, entry, eflags) != 0) {
+			if (archive_read_extract(ar, entry, lflags) != 0) {
 				if ((rv = archive_errno(ar)) != EEXIST) {
 					free(buf);
 					return rv;
@@ -400,7 +398,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		 * Handle configuration files.
 		 */
 		if ((rv = install_config_file(filesd, entry, pkgname,
-		     eflags, skip_entry)) != 0) {
+		     &lflags, skip_entry)) != 0) {
 			prop_object_release(filesd);
 			return rv;
 		}
@@ -412,7 +410,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		/*
 		 * Extract entry from archive.
 		 */
-		if (archive_read_extract(ar, entry, eflags) != 0) {
+		if (archive_read_extract(ar, entry, lflags) != 0) {
 			rv = archive_errno(ar);
 			if (rv != EEXIST) {
 				printf("ERROR: %s...exiting!\n",
