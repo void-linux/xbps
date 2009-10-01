@@ -369,11 +369,19 @@ exec_transaction(struct transaction *trans)
 			prop_object_release(instpkgd);
 
 			/*
-			 * If this package is not 'essential', just remove
-			 * the old package and install the new one. Otherwise
-			 * we just overwrite the files.
+			 * If package is marked as 'essential' remove old
+			 * requiredby entries and overwrite pkg files; otherwise
+			 * remove old package and install new one.
 			 */
-			if (essential == false) {
+			if (essential) {
+				rv = xbps_requiredby_pkg_remove(pkgname);
+				if (rv != 0) {
+					printf("error: couldn't remove reqby"
+					    " entries for %s-%s (%s)\n",
+					    pkgname, instver, strerror(rv));
+					return rv;
+				}
+			} else {
 				rv = xbps_remove_pkg(pkgname, version, true);
 				if (rv != 0) {
 					printf("error: removing %s-%s (%s)\n",
