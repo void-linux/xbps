@@ -40,11 +40,12 @@ xbps_write_metadata_scripts_pkg()
 	cat >> $tmpf <<_EOF
 #!/bin/sh -e
 #
-# Generic INSTALL/REMOVE script.
+# Generic INSTALL/REMOVE script. Arguments passed to this script:
 #
-# \$1 = action
-# \$2 = pkgname
-# \$3 = version
+# \$1 = ACTION	[pre/post]
+# \$2 = PKGNAME
+# \$3 = VERSION
+# \$4 = UPDATE	[yes/no]
 #
 # Note that paths must be relative to CWD, to avoid calling
 # host commands if /bin/sh (dash) is not installed and it's
@@ -57,7 +58,11 @@ TRIGGERSDIR="./var/db/xbps/triggers"
 ACTION="\$1"
 PKGNAME="\$2"
 VERSION="\$3"
+UPDATE="\$4"
 
+#
+# The following code will run the triggers.
+#
 _EOF
 
 	#
@@ -162,7 +167,7 @@ _EOF
 				if ! $(echo $j|grep -q pre-${action}); then
 					continue
 				fi
-				printf "\t\${TRIGGERSDIR}/$f run $j \${PKGNAME} \${VERSION}\n" >> $tmpf
+				printf "\t\${TRIGGERSDIR}/$f run $j \${PKGNAME} \${VERSION} \${UPDATE}\n" >> $tmpf
 				printf "\t[ \$? -ne 0 ] && exit \$?\n" >> $tmpf
 			done
 		done
@@ -174,7 +179,7 @@ _EOF
 				if ! $(echo $j|grep -q post-${action}); then
 					continue
 				fi
-				printf "\t\${TRIGGERSDIR}/$f run $j \${PKGNAME} \${VERSION}\n" >> $tmpf
+				printf "\t\${TRIGGERSDIR}/$f run $j \${PKGNAME} \${VERSION} \${UPDATE}\n" >> $tmpf
 				printf "\t[ \$? -ne 0 ] && exit \$?\n" >> $tmpf
 			done
 		done
