@@ -221,7 +221,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		 */
 		prepostf = true;
 		rv = xbps_file_chdir_exec(rootdir, buf, "pre", pkgname,
-		    version, NULL);
+		    version, update ? "yes" : "no", NULL);
 		if (rv != 0) {
 			printf("%s: prerm action target error (%s)\n", pkgname,
 			    strerror(errno));
