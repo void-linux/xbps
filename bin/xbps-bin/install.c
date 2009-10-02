@@ -382,6 +382,8 @@ exec_transaction(struct transaction *trans)
 					return rv;
 				}
 			} else {
+				printf("Removing %s-%s ...\n",
+				    pkgname, instver);
 				rv = xbps_remove_pkg(pkgname, version, true);
 				if (rv != 0) {
 					printf("error: removing %s-%s (%s)\n",
