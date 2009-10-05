@@ -41,19 +41,20 @@ usage(void)
 {
 	printf("Usage: xbps-bin [options] [target] [arguments]\n\n"
 	" Available targets:\n"
-        "    autoremove, autoupdate, check, files, install, list\n"
-	"    purge, remove, show, show-deps, show-revdeps, update\n"
+        "    autoremove, autoupdate, check, install, list, purge\n"
+	"    remove, show, show-deps, show-files, show-revdeps, update\n"
+	"\n"
 	" Targets with arguments:\n"
-	"    check\t<pkgname>\n"
-	"    files\t<pkgname>\n"
-	"    install\t<pkgname>\n"
-	"    purge\t[<pkgname>|<all>]\n"
-	"    reconfigure\t[<pkgname>|<all>]\n"
-	"    remove\t<pkgname>\n"
-	"    show\t<pkgname>\n"
-	"    show-deps\t<pkgname>\n"
+	"    check\t\t<pkgname>\n"
+	"    install\t\t<pkgname>\n"
+	"    purge\t\t[<pkgname>|<all>]\n"
+	"    reconfigure\t\t[<pkgname>|<all>]\n"
+	"    remove\t\t<pkgname>\n"
+	"    show\t\t<pkgname>\n"
+	"    show-deps\t\t<pkgname>\n"
+	"    show-files\t\t<pkgname>\n"
 	"    show-revdeps\t<pkgname>\n"
-	"    update\t<pkgname>\n"
+	"    update\t\t<pkgname>\n"
 	" Options shared by all targets:\n"
 	"    -r\t\t<rootdir>\n"
 	"    -v\t\t<verbose>\n"
@@ -178,7 +179,7 @@ main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 
-	} else if (strcasecmp(argv[0], "files") == 0) {
+	} else if (strcasecmp(argv[0], "show-files") == 0) {
 		/* Shows files installed by a binary package. */
 		if (argc != 2)
 			usage();
