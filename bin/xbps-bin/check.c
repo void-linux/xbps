@@ -43,9 +43,6 @@
  * 	o Check the hash for all installed files, except
  * 	  configuration files (which is expected if they are modified).
  * 	o Check for missing run time dependencies.
- *
- * If any of these checks fail, the package will change its
- * state to 'broken'.
  */
 
 int
@@ -58,7 +55,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	const char *rootdir, *file, *sha256, *reqpkg;
 	char *path;
 	int rv = 0;
-	bool files_broken = false, broken = false;
+	bool files_broken = false;
 
 	assert(pkgname != NULL);
 
@@ -85,19 +82,16 @@ xbps_check_pkg_integrity(const char *pkgname)
 		printf("%s: unexistent %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = errno;
-		broken = true;
 		goto out;
 	} else if (prop_object_type(propsd) != PROP_TYPE_DICTIONARY) {
 		printf("%s: invalid %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = EINVAL;
-		broken = true;
 		goto out1;
 	} else if (prop_dictionary_count(propsd) == 0) {
 		printf("%s: incomplete %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = EINVAL;
-		broken = true;
 		goto out1;
 	}
 
@@ -117,19 +111,16 @@ xbps_check_pkg_integrity(const char *pkgname)
 		printf("%s: unexistent %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = ENOENT;
-		broken = true;
 		goto out1;
 	} else if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY) {
 		printf("%s: invalid %s metadata file.\n", pkgname,
 		    XBPS_PKGFILES);
 		rv = EINVAL;
-		broken = true;
 		goto out2;
 	} else if (prop_dictionary_count(filesd) == 0) {
 		printf("%s: incomplete %s metadata file.\n", pkgname,
 		    XBPS_PKGFILES);
 		rv = EINVAL;
-		broken = true;
 		goto out2;
 	} else if (((array = prop_dictionary_get(filesd, "files")) == NULL) ||
 		   ((array = prop_dictionary_get(filesd, "links")) == NULL) ||
@@ -137,7 +128,6 @@ xbps_check_pkg_integrity(const char *pkgname)
 			printf("%s: incomplete %s metadata file.\n", pkgname,
 			    XBPS_PKGFILES);
 			rv = EINVAL;
-			broken = true;
 			goto out2;
 	}
 
@@ -170,13 +160,11 @@ xbps_check_pkg_integrity(const char *pkgname)
 				printf("%s: unexistent file %s.\n",
 				    pkgname, file);
 				files_broken = true;
-				broken = true;
 				break;
 			case ERANGE:
                                 printf("%s: hash mismatch for %s.\n",
 				    pkgname, file);
 				files_broken = true;
-				broken = true;
 				break;
 			default:
 				printf("%s: unexpected error for %s (%s)\n",
@@ -213,7 +201,6 @@ xbps_check_pkg_integrity(const char *pkgname)
 				if (errno == ENOENT) {
 					printf("%s: unexistent file %s\n",
 					    pkgname, file);
-					broken = true;
 				} else
 					printf("%s: unexpected error for "
 					    "%s (%s)\n", pkgname, file,
@@ -242,7 +229,6 @@ xbps_check_pkg_integrity(const char *pkgname)
 				rv = ENOENT;
 				printf("%s: dependency not satisfied: %s\n",
 				    pkgname, reqpkg);
-				broken = true;
 			}
 		}
 		prop_object_iterator_release(iter);
@@ -257,18 +243,6 @@ out1:
 	prop_object_release(propsd);
 out:
 	prop_object_release(pkgd);
-
-	if (broken) {
-		rv = xbps_set_pkg_state_installed(pkgname,
-		    XBPS_PKG_STATE_BROKEN);
-		if (rv == 0)
-			printf("%s: changed package state to broken.\n",
-			    pkgname);
-		else
-			printf("%s: can't change package state (%s).\n",
-			    pkgname, strerror(rv));
-	}
-
 	xbps_release_regpkgdb_dict();
 
 	return rv;
