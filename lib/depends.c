@@ -143,6 +143,7 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 	prop_array_t pkg_rdeps, missing_rdeps;
 	struct repository_data *rdata;
 	int rv = 0;
+	bool missingdeps = false;
 
 	assert(pkg != NULL);
 	assert(iter != NULL);
@@ -165,6 +166,7 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 		if (rv != 0) {
 			if (rv == ENOENT) {
 				rv = 0;
+				missingdeps = true;
 				continue;
 			}
 			break;
@@ -185,7 +187,10 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 			return rv;
 	}
 
-        return 0;
+	if (missingdeps)
+		rv = ENOENT;
+
+	return rv;
 }
 
 static int
