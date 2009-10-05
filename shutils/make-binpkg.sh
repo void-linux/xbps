@@ -30,6 +30,7 @@ xbps_make_binpkg()
 
 	for subpkg in ${subpackages}; do
 		if [ "$pkg" = "$pkgname-$subpkg" ]; then
+			unset revision
 			. $XBPS_TEMPLATESDIR/$pkgname/$subpkg.template
 			pkgname=${sourcepkg}-${subpkg}
 			set_tmpl_common_vars
