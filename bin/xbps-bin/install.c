@@ -238,10 +238,10 @@ xbps_install_pkg(const char *pkg, bool force, bool update)
 		}
 		rv = xbps_prepare_pkg(pkg);
 		if (rv != 0 && rv == EAGAIN) {
-			printf("unable to locate %s in repository pool.", pkg);
+			printf("Unable to locate '%s' in repository pool.\n", pkg);
 			cleanup(rv);
 		} else if (rv != 0 && rv != ENOENT) {
-			printf("unexpected error: %s", strerror(rv));
+			printf("Unexpected error: %s", strerror(rv));
 			cleanup(rv);
 		}
 	}
