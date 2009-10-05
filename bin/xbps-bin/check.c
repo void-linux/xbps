@@ -46,6 +46,38 @@
  */
 
 int
+xbps_check_pkg_integrity_all(void)
+{
+	prop_dictionary_t d;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	const char *pkgname;
+	int rv = 0;
+	size_t npkgs = 0, nbrokenpkgs = 0;
+
+	d = xbps_prepare_regpkgdb_dict();
+	if (d == NULL)
+		return ENODEV;
+
+	iter = xbps_get_array_iter_from_dict(d, "packages");
+	if (iter == NULL)
+		return ENOENT;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		if ((rv = xbps_check_pkg_integrity(pkgname)) != 0)
+			nbrokenpkgs++;
+		npkgs++;
+	}
+	prop_object_iterator_release(iter);
+
+	printf("%zu package%s processed: %zu broken.\n", npkgs,
+	    npkgs == 1 ? "" : "s", nbrokenpkgs);
+
+	return rv;
+}
+
+int
 xbps_check_pkg_integrity(const char *pkgname)
 {
 	prop_dictionary_t pkgd, propsd, filesd;
@@ -55,7 +87,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	const char *rootdir, *file, *sha256, *reqpkg;
 	char *path;
 	int rv = 0;
-	bool files_broken = false;
+	bool broken = false, files_broken = false;
 
 	assert(pkgname != NULL);
 
@@ -174,8 +206,10 @@ xbps_check_pkg_integrity(const char *pkgname)
 			free(path);
                 }
                 prop_object_iterator_release(iter);
-		if (files_broken)
+		if (files_broken) {
+			broken = true;
 			printf("%s: files check FAILED.\n", pkgname);
+		}
 	}
 
 	/*
@@ -201,6 +235,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 				if (errno == ENOENT) {
 					printf("%s: unexistent file %s\n",
 					    pkgname, file);
+					broken = true;
 				} else
 					printf("%s: unexpected error for "
 					    "%s (%s)\n", pkgname, file,
@@ -232,9 +267,11 @@ xbps_check_pkg_integrity(const char *pkgname)
 			}
 		}
 		prop_object_iterator_release(iter);
-		if (rv == ENOENT)
+		if (rv == ENOENT) {
 			printf("%s: run-time dependency check FAILED.\n",
 			    pkgname);
+			broken = true;
+		}
 	}
 
 out2:
@@ -244,6 +281,9 @@ out1:
 out:
 	prop_object_release(pkgd);
 	xbps_release_regpkgdb_dict();
+
+	if (broken)
+		rv = EINVAL;
 
 	return rv;
 }

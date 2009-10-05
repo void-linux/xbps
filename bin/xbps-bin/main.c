@@ -45,7 +45,7 @@ usage(void)
 	"    remove, show, show-deps, show-files, show-revdeps, update\n"
 	"\n"
 	" Targets with arguments:\n"
-	"    check\t\t<pkgname>\n"
+	"    check\t\t[<pkgname>|<all>]\n"
 	"    install\t\t<pkgname>\n"
 	"    purge\t\t[<pkgname>|<all>]\n"
 	"    reconfigure\t\t[<pkgname>|<all>]\n"
@@ -195,7 +195,10 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		rv = xbps_check_pkg_integrity(argv[1]);
+		if (strcasecmp(argv[1], "all") == 0)
+			rv = xbps_check_pkg_integrity_all();
+		else
+			rv = xbps_check_pkg_integrity(argv[1]);
 
 	} else if (strcasecmp(argv[0], "autoupdate") == 0) {
 		/*
