@@ -145,7 +145,6 @@ xbps_chroot_handler()
 	[ "$action" != "configure" -a "$action" != "build" -a \
 	  "$action" != "install" -a "$action" != "chroot" ] && return 1
 
-	rebuild_ldso_cache
 	mount_chroot_fs
 	install_xbps_utils
 
