@@ -323,7 +323,7 @@ xbps_remove_string_from_array(prop_array_t array, const char *str)
 {
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	size_t idx = 0;
+	unsigned int idx = 0;
 	bool found = false;
 
 	assert(array != NULL);
@@ -359,7 +359,7 @@ xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *curpkgname;
-	size_t i = 0;
+	unsigned int i = 0;
 	bool found = false;
 
 	assert(dict != NULL);

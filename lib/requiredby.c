@@ -85,7 +85,7 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 	prop_object_iterator_t iter;
 	const char *pkgname = arg;
 	char *curpkgname;
-	size_t idx = 0;
+	unsigned int idx = 0;
 	bool found = false;
 
 	(void)loop_done;
