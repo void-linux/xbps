@@ -74,7 +74,7 @@ install_src_phase()
 	run_func post_install
 
 	# Remove libtool archives from pkg destdir.
-	if [ -n "$libtool_no_delete_archives" ]; then
+	if [ -z "$libtool_no_delete_archives" ]; then
 		find ${DESTDIR} -type f -name \*.la -delete
 	fi
 
