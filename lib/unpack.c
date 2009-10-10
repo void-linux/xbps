@@ -160,23 +160,25 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 
 	forigd = prop_dictionary_internalize_from_file(buf);
 	free(buf);
-	if (forigd != NULL) {
-		iter2 = xbps_get_array_iter_from_dict(forigd, "conf_files");
-		if (iter2 != NULL) {
-			while ((obj2 = prop_object_iterator_next(iter2))) {
-				prop_dictionary_get_cstring_nocopy(obj2,
-				    "file", &cffile);
-				if (strstr(archive_entry_pathname(entry),
-				    cffile)) {
-					prop_dictionary_get_cstring(obj2,
-					    "sha256", &sha256_orig);
-					break;
-				}
-			}
-			prop_object_iterator_release(iter2);
-		}
-		prop_object_release(forigd);
+	if (forigd == NULL) {
+		install_new = true;
+		goto out;
 	}
+
+	iter2 = xbps_get_array_iter_from_dict(forigd, "conf_files");
+	if (iter2 != NULL) {
+		while ((obj2 = prop_object_iterator_next(iter2))) {
+			prop_dictionary_get_cstring_nocopy(obj2,
+			    "file", &cffile);
+			if (strstr(archive_entry_pathname(entry), cffile)) {
+				prop_dictionary_get_cstring(obj2, "sha256",
+				    &sha256_orig);
+				break;
+			}
+		}
+		prop_object_iterator_release(iter2);
+	}
+	prop_object_release(forigd);
 
 	/*
 	 * Compare original, installed and new hash for current file.
@@ -268,6 +270,7 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 		}
 	}
 
+out:
 	if (install_new)
 		set_extract_flags(flags);
 	if (sha256_orig)
