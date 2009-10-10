@@ -32,7 +32,6 @@ install_pkg()
 {
 	local pkg=
 	local curpkgn="$1"
-	local automatic="$2"
 	local cdestdir=
 	local cur_tmpl="$XBPS_TEMPLATESDIR/$curpkgn/template"
 
@@ -120,7 +119,7 @@ install_pkg()
 	#
 	if [ -z "$install_destdir_target" ]; then
 		. $XBPS_SHUTILSDIR/stow_funcs.sh
-		stow_pkg $curpkgn $automatic
+		stow_pkg $curpkgn
 	fi
 }
 

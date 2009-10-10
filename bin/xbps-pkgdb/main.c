@@ -65,9 +65,6 @@ usage(void)
 	"  Options shared by all actions:\n"
 	"    -r\t\t\t<rootdir>\n"
 	"\n"
-	"  Options used by the register action:\n"
-	"    -a\t\t\tSet automatic installation flag.\n"
-	"\n"
 	"  Examples:\n"
 	"    $ xbps-pkgdb getpkgname foo-2.0\n"
 	"    $ xbps-pkgdb getpkgrevision foo-2.0_1\n"
@@ -86,15 +83,11 @@ main(int argc, char **argv)
 	prop_dictionary_t dict;
 	const char *version;
 	char *plist, *pkgname, *in_chroot_env, *root = NULL;
-	bool automatic = false, in_chroot = false;
+	bool in_chroot = false;
 	int c, rv = 0;
 
 	while ((c = getopt(argc, argv, "ar:")) != -1) {
 		switch (c) {
-		case 'a':
-			/* Set automatic install flag */
-			automatic = true;
-			break;
 		case 'r':
 			/* To specify the root directory */
 			root = strdup(optarg);
@@ -142,7 +135,7 @@ main(int argc, char **argv)
 		if (rv != 0)
 			exit(EXIT_FAILURE);
 
-		rv = xbps_register_pkg(dict, automatic);
+		rv = xbps_register_pkg(dict, false);
 		if (rv == EEXIST) {
 			printf("%s=> %s-%s already registered.\n",
 			    in_chroot ? "[chroot] " : "", argv[1], argv[2]);

@@ -28,7 +28,6 @@
 stow_pkg()
 {
 	local pkg="$1"
-	local automatic="$2"
 	local subpkg spkgrev
 
 	for subpkg in ${subpackages}; do
@@ -51,7 +50,7 @@ stow_pkg()
 		. $XBPS_TEMPLATESDIR/${sourcepkg}/${subpkg}.template
 		pkgname=${sourcepkg}-${subpkg}
 		set_tmpl_common_vars
-		stow_pkg_real ${pkgname} ${automatic}
+		stow_pkg_real ${pkgname}
 		run_template ${sourcepkg}
 		if [ "${pkg}" = "${sourcepkg}-${subpkg}" ]; then
 			#
@@ -64,7 +63,6 @@ stow_pkg()
 	done
 
 	stow_pkg_real ${pkg} ${automatic}
-
 	return $?
 }
 
@@ -75,7 +73,6 @@ stow_pkg()
 stow_pkg_real()
 {
 	local pkg="$1"
-	local automatic="$2"
 	local i lver regpkgdb_flags
 
 	[ -z "$pkg" ] && return 2
@@ -102,18 +99,15 @@ stow_pkg_real()
 	done
 
 	#
-	# Register pkg in plist file and add automatic installation
-	# object if requested.
+	# Register pkg in plist file.
 	#
-	[ -n "$automatic" ] && regpkgdb_flags="-a"
-
 	if [ -n "$revision" ]; then
 		lver="${version}_${revision}"
 	else
 		lver="${version}"
 	fi
-	$XBPS_REGPKGDB_CMD $regpkgdb_flags register \
-		$pkg $lver "$short_desc" || exit 1
+	$XBPS_REGPKGDB_CMD register $pkg $lver "$short_desc" || exit 1
+	return $?
 }
 
 #
@@ -172,6 +166,5 @@ unstow_pkg()
 
 	# Unregister pkg from plist file.
 	$XBPS_REGPKGDB_CMD unregister $pkg $ver
-
 	return $?
 }
