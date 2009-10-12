@@ -71,7 +71,16 @@ fetch_distfiles()
 	#
 	[ "$build_style" = "meta-template" ] && return 0
 
-	cd $XBPS_SRCDISTDIR
+	#
+	# If nofetch is set in a build template, skip this phase
+	# entirely and run the do_fetch() function.
+	#
+	if [ -n "$nofetch" ]; then
+		cd ${XBPS_BUILDDIR} && run_func do_fetch
+		return $?
+	fi
+
+	cd $XBPS_SRCDISTDIR || return 1
 	for f in ${distfiles}; do
 		curfile=$(basename $f)
 		if [ -f "$XBPS_SRCDISTDIR/$curfile" ]; then

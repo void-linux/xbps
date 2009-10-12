@@ -63,7 +63,7 @@ reset_tmpl_vars()
 			make_build_args make_install_args build_style	\
 			short_desc maintainer long_desc checksum wrksrc	\
 			patch_files make_cmd base_chroot register_shell \
-			make_build_target configure_script noextract \
+			make_build_target configure_script noextract nofetch \
 			pre_configure pre_build pre_install configure_shell \
 			post_configure post_build post_install \
 			make_install_target version revision essential \
@@ -194,7 +194,8 @@ prepare_tmpl()
 
 	if [ -z "$in_chroot" ]; then
 		export PATH="$XBPS_MASTERDIR/bin:$XBPS_MASTERDIR/sbin"
-		export PATH="$PATH:$XBPS_MASTERDIR/usr/bin:$XBPS_MASTERDIR/usr/sbin"
+		export PATH="$PATH:$XBPS_MASTERDIR/usr/bin"
+		export PATH="$PATH:$XBPS_MASTERDIR/usr/sbin"
 		export PATH="$PATH:/bin:/sbin:/usr/bin:/usr/sbin"
 		export PATH="$PATH:/usr/local/sbin"
 	fi
