@@ -60,7 +60,7 @@ install_src_phase()
 
 	# cross compilation vars.
 	if [ -n "$cross_compiler" ]; then
-		. $XBPS_HELPERSDIR/cross-compilation.sh
+		. $XBPS_SHUTILSDIR/cross-compilation.sh
 		cross_compile_setvars
 	fi
 
