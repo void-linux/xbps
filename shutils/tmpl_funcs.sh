@@ -30,6 +30,10 @@ info_tmpl()
 {
 	local i=
 
+	for f in $(echo $XBPS_COMMONVARSDIR/*.sh); do
+		[ -r ${f} ] && . ${f}
+	done
+
 	echo "pkgname:	$pkgname"
 	echo "version:	$version"
 	[ -n "$revision" ] && echo "revision:   $revision"
@@ -95,7 +99,9 @@ setup_tmpl()
 
 	[ -z "$pkg" ] && msg_error "missing package name after target."
 
-	. $XBPS_SHUTILSDIR/tmpl_vars.sh
+	for f in $(echo $XBPS_COMMONVARSDIR/*.sh); do
+		[ -r ${f} ] && . ${f}
+	done
 
 	if [ -f "$XBPS_TEMPLATESDIR/$pkg/template" ]; then
 		if [ "$pkgname" != "$pkg" ]; then
