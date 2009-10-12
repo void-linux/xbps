@@ -33,7 +33,10 @@ run_func()
 	[ -z "$func" ] && return 1
 
 	type -t $func | grep -q 'function'
-	[ $? -eq 0 ] && $func
+	if [ $? -eq 0 ]; then
+		$func
+		return $?
+	fi
 }
 
 run_rootcmd()

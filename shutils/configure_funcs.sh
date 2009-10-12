@@ -62,7 +62,7 @@ configure_src_phase()
 	fi
 
 	# Run pre_configure func.
-	run_func pre_configure
+	run_func pre_configure || msg_error "pre_configure stage failed!"
 
 	# Export configure_env vars.
 	for f in ${configure_env}; do
@@ -124,7 +124,7 @@ configure_src_phase()
 	fi
 
 	# Run post_configure func.
-	run_func post_configure
+	run_func post_configure || msg_error "post_configure stage failed!"
 
 	# unset configure_env vars.
 	for f in ${configure_env}; do

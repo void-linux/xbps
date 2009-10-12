@@ -58,7 +58,7 @@ build_src_phase()
 	[ -z "$make_cmd" ] && make_cmd=/usr/bin/make
 
 	# Run pre_build func.
-	run_func pre_build
+	run_func pre_build || msg_error "pre_build stage failed!"
 
 	[ -n "$XBPS_MAKEJOBS" -a -z "$disable_parallel_build" ] && \
 		makejobs="-j$XBPS_MAKEJOBS"
@@ -80,7 +80,7 @@ build_src_phase()
 	[ $? -ne 0 ] && msg_error "building $pkg (build phase)."
 
 	# Run post_build func.
-	run_func post_build
+	run_func post_build || msg_error "post_build stage failed!"
 
 	unset makejobs
 

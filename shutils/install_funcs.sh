@@ -49,12 +49,10 @@ install_src_phase()
 		return 0
 	fi
 
-	[ ! -d $wrksrc ] && msg_error "unexistent build directory [$wrksrc]"
-
-	cd $wrksrc || exit 1
+	cd $wrksrc || msg_error "can't change cwd to wrksrc!"
 
 	# Run pre_install func.
-	run_func pre_install
+	run_func pre_install || msg_error "pre_install stage failed!"
 
 	msg_normal "Running install phase for $pkgname-$lver."
 
@@ -65,13 +63,13 @@ install_src_phase()
 	fi
 
 	if [ "$build_style" = "custom-install" ]; then
-		run_func do_install
+		run_func do_install || msg_error "do_install stage failed!"
 	else
 		make_install $lver
 	fi
 
 	# Run post_install func.
-	run_func post_install
+	run_func post_install || msg_error "post_install stage failed!"
 
 	# Remove libtool archives from pkg destdir.
 	if [ -z "$libtool_no_delete_archives" ]; then
@@ -110,7 +108,8 @@ install_src_phase()
 		. $XBPS_TEMPLATESDIR/$pkgname/$subpkg.template
 		pkgname=${sourcepkg}-${subpkg}
 		set_tmpl_common_vars
-		run_func do_install
+		run_func do_install || \
+			msg_error "$pkgname do_install stage failed!"
 		run_template ${sourcepkg}
 		[ "$pkg" = "${sourcepkg}-${subpkg}" ] && break
 	done
@@ -120,8 +119,7 @@ install_src_phase()
 	# Remove $wrksrc if -C not specified.
 	#
 	if [ -d "$wrksrc" -a -z "$dontrm_builddir" ]; then
-		rm -rf $wrksrc
-		[ $? -eq 0 ] && \
+		rm -rf $wrksrc && \
 			msg_normal "Removed $pkgname-$lver build directory."
 	fi
 }
@@ -147,10 +145,7 @@ make_install()
 	# Install package via make.
 	#
 	run_rootcmd no ${make_cmd} ${make_install_target} ${make_install_args}
-	if [ "$?" -ne 0 ]; then
-		msg_error "installing $pkgname-$lver."
-		exit 1
-	fi
+	[ $? -ne 0 ] && msg_error "installing $pkgname-$lver."
 
 	# Replace libtool archives if requested.
 	if [ -z "$in_chroot" ]; then
