@@ -90,7 +90,6 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 	 * Remove some unneeded objects.
 	 */
 	prop_dictionary_remove(dict, "conf_files");
-	prop_dictionary_remove(dict, "keep_dirs");
 	prop_dictionary_remove(dict, "maintainer");
 	prop_dictionary_remove(dict, "long_desc");
 

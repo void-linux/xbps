@@ -106,15 +106,6 @@ show_pkg_info(prop_dictionary_t dict)
 		printf("\n");
 	}
 
-	obj = prop_dictionary_get(dict, "keep_dirs");
-	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {
-		printf("Permanent directories:\n");
-		sep = "  ";
-		(void)xbps_callback_array_iter_in_dict(dict, "keep_dirs",
-		    list_strings_sep_in_array, __UNCONST(sep));
-		printf("\n");
-	}
-
 	obj = prop_dictionary_get(dict, "short_desc");
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Description: %s", prop_string_cstring_nocopy(obj));

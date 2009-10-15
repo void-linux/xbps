@@ -57,7 +57,7 @@ xbps_write_metadata_pkg()
 		if [ ! -f $XBPS_TEMPLATESDIR/${sourcepkg}/${subpkg}.template ]; then
 			msg_error "Cannot find subpackage template!"
 		fi
-		unset run_depends conf_files keep_dirs noarch triggers \
+		unset run_depends conf_files noarch triggers \
 			revision openrc_services essential
 		. $XBPS_TEMPLATESDIR/${sourcepkg}/${subpkg}.template
 		pkgname=${sourcepkg}-${subpkg}
@@ -228,13 +228,6 @@ xbps_write_metadata_pkg_real()
 		echo "<dict>" >> $TMPFPLIST
 		echo "<key>file</key>" >> $TMPFPLIST
 		echo "<string>$j</string>" >> $TMPFPLIST
-		for i in ${keep_dirs}; do
-			if [ "$j" = "$i" ]; then
-				echo "<key>keep</key>" >> $TMPFPLIST
-				echo "<true/>" >> $TMPFPLIST
-				break
-			fi
-		done
 		echo "</dict>" >> $TMPFPLIST
 	done
 	echo "</array>" >> $TMPFPLIST
@@ -313,15 +306,6 @@ _EOF
 		echo "<key>conf_files</key>" >> $TMPFPROPS
 		echo "<array>" >> $TMPFPROPS
 		for f in ${conf_files}; do
-			echo "<string>$f</string>" >> $TMPFPROPS
-		done
-		echo "</array>" >> $TMPFPROPS
-	fi
-	# Keep directories while removing.
-	if [ -n "$keep_dirs" ]; then
-		echo "<key>keep_dirs</key>" >> $TMPFPROPS
-		echo "<array>" >> $TMPFPROPS
-		for f in ${keep_dirs}; do
 			echo "<string>$f</string>" >> $TMPFPROPS
 		done
 		echo "</array>" >> $TMPFPROPS

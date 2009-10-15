@@ -74,7 +74,7 @@ reset_tmpl_vars()
 			sgml_catalogs xml_catalogs xml_entries sgml_entries \
 			build_depends libtool_fixup_la_stage no_fixup_libtool \
 			disable_parallel_build run_depends cross_compiler \
-			only_for_archs conf_files keep_dirs \
+			only_for_archs conf_files \
 			noarch subpackages sourcepkg gtk_iconcache_dirs \
 			abi_depends api_depends triggers openrc_services \
 			libtool_no_delete_archives \
