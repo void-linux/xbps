@@ -66,7 +66,7 @@ reset_tmpl_vars()
 	local TMPL_VARS="pkgname distfiles configure_args configure_env \
 			make_build_args make_install_args build_style	\
 			short_desc maintainer long_desc checksum wrksrc	\
-			patch_files make_cmd base_chroot register_shell \
+			make_cmd base_chroot register_shell \
 			make_build_target configure_script noextract nofetch \
 			pre_configure pre_build pre_install configure_shell \
 			post_configure post_build post_install \
@@ -74,13 +74,13 @@ reset_tmpl_vars()
 			sgml_catalogs xml_catalogs xml_entries sgml_entries \
 			build_depends libtool_fixup_la_stage no_fixup_libtool \
 			disable_parallel_build run_depends cross_compiler \
-			only_for_archs patch_args conf_files keep_dirs \
+			only_for_archs conf_files keep_dirs \
 			noarch subpackages sourcepkg gtk_iconcache_dirs \
 			abi_depends api_depends triggers openrc_services \
 			libtool_no_delete_archives \
 			XBPS_EXTRACT_DONE XBPS_CONFIGURE_DONE \
 			XBPS_BUILD_DONE XBPS_INSTALL_DONE FILESDIR DESTDIR \
-			SRCPKGDESTDIR"
+			SRCPKGDESTDIR PATCHESDIR"
 
 	for v in ${TMPL_VARS}; do
 		eval unset "$v"
@@ -212,6 +212,7 @@ set_tmpl_common_vars()
 	[ -z "$pkgname" ] && return 1
 
 	FILESDIR=${XBPS_TEMPLATESDIR}/${pkgname}/files
+	PATCHESDIR=${XBPS_TEMPLATESDIR}/${pkgname}/patches
 	DESTDIR=${XBPS_DESTDIR}/${pkgname}-${version}
 	if [ -z "${sourcepkg}" ]; then
 		sourcepkg=${pkgname}

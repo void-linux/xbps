@@ -1,5 +1,5 @@
 #-
-# Copyright (c) 2008 Juan Romero Pardines.
+# Copyright (c) 2008-2009 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -24,57 +24,57 @@
 #-
 
 #
-# Applies to the build directory the patches specified by a template.
+# Applies to the build directory all patches found in PATCHESDIR
+# (templates/$pkgname/patches).
 #
 apply_tmpl_patches()
 {
-	local patch=
-	local i=
+	local patch_files args patch i
 
-	# Apply some build/install patches automatically.
-	if [ -f $XBPS_TEMPLATESDIR/$pkgname/build.diff ]; then
-		patch_files="build.diff $patch_files"
-	fi
-	if [ -f $XBPS_TEMPLATESDIR/$pkgname/install.diff ]; then
-		patch_files="install.diff $patch_files"
-	fi
+	[ ! -d $PATCHESDIR ] && return 0
 
-	[ -z "$patch_args" ] && patch_args="-p0"
-	[ -z "$patch_files" ] && return 0
-
-	#
-	# If package needs some patches applied before building,
-	# apply them now.
-	#
-	for i in ${patch_files}; do
-		patch="$XBPS_TEMPLATESDIR/$pkgname/$i"
-		if [ ! -f "$patch" ]; then
-			msg_warn "unexistent patch: $i."
+	for f in $(echo $PATCHESDIR/*); do
+		if $(echo $f|grep -q '.args'); then
 			continue
 		fi
+		patch_files="$patch_files $f"
+	done
 
-		cp -f $patch $wrksrc
+	for i in ${patch_files}; do
+		args="-Np0"
+		patch=$(basename $i)
+		if [ -f $PATCHESDIR/$patch.args ]; then
+			args=$(cat $PATCHESDIR/$patch.args)
+		fi
+		cp -f $i $wrksrc
 
 		# Try to guess if its a compressed patch.
-		if $(echo $patch|grep -q '.diff.gz'); then
-			gunzip $wrksrc/$i
-			patch=${i%%.gz}
-		elif $(echo $patch|grep -q '.diff.bz2'); then
-			bunzip2 $wrksrc/$i
-			patch=${i%%.bz2}
-		elif $(echo $patch|grep -q '.diff'); then
-			patch=$i
+		if $(echo $i|grep -q '.diff.gz'); then
+			gunzip $wrksrc/$patch
+			patch=${patch%%.gz}
+		elif $(echo $i|grep -q '.patch.gz'); then
+			gunzip $wrksrc/$patch
+			patch=${patch%%.gz}
+		elif $(echo $i|grep -q '.diff.bz2'); then
+			bunzip2 $wrksrc/$patch
+			patch=${patch%%.bz2}
+		elif $(echo $i|grep -q '.patch.bz2'); then
+			bunzip2 $wrksrc/$patch
+			patch=${patch%%.bz2}
+		elif $(echo $i|grep -q '.diff'); then
+			:
+		elif $(echo $i|grep -q '.patch'); then
+			:
 		else
 			msg_warn "unknown patch type: $i."
 			continue
 		fi
 
-		cd $wrksrc && patch -s ${patch_args} < \
-			$patch 2>/dev/null
-		if [ "$?" -eq 0 ]; then
-			msg_normal "Patch applied: $i."
+		cd $wrksrc && patch -s ${args} < $patch 2>/dev/null
+		if [ $? -eq 0 ]; then
+			msg_normal "Patch applied: $patch."
 		else
-			msg_error "couldn't apply patch: $i."
+			msg_error "couldn't apply patch: $patch."
 		fi
 	done
 
