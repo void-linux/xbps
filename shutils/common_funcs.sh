@@ -1,5 +1,5 @@
 #-
-# Copyright (c) 2008 Juan Romero Pardines.
+# Copyright (c) 2008-2009 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -61,11 +61,14 @@ msg_error()
 {
 	[ -z "$1" ] && return 1
 
+	# error messages in bold/red
+	printf "\033[1m\033[31m"
 	if [ -n "$in_chroot" ]; then
 		echo "[chroot] => ERROR: $1"
 	else
 		echo "=> ERROR: $1"
 	fi
+	printf "\033[m"
 
 	exit 1
 }
@@ -74,20 +77,26 @@ msg_warn()
 {
 	[ -z "$1" ] && return 1
 
+	# warn messages in bold/yellow
+	printf "\033[1m\033[33m"
 	if [ -n "$in_chroot" ]; then
 		echo "[chroot] => WARNING: $1"
 	else
 		echo "=> WARNING: $1"
 	fi
+	printf "\033[m"
 }
 
 msg_normal()
 {
 	[ -z "$1" ] && return 1
 
+	# normal messages in bold
+	printf "\033[1m"
 	if [ -n "$in_chroot" ]; then
 		echo "[chroot] => $1"
 	else
 		echo "=> $1"
 	fi
+	printf "\033[m"
 }

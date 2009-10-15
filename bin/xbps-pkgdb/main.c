@@ -31,6 +31,14 @@
 
 #include <xbps_api.h>
 
+/* error messages in bold/red */
+#define MSG_ERROR	"\033[1m\033[31m"
+/* warn messages in bold/yellow */
+#define MSG_WARN	"\033[1m\033[33m"
+/* normal messages in bold */
+#define MSG_NORMAL	"\033[1m"
+#define MSG_RESET	"\033[m"
+
 static void
 write_plist_file(prop_dictionary_t dict, const char *file)
 {
@@ -109,8 +117,8 @@ main(int argc, char **argv)
 
 	plist = xbps_xasprintf("%s/%s/%s", root, XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
-		printf("=> ERROR: couldn't find regpkdb file (%s)\n",
-		    strerror(errno));
+		printf("%s=> ERROR: couldn't find regpkdb file (%s)%s\n",
+		    MSG_ERROR, strerror(errno), MSG_RESET);
 		exit(EXIT_FAILURE);
 	}
 
@@ -137,15 +145,18 @@ main(int argc, char **argv)
 
 		rv = xbps_register_pkg(dict, false);
 		if (rv == EEXIST) {
-			printf("%s=> %s-%s already registered.\n",
-			    in_chroot ? "[chroot] " : "", argv[1], argv[2]);
+			printf("%s%s=> %s-%s already registered.%s\n", MSG_WARN,
+			    in_chroot ? "[chroot] " : "", argv[1], argv[2],
+			    MSG_RESET);
 		} else if (rv != 0) {
-			printf("%s=> couldn't register %s-%s (%s).\n",
+			printf("%s%s=> couldn't register %s-%s "
+			    "(%s).%s\n", MSG_ERROR,
 			    in_chroot ? "[chroot] " : "" , argv[1], argv[2],
-			    strerror(rv));
+			    strerror(rv), MSG_RESET);
 		} else {
-			printf("%s=> %s-%s registered successfully.\n",
-			    in_chroot ? "[chroot] " : "", argv[1], argv[2]);
+			printf("%s%s=> %s-%s registered successfully.%s\n",
+			    MSG_NORMAL, in_chroot ? "[chroot] " : "",
+			    argv[1], argv[2], MSG_RESET);
 		}
 
 	} else if (strcasecmp(argv[0], "unregister") == 0) {
@@ -155,16 +166,18 @@ main(int argc, char **argv)
 
 		rv = xbps_remove_pkg_dict_from_file(argv[1], plist);
 		if (rv == ENOENT) {
-			printf("=> ERROR: %s not registered in database.\n",
-			     argv[1]);
+			printf("%s=> ERROR: %s not registered "
+			    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET); 
 		} else if (rv != 0) {
-			printf("=> ERROR: couldn't unregister %s "
-			    "from database (%s)\n", argv[1], strerror(rv));
+			printf("%s=> ERROR: couldn't unregister %s "
+			    "from database (%s)%s\n", MSG_ERROR,
+			    argv[1], strerror(rv), MSG_RESET);
 			exit(EXIT_FAILURE);
 		}
 
-		printf("%s=> %s-%s unregistered successfully.\n",
-		    in_chroot ? "[chroot] " : "", argv[1], argv[2]);
+		printf("%s%s=> %s-%s unregistered successfully.%s\n",
+		    MSG_NORMAL, in_chroot ? "[chroot] " : "", argv[1],
+		    argv[2], MSG_RESET);
 
 	} else if (strcasecmp(argv[0], "version") == 0) {
 		/* Prints version of an installed package */
