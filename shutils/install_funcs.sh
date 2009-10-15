@@ -1,5 +1,5 @@
 #-
-# Copyright (c) 2008 Juan Romero Pardines.
+# Copyright (c) 2008-2009 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -71,9 +71,14 @@ install_src_phase()
 	# Run post_install func.
 	run_func post_install || msg_error "post_install stage failed!"
 
-	# Remove libtool archives from pkg destdir.
+	# Remove libtool archives.
 	if [ -z "$libtool_no_delete_archives" ]; then
 		find ${DESTDIR} -type f -name \*.la -delete
+	fi
+	# Always remove perllocal.pod and .packlist files.
+	if [ "$pkgname" != "perl" ]; then
+		find ${DESTDIR} -type f -name perllocal.pod -delete
+		find ${DESTDIR} -type f -name .packlist -delete
 	fi
 
 	# unset cross compiler vars.
@@ -101,7 +106,7 @@ install_src_phase()
 		check_installed_pkg ${spkgrev}
 		[ $? -eq 0 ] && continue
 
-		msg_normal "Preparing ${sourcepkg} subpackage: $sourcepkg-$subpkg"
+		msg_normal "Preparing $sourcepkg subpackage: $sourcepkg-$subpkg"
 		if [ ! -f $XBPS_TEMPLATESDIR/$pkgname/$subpkg.template ]; then
 			msg_error "Cannot find subpackage template!"
 		fi
@@ -154,10 +159,6 @@ make_install()
 			libtool_fixup_la_files postinstall
 		fi
 	fi
-
-	# Always remove perllocal.pod and .packlist files.
-	find ${DESTDIR} -name perllocal.pod -delete
-	find ${DESTDIR} -name .packlist -delete
 
 	# Unset build vars.
 	unset_build_vars
