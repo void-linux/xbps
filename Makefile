@@ -24,6 +24,7 @@ install:
 uninstall:
 	-rm -f $(SBINDIR)/xbps-*
 	-rm -f $(LIBDIR)/libxbps.*
+	-rm -f $(SHAREDIR)/*
 
 .PHONY: clean
 clean:
