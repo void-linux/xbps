@@ -43,21 +43,21 @@ install_pkg_deps()
 		curpkgname=$(xbps-pkgdb getpkgname ${curpkg})
 	fi
 
-	echo "==> Installing $saved_prevpkg dependency: $curpkgname."
+	msg_normal "Installing $saved_prevpkg dependency: $curpkgname."
 
 	run_template $curpkgname
 	check_build_depends_pkg
 	if [ $? -eq 0 ]; then
-		echo "==> Dependency $curpkgname requires:"
+		msg_normal "Dependency $curpkgname requires:"
 		for j in ${build_depends}; do
 			jname=$(xbps-pkgdb getpkgname ${j})
 			jver=$($XBPS_REGPKGDB_CMD version ${jname})
                 	reqver=$(xbps-pkgdb getpkgversion ${j})
                 	check_installed_pkg $j
                 	if [ $? -eq 0 ]; then
-                        	echo "  $jname >= $reqver: found $jname-$jver."
+                        	echo "   $jname >= $reqver: found $jname-$jver."
                 	else
-                        	echo "  $jname >= $reqver: not found."
+                        	echo "   $jname >= $reqver: not found."
                 	fi
 		done
 	fi
@@ -101,7 +101,7 @@ install_dependencies_pkg()
 		lver="${version}"
 	fi
 
-	echo "==> Required build dependencies for $pkgname-$lver... "
+	msg_normal "Required build dependencies for $pkgname-$lver... "
 	for i in ${build_depends}; do
                 ipkgname=$(xbps-pkgdb getpkgname ${i})
                 iversion=$($XBPS_REGPKGDB_CMD version $ipkgname)
