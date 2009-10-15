@@ -1,5 +1,5 @@
 #-
-# Copyright (c) 2008 Juan Romero Pardines.
+# Copyright (c) 2008-2009 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -78,18 +78,12 @@ configure_src_phase()
 	. $XBPS_SHUTILSDIR/buildvars_funcs.sh
 	set_build_vars
 
-	if [ -z "${configure_shell}" ]; then
-		configure_shell=/bin/bash
-	fi
-
 	#
 	# Packages using GNU autoconf
 	#
 	if [ "$build_style" = "gnu_configure" ]; then
-		env CONFIG_SHELL=${configure_shell} ${configure_script}	\
-			--prefix=/usr --sysconfdir=/etc		\
-			--infodir=/usr/share/info		\
-			--mandir=/usr/share/man			\
+		${configure_script} --prefix=/usr --sysconfdir=/etc \
+			--infodir=/usr/share/info --mandir=/usr/share/man \
 			${configure_args}
 	#
 	# Packages using propietary configure scripts.

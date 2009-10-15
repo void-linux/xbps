@@ -68,7 +68,7 @@ reset_tmpl_vars()
 			short_desc maintainer long_desc checksum wrksrc	\
 			make_cmd base_chroot register_shell \
 			make_build_target configure_script noextract nofetch \
-			pre_configure pre_build pre_install configure_shell \
+			pre_configure pre_build pre_install \
 			post_configure post_build post_install \
 			make_install_target version revision essential \
 			sgml_catalogs xml_catalogs xml_entries sgml_entries \
