@@ -33,8 +33,12 @@ and install xbps binary packages:
 	* GNU Make
 	* GNU Bison
 	* fakeroot
-	* wget
-	* libarchive (development package)
+	* wget OR curl OR fetch
+	* libarchive (devel package with static library. 
+	  acl, lzma, bzip2 support)
+	* libacl (devel package with static library)
+	* lzma/xz (devel package with static library)
+	* bzip2 (devel package with static library)
 	* perl
 	* sudo
 
