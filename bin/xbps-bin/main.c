@@ -130,11 +130,6 @@ main(int argc, char **argv)
 			goto out;
 		}
 	}
-	if ((rv = xbps_prepare_repolist_data()) != 0) {
-		printf("Couldn't initialized repository pool data (%s)\n",
-		    strerror(rv));
-		goto out;
-	}
 
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */

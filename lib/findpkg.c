@@ -256,6 +256,12 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	assert(pkgname != NULL);
 	assert(instpkg != NULL);
 
+	/*
+	 * Prepare dictionary with all registered repositories.
+	 */
+	if ((rv = xbps_prepare_repolist_data()) != 0)
+		return rv;
+
 	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
 		/*
 		 * Get the package dictionary from current repository.
