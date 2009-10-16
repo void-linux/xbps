@@ -207,52 +207,78 @@ show_transaction_sizes(prop_object_iterator_t iter)
 }
 
 void
-xbps_install_pkg(const char *pkg, bool force, bool update)
+xbps_exec_transaction(const char *pkgname, bool force, bool update)
 {
 	struct transaction *trans;
 	prop_dictionary_t pkgd;
 	prop_array_t array;
 	int rv = 0;
 
-	/*
-	 * Find all required pkgs and sort the package transaction.
-	 */
-	pkgd = xbps_find_pkg_installed_from_plist(pkg);
-	if (update) {
-		if (pkgd) {
-			rv = xbps_find_new_pkg(pkg, pkgd);
-			if (rv == EEXIST) {
-				printf("Package '%s' is up to date.\n", pkg);
+	assert(pkgname != NULL);
+
+	if (update && (strcasecmp(pkgname, "all") == 0)) {
+		/*
+		 * Update all currently installed packages, aka
+		 * "xbps-bin autoupdate".
+		 */
+		printf("Finding new packages...\n");
+		if ((rv = xbps_find_new_packages()) != 0) {
+			if (rv == ENOENT) {
+				printf("No packages currently registered.\n");
+				cleanup(0);
+			}
+			goto out;
+		}
+	} else {
+		pkgd = xbps_find_pkg_installed_from_plist(pkgname);
+		if (update) {
+			/*
+			 * Update a single package, aka
+			 * "xbps-bin update pkgname"
+			 */
+			printf("Finding new '%s' package...\n", pkgname);
+			if (pkgd) {
+				rv = xbps_find_new_pkg(pkgname, pkgd);
+				if (rv == EEXIST) {
+					printf("Package '%s' is up to date.\n",
+					    pkgname);
+					prop_object_release(pkgd);
+					cleanup(rv);
+				} else if (rv == ENOENT) {
+					printf("Package '%s' not found in "
+					    "repository pool.\n", pkgname);
+					prop_object_release(pkgd);
+					cleanup(rv);
+				} else if (rv != 0) {
+					prop_object_release(pkgd);
+					cleanup(rv);
+				}
 				prop_object_release(pkgd);
+			} else {
+				printf("Package '%s' not installed.\n",
+				    pkgname);
 				cleanup(rv);
-			} else if (rv == ENOENT) {
-				printf("Package '%s' not found in "
-				    "repository pool.\n", pkg);
-				prop_object_release(pkgd);
-				cleanup(rv);
-			} else if (rv != 0) {
+			}
+		} else {
+			/*
+			 * Install a single package, aka
+			 * "xbps-bin install pkgname"
+			 */
+			if (pkgd) {
+				printf("Package '%s' is already installed.\n",
+				    pkgname);
 				prop_object_release(pkgd);
 				cleanup(rv);
 			}
-			prop_object_release(pkgd);
-		} else {
-			printf("Package '%s' not installed.\n", pkg);
-			cleanup(rv);
-		}
-	} else {
-		if (pkgd) {
-			printf("Package '%s' is already installed.\n", pkg);
-			prop_object_release(pkgd);
-			cleanup(rv);
-		}
-		rv = xbps_prepare_pkg(pkg);
-		if (rv != 0 && rv == EAGAIN) {
-			printf("Unable to locate '%s' in repository pool.\n",
-			    pkg);
-			cleanup(rv);
-		} else if (rv != 0 && rv != ENOENT) {
-			printf("Unexpected error: %s", strerror(rv));
-			cleanup(rv);
+			rv = xbps_prepare_pkg(pkgname);
+			if (rv != 0 && rv == EAGAIN) {
+				printf("Unable to locate '%s' in "
+				    "repository pool.\n", pkgname);
+				cleanup(rv);
+			} else if (rv != 0 && rv != ENOENT) {
+				printf("Unexpected error: %s", strerror(rv));
+				cleanup(rv);
+			}
 		}
 	}
 
@@ -271,7 +297,7 @@ xbps_install_pkg(const char *pkg, bool force, bool update)
 	 */
 	array = prop_dictionary_get(trans->dict, "missing_deps");
 	if (prop_array_count(array) > 0) {
-		show_missing_deps(trans->dict, pkg);
+		show_missing_deps(trans->dict, pkgname);
 		goto out2;
 	}
 
@@ -455,73 +481,6 @@ exec_transaction(struct transaction *trans)
 	}
 
 	return 0;
-}
-
-void
-xbps_autoupdate_pkgs(bool force)
-{
-	struct transaction *trans;
-	int rv = 0;
-
-	/*
-	 * Find new package versions.
-	 */
-	if ((rv = xbps_find_new_packages()) != 0) {
-		if (rv == ENOENT) {
-			printf("No packages currently registered.\n");
-			cleanup(0);
-		}
-		goto out;
-	}
-
-	/*
-	 * Prepare transaction data.
-	 */
-	trans = calloc(1, sizeof(struct transaction));
-	if (trans == NULL)
-		goto out;
-
-	/*
-	 * Get package transaction dictionary.
-	 */
-	trans->dict = xbps_get_pkg_props();
-	if (trans->dict == NULL) {
-		if (errno == 0) {
-			printf("All packages are up-to-date.\n");
-			goto out;
-		}
-		printf("Error while checking for new pkgs: %s\n",
-		    strerror(errno));
-		goto out1;
-	}
-	/*
-	 * Sort the package transaction dictionary.
-	 */
-	if ((rv = xbps_sort_pkg_deps(trans->dict)) != 0) {
-		printf("Error while sorting packages: %s\n",
-		    strerror(rv));
-		goto out2;
-	}
-
-	/*
-	 * It's time to run the transaction!
-	 */
-	trans->iter = xbps_get_array_iter_from_dict(trans->dict, "packages");
-	if (trans->iter == NULL) {
-		printf("error: allocating array mem! (%s)\n", strerror(errno));
-		goto out2;
-	}
-
-	trans->force = force;
-	rv = exec_transaction(trans);
-
-	prop_object_iterator_release(trans->iter);
-out2:
-	prop_object_release(trans->dict);
-out1:
-	free(trans);
-out:
-	cleanup(rv);
 }
 
 static void

@@ -152,14 +152,14 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		xbps_install_pkg(argv[1], force, false);
+		xbps_exec_transaction(argv[1], force, false);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
 		if (argc != 2)
 			usage();
 
-		xbps_install_pkg(argv[1], force, true);
+		xbps_exec_transaction(argv[1], force, true);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a binary package. */
@@ -207,7 +207,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		xbps_autoupdate_pkgs(force);
+		xbps_exec_transaction("all", force, true);
 
 	} else if (strcasecmp(argv[0], "autoremove") == 0) {
 		/*
