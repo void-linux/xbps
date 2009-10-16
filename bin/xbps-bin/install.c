@@ -278,13 +278,15 @@ xbps_install_pkg(const char *pkg, bool force, bool update)
 	prop_dictionary_get_cstring_nocopy(trans->dict,
 	     "origin", &trans->originpkgname);
 
-	/*
-	 * Sort the package transaction dictionary.
-	 */
-	if ((rv = xbps_sort_pkg_deps(trans->dict)) != 0) {
-		printf("Error while sorting packages: %s\n",
-		    strerror(rv));
-		goto out2;
+	if (update) {
+		/*
+		 * Sort the package transaction dictionary.
+		 */
+		if ((rv = xbps_sort_pkg_deps(trans->dict)) != 0) {
+			printf("Error while sorting packages: %s\n",
+		    	    strerror(rv));
+			goto out2;
+		}
 	}
 
 	/*
