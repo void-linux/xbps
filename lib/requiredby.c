@@ -195,7 +195,9 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 			    &reqname);
 			if (strcmp(rdepname, reqname) == 0) {
 				rv = add_pkg_into_reqby(obj2, fpkgn);
-				if (rv != 0) {
+				if (rv == EEXIST)
+					continue;
+				else if (rv != 0) {
 					free(rdepname);
 					prop_object_iterator_release(iter2);
 					goto out;
