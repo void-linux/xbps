@@ -229,8 +229,10 @@ xbps_find_new_packages(void)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		rv = xbps_find_new_pkg(pkgname, obj);
-		if (rv == ENOENT || rv == EEXIST)
+		if (rv == ENOENT || rv == EEXIST) {
+			rv = 0;
 			continue;
+		}
 		else if (rv != 0) {
 			prop_object_iterator_release(iter);
 			return rv;
