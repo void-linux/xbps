@@ -220,8 +220,17 @@ xbps_install_pkg(const char *pkg, bool force, bool update)
 	pkgd = xbps_find_pkg_installed_from_plist(pkg);
 	if (update) {
 		if (pkgd) {
-			if ((rv = xbps_find_new_pkg(pkg, pkgd)) == 0) {
+			rv = xbps_find_new_pkg(pkg, pkgd);
+			if (rv == EEXIST) {
 				printf("Package '%s' is up to date.\n", pkg);
+				prop_object_release(pkgd);
+				cleanup(rv);
+			} else if (rv == ENOENT) {
+				printf("Package '%s' not found in "
+				    "repository pool.\n", pkg);
+				prop_object_release(pkgd);
+				cleanup(rv);
+			} else if (rv != 0) {
 				prop_object_release(pkgd);
 				cleanup(rv);
 			}
@@ -238,7 +247,8 @@ xbps_install_pkg(const char *pkg, bool force, bool update)
 		}
 		rv = xbps_prepare_pkg(pkg);
 		if (rv != 0 && rv == EAGAIN) {
-			printf("Unable to locate '%s' in repository pool.\n", pkg);
+			printf("Unable to locate '%s' in repository pool.\n",
+			    pkg);
 			cleanup(rv);
 		} else if (rv != 0 && rv != ENOENT) {
 			printf("Unexpected error: %s", strerror(rv));
@@ -269,11 +279,20 @@ xbps_install_pkg(const char *pkg, bool force, bool update)
 	     "origin", &trans->originpkgname);
 
 	/*
+	 * Sort the package transaction dictionary.
+	 */
+	if ((rv = xbps_sort_pkg_deps(trans->dict)) != 0) {
+		printf("Error while sorting packages: %s\n",
+		    strerror(rv));
+		goto out2;
+	}
+
+	/*
 	 * It's time to run the transaction!
 	 */
 	trans->iter = xbps_get_array_iter_from_dict(trans->dict, "packages");
 	if (trans->iter == NULL) {
-		printf("error: allocating array mem! (%s)",
+		printf("error: allocating array mem! (%s)\n",
 		    strerror(errno));
 		goto out2;
 	}

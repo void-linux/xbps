@@ -228,7 +228,10 @@ xbps_find_new_packages(void)
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		if ((rv = xbps_find_new_pkg(pkgname, obj)) != 0) {
+		rv = xbps_find_new_pkg(pkgname, obj);
+		if (rv == ENOENT || rv == EEXIST)
+			continue;
+		else if (rv != 0) {
 			prop_object_iterator_release(iter);
 			return rv;
 		}
@@ -246,6 +249,7 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	struct repository_data *rdata;
 	const char *repoloc, *repover, *instver;
 	int rv = 0;
+	bool newpkg_found = false;
 
 	assert(pkgname != NULL);
 	assert(instpkg != NULL);
@@ -259,22 +263,24 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 		    "packages", pkgname);
 		if (pkgrd != NULL) {
 			/*
-			 * Check if installed version is >= than the
-			 * one available in current repository.
+			 * Check if version in repository is greater than
+			 * the version currently installed.
 			 */
 			prop_dictionary_get_cstring_nocopy(instpkg,
 			    "version", &instver);
 			prop_dictionary_get_cstring_nocopy(pkgrd,
 			    "version", &repover);
-			if (xbps_cmpver(instver, repover) >= 0)
-				goto out;
-
-			break;
+			if (xbps_cmpver(repover, instver) > 0) {
+				newpkg_found = true;
+				break;
+			}
 		}
 	}
-	if (pkgrd == NULL)
-		return 0;
+	if (!newpkg_found)
+		return EEXIST;
 
+	if (pkgrd == NULL)
+		return ENOENT;
 	/*
 	 * Create master pkg dictionary.
 	 */
