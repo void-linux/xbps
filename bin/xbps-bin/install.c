@@ -226,6 +226,9 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 			if (rv == ENOENT) {
 				printf("No packages currently registered.\n");
 				cleanup(0);
+			} else if (rv == ENOPKG) {
+				printf("All packages are up-to-date.\n");
+				cleanup(0);
 			}
 			goto out;
 		}
