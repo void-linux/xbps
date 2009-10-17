@@ -57,7 +57,7 @@ xbps_write_metadata_pkg()
 		if [ ! -f $XBPS_TEMPLATESDIR/$sourcepkg/$subpkg.template ]; then
 			msg_error "Cannot find subpackage template!"
 		fi
-		unset run_depends conf_files noarch triggers \
+		unset run_depends conf_files noarch triggers replaces \
 			revision openrc_services essential keep_empty_dirs
 		. $XBPS_TEMPLATESDIR/${sourcepkg}/${subpkg}.template
 		pkgname=${sourcepkg}-${subpkg}
