@@ -338,10 +338,47 @@ out:
 }
 
 static int
+replace_packages(prop_object_iterator_t iter, const char *pkgname,
+		 const char *version)
+{
+	prop_dictionary_t instd;
+	prop_object_t obj;
+	const char *reppkgn;
+	int rv = 0;
+
+	/*
+	 * This package replaces other package(s), so we remove
+	 * them before upgrading or installing new one.
+	 */
+	while ((obj = prop_object_iterator_next(iter))) {
+		reppkgn = prop_string_cstring_nocopy(obj);
+		instd = xbps_find_pkg_installed_from_plist(reppkgn);
+		if (instd == NULL)
+			continue;
+
+		printf("Replacing package '%s' with '%s-%s' ...\n",
+		    reppkgn, pkgname, version);
+		if ((rv = xbps_remove_pkg(reppkgn, NULL, false)) != 0) {
+			printf("Couldn't remove %s (%s)\n",
+			    reppkgn, strerror(rv));
+			return rv;
+		}
+		if ((rv = xbps_purge_pkg(reppkgn, false)) != 0) {
+			printf("Couldn't purge %s (%s)\n",
+			    reppkgn, strerror(rv));
+			return rv;
+		}
+	}
+	prop_object_iterator_release(iter);
+
+	return 0;
+}
+
+static int
 exec_transaction(struct transaction *trans)
 {
 	prop_dictionary_t instpkgd;
-	prop_object_t obj, obj2;
+	prop_object_t obj;
 	prop_object_iterator_t replaces_iter;
 	const char *pkgname, *version, *instver, *filename, *tract;
 	int rv = 0;
@@ -402,33 +439,15 @@ exec_transaction(struct transaction *trans)
 			continue;
 
 		/*
-		 * This package replaces other package(s), so we remove
-		 * them before upgrading or installing new one.
+		 * Replace package(s) if necessary.
 		 */
 		if (replaces_iter != NULL) {
-			while ((obj2 =
-			    prop_object_iterator_next(replaces_iter))) {
-				printf("Replacing package '%s' with '%s-%s' "
-				    "...\n", prop_string_cstring(obj2),
-				    pkgname, version);
-				rv = xbps_remove_pkg(prop_string_cstring(obj2),
-				    NULL, false);
-				if (rv != 0) {
-					printf("Couldn't remove %s (%s)\n",
-					    prop_string_cstring(obj2),
-					    strerror(rv));
-					return rv;
-				}
-				rv = xbps_purge_pkg(prop_string_cstring(obj2),
-				    false);
-				if (rv != 0) {
-					printf("Couldn't purge %s (%s)\n",
-					    prop_string_cstring(obj2),
-					    strerror(rv));
-					return rv;
-				}
+			rv = replace_packages(replaces_iter, pkgname, version);
+			if (rv != 0) {
+				printf("Couldn't replace some packages! "
+				    "(%s)\n", strerror(rv));
+				return rv;
 			}
-			prop_object_iterator_release(replaces_iter);
 			replaces_iter = NULL;
 		}
 
