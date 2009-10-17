@@ -341,7 +341,8 @@ static int
 exec_transaction(struct transaction *trans)
 {
 	prop_dictionary_t instpkgd;
-	prop_object_t obj;
+	prop_object_t obj, obj2;
+	prop_object_iterator_t replaces_iter;
 	const char *pkgname, *version, *instver, *filename, *tract;
 	int rv = 0;
 	bool essential, isdep, autoinst;
@@ -384,6 +385,7 @@ exec_transaction(struct transaction *trans)
 		prop_dictionary_get_bool(obj, "essential", &essential);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		replaces_iter = xbps_get_array_iter_from_dict(obj, "replaces");
 
 		if (trans->originpkgname &&
 		    strcmp(trans->originpkgname, pkgname))
@@ -398,6 +400,37 @@ exec_transaction(struct transaction *trans)
 
 		if (state == XBPS_PKG_STATE_UNPACKED)
 			continue;
+
+		/*
+		 * This package replaces other package(s), so we remove
+		 * them before upgrading or installing new one.
+		 */
+		if (replaces_iter != NULL) {
+			while ((obj2 =
+			    prop_object_iterator_next(replaces_iter))) {
+				printf("Replacing package '%s' with '%s-%s' "
+				    "...\n", prop_string_cstring(obj2),
+				    pkgname, version);
+				rv = xbps_remove_pkg(prop_string_cstring(obj2),
+				    NULL, false);
+				if (rv != 0) {
+					printf("Couldn't remove %s (%s)\n",
+					    prop_string_cstring(obj2),
+					    strerror(rv));
+					return rv;
+				}
+				rv = xbps_purge_pkg(prop_string_cstring(obj2),
+				    false);
+				if (rv != 0) {
+					printf("Couldn't purge %s (%s)\n",
+					    prop_string_cstring(obj2),
+					    strerror(rv));
+					return rv;
+				}
+			}
+			prop_object_iterator_release(replaces_iter);
+			replaces_iter = NULL;
+		}
 
 		if (strcmp(tract, "update") == 0) {
 			instpkgd = xbps_find_pkg_installed_from_plist(pkgname);

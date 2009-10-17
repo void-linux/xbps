@@ -311,6 +311,16 @@ _EOF
 		echo "</array>" >> $TMPFPROPS
 	fi
 
+	# Replace package(s).
+	if [ -n "$replaces" ]; then
+		echo "<key>replaces</key>" >> $TMPFPROPS
+		echo "<array>" >> $TMPFPROPS
+		for f in ${replaces}; do
+			echo "<string>$f</string>" >> $TMPFPROPS
+		done
+		echo "</array>" >> $TMPFPROPS
+	fi
+
 	# Terminate the property list file.
 	echo "</dict>" >> $TMPFPROPS
 	echo "</plist>" >> $TMPFPROPS

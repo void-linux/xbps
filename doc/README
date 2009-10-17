@@ -47,7 +47,7 @@ and install xbps binary packages:
 	* sudo
 
 Super-user privileges are required as well, because all packages are built
-in a chroot (except the ones that are included in a virtual package to be
+in a chroot (except the ones that are included in a meta package to be
 able to build a minimal system for the chroot).
 
 PLEASE NOTE THAT fakechroot or fakeroot-ng DO NOT WORK.
@@ -64,9 +64,6 @@ level directory. See the REQUIREMENTS section above for required packages.
 Once the xbps distfiles are installed into prefix, you can start building
 packages from source, add local repositories with binary packages, install or
 remove them, etc.
-
-If you are only interested in building/using packages from source, see the
-SRCPKG_INFO file.
 
 For information about binary packages, see the BINPKG_INFO file.
 
