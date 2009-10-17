@@ -29,7 +29,6 @@ trap "echo && exit 1" INT QUIT
 
 : ${progname:=$(basename $0)}
 : ${fakeroot_cmd:=fakeroot}
-: ${fetch_cmd:=wget}
 : ${xbps_machine:=$(uname -m)}
 
 usage()
@@ -118,8 +117,7 @@ set_defvars()
 #
 check_config_vars()
 {
-	local cffound=
-	local f=
+	local cffound f
 
 	if [ -z "$config_file_specified" ]; then
 		config_file_paths="$XBPS_CONFIG_FILE ./etc/xbps-src.conf"

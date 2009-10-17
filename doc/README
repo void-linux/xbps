@@ -26,6 +26,15 @@ http://code.google.com/p/portableproplib/
 I'm also the human maintaining the portable proplib package. I'd suggest you
 to install it into /usr/local to avoid issues with your distribution packages.
 
+To build the xbps utils, you'll need:
+
+	* acl (devel pkg with static lib)
+	* zlib (devel pkg with static lib)
+	* bzip2 (devel pkg with static lib)
+	* xz (devel pkg with static lib)
+	* libarchive (devel pkg with static lib, all features built in)
+	* proplib (deve pkg with static lib, see above)
+
 Additionally the following software is required in the host system to build
 and install xbps binary packages:
 
@@ -33,12 +42,7 @@ and install xbps binary packages:
 	* GNU Make
 	* GNU Bison
 	* fakeroot
-	* wget OR curl OR fetch
-	* libarchive (devel package with static library. 
-	  acl, lzma, bzip2 support)
-	* libacl (devel package with static library)
-	* lzma/xz (devel package with static library)
-	* bzip2 (devel package with static library)
+	* wget OR curl OR fetch (statically linked or no additional deps)
 	* perl
 	* sudo
 

@@ -120,7 +120,7 @@ fetch_distfiles()
 			localurl="$url/$curfile"
 		fi
 
-		$fetch_cmd $localurl
+		$XBPS_FETCH_CMD $localurl
 		if [ $? -ne 0 ]; then
 			unset localurl
 			if [ ! -f $XBPS_SRCDISTDIR/$curfile ]; then

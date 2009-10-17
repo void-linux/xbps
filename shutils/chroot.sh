@@ -1,5 +1,5 @@
 #-
-# Copyright (c) 2008 Juan Romero Pardines.
+# Copyright (c) 2008-2009 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -106,7 +106,7 @@ rebuild_ldso_cache()
 
 install_xbps_utils()
 {
-	local needed=
+	local needed fetch_cmd
 	local xbps_prefix=$XBPS_MASTERDIR/usr/local
 
 	for f in bin cmpver digest pkgdb; do
@@ -117,13 +117,20 @@ install_xbps_utils()
 
 	if [ -n "$needed" ]; then
 		cd ${XBPS_MASTERDIR}/bin && ln -s dash sh
-		echo "=> Building and installing xbps utils."
+		echo "=> Installing the required XBPS utils."
 		chroot $XBPS_MASTERDIR sh -c \
 			"echo /usr/local/lib > /etc/ld.so.conf"
-		for f in bin src cmpver digest pkgdb repo; do
-			cp -f $XBPS_INSTALLDIR/sbin/xbps-$f $xbps_prefix/sbin
+		fetch_cmd="$(which $XBPS_FETCH_CMD 2>/dev/null)"
+		if [ -z "$fetch_cmd" ]; then
+			echo "Unexistent XBPS_FETCH_CMD specified!"
+			exit 1
+		fi
+		cp -f $fetch_cmd $xbps_prefix/sbin
+		for f in bin cmpver digest pkgdb repo; do
+			cp -f $XBPS_INSTALLDIR/sbin/xbps-$f.static \
+				$xbps_prefix/sbin/xbps-$f
 		done
-		cp -a $XBPS_INSTALLDIR/lib/libxbps.so* $xbps_prefix/lib
+		cp -f $XBPS_INSTALLDIR/sbin/xbps-src $xbps_prefix/sbin
 		if [ -z $XBPS_INSTALLDIR ]; then
 			installdir=/usr/share/xbps
 		else
@@ -192,7 +199,7 @@ mount_chroot_fs()
 					;;
 				*) blah=/$f;;
 			esac
-			[ ! -d $blah ] && continue
+			[ ! -d $blah ] && echo "failed." && continue
 			mount --bind $blah $XBPS_MASTERDIR/$f
 			if [ $? -eq 0 ]; then
 				echo 1 > $XBPS_MASTERDIR/.${f}_mount_bind_done
@@ -281,6 +288,7 @@ echo "XBPS_BUILDDIR=/xbps_builddir" >> $XBPSSRC_CF
 echo "XBPS_SRCDISTDIR=/xbps_srcdistdir" >> $XBPSSRC_CF
 echo "XBPS_CFLAGS=\"$XBPS_CFLAGS\"" >> $XBPSSRC_CF
 echo "XBPS_CXXFLAGS=\"\$XBPS_CFLAGS\"" >> $XBPSSRC_CF
+echo "XBPS_FETCH_CMD=$XBPS_FETCH_CMD" >> $XBPSSRC_CF
 if [ -n "$XBPS_MAKEJOBS" ]; then
 	echo "XBPS_MAKEJOBS=$XBPS_MAKEJOBS" >> $XBPSSRC_CF
 fi

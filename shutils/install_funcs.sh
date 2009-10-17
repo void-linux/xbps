@@ -27,6 +27,27 @@
 # Runs the "install" phase for a pkg. This consists in installing package
 # into the destination directory.
 #
+
+strip_files()
+{
+	if [ ! -x /usr/bin/strip ]; then
+		return 0
+	fi
+	[ -n "$nostrip" ] && return 0
+
+	msg_normal "Finding binaries/libraries to strip..."
+	for f in $(find ${DESTDIR} -type f); do
+		case "$(file -biz $f)" in
+		application/x-executable*)
+			/usr/bin/strip $f && \
+				echo "===> Stripped executable: $(basename $f)";;
+		application/x-sharedlib*|application/x-archive*)
+			/usr/bin/strip -S $f && \
+				echo "===> Stripped library: $(basename $f)";;
+		esac
+	done
+}
+
 install_src_phase()
 {
 	local pkg="$1"
@@ -71,8 +92,8 @@ install_src_phase()
 	# Run post_install func.
 	run_func post_install || msg_error "post_install stage failed!"
 
-	# Remove libtool archives.
-	if [ -z "$libtool_no_delete_archives" ]; then
+	# Remove libtool archives by default.
+	if [ -z "$keep_libtool_archives" ]; then
 		find ${DESTDIR} -type f -name \*.la -delete
 	fi
 	# Always remove perllocal.pod and .packlist files.
@@ -80,6 +101,12 @@ install_src_phase()
 		find ${DESTDIR} -type f -name perllocal.pod -delete
 		find ${DESTDIR} -type f -name .packlist -delete
 	fi
+	# Remove empty directories by default.
+	if [ -z "$keep_empty_dirs" ]; then
+		find ${DESTDIR} -depth -type d -empty -delete
+	fi
+	# Strip bins/libs.
+	strip_files
 
 	# unset cross compiler vars.
 	[ -n "$cross_compiler" ] && cross_compile_unsetvars
@@ -151,14 +178,6 @@ make_install()
 	#
 	run_rootcmd no ${make_cmd} ${make_install_target} ${make_install_args}
 	[ $? -ne 0 ] && msg_error "installing $pkgname-$lver."
-
-	# Replace libtool archives if requested.
-	if [ -z "$in_chroot" ]; then
-		if [ "$libtool_fixup_la_stage" = "postinstall" ]; then
-			. $XBPS_SHUTILSDIR/libtool_funcs.sh
-			libtool_fixup_la_files postinstall
-		fi
-	fi
 
 	# Unset build vars.
 	unset_build_vars

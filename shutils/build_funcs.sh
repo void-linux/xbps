@@ -1,5 +1,5 @@
 #-
-# Copyright (c) 2008 Juan Romero Pardines.
+# Copyright (c) 2008-2009 Juan Romero Pardines.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -63,11 +63,6 @@ build_src_phase()
 	[ -n "$XBPS_MAKEJOBS" -a -z "$disable_parallel_build" ] && \
 		makejobs="-j$XBPS_MAKEJOBS"
 
-	if [ -z "$in_chroot" ]; then
-		. $XBPS_SHUTILSDIR/libtool_funcs.sh
-		libtool_fixup_file
-	fi
-
 	. $XBPS_SHUTILSDIR/buildvars_funcs.sh
 	set_build_vars
 
@@ -83,13 +78,6 @@ build_src_phase()
 	run_func post_build || msg_error "post_build stage failed!"
 
 	unset makejobs
-
-	if [ -z "$in_chroot" ]; then
-		if [ -z "$libtool_fixup_la_stage" \
-		     -o "$libtool_fixup_la_stage" = "postbuild" ]; then
-			libtool_fixup_la_files
-		fi
-	fi
 
 	# unset cross compiler vars.
 	[ -n "$cross_compiler" ] && cross_compile_unsetvars

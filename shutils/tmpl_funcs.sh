@@ -66,18 +66,16 @@ reset_tmpl_vars()
 	local TMPL_VARS="pkgname distfiles configure_args configure_env \
 			make_build_args make_install_args build_style	\
 			short_desc maintainer long_desc checksum wrksrc	\
-			make_cmd base_chroot register_shell \
+			make_cmd base_chroot register_shell keep_empty_dirs \
 			make_build_target configure_script noextract nofetch \
-			pre_configure pre_build pre_install \
-			post_configure post_build post_install \
+			pre_configure pre_build pre_install build_depends \
+			post_configure post_build post_install nostrip \
 			make_install_target version revision essential \
 			sgml_catalogs xml_catalogs xml_entries sgml_entries \
-			build_depends libtool_fixup_la_stage no_fixup_libtool \
 			disable_parallel_build run_depends cross_compiler \
-			only_for_archs conf_files \
+			only_for_archs conf_files keep_libtool_archives \
 			noarch subpackages sourcepkg gtk_iconcache_dirs \
 			abi_depends api_depends triggers openrc_services \
-			libtool_no_delete_archives \
 			XBPS_EXTRACT_DONE XBPS_CONFIGURE_DONE \
 			XBPS_BUILD_DONE XBPS_INSTALL_DONE FILESDIR DESTDIR \
 			SRCPKGDESTDIR PATCHESDIR"
@@ -165,7 +163,10 @@ prepare_tmpl()
 	#
 	# There's nothing of interest if we are a meta template.
 	#
-	[ "$build_style" = "meta-template" ] && return 0
+	if [ "$build_style" = "meta-template" ]; then
+		set_tmpl_common_vars
+		return 0
+	fi
 
 	REQ_VARS="pkgname version build_style short_desc long_desc"
 

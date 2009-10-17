@@ -54,11 +54,11 @@ xbps_write_metadata_pkg()
 		check_installed_pkg ${spkgrev}
 		[ $? -eq 0 ] && continue
 
-		if [ ! -f $XBPS_TEMPLATESDIR/${sourcepkg}/${subpkg}.template ]; then
+		if [ ! -f $XBPS_TEMPLATESDIR/$sourcepkg/$subpkg.template ]; then
 			msg_error "Cannot find subpackage template!"
 		fi
 		unset run_depends conf_files noarch triggers \
-			revision openrc_services essential
+			revision openrc_services essential keep_empty_dirs
 		. $XBPS_TEMPLATESDIR/${sourcepkg}/${subpkg}.template
 		pkgname=${sourcepkg}-${subpkg}
 		set_tmpl_common_vars
@@ -70,11 +70,11 @@ xbps_write_metadata_pkg()
 	[ -n "${subpackages}" ] && [ "$pkg" != "${sourcepkg}" ] && return $?
 
 	if [ "$build_style" = "meta-template" -a -z "${run_depends}" ]; then
-		for subpkg in ${subpackages}; do
+		for spkg in ${subpackages}; do
 			if [ -n "${revision}" ]; then
-				spkgrev="${sourcepkg}-${subpkg}-${version}_${revision}"
+				spkgrev="$sourcepkg-$spkg-${version}_$revision"
 			else
-				spkgrev="${sourcepkg}-${subpkg}-${version}"
+				spkgrev="${sourcepkg}-${spkg}-${version}"
 			fi
 			run_depends="${run_depends} ${spkgrev}"
 		done
@@ -148,7 +148,7 @@ xbps_write_metadata_pkg_real()
 				ln -s ${lnkat}.gz ${newlnk}.gz
 				continue
 			fi
-			echo "=> Compressing info file: $j..."
+			echo "===> Compressing info file: $j..."
 			gzip -q9 ${DESTDIR}/$j
 		done
 	fi
@@ -173,7 +173,7 @@ xbps_write_metadata_pkg_real()
 				ln -s ${lnkat}.gz ${newlnk}.gz
 				continue
 			fi
-			echo "=> Compressing manpage: $j..."
+			echo "===> Compressing manpage: $j..."
 			gzip -q9 ${DESTDIR}/$j
 		done
 	fi
