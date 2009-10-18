@@ -42,12 +42,14 @@ configure_src_phase()
 	fi
 
 	#
-	# There's nothing we can do if we are a meta template or an
-	# {custom,only}_install template.
+	# Skip this phase for: meta-template, only-install, custom-install,
+	# gnu_makefile and python-module style builds.
 	#
 	[ "$build_style" = "meta-template" -o	\
 	  "$build_style" = "only-install" -o	\
-	  "$build_style" = "custom-install" ] && return 0
+	  "$build_style" = "custom-install" -o	\
+	  "$build_style" = "gnu_makefile" -o	\
+	  "$build_style" = "python-module" ] && return 0
 
 	if [ -n "$revision" ]; then
 		lver="${version}_${revision}"
@@ -78,40 +80,37 @@ configure_src_phase()
 	. $XBPS_SHUTILSDIR/buildvars_funcs.sh
 	set_build_vars
 
-	#
-	# Packages using GNU autoconf
-	#
-	if [ "$build_style" = "gnu_configure" ]; then
+	case "$build_style" in
+	gnu_configure|gnu-configure)
+		#
+		# Packages using GNU autoconf
+		#
 		${configure_script} --prefix=/usr --sysconfdir=/etc \
 			--infodir=/usr/share/info --mandir=/usr/share/man \
 			${configure_args}
-	#
-	# Packages using propietary configure scripts.
-	#
-	elif [ "$build_style" = "configure" ]; then
+		;;
+	configure)
+		#
+		# Packages using custom configure scripts.
+		#
 		${configure_script} ${configure_args}
-	#
-	# Packages that are perl modules and use Makefile.PL files.
-	# They are all handled by the helper perl-module.sh.
-	#
-	elif [ "$build_style" = "perl_module" ]; then
+		;;
+	perl-module|perl_module)
+		#
+		# Packages that are perl modules and use Makefile.PL files.
+		# They are all handled by the helper perl-module.sh.
+		#
 		. $XBPS_HELPERSDIR/perl-module.sh
 		perl_module_build $pkgname
-
-	#
-	# Packages with BSD or GNU Makefiles are easy, just skip
-	# the configure stage and proceed.
-	#
-	elif [ "$build_style" = "bsd_makefile" -o \
-	       "$build_style" = "gnu_makefile" ]; then
-	       :
-	#
-	# Unknown build_style type won't work :-)
-	#
-	else
+		;;
+	*)
+		#
+		# Unknown build_style type won't work :-)
+		#
 		msg_error "unknown build_style [$build_style]"
 		exit 1
-	fi
+		;;
+	esac
 
 	if [ "$build_style" != "perl_module" -a "$?" -ne 0 ]; then
 		msg_error "building $pkg (configure phase)."
@@ -128,5 +127,6 @@ configure_src_phase()
 	# unset cross compiler vars.
 	[ -n "$cross_compiler" ] && cross_compile_unsetvars
 	unset_build_vars
+
 	touch -f $XBPS_CONFIGURE_DONE
 }

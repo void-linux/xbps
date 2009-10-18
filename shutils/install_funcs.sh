@@ -83,11 +83,19 @@ install_src_phase()
 		cross_compile_setvars
 	fi
 
-	if [ "$build_style" = "custom-install" ]; then
+	# Type of installation: custom, make or python.
+	case "$build_style" in
+	custom-install)
 		run_func do_install || msg_error "do_install stage failed!"
-	else
+		;;
+	python-module)
+		. $XBPS_HELPERSDIR/python-module.sh
+		run_func do_install || msg_error "python module install failed!"
+		;;
+	*)
 		make_install $lver
-	fi
+		;;
+	esac
 
 	# Run post_install func.
 	run_func post_install || msg_error "post_install stage failed!"
@@ -176,8 +184,8 @@ make_install()
 	#
 	# Install package via make.
 	#
-	run_rootcmd no ${make_cmd} ${make_install_target} ${make_install_args}
-	[ $? -ne 0 ] && msg_error "installing $pkgname-$lver."
+	run_rootcmd no ${make_cmd} ${make_install_target} \
+		${make_install_args} || msg_error "installing $pkgname-$lver"
 
 	# Unset build vars.
 	unset_build_vars

@@ -29,19 +29,18 @@
 #
 build_src_phase()
 {
-	local pkgparam="$1"
-	local pkg="$pkgname-$version"
-	local f
+	local pkg="$pkgname-$version" pkgparam="$1" f
 
 	[ -z $pkgparam ] && [ -z $pkgname -o -z $version ] && return 1
 
         #
-	# There's nothing of interest if we are a meta template or an
-	# {custom,only}-install template.
+	# Skip this phase for: meta-template, only-install, custom-install
+	# and python-module style builds.
 	#
 	[ "$build_style" = "meta-template" -o	\
 	  "$build_style" = "only-install" -o	\
-	  "$build_style" = "custom-install" ] && return 0
+	  "$build_style" = "custom-install" -o	\
+	  "$build_style" = "python-module" ] && return 0
 
 	[ ! -d $wrksrc ] && msg_error "unexistent build directory [$wrksrc]"
 
@@ -82,5 +81,6 @@ build_src_phase()
 	# unset cross compiler vars.
 	[ -n "$cross_compiler" ] && cross_compile_unsetvars
 	unset_build_vars
+
 	touch -f $XBPS_BUILD_DONE
 }
