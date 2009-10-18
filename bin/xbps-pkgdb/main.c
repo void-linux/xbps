@@ -72,6 +72,7 @@ usage(void)
 	"\n"
 	"  Options shared by all actions:\n"
 	"    -r\t\t\t<rootdir>\n"
+	"    -V\t\tPrints the xbps release version\n"
 	"\n"
 	"  Examples:\n"
 	"    $ xbps-pkgdb getpkgname foo-2.0\n"
@@ -94,7 +95,7 @@ main(int argc, char **argv)
 	bool in_chroot = false;
 	int c, rv = 0;
 
-	while ((c = getopt(argc, argv, "ar:")) != -1) {
+	while ((c = getopt(argc, argv, "Var:")) != -1) {
 		switch (c) {
 		case 'r':
 			/* To specify the root directory */
@@ -103,6 +104,9 @@ main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			xbps_set_rootdir(root);
 			break;
+		case 'V':
+			printf("%s\n", XBPS_RELVER);
+			exit(EXIT_SUCCESS);
 		case '?':
 		default:
 			usage();

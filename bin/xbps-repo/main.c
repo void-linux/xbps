@@ -61,6 +61,7 @@ usage(void)
 	"    show\t<pkgname>\n"
 	" Options shared by all actions:\n"
 	"    -r\t\t<rootdir>\n"
+	"    -V\t\tPrints xbps release version\n"
 	"\n"
 	" Examples:\n"
 	"    $ xbps-repo add /path/to/directory\n"
@@ -151,13 +152,16 @@ main(int argc, char **argv)
 	char dpkgidx[PATH_MAX], *plist, *root = NULL;
 	int c, rv = 0;
 
-	while ((c = getopt(argc, argv, "r:")) != -1) {
+	while ((c = getopt(argc, argv, "Vr:")) != -1) {
 		switch (c) {
 		case 'r':
 			/* To specify the root directory */
 			root = optarg;
 			xbps_set_rootdir(root);
 			break;
+		case 'V':
+			printf("%s\n", XBPS_RELVER);
+			exit(EXIT_SUCCESS);
 		case '?':
 		default:
 			usage();

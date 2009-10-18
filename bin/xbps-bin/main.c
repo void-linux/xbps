@@ -57,7 +57,8 @@ usage(void)
 	"    update\t\t<pkgname>\n"
 	" Options shared by all targets:\n"
 	"    -r\t\t<rootdir>\n"
-	"    -v\t\t<verbose>\n"
+	"    -v\t\tShows verbose messages\n"
+	"    -V\t\tPrints the xbps release version\n"
 	" Options used by the (auto)remove and install target:\n"
 	"    -f\t\tForce installation or removal of packages.\n"
 	"      \t\tBeware with this option if you use autoremove!\n"
@@ -93,7 +94,7 @@ main(int argc, char **argv)
 	int c, flags = 0, rv = 0;
 	bool force = false, verbose = false;
 
-	while ((c = getopt(argc, argv, "Cfr:v")) != -1) {
+	while ((c = getopt(argc, argv, "CVfr:v")) != -1) {
 		switch (c) {
 		case 'f':
 			flags |= XBPS_FLAG_FORCE;
@@ -107,6 +108,9 @@ main(int argc, char **argv)
 			verbose = true;
 			flags |= XBPS_FLAG_VERBOSE;
 			break;
+		case 'V':
+			printf("%s\n", XBPS_RELVER);
+			exit(EXIT_SUCCESS);
 		case '?':
 		default:
 			usage();
