@@ -24,3 +24,7 @@ install: $(BIN) $(BIN_STATIC)
 	install -d $(SBINDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(SBINDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN_STATIC) $(SBINDIR)
+
+.PHONY: uninstall
+uninstall:
+	-rm -f $(SBINDIR)/$(BIN) $(SBINDIR)/$(BIN_STATIC)
