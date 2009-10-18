@@ -3,13 +3,6 @@
 PREFIX	?= /usr/local
 SBINDIR	?= $(DESTDIR)$(PREFIX)/sbin
 LIBDIR	?= $(DESTDIR)$(PREFIX)/lib
-ifeq ($(PREFIX),/)
-else ifeq ($(PREFIX),)
-SHAREDIR ?= /usr/share/xbps/shutils
-else
-SHAREDIR ?= $(PREFIX)/share/xbps/shutils
-endif
-ETCDIR	?= $(PREFIX)/etc
 TOPDIR	?= ..
 INSTALL_STRIPPED ?= -s
 

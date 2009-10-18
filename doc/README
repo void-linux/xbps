@@ -33,24 +33,7 @@ To build the xbps utils, you'll need:
 	* bzip2 (devel pkg with static lib)
 	* xz (devel pkg with static lib)
 	* libarchive (devel pkg with static lib, all features built in)
-	* proplib (deve pkg with static lib, see above)
-
-Additionally the following software is required in the host system to build
-and install xbps binary packages:
-
-	* GNU GCC C++
-	* GNU Make
-	* GNU Bison
-	* fakeroot
-	* wget OR curl OR fetch (statically linked or no additional deps)
-	* perl
-	* sudo
-
-Super-user privileges are required as well, because all packages are built
-in a chroot (except the ones that are included in a meta package to be
-able to build a minimal system for the chroot).
-
-PLEASE NOTE THAT fakechroot or fakeroot-ng DO NOT WORK.
+	* proplib (devel pkg with static lib, see above)
 
 ------------------------------------------------------------------------------
  HOW TO USE IT
@@ -61,9 +44,10 @@ into $(PREFIX); by default they are installed into /usr/local.
 You can do this by issuing "make" and "make install" as root in the top
 level directory. See the REQUIREMENTS section above for required packages.
 
-Once the xbps distfiles are installed into prefix, you can start building
-packages from source, add local repositories with binary packages, install or
-remove them, etc.
+To build binary packages, you need xbps-src. It's stored in a public GIT
+repository located at:
+
+	http://repo.or.cz/w/xbps.git
 
 For information about binary packages, see the BINPKG_INFO file.
 

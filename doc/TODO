@@ -1,9 +1,3 @@
-xbps-src:
- * Personalized scripts per template to unpack distfiles.
- * Multiple URLs to download source distribution files, aliases, etc.
-   Something like ${sourceforge} to pick up any specified mirror on the list.
- * Fix -C flag while building packages via chroot.
-
 xbps-bin:
  * Add support to install binary packages without any repository.
  * Add a flag to reinstall a package version that is already installed,

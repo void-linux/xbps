@@ -34,6 +34,10 @@ install: $(LIBXBPS) $(LIBXBPS_STATIC)
 	cp -a $(LIBXBPS) $(LIBDIR)
 	cp -a $(LIBXBPS).$(MAJOR) $(LIBDIR)
 
+.PHONY: uninstall
+uninstall:
+	-rm -f $(LIBDIR)/libxbps.*
+
 .PHONY: clean
 clean: clean-lib clean-objs
 

@@ -5,7 +5,6 @@ SUBDIRS +=	xbps-cmpver
 SUBDIRS +=	xbps-digest
 SUBDIRS +=	xbps-pkgdb
 SUBDIRS +=	xbps-repo
-SUBDIRS +=	xbps-src
 
 .PHONY: all
 all:
@@ -17,6 +16,12 @@ all:
 install:
 	for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir install;	\
+	done
+
+.PHONY: uninstall
+uninstall:
+	for bin in $(SUBDIRS); do		\
+		-rm -f $(SBINDIR)/$$bin;	\
 	done
 
 .PHONY: clean

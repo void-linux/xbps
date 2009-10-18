@@ -1,6 +1,6 @@
 include vars.mk
 
-SUBDIRS	= lib bin etc shutils
+SUBDIRS	= lib bin
 
 .PHONY: all
 all:
@@ -22,9 +22,9 @@ install:
 
 .PHONY: uninstall
 uninstall:
-	-rm -f $(SBINDIR)/xbps-*
-	-rm -f $(LIBDIR)/libxbps.*
-	-rm -f $(SHAREDIR)/*
+	for dir in $(SUBDIRS); do		\
+		$(MAKE) -C $$dir uninstall;	\
+	done
 
 .PHONY: clean
 clean:
