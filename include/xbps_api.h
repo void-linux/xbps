@@ -38,6 +38,9 @@
 
 #include "sha256.h"
 
+/* Current release version */
+#define XBPS_RELVER		"0.2.99.1"
+
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
 
