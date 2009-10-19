@@ -91,7 +91,7 @@ main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
 	const char *version;
-	char *plist, *pkgname, *in_chroot_env, *root = NULL;
+	char *plist, *pkgname, *in_chroot_env, *root = "";
 	bool in_chroot = false;
 	int c, rv = 0;
 
