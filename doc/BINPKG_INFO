@@ -3,7 +3,8 @@
 ------------------------------------------------------------------------------
 
 A binary package built with xbps is a normal tar(1) archive, compressed
-with bzip2 and has the following structure:
+with any of the formats that libarchive supports, and it has the following
+structure:
 
 	Package metadata
 	-----------------
