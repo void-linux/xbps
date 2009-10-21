@@ -348,7 +348,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		set_extract_flags(&lflags);
 		if (((strcmp("./INSTALL", entry_str)) == 0) ||
 		    ((strcmp("./REMOVE", entry_str)) == 0) ||
-		    ((strcmp("./files.plist", entry_str))) == 0 ||
+		    ((strcmp("./files.plist", entry_str)) == 0) ||
 		    ((strcmp("./props.plist", entry_str)) == 0) || essential) {
 			/*
 			 * Always overwrite files in essential packages,
