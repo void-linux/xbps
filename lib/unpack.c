@@ -117,13 +117,16 @@ out:
  * are some files that were in the old package that should be removed.
  */
 #define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \
-			ARCHIVE_EXTRACT_SECURE_SYMLINKS
+			ARCHIVE_EXTRACT_SECURE_SYMLINKS | \
+			ARCHIVE_EXTRACT_NO_OVERWRITE | \
+			ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER
 #define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | ARCHIVE_EXTRACT_PERM | \
 			ARCHIVE_EXTRACT_TIME | EXTRACT_FLAGS
 
 static void
 set_extract_flags(int *flags)
 {
+	*flags = 0;
 	if (getuid() == 0)
 		*flags = FEXTRACT_FLAGS;
 	else
@@ -132,12 +135,12 @@ set_extract_flags(int *flags)
 
 static int
 install_config_file(prop_dictionary_t d, struct archive_entry *entry,
-		    const char *pkgname, int *flags, bool skip)
+		    const char *pkgname, int *flags, bool *skip)
 {
 	prop_dictionary_t forigd;
 	prop_object_t obj, obj2;
 	prop_object_iterator_t iter, iter2;
-	const char *cffile, *sha256_new;
+	const char *cffile, *sha256_new = NULL;
 	char *buf, *sha256_cur = NULL, *sha256_orig = NULL;
 	int rv = 0;
 	bool install_new = false;
@@ -170,31 +173,54 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 		while ((obj2 = prop_object_iterator_next(iter2))) {
 			prop_dictionary_get_cstring_nocopy(obj2,
 			    "file", &cffile);
-			if (strstr(archive_entry_pathname(entry), cffile)) {
+			buf = xbps_xasprintf(".%s", cffile);
+			if (buf == NULL) {
+				prop_object_iterator_release(iter2);
+				rv = errno;
+				goto out;
+			}
+			if (strcmp(archive_entry_pathname(entry), buf) == 0) {
 				prop_dictionary_get_cstring(obj2, "sha256",
 				    &sha256_orig);
+				free(buf);
 				break;
 			}
+			free(buf);
+			buf = NULL;
 		}
 		prop_object_iterator_release(iter2);
 	}
 	prop_object_release(forigd);
+	/*
+	 * First case: original hash not found, install new file.
+	 */
+	if (sha256_orig == NULL) {
+		install_new = true;
+		goto out;
+	}
 
 	/*
 	 * Compare original, installed and new hash for current file.
 	 */
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "file", &cffile);
-		if (strstr(archive_entry_pathname(entry), cffile) == 0)
-			continue;
 		buf = xbps_xasprintf(".%s", cffile);
 		if (buf == NULL) {
 			prop_object_iterator_release(iter);
 			return errno;
 		}
-		prop_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
+		if (strcmp(archive_entry_pathname(entry), buf)) {
+			free(buf);
+			buf = NULL;
+			continue;
+		}
 		sha256_cur = xbps_get_file_hash(buf);
 		free(buf);
+		prop_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
+		if (sha256_new == NULL) {
+			rv = EINVAL;
+			break;
+		}
 		if (sha256_cur == NULL) {
 			if (errno == ENOENT) {
 				/*
@@ -214,8 +240,8 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 		 * Install new file.
 		 */
 		if ((strcmp(sha256_orig, sha256_cur) == 0) &&
-		    (strcmp(sha256_cur, sha256_new) == 0) &&
-		    (strcmp(sha256_orig, sha256_new) == 0)) {
+		    (strcmp(sha256_orig, sha256_new) == 0) &&
+		    (strcmp(sha256_cur, sha256_new) == 0)) {
 			install_new = true;
 			break;
 		/*
@@ -224,8 +250,10 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 		 * Install new file.
 		 */
 		} else if ((strcmp(sha256_orig, sha256_cur) == 0) &&
-			   (strcmp(sha256_cur, sha256_new)) &&
-			   (strcmp(sha256_orig, sha256_new))) {
+			   (strcmp(sha256_orig, sha256_new)) &&
+			   (strcmp(sha256_cur, sha256_new))) {
+			printf("Updating %s file with new version.\n",
+			    cffile);
 			install_new = true;
 			break;
 		/*
@@ -233,19 +261,20 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 		 *
 		 * Keep current file as is.
 		 */
-		} else if ((strcmp(sha256_orig, sha256_cur)) &&
-			   (strcmp(sha256_orig, sha256_new) == 0) &&
-			   (strcmp(sha256_cur, sha256_new))) {
-			skip = true;
+		} else if ((strcmp(sha256_orig, sha256_new) == 0) &&
+			   (strcmp(sha256_cur, sha256_new)) &&
+			   (strcmp(sha256_orig, sha256_cur))) {
+			printf("Keeping modified file %s.\n", cffile);
+			*skip = true;
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = Y
 		 *
 		 * Install new file.
 		 */
-		} else if ((strcmp(sha256_orig, sha256_cur)) &&
-			   (strcmp(sha256_cur, sha256_new) == 0) &&
-			   (strcmp(sha256_orig, sha256_new))) {
+		} else if ((strcmp(sha256_cur, sha256_new) == 0) &&
+			   (strcmp(sha256_orig, sha256_new)) &&
+			   (strcmp(sha256_orig, sha256_cur))) {
 			install_new = true;
 			break;
 		/*
@@ -261,8 +290,8 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 				rv = errno;
 				break;
 			}
-			printf("Installing new configuration "
-			    "file %s.new\n", cffile);
+			printf("Keeping modified file %s.\n", cffile);
+			printf("Installing new version as %s.new.\n", cffile);
 			install_new = true;
 			archive_entry_set_pathname(entry, buf);
 			free(buf);
@@ -271,8 +300,10 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 	}
 
 out:
-	if (install_new)
-		set_extract_flags(flags);
+	if (install_new) {
+		*flags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE;
+		*flags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
+	}
 	if (sha256_orig)
 		free(sha256_orig);
 	if (sha256_cur)
@@ -293,7 +324,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 {
 	prop_dictionary_t filesd;
 	struct archive_entry *entry;
-	const char *pkgname, *version, *rootdir;
+	const char *pkgname, *version, *rootdir, *entry_str;
 	char *buf, *buf2;
 	int rv = 0, flags, lflags;
 	bool actgt = false, skip_entry = false;
@@ -313,28 +344,24 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 	prop_dictionary_get_cstring_nocopy(pkg, "version", &version);
 
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
-		lflags = 0;
+		entry_str = archive_entry_pathname(entry);
 		set_extract_flags(&lflags);
-		/*
-		 * Always overwrite pkg metadata files. Other files
-		 * in the archive aren't overwritten unless a package
-		 * defines the "essential" boolean obj, or the
-		 * XBPS_FLAG_FORCE is specified.
-		 */
-		if (strcmp("./INSTALL", archive_entry_pathname(entry)) &&
-		    strcmp("./REMOVE", archive_entry_pathname(entry)) &&
-		    strcmp("./files.plist", archive_entry_pathname(entry)) &&
-		    strcmp("./props.plist", archive_entry_pathname(entry))) {
-			if (((flags & XBPS_FLAG_FORCE) == 0) && !essential) {
-				lflags |= ARCHIVE_EXTRACT_NO_OVERWRITE;
-				lflags |= ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
-			}
+		if (((strcmp("./INSTALL", entry_str)) == 0) ||
+		    ((strcmp("./REMOVE", entry_str)) == 0) ||
+		    ((strcmp("./files.plist", entry_str))) == 0 ||
+		    ((strcmp("./props.plist", entry_str)) == 0) || essential) {
+			/*
+			 * Always overwrite files in essential packages,
+			 * and metadata files.
+			 */
+			lflags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE;
+			lflags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
 		}
 
 		/*
 		 * Run the pre INSTALL action if the file is there.
 		 */
-		if (strcmp("./INSTALL", archive_entry_pathname(entry)) == 0) {
+		if (strcmp("./INSTALL", entry_str) == 0) {
 			buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
 			    XBPS_META_PATH, pkgname);
 			if (buf == NULL)
@@ -364,8 +391,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		/*
 		 * Unpack metadata files in final directory.
 		 */
-		} else if (strcmp("./REMOVE",
-		    archive_entry_pathname(entry)) == 0) {
+		} else if (strcmp("./REMOVE", entry_str) == 0) {
 			buf2 = xbps_xasprintf(".%s/metadata/%s/REMOVE",
 			    XBPS_META_PATH, pkgname);
 			if (buf2 == NULL)
@@ -373,9 +399,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 			archive_entry_set_pathname(entry, buf2);
 			free(buf2);
 			buf2 = NULL;
-
-		} else if (strcmp("./files.plist",
-		    archive_entry_pathname(entry)) == 0) {
+		} else if (strcmp("./files.plist", entry_str) == 0) {
 			/*
 			 * Now we have a dictionary from the entry
 			 * in memory. Will be written to disk later, when
@@ -388,28 +412,29 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 			/* Pass to next entry */
 			continue;
 
-		} else if (strcmp("./props.plist",
-		    archive_entry_pathname(entry)) == 0) {
+		} else if (strcmp("./props.plist", entry_str) == 0) {
 			buf2 = xbps_xasprintf(".%s/metadata/%s/props.plist",
 			    XBPS_META_PATH, pkgname);
 			if (buf2 == NULL)
 				return errno;
 			archive_entry_set_pathname(entry, buf2);
 			free(buf2);
+		} else {
+			/*
+			 * Handle configuration files.
+			 */
+			if ((rv = install_config_file(filesd, entry, pkgname,
+			    &lflags, &skip_entry)) != 0) {
+				prop_object_release(filesd);
+				return rv;
+			}
+			if (skip_entry) {
+				archive_read_data_skip(ar);
+				skip_entry = false;
+				continue;
+			}
 		}
-		/*
-		 * Handle configuration files.
-		 */
-		if ((rv = install_config_file(filesd, entry, pkgname,
-		     &lflags, skip_entry)) != 0) {
-			prop_object_release(filesd);
-			return rv;
-		}
-		if (skip_entry) {
-			archive_read_data_skip(ar);
-			skip_entry = false;
-			continue;
-		}
+
 		/*
 		 * Extract entry from archive.
 		 */
