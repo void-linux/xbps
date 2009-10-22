@@ -34,6 +34,7 @@
 #include <sys/utsname.h>
 
 #include <xbps_api.h>
+#include "sha256.h"
 
 static bool	question(bool, const char *, va_list);
 

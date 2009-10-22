@@ -48,7 +48,8 @@
 #include <inttypes.h>
 #include <libgen.h>
 
-#include "xbps_api.h"
+#include <xbps_api.h>
+#include "sha256.h"
 
 /*** SHA-256 Various Length Definitions ***********************/
 /* NOTE: Most of these are in sha2.h */

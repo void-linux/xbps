@@ -36,8 +36,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-#include "sha256.h"
-
 /* Current release version */
 #define XBPS_RELVER		"0.2.99.1"
 

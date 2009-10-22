@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include <xbps_api.h>
+#include "sha256.h"
 
 static void
 usage(void)
