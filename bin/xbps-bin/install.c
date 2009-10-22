@@ -385,14 +385,14 @@ exec_transaction(struct transaction *trans)
 	prop_object_iterator_t replaces_iter;
 	const char *pkgname, *version, *instver, *filename, *tract;
 	int rv = 0;
-	bool essential, isdep, autoinst;
+	bool essential, autoinst;
 	pkg_state_t state = 0;
 
 	assert(trans != NULL);
 	assert(trans->dict != NULL);
 	assert(trans->iter != NULL);
 
-	essential = isdep = autoinst = false;
+	essential = autoinst = false;
 	/*
 	 * Show download/installed size for the transaction.
 	 */
@@ -427,9 +427,17 @@ exec_transaction(struct transaction *trans)
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		replaces_iter = xbps_get_array_iter_from_dict(obj, "replaces");
 
+		/*
+		 * Set automatic-install bool if we are updating all packages,
+		 * and a new package is going to be installed, and
+		 * if we updating a package required new updating dependent
+		 * packages.
+		 */
 		if (trans->originpkgname &&
 		    strcmp(trans->originpkgname, pkgname))
-			isdep = true;
+			autoinst = true;
+		else if (!trans->originpkgname && strcmp(tract, "install") == 0)
+			autoinst = true;
 
 		/*
 		 * If dependency is already unpacked skip this phase.
@@ -467,7 +475,6 @@ exec_transaction(struct transaction *trans)
 			autoinst = false;
 			prop_dictionary_get_bool(instpkgd, "automatic-install",
 			    &autoinst);
-			isdep = autoinst;
 			prop_object_release(instpkgd);
 
 			/*
@@ -507,12 +514,12 @@ exec_transaction(struct transaction *trans)
 		/*
 		 * Register binary package.
 		 */
-		if ((rv = xbps_register_pkg(obj, isdep)) != 0) {
+		if ((rv = xbps_register_pkg(obj, autoinst)) != 0) {
 			printf("error: registering %s-%s! (%s)\n",
 			    pkgname, version, strerror(rv));
 			return rv;
 		}
-		isdep = false;
+		autoinst = false;
 		/*
 		 * Set package state to unpacked in the transaction
 		 * dictionary.
