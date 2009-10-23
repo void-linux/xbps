@@ -138,6 +138,7 @@ xbps_find_orphan_packages(void)
 	rv = xbps_callback_array_iter_reverse_in_dict(dict, "packages",
 	    find_orphan_pkg, NULL);
 	if (rv != 0) {
+		errno = rv;
 		cleanup();
 		return NULL;
 	}
