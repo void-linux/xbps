@@ -39,7 +39,6 @@ struct transaction {
 	bool force;
 };
 
-static void	cleanup(int);
 static int	exec_transaction(struct transaction *);
 static void	show_missing_deps(prop_dictionary_t, const char *);
 static int	show_missing_dep_cb(prop_object_t, void *, bool *);
@@ -206,7 +205,7 @@ show_transaction_sizes(prop_object_iterator_t iter)
 	return 0;
 }
 
-void
+int
 xbps_exec_transaction(const char *pkgname, bool force, bool update)
 {
 	struct transaction *trans;
@@ -225,10 +224,10 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 		if ((rv = xbps_find_new_packages()) != 0) {
 			if (rv == ENOENT) {
 				printf("No packages currently registered.\n");
-				cleanup(0);
+				return 0;
 			} else if (rv == ENOPKG) {
 				printf("All packages are up-to-date.\n");
-				cleanup(0);
+				return 0;
 			}
 			goto out;
 		}
@@ -246,21 +245,21 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 					printf("Package '%s' is up to date.\n",
 					    pkgname);
 					prop_object_release(pkgd);
-					cleanup(rv);
+					return rv;
 				} else if (rv == ENOENT) {
 					printf("Package '%s' not found in "
 					    "repository pool.\n", pkgname);
 					prop_object_release(pkgd);
-					cleanup(rv);
+					return rv;
 				} else if (rv != 0) {
 					prop_object_release(pkgd);
-					cleanup(rv);
+					return rv;
 				}
 				prop_object_release(pkgd);
 			} else {
 				printf("Package '%s' not installed.\n",
 				    pkgname);
-				cleanup(rv);
+				return rv;
 			}
 		} else {
 			/*
@@ -271,16 +270,16 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 				printf("Package '%s' is already installed.\n",
 				    pkgname);
 				prop_object_release(pkgd);
-				cleanup(rv);
+				return rv;
 			}
 			rv = xbps_prepare_pkg(pkgname);
 			if (rv != 0 && rv == EAGAIN) {
 				printf("Unable to locate '%s' in "
 				    "repository pool.\n", pkgname);
-				cleanup(rv);
+				return rv;
 			} else if (rv != 0 && rv != ENOENT) {
 				printf("Unexpected error: %s", strerror(rv));
-				cleanup(rv);
+				return rv;
 			}
 		}
 	}
@@ -337,7 +336,7 @@ out2:
 out1:
 	free(trans);
 out:
-	cleanup(rv);
+	return rv;
 }
 
 static int
@@ -543,12 +542,4 @@ exec_transaction(struct transaction *trans)
 	}
 
 	return 0;
-}
-
-static void
-cleanup(int rv)
-{
-	xbps_release_repolist_data();
-	xbps_release_regpkgdb_dict();
-	exit(rv == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }

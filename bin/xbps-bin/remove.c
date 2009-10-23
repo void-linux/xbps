@@ -33,7 +33,7 @@
 #include "defs.h"
 #include "../xbps-repo/util.h"
 
-void
+int
 xbps_autoremove_pkgs(void)
 {
 	prop_array_t orphans;
@@ -52,15 +52,18 @@ xbps_autoremove_pkgs(void)
 
 	orphans = xbps_find_orphan_packages();
 	if (orphans == NULL)
-		exit(EXIT_FAILURE);
+		return errno;
+
 	if (orphans != NULL && prop_array_count(orphans) == 0) {
 		printf("There are not orphaned packages currently.\n");
-		exit(EXIT_SUCCESS);
+		goto out;
 	}
 
 	iter = prop_array_iterator(orphans);
-	if (iter == NULL)
+	if (iter == NULL) {
+		rv = errno;
 		goto out;
+	}
 
 	printf("The following packages were installed automatically\n"
 	    "(as dependencies) and aren't needed anymore:\n\n");
@@ -99,13 +102,11 @@ out2:
 	prop_object_iterator_release(iter);
 out:
 	prop_object_release(orphans);
-	if (rv != 0)
-		exit(EXIT_FAILURE);
 
-	exit(EXIT_SUCCESS);
+	return rv;
 }
 
-void
+int
 xbps_remove_installed_pkg(const char *pkgname, bool force)
 {
 	prop_array_t reqby;
@@ -119,7 +120,7 @@ xbps_remove_installed_pkg(const char *pkgname, bool force)
 	dict = xbps_find_pkg_installed_from_plist(pkgname);
 	if (dict == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
-		goto out;
+		return 0;
 	}
 	prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 
@@ -133,7 +134,7 @@ xbps_remove_installed_pkg(const char *pkgname, bool force)
 		if (!force) {
 			if (!xbps_noyes("Do you want to remove %s?", pkgname)) {
 				printf("Cancelling!\n");
-				goto out;
+				return 0;
 			}
 		}
 		printf("Forcing %s-%s for deletion!\n", pkgname, version);
@@ -141,7 +142,7 @@ xbps_remove_installed_pkg(const char *pkgname, bool force)
 		if (!force) {
 			if (!xbps_noyes("Do you want to remove %s?", pkgname)) {
 				printf("Cancelling!\n");
-				goto out;
+				return 0;
 			}
 		}
 	}
@@ -150,13 +151,8 @@ xbps_remove_installed_pkg(const char *pkgname, bool force)
 	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0) {
 		printf("Unable to remove %s-%s (%s).\n",
 		    pkgname, version, strerror(errno));
-		goto out;
+		return rv;
 	}
 
-out:
-	xbps_release_regpkgdb_dict();
-	if (rv != 0)
-		exit(EXIT_FAILURE);
-
-	exit(EXIT_SUCCESS);
+	return 0;
 }

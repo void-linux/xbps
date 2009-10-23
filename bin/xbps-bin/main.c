@@ -168,21 +168,21 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		xbps_exec_transaction(argv[1], force, false);
+		rv = xbps_exec_transaction(argv[1], force, false);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
 		if (argc != 2)
 			usage();
 
-		xbps_exec_transaction(argv[1], force, true);
+		rv = xbps_exec_transaction(argv[1], force, true);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a binary package. */
 		if (argc != 2)
 			usage();
 
-		xbps_remove_installed_pkg(argv[1], force);
+		rv = xbps_remove_installed_pkg(argv[1], force);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
@@ -192,7 +192,7 @@ main(int argc, char **argv)
 		rv = show_pkg_info_from_metadir(argv[1]);
 		if (rv != 0) {
 			printf("Package %s not installed.\n", argv[1]);
-			exit(EXIT_FAILURE);
+			goto out;
 		}
 
 	} else if (strcasecmp(argv[0], "show-files") == 0) {
@@ -203,7 +203,7 @@ main(int argc, char **argv)
 		rv = show_pkg_files_from_metadir(argv[1]);
 		if (rv != 0) {
 			printf("Package %s not installed.\n", argv[1]);
-			exit(EXIT_FAILURE);
+			goto out;
 		}
 
 	} else if (strcasecmp(argv[0], "check") == 0) {
@@ -223,7 +223,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		xbps_exec_transaction("all", force, true);
+		rv = xbps_exec_transaction("all", force, true);
 
 	} else if (strcasecmp(argv[0], "autoremove") == 0) {
 		/*
@@ -234,7 +234,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		xbps_autoremove_pkgs();
+		rv = xbps_autoremove_pkgs();
 
 	} else if (strcasecmp(argv[0], "purge") == 0) {
 		/*
