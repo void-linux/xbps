@@ -134,13 +134,16 @@ xbps_check_is_installed_pkg(const char *pkg)
 	 * unpacked or something else.
 	 */
 	if (xbps_get_pkg_state_installed(pkgname, &state) != 0) {
+		prop_object_release(dict);
 		free(pkgname);
 		return -1;
 	}
 	free(pkgname);
 
-	if (state != XBPS_PKG_STATE_INSTALLED)
+	if (state != XBPS_PKG_STATE_INSTALLED) {
+		prop_object_release(dict);
 		return -1;
+	}
 
 	/* Get version from installed package */
 	prop_dictionary_get_cstring_nocopy(dict, "version", &instver);
