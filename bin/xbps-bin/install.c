@@ -189,14 +189,14 @@ show_transaction_sizes(prop_object_iterator_t iter)
 	 * Show total download/installed size for all required packages.
 	 */
 	if (xbps_humanize_number(size, 5, (int64_t)dlsize,
-	    "", HN_AUTOSCALE, HN_NOSPACE) == -1) {
+	    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE) == -1) {
 		printf("error: humanize_number returns %s\n",
 		    strerror(errno));
 		return -1;
 	}
 	printf("Total download size: %s\n", size);
 	if (xbps_humanize_number(size, 5, (int64_t)instsize,
-	    "", HN_AUTOSCALE, HN_NOSPACE) == -1) {
+	    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE) == -1) {
 		printf("error: humanize_number2 returns %s\n",
 		    strerror(errno));
 		return -1;
