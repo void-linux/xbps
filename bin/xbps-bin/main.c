@@ -28,11 +28,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 
 #include <xbps_api.h>
 #include "defs.h"
 #include "../xbps-repo/util.h"
 
+static void	cleanup(int);
 static void	usage(void);
 static int	list_pkgs_in_dict(prop_object_t, void *, bool *);
 
@@ -91,6 +93,7 @@ int
 main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
+	struct sigaction sa;
 	int c, flags = 0, rv = 0;
 	bool force = false, verbose = false;
 
@@ -125,6 +128,15 @@ main(int argc, char **argv)
 
 	if (flags != 0)
 		xbps_set_flags(flags);
+
+	/*
+	 * Register a signal handler to clean up resources used by libxbps.
+	 */
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = cleanup;
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
 
 	if ((dict = xbps_prepare_regpkgdb_dict()) == NULL) {
 		if (errno != ENOENT) {
@@ -271,10 +283,21 @@ main(int argc, char **argv)
 	}
 
 out:
+	cleanup(rv);
+}
+
+static void
+cleanup(int signum)
+{
+	switch (signum) {
+	case SIGINT:
+	case SIGTERM:
+	case SIGQUIT:
+		printf("\nSignal caught, cleaning up...\n");
+		break;
+	}
 	xbps_release_repolist_data();
 	xbps_release_regpkgdb_dict();
-	if (rv != 0)
-		exit(EXIT_FAILURE);
-
-	exit(EXIT_SUCCESS);
+	
+	_exit(signum);
 }
