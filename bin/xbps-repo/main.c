@@ -37,8 +37,6 @@
 
 typedef struct repository_info {
 	const char *index_version;
-	const char *location_local;
-	const char *location_remote;
 	uint64_t total_pkgs;
 } repo_info_t;
 
@@ -83,14 +81,6 @@ pkgindex_getinfo(prop_dictionary_t dict, repo_info_t *ri)
 	if (!prop_dictionary_get_cstring_nocopy(dict,
 	    "pkgindex-version", &ri->index_version))
 		return false;
-
-	if (!prop_dictionary_get_cstring_nocopy(dict,
-	    "location-local", &ri->location_local))
-		return false;
-
-	/* This one is optional, thus don't panic */
-	prop_dictionary_get_cstring_nocopy(dict, "location-remote",
-	    &ri->location_remote);
 
 	if (!prop_dictionary_get_uint64(dict, "total-pkgs",
 	    &ri->total_pkgs))
@@ -144,13 +134,79 @@ out:
 	return rv;
 }
 
+static int
+add_repository(const char *uri, bool remote)
+{
+	prop_dictionary_t dict;
+	repo_info_t *rinfo;
+	char *plist, idxstr[PATH_MAX];
+	int rv = 0;
+
+	if (remote) {
+		rv = xbps_sync_repository_pkg_index(uri);
+		if (rv != 0)
+			return rv;
+		plist = xbps_get_pkg_index_plist(uri);
+	} else {
+		if (!sanitize_localpath(idxstr, uri))
+			return errno;
+		plist = xbps_get_pkg_index_plist(idxstr);
+	}
+
+	if (plist == NULL)
+		return errno;
+
+	dict = prop_dictionary_internalize_from_file(plist);
+	if (dict == NULL) {
+		printf("Repository %s does not contain any "
+		    "xbps pkgindex file.\n", idxstr);
+		rv = errno;
+		goto out;
+	}
+
+	rinfo = malloc(sizeof(*rinfo));
+	if (rinfo == NULL) {
+		rv = errno;
+		goto out;
+	}
+
+	if (!pkgindex_getinfo(dict, rinfo)) {
+		printf("'%s' is incomplete.\n", plist);
+		rv = EINVAL;
+		goto out;
+	}
+
+	if (remote)
+		rv = xbps_register_repository(uri);
+	else
+		rv = xbps_register_repository(idxstr);
+
+	if (rv != 0) {
+		printf("ERROR: couldn't register repository (%s)\n",
+		    strerror(rv));
+		goto out;
+	}
+	
+	printf("Added repository at %s (%s) with %ju packages.\n",
+	       uri, rinfo->index_version, rinfo->total_pkgs);
+
+out:
+	if (dict != NULL)
+		prop_object_release(dict);
+	if (rinfo != NULL)
+		free(rinfo);
+	if (plist != NULL)
+		free(plist);
+
+	return rv;
+}
+
 int
 main(int argc, char **argv)
 {
-	prop_dictionary_t dict;
-	repo_info_t *rinfo = NULL;
-	char dpkgidx[PATH_MAX], *plist, *root = NULL;
+	char dpkgidx[PATH_MAX], *root = NULL;
 	int c, rv = 0;
+	bool remote_repo = false;
 
 	while ((c = getopt(argc, argv, "Vr:")) != -1) {
 		switch (c) {
@@ -179,53 +235,11 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		if (!sanitize_localpath(dpkgidx, argv[1]))
-			exit(EXIT_FAILURE);
+		if ((strncmp(argv[1], "http://", 7) == 0) ||
+		    (strncmp(argv[1], "ftp://", 6) == 0))
+			remote_repo = true;
 
-		/* Temp buffer to verify pkgindex file. */
-		plist = xbps_get_pkg_index_plist(dpkgidx);
-		if (plist == NULL)
-			exit(EXIT_FAILURE);
-
-		dict = prop_dictionary_internalize_from_file(plist);
-		if (dict == NULL) {
-			printf("Directory %s does not contain any "
-			    "xbps pkgindex file.\n", dpkgidx);
-			free(plist);
-			exit(EXIT_FAILURE);
-		}
-
-		rinfo = malloc(sizeof(*rinfo));
-		if (rinfo == NULL) {
-			prop_object_release(dict);
-			free(plist);
-			exit(EXIT_FAILURE);
-		}
-
-		if (!pkgindex_getinfo(dict, rinfo)) {
-			printf("'%s' is incomplete.\n", plist);
-			prop_object_release(dict);
-			free(rinfo);
-			free(plist);
-			exit(EXIT_FAILURE);
-		}
-
-		if ((rv = xbps_register_repository(dpkgidx)) != 0) {
-			printf("ERROR: couldn't register repository (%s)\n",
-			    strerror(rv));
-			prop_object_release(dict);
-			free(rinfo);
-			free(plist);
-			exit(EXIT_FAILURE);
-		}
-
-		printf("Added repository at %s (%s) with %ju packages.\n",
-		       rinfo->location_local, rinfo->index_version,
-		       rinfo->total_pkgs);
-
-		prop_object_release(dict);
-		free(rinfo);
-		free(plist);
+		rv = add_repository(argv[1], remote_repo);
 
 	} else if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists all repositories registered in pool. */

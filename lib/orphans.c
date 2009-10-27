@@ -120,7 +120,7 @@ cleanup(void)
 	}
 }
 
-prop_array_t
+prop_array_t SYMEXPORT
 xbps_find_orphan_packages(void)
 {
 	prop_array_t array;

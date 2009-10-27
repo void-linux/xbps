@@ -3,6 +3,7 @@ include ../vars.mk
 SUBDIRS =	xbps-bin
 SUBDIRS +=	xbps-cmpver
 SUBDIRS +=	xbps-digest
+SUBDIRS +=	xbps-fetch
 SUBDIRS +=	xbps-pkgdb
 SUBDIRS +=	xbps-repo
 

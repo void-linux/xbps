@@ -54,7 +54,7 @@ find_sorteddep_by_name(const char *pkgname)
 	return sdep;
 }
 
-int
+int SYMEXPORT
 xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 {
 	prop_array_t sorted, unsorted, rundeps;

@@ -41,7 +41,7 @@ static bool	question(bool, const char *, va_list);
 static const char *rootdir;
 static int flags;
 
-char *
+char SYMEXPORT *
 xbps_get_file_hash(const char *file)
 {
 	SHA256_CTX ctx;
@@ -62,7 +62,7 @@ xbps_get_file_hash(const char *file)
 	return hash;
 }
 
-int
+int SYMEXPORT
 xbps_check_file_hash(const char *path, const char *sha256)
 {
 	char *res;
@@ -80,7 +80,7 @@ xbps_check_file_hash(const char *path, const char *sha256)
 	return 0;
 }
 
-int
+int SYMEXPORT
 xbps_check_pkg_file_hash(prop_dictionary_t pkgd, const char *repoloc)
 {
 	const char *sha256, *arch, *filename;
@@ -109,7 +109,7 @@ xbps_check_pkg_file_hash(prop_dictionary_t pkgd, const char *repoloc)
 	return rv;
 }
 
-int
+int SYMEXPORT
 xbps_check_is_installed_pkg(const char *pkg)
 {
 	prop_dictionary_t dict;
@@ -156,7 +156,7 @@ xbps_check_is_installed_pkg(const char *pkg)
 	return rv;
 }
 
-bool
+bool SYMEXPORT
 xbps_check_is_installed_pkgname(const char *pkgname)
 {
 	prop_dictionary_t pkgd;
@@ -172,7 +172,7 @@ xbps_check_is_installed_pkgname(const char *pkgname)
 	return false;
 }
 
-const char *
+const char SYMEXPORT *
 xbps_get_pkg_version(const char *pkg)
 {
 	const char *tmp;
@@ -187,7 +187,7 @@ xbps_get_pkg_version(const char *pkg)
 	return tmp + 1; /* skip first '-' */
 }
 
-const char *
+const char SYMEXPORT *
 xbps_get_pkg_revision(const char *pkg)
 {
 	const char *tmp;
@@ -202,7 +202,7 @@ xbps_get_pkg_revision(const char *pkg)
 	return tmp + 1; /* skip first '_' */
 }
 
-char *
+char SYMEXPORT *
 xbps_get_pkg_name(const char *pkg)
 {
 	const char *tmp;
@@ -225,20 +225,44 @@ xbps_get_pkg_name(const char *pkg)
 	return pkgname;
 }
 
-char *
-xbps_get_pkg_index_plist(const char *path)
+static char *
+get_pkg_index_remote_plist(const char *uri, const char *machine)
+{
+	char *uri_fixed, *repodir;
+
+	uri_fixed = xbps_get_remote_repo_string(uri);
+	if (uri_fixed == NULL)
+		return NULL;
+
+	repodir = xbps_xasprintf("%s/%s/repo/%s/%s/%s",
+	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixed,
+	    machine, XBPS_PKGINDEX);
+	if (repodir == NULL) {
+		free(uri_fixed);
+		return NULL;
+	}
+		
+	return repodir;
+}
+
+char SYMEXPORT *
+xbps_get_pkg_index_plist(const char *uri)
 {
 	struct utsname un;
 
-	assert(path != NULL);
+	assert(uri != NULL);
 
 	if (uname(&un) == -1)
 		return NULL;
 
-	return xbps_xasprintf("%s/%s/%s", path, un.machine, XBPS_PKGINDEX);
+	if ((strncmp(uri, "http://", 7) == 0) ||
+	    (strncmp(uri, "ftp://", 6) == 0))
+		return get_pkg_index_remote_plist(uri, un.machine);
+
+	return xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
 }
 
-bool
+bool SYMEXPORT
 xbps_pkg_has_rundeps(prop_dictionary_t pkg)
 {
 	prop_array_t array;
@@ -251,14 +275,14 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkg)
 	return false;
 }
 
-void
+void SYMEXPORT
 xbps_set_rootdir(const char *dir)
 {
 	assert(dir != NULL);
 	rootdir = dir;
 }
 
-const char *
+const char SYMEXPORT *
 xbps_get_rootdir(void)
 {
 	if (rootdir == NULL)
@@ -267,19 +291,19 @@ xbps_get_rootdir(void)
 	return rootdir;
 }
 
-void
+void SYMEXPORT
 xbps_set_flags(int lflags)
 {
 	flags = lflags;
 }
 
-int
+int SYMEXPORT
 xbps_get_flags(void)
 {
 	return flags;
 }
 
-char *
+char SYMEXPORT *
 xbps_xasprintf(const char *fmt, ...)
 {
 	va_list ap;
@@ -293,11 +317,7 @@ xbps_xasprintf(const char *fmt, ...)
 	return buf;
 }
 
-/*
- * The following functions were taken from pacman (src/pacman/util.c)
- * Copyright (c) 2002-2007 by Judd Vinet <jvinet@zeroflux.org>
- */
-bool
+bool SYMEXPORT
 xbps_yesno(const char *fmt, ...)
 {
 	va_list ap;
@@ -310,7 +330,7 @@ xbps_yesno(const char *fmt, ...)
 	return res;
 }
 
-bool
+bool SYMEXPORT
 xbps_noyes(const char *fmt, ...)
 {
 	va_list ap;

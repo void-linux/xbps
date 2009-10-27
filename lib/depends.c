@@ -31,27 +31,28 @@
 #include <xbps_api.h>
 
 static int add_missing_reqdep(prop_dictionary_t, const char *, const char *);
-static int find_repo_deps(prop_dictionary_t, prop_dictionary_t, prop_array_t);
-static int find_repo_missing_deps(prop_dictionary_t, prop_dictionary_t);
+static int find_repo_deps(prop_dictionary_t, prop_dictionary_t,
+			  const char *, prop_array_t);
+static int find_repo_missing_deps(prop_dictionary_t, prop_dictionary_t,
+				  const char *);
 
 static int
 store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
-		 prop_dictionary_t repod)
+		 const char *repoloc)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
-	const char *repoloc, *pkgname;
+	const char *pkgname;
 	int rv = 0;
 	pkg_state_t state = 0;
 
 	assert(master != NULL);
 	assert(depd != NULL);
-	assert(repod != NULL);
+	assert(repoloc != NULL);
 	/*
 	 * Get some info about dependencies and current repository.
 	 */
 	prop_dictionary_get_cstring_nocopy(depd, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(repod, "location-local", &repoloc);
 
 	dict = prop_dictionary_copy(depd);
 	if (dict == NULL)
@@ -136,7 +137,7 @@ add_missing_reqdep(prop_dictionary_t master, const char *pkgname,
 	return 0;
 }
 
-int
+int SYMEXPORT
 xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 {
 	prop_array_t pkg_rdeps, missing_rdeps;
@@ -161,7 +162,8 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 		 * if any of them is not there it will be added
 		 * into the missing_deps array.
 		 */
-		rv = find_repo_deps(master, rdata->rd_repod, pkg_rdeps);
+		rv = find_repo_deps(master, rdata->rd_repod,
+		    rdata->rd_uri, pkg_rdeps);
 		if (rv != 0) {
 			if (rv == ENOENT) {
 				rv = 0;
@@ -181,7 +183,8 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 	 * just in case that indirect deps weren't found.
 	 */
 	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
-		rv = find_repo_missing_deps(master, rdata->rd_repod);
+		rv = find_repo_missing_deps(master, rdata->rd_repod,
+		    rdata->rd_uri);
 		if (rv != 0 && rv != ENOENT)
 			return rv;
 	}
@@ -193,7 +196,8 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 }
 
 static int
-find_repo_missing_deps(prop_dictionary_t master, prop_dictionary_t repo)
+find_repo_missing_deps(prop_dictionary_t master, prop_dictionary_t repo,
+		       const char *repoloc)
 {
 	prop_array_t array;
 	prop_dictionary_t curpkgd;
@@ -233,7 +237,7 @@ find_repo_missing_deps(prop_dictionary_t master, prop_dictionary_t repo)
 		/*
 		 * Package is on repo, add it into the dictionary.
 		 */
-		if ((rv = store_dependency(master, curpkgd, repo)) != 0)
+		if ((rv = store_dependency(master, curpkgd, repoloc)) != 0)
 			break;
 		/*
 		 * Remove package from missing_deps array now.
@@ -252,7 +256,7 @@ find_repo_missing_deps(prop_dictionary_t master, prop_dictionary_t repo)
 
 static int
 find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
-	       prop_array_t pkg_rdeps)
+	       const char *repoloc, prop_array_t pkg_rdeps)
 {
 	prop_dictionary_t curpkgd, tmpd = NULL;
 	prop_array_t curpkg_rdeps;
@@ -321,7 +325,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		/*
 		 * Package is on repo, add it into the dictionary.
 		 */
-		if ((rv = store_dependency(master, curpkgd, repo)) != 0) {
+		if ((rv = store_dependency(master, curpkgd, repoloc)) != 0) {
 			free(pkgname);
 			break;
 		}
@@ -344,7 +348,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		/*
 		 * Iterate on required pkg to find more deps.
 		 */
-		if (!find_repo_deps(master, repo, curpkg_rdeps))
+		if (!find_repo_deps(master, repo, repoloc, curpkg_rdeps))
 			continue;
 	}
 	prop_object_iterator_release(iter);

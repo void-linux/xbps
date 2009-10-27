@@ -34,7 +34,7 @@
 static prop_dictionary_t regpkgdb_dict;
 static bool regpkgdb_initialized;
 
-bool
+bool SYMEXPORT
 xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 		       const char *key)
 {
@@ -51,7 +51,7 @@ xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 	return true;
 }
 
-bool
+bool SYMEXPORT
 xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 {
 	assert(array != NULL);
@@ -66,7 +66,7 @@ xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 	return true;
 }
 
-int
+int SYMEXPORT
 xbps_callback_array_iter_in_repolist(int (*fn)(prop_object_t, void *, bool *),
 				     void *arg)
 {
@@ -103,7 +103,7 @@ xbps_callback_array_iter_in_repolist(int (*fn)(prop_object_t, void *, bool *),
 	return rv;
 }
 
-int
+int SYMEXPORT
 xbps_callback_array_iter_in_dict(prop_dictionary_t dict, const char *key,
 				 int (*fn)(prop_object_t, void *, bool *),
 				 void *arg)
@@ -131,7 +131,7 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict, const char *key,
 	return rv;
 }
 
-int
+int SYMEXPORT
 xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
     const char *key, int (*fn)(prop_object_t, void *, bool *), void *arg)
 {
@@ -162,7 +162,7 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 	return rv;
 }
 
-prop_dictionary_t
+prop_dictionary_t SYMEXPORT
 xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 {
 	prop_dictionary_t dict, obj, res;
@@ -189,7 +189,7 @@ xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 	return res;
 }
 
-prop_dictionary_t
+prop_dictionary_t SYMEXPORT
 xbps_find_pkg_installed_from_plist(const char *pkgname)
 {
 	prop_dictionary_t d, pkgd;
@@ -215,7 +215,7 @@ xbps_find_pkg_installed_from_plist(const char *pkgname)
 	}
 }
 
-prop_dictionary_t
+prop_dictionary_t SYMEXPORT
 xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
 		      const char *pkgname)
 {
@@ -241,7 +241,7 @@ xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
 	return obj;
 }
 
-prop_dictionary_t
+prop_dictionary_t SYMEXPORT
 xbps_prepare_regpkgdb_dict(void)
 {
 	const char *rootdir;
@@ -266,7 +266,7 @@ xbps_prepare_regpkgdb_dict(void)
 	return regpkgdb_dict;
 }
 
-void
+void SYMEXPORT
 xbps_release_regpkgdb_dict(void)
 {
 	if (regpkgdb_initialized == false)
@@ -277,7 +277,7 @@ xbps_release_regpkgdb_dict(void)
 	regpkgdb_initialized = false;
 }
 
-bool
+bool SYMEXPORT
 xbps_find_string_in_array(prop_array_t array, const char *val)
 {
 	prop_object_iterator_t iter;
@@ -303,7 +303,7 @@ xbps_find_string_in_array(prop_array_t array, const char *val)
 	return false;
 }
 
-prop_object_iterator_t
+prop_object_iterator_t SYMEXPORT
 xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 {
 	prop_array_t array;
@@ -318,7 +318,7 @@ xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 	return prop_array_iterator(array);
 }
 
-int
+int SYMEXPORT
 xbps_remove_string_from_array(prop_array_t array, const char *str)
 {
 	prop_object_t obj;
@@ -351,7 +351,7 @@ xbps_remove_string_from_array(prop_array_t array, const char *str)
 	return 0;
 }
 
-int
+int SYMEXPORT
 xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 			  const char *pkgname)
 {
@@ -393,7 +393,7 @@ xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 	return 0;
 }
 
-int
+int SYMEXPORT
 xbps_remove_pkg_dict_from_file(const char *pkg, const char *plist)
 {
 	prop_dictionary_t pdict;
@@ -422,7 +422,7 @@ xbps_remove_pkg_dict_from_file(const char *pkg, const char *plist)
 	return 0;
 }
 
-prop_dictionary_t
+prop_dictionary_t SYMEXPORT
 xbps_read_dict_from_archive_entry(struct archive *ar,
 				  struct archive_entry *entry)
 {

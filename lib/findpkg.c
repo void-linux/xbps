@@ -84,7 +84,7 @@ fail:
         return rv;
 }
 
-prop_dictionary_t
+prop_dictionary_t SYMEXPORT
 xbps_get_pkg_props(void)
 {
 	if (pkg_props_initialized == false)
@@ -93,7 +93,7 @@ xbps_get_pkg_props(void)
 	return pkg_props;
 }
 
-int
+int SYMEXPORT
 xbps_prepare_repolist_data(void)
 {
 	prop_dictionary_t dict = NULL;
@@ -160,6 +160,7 @@ xbps_prepare_repolist_data(void)
 			goto out2;
 		}
 
+		rdata->rd_uri = prop_string_cstring(obj);
 		rdata->rd_repod = prop_dictionary_internalize_from_file(plist);
 		if (rdata->rd_repod == NULL) {
 			free(plist);
@@ -184,7 +185,7 @@ out:
 
 }
 
-void
+void SYMEXPORT
 xbps_release_repolist_data(void)
 {
 	struct repository_data *rdata;
@@ -192,11 +193,12 @@ xbps_release_repolist_data(void)
 	while ((rdata = SIMPLEQ_FIRST(&repodata_queue)) != NULL) {
 		SIMPLEQ_REMOVE(&repodata_queue, rdata, repository_data, chain);
 		prop_object_release(rdata->rd_repod);
+		free(rdata->rd_uri);
 		free(rdata);
 	}
 }
 
-int
+int SYMEXPORT
 xbps_find_new_packages(void)
 {
 	prop_dictionary_t dict;
@@ -249,13 +251,13 @@ xbps_find_new_packages(void)
 	return rv;
 }
 
-int
+int SYMEXPORT
 xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 {
 	prop_dictionary_t pkgrd = NULL;
 	prop_array_t unsorted;
 	struct repository_data *rdata;
-	const char *repoloc, *repover, *instver;
+	const char *repover, *instver;
 	int rv = 0;
 	bool newpkg_found = false;
 
@@ -304,12 +306,7 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	/*
 	 * Set repository in pkg dictionary.
 	 */
-	if (!prop_dictionary_get_cstring_nocopy(rdata->rd_repod,
-	    "location-local", &repoloc)) {
-		rv = EINVAL;
-		goto out;
-	}
-	prop_dictionary_set_cstring(pkgrd, "repository", repoloc);
+	prop_dictionary_set_cstring(pkgrd, "repository", rdata->rd_uri);
 
 	/*
 	 * Construct the dependency chain for this package.
@@ -370,13 +367,12 @@ set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
 	return rv;
 }
 
-int
+int SYMEXPORT
 xbps_prepare_pkg(const char *pkgname)
 {
 	prop_dictionary_t pkgrd = NULL;
 	prop_array_t pkgs_array;
 	struct repository_data *rdata;
-	const char *repoloc;
 	int rv = 0;
 
 	assert(pkgname != NULL);
@@ -408,12 +404,7 @@ xbps_prepare_pkg(const char *pkgname)
 	/*
 	 * Set repository in pkg dictionary.
 	 */
-	if (!prop_dictionary_get_cstring_nocopy(rdata->rd_repod,
-	    "location-local", &repoloc)) {
-		rv = EINVAL;
-		goto out;
-	}
-	prop_dictionary_set_cstring(pkgrd, "repository", repoloc);
+	prop_dictionary_set_cstring(pkgrd, "repository", rdata->rd_uri);
 	prop_dictionary_set_cstring(pkg_props, "origin", pkgname);
 
 	/*

@@ -116,7 +116,7 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 	return 0;
 }
 
-int
+int SYMEXPORT
 xbps_requiredby_pkg_remove(const char *pkgname)
 {
 	prop_dictionary_t dict;
@@ -149,7 +149,7 @@ xbps_requiredby_pkg_remove(const char *pkgname)
 	return rv;
 }
 
-int
+int SYMEXPORT
 xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 {
 	prop_array_t rdeps;

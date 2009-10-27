@@ -108,6 +108,91 @@ check_pkg_hashes(prop_object_iterator_t iter)
 	return 0;
 }
 
+static int
+download_package_list(prop_object_iterator_t iter)
+{
+	prop_object_t obj;
+	const char *pkgname, *version, *repoloc, *filename, *arch;
+	char *savedir, *binfile, *lbinfile, *repoloc_trans;
+	int rv = 0;
+
+	printf("Downloading binary package file(s)...\n");
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		/*
+		 * Skip packages in local repositories.
+		 */
+		if ((strncmp(repoloc, "http://", 7)) &&
+		    (strncmp(repoloc, "ftp://", 6)))
+			continue;
+
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
+		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+
+		repoloc_trans = xbps_get_remote_repo_string(repoloc);
+		if (repoloc_trans == NULL)
+			return errno;
+
+		savedir = xbps_xasprintf("%s/%s/repo/%s/%s",
+		    xbps_get_rootdir(), XBPS_META_PATH, repoloc_trans, arch);
+		if (savedir == NULL) {
+			free(repoloc_trans);
+			return errno;
+		}
+
+		lbinfile = xbps_xasprintf("%s/%s", savedir, filename);
+		if (lbinfile == NULL) {
+			free(repoloc_trans);
+			free(savedir);
+			return errno;
+		}
+
+		if (access(lbinfile, R_OK) == 0) {
+			free(savedir);
+			free(lbinfile);
+			goto change_repodir;
+		}
+		free(lbinfile);
+
+		binfile = xbps_xasprintf("%s/%s/%s", repoloc, arch, filename);
+		if (binfile == NULL) {
+			free(repoloc_trans);
+			free(savedir);
+			return errno;
+		}
+		printf("Downloading %s-%s binary package ...\n",
+		    pkgname, version);
+		rv = xbps_fetch_file(binfile, savedir);
+		free(savedir);
+		free(binfile);
+		if (rv != 0) {
+			printf("Couldn't download %s from %s (%s)\n",
+			    filename, repoloc, strerror(rv));
+			free(repoloc_trans);
+			return errno;
+		}
+
+change_repodir:
+		/*
+		 * If it was downloaded successfully, override repository
+		 * path in transaction dictionary.
+		 */
+		savedir = xbps_xasprintf("%s/%s/repo/%s",
+		    xbps_get_rootdir(), XBPS_META_PATH, repoloc_trans);
+		free(repoloc_trans);
+		if (savedir == NULL)
+		       return errno;
+
+		prop_dictionary_set_cstring(obj, "repository", savedir);
+		free(savedir);
+	}
+	prop_object_iterator_reset(iter);
+
+	return 0;
+}
+
 static void
 show_package_list(prop_object_iterator_t iter, const char *match)
 {
@@ -408,6 +493,12 @@ exec_transaction(struct transaction *trans)
 			return 0;
 		}
 	}
+
+	/*
+	 * Download binary packages if they are in a remote repository.
+	 */
+	if ((rv = download_package_list(trans->iter)) != 0)
+		return rv;
 
 	/*
 	 * Check the SHA256 hash for all required packages.

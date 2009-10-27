@@ -128,7 +128,7 @@ vfcexec(const char *path, int skipempty, const char *arg, va_list ap)
 	return retval;
 }
 
-int
+int SYMEXPORT
 xbps_file_exec(const char *arg, ...)
 {
 	va_list	ap;
@@ -141,7 +141,7 @@ xbps_file_exec(const char *arg, ...)
 	return result;
 }
 
-int
+int SYMEXPORT
 xbps_file_exec_skipempty(const char *arg, ...)
 {
 	va_list	ap;
@@ -154,7 +154,7 @@ xbps_file_exec_skipempty(const char *arg, ...)
 	return result;
 }
 
-int
+int SYMEXPORT
 xbps_file_chdir_exec(const char *path, const char *arg, ...)
 {
 	va_list	ap;

@@ -35,7 +35,7 @@
 static int unpack_archive_fini(struct archive *, prop_dictionary_t, bool);
 static void set_extract_flags(int *);
 
-int
+int SYMEXPORT
 xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 {
 	prop_string_t filename, repoloc, arch;

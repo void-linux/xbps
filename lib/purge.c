@@ -33,7 +33,7 @@
 
 static int	remove_pkg_metadata(const char *);
 
-int
+int SYMEXPORT
 xbps_purge_all_pkgs(void)
 {
 
@@ -71,7 +71,7 @@ xbps_purge_all_pkgs(void)
  * This removes configuration files if they weren't modified,
  * removes metadata files and fully unregisters the package.
  */
-int
+int SYMEXPORT
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict;

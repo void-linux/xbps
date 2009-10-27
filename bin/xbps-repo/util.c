@@ -248,10 +248,8 @@ int
 show_pkg_info_from_repolist(prop_object_t obj, void *arg, bool *loop_done)
 {
 	prop_dictionary_t dict, pkgdict;
-	prop_string_t oloc;
-	const char *repofile, *repoloc;
+	const char *repofile;
 	char *plist;
-
 	assert(prop_object_type(obj) == PROP_TYPE_STRING);
 
 	/* Get the location */
@@ -276,19 +274,7 @@ show_pkg_info_from_repolist(prop_object_t obj, void *arg, bool *loop_done)
 		return 0;
 	}
 
-	oloc = prop_dictionary_get(dict, "location-remote");
-	if (oloc == NULL)
-		oloc = prop_dictionary_get(dict, "location-local");
-
-	if (oloc && prop_object_type(oloc) == PROP_TYPE_STRING)
-		repoloc = prop_string_cstring_nocopy(oloc);
-	else {
-		prop_object_release(dict);
-		free(plist);
-		return EINVAL;
-	}
-
-	printf("Repository: %s\n", repoloc);
+	printf("Repository: %s\n", repofile);
 	show_pkg_info(pkgdict);
 	*loop_done = true;
 	prop_object_release(dict);

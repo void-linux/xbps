@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008 Juan Romero Pardines.
+ * Copyright (c) 2008-2009 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,6 @@
 #include <string.h>
 
 #include <xbps_api.h>
-#include "sha256.h"
 
 static void
 usage(void)
@@ -42,35 +41,21 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-	SHA256_CTX ctx;
-	uint8_t buffer[BUFSIZ * 20], *digest;
-	ssize_t bytes;
-	int i, fd;
+	char *hash;
+	int i;
 
 	if (argc < 2)
 		usage();
 
 	for (i = 1; i < argc; i++) {
-		if ((fd = open(argv[i], O_RDONLY)) == -1) {
-			printf("xbps-digest: cannot open %s (%s)\n", argv[i],
-			    strerror(errno));
+		hash = xbps_get_file_hash(argv[i]);
+		if (hash == NULL) {
+			printf("Couldn't get hash for %s (%s)\n",
+			    argv[i], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-
-		digest = malloc(SHA256_DIGEST_STRING_LENGTH);
-		if (digest == NULL) {
-			printf("xbps-digest: malloc failed (%s)\n",
-			    strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-
-		SHA256_Init(&ctx);
-		while ((bytes = read(fd, buffer, sizeof(buffer))) > 0)
-			SHA256_Update(&ctx, buffer, (size_t)bytes);
-
-		printf("%s\n", SHA256_End(&ctx, digest));
-		free(digest);
-		close(fd);
+		printf("%s\n", hash);
+		free(hash);
 	}
 
 	exit(EXIT_SUCCESS);

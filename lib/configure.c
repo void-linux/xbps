@@ -33,7 +33,7 @@
 /*
  * Configure all packages currently in unpacked state.
  */
-int
+int SYMEXPORT
 xbps_configure_all_pkgs(void)
 {
 	prop_dictionary_t d;
@@ -71,7 +71,7 @@ xbps_configure_all_pkgs(void)
  * post INSTALL action if required and updates package state to
  * to installed.
  */
-int
+int SYMEXPORT
 xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
 {
 	prop_dictionary_t pkgd;

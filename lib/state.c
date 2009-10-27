@@ -92,7 +92,7 @@ get_state(prop_dictionary_t dict)
 	return state;
 }
 
-int
+int SYMEXPORT
 xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 {
 	prop_dictionary_t dict, pkgd;
@@ -128,7 +128,7 @@ xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 	return 0;
 }
 
-int
+int SYMEXPORT
 xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 {
 	assert(dict != NULL);
@@ -139,7 +139,7 @@ xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 	return 0;
 }
 
-int
+int SYMEXPORT
 xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 {
 	assert(dict != NULL);
@@ -147,7 +147,7 @@ xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 	return set_new_state(dict, state);
 }
 
-int
+int SYMEXPORT
 xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 {
 	prop_dictionary_t dict, pkgd;

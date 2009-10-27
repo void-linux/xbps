@@ -30,7 +30,7 @@
 
 #include <xbps_api.h>
 
-int
+int SYMEXPORT
 xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 {
 	prop_dictionary_t dict, pkgd;
@@ -92,7 +92,7 @@ out:
 	return rv;
 }
 
-int
+int SYMEXPORT
 xbps_unregister_pkg(const char *pkgname)
 {
 	const char *rootdir;

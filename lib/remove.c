@@ -183,7 +183,7 @@ dirs:
 	return 0;
 }
 
-int
+int SYMEXPORT
 xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 {
 	prop_dictionary_t dict;
