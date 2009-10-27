@@ -29,8 +29,8 @@ OBJS = fetch/common.o fetch/fetch.o fetch/file.o fetch/ftp.o fetch/http.o
 # libxbps
 OBJS +=	configure.o cmpver.o depends.o download.o fexec.o findpkg.o
 OBJS +=	humanize_number.o orphans.o plist.o purge.o register.o remove.o
-OBJS +=	repository.o requiredby.o sha256.o sortdeps.o state.o unpack.o
-OBJS +=	util.o
+OBJS +=	repository.o requiredby.o sha256.o sortdeps.o state.o
+OBJS +=	sync_remote_pkgidx.o unpack.o util.o
 
 all: libfetch libxbps.so libxbps.a
 .PHONY: all

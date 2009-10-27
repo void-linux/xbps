@@ -174,8 +174,6 @@ int SYMEXPORT	xbps_remove_pkg(const char *, const char *, bool);
 /* From lib/repository.c */
 int SYMEXPORT	xbps_register_repository(const char *);
 int SYMEXPORT	xbps_unregister_repository(const char *);
-int SYMEXPORT	xbps_sync_repository_pkg_index(const char *);
-char SYMEXPORT	*xbps_get_remote_repo_string(const char *);
 
 /* From lib/requiredby.c */
 int SYMEXPORT	xbps_requiredby_pkg_add(prop_array_t, prop_dictionary_t);
@@ -196,6 +194,10 @@ int SYMEXPORT	xbps_get_pkg_state_installed(const char *, pkg_state_t *);
 int SYMEXPORT	xbps_get_pkg_state_dictionary(prop_dictionary_t, pkg_state_t *);
 int SYMEXPORT	xbps_set_pkg_state_installed(const char *, pkg_state_t);
 int SYMEXPORT	xbps_set_pkg_state_dictionary(prop_dictionary_t, pkg_state_t);
+
+/* From lib/sync_remote_pkgidx.c */
+int SYMEXPORT	xbps_sync_repository_pkg_index(const char *);
+char SYMEXPORT	*xbps_get_remote_repo_string(const char *);
 
 /* From lib/unpack.c */
 int SYMEXPORT	xbps_unpack_binary_pkg(prop_dictionary_t, bool);
