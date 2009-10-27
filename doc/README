@@ -34,6 +34,7 @@ To build the xbps utils, you'll need:
 	* xz (devel pkg with static lib)
 	* libarchive (devel pkg with static lib, all features built in)
 	* proplib (devel pkg with static lib, see above)
+	* openssl (devel pkg with static lib)
 
 ------------------------------------------------------------------------------
  HOW TO USE IT
