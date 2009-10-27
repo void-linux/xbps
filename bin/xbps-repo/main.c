@@ -143,13 +143,18 @@ add_repository(const char *uri, bool remote)
 	int rv = 0;
 
 	if (remote) {
-		rv = xbps_sync_repository_pkg_index(uri);
+		if (!sanitize_localpath(idxstr, uri))
+			return errno;
+
+		rv = xbps_sync_repository_pkg_index(idxstr);
 		if (rv != 0)
 			return rv;
-		plist = xbps_get_pkg_index_plist(uri);
+
+		plist = xbps_get_pkg_index_plist(idxstr);
 	} else {
 		if (!sanitize_localpath(idxstr, uri))
 			return errno;
+
 		plist = xbps_get_pkg_index_plist(idxstr);
 	}
 
@@ -176,19 +181,14 @@ add_repository(const char *uri, bool remote)
 		goto out;
 	}
 
-	if (remote)
-		rv = xbps_register_repository(uri);
-	else
-		rv = xbps_register_repository(idxstr);
-
-	if (rv != 0) {
+	if ((rv = xbps_register_repository(idxstr)) != 0) {
 		printf("ERROR: couldn't register repository (%s)\n",
 		    strerror(rv));
 		goto out;
 	}
 	
 	printf("Added repository at %s (%s) with %ju packages.\n",
-	       uri, rinfo->index_version, rinfo->total_pkgs);
+	       idxstr, rinfo->index_version, rinfo->total_pkgs);
 
 out:
 	if (dict != NULL)
