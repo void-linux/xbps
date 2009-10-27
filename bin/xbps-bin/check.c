@@ -84,14 +84,13 @@ xbps_check_pkg_integrity(const char *pkgname)
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *rootdir, *file, *sha256, *reqpkg;
+	const char *file, *sha256, *reqpkg;
 	char *path;
 	int rv = 0;
 	bool broken = false, files_broken = false;
 
 	assert(pkgname != NULL);
 
-	rootdir = xbps_get_rootdir();
 	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
 	if (pkgd == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
@@ -101,7 +100,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s", rootdir,
+	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
 	if (path == NULL) {
 		rv = errno;
@@ -130,7 +129,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	/*
 	 * Check for files.plist metadata file.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s", rootdir,
+	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
 	if (path == NULL) {
 		rv = errno;
@@ -176,7 +175,8 @@ xbps_check_pkg_integrity(const char *pkgname)
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s", rootdir, file);
+			path = xbps_xasprintf("%s/%s",
+			    xbps_get_rootdir(), file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				rv = errno;
@@ -225,7 +225,8 @@ xbps_check_pkg_integrity(const char *pkgname)
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s", rootdir, file);
+			path = xbps_xasprintf("%s/%s",
+			    xbps_get_rootdir(), file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				rv = ENOMEM;

@@ -120,12 +120,10 @@ int SYMEXPORT
 xbps_requiredby_pkg_remove(const char *pkgname)
 {
 	prop_dictionary_t dict;
-	const char *rootdir;
 	char *plist;
 	int rv = 0;
 
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return EINVAL;

@@ -155,11 +155,9 @@ int
 show_pkg_info_from_metadir(const char *pkgname)
 {
 	prop_dictionary_t pkgd;
-	const char *rootdir;
 	char *plist;
 
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
 	if (plist == NULL)
 		return EINVAL;
@@ -184,12 +182,11 @@ show_pkg_files_from_metadir(const char *pkgname)
 	prop_array_t array;
 	prop_object_iterator_t iter = NULL;
 	prop_object_t obj;
-	const char *destdir, *file;
+	const char *file;
 	char *plist, *array_str = "files";
 	int i, rv = 0;
 
-	destdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", destdir,
+	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
 	if (plist == NULL)
 		return EINVAL;

@@ -36,14 +36,12 @@ xbps_register_repository(const char *uri)
 	prop_dictionary_t dict;
 	prop_array_t array;
 	prop_object_t obj = NULL;
-	const char *rootdir;
 	char *plist;
 	int rv = 0;
 
 	assert(uri != NULL);
 
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REPOLIST);
 	if (plist == NULL)
 		return errno;
@@ -113,14 +111,12 @@ xbps_unregister_repository(const char *uri)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
-	const char *rootdir;
 	char *plist;
 	int rv = 0;
 
 	assert(uri != NULL);
 
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REPOLIST);
 	if (plist == NULL)
 		return errno;

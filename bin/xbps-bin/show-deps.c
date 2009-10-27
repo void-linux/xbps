@@ -60,13 +60,11 @@ int
 xbps_show_pkg_deps(const char *pkgname)
 {
 	prop_dictionary_t pkgd, propsd;
-	const char *rootdir;
 	char *path;
 	int rv = 0;
 
 	assert(pkgname != NULL);
 
-	rootdir = xbps_get_rootdir();
 	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
 	if (pkgd == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
@@ -76,7 +74,7 @@ xbps_show_pkg_deps(const char *pkgname)
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s", rootdir,
+	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
 	if (path == NULL)
 		return errno;

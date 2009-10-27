@@ -78,13 +78,12 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *rootdir, *file, *sha256;
+	const char *file, *sha256;
 	char *path;
 	int rv = 0, flags;
 	pkg_state_t state = 0;
 
 	assert(pkgname != NULL);
-	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
 	if (check_state) {
@@ -102,8 +101,8 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	 * Iterate over the pkg file list dictionary and remove all
 	 * unmodified configuration files.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s",
-	    rootdir, XBPS_META_PATH, pkgname, XBPS_PKGFILES);
+	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
+	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
 	if (path == NULL)
                 return errno;
 
@@ -134,7 +133,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 			prop_object_release(dict);
 			return EINVAL;
 		}
-		path = xbps_xasprintf("%s/%s", rootdir, file);
+		path = xbps_xasprintf("%s/%s", xbps_get_rootdir(), file);
 		if (path == NULL) {
 			prop_object_iterator_release(iter);
 			prop_object_release(dict);
@@ -191,16 +190,14 @@ remove_pkg_metadata(const char *pkgname)
 {
 	struct dirent *dp;
 	DIR *dirp;
-	const char *rootdir;
 	char *metadir, *path;
 	int flags = 0, rv = 0;
 
 	assert(pkgname != NULL);
 
-	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
-	metadir = xbps_xasprintf("%s/%s/metadata/%s", rootdir,
+	metadir = xbps_xasprintf("%s/%s/metadata/%s", xbps_get_rootdir(),
 	     XBPS_META_PATH, pkgname);
 	if (metadir == NULL)
 		return errno;

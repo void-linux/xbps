@@ -35,12 +35,11 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 {
 	prop_dictionary_t dict, pkgd;
 	prop_array_t array;
-	const char *pkgname, *version, *desc, *rootdir;
+	const char *pkgname, *version, *desc;
 	char *plist;
 	int rv = 0;
 
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return EINVAL;
@@ -95,14 +94,12 @@ out:
 int SYMEXPORT
 xbps_unregister_pkg(const char *pkgname)
 {
-	const char *rootdir;
 	char *plist;
 	int rv = 0;
 
 	assert(pkgname != NULL);
 
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return EINVAL;

@@ -41,11 +41,10 @@ remove_pkg_files(prop_dictionary_t dict)
 	prop_object_iterator_t iter;
 	prop_object_t obj;
 	prop_bool_t bobj;
-	const char *file, *rootdir, *sha256;
+	const char *file, *sha256;
 	char *path = NULL;
 	int flags = 0, rv = 0;
 
-	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
 	/* Links */
@@ -62,7 +61,7 @@ remove_pkg_files(prop_dictionary_t dict)
 			prop_object_iterator_release(iter);
 			return EINVAL;
 		}
-		path = xbps_xasprintf("%s/%s", rootdir, file);
+		path = xbps_xasprintf("%s/%s", xbps_get_rootdir(), file);
 		if (path == NULL) {
 			prop_object_iterator_release(iter);
 			return EINVAL;
@@ -97,7 +96,7 @@ files:
 			prop_object_iterator_release(iter);
 			return EINVAL;
 		}
-		path = xbps_xasprintf("%s/%s", rootdir, file);
+		path = xbps_xasprintf("%s/%s", xbps_get_rootdir(), file);
 		if (path == NULL) {
 			prop_object_iterator_release(iter);
 			return EINVAL;
@@ -155,7 +154,7 @@ dirs:
 			prop_object_iterator_release(iter);
 			return EINVAL;
 		}
-		path = xbps_xasprintf("%s/%s", rootdir, file);
+		path = xbps_xasprintf("%s/%s", xbps_get_rootdir(), file);
 		if (path == NULL) {
 			prop_object_iterator_release(iter);
 			return EINVAL;

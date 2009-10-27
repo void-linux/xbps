@@ -96,12 +96,10 @@ int SYMEXPORT
 xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 {
 	prop_dictionary_t dict, pkgd;
-	const char *rootdir;
 	char *plist;
 
 	assert(pkgname != NULL);
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return errno;
@@ -152,13 +150,11 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 {
 	prop_dictionary_t dict, pkgd;
 	prop_array_t array;
-	const char *rootdir;
 	char *plist;
 	int rv = 0;
 	bool newpkg = false;
 
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return EINVAL;

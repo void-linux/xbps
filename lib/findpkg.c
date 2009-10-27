@@ -101,7 +101,6 @@ xbps_prepare_repolist_data(void)
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	struct repository_data *rdata;
-	const char *rootdir;
 	char *plist;
 	int rv = 0;
 	static bool repodata_initialized;
@@ -111,11 +110,7 @@ xbps_prepare_repolist_data(void)
 
 	SIMPLEQ_INIT(&repodata_queue);
 
-	rootdir = xbps_get_rootdir();
-	if (rootdir == NULL)
-		rootdir = "";
-
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REPOLIST);
 	if (plist == NULL) {
 		rv = EINVAL;

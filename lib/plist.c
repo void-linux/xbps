@@ -71,14 +71,12 @@ xbps_callback_array_iter_in_repolist(int (*fn)(prop_object_t, void *, bool *),
 				     void *arg)
 {
 	prop_dictionary_t repolistd;
-	const char *rootdir;
 	char *plist;
 	int rv = 0;
 
 	assert(fn != NULL);
 
-	rootdir = xbps_get_rootdir();
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REPOLIST);
 	if (plist == NULL)
 		return EINVAL;
@@ -244,12 +242,10 @@ xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
 prop_dictionary_t SYMEXPORT
 xbps_prepare_regpkgdb_dict(void)
 {
-	const char *rootdir;
 	char *plist;
 
 	if (regpkgdb_initialized == false) {
-		rootdir = xbps_get_rootdir();
-		plist = xbps_xasprintf("%s/%s/%s", rootdir,
+		plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 		    XBPS_META_PATH, XBPS_REGPKGDB);
 		if (plist == NULL)
 			return NULL;
