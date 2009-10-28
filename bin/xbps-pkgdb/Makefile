@@ -1,6 +1,7 @@
 TOPDIR = ../..
 include $(TOPDIR)/vars.mk
 
-BIN	= xbps-pkgdb
+BIN = xbps-pkgdb
+MAN = # empty
 
 include $(TOPDIR)/prog.mk

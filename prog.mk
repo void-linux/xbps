@@ -1,8 +1,12 @@
 BIN_STATIC  ?= $(BIN).static
 OBJS ?=	main.o
+MAN ?= $(BIN).8
 
-all: $(BIN) $(BIN_STATIC)
+all: $(BIN) $(BIN_STATIC) $(MAN)
 .PHONY: all
+
+$(MAN):
+	a2x -f manpage $(MAN).txt
 
 $(BIN_STATIC): $(OBJS)
 	$(CC) -static $^ $(LDFLAGS) $(STATIC_LIBS) -o $@
@@ -11,19 +15,17 @@ $(BIN): $(OBJS)
 	$(CC) $^ $(LDFLAGS) -o $@
 
 .PHONY: clean
-clean: clean-bins clean-objs
-
-clean-bins:
-	-rm -f $(BIN) $(BIN_STATIC)
-
-clean-objs:
+clean:
+	-rm -f $(BIN) $(BIN_STATIC) $(MAN)
 	-rm -f $(OBJS)
 
 .PHONY: install
-install: $(BIN) $(BIN_STATIC)
+install: $(BIN) $(BIN_STATIC) $(MAN)
 	install -d $(SBINDIR)
+	install -d $(MANDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(SBINDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN_STATIC) $(SBINDIR)
+	install -m 644 $(MAN) $(MANDIR)
 
 .PHONY: uninstall
 uninstall:

@@ -6,3 +6,4 @@ xbps-pkgdb
 *.static
 *.so*
 *.a
+*.8

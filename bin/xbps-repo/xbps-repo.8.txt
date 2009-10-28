@@ -1,0 +1,96 @@
+XBPS-REPO(8)
+===========
+
+
+NAME
+----
+xbps-repo - XBPS command for binary package repositories
+
+
+SYNOPSYS
+--------
+*xbps-repo* ['options'] 'target' ['arguments']
+
+
+DESCRIPTION
+-----------
+The xbps-repo(1) command is used to handle local or remote binary
+package repositories in the *XBPS binary package system*.
+You can use it to create a package index for a local repository,
+add or remove local and remote repositories, search for packages
+and show information about a binary package in repository pool.
+
+
+OPTIONS
+-------
+*-r* 'rootdir'::
+	Sets the 'root' directory. By default the root directory is
+	set to '/'. Please note that the database directory is always
+	set to '/var/db/xbps' independently of 'rootdir'. So if you
+	use a 'rootdir' of '/blah', metadata stuff will go into
+	'/blah/var/db/xbps'.
+
+*-V*::
+	Shows the current XBPS release version (library and code).
+
+
+TARGETS
+-------
+Please note that all targets are *case insensitive*.
+
+*add* 'URI'::
+	Adds a repository as specified in 'URI' to the repository pool.
+	Local (by specifying a *directory*) and remote (by specifiying an
+	*HTTP/HTTPS/FTP URL*) repositories can be specified.
+
+*add-pkgidx* '/path/to/local/repo' '/path/to/local/repo/arch/binpkg'::
+	Adds the binary package 'binpkg' as specified in the second argument
+	into the package index of a local repository as specified in the
+	first argument. Please note that 'binpkg' must also live in the same
+	local repository, you need to specify the full path to the file.
+
+*genindex* '/path/to/local/repo'::
+	Generates a package index for a local repository as specified in
+	its argument. The same argument should be used for the *add*
+	and *remove* targets.
+
+*list*::
+	Lists all currently registered repositories in repository pool.
+
+*remove* 'URI'::
+	Removes a repository from repository pool as specified by the
+	'URI' argument. You have to use the same 'URI' that was used
+	in the *add* target.
+
+*search* 'pattern'::
+	Search for packages containing the shell 'pattern' (see fnmatch(3)) in
+	its *pkgname* or *description* values.
+
+*show 'pkgname'*::
+	Shows information about binary package 'pkgname'. This will print
+	the size it takes in filesystem, description, maintainer, architecture
+	and other information.
+
+
+BUGS
+----
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+
+Report bugs in '<https://bugs.launchpad.net/xbps>'.
+
+SEE ALSO
+--------
+*xbps-bin(8)*, *xbps-src(8)*
+
+XBPS utilities: '<https://launchpad.net/xbps>'
+
+To build binary packages, the xbps-src(8) shell script is the command
+designed for this task. This must be retrieved from a GIT repository,
+available at '<http://repo.or/cz/w/xbps.git>'.
+
+
+AUTHORS
+-------
+The *XBPS binary package system* has been designed and implemented by
+Juan Romero Pardines <xtraeme@gmail.com>.

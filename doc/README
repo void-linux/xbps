@@ -28,6 +28,7 @@ to install it into /usr/local to avoid issues with your distribution packages.
 
 To build the xbps utils, you'll need:
 
+	* asciidoc (to build the manpages)
 	* acl (devel pkg with static lib)
 	* zlib (devel pkg with static lib)
 	* bzip2 (devel pkg with static lib)

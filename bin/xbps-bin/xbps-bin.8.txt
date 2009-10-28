@@ -1,0 +1,171 @@
+XBPS-BIN(8)
+===========
+
+
+NAME
+----
+xbps-bin - XBPS command for binary packages
+
+
+SYNOPSYS
+--------
+*xbps-bin* ['options'] 'target' ['pkgname']
+
+
+DESCRIPTION
+-----------
+The xbps-bin(1) command is used to handle binary packages created
+for the *XBPS binary package system*. You can use it to install, remove,
+list or show information about any binary package. Binary packages can
+be installed from local ('directory') or remote repositories ('http',
+'https' or 'ftp'), see xbps-repo(1) for information about repositories.
+
+
+OPTIONS
+-------
+*-f*::
+	By default while installing or removing packages, xbps-bin(1)
+	will ask you if you are sure about the task that will be done.
+	This option bypasses the question and executes the task immediately.
+	Use this option carefully.
+
+*-r* 'rootdir'::
+	Sets the 'root' directory. By default the root directory is
+	set to '/'. Please note that the database directory is always
+	set to '/var/db/xbps' independently of 'rootdir'. So if you
+	use a 'rootdir' of '/blah', metadata stuff will go into
+	'/blah/var/db/xbps'.
+
+*-v*::
+	Shows verbose messages. Useful while installing and removing packages.
+
+*-V*::
+	Shows the current XBPS release version (library and code).
+
+
+TARGETS
+-------
+Please note that all targets are *case insensitive*.
+
+*autoremove*::
+	Removes 'leaf' packages. These packages were installed as dependencies
+	and currently there is not any package depending on it, directly or
+	indirectly. Usually it is safe to always answer 'yes'.
+
+*autoupdate*::
+	Updates all currently installed packages to the most newer version
+	available in repository pool.
+
+*check 'pkgname' | 'all'*::
+	Checks for integrity errors in installed packages. The checks
+	are to found missing run-time dependencies, missing and modified
+	package files and metadata files. If the *all* keyword is used,
+	'all' packages currently installed will be checked, otherwise only
+	*pkgname*.
+
+*install 'pkgname'*::
+	Install binary package "*pkgname*". The package will be
+	'downloaded' (if available in a 'remote repository'),
+	'unpacked' and 'configured'. The 'unpack' stage will execute the
+	*pre-install* action on its *INSTALL* script, and unpack its files.
+	The 'configure' stage will run the *post-install* action set on its
+	*INSTALL* script and will change its state to *installed* in the
+	package database.
+
+*list*::
+	Lists all currently installed packages.
+
+*purge 'pkgname' | 'all'*::
+	Purge an installed package, *pkgname* or *all* packages. The 'purge'
+	stage runs the *post-remove* action set in the *REMOVE* script in its
+	metadata directory ( /var/db/xbps/metadata/'pkgname' ) and will
+	remove configuration (if they were not modified by the user) and
+	metadata files. The package will be fully removed from the system once
+	it has been *purged*.
+
+*reconfigure 'pkgname' | 'all'*::
+	Reconfigure an *unpacked* package. Packages in this state are not
+	fully installed, because they were not configured for whatever reason.
+	The 'configure' stage will run the 'post-install' action set on its
+	*INSTALL* script and will change its state to *installed* in the
+	package database. The 'all' keyword can be used to reconfigure all
+	not configured packages. If *-f* option is used, the package will be
+	reconfigured even if its state is already *installed*.
+
+*remove 'pkgname'*::
+	Removes the installed package 'pkgname'. Its files will be removed
+	and its state will be changed to *config-files* in the package
+	database. Configuration files, its metadata directory/files and
+	its information in the package database are preserved. To fully remove
+	a package in *config-files* state, it must be *purged* with the
+	*purge* command.
+
+*show 'pkgname'*::
+	Shows information for installed package 'pkgname'. This will print
+	the size it takes in filesystem, description, maintainer, architecture
+	and other information.
+
+*show-deps 'pkgname'*::
+	Shows the list of dependencies that 'pkgname' requires at run time.
+
+*show-files 'pkgname'*::
+	Shows the list of files that 'pkgname' contains.
+
+*show-manual*::
+	Shows the list of packages that were installed 'manually' by the
+	user, i.e not as dependencies of any other package.
+
+*show-revdeps 'pkgname'*::
+	Shows the reverse dependencies for 'pkgname'. Reverse dependencies
+	are packages that are currently depending in 'pkgname' directly.
+
+*update 'pkgname'*::
+	Updates 'pkgname' to the most newer version available in repository
+	pool. This can be used if only 'pkgname' needs to be updated, unlike
+	the *autoupdate* target that will update all currently installed
+	packages.
+
+
+PACKAGE STATES
+--------------
+A package can be in a different state while it is being installed, removed,
+unpacked, configured or purged. The following states are available:
+
+*installed*::
+	The package is fully installed, that means it was unpacked and
+	configured correctly.
+
+*unpacked*::
+	The package has been unpacked in destination root directory, but
+	it is not fully installed because it was not yet configured. Please
+	note, that some packages will do not work if they are only unpacked.
+
+*config-files*::
+	The package has been removed but configuration files and its metadata
+	directory are still available (and it is still registered
+	in the package database). You can 'purge' safely packages that are
+	in this state, modified configuration files will be preserved.
+
+
+BUGS
+----
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+
+Report bugs in '<https://bugs.launchpad.net/xbps>'.
+
+SEE ALSO
+--------
+*xbps-repo(8)*, *xbps-src(8)*
+
+XBPS utilities: '<https://launchpad.net/xbps>'
+
+To build binary packages, the xbps-src(8) shell script is the command
+designed for this task. This must be retrieved from a GIT repository,
+available at '<http://repo.or/cz/w/xbps.git>'.
+
+
+AUTHORS
+-------
+The *XBPS binary package system* has been designed and implemented by
+Juan Romero Pardines <xtraeme@gmail.com>.

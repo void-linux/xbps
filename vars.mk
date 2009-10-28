@@ -3,6 +3,7 @@
 PREFIX	?= /usr/local
 SBINDIR	?= $(DESTDIR)$(PREFIX)/sbin
 LIBDIR	?= $(DESTDIR)$(PREFIX)/lib
+MANDIR	?= $(DESTDIR)$(PREFIX)/share/man/man8
 TOPDIR	?= ..
 INSTALL_STRIPPED ?= -s
 
