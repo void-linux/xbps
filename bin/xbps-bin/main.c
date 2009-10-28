@@ -43,18 +43,18 @@ usage(void)
 {
 	printf("Usage: xbps-bin [options] [target] [arguments]\n\n"
 	" Available targets:\n"
-        "    autoremove, autoupdate, check, install, list, purge\n"
-	"    remove, show, show-deps, show-files, show-revdeps, update\n"
-	"\n"
-	" Targets with arguments:\n"
+	"    autoremove\n"
+	"    autoupdate\n"
 	"    check\t\t[<pkgname>|<all>]\n"
 	"    install\t\t<pkgname>\n"
+	"    list\n"
 	"    purge\t\t[<pkgname>|<all>]\n"
 	"    reconfigure\t\t[<pkgname>|<all>]\n"
 	"    remove\t\t<pkgname>\n"
 	"    show\t\t<pkgname>\n"
 	"    show-deps\t\t<pkgname>\n"
 	"    show-files\t\t<pkgname>\n"
+	"    show-manual\n"
 	"    show-revdeps\t<pkgname>\n"
 	"    update\t\t<pkgname>\n"
 	" Options shared by all targets:\n"
@@ -89,13 +89,34 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 	return EINVAL;
 }
 
+static int
+list_manual_packages(prop_object_t obj, void *arg, bool *loop_done)
+{
+	const char *pkgname, *version;
+	bool automatic = false;
+
+	(void)arg;
+	(void)loop_done;
+
+	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
+	if (automatic == false) {
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		printf("%s-%s\n", pkgname, version);
+	}
+
+	return 0;
+}
+
 int
 main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
 	struct sigaction sa;
 	int c, flags = 0, rv = 0;
-	bool force = false, verbose = false;
+	bool force, verbose;
+
+	force = verbose = false;
 
 	while ((c = getopt(argc, argv, "CVfr:v")) != -1) {
 		switch (c) {
@@ -269,6 +290,17 @@ main(int argc, char **argv)
 
 		rv = xbps_show_pkg_deps(argv[1]);
 
+	} else if (strcasecmp(argv[0], "show-manual") == 0) {
+		/*
+		 * Show packages that were installed manually, not as
+		 * dependencies.
+		 */
+		if (argc != 1)
+			usage();
+
+		rv = xbps_callback_array_iter_in_dict(dict, "packages",
+		    list_manual_packages, NULL);
+		
 	} else if (strcasecmp(argv[0], "show-revdeps") == 0) {
 		/*
 		 * Show reverse dependencies for a package.
@@ -289,13 +321,6 @@ out:
 static void
 cleanup(int signum)
 {
-	switch (signum) {
-	case SIGINT:
-	case SIGTERM:
-	case SIGQUIT:
-		printf("\nSignal caught, cleaning up...\n");
-		break;
-	}
 	xbps_release_repolist_data();
 	xbps_release_regpkgdb_dict();
 	
