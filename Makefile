@@ -4,27 +4,9 @@ SUBDIRS	= lib bin
 
 .PHONY: all
 all:
-	@echo
-	@echo "********************************"
-	@echo "*** Building shared libxbps  ***"
-	@echo "********************************"
-	@echo
-	$(MAKE) -C lib
-	@echo
-	@echo "********************************"
-	@echo "*** Building shared binaries ***"
-	@echo "********************************"
-	@echo
-	$(MAKE) -C bin
-	@echo 
-	@echo "********************************"
-	@echo "*** Building static binaries ***"
-	@echo "********************************"
-	@echo
-	$(MAKE) -C lib clean
-	$(MAKE) -C bin clean
-	$(MAKE) STATIC=1 -C lib
-	$(MAKE) STATIC=1 -C bin
+	for dir in $(SUBDIRS); do		\
+		$(MAKE) -C $$dir;		\
+	done
 
 .PHONY: install
 install:

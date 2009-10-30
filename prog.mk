@@ -29,7 +29,9 @@ clean:
 install: $(BIN) $(MAN)
 	install -d $(SBINDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(SBINDIR)
+ifdef STATIC
 	install $(INSTALL_STRIPPED) -m 755 $(BIN).static $(SBINDIR)
+endif
 ifdef MAN
 	install -d $(MANDIR)
 	install -m 644 $(MAN) $(MANDIR)

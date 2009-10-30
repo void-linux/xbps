@@ -44,7 +44,9 @@ libxbps.a: $(OBJS)
 .PHONY: install
 install: all
 	install -d $(LIBDIR)
+ifdef STATIC
 	install -m 644 libxbps.a $(LIBDIR)
+endif
 	install -m 644 $(LIBXBPS_SHLIB) $(LIBDIR)
 	cp -a libxbps.so $(LIBDIR)
 	cp -a libxbps.so.$(LIBMAJOR) $(LIBDIR)
