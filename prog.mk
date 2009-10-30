@@ -3,6 +3,7 @@ MAN ?= $(BIN).8
 
 ifdef STATIC
 all: $(BIN).static
+MAN =
 else
 LDFLAGS = -lxbps
 all: $(BIN) $(MAN)
@@ -26,10 +27,11 @@ clean:
 	-rm -f $(OBJS)
 
 .PHONY: install
-install: $(BIN) $(MAN)
+install: all
 	install -d $(SBINDIR)
+ifndef STATIC
 	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(SBINDIR)
-ifdef STATIC
+else
 	install $(INSTALL_STRIPPED) -m 755 $(BIN).static $(SBINDIR)
 endif
 ifdef MAN

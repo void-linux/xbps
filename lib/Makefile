@@ -46,10 +46,11 @@ install: all
 	install -d $(LIBDIR)
 ifdef STATIC
 	install -m 644 libxbps.a $(LIBDIR)
-endif
+else
 	install -m 644 $(LIBXBPS_SHLIB) $(LIBDIR)
 	cp -a libxbps.so $(LIBDIR)
 	cp -a libxbps.so.$(LIBMAJOR) $(LIBDIR)
+endif
 
 .PHONY: uninstall
 uninstall:
