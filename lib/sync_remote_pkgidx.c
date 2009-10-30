@@ -133,7 +133,7 @@ xbps_sync_repository_pkg_index(const char *uri)
 		free(lrepodir);
 		return errno;
 	}
-	rv = xbps_fetch_file(rpidx, lrepodir);
+	rv = xbps_fetch_file(rpidx, lrepodir, NULL);
 
 	free(rpidx);
 	free(lrepodir);

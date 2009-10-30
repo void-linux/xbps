@@ -171,7 +171,7 @@ xbps_fetch_error_string(void)
 }
 
 int SYMEXPORT
-xbps_fetch_file(const char *uri, const char *outputdir)
+xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 {
 	struct stat st;
 	struct xferstat xs;
@@ -181,7 +181,7 @@ xbps_fetch_file(const char *uri, const char *outputdir)
 	struct timeval tv[2];
 	ssize_t bytes_read, bytes_written;
 	off_t bytes_dld = -1;
-	char buf[32768], *filename, *destfile = NULL;
+	char buf[32768], *filename, *destfile = NULL, fetchflags[8];
 	int fd = -1, rv = 0;
 	bool restart = false;
 
@@ -221,7 +221,12 @@ xbps_fetch_file(const char *uri, const char *outputdir)
 		goto out;
 
 	}
-	if ((rv = fetchStat(url, &url_st, "i")) == -1) {
+	memset(&fetchflags, 0, sizeof(fetchflags));
+	if (flags != NULL)
+		strcat(fetchflags, flags);
+	strcat(fetchflags, "i");
+
+	if ((rv = fetchStat(url, &url_st, fetchflags)) == -1) {
 		rv = fetchLastErrCode;
 		goto out;
 	}
@@ -234,7 +239,7 @@ xbps_fetch_file(const char *uri, const char *outputdir)
 	if (restart)
 		url->offset = st.st_size;
 
-	fio = fetchXGet(url, &url_st, "i");
+	fio = fetchXGet(url, &url_st, fetchflags);
 	if (fio == NULL) {
 		rv = fetchLastErrCode;
 		goto out;

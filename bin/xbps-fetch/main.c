@@ -1,21 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <xbps_api.h>
+#include "fetch.h"
+
+static void
+usage(void)
+{
+	printf("usage: xbps-fetch [-v] URL\n");
+	exit(EXIT_FAILURE);
+}
 
 int
 main(int argc, char **argv)
 {
-	int rv = 0;
+	char flags[8];
+	int c, rv = 0;
 
-	if (argc != 2) {
-		printf("Usage: xbps-fetch [options] URL\n");
-		exit(EXIT_FAILURE);
+	while ((c = getopt(argc, argv, "v")) != -1) {
+		switch (c) {
+		case 'v':
+			strcat(flags, "v");
+			break;
+		default:
+			usage();
+		}
 	}
+	argc -= optind;
+	argv += optind;
 
-	rv = xbps_fetch_file(argv[1], ".");
+	if (argc != 1)
+		usage();
+
+	rv = xbps_fetch_file(argv[0], ".", flags);
 	if (rv != 0) {
-		printf("xbps-fetch: couldn't download %s!\n", argv[1]);
-		printf("xbps-fetch: %s\n", xbps_fetch_error_string());
+		printf("%s: %s\n", argv[0], xbps_fetch_error_string());
 		exit(EXIT_FAILURE);
 	}
 	exit(EXIT_SUCCESS);

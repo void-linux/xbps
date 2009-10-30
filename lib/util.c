@@ -53,10 +53,10 @@ xbps_get_file_hash(const char *file)
 	if ((fd = open(file, O_RDONLY)) == -1)
 		return NULL;
 
-	SHA256_Init(&ctx);
+	XBPS_SHA256_Init(&ctx);
 	while ((bytes = read(fd, buf, sizeof(buf))) > 0)
-		SHA256_Update(&ctx, buf, (size_t)bytes);
-	hash = strdup(SHA256_End(&ctx, digest));
+		XBPS_SHA256_Update(&ctx, buf, (size_t)bytes);
+	hash = strdup(XBPS_SHA256_End(&ctx, digest));
 	(void)close(fd);
 
 	return hash;

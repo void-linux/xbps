@@ -82,7 +82,7 @@ int SYMEXPORT	xbps_configure_all_pkgs(void);
 int SYMEXPORT	xbps_cmpver(const char *, const char *);
 
 /* From lib/download.c */
-int SYMEXPORT	xbps_fetch_file(const char *, const char *);
+int SYMEXPORT	xbps_fetch_file(const char *, const char *, const char *);
 void SYMEXPORT	(*xbps_fetch_start_cb)(const char *, off_t *, off_t *);
 void SYMEXPORT	(*xbps_fetch_update_cb)(off_t *);
 void SYMEXPORT	(*xbps_fetch_end_cb)(void);

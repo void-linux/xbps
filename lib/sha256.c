@@ -123,7 +123,7 @@ static const uint32_t sha256_initial_hash_value[8] = {
 
 /*** SHA-256: *********************************************************/
 int
-SHA256_Init(SHA256_CTX *context)
+XBPS_SHA256_Init(SHA256_CTX *context)
 {
 	if (context == NULL)
 		return 1;
@@ -220,7 +220,7 @@ SHA256_Transform(SHA256_CTX *context, const uint32_t *data)
 
 #else /* SHA2_UNROLL_TRANSFORM */
 
-void
+static void
 SHA256_Transform(SHA256_CTX *context, const uint32_t *data)
 {
 	uint32_t	a, b, c, d, e, f, g, h, s0, s1;
@@ -298,7 +298,7 @@ SHA256_Transform(SHA256_CTX *context, const uint32_t *data)
 #endif /* SHA2_UNROLL_TRANSFORM */
 
 int
-SHA256_Update(SHA256_CTX *context, const uint8_t *data, size_t len)
+XBPS_SHA256_Update(SHA256_CTX *context, const uint8_t *data, size_t len)
 {
 	unsigned int	freespace, usedspace;
 
@@ -441,7 +441,7 @@ SHA256_Final(uint8_t digest[], SHA256_CTX *context)
 static const char sha2_hex_digits[] = "0123456789abcdef";
 
 char *
-SHA256_End(SHA256_CTX *ctx, uint8_t *buffer)
+XBPS_SHA256_End(SHA256_CTX *ctx, uint8_t *buffer)
 {
 	uint8_t digest[SHA256_DIGEST_LENGTH], *d = digest;
 	uint8_t *ret;

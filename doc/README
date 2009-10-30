@@ -26,16 +26,26 @@ http://code.google.com/p/portableproplib/
 I'm also the human maintaining the portable proplib package. I'd suggest you
 to install it into /usr/local to avoid issues with your distribution packages.
 
-To build the xbps utils, you'll need:
+To build the xbps utils, you'll need for both shared and dynamic:
 
 	* asciidoc (to build the manpages)
+	* libarchive (devel pkg)
+	* proplib (devel pkg)
+	* openssl (devel pkg)
+
+If you only want to build the static binaries, you can pass STATIC=1
+to the make command. You'll need development packages for the ones
+mentioned above as well as the following:
+
+	* attr (devel pkg with static lib)
 	* acl (devel pkg with static lib)
 	* zlib (devel pkg with static lib)
 	* bzip2 (devel pkg with static lib)
 	* xz (devel pkg with static lib)
-	* libarchive (devel pkg with static lib, all features built in)
-	* proplib (devel pkg with static lib, see above)
-	* openssl (devel pkg with static lib)
+
+Please note that when building the static binaries, the static libs
+must match the requirements! please make sure that your installed
+libarchive has all features built in (acl, zlib, bzip2, xz and openssl).
 
 ------------------------------------------------------------------------------
  HOW TO USE IT

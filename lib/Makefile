@@ -1,27 +1,10 @@
 include ../vars.mk
 
-INET6	?= yes
-SSL	?= yes
-LIBS	= -larchive -lprop
-
-ifdef SSL
-CPPFLAGS += -DWITH_SSL
-LIBS += -lssl -lcrypto
-endif
-
-ifdef INET6
-CPPFLAGS += -DINET6
-endif
-
-ifdef DEBUG
-CPPFLAGS += -DDEBUG
-endif
-
 LIBMAJOR	= 0
 LIBMINOR	= 0
 LIBMICRO	= 0
 LIBXBPS_SHLIB	= libxbps.so.$(LIBMAJOR).$(LIBMINOR).$(LIBMICRO)
-LIBXBPS_LDFLAGS	= $(LIBS) -shared -Wl,-soname,libxbps.so.$(LIBMAJOR)
+LIBXBPS_LDFLAGS	= -shared -Wl,-soname,libxbps.so.$(LIBMAJOR)
 
 # libfetch
 OBJS = fetch/common.o fetch/fetch.o fetch/file.o fetch/ftp.o fetch/http.o
@@ -32,14 +15,25 @@ OBJS +=	humanize_number.o orphans.o plist.o purge.o register.o remove.o
 OBJS +=	repository.o requiredby.o sha256.o sortdeps.o state.o
 OBJS +=	sync_remote_pkgidx.o unpack.o util.o
 
+ifdef STATIC
+all: libfetch libxbps.a
+else
+LDFLAGS = -lprop -larchive
+ifdef WITH_SSL
+LDFLAGS += -lssl -lcrypto
+endif
 all: libfetch libxbps.so libxbps.a
+endif
 .PHONY: all
 
 libfetch:
 	$(MAKE) -C fetch
 
+%.o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -c $<
+
 libxbps.so: $(OBJS)
-	$(CC) $(LIBXBPS_LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
+	$(CC) $(LDFLAGS) $(LIBXBPS_LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
 	-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBMAJOR)
 	-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
@@ -50,7 +44,9 @@ libxbps.a: $(OBJS)
 .PHONY: install
 install: all
 	install -d $(LIBDIR)
+ifdef STATIC
 	install -m 644 libxbps.a $(LIBDIR)
+endif
 	install -m 644 $(LIBXBPS_SHLIB) $(LIBDIR)
 	cp -a libxbps.so $(LIBDIR)
 	cp -a libxbps.so.$(LIBMAJOR) $(LIBDIR)

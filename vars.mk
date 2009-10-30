@@ -1,5 +1,8 @@
 # Common variables.
 
+WITH_INET6 = yes
+WITH_SSL = yes
+
 PREFIX	?= /usr/local
 SBINDIR	?= $(DESTDIR)$(PREFIX)/sbin
 LIBDIR	?= $(DESTDIR)$(PREFIX)/lib
@@ -12,12 +15,19 @@ INSTALL_STRIPPED=
 DEBUG_FLAGS = -g
 endif
 
-STATIC_LIBS ?= -lprop -lpthread -larchive
-LDFLAGS +=  -L$(TOPDIR)/lib -L$(PREFIX)/lib -lxbps
+LDFLAGS =  -L$(TOPDIR)/lib
 CPPFLAGS += -I$(TOPDIR)/include -D_XOPEN_SOURCE=600 -D_GNU_SOURCE
 CPPFLAGS += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGE_FILES
 WARNFLAGS ?= -pedantic -std=c99 -Wall -Wextra -Werror -Wshadow -Wformat=2
 WARNFLAGS += -Wmissing-declarations -Wcomment -Wunused-macros -Wendif-labels
-WARNFLAGS += -Wcast-qual -Wcast-align -Wstack-protector
-CFLAGS = $(DEBUG_FLAGS) $(WARNFLAGS) -fstack-protector-all -O2 -fPIC -DPIC
-CFLAGS += -fvisibility=hidden
+WARNFLAGS += -Wcast-qual -Wcast-align
+CFLAGS = $(DEBUG_FLAGS) $(WARNFLAGS)
+
+ifdef STATIC
+CFLAGS += -static
+LDFLAGS += -lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl \
+	  -lattr -lcrypto -llzma -lbz2 -lz
+else
+CFLAGS += -fvisibility=hidden -fstack-protector-all -fPIC -DPIC
+CPPFLAGS += -Wstack-protector
+endif
