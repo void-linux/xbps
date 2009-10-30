@@ -6,6 +6,7 @@ SUBDIRS +=	xbps-digest
 SUBDIRS +=	xbps-fetch
 SUBDIRS +=	xbps-pkgdb
 SUBDIRS +=	xbps-repo
+SUBDIRS +=	xbps-fetch
 
 .PHONY: all
 all:

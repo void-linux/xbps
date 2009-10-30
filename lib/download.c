@@ -164,6 +164,12 @@ stat_end(struct xferstat *xsp)
 	    xsp->name, size, stat_bps(xsp));
 }
 
+const char SYMEXPORT *
+xbps_fetch_error_string(void)
+{
+	return fetchLastErrString;
+}
+
 int SYMEXPORT
 xbps_fetch_file(const char *uri, const char *outputdir)
 {

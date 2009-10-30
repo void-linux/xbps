@@ -86,6 +86,7 @@ int SYMEXPORT	xbps_fetch_file(const char *, const char *);
 void SYMEXPORT	(*xbps_fetch_start_cb)(const char *, off_t *, off_t *);
 void SYMEXPORT	(*xbps_fetch_update_cb)(off_t *);
 void SYMEXPORT	(*xbps_fetch_end_cb)(void);
+const char SYMEXPORT	*xbps_fetch_error_string(void);
 
 /* From lib/fexec.c */
 int SYMEXPORT	xbps_file_exec(const char *, ...);

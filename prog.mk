@@ -22,10 +22,12 @@ clean:
 .PHONY: install
 install: $(BIN) $(BIN_STATIC) $(MAN)
 	install -d $(SBINDIR)
-	install -d $(MANDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(SBINDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN_STATIC) $(SBINDIR)
+ifdef MAN
+	install -d $(MANDIR)
 	install -m 644 $(MAN) $(MANDIR)
+endif
 
 .PHONY: uninstall
 uninstall:
