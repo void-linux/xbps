@@ -324,5 +324,5 @@ cleanup(int signum)
 	xbps_release_repolist_data();
 	xbps_release_regpkgdb_dict();
 	
-	_exit(signum);
+	exit(signum);
 }
