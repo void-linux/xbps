@@ -186,6 +186,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	bool restart = false;
 
 	bytes_read = bytes_written = -1;
+	fetchLastErrCode = 0;
 
 	/*
 	 * Get the filename specified in URI argument.
@@ -204,6 +205,10 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 		goto out;
 	}
 
+	/*
+	 * Check if we have to resume a transfer.
+	 */
+	memset(&st, 0, sizeof(st));
 	if (stat(destfile, &st) == 0)
 		restart = true;
 	else {
@@ -221,30 +226,46 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 		goto out;
 
 	}
-	memset(&fetchflags, 0, sizeof(fetchflags));
+	/*
+	 * Set client flags.
+	 */
 	if (flags != NULL)
 		strcat(fetchflags, flags);
 	strcat(fetchflags, "i");
 
-	if ((rv = fetchStat(url, &url_st, fetchflags)) == -1) {
-		rv = fetchLastErrCode;
-		goto out;
-	}
 	/*
-	 * Nothing to do if both files do have same size/mtime.
+	 * By default we assume that we want always restart a transfer,
+	 * will be checked later.
 	 */
-	if (url_st.size == st.st_size && url_st.mtime == st.st_mtime)
-		goto out;
-
-	if (restart)
-		url->offset = st.st_size;
+	url->offset = st.st_size;
 
 	fio = fetchXGet(url, &url_st, fetchflags);
 	if (fio == NULL) {
+		/*
+		 * If requested offset is the same than remote size,
+		 * files are identical.
+		 */
+		if (url->offset == st.st_size)
+			goto out;
+
 		rv = fetchLastErrCode;
 		goto out;
 	}
 
+	if (url_st.size != -1) {
+		if (url_st.size == st.st_size) {
+			/*
+			 * Files are identical.
+			*/
+			goto out;
+		} else if (st.st_size > url_st.size) {
+			/*
+			 * Local file bigger, error out.
+			 */
+			rv = EFBIG;
+			goto out;
+		}
+	}
 	printf("Connected to %s.\n", url->host);
 
 	/*
@@ -280,7 +301,10 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 		else
 			stat_update(&xs, bytes_dld);
 	}
-	if (bytes_read == -1) {
+	if (fetchLastErrCode != 0) {
+		rv = fetchLastErrCode;
+		goto out;
+	} else if (bytes_read == -1) {
 		rv = EINVAL;
 		goto out;
 	}
