@@ -247,8 +247,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 		 * and If-Modified-Since is unchanged, we are done.
 		 */
 		if (url->offset == st.st_size &&
-		    fetchLastErrCode == FETCH_UNCHANGED ||
-		    fetchLastErrCode == HTTP_NOT_MODIFIED)
+		    fetchLastErrCode == FETCH_UNCHANGED)
 			goto out;
 
 		rv = fetchLastErrCode;
