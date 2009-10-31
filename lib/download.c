@@ -181,7 +181,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	struct timeval tv[2];
 	ssize_t bytes_read, bytes_written;
 	off_t bytes_dld = -1;
-	char buf[32768], *filename, *destfile = NULL, fetchflags[8];
+	char buf[4096], *filename, *destfile = NULL, fetchflags[8];
 	int fd = -1, rv = 0;
 	bool restart = false;
 
@@ -238,14 +238,17 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	 * will be checked later.
 	 */
 	url->offset = st.st_size;
+	url->last_modified = st.st_mtime;
 
 	fio = fetchXGet(url, &url_st, fetchflags);
 	if (fio == NULL) {
 		/*
 		 * If requested offset is the same than remote size,
-		 * files are identical.
+		 * and If-Modified-Since is unchanged, we are done.
 		 */
-		if (url->offset == st.st_size)
+		if (url->offset == st.st_size &&
+		    fetchLastErrCode == FETCH_UNCHANGED ||
+		    fetchLastErrCode == HTTP_NOT_MODIFIED)
 			goto out;
 
 		rv = fetchLastErrCode;
@@ -253,7 +256,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	}
 
 	if (url_st.size != -1) {
-		if (url_st.size == st.st_size) {
+		if (url_st.size == st.st_size && url_st.mtime == st.st_mtime) {
 			/*
 			 * Files are identical.
 			*/
@@ -292,6 +295,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	while ((bytes_read = fetchIO_read(fio, buf, sizeof(buf))) > 0) {
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
+			printf("Couldn't write to %s!\n", destfile);
 			rv = errno;
 			goto out;
 		}
@@ -301,10 +305,9 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 		else
 			stat_update(&xs, bytes_dld);
 	}
-	if (fetchLastErrCode != 0) {
-		rv = fetchLastErrCode;
-		goto out;
-	} else if (bytes_read == -1) {
+	if (bytes_read == -1) {
+		printf("IO error while fetching %s: %s\n", filename,
+		    fetchLastErrString);
 		rv = EINVAL;
 		goto out;
 	}
