@@ -12,10 +12,6 @@ ifdef WITH_SSL
 CPPFLAGS += -DWITH_SSL
 endif
 
-ifdef WITH_DEBUG
-CPPFLAGS += -DDEBUG
-endif
-
 ifdef STATIC
 CFLAGS += -static
 endif
