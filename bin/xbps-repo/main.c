@@ -57,6 +57,7 @@ usage(void)
 	"    remove\t<URI>\n"
 	"    search\t<string>\n"
 	"    show\t<pkgname>\n"
+	"    sync\t\t<URI>\n"
 	" Options shared by all actions:\n"
 	"    -r\t\t<rootdir>\n"
 	"    -V\t\tPrints xbps release version\n"
@@ -308,6 +309,17 @@ main(int argc, char **argv)
 		rv = xbps_repo_addpkg_index(argv[1], argv[2]);
 		if (rv != 0)
 			exit(rv);
+
+	} else if (strcasecmp(argv[0], "sync") == 0) {
+		/* Syncs the pkg index file from a remote repo */
+		if (argc != 2)
+			usage();
+
+		if (!sanitize_localpath(dpkgidx, argv[1]))
+			exit(EXIT_FAILURE);
+
+		printf("Updating package index from: %s\n", dpkgidx);
+		rv = xbps_sync_repository_pkg_index(dpkgidx);
 
 	} else {
 		usage();

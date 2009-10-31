@@ -71,6 +71,11 @@ Please note that all targets are *case insensitive*.
 	the size it takes in filesystem, description, maintainer, architecture
 	and other information.
 
+*sync 'URI'*::
+	Syncs the package index file that is available from the repository
+	specified at 'URI'. The new file will be fetched if it has been
+	modified since last synchronization.
+
 
 BUGS
 ----
