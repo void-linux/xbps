@@ -51,7 +51,7 @@ xbps_check_pkg_integrity_all(void)
 	prop_dictionary_t d;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pkgname;
+	const char *pkgname, *version;
 	int rv = 0;
 	size_t npkgs = 0, nbrokenpkgs = 0;
 
@@ -65,9 +65,12 @@ xbps_check_pkg_integrity_all(void)
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		printf("Checking %s-%s ...\n", pkgname, version);
 		if ((rv = xbps_check_pkg_integrity(pkgname)) != 0)
 			nbrokenpkgs++;
 		npkgs++;
+		printf("\033[1A\033[K");
 	}
 	prop_object_iterator_release(iter);
 
