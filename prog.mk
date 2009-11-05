@@ -5,7 +5,7 @@ ifdef STATIC
 all: $(BIN).static
 MAN =
 else
-LDFLAGS = -lxbps
+LDFLAGS += -lxbps
 all: $(BIN) $(MAN)
 endif
 
