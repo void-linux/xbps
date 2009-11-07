@@ -113,6 +113,8 @@ xbps_pkgdep_match(const char *instpkg, char *pattern)
 	char basefname[PATH_MAX], condchar = '\0', *condition;
 	int rv = 0;
 
+	memset(&basefname, 0, sizeof(basefname));
+
 	condition = strpbrk(pattern, "><=");
 	if (condition) {
 		const char *ch;

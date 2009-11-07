@@ -279,12 +279,23 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		/*
 		 * Check if required dep is satisfied and installed.
 		 */
-		if (xbps_check_is_installed_pkg(reqpkg))
+		rv = xbps_check_is_installed_pkg(reqpkg);
+		if (rv == -1) {
+			/* There was an error checking it... */
+			break;
+		} else if (rv == 1) {
+			/* pkgdep is satisfied */
 			continue;
+		}
 
 		pkgname = xbps_get_pkgdep_name(reqpkg);
+		if (pkgname == NULL) {
+			rv = EINVAL;
+			break;
+		}
 		reqvers = xbps_get_pkgdep_version(reqpkg);
-		if (pkgname == NULL || reqvers == NULL) {
+		if (reqvers == NULL) {
+			free(pkgname);
 			rv = EINVAL;
 			break;
 		}

@@ -141,16 +141,16 @@ xbps_check_is_installed_pkg(const char *pkg)
 		free(pkgname);
 		return -1;
 	}
-	free(pkgname);
-
 	if (state != XBPS_PKG_STATE_INSTALLED) {
 		prop_object_release(dict);
-		return 0;
+		free(pkgname);
+		return 0; /* not fully installed */
 	}
 
 	/* Get version from installed package */
 	prop_dictionary_get_cstring_nocopy(dict, "version", &instver);
 	instpkg = xbps_xasprintf("%s-%s", pkgname, instver);
+	free(pkgname);
 	if (instpkg == NULL) {
 		prop_object_release(dict);
 		return -1;
