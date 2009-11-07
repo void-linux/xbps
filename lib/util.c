@@ -32,6 +32,8 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <sys/utsname.h>
+#include <limits.h>
+#include <fnmatch.h>
 
 #include <xbps_api.h>
 #include "sha256.h"
@@ -113,20 +115,21 @@ int SYMEXPORT
 xbps_check_is_installed_pkg(const char *pkg)
 {
 	prop_dictionary_t dict;
-	const char *reqver, *instver;
-	char *pkgname;
+	const char *instver;
+	char *pkgname, *instpkg;
 	int rv = 0;
 	pkg_state_t state = 0;
 
 	assert(pkg != NULL);
 
-	pkgname = xbps_get_pkg_name(pkg);
-	reqver = xbps_get_pkg_version(pkg);
+	pkgname = xbps_get_pkgdep_name(pkg);
+	if (pkgname == NULL)
+		return -1;
 
 	dict = xbps_find_pkg_installed_from_plist(pkgname);
 	if (dict == NULL) {
 		free(pkgname);
-		return -1; /* not installed */
+		return 0; /* not installed */
 	}
 
 	/*
@@ -142,15 +145,19 @@ xbps_check_is_installed_pkg(const char *pkg)
 
 	if (state != XBPS_PKG_STATE_INSTALLED) {
 		prop_object_release(dict);
-		return -1;
+		return 0;
 	}
 
 	/* Get version from installed package */
 	prop_dictionary_get_cstring_nocopy(dict, "version", &instver);
-
-	/* Compare installed and required version. */
-	rv = xbps_cmpver(instver, reqver);
-
+	instpkg = xbps_xasprintf("%s-%s", pkgname, instver);
+	if (instpkg == NULL) {
+		prop_object_release(dict);
+		return -1;
+	}
+	/* Check if installed pkg is matched against pkgdep pattern */
+	rv = xbps_pkgdep_match(instpkg, __UNCONST(pkg));
+	free(instpkg);
 	prop_object_release(dict);
 
 	return rv;
@@ -219,10 +226,47 @@ xbps_get_pkg_name(const char *pkg)
 	len = strlen(pkg) - strlen(tmp) + 1;
 
 	pkgname = malloc(len);
-	memcpy(pkgname, pkg, len - 1);
+	strncpy(pkgname, pkg, len);
 	pkgname[len - 1] = '\0';
 
 	return pkgname;
+}
+
+char SYMEXPORT *
+xbps_get_pkgdep_name(const char *pkg)
+{
+	char *res, *pkgname;
+	size_t len;
+
+	assert(pkg != NULL);
+
+	res = strpbrk(pkg, "><=");
+	if (res == NULL)
+		return NULL;
+
+	len = strlen(pkg) - strlen(res) + 1;
+	pkgname = malloc(len);
+	if (pkgname == NULL)
+		return NULL;
+
+	strncpy(pkgname, pkg, len);
+	pkgname[len - 1] = '\0';
+
+	return pkgname;
+}
+
+const char SYMEXPORT *
+xbps_get_pkgdep_version(const char *pkg)
+{
+	char *res;
+
+	assert(pkg != NULL);
+
+	res = strpbrk(pkg, "><=");
+	if (res == NULL)
+		return NULL;
+
+	return res;
 }
 
 static char *

@@ -37,7 +37,7 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"0.2.99.1"
+#define XBPS_RELVER		"20091107"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
@@ -125,6 +125,9 @@ int SYMEXPORT	xbps_find_deps_in_pkg(prop_dictionary_t, prop_dictionary_t);
 /* From lib/orphans.c */
 prop_array_t SYMEXPORT		xbps_find_orphan_packages(void);
 
+/* From lib/pkgmatch.c */
+int SYMEXPORT			xbps_pkgdep_match(const char *, char *);
+
 /* From lib/plist.c */
 bool SYMEXPORT	xbps_add_obj_to_dict(prop_dictionary_t, prop_object_t,
 				     const char *);
@@ -145,7 +148,8 @@ prop_dictionary_t SYMEXPORT	xbps_find_pkg_in_dict(prop_dictionary_t,
 					      const char *, const char *);
 prop_dictionary_t SYMEXPORT	xbps_find_pkg_from_plist(const char *,
 						const char *);
-prop_dictionary_t SYMEXPORT	xbps_find_pkg_installed_from_plist(const char *);
+prop_dictionary_t SYMEXPORT
+	xbps_find_pkg_installed_from_plist(const char *);
 bool SYMEXPORT	xbps_find_string_in_array(prop_array_t, const char *);
 
 prop_dictionary_t SYMEXPORT	xbps_prepare_regpkgdb_dict(void);
@@ -207,12 +211,15 @@ int SYMEXPORT	xbps_unpack_binary_pkg(prop_dictionary_t, bool);
 char SYMEXPORT		*xbps_xasprintf(const char *, ...);
 char SYMEXPORT		*xbps_get_file_hash(const char *);
 int SYMEXPORT		xbps_check_file_hash(const char *, const char *);
-int SYMEXPORT		xbps_check_pkg_file_hash(prop_dictionary_t, const char *);
+int SYMEXPORT		xbps_check_pkg_file_hash(prop_dictionary_t,
+						 const char *);
 int SYMEXPORT		xbps_check_is_installed_pkg(const char *);
 bool SYMEXPORT		xbps_check_is_installed_pkgname(const char *);
 char SYMEXPORT		*xbps_get_pkg_index_plist(const char *);
 char SYMEXPORT		*xbps_get_pkg_name(const char *);
+char SYMEXPORT		*xbps_get_pkgdep_name(const char *);
 const char SYMEXPORT	*xbps_get_pkg_version(const char *);
+const char SYMEXPORT	*xbps_get_pkgdep_version(const char *);
 const char SYMEXPORT	*xbps_get_pkg_revision(const char *);
 bool SYMEXPORT		xbps_pkg_has_rundeps(prop_dictionary_t);
 void SYMEXPORT		xbps_set_rootdir(const char *);

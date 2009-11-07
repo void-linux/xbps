@@ -64,7 +64,7 @@ show_missing_dep_cb(prop_object_t obj, void *arg, bool *loop_done)
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 	if (pkgname && version) {
-		printf("  * Missing binary package for: %s >= %s\n",
+		printf("  * Missing binary package for: %s%s\n",
 		    pkgname, version);
 		return 0;
 	}

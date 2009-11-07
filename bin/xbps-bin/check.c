@@ -264,7 +264,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			reqpkg = prop_string_cstring_nocopy(obj);
-			if (xbps_check_is_installed_pkg(reqpkg) < 0) {
+			if (xbps_check_is_installed_pkg(reqpkg) <= 0) {
 				rv = ENOENT;
 				printf("%s: dependency not satisfied: %s\n",
 				    pkgname, reqpkg);

@@ -279,11 +279,15 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		/*
 		 * Check if required dep is satisfied and installed.
 		 */
-		if (xbps_check_is_installed_pkg(reqpkg) >= 0)
+		if (xbps_check_is_installed_pkg(reqpkg))
 			continue;
 
-		pkgname = xbps_get_pkg_name(reqpkg);
-		reqvers = xbps_get_pkg_version(reqpkg);
+		pkgname = xbps_get_pkgdep_name(reqpkg);
+		reqvers = xbps_get_pkgdep_version(reqpkg);
+		if (pkgname == NULL || reqvers == NULL) {
+			rv = EINVAL;
+			break;
+		}
 		/*
 		 * Check if package is already added in the
 		 * array of unsorted deps.

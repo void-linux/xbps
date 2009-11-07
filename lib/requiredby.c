@@ -153,7 +153,7 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 	prop_array_t rdeps;
 	prop_object_t obj, obj2;
 	prop_object_iterator_t iter, iter2;
-	const char *reqname, *pkgname, *version;
+	const char *reqname, *pkgname, *version, *str;
 	char *rdepname, *fpkgn;
 	int rv = 0;
 
@@ -176,7 +176,8 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		rdepname = xbps_get_pkg_name(prop_string_cstring_nocopy(obj));
+		str = prop_string_cstring_nocopy(obj);
+		rdepname = xbps_get_pkgdep_name(str);
 		iter2 = prop_array_iterator(regar);
 		if (iter2 == NULL) {
 			free(rdepname);

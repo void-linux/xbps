@@ -62,7 +62,7 @@ xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 	prop_object_iterator_t iter, iter2;
 	struct sorted_dependency *sdep;
 	size_t ndeps = 0, rundepscnt = 0, cnt = 0;
-	const char *pkgname;
+	const char *pkgname, *str;
 	char *curpkgnamedep;
 	int rv = 0;
 
@@ -125,8 +125,8 @@ again:
 		 * were already added in the sorted list.
 		 */
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
-			curpkgnamedep =
-			    xbps_get_pkg_name(prop_string_cstring_nocopy(obj2));
+			str = prop_string_cstring_nocopy(obj2);
+			curpkgnamedep = xbps_get_pkgdep_name(str);
 			/*
 			 * If dependency is already installed or queued,
 			 * pass to the next one.

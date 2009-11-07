@@ -44,12 +44,12 @@ list_deps(prop_object_t obj, void *arg, bool *loop_done)
 
 	assert(prop_object_type(obj) == PROP_TYPE_STRING);
 
-	pkgname = xbps_get_pkg_name(prop_string_cstring_nocopy(obj));
-	version = xbps_get_pkg_version(prop_string_cstring_nocopy(obj));
-	if (strcmp(version, "0") == 0)
+	pkgname = xbps_get_pkgdep_name(prop_string_cstring_nocopy(obj));
+	version = xbps_get_pkgdep_version(prop_string_cstring_nocopy(obj));
+	if (strcmp(version, ">=0") == 0)
 		printf("%s\n", pkgname);
 	else
-		printf("%s >= %s\n", pkgname, version);
+		printf("%s%s\n", pkgname, version);
 
 	free(pkgname);
 	

@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include <xbps_api.h>
 
@@ -58,13 +59,15 @@ usage(void)
 	printf("usage: xbps-pkgdb [options] [action] [args]\n"
 	"\n"
 	"  Available actions:\n"
-	"    getpkgname, getpkgrevision, getpkgversion, register\n"
-	"    sanitize-plist, unregister, version\n"
+	"    getpkgdepname, getpkgname, getpkgrevision, getpkgversion,\n"
+	"    pkgmatch, register, sanitize-plist, unregister, version\n"
 	"\n"
 	"  Action arguments:\n"
+	"    getpkgdepname\t<string>\n"
 	"    getpkgname\t\t<string>\n"
 	"    getpkgrevision\t<string>\n"
 	"    getpkgversion\t<string>\n"
+	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
 	"    register\t\t<pkgname> <version> <shortdesc>\n"
 	"    sanitize-plist\t<plist>\n"
 	"    unregister\t\t<pkgname> <version>\n"
@@ -247,6 +250,26 @@ main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 
 		printf("%s\n", version);
+
+	} else if (strcasecmp(argv[0], "getpkgdepname") == 0) {
+		/* Returns the pkgname of a dependency */
+		if (argc != 2)
+			usage();
+
+		pkgname = xbps_get_pkgdep_name(argv[1]);
+		if (pkgname == NULL)
+			exit(EXIT_FAILURE);
+
+		printf("%s\n", pkgname);
+		free(pkgname);
+
+	} else if (strcasecmp(argv[0], "pkgmatch") == 0) {
+		/* Matches a pkg with a pattern */
+		if (argc != 3)
+			usage();
+
+		rv = xbps_pkgdep_match(argv[1], argv[2]);
+		exit(rv);
 
 	} else {
 		usage();
