@@ -196,7 +196,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	struct timeval tv[2];
 	ssize_t bytes_read, bytes_written;
 	off_t bytes_dld = -1;
-	char buf[4096], *filename, *destfile = NULL, fetchflags[8];
+	char buf[4096], *filename, *destfile = NULL;
 	int fd = -1, rv = 0;
 	bool restart = false;
 
@@ -242,16 +242,10 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 
 	}
 	/*
-	 * Set client flags.
-	 */
-	if (flags != NULL)
-		strcat(fetchflags, flags);
-
-	/*
 	 * Establish connection to remote host.
 	 */
 	url->offset = st.st_size;
-	fio = fetchXGet(url, &url_st, fetchflags);
+	fio = fetchXGet(url, &url_st, flags);
 #ifdef DEBUG
 	printf("st.st_size: %zd\n", (ssize_t)st.st_size);
 	printf("st.st_atime: %s\n", print_time(&st.st_atime));
@@ -271,6 +265,11 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 #endif
 	if (fio == NULL) {
 		/* Local and remote size match, do nothing */
+		if (fetchLastErrCode != FETCH_OK) {
+			rv = fetchLastErrCode;
+			goto out;
+		}
+
 		if (url->length == 0)
 			goto out;
 
@@ -350,11 +349,11 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 out:
 	if (fd != -1)
 		(void)close(fd);
-	if (fio)
+	if (fio != NULL)
 		fetchIO_close(fio);
-	if (url)
+	if (url != NULL)
 		fetchFreeURL(url);
-	if (destfile)
+	if (destfile != NULL)
 		free(destfile);
 
 	return rv;
