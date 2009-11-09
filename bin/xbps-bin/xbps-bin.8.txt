@@ -75,6 +75,10 @@ Please note that all targets are *case insensitive*.
 *list*::
 	Lists all currently installed packages.
 
+*list-manual*::
+	Lists packages that were installed 'manually' by the user, i.e
+	not as dependencies of any other package.
+
 *purge 'pkgname' | 'all'*::
 	Purge an installed package, *pkgname* or *all* packages. The 'purge'
 	stage runs the *post-remove* action set in the *REMOVE* script in its
@@ -110,10 +114,6 @@ Please note that all targets are *case insensitive*.
 
 *show-files 'pkgname'*::
 	Shows the list of files that 'pkgname' contains.
-
-*show-manual*::
-	Shows the list of packages that were installed 'manually' by the
-	user, i.e not as dependencies of any other package.
 
 *show-revdeps 'pkgname'*::
 	Shows the reverse dependencies for 'pkgname'. Reverse dependencies

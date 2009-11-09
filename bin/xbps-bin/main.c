@@ -48,13 +48,13 @@ usage(void)
 	"    check\t\t[<pkgname>|<all>]\n"
 	"    install\t\t<pkgname>\n"
 	"    list\n"
+	"    list-manual\n"
 	"    purge\t\t[<pkgname>|<all>]\n"
 	"    reconfigure\t\t[<pkgname>|<all>]\n"
 	"    remove\t\t<pkgname>\n"
 	"    show\t\t<pkgname>\n"
 	"    show-deps\t\t<pkgname>\n"
 	"    show-files\t\t<pkgname>\n"
-	"    show-manual\n"
 	"    show-revdeps\t<pkgname>\n"
 	"    update\t\t<pkgname>\n"
 	" Options shared by all targets:\n"
@@ -290,9 +290,9 @@ main(int argc, char **argv)
 
 		rv = xbps_show_pkg_deps(argv[1]);
 
-	} else if (strcasecmp(argv[0], "show-manual") == 0) {
+	} else if (strcasecmp(argv[0], "list-manual") == 0) {
 		/*
-		 * Show packages that were installed manually, not as
+		 * List packages that were installed manually, not as
 		 * dependencies.
 		 */
 		if (argc != 1)
