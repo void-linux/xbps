@@ -33,6 +33,7 @@
 #include <xbps_api.h>
 
 static int unpack_archive_fini(struct archive *, prop_dictionary_t, bool);
+static int remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
 static void set_extract_flags(int *);
 
 int SYMEXPORT
@@ -322,7 +323,7 @@ static int
 unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		    bool essential)
 {
-	prop_dictionary_t filesd;
+	prop_dictionary_t filesd, old_filesd = NULL;
 	struct archive_entry *entry;
 	const char *pkgname, *version, *rootdir, *entry_str;
 	char *buf, *buf2;
@@ -459,13 +460,39 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 	}
 
 	if ((rv = archive_errno(ar)) == 0) {
+		buf2 = xbps_xasprintf(".%s/metadata/%s/files.plist",
+		    XBPS_META_PATH, pkgname);
+		if (buf2 == NULL) {
+			prop_object_release(filesd);
+			return errno;
+		}
+		/*
+		 * Check if files.plist exists and pkg is marked as
+		 * essential, in that case we need to check for obsolete
+		 * files and remove them if necessary.
+		 */
+		if (essential && (access(buf2, R_OK) == 0)) {
+			old_filesd =
+			    prop_dictionary_internalize_from_file(buf2);
+			if (old_filesd == NULL) {
+				prop_object_release(filesd);
+				free(buf2);
+				return errno;
+			}
+			rv = remove_obsoletes(old_filesd, filesd);
+			if (rv != 0) {
+				prop_object_release(old_filesd);
+				prop_object_release(filesd);
+				free(buf2);
+				return rv;
+			}
+			prop_object_release(old_filesd);
+		}
 		/*
 		 * Now that all files were successfully unpacked, we
 		 * can safely externalize files.plist because the path
 		 * is reachable.
 		 */
-		buf2 = xbps_xasprintf(".%s/metadata/%s/files.plist",
-		    XBPS_META_PATH, pkgname);
 		if (!prop_dictionary_externalize_to_file(filesd, buf2)) {
 			prop_object_release(filesd);
 			free(buf2);
@@ -477,3 +504,84 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 
 	return rv;
 }
+
+static int
+remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
+{
+	prop_object_iterator_t iter, iter2;
+	prop_object_t obj, obj2;
+	prop_string_t oldstr, newstr;
+	const char *array_str = "files";
+	char *buf = NULL;
+	int rv = 0;
+	bool found, dolinks = false;
+
+	iter = iter2 = NULL;
+	obj = obj2 = NULL;
+	oldstr = newstr = NULL;
+
+again:
+	iter = xbps_get_array_iter_from_dict(oldd, array_str);
+	if (iter == NULL)
+		return errno;
+	iter2 = xbps_get_array_iter_from_dict(newd, array_str);
+	if (iter2 == NULL) {
+		prop_object_iterator_release(iter);
+		return errno;
+	}
+	/*
+	 * Check for obsolete files, i.e files/links available in
+	 * the old package list not found in new package list.
+	 */
+	while ((obj = prop_object_iterator_next(iter))) {
+		found = false;
+		oldstr = prop_dictionary_get(obj, "file");
+		while ((obj2 = prop_object_iterator_next(iter2))) {
+			newstr = prop_dictionary_get(obj2, "file");
+			if (prop_string_equals(oldstr, newstr)) {
+				found = true;
+				break;
+			}
+		}
+		prop_object_iterator_reset(iter2);
+		if (found)
+			continue;
+
+		/*
+		 * Obsolete file found, remove it.
+		 */
+		buf = xbps_xasprintf(".%s", prop_string_cstring_nocopy(oldstr));
+		if (buf == NULL) {
+			rv = errno;
+			goto out;
+		}
+		if (remove(buf) == -1) {
+			printf("WARNING: couldn't remove obsolete %s: %s\n",
+			    dolinks ? "link" : "file",
+			    prop_string_cstring_nocopy(oldstr));
+			free(buf);
+			continue;
+		}
+		printf("Removed obsolete %s: %s\n",
+		    dolinks ? "link" : "file",
+		    prop_string_cstring_nocopy(oldstr));
+		free(buf);
+	}
+	if (!dolinks) {
+		/*
+		 * Now look for obsolete links.
+		 */
+		dolinks = true;
+		array_str = "links";
+		prop_object_iterator_release(iter2);
+		prop_object_iterator_release(iter);
+		iter = iter2 = NULL;
+		goto again;
+	}
+
+out:
+	prop_object_iterator_release(iter2);
+	prop_object_iterator_release(iter);
+
+	return rv;
+}	
