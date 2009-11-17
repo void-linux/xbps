@@ -92,7 +92,7 @@ XBPS utilities: '<https://launchpad.net/xbps>'
 
 To build binary packages, the xbps-src(8) shell script is the command
 designed for this task. This must be retrieved from a GIT repository,
-available at '<http://repo.or/cz/w/xbps.git>'.
+available at '<http://repo.or.cz/w/xbps.git>'.
 
 
 AUTHORS
