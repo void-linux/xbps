@@ -255,8 +255,8 @@ xbps_repo_genindex(const char *pkgdir)
 
 		path = xbps_xasprintf("%s/%s", pkgdir, archdirs[i]);
 		if (path == NULL) {
-			prop_object_release(idxdict);
-			return errno;
+			rv = errno;
+			goto out;
 		}
 
 		dirp = opendir(path);
@@ -279,9 +279,8 @@ xbps_repo_genindex(const char *pkgdir)
 			if (binfile == NULL) {
 				(void)closedir(dirp);
 				free(path);
-				prop_object_release(idxdict);
-				free(plist);
-				return errno;
+				rv = errno;
+				goto out;
 			}
 			rv = xbps_repo_addpkg_index(idxdict, binfile);
 			free(binfile);
@@ -290,9 +289,7 @@ xbps_repo_genindex(const char *pkgdir)
 			else if (rv != 0) {
 				(void)closedir(dirp);
 				free(path);
-				prop_object_release(idxdict);
-				free(plist);
-				return rv;
+				goto out;
 			}
 			registered_newpkgs = true;
 		}
@@ -313,7 +310,7 @@ xbps_repo_genindex(const char *pkgdir)
 		 * Don't write plist file if no packages were registered.
 		 */
 		if (registered_newpkgs == false)
-			return rv;
+			goto out;
 		/*
 		 * If any package was registered in package index, write
 		 * plist file to storage.
@@ -321,6 +318,7 @@ xbps_repo_genindex(const char *pkgdir)
 		if (!prop_dictionary_externalize_to_file(idxdict, plist))
 			rv = errno;
 	}
+out:
 	free(plist);
 	prop_object_release(idxdict);
 
