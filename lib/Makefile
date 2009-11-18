@@ -4,10 +4,14 @@ LIBMAJOR	= 0
 LIBMINOR	= 0
 LIBMICRO	= 0
 LIBXBPS_SHLIB	= libxbps.so.$(LIBMAJOR).$(LIBMINOR).$(LIBMICRO)
-LIBXBPS_LDFLAGS	= -shared -Wl,-soname,libxbps.so.$(LIBMAJOR)
+SHAREDLIB_LDFLAGS = -lprop -larchive
+ifdef WITH_SSL
+SHAREDLIB_LDFLAGS += -lssl
+endif
+SHAREDLIB_LDFLAGS += -shared -Wl,-soname,libxbps.so.$(LIBMAJOR)
 
 # libfetch
-OBJS = fetch/common.o fetch/fetch.o fetch/file.o fetch/ftp.o fetch/http.o
+LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o fetch/ftp.o fetch/http.o
 
 # libxbps
 OBJS +=	configure.o cmpver.o depends.o download.o fexec.o findpkg.o
@@ -15,29 +19,26 @@ OBJS +=	humanize_number.o orphans.o plist.o purge.o register.o remove.o
 OBJS +=	repository.o requiredby.o sha256.o sortdeps.o state.o
 OBJS +=	sync_remote_pkgidx.o unpack.o util.o pkgmatch.o
 
+.PHONY: all
 ifdef STATIC
 all: libfetch libxbps.a
 else
-LDFLAGS = -lprop -larchive
-ifdef WITH_SSL
-LDFLAGS += -lssl -lcrypto
-endif
 all: libfetch libxbps.so libxbps.a
 endif
-.PHONY: all
 
 libfetch:
 	$(MAKE) -C fetch
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -c $<
+	$(CC) $(CPPFLAGS) $(SHAREDLIB_CFLAGS) $(CFLAGS) \
+		$(LDFLAGS) $(STATIC_LIBS) -c $<
 
-libxbps.so: $(OBJS)
-	$(CC) $(LDFLAGS) $(LIBXBPS_LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
+libxbps.so: $(OBJS) $(LIBFETCH_OBJS)
+	$(CC) $(LDFLAGS) $(SHAREDLIB_LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
 	-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBMAJOR)
 	-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
-libxbps.a: $(OBJS)
+libxbps.a: $(OBJS) $(LIBFETCH_OBJS)
 	$(AR) rcs $@ $^
 	ranlib $@
 

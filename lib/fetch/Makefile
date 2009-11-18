@@ -12,19 +12,16 @@ ifdef WITH_SSL
 CPPFLAGS += -DWITH_SSL
 endif
 
-ifdef STATIC
-CFLAGS += -static
-endif
-
 OBJS= fetch.o common.o ftp.o http.o file.o
 INCS= common.h
 GEN = ftperr.h httperr.h
 
 .PHONY: all
-all: $(OBJS)
+all: $(INCS) $(GEN) $(OBJS)
 
 %.o: %.c $(INCS) $(GEN)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+		$(SHAREDLIB_CFLAGS) -c $<
 
 ftperr.h: ftp.errors
 	./errlist.sh ftp_errlist FTP ftp.errors > $@

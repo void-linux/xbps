@@ -1,11 +1,12 @@
 OBJS ?=	main.o
 MAN ?= $(BIN).8
 
+LDFLAGS += -lxbps
+
 ifdef STATIC
 all: $(BIN).static
 MAN =
 else
-LDFLAGS += -lxbps
 all: $(BIN) $(MAN)
 endif
 
@@ -15,10 +16,11 @@ $(MAN):
 	a2x -f manpage $(MAN).txt
 
 $(BIN).static: $(OBJS)
-	$(CC) $^ -static -lxbps $(LDFLAGS) -o $@
+	$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+		$(STATIC_LIBS) -o $@
 
 $(BIN): $(OBJS)
-	$(CC) $^ $(LDFLAGS) -o $@
+	$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
 
 .PHONY: clean
 clean:

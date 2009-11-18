@@ -19,16 +19,16 @@ endif
 LDFLAGS =  -L$(TOPDIR)/lib
 CPPFLAGS += -I$(TOPDIR)/include -D_XOPEN_SOURCE=600 -D_GNU_SOURCE
 CPPFLAGS += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGE_FILES
+SHAREDLIB_CFLAGS = -fvisibility=hidden
 WARNFLAGS ?= -pedantic -std=c99 -Wall -Wextra -Werror -Wshadow -Wformat=2
 WARNFLAGS += -Wmissing-declarations -Wcomment -Wunused-macros -Wendif-labels
-WARNFLAGS += -Wcast-qual -Wcast-align
-CFLAGS = $(DEBUG_FLAGS) $(WARNFLAGS)
+WARNFLAGS += -Wcast-qual -Wcast-align -Wstack-protector
+CFLAGS = $(DEBUG_FLAGS) $(WARNFLAGS) -fstack-protector-all
 
 ifdef STATIC
 CFLAGS += -static
-LDFLAGS += -lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl \
-	  -lattr -lcrypto -llzma -lbz2 -lz
+STATIC_LIBS =	-lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl \
+		-lattr -lcrypto -llzma -lbz2 -lz
 else
-CFLAGS += -fvisibility=hidden -fstack-protector-all -fPIC -DPIC
-CPPFLAGS += -Wstack-protector
+CFLAGS += -fPIC -DPIC
 endif
