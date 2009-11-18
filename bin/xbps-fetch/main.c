@@ -32,7 +32,7 @@ main(int argc, char **argv)
 	if (argc != 1)
 		usage();
 
-	rv = xbps_fetch_file(argv[0], ".", flags);
+	rv = xbps_fetch_file(argv[0], ".", false, flags);
 	if (rv != 0) {
 		printf("%s: %s\n", argv[0], xbps_fetch_error_string());
 		exit(EXIT_FAILURE);

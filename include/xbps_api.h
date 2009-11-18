@@ -37,7 +37,7 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"20091109"
+#define XBPS_RELVER		"20091118"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
@@ -82,10 +82,7 @@ int SYMEXPORT	xbps_configure_all_pkgs(void);
 int SYMEXPORT	xbps_cmpver(const char *, const char *);
 
 /* From lib/download.c */
-int SYMEXPORT	xbps_fetch_file(const char *, const char *, const char *);
-void SYMEXPORT	(*xbps_fetch_start_cb)(const char *, off_t *, off_t *);
-void SYMEXPORT	(*xbps_fetch_update_cb)(off_t *);
-void SYMEXPORT	(*xbps_fetch_end_cb)(void);
+int SYMEXPORT	xbps_fetch_file(const char *, const char *, bool, const char *);
 const char SYMEXPORT	*xbps_fetch_error_string(void);
 
 /* From lib/fexec.c */

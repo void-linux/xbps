@@ -164,7 +164,7 @@ download_package_list(prop_object_iterator_t iter)
 		}
 		printf("Downloading %s-%s binary package ...\n",
 		    pkgname, version);
-		rv = xbps_fetch_file(binfile, savedir, NULL);
+		rv = xbps_fetch_file(binfile, savedir, false, NULL);
 		free(savedir);
 		free(binfile);
 		if (rv != 0) {

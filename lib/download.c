@@ -115,15 +115,14 @@ stat_display(struct xferstat *xsp)
 	    HN_AUTOSCALE, HN_NOSPACE|HN_DECIMAL);
 	(void)xbps_humanize_number(recvsize, 7, (int64_t)xsp->rcvd, "",
 	    HN_AUTOSCALE, HN_NOSPACE|HN_DECIMAL);
-	printf("Downloading %s ...", xsp->name);
-	printf("\n\t%sB [%d%% of %sB]", recvsize,
+	fprintf(stderr, "\r%s: %sB [%d%% of %sB]",
+	    xsp->name, recvsize,
 	    (int)((double)(100.0 * (double)xsp->rcvd) / (double)xsp->size),
 	    totsize);
-	printf(" %s", stat_bps(xsp));
+	fprintf(stderr, " %s", stat_bps(xsp));
 	if (xsp->size > 0 && xsp->rcvd > 0 &&
 	    xsp->last.tv_sec >= xsp->start.tv_sec + 10)
-		printf(" ETA: %s", stat_eta(xsp));
-	printf("\n\033[2A\033[K");
+		fprintf(stderr, " ETA: %s", stat_eta(xsp));
 }
 
 /*
@@ -160,10 +159,9 @@ stat_end(struct xferstat *xsp)
 
 	(void)xbps_humanize_number(size, 6, (int64_t)xsp->size, "",
 	    HN_AUTOSCALE, HN_NOSPACE|HN_DECIMAL);
-	printf("\033[1A\033[K");
-	printf("Downloaded %s successfully (%sB at %s)\n",
-	    xsp->name, size, stat_bps(xsp));
-	printf("\033[J");
+	fprintf(stderr, "\rDownloaded %sB for %s [avg rate: %s]",
+	    size, xsp->name, stat_bps(xsp));
+	fprintf(stderr, "\033[K\n");
 }
 
 const char SYMEXPORT *
@@ -186,7 +184,8 @@ print_time(time_t *t)
 #endif
 
 int SYMEXPORT
-xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
+xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
+		const char *flags)
 {
 	struct stat st;
 	struct xferstat xs;
@@ -196,10 +195,11 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	struct timeval tv[2];
 	ssize_t bytes_read, bytes_written;
 	off_t bytes_dld = -1;
-	char buf[4096], *filename, *destfile = NULL;
+	char buf[4096], *filename, *destfile;
 	int fd = -1, rv = 0;
 	bool restart = false;
 
+	filename = destfile = NULL;
 	bytes_read = bytes_written = -1;
 	fetchLastErrCode = 0;
 
@@ -210,7 +210,6 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	if (filename == NULL)
 		return EINVAL;
 	filename++;
-
 	/*
 	 * Compute destination file path.
 	 */
@@ -219,20 +218,19 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 		rv = errno;
 		goto out;
 	}
-
 	/*
 	 * Check if we have to resume a transfer.
 	 */
 	memset(&st, 0, sizeof(st));
-	if (stat(destfile, &st) == 0)
-		restart = true;
-	else {
+	if (stat(destfile, &st) == 0) {
+		if (st.st_size > 0)
+			restart = true;
+	} else {
 		if (errno != ENOENT) {
 			rv = errno;
 			goto out;
 		}
 	}
-
 	/*
 	 * Prepare stuff for libfetch.
 	 */
@@ -242,10 +240,45 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 
 	}
 	/*
-	 * Establish connection to remote host.
+	 * Check if we want to refetch from scratch a file.
 	 */
-	url->offset = st.st_size;
-	fio = fetchXGet(url, &url_st, flags);
+	if (refetch) {
+		/*
+		 * Issue a HEAD request to know size and mtime.
+		 */
+		if (fetchStat(url, &url_st, NULL) == -1) {
+			rv = fetchLastErrCode;
+			goto out;
+		}
+		/*
+		 * If mtime and size match do nothing.
+		 */
+		if (restart && url_st.size && url_st.mtime &&
+		    url_st.size == st.st_size &&
+		    url_st.mtime == st.st_mtime)
+			goto out;
+
+		/*
+		 * Remove current file (if exists).
+		 */
+		if (restart && remove(destfile) == -1) {
+			rv = errno;
+			goto out;
+		}
+		restart = false;
+		url->offset = 0;
+		/*
+		 * Issue the GET request to refetch.
+		 */
+		fio = fetchGet(url, flags);
+	} else {
+		/*
+		 * Issue a GET and skip the HEAD request, some servers
+		 * (googlecode.com) return a 404 in HEAD requests!
+		 */
+		url->offset = st.st_size;
+		fio = fetchXGet(url, &url_st, flags);
+	}
 #ifdef DEBUG
 	printf("st.st_size: %zd\n", (ssize_t)st.st_size);
 	printf("st.st_atime: %s\n", print_time(&st.st_atime));
@@ -263,20 +296,20 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	printf("url_stat.atime: %s\n", print_time(&url_st.atime));
 	printf("url_stat.mtime: %s\n", print_time(&url_st.mtime));
 #endif
-	if (fio == NULL) {
-		/* Local and remote size match, do nothing */
-		if (fetchLastErrCode != FETCH_OK) {
-			rv = fetchLastErrCode;
-			goto out;
+	if (fio == NULL && fetchLastErrCode != FETCH_OK) {
+		if (restart && fetchLastErrCode == FETCH_UNAVAIL) {
+			/*
+			 * In HTTP when 416 is returned and length==0
+			 * means that local and remote file size match.
+			 * Because we are requesting offset==st_size! grr,
+			 * stupid http servers...
+			 */
+			if (url->length == 0)
+				goto out;
 		}
-
-		if (url->length == 0)
-			goto out;
-
 		rv = fetchLastErrCode;
 		goto out;
 	}
-
 	if (url_st.size == -1) {
 		printf("Remote file size is unknown!\n");
 		rv = EINVAL;
@@ -286,12 +319,13 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 		    filename);
 		rv = EFBIG;
 		goto out;
-	} else if (st.st_size == url_st.size && st.st_mtime == url_st.mtime) {
+	} else if (restart && url_st.mtime && url_st.size &&
+		   url_st.size == st.st_size && url_st.mtime == st.st_mtime) {
 		/* Local and remote size/mtime match, do nothing. */
 		rv = 0;
 		goto out;
 	}
-	printf("Connected to %s.\n", url->host);
+	fprintf(stderr, "Connected to %s.\n", url->host);
 
 	/*
 	 * If restarting, open the file for appending otherwise create it.
@@ -299,7 +333,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	if (restart)
 		fd = open(destfile, O_WRONLY|O_APPEND);
 	else
-		fd = open(destfile, O_WRONLY|O_CREAT, 0644);
+		fd = open(destfile, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 
 	if (fd == -1) {
 		rv = errno;
@@ -309,42 +343,37 @@ xbps_fetch_file(const char *uri, const char *outputdir, const char *flags)
 	/*
 	 * Start fetching requested file.
 	 */
-	if (xbps_fetch_start_cb != NULL)
-		(*xbps_fetch_start_cb)(filename, &url_st.size, &url->offset);
-	else
-		stat_start(&xs, filename, &url_st.size, &url->offset);
-
+	stat_start(&xs, filename, &url_st.size, &url->offset);
 	while ((bytes_read = fetchIO_read(fio, buf, sizeof(buf))) > 0) {
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
-			printf("Couldn't write to %s!\n", destfile);
+			fprintf(stderr, "Couldn't write to %s!\n", destfile);
 			rv = errno;
 			goto out;
 		}
 		bytes_dld += bytes_read;
-		if (xbps_fetch_update_cb != NULL)
-			(*xbps_fetch_update_cb)(&bytes_dld);
-		else
-			stat_update(&xs, bytes_dld);
+		stat_update(&xs, bytes_dld);
 	}
 	if (bytes_read == -1) {
-		printf("IO error while fetching %s: %s\n", filename,
+		fprintf(stderr, "IO error while fetching %s: %s\n", filename,
 		    fetchLastErrString);
 		rv = EINVAL;
 		goto out;
 	}
-	if (xbps_fetch_end_cb != NULL)
-		(*xbps_fetch_end_cb)();
-	else
-		stat_end(&xs);
+	stat_end(&xs);
+
+	if (fd == -1)
+		goto out;
 
 	/*
-	 * Update mtime to match remote file if download was successful.
+	 * Update mtime in local file to match remote file if transfer
+	 * was successful.
 	 */
 	tv[0].tv_sec = url_st.atime ? url_st.atime : url_st.mtime;
 	tv[1].tv_sec = url_st.mtime;
 	tv[0].tv_usec = tv[1].tv_usec = 0;
-	rv = utimes(destfile, tv);
+	if (utimes(destfile, tv) == -1)
+		rv = errno;
 
 out:
 	if (fd != -1)
