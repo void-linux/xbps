@@ -112,12 +112,6 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 		goto out1;
 	}
 
-	/* Get package array in repo index file */
-	pkgar = prop_dictionary_get(idxdict, "packages");
-	if (pkgar == NULL) {
-		rv = errno;
-		goto out1;
-	}
 	/*
 	 * Open the binary package and read the props.plist
 	 * into a buffer.
@@ -173,7 +167,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 		 * We have the dictionary now, add the required
 		 * objects for the index.
 		 */
-		prop_dictionary_set_cstring_nocopy(newpkgd, "filename", filen);
+		prop_dictionary_set_cstring(newpkgd, "filename", filen);
 		sha256 = xbps_get_file_hash(file);
 		if (sha256 == NULL) {
 			prop_object_release(newpkgd);
@@ -193,6 +187,13 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 		/*
 		 * Add dictionary into the index and update package count.
 		 */
+		/* Get package array in repo index file */
+		pkgar = prop_dictionary_get(idxdict, "packages");
+		if (pkgar == NULL) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			break;
+		}
 		if (!xbps_add_obj_to_array(pkgar, newpkgd)) {
 			prop_object_release(newpkgd);
 			rv = EINVAL;
@@ -320,6 +321,8 @@ xbps_repo_genindex(const char *pkgdir)
 		if (!prop_dictionary_externalize_to_file(idxdict, plist))
 			rv = errno;
 	}
+	free(plist);
+	prop_object_release(idxdict);
 
 	return rv;
 }
