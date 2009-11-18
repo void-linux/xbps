@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <sys/cdefs.h>
 #include <sys/queue.h>
 #define NDEBUG
 #include <assert.h>
@@ -73,6 +74,8 @@
 #else
 #define SYMEXPORT
 #endif
+
+__BEGIN_DECLS
 
 /* From lib/configure.c */
 int SYMEXPORT	xbps_configure_pkg(const char *, const char *, bool);
@@ -225,5 +228,7 @@ void SYMEXPORT		xbps_set_flags(int);
 int SYMEXPORT		xbps_get_flags(void);
 bool SYMEXPORT		xbps_yesno(const char *, ...);
 bool SYMEXPORT		xbps_noyes(const char *, ...);
+
+__END_DECLS
 
 #endif /* !_XBPS_API_H_ */
