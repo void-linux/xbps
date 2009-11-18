@@ -7,3 +7,5 @@ xbps-pkgdb
 *.so*
 *.a
 *.8
+ftperr.h
+httperr.h
