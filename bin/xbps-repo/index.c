@@ -73,15 +73,15 @@ out:
 }
 
 int
-xbps_repo_addpkg_index(const char *pkgdir, const char *file)
+xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 {
-	prop_dictionary_t newpkgd, idxdict, curpkgd;
+	prop_dictionary_t newpkgd, curpkgd;
 	prop_array_t pkgar;
 	struct archive *ar;
 	struct archive_entry *entry;
 	struct stat st;
 	const char *pkgname, *version, *regver;
-	char *sha256, *plist, *filen = NULL, *tmpfilen = NULL;
+	char *sha256, *filen = NULL, *tmpfilen = NULL;
 	int rv = 0;
 
 	assert(file != NULL);
@@ -112,19 +112,12 @@ xbps_repo_addpkg_index(const char *pkgdir, const char *file)
 		goto out1;
 	}
 
-	/* Get existing or create repo index dictionary */
-	idxdict = repoidx_getdict(pkgdir);
-	if (idxdict == NULL) {
+	/* Get package array in repo index file */
+	pkgar = prop_dictionary_get(idxdict, "packages");
+	if (pkgar == NULL) {
 		rv = errno;
 		goto out1;
 	}
-	plist = xbps_get_pkg_index_plist(pkgdir);
-	if (plist == NULL) {
-		prop_dictionary_remove(idxdict, "packages");
-		rv = ENOMEM;
-		goto out2;
-	}
-
 	/*
 	 * Open the binary package and read the props.plist
 	 * into a buffer.
@@ -156,10 +149,11 @@ xbps_repo_addpkg_index(const char *pkgdir, const char *file)
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "version", &regver);
 			if (xbps_cmpver(version, regver) <= 0) {
-				printf("Skipping %s. Version %s already "
-				    "registered.\n", filen, regver);
+				printf("W: skipping %s. %s-%s already "
+				    "registered.\n", filen, pkgname, regver);
 				prop_object_release(newpkgd);
 				archive_read_data_skip(ar);
+				rv = EEXIST;
 				break;
 			}
 			/*
@@ -199,32 +193,19 @@ xbps_repo_addpkg_index(const char *pkgdir, const char *file)
 		/*
 		 * Add dictionary into the index and update package count.
 		 */
-		pkgar = prop_dictionary_get(idxdict, "packages");
-		if (pkgar == NULL) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			break;
-		}
 		if (!xbps_add_obj_to_array(pkgar, newpkgd)) {
 			prop_object_release(newpkgd);
 			rv = EINVAL;
 			break;
 		}
-
 		prop_dictionary_set_uint64(idxdict, "total-pkgs",
 		    prop_array_count(pkgar));
-		if (!prop_dictionary_externalize_to_file(idxdict, plist)) {
-			rv = errno;
-			break;
-		}
 		printf("Registered %s-%s in package index.\n",
 		    pkgname, version);
+		printf("\033[1A\033[K");
 		break;
 	}
 
-	free(plist);
-out2:
-	prop_object_release(idxdict);
 out1:
 	archive_read_finish(ar);
 out:
@@ -236,16 +217,32 @@ out:
 int
 xbps_repo_genindex(const char *pkgdir)
 {
+	prop_dictionary_t idxdict = NULL;
 	struct dirent *dp;
 	DIR *dirp;
 	struct utsname un;
-	char *binfile, *path;
+	uint64_t npkgcnt = 0;
+	char *binfile, *path, *plist;
 	size_t i;
 	int rv = 0;
-	bool foundpkg = false;
+	bool registered_newpkgs = false, foundpkg = false;
 
 	if (uname(&un) == -1)
 		return errno;
+
+	/*
+	 * Create or read existing package index plist file.
+	 */
+	idxdict = repoidx_getdict(pkgdir);
+	if (idxdict == NULL)
+		return errno;
+
+	plist = xbps_get_pkg_index_plist(pkgdir);
+	if (plist == NULL) {
+		prop_object_release(idxdict);
+		return errno;
+	}
+
 	/*
 	 * Iterate over the known architecture directories to find
 	 * binary packages.
@@ -256,8 +253,10 @@ xbps_repo_genindex(const char *pkgdir)
 			continue;
 
 		path = xbps_xasprintf("%s/%s", pkgdir, archdirs[i]);
-		if (path == NULL)
+		if (path == NULL) {
+			prop_object_release(idxdict);
 			return errno;
+		}
 
 		dirp = opendir(path);
 		if (dirp == NULL) {
@@ -279,22 +278,48 @@ xbps_repo_genindex(const char *pkgdir)
 			if (binfile == NULL) {
 				(void)closedir(dirp);
 				free(path);
+				prop_object_release(idxdict);
+				free(plist);
 				return errno;
 			}
-			rv = xbps_repo_addpkg_index(pkgdir, binfile);
+			rv = xbps_repo_addpkg_index(idxdict, binfile);
 			free(binfile);
-			if (rv != 0) {
+			if (rv == EEXIST)
+				continue;
+			else if (rv != 0) {
 				(void)closedir(dirp);
 				free(path);
+				prop_object_release(idxdict);
+				free(plist);
 				return rv;
 			}
+			registered_newpkgs = true;
 		}
 		(void)closedir(dirp);
 		free(path);
 	}
 
-	if (foundpkg == false)
+	if (foundpkg == false) {
+		/* No packages were found in directory */
 		rv = ENOENT;
+	} else {
+		/*
+		 * Show total count registered packages.
+		 */
+		prop_dictionary_get_uint64(idxdict, "total-pkgs", &npkgcnt);
+		printf("%ju packages registered in package index.\n", npkgcnt);
+		/*
+		 * Don't write plist file if no packages were registered.
+		 */
+		if (registered_newpkgs == false)
+			return rv;
+		/*
+		 * If any package was registered in package index, write
+		 * plist file to storage.
+		 */
+		if (!prop_dictionary_externalize_to_file(idxdict, plist))
+			rv = errno;
+	}
 
 	return rv;
 }
