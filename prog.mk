@@ -1,26 +1,25 @@
-OBJS ?=	main.o
-MAN ?= $(BIN).8
+OBJS	?= main.o
+LDFLAGS	+= -lxbps
 
-LDFLAGS += -lxbps
-
-ifdef STATIC
-all: $(BIN).static
-MAN =
-else
-all: $(BIN) $(MAN)
-endif
-
-.PHONY: all
+%.o: %.c
+	@echo "    [CC] $@"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(STATIC_LIBS) -c $<
 
 $(MAN):
-	a2x -f manpage $(MAN).txt
+	@echo "    [ASCIIDOC] $(MAN)"
+	@a2x -f manpage $(MAN).txt
 
 $(BIN).static: $(OBJS)
-	$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
-		$(STATIC_LIBS) -o $@
+	@echo "    [CCLD] $@"
+	@$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+		$(STATIC_LIBS) -o $@ >/dev/null 2>&1
 
 $(BIN): $(OBJS)
-	$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
+	@echo "    [CCLD] $@"
+	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
+
+.PHONY: all
+all: $(BIN) $(BIN).static $(MAN)
 
 .PHONY: clean
 clean:
@@ -31,11 +30,8 @@ clean:
 .PHONY: install
 install: all
 	install -d $(SBINDIR)
-ifndef STATIC
 	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(SBINDIR)
-else
 	install $(INSTALL_STRIPPED) -m 755 $(BIN).static $(SBINDIR)
-endif
 ifdef MAN
 	install -d $(MANDIR)
 	install -m 644 $(MAN) $(MANDIR)
@@ -45,3 +41,7 @@ endif
 uninstall:
 	-rm -f $(SBINDIR)/$(BIN)
 	-rm -f $(SBINDIR)/$(BIN).static
+
+ifdef MAN
+	-rm -f $(MANDIR)/$(MAN)
+endif

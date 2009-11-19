@@ -23,12 +23,8 @@ SHAREDLIB_CFLAGS = -fvisibility=hidden
 WARNFLAGS ?= -pedantic -std=c99 -Wall -Wextra -Werror -Wshadow -Wformat=2
 WARNFLAGS += -Wmissing-declarations -Wcomment -Wunused-macros -Wendif-labels
 WARNFLAGS += -Wcast-qual -Wcast-align -Wstack-protector
-CFLAGS = $(DEBUG_FLAGS) $(WARNFLAGS) -fstack-protector-all
+CFLAGS += $(DEBUG_FLAGS) $(WARNFLAGS) -fPIC -DPIC -fstack-protector-all
 
-ifdef STATIC
-CFLAGS += -static
+# Grr, hate the static libs!
 STATIC_LIBS =	-lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl \
 		-lattr -lcrypto -llzma -lbz2 -lz
-else
-CFLAGS += -fPIC -DPIC
-endif

@@ -20,14 +20,17 @@ GEN = ftperr.h httperr.h
 all: $(INCS) $(GEN) $(OBJS)
 
 %.o: %.c $(INCS) $(GEN)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+	@echo "    [CC] $@"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
 		$(SHAREDLIB_CFLAGS) -c $<
 
 ftperr.h: ftp.errors
-	./errlist.sh ftp_errlist FTP ftp.errors > $@
+	@echo "    [GEN] $@"
+	@./errlist.sh ftp_errlist FTP ftp.errors > $@
 
 httperr.h: http.errors
-	./errlist.sh http_errlist HTTP http.errors > $@
+	@echo "    [GEN] $@"
+	@./errlist.sh http_errlist HTTP http.errors > $@
 
 .PHONY: clean
 clean:

@@ -33,9 +33,7 @@ To build the xbps utils, you'll need for both shared and dynamic:
 	* proplib (devel pkg)
 	* openssl (devel pkg)
 
-If you only want to build the static binaries, you can pass STATIC=1
-to the make command. You'll need development packages for the ones
-mentioned above as well as the following:
+And the following packages as well to build the static binaries:
 
 	* attr (devel pkg with static lib)
 	* acl (devel pkg with static lib)

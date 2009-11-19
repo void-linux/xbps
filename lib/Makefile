@@ -20,38 +20,35 @@ OBJS +=	repository.o requiredby.o sha256.o sortdeps.o state.o
 OBJS +=	sync_remote_pkgidx.o unpack.o util.o pkgmatch.o
 
 .PHONY: all
-ifdef STATIC
-all: libfetch libxbps.a
-else
 all: libfetch libxbps.so libxbps.a
-endif
 
 libfetch:
-	$(MAKE) -C fetch
+	@$(MAKE) -C fetch
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(SHAREDLIB_CFLAGS) $(CFLAGS) \
+	@echo "    [CC] $@"
+	@$(CC) $(CPPFLAGS) $(SHAREDLIB_CFLAGS) $(CFLAGS) \
 		$(LDFLAGS) $(STATIC_LIBS) -c $<
 
 libxbps.so: $(OBJS) $(LIBFETCH_OBJS)
-	$(CC) $(LDFLAGS) $(SHAREDLIB_LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
-	-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBMAJOR)
-	-ln -sf $(LIBXBPS_SHLIB) libxbps.so
+	@echo "    [CCLD] $@"
+	@$(CC) $(LDFLAGS) $(SHAREDLIB_LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
+	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBMAJOR)
+	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
 libxbps.a: $(OBJS) $(LIBFETCH_OBJS)
-	$(AR) rcs $@ $^
-	ranlib $@
+	@echo "    [AR] $@"
+	@$(AR) rcs $@ $^
+	@echo "    [RANLIB] $@"
+	@ranlib $@
 
 .PHONY: install
 install: all
 	install -d $(LIBDIR)
-ifdef STATIC
 	install -m 644 libxbps.a $(LIBDIR)
-else
 	install -m 644 $(LIBXBPS_SHLIB) $(LIBDIR)
 	cp -a libxbps.so $(LIBDIR)
 	cp -a libxbps.so.$(LIBMAJOR) $(LIBDIR)
-endif
 
 .PHONY: uninstall
 uninstall:
@@ -60,4 +57,4 @@ uninstall:
 .PHONY: clean
 clean:
 	-rm -f libxbps* $(OBJS)
-	$(MAKE) -C fetch clean
+	@$(MAKE) -C fetch clean

@@ -4,14 +4,14 @@ SUBDIRS	= lib bin
 
 .PHONY: all
 all:
-	for dir in $(SUBDIRS); do		\
-		$(MAKE) -C $$dir;		\
+	@for dir in $(SUBDIRS); do		\
+		$(MAKE) -C $$dir || exit 1;	\
 	done
 
 .PHONY: install
 install:
-	for dir in $(SUBDIRS); do		\
-		$(MAKE) -C $$dir install;	\
+	@for dir in $(SUBDIRS); do		\
+		$(MAKE) -C $$dir install || exit 1;	\
 	done
 	@echo
 	@echo "Binaries have been installed into $(SBINDIR)."
@@ -22,12 +22,12 @@ install:
 
 .PHONY: uninstall
 uninstall:
-	for dir in $(SUBDIRS); do		\
-		$(MAKE) -C $$dir uninstall;	\
+	@for dir in $(SUBDIRS); do		\
+		$(MAKE) -C $$dir uninstall || exit 1;	\
 	done
 
 .PHONY: clean
 clean:
-	for dir in $(SUBDIRS); do		\
-		$(MAKE) -C $$dir clean;		\
+	@for dir in $(SUBDIRS); do		\
+		$(MAKE) -C $$dir clean || exit 1;	\
 	done
