@@ -323,7 +323,7 @@ static int
 unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		    bool essential)
 {
-	prop_dictionary_t filesd, old_filesd = NULL;
+	prop_dictionary_t filesd = NULL, old_filesd = NULL;
 	struct archive_entry *entry;
 	const char *pkgname, *version, *rootdir, *entry_str;
 	char *buf, *buf2;
