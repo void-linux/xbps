@@ -3,6 +3,7 @@ xbps-cmpver
 xbps-digest
 xbps-repo
 xbps-pkgdb
+xbps-fetch
 *.static
 *.so*
 *.a
