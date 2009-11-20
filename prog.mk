@@ -1,23 +1,6 @@
 OBJS	?= main.o
 LDFLAGS	+= -lxbps
 
-%.o: %.c
-	@echo "    [CC] $@"
-	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(STATIC_LIBS) -c $<
-
-$(MAN):
-	@echo "    [ASCIIDOC] $(MAN)"
-	@a2x -f manpage $(MAN).txt
-
-$(BIN).static: $(OBJS)
-	@echo "    [CCLD] $@"
-	@$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
-		$(STATIC_LIBS) -o $@ >/dev/null 2>&1
-
-$(BIN): $(OBJS)
-	@echo "    [CCLD] $@"
-	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
-
 .PHONY: all
 all: $(BIN) $(BIN).static $(MAN)
 
@@ -45,3 +28,21 @@ uninstall:
 ifdef MAN
 	-rm -f $(MANDIR)/$(MAN)
 endif
+
+%.o: %.c
+	@echo "    [CC] $@"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(STATIC_LIBS) -c $<
+
+$(MAN):
+	@echo "    [ASCIIDOC] $(MAN)"
+	@a2x -f manpage $(MAN).txt
+
+$(BIN).static: $(OBJS)
+	@echo "    [CCLD] $@"
+	@$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+		$(STATIC_LIBS) -o $@ >/dev/null 2>&1
+
+$(BIN): $(OBJS)
+	@echo "    [CCLD] $@"
+	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
+
