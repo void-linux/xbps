@@ -232,10 +232,9 @@ xbps_find_new_packages(void)
 		else if (rv == EEXIST) {
 			rv = 0;
 			continue;
-		} else if (rv != 0) {
-			prop_object_iterator_release(iter);
-			return rv;
-		} 
+		} else if (rv != 0)
+			break;
+
 		newpkg_found = true;
 	}
 	prop_object_iterator_release(iter);
@@ -282,10 +281,16 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 			prop_dictionary_get_cstring_nocopy(pkgrd,
 			    "version", &repover);
 			if (xbps_cmpver(repover, instver) > 0) {
+				DPRINTF(("Found %s-%s in repo %s.\n",
+				    pkgname, repover, rdata->rd_uri));
 				newpkg_found = true;
 				break;
 			}
+			DPRINTF(("Skipping %s-%s in repo %s.\n",
+			    pkgname, repover, rdata->rd_uri));
 		}
+		DPRINTF(("Package %s not found in repo %s.\n",
+		    pkgname, rdata->rd_uri));
 	}
 	if (!newpkg_found)
 		return EEXIST;

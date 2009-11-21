@@ -69,6 +69,12 @@
 #define __UNCONST(a)	((void *)(unsigned long)(const void *)(a))
 #endif
 
+#ifdef DEBUG
+#define DPRINTF(x)	printf x
+#else
+#define DPRINTF(x)
+#endif
+
 #if __GNUC__ >= 4
 #define SYMEXPORT __attribute__ ((visibility("default")))
 #else
