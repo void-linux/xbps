@@ -159,10 +159,12 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 		 * if any of them is not there it will be added
 		 * into the missing_deps array.
 		 */
-		rv = find_repo_deps(master, rdata->rd_repod,
-		    rdata->rd_uri, pkg_rdeps);
-		if (rv != 0)
-			break;
+		if ((rv = find_repo_deps(master, rdata->rd_repod,
+		    rdata->rd_uri, pkg_rdeps)) != 0) {
+			DPRINTF(("Error '%s' while checking rundeps!\n",
+			    strerror(rv)));
+			return rv;
+		}
 	}
 
 	/*
@@ -178,10 +180,12 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 	 */
 	DPRINTF(("Checking for missing deps in %s.\n", pkgname)); 
 	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
-		rv = find_repo_deps(master, rdata->rd_repod,
-		    rdata->rd_uri, missing_rdeps);
-		if (rv != 0)
-			break;
+		if ((rv = find_repo_deps(master, rdata->rd_repod,
+		    rdata->rd_uri, missing_rdeps)) != 0) {
+			DPRINTF(("Error '%s' while checking for"
+			    "missing rundeps!\n", strerror(rv)));
+			return rv;
+		}
 	}
 
 	return rv;
@@ -193,7 +197,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 {
 	prop_dictionary_t curpkgd, tmpd = NULL;
 	prop_array_t curpkg_rdeps;
-	prop_object_t obj;
+	prop_object_t obj = NULL;
 	prop_object_iterator_t iter;
 	const char *reqpkg, *reqvers, *pkg_queued;
 	char *pkgname;
@@ -207,7 +211,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 	 * Iterate over the list of required run dependencies for
 	 * current package.
 	 */
-	while ((obj = prop_object_iterator_next(iter))) {
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		reqpkg = prop_string_cstring_nocopy(obj);
 		/*
 		 * Check if required dep is satisfied and installed.
@@ -241,11 +245,11 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 */
 		curpkgd = xbps_find_pkg_in_dict(master, "unsorted_deps", pkgname);
 		if (curpkgd) {
-			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "pkgver", &pkg_queued);
-			if (pkg_queued == NULL) {
+			if (!prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "pkgver", &pkg_queued)) {
 				free(pkgname);
-				return errno;
+				rv = errno;
+				break;
 			}
 			if (xbps_pkgdep_match(pkg_queued, __UNCONST(reqpkg))) {
 				DPRINTF(("Dependency %s already queued.\n",
@@ -326,8 +330,9 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 * Iterate on required pkg to find more deps.
 		 */
 		DPRINTF(("Looking for rundeps on %s.\n", reqpkg));
-		if (!find_repo_deps(master, repo, repoloc, curpkg_rdeps))
-			continue;
+		if ((rv = find_repo_deps(master, repo, repoloc,
+		     curpkg_rdeps)) != 0)
+			break;
 	}
 	prop_object_iterator_release(iter);
 
