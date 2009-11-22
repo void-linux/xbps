@@ -35,7 +35,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 {
 	prop_dictionary_t dict, pkgd;
 	prop_array_t array;
-	const char *pkgname, *version, *desc;
+	const char *pkgname, *version, *desc, *pkgver;
 	char *plist;
 	int rv = 0;
 
@@ -47,6 +47,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
+	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
 
 	dict = prop_dictionary_internalize_from_file(plist);
 	if (dict != NULL) {
@@ -56,6 +57,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 			goto out;
 		}
 		prop_dictionary_set_cstring_nocopy(pkgd, "version", version);
+		prop_dictionary_set_cstring_nocopy(pkgd, "pkgver", pkgver);
 		prop_dictionary_set_cstring_nocopy(pkgd, "short_desc", desc);
 		prop_dictionary_set_bool(pkgd, "automatic-install", automatic);
 

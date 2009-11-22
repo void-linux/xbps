@@ -71,18 +71,17 @@ usage(void)
 static int
 list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 {
-	const char *pkgname, *version, *short_desc;
+	const char *pkgver, *short_desc;
 
 	(void)arg;
 	(void)loop_done;
 
 	assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
-	if (pkgname && version && short_desc) {
-		printf("%s-%s\t%s\n", pkgname, version, short_desc);
+	if (pkgver && short_desc) {
+		printf("%s\t%s\n", pkgver, short_desc);
 		return 0;
 	}
 
@@ -92,7 +91,7 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 static int
 list_manual_packages(prop_object_t obj, void *arg, bool *loop_done)
 {
-	const char *pkgname, *version;
+	const char *pkgver;
 	bool automatic = false;
 
 	(void)arg;
@@ -100,9 +99,8 @@ list_manual_packages(prop_object_t obj, void *arg, bool *loop_done)
 
 	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
 	if (automatic == false) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		printf("%s-%s\n", pkgname, version);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		printf("%s\n", pkgver);
 	}
 
 	return 0;

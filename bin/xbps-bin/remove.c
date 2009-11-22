@@ -39,7 +39,7 @@ xbps_autoremove_pkgs(void)
 	prop_array_t orphans;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pkgname, *version;
+	const char *pkgver, *pkgname, *version;
 	size_t cols = 0;
 	int rv = 0;
 	bool first = false;
@@ -68,9 +68,8 @@ xbps_autoremove_pkgs(void)
 	printf("The following packages were installed automatically\n"
 	    "(as dependencies) and aren't needed anymore:\n\n");
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		cols += strlen(pkgname) + strlen(version) + 4;
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		cols += strlen(pkgver) + 4;
 		if (cols <= 80) {
 			if (first == false) {
 				printf("  ");
@@ -78,9 +77,9 @@ xbps_autoremove_pkgs(void)
 			}
 		} else {
 			printf("\n  ");
-			cols = strlen(pkgname) + strlen(version) + 4;
+			cols = strlen(pkgver) + 4;
 		}
-		printf("%s-%s ", pkgname, version);
+		printf("%s ", pkgver);
 	}
 	prop_object_iterator_reset(iter);
 	printf("\n\n");
@@ -93,7 +92,6 @@ xbps_autoremove_pkgs(void)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-
 		printf("Removing package %s-%s ...\n", pkgname, version);
 		if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0)
 			goto out2;

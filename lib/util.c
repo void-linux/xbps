@@ -115,8 +115,8 @@ int SYMEXPORT
 xbps_check_is_installed_pkg(const char *pkg)
 {
 	prop_dictionary_t dict;
-	const char *instver;
-	char *pkgname, *instpkg;
+	const char *instpkgver;
+	char *pkgname;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -146,18 +146,15 @@ xbps_check_is_installed_pkg(const char *pkg)
 		free(pkgname);
 		return 0; /* not fully installed */
 	}
-
-	/* Get version from installed package */
-	prop_dictionary_get_cstring_nocopy(dict, "version", &instver);
-	instpkg = xbps_xasprintf("%s-%s", pkgname, instver);
 	free(pkgname);
-	if (instpkg == NULL) {
+
+	instpkgver = xbps_get_pkgver_from_dict(dict);
+	if (instpkgver == NULL) {
 		prop_object_release(dict);
 		return -1;
 	}
 	/* Check if installed pkg is matched against pkgdep pattern */
-	rv = xbps_pkgdep_match(instpkg, __UNCONST(pkg));
-	free(instpkg);
+	rv = xbps_pkgdep_match(instpkgver, __UNCONST(pkg));
 	prop_object_release(dict);
 
 	return rv;
@@ -267,6 +264,17 @@ xbps_get_pkgdep_version(const char *pkg)
 		return NULL;
 
 	return res;
+}
+
+const char SYMEXPORT *
+xbps_get_pkgver_from_dict(prop_dictionary_t d)
+{
+	const char *pkgver;
+
+	assert(d != NULL);
+
+	prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
+	return pkgver;
 }
 
 static char *

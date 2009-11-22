@@ -38,7 +38,7 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"20091118"
+#define XBPS_RELVER		"20091121"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
@@ -227,6 +227,7 @@ char SYMEXPORT		*xbps_get_pkgdep_name(const char *);
 const char SYMEXPORT	*xbps_get_pkg_version(const char *);
 const char SYMEXPORT	*xbps_get_pkgdep_version(const char *);
 const char SYMEXPORT	*xbps_get_pkg_revision(const char *);
+const char SYMEXPORT	*xbps_get_pkgver_from_dict(prop_dictionary_t);
 bool SYMEXPORT		xbps_pkg_has_rundeps(prop_dictionary_t);
 void SYMEXPORT		xbps_set_rootdir(const char *);
 const char SYMEXPORT	*xbps_get_rootdir(void);

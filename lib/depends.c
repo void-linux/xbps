@@ -195,7 +195,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 	prop_array_t curpkg_rdeps;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *reqpkg, *reqvers;
+	const char *reqpkg, *reqvers, *pkg_queued;
 	char *pkgname;
 	int rv = 0;
 
@@ -217,12 +217,12 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 			/* There was an error checking it... */
 			break;
 		} else if (rv == 1) {
-			/* pkgdep is satisfied */
+			/* Required pkg dependency is satisfied */
 			DPRINTF(("Dependency %s satisfied.\n", reqpkg));
 			rv = 0;
 			continue;
 		}
-		DPRINTF(("Dependency %s not mached.\n", reqpkg));
+		DPRINTF(("Dependency %s not installed.\n", reqpkg));
 		pkgname = xbps_get_pkgdep_name(reqpkg);
 		if (pkgname == NULL) {
 			rv = EINVAL;
@@ -236,12 +236,24 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		}
 		/*
 		 * Check if package is already added in the
-		 * array of unsorted deps.
+		 * array of unsorted deps, and check if current required
+		 * dependency pattern is matched.
 		 */
-		if (xbps_find_pkg_in_dict(master, "unsorted_deps", pkgname)) {
-			DPRINTF(("Dependency %s already queued.\n", pkgname));
-			free(pkgname);
-			continue;
+		curpkgd = xbps_find_pkg_in_dict(master, "unsorted_deps", pkgname);
+		if (curpkgd) {
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "pkgver", &pkg_queued);
+			if (pkg_queued == NULL) {
+				free(pkgname);
+				return errno;
+			}
+			if (xbps_pkgdep_match(pkg_queued, __UNCONST(reqpkg))) {
+				DPRINTF(("Dependency %s already queued.\n",
+				    pkgname));
+				free(pkgname);
+				continue;
+			}
+			curpkgd = NULL;
 		}
 
 		/*

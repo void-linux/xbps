@@ -112,7 +112,7 @@ static int
 download_package_list(prop_object_iterator_t iter)
 {
 	prop_object_t obj;
-	const char *pkgname, *version, *repoloc, *filename, *arch;
+	const char *pkgver, *repoloc, *filename, *arch;
 	char *savedir, *binfile, *lbinfile, *repoloc_trans;
 	int rv = 0;
 
@@ -126,8 +126,7 @@ download_package_list(prop_object_iterator_t iter)
 		    (strncmp(repoloc, "ftp://", 6)))
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
 		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 
@@ -162,8 +161,7 @@ download_package_list(prop_object_iterator_t iter)
 			free(savedir);
 			return errno;
 		}
-		printf("Downloading %s-%s binary package ...\n",
-		    pkgname, version);
+		printf("Downloading %s binary package ...\n", pkgver);
 		rv = xbps_fetch_file(binfile, savedir, false, NULL);
 		free(savedir);
 		free(binfile);
@@ -198,17 +196,16 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 {
 	prop_object_t obj;
 	size_t cols = 0;
-	const char *pkgname, *version, *tract;
+	const char *pkgver, *tract;
 	bool first = false;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		if (strcmp(match, tract))
 			continue;
 
-		cols += strlen(pkgname) + strlen(version) + 4;
+		cols += strlen(pkgver) + 4;
 		if (cols <= 80) {
 			if (first == false) {
 				printf("  ");
@@ -216,9 +213,9 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 			}
 		} else {
 			printf("\n  ");
-			cols = strlen(pkgname) + strlen(version) + 4;
+			cols = strlen(pkgver) + 4;
 		}
-		printf("%s-%s ", pkgname, version);
+		printf("%s ", pkgver);
 	}
 	prop_object_iterator_reset(iter);
 }
@@ -425,8 +422,7 @@ out:
 }
 
 static int
-replace_packages(prop_object_iterator_t iter, const char *pkgname,
-		 const char *version)
+replace_packages(prop_object_iterator_t iter, const char *pkgver)
 {
 	prop_dictionary_t instd;
 	prop_object_t obj;
@@ -443,8 +439,8 @@ replace_packages(prop_object_iterator_t iter, const char *pkgname,
 		if (instd == NULL)
 			continue;
 
-		printf("Replacing package '%s' with '%s-%s' ...\n",
-		    reppkgn, pkgname, version);
+		printf("Replacing package '%s' with '%s' ...\n",
+		    reppkgn, pkgver);
 		if ((rv = xbps_remove_pkg(reppkgn, NULL, false)) != 0) {
 			printf("Couldn't remove %s (%s)\n",
 			    reppkgn, strerror(rv));
@@ -467,7 +463,7 @@ exec_transaction(struct transaction *trans)
 	prop_dictionary_t instpkgd;
 	prop_object_t obj;
 	prop_object_iterator_t replaces_iter;
-	const char *pkgname, *version, *instver, *filename, *tract;
+	const char *pkgname, *version, *pkgver, *instver, *filename, *tract;
 	int rv = 0;
 	bool essential, autoinst;
 	pkg_state_t state = 0;
@@ -512,6 +508,7 @@ exec_transaction(struct transaction *trans)
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_bool(obj, "essential", &essential);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
@@ -543,7 +540,7 @@ exec_transaction(struct transaction *trans)
 		 * Replace package(s) if necessary.
 		 */
 		if (replaces_iter != NULL) {
-			rv = replace_packages(replaces_iter, pkgname, version);
+			rv = replace_packages(replaces_iter, pkgver);
 			if (rv != 0) {
 				printf("Couldn't replace some packages! "
 				    "(%s)\n", strerror(rv));
@@ -594,19 +591,18 @@ exec_transaction(struct transaction *trans)
 		/*
 		 * Unpack binary package.
 		 */
-		printf("Unpacking %s-%s (from .../%s) ...\n", pkgname, version,
-		    filename);
+		printf("Unpacking %s (from .../%s) ...\n", pkgver, filename);
 		if ((rv = xbps_unpack_binary_pkg(obj, essential)) != 0) {
-			printf("error: unpacking %s-%s (%s)\n", pkgname,
-			    version, strerror(rv));
+			printf("error: unpacking %s (%s)\n", pkgver,
+			    strerror(rv));
 			return rv;
 		}
 		/*
 		 * Register binary package.
 		 */
 		if ((rv = xbps_register_pkg(obj, autoinst)) != 0) {
-			printf("error: registering %s-%s! (%s)\n",
-			    pkgname, version, strerror(rv));
+			printf("error: registering %s! (%s)\n",
+			    pkgver, strerror(rv));
 			return rv;
 		}
 		autoinst = false;
