@@ -147,8 +147,11 @@ add_repository(const char *uri, bool remote)
 
 		printf("Fetching remote package index at %s...\n", uri);
 		rv = xbps_sync_repository_pkg_index(idxstr);
-		if (rv != 0)
+		if (rv != 0) {
+			printf("Couldn't download pkg index: %s\n",
+			    xbps_fetch_error_string());
 			return rv;
+		}
 
 		plist = xbps_get_pkg_index_plist(idxstr);
 	} else {

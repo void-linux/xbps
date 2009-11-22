@@ -297,7 +297,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	printf("url_stat.mtime: %s\n", print_time(&url_st.mtime));
 #endif
 	if (fio == NULL && fetchLastErrCode != FETCH_OK) {
-		if (restart && fetchLastErrCode == FETCH_UNAVAIL) {
+		if (!refetch && restart && fetchLastErrCode == FETCH_UNAVAIL) {
 			/*
 			 * In HTTP when 416 is returned and length==0
 			 * means that local and remote file size match.
