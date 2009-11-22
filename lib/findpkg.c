@@ -288,6 +288,7 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 			}
 			DPRINTF(("Skipping %s-%s in repo %s.\n",
 			    pkgname, repover, rdata->rd_uri));
+			continue;
 		}
 		DPRINTF(("Package %s not found in repo %s.\n",
 		    pkgname, rdata->rd_uri));
