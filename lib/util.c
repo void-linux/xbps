@@ -148,12 +148,13 @@ xbps_check_is_installed_pkg(const char *pkg)
 	}
 	free(pkgname);
 
+	/* Check if installed pkg is matched against pkgdep pattern */
 	instpkgver = xbps_get_pkgver_from_dict(dict);
 	if (instpkgver == NULL) {
 		prop_object_release(dict);
 		return -1;
 	}
-	/* Check if installed pkg is matched against pkgdep pattern */
+
 	rv = xbps_pkgdep_match(instpkgver, __UNCONST(pkg));
 	prop_object_release(dict);
 
@@ -273,7 +274,9 @@ xbps_get_pkgver_from_dict(prop_dictionary_t d)
 
 	assert(d != NULL);
 
-	prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
+	if (!prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver))
+		return NULL;
+
 	return pkgver;
 }
 
