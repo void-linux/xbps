@@ -195,9 +195,9 @@ static int
 find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 	       const char *repoloc, prop_array_t array)
 {
-	prop_dictionary_t curpkgd, tmpd = NULL;
+	prop_dictionary_t curpkgd, tmpd;
 	prop_array_t curpkg_rdeps;
-	prop_object_t obj = NULL;
+	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *reqpkg, *reqvers, *pkg_queued;
 	char *pkgname;
@@ -219,6 +219,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		rv = xbps_check_is_installed_pkg(reqpkg);
 		if (rv == -1) {
 			/* There was an error checking it... */
+			DPRINTF(("Error matching reqdep %s\n", reqpkg));
 			break;
 		} else if (rv == 1) {
 			/* Required pkg dependency is satisfied */
@@ -247,6 +248,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		if (curpkgd) {
 			if (!prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkg_queued)) {
+				DPRINTF(("pkgver failed %s\n", reqpkg));
 				free(pkgname);
 				rv = errno;
 				break;
@@ -268,6 +270,8 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		if (curpkgd == NULL) {
 			rv = add_missing_reqdep(master, pkgname, reqvers);
 			if (rv != 0 && rv != EEXIST) {
+				DPRINTF(("add missing reqdep failed %s\n",
+				    reqpkg));
 				free(pkgname);
 				break;
 			} else if (rv == EEXIST) {
@@ -301,6 +305,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 * Package is on repo, add it into the dictionary.
 		 */
 		if ((rv = store_dependency(master, curpkgd, repoloc)) != 0) {
+			DPRINTF(("store_dependency failed %s\n", reqpkg));
 			free(pkgname);
 			break;
 		}
@@ -311,9 +316,13 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 * can remove it now it has been found in current repository.
 		 */
 		rv = xbps_remove_pkg_from_dict(master, "missing_deps", pkgname);
-		if (rv == 0)
+		if (rv == ENOENT) {
+			rv = 0;
+		} else if (rv == 0) {
 			DPRINTF(("Removed missing dep %s.\n", pkgname));
-		else if (rv != 0 && rv != ENOENT) {
+		} else {
+			DPRINTF(("Removing missing dep %s returned %s\n",
+			    pkgname, strerror(rv)));
 			free(pkgname);
 			break;
 		}
@@ -331,8 +340,11 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 */
 		DPRINTF(("Looking for rundeps on %s.\n", reqpkg));
 		if ((rv = find_repo_deps(master, repo, repoloc,
-		     curpkg_rdeps)) != 0)
+		     curpkg_rdeps)) != 0) {
+			DPRINTF(("Error checking %s rundeps %s\n",
+			    reqpkg, strerror(rv)));
 			break;
+		}
 	}
 	prop_object_iterator_release(iter);
 
