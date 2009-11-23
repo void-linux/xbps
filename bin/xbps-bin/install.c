@@ -122,8 +122,7 @@ download_package_list(prop_object_iterator_t iter)
 		/*
 		 * Skip packages in local repositories.
 		 */
-		if ((strncmp(repoloc, "http://", 7)) &&
-		    (strncmp(repoloc, "ftp://", 6)))
+		if (!xbps_check_is_repo_string_remote(repoloc))
 			continue;
 
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);

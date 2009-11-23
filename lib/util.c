@@ -111,6 +111,19 @@ xbps_check_pkg_file_hash(prop_dictionary_t pkgd, const char *repoloc)
 	return rv;
 }
 
+bool SYMEXPORT
+xbps_check_is_repo_string_remote(const char *uri)
+{
+	assert(uri != NULL);
+
+	if ((strncmp(uri, "https://", 8) == 0) ||
+	    (strncmp(uri, "http://", 7) == 0) ||
+	    (strncmp(uri, "ftp://", 6) == 0))
+		return true;
+
+	return false;
+}
+
 int SYMEXPORT
 xbps_check_is_installed_pkg(const char *pkg)
 {
@@ -289,7 +302,7 @@ get_pkg_index_remote_plist(const char *uri, const char *machine)
 	if (uri_fixed == NULL)
 		return NULL;
 
-	repodir = xbps_xasprintf("%s/%s/repo/%s/%s/%s",
+	repodir = xbps_xasprintf("%s/%s/%s/%s/%s",
 	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixed,
 	    machine, XBPS_PKGINDEX);
 	if (repodir == NULL) {

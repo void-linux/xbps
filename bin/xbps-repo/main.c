@@ -49,14 +49,13 @@ usage(void)
 {
 	printf("Usage: xbps-repo [options] [action] [arguments]\n\n"
 	" Available actions:\n"
-        "    add, genindex, list, remove, search, show\n"
+        "    add, genindex, list, remove, search, show, sync\n"
 	" Actions with arguments:\n"
 	"    add\t\t<URI>\n"
 	"    genindex\t<path>\n"
 	"    remove\t<URI>\n"
 	"    search\t<string>\n"
 	"    show\t<pkgname>\n"
-	"    sync\t\t<URI>\n"
 	" Options shared by all actions:\n"
 	"    -r\t\t<rootdir>\n"
 	"    -V\t\tPrints xbps release version\n"
@@ -134,21 +133,21 @@ out:
 }
 
 static int
-add_repository(const char *uri, bool remote)
+add_repository(const char *uri)
 {
 	prop_dictionary_t dict;
 	repo_info_t *rinfo;
 	char *plist, idxstr[PATH_MAX];
 	int rv = 0;
 
-	if (remote) {
+	if (xbps_check_is_repo_string_remote(uri)) {
 		if (!sanitize_localpath(idxstr, uri))
 			return errno;
 
 		printf("Fetching remote package index at %s...\n", uri);
 		rv = xbps_sync_repository_pkg_index(idxstr);
 		if (rv != 0) {
-			printf("Couldn't download pkg index: %s\n",
+			printf("Error: could not fetch pkg index file: %s.\n",
 			    xbps_fetch_error_string());
 			return rv;
 		}
@@ -208,8 +207,8 @@ int
 main(int argc, char **argv)
 {
 	char dpkgidx[PATH_MAX], *root = NULL;
+	struct repository_data *rdata = NULL;
 	int c, rv = 0;
-	bool remote_repo = false;
 
 	while ((c = getopt(argc, argv, "Vr:")) != -1) {
 		switch (c) {
@@ -238,11 +237,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		if ((strncmp(argv[1], "http://", 7) == 0) ||
-		    (strncmp(argv[1], "ftp://", 6) == 0))
-			remote_repo = true;
-
-		rv = add_repository(argv[1], remote_repo);
+		rv = add_repository(argv[1]);
 
 	} else if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists all repositories registered in pool. */
@@ -304,15 +299,25 @@ main(int argc, char **argv)
 		exit(rv);
 
 	} else if (strcasecmp(argv[0], "sync") == 0) {
-		/* Syncs the pkg index file from a remote repo */
-		if (argc != 2)
+		/* Syncs the pkg index for all registered remote repos */
+		if (argc != 1)
 			usage();
 
-		if (!sanitize_localpath(dpkgidx, argv[1]))
-			exit(EXIT_FAILURE);
-
-		printf("Updating package index from: %s\n", dpkgidx);
-		rv = xbps_sync_repository_pkg_index(dpkgidx);
+		if ((rv = xbps_prepare_repolist_data()) != 0)
+			exit(rv);
+		/*
+		 * Iterate over repository pool.
+		 */
+		SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
+			const char *uri = rdata->rd_uri;
+			if (xbps_check_is_repo_string_remote(uri)) {
+				printf("Syncing package index from: %s\n", uri);
+				rv = xbps_sync_repository_pkg_index(uri);
+				if (rv != 0)
+					break;
+			}
+		}
+		xbps_release_repolist_data();
 
 	} else {
 		usage();

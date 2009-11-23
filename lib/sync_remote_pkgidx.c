@@ -45,23 +45,23 @@ xbps_get_remote_repo_string(const char *uri)
 		return NULL;
 
 	/*
-	 * Replace dots and slashes with underscores, so that
+	 * Replace '.' ':' and '/' characters with underscores, so that
 	 * provided URL:
 	 *
-	 * 	www.foo.org/blah/xbps/binpkg-repo
+	 * 	http://www.foo.org/blah/xbps/binpkg-repo
 	 *
 	 * becomes:
 	 *
-	 * 	www_foo_org_blah_xbps_binpkg_repo
+	 * 	http___www_foo_org_blah_xbps_binpkg_repo
 	 * 	
 	 */
-	p = xbps_xasprintf("%s%s", url->host, url->doc);
+	p = xbps_xasprintf("%s://%s%s", url->scheme, url->host, url->doc);
 	fetchFreeURL(url);
 	if (p == NULL)
 		return NULL;
 
 	for (i = 0; i < strlen(p); i++) {
-		if (p[i] == '.' || p[i] == '/')
+		if (p[i] == '.' || p[i] == '/' || p[i] == ':')
 			p[i] = '_';
 	}
 
@@ -71,10 +71,17 @@ xbps_get_remote_repo_string(const char *uri)
 int SYMEXPORT
 xbps_sync_repository_pkg_index(const char *uri)
 {
-	struct url *url;
+	struct url *url = NULL;
 	struct utsname un;
-	char *rpidx, *dir, *lrepodir, *uri_fixedp = NULL;
+	struct stat st;
+	const char *fetch_outputdir;
+	char *rpidx, *dir, *lrepodir, *uri_fixedp;
+	char *metadir, *tmp_metafile, *lrepofile;
 	int rv = 0;
+	bool only_sync = false;
+
+	rpidx = dir = lrepodir = uri_fixedp = NULL;
+	metadir = tmp_metafile = lrepofile = NULL;
 
 	if (uname(&un) == -1)
 		return errno;
@@ -89,54 +96,136 @@ xbps_sync_repository_pkg_index(const char *uri)
 	}
 
 	/*
+	 * Create metadir if it doesn't exist yet.
+	 */
+	metadir = xbps_xasprintf("%s/%s", xbps_get_rootdir(),
+	    XBPS_META_PATH);
+	if (metadir == NULL) {
+		rv = errno;
+		goto out;
+	}
+	rv = stat(metadir, &st);
+	if (rv == -1 && errno == ENOENT) {
+		if (mkpath(metadir, 0755) == -1) {
+			rv = errno;
+			goto out;
+		}
+	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
+		rv = ENOTDIR;
+		goto out;
+	}
+
+	/*
+	 * Remote repository pkg-index.plist full URL.
+	 */
+	rpidx = xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
+	if (rpidx == NULL) {
+		rv = errno;
+		goto out;
+	}
+	/*
+	 * Save temporary file in XBPS_META_PATH, and rename if it
+	 * was downloaded successfully.
+	 */
+	tmp_metafile = xbps_xasprintf("%s/%s", metadir, XBPS_PKGINDEX);
+	if (tmp_metafile == NULL) {
+		rv = errno;
+		goto out;
+	}
+	/*
+	 * Full path to machine arch local repository directory.
+	 */
+	lrepodir = xbps_xasprintf("%s/%s/%s/%s",
+	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp, un.machine);
+	if (lrepodir == NULL) {
+		rv = errno;
+		goto out;
+	}
+	/*
+	 * If directory exists probably the pkg-index.plist file
+	 * was downloaded previously...
+	 */
+	rv = stat(lrepodir, &st);
+	if (rv == 0 && S_ISDIR(st.st_mode)) {
+		only_sync = true;
+		fetch_outputdir = lrepodir;
+	} else
+		fetch_outputdir = metadir;
+
+	/*
+	 * Download pkg-index.plist file from repository.
+	 */
+	if ((rv = xbps_fetch_file(rpidx, fetch_outputdir,
+	     true, NULL)) != 0) {
+		(void)remove(tmp_metafile);
+		goto out;
+	}
+	if (only_sync)
+		goto out;
+
+	/*
 	 * Create local arch repodir:
 	 *
 	 * 	<rootdir>/var/db/xbps/repo/<url_path_blah>/<arch>
 	 */
-	lrepodir = xbps_xasprintf("%s/%s/repo/%s/%s",
-	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp, un.machine);
-	if (lrepodir == NULL) {
-		fetchFreeURL(url);
-		free(uri_fixedp);
-		return errno;
-	}
-	if (mkpath(lrepodir, 0755) == -1) {
-		free(lrepodir);
-		free(uri_fixedp);
-		fetchFreeURL(url);
-		return errno;
+	rv = stat(lrepodir, &st);
+	if (rv == -1 && errno == ENOENT) {
+		if (mkpath(lrepodir, 0755) == -1) {
+			rv = errno;
+			goto out;
+		}
+	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
+		rv = ENOTDIR;
+		goto out;
 	}
 	/*
 	 * Create local noarch repodir:
 	 *
 	 * 	<rootdir>/var/db/xbps/repo/<url_path_blah>/noarch
 	 */
-	dir = xbps_xasprintf("%s/%s/repo/%s/noarch",
+	dir = xbps_xasprintf("%s/%s/%s/noarch",
 	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp);
-	free(uri_fixedp);
-	fetchFreeURL(url);
 	if (dir == NULL) {
-		free(lrepodir);
-		return errno;
+		rv = errno;
+		goto out;
 	}
-	if (mkpath(dir, 0755) == -1) {
+	rv = stat(dir, &st);
+	if (rv == -1 && errno == ENOENT) {
+		if (mkpath(dir, 0755) == -1) {
+			free(dir);
+			rv = errno;
+			goto out;
+		}
+	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
 		free(dir);
-		free(lrepodir);
-		return errno;
+		rv = ENOTDIR;
+		goto out;
 	}
 	free(dir);
-	/*
-	 * Download pkg-index.plist file from repository.
-	 */
-	rpidx = xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
-	if (rpidx == NULL) {
-		free(lrepodir);
-		return errno;
+	lrepofile = xbps_xasprintf("%s/%s", lrepodir, XBPS_PKGINDEX);
+	if (lrepofile == NULL) {
+		rv = errno;
+		goto out;
 	}
-	rv = xbps_fetch_file(rpidx, lrepodir, true, NULL);
-
-	free(rpidx);
-	free(lrepodir);
+	/*
+	 * Rename to destination file now it has been fetched successfully.
+	 */
+	rv = rename(tmp_metafile, lrepofile);
+out:
+	if (rpidx)
+		free(rpidx);
+	if (lrepodir)
+		free(lrepodir);
+	if (metadir)
+		free(metadir);
+	if (tmp_metafile)
+		free(tmp_metafile);
+	if (lrepofile)
+		free(lrepofile);
+	if (url)
+		fetchFreeURL(url);
+	if (uri_fixedp)
+		free(uri_fixedp);
 
 	return rv;
 }
