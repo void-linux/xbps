@@ -94,7 +94,7 @@ main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
 	const char *version;
-	char *plist, *pkgname, *in_chroot_env, *root = "";
+	char *plist, *pkgname, *pkgver, *in_chroot_env, *root = "";
 	bool in_chroot = false;
 	int c, rv = 0;
 
@@ -144,6 +144,11 @@ main(int argc, char **argv)
 		prop_dictionary_set_cstring_nocopy(dict, "pkgname", argv[1]);
 		prop_dictionary_set_cstring_nocopy(dict, "version", argv[2]);
 		prop_dictionary_set_cstring_nocopy(dict, "short_desc", argv[3]);
+		pkgver = xbps_xasprintf("%s-%s", argv[1], argv[2]);
+		if (pkgver == NULL)
+			exit(EXIT_FAILURE);
+		prop_dictionary_set_cstring(dict, "pkgver", pkgver);
+		free(pkgver);
 
 		rv = xbps_set_pkg_state_installed(argv[1],
 		    XBPS_PKG_STATE_INSTALLED);
