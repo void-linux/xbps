@@ -323,8 +323,7 @@ xbps_get_pkg_index_plist(const char *uri)
 	if (uname(&un) == -1)
 		return NULL;
 
-	if ((strncmp(uri, "http://", 7) == 0) ||
-	    (strncmp(uri, "ftp://", 6) == 0))
+	if (xbps_check_is_repo_string_remote(uri))
 		return get_pkg_index_remote_plist(uri, un.machine);
 
 	return xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
