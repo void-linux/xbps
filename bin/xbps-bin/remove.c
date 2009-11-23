@@ -68,7 +68,11 @@ xbps_autoremove_pkgs(void)
 	printf("The following packages were installed automatically\n"
 	    "(as dependencies) and aren't needed anymore:\n\n");
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgver", &pkgver)) {
+			rv = errno;
+			goto out2;
+		}
 		cols += strlen(pkgver) + 4;
 		if (cols <= 80) {
 			if (first == false) {
@@ -90,8 +94,16 @@ xbps_autoremove_pkgs(void)
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname)) {
+			rv = errno;
+			goto out2;
+		}
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "version", &version)) {
+			rv = errno;
+			goto out;
+		}
 		printf("Removing package %s-%s ...\n", pkgname, version);
 		if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0)
 			goto out2;
@@ -120,7 +132,8 @@ xbps_remove_installed_pkg(const char *pkgname, bool force)
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;
 	}
-	prop_dictionary_get_cstring_nocopy(dict, "version", &version);
+	if (!prop_dictionary_get_cstring_nocopy(dict, "version", &version))
+		return errno;
 
 	reqby = prop_dictionary_get(dict, "requiredby");
 	if (reqby != NULL && prop_array_count(reqby) > 0) {

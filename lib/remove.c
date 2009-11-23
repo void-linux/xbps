@@ -101,7 +101,12 @@ files:
 			prop_object_iterator_release(iter);
 			return EINVAL;
 		}
-		prop_dictionary_get_cstring_nocopy(obj, "sha256", &sha256);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "sha256", &sha256)) {
+			prop_object_iterator_release(iter);
+			free(path);
+			return errno;
+		}
 		rv = xbps_check_file_hash(path, sha256);
 		if (rv == ENOENT) {
 			printf("WARNING: '%s' doesn't exist!\n", file);

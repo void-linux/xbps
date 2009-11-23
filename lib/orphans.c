@@ -83,6 +83,9 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 
 	while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
 		pkgname = xbps_get_pkg_name(prop_string_cstring_nocopy(obj2));
+		if (pkgname == NULL)
+			return EINVAL;
+
 		SIMPLEQ_FOREACH(orphan, &orphan_list, chain) {
 			if (strcmp(orphan->pkgname, pkgname) == 0) {
 				ndep++;
@@ -101,7 +104,11 @@ add_orphan:
 	if (orphan == NULL)
 		return errno;
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &orphan->pkgname);
+	if (!prop_dictionary_get_cstring_nocopy(obj, "pkgname",
+	    &orphan->pkgname)) {
+		free(orphan);
+		return errno;
+	}
 	orphan->dict = prop_dictionary_copy(obj);
 	SIMPLEQ_INSERT_TAIL(&orphan_list, orphan, chain);
 
@@ -151,7 +158,10 @@ xbps_find_orphan_packages(void)
 		return NULL;
 	}
 	while ((orphan = SIMPLEQ_FIRST(&orphan_list)) != NULL) {
-		prop_array_add(array, orphan->dict);
+		if (!prop_array_add(array, orphan->dict)) {
+			cleanup();
+			return NULL;
+		}
 		SIMPLEQ_REMOVE(&orphan_list, orphan, orphan_pkg, chain);
 		prop_object_release(orphan->dict);
 		free(orphan);

@@ -68,10 +68,30 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 			rv = ENOENT;
 			goto out;
 		}
-		prop_dictionary_set_cstring_nocopy(pkgd, "version", version);
-		prop_dictionary_set_cstring_nocopy(pkgd, "pkgver", pkgver);
-		prop_dictionary_set_cstring_nocopy(pkgd, "short_desc", desc);
-		prop_dictionary_set_bool(pkgd, "automatic-install", automatic);
+		if (!prop_dictionary_set_cstring_nocopy(pkgd,
+		    "version", version)) {
+			prop_object_release(pkgd);
+			rv = errno;
+			goto out;
+		}
+		if (!prop_dictionary_set_cstring_nocopy(pkgd,
+		    "pkgver", pkgver)) {
+			prop_object_release(pkgd);
+			rv = errno;
+			goto out;
+		}
+		if (!prop_dictionary_set_cstring_nocopy(pkgd,
+		    "short_desc", desc)) {
+			prop_object_release(pkgd);
+			rv = errno;
+			goto out;
+		}
+		if (!prop_dictionary_set_bool(pkgd,
+		    "automatic-install", automatic)) {
+			prop_object_release(pkgd);
+			rv = errno;
+			goto out;
+		}
 
 		/*
 		 * Add the requiredby objects for dependent packages.

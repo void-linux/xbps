@@ -52,8 +52,16 @@ xbps_configure_all_pkgs(void)
 		return ENOENT;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname)) {
+			rv = errno;
+			break;
+		}
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "version", &version)) {
+			rv = errno;
+			break;
+		}
 		if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
 			break;
 		if (state != XBPS_PKG_STATE_UNPACKED)
@@ -102,7 +110,11 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
 		if (pkgd == NULL)
 			return ENOENT;
 
-		prop_dictionary_get_cstring_nocopy(pkgd, "version", &lver);
+		if (!prop_dictionary_get_cstring_nocopy(pkgd,
+		    "version", &lver)) {
+			prop_object_release(pkgd);
+			return errno;
+		}
 		prop_object_release(pkgd);
 	} else {
 		lver = version;

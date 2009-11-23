@@ -80,9 +80,7 @@ xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 		prop_dictionary_set(chaindeps, "packages", sorted);
 		return 0;
 	}
-
 	ndeps = prop_array_count(unsorted);
-	unsorted = prop_dictionary_get(chaindeps, "unsorted_deps");
 
 	iter = prop_array_iterator(unsorted);
 	if (iter == NULL) {
@@ -94,7 +92,11 @@ again:
 	 * Order all deps by looking at its run_depends array.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname)) {
+			rv = errno;
+			goto out;
+		}
 		if (find_sorteddep_by_name(pkgname) != NULL)
 			continue;
 
@@ -126,7 +128,17 @@ again:
 		 */
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
 			str = prop_string_cstring_nocopy(obj2);
+			if (str == NULL) {
+				free(sdep);
+				rv = EINVAL;
+				goto out;
+			}
 			curpkgnamedep = xbps_get_pkgdep_name(str);
+			if (curpkgnamedep == NULL) {
+				free(sdep);
+				rv = EINVAL;
+				goto out;
+			}
 			/*
 			 * If dependency is already installed or queued,
 			 * pass to the next one.
@@ -163,7 +175,11 @@ again:
 	 * Add all sorted dependencies into the sorted deps array.
 	 */
 	while ((sdep = SIMPLEQ_FIRST(&sdep_list)) != NULL) {
-		prop_array_add(sorted, sdep->dict);
+		if (!prop_array_add(sorted, sdep->dict)) {
+			free(sdep);
+			rv = errno;
+			goto out;
+		}
 		SIMPLEQ_REMOVE(&sdep_list, sdep, sorted_dependency, chain);
 		prop_object_release(sdep->dict);
 		free(sdep);

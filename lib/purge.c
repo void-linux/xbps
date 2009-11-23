@@ -53,7 +53,11 @@ xbps_purge_all_pkgs(void)
 		return ENOENT;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname)) {
+			rv = errno;
+			break;
+		}
 		if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
 			break;
 		if (state != XBPS_PKG_STATE_CONFIG_FILES)
@@ -139,7 +143,12 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 			prop_object_release(dict);
 			return EINVAL;
 		}
-		prop_dictionary_get_cstring_nocopy(obj, "sha256", &sha256);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "sha256", &sha256)) {
+			prop_object_iterator_release(iter);
+			prop_object_release(dict);
+			return errno;
+		}
 		rv = xbps_check_file_hash(path, sha256);
 		if (rv == ENOENT) {
 			printf("Configuration file %s doesn't exist!\n", file);

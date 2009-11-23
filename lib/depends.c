@@ -50,7 +50,8 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 	/*
 	 * Get some info about dependencies and current repository.
 	 */
-	prop_dictionary_get_cstring_nocopy(depd, "pkgname", &pkgname);
+	if (!prop_dictionary_get_cstring_nocopy(depd, "pkgname", &pkgname))
+		return errno;
 
 	dict = prop_dictionary_copy(depd);
 	if (dict == NULL)
@@ -84,7 +85,10 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 	/*
 	 * Add required objects into package dep's dictionary.
 	 */
-	prop_dictionary_set_cstring(dict, "repository", repoloc);
+	if (!prop_dictionary_set_cstring(dict, "repository", repoloc)) {
+		prop_object_release(dict);
+		return errno;
+	}
 	/*
 	 * Remove some unneeded objects.
 	 */
@@ -121,9 +125,14 @@ add_missing_reqdep(prop_dictionary_t master, const char *pkgname,
 		return errno;
 
 	missing_rdeps = prop_dictionary_get(master, "missing_deps");
-	prop_dictionary_set_cstring(mdepd, "pkgname", pkgname);
-	prop_dictionary_set_cstring(mdepd, "version", version);
-
+	if (!prop_dictionary_set_cstring(mdepd, "pkgname", pkgname)) {
+		prop_object_release(mdepd);
+		return errno;
+	}
+	if (!prop_dictionary_set_cstring(mdepd, "version", version)) {
+		prop_object_release(mdepd);
+		return errno;
+	}
 	if (!xbps_add_obj_to_array(missing_rdeps, mdepd)) {
 		prop_object_release(mdepd);
 		return EINVAL;
@@ -147,7 +156,9 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 	if (pkg_rdeps == NULL)
 		return 0;
 
-	prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname);
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
+		return errno;
+
 	DPRINTF(("Checking rundeps for %s.\n", pkgname));
 	/*
 	 * Iterate over the repository pool and find out if we have
@@ -213,6 +224,10 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		reqpkg = prop_string_cstring_nocopy(obj);
+		if (reqpkg == NULL) {
+			rv = EINVAL;
+			break;
+		}
 		/*
 		 * Check if required dep is satisfied and installed.
 		 */

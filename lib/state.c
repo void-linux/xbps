@@ -72,8 +72,7 @@ get_state(prop_dictionary_t dict)
 
 	assert(dict != NULL);
 
-	prop_dictionary_get_cstring_nocopy(dict, "state", &state_str);
-	if (state_str == NULL)
+	if (!prop_dictionary_get_cstring_nocopy(dict, "state", &state_str))
 		return 0;
 
 	if (strcmp(state_str, "unpacked") == 0)
@@ -177,7 +176,12 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 			rv = errno;
 			goto out;
 		}
-		prop_dictionary_set_cstring_nocopy(pkgd, "pkgname", pkgname);
+		if (!prop_dictionary_set_cstring_nocopy(pkgd, "pkgname",
+		    pkgname)) {
+			prop_object_release(array);
+			rv = errno;
+			goto out;
+		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
 			prop_object_release(array);
 			goto out;
@@ -198,8 +202,12 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 		if (pkgd == NULL) {
 			newpkg = true;
 			pkgd = prop_dictionary_create();
-			prop_dictionary_set_cstring_nocopy(pkgd, "pkgname",
-			    pkgname);
+			if (!prop_dictionary_set_cstring_nocopy(pkgd,
+			    "pkgname", pkgname)) {
+				prop_object_release(pkgd);
+				rv = errno;
+				goto out;
+			}
 		}
 		array = prop_dictionary_get(dict, "packages");
 		if (array == NULL) {

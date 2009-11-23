@@ -82,7 +82,10 @@ check_pkg_hashes(prop_object_iterator_t iter)
 
 	printf("Checking binary package file(s) integrity...\n");
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname))
+			return errno;
+
 		state = 0;
 		if (xbps_get_pkg_state_dictionary(obj, &state) != 0)
 			return EINVAL;
@@ -90,8 +93,12 @@ check_pkg_hashes(prop_object_iterator_t iter)
 		if (state == XBPS_PKG_STATE_UNPACKED)
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "repository", &repoloc))
+			return errno;
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "filename", &filename))
+			return errno;
 		rv = xbps_check_pkg_file_hash(obj, repoloc);
 		if (rv != 0 && rv != ERANGE) {
 			printf("Unexpected error while checking hash for "
@@ -118,16 +125,24 @@ download_package_list(prop_object_iterator_t iter)
 
 	printf("Downloading binary package file(s)...\n");
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "repository", &repoloc))
+			return errno;
 		/*
 		 * Skip packages in local repositories.
 		 */
 		if (!xbps_check_is_repo_string_remote(repoloc))
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
-		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgver", &pkgver))
+			return errno;
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "filename", &filename))
+			return errno;
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "architecture", &arch))
+			return errno;
 
 		repoloc_trans = xbps_get_remote_repo_string(repoloc);
 		if (repoloc_trans == NULL)
@@ -139,14 +154,12 @@ download_package_list(prop_object_iterator_t iter)
 			free(repoloc_trans);
 			return errno;
 		}
-
 		lbinfile = xbps_xasprintf("%s/%s", savedir, filename);
 		if (lbinfile == NULL) {
 			free(repoloc_trans);
 			free(savedir);
 			return errno;
 		}
-
 		if (access(lbinfile, R_OK) == 0) {
 			free(savedir);
 			free(lbinfile);
@@ -182,7 +195,10 @@ change_repodir:
 		if (savedir == NULL)
 		       return errno;
 
-		prop_dictionary_set_cstring(obj, "repository", savedir);
+		if (!prop_dictionary_set_cstring(obj, "repository", savedir)) {
+			free(savedir);
+			return errno;
+		}
 		free(savedir);
 	}
 	prop_object_iterator_reset(iter);
@@ -199,8 +215,12 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 	bool first = false;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgver", &pkgver))
+			return;
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "trans-action", &tract))
+			return;
 		if (strcmp(match, tract))
 			continue;
 
@@ -233,17 +253,24 @@ show_transaction_sizes(prop_object_iterator_t iter)
 	 * installed and check the file hash.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_uint64(obj, "filename-size", &tsize);
+		if (!prop_dictionary_get_uint64(obj, "filename-size", &tsize))
+			return errno;
+
 		dlsize += tsize;
 		tsize = 0;
-		prop_dictionary_get_uint64(obj, "installed_size", &tsize);
+		if (!prop_dictionary_get_uint64(obj, "installed_size", &tsize))
+			return errno;
+
 		instsize += tsize;
 		tsize = 0;
 	}
 	prop_object_iterator_reset(iter);
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "trans-action", &tract))
+			return errno;
+
 		if (strcmp(tract, "install") == 0)
 			trans_inst = true;
 		else if (strcmp(tract, "update") == 0)
@@ -384,8 +411,11 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 		goto out2;
 	}
 
-	prop_dictionary_get_cstring_nocopy(trans->dict,
-	     "origin", &trans->originpkgname);
+	if (!prop_dictionary_get_cstring_nocopy(trans->dict,
+	     "origin", &trans->originpkgname)) {
+		rv = errno;
+		goto out2;
+	}
 
 	if (update) {
 		/*
@@ -434,6 +464,9 @@ replace_packages(prop_object_iterator_t iter, const char *pkgver)
 	 */
 	while ((obj = prop_object_iterator_next(iter))) {
 		reppkgn = prop_string_cstring_nocopy(obj);
+		if (reppkgn == NULL)
+			return errno;
+
 		instd = xbps_find_pkg_installed_from_plist(reppkgn);
 		if (instd == NULL)
 			continue;
@@ -505,12 +538,22 @@ exec_transaction(struct transaction *trans)
 	 * Iterate over the transaction dictionary.
 	 */
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname))
+			return errno;
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "version", &version))
+			return errno;
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgver", &pkgver))
+			return errno;
 		prop_dictionary_get_bool(obj, "essential", &essential);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "filename", &filename))
+			return errno;
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "trans-action", &tract))
+			return errno;
 		replaces_iter = xbps_get_array_iter_from_dict(obj, "replaces");
 
 		/*
@@ -556,11 +599,17 @@ exec_transaction(struct transaction *trans)
 				return EINVAL;
 			}
 
-			prop_dictionary_get_cstring_nocopy(instpkgd,
-			    "version", &instver);
+			if (!prop_dictionary_get_cstring_nocopy(instpkgd,
+			    "version", &instver)) {
+				prop_object_release(instpkgd);
+				return errno;
+			}
 			autoinst = false;
-			prop_dictionary_get_bool(instpkgd, "automatic-install",
-			    &autoinst);
+			if (!prop_dictionary_get_bool(instpkgd,
+			    "automatic-install", &autoinst)) {
+				prop_object_release(instpkgd);
+				return errno;
+			}
 			prop_object_release(instpkgd);
 
 			/*
@@ -618,8 +667,12 @@ exec_transaction(struct transaction *trans)
 	 * Configure all unpacked packages.
 	 */
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname))
+			return errno;
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "version", &version))
+			return errno;
 		if ((rv = xbps_configure_pkg(pkgname, version, false)) != 0) {
 			printf("Error configuring package %s (%s)\n",
 			    pkgname, strerror(rv));

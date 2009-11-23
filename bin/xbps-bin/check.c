@@ -64,8 +64,16 @@ xbps_check_pkg_integrity_all(void)
 		return ENOENT;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname)) {
+			prop_object_iterator_release(iter);
+			return errno;
+		}
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "version", &version)) {
+			prop_object_iterator_release(iter);
+			return errno;
+		}
 		printf("Checking %s-%s ...\n", pkgname, version);
 		if ((rv = xbps_check_pkg_integrity(pkgname)) != 0)
 			nbrokenpkgs++;
@@ -177,7 +185,12 @@ xbps_check_pkg_integrity(const char *pkgname)
 			goto out2;
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+			if (!prop_dictionary_get_cstring_nocopy(obj,
+			    "file", &file)) {
+				prop_object_iterator_release(iter);
+				rv = errno;
+				goto out2;
+			}
 			path = xbps_xasprintf("%s/%s",
 			    xbps_get_rootdir(), file);
 			if (path == NULL) {
@@ -185,8 +198,13 @@ xbps_check_pkg_integrity(const char *pkgname)
 				rv = errno;
 				goto out2;
 			}
-                        prop_dictionary_get_cstring_nocopy(obj,
-                            "sha256", &sha256);
+                        if (!prop_dictionary_get_cstring_nocopy(obj,
+                            "sha256", &sha256)) {
+				free(path);
+				prop_object_iterator_release(iter);
+				rv = errno;
+				goto out2;
+			}
 			rv = xbps_check_file_hash(path, sha256);
 			switch (rv) {
 			case 0:
@@ -227,7 +245,12 @@ xbps_check_pkg_integrity(const char *pkgname)
 			goto out2;
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+			if (!prop_dictionary_get_cstring_nocopy(obj,
+			    "file", &file)) {
+				prop_object_iterator_release(iter);
+				rv = errno;
+				goto out2;
+			}
 			path = xbps_xasprintf("%s/%s",
 			    xbps_get_rootdir(), file);
 			if (path == NULL) {
@@ -264,6 +287,11 @@ xbps_check_pkg_integrity(const char *pkgname)
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			reqpkg = prop_string_cstring_nocopy(obj);
+			if (reqpkg == NULL) {
+				prop_object_iterator_release(iter);
+				rv = EINVAL;
+				goto out2;
+			}
 			if (xbps_check_is_installed_pkg(reqpkg) <= 0) {
 				rv = ENOENT;
 				printf("%s: dependency not satisfied: %s\n",

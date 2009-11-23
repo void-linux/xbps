@@ -101,6 +101,11 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 	while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
 		curpkgname =
 		    xbps_get_pkg_name(prop_string_cstring_nocopy(obj2));
+		if (curpkgname == NULL) {
+			prop_object_iterator_release(iter);
+			return EINVAL;
+		}
+			
 		if (strcmp(curpkgname, pkgname) == 0) {
 			free(curpkgname);
 			found = true;
@@ -157,7 +162,8 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 	char *rdepname;
 	int rv = 0;
 
-	prop_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver))
+		return errno;
 
 	rdeps = prop_dictionary_get(pkg, "run_depends");
 	if (rdeps == NULL || prop_array_count(rdeps) == 0)
@@ -169,7 +175,15 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		str = prop_string_cstring_nocopy(obj);
+		if (str == NULL) {
+			rv = errno;
+			goto out;
+		}
 		rdepname = xbps_get_pkgdep_name(str);
+		if (rdepname == NULL) {
+			rv = EINVAL;
+			goto out;
+		}
 		iter2 = prop_array_iterator(regar);
 		if (iter2 == NULL) {
 			free(rdepname);
@@ -182,8 +196,13 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 		 * current run dependency.
 		 */
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
-			prop_dictionary_get_cstring_nocopy(obj2, "pkgname",
-			    &reqname);
+			if (!prop_dictionary_get_cstring_nocopy(obj2,
+			    "pkgname", &reqname)) {
+				free(rdepname);
+				prop_object_iterator_release(iter2);
+				rv = errno;
+				goto out;
+			}
 			if (strcmp(rdepname, reqname) == 0) {
 				rv = add_pkg_into_reqby(obj2, pkgver);
 				if (rv == EEXIST)

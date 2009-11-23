@@ -156,6 +156,11 @@ xbps_prepare_repolist_data(void)
 		}
 
 		rdata->rd_uri = prop_string_cstring(obj);
+		if (rdata->rd_uri == NULL) {
+			free(plist);
+			rv = EINVAL;
+			goto out2;
+		}
 		rdata->rd_repod = prop_dictionary_internalize_from_file(plist);
 		if (rdata->rd_repod == NULL) {
 			free(plist);
@@ -225,7 +230,11 @@ xbps_find_new_packages(void)
 	 * installed packages.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &pkgname)) {
+			rv = errno;
+			break;
+		}
 		rv = xbps_find_new_pkg(pkgname, obj);
 		if (rv == ENOENT)
 			continue;
@@ -276,10 +285,16 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 			 * Check if version in repository is greater than
 			 * the version currently installed.
 			 */
-			prop_dictionary_get_cstring_nocopy(instpkg,
-			    "version", &instver);
-			prop_dictionary_get_cstring_nocopy(pkgrd,
-			    "version", &repover);
+			if (!prop_dictionary_get_cstring_nocopy(instpkg,
+			    "version", &instver)) {
+				rv = errno;
+				break;
+			}
+			if (!prop_dictionary_get_cstring_nocopy(pkgrd,
+			    "version", &repover)) {
+				rv = errno;
+				break;
+			}
 			if (xbps_cmpver(repover, instver) > 0) {
 				DPRINTF(("Found %s-%s in repo %s.\n",
 				    pkgname, repover, rdata->rd_uri));
@@ -307,7 +322,10 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	/*
 	 * Set repository in pkg dictionary.
 	 */
-	prop_dictionary_set_cstring(pkgrd, "repository", rdata->rd_uri);
+	if (!prop_dictionary_set_cstring(pkgrd, "repository", rdata->rd_uri)) {
+		rv = errno;
+		goto out;
+	}
 
 	/*
 	 * Construct the dependency chain for this package.
@@ -332,7 +350,11 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	if ((rv = set_pkg_state(pkgrd, pkgname)) != 0)
 		goto out;
 
-	prop_dictionary_set_cstring_nocopy(pkgrd, "trans-action", "update");
+	if (!prop_dictionary_set_cstring_nocopy(pkgrd,
+	    "trans-action", "update")) {
+		rv = errno;
+		goto out;
+	}
 
 	if (!prop_array_add(unsorted, pkgrd))
 		rv = errno;
@@ -405,8 +427,14 @@ xbps_prepare_pkg(const char *pkgname)
 	/*
 	 * Set repository in pkg dictionary.
 	 */
-	prop_dictionary_set_cstring(pkgrd, "repository", rdata->rd_uri);
-	prop_dictionary_set_cstring(pkg_props, "origin", pkgname);
+	if (!prop_dictionary_set_cstring(pkgrd, "repository", rdata->rd_uri)) {
+		rv = errno;
+		goto out;
+	}
+	if (!prop_dictionary_set_cstring(pkg_props, "origin", pkgname)) {
+		rv = errno;
+		goto out;
+	}
 
 	/*
 	 * Check if this package needs dependencies.
@@ -458,7 +486,11 @@ xbps_prepare_pkg(const char *pkgname)
 	if ((rv = set_pkg_state(pkgrd, pkgname)) != 0)
 		goto out;
 
-	prop_dictionary_set_cstring_nocopy(pkgrd, "trans-action", "install");
+	if (!prop_dictionary_set_cstring_nocopy(pkgrd,
+	    "trans-action", "install")) {
+		rv = errno;
+		goto out;
+	}
 
 	if (!prop_array_add(pkgs_array, pkgrd))
 		rv = errno;

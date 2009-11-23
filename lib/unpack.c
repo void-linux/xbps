@@ -50,7 +50,9 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 	/*
 	 * Append filename to the full path for binary pkg.
 	 */
-	prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname);
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
+		return errno;
+
 	filename = prop_dictionary_get(pkg, "filename");
 	arch = prop_dictionary_get(pkg, "architecture");
 	repoloc = prop_dictionary_get(pkg, "repository");
@@ -172,8 +174,12 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 	iter2 = xbps_get_array_iter_from_dict(forigd, "conf_files");
 	if (iter2 != NULL) {
 		while ((obj2 = prop_object_iterator_next(iter2))) {
-			prop_dictionary_get_cstring_nocopy(obj2,
-			    "file", &cffile);
+			if (!prop_dictionary_get_cstring_nocopy(obj2,
+			    "file", &cffile)) {
+				prop_object_iterator_release(iter2);
+				rv = errno;
+				goto out;
+			}
 			buf = xbps_xasprintf(".%s", cffile);
 			if (buf == NULL) {
 				prop_object_iterator_release(iter2);
@@ -204,7 +210,11 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 	 * Compare original, installed and new hash for current file.
 	 */
 	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "file", &cffile);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "file", &cffile)) {
+			prop_object_iterator_release(iter);
+			return errno;
+		}
 		buf = xbps_xasprintf(".%s", cffile);
 		if (buf == NULL) {
 			prop_object_iterator_release(iter);
@@ -217,8 +227,8 @@ install_config_file(prop_dictionary_t d, struct archive_entry *entry,
 		}
 		sha256_cur = xbps_get_file_hash(buf);
 		free(buf);
-		prop_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
-		if (sha256_new == NULL) {
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "sha256", &sha256_new)) {
 			rv = EINVAL;
 			break;
 		}
@@ -341,8 +351,10 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 	if (chdir(rootdir) == -1)
 		return errno;
 
-	prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(pkg, "version", &version);
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
+		return errno;
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "version", &version))
+		return errno;
 
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		entry_str = archive_entry_pathname(entry);
@@ -536,8 +548,16 @@ again:
 	while ((obj = prop_object_iterator_next(iter))) {
 		found = false;
 		oldstr = prop_dictionary_get(obj, "file");
+		if (oldstr == NULL) {
+			rv = errno;
+			goto out;
+		}
 		while ((obj2 = prop_object_iterator_next(iter2))) {
 			newstr = prop_dictionary_get(obj2, "file");
+			if (newstr == NULL) {
+				rv = errno;
+				goto out;
+			}
 			if (prop_string_equals(oldstr, newstr)) {
 				found = true;
 				break;

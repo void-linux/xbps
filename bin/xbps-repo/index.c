@@ -61,10 +61,17 @@ repoidx_getdict(const char *pkgdir)
 			goto out;
 		}
 
-		prop_dictionary_set(dict, "packages", array);
+		if (!prop_dictionary_set(dict, "packages", array)) {
+			prop_object_release(dict);
+			prop_object_release(array);
+			goto out;
+		}
 		prop_object_release(array);
-		prop_dictionary_set_cstring_nocopy(dict,
-		    "pkgindex-version", XBPS_PKGINDEX_VERSION);
+		if (!prop_dictionary_set_cstring_nocopy(dict,
+		    "pkgindex-version", XBPS_PKGINDEX_VERSION)) {
+			prop_object_release(dict);
+			goto out;
+		}
 	}
 out:
 	free(plist);
@@ -128,10 +135,18 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 			break;
 		}
 
-		prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname",
-		    &pkgname);
-		prop_dictionary_get_cstring_nocopy(newpkgd, "version",
-		    &version);
+		if (!prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname",
+		    &pkgname)) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			break;
+		}
+		if (!prop_dictionary_get_cstring_nocopy(newpkgd, "version",
+		    &version)) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			break;
+		}
 		/*
 		 * Check if this package exists already in the index, but first
 		 * checking the version. If current package version is greater
@@ -140,8 +155,12 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 		 */
 		curpkgd = xbps_find_pkg_in_dict(idxdict, "packages", pkgname);
 		if (curpkgd) {
-			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "version", &regver);
+			if (!prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "version", &regver)) {
+				prop_object_release(newpkgd);
+				rv = errno;
+				break;
+			}
 			if (xbps_cmpver(version, regver) <= 0) {
 				printf("W: skipping %s. %s-%s already "
 				    "registered.\n", filen, pkgname, regver);
@@ -167,14 +186,24 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 		 * We have the dictionary now, add the required
 		 * objects for the index.
 		 */
-		prop_dictionary_set_cstring(newpkgd, "filename", filen);
+		if (!prop_dictionary_set_cstring(newpkgd, "filename", filen)) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			break;
+		}
 		sha256 = xbps_get_file_hash(file);
 		if (sha256 == NULL) {
 			prop_object_release(newpkgd);
 			rv = errno;
 			break;
 		}
-		prop_dictionary_set_cstring(newpkgd, "filename-sha256", sha256);
+		if (!prop_dictionary_set_cstring(newpkgd,
+		    "filename-sha256", sha256)) {
+			prop_object_release(newpkgd);
+			free(sha256);
+			rv = errno;
+			break;
+		}
 		free(sha256);
 
 		if (stat(file, &st) == -1) {
@@ -182,8 +211,12 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 			rv = errno;
 			break;
 		}
-		prop_dictionary_set_uint64(newpkgd, "filename-size",
-		    (uint64_t)st.st_size);
+		if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
+		    (uint64_t)st.st_size)) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			break;
+		}
 		/*
 		 * Add dictionary into the index and update package count.
 		 */
@@ -199,8 +232,13 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 			rv = EINVAL;
 			break;
 		}
-		prop_dictionary_set_uint64(idxdict, "total-pkgs",
-		    prop_array_count(pkgar));
+		if (!prop_dictionary_set_uint64(idxdict, "total-pkgs",
+		    prop_array_count(pkgar))) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			break;
+		}
+		prop_object_release(newpkgd);
 		printf("Registered %s-%s in package index.\n",
 		    pkgname, version);
 		printf("\033[1A\033[K");

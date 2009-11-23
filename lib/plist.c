@@ -372,8 +372,11 @@ xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 
 	/* Iterate over the array of dictionaries to find its index. */
 	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname",
-		    &curpkgname);
+		if (!prop_dictionary_get_cstring_nocopy(obj, "pkgname",
+		    &curpkgname)) {
+			prop_object_iterator_release(iter);
+			return errno;
+		}
 		if ((curpkgname && (strcmp(curpkgname, pkgname) == 0))) {
 			found = true;
 			break;

@@ -207,7 +207,12 @@ show_pkg_files_from_metadir(const char *pkgname)
 			goto out;
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+			if (!prop_dictionary_get_cstring_nocopy(obj,
+			    "file", &file)) {
+				prop_object_iterator_release(iter);
+				rv = errno;
+				goto out;
+			}
 			printf("%s\n", file);
 		}
 		prop_object_iterator_release(iter);
@@ -230,7 +235,12 @@ show_pkg_files_from_metadir(const char *pkgname)
 			goto out;
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+			if (!prop_dictionary_get_cstring_nocopy(obj,
+			    "file", &file)) {
+				prop_object_iterator_release(iter);
+				rv = errno;
+				goto out;
+			}
 			printf("%s\n", file);
 		}
 		prop_object_iterator_release(iter);
