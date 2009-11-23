@@ -148,7 +148,7 @@ download_package_list(prop_object_iterator_t iter)
 		if (repoloc_trans == NULL)
 			return errno;
 
-		savedir = xbps_xasprintf("%s/%s/repo/%s/%s",
+		savedir = xbps_xasprintf("%s/%s/%s/%s",
 		    xbps_get_rootdir(), XBPS_META_PATH, repoloc_trans, arch);
 		if (savedir == NULL) {
 			free(repoloc_trans);
