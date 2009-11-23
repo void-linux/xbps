@@ -44,10 +44,22 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	if (plist == NULL)
 		return EINVAL;
 
-	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version);
-	prop_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
-	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
+	if (!prop_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname)) {
+		free(plist);
+		return EINVAL;
+	}
+	if (!prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version)) {
+		free(plist);
+		return EINVAL;
+	}
+	if (!prop_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc)) {
+		free(plist);
+		return EINVAL;
+	}
+	if (!prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver)) {
+		free(plist);
+		return EINVAL;
+	}
 
 	dict = prop_dictionary_internalize_from_file(plist);
 	if (dict != NULL) {
