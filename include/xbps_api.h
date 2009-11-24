@@ -147,15 +147,13 @@ int SYMEXPORT	xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t,
 			const char *,
 			int (*fn)(prop_object_t, void *, bool *),
 			void *);
-int SYMEXPORT	xbps_callback_array_iter_in_repolist(int (*fn)(prop_object_t,
-			void *, bool *), void *);
 
 prop_dictionary_t SYMEXPORT	xbps_find_pkg_in_dict(prop_dictionary_t,
 					      const char *, const char *);
 prop_dictionary_t SYMEXPORT	xbps_find_pkg_from_plist(const char *,
 						const char *);
 prop_dictionary_t SYMEXPORT
-	xbps_find_pkg_installed_from_plist(const char *);
+		xbps_find_pkg_installed_from_plist(const char *);
 bool SYMEXPORT	xbps_find_string_in_array(prop_array_t, const char *);
 
 prop_dictionary_t SYMEXPORT	xbps_prepare_regpkgdb_dict(void);
@@ -201,6 +199,7 @@ typedef enum pkg_state {
 	XBPS_PKG_STATE_CONFIG_FILES,
 	XBPS_PKG_STATE_NOT_INSTALLED
 } pkg_state_t;
+
 int SYMEXPORT	xbps_get_pkg_state_installed(const char *, pkg_state_t *);
 int SYMEXPORT	xbps_get_pkg_state_dictionary(prop_dictionary_t, pkg_state_t *);
 int SYMEXPORT	xbps_set_pkg_state_installed(const char *, pkg_state_t);

@@ -26,10 +26,10 @@
 #ifndef _XBPS_REPO_UTIL_H_
 #define _XBPS_REPO_UTIL_H_
 
-int	search_string_in_pkgs(prop_object_t, void *, bool *);
+void	show_pkg_info(prop_dictionary_t);
 int	show_pkg_info_from_metadir(const char *);
 int	show_pkg_files_from_metadir(const char *);
-int	show_pkg_info_from_repolist(prop_object_t, void *, bool *);
+int	show_pkg_namedesc(prop_object_t, void *, bool *);
 int	list_strings_in_array(prop_object_t, void *, bool *);
 int	list_strings_sep_in_array(prop_object_t, void *, bool *);
 

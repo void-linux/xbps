@@ -67,41 +67,6 @@ xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 }
 
 int SYMEXPORT
-xbps_callback_array_iter_in_repolist(int (*fn)(prop_object_t, void *, bool *),
-				     void *arg)
-{
-	prop_dictionary_t repolistd;
-	char *plist;
-	int rv = 0;
-
-	assert(fn != NULL);
-
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, XBPS_REPOLIST);
-	if (plist == NULL)
-		return EINVAL;
-
-	/*
-	 * Get the dictionary with the list of registered repositories.
-	 */
-	repolistd = prop_dictionary_internalize_from_file(plist);
-	if (repolistd == NULL)
-                return EINVAL;
-
-	/*
-	 * Iterate over the repository pool and run the associated
-	 * callback function. The loop is stopped when the bool
-	 * argument is true or the cb returns non 0.
-	 */
-	rv = xbps_callback_array_iter_in_dict(repolistd, "repository-list",
-		fn, arg);
-	prop_object_release(repolistd);
-	free(plist);
-
-	return rv;
-}
-
-int SYMEXPORT
 xbps_callback_array_iter_in_dict(prop_dictionary_t dict, const char *key,
 				 int (*fn)(prop_object_t, void *, bool *),
 				 void *arg)

@@ -33,10 +33,7 @@
 #include <xbps_api.h>
 #include "util.h"
 
-static void	show_pkg_info(prop_dictionary_t);
-static int	show_pkg_namedesc(prop_object_t, void *, bool *);
-
-static void
+void
 show_pkg_info(prop_dictionary_t dict)
 {
 	prop_object_t obj;
@@ -113,42 +110,6 @@ show_pkg_info(prop_dictionary_t dict)
 	obj = prop_dictionary_get(dict, "long_desc");
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
 		printf(" %s\n", prop_string_cstring_nocopy(obj));
-}
-
-int
-search_string_in_pkgs(prop_object_t obj, void *arg, bool *loop_done)
-{
-	prop_dictionary_t dict;
-	const char *repofile;
-	char *plist;
-
-	(void)loop_done;
-
-	assert(prop_object_type(obj) == PROP_TYPE_STRING);
-
-	/* Get the location of pkgindex file. */
-	repofile = prop_string_cstring_nocopy(obj);
-	assert(repofile != NULL);
-
-	plist = xbps_get_pkg_index_plist(repofile);
-	if (plist == NULL) {
-		errno = ENOENT;
-		return 0;
-	}
-
-	dict = prop_dictionary_internalize_from_file(plist);
-	if (dict == NULL) {
-		free(plist);
-		return 0;
-	}
-
-	printf("From %s repository ...\n", repofile);
-	xbps_callback_array_iter_in_dict(dict, "packages",
-	    show_pkg_namedesc, arg);
-	prop_object_release(dict);
-	free(plist);
-
-	return 0;
 }
 
 int
@@ -252,45 +213,6 @@ out:
 }
 
 int
-show_pkg_info_from_repolist(prop_object_t obj, void *arg, bool *loop_done)
-{
-	prop_dictionary_t dict, pkgdict;
-	const char *repofile;
-	char *plist;
-	assert(prop_object_type(obj) == PROP_TYPE_STRING);
-
-	/* Get the location */
-	repofile = prop_string_cstring_nocopy(obj);
-
-	plist = xbps_get_pkg_index_plist(repofile);
-	if (plist == NULL)
-		return EINVAL;
-
-	dict = prop_dictionary_internalize_from_file(plist);
-	if (dict == NULL || prop_dictionary_count(dict) == 0) {
-		free(plist);
-		errno = ENOENT;
-		return 0;
-	}
-
-	pkgdict = xbps_find_pkg_in_dict(dict, "packages", arg);
-	if (pkgdict == NULL) {
-		prop_object_release(dict);
-		free(plist);
-		errno = ENOENT;
-		return 0;
-	}
-
-	printf("Repository: %s\n", repofile);
-	show_pkg_info(pkgdict);
-	*loop_done = true;
-	prop_object_release(dict);
-	free(plist);
-
-	return 0;
-}
-
-static int
 show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 {
 	const char *pkgname, *desc, *ver, *pattern = arg;
@@ -303,7 +225,6 @@ show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
 	prop_dictionary_get_cstring_nocopy(obj, "version", &ver);
-	assert(ver != NULL);
 
 	if ((fnmatch(pattern, pkgname, 0) == 0) ||
 	    (fnmatch(pattern, desc, 0) == 0))

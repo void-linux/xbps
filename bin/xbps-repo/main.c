@@ -44,13 +44,14 @@ usage(void)
 {
 	printf("Usage: xbps-repo [options] [action] [arguments]\n\n"
 	" Available actions:\n"
-        "    add, genindex, list, remove, search, show, sync\n"
+        "    add, genindex, list, remove, search, show, show-deps, sync\n"
 	" Actions with arguments:\n"
 	"    add\t\t<URI>\n"
 	"    genindex\t<path>\n"
 	"    remove\t<URI>\n"
 	"    search\t<string>\n"
 	"    show\t<pkgname>\n"
+	"    show-deps\t<pkgname>\n"
 	" Options shared by all actions:\n"
 	"    -r\t\t<rootdir>\n"
 	"    -V\t\tPrints xbps release version\n"
@@ -209,8 +210,10 @@ out:
 int
 main(int argc, char **argv)
 {
-	struct repository_data *rdata = NULL;
-	char dpkgidx[PATH_MAX], *plist, *root = NULL;
+	prop_dictionary_t pkgd;
+	struct repository_data *rdata;
+	const char *pkgver;
+	char dpkgidx[PATH_MAX], *plist, *root;
 	int c, rv = 0;
 
 	while ((c = getopt(argc, argv, "Vr:")) != -1) {
@@ -235,6 +238,14 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
+	if ((rv = xbps_prepare_repolist_data()) != 0) {
+		if (rv != ENOENT) {
+			printf("E: cannot get repository list pool! %s\n",
+			    strerror(rv));
+			exit(EXIT_FAILURE);
+		}
+	}
+
 	if (strcasecmp(argv[0], "add") == 0) {
 		/* Adds a new repository to the pool. */
 		if (argc != 2)
@@ -247,8 +258,8 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		(void)xbps_callback_array_iter_in_repolist(
-		    list_strings_sep_in_array, NULL);
+		SIMPLEQ_FOREACH(rdata, &repodata_queue, chain)
+			printf("%s\n", rdata->rd_uri);
 
 	} else if ((strcasecmp(argv[0], "rm") == 0) ||
 		   (strcasecmp(argv[0], "remove") == 0)) {
@@ -256,8 +267,10 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		if (!sanitize_localpath(dpkgidx, argv[1]))
-			exit(EXIT_FAILURE);
+		if (!sanitize_localpath(dpkgidx, argv[1])) {
+			rv = EINVAL;
+			goto out;
+		}
 
 		if ((rv = xbps_unregister_repository(dpkgidx)) != 0) {
 			if (rv == ENOENT)
@@ -266,7 +279,6 @@ main(int argc, char **argv)
 			else
 				printf("ERROR: couldn't unregister "
 				    "repository (%s)\n", strerror(rv));
-			exit(EXIT_FAILURE);
 		}
 
 	} else if (strcasecmp(argv[0], "search") == 0) {
@@ -277,20 +289,62 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		(void)xbps_callback_array_iter_in_repolist(
-		    search_string_in_pkgs, argv[1]);
+		SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
+			printf("From %s repository ...\n", rdata->rd_uri);
+			(void)xbps_callback_array_iter_in_dict(rdata->rd_repod,
+			    "packages", show_pkg_namedesc, argv[1]);
+		}
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about a binary package. */
 		if (argc != 2)
 			usage();
 
-		rv = xbps_callback_array_iter_in_repolist(
-			show_pkg_info_from_repolist, argv[1]);
+		SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
+			pkgd = xbps_find_pkg_in_dict(rdata->rd_repod,
+			    "packages", argv[1]);
+			if (pkgd == NULL) {
+				errno = ENOENT;
+				continue;
+			}
+			printf("Repository: %s\n", rdata->rd_uri);
+			show_pkg_info(pkgd);
+			break;
+		}
 		if (rv == 0 && errno == ENOENT) {
 			printf("Unable to locate package '%s' from "
 			    "repository pool.\n", argv[1]);
-			exit(EXIT_FAILURE);
+			rv = EINVAL;
+			goto out;
+		}
+
+	} else if (strcasecmp(argv[0], "show-deps") == 0) {
+		/* Shows the required run dependencies for a package. */
+		if (argc != 2)
+			usage();
+
+		SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
+			pkgd = xbps_find_pkg_in_dict(rdata->rd_repod,
+			    "packages", argv[1]);
+			if (pkgd == NULL) {
+				errno = ENOENT;
+				continue;
+			}
+			if (!prop_dictionary_get_cstring_nocopy(pkgd,
+			    "version", &pkgver)) {
+				rv = errno;
+				goto out;
+			}
+			printf("Repository %s [pkgver: %s]\n",
+			    rdata->rd_uri, pkgver);
+			(void)xbps_callback_array_iter_in_dict(pkgd,
+			    "run_depends", list_strings_sep_in_array, NULL);
+		}
+		if (rv == 0 && errno == ENOENT) {
+			printf("Unable to locate package '%s' from "
+			    "repository pool.\n", argv[1]);
+			rv = EINVAL;
+			goto out;
 		}
 
 	} else if (strcasecmp(argv[0], "genindex") == 0) {
@@ -299,15 +353,12 @@ main(int argc, char **argv)
 			usage();
 
 		rv = xbps_repo_genindex(argv[1]);
-		exit(rv);
 
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
 		if (argc != 1)
 			usage();
 
-		if ((rv = xbps_prepare_repolist_data()) != 0)
-			exit(rv);
 		/*
 		 * Iterate over repository pool.
 		 */
@@ -319,7 +370,7 @@ main(int argc, char **argv)
 				if (rv == -1) {
 					printf("Failed! returned: %s\n",
 					    xbps_fetch_error_string());
-					break;
+					goto out;
 				} else if (rv == 0) {
 					printf("Package index file is already "
 					    "up to date.\n");
@@ -328,17 +379,18 @@ main(int argc, char **argv)
 				plist = xbps_get_pkg_index_plist(uri);
 				if (plist == NULL) {
 					rv = EINVAL;
-					break;
+					goto out;
 				}
 				(void)pkgindex_verify(plist, uri, true);
 				free(plist);
 			}
 		}
-		xbps_release_repolist_data();
 
 	} else {
 		usage();
 	}
 
-	exit(EXIT_SUCCESS);
+out:
+	xbps_release_repolist_data();
+	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -33,29 +33,6 @@
 #include "../xbps-repo/util.h"
 #include "defs.h"
 
-static int
-list_deps(prop_object_t obj, void *arg, bool *loop_done)
-{
-	char *pkgname;
-	const char *version;
-
-	(void)arg;
-	(void)loop_done;
-
-	assert(prop_object_type(obj) == PROP_TYPE_STRING);
-
-	pkgname = xbps_get_pkgdep_name(prop_string_cstring_nocopy(obj));
-	version = xbps_get_pkgdep_version(prop_string_cstring_nocopy(obj));
-	if (strcmp(version, ">=0") == 0)
-		printf("%s\n", pkgname);
-	else
-		printf("%s%s\n", pkgname, version);
-
-	free(pkgname);
-	
-	return 0;
-}
-
 int
 xbps_show_pkg_deps(const char *pkgname)
 {
@@ -88,7 +65,7 @@ xbps_show_pkg_deps(const char *pkgname)
 	}
 
 	rv = xbps_callback_array_iter_in_dict(propsd, "run_depends",
-	     list_deps, NULL);
+	     list_strings_sep_in_array, NULL);
 	prop_object_release(propsd);
 	prop_object_release(pkgd);
 

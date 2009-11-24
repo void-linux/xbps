@@ -69,6 +69,10 @@ Please note that all targets are *case insensitive*.
 	the size it takes in filesystem, description, maintainer, architecture
 	and other information.
 
+*show-deps 'pkgname'*::
+	Shows run time dependencies for binary package 'pkgname'. The first
+	repository in the pool wins.
+
 *sync*::
 	Syncs the package index file for all registered remote repositories.
 	The new file will be fetched if local and remote size/mtime do not match.
