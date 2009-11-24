@@ -330,6 +330,7 @@ xbps_repo_genindex(const char *pkgdir)
 
 		dirp = opendir(path);
 		if (dirp == NULL) {
+			printf("E: unexistent '%s' directory!\n", path);
 			free(path);
 			continue;
 		}
