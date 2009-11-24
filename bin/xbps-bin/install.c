@@ -189,7 +189,7 @@ change_repodir:
 		 * If it was downloaded successfully, override repository
 		 * path in transaction dictionary.
 		 */
-		savedir = xbps_xasprintf("%s/%s/repo/%s",
+		savedir = xbps_xasprintf("%s/%s/%s",
 		    xbps_get_rootdir(), XBPS_META_PATH, repoloc_trans);
 		free(repoloc_trans);
 		if (savedir == NULL)
