@@ -56,13 +56,17 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 static void
 usage(void)
 {
-	printf("usage: xbps-pkgdb [options] [action] [args]\n"
+	printf("usage: xbps-uhelper [options] [action] [args]\n"
 	"\n"
 	"  Available actions:\n"
-	"    getpkgdepname, getpkgname, getpkgrevision, getpkgversion,\n"
-	"    pkgmatch, register, sanitize-plist, unregister, version\n"
+	"    cmpver, digest, fetch, getpkgdepname, getpkgname, getpkgrevision,\n"
+	"    getpkgversion, pkgmatch, register, sanitize-plist, unregister,\n"
+	"    version\n"
 	"\n"
 	"  Action arguments:\n"
+	"    cmpver\t\t<instver> <reqver>\n"
+	"    digest\t\t<file> <file1+N>\n"
+	"    fetch\t\t<URL>\n"
 	"    getpkgdepname\t<string>\n"
 	"    getpkgname\t\t<string>\n"
 	"    getpkgrevision\t<string>\n"
@@ -78,13 +82,16 @@ usage(void)
 	"    -V\t\tPrints the xbps release version\n"
 	"\n"
 	"  Examples:\n"
-	"    $ xbps-pkgdb getpkgname foo-2.0\n"
-	"    $ xbps-pkgdb getpkgrevision foo-2.0_1\n"
-	"    $ xbps-pkgdb getpkgversion foo-2.0\n"
-	"    $ xbps-pkgdb register pkgname 2.0 \"A short description\"\n"
-	"    $ xbps-pkgdb sanitize-plist /blah/foo.plist\n"
-	"    $ xbps-pkgdb unregister pkgname 2.0\n"
-	"    $ xbps-pkgdb version pkgname\n");
+	"    $ xbps-uhelper cmpver 'foo-1.0' 'foo-2.1'\n"
+	"    $ xbps-uhelper digest /foo/blah.txt\n"
+	"    $ xbps-uhelper fetch http://www.foo.org/file.blob\n"
+	"    $ xbps-uhelper getpkgname foo-2.0\n"
+	"    $ xbps-uhelper getpkgrevision foo-2.0_1\n"
+	"    $ xbps-uhelper getpkgversion foo-2.0\n"
+	"    $ xbps-uhelper register pkgname 2.0 \"A short description\"\n"
+	"    $ xbps-uhelper sanitize-plist /blah/foo.plist\n"
+	"    $ xbps-uhelper unregister pkgname 2.0\n"
+	"    $ xbps-uhelper version pkgname\n");
 
 	exit(EXIT_FAILURE);
 }
@@ -273,8 +280,46 @@ main(int argc, char **argv)
 		if (argc != 3)
 			usage();
 
-		rv = xbps_pkgdep_match(argv[1], argv[2]);
-		exit(rv);
+		exit(xbps_pkgdep_match(argv[1], argv[2]));
+
+	} else if (strcasecmp(argv[0], "cmpver") == 0) {
+		/* Compare two version strings, installed vs required */
+		if (argc != 3)
+			usage();
+
+		exit(xbps_cmpver(argv[1], argv[2]));
+
+	} else if (strcasecmp(argv[0], "digest") == 0) {
+		/* Prints SHA256 hashes for specified files */
+		if (argc < 2)
+			usage();
+
+		char *hash;
+		int i;
+
+		for (i = 1; i < argc; i++) {
+			hash = xbps_get_file_hash(argv[i]);
+			if (hash == NULL) {
+				printf("Couldn't get hash for %s (%s)\n",
+				    argv[i], strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+			printf("%s\n", hash);
+			free(hash);
+		}
+
+	} else if (strcasecmp(argv[0], "fetch") == 0) {
+		/* Fetch a file from specified URL */
+		if (argc != 2)
+			usage();
+
+		rv = xbps_fetch_file(argv[1], ".", false, "v");
+		if (rv == -1) {
+			printf("%s: %s\n", argv[1], xbps_fetch_error_string());
+			exit(EXIT_FAILURE);
+		} else if (rv == 0) {
+			printf("%s: file is identical than remote.\n", argv[1]);
+		}
 
 	} else {
 		usage();

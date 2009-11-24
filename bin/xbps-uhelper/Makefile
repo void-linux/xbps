@@ -1,6 +1,6 @@
 TOPDIR = ../..
 include $(TOPDIR)/vars.mk
 
-BIN = xbps-digest
+BIN = xbps-uhelper
 
 include $(TOPDIR)/prog.mk
