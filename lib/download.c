@@ -259,6 +259,12 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 			goto out;
 
 		/*
+		 * If size match do nothing.
+		 */
+		if (restart && url_st.size && url_st.size == st.st_size)
+			goto out;
+
+		/*
 		 * Remove current file (if exists).
 		 */
 		if (restart && remove(destfile) == -1) {
