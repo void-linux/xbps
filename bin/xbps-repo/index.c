@@ -80,19 +80,23 @@ out:
 }
 
 int
-xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
+xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
+		       const char *file)
 {
 	prop_dictionary_t newpkgd, curpkgd;
 	prop_array_t pkgar;
-	struct archive *ar;
+	struct archive *ar = NULL;
 	struct archive_entry *entry;
 	struct stat st;
-	const char *pkgname, *version, *regver;
-	char *sha256, *filen = NULL, *tmpfilen = NULL;
+	const char *pkgname, *version, *regver, *oldfilen;
+	char *sha256, *filen, *tmpfilen, *tmpstr, *oldfilepath;
 	int rv = 0;
 
-	assert(file != NULL);
-	assert(pkgdir != NULL);
+	if (idxdict == NULL || file == NULL)
+		return EINVAL;
+
+	pkgname = version = regver = oldfilen = NULL;
+	sha256 = filen = tmpfilen = tmpstr = oldfilepath = NULL;
 
 	tmpfilen = strdup(file);
 	if (tmpfilen == NULL)
@@ -100,8 +104,8 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 
 	filen = basename(tmpfilen);
 	if (strcmp(tmpfilen, filen) == 0) {
-		free(tmpfilen);
-		return EINVAL;
+		rv = EINVAL;
+		goto out;
 	}
 
 	ar = archive_read_new();
@@ -116,7 +120,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 	if ((rv = archive_read_open_filename(ar, file,
 	     ARCHIVE_READ_BLOCKSIZE)) == -1) {
 		rv = errno;
-		goto out1;
+		goto out;
 	}
 
 	/*
@@ -134,7 +138,6 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 			    file, XBPS_PKGPROPS);
 			break;
 		}
-
 		if (!prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname",
 		    &pkgname)) {
 			prop_object_release(newpkgd);
@@ -170,16 +173,47 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 				break;
 			}
 			/*
-			 * Current package is newer than the one that is
-			 * registered actually, remove old package from
-			 * the index.
+			 * Current binpkg is newer than the one registered
+			 * in package index, remove outdated binpkg file
+			 * and its dictionary from the pkg index.
 			 */
-			rv = xbps_remove_pkg_from_dict(idxdict,
-			    "packages", pkgname);
-			if (rv != 0) {
+			if (!prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "filename", &oldfilen)) {
 				prop_object_release(newpkgd);
+				rv = errno;
 				break;
 			}
+			oldfilepath = xbps_xasprintf("%s/%s", filedir,
+			    oldfilen);
+			if (oldfilepath == NULL) {
+				prop_object_release(newpkgd);
+				rv = errno;
+				break;
+			}
+			if (remove(oldfilepath) == -1) {
+				printf("E: Couldn't remove old package file "
+				    "'%s'!\n", oldfilen);
+				free(oldfilepath);
+				prop_object_release(newpkgd);
+				rv = errno;
+				break;
+			}
+			free(oldfilepath);
+			tmpstr = strdup(oldfilen);
+			if (tmpstr == NULL) {
+				prop_object_release(newpkgd);
+				rv = errno;
+				break;
+			}
+			if ((rv = xbps_remove_pkg_from_dict(idxdict,
+			    "packages", pkgname)) != 0) {
+				prop_object_release(newpkgd);
+				free(tmpstr);
+				break;
+			}
+			printf("W: removed outdated binpkg file "
+			    "for '%s'.\n", tmpstr);
+			free(tmpstr);
 		}
 
 		/*
@@ -205,7 +239,6 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 			break;
 		}
 		free(sha256);
-
 		if (stat(file, &st) == -1) {
 			prop_object_release(newpkgd);
 			rv = errno;
@@ -217,9 +250,6 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 			rv = errno;
 			break;
 		}
-		/*
-		 * Add dictionary into the index and update package count.
-		 */
 		/* Get package array in repo index file */
 		pkgar = prop_dictionary_get(idxdict, "packages");
 		if (pkgar == NULL) {
@@ -227,28 +257,29 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *file)
 			rv = errno;
 			break;
 		}
+		/*
+		 * Add dictionary into the index and update package count.
+		 */
 		if (!xbps_add_obj_to_array(pkgar, newpkgd)) {
 			prop_object_release(newpkgd);
 			rv = EINVAL;
 			break;
 		}
+		printf("Registered %s-%s (%s) in package index.\n",
+		    pkgname, version, filen);
+
 		if (!prop_dictionary_set_uint64(idxdict, "total-pkgs",
-		    prop_array_count(pkgar))) {
-			prop_object_release(newpkgd);
+		    prop_array_count(pkgar)))
 			rv = errno;
-			break;
-		}
-		prop_object_release(newpkgd);
-		printf("Registered %s-%s in package index.\n",
-		    pkgname, version);
-		printf("\033[1A\033[K");
+
 		break;
 	}
 
-out1:
-	archive_read_finish(ar);
 out:
-	free(tmpfilen);
+	if (ar)
+		archive_read_finish(ar);
+	if (tmpfilen)
+		free(tmpfilen);
 
 	return rv;
 }
@@ -320,7 +351,7 @@ xbps_repo_genindex(const char *pkgdir)
 				rv = errno;
 				goto out;
 			}
-			rv = xbps_repo_addpkg_index(idxdict, binfile);
+			rv = xbps_repo_addpkg_index(idxdict, path, binfile);
 			free(binfile);
 			if (rv == EEXIST)
 				continue;

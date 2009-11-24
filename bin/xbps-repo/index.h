@@ -27,6 +27,6 @@
 #define _XBPS_REPO_INDEX_H_
 
 int	xbps_repo_genindex(const char *);
-int	xbps_repo_addpkg_index(prop_dictionary_t, const char *);
+int	xbps_repo_addpkg_index(prop_dictionary_t, const char *, const char *);
 
 #endif /* !_XBPS_REPO_INDEX_H_ */
