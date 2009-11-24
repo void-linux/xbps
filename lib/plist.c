@@ -230,7 +230,11 @@ xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &dpkgn);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgname", &dpkgn)) {
+			obj = NULL;
+			break;
+		}
 		if (strcmp(dpkgn, pkgname) == 0)
 			break;
 	}
