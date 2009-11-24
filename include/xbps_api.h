@@ -38,7 +38,7 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"20091123"
+#define XBPS_RELVER		"20091124"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
