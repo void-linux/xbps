@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2009 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,14 +23,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _XBPS_REPO_UTIL_H_
-#define _XBPS_REPO_UTIL_H_
+#ifndef _XBPS_REPO_DEFS_H_
+#define _XBPS_REPO_DEFS_H_
 
-void	show_pkg_info(prop_dictionary_t);
-int	show_pkg_info_from_metadir(const char *);
-int	show_pkg_files_from_metadir(const char *);
-int	show_pkg_namedesc(prop_object_t, void *, bool *);
-int	list_strings_in_array(prop_object_t, void *, bool *);
-int	list_strings_sep_in_array(prop_object_t, void *, bool *);
+/* From index.c */
+int	xbps_repo_genindex(const char *);
+int	xbps_repo_addpkg_index(prop_dictionary_t, const char *, const char *);
+/* From util.c */
+void    show_pkg_info(prop_dictionary_t);
+int     show_pkg_namedesc(prop_object_t, void *, bool *);
+int     list_strings_in_array(prop_object_t, void *, bool *);
+int     list_strings_sep_in_array(prop_object_t, void *, bool *);
 
-#endif /* !_XBPS_REPO_UTIL_H_ */
+#endif /* !_XBPS_REPO_DEFS_H_ */

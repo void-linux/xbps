@@ -32,7 +32,7 @@
 
 #include <xbps_api.h>
 #include "defs.h"
-#include "../xbps-repo/util.h"
+#include "../xbps-repo/defs.h"
 
 static void	cleanup(int);
 static void	usage(void);

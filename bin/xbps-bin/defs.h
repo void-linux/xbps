@@ -33,5 +33,7 @@ int	xbps_check_pkg_integrity(const char *);
 int	xbps_check_pkg_integrity_all(void);
 int	xbps_show_pkg_deps(const char *);
 int	xbps_show_pkg_reverse_deps(const char *);
+int	show_pkg_info_from_metadir(const char *);
+int	show_pkg_files_from_metadir(const char *);
 
 #endif /* !_XBPS_BIN_DEFS_H_ */

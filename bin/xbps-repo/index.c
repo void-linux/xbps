@@ -33,7 +33,7 @@
 #include <sys/stat.h>
 
 #include <xbps_api.h>
-#include "index.h"
+#include "defs.h"
 
 /* Array of valid architectures */
 static const char *archdirs[] = { "i686", "x86_64", "noarch", NULL };

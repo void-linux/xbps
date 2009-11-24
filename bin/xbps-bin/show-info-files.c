@@ -1,0 +1,135 @@
+/*-
+ * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <fnmatch.h>
+
+#include <xbps_api.h>
+#include "../xbps-repo/defs.h"
+#include "defs.h"
+
+int
+show_pkg_info_from_metadir(const char *pkgname)
+{
+	prop_dictionary_t pkgd;
+	char *plist;
+
+	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
+	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
+	if (plist == NULL)
+		return EINVAL;
+
+	pkgd = prop_dictionary_internalize_from_file(plist);
+	if (pkgd == NULL) {
+		free(plist);
+		return errno;
+	}
+
+	show_pkg_info(pkgd);
+	prop_object_release(pkgd);
+	free(plist);
+
+	return 0;
+}
+
+int
+show_pkg_files_from_metadir(const char *pkgname)
+{
+	prop_dictionary_t pkgd;
+	prop_array_t array;
+	prop_object_iterator_t iter = NULL;
+	prop_object_t obj;
+	const char *file;
+	char *plist, *array_str = "files";
+	int i, rv = 0;
+
+	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
+	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
+	if (plist == NULL)
+		return EINVAL;
+
+	pkgd = prop_dictionary_internalize_from_file(plist);
+	if (pkgd == NULL) {
+		free(plist);
+		return errno;
+	}
+	free(plist);
+
+	/* Links. */
+	array = prop_dictionary_get(pkgd, "links");
+	if (array && prop_array_count(array) > 0) {
+		iter = xbps_get_array_iter_from_dict(pkgd, "links");
+		if (iter == NULL) {
+			rv = EINVAL;
+			goto out;
+		}
+		while ((obj = prop_object_iterator_next(iter))) {
+			if (!prop_dictionary_get_cstring_nocopy(obj,
+			    "file", &file)) {
+				prop_object_iterator_release(iter);
+				rv = errno;
+				goto out;
+			}
+			printf("%s\n", file);
+		}
+		prop_object_iterator_release(iter);
+	}
+
+	/* Files and configuration files. */
+	for (i = 0; i < 2; i++) {
+		if (i == 0)
+			array_str = "conf_files";
+		else
+			array_str = "files";
+
+		array = prop_dictionary_get(pkgd, array_str);
+		if (array == NULL || prop_array_count(array) == 0)
+			continue;
+
+		iter = xbps_get_array_iter_from_dict(pkgd, array_str);
+		if (iter == NULL) {
+			rv = EINVAL;
+			goto out;
+		}
+		while ((obj = prop_object_iterator_next(iter))) {
+			if (!prop_dictionary_get_cstring_nocopy(obj,
+			    "file", &file)) {
+				prop_object_iterator_release(iter);
+				rv = errno;
+				goto out;
+			}
+			printf("%s\n", file);
+		}
+		prop_object_iterator_release(iter);
+	}
+out:
+	prop_object_release(pkgd);
+
+	return rv;
+}

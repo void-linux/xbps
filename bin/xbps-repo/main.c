@@ -32,8 +32,7 @@
 #include <libgen.h>
 
 #include <xbps_api.h>
-#include "index.h"
-#include "util.h"
+#include "defs.h"
 
 static bool sanitize_localpath(char *, const char *);
 static int  pkgindex_verify(const char *, const char *, bool);

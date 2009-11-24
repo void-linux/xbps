@@ -31,7 +31,7 @@
 #include <fnmatch.h>
 
 #include <xbps_api.h>
-#include "util.h"
+#include "defs.h"
 
 void
 show_pkg_info(prop_dictionary_t dict)
@@ -110,106 +110,6 @@ show_pkg_info(prop_dictionary_t dict)
 	obj = prop_dictionary_get(dict, "long_desc");
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
 		printf(" %s\n", prop_string_cstring_nocopy(obj));
-}
-
-int
-show_pkg_info_from_metadir(const char *pkgname)
-{
-	prop_dictionary_t pkgd;
-	char *plist;
-
-	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
-	if (plist == NULL)
-		return EINVAL;
-
-	pkgd = prop_dictionary_internalize_from_file(plist);
-	if (pkgd == NULL) {
-		free(plist);
-		return errno;
-	}
-
-	show_pkg_info(pkgd);
-	prop_object_release(pkgd);
-	free(plist);
-
-	return 0;
-}
-
-int
-show_pkg_files_from_metadir(const char *pkgname)
-{
-	prop_dictionary_t pkgd;
-	prop_array_t array;
-	prop_object_iterator_t iter = NULL;
-	prop_object_t obj;
-	const char *file;
-	char *plist, *array_str = "files";
-	int i, rv = 0;
-
-	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
-	if (plist == NULL)
-		return EINVAL;
-
-	pkgd = prop_dictionary_internalize_from_file(plist);
-	if (pkgd == NULL) {
-		free(plist);
-		return errno;
-	}
-	free(plist);
-
-	/* Links. */
-	array = prop_dictionary_get(pkgd, "links");
-	if (array && prop_array_count(array) > 0) {
-		iter = xbps_get_array_iter_from_dict(pkgd, "links");
-		if (iter == NULL) {
-			rv = EINVAL;
-			goto out;
-		}
-		while ((obj = prop_object_iterator_next(iter))) {
-			if (!prop_dictionary_get_cstring_nocopy(obj,
-			    "file", &file)) {
-				prop_object_iterator_release(iter);
-				rv = errno;
-				goto out;
-			}
-			printf("%s\n", file);
-		}
-		prop_object_iterator_release(iter);
-	}
-
-	/* Files and configuration files. */
-	for (i = 0; i < 2; i++) {
-		if (i == 0)
-			array_str = "conf_files";
-		else
-			array_str = "files";
-
-		array = prop_dictionary_get(pkgd, array_str);
-		if (array == NULL || prop_array_count(array) == 0)
-			continue;
-
-		iter = xbps_get_array_iter_from_dict(pkgd, array_str);
-		if (iter == NULL) {
-			rv = EINVAL;
-			goto out;
-		}
-		while ((obj = prop_object_iterator_next(iter))) {
-			if (!prop_dictionary_get_cstring_nocopy(obj,
-			    "file", &file)) {
-				prop_object_iterator_release(iter);
-				rv = errno;
-				goto out;
-			}
-			printf("%s\n", file);
-		}
-		prop_object_iterator_release(iter);
-	}
-out:
-	prop_object_release(pkgd);
-
-	return rv;
 }
 
 int

@@ -31,7 +31,7 @@
 
 #include <xbps_api.h>
 #include "defs.h"
-#include "../xbps-repo/util.h"
+#include "../xbps-repo/defs.h"
 
 int
 xbps_autoremove_pkgs(void)
