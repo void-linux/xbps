@@ -79,7 +79,7 @@ out:
 	return dict;
 }
 
-int
+static int
 xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		       const char *file)
 {

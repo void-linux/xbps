@@ -28,7 +28,6 @@
 
 /* From index.c */
 int	xbps_repo_genindex(const char *);
-int	xbps_repo_addpkg_index(prop_dictionary_t, const char *, const char *);
 /* From util.c */
 void    show_pkg_info(prop_dictionary_t);
 int     show_pkg_namedesc(prop_object_t, void *, bool *);
