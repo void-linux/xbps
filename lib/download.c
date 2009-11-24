@@ -183,6 +183,10 @@ print_time(time_t *t)
 }
 #endif
 
+/*
+ * Returns -1 on error, 0 if not download (because local/remote
+ * size and/or mtime match) and 1 if downloaded successfully.
+ */
 int SYMEXPORT
 xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		const char *flags)
@@ -207,15 +211,17 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	 * Get the filename specified in URI argument.
 	 */
 	filename = strrchr(uri, '/');
-	if (filename == NULL)
-		return EINVAL;
+	if (filename == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
 	filename++;
 	/*
 	 * Compute destination file path.
 	 */
 	destfile = xbps_xasprintf("%s/%s", outputdir, filename);
 	if (destfile == NULL) {
-		rv = errno;
+		rv = -1;
 		goto out;
 	}
 	/*
@@ -227,7 +233,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 			restart = true;
 	} else {
 		if (errno != ENOENT) {
-			rv = errno;
+			rv = -1;
 			goto out;
 		}
 	}
@@ -235,7 +241,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	 * Prepare stuff for libfetch.
 	 */
 	if ((url = fetchParseURL(uri)) == NULL) {
-		rv = fetchLastErrCode;
+		rv = -1;
 		goto out;
 
 	}
@@ -246,10 +252,9 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		/*
 		 * Issue a HEAD request to know size and mtime.
 		 */
-		if (fetchStat(url, &url_st, NULL) == -1) {
-			rv = fetchLastErrCode;
+		if ((rv = fetchStat(url, &url_st, NULL)) == -1)
 			goto out;
-		}
+
 		/*
 		 * If mtime and size match do nothing.
 		 */
@@ -268,7 +273,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		 * Remove current file (if exists).
 		 */
 		if (restart && remove(destfile) == -1) {
-			rv = errno;
+			rv = -1;
 			goto out;
 		}
 		restart = false;
@@ -313,22 +318,23 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 			if (url->length == 0)
 				goto out;
 		}
-		rv = fetchLastErrCode;
+		rv = -1;
 		goto out;
 	}
 	if (url_st.size == -1) {
 		printf("Remote file size is unknown!\n");
-		rv = EINVAL;
+		errno = EINVAL;
+		rv = -1;
 		goto out;
 	} else if (st.st_size > url_st.size) {
 		printf("Local file %s is greater than remote file!\n",
 		    filename);
-		rv = EFBIG;
+		errno = EFBIG;
+		rv = -1;
 		goto out;
 	} else if (restart && url_st.mtime && url_st.size &&
 		   url_st.size == st.st_size && url_st.mtime == st.st_mtime) {
 		/* Local and remote size/mtime match, do nothing. */
-		rv = 0;
 		goto out;
 	}
 	fprintf(stderr, "Connected to %s.\n", url->host);
@@ -342,7 +348,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		fd = open(destfile, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 
 	if (fd == -1) {
-		rv = errno;
+		rv = -1;
 		goto out;
 	}
 
@@ -354,7 +360,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
 			fprintf(stderr, "Couldn't write to %s!\n", destfile);
-			rv = errno;
+			rv = -1;
 			goto out;
 		}
 		bytes_dld += bytes_read;
@@ -363,7 +369,8 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	if (bytes_read == -1) {
 		fprintf(stderr, "IO error while fetching %s: %s\n", filename,
 		    fetchLastErrString);
-		rv = EINVAL;
+		errno = EIO;
+		rv = -1;
 		goto out;
 	}
 	stat_end(&xs);
@@ -379,7 +386,11 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	tv[1].tv_sec = url_st.mtime;
 	tv[0].tv_usec = tv[1].tv_usec = 0;
 	if (utimes(destfile, tv) == -1)
-		rv = errno;
+		rv = -1;
+	else {
+		/* File downloaded successfully */
+		rv = 1;
+	}
 
 out:
 	if (fd != -1)

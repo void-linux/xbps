@@ -33,9 +33,11 @@ main(int argc, char **argv)
 		usage();
 
 	rv = xbps_fetch_file(argv[0], ".", false, flags);
-	if (rv != 0) {
+	if (rv == -1) {
 		printf("%s: %s\n", argv[0], xbps_fetch_error_string());
 		exit(EXIT_FAILURE);
+	} else if (rv == 0) {
+		printf("%s: file is identical than remote.\n", argv[0]);
 	}
 	exit(EXIT_SUCCESS);
 }

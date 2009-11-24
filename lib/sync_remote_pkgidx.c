@@ -68,6 +68,10 @@ xbps_get_remote_repo_string(const char *uri)
 	return p;
 }
 
+/*
+ * Returns -1 on error, 0 if transfer was not necessary (local/remote
+ * size and/or mtime match) and 1 if downloaded successfully.
+ */
 int SYMEXPORT
 xbps_sync_repository_pkg_index(const char *uri)
 {
@@ -84,15 +88,15 @@ xbps_sync_repository_pkg_index(const char *uri)
 	metadir = tmp_metafile = lrepofile = NULL;
 
 	if (uname(&un) == -1)
-		return errno;
+		return -1;
 
 	if ((url = fetchParseURL(uri)) == NULL)
-		return errno;
+		return -1;
 
 	uri_fixedp = xbps_get_remote_repo_string(uri);
 	if (uri_fixedp == NULL) {
 		fetchFreeURL(url);
-		return errno;
+		return -1;
 	}
 
 	/*
@@ -101,17 +105,18 @@ xbps_sync_repository_pkg_index(const char *uri)
 	metadir = xbps_xasprintf("%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH);
 	if (metadir == NULL) {
-		rv = errno;
+		rv = -1;
 		goto out;
 	}
 	rv = stat(metadir, &st);
 	if (rv == -1 && errno == ENOENT) {
 		if (mkpath(metadir, 0755) == -1) {
-			rv = errno;
+			rv = -1;
 			goto out;
 		}
 	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
-		rv = ENOTDIR;
+		errno = ENOTDIR;
+		rv = -1;
 		goto out;
 	}
 
@@ -120,7 +125,7 @@ xbps_sync_repository_pkg_index(const char *uri)
 	 */
 	rpidx = xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
 	if (rpidx == NULL) {
-		rv = errno;
+		rv = -1;
 		goto out;
 	}
 	/*
@@ -129,7 +134,7 @@ xbps_sync_repository_pkg_index(const char *uri)
 	 */
 	tmp_metafile = xbps_xasprintf("%s/%s", metadir, XBPS_PKGINDEX);
 	if (tmp_metafile == NULL) {
-		rv = errno;
+		rv = -1;
 		goto out;
 	}
 	/*
@@ -138,7 +143,7 @@ xbps_sync_repository_pkg_index(const char *uri)
 	lrepodir = xbps_xasprintf("%s/%s/%s/%s",
 	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp, un.machine);
 	if (lrepodir == NULL) {
-		rv = errno;
+		rv = -1;
 		goto out;
 	}
 	/*
@@ -156,7 +161,7 @@ xbps_sync_repository_pkg_index(const char *uri)
 	 * Download pkg-index.plist file from repository.
 	 */
 	if ((rv = xbps_fetch_file(rpidx, fetch_outputdir,
-	     true, NULL)) != 0) {
+	     true, NULL)) == -1) {
 		(void)remove(tmp_metafile);
 		goto out;
 	}
@@ -171,11 +176,12 @@ xbps_sync_repository_pkg_index(const char *uri)
 	rv = stat(lrepodir, &st);
 	if (rv == -1 && errno == ENOENT) {
 		if (mkpath(lrepodir, 0755) == -1) {
-			rv = errno;
+			rv = -1;
 			goto out;
 		}
 	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
-		rv = ENOTDIR;
+		errno = ENOTDIR;
+		rv = -1;
 		goto out;
 	}
 	/*
@@ -186,31 +192,34 @@ xbps_sync_repository_pkg_index(const char *uri)
 	dir = xbps_xasprintf("%s/%s/%s/noarch",
 	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp);
 	if (dir == NULL) {
-		rv = errno;
+		rv = -1;
 		goto out;
 	}
 	rv = stat(dir, &st);
 	if (rv == -1 && errno == ENOENT) {
 		if (mkpath(dir, 0755) == -1) {
 			free(dir);
-			rv = errno;
+			rv = -1;
 			goto out;
 		}
 	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
 		free(dir);
-		rv = ENOTDIR;
+		errno = ENOTDIR;
+		rv = -1;
 		goto out;
 	}
 	free(dir);
 	lrepofile = xbps_xasprintf("%s/%s", lrepodir, XBPS_PKGINDEX);
 	if (lrepofile == NULL) {
-		rv = errno;
+		rv = -1;
 		goto out;
 	}
 	/*
 	 * Rename to destination file now it has been fetched successfully.
 	 */
-	rv = rename(tmp_metafile, lrepofile);
+	if ((rv = rename(tmp_metafile, lrepofile)) == 0)
+		rv = 1;
+
 out:
 	if (rpidx)
 		free(rpidx);

@@ -35,13 +35,8 @@
 #include "index.h"
 #include "util.h"
 
-typedef struct repository_info {
-	const char *index_version;
-	uint64_t total_pkgs;
-} repo_info_t;
-
 static bool sanitize_localpath(char *, const char *);
-static bool pkgindex_getinfo(prop_dictionary_t, repo_info_t *);
+static int  pkgindex_verify(const char *, const char *, bool);
 static void usage(void);
 
 static void
@@ -71,24 +66,54 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
-static bool
-pkgindex_getinfo(prop_dictionary_t dict, repo_info_t *ri)
+static int
+pkgindex_verify(const char *plist, const char *uri, bool only_sync)
 {
-	assert(dict != NULL || ri != NULL);
+	prop_dictionary_t d;
+	const char *pkgidx_version;
+	uint64_t total_pkgs;
+	int rv = 0;
 
-	if (!prop_dictionary_get_cstring_nocopy(dict,
-	    "pkgindex-version", &ri->index_version))
-		return false;
+	assert(plist != NULL);
 
-	if (!prop_dictionary_get_uint64(dict, "total-pkgs",
-	    &ri->total_pkgs))
-		return false;
+	d = prop_dictionary_internalize_from_file(plist);
+	if (d == NULL) {
+		printf("E: repository %s does not contain any "
+		    "xbps pkgindex file.\n", uri);
+		return errno;
+	}
+
+	if (!prop_dictionary_get_cstring_nocopy(d,
+	    "pkgindex-version", &pkgidx_version)) {
+		printf("E: missing 'pkgindex-version' object!\n");
+		rv = errno;
+		goto out;
+	}
+
+	if (!prop_dictionary_get_uint64(d, "total-pkgs", &total_pkgs)) {
+		printf("E: missing 'total-pkgs' object!\n");
+		rv = errno;
+		goto out;
+	}
 
 	/* Reject empty repositories, how could this happen? :-) */
-	if (ri->total_pkgs <= 0)
-		return false;
+	if (total_pkgs == 0) {
+		printf("E: empty package list!\n");
+		rv = EINVAL;
+		goto out;
+	}
 
-	return true;
+	printf("%s package index at %s (v%s) with %ju packages.\n",
+	    only_sync ? "Updated" : "Added", uri, pkgidx_version, total_pkgs);
+
+out:
+	prop_object_release(d);
+	if (rv != 0) {
+		printf("W: removing incorrect pkg index file: '%s' ...\n",
+		    plist);
+		rv = remove(plist);
+	}
+	return rv;
 }
 
 static bool
@@ -135,8 +160,6 @@ out:
 static int
 add_repository(const char *uri)
 {
-	prop_dictionary_t dict;
-	repo_info_t *rinfo;
 	char *plist, idxstr[PATH_MAX];
 	int rv = 0;
 
@@ -146,10 +169,14 @@ add_repository(const char *uri)
 
 		printf("Fetching remote package index at %s...\n", uri);
 		rv = xbps_sync_repository_pkg_index(idxstr);
-		if (rv != 0) {
+		if (rv == -1) {
 			printf("Error: could not fetch pkg index file: %s.\n",
 			    xbps_fetch_error_string());
 			return rv;
+		} else if (rv == 0) {
+			printf("Package index file is already "
+			    "up to date.\n");
+			return 0;
 		}
 
 		plist = xbps_get_pkg_index_plist(idxstr);
@@ -163,25 +190,8 @@ add_repository(const char *uri)
 	if (plist == NULL)
 		return errno;
 
-	dict = prop_dictionary_internalize_from_file(plist);
-	if (dict == NULL) {
-		printf("Repository %s does not contain any "
-		    "xbps pkgindex file.\n", idxstr);
-		rv = errno;
+	if ((rv = pkgindex_verify(plist, idxstr, false)) != 0)
 		goto out;
-	}
-
-	rinfo = malloc(sizeof(*rinfo));
-	if (rinfo == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	if (!pkgindex_getinfo(dict, rinfo)) {
-		printf("'%s' is incomplete.\n", plist);
-		rv = EINVAL;
-		goto out;
-	}
 
 	if ((rv = xbps_register_repository(idxstr)) != 0) {
 		printf("ERROR: couldn't register repository (%s)\n",
@@ -189,14 +199,7 @@ add_repository(const char *uri)
 		goto out;
 	}
 	
-	printf("Added repository at %s (%s) with %ju packages.\n",
-	       idxstr, rinfo->index_version, rinfo->total_pkgs);
-
 out:
-	if (dict != NULL)
-		prop_object_release(dict);
-	if (rinfo != NULL)
-		free(rinfo);
 	if (plist != NULL)
 		free(plist);
 
@@ -206,8 +209,8 @@ out:
 int
 main(int argc, char **argv)
 {
-	char dpkgidx[PATH_MAX], *root = NULL;
 	struct repository_data *rdata = NULL;
+	char dpkgidx[PATH_MAX], *plist, *root = NULL;
 	int c, rv = 0;
 
 	while ((c = getopt(argc, argv, "Vr:")) != -1) {
@@ -313,8 +316,22 @@ main(int argc, char **argv)
 			if (xbps_check_is_repo_string_remote(uri)) {
 				printf("Syncing package index from: %s\n", uri);
 				rv = xbps_sync_repository_pkg_index(uri);
-				if (rv != 0)
+				if (rv == -1) {
+					printf("Failed! returned: %s\n",
+					    xbps_fetch_error_string());
 					break;
+				} else if (rv == 0) {
+					printf("Package index file is already "
+					    "up to date.\n");
+					continue;
+				}
+				plist = xbps_get_pkg_index_plist(uri);
+				if (plist == NULL) {
+					rv = EINVAL;
+					break;
+				}
+				(void)pkgindex_verify(plist, uri, true);
+				free(plist);
 			}
 		}
 		xbps_release_repolist_data();

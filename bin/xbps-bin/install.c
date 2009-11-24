@@ -177,9 +177,9 @@ download_package_list(prop_object_iterator_t iter)
 		rv = xbps_fetch_file(binfile, savedir, false, NULL);
 		free(savedir);
 		free(binfile);
-		if (rv != 0) {
+		if (rv == -1) {
 			printf("Couldn't download %s from %s (%s)\n",
-			    filename, repoloc, strerror(rv));
+			    filename, repoloc, xbps_fetch_error_string());
 			free(repoloc_trans);
 			return errno;
 		}
