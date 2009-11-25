@@ -28,11 +28,20 @@
 
 /* From index.c */
 int	xbps_repo_genindex(const char *);
+/* From repository.c */
+int	pkgindex_verify(const char *, const char *, bool);
+bool	sanitize_url(char *, const char *);
+int	register_repository(const char *);
+int	unregister_repository(const char *);
+int	show_pkg_info_from_repolist(const char *);
+int	show_pkg_deps_from_repolist(const char *);
+int	repository_sync(void);
 /* From util.c */
 int 	show_pkg_files(prop_dictionary_t);
-void    show_pkg_info(prop_dictionary_t);
-int     show_pkg_namedesc(prop_object_t, void *, bool *);
-int     list_strings_in_array(prop_object_t, void *, bool *);
-int     list_strings_sep_in_array(prop_object_t, void *, bool *);
+void	show_pkg_info(prop_dictionary_t);
+void	show_pkg_info_only_repo(prop_dictionary_t);
+int	show_pkg_namedesc(prop_object_t, void *, bool *);
+int	list_strings_in_array(prop_object_t, void *, bool *);
+int	list_strings_sep_in_array(prop_object_t, void *, bool *);
 
 #endif /* !_XBPS_REPO_DEFS_H_ */

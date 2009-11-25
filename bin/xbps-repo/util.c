@@ -34,6 +34,35 @@
 #include "defs.h"
 
 void
+show_pkg_info_only_repo(prop_dictionary_t dict)
+{
+	prop_object_t obj;
+	char size[64];
+	int rv = 0;
+
+	obj = prop_dictionary_get(dict, "filename");
+	if (obj && prop_object_type(obj) == PROP_TYPE_STRING) {
+		printf("Filename: %s", prop_string_cstring_nocopy(obj));
+		obj = prop_dictionary_get(dict, "filename-size");
+		if (obj && prop_object_type(obj) == PROP_TYPE_NUMBER) {
+			rv = xbps_humanize_number(size, 5,
+			    (int64_t)prop_number_unsigned_integer_value(obj),
+			    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE);
+			if (rv == -1)
+				printf(" (size: %ju)\n",
+				    prop_number_unsigned_integer_value(obj));
+			else
+				printf(" (size: %s)\n", size);
+		} else
+			printf("\n");
+	}
+
+	obj = prop_dictionary_get(dict, "filename-sha256");
+	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+		printf("SHA256: %s\n", prop_string_cstring_nocopy(obj));
+}
+
+void
 show_pkg_info(prop_dictionary_t dict)
 {
 	prop_object_t obj;
@@ -73,27 +102,6 @@ show_pkg_info(prop_dictionary_t dict)
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Version: %s\n", prop_string_cstring_nocopy(obj));
 
-	obj = prop_dictionary_get(dict, "filename");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING) {
-		printf("Filename: %s", prop_string_cstring_nocopy(obj));
-		obj = prop_dictionary_get(dict, "filename-size");
-		if (obj && prop_object_type(obj) == PROP_TYPE_NUMBER) {
-			rv = xbps_humanize_number(size, 5,
-			    (int64_t)prop_number_unsigned_integer_value(obj),
-			    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE);
-			if (rv == -1)
-				printf(" (size: %ju)\n",
-				    prop_number_unsigned_integer_value(obj));
-			else
-				printf(" (size: %s)\n", size);
-		} else
-			printf("\n");
-	}
-
-	obj = prop_dictionary_get(dict, "filename-sha256");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
-		printf("SHA256: %s\n", prop_string_cstring_nocopy(obj));
-
 	obj = prop_dictionary_get(dict, "conf_files");
 	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {
 		printf("Configuration files:\n");
@@ -105,7 +113,7 @@ show_pkg_info(prop_dictionary_t dict)
 
 	obj = prop_dictionary_get(dict, "short_desc");
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
-		printf("Description: %s", prop_string_cstring_nocopy(obj));
+		printf("Description: %s\n", prop_string_cstring_nocopy(obj));
 
 	obj = prop_dictionary_get(dict, "long_desc");
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)

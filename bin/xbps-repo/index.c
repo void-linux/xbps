@@ -85,12 +85,10 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 {
 	prop_dictionary_t newpkgd, curpkgd;
 	prop_array_t pkgar;
-	struct archive *ar = NULL;
-	struct archive_entry *entry;
 	struct stat st;
 	const char *pkgname, *version, *regver, *oldfilen;
 	char *sha256, *filen, *tmpfilen, *tmpstr, *oldfilepath;
-	int i = 0, rv = 0;
+	int rv = 0;
 
 	if (idxdict == NULL || file == NULL)
 		return EINVAL;
@@ -108,187 +106,148 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		goto out;
 	}
 
-	ar = archive_read_new();
-	if (ar == NULL) {
+	newpkgd = xbps_get_pkg_plist_dict_from_url(file, XBPS_PKGPROPS);
+	if (newpkgd == NULL) {
+		printf("%s: can't read %s metadata file, skipping!\n",
+		    file, XBPS_PKGPROPS);
+		goto out;
+	}
+	if (!prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname", &pkgname)) {
+		prop_object_release(newpkgd);
 		rv = errno;
 		goto out;
 	}
-	/* Enable support for tar format and all compression methods */
-	archive_read_support_compression_all(ar);
-	archive_read_support_format_tar(ar);
+	if (!prop_dictionary_get_cstring_nocopy(newpkgd, "version", &version)) {
+		prop_object_release(newpkgd);
+		rv = errno;
+		goto out;
+	}
+	/*
+	 * Check if this package exists already in the index, but first
+	 * checking the version. If current package version is greater
+	 * than current registered package, update the index; otherwise
+	 * pass to the next one.
+	 */
+	curpkgd = xbps_find_pkg_in_dict(idxdict, "packages", pkgname);
+	if (curpkgd) {
+		if (!prop_dictionary_get_cstring_nocopy(curpkgd,
+		    "version", &regver)) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			goto out;
+		}
+		if (xbps_cmpver(version, regver) <= 0) {
+			printf("W: skipping %s. %s-%s already "
+			    "registered.\n", filen, pkgname, regver);
+			prop_object_release(newpkgd);
+			rv = EEXIST;
+			goto out;
+		}
+		/*
+		 * Current binpkg is newer than the one registered
+		 * in package index, remove outdated binpkg file
+		 * and its dictionary from the pkg index.
+		 */
+		if (!prop_dictionary_get_cstring_nocopy(curpkgd,
+		    "filename", &oldfilen)) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			goto out;
+		}
+		oldfilepath = xbps_xasprintf("%s/%s", filedir, oldfilen);
+		if (oldfilepath == NULL) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			goto out;
+		}
+		if (remove(oldfilepath) == -1) {
+			printf("E: Couldn't remove old package file "
+			    "'%s'!\n", oldfilen);
+			free(oldfilepath);
+			prop_object_release(newpkgd);
+			rv = errno;
+			goto out;
+		}
+		free(oldfilepath);
+		tmpstr = strdup(oldfilen);
+		if (tmpstr == NULL) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			goto out;
+		}
+		if ((rv = xbps_remove_pkg_from_dict(idxdict,
+		    "packages", pkgname)) != 0) {
+			prop_object_release(newpkgd);
+			free(tmpstr);
+			goto out;
+		}
+		printf("W: removed outdated binpkg file for '%s'.\n", tmpstr);
+		free(tmpstr);
+	}
 
-	if ((rv = archive_read_open_filename(ar, file,
-	     ARCHIVE_READ_BLOCKSIZE)) == -1) {
+	/*
+	 * We have the dictionary now, add the required
+	 * objects for the index.
+	 */
+	if (!prop_dictionary_set_cstring(newpkgd, "filename", filen)) {
+		prop_object_release(newpkgd);
+		rv = errno;
+		goto out;
+	}
+	sha256 = xbps_get_file_hash(file);
+	if (sha256 == NULL) {
+		prop_object_release(newpkgd);
+		rv = errno;
+		goto out;
+	}
+	if (!prop_dictionary_set_cstring(newpkgd, "filename-sha256", sha256)) {
+		prop_object_release(newpkgd);
+		free(sha256);
+		rv = errno;
+		goto out;
+	}
+	free(sha256);
+	if (stat(file, &st) == -1) {
+		prop_object_release(newpkgd);
+		rv = errno;
+		goto out;
+	}
+	if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
+	    (uint64_t)st.st_size)) {
+		prop_object_release(newpkgd);
+		rv = errno;
+		goto out;
+	}
+	/* Get package array in repo index file */
+	pkgar = prop_dictionary_get(idxdict, "packages");
+	if (pkgar == NULL) {
+		prop_object_release(newpkgd);
 		rv = errno;
 		goto out;
 	}
 
 	/*
-	 * Open the binary package and read the props.plist
-	 * into a buffer.
+	 * Remote some unneeded and large objects.
 	 */
-	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
-		if (i >= 5) {
-			/* 
-			 * Unlikely that archive contains XBPS_PKGPROPS,
-			 * discard it completely.
-			 */
-			archive_read_data_skip(ar);
-			printf("W: archive %s does not contain required "
-			    "props.plist file!\n", file);
-			break;
-		}
-		if (strstr(archive_entry_pathname(entry), XBPS_PKGPROPS) == 0) {
-			archive_read_data_skip(ar);
-			i++;
-			continue;
-		}
-		newpkgd = xbps_read_dict_from_archive_entry(ar, entry);
-		if (newpkgd == NULL) {
-			printf("%s: can't read %s metadata file, skipping!\n",
-			    file, XBPS_PKGPROPS);
-			break;
-		}
-		if (!prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname",
-		    &pkgname)) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			break;
-		}
-		if (!prop_dictionary_get_cstring_nocopy(newpkgd, "version",
-		    &version)) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			break;
-		}
-		/*
-		 * Check if this package exists already in the index, but first
-		 * checking the version. If current package version is greater
-		 * than current registered package, update the index; otherwise
-		 * pass to the next one.
-		 */
-		curpkgd = xbps_find_pkg_in_dict(idxdict, "packages", pkgname);
-		if (curpkgd) {
-			if (!prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "version", &regver)) {
-				prop_object_release(newpkgd);
-				rv = errno;
-				break;
-			}
-			if (xbps_cmpver(version, regver) <= 0) {
-				printf("W: skipping %s. %s-%s already "
-				    "registered.\n", filen, pkgname, regver);
-				prop_object_release(newpkgd);
-				archive_read_data_skip(ar);
-				rv = EEXIST;
-				break;
-			}
-			/*
-			 * Current binpkg is newer than the one registered
-			 * in package index, remove outdated binpkg file
-			 * and its dictionary from the pkg index.
-			 */
-			if (!prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "filename", &oldfilen)) {
-				prop_object_release(newpkgd);
-				rv = errno;
-				break;
-			}
-			oldfilepath = xbps_xasprintf("%s/%s", filedir,
-			    oldfilen);
-			if (oldfilepath == NULL) {
-				prop_object_release(newpkgd);
-				rv = errno;
-				break;
-			}
-			if (remove(oldfilepath) == -1) {
-				printf("E: Couldn't remove old package file "
-				    "'%s'!\n", oldfilen);
-				free(oldfilepath);
-				prop_object_release(newpkgd);
-				rv = errno;
-				break;
-			}
-			free(oldfilepath);
-			tmpstr = strdup(oldfilen);
-			if (tmpstr == NULL) {
-				prop_object_release(newpkgd);
-				rv = errno;
-				break;
-			}
-			if ((rv = xbps_remove_pkg_from_dict(idxdict,
-			    "packages", pkgname)) != 0) {
-				prop_object_release(newpkgd);
-				free(tmpstr);
-				break;
-			}
-			printf("W: removed outdated binpkg file "
-			    "for '%s'.\n", tmpstr);
-			free(tmpstr);
-		}
+	prop_dictionary_remove(newpkgd, "long_desc");
+	prop_dictionary_remove(newpkgd, "maintainer");
 
-		/*
-		 * We have the dictionary now, add the required
-		 * objects for the index.
-		 */
-		if (!prop_dictionary_set_cstring(newpkgd, "filename", filen)) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			break;
-		}
-		sha256 = xbps_get_file_hash(file);
-		if (sha256 == NULL) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			break;
-		}
-		if (!prop_dictionary_set_cstring(newpkgd,
-		    "filename-sha256", sha256)) {
-			prop_object_release(newpkgd);
-			free(sha256);
-			rv = errno;
-			break;
-		}
-		free(sha256);
-		if (stat(file, &st) == -1) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			break;
-		}
-		if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
-		    (uint64_t)st.st_size)) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			break;
-		}
-		/* Get package array in repo index file */
-		pkgar = prop_dictionary_get(idxdict, "packages");
-		if (pkgar == NULL) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			break;
-		}
-		/*
-		 * Add dictionary into the index and update package count.
-		 */
-		if (!xbps_add_obj_to_array(pkgar, newpkgd)) {
-			prop_object_release(newpkgd);
-			rv = EINVAL;
-			break;
-		}
-		printf("Registered %s-%s (%s) in package index.\n",
-		    pkgname, version, filen);
-
-		if (!prop_dictionary_set_uint64(idxdict, "total-pkgs",
-		    prop_array_count(pkgar)))
-			rv = errno;
-
-		break;
+	/*
+	 * Add dictionary into the index and update package count.
+	 */
+	if (!xbps_add_obj_to_array(pkgar, newpkgd)) {
+		prop_object_release(newpkgd);
+		rv = EINVAL;
+		goto out;
 	}
+	printf("Registered %s-%s (%s) in package index.\n",
+	    pkgname, version, filen);
+
+	if (!prop_dictionary_set_uint64(idxdict, "total-pkgs",
+	    prop_array_count(pkgar)))
+		rv = errno;
 
 out:
-	if (ar)
-		archive_read_finish(ar);
 	if (tmpfilen)
 		free(tmpfilen);
 
