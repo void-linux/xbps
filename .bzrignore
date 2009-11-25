@@ -1,9 +1,6 @@
 xbps-bin
-xbps-cmpver
-xbps-digest
 xbps-repo
-xbps-pkgdb
-xbps-fetch
+xbps-uhelper
 *.static
 *.so*
 *.a
