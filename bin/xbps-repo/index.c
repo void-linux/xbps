@@ -90,7 +90,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	struct stat st;
 	const char *pkgname, *version, *regver, *oldfilen;
 	char *sha256, *filen, *tmpfilen, *tmpstr, *oldfilepath;
-	int rv = 0;
+	int i = 0, rv = 0;
 
 	if (idxdict == NULL || file == NULL)
 		return EINVAL;
@@ -128,8 +128,19 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	 * into a buffer.
 	 */
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
+		if (i >= 5) {
+			/* 
+			 * Unlikely that archive contains XBPS_PKGPROPS,
+			 * discard it completely.
+			 */
+			archive_read_data_skip(ar);
+			printf("W: archive %s does not contain required "
+			    "props.plist file!\n", file);
+			break;
+		}
 		if (strstr(archive_entry_pathname(entry), XBPS_PKGPROPS) == 0) {
 			archive_read_data_skip(ar);
+			i++;
 			continue;
 		}
 		newpkgd = xbps_read_dict_from_archive_entry(ar, entry);
