@@ -113,6 +113,63 @@ show_pkg_info(prop_dictionary_t dict)
 }
 
 int
+show_pkg_files(prop_dictionary_t filesd)
+{
+	prop_array_t array;
+	prop_object_iterator_t iter = NULL;
+	prop_object_t obj;
+	const char *file;
+	char *array_str = "files";
+	int i = 0;
+
+	/* Links. */
+	array = prop_dictionary_get(filesd, "links");
+	if (array && prop_array_count(array) > 0) {
+		iter = xbps_get_array_iter_from_dict(filesd, "links");
+		if (iter == NULL)
+			return EINVAL;
+
+		while ((obj = prop_object_iterator_next(iter))) {
+			if (!prop_dictionary_get_cstring_nocopy(obj,
+			    "file", &file)) {
+				prop_object_iterator_release(iter);
+				return errno;
+			}
+			printf("%s\n", file);
+		}
+		prop_object_iterator_release(iter);
+	}
+
+	/* Files and configuration files. */
+	for (i = 0; i < 2; i++) {
+		if (i == 0)
+			array_str = "conf_files";
+		else
+			array_str = "files";
+
+		array = prop_dictionary_get(filesd, array_str);
+		if (array == NULL || prop_array_count(array) == 0)
+			continue;
+
+		iter = xbps_get_array_iter_from_dict(filesd, array_str);
+		if (iter == NULL)
+			return EINVAL;
+
+		while ((obj = prop_object_iterator_next(iter))) {
+			if (!prop_dictionary_get_cstring_nocopy(obj,
+			    "file", &file)) {
+				prop_object_iterator_release(iter);
+				return errno;
+			}
+			printf("%s\n", file);
+		}
+		prop_object_iterator_release(iter);
+	}
+
+	return 0;
+}
+
+int
 show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 {
 	const char *pkgname, *desc, *ver, *pattern = arg;

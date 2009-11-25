@@ -73,6 +73,10 @@ Please note that all targets are *case insensitive*.
 	Shows run time dependencies for binary package 'pkgname'. The first
 	repository in the pool wins.
 
+*show-files 'pkgname'*::
+	Shows the file list for a binary package 'pkgname' by searching it
+	in repository pool. Local and remote repositories are supported.
+
 *sync*::
 	Syncs the package index file for all registered remote repositories.
 	The new file will be fetched if local and remote size/mtime do not match.

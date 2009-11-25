@@ -43,7 +43,8 @@ usage(void)
 {
 	printf("Usage: xbps-repo [options] [action] [arguments]\n\n"
 	" Available actions:\n"
-        "    add, genindex, list, remove, search, show, show-deps, sync\n"
+        "    add, genindex, list, remove, search, show, show-deps,\n"
+	"    show-files, sync\n"
 	" Actions with arguments:\n"
 	"    add\t\t<URI>\n"
 	"    genindex\t<path>\n"
@@ -51,6 +52,7 @@ usage(void)
 	"    search\t<string>\n"
 	"    show\t<pkgname>\n"
 	"    show-deps\t<pkgname>\n"
+	"    show-files\t<pkgname>\n"
 	" Options shared by all actions:\n"
 	"    -r\t\t<rootdir>\n"
 	"    -V\t\tPrints xbps release version\n"
@@ -345,6 +347,22 @@ main(int argc, char **argv)
 			rv = EINVAL;
 			goto out;
 		}
+
+	} else if (strcasecmp(argv[0], "show-files") == 0) {
+		/* Shows the package files in a binary package */
+		if (argc != 2)
+			usage();
+
+		pkgd = xbps_get_pkg_plist_dict_from_repo(argv[1],
+		    "./files.plist");
+		if (pkgd == NULL) {
+			printf("E: couldn't read files.plist: %s.\n",
+			    strerror(errno));
+			rv = errno;
+			goto out;
+		}
+		rv = show_pkg_files(pkgd);
+		prop_object_release(pkgd);
 
 	} else if (strcasecmp(argv[0], "genindex") == 0) {
 		/* Generates a package repository index plist file. */
