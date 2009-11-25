@@ -231,6 +231,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	 */
 	prop_dictionary_remove(newpkgd, "long_desc");
 	prop_dictionary_remove(newpkgd, "maintainer");
+	prop_dictionary_remove(newpkgd, "conf_files");
 
 	/*
 	 * Add dictionary into the index and update package count.
