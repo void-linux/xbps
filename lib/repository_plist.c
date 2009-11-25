@@ -136,6 +136,23 @@ open_archive(const char *url)
 	return a;
 }
 
+char SYMEXPORT *
+xbps_get_path_from_pkg_dict_repo(prop_dictionary_t d, const char *uri)
+{
+	const char *arch, *filen;
+
+	if (!prop_dictionary_get_cstring_nocopy(d, "architecture", &arch))
+		return NULL;
+	if (!prop_dictionary_get_cstring_nocopy(d, "filename", &filen))
+		return NULL;
+
+	if (xbps_check_is_repo_string_remote(uri))
+		return xbps_xasprintf("%s/%s/%s", uri, arch, filen);
+
+	return xbps_xasprintf("%s/%s/%s/%s", xbps_get_rootdir(),
+	    uri, arch, filen);
+}
+
 prop_dictionary_t SYMEXPORT
 xbps_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 {
@@ -180,7 +197,6 @@ xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL, pkgd;
 	struct repository_data *rdata;
-	const char *arch, *filen;
 	char *url = NULL;
 	int rv = 0;
 
@@ -202,16 +218,9 @@ xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 		if ((pkgd = xbps_find_pkg_in_dict(rdata->rd_repod,
 		    "packages", pkgname)) == NULL)
 			continue;
-		if (!prop_dictionary_get_cstring_nocopy(pkgd,
-		    "architecture", &arch))
-			break;
-		if (!prop_dictionary_get_cstring_nocopy(pkgd,
-		    "filename", &filen))
-			break;
-		url = xbps_xasprintf("%s/%s/%s", rdata->rd_uri, arch, filen);
+		url = xbps_get_path_from_pkg_dict_repo(pkgd, rdata->rd_uri);
 		if (url == NULL)
 			break;
-
 		plistd = xbps_get_pkg_plist_dict_from_url(url, plistf);
 		if (plistd != NULL) {
 			free(url);

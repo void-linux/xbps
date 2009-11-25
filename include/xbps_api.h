@@ -185,6 +185,8 @@ int SYMEXPORT	xbps_register_repository(const char *);
 int SYMEXPORT	xbps_unregister_repository(const char *);
 
 /* From lib/repository_plist.c */
+char SYMEXPORT
+	*xbps_get_path_from_pkg_dict_repo(prop_dictionary_t, const char *);
 prop_dictionary_t SYMEXPORT
 	xbps_get_pkg_plist_dict_from_repo(const char *, const char *);
 prop_dictionary_t SYMEXPORT
