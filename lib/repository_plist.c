@@ -137,16 +137,52 @@ open_archive(const char *url)
 }
 
 prop_dictionary_t SYMEXPORT
+xbps_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
+{
+	prop_dictionary_t plistd = NULL;
+	struct archive *a;
+	struct archive_entry *entry;
+	const char *curpath;
+	int i = 0;
+
+	if ((a = open_archive(url)) == NULL)
+		return NULL;
+
+	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
+		curpath = archive_entry_pathname(entry);
+		if (i >= 5) {
+			/*
+			 * Archive does not contain required plist
+			 * file, discard it completely.
+			 */
+			errno = ENOENT;
+			break;
+		}
+		if (strstr(curpath, plistf) == 0) {
+			archive_read_data_skip(a);
+			i++;
+			continue;
+		}
+		plistd = xbps_read_dict_from_archive_entry(a, entry);
+		if (plistd == NULL) {
+			errno = EINVAL;
+			break;
+		}
+		break;
+	}
+	archive_read_finish(a);
+
+	return plistd;
+}
+
+prop_dictionary_t SYMEXPORT
 xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL, pkgd;
 	struct repository_data *rdata;
-	struct archive *a;
-	struct archive_entry *entry;
 	const char *arch, *filen;
 	char *url = NULL;
-	int i = 0, rv = 0;
-	bool found = false;
+	int rv = 0;
 
 	if ((rv = xbps_prepare_repolist_data()) != 0) {
 		errno = rv;
@@ -176,46 +212,16 @@ xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 		if (url == NULL)
 			break;
 
-		if ((a = open_archive(url)) == NULL) {
+		plistd = xbps_get_pkg_plist_dict_from_url(url, plistf);
+		if (plistd != NULL) {
 			free(url);
-			goto out;
+			break;
 		}
 		free(url);
-
-		while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
-			const char *curpath = archive_entry_pathname(entry);
-
-			if (i >= 5) {
-				/*
-				 * Archive does not contain required plist
-				 * file, discard it completely.
-				 */
-				archive_read_finish(a);
-				errno = ENOENT;
-				goto out;
-			}
-			if (strstr(curpath, plistf) == 0) {
-				archive_read_data_skip(a);
-				i++;
-				continue;
-			}
-			plistd = xbps_read_dict_from_archive_entry(a, entry);
-			if (plistd == NULL) {
-				archive_read_finish(a);
-				errno = EINVAL;
-				goto out;
-			}
-			found = true;
-			break;
-		}
-		archive_read_finish(a);
-		if (found)
-			break;
 	}
 
-out:
 	xbps_release_repolist_data();
-	if (found == false)
+	if (plistd == NULL)
 		errno = ENOENT;
 
 	return plistd;
