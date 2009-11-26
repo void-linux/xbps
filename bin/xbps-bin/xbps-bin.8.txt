@@ -64,10 +64,10 @@ Please note that all targets are *case insensitive*.
 	*pkgname*.
 
 *install 'pkgname'*::
-	Install binary package "*pkgname*". The package will be
-	'downloaded' (if available in a 'remote repository'),
-	'unpacked' and 'configured'. The 'unpack' stage will execute the
-	*pre-install* action on its *INSTALL* script, and unpack its files.
+	Install binary package "*pkgname*" by searching it in the
+	repository pool. The package will be 'download' (if working with
+	a remote repository), 'unpacked' and 'configured'. The 'unpack stage will
+	execute the *pre-install* action on its *INSTALL* script, and unpack its files.
 	The 'configure' stage will run the *post-install* action set on its
 	*INSTALL* script and will change its state to *installed* in the
 	package database.

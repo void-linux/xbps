@@ -47,10 +47,8 @@ Please note that all targets are *case insensitive*.
 	Generates a package index for a local repository as specified in
 	its argument. It will look for archives with *.xbps* extension
 	and will only add it into the index if version is newer than the one
-	available in the index. If a newer package is available, the file
-	for old package will be removed automatically.
-
-	The same argument should be used for the *add* and *remove* targets.
+	available in the index. If a newer package is available, the
+	for old package file will be removed automatically.
 
 *list*::
 	Lists all currently registered repositories in repository pool.
@@ -62,12 +60,14 @@ Please note that all targets are *case insensitive*.
 
 *search* 'pattern'::
 	Search for packages containing the shell 'pattern' (see fnmatch(3)) in
-	its *pkgname* or *description* values.
+	its *pkgname* or *description* values in repository pool.
 
 *show 'pkgname'*::
 	Shows information about binary package 'pkgname'. This will print
 	the size it takes in filesystem, description, maintainer, architecture
-	and other information.
+	and other information. The first repository in the pool wins. *NOTE:
+	if a remote repository is the winner it will have to fetch some info
+	from it.*
 
 *show-deps 'pkgname'*::
 	Shows run time dependencies for binary package 'pkgname'. The first
@@ -75,7 +75,8 @@ Please note that all targets are *case insensitive*.
 
 *show-files 'pkgname'*::
 	Shows the file list for a binary package 'pkgname' by searching it
-	in repository pool. Local and remote repositories are supported.
+	in repository pool. *NOTE: if a remote repository is the winner it will
+	have to fetch some info from it.*
 
 *sync*::
 	Syncs the package index file for all registered remote repositories.
