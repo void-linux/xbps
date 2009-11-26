@@ -40,8 +40,9 @@ xbps_repository_pool_init(void)
 	prop_dictionary_t dict = NULL;
 	prop_array_t array;
 	prop_object_t obj;
-	prop_object_iterator_t iter;
+	prop_object_iterator_t iter = NULL;
 	struct repository_data *rdata;
+	size_t ntotal = 0, nmissing = 0;
 	char *plist;
 	int rv = 0;
 
@@ -69,17 +70,18 @@ xbps_repository_pool_init(void)
 
 	array = prop_dictionary_get(dict, "repository-list");
 	if (array == NULL) {
-		rv = EINVAL;
-		goto out1;
+		rv = errno;
+		goto out;
 	}
 
 	iter = prop_array_iterator(array);
 	if (iter == NULL) {
-		rv = ENOMEM;
-		goto out1;
+		rv = errno;
+		goto out;
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		ntotal++;
 		/*
 		 * Iterate over the repository pool and add the dictionary
 		 * for current repository into the queue.
@@ -88,39 +90,51 @@ xbps_repository_pool_init(void)
 		    xbps_get_pkg_index_plist(prop_string_cstring_nocopy(obj));
 		if (plist == NULL) {
 			rv = EINVAL;
-			goto out2;
+			goto out;
 		}
 
 		rdata = malloc(sizeof(struct repository_data));
 		if (rdata == NULL) {
 			rv = errno;
-			goto out2;
+			goto out;
 		}
 
 		rdata->rd_uri = prop_string_cstring(obj);
 		if (rdata->rd_uri == NULL) {
 			free(plist);
-			rv = EINVAL;
-			goto out2;
+			rv = errno;
+			goto out;
 		}
 		rdata->rd_repod = prop_dictionary_internalize_from_file(plist);
 		if (rdata->rd_repod == NULL) {
 			free(plist);
+			if (errno == ENOENT) {
+				free(rdata->rd_uri);
+				free(rdata);
+				errno = 0;
+				nmissing++;
+				continue;
+			}
 			rv = errno;
-			goto out2;
+			goto out;
 		}
 		free(plist);
 		SIMPLEQ_INSERT_TAIL(&repodata_queue, rdata, chain);
 	}
 
+	if (ntotal - nmissing == 0) {
+		rv = EINVAL;
+		goto out;
+	}
+
 	repolist_initialized = true;
 	repolist_refcnt = 1;
 	DPRINTF(("%s: initialized ok.\n", __func__));
-out2:
-	prop_object_iterator_release(iter);
-out1:
-	prop_object_release(dict);
 out:
+	if (iter)
+		prop_object_iterator_release(iter);
+	if (dict)
+		prop_object_release(dict);
 	if (rv != 0)
 		xbps_repository_pool_release();
 
