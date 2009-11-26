@@ -167,6 +167,9 @@ xbps_find_pkg_installed_from_plist(const char *pkgname)
 	case XBPS_PKG_STATE_UNPACKED:
 		xbps_regpkgs_dictionary_release();
 		return prop_dictionary_copy(pkgd);
+	case XBPS_PKG_STATE_CONFIG_FILES:
+		errno = ENOENT;
+		break;
 	default:
 		break;
 	}
