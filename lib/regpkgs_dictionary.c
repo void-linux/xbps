@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2009 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,63 +30,44 @@
 #include <errno.h>
 
 #include <xbps_api.h>
-#include "defs.h"
-#include "../xbps-repo/defs.h"
 
-int
-xbps_show_pkg_deps(const char *pkgname)
+static prop_dictionary_t regpkgs_dict;
+static size_t regpkgs_refcount;
+static bool regpkgs_initialized;
+
+prop_dictionary_t SYMEXPORT
+xbps_regpkgs_dictionary_init(void)
 {
-	prop_dictionary_t pkgd, propsd;
-	char *path;
-	int rv = 0;
+	char *plist;
 
-	assert(pkgname != NULL);
+	if (regpkgs_initialized == false) {
+		plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+		    XBPS_META_PATH, XBPS_REGPKGDB);
+		if (plist == NULL)
+			return NULL;
 
-	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
-	if (pkgd == NULL) {
-		printf("Package %s is not installed.\n", pkgname);
-		return 0;
-	}
+		regpkgs_dict = prop_dictionary_internalize_from_file(plist);
+		if (regpkgs_dict == NULL) {
+			free(plist);
+			return NULL;
+		}
+		free(plist);
+		regpkgs_initialized = true;
+		DPRINTF(("%s: initialized ok.\n", __func__));
+	}	
+	regpkgs_refcount++;
 
-	/*
-	 * Check for props.plist metadata file.
-	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
-	if (path == NULL)
-		return errno;
-
-	propsd = prop_dictionary_internalize_from_file(path);
-	free(path);
-	if (propsd == NULL) {
-		printf("%s: unexistent %s metadata file.\n", pkgname,
-		    XBPS_PKGPROPS);
-		return errno;
-	}
-
-	rv = xbps_callback_array_iter_in_dict(propsd, "run_depends",
-	     list_strings_sep_in_array, NULL);
-	prop_object_release(propsd);
-	prop_object_release(pkgd);
-
-	return rv;
+	return regpkgs_dict;
 }
 
-int
-xbps_show_pkg_reverse_deps(const char *pkgname)
+void SYMEXPORT
+xbps_regpkgs_dictionary_release(void)
 {
-	prop_dictionary_t pkgd;
-	int rv = 0;
+	if (--regpkgs_refcount > 0)
+		return;
 
-	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
-	if (pkgd == NULL) {
-		printf("Package %s is not installed.\n", pkgname);
-		return 0;
-	}
-
-	rv = xbps_callback_array_iter_in_dict(pkgd, "requiredby",
-	    list_strings_sep_in_array, NULL);
-	prop_object_release(pkgd);
-
-	return rv;
+	prop_object_release(regpkgs_dict);
+	regpkgs_dict = NULL;
+	regpkgs_initialized = false;
+	DPRINTF(("%s: released ok.\n", __func__));
 }

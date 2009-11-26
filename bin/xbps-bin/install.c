@@ -246,7 +246,9 @@ show_transaction_sizes(prop_object_iterator_t iter)
 	uint64_t tsize = 0, dlsize = 0, instsize = 0;
 	const char *tract;
 	char size[64];
-	bool trans_inst = false, trans_up = false;
+	bool trans_inst, trans_up, trans_conf;
+
+	trans_inst = trans_up = trans_conf = false;
 
 	/*
 	 * Iterate over the list of packages that are going to be
@@ -275,6 +277,8 @@ show_transaction_sizes(prop_object_iterator_t iter)
 			trans_inst = true;
 		else if (strcmp(tract, "update") == 0)
 			trans_up = true;
+		else if (strcmp(tract, "configure") == 0)
+			trans_conf = true;
 	}
 	prop_object_iterator_reset(iter);
 
@@ -289,6 +293,11 @@ show_transaction_sizes(prop_object_iterator_t iter)
 	if (trans_up) {
 		printf("The following packages will be updated:\n\n");
 		show_package_list(iter, "update");
+		printf("\n\n");
+	}
+	if (trans_conf) {
+		printf("The following packages will be configured:\n\n");
+		show_package_list(iter, "configure");
 		printf("\n\n");
 	}
 
@@ -386,7 +395,7 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 				    "repository pool.\n", pkgname);
 				return rv;
 			} else if (rv != 0 && rv != ENOENT) {
-				printf("Unexpected error: %s", strerror(rv));
+				printf("Unexpected error: %s", strerror(errno));
 				return rv;
 			}
 		}
@@ -410,13 +419,6 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 		show_missing_deps(trans->dict, pkgname);
 		goto out2;
 	}
-
-	if (!prop_dictionary_get_cstring_nocopy(trans->dict,
-	     "origin", &trans->originpkgname)) {
-		rv = errno;
-		goto out2;
-	}
-
 	if (update) {
 		/*
 		 * Sort the package transaction dictionary.
@@ -426,8 +428,13 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 		    	    strerror(rv));
 			goto out2;
 		}
+	} else {
+		if (!prop_dictionary_get_cstring_nocopy(trans->dict,
+		    "origin", &trans->originpkgname)) {
+			rv = errno;
+			goto out2;
+		}
 	}
-
 	/*
 	 * It's time to run the transaction!
 	 */
@@ -654,13 +661,6 @@ exec_transaction(struct transaction *trans)
 			return rv;
 		}
 		autoinst = false;
-		/*
-		 * Set package state to unpacked in the transaction
-		 * dictionary.
-		 */
-		if ((rv = xbps_set_pkg_state_dictionary(obj,
-		    XBPS_PKG_STATE_UNPACKED)) != 0)
-			return rv;
 	}
 	prop_object_iterator_reset(trans->iter);
 	/*

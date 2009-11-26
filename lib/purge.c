@@ -44,13 +44,14 @@ xbps_purge_all_pkgs(void)
 	int rv = 0;
 	pkg_state_t state = 0;
 
-	d = xbps_prepare_regpkgdb_dict();
-	if (d == NULL)
-		return ENODEV;
+	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
+		return errno;
 
 	iter = xbps_get_array_iter_from_dict(d, "packages");
-	if (iter == NULL)
-		return ENOENT;
+	if (iter == NULL) {
+		rv = errno;
+		goto out;
+	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (!prop_dictionary_get_cstring_nocopy(obj,
@@ -66,6 +67,8 @@ xbps_purge_all_pkgs(void)
 			break;
 	}
 	prop_object_iterator_release(iter);
+out:
+	xbps_regpkgs_dictionary_release();
 
 	return rv;
 }

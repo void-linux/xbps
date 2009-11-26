@@ -200,7 +200,7 @@ xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 	char *url = NULL;
 	int rv = 0;
 
-	if ((rv = xbps_prepare_repolist_data()) != 0) {
+	if ((rv = xbps_repository_pool_init()) != 0) {
 		errno = rv;
 		return NULL;
 	}
@@ -215,9 +215,13 @@ xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 	 * libfetch!
 	 */
 	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
-		if ((pkgd = xbps_find_pkg_in_dict(rdata->rd_repod,
-		    "packages", pkgname)) == NULL)
+		pkgd = xbps_find_pkg_in_dict(rdata->rd_repod,
+		    "packages", pkgname);
+		if (pkgd == NULL) {
+			if (errno != ENOENT)
+				break;
 			continue;
+		}
 		url = xbps_get_path_from_pkg_dict_repo(pkgd, rdata->rd_uri);
 		if (url == NULL)
 			break;
@@ -229,7 +233,7 @@ xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 		free(url);
 	}
 
-	xbps_release_repolist_data();
+	xbps_repository_pool_release();
 	if (plistd == NULL)
 		errno = ENOENT;
 

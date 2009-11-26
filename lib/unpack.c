@@ -40,9 +40,9 @@ int SYMEXPORT
 xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 {
 	prop_string_t filename, repoloc, arch;
-	struct archive *ar;
+	struct archive *ar = NULL;
 	const char *pkgname;
-	char *binfile;
+	char *binfile = NULL;
 	int pkg_fd, rv = 0;
 
 	assert(pkg != NULL);
@@ -73,8 +73,8 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 
 	ar = archive_read_new();
 	if (ar == NULL) {
-		rv = ENOMEM;
-		goto out2;
+		rv = errno;
+		goto out;
 	}
 
 	/*
@@ -85,7 +85,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 
 	if ((rv = archive_read_open_fd(ar, pkg_fd,
 	     ARCHIVE_READ_BLOCKSIZE)) != 0)
-		goto out3;
+		goto out;
 
 	rv = unpack_archive_fini(ar, pkg, essential);
 	/*
@@ -95,7 +95,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 	if (rv == 0) {
 		if (fsync(pkg_fd) == -1) {
 			rv = errno;
-			goto out3;
+			goto out;
 		}
 		/*
 		 * Set package state to unpacked.
@@ -103,12 +103,14 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 		rv = xbps_set_pkg_state_installed(pkgname,
 		    XBPS_PKG_STATE_UNPACKED);
 	}
-out3:
-	archive_read_finish(ar);
-out2:
-	(void)close(pkg_fd);
+
 out:
-	free(binfile);
+	if (ar)
+		archive_read_finish(ar);
+	if (pkg_fd != -1)
+		(void)close(pkg_fd);
+	if (binfile)
+		free(binfile);
 
 	return rv;
 }

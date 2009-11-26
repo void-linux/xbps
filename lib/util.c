@@ -128,7 +128,7 @@ int SYMEXPORT
 xbps_check_is_installed_pkg(const char *pkg)
 {
 	prop_dictionary_t dict;
-	const char *instpkgver;
+	const char *instpkgver = NULL;
 	char *pkgname;
 	int rv = 0;
 	pkg_state_t state = 0;
@@ -142,14 +142,18 @@ xbps_check_is_installed_pkg(const char *pkg)
 	dict = xbps_find_pkg_installed_from_plist(pkgname);
 	if (dict == NULL) {
 		free(pkgname);
-		return 0; /* not installed */
+		if (errno == ENOENT) {
+			errno = 0;
+			return 0; /* not installed */
+		}	
+		return -1;
 	}
 
 	/*
 	 * Check that package state is fully installed, not
 	 * unpacked or something else.
 	 */
-	if (xbps_get_pkg_state_installed(pkgname, &state) != 0) {
+	if (xbps_get_pkg_state_dictionary(dict, &state) != 0) {
 		prop_object_release(dict);
 		free(pkgname);
 		return -1;

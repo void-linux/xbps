@@ -61,11 +61,10 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 		return EINVAL;
 	}
 
-	dict = prop_dictionary_internalize_from_file(plist);
-	if (dict != NULL) {
+	if ((dict = prop_dictionary_internalize_from_file(plist)) != NULL) {
 		pkgd = xbps_find_pkg_in_dict(dict, "packages", pkgname);
 		if (pkgd == NULL) {
-			rv = ENOENT;
+			rv = errno;
 			goto out;
 		}
 		if (!prop_dictionary_set_cstring_nocopy(pkgd,

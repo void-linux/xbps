@@ -94,111 +94,6 @@ xbps_get_pkg_props(void)
 }
 
 int SYMEXPORT
-xbps_prepare_repolist_data(void)
-{
-	prop_dictionary_t dict = NULL;
-	prop_array_t array;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	struct repository_data *rdata;
-	char *plist;
-	int rv = 0;
-	static bool repodata_initialized;
-
-	if (repodata_initialized)
-		return 0;
-
-	SIMPLEQ_INIT(&repodata_queue);
-
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, XBPS_REPOLIST);
-	if (plist == NULL) {
-		rv = EINVAL;
-		goto out;
-	}
-
-	dict = prop_dictionary_internalize_from_file(plist);
-	if (dict == NULL) {
-                free(plist);
-		rv = errno;
-		goto out;
-	}
-	free(plist);
-
-	array = prop_dictionary_get(dict, "repository-list");
-	if (array == NULL) {
-		rv = EINVAL;
-		goto out1;
-	}
-
-	iter = prop_array_iterator(array);
-	if (iter == NULL) {
-		rv = ENOMEM;
-		goto out1;
-	}
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		/*
-		 * Iterate over the repository pool and add the dictionary
-		 * for current repository into the queue.
-		 */
-		plist =
-		    xbps_get_pkg_index_plist(prop_string_cstring_nocopy(obj));
-		if (plist == NULL) {
-			rv = EINVAL;
-			goto out2;
-		}
-
-		rdata = malloc(sizeof(struct repository_data));
-		if (rdata == NULL) {
-			rv = errno;
-			goto out2;
-		}
-
-		rdata->rd_uri = prop_string_cstring(obj);
-		if (rdata->rd_uri == NULL) {
-			free(plist);
-			rv = EINVAL;
-			goto out2;
-		}
-		rdata->rd_repod = prop_dictionary_internalize_from_file(plist);
-		if (rdata->rd_repod == NULL) {
-			free(plist);
-			rv = errno;
-			goto out2;
-		}
-		free(plist);
-		SIMPLEQ_INSERT_TAIL(&repodata_queue, rdata, chain);
-	}
-
-	repodata_initialized = true;
-
-out2:
-	prop_object_iterator_release(iter);
-out1:
-	prop_object_release(dict);
-out:
-	if (rv != 0)
-		xbps_release_repolist_data();
-
-	return rv;
-
-}
-
-void SYMEXPORT
-xbps_release_repolist_data(void)
-{
-	struct repository_data *rdata;
-
-	while ((rdata = SIMPLEQ_FIRST(&repodata_queue)) != NULL) {
-		SIMPLEQ_REMOVE(&repodata_queue, rdata, repository_data, chain);
-		prop_object_release(rdata->rd_repod);
-		free(rdata->rd_uri);
-		free(rdata);
-	}
-}
-
-int SYMEXPORT
 xbps_find_new_packages(void)
 {
 	prop_dictionary_t dict;
@@ -211,19 +106,21 @@ xbps_find_new_packages(void)
 	/*
 	 * Prepare dictionary with all registered packages.
 	 */
-	dict = xbps_prepare_regpkgdb_dict();
+	dict = xbps_regpkgs_dictionary_init();
 	if (dict == NULL)
 		return ENOENT;
 
 	/*
-	 * Prepare dictionary with all registered repositories.
+	 * Prepare simpleq with all registered repositories.
 	 */
-	if ((rv = xbps_prepare_repolist_data()) != 0)
-		return rv;
+	if ((rv = xbps_repository_pool_init()) != 0) 
+		goto out;
 
 	iter = xbps_get_array_iter_from_dict(dict, "packages");
-	if (iter == NULL)
-		return EINVAL;
+	if (iter == NULL) {
+		rv = EINVAL;
+		goto out;
+	}
 
 	/*
 	 * Find out if there is a newer version for all currently
@@ -250,6 +147,9 @@ xbps_find_new_packages(void)
 
 	if (rv != ENOENT && !newpkg_found)
 		rv = ENOPKG;
+out:
+	xbps_repository_pool_release();
+	xbps_regpkgs_dictionary_release();
 
 	return rv;
 }
@@ -268,9 +168,9 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	assert(instpkg != NULL);
 
 	/*
-	 * Prepare dictionary with all registered repositories.
+	 * Prepare repository pool queue.
 	 */
-	if ((rv = xbps_prepare_repolist_data()) != 0)
+	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;
 
 	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
@@ -280,7 +180,14 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 		 */
 		pkgrd = xbps_find_pkg_in_dict(rdata->rd_repod,
 		    "packages", pkgname);
-		if (pkgrd != NULL) {
+		if (pkgrd == NULL) {
+			if (errno && errno != ENOENT) {
+				rv = errno;
+				break;
+			}
+			DPRINTF(("Package %s not found in repo %s.\n",
+			    pkgname, rdata->rd_uri));
+		} else if (pkgrd != NULL) {
 			/*
 			 * Check if version in repository is greater than
 			 * the version currently installed.
@@ -305,14 +212,16 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 			    pkgname, repover, rdata->rd_uri));
 			continue;
 		}
-		DPRINTF(("Package %s not found in repo %s.\n",
-		    pkgname, rdata->rd_uri));
 	}
-	if (!newpkg_found)
-		return EEXIST;
+	if (!newpkg_found) {
+		rv = EEXIST;
+		goto out;
+	}
 
-	if (pkgrd == NULL)
-		return ENOENT;
+	if (pkgrd == NULL) {
+		rv = ENOENT;
+		goto out;
+	}
 	/*
 	 * Create master pkg dictionary.
 	 */
@@ -360,8 +269,7 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 		rv = errno;
 
 out:
-	if (rv != 0)
-		xbps_release_repolist_data();
+	xbps_repository_pool_release();
 
 	return rv;
 }
@@ -375,7 +283,6 @@ set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
 	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_NOT_INSTALLED);
 	if (rv != 0)
 		return rv;
-
 	/*
 	 * Overwrite package state in dictionary if it was unpacked
 	 * previously.
@@ -393,14 +300,14 @@ set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
 int SYMEXPORT
 xbps_prepare_pkg(const char *pkgname)
 {
-	prop_dictionary_t pkgrd = NULL;
+	prop_dictionary_t origin_pkgrd = NULL, pkgrd = NULL;
 	prop_array_t pkgs_array;
 	struct repository_data *rdata;
 	int rv = 0;
 
 	assert(pkgname != NULL);
 
-	if ((rv = xbps_prepare_repolist_data()) != 0)
+	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;
 
 	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
@@ -410,7 +317,12 @@ xbps_prepare_pkg(const char *pkgname)
 		 */
 		pkgrd = xbps_find_pkg_in_dict(rdata->rd_repod,
 		    "packages", pkgname);
-		if (pkgrd != NULL)
+		if (pkgrd == NULL) {
+			if (errno && errno != ENOENT) {
+				rv = errno;
+				goto out;
+			}
+		} else if (pkgrd != NULL)
 			break;
 	}
 	if (pkgrd == NULL) {
@@ -431,11 +343,12 @@ xbps_prepare_pkg(const char *pkgname)
 		rv = errno;
 		goto out;
 	}
+	origin_pkgrd = prop_dictionary_copy(pkgrd);
+
 	if (!prop_dictionary_set_cstring(pkg_props, "origin", pkgname)) {
 		rv = errno;
 		goto out;
 	}
-
 	/*
 	 * Check if this package needs dependencies.
 	 */
@@ -445,7 +358,6 @@ xbps_prepare_pkg(const char *pkgname)
 		 */
 		if ((rv = xbps_find_deps_in_pkg(pkg_props, pkgrd)) != 0)
 			goto out;
-
 		/*
 		 * Sort the dependency chain for this package.
 		 */
@@ -478,25 +390,22 @@ xbps_prepare_pkg(const char *pkgname)
 		rv = EINVAL;
 		goto out;
 	}
-
-	/*
-	 * Always set "not-installed" package state. Will be overwritten
-	 * to its correct state later.
-	 */
-	if ((rv = set_pkg_state(pkgrd, pkgname)) != 0)
+	if ((rv = set_pkg_state(origin_pkgrd, pkgname)) != 0)
 		goto out;
 
-	if (!prop_dictionary_set_cstring_nocopy(pkgrd,
+	if (!prop_dictionary_set_cstring_nocopy(origin_pkgrd,
 	    "trans-action", "install")) {
 		rv = errno;
 		goto out;
 	}
-
-	if (!prop_array_add(pkgs_array, pkgrd))
+	if (!prop_array_add(pkgs_array, origin_pkgrd))
 		rv = errno;
 
 out:
-	xbps_release_repolist_data();
+	if (origin_pkgrd)
+		prop_object_release(origin_pkgrd);
+
+	xbps_repository_pool_release();
 
 	return rv;
 }

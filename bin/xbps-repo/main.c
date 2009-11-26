@@ -96,7 +96,7 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
-	if ((rv = xbps_prepare_repolist_data()) != 0) {
+	if ((rv = xbps_repository_pool_init()) != 0) {
 		if (rv != ENOENT) {
 			printf("E: cannot get repository list pool! %s\n",
 			    strerror(rv));
@@ -202,6 +202,6 @@ main(int argc, char **argv)
 	}
 
 out:
-	xbps_release_repolist_data();
+	xbps_repository_pool_release();
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

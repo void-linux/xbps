@@ -31,9 +31,6 @@
 
 #include <xbps_api.h>
 
-static prop_dictionary_t regpkgdb_dict;
-static bool regpkgdb_initialized;
-
 bool SYMEXPORT
 xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 		       const char *key)
@@ -134,15 +131,12 @@ xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 	assert(pkgname != NULL);
 
 	dict = prop_dictionary_internalize_from_file(plist);
-	if (dict == NULL) {
-		errno = ENOENT;
+	if (dict == NULL)
 		return NULL;
-	}
 
 	obj = xbps_find_pkg_in_dict(dict, "packages", pkgname);
 	if (obj == NULL) {
 		prop_object_release(dict);
-		errno = ENOENT;
 		return NULL;
 	}
 
@@ -158,24 +152,27 @@ xbps_find_pkg_installed_from_plist(const char *pkgname)
 	prop_dictionary_t d, pkgd;
 	pkg_state_t state = 0;
 
-	d = xbps_prepare_regpkgdb_dict();
-	if (d == NULL)
+	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
 		return NULL;
 
 	pkgd = xbps_find_pkg_in_dict(d, "packages", pkgname);
 	if (pkgd == NULL)
-		return NULL;
+		goto fail;
 
-	if (xbps_get_pkg_state_installed(pkgname, &state) != 0)
-		return NULL;
+	if (xbps_get_pkg_state_dictionary(pkgd, &state) != 0)
+		goto fail;
 
 	switch (state) {
 	case XBPS_PKG_STATE_INSTALLED:
 	case XBPS_PKG_STATE_UNPACKED:
+		xbps_regpkgs_dictionary_release();
 		return prop_dictionary_copy(pkgd);
 	default:
-		return NULL;
+		break;
 	}
+fail:
+	xbps_regpkgs_dictionary_release();
+	return NULL;
 }
 
 prop_dictionary_t SYMEXPORT
@@ -183,7 +180,7 @@ xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
 		      const char *pkgname)
 {
 	prop_object_iterator_t iter;
-	prop_object_t obj;
+	prop_object_t obj = NULL;
 	const char *dpkgn;
 
 	assert(dict != NULL);
@@ -196,50 +193,16 @@ xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
 
 	while ((obj = prop_object_iterator_next(iter))) {
 		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &dpkgn)) {
-			obj = NULL;
+		    "pkgname", &dpkgn))
 			break;
-		}
 		if (strcmp(dpkgn, pkgname) == 0)
 			break;
 	}
 	prop_object_iterator_release(iter);
+	if (obj == NULL)
+		errno = ENOENT;
 
 	return obj;
-}
-
-prop_dictionary_t SYMEXPORT
-xbps_prepare_regpkgdb_dict(void)
-{
-	char *plist;
-
-	if (regpkgdb_initialized == false) {
-		plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
-		    XBPS_META_PATH, XBPS_REGPKGDB);
-		if (plist == NULL)
-			return NULL;
-
-		regpkgdb_dict = prop_dictionary_internalize_from_file(plist);
-		if (regpkgdb_dict == NULL) {
-			free(plist);
-			return NULL;
-		}
-		free(plist);
-		regpkgdb_initialized = true;
-	}
-
-	return regpkgdb_dict;
-}
-
-void SYMEXPORT
-xbps_release_regpkgdb_dict(void)
-{
-	if (regpkgdb_initialized == false)
-		return;
-
-	prop_object_release(regpkgdb_dict);
-	regpkgdb_dict = NULL;
-	regpkgdb_initialized = false;
 }
 
 bool SYMEXPORT
@@ -296,7 +259,7 @@ xbps_remove_string_from_array(prop_array_t array, const char *str)
 
 	iter = prop_array_iterator(array);
 	if (iter == NULL)
-		return ENOMEM;
+		return errno;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (prop_object_type(obj) != PROP_TYPE_STRING)

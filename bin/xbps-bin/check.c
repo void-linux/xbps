@@ -50,29 +50,33 @@ xbps_check_pkg_integrity_all(void)
 {
 	prop_dictionary_t d;
 	prop_object_t obj;
-	prop_object_iterator_t iter;
+	prop_object_iterator_t iter = NULL;
 	const char *pkgname, *version;
 	int rv = 0;
 	size_t npkgs = 0, nbrokenpkgs = 0;
 
-	d = xbps_prepare_regpkgdb_dict();
+	d = xbps_regpkgs_dictionary_init();
 	if (d == NULL)
 		return ENODEV;
 
 	iter = xbps_get_array_iter_from_dict(d, "packages");
-	if (iter == NULL)
-		return ENOENT;
+	if (iter == NULL) {
+		rv = ENOENT;
+		goto out;
+	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgname", &pkgname)) {
 			prop_object_iterator_release(iter);
-			return errno;
+			rv = errno;
+			goto out;
 		}
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "version", &version)) {
 			prop_object_iterator_release(iter);
-			return errno;
+			rv = errno;
+			goto out;
 		}
 		printf("Checking %s-%s ...\n", pkgname, version);
 		if ((rv = xbps_check_pkg_integrity(pkgname)) != 0)
@@ -80,10 +84,14 @@ xbps_check_pkg_integrity_all(void)
 		npkgs++;
 		printf("\033[1A\033[K");
 	}
-	prop_object_iterator_release(iter);
-
 	printf("%zu package%s processed: %zu broken.\n", npkgs,
 	    npkgs == 1 ? "" : "s", nbrokenpkgs);
+
+out:
+	if (iter)
+		prop_object_iterator_release(iter);
+
+	xbps_regpkgs_dictionary_release();
 
 	return rv;
 }
@@ -312,7 +320,6 @@ out1:
 	prop_object_release(propsd);
 out:
 	prop_object_release(pkgd);
-	xbps_release_regpkgdb_dict();
 
 	if (broken)
 		rv = EINVAL;

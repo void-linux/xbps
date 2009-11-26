@@ -43,13 +43,14 @@ xbps_configure_all_pkgs(void)
 	int rv = 0;
 	pkg_state_t state = 0;
 
-	d = xbps_prepare_regpkgdb_dict();
-	if (d == NULL)
-		return ENODEV;
+	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
+		return errno;
 
 	iter = xbps_get_array_iter_from_dict(d, "packages");
-	if (iter == NULL)
-		return ENOENT;
+	if (iter == NULL) {
+		rv = errno;
+		goto out;
+	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (!prop_dictionary_get_cstring_nocopy(obj,
@@ -70,6 +71,8 @@ xbps_configure_all_pkgs(void)
 			break;
 	}
 	prop_object_iterator_release(iter);
+out:
+	xbps_regpkgs_dictionary_release();
 
 	return rv;
 }
@@ -108,7 +111,7 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
 	
 		pkgd = xbps_find_pkg_installed_from_plist(pkgname);
 		if (pkgd == NULL)
-			return ENOENT;
+			return errno;
 
 		if (!prop_dictionary_get_cstring_nocopy(pkgd,
 		    "version", &lver)) {
@@ -131,8 +134,10 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
 	if (strcmp(rootdir, "") == 0)
 		rootdir = "/";
 
-	if (chdir(rootdir) == -1)
+	if (chdir(rootdir) == -1) {
+		free(buf);
 		return errno;
+	}
 
 	if (access(buf, X_OK) == 0) {
 		if ((rv = xbps_file_chdir_exec(rootdir, buf, "post",

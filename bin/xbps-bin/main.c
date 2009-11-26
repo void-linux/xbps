@@ -157,7 +157,7 @@ main(int argc, char **argv)
 	sigaction(SIGTERM, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
 
-	if ((dict = xbps_prepare_regpkgdb_dict()) == NULL) {
+	if ((dict = xbps_regpkgs_dictionary_init()) == NULL) {
 		if (errno != ENOENT) {
 			rv = errno;
 			printf("Couldn't initialized regpkgdb dict: %s\n",
@@ -319,8 +319,6 @@ out:
 static void
 cleanup(int signum)
 {
-	xbps_release_repolist_data();
-	xbps_release_regpkgdb_dict();
-	
+	xbps_regpkgs_dictionary_release();
 	exit(signum);
 }

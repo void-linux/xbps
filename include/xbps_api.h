@@ -38,7 +38,7 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"20091125"
+#define XBPS_RELVER		"20091126"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
@@ -111,18 +111,9 @@ int SYMEXPORT	xbps_humanize_number(char *, size_t, int64_t, const char *,
 				     int, int);
 
 /* From lib/findpkg.c */
-struct repository_data {
-	SIMPLEQ_ENTRY(repository_data) chain;
-	prop_dictionary_t rd_repod;
-	char *rd_uri;
-};
-SYMEXPORT SIMPLEQ_HEAD(, repository_data) repodata_queue;
-
 int SYMEXPORT			xbps_prepare_pkg(const char *);
 int SYMEXPORT			xbps_find_new_pkg(const char *, prop_dictionary_t);
 int SYMEXPORT			xbps_find_new_packages(void);
-int SYMEXPORT			xbps_prepare_repolist_data(void);
-void SYMEXPORT			xbps_release_repolist_data(void);
 prop_dictionary_t SYMEXPORT	xbps_get_pkg_props(void);
 
 /* From lib/depends.c */
@@ -156,8 +147,6 @@ prop_dictionary_t SYMEXPORT
 		xbps_find_pkg_installed_from_plist(const char *);
 bool SYMEXPORT	xbps_find_string_in_array(prop_array_t, const char *);
 
-prop_dictionary_t SYMEXPORT	xbps_prepare_regpkgdb_dict(void);
-void SYMEXPORT			xbps_release_regpkgdb_dict(void);
 prop_object_iterator_t	SYMEXPORT
 	xbps_get_array_iter_from_dict(prop_dictionary_t, const char *);
 
@@ -177,6 +166,10 @@ int SYMEXPORT	xbps_purge_all_pkgs(void);
 int SYMEXPORT	xbps_register_pkg(prop_dictionary_t, bool);
 int SYMEXPORT	xbps_unregister_pkg(const char *);
 
+/* From lib/regpkgs_dictionary.c */
+prop_dictionary_t SYMEXPORT	xbps_regpkgs_dictionary_init(void);
+void SYMEXPORT			xbps_regpkgs_dictionary_release(void);
+
 /* From lib/remove.c */
 int SYMEXPORT	xbps_remove_pkg(const char *, const char *, bool);
 
@@ -191,6 +184,17 @@ prop_dictionary_t SYMEXPORT
 	xbps_get_pkg_plist_dict_from_repo(const char *, const char *);
 prop_dictionary_t SYMEXPORT
 	xbps_get_pkg_plist_dict_from_url(const char *, const char *);
+
+/* From lib/repository_pool.c */
+struct repository_data {
+	SIMPLEQ_ENTRY(repository_data) chain;
+	prop_dictionary_t rd_repod;
+	char *rd_uri;
+};
+SYMEXPORT SIMPLEQ_HEAD(, repository_data) repodata_queue;
+
+int SYMEXPORT	xbps_repository_pool_init(void);
+void SYMEXPORT	xbps_repository_pool_release(void);
 
 /* From lib/requiredby.c */
 int SYMEXPORT	xbps_requiredby_pkg_add(prop_array_t, prop_dictionary_t);

@@ -113,7 +113,7 @@ show_pkg_info(prop_dictionary_t dict)
 
 	obj = prop_dictionary_get(dict, "short_desc");
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
-		printf("Description: %s\n", prop_string_cstring_nocopy(obj));
+		printf("Description: %s", prop_string_cstring_nocopy(obj));
 
 	obj = prop_dictionary_get(dict, "long_desc");
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)

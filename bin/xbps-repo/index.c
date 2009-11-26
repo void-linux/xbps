@@ -129,7 +129,13 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	 * pass to the next one.
 	 */
 	curpkgd = xbps_find_pkg_in_dict(idxdict, "packages", pkgname);
-	if (curpkgd) {
+	if (curpkgd == NULL) {
+		if (errno && errno != ENOENT) {
+			prop_object_release(newpkgd);
+			rv = errno;
+			goto out;
+		}
+	} else if (curpkgd) {
 		if (!prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "version", &regver)) {
 			prop_object_release(newpkgd);

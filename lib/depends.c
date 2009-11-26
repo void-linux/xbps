@@ -89,12 +89,6 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 		prop_object_release(dict);
 		return errno;
 	}
-	/*
-	 * Remove some unneeded objects.
-	 */
-	prop_dictionary_remove(dict, "conf_files");
-	prop_dictionary_remove(dict, "maintainer");
-	prop_dictionary_remove(dict, "long_desc");
 
 	/*
 	 * Add the dictionary into the array.
@@ -112,12 +106,16 @@ add_missing_reqdep(prop_dictionary_t master, const char *pkgname,
 		   const char *version)
 {
 	prop_array_t missing_rdeps;
-	prop_dictionary_t mdepd;
+	prop_dictionary_t mdepd, tmpd;
 
 	assert(array != NULL);
 	assert(reqdep != NULL);
 
-	if (xbps_find_pkg_in_dict(master, "missing_deps", pkgname))
+	tmpd = xbps_find_pkg_in_dict(master, "missing_deps", pkgname);
+	if (tmpd == NULL) {
+		if (errno && errno != ENOENT)
+			return errno;
+	} else if (tmpd)
 		return EEXIST;
 
 	mdepd = prop_dictionary_create();
@@ -159,6 +157,9 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
 		return errno;
 
+	if ((rv = xbps_repository_pool_init()) != 0)
+		return rv;
+
 	DPRINTF(("Checking rundeps for %s.\n", pkgname));
 	/*
 	 * Iterate over the repository pool and find out if we have
@@ -173,8 +174,8 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 		if ((rv = find_repo_deps(master, rdata->rd_repod,
 		    rdata->rd_uri, pkg_rdeps)) != 0) {
 			DPRINTF(("Error '%s' while checking rundeps!\n",
-			    strerror(rv)));
-			return rv;
+			    strerror(errno)));
+			goto out;
 		}
 	}
 
@@ -183,7 +184,7 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 	 */
 	missing_rdeps = prop_dictionary_get(master, "missing_deps");
 	if (prop_array_count(missing_rdeps) == 0)
-		return 0;
+		goto out;
 
 	/*
 	 * Iterate one more time, but this time with missing deps
@@ -194,10 +195,12 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 		if ((rv = find_repo_deps(master, rdata->rd_repod,
 		    rdata->rd_uri, missing_rdeps)) != 0) {
 			DPRINTF(("Error '%s' while checking for"
-			    "missing rundeps!\n", strerror(rv)));
-			return rv;
+			    "missing rundeps!\n", strerror(errno)));
+			goto out;
 		}
 	}
+out:
+	xbps_repository_pool_release();
 
 	return rv;
 }
@@ -210,6 +213,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 	prop_array_t curpkg_rdeps;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
+	pkg_state_t state = 0;
 	const char *reqpkg, *reqvers, *pkg_queued;
 	char *pkgname;
 	int rv = 0;
@@ -260,7 +264,13 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 * dependency pattern is matched.
 		 */
 		curpkgd = xbps_find_pkg_in_dict(master, "unsorted_deps", pkgname);
-		if (curpkgd) {
+		if (curpkgd == NULL) {
+			if (errno && errno != ENOENT) {
+				free(pkgname);
+				rv = errno;
+				break;
+			}
+		} else if (curpkgd) {
 			if (!prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkg_queued)) {
 				DPRINTF(("pkgver failed %s\n", reqpkg));
@@ -283,6 +293,12 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 */
 		curpkgd = xbps_find_pkg_in_dict(repo, "packages", pkgname);
 		if (curpkgd == NULL) {
+			if (errno && errno != ENOENT) {
+				free(pkgname);
+				rv = errno;
+				break;
+			}
+
 			rv = add_missing_reqdep(master, pkgname, reqvers);
 			if (rv != 0 && rv != EEXIST) {
 				DPRINTF(("add missing reqdep failed %s\n",
@@ -305,16 +321,32 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		/*
 		 * If package is installed but version doesn't satisfy
 		 * the dependency mark it as an update, otherwise as
-		 * an install.
+		 * an install. Packages that were unpacked previously
+		 * will be marked as pending to be configured.
 		 */
 		tmpd = xbps_find_pkg_installed_from_plist(pkgname);
-		if (tmpd != NULL) {
-			prop_dictionary_set_cstring_nocopy(curpkgd,
-			    "trans-action", "update");
-			prop_object_release(tmpd);
-		} else {
+		if (tmpd == NULL) {
+			if (errno && errno != ENOENT) {
+				free(pkgname);
+				rv = errno;
+				break;
+			}
 			prop_dictionary_set_cstring_nocopy(curpkgd,
 			    "trans-action", "install");
+		} else if (tmpd) {
+			rv = xbps_get_pkg_state_installed(pkgname, &state);
+			if (rv != 0) {
+				prop_object_release(tmpd);
+				break;
+			}
+			if (state == XBPS_PKG_STATE_INSTALLED)
+				prop_dictionary_set_cstring_nocopy(curpkgd,
+				    "trans-action", "update");
+			else
+				prop_dictionary_set_cstring_nocopy(curpkgd,
+				    "trans-action", "configure");
+
+			prop_object_release(tmpd);
 		}
 		/*
 		 * Package is on repo, add it into the dictionary.
@@ -357,7 +389,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		if ((rv = find_repo_deps(master, repo, repoloc,
 		     curpkg_rdeps)) != 0) {
 			DPRINTF(("Error checking %s rundeps %s\n",
-			    reqpkg, strerror(rv)));
+			    reqpkg, strerror(errno)));
 			break;
 		}
 	}

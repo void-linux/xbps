@@ -125,6 +125,7 @@ cleanup(void)
 		prop_object_release(orphan->dict);
 		free(orphan);
 	}
+	xbps_regpkgs_dictionary_release();
 }
 
 prop_array_t SYMEXPORT
@@ -135,7 +136,7 @@ xbps_find_orphan_packages(void)
 	struct orphan_pkg *orphan;
 	int rv = 0;
 
-	if ((dict = xbps_prepare_regpkgdb_dict()) == NULL)
+	if ((dict = xbps_regpkgs_dictionary_init()) == NULL)
 		return NULL;
 	/*
 	 * Find out all orphans by looking at the
@@ -166,6 +167,7 @@ xbps_find_orphan_packages(void)
 		prop_object_release(orphan->dict);
 		free(orphan);
 	}
+	xbps_regpkgs_dictionary_release();
 
 	return array;
 }

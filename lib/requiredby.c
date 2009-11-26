@@ -133,8 +133,7 @@ xbps_requiredby_pkg_remove(const char *pkgname)
 	if (plist == NULL)
 		return EINVAL;
 
-	dict = prop_dictionary_internalize_from_file(plist);
-	if (dict == NULL) {
+	if ((dict = prop_dictionary_internalize_from_file(plist)) == NULL) {
 		free(plist);
 		return errno;
 	}

@@ -207,7 +207,10 @@ show_pkg_info_from_repolist(const char *pkgname)
 		repo_pkgd = xbps_find_pkg_in_dict(rd->rd_repod,
 		    "packages", pkgname);
 		if (repo_pkgd == NULL) {
-			errno = ENOENT;
+			if (errno && errno != ENOENT) {
+				rv = errno;
+				break;
+			}
 			continue;
 		}
 		url = xbps_get_path_from_pkg_dict_repo(repo_pkgd, rd->rd_uri);
@@ -243,7 +246,10 @@ show_pkg_deps_from_repolist(const char *pkgname)
 	SIMPLEQ_FOREACH(rd, &repodata_queue, chain) {
 		pkgd = xbps_find_pkg_in_dict(rd->rd_repod, "packages", pkgname);
 		if (pkgd == NULL) {
-			errno = ENOENT;
+			if (errno != ENOENT) {
+				rv = errno;
+				break;
+			}
 			continue;
 		}
 		if (!prop_dictionary_get_cstring_nocopy(pkgd,
