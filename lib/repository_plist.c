@@ -146,11 +146,7 @@ xbps_get_path_from_pkg_dict_repo(prop_dictionary_t d, const char *uri)
 	if (!prop_dictionary_get_cstring_nocopy(d, "filename", &filen))
 		return NULL;
 
-	if (xbps_check_is_repo_string_remote(uri))
-		return xbps_xasprintf("%s/%s/%s", uri, arch, filen);
-
-	return xbps_xasprintf("%s/%s/%s/%s", xbps_get_rootdir(),
-	    uri, arch, filen);
+	return xbps_xasprintf("%s/%s/%s", uri, arch, filen);
 }
 
 prop_dictionary_t SYMEXPORT
