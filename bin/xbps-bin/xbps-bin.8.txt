@@ -156,7 +156,7 @@ Report bugs in '<https://bugs.launchpad.net/xbps>'.
 
 SEE ALSO
 --------
-*xbps-repo(8)*, *xbps-src(8)*
+link:xbps-repo.8.html[xbps-repo(8)], link:xbps-src.8.html[xbps-src(8)]
 
 XBPS utilities: '<https://launchpad.net/xbps>'
 

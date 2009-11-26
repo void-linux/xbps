@@ -92,7 +92,7 @@ Report bugs in '<https://bugs.launchpad.net/xbps>'.
 
 SEE ALSO
 --------
-*xbps-bin(8)*, *xbps-src(8)*
+link:xbps-bin.8.html[xbps-bin(8)], link:xbps-src.8.html[xbps-src(8)]
 
 XBPS utilities: '<https://launchpad.net/xbps>'
 
