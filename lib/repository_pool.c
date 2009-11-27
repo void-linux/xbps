@@ -122,10 +122,8 @@ xbps_repository_pool_init(void)
 		SIMPLEQ_INSERT_TAIL(&repodata_queue, rdata, chain);
 	}
 
-	if (ntotal - nmissing == 0) {
-		rv = EINVAL;
+	if (ntotal - nmissing == 0)
 		goto out;
-	}
 
 	repolist_initialized = true;
 	repolist_refcnt = 1;
