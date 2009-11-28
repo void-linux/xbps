@@ -154,6 +154,20 @@ unpacked, configured or purged. The following states are available:
 	in this state, modified configuration files will be preserved.
 
 
+FILES
+-----
+*/var/db/xbps*:: xbps global _metadata_ directory.
+ +
+
+*/var/db/xbps/metadata/<pkgname>*:: Installed package metadata directory.
+ +
+
+*/var/db/xbps/regpkgdb.plist*:: Registered packages plist database.
+ +
+
+*/var/cache/xbps*:: xbps _cache_ directory for downloaded binary packages.
+ +
+
 BUGS
 ----
 Probably, but I try to make this not happen. Use it under your own
