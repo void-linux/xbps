@@ -136,10 +136,30 @@ open_archive(const char *url)
 	return a;
 }
 
+static char *
+binpkg_in_cachedir(prop_dictionary_t d, const char *uri)
+{
+	char *lbinfile;
+
+	lbinfile = xbps_get_binpkg_local_path(d, uri);
+	if (lbinfile == NULL)
+		return NULL;
+
+	if (access(lbinfile, R_OK) == 0)
+		return lbinfile;
+
+	return NULL;
+}
+
 char SYMEXPORT *
 xbps_get_path_from_pkg_dict_repo(prop_dictionary_t d, const char *uri)
 {
 	const char *arch, *filen;
+	char *path = NULL;
+
+	path = binpkg_in_cachedir(d, uri);
+	if (path)
+		return path;
 
 	if (!prop_dictionary_get_cstring_nocopy(d, "architecture", &arch))
 		return NULL;

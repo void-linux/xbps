@@ -305,12 +305,10 @@ xbps_get_pkg_index_plist(const char *uri)
 }
 
 char SYMEXPORT *
-xbps_get_binpkg_local_path(prop_dictionary_t pkg)
+xbps_get_binpkg_local_path(prop_dictionary_t pkg, const char *repoloc)
 {
-	const char *repoloc, *filen, *arch, *cdir;
+	const char *filen, *arch, *cdir;
 
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "repository", &repoloc))
-		return NULL;
 	if (!prop_dictionary_get_cstring_nocopy(pkg, "filename", &filen))
 		return NULL;
 	if (!prop_dictionary_get_cstring_nocopy(pkg, "architecture", &arch))

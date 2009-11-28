@@ -121,7 +121,7 @@ download_package_list(prop_object_iterator_t iter)
 		    "filename-sha256", &sha256))
 			return errno;
 
-		lbinfile = xbps_get_binpkg_local_path(obj);
+		lbinfile = xbps_get_binpkg_local_path(obj, repoloc);
 		if (lbinfile == NULL)
 			return errno;
 

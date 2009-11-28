@@ -238,7 +238,8 @@ int SYMEXPORT		xbps_check_file_hash(const char *, const char *);
 int SYMEXPORT		xbps_check_is_installed_pkg(const char *);
 bool SYMEXPORT		xbps_check_is_installed_pkgname(const char *);
 bool SYMEXPORT		xbps_check_is_repo_string_remote(const char *);
-char SYMEXPORT		*xbps_get_binpkg_local_path(prop_dictionary_t);
+char SYMEXPORT
+	*xbps_get_binpkg_local_path(prop_dictionary_t, const char *);
 char SYMEXPORT		*xbps_get_pkg_index_plist(const char *);
 char SYMEXPORT		*xbps_get_pkg_name(const char *);
 char SYMEXPORT		*xbps_get_pkgdep_name(const char *);
