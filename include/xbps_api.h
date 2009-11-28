@@ -129,9 +129,9 @@ int SYMEXPORT	xbps_humanize_number(char *, size_t, int64_t, const char *,
 				     int, int);
 
 /* From lib/findpkg.c */
-int SYMEXPORT			xbps_prepare_pkg(const char *);
-int SYMEXPORT			xbps_find_new_pkg(const char *, prop_dictionary_t);
-int SYMEXPORT			xbps_find_new_packages(void);
+int SYMEXPORT	xbps_prepare_pkg(const char *);
+int SYMEXPORT	xbps_find_new_pkg(const char *, prop_dictionary_t);
+int SYMEXPORT	xbps_find_new_packages(void);
 prop_dictionary_t SYMEXPORT	xbps_get_pkg_props(void);
 
 /* From lib/depends.c */
@@ -141,10 +141,10 @@ int SYMEXPORT	xbps_find_deps_in_pkg(prop_dictionary_t, prop_dictionary_t);
 int SYMEXPORT	xbps_mkpath(char *, mode_t);
 
 /* From lib/orphans.c */
-prop_array_t SYMEXPORT		xbps_find_orphan_packages(void);
+prop_array_t SYMEXPORT	xbps_find_orphan_packages(void);
 
 /* From lib/pkgmatch.c */
-int SYMEXPORT			xbps_pkgdep_match(const char *, char *);
+int SYMEXPORT	xbps_pkgdep_match(const char *, char *);
 
 /* From lib/plist.c */
 bool SYMEXPORT	xbps_add_obj_to_dict(prop_dictionary_t, prop_object_t,
@@ -191,7 +191,7 @@ int SYMEXPORT	xbps_unregister_pkg(const char *);
 
 /* From lib/regpkgs_dictionary.c */
 prop_dictionary_t SYMEXPORT	xbps_regpkgs_dictionary_init(void);
-void SYMEXPORT			xbps_regpkgs_dictionary_release(void);
+void SYMEXPORT	xbps_regpkgs_dictionary_release(void);
 
 /* From lib/remove.c */
 int SYMEXPORT	xbps_remove_pkg(const char *, const char *, bool);
@@ -251,17 +251,16 @@ char SYMEXPORT	*xbps_get_remote_repo_string(const char *);
 int SYMEXPORT	xbps_unpack_binary_pkg(prop_dictionary_t, bool);
 
 /* From lib/util.c */
-char SYMEXPORT		*xbps_xasprintf(const char *, ...);
-char SYMEXPORT		*xbps_get_file_hash(const char *);
-int SYMEXPORT		xbps_check_file_hash(const char *, const char *);
-int SYMEXPORT		xbps_check_is_installed_pkg(const char *);
-bool SYMEXPORT		xbps_check_is_installed_pkgname(const char *);
-bool SYMEXPORT		xbps_check_is_repo_string_remote(const char *);
-char SYMEXPORT
-	*xbps_get_binpkg_local_path(prop_dictionary_t, const char *);
-char SYMEXPORT		*xbps_get_pkg_index_plist(const char *);
-char SYMEXPORT		*xbps_get_pkg_name(const char *);
-char SYMEXPORT		*xbps_get_pkgdep_name(const char *);
+char SYMEXPORT	*xbps_xasprintf(const char *, ...);
+char SYMEXPORT	*xbps_get_file_hash(const char *);
+int SYMEXPORT	xbps_check_file_hash(const char *, const char *);
+int SYMEXPORT	xbps_check_is_installed_pkg(const char *);
+bool SYMEXPORT	xbps_check_is_installed_pkgname(const char *);
+bool SYMEXPORT	xbps_check_is_repo_string_remote(const char *);
+char SYMEXPORT	*xbps_get_binpkg_local_path(prop_dictionary_t, const char *);
+char SYMEXPORT	*xbps_get_pkg_index_plist(const char *);
+char SYMEXPORT	*xbps_get_pkg_name(const char *);
+char SYMEXPORT	*xbps_get_pkgdep_name(const char *);
 const char SYMEXPORT	*xbps_get_pkg_version(const char *);
 const char SYMEXPORT	*xbps_get_pkgdep_version(const char *);
 const char SYMEXPORT	*xbps_get_pkg_revision(const char *);
