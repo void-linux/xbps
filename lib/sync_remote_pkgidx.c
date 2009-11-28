@@ -32,8 +32,6 @@
 #include <xbps_api.h>
 #include "fetch.h"
 
-static int	mkpath(char *, mode_t);
-
 char SYMEXPORT *
 xbps_get_remote_repo_string(const char *uri)
 {
@@ -79,12 +77,12 @@ xbps_sync_repository_pkg_index(const char *uri)
 	struct utsname un;
 	struct stat st;
 	const char *fetch_outputdir;
-	char *rpidx, *dir, *lrepodir, *uri_fixedp;
+	char *rpidx, *lrepodir, *uri_fixedp;
 	char *metadir, *tmp_metafile, *lrepofile;
 	int rv = 0;
 	bool only_sync = false;
 
-	rpidx = dir = lrepodir = uri_fixedp = NULL;
+	rpidx = lrepodir = uri_fixedp = NULL;
 	metadir = tmp_metafile = lrepofile = NULL;
 
 	if (uname(&un) == -1)
@@ -100,7 +98,7 @@ xbps_sync_repository_pkg_index(const char *uri)
 	}
 
 	/*
-	 * Create metadir if it doesn't exist yet.
+	 * Create metadir if necessary.
 	 */
 	metadir = xbps_xasprintf("%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH);
@@ -108,17 +106,8 @@ xbps_sync_repository_pkg_index(const char *uri)
 		rv = -1;
 		goto out;
 	}
-	rv = stat(metadir, &st);
-	if (rv == -1 && errno == ENOENT) {
-		if (mkpath(metadir, 0755) == -1) {
-			rv = -1;
-			goto out;
-		}
-	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
-		errno = ENOTDIR;
-		rv = -1;
+	if ((rv = xbps_mkpath(metadir, 0755)) == -1)
 		goto out;
-	}
 
 	/*
 	 * Remote repository pkg-index.plist full URL.
@@ -140,8 +129,8 @@ xbps_sync_repository_pkg_index(const char *uri)
 	/*
 	 * Full path to machine arch local repository directory.
 	 */
-	lrepodir = xbps_xasprintf("%s/%s/%s/%s",
-	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp, un.machine);
+	lrepodir = xbps_xasprintf("%s/%s/%s",
+	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp);
 	if (lrepodir == NULL) {
 		rv = -1;
 		goto out;
@@ -168,52 +157,17 @@ xbps_sync_repository_pkg_index(const char *uri)
 	if (only_sync)
 		goto out;
 
-	/*
-	 * Create local arch repodir:
-	 *
-	 * 	<rootdir>/var/db/xbps/repo/<url_path_blah>/<arch>
-	 */
-	rv = stat(lrepodir, &st);
-	if (rv == -1 && errno == ENOENT) {
-		if (mkpath(lrepodir, 0755) == -1) {
-			rv = -1;
-			goto out;
-		}
-	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
-		errno = ENOTDIR;
-		rv = -1;
-		goto out;
-	}
-	/*
-	 * Create local noarch repodir:
-	 *
-	 * 	<rootdir>/var/db/xbps/repo/<url_path_blah>/noarch
-	 */
-	dir = xbps_xasprintf("%s/%s/%s/noarch",
-	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp);
-	if (dir == NULL) {
-		rv = -1;
-		goto out;
-	}
-	rv = stat(dir, &st);
-	if (rv == -1 && errno == ENOENT) {
-		if (mkpath(dir, 0755) == -1) {
-			free(dir);
-			rv = -1;
-			goto out;
-		}
-	} else if (rv == 0 && !S_ISDIR(st.st_mode)) {
-		free(dir);
-		errno = ENOTDIR;
-		rv = -1;
-		goto out;
-	}
-	free(dir);
 	lrepofile = xbps_xasprintf("%s/%s", lrepodir, XBPS_PKGINDEX);
 	if (lrepofile == NULL) {
 		rv = -1;
 		goto out;
 	}
+	/*
+	 * Create local repodir to store pkg-index.plist file.
+	 */
+	if ((rv = xbps_mkpath(lrepodir, 0755)) == -1)
+		goto out;
+
 	/*
 	 * Rename to destination file now it has been fetched successfully.
 	 */
@@ -237,97 +191,4 @@ out:
 		free(uri_fixedp);
 
 	return rv;
-}
-
-/*
- * The following is a modified function from NetBSD's src/bin/mkdir/mkdir.c
- */
-
-/*
- * Copyright (c) 1983, 1992, 1993
- *	The Regents of the University of California.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-/*
- * mkpath -- create directories.
- *	path     - path
- *	mode     - file mode of terminal directory
- */
-static int
-mkpath(char *path, mode_t mode)
-{
-	struct stat sb;
-	char *slash = path;
-	int done = 0, rv;
-	mode_t dir_mode;
-
-	/*
-	 * The default file mode is a=rwx (0777) with selected permissions
-	 * removed in accordance with the file mode creation mask.  For
-	 * intermediate path name components, the mode is the default modified
-	 * by u+wx so that the subdirectories can always be created.
-	 */
-	if (mode == 0)
-		mode = (S_IRWXU | S_IRWXG | S_IRWXO) & ~umask(0);
-
-	dir_mode = mode | S_IWUSR | S_IXUSR;
-
-	for (;;) {
-		slash += strspn(slash, "/");
-		slash += strcspn(slash, "/");
-
-		done = (*slash == '\0');
-		*slash = '\0';
-
-		rv = mkdir(path, done ? mode : dir_mode);
-		if (rv < 0) {
-			/*
-			 * Can't create; path exists or no perms.
-			 * stat() path to determine what's there now.
-			 */
-			int	sverrno;
-
-			sverrno = errno;
-			if (stat(path, &sb) < 0) {
-					/* Not there; use mkdir()s error */
-				errno = sverrno;
-				return -1;
-			}
-			if (!S_ISDIR(sb.st_mode)) {
-					/* Is there, but isn't a directory */
-				errno = ENOTDIR;
-				return -1;
-			}
-		}
-		if (done)
-			break;
-
-		*slash = '/';
-	}
-
-	return 0;
 }

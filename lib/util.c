@@ -41,6 +41,7 @@
 static bool	question(bool, const char *, va_list);
 
 static const char *rootdir;
+static const char *cachedir;
 static int flags;
 
 char SYMEXPORT *
@@ -298,7 +299,7 @@ xbps_get_pkgver_from_dict(prop_dictionary_t d)
 }
 
 static char *
-get_pkg_index_remote_plist(const char *uri, const char *machine)
+get_pkg_index_remote_plist(const char *uri)
 {
 	char *uri_fixed, *repodir;
 
@@ -306,9 +307,8 @@ get_pkg_index_remote_plist(const char *uri, const char *machine)
 	if (uri_fixed == NULL)
 		return NULL;
 
-	repodir = xbps_xasprintf("%s/%s/%s/%s/%s",
-	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixed,
-	    machine, XBPS_PKGINDEX);
+	repodir = xbps_xasprintf("%s/%s/%s/%s",
+	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
 	if (repodir == NULL) {
 		free(uri_fixed);
 		return NULL;
@@ -328,9 +328,32 @@ xbps_get_pkg_index_plist(const char *uri)
 		return NULL;
 
 	if (xbps_check_is_repo_string_remote(uri))
-		return get_pkg_index_remote_plist(uri, un.machine);
+		return get_pkg_index_remote_plist(uri);
 
 	return xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
+}
+
+char SYMEXPORT *
+xbps_get_binpkg_local_path(prop_dictionary_t pkg)
+{
+	const char *repoloc, *filen, *arch, *cdir;
+
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "repository", &repoloc))
+		return NULL;
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "filename", &filen))
+		return NULL;
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "architecture", &arch))
+		return NULL;
+	cdir = xbps_get_cachedir();
+	if (cdir == NULL)
+		return NULL;
+
+	if (!xbps_check_is_repo_string_remote(repoloc)) {
+		/* local repo */
+		return xbps_xasprintf("%s/%s/%s", repoloc, arch, filen);
+	}
+	/* cachedir */
+	return xbps_xasprintf("%s/%s", cdir, filen);
 }
 
 bool SYMEXPORT
@@ -360,6 +383,40 @@ xbps_get_rootdir(void)
 		rootdir = "";
 
 	return rootdir;
+}
+
+void SYMEXPORT
+xbps_set_cachedir(const char *dir)
+{
+	static char res[PATH_MAX];
+	int r = 0;
+
+	assert(dir != NULL);
+
+	r = snprintf(res, sizeof(res), "%s/%s", xbps_get_rootdir(), dir);
+	if (r == -1 || r >= (int)sizeof(res)) {
+		/* If error or truncated set to default */
+		cachedir = XBPS_CACHE_PATH;
+		return;
+	}
+	cachedir = res;
+}
+
+const char SYMEXPORT *
+xbps_get_cachedir(void)
+{
+	static char res[PATH_MAX];
+	int r = 0;
+
+	if (cachedir == NULL) {
+		r = snprintf(res, sizeof(res), "%s/%s",
+		    xbps_get_rootdir(), XBPS_CACHE_PATH);
+		if (r == -1 || r >= (int)sizeof(res))
+			return NULL;
+
+		cachedir = res;
+	}
+	return cachedir;
 }
 
 void SYMEXPORT

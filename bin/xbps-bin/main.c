@@ -58,12 +58,12 @@ usage(void)
 	"    show-revdeps\t<pkgname>\n"
 	"    update\t\t<pkgname>\n"
 	" Options shared by all targets:\n"
+	"    -c\t\t<cachedir>\n"
 	"    -r\t\t<rootdir>\n"
 	"    -v\t\tShows verbose messages\n"
 	"    -V\t\tPrints the xbps release version\n"
 	" Options used by the (auto)remove and install target:\n"
-	"    -f\t\tForce installation or removal of packages.\n"
-	"      \t\tBeware with this option if you use autoremove!\n"
+	"    -f\t\tBypasses the questions.\n"
 	"\n");
 	exit(EXIT_FAILURE);
 }
@@ -116,8 +116,11 @@ main(int argc, char **argv)
 
 	force = verbose = false;
 
-	while ((c = getopt(argc, argv, "CVfr:v")) != -1) {
+	while ((c = getopt(argc, argv, "Vcfr:v")) != -1) {
 		switch (c) {
+		case 'c':
+			xbps_set_cachedir(optarg);
+			break;
 		case 'f':
 			flags |= XBPS_FLAG_FORCE;
 			force = true;

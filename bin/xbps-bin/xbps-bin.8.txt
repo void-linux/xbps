@@ -23,6 +23,13 @@ be installed from local ('directory') or remote repositories ('http',
 
 OPTIONS
 -------
+*-c* 'cachedir'::
+	Sets the 'cache' directory to store downloaded binary packages
+	from remote repositories.
+	By default it's set to '/var/cache/xbps' and it's always relative
+	to the 'root' directory. So if you use a 'rootdir' of '/blah',
+	it will become '/blah/cachedir'.
+
 *-f*::
 	By default while installing or removing packages, xbps-bin(1)
 	will ask you if you are sure about the task that will be done.

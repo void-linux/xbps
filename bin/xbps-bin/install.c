@@ -72,68 +72,45 @@ show_missing_dep_cb(prop_object_t obj, void *arg, bool *loop_done)
 	return EINVAL;
 }
 
-static int
-check_pkg_hashes(prop_object_iterator_t iter)
+static bool
+check_binpkg_hash(const char *path, const char *filename,
+		  const char *sha256)
 {
-	prop_object_t obj;
-	const char *pkgname, *repoloc, *filename;
 	int rv = 0;
-	pkg_state_t state = 0;
 
-	printf("Checking binary package file(s) integrity...\n");
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &pkgname))
-			return errno;
-
-		state = 0;
-		if (xbps_get_pkg_state_dictionary(obj, &state) != 0)
-			return EINVAL;
-
-		if (state == XBPS_PKG_STATE_UNPACKED)
-			continue;
-
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "repository", &repoloc))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "filename", &filename))
-			return errno;
-		rv = xbps_check_pkg_file_hash(obj, repoloc);
-		if (rv != 0 && rv != ERANGE) {
-			printf("Unexpected error while checking hash for "
-			    "%s (%s)\n", filename, strerror(rv));
-			return -1;
-		} else if (rv != 0 && rv == ERANGE) {
-			printf("Hash mismatch for %s, exiting.\n",
-			    filename);
-			return -1;
-		}
+	printf("Checking %s integrity... ", filename);
+	rv = xbps_check_file_hash(path, sha256);
+	errno = rv;
+	if (rv != 0 && rv != ERANGE) {
+		printf("unexpected error: %s\n", strerror(rv));
+		return false;
+	} else if (rv == ERANGE) {
+		printf("hash mismatch!.\n");
+		return false;
 	}
-	prop_object_iterator_reset(iter);
+	printf("OK.\n");
 
-	return 0;
+	return true;
 }
 
 static int
 download_package_list(prop_object_iterator_t iter)
 {
 	prop_object_t obj;
-	const char *pkgver, *repoloc, *filename, *arch;
-	char *savedir, *binfile, *lbinfile, *repoloc_trans;
+	const char *pkgver, *repoloc, *filename, *cachedir, *sha256;
+	char *binfile, *lbinfile;
 	int rv = 0;
+	bool found_binpkg;
 
-	printf("Downloading binary package file(s)...\n");
+	cachedir = xbps_get_cachedir();
+	if (cachedir == NULL)
+		return EINVAL;
+
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		found_binpkg = false;
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "repository", &repoloc))
 			return errno;
-		/*
-		 * Skip packages in local repositories.
-		 */
-		if (!xbps_check_is_repo_string_remote(repoloc))
-			continue;
-
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgver", &pkgver))
 			return errno;
@@ -141,65 +118,69 @@ download_package_list(prop_object_iterator_t iter)
 		    "filename", &filename))
 			return errno;
 		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "architecture", &arch))
+		    "filename-sha256", &sha256))
 			return errno;
 
-		repoloc_trans = xbps_get_remote_repo_string(repoloc);
-		if (repoloc_trans == NULL)
+		lbinfile = xbps_get_binpkg_local_path(obj);
+		if (lbinfile == NULL)
 			return errno;
 
-		savedir = xbps_xasprintf("%s/%s/%s/%s",
-		    xbps_get_rootdir(), XBPS_META_PATH, repoloc_trans, arch);
-		if (savedir == NULL) {
-			free(repoloc_trans);
-			return errno;
-		}
-		lbinfile = xbps_xasprintf("%s/%s", savedir, filename);
-		if (lbinfile == NULL) {
-			free(repoloc_trans);
-			free(savedir);
-			return errno;
-		}
-		if (access(lbinfile, R_OK) == 0) {
-			free(savedir);
+		/*
+		 * If package is in a local repository, check its hash
+		 * and pass no next one.
+		 */
+		if (!xbps_check_is_repo_string_remote(repoloc)) {
+			if (!check_binpkg_hash(lbinfile, filename, sha256)) {
+				free(lbinfile);
+				return errno;
+			}
 			free(lbinfile);
-			goto change_repodir;
+			continue;
 		}
-		free(lbinfile);
-
-		binfile = xbps_xasprintf("%s/%s/%s", repoloc, arch, filename);
+		/*
+		 * If downloaded package is in cachedir, check its hash
+		 * and restart it again if doesn't match.
+		 */
+		if (access(lbinfile, R_OK) == 0) {
+			if (check_binpkg_hash(lbinfile, filename, sha256)) {
+				free(lbinfile);
+				continue;
+			}
+			if (errno && errno != ERANGE) {
+				free(lbinfile);
+				return errno;
+			} else if (errno == ERANGE) {
+				(void)remove(lbinfile);
+				printf("Refetching %s again...\n",
+				    filename);
+				errno = 0;
+			}
+		}
+		if (xbps_mkpath(__UNCONST(cachedir), 0755) == -1) {
+			free(lbinfile);
+			return errno;
+		}
+		binfile = xbps_get_path_from_pkg_dict_repo(obj, repoloc);
 		if (binfile == NULL) {
-			free(repoloc_trans);
-			free(savedir);
+			free(lbinfile);
 			return errno;
 		}
 		printf("Downloading %s binary package ...\n", pkgver);
-		rv = xbps_fetch_file(binfile, savedir, false, NULL);
-		free(savedir);
+		rv = xbps_fetch_file(binfile, cachedir, false, NULL);
 		free(binfile);
 		if (rv == -1) {
 			printf("Couldn't download %s from %s (%s)\n",
 			    filename, repoloc, xbps_fetch_error_string());
-			free(repoloc_trans);
+			free(lbinfile);
 			return errno;
 		}
-
-change_repodir:
-		/*
-		 * If it was downloaded successfully, override repository
-		 * path in transaction dictionary.
-		 */
-		savedir = xbps_xasprintf("%s/%s/%s",
-		    xbps_get_rootdir(), XBPS_META_PATH, repoloc_trans);
-		free(repoloc_trans);
-		if (savedir == NULL)
-		       return errno;
-
-		if (!prop_dictionary_set_cstring(obj, "repository", savedir)) {
-			free(savedir);
+		if (!check_binpkg_hash(lbinfile, filename, sha256)) {
+			printf("W: removing wrong %s file ...\n", filename);
+			(void)remove(lbinfile);
+			free(lbinfile);
 			return errno;
 		}
-		free(savedir);
+		free(lbinfile);
 	}
 	prop_object_iterator_reset(iter);
 
@@ -250,10 +231,6 @@ show_transaction_sizes(prop_object_iterator_t iter)
 
 	trans_inst = trans_up = trans_conf = false;
 
-	/*
-	 * Iterate over the list of packages that are going to be
-	 * installed and check the file hash.
-	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (!prop_dictionary_get_uint64(obj, "filename-size", &tsize))
 			return errno;
@@ -530,15 +507,10 @@ exec_transaction(struct transaction *trans)
 	}
 
 	/*
-	 * Download binary packages if they are in a remote repository.
+	 * Download binary packages (if they come from a remote repository)
+	 * and check its SHA256 hash.
 	 */
 	if ((rv = download_package_list(trans->iter)) != 0)
-		return rv;
-
-	/*
-	 * Check the SHA256 hash for all required packages.
-	 */
-	if ((rv = check_pkg_hashes(trans->iter)) != 0)
 		return rv;
 
 	/*

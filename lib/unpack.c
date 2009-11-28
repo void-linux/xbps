@@ -39,30 +39,17 @@ static void set_extract_flags(int *);
 int SYMEXPORT
 xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 {
-	prop_string_t filename, repoloc, arch;
-	struct archive *ar = NULL;
 	const char *pkgname;
+	struct archive *ar = NULL;
 	char *binfile = NULL;
 	int pkg_fd, rv = 0;
 
 	assert(pkg != NULL);
 
-	/*
-	 * Append filename to the full path for binary pkg.
-	 */
 	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
 		return errno;
 
-	filename = prop_dictionary_get(pkg, "filename");
-	arch = prop_dictionary_get(pkg, "architecture");
-	repoloc = prop_dictionary_get(pkg, "repository");
-	if (filename == NULL || arch == NULL || repoloc == NULL)
-		return ENOTSUP;
-
-	binfile = xbps_xasprintf("%s/%s/%s",
-	    prop_string_cstring_nocopy(repoloc),
-	    prop_string_cstring_nocopy(arch),
-	    prop_string_cstring_nocopy(filename));
+	binfile = xbps_get_binpkg_local_path(pkg);
 	if (binfile == NULL)
 		return EINVAL;
 

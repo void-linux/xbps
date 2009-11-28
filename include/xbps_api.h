@@ -30,7 +30,9 @@
 #include <inttypes.h>
 #include <sys/cdefs.h>
 #include <sys/queue.h>
-#define NDEBUG
+#ifndef DEBUG
+#  define NDEBUG
+#endif
 #include <assert.h>
 
 #include <prop/proplib.h>
@@ -38,10 +40,13 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"20091126"
+#define XBPS_RELVER		"20091128"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
+
+/* Default cache PATH for xbps to store downloaded binpkgs. */
+#define XBPS_CACHE_PATH		"/var/cache/xbps"
 
 /* Filename for the repositories plist file. */
 #define XBPS_REPOLIST		"repositories.plist"
@@ -59,7 +64,6 @@
 /* Current version of the package index format. */
 #define XBPS_PKGINDEX_VERSION	"1.1"
 
-/* Verbose messages */
 #define XBPS_FLAG_VERBOSE	0x00000001
 #define XBPS_FLAG_FORCE		0x00000002
 
@@ -118,6 +122,9 @@ prop_dictionary_t SYMEXPORT	xbps_get_pkg_props(void);
 
 /* From lib/depends.c */
 int SYMEXPORT	xbps_find_deps_in_pkg(prop_dictionary_t, prop_dictionary_t);
+
+/* From lib/mkpath.c */
+int SYMEXPORT	xbps_mkpath(char *, mode_t);
 
 /* From lib/orphans.c */
 prop_array_t SYMEXPORT		xbps_find_orphan_packages(void);
@@ -233,6 +240,7 @@ int SYMEXPORT		xbps_check_pkg_file_hash(prop_dictionary_t,
 int SYMEXPORT		xbps_check_is_installed_pkg(const char *);
 bool SYMEXPORT		xbps_check_is_installed_pkgname(const char *);
 bool SYMEXPORT		xbps_check_is_repo_string_remote(const char *);
+char SYMEXPORT		*xbps_get_binpkg_local_path(prop_dictionary_t);
 char SYMEXPORT		*xbps_get_pkg_index_plist(const char *);
 char SYMEXPORT		*xbps_get_pkg_name(const char *);
 char SYMEXPORT		*xbps_get_pkgdep_name(const char *);
@@ -243,6 +251,8 @@ const char SYMEXPORT	*xbps_get_pkgver_from_dict(prop_dictionary_t);
 bool SYMEXPORT		xbps_pkg_has_rundeps(prop_dictionary_t);
 void SYMEXPORT		xbps_set_rootdir(const char *);
 const char SYMEXPORT	*xbps_get_rootdir(void);
+void SYMEXPORT		xbps_set_cachedir(const char *);
+const char SYMEXPORT	*xbps_get_cachedir(void);
 void SYMEXPORT		xbps_set_flags(int);
 int SYMEXPORT		xbps_get_flags(void);
 bool SYMEXPORT		xbps_yesno(const char *, ...);

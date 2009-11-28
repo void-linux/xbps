@@ -17,7 +17,7 @@ LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o fetch/ftp.o fetch/http
 OBJS +=	configure.o cmpver.o depends.o download.o fexec.o findpkg.o
 OBJS +=	humanize_number.o orphans.o plist.o purge.o register.o remove.o
 OBJS +=	repository.o requiredby.o sha256.o sortdeps.o state.o
-OBJS +=	sync_remote_pkgidx.o unpack.o util.o pkgmatch.o
+OBJS +=	sync_remote_pkgidx.o unpack.o util.o pkgmatch.o mkpath.o
 OBJS +=	regpkgs_dictionary.o repository_plist.o repository_pool.o
 
 .PHONY: all
