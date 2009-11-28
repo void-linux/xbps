@@ -74,12 +74,11 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 	     ARCHIVE_READ_BLOCKSIZE)) != 0)
 		goto out;
 
-	rv = unpack_archive_fini(ar, pkg, essential);
-	/*
-	 * If installation of package was successful, make sure the package
-	 * is really on storage (if possible).
-	 */
-	if (rv == 0) {
+	if ((rv = unpack_archive_fini(ar, pkg, essential)) == 0) {
+		/*
+		 * If installation of package was successful, make sure
+		 * its files are written in storage (if possible).
+		 */
 		if (fsync(pkg_fd) == -1) {
 			rv = errno;
 			goto out;
