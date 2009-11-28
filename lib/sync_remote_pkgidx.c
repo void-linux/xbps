@@ -127,7 +127,8 @@ xbps_sync_repository_pkg_index(const char *uri)
 		goto out;
 	}
 	/*
-	 * Full path to machine arch local repository directory.
+	 * Full path to local repository directory to store the
+	 * package index file.
 	 */
 	lrepodir = xbps_xasprintf("%s/%s/%s",
 	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp);
