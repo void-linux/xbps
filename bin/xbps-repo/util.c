@@ -180,20 +180,19 @@ show_pkg_files(prop_dictionary_t filesd)
 int
 show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 {
-	const char *pkgname, *desc, *ver, *pattern = arg;
+	const char *pkgver, *desc;
+	char *pattern = arg;
 
 	(void)loop_done;
 
 	assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
 	assert(pattern != NULL);
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
-	prop_dictionary_get_cstring_nocopy(obj, "version", &ver);
 
-	if ((fnmatch(pattern, pkgname, 0) == 0) ||
-	    (fnmatch(pattern, desc, 0) == 0))
-		printf(" %s-%s - %s\n", pkgname, ver, desc);
+	if (xbps_pkgdep_match(pkgver, pattern) == 1)
+		printf(" %s - %s\n", pkgver, desc);
 
 	return 0;
 }
