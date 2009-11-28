@@ -23,6 +23,13 @@ and show information about a binary package in repository pool.
 
 OPTIONS
 -------
+*-c* 'cachedir'::
+	Sets the 'cache' directory to store downloaded binary packages
+	from remote repositories.
+	By default it's set to '/var/cache/xbps' and it's always relative
+	to the 'root' directory. So if you use a 'rootdir' of '/blah',
+	it will become '/blah/cachedir'.
+
 *-r* 'rootdir'::
 	Sets the 'root' directory. By default the root directory is
 	set to '/'. Please note that the database directory is always
@@ -84,6 +91,16 @@ Please note that all targets are *case insensitive*.
 	Syncs the package index file for all registered remote repositories.
 	The new file will be fetched if local and remote size/mtime do not match.
 
+FILES
+-----
+*/var/db/xbps/repositories.plist*:: Registered repository list.
+ +
+
+*/var/db/xbps/<remoterepodir>/pkg-index.plist*:: Remote repository package index file.
+ +
+
+*/var/cache/xbps*:: xbps _cache_ directory for downloaded binary packages.
+ +
 
 BUGS
 ----

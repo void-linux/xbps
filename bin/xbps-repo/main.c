@@ -52,6 +52,7 @@ usage(void)
 	"    show-deps\t<pkgname>\n"
 	"    show-files\t<pkgname>\n"
 	" Options shared by all actions:\n"
+	"    -c\t\t<cachedir>\n"
 	"    -r\t\t<rootdir>\n"
 	"    -V\t\tPrints xbps release version\n"
 	"\n"
@@ -74,8 +75,11 @@ main(int argc, char **argv)
 	char *root;
 	int c, rv = 0;
 
-	while ((c = getopt(argc, argv, "Vr:")) != -1) {
+	while ((c = getopt(argc, argv, "Vcr:")) != -1) {
 		switch (c) {
+		case 'c':
+			xbps_set_cachedir(optarg);
+			break;
 		case 'r':
 			/* To specify the root directory */
 			root = optarg;
