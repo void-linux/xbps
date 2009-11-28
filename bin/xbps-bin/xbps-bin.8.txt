@@ -162,6 +162,12 @@ FILES
 */var/db/xbps/metadata/<pkgname>*:: Installed package metadata directory.
  +
 
+*/var/db/xbps/metadata/<pkgname>/files.plist*:: Installed package metadata list of files.
+ +
+
+*/var/db/xbps/metadata/<pkgname>/prop.plist*:: Install package metadata properties.
+ +
+
 */var/db/xbps/regpkgdb.plist*:: Registered packages plist database.
  +
 
