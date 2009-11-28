@@ -175,11 +175,16 @@ xbps_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 	prop_dictionary_t plistd = NULL;
 	struct archive *a;
 	struct archive_entry *entry;
-	const char *curpath;
+	const char *curpath, *comptype;
 	int i = 0;
 
 	if ((a = open_archive(url)) == NULL)
 		return NULL;
+
+	/*
+	 * Save compression type string for future use.
+	 */
+	comptype = archive_compression_name(a);
 
 	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
 		curpath = archive_entry_pathname(entry);
@@ -201,6 +206,9 @@ xbps_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 			errno = EINVAL;
 			break;
 		}
+		prop_dictionary_set_cstring_nocopy(plistd,
+		    "archive-compression-type", comptype);
+
 		break;
 	}
 	archive_read_finish(a);

@@ -73,6 +73,11 @@ show_pkg_info(prop_dictionary_t dict)
 	assert(dict != NULL);
 	assert(prop_dictionary_count(dict) != 0);
 
+	obj = prop_dictionary_get(dict, "archive-compression-type");
+	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+		printf("Compression type: %s\n",
+		    prop_string_cstring_nocopy(obj));
+
 	obj = prop_dictionary_get(dict, "pkgname");
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Package: %s\n", prop_string_cstring_nocopy(obj));
