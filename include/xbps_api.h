@@ -69,6 +69,13 @@
 
 #define ARCHIVE_READ_BLOCKSIZE	10240
 
+#define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \
+			ARCHIVE_EXTRACT_SECURE_SYMLINKS | \
+			ARCHIVE_EXTRACT_NO_OVERWRITE | \
+			ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER
+#define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | ARCHIVE_EXTRACT_PERM | \
+			ARCHIVE_EXTRACT_TIME | EXTRACT_FLAGS
+
 #ifndef __UNCONST
 #define __UNCONST(a)	((void *)(unsigned long)(const void *)(a))
 #endif
@@ -86,6 +93,13 @@
 #endif
 
 __BEGIN_DECLS
+
+/* From lib/config_files.c */
+int		xbps_config_file_from_archive_entry(prop_dictionary_t,
+						    struct archive_entry *,
+						    const char *,
+						    int *,
+						    bool *);
 
 /* From lib/configure.c */
 int SYMEXPORT	xbps_configure_pkg(const char *, const char *, bool);
@@ -157,12 +171,14 @@ bool SYMEXPORT	xbps_find_string_in_array(prop_array_t, const char *);
 prop_object_iterator_t	SYMEXPORT
 	xbps_get_array_iter_from_dict(prop_dictionary_t, const char *);
 
-prop_dictionary_t SYMEXPORT	xbps_read_dict_from_archive_entry(struct archive *,
-					struct archive_entry *);
+prop_dictionary_t SYMEXPORT
+	xbps_read_dict_from_archive_entry(struct archive *,
+					  struct archive_entry *);
 
 int SYMEXPORT	xbps_remove_pkg_dict_from_file(const char *, const char *);
-int SYMEXPORT	xbps_remove_pkg_from_dict(prop_dictionary_t, const char *,
-					  const char *);
+int SYMEXPORT
+	xbps_remove_pkg_from_dict(prop_dictionary_t, const char *,
+				  const char *);
 int SYMEXPORT	xbps_remove_string_from_array(prop_array_t, const char *);
 
 /* From lib/purge.c */
@@ -179,6 +195,9 @@ void SYMEXPORT			xbps_regpkgs_dictionary_release(void);
 
 /* From lib/remove.c */
 int SYMEXPORT	xbps_remove_pkg(const char *, const char *, bool);
+
+/* From lib/remove_obsoletes.c */
+int		xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
 
 /* From lib/repository.c */
 int SYMEXPORT	xbps_register_repository(const char *);

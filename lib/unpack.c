@@ -33,7 +33,6 @@
 #include <xbps_api.h>
 
 static int unpack_archive_fini(struct archive *, prop_dictionary_t, bool);
-static int remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
 static void set_extract_flags(int *);
 
 int SYMEXPORT
@@ -102,19 +101,6 @@ out:
 	return rv;
 }
 
-/*
- * Flags for extracting files in binary packages. If a package
- * is marked as "essential", its files will be overwritten and then
- * the old and new dictionaries are compared to find out if there
- * are some files that were in the old package that should be removed.
- */
-#define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \
-			ARCHIVE_EXTRACT_SECURE_SYMLINKS | \
-			ARCHIVE_EXTRACT_NO_OVERWRITE | \
-			ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER
-#define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | ARCHIVE_EXTRACT_PERM | \
-			ARCHIVE_EXTRACT_TIME | EXTRACT_FLAGS
-
 static void
 set_extract_flags(int *flags)
 {
@@ -123,195 +109,6 @@ set_extract_flags(int *flags)
 		*flags = FEXTRACT_FLAGS;
 	else
 		*flags = EXTRACT_FLAGS;
-}
-
-static int
-install_config_file(prop_dictionary_t d, struct archive_entry *entry,
-		    const char *pkgname, int *flags, bool *skip)
-{
-	prop_dictionary_t forigd;
-	prop_object_t obj, obj2;
-	prop_object_iterator_t iter, iter2;
-	const char *cffile, *sha256_new = NULL;
-	char *buf, *sha256_cur = NULL, *sha256_orig = NULL;
-	int rv = 0;
-	bool install_new = false;
-
-	if (d == NULL)
-		return 0;
-
-	iter = xbps_get_array_iter_from_dict(d, "conf_files");
-	if (iter == NULL)
-		return 0;
-
-	/*
-	 * Get original hash for the file from current
-	 * installed package.
-	 */
-	buf = xbps_xasprintf(".%s/metadata/%s/%s", XBPS_META_PATH,
-	    pkgname, XBPS_PKGFILES);
-	if (buf == NULL)
-		return errno;
-
-	forigd = prop_dictionary_internalize_from_file(buf);
-	free(buf);
-	if (forigd == NULL) {
-		install_new = true;
-		goto out;
-	}
-
-	iter2 = xbps_get_array_iter_from_dict(forigd, "conf_files");
-	if (iter2 != NULL) {
-		while ((obj2 = prop_object_iterator_next(iter2))) {
-			if (!prop_dictionary_get_cstring_nocopy(obj2,
-			    "file", &cffile)) {
-				prop_object_iterator_release(iter2);
-				rv = errno;
-				goto out;
-			}
-			buf = xbps_xasprintf(".%s", cffile);
-			if (buf == NULL) {
-				prop_object_iterator_release(iter2);
-				rv = errno;
-				goto out;
-			}
-			if (strcmp(archive_entry_pathname(entry), buf) == 0) {
-				prop_dictionary_get_cstring(obj2, "sha256",
-				    &sha256_orig);
-				free(buf);
-				break;
-			}
-			free(buf);
-			buf = NULL;
-		}
-		prop_object_iterator_release(iter2);
-	}
-	prop_object_release(forigd);
-	/*
-	 * First case: original hash not found, install new file.
-	 */
-	if (sha256_orig == NULL) {
-		install_new = true;
-		goto out;
-	}
-
-	/*
-	 * Compare original, installed and new hash for current file.
-	 */
-	while ((obj = prop_object_iterator_next(iter))) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "file", &cffile)) {
-			prop_object_iterator_release(iter);
-			return errno;
-		}
-		buf = xbps_xasprintf(".%s", cffile);
-		if (buf == NULL) {
-			prop_object_iterator_release(iter);
-			return errno;
-		}
-		if (strcmp(archive_entry_pathname(entry), buf)) {
-			free(buf);
-			buf = NULL;
-			continue;
-		}
-		sha256_cur = xbps_get_file_hash(buf);
-		free(buf);
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "sha256", &sha256_new)) {
-			rv = EINVAL;
-			break;
-		}
-		if (sha256_cur == NULL) {
-			if (errno == ENOENT) {
-				/*
-				 * File not installed, install new one.
-				 */
-				install_new = true;
-				break;
-			} else {
-				rv = errno;
-				break;
-			}
-		}
-
-		/*
-		 * Orig = X, Curr = X, New = X
-		 *
-		 * Install new file.
-		 */
-		if ((strcmp(sha256_orig, sha256_cur) == 0) &&
-		    (strcmp(sha256_orig, sha256_new) == 0) &&
-		    (strcmp(sha256_cur, sha256_new) == 0)) {
-			install_new = true;
-			break;
-		/*
-		 * Orig = X, Curr = X, New = Y
-		 *
-		 * Install new file.
-		 */
-		} else if ((strcmp(sha256_orig, sha256_cur) == 0) &&
-			   (strcmp(sha256_orig, sha256_new)) &&
-			   (strcmp(sha256_cur, sha256_new))) {
-			printf("Updating %s file with new version.\n",
-			    cffile);
-			install_new = true;
-			break;
-		/*
-		 * Orig = X, Curr = Y, New = X
-		 *
-		 * Keep current file as is.
-		 */
-		} else if ((strcmp(sha256_orig, sha256_new) == 0) &&
-			   (strcmp(sha256_cur, sha256_new)) &&
-			   (strcmp(sha256_orig, sha256_cur))) {
-			printf("Keeping modified file %s.\n", cffile);
-			*skip = true;
-			break;
-		/*
-		 * Orig = X, Curr = Y, New = Y
-		 *
-		 * Install new file.
-		 */
-		} else if ((strcmp(sha256_cur, sha256_new) == 0) &&
-			   (strcmp(sha256_orig, sha256_new)) &&
-			   (strcmp(sha256_orig, sha256_cur))) {
-			install_new = true;
-			break;
-		/*
-		 * Orig = X, Curr = Y, New = Z
-		 *
-		 * Install new file as file.new.
-		 */
-		} else  if ((strcmp(sha256_orig, sha256_cur)) &&
-			    (strcmp(sha256_cur, sha256_new)) &&
-			    (strcmp(sha256_orig, sha256_new))) {
-			buf = xbps_xasprintf(".%s.new", cffile);
-			if (buf == NULL) {
-				rv = errno;
-				break;
-			}
-			printf("Keeping modified file %s.\n", cffile);
-			printf("Installing new version as %s.new.\n", cffile);
-			install_new = true;
-			archive_entry_set_pathname(entry, buf);
-			free(buf);
-			break;
-		}
-	}
-
-out:
-	if (install_new) {
-		*flags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE;
-		*flags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
-	}
-	if (sha256_orig)
-		free(sha256_orig);
-	if (sha256_cur)
-		free(sha256_cur);
-
-	prop_object_iterator_release(iter);
-
-	return rv;
 }
 
 /*
@@ -425,8 +222,8 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 			/*
 			 * Handle configuration files.
 			 */
-			if ((rv = install_config_file(filesd, entry, pkgname,
-			    &lflags, &skip_entry)) != 0) {
+			if ((rv = xbps_config_file_from_archive_entry(filesd,
+			    entry, pkgname, &lflags, &skip_entry)) != 0) {
 				prop_object_release(filesd);
 				return rv;
 			}
@@ -480,7 +277,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 				free(buf2);
 				return errno;
 			}
-			rv = remove_obsoletes(old_filesd, filesd);
+			rv = xbps_remove_obsoletes(old_filesd, filesd);
 			if (rv != 0) {
 				prop_object_release(old_filesd);
 				prop_object_release(filesd);
@@ -505,92 +302,3 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 
 	return rv;
 }
-
-static int
-remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
-{
-	prop_object_iterator_t iter, iter2;
-	prop_object_t obj, obj2;
-	prop_string_t oldstr, newstr;
-	const char *array_str = "files";
-	char *buf = NULL;
-	int rv = 0;
-	bool found, dolinks = false;
-
-	iter = iter2 = NULL;
-	obj = obj2 = NULL;
-	oldstr = newstr = NULL;
-
-again:
-	iter = xbps_get_array_iter_from_dict(oldd, array_str);
-	if (iter == NULL)
-		return errno;
-	iter2 = xbps_get_array_iter_from_dict(newd, array_str);
-	if (iter2 == NULL) {
-		prop_object_iterator_release(iter);
-		return errno;
-	}
-	/*
-	 * Check for obsolete files, i.e files/links available in
-	 * the old package list not found in new package list.
-	 */
-	while ((obj = prop_object_iterator_next(iter))) {
-		found = false;
-		oldstr = prop_dictionary_get(obj, "file");
-		if (oldstr == NULL) {
-			rv = errno;
-			goto out;
-		}
-		while ((obj2 = prop_object_iterator_next(iter2))) {
-			newstr = prop_dictionary_get(obj2, "file");
-			if (newstr == NULL) {
-				rv = errno;
-				goto out;
-			}
-			if (prop_string_equals(oldstr, newstr)) {
-				found = true;
-				break;
-			}
-		}
-		prop_object_iterator_reset(iter2);
-		if (found)
-			continue;
-
-		/*
-		 * Obsolete file found, remove it.
-		 */
-		buf = xbps_xasprintf(".%s", prop_string_cstring_nocopy(oldstr));
-		if (buf == NULL) {
-			rv = errno;
-			goto out;
-		}
-		if (remove(buf) == -1) {
-			printf("WARNING: couldn't remove obsolete %s: %s\n",
-			    dolinks ? "link" : "file",
-			    prop_string_cstring_nocopy(oldstr));
-			free(buf);
-			continue;
-		}
-		printf("Removed obsolete %s: %s\n",
-		    dolinks ? "link" : "file",
-		    prop_string_cstring_nocopy(oldstr));
-		free(buf);
-	}
-	if (!dolinks) {
-		/*
-		 * Now look for obsolete links.
-		 */
-		dolinks = true;
-		array_str = "links";
-		prop_object_iterator_release(iter2);
-		prop_object_iterator_release(iter);
-		iter = iter2 = NULL;
-		goto again;
-	}
-
-out:
-	prop_object_iterator_release(iter2);
-	prop_object_iterator_release(iter);
-
-	return rv;
-}	
