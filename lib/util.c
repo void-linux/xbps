@@ -83,35 +83,6 @@ xbps_check_file_hash(const char *path, const char *sha256)
 	return 0;
 }
 
-int SYMEXPORT
-xbps_check_pkg_file_hash(prop_dictionary_t pkgd, const char *repoloc)
-{
-	const char *sha256, *arch, *filename;
-	char *binfile;
-	int rv = 0;
-
-	assert(repoloc != NULL);
-
-	if (!prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filename))
-		return EINVAL;
-
-	if (!prop_dictionary_get_cstring_nocopy(pkgd, "filename-sha256",
-	    &sha256))
-		return EINVAL;
-
-	if (!prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch))
-		return EINVAL;
-
-	binfile = xbps_xasprintf("%s/%s/%s", repoloc, arch, filename);
-	if (binfile == NULL)
-		return EINVAL;
-
-	rv = xbps_check_file_hash(binfile, sha256);
-	free(binfile);
-
-	return rv;
-}
-
 bool SYMEXPORT
 xbps_check_is_repo_string_remote(const char *uri)
 {

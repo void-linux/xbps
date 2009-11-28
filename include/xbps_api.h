@@ -235,8 +235,6 @@ int SYMEXPORT	xbps_unpack_binary_pkg(prop_dictionary_t, bool);
 char SYMEXPORT		*xbps_xasprintf(const char *, ...);
 char SYMEXPORT		*xbps_get_file_hash(const char *);
 int SYMEXPORT		xbps_check_file_hash(const char *, const char *);
-int SYMEXPORT		xbps_check_pkg_file_hash(prop_dictionary_t,
-						 const char *);
 int SYMEXPORT		xbps_check_is_installed_pkg(const char *);
 bool SYMEXPORT		xbps_check_is_installed_pkgname(const char *);
 bool SYMEXPORT		xbps_check_is_repo_string_remote(const char *);
