@@ -393,6 +393,9 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 		show_missing_deps(trans->dict, pkgname);
 		goto out2;
 	}
+
+	DPRINTF(("%s", prop_dictionary_externalize(trans->dict)));
+
 	if (update) {
 		/*
 		 * Sort the package transaction dictionary.
@@ -436,7 +439,7 @@ replace_packages(prop_object_iterator_t iter, const char *pkgver)
 {
 	prop_dictionary_t instd;
 	prop_object_t obj;
-	const char *reppkgn;
+	const char *reppkgn, *version;
 	int rv = 0;
 
 	/*
@@ -454,7 +457,8 @@ replace_packages(prop_object_iterator_t iter, const char *pkgver)
 
 		printf("Replacing package '%s' with '%s' ...\n",
 		    reppkgn, pkgver);
-		if ((rv = xbps_remove_pkg(reppkgn, NULL, false)) != 0) {
+		version = xbps_get_pkg_version(pkgver);
+		if ((rv = xbps_remove_pkg(reppkgn, version, false)) != 0) {
 			printf("Couldn't remove %s (%s)\n",
 			    reppkgn, strerror(rv));
 			return rv;
