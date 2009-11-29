@@ -56,20 +56,17 @@ show_missing_deps(prop_dictionary_t d, const char *pkgname)
 static int
 show_missing_dep_cb(prop_object_t obj, void *arg, bool *loop_done)
 {
-	const char *pkgname, *version;
+	const char *reqpkg;
 
         (void)arg;
         (void)loop_done;
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-	if (pkgname && version) {
-		printf("  * Missing binary package for: %s%s\n",
-		    pkgname, version);
-		return 0;
-	}
+	reqpkg = prop_string_cstring_nocopy(obj);
+	if (reqpkg == NULL)
+		return EINVAL;
 
-	return EINVAL;
+	printf("  * Missing binary package for: %s\n", reqpkg);
+	return 0;
 }
 
 static bool

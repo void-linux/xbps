@@ -265,8 +265,6 @@ xbps_remove_string_from_array(prop_array_t array, const char *str)
 		return errno;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (prop_object_type(obj) != PROP_TYPE_STRING)
-			continue;
 		if (prop_string_equals_cstring(obj, str)) {
 			found = true;
 			break;

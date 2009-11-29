@@ -30,7 +30,8 @@
 
 #include <xbps_api.h>
 
-static int add_missing_reqdep(prop_dictionary_t, const char *, const char *);
+static int add_missing_reqdep(prop_dictionary_t, const char *);
+static int remove_missing_reqdep(prop_dictionary_t, const char *);
 static int find_repo_deps(prop_dictionary_t, prop_dictionary_t,
 			  const char *, prop_array_t);
 
@@ -102,41 +103,137 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 }
 
 static int
-add_missing_reqdep(prop_dictionary_t master, const char *pkgname,
-		   const char *version)
+add_missing_reqdep(prop_dictionary_t master, const char *reqpkg)
 {
 	prop_array_t missing_rdeps;
-	prop_dictionary_t mdepd, tmpd;
+	prop_string_t reqpkg_str;
+	prop_object_iterator_t iter = NULL;
+	prop_object_t obj;
+	size_t idx = 0;
+	bool add_pkgdep, pkgfound, update_pkgdep;
 
-	assert(array != NULL);
-	assert(reqdep != NULL);
+	assert(master != NULL);
+	assert(reqpkg != NULL);
 
-	tmpd = xbps_find_pkg_in_dict(master, "missing_deps", pkgname);
-	if (tmpd == NULL) {
-		if (errno && errno != ENOENT)
-			return errno;
-	} else if (tmpd)
-		return EEXIST;
+	add_pkgdep = update_pkgdep = pkgfound = false;
 
-	mdepd = prop_dictionary_create();
-	if (mdepd == NULL)
+	reqpkg_str = prop_string_create_cstring_nocopy(reqpkg);
+	if (reqpkg_str == NULL)
 		return errno;
 
 	missing_rdeps = prop_dictionary_get(master, "missing_deps");
-	if (!prop_dictionary_set_cstring(mdepd, "pkgname", pkgname)) {
-		prop_object_release(mdepd);
-		return errno;
+	iter = prop_array_iterator(missing_rdeps);
+	if (iter == NULL)
+		goto out;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		const char *curdep, *curver, *pkgver;
+		char *curpkgnamedep = NULL, *pkgnamedep = NULL;
+
+		assert(prop_object_type(obj) == PROP_TYPE_STRING);
+		curdep = prop_string_cstring_nocopy(obj);
+		curver = xbps_get_pkgdep_version(curdep);
+		pkgver = xbps_get_pkgdep_version(reqpkg);
+		if (curver == NULL || pkgver == NULL)
+			goto out;
+		curpkgnamedep = xbps_get_pkgdep_name(curdep);
+		if (curpkgnamedep == NULL)
+			goto out;
+		pkgnamedep = xbps_get_pkgdep_name(reqpkg);
+		if (pkgnamedep == NULL) {
+			free(curpkgnamedep);
+			goto out;
+		}
+		if (strcmp(pkgnamedep, curpkgnamedep) == 0) {
+			pkgfound = true;
+			/*
+			 * if new dependency version is greater than current
+			 * one, store it.
+			 */
+			DPRINTF(("Missing pkgdep name matched, curver: %s "
+			    "newver: %s\n", curver, pkgver));
+			if (xbps_cmpver(curver, pkgver) <= 0) {
+				add_pkgdep = false;
+				free(curpkgnamedep);
+				free(pkgnamedep);
+				goto out;
+			}
+			update_pkgdep = true;
+		}
+		free(curpkgnamedep);
+		free(pkgnamedep);
+		if (pkgfound)
+			break;
+
+		idx++;
 	}
-	if (!prop_dictionary_set_cstring(mdepd, "version", version)) {
-		prop_object_release(mdepd);
+	add_pkgdep = true;
+out:
+	if (iter)
+		prop_object_iterator_release(iter);
+	if (update_pkgdep)
+		prop_array_remove(missing_rdeps, idx);
+	if (add_pkgdep && !xbps_add_obj_to_array(missing_rdeps, reqpkg_str)) {
+		prop_object_release(reqpkg_str);
 		return errno;
-	}
-	if (!xbps_add_obj_to_array(missing_rdeps, mdepd)) {
-		prop_object_release(mdepd);
-		return EINVAL;
 	}
 
 	return 0;
+}
+
+static int
+remove_missing_reqdep(prop_dictionary_t master, const char *reqpkg)
+{
+	prop_array_t missing_rdeps;
+	prop_object_iterator_t iter = NULL;
+	prop_object_t obj;
+	size_t idx = 0;
+	int rv = 0;
+	bool found = false;
+
+	assert(master != NULL);
+	assert(reqpkg != NULL);
+
+	missing_rdeps = prop_dictionary_get(master, "missing_deps");
+	iter = prop_array_iterator(missing_rdeps);
+	if (iter == NULL)
+		return errno;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		const char *curdep;
+		char *curpkgnamedep, *reqpkgname;
+
+		curdep = prop_string_cstring_nocopy(obj);
+		curpkgnamedep = xbps_get_pkgdep_name(curdep);
+		if (curpkgnamedep == NULL) {
+			rv = errno;
+			goto out;
+		}
+		reqpkgname = xbps_get_pkgdep_name(reqpkg);
+		if (reqpkgname == NULL) {
+			free(curpkgnamedep);
+			rv = errno;
+			goto out;
+		}
+		if (strcmp(reqpkgname, curpkgnamedep) == 0)
+			found = true;
+
+		free(curpkgnamedep);
+		free(reqpkgname);
+		if (found)
+			break;
+		idx++;
+	}
+out:
+	prop_object_iterator_release(iter);
+	if (found) {
+		prop_array_remove(missing_rdeps, idx);
+		return 0;
+	}
+	if (rv == 0)
+		rv = ENOENT;
+
+	return rv;
 }
 
 int SYMEXPORT
@@ -147,8 +244,8 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 	const char *pkgname;
 	int rv = 0;
 
+	assert(master != NULL);
 	assert(pkg != NULL);
-	assert(iter != NULL);
 
 	pkg_rdeps = prop_dictionary_get(pkg, "run_depends");
 	if (pkg_rdeps == NULL)
@@ -174,7 +271,7 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 		if ((rv = find_repo_deps(master, rdata->rd_repod,
 		    rdata->rd_uri, pkg_rdeps)) != 0) {
 			DPRINTF(("Error '%s' while checking rundeps!\n",
-			    strerror(errno)));
+			    strerror(rv)));
 			goto out;
 		}
 	}
@@ -194,8 +291,8 @@ xbps_find_deps_in_pkg(prop_dictionary_t master, prop_dictionary_t pkg)
 	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
 		if ((rv = find_repo_deps(master, rdata->rd_repod,
 		    rdata->rd_uri, missing_rdeps)) != 0) {
-			DPRINTF(("Error '%s' while checking for"
-			    "missing rundeps!\n", strerror(errno)));
+			DPRINTF(("Error '%s' while checking for "
+			    "missing rundeps!\n", strerror(rv)));
 			goto out;
 		}
 	}
@@ -299,7 +396,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 				break;
 			}
 
-			rv = add_missing_reqdep(master, pkgname, reqvers);
+			rv = add_missing_reqdep(master, reqpkg);
 			if (rv != 0 && rv != EEXIST) {
 				DPRINTF(("add missing reqdep failed %s\n",
 				    reqpkg));
@@ -313,7 +410,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 				continue;
 			} else {
 				DPRINTF(("Added missing dep %s (repo: %s).\n",
-				    pkgname, repoloc));
+				    reqpkg, repoloc));
 				free(pkgname);
 				continue;
 			}
@@ -336,6 +433,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		} else if (tmpd) {
 			rv = xbps_get_pkg_state_installed(pkgname, &state);
 			if (rv != 0) {
+				free(pkgname);
 				prop_object_release(tmpd);
 				break;
 			}
@@ -348,32 +446,30 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 
 			prop_object_release(tmpd);
 		}
+		free(pkgname);
 		/*
 		 * Package is on repo, add it into the dictionary.
 		 */
 		if ((rv = store_dependency(master, curpkgd, repoloc)) != 0) {
 			DPRINTF(("store_dependency failed %s\n", reqpkg));
-			free(pkgname);
 			break;
 		}
-		DPRINTF(("Added reqdep %s (repo: %s)\n", pkgname, repoloc));
+		DPRINTF(("Added reqdep %s (repo: %s)\n", reqpkg, repoloc));
 
 		/*
 		 * If package was added in the missing_deps array, we
 		 * can remove it now it has been found in current repository.
 		 */
-		rv = xbps_remove_pkg_from_dict(master, "missing_deps", pkgname);
+		rv = remove_missing_reqdep(master, reqpkg);
 		if (rv == ENOENT) {
 			rv = 0;
 		} else if (rv == 0) {
-			DPRINTF(("Removed missing dep %s.\n", pkgname));
+			DPRINTF(("Removed missing dep %s.\n", reqpkg));
 		} else {
 			DPRINTF(("Removing missing dep %s returned %s\n",
-			    pkgname, strerror(rv)));
-			free(pkgname);
+			    reqpkg, strerror(rv)));
 			break;
 		}
-		free(pkgname);
 
 		/*
 		 * If package doesn't have rundeps, pass to the next one.
