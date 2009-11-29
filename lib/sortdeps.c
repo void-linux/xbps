@@ -42,14 +42,19 @@ static struct sorted_dependency *
 find_sorteddep_by_name(const char *pkgname)
 {
 	struct sorted_dependency *sdep = NULL;
-	const char *curname;
+	const char *curpkgname;
+	bool found = false;
 
 	SIMPLEQ_FOREACH(sdep, &sdep_list, chain) {
 		prop_dictionary_get_cstring_nocopy(sdep->dict,
-		    "pkgname", &curname);
-		if (strcmp(pkgname, curname) == 0)
+		    "pkgname", &curpkgname);
+		if (strcmp(pkgname, curpkgname) == 0) {
+			found = true;
 			break;
+		}
 	}
+	if (!found)
+		return NULL;
 
 	return sdep;
 }
@@ -62,8 +67,8 @@ xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 	prop_object_iterator_t iter, iter2;
 	struct sorted_dependency *sdep;
 	size_t ndeps = 0, rundepscnt = 0, cnt = 0;
-	const char *pkgname, *str;
-	char *curpkgnamedep;
+	const char *pkgname, *pkgver, *str;
+	char *pkgnamedep;
 	int rv = 0;
 
 	assert(chaindeps != NULL);
@@ -97,8 +102,16 @@ again:
 			rv = errno;
 			goto out;
 		}
-		if (find_sorteddep_by_name(pkgname) != NULL)
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgver", &pkgver)) {
+			rv = errno;
+			goto out;
+		}
+		DPRINTF(("Sorting package: %s\n", pkgver));
+		if (find_sorteddep_by_name(pkgname) != NULL) {
+			DPRINTF(("Skipping %s already queued.\n", pkgname));
 			continue;
+		}
 
 		sdep = malloc(sizeof(*sdep));
 		if (sdep == NULL) {
@@ -111,6 +124,8 @@ again:
 		 */
 		rundeps = prop_dictionary_get(obj, "run_depends");
 		if (rundeps == NULL || prop_array_count(rundeps) == 0) {
+			DPRINTF(("Adding %s (no rundeps) into the sorted "
+			    "queue.\n", pkgver));
 			sdep->dict = prop_dictionary_copy(obj);
 			SIMPLEQ_INSERT_TAIL(&sdep_list, sdep, chain);
 			cnt++;
@@ -126,6 +141,7 @@ again:
 		 * Iterate over the run_depends array, and find out if they
 		 * were already added in the sorted list.
 		 */
+		DPRINTF(("Checking %s run_depends for sorting...\n", pkgver));
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
 			str = prop_string_cstring_nocopy(obj2);
 			if (str == NULL) {
@@ -133,39 +149,49 @@ again:
 				rv = EINVAL;
 				goto out;
 			}
-			curpkgnamedep = xbps_get_pkgdep_name(str);
-			if (curpkgnamedep == NULL) {
+			pkgnamedep = xbps_get_pkgdep_name(str);
+			if (pkgnamedep == NULL) {
 				free(sdep);
-				rv = EINVAL;
+				rv = errno;
 				goto out;
 			}
+			DPRINTF(("Required dependency %s: ", str));
 			/*
-			 * If dependency is already installed or queued,
+			 * If dependency is already satisfied or queued,
 			 * pass to the next one.
 			 */
-			if (xbps_check_is_installed_pkgname(curpkgnamedep))
+			if (xbps_check_is_installed_pkg(str)) {
 				rundepscnt++;
-			else if (find_sorteddep_by_name(curpkgnamedep) != NULL)
+				DPRINTF(("installed.\n"));
+			} else if (find_sorteddep_by_name(pkgnamedep) != NULL) {
+				DPRINTF(("queued.\n"));
 				rundepscnt++;
-
-			free(curpkgnamedep);
+			} else {
+				DPRINTF(("not installed or queued.\n"));
+			}
+			free(pkgnamedep);
 		}
 		prop_object_iterator_release(iter2);
 
 		/* Add dependency if all its required deps are already added */
 		if (prop_array_count(rundeps) == rundepscnt) {
+			DPRINTF(("Adding package %s to the sorted queue.\n",
+			    pkgver));
 			sdep->dict = prop_dictionary_copy(obj);
 			SIMPLEQ_INSERT_TAIL(&sdep_list, sdep, chain);
 			rundepscnt = 0;
 			cnt++;
 			continue;
 		}
+		DPRINTF(("Unsorted package %s has missing rundeps.\n", pkgver));
 		free(sdep);
 		rundepscnt = 0;
 	}
 
 	/* Iterate until all deps are processed. */
 	if (cnt < ndeps) {
+		DPRINTF(("Missing required deps! cnt: %zu ndeps: %zu\n",
+		    cnt, ndeps));
 		prop_object_iterator_reset(iter);
 		goto again;
 	}
