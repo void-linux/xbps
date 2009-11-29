@@ -311,7 +311,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	pkg_state_t state = 0;
-	const char *reqpkg, *reqvers, *pkg_queued;
+	const char *reqpkg, *reqvers, *pkg_queued, *repo_pkgver;
 	char *pkgname;
 	int rv = 0;
 
@@ -381,7 +381,6 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 				free(pkgname);
 				continue;
 			}
-			curpkgd = NULL;
 		}
 
 		/*
@@ -415,6 +414,21 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 				continue;
 			}
 		}
+		/*
+		 * If version in repo does not satisfy the rundep, pass
+		 * to the next rundep.
+		 */
+		if (!prop_dictionary_get_cstring_nocopy(curpkgd,
+		    "pkgver", &repo_pkgver)) {
+			free(pkgname);
+			rv = errno;
+			break;
+		}
+		if (xbps_pkgdep_match(repo_pkgver, __UNCONST(reqpkg)) < 1) {
+			free(pkgname);
+			continue;
+		}
+
 		/*
 		 * If package is installed but version doesn't satisfy
 		 * the dependency mark it as an update, otherwise as
