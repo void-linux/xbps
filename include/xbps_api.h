@@ -213,12 +213,12 @@ prop_dictionary_t SYMEXPORT
 	xbps_get_pkg_plist_dict_from_url(const char *, const char *);
 
 /* From lib/repository_pool.c */
-struct repository_data {
-	SIMPLEQ_ENTRY(repository_data) chain;
-	prop_dictionary_t rd_repod;
-	char *rd_uri;
+struct repository_pool {
+	SIMPLEQ_ENTRY(repository_pool) chain;
+	prop_dictionary_t rp_repod;
+	char *rp_uri;
 };
-SYMEXPORT SIMPLEQ_HEAD(, repository_data) repodata_queue;
+SYMEXPORT SIMPLEQ_HEAD(, repository_pool) repopool_queue;
 
 int SYMEXPORT	xbps_repository_pool_init(void);
 void SYMEXPORT	xbps_repository_pool_release(void);

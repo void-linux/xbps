@@ -41,7 +41,7 @@ xbps_repository_pool_init(void)
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter = NULL;
-	struct repository_data *rdata;
+	struct repository_pool *rpool;
 	size_t ntotal = 0, nmissing = 0;
 	char *plist;
 	int rv = 0;
@@ -51,7 +51,7 @@ xbps_repository_pool_init(void)
 		return 0;
 	}
 
-	SIMPLEQ_INIT(&repodata_queue);
+	SIMPLEQ_INIT(&repopool_queue);
 
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REPOLIST);
@@ -93,24 +93,24 @@ xbps_repository_pool_init(void)
 			goto out;
 		}
 
-		rdata = malloc(sizeof(struct repository_data));
-		if (rdata == NULL) {
+		rpool = malloc(sizeof(struct repository_pool));
+		if (rpool == NULL) {
 			rv = errno;
 			goto out;
 		}
 
-		rdata->rd_uri = prop_string_cstring(obj);
-		if (rdata->rd_uri == NULL) {
+		rpool->rp_uri = prop_string_cstring(obj);
+		if (rpool->rp_uri == NULL) {
 			free(plist);
 			rv = errno;
 			goto out;
 		}
-		rdata->rd_repod = prop_dictionary_internalize_from_file(plist);
-		if (rdata->rd_repod == NULL) {
+		rpool->rp_repod = prop_dictionary_internalize_from_file(plist);
+		if (rpool->rp_repod == NULL) {
 			free(plist);
 			if (errno == ENOENT) {
-				free(rdata->rd_uri);
-				free(rdata);
+				free(rpool->rp_uri);
+				free(rpool);
 				errno = 0;
 				nmissing++;
 				continue;
@@ -119,7 +119,7 @@ xbps_repository_pool_init(void)
 			goto out;
 		}
 		free(plist);
-		SIMPLEQ_INSERT_TAIL(&repodata_queue, rdata, chain);
+		SIMPLEQ_INSERT_TAIL(&repopool_queue, rpool, chain);
 	}
 
 	if (ntotal - nmissing == 0)
@@ -143,16 +143,16 @@ out:
 void SYMEXPORT
 xbps_repository_pool_release(void)
 {
-	struct repository_data *rdata;
+	struct repository_pool *rpool;
 
 	if (--repolist_refcnt > 0)
 		return;
 
-	while ((rdata = SIMPLEQ_FIRST(&repodata_queue)) != NULL) {
-		SIMPLEQ_REMOVE(&repodata_queue, rdata, repository_data, chain);
-		prop_object_release(rdata->rd_repod);
-		free(rdata->rd_uri);
-		free(rdata);
+	while ((rpool = SIMPLEQ_FIRST(&repopool_queue)) != NULL) {
+		SIMPLEQ_REMOVE(&repopool_queue, rpool, repository_pool, chain);
+		prop_object_release(rpool->rp_repod);
+		free(rpool->rp_uri);
+		free(rpool);
 	}
 	repolist_refcnt = 0;
 	repolist_initialized = false;

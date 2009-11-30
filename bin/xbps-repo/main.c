@@ -71,7 +71,7 @@ int
 main(int argc, char **argv)
 {
 	prop_dictionary_t pkgd;
-	struct repository_data *rdata;
+	struct repository_pool *rpool;
 	char *root;
 	int c, rv = 0;
 
@@ -120,8 +120,8 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		SIMPLEQ_FOREACH(rdata, &repodata_queue, chain)
-			printf("%s\n", rdata->rd_uri);
+		SIMPLEQ_FOREACH(rpool, &repopool_queue, chain)
+			printf("%s\n", rpool->rp_uri);
 
 	} else if ((strcasecmp(argv[0], "rm") == 0) ||
 		   (strcasecmp(argv[0], "remove") == 0)) {
@@ -139,9 +139,9 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
-			printf("From %s repository ...\n", rdata->rd_uri);
-			(void)xbps_callback_array_iter_in_dict(rdata->rd_repod,
+		SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
+			printf("From %s repository ...\n", rpool->rp_uri);
+			(void)xbps_callback_array_iter_in_dict(rpool->rp_repod,
 			    "packages", show_pkg_namedesc, argv[1]);
 		}
 

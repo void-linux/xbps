@@ -198,13 +198,13 @@ out:
 int
 show_pkg_info_from_repolist(const char *pkgname)
 {
-	struct repository_data *rd;
+	struct repository_pool *rd;
 	prop_dictionary_t repo_pkgd, pkg_propsd;
 	int rv = 0;
 
-	SIMPLEQ_FOREACH(rd, &repodata_queue, chain) {
+	SIMPLEQ_FOREACH(rd, &repopool_queue, chain) {
 		char *url = NULL;
-		repo_pkgd = xbps_find_pkg_in_dict(rd->rd_repod,
+		repo_pkgd = xbps_find_pkg_in_dict(rd->rp_repod,
 		    "packages", pkgname);
 		if (repo_pkgd == NULL) {
 			if (errno && errno != ENOENT) {
@@ -213,12 +213,12 @@ show_pkg_info_from_repolist(const char *pkgname)
 			}
 			continue;
 		}
-		url = xbps_get_path_from_pkg_dict_repo(repo_pkgd, rd->rd_uri);
+		url = xbps_get_path_from_pkg_dict_repo(repo_pkgd, rd->rp_uri);
 		if (url == NULL) {
 			rv = errno;
 			break;
 		}
-		printf("Fetching info from: %s\n", rd->rd_uri);
+		printf("Fetching info from: %s\n", rd->rp_uri);
 		pkg_propsd = xbps_get_pkg_plist_dict_from_url(url,
 		    XBPS_PKGPROPS);
 		if (pkg_propsd == NULL) {
@@ -238,13 +238,13 @@ show_pkg_info_from_repolist(const char *pkgname)
 int
 show_pkg_deps_from_repolist(const char *pkgname)
 {
-	struct repository_data *rd;
+	struct repository_pool *rd;
 	prop_dictionary_t pkgd;
 	const char *ver;
 	int rv = 0;
 
-	SIMPLEQ_FOREACH(rd, &repodata_queue, chain) {
-		pkgd = xbps_find_pkg_in_dict(rd->rd_repod, "packages", pkgname);
+	SIMPLEQ_FOREACH(rd, &repopool_queue, chain) {
+		pkgd = xbps_find_pkg_in_dict(rd->rp_repod, "packages", pkgname);
 		if (pkgd == NULL) {
 			if (errno != ENOENT) {
 				rv = errno;
@@ -257,7 +257,7 @@ show_pkg_deps_from_repolist(const char *pkgname)
 			rv = errno;
 			break;
 		}
-		printf("Repository %s [pkgver: %s]\n", rd->rd_uri, ver);
+		printf("Repository %s [pkgver: %s]\n", rd->rp_uri, ver);
 		(void)xbps_callback_array_iter_in_dict(pkgd,
 		    "run_depends", list_strings_sep_in_array, NULL);
 	}
@@ -268,16 +268,16 @@ show_pkg_deps_from_repolist(const char *pkgname)
 int
 repository_sync(void)
 {
-	struct repository_data *rd;
+	struct repository_pool *rp;
 	char *plist;
 	int rv = 0;
 
-	SIMPLEQ_FOREACH(rd, &repodata_queue, chain) {
-		if (!xbps_check_is_repo_string_remote(rd->rd_uri))
+	SIMPLEQ_FOREACH(rp, &repopool_queue, chain) {
+		if (!xbps_check_is_repo_string_remote(rp->rp_uri))
 			continue;
 
-		printf("Syncing package index from: %s\n", rd->rd_uri);
-		rv = xbps_repository_sync_pkg_index(rd->rd_uri);
+		printf("Syncing package index from: %s\n", rp->rp_uri);
+		rv = xbps_repository_sync_pkg_index(rp->rp_uri);
 		if (rv == -1) {
 			printf("Failed! returned: %s\n",
 			    xbps_fetch_error_string());
@@ -286,11 +286,11 @@ repository_sync(void)
 			printf("Package index file is already up to date.\n");
 			continue;
 		}
-		if ((plist = xbps_get_pkg_index_plist(rd->rd_uri)) == NULL) {
+		if ((plist = xbps_get_pkg_index_plist(rp->rp_uri)) == NULL) {
 			rv = EINVAL;
 			break;
 		}
-		(void)pkgindex_verify(plist, rd->rd_uri, true);
+		(void)pkgindex_verify(plist, rp->rp_uri, true);
 		free(plist);
 	}
 

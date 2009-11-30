@@ -220,7 +220,7 @@ prop_dictionary_t SYMEXPORT
 xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL, pkgd;
-	struct repository_data *rdata;
+	struct repository_pool *rpool;
 	char *url = NULL;
 	int rv = 0;
 
@@ -238,15 +238,15 @@ xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 	 * This will work locally and remotely, thanks to libarchive and
 	 * libfetch!
 	 */
-	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
-		pkgd = xbps_find_pkg_in_dict(rdata->rd_repod,
+	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
+		pkgd = xbps_find_pkg_in_dict(rpool->rp_repod,
 		    "packages", pkgname);
 		if (pkgd == NULL) {
 			if (errno != ENOENT)
 				break;
 			continue;
 		}
-		url = xbps_get_path_from_pkg_dict_repo(pkgd, rdata->rd_uri);
+		url = xbps_get_path_from_pkg_dict_repo(pkgd, rpool->rp_uri);
 		if (url == NULL)
 			break;
 		plistd = xbps_get_pkg_plist_dict_from_url(url, plistf);

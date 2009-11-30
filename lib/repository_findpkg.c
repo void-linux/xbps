@@ -159,7 +159,7 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 {
 	prop_dictionary_t pkgrd = NULL;
 	prop_array_t unsorted;
-	struct repository_data *rdata;
+	struct repository_pool *rpool;
 	const char *repover, *instver;
 	int rv = 0;
 	bool newpkg_found = false;
@@ -173,12 +173,12 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;
 
-	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
+	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
 		/*
 		 * Get the package dictionary from current repository.
 		 * If it's not there, pass to the next repository.
 		 */
-		pkgrd = xbps_find_pkg_in_dict(rdata->rd_repod,
+		pkgrd = xbps_find_pkg_in_dict(rpool->rp_repod,
 		    "packages", pkgname);
 		if (pkgrd == NULL) {
 			if (errno && errno != ENOENT) {
@@ -186,7 +186,7 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 				break;
 			}
 			DPRINTF(("Package %s not found in repo %s.\n",
-			    pkgname, rdata->rd_uri));
+			    pkgname, rpool->rp_uri));
 		} else if (pkgrd != NULL) {
 			/*
 			 * Check if version in repository is greater than
@@ -204,12 +204,12 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 			}
 			if (xbps_cmpver(repover, instver) > 0) {
 				DPRINTF(("Found %s-%s in repo %s.\n",
-				    pkgname, repover, rdata->rd_uri));
+				    pkgname, repover, rpool->rp_uri));
 				newpkg_found = true;
 				break;
 			}
 			DPRINTF(("Skipping %s-%s in repo %s.\n",
-			    pkgname, repover, rdata->rd_uri));
+			    pkgname, repover, rpool->rp_uri));
 			continue;
 		}
 	}
@@ -231,7 +231,7 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	/*
 	 * Set repository in pkg dictionary.
 	 */
-	if (!prop_dictionary_set_cstring(pkgrd, "repository", rdata->rd_uri)) {
+	if (!prop_dictionary_set_cstring(pkgrd, "repository", rpool->rp_uri)) {
 		rv = errno;
 		goto out;
 	}
@@ -302,7 +302,7 @@ xbps_repository_install_pkg(const char *pkgname)
 {
 	prop_dictionary_t origin_pkgrd = NULL, pkgrd = NULL;
 	prop_array_t pkgs_array;
-	struct repository_data *rdata;
+	struct repository_pool *rpool;
 	int rv = 0;
 
 	assert(pkgname != NULL);
@@ -310,12 +310,12 @@ xbps_repository_install_pkg(const char *pkgname)
 	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;
 
-	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
+	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
 		/*
 		 * Get the package dictionary from current repository.
 		 * If it's not there, pass to the next repository.
 		 */
-		pkgrd = xbps_find_pkg_in_dict(rdata->rd_repod,
+		pkgrd = xbps_find_pkg_in_dict(rpool->rp_repod,
 		    "packages", pkgname);
 		if (pkgrd == NULL) {
 			if (errno && errno != ENOENT) {
@@ -339,7 +339,7 @@ xbps_repository_install_pkg(const char *pkgname)
 	/*
 	 * Set repository in pkg dictionary.
 	 */
-	if (!prop_dictionary_set_cstring(pkgrd, "repository", rdata->rd_uri)) {
+	if (!prop_dictionary_set_cstring(pkgrd, "repository", rpool->rp_uri)) {
 		rv = errno;
 		goto out;
 	}

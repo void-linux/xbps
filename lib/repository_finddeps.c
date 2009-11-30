@@ -240,7 +240,7 @@ int SYMEXPORT
 xbps_repository_find_pkg_deps(prop_dictionary_t master, prop_dictionary_t pkg)
 {
 	prop_array_t pkg_rdeps, missing_rdeps;
-	struct repository_data *rdata;
+	struct repository_pool *rpool;
 	const char *pkgname;
 	int rv = 0;
 
@@ -262,14 +262,14 @@ xbps_repository_find_pkg_deps(prop_dictionary_t master, prop_dictionary_t pkg)
 	 * Iterate over the repository pool and find out if we have
 	 * all available binary packages.
 	 */
-	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
+	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
 		/*
 		 * This will find direct and indirect deps,
 		 * if any of them is not there it will be added
 		 * into the missing_deps array.
 		 */
-		if ((rv = find_repo_deps(master, rdata->rd_repod,
-		    rdata->rd_uri, pkg_rdeps)) != 0) {
+		if ((rv = find_repo_deps(master, rpool->rp_repod,
+		    rpool->rp_uri, pkg_rdeps)) != 0) {
 			DPRINTF(("Error '%s' while checking rundeps!\n",
 			    strerror(rv)));
 			goto out;
@@ -288,9 +288,9 @@ xbps_repository_find_pkg_deps(prop_dictionary_t master, prop_dictionary_t pkg)
 	 * that were found in previous pass.
 	 */
 	DPRINTF(("Checking for missing deps in %s.\n", pkgname)); 
-	SIMPLEQ_FOREACH(rdata, &repodata_queue, chain) {
-		if ((rv = find_repo_deps(master, rdata->rd_repod,
-		    rdata->rd_uri, missing_rdeps)) != 0) {
+	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
+		if ((rv = find_repo_deps(master, rpool->rp_repod,
+		    rpool->rp_uri, missing_rdeps)) != 0) {
 			DPRINTF(("Error '%s' while checking for "
 			    "missing rundeps!\n", strerror(rv)));
 			goto out;
