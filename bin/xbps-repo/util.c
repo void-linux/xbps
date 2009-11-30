@@ -107,6 +107,17 @@ show_pkg_info(prop_dictionary_t dict)
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Version: %s\n", prop_string_cstring_nocopy(obj));
 
+	obj = prop_dictionary_get(dict, "essential");
+	if (obj && prop_object_type(obj) == PROP_TYPE_BOOL)
+		printf("Essential: %s\n", prop_bool_true(obj) ? "yes" : "no");
+
+	obj = prop_dictionary_get(dict, "replaces");
+	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {
+		printf("Replaces: ");
+		(void)xbps_callback_array_iter_in_dict(dict, "replaces",
+		    list_strings_sep_in_array, NULL);
+	}
+
 	obj = prop_dictionary_get(dict, "conf_files");
 	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {
 		printf("Configuration files:\n");
