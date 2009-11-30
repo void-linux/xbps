@@ -128,15 +128,6 @@ int SYMEXPORT	xbps_file_chdir_exec(const char *, const char *, ...);
 int SYMEXPORT	xbps_humanize_number(char *, size_t, int64_t, const char *,
 				     int, int);
 
-/* From lib/findpkg.c */
-int SYMEXPORT	xbps_prepare_pkg(const char *);
-int SYMEXPORT	xbps_find_new_pkg(const char *, prop_dictionary_t);
-int SYMEXPORT	xbps_find_new_packages(void);
-prop_dictionary_t SYMEXPORT	xbps_get_pkg_props(void);
-
-/* From lib/depends.c */
-int SYMEXPORT	xbps_find_deps_in_pkg(prop_dictionary_t, prop_dictionary_t);
-
 /* From lib/mkpath.c */
 int SYMEXPORT	xbps_mkpath(char *, mode_t);
 
@@ -202,6 +193,15 @@ int		xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
 /* From lib/repository.c */
 int SYMEXPORT	xbps_register_repository(const char *);
 int SYMEXPORT	xbps_unregister_repository(const char *);
+
+/* From lib/repository_finddeps.c */
+int SYMEXPORT	xbps_find_deps_in_pkg(prop_dictionary_t, prop_dictionary_t);
+
+/* From lib/repository_findpkg.c */
+int SYMEXPORT	xbps_prepare_pkg(const char *);
+int SYMEXPORT	xbps_find_new_pkg(const char *, prop_dictionary_t);
+int SYMEXPORT	xbps_find_new_packages(void);
+prop_dictionary_t SYMEXPORT	xbps_get_pkg_props(void);
 
 /* From lib/repository_plist.c */
 char SYMEXPORT
