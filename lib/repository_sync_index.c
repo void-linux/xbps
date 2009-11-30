@@ -71,7 +71,7 @@ xbps_get_remote_repo_string(const char *uri)
  * size and/or mtime match) and 1 if downloaded successfully.
  */
 int SYMEXPORT
-xbps_sync_repository_pkg_index(const char *uri)
+xbps_repository_sync_pkg_index(const char *uri)
 {
 	struct url *url = NULL;
 	struct utsname un;

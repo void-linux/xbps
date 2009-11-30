@@ -157,7 +157,7 @@ register_repository(const char *uri)
 			return errno;
 
 		printf("Fetching remote package index at %s...\n", uri);
-		rv = xbps_sync_repository_pkg_index(idxstr);
+		rv = xbps_repository_sync_pkg_index(idxstr);
 		if (rv == -1) {
 			printf("Error: could not fetch pkg index file: %s.\n",
 			    xbps_fetch_error_string());
@@ -277,7 +277,7 @@ repository_sync(void)
 			continue;
 
 		printf("Syncing package index from: %s\n", rd->rd_uri);
-		rv = xbps_sync_repository_pkg_index(rd->rd_uri);
+		rv = xbps_repository_sync_pkg_index(rd->rd_uri);
 		if (rv == -1) {
 			printf("Failed! returned: %s\n",
 			    xbps_fetch_error_string());

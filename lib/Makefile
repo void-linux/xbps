@@ -18,8 +18,8 @@ OBJS += configure.o config_files.o cmpver.o download.o fexec.o
 OBJS += humanize_number.o orphans.o plist.o purge.o register.o
 OBJS += regpkgs_dictionary.o remove.o remove_obsoletes.o repository.o
 OBJS += repository_finddeps.o repository_findpkg.o repository_plist.o
-OBJS += repository_pool.o requiredby.o sha256.o sortdeps.o state.o
-OBJS += sync_remote_pkgidx.o unpack.o util.o pkgmatch.o mkpath.o
+OBJS += repository_pool.o repository_sync_index.o requiredby.o sha256.o
+OBJS += sortdeps.o state.o unpack.o util.o pkgmatch.o mkpath.o
 
 .PHONY: all
 all: libfetch libxbps.so libxbps.a

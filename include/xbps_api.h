@@ -222,6 +222,10 @@ SYMEXPORT SIMPLEQ_HEAD(, repository_data) repodata_queue;
 int SYMEXPORT	xbps_repository_pool_init(void);
 void SYMEXPORT	xbps_repository_pool_release(void);
 
+/* From lib/repository_sync_index.c */
+int SYMEXPORT	xbps_repository_sync_pkg_index(const char *);
+char SYMEXPORT	*xbps_get_remote_repo_string(const char *);
+
 /* From lib/requiredby.c */
 int SYMEXPORT	xbps_requiredby_pkg_add(prop_array_t, prop_dictionary_t);
 int SYMEXPORT	xbps_requiredby_pkg_remove(const char *);
@@ -242,10 +246,6 @@ int SYMEXPORT	xbps_get_pkg_state_installed(const char *, pkg_state_t *);
 int SYMEXPORT	xbps_get_pkg_state_dictionary(prop_dictionary_t, pkg_state_t *);
 int SYMEXPORT	xbps_set_pkg_state_installed(const char *, pkg_state_t);
 int SYMEXPORT	xbps_set_pkg_state_dictionary(prop_dictionary_t, pkg_state_t);
-
-/* From lib/sync_remote_pkgidx.c */
-int SYMEXPORT	xbps_sync_repository_pkg_index(const char *);
-char SYMEXPORT	*xbps_get_remote_repo_string(const char *);
 
 /* From lib/unpack.c */
 int SYMEXPORT	xbps_unpack_binary_pkg(prop_dictionary_t, bool);
