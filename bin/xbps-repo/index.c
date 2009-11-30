@@ -106,7 +106,8 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		goto out;
 	}
 
-	newpkgd = xbps_get_pkg_plist_dict_from_url(file, XBPS_PKGPROPS);
+	newpkgd = xbps_repository_get_pkg_plist_dict_from_url(file,
+	    XBPS_PKGPROPS);
 	if (newpkgd == NULL) {
 		printf("%s: can't read %s metadata file, skipping!\n",
 		    file, XBPS_PKGPROPS);

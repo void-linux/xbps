@@ -205,12 +205,12 @@ int SYMEXPORT	xbps_repository_update_allpkgs(void);
 prop_dictionary_t SYMEXPORT	xbps_repository_get_transaction_dict(void);
 
 /* From lib/repository_plist.c */
-char SYMEXPORT
-	*xbps_get_path_from_pkg_dict_repo(prop_dictionary_t, const char *);
+char SYMEXPORT	*xbps_repository_get_path_from_pkg_dict(prop_dictionary_t,
+							const char *);
 prop_dictionary_t SYMEXPORT
-	xbps_get_pkg_plist_dict_from_repo(const char *, const char *);
+	xbps_repository_get_pkg_plist_dict(const char *, const char *);
 prop_dictionary_t SYMEXPORT
-	xbps_get_pkg_plist_dict_from_url(const char *, const char *);
+	xbps_repository_get_pkg_plist_dict_from_url(const char *, const char *);
 
 /* From lib/repository_pool.c */
 struct repository_pool {

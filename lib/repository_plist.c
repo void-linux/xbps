@@ -152,7 +152,7 @@ binpkg_in_cachedir(prop_dictionary_t d, const char *uri)
 }
 
 char SYMEXPORT *
-xbps_get_path_from_pkg_dict_repo(prop_dictionary_t d, const char *uri)
+xbps_repository_get_path_from_pkg_dict(prop_dictionary_t d, const char *uri)
 {
 	const char *arch, *filen;
 	char *path = NULL;
@@ -170,7 +170,7 @@ xbps_get_path_from_pkg_dict_repo(prop_dictionary_t d, const char *uri)
 }
 
 prop_dictionary_t SYMEXPORT
-xbps_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
+xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL;
 	struct archive *a;
@@ -217,7 +217,7 @@ xbps_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 }
 
 prop_dictionary_t SYMEXPORT
-xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
+xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL, pkgd;
 	struct repository_pool *rpool;
@@ -246,10 +246,12 @@ xbps_get_pkg_plist_dict_from_repo(const char *pkgname, const char *plistf)
 				break;
 			continue;
 		}
-		url = xbps_get_path_from_pkg_dict_repo(pkgd, rpool->rp_uri);
+		url = xbps_repository_get_path_from_pkg_dict(pkgd,
+		    rpool->rp_uri);
 		if (url == NULL)
 			break;
-		plistd = xbps_get_pkg_plist_dict_from_url(url, plistf);
+		plistd = xbps_repository_get_pkg_plist_dict_from_url(url,
+		    plistf);
 		if (plistd != NULL) {
 			free(url);
 			break;

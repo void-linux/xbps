@@ -157,7 +157,7 @@ download_package_list(prop_object_iterator_t iter)
 			free(lbinfile);
 			return errno;
 		}
-		binfile = xbps_get_path_from_pkg_dict_repo(obj, repoloc);
+		binfile = xbps_repository_get_path_from_pkg_dict(obj, repoloc);
 		if (binfile == NULL) {
 			free(lbinfile);
 			return errno;

@@ -198,13 +198,13 @@ out:
 int
 show_pkg_info_from_repolist(const char *pkgname)
 {
-	struct repository_pool *rd;
+	struct repository_pool *rp;
 	prop_dictionary_t repo_pkgd, pkg_propsd;
 	int rv = 0;
 
-	SIMPLEQ_FOREACH(rd, &repopool_queue, chain) {
+	SIMPLEQ_FOREACH(rp, &repopool_queue, chain) {
 		char *url = NULL;
-		repo_pkgd = xbps_find_pkg_in_dict(rd->rp_repod,
+		repo_pkgd = xbps_find_pkg_in_dict(rp->rp_repod,
 		    "packages", pkgname);
 		if (repo_pkgd == NULL) {
 			if (errno && errno != ENOENT) {
@@ -213,13 +213,14 @@ show_pkg_info_from_repolist(const char *pkgname)
 			}
 			continue;
 		}
-		url = xbps_get_path_from_pkg_dict_repo(repo_pkgd, rd->rp_uri);
+		url = xbps_repository_get_path_from_pkg_dict(repo_pkgd,
+		    rp->rp_uri);
 		if (url == NULL) {
 			rv = errno;
 			break;
 		}
-		printf("Fetching info from: %s\n", rd->rp_uri);
-		pkg_propsd = xbps_get_pkg_plist_dict_from_url(url,
+		printf("Fetching info from: %s\n", rp->rp_uri);
+		pkg_propsd = xbps_repository_get_pkg_plist_dict_from_url(url,
 		    XBPS_PKGPROPS);
 		if (pkg_propsd == NULL) {
 			free(url);

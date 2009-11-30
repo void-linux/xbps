@@ -176,7 +176,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		pkgd = xbps_get_pkg_plist_dict_from_repo(argv[1],
+		pkgd = xbps_repository_get_pkg_plist_dict(argv[1],
 		    XBPS_PKGFILES);
 		if (pkgd == NULL) {
 			printf("E: couldn't read %s: %s.\n", XBPS_PKGFILES,
