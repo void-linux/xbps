@@ -134,7 +134,7 @@ unregister_repository(const char *uri)
 	if (!sanitize_url(idxstr, uri))
 		return errno;
 
-	if ((rv = xbps_unregister_repository(idxstr)) != 0) {
+	if ((rv = xbps_repository_unregister(idxstr)) != 0) {
 		if (rv == ENOENT)
 			printf("Repository '%s' not actually "
 			    "registered.\n", idxstr);
@@ -182,7 +182,7 @@ register_repository(const char *uri)
 	if ((rv = pkgindex_verify(plist, idxstr, false)) != 0)
 		goto out;
 
-	if ((rv = xbps_register_repository(idxstr)) != 0) {
+	if ((rv = xbps_repository_register(idxstr)) != 0) {
 		printf("ERROR: couldn't register repository (%s)\n",
 		    strerror(rv));
 		goto out;

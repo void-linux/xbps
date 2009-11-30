@@ -31,7 +31,7 @@
 #include <xbps_api.h>
 
 int SYMEXPORT
-xbps_register_repository(const char *uri)
+xbps_repository_register(const char *uri)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
@@ -107,7 +107,7 @@ out:
 }
 
 int SYMEXPORT
-xbps_unregister_repository(const char *uri)
+xbps_repository_unregister(const char *uri)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;

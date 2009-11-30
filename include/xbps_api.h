@@ -191,17 +191,18 @@ int SYMEXPORT	xbps_remove_pkg(const char *, const char *, bool);
 int		xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
 
 /* From lib/repository.c */
-int SYMEXPORT	xbps_register_repository(const char *);
-int SYMEXPORT	xbps_unregister_repository(const char *);
+int SYMEXPORT	xbps_repository_register(const char *);
+int SYMEXPORT	xbps_repository_unregister(const char *);
 
 /* From lib/repository_finddeps.c */
-int SYMEXPORT	xbps_find_deps_in_pkg(prop_dictionary_t, prop_dictionary_t);
+int SYMEXPORT	xbps_repository_find_pkg_deps(prop_dictionary_t,
+					      prop_dictionary_t);
 
 /* From lib/repository_findpkg.c */
-int SYMEXPORT	xbps_prepare_pkg(const char *);
-int SYMEXPORT	xbps_find_new_pkg(const char *, prop_dictionary_t);
-int SYMEXPORT	xbps_find_new_packages(void);
-prop_dictionary_t SYMEXPORT	xbps_get_pkg_props(void);
+int SYMEXPORT	xbps_repository_install_pkg(const char *);
+int SYMEXPORT	xbps_repository_update_pkg(const char *, prop_dictionary_t);
+int SYMEXPORT	xbps_repository_update_allpkgs(void);
+prop_dictionary_t SYMEXPORT	xbps_repository_get_transaction_dict(void);
 
 /* From lib/repository_plist.c */
 char SYMEXPORT

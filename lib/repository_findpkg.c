@@ -31,22 +31,22 @@
 
 #include <xbps_api.h>
 
-static prop_dictionary_t pkg_props;
-static bool pkg_props_initialized;
+static prop_dictionary_t trans_dict;
+static bool trans_dict_initialized;
 
 static int set_pkg_state(prop_dictionary_t, const char *);
 
 static int
-create_pkg_props_dictionary(void)
+create_transaction_dictionary(void)
 {
 	prop_array_t unsorted, missing;
 	int rv = 0;
 
-	if (pkg_props_initialized)
+	if (trans_dict_initialized)
 		return 0;
 
-	pkg_props = prop_dictionary_create();
-	if (pkg_props == NULL)
+	trans_dict = prop_dictionary_create();
+	if (trans_dict == NULL)
 		return ENOMEM;
 
 	missing = prop_array_create();
@@ -61,16 +61,16 @@ create_pkg_props_dictionary(void)
                 goto fail2;
         }
 
-        if (!xbps_add_obj_to_dict(pkg_props, missing, "missing_deps")) {
+        if (!xbps_add_obj_to_dict(trans_dict, missing, "missing_deps")) {
                 rv = EINVAL;
                 goto fail3;
         }
-        if (!xbps_add_obj_to_dict(pkg_props, unsorted, "unsorted_deps")) {
+        if (!xbps_add_obj_to_dict(trans_dict, unsorted, "unsorted_deps")) {
                 rv = EINVAL;
                 goto fail3;
         }
 
-	pkg_props_initialized = true;
+	trans_dict_initialized = true;
 
         return rv;
 
@@ -79,22 +79,22 @@ fail3:
 fail2:
         prop_object_release(missing);
 fail:
-        prop_object_release(pkg_props);
+        prop_object_release(trans_dict);
 
         return rv;
 }
 
 prop_dictionary_t SYMEXPORT
-xbps_get_pkg_props(void)
+xbps_repository_get_transaction_dict(void)
 {
-	if (pkg_props_initialized == false)
+	if (trans_dict_initialized == false)
 		return NULL;
 
-	return pkg_props;
+	return trans_dict;
 }
 
 int SYMEXPORT
-xbps_find_new_packages(void)
+xbps_repository_update_allpkgs(void)
 {
 	prop_dictionary_t dict;
 	prop_object_t obj;
@@ -132,7 +132,7 @@ xbps_find_new_packages(void)
 			rv = errno;
 			break;
 		}
-		rv = xbps_find_new_pkg(pkgname, obj);
+		rv = xbps_repository_update_pkg(pkgname, obj);
 		if (rv == ENOENT)
 			continue;
 		else if (rv == EEXIST) {
@@ -155,7 +155,7 @@ out:
 }
 
 int SYMEXPORT
-xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
+xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 {
 	prop_dictionary_t pkgrd = NULL;
 	prop_array_t unsorted;
@@ -223,9 +223,9 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 		goto out;
 	}
 	/*
-	 * Create master pkg dictionary.
+	 * Create the transaction dictionary.
 	 */
-	if ((rv = create_pkg_props_dictionary()) != 0)
+	if ((rv = create_transaction_dictionary()) != 0)
 		goto out;
 
 	/*
@@ -239,14 +239,14 @@ xbps_find_new_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	/*
 	 * Construct the dependency chain for this package.
 	 */
-	if ((rv = xbps_find_deps_in_pkg(pkg_props, pkgrd)) != 0)
+	if ((rv = xbps_repository_find_pkg_deps(trans_dict, pkgrd)) != 0)
 		goto out;
 
 	/*
 	 * Add required package dictionary into the packages
 	 * dictionary.
 	 */
-	unsorted = prop_dictionary_get(pkg_props, "unsorted_deps");
+	unsorted = prop_dictionary_get(trans_dict, "unsorted_deps");
 	if (unsorted == NULL) {
 		rv = EINVAL;
 		goto out;
@@ -298,7 +298,7 @@ set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
 }
 
 int SYMEXPORT
-xbps_prepare_pkg(const char *pkgname)
+xbps_repository_install_pkg(const char *pkgname)
 {
 	prop_dictionary_t origin_pkgrd = NULL, pkgrd = NULL;
 	prop_array_t pkgs_array;
@@ -331,9 +331,9 @@ xbps_prepare_pkg(const char *pkgname)
 	}
 
 	/*
-	 * Create master pkg dictionary.
+	 * Create the transaction dictionary.
 	 */
-	if ((rv = create_pkg_props_dictionary()) != 0)
+	if ((rv = create_transaction_dictionary()) != 0)
 		goto out;
 
 	/*
@@ -345,7 +345,7 @@ xbps_prepare_pkg(const char *pkgname)
 	}
 	origin_pkgrd = prop_dictionary_copy(pkgrd);
 
-	if (!prop_dictionary_set_cstring(pkg_props, "origin", pkgname)) {
+	if (!prop_dictionary_set_cstring(trans_dict, "origin", pkgname)) {
 		rv = errno;
 		goto out;
 	}
@@ -356,12 +356,13 @@ xbps_prepare_pkg(const char *pkgname)
 		/*
 		 * Construct the dependency chain for this package.
 		 */
-		if ((rv = xbps_find_deps_in_pkg(pkg_props, pkgrd)) != 0)
+		if ((rv = xbps_repository_find_pkg_deps(trans_dict,
+		    pkgrd)) != 0)
 			goto out;
 		/*
 		 * Sort the dependency chain for this package.
 		 */
-		if ((rv = xbps_sort_pkg_deps(pkg_props)) != 0)
+		if ((rv = xbps_sort_pkg_deps(trans_dict)) != 0)
 			goto out;
 	} else {
 		/*
@@ -373,7 +374,7 @@ xbps_prepare_pkg(const char *pkgname)
 			rv = errno;
 			goto out;
 		}
-		if (!prop_dictionary_set(pkg_props, "packages",
+		if (!prop_dictionary_set(trans_dict, "packages",
 		    pkgs_array)) {
 			rv = errno;
 			goto out;
@@ -384,7 +385,7 @@ xbps_prepare_pkg(const char *pkgname)
 	 * Add required package dictionary into the packages
 	 * dictionary.
 	 */
-	pkgs_array = prop_dictionary_get(pkg_props, "packages");
+	pkgs_array = prop_dictionary_get(trans_dict, "packages");
 	if (pkgs_array == NULL ||
 	    prop_object_type(pkgs_array) != PROP_TYPE_ARRAY) {
 		rv = EINVAL;

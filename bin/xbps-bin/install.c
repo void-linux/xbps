@@ -312,7 +312,7 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 		 * "xbps-bin autoupdate".
 		 */
 		printf("Finding new packages...\n");
-		if ((rv = xbps_find_new_packages()) != 0) {
+		if ((rv = xbps_repository_update_allpkgs()) != 0) {
 			if (rv == ENOENT) {
 				printf("No packages currently registered.\n");
 				return 0;
@@ -331,7 +331,7 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 			 */
 			printf("Finding new '%s' package...\n", pkgname);
 			if (pkgd) {
-				rv = xbps_find_new_pkg(pkgname, pkgd);
+				rv = xbps_repository_update_pkg(pkgname, pkgd);
 				if (rv == EEXIST) {
 					printf("Package '%s' is up to date.\n",
 					    pkgname);
@@ -363,7 +363,7 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 				prop_object_release(pkgd);
 				return rv;
 			}
-			rv = xbps_prepare_pkg(pkgname);
+			rv = xbps_repository_install_pkg(pkgname);
 			if (rv != 0 && rv == EAGAIN) {
 				printf("Unable to locate '%s' in "
 				    "repository pool.\n", pkgname);
@@ -379,7 +379,7 @@ xbps_exec_transaction(const char *pkgname, bool force, bool update)
 	if (trans == NULL)
 		goto out;
 
-	trans->dict = xbps_get_pkg_props();
+	trans->dict = xbps_repository_get_transaction_dict();
 	if (trans->dict == NULL) {
 		printf("error: unexistent props dictionary!\n");
 		goto out1;
