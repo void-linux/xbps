@@ -620,7 +620,7 @@ exec_transaction(struct transaction *trans)
 		 * Unpack binary package.
 		 */
 		printf("Unpacking %s (from .../%s) ...\n", pkgver, filename);
-		if ((rv = xbps_unpack_binary_pkg(obj, essential)) != 0) {
+		if ((rv = xbps_unpack_binary_pkg(obj)) != 0) {
 			printf("error: unpacking %s (%s)\n", pkgver,
 			    strerror(rv));
 			return rv;

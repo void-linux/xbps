@@ -40,7 +40,7 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"20091128"
+#define XBPS_RELVER		"20091202"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
@@ -249,7 +249,7 @@ int SYMEXPORT	xbps_set_pkg_state_installed(const char *, pkg_state_t);
 int SYMEXPORT	xbps_set_pkg_state_dictionary(prop_dictionary_t, pkg_state_t);
 
 /* From lib/unpack.c */
-int SYMEXPORT	xbps_unpack_binary_pkg(prop_dictionary_t, bool);
+int SYMEXPORT	xbps_unpack_binary_pkg(prop_dictionary_t);
 
 /* From lib/util.c */
 char SYMEXPORT	*xbps_xasprintf(const char *, ...);

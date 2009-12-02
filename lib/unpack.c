@@ -32,11 +32,11 @@
 
 #include <xbps_api.h>
 
-static int unpack_archive_fini(struct archive *, prop_dictionary_t, bool);
+static int unpack_archive_fini(struct archive *, prop_dictionary_t);
 static void set_extract_flags(int *);
 
 int SYMEXPORT
-xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
+xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 {
 	const char *pkgname, *repoloc;
 	struct archive *ar = NULL;
@@ -74,7 +74,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg, bool essential)
 	     ARCHIVE_READ_BLOCKSIZE)) != 0)
 		goto out;
 
-	if ((rv = unpack_archive_fini(ar, pkg, essential)) == 0) {
+	if ((rv = unpack_archive_fini(ar, pkg)) == 0) {
 		/*
 		 * If installation of package was successful, make sure
 		 * its files are written in storage (if possible).
@@ -116,18 +116,19 @@ set_extract_flags(int *flags)
  * the consumer.
  */
 static int
-unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
-		    bool essential)
+unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 {
 	prop_dictionary_t filesd = NULL, old_filesd = NULL;
 	struct archive_entry *entry;
 	const char *pkgname, *version, *rootdir, *entry_str;
 	char *buf, *buf2;
 	int rv = 0, flags, lflags;
-	bool actgt = false, skip_entry = false;
+	bool essential, preserve, actgt, skip_entry;
 
 	assert(ar != NULL);
 	assert(pkg != NULL);
+
+	essential = preserve = actgt = skip_entry = false;
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
@@ -141,6 +142,11 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		return errno;
 	if (!prop_dictionary_get_cstring_nocopy(pkg, "version", &version))
 		return errno;
+	/*
+	 * The following two objects are OPTIONAL.
+	 */
+	prop_dictionary_get_bool(pkg, "essential", &essential);
+	prop_dictionary_get_bool(pkg, "preserve", &preserve);
 
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		entry_str = archive_entry_pathname(entry);
@@ -266,10 +272,10 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		}
 		/*
 		 * Check if files.plist exists and pkg is marked as
-		 * essential, in that case we need to check for obsolete
-		 * files and remove them if necessary.
+		 * essential and NOT preserve, in that case we need to check
+		 * for obsolete files and remove them if necessary.
 		 */
-		if (essential && (access(buf2, R_OK) == 0)) {
+		if (!preserve && essential && (access(buf2, R_OK) == 0)) {
 			old_filesd =
 			    prop_dictionary_internalize_from_file(buf2);
 			if (old_filesd == NULL) {
