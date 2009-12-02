@@ -14,7 +14,7 @@ SYNOPSYS
 
 DESCRIPTION
 -----------
-The xbps-repo(1) command is used to handle local or remote binary
+The xbps-repo(8) command is used to handle local or remote binary
 package repositories in the *XBPS binary package system*.
 You can use it to create a package index for a local repository,
 add or remove local and remote repositories, search for packages

@@ -14,7 +14,7 @@ SYNOPSYS
 
 DESCRIPTION
 -----------
-The xbps-bin(1) command is used to handle binary packages created
+The xbps-bin(8) command is used to handle binary packages created
 for the *XBPS binary package system*. You can use it to install, remove,
 list or show information about any binary package. Binary packages can
 be installed from local ('directory') or remote repositories ('http',
@@ -165,7 +165,7 @@ FILES
 */var/db/xbps/metadata/<pkgname>/files.plist*:: Installed package metadata list of files.
  +
 
-*/var/db/xbps/metadata/<pkgname>/prop.plist*:: Install package metadata properties.
+*/var/db/xbps/metadata/<pkgname>/prop.plist*:: Installed package metadata properties.
  +
 
 */var/db/xbps/regpkgdb.plist*:: Registered packages plist database.
