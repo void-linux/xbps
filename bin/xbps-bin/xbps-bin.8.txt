@@ -18,7 +18,7 @@ The xbps-bin(8) command is used to handle binary packages created
 for the *XBPS binary package system*. You can use it to install, remove,
 list or show information about any binary package. Binary packages can
 be installed from local ('directory') or remote repositories ('http',
-'https' or 'ftp'), see xbps-repo(1) for information about repositories.
+'https' or 'ftp'), see xbps-repo(8) for information about repositories.
 
 
 OPTIONS
