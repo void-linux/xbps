@@ -149,7 +149,7 @@ unregister_repository(const char *uri)
 int
 register_repository(const char *uri)
 {
-	char *plist, idxstr[PATH_MAX];
+	char *metadir, *plist, idxstr[PATH_MAX];
 	int rv = 0;
 
 	if (xbps_check_is_repo_string_remote(uri)) {
@@ -173,6 +173,21 @@ register_repository(const char *uri)
 		if (!sanitize_url(idxstr, uri))
 			return errno;
 
+		/*
+		 * Create metadir if necessary.
+		 */
+		metadir = xbps_xasprintf("%s/%s", xbps_get_rootdir(),
+		    XBPS_META_PATH);
+		if (metadir == NULL)
+			return errno;
+
+		if (xbps_mkpath(metadir, 0755) == -1) {
+			printf("E: couldn't create metadata dir! (%s)\n",
+			    strerror(errno));
+			free(metadir);
+			return EXIT_FAILURE;
+		}
+		free(metadir);
 		plist = xbps_get_pkg_index_plist(idxstr);
 	}
 
