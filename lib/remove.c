@@ -40,7 +40,6 @@ remove_pkg_files(prop_dictionary_t dict)
 	prop_array_t array;
 	prop_object_iterator_t iter;
 	prop_object_t obj;
-	prop_bool_t bobj;
 	const char *file, *sha256;
 	char *path = NULL;
 	int flags = 0, rv = 0;
@@ -151,10 +150,6 @@ dirs:
 		return EINVAL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		if ((bobj = prop_dictionary_get(obj, "keep")) != NULL) {
-			/* Skip permanent directory. */
-			continue;
-		}
 		if (!prop_dictionary_get_cstring_nocopy(obj, "file", &file)) {
 			prop_object_iterator_release(iter);
 			return EINVAL;
