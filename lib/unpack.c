@@ -120,15 +120,18 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 {
 	prop_dictionary_t filesd = NULL, old_filesd = NULL;
 	struct archive_entry *entry;
+	size_t entry_idx = 0;
 	const char *pkgname, *version, *rootdir, *entry_str;
 	char *buf, *buf2;
 	int rv = 0, flags, lflags;
 	bool essential, preserve, actgt, skip_entry;
+	bool props_plist_found, files_plist_found;
 
 	assert(ar != NULL);
 	assert(pkg != NULL);
 
 	essential = preserve = actgt = skip_entry = false;
+	props_plist_found = files_plist_found = false;
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
@@ -149,6 +152,16 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	prop_dictionary_get_bool(pkg, "preserve", &preserve);
 
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
+		if (entry_idx >= 5) {
+			/*
+			 * If we have processed 6 entries and the two
+			 * required metadata files weren't found, bail out.
+			 * This is not an XBPS binary package.
+			 */
+			if (!props_plist_found && !files_plist_found)
+				return ENOPKG;
+		}
+
 		entry_str = archive_entry_pathname(entry);
 		set_extract_flags(&lflags);
 		if (((strcmp("./INSTALL", entry_str)) == 0) ||
@@ -191,6 +204,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 			}
 			/* pass to the next entry if successful */
 			free(buf);
+			entry_idx++;
 			continue;
 
 		/*
@@ -215,6 +229,8 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 				return errno;
 
 			/* Pass to next entry */
+			files_plist_found = true;
+			entry_idx++;
 			continue;
 
 		} else if (strcmp("./props.plist", entry_str) == 0) {
@@ -224,6 +240,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 				return errno;
 			archive_entry_set_pathname(entry, buf2);
 			free(buf2);
+			props_plist_found = true;
 		} else {
 			/*
 			 * Handle configuration files.
@@ -236,6 +253,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 			if (skip_entry) {
 				archive_read_data_skip(ar);
 				skip_entry = false;
+				entry_idx++;
 				continue;
 			}
 		}
@@ -256,9 +274,11 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 					    archive_entry_pathname(entry));
 				}
 				rv = 0;
+				entry_idx++;
 				continue;
 			}
 		}
+		entry_idx++;
 		if (flags & XBPS_FLAG_VERBOSE)
 			printf(" %s\n", archive_entry_pathname(entry));
 	}
