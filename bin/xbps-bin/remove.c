@@ -34,7 +34,7 @@
 #include "../xbps-repo/defs.h"
 
 int
-xbps_autoremove_pkgs(void)
+xbps_autoremove_pkgs(bool force)
 {
 	prop_array_t orphans;
 	prop_object_t obj;
@@ -88,7 +88,7 @@ xbps_autoremove_pkgs(void)
 	prop_object_iterator_reset(iter);
 	printf("\n\n");
 
-	if (xbps_noyes("Do you want to remove them?") == false) {
+	if (!force && !xbps_noyes("Do you want to remove them?")) {
 		printf("Cancelled!\n");
 		goto out2;
 	}
@@ -123,6 +123,7 @@ xbps_remove_installed_pkg(const char *pkgname, bool force)
 	prop_dictionary_t dict;
 	const char *version;
 	int rv = 0;
+	bool reqby_force = false;
 
 	/*
 	 * First check if package is required by other packages.
@@ -142,21 +143,15 @@ xbps_remove_installed_pkg(const char *pkgname, bool force)
 		(void)xbps_callback_array_iter_in_dict(dict,
 			"requiredby", list_strings_in_array, NULL);
 		printf("\n\n");
-		if (!force) {
-			if (!xbps_noyes("Do you want to remove %s?", pkgname)) {
-				printf("Cancelling!\n");
-				return 0;
-			}
-		}
-		printf("Forcing %s-%s for deletion!\n", pkgname, version);
-	} else {
-		if (!force) {
-			if (!xbps_noyes("Do you want to remove %s?", pkgname)) {
-				printf("Cancelling!\n");
-				return 0;
-			}
-		}
+		reqby_force = true;
 	}
+
+	if (!force && !xbps_noyes("Do you want to remove %s?", pkgname)) {
+		printf("Cancelling!\n");
+		return 0;
+	}
+	if (reqby_force)
+		printf("Forcing %s-%s for deletion!\n", pkgname, version);
 
 	printf("Removing package %s-%s ...\n", pkgname, version);
 	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0) {

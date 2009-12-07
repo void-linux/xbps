@@ -27,7 +27,7 @@
 #define _XBPS_BIN_DEFS_H_
 
 int	xbps_exec_transaction(const char *, bool, bool);
-int	xbps_autoremove_pkgs(void);
+int	xbps_autoremove_pkgs(bool);
 int	xbps_remove_installed_pkg(const char *, bool);
 int	xbps_check_pkg_integrity(const char *);
 int	xbps_check_pkg_integrity_all(void);

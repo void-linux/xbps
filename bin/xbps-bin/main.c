@@ -62,7 +62,7 @@ usage(void)
 	"    -r\t\t<rootdir>\n"
 	"    -v\t\tShows verbose messages\n"
 	"    -V\t\tPrints the xbps release version\n"
-	" Options used by the (auto)remove and install target:\n"
+	" Options used by the install/(auto)remove/update targets:\n"
 	"    -f\t\tBypasses the questions.\n"
 	"\n");
 	exit(EXIT_FAILURE);
@@ -256,7 +256,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoremove_pkgs();
+		rv = xbps_autoremove_pkgs(force);
 
 	} else if (strcasecmp(argv[0], "purge") == 0) {
 		/*
