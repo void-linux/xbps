@@ -40,7 +40,7 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"20091202"
+#define XBPS_RELVER		"20091207"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
@@ -186,6 +186,7 @@ void SYMEXPORT	xbps_regpkgs_dictionary_release(void);
 
 /* From lib/remove.c */
 int SYMEXPORT	xbps_remove_pkg(const char *, const char *, bool);
+int SYMEXPORT	xbps_remove_pkg_files(prop_dictionary_t, const char *);
 
 /* From lib/remove_obsoletes.c */
 int		xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);

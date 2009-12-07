@@ -82,10 +82,6 @@ int SYMEXPORT
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict;
-	prop_array_t array;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	const char *file, *sha256;
 	char *path;
 	int rv = 0, flags;
 	pkg_state_t state = 0;
@@ -105,8 +101,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	}
 
 	/*
-	 * Iterate over the pkg file list dictionary and remove all
-	 * unmodified configuration files.
+	 * Remove unmodified configuration files.
 	 */
 	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
@@ -119,75 +114,20 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		return errno;
 	}
 	free(path);
-
-	array = prop_dictionary_get(dict, "conf_files");
-	if (array == NULL) {
-		goto out;
-	} else if (prop_object_type(array) != PROP_TYPE_ARRAY) {
+	if ((rv = xbps_remove_pkg_files(dict, "conf_files")) != 0) {
 		prop_object_release(dict);
-		return EINVAL;
-	} else if (prop_array_count(array) == 0) {
-		goto out;
+		return rv;
 	}
-
-	iter = xbps_get_array_iter_from_dict(dict, "conf_files");
-	if (iter == NULL)
-		return EINVAL;
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		if (!prop_dictionary_get_cstring_nocopy(obj, "file", &file)) {
-			prop_object_iterator_release(iter);
-			prop_object_release(dict);
-			return EINVAL;
-		}
-		path = xbps_xasprintf("%s/%s", xbps_get_rootdir(), file);
-		if (path == NULL) {
-			prop_object_iterator_release(iter);
-			prop_object_release(dict);
-			return EINVAL;
-		}
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "sha256", &sha256)) {
-			prop_object_iterator_release(iter);
-			prop_object_release(dict);
-			return errno;
-		}
-		rv = xbps_check_file_hash(path, sha256);
-		if (rv == ENOENT) {
-			printf("Configuration file %s doesn't exist!\n", file);
-			free(path);
-			continue;
-		} else if (rv == ERANGE) {
-			if (flags & XBPS_FLAG_VERBOSE)
-				printf("Configuration file %s has been "
-				    "modified, preserving...\n", file);
-
-			free(path);
-			continue;
-		} else if (rv != 0 && rv != ERANGE) {
-			free(path);
-			prop_object_iterator_release(iter);
-			prop_object_release(dict);
-			return rv;
-		}
-		if ((rv = remove(path)) == -1) {
-			if (flags & XBPS_FLAG_VERBOSE)
-				printf("WARNING: can't remove %s (%s)\n",
-				    file, strerror(errno));
-
-			free(path);
-			continue;
-		}
-		if (flags & XBPS_FLAG_VERBOSE)
-			printf("Removed configuration file %s\n", file);
-
-		free(path);
+	/* Also try to remove empty dirs used in conf_files */
+	if ((rv = xbps_remove_pkg_files(dict, "dirs")) != 0) {
+		prop_object_release(dict);
+		return rv;
 	}
-
-	prop_object_iterator_release(iter);
-out:
 	prop_object_release(dict);
 
+	/*
+	 * Remove metadata dir and unregister package.
+	 */
 	if ((rv = remove_pkg_metadata(pkgname)) == 0) {
 		if ((rv = xbps_unregister_pkg(pkgname)) == 0)
 			printf("Package %s has been purged successfully.\n",
