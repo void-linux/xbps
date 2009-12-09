@@ -280,7 +280,7 @@ main(int argc, char **argv)
 		if (strcasecmp(argv[1], "all") == 0)
 			rv = xbps_configure_all_pkgs();
 		else
-			rv = xbps_configure_pkg(argv[1], NULL, true);
+			rv = xbps_configure_pkg(argv[1], NULL, true, false);
 
 	} else if (strcasecmp(argv[0], "show-deps") == 0) {
 		/*

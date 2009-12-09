@@ -482,14 +482,14 @@ exec_transaction(struct transaction *trans)
 	prop_object_iterator_t replaces_iter;
 	const char *pkgname, *version, *pkgver, *instver, *filename, *tract;
 	int rv = 0;
-	bool essential, autoinst;
+	bool update, essential, autoinst;
 	pkg_state_t state = 0;
 
 	assert(trans != NULL);
 	assert(trans->dict != NULL);
 	assert(trans->iter != NULL);
 
-	essential = autoinst = false;
+	update = essential = autoinst = false;
 	/*
 	 * Show download/installed size for the transaction.
 	 */
@@ -646,7 +646,14 @@ exec_transaction(struct transaction *trans)
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "version", &version))
 			return errno;
-		if ((rv = xbps_configure_pkg(pkgname, version, false)) != 0) {
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "trans-action", &tract))
+			return errno;
+		update = false;
+		if (strcmp(tract, "update") == 0)
+			update = true;
+		rv = xbps_configure_pkg(pkgname, version, false, update);
+		if (rv != 0) {
 			printf("Error configuring package %s (%s)\n",
 			    pkgname, strerror(rv));
 			return rv;

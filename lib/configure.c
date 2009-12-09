@@ -67,7 +67,8 @@ xbps_configure_all_pkgs(void)
 			break;
 		if (state != XBPS_PKG_STATE_UNPACKED)
 			continue;
-		if ((rv = xbps_configure_pkg(pkgname, version, false)) != 0)
+		if ((rv = xbps_configure_pkg(pkgname, version,
+		    false, false)) != 0)
 			break;
 	}
 	prop_object_iterator_release(iter);
@@ -83,7 +84,8 @@ out:
  * to installed.
  */
 int SYMEXPORT
-xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
+xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
+		   bool update)
 {
 	prop_dictionary_t pkgd;
 	const char *rootdir, *lver;
@@ -141,7 +143,7 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state)
 
 	if (access(buf, X_OK) == 0) {
 		if ((rv = xbps_file_chdir_exec(rootdir, buf, "post",
-		     pkgname, lver, NULL)) != 0) {
+		     pkgname, lver, update ? "yes" : "no", NULL)) != 0) {
 			free(buf);
 			printf("%s: post INSTALL action returned: %s\n",
 			    pkgname, strerror(errno));

@@ -124,13 +124,13 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	const char *pkgname, *version, *rootdir, *entry_str;
 	char *buf, *buf2;
 	int rv = 0, flags, lflags;
-	bool essential, preserve, actgt, skip_entry;
+	bool essential, preserve, actgt, skip_entry, update;
 	bool props_plist_found, files_plist_found;
 
 	assert(ar != NULL);
 	assert(pkg != NULL);
 
-	essential = preserve = actgt = skip_entry = false;
+	essential = preserve = actgt = skip_entry = update = false;
 	props_plist_found = files_plist_found = false;
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
@@ -150,6 +150,9 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	 */
 	prop_dictionary_get_bool(pkg, "essential", &essential);
 	prop_dictionary_get_bool(pkg, "preserve", &preserve);
+
+	if (xbps_check_is_installed_pkgname(pkgname))
+		update = true;
 
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		if (entry_idx >= 5) {
@@ -194,9 +197,10 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 					return rv;
 				}
 			}
-
+			
 			if ((rv = xbps_file_chdir_exec(rootdir, buf, "pre",
-			     pkgname, version, NULL)) != 0) {
+			     pkgname, version, update ? "yes" : "no",
+			     NULL)) != 0) {
 				free(buf);
 				printf("%s: preinst action target error %s\n",
 				    pkgname, strerror(errno));
