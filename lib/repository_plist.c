@@ -54,7 +54,7 @@ fetch_archive_open(struct archive *a, void *client_data)
 	return 0;
 }
 
-static int
+static ssize_t
 fetch_archive_read(struct archive *a, void *client_data, const void **buf)
 {
 	struct fetch_archive *f = client_data;
