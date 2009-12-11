@@ -190,6 +190,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 
 			actgt = true;
 			archive_entry_set_pathname(entry, buf);
+			archive_entry_set_mode(entry, 0750);
 
 			if (archive_read_extract(ar, entry, lflags) != 0) {
 				if ((rv = archive_errno(ar)) != EEXIST) {
@@ -220,6 +221,8 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 			if (buf2 == NULL)
 				return errno;
 			archive_entry_set_pathname(entry, buf2);
+			archive_entry_set_mode(entry, 0750);
+
 			free(buf2);
 			buf2 = NULL;
 		} else if (strcmp("./files.plist", entry_str) == 0) {
