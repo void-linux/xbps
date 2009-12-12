@@ -6,6 +6,7 @@ To build this you'll need:
 - libarchive (development package, all features built in)
 - proplib (development package),
   available at http://code.google.com/p/portableproplib
+- asciidoc (to build the manpages)
 
 By default it will be installed into /usr/local, can be changed
 by setting PREFIX and DESTDIR vars as make(1) arguments.
