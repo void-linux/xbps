@@ -1,7 +1,7 @@
 TOPDIR = ../..
 include $(TOPDIR)/vars.mk
 
-CFLAGS += -Wno-unused-macros -Wno-conversion
+CFLAGS += -Wno-unused-macros -Wno-conversion -Wno-stack-protector
 CPPFLAGS += -DFTP_COMBINE_CWDS -DNETBSD -I$(TOPDIR)/include
 
 ifdef WITH_INET6
