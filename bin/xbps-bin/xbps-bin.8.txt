@@ -7,7 +7,7 @@ NAME
 xbps-bin - XBPS command for binary packages
 
 
-SYNOPSYS
+SYNOPSIS
 --------
 *xbps-bin* ['options'] 'target' ['pkgname']
 
