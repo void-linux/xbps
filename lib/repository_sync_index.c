@@ -24,6 +24,7 @@
  */
 
 #include <sys/utsname.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
