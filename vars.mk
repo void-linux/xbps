@@ -27,4 +27,4 @@ CFLAGS += $(DEBUG_FLAGS) $(WARNFLAGS) -fPIC -DPIC -fstack-protector-all
 
 # Grr, hate the static libs!
 STATIC_LIBS =	-lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl \
-		-lattr -lcrypto -llzma -lbz2 -lz
+		-lattr -llzma -lbz2 -lz
