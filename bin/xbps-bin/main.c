@@ -111,7 +111,7 @@ main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
 	struct sigaction sa;
-	int c, flags = 0, rv = 0;
+	int i = 0, c, flags = 0, rv = 0;
 	bool force, verbose;
 
 	force = verbose = false;
@@ -187,24 +187,32 @@ main(int argc, char **argv)
 
 	} else if (strcasecmp(argv[0], "install") == 0) {
 		/* Installs a binary package and required deps. */
-		if (argc != 2)
+		if (argc < 2)
 			usage();
 
-		rv = xbps_exec_transaction(argv[1], force, false);
+		for (i = 1; i < argc; i++)
+			if ((rv = xbps_install_new_pkg(argv[i])) != 0)
+				goto out;
+
+		rv = xbps_exec_transaction(force);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
-		if (argc != 2)
+		if (argc < 2)
 			usage();
 
-		rv = xbps_exec_transaction(argv[1], force, true);
+		for (i = 1; i < argc; i++)
+			if ((rv = xbps_update_pkg(argv[i])) != 0)
+				goto out;
+
+		rv = xbps_exec_transaction(force);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a binary package. */
-		if (argc != 2)
+		if (argc < 2)
 			usage();
 
-		rv = xbps_remove_installed_pkg(argv[1], force);
+		rv = xbps_remove_installed_pkgs(argc, argv, force);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
@@ -245,7 +253,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_exec_transaction("all", force, true);
+		rv = xbps_autoupdate_pkgs(force);
 
 	} else if (strcasecmp(argv[0], "autoremove") == 0) {
 		/*

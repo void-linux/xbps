@@ -63,16 +63,16 @@ Please note that all targets are *case insensitive*.
 	Updates all currently installed packages to the most newer version
 	available in repository pool.
 
-*check 'pkgname' | 'all'*::
+*check 'pkgname(s)' | 'all'*::
 	Checks for integrity errors in installed packages. The checks
 	are to found missing run-time dependencies, missing and modified
 	package files and metadata files. If the *all* keyword is used,
 	'all' packages currently installed will be checked, otherwise only
 	*pkgname*.
 
-*install 'pkgname'*::
+*install 'pkgname(s)'*::
 	Install binary package "*pkgname*" by searching it in the
-	repository pool. The package will be 'download' (if working with
+	repository pool. The package(s) will be 'download' (if working with
 	a remote repository), 'unpacked' and 'configured'. The 'unpack stage will
 	execute the *pre-install* action on its *INSTALL* script, and unpack its files.
 	The 'configure' stage will run the *post-install* action set on its
@@ -103,8 +103,8 @@ Please note that all targets are *case insensitive*.
 	not configured packages. If *-f* option is used, the package will be
 	reconfigured even if its state is already *installed*.
 
-*remove 'pkgname'*::
-	Removes the installed package 'pkgname'. Its files will be removed
+*remove 'pkgname(s)'*::
+	Removes the installed package 'pkgname(s)'. Its files will be removed
 	and its state will be changed to *config-files* in the package
 	database. Configuration files, its metadata directory/files and
 	its information in the package database are preserved. To fully remove
@@ -126,9 +126,9 @@ Please note that all targets are *case insensitive*.
 	Shows the reverse dependencies for 'pkgname'. Reverse dependencies
 	are packages that are currently depending in 'pkgname' directly.
 
-*update 'pkgname'*::
-	Updates 'pkgname' to the most newer version available in repository
-	pool. This can be used if only 'pkgname' needs to be updated, unlike
+*update 'pkgname(s)'*::
+	Updates 'pkgname(s)' to the most newer version available in repository
+	pool. This can be used if only 'pkgname(s)' needs to be updated, unlike
 	the *autoupdate* target that will update all currently installed
 	packages.
 

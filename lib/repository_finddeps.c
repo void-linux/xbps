@@ -90,7 +90,10 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 		prop_object_release(dict);
 		return errno;
 	}
-
+	if (!prop_dictionary_set_bool(dict, "automatic-install", true)) {
+		prop_object_release(dict);
+		return errno;
+	}
 	/*
 	 * Add the dictionary into the array.
 	 */

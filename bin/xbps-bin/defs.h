@@ -26,9 +26,12 @@
 #ifndef _XBPS_BIN_DEFS_H_
 #define _XBPS_BIN_DEFS_H_
 
-int	xbps_exec_transaction(const char *, bool, bool);
+int	xbps_install_new_pkg(const char *);
+int	xbps_update_pkg(const char *);
+int	xbps_autoupdate_pkgs(bool);
 int	xbps_autoremove_pkgs(bool);
-int	xbps_remove_installed_pkg(const char *, bool);
+int	xbps_exec_transaction(bool);
+int	xbps_remove_installed_pkgs(int, char **, bool);
 int	xbps_check_pkg_integrity(const char *);
 int	xbps_check_pkg_integrity_all(void);
 int	xbps_show_pkg_deps(const char *);

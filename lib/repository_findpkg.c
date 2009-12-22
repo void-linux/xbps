@@ -301,7 +301,7 @@ int SYMEXPORT
 xbps_repository_install_pkg(const char *pkgname)
 {
 	prop_dictionary_t origin_pkgrd = NULL, pkgrd = NULL;
-	prop_array_t pkgs_array;
+	prop_array_t unsorted;
 	struct repository_pool *rpool;
 	int rv = 0;
 
@@ -345,49 +345,18 @@ xbps_repository_install_pkg(const char *pkgname)
 	}
 	origin_pkgrd = prop_dictionary_copy(pkgrd);
 
-	if (!prop_dictionary_set_cstring(trans_dict, "origin", pkgname)) {
-		rv = errno;
-		goto out;
-	}
 	/*
-	 * Check if this package needs dependencies.
+	 * Prepare required package dependencies.
 	 */
-	if (xbps_pkg_has_rundeps(pkgrd)) {
-		/*
-		 * Construct the dependency chain for this package.
-		 */
-		if ((rv = xbps_repository_find_pkg_deps(trans_dict,
-		    pkgrd)) != 0)
-			goto out;
-		/*
-		 * Sort the dependency chain for this package.
-		 */
-		if ((rv = xbps_sort_pkg_deps(trans_dict)) != 0)
-			goto out;
-	} else {
-		/*
-		 * Package has no deps, so we have to create the
-		 * "packages" array.
-		 */
-		pkgs_array = prop_array_create();
-		if (pkgs_array == NULL) {
-			rv = errno;
-			goto out;
-		}
-		if (!prop_dictionary_set(trans_dict, "packages",
-		    pkgs_array)) {
-			rv = errno;
-			goto out;
-		}
-	}
+	if ((rv = xbps_repository_find_pkg_deps(trans_dict, pkgrd)) != 0)
+		goto out;
 
 	/*
-	 * Add required package dictionary into the packages
-	 * dictionary.
+	 * Add required package dictionary into the unsorted deps dictionary,
+	 * set package state as not yet installed.
 	 */
-	pkgs_array = prop_dictionary_get(trans_dict, "packages");
-	if (pkgs_array == NULL ||
-	    prop_object_type(pkgs_array) != PROP_TYPE_ARRAY) {
+	unsorted = prop_dictionary_get(trans_dict, "unsorted_deps");
+	if (unsorted == NULL) {
 		rv = EINVAL;
 		goto out;
 	}
@@ -399,7 +368,7 @@ xbps_repository_install_pkg(const char *pkgname)
 		rv = errno;
 		goto out;
 	}
-	if (!prop_array_add(pkgs_array, origin_pkgrd))
+	if (!prop_array_add(unsorted, origin_pkgrd))
 		rv = errno;
 
 out:

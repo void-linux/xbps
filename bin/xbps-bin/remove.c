@@ -88,7 +88,7 @@ xbps_autoremove_pkgs(bool force)
 	prop_object_iterator_reset(iter);
 	printf("\n\n");
 
-	if (!force && !xbps_noyes("Do you want to remove them?")) {
+	if (!force && !xbps_noyes("Do you want to continue?")) {
 		printf("Cancelled!\n");
 		goto out2;
 	}
@@ -117,47 +117,79 @@ out:
 }
 
 int
-xbps_remove_installed_pkg(const char *pkgname, bool force)
+xbps_remove_installed_pkgs(int argc, char **argv, bool force)
 {
 	prop_array_t reqby;
 	prop_dictionary_t dict;
+	size_t cols = 0;
 	const char *version;
-	int rv = 0;
-	bool reqby_force = false;
+	int i, rv = 0;
+	bool found = false, first = false, reqby_force = false;
 
 	/*
 	 * First check if package is required by other packages.
 	 */
-	dict = xbps_find_pkg_installed_from_plist(pkgname);
-	if (dict == NULL) {
-		printf("Package %s is not installed.\n", pkgname);
+	for (i = 1; i < argc; i++) {
+		dict = xbps_find_pkg_installed_from_plist(argv[i]);
+		if (dict == NULL) {
+			printf("Package %s is not installed.\n", argv[i]);
+			continue;
+		}
+		if (!prop_dictionary_get_cstring_nocopy(dict, "version",
+		    &version))
+			return errno;
+
+		found = true;
+		reqby = prop_dictionary_get(dict, "requiredby");
+		if (reqby != NULL && prop_array_count(reqby) > 0) {
+			printf("WARNING: %s-%s IS REQUIRED BY OTHER "
+			    "PACKAGES!\n", argv[i], version);
+			reqby_force = true;
+		}
+	}
+	if (!found)
 		return 0;
-	}
-	if (!prop_dictionary_get_cstring_nocopy(dict, "version", &version))
-		return errno;
 
-	reqby = prop_dictionary_get(dict, "requiredby");
-	if (reqby != NULL && prop_array_count(reqby) > 0) {
-		printf("WARNING! %s-%s is required by the following "
-		    "packages:\n\n", pkgname, version);
-		(void)xbps_callback_array_iter_in_dict(dict,
-			"requiredby", list_strings_in_array, NULL);
-		printf("\n\n");
-		reqby_force = true;
+	/*
+	 * Show the list of going-to-be removed packages.
+	 */
+	printf("The following packages will be removed:\n\n");
+	for (i = 1; i < argc; i++) {
+		dict = xbps_find_pkg_installed_from_plist(argv[i]);
+		if (dict == NULL)
+			continue;
+		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
+		cols += strlen(argv[i]) + strlen(version) + 4;
+		if (cols <= 80) {
+			if (first == false) {
+				printf("  ");
+				first = true;
+			}
+		} else {
+			printf("\n  ");
+			cols = strlen(argv[i]) + strlen(version) + 4;
+		}
+		printf("%s-%s ", argv[i], version);
 	}
-
-	if (!force && !xbps_noyes("Do you want to remove %s?", pkgname)) {
+	printf("\n\n");
+	if (!force && !xbps_noyes("Do you want to continue?")) {
 		printf("Cancelling!\n");
 		return 0;
 	}
 	if (reqby_force)
-		printf("Forcing %s-%s for deletion!\n", pkgname, version);
+		printf("Forcing removal!\n");
 
-	printf("Removing package %s-%s ...\n", pkgname, version);
-	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0) {
-		printf("Unable to remove %s-%s (%s).\n",
-		    pkgname, version, strerror(errno));
-		return rv;
+	for (i = 1; i < argc; i++) {
+		dict = xbps_find_pkg_installed_from_plist(argv[i]);
+		if (dict == NULL)
+			continue;
+		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
+		printf("Removing package %s-%s ...\n", argv[i], version);
+		if ((rv = xbps_remove_pkg(argv[i], version, false)) != 0) {
+			printf("Unable to remove %s-%s (%s).\n",
+			    argv[i], version, strerror(errno));
+			return rv;
+		}
 	}
 
 	return 0;
