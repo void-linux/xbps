@@ -31,10 +31,8 @@ OPTIONS
 	it will become '/blah/cachedir'.
 
 *-f*::
-	By default while installing or removing packages, xbps-bin(1)
-	will ask you if you are sure about the task that will be done.
-	This option bypasses the question and executes the task immediately.
-	Use this option carefully.
+	Used currently in the 'reconfigure' target. If set, package(s) will
+	be reconfigured regardless of its state.
 
 *-r* 'rootdir'::
 	Sets the 'root' directory. By default the root directory is
@@ -45,6 +43,10 @@ OPTIONS
 
 *-v*::
 	Shows verbose messages. Useful while installing and removing packages.
+
+*-y*::
+	Assume "yes" to all questions. This will bypass all questions and
+	immediately proceed with the task, use this option with care.
 
 *-V*::
 	Shows the current XBPS release version (library and code).

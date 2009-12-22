@@ -46,24 +46,26 @@ usage(void)
 	"    autoremove\n"
 	"    autoupdate\n"
 	"    check\t\t[<pkgname>|<all>]\n"
-	"    install\t\t<pkgname>\n"
+	"    install\t\t<pkgname(s)>\n"
 	"    list\n"
 	"    list-manual\n"
 	"    purge\t\t[<pkgname>|<all>]\n"
 	"    reconfigure\t\t[<pkgname>|<all>]\n"
-	"    remove\t\t<pkgname>\n"
+	"    remove\t\t<pkgname(s)>\n"
 	"    show\t\t<pkgname>\n"
 	"    show-deps\t\t<pkgname>\n"
 	"    show-files\t\t<pkgname>\n"
 	"    show-revdeps\t<pkgname>\n"
-	"    update\t\t<pkgname>\n"
+	"    update\t\t<pkgname(s)>\n"
 	" Options shared by all targets:\n"
 	"    -c\t\t<cachedir>\n"
 	"    -r\t\t<rootdir>\n"
 	"    -v\t\tShows verbose messages\n"
 	"    -V\t\tPrints the xbps release version\n"
 	" Options used by the install/(auto)remove/update targets:\n"
-	"    -f\t\tBypasses the questions.\n"
+	"    -y\t\tAssume \"yes\" for all questions.\n"
+	" Options used by the reconfigure target:\n"
+	"    -f\t\tForce reconfiguration.\n"
 	"\n");
 	exit(EXIT_FAILURE);
 }
@@ -112,18 +114,17 @@ main(int argc, char **argv)
 	prop_dictionary_t dict;
 	struct sigaction sa;
 	int i = 0, c, flags = 0, rv = 0;
-	bool force, verbose;
+	bool yes, verbose;
 
-	force = verbose = false;
+	yes = verbose = false;
 
-	while ((c = getopt(argc, argv, "Vcfr:v")) != -1) {
+	while ((c = getopt(argc, argv, "Vcfr:vy")) != -1) {
 		switch (c) {
 		case 'c':
 			xbps_set_cachedir(optarg);
 			break;
 		case 'f':
 			flags |= XBPS_FLAG_FORCE;
-			force = true;
 			break;
 		case 'r':
 			/* To specify the root directory */
@@ -136,6 +137,9 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case 'y':
+			yes = true;
+			break;
 		case '?':
 		default:
 			usage();
@@ -194,7 +198,7 @@ main(int argc, char **argv)
 			if ((rv = xbps_install_new_pkg(argv[i])) != 0)
 				goto out;
 
-		rv = xbps_exec_transaction(force);
+		rv = xbps_exec_transaction(yes);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
@@ -205,14 +209,14 @@ main(int argc, char **argv)
 			if ((rv = xbps_update_pkg(argv[i])) != 0)
 				goto out;
 
-		rv = xbps_exec_transaction(force);
+		rv = xbps_exec_transaction(yes);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a binary package. */
 		if (argc < 2)
 			usage();
 
-		rv = xbps_remove_installed_pkgs(argc, argv, force);
+		rv = xbps_remove_installed_pkgs(argc, argv, yes);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
@@ -253,7 +257,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoupdate_pkgs(force);
+		rv = xbps_autoupdate_pkgs(yes);
 
 	} else if (strcasecmp(argv[0], "autoremove") == 0) {
 		/*
@@ -264,7 +268,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoremove_pkgs(force);
+		rv = xbps_autoremove_pkgs(yes);
 
 	} else if (strcasecmp(argv[0], "purge") == 0) {
 		/*

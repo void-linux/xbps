@@ -35,7 +35,7 @@
 struct transaction {
 	prop_dictionary_t dict;
 	prop_object_iterator_t iter;
-	bool force;
+	bool yes;
 };
 
 static int	exec_transaction(struct transaction *);
@@ -295,7 +295,7 @@ show_transaction_sizes(prop_object_iterator_t iter)
 }
 
 int
-xbps_autoupdate_pkgs(bool force)
+xbps_autoupdate_pkgs(bool yes)
 {
 	int rv = 0;
 
@@ -315,7 +315,7 @@ xbps_autoupdate_pkgs(bool force)
 		return rv;
 	}
 
-	return xbps_exec_transaction(force);
+	return xbps_exec_transaction(yes);
 }
 
 int
@@ -330,16 +330,15 @@ xbps_install_new_pkg(const char *pkgname)
 	if ((pkgd = xbps_find_pkg_installed_from_plist(pkgname))) {
 		printf("Package '%s' is already installed.\n", pkgname);
 		prop_object_release(pkgd);
-		return rv;
+		return 0;
 	}
 	rv = xbps_repository_install_pkg(pkgname);
 	if (rv != 0 && rv == EAGAIN) {
 		printf("Unable to locate '%s' in "
 		    "repository pool.\n", pkgname);
-		return rv;
+		rv = 0;
 	} else if (rv != 0 && rv != ENOENT) {
 		printf("Unexpected error: %s", strerror(errno));
-		return rv;
 	}
 
 	return rv;
@@ -357,28 +356,23 @@ xbps_update_pkg(const char *pkgname)
 		rv = xbps_repository_update_pkg(pkgname, pkgd);
 		if (rv == EEXIST) {
 			printf("Package '%s' is up to date.\n", pkgname);
-			prop_object_release(pkgd);
-			return 0;
+			rv = 0;
 		} else if (rv == ENOENT) {
 			printf("Package '%s' not found in "
 			    "repository pool.\n", pkgname);
-			prop_object_release(pkgd);
-			return rv;
-		} else if (rv != 0) {
-			prop_object_release(pkgd);
-			return rv;
+			rv = 0;
 		}
 		prop_object_release(pkgd);
 	} else {
 		printf("Package '%s' not installed.\n", pkgname);
-		return rv;
+		return 0;
 	}
 
 	return rv;
 }
 
 int
-xbps_exec_transaction(bool force)
+xbps_exec_transaction(bool yes)
 {
 	struct transaction *trans;
 	prop_array_t array;
@@ -390,7 +384,7 @@ xbps_exec_transaction(bool force)
 
 	trans->dict = xbps_repository_get_transaction_dict();
 	if (trans->dict == NULL) {
-		printf("error: unexistent props dictionary!\n");
+		printf("Empty transaction, exiting.\n");
 		goto out1;
 	}
 
@@ -423,7 +417,7 @@ xbps_exec_transaction(bool force)
 		goto out2;
 	}
 
-	trans->force = force;
+	trans->yes = yes;
 	rv = exec_transaction(trans);
 
 	prop_object_iterator_release(trans->iter);
@@ -499,9 +493,9 @@ exec_transaction(struct transaction *trans)
 		return rv;
 
 	/*
-	 * Ask interactively (if -f not set).
+	 * Ask interactively (if -y not set).
 	 */
-	if (trans->force == false) {
+	if (trans->yes == false) {
 		if (xbps_noyes("Do you want to continue?") == false) {
 			printf("Aborting!\n");
 			return 0;
