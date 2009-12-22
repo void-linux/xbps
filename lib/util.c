@@ -473,20 +473,18 @@ question(bool preset, const char *fmt, va_list ap)
 
 	vfprintf(stderr, fmt, ap);
 	if (preset)
-		fprintf(stderr, " %s ", "[Y/n]");
+		fprintf(stderr, " %s ", "[YES/no]");
 	else
-		fprintf(stderr, " %s ", "[y/N]");
+		fprintf(stderr, " %s ", "[yes/NO]");
 
 	if (fgets(response, 32, stdin)) {
 		(void)strtrim(response);
 		if (strlen(response) == 0)
 			return preset;
 
-		if ((strcasecmp(response, "y") == 0) ||
-		    (strcasecmp(response, "yes") == 0))
+		if (strcasecmp(response, "yes") == 0)
 			return true;
-		else if ((strcasecmp(response, "n") == 0) ||
-			 (strcasecmp(response, "no") == 0))
+		else if (strcasecmp(response, "no") == 0)
 			return false;
 	}
 	return false;
