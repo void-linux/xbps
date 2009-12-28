@@ -13,6 +13,6 @@ To build this you'll need:
 By default it will be installed into /usr/local, can be changed
 by setting PREFIX and DESTDIR vars as make(1) arguments.
 
-Just run "make" and "sudo make DESTDIR=~/xbps install".
+Just run "make" and "make DESTDIR=~/xbps install".
 
 Good luck!
