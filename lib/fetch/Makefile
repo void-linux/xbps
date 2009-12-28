@@ -21,8 +21,7 @@ all: $(INCS) $(GEN) $(OBJS)
 
 %.o: %.c $(INCS) $(GEN)
 	@echo "    [CC] $@"
-	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
-		$(SHAREDLIB_CFLAGS) -c $<
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(SHAREDLIB_CFLAGS) -c $<
 
 ftperr.h: ftp.errors
 	@echo "    [GEN] $@"

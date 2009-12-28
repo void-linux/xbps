@@ -29,8 +29,7 @@ libfetch:
 
 %.o: %.c
 	@echo "    [CC] $@"
-	@$(CC) $(CPPFLAGS) $(SHAREDLIB_CFLAGS) $(CFLAGS) \
-		$(LDFLAGS) $(STATIC_LIBS) -c $<
+	@$(CC) $(CPPFLAGS) $(SHAREDLIB_CFLAGS) $(CFLAGS) -c $<
 
 libxbps.so: $(OBJS) $(LIBFETCH_OBJS)
 	@echo "    [CCLD] $@"

@@ -1,5 +1,5 @@
 OBJS	?= main.o
-LDFLAGS	+= -lxbps
+LDFLAGS += -lxbps
 
 .PHONY: all
 all: $(BIN) $(BIN).static $(MAN)
@@ -31,7 +31,7 @@ endif
 
 %.o: %.c
 	@echo "    [CC] $@"
-	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(STATIC_LIBS) -c $<
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 $(MAN):
 	@echo "    [ASCIIDOC] $(MAN)"
