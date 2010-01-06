@@ -1,4 +1,5 @@
 OBJS	?= main.o
+CFLAGS  += -fPIE
 LDFLAGS += -lxbps
 
 .PHONY: all
@@ -44,5 +45,5 @@ $(BIN).static: $(OBJS)
 
 $(BIN): $(OBJS)
 	@echo "    [CCLD] $@"
-	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
+	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -pie -o $@
 

@@ -3,14 +3,7 @@ include $(TOPDIR)/vars.mk
 
 CFLAGS += -Wno-unused-macros -Wno-conversion -Wno-stack-protector
 CPPFLAGS += -DFTP_COMBINE_CWDS -DNETBSD -I$(TOPDIR)/include
-
-ifdef WITH_INET6
-CPPFLAGS += -DINET6
-endif
-
-ifdef WITH_SSL
-CPPFLAGS += -DWITH_SSL
-endif
+CPPFLAGS += -DINET6 -DWITH_SSL
 
 OBJS= fetch.o common.o ftp.o http.o file.o
 INCS= common.h
@@ -21,7 +14,7 @@ all: $(INCS) $(GEN) $(OBJS)
 
 %.o: %.c $(INCS) $(GEN)
 	@echo "    [CC] $@"
-	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(SHAREDLIB_CFLAGS) -c $<
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) $(LDFLAGS) -c $<
 
 ftperr.h: ftp.errors
 	@echo "    [GEN] $@"

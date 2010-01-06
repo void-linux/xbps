@@ -1,14 +1,11 @@
 include ../vars.mk
 
-LIBMAJOR	= 0
-LIBMINOR	= 0
-LIBMICRO	= 0
-LIBXBPS_SHLIB	= libxbps.so.$(LIBMAJOR).$(LIBMINOR).$(LIBMICRO)
-SHAREDLIB_LDFLAGS = -lprop -larchive
-ifdef WITH_SSL
-SHAREDLIB_LDFLAGS += -lssl
-endif
-SHAREDLIB_LDFLAGS += -shared -Wl,-soname,libxbps.so.$(LIBMAJOR)
+LIBMAJOR = 0
+LIBMINOR = 0
+LIBMICRO = 0
+LIBXBPS_SHLIB = libxbps.so.$(LIBMAJOR).$(LIBMINOR).$(LIBMICRO)
+LDFLAGS += -lprop -larchive -lssl
+LDFLAGS += -shared -Wl,-soname,libxbps.so.$(LIBMAJOR)
 
 # libfetch
 LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o fetch/ftp.o fetch/http.o
@@ -29,11 +26,11 @@ libfetch:
 
 %.o: %.c
 	@echo "    [CC] $@"
-	@$(CC) $(CPPFLAGS) $(SHAREDLIB_CFLAGS) $(CFLAGS) -c $<
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $<
 
 libxbps.so: $(OBJS) $(LIBFETCH_OBJS)
 	@echo "    [CCLD] $@"
-	@$(CC) $(LDFLAGS) $(SHAREDLIB_LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
+	@$(CC) $(LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBMAJOR)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
