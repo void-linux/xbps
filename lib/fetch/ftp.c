@@ -1083,7 +1083,7 @@ ftp_cached_connect(struct url *url, struct url *purl, const char *flags)
 		return (NULL);
 	doc = strdup(url->doc);
 	if (doc != NULL) {
-		if (cached_connection)
+		if (cached_connection && !cached_connection->is_active)
 			ftp_disconnect(cached_connection);
 		cached_connection = fetch_ref(conn);
 		memcpy(&cached_host, url, sizeof(*url));
