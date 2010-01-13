@@ -214,6 +214,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		prop_object_release(dict);
 		return rv;
 	}
+	prop_object_release(dict);
+
 	/*
 	 * Run the post remove action if REMOVE file is there
 	 * and we aren't updating a package.
