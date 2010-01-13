@@ -44,7 +44,7 @@ libxbps.a: $(OBJS) $(LIBFETCH_OBJS)
 install: all
 	install -d $(LIBDIR)
 	install -m 644 libxbps.a $(LIBDIR)
-	install -m 644 $(LIBXBPS_SHLIB) $(LIBDIR)
+	install -m 755 $(LIBXBPS_SHLIB) $(LIBDIR)
 	cp -a libxbps.so $(LIBDIR)
 	cp -a libxbps.so.$(LIBMAJOR) $(LIBDIR)
 
