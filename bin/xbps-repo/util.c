@@ -142,31 +142,14 @@ show_pkg_files(prop_dictionary_t filesd)
 	prop_array_t array;
 	prop_object_iterator_t iter = NULL;
 	prop_object_t obj;
-	const char *file;
-	char *array_str = "files";
+	const char *file, *array_str;
 	int i = 0;
 
-	/* Links. */
-	array = prop_dictionary_get(filesd, "links");
-	if (array && prop_array_count(array) > 0) {
-		iter = xbps_get_array_iter_from_dict(filesd, "links");
-		if (iter == NULL)
-			return EINVAL;
-
-		while ((obj = prop_object_iterator_next(iter))) {
-			if (!prop_dictionary_get_cstring_nocopy(obj,
-			    "file", &file)) {
-				prop_object_iterator_release(iter);
-				return errno;
-			}
-			printf("%s\n", file);
-		}
-		prop_object_iterator_release(iter);
-	}
-
-	/* Files and configuration files. */
-	for (i = 0; i < 2; i++) {
+	/* This will print links, conf_files and files respectively. */
+	for (i = 0; i < 3; i++) {
 		if (i == 0)
+			array_str = "links";
+		else if (i == 1)
 			array_str = "conf_files";
 		else
 			array_str = "files";
