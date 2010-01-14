@@ -343,6 +343,19 @@ xbps_repository_install_pkg(const char *pkg, bool by_pkgmatch)
 		goto out;
 
 	/*
+	 * Check that this pkg hasn't been added previously into
+	 * the transaction.
+	 */
+	if (by_pkgmatch) {
+		if (xbps_find_pkg_in_dict_by_pkgmatch(trans_dict,
+		    "unsorted_deps", pkg))
+			return 0;
+	} else {
+		if (xbps_find_pkg_in_dict_by_name(trans_dict,
+		    "unsorted_deps", pkg))
+			return 0;
+	}
+	/*
 	 * Set repository in pkg dictionary.
 	 */
 	if (!prop_dictionary_set_cstring(pkgrd, "repository", rpool->rp_uri)) {
