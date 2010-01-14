@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -318,35 +319,75 @@ xbps_autoupdate_pkgs(bool yes)
 	return xbps_exec_transaction(yes);
 }
 
-int
-xbps_install_new_pkg(const char *pkg)
+static char *
+pkgname_from_pkgmatch(const char *pkg)
 {
-	prop_dictionary_t pkgd;
-	char *pkgname;
-	int rv = 0;
-	bool pkgmatch = false;
+	const char *version;
+	char *pkgname = NULL;
 
 	/*
 	 * Check if 'pkg' string is a pkgmatch valid pattern or it
 	 * is just a pkgname.
+	 *
+	 * XXX REALLY FIX THIS CRAP! I haven't found much easier ways...
 	 */
-	if ((pkgname = xbps_get_pkgdep_name(pkg))) {
-		if (xbps_cmpver("0.0", pkgname) <= 0)
-			pkgmatch = true;
-		else {
-			free(pkgname);
-			pkgname = NULL;
+	if ((version = xbps_get_pkgdep_version(pkg))) {
+		while (*version) {
+			if (isdigit((unsigned char)*version)) {
+				version++;
+				continue;
+			}
+			if (xbps_cmpver("0", version) <= 0)
+				pkgname = xbps_get_pkgdep_name(pkg);
+			break;
 		}
 	}
-	if (pkgname == NULL && (pkgname = xbps_get_pkg_name(pkg))) {
-		if (xbps_cmpver("0.0", pkgname) <= 0)
-			pkgmatch = true;
-		else {
-			free(pkgname);
-			pkgname = NULL;
+	if ((version = xbps_get_pkg_version(pkg))) {
+		while (*version) {
+			if (!isdigit((unsigned char)*version)) {
+				version++;
+				continue;
+			}
+
+			const char *tmp = version;
+			size_t ndigits = 0, tmplen = strlen(tmp);
+			bool dot = false, digit = false;
+
+			while (*tmp) {
+				if (isdigit((unsigned char)*tmp)) {
+					digit = true;
+					ndigits++;
+				}
+				if (*tmp == '.')
+					dot = true;
+				else if (*tmp == '_')
+					ndigits++;
+
+				tmp++;
+			}
+			if ((!dot && !digit) || (!dot && tmplen != ndigits))
+				break;
+
+			if (xbps_cmpver("0", version) <= 0)
+				pkgname = xbps_get_pkg_name(pkg);
+			break;
 		}
 	}
-	if (pkgname == NULL)
+
+	return pkgname;
+}
+
+int
+xbps_install_new_pkg(const char *pkg)
+{
+	prop_dictionary_t pkgd;
+	char *pkgname = NULL;
+	int rv = 0;
+	bool pkgmatch = false;
+
+	if ((pkgname = pkgname_from_pkgmatch(pkg)))
+		pkgmatch = true;
+	else
 		pkgname = __UNCONST(pkg);
 
 	/*
