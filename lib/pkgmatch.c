@@ -115,6 +115,10 @@ xbps_pkgdep_match(const char *instpkg, char *pattern)
 
 	memset(&basefname, 0, sizeof(basefname));
 
+	/* Check for a full match with strcmp, otherwise try csh_match() */
+	if (strcmp(instpkg, pattern) == 0)
+		return 1;
+
 	condition = strpbrk(pattern, "><=");
 	if (condition) {
 		const char *ch;
