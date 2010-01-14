@@ -349,11 +349,11 @@ xbps_repository_install_pkg(const char *pkg, bool by_pkgmatch)
 	if (by_pkgmatch) {
 		if (xbps_find_pkg_in_dict_by_pkgmatch(trans_dict,
 		    "unsorted_deps", pkg))
-			return 0;
+			goto out;
 	} else {
 		if (xbps_find_pkg_in_dict_by_name(trans_dict,
 		    "unsorted_deps", pkg))
-			return 0;
+			goto out;
 	}
 	/*
 	 * Set repository in pkg dictionary.
