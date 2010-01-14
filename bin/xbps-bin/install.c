@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -319,10 +319,23 @@ xbps_autoupdate_pkgs(bool yes)
 }
 
 int
-xbps_install_new_pkg(const char *pkgname)
+xbps_install_new_pkg(const char *pkg)
 {
 	prop_dictionary_t pkgd;
+	char *pkgname;
 	int rv = 0;
+	bool pkgmatch = false;
+
+	/*
+	 * Check if 'pkg' string is a pkgmatch valid pattern or it
+	 * is just a pkgname.
+	 */
+	if ((pkgname = xbps_get_pkgdep_name(pkg)))
+		pkgmatch = true;
+	else if ((pkgname = xbps_get_pkg_name(pkg)))
+		pkgmatch = true;
+	else
+		pkgname = __UNCONST(pkg);
 
 	/*
 	 * Find a package in a repository and prepare for installation.
@@ -330,16 +343,21 @@ xbps_install_new_pkg(const char *pkgname)
 	if ((pkgd = xbps_find_pkg_installed_from_plist(pkgname))) {
 		printf("Package '%s' is already installed.\n", pkgname);
 		prop_object_release(pkgd);
+		if (pkgmatch)
+			free(pkgname);
 		return 0;
 	}
-	rv = xbps_repository_install_pkg(pkgname);
-	if (rv != 0 && rv == EAGAIN) {
+	rv = xbps_repository_install_pkg(pkg, pkgmatch);
+	if (rv == EAGAIN) {
 		printf("Unable to locate '%s' in "
-		    "repository pool.\n", pkgname);
+		    "repository pool.\n", pkg);
 		rv = 0;
 	} else if (rv != 0 && rv != ENOENT) {
 		printf("Unexpected error: %s", strerror(errno));
 	}
+	
+	if (pkgmatch)
+		free(pkgname);
 
 	return rv;
 }

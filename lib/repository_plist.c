@@ -1,6 +1,6 @@
 /*-
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * Copyright (c) 2008, 2009 Joerg Sonnenberger <joerg (at) NetBSD.org>
- * Copyright (c) 2009 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -239,7 +239,7 @@ xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 	 * libfetch!
 	 */
 	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
-		pkgd = xbps_find_pkg_in_dict(rpool->rp_repod,
+		pkgd = xbps_find_pkg_in_dict_by_name(rpool->rp_repod,
 		    "packages", pkgname);
 		if (pkgd == NULL) {
 			if (errno != ENOENT)

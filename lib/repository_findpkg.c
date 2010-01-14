@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -178,7 +178,7 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 		 * Get the package dictionary from current repository.
 		 * If it's not there, pass to the next repository.
 		 */
-		pkgrd = xbps_find_pkg_in_dict(rpool->rp_repod,
+		pkgrd = xbps_find_pkg_in_dict_by_name(rpool->rp_repod,
 		    "packages", pkgname);
 		if (pkgrd == NULL) {
 			if (errno && errno != ENOENT) {
@@ -298,14 +298,15 @@ set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
 }
 
 int SYMEXPORT
-xbps_repository_install_pkg(const char *pkgname)
+xbps_repository_install_pkg(const char *pkg, bool by_pkgmatch)
 {
 	prop_dictionary_t origin_pkgrd = NULL, pkgrd = NULL;
 	prop_array_t unsorted;
 	struct repository_pool *rpool;
+	const char *pkgname;
 	int rv = 0;
 
-	assert(pkgname != NULL);
+	assert(pkg != NULL);
 
 	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;
@@ -315,8 +316,13 @@ xbps_repository_install_pkg(const char *pkgname)
 		 * Get the package dictionary from current repository.
 		 * If it's not there, pass to the next repository.
 		 */
-		pkgrd = xbps_find_pkg_in_dict(rpool->rp_repod,
-		    "packages", pkgname);
+		if (by_pkgmatch)
+			pkgrd = xbps_find_pkg_in_dict_by_pkgmatch(
+			    rpool->rp_repod, "packages", pkg);
+		else
+			pkgrd = xbps_find_pkg_in_dict_by_name(
+			    rpool->rp_repod, "packages", pkg);
+
 		if (pkgrd == NULL) {
 			if (errno && errno != ENOENT) {
 				rv = errno;
@@ -344,6 +350,8 @@ xbps_repository_install_pkg(const char *pkgname)
 		goto out;
 	}
 	origin_pkgrd = prop_dictionary_copy(pkgrd);
+
+	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname);
 
 	/*
 	 * Prepare required package dependencies.

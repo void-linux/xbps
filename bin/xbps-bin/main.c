@@ -46,7 +46,7 @@ usage(void)
 	"    autoremove\n"
 	"    autoupdate\n"
 	"    check\t\t[<pkgname>|<all>]\n"
-	"    install\t\t<pkgname(s)>\n"
+	"    install\t\t[<pkgname(s)>|<pkgpattern(s)>]\n"
 	"    list\n"
 	"    list-manual\n"
 	"    purge\t\t[<pkgname>|<all>]\n"

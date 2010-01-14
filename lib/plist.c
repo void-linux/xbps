@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -134,7 +134,7 @@ xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 	if (dict == NULL)
 		return NULL;
 
-	obj = xbps_find_pkg_in_dict(dict, "packages", pkgname);
+	obj = xbps_find_pkg_in_dict_by_name(dict, "packages", pkgname);
 	if (obj == NULL) {
 		prop_object_release(dict);
 		return NULL;
@@ -155,7 +155,7 @@ xbps_find_pkg_installed_from_plist(const char *pkgname)
 	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
 		return NULL;
 
-	pkgd = xbps_find_pkg_in_dict(d, "packages", pkgname);
+	pkgd = xbps_find_pkg_in_dict_by_name(d, "packages", pkgname);
 	if (pkgd == NULL)
 		goto fail;
 
@@ -179,8 +179,8 @@ fail:
 }
 
 prop_dictionary_t SYMEXPORT
-xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
-		      const char *pkgname)
+xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict, const char *key,
+			      const char *pkgname)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj = NULL;
@@ -190,8 +190,7 @@ xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
 	assert(pkgname != NULL);
 	assert(key != NULL);
 
-	iter = xbps_get_array_iter_from_dict(dict, key);
-	if (iter == NULL)
+	if ((iter = xbps_get_array_iter_from_dict(dict, key)) == NULL)
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
@@ -199,6 +198,35 @@ xbps_find_pkg_in_dict(prop_dictionary_t dict, const char *key,
 		    "pkgname", &dpkgn))
 			break;
 		if (strcmp(dpkgn, pkgname) == 0)
+			break;
+	}
+	prop_object_iterator_release(iter);
+	if (obj == NULL)
+		errno = ENOENT;
+
+	return obj;
+}
+
+prop_dictionary_t SYMEXPORT
+xbps_find_pkg_in_dict_by_pkgmatch(prop_dictionary_t dict, const char *key,
+				  const char *pkgmatch)
+{
+	prop_object_iterator_t iter;
+	prop_object_t obj = NULL;
+	const char *pkgver;
+
+	assert(dict != NULL);
+	assert(key != NULL);
+	assert(pkgmatch != NULL);
+
+	if ((iter = xbps_get_array_iter_from_dict(dict, key)) == NULL)
+		return NULL;
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgver", &pkgver))
+			break;
+		if (xbps_pkgdep_match(pkgver, __UNCONST(pkgmatch)))
 			break;
 	}
 	prop_object_iterator_release(iter);

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
 #include <archive_entry.h>
 
 /* Current release version */
-#define XBPS_RELVER		"20091222"
+#define XBPS_RELVER		"20100114"
 
 /* Default root PATH for xbps to store metadata info. */
 #define XBPS_META_PATH		"/var/db/xbps"
@@ -151,8 +151,12 @@ int SYMEXPORT	xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t,
 			int (*fn)(prop_object_t, void *, bool *),
 			void *);
 
-prop_dictionary_t SYMEXPORT	xbps_find_pkg_in_dict(prop_dictionary_t,
-					      const char *, const char *);
+prop_dictionary_t SYMEXPORT
+	xbps_find_pkg_in_dict_by_name(prop_dictionary_t,
+				      const char *, const char *);
+prop_dictionary_t SYMEXPORT
+	xbps_find_pkg_in_dict_by_pkgmatch(prop_dictionary_t,
+					  const char *, const char *);
 prop_dictionary_t SYMEXPORT	xbps_find_pkg_from_plist(const char *,
 						const char *);
 prop_dictionary_t SYMEXPORT
@@ -200,7 +204,7 @@ int SYMEXPORT	xbps_repository_find_pkg_deps(prop_dictionary_t,
 					      prop_dictionary_t);
 
 /* From lib/repository_findpkg.c */
-int SYMEXPORT	xbps_repository_install_pkg(const char *);
+int SYMEXPORT	xbps_repository_install_pkg(const char *, bool);
 int SYMEXPORT	xbps_repository_update_pkg(const char *, prop_dictionary_t);
 int SYMEXPORT	xbps_repository_update_allpkgs(void);
 prop_dictionary_t SYMEXPORT	xbps_repository_get_transaction_dict(void);

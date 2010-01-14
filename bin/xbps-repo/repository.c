@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -219,7 +219,7 @@ show_pkg_info_from_repolist(const char *pkgname)
 
 	SIMPLEQ_FOREACH(rp, &repopool_queue, chain) {
 		char *url = NULL;
-		repo_pkgd = xbps_find_pkg_in_dict(rp->rp_repod,
+		repo_pkgd = xbps_find_pkg_in_dict_by_name(rp->rp_repod,
 		    "packages", pkgname);
 		if (repo_pkgd == NULL) {
 			if (errno && errno != ENOENT) {
@@ -260,7 +260,8 @@ show_pkg_deps_from_repolist(const char *pkgname)
 	int rv = 0;
 
 	SIMPLEQ_FOREACH(rd, &repopool_queue, chain) {
-		pkgd = xbps_find_pkg_in_dict(rd->rp_repod, "packages", pkgname);
+		pkgd = xbps_find_pkg_in_dict_by_name(rd->rp_repod,
+		    "packages", pkgname);
 		if (pkgd == NULL) {
 			if (errno != ENOENT) {
 				rv = errno;

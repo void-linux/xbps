@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -129,7 +129,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	 * than current registered package, update the index; otherwise
 	 * pass to the next one.
 	 */
-	curpkgd = xbps_find_pkg_in_dict(idxdict, "packages", pkgname);
+	curpkgd = xbps_find_pkg_in_dict_by_name(idxdict, "packages", pkgname);
 	if (curpkgd == NULL) {
 		if (errno && errno != ENOENT) {
 			prop_object_release(newpkgd);

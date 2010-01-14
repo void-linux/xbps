@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -363,7 +363,8 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 * array of unsorted deps, and check if current required
 		 * dependency pattern is matched.
 		 */
-		curpkgd = xbps_find_pkg_in_dict(master, "unsorted_deps", pkgname);
+		curpkgd = xbps_find_pkg_in_dict_by_name(master,
+		    "unsorted_deps", pkgname);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				free(pkgname);
@@ -390,7 +391,8 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 * If required package is not in repo, add it into the
 		 * missing deps array and pass to the next one.
 		 */
-		curpkgd = xbps_find_pkg_in_dict(repo, "packages", pkgname);
+		curpkgd = xbps_find_pkg_in_dict_by_name(repo,
+		    "packages", pkgname);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				free(pkgname);

@@ -72,9 +72,11 @@ Please note that all targets are *case insensitive*.
 	'all' packages currently installed will be checked, otherwise only
 	*pkgname*.
 
-*install 'pkgname(s)'*::
-	Install binary package "*pkgname*" by searching it in the
-	repository pool. The package(s) will be 'download' (if working with
+*install 'pkgname(s)' | 'pkgpattern(s)'*::
+	Install binary package(s) from repository pool by specifying
+	"*pkgname(s)*" or "*package pattern(s)*".
+	The first repository matching the arguments will be used.
+	The package(s) will be 'download' (if working with
 	a remote repository), 'unpacked' and 'configured'. The 'unpack stage will
 	execute the *pre-install* action on its *INSTALL* script, and unpack its files.
 	The 'configure' stage will run the *post-install* action set on its
@@ -175,6 +177,20 @@ FILES
 
 */var/cache/xbps*:: xbps _cache_ directory for downloaded binary packages.
  +
+
+EXAMPLES
+--------
+*Install a package by specifying its name:*::
+
+	$ xbps-bin install foo
+
+*Install a package by specifying a package pattern:*::
+
+	$ xbps-bin install "*foo>=3.0*"
+
+*Install multiple packages by specifying names and package patterns:*::
+
+	$ xbps-bin install foo "*blah<=4.0*" baz-2.0 "*blob>4.[0-9]*"
 
 BUGS
 ----

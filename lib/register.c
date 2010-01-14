@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,8 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	}
 
 	if ((dict = prop_dictionary_internalize_from_file(plist)) != NULL) {
-		pkgd = xbps_find_pkg_in_dict(dict, "packages", pkgname);
+		pkgd = xbps_find_pkg_in_dict_by_name(dict,
+		    "packages", pkgname);
 		if (pkgd == NULL) {
 			rv = errno;
 			goto out;
