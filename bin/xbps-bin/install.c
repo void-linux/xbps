@@ -330,11 +330,23 @@ xbps_install_new_pkg(const char *pkg)
 	 * Check if 'pkg' string is a pkgmatch valid pattern or it
 	 * is just a pkgname.
 	 */
-	if ((pkgname = xbps_get_pkgdep_name(pkg)))
-		pkgmatch = true;
-	else if ((pkgname = xbps_get_pkg_name(pkg)))
-		pkgmatch = true;
-	else
+	if ((pkgname = xbps_get_pkgdep_name(pkg))) {
+		if (xbps_cmpver("0.0", pkgname) <= 0)
+			pkgmatch = true;
+		else {
+			free(pkgname);
+			pkgname = NULL;
+		}
+	}
+	if (pkgname == NULL && (pkgname = xbps_get_pkg_name(pkg))) {
+		if (xbps_cmpver("0.0", pkgname) <= 0)
+			pkgmatch = true;
+		else {
+			free(pkgname);
+			pkgname = NULL;
+		}
+	}
+	if (pkgname == NULL)
 		pkgname = __UNCONST(pkg);
 
 	/*
