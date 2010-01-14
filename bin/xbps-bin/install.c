@@ -323,7 +323,6 @@ static char *
 pkgname_from_pkgmatch(const char *pkg)
 {
 	const char *version;
-	char *pkgname = NULL;
 
 	/*
 	 * Check if 'pkg' string is a pkgmatch valid pattern or it
@@ -333,13 +332,12 @@ pkgname_from_pkgmatch(const char *pkg)
 	 */
 	if ((version = xbps_get_pkgdep_version(pkg))) {
 		while (*version) {
-			if (isdigit((unsigned char)*version)) {
+			if (!isdigit((unsigned char)*version)) {
 				version++;
 				continue;
 			}
 			if (xbps_cmpver("0", version) <= 0)
-				pkgname = xbps_get_pkgdep_name(pkg);
-			break;
+				return xbps_get_pkgdep_name(pkg);
 		}
 	}
 	if ((version = xbps_get_pkg_version(pkg))) {
@@ -369,12 +367,11 @@ pkgname_from_pkgmatch(const char *pkg)
 				break;
 
 			if (xbps_cmpver("0", version) <= 0)
-				pkgname = xbps_get_pkg_name(pkg);
-			break;
+				return xbps_get_pkg_name(pkg);
 		}
 	}
 
-	return pkgname;
+	return NULL;
 }
 
 int
