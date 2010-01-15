@@ -39,7 +39,8 @@ static void usage(void);
 static void
 usage(void)
 {
-	printf("Usage: xbps-repo [options] [action] [arguments]\n\n"
+	fprintf(stderr,
+	"Usage: xbps-repo [options] [action] [arguments]\n\n"
 	" Available actions:\n"
         "    add, genindex, list, remove, search, show, show-deps,\n"
 	"    show-files, sync\n"
@@ -102,7 +103,8 @@ main(int argc, char **argv)
 
 	if ((rv = xbps_repository_pool_init()) != 0) {
 		if (rv != ENOENT) {
-			printf("E: cannot get repository list pool! %s\n",
+			fprintf(stderr, 
+			    "E: cannot get repository list pool! %s\n",
 			    strerror(rv));
 			exit(EXIT_FAILURE);
 		}
@@ -152,7 +154,8 @@ main(int argc, char **argv)
 
 		rv = show_pkg_info_from_repolist(argv[1]);
 		if (rv == 0 && errno == ENOENT) {
-			printf("Unable to locate package '%s' from "
+			fprintf(stderr,
+			    "Unable to locate package '%s' from "
 			    "repository pool.\n", argv[1]);
 			rv = EINVAL;
 			goto out;
@@ -165,7 +168,8 @@ main(int argc, char **argv)
 
 		rv = show_pkg_deps_from_repolist(argv[1]);
 		if (rv == 0 && errno == ENOENT) {
-			printf("Unable to locate package '%s' from "
+			fprintf(stderr, 
+			    "Unable to locate package '%s' from "
 			    "repository pool.\n", argv[1]);
 			rv = EINVAL;
 			goto out;
@@ -179,7 +183,8 @@ main(int argc, char **argv)
 		pkgd = xbps_repository_get_pkg_plist_dict(argv[1],
 		    XBPS_PKGFILES);
 		if (pkgd == NULL) {
-			printf("E: couldn't read %s: %s.\n", XBPS_PKGFILES,
+			fprintf(stderr,
+			    "E: couldn't read %s: %s.\n", XBPS_PKGFILES,
 			    strerror(errno));
 			rv = errno;
 			goto out;

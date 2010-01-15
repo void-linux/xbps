@@ -56,7 +56,8 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 static void
 usage(void)
 {
-	printf("usage: xbps-uhelper [options] [action] [args]\n"
+	fprintf(stderr,
+	"usage: xbps-uhelper [options] [action] [args]\n"
 	"\n"
 	"  Available actions:\n"
 	"    cmpver, digest, fetch, getpkgdepname, getpkgname, getpkgrevision,\n"
@@ -131,7 +132,8 @@ main(int argc, char **argv)
 
 	plist = xbps_xasprintf("%s/%s/%s", root, XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
-		printf("%s=> ERROR: couldn't find regpkdb file (%s)%s\n",
+		fprintf(stderr,
+		    "%s=> ERROR: couldn't find regpkdb file (%s)%s\n",
 		    MSG_ERROR, strerror(errno), MSG_RESET);
 		exit(EXIT_FAILURE);
 	}
@@ -168,7 +170,7 @@ main(int argc, char **argv)
 			    in_chroot ? "[chroot] " : "", argv[1], argv[2],
 			    MSG_RESET);
 		} else if (rv != 0) {
-			printf("%s%s=> couldn't register %s-%s "
+			fprintf(stderr, "%s%s=> couldn't register %s-%s "
 			    "(%s).%s\n", MSG_ERROR,
 			    in_chroot ? "[chroot] " : "" , argv[1], argv[2],
 			    strerror(rv), MSG_RESET);
@@ -185,10 +187,10 @@ main(int argc, char **argv)
 
 		rv = xbps_remove_pkg_dict_from_file(argv[1], plist);
 		if (rv == ENOENT) {
-			printf("%s=> ERROR: %s not registered "
+			fprintf(stderr, "%s=> ERROR: %s not registered "
 			    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET); 
 		} else if (rv != 0) {
-			printf("%s=> ERROR: couldn't unregister %s "
+			fprintf(stderr, "%s=> ERROR: couldn't unregister %s "
 			    "from database (%s)%s\n", MSG_ERROR,
 			    argv[1], strerror(rv), MSG_RESET);
 			exit(EXIT_FAILURE);
@@ -221,7 +223,8 @@ main(int argc, char **argv)
 
 		dict = prop_dictionary_internalize_from_file(argv[1]);
 		if (dict == NULL) {
-			printf("=> ERROR: couldn't sanitize %s plist file "
+			fprintf(stderr,
+			    "=> ERROR: couldn't sanitize %s plist file "
 			    "(%s)\n", argv[1], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
@@ -234,7 +237,8 @@ main(int argc, char **argv)
 
 		version = xbps_get_pkg_version(argv[1]);
 		if (version == NULL) {
-			printf("Invalid string, expected <string>-<version>\n");
+			fprintf(stderr,
+			    "Invalid string, expected <string>-<version>\n");
 			exit(EXIT_FAILURE);
 		}
 		printf("%s\n", version);
@@ -246,7 +250,8 @@ main(int argc, char **argv)
 
 		pkgname = xbps_get_pkg_name(argv[1]);
 		if (pkgname == NULL) {
-			printf("Invalid string, expected <string>-<version>\n");
+			fprintf(stderr,
+			    "Invalid string, expected <string>-<version>\n");
 			exit(EXIT_FAILURE);
 		}
 		printf("%s\n", pkgname);
@@ -300,7 +305,8 @@ main(int argc, char **argv)
 		for (i = 1; i < argc; i++) {
 			hash = xbps_get_file_hash(argv[i]);
 			if (hash == NULL) {
-				printf("Couldn't get hash for %s (%s)\n",
+				fprintf(stderr,
+				    "E: couldn't get hash for %s (%s)\n",
 				    argv[i], strerror(errno));
 				exit(EXIT_FAILURE);
 			}

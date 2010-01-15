@@ -79,13 +79,15 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 			}
 			rv = xbps_check_file_hash(path, sha256);
 			if (rv == ENOENT) {
-				printf("WARNING: '%s' doesn't exist!\n", file);
+				fprintf(stderr,
+				    "WARNING: '%s' doesn't exist!\n", file);
 				free(path);
 				rv = 0;
 				continue;
 			} else if (rv == ERANGE) {
 				if (flags & XBPS_FLAG_VERBOSE)
-					printf("WARNING: '%s' SHA256 mismatch, "
+					fprintf(stderr,
+					    "WARNING: '%s' SHA256 mismatch, "
 				    	    "preserving...\n", file);
 				rv = 0;
 				free(path);
@@ -102,7 +104,8 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 					continue;
 				}
 				if (flags & XBPS_FLAG_VERBOSE) {
-					printf("WARNING: can't remove "
+					fprintf(stderr,
+					    "WARNING: can't remove "
 				    	    "directory %s (%s)\n", file,
 				    	strerror(errno));
 					free(path);
@@ -113,7 +116,8 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 		if (strcmp(key, "dirs")) {
 			if ((rv = remove(path)) == -1) {
 				if (flags & XBPS_FLAG_VERBOSE)
-					printf("WARNING: can't remove %s "
+					fprintf(stderr,
+					    "WARNING: can't remove %s "
 					    "(%s)\n", file, strerror(errno));
 
 				rv = 0;
@@ -171,7 +175,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		rv = xbps_file_chdir_exec(rootdir, buf, "pre", pkgname,
 		    version, update ? "yes" : "no", NULL);
 		if (rv != 0) {
-			printf("%s: prerm action target error (%s)\n", pkgname,
+			fprintf(stderr,
+			    "%s: prerm action target error (%s)\n", pkgname,
 			    strerror(errno));
 			free(buf);
 			return rv;
@@ -223,7 +228,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	if (update == false && prepostf) {
 		if ((rv = xbps_file_chdir_exec(rootdir, buf, "post",
 		     pkgname, version, NULL)) != 0) {
-			printf("%s: postrm action target error (%s)\n",
+			fprintf(stderr,
+			    "%s: postrm action target error (%s)\n",
 			    pkgname, strerror(errno));
 			free(buf);
 			return rv;

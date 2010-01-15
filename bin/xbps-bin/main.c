@@ -41,7 +41,8 @@ static int	list_pkgs_in_dict(prop_object_t, void *, bool *);
 static void
 usage(void)
 {
-	printf("Usage: xbps-bin [options] [target] [arguments]\n\n"
+	fprintf(stderr,
+	"Usage: xbps-bin [options] [target] [arguments]\n\n"
 	" Available targets:\n"
 	"    autoremove\n"
 	"    autoupdate\n"
@@ -167,7 +168,8 @@ main(int argc, char **argv)
 	if ((dict = xbps_regpkgs_dictionary_init()) == NULL) {
 		if (errno != ENOENT) {
 			rv = errno;
-			printf("Couldn't initialized regpkgdb dict: %s\n",
+			fprintf(stderr,
+			    "E: couldn't initialize regpkgdb dict: %s\n",
 			    strerror(errno));
 			goto out;
 		}

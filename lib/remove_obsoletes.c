@@ -90,7 +90,8 @@ again:
 			goto out;
 		}
 		if (remove(buf) == -1) {
-			printf("WARNING: couldn't remove obsolete %s: %s\n",
+			fprintf(stderr,
+			    "WARNING: couldn't remove obsolete %s: %s\n",
 			    dolinks ? "link" : "file",
 			    prop_string_cstring_nocopy(oldstr));
 			free(buf);

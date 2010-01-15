@@ -59,7 +59,8 @@ xbps_show_pkg_deps(const char *pkgname)
 	propsd = prop_dictionary_internalize_from_file(path);
 	free(path);
 	if (propsd == NULL) {
-		printf("%s: unexistent %s metadata file.\n", pkgname,
+		fprintf(stderr,
+		    "%s: unexistent %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		return errno;
 	}

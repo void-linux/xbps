@@ -129,17 +129,20 @@ xbps_check_pkg_integrity(const char *pkgname)
 	propsd = prop_dictionary_internalize_from_file(path);
 	free(path);
 	if (propsd == NULL) {
-		printf("%s: unexistent %s metadata file.\n", pkgname,
+		fprintf(stderr,
+		    "E: %s: unexistent %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = errno;
 		goto out;
 	} else if (prop_object_type(propsd) != PROP_TYPE_DICTIONARY) {
-		printf("%s: invalid %s metadata file.\n", pkgname,
+		fprintf(stderr,
+		    "E: %s: invalid %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = EINVAL;
 		goto out1;
 	} else if (prop_dictionary_count(propsd) == 0) {
-		printf("%s: incomplete %s metadata file.\n", pkgname,
+		fprintf(stderr,
+		    "E: %s: incomplete %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = EINVAL;
 		goto out1;
@@ -158,24 +161,28 @@ xbps_check_pkg_integrity(const char *pkgname)
 	filesd = prop_dictionary_internalize_from_file(path);
 	free(path);
 	if (filesd == NULL) {
-		printf("%s: unexistent %s metadata file.\n", pkgname,
+		fprintf(stderr,
+		    "E: %s: unexistent %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = ENOENT;
 		goto out1;
 	} else if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY) {
-		printf("%s: invalid %s metadata file.\n", pkgname,
+		fprintf(stderr,
+		    "E: %s: invalid %s metadata file.\n", pkgname,
 		    XBPS_PKGFILES);
 		rv = EINVAL;
 		goto out2;
 	} else if (prop_dictionary_count(filesd) == 0) {
-		printf("%s: incomplete %s metadata file.\n", pkgname,
+		fprintf(stderr,
+		    "E: %s: incomplete %s metadata file.\n", pkgname,
 		    XBPS_PKGFILES);
 		rv = EINVAL;
 		goto out2;
 	} else if (((array = prop_dictionary_get(filesd, "files")) == NULL) ||
 		   ((array = prop_dictionary_get(filesd, "links")) == NULL) ||
 		   ((array = prop_dictionary_get(filesd, "dirs")) == NULL)) {
-			printf("%s: incomplete %s metadata file.\n", pkgname,
+			fprintf(stderr,
+			    "E: %s: incomplete %s metadata file.\n", pkgname,
 			    XBPS_PKGFILES);
 			rv = EINVAL;
 			goto out2;
@@ -218,17 +225,18 @@ xbps_check_pkg_integrity(const char *pkgname)
 			case 0:
 				break;
 			case ENOENT:
-				printf("%s: unexistent file %s.\n",
+				fprintf(stderr, "%s: unexistent file %s.\n",
 				    pkgname, file);
 				files_broken = true;
 				break;
 			case ERANGE:
-                                printf("%s: hash mismatch for %s.\n",
+                                fprintf(stderr, "%s: hash mismatch for %s.\n",
 				    pkgname, file);
 				files_broken = true;
 				break;
 			default:
-				printf("%s: unexpected error for %s (%s)\n",
+				fprintf(stderr,
+				    "%s: unexpected error for %s (%s)\n",
 				    pkgname, file, strerror(rv));
 				break;
 			}
@@ -268,11 +276,13 @@ xbps_check_pkg_integrity(const char *pkgname)
 			}
 			if ((rv = access(path, R_OK)) == -1) {
 				if (errno == ENOENT) {
-					printf("%s: unexistent file %s\n",
+					fprintf(stderr,
+					    "%s: unexistent file %s\n",
 					    pkgname, file);
 					broken = true;
 				} else
-					printf("%s: unexpected error for "
+					fprintf(stderr,
+					    "%s: unexpected error for "
 					    "%s (%s)\n", pkgname, file,
 					    strerror(errno));
 			}

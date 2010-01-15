@@ -145,8 +145,8 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 		if ((rv = xbps_file_chdir_exec(rootdir, buf, "post",
 		     pkgname, lver, update ? "yes" : "no", NULL)) != 0) {
 			free(buf);
-			printf("%s: post INSTALL action returned: %s\n",
-			    pkgname, strerror(errno));
+			fprintf(stderr, "%s: post INSTALL action "
+			    "returned: %s\n", pkgname, strerror(errno));
 			return rv;
 		}
 	} else {

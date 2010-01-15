@@ -203,7 +203,8 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 			     pkgname, version, update ? "yes" : "no",
 			     NULL)) != 0) {
 				free(buf);
-				printf("%s: preinst action target error %s\n",
+				fprintf(stderr,
+				    "%s: preinst action target error %s\n",
 				    pkgname, strerror(errno));
 				return rv;
 			}
@@ -271,12 +272,13 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		if (archive_read_extract(ar, entry, lflags) != 0) {
 			rv = archive_errno(ar);
 			if (rv != EEXIST) {
-				printf("ERROR: %s...exiting!\n",
+				fprintf(stderr, "ERROR: %s...exiting!\n",
 				    archive_error_string(ar));
 				return rv;;
 			} else if (rv == EEXIST) {
 				if (flags & XBPS_FLAG_VERBOSE) {
-					printf("WARNING: ignoring existent "
+					fprintf(stderr,
+					    "WARNING: ignoring existent "
 					    "path: %s\n",
 					    archive_entry_pathname(entry));
 				}

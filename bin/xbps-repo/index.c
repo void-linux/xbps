@@ -109,8 +109,8 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	newpkgd = xbps_repository_get_pkg_plist_dict_from_url(file,
 	    XBPS_PKGPROPS);
 	if (newpkgd == NULL) {
-		printf("%s: can't read %s metadata file, skipping!\n",
-		    file, XBPS_PKGPROPS);
+		fprintf(stderr, "xbps-repo: can't read %s %s metadata "
+		    "file, skipping!\n", file, XBPS_PKGPROPS);
 		goto out;
 	}
 	if (!prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname", &pkgname)) {
@@ -144,7 +144,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 			goto out;
 		}
 		if (xbps_cmpver(version, regver) <= 0) {
-			printf("W: skipping %s. %s-%s already "
+			fprintf(stderr, "W: skipping %s. %s-%s already "
 			    "registered.\n", filen, pkgname, regver);
 			prop_object_release(newpkgd);
 			rv = EEXIST;
@@ -168,7 +168,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 			goto out;
 		}
 		if (remove(oldfilepath) == -1) {
-			printf("E: Couldn't remove old package file "
+			fprintf(stderr, "E: Couldn't remove old package file "
 			    "'%s'!\n", oldfilen);
 			free(oldfilepath);
 			prop_object_release(newpkgd);
@@ -188,7 +188,8 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 			free(tmpstr);
 			goto out;
 		}
-		printf("W: removed outdated binpkg file for '%s'.\n", tmpstr);
+		fprintf(stderr, "W: removed outdated binpkg file for "
+		    "'%s'.\n", tmpstr);
 		free(tmpstr);
 	}
 
@@ -308,7 +309,8 @@ xbps_repo_genindex(const char *pkgdir)
 
 		dirp = opendir(path);
 		if (dirp == NULL) {
-			printf("E: unexistent '%s' directory!\n", path);
+			fprintf(stderr, "E: unexistent '%s' directory!\n",
+			    path);
 			free(path);
 			continue;
 		}
