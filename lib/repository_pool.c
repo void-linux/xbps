@@ -101,16 +101,17 @@ xbps_repository_pool_init(void)
 
 		rpool->rp_uri = prop_string_cstring(obj);
 		if (rpool->rp_uri == NULL) {
+			free(rpool);
 			free(plist);
 			rv = errno;
 			goto out;
 		}
 		rpool->rp_repod = prop_dictionary_internalize_from_file(plist);
 		if (rpool->rp_repod == NULL) {
+			free(rpool->rp_uri);
+			free(rpool);
 			free(plist);
 			if (errno == ENOENT) {
-				free(rpool->rp_uri);
-				free(rpool);
 				errno = 0;
 				nmissing++;
 				continue;
