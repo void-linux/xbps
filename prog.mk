@@ -31,19 +31,19 @@ ifdef MAN
 endif
 
 %.o: %.c
-	@echo "    [CC] $@"
+	@echo " [CC]\t\t$@"
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 $(MAN):
-	@echo "    [ASCIIDOC] $(MAN)"
+	@echo " [ASCIIDOC]\t$(MAN)"
 	@a2x -f manpage $(MAN).txt
 
 $(BIN).static: $(OBJS)
-	@echo "    [CCLD] $@"
+	@echo " [CCLD]\t\t$@"
 	@$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
 		$(STATIC_LIBS) -o $@ >/dev/null 2>&1
 
 $(BIN): $(OBJS)
-	@echo "    [CCLD] $@"
+	@echo " [CCLD]\t\t$@"
 	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -pie -o $@
 

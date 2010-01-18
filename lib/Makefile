@@ -1,17 +1,22 @@
 include ../vars.mk
 
-LIBMAJOR = 0
-LIBMINOR = 0
-LIBMICRO = 0
-LIBXBPS_SHLIB = libxbps.so.$(LIBMAJOR).$(LIBMINOR).$(LIBMICRO)
+LIBXBPS_MAJOR = 0
+LIBXBPS_MINOR = 0
+LIBXBPS_MICRO = 0
+LIBXBPS_SHLIB = libxbps.so.$(LIBXBPS_MAJOR).$(LIBXBPS_MINOR).$(LIBXBPS_MICRO)
 LDFLAGS += -lprop -larchive -lssl
-LDFLAGS += -shared -Wl,-soname,libxbps.so.$(LIBMAJOR)
+LDFLAGS += -shared -Wl,-soname,libxbps.so.$(LIBXBPS_MAJOR)
 
 # libfetch
-LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o fetch/ftp.o fetch/http.o
+LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
+LIBFETCH_OBJS += fetch/ftp.o fetch/http.o
+LIBFETCH_CPPFLAGS = -DFTP_COMBINE_CWDS -DNETBSD -DINET6 -DWITH_SSL
+LIBFETCH_CFLAGS = -Wno-unused-macros -Wno-conversion -Wno-stack-protector
+LIBFETCH_INCS = fetch/common.h
+LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
 # libxbps
-OBJS += configure.o config_files.o cmpver.o download.o fexec.o
+OBJS = configure.o config_files.o cmpver.o download.o fexec.o
 OBJS += humanize_number.o orphans.o plist.o purge.o register.o
 OBJS += regpkgs_dictionary.o remove.o remove_obsoletes.o repository.o
 OBJS += repository_finddeps.o repository_findpkg.o repository_plist.o
@@ -19,25 +24,35 @@ OBJS += repository_pool.o repository_sync_index.o requiredby.o sha256.o
 OBJS += sortdeps.o state.o unpack.o util.o pkgmatch.o mkpath.o
 
 .PHONY: all
-all: libfetch libxbps.so libxbps.a
+all: libxbps.so libxbps.a
 
-libfetch:
-	@$(MAKE) -C fetch
+fetch/ftperr.h: fetch/ftp.errors
+	@echo " [GEN]\t\t$@"
+	@./fetch/errlist.sh ftp_errlist FTP $< > $@
 
-%.o: %.c
-	@echo "    [CC] $@"
-	@$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $<
+fetch/httperr.h: fetch/http.errors
+	@echo " [GEN]\t\t$@"
+	@./fetch/errlist.sh http_errlist HTTP $< > $@
+
+$(LIBFETCH_OBJS): %.o: %.c $(LIBFETCH_INCS) $(LIBFETCH_GEN)
+	@echo " [CC]\t\t$@"
+	@$(CC) $(CPPFLAGS) $(LIBFETCH_CPPFLAGS) $(CFLAGS) \
+		$(LIBFETCH_CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
+
+$(OBJS): %.o: %.c
+	@echo " [CC]\t\t$@"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
 
 libxbps.so: $(OBJS) $(LIBFETCH_OBJS)
-	@echo "    [CCLD] $@"
+	@echo " [CCLD]\t\t$@"
 	@$(CC) $(LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
-	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBMAJOR)
+	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBXBPS_MAJOR)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
 libxbps.a: $(OBJS) $(LIBFETCH_OBJS)
-	@echo "    [AR] $@"
+	@echo " [AR]\t\t$@"
 	@$(AR) rcs $@ $^
-	@echo "    [RANLIB] $@"
+	@echo " [RANLIB]\t$@"
 	@ranlib $@
 
 .PHONY: install
@@ -46,7 +61,7 @@ install: all
 	install -m 644 libxbps.a $(LIBDIR)
 	install -m 755 $(LIBXBPS_SHLIB) $(LIBDIR)
 	cp -a libxbps.so $(LIBDIR)
-	cp -a libxbps.so.$(LIBMAJOR) $(LIBDIR)
+	cp -a libxbps.so.$(LIBXBPS_MAJOR) $(LIBDIR)
 
 .PHONY: uninstall
 uninstall:
@@ -54,5 +69,5 @@ uninstall:
 
 .PHONY: clean
 clean:
-	-rm -f libxbps* $(OBJS)
-	@$(MAKE) -C fetch clean
+	-rm -f libxbps* $(OBJS) $(LIBFETCH_OBJS)
+	-rm -f $(LIBFETCH_GEN)

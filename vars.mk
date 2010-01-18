@@ -25,5 +25,5 @@ CFLAGS = $(DEBUG_FLAGS) $(WARNFLAGS) -fPIC -DPIC -fstack-protector-all
 SHAREDLIB_CFLAGS = -fvisibility=hidden
 
 # Grr, hate the static libs!
-STATIC_LIBS =	-lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl \
-		-lattr -llzma -lbz2 -lz
+STATIC_LIBS =	-lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl
+STATIC_LIBS +=	-lattr -llzma -lbz2 -lz
