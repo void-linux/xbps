@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -154,6 +154,33 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	if (xbps_check_is_installed_pkgname(pkgname))
 		update = true;
 
+	/*
+	 * If we are updating an essential package, we have to run the
+	 * pre-remove stage by the current package, because later some
+	 * files could be removed.
+	 */
+	if (update && essential) {
+		buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
+		    XBPS_META_PATH, pkgname);
+		if (buf == NULL)
+			return errno;
+		if (access(buf, R_OK|X_OK) == 0) {
+			if ((rv = xbps_file_chdir_exec(rootdir, buf, "pre",
+			     pkgname, version, "yes", NULL)) != 0) {
+				fprintf(stderr, "%s: prerm action target error"
+				    "(%s) while updating!\n",
+				    pkgname, strerror(errno));
+				free(buf);
+				return rv;
+			}
+		}
+		free(buf);
+		buf = NULL;
+	}
+
+	/*
+	 * Process the archive files.
+	 */
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		if (entry_idx >= 5) {
 			/*
@@ -167,6 +194,42 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 
 		entry_str = archive_entry_pathname(entry);
 		set_extract_flags(&lflags);
+
+		/*
+		 * While updating, always remove current INSTALL/REMOVE
+		 * scripts, because a package upgrade might not have those
+		 * anymore.
+		 */
+		if (update) {
+			buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
+			    XBPS_META_PATH, pkgname);
+			if (buf == NULL)
+				return errno;
+			if (access(buf, R_OK|X_OK) == 0) {
+				if (unlink(buf) == -1) {
+					free(buf);
+					return errno;
+				}
+			}
+			free(buf);
+			buf = NULL;
+			buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
+			    XBPS_META_PATH, pkgname);
+			if (buf == NULL)
+				return errno;
+			if (access(buf, R_OK|X_OK) == 0) {
+				if (unlink(buf) == -1) {
+					free(buf);
+					return errno;
+				}
+			}
+			free(buf);
+			buf = NULL;
+		}
+
+		/*
+		 * Now check what currenty entry in the archive contains.
+		 */
 		if (((strcmp("./INSTALL", entry_str)) == 0) ||
 		    ((strcmp("./REMOVE", entry_str)) == 0) ||
 		    ((strcmp("./files.plist", entry_str)) == 0) ||
@@ -333,7 +396,8 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		}
 		free(buf2);
 	}
-	prop_object_release(filesd);
+	if (filesd)
+		prop_object_release(filesd);
 
 	return rv;
 }
