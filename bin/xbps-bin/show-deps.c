@@ -42,7 +42,7 @@ xbps_show_pkg_deps(const char *pkgname)
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
+	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;
@@ -79,7 +79,7 @@ xbps_show_pkg_reverse_deps(const char *pkgname)
 	prop_dictionary_t pkgd;
 	int rv = 0;
 
-	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
+	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;

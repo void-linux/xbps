@@ -27,6 +27,12 @@
 
 #include <xbps_api.h>
 
+/**
+ * @file lib/pkgmatch.c
+ * @brief Package version matching routines
+ * @defgroup vermatch Package version matching functions
+ */
+
 static int
 csh_match(const char *pattern, const char *string, int flags)
 {
@@ -106,8 +112,8 @@ csh_match(const char *pattern, const char *string, int flags)
 	return ret;
 }
 
-int SYMEXPORT
-xbps_pkgdep_match(const char *instpkg, char *pattern)
+int
+xbps_pkgpattern_match(const char *instpkg, char *pattern)
 {
 	const char *fname = instpkg;
 	char basefname[PATH_MAX], condchar = '\0', *condition;

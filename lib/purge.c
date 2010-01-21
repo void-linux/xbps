@@ -31,9 +31,77 @@
 
 #include <xbps_api.h>
 
-static int	remove_pkg_metadata(const char *);
+/**
+ * @file lib/purge.c
+ * @brief Package purging routines
+ * @defgroup purge Package purging functions
+ *
+ * These functions will purge an specified package or all packages.
+ * Only packages in <b>config-files</b> state will be processed
+ * (unless overriden). Package purging steps:
+ *
+ * 1- Its <b>post-remove</b> target specified in the REMOVE script
+ * will be executed.
+ *
+ * 2- Unmodified configuration files and directories containing them
+ * will be removed (if empty).
+ *
+ * 3- Its metadata directory and all its files will be removed.
+ *
+ * 4- It will be unregistered from the installed packages database with
+ * xbps_unregister_pkg().
+ */
 
-int SYMEXPORT
+static int
+remove_pkg_metadata(const char *pkgname)
+{
+	struct dirent *dp;
+	DIR *dirp;
+	char *metadir, *path;
+	int flags = 0, rv = 0;
+
+	assert(pkgname != NULL);
+
+	flags = xbps_get_flags();
+
+	metadir = xbps_xasprintf("%s/%s/metadata/%s", xbps_get_rootdir(),
+	     XBPS_META_PATH, pkgname);
+	if (metadir == NULL)
+		return errno;
+
+	dirp = opendir(metadir);
+	if (dirp == NULL) {
+		free(metadir);
+		return errno;
+	}
+
+	while ((dp = readdir(dirp)) != NULL) {
+		if ((strcmp(dp->d_name, ".") == 0) ||
+		    (strcmp(dp->d_name, "..") == 0))
+			continue;
+
+		path = xbps_xasprintf("%s/%s", metadir, dp->d_name);
+		if (path == NULL) {
+			(void)closedir(dirp);
+			free(metadir);
+			return -1;
+		}
+
+		if ((rv = unlink(path)) == -1) {
+			if (flags & XBPS_FLAG_VERBOSE)
+				printf("WARNING: can't remove %s (%s)\n",
+				    pkgname, strerror(errno));
+		}
+		free(path);
+	}
+	(void)closedir(dirp);
+	rv = rmdir(metadir);
+	free(metadir);
+
+	return rv;
+}
+
+int
 xbps_purge_all_pkgs(void)
 {
 
@@ -73,12 +141,7 @@ out:
 	return rv;
 }
 
-/*
- * Purge a package that is currently in "config-files" state.
- * This removes configuration files if they weren't modified,
- * removes metadata files and fully unregisters the package.
- */
-int SYMEXPORT
+int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict;
@@ -129,59 +192,13 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	 * Remove metadata dir and unregister package.
 	 */
 	if ((rv = remove_pkg_metadata(pkgname)) == 0) {
-		if ((rv = xbps_unregister_pkg(pkgname)) == 0)
-			printf("Package %s has been purged successfully.\n",
-			    pkgname);
-	}
-
-	return rv;
-}
-
-static int
-remove_pkg_metadata(const char *pkgname)
-{
-	struct dirent *dp;
-	DIR *dirp;
-	char *metadir, *path;
-	int flags = 0, rv = 0;
-
-	assert(pkgname != NULL);
-
-	flags = xbps_get_flags();
-
-	metadir = xbps_xasprintf("%s/%s/metadata/%s", xbps_get_rootdir(),
-	     XBPS_META_PATH, pkgname);
-	if (metadir == NULL)
-		return errno;
-
-	dirp = opendir(metadir);
-	if (dirp == NULL) {
-		free(metadir);
-		return errno;
-	}
-
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, ".") == 0) ||
-		    (strcmp(dp->d_name, "..") == 0))
-			continue;
-
-		path = xbps_xasprintf("%s/%s", metadir, dp->d_name);
-		if (path == NULL) {
-			(void)closedir(dirp);
-			free(metadir);
-			return -1;
+		if ((rv = xbps_unregister_pkg(pkgname)) == 0) {
+			if (flags & XBPS_FLAG_VERBOSE) {
+				printf("Package %s purged "
+				    "successfully.\n", pkgname);
+			}
 		}
-
-		if ((rv = unlink(path)) == -1) {
-			if (flags & XBPS_FLAG_VERBOSE)
-				printf("WARNING: can't remove %s (%s)\n",
-				    pkgname, strerror(errno));
-		}
-		free(path);
 	}
-	(void)closedir(dirp);
-	rv = rmdir(metadir);
-	free(metadir);
 
 	return rv;
 }

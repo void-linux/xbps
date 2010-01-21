@@ -37,11 +37,13 @@
 #include <sys/stat.h>
 
 #include <xbps_api.h>
-/*
- * mkpath -- create directories.
- *	path     - path
- *	mode     - file mode of terminal directory
+
+/**
+ * @file lib/mkpath.c
+ * @brief Generic directory creation routines
+ * @defgroup dircreate Generic directory creation functions
  */
+
 int
 xbps_mkpath(char *path, mode_t mode)
 {

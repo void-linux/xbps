@@ -34,8 +34,6 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-static void usage(void);
-
 static void
 usage(void)
 {
@@ -122,7 +120,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		SIMPLEQ_FOREACH(rpool, &repopool_queue, chain)
+		SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries)
 			printf("%s\n", rpool->rp_uri);
 
 	} else if ((strcasecmp(argv[0], "rm") == 0) ||
@@ -141,7 +139,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
+		SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
 			printf("From %s repository ...\n", rpool->rp_uri);
 			(void)xbps_callback_array_iter_in_dict(rpool->rp_repod,
 			    "packages", show_pkg_namedesc, argv[1]);

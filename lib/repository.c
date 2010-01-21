@@ -30,7 +30,13 @@
 
 #include <xbps_api.h>
 
-int SYMEXPORT
+/**
+ * @file lib/repository.c
+ * @brief Repository (un)registration routines
+ * @defgroup repo_register Repository (un)registration functions
+ */
+
+int
 xbps_repository_register(const char *uri)
 {
 	prop_dictionary_t dict;
@@ -106,7 +112,7 @@ out:
 	return rv;
 }
 
-int SYMEXPORT
+int
 xbps_repository_unregister(const char *uri)
 {
 	prop_dictionary_t dict;

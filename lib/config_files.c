@@ -32,7 +32,7 @@
 
 #include <xbps_api.h>
 
-int
+int HIDDEN
 xbps_config_file_from_archive_entry(prop_dictionary_t d,
 				    struct archive_entry *entry,
 				    const char *pkgname,

@@ -42,6 +42,13 @@
 #include <xbps_api.h>
 #include "fetch.h"
 
+/**
+ * @file lib/download.c
+ * @brief Download routines
+ * @defgroup download Internal download functions
+ *
+ * These functions allow you to download files.
+ */
 struct xferstat {
 	struct timeval	 start;
 	struct timeval	 last;
@@ -164,7 +171,7 @@ stat_end(struct xferstat *xsp)
 	fprintf(stderr, "\033[K\n");
 }
 
-const char SYMEXPORT *
+const char *
 xbps_fetch_error_string(void)
 {
 	return fetchLastErrString;
@@ -183,11 +190,7 @@ print_time(time_t *t)
 }
 #endif
 
-/*
- * Returns -1 on error, 0 if not download (because local/remote
- * size and/or mtime match) and 1 if downloaded successfully.
- */
-int SYMEXPORT
+int
 xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		const char *flags)
 {

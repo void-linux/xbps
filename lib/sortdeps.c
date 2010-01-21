@@ -59,7 +59,7 @@ find_sorteddep_by_name(const char *pkgname)
 	return sdep;
 }
 
-int SYMEXPORT
+int HIDDEN
 xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 {
 	prop_array_t sorted, unsorted, rundeps;
@@ -149,7 +149,7 @@ again:
 				rv = EINVAL;
 				goto out;
 			}
-			pkgnamedep = xbps_get_pkgdep_name(str);
+			pkgnamedep = xbps_get_pkgpattern_name(str);
 			if (pkgnamedep == NULL) {
 				free(sdep);
 				rv = errno;

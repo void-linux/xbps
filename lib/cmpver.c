@@ -223,7 +223,7 @@ get_component(const char *position, version_component *component)
  * of the version should conform to the porting guidelines. It can contain
  * multiple components, separated by a period, including letters.
  */
-int SYMEXPORT
+int
 xbps_cmpver(const char *pkg1, const char *pkg2)
 {
     const char *v1, *v2, *ve1, *ve2;

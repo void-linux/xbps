@@ -222,7 +222,7 @@ show_pkg_info_from_repolist(const char *pkgname)
 	prop_dictionary_t repo_pkgd, pkg_propsd;
 	int rv = 0;
 
-	SIMPLEQ_FOREACH(rp, &repopool_queue, chain) {
+	SIMPLEQ_FOREACH(rp, &rp_queue, rp_entries) {
 		char *url = NULL;
 		repo_pkgd = xbps_find_pkg_in_dict_by_name(rp->rp_repod,
 		    "packages", pkgname);
@@ -264,7 +264,7 @@ show_pkg_deps_from_repolist(const char *pkgname)
 	const char *ver;
 	int rv = 0;
 
-	SIMPLEQ_FOREACH(rd, &repopool_queue, chain) {
+	SIMPLEQ_FOREACH(rd, &rp_queue, rp_entries) {
 		pkgd = xbps_find_pkg_in_dict_by_name(rd->rp_repod,
 		    "packages", pkgname);
 		if (pkgd == NULL) {
@@ -294,7 +294,7 @@ repository_sync(void)
 	char *plist;
 	int rv = 0;
 
-	SIMPLEQ_FOREACH(rp, &repopool_queue, chain) {
+	SIMPLEQ_FOREACH(rp, &rp_queue, rp_entries) {
 		if (!xbps_check_is_repo_string_remote(rp->rp_uri))
 			continue;
 

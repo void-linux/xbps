@@ -31,6 +31,12 @@
 
 #include <xbps_api.h>
 
+/**
+ * @file lib/state.c
+ * @brief Package state handling routines
+ * @defgroup pkgstates Package state handling functions
+ */
+
 static int
 set_new_state(prop_dictionary_t dict, pkg_state_t state)
 {
@@ -96,14 +102,14 @@ get_state(prop_dictionary_t dict)
 	return state;
 }
 
-int SYMEXPORT
+int
 xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 {
 	prop_dictionary_t pkgd;
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
+	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL)
 		return errno;
 
@@ -114,7 +120,7 @@ xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 	return 0;
 }
 
-int SYMEXPORT
+int
 xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 {
 	assert(dict != NULL);
@@ -125,7 +131,7 @@ xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 	return 0;
 }
 
-int SYMEXPORT
+int
 xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 {
 	assert(dict != NULL);
@@ -133,7 +139,7 @@ xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 	return set_new_state(dict, state);
 }
 
-int SYMEXPORT
+int
 xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 {
 	prop_dictionary_t dict = NULL, pkgd;

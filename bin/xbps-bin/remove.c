@@ -130,7 +130,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force)
 	 * First check if package is required by other packages.
 	 */
 	for (i = 1; i < argc; i++) {
-		dict = xbps_find_pkg_installed_from_plist(argv[i]);
+		dict = xbps_find_pkg_dict_installed(argv[i], false);
 		if (dict == NULL) {
 			printf("Package %s is not installed.\n", argv[i]);
 			continue;
@@ -155,7 +155,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force)
 	 */
 	printf("The following packages will be removed:\n\n");
 	for (i = 1; i < argc; i++) {
-		dict = xbps_find_pkg_installed_from_plist(argv[i]);
+		dict = xbps_find_pkg_dict_installed(argv[i], false);
 		if (dict == NULL)
 			continue;
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
@@ -180,7 +180,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force)
 		printf("Forcing removal!\n");
 
 	for (i = 1; i < argc; i++) {
-		dict = xbps_find_pkg_installed_from_plist(argv[i]);
+		dict = xbps_find_pkg_dict_installed(argv[i], false);
 		if (dict == NULL)
 			continue;
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);

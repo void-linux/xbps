@@ -32,7 +32,38 @@
 
 #include <xbps_api.h>
 
-int SYMEXPORT
+/**
+ * @file lib/remove.c
+ * @brief Package removal routines
+ * @defgroup pkg_remove Package removal functions
+ *
+ * These functions will remove a package or only a subset of its
+ * files. Package removal steps:
+ * 
+ * 1) Its <b>pre-remove</b> target specified in the REMOVE script
+ * will be executed.
+ *
+ * 2) Its files, dirs and links will be removed. Modified files (not
+ * matching its sha256 hash) will always be preserved.
+ *
+ * 3) Its <b>post-remove</b> target specified in the REMOVE script
+ * will be executed.
+ *
+ * 4) Its requiredby objects will be removed from the installed packages
+ * database.
+ *
+ * 5) Its state will be changed to <b>config-files</b>.
+ *
+ * If a package is going to be updated and it's an essential package,
+ * only steps <b>1</b> and <b>4</b> will be executed.
+ *
+ * If a package is going to be updated and it's <b>NOT</b> an essential
+ * package, only steps <b>1</b>, <b>2</b> and <b>4</b> will be executed.
+ *
+ * If a package is going to be removed, all steps will be executed.
+ */
+
+int
 xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 {
 	prop_array_t array;
@@ -135,14 +166,14 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 	return rv;
 }
 
-int SYMEXPORT
+int
 xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 {
-	prop_dictionary_t dict;
+	prop_dictionary_t dict, pkgd;
 	const char *rootdir = xbps_get_rootdir();
 	char *path, *buf;
 	int rv = 0;
-	bool prepostf = false;
+	bool essential = false, prepostf = false;
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
@@ -150,8 +181,11 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	/*
 	 * Check if pkg is installed before anything else.
 	 */
-	if (xbps_check_is_installed_pkgname(pkgname) == false)
+	if ((pkgd = xbps_find_pkg_dict_installed(pkgname, false)) == NULL)
 		return ENOENT;
+
+	prop_dictionary_get_bool(pkgd, "essential", &essential);
+	prop_object_release(pkgd);
 
 	if (strcmp(rootdir, "") == 0)
 		rootdir = "/";
@@ -182,6 +216,15 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 			return rv;
 		}
 	}
+
+	/*
+	 * If updating an essential package, we just need to execute
+	 * the current pre-remove action target, unregister its requiredby
+	 * entries and continue. Its files will be overwritten later in
+	 * the unpack phase.
+	 */
+	if (essential && update)
+		return xbps_requiredby_pkg_remove(pkgname);
 
 	/*
 	 * Remove links, files and dirs.

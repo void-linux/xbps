@@ -38,13 +38,17 @@
 #include <xbps_api.h>
 #include "sha256.h"
 
-static bool	question(bool, const char *, va_list);
+/**
+ * @file lib/util.c
+ * @brief Utility routines
+ * @defgroup util Utility functions
+ */
 
 static const char *rootdir;
 static const char *cachedir;
 static int flags;
 
-char SYMEXPORT *
+char *
 xbps_get_file_hash(const char *file)
 {
 	SHA256_CTX ctx;
@@ -65,12 +69,12 @@ xbps_get_file_hash(const char *file)
 	return hash;
 }
 
-int SYMEXPORT
-xbps_check_file_hash(const char *path, const char *sha256)
+int
+xbps_check_file_hash(const char *file, const char *sha256)
 {
 	char *res;
 
-	res = xbps_get_file_hash(path);
+	res = xbps_get_file_hash(file);
 	if (res == NULL)
 		return errno;
 
@@ -83,7 +87,7 @@ xbps_check_file_hash(const char *path, const char *sha256)
 	return 0;
 }
 
-bool SYMEXPORT
+bool
 xbps_check_is_repo_string_remote(const char *uri)
 {
 	assert(uri != NULL);
@@ -96,7 +100,20 @@ xbps_check_is_repo_string_remote(const char *uri)
 	return false;
 }
 
-int SYMEXPORT
+static const char *
+xbps_get_pkgver_from_dict(prop_dictionary_t d)
+{
+	const char *pkgver;
+
+	assert(d != NULL);
+
+	if (!prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver))
+		return NULL;
+
+	return pkgver;
+}
+
+int
 xbps_check_is_installed_pkg(const char *pkg)
 {
 	prop_dictionary_t dict;
@@ -107,11 +124,11 @@ xbps_check_is_installed_pkg(const char *pkg)
 
 	assert(pkg != NULL);
 
-	pkgname = xbps_get_pkgdep_name(pkg);
+	pkgname = xbps_get_pkgpattern_name(pkg);
 	if (pkgname == NULL)
 		return -1;
 
-	dict = xbps_find_pkg_installed_from_plist(pkgname);
+	dict = xbps_find_pkg_dict_installed(pkgname, false);
 	if (dict == NULL) {
 		free(pkgname);
 		if (errno == ENOENT) {
@@ -144,20 +161,20 @@ xbps_check_is_installed_pkg(const char *pkg)
 		return -1;
 	}
 
-	rv = xbps_pkgdep_match(instpkgver, __UNCONST(pkg));
+	rv = xbps_pkgpattern_match(instpkgver, __UNCONST(pkg));
 	prop_object_release(dict);
 
 	return rv;
 }
 
-bool SYMEXPORT
+bool
 xbps_check_is_installed_pkgname(const char *pkgname)
 {
 	prop_dictionary_t pkgd;
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
+	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd) {
 		prop_object_release(pkgd);
 		return true;
@@ -166,7 +183,7 @@ xbps_check_is_installed_pkgname(const char *pkgname)
 	return false;
 }
 
-const char SYMEXPORT *
+const char *
 xbps_get_pkg_version(const char *pkg)
 {
 	const char *tmp;
@@ -181,7 +198,7 @@ xbps_get_pkg_version(const char *pkg)
 	return tmp + 1; /* skip first '-' */
 }
 
-const char SYMEXPORT *
+const char *
 xbps_get_pkg_revision(const char *pkg)
 {
 	const char *tmp;
@@ -196,7 +213,7 @@ xbps_get_pkg_revision(const char *pkg)
 	return tmp + 1; /* skip first '_' */
 }
 
-char SYMEXPORT *
+char *
 xbps_get_pkg_name(const char *pkg)
 {
 	const char *tmp;
@@ -219,8 +236,8 @@ xbps_get_pkg_name(const char *pkg)
 	return pkgname;
 }
 
-char SYMEXPORT *
-xbps_get_pkgdep_name(const char *pkg)
+char *
+xbps_get_pkgpattern_name(const char *pkg)
 {
 	char *res, *pkgname;
 	size_t len;
@@ -242,8 +259,8 @@ xbps_get_pkgdep_name(const char *pkg)
 	return pkgname;
 }
 
-const char SYMEXPORT *
-xbps_get_pkgdep_version(const char *pkg)
+const char *
+xbps_get_pkgpattern_version(const char *pkg)
 {
 	char *res;
 
@@ -254,19 +271,6 @@ xbps_get_pkgdep_version(const char *pkg)
 		return NULL;
 
 	return res;
-}
-
-const char SYMEXPORT *
-xbps_get_pkgver_from_dict(prop_dictionary_t d)
-{
-	const char *pkgver;
-
-	assert(d != NULL);
-
-	if (!prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver))
-		return NULL;
-
-	return pkgver;
 }
 
 static char *
@@ -288,7 +292,7 @@ get_pkg_index_remote_plist(const char *uri)
 	return repodir;
 }
 
-char SYMEXPORT *
+char *
 xbps_get_pkg_index_plist(const char *uri)
 {
 	struct utsname un;
@@ -304,14 +308,14 @@ xbps_get_pkg_index_plist(const char *uri)
 	return xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
 }
 
-char SYMEXPORT *
-xbps_get_binpkg_local_path(prop_dictionary_t pkg, const char *repoloc)
+char *
+xbps_get_binpkg_local_path(prop_dictionary_t pkgd, const char *repoloc)
 {
 	const char *filen, *arch, *cdir;
 
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "filename", &filen))
+	if (!prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen))
 		return NULL;
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "architecture", &arch))
+	if (!prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch))
 		return NULL;
 	cdir = xbps_get_cachedir();
 	if (cdir == NULL)
@@ -325,7 +329,7 @@ xbps_get_binpkg_local_path(prop_dictionary_t pkg, const char *repoloc)
 	return xbps_xasprintf("%s/%s", cdir, filen);
 }
 
-bool SYMEXPORT
+bool
 xbps_pkg_has_rundeps(prop_dictionary_t pkg)
 {
 	prop_array_t array;
@@ -338,14 +342,14 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkg)
 	return false;
 }
 
-void SYMEXPORT
+void
 xbps_set_rootdir(const char *dir)
 {
 	assert(dir != NULL);
 	rootdir = dir;
 }
 
-const char SYMEXPORT *
+const char *
 xbps_get_rootdir(void)
 {
 	if (rootdir == NULL)
@@ -354,7 +358,7 @@ xbps_get_rootdir(void)
 	return rootdir;
 }
 
-void SYMEXPORT
+void
 xbps_set_cachedir(const char *dir)
 {
 	static char res[PATH_MAX];
@@ -371,7 +375,7 @@ xbps_set_cachedir(const char *dir)
 	cachedir = res;
 }
 
-const char SYMEXPORT *
+const char *
 xbps_get_cachedir(void)
 {
 	static char res[PATH_MAX];
@@ -388,19 +392,19 @@ xbps_get_cachedir(void)
 	return cachedir;
 }
 
-void SYMEXPORT
+void
 xbps_set_flags(int lflags)
 {
 	flags = lflags;
 }
 
-int SYMEXPORT
+int
 xbps_get_flags(void)
 {
 	return flags;
 }
 
-char SYMEXPORT *
+char *
 xbps_xasprintf(const char *fmt, ...)
 {
 	va_list ap;
@@ -412,32 +416,6 @@ xbps_xasprintf(const char *fmt, ...)
 	va_end(ap);
 
 	return buf;
-}
-
-bool SYMEXPORT
-xbps_yesno(const char *fmt, ...)
-{
-	va_list ap;
-	bool res;
-
-	va_start(ap, fmt);
-	res = question(1, fmt, ap);
-	va_end(ap);
-
-	return res;
-}
-
-bool SYMEXPORT
-xbps_noyes(const char *fmt, ...)
-{
-	va_list ap;
-	bool res;
-
-	va_start(ap, fmt);
-	res = question(0, fmt, ap);
-	va_end(ap);
-
-	return res;
 }
 
 static char *
@@ -488,4 +466,30 @@ question(bool preset, const char *fmt, va_list ap)
 			return false;
 	}
 	return false;
+}
+
+bool
+xbps_yesno(const char *fmt, ...)
+{
+	va_list ap;
+	bool res;
+
+	va_start(ap, fmt);
+	res = question(1, fmt, ap);
+	va_end(ap);
+
+	return res;
+}
+
+bool
+xbps_noyes(const char *fmt, ...)
+{
+	va_list ap;
+	bool res;
+
+	va_start(ap, fmt);
+	res = question(0, fmt, ap);
+	va_end(ap);
+
+	return res;
 }

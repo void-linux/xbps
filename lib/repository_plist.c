@@ -34,6 +34,12 @@
 #include <xbps_api.h>
 #include "fetch.h"
 
+/**
+ * @file lib/repository_plist.c
+ * @brief Repository plist file handling routines
+ * @defgroup repo_plist Repository plist file handling functions
+ */
+
 struct fetch_archive {
 	struct url *url;
 	struct fetchIO *fetch;
@@ -151,7 +157,7 @@ binpkg_in_cachedir(prop_dictionary_t d, const char *uri)
 	return NULL;
 }
 
-char SYMEXPORT *
+char *
 xbps_repository_get_path_from_pkg_dict(prop_dictionary_t d, const char *uri)
 {
 	const char *arch, *filen;
@@ -169,7 +175,7 @@ xbps_repository_get_path_from_pkg_dict(prop_dictionary_t d, const char *uri)
 	return xbps_xasprintf("%s/%s/%s", uri, arch, filen);
 }
 
-prop_dictionary_t SYMEXPORT
+prop_dictionary_t
 xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL;
@@ -216,7 +222,7 @@ xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 	return plistd;
 }
 
-prop_dictionary_t SYMEXPORT
+prop_dictionary_t
 xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL, pkgd;
@@ -238,7 +244,7 @@ xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 	 * This will work locally and remotely, thanks to libarchive and
 	 * libfetch!
 	 */
-	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
+	SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
 		pkgd = xbps_find_pkg_in_dict_by_name(rpool->rp_repod,
 		    "packages", pkgname);
 		if (pkgd == NULL) {

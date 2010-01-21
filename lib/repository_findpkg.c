@@ -31,10 +31,14 @@
 
 #include <xbps_api.h>
 
+/**
+ * @file lib/repository_findpkg.c
+ * @brief Repository packages transaction handling routines
+ * @defgroup repo_pkgs Repository packages transaction handling functions
+ */
+
 static prop_dictionary_t trans_dict;
 static bool trans_dict_initialized;
-
-static int set_pkg_state(prop_dictionary_t, const char *);
 
 static int
 create_transaction_dictionary(void)
@@ -84,16 +88,123 @@ fail:
         return rv;
 }
 
-prop_dictionary_t SYMEXPORT
+static int
+compute_transaction_sizes(void)
+{
+	prop_object_iterator_t iter;
+	prop_object_t obj;
+	uint64_t tsize = 0, dlsize = 0, instsize = 0;
+	int rv = 0;
+	const char *tract;
+
+	iter = xbps_get_array_iter_from_dict(trans_dict, "packages");
+	if (iter == NULL)
+		return -1;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "trans-action", &tract)) {
+			rv = -1;
+			goto out;
+		}
+		/*
+		 * Skip pkgs that need to be configured.
+		 */
+		if (strcmp(tract, "configure") == 0)
+			continue;
+
+		if (!prop_dictionary_get_uint64(obj,
+		    "filename-size", &tsize)) {
+			rv = -1;
+			goto out;
+		}
+		dlsize += tsize;
+		tsize = 0;
+		if (!prop_dictionary_get_uint64(obj,
+		    "installed_size", &tsize)) {
+			rv = -1;
+			goto out;
+		}
+		instsize += tsize;
+		tsize = 0;
+	}
+
+	/*
+	 * Add object in transaction dictionary with total installed
+	 * size that it will take.
+	 */
+	if (!prop_dictionary_set_uint64(trans_dict,
+	    "total-installed-size", instsize)) {
+		rv = -1;
+		goto out;
+	}
+	/*
+	 * Add object in transaction dictionary with total download
+	 * size that needs to be sucked in.
+	 */
+	if (!prop_dictionary_set_uint64(trans_dict,
+	    "total-download-size", dlsize)) {
+		rv = -1;
+		goto out;
+	}
+out:
+	prop_object_iterator_release(iter);
+
+	return rv;
+}
+
+static int
+set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
+{
+	pkg_state_t state = 0;
+	int rv = 0;
+
+	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_NOT_INSTALLED);
+	if (rv != 0)
+		return rv;
+	/*
+	 * Overwrite package state in dictionary if it was unpacked
+	 * previously.
+	 */
+	rv = xbps_get_pkg_state_installed(pkgname, &state);
+	if (rv == 0) {
+		if ((rv = xbps_set_pkg_state_dictionary(pkgd, state)) != 0)
+			return rv;
+        } else if (rv == ENOENT)
+		rv = 0;
+
+	return rv;
+}
+
+prop_dictionary_t
 xbps_repository_get_transaction_dict(void)
 {
-	if (trans_dict_initialized == false)
+	int rv = 0;
+
+	if (trans_dict_initialized == false) {
+		errno = ENOENT;
+		return NULL;
+	}
+
+	/*
+	 * Sort package list if necessary.
+	 */
+	if ((rv = xbps_sort_pkg_deps(trans_dict)) != 0) {
+		errno = rv;
+		return NULL;
+	}
+
+	/*
+	 * Add total transaction installed/download sizes
+	 * to the transaction dictionary.
+	 */
+	if (compute_transaction_sizes() != 0)
 		return NULL;
 
 	return trans_dict;
 }
 
-int SYMEXPORT
+int
 xbps_repository_update_allpkgs(void)
 {
 	prop_dictionary_t dict;
@@ -110,10 +221,7 @@ xbps_repository_update_allpkgs(void)
 	if (dict == NULL)
 		return ENOENT;
 
-	/*
-	 * Prepare simpleq with all registered repositories.
-	 */
-	if ((rv = xbps_repository_pool_init()) != 0) 
+	if ((rv = xbps_repository_pool_init()) != 0)
 		goto out;
 
 	iter = xbps_get_array_iter_from_dict(dict, "packages");
@@ -154,7 +262,7 @@ out:
 	return rv;
 }
 
-int SYMEXPORT
+int
 xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 {
 	prop_dictionary_t pkgrd = NULL;
@@ -173,7 +281,7 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;
 
-	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
+	SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
 		/*
 		 * Get the package dictionary from current repository.
 		 * If it's not there, pass to the next repository.
@@ -274,31 +382,8 @@ out:
 	return rv;
 }
 
-static int
-set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
-{
-	pkg_state_t state = 0;
-	int rv = 0;
-
-	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_NOT_INSTALLED);
-	if (rv != 0)
-		return rv;
-	/*
-	 * Overwrite package state in dictionary if it was unpacked
-	 * previously.
-	 */
-	rv = xbps_get_pkg_state_installed(pkgname, &state);
-	if (rv == 0) {
-		if ((rv = xbps_set_pkg_state_dictionary(pkgd, state)) != 0)
-			return rv;
-        } else if (rv == ENOENT)
-		rv = 0;
-
-	return rv;
-}
-
-int SYMEXPORT
-xbps_repository_install_pkg(const char *pkg, bool by_pkgmatch)
+int
+xbps_repository_install_pkg(const char *pkg, bool bypattern)
 {
 	prop_dictionary_t origin_pkgrd = NULL, pkgrd = NULL;
 	prop_array_t unsorted;
@@ -311,13 +396,13 @@ xbps_repository_install_pkg(const char *pkg, bool by_pkgmatch)
 	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;
 
-	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
+	SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
 		/*
 		 * Get the package dictionary from current repository.
 		 * If it's not there, pass to the next repository.
 		 */
-		if (by_pkgmatch)
-			pkgrd = xbps_find_pkg_in_dict_by_pkgmatch(
+		if (bypattern)
+			pkgrd = xbps_find_pkg_in_dict_by_pattern(
 			    rpool->rp_repod, "packages", pkg);
 		else
 			pkgrd = xbps_find_pkg_in_dict_by_name(
@@ -346,8 +431,8 @@ xbps_repository_install_pkg(const char *pkg, bool by_pkgmatch)
 	 * Check that this pkg hasn't been added previously into
 	 * the transaction.
 	 */
-	if (by_pkgmatch) {
-		if (xbps_find_pkg_in_dict_by_pkgmatch(trans_dict,
+	if (bypattern) {
+		if (xbps_find_pkg_in_dict_by_pattern(trans_dict,
 		    "unsorted_deps", pkg))
 			goto out;
 	} else {

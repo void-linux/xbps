@@ -31,10 +31,16 @@
 
 #include <xbps_api.h>
 
+/**
+ * @file lib/repository_pool.c
+ * @brief Repository pool init/fini routines
+ * @defgroup repopool Repository pool init/fini functions
+ */
+
 static size_t repolist_refcnt;
 static bool repolist_initialized;
 
-int SYMEXPORT
+int
 xbps_repository_pool_init(void)
 {
 	prop_dictionary_t dict = NULL;
@@ -51,7 +57,7 @@ xbps_repository_pool_init(void)
 		return 0;
 	}
 
-	SIMPLEQ_INIT(&repopool_queue);
+	SIMPLEQ_INIT(&rp_queue);
 
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REPOLIST);
@@ -120,7 +126,7 @@ xbps_repository_pool_init(void)
 			goto out;
 		}
 		free(plist);
-		SIMPLEQ_INSERT_TAIL(&repopool_queue, rpool, chain);
+		SIMPLEQ_INSERT_TAIL(&rp_queue, rpool, rp_entries);
 	}
 
 	if (ntotal - nmissing == 0)
@@ -141,7 +147,7 @@ out:
 
 }
 
-void SYMEXPORT
+void
 xbps_repository_pool_release(void)
 {
 	struct repository_pool *rpool;
@@ -149,8 +155,8 @@ xbps_repository_pool_release(void)
 	if (--repolist_refcnt > 0)
 		return;
 
-	while ((rpool = SIMPLEQ_FIRST(&repopool_queue)) != NULL) {
-		SIMPLEQ_REMOVE(&repopool_queue, rpool, repository_pool, chain);
+	while ((rpool = SIMPLEQ_FIRST(&rp_queue)) != NULL) {
+		SIMPLEQ_REMOVE(&rp_queue, rpool, repository_pool, rp_entries);
 		prop_object_release(rpool->rp_repod);
 		free(rpool->rp_uri);
 		free(rpool);

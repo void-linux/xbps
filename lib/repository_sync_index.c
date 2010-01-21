@@ -33,7 +33,13 @@
 #include <xbps_api.h>
 #include "fetch.h"
 
-char SYMEXPORT *
+/**
+ * @file lib/repository_sync_index.c
+ * @brief Repository package index synchronization routines
+ * @defgroup reposync Repository package index synchronization functions
+ */
+
+char *
 xbps_get_remote_repo_string(const char *uri)
 {
 	struct url *url;
@@ -71,7 +77,7 @@ xbps_get_remote_repo_string(const char *uri)
  * Returns -1 on error, 0 if transfer was not necessary (local/remote
  * size and/or mtime match) and 1 if downloaded successfully.
  */
-int SYMEXPORT
+int
 xbps_repository_sync_pkg_index(const char *uri)
 {
 	struct url *url = NULL;

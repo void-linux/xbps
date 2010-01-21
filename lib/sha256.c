@@ -87,6 +87,11 @@
 static void SHA256_Transform(SHA256_CTX *, const uint32_t*);
 static int SHA256_Final(uint8_t *, SHA256_CTX *);
 
+/*
+ * Constant used by SHA256/384/512_End() functions for converting the
+ * digest to a readable hexadecimal character string:
+ */
+static const char sha2_hex_digits[] = "0123456789abcdef";
 
 /*** SHA-XYZ INITIAL HASH VALUES AND CONSTANTS ************************/
 /* Hash constant words K for SHA-256: */
@@ -122,7 +127,7 @@ static const uint32_t sha256_initial_hash_value[8] = {
 };
 
 /*** SHA-256: *********************************************************/
-int
+int HIDDEN
 XBPS_SHA256_Init(SHA256_CTX *context)
 {
 	if (context == NULL)
@@ -297,7 +302,7 @@ SHA256_Transform(SHA256_CTX *context, const uint32_t *data)
 
 #endif /* SHA2_UNROLL_TRANSFORM */
 
-int
+int HIDDEN
 XBPS_SHA256_Update(SHA256_CTX *context, const uint8_t *data, size_t len)
 {
 	unsigned int	freespace, usedspace;
@@ -434,13 +439,7 @@ SHA256_Final(uint8_t digest[], SHA256_CTX *context)
 	return SHA224_256_Final(digest, context, SHA256_DIGEST_LENGTH);
 }
 
-/*
- * Constant used by SHA256/384/512_End() functions for converting the
- * digest to a readable hexadecimal character string:
- */
-static const char sha2_hex_digits[] = "0123456789abcdef";
-
-char *
+char HIDDEN *
 XBPS_SHA256_End(SHA256_CTX *ctx, uint8_t *buffer)
 {
 	uint8_t digest[SHA256_DIGEST_LENGTH], *d = digest;

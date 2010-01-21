@@ -273,7 +273,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		pkgname = xbps_get_pkgdep_name(argv[1]);
+		pkgname = xbps_get_pkgpattern_name(argv[1]);
 		if (pkgname == NULL)
 			exit(EXIT_FAILURE);
 
@@ -285,7 +285,7 @@ main(int argc, char **argv)
 		if (argc != 3)
 			usage();
 
-		exit(xbps_pkgdep_match(argv[1], argv[2]));
+		exit(xbps_pkgpattern_match(argv[1], argv[2]));
 
 	} else if (strcasecmp(argv[0], "cmpver") == 0) {
 		/* Compare two version strings, installed vs required */

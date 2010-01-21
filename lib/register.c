@@ -30,7 +30,16 @@
 
 #include <xbps_api.h>
 
-int SYMEXPORT
+/**
+ * @file lib/register.c
+ * @brief Package (un)registration routines
+ * @defgroup pkg_register Package (un)registration functions
+ *
+ * Register and unregister packages into/from the installed
+ * packages database. 
+ */
+
+int
 xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 {
 	prop_dictionary_t dict, pkgd;
@@ -129,7 +138,7 @@ out:
 	return rv;
 }
 
-int SYMEXPORT
+int
 xbps_unregister_pkg(const char *pkgname)
 {
 	char *plist;

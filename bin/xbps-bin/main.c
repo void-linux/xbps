@@ -34,10 +34,6 @@
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
-static void	cleanup(int);
-static void	usage(void);
-static int	list_pkgs_in_dict(prop_object_t, void *, bool *);
-
 static void
 usage(void)
 {
@@ -107,6 +103,14 @@ list_manual_packages(prop_object_t obj, void *arg, bool *loop_done)
 	}
 
 	return 0;
+}
+
+
+static void
+cleanup(int signum)
+{
+	xbps_regpkgs_dictionary_release();
+	exit(signum);
 }
 
 int
@@ -331,11 +335,4 @@ main(int argc, char **argv)
 
 out:
 	cleanup(rv);
-}
-
-static void
-cleanup(int signum)
-{
-	xbps_regpkgs_dictionary_release();
-	exit(signum);
 }

@@ -44,8 +44,8 @@ typedef struct _SHA256_CTX {
 	uint8_t		buffer[SHA256_BLOCK_LENGTH];
 } SHA256_CTX;
 
-int	XBPS_SHA256_Init(SHA256_CTX *);
-int	XBPS_SHA256_Update(SHA256_CTX *, const uint8_t *, size_t);
-char	*XBPS_SHA256_End(SHA256_CTX *, uint8_t *);
+int HIDDEN XBPS_SHA256_Init(SHA256_CTX *);
+int HIDDEN XBPS_SHA256_Update(SHA256_CTX *, const uint8_t *, size_t);
+char HIDDEN *XBPS_SHA256_End(SHA256_CTX *, uint8_t *);
 
 #endif /* !_SHA2_DIGEST_H_ */

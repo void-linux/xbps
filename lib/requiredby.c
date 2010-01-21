@@ -121,7 +121,7 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 	return 0;
 }
 
-int SYMEXPORT
+int HIDDEN
 xbps_requiredby_pkg_remove(const char *pkgname)
 {
 	prop_dictionary_t dict;
@@ -151,7 +151,7 @@ xbps_requiredby_pkg_remove(const char *pkgname)
 	return rv;
 }
 
-int SYMEXPORT
+int HIDDEN
 xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 {
 	prop_array_t rdeps;
@@ -178,7 +178,7 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 			rv = errno;
 			goto out;
 		}
-		rdepname = xbps_get_pkgdep_name(str);
+		rdepname = xbps_get_pkgpattern_name(str);
 		if (rdepname == NULL) {
 			rv = EINVAL;
 			goto out;

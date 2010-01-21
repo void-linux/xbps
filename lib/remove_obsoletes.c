@@ -31,7 +31,7 @@
 
 #include <xbps_api.h>
 
-int
+int HIDDEN
 xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 {
 	prop_object_iterator_t iter, iter2;

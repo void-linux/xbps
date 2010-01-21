@@ -191,7 +191,7 @@ show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
 
-	if (xbps_pkgdep_match(pkgver, pattern) == 1)
+	if (xbps_pkgpattern_match(pkgver, pattern) == 1)
 		printf(" %s - %s\n", pkgver, desc);
 	else if (strcmp(pkgname, pattern) == 0)
 		printf(" %s - %s\n", pkgver, desc);

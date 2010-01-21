@@ -31,11 +31,22 @@
 
 #include <xbps_api.h>
 
+/**
+ * @file lib/regpkgs_dictionary.c
+ * @brief Installed packages database init/fini routines
+ * @defgroup regpkgdb Installed packages database init/fini functions
+ *
+ * These functions will initialize the installed packages database,
+ * internalizing/externalizing the plist dictionary. Every initialization
+ * must be followed by a finalization if its data is not necessary, because
+ * the functions are reference counted.
+ */
+
 static prop_dictionary_t regpkgs_dict;
 static size_t regpkgs_refcount;
 static bool regpkgs_initialized;
 
-prop_dictionary_t SYMEXPORT
+prop_dictionary_t
 xbps_regpkgs_dictionary_init(void)
 {
 	char *plist;
@@ -60,7 +71,7 @@ xbps_regpkgs_dictionary_init(void)
 	return regpkgs_dict;
 }
 
-void SYMEXPORT
+void
 xbps_regpkgs_dictionary_release(void)
 {
 	if (--regpkgs_refcount > 0)

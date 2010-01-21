@@ -32,74 +32,11 @@
 
 #include <xbps_api.h>
 
-static int unpack_archive_fini(struct archive *, prop_dictionary_t);
-static void set_extract_flags(int *);
-
-int SYMEXPORT
-xbps_unpack_binary_pkg(prop_dictionary_t pkg)
-{
-	const char *pkgname, *repoloc;
-	struct archive *ar = NULL;
-	char *binfile = NULL;
-	int pkg_fd, rv = 0;
-
-	assert(pkg != NULL);
-
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
-		return errno;
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "repository", &repoloc))
-		return errno;
-	binfile = xbps_get_binpkg_local_path(pkg, repoloc);
-	if (binfile == NULL)
-		return EINVAL;
-
-	if ((pkg_fd = open(binfile, O_RDONLY)) == -1) {
-		rv = errno;
-		goto out;
-	}
-
-	ar = archive_read_new();
-	if (ar == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	/*
-	 * Enable support for tar format and all compression methods.
-	 */
-	archive_read_support_compression_all(ar);
-	archive_read_support_format_tar(ar);
-
-	if ((rv = archive_read_open_fd(ar, pkg_fd,
-	     ARCHIVE_READ_BLOCKSIZE)) != 0)
-		goto out;
-
-	if ((rv = unpack_archive_fini(ar, pkg)) == 0) {
-		/*
-		 * If installation of package was successful, make sure
-		 * its files are written in storage (if possible).
-		 */
-		if (fsync(pkg_fd) == -1) {
-			rv = errno;
-			goto out;
-		}
-		/*
-		 * Set package state to unpacked.
-		 */
-		rv = xbps_set_pkg_state_installed(pkgname,
-		    XBPS_PKG_STATE_UNPACKED);
-	}
-
-out:
-	if (ar)
-		archive_read_finish(ar);
-	if (pkg_fd != -1)
-		(void)close(pkg_fd);
-	if (binfile)
-		free(binfile);
-
-	return rv;
-}
+/**
+ * @file lib/unpack.c
+ * @brief Binary package file unpacking routines
+ * @defgroup unpack Binary package file unpacking functions
+ */
 
 static void
 set_extract_flags(int *flags)
@@ -153,30 +90,6 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 
 	if (xbps_check_is_installed_pkgname(pkgname))
 		update = true;
-
-	/*
-	 * If we are updating an essential package, we have to run the
-	 * pre-remove stage by the current package, because later some
-	 * files could be removed.
-	 */
-	if (update && essential) {
-		buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
-		    XBPS_META_PATH, pkgname);
-		if (buf == NULL)
-			return errno;
-		if (access(buf, R_OK|X_OK) == 0) {
-			if ((rv = xbps_file_chdir_exec(rootdir, buf, "pre",
-			     pkgname, version, "yes", NULL)) != 0) {
-				fprintf(stderr, "%s: prerm action target error"
-				    "(%s) while updating!\n",
-				    pkgname, strerror(errno));
-				free(buf);
-				return rv;
-			}
-		}
-		free(buf);
-		buf = NULL;
-	}
 
 	/*
 	 * Process the archive files.
@@ -398,6 +311,72 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	}
 	if (filesd)
 		prop_object_release(filesd);
+
+	return rv;
+}
+
+int
+xbps_unpack_binary_pkg(prop_dictionary_t pkg)
+{
+	const char *pkgname, *repoloc;
+	struct archive *ar = NULL;
+	char *binfile = NULL;
+	int pkg_fd, rv = 0;
+
+	assert(pkg != NULL);
+
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
+		return errno;
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "repository", &repoloc))
+		return errno;
+	binfile = xbps_get_binpkg_local_path(pkg, repoloc);
+	if (binfile == NULL)
+		return EINVAL;
+
+	if ((pkg_fd = open(binfile, O_RDONLY)) == -1) {
+		rv = errno;
+		goto out;
+	}
+
+	ar = archive_read_new();
+	if (ar == NULL) {
+		rv = errno;
+		goto out;
+	}
+
+	/*
+	 * Enable support for tar format and all compression methods.
+	 */
+	archive_read_support_compression_all(ar);
+	archive_read_support_format_tar(ar);
+
+	if ((rv = archive_read_open_fd(ar, pkg_fd,
+	     ARCHIVE_READ_BLOCKSIZE)) != 0)
+		goto out;
+
+	if ((rv = unpack_archive_fini(ar, pkg)) == 0) {
+		/*
+		 * If installation of package was successful, make sure
+		 * its files are written in storage (if possible).
+		 */
+		if (fsync(pkg_fd) == -1) {
+			rv = errno;
+			goto out;
+		}
+		/*
+		 * Set package state to unpacked.
+		 */
+		rv = xbps_set_pkg_state_installed(pkgname,
+		    XBPS_PKG_STATE_UNPACKED);
+	}
+
+out:
+	if (ar)
+		archive_read_finish(ar);
+	if (pkg_fd != -1)
+		(void)close(pkg_fd);
+	if (binfile)
+		free(binfile);
 
 	return rv;
 }

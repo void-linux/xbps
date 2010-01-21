@@ -36,15 +36,16 @@
 
 #include <xbps_api.h>
 
-static int	vfcexec(const char *, int, const char *, va_list);
-static int	pfcexec(const char *, const char *, const char **);
-
-/*
- * Fork, then if /bin/sh exists change root directory to
- * path; otherwise just change current working directory.
- * Execute the command and arguments in the argv array.
- * wait for the command to finish, then return the exit status.
+/**
+ * @file lib/fexec.c
+ * @brief Generic file execution routines
+ * @defgroup fexec File execution functions
+ *
+ * These functions will fork and execute a program in cwd (current working
+ * directory), destination directory or changing root directory to
+ * destination directory and passing an arbitrary number of arguments to it.
  */
+
 static int
 pfcexec(const char *path, const char *file, const char **argv)
 {
@@ -128,7 +129,7 @@ vfcexec(const char *path, int skipempty, const char *arg, va_list ap)
 	return retval;
 }
 
-int SYMEXPORT
+int
 xbps_file_exec(const char *arg, ...)
 {
 	va_list	ap;
@@ -141,7 +142,7 @@ xbps_file_exec(const char *arg, ...)
 	return result;
 }
 
-int SYMEXPORT
+int
 xbps_file_exec_skipempty(const char *arg, ...)
 {
 	va_list	ap;
@@ -154,7 +155,7 @@ xbps_file_exec_skipempty(const char *arg, ...)
 	return result;
 }
 
-int SYMEXPORT
+int
 xbps_file_chdir_exec(const char *path, const char *arg, ...)
 {
 	va_list	ap;

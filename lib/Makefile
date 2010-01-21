@@ -12,6 +12,7 @@ LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
 LIBFETCH_OBJS += fetch/ftp.o fetch/http.o
 LIBFETCH_CPPFLAGS = -DFTP_COMBINE_CWDS -DNETBSD -DINET6 -DWITH_SSL
 LIBFETCH_CFLAGS = -Wno-unused-macros -Wno-conversion -Wno-stack-protector
+LIBFETCH_SHLIBCFLAGS = -fvisibility=hidden
 LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
@@ -37,7 +38,7 @@ fetch/httperr.h: fetch/http.errors
 $(LIBFETCH_OBJS): %.o: %.c $(LIBFETCH_INCS) $(LIBFETCH_GEN)
 	@echo " [CC]\t\t$@"
 	@$(CC) $(CPPFLAGS) $(LIBFETCH_CPPFLAGS) $(CFLAGS) \
-		$(LIBFETCH_CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
+		$(LIBFETCH_CFLAGS) $(LIBFETCH_SHLIBCFLAGS) -c $< -o $@
 
 $(OBJS): %.o: %.c
 	@echo " [CC]\t\t$@"

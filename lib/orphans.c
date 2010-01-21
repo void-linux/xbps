@@ -31,6 +31,12 @@
 
 #include <xbps_api.h>
 
+/**
+ * @file lib/orphans.c
+ * @brief Package orphans handling routines
+ * @defgroup pkg_orphans Package orphans handling functions
+ */
+
 struct orphan_pkg {
 	SIMPLEQ_ENTRY(orphan_pkg) chain;
 	prop_dictionary_t dict;
@@ -128,7 +134,7 @@ cleanup(void)
 	xbps_regpkgs_dictionary_release();
 }
 
-prop_array_t SYMEXPORT
+prop_array_t
 xbps_find_orphan_packages(void)
 {
 	prop_array_t array;

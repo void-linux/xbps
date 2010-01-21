@@ -110,7 +110,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_find_pkg_installed_from_plist(pkgname);
+	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;

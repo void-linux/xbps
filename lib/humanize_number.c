@@ -39,7 +39,7 @@
 
 #include <xbps_api.h>
 
-int SYMEXPORT
+int
 xbps_humanize_number(char *buf, size_t len, int64_t bytes,
     const char *suffix, int scale, int flags)
 {

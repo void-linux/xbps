@@ -30,11 +30,6 @@
 
 #include <xbps_api.h>
 
-static int add_missing_reqdep(prop_dictionary_t, const char *);
-static int remove_missing_reqdep(prop_dictionary_t, const char *);
-static int find_repo_deps(prop_dictionary_t, prop_dictionary_t,
-			  const char *, prop_array_t);
-
 static int
 store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 		 const char *repoloc)
@@ -135,14 +130,14 @@ add_missing_reqdep(prop_dictionary_t master, const char *reqpkg)
 
 		assert(prop_object_type(obj) == PROP_TYPE_STRING);
 		curdep = prop_string_cstring_nocopy(obj);
-		curver = xbps_get_pkgdep_version(curdep);
-		pkgver = xbps_get_pkgdep_version(reqpkg);
+		curver = xbps_get_pkgpattern_version(curdep);
+		pkgver = xbps_get_pkgpattern_version(reqpkg);
 		if (curver == NULL || pkgver == NULL)
 			goto out;
-		curpkgnamedep = xbps_get_pkgdep_name(curdep);
+		curpkgnamedep = xbps_get_pkgpattern_name(curdep);
 		if (curpkgnamedep == NULL)
 			goto out;
-		pkgnamedep = xbps_get_pkgdep_name(reqpkg);
+		pkgnamedep = xbps_get_pkgpattern_name(reqpkg);
 		if (pkgnamedep == NULL) {
 			free(curpkgnamedep);
 			goto out;
@@ -207,12 +202,12 @@ remove_missing_reqdep(prop_dictionary_t master, const char *reqpkg)
 		char *curpkgnamedep, *reqpkgname;
 
 		curdep = prop_string_cstring_nocopy(obj);
-		curpkgnamedep = xbps_get_pkgdep_name(curdep);
+		curpkgnamedep = xbps_get_pkgpattern_name(curdep);
 		if (curpkgnamedep == NULL) {
 			rv = errno;
 			goto out;
 		}
-		reqpkgname = xbps_get_pkgdep_name(reqpkg);
+		reqpkgname = xbps_get_pkgpattern_name(reqpkg);
 		if (reqpkgname == NULL) {
 			free(curpkgnamedep);
 			rv = errno;
@@ -235,72 +230,6 @@ out:
 	}
 	if (rv == 0)
 		rv = ENOENT;
-
-	return rv;
-}
-
-int SYMEXPORT
-xbps_repository_find_pkg_deps(prop_dictionary_t master, prop_dictionary_t pkg)
-{
-	prop_array_t pkg_rdeps, missing_rdeps;
-	struct repository_pool *rpool;
-	const char *pkgname;
-	int rv = 0;
-
-	assert(master != NULL);
-	assert(pkg != NULL);
-
-	pkg_rdeps = prop_dictionary_get(pkg, "run_depends");
-	if (pkg_rdeps == NULL)
-		return 0;
-
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
-		return errno;
-
-	if ((rv = xbps_repository_pool_init()) != 0)
-		return rv;
-
-	DPRINTF(("Checking rundeps for %s.\n", pkgname));
-	/*
-	 * Iterate over the repository pool and find out if we have
-	 * all available binary packages.
-	 */
-	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
-		/*
-		 * This will find direct and indirect deps,
-		 * if any of them is not there it will be added
-		 * into the missing_deps array.
-		 */
-		if ((rv = find_repo_deps(master, rpool->rp_repod,
-		    rpool->rp_uri, pkg_rdeps)) != 0) {
-			DPRINTF(("Error '%s' while checking rundeps!\n",
-			    strerror(rv)));
-			goto out;
-		}
-	}
-
-	/*
-	 * If there are no missing deps, there's nothing to do.
-	 */
-	missing_rdeps = prop_dictionary_get(master, "missing_deps");
-	if (prop_array_count(missing_rdeps) == 0)
-		goto out;
-
-	/*
-	 * Iterate one more time, but this time with missing deps
-	 * that were found in previous pass.
-	 */
-	DPRINTF(("Checking for missing deps in %s.\n", pkgname)); 
-	SIMPLEQ_FOREACH(rpool, &repopool_queue, chain) {
-		if ((rv = find_repo_deps(master, rpool->rp_repod,
-		    rpool->rp_uri, missing_rdeps)) != 0) {
-			DPRINTF(("Error '%s' while checking for "
-			    "missing rundeps!\n", strerror(rv)));
-			goto out;
-		}
-	}
-out:
-	xbps_repository_pool_release();
 
 	return rv;
 }
@@ -347,12 +276,12 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 			continue;
 		}
 		DPRINTF(("Dependency %s not installed.\n", reqpkg));
-		pkgname = xbps_get_pkgdep_name(reqpkg);
+		pkgname = xbps_get_pkgpattern_name(reqpkg);
 		if (pkgname == NULL) {
 			rv = EINVAL;
 			break;
 		}
-		reqvers = xbps_get_pkgdep_version(reqpkg);
+		reqvers = xbps_get_pkgpattern_version(reqpkg);
 		if (reqvers == NULL) {
 			free(pkgname);
 			rv = EINVAL;
@@ -379,7 +308,8 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 				rv = errno;
 				break;
 			}
-			if (xbps_pkgdep_match(pkg_queued, __UNCONST(reqpkg))) {
+			if (xbps_pkgpattern_match(pkg_queued,
+			    __UNCONST(reqpkg))) {
 				DPRINTF(("Dependency %s already queued.\n",
 				    pkgname));
 				free(pkgname);
@@ -429,7 +359,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 			rv = errno;
 			break;
 		}
-		if (xbps_pkgdep_match(repo_pkgver, __UNCONST(reqpkg)) < 1) {
+		if (xbps_pkgpattern_match(repo_pkgver, __UNCONST(reqpkg)) < 1) {
 			free(pkgname);
 			continue;
 		}
@@ -440,7 +370,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		 * an install. Packages that were unpacked previously
 		 * will be marked as pending to be configured.
 		 */
-		tmpd = xbps_find_pkg_installed_from_plist(pkgname);
+		tmpd = xbps_find_pkg_dict_installed(pkgname, false);
 		if (tmpd == NULL) {
 			if (errno && errno != ENOENT) {
 				free(pkgname);
@@ -509,6 +439,72 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		}
 	}
 	prop_object_iterator_release(iter);
+
+	return rv;
+}
+
+int HIDDEN
+xbps_repository_find_pkg_deps(prop_dictionary_t master, prop_dictionary_t pkg)
+{
+	prop_array_t pkg_rdeps, missing_rdeps;
+	struct repository_pool *rpool;
+	const char *pkgname;
+	int rv = 0;
+
+	assert(master != NULL);
+	assert(pkg != NULL);
+
+	pkg_rdeps = prop_dictionary_get(pkg, "run_depends");
+	if (pkg_rdeps == NULL)
+		return 0;
+
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
+		return errno;
+
+	if ((rv = xbps_repository_pool_init()) != 0)
+		return rv;
+
+	DPRINTF(("Checking rundeps for %s.\n", pkgname));
+	/*
+	 * Iterate over the repository pool and find out if we have
+	 * all available binary packages.
+	 */
+	SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
+		/*
+		 * This will find direct and indirect deps,
+		 * if any of them is not there it will be added
+		 * into the missing_deps array.
+		 */
+		if ((rv = find_repo_deps(master, rpool->rp_repod,
+		    rpool->rp_uri, pkg_rdeps)) != 0) {
+			DPRINTF(("Error '%s' while checking rundeps!\n",
+			    strerror(rv)));
+			goto out;
+		}
+	}
+
+	/*
+	 * If there are no missing deps, there's nothing to do.
+	 */
+	missing_rdeps = prop_dictionary_get(master, "missing_deps");
+	if (prop_array_count(missing_rdeps) == 0)
+		goto out;
+
+	/*
+	 * Iterate one more time, but this time with missing deps
+	 * that were found in previous pass.
+	 */
+	DPRINTF(("Checking for missing deps in %s.\n", pkgname)); 
+	SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
+		if ((rv = find_repo_deps(master, rpool->rp_repod,
+		    rpool->rp_uri, missing_rdeps)) != 0) {
+			DPRINTF(("Error '%s' while checking for "
+			    "missing rundeps!\n", strerror(rv)));
+			goto out;
+		}
+	}
+out:
+	xbps_repository_pool_release();
 
 	return rv;
 }

@@ -22,7 +22,7 @@ WARNFLAGS = -pedantic -std=c99 -Wall -Wextra -Werror -Wshadow -Wformat=2
 WARNFLAGS += -Wmissing-declarations -Wcomment -Wunused-macros -Wendif-labels
 WARNFLAGS += -Wcast-qual -Wcast-align -Wstack-protector
 CFLAGS = $(DEBUG_FLAGS) $(WARNFLAGS) -fPIC -DPIC -fstack-protector-all
-SHAREDLIB_CFLAGS = -fvisibility=hidden
+SHAREDLIB_CFLAGS = -fvisibility=default
 
 # Grr, hate the static libs!
 STATIC_LIBS =	-lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl

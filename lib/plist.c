@@ -31,7 +31,15 @@
 
 #include <xbps_api.h>
 
-bool SYMEXPORT
+/**
+ * @file lib/plist.c
+ * @brief PropertyList generic routines
+ * @defgroup plist PropertyList generic functions
+ *
+ * These functions manipulate plist files and objects shared by almost
+ * all library functions.
+ */
+bool
 xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 		       const char *key)
 {
@@ -48,7 +56,7 @@ xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 	return true;
 }
 
-bool SYMEXPORT
+bool
 xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 {
 	assert(array != NULL);
@@ -63,7 +71,7 @@ xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 	return true;
 }
 
-int SYMEXPORT
+int
 xbps_callback_array_iter_in_dict(prop_dictionary_t dict, const char *key,
 				 int (*fn)(prop_object_t, void *, bool *),
 				 void *arg)
@@ -91,7 +99,7 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict, const char *key,
 	return rv;
 }
 
-int SYMEXPORT
+int
 xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
     const char *key, int (*fn)(prop_object_t, void *, bool *), void *arg)
 {
@@ -122,7 +130,7 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 	return rv;
 }
 
-prop_dictionary_t SYMEXPORT
+prop_dictionary_t
 xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 {
 	prop_dictionary_t dict, obj, res;
@@ -146,8 +154,8 @@ xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 	return res;
 }
 
-prop_dictionary_t SYMEXPORT
-xbps_find_pkg_installed_from_plist(const char *pkgname)
+prop_dictionary_t
+xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 {
 	prop_dictionary_t d, pkgd;
 	pkg_state_t state = 0;
@@ -155,7 +163,10 @@ xbps_find_pkg_installed_from_plist(const char *pkgname)
 	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
 		return NULL;
 
-	pkgd = xbps_find_pkg_in_dict_by_name(d, "packages", pkgname);
+	if (bypattern)
+		pkgd = xbps_find_pkg_in_dict_by_pattern(d, "packages", str);
+	else
+		pkgd = xbps_find_pkg_in_dict_by_name(d, "packages", str);
 	if (pkgd == NULL)
 		goto fail;
 
@@ -178,8 +189,9 @@ fail:
 	return NULL;
 }
 
-prop_dictionary_t SYMEXPORT
-xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict, const char *key,
+prop_dictionary_t
+xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
+			      const char *key,
 			      const char *pkgname)
 {
 	prop_object_iterator_t iter;
@@ -207,9 +219,10 @@ xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict, const char *key,
 	return obj;
 }
 
-prop_dictionary_t SYMEXPORT
-xbps_find_pkg_in_dict_by_pkgmatch(prop_dictionary_t dict, const char *key,
-				  const char *pkgmatch)
+prop_dictionary_t
+xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
+				 const char *key,
+				 const char *pattern)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj = NULL;
@@ -226,7 +239,7 @@ xbps_find_pkg_in_dict_by_pkgmatch(prop_dictionary_t dict, const char *key,
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgver", &pkgver))
 			break;
-		if (xbps_pkgdep_match(pkgver, __UNCONST(pkgmatch)))
+		if (xbps_pkgpattern_match(pkgver, __UNCONST(pattern)))
 			break;
 	}
 	prop_object_iterator_release(iter);
@@ -236,7 +249,7 @@ xbps_find_pkg_in_dict_by_pkgmatch(prop_dictionary_t dict, const char *key,
 	return obj;
 }
 
-bool SYMEXPORT
+bool
 xbps_find_string_in_array(prop_array_t array, const char *val)
 {
 	prop_object_iterator_t iter;
@@ -262,7 +275,7 @@ xbps_find_string_in_array(prop_array_t array, const char *val)
 	return false;
 }
 
-prop_object_iterator_t SYMEXPORT
+prop_object_iterator_t
 xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 {
 	prop_array_t array;
@@ -277,7 +290,7 @@ xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 	return prop_array_iterator(array);
 }
 
-int SYMEXPORT
+int
 xbps_remove_string_from_array(prop_array_t array, const char *str)
 {
 	prop_object_t obj;
@@ -308,7 +321,7 @@ xbps_remove_string_from_array(prop_array_t array, const char *str)
 	return 0;
 }
 
-int SYMEXPORT
+int
 xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 			  const char *pkgname)
 {
@@ -353,7 +366,7 @@ xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 	return 0;
 }
 
-int SYMEXPORT
+int
 xbps_remove_pkg_dict_from_file(const char *pkg, const char *plist)
 {
 	prop_dictionary_t pdict;
@@ -382,7 +395,7 @@ xbps_remove_pkg_dict_from_file(const char *pkg, const char *plist)
 	return 0;
 }
 
-prop_dictionary_t SYMEXPORT
+prop_dictionary_t
 xbps_read_dict_from_archive_entry(struct archive *ar,
 				  struct archive_entry *entry)
 {

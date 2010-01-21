@@ -28,12 +28,25 @@
 #include <string.h>
 #include <errno.h>
 
+/**
+ * @file lib/configure.c
+ * @brief Package configuration routines
+ * @defgroup configure Package configuration functions
+ *
+ * Configure a package or all packages. Only packages in <b>unpacked</b>
+ * state will be processed (unless overriden). Package configuration steps:
+ *
+ * 1- Its <b>post-install</b> target in the INSTALL script will be executed.
+ *
+ * 2- Its state will be changed to <b>installed</b> if previous step
+ * ran successful.
+ *
+ * If the \a XBPS_FLAG_FORCE is set through xbps_set_flags(), the package
+ * (or packages) will be reconfigured even if its state is <b>installed</b>.
+ */
 #include <xbps_api.h>
 
-/*
- * Configure all packages currently in unpacked state.
- */
-int SYMEXPORT
+int
 xbps_configure_all_pkgs(void)
 {
 	prop_dictionary_t d;
@@ -78,12 +91,7 @@ out:
 	return rv;
 }
 
-/*
- * Configure a package that is in unpacked state. This runs the
- * post INSTALL action if required and updates package state to
- * to installed.
- */
-int SYMEXPORT
+int
 xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 		   bool update)
 {
@@ -111,7 +119,7 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 		} else if (state != XBPS_PKG_STATE_UNPACKED)
 			return EINVAL;
 	
-		pkgd = xbps_find_pkg_installed_from_plist(pkgname);
+		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 		if (pkgd == NULL)
 			return errno;
 
