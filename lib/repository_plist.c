@@ -194,16 +194,16 @@ xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 
 	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
 		curpath = archive_entry_pathname(entry);
-		if (i >= 5) {
-			/*
-			 * Archive does not contain required plist
-			 * file, discard it completely.
-			 */
-			errno = ENOENT;
-			break;
-		}
 		if (strstr(curpath, plistf) == 0) {
 			archive_read_data_skip(a);
+			if (i >= 3) {
+				/*
+				 * Archive does not contain required
+				 * plist file, discard it completely.
+				 */
+				errno = ENOENT;
+				break;
+			}
 			i++;
 			continue;
 		}
