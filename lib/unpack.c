@@ -36,6 +36,21 @@
  * @file lib/unpack.c
  * @brief Binary package file unpacking routines
  * @defgroup unpack Binary package file unpacking functions
+ *
+ * The following image shows a proplib dictionary returned in a transaction,
+ * by xbps_repository_get_transaction_dict():
+ *
+ * @image html images/xbps_transaction_dictionary.png
+ *
+ * Legend:
+ *   - <b>Salmon bg box</b>: The transaction dictionary.
+ *   - <b>White bg box</b>: mandatory objects.
+ *   - <b>Grey bg box</b>: optional objects.
+ *   - <b>Green bg box</b>: possible value set in the object, only one of them
+ *     will be set.
+ *
+ * Text inside of white boxes are the key associated with the object, its
+ * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 
 static void
@@ -58,8 +73,8 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	prop_dictionary_t filesd = NULL, old_filesd = NULL;
 	struct archive_entry *entry;
 	size_t entry_idx = 0;
-	const char *pkgname, *version, *rootdir, *entry_str;
-	char *buf, *buf2;
+	const char *pkgname, *version, *rootdir, *entry_str, *transact;
+	char *buf;
 	int rv = 0, flags, lflags;
 	bool essential, preserve, actgt, skip_entry, update;
 	bool props_plist_found, files_plist_found;
@@ -87,69 +102,57 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	 */
 	prop_dictionary_get_bool(pkg, "essential", &essential);
 	prop_dictionary_get_bool(pkg, "preserve", &preserve);
-
-	if (xbps_check_is_installed_pkgname(pkgname))
+	
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "trans-action",
+	    &transact))
+		return errno;
+	if (strcmp(transact, "update") == 0)
 		update = true;
+
+	/*
+	 * While updating, always remove current INSTALL/REMOVE
+	 * scripts, because a package upgrade might not have those
+	 * anymore.
+	 */
+	if (update) {
+		buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
+		    XBPS_META_PATH, pkgname);
+		if (buf == NULL)
+			return errno;
+		if (access(buf, R_OK|X_OK) == 0) {
+			if (unlink(buf) == -1) {
+				free(buf);
+				return errno;
+			}
+		}
+		free(buf);
+		buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
+		    XBPS_META_PATH, pkgname);
+		if (buf == NULL)
+			return errno;
+		if (access(buf, R_OK|X_OK) == 0) {
+			if (unlink(buf) == -1) {
+				free(buf);
+				return errno;
+			}
+		}
+		free(buf);
+	}
 
 	/*
 	 * Process the archive files.
 	 */
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
-		if (entry_idx >= 5) {
-			/*
-			 * If we have processed 6 entries and the two
-			 * required metadata files weren't found, bail out.
-			 * This is not an XBPS binary package.
-			 */
-			if (!props_plist_found && !files_plist_found)
-				return ENOPKG;
-		}
-
 		entry_str = archive_entry_pathname(entry);
 		set_extract_flags(&lflags);
-
-		/*
-		 * While updating, always remove current INSTALL/REMOVE
-		 * scripts, because a package upgrade might not have those
-		 * anymore.
-		 */
-		if (update) {
-			buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
-			    XBPS_META_PATH, pkgname);
-			if (buf == NULL)
-				return errno;
-			if (access(buf, R_OK|X_OK) == 0) {
-				if (unlink(buf) == -1) {
-					free(buf);
-					return errno;
-				}
-			}
-			free(buf);
-			buf = NULL;
-			buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
-			    XBPS_META_PATH, pkgname);
-			if (buf == NULL)
-				return errno;
-			if (access(buf, R_OK|X_OK) == 0) {
-				if (unlink(buf) == -1) {
-					free(buf);
-					return errno;
-				}
-			}
-			free(buf);
-			buf = NULL;
-		}
-
 		/*
 		 * Now check what currenty entry in the archive contains.
 		 */
-		if (((strcmp("./INSTALL", entry_str)) == 0) ||
-		    ((strcmp("./REMOVE", entry_str)) == 0) ||
-		    ((strcmp("./files.plist", entry_str)) == 0) ||
+		if (((strcmp("./files.plist", entry_str)) == 0) ||
 		    ((strcmp("./props.plist", entry_str)) == 0) || essential) {
 			/*
 			 * Always overwrite files in essential packages,
-			 * and metadata files.
+			 * and plist metadata files.
 			 */
 			lflags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE;
 			lflags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
@@ -184,7 +187,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 				    pkgname, strerror(errno));
 				return rv;
 			}
-			/* pass to the next entry if successful */
+			/* Pass to the next entry if successful */
 			free(buf);
 			entry_idx++;
 			continue;
@@ -193,15 +196,20 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		 * Unpack metadata files in final directory.
 		 */
 		} else if (strcmp("./REMOVE", entry_str) == 0) {
-			buf2 = xbps_xasprintf(".%s/metadata/%s/REMOVE",
+			buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
 			    XBPS_META_PATH, pkgname);
-			if (buf2 == NULL)
+			if (buf == NULL)
 				return errno;
-			archive_entry_set_pathname(entry, buf2);
+			archive_entry_set_pathname(entry, buf);
+			free(buf);
 			archive_entry_set_mode(entry, 0750);
+			if (archive_read_extract(ar, entry, lflags) != 0)
+				return archive_errno(ar);
 
-			free(buf2);
-			buf2 = NULL;
+			/* Pass to next entry if successful */
+			entry_idx++;
+			continue;
+
 		} else if (strcmp("./files.plist", entry_str) == 0) {
 			/*
 			 * Now we have a dictionary from the entry
@@ -218,13 +226,21 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 			continue;
 
 		} else if (strcmp("./props.plist", entry_str) == 0) {
-			buf2 = xbps_xasprintf(".%s/metadata/%s/props.plist",
+			buf = xbps_xasprintf(".%s/metadata/%s/props.plist",
 			    XBPS_META_PATH, pkgname);
-			if (buf2 == NULL)
+			if (buf == NULL)
 				return errno;
-			archive_entry_set_pathname(entry, buf2);
-			free(buf2);
+			archive_entry_set_pathname(entry, buf);
+			free(buf);
+
+			if (archive_read_extract(ar, entry, lflags) != 0)
+				return archive_errno(ar);
+
+			/* Pass to next entry if successful */
 			props_plist_found = true;
+			entry_idx++;
+			continue;
+
 		} else {
 			/*
 			 * Handle configuration files.
@@ -240,6 +256,24 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 				entry_idx++;
 				continue;
 			}
+		}
+
+		/*
+		 * If XBPS_PKGFILES or XBPS_PKGPROPS weren't found
+		 * in the archive at this phase, skip all data.
+		 */
+		if (!files_plist_found || !props_plist_found) {
+			archive_read_data_skip(ar);
+			/*
+			 * If we have processed 4 entries and the two
+			 * required metadata files weren't found, bail out.
+			 * This is not an XBPS binary package.
+			 */
+			if (entry_idx >= 3)
+				return ENOPKG;
+
+			entry_idx++;
+			continue;
 		}
 
 		/*
@@ -259,19 +293,17 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 					    archive_entry_pathname(entry));
 				}
 				rv = 0;
-				entry_idx++;
 				continue;
 			}
 		}
-		entry_idx++;
 		if (flags & XBPS_FLAG_VERBOSE)
 			printf(" %s\n", archive_entry_pathname(entry));
 	}
 
 	if ((rv = archive_errno(ar)) == 0) {
-		buf2 = xbps_xasprintf(".%s/metadata/%s/files.plist",
+		buf = xbps_xasprintf(".%s/metadata/%s/files.plist",
 		    XBPS_META_PATH, pkgname);
-		if (buf2 == NULL) {
+		if (buf == NULL) {
 			prop_object_release(filesd);
 			return errno;
 		}
@@ -280,19 +312,19 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		 * essential and NOT preserve, in that case we need to check
 		 * for obsolete files and remove them if necessary.
 		 */
-		if (!preserve && essential && (access(buf2, R_OK) == 0)) {
+		if (!preserve && essential && (access(buf, R_OK) == 0)) {
 			old_filesd =
-			    prop_dictionary_internalize_from_file(buf2);
+			    prop_dictionary_internalize_from_file(buf);
 			if (old_filesd == NULL) {
 				prop_object_release(filesd);
-				free(buf2);
+				free(buf);
 				return errno;
 			}
 			rv = xbps_remove_obsoletes(old_filesd, filesd);
 			if (rv != 0) {
 				prop_object_release(old_filesd);
 				prop_object_release(filesd);
-				free(buf2);
+				free(buf);
 				return rv;
 			}
 			prop_object_release(old_filesd);
@@ -302,12 +334,12 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		 * can safely externalize files.plist because the path
 		 * is reachable.
 		 */
-		if (!prop_dictionary_externalize_to_file(filesd, buf2)) {
+		if (!prop_dictionary_externalize_to_file(filesd, buf)) {
 			prop_object_release(filesd);
-			free(buf2);
+			free(buf);
 			return errno;
 		}
-		free(buf2);
+		free(buf);
 	}
 	if (filesd)
 		prop_object_release(filesd);
@@ -354,21 +386,13 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 	     ARCHIVE_READ_BLOCKSIZE)) != 0)
 		goto out;
 
-	if ((rv = unpack_archive_fini(ar, pkg)) == 0) {
-		/*
-		 * If installation of package was successful, make sure
-		 * its files are written in storage (if possible).
-		 */
-		if (fsync(pkg_fd) == -1) {
-			rv = errno;
-			goto out;
-		}
-		/*
-		 * Set package state to unpacked.
-		 */
-		rv = xbps_set_pkg_state_installed(pkgname,
-		    XBPS_PKG_STATE_UNPACKED);
-	}
+	if ((rv = unpack_archive_fini(ar, pkg)) != 0)
+		goto out;
+
+	/*
+	 * Set package state to unpacked.
+	 */
+	rv = xbps_set_pkg_state_installed(pkgname, XBPS_PKG_STATE_UNPACKED);
 
 out:
 	if (ar)
