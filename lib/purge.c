@@ -39,17 +39,13 @@
  * These functions will purge an specified package or all packages.
  * Only packages in <b>config-files</b> state will be processed
  * (unless overriden). Package purging steps:
- *
- * 1- Its <b>post-remove</b> target specified in the REMOVE script
- * will be executed.
- *
- * 2- Unmodified configuration files and directories containing them
- * will be removed (if empty).
- *
- * 3- Its metadata directory and all its files will be removed.
- *
- * 4- It will be unregistered from the installed packages database with
- * xbps_unregister_pkg().
+ *  - Its <b>post-remove</b> target specified in the REMOVE script
+ *    will be executed.
+ *  - Unmodified configuration files and directories containing them
+ *    will be removed (if empty).
+ *  - Its metadata directory and all its files will be removed.
+ *  - It will be unregistered from the installed packages database with
+ *    xbps_unregister_pkg().
  */
 
 static int

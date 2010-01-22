@@ -70,19 +70,17 @@ __BEGIN_DECLS
  * NetBSD's proplib has been used because it's fast, extensible, and easy
  * to use. These are the three facts I mentioned:
  *
- * <ul>
- * <li><b>Fast</b> because proplib uses an ultra optimized
- * <em>red-black tree</em> implementation to store and find all its objects,
- * the same implementation has been used in commercial projects by
- * <em>Apple Inc</em>.</li>
+ *  - <b>Fast</b> because proplib uses an ultra optimized
+ *    <em>red-black tree</em> implementation to store and find all its objects,
+ *    the same implementation has been used in commercial projects by
+ *    <em>Apple Inc</em>.
  *
- * <li><b>Extensible</b> because you don't have to worry about
- * ABI problems with its objects, arrays and dictionaries can be extended
- * without such problems.</li>
+ *  - <b>Extensible</b> because you don't have to worry about ABI problems
+ *    with its objects, arrays and dictionaries can be extended without such
+ *    problems.
  *
- * <li><b>Easy</b> to use (and learn) because it has a superb documentation
- * available in the form of manual pages.</li>
- * </ul>
+ *  - <b>Easy</b> to use (and learn) because it has a superb documentation
+ *    available in the form of manual pages.
  *
  * Not to mention that its arrays and dictionaries can be externalized to
  * files (known as plists) and <b>always are written atomically</b>. You
@@ -207,9 +205,10 @@ int HIDDEN xbps_config_file_from_archive_entry(prop_dictionary_t,
 					       int *,
 					       bool *);
 
+/** @addtogroup configure */
+/*@{*/
+
 /**
- * @ingroup configure
- *
  * Configure (or force reconfiguration of) a package.
  *
  * @param[in] pkgname Package name to configure.
@@ -226,13 +225,13 @@ int xbps_configure_pkg(const char *pkgname,
 		       bool update);
 
 /**
- * @ingroup configure
- *
  * Configure (or force reconfiguration of) all packages.
  *
  * @return 0 on success, or an appropiate errno value otherwise.
  */
 int xbps_configure_all_pkgs(void);
+
+/*@}*/
 
 /**
  * @ingroup vermatch
@@ -252,9 +251,11 @@ int xbps_configure_all_pkgs(void);
  */
 int xbps_cmpver(const char *pkg1, const char *pkg2);
 
+
+/** @addtogroup download */
+/*@{*/
+
 /**
- * @ingroup download
- *
  * Download a file from a remote URL.
  * 
  * @param[in] uri Remote URI string.
@@ -272,17 +273,19 @@ int xbps_fetch_file(const char *uri,
 		    const char *flags);
 
 /**
- * @ingroup download
- *
  * Returns last error string reported by xbps_fetch_file().
  *
  * @return A string with the appropiate error message.
+ * @}
  */
 const char *xbps_fetch_error_string(void);
 
+/*@}*/
+
+/** @addtogroup fexec */
+/*@{*/
+
 /**
- * @ingroup fexec
- *
  * Forks and executes a command in the current working directory
  * with an arbitrary number of arguments.
  *
@@ -294,8 +297,6 @@ const char *xbps_fetch_error_string(void);
 int xbps_file_exec(const char *arg, ...);
 
 /**
- * @ingroup fexec
- *
  * Forks and executes a command in the current working directory
  * with an arbitrary number of arguments.
  *
@@ -307,8 +308,6 @@ int xbps_file_exec(const char *arg, ...);
 int xbps_file_exec_skipempty(const char *arg, ...);
 
 /**
- * @ingroup fexec
- *
  * Forks and executes a command with an arbitrary number of arguments
  * in a specified path.
  * 
@@ -322,6 +321,8 @@ int xbps_file_exec_skipempty(const char *arg, ...);
  * @return 0 on success, -1 on error and errno set appropiately.
  */
 int xbps_file_chdir_exec(const char *path, const char *arg, ...);
+
+/*@}*/
 
 /* From lib/humanize_number.c */
 #define HN_DECIMAL		0x01
@@ -367,9 +368,10 @@ prop_array_t xbps_find_orphan_packages(void);
  */
 int xbps_pkgpattern_match(const char *instpkg, char *pattern);
 
+/** @addtogroup plist */
+/*@{*/
+
 /**
- * @ingroup plist
- *
  * Adds a proplib object into a proplib dictionary with specified key.
  *
  * @param[in] dict Proplib dictionary to insert the object to.
@@ -383,8 +385,6 @@ bool xbps_add_obj_to_dict(prop_dictionary_t dict,
 			  const char *key);
 
 /**
- * @ingroup plist
- *
  * Adds a proplib object into a proplib array.
  *
  * @param[in] array Proplib array to insert the object to.
@@ -395,8 +395,6 @@ bool xbps_add_obj_to_dict(prop_dictionary_t dict,
 bool xbps_add_obj_to_array(prop_array_t array, prop_object_t obj);
 
 /**
- * @ingroup plist
- *
  * Executes a function callback into the array associated with key \a key,
  * contained in a proplib dictionary.
  *
@@ -417,8 +415,6 @@ int xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 			void *arg);
 
 /**
- * @ingroup plist
- *
  * Executes a function callback (in reverse order) into the array
  * associated with key \a key, contained in a proplib dictionary.
  *
@@ -439,8 +435,6 @@ int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 			void *arg);
 
 /**
- * @ingroup plist
- *
  * Finds the proplib's dictionary associated with a package, by looking
  * it via its name in a proplib dictionary.
  *
@@ -456,8 +450,6 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
 						const char *pkgname);
 
 /**
- * @ingroup plist
- *
  * Finds the proplib's dictionary associated with a package, by looking
  * at it via a package pattern in a proplib dictionary.
  *
@@ -473,8 +465,6 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
 						   const char *pattern);
 
 /**
- * @ingroup plist
- *
  * Finds the package's proplib dictionary by looking at it in
  * a plist file.
  *
@@ -488,8 +478,6 @@ prop_dictionary_t xbps_find_pkg_from_plist(const char *plist,
 					   const char *pkgname);
 
 /**
- * @ingroup plist
- *
  * Finds a package's dictionary searching in the registered packages
  * database by using a package name or a package pattern.
  *
@@ -504,8 +492,6 @@ prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
 					       bool bypattern);
 
 /**
- * @ingroup plist
- *
  * Finds a string matching an object in a proplib array.
  *
  * @param[in] array The proplib array where to look for.
@@ -517,8 +503,6 @@ prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
 bool xbps_find_string_in_array(prop_array_t array, const char *val);
 
 /**
- * @ingroup plist
- *
  * Gets a proplib object iterator associated with an array, contained
  * in a proplib dictionary matching a key.
  *
@@ -532,8 +516,6 @@ prop_object_iterator_t xbps_get_array_iter_from_dict(prop_dictionary_t dict,
 						     const char *key);
 
 /**
- * @ingroup plist
- *
  * Finds a proplib dictionary in an archive, matching a specific
  * entry on it.
  *
@@ -547,8 +529,6 @@ prop_dictionary_t xbps_read_dict_from_archive_entry(struct archive *ar,
 				struct archive_entry *entry);
 
 /**
- * @ingroup plist
- *
  * Removes the package's proplib dictionary matching \a pkgname
  * in a plist file.
  *
@@ -560,8 +540,6 @@ prop_dictionary_t xbps_read_dict_from_archive_entry(struct archive *ar,
 int xbps_remove_pkg_dict_from_file(const char *pkgname, const char *plist);
 
 /**
- * @ingroup plist
- *
  * Removes the package's proplib dictionary matching \a pkgname,
  * in an array with key \a key stored in a proplib dictionary.
  *
@@ -576,8 +554,6 @@ int xbps_remove_pkg_from_dict(prop_dictionary_t dict,
 			      const char *pkgname);
 
 /**
- * @ingroup plist
- *
  * Removes a string from a proplib's array.
  *
  * @param[in] array Proplib array where to look for.
@@ -587,9 +563,12 @@ int xbps_remove_pkg_from_dict(prop_dictionary_t dict,
  */
 int xbps_remove_string_from_array(prop_array_t array, const char *str);
 
+/*@}*/
+
+/** @addtogroup purge */
+/*@{*/
+
 /**
- * @ingroup purge
- *
  * Purge an installed package.
  *
  * @param[in] pkgname Package name to match.
@@ -601,8 +580,6 @@ int xbps_remove_string_from_array(prop_array_t array, const char *str);
 int xbps_purge_pkg(const char *pkgname, bool check_state);
 
 /**
- * @ingroup purge
- *
  * Purge all installed packages. Packages that aren't in
  * <b>config-files</b> state will be ignored.
  *
@@ -610,9 +587,12 @@ int xbps_purge_pkg(const char *pkgname, bool check_state);
  */
 int xbps_purge_all_pkgs(void);
 
+/*@}*/
+
+/** @addtogroup pkg_register */
+/*@{*/
+
 /**
- * @ingroup pkg_register
- *
  * Register a package into the installed packages database.
  *
  * @param[in] pkgrd Package proplib dictionary returned by a transaction.
@@ -624,8 +604,6 @@ int xbps_purge_all_pkgs(void);
 int xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic);
 
 /**
- * @ingroup pkg_register
- *
  * Unregister a package from the package database.
  *
  * @param[in] pkgname Package name to match.
@@ -634,9 +612,12 @@ int xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic);
  */
 int xbps_unregister_pkg(const char *pkgname);
 
+/*@}*/
+
+/** @addtogroup regpkgdb */
+/*@{*/
+
 /**
- * @ingroup regpkgdb
- *
  * Initialize resources used by the installed packages database.
  *
  * @note This function is reference counted, if the database has
@@ -644,16 +625,14 @@ int xbps_unregister_pkg(const char *pkgname);
  * and dictionary stored in memory will be returned.
  *
  * @warning Don't forget to always use xbps_regpkgs_dictionary_release()
- * once that you don't this data to release resources if possible.
+ * when its dictionary is no longer needed.
  *
- * @return A proplib dictionary with all packages registered currently
- * on success, NULL otherwise and errno is set appropiately.
+ * @return A proplib dictionary as shown above in the Detailed description
+ * image on success, or NULL otherwise and errno is set appropiately.
  */
 prop_dictionary_t xbps_regpkgs_dictionary_init(void);
 
 /**
- * @ingroup regpkgdb
- *
  * Release resources used by the installed packages database.
  *
  * @note This function is reference counted, if the database
@@ -661,9 +640,12 @@ prop_dictionary_t xbps_regpkgs_dictionary_init(void);
  */ 
 void xbps_regpkgs_dictionary_release(void);
 
+/*@}*/
+
+/** @addtogroup pkg_remove */
+/*@{*/
+
 /**
- * @ingroup pkg_remove
- *
  * Remove an installed package.
  *
  * @param[in] pkgname Package name to match.
@@ -677,19 +659,20 @@ void xbps_regpkgs_dictionary_release(void);
 int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
 
 /**
- * @ingroup pkg_remove
- *
  * Remove files defined in a proplib array as specified by \a key
  * of an installed package.
  * 
  * @param[in] dict Proplib dictionary internalized from package's
- * "files.plist" metadata plist file.
- * @param[in] key Key where the object files reside on, valid values are:
- * "files", "dirs", "links" and "conf_files".
+ * <b>XBPS_PKGFILES</b> definition in package's metadata directory.
+ * The image in Detailed description shows off its structure.
+ * @param[in] key Key of the array object to match, valid values are:
+ * <b>files</b>, <b>dirs</b>, <b>links</b> and <b>conf_files</b>.
  *
  * @return 0 on success, or an errno value otherwise.
  */
 int xbps_remove_pkg_files(prop_dictionary_t dict, const char *key);
+
+/*@}*/
 
 /**
  * @private
@@ -697,9 +680,10 @@ int xbps_remove_pkg_files(prop_dictionary_t dict, const char *key);
  */
 int HIDDEN xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
 
+/** @addtogroup repo_register */
+/*@{*/
+
 /**
- * @ingroup repo_register
- *
  * Registers a repository into the database.
  *
  * @param[in] uri URI pointing to the repository.
@@ -709,8 +693,6 @@ int HIDDEN xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
 int xbps_repository_register(const char *uri);
 
 /**
- * @ingroup repo_register
- *
  * Unregisters a repository from the database.
  *
  * @param[in] uri URI pointing to the repository.
@@ -719,15 +701,18 @@ int xbps_repository_register(const char *uri);
  */
 int xbps_repository_unregister(const char *uri);
 
+/*@}*/
+
 /**
  * @private
  */
 int HIDDEN xbps_repository_find_pkg_deps(prop_dictionary_t,
 					 prop_dictionary_t);
 
+/** @addtogroup repo_pkgs */
+/*@{*/
+
 /**
- * @ingroup repo_pkgs
- *
  * Finds a package by its name or by a pattern and enqueues it into
  * the transaction dictionary for future use. The first repository in
  * the queue that matched the requirement wins.
@@ -744,8 +729,6 @@ int HIDDEN xbps_repository_find_pkg_deps(prop_dictionary_t,
 int xbps_repository_install_pkg(const char *pkg, bool bypattern);
 
 /**
- * @ingroup repo_pkgs
- *
  * Marks a package as "going to be updated" in the transaction dictionary.
  * All repositories in the pool will be used, and if a newer version
  * is available the package dictionary will be enqueued.
@@ -760,8 +743,6 @@ int xbps_repository_update_pkg(const char *pkgname,
 			       prop_dictionary_t instpkg);
 
 /**
- * @ingroup repo_pkgs
- *
  * Finds newer versions for all installed packages by looking at the
  * repository pool. If a newer version exists, package will be enqueued
  * into the transaction dictionary.
@@ -771,23 +752,28 @@ int xbps_repository_update_pkg(const char *pkgname,
 int xbps_repository_update_allpkgs(void);
 
 /**
- * @ingroup repo_pkgs
+ * Returns the transaction proplib dictionary, as shown above in the image.
  *
- * Returns the transaction proplib dictionary with properties for
- * all operations previously done.
- *
- * @note This function won't return anything useful in the proplib
- * dictionary, if either of xbps_repository_install_pkg() or
- * xbps_repository_update_pkg() functions are not called previously.
+ * @note
+ *  - If the array \a missing_deps object in the returned transaction
+ *    dictionary is not empty, that means that some required package
+ *    dependencies could not be found; in that case the caller should stop
+ *    immediately the transaction.
+ *  - This function won't return anything useful in the proplib
+ *    dictionary, if either of xbps_repository_install_pkg() or
+ *    xbps_repository_update_pkg() functions are not called previously.
  *
  * @return The transaction dictionary to install/update/replace
  * a package list.
  */
 prop_dictionary_t xbps_repository_get_transaction_dict(void);
 
+/*@}*/
+
+/** @addtogroup repo_plist */
+/*@{*/
+
 /**
- * @ingroup repo_plist
- * 
  * Returns a malloc(3)ed URI string pointing to a binary package file,
  * either from a local or remote repository.
  *
@@ -804,8 +790,6 @@ char *xbps_repository_get_path_from_pkg_dict(prop_dictionary_t d,
 					     const char *uri);
 
 /**
- * @ingroup repo_plist
- *
  * Iterate over the the repository pool and search for a plist file
  * in the binary package named 'pkgname'. The plist file will be
  * internalized to a proplib dictionary.
@@ -828,8 +812,6 @@ prop_dictionary_t xbps_repository_get_pkg_plist_dict(const char *pkgname,
 						     const char *plistf);
 
 /**
- * @ingroup repo_plist
- *
  * Finds a plist file in a binary package file stored local or
  * remotely as specified in the URL.
  *
@@ -842,9 +824,12 @@ prop_dictionary_t xbps_repository_get_pkg_plist_dict(const char *pkgname,
 prop_dictionary_t xbps_repository_get_pkg_plist_dict_from_url(const char *url,
 							const char *plistf);
 
+/*@}*/
+
+/** @addtogroup repopool */
+/*@{*/
+
 /**
- * @ingroup repopool
- *
  * @struct repository_pool xbps_api.h "xbps_api.h"
  * @brief Repository pool structure
  *
@@ -875,8 +860,6 @@ struct repository_pool {
 	char *rp_uri;
 };
 /**
- * @ingroup repopool
- *
  * @var rp_queue
  * @brief Pointer to the head of global simple queue.
  * 
@@ -888,8 +871,6 @@ SIMPLEQ_HEAD(repopool_queue, repository_pool);
 struct repopool_queue rp_queue;
 
 /**
- * @ingroup repopool
- *
  * Initializes the repository pool by creating a global simple queue
  * \a rp_queue with all registered repositories in the database.
  *
@@ -905,8 +886,6 @@ struct repopool_queue rp_queue;
 int xbps_repository_pool_init(void);
 
 /**
- * @ingroup repopool
- *
  * Releases the repository pool with all registered repositories
  * in the database.
  *
@@ -915,9 +894,12 @@ int xbps_repository_pool_init(void);
  */
 void xbps_repository_pool_release(void);
 
+/*@}*/
+
+/** @addtogroup reposync */
+/*@{*/
+
 /**
- * @ingroup reposync
- *
  * Syncs the package index file for a remote repository as specified
  * by the \a uri argument (if necessary).
  *
@@ -930,8 +912,6 @@ void xbps_repository_pool_release(void);
 int xbps_repository_sync_pkg_index(const char *uri);
 
 /**
- * @ingroup reposync
- *
  * Returns a malloc(3)ed string with the local directory name for
  * the package cache directory pointing to a remote URI repository.
  *
@@ -942,6 +922,8 @@ int xbps_repository_sync_pkg_index(const char *uri);
  * errno is set appropiately.
  */
 char *xbps_get_remote_repo_string(const char *uri);
+
+/*@}*/
 
 /**
  * @private
@@ -956,9 +938,10 @@ int HIDDEN xbps_requiredby_pkg_remove(const char *);
  */
 int HIDDEN xbps_sort_pkg_deps(prop_dictionary_t);
 
+/** @addtogroup pkgstates */
+/*@{*/
+
 /**
- * @ingroup pkgstates
- *
  * @enum pkg_state_t
  *
  * Integer representing a state on which a package may be. Possible
@@ -986,8 +969,6 @@ typedef enum pkg_state {
 } pkg_state_t;
 
 /**
- * @ingroup pkgstates
- *
  * Gets package state from package \a pkgname, and sets its state
  * into \a state.
  * 
@@ -999,8 +980,6 @@ typedef enum pkg_state {
 int xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state);
 
 /**
- * @ingroup pkgstates
- *
  * Gets package state from a package dictionary \a dict, and sets its
  * state into \a state.
  *
@@ -1012,8 +991,6 @@ int xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state);
 int xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
 
 /**
- * @ingroup pkgstates
- *
  * Sets package state \a state in package \a pkgname.
  *
  * @param[in] pkgname Package name.
@@ -1024,8 +1001,6 @@ int xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
 int xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state);
 
 /**
- * @ingroup pkgstates
- *
  * Sets package state \a state in package dictionary \a dict.
  *
  * @param[in] dict Package dictionary.
@@ -1035,20 +1010,24 @@ int xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state);
  */
 int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
 
+/*@}*/
+
 /**
  * @ingroup unpack
  *
  * Unpacks a binary package into specified root directory.
  *
- * @param[in] dict Package proplib dictionary as returned by a transaction.
+ * @param[in] dict Package proplib dictionary as stored in a transaction
+ * dictionary.
  *
  * @return 0 on success, or an errno value otherwise.
  */
 int xbps_unpack_binary_pkg(prop_dictionary_t dict);
 
+/** @addtogroup util */
+/*@{*/
+
 /**
- * @ingroup util
- *
  * Returns a string by concatenating its variable argument list
  * as specified by the format string \a fmt.
  *
@@ -1060,8 +1039,6 @@ int xbps_unpack_binary_pkg(prop_dictionary_t dict);
 char *xbps_xasprintf(const char *fmt, ...);
 
 /**
- * @ingroup util
- *
  * Returns a string with the sha256 hash for the file specified
  * by \a file.
  *
@@ -1073,8 +1050,6 @@ char *xbps_xasprintf(const char *fmt, ...);
 char *xbps_get_file_hash(const char *file);
 
 /**
- * @ingroup util
- *
  * Compares the sha256 hash of the file \a file with the sha256
  * string specified by \a sha256.
  *
@@ -1087,8 +1062,6 @@ char *xbps_get_file_hash(const char *file);
 int xbps_check_file_hash(const char *file, const char *sha256);
 
 /**
- * @ingroup util
- *
  * Checks if a package is currently installed by matching a package
  * pattern string.
  *
@@ -1101,8 +1074,6 @@ int xbps_check_file_hash(const char *file, const char *sha256);
 int xbps_check_is_installed_pkg(const char *pkg);
 
 /**
- * @ingroup util
- *
  * Checks if package \a pkgname is currently installed.
  *
  * @param[in] pkgname Package name.
@@ -1112,8 +1083,6 @@ int xbps_check_is_installed_pkg(const char *pkg);
 bool xbps_check_is_installed_pkgname(const char *pkgname);
 
 /**
- * @ingroup util
- *
  * Checks if the URI specified by \a uri is remote or local.
  *
  * @param[in] uri URI string.
@@ -1123,8 +1092,6 @@ bool xbps_check_is_installed_pkgname(const char *pkgname);
 bool xbps_check_is_repo_string_remote(const char *uri);
 
 /**
- * @ingroup util
- *
  * Gets the full path to a binary package file as returned by a
  * package transaction dictionary \a pkgd, by looking at the
  * repository location \a repoloc.
@@ -1141,8 +1108,6 @@ bool xbps_check_is_repo_string_remote(const char *uri);
 char *xbps_get_binpkg_local_path(prop_dictionary_t pkgd, const char *repoloc);
 
 /**
- * @ingroup util
- *
  * Gets the full path to a repository package index plist file, as
  * specified by \a uri.
  *
@@ -1155,8 +1120,6 @@ char *xbps_get_binpkg_local_path(prop_dictionary_t pkgd, const char *repoloc);
 char *xbps_get_pkg_index_plist(const char *uri);
 
 /**
- * @ingroup util
- *
  * Gets the name of a package string. Package strings are composed
  * by a @<pkgname@>/@<version@> pair and separated by the <em>minus</em>
  * sign, i.e <b>foo-2.0</b>.
@@ -1170,8 +1133,6 @@ char *xbps_get_pkg_index_plist(const char *uri);
 char *xbps_get_pkg_name(const char *pkg);
 
 /**
- * @ingroup util
- *
  * Gets a the package name of a package pattern string specified by
  * the \a pattern argument.
  *
@@ -1186,8 +1147,6 @@ char *xbps_get_pkg_name(const char *pkg);
 char *xbps_get_pkgpattern_name(const char *pattern);
 
 /**
- * @ingroup util
- *
  * Gets the package version in a package string, i.e <b>foo-2.0</b>.
  * 
  * @param[in] pkg Package string.
@@ -1198,8 +1157,6 @@ char *xbps_get_pkgpattern_name(const char *pattern);
 const char *xbps_get_pkg_version(const char *pkg);
 
 /**
- * @ingroup util
- *
  * Gets the package version of a package pattern string specified by
  * the \a pattern argument.
  *
@@ -1212,8 +1169,6 @@ const char *xbps_get_pkg_version(const char *pkg);
 const char *xbps_get_pkgpattern_version(const char *pattern);
 
 /**
- * @ingroup util
- *
  * Gets the package version revision in a package string.
  *
  * @param[in] pkg Package string, i.e <b>foo-2.0_1</b>.
@@ -1224,8 +1179,6 @@ const char *xbps_get_pkgpattern_version(const char *pattern);
 const char *xbps_get_pkg_revision(const char *pkg);
 
 /**
- * @ingroup util
- *
  * Checks if a package has run dependencies.
  *
  * @param[in] dict Package dictionary.
@@ -1235,8 +1188,6 @@ const char *xbps_get_pkg_revision(const char *pkg);
 bool xbps_pkg_has_rundeps(prop_dictionary_t dict);
 
 /**
- * @ingroup util
- *
  * Sets the global root directory.
  *
  * @param[in] path Destination directory.
@@ -1244,8 +1195,6 @@ bool xbps_pkg_has_rundeps(prop_dictionary_t dict);
 void xbps_set_rootdir(const char *path);
 
 /**
- * @ingroup util
- *
  * Gets the global root directory.
  *
  * @return A string with full path to the root directory.
@@ -1253,8 +1202,6 @@ void xbps_set_rootdir(const char *path);
 const char *xbps_get_rootdir(void);
 
 /**
- * @ingroup util
- *
  * Sets globally the cache directory to store downloaded binary
  * packages. Any full path without rootdir is valid.
  *
@@ -1263,8 +1210,6 @@ const char *xbps_get_rootdir(void);
 void xbps_set_cachedir(const char *cachedir);
 
 /**
- * @ingroup util
- *
  * Gets the cache directory currently used to store downloaded
  * binary packages.
  *
@@ -1273,8 +1218,6 @@ void xbps_set_cachedir(const char *cachedir);
 const char *xbps_get_cachedir(void);
 
 /**
- * @ingroup util
- *
  * Sets the flag specified in \a flags for internal use.
  *
  * @param[in] flags Flags to be set globally.
@@ -1282,8 +1225,6 @@ const char *xbps_get_cachedir(void);
 void xbps_set_flags(int flags);
 
 /**
- * @ingroup util
- *
  * Gets the flags currently set internally.
  *
  * @return An integer with flags
@@ -1292,6 +1233,8 @@ int xbps_get_flags(void);
 
 bool xbps_yesno(const char *, ...);
 bool xbps_noyes(const char *, ...);
+
+/*@}*/
 
 __END_DECLS
 

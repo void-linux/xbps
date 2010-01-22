@@ -35,14 +35,14 @@
  *
  * Configure a package or all packages. Only packages in <b>unpacked</b>
  * state will be processed (unless overriden). Package configuration steps:
+ *  - Its <b>post-install</b> target in the INSTALL script will be executed.
+ *  - Its state will be changed to <b>installed</b> if previous step
+ *    ran successful.
  *
- * 1- Its <b>post-install</b> target in the INSTALL script will be executed.
- *
- * 2- Its state will be changed to <b>installed</b> if previous step
- * ran successful.
- *
+ * @note
  * If the \a XBPS_FLAG_FORCE is set through xbps_set_flags(), the package
- * (or packages) will be reconfigured even if its state is <b>installed</b>.
+ * (or packages) will be reconfigured even if its state is <b>installed</b>,
+ * as explained in @ref pkgstates.
  */
 #include <xbps_api.h>
 

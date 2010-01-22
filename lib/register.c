@@ -32,11 +32,28 @@
 
 /**
  * @file lib/register.c
- * @brief Package (un)registration routines
- * @defgroup pkg_register Package (un)registration functions
+ * @brief Package registration routines
+ * @defgroup pkg_register Package registration functions
  *
  * Register and unregister packages into/from the installed
- * packages database. 
+ * packages database.
+ *
+ * The following image shows off the full transaction dictionary returned
+ * by xbps_repository_get_transaction_dict(). The dictionary passed to
+ * xbps_register_pkg() should be one of those package dictionaries
+ * stored in the \a packages array stored in the transaction dictionary.
+ *
+ * @image html images/xbps_transaction_dictionary.png
+ *
+ * Legend:
+ *  - <b>Salmon bg box</b>: The transaction dictionary.
+ *  - <b>White bg box</b>: mandatory objects.
+ *  - <b>Grey bg box</b>: optional objects.
+ *  - <b>Green bg box</b>: possible value set in the object, only one of them
+ *    will be set.
+ *
+ * Text inside of white boxes are the key associated with the object, its
+ * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 
 int

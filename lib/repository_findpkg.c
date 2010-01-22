@@ -33,8 +33,23 @@
 
 /**
  * @file lib/repository_findpkg.c
- * @brief Repository packages transaction handling routines
- * @defgroup repo_pkgs Repository packages transaction handling functions
+ * @brief Repository transaction handling routines
+ * @defgroup repo_pkgs Repository transaction handling functions
+ *
+ * The following image shows off the full transaction dictionary returned
+ * by xbps_repository_get_transaction_dict().
+ *
+ * @image html images/xbps_transaction_dictionary.png
+ *
+ * Legend:
+ *  - <b>Salmon bg box</b>: The transaction dictionary.
+ *  - <b>White bg box</b>: mandatory objects.
+ *  - <b>Grey bg box</b>: optional objects.
+ *  - <b>Green bg box</b>: possible value set in the object, only one of them
+ *    will be set.
+ *
+ * Text inside of white boxes are the key associated with the object, its
+ * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 
 static prop_dictionary_t trans_dict;

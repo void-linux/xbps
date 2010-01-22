@@ -39,28 +39,35 @@
  *
  * These functions will remove a package or only a subset of its
  * files. Package removal steps:
- * 
- * 1) Its <b>pre-remove</b> target specified in the REMOVE script
- * will be executed.
+ *  - Its <b>pre-remove</b> target specified in the REMOVE script
+ *    will be executed.
+ *  - Its files, dirs and links will be removed. Modified files (not
+ *    matching its sha256 hash) will always be preserved.
+ *  - Its <b>post-remove</b> target specified in the REMOVE script
+ *    will be executed.
+ *  - Its requiredby objects will be removed from the installed packages
+ *    database.
+ *  - Its state will be changed to <b>config-files</b>.
  *
- * 2) Its files, dirs and links will be removed. Modified files (not
- * matching its sha256 hash) will always be preserved.
+ * @note
+ *  - If a package is going to be updated and it's an essential package,
+ *    only steps <b>1</b> and <b>4</b> will be executed.
+ *  - If a package is going to be updated and it's <b>NOT</b> an essential
+ *    package, only steps <b>1</b>, <b>2</b> and <b>4</b> will be executed.
+ *  - If a package is going to be removed, all steps will be executed.
  *
- * 3) Its <b>post-remove</b> target specified in the REMOVE script
- * will be executed.
+ * The following image shows the structure of an internalized package's
+ * files.plist dictionary:
  *
- * 4) Its requiredby objects will be removed from the installed packages
- * database.
+ * @image html images/xbps_pkg_files_dictionary.png
  *
- * 5) Its state will be changed to <b>config-files</b>.
+ * Legend:
+ *  - <b>Salmon bg box</b>: XBPS_PKGFILES plist file.
+ *  - <b>White bg box</b>: mandatory objects.
+ *  - <b>Grey bg box</b>: optional objects.
  *
- * If a package is going to be updated and it's an essential package,
- * only steps <b>1</b> and <b>4</b> will be executed.
- *
- * If a package is going to be updated and it's <b>NOT</b> an essential
- * package, only steps <b>1</b>, <b>2</b> and <b>4</b> will be executed.
- *
- * If a package is going to be removed, all steps will be executed.
+ * Text inside of white boxes are the key associated with the object, its
+ * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 
 int

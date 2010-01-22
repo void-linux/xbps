@@ -32,8 +32,8 @@
 
 /**
  * @file lib/repository.c
- * @brief Repository (un)registration routines
- * @defgroup repo_register Repository (un)registration functions
+ * @brief Repository registration routines
+ * @defgroup repo_register Repository registration functions
  */
 
 int

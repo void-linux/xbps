@@ -36,10 +36,23 @@
  * @brief Installed packages database init/fini routines
  * @defgroup regpkgdb Installed packages database init/fini functions
  *
- * These functions will initialize the installed packages database,
- * internalizing/externalizing the plist dictionary. Every initialization
- * must be followed by a finalization if its data is not necessary, because
- * the functions are reference counted.
+ * These functions will initialize and release (resources of)
+ * the installed packages database.
+ *
+ * The returned dictionary by xbps_regpkgs_dictionary_init() (if initialized
+ * successfully) will have the following structure:
+ *
+ * @image html images/xbps_regpkgdb_dictionary.png
+ *
+ * Legend:
+ *  - <b>Salmon bg box</b>: XBPS_REGPKGDB_PLIST file internalized.
+ *  - <b>White bg box</b>: mandatory objects.
+ *  - <b>Grey bg box</b>: optional objects.
+ *  - <b>Green bg box</b>: possible value set in the object, only one of them
+ *    will be set.
+ *
+ * Text inside of white boxes are the key associated with the object, its
+ * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 
 static prop_dictionary_t regpkgs_dict;
