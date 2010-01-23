@@ -37,17 +37,28 @@
  * @brief Binary package file unpacking routines
  * @defgroup unpack Binary package file unpacking functions
  *
- * The following image shows a proplib dictionary returned in a transaction,
- * by xbps_repository_get_transaction_dict():
+ * Unpacking a binary package involves the following steps:
+ *  - Its <b>pre-install</b> target in the INSTALL script is executed
+ *    (if available).
+ *  - Metadata files are extracted.
+ *  - All other kind of files on archive are extracted.
+ *  - Handles configuration files by taking care of updating them with
+ *    new versions if necessary and to not overwrite modified ones.
+ *  - If it's an <b>essential</b> package, files from installed package are
+ *    compared with new package and obsolete files are removed.
+ *  - Finally its state is set to XBPS_PKG_STATE_UNPACKED.
+ *
+ * The following image shown below represents a transaction dictionary
+ * returned by xbps_repository_get_transaction_dict():
  *
  * @image html images/xbps_transaction_dictionary.png
  *
  * Legend:
- *   - <b>Salmon bg box</b>: The transaction dictionary.
- *   - <b>White bg box</b>: mandatory objects.
- *   - <b>Grey bg box</b>: optional objects.
- *   - <b>Green bg box</b>: possible value set in the object, only one of them
- *     will be set.
+ *   - <b>Salmon filled box</b>: The transaction dictionary.
+ *   - <b>White filled box</b>: mandatory objects.
+ *   - <b>Grey filled box</b>: optional objects.
+ *   - <b>Green filled box</b>: possible value set in the object, only one of
+ *     them is set.
  *
  * Text inside of white boxes are the key associated with the object, its
  * data type is specified on its edge, i.e string, array, integer, dictionary.
