@@ -6,5 +6,7 @@ xbps-uhelper
 *.a
 *.8
 *.xml
+*.png
+api/
 ftperr.h
 httperr.h
