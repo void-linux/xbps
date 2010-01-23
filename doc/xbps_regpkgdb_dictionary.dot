@@ -1,0 +1,34 @@
+digraph regpkgdb_dictionary {
+	graph [rankdir=LR,rank=same,ranksep=".10"];
+	edge [arrowhead="vee",arrowsize="0.2",fontname="DejaVuSansCondensed",fontsize="9"];
+	node [height=".1",shape=box,fontname="DejaVuSansCondensed",fontsize="9"];
+	regpkgdb_plist -> main;
+	regpkgdb_plist [style=filled,fillcolor="darksalmon",label="regpkgdb.plist"];
+	main [label="Main dictionary"];
+	main -> packages [label="array"];
+	packages -> pkgdict [label="dictionary"];
+	packages -> pkgdict2 [label="dictionary"];
+	pkgdict [style=filled,label="Package[0]"];
+	pkgdict2 [style=filled,label="Package[N+1]"];
+	pkgdict2 -> pkgdict2_objs [label="objects"];
+	pkgdict2_objs [style=filled,label="..."];
+	pkgdict -> pkgname [label="string"];
+	pkgdict -> version [label="string"];
+	pkgdict -> pkgver [label="string"];
+	pkgdict -> state [label="string"];
+	state -> state_inst [label="value"];
+	state -> state_cffiles [label="value"];
+	state -> state_unpack [label="value"];
+	state_inst [style=filled,fillcolor="yellowgreen",label="installed"];
+	state_cffiles [style=filled,fillcolor="yellowgreen",label="config-files"];
+	state_unpack [style=filled,fillcolor="yellowgreen",label="unpacked"];
+	pkgdict -> automatic [label="bool"];
+	automatic [label="automatic-install"];
+	pkgdict -> short_desc [label="string"]
+	pkgdict -> requiredby [label="array"];
+	requiredby [style=filled];
+	requiredby -> reqby1 [label="string"];
+	requiredby -> reqby2 [style=filled,label="string"];
+	reqby1 [label="blah-2.0"];
+	reqby2 [style=filled,label="..."];
+}

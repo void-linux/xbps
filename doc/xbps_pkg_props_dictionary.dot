@@ -1,0 +1,37 @@
+digraph pkg_props_dictionary {
+	graph [rankdir=LR,ranksep="0.7"];
+	edge [arrowhead="vee",arrowsize="0.2",fontname="DejaVuSansCondensed",fontsize="8"];
+	node [height=".1",shape=box,fontname="DejaVuSansCondensed",fontsize="8"];
+	props_plist -> main;
+	props_plist [style=filled,fillcolor="darksalmon",label="props.plist"];
+	main [label="Package dictionary"];
+	main -> pkgname [label="string"];
+	main -> version [label="string"];
+	main -> pkgver [label="string"];
+	main -> essential [label="bool"];
+	main -> preserve [label="bool"];
+	main -> run_depends [label="array"];
+	run_depends [style=filled];
+	run_depends -> rundep1_string [label="string"];
+	run_depends -> rundep2_string [label="string"];
+	rundep1_string [label="foo>=1.2"];
+	rundep2_string [style=filled,label="..."];
+	main -> architecture [label="string"];
+	main -> instsize [label="integer"];
+	instsize [label="installed_size"];
+	main -> short_desc [label="string"]
+	main -> long_desc [label="string"];
+	main -> maintainer [label="string"];
+	main -> replaces [label="array"];
+	replaces [style=filled];
+	replaces -> replace1_string [label="string"];
+	replaces -> replace2_string [label="string"];
+	replace1_string [label="blah<=2.0"];
+	replace2_string [style=filled,label="..."];
+	main -> conf_files [label="array"];
+	conf_files [style=filled];
+	conf_files -> cffile1 [style=filled,label="string"];
+	conf_files -> cffile2 [style=filled,label="string"];
+	cffile1 [label="/etc/foo.conf"];
+	cffile2 [style=filled,label="..."];
+}

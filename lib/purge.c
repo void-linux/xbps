@@ -37,7 +37,7 @@
  * @defgroup purge Package purging functions
  *
  * These functions will purge an specified package or all packages.
- * Only packages in <b>config-files</b> state will be processed
+ * Only packages in XBPS_PKG_STATE_CONFIG_FILES state will be processed
  * (unless overriden). Package purging steps:
  *  - Its <b>post-remove</b> target specified in the REMOVE script
  *    will be executed.

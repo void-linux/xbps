@@ -2,6 +2,10 @@ include vars.mk
 
 SUBDIRS	= include lib bin
 
+ifdef BUILD_API_DOCS
+SUBDIRS += doc
+endif
+
 .PHONY: all
 all:
 	@for dir in $(SUBDIRS); do		\

@@ -39,22 +39,22 @@
  *
  * These functions will remove a package or only a subset of its
  * files. Package removal steps:
- *  - Its <b>pre-remove</b> target specified in the REMOVE script
- *    will be executed.
- *  - Its files, dirs and links will be removed. Modified files (not
- *    matching its sha256 hash) will always be preserved.
- *  - Its <b>post-remove</b> target specified in the REMOVE script
- *    will be executed.
- *  - Its requiredby objects will be removed from the installed packages
- *    database.
- *  - Its state will be changed to <b>config-files</b>.
+ *  -# Its <b>pre-remove</b> target specified in the REMOVE script
+ *     will be executed.
+ *  -# Its files, dirs and links will be removed. Modified files (not
+ *     matching its sha256 hash) will always be preserved.
+ *  -# Its <b>post-remove</b> target specified in the REMOVE script
+ *     will be executed.
+ *  -# Its requiredby objects will be removed from the installed packages
+ *     database.
+ *  -# Its state will be changed to XBPS_PKG_STATE_CONFIG_FILES.
  *
  * @note
- *  - If a package is going to be updated and it's an essential package,
- *    only steps <b>1</b> and <b>4</b> will be executed.
- *  - If a package is going to be updated and it's <b>NOT</b> an essential
- *    package, only steps <b>1</b>, <b>2</b> and <b>4</b> will be executed.
- *  - If a package is going to be removed, all steps will be executed.
+ *  -# If a package is going to be updated and it's an essential package,
+ *     only steps <b>1</b> and <b>4</b> will be executed.
+ *  -# If a package is going to be updated and it's <b>NOT</b> an essential
+ *     package, only steps <b>1</b>, <b>2</b> and <b>4</b> will be executed.
+ *  -# If a package is going to be removed, all steps will be executed.
  *
  * The following image shows the structure of an internalized package's
  * files.plist dictionary:

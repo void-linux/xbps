@@ -33,26 +33,27 @@
 
 /**
  * @file lib/regpkgs_dictionary.c
- * @brief Installed packages database init/fini routines
- * @defgroup regpkgdb Installed packages database init/fini functions
+ * @brief Package register database routines
+ * @defgroup regpkgdb Package register database functions
  *
  * These functions will initialize and release (resources of)
- * the installed packages database.
+ * the registered packages database plist file (defined by XBPS_REGPKGDB).
  *
- * The returned dictionary by xbps_regpkgs_dictionary_init() (if initialized
- * successfully) will have the following structure:
+ * The returned dictionary by xbps_regpkgs_dictionary_init() uses
+ * the structure as shown in the next graph:
  *
  * @image html images/xbps_regpkgdb_dictionary.png
  *
  * Legend:
- *  - <b>Salmon bg box</b>: XBPS_REGPKGDB_PLIST file internalized.
- *  - <b>White bg box</b>: mandatory objects.
- *  - <b>Grey bg box</b>: optional objects.
- *  - <b>Green bg box</b>: possible value set in the object, only one of them
- *    will be set.
+ *  - <b>Salmon filled box</b>: \a XBPS_REGPKGDB_PLIST file internalized.
+ *  - <b>White filled box</b>: mandatory objects.
+ *  - <b>Grey filled box</b>: optional objects.
+ *  - <b>Green filled box</b>: possible value set in the object, only one
+ *    of them is set.
  *
  * Text inside of white boxes are the key associated with the object, its
- * data type is specified on its edge, i.e string, array, integer, dictionary.
+ * data type is specified on its edge, i.e array, bool, integer, string,
+ * dictionary.
  */
 
 static prop_dictionary_t regpkgs_dict;

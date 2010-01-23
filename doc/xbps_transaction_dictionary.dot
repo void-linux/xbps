@@ -1,0 +1,48 @@
+digraph transaction_dictionary {
+	graph [rankdir=LR,ranksep=".1"];
+	edge [arrowhead="vee",arrowsize="0.40",fontname="DejaVuSansCondensed",fontsize="8"];
+	node [shape=box,fontname="DejaVuSansCondensed",fontsize="8",height=".1",width=".1"];
+	main -> packages [label="array"];
+	main -> missing_deps [label="array"];
+	missing_deps -> mdep1 [label="string"];
+	missing_deps -> mdep2 [label="string"];
+	mdep1 [style=filled,label="blob>=3.0<4.1"];
+	mdep2 [style=filled,label="..."];
+	main -> totalsize [label="integer"];
+	main -> totaldlsize [label="integer"];
+	main [style=filled,fillcolor="darksalmon",label="Main dictionary"];
+	totalsize [label="total-installed-size"];
+	totaldlsize [label="total-download-size"];
+	packages -> dictionary [label="dictionary"];
+	packages -> dictionary2 [label="dictionary"];
+	dictionary [style=filled,label="Package[0]"];
+	dictionary2 [style=filled,label="Package[N+1]"];
+	dictionary2 -> dict2_objs [label="objects"];
+	dict2_objs [style=filled,label="..."];
+	dictionary -> pkgname [label="string"];
+	dictionary -> version [label="string"];
+	dictionary -> pkgver [label="string"];
+	dictionary -> run_depends [label="array"];
+	run_depends [style=filled];
+	run_depends -> rundep1_string [label="string"];
+	run_depends -> rundep2_string [label="string"];
+	rundep1_string [label="foo>=1.2"];
+	rundep2_string [style=filled,label="..."];
+	dictionary -> architecture [label="string"];
+	dictionary -> filename [label="string"];
+	dictionary -> fnamesha256 [label="string"];
+	fnamesha256 [label="filename-sha256"];
+	dictionary -> fnamesize [label="integer"];
+	fnamesize [label="filename-size"];
+	dictionary -> instsize [label="integer"];
+	instsize [label="installed_size"];
+	dictionary -> short_desc [label="string"]
+	dictionary -> trans_action [label="string"];
+	trans_action [label="trans-action"];
+	trans_action -> tract_inst [label="value"];
+	trans_action -> tract_up [label="value"];
+	trans_action -> tract_cf [label="value"];
+	tract_inst [style=filled,fillcolor="yellowgreen",label="install"];
+	tract_up [style=filled,fillcolor="yellowgreen",label="update"];
+	tract_cf [style=filled,fillcolor="yellowgreen",label="configure"];
+}

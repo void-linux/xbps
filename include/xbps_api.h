@@ -48,44 +48,6 @@
 __BEGIN_DECLS
 
 /**
- * @mainpage The X Binary Package System Library API
- * @section intro_sec Introduction
- *
- * XBPS is a new binary package system designed and implemented from
- * scratch, by <b>Juan Romero Pardines</b>. This document describes
- * the API used by the XBPS Library, that is the base to implement
- * a package manager frontend, such as is implemented in the xbps-bin(8)
- * and xbps-repo(8) command line interfaces.
- *
- * XBPS uses extensively NetBSD's proplib, a library that provides an
- * abstract interface for creating and manipulating property lists.
- * Property lists have object types for boolean values, opaque data, numbers,
- * and strings. Structure is provided by the array and dictionary collection
- * types. Property lists can be passed across protection boundaries by
- * translating them to an external representation. This external representation
- * is an XML document whose format is described by the following DTD:
- *
- * http://www.apple.com/DTDs/PropertyList-1.0.dtd
- *
- * NetBSD's proplib has been used because it's fast, extensible, and easy
- * to use. These are the three facts I mentioned:
- *
- *  - <b>Fast</b> because proplib uses an ultra optimized
- *    <em>red-black tree</em> implementation to store and find all its objects,
- *    the same implementation has been used in commercial projects by
- *    <em>Apple Inc</em>.
- *
- *  - <b>Extensible</b> because you don't have to worry about ABI problems
- *    with its objects, arrays and dictionaries can be extended without such
- *    problems.
- *
- *  - <b>Easy</b> to use (and learn) because it has a superb documentation
- *    available in the form of manual pages.
- *
- * Not to mention that its arrays and dictionaries can be externalized to
- * files (known as plists) and <b>always are written atomically</b>. You
- * have the whole file or don't have it at all.
- *
  * @file include/xbps_api.h
  * @brief XBPS Library API header
  *
@@ -573,7 +535,7 @@ int xbps_remove_string_from_array(prop_array_t array, const char *str);
  *
  * @param[in] pkgname Package name to match.
  * @param[in] check_state Set it to true to check that package
- * is in <b>config-files</b> state.
+ * is in XBPS_PKG_STATE_CONFIG_FILES state.
  *
  * @return 0 on success, or an errno value otherwise.
  */
@@ -581,7 +543,7 @@ int xbps_purge_pkg(const char *pkgname, bool check_state);
 
 /**
  * Purge all installed packages. Packages that aren't in
- * <b>config-files</b> state will be ignored.
+ * XBPS_PKG_STATE_CONFIG_FILES state will be ignored.
  *
  * @return 0 on success, or an errno value otherwise.
  */
@@ -595,18 +557,19 @@ int xbps_purge_all_pkgs(void);
 /**
  * Register a package into the installed packages database.
  *
- * @param[in] pkgrd Package proplib dictionary returned by a transaction.
+ * @param[in] pkg_dict A dictionary with the following objects:
+ * \a pkgname, \a version, \a pkgver and \a short_desc (string).
  * @param[in] automatic Set it to true to mark package that has been
  * installed by another package, and not explicitly.
  *
  * @return 0 on success, an errno value otherwise.
  */
-int xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic);
+int xbps_register_pkg(prop_dictionary_t pkg_dict, bool automatic);
 
 /**
  * Unregister a package from the package database.
  *
- * @param[in] pkgname Package name to match.
+ * @param[in] pkgname Package name.
  *
  * @return 0 on success, an errno value otherwise.
  */
@@ -618,7 +581,7 @@ int xbps_unregister_pkg(const char *pkgname);
 /*@{*/
 
 /**
- * Initialize resources used by the installed packages database.
+ * Initialize resources used by the registered packages database.
  *
  * @note This function is reference counted, if the database has
  * been initialized previously, the counter will be increased by one
@@ -627,16 +590,16 @@ int xbps_unregister_pkg(const char *pkgname);
  * @warning Don't forget to always use xbps_regpkgs_dictionary_release()
  * when its dictionary is no longer needed.
  *
- * @return A proplib dictionary as shown above in the Detailed description
- * image on success, or NULL otherwise and errno is set appropiately.
+ * @return A dictionary as shown above in the Detailed description
+ * graph on success, or NULL otherwise and errno is set appropiately.
  */
 prop_dictionary_t xbps_regpkgs_dictionary_init(void);
 
 /**
- * Release resources used by the installed packages database.
+ * Release resources used by the registered packages database.
  *
  * @note This function is reference counted, if the database
- * is in use by other callers it won't be released.
+ * is in use (its reference count number is not 0), won't be released.
  */ 
 void xbps_regpkgs_dictionary_release(void);
 
@@ -1017,12 +980,12 @@ int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
  *
  * Unpacks a binary package into specified root directory.
  *
- * @param[in] dict Package proplib dictionary as stored in a transaction
- * dictionary.
+ * @param[in] trans_pkg_dict Package proplib dictionary as stored in the
+ * \a packages array returned by the transaction dictionary.
  *
  * @return 0 on success, or an errno value otherwise.
  */
-int xbps_unpack_binary_pkg(prop_dictionary_t dict);
+int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict);
 
 /** @addtogroup util */
 /*@{*/

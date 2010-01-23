@@ -1,0 +1,18 @@
+digraph xbps_binary_pkg_content {
+	graph [ranksep="0"];
+	edge [color=white,arrowhead="none",fontname="DejaVuSansCondensed",fontsize="12"];
+	node [width="4.0",shape=box,fontname="DejaVuSansCondensed",fontsize="12"];
+	install -> remove;
+	remove -> files_plist;
+	files_plist -> props_plist;
+	props_plist -> archive_entry;
+	archive_entry -> archive_entry2;
+	archive_entry2 -> archive_entry3;
+	install [style=filled,label="INSTALL"];
+	remove [style=filled,label="REMOVE"];
+	files_plist [label="files.plist"];
+	props_plist [label="props.plist"];
+	archive_entry [style=filled,label="/etc"];
+	archive_entry2 [style=filled,label="/etc/foo.conf"];
+	archive_entry3 [style=filled,label="..."];
+}

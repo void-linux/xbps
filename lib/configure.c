@@ -33,16 +33,16 @@
  * @brief Package configuration routines
  * @defgroup configure Package configuration functions
  *
- * Configure a package or all packages. Only packages in <b>unpacked</b>
+ * Configure a package or all packages. Only packages in XBPS_PKG_STATE_UNPACKED
  * state will be processed (unless overriden). Package configuration steps:
  *  - Its <b>post-install</b> target in the INSTALL script will be executed.
- *  - Its state will be changed to <b>installed</b> if previous step
+ *  - Its state will be changed to XBPS_PKG_STATE_INSTALLED if previous step
  *    ran successful.
  *
  * @note
  * If the \a XBPS_FLAG_FORCE is set through xbps_set_flags(), the package
- * (or packages) will be reconfigured even if its state is <b>installed</b>,
- * as explained in @ref pkgstates.
+ * (or packages) will be reconfigured even if its state is
+ * XBPS_PKG_STATE_INSTALLED.
  */
 #include <xbps_api.h>
 

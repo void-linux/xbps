@@ -8,6 +8,10 @@ MANDIR	?= $(DESTDIR)$(PREFIX)/share/man/man8
 TOPDIR	?= ..
 INSTALL_STRIPPED ?= -s
 
+# To build the libxbps API documentation, requires graphviz and doxygen.
+# Uncomment this to enable.
+#BUILD_API_DOCS	= 1
+
 LDFLAGS = -L$(TOPDIR)/lib
 CPPFLAGS = -I$(TOPDIR)/include -D_XOPEN_SOURCE=600 -D_GNU_SOURCE
 CPPFLAGS += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGE_FILES
