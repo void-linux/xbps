@@ -10,7 +10,8 @@ To build this you'll need:
     available at http://code.google.com/p/portableproplib
   - asciidoc (to build the manpages)
 
-Optionally to build the API documentation:
+Optionally to build the API documentation (enabled with BUILD_API_DOCS
+make(1) argument):
 
   - graphviz and doxygen.
 
