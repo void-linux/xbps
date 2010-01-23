@@ -35,6 +35,28 @@
  * @file lib/orphans.c
  * @brief Package orphans handling routines
  * @defgroup pkg_orphans Package orphans handling functions
+ *
+ * Functions to find installed package orphans.
+ *
+ * Package orphans were installed automatically by another package,
+ * but currently no other packages are depending on.
+ *
+ * The following image shown below shows the registered packages database
+ * dictionary (the array returned by xbps_find_orphan_packages() will
+ * contain a package dictionary per orphan found):
+ *
+ * @image html images/xbps_regpkgdb_dictionary.png
+ *
+ * Legend:
+ *  - <b>Salmon filled box</b>: \a XBPS_REGPKGDB_PLIST file internalized.
+ *  - <b>White filled box</b>: mandatory objects.
+ *  - <b>Grey filled box</b>: optional objects.
+ *  - <b>Green filled box</b>: possible value set in the object, only one
+ *    of them is set.
+ * 
+ * Text inside of white boxes are the key associated with the object, its
+ * data type is specified on its edge, i.e array, bool, integer, string,
+ * dictionary.
  */
 
 struct orphan_pkg {
