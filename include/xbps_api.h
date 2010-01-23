@@ -875,16 +875,9 @@ void xbps_repository_pool_release(void);
 int xbps_repository_sync_pkg_index(const char *uri);
 
 /**
- * Returns a malloc(3)ed string with the local directory name for
- * the package cache directory pointing to a remote URI repository.
- *
- * @note The caller is responsible to free(3) the returned buffer,
- * @param[in] uri URI to a remote repository.
- *
- * @return A buffer with the transformed string, NULL otherwise and
- * errno is set appropiately.
+ * @private
  */
-char *xbps_get_remote_repo_string(const char *uri);
+char HIDDEN *xbps_get_remote_repo_string(const char *uri);
 
 /*@}*/
 
