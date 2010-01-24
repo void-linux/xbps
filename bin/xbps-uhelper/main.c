@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,7 +67,7 @@ usage(void)
 	"  Action arguments:\n"
 	"    cmpver\t\t<instver> <reqver>\n"
 	"    digest\t\t<file> <file1+N>\n"
-	"    fetch\t\t<URL>\n"
+	"    fetch\t\t<URL> <URL1+N>\n"
 	"    getpkgdepname\t<string>\n"
 	"    getpkgname\t\t<string>\n"
 	"    getpkgrevision\t<string>\n"
@@ -84,8 +84,8 @@ usage(void)
 	"\n"
 	"  Examples:\n"
 	"    $ xbps-uhelper cmpver 'foo-1.0' 'foo-2.1'\n"
-	"    $ xbps-uhelper digest /foo/blah.txt\n"
-	"    $ xbps-uhelper fetch http://www.foo.org/file.blob\n"
+	"    $ xbps-uhelper digest /foo/blah.txt ...\n"
+	"    $ xbps-uhelper fetch http://www.foo.org/file.blob ...\n"
 	"    $ xbps-uhelper getpkgname foo-2.0\n"
 	"    $ xbps-uhelper getpkgrevision foo-2.0_1\n"
 	"    $ xbps-uhelper getpkgversion foo-2.0\n"
@@ -319,12 +319,19 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		rv = xbps_fetch_file(argv[1], ".", false, "v");
-		if (rv == -1) {
-			printf("%s: %s\n", argv[1], xbps_fetch_error_string());
-			exit(EXIT_FAILURE);
-		} else if (rv == 0) {
-			printf("%s: file is identical than remote.\n", argv[1]);
+		xbps_fetch_set_cache_connection(0, 0);
+		int i;
+
+		for (i = 1; i < argc; i++) {
+			rv = xbps_fetch_file(argv[i], ".", false, "v");
+			if (rv == -1) {
+				printf("%s: %s\n", argv[1],
+				    xbps_fetch_error_string());
+				exit(EXIT_FAILURE);
+			} else if (rv == 0) {
+				printf("%s: file is identical than remote.\n",
+				    argv[1]);
+			}
 		}
 
 	} else {
