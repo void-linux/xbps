@@ -523,14 +523,14 @@ exec_transaction(struct transaction *trans)
 	 * Download binary packages (if they come from a remote repository)
 	 * and check its SHA256 hash.
 	 */
-	printf("[1/3] Downloading/integrity check\n\n");
+	printf("[1/3] Downloading/integrity check\n");
 	if ((rv = download_package_list(trans->iter)) != 0)
 		return rv;
 
 	/*
 	 * Iterate over the transaction dictionary.
 	 */
-	printf("\n[2/3] Unpacking\n\n");
+	printf("\n[2/3] Unpacking\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgname", &pkgname))
@@ -636,7 +636,7 @@ exec_transaction(struct transaction *trans)
 	/*
 	 * Configure all unpacked packages.
 	 */
-	printf("\n[3/3] Configuring\n\n");
+	printf("\n[3/3] Configuring\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgname", &pkgname))
