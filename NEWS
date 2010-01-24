@@ -1,0 +1,44 @@
+xbps-0.4 (2010-02-01):
+
+ * xbps-uhelper: the 'fetch' target now accepts an arbitrary number of
+   arguments, and sets default libfetch cache connection limits.
+
+ * xbps-bin(8): when downloading binary packages, it now sets default
+   libfetch cache connection limits, thus reusing connections to the same host.
+
+ * libxbps: synced libfetch code with NetBSD's pkgsrc, updated to 2.30.
+
+ * Added doxygen documentation for the API, enabled with BUILD_API_DOCS.
+
+ * libxbps: be more strict finding required metadata plist files in binary
+   packages. Now the code checks for the two required plist files to be at
+   index <= 4 and doesn't write any entry to storage until they aren't found.
+
+ * libxbps: many exported functions to the API are now internal and not
+   exported, because they were only used internally. The API is still not
+   finished and may be changed without notice.
+
+ * Makefiles reworked to support parallel builds.
+
+ * libxbps: fixed some memleaks found by cppcheck and valgrind.
+
+ * libxbps: fixed some bugs while upgrading essential packages when new package
+   didn't have an INSTALL or REMOVE script and old package had them.
+
+ * xbps-bin(8): added support to the 'install' and 'update' targets to
+   accept package patterns, i.e "xbps-bin install 'foo<=3.0'.
+   See https://blueprints.launchpad.net/xbps/+spec/install-pkg-by-pkgmatch
+
+ * xbps-bin(8) added support to the 'install', 'remove' and 'update'
+   targets to accept any arbitrary number of package names, i.e
+   "xbps-bin install foo blah baz".
+   See https://blueprints.launchpad.net/xbps/+spec/arbitrary-pkgname-args
+
+ * xbps-repo(8): added support to the 'search' target to find exact matches,
+   i.e 'xbps-repo search bash'.
+
+ * libxbps: changes xbps_yesno() and xbps_noyes() to only accept "yes" or "no"
+   (case insensitive) answers rather than 'y' or 'n', to avoid mistaken answers.
+
+ * libxbps, xbps-bin(8), xbps-repo(8): redirect all warning and error
+   messages to stderr.
