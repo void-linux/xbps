@@ -1,11 +1,11 @@
 # Common variables.
 
-PREFIX	?= /usr/local
-SBINDIR	?= $(DESTDIR)$(PREFIX)/sbin
-LIBDIR	?= $(DESTDIR)$(PREFIX)/lib
-INCLUDEDIR ?= $(DESTDIR)$(PREFIX)/include
-MANDIR	?= $(DESTDIR)$(PREFIX)/share/man/man8
-TOPDIR	?= ..
+PREFIX ?= /usr/local
+SBINDIR ?= $(PREFIX)/sbin
+LIBDIR ?= $(PREFIX)/lib
+INCLUDEDIR ?= $(PREFIX)/include
+MANDIR ?= $(PREFIX)/share/man
+TOPDIR ?= ..
 INSTALL_STRIPPED ?= -s
 
 # To build the libxbps API documentation, requires graphviz and doxygen.
@@ -17,7 +17,7 @@ CPPFLAGS = -I$(TOPDIR)/include -D_XOPEN_SOURCE=600 -D_GNU_SOURCE
 CPPFLAGS += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGE_FILES
 
 ifdef DEBUG
-INSTALL_STRIPPED=
+INSTALL_STRIPPED =
 DEBUG_FLAGS = -g
 CPPFLAGS += -DDEBUG
 endif

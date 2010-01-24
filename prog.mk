@@ -13,37 +13,36 @@ clean:
 
 .PHONY: install
 install: all
-	install -d $(SBINDIR)
-	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(SBINDIR)
-	install $(INSTALL_STRIPPED) -m 755 $(BIN).static $(SBINDIR)
+	install -d $(DESTDIR)$(SBINDIR)
+	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(DESTDIR)$(SBINDIR)
+	install $(INSTALL_STRIPPED) -m 755 $(BIN).static $(DESTDIR)$(SBINDIR)
 ifdef MAN
-	install -d $(MANDIR)
-	install -m 644 $(MAN) $(MANDIR)
+	install -d $(DESTDIR)$(MANDIR)/man8
+	install -m 644 $(MAN) $(DESTDIR)$(MANDIR)/man8
 endif
 
 .PHONY: uninstall
 uninstall:
-	-rm -f $(SBINDIR)/$(BIN)
-	-rm -f $(SBINDIR)/$(BIN).static
-
+	-rm -f $(DESTDIR)$(SBINDIR)/$(BIN)
+	-rm -f $(DESTDIR)$(SBINDIR)/$(BIN).static
 ifdef MAN
-	-rm -f $(MANDIR)/$(MAN)
+	-rm -f $(DESTDIR)$(MANDIR)/man8/$(MAN)
 endif
 
 %.o: %.c
-	@echo " [CC]\t\t$@"
+	@printf " [CC]\t\t$@\n"
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 $(MAN):
-	@echo " [ASCIIDOC]\t$(MAN)"
+	@printf " [ASCIIDOC]\t$(MAN)\n"
 	@a2x -f manpage $(MAN).txt
 
 $(BIN).static: $(OBJS)
-	@echo " [CCLD]\t\t$@"
+	@printf " [CCLD]\t\t$@\n"
 	@$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
 		$(STATIC_LIBS) -o $@ >/dev/null 2>&1
 
 $(BIN): $(OBJS)
-	@echo " [CCLD]\t\t$@"
+	@printf " [CCLD]\t\t$@\n"
 	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -pie -o $@
 

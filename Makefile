@@ -18,8 +18,8 @@ install:
 		$(MAKE) -C $$dir install || exit 1;	\
 	done
 	@echo
-	@echo "Binaries have been installed into $(SBINDIR)."
-	@echo "Librares have been installed into $(LIBDIR)."
+	@echo "Binaries have been installed into $(DESTDIR)$(SBINDIR)."
+	@echo "Librares have been installed into $(DESTDIR)$(LIBDIR)."
 	@echo
 	@echo "WARNING: Don't forget to rerun ldconfig(1)."
 	@echo

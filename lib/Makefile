@@ -28,45 +28,45 @@ OBJS += sortdeps.o state.o unpack.o util.o pkgmatch.o mkpath.o
 all: libxbps.so libxbps.a
 
 fetch/ftperr.h: fetch/ftp.errors
-	@echo " [GEN]\t\t$@"
+	@printf " [GEN]\t\t$@\n"
 	@./fetch/errlist.sh ftp_errlist FTP $< > $@
 
 fetch/httperr.h: fetch/http.errors
-	@echo " [GEN]\t\t$@"
+	@printf " [GEN]\t\t$@\n"
 	@./fetch/errlist.sh http_errlist HTTP $< > $@
 
 $(LIBFETCH_OBJS): %.o: %.c $(LIBFETCH_INCS) $(LIBFETCH_GEN)
-	@echo " [CC]\t\t$@"
+	@printf " [CC]\t\t$@\n"
 	@$(CC) $(CPPFLAGS) $(LIBFETCH_CPPFLAGS) $(CFLAGS) \
 		$(LIBFETCH_CFLAGS) $(LIBFETCH_SHLIBCFLAGS) -c $< -o $@
 
 $(OBJS): %.o: %.c
-	@echo " [CC]\t\t$@"
+	@printf " [CC]\t\t$@\n"
 	@$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
 
 libxbps.so: $(OBJS) $(LIBFETCH_OBJS)
-	@echo " [CCLD]\t\t$@"
+	@printf " [CCLD]\t\t$@\n"
 	@$(CC) $(LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBXBPS_MAJOR)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
 libxbps.a: $(OBJS) $(LIBFETCH_OBJS)
-	@echo " [AR]\t\t$@"
+	@printf " [AR]\t\t$@\n"
 	@$(AR) rcs $@ $^
-	@echo " [RANLIB]\t$@"
+	@printf " [RANLIB]\t$@\n"
 	@ranlib $@
 
 .PHONY: install
 install: all
-	install -d $(LIBDIR)
-	install -m 644 libxbps.a $(LIBDIR)
-	install -m 755 $(LIBXBPS_SHLIB) $(LIBDIR)
-	cp -a libxbps.so $(LIBDIR)
-	cp -a libxbps.so.$(LIBXBPS_MAJOR) $(LIBDIR)
+	install -d $(DESTDIR)$(LIBDIR)
+	install -m 644 libxbps.a $(DESTDIR)$(LIBDIR)
+	install -m 755 $(LIBXBPS_SHLIB) $(DESTDIR)$(LIBDIR)
+	cp -a libxbps.so $(DESTDIR)$(LIBDIR)
+	cp -a libxbps.so.$(LIBXBPS_MAJOR) $(DESTDIR)$(LIBDIR)
 
 .PHONY: uninstall
 uninstall:
-	-rm -f $(LIBDIR)/libxbps.*
+	-rm -f $(DESTDIR)$(LIBDIR)/libxbps.*
 
 .PHONY: clean
 clean:

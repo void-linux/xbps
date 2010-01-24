@@ -7,12 +7,12 @@ all:
 
 .PHONY: install
 install:
-	install -d $(INCLUDEDIR)
-	install -m 644 $(INCS) $(INCLUDEDIR)
+	install -d $(DESTDIR)$(INCLUDEDIR)
+	install -m 644 $(INCS) $(DESTDIR)$(INCLUDEDIR)
 
 .PHONY: uninstall
 uninstall:
-	-rm -f $(INCLUDEDIR)/$(INCS)
+	-rm -f $(DESTDIR)$(INCLUDEDIR)/$(INCS)
 
 .PHONY: clean
 clean:
