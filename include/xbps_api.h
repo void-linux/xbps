@@ -235,6 +235,14 @@ int xbps_fetch_file(const char *uri,
 		    const char *flags);
 
 /**
+ * Sets the libfetch's cache connection limits.
+ *
+ * @param[in] global Number of global cached connections, by default 8.
+ * @param[in] per_host Number of per host cached connections, by default 16.
+ */
+void xbps_fetch_set_cache_connection(int global, int per_host);
+
+/**
  * Returns last error string reported by xbps_fetch_file().
  *
  * @return A string with the appropiate error message.

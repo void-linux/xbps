@@ -58,6 +58,9 @@ struct xferstat {
 	const char 	 *name;
 };
 
+static int cache_connections = 8;
+static int cache_connections_host = 16;
+
 /*
  * Compute and display ETA
  */
@@ -171,12 +174,6 @@ stat_end(struct xferstat *xsp)
 	fprintf(stderr, "\033[K\n");
 }
 
-const char *
-xbps_fetch_error_string(void)
-{
-	return fetchLastErrString;
-}
-
 #ifdef DEBUG
 static const char *
 print_time(time_t *t)
@@ -189,6 +186,23 @@ print_time(time_t *t)
 	return buf;
 }
 #endif
+
+const char *
+xbps_fetch_error_string(void)
+{
+	return fetchLastErrString;
+}
+
+void
+xbps_fetch_set_cache_connection(int global, int per_host)
+{
+	if (global == 0)
+		global = cache_connections;
+	if (per_host == 0)
+		per_host = cache_connections_host;
+
+	fetchConnectionCacheInit(global, per_host);
+}
 
 int
 xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
