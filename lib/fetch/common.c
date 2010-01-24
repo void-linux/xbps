@@ -1,7 +1,7 @@
-/*	$NetBSD: common.c,v 1.21 2009/10/15 12:36:57 joerg Exp $	*/
+/*	$NetBSD: common.c,v 1.24 2010/01/23 14:25:26 joerg Exp $	*/
 /*-
- * Copyright (c) 1998-2004 Dag-Erling CoÃ¯dan SmÃ¸rav
- * Copyright (c) 2008 Joerg Sonnenberger <joerg@NetBSD.org>
+ * Copyright (c) 1998-2004 Dag-Erling Coïdan Smørgrav
+ * Copyright (c) 2008, 2010 Joerg Sonnenberger <joerg@NetBSD.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,9 +65,6 @@
 #include "fetch.h"
 #include "common.h"
 
-#define DECONST(x,y) ((x)(uintptr_t)(y))
-
-
 /*** Local data **************************************************************/
 
 /*
@@ -82,10 +79,6 @@ static struct fetcherr netdb_errlist[] = {
 	{ EAI_NONAME,	FETCH_RESOLV,	"No address record" },
 	{ -1,		FETCH_UNKNOWN,	"Unknown resolver error" }
 };
-
-/* End-of-Line */
-static const char ENDL[2] = "\r\n";
-
 
 /*** Error-reporting functions ***********************************************/
 
@@ -234,23 +227,10 @@ fetch_reopen(int sd)
 	/* allocate and fill connection structure */
 	if ((conn = calloc(1, sizeof(*conn))) == NULL)
 		return (NULL);
+	conn->cache_url = NULL;
 	conn->next_buf = NULL;
 	conn->next_len = 0;
 	conn->sd = sd;
-	conn->is_active = 0;
-	++conn->ref;
-	return (conn);
-}
-
-
-/*
- * Bump a connection's reference count.
- */
-conn_t *
-fetch_ref(conn_t *conn)
-{
-
-	++conn->ref;
 	return (conn);
 }
 
@@ -281,7 +261,7 @@ fetch_bind(int sd, int af, const char *addr)
  * Establish a TCP connection to the specified port on the specified host.
  */
 conn_t *
-fetch_connect(const char *host, int port, int af, int verbose)
+fetch_connect(struct url *url, int af, int verbose)
 {
 	conn_t *conn;
 	char pbuf[10];
@@ -290,22 +270,22 @@ fetch_connect(const char *host, int port, int af, int verbose)
 	int sd, error;
 
 	if (verbose)
-		fetch_info("looking up %s", host);
+		fetch_info("looking up %s", url->host);
 
 	/* look up host name and set up socket address structure */
-	snprintf(pbuf, sizeof(pbuf), "%d", port);
+	snprintf(pbuf, sizeof(pbuf), "%d", url->port);
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = af;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = 0;
-	if ((error = getaddrinfo(host, pbuf, &hints, &res0)) != 0) {
+	if ((error = getaddrinfo(url->host, pbuf, &hints, &res0)) != 0) {
 		netdb_seterr(error);
 		return (NULL);
 	}
 	bindaddr = getenv("FETCH_BIND_ADDRESS");
 
 	if (verbose)
-		fetch_info("connecting to %s:%d", host, port);
+		fetch_info("connecting to %s:%d", url->host, url->port);
 
 	/* try to connect */
 	for (sd = -1, res = res0; res; sd = -1, res = res->ai_next) {
@@ -332,9 +312,114 @@ fetch_connect(const char *host, int port, int af, int verbose)
 		fetch_syserr();
 		close(sd);
 	}
+	conn->cache_url = fetchCopyURL(url);
+	conn->cache_af = af;
 	return (conn);
 }
 
+static conn_t *connection_cache;
+static int cache_global_limit = 0;
+static int cache_per_host_limit = 0;
+
+/*
+ * Initialise cache with the given limits.
+ */
+void
+fetchConnectionCacheInit(int global_limit, int per_host_limit)
+{
+
+	if (global_limit < 0)
+		cache_global_limit = INT_MAX;
+	else if (per_host_limit > global_limit)
+		cache_global_limit = per_host_limit;
+	else
+		cache_global_limit = global_limit;
+	if (per_host_limit < 0)
+		cache_per_host_limit = INT_MAX;
+	else
+		cache_per_host_limit = per_host_limit;
+}
+
+/*
+ * Flush cache and free all associated resources.
+ */
+void
+fetchConnectionCacheClose(void)
+{
+	conn_t *conn;
+
+	while ((conn = connection_cache) != NULL) {
+		connection_cache = conn->next_cached;
+		(*conn->cache_close)(conn);
+	}
+}
+
+/*
+ * Check connection cache for an existing entry matching
+ * protocol/host/port/user/password/family.
+ */
+conn_t *
+fetch_cache_get(const struct url *url, int af)
+{
+	conn_t *conn, *last_conn = NULL;
+
+	for (conn = connection_cache; conn; conn = conn->next_cached) {
+		if (conn->cache_url->port == url->port &&
+		    strcmp(conn->cache_url->scheme, url->scheme) == 0 &&
+		    strcmp(conn->cache_url->host, url->host) == 0 &&
+		    strcmp(conn->cache_url->user, url->user) == 0 &&
+		    strcmp(conn->cache_url->pwd, url->pwd) == 0 &&
+		    (conn->cache_af == AF_UNSPEC || af == AF_UNSPEC ||
+		     conn->cache_af == af)) {
+			if (last_conn != NULL)
+				last_conn->next_cached = conn->next_cached;
+			else
+				connection_cache = conn->next_cached;
+			return conn;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+ * Put the connection back into the cache for reuse.
+ * If the connection is freed due to LRU or if the cache
+ * is explicitly closed, the given callback is called.
+ */
+void
+fetch_cache_put(conn_t *conn, int (*closecb)(conn_t *))
+{
+	conn_t *iter, *last;
+	int global_count, host_count;
+
+	if (conn->cache_url == NULL || cache_global_limit == 0) {
+		(*closecb)(conn);
+		return;
+	}
+
+	global_count = host_count = 0;
+	last = NULL;
+	for (iter = connection_cache; iter;
+	    last = iter, iter = iter->next_cached) {
+		++global_count;
+		if (strcmp(conn->cache_url->host, iter->cache_url->host) == 0)
+			++host_count;
+		if (global_count < cache_global_limit &&
+		    host_count < cache_per_host_limit)
+			continue;
+		--global_count;
+		if (last != NULL)
+			last->next_cached = iter->next_cached;
+		else
+			connection_cache = iter->next_cached;
+		(*iter->cache_close)(iter);
+	}
+
+	conn->cache_close = closecb;
+	conn->next_cached = connection_cache;
+	connection_cache = conn;
+}
 
 /*
  * Enable SSL on a connection.
@@ -528,26 +613,12 @@ fetch_getln(conn_t *conn)
 	return (0);
 }
 
-
-/*
- * Write to a connection w/ timeout
- */
-ssize_t
-fetch_write(conn_t *conn, const char *buf, size_t len)
-{
-	struct iovec iov;
-
-	iov.iov_base = DECONST(char *, buf);
-	iov.iov_len = len;
-	return fetch_writev(conn, &iov, 1);
-}
-
 /*
  * Write a vector to a connection w/ timeout
  * Note: can modify the iovec.
  */
 ssize_t
-fetch_writev(conn_t *conn, struct iovec *iov, int iovcnt)
+fetch_write(conn_t *conn, const void *buf, size_t len)
 {
 	struct timeval now, timeout, waittv;
 	fd_set writefds;
@@ -561,7 +632,7 @@ fetch_writev(conn_t *conn, struct iovec *iov, int iovcnt)
 	}
 
 	total = 0;
-	while (iovcnt > 0) {
+	while (len) {
 		while (fetchTimeout && !FD_ISSET(conn->sd, &writefds)) {
 			FD_SET(conn->sd, &writefds);
 			gettimeofday(&now, NULL);
@@ -587,11 +658,10 @@ fetch_writev(conn_t *conn, struct iovec *iov, int iovcnt)
 		errno = 0;
 #ifdef WITH_SSL
 		if (conn->ssl != NULL)
-			wlen = SSL_write(conn->ssl,
-			    iov->iov_base, iov->iov_len);
+			wlen = SSL_write(conn->ssl, buf, len);
 		else
 #endif
-			wlen = writev(conn->sd, iov, iovcnt);
+			wlen = send(conn->sd, buf, len, MSG_NOSIGNAL);
 		if (wlen == 0) {
 			/* we consider a short write a failure */
 			errno = EPIPE;
@@ -604,40 +674,10 @@ fetch_writev(conn_t *conn, struct iovec *iov, int iovcnt)
 			return (-1);
 		}
 		total += wlen;
-		while (iovcnt > 0 && wlen >= (ssize_t)iov->iov_len) {
-			wlen -= iov->iov_len;
-			iov++;
-			iovcnt--;
-		}
-		if (iovcnt > 0) {
-			iov->iov_len -= wlen;
-			iov->iov_base = DECONST(char *, iov->iov_base) + wlen;
-		}
+		buf = (const char *)buf + wlen;
+		len -= wlen;
 	}
 	return (total);
-}
-
-
-/*
- * Write a line of text to a connection w/ timeout
- */
-int
-fetch_putln(conn_t *conn, const char *str, size_t len)
-{
-	struct iovec iov[2];
-	ssize_t ret;
-
-	iov[0].iov_base = DECONST(char *, str);
-	iov[0].iov_len = len;
-	iov[1].iov_base = DECONST(char *, ENDL);
-	iov[1].iov_len = sizeof(ENDL);
-	if (len == 0)
-		ret = fetch_writev(conn, &iov[1], 1);
-	else
-		ret = fetch_writev(conn, iov, 2);
-	if (ret == -1)
-		return (-1);
-	return (0);
 }
 
 
@@ -649,9 +689,9 @@ fetch_close(conn_t *conn)
 {
 	int ret;
 
-	if (--conn->ref > 0)
-		return (0);
 	ret = close(conn->sd);
+	if (conn->cache_url)
+		fetchFreeURL(conn->cache_url);
 	free(conn->buf);
 	free(conn);
 	return (ret);
