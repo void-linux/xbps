@@ -102,6 +102,9 @@ download_package_list(prop_object_iterator_t iter)
 	if (cachedir == NULL)
 		return EINVAL;
 
+	/* Set default limit of global and per-host cached connections */
+	xbps_fetch_set_cache_connection(0, 0);
+
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		found_binpkg = false;
 		if (!prop_dictionary_get_cstring_nocopy(obj,

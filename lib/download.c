@@ -58,9 +58,6 @@ struct xferstat {
 	const char 	 *name;
 };
 
-static int cache_connections = 8;
-static int cache_connections_host = 16;
-
 /*
  * Compute and display ETA
  */
@@ -197,9 +194,9 @@ void
 xbps_fetch_set_cache_connection(int global, int per_host)
 {
 	if (global == 0)
-		global = cache_connections;
+		global = XBPS_FETCH_CACHECONN;
 	if (per_host == 0)
-		per_host = cache_connections_host;
+		per_host = XBPS_FETCH_CACHECONN_HOST;
 
 	fetchConnectionCacheInit(global, per_host);
 }

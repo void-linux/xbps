@@ -218,6 +218,20 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
 /*@{*/
 
 /**
+ * @def XBPS_FETCH_CACHECONN
+ *
+ * Default (global) limit of cached connections used in libfetch.
+ */
+#define XBPS_FETCH_CACHECONN		8
+
+/**
+ * @def XBPS_FETCH_CACHECONN_HOST
+ *
+ * Default (per host) limit of cached connections used in libfetch.
+ */
+#define XBPS_FETCH_CACHECONN_HOST	16
+
+/**
  * Download a file from a remote URL.
  * 
  * @param[in] uri Remote URI string.
@@ -237,8 +251,10 @@ int xbps_fetch_file(const char *uri,
 /**
  * Sets the libfetch's cache connection limits.
  *
- * @param[in] global Number of global cached connections, by default 8.
- * @param[in] per_host Number of per host cached connections, by default 16.
+ * @param[in] global Number of global cached connections, if set to 0
+ * by default it's set to XBPS_FETCH_CACHECONN.
+ * @param[in] per_host Number of per host cached connections, if set to 0
+ * by default it's set to XBPS_FETCH_CACHECONN_HOST.
  */
 void xbps_fetch_set_cache_connection(int global, int per_host);
 
