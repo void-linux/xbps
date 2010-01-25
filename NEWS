@@ -1,4 +1,8 @@
 xbps-0.4 (2010-02-01):
+ 
+ * xbps-bin(8): enable -f option for the 'purge' and 'remove' targets.
+   If set, files will be removed even if its hash doesn't match for the
+   'remove' target, and configuration files for the 'purge' target.
 
  * xbps-uhelper: the 'fetch' target now accepts an arbitrary number of
    arguments, and sets default libfetch cache connection limits.

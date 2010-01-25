@@ -42,7 +42,8 @@
  *  -# Its <b>pre-remove</b> target specified in the REMOVE script
  *     will be executed.
  *  -# Its files, dirs and links will be removed. Modified files (not
- *     matching its sha256 hash) will always be preserved.
+ *     matching its sha256 hash) are preserved, unless XBPS_FLAG_FORCE
+ *     is set via xbps_set_flags().
  *  -# Its <b>post-remove</b> target specified in the REMOVE script
  *     will be executed.
  *  -# Its requiredby objects will be removed from the installed packages
@@ -123,13 +124,24 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 				rv = 0;
 				continue;
 			} else if (rv == ERANGE) {
-				if (flags & XBPS_FLAG_VERBOSE)
-					fprintf(stderr,
-					    "WARNING: '%s' SHA256 mismatch, "
-				    	    "preserving...\n", file);
 				rv = 0;
-				free(path);
-				continue;
+				if (flags & XBPS_FLAG_VERBOSE) {
+					if (flags & XBPS_FLAG_FORCE) {
+						fprintf(stderr,
+						    "WARNING: '%s' SHA256 "
+						    "mismatch, forcing "
+						    "removal...\n", file);
+					} else {
+						fprintf(stderr,
+					    	"WARNING: '%s' SHA256 "
+						"mismatch, preserving...\n",
+						file);
+					}
+				}
+				if ((flags & XBPS_FLAG_FORCE) == 0) {
+					free(path);
+					continue;
+				}
 			} else if (rv != 0 && rv != ERANGE) {
 				free(path);
 				break;

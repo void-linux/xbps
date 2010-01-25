@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,8 +61,8 @@ usage(void)
 	"    -V\t\tPrints the xbps release version\n"
 	" Options used by the install/(auto)remove/update targets:\n"
 	"    -y\t\tAssume \"yes\" for all questions.\n"
-	" Options used by the reconfigure target:\n"
-	"    -f\t\tForce reconfiguration.\n"
+	" Options used by the purge/reconfigure/remove targets:\n"
+	"    -f\t\tForce reconfiguration or removal of files.\n"
 	"\n");
 	exit(EXIT_FAILURE);
 }

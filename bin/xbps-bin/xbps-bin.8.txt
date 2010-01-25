@@ -31,8 +31,10 @@ OPTIONS
 	it will become '/blah/cachedir'.
 
 *-f*::
-	Used currently in the 'reconfigure' target. If set, package(s) will
-	be reconfigured regardless of its state.
+	Used currently in the 'purge', 'reconfigure' and 'remove' targets.
+	If set, package(s) will be reconfigured regardless of its state if working
+	with the 'reconfigure target, or to force removal of package files
+	even if its hash doesn't match in the 'purge' and 'remove' targets.
 
 *-r* 'rootdir'::
 	Sets the 'root' directory. By default the root directory is
@@ -96,7 +98,8 @@ Please note that all targets are *case insensitive*.
 	metadata directory ( /var/db/xbps/metadata/'pkgname' ) and will
 	remove configuration (if they were not modified by the user) and
 	metadata files. The package will be fully removed from the system once
-	it has been *purged*.
+	it has been *purged*. If *-f* option is used, configuration files
+	that have been modified *WILL BE REMOVED, BEWARE WITH THIS!*.
 
 *reconfigure 'pkgname' | 'all'*::
 	Reconfigure an *unpacked* package. Packages in this state are not
@@ -113,7 +116,8 @@ Please note that all targets are *case insensitive*.
 	database. Configuration files, its metadata directory/files and
 	its information in the package database are preserved. To fully remove
 	a package in *config-files* state, it must be *purged* with the
-	*purge* command.
+	*purge* command. If *-f* option is used, package files will be removed
+	even if its SHA256 hash doesn't match.
 
 *show 'pkgname'*::
 	Shows information for installed package 'pkgname'. This will print
