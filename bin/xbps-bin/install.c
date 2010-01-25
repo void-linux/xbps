@@ -285,14 +285,14 @@ show_transaction_sizes(struct transaction *trans)
 		    "%s\n", strerror(errno));
 		return -1;
 	}
-	printf("Total download size: %s\n", size);
+	printf("Total download size: %sB\n", size);
 	if (xbps_humanize_number(size, 5, (int64_t)instsize,
 	    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE) == -1) {
 		fprintf(stderr, "xbps-bin: error: humanize_number2 returns "
 		    "%s\n", strerror(errno));
 		return -1;
 	}
-	printf("Total installed size: %s\n\n", size);
+	printf("Total installed size: %sB\n\n", size);
 
 	return 0;
 }
@@ -499,14 +499,14 @@ exec_transaction(struct transaction *trans)
 	prop_object_iterator_t replaces_iter;
 	const char *pkgname, *version, *pkgver, *instver, *filename, *tract;
 	int rv = 0;
-	bool update, essential, autoinst;
+	bool update, essential, preserve, autoinst;
 	pkg_state_t state = 0;
 
 	assert(trans != NULL);
 	assert(trans->dict != NULL);
 	assert(trans->iter != NULL);
 
-	update = essential = autoinst = false;
+	update = essential = autoinst = preserve = false;
 	/*
 	 * Show download/installed size for the transaction.
 	 */
@@ -547,6 +547,7 @@ exec_transaction(struct transaction *trans)
 			return errno;
 		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
 		prop_dictionary_get_bool(obj, "essential", &essential);
+		prop_dictionary_get_bool(obj, "preserve",  &preserve);
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "filename", &filename))
 			return errno;
@@ -601,9 +602,12 @@ exec_transaction(struct transaction *trans)
 			 * is all handled internally in xbps_remove_pkg()
 			 * and xbps_unpack_binary_pkg().
 			 */
-			if (essential)
+			if (essential && !preserve)
 				printf("Replacing %s-%s with %s-%s ...\n",
 				    pkgname, instver, pkgname, version);
+			else if (essential && preserve)
+				printf("Conserving %s-%s files, installing new "
+				    "version ...\n", pkgname, instver);
 			else
 				printf("Removing %s-%s before installing new "
 				    "version ...\n", pkgname, instver);
