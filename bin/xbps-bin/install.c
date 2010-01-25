@@ -474,7 +474,8 @@ replace_packages(prop_object_iterator_t iter, const char *pkgver)
 		prop_object_release(instd);
 
 		version = xbps_get_pkg_version(pkgver);
-		if ((rv = xbps_remove_pkg(reppkgn, version, false)) != 0) {
+		rv = xbps_remove_pkg(reppkgn, version, false, false);
+		if (rv != 0) {
 			fprintf(stderr, "xbps-bin: couldn't remove %s (%s)\n",
 			    reppkgn, strerror(rv));
 			return rv;
@@ -607,7 +608,7 @@ exec_transaction(struct transaction *trans)
 				printf("Removing %s-%s before installing new "
 				    "version ...\n", pkgname, instver);
 
-			rv = xbps_remove_pkg(pkgname, version, true);
+			rv = xbps_remove_pkg(pkgname, version, true, essential);
 			if (rv != 0) {
 				fprintf(stderr, "xbps-bin: error "
 				    "%s %s-%s (%s)\n", essential ?

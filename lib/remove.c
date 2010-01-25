@@ -174,13 +174,14 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 }
 
 int
-xbps_remove_pkg(const char *pkgname, const char *version, bool update)
+xbps_remove_pkg(const char *pkgname, const char *version,
+		bool update, bool essential)
 {
-	prop_dictionary_t dict, pkgd;
+	prop_dictionary_t dict;
 	const char *rootdir = xbps_get_rootdir();
 	char *path, *buf;
 	int rv = 0;
-	bool essential = false, prepostf = false;
+	bool prepostf = false;
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
@@ -188,11 +189,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	/*
 	 * Check if pkg is installed before anything else.
 	 */
-	if ((pkgd = xbps_find_pkg_dict_installed(pkgname, false)) == NULL)
+	if (!xbps_check_is_installed_pkgname(pkgname))
 		return ENOENT;
-
-	prop_dictionary_get_bool(pkgd, "essential", &essential);
-	prop_object_release(pkgd);
 
 	if (strcmp(rootdir, "") == 0)
 		rootdir = "/";
@@ -230,8 +228,10 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	 * entries and continue. Its files will be overwritten later in
 	 * the unpack phase.
 	 */
-	if (essential && update)
+	if (essential && update) {
+		free(buf);
 		return xbps_requiredby_pkg_remove(pkgname);
+	}
 
 	/*
 	 * Remove links, files and dirs.

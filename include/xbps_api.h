@@ -640,10 +640,12 @@ void xbps_regpkgs_dictionary_release(void);
  * @param[in] update If true, and depending if \a pkgname is an
  * <em>essential</em> package, some steps will be skipped. See in the
  * detailed description section for more information.
+ * @param[in] essential Set it to true if \a pkgname is essential.
  *
  * @return 0 on success, or an errno value otherwise.
  */
-int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
+int xbps_remove_pkg(const char *pkgname, const char *version,
+		    bool update, bool essential);
 
 /**
  * Remove files defined in a proplib array as specified by \a key

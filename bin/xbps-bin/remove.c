@@ -105,7 +105,7 @@ xbps_autoremove_pkgs(bool force)
 			goto out;
 		}
 		printf("Removing package %s-%s ...\n", pkgname, version);
-		if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0)
+		if ((rv = xbps_remove_pkg(pkgname, version, false, false)) != 0)
 			goto out2;
 	}
 out2:
@@ -185,7 +185,8 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force)
 			continue;
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 		printf("Removing package %s-%s ...\n", argv[i], version);
-		if ((rv = xbps_remove_pkg(argv[i], version, false)) != 0) {
+		rv = xbps_remove_pkg(argv[i], version, false, false);
+		if (rv != 0) {
 			fprintf(stderr, "E: unable to remove %s-%s (%s).\n",
 			    argv[i], version, strerror(errno));
 			return rv;
