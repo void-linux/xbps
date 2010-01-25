@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,12 +49,11 @@ xbps_autoremove_pkgs(bool force)
 	 * as dependency and any installed package does not depend
 	 * on it currently.
 	 */
-
 	orphans = xbps_find_orphan_packages();
 	if (orphans == NULL)
 		return errno;
 
-	if (orphans != NULL && prop_array_count(orphans) == 0) {
+	if (prop_array_count(orphans) == 0) {
 		printf("There are not orphaned packages currently.\n");
 		goto out;
 	}
@@ -71,7 +70,7 @@ xbps_autoremove_pkgs(bool force)
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgver", &pkgver)) {
 			rv = errno;
-			goto out2;
+			goto out;
 		}
 		cols += strlen(pkgver) + 4;
 		if (cols <= 80) {
@@ -90,14 +89,14 @@ xbps_autoremove_pkgs(bool force)
 
 	if (!force && !xbps_noyes("Do you want to continue?")) {
 		printf("Cancelled!\n");
-		goto out2;
+		goto out;
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgname", &pkgname)) {
 			rv = errno;
-			goto out2;
+			goto out;
 		}
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "version", &version)) {
@@ -106,12 +105,14 @@ xbps_autoremove_pkgs(bool force)
 		}
 		printf("Removing package %s-%s ...\n", pkgname, version);
 		if ((rv = xbps_remove_pkg(pkgname, version, false, false)) != 0)
-			goto out2;
+			goto out;
 	}
-out2:
-	prop_object_iterator_release(iter);
+
 out:
-	prop_object_release(orphans);
+	if (iter)
+		prop_object_iterator_release(iter);
+	if (orphans)
+		prop_object_release(orphans);
 
 	return rv;
 }
