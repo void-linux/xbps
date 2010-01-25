@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -139,13 +139,13 @@ xbps_check_pkg_integrity(const char *pkgname)
 		    "E: %s: invalid %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = EINVAL;
-		goto out1;
+		goto out;
 	} else if (prop_dictionary_count(propsd) == 0) {
 		fprintf(stderr,
 		    "E: %s: incomplete %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = EINVAL;
-		goto out1;
+		goto out;
 	}
 
 	/*
@@ -155,7 +155,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
 	if (path == NULL) {
 		rv = errno;
-		goto out1;
+		goto out;
 	}
 
 	filesd = prop_dictionary_internalize_from_file(path);
@@ -165,19 +165,19 @@ xbps_check_pkg_integrity(const char *pkgname)
 		    "E: %s: unexistent %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = ENOENT;
-		goto out1;
+		goto out;
 	} else if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY) {
 		fprintf(stderr,
 		    "E: %s: invalid %s metadata file.\n", pkgname,
 		    XBPS_PKGFILES);
 		rv = EINVAL;
-		goto out2;
+		goto out;
 	} else if (prop_dictionary_count(filesd) == 0) {
 		fprintf(stderr,
 		    "E: %s: incomplete %s metadata file.\n", pkgname,
 		    XBPS_PKGFILES);
 		rv = EINVAL;
-		goto out2;
+		goto out;
 	} else if (((array = prop_dictionary_get(filesd, "files")) == NULL) ||
 		   ((array = prop_dictionary_get(filesd, "links")) == NULL) ||
 		   ((array = prop_dictionary_get(filesd, "dirs")) == NULL)) {
@@ -185,7 +185,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 			    "E: %s: incomplete %s metadata file.\n", pkgname,
 			    XBPS_PKGFILES);
 			rv = EINVAL;
-			goto out2;
+			goto out;
 	}
 
 	/*
@@ -197,28 +197,28 @@ xbps_check_pkg_integrity(const char *pkgname)
 		iter = xbps_get_array_iter_from_dict(filesd, "files");
 		if (iter == NULL) {
 			rv = ENOMEM;
-			goto out2;
+			goto out;
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			if (!prop_dictionary_get_cstring_nocopy(obj,
 			    "file", &file)) {
 				prop_object_iterator_release(iter);
 				rv = errno;
-				goto out2;
+				goto out;
 			}
 			path = xbps_xasprintf("%s/%s",
 			    xbps_get_rootdir(), file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				rv = errno;
-				goto out2;
+				goto out;
 			}
                         if (!prop_dictionary_get_cstring_nocopy(obj,
                             "sha256", &sha256)) {
 				free(path);
 				prop_object_iterator_release(iter);
 				rv = errno;
-				goto out2;
+				goto out;
 			}
 			rv = xbps_check_file_hash(path, sha256);
 			switch (rv) {
@@ -258,21 +258,21 @@ xbps_check_pkg_integrity(const char *pkgname)
 		iter = xbps_get_array_iter_from_dict(filesd, "conf_files");
 		if (iter == NULL) {
 			rv = ENOMEM;
-			goto out2;
+			goto out;
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			if (!prop_dictionary_get_cstring_nocopy(obj,
 			    "file", &file)) {
 				prop_object_iterator_release(iter);
 				rv = errno;
-				goto out2;
+				goto out;
 			}
 			path = xbps_xasprintf("%s/%s",
 			    xbps_get_rootdir(), file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				rv = ENOMEM;
-				goto out2;
+				goto out;
 			}
 			if ((rv = access(path, R_OK)) == -1) {
 				if (errno == ENOENT) {
@@ -301,14 +301,14 @@ xbps_check_pkg_integrity(const char *pkgname)
 		iter = xbps_get_array_iter_from_dict(propsd, "run_depends");
 		if (iter == NULL) {
 			rv = ENOMEM;
-			goto out2;
+			goto out;
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			reqpkg = prop_string_cstring_nocopy(obj);
 			if (reqpkg == NULL) {
 				prop_object_iterator_release(iter);
 				rv = EINVAL;
-				goto out2;
+				goto out;
 			}
 			if (xbps_check_is_installed_pkg(reqpkg) <= 0) {
 				rv = ENOENT;
@@ -324,13 +324,13 @@ xbps_check_pkg_integrity(const char *pkgname)
 		}
 	}
 
-out2:
-	prop_object_release(filesd);
-out1:
-	prop_object_release(propsd);
 out:
-	prop_object_release(pkgd);
-
+	if (filesd)
+		prop_object_release(filesd);
+	if (propsd)
+		prop_object_release(propsd);
+	if (pkgd)
+		prop_object_release(pkgd);
 	if (broken)
 		rv = EINVAL;
 
