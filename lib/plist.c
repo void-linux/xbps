@@ -230,7 +230,7 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
 
 	assert(dict != NULL);
 	assert(key != NULL);
-	assert(pkgmatch != NULL);
+	assert(pattern != NULL);
 
 	if ((iter = xbps_get_array_iter_from_dict(dict, key)) == NULL)
 		return NULL;
