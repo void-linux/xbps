@@ -77,11 +77,11 @@ check_binpkg_hash(const char *path, const char *filename,
 	rv = xbps_check_file_hash(path, sha256);
 	errno = rv;
 	if (rv != 0 && rv != ERANGE) {
-		fprintf(stderr, "xbps-bin: unexpected error: %s\n",
+		fprintf(stderr, "\nxbps-bin: unexpected error: %s\n",
 		    strerror(rv));
 		return false;
 	} else if (rv == ERANGE) {
-		fprintf(stderr, "xbps-bin: hash mismatch!.\n");
+		printf("hash mismatch!\n");
 		return false;
 	}
 	printf("OK.\n");
