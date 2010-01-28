@@ -36,9 +36,9 @@
 int
 xbps_autoremove_pkgs(bool force)
 {
-	prop_array_t orphans;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	prop_array_t orphans = NULL;
+	prop_object_t obj = NULL;
+	prop_object_iterator_t iter = NULL;
 	const char *pkgver, *pkgname, *version;
 	size_t cols = 0;
 	int rv = 0;
