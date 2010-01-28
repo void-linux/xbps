@@ -47,7 +47,7 @@ xbps-0.4 (2010-02-01):
    If set, files will be removed even if its hash doesn't match for the
    'remove' target, and configuration files for the 'purge' target.
 
- * libxbps: always overwrite files while unpacking, and compare old and
-   new files to remove obsoletes if necessary. This makes the "essential"
-   object in package dictionary unnecessary, because all packages are
-   treated as they were essential.
+ * libxbps: if updating a package, always overwrite files while unpacking;
+   compare old and new files to remove obsoletes if necessary. This makes
+   the "essential" object in package dictionary unnecessary, because all
+   packages are treated as they were essential.

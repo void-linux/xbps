@@ -65,13 +65,24 @@
  */
 
 static void
-set_extract_flags(int *flags)
+set_extract_flags(int *flags, bool update)
 {
-	*flags = 0;
+	int lflags = 0;
+
 	if (getuid() == 0)
-		*flags = FEXTRACT_FLAGS;
+		lflags = FEXTRACT_FLAGS;
 	else
-		*flags = EXTRACT_FLAGS;
+		lflags = EXTRACT_FLAGS;
+
+	if (!update) {
+		/*
+		 * Only overwrite files while updating.
+		 */
+		lflags |= ARCHIVE_EXTRACT_NO_OVERWRITE;
+		lflags |= ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
+	}
+
+	*flags = lflags;
 }
 
 /*
@@ -152,7 +163,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	 */
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		entry_str = archive_entry_pathname(entry);
-		set_extract_flags(&lflags);
+		set_extract_flags(&lflags, update);
 		/*
 		 * Run the pre INSTALL action if the file is there.
 		 */
