@@ -44,8 +44,8 @@
  *  - All other kind of files on archive are extracted.
  *  - Handles configuration files by taking care of updating them with
  *    new versions if necessary and to not overwrite modified ones.
- *  - If it's an <b>essential</b> package, files from installed package are
- *    compared with new package and obsolete files are removed.
+ *  - Files from installed package are compared with new package and
+ *    obsolete files are removed.
  *  - Finally its state is set to XBPS_PKG_STATE_UNPACKED.
  *
  * The following image shown below represents a transaction dictionary
@@ -87,13 +87,13 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	const char *pkgname, *version, *rootdir, *entry_str, *transact;
 	char *buf;
 	int rv = 0, flags, lflags;
-	bool essential, preserve, actgt, skip_entry, update;
+	bool preserve, actgt, skip_entry, update;
 	bool props_plist_found, files_plist_found;
 
 	assert(ar != NULL);
 	assert(pkg != NULL);
 
-	essential = preserve = actgt = skip_entry = update = false;
+	preserve = actgt = skip_entry = update = false;
 	props_plist_found = files_plist_found = false;
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
@@ -108,10 +108,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		return errno;
 	if (!prop_dictionary_get_cstring_nocopy(pkg, "version", &version))
 		return errno;
-	/*
-	 * The following two objects are OPTIONAL.
-	 */
-	prop_dictionary_get_bool(pkg, "essential", &essential);
+
 	prop_dictionary_get_bool(pkg, "preserve", &preserve);
 	
 	if (!prop_dictionary_get_cstring_nocopy(pkg, "trans-action",
@@ -156,19 +153,6 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		entry_str = archive_entry_pathname(entry);
 		set_extract_flags(&lflags);
-		/*
-		 * Now check what currenty entry in the archive contains.
-		 */
-		if (((strcmp("./files.plist", entry_str)) == 0) ||
-		    ((strcmp("./props.plist", entry_str)) == 0) || essential) {
-			/*
-			 * Always overwrite files in essential packages,
-			 * and plist metadata files.
-			 */
-			lflags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE;
-			lflags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
-		}
-
 		/*
 		 * Run the pre INSTALL action if the file is there.
 		 */
@@ -319,11 +303,11 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 			return errno;
 		}
 		/*
-		 * Check if files.plist exists and pkg is marked as
-		 * essential and NOT preserve, in that case we need to check
-		 * for obsolete files and remove them if necessary.
+		 * Check if files.plist exists and pkg is NOT marked as
+		 * preserve, in that case we need to check for obsolete files
+		 * and remove them if necessary.
 		 */
-		if (!preserve && essential && (access(buf, R_OK) == 0)) {
+		if (!preserve && (access(buf, R_OK) == 0)) {
 			old_filesd =
 			    prop_dictionary_internalize_from_file(buf);
 			if (old_filesd == NULL) {

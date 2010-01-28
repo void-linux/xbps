@@ -51,10 +51,8 @@
  *  -# Its state will be changed to XBPS_PKG_STATE_CONFIG_FILES.
  *
  * @note
- *  -# If a package is going to be updated and it's an essential package,
- *     only steps <b>1</b> and <b>4</b> will be executed.
- *  -# If a package is going to be updated and it's <b>NOT</b> an essential
- *     package, only steps <b>1</b>, <b>2</b> and <b>4</b> will be executed.
+ *  -# If a package is going to be updated, only steps <b>1</b> and <b>4</b>
+ *     will be executed.
  *  -# If a package is going to be removed, all steps will be executed.
  *
  * The following image shows the structure of an internalized package's
@@ -186,8 +184,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 }
 
 int
-xbps_remove_pkg(const char *pkgname, const char *version,
-		bool update, bool essential)
+xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 {
 	prop_dictionary_t dict;
 	const char *rootdir = xbps_get_rootdir();
@@ -235,12 +232,11 @@ xbps_remove_pkg(const char *pkgname, const char *version,
 	}
 
 	/*
-	 * If updating an essential package, we just need to execute
-	 * the current pre-remove action target, unregister its requiredby
-	 * entries and continue. Its files will be overwritten later in
-	 * the unpack phase.
+	 * If updating a package, we just need to execute the current
+	 * pre-remove action target, unregister its requiredby entries and
+	 * continue. Its files will be overwritten later in unpack phase.
 	 */
-	if (essential && update) {
+	if (update) {
 		free(buf);
 		return xbps_requiredby_pkg_remove(pkgname);
 	}

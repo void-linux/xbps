@@ -474,7 +474,7 @@ replace_packages(prop_object_iterator_t iter, const char *pkgver)
 		prop_object_release(instd);
 
 		version = xbps_get_pkg_version(pkgver);
-		rv = xbps_remove_pkg(reppkgn, version, false, false);
+		rv = xbps_remove_pkg(reppkgn, version, false);
 		if (rv != 0) {
 			fprintf(stderr, "xbps-bin: couldn't remove %s (%s)\n",
 			    reppkgn, strerror(rv));
@@ -499,14 +499,14 @@ exec_transaction(struct transaction *trans)
 	prop_object_iterator_t replaces_iter;
 	const char *pkgname, *version, *pkgver, *instver, *filename, *tract;
 	int rv = 0;
-	bool update, essential, preserve, autoinst;
+	bool update, preserve, autoinst;
 	pkg_state_t state = 0;
 
 	assert(trans != NULL);
 	assert(trans->dict != NULL);
 	assert(trans->iter != NULL);
 
-	update = essential = autoinst = preserve = false;
+	update = autoinst = preserve = false;
 	/*
 	 * Show download/installed size for the transaction.
 	 */
@@ -546,7 +546,6 @@ exec_transaction(struct transaction *trans)
 		    "pkgver", &pkgver))
 			return errno;
 		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
-		prop_dictionary_get_bool(obj, "essential", &essential);
 		prop_dictionary_get_bool(obj, "preserve",  &preserve);
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "filename", &filename))
@@ -595,28 +594,17 @@ exec_transaction(struct transaction *trans)
 			}
 			prop_object_release(instpkgd);
 
-			/*
-			 * If package is marked as 'essential' remove old
-			 * requiredby entries and overwrite pkg files; otherwise
-			 * remove old package and install new one. This
-			 * is all handled internally in xbps_remove_pkg()
-			 * and xbps_unpack_binary_pkg().
-			 */
-			if (essential && !preserve)
-				printf("Replacing %s-%s with %s-%s ...\n",
-				    pkgname, instver, pkgname, version);
-			else if (essential && preserve)
+			if (preserve)
 				printf("Conserving %s-%s files, installing new "
 				    "version ...\n", pkgname, instver);
 			else
-				printf("Removing %s-%s before installing new "
-				    "version ...\n", pkgname, instver);
+				printf("Replacing %s files (%s -> %s) ...\n",
+				    pkgname, instver, version);
 
-			rv = xbps_remove_pkg(pkgname, version, true, essential);
+			rv = xbps_remove_pkg(pkgname, version, true);
 			if (rv != 0) {
 				fprintf(stderr, "xbps-bin: error "
-				    "%s %s-%s (%s)\n", essential ?
-				    "replacing" : "removing", pkgname,
+				    "replacing %s-%s (%s)\n", pkgname,
 				    instver, strerror(rv));
 				return rv;
 			}

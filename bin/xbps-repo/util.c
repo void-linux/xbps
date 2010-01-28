@@ -107,9 +107,10 @@ show_pkg_info(prop_dictionary_t dict)
 	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Version: %s\n", prop_string_cstring_nocopy(obj));
 
-	obj = prop_dictionary_get(dict, "essential");
+	obj = prop_dictionary_get(dict, "preserve");
 	if (obj && prop_object_type(obj) == PROP_TYPE_BOOL)
-		printf("Essential: %s\n", prop_bool_true(obj) ? "yes" : "no");
+		printf("Preserve files: %s\n",
+		    prop_bool_true(obj) ? "yes" : "no");
 
 	obj = prop_dictionary_get(dict, "replaces");
 	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {

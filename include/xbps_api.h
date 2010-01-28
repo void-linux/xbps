@@ -58,7 +58,7 @@ __BEGIN_DECLS
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20100121"
+#define XBPS_RELVER		"20100128"
 
 /** 
  * @def XBPS_META_PATH
@@ -128,9 +128,7 @@ __BEGIN_DECLS
 #define ARCHIVE_READ_BLOCKSIZE	10240
 
 #define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \
-			ARCHIVE_EXTRACT_SECURE_SYMLINKS | \
-			ARCHIVE_EXTRACT_NO_OVERWRITE | \
-			ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER
+			ARCHIVE_EXTRACT_SECURE_SYMLINKS
 #define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | ARCHIVE_EXTRACT_PERM | \
 			ARCHIVE_EXTRACT_TIME | EXTRACT_FLAGS
 
@@ -637,15 +635,12 @@ void xbps_regpkgs_dictionary_release(void);
  *
  * @param[in] pkgname Package name to match.
  * @param[in] version Package version associated.
- * @param[in] update If true, and depending if \a pkgname is an
- * <em>essential</em> package, some steps will be skipped. See in the
- * detailed description section for more information.
- * @param[in] essential Set it to true if \a pkgname is essential.
+ * @param[in] update If true, some steps will be skipped. See in the
+ * detailed description above for more information.
  *
  * @return 0 on success, or an errno value otherwise.
  */
-int xbps_remove_pkg(const char *pkgname, const char *version,
-		    bool update, bool essential);
+int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
 
 /**
  * Remove files defined in a proplib array as specified by \a key

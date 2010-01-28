@@ -8,7 +8,6 @@ digraph pkg_props_dictionary {
 	main -> pkgname [label="string"];
 	main -> version [label="string"];
 	main -> pkgver [label="string"];
-	main -> essential [label="bool"];
 	main -> preserve [label="bool"];
 	main -> run_depends [label="array"];
 	run_depends [style=filled];
