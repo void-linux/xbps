@@ -62,7 +62,7 @@ find_sorteddep_by_name(const char *pkgname)
 int HIDDEN
 xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 {
-	prop_array_t sorted, unsorted, rundeps;
+	prop_array_t sorted, unsorted, rundeps, missingdeps;
 	prop_object_t obj, obj2;
 	prop_object_iterator_t iter, iter2;
 	struct sorted_dependency *sdep;
@@ -72,6 +72,13 @@ xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 	int rv = 0;
 
 	assert(chaindeps != NULL);
+
+	/*
+	 * If there are missing dependencies, bail out.
+	 */
+	missingdeps = prop_dictionary_get(chaindeps, "missing_deps");
+	if (prop_array_count(missingdeps) > 0)
+		return ENOENT;
 
 	sorted = prop_array_create();
 	if (sorted == NULL)

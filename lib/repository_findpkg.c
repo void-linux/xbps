@@ -205,6 +205,14 @@ xbps_repository_get_transaction_dict(void)
 	 * Sort package list if necessary.
 	 */
 	if ((rv = xbps_sort_pkg_deps(trans_dict)) != 0) {
+		/*
+		 * If there are missing deps (errno==ENOENT)
+		 * return the dictionary, the client should always
+		 * check if that's the case.
+		 */
+		if (errno == ENOENT)
+			return trans_dict;
+
 		errno = rv;
 		return NULL;
 	}
