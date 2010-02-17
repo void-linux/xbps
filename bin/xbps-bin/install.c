@@ -506,7 +506,6 @@ exec_transaction(struct transaction *trans)
 	assert(trans->dict != NULL);
 	assert(trans->iter != NULL);
 
-	update = autoinst = preserve = false;
 	/*
 	 * Show download/installed size for the transaction.
 	 */
@@ -536,6 +535,8 @@ exec_transaction(struct transaction *trans)
 	 */
 	printf("\n[2/3] Unpacking\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
+		update = autoinst = preserve = false;
+
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgname", &pkgname))
 			return errno;
@@ -626,7 +627,6 @@ exec_transaction(struct transaction *trans)
 			    "(%s)\n", pkgver, strerror(rv));
 			return rv;
 		}
-		autoinst = false;
 	}
 	prop_object_iterator_reset(trans->iter);
 	/*
