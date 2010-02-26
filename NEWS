@@ -1,3 +1,13 @@
+xbps-0.4.1 (2010-02-28):
+
+ * xbps-bin(8): fixed the install target to work with package names containing
+   multiple '-', thus resulting in incorrect package name.
+   [ https://bugs.launchpad.net/bugs/528212 ]
+
+ * xbps-bin(8): fixed printing of incorrect message for packages containing
+   the 'preserve' object in its props dictionary.
+   [ https://bugs.launchpad.net/xbps/bugs/528216 ]
+
 xbps-0.4 (2010-02-01):
  
  * libxbps, xbps-bin(8), xbps-repo(8): redirect all warning and error
