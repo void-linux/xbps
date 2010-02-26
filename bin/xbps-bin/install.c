@@ -321,73 +321,29 @@ xbps_autoupdate_pkgs(bool yes)
 	return xbps_exec_transaction(yes);
 }
 
-static char *
-pkgname_from_pkgmatch(const char *pkg)
-{
-	const char *version;
-
-	/*
-	 * Check if 'pkg' string is a pkgmatch valid pattern or it
-	 * is just a pkgname.
-	 *
-	 * XXX REALLY FIX THIS CRAP! I haven't found much easier ways...
-	 */
-	if ((version = xbps_get_pkgpattern_version(pkg))) {
-		while (*version) {
-			if (!isdigit((unsigned char)*version)) {
-				version++;
-				continue;
-			}
-			if (xbps_cmpver("0", version) <= 0)
-				return xbps_get_pkgpattern_name(pkg);
-		}
-	}
-	if ((version = xbps_get_pkg_version(pkg))) {
-		while (*version) {
-			if (!isdigit((unsigned char)*version)) {
-				version++;
-				continue;
-			}
-
-			const char *tmp = version;
-			size_t ndigits = 0, tmplen = strlen(tmp);
-			bool dot = false, digit = false;
-
-			while (*tmp) {
-				if (isdigit((unsigned char)*tmp)) {
-					digit = true;
-					ndigits++;
-				}
-				if (*tmp == '.')
-					dot = true;
-				else if (*tmp == '_')
-					ndigits++;
-
-				tmp++;
-			}
-			if ((!dot && !digit) || (!dot && tmplen != ndigits))
-				break;
-
-			if (xbps_cmpver("0", version) <= 0)
-				return xbps_get_pkg_name(pkg);
-		}
-	}
-
-	return NULL;
-}
-
 int
 xbps_install_new_pkg(const char *pkg)
 {
 	prop_dictionary_t pkgd;
-	char *pkgname = NULL;
+	char *pkgname = NULL, *pkgpatt = NULL;
 	int rv = 0;
 	bool pkgmatch = false;
 
-	if ((pkgname = pkgname_from_pkgmatch(pkg)))
+	if (xbps_get_pkgpattern_version(pkg)) {
+		pkgpatt = __UNCONST(pkg);
+	} else {
+		/* 
+		 * If only pkgname has been specified, always append
+		 * '>=0' at the end, will be easier to parse.
+		 */
 		pkgmatch = true;
-	else
-		pkgname = __UNCONST(pkg);
+		pkgpatt = xbps_xasprintf("%s%s", pkg, ">=0");
+		if (pkgpatt == NULL)
+			return -1;
+	}
+	pkgname = xbps_get_pkgpattern_name(pkgpatt);
+	if (pkgname == NULL)
+		return -1;
 
 	/*
 	 * Find a package in a repository and prepare for installation.
@@ -399,7 +355,7 @@ xbps_install_new_pkg(const char *pkg)
 			free(pkgname);
 		return 0;
 	}
-	rv = xbps_repository_install_pkg(pkg, pkgmatch);
+	rv = xbps_repository_install_pkg(pkgpatt, true);
 	if (rv == EAGAIN) {
 		fprintf(stderr, "xbps-bin: unable to locate '%s' in "
 		    "repository pool.\n", pkg);
@@ -409,9 +365,10 @@ xbps_install_new_pkg(const char *pkg)
 		    strerror(errno));
 		rv = -1;
 	}
-	
+
 	if (pkgmatch)
-		free(pkgname);
+		free(pkgpatt);
+	free(pkgname);
 
 	return rv;
 }
