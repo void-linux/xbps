@@ -2,10 +2,9 @@ See http://xbps.nopcode.org/ for information.
 
 To build this you'll need:
 
+  - pkg-config
   - openssl (development package with static libs)
-  - libarchive (development package with static libs, and all features
-    built in: acl/attr, xz, bzip2 and zlib are REQUIRED to build the
-    static binaries!)
+  - libarchive (development package with static libs)
   - proplib (development package with static lib),
     available at http://code.google.com/p/portableproplib
   - asciidoc (to build the manpages)

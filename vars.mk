@@ -29,5 +29,6 @@ CFLAGS = $(DEBUG_FLAGS) $(WARNFLAGS) -fPIC -DPIC -fstack-protector-all
 SHAREDLIB_CFLAGS = -fvisibility=default
 
 # Grr, hate the static libs!
-STATIC_LIBS =	-lprop -lpthread -larchive -lssl -lcrypto -ldl -lacl
-STATIC_LIBS +=	-lattr -llzma -lbz2 -lz
+STATIC_LIBS =	-lprop -lpthread
+STATIC_LIBS +=	`pkg-config openssl --libs --static`
+STATIC_LIBS +=	`pkg-config libarchive --libs --static`
