@@ -167,7 +167,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	if (path == NULL)
                 return errno;
 
-	dict = prop_dictionary_internalize_from_file(path);
+	dict = prop_dictionary_internalize_from_zfile(path);
 	if (dict == NULL) {
 		free(path);
 		return errno;

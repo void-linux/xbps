@@ -66,7 +66,7 @@ xbps_repository_pool_init(void)
 		goto out;
 	}
 
-	dict = prop_dictionary_internalize_from_file(plist);
+	dict = prop_dictionary_internalize_from_zfile(plist);
 	if (dict == NULL) {
                 free(plist);
 		rv = errno;
@@ -112,7 +112,7 @@ xbps_repository_pool_init(void)
 			rv = errno;
 			goto out;
 		}
-		rpool->rp_repod = prop_dictionary_internalize_from_file(plist);
+		rpool->rp_repod = prop_dictionary_internalize_from_zfile(plist);
 		if (rpool->rp_repod == NULL) {
 			free(rpool->rp_uri);
 			free(rpool);

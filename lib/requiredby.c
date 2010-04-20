@@ -133,7 +133,7 @@ xbps_requiredby_pkg_remove(const char *pkgname)
 	if (plist == NULL)
 		return EINVAL;
 
-	if ((dict = prop_dictionary_internalize_from_file(plist)) == NULL) {
+	if ((dict = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
 		free(plist);
 		return errno;
 	}
@@ -141,7 +141,7 @@ xbps_requiredby_pkg_remove(const char *pkgname)
 	rv = xbps_callback_array_iter_in_dict(dict, "packages",
 	    remove_pkg_from_reqby, __UNCONST(pkgname));
 	if (rv == 0) {
-		if (!prop_dictionary_externalize_to_file(dict, plist))
+		if (!prop_dictionary_externalize_to_zfile(dict, plist))
 			rv = errno;
 	}
 

@@ -49,7 +49,7 @@ repoidx_getdict(const char *pkgdir)
 	if (plist == NULL)
 		return NULL;
 
-	dict = prop_dictionary_internalize_from_file(plist);
+	dict = prop_dictionary_internalize_from_zfile(plist);
 	if (dict == NULL) {
 		dict = prop_dictionary_create();
 		if (dict == NULL)
@@ -365,7 +365,7 @@ xbps_repo_genindex(const char *pkgdir)
 		 * If any package was registered in package index, write
 		 * plist file to storage.
 		 */
-		if (!prop_dictionary_externalize_to_file(idxdict, plist))
+		if (!prop_dictionary_externalize_to_zfile(idxdict, plist))
 			rv = errno;
 	}
 out:

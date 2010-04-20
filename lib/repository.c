@@ -53,7 +53,7 @@ xbps_repository_register(const char *uri)
 		return errno;
 
 	/* First check if we have the repository plist file. */
-	dict = prop_dictionary_internalize_from_file(plist);
+	dict = prop_dictionary_internalize_from_zfile(plist);
 	if (dict == NULL) {
 		/* Looks like not, create it. */
 		dict = prop_dictionary_create();
@@ -98,7 +98,7 @@ xbps_repository_register(const char *uri)
 	}
 
 	/* Write dictionary into plist file. */
-	if (!prop_dictionary_externalize_to_file(dict, plist)) {
+	if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
 		if (obj)
 			prop_object_release(obj);
 		rv = errno;
@@ -127,7 +127,7 @@ xbps_repository_unregister(const char *uri)
 	if (plist == NULL)
 		return errno;
 
-	dict = prop_dictionary_internalize_from_file(plist);
+	dict = prop_dictionary_internalize_from_zfile(plist);
 	if (dict == NULL) {
 		free(plist);
 		return errno;
@@ -142,7 +142,7 @@ xbps_repository_unregister(const char *uri)
 	rv = xbps_remove_string_from_array(array, uri);
 	if (rv == 0) {
 		/* Update plist file. */
-		if (!prop_dictionary_externalize_to_file(dict, plist))
+		if (!prop_dictionary_externalize_to_zfile(dict, plist))
 			rv = errno;
 	}
 

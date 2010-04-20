@@ -45,7 +45,7 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 {
 	assert(dict != NULL || file != NULL);
 
-	if (!prop_dictionary_externalize_to_file(dict, file)) {
+	if (!prop_dictionary_externalize_to_zfile(dict, file)) {
 		prop_object_release(dict);
 		printf("=> ERROR: couldn't write to %s (%s)",
 		    file, strerror(errno));
@@ -221,7 +221,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		dict = prop_dictionary_internalize_from_file(argv[1]);
+		dict = prop_dictionary_internalize_from_zfile(argv[1]);
 		if (dict == NULL) {
 			fprintf(stderr,
 			    "=> ERROR: couldn't sanitize %s plist file "
@@ -334,6 +334,12 @@ main(int argc, char **argv)
 			}
 		}
 
+	} else if (strcasecmp(argv[0], "gzprint") == 0) {
+		if (argc != 2)
+			usage();
+
+		dict = prop_dictionary_internalize_from_zfile(argv[1]);
+		printf("%s", prop_dictionary_externalize(dict));
 	} else {
 		usage();
 	}

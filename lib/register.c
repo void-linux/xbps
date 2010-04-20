@@ -71,7 +71,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 		return EINVAL;
 	}
 
-	if ((dict = prop_dictionary_internalize_from_file(plist)) != NULL) {
+	if ((dict = prop_dictionary_internalize_from_zfile(plist)) != NULL) {
 		pkgd = xbps_find_pkg_in_dict_by_name(dict,
 		    "packages", pkgname);
 		if (pkgd == NULL) {
@@ -136,7 +136,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 		/*
 		 * Write plist file to storage.
 		 */
-		if (!prop_dictionary_externalize_to_file(dict, plist))
+		if (!prop_dictionary_externalize_to_zfile(dict, plist))
 			rv = errno;
 	} else {
 		free(plist);

@@ -71,7 +71,7 @@ xbps_regpkgs_dictionary_init(void)
 		if (plist == NULL)
 			return NULL;
 
-		regpkgs_dict = prop_dictionary_internalize_from_file(plist);
+		regpkgs_dict = prop_dictionary_internalize_from_zfile(plist);
 		if (regpkgs_dict == NULL) {
 			free(plist);
 			return NULL;

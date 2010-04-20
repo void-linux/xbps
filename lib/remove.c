@@ -251,7 +251,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		return errno;
 	}
 
-	dict = prop_dictionary_internalize_from_file(path);
+	dict = prop_dictionary_internalize_from_zfile(path);
 	if (dict == NULL) {
 		free(buf);
 		free(path);

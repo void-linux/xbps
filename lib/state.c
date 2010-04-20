@@ -153,7 +153,7 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 	if (plist == NULL)
 		return EINVAL;
 
-	if ((dict = prop_dictionary_internalize_from_file(plist)) == NULL) {
+	if ((dict = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
 		dict = prop_dictionary_create();
 		if (dict == NULL) {
 			rv = errno;
@@ -230,7 +230,7 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 		}
 	}
 
-	if (!prop_dictionary_externalize_to_file(dict, plist))
+	if (!prop_dictionary_externalize_to_zfile(dict, plist))
 		rv = errno;
 
 out:

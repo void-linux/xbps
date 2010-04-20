@@ -44,7 +44,7 @@ pkgindex_verify(const char *plist, const char *uri, bool only_sync)
 
 	assert(plist != NULL);
 
-	d = prop_dictionary_internalize_from_file(plist);
+	d = prop_dictionary_internalize_from_zfile(plist);
 	if (d == NULL) {
 		fprintf(stderr,
 		    "E: repository %s does not contain any "

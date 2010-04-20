@@ -4,8 +4,23 @@ LIBXBPS_MAJOR = 0
 LIBXBPS_MINOR = 0
 LIBXBPS_MICRO = 0
 LIBXBPS_SHLIB = libxbps.so.$(LIBXBPS_MAJOR).$(LIBXBPS_MINOR).$(LIBXBPS_MICRO)
-LDFLAGS += -lprop -larchive -lssl
+LDFLAGS += -larchive -lssl -lz
 LDFLAGS += -shared -Wl,-soname,libxbps.so.$(LIBXBPS_MAJOR)
+
+# portableproplib
+LIBPROP_OBJS = portableproplib/prop_array.o portableproplib/prop_bool.o
+LIBPROP_OBJS += portableproplib/prop_dictionary.o portableproplib/prop_ingest.o
+LIBPROP_OBJS += portableproplib/prop_object.o portableproplib/prop_rb.o
+LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
+LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
+LIBPROP_OBJS += portableproplib/prop_dictionary_util.o
+LIBPROP_OBJS += portableproplib/prop_data.o
+LIBPROP_CFLAGS = -Wno-error -Wno-cast-qual -Wno-cast-align -Wno-extra
+
+ifdef USE_EXTERNAL_PROPLIB
+LIBPROP_OBJS =
+LDFLAGS += -lprop
+endif
 
 # libfetch
 LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
@@ -40,17 +55,21 @@ $(LIBFETCH_OBJS): %.o: %.c $(LIBFETCH_INCS) $(LIBFETCH_GEN)
 	@$(CC) $(CPPFLAGS) $(LIBFETCH_CPPFLAGS) $(CFLAGS) \
 		$(LIBFETCH_CFLAGS) $(LIBFETCH_SHLIBCFLAGS) -c $< -o $@
 
+$(LIBPROP_OBJS): %.o: %.c
+	@printf " [CC]\t\t$@\n"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(LIBPROP_CFLAGS) -c $< -o $@
+
 $(OBJS): %.o: %.c
 	@printf " [CC]\t\t$@\n"
 	@$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
 
-libxbps.so: $(OBJS) $(LIBFETCH_OBJS)
+libxbps.so: $(OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS)
 	@printf " [CCLD]\t\t$@\n"
 	@$(CC) $(LDFLAGS) $^ -o $(LIBXBPS_SHLIB)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBXBPS_MAJOR)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
-libxbps.a: $(OBJS) $(LIBFETCH_OBJS)
+libxbps.a: $(OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS)
 	@printf " [AR]\t\t$@\n"
 	@$(AR) rcs $@ $^
 	@printf " [RANLIB]\t$@\n"
@@ -70,5 +89,5 @@ uninstall:
 
 .PHONY: clean
 clean:
-	-rm -f libxbps* $(OBJS) $(LIBFETCH_OBJS)
+	-rm -f libxbps* $(OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS)
 	-rm -f $(LIBFETCH_GEN)

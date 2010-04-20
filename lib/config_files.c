@@ -63,7 +63,7 @@ xbps_config_file_from_archive_entry(prop_dictionary_t d,
 	if (buf == NULL)
 		return errno;
 
-	forigd = prop_dictionary_internalize_from_file(buf);
+	forigd = prop_dictionary_internalize_from_zfile(buf);
 	free(buf);
 	if (forigd == NULL) {
 		install_new = true;

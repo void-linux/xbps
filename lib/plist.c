@@ -138,7 +138,7 @@ xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 	assert(plist != NULL);
 	assert(pkgname != NULL);
 
-	dict = prop_dictionary_internalize_from_file(plist);
+	dict = prop_dictionary_internalize_from_zfile(plist);
 	if (dict == NULL)
 		return NULL;
 
@@ -375,7 +375,7 @@ xbps_remove_pkg_dict_from_file(const char *pkg, const char *plist)
 	assert(pkg != NULL);
 	assert(plist != NULL);
 
-	pdict = prop_dictionary_internalize_from_file(plist);
+	pdict = prop_dictionary_internalize_from_zfile(plist);
 	if (pdict == NULL)
 		return errno;
 
@@ -385,7 +385,7 @@ xbps_remove_pkg_dict_from_file(const char *pkg, const char *plist)
 		return rv;
 	}
 
-	if (!prop_dictionary_externalize_to_file(pdict, plist)) {
+	if (!prop_dictionary_externalize_to_zfile(pdict, plist)) {
 		prop_object_release(pdict);
 		return errno;
 	}

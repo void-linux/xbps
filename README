@@ -4,9 +4,7 @@ To build this you'll need:
 
   - pkg-config
   - openssl (development package with static libs)
-  - libarchive (development package with static libs)
-  - proplib (development package with static lib),
-    available at http://code.google.com/p/portableproplib
+  - libarchive >= 2.8.0 (development package with static libs)
   - asciidoc (to build the manpages)
 
 Optionally to build the API documentation (enabled with BUILD_API_DOCS

@@ -1,0 +1,5 @@
+XBPS includes the following software from third parties for internal
+use in the code:
+
+- libfetch-2.30 from NetBSD
+- portableproplib-0.4.1 from http://code.google.com/p/portableproplib

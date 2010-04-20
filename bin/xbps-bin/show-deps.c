@@ -56,7 +56,7 @@ xbps_show_pkg_deps(const char *pkgname)
 	if (path == NULL)
 		return errno;
 
-	propsd = prop_dictionary_internalize_from_file(path);
+	propsd = prop_dictionary_internalize_from_zfile(path);
 	free(path);
 	if (propsd == NULL) {
 		fprintf(stderr,

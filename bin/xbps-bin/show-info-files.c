@@ -45,7 +45,7 @@ show_pkg_info_from_metadir(const char *pkgname)
 	if (plist == NULL)
 		return EINVAL;
 
-	pkgd = prop_dictionary_internalize_from_file(plist);
+	pkgd = prop_dictionary_internalize_from_zfile(plist);
 	if (pkgd == NULL) {
 		free(plist);
 		return errno;
@@ -70,7 +70,7 @@ show_pkg_files_from_metadir(const char *pkgname)
 	if (plist == NULL)
 		return EINVAL;
 
-	pkgd = prop_dictionary_internalize_from_file(plist);
+	pkgd = prop_dictionary_internalize_from_zfile(plist);
 	if (pkgd == NULL) {
 		free(plist);
 		return errno;

@@ -126,7 +126,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 		goto out;
 	}
 
-	propsd = prop_dictionary_internalize_from_file(path);
+	propsd = prop_dictionary_internalize_from_zfile(path);
 	free(path);
 	if (propsd == NULL) {
 		fprintf(stderr,
@@ -158,7 +158,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 		goto out;
 	}
 
-	filesd = prop_dictionary_internalize_from_file(path);
+	filesd = prop_dictionary_internalize_from_zfile(path);
 	free(path);
 	if (filesd == NULL) {
 		fprintf(stderr,

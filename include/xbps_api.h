@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <sys/cdefs.h>
-#include <sys/queue.h>
 /**
  * @cond
  */
@@ -44,6 +43,9 @@
 #include <prop/proplib.h>
 #include <archive.h>
 #include <archive_entry.h>
+
+/* Use our own queue header (from NetBSD) */
+#include "queue.h"
 
 __BEGIN_DECLS
 

@@ -320,7 +320,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		 */
 		if (!preserve && (access(buf, R_OK) == 0)) {
 			old_filesd =
-			    prop_dictionary_internalize_from_file(buf);
+			    prop_dictionary_internalize_from_zfile(buf);
 			if (old_filesd == NULL) {
 				prop_object_release(filesd);
 				free(buf);
@@ -340,7 +340,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		 * can safely externalize files.plist because the path
 		 * is reachable.
 		 */
-		if (!prop_dictionary_externalize_to_file(filesd, buf)) {
+		if (!prop_dictionary_externalize_to_zfile(filesd, buf)) {
 			prop_object_release(filesd);
 			free(buf);
 			return errno;
