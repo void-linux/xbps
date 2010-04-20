@@ -334,12 +334,6 @@ main(int argc, char **argv)
 			}
 		}
 
-	} else if (strcasecmp(argv[0], "gzprint") == 0) {
-		if (argc != 2)
-			usage();
-
-		dict = prop_dictionary_internalize_from_zfile(argv[1]);
-		printf("%s", prop_dictionary_externalize(dict));
 	} else {
 		usage();
 	}
