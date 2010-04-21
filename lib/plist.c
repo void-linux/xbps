@@ -30,6 +30,7 @@
 #include <errno.h>
 
 #include <xbps_api.h>
+#include <zlib.h>
 
 /**
  * @file lib/plist.c
@@ -395,6 +396,78 @@ xbps_remove_pkg_dict_from_file(const char *pkg, const char *plist)
 	return 0;
 }
 
+/*
+ * Takes a compressed data buffer, decompresses it and returns the
+ * new buffer uncompressed if all was right.
+ */
+#define _READ_CHUNK	512
+
+static char *
+_xbps_uncompress_plist_data(char *xml, size_t len)
+{
+	z_stream strm;
+	unsigned char out[_READ_CHUNK];
+	char *uncomp_xml = NULL;
+	size_t have;
+	ssize_t totalsize = 0;
+	int rv = 0;
+
+	/* Decompress the mmap'ed buffer with zlib */
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.avail_in = 0;
+	strm.next_in = Z_NULL;
+
+	/* 15+16 to use gzip method */
+	if (inflateInit2(&strm, 15+16) != Z_OK)
+		return NULL;
+
+	strm.avail_in = len;
+	strm.next_in = (unsigned char *)xml;
+
+	/* Output buffer (uncompressed) */
+	uncomp_xml = malloc(_READ_CHUNK);
+	if (uncomp_xml == NULL) {
+		(void)inflateEnd(&strm);
+		return NULL;
+	}
+
+	/* Inflate the input buffer and copy into 'uncomp_xml' */
+	do {
+		strm.avail_out = _READ_CHUNK;
+		strm.next_out = out;
+		rv = inflate(&strm, Z_NO_FLUSH);
+		switch (rv) {
+		case Z_DATA_ERROR:
+			/*
+			 * Wrong compressed data or uncompressed, try
+			 * normal method as last resort.
+			 */
+			(void)inflateEnd(&strm);
+			free(uncomp_xml);
+			errno = EAGAIN;
+			return NULL;
+		case Z_STREAM_ERROR:
+		case Z_NEED_DICT:
+		case Z_MEM_ERROR:
+			(void)inflateEnd(&strm);
+			free(uncomp_xml);
+			return NULL;
+		}
+		have = _READ_CHUNK - strm.avail_out;
+		totalsize += have;
+		uncomp_xml = realloc(uncomp_xml, totalsize);
+		memcpy(uncomp_xml + totalsize - have, out, have);
+	} while (strm.avail_out == 0);
+
+	/* we are done */
+	(void)inflateEnd(&strm);
+
+	return uncomp_xml;
+}
+#undef _READ_CHUNK
+
 prop_dictionary_t
 xbps_read_dict_from_archive_entry(struct archive *ar,
 				  struct archive_entry *entry)
@@ -402,7 +475,7 @@ xbps_read_dict_from_archive_entry(struct archive *ar,
 	prop_dictionary_t d;
 	size_t buflen = 0;
 	ssize_t nbytes = -1;
-	char *buf;
+	char *buf, *uncomp_buf;
 
 	assert(ar != NULL);
 	assert(entry != NULL);
@@ -418,8 +491,25 @@ xbps_read_dict_from_archive_entry(struct archive *ar,
 		return NULL;
 	}
 
-	d = prop_dictionary_internalize(buf);
-	free(buf);
+	uncomp_buf = _xbps_uncompress_plist_data(buf, buflen);
+	if (uncomp_buf == NULL) {
+		if (errno && errno != EAGAIN) {
+			/* Error while decompressing */
+			free(buf);
+			return NULL;
+		} else if (errno == EAGAIN) {
+			/* Not a compressed data, try again */
+			errno = 0;
+			d = prop_dictionary_internalize(buf);
+			free(buf);
+		}
+	} else {
+		/* We have the uncompressed data */
+		d = prop_dictionary_internalize(uncomp_buf);
+		free(uncomp_buf);
+		free(buf);
+	}
+
 	if (d == NULL)
 		return NULL;
 	else if (prop_object_type(d) != PROP_TYPE_DICTIONARY) {
