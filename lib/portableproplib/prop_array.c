@@ -993,7 +993,7 @@ prop_array_internalize_from_zfile(const char *fname)
 	}
 
 	strm.avail_in = mf->poimf_mapsize;
-	strm.next_in = mf->poimf_xml;
+	strm.next_in = (unsigned char *)mf->poimf_xml;
 
 	/* Output buffer (decompressed) */
 	uncomp_xml = _PROP_MALLOC(_READ_CHUNK, M_TEMP);
