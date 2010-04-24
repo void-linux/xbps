@@ -3,6 +3,7 @@ See http://xbps.nopcode.org/ for information.
 To build this you'll need:
 
   - pkg-config
+  - zlib (development package with static libs)
   - openssl (development package with static libs)
   - libarchive >= 2.8.0 (development package with static libs)
   - asciidoc (to build the manpages)
