@@ -44,8 +44,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-/* Use our own queue header (from NetBSD) */
-#include "queue.h"
+#include <sys/queue.h>
 
 __BEGIN_DECLS
 
@@ -60,7 +59,7 @@ __BEGIN_DECLS
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20100420"
+#define XBPS_RELVER		"20100427"
 
 /** 
  * @def XBPS_META_PATH

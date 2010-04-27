@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -85,7 +85,7 @@ xbps_repository_register(const char *uri)
 		}
 		/* It seems that this object is already there */
 		if (xbps_find_string_in_array(array, uri)) {
-			errno = EEXIST;
+			rv = EEXIST;
 			goto out;
 		}
 
