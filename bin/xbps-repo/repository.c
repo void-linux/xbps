@@ -34,12 +34,16 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-int
-pkgindex_verify(const char *plist, const char *uri, bool only_sync)
+struct repoinfo {
+	char *pkgidxver;
+	uint64_t totalpkgs;
+};
+
+static struct repoinfo *
+pkgindex_verify(const char *plist, const char *uri)
 {
+	struct repoinfo *rpi = NULL;
 	prop_dictionary_t d;
-	const char *pkgidx_version;
-	uint64_t total_pkgs;
 	int rv = 0;
 
 	assert(plist != NULL);
@@ -49,32 +53,35 @@ pkgindex_verify(const char *plist, const char *uri, bool only_sync)
 		fprintf(stderr,
 		    "E: repository %s does not contain any "
 		    "xbps pkgindex file.\n", uri);
-		return errno;
+		return NULL;
 	}
 
-	if (!prop_dictionary_get_cstring_nocopy(d,
-	    "pkgindex-version", &pkgidx_version)) {
+	if ((rpi = malloc(sizeof(*rpi))) == NULL) {
+		rv = errno;
+		goto out;
+	}
+
+	if (!prop_dictionary_get_cstring(d,
+	    "pkgindex-version", &rpi->pkgidxver)) {
 		fprintf(stderr,
 		    "E: missing 'pkgindex-version' object!\n");
 		rv = errno;
 		goto out;
 	}
 
-	if (!prop_dictionary_get_uint64(d, "total-pkgs", &total_pkgs)) {
+	if (!prop_dictionary_get_uint64(d, "total-pkgs",
+	    &rpi->totalpkgs)) {
 		fprintf(stderr, "E: missing 'total-pkgs' object!\n");
 		rv = errno;
 		goto out;
 	}
 
 	/* Reject empty repositories, how could this happen? :-) */
-	if (total_pkgs == 0) {
+	if (rpi->totalpkgs == 0) {
 		fprintf(stderr, "E: empty package list!\n");
 		rv = EINVAL;
 		goto out;
 	}
-
-	printf("%s package index at %s (v%s) with %ju packages.\n",
-	    only_sync ? "Updated" : "Added", uri, pkgidx_version, total_pkgs);
 
 out:
 	prop_object_release(d);
@@ -82,12 +89,16 @@ out:
 		fprintf(stderr,
 		    "W: removing incorrect pkg index file: '%s' ...\n",
 		    plist);
-		rv = remove(plist);
+		(void)remove(plist);
+		if (rpi) {
+			free(rpi);
+			rpi = NULL;
+		}
 	}
-	return rv;
+	return rpi;
 }
 
-bool
+static bool
 sanitize_url(char *buf, const char *path)
 {
 	char *dirnp, *basenp, *dir, *base, *tmp;
@@ -152,6 +163,7 @@ unregister_repository(const char *uri)
 int
 register_repository(const char *uri)
 {
+	struct repoinfo *rpi = NULL;
 	char *metadir, *plist, idxstr[PATH_MAX];
 	int rv = 0;
 
@@ -199,16 +211,26 @@ register_repository(const char *uri)
 	if (plist == NULL)
 		return errno;
 
-	if ((rv = pkgindex_verify(plist, idxstr, false)) != 0)
+	if ((rpi = pkgindex_verify(plist, uri)) == NULL)
 		goto out;
 
-	if ((rv = xbps_repository_register(idxstr)) != 0) {
+	rv = xbps_repository_register(idxstr);
+	if (rv != 0 && rv != EEXIST) {
 		fprintf(stderr, "E: couldn't register repository (%s)\n",
 		    strerror(rv));
 		goto out;
+	} else if (rv == EEXIST) {
+		fprintf(stderr, "W: repository already registered.\n");
+		rv = 0;
+		goto out;
 	}
-	
+
+	printf("Added package index at %s (v%s) with %ju packages.\n",
+	    uri, rpi->pkgidxver, rpi->totalpkgs);
+
 out:
+	if (rpi != NULL)
+		free(rpi);
 	if (plist != NULL)
 		free(plist);
 
@@ -295,6 +317,8 @@ repository_sync(void)
 	int rv = 0;
 
 	SIMPLEQ_FOREACH(rp, &rp_queue, rp_entries) {
+		struct repoinfo *rpi = NULL;
+
 		if (!xbps_check_is_repo_string_remote(rp->rp_uri))
 			continue;
 
@@ -312,7 +336,13 @@ repository_sync(void)
 			rv = EINVAL;
 			break;
 		}
-		(void)pkgindex_verify(plist, rp->rp_uri, true);
+		if ((rpi = pkgindex_verify(plist, rp->rp_uri)) == NULL) {
+			rv = errno;
+			break;
+		}
+		printf("Updated package index at %s (v%s) with %ju packages.\n",
+		    rp->rp_uri, rpi->pkgidxver, rpi->totalpkgs);
+		free(rpi);
 		free(plist);
 	}
 

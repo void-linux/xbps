@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,6 @@
 /* From index.c */
 int	xbps_repo_genindex(const char *);
 /* From repository.c */
-int	pkgindex_verify(const char *, const char *, bool);
-bool	sanitize_url(char *, const char *);
 int	register_repository(const char *);
 int	unregister_repository(const char *);
 int	show_pkg_info_from_repolist(const char *);
