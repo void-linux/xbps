@@ -1,5 +1,8 @@
 xbps-0.5.0 (2010-05-01):
 
+ * xbps-repo(8): print a warning when registering a repository that has
+   been already added previously.
+
  * Add proplib-0.4.1 source and use it in XBPS. This is to avoid
    an external dependency, so that we depend on the features of the
    internal library. This also means that proplib is not required anymore.
