@@ -88,7 +88,8 @@ INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c *.h
 RECURSIVE              = YES
 EXCLUDE                = ../.bzr ../bin ../lib/fetch \
-			 ../include/sha256.h ../include/fetch.h
+			 ../include/sha256.h ../include/fetch.h \
+			 ../lib/portableproplib
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = .bzr *.mk Makefile
 EXCLUDE_SYMBOLS        = 
