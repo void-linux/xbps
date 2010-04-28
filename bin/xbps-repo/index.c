@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <dirent.h>
+#include <libgen.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
 
@@ -92,9 +93,6 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 
 	if (idxdict == NULL || file == NULL)
 		return EINVAL;
-
-	pkgname = version = regver = oldfilen = NULL;
-	sha256 = filen = tmpfilen = tmpstr = oldfilepath = NULL;
 
 	tmpfilen = strdup(file);
 	if (tmpfilen == NULL)
