@@ -83,7 +83,7 @@ remove_pkg_metadata(const char *pkgname)
 			return -1;
 		}
 
-		if ((rv = unlink(path)) == -1) {
+		if (unlink(path) == -1) {
 			if (flags & XBPS_FLAG_VERBOSE)
 				printf("WARNING: can't remove %s (%s)\n",
 				    pkgname, strerror(errno));

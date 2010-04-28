@@ -97,14 +97,14 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	size_t entry_idx = 0;
 	const char *pkgname, *version, *rootdir, *entry_str, *transact;
 	char *buf;
-	int rv = 0, flags, lflags;
-	bool preserve, actgt, skip_entry, update;
+	int rv, flags, lflags;
+	bool preserve, skip_entry, update;
 	bool props_plist_found, files_plist_found;
 
 	assert(ar != NULL);
 	assert(pkg != NULL);
 
-	preserve = actgt = skip_entry = update = false;
+	preserve = skip_entry = update = false;
 	props_plist_found = files_plist_found = false;
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
@@ -173,7 +173,6 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 			if (buf == NULL)
 				return errno;
 
-			actgt = true;
 			archive_entry_set_pathname(entry, buf);
 			archive_entry_set_mode(entry, 0750);
 
@@ -298,7 +297,6 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 					    "path: %s\n",
 					    archive_entry_pathname(entry));
 				}
-				rv = 0;
 				continue;
 			}
 		}

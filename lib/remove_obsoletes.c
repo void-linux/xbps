@@ -34,17 +34,13 @@
 int HIDDEN
 xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 {
-	prop_object_iterator_t iter, iter2;
-	prop_object_t obj, obj2;
-	prop_string_t oldstr, newstr;
+	prop_object_iterator_t iter, iter2 = NULL;
+	prop_object_t obj, obj2 = NULL;
+	prop_string_t oldstr = NULL, newstr = NULL;
 	const char *array_str = "files";
 	char *buf = NULL;
 	int rv = 0;
 	bool found, dolinks = false;
-
-	iter = iter2 = NULL;
-	obj = obj2 = NULL;
-	oldstr = newstr = NULL;
 
 again:
 	iter = xbps_get_array_iter_from_dict(oldd, array_str);
@@ -110,7 +106,7 @@ again:
 		array_str = "links";
 		prop_object_iterator_release(iter2);
 		prop_object_iterator_release(iter);
-		iter = iter2 = NULL;
+		iter2 = NULL;
 		goto again;
 	}
 

@@ -472,7 +472,7 @@ prop_dictionary_t
 xbps_read_dict_from_archive_entry(struct archive *ar,
 				  struct archive_entry *entry)
 {
-	prop_dictionary_t d;
+	prop_dictionary_t d = NULL;
 	size_t buflen = 0;
 	ssize_t nbytes = -1;
 	char *buf, *uncomp_buf;

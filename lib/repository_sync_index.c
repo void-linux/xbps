@@ -92,8 +92,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	int rv = 0;
 	bool only_sync = false;
 
-	rpidx = lrepodir = uri_fixedp = NULL;
-	metadir = tmp_metafile = lrepofile = NULL;
+	tmp_metafile = rpidx = lrepodir = lrepofile = NULL;
 
 	if (uname(&un) == -1)
 		return -1;

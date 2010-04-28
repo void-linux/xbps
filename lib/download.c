@@ -211,14 +211,12 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	struct url_stat url_st;
 	struct fetchIO *fio = NULL;
 	struct timeval tv[2];
-	ssize_t bytes_read, bytes_written;
+	ssize_t bytes_read = -1, bytes_written;
 	off_t bytes_dld = -1;
-	char buf[4096], *filename, *destfile;
+	char buf[4096], *filename, *destfile = NULL;
 	int fd = -1, rv = 0;
 	bool restart = false;
 
-	filename = destfile = NULL;
-	bytes_read = bytes_written = -1;
 	fetchLastErrCode = 0;
 
 	/*

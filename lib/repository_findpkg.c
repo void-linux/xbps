@@ -314,7 +314,7 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 		if (pkgrd == NULL) {
 			if (errno && errno != ENOENT) {
 				rv = errno;
-				break;
+				goto out;
 			}
 			DPRINTF(("Package %s not found in repo %s.\n",
 			    pkgname, rpool->rp_uri));
@@ -326,12 +326,12 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 			if (!prop_dictionary_get_cstring_nocopy(instpkg,
 			    "version", &instver)) {
 				rv = errno;
-				break;
+				goto out;
 			}
 			if (!prop_dictionary_get_cstring_nocopy(pkgrd,
 			    "version", &repover)) {
 				rv = errno;
-				break;
+				goto out;
 			}
 			if (xbps_cmpver(repover, instver) > 0) {
 				DPRINTF(("Found %s-%s in repo %s.\n",

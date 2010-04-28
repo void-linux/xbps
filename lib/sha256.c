@@ -295,9 +295,6 @@ SHA256_Transform(SHA256_CTX *context, const uint32_t *data)
 	context->state[5] += f;
 	context->state[6] += g;
 	context->state[7] += h;
-
-	/* Clean up */
-	a = b = c = d = e = f = g = h = T1 = T2 = 0;
 }
 
 #endif /* SHA2_UNROLL_TRANSFORM */
@@ -331,8 +328,6 @@ XBPS_SHA256_Update(SHA256_CTX *context, const uint8_t *data, size_t len)
 			/* The buffer is not yet full */
 			memcpy(&context->buffer[usedspace], data, len);
 			context->bitcount += len << 3;
-			/* Clean up: */
-			usedspace = freespace = 0;
 			return 1;
 		}
 	}
@@ -366,9 +361,6 @@ XBPS_SHA256_Update(SHA256_CTX *context, const uint8_t *data, size_t len)
 		memcpy(context->buffer, data, len);
 		context->bitcount += len << 3;
 	}
-	/* Clean up: */
-	usedspace = freespace = 0;
-
 	return 1;
 }
 
@@ -428,7 +420,6 @@ SHA224_256_Final(uint8_t digest[], SHA256_CTX *context, size_t len)
 
 	/* Clean up state data: */
 	memset(context, 0, sizeof(*context));
-	usedspace = 0;
 
 	return 1;
 }
