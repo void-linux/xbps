@@ -61,6 +61,7 @@ usage(void)
 	"    -V\t\tPrints the xbps release version\n"
 	" Options used by the install/(auto)remove/update targets:\n"
 	"    -y\t\tAssume \"yes\" for all questions.\n"
+	"    -p\t\tAlso purge package(s) in the (auto)remove targets.\n"
 	" Options used by the purge/reconfigure/remove targets:\n"
 	"    -f\t\tForce reconfiguration or removal of files.\n"
 	"\n");
@@ -119,17 +120,20 @@ main(int argc, char **argv)
 	prop_dictionary_t dict;
 	struct sigaction sa;
 	int i = 0, c, flags = 0, rv = 0;
-	bool yes, verbose;
+	bool yes, verbose, purge;
 
-	yes = verbose = false;
+	yes = verbose = purge = false;
 
-	while ((c = getopt(argc, argv, "Vcfr:vy")) != -1) {
+	while ((c = getopt(argc, argv, "Vcfpr:vy")) != -1) {
 		switch (c) {
 		case 'c':
 			xbps_set_cachedir(optarg);
 			break;
 		case 'f':
 			flags |= XBPS_FLAG_FORCE;
+			break;
+		case 'p':
+			purge = true;
 			break;
 		case 'r':
 			/* To specify the root directory */
@@ -222,7 +226,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage();
 
-		rv = xbps_remove_installed_pkgs(argc, argv, yes);
+		rv = xbps_remove_installed_pkgs(argc, argv, yes, purge);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
@@ -274,7 +278,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoremove_pkgs(yes);
+		rv = xbps_autoremove_pkgs(yes, purge);
 
 	} else if (strcasecmp(argv[0], "purge") == 0) {
 		/*

@@ -33,8 +33,36 @@
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
+static int
+pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
+{
+	int rv = 0;
+
+	printf("Removing package %s-%s ... ", pkgname, version);
+	(void)fflush(stdout);
+
+	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0) {
+		fprintf(stderr, "\nE: unable to remove %s-%s (%s).\n",
+		    pkgname, version, strerror(errno));
+		return rv;
+	}
+	if (purge) {
+		printf("purging ... ");
+		(void)fflush(stdout);
+		if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
+			fprintf(stderr, "\nE: unable to purge %s-%s "
+			    "(%s).\n", pkgname, version,
+			    strerror(errno));
+			return rv;
+		}
+	}
+	printf("done.\n");
+
+	return rv;
+}
+
 int
-xbps_autoremove_pkgs(bool force)
+xbps_autoremove_pkgs(bool force, bool purge)
 {
 	prop_array_t orphans = NULL;
 	prop_object_t obj = NULL;
@@ -103,8 +131,7 @@ xbps_autoremove_pkgs(bool force)
 			rv = errno;
 			goto out;
 		}
-		printf("Removing package %s-%s ...\n", pkgname, version);
-		if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0)
+		if ((rv = pkg_remove_and_purge(pkgname, version, purge)) != 0)
 			goto out;
 	}
 
@@ -118,7 +145,7 @@ out:
 }
 
 int
-xbps_remove_installed_pkgs(int argc, char **argv, bool force)
+xbps_remove_installed_pkgs(int argc, char **argv, bool force, bool purge)
 {
 	prop_array_t reqby;
 	prop_dictionary_t dict;
@@ -185,12 +212,8 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force)
 		if (dict == NULL)
 			continue;
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
-		printf("Removing package %s-%s ...\n", argv[i], version);
-		if ((rv = xbps_remove_pkg(argv[i], version, false)) != 0) {
-			fprintf(stderr, "E: unable to remove %s-%s (%s).\n",
-			    argv[i], version, strerror(errno));
+		if ((rv = pkg_remove_and_purge(argv[i], version, purge)) != 0)
 			return rv;
-		}
 	}
 
 	return 0;

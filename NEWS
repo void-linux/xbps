@@ -1,5 +1,8 @@
 xbps-0.5.0 (2010-05-01):
 
+ * xbps-bin(8): added new flag '-p' for the 'remove' and 'autoremove'
+   targets, to also purge the package(s) after successful removal.
+
  * xbps-repo(8): print a warning when registering a repository that has
    been already added previously.
 

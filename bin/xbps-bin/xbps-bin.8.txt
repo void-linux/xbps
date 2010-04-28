@@ -36,6 +36,11 @@ OPTIONS
 	with the 'reconfigure target, or to force removal of package files
 	even if its hash doesn't match in the 'purge' and 'remove' targets.
 
+*-p*::
+	Used currently in the 'remove' and 'autoremove' targets, if enabled
+	after removing a package it is also purged.
+
+
 *-r* 'rootdir'::
 	Sets the 'root' directory. By default the root directory is
 	set to '/'. Please note that the database directory is always
