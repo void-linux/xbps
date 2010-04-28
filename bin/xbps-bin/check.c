@@ -99,7 +99,7 @@ out:
 int
 xbps_check_pkg_integrity(const char *pkgname)
 {
-	prop_dictionary_t pkgd, propsd, filesd;
+	prop_dictionary_t pkgd, propsd = NULL, filesd = NULL;
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
@@ -178,14 +178,6 @@ xbps_check_pkg_integrity(const char *pkgname)
 		    XBPS_PKGFILES);
 		rv = EINVAL;
 		goto out;
-	} else if (((array = prop_dictionary_get(filesd, "files")) == NULL) ||
-		   ((array = prop_dictionary_get(filesd, "links")) == NULL) ||
-		   ((array = prop_dictionary_get(filesd, "dirs")) == NULL)) {
-			fprintf(stderr,
-			    "E: %s: incomplete %s metadata file.\n", pkgname,
-			    XBPS_PKGFILES);
-			rv = EINVAL;
-			goto out;
 	}
 
 	/*
