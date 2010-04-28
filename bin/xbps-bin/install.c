@@ -96,7 +96,6 @@ download_package_list(prop_object_iterator_t iter)
 	const char *pkgver, *repoloc, *filename, *cachedir, *sha256;
 	char *binfile, *lbinfile;
 	int rv = 0;
-	bool found_binpkg;
 
 	cachedir = xbps_get_cachedir();
 	if (cachedir == NULL)
@@ -106,7 +105,6 @@ download_package_list(prop_object_iterator_t iter)
 	xbps_fetch_set_cache_connection(0, 0);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		found_binpkg = false;
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "repository", &repoloc))
 			return errno;
@@ -492,7 +490,7 @@ exec_transaction(struct transaction *trans)
 	 */
 	printf("\n[2/3] Unpacking\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-		update = autoinst = preserve = false;
+		autoinst = preserve = false;
 
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgname", &pkgname))
