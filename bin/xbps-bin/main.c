@@ -120,9 +120,9 @@ main(int argc, char **argv)
 	prop_dictionary_t dict;
 	struct sigaction sa;
 	int i = 0, c, flags = 0, rv = 0;
-	bool yes, verbose, purge;
+	bool yes, purge;
 
-	yes = verbose = purge = false;
+	yes = purge = false;
 
 	while ((c = getopt(argc, argv, "Vcfpr:vy")) != -1) {
 		switch (c) {
@@ -140,7 +140,6 @@ main(int argc, char **argv)
 			xbps_set_rootdir(optarg);
 			break;
 		case 'v':
-			verbose = true;
 			flags |= XBPS_FLAG_VERBOSE;
 			break;
 		case 'V':
