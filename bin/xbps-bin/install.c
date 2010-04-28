@@ -627,7 +627,7 @@ xbps_exec_transaction(bool yes)
 
 	trans = calloc(1, sizeof(struct transaction));
 	if (trans == NULL)
-		goto out;
+		return rv;
 
 	trans->dict = xbps_repository_get_transaction_dict();
 	if (trans->dict == NULL)
