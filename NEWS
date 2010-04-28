@@ -1,5 +1,8 @@
 xbps-0.5.0 (2010-05-01):
 
+ * xbps-repo(8): fixed the 'search' target to also match patterns against
+   its description, and not only from the package/version touple.
+
  * Cleaned up the code by using the LLVM's clang static analyzer, found
    two possible NULL pointer dereferences and dead core.
 
