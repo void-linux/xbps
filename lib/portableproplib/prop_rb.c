@@ -327,8 +327,6 @@ rb_tree_insert_rebalance(struct rb_tree *rbt, struct rb_node *self)
 			KASSERT(father->rb_parent == self);
 			KASSERT(self->rb_nodes[which] == father);
 			KASSERT(self->rb_parent == grandpa);
-			self = father;
-			father = self->rb_parent;
 		}
 		KASSERT(RB_RED_P(self) && RB_RED_P(father));
 		KASSERT(grandpa->rb_nodes[which] == father);
@@ -655,7 +653,6 @@ rb_tree_removal_rebalance(struct rb_tree *rbt, struct rb_node *parent,
 			if (RB_RED_P(brother)) {
 				KASSERT(RB_BLACK_P(parent));
 				rb_tree_reparent_nodes(rbt, parent, other);
-				brother = parent->rb_nodes[other];
 				KASSERT(!RB_SENTINEL_P(brother));
 				KASSERT(RB_BLACK_P(brother));
 				KASSERT(RB_RED_P(parent));

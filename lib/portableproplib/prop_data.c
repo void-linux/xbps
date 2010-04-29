@@ -485,7 +485,6 @@ _prop_data_internalize_decode(struct _prop_object_internalize_context *ctx,
 			/* Make sure there is another trailing = */
 			if (ch != _prop_data_pad64)
 				return (false);
-			ch = (unsigned char) *src;
 			/* FALLTHROUGH */
 		
 		case 3:		/* Valid, two bytes of info */
