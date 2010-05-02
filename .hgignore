@@ -1,8 +1,11 @@
+syntax: glob
+
 xbps-bin
 xbps-repo
 xbps-uhelper
 *.static
 *.so*
+*.o
 *.a
 *.8
 *.xml
