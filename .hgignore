@@ -7,7 +7,6 @@ xbps-uhelper
 *.so*
 *.o
 *.a
-*.8
 *.xml
 *.png
 api/
