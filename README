@@ -6,7 +6,6 @@ To build this you'll need:
   - zlib (development package with static libs)
   - openssl (development package with static libs)
   - libarchive >= 2.8.0 (development package with static libs)
-  - asciidoc (to build the manpages)
 
 Optionally to build the API documentation (enabled with BUILD_API_DOCS
 make(1) argument):

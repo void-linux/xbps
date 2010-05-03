@@ -3,12 +3,11 @@ CFLAGS  += -fPIE
 LDFLAGS += -lxbps
 
 .PHONY: all
-all: $(BIN) $(BIN).static $(MAN)
+all: $(BIN) $(BIN).static
 
 .PHONY: clean
 clean:
-	-rm -f $(BIN) $(MAN)
-	-rm -f $(BIN).static
+	-rm -f $(BIN) $(BIN).static
 	-rm -f $(OBJS)
 
 .PHONY: install
@@ -32,10 +31,6 @@ endif
 %.o: %.c
 	@printf " [CC]\t\t$@\n"
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
-
-$(MAN):
-	@printf " [ASCIIDOC]\t$(MAN)\n"
-	@a2x -f manpage $(MAN).txt
 
 $(BIN).static: $(OBJS)
 	@printf " [CCLD]\t\t$@\n"

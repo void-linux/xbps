@@ -1,3 +1,7 @@
+xbps-0.6.0 (2010-07-01):
+
+ * Removed asciidoc build dependency, simply use the troff manpages.
+
 xbps-0.5.0 (2010-05-01):
 
  * xbps-repo(8): fixed the 'search' target to also match patterns against
