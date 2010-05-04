@@ -1,5 +1,8 @@
 xbps-0.6.0 (2010-07-01):
 
+ * xbps-bin(8): added a new target 'show-orphans' that list all package
+   orphans currently installed.
+
  * Removed asciidoc build dependency, simply use the troff manpages.
 
 xbps-0.5.0 (2010-05-01):

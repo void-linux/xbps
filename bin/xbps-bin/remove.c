@@ -62,7 +62,7 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 }
 
 int
-xbps_autoremove_pkgs(bool force, bool purge)
+xbps_autoremove_pkgs(bool force, bool purge, bool only_show)
 {
 	prop_array_t orphans = NULL;
 	prop_object_t obj = NULL;
@@ -114,6 +114,9 @@ xbps_autoremove_pkgs(bool force, bool purge)
 	}
 	prop_object_iterator_reset(iter);
 	printf("\n\n");
+
+	if (only_show)
+		goto out;
 
 	if (!force && !xbps_noyes("Do you want to continue?")) {
 		printf("Cancelled!\n");

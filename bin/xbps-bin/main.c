@@ -52,6 +52,7 @@ usage(void)
 	"    show\t\t<pkgname>\n"
 	"    show-deps\t\t<pkgname>\n"
 	"    show-files\t\t<pkgname>\n"
+	"    show-orphans\n"
 	"    show-revdeps\t<pkgname>\n"
 	"    update\t\t<pkgname(s)>\n"
 	" Options shared by all targets:\n"
@@ -268,6 +269,16 @@ main(int argc, char **argv)
 
 		rv = xbps_autoupdate_pkgs(yes);
 
+	} else if (strcasecmp(argv[0], "show-orphans") == 0) {
+		/*
+		 * Only show the package name of all currently package
+		 * orphans.
+		 */
+		if (argc != 1)
+			usage();
+
+		rv = xbps_autoremove_pkgs(yes, purge, true);
+
 	} else if (strcasecmp(argv[0], "autoremove") == 0) {
 		/*
 		 * Removes orphan pkgs. These packages were installed
@@ -277,7 +288,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoremove_pkgs(yes, purge);
+		rv = xbps_autoremove_pkgs(yes, purge, false);
 
 	} else if (strcasecmp(argv[0], "purge") == 0) {
 		/*
