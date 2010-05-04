@@ -36,6 +36,7 @@
  *
  */
 
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -50,6 +51,34 @@
 
 #include <xbps_api.h>
 #include "sha256.h"
+
+/* Workaround byte swap cludge on Linux systems */
+#ifdef _BSD
+#include <sys/endian.h>
+#elif defined(__linux__)
+#include <byteswap.h>
+# if __BYTE_ORDER == __LITTLE_ENDIAN
+#  ifndef htobe32
+#    define htobe32(x) bswap_32 (x)
+#  endif
+#  ifndef be32toh
+#    define be32toh(x) bswap_32 (x)
+#  endif
+#  ifndef htobe64
+#    define htobe64(x) bswap_64 (x)
+#  endif
+# else
+#  ifndef htobe32
+#    define htobe32(x) (x)
+#  endif
+#  ifndef be32toh
+#    define be32toh(x) (x)
+#  endif
+#  ifndef htobe64
+#    define htobe64(x) (x)
+#  endif
+# endif
+#endif
 
 /*** SHA-256 Various Length Definitions ***********************/
 /* NOTE: Most of these are in sha2.h */
