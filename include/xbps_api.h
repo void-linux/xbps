@@ -59,7 +59,7 @@ __BEGIN_DECLS
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20100427"
+#define XBPS_RELVER		"20100511"
 
 /** 
  * @def XBPS_META_PATH
