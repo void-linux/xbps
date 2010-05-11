@@ -15,7 +15,7 @@ LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
 LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
 LIBPROP_OBJS += portableproplib/prop_dictionary_util.o
 LIBPROP_OBJS += portableproplib/prop_data.o
-LIBPROP_CFLAGS = -Wno-cast-qual -Wno-unused-parameter
+LIBPROP_CFLAGS = -Wno-cast-qual -Wno-unused-parameter -Wno-stack-protector
 
 ifdef USE_EXTERNAL_PROPLIB
 LIBPROP_OBJS =
