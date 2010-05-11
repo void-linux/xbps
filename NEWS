@@ -1,4 +1,9 @@
-xbps-0.6.0 (2010-07-01):
+xbps-0.5.1 (2010-05-12):
+
+ * Fixed build issues in RHEL5, Ubuntu and others distributions.
+
+ * libxbps: changed the epoch component in version strings to the ':'
+   character to be differentiated from '-' in pkgname, and '_' in revision.
 
  * xbps-bin(8): added a new target 'show-orphans' that list all package
    orphans currently installed.
