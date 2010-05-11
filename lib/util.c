@@ -184,6 +184,20 @@ xbps_check_is_installed_pkgname(const char *pkgname)
 }
 
 const char *
+xbps_get_pkg_epoch(const char *pkg)
+{
+	const char *tmp;
+
+	assert(pkg != NULL);
+
+	tmp = strrchr(pkg, ':');
+	if (tmp == NULL)
+		return NULL;
+
+	return tmp + 1; /* skip first ':' */
+}
+
+const char *
 xbps_get_pkg_version(const char *pkg)
 {
 	const char *tmp;

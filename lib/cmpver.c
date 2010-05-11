@@ -29,7 +29,7 @@
  * split_version(pkgname, endname, epoch, revision) returns a pointer to
  * the version portion of a package name and the two special components.
  *
- * Syntax is: ${PKGNAME}-${VERSION}[_${PKGREVISION}][-${EPOCH}]
+ * Syntax is: ${PKGNAME}-${VERSION}[_${PKGREVISION}][:${EPOCH}]
  *
  */
 static const char *
@@ -54,8 +54,8 @@ split_version(const char *pkgname, const char **endname, unsigned long *epoch,
     }
     endversionstr = ch;
 
-    /* Look for the last '-' in the remaining version string */
-    ch = strrchr(endversionstr ? endversionstr + 1 : versionstr, '-');
+    /* Look for the last ':' in the remaining version string */
+    ch = strrchr(endversionstr ? endversionstr + 1 : versionstr, ':');
     if (epoch != NULL) {
 	*epoch = ch ? strtoul(ch + 1, NULL, 10) : 0;
     }
@@ -216,7 +216,7 @@ get_component(const char *position, version_component *component)
  * comparison of the basenames is done.
  *
  * The port version is defined by:
- * ${VERSION}[_${PKGREVISION}][-${EPOCH}]
+ * ${VERSION}[_${PKGREVISION}][:${EPOCH}]
  * ${EPOCH} supersedes ${VERSION} supersedes ${PKGREVISION}.
  *
  * The epoch and revision are defined to be a single number, while the rest
