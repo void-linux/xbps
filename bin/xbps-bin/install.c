@@ -435,11 +435,6 @@ replace_packages(prop_object_iterator_t iter, const char *pkgver)
 			    reppkgn, strerror(rv));
 			return rv;
 		}
-		if ((rv = xbps_purge_pkg(reppkgn, false)) != 0) {
-			fprintf(stderr, "xbps-bin: couldn't purge %s (%s)\n",
-			    reppkgn, strerror(rv));
-			return rv;
-		}
 	}
 	prop_object_iterator_release(iter);
 
