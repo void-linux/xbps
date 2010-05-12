@@ -198,6 +198,8 @@ show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 		printf(" %s - %s\n", pkgver, desc);
 	else if (xbps_pkgpattern_match(desc, pattern) == 1)
 		printf(" %s - %s\n", pkgver, desc);
+	else if (strstr(pkgver, pattern))
+		printf(" %s - %s\n", pkgver, desc);
 
 	return 0;
 }

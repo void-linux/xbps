@@ -1,3 +1,8 @@
+xbps-0.6.0 (2010-07-01):
+
+ * xbps-repo(8): improved the 'search' target to also match substrings in
+   package/version tuples.
+
 xbps-0.5.1 (2010-05-12):
 
  * Fixed build issues in RHEL5, Ubuntu and others distributions.
