@@ -233,7 +233,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	}
 
 	/*
-	 * Remote some unneeded and large objects.
+	 * Remove some unneeded and large objects.
 	 */
 	prop_dictionary_remove(newpkgd, "long_desc");
 	prop_dictionary_remove(newpkgd, "maintainer");
