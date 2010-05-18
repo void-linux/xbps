@@ -222,7 +222,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		prepostf = true;
 		rv = xbps_file_chdir_exec(rootdir, buf, "pre", pkgname,
 		    version, update ? "yes" : "no", NULL);
-		if (rv != 0) {
+		if (rv != 0 && errno != ENOENT) {
 			fprintf(stderr,
 			    "%s: prerm action target error (%s)\n", pkgname,
 			    strerror(errno));
@@ -284,8 +284,9 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	 * and we aren't updating a package.
 	 */
 	if (update == false && prepostf) {
-		if ((rv = xbps_file_chdir_exec(rootdir, buf, "post",
-		     pkgname, version, NULL)) != 0) {
+		rv = xbps_file_chdir_exec(rootdir, buf, "post",
+		     pkgname, version, NULL);
+		if (rv != 0 && errno != ENOENT) {
 			fprintf(stderr,
 			    "%s: postrm action target error (%s)\n",
 			    pkgname, strerror(errno));

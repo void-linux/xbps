@@ -1,4 +1,16 @@
-xbps-0.6.0 (2010-07-01):
+xbps-0.5.2 (2010-07-18):
+
+ * libxbps: while running INSTALL/REMOVE scripts, do not fail if a script
+   returns ENOENT but the script exists; that means the script did not match
+   the expected action on its switch statement and the fact can be simply
+   ignored.
+
+ * libxbps: while upgrading packages and searching for obsolete files,
+   do not remove the files that did not match previous SHA256 hash. Also,
+   only remove obsolete dangling symlinks.
+
+ * xbps-repo(8): fixed the 'genindex' target to not return error if any
+   package is already registered in the index.
 
  * xbps-repo(8): improved the 'search' target to also match substrings in
    package/version tuples.
@@ -18,7 +30,7 @@ xbps-0.5.1 (2010-05-12):
 xbps-0.5.0 (2010-05-01):
 
  * xbps-repo(8): fixed the 'search' target to also match patterns against
-   its description, and not only from the package/version touple.
+   its description, and not only from the package/version tuple.
 
  * Cleaned up the code by using the LLVM's clang static analyzer, found
    two possible NULL pointer dereferences in error branches and dead code.
