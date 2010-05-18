@@ -8,12 +8,13 @@ digraph pkg_props_dictionary {
 	main -> pkgname [label="string"];
 	main -> version [label="string"];
 	main -> pkgver [label="string"];
-	main -> preserve [label="bool"];
+	main -> preserve [style=filled,label="bool"];
+	preserve [style=filled];
 	main -> run_depends [label="array"];
 	run_depends [style=filled];
 	run_depends -> rundep1_string [label="string"];
 	run_depends -> rundep2_string [label="string"];
-	rundep1_string [label="foo>=1.2"];
+	rundep1_string [style=filled,fillcolor="yellowgreen",label="foo>=1.2"];
 	rundep2_string [style=filled,label="..."];
 	main -> architecture [label="string"];
 	main -> instsize [label="integer"];
@@ -25,12 +26,18 @@ digraph pkg_props_dictionary {
 	replaces [style=filled];
 	replaces -> replace1_string [label="string"];
 	replaces -> replace2_string [label="string"];
-	replace1_string [label="blah<=2.0"];
+	replace1_string [style=filled,fillcolor="yellowgreen",label="blah<=2.0"];
 	replace2_string [style=filled,label="..."];
 	main -> conf_files [label="array"];
 	conf_files [style=filled];
 	conf_files -> cffile1 [style=filled,label="string"];
 	conf_files -> cffile2 [style=filled,label="string"];
-	cffile1 [label="/etc/foo.conf"];
+	cffile1 [style=filled,fillcolor="yellowgreen",label="/etc/foo.conf"];
 	cffile2 [style=filled,label="..."];
+	main -> conflicts [label="array"];
+	conflicts [style=filled];
+	conflicts -> conflict1 [style=filled,label="string"];
+	conflicts -> conflict2 [style=filled,label="string"];
+	conflict1 [style=filled,fillcolor="yellowgreen",label="foo<2.0"];
+	conflict2 [style=filled,label="..."];
 }
