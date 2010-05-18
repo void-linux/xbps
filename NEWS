@@ -1,3 +1,9 @@
+xbps-0.5.2.1 (2010-05-18):
+
+ * Due to human error, last fix in 0.5.2 was completely wrong and the
+   INSTALL/REMOVE scripts were simply empty so ENOENT was returned, clearly
+   this is expected and shouldn't be ignored.
+
 xbps-0.5.2 (2010-07-18):
 
  * libxbps: while running INSTALL/REMOVE scripts, do not fail if a script

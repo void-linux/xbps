@@ -185,7 +185,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 			
 			rv = xbps_file_chdir_exec(rootdir, buf, "pre",
 			     pkgname, version, update ? "yes" : "no", NULL);
-			if (rv != 0 && errno != ENOENT) {
+			if (rv != 0) {
 				free(buf);
 				fprintf(stderr,
 				    "%s: preinst action target error %s\n",
