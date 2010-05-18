@@ -1,3 +1,8 @@
+xbps-0.5.2.2 (2010-05-18):
+
+ * libxbps: do not forget to reset a variable to 0 when removing obsolete files
+   that are unexistent or its hash didn't match.
+
 xbps-0.5.2.1 (2010-05-18):
 
  * Due to human error, last fix in 0.5.2 was completely wrong and the

@@ -84,6 +84,7 @@ again:
 				 * match the hash.
 				 */
 				free(file);
+				rv = 0;
 				continue;
 			}
 		} else {
