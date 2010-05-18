@@ -6,8 +6,14 @@ digraph pkg_props_dictionary {
 	props_plist [style=filled,fillcolor="darksalmon",label="props.plist"];
 	main [label="Package dictionary"];
 	main -> pkgname [label="string"];
+	pkgname -> pkgname_value;
+	pkgname_value [style=filled,fillcolor="yellowgreen",label="xbps"];
 	main -> version [label="string"];
+	version -> version_value;
+	version_value [style=filled,fillcolor="yellowgreen",label="0.5.2.2"];
 	main -> pkgver [label="string"];
+	pkgver -> pkgver_value;
+	pkgver_value [style=filled,fillcolor="yellowgreen",label="xbps-0.5.2.2"];
 	main -> preserve [style=filled,label="bool"];
 	preserve [style=filled];
 	main -> run_depends [label="array"];
@@ -17,11 +23,21 @@ digraph pkg_props_dictionary {
 	rundep1_string [style=filled,fillcolor="yellowgreen",label="foo>=1.2"];
 	rundep2_string [style=filled,label="..."];
 	main -> architecture [label="string"];
+	architecture -> arch_value;
+	arch_value [style=filled,fillcolor="yellowgreen",label="x86_64"];
 	main -> instsize [label="integer"];
+	instsize -> instsize_value;
+	instsize_value [style=filled,fillcolor="yellowgreen",label="389120"];
 	instsize [label="installed_size"];
 	main -> short_desc [label="string"]
+	short_desc -> shortdesc_val;
+	shortdesc_val [style=filled,fillcolor="yellowgreen",label="The XBPS package system utilities"];
 	main -> long_desc [label="string"];
+	long_desc -> longdesc_val;
+	longdesc_val [style=filled,fillcolor="yellowgreen",label="..."];
 	main -> maintainer [label="string"];
+	maintainer -> maintainer_val;
+	maintainer_val [style=filled,fillcolor="yellowgreen",label="baobab@blobb.org"];
 	main -> replaces [label="array"];
 	replaces [style=filled];
 	replaces -> replace1_string [label="string"];
