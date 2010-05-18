@@ -332,8 +332,10 @@ xbps_repo_genindex(const char *pkgdir)
 			}
 			rv = xbps_repo_addpkg_index(idxdict, path, binfile);
 			free(binfile);
-			if (rv == EEXIST)
+			if (rv == EEXIST) {
+				rv = 0;
 				continue;
+			}
 			else if (rv != 0) {
 				(void)closedir(dirp);
 				free(path);
