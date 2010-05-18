@@ -36,8 +36,8 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
-	const char *pkgname;
-	int rv = 0;
+	const char *pkgname, *pkgver;
+	int flags = xbps_get_flags(), rv = 0;
 	pkg_state_t state = 0;
 
 	assert(master != NULL);
@@ -47,6 +47,9 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 	 * Get some info about dependencies and current repository.
 	 */
 	if (!prop_dictionary_get_cstring_nocopy(depd, "pkgname", &pkgname))
+		return errno;
+
+	if (!prop_dictionary_get_cstring_nocopy(depd, "pkgver", &pkgver))
 		return errno;
 
 	dict = prop_dictionary_copy(depd);
@@ -96,6 +99,9 @@ store_dependency(prop_dictionary_t master, prop_dictionary_t depd,
 		prop_object_release(dict);
 		return EINVAL;
 	}
+	if (flags & XBPS_FLAG_VERBOSE)
+		printf("\n   Added package '%s' into the transaction (%s).\n",
+		    pkgver, repoloc);
 
 	return 0;
 }
@@ -245,7 +251,7 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 	pkg_state_t state = 0;
 	const char *reqpkg, *reqvers, *pkg_queued, *repo_pkgver;
 	char *pkgname;
-	int rv = 0;
+	int flags = xbps_get_flags(), rv = 0;
 
 	iter = prop_array_iterator(array);
 	if (iter == NULL)
@@ -261,6 +267,9 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 			rv = EINVAL;
 			break;
 		}
+		if (flags & XBPS_FLAG_VERBOSE)
+			printf("  Requires dependency '%s': ", reqpkg);
+
 		/*
 		 * Check if required dep is satisfied and installed.
 		 */
@@ -271,11 +280,11 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 			break;
 		} else if (rv == 1) {
 			/* Required pkg dependency is satisfied */
-			DPRINTF(("Dependency %s satisfied.\n", reqpkg));
+			if (flags & XBPS_FLAG_VERBOSE)
+				printf("satisfied and installed.\n");
 			rv = 0;
 			continue;
 		}
-		DPRINTF(("Dependency %s not installed.\n", reqpkg));
 		pkgname = xbps_get_pkgpattern_name(reqpkg);
 		if (pkgname == NULL) {
 			rv = EINVAL;
@@ -310,8 +319,8 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 			}
 			if (xbps_pkgpattern_match(pkg_queued,
 			    __UNCONST(reqpkg))) {
-				DPRINTF(("Dependency %s already queued.\n",
-				    pkgname));
+				if (flags & XBPS_FLAG_VERBOSE)
+					printf("queued in the transaction.\n");
 				free(pkgname);
 				continue;
 			}
@@ -343,8 +352,8 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 				free(pkgname);
 				continue;
 			} else {
-				DPRINTF(("Added missing dep %s (repo: %s).\n",
-				    reqpkg, repoloc));
+				if (flags & XBPS_FLAG_VERBOSE)
+					printf("missing package in repository!\n");
 				free(pkgname);
 				continue;
 			}
@@ -403,7 +412,6 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 			DPRINTF(("store_dependency failed %s\n", reqpkg));
 			break;
 		}
-		DPRINTF(("Added reqdep %s (repo: %s)\n", reqpkg, repoloc));
 
 		/*
 		 * If package was added in the missing_deps array, we
@@ -430,7 +438,9 @@ find_repo_deps(prop_dictionary_t master, prop_dictionary_t repo,
 		/*
 		 * Iterate on required pkg to find more deps.
 		 */
-		DPRINTF(("Looking for rundeps on %s.\n", reqpkg));
+		if (flags & XBPS_FLAG_VERBOSE)
+			printf("  Finding dependencies for '%s':\n", reqpkg);
+
 		if ((rv = find_repo_deps(master, repo, repoloc,
 		     curpkg_rdeps)) != 0) {
 			DPRINTF(("Error checking %s rundeps %s\n",
@@ -448,8 +458,8 @@ xbps_repository_find_pkg_deps(prop_dictionary_t master, prop_dictionary_t pkg)
 {
 	prop_array_t pkg_rdeps, missing_rdeps;
 	struct repository_pool *rpool;
-	const char *pkgname;
-	int rv = 0;
+	const char *pkgname, *pkgver;
+	int flags = xbps_get_flags(), rv = 0;
 
 	assert(master != NULL);
 	assert(pkg != NULL);
@@ -461,10 +471,15 @@ xbps_repository_find_pkg_deps(prop_dictionary_t master, prop_dictionary_t pkg)
 	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
 		return errno;
 
+	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver))
+		return errno;
+
 	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;
 
-	DPRINTF(("Checking rundeps for %s.\n", pkgname));
+	if (flags & XBPS_FLAG_VERBOSE)
+		printf(" Finding required dependencies for '%s':\n", pkgver);
+
 	/*
 	 * Iterate over the repository pool and find out if we have
 	 * all available binary packages.

@@ -292,7 +292,7 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 	prop_array_t unsorted;
 	struct repository_pool *rpool;
 	const char *repover, *instver;
-	int rv = 0;
+	int flags = xbps_get_flags(), rv = 0;
 	bool newpkg_found = false;
 
 	assert(pkgname != NULL);
@@ -316,8 +316,9 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 				rv = errno;
 				goto out;
 			}
-			DPRINTF(("Package %s not found in repo %s.\n",
-			    pkgname, rpool->rp_uri));
+			if (flags & XBPS_FLAG_VERBOSE)
+				printf("Package '%s' not found in repository "
+				    "'%s'.\n", pkgname, rpool->rp_uri);
 		} else if (pkgrd != NULL) {
 			/*
 			 * Check if version in repository is greater than
@@ -334,13 +335,17 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 				goto out;
 			}
 			if (xbps_cmpver(repover, instver) > 0) {
-				DPRINTF(("Found %s-%s in repo %s.\n",
-				    pkgname, repover, rpool->rp_uri));
+				if (flags & XBPS_FLAG_VERBOSE) {
+					printf("Found '%s-%s' in repository "
+					    "'%s'.\n", pkgname, repover,
+					    rpool->rp_uri);
+				}
 				newpkg_found = true;
 				break;
 			}
-			DPRINTF(("Skipping %s-%s in repo %s.\n",
-			    pkgname, repover, rpool->rp_uri));
+			if (flags & XBPS_FLAG_VERBOSE)
+				printf("Skipping '%s-%s' from repository "
+				    "'%s'.\n", pkgname, repover, rpool->rp_uri);
 			continue;
 		}
 	}
@@ -411,8 +416,8 @@ xbps_repository_install_pkg(const char *pkg, bool bypattern)
 	prop_dictionary_t origin_pkgrd = NULL, pkgrd = NULL;
 	prop_array_t unsorted;
 	struct repository_pool *rpool;
-	const char *pkgname;
-	int rv = 0;
+	const char *pkgname, *pkgver;
+	int flags = xbps_get_flags(), rv = 0;
 
 	assert(pkg != NULL);
 
@@ -436,8 +441,15 @@ xbps_repository_install_pkg(const char *pkg, bool bypattern)
 				rv = errno;
 				goto out;
 			}
-		} else if (pkgrd != NULL)
+		} else if (pkgrd != NULL) {
+			if (flags & XBPS_FLAG_VERBOSE) {
+				prop_dictionary_get_cstring_nocopy(pkgrd,
+				    "pkgver", &pkgver);
+				printf("Found package '%s' (%s).\n",
+				    pkgver, rpool->rp_uri);
+			}
 			break;
+		}
 	}
 	if (pkgrd == NULL) {
 		rv = EAGAIN;
@@ -479,6 +491,9 @@ xbps_repository_install_pkg(const char *pkg, bool bypattern)
 	 */
 	if ((rv = xbps_repository_find_pkg_deps(trans_dict, pkgrd)) != 0)
 		goto out;
+
+	if (flags & XBPS_FLAG_VERBOSE)
+		printf("\n");
 
 	/*
 	 * Add required package dictionary into the unsorted deps dictionary,
