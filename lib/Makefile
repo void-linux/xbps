@@ -1,4 +1,4 @@
-include ../vars.mk
+-include ../config.mk
 
 LIBXBPS_MAJOR = 0
 LIBXBPS_MINOR = 0
@@ -15,7 +15,7 @@ LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
 LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
 LIBPROP_OBJS += portableproplib/prop_dictionary_util.o
 LIBPROP_OBJS += portableproplib/prop_data.o
-LIBPROP_CFLAGS = -Wno-cast-qual -Wno-unused-parameter -Wno-stack-protector
+LIBPROP_CFLAGS = -Wno-cast-qual -Wno-unused-parameter
 
 ifdef USE_EXTERNAL_PROPLIB
 LIBPROP_OBJS =
@@ -26,7 +26,7 @@ endif
 LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
 LIBFETCH_OBJS += fetch/ftp.o fetch/http.o
 LIBFETCH_CPPFLAGS = -DFTP_COMBINE_CWDS -DNETBSD -DINET6 -DWITH_SSL
-LIBFETCH_CFLAGS = -Wno-unused-macros -Wno-conversion -Wno-stack-protector
+LIBFETCH_CFLAGS = -Wno-unused-macros -Wno-conversion
 LIBFETCH_SHLIBCFLAGS = -fvisibility=hidden
 LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
@@ -38,6 +38,7 @@ OBJS += regpkgs_dictionary.o remove.o remove_obsoletes.o repository.o
 OBJS += repository_finddeps.o repository_findpkg.o repository_plist.o
 OBJS += repository_pool.o repository_sync_index.o requiredby.o sha256.o
 OBJS += sortdeps.o state.o unpack.o util.o pkgmatch.o mkpath.o
+OBJS += $(COMPAT_SRCS)
 
 .PHONY: all
 all: libxbps.so libxbps.a

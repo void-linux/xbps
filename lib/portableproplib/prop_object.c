@@ -41,6 +41,10 @@
 
 #include <zlib.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /*
  * _prop_object_init --
  *	Initialize an object.  Called when sub-classes create
@@ -812,7 +816,10 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
     size_t len, bool do_compress)
 {
 	gzFile *gzf = NULL;
-	char tname[PATH_MAX], *otname;
+	char tname[PATH_MAX];
+#ifndef HAVE_STRLCAT
+	char *otname;
+#endif
 	int fd;
 	int save_errno;
 	mode_t myumask;

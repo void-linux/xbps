@@ -1,5 +1,5 @@
 TOPDIR = ../..
-include $(TOPDIR)/vars.mk
+-include $(TOPDIR)/config.mk
 
 BIN = xbps-bin
 OBJS =  check.o install.o main.o remove.o show-deps.o

@@ -1,4 +1,4 @@
-include ../vars.mk
+-include ../config.mk
 
 INCS =	xbps_api.h
 

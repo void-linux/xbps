@@ -1,4 +1,5 @@
-#
+-include ../config.mk
+
 # Makefile to build the libxbps API documentation.
 #
 DOXYF	?=	xbps_api_doxyfile
@@ -22,3 +23,8 @@ doxygendocs: $(FILES)
 clean:
 	-rm -f images/*.$(FORMAT)
 	-rm -rf ../api
+
+.PHONY: install
+install:
+	install -d $(DESTDIR)$(SHAREDIR)/doc/xbps
+	cp -r ../api $(DESTDIR)$(SHAREDIR)/doc/xbps

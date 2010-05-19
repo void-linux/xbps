@@ -1,4 +1,4 @@
-include ../vars.mk
+-include ../config.mk
 
 SUBDIRS =	xbps-uhelper
 SUBDIRS +=	xbps-repo

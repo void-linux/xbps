@@ -7,14 +7,15 @@ To build this you'll need:
   - openssl (development package with static libs)
   - libarchive >= 2.8.0 (development package with static libs)
 
-Optionally to build the API documentation (enabled with BUILD_API_DOCS
-make(1) argument):
+Optionally to build the API documentation:
 
   - graphviz and doxygen.
 
-By default it will be installed into /usr/local, can be changed
-by setting PREFIX and DESTDIR vars as make(1) arguments.
+Just run ./configure && make && make install. By default PREFIX is set
+to `/usr/local', can be changed by setting --prefix. The DESTDIR variable
+is also supported for package managers.
 
-Just run "make" and "make DESTDIR=~/xbps install".
+There are some more options that can be tweaked, see them with
+`./configure --help'.
 
 Good luck!

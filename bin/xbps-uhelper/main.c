@@ -102,9 +102,9 @@ main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
 	const char *version;
-	char *plist, *pkgname, *pkgver, *in_chroot_env, *root = "";
+	char *plist, *pkgname, *pkgver, *in_chroot_env, *root = "", *hash;
 	bool in_chroot = false;
-	int c, rv = 0;
+	int i, c, rv = 0;
 
 	while ((c = getopt(argc, argv, "Var:")) != -1) {
 		switch (c) {
@@ -299,9 +299,6 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage();
 
-		char *hash;
-		int i;
-
 		for (i = 1; i < argc; i++) {
 			hash = xbps_get_file_hash(argv[i]);
 			if (hash == NULL) {
@@ -320,7 +317,6 @@ main(int argc, char **argv)
 			usage();
 
 		xbps_fetch_set_cache_connection(0, 0);
-		int i;
 
 		for (i = 1; i < argc; i++) {
 			rv = xbps_fetch_file(argv[i], ".", false, "v");

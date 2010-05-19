@@ -1,4 +1,4 @@
-include vars.mk
+-include config.mk
 
 SUBDIRS	= include lib bin
 
@@ -35,3 +35,4 @@ clean:
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir clean || exit 1;	\
 	done
+	-rm -f config.h config.mk

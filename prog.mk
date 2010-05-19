@@ -1,5 +1,7 @@
+-include $(TOPDIR)/config.mk
+
 OBJS	?= main.o
-CFLAGS  += -fPIE
+CFLAGS  += $(PROG_CFLAGS)
 LDFLAGS += -lxbps
 
 .PHONY: all
@@ -39,5 +41,5 @@ $(BIN).static: $(OBJS)
 
 $(BIN): $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
-	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -pie -o $@
+	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) -o $@
 

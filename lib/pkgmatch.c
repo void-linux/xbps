@@ -26,6 +26,7 @@
 #include <fnmatch.h>
 
 #include <xbps_api.h>
+#include "config.h"
 
 /**
  * @file lib/pkgmatch.c
@@ -116,7 +117,8 @@ int
 xbps_pkgpattern_match(const char *instpkg, char *pattern)
 {
 	const char *fname = instpkg;
-	char basefname[PATH_MAX], condchar = '\0', *condition;
+	char *basefname, condchar = '\0', *condition;
+	size_t len = 0;
 	int rv = 0;
 
 	memset(&basefname, 0, sizeof(basefname));
@@ -134,7 +136,11 @@ xbps_pkgpattern_match(const char *instpkg, char *pattern)
 		*condition = '\0';
 		ch = strrchr(fname, '-');
 		if (ch && ch - fname < PATH_MAX) {
-			strncpy(basefname, fname, ch - fname);
+			len = ch - fname + 1;
+			basefname = malloc(len);
+			if (basefname == NULL)
+				return -1;
+			strlcpy(basefname, fname, len);
 			fname = basefname;
 		}
 	}
@@ -177,6 +183,8 @@ xbps_pkgpattern_match(const char *instpkg, char *pattern)
 			break;
 		}
 	}
+	if (basefname)
+		free(basefname);
 
 	return rv;
 }

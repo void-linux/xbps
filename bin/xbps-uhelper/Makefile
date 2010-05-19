@@ -1,5 +1,5 @@
 TOPDIR = ../..
-include $(TOPDIR)/vars.mk
+-include $(TOPDIR)/config.mk
 
 BIN = xbps-uhelper
 

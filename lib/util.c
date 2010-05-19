@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,6 +37,7 @@
 
 #include <xbps_api.h>
 #include "sha256.h"
+#include "config.h"
 
 /**
  * @file lib/util.c
@@ -242,10 +243,11 @@ xbps_get_pkg_name(const char *pkg)
 		return NULL;
 
 	len = strlen(pkg) - strlen(tmp) + 1;
-
 	pkgname = malloc(len);
-	strncpy(pkgname, pkg, len);
-	pkgname[len - 1] = '\0';
+	if (pkgname == NULL)
+		return NULL;
+
+	strlcpy(pkgname, pkg, len);
 
 	return pkgname;
 }
@@ -267,8 +269,7 @@ xbps_get_pkgpattern_name(const char *pkg)
 	if (pkgname == NULL)
 		return NULL;
 
-	strncpy(pkgname, pkg, len);
-	pkgname[len - 1] = '\0';
+	strlcpy(pkgname, pkg, len);
 
 	return pkgname;
 }

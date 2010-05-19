@@ -33,6 +33,7 @@
 
 #include <xbps_api.h>
 #include "defs.h"
+#include "config.h"
 
 struct repoinfo {
 	char *pkgidxver;
@@ -98,54 +99,13 @@ out:
 	return rpi;
 }
 
-static bool
-sanitize_url(char *buf, const char *path)
-{
-	char *dirnp, *basenp, *dir, *base, *tmp;
-	bool rv = false;
-
-	dir = strdup(path);
-	if (dir == NULL)
-		return false;
-
-	base = strdup(path);
-	if (base == NULL) {
-		free(dir);
-		return false;
-	}
-
-	dirnp = dirname(dir);
-	if (strcmp(dirnp, ".") == 0)
-		goto out;
-
-	basenp = basename(base);
-	if (strcmp(basenp, base) == 0)
-		goto out;
-
-	tmp = strncpy(buf, dirnp, PATH_MAX - 1);
-	if (sizeof(*tmp) >= PATH_MAX)
-		goto out;
-
-	buf[strlen(buf) + 1] = '\0';
-	if (strcmp(dirnp, "/"))
-		strncat(buf, "/", 1);
-	strncat(buf, basenp, PATH_MAX - strlen(buf) - 1);
-	rv = true;
-
-out:
-	free(dir);
-	free(base);
-
-	return rv;
-}
-
 int
 unregister_repository(const char *uri)
 {
 	char idxstr[PATH_MAX];
 	int rv = 0;
 
-	if (!sanitize_url(idxstr, uri))
+	if (!realpath(uri, idxstr))
 		return errno;
 
 	if ((rv = xbps_repository_unregister(idxstr)) != 0) {
@@ -168,7 +128,7 @@ register_repository(const char *uri)
 	int rv = 0;
 
 	if (xbps_check_is_repo_string_remote(uri)) {
-		if (!sanitize_url(idxstr, uri))
+		if (!realpath(uri, idxstr))
 			return errno;
 
 		printf("Fetching remote package index at %s...\n", uri);
@@ -186,7 +146,7 @@ register_repository(const char *uri)
 
 		plist = xbps_get_pkg_index_plist(idxstr);
 	} else {
-		if (!sanitize_url(idxstr, uri))
+		if (!realpath(uri, idxstr))
 			return errno;
 
 		/*
@@ -226,7 +186,7 @@ register_repository(const char *uri)
 	}
 
 	printf("Added package index at %s (v%s) with %ju packages.\n",
-	    uri, rpi->pkgidxver, rpi->totalpkgs);
+	    idxstr, rpi->pkgidxver, rpi->totalpkgs);
 
 out:
 	if (rpi != NULL)
