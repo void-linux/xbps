@@ -431,8 +431,8 @@ xbps_set_cachedir(const char *dir)
 
 	assert(dir != NULL);
 
-	r = snprintf(res, sizeof(res), "%s/%s", xbps_get_rootdir(), dir);
-	if (r == -1 || r >= (int)sizeof(res)) {
+	r = snprintf(res, sizeof(res) - 1, "%s/%s", xbps_get_rootdir(), dir);
+	if (r == -1 || r >= (int)sizeof(res) - 1) {
 		/* If error or truncated set to default */
 		cachedir = XBPS_CACHE_PATH;
 		return;
@@ -447,9 +447,9 @@ xbps_get_cachedir(void)
 	int r = 0;
 
 	if (cachedir == NULL) {
-		r = snprintf(res, sizeof(res), "%s/%s",
+		r = snprintf(res, sizeof(res) - 1, "%s/%s",
 		    xbps_get_rootdir(), XBPS_CACHE_PATH);
-		if (r == -1 || r >= (int)sizeof(res))
+		if (r == -1 || r >= (int)sizeof(res) - 1)
 			return NULL;
 
 		cachedir = res;
