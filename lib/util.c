@@ -32,11 +32,11 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <sys/utsname.h>
+#include <sys/mman.h>
 #include <limits.h>
-#include <fnmatch.h>
 
 #include <xbps_api.h>
-#include "sha256.h"
+#include <openssl/sha.h>
 #include "config.h"
 
 /**
@@ -49,25 +49,75 @@ static const char *rootdir;
 static const char *cachedir;
 static int flags;
 
+static void
+digest2string(const uint8_t *digest, char *string, size_t len)
+{
+	while (len--) {
+		if (*digest / 16 < 10)
+			*string++ = '0' + *digest / 16;
+		else
+			*string++ = 'a' + *digest / 16 - 10;
+		if (*digest % 16 < 10)
+			*string++ = '0' + *digest % 16;
+		else
+			*string++ = 'a' + *digest % 16 - 10;
+		++digest;
+	}
+	*string = '\0';
+}
+
 char *
 xbps_get_file_hash(const char *file)
 {
-	SHA256_CTX ctx;
-	char *hash;
-	uint8_t buf[BUFSIZ * 20], digest[SHA256_DIGEST_STRING_LENGTH];
-	ssize_t bytes;
+	struct stat st;
+	size_t pgsize = (size_t)sysconf(_SC_PAGESIZE);
+	size_t pgmask = pgsize - 1, mapsize;
+	char hash[SHA256_DIGEST_LENGTH * 2 + 1];
+	unsigned char *buf = NULL, digest[SHA256_DIGEST_LENGTH];
 	int fd;
+	bool need_guard = false;
 
-	if ((fd = open(file, O_RDONLY)) == -1)
+	if ((fd = open(file, O_RDONLY)) == -1) {
+		free(buf);
+		return NULL;
+	}
+	memset(&st, 0, sizeof(st));
+	if (fstat(fd, &st) == -1) {
+		(void)close(fd);
+		return NULL;
+	}
+	if (st.st_size > SSIZE_MAX - 1) {
+		(void)close(fd);
+		return NULL;
+	}
+
+	mapsize = ((size_t)st.st_size + pgmask) & ~pgmask;
+	if (mapsize < (size_t)st.st_size) {
+		(void)close(fd);
+		return NULL;
+	}
+	/*
+	 * If the file length is an integral number of pages, then we
+	 * need to map a guard page at the end in order to provide the
+	 * necessary NUL-termination of the buffer.
+	 */
+	if ((st.st_size & pgmask) == 0)
+		need_guard = true;
+
+	buf = mmap(NULL, need_guard ? mapsize + pgsize : mapsize,
+		PROT_READ, MAP_FILE|MAP_PRIVATE, fd, 0);
+	(void)close(fd);
+	if (buf == MAP_FAILED)
 		return NULL;
 
-	XBPS_SHA256_Init(&ctx);
-	while ((bytes = read(fd, buf, sizeof(buf))) > 0)
-		XBPS_SHA256_Update(&ctx, buf, (size_t)bytes);
-	hash = strdup(XBPS_SHA256_End(&ctx, digest));
-	(void)close(fd);
+	if (SHA256(buf, st.st_size, digest) == NULL) {
+		munmap(buf, mapsize);
+		return NULL;
+	}
+	munmap(buf, mapsize);
+	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
 
-	return hash;
+	return strdup(hash);
 }
 
 int

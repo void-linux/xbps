@@ -1,10 +1,18 @@
 xbps-0.6.0 (2010-07-01):
 
+ * libxbps: improved xbps_get_file_hash() to mmap(2) rather than read(2)
+   the file we have to process. With mmap'ed files the hash can be
+   processed 5x faster than before, or even more in some cases.
+
+ * libxbps: switch to OpenSSL SHA256 implementation and remove the one
+   previously used. It's faster and OpenSSL is required for libfetch so
+   there is not point in using it.
+
  * Added strlcpy() and strlcat() from OpenBSD. Use them if they weren't
    found by the configure script on the system.
 
  * Added a configure script that emulates GNU autoconf but simplified, to
-   ease settings for build options, flags, etc.
+   simplify customization for build options, flags, etc.
 
 xbps-0.5.2.2 (2010-05-18):
 
