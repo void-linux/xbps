@@ -29,7 +29,7 @@
 
 #include <stdio.h>
 #include <inttypes.h>
-#include <sys/cdefs.h>
+
 /**
  * @cond
  */
@@ -46,7 +46,9 @@
 
 #include <sys/queue.h>
 
-__BEGIN_DECLS
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 /**
  * @file include/xbps_api.h
@@ -200,9 +202,9 @@ int xbps_configure_all_pkgs(void);
  * Compares package version strings.
  *
  * The package version is defined by:
- * ${VERSION}[_${PKGREVISION}][-${EPOCH}].
+ * ${VERSION}[_${REVISION}][:${EPOCH}].
  *
- * ${EPOCH} supersedes ${VERSION} supersedes ${PKGREVISION}.
+ * ${EPOCH} supersedes ${VERSION} supersedes ${REVISION}.
  *
  * @param[in] pkg1 a package version string.
  * @param[in] pkg2 a package version string.
@@ -1224,6 +1226,8 @@ bool xbps_noyes(const char *, ...);
 
 /*@}*/
 
-__END_DECLS
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* !_XBPS_API_H_ */
