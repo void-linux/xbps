@@ -99,13 +99,11 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
-	if ((rv = xbps_repository_pool_init()) != 0) {
-		if (rv != ENOENT) {
-			fprintf(stderr, 
-			    "E: cannot get repository list pool! %s\n",
-			    strerror(rv));
-			exit(EXIT_FAILURE);
-		}
+	rv = xbps_repository_pool_init();
+	if (rv != 0 && rv != ENOENT) {
+		fprintf(stderr, "E: cannot get repository list pool! %s\n",
+		    strerror(rv));
+		exit(EXIT_FAILURE);
 	}
 
 	if (strcasecmp(argv[0], "add") == 0) {

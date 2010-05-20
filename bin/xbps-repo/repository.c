@@ -40,6 +40,44 @@ struct repoinfo {
 	uint64_t totalpkgs;
 };
 
+static const char *
+sanitize_url(const char *path)
+{
+	static char buf[PATH_MAX];
+	const char *res = NULL;
+	char *dirnp, *basenp, *dir, *base;
+	int r = 0;
+
+	memset(&buf, 0, sizeof(buf));
+
+	if ((dir = strdup(path)) == NULL)
+		return NULL;
+
+	if ((base = strdup(path)) == NULL) {
+		free(dir);
+		return NULL;
+	}
+
+	dirnp = dirname(dir);
+	if (strcmp(dirnp, ".") == 0)
+		goto out;
+
+	basenp = basename(base);
+	if (strcmp(basenp, base) == 0)
+		goto out;
+
+	r = snprintf(buf, sizeof(buf) - 1, "%s/%s", dirnp, basenp);
+	if (r == -1 || r >= (int)sizeof(buf) - 1)
+		goto out;
+
+	res = buf;
+out:
+	free(dir);
+	free(base);
+
+	return res;
+}
+
 static struct repoinfo *
 pkgindex_verify(const char *plist, const char *uri)
 {
@@ -102,10 +140,10 @@ out:
 int
 unregister_repository(const char *uri)
 {
-	char idxstr[PATH_MAX];
+	const char *idxstr = NULL;
 	int rv = 0;
 
-	if (!realpath(uri, idxstr))
+	if ((idxstr = sanitize_url(uri)) == NULL)
 		return errno;
 
 	if ((rv = xbps_repository_unregister(idxstr)) != 0) {
@@ -124,14 +162,15 @@ int
 register_repository(const char *uri)
 {
 	struct repoinfo *rpi = NULL;
-	char *metadir, *plist, idxstr[PATH_MAX];
+	const char *idxstr = NULL;
+	char *metadir, *plist;
 	int rv = 0;
 
-	if (xbps_check_is_repo_string_remote(uri)) {
-		if (!realpath(uri, idxstr))
-			return errno;
+	if ((idxstr = sanitize_url(uri)) == NULL)
+		return errno;
 
-		printf("Fetching remote package index at %s...\n", uri);
+	if (xbps_check_is_repo_string_remote(idxstr)) {
+		printf("Fetching remote package index at %s...\n", idxstr);
 		rv = xbps_repository_sync_pkg_index(idxstr);
 		if (rv == -1) {
 			fprintf(stderr,
@@ -146,9 +185,6 @@ register_repository(const char *uri)
 
 		plist = xbps_get_pkg_index_plist(idxstr);
 	} else {
-		if (!realpath(uri, idxstr))
-			return errno;
-
 		/*
 		 * Create metadir if necessary.
 		 */
@@ -171,7 +207,7 @@ register_repository(const char *uri)
 	if (plist == NULL)
 		return errno;
 
-	if ((rpi = pkgindex_verify(plist, uri)) == NULL)
+	if ((rpi = pkgindex_verify(plist, idxstr)) == NULL)
 		goto out;
 
 	rv = xbps_repository_register(idxstr);
