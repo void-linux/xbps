@@ -1,5 +1,7 @@
 syntax: glob
 
+config.h
+config.mk
 xbps-bin
 xbps-repo
 xbps-uhelper
