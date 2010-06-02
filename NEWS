@@ -1,5 +1,7 @@
 xbps-0.6.0 (2010-07-01):
 
+ * Synced libfetch code with NetBSD pkgsrc, updated to 2.31.
+
  * libxbps: improved xbps_get_file_hash() to mmap(2) rather than read(2)
    the file we have to process. With mmap'ed files the hash can be
    processed 5x faster than before, or even more in some cases.
