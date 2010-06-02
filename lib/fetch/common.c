@@ -1,4 +1,4 @@
-/*	$NetBSD: common.c,v 1.24 2010/01/23 14:25:26 joerg Exp $	*/
+/*	$NetBSD: common.c,v 1.26 2010/03/21 16:48:43 joerg Exp $	*/
 /*-
  * Copyright (c) 1998-2004 Dag-Erling Coïdan Smørgrav
  * Copyright (c) 2008, 2010 Joerg Sonnenberger <joerg@NetBSD.org>
@@ -61,6 +61,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifndef MSG_NOSIGNAL
+#include <signal.h>
+#endif
 
 #include "fetch.h"
 #include "common.h"
@@ -227,6 +231,7 @@ fetch_reopen(int sd)
 	/* allocate and fill connection structure */
 	if ((conn = calloc(1, sizeof(*conn))) == NULL)
 		return (NULL);
+	conn->ftp_home = NULL;
 	conn->cache_url = NULL;
 	conn->next_buf = NULL;
 	conn->next_len = 0;
@@ -624,6 +629,17 @@ fetch_write(conn_t *conn, const void *buf, size_t len)
 	fd_set writefds;
 	ssize_t wlen, total;
 	int r;
+#ifndef MSG_NOSIGNAL
+	static int killed_sigpipe;
+#endif
+
+#ifndef MSG_NOSIGNAL
+	if (!killed_sigpipe) {
+		signal(SIGPIPE, SIG_IGN);
+		killed_sigpipe = 1;
+	}
+#endif
+
 
 	if (fetchTimeout) {
 		FD_ZERO(&writefds);
@@ -661,7 +677,11 @@ fetch_write(conn_t *conn, const void *buf, size_t len)
 			wlen = SSL_write(conn->ssl, buf, len);
 		else
 #endif
+#ifndef MSG_NOSIGNAL
+			wlen = send(conn->sd, buf, len, 0);
+#else
 			wlen = send(conn->sd, buf, len, MSG_NOSIGNAL);
+#endif
 		if (wlen == 0) {
 			/* we consider a short write a failure */
 			errno = EPIPE;
@@ -692,6 +712,7 @@ fetch_close(conn_t *conn)
 	ret = close(conn->sd);
 	if (conn->cache_url)
 		fetchFreeURL(conn->cache_url);
+	free(conn->ftp_home);
 	free(conn->buf);
 	free(conn);
 	return (ret);

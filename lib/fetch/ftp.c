@@ -1,4 +1,4 @@
-/*	$NetBSD: ftp.c,v 1.34 2010/01/23 14:25:26 joerg Exp $	*/
+/*	$NetBSD: ftp.c,v 1.35 2010/03/21 16:48:43 joerg Exp $	*/
 /*-
  * Copyright (c) 1998-2004 Dag-Erling Coïdan Smørgrav
  * Copyright (c) 2008, 2009, 2010 Joerg Sonnenberger <joerg@NetBSD.org>
@@ -247,7 +247,7 @@ ftp_filename(const char *file, int *len, int *type, int subdir)
  * command.
  */
 static int
-ftp_pwd(conn_t *conn, char *pwd, size_t pwdlen)
+ftp_pwd(conn_t *conn, char **pwd)
 {
 	char *src, *dst, *end;
 	int q;
@@ -259,7 +259,10 @@ ftp_pwd(conn_t *conn, char *pwd, size_t pwdlen)
 	src = conn->buf + 4;
 	if (src >= end || *src++ != '"')
 		return (FTP_PROTOCOL_ERROR);
-	for (q = 0, dst = pwd; src < end && pwdlen--; ++src) {
+	*pwd = malloc(end - src + 1);
+	if (*pwd == NULL)
+		return (FTP_PROTOCOL_ERROR);
+	for (q = 0, dst = *pwd; src < end; ++src) {
 		if (!q && *src == '"')
 			q = 1;
 		else if (q && *src != '"')
@@ -269,9 +272,12 @@ ftp_pwd(conn_t *conn, char *pwd, size_t pwdlen)
 		else
 			*dst++ = *src;
 	}
-	if (!pwdlen)
-		return (FTP_PROTOCOL_ERROR);
 	*dst = '\0';
+	if (**pwd != '/') {
+		free(*pwd);
+		*pwd = NULL;
+		return (FTP_PROTOCOL_ERROR);
+	}
 	return (FTP_OK);
 }
 
@@ -280,69 +286,109 @@ ftp_pwd(conn_t *conn, char *pwd, size_t pwdlen)
  * file.
  */
 static int
-ftp_cwd(conn_t *conn, const char *file, int subdir)
+ftp_cwd(conn_t *conn, const char *path, int subdir)
 {
 	const char *beg, *end;
-	char pwd[PATH_MAX];
+	char *pwd, *dst;
 	int e, i, len;
 
-	/* If no slashes in name, no need to change dirs. */
-	if (subdir)
-		end = file + strlen(file);
-	else if ((end = strrchr(file, '/')) == NULL)
-		return (0);
+	if (*path != '/') {
+		ftp_seterr(501);
+		return (-1);
+	}
+	++path;
+
+	/* Simple case: still in the home directory and no directory change. */
+	if (conn->ftp_home == NULL && strchr(path, '/') == NULL &&
+	    (!subdir || *path == '\0'))
+		return 0;
+
 	if ((e = ftp_cmd(conn, "PWD\r\n")) != FTP_WORKING_DIRECTORY ||
-	    (e = ftp_pwd(conn, pwd, sizeof(pwd))) != FTP_OK) {
+	    (e = ftp_pwd(conn, &pwd)) != FTP_OK) {
 		ftp_seterr(e);
 		return (-1);
 	}
+	if (conn->ftp_home == NULL && (conn->ftp_home = strdup(pwd)) == NULL) {
+		fetch_syserr();
+		free(pwd);
+		return (-1);
+	}
+	if (*path == '/') {
+		while (path[1] == '/')
+			++path;
+		dst = strdup(path);
+	} else if (strcmp(conn->ftp_home, "/") == 0) {
+		dst = strdup(path - 1);
+	} else {
+		asprintf(&dst, "%s/%s", conn->ftp_home, path);
+	}
+	if (dst == NULL) {
+		fetch_syserr();
+		free(pwd);
+		return (-1);
+	}
+
+	if (subdir)
+		end = dst + strlen(dst);
+	else
+		end = strrchr(dst, '/');
+
 	for (;;) {
 		len = strlen(pwd);
 
 		/* Look for a common prefix between PWD and dir to fetch. */
-		for (i = 0; i <= len && i <= end - file; ++i)
-			if (pwd[i] != file[i])
+		for (i = 0; i <= len && i <= end - dst; ++i)
+			if (pwd[i] != dst[i])
 				break;
 		/* Keep going up a dir until we have a matching prefix. */
 		if (strcmp(pwd, "/") == 0)
 			break;
-		if (pwd[i] == '\0' && (file[i - 1] == '/' || file[i] == '/'))
+		if (pwd[i] == '\0' && (dst[i - 1] == '/' || dst[i] == '/'))
 			break;
+		free(pwd);
 		if ((e = ftp_cmd(conn, "CDUP\r\n")) != FTP_FILE_ACTION_OK ||
 		    (e = ftp_cmd(conn, "PWD\r\n")) != FTP_WORKING_DIRECTORY ||
-		    (e = ftp_pwd(conn, pwd, sizeof(pwd))) != FTP_OK) {
+		    (e = ftp_pwd(conn, &pwd)) != FTP_OK) {
 			ftp_seterr(e);
+			free(dst);
 			return (-1);
 		}
 	}
+	free(pwd);
 
 #ifdef FTP_COMBINE_CWDS
 	/* Skip leading slashes, even "////". */
-	for (beg = file + i; beg < end && *beg == '/'; ++beg, ++i)
+	for (beg = dst + i; beg < end && *beg == '/'; ++beg, ++i)
 		/* nothing */ ;
 
 	/* If there is no trailing dir, we're already there. */
-	if (beg >= end)
+	if (beg >= end) {
+		free(dst);
 		return (0);
+	}
 
 	/* Change to the directory all in one chunk (e.g., foo/bar/baz). */
 	e = ftp_cmd(conn, "CWD %.*s\r\n", (int)(end - beg), beg);
-	if (e == FTP_FILE_ACTION_OK)
+	if (e == FTP_FILE_ACTION_OK) {
+		free(dst);
 		return (0);
+	}
 #endif /* FTP_COMBINE_CWDS */
 
 	/* That didn't work so go back to legacy behavior (multiple CWDs). */
-	for (beg = file + i; beg < end; beg = file + i + 1) {
+	for (beg = dst + i; beg < end; beg = dst + i + 1) {
 		while (*beg == '/')
 			++beg, ++i;
-		for (++i; file + i < end && file[i] != '/'; ++i)
+		for (++i; dst + i < end && dst[i] != '/'; ++i)
 			/* nothing */ ;
-		e = ftp_cmd(conn, "CWD %.*s\r\n", file + i - beg, beg);
+		e = ftp_cmd(conn, "CWD %.*s\r\n", dst + i - beg, beg);
 		if (e != FTP_FILE_ACTION_OK) {
+			free(dst);
 			ftp_seterr(e);
 			return (-1);
 		}
 	}
+	free(dst);
 	return (0);
 }
 
