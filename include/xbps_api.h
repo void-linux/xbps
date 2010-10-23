@@ -61,7 +61,7 @@ extern "C" {
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20100602:0.6.0"
+#define XBPS_RELVER		"20101023:0.6.1"
 
 /** 
  * @def XBPS_META_PATH
