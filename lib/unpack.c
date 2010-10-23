@@ -98,13 +98,13 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	const char *pkgname, *version, *rootdir, *entry_str, *transact;
 	char *buf;
 	int rv, flags, lflags;
-	bool preserve, skip_entry, update;
+	bool preserve, skip_entry, update, replace_files_in_pkg_update;
 	bool props_plist_found, files_plist_found;
 
 	assert(ar != NULL);
 	assert(pkg != NULL);
 
-	preserve = skip_entry = update = false;
+	preserve = skip_entry = update = replace_files_in_pkg_update = false;
 	props_plist_found = files_plist_found = false;
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
@@ -279,6 +279,32 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 
 			entry_idx++;
 			continue;
+		}
+
+		/*
+		 * Account for the following scenario (real example):
+		 *
+		 * 	- gtk+-2.20 is currently installed.
+		 * 	- gtk+-2.20 contains libgdk_pixbuf.so.
+		 * 	- gtk+-2.20 will be updated to 2.22 in the transaction.
+		 * 	- gtk+-2.22 depends on gdk-pixbuf>=2.22.
+		 * 	- gdk-pixbuf-2.22 contains libgdk_pixbuf.so.
+		 * 	- gdk-pixbuf-2.22 will be installed in the transaction.
+		 *
+		 * We do the following to fix this:
+		 *
+		 * 	- gdk-pixbuf-2.22 installs its files overwritting
+		 * 	  current ones if they exist.
+		 * 	- gtk+ is updated to 2.22, it checks for obsolete files
+		 * 	  and detects that the files that were owned in 2.20
+		 * 	  don't match the SHA256 hash and skips them.
+		 */
+		replace_files_in_pkg_update = false;
+		prop_dictionary_get_bool(pkg, "replace-files-in-pkg-update",
+		    &replace_files_in_pkg_update);
+		if (replace_files_in_pkg_update) {
+			lflags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE;
+			lflags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
 		}
 
 		/*

@@ -1,3 +1,13 @@
+xbps-0.6.1 (2010-10-23):
+
+ * When replacing a package that is going to be updated in the transaction
+   do not remove it, just overwrite its files and continue. The updated
+   package will find that old files didn't match the SHA256 hash and will
+   skip them. This solves the issue of new package updates requiring new
+   dependencies with files that were previously stored in the old version.
+   For example gtk+-2.20 containing gdk-pixbuf, and gtk+-2.22 requiring
+   gdk-pixbuf externally.
+
 xbps-0.6.0 (2010-06-03):
 
  * Synced libfetch code with NetBSD pkgsrc, updated to 2.31.

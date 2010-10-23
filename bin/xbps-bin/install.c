@@ -399,18 +399,21 @@ xbps_update_pkg(const char *pkgname)
 }
 
 static int
-replace_packages(prop_object_iterator_t iter, const char *pkgver)
+replace_packages(prop_dictionary_t trans_dict, prop_dictionary_t pkgd,
+		 prop_object_iterator_t replaces_iter, const char *pkgver)
 {
-	prop_dictionary_t instd;
+	prop_dictionary_t instd = NULL, transd = NULL;
 	prop_object_t obj;
 	const char *pattern, *reppkgn, *reppkgver, *version;
 	int rv = 0;
 
 	/*
 	 * This package replaces other package(s), so we remove
-	 * them before upgrading or installing new one.
+	 * them before upgrading or installing new one. If the package
+	 * to be replaced is in the transaction and to be updated,
+	 * the new package will overwrite its files.
 	 */
-	while ((obj = prop_object_iterator_next(iter))) {
+	while ((obj = prop_object_iterator_next(replaces_iter))) {
 		pattern = prop_string_cstring_nocopy(obj);
 		if (pattern == NULL)
 			return errno;
@@ -424,6 +427,25 @@ replace_packages(prop_object_iterator_t iter, const char *pkgver)
 
 		prop_dictionary_get_cstring_nocopy(instd, "pkgname", &reppkgn);
 		prop_dictionary_get_cstring_nocopy(instd, "pkgver", &reppkgver);
+		/*
+		 * If the package to be replaced is in the transaction due to
+		 * an update, do not remove it; just overwrite its files.
+		 */
+		transd = xbps_find_pkg_in_dict_by_name(trans_dict,
+		    "packages", reppkgn);
+		if (transd) {
+			/*
+			 * Set the bool property 'replace-files-in-pkg-update'.
+			 */
+			prop_dictionary_set_bool(pkgd,
+			    "replace-files-in-pkg-update", true);
+			printf("Replacing some files from '%s (will be "
+			    "updated)' with '%s' (matched by '%s')...\n",
+			    reppkgver, pkgver, pattern);
+			prop_object_release(instd);
+			continue;
+		}
+
 		printf("Replacing package '%s' with '%s' "
 		    "(matched by '%s')...\n", reppkgver, pkgver, pattern);
 		prop_object_release(instd);
@@ -436,7 +458,7 @@ replace_packages(prop_object_iterator_t iter, const char *pkgver)
 			return rv;
 		}
 	}
-	prop_object_iterator_release(iter);
+	prop_object_iterator_release(replaces_iter);
 
 	return 0;
 }
@@ -496,14 +518,15 @@ exec_transaction(struct transaction *trans)
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgver", &pkgver))
 			return errno;
-		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
-		prop_dictionary_get_bool(obj, "preserve",  &preserve);
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "filename", &filename))
 			return errno;
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "trans-action", &tract))
 			return errno;
+
+		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
+		prop_dictionary_get_bool(obj, "preserve",  &preserve);
 		replaces_iter = xbps_get_array_iter_from_dict(obj, "replaces");
 
 		/*
@@ -520,7 +543,7 @@ exec_transaction(struct transaction *trans)
 		 * Replace package(s) if necessary.
 		 */
 		if (replaces_iter != NULL) {
-			rv = replace_packages(replaces_iter, pkgver);
+			rv = replace_packages(trans->dict, obj, replaces_iter, pkgver);
 			if (rv != 0) {
 				fprintf(stderr, 
 				    "xbps-bin: couldn't replace some "
@@ -635,6 +658,7 @@ xbps_exec_transaction(bool yes)
 		goto out;
 	}
 
+	DPRINTF(("Dictionary before transaction happens:\n"));
 	DPRINTF(("%s", prop_dictionary_externalize(trans->dict)));
 
 	/*
@@ -649,6 +673,8 @@ xbps_exec_transaction(bool yes)
 
 	trans->yes = yes;
 	rv = exec_transaction(trans);
+	DPRINTF(("Dictionary AFTER transaction happened:\n"));
+	DPRINTF(("%s", prop_dictionary_externalize(trans->dict)));
 
 out:
 	if (trans->iter)
