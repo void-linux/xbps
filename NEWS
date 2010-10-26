@@ -1,3 +1,8 @@
+xbps-0.6.2 (???):
+
+ * When updating a package and removing obsolete files, don't forget to
+   remove those directories if they were empty.
+
 xbps-0.6.1 (2010-10-23):
 
  * When replacing a package that is going to be updated in the transaction

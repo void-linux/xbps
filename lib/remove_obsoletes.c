@@ -31,6 +31,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include <xbps_api.h>
 
@@ -43,7 +44,7 @@ xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 	struct stat st;
 	const char *array_str = "files";
 	const char *oldhash = NULL;
-	char *file = NULL;
+	char *dname = NULL, *file = NULL;
 	int rv = 0;
 	bool found, dolinks = false;
 
@@ -134,6 +135,18 @@ again:
 		printf("Removed obsolete %s: %s\n",
 		    dolinks ? "link" : "file",
 		    prop_string_cstring_nocopy(oldstr));
+		/*
+		 * Try to remove the directory where the obsole file or link
+		 * was currently living on.
+		 */
+		dname = dirname(file);
+		if (rmdir(dname) == -1) {
+			if (errno != 0 && errno != EEXIST && errno != ENOTEMPTY)
+				fprintf(stderr,
+				    "WARNING: couldn't remove obsolete "
+				    "directory %s: %s\n", dname,
+				    strerror(errno));
+		}
 		free(file);
 	}
 	if (!dolinks) {
