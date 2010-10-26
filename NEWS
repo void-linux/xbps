@@ -1,5 +1,9 @@
 xbps-0.6.2 (???):
 
+ * xbps-bin(8): added a new target 'find-files' to find which installed
+   package(s) own a file. Exact matches "/bin/mount" or patterns
+   "/usr/lib/libb[ao]b\*" can be specified.
+
  * When updating a package and removing obsolete files, don't forget to
    remove those directories if they were empty.
 

@@ -2,12 +2,12 @@
 .\"     Title: xbps-bin
 .\"    Author: [see the "AUTHORS" section]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 05/03/2010
+.\"      Date: 26/10/2010
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "XBPS\-BIN" "8" "05/03/2010" "\ \&" "\ \&"
+.TH "XBPS\-BIN" "8" "26/10/2010" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -120,6 +120,11 @@ keyword is used,
 \fIall\fR
 packages currently installed will be checked, otherwise only
 \fBpkgname\fR\&.
+.RE
+.PP
+\fBfind-files\fR \fR\fB\fIpattern\fR\fR
+.RS 4
+Prints the name of the installed "\fBpackage(s)\fR" matching the \fBpattern\fR on its file list.
 .RE
 .PP
 \fBinstall \fR\fB\fIpkgname(s)\fR\fR\fB | \fR\fB\fIpkgpattern(s)\fR\fR
@@ -323,6 +328,16 @@ $ xbps\-bin install "\fBfoo>=3\&.0\fR"
 \fBInstall multiple packages by specifying names and package patterns:\fR
 .RS 4
 $ xbps\-bin install foo "\fBblah⇐4\&.0\fR" baz\-2\&.0 "\fBblob>4\&.[0\-9]\fR"
+.RE
+.PP
+\fBFind the package that owns the file \fB/bin/mount\fR:\fR
+.RS 4
+$ xbps\-bin find\-files /bin/mount
+.RE
+.PP
+\fBFind the packages that match the pattern "\fB/usr/lib/libav\&*\fR":
+.RS 4
+$ xbps\-bin find\-files "/usr/lib/libav\&*"
 .RE
 .SH "BUGS"
 .sp

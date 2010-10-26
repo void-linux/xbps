@@ -43,6 +43,7 @@ usage(void)
 	"    autoremove\n"
 	"    autoupdate\n"
 	"    check\t\t[<pkgname>|<all>]\n"
+	"    find-files\t<pattern>\n"
 	"    install\t\t[<pkgname(s)>|<pkgpattern(s)>]\n"
 	"    list\n"
 	"    list-manual\n"
@@ -342,6 +343,16 @@ main(int argc, char **argv)
 			usage();
 
 		rv = xbps_show_pkg_reverse_deps(argv[1]);
+
+	} else if (strcasecmp(argv[0], "find-files") == 0) {
+		/*
+		 * Find files matched by a pattern from installed
+		 * packages.
+		 */
+		if (argc != 2)
+			usage();
+
+		rv = find_files_in_packages(argv[1]);
 
 	} else {
 		usage();
