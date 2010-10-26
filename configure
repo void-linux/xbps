@@ -251,7 +251,9 @@ if [ $? -ne 0 ]; then
 	check_compiler_flag stack-protector f
 fi
 if [ $? -eq 0 ]; then
-	check_compiler_flag "param ssp-buffer-size=1" -
+	if [ "$CC" = "gcc" ]; then
+		check_compiler_flag "param ssp-buffer-size=1" -
+	fi
 fi
 if [ $? -eq 0 ]; then
 	echo "CPPFLAGS +=	-D_FORTIFY_SOURCE=2" >>$CONFIG_MK
@@ -265,7 +267,7 @@ check_compiler_flag "std=c99"
 if [ -n "$BUILD_PIE" ]; then
 	BUILD_PIE_VAL=yes
 	echo "Building programs as PIE (Position Independent Executable)."
-	check_compiler_flag PIE f PROG_CFLAGS
+	[ "$CC" = "gcc" ] && check_compiler_flag PIE f PROG_CFLAGS
 	check_compiler_flag pie "" PROG_LDFLAGS
 fi
 
