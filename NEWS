@@ -1,5 +1,9 @@
 xbps-0.6.2 (???):
 
+ * xbps-bin(8): modify the 'list' target to accept an optional argument to
+   list packages in the specified state, so that you can list packages that
+   need to be purged, configured and broken (will be used in the future).
+
  * xbps-bin(8): added a new target 'find-files' to find which installed
    package(s) own a file. Exact matches "/bin/mount" or patterns
    "/usr/lib/libb[ao]b\*" can be specified.

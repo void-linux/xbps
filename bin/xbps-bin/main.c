@@ -45,7 +45,7 @@ usage(void)
 	"    check\t\t[<pkgname>|<all>]\n"
 	"    find-files\t<pattern>\n"
 	"    install\t\t[<pkgname(s)>|<pkgpattern(s)>]\n"
-	"    list\n"
+	"    list\t\t[state]\n"
 	"    list-manual\n"
 	"    purge\t\t[<pkgname>|<all>]\n"
 	"    reconfigure\t\t[<pkgname>|<all>]\n"
@@ -74,20 +74,27 @@ static int
 list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 {
 	const char *pkgver, *short_desc;
+	pkg_state_t curstate, *wantstate = (pkg_state_t *)arg;
 
-	(void)arg;
 	(void)loop_done;
 
 	assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
-	if (pkgver && short_desc) {
-		printf("%s\t%s\n", pkgver, short_desc);
-		return 0;
+	if (wantstate && *wantstate != 0) {
+		if (xbps_get_pkg_state_dictionary(obj, &curstate))
+			return EINVAL;
+
+		if (curstate != *wantstate)
+			return 0;
 	}
 
-	return EINVAL;
+	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
+	if (!pkgver && !short_desc)
+		return EINVAL;
+
+	printf("%s\t%s\n", pkgver, short_desc);
+	return 0;
 }
 
 static int
@@ -120,6 +127,7 @@ int
 main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
+	pkg_state_t pkgstate = 0;
 	struct sigaction sa;
 	int i = 0, c, flags = 0, rv = 0;
 	bool yes, purge;
@@ -186,7 +194,7 @@ main(int argc, char **argv)
 
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
-		if (argc != 1)
+		if (argc < 1 || argc > 2)
 			usage();
 
 		if (dict == NULL) {
@@ -194,8 +202,25 @@ main(int argc, char **argv)
 			goto out;
 		}
 
+		if (argv[1]) {
+			if (strcmp(argv[1], "installed") == 0)
+				pkgstate = XBPS_PKG_STATE_INSTALLED;
+			else if (strcmp(argv[1], "unpacked") == 0)
+				pkgstate = XBPS_PKG_STATE_UNPACKED;
+			else if (strcmp(argv[1], "config-files") == 0)
+				pkgstate = XBPS_PKG_STATE_CONFIG_FILES;
+			else {
+				fprintf(stderr,
+				    "E: invalid state `%s'. Accepted values: "
+				    "config-files, unpacked, "
+				    "installed [default]\n", argv[1]);
+				rv = -1;
+				goto out;
+			}
+
+		}
 		if (!xbps_callback_array_iter_in_dict(dict, "packages",
-		    list_pkgs_in_dict, NULL)) {
+		    list_pkgs_in_dict, &pkgstate)) {
 			rv = errno;
 			goto out;
 		}
