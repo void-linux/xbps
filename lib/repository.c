@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <libgen.h>
 
 #include <xbps_api.h>
 
@@ -117,7 +118,8 @@ xbps_repository_unregister(const char *uri)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
-	char *plist;
+	const char *pkgindexdir;
+	char *plist, *pkgindex;
 	int rv = 0;
 
 	assert(uri != NULL);
@@ -139,11 +141,44 @@ xbps_repository_unregister(const char *uri)
 		goto out;
 	}
 
-	rv = xbps_remove_string_from_array(array, uri);
-	if (rv == 0) {
+	if ((rv = xbps_remove_string_from_array(array, uri)) == 0) {
 		/* Update plist file. */
-		if (!prop_dictionary_externalize_to_zfile(dict, plist))
+		if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
 			rv = errno;
+			goto out;
+		}
+	}
+
+	/*
+	 * If it's a remote repository, also remove the stored XBPS_PKGINDEX
+	 * file and its directory.
+	 */
+	if (xbps_check_is_repo_string_remote(uri)) {
+		pkgindex = xbps_get_pkg_index_plist(uri);
+		if (pkgindex == NULL) {
+			rv = EINVAL;
+			goto out;
+		}
+		if (unlink(pkgindex) == -1) {
+			if (errno == ENOENT) {
+				free(pkgindex);
+				goto out;
+			}
+			fprintf(stderr, "E: cannot remove pkgindex file at "
+			    "%s: %s\n", pkgindex, strerror(errno));
+			free(pkgindex);
+			rv = errno;
+			goto out;
+		}
+		pkgindexdir = dirname(pkgindex);
+		if (rmdir(pkgindexdir) == -1) {
+			fprintf(stderr, "E: cannot remove pkgindex dir at "
+			    "%s: %s\n", pkgindexdir, strerror(errno));
+			free(pkgindex);
+			rv = errno;
+			goto out;
+		}
+		free(pkgindex);
 	}
 
 out:

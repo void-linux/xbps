@@ -1,5 +1,10 @@
 xbps-0.6.2 (???):
 
+ * libxbps: xbps_repository_unregister(): in remote repositories, also
+   remove the pkg index file and its directory.
+
+ * libxbps: xbps_get_pkg_index_plist(): fixed a memleak.
+
  * xbps-bin(8): modify the 'list' target to accept an optional argument to
    list packages in the specified state, so that you can list packages that
    need to be purged, configured and broken (will be used in the future).
