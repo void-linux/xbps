@@ -353,7 +353,8 @@ get_pkg_index_remote_plist(const char *uri)
 		free(uri_fixed);
 		return NULL;
 	}
-		
+	free(uri_fixed);
+
 	return repodir;
 }
 
