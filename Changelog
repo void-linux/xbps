@@ -1,4 +1,21 @@
-2010-10-27 13:10 +0200  Juan RP  <xtraeme@gmail.com>  (559e85af63c5 [tip])
+2010-10-29 09:10 +0200  Juan RP  <xtraeme@gmail.com>  (e71cb84b6a91 [tip])
+
+	* NEWS, lib/repository.c:
+	libxbps: xbps_repository_unregister(): in remote repositories, also
+	remove the pkg index file and its directory.
+
+2010-10-29 08:21 +0200  Juan RP  <xtraeme@gmail.com>  (e1360eb38233)
+
+	* lib/util.c:
+	xbps_get_pkg_index_plist: fix a memleak.
+
+2010-10-27 16:37 +0200  Juan RP  <xtraeme@gmail.com>  (962f23e033f9)
+
+	* Changelog: new file.
+	* Changelog:
+	Add a Changelog file with all repo changes.
+
+2010-10-27 13:10 +0200  Juan RP  <xtraeme@gmail.com>  (559e85af63c5)
 
 	* NEWS, bin/xbps-bin/main.c, bin/xbps-bin/xbps-bin.8:
 	xbps-bin(8): modify the 'list' target to accept an optional argument
