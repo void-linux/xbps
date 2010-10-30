@@ -1,4 +1,4 @@
-xbps-0.6.2 (???):
+xbps-0.6.2 (2010-10-31):
 
  * libxbps: xbps_repository_unregister(): in remote repositories, also
    remove the pkg index file and its directory.
