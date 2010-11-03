@@ -32,12 +32,15 @@ LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
 # libxbps
-OBJS = configure.o config_files.o cmpver.o download.o fexec.o
-OBJS += humanize_number.o orphans.o plist.o purge.o register.o
-OBJS += regpkgs_dictionary.o remove.o remove_obsoletes.o repository.o
-OBJS += repository_finddeps.o repository_findpkg.o repository_plist.o
-OBJS += repository_pool.o repository_sync_index.o requiredby.o
-OBJS += sortdeps.o state.o unpack.o util.o pkgmatch.o mkpath.o
+OBJS = package_configure.o package_config_files.o package_orphans.o
+OBJS += package_orphans.o package_configure.o package_purge.o
+OBJS += package_remove.o package_remove_obsoletes.o package_state.o
+OBJS += package_unpack.o package_requiredby.o package_register.o
+OBJS += cmpver.o download.o fexec.o humanize_number.o plist.o
+OBJS += sortdeps.o util.o pkgmatch.o mkpath.o
+OBJS += regpkgs_dictionary.o repository.o repository_finddeps.o
+OBJS += repository_findpkg.o repository_plist.o
+OBJS += repository_pool.o repository_sync_index.o
 OBJS += $(COMPAT_SRCS)
 
 .PHONY: all
