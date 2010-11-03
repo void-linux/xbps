@@ -120,6 +120,7 @@ static void
 cleanup(int signum)
 {
 	xbps_regpkgs_dictionary_release();
+	xbps_fetch_unset_cache_connection();
 	exit(signum);
 }
 

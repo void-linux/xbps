@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines
+ * Copyright (c) 2009-2010 Juan Romero Pardines
  * Copyright (c) 2000-2004 Dag-Erling Coïdan Smørgrav
  * All rights reserved.
  *
@@ -130,6 +130,7 @@ stat_display(struct xferstat *xsp)
 	if (xsp->size > 0 && xsp->rcvd > 0 &&
 	    xsp->last.tv_sec >= xsp->start.tv_sec + 10)
 		fprintf(stderr, " ETA: %s", stat_eta(xsp));
+	fprintf(stderr, "\033[K");
 }
 
 /*
@@ -199,6 +200,12 @@ xbps_fetch_set_cache_connection(int global, int per_host)
 		per_host = XBPS_FETCH_CACHECONN_HOST;
 
 	fetchConnectionCacheInit(global, per_host);
+}
+
+void
+xbps_fetch_unset_cache_connection(void)
+{
+	fetchConnectionCacheClose();
 }
 
 int
