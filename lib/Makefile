@@ -33,9 +33,9 @@ LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o
-OBJS += package_orphans.o package_configure.o package_purge.o
 OBJS += package_remove.o package_remove_obsoletes.o package_state.o
 OBJS += package_unpack.o package_requiredby.o package_register.o
+OBJS += package_purge.o
 OBJS += cmpver.o download.o fexec.o humanize_number.o plist.o
 OBJS += sortdeps.o util.o pkgmatch.o mkpath.o
 OBJS += regpkgs_dictionary.o repository.o repository_finddeps.o
