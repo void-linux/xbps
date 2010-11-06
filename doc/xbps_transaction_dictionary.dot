@@ -36,7 +36,23 @@ digraph transaction_dictionary {
 	fnamesize [label="filename-size"];
 	dictionary -> instsize [label="integer"];
 	instsize [label="installed_size"];
-	dictionary -> short_desc [label="string"]
+	dictionary -> repository [label="value"];
+	repository -> repoval [label="value"];
+	repoval [style=filled,fillcolor="yellowgreen",label="http://xbps.nopcode.org/repos/stable"];
+	dictionary -> archive_comptype [label="string"];
+	archive_comptype [label="archive-compression-type"];
+	archive_comptype -> comptype_gz [label="value"];
+	archive_comptype -> comptype_bz [label="value"];
+	archive_comptype -> comptype_xz [label="value"];
+	comptype_gz [style=filled,fillcolor="yellowgreen",label="gzip"];
+	comptype_bz [style=filled,fillcolor="yellowgreen",label="bzip2"];
+	comptype_xz [style=filled,fillcolor="yellowgreen",label="xz"];
+	dictionary -> short_desc [label="string"];
+	dictionary -> state [label="string"];
+	state -> state_notinst [label="value"];
+	state -> state_unpacked [label="value"];
+	state_notinst [style=filled,fillcolor="yellowgreen",label="not-installed"];
+	state_unpacked [style=filled,fillcolor="yellowgreen",label="unpacked"];
 	dictionary -> trans_action [label="string"];
 	trans_action [label="trans-action"];
 	trans_action -> tract_inst [label="value"];
