@@ -51,27 +51,35 @@ pfcexec(const char *path, const char *file, const char **argv)
 {
 	pid_t			child;
 	int			status;
+	bool			do_chroot = false;
 
 	child = vfork();
 	switch (child) {
 	case 0:
-		if (path != NULL) {
-			/*
-			 * If root and /bin/sh exists chroot to
-			 * destdir and exec the command. Otherwise
-			 * just change CWD to destdir.
-			 */
-			if (getuid() == 0 && access("./bin/sh", X_OK) == 0) {
-				if (chroot(path) == -1)
-					_exit(127);
-				if (chdir("/") == -1)
-					_exit(127);
-			} else {
-				if (chdir(path) == -1)
-					_exit(127);
-			}
+		if (getuid() == 0 && access("./bin/sh", X_OK) == 0)
+			do_chroot = true;
+
+		/*
+		 * If uid==0 and /bin/sh exists, we can change root directory,
+		 * fork and execute the command. Otherwise just change current
+		 * directory and fork/execute.
+		 */
+		if (path && do_chroot) {
+			if (chroot(path) == -1)
+				_exit(127);
+			if (chdir("/") == -1)
+				_exit(127);
+		} else if (path && !do_chroot) {
+			if (chdir(path) == -1)
+				_exit(127);
+		} else if (!path && do_chroot) {
+			if (chroot(".") == -1)
+				_exit(127);
+			if (chdir("/") == -1)
+				_exit(127);
 		}
-		(void)execvp(file, (char ** const)__UNCONST(argv));
+
+		(void)execvp(file, __UNCONST(argv));
 		_exit(127);
 		/* NOTREACHED */
 	case -1:
