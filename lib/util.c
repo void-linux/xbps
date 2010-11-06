@@ -154,13 +154,11 @@ xbps_check_is_repo_string_remote(const char *uri)
 static const char *
 xbps_get_pkgver_from_dict(prop_dictionary_t d)
 {
-	const char *pkgver;
+	const char *pkgver = NULL;
 
 	assert(d != NULL);
 
-	if (!prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver))
-		return NULL;
-
+	prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
 	return pkgver;
 }
 
@@ -379,10 +377,8 @@ xbps_get_binpkg_local_path(prop_dictionary_t pkgd, const char *repoloc)
 {
 	const char *filen, *arch, *cdir;
 
-	if (!prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen))
-		return NULL;
-	if (!prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch))
-		return NULL;
+	prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
+	prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
 	cdir = xbps_get_cachedir();
 	if (cdir == NULL)
 		return NULL;
@@ -419,7 +415,7 @@ const char *
 xbps_get_rootdir(void)
 {
 	if (rootdir == NULL)
-		rootdir = "";
+		rootdir = "/";
 
 	return rootdir;
 }

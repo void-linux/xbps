@@ -161,9 +161,7 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 	char *rdepname;
 	int rv = 0;
 
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver))
-		return errno;
-
+	prop_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
 	rdeps = prop_dictionary_get(pkg, "run_depends");
 	if (rdeps == NULL || prop_array_count(rdeps) == 0)
 		return EINVAL;
@@ -195,13 +193,8 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 		 * current run dependency.
 		 */
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
-			if (!prop_dictionary_get_cstring_nocopy(obj2,
-			    "pkgname", &reqname)) {
-				free(rdepname);
-				prop_object_iterator_release(iter2);
-				rv = errno;
-				goto out;
-			}
+			prop_dictionary_get_cstring_nocopy(obj2,
+			    "pkgname", &reqname);
 			if (strcmp(rdepname, reqname) == 0) {
 				rv = add_pkg_into_reqby(obj2, pkgver);
 				if (rv == EEXIST)

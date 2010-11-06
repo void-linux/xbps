@@ -164,11 +164,7 @@ show_pkg_files(prop_dictionary_t filesd)
 			return EINVAL;
 
 		while ((obj = prop_object_iterator_next(iter))) {
-			if (!prop_dictionary_get_cstring_nocopy(obj,
-			    "file", &file)) {
-				prop_object_iterator_release(iter);
-				return errno;
-			}
+			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			printf("%s\n", file);
 		}
 		prop_object_iterator_release(iter);

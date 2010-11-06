@@ -105,18 +105,11 @@ download_package_list(prop_object_iterator_t iter)
 	xbps_fetch_set_cache_connection(0, 0);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "repository", &repoloc))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgver", &pkgver))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "filename", &filename))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "filename-sha256", &sha256))
-			return errno;
+		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
+		prop_dictionary_get_cstring_nocopy(obj,
+		    "filename-sha256", &sha256);
 
 		lbinfile = xbps_get_binpkg_local_path(obj, repoloc);
 		if (lbinfile == NULL)
@@ -196,12 +189,8 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 	bool first = false;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgver", &pkgver))
-			return;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "trans-action", &tract))
-			return;
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		if (strcmp(match, tract))
 			continue;
 
@@ -232,10 +221,7 @@ show_transaction_sizes(struct transaction *trans)
 	trans_inst = trans_up = trans_conf = false;
 
 	while ((obj = prop_object_iterator_next(trans->iter))) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "trans-action", &tract))
-			return errno;
-
+		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		if (strcmp(tract, "install") == 0) {
 			trans->inst_pkgcnt++;
 			trans_inst = true;
@@ -271,12 +257,9 @@ show_transaction_sizes(struct transaction *trans)
 	/*
 	 * Show total download/installed size for all required packages.
 	 */
-	if (!prop_dictionary_get_uint64(trans->dict,
-	    "total-download-size", &dlsize))
-		return errno;
-	if (!prop_dictionary_get_uint64(trans->dict,
-	    "total-installed-size", &instsize))
-		return errno;
+	prop_dictionary_get_uint64(trans->dict, "total-download-size", &dlsize);
+	prop_dictionary_get_uint64(trans->dict, "total-installed-size",
+	    &instsize);
 	if (xbps_humanize_number(size, 5, (int64_t)dlsize,
 	    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE) == -1) {
 		fprintf(stderr, "xbps-bin: error: humanize_number returns "
@@ -509,21 +492,17 @@ exec_transaction(struct transaction *trans)
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		autoinst = preserve = false;
 
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &pkgname))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "version", &version))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgver", &pkgver))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "filename", &filename))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "trans-action", &tract))
-			return errno;
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
+		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+
+		assert(pkgname != NULL);
+		assert(version != NULL);
+		assert(pkgver != NULL);
+		assert(filename != NULL);
+		assert(tract != NULL);
 
 		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
 		prop_dictionary_get_bool(obj, "preserve",  &preserve);
@@ -561,11 +540,8 @@ exec_transaction(struct transaction *trans)
 				return EINVAL;
 			}
 
-			if (!prop_dictionary_get_cstring_nocopy(instpkgd,
-			    "version", &instver)) {
-				prop_object_release(instpkgd);
-				return errno;
-			}
+			prop_dictionary_get_cstring_nocopy(instpkgd,
+			    "version", &instver);
 			prop_object_release(instpkgd);
 
 			if (preserve)
@@ -607,15 +583,9 @@ exec_transaction(struct transaction *trans)
 	 */
 	printf("\n[3/3] Configuring\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &pkgname))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "version", &version))
-			return errno;
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "trans-action", &tract))
-			return errno;
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		update = false;
 		if (strcmp(tract, "update") == 0)
 			update = true;

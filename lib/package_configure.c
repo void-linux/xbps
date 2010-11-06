@@ -54,7 +54,6 @@ xbps_configure_all_pkgs(void)
 	prop_object_iterator_t iter;
 	const char *pkgname, *version;
 	int rv = 0;
-	pkg_state_t state = 0;
 
 	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
 		return errno;
@@ -66,22 +65,10 @@ xbps_configure_all_pkgs(void)
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &pkgname)) {
-			rv = errno;
-			break;
-		}
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "version", &version)) {
-			rv = errno;
-			break;
-		}
-		if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
-			break;
-		if (state != XBPS_PKG_STATE_UNPACKED)
-			continue;
-		if ((rv = xbps_configure_pkg(pkgname, version,
-		    false, false)) != 0)
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		rv = xbps_configure_pkg(pkgname, version, true, false);
+		if (rv != 0)
 			break;
 	}
 	prop_object_iterator_release(iter);
@@ -96,7 +83,7 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 		   bool update)
 {
 	prop_dictionary_t pkgd;
-	const char *rootdir, *lver;
+	const char *lver, *rootdir = xbps_get_rootdir();
 	char *buf;
 	int rv = 0, flags = 0;
 	pkg_state_t state = 0;
@@ -104,7 +91,6 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 
 	assert(pkgname != NULL);
 
-	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
 	if (check_state) {
@@ -123,11 +109,7 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 		if (pkgd == NULL)
 			return errno;
 
-		if (!prop_dictionary_get_cstring_nocopy(pkgd,
-		    "version", &lver)) {
-			prop_object_release(pkgd);
-			return errno;
-		}
+		prop_dictionary_get_cstring_nocopy(pkgd, "version", &lver);
 		prop_object_release(pkgd);
 	} else {
 		lver = version;
@@ -141,28 +123,18 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 	if (buf == NULL)
 		return errno;
 
-	if (strcmp(rootdir, "") == 0)
-		rootdir = "/";
-
 	if (chdir(rootdir) == -1) {
 		free(buf);
 		return errno;
 	}
 
-	if (access(buf, X_OK) == 0) {
-		rv = xbps_file_chdir_exec(rootdir, buf, "post",
-		     pkgname, lver, update ? "yes" : "no", NULL);
-		if (rv != 0) {
-			free(buf);
-			fprintf(stderr, "%s: post INSTALL action "
-			    "returned: %s\n", pkgname, strerror(errno));
-			return rv;
-		}
-	} else {
-		if (errno != ENOENT) {
-			free(buf);
-			return errno;
-		}
+	rv = xbps_file_exec(buf, "post",
+	    pkgname, lver, update ? "yes" : "no", NULL);
+	if (rv != 0 && errno != ENOENT) {
+		free(buf);
+		fprintf(stderr, "%s: post INSTALL action "
+		    "returned: %s\n", pkgname, strerror(errno));
+		return rv;
 	}
 	free(buf);
 

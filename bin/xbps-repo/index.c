@@ -111,16 +111,8 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		    "file, skipping!\n", file, XBPS_PKGPROPS);
 		goto out;
 	}
-	if (!prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname", &pkgname)) {
-		prop_object_release(newpkgd);
-		rv = errno;
-		goto out;
-	}
-	if (!prop_dictionary_get_cstring_nocopy(newpkgd, "version", &version)) {
-		prop_object_release(newpkgd);
-		rv = errno;
-		goto out;
-	}
+	prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(newpkgd, "version", &version);
 	/*
 	 * Check if this package exists already in the index, but first
 	 * checking the version. If current package version is greater
@@ -135,12 +127,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 			goto out;
 		}
 	} else if (curpkgd) {
-		if (!prop_dictionary_get_cstring_nocopy(curpkgd,
-		    "version", &regver)) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			goto out;
-		}
+		prop_dictionary_get_cstring_nocopy(curpkgd, "version", &regver);
 		if (xbps_cmpver(version, regver) <= 0) {
 			fprintf(stderr, "W: skipping %s. %s-%s already "
 			    "registered.\n", filen, pkgname, regver);
@@ -153,12 +140,8 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		 * in package index, remove outdated binpkg file
 		 * and its dictionary from the pkg index.
 		 */
-		if (!prop_dictionary_get_cstring_nocopy(curpkgd,
-		    "filename", &oldfilen)) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			goto out;
-		}
+		prop_dictionary_get_cstring_nocopy(curpkgd,
+		    "filename", &oldfilen);
 		oldfilepath = xbps_xasprintf("%s/%s", filedir, oldfilen);
 		if (oldfilepath == NULL) {
 			prop_object_release(newpkgd);

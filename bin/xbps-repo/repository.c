@@ -292,11 +292,7 @@ show_pkg_deps_from_repolist(const char *pkgname)
 			}
 			continue;
 		}
-		if (!prop_dictionary_get_cstring_nocopy(pkgd,
-		    "version", &ver)) {
-			rv = errno;
-			break;
-		}
+		prop_dictionary_get_cstring_nocopy(pkgd, "version", &ver);
 		printf("Repository %s [pkgver: %s]\n", rd->rp_uri, ver);
 		(void)xbps_callback_array_iter_in_dict(pkgd,
 		    "run_depends", list_strings_sep_in_array, NULL);

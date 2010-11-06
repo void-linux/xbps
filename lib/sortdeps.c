@@ -104,16 +104,8 @@ again:
 	 * Order all deps by looking at its run_depends array.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &pkgname)) {
-			rv = errno;
-			goto out;
-		}
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgver", &pkgver)) {
-			rv = errno;
-			goto out;
-		}
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		DPRINTF(("Sorting package: %s\n", pkgver));
 		if (find_sorteddep_by_name(pkgname) != NULL) {
 			DPRINTF(("Skipping %s already queued.\n", pkgname));

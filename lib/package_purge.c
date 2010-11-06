@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,8 +39,7 @@
  * These functions will purge an specified package or all packages.
  * Only packages in XBPS_PKG_STATE_CONFIG_FILES state will be processed
  * (unless overriden). Package purging steps:
- *  - Its <b>post-remove</b> target specified in the REMOVE script
- *    will be executed.
+ *
  *  - Unmodified configuration files and directories containing them
  *    will be removed (if empty).
  *  - Its metadata directory and all its files will be removed.
@@ -118,15 +117,12 @@ xbps_purge_all_pkgs(void)
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &pkgname)) {
-			rv = errno;
-			break;
-		}
 		if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
 			break;
 		if (state != XBPS_PKG_STATE_CONFIG_FILES)
 			continue;
+
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		if ((rv = xbps_purge_pkg(pkgname, false)) != 0)
 			break;
 	}
@@ -140,7 +136,7 @@ out:
 int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
-	prop_dictionary_t dict;
+	prop_dictionary_t dict, pkgd;
 	char *path;
 	int rv = 0, flags;
 	pkg_state_t state = 0;
@@ -148,39 +144,49 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	assert(pkgname != NULL);
 	flags = xbps_get_flags();
 
+	/*
+	 * Firstly let's get the pkg dictionary from regpkgdb.
+	 */
+	if ((dict = xbps_regpkgs_dictionary_init()) == NULL)
+		return errno;
+
+	pkgd = xbps_find_pkg_in_dict_by_name(dict, "packages", pkgname);
+	if (pkgd == NULL) {
+		rv = errno;
+		goto out;
+	}
+
 	if (check_state) {
 		/*
 		 * Skip packages that aren't in "config-files" state.
 		 */
-		if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0)
-			return rv;
+		if ((rv = xbps_get_pkg_state_dictionary(pkgd, &state)) != 0)
+			goto out;
 
 		if (state != XBPS_PKG_STATE_CONFIG_FILES)
-			return 0;
+			goto out;
 	}
 
 	/*
 	 * Remove unmodified configuration files.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
-	if (path == NULL)
-                return errno;
+	path = xbps_xasprintf("%s/%s/metadata/%s/%s",
+	    xbps_get_rootdir(), XBPS_META_PATH, pkgname, XBPS_PKGFILES);
+	if (path == NULL) {
+                rv = errno;
+		goto out;
+	}
 
 	dict = prop_dictionary_internalize_from_zfile(path);
 	if (dict == NULL) {
 		free(path);
-		return errno;
+		rv = errno;
+		goto out;
 	}
 	free(path);
 	if ((rv = xbps_remove_pkg_files(dict, "conf_files")) != 0) {
 		prop_object_release(dict);
-		return rv;
-	}
-	/* Also try to remove empty dirs used in conf_files */
-	if ((rv = xbps_remove_pkg_files(dict, "dirs")) != 0) {
-		prop_object_release(dict);
-		return rv;
+		goto out;
 	}
 	prop_object_release(dict);
 
@@ -196,5 +202,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		}
 	}
 
+out:
+	xbps_regpkgs_dictionary_release();
 	return rv;
 }

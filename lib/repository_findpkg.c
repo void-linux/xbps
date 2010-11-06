@@ -117,29 +117,17 @@ compute_transaction_sizes(void)
 		return -1;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "trans-action", &tract)) {
-			rv = -1;
-			goto out;
-		}
+		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		/*
 		 * Skip pkgs that need to be configured.
 		 */
 		if (strcmp(tract, "configure") == 0)
 			continue;
 
-		if (!prop_dictionary_get_uint64(obj,
-		    "filename-size", &tsize)) {
-			rv = -1;
-			goto out;
-		}
+		prop_dictionary_get_uint64(obj, "filename-size", &tsize);
 		dlsize += tsize;
 		tsize = 0;
-		if (!prop_dictionary_get_uint64(obj,
-		    "installed_size", &tsize)) {
-			rv = -1;
-			goto out;
-		}
+		prop_dictionary_get_uint64(obj, "installed_size", &tsize);
 		instsize += tsize;
 		tsize = 0;
 	}
@@ -258,11 +246,7 @@ xbps_repository_update_allpkgs(void)
 	 * installed packages.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &pkgname)) {
-			rv = errno;
-			break;
-		}
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		rv = xbps_repository_update_pkg(pkgname, obj);
 		if (rv == ENOENT)
 			continue;
@@ -324,16 +308,10 @@ xbps_repository_update_pkg(const char *pkgname, prop_dictionary_t instpkg)
 			 * Check if version in repository is greater than
 			 * the version currently installed.
 			 */
-			if (!prop_dictionary_get_cstring_nocopy(instpkg,
-			    "version", &instver)) {
-				rv = errno;
-				goto out;
-			}
-			if (!prop_dictionary_get_cstring_nocopy(pkgrd,
-			    "version", &repover)) {
-				rv = errno;
-				goto out;
-			}
+			prop_dictionary_get_cstring_nocopy(instpkg,
+			    "version", &instver);
+			prop_dictionary_get_cstring_nocopy(pkgrd,
+			    "version", &repover);
 			if (xbps_cmpver(repover, instver) > 0) {
 				if (flags & XBPS_FLAG_VERBOSE) {
 					printf("Found '%s-%s' in repository "

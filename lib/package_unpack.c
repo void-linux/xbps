@@ -90,12 +90,13 @@ set_extract_flags(int *flags, bool update)
  * the consumer.
  */
 static int
-unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
+unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
+		    const char *pkgname, const char *version)
 {
 	prop_dictionary_t filesd = NULL, old_filesd = NULL;
 	struct archive_entry *entry;
 	size_t entry_idx = 0;
-	const char *pkgname, *version, *rootdir, *entry_str, *transact;
+	const char *rootdir, *entry_str, *transact;
 	char *buf;
 	int rv, flags, lflags;
 	bool preserve, skip_entry, update, replace_files_in_pkg_update;
@@ -109,22 +110,11 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 	rootdir = xbps_get_rootdir();
 	flags = xbps_get_flags();
 
-	if (strcmp(rootdir, "") == 0)
-		rootdir = "/";
-
 	if (chdir(rootdir) == -1)
 		return errno;
 
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
-		return errno;
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "version", &version))
-		return errno;
-
 	prop_dictionary_get_bool(pkg, "preserve", &preserve);
-	
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "trans-action",
-	    &transact))
-		return errno;
+	prop_dictionary_get_cstring_nocopy(pkg, "trans-action", &transact);
 	if (strcmp(transact, "update") == 0)
 		update = true;
 
@@ -138,8 +128,8 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		    XBPS_META_PATH, pkgname);
 		if (buf == NULL)
 			return errno;
-		if (access(buf, R_OK|X_OK) == 0) {
-			if (unlink(buf) == -1) {
+		if (unlink(buf) == -1) {
+			if (errno != ENOENT) {
 				free(buf);
 				return errno;
 			}
@@ -149,8 +139,8 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 		    XBPS_META_PATH, pkgname);
 		if (buf == NULL)
 			return errno;
-		if (access(buf, R_OK|X_OK) == 0) {
-			if (unlink(buf) == -1) {
+		if (unlink(buf) == -1) {
+			if (errno != ENOENT) {
 				free(buf);
 				return errno;
 			}
@@ -183,7 +173,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 				}
 			}
 			
-			rv = xbps_file_chdir_exec(rootdir, buf, "pre",
+			rv = xbps_file_exec(buf, "pre",
 			     pkgname, version, update ? "yes" : "no", NULL);
 			if (rv != 0) {
 				free(buf);
@@ -380,17 +370,17 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg)
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 {
-	const char *pkgname, *repoloc;
+	const char *pkgname, *repoloc, *version;
 	struct archive *ar = NULL;
 	char *binfile = NULL;
 	int pkg_fd, rv = 0;
 
 	assert(pkg != NULL);
 
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname))
-		return errno;
-	if (!prop_dictionary_get_cstring_nocopy(pkg, "repository", &repoloc))
-		return errno;
+	prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(pkg, "repository", &repoloc);
+	prop_dictionary_get_cstring_nocopy(pkg, "version", &version);
+
 	binfile = xbps_get_binpkg_local_path(pkg, repoloc);
 	if (binfile == NULL)
 		return EINVAL;
@@ -416,7 +406,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 	     ARCHIVE_READ_BLOCKSIZE)) != 0)
 		goto out;
 
-	if ((rv = unpack_archive_fini(ar, pkg)) != 0)
+	if ((rv = unpack_archive_fini(ar, pkg, pkgname, version)) != 0)
 		goto out;
 
 	/*

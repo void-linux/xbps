@@ -209,10 +209,7 @@ main(int argc, char **argv)
 		if (dict == NULL)
 			exit(EXIT_FAILURE);
 
-		if (!prop_dictionary_get_cstring_nocopy(dict, "version",
-		    &version))
-			exit(EXIT_FAILURE);
-
+		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 		printf("%s\n", version);
 		prop_object_release(dict);
 

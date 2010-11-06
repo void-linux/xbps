@@ -83,8 +83,8 @@ get_state(prop_dictionary_t dict)
 
 	assert(dict != NULL);
 
-	if (!prop_dictionary_get_cstring_nocopy(dict, "state", &state_str))
-		return 0;
+	prop_dictionary_get_cstring_nocopy(dict, "state", &state_str);
+	assert(state_str != NULL);
 
 	if (strcmp(state_str, "unpacked") == 0)
 		state = XBPS_PKG_STATE_UNPACKED;

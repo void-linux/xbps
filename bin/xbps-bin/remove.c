@@ -38,8 +38,7 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 {
 	int rv = 0;
 
-	printf("Removing package %s-%s ... ", pkgname, version);
-	(void)fflush(stdout);
+	printf("Removing package %s-%s ...\n", pkgname, version);
 
 	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0) {
 		fprintf(stderr, "\nE: unable to remove %s-%s (%s).\n",
@@ -47,7 +46,7 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 		return rv;
 	}
 	if (purge) {
-		printf("purging ... ");
+		printf(" Purging ... ");
 		(void)fflush(stdout);
 		if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
 			fprintf(stderr, "\nE: unable to purge %s-%s "
@@ -55,8 +54,8 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 			    strerror(errno));
 			return rv;
 		}
+		printf("done.\n");
 	}
-	printf("done.\n");
 
 	return rv;
 }
@@ -95,11 +94,7 @@ xbps_autoremove_pkgs(bool force, bool purge, bool only_show)
 	printf("The following packages were installed automatically\n"
 	    "(as dependencies) and aren't needed anymore:\n\n");
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgver", &pkgver)) {
-			rv = errno;
-			goto out;
-		}
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		cols += strlen(pkgver) + 4;
 		if (cols <= 80) {
 			if (first == false) {
@@ -124,16 +119,8 @@ xbps_autoremove_pkgs(bool force, bool purge, bool only_show)
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &pkgname)) {
-			rv = errno;
-			goto out;
-		}
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "version", &version)) {
-			rv = errno;
-			goto out;
-		}
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		if ((rv = pkg_remove_and_purge(pkgname, version, purge)) != 0)
 			goto out;
 	}
@@ -166,10 +153,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force, bool purge)
 			printf("Package %s is not installed.\n", argv[i]);
 			continue;
 		}
-		if (!prop_dictionary_get_cstring_nocopy(dict, "version",
-		    &version))
-			return errno;
-
+		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 		found = true;
 		reqby = prop_dictionary_get(dict, "requiredby");
 		if (reqby != NULL && prop_array_count(reqby) > 0) {

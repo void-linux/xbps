@@ -46,13 +46,8 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,
 	/*
 	 * Get some info about dependencies and current repository.
 	 */
-	if (!prop_dictionary_get_cstring_nocopy(repo_pkg_dict,
-	    "pkgname", &pkgname))
-		return errno;
-
-	if (!prop_dictionary_get_cstring_nocopy(repo_pkg_dict,
-	    "pkgver", &pkgver))
-		return errno;
+	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgver", &pkgver);
 
 	dict = prop_dictionary_copy(repo_pkg_dict);
 	if (dict == NULL)
@@ -318,13 +313,8 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 				break;
 			}
 		} else if (curpkgd) {
-			if (!prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "pkgver", &pkg_queued)) {
-				DPRINTF(("pkgver failed %s\n", reqpkg));
-				free(pkgname);
-				rv = errno;
-				break;
-			}
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "pkgver", &pkg_queued);
 			if (xbps_pkgpattern_match(pkg_queued,
 			    __UNCONST(reqpkg))) {
 				if (flags & XBPS_FLAG_VERBOSE)
@@ -370,12 +360,7 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 		 * If version in repo does not satisfy the rundep, pass
 		 * to the next rundep.
 		 */
-		if (!prop_dictionary_get_cstring_nocopy(curpkgd,
-		    "pkgver", &repo_pkgver)) {
-			free(pkgname);
-			rv = errno;
-			break;
-		}
+		prop_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &repo_pkgver);
 		if (xbps_pkgpattern_match(repo_pkgver, __UNCONST(reqpkg)) < 1) {
 			free(pkgname);
 			continue;
@@ -483,13 +468,8 @@ xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
 	if (pkg_rdeps == NULL)
 		return 0;
 
-	if (!prop_dictionary_get_cstring_nocopy(repo_pkg_dict,
-	    "pkgname", &pkgname))
-		return errno;
-
-	if (!prop_dictionary_get_cstring_nocopy(repo_pkg_dict,
-	    "pkgver", &pkgver))
-		return errno;
+	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgver", &pkgver);
 
 	if ((rv = xbps_repository_pool_init()) != 0)
 		return rv;

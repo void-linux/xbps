@@ -73,12 +73,8 @@ xbps_config_file_from_archive_entry(prop_dictionary_t d,
 	iter2 = xbps_get_array_iter_from_dict(forigd, "conf_files");
 	if (iter2 != NULL) {
 		while ((obj2 = prop_object_iterator_next(iter2))) {
-			if (!prop_dictionary_get_cstring_nocopy(obj2,
-			    "file", &cffile)) {
-				prop_object_iterator_release(iter2);
-				rv = errno;
-				goto out;
-			}
+			prop_dictionary_get_cstring_nocopy(obj2,
+			    "file", &cffile);
 			buf = xbps_xasprintf(".%s", cffile);
 			if (buf == NULL) {
 				prop_object_iterator_release(iter2);
@@ -109,11 +105,7 @@ xbps_config_file_from_archive_entry(prop_dictionary_t d,
 	 * Compare original, installed and new hash for current file.
 	 */
 	while ((obj = prop_object_iterator_next(iter))) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "file", &cffile)) {
-			prop_object_iterator_release(iter);
-			return errno;
-		}
+		prop_dictionary_get_cstring_nocopy(obj, "file", &cffile);
 		buf = xbps_xasprintf(".%s", cffile);
 		if (buf == NULL) {
 			prop_object_iterator_release(iter);
@@ -126,11 +118,7 @@ xbps_config_file_from_archive_entry(prop_dictionary_t d,
 		}
 		sha256_cur = xbps_get_file_hash(buf);
 		free(buf);
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "sha256", &sha256_new)) {
-			rv = EINVAL;
-			break;
-		}
+		prop_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
 		if (sha256_cur == NULL) {
 			if (errno == ENOENT) {
 				/*

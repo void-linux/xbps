@@ -84,9 +84,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 	(void)arg;
 	(void)loop_done;
 
-	if (!prop_dictionary_get_bool(obj, "automatic-install", &automatic))
-		return EINVAL;
-
+	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
 	if (!automatic)
 		return 0;
 
@@ -132,11 +130,7 @@ add_orphan:
 	if (orphan == NULL)
 		return errno;
 
-	if (!prop_dictionary_get_cstring_nocopy(obj, "pkgname",
-	    &orphan->pkgname)) {
-		free(orphan);
-		return errno;
-	}
+	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &orphan->pkgname);
 	orphan->dict = prop_dictionary_copy(obj);
 	SIMPLEQ_INSERT_TAIL(&orphan_list, orphan, chain);
 

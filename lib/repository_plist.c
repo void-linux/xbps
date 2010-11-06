@@ -167,10 +167,8 @@ xbps_repository_get_path_from_pkg_dict(prop_dictionary_t d, const char *uri)
 	if (path)
 		return path;
 
-	if (!prop_dictionary_get_cstring_nocopy(d, "architecture", &arch))
-		return NULL;
-	if (!prop_dictionary_get_cstring_nocopy(d, "filename", &filen))
-		return NULL;
+	prop_dictionary_get_cstring_nocopy(d, "architecture", &arch);
+	prop_dictionary_get_cstring_nocopy(d, "filename", &filen);
 
 	return xbps_xasprintf("%s/%s/%s", uri, arch, filen);
 }

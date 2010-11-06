@@ -207,9 +207,7 @@ xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgname", &dpkgn))
-			break;
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &dpkgn);
 		if (strcmp(dpkgn, pkgname) == 0)
 			break;
 	}
@@ -237,9 +235,7 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgver", &pkgver))
-			break;
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		if (xbps_pkgpattern_match(pkgver, __UNCONST(pattern)))
 			break;
 	}
@@ -347,11 +343,7 @@ xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 
 	/* Iterate over the array of dictionaries to find its index. */
 	while ((obj = prop_object_iterator_next(iter))) {
-		if (!prop_dictionary_get_cstring_nocopy(obj, "pkgname",
-		    &curpkgname)) {
-			prop_object_iterator_release(iter);
-			return errno;
-		}
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &curpkgname);
 		if ((curpkgname && (strcmp(curpkgname, pkgname) == 0))) {
 			found = true;
 			break;
