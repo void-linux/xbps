@@ -65,7 +65,7 @@ extern "C" {
 
 /** 
  * @def XBPS_META_PATH
- * Default root PATH store metadata info.
+ * Default root PATH to store metadata info.
  */
 #define XBPS_META_PATH		"/var/db/xbps"
 
@@ -77,37 +77,37 @@ extern "C" {
 
 /**
  * @def XBPS_REPOLIST
- * Filename for the repositories plist file.
+ * Filename for the global repository property list.
  */
 #define XBPS_REPOLIST		"repositories.plist"
 
 /** 
  * @def XBPS_REGPKGDB
- * Filename of the packages register database.
+ * Filename for the global package register database.
  */
 #define XBPS_REGPKGDB		"regpkgdb.plist"
 
 /** 
  * @def XBPS_PKGPROPS
- * Package metadata properties file.
+ * Filename for package metadata property list.
  */
 #define XBPS_PKGPROPS		"props.plist"
 
 /**
  * @def XBPS_PKGFILES
- * Package metadata files properties file.
+ * Filename for package metadata files property list.
  */
 #define XBPS_PKGFILES		"files.plist"
 
 /** 
  * @def XBPS_PKGINDEX
- * Filename of the package index plist for a repository.
+ * Filename for the repository package index property list.
  */
 #define XBPS_PKGINDEX		"pkg-index.plist"
 
 /**
  * @def XBPS_PKGINDEX_VERSION
- * Current version of the package index format.
+ * Current version for the repository package index format.
  */
 #define XBPS_PKGINDEX_VERSION	"1.1"
 
