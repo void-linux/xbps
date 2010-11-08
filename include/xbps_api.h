@@ -465,7 +465,9 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
  * @param[in] pkgname Package name to look for.
  *
  * @return The package's proplib dictionary on success, NULL otherwise and
- * errno is set appropiately.
+ * errno is set appropiately. Returned dictionary is copied via
+ * prop_dictionary_copy(), which means that caller is responsible to
+ * release the object with prop_object_release() when done.
  */
 prop_dictionary_t xbps_find_pkg_from_plist(const char *plist,
 					   const char *pkgname);
