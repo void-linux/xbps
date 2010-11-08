@@ -161,6 +161,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force, bool purge)
 			    "PACKAGES!\n", argv[i], version);
 			reqby_force = true;
 		}
+		prop_object_release(dict);
 	}
 	if (!found)
 		return 0;
@@ -185,6 +186,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force, bool purge)
 			cols = strlen(argv[i]) + strlen(version) + 4;
 		}
 		printf("%s-%s ", argv[i], version);
+		prop_object_release(dict);
 	}
 	printf("\n\n");
 	if (!force && !xbps_noyes("Do you want to continue?")) {
@@ -199,6 +201,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool force, bool purge)
 		if (dict == NULL)
 			continue;
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
+		prop_object_release(dict);
 		if ((rv = pkg_remove_and_purge(argv[i], version, purge)) != 0)
 			return rv;
 	}

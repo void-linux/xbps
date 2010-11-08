@@ -105,6 +105,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;
 	}
+	prop_object_release(pkgd);
 
 	/*
 	 * Check for props.plist metadata file.
@@ -296,8 +297,6 @@ out:
 		prop_object_release(filesd);
 	if (propsd)
 		prop_object_release(propsd);
-	if (pkgd)
-		prop_object_release(pkgd);
 	if (broken)
 		rv = EINVAL;
 

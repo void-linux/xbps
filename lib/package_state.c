@@ -114,6 +114,7 @@ xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 		return errno;
 
 	*state = get_state(pkgd);
+	prop_object_release(pkgd);
 	if (*state == 0)
 		return EINVAL;
 

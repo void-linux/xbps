@@ -125,6 +125,7 @@ extern "C" {
  */
 #define XBPS_FLAG_FORCE		0x00000002
 
+
 /**
  * @cond
  */
@@ -478,7 +479,9 @@ prop_dictionary_t xbps_find_pkg_from_plist(const char *plist,
  * by using a package pattern. If false, \a str is assumed to be a package name.
  *
  * @return The package's dictionary on success, NULL otherwise and
- * errno is set appropiately.
+ * errno is set appropiately. Returned dictionary is copied via
+ * prop_dictionary_copy(), which means that caller is responsible to
+ * release the object with prop_object_release() when done.
  */
 prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
 					       bool bypattern);
