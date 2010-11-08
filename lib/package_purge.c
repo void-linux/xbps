@@ -137,7 +137,6 @@ int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict, pkgd;
-	char *path;
 	int rv = 0, flags;
 	pkg_state_t state = 0;
 
@@ -170,20 +169,11 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Remove unmodified configuration files.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s",
-	    xbps_get_rootdir(), XBPS_META_PATH, pkgname, XBPS_PKGFILES);
-	if (path == NULL) {
-                rv = errno;
-		goto out;
-	}
-
-	dict = prop_dictionary_internalize_from_zfile(path);
+	dict = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (dict == NULL) {
-		free(path);
 		rv = errno;
 		goto out;
 	}
-	free(path);
 	if ((rv = xbps_remove_pkg_files(dict, "conf_files")) != 0) {
 		prop_object_release(dict);
 		goto out;

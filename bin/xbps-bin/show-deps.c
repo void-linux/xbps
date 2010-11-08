@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,6 @@ int
 xbps_show_pkg_deps(const char *pkgname)
 {
 	prop_dictionary_t pkgd, propsd;
-	char *path;
 	int rv = 0;
 
 	assert(pkgname != NULL);
@@ -47,17 +46,12 @@ xbps_show_pkg_deps(const char *pkgname)
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;
 	}
+	prop_object_release(pkgd);
 
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
-	if (path == NULL)
-		return errno;
-
-	propsd = prop_dictionary_internalize_from_zfile(path);
-	free(path);
+	propsd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGPROPS);
 	if (propsd == NULL) {
 		fprintf(stderr,
 		    "%s: unexistent %s metadata file.\n", pkgname,
@@ -68,7 +62,6 @@ xbps_show_pkg_deps(const char *pkgname)
 	rv = xbps_callback_array_iter_in_dict(propsd, "run_depends",
 	     list_strings_sep_in_array, NULL);
 	prop_object_release(propsd);
-	prop_object_release(pkgd);
 
 	return rv;
 }

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,23 +37,14 @@
 int
 show_pkg_info_from_metadir(const char *pkgname)
 {
-	prop_dictionary_t pkgd;
-	char *plist;
+	prop_dictionary_t d;
 
-	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
-	if (plist == NULL)
-		return EINVAL;
-
-	pkgd = prop_dictionary_internalize_from_zfile(plist);
-	if (pkgd == NULL) {
-		free(plist);
+	d = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGPROPS);
+	if (d == NULL)
 		return errno;
-	}
 
-	show_pkg_info(pkgd);
-	prop_object_release(pkgd);
-	free(plist);
+	show_pkg_info(d);
+	prop_object_release(d);
 
 	return 0;
 }
@@ -61,24 +52,15 @@ show_pkg_info_from_metadir(const char *pkgname)
 int
 show_pkg_files_from_metadir(const char *pkgname)
 {
-	prop_dictionary_t pkgd;
-	char *plist;
+	prop_dictionary_t d;
 	int rv = 0;
 
-	plist = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
-	if (plist == NULL)
-		return EINVAL;
-
-	pkgd = prop_dictionary_internalize_from_zfile(plist);
-	if (pkgd == NULL) {
-		free(plist);
+	d = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	if (d == NULL)
 		return errno;
-	}
-	free(plist);
 
-	rv = show_pkg_files(pkgd);
-	prop_object_release(pkgd);
+	rv = show_pkg_files(d);
+	prop_object_release(d);
 
 	return rv;
 }

@@ -511,6 +511,19 @@ prop_object_iterator_t xbps_get_array_iter_from_dict(prop_dictionary_t dict,
 						     const char *key);
 
 /**
+ * Get a proplib object dictionary associated with the installed package
+ * \a pkgn, by internalizing its plist file defined by \a plist.
+ *
+ * @param[in] pkgn Package name of installed package.
+ * @param[in] plist Package metadata property list file.
+ *
+ * @return The proplib object dictionary on success, NULL otherwise and
+ * errno is set appropiately.
+ */
+prop_dictionary_t xbps_get_pkg_dict_from_metadata_plist(const char *pkgn,
+							const char *plist);
+
+/**
  * Finds a proplib dictionary in an archive, matching a specific
  * entry on it.
  *

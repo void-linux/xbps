@@ -287,6 +287,26 @@ xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 	return prop_array_iterator(array);
 }
 
+prop_dictionary_t
+xbps_get_pkg_dict_from_metadata_plist(const char *pkgn, const char *plist)
+{
+	prop_dictionary_t plistd = NULL;
+	char *plistf;
+
+	assert(pkgn != NULL);
+	assert(plist != NULL);
+
+	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
+	    xbps_get_rootdir(), XBPS_META_PATH, pkgn, plist);
+	if (plistf == NULL)
+		return NULL;
+
+	plistd = prop_dictionary_internalize_from_zfile(plistf);
+	free(plistf);
+
+	return plistd;
+}
+
 int
 xbps_remove_string_from_array(prop_array_t array, const char *str)
 {

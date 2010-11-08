@@ -192,7 +192,7 @@ int
 xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 {
 	prop_dictionary_t dict;
-	char *path, *buf;
+	char *buf;
 	int rv = 0;
 
 	assert(pkgname != NULL);
@@ -240,19 +240,11 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	/*
 	 * Remove links, files and dirs.
 	 */
-	path = xbps_xasprintf(".%s/metadata/%s/%s",
-	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
-	if (path == NULL) {
-		free(buf);
-		return errno;
-	}
-	dict = prop_dictionary_internalize_from_zfile(path);
+	dict = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (dict == NULL) {
-		free(path);
 		free(buf);
 		return errno;
 	}
-	free(path);
 
 	/* Remove links */
 	if ((rv = xbps_remove_pkg_files(dict, "links")) != 0) {

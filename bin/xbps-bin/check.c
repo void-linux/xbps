@@ -110,15 +110,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
-	if (path == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	propsd = prop_dictionary_internalize_from_zfile(path);
-	free(path);
+	propsd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGPROPS);
 	if (propsd == NULL) {
 		fprintf(stderr,
 		    "E: %s: unexistent %s metadata file.\n", pkgname,
@@ -142,15 +134,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	/*
 	 * Check for files.plist metadata file.
 	 */
-	path = xbps_xasprintf("%s/%s/metadata/%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
-	if (path == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	filesd = prop_dictionary_internalize_from_zfile(path);
-	free(path);
+	filesd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (filesd == NULL) {
 		fprintf(stderr,
 		    "E: %s: unexistent %s metadata file.\n", pkgname,

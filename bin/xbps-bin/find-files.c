@@ -75,7 +75,7 @@ find_files_in_packages(const char *pattern)
 	prop_array_t files_keys;
 	DIR *dirp;
 	struct dirent *dp;
-	char *path, *filesplist;
+	char *path;
 	int rv = 0;
 	unsigned int i, count;
 
@@ -94,16 +94,9 @@ find_files_in_packages(const char *pattern)
 		    (strcmp(dp->d_name, "..") == 0))
 			continue;
 
-		filesplist = xbps_xasprintf("%s/%s/%s", path, dp->d_name,
+		pkg_filesd = xbps_get_pkg_dict_from_metadata_plist(dp->d_name,
 		    XBPS_PKGFILES);
-		if (filesplist == NULL) {
-			rv = -1;
-			break;
-		}
-
-		pkg_filesd = prop_dictionary_internalize_from_zfile(filesplist);
 		if (pkg_filesd == NULL) {
-			free(filesplist);
 			if (errno == ENOENT)
 				continue;
 			rv = -1;
@@ -118,7 +111,6 @@ find_files_in_packages(const char *pattern)
 				break;
 		}
 		prop_object_release(pkg_filesd);
-		free(filesplist);
 		if (rv == -1)
 			break;
 	}

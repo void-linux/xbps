@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,13 +58,7 @@ xbps_config_file_from_archive_entry(prop_dictionary_t d,
 	 * Get original hash for the file from current
 	 * installed package.
 	 */
-	buf = xbps_xasprintf(".%s/metadata/%s/%s", XBPS_META_PATH,
-	    pkgname, XBPS_PKGFILES);
-	if (buf == NULL)
-		return errno;
-
-	forigd = prop_dictionary_internalize_from_zfile(buf);
-	free(buf);
+	forigd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (forigd == NULL) {
 		install_new = true;
 		goto out;
