@@ -105,7 +105,6 @@ xbps_purge_all_pkgs(void)
 	prop_object_iterator_t iter;
 	const char *pkgname;
 	int rv = 0;
-	pkg_state_t state = 0;
 
 	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
 		return errno;
@@ -117,13 +116,8 @@ xbps_purge_all_pkgs(void)
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
-			break;
-		if (state != XBPS_PKG_STATE_CONFIG_FILES)
-			continue;
-
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		if ((rv = xbps_purge_pkg(pkgname, false)) != 0)
+		if ((rv = xbps_purge_pkg(pkgname, true)) != 0)
 			break;
 	}
 	prop_object_iterator_release(iter);
