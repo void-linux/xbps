@@ -161,7 +161,7 @@ extern "C" {
 
 /**
  * @private
- * From lib/config_files.c
+ * From lib/package_config_files.c
  */
 int HIDDEN xbps_config_file_from_archive_entry(prop_dictionary_t,
 					       struct archive_entry *,
@@ -671,7 +671,7 @@ int xbps_remove_pkg_files(prop_dictionary_t dict, const char *key);
 
 /**
  * @private
- * From lib/remove_obsoletes.c
+ * From lib/package_remove_obsoletes.c
  */
 int HIDDEN xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
 
@@ -700,6 +700,7 @@ int xbps_repository_unregister(const char *uri);
 
 /**
  * @private
+ * From lib/repository_finddeps.c
  */
 int HIDDEN xbps_repository_find_pkg_deps(prop_dictionary_t,
 					 prop_dictionary_t);
@@ -915,7 +916,7 @@ char HIDDEN *xbps_get_remote_repo_string(const char *uri);
 
 /**
  * @private
- * From lib/requiredby.c
+ * From lib/package_requiredby.c
  */
 int HIDDEN xbps_requiredby_pkg_add(prop_array_t, prop_dictionary_t);
 int HIDDEN xbps_requiredby_pkg_remove(const char *);
