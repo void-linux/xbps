@@ -1,3 +1,16 @@
+xbps-0.6.3 (?)
+ 
+ * xbps-dgraph: new utility to generate graphviz' dot(1) graphs for package
+   metadata properties, such as dependencies, reverse dependencies, etc.
+   Extracts the info from installed package metadata plist files.
+
+ * Performance improvements in libxbps and all utilities, by avoiding
+   unnecessary access(2) and chdir(2) calls while executing the
+   INSTALL/REMOVE scripts at pre/post (de)install time.
+
+ * Fixed some memleaks on libxbps found while working on the xbps-dgraph
+   utility.
+
 xbps-0.6.2 (2010-10-31):
 
  * libxbps: xbps_repository_unregister(): in remote repositories, also

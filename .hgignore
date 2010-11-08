@@ -2,9 +2,10 @@ syntax: glob
 
 config.h
 config.mk
-xbps-bin
-xbps-repo
-xbps-uhelper
+bin/xbps-bin/xbps-bin
+bin/xbps-repo/xbps-repo
+bin/xbps-uhelper/xbps-uhelper
+bin/xbps-dgraph/xbps-dgraph
 *.static
 *.so*
 *.o

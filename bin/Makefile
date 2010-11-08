@@ -3,6 +3,7 @@
 SUBDIRS =	xbps-uhelper
 SUBDIRS +=	xbps-repo
 SUBDIRS +=	xbps-bin
+SUBDIRS +=	xbps-dgraph
 
 .PHONY: all
 all:
