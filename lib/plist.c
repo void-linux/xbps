@@ -158,7 +158,7 @@ xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 prop_dictionary_t
 xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 {
-	prop_dictionary_t d, pkgd;
+	prop_dictionary_t d, pkgd, rpkgd = NULL;
 	pkg_state_t state = 0;
 
 	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
@@ -169,25 +169,25 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 	else
 		pkgd = xbps_find_pkg_in_dict_by_name(d, "packages", str);
 	if (pkgd == NULL)
-		goto fail;
+		goto out;
 
 	if (xbps_get_pkg_state_dictionary(pkgd, &state) != 0)
-		goto fail;
+		goto out;
 
 	switch (state) {
 	case XBPS_PKG_STATE_INSTALLED:
 	case XBPS_PKG_STATE_UNPACKED:
-		xbps_regpkgs_dictionary_release();
-		return prop_dictionary_copy(pkgd);
+		rpkgd = prop_dictionary_copy(pkgd);
+		break;
 	case XBPS_PKG_STATE_CONFIG_FILES:
 		errno = ENOENT;
 		break;
 	default:
 		break;
 	}
-fail:
+out:
 	xbps_regpkgs_dictionary_release();
-	return NULL;
+	return rpkgd;
 }
 
 prop_dictionary_t
