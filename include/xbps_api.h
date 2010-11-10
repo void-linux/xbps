@@ -526,6 +526,7 @@ prop_dictionary_t xbps_get_pkg_dict_from_metadata_plist(const char *pkgn,
 							const char *plist);
 
 /**
+ * @private
  * Finds a proplib dictionary in an archive, matching a specific
  * entry on it.
  *
@@ -535,7 +536,7 @@ prop_dictionary_t xbps_get_pkg_dict_from_metadata_plist(const char *pkgn,
  * @return The proplib dictionary associated with entry, NULL otherwise
  * and errno is set appropiately.
  */
-prop_dictionary_t xbps_read_dict_from_archive_entry(struct archive *ar,
+prop_dictionary_t HIDDEN xbps_read_dict_from_archive_entry(struct archive *ar,
 				struct archive_entry *entry);
 
 /**
