@@ -34,6 +34,7 @@
 #include <libgen.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 int HIDDEN
 xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)

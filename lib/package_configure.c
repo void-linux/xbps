@@ -28,6 +28,9 @@
 #include <string.h>
 #include <errno.h>
 
+#include <xbps_api.h>
+#include "xbps_api_impl.h"
+
 /**
  * @file lib/configure.c
  * @brief Package configuration routines
@@ -44,7 +47,6 @@
  * (or packages) will be reconfigured even if its state is
  * XBPS_PKG_STATE_INSTALLED.
  */
-#include <xbps_api.h>
 
 int
 xbps_configure_all_pkgs(void)

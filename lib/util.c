@@ -35,9 +35,10 @@
 #include <sys/mman.h>
 #include <limits.h>
 
-#include <xbps_api.h>
-#include <openssl/sha.h>
 #include "config.h"
+#include <openssl/sha.h>
+#include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 /**
  * @file lib/util.c

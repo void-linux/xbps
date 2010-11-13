@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include <xbps_api.h>
 #include "defs.h"

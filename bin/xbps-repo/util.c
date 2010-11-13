@@ -29,9 +29,14 @@
 #include <string.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <assert.h>
 
 #include <xbps_api.h>
 #include "defs.h"
+
+#ifndef __UNCONST
+#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+#endif
 
 void
 show_pkg_info_only_repo(prop_dictionary_t dict)

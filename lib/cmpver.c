@@ -23,7 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 /*
  * split_version(pkgname, endname, epoch, revision) returns a pointer to

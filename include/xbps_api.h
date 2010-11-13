@@ -30,25 +30,20 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-/**
- * @cond
- */
-#ifndef DEBUG
-#  define NDEBUG
-#endif
-#include <assert.h>
-/**
- * @endcond
- */
 #include <prop/proplib.h>
 #include <archive.h>
 #include <archive_entry.h>
 
 #include <sys/queue.h>
 
-#if defined(__cplusplus)
-extern "C" {
+#ifdef  __cplusplus
+# define __BEGIN_DECLS  extern "C" {
+# define __END_DECLS    }
+#else
+# define __BEGIN_DECLS
+# define __END_DECLS
 #endif
+
 
 /**
  * @file include/xbps_api.h
@@ -125,49 +120,7 @@ extern "C" {
  */
 #define XBPS_FLAG_FORCE		0x00000002
 
-
-/**
- * @cond
- */
-#define ARCHIVE_READ_BLOCKSIZE	10240
-
-#define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \
-			ARCHIVE_EXTRACT_SECURE_SYMLINKS
-#define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | ARCHIVE_EXTRACT_PERM | \
-			ARCHIVE_EXTRACT_TIME | EXTRACT_FLAGS
-
-#ifndef __UNCONST
-#define __UNCONST(a)	((void *)(unsigned long)(const void *)(a))
-#endif
-
-#ifdef DEBUG
-#define DPRINTF(x)	printf x
-#else
-#define DPRINTF(x)
-#endif
-
-/*
- * By default all public functions have default visibility, unless
- * gcc >= 4.x and the HIDDEN definition is used.
- */
-#if __GNUC__ >= 4
-#define HIDDEN __attribute__ ((visibility("hidden")))
-#else
-#define HIDDEN
-#endif
-/**
- * @endcond
- */
-
-/**
- * @private
- * From lib/package_config_files.c
- */
-int HIDDEN xbps_config_file_from_archive_entry(prop_dictionary_t,
-					       struct archive_entry *,
-					       const char *,
-					       int *,
-					       bool *);
+__BEGIN_DECLS
 
 /** @addtogroup configure */
 /*@{*/
@@ -526,20 +479,6 @@ prop_dictionary_t xbps_get_pkg_dict_from_metadata_plist(const char *pkgn,
 							const char *plist);
 
 /**
- * @private
- * Finds a proplib dictionary in an archive, matching a specific
- * entry on it.
- *
- * @param[in] ar Pointer to an archive object, as returned by libarchive.
- * @param[in] entry Pointer to an archive entry object, as returned by libarchive.
- *
- * @return The proplib dictionary associated with entry, NULL otherwise
- * and errno is set appropiately.
- */
-prop_dictionary_t HIDDEN xbps_read_dict_from_archive_entry(struct archive *ar,
-				struct archive_entry *entry);
-
-/**
  * Removes the package's proplib dictionary matching \a pkgname
  * in a plist file.
  *
@@ -685,12 +624,6 @@ int xbps_remove_pkg_files(prop_dictionary_t dict, const char *key);
 
 /*@}*/
 
-/**
- * @private
- * From lib/package_remove_obsoletes.c
- */
-int HIDDEN xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
-
 /** @addtogroup repo_register */
 /*@{*/
 
@@ -713,13 +646,6 @@ int xbps_repository_register(const char *uri);
 int xbps_repository_unregister(const char *uri);
 
 /*@}*/
-
-/**
- * @private
- * From lib/repository_finddeps.c
- */
-int HIDDEN xbps_repository_find_pkg_deps(prop_dictionary_t,
-					 prop_dictionary_t);
 
 /** @addtogroup repo_pkgs */
 /*@{*/
@@ -747,7 +673,7 @@ int xbps_repository_install_pkg(const char *pkg, bool bypattern);
  *
  * @param pkgname The package name to update.
  * @param instpkg Installed package dictionary, as returned by
- * xbps_find_pkg_installed_from_plist().
+ * xbps_find_pkg_dict_installed().
  *
  * @return 0 on success, or an errno value otherwise.
  */
@@ -776,7 +702,7 @@ int xbps_repository_update_allpkgs(void);
  *    xbps_repository_update_pkg() functions are not called previously.
  *
  * @return The transaction dictionary to install/update/replace
- * a package list.
+ * a package list. NULL on failure and errno set appropiately.
  */
 prop_dictionary_t xbps_repository_get_transaction_dict(void);
 
@@ -922,26 +848,6 @@ void xbps_repository_pool_release(void);
  * downloaded successfully.
  */
 int xbps_repository_sync_pkg_index(const char *uri);
-
-/**
- * @private
- */
-char HIDDEN *xbps_get_remote_repo_string(const char *uri);
-
-/*@}*/
-
-/**
- * @private
- * From lib/package_requiredby.c
- */
-int HIDDEN xbps_requiredby_pkg_add(prop_array_t, prop_dictionary_t);
-int HIDDEN xbps_requiredby_pkg_remove(const char *);
-
-/**
- * @private
- * From lib/sortdeps.c
- */
-int HIDDEN xbps_sort_pkg_deps(prop_dictionary_t);
 
 /** @addtogroup pkgstates */
 /*@{*/
@@ -1251,8 +1157,6 @@ bool xbps_noyes(const char *, ...);
 
 /*@}*/
 
-#if defined(__cplusplus)
-}
-#endif
+__END_DECLS
 
 #endif /* !_XBPS_API_H_ */

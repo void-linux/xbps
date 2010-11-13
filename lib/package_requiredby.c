@@ -30,6 +30,7 @@
 #include <errno.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 static int
 add_pkg_into_reqby(prop_dictionary_t pkgd, const char *reqname)

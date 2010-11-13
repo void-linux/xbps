@@ -29,6 +29,7 @@
 #include <errno.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 struct sorted_dependency {
 	SIMPLEQ_ENTRY(sorted_dependency) chain;

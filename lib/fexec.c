@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 /**
  * @file lib/fexec.c

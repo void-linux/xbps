@@ -29,6 +29,7 @@
 #include <errno.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 static int
 store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,

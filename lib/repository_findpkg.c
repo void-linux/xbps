@@ -30,6 +30,7 @@
 #include <errno.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 /**
  * @file lib/repository_findpkg.c

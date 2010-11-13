@@ -26,6 +26,16 @@
 #ifndef _XBPS_BIN_DEFS_H_
 #define _XBPS_BIN_DEFS_H_
 
+#ifdef DEBUG
+#define DPRINTF(x)      printf x
+#else
+#define DPRINTF(x)
+#endif
+
+#ifndef __UNCONST
+#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+#endif
+
 int	xbps_install_new_pkg(const char *);
 int	xbps_update_pkg(const char *);
 int	xbps_autoupdate_pkgs(bool);
@@ -39,5 +49,6 @@ int	xbps_show_pkg_reverse_deps(const char *);
 int	show_pkg_info_from_metadir(const char *);
 int	show_pkg_files_from_metadir(const char *);
 int	find_files_in_packages(const char *);
+
 
 #endif /* !_XBPS_BIN_DEFS_H_ */

@@ -31,6 +31,7 @@
 #include <fcntl.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 int HIDDEN
 xbps_config_file_from_archive_entry(prop_dictionary_t d,
