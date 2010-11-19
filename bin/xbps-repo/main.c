@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <libgen.h>
+#include <unistd.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -66,18 +67,43 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
+static int
+repo_list_uri_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	(void)arg;
+	(void)done;
+
+	printf("%s\n", rpi->rpi_uri);
+	return 0;
+}
+
+static int
+repo_search_pkgs_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	char *pattern = arg;
+	(void)done;
+
+	printf("From %s repository ...\n", rpi->rpi_uri);
+	(void)xbps_callback_array_iter_in_dict(rpi->rpi_repod,
+	    "packages", show_pkg_namedesc, pattern);
+	return 0;
+}
+
 int
 main(int argc, char **argv)
 {
 	prop_dictionary_t pkgd;
-	struct repository_pool *rpool;
 	char *root;
 	int c, rv = 0;
+	bool with_debug = false;
 
-	while ((c = getopt(argc, argv, "Vcr:")) != -1) {
+	while ((c = getopt(argc, argv, "Vcdr:")) != -1) {
 		switch (c) {
 		case 'c':
 			xbps_set_cachedir(optarg);
+			break;
+		case 'd':
+			with_debug = true;
 			break;
 		case 'r':
 			/* To specify the root directory */
@@ -99,11 +125,14 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
-	rv = xbps_repository_pool_init();
-	if (rv != 0 && rv != ENOENT) {
-		fprintf(stderr, "E: cannot get repository list pool! %s\n",
-		    strerror(rv));
-		exit(EXIT_FAILURE);
+	xbps_init(with_debug);
+
+	if ((rv = xbps_repository_pool_init()) != 0) {
+		if (rv != ENOENT) {
+			fprintf(stderr, "E: cannot get repository list pool! %s\n",
+			    strerror(rv));
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (strcasecmp(argv[0], "add") == 0) {
@@ -118,8 +147,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries)
-			printf("%s\n", rpool->rp_uri);
+		xbps_repository_pool_foreach(repo_list_uri_cb, NULL);
 
 	} else if ((strcasecmp(argv[0], "rm") == 0) ||
 		   (strcasecmp(argv[0], "remove") == 0)) {
@@ -137,11 +165,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
-			printf("From %s repository ...\n", rpool->rp_uri);
-			(void)xbps_callback_array_iter_in_dict(rpool->rp_repod,
-			    "packages", show_pkg_namedesc, argv[1]);
-		}
+		xbps_repository_pool_foreach(repo_search_pkgs_cb, argv[1]);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about a binary package. */
@@ -179,9 +203,15 @@ main(int argc, char **argv)
 		pkgd = xbps_repository_get_pkg_plist_dict(argv[1],
 		    XBPS_PKGFILES);
 		if (pkgd == NULL) {
-			fprintf(stderr,
-			    "E: couldn't read %s: %s.\n", XBPS_PKGFILES,
-			    strerror(errno));
+			if (errno != ENOENT) {
+				fprintf(stderr, "xbps-repo: unexpected "
+				    "error '%s' searching for '%s'\n",
+				    strerror(errno), argv[1]);
+			} else {
+				fprintf(stderr,
+				    "Package '%s' not found in repository "
+				    "pool.\n", argv[1]);
+			}
 			rv = errno;
 			goto out;
 		}
@@ -207,6 +237,6 @@ main(int argc, char **argv)
 	}
 
 out:
-	xbps_repository_pool_release();
+	xbps_end();
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

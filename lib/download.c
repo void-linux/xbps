@@ -39,7 +39,9 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 #include "fetch.h"
 
 /**
@@ -191,7 +193,7 @@ xbps_fetch_error_string(void)
 	return fetchLastErrString;
 }
 
-void
+void HIDDEN
 xbps_fetch_set_cache_connection(int global, int per_host)
 {
 	if (global == 0)
@@ -202,7 +204,7 @@ xbps_fetch_set_cache_connection(int global, int per_host)
 	fetchConnectionCacheInit(global, per_host);
 }
 
-void
+void HIDDEN
 xbps_fetch_unset_cache_connection(void)
 {
 	fetchConnectionCacheClose();

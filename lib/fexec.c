@@ -80,7 +80,7 @@ pfcexec(const char *path, const char *file, const char **argv)
 				_exit(127);
 		}
 
-		(void)execvp(file, __UNCONST(argv));
+		(void)execv(file, __UNCONST(argv));
 		_exit(127);
 		/* NOTREACHED */
 	case -1:
@@ -138,7 +138,7 @@ vfcexec(const char *path, int skipempty, const char *arg, va_list ap)
 	return retval;
 }
 
-int
+int HIDDEN
 xbps_file_exec(const char *arg, ...)
 {
 	va_list	ap;
@@ -151,7 +151,7 @@ xbps_file_exec(const char *arg, ...)
 	return result;
 }
 
-int
+int HIDDEN
 xbps_file_exec_skipempty(const char *arg, ...)
 {
 	va_list	ap;
@@ -164,7 +164,7 @@ xbps_file_exec_skipempty(const char *arg, ...)
 	return result;
 }
 
-int
+int HIDDEN
 xbps_file_chdir_exec(const char *path, const char *arg, ...)
 {
 	va_list	ap;

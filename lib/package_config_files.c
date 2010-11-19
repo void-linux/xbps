@@ -33,32 +33,82 @@
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
 
+/*
+ * Returns 1 if entry is a configuration file, 0 if don't or -1 on error.
+ */
+static int
+entry_is_conf_file(prop_dictionary_t propsd, struct archive_entry *entry)
+{
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	char *entrytmp, *cffile;
+	int rv = 0;
+
+	iter = xbps_get_array_iter_from_dict(propsd, "conf_files");
+	if (iter == NULL)
+		return -1;
+
+	entrytmp = xbps_xasprintf(".%s", archive_entry_pathname(entry));
+	if (entrytmp == NULL) {
+		rv = -1;
+		goto out;
+	}
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		cffile = xbps_xasprintf(".%s",
+		    prop_string_cstring_nocopy(obj));
+		if (cffile == NULL) {
+			rv = -1;
+			goto out;
+		}
+		if (strcmp(cffile, entrytmp) == 0) {
+			rv = 1;
+			free(cffile);
+			break;
+		}
+		free(cffile);
+	}
+
+out:
+	prop_object_iterator_release(iter);
+	if (entrytmp)
+		free(entrytmp);
+
+	return rv;
+}
+
 int HIDDEN
-xbps_config_file_from_archive_entry(prop_dictionary_t d,
+xbps_config_file_from_archive_entry(prop_dictionary_t filesd,
+				    prop_dictionary_t propsd,
 				    struct archive_entry *entry,
-				    const char *pkgname,
 				    int *flags,
 				    bool *skip)
 {
 	prop_dictionary_t forigd;
 	prop_object_t obj, obj2;
 	prop_object_iterator_t iter, iter2;
-	const char *cffile, *sha256_new = NULL;
+	const char *pkgname, *cffile, *sha256_new = NULL;
 	char *buf, *sha256_cur = NULL, *sha256_orig = NULL;
 	int rv = 0;
 	bool install_new = false;
 
-	if (d == NULL)
-		return 0;
+	/*
+	 * Check that current entry is really a configuration file.
+	 */
+	rv = entry_is_conf_file(propsd, entry);
+	if (rv == -1 || rv == 0)
+		return rv;
 
-	iter = xbps_get_array_iter_from_dict(d, "conf_files");
+	rv = 0;
+	iter = xbps_get_array_iter_from_dict(filesd, "conf_files");
 	if (iter == NULL)
-		return 0;
+		return EINVAL;
 
 	/*
 	 * Get original hash for the file from current
 	 * installed package.
 	 */
+	prop_dictionary_get_cstring_nocopy(propsd, "pkgname", &pkgname);
 	forigd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (forigd == NULL) {
 		install_new = true;
@@ -73,7 +123,7 @@ xbps_config_file_from_archive_entry(prop_dictionary_t d,
 			buf = xbps_xasprintf(".%s", cffile);
 			if (buf == NULL) {
 				prop_object_iterator_release(iter2);
-				rv = errno;
+				rv = ENOMEM;
 				goto out;
 			}
 			if (strcmp(archive_entry_pathname(entry), buf) == 0) {
@@ -104,7 +154,7 @@ xbps_config_file_from_archive_entry(prop_dictionary_t d,
 		buf = xbps_xasprintf(".%s", cffile);
 		if (buf == NULL) {
 			prop_object_iterator_release(iter);
-			return errno;
+			return ENOMEM;
 		}
 		if (strcmp(archive_entry_pathname(entry), buf)) {
 			free(buf);
@@ -180,7 +230,7 @@ xbps_config_file_from_archive_entry(prop_dictionary_t d,
 			    (strcmp(sha256_orig, sha256_new))) {
 			buf = xbps_xasprintf(".%s.new", cffile);
 			if (buf == NULL) {
-				rv = errno;
+				rv = ENOMEM;
 				break;
 			}
 			printf("Keeping modified file %s.\n", cffile);

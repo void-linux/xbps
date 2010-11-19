@@ -31,10 +31,6 @@
 #include <inttypes.h>
 
 #include <prop/proplib.h>
-#include <archive.h>
-#include <archive_entry.h>
-
-#include <sys/queue.h>
 
 #ifdef  __cplusplus
 # define __BEGIN_DECLS  extern "C" {
@@ -43,7 +39,6 @@
 # define __BEGIN_DECLS
 # define __END_DECLS
 #endif
-
 
 /**
  * @file include/xbps_api.h
@@ -56,7 +51,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20101023:0.6.1"
+#define XBPS_RELVER		"20101118"
 
 /** 
  * @def XBPS_META_PATH
@@ -122,6 +117,30 @@
 
 __BEGIN_DECLS
 
+void		xbps_dbg_printf(const char *, ...);
+void		xbps_dbg_printf_append(const char *, ...);
+
+/** @addtogroup initend */ 
+/*@{*/
+
+/**
+ * Initialize the XBPS library with the following steps:
+ *
+ *   - Sets default cache connections for libfetch.
+ *
+ *   - Initializes the debug printfs.
+ *
+ * @param[in] debug If true, debugging output will be shown to stderr.
+ */
+void xbps_init(bool debug);
+
+/**
+ * Releases all resources used by the XBPS library.
+ */
+void xbps_end(void);
+
+/*@}*/
+
 /** @addtogroup configure */
 /*@{*/
 
@@ -134,7 +153,7 @@ __BEGIN_DECLS
  * in unpacked state.
  * @param[in] update Set it to true if this package is being updated.
  *
- * @return 0 on success, or an appropiate errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_configure_pkg(const char *pkgname,
 		       const char *version,
@@ -144,7 +163,7 @@ int xbps_configure_pkg(const char *pkgname,
 /**
  * Configure (or force reconfiguration of) all packages.
  *
- * @return 0 on success, or an appropiate errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_configure_all_pkgs(void);
 
@@ -173,20 +192,6 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
 /*@{*/
 
 /**
- * @def XBPS_FETCH_CACHECONN
- *
- * Default (global) limit of cached connections used in libfetch.
- */
-#define XBPS_FETCH_CACHECONN		6
-
-/**
- * @def XBPS_FETCH_CACHECONN_HOST
- *
- * Default (per host) limit of cached connections used in libfetch.
- */
-#define XBPS_FETCH_CACHECONN_HOST	2
-
-/**
  * Download a file from a remote URL.
  * 
  * @param[in] uri Remote URI string.
@@ -204,69 +209,11 @@ int xbps_fetch_file(const char *uri,
 		    const char *flags);
 
 /**
- * Sets the libfetch's cache connection limits.
- *
- * @param[in] global Number of global cached connections, if set to 0
- * by default it's set to XBPS_FETCH_CACHECONN.
- * @param[in] per_host Number of per host cached connections, if set to 0
- * by default it's set to XBPS_FETCH_CACHECONN_HOST.
- */
-void xbps_fetch_set_cache_connection(int global, int per_host);
-
-/**
- * Destroys the libfetch's cache connection established.
- */
-void xbps_fetch_unset_cache_connection(void);
-
-/**
  * Returns last error string reported by xbps_fetch_file().
  *
  * @return A string with the appropiate error message.
- * @}
  */
 const char *xbps_fetch_error_string(void);
-
-/*@}*/
-
-/** @addtogroup fexec */
-/*@{*/
-
-/**
- * Forks and executes a command in the current working directory
- * with an arbitrary number of arguments.
- *
- * @param[in] arg Arguments passed to execvp(3) when forked, the last
- * argument must be NULL.
- *
- * @return 0 on success, -1 on error and errno set appropiately.
- */
-int xbps_file_exec(const char *arg, ...);
-
-/**
- * Forks and executes a command in the current working directory
- * with an arbitrary number of arguments.
- *
- * @param[in] arg Arguments passed to execvp(3) when forked, does not need
- * to be terminated with a NULL argument.
- *
- * @return 0 on success, -1 on error and errno set appropiately.
- */
-int xbps_file_exec_skipempty(const char *arg, ...);
-
-/**
- * Forks and executes a command with an arbitrary number of arguments
- * in a specified path.
- * 
- * If uid==0 and /bin/sh (relative to path) exists, a chroot(2) call
- * will be done, otherwise chdir(2) to path.
- * 
- * @param[in] path Destination path to chroot(2) or chdir(2).
- * @param[in] arg Arguments passed to execvp(3) when forked, the last
- * argument must be NULL.
- *
- * @return 0 on success, -1 on error and errno set appropiately.
- */
-int xbps_file_chdir_exec(const char *path, const char *arg, ...);
 
 /*@}*/
 
@@ -298,7 +245,7 @@ int xbps_mkpath(char *path, mode_t mode);
  * Finds all package orphans currently installed.
  *
  * @return A proplib array of dictionaries with all orphans found,
- * on error NULL is returned and errno set appropiately.
+ * on error NULL is returned and errno is set appropiately.
  */
 prop_array_t xbps_find_orphan_packages(void);
 
@@ -336,7 +283,7 @@ bool xbps_add_obj_to_dict(prop_dictionary_t dict,
  * @param[in] array Proplib array to insert the object to.
  * @param[in] obj Proplib object to be inserted.
  * 
- * @return true on success, false otherwise and errno set appropiately.
+ * @return true on success, false otherwise and xbps_errno set appropiately.
  */
 bool xbps_add_obj_to_array(prop_array_t array, prop_object_t obj);
 
@@ -353,7 +300,7 @@ bool xbps_add_obj_to_array(prop_array_t array, prop_object_t obj);
  * @param[in] arg Argument to be passed to the function callback.
  *
  * @return 0 on success (all objects were processed), otherwise an
- * errno value on error.
+ * errno value is set appropiately.
  */
 int xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 			const char *key,
@@ -373,7 +320,7 @@ int xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
  * @param[in] arg Argument to be passed to the function callback.
  *
  * @return 0 on success (all objects were processed), otherwise an
- * errno value on error.
+ * errno value is set appropiately.
  */
 int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 			const char *key,
@@ -447,8 +394,7 @@ prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
  * @param[in] array The proplib array where to look for.
  * @param[in] val The value of string to match.
  *
- * @return true on success, false otherwise and errno set appropiately
- * if there was an unexpected error.
+ * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_find_string_in_array(prop_array_t array, const char *val);
 
@@ -485,9 +431,9 @@ prop_dictionary_t xbps_get_pkg_dict_from_metadata_plist(const char *pkgn,
  * @param[in] pkgname Package name to look for.
  * @param[in] plist Path to a plist file.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return true on success, false otherwise and errno is set appropiately.
  */
-int xbps_remove_pkg_dict_from_file(const char *pkgname, const char *plist);
+bool xbps_remove_pkg_dict_from_file(const char *pkgname, const char *plist);
 
 /**
  * Removes the package's proplib dictionary matching \a pkgname,
@@ -497,11 +443,11 @@ int xbps_remove_pkg_dict_from_file(const char *pkgname, const char *plist);
  * @param[in] key Key associated with the proplib array.
  * @param[in] pkgname Package name to look for.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return true on success, false otherwise and errno is set appropiately.
  */
-int xbps_remove_pkg_from_dict(prop_dictionary_t dict,
-			      const char *key,
-			      const char *pkgname);
+bool xbps_remove_pkg_from_dict(prop_dictionary_t dict,
+			       const char *key,
+			       const char *pkgname);
 
 /**
  * Removes a string from a proplib's array.
@@ -509,9 +455,9 @@ int xbps_remove_pkg_from_dict(prop_dictionary_t dict,
  * @param[in] array Proplib array where to look for.
  * @param[in] str String to match in the array.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return true on success, false otherwise and errno is set appropiately.
  */
-int xbps_remove_string_from_array(prop_array_t array, const char *str);
+bool xbps_remove_string_from_array(prop_array_t array, const char *str);
 
 /*@}*/
 
@@ -525,7 +471,7 @@ int xbps_remove_string_from_array(prop_array_t array, const char *str);
  * @param[in] check_state Set it to true to check that package
  * is in XBPS_PKG_STATE_CONFIG_FILES state.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_purge_pkg(const char *pkgname, bool check_state);
 
@@ -533,7 +479,7 @@ int xbps_purge_pkg(const char *pkgname, bool check_state);
  * Purge all installed packages. Packages that aren't in
  * XBPS_PKG_STATE_CONFIG_FILES state will be ignored.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_purge_all_pkgs(void);
 
@@ -550,7 +496,7 @@ int xbps_purge_all_pkgs(void);
  * @param[in] automatic Set it to true to mark package that has been
  * installed by another package, and not explicitly.
  *
- * @return 0 on success, an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_register_pkg(prop_dictionary_t pkg_dict, bool automatic);
 
@@ -559,7 +505,7 @@ int xbps_register_pkg(prop_dictionary_t pkg_dict, bool automatic);
  *
  * @param[in] pkgname Package name.
  *
- * @return 0 on success, an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_unregister_pkg(const char *pkgname);
 
@@ -569,19 +515,20 @@ int xbps_unregister_pkg(const char *pkgname);
 /*@{*/
 
 /**
- * Initialize resources used by the registered packages database.
+ * Initialize resources used by the registered packages database dictionary
+ * and returns the internalized proplib dictionary.
  *
  * @note This function is reference counted, if the database has
  * been initialized previously, the counter will be increased by one
  * and dictionary stored in memory will be returned.
  *
- * @warning Don't forget to always use xbps_regpkgs_dictionary_release()
+ * @warning Don't forget to always use xbps_regpkgdb_dictionary_release()
  * when its dictionary is no longer needed.
  *
  * @return A dictionary as shown above in the Detailed description
  * graph on success, or NULL otherwise and errno is set appropiately.
  */
-prop_dictionary_t xbps_regpkgs_dictionary_init(void);
+prop_dictionary_t xbps_regpkgdb_dictionary_get(void);
 
 /**
  * Release resources used by the registered packages database.
@@ -589,7 +536,7 @@ prop_dictionary_t xbps_regpkgs_dictionary_init(void);
  * @note This function is reference counted, if the database
  * is in use (its reference count number is not 0), won't be released.
  */ 
-void xbps_regpkgs_dictionary_release(void);
+void xbps_regpkgdb_dictionary_release(void);
 
 /*@}*/
 
@@ -604,7 +551,7 @@ void xbps_regpkgs_dictionary_release(void);
  * @param[in] update If true, some steps will be skipped. See in the
  * detailed description above for more information.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
 
@@ -618,7 +565,7 @@ int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
  * @param[in] key Key of the array object to match, valid values are:
  * <b>files</b>, <b>dirs</b>, <b>links</b> and <b>conf_files</b>.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_remove_pkg_files(prop_dictionary_t dict, const char *key);
 
@@ -632,7 +579,7 @@ int xbps_remove_pkg_files(prop_dictionary_t dict, const char *key);
  *
  * @param[in] uri URI pointing to the repository.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_repository_register(const char *uri);
 
@@ -641,7 +588,7 @@ int xbps_repository_register(const char *uri);
  *
  * @param[in] uri URI pointing to the repository.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_repository_unregister(const char *uri);
 
@@ -651,20 +598,18 @@ int xbps_repository_unregister(const char *uri);
 /*@{*/
 
 /**
- * Finds a package by its name or by a pattern and enqueues it into
+ * Finds a package by a pattern and enqueues it into
  * the transaction dictionary for future use. The first repository in
- * the queue that matched the requirement wins.
+ * the pool that matched the pattern wins.
  *
  * @note The function name might be misleading, but is correct because
  * if package is found, it will be marked as "going to be installed".
  *
  * @param pkg Package name or pattern to find.
- * @param bypattern If true, a package pattern will be used in \a pkg.
- * Otherwise \a pkg will be used as a package name.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
-int xbps_repository_install_pkg(const char *pkg, bool bypattern);
+int xbps_repository_install_pkg(const char *pkgpattern);
 
 /**
  * Marks a package as "going to be updated" in the transaction dictionary.
@@ -672,20 +617,17 @@ int xbps_repository_install_pkg(const char *pkg, bool bypattern);
  * is available the package dictionary will be enqueued.
  *
  * @param pkgname The package name to update.
- * @param instpkg Installed package dictionary, as returned by
- * xbps_find_pkg_dict_installed().
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
-int xbps_repository_update_pkg(const char *pkgname,
-			       prop_dictionary_t instpkg);
+int xbps_repository_update_pkg(const char *pkgname);
 
 /**
  * Finds newer versions for all installed packages by looking at the
  * repository pool. If a newer version exists, package will be enqueued
  * into the transaction dictionary.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_repository_update_allpkgs(void);
 
@@ -702,7 +644,7 @@ int xbps_repository_update_allpkgs(void);
  *    xbps_repository_update_pkg() functions are not called previously.
  *
  * @return The transaction dictionary to install/update/replace
- * a package list. NULL on failure and errno set appropiately.
+ * a package list. NULL on failure and errno is set appropiately.
  */
 prop_dictionary_t xbps_repository_get_transaction_dict(void);
 
@@ -722,7 +664,7 @@ prop_dictionary_t xbps_repository_get_transaction_dict(void);
  * @param[in] uri URI pointing to a repository.
  *
  * @return A string with the full path, NULL otherwise and errno
- * set appropiately.
+ * is set appropiately.
  */
 char *xbps_repository_get_path_from_pkg_dict(prop_dictionary_t d,
 					     const char *uri);
@@ -759,8 +701,9 @@ prop_dictionary_t xbps_repository_get_pkg_plist_dict(const char *pkgname,
  * @return An internalized proplib dictionary, otherwise NULL and
  * errno is set appropiately.
  */
-prop_dictionary_t xbps_repository_get_pkg_plist_dict_from_url(const char *url,
-							const char *plistf);
+prop_dictionary_t
+	xbps_repository_get_pkg_plist_dict_from_url(const char *url,
+						    const char *plistf);
 
 /*@}*/
 
@@ -768,58 +711,39 @@ prop_dictionary_t xbps_repository_get_pkg_plist_dict_from_url(const char *url,
 /*@{*/
 
 /**
- * @struct repository_pool xbps_api.h "xbps_api.h"
- * @brief Repository pool structure
+ * @struct repository_pool_index xbps_api.h "xbps_api.h"
+ * @brief Repository pool dictionary structure
  *
- * Repository object structure registered in the global simple queue
- * \a rp_queue. The simple queue must be initialized through
- * xbps_repository_pool_init(), and released with
- * xbps_repository_pool_release() when it's no longer needed.
+ * Repository index object structure registered in a private simple queue.
+ * The structure contains a dictionary and the URI associated with the
+ * registered repository index.
  */
-struct repository_pool {
+struct repository_pool_index {
 	/**
-	 * @var rp_entries
+	 * @var rpi_repod
 	 * 
-	 * Structure that connects elements in the simple queue.
-	 * For use with the SIMPLEQ macros.
+	 * Internalized Proplib dictionary of the pkg-index plist file
+	 * associated with repository.
 	 */
-	SIMPLEQ_ENTRY(repository_pool) rp_entries;
-	/**
-	 * @var rp_repod
-	 * 
-	 * Proplib dictionary associated with repository.
-	 */
-	prop_dictionary_t rp_repod;
+	prop_dictionary_t rpi_repod;
 	/**
 	 * @var rp_uri
 	 * 
 	 * URI string associated with repository.
 	 */
-	char *rp_uri;
+	char *rpi_uri;
 };
-/**
- * @var rp_queue
- * @brief Pointer to the head of global simple queue.
- * 
- * A pointer to the head of the global simple queue to
- * use after xbps_repository_pool_init() has been initialized
- * successfully.
- */
-SIMPLEQ_HEAD(repopool_queue, repository_pool);
-struct repopool_queue rp_queue;
 
 /**
- * Initializes the repository pool by creating a global simple queue
- * \a rp_queue with all registered repositories in the database.
+ * Initializes the repository pool.
  *
  * Once it's initialized, access to the repositories can be done
- * by the global simple queue \a rp_queue and the \a repository_pool
- * structure.
+ * through the \a xbps_repository_pool_foreach() function.
  *
  * @note This function is reference counted, don't forget to call
  * xbps_repository_pool_release() when it's no longer needed.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_repository_pool_init(void);
 
@@ -831,6 +755,24 @@ int xbps_repository_pool_init(void);
  * its reference counter is 0.
  */
 void xbps_repository_pool_release(void);
+
+/**
+ * Iterates over the repository pool and executes the \a fn function
+ * callback passing in the void * \a arg argument to it. The bool pointer
+ * argument can be used in the callbacks to stop immediately the loop if
+ * set to true, otherwise it will only be stopped if it returns a
+ * non-zero value.
+ *
+ * @param fn Function callback to execute for every repository registered in
+ * the pool.
+ * @param arg Opaque data passed in to the \a fn function callback for
+ * client data.
+ *
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_repository_pool_foreach(
+		int (*fn)(struct repository_pool_index *, void *, bool *),
+		void *arg);
 
 /*@}*/
 
@@ -886,7 +828,7 @@ typedef enum pkg_state {
  * @param[in] pkgname Package name.
  * @param[out] state Package state returned.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state);
 
@@ -897,7 +839,7 @@ int xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state);
  * @param[in] dict Package dictionary.
  * @param[out] state Package state returned.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
 
@@ -907,7 +849,7 @@ int xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
  * @param[in] pkgname Package name.
  * @param[in] state Package state to be set.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state);
 
@@ -917,7 +859,7 @@ int xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state);
  * @param[in] dict Package dictionary.
  * @param[in] state Package state to be set.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
 
@@ -931,7 +873,7 @@ int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
  * @param[in] trans_pkg_dict Package proplib dictionary as stored in the
  * \a packages array returned by the transaction dictionary.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, otherwise an errno value.
  */
 int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict);
 

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2009 Juan Romero Pardines.
+ * Copyright (c) 2008-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/regpkgs_dictionary.c
+ * @file lib/regpkgdb_dictionary.c
  * @brief Package register database routines
  * @defgroup regpkgdb Package register database functions
  *
@@ -57,43 +57,45 @@
  * dictionary.
  */
 
-static prop_dictionary_t regpkgs_dict;
-static size_t regpkgs_refcount;
-static bool regpkgs_initialized;
+static prop_dictionary_t regpkgdb_dict;
+static size_t regpkgdb_refcount;
+static bool regpkgdb_initialized;
 
 prop_dictionary_t
-xbps_regpkgs_dictionary_init(void)
+xbps_regpkgdb_dictionary_get(void)
 {
 	char *plist;
 
-	if (regpkgs_initialized == false) {
+	if (regpkgdb_initialized == false) {
 		plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 		    XBPS_META_PATH, XBPS_REGPKGDB);
 		if (plist == NULL)
 			return NULL;
 
-		regpkgs_dict = prop_dictionary_internalize_from_zfile(plist);
-		if (regpkgs_dict == NULL) {
+		regpkgdb_dict = prop_dictionary_internalize_from_zfile(plist);
+		if (regpkgdb_dict == NULL) {
 			free(plist);
+			xbps_dbg_printf("[regpkgdb] cannot internalize "
+			    "regpkgdb_dict %s\n", strerror(errno));
 			return NULL;
 		}
 		free(plist);
-		regpkgs_initialized = true;
-		DPRINTF(("%s: initialized ok.\n", __func__));
+		regpkgdb_initialized = true;
+		xbps_dbg_printf("%s: initialized ok.\n", __func__);
 	}	
-	regpkgs_refcount++;
+	regpkgdb_refcount++;
 
-	return regpkgs_dict;
+	return regpkgdb_dict;
 }
 
 void
-xbps_regpkgs_dictionary_release(void)
+xbps_regpkgdb_dictionary_release(void)
 {
-	if (--regpkgs_refcount > 0)
+	if (--regpkgdb_refcount > 0)
 		return;
 
-	prop_object_release(regpkgs_dict);
-	regpkgs_dict = NULL;
-	regpkgs_initialized = false;
-	DPRINTF(("%s: released ok.\n", __func__));
+	prop_object_release(regpkgdb_dict);
+	regpkgdb_dict = NULL;
+	regpkgdb_initialized = false;
+	xbps_dbg_printf("%s: released ok.\n", __func__);
 }

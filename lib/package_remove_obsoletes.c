@@ -39,15 +39,15 @@
 int HIDDEN
 xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 {
-	prop_object_iterator_t iter, iter2 = NULL;
-	prop_object_t obj, obj2 = NULL;
-	prop_string_t oldstr = NULL, newstr = NULL;
+	prop_object_iterator_t iter, iter2;
+	prop_object_t obj, obj2;
+	prop_string_t oldstr, newstr;
 	struct stat st;
 	const char *array_str = "files";
-	const char *oldhash = NULL;
-	char *dname = NULL, *file = NULL;
+	const char *oldhash;
+	char *file;
 	int rv = 0;
-	bool found, dolinks = false;
+	bool found, dodirs = false, dolinks = false;
 
 again:
 	iter = xbps_get_array_iter_from_dict(oldd, array_str);
@@ -59,7 +59,7 @@ again:
 		return errno;
 	}
 	/*
-	 * Check for obsolete files, i.e files/links available in
+	 * Check for obsolete files, i.e files/links/dirs available in
 	 * the old package list not found in new package list.
 	 */
 	while ((obj = prop_object_iterator_next(iter))) {
@@ -89,7 +89,7 @@ again:
 				rv = 0;
 				continue;
 			}
-		} else {
+		} else if (strcmp(array_str, "links") == 0) {
 			/*
 			 * Only remove dangling symlinks.
 			 */
@@ -123,32 +123,18 @@ again:
 		}
 
 		/*
-		 * Obsolete file found, remove it.
+		 * Obsolete obj found, remove it.
 		 */
 		if (remove(file) == -1) {
 			fprintf(stderr,
-			    "WARNING: couldn't remove obsolete %s: %s\n",
-			    dolinks ? "link" : "file",
-			    prop_string_cstring_nocopy(oldstr));
+			    "WARNING: couldn't remove obsolete obj: %s (%s)\n",
+			    prop_string_cstring_nocopy(oldstr),
+			    strerror(errno));
 			free(file);
 			continue;
 		}
-		printf("Removed obsolete %s: %s\n",
-		    dolinks ? "link" : "file",
+		printf("Removed obsolete obj: %s\n",
 		    prop_string_cstring_nocopy(oldstr));
-		/*
-		 * Try to remove the directory where the obsole file or link
-		 * was currently living on.
-		 */
-		dname = dirname(file);
-		if (rmdir(dname) == -1) {
-			if (errno != 0 && errno != EEXIST && errno != ENOTEMPTY)
-				fprintf(stderr,
-				    "WARNING: couldn't remove obsolete "
-				    "directory %s: %s\n", dname,
-				    strerror(errno));
-		}
-		free(file);
 	}
 	if (!dolinks) {
 		/*
@@ -156,6 +142,17 @@ again:
 		 */
 		dolinks = true;
 		array_str = "links";
+		prop_object_iterator_release(iter2);
+		prop_object_iterator_release(iter);
+		iter2 = NULL;
+		goto again;
+	}
+	if (!dodirs) {
+		/*
+		 * Look for obsolete dirs.
+		 */
+		dodirs = true;
+		array_str = "dirs";
 		prop_object_iterator_release(iter2);
 		prop_object_iterator_release(iter);
 		iter2 = NULL;

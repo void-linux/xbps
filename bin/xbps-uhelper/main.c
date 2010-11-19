@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include <xbps_api.h>
 
@@ -130,6 +131,8 @@ main(int argc, char **argv)
 
 	if (argc < 1)
 		usage();
+
+	xbps_init(false);
 
 	plist = xbps_xasprintf("%s/%s/%s", root, XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
@@ -314,8 +317,6 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		xbps_fetch_set_cache_connection(0, 0);
-
 		for (i = 1; i < argc; i++) {
 			rv = xbps_fetch_file(argv[i], ".", false, "v");
 			if (rv == -1) {
@@ -331,6 +332,8 @@ main(int argc, char **argv)
 	} else {
 		usage();
 	}
+
+	xbps_end();
 
 	exit(EXIT_SUCCESS);
 }

@@ -33,6 +33,7 @@
 #include <assert.h>
 
 #include <xbps_api.h>
+#include "../xbps-bin/defs.h"
 #include "defs.h"
 #include "config.h"
 
@@ -147,13 +148,15 @@ unregister_repository(const char *uri)
 	if ((idxstr = sanitize_url(uri)) == NULL)
 		return errno;
 
-	if ((rv = xbps_repository_unregister(idxstr)) != 0) {
-		if (rv == ENOENT)
-			fprintf(stderr, "Repository '%s' not actually "
-			    "registered.\n", idxstr);
-		else
-			fprintf(stderr, "E: couldn't unregister "
-			    "repository (%s)\n", strerror(rv));
+	if ((rv = xbps_repository_unregister(idxstr)) == 0)
+		return 0;
+
+	if (rv == ENOENT) {
+		fprintf(stderr, "Repository '%s' not actually "
+		    "registered.\n", idxstr);
+	} else {
+		fprintf(stderr, "E: couldn't unregister "
+		    "repository (%s)\n", strerror(rv));
 	}
 
 	return rv;
@@ -211,14 +214,13 @@ register_repository(const char *uri)
 	if ((rpi = pkgindex_verify(plist, idxstr)) == NULL)
 		goto out;
 
-	rv = xbps_repository_register(idxstr);
-	if (rv != 0 && rv != EEXIST) {
-		fprintf(stderr, "E: couldn't register repository (%s)\n",
-		    strerror(rv));
-		goto out;
-	} else if (rv == EEXIST) {
-		fprintf(stderr, "W: repository already registered.\n");
-		rv = 0;
+	if ((rv = xbps_repository_register(idxstr)) != 0) {
+		if (rv == EEXIST) {
+			fprintf(stderr, "W: repository already registered.\n");
+		} else {
+			fprintf(stderr, "E: couldn't register repository "
+			    "(%s)\n", strerror(errno));
+		}
 		goto out;
 	}
 
@@ -234,110 +236,111 @@ out:
 	return rv;
 }
 
+static int
+repo_show_pkg_info_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	prop_dictionary_t repo_pkgd, pkg_propsd;
+	const char *pkgname = arg;
+	char *url = NULL;
+
+	repo_pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
+	    "packages", pkgname);
+	if (repo_pkgd == NULL)
+		return errno;
+
+	url = xbps_repository_get_path_from_pkg_dict(repo_pkgd, rpi->rpi_uri);
+	if (url == NULL)
+		return errno;
+
+	printf("Fetching info from: %s\n", rpi->rpi_uri);
+	pkg_propsd =
+	    xbps_repository_get_pkg_plist_dict_from_url(url, XBPS_PKGPROPS);
+	if (pkg_propsd == NULL) {
+		free(url);
+		return errno;
+	}
+	show_pkg_info_only_repo(repo_pkgd);
+	show_pkg_info(pkg_propsd);
+	prop_object_release(pkg_propsd);
+	*done = true;
+	return 0;
+}
+
 int
 show_pkg_info_from_repolist(const char *pkgname)
 {
-	struct repository_pool *rp;
-	prop_dictionary_t repo_pkgd, pkg_propsd;
-	int rv = 0;
+	return xbps_repository_pool_foreach(repo_show_pkg_info_cb,
+	    __UNCONST(pkgname));
+}
 
-	SIMPLEQ_FOREACH(rp, &rp_queue, rp_entries) {
-		char *url = NULL;
-		repo_pkgd = xbps_find_pkg_in_dict_by_name(rp->rp_repod,
-		    "packages", pkgname);
-		if (repo_pkgd == NULL) {
-			if (errno && errno != ENOENT) {
-				rv = errno;
-				break;
-			}
-			continue;
-		}
-		url = xbps_repository_get_path_from_pkg_dict(repo_pkgd,
-		    rp->rp_uri);
-		if (url == NULL) {
-			rv = errno;
-			break;
-		}
-		printf("Fetching info from: %s\n", rp->rp_uri);
-		pkg_propsd = xbps_repository_get_pkg_plist_dict_from_url(url,
-		    XBPS_PKGPROPS);
-		if (pkg_propsd == NULL) {
-			free(url);
-			rv = errno;
-			break;
-		}
-		show_pkg_info_only_repo(repo_pkgd);
-		show_pkg_info(pkg_propsd);
-		prop_object_release(pkg_propsd);
-		break;
+static int
+repo_show_pkg_deps_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	prop_dictionary_t pkgd;
+	const char *ver, *pkgname = arg;
+
+	pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
+	    "packages", pkgname);
+	if (pkgd == NULL) {
+		if (errno && errno != ENOENT)
+			return errno;
+
+		return 0;
 	}
+	prop_dictionary_get_cstring_nocopy(pkgd, "version", &ver);
+	printf("Repository %s [pkgver: %s]\n", rpi->rpi_uri, ver);
+	(void)xbps_callback_array_iter_in_dict(pkgd,
+	    "run_depends", list_strings_sep_in_array, NULL);
+	*done = true;
 
-	return rv;
+	return 0;
 }
 
 int
 show_pkg_deps_from_repolist(const char *pkgname)
 {
-	struct repository_pool *rd;
-	prop_dictionary_t pkgd;
-	const char *ver;
+	return xbps_repository_pool_foreach(repo_show_pkg_deps_cb,
+	    __UNCONST(pkgname));
+}
+
+static int
+repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	struct repoinfo *rp;
+	char *plist;
 	int rv = 0;
 
-	SIMPLEQ_FOREACH(rd, &rp_queue, rp_entries) {
-		pkgd = xbps_find_pkg_in_dict_by_name(rd->rp_repod,
-		    "packages", pkgname);
-		if (pkgd == NULL) {
-			if (errno != ENOENT) {
-				rv = errno;
-				break;
-			}
-			continue;
-		}
-		prop_dictionary_get_cstring_nocopy(pkgd, "version", &ver);
-		printf("Repository %s [pkgver: %s]\n", rd->rp_uri, ver);
-		(void)xbps_callback_array_iter_in_dict(pkgd,
-		    "run_depends", list_strings_sep_in_array, NULL);
-	}
+	(void)arg;
+	(void)done;
 
-	return rv;
+	if (!xbps_check_is_repo_string_remote(rpi->rpi_uri))
+		return 0;
+
+	printf("Syncing package index from: %s\n", rpi->rpi_uri);
+	rv = xbps_repository_sync_pkg_index(rpi->rpi_uri);
+	if (rv == -1) {
+		fprintf(stderr, "E: returned: %s\n", xbps_fetch_error_string());
+		return rv;
+	} else if (rv == 0) {
+		printf("Package index file is already up to date.\n");
+		return 0;
+	}
+	if ((plist = xbps_get_pkg_index_plist(rpi->rpi_uri)) == NULL)
+		return EINVAL;
+
+	if ((rp = pkgindex_verify(plist, rpi->rpi_uri)) == NULL)
+		return errno;
+
+	printf("Updated package index at %s (v%s) with %ju packages.\n",
+	    rpi->rpi_uri, rp->pkgidxver, rp->totalpkgs);
+	free(rp);
+	free(plist);
+
+	return 0;
 }
 
 int
 repository_sync(void)
 {
-	struct repository_pool *rp;
-	char *plist;
-	int rv = 0;
-
-	SIMPLEQ_FOREACH(rp, &rp_queue, rp_entries) {
-		struct repoinfo *rpi = NULL;
-
-		if (!xbps_check_is_repo_string_remote(rp->rp_uri))
-			continue;
-
-		printf("Syncing package index from: %s\n", rp->rp_uri);
-		rv = xbps_repository_sync_pkg_index(rp->rp_uri);
-		if (rv == -1) {
-			fprintf(stderr, "E: returned: %s\n",
-			    xbps_fetch_error_string());
-			break;
-		} else if (rv == 0) {
-			printf("Package index file is already up to date.\n");
-			continue;
-		}
-		if ((plist = xbps_get_pkg_index_plist(rp->rp_uri)) == NULL) {
-			rv = EINVAL;
-			break;
-		}
-		if ((rpi = pkgindex_verify(plist, rp->rp_uri)) == NULL) {
-			rv = errno;
-			break;
-		}
-		printf("Updated package index at %s (v%s) with %ju packages.\n",
-		    rp->rp_uri, rpi->pkgidxver, rpi->totalpkgs);
-		free(rpi);
-		free(plist);
-	}
-
-	return rv;
+	return xbps_repository_pool_foreach(repo_sync_pkg_index_cb, NULL);
 }

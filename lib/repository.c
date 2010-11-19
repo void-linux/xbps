@@ -69,6 +69,7 @@ xbps_repository_register(const char *uri)
 			rv = errno;
 			goto out;
 		}
+
 		if (!prop_array_set_cstring_nocopy(array, 0, uri)) {
 			rv = errno;
 			goto out;
@@ -78,6 +79,7 @@ xbps_repository_register(const char *uri)
 			rv = errno;
 			goto out;
 		}
+		xbps_dbg_printf("Added repository into plist: %s\n", uri);
 	} else {
 		/* Append into the array, the plist file exists. */
 		array = prop_dictionary_get(dict, "repository-list");
@@ -97,14 +99,16 @@ xbps_repository_register(const char *uri)
 			rv = errno;
 			goto out;
 		}
+		xbps_dbg_printf("Added repository into plist: %s\n", uri);
 	}
 
 	/* Write dictionary into plist file. */
 	if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
+		rv = errno;
+		xbps_dbg_printf("%s: cannot externalize '%s' for '%s': %s\n",
+		    __func__, plist, uri, strerror(errno));
 		if (obj)
 			prop_object_release(obj);
-		rv = errno;
-		goto out;
 	}
 
 out:
@@ -142,14 +146,18 @@ xbps_repository_unregister(const char *uri)
 		goto out;
 	}
 
-	if ((rv = xbps_remove_string_from_array(array, uri)) == 0) {
-		/* Update plist file. */
-		if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
-			rv = errno;
-			goto out;
-		}
+	if (!xbps_remove_string_from_array(array, uri)) {
+		rv = errno;
+		goto out;
 	}
 
+	/* Update plist file. */
+	if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
+		rv = errno;
+		goto out;
+	}
+
+	xbps_dbg_printf("Removed repository from plist: %s\n", uri);
 	/*
 	 * If it's a remote repository, also remove the stored XBPS_PKGINDEX
 	 * file and its directory.
@@ -157,26 +165,27 @@ xbps_repository_unregister(const char *uri)
 	if (xbps_check_is_repo_string_remote(uri)) {
 		pkgindex = xbps_get_pkg_index_plist(uri);
 		if (pkgindex == NULL) {
-			rv = EINVAL;
+			rv = errno;
 			goto out;
 		}
+
 		if (unlink(pkgindex) == -1) {
+			rv = errno;
 			if (errno == ENOENT) {
 				free(pkgindex);
 				goto out;
 			}
-			fprintf(stderr, "E: cannot remove pkgindex file at "
-			    "%s: %s\n", pkgindex, strerror(errno));
+			xbps_dbg_printf("%s cannot remove pkgindex file at "
+			    "%s: %s\n", __func__, pkgindex, strerror(errno));
 			free(pkgindex);
-			rv = errno;
 			goto out;
 		}
 		pkgindexdir = dirname(pkgindex);
 		if (rmdir(pkgindexdir) == -1) {
-			fprintf(stderr, "E: cannot remove pkgindex dir at "
-			    "%s: %s\n", pkgindexdir, strerror(errno));
-			free(pkgindex);
 			rv = errno;
+			xbps_dbg_printf("%s: cannot remove pkgindex dir at "
+			    "%s: %s\n", __func__, pkgindexdir, strerror(errno));
+			free(pkgindex);
 			goto out;
 		}
 		free(pkgindex);

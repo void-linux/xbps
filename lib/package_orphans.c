@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,8 @@
 #include <errno.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
+#include "queue.h"
 
 /**
  * @file lib/orphans.c
@@ -147,7 +149,7 @@ cleanup(void)
 		prop_object_release(orphan->dict);
 		free(orphan);
 	}
-	xbps_regpkgs_dictionary_release();
+	xbps_regpkgdb_dictionary_release();
 }
 
 prop_array_t
@@ -158,7 +160,7 @@ xbps_find_orphan_packages(void)
 	struct orphan_pkg *orphan;
 	int rv = 0;
 
-	if ((dict = xbps_regpkgs_dictionary_init()) == NULL)
+	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL)
 		return NULL;
 	/*
 	 * Find out all orphans by looking at the
@@ -189,7 +191,7 @@ xbps_find_orphan_packages(void)
 		prop_object_release(orphan->dict);
 		free(orphan);
 	}
-	xbps_regpkgs_dictionary_release();
+	xbps_regpkgdb_dictionary_release();
 
 	return array;
 }

@@ -51,6 +51,7 @@ xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 
 	if (!prop_dictionary_set(dict, key, obj)) {
 		prop_object_release(dict);
+		errno = EINVAL;
 		return false;
 	}
 
@@ -66,6 +67,7 @@ xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 
 	if (!prop_array_add(array, obj)) {
 		prop_object_release(array);
+		errno = EINVAL;
 		return false;
 	}
 
@@ -98,6 +100,7 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict, const char *key,
 	}
 
 	prop_object_iterator_release(iter);
+
 	return rv;
 }
 
@@ -116,8 +119,10 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 	assert(fn != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY)
+	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY) {
+		xbps_dbg_printf("invalid key '%s' for dictionary", key);
 		return EINVAL;
+	}
 
 	if ((cnt = prop_array_count(array)) == 0)
 		return 0;
@@ -141,8 +146,11 @@ xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
 	assert(pkgname != NULL);
 
 	dict = prop_dictionary_internalize_from_zfile(plist);
-	if (dict == NULL)
+	if (dict == NULL) {
+		xbps_dbg_printf("cannot internalize %s for pkg %s: %s",
+		    plist, pkgname, strerror(errno));
 		return NULL;
+	}
 
 	obj = xbps_find_pkg_in_dict_by_name(dict, "packages", pkgname);
 	if (obj == NULL) {
@@ -162,7 +170,7 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 	prop_dictionary_t d, pkgd, rpkgd = NULL;
 	pkg_state_t state = 0;
 
-	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
+	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
 		return NULL;
 
 	if (bypattern)
@@ -182,12 +190,14 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 		break;
 	case XBPS_PKG_STATE_CONFIG_FILES:
 		errno = ENOENT;
+		xbps_dbg_printf("'%s' installed but its state is "
+		    "config-files\n",str);
 		break;
 	default:
 		break;
 	}
 out:
-	xbps_regpkgs_dictionary_release();
+	xbps_regpkgdb_dictionary_release();
 	return rpkgd;
 }
 
@@ -213,8 +223,10 @@ xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
 			break;
 	}
 	prop_object_iterator_release(iter);
-	if (obj == NULL)
+	if (obj == NULL) {
 		errno = ENOENT;
+		return NULL;
+	}
 
 	return obj;
 }
@@ -241,8 +253,10 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
 			break;
 	}
 	prop_object_iterator_release(iter);
-	if (obj == NULL)
+	if (obj == NULL) {
 		errno = ENOENT;
+		return NULL;
+	}
 
 	return obj;
 }
@@ -270,6 +284,7 @@ xbps_find_string_in_array(prop_array_t array, const char *val)
 	}
 
 	prop_object_iterator_release(iter);
+
 	return false;
 }
 
@@ -282,8 +297,10 @@ xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 	assert(key != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY)
+	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY) {
+		errno = EINVAL;
 		return NULL;
+	}
 
 	return prop_array_iterator(array);
 }
@@ -304,11 +321,16 @@ xbps_get_pkg_dict_from_metadata_plist(const char *pkgn, const char *plist)
 
 	plistd = prop_dictionary_internalize_from_zfile(plistf);
 	free(plistf);
+	if (plistd == NULL) {
+		xbps_dbg_printf("cannot read from plist file %s for %s: %s\n",
+		    plist, pkgn, strerror(errno));
+		return NULL;
+	}
 
 	return plistd;
 }
 
-int
+bool
 xbps_remove_string_from_array(prop_array_t array, const char *str)
 {
 	prop_object_t obj;
@@ -321,7 +343,7 @@ xbps_remove_string_from_array(prop_array_t array, const char *str)
 
 	iter = prop_array_iterator(array);
 	if (iter == NULL)
-		return errno;
+		return false;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (prop_string_equals_cstring(obj, str)) {
@@ -331,16 +353,19 @@ xbps_remove_string_from_array(prop_array_t array, const char *str)
 		idx++;
 	}
 	prop_object_iterator_release(iter);
-	if (found == false)
-		return ENOENT;
+	if (!found) {
+		errno = ENOENT;
+		return false;
+	}
 
 	prop_array_remove(array, idx);
 
-	return 0;
+	return true;
 }
 
-int
-xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
+bool
+xbps_remove_pkg_from_dict(prop_dictionary_t dict,
+			  const char *key,
 			  const char *pkgname)
 {
 	prop_array_t array;
@@ -355,12 +380,16 @@ xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 	assert(pkgname != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY)
-		return EINVAL;
+	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY) {
+		errno = EINVAL;
+		xbps_dbg_printf("invalid array type for key: %s pkgname: %s\n",
+		    key, pkgname);
+		return false;
+	}
 
 	iter = prop_array_iterator(array);
 	if (iter == NULL)
-		return errno;
+		return false;
 
 	/* Iterate over the array of dictionaries to find its index. */
 	while ((obj = prop_object_iterator_next(iter))) {
@@ -372,41 +401,46 @@ xbps_remove_pkg_from_dict(prop_dictionary_t dict, const char *key,
 		i++;
 	}
 	prop_object_iterator_release(iter);
-	if (found == true)
+	if (found) {
 		prop_array_remove(array, i);
-	else
-		return ENOENT;
+		return true;
+	}
 
-	return 0;
+	errno = ENOENT;
+
+	return false;
 }
 
-int
+bool
 xbps_remove_pkg_dict_from_file(const char *pkg, const char *plist)
 {
 	prop_dictionary_t pdict;
-	int rv = 0;
 
 	assert(pkg != NULL);
 	assert(plist != NULL);
 
 	pdict = prop_dictionary_internalize_from_zfile(plist);
-	if (pdict == NULL)
-		return errno;
+	if (pdict == NULL) {
+		xbps_dbg_printf("'%s' cannot read from file %s: %s\n",
+		    pkg, plist, strerror(errno));
+		return false;
+	}
 
-	rv = xbps_remove_pkg_from_dict(pdict, "packages", pkg);
-	if (rv != 0) {
+	if (!xbps_remove_pkg_from_dict(pdict, "packages", pkg)) {
 		prop_object_release(pdict);
-		return rv;
+		return false;
 	}
 
 	if (!prop_dictionary_externalize_to_zfile(pdict, plist)) {
+		xbps_dbg_printf("'%s' cannot write plist file %s: %s\n",
+		    pkg, plist, strerror(errno));
 		prop_object_release(pdict);
-		return errno;
+		return false;
 	}
 
 	prop_object_release(pdict);
 
-	return 0;
+	return true;
 }
 
 /*

@@ -57,7 +57,7 @@ xbps_configure_all_pkgs(void)
 	const char *pkgname, *version;
 	int rv = 0;
 
-	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
+	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
 		return errno;
 
 	iter = xbps_get_array_iter_from_dict(d, "packages");
@@ -75,29 +75,30 @@ xbps_configure_all_pkgs(void)
 	}
 	prop_object_iterator_release(iter);
 out:
-	xbps_regpkgs_dictionary_release();
+	xbps_regpkgdb_dictionary_release();
 
 	return rv;
 }
 
 int
-xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
+xbps_configure_pkg(const char *pkgname,
+		   const char *version,
+		   bool check_state,
 		   bool update)
 {
 	prop_dictionary_t pkgd;
 	const char *lver, *rootdir = xbps_get_rootdir();
 	char *buf;
-	int rv = 0, flags = 0;
+	int rv = 0, flags = xbps_get_flags();
 	pkg_state_t state = 0;
 	bool reconfigure = false;
 
 	assert(pkgname != NULL);
 
-	flags = xbps_get_flags();
-
 	if (check_state) {
-		if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0)
-			return rv;
+		rv = xbps_get_pkg_state_installed(pkgname, &state);
+		if (rv != 0)
+			return EINVAL;
 
 		if (state == XBPS_PKG_STATE_INSTALLED) {
 			if ((flags & XBPS_FLAG_FORCE) == 0)
@@ -108,9 +109,6 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 			return EINVAL;
 	
 		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
-		if (pkgd == NULL)
-			return errno;
-
 		prop_dictionary_get_cstring_nocopy(pkgd, "version", &lver);
 		prop_object_release(pkgd);
 	} else {
@@ -123,20 +121,28 @@ xbps_configure_pkg(const char *pkgname, const char *version, bool check_state,
 	buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
 	    XBPS_META_PATH, pkgname);
 	if (buf == NULL)
-		return errno;
+		return ENOMEM;
 
 	if (chdir(rootdir) == -1) {
+		xbps_dbg_printf("%s: [configure] chdir to '%s' returned %s\n",
+		    pkgname, rootdir, strerror(errno));
 		free(buf);
-		return errno;
+		return EINVAL;
 	}
 
-	rv = xbps_file_exec(buf, "post",
-	    pkgname, lver, update ? "yes" : "no", NULL);
-	if (rv != 0 && errno != ENOENT) {
-		free(buf);
-		fprintf(stderr, "%s: post INSTALL action "
-		    "returned: %s\n", pkgname, strerror(errno));
-		return rv;
+	if (access(buf, X_OK) == 0) {
+		if (xbps_file_exec(buf, "post",
+		    pkgname, lver, update ? "yes" : "no", NULL) != 0) {
+			free(buf);
+			xbps_dbg_printf("%s: [configure] post INSTALL "
+			    "action returned %s\n", pkgname, strerror(errno));
+			return errno;
+		}
+	} else {
+		if (errno != ENOENT) {
+			free(buf);
+			return errno;
+		}
 	}
 	free(buf);
 

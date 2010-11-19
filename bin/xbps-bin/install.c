@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -101,9 +102,6 @@ download_package_list(prop_object_iterator_t iter)
 	cachedir = xbps_get_cachedir();
 	if (cachedir == NULL)
 		return EINVAL;
-
-	/* Set default limit of global and per-host cached connections */
-	xbps_fetch_set_cache_connection(0, 0);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
@@ -293,11 +291,14 @@ xbps_autoupdate_pkgs(bool yes)
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
 			return 0;
-		} else if (rv == ENOPKG) {
+		} else if (rv == ENXIO) {
 			printf("All packages are up-to-date.\n");
 			return 0;
+		} else {
+			fprintf(stderr, "xbps-bin: unexpected error %s\n",
+			    strerror(rv));
+			return -1;
 		}
-		return rv;
 	}
 
 	return xbps_exec_transaction(yes);
@@ -337,15 +338,16 @@ xbps_install_new_pkg(const char *pkg)
 			free(pkgname);
 		return 0;
 	}
-	rv = xbps_repository_install_pkg(pkgpatt, true);
-	if (rv == EAGAIN) {
-		fprintf(stderr, "xbps-bin: unable to locate '%s' in "
-		    "repository pool.\n", pkg);
-		rv = 1;
-	} else if (rv != 0 && rv != ENOENT) {
-		fprintf(stderr, "xbps-bin: unexpected error: %s",
-		    strerror(errno));
-		rv = -1;
+	if ((rv = xbps_repository_install_pkg(pkgpatt)) != 0) {
+		if (rv == EAGAIN) {
+			fprintf(stderr, "xbps-bin: unable to locate '%s' in "
+			    "repository pool.\n", pkg);
+			rv = -1;
+		} else {
+			fprintf(stderr, "xbps-bin: unexpected error: %s\n",
+			    strerror(rv));
+			rv = -1;
+		}
 	}
 
 	if (pkgmatch)
@@ -358,28 +360,22 @@ xbps_install_new_pkg(const char *pkg)
 int
 xbps_update_pkg(const char *pkgname)
 {
-	prop_dictionary_t pkgd;
 	int rv = 0;
 
-	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
-	printf("Finding new '%s' package...\n", pkgname);
-	if (pkgd) {
-		rv = xbps_repository_update_pkg(pkgname, pkgd);
-		if (rv == EEXIST) {
-			printf("Package '%s' is up to date.\n", pkgname);
-			rv = 0;
-		} else if (rv == ENOENT) {
-			fprintf(stderr, "Package '%s' not found in "
-			    "repository pool.\n", pkgname);
-			rv = 0;
-		}
-		prop_object_release(pkgd);
-	} else {
+	rv = xbps_repository_update_pkg(pkgname);
+	if (rv == EEXIST)
+		printf("Package '%s' is up to date.\n", pkgname);
+	else if (rv == ENOENT)
+		fprintf(stderr, "Package '%s' not found in "
+		    "repository pool.\n", pkgname);
+	else if (rv == ENODEV)
 		printf("Package '%s' not installed.\n", pkgname);
-		return 0;
+	else if (rv != 0) {
+		fprintf(stderr, "xbps-bin: unexpected error %s\n",
+		    strerror(rv));
+		return -1;
 	}
-
-	return rv;
+	return 0;
 }
 
 static int
@@ -435,11 +431,10 @@ replace_packages(prop_dictionary_t trans_dict, prop_dictionary_t pkgd,
 		prop_object_release(instd);
 
 		version = xbps_get_pkg_version(pkgver);
-		rv = xbps_remove_pkg(reppkgn, version, false);
-		if (rv != 0) {
+		if ((rv = xbps_remove_pkg(reppkgn, version, false)) != 0) {
 			fprintf(stderr, "xbps-bin: couldn't remove %s (%s)\n",
 			    reppkgn, strerror(rv));
-			return rv;
+			return -1;
 		}
 	}
 	prop_object_iterator_release(replaces_iter);
@@ -552,8 +547,7 @@ exec_transaction(struct transaction *trans)
 				printf("Replacing %s files (%s -> %s) ...\n",
 				    pkgname, instver, version);
 
-			rv = xbps_remove_pkg(pkgname, version, true);
-			if (rv != 0) {
+			if ((rv = xbps_remove_pkg(pkgname, version, true)) != 0) {
 				fprintf(stderr, "xbps-bin: error "
 				    "replacing %s-%s (%s)\n", pkgname,
 				    instver, strerror(rv));
@@ -617,14 +611,15 @@ xbps_exec_transaction(bool yes)
 		return rv;
 
 	trans->dict = xbps_repository_get_transaction_dict();
-	if (trans->dict == NULL)
+	if (trans->dict == NULL) {
+		rv = errno;
 		goto out;
-
-	/*
-	 * Bail out if there are unresolved deps.
-	 */
-	array = prop_dictionary_get(trans->dict, "missing_deps");
-	if (prop_array_count(array) > 0) {
+	}
+	if (rv == ENOENT) {
+		/*
+		 * Bail out if there are unresolved deps.
+		 */
+		array = prop_dictionary_get(trans->dict, "missing_deps");
 		show_missing_deps(trans->dict);
 		goto out;
 	}
@@ -644,9 +639,6 @@ xbps_exec_transaction(bool yes)
 
 	trans->yes = yes;
 	rv = exec_transaction(trans);
-	DPRINTF(("Dictionary AFTER transaction happened:\n"));
-	DPRINTF(("%s", prop_dictionary_externalize(trans->dict)));
-
 out:
 	if (trans->iter)
 		prop_object_iterator_release(trans->iter);

@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -44,7 +45,7 @@ usage(void)
 	"    autoremove\n"
 	"    autoupdate\n"
 	"    check\t\t[<pkgname>|<all>]\n"
-	"    find-files\t<pattern>\n"
+	"    find-files\t\t<pattern>\n"
 	"    install\t\t[<pkgname(s)>|<pkgpattern(s)>]\n"
 	"    list\t\t[state]\n"
 	"    list-manual\n"
@@ -59,6 +60,7 @@ usage(void)
 	"    update\t\t<pkgname(s)>\n"
 	" Options shared by all targets:\n"
 	"    -c\t\t<cachedir>\n"
+	"    -d\t\tDebug output\n"
 	"    -r\t\t<rootdir>\n"
 	"    -v\t\tShows verbose messages\n"
 	"    -V\t\tPrints the xbps release version\n"
@@ -120,8 +122,7 @@ list_manual_packages(prop_object_t obj, void *arg, bool *loop_done)
 static void
 cleanup(int signum)
 {
-	xbps_regpkgs_dictionary_release();
-	xbps_fetch_unset_cache_connection();
+	xbps_end();
 	exit(signum);
 }
 
@@ -132,14 +133,17 @@ main(int argc, char **argv)
 	pkg_state_t pkgstate = 0;
 	struct sigaction sa;
 	int i = 0, c, flags = 0, rv = 0;
-	bool yes, purge;
+	bool yes, purge, with_debug;
 
-	yes = purge = false;
+	yes = purge = with_debug = false;
 
-	while ((c = getopt(argc, argv, "Vcfpr:vy")) != -1) {
+	while ((c = getopt(argc, argv, "Vcdfpr:vy")) != -1) {
 		switch (c) {
 		case 'c':
 			xbps_set_cachedir(optarg);
+			break;
+		case 'd':
+			with_debug = true;
 			break;
 		case 'f':
 			flags |= XBPS_FLAG_FORCE;
@@ -184,12 +188,25 @@ main(int argc, char **argv)
 	sigaction(SIGTERM, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
 
-	if ((dict = xbps_regpkgs_dictionary_init()) == NULL) {
-		if (errno != ENOENT) {
-			rv = errno;
+	/*
+	 * Initialize stuff for libxbps.
+	 */
+	xbps_init(with_debug);
+
+	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL) {
+		if (errno && errno != ENOENT) {
 			fprintf(stderr,
 			    "E: couldn't initialize regpkgdb dict: %s\n",
 			    strerror(errno));
+			goto out;
+		}
+	}
+
+	if ((rv = xbps_repository_pool_init()) != 0) {
+		if (rv != ENOENT) {
+			fprintf(stderr,
+			    "E: couldn't initialize repository pool: %s\n",
+			    strerror(rv));
 			goto out;
 		}
 	}
@@ -221,11 +238,8 @@ main(int argc, char **argv)
 			}
 
 		}
-		if (!xbps_callback_array_iter_in_dict(dict, "packages",
-		    list_pkgs_in_dict, &pkgstate)) {
-			rv = errno;
-			goto out;
-		}
+		rv = xbps_callback_array_iter_in_dict(dict, "packages",
+		    list_pkgs_in_dict, &pkgstate);
 
 	} else if (strcasecmp(argv[0], "install") == 0) {
 		/* Installs a binary package and required deps. */
@@ -361,7 +375,7 @@ main(int argc, char **argv)
 
 		rv = xbps_callback_array_iter_in_dict(dict, "packages",
 		    list_manual_packages, NULL);
-		
+
 	} else if (strcasecmp(argv[0], "show-revdeps") == 0) {
 		/*
 		 * Show reverse dependencies for a package.

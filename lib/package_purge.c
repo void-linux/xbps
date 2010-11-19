@@ -54,16 +54,14 @@ remove_pkg_metadata(const char *pkgname)
 	struct dirent *dp;
 	DIR *dirp;
 	char *metadir, *path;
-	int flags = 0, rv = 0;
+	int rv = 0, flags = xbps_get_flags();
 
 	assert(pkgname != NULL);
-
-	flags = xbps_get_flags();
 
 	metadir = xbps_xasprintf("%s/%s/metadata/%s", xbps_get_rootdir(),
 	     XBPS_META_PATH, pkgname);
 	if (metadir == NULL)
-		return errno;
+		return ENOMEM;
 
 	dirp = opendir(metadir);
 	if (dirp == NULL) {
@@ -80,7 +78,7 @@ remove_pkg_metadata(const char *pkgname)
 		if (path == NULL) {
 			(void)closedir(dirp);
 			free(metadir);
-			return -1;
+			return ENOMEM;
 		}
 
 		if (unlink(path) == -1) {
@@ -107,7 +105,7 @@ xbps_purge_all_pkgs(void)
 	const char *pkgname;
 	int rv = 0;
 
-	if ((d = xbps_regpkgs_dictionary_init()) == NULL)
+	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
 		return errno;
 
 	iter = xbps_get_array_iter_from_dict(d, "packages");
@@ -123,7 +121,7 @@ xbps_purge_all_pkgs(void)
 	}
 	prop_object_iterator_release(iter);
 out:
-	xbps_regpkgs_dictionary_release();
+	xbps_regpkgdb_dictionary_release();
 
 	return rv;
 }
@@ -132,16 +130,15 @@ int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict, pkgd;
-	int rv = 0, flags;
+	int rv = 0, flags = xbps_get_flags();
 	pkg_state_t state = 0;
 
 	assert(pkgname != NULL);
-	flags = xbps_get_flags();
 
 	/*
 	 * Firstly let's get the pkg dictionary from regpkgdb.
 	 */
-	if ((dict = xbps_regpkgs_dictionary_init()) == NULL)
+	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL)
 		return errno;
 
 	pkgd = xbps_find_pkg_in_dict_by_name(dict, "packages", pkgname);
@@ -157,37 +154,47 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		if ((rv = xbps_get_pkg_state_dictionary(pkgd, &state)) != 0)
 			goto out;
 
-		if (state != XBPS_PKG_STATE_CONFIG_FILES)
+		if (state != XBPS_PKG_STATE_CONFIG_FILES) {
+			rv = EINVAL;
 			goto out;
+		}
 	}
 
 	/*
-	 * Remove unmodified configuration files.
+	 * Remove unmodified configuration files and directories.
 	 */
 	dict = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (dict == NULL) {
 		rv = errno;
 		goto out;
 	}
-	if ((rv = xbps_remove_pkg_files(dict, "conf_files")) != 0) {
-		prop_object_release(dict);
-		goto out;
+
+	if (prop_dictionary_get(dict, "conf_files")) {
+		if ((rv = xbps_remove_pkg_files(dict, "conf_files")) != 0) {
+			prop_object_release(dict);
+			goto out;
+		}
+		if ((rv = xbps_remove_pkg_files(dict, "dirs")) != 0) {
+			prop_object_release(dict);
+			goto out;
+		}
 	}
 	prop_object_release(dict);
 
 	/*
 	 * Remove metadata dir and unregister package.
 	 */
-	if ((rv = remove_pkg_metadata(pkgname)) == 0) {
-		if ((rv = xbps_unregister_pkg(pkgname)) == 0) {
-			if (flags & XBPS_FLAG_VERBOSE) {
-				printf("Package %s purged "
-				    "successfully.\n", pkgname);
-			}
-		}
-	}
+	if ((rv = remove_pkg_metadata(pkgname)) != 0)
+		goto out;
+
+	if ((rv = xbps_unregister_pkg(pkgname)) != 0)
+		goto out;
+
+	if (flags & XBPS_FLAG_VERBOSE)
+		printf("Package %s purged successfully.\n", pkgname);
 
 out:
-	xbps_regpkgs_dictionary_release();
+	xbps_regpkgdb_dictionary_release();
+
 	return rv;
 }

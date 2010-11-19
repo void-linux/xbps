@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -56,7 +57,7 @@ xbps_check_pkg_integrity_all(void)
 	int rv = 0;
 	size_t npkgs = 0, nbrokenpkgs = 0;
 
-	d = xbps_regpkgs_dictionary_init();
+	d = xbps_regpkgdb_dictionary_get();
 	if (d == NULL)
 		return ENODEV;
 
@@ -82,7 +83,7 @@ out:
 	if (iter)
 		prop_object_iterator_release(iter);
 
-	xbps_regpkgs_dictionary_release();
+	xbps_regpkgdb_dictionary_release();
 
 	return rv;
 }

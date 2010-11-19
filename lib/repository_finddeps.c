@@ -38,7 +38,7 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,
 	prop_dictionary_t dict;
 	prop_array_t array;
 	const char *pkgname, *pkgver;
-	int flags = xbps_get_flags(), rv = 0;
+	int rv = 0;
 	pkg_state_t state = 0;
 
 	assert(trans_dict != NULL);
@@ -63,17 +63,18 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,
 	 * Always set "not-installed" package state. Will be overwritten
 	 * to its correct state later.
 	 */
+	xbps_dbg_printf_append("\n");
 	rv = xbps_set_pkg_state_dictionary(dict, XBPS_PKG_STATE_NOT_INSTALLED);
 	if (rv != 0) {
 		prop_object_release(dict);
 		return rv;
 	}
+
 	/*
 	 * Overwrite package state in dictionary if it was unpacked
 	 * previously.
 	 */
-	rv = xbps_get_pkg_state_installed(pkgname, &state);
-	if (rv == 0) {
+	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) == 0) {
 		if ((rv = xbps_set_pkg_state_dictionary(dict, state)) != 0) {
 			prop_object_release(dict);
 			return rv;
@@ -97,9 +98,8 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,
 		prop_object_release(dict);
 		return EINVAL;
 	}
-	if (flags & XBPS_FLAG_VERBOSE)
-		printf("\n      Added package '%s' into the transaction (%s).\n",
-		    pkgver, repoloc);
+	xbps_dbg_printf("Added package '%s' into "
+	    "the transaction (%s).\n", pkgver, repoloc);
 
 	return 0;
 }
@@ -152,8 +152,8 @@ add_missing_reqdep(prop_dictionary_t trans_dict, const char *reqpkg)
 			 * if new dependency version is greater than current
 			 * one, store it.
 			 */
-			DPRINTF(("Missing pkgdep name matched, curver: %s "
-			    "newver: %s\n", curver, pkgver));
+			xbps_dbg_printf("Missing pkgdep name matched, "
+			    "curver: %s newver: %s\n", curver, pkgver);
 			if (xbps_cmpver(curver, pkgver) <= 0) {
 				add_pkgdep = false;
 				free(curpkgnamedep);
@@ -250,7 +250,7 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 	pkg_state_t state = 0;
 	const char *reqpkg, *reqvers, *pkg_queued, *repo_pkgver;
 	char *pkgname;
-	int flags = xbps_get_flags(), rv = 0;
+	int rv = 0;
 
 	iter = prop_array_iterator(pkg_rdeps_array);
 	if (iter == NULL)
@@ -266,26 +266,25 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 			rv = EINVAL;
 			break;
 		}
-		if (flags & XBPS_FLAG_VERBOSE) {
-			if (originpkgn)
-				printf("  %s requires dependency '%s' "
-				    "[direct]: ", originpkgn, reqpkg);
-			else
-				printf("    requires dependency '%s' "
-				    "[indirect]: ", reqpkg);
-		}
+		if (originpkgn)
+			xbps_dbg_printf("  %s requires dependency '%s' "
+			    "[direct]: ", originpkgn, reqpkg);
+		else
+			xbps_dbg_printf("    requires dependency '%s' "
+			    "[indirect]: ", reqpkg);
+
 		/*
 		 * Check if required dep is satisfied and installed.
 		 */
 		rv = xbps_check_is_installed_pkg(reqpkg);
 		if (rv == -1) {
 			/* There was an error checking it... */
-			DPRINTF(("Error matching reqdep %s\n", reqpkg));
+			xbps_dbg_printf_append("error matching reqdep %s\n",
+			    reqpkg);
 			break;
 		} else if (rv == 1) {
 			/* Required pkg dependency is satisfied */
-			if (flags & XBPS_FLAG_VERBOSE)
-				printf("satisfied and installed.\n");
+			xbps_dbg_printf_append("satisfied and installed.\n");
 			rv = 0;
 			continue;
 		}
@@ -318,8 +317,8 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 			    "pkgver", &pkg_queued);
 			if (xbps_pkgpattern_match(pkg_queued,
 			    __UNCONST(reqpkg))) {
-				if (flags & XBPS_FLAG_VERBOSE)
-					printf("queued in the transaction.\n");
+				xbps_dbg_printf_append(
+				    "queued in the transaction.\n");
 				free(pkgname);
 				continue;
 			}
@@ -340,19 +339,19 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 
 			rv = add_missing_reqdep(trans_dict, reqpkg);
 			if (rv != 0 && rv != EEXIST) {
-				DPRINTF(("add missing reqdep failed %s\n",
-				    reqpkg));
+				xbps_dbg_printf_append("add missing reqdep "
+				    "failed %s\n", reqpkg);
 				free(pkgname);
 				break;
 			} else if (rv == EEXIST) {
-				DPRINTF(("Missing dep %s already added.\n",
-				    reqpkg));
+				xbps_dbg_printf_append("missing dep %s "
+				    "already added.\n", reqpkg);
 				rv = 0;
 				free(pkgname);
 				continue;
 			} else {
-				if (flags & XBPS_FLAG_VERBOSE)
-					printf("missing package in repository!\n");
+				xbps_dbg_printf_append(
+				    "missing package in repository!\n");
 				free(pkgname);
 				continue;
 			}
@@ -401,9 +400,10 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 		/*
 		 * Package is on repo, add it into the dictionary.
 		 */
-		if ((rv = store_dependency(trans_dict, curpkgd,
-		    repoloc)) != 0) {
-			DPRINTF(("store_dependency failed %s\n", reqpkg));
+		rv = store_dependency(trans_dict, curpkgd, repoloc);
+		if (rv != 0) {
+			xbps_dbg_printf("store_dependency failed %s",
+			    reqpkg);
 			free(pkgname);
 			break;
 		}
@@ -416,10 +416,10 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 		if (rv == ENOENT) {
 			rv = 0;
 		} else if (rv == 0) {
-			DPRINTF(("Removed missing dep %s.\n", reqpkg));
+			xbps_dbg_printf("Removed missing dep %s.\n", reqpkg);
 		} else {
-			DPRINTF(("Removing missing dep %s returned %s\n",
-			    reqpkg, strerror(rv)));
+			xbps_dbg_printf("Removing missing dep %s "
+			    "returned %s\n", reqpkg, strerror(rv));
 			free(pkgname);
 			break;
 		}
@@ -436,15 +436,15 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 		/*
 		 * Iterate on required pkg to find more deps.
 		 */
-		if (flags & XBPS_FLAG_VERBOSE)
-			printf("   Finding dependencies for '%s-%s' [%s]:\n",
+		xbps_dbg_printf_append("\n");
+		xbps_dbg_printf("Finding dependencies for '%s-%s' [%s]:\n",
 			    pkgname, reqvers, originpkgn ? "direct" : "indirect");
 
 		free(pkgname);
 		if ((rv = find_repo_deps(trans_dict, repo_dict, repoloc,
 		     NULL, curpkg_rdeps)) != 0) {
-			DPRINTF(("Error checking %s rundeps %s\n",
-			    reqpkg, strerror(errno)));
+			xbps_dbg_printf("Error checking %s for rundeps: %s\n",
+			    reqpkg, strerror(rv));
 			break;
 		}
 	}
@@ -453,14 +453,34 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 	return rv;
 }
 
+struct rpool_index_data {
+	prop_dictionary_t transd;
+	prop_array_t rdeps;
+	const char *pkgname;
+};
+
+static int
+find_repo_deps_in_pool(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	struct rpool_index_data *rid = arg;
+	int rv;
+
+	(void)done;
+
+	rv = find_repo_deps(rid->transd, rpi->rpi_repod, rpi->rpi_uri,
+	    rid->pkgname, rid->rdeps);
+	return rv;
+}
+
+	
 int HIDDEN
 xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
 			      prop_dictionary_t repo_pkg_dict)
 {
 	prop_array_t pkg_rdeps, missing_rdeps;
-	struct repository_pool *rpool;
+	struct rpool_index_data *rid;
 	const char *pkgname, *pkgver;
-	int flags = xbps_get_flags(), rv = 0;
+	int rv = 0;
 
 	assert(trans_dict != NULL);
 	assert(repo_pkg_dict != NULL);
@@ -469,31 +489,36 @@ xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
 	if (pkg_rdeps == NULL)
 		return 0;
 
+	rid = malloc(sizeof(struct rpool_index_data));
+	if (rid == NULL)
+		return ENOMEM;
+
 	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgver", &pkgver);
 
 	if ((rv = xbps_repository_pool_init()) != 0)
-		return rv;
+		goto out;
 
-	if (flags & XBPS_FLAG_VERBOSE)
-		printf(" Finding required dependencies for '%s':\n", pkgver);
+	xbps_dbg_printf("Finding required dependencies for '%s':\n", pkgver);
 
 	/*
 	 * Iterate over the repository pool and find out if we have
 	 * all available binary packages.
 	 */
-	SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
-		/*
-		 * This will find direct and indirect deps,
-		 * if any of them is not there it will be added
-		 * into the missing_deps array.
-		 */
-		if ((rv = find_repo_deps(trans_dict, rpool->rp_repod,
-		    rpool->rp_uri, pkgname, pkg_rdeps)) != 0) {
-			DPRINTF(("Error '%s' while checking rundeps!\n",
-			    strerror(rv)));
-			goto out;
-		}
+	rid->transd = trans_dict;
+	rid->rdeps = pkg_rdeps;
+	rid->pkgname = pkgname;
+
+	/*
+	 * This will find direct and indirect deps,
+	 * if any of them is not there it will be added
+	 * into the missing_deps array.
+	 */
+	rv = xbps_repository_pool_foreach(find_repo_deps_in_pool, rid);
+	if (rv != 0) {
+		xbps_dbg_printf("Error '%s' while checking rundeps!\n",
+		    strerror(errno));
+		goto out;
 	}
 
 	/*
@@ -507,16 +532,20 @@ xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
 	 * Iterate one more time, but this time with missing deps
 	 * that were found in previous pass.
 	 */
-	DPRINTF(("Checking for missing deps in %s.\n", pkgname)); 
-	SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
-		if ((rv = find_repo_deps(trans_dict, rpool->rp_repod,
-		    rpool->rp_uri, pkgname, missing_rdeps)) != 0) {
-			DPRINTF(("Error '%s' while checking for "
-			    "missing rundeps!\n", strerror(rv)));
-			goto out;
-		}
+	rid->rdeps = missing_rdeps;
+	rid->pkgname = NULL;
+
+	xbps_dbg_printf("Checking for missing deps in %s.\n", pkgname); 
+	rv = xbps_repository_pool_foreach(find_repo_deps_in_pool, rid);
+	if (rv != 0) {
+		xbps_dbg_printf("Error '%s' while checking for "
+		    "missing rundeps!\n", strerror(errno));
+		goto out;
 	}
 out:
+	if (rid)
+		free(rid);
+
 	xbps_repository_pool_release();
 
 	return rv;

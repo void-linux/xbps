@@ -91,10 +91,12 @@ set_extract_flags(int *flags, bool update)
  * the consumer.
  */
 static int
-unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
-		    const char *pkgname, const char *version)
+unpack_archive_fini(struct archive *ar,
+		    prop_dictionary_t pkg,
+		    const char *pkgname,
+		    const char *version)
 {
-	prop_dictionary_t filesd = NULL, old_filesd = NULL;
+	prop_dictionary_t propsd, filesd, old_filesd;
 	struct archive_entry *entry;
 	size_t entry_idx = 0;
 	const char *rootdir, *entry_str, *transact;
@@ -128,9 +130,10 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
 		    XBPS_META_PATH, pkgname);
 		if (buf == NULL)
-			return errno;
+			return ENOMEM;
+
 		if (unlink(buf) == -1) {
-			if (errno != ENOENT) {
+			if (errno && errno != ENOENT) {
 				free(buf);
 				return errno;
 			}
@@ -139,9 +142,10 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
 		    XBPS_META_PATH, pkgname);
 		if (buf == NULL)
-			return errno;
+			return ENOMEM;
+
 		if (unlink(buf) == -1) {
-			if (errno != ENOENT) {
+			if (errno && errno != ENOENT) {
 				free(buf);
 				return errno;
 			}
@@ -161,16 +165,18 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		if (strcmp("./INSTALL", entry_str) == 0) {
 			buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
 			    XBPS_META_PATH, pkgname);
-			if (buf == NULL)
-				return errno;
+			if (buf == NULL) {
+				rv = ENOMEM;
+				goto out;
+			}
 
 			archive_entry_set_pathname(entry, buf);
-			archive_entry_set_mode(entry, 0750);
+			archive_entry_set_perm(entry, 0750);
 
 			if (archive_read_extract(ar, entry, lflags) != 0) {
 				if ((rv = archive_errno(ar)) != EEXIST) {
 					free(buf);
-					return rv;
+					goto out;
 				}
 			}
 			
@@ -181,7 +187,7 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 				fprintf(stderr,
 				    "%s: preinst action target error %s\n",
 				    pkgname, strerror(errno));
-				return rv;
+				goto out;
 			}
 			/* Pass to the next entry if successful */
 			free(buf);
@@ -194,13 +200,18 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		} else if (strcmp("./REMOVE", entry_str) == 0) {
 			buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
 			    XBPS_META_PATH, pkgname);
-			if (buf == NULL)
-				return errno;
+			if (buf == NULL) {
+				rv = ENOMEM;
+				goto out;
+			}
+
 			archive_entry_set_pathname(entry, buf);
 			free(buf);
-			archive_entry_set_mode(entry, 0750);
-			if (archive_read_extract(ar, entry, lflags) != 0)
-				return archive_errno(ar);
+			archive_entry_set_perm(entry, 0750);
+			if (archive_read_extract(ar, entry, lflags) != 0) {
+				if ((rv = archive_errno(ar)) != EEXIST)
+					goto out;
+			}
 
 			/* Pass to next entry if successful */
 			entry_idx++;
@@ -213,8 +224,10 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 			 * all files are extracted.
 			 */
 			filesd = xbps_read_dict_from_archive_entry(ar, entry);
-			if (filesd == NULL)
-				return errno;
+			if (filesd == NULL) {
+				rv = errno;
+				goto out;
+			}
 
 			/* Pass to next entry */
 			files_plist_found = true;
@@ -222,36 +235,30 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 			continue;
 
 		} else if (strcmp("./props.plist", entry_str) == 0) {
-			buf = xbps_xasprintf(".%s/metadata/%s/props.plist",
-			    XBPS_META_PATH, pkgname);
-			if (buf == NULL)
-				return errno;
+			buf = xbps_xasprintf(".%s/metadata/%s/%s",
+			    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
+			if (buf == NULL) {
+				rv = ENOMEM;
+				goto out;
+			}
+
 			archive_entry_set_pathname(entry, buf);
 			free(buf);
 
 			if (archive_read_extract(ar, entry, lflags) != 0)
 				return archive_errno(ar);
 
+			propsd =
+			    xbps_get_pkg_dict_from_metadata_plist(pkgname,
+			    XBPS_PKGPROPS);
+			if (propsd == NULL) {
+				rv = errno;
+				goto out;
+			}
 			/* Pass to next entry if successful */
 			props_plist_found = true;
 			entry_idx++;
 			continue;
-
-		} else {
-			/*
-			 * Handle configuration files.
-			 */
-			if ((rv = xbps_config_file_from_archive_entry(filesd,
-			    entry, pkgname, &lflags, &skip_entry)) != 0) {
-				prop_object_release(filesd);
-				return rv;
-			}
-			if (skip_entry) {
-				archive_read_data_skip(ar);
-				skip_entry = false;
-				entry_idx++;
-				continue;
-			}
 		}
 
 		/*
@@ -266,10 +273,29 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 			 * This is not an XBPS binary package.
 			 */
 			if (entry_idx >= 3)
-				return ENOPKG;
+				return ENODEV;
 
 			entry_idx++;
 			continue;
+		}
+
+		/*
+		 * Handle configuration files. Check if current entry is
+		 * a configuration file and take action if required. Skip
+		 * packages that don't have the "conf_files" array in
+		 * the XBPS_PKGPROPS dictionary.
+		 */
+		if (prop_dictionary_get(propsd, "conf_files")) {
+			if ((rv = xbps_config_file_from_archive_entry(filesd,
+			    propsd, entry, &lflags, &skip_entry)) != 0) {
+				prop_object_release(filesd);
+				goto out;
+			}
+			if (skip_entry) {
+				archive_read_data_skip(ar);
+				skip_entry = false;
+				continue;
+			}
 		}
 
 		/*
@@ -303,10 +329,10 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		 */
 		if (archive_read_extract(ar, entry, lflags) != 0) {
 			rv = archive_errno(ar);
-			if (rv != EEXIST) {
+			if (rv && rv != EEXIST) {
 				fprintf(stderr, "ERROR: %s...exiting!\n",
 				    archive_error_string(ar));
-				return rv;;
+				goto out;
 			} else if (rv == EEXIST) {
 				if (flags & XBPS_FLAG_VERBOSE) {
 					fprintf(stderr,
@@ -322,33 +348,33 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 	}
 
 	if ((rv = archive_errno(ar)) == 0) {
-		buf = xbps_xasprintf(".%s/metadata/%s/files.plist",
-		    XBPS_META_PATH, pkgname);
+		buf = xbps_xasprintf(".%s/metadata/%s/%s",
+		    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
 		if (buf == NULL) {
 			prop_object_release(filesd);
-			return errno;
+			return ENOMEM;
 		}
 		/*
 		 * Check if files.plist exists and pkg is NOT marked as
 		 * preserve, in that case we need to check for obsolete files
 		 * and remove them if necessary.
 		 */
-		if (!preserve && (access(buf, R_OK) == 0)) {
+		if (!preserve) {
 			old_filesd =
 			    prop_dictionary_internalize_from_zfile(buf);
-			if (old_filesd == NULL) {
+			if (old_filesd) {
+				rv = xbps_remove_obsoletes(old_filesd, filesd);
+				if (rv != 0) {
+					prop_object_release(old_filesd);
+					prop_object_release(filesd);
+					free(buf);
+					return rv;
+				}
+			} else if (errno && errno != ENOENT) {
 				prop_object_release(filesd);
 				free(buf);
 				return errno;
 			}
-			rv = xbps_remove_obsoletes(old_filesd, filesd);
-			if (rv != 0) {
-				prop_object_release(old_filesd);
-				prop_object_release(filesd);
-				free(buf);
-				return rv;
-			}
-			prop_object_release(old_filesd);
 		}
 		/*
 		 * Now that all files were successfully unpacked, we
@@ -362,8 +388,12 @@ unpack_archive_fini(struct archive *ar, prop_dictionary_t pkg,
 		}
 		free(buf);
 	}
+
+out:
 	if (filesd)
 		prop_object_release(filesd);
+	if (propsd)
+		prop_object_release(propsd);
 
 	return rv;
 }
@@ -388,6 +418,8 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 
 	if ((pkg_fd = open(binfile, O_RDONLY)) == -1) {
 		rv = errno;
+		xbps_dbg_printf("cannot open '%s' for unpacking %s\n",
+		    binfile, strerror(errno));
 		goto out;
 	}
 
@@ -403,9 +435,11 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 	archive_read_support_compression_all(ar);
 	archive_read_support_format_tar(ar);
 
-	if ((rv = archive_read_open_fd(ar, pkg_fd,
-	     ARCHIVE_READ_BLOCKSIZE)) != 0)
+	if (archive_read_open_fd(ar, pkg_fd,
+	     ARCHIVE_READ_BLOCKSIZE) != 0) {
+		rv = errno;
 		goto out;
+	}
 
 	if ((rv = unpack_archive_fini(ar, pkg, pkgname, version)) != 0)
 		goto out;

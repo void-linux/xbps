@@ -78,7 +78,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 	prop_object_iterator_t iter;
 	prop_object_t obj;
 	const char *file, *sha256, *curobj = NULL;
-	char *dname = NULL, *path = NULL;
+	char *path = NULL;
 	int flags = 0, rv = 0;
 
 	assert(dict != NULL);
@@ -87,12 +87,14 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 	flags = xbps_get_flags();
 
 	array = prop_dictionary_get(dict, key);
-	if (array == NULL || prop_array_count(array) == 0)
+	if (array == NULL)
+		return EINVAL;
+	else if (prop_array_count(array) == 0)
 		return 0;
 
 	iter = xbps_get_array_iter_from_dict(dict, key);
 	if (iter == NULL)
-		return errno;
+		return ENOMEM;
 
 	if (strcmp(key, "files") == 0)
 		curobj = "file";
@@ -107,9 +109,10 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 		prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 		path = xbps_xasprintf("%s/%s", xbps_get_rootdir(), file);
 		if (path == NULL) {
-			rv = errno;
+			rv = ENOMEM;
 			break;
 		}
+
 		if ((strcmp(key, "files") == 0) ||
 		    (strcmp(key, "conf_files") == 0)) {
 			/*
@@ -163,25 +166,6 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 			if (flags & XBPS_FLAG_VERBOSE)
 				printf("Removed %s: %s\n", curobj, file);
 		}
-		/*
-		 * When purging a package, also remove the directory where
-		 * the conf_files are living on.
-		 */
-		if (strcmp(key, "conf_files") == 0) {
-			dname = dirname(path);
-			if (rmdir(dname) == -1) {
-				if (errno != ENOTEMPTY) {
-					fprintf(stderr,
-				    	    "WARNING: can't remove %s %s "
-				    	    "(%s)\n", curobj, file,
-					    strerror(errno));
-				}
-			} else {
-				if (flags & XBPS_FLAG_VERBOSE)
-					printf("Removed empty directory: "
-					    "%s\n", dname);
-			}
-		}
 		free(path);
 	}
 	prop_object_iterator_release(iter);
@@ -195,6 +179,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	prop_dictionary_t dict;
 	char *buf;
 	int rv = 0;
+	bool rmfile_exists = false;
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
@@ -208,24 +193,31 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
 	    XBPS_META_PATH, pkgname);
 	if (buf == NULL)
-		return errno;
+		return ENOMEM;
 
 	if (chdir(xbps_get_rootdir()) == -1) {
 		free(buf);
-		return errno;
+		return EINVAL;
 	}
 
 	/*
 	 * Run the pre remove action.
 	 */
-	rv = xbps_file_exec(buf, "pre", pkgname, version,
-	    update ? "yes" : "no", NULL);
-	if (rv != 0 && errno != ENOENT) {
-		fprintf(stderr,
-		    "%s: prerm action target error (%s)\n", pkgname,
-		    strerror(errno));
-		free(buf);
-		return rv;
+	if (access(buf, X_OK) == 0) {
+		rmfile_exists = true;
+		if (xbps_file_exec(buf, "pre", pkgname, version,
+		    update ? "yes" : "no", NULL) != 0) {
+			fprintf(stderr,
+			    "%s: prerm action target error (%s)\n",
+			    pkgname, strerror(errno));
+			free(buf);
+			return errno;
+		}
+	} else {
+		if (errno != ENOENT) {
+			free(buf);
+			return errno;
+		}
 	}
 
 	/*
@@ -271,13 +263,13 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	 * Execute the post REMOVE action if file exists and we aren't
 	 * updating the package.
 	 */
-	rv = xbps_file_exec(buf, "post", pkgname, version, "no", NULL);
-	if (rv != 0 && errno != ENOENT) {
+	if (rmfile_exists &&
+	    (xbps_file_exec(buf, "post", pkgname, version, "no", NULL) != 0)) {
 		fprintf(stderr,
 		    "%s: postrm action target error (%s)\n", pkgname,
 		    strerror(errno));
 		free(buf);
-		return rv;
+		return errno;
 	}
 	free(buf);
 
@@ -292,6 +284,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	 */
 	rv = xbps_set_pkg_state_installed(pkgname,
 	     XBPS_PKG_STATE_CONFIG_FILES);
+
 
 	return rv;
 }

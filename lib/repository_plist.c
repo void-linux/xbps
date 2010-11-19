@@ -221,12 +221,45 @@ xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 	return plistd;
 }
 
+struct rpool_index_data {
+	prop_dictionary_t plistd;
+	const char *plistf;
+	const char *pkgname;
+};
+
+static int
+repo_find_pkg_plistd_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	struct rpool_index_data *rid = arg;
+	prop_dictionary_t pkgd;
+	char *url;
+
+	pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
+	    "packages", rid->pkgname);
+	if (pkgd == NULL) {
+		if (errno != ENOENT)
+			return errno;
+
+		return 0;
+	}
+	url = xbps_repository_get_path_from_pkg_dict(pkgd, rpi->rpi_uri);
+	if (url == NULL)
+		return EINVAL;
+
+	rid->plistd =
+	    xbps_repository_get_pkg_plist_dict_from_url(url, rid->plistf);
+	free(url);
+	if (prop_object_type(rid->plistd) == PROP_TYPE_DICTIONARY)
+		*done = true;
+
+	return 0;
+}
+
 prop_dictionary_t
 xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 {
-	prop_dictionary_t plistd = NULL, pkgd;
-	struct repository_pool *rpool;
-	char *url = NULL;
+	prop_dictionary_t plistd;
+	struct rpool_index_data *rid;
 	int rv = 0;
 
 	if ((rv = xbps_repository_pool_init()) != 0) {
@@ -234,6 +267,10 @@ xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 		return NULL;
 	}
 
+	rid = malloc(sizeof(struct rpool_index_data));
+	if (rid == NULL)
+		goto out;
+		
 	/*
 	 * Iterate over the the repository pool and search for a plist file
 	 * in the binary package named 'pkgname'. The plist file will be
@@ -243,27 +280,12 @@ xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 	 * This will work locally and remotely, thanks to libarchive and
 	 * libfetch!
 	 */
-	SIMPLEQ_FOREACH(rpool, &rp_queue, rp_entries) {
-		pkgd = xbps_find_pkg_in_dict_by_name(rpool->rp_repod,
-		    "packages", pkgname);
-		if (pkgd == NULL) {
-			if (errno != ENOENT)
-				break;
-			continue;
-		}
-		url = xbps_repository_get_path_from_pkg_dict(pkgd,
-		    rpool->rp_uri);
-		if (url == NULL)
-			break;
-		plistd = xbps_repository_get_pkg_plist_dict_from_url(url,
-		    plistf);
-		if (plistd != NULL) {
-			free(url);
-			break;
-		}
-		free(url);
-	}
-
+	rid->pkgname = pkgname;
+	rid->plistf = plistf;
+	rv = xbps_repository_pool_foreach(repo_find_pkg_plistd_cb, rid);
+	plistd = rid->plistd;
+	free(rid);
+out:
 	xbps_repository_pool_release();
 	if (plistd == NULL)
 		errno = ENOENT;

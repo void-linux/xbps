@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@
 
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
+#include "queue.h"
 
 struct sorted_dependency {
 	SIMPLEQ_ENTRY(sorted_dependency) chain;
@@ -44,20 +45,15 @@ find_sorteddep_by_name(const char *pkgname)
 {
 	struct sorted_dependency *sdep = NULL;
 	const char *curpkgname;
-	bool found = false;
 
 	SIMPLEQ_FOREACH(sdep, &sdep_list, chain) {
 		prop_dictionary_get_cstring_nocopy(sdep->dict,
 		    "pkgname", &curpkgname);
-		if (strcmp(pkgname, curpkgname) == 0) {
-			found = true;
-			break;
-		}
+		if (strcmp(pkgname, curpkgname) == 0)
+			return sdep;
 	}
-	if (!found)
-		return NULL;
 
-	return sdep;
+	return NULL;
 }
 
 int HIDDEN
@@ -107,13 +103,14 @@ again:
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		DPRINTF(("Sorting package: %s\n", pkgver));
+		xbps_dbg_printf("Sorting package '%s': ", pkgver);
 		if (find_sorteddep_by_name(pkgname) != NULL) {
-			DPRINTF(("Skipping %s already queued.\n", pkgname));
+			xbps_dbg_printf_append("skipping, already queued.\n",
+			    pkgname);
 			continue;
 		}
 
-		sdep = malloc(sizeof(*sdep));
+		sdep = malloc(sizeof(struct sorted_dependency));
 		if (sdep == NULL) {
 			rv = ENOMEM;
 			goto out;
@@ -124,8 +121,8 @@ again:
 		 */
 		rundeps = prop_dictionary_get(obj, "run_depends");
 		if (rundeps == NULL || prop_array_count(rundeps) == 0) {
-			DPRINTF(("Adding %s (no rundeps) into the sorted "
-			    "queue.\n", pkgver));
+			xbps_dbg_printf_append("added (no rundeps) into "
+			    "the sorted queue.\n");
 			sdep->dict = prop_dictionary_copy(obj);
 			SIMPLEQ_INSERT_TAIL(&sdep_list, sdep, chain);
 			cnt++;
@@ -133,15 +130,18 @@ again:
 		}
 		iter2 = prop_array_iterator(rundeps);
 		if (iter2 == NULL) {
-			free(sdep);
 			rv = ENOMEM;
+			free(sdep);
 			goto out;
 		}
+
 		/*
 		 * Iterate over the run_depends array, and find out if they
 		 * were already added in the sorted list.
 		 */
-		DPRINTF(("Checking %s run_depends for sorting...\n", pkgver));
+		xbps_dbg_printf_append("\n");
+		xbps_dbg_printf("Checking '%s' run depends for sorting...\n",
+		    pkgver);
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
 			str = prop_string_cstring_nocopy(obj2);
 			if (str == NULL) {
@@ -152,22 +152,22 @@ again:
 			pkgnamedep = xbps_get_pkgpattern_name(str);
 			if (pkgnamedep == NULL) {
 				free(sdep);
-				rv = errno;
+				rv = EINVAL;
 				goto out;
 			}
-			DPRINTF(("Required dependency %s: ", str));
+			xbps_dbg_printf("  Required dependency '%s': ", str);
 			/*
 			 * If dependency is already satisfied or queued,
 			 * pass to the next one.
 			 */
 			if (xbps_check_is_installed_pkg(str)) {
 				rundepscnt++;
-				DPRINTF(("installed.\n"));
+				xbps_dbg_printf_append("installed.\n");
 			} else if (find_sorteddep_by_name(pkgnamedep) != NULL) {
-				DPRINTF(("queued.\n"));
+				xbps_dbg_printf_append("queued.\n");
 				rundepscnt++;
 			} else {
-				DPRINTF(("not installed or queued.\n"));
+				xbps_dbg_printf_append("not installed.\n");
 			}
 			free(pkgnamedep);
 		}
@@ -175,23 +175,25 @@ again:
 
 		/* Add dependency if all its required deps are already added */
 		if (prop_array_count(rundeps) == rundepscnt) {
-			DPRINTF(("Adding package %s to the sorted queue.\n",
-			    pkgver));
 			sdep->dict = prop_dictionary_copy(obj);
 			SIMPLEQ_INSERT_TAIL(&sdep_list, sdep, chain);
+			xbps_dbg_printf("Added package '%s' to the sorted "
+			    "queue (all rundeps satisfied).\n\n", pkgver);
 			rundepscnt = 0;
 			cnt++;
 			continue;
 		}
-		DPRINTF(("Unsorted package %s has missing rundeps.\n", pkgver));
+		xbps_dbg_printf("Unsorted package '%s' has missing "
+		    "rundeps (missing %zu).\n\n", pkgver,
+		    prop_array_count(rundeps) - rundepscnt);
 		free(sdep);
 		rundepscnt = 0;
 	}
 
 	/* Iterate until all deps are processed. */
 	if (cnt < ndeps) {
-		DPRINTF(("Missing required deps! cnt: %zu ndeps: %zu\n",
-		    cnt, ndeps));
+		xbps_dbg_printf("Missing required deps! queued: %zu "
+		    "required: %zu.\n", cnt, ndeps);
 		prop_object_iterator_reset(iter);
 		goto again;
 	}
@@ -203,7 +205,7 @@ again:
 	while ((sdep = SIMPLEQ_FIRST(&sdep_list)) != NULL) {
 		if (!prop_array_add(sorted, sdep->dict)) {
 			free(sdep);
-			rv = errno;
+			rv = EINVAL;
 			goto out;
 		}
 		SIMPLEQ_REMOVE(&sdep_list, sdep, sorted_dependency, chain);

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,21 @@
 
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
+#include "queue.h"
 
 /**
  * @file lib/repository_pool.c
  * @brief Repository pool init/fini routines
  * @defgroup repopool Repository pool init/fini functions
  */
+
+struct repository_pool {
+	SIMPLEQ_ENTRY(repository_pool) rp_entries;
+	struct repository_pool_index *rpi;
+};
+
+static SIMPLEQ_HEAD(rpool_head, repository_pool) rpool_queue =
+    SIMPLEQ_HEAD_INITIALIZER(rpool_queue);
 
 static size_t repolist_refcnt;
 static bool repolist_initialized;
@@ -58,19 +67,19 @@ xbps_repository_pool_init(void)
 		return 0;
 	}
 
-	SIMPLEQ_INIT(&rp_queue);
-
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REPOLIST);
 	if (plist == NULL) {
-		rv = EINVAL;
+		rv = errno;
 		goto out;
 	}
 
 	dict = prop_dictionary_internalize_from_zfile(plist);
 	if (dict == NULL) {
-                free(plist);
 		rv = errno;
+                free(plist);
+		xbps_dbg_printf("%s: cannot internalize plist %s: %s\n",
+		    __func__, plist, strerror(errno));
 		goto out;
 	}
 	free(plist);
@@ -96,7 +105,7 @@ xbps_repository_pool_init(void)
 		plist =
 		    xbps_get_pkg_index_plist(prop_string_cstring_nocopy(obj));
 		if (plist == NULL) {
-			rv = EINVAL;
+			rv = errno;
 			goto out;
 		}
 
@@ -106,16 +115,26 @@ xbps_repository_pool_init(void)
 			goto out;
 		}
 
-		rpool->rp_uri = prop_string_cstring(obj);
-		if (rpool->rp_uri == NULL) {
-			free(rpool);
-			free(plist);
+		rpool->rpi = malloc(sizeof(struct repository_pool_index));
+		if (rpool->rpi == NULL) {
 			rv = errno;
+			free(rpool);
 			goto out;
 		}
-		rpool->rp_repod = prop_dictionary_internalize_from_zfile(plist);
-		if (rpool->rp_repod == NULL) {
-			free(rpool->rp_uri);
+
+		rpool->rpi->rpi_uri = prop_string_cstring(obj);
+		if (rpool->rpi->rpi_uri == NULL) {
+			rv = errno;
+			free(rpool->rpi);
+			free(rpool);
+			free(plist);
+			goto out;
+		}
+		rpool->rpi->rpi_repod =
+		    prop_dictionary_internalize_from_zfile(plist);
+		if (rpool->rpi->rpi_repod == NULL) {
+			free(rpool->rpi->rpi_uri);
+			free(rpool->rpi);
 			free(rpool);
 			free(plist);
 			if (errno == ENOENT) {
@@ -124,10 +143,14 @@ xbps_repository_pool_init(void)
 				continue;
 			}
 			rv = errno;
+			xbps_dbg_printf("%s: cannot internalize plist %s: %s\n",
+			    __func__, plist, strerror(errno));
 			goto out;
 		}
 		free(plist);
-		SIMPLEQ_INSERT_TAIL(&rp_queue, rpool, rp_entries);
+		xbps_dbg_printf("Registered repository '%s'\n",
+		    rpool->rpi->rpi_uri);
+		SIMPLEQ_INSERT_TAIL(&rpool_queue, rpool, rp_entries);
 	}
 
 	if (ntotal - nmissing == 0)
@@ -135,13 +158,13 @@ xbps_repository_pool_init(void)
 
 	repolist_initialized = true;
 	repolist_refcnt = 1;
-	DPRINTF(("%s: initialized ok.\n", __func__));
+	xbps_dbg_printf("%s: initialized ok.\n", __func__);
 out:
 	if (iter)
 		prop_object_iterator_release(iter);
 	if (dict)
 		prop_object_release(dict);
-	if (rv != 0)
+	if (rv != 0) 
 		xbps_repository_pool_release();
 
 	return rv;
@@ -156,13 +179,37 @@ xbps_repository_pool_release(void)
 	if (--repolist_refcnt > 0)
 		return;
 
-	while ((rpool = SIMPLEQ_FIRST(&rp_queue)) != NULL) {
-		SIMPLEQ_REMOVE(&rp_queue, rpool, repository_pool, rp_entries);
-		prop_object_release(rpool->rp_repod);
-		free(rpool->rp_uri);
+	while ((rpool = SIMPLEQ_FIRST(&rpool_queue)) != NULL) {
+		SIMPLEQ_REMOVE(&rpool_queue, rpool, repository_pool, rp_entries);
+		xbps_dbg_printf("Unregistered repository '%s'\n",
+		    rpool->rpi->rpi_uri);
+		prop_object_release(rpool->rpi->rpi_repod);
+		free(rpool->rpi->rpi_uri);
+		free(rpool->rpi);
 		free(rpool);
 	}
 	repolist_refcnt = 0;
 	repolist_initialized = false;
-	DPRINTF(("%s: released ok.\n", __func__));
+	xbps_dbg_printf("%s: released ok.\n", __func__);
+}
+
+int
+xbps_repository_pool_foreach(
+		int (*fn)(struct repository_pool_index *, void *, bool *),
+		void *arg)
+{
+	struct repository_pool *rpool;
+	int rv = 0;
+	bool done = false;
+
+	if (!repolist_initialized)
+		return 0;
+
+	SIMPLEQ_FOREACH(rpool, &rpool_queue, rp_entries) {
+		rv = (*fn)(rpool->rpi, arg, &done);
+		if (rv != 0 || done)
+			break;
+	}
+
+	return rv;
 }

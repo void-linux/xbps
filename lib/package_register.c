@@ -53,7 +53,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
-		return EINVAL;
+		return ENOMEM;
 
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version);
@@ -70,29 +70,24 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 		    "packages", pkgname);
 		if (pkgd == NULL) {
 			rv = errno;
-			DPRINTF(("%s: find_pkg_in_dict_by_name failed: %s\n",
-			     __func__, strerror(rv)));
 			goto out;
 		}
 		if (!prop_dictionary_set_cstring_nocopy(pkgd,
 		    "version", version)) {
 			prop_object_release(pkgd);
-			rv = errno;
-			DPRINTF(("%s: version obj not found!\n", __func__));
+			rv = EINVAL;
 			goto out;
 		}
 		if (!prop_dictionary_set_cstring_nocopy(pkgd,
 		    "pkgver", pkgver)) {
 			prop_object_release(pkgd);
-			rv = errno;
-			DPRINTF(("%s: pkgver obj not found!\n", __func__));
+			rv = EINVAL;
 			goto out;
 		}
 		if (!prop_dictionary_set_cstring_nocopy(pkgd,
 		    "short_desc", desc)) {
 			prop_object_release(pkgd);
-			rv = errno;
-			DPRINTF(("%s: short_desc obj not found!\n", __func__));
+			rv = EINVAL;
 			goto out;
 		}
 		if (!prop_dictionary_get_bool(pkgd,
@@ -100,9 +95,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 			if (!prop_dictionary_set_bool(pkgd,
 		    	    "automatic-install", automatic)) {
 				prop_object_release(pkgd);
-				rv = errno;
-				DPRINTF(("%s: autoinst obj not found!\n",
-				    __func__));
+				rv = EINVAL;
 				goto out;
 			}
 		}
@@ -114,24 +107,19 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 			array = prop_dictionary_get(dict, "packages");
 			if (array == NULL) {
 				prop_object_release(pkgd);
-				rv = ENOENT;
-				DPRINTF(("%s: packages array obj not found!\n",
-				    __func__));
+				rv = EINVAL;
 				goto out;
 			}
-			rv = xbps_requiredby_pkg_add(array, pkgrd);
-			if (rv != 0) {
-				prop_object_release(pkgd);
-				DPRINTF(("%s: requiredby_pkg_add failed %d\n",
-				    __func__, rv));
+			if ((rv = xbps_requiredby_pkg_add(array, pkgrd)) != 0)
 				goto out;
-			}
 		}
 		/*
 		 * Write plist file to storage.
 		 */
-		if (!prop_dictionary_externalize_to_zfile(dict, plist))
+		if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
 			rv = errno;
+			goto out;
+		}
 	} else {
 		free(plist);
 		return ENOENT;
@@ -154,9 +142,11 @@ xbps_unregister_pkg(const char *pkgname)
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
-		return EINVAL;
+		return ENOMEM;
 
-	rv = xbps_remove_pkg_dict_from_file(pkgname, plist);
+	if (!xbps_remove_pkg_dict_from_file(pkgname, plist))
+		rv = errno;
+
 	free(plist);
 
 	return rv;

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009 Juan Romero Pardines.
+ * Copyright (c) 2009-2010 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,7 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *reqname)
 	if (reqstr == NULL) {
 		if (alloc)
 			prop_object_release(array);
-		return errno;
+		return ENOMEM;
 	}
 
 	if (!xbps_add_obj_to_array(array, reqstr)) {
@@ -132,20 +132,27 @@ xbps_requiredby_pkg_remove(const char *pkgname)
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
-		return EINVAL;
+		return ENOMEM;
 
 	if ((dict = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
 		free(plist);
+		xbps_dbg_printf("[reqby-rm] cannot internalize "
+		    "regpkgdb plist for '%s': %s\n", pkgname, strerror(errno));
 		return errno;
 	}
 
 	rv = xbps_callback_array_iter_in_dict(dict, "packages",
 	    remove_pkg_from_reqby, __UNCONST(pkgname));
-	if (rv == 0) {
-		if (!prop_dictionary_externalize_to_zfile(dict, plist))
-			rv = errno;
+	if (rv != 0)
+		goto out;
+
+	if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
+		xbps_dbg_printf("[reqby-rm] cannot externalize plist for "
+		    "'%s': %s\n", pkgname, strerror(errno));
+		rv = errno;
 	}
 
+out:
 	prop_object_release(dict);
 	free(plist);
 
@@ -174,7 +181,7 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		str = prop_string_cstring_nocopy(obj);
 		if (str == NULL) {
-			rv = errno;
+			rv = EINVAL;
 			goto out;
 		}
 		rdepname = xbps_get_pkgpattern_name(str);
@@ -182,10 +189,11 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 			rv = EINVAL;
 			goto out;
 		}
+
 		iter2 = prop_array_iterator(regar);
 		if (iter2 == NULL) {
-			free(rdepname);
 			rv = ENOMEM;
+			free(rdepname);
 			goto out;
 		}
 
