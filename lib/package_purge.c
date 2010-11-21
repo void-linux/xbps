@@ -154,10 +154,8 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		if ((rv = xbps_get_pkg_state_dictionary(pkgd, &state)) != 0)
 			goto out;
 
-		if (state != XBPS_PKG_STATE_CONFIG_FILES) {
-			rv = EINVAL;
+		if (state != XBPS_PKG_STATE_CONFIG_FILES)
 			goto out;
-		}
 	}
 
 	/*
