@@ -113,6 +113,7 @@ add_missing_reqdep(prop_dictionary_t trans_dict, const char *reqpkg)
 	prop_object_t obj;
 	size_t idx = 0;
 	bool add_pkgdep, pkgfound, update_pkgdep;
+	int rv = 0;
 
 	assert(trans_dict != NULL);
 	assert(reqpkg != NULL);
@@ -148,6 +149,12 @@ add_missing_reqdep(prop_dictionary_t trans_dict, const char *reqpkg)
 		}
 		if (strcmp(pkgnamedep, curpkgnamedep) == 0) {
 			pkgfound = true;
+			if (strcmp(curver, pkgver) == 0) {
+				free(curpkgnamedep);
+				free(pkgnamedep);
+				rv = EEXIST;
+				goto out;
+			}
 			/*
 			 * if new dependency version is greater than current
 			 * one, store it.
@@ -158,6 +165,7 @@ add_missing_reqdep(prop_dictionary_t trans_dict, const char *reqpkg)
 				add_pkgdep = false;
 				free(curpkgnamedep);
 				free(pkgnamedep);
+				rv = EEXIST;
 				goto out;
 			}
 			update_pkgdep = true;
@@ -180,7 +188,7 @@ out:
 		return errno;
 	}
 
-	return 0;
+	return rv;
 }
 
 static int

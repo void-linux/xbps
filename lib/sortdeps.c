@@ -74,8 +74,11 @@ xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 	 * If there are missing dependencies, bail out.
 	 */
 	missingdeps = prop_dictionary_get(chaindeps, "missing_deps");
-	if (prop_array_count(missingdeps) > 0)
+	if (prop_array_count(missingdeps) > 0) {
+		xbps_dbg_printf("missing dependencies! won't "
+		    "continue sorting\n");
 		return ENOENT;
+	}
 
 	sorted = prop_array_create();
 	if (sorted == NULL)

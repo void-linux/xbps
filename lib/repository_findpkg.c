@@ -213,18 +213,17 @@ xbps_repository_get_transaction_dict(void)
 		 * return the dictionary, the client should always
 		 * check if that's the case.
 		 */
-		if (rv == ENOENT)
-			return trans_dict;
-
-		return NULL;
+		return trans_dict;
 	}
 
 	/*
 	 * Add total transaction installed/download sizes
 	 * to the transaction dictionary.
 	 */
-	if (compute_transaction_sizes() != 0)
+	if ((rv = compute_transaction_sizes()) != 0) {
+		errno = rv;
 		return NULL;
+	}
 
 	/*
 	 * Remove the "missing_deps" array now that it's not needed.

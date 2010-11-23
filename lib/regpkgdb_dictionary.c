@@ -75,8 +75,9 @@ xbps_regpkgdb_dictionary_get(void)
 		regpkgdb_dict = prop_dictionary_internalize_from_zfile(plist);
 		if (regpkgdb_dict == NULL) {
 			free(plist);
-			xbps_dbg_printf("[regpkgdb] cannot internalize "
-			    "regpkgdb_dict %s\n", strerror(errno));
+			if (errno != ENOENT)
+				xbps_dbg_printf("[regpkgdb] cannot internalize "
+				    "regpkgdb_dict %s\n", strerror(errno));
 			return NULL;
 		}
 		free(plist);

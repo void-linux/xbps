@@ -612,10 +612,11 @@ xbps_exec_transaction(bool yes)
 
 	trans->dict = xbps_repository_get_transaction_dict();
 	if (trans->dict == NULL) {
-		rv = errno;
+		xbps_dbg_printf("Empty transaction dictionary: %s\n",
+		    strerror(errno));
 		goto out;
 	}
-	if (rv == ENOENT) {
+	if (errno == ENOENT) {
 		/*
 		 * Bail out if there are unresolved deps.
 		 */
