@@ -8,6 +8,10 @@ xbps-0.7.0 (?)
  
  * xbps-{bin,repo}(8): added -d arg to enable debugging output to stderr.
 
+ * While updating packages, obsolete directories are also removed when
+   necessary. This helped to remove some empty dirs for python 2.6 > 2.7
+   update, just to mention a real example.
+
  * Cleaned up the API. Still not finished and there's a long way to have this
    finished and ready for public consumption.
  
