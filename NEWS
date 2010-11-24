@@ -1,4 +1,15 @@
-xbps-0.6.3 (?)
+xbps-0.7.0 (?)
+
+ * xbps-{bin,repo}(8): indent uniformly all lines while listing packages
+   in xbps-bin or while searching for packages in xbps-repo.
+
+ * xbps-repo(8): while searching for packages also try to find strings
+   in the short description object.
+ 
+ * xbps-{bin,repo}(8): added -d arg to enable debugging output to stderr.
+
+ * Cleaned up the API. Still not finished and there's a long way to have this
+   finished and ready for public consumption.
  
  * xbps-dgraph: new utility to generate graphviz' dot(1) graphs for package
    metadata properties, such as dependencies, reverse dependencies, etc.

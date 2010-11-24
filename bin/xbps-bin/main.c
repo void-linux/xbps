@@ -36,6 +36,11 @@
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
+struct list_pkgver_cb {
+	pkg_state_t state;
+	size_t pkgver_len;
+};
+
 static void
 usage(void)
 {
@@ -76,8 +81,11 @@ usage(void)
 static int
 list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 {
+	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver, *short_desc;
-	pkg_state_t curstate, *wantstate = (pkg_state_t *)arg;
+	char *tmp = NULL;
+	pkg_state_t curstate, *wantstate = &lpc->state;
+	size_t i = 0;
 
 	(void)loop_done;
 
@@ -96,7 +104,18 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 	if (!pkgver && !short_desc)
 		return EINVAL;
 
-	printf("%s\t%s\n", pkgver, short_desc);
+	tmp = malloc(lpc->pkgver_len + 1);
+	if (tmp == NULL)
+		return errno;
+
+	memcpy(tmp, pkgver, lpc->pkgver_len);
+	for (i = strlen(tmp); i < lpc->pkgver_len; i++)
+		tmp[i] = ' ';
+
+	tmp[lpc->pkgver_len + 1] = '\0';
+	printf("%s %s\n", tmp, short_desc);
+	free(tmp);
+
 	return 0;
 }
 
@@ -130,7 +149,7 @@ int
 main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
-	pkg_state_t pkgstate = 0;
+	struct list_pkgver_cb lpc;
 	struct sigaction sa;
 	int i = 0, c, flags = 0, rv = 0;
 	bool yes, purge, with_debug;
@@ -223,11 +242,11 @@ main(int argc, char **argv)
 
 		if (argv[1]) {
 			if (strcmp(argv[1], "installed") == 0)
-				pkgstate = XBPS_PKG_STATE_INSTALLED;
+				lpc.state = XBPS_PKG_STATE_INSTALLED;
 			else if (strcmp(argv[1], "unpacked") == 0)
-				pkgstate = XBPS_PKG_STATE_UNPACKED;
+				lpc.state = XBPS_PKG_STATE_UNPACKED;
 			else if (strcmp(argv[1], "config-files") == 0)
-				pkgstate = XBPS_PKG_STATE_CONFIG_FILES;
+				lpc.state = XBPS_PKG_STATE_CONFIG_FILES;
 			else {
 				fprintf(stderr,
 				    "E: invalid state `%s'. Accepted values: "
@@ -238,8 +257,12 @@ main(int argc, char **argv)
 			}
 
 		}
+		/*
+		 * Find the longest pkgver string to pretty print the output.
+		 */
+		lpc.pkgver_len = find_longest_pkgver(dict);
 		rv = xbps_callback_array_iter_in_dict(dict, "packages",
-		    list_pkgs_in_dict, &pkgstate);
+		    list_pkgs_in_dict, &lpc);
 
 	} else if (strcasecmp(argv[0], "install") == 0) {
 		/* Installs a binary package and required deps. */

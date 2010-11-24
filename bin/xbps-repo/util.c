@@ -178,29 +178,64 @@ show_pkg_files(prop_dictionary_t filesd)
 	return 0;
 }
 
+static int
+_find_longest_pkgver_cb(prop_object_t obj, void *arg, bool *loop_done)
+{
+	size_t *len = arg;
+	const char *pkgver;
+
+	(void)loop_done;
+
+	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	if (*len == 0 || strlen(pkgver) > *len)
+		*len = strlen(pkgver);
+
+	return 0;
+}
+
+size_t
+find_longest_pkgver(prop_dictionary_t d)
+{
+	size_t len = 0;
+
+	(void)xbps_callback_array_iter_in_dict(d, "packages",
+	    _find_longest_pkgver_cb, &len);
+
+	return len;
+}
 int
 show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 {
+	struct repo_search_data *rsd = arg;
 	const char *pkgver, *pkgname, *desc;
-	char *pattern = arg;
+	char *tmp = NULL;
+	size_t i;
 
 	(void)loop_done;
 
 	assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
-	assert(pattern != NULL);
+	assert(rsd->pattern != NULL);
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
 
-	if (xbps_pkgpattern_match(pkgver, pattern) == 1)
-		printf(" %s - %s\n", pkgver, desc);
-	else if (strcmp(pkgname, pattern) == 0)
-		printf(" %s - %s\n", pkgver, desc);
-	else if (xbps_pkgpattern_match(desc, pattern) == 1)
-		printf(" %s - %s\n", pkgver, desc);
-	else if (strstr(pkgver, pattern))
-		printf(" %s - %s\n", pkgver, desc);
+	if ((xbps_pkgpattern_match(pkgver, rsd->pattern) == 1) ||
+	    (xbps_pkgpattern_match(desc, rsd->pattern) == 1)  ||
+	    (strcmp(pkgname, rsd->pattern) == 0) ||
+	    (strstr(pkgver, rsd->pattern)) || (strstr(desc, rsd->pattern))) {
+		tmp = malloc(rsd->pkgver_len + 1);
+		if (tmp == NULL)
+			return errno;
+
+		memcpy(tmp, pkgver, rsd->pkgver_len);
+		for (i = strlen(tmp); i < rsd->pkgver_len; i++)
+			tmp[i] = ' ';
+
+		tmp[rsd->pkgver_len + 1] = '\0';
+		printf(" %s %s\n", tmp, desc);
+		free(tmp);
+	}
 
 	return 0;
 }

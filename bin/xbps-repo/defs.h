@@ -41,5 +41,11 @@ void	show_pkg_info_only_repo(prop_dictionary_t);
 int	show_pkg_namedesc(prop_object_t, void *, bool *);
 int	list_strings_in_array(prop_object_t, void *, bool *);
 int	list_strings_sep_in_array(prop_object_t, void *, bool *);
+size_t	find_longest_pkgver(prop_dictionary_t);
+
+struct repo_search_data {
+	char *pattern;
+	size_t pkgver_len;
+};
 
 #endif /* !_XBPS_REPO_DEFS_H_ */

@@ -74,18 +74,23 @@ repo_list_uri_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	(void)done;
 
 	printf("%s\n", rpi->rpi_uri);
+
 	return 0;
 }
 
 static int
 repo_search_pkgs_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 {
-	char *pattern = arg;
+	struct repo_search_data rsd;
 	(void)done;
+
+	rsd.pattern = arg;
+	rsd.pkgver_len = find_longest_pkgver(rpi->rpi_repod);
 
 	printf("From %s repository ...\n", rpi->rpi_uri);
 	(void)xbps_callback_array_iter_in_dict(rpi->rpi_repod,
-	    "packages", show_pkg_namedesc, pattern);
+	    "packages", show_pkg_namedesc, &rsd);
+
 	return 0;
 }
 
