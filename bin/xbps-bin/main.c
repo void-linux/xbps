@@ -221,15 +221,6 @@ main(int argc, char **argv)
 		}
 	}
 
-	if ((rv = xbps_repository_pool_init()) != 0) {
-		if (rv != ENOENT) {
-			fprintf(stderr,
-			    "E: couldn't initialize repository pool: %s\n",
-			    strerror(rv));
-			goto out;
-		}
-	}
-
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
 		if (argc < 1 || argc > 2)
