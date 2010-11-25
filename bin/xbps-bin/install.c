@@ -616,11 +616,11 @@ xbps_exec_transaction(bool yes)
 		    strerror(errno));
 		goto out;
 	}
-	if (errno == ENOENT) {
-		/*
-		 * Bail out if there are unresolved deps.
-		 */
-		array = prop_dictionary_get(trans->dict, "missing_deps");
+	/*
+	 * Bail out if there are unresolved deps.
+	 */
+	array = prop_dictionary_get(trans->dict, "missing_deps");
+	if (array && prop_array_count(array) > 0) {
 		show_missing_deps(trans->dict);
 		goto out;
 	}
