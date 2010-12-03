@@ -34,10 +34,6 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-#ifndef __UNCONST
-#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
-#endif
-
 void
 show_pkg_info_only_repo(prop_dictionary_t dict)
 {
@@ -46,10 +42,10 @@ show_pkg_info_only_repo(prop_dictionary_t dict)
 	int rv = 0;
 
 	obj = prop_dictionary_get(dict, "filename");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING) {
+	if (prop_object_type(obj) == PROP_TYPE_STRING) {
 		printf("Filename: %s", prop_string_cstring_nocopy(obj));
 		obj = prop_dictionary_get(dict, "filename-size");
-		if (obj && prop_object_type(obj) == PROP_TYPE_NUMBER) {
+		if (prop_object_type(obj) == PROP_TYPE_NUMBER) {
 			rv = xbps_humanize_number(size, 5,
 			    (int64_t)prop_number_unsigned_integer_value(obj),
 			    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE);
@@ -63,7 +59,7 @@ show_pkg_info_only_repo(prop_dictionary_t dict)
 	}
 
 	obj = prop_dictionary_get(dict, "filename-sha256");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+	if (prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("SHA256: %s\n", prop_string_cstring_nocopy(obj));
 }
 
@@ -71,24 +67,23 @@ void
 show_pkg_info(prop_dictionary_t dict)
 {
 	prop_object_t obj;
-	const char *sep;
-	char size[64];
+	char size[64], *sep;
 	int rv = 0;
 
 	assert(dict != NULL);
 	assert(prop_dictionary_count(dict) != 0);
 
 	obj = prop_dictionary_get(dict, "archive-compression-type");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+	if (prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Compression type: %s\n",
 		    prop_string_cstring_nocopy(obj));
 
 	obj = prop_dictionary_get(dict, "pkgname");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+	if (prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Package: %s\n", prop_string_cstring_nocopy(obj));
 
 	obj = prop_dictionary_get(dict, "installed_size");
-	if (obj && prop_object_type(obj) == PROP_TYPE_NUMBER) {
+	if (prop_object_type(obj) == PROP_TYPE_NUMBER) {
 		printf("Installed size: ");
 		rv = xbps_humanize_number(size, 5,
 		    (int64_t)prop_number_unsigned_integer_value(obj),
@@ -101,44 +96,51 @@ show_pkg_info(prop_dictionary_t dict)
 	}
 
 	obj = prop_dictionary_get(dict, "maintainer");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+	if (prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Maintainer: %s\n", prop_string_cstring_nocopy(obj));
 
 	obj = prop_dictionary_get(dict, "architecture");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+	if (prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Architecture: %s\n", prop_string_cstring_nocopy(obj));
 
 	obj = prop_dictionary_get(dict, "version");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+	if (prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Version: %s\n", prop_string_cstring_nocopy(obj));
 
 	obj = prop_dictionary_get(dict, "preserve");
-	if (obj && prop_object_type(obj) == PROP_TYPE_BOOL)
+	if (prop_object_type(obj) == PROP_TYPE_BOOL)
 		printf("Preserve files: %s\n",
 		    prop_bool_true(obj) ? "yes" : "no");
 
 	obj = prop_dictionary_get(dict, "replaces");
-	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {
+	if (prop_object_type(obj) == PROP_TYPE_ARRAY) {
 		printf("Replaces: ");
 		(void)xbps_callback_array_iter_in_dict(dict, "replaces",
 		    list_strings_sep_in_array, NULL);
 	}
 
+	obj = prop_dictionary_get(dict, "conflicts");
+	if (prop_object_type(obj) == PROP_TYPE_ARRAY) {
+		printf("Conflicts: ");
+		(void)xbps_callback_array_iter_in_dict(dict, "conflicts",
+		    list_strings_sep_in_array, NULL);
+	}
+
 	obj = prop_dictionary_get(dict, "conf_files");
-	if (obj && prop_object_type(obj) == PROP_TYPE_ARRAY) {
+	if (prop_object_type(obj) == PROP_TYPE_ARRAY) {
 		printf("Configuration files:\n");
 		sep = "  ";
 		(void)xbps_callback_array_iter_in_dict(dict, "conf_files",
-		    list_strings_sep_in_array, __UNCONST(sep));
+		    list_strings_sep_in_array, sep);
 		printf("\n");
 	}
 
 	obj = prop_dictionary_get(dict, "short_desc");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+	if (prop_object_type(obj) == PROP_TYPE_STRING)
 		printf("Description: %s", prop_string_cstring_nocopy(obj));
 
 	obj = prop_dictionary_get(dict, "long_desc");
-	if (obj && prop_object_type(obj) == PROP_TYPE_STRING)
+	if (prop_object_type(obj) == PROP_TYPE_STRING)
 		printf(" %s\n", prop_string_cstring_nocopy(obj));
 }
 
