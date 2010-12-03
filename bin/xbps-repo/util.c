@@ -245,25 +245,11 @@ show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 int
 list_strings_in_array(prop_object_t obj, void *arg, bool *loop_done)
 {
-	static size_t cols;
-	static bool first;
-
 	(void)arg;
 	(void)loop_done;
 
 	assert(prop_object_type(obj) == PROP_TYPE_STRING);
-
-	cols += strlen(prop_string_cstring_nocopy(obj)) + 4;
-	if (cols <= 80) {
-		if (first == false) {
-			printf("  ");
-			first = true;
-		}
-	} else {
-		printf("\n  ");
-		cols = strlen(prop_string_cstring_nocopy(obj)) + 4;
-	}
-	printf("%s ", prop_string_cstring_nocopy(obj));
+	print_package_line(prop_string_cstring_nocopy(obj));
 
 	return 0;
 }
@@ -276,8 +262,26 @@ list_strings_sep_in_array(prop_object_t obj, void *arg, bool *loop_done)
 	(void)loop_done;
 
 	assert(prop_object_type(obj) == PROP_TYPE_STRING);
-
 	printf("%s%s\n", sep ? sep : "", prop_string_cstring_nocopy(obj));
 
 	return 0;
+}
+
+void
+print_package_line(const char *str)
+{
+	static size_t cols;
+	static bool first;
+
+	cols += strlen(str) + 4;
+	if (cols <= 80) {
+		if (first == false) {
+			printf("  ");
+			first = true;
+		}
+	} else {
+		printf("\n  ");
+		cols = strlen(str) + 4;
+	}
+	printf("%s ", str);
 }

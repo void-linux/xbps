@@ -45,36 +45,8 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	"Usage: xbps-bin [options] [target] [arguments]\n\n"
-	" Available targets:\n"
-	"    autoremove\n"
-	"    autoupdate\n"
-	"    check\t\t[<pkgname>|<all>]\n"
-	"    find-files\t\t<pattern>\n"
-	"    install\t\t[<pkgname(s)>|<pkgpattern(s)>]\n"
-	"    list\t\t[state]\n"
-	"    list-manual\n"
-	"    purge\t\t[<pkgname>|<all>]\n"
-	"    reconfigure\t\t[<pkgname>|<all>]\n"
-	"    remove\t\t<pkgname(s)>\n"
-	"    show\t\t<pkgname>\n"
-	"    show-deps\t\t<pkgname>\n"
-	"    show-files\t\t<pkgname>\n"
-	"    show-orphans\n"
-	"    show-revdeps\t<pkgname>\n"
-	"    update\t\t<pkgname(s)>\n"
-	" Options shared by all targets:\n"
-	"    -c\t\t<cachedir>\n"
-	"    -d\t\tDebug output\n"
-	"    -r\t\t<rootdir>\n"
-	"    -v\t\tShows verbose messages\n"
-	"    -V\t\tPrints the xbps release version\n"
-	" Options used by the install/(auto)remove/update targets:\n"
-	"    -y\t\tAssume \"yes\" for all questions.\n"
-	"    -p\t\tAlso purge package(s) in the (auto)remove targets.\n"
-	" Options used by the purge/reconfigure/remove targets:\n"
-	"    -f\t\tForce reconfiguration or removal of files.\n"
-	"\n");
+	    "Usage: xbps-bin [options] [target] [arguments]\n"
+	    "See xbps-bin(8) for more information.\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -137,6 +109,33 @@ list_manual_packages(prop_object_t obj, void *arg, bool *loop_done)
 	return 0;
 }
 
+static int
+show_orphans(void)
+{
+	prop_array_t orphans;
+	prop_object_iterator_t iter;
+	prop_object_t obj;
+	const char *pkgver;
+
+	orphans = xbps_find_orphan_packages();
+	if (orphans == NULL)
+		return EINVAL;
+
+	if (prop_array_count(orphans) == 0)
+		return 0;
+
+	iter = prop_array_iterator(orphans);
+	if (iter == NULL)
+		return ENOMEM;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		printf("%s\n", pkgver);
+	}
+	prop_object_iterator_release(iter);
+
+	return 0;
+}
 
 static void
 cleanup(int signum)
@@ -151,18 +150,22 @@ main(int argc, char **argv)
 	prop_dictionary_t dict;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
-	int i = 0, c, flags = 0, rv = 0;
-	bool yes, purge, with_debug;
+	int i , c, flags, rv;
+	bool yes, purge, with_debug, force_rm_with_deps;
 
-	yes = purge = with_debug = false;
+	i = c = flags = rv = 0;
+	yes = purge = force_rm_with_deps = with_debug = false;
 
-	while ((c = getopt(argc, argv, "Vcdfpr:vy")) != -1) {
+	while ((c = getopt(argc, argv, "VcdFfpr:vy")) != -1) {
 		switch (c) {
 		case 'c':
 			xbps_set_cachedir(optarg);
 			break;
 		case 'd':
 			with_debug = true;
+			break;
+		case 'F':
+			force_rm_with_deps = true;
 			break;
 		case 'f':
 			flags |= XBPS_FLAG_FORCE;
@@ -292,7 +295,8 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage();
 
-		rv = xbps_remove_installed_pkgs(argc, argv, yes, purge);
+		rv = xbps_remove_installed_pkgs(argc, argv, yes, purge,
+		    force_rm_with_deps);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
@@ -343,7 +347,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoremove_pkgs(yes, purge, true);
+		rv = show_orphans();
 
 	} else if (strcasecmp(argv[0], "autoremove") == 0) {
 		/*
@@ -354,7 +358,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoremove_pkgs(yes, purge, false);
+		rv = xbps_autoremove_pkgs(yes, purge);
 
 	} else if (strcasecmp(argv[0], "purge") == 0) {
 		/*

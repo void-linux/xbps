@@ -34,6 +34,7 @@
 
 #include <xbps_api.h>
 #include "defs.h"
+#include "../xbps-repo/defs.h"
 
 struct transaction {
 	prop_dictionary_t dict;
@@ -183,27 +184,14 @@ static void
 show_package_list(prop_object_iterator_t iter, const char *match)
 {
 	prop_object_t obj;
-	size_t cols = 0;
 	const char *pkgver, *tract;
-	bool first = false;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		if (strcmp(match, tract))
 			continue;
-
-		cols += strlen(pkgver) + 4;
-		if (cols <= 80) {
-			if (first == false) {
-				printf("  ");
-				first = true;
-			}
-		} else {
-			printf("\n  ");
-			cols = strlen(pkgver) + 4;
-		}
-		printf("%s ", pkgver);
+		print_package_line(pkgver);
 	}
 	prop_object_iterator_reset(iter);
 }
@@ -625,8 +613,8 @@ xbps_exec_transaction(bool yes)
 		goto out;
 	}
 
-	DPRINTF(("Dictionary before transaction happens:\n"));
-	DPRINTF(("%s", prop_dictionary_externalize(trans->dict)));
+	xbps_dbg_printf("Dictionary before transaction happens:\n");
+	xbps_dbg_printf_append("%s", prop_dictionary_externalize(trans->dict));
 
 	/*
 	 * It's time to run the transaction!

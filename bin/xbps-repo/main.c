@@ -39,31 +39,8 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-	"Usage: xbps-repo [options] [action] [arguments]\n\n"
-	" Available actions:\n"
-        "    add, genindex, list, remove, search, show, show-deps,\n"
-	"    show-files, sync\n"
-	" Actions with arguments:\n"
-	"    add\t\t<URI>\n"
-	"    genindex\t<path>\n"
-	"    remove\t<URI>\n"
-	"    search\t<string>\n"
-	"    show\t<pkgname>\n"
-	"    show-deps\t<pkgname>\n"
-	"    show-files\t<pkgname>\n"
-	" Options shared by all actions:\n"
-	"    -c\t\t<cachedir>\n"
-	"    -r\t\t<rootdir>\n"
-	"    -V\t\tPrints xbps release version\n"
-	"\n"
-	" Examples:\n"
-	"    $ xbps-repo add /path/to/directory\n"
-	"    $ xbps-repo add http://www.location.org/xbps-repo\n"
-	"    $ xbps-repo list\n"
-	"    $ xbps-repo remove /path/to/directory\n"
-	"    $ xbps-repo search klibc\n"
-	"    $ xbps-repo show klibc\n"
-	"    $ xbps-repo genindex /pkgdir\n");
+	    "Usage: xbps-repo [options] [action] [arguments]\n"
+	    "See xbps-repo(8) for more information.\n");
 	exit(EXIT_FAILURE);
 }
 

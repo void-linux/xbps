@@ -1,5 +1,9 @@
 xbps-0.7.0 (?)
 
+ * xbps-bin(8): added -F flag for the remove target. Unless it's set,
+   packages that are dependencies of other installed packages won't be removed.
+   This flag overrides this behaviour and forces the package removal.
+
  * xbps-{bin,repo}(8): indent uniformly all lines while listing packages
    in xbps-bin or while searching for packages in xbps-repo.
 
