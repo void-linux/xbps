@@ -119,7 +119,7 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 	assert(fn != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY) {
+	if (prop_object_type(array) != PROP_TYPE_ARRAY) {
 		xbps_dbg_printf("invalid key '%s' for dictionary", key);
 		return EINVAL;
 	}
@@ -297,7 +297,7 @@ xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 	assert(key != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY) {
+	if (prop_object_type(array) != PROP_TYPE_ARRAY) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -380,7 +380,7 @@ xbps_remove_pkg_from_dict(prop_dictionary_t dict,
 	assert(pkgname != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if (array == NULL || prop_object_type(array) != PROP_TYPE_ARRAY) {
+	if (prop_object_type(array) != PROP_TYPE_ARRAY) {
 		errno = EINVAL;
 		xbps_dbg_printf("invalid array type for key: %s pkgname: %s\n",
 		    key, pkgname);
