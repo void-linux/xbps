@@ -47,12 +47,6 @@
 #define __UNCONST(a)	((void *)(unsigned long)(const void *)(a))
 #endif
 
-#ifdef DEBUG
-#define DPRINTF(x)	printf x
-#else
-#define DPRINTF(x)
-#endif
-
 /*
  * By default all public functions have default visibility, unless
  * gcc >= 4.x and the HIDDEN definition is used.
