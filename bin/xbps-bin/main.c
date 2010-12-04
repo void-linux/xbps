@@ -76,7 +76,7 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 	if (!pkgver && !short_desc)
 		return EINVAL;
 
-	tmp = malloc(lpc->pkgver_len + 1);
+	tmp = calloc(1, lpc->pkgver_len + 1);
 	if (tmp == NULL)
 		return errno;
 
