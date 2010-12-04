@@ -226,7 +226,7 @@ show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 	    (xbps_pkgpattern_match(desc, rsd->pattern) == 1)  ||
 	    (strcmp(pkgname, rsd->pattern) == 0) ||
 	    (strstr(pkgver, rsd->pattern)) || (strstr(desc, rsd->pattern))) {
-		tmp = malloc(rsd->pkgver_len + 1);
+		tmp = calloc(1, rsd->pkgver_len + 1);
 		if (tmp == NULL)
 			return errno;
 
