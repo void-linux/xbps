@@ -303,7 +303,7 @@ printf "Checking for strlcat() ... "
 cat <<EOF > _strlcat.c
 #include <string.h>
 int main(void) {
-	const char src[] = "foo"
+	const char src[] = "foo";
 	char dst[10];
 	strlcat(dst, src, sizeof(dst));
 	return 0;
