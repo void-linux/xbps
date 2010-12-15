@@ -1,31 +1,334 @@
-2010-10-29 09:10 +0200  Juan RP  <xtraeme@gmail.com>  (e71cb84b6a91 [tip])
+2010-12-15  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS:
+	NEWS: 0.7.0 will be released today.
+	[e4c9e061a58d] [tip]
+
+	* NEWS, bin/xbps-repo/Makefile, bin/xbps-repo/defs.h, bin/xbps-repo
+	/find-files.c, bin/xbps-repo/main.c, bin/xbps-repo/xbps-repo.8:
+	xbps-repo(8): implemented 'find-files' target.
+	[2ad425bc1442]
+
+2010-12-10  Juan RP  <xtraeme@gmail.com>
+
+	* configure:
+	configure: fix a typo that broke strlcat test. Found by Min Sik Kim
+	reported in issue 2.
+	[ad7a5c48fce0]
+
+2010-12-04  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-repo/util.c:
+	xbps-repo: zero out allocated mem to avoid garbage in the 'search'
+	target.
+	[889d786ed645]
+
+	* bin/xbps-bin/main.c:
+	xbps-bin: zero out allocated mem to avoid garbage in the 'list'
+	target.
+	[91611ae45470]
+
+2010-12-03  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS, bin/xbps-bin/defs.h, bin/xbps-bin/install.c, bin/xbps-
+	bin/main.c, bin/xbps-bin/remove.c, bin/xbps-bin/xbps-bin.8, bin
+	/xbps-repo/defs.h, bin/xbps-repo/main.c, bin/xbps-repo/util.c:
+	xbps-bin: added -F flag for the remove target.
+
+	Unless it's set, packages that are dependencies of other installed
+	packages won't be removed. This flag overrides this behaviour and
+	forces the package removal.
+
+	While being here, misc cleanups.
+	[0c4fbaab6dae]
+
+	* include/xbps_api_impl.h:
+	Remove DPRINTF macro, unused.
+	[86abf78451c3]
+
+	* bin/xbps-repo/util.c:
+	Also show the conflicts object if available and simplify the code.
+	[81f881155e69]
+
+	* lib/plist.c:
+	lib/plist: no need to check against NULL if prop_object_type() is
+	used.
+	[ace100d35b8f]
+
+2010-11-25  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/main.c:
+	Backed out changeset e82cc0e4b779
+
+	Otherwise the refcount in repository pool will initialize/release on
+	every op.
+	[98f0e7f0145e]
+
+	* bin/xbps-bin/main.c:
+	xbps-bin: there's no need to init repository pool.
+	[e82cc0e4b779]
+
+	* bin/xbps-bin/install.c:
+	xbps-bin: always check if the there are missing deps regardless of
+	the errno value.
+	[1519a015100d]
+
+2010-11-24  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS:
+	NEWS: mention that obsolete dirs are also removed while updating.
+	[85d86351185d]
+
+	* bin/xbps-bin/main.c:
+	xbps-bin: fix for previous.
+	[bdfbd01d5cda]
+
+	* NEWS, bin/xbps-bin/main.c, bin/xbps-repo/defs.h, bin/xbps-
+	repo/main.c, bin/xbps-repo/util.c:
+	Improvements for xbps-{bin,repo}.
+
+	- Indent properly with the longest "pkgver" object while listing or
+	searching for packages.
+	- Also match strings in the short description object while searching
+	for packages in xbps_repo.
+	[cf5d5e73a4ad]
+
+2010-11-23  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/install.c, lib/regpkgdb_dictionary.c,
+	lib/repository_finddeps.c, lib/repository_findpkg.c, lib/sortdeps.c:
+	Fix and improve when there are missing deps in the transaction
+	dictionary.
+	[01e5d6b82dc9]
+
+2010-11-21  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_purge.c:
+	xbps_purge_pkg: if state is not XBPS_PKG_STATE_CONFIG_FILES, just
+	return 0.
+	[c4c2675ee59c]
+
+2010-11-19  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/check.c, bin/xbps-bin/install.c, bin/xbps-bin/main.c,
+	bin/xbps-bin/xbps-bin.8, bin/xbps-dgraph/main.c, bin/xbps-
+	repo/main.c, bin/xbps-repo/repository.c, bin/xbps-repo/xbps-repo.8,
+	bin/xbps-uhelper/main.c, include/xbps_api.h,
+	include/xbps_api_impl.h, lib/Makefile, lib/download.c, lib/fexec.c,
+	lib/initend.c, lib/package_config_files.c, lib/package_configure.c,
+	lib/package_orphans.c, lib/package_purge.c, lib/package_register.c,
+	lib/package_remove.c, lib/package_remove_obsoletes.c,
+	lib/package_requiredby.c, lib/package_state.c, lib/package_unpack.c,
+	lib/plist.c, lib/regpkgdb_dictionary.c, lib/regpkgs_dictionary.c,
+	lib/repository.c, lib/repository_finddeps.c,
+	lib/repository_findpkg.c, lib/repository_plist.c,
+	lib/repository_pool.c, lib/sortdeps.c:
+	API clean up (part 2), plus misc changes and improvements.
+
+	- Rename regpkgs_dictionary to regpkgdb_dictionary to better
+	describe what is is.
+	- Change some funcs in plist.c to return a boolean rather than int.
+	- Hide more internal funcs off the API.
+	- Simplify xbps_repository_update_pkg() and remove its second arg.
+	- Hide implementation details in xbps_repository_pool, now to iterate
+	over the pool you have to use xbps_repository_pool_foreach and its
+	struct repository_pool_index.
+	- Introduce xbps_{init,end}, to initialize/destroy some stuff in the
+	library.
+	- Introduce xbps_dbg_printf to printf stuff for debugging purposes.
+	- xbps-{bin,repo}: added -d arg to enable debugging output.
+	- Before checking if a config file needs to be installed or such,
+	check that package contains the "conf_files" array.
+	- Remove obsolete dirs as well while updating packages.
+	- If transaction dictionary is ready remove the "missing_deps" array.
+
+	Bump XBPS_RELVER to 20101118.
+	[ae1abcf9ce44]
+
+2010-11-13  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/check.c, bin/xbps-bin/defs.h, bin/xbps-bin/install.c,
+	bin/xbps-bin/main.c, bin/xbps-bin/show-deps.c, bin/xbps-
+	repo/repository.c, bin/xbps-repo/util.c, bin/xbps-uhelper/main.c,
+	include/xbps_api.h, include/xbps_api_impl.h, lib/cmpver.c,
+	lib/fexec.c, lib/package_config_files.c, lib/package_configure.c,
+	lib/package_purge.c, lib/package_register.c, lib/package_remove.c,
+	lib/package_remove_obsoletes.c, lib/package_requiredby.c,
+	lib/package_state.c, lib/package_unpack.c, lib/plist.c,
+	lib/regpkgs_dictionary.c, lib/repository.c,
+	lib/repository_finddeps.c, lib/repository_findpkg.c,
+	lib/repository_plist.c, lib/repository_pool.c,
+	lib/repository_sync_index.c, lib/sortdeps.c, lib/util.c:
+	Starting to clean up the public API, move private stuff into
+	xbps_api_impl.h.
+	[9124f8dc1603]
+
+2010-11-10  Juan RP  <xtraeme@gmail.com>
+
+	* include/xbps_api.h, lib/plist.c:
+	Make xbps_read_dict_from_archive_entry() private to libxbps, as it's
+	only used internally.
+	[7110e8dced8e]
+
+2010-11-08  Juan RP  <xtraeme@gmail.com>
+
+	* .hgignore, NEWS, bin/Makefile, bin/xbps-dgraph/Makefile, bin/xbps-
+	dgraph/main.c:
+	xbps-dgraph: new utility to generate dot(1) graphs for package
+	metadata properties.
+	[03653b633113]
+
+	* lib/package_purge.c:
+	xbps_purge_all_pkgs: no need to check for pkg state because
+	xbps_purge_pkg() does it too.
+	[7222006a428d]
+
+	* include/xbps_api.h:
+	Better describe xbps_find_pkg_from_plist().
+	[d306b1ea05bc]
+
+	* bin/xbps-bin/check.c, bin/xbps-bin/find-files.c, bin/xbps-bin/show-
+	deps.c, bin/xbps-bin/show-info-files.c, include/xbps_api.h,
+	lib/package_config_files.c, lib/package_purge.c,
+	lib/package_remove.c, lib/plist.c:
+	New function: xbps_get_pkg_dict_from_metadata_plist.
+
+	This function returns and internalized dictionary from a package's
+	metadata plist file as specified by its arguments.
+
+	Update all code to use it where appropiate.
+	[933e865bdeee]
+
+	* include/xbps_api.h:
+	xbps_api.h: update comments for @private funcs.
+	[956e615695a0]
+
+	* bin/xbps-bin/check.c, bin/xbps-bin/remove.c, include/xbps_api.h,
+	lib/package_state.c:
+	Always release the object dictionary returned by
+	xbps_find_pkg_dict_installed().
+
+	Document this in the public API header and update all code
+	accordingly.
+	[7544cca4549e]
+
+	* lib/plist.c:
+	xbps_find_pkg_dict_installed: dictionary MUST be copied before
+	calling xbps_regpkgs_dictionary_release(), otherwise it will be
+	NULL.
+
+	Found by executing this function without initializing regpkgdb.
+	[8a780338f082]
+
+	* include/xbps_api.h:
+	xbps_api.h: improve description for some defs.
+	[84f6f1d13440]
+
+2010-11-06  Juan RP  <xtraeme@gmail.com>
+
+	* doc/xbps_transaction_dictionary.dot:
+	Update the dot(1) graph for the libxbps transaction dictionary.
+	[8764e84df72e]
+
+	* bin/xbps-bin/check.c, bin/xbps-bin/install.c, bin/xbps-bin/remove.c,
+	bin/xbps-repo/index.c, bin/xbps-repo/repository.c, bin/xbps-
+	repo/util.c, bin/xbps-uhelper/main.c, lib/package_config_files.c,
+	lib/package_configure.c, lib/package_orphans.c, lib/package_purge.c,
+	lib/package_register.c, lib/package_remove.c,
+	lib/package_requiredby.c, lib/package_state.c, lib/package_unpack.c,
+	lib/plist.c, lib/repository_finddeps.c, lib/repository_findpkg.c,
+	lib/repository_plist.c, lib/sortdeps.c, lib/util.c:
+	Misc cleanups and performance improvements.
+
+	- There's no need to check rval for prop_dictionary_get_*, we are
+	sure the objects are there at prop_dictionary_set_* time.
+	- Avoid two chdir(2) calls per INSTALL/REMOVE run.
+	- Avoid using access(2) to check for existence of INSTALL/REMOVE
+	scripts, just try to run the executable directly and check for
+	ENOENT.
+	[e4d82bff8b11]
+
+	* lib/fexec.c:
+	Make xbps_file_*_exec() always chroot if uid==0 and /bin/sh (+x,
+	relative) exists.
+	[15078069dc33]
+
+2010-11-04  Juan RP  <xtraeme@gmail.com>
+
+	* lib/Makefile:
+	lib/Makefile: remove dup values.
+	[0d77552eebc1]
+
+2010-11-03  Juan RP  <xtraeme@gmail.com>
+
+	* lib/Makefile, lib/config_files.c, lib/configure.c, lib/orphans.c,
+	lib/package_config_files.c, lib/package_configure.c,
+	lib/package_orphans.c, lib/package_purge.c, lib/package_register.c,
+	lib/package_remove.c, lib/package_remove_obsoletes.c,
+	lib/package_requiredby.c, lib/package_state.c, lib/package_unpack.c,
+	lib/purge.c, lib/register.c, lib/remove.c, lib/remove_obsoletes.c,
+	lib/requiredby.c, lib/state.c, lib/unpack.c:
+	Rename some files in the library to better describe what they do.
+	[aca21d16213a]
+
+	* bin/xbps-bin/main.c, include/xbps_api.h, lib/download.c:
+	Some changes for the XBPS libfetch's frontend code.
+
+	1) Raise the cache connection settings to more sane defaults (8->6,
+	16->2). 2) Introduce xbps_fetch_unset_cache_connection() to drop the
+	caches.
+	[118cc56d26b5]
+
+2010-11-02  Juan RP  <xtraeme@gmail.com>
+
+	* lib/Makefile:
+	Pass LDFLAGS after the objects when creating the sharedlib,
+	otherwise
+	-Wl,--as-needed will think that zlib is not needed.
+	[67f956d02f2f]
+
+2010-10-31  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/xbps-bin.8:
+	xbps-bin.8: fixed two formatting errors.
+	[ee6c2fedf072]
+
+	* .hgtags:
+	Added tag 0.6.2 for changeset fe0d022c4236
+	[214f66dc4d0b]
+
+	* Changelog:
+	Changelog: update.
+	[fe0d022c4236] [0.6.2]
+
+	* NEWS:
+	NEWS: XBPS 0.6.2 will be released in a few minutes.
+	[a01eb604fca2]
+
+2010-10-29  Juan RP  <xtraeme@gmail.com>
 
 	* NEWS, lib/repository.c:
 	libxbps: xbps_repository_unregister(): in remote repositories, also
 	remove the pkg index file and its directory.
-
-2010-10-29 08:21 +0200  Juan RP  <xtraeme@gmail.com>  (e1360eb38233)
+	[e71cb84b6a91]
 
 	* lib/util.c:
 	xbps_get_pkg_index_plist: fix a memleak.
+	[e1360eb38233]
 
-2010-10-27 16:37 +0200  Juan RP  <xtraeme@gmail.com>  (962f23e033f9)
+2010-10-27  Juan RP  <xtraeme@gmail.com>
 
-	* Changelog: new file.
 	* Changelog:
 	Add a Changelog file with all repo changes.
-
-2010-10-27 13:10 +0200  Juan RP  <xtraeme@gmail.com>  (559e85af63c5)
+	[962f23e033f9]
 
 	* NEWS, bin/xbps-bin/main.c, bin/xbps-bin/xbps-bin.8:
 	xbps-bin(8): modify the 'list' target to accept an optional argument
 	to list packages in the specified state, so that you can list
 	packages that need to be purged, configured and broken (will be
 	used in the future).
+	[559e85af63c5]
 
-2010-10-27 00:25 +0200  Juan RP  <xtraeme@gmail.com>  (bde21eacfae1)
-
-	* bin/xbps-bin/find-files.c: new file.
 	* NEWS, bin/xbps-bin/Makefile, bin/xbps-bin/defs.h, bin/xbps-bin/find-
 	files.c, bin/xbps-bin/main.c, bin/xbps-bin/xbps-bin.8:
 	xbps-bin(8): added a new target "find-files".
@@ -33,38 +336,33 @@
 	This new target 'find-files' can be used to find which installed
 	package(s) own a file. Exact matches like "/bin/mount" or patterns
 	like "/usr/lib/libb[ao]b\*" can be specified.
-
-2010-10-27 00:19 +0200  Juan RP  <xtraeme@gmail.com>  (c7773e278e58)
+	[bde21eacfae1]
 
 	* configure:
 	configure: don't use -fPIE and --param ssp-buffer-size if CC != gcc.
-
-2010-10-27 00:17 +0200  Juan RP  <xtraeme@gmail.com>  (f231b4972d0e)
+	[c7773e278e58]
 
 	* lib/fetch/ftp.c:
 	fetch/ftp.c: fix a cast that caught clang via -Wcast-qual.
-
-2010-10-27 00:15 +0200  Juan RP  <xtraeme@gmail.com>  (676b7e99dca2)
+	[f231b4972d0e]
 
 	* NEWS, lib/remove_obsoletes.c:
 	Remove empty dirs while removing obsolete files.
+	[676b7e99dca2]
 
-2010-10-23 18:13 +0200  Juan RP  <xtraeme@gmail.com>  (100f4038999f)
+2010-10-23  Juan RP  <xtraeme@gmail.com>
 
 	* .hgtags:
 	Added tag 0.6.1 for changeset 9133c604fd81
-
-2010-10-23 18:12 +0200  Juan RP  <xtraeme@gmail.com>  (9133c604fd81 [0.6.1])
+	[100f4038999f]
 
 	* include/xbps_api.h:
 	Increment XBPS_RELVER for 0.6.1.
-
-2010-10-23 18:10 +0200  Juan RP  <xtraeme@gmail.com>  (b7e383e37039)
+	[9133c604fd81] [0.6.1]
 
 	* .hgtags:
 	Added tag 0.6.1 for changeset 6a4587e4f95f
-
-2010-10-23 18:09 +0200  Juan RP  <xtraeme@gmail.com>  (6a4587e4f95f)
+	[b7e383e37039]
 
 	* NEWS, bin/xbps-bin/install.c, lib/unpack.c:
 	Prepare for going-to-be-released 0.6.1.
@@ -79,72 +377,64 @@
 	were previously stored in the old version. For example gtk+-2.20
 	containing gdk-pixbuf, and gtk+-2.22 requiring gdk-pixbuf
 	externally.
-
-2010-10-23 18:08 +0200  Juan RP  <xtraeme@gmail.com>  (ff3357d56465)
+	[6a4587e4f95f]
 
 	* Makefile:
 	Makefile: added dist target to create distribution source tarball.
-
-2010-10-23 17:58 +0200  Juan RP  <xtraeme@gmail.com>  (e45e87832117)
+	[ff3357d56465]
 
 	* .hgtags:
 	Added tag 0.6.1 for changeset e51c0a0d740b
+	[e45e87832117]
 
-2010-06-03 09:53 +0200  Juan RP  <xtraeme@gmail.com>  (e51c0a0d740b)
+2010-06-03  Juan RP  <xtraeme@gmail.com>
 
 	* .hgtags:
 	Added tag 0.6.0 for changeset bfbbdcaef85a
-
-2010-06-03 09:53 +0200  Juan RP  <xtraeme@gmail.com>  (bfbbdcaef85a [0.6.0])
+	[e51c0a0d740b]
 
 	* NEWS:
 	NEWS: fix date for 0.6.0.
+	[bfbbdcaef85a] [0.6.0]
 
-2010-06-02 23:50 +0200  Juan RP  <xtraeme@gmail.com>  (6b622708535e)
+2010-06-02  Juan RP  <xtraeme@gmail.com>
 
 	* include/xbps_api.h:
 	Bump XBPS_RELVER for changes that will go to 0.6.0.
-
-2010-06-02 23:48 +0200  Juan RP  <xtraeme@gmail.com>  (8e790b8a35ca)
+	[6b622708535e]
 
 	* NEWS:
 	Mention libfetch-2.31 sync.
-
-2010-06-02 23:44 +0200  Juan RP  <xtraeme@gmail.com>  (8a0441414ef3)
+	[8e790b8a35ca]
 
 	* 3RDPARTY, lib/fetch/common.c, lib/fetch/common.h, lib/fetch/ftp.c:
 	Import and merge libfetch-2.31 from NetBSD pkgsrc.
+	[8a0441414ef3]
 
-2010-05-20 15:20 +0200  Juan RP  <xtraeme@gmail.com>  (b4f0ed9d6748)
+2010-05-20  Juan RP  <xtraeme@gmail.com>
 
 	* .hgignore:
 	Update .hgignore for recent changes.
-
-2010-05-20 15:10 +0200  Juan RP  <xtraeme@gmail.com>  (9f8692289158)
+	[b4f0ed9d6748]
 
 	* lib/util.c:
 	xbps_[gs]et_cachedir(): ensure we don't copy more than buffer's size
 	including NUL.
-
-2010-05-20 14:45 +0200  Juan RP  <xtraeme@gmail.com>  (6221608dcf00)
+	[9f8692289158]
 
 	* bin/xbps-repo/main.c, bin/xbps-repo/repository.c:
 	xbps-repo: put back sanitize_url() and improve the implementation.
-
-2010-05-20 07:21 +0200  Juan RP  <xtraeme@gmail.com>  (3251baf24e83)
+	[6221608dcf00]
 
 	* lib/repository_finddeps.c:
 	lib/repository_finddeps.c: change var names to be more descriptive,
 	add some more verbose messages.
-
-2010-05-20 04:49 +0200  Juan RP  <xtraeme@gmail.com>  (7d7d6c85ad67)
+	[3251baf24e83]
 
 	* include/xbps_api.h:
 	xbps_api.h: do not rely on sys/cdefs.h, fix up some comments.
+	[7d7d6c85ad67]
 
-2010-05-20 02:43 +0200  Juan RP  <xtraeme@gmail.com>  (8ef9d11bc805)
-
-	* include/sha256.h, lib/sha256.c: deleted file.
 	* NEWS, include/sha256.h, lib/Makefile, lib/sha256.c, lib/util.c:
 	libxbps: use OpenSSL SHA256, 5x faster xbps_get_file_hash()
 	implementation.
@@ -157,17 +447,14 @@
 	* libxbps: switch to OpenSSL SHA256 implementation and remove the
 	one previously used. It's faster and OpenSSL is required for
 	libfetch so there is not point in using it.
+	[8ef9d11bc805]
 
-2010-05-19 23:29 +0200  Juan RP  <xtraeme@gmail.com>  (8a3ccfebb7a6)
+2010-05-19  Juan RP  <xtraeme@gmail.com>
 
 	* 3RDPARTY:
 	3RDPARTY: sync with reality.
+	[8a3ccfebb7a6]
 
-2010-05-19 22:38 +0200  Juan RP  <xtraeme@gmail.com>  (f3d2d6556b5c)
-
-	* configure, include/strlcat.h, include/strlcpy.h,
-	lib/compat/strlcat.c, lib/compat/strlcpy.c: new file.
-	* vars.mk: deleted file.
 	* Makefile, NEWS, README, bin/Makefile, bin/xbps-bin/Makefile, bin
 	/xbps-repo/Makefile, bin/xbps-repo/repository.c, bin/xbps-
 	uhelper/Makefile, bin/xbps-uhelper/main.c, configure, doc/Makefile,
@@ -190,67 +477,57 @@
 	 * If compiler supports -fstack-protector, build all code with
 	   -D_FORTIFY_SOURCE=2 and --param ssp-buffer-size=1 so that all
 	buffers are protected.
-
-2010-05-19 01:06 +0200  Juan RP  <xtraeme@gmail.com>  (7357b1cd86fd)
+	[f3d2d6556b5c]
 
 	* doc/xbps_pkg_props_dictionary.dot:
 	Improve xbps_pkg_props_dictionary.dot even more.
-
-2010-05-19 00:42 +0200  Juan RP  <xtraeme@gmail.com>  (4c5ae8d5be32)
+	[7357b1cd86fd]
 
 	* doc/xbps_pkg_files_dictionary.dot,
 	doc/xbps_pkg_props_dictionary.dot:
 	Improve binary package metadata plist file images.
+	[4c5ae8d5be32]
 
-2010-05-18 23:06 +0200  Juan RP  <xtraeme@gmail.com>  (5979d1ae4436)
+2010-05-18  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-repo/index.c:
 	xbps-repo/index.c: fix a typo.
-
-2010-05-18 23:04 +0200  Juan RP  <xtraeme@gmail.com>  (a30843b4c20c)
+	[5979d1ae4436]
 
 	* lib/repository_finddeps.c, lib/repository_findpkg.c:
 	libxbps: if XBPS_FLAG_VERBOSE is set print to stdout some info about
 	binary packages found in repositories and its dependencies.
-
-2010-05-18 15:33 +0200  Juan RP  <xtraeme@gmail.com>  (8e7b4d5855bb)
+	[a30843b4c20c]
 
 	* .hgtags:
 	Added tag 0.5.2.2 for changeset 0c1a7cea8bd2
-
-2010-05-18 15:33 +0200  Juan RP  <xtraeme@gmail.com>  (0c1a7cea8bd2 [0.5.2.2])
+	[8e7b4d5855bb]
 
 	* NEWS, include/xbps_api.h, lib/remove_obsoletes.c:
 	libxbps::xbps_remove_obsoletes(): reset a var to 0 in non fatal
 	errors!
-
-2010-05-18 13:42 +0200  Juan RP  <xtraeme@gmail.com>  (5a8af7dd8395)
+	[0c1a7cea8bd2] [0.5.2.2]
 
 	* .hgtags:
 	Added tag 0.5.2.1 for changeset 4cf86e688eef
-
-2010-05-18 13:41 +0200  Juan RP  <xtraeme@gmail.com>  (4cf86e688eef [0.5.2.1])
+	[5a8af7dd8395]
 
 	* include/xbps_api.h:
 	Bump XBPS_RELVER.
-
-2010-05-18 13:41 +0200  Juan RP  <xtraeme@gmail.com>  (8b3e20d4d99b)
+	[4cf86e688eef] [0.5.2.1]
 
 	* NEWS:
 	NEWS: fixed a typo.
-
-2010-05-18 13:40 +0200  Juan RP  <xtraeme@gmail.com>  (7f1e37ff4605)
+	[8b3e20d4d99b]
 
 	* NEWS, lib/configure.c, lib/remove.c, lib/unpack.c:
 	libxbps: bah do not ignore ENOENT when running INSTALL/REMOVE
 	scripts.
-
-2010-05-18 07:46 +0200  Juan RP  <xtraeme@gmail.com>  (90f2379c998c)
+	[7f1e37ff4605]
 
 	* .hgtags:
 	Added tag 0.5.2 for changeset e3054c016de0
-
-2010-05-18 07:46 +0200  Juan RP  <xtraeme@gmail.com>  (e3054c016de0 [0.5.2])
+	[90f2379c998c]
 
 	* NEWS, include/xbps_api.h, lib/configure.c, lib/remove.c,
 	lib/remove_obsoletes.c, lib/unpack.c:
@@ -264,128 +541,115 @@
 	* libxbps: while upgrading packages and searching for obsolete
 	files, do not remove the files that did not match previous SHA256
 	hash. Also, only remove obsolete dangling symlinks.
-
-2010-05-18 07:45 +0200  Juan RP  <xtraeme@gmail.com>  (2e19758da01f)
+	[e3054c016de0] [0.5.2]
 
 	* .hgtags:
 	Removed tag 0.5.2
-
-2010-05-18 07:44 +0200  Juan RP  <xtraeme@gmail.com>  (47673ec3fed9)
+	[2e19758da01f]
 
 	* .hgtags:
 	Added tag 0.5.2 for changeset 246721b8546e
-
-2010-05-18 02:42 +0200  Juan RP  <xtraeme@gmail.com>  (246721b8546e)
+	[47673ec3fed9]
 
 	* bin/xbps-repo/index.c:
 	xbps-repo: fix genindex target to not return error when a package is
 	already registered in the index.
+	[246721b8546e]
 
-2010-05-12 07:47 +0200  Juan RP  <xtraeme@gmail.com>  (a4e9fb17726b)
+2010-05-12  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: when replacing a pkg do not purge the old one, just remove
 	it.
-
-2010-05-12 05:04 +0200  Juan RP  <xtraeme@gmail.com>  (57555845334d)
+	[a4e9fb17726b]
 
 	* NEWS, bin/xbps-repo/util.c:
 	xbps-repo(8): improved the 'search' target to also match substrings
 	in package/version tuples.
+	[57555845334d]
 
-2010-05-11 15:20 +0200  Juan RP  <xtraeme@gmail.com>  (54be827f1fe3)
+2010-05-11  Juan RP  <xtraeme@gmail.com>
 
 	* .hgtags:
 	Added tag 0.5.1 for changeset 0d9e4fc8afd9
-
-2010-05-11 15:01 +0200  Juan RP  <xtraeme@gmail.com>  (0d9e4fc8afd9 [0.5.1])
+	[54be827f1fe3]
 
 	* NEWS:
 	NEWS: mention new changes, in preparation for 0.5.1.
-
-2010-05-11 13:47 +0200  Juan RP  <xtraeme@gmail.com>  (4f50c2d1a2f4)
+	[0d9e4fc8afd9] [0.5.1]
 
 	* include/xbps_api.h:
 	Bump XBPS_RELVER for last change.
-
-2010-05-11 13:38 +0200  Juan RP  <xtraeme@gmail.com>  (68b083da7e05)
+	[4f50c2d1a2f4]
 
 	* include/xbps_api.h, lib/cmpver.c, lib/util.c:
 	libxbps: change the epoch char to ':' to differentiate the starting
 	char in pkgname.
 
 	Added xbps_get_pkg_epoch(), to get the epoch version string.
-
-2010-05-11 13:37 +0200  Juan RP  <xtraeme@gmail.com>  (02119879f21c)
+	[68b083da7e05]
 
 	* lib/Makefile:
 	lib/Makefile: proplib sources need -Wno-stack-protector.
+	[02119879f21c]
 
-2010-05-04 17:04 +0200  Juan RP  <xtraeme@gmail.com>  (3c4ed1d715a7)
+2010-05-04  Juan RP  <xtraeme@gmail.com>
 
 	* NEWS, bin/xbps-bin/defs.h, bin/xbps-bin/main.c, bin/xbps-
 	bin/remove.c, bin/xbps-bin/xbps-bin.8:
 	xbps-bin(8): added a new target 'show-orphans' that list all package
 	orphans currently installed.
-
-2010-05-04 15:11 +0200  Juan RP  <xtraeme@gmail.com>  (f62d675ada32)
+	[3c4ed1d715a7]
 
 	* README:
 	README: update project URL.
-
-2010-05-04 15:04 +0200  Juan RP  <xtraeme@gmail.com>  (d5ef997c5c8f)
+	[f62d675ada32]
 
 	* prog.mk:
 	prog.mk: don't redirect stderr to /dev/null for static linking.
 
 	It's useful to see some possible errors.
-
-2010-05-04 14:57 +0200  Juan RP  <xtraeme@gmail.com>  (68ba7a848eb2)
+	[d5ef997c5c8f]
 
 	* lib/Makefile:
 	Also link libxbps to libpthread as it's required now.
-
-2010-05-04 14:36 +0200  Juan RP  <xtraeme@gmail.com>  (10279e555579)
+	[68ba7a848eb2]
 
 	* lib/sha256.c:
 	Provide stubs for htobe{32,64}() and be32toh() macros if they aren't
 	defined on Linux.
 
 	Tested and verified by Jimmy on xbps@googlegroups.com.
+	[10279e555579]
 
-2010-05-03 22:01 +0200  Juan RP  <xtraeme@gmail.com>  (1530e5dccbd5)
+2010-05-03  Juan RP  <xtraeme@gmail.com>
 
 	* .hgignore:
 	Update .hgignore after last change (troff manpages).
+	[1530e5dccbd5]
 
-2010-05-03 21:50 +0200  Juan RP  <xtraeme@gmail.com>  (d635c8a30999)
-
-	* bin/xbps-bin/xbps-bin.8, bin/xbps-repo/xbps-repo.8: new file.
-	* bin/xbps-bin/xbps-bin.8.txt, bin/xbps-repo/xbps-repo.8.txt: deleted
-	file.
 	* NEWS, README, bin/xbps-bin/xbps-bin.8, bin/xbps-bin/xbps-bin.8.txt,
 	bin/xbps-repo/xbps-repo.8, bin/xbps-repo/xbps-repo.8.txt, prog.mk:
 	Remove asciidoc build dependency, use troff manpages directly.
+	[d635c8a30999]
 
-2010-05-02 11:51 +0200  Juan RP  <xtraeme@gmail.com>  (83fffa6b1784)
+2010-05-02  Juan RP  <xtraeme@gmail.com>
 
-	* .hgignore: new file.
-	* .bzrignore: deleted file.
 	* .bzrignore, .hgignore:
 	Moved .bzrignore to .hgignore and make it work.
-
-2010-05-02 11:36 +0200  Juan RP  <xtraeme@gmail.com>  (783e207d30cd)
+	[83fffa6b1784]
 
 	* bin/xbps-bin/xbps-bin.8.txt, bin/xbps-repo/xbps-repo.8.txt:
 	Update manpages for new XBPS project locations.
+	[783e207d30cd]
 
-2010-05-01 17:32 +0000  convert-repo  <convert-repo>  (406f512e4931)
+2010-05-01  convert-repo  <convert-repo>
 
-	* .hgtags: new file.
 	* .hgtags:
 	update tags
+	[406f512e4931]
 
-2010-04-29 18:24 +0200  Juan RP  <xtraeme@gmail.com>  (8c76b0f9dc54 [0.5.0])
+2010-04-29  Juan RP  <xtraeme@gmail.com>
 
 	* lib/portableproplib/prop_data.c, lib/portableproplib/prop_rb.c:
 	Apply the commit from portableproplib's git master:
@@ -394,108 +658,98 @@
 	<xtraeme@gmail.com> Date: Thu Apr 29 18:23:15 2010 +0200
 
 	 Remove some dead code found by the LLVM's clang static analyzer.
+	[8c76b0f9dc54] [0.5.0]
 
-2010-04-28 23:58 +0200  Juan RP  <xtraeme@gmail.com>  (7e06f281ee90)
+2010-04-28  Juan RP  <xtraeme@gmail.com>
 
 	* NEWS:
 	NEWS: improve an entry.
-
-2010-04-28 23:46 +0200  Juan RP  <xtraeme@gmail.com>  (b7ae363ae037)
+	[7e06f281ee90]
 
 	* NEWS, bin/xbps-repo/util.c:
 	xbps-repo(8): fixed the 'search' target to also match patterns
 	against its description, and not only from the package/version
 	touple.
-
-2010-04-28 23:33 +0200  Juan RP  <xtraeme@gmail.com>  (782e0f71f7b6)
+	[b7ae363ae037]
 
 	* NEWS:
 	NEWS: no more warnings now are reported by the LLVM's clang
 	analyzer.
 
 	All possible warnings are only from portableproplib and libfetch.
-
-2010-04-28 23:30 +0200  Juan RP  <xtraeme@gmail.com>  (04177a757347)
+	[782e0f71f7b6]
 
 	* lib/download.c, lib/plist.c, lib/purge.c, lib/remove_obsoletes.c,
 	lib/repository_findpkg.c, lib/repository_sync_index.c, lib/sha256.c,
 	lib/unpack.c:
 	libxbps: fixed all warnings found by clang.
-
-2010-04-28 23:13 +0200  Juan RP  <xtraeme@gmail.com>  (3dee67a333f7)
+	[04177a757347]
 
 	* bin/xbps-repo/index.c:
 	xbps-repo/index.c: fix warnings found by clang.
-
-2010-04-28 23:11 +0200  Juan RP  <xtraeme@gmail.com>  (25919bb83bd8)
+	[3dee67a333f7]
 
 	* bin/xbps-bin/check.c:
 	xbps-bin/check.c: remove dead code, fix warnings found by clang.
-
-2010-04-28 21:33 +0200  Juan RP  <xtraeme@gmail.com>  (3ef971556d56)
+	[25919bb83bd8]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin/install.c: remove unused vars, found by clang.
-
-2010-04-28 18:33 +0200  Juan RP  <xtraeme@gmail.com>  (0e3eaf381521)
+	[3ef971556d56]
 
 	* bin/xbps-bin/main.c:
 	xbps-bin/main.c: remove unused var found by clang analyzer.
-
-2010-04-28 18:31 +0200  Juan RP  <xtraeme@gmail.com>  (12de53084cfd)
+	[0e3eaf381521]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin/install.c: fix a NULL pointer dereference in error path,
 	found by the clang analyzer.
-
-2010-04-28 18:10 +0200  Juan RP  <xtraeme@gmail.com>  (bdd70727d85d)
+	[12de53084cfd]
 
 	* doc/xbps_api_doxyfile:
 	Exclude portableproplib code when generating the API docs.
-
-2010-04-28 03:40 +0200  Juan RP  <xtraeme@gmail.com>  (215b07ce19f0)
+	[bdd70727d85d]
 
 	* LICENSE:
 	LICENSE: remove C comments.
-
-2010-04-28 03:26 +0200  Juan RP  <xtraeme@gmail.com>  (bae8299d9dff)
+	[215b07ce19f0]
 
 	* NEWS, bin/xbps-bin/defs.h, bin/xbps-bin/main.c, bin/xbps-
 	bin/remove.c, bin/xbps-bin/xbps-bin.8.txt:
 	xbps-bin(8): added -p flag to also purge packages for the 'remove'
 	and 'autoremove' targets, after successful removal.
+	[bae8299d9dff]
 
-2010-04-27 18:04 +0200  Juan RP  <xtraeme@gmail.com>  (dffd2080422d)
+2010-04-27  Juan RP  <xtraeme@gmail.com>
 
 	* NEWS:
 	NEWS: update for latest changes.
-
-2010-04-27 18:02 +0200  Juan RP  <xtraeme@gmail.com>  (8dda2aefa593)
+	[dffd2080422d]
 
 	* bin/xbps-repo/defs.h, bin/xbps-repo/repository.c:
 	xbps-repo: show a warning when a repository has been already added.
-
-2010-04-27 18:01 +0200  Juan RP  <xtraeme@gmail.com>  (190ec304a2be)
+	[8dda2aefa593]
 
 	* include/xbps_api.h, lib/repository.c:
 	xbps_repository_register(): if repository already exists return
 	EEXIST.
 
 	Bump XBPS_RELVER to 20100427.
+	[190ec304a2be]
 
-2010-04-24 18:08 +0200  Juan RP  <xtraeme@gmail.com>  (7a4a3f7e1833)
+2010-04-24  Juan RP  <xtraeme@gmail.com>
 
 	* README:
 	README: zlib is also required now.
+	[7a4a3f7e1833]
 
-2010-04-21 11:04 +0200  Juan RP  <xtraeme@gmail.com>  (1697ed1beb24)
+2010-04-21  Juan RP  <xtraeme@gmail.com>
 
 	* lib/Makefile:
 	portableproplib can now be built with -Wextra and -Werror, but still
 	needs
 	-Wno-cast-qual and -Wno-unused-parameter.
-
-2010-04-21 05:48 +0200  Juan RP  <xtraeme@gmail.com>  (dd3d514cd25f)
+	[1697ed1beb24]
 
 	* lib/portableproplib/prop_object.c:
 	Add change from portableproplib's git master to fix a warning with
@@ -505,8 +759,7 @@
 	<xtraeme@gmail.com> Date: Wed Apr 21 05:47:34 2010 +0200
 
 	 prop_object: add cast for -Wextra.
-
-2010-04-21 05:09 +0200  Juan RP  <xtraeme@gmail.com>  (53749673049e)
+	[dd3d514cd25f]
 
 	* lib/portableproplib/prop_array.c,
 	lib/portableproplib/prop_dictionary.c:
@@ -517,47 +770,24 @@
 	<xtraeme@gmail.com> Date: Wed Apr 21 05:07:53 2010 +0200
 
 	 Add a cast that fixes a warning in the new zlib code.
-
-2010-04-21 05:04 +0200  Juan RP  <xtraeme@gmail.com>  (e95c452405c1)
+	[53749673049e]
 
 	* lib/plist.c:
 	xbps_read_dict_from_archive_entry: added support to uncompress plist
 	files in archives.
+	[e95c452405c1]
 
-2010-04-20 15:04 +0200  Juan RP  <xtraeme@gmail.com>  (65ccb7b94628)
+2010-04-20  Juan RP  <xtraeme@gmail.com>
 
 	* include/xbps_api.h:
 	Bump XBPS_RELVER to 20100420 for compressed gzip plist files
 	support.
-
-2010-04-20 14:35 +0200  Juan RP  <xtraeme@gmail.com>  (295c80d16a5b)
+	[65ccb7b94628]
 
 	* bin/xbps-uhelper/main.c:
 	xbps-uhelper: remove unused debug code.
+	[295c80d16a5b]
 
-2010-04-20 14:22 +0200  Juan RP  <xtraeme@gmail.com>  (bec8ad674e2c)
-
-	* 3RDPARTY, include/queue.h, lib/portableproplib/prop/prop_array.h,
-	lib/portableproplib/prop/prop_bool.h,
-	lib/portableproplib/prop/prop_data.h,
-	lib/portableproplib/prop/prop_dictionary.h,
-	lib/portableproplib/prop/prop_ingest.h,
-	lib/portableproplib/prop/prop_number.h,
-	lib/portableproplib/prop/prop_object.h,
-	lib/portableproplib/prop/prop_string.h,
-	lib/portableproplib/prop/proplib.h,
-	lib/portableproplib/prop_array.c,
-	lib/portableproplib/prop_array_util.c,
-	lib/portableproplib/prop_bool.c, lib/portableproplib/prop_data.c,
-	lib/portableproplib/prop_dictionary.c,
-	lib/portableproplib/prop_dictionary_util.c,
-	lib/portableproplib/prop_ingest.c,
-	lib/portableproplib/prop_number.c,
-	lib/portableproplib/prop_object.c,
-	lib/portableproplib/prop_object_impl.h,
-	lib/portableproplib/prop_rb.c, lib/portableproplib/prop_rb_impl.h,
-	lib/portableproplib/prop_stack.c, lib/portableproplib/prop_stack.h,
-	lib/portableproplib/prop_string.c: new file.
 	* 3RDPARTY, NEWS, README, bin/xbps-bin/check.c, bin/xbps-bin/show-
 	deps.c, bin/xbps-bin/show-info-files.c, bin/xbps-repo/index.c, bin
 	/xbps-repo/repository.c, bin/xbps-uhelper/main.c, include/queue.h,
@@ -600,30 +830,32 @@
 	plist files for all metadata related work. This will vastly reduce
 	bandwidth required for fetching remote repo's pkg index file and
 	binary packages.
+	[bec8ad674e2c]
 
-2010-03-31 12:50 +0200  Juan RP  <xtraeme@gmail.com>  (f127b9149824)
+2010-03-31  Juan RP  <xtraeme@gmail.com>
 
 	* README, vars.mk:
 	Use pkg-config to find out the openssl/libarchive required static
 	libs.
+	[f127b9149824]
 
-2010-03-13 09:31 +0100  Juan RP  <xtraeme@gmail.com>  (652e4dc0ff62)
+2010-03-13  Juan RP  <xtraeme@gmail.com>
 
 	* lib/register.c:
 	lib/register.c: add some DPRINTFs.
+	[652e4dc0ff62]
 
-2010-02-28 03:23 +0100  Juan RP  <xtraeme@gmail.com>  (83ac79b54ac9 [0.4.1])
+2010-02-28  Juan RP  <xtraeme@gmail.com>
 
-	* LICENSE: new file.
 	* LICENSE:
 	Add a LICENSE file.
+	[83ac79b54ac9] [0.4.1]
 
-2010-02-26 06:48 +0100  Juan RP  <xtraeme@gmail.com>  (564935f86832)
+2010-02-26  Juan RP  <xtraeme@gmail.com>
 
 	* NEWS:
 	NEWS: update for to be relesed 0.4.1 version.
-
-2010-02-26 06:13 +0100  Juan RP  <xtraeme@gmail.com>  (ec1e8deeea0c)
+	[564935f86832]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: fixed the install target to work with pkgnames containing
@@ -631,31 +863,32 @@
 
 	The fix is to always append '>=0' if a pkgname is specified, and
 	passing a pkgpattern to xbps_repository_install_pkg().
+	[ec1e8deeea0c]
 
-2010-02-17 05:19 +0100  Juan RP  <xtraeme@gmail.com>  (3f3ee571b025)
+2010-02-17  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: unset some bool vars while processing the transaction to
 	avoid wrong messages for preserve pkgs.
+	[3f3ee571b025]
 
-2010-01-29 04:44 +0100  Juan RP  <xtraeme@gmail.com>  (a4fce231a58e [0.4])
+2010-01-29  Juan RP  <xtraeme@gmail.com>
 
 	* lib/repository_findpkg.c, lib/sortdeps.c:
 	Avoid endless loop while sorting dependencies due to missing
 	packages.
+	[a4fce231a58e] [0.4]
 
-2010-01-28 17:44 +0100  Juan RP  <xtraeme@gmail.com>  (9704c175fdd3)
+2010-01-28  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/remove.c:
 	xbps-bin/remove.c: set some pointers to NULL before checking them.
-
-2010-01-28 16:21 +0100  Juan RP  <xtraeme@gmail.com>  (9bfc58f968bc)
+	[9704c175fdd3]
 
 	* NEWS, lib/unpack.c:
 	Improve previous and only overwrite files while upgrading packages
 	in the unpack phase.
-
-2010-01-28 16:08 +0100  Juan RP  <xtraeme@gmail.com>  (823d10c9fa55)
+	[9bfc58f968bc]
 
 	* NEWS, bin/xbps-bin/install.c, bin/xbps-bin/remove.c, bin/xbps-
 	repo/util.c, doc/xbps_pkg_props_dictionary.dot, include/xbps_api.h,
@@ -666,94 +899,82 @@
 	This helps to catch upgrade problems and simplifies some parts of
 	the code. Bumped XBPS_RELVER because xbps_remove_pkg() has been
 	changed.
+	[823d10c9fa55]
 
-2010-01-25 16:16 +0100  Juan RP  <xtraeme@gmail.com>  (f048ee5b668d)
+2010-01-25  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: print different msgs for pkgs marked as preserve and
 	essential.
-
-2010-01-25 16:16 +0100  Juan RP  <xtraeme@gmail.com>  (15908f782da6)
+	[f048ee5b668d]
 
 	* bin/xbps-bin/remove.c:
 	xbps-bin/remove.c: simplify error paths.
-
-2010-01-25 16:15 +0100  Juan RP  <xtraeme@gmail.com>  (f9645223f939)
+	[15908f782da6]
 
 	* bin/xbps-bin/check.c:
 	xbps-bin/check.c: simplify exit paths.
-
-2010-01-25 08:28 +0100  Juan RP  <xtraeme@gmail.com>  (20a41020b58a)
+	[f9645223f939]
 
 	* lib/remove.c:
 	lib/remove.c: bump copyright year for previous change.
-
-2010-01-25 08:09 +0100  Juan RP  <xtraeme@gmail.com>  (2fa1720168c0)
+	[20a41020b58a]
 
 	* NEWS, bin/xbps-bin/main.c, bin/xbps-bin/xbps-bin.8.txt,
 	lib/remove.c:
 	xbps-bin(8): if -f is set, remove files and configuration files even
 	if its hash doesn't match for the remove and purge targets
 	respectively.
-
-2010-01-25 06:27 +0100  Juan RP  <xtraeme@gmail.com>  (150efe0786e0)
+	[2fa1720168c0]
 
 	* bin/xbps-bin/install.c, bin/xbps-bin/remove.c, include/xbps_api.h,
 	lib/remove.c:
 	Repair upgrades of preserve packages, i.e kernel.
-
-2010-01-25 03:14 +0100  Juan RP  <xtraeme@gmail.com>  (69dc1ef57c07)
+	[150efe0786e0]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: fixed some stdout vs stderr printf issues.
-
-2010-01-25 02:14 +0100  Juan RP  <xtraeme@gmail.com>  (d2dbe6ef606b)
+	[69dc1ef57c07]
 
 	* lib/plist.c:
 	lib/plist.c: fix an assertion.
+	[d2dbe6ef606b]
 
-2010-01-24 17:59 +0100  Juan RP  <xtraeme@gmail.com>  (c216d9c2a28a)
+2010-01-24  Juan RP  <xtraeme@gmail.com>
 
-	* NEWS: new file.
 	* NEWS:
 	Added a NEWS file in preparation for xbps-0.4.
-
-2010-01-24 17:25 +0100  Juan RP  <xtraeme@gmail.com>  (82f5d9be9e95)
+	[c216d9c2a28a]
 
 	* bin/xbps-uhelper/main.c:
 	xbps-uhelper: make 'fetch' target accept an arbitrary number of
 	arguments.
 
 	Also set default libfetch's cache connection limits.
-
-2010-01-24 16:31 +0100  Juan RP  <xtraeme@gmail.com>  (94a209bd5e95)
+	[82f5d9be9e95]
 
 	* bin/xbps-bin/install.c, include/xbps_api.h, lib/download.c:
 	Add defs for default fetch cache connection limits and use them in
 	xbps_fetch_cache_connection() if 0 is passed as argument.
 
 	xbps-bin: enable fetch cached connection when downloading binpkgs.
-
-2010-01-24 15:48 +0100  Juan RP  <xtraeme@gmail.com>  (c3f50dbaa4bf)
+	[94a209bd5e95]
 
 	* include/xbps_api.h, lib/download.c:
 	Add xbps_fetch_set_cache_connection() to set libfetch's cache
 	connection limits.
 
 	Use it in xbps_fetch_file(), by default set with 8 and 16.
-
-2010-01-24 15:47 +0100  Juan RP  <xtraeme@gmail.com>  (d20017f977a1)
+	[c3f50dbaa4bf]
 
 	* include/fetch.h, lib/fetch/common.c, lib/fetch/common.h,
 	lib/fetch/ftp.c, lib/fetch/http.c:
 	Merge libfetch-2.30 from NetBSD's pkgsrc.
-
-2010-01-24 14:07 +0100  Juan RP  <xtraeme@gmail.com>  (601f784cd0d1)
+	[d20017f977a1]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: remove an extra newline in transaction ops.
-
-2010-01-24 13:59 +0100  Juan RP  <xtraeme@gmail.com>  (b76ee83f097e)
+	[601f784cd0d1]
 
 	* Makefile, include/Makefile, lib/Makefile, prog.mk, vars.mk:
 	Rework Makefiles one more time.
@@ -762,39 +983,31 @@
 	have support for escape sequences (-e).
 	- Remove DESTDIR from SBINDIR, MANDIR, LIBDIR and INCLUDEDIR so that
 	you can override it.
+	[b76ee83f097e]
 
-2010-01-23 06:59 +0100  Juan RP  <xtraeme@gmail.com>  (5b3e7a70bc35)
+2010-01-23  Juan RP  <xtraeme@gmail.com>
 
 	* README:
 	README: explain BUILD_API_DOCS.
-
-2010-01-23 06:29 +0100  Juan RP  <xtraeme@gmail.com>  (d4b89782c2ab)
+	[5b3e7a70bc35]
 
 	* lib/orphans.c:
 	xbps_find_orphan_packages: improve doxygen documentation.
-
-2010-01-23 06:16 +0100  Juan RP  <xtraeme@gmail.com>  (e74d83fe6fc0)
+	[d4b89782c2ab]
 
 	* lib/unpack.c:
 	lib/unpack.c: improve doxygen description.
-
-2010-01-23 06:13 +0100  Juan RP  <xtraeme@gmail.com>  (a0274c611431)
+	[e74d83fe6fc0]
 
 	* include/xbps_api.h, lib/repository_sync_index.c:
 	Don't export xbps_get_remote_repo_string() to the API, it's only
 	used internally in the library.
-
-2010-01-23 06:12 +0100  Juan RP  <xtraeme@gmail.com>  (a070cee9a512)
+	[a0274c611431]
 
 	* .bzrignore:
 	.bzrignore: add new stuff.
+	[a070cee9a512]
 
-2010-01-23 02:37 +0100  Juan RP  <xtraeme@gmail.com>  (e4720c1ab598)
-
-	* doc/Makefile, doc/xbps_api_doxyfile,
-	doc/xbps_binary_pkg_content.dot, doc/xbps_pkg_files_dictionary.dot,
-	doc/xbps_pkg_props_dictionary.dot, doc/xbps_regpkgdb_dictionary.dot,
-	doc/xbps_transaction_dictionary.dot, include/mainpage.h: new file.
 	* Makefile, README, doc/Makefile, doc/xbps_api_doxyfile,
 	doc/xbps_binary_pkg_content.dot, doc/xbps_pkg_files_dictionary.dot,
 	doc/xbps_pkg_props_dictionary.dot, doc/xbps_regpkgdb_dictionary.dot,
@@ -805,15 +1018,15 @@
 
 	doxygen and graphviz are required. It's disabled by default, use the
 	BUILD_API_DOCS make(1) argument to enable it.
+	[e4720c1ab598]
 
-2010-01-22 23:59 +0100  Juan RP  <xtraeme@gmail.com>  (ed839e468150)
+2010-01-22  Juan RP  <xtraeme@gmail.com>
 
 	* include/xbps_api.h, lib/configure.c, lib/purge.c, lib/register.c,
 	lib/regpkgs_dictionary.c, lib/remove.c, lib/repository.c,
 	lib/repository_findpkg.c:
 	libxbps: improve doxygen documentation, still not finished.
-
-2010-01-22 23:56 +0100  Juan RP  <xtraeme@gmail.com>  (3a93f4fa5c34)
+	[ed839e468150]
 
 	* lib/unpack.c:
 	xbps_unpack_binary_pkg: multiple fixes and improvements.
@@ -825,8 +1038,7 @@
 	- Don't check for removing INSTALL/REMOVE scripts on each iteration
 	when extracting, just check it once before the loop.
 	- Add doxygen comments and related stuff.
-
-2010-01-22 23:54 +0100  Juan RP  <xtraeme@gmail.com>  (b3389760c4e2)
+	[3a93f4fa5c34]
 
 	* lib/repository_plist.c:
 	xbps_repository_get_pkg_plist_dict_from_url: stop processing the
@@ -834,8 +1046,9 @@
 
 	Processing 6 entries is too much, we can be sure that plist file
 	will always be in the first 4 entries.
+	[b3389760c4e2]
 
-2010-01-21 03:10 +0100  Juan RP  <xtraeme@gmail.com>  (8c246c2ef9fc)
+2010-01-21  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/check.c, bin/xbps-bin/install.c, bin/xbps-bin/main.c,
 	bin/xbps-bin/remove.c, bin/xbps-bin/show-deps.c, bin/xbps-
@@ -860,14 +1073,13 @@
 	previously.
 	- Cosmetic changes all along the way, as well as some fixes here and
 	there.
+	[8c246c2ef9fc]
 
-2010-01-18 21:18 +0100  Juan RP  <xtraeme@gmail.com>  (e04bde7d0b34)
+2010-01-18  Juan RP  <xtraeme@gmail.com>
 
-	* lib/fetch/Makefile: deleted file.
 	* lib/Makefile, lib/fetch/Makefile, prog.mk, vars.mk:
 	Rework Makefile files, fully parallel builds are now possible.
-
-2010-01-18 19:49 +0100  Juan RP  <xtraeme@gmail.com>  (59fd772dd9f6)
+	[e04bde7d0b34]
 
 	* include/xbps_api.h, lib/unpack.c:
 	xbps_unpack_binary_pkg: fixed some bugs while upgrading essential
@@ -881,14 +1093,14 @@
 	remove action target was never called, now it all works properly.
 
 	Bumped XBPS_RELVER because I consider these bugs so important.
-
-2010-01-18 00:26 +0100  Juan RP  <xtraeme@gmail.com>  (f7b32d48913f)
+	[59fd772dd9f6]
 
 	* lib/repository_pool.c:
 	xbps_repository_pool_init: fix memleaks in error paths, found by
 	cppcheck.
+	[f7b32d48913f]
 
-2010-01-15 15:19 +0100  Juan RP  <xtraeme@gmail.com>  (e59c1e70812f)
+2010-01-15  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/check.c, bin/xbps-bin/install.c, bin/xbps-bin/main.c,
 	bin/xbps-bin/remove.c, bin/xbps-bin/show-deps.c, bin/xbps-
@@ -896,14 +1108,14 @@
 	/xbps-uhelper/main.c, lib/configure.c, lib/remove.c,
 	lib/remove_obsoletes.c, lib/unpack.c:
 	Error and warning messages should go to stderr, make it so.
+	[e59c1e70812f]
 
-2010-01-14 18:58 +0100  Juan RP  <xtraeme@gmail.com>  (d9d8422836f2)
+2010-01-14  Juan RP  <xtraeme@gmail.com>
 
 	* lib/repository_findpkg.c:
 	xbps_repository_install_pkg: don't forget to release repository pool
 	stuff.
-
-2010-01-14 13:57 +0100  Juan RP  <xtraeme@gmail.com>  (89032ca90604)
+	[d9d8422836f2]
 
 	* lib/repository_findpkg.c:
 	xbps_repository_install_pkg: before adding pkg into the transaction,
@@ -914,24 +1126,20 @@
 	$ xbps-bin install libXext libX11
 
 	where libX11 is a dependency of libXext and was already queued.
-
-2010-01-14 13:39 +0100  Juan RP  <xtraeme@gmail.com>  (dfe13e8dcad5)
+	[89032ca90604]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: simplify pkgname_from_pkgmatch() and fix a bug.
-
-2010-01-14 06:25 +0100  Juan RP  <xtraeme@gmail.com>  (68916b88bbe3)
+	[dfe13e8dcad5]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: really fix previous, by using a hack for now.
-
-2010-01-14 04:00 +0100  Juan RP  <xtraeme@gmail.com>  (d4a5c466c003)
+	[68916b88bbe3]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: don't make false positives detecting pkgmatches vs
 	pkgnames while installing packages.
-
-2010-01-14 02:14 +0100  Juan RP  <xtraeme@gmail.com>  (cffd5516e9d2)
+	[d4a5c466c003]
 
 	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, bin/xbps-bin/xbps-
 	bin.8.txt, bin/xbps-repo/index.c, bin/xbps-repo/repository.c,
@@ -943,45 +1151,40 @@
 
 	The implementation works as expected, it was easier that I thought.
 	Bump XBPS_RELVER because the API was changed slightly.
-
-2010-01-14 01:06 +0100  Juan RP  <xtraeme@gmail.com>  (973a02766629)
+	[cffd5516e9d2]
 
 	* bin/xbps-repo/util.c:
 	xbps-repo: search target: also report exact matches by pkgname.
-
-2010-01-14 01:00 +0100  Juan RP  <xtraeme@gmail.com>  (577a92acf90e)
+	[973a02766629]
 
 	* lib/pkgmatch.c:
 	xbps_pkgmatch: before checking pattern with csh_match(), try to see
 	if a full match with strcmp() is enough.
+	[577a92acf90e]
 
-2010-01-13 19:32 +0100  Juan RP  <xtraeme@gmail.com>  (9a72f86c9b66)
+2010-01-13  Juan RP  <xtraeme@gmail.com>
 
-	* include/Makefile: new file.
 	* Makefile, bin/Makefile, include/Makefile, vars.mk:
 	Install the xbps_api.h header.
-
-2010-01-13 18:10 +0100  Juan RP  <xtraeme@gmail.com>  (5a9193b86cba)
+	[9a72f86c9b66]
 
 	* lib/remove.c:
 	xbps_remove_pkg: fix a memleak, thanks valgrind.
-
-2010-01-13 17:05 +0100  Juan RP  <xtraeme@gmail.com>  (8b1fff326b0c)
+	[5a9193b86cba]
 
 	* bin/xbps-repo/util.c:
 	xbps-repo/util.c: bump copyright year.
-
-2010-01-13 16:57 +0100  Juan RP  <xtraeme@gmail.com>  (c7298514c018)
+	[8b1fff326b0c]
 
 	* bin/xbps-repo/util.c:
 	xbps-repo/util.c: simplify show_pkg_files().
-
-2010-01-13 16:57 +0100  Juan RP  <xtraeme@gmail.com>  (d30359f579fe)
+	[c7298514c018]
 
 	* lib/Makefile:
 	Install shlib with 755 perms to match what the world does.
+	[d30359f579fe]
 
-2010-01-11 20:24 +0100  Juan RP  <xtraeme@gmail.com>  (702b8f0b469b)
+2010-01-11  Juan RP  <xtraeme@gmail.com>
 
 	* lib/fetch/ftp.c:
 	Sync fetch code with libfetch-2.27.
@@ -990,35 +1193,37 @@
 	case of active transfers correctly and tried to close the connection
 	in that case (PR 42607). Correctly check if there is a transfer
 	going on and just leave the connection alone in that case.
+	[702b8f0b469b]
 
-2010-01-06 11:15 +0100  Juan RP  <xtraeme@gmail.com>  (0bee17c756d6)
+2010-01-06  Juan RP  <xtraeme@gmail.com>
 
 	* lib/Makefile, lib/fetch/Makefile, prog.mk, vars.mk:
 	Restructure the Makefiles, INET6 and SSL support in libfetch is now
 	mandatory, build executables as PIE objects.
+	[0bee17c756d6]
 
-2009-12-28 23:35 +0100  Juan RP  <xtraeme@gmail.com>  (c55ab3d86c16)
+2009-12-28  Juan RP  <xtraeme@gmail.com>
 
 	* README:
 	README: improve make install example.
-
-2009-12-28 16:19 +0100  Juan RP  <xtraeme@gmail.com>  (c3af2254249d)
+	[c55ab3d86c16]
 
 	* README, lib/Makefile, lib/fetch/Makefile, prog.mk:
 	Cleaned up the Makefiles, improve README about what's required.
+	[c3af2254249d]
 
-2009-12-24 01:32 +0100  Juan RP  <xtraeme@gmail.com>  (5a0d1558f4a3)
+2009-12-24  Juan RP  <xtraeme@gmail.com>
 
 	* lib/register.c:
 	xbps_register_pkg: if automatic-install obj is there, don't
 	overwrite its value.
+	[5a0d1558f4a3]
 
-2009-12-22 15:03 +0100  Juan RP  <xtraeme@gmail.com>  (345145c682ad)
+2009-12-22  Juan RP  <xtraeme@gmail.com>
 
 	* include/xbps_api.h:
 	Bump XBPS_RELVER to 20091222 for last set of changes.
-
-2009-12-22 14:43 +0100  Juan RP  <xtraeme@gmail.com>  (5297e0d22a24)
+	[345145c682ad]
 
 	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, bin/xbps-bin/xbps-
 	bin.8.txt:
@@ -1026,8 +1231,7 @@
 	 - Add -y flag to assume "yes" for all questions.
 	 - Print a proper error string when the transaction dictionary is
 	empty.
-
-2009-12-22 12:37 +0100  Juan RP  <xtraeme@gmail.com>  (acd82608bcca)
+	[5297e0d22a24]
 
 	* bin/xbps-bin/defs.h, bin/xbps-bin/install.c, bin/xbps-bin/main.c,
 	bin/xbps-bin/remove.c, bin/xbps-bin/xbps-bin.8.txt,
@@ -1038,55 +1242,56 @@
 
 	The install, update and remove targets now accept a list of package
 	names that will be processed.
-
-2009-12-22 12:27 +0100  Juan RP  <xtraeme@gmail.com>  (a5a171e641fb)
+	[acd82608bcca]
 
 	* lib/util.c:
 	xbps_yesno/noyes: change the funcs to only accept "yes" or "no"
 	(case insensitive) answers rather than the short ones.
+	[a5a171e641fb]
 
-2009-12-20 23:33 +0100  Juan RP  <xtraeme@gmail.com>  (aa8e61d170b2)
+2009-12-20  Juan RP  <xtraeme@gmail.com>
 
 	* vars.mk:
 	vars.mk: remove dup -lcrypto.
+	[aa8e61d170b2]
 
-2009-12-18 13:21 +0100  Juan RP  <xtraeme@gmail.com>  (f800f31fa361)
+2009-12-18  Juan RP  <xtraeme@gmail.com>
 
 	* lib/fetch/Makefile:
 	lib/fetch/Makefile: ignore fstack-protector warnings.
-
-2009-12-18 13:21 +0100  Juan RP  <xtraeme@gmail.com>  (2db899aa6d90)
+	[f800f31fa361]
 
 	* .bzrignore:
 	.bzrignore: add .xml files.
-
-2009-12-18 13:20 +0100  Juan RP  <xtraeme@gmail.com>  (a0217d3f9741)
+	[2db899aa6d90]
 
 	* lib/repository_sync_index.c:
 	repository_sync_index.c: add missing sys/stat.h.
+	[a0217d3f9741]
 
-2009-12-18 13:19 +0100  Juan RP  <juan@juan-desktop>  (c7bc21a8517f)
+2009-12-18  Juan RP  <juan@juan-desktop>
 
 	* bin/xbps-bin/xbps-bin.8.txt, bin/xbps-repo/xbps-repo.8.txt:
 	xbps-{bin,repo}.8.txt: s/SYNOPSYS/SYNOPSIS/
+	[c7bc21a8517f]
 
-2009-12-12 11:22 +0100  Juan RP  <xtraeme@gmail.com>  (84cbb396030d [0.3])
+2009-12-12  Juan RP  <xtraeme@gmail.com>
 
 	* README:
 	README: asciidoc is also required to build the manpages.
+	[84cbb396030d] [0.3]
 
-2009-12-12 11:20 +0100  Juan RP  <xtraeme@gmail.com>  (034ae565f6db)
-
-	* README: new file.
 	* README:
 	Added a minimal README file.
+	[034ae565f6db]
 
-2009-12-11 10:58 +0100  Juan RP  <xtraeme@gmail.com>  (921fed384a70)
+2009-12-11  Juan RP  <xtraeme@gmail.com>
 
 	* lib/unpack.c:
 	xbps_unpack_binary_pkg: set INSTALL/REMOVE perms to 0750.
+	[921fed384a70]
 
-2009-12-10 09:13 +0100  Juan RP  <xtraeme@gmail.com>  (8ec89948aa24)
+2009-12-10  Juan RP  <xtraeme@gmail.com>
 
 	* lib/repository_plist.c:
 	repository_plist.c: fix lp bug #494905 "xbps build failure on
@@ -1094,8 +1299,9 @@
 
 	fetchIO_read returns ssize_t not int, applied patch from submitter.
 	Thanks.
+	[8ec89948aa24]
 
-2009-12-09 16:14 +0100  Juan RP  <xtraeme@gmail.com>  (31dcb98264ce)
+2009-12-09  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, include/xbps_api.h,
 	lib/configure.c, lib/unpack.c:
@@ -1103,22 +1309,21 @@
 	value to them.
 
 	Bump XBPS_RELVER to 20091209.
+	[31dcb98264ce]
 
-2009-12-07 07:24 +0100  Juan RP  <xtraeme@gmail.com>  (b45c72e349e1)
+2009-12-07  Juan RP  <xtraeme@gmail.com>
 
 	* lib/unpack.c:
 	xbps_unpack_binary_pkg: bail out if required metadata plist files
 	aren't found after processing 6 entries from the archive.
 
 	This to detect non-valid XBPS binary packages.
-
-2009-12-07 06:52 +0100  Juan RP  <xtraeme@gmail.com>  (cb0cae51a795)
+	[b45c72e349e1]
 
 	* bin/xbps-bin/defs.h, bin/xbps-bin/main.c, bin/xbps-bin/remove.c:
 	xbps-bin: make the 'autoremove' target respect -f flag to bypass
 	question.
-
-2009-12-07 06:30 +0100  Juan RP  <xtraeme@gmail.com>  (3d82446e2e5e)
+	[cb0cae51a795]
 
 	* include/xbps_api.h, lib/purge.c, lib/remove.c:
 	libxbps: share code for removing pkg files in remove.c and purge.c.
@@ -1132,37 +1337,39 @@
 	empty.
 
 	Bump XBPS_RELVER to 20091207.
-
-2009-12-07 05:27 +0100  Juan RP  <xtraeme@gmail.com>  (78a09943bec5)
+	[3d82446e2e5e]
 
 	* lib/remove.c:
 	xbps_remove_pkg: when removing dirs there is no need to look for the
 	"keep" obj anymore.
+	[78a09943bec5]
 
-2009-12-06 09:29 +0100  Juan RP  <xtraeme@gmail.com>  (0ddde4623cec)
+2009-12-06  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-repo/repository.c:
 	xbps-repo: when adding local repos always create XBPS_META_PATH.
+	[0ddde4623cec]
 
-2009-12-05 01:05 +0100  Juan RP  <xtraeme@gmail.com>  (c3550956f315)
+2009-12-05  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/xbps-bin.8.txt:
 	xbps-bin.8.txt: fix typo.
+	[c3550956f315]
 
-2009-12-02 07:19 +0100  Juan RP  <xtraeme@gmail.com>  (6283c719c91d)
+2009-12-02  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/xbps-bin.8.txt, bin/xbps-repo/xbps-repo.8.txt:
 	Fixed typos in xbps-{bin,repo} manpages.
-
-2009-12-02 06:31 +0100  Juan RP  <xtraeme@gmail.com>  (9468623e7bdc)
+	[6283c719c91d]
 
 	* bin/xbps-bin/install.c, include/xbps_api.h, lib/unpack.c:
 	xbps_unpack_binary_pkg: removed 2nd bool argument, look for a
 	preserve object to not remove files in removal or upgrades.
 
 	Bump XBPS_RELVER to 20091202.
+	[9468623e7bdc]
 
-2009-11-30 12:35 +0100  Juan RP  <xtraeme@gmail.com>  (ef29dd5b4e87)
+2009-11-30  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/install.c, bin/xbps-repo/index.c, bin/xbps-repo/main.c,
 	bin/xbps-repo/repository.c, include/xbps_api.h,
@@ -1174,16 +1381,14 @@
 	xbps_get_pkg_plist_dict_from_repo ->
 	xbps_repository_get_pkg_plist_dict xbps_get_pkg_plist_dict_from_url
 	-> xbps_repository_get_pkg_plist_dict_from_url
-
-2009-11-30 12:24 +0100  Juan RP  <xtraeme@gmail.com>  (50c3b6347af1)
+	[ef29dd5b4e87]
 
 	* bin/xbps-repo/main.c, bin/xbps-repo/repository.c,
 	include/xbps_api.h, lib/repository_finddeps.c,
 	lib/repository_findpkg.c, lib/repository_plist.c,
 	lib/repository_pool.c:
 	Rename struct repository_data to repository_pool.
-
-2009-11-30 12:08 +0100  Juan RP  <xtraeme@gmail.com>  (d323ab017a4a)
+	[50c3b6347af1]
 
 	* bin/xbps-bin/install.c, bin/xbps-repo/repository.c,
 	include/xbps_api.h, lib/repository.c, lib/repository_finddeps.c,
@@ -1198,55 +1403,45 @@
 	xbps_find_new_pkg() -> xbps_repository_update_pkg()
 	xbps_find_new_packages() -> xbps_repository_update_allpkgs()
 	xbps_get_pkg_props() -> xbps_repository_get_transaction_dict()
+	[d323ab017a4a]
 
-2009-11-30 11:53 +0100  Juan RP  <xtraeme@gmail.com>  (af35d7234973)
-
-	* lib/repository_sync_index.c: new file.
-	* lib/sync_remote_pkgidx.c: deleted file.
 	* bin/xbps-repo/repository.c, include/xbps_api.h, lib/Makefile,
 	lib/repository_sync_index.c, lib/sync_remote_pkgidx.c:
 	Rename lib/sync_remote_pkgidx.c to repository_sync_index.c.
 
 	xbps_sync_repository_pkg_index() renamed to
 	xbps_repository_sync_pkg_index().
-
-2009-11-30 11:48 +0100  Juan RP  <xtraeme@gmail.com>  (94aebfa33b2d)
+	[af35d7234973]
 
 	* include/xbps_api.h:
 	xbps_api.h: update comments, sort.
+	[94aebfa33b2d]
 
-2009-11-30 11:38 +0100  Juan RP  <xtraeme@gmail.com>  (443a6a312bda)
-
-	* lib/repository_finddeps.c, lib/repository_findpkg.c: new file.
-	* lib/depends.c, lib/findpkg.c: deleted file.
 	* lib/Makefile, lib/depends.c, lib/findpkg.c,
 	lib/repository_finddeps.c, lib/repository_findpkg.c:
 	Rename lib/depends.c to repository_finddeps.c and lib/findpkg.c to
 	repository_findpkg.c.
-
-2009-11-30 11:20 +0100  Juan RP  <xtraeme@gmail.com>  (44829821456e)
+	[443a6a312bda]
 
 	* bin/xbps-repo/util.c:
 	xbps-bin, xbps-repo: show the "essential" and "replaces" objs values
 	in the 'show' target.
+	[44829821456e]
 
-2009-11-29 05:53 +0100  Juan RP  <xtraeme@gmail.com>  (69ecd1f57a9f)
+2009-11-29  Juan RP  <xtraeme@gmail.com>
 
 	* lib/sortdeps.c:
 	xbps_sort_pkg_deps: add debugging, use xbps_pkgdep_match().
-
-2009-11-29 05:52 +0100  Juan RP  <xtraeme@gmail.com>  (e18fae789099)
+	[69ecd1f57a9f]
 
 	* lib/depends.c:
 	xbps_find_pkg_repo_deps: check if current pkg version in repo is
 	enough to satisfy the required rundep for a pkg!
-
-2009-11-29 05:51 +0100  Juan RP  <xtraeme@gmail.com>  (59fb3bb7bbdf)
+	[e18fae789099]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: fix assertion with pkgs containing the "replaces" obj.
-
-2009-11-29 03:17 +0100  Juan RP  <xtraeme@gmail.com>  (22b1b338ccf1)
+	[59fb3bb7bbdf]
 
 	* bin/xbps-bin/install.c, lib/depends.c, lib/plist.c:
 	Fix and improve how missing pkg dependencies are handled from repos.
@@ -1255,18 +1450,17 @@
 	- While adding a missing pkgdep, check if it's already in the queue
 	and new required version is greater, in that case replace with new
 	one.
+	[22b1b338ccf1]
 
-2009-11-28 09:18 +0100  Juan RP  <xtraeme@gmail.com>  (3f756bb4ac47)
+2009-11-28  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/xbps-bin.8.txt:
 	xbps-bin(8): mention /var/db/xbps/metadata/pkgname/*.plist.
-
-2009-11-28 09:14 +0100  Juan RP  <xtraeme@gmail.com>  (741b469c726b)
+	[3f756bb4ac47]
 
 	* include/xbps_api.h:
 	xbps_api.h: indent.
-
-2009-11-28 06:11 +0100  Juan RP  <xtraeme@gmail.com>  (609f4e7ed906)
+	[741b469c726b]
 
 	* bin/xbps-repo/util.c, lib/repository_plist.c:
 	xbps-repo: also print binpkg compression type in the show target.
@@ -1283,33 +1477,27 @@
 	The XBPS package system. A new, fast, from scratch and simple
 	binary package manager. This packages includes code from a
 	development branch available from https://launchpad.net/xbps $
-
-2009-11-28 05:52 +0100  Juan RP  <xtraeme@gmail.com>  (6f8468780883)
+	[609f4e7ed906]
 
 	* bin/xbps-repo/util.c:
 	xbps-bin, xbps-repo: use xbps_pkgdep_match() for the search target.
 
 	This provides csh style shell pattern.
+	[6f8468780883]
 
-2009-11-28 05:43 +0100  Juan RP  <xtraeme@gmail.com>  (cd1056500384)
-
-	* lib/config_files.c, lib/remove_obsoletes.c: new file.
 	* include/xbps_api.h, lib/Makefile, lib/config_files.c,
 	lib/remove_obsoletes.c, lib/unpack.c:
 	Split unpack.c config files and remove obsoletes code into its own
 	files.
-
-2009-11-28 03:56 +0100  Juan RP  <xtraeme@gmail.com>  (92d52396c86f)
+	[cd1056500384]
 
 	* bin/xbps-bin/xbps-bin.8.txt:
 	xbps-bin: update manpage.
-
-2009-11-28 03:56 +0100  Juan RP  <xtraeme@gmail.com>  (a2fbdc4ea54f)
+	[92d52396c86f]
 
 	* bin/xbps-repo/main.c, bin/xbps-repo/xbps-repo.8.txt:
 	xbps-repo: add -c flag to set cachedir, update manpage.
-
-2009-11-28 03:21 +0100  Juan RP  <xtraeme@gmail.com>  (8066b1b10113)
+	[a2fbdc4ea54f]
 
 	* bin/xbps-bin/install.c, bin/xbps-repo/xbps-repo.8.txt,
 	include/xbps_api.h, lib/repository_plist.c, lib/unpack.c,
@@ -1317,25 +1505,20 @@
 	xbps-repo: if fetching info from remote repo for the 'show' and
 	'show-files' targets and the binary package exists in cachedir, use
 	it.
-
-2009-11-28 02:53 +0100  Juan RP  <xtraeme@gmail.com>  (9c8f64cdd692)
+	[8066b1b10113]
 
 	* lib/sync_remote_pkgidx.c:
 	xbps_sync_repository_pkg_index: update comments.
-
-2009-11-28 02:51 +0100  Juan RP  <xtraeme@gmail.com>  (e5ec88b8b03f)
+	[9c8f64cdd692]
 
 	* include/xbps_api.h, lib/util.c:
 	libxbps: remove unused xbps_check_pkg_file_hash().
-
-2009-11-28 02:49 +0100  Juan RP  <xtraeme@gmail.com>  (3ed60ce6d5de)
+	[e5ec88b8b03f]
 
 	* lib/unpack.c:
 	xbps_unpack_binary_pkg: cosmetic changes.
+	[3ed60ce6d5de]
 
-2009-11-28 02:38 +0100  Juan RP  <xtraeme@gmail.com>  (ea1a6979cd94)
-
-	* lib/mkpath.c: new file.
 	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, bin/xbps-bin/xbps-
 	bin.8.txt, include/xbps_api.h, lib/Makefile, lib/mkpath.c,
 	lib/sync_remote_pkgidx.c, lib/unpack.c, lib/util.c:
@@ -1359,44 +1542,40 @@
 	 * If a binpkg doesn't match the hash it will be refetched.
 
 	Bump XBPS_RELVER to 20091128.
+	[ea1a6979cd94]
 
-2009-11-27 01:51 +0100  Juan RP  <xtraeme@gmail.com>  (de5c5b1fb970)
+2009-11-27  Juan RP  <xtraeme@gmail.com>
 
 	* lib/repository_pool.c:
 	xbps_repository_pool_init: if unexistent repos are registered,
 	ignore them but do not report any error.
+	[de5c5b1fb970]
 
-2009-11-26 21:41 +0100  Juan RP  <xtraeme@gmail.com>  (ce391bf58b1f)
+2009-11-26  Juan RP  <xtraeme@gmail.com>
 
 	* lib/repository_pool.c:
 	xbps_repository_pool_init: ignore invalid repositories if always
 	there is one that is working, otherwise report an error.
-
-2009-11-26 05:01 +0100  Juan RP  <xtraeme@gmail.com>  (0daad84b3171)
+	[ce391bf58b1f]
 
 	* lib/plist.c:
 	xbps_find_pkg_installed_from_plist: if pkg is in 'config-files'
 	state, treat this as not installed and set errno to ENOENT.
-
-2009-11-26 04:40 +0100  Juan RP  <xtraeme@gmail.com>  (9795082b301e)
+	[0daad84b3171]
 
 	* lib/repository_plist.c:
 	xbps_get_path_from_pkg_dict_repo: adding rootdir wasn't correct for
 	a local repository, remove it.
-
-2009-11-26 03:32 +0100  Juan RP  <xtraeme@gmail.com>  (fb2c1f59c99b)
+	[9795082b301e]
 
 	* bin/xbps-bin/xbps-bin.8.txt, bin/xbps-repo/xbps-repo.8.txt:
 	Added some missing changes for previous.
-
-2009-11-26 03:29 +0100  Juan RP  <xtraeme@gmail.com>  (c219acc682bc)
+	[fb2c1f59c99b]
 
 	* bin/xbps-bin/xbps-bin.8.txt, bin/xbps-repo/xbps-repo.8.txt:
 	xbps-bin(8), xbps-repo(8): improve descr for some targets.
+	[c219acc682bc]
 
-2009-11-26 02:22 +0000  Juan RP  <xtraeme@gmail.com>  (f993808267ff)
-
-	* lib/regpkgs_dictionary.c, lib/repository_pool.c: new file.
 	* bin/xbps-bin/check.c, bin/xbps-bin/install.c, bin/xbps-bin/main.c,
 	bin/xbps-bin/show-deps.c, bin/xbps-repo/index.c, bin/xbps-
 	repo/main.c, bin/xbps-repo/repository.c, bin/xbps-repo/util.c,
@@ -1429,21 +1608,19 @@
 	dependency is already unpacked and shows it as "unconfigured".
 
 	Bump XBPS_RELVER to 20091126.
+	[f993808267ff]
 
-2009-11-25 07:42 +0000  Juan RP  <xtraeme@gmail.com>  (8b06d31c5dc8)
+2009-11-25  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-repo/index.c:
 	xbps-repo: genindex: also remove the "conf_files" object.
-
-2009-11-25 04:38 +0000  Juan RP  <xtraeme@gmail.com>  (d635282d7668)
+	[8b06d31c5dc8]
 
 	* include/xbps_api.h:
 	Bump XBPS_PKGINDEX_VERSION to 1.1 because some pkg objects were
 	removed.
+	[d635282d7668]
 
-2009-11-25 04:32 +0000  Juan RP  <xtraeme@gmail.com>  (309260a1a4b2)
-
-	* bin/xbps-repo/repository.c: new file.
 	* bin/xbps-repo/Makefile, bin/xbps-repo/defs.h, bin/xbps-repo/index.c,
 	bin/xbps-repo/main.c, bin/xbps-repo/repository.c, bin/xbps-
 	repo/util.c:
@@ -1452,20 +1629,17 @@
 	- genindex: use new recently added function, remove some objects
 	from generated pkg dictionaries, they will be fetched remotely.
 	- moved some code from main.c into repository.c.
-
-2009-11-25 04:29 +0000  Juan RP  <xtraeme@gmail.com>  (086ceefd4a58)
+	[309260a1a4b2]
 
 	* include/xbps_api.h, lib/repository_plist.c:
 	xbps_get_path_from_pkg_dict_repo: new function that returns a
 	malloc'ed string with the full path to a binary package file.
-
-2009-11-25 02:52 +0000  Juan RP  <xtraeme@gmail.com>  (788f4c5f16ae)
+	[086ceefd4a58]
 
 	* include/xbps_api.h, lib/repository_plist.c:
 	xbps_get_pkg_plist_dict_from_repo: split reading the pkg plist dict
 	from an url into a new function, xbps_get_pkg_plist_dict_from_url.
-
-2009-11-25 02:15 +0000  Juan RP  <xtraeme@gmail.com>  (e8cd4a35970e)
+	[788f4c5f16ae]
 
 	* bin/xbps-bin/show-info-files.c, bin/xbps-repo/defs.h, bin/xbps-
 	repo/main.c, bin/xbps-repo/util.c, bin/xbps-repo/xbps-repo.8.txt,
@@ -1476,10 +1650,8 @@
 	searching it in repository pool. The first repo wins.
 
 	Bump XBPS_RELVER to 20091125.
+	[e8cd4a35970e]
 
-2009-11-25 02:09 +0000  Juan RP  <xtraeme@gmail.com>  (38dd644ba7c0)
-
-	* lib/repository_plist.c: new file.
 	* include/xbps_api.h, lib/Makefile, lib/repository_plist.c:
 	Added xbps_get_pkg_plist_dict_from_repo().
 
@@ -1489,8 +1661,7 @@
 	This works in any kind of repository, local and remote. Some code
 	was Taken from NetBSD's pkg_install HEAD. Oh, and it's on-the-fly!
 	doesn't need to download the binpkg first!
-
-2009-11-25 00:17 +0000  Juan RP  <xtraeme@gmail.com>  (7a913fc8ee10)
+	[38dd644ba7c0]
 
 	* bin/xbps-repo/index.c:
 	xbps-repo: genindex: optimization change.
@@ -1500,25 +1671,19 @@
 	completely and show an error message.
 
 	The XBPS_PKGPROPS it's always there at index <= 4.
-
-2009-11-25 00:17 +0000  Juan RP  <xtraeme@gmail.com>  (6daf7302edd8)
+	[7a913fc8ee10]
 
 	* .bzrignore:
 	Update .bzrignore after last changes.
+	[6daf7302edd8]
 
-2009-11-24 23:45 +0000  Juan RP  <xtraeme@gmail.com>  (1b1cd4c9c552)
+2009-11-24  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-repo/index.c:
 	xbps-repo: genindex: print error msg if required dirs to store
 	binpkgs are not there.
+	[1b1cd4c9c552]
 
-2009-11-24 11:59 +0000  Juan RP  <xtraeme@gmail.com>  (db3bdfaeacab)
-
-	* bin/xbps-uhelper/Makefile, bin/xbps-uhelper/main.c: new file.
-	* bin/xbps-cmpver/Makefile, bin/xbps-cmpver/main.c, bin/xbps-
-	digest/Makefile, bin/xbps-digest/main.c, bin/xbps-fetch/Makefile,
-	bin/xbps-fetch/main.c, bin/xbps-pkgdb/Makefile, bin/xbps-
-	pkgdb/main.c: deleted file.
 	* bin/Makefile, bin/xbps-cmpver/Makefile, bin/xbps-cmpver/main.c, bin
 	/xbps-digest/Makefile, bin/xbps-digest/main.c, bin/xbps-
 	fetch/Makefile, bin/xbps-fetch/main.c, bin/xbps-pkgdb/Makefile, bin
@@ -1528,16 +1693,12 @@
 	fetch and xbps-pkgdb in one utility.
 
 	Bump XBPS_RELVER to 20091124-1.
-
-2009-11-24 11:11 +0000  Juan RP  <xtraeme@gmail.com>  (2a7bbbef1992)
+	[db3bdfaeacab]
 
 	* bin/xbps-repo/defs.h, bin/xbps-repo/index.c:
 	xbps-repo: make xbps_repo_addpkg_index() static.
+	[2a7bbbef1992]
 
-2009-11-24 11:05 +0000  Juan RP  <xtraeme@gmail.com>  (1c25b7658fe3)
-
-	* bin/xbps-bin/show-info-files.c, bin/xbps-repo/defs.h: new file.
-	* bin/xbps-repo/index.h, bin/xbps-repo/util.h: deleted file.
 	* bin/xbps-bin/Makefile, bin/xbps-bin/defs.h, bin/xbps-bin/main.c, bin
 	/xbps-bin/remove.c, bin/xbps-bin/show-deps.c, bin/xbps-bin/show-
 	info-files.c, bin/xbps-repo/defs.h, bin/xbps-repo/index.c, bin/xbps-
@@ -1548,8 +1709,7 @@
 	- xbps-repo: move protos to defs.h and remove index.h and util.h.
 	- xbps-bin: move code that belongs to it from xbps-repo to show-info-
 	files.c.
-
-2009-11-24 10:47 +0000  Juan RP  <xtraeme@gmail.com>  (253e8be13a0b)
+	[1c25b7658fe3]
 
 	* bin/xbps-bin/show-deps.c, bin/xbps-repo/main.c, bin/xbps-
 	repo/util.c, bin/xbps-repo/util.h, bin/xbps-repo/xbps-repo.8.txt,
@@ -1560,8 +1720,7 @@
 	xbps_callback_array_iter_in_repolist(). Nowadays to iter over the
 	repository pool we have a SIMPLEQ, this allowed to simplify the code
 	and remove some now unneeed stuff.
-
-2009-11-24 05:03 +0000  Juan RP  <xtraeme@gmail.com>  (698e054e3545)
+	[253e8be13a0b]
 
 	* bin/xbps-bin/install.c, bin/xbps-fetch/main.c, bin/xbps-repo/main.c,
 	lib/download.c, lib/sync_remote_pkgidx.c:
@@ -1570,47 +1729,41 @@
 	Improved xbps-repo sync/add and xbps-fetch to print informative
 	messages when a transfer was not necessary because local/remote size
 	and/or mtime matched.
-
-2009-11-24 03:54 +0000  Juan RP  <xtraeme@gmail.com>  (0efe39e1eb50)
+	[698e054e3545]
 
 	* lib/download.c:
 	xbps_fetch_file: in refetch case, do nothing if local/remote size
 	match.
-
-2009-11-24 03:16 +0000  Juan RP  <xtraeme@gmail.com>  (17384d2aea1f)
+	[0efe39e1eb50]
 
 	* bin/xbps-repo/xbps-repo.8.txt:
 	xbps-repo: explain in the manpage that outdated package files will
 	be removed automatically for the 'genindex' target.
-
-2009-11-24 03:07 +0000  Juan RP  <xtraeme@gmail.com>  (146aa3c7b1b1)
+	[17384d2aea1f]
 
 	* include/xbps_api.h:
 	Bump XBPS_RELVER to 20091124 for xbps-repo genindex fix.
-
-2009-11-24 03:06 +0000  Juan RP  <xtraeme@gmail.com>  (9049eab45957)
+	[146aa3c7b1b1]
 
 	* bin/xbps-repo/index.c, bin/xbps-repo/index.h:
 	xbps-repo genindex: fix use after free, remove outdated binpkg files
 	by default.
-
-2009-11-24 03:01 +0000  Juan RP  <xtraeme@gmail.com>  (87bcc31f3a72)
+	[9049eab45957]
 
 	* lib/plist.c:
 	xbps_find_pkg_in_dict: return NULL if pkgname obj is not there.
-
-2009-11-24 00:30 +0000  Juan RP  <xtraeme@gmail.com>  (7a5106340a33)
+	[87bcc31f3a72]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: fix one more for previous commit.
+	[7a5106340a33]
 
-2009-11-23 23:56 +0000  Juan RP  <xtraeme@gmail.com>  (982c79ab0fef)
+2009-11-23  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: fix download local dir when fetching binpkgs from remote
 	repos.
-
-2009-11-23 09:46 +0000  Juan RP  <xtraeme@gmail.com>  (d70c50d38f5a)
+	[982c79ab0fef]
 
 	* bin/xbps-bin/check.c, bin/xbps-bin/install.c, bin/xbps-bin/remove.c,
 	bin/xbps-repo/index.c, bin/xbps-repo/util.c, lib/configure.c,
@@ -1620,13 +1773,11 @@
 	Extensively verified that all functions have its return value
 	checked for any spurious error, this should make the core more safer
 	:-)
-
-2009-11-23 07:02 +0000  Juan RP  <xtraeme@gmail.com>  (5147bd1c5c99)
+	[d70c50d38f5a]
 
 	* lib/util.c:
 	xbps_get_pkg_index_plist: use xbps_check_is_repo_string_remote().
-
-2009-11-23 04:23 +0000  Juan RP  <xtraeme@gmail.com>  (e9f2422e6225)
+	[5147bd1c5c99]
 
 	* bin/xbps-bin/install.c, bin/xbps-repo/main.c, bin/xbps-repo/xbps-
 	repo.8.txt, include/xbps_api.h, lib/sync_remote_pkgidx.c,
@@ -1644,63 +1795,52 @@
 	xbps_check_is_repo_string_remote: New function to check if a repo
 	string is a remote repository, use it in all places where it was
 	used before.
-
-2009-11-23 00:29 +0000  Juan RP  <xtraeme@gmail.com>  (2031e9856f4f)
+	[e9f2422e6225]
 
 	* include/xbps_api.h:
 	Bump XBPS_RELVER to 20091123.
-
-2009-11-23 00:28 +0000  Juan RP  <xtraeme@gmail.com>  (115848ac8bd9)
+	[2031e9856f4f]
 
 	* bin/xbps-pkgdb/main.c:
 	xbps-pkgdb: don't forget to add the pkgver object in register
 	target.
-
-2009-11-23 00:28 +0000  Juan RP  <xtraeme@gmail.com>  (9555e41af3a5)
+	[115848ac8bd9]
 
 	* lib/register.c:
 	xbps_register_pkg: check that required objs are there!
-
-2009-11-23 00:43 +0100  Juan RP  <xtraeme@gmail.com>  (7a1117ae48f5)
+	[9555e41af3a5]
 
 	* lib/depends.c:
 	xbps_find_pkg_repo_deps: don't propagate rv to next calls using it,
 	add some more debugging for future problems.
+	[7a1117ae48f5]
 
-2009-11-22 21:52 +0100  Juan RP  <xtraeme@gmail.com>  (f0bf38818fb3)
+2009-11-22  Juan RP  <xtraeme@gmail.com>
 
 	* lib/depends.c:
 	xbps_find_pkg_repo_deps: if finding a dep failed for whatever
 	reason, stop immediately and return the appropiate error.
-
-2009-11-22 21:52 +0100  Juan RP  <xtraeme@gmail.com>  (b8cd563a6cbd)
+	[f0bf38818fb3]
 
 	* lib/findpkg.c:
 	xbps_find_new_pkg: do not report incorrect debug printf.
-
-2009-11-22 21:51 +0100  Juan RP  <xtraeme@gmail.com>  (fb899b286db1)
+	[b8cd563a6cbd]
 
 	* lib/util.c:
 	xbps_get_pkgver_from_dict: return NULL if the object is not there.
-
-2009-11-22 08:24 +0100  Juan RP  <xtraeme@gmail.com>  (54cb8e2fa608)
+	[fb899b286db1]
 
 	* include/xbps_api.h:
 	Bump XBPS_RELVER to 20091122 for previous change.
-
-2009-11-22 07:04 +0100  Juan RP  <xtraeme@gmail.com>  (5614620233f0)
+	[54cb8e2fa608]
 
 	* bin/xbps-repo/main.c, lib/download.c:
 	xbps-repo: print error if pkg-index file cannot be fetched.
+	[5614620233f0]
 
-2009-11-22 06:47 +0100  Juan RP  <xtraeme@gmail.com>  (a0a319ac3061)
-
-	* doc/BINPKG_INFO, doc/BINPKG_REPOSITORY, doc/README, doc/TODO:
-	deleted file.
 	* doc/BINPKG_INFO, doc/BINPKG_REPOSITORY, doc/README, doc/TODO:
 	Removed outdated doc files.
-
-2009-11-22 05:15 +0100  Juan RP  <xtraeme@gmail.com>  (b76ecd32fd03)
+	[a0a319ac3061]
 
 	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, bin/xbps-bin/remove.c,
 	include/xbps_api.h, lib/depends.c, lib/register.c, lib/requiredby.c,
@@ -1709,28 +1849,29 @@
 	pkg dictionary to improve performance in some cases.
 
 	Bumped XBPS_RELVER to 20091121.
+	[b76ecd32fd03]
 
-2009-11-21 07:12 +0100  Juan RP  <xtraeme@gmail.com>  (c1440f8556d2)
+2009-11-21  Juan RP  <xtraeme@gmail.com>
 
 	* include/xbps_api.h, lib/depends.c, lib/findpkg.c:
 	xbps_find_pkg_deps: simplify, fix multi-repo bug, add debugging.
+	[c1440f8556d2]
 
-2009-11-20 22:08 +0100  Juan RP  <xtraeme@gmail.com>  (1212e98c77cb)
+2009-11-20  Juan RP  <xtraeme@gmail.com>
 
 	* .bzrignore:
 	.bzrignore: add xbps-fetch bin.
-
-2009-11-20 22:02 +0100  Juan RP  <xtraeme@gmail.com>  (bb67838675ed)
+	[1212e98c77cb]
 
 	* prog.mk:
 	Fixed prog.mk rules that skipped the manpage.
+	[bb67838675ed]
 
-2009-11-19 06:10 +0100  Juan RP  <xtraeme@gmail.com>  (f76ba5b1365c)
+2009-11-19  Juan RP  <xtraeme@gmail.com>
 
 	* lib/unpack.c:
 	xbps_unpack_binary_pkg: initialize a local var.
-
-2009-11-19 06:03 +0100  Juan RP  <xtraeme@gmail.com>  (1e0e8631efd3)
+	[f76ba5b1365c]
 
 	* Makefile, bin/Makefile, bin/xbps-bin/Makefile, bin/xbps-
 	cmpver/Makefile, bin/xbps-digest/Makefile, bin/xbps-fetch/Makefile,
@@ -1740,41 +1881,36 @@
 
 	Also always build the static bins so that it's done in one pass,
 	that means that objects are PIC and built with SSP.
-
-2009-11-19 00:11 +0100  Juan RP  <xtraeme@gmail.com>  (15353effc62c)
+	[1e0e8631efd3]
 
 	* bin/xbps-repo/index.c:
 	xbps-repo: do the right thing in some error paths.
+	[15353effc62c]
 
-2009-11-18 10:05 +0100  Juan RP  <xtraeme@gmail.com>  (c186a4f92c63)
+2009-11-18  Juan RP  <xtraeme@gmail.com>
 
 	* lib/Makefile, lib/fetch/Makefile, prog.mk, vars.mk:
 	Reorganize the Makefiles so that parallel build is possible.
-
-2009-11-18 10:02 +0100  Juan RP  <xtraeme@gmail.com>  (36cd7959676e)
+	[c186a4f92c63]
 
 	* include/xbps_api.h:
 	xbps_api.h: use __BEGIN/END_DECLS.
-
-2009-11-18 08:49 +0100  Juan RP  <xtraeme@gmail.com>  (c61a6a170d65)
+	[36cd7959676e]
 
 	* .bzrignore:
 	Ignore two generated headers in .bzrignore.
-
-2009-11-18 07:28 +0100  Juan RP  <xtraeme@gmail.com>  (c40274228d3f)
+	[c61a6a170d65]
 
 	* bin/xbps-bin/install.c, bin/xbps-fetch/main.c, include/xbps_api.h,
 	lib/download.c, lib/sync_remote_pkgidx.c:
 	Improve download code, as well as fixing refetching when syncing to
 	a remote package index. Bump XBPS_RELVER to 20091118.
-
-2009-11-18 07:17 +0100  Juan RP  <xtraeme@gmail.com>  (46942e1c007d)
+	[c40274228d3f]
 
 	* bin/xbps-repo/index.c:
 	xbps-repo: fix previous, writing a dangling string and a leak in
 	exit path.
-
-2009-11-18 06:34 +0100  Juan RP  <xtraeme@gmail.com>  (1adb5fbe7818)
+	[46942e1c007d]
 
 	* bin/xbps-repo/index.c, bin/xbps-repo/index.h, bin/xbps-repo/main.c,
 	bin/xbps-repo/xbps-repo.8.txt:
@@ -1785,24 +1921,24 @@
 	packages have been processed. Creating an index with 700 pkgs now
 	takes 14s in a VM, where before it took 39s. As consequence of this,
 	the 'add-pkgidx' target is no longer relevant or useful, remove it.
+	[1adb5fbe7818]
 
-2009-11-17 17:43 +0100  Juan RP  <xtraeme@gmail.com>  (bcb09f418b5a)
+2009-11-17  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/xbps-bin.8.txt, bin/xbps-repo/xbps-repo.8.txt:
 	Fix a typo in xbps-bin/repo manpages.
+	[bcb09f418b5a]
 
-2009-11-09 02:59 +0100  Juan RP  <xtraeme@gmail.com>  (71e6765c1fe9)
+2009-11-09  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/main.c, bin/xbps-bin/xbps-bin.8.txt:
 	xbps-bin: rename 'show-manual' target to 'list-manual', it's a
 	better name IMHO :-)
-
-2009-11-09 02:45 +0100  Juan RP  <xtraeme@gmail.com>  (d2486475ad2a)
+	[71e6765c1fe9]
 
 	* include/xbps_api.h:
 	xbps_api.h: bump XBPS_RELVER to 20091109.
-
-2009-11-09 02:30 +0100  Juan RP  <xtraeme@gmail.com>  (1c13692d6c52)
+	[d2486475ad2a]
 
 	* lib/unpack.c:
 	Implemented blueprint "essential-upgrades".
@@ -1813,21 +1949,19 @@
 	Implementation used almost the same code than the pseudo-code
 	explained in the blueprint. Works really fine, tested with
 	glibc-2.10.1 -> 2.11 upgrade.
+	[1c13692d6c52]
 
-2009-11-07 16:41 +0100  Juan RP  <xtraeme@gmail.com>  (f5288e2b757c)
+2009-11-07  Juan RP  <xtraeme@gmail.com>
 
 	* lib/depends.c, lib/pkgmatch.c, lib/util.c:
 	Fix some issues while matching for required pkgdeps.
-
-2009-11-07 06:21 +0100  Juan RP  <xtraeme@gmail.com>  (ac6ffd0a3ba0)
+	[f5288e2b757c]
 
 	* lib/download.c:
 	xbps_fetch_file: return proper error if connection failed, fix SSP
 	problem with fetchflags!
+	[ac6ffd0a3ba0]
 
-2009-11-07 04:56 +0100  Juan RP  <xtraeme@gmail.com>  (9ec078af1aed)
-
-	* lib/pkgmatch.c: new file.
 	* bin/xbps-bin/check.c, bin/xbps-bin/install.c, bin/xbps-bin/show-
 	deps.c, bin/xbps-pkgdb/main.c, include/xbps_api.h, lib/Makefile,
 	lib/depends.c, lib/pkgmatch.c, lib/requiredby.c, lib/sortdeps.c,
@@ -1842,72 +1976,68 @@
 	Code lifted from FreeBSD, thanks! :-)
 
 	Change XBPS_RELVER to 20091107 to match latest additions.
+	[9ec078af1aed]
 
-2009-11-05 22:55 +0100  Juan RP  <xtraeme@gmail.com>  (e761763b5e3e)
+2009-11-05  Juan RP  <xtraeme@gmail.com>
 
 	* prog.mk:
 	Fix launchpad bug #473249 "-lxbps not found because of wrong
 	LDFLAGS"
 
 	Append (+=) to LDFLAGS as suggested in provided patch.
+	[e761763b5e3e]
 
-2009-11-01 07:34 +0100  Juan RP  <xtraeme@gmail.com>  (7beb6d20537e)
+2009-11-01  Juan RP  <xtraeme@gmail.com>
 
 	* doc/TODO:
 	doc/TODO: remote repos are working.
-
-2009-11-01 07:32 +0100  Juan RP  <xtraeme@gmail.com>  (6a04b92af1fa)
+	[7beb6d20537e]
 
 	* bin/xbps-bin/check.c:
 	xbps-bin: improve 'check all' target output.
+	[6a04b92af1fa]
 
-2009-10-31 15:09 +0100  Juan RP  <xtraeme@gmail.com>  (c2b5c03a8c74)
+2009-10-31  Juan RP  <xtraeme@gmail.com>
 
 	* lib/download.c, lib/fetch/Makefile, vars.mk:
 	Improve xbps_fetch_file() and friends, one more time by Daft Punk.
-
-2009-10-31 11:57 +0100  Juan RP  <xtraeme@gmail.com>  (49ef49bc5f98)
+	[c2b5c03a8c74]
 
 	* bin/xbps-repo/main.c, bin/xbps-repo/xbps-repo.8.txt:
 	xbps-repo: add a sync target, to sync the pkg index file from a
 	remote repository.
-
-2009-10-31 11:55 +0100  Juan RP  <xtraeme@gmail.com>  (9fe634d036d5)
+	[49ef49bc5f98]
 
 	* lib/download.c:
 	xbps_fetch_file: erm fix previous, FETH_UNCHANGED is the correct
 	one.
-
-2009-10-31 11:40 +0100  Juan RP  <xtraeme@gmail.com>  (ffddae242974)
+	[9fe634d036d5]
 
 	* lib/download.c:
 	xbps_fetch_file(): check for local/remote mtime, add some more
 	checks for errors, add some printfs.
+	[ffddae242974]
 
-2009-10-30 17:32 +0100  Juan RP  <xtraeme@gmail.com>  (4ac1a1d3464f)
+2009-10-30  Juan RP  <xtraeme@gmail.com>
 
 	* lib/Makefile, prog.mk:
 	Bah, fix these stupid make targets.
-
-2009-10-30 17:23 +0100  Juan RP  <xtraeme@gmail.com>  (1106a3d93328)
+	[4ac1a1d3464f]
 
 	* Makefile, lib/Makefile, prog.mk:
 	Fix up some issues for building shared/static bins.
-
-2009-10-30 17:20 +0100  Juan RP  <xtraeme@gmail.com>  (69559e9c0ec8)
+	[1106a3d93328]
 
 	* lib/download.c:
 	libxbps: avoid fetchStat() and use only fetchXGet().
 
 	Some HTTP servers (observerd with googlecode.com), issue a 404 if
 	the headers are checked before issuing a GET transfer.
-
-2009-10-30 12:22 +0100  Juan RP  <xtraeme@gmail.com>  (90d025d30e87)
+	[69559e9c0ec8]
 
 	* lib/Makefile:
 	lib/Makefile: don't forget to install the static lib.
-
-2009-10-30 12:17 +0100  Juan RP  <xtraeme@gmail.com>  (d565eed997f2)
+	[90d025d30e87]
 
 	* Makefile, bin/xbps-bin/Makefile, bin/xbps-bin/install.c, bin/xbps-
 	fetch/main.c, bin/xbps-repo/Makefile, doc/README, include/sha256.h,
@@ -1917,8 +2047,7 @@
 	Properly build shared/static libxbps and utils.
 
 	xbps-fetch: added -v flag to see verbose messages in libfetch.
-
-2009-10-30 03:13 +0100  Juan RP  <xtraeme@gmail.com>  (5a6a438879c4)
+	[d565eed997f2]
 
 	* bin/Makefile, bin/xbps-fetch/main.c, include/xbps_api.h,
 	lib/download.c, prog.mk:
@@ -1927,18 +2056,16 @@
 
 	Hook xbps-fetch to the tree and use the new function to print
 	errors.
-
-2009-10-30 01:42 +0100  Juan RP  <xtraeme@gmail.com>  (1d9c06a3a0e9)
+	[5a6a438879c4]
 
 	* bin/xbps-bin/main.c:
 	xbps-bin: use exit(2) rather than _exit(2).
 
 	This was causing premature exiting when piping the program!
+	[1d9c06a3a0e9]
 
-2009-10-28 16:32 +0100  Juan RP  <xtraeme@gmail.com>  (bf8946a8a147)
+2009-10-28  Juan RP  <xtraeme@gmail.com>
 
-	* bin/xbps-bin/xbps-bin.8.txt, bin/xbps-repo/xbps-repo.8.txt: new
-	file.
 	* .bzrignore, bin/xbps-bin/xbps-bin.8.txt, bin/xbps-cmpver/Makefile,
 	bin/xbps-digest/Makefile, bin/xbps-fetch/Makefile, bin/xbps-
 	pkgdb/Makefile, bin/xbps-repo/xbps-repo.8.txt, doc/README, prog.mk,
@@ -1946,53 +2073,42 @@
 	Added xbps-bin(8) and xbps-repo(8) manpages in asciidoc format.
 
 	That means that asciidoc is required to build/install XBPS.
-
-2009-10-28 03:39 +0100  Juan RP  <xtraeme@gmail.com>  (ba394491b1ef)
+	[bf8946a8a147]
 
 	* bin/xbps-bin/main.c:
 	xbps-bin: added "show-manual" target.
 
 	This targets shows the list of packages that were installed
 	manually, i.e not as dependencies.
-
-2009-10-28 03:16 +0100  Juan RP  <xtraeme@gmail.com>  (b36aeb02e154)
+	[ba394491b1ef]
 
 	* lib/depends.c:
 	lib/depends.c: minor performance change.
+	[b36aeb02e154]
 
-2009-10-27 15:25 +0100  Juan RP  <xtraeme@gmail.com>  (6acbb982d232)
+2009-10-27  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-repo/main.c:
 	xbps-repo: sanitize uri provided to the add target also for remote
 	repositories.
-
-2009-10-27 12:15 +0100  Juan RP  <xtraeme@gmail.com>  (dc7621ef6247)
+	[6acbb982d232]
 
 	* bin/xbps-bin/check.c, bin/xbps-bin/show-deps.c, bin/xbps-
 	repo/util.c, lib/findpkg.c, lib/plist.c, lib/purge.c,
 	lib/register.c, lib/remove.c, lib/repository.c, lib/requiredby.c,
 	lib/state.c:
 	Use xbps_get_root() directly where appropiate.
+	[dc7621ef6247]
 
-2009-10-27 04:40 +0100  Juan RP  <xtraeme@gmail.com>  (f5acd8c6ae5b)
-
-	* lib/sync_remote_pkgidx.c: new file.
 	* include/xbps_api.h, lib/Makefile, lib/repository.c,
 	lib/sync_remote_pkgidx.c:
 	libxbps: move remote repo pkg-index sync code into its own file.
-
-2009-10-27 01:56 +0100  Juan RP  <xtraeme@gmail.com>  (8cd94bbd0f63)
+	[f5acd8c6ae5b]
 
 	* doc/README:
 	README: mention that openssl is required for https support.
+	[8cd94bbd0f63]
 
-2009-10-27 01:46 +0100  Juan RP  <xtraeme@gmail.com>  (8c3dab8669c1)
-
-	* bin/xbps-fetch/Makefile, bin/xbps-fetch/main.c, include/fetch.h,
-	lib/download.c, lib/fetch/Makefile, lib/fetch/common.c,
-	lib/fetch/common.h, lib/fetch/errlist.sh, lib/fetch/fetch.c,
-	lib/fetch/file.c, lib/fetch/ftp.c, lib/fetch/ftp.errors,
-	lib/fetch/http.c, lib/fetch/http.errors: new file.
 	* bin/Makefile, bin/xbps-bin/install.c, bin/xbps-digest/main.c, bin
 	/xbps-fetch/Makefile, bin/xbps-fetch/main.c, bin/xbps-repo/index.c,
 	bin/xbps-repo/main.c, bin/xbps-repo/util.c, doc/BINPKG_REPOSITORY,
@@ -2015,109 +2131,94 @@
 	exported symbols are the ones that use the SYMEXPORT macro.
 
 	The code works well enough, but will need many more cleanups.
+	[8c3dab8669c1]
 
-2009-10-23 14:03 +0200  Juan RP  <xtraeme@gmail.com>  (32b865393c07)
+2009-10-23  Juan RP  <xtraeme@gmail.com>
 
 	* lib/orphans.c:
 	xbps_find_orphan_packages: report return value as errno in an error
 	path.
-
-2009-10-23 14:01 +0200  Juan RP  <xtraeme@gmail.com>  (69998c500a00)
+	[32b865393c07]
 
 	* bin/xbps-bin/defs.h, bin/xbps-bin/install.c, bin/xbps-bin/main.c,
 	bin/xbps-bin/remove.c:
 	xbps-bin: use a single point to cleanup resources.
-
-2009-10-23 11:20 +0200  Juan RP  <xtraeme@gmail.com>  (d0826ac9f982)
+	[69998c500a00]
 
 	* bin/xbps-bin/main.c:
 	xbps-bin: use a signal handler for SIGINT, SIGTERM and SIGQUIT to
 	free resources used by libxbps.
-
-2009-10-23 11:11 +0200  Juan RP  <xtraeme@gmail.com>  (545f099950cf)
+	[d0826ac9f982]
 
 	* lib/util.c:
 	xbps_check_is_installed_pkg: fix a leak in error paths reported by
 	valgrind.
-
-2009-10-23 08:45 +0200  Juan RP  <xtraeme@gmail.com>  (d954a44a8d10)
+	[545f099950cf]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: use HN_B and HN_DECIMAL when using humanize_number for a
 	more detailed output.
+	[d954a44a8d10]
 
-2009-10-22 14:49 +0200  Juan RP  <xtraeme@gmail.com>  (40768c0c7d4d)
+2009-10-22  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-digest/main.c, include/xbps_api.h, lib/sha256.c,
 	lib/util.c:
 	Do not use private sha256.h header file in the public exported API
 	header file (xbps_api.h).
-
-2009-10-22 14:48 +0200  Juan RP  <xtraeme@gmail.com>  (fa07818c5854)
+	[40768c0c7d4d]
 
 	* vars.mk:
 	vars.mk: _BSD_SOURCE does not need to be defined.
-
-2009-10-22 14:32 +0200  Juan RP  <xtraeme@gmail.com>  (94bae6c1e686)
+	[fa07818c5854]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin: while updating a package that needs a new dependent
 	package the automatic-install object wasn't set correctly, fix this.
-
-2009-10-22 11:30 +0200  Juan RP  <xtraeme@gmail.com>  (eba217df0199)
+	[94bae6c1e686]
 
 	* .bzrignore:
 	.bzrignore: add static bins.
+	[eba217df0199]
 
-2009-10-21 18:27 +0200  Juan RP  <xtraeme@gmail.com>  (a409205a4184)
+2009-10-21  Juan RP  <xtraeme@gmail.com>
 
 	* lib/unpack.c:
 	Fix typo in previous.
-
-2009-10-21 18:16 +0200  Juan RP  <xtraeme@gmail.com>  (08b23e8136f7)
+	[a409205a4184]
 
 	* lib/unpack.c:
 	Improved unpacking package files, fixing bugs in configuration file
 	handling.
+	[08b23e8136f7]
 
-2009-10-20 14:25 +0200  Juan RP  <xtraeme@gmail.com>  (9a1f7c1debb0)
+2009-10-20  Juan RP  <xtraeme@gmail.com>
 
 	* doc/BINPKG_INFO:
 	doc/BINPKG_INFO: mention that binary packages might be compressed in
 	any format supported by libarchive, not just bzip2.
-
-2009-10-20 09:45 +0200  Juan RP  <xtraeme@gmail.com>  (b4c2c85c3ea8)
+	[9a1f7c1debb0]
 
 	* vars.mk:
 	vars.mk: build bins with -fstack-protector-all and -Wstack-
 	protector.
+	[b4c2c85c3ea8]
 
-2009-10-19 23:49 +0200  Juan RP  <xtraeme@gmail.com>  (c6e0f06e6794)
+2009-10-19  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-pkgdb/main.c:
 	xbps-pkgdb: always set rootdir as an empty string, otherwise if -r
 	is not specified it will fail to get the regpkgdb plist file.
 
 	Bug found by pancake.
+	[c6e0f06e6794]
 
-2009-10-18 17:39 +0200  Juan RP  <xtraeme@gmail.com>  (893b5e9fae10)
+2009-10-18  Juan RP  <xtraeme@gmail.com>
 
 	* prog.mk:
 	prog.mk: add uninstall target.
+	[893b5e9fae10]
 
-2009-10-18 11:15 +0200  Juan RP  <xtraeme@gmail.com>  (bc54efa70907)
-
-	* bin/xbps-src/Makefile, bin/xbps-src/main.sh, doc/SRCPKG_INFO,
-	etc/Makefile, etc/xbps-src.conf, shutils/Makefile,
-	shutils/build_funcs.sh, shutils/builddep_funcs.sh,
-	shutils/buildvars_funcs.sh, shutils/chroot.sh,
-	shutils/common_funcs.sh, shutils/configure_funcs.sh, shutils/cross-
-	compilation.sh, shutils/extract_funcs.sh, shutils/fetch_funcs.sh,
-	shutils/install_funcs.sh, shutils/make-binpkg.sh,
-	shutils/metadata.sh, shutils/metadata_scripts.sh,
-	shutils/mktoolchain.sh, shutils/patch_funcs.sh,
-	shutils/pkgtarget_funcs.sh, shutils/stow_funcs.sh,
-	shutils/tmpl_funcs.sh: deleted file.
 	* .bzrignore, Makefile, bin/Makefile, bin/xbps-src/Makefile, bin/xbps-
 	src/main.sh, doc/README, doc/SRCPKG_INFO, doc/TODO, etc/Makefile,
 	etc/xbps-src.conf, lib/Makefile, shutils/Makefile,
@@ -2132,22 +2233,19 @@
 	shutils/tmpl_funcs.sh, vars.mk:
 	Remove xbps-src and its associated code. This is required for the
 	upcoming 0.3 version.
-
-2009-10-18 10:42 +0200  Juan RP  <xtraeme@gmail.com>  (00c44e5d2329)
+	[bc54efa70907]
 
 	* bin/xbps-bin/main.c, bin/xbps-pkgdb/main.c, bin/xbps-repo/main.c:
 	xbps-{bin,repo,pkgdb}: added -V flag that prints the current XBPS
 	release version as defined in xbps_api.h.
-
-2009-10-18 10:23 +0200  Juan RP  <xtraeme@gmail.com>  (e5afadcd94db)
+	[00c44e5d2329]
 
 	* include/xbps_api.h:
 	xbps_api.h: aded XBPS_RELVER definition that returns the current
 	version of xbps (utils and libraries).
 
 	Will be used by xbps-src in the future to require a minimal version.
-
-2009-10-18 09:18 +0200  Juan RP  <xtraeme@gmail.com>  (608cc871c1d9)
+	[e5afadcd94db]
 
 	* shutils/build_funcs.sh, shutils/configure_funcs.sh,
 	shutils/install_funcs.sh:
@@ -2156,32 +2254,29 @@
 
 	If build_style=python-module, $XBPS_HELPERSDIR/python-module.sh will
 	run the do_install function.
+	[608cc871c1d9]
 
-2009-10-17 06:18 +0200  Juan RP  <xtraeme@gmail.com>  (5644a2e49e30 [0.2])
+2009-10-17  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/install.c, lib/findpkg.c:
 	Fix "autoupdate" target when no new packages are available.
-
-2009-10-17 05:12 +0200  Juan RP  <xtraeme@gmail.com>  (1ecfc8bd7207)
+	[5644a2e49e30] [0.2]
 
 	* shutils/metadata.sh:
 	Don't propagate $replaces value to subpkgs, use its own if defined.
-
-2009-10-17 05:01 +0200  Juan RP  <xtraeme@gmail.com>  (7d396e81655a)
+	[1ecfc8bd7207]
 
 	* bin/xbps-bin/Makefile, bin/xbps-repo/Makefile:
 	Fixed bug #453422: "xbps shouldn't depend on LZMA utils"
 
 	Do not link to libzmadec, rather to liblzma provided by xz. Pointed
 	by ojab in the bug, thanks!
-
-2009-10-17 04:59 +0200  Juan RP  <xtraeme@gmail.com>  (80d343373334)
+	[7d396e81655a]
 
 	* bin/xbps-bin/install.c:
 	Fix previous, so that only tries to replace packages if they are
 	installed! heh
-
-2009-10-17 04:26 +0200  Juan RP  <xtraeme@gmail.com>  (1cdebda9461a)
+	[80d343373334]
 
 	* bin/xbps-bin/install.c, doc/README, shutils/metadata.sh,
 	shutils/tmpl_funcs.sh:
@@ -2191,10 +2286,8 @@
 
 	In the build templates one can use: replaces="foo foo-blah foo-
 	libs".
+	[1cdebda9461a]
 
-2009-10-17 02:58 +0200  Juan RP  <xtraeme@gmail.com>  (a9aeaa8e80e2)
-
-	* shutils/libtool_funcs.sh: deleted file.
 	* bin/xbps-src/main.sh, doc/README, etc/xbps-src.conf,
 	shutils/build_funcs.sh, shutils/chroot.sh, shutils/fetch_funcs.sh,
 	shutils/install_funcs.sh, shutils/libtool_funcs.sh,
@@ -2214,36 +2307,32 @@
 	the var in a build template to change the behaviour.
 
 	* Explain in README what are the requirements to build XBPS.
+	[a9aeaa8e80e2]
 
-2009-10-16 17:37 +0200  Juan RP  <xtraeme@gmail.com>  (2011b786cc0c)
+2009-10-16  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/defs.h, bin/xbps-bin/install.c, bin/xbps-bin/main.c:
 	xbps-bin/install.c: use only a function for
 	install/update/autoupdate.
-
-2009-10-16 17:04 +0200  Juan RP  <xtraeme@gmail.com>  (baac7fd0ea53)
+	[2011b786cc0c]
 
 	* bin/xbps-bin/main.c, lib/findpkg.c:
 	xbps-bin: don't initialize repolist data unless we want to update.
 	xbps_find_new_pkg: always initialize repolist data.
-
-2009-10-16 16:14 +0200  Juan RP  <xtraeme@gmail.com>  (f0d439793c3a)
+	[baac7fd0ea53]
 
 	* vars.mk:
 	vars.mk: add DEBUG option.
-
-2009-10-16 15:55 +0200  Juan RP  <xtraeme@gmail.com>  (a687c1a9f69d)
+	[f0d439793c3a]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin/xbps_install_pkg(): only sort pkg deps in update mode.
-
-2009-10-16 15:46 +0200  Juan RP  <xtraeme@gmail.com>  (3c2258d3400e)
+	[a687c1a9f69d]
 
 	* lib/findpkg.c:
 	xbps_find_new_packages(): do not treat missing packages in repo, or
 	packages with less than or equal version installed as errors.
-
-2009-10-16 15:31 +0200  Juan RP  <xtraeme@gmail.com>  (bf6b3fda863d)
+	[3c2258d3400e]
 
 	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, lib/findpkg.c:
 	xbps-bin: multiple fixes to update packages.
@@ -2251,13 +2340,11 @@
 	* Fix 'autoupdate' target to look for new packages in ALL repos, not
 	just the first one that has the package.
 	* Fix 'update' target to work correctly.
-
-2009-10-16 13:36 +0200  Juan RP  <xtraeme@gmail.com>  (4a1beac04777)
+	[bf6b3fda863d]
 
 	* lib/requiredby.c:
 	xbps_requiredby_pkg_add: ignore existing entries.
-
-2009-10-16 00:22 +0200  Juan RP  <xtraeme@gmail.com>  (0957ac14ff22)
+	[4a1beac04777]
 
 	* bin/xbps-bin/Makefile, bin/xbps-cmpver/Makefile, bin/xbps-
 	digest/Makefile, bin/xbps-pkgdb/Makefile, bin/xbps-repo/Makefile,
@@ -2268,43 +2355,38 @@
 	Updated README to note the new requirements for it. It will be used
 	to reduce the number of dependencies when building packages in the
 	chroot.
-
-2009-10-16 00:21 +0200  Juan RP  <xtraeme@gmail.com>  (6ea28411ecee)
+	[0957ac14ff22]
 
 	* Makefile:
 	Makefile: remove $(SHAREDIR) in uninstall target.
+	[6ea28411ecee]
 
-2009-10-15 16:29 +0200  Juan RP  <xtraeme@gmail.com>  (0d7601d2e264)
+2009-10-15  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-repo/util.c, lib/depends.c, shutils/metadata.sh,
 	shutils/tmpl_funcs.sh:
 	Remove support for "keep_dirs", it won't be used.
-
-2009-10-15 16:25 +0200  Juan RP  <xtraeme@gmail.com>  (010b6d7177fa)
+	[0d7601d2e264]
 
 	* shutils/install_funcs.sh:
 	shutils/install_funcs.sh: always remove unwanted perl installed
 	files, even in packages that use do_install(). Wrap a long line.
-
-2009-10-15 16:17 +0200  Juan RP  <xtraeme@gmail.com>  (3f099169118f)
+	[010b6d7177fa]
 
 	* bin/xbps-pkgdb/main.c, shutils/common_funcs.sh:
 	xbps-pkgdb, shutils: use red/bold, red/yellow and bold for
 	msg_error, msg_warn and msg_normal respectively.
-
-2009-10-15 16:16 +0200  Juan RP  <xtraeme@gmail.com>  (d70818cb62dc)
+	[3f099169118f]
 
 	* shutils/configure_funcs.sh, shutils/tmpl_funcs.sh:
 	shutils: remove support for $configure_shell.
 
 	There is not much gain supporting this...
-
-2009-10-15 16:06 +0200  Juan RP  <xtraeme@gmail.com>  (d1157fcb8574)
+	[d70818cb62dc]
 
 	* shutils/builddep_funcs.sh:
 	shutils/builddep_func.sh: use msg_* funcs.
-
-2009-10-15 16:02 +0200  Juan RP  <xtraeme@gmail.com>  (a5d5a8aca232)
+	[d1157fcb8574]
 
 	* shutils/patch_funcs.sh, shutils/tmpl_funcs.sh:
 	shutils: improve how the patches are applied.
@@ -2313,30 +2395,29 @@
 	(templatesdir/$pkgname/patches) and must be in -p0 format. If other
 	args are required, a same file with .args extension should be
 	created with specific args inside of it.
+	[a5d5a8aca232]
 
-2009-10-13 00:07 +0200  Juan RP  <xtraeme@gmail.com>  (f047e1331df2)
+2009-10-13  Juan RP  <xtraeme@gmail.com>
 
 	* shutils/build_funcs.sh, shutils/common_funcs.sh,
 	shutils/configure_funcs.sh, shutils/install_funcs.sh:
 	shutils: return proper error in {do,pre,post}_* stage funcs and use
 	msg_error.
+	[f047e1331df2]
 
-2009-10-12 22:35 +0200  Juan RP  <xtraeme@gmail.com>  (8e86c3521434)
+2009-10-12  Juan RP  <xtraeme@gmail.com>
 
 	* shutils/build_funcs.sh, shutils/configure_funcs.sh,
 	shutils/install_funcs.sh:
 	shutils: cross-compilation.sh is in XBPS_SHUTILSDIR not
 	XBPS_HELPERSDIR.
+	[8e86c3521434]
 
-2009-10-12 22:30 +0200  Juan RP  <xtraeme@gmail.com>  (1e73a060daa1)
-
-	* shutils/tmpl_vars.sh: deleted file.
 	* bin/xbps-src/main.sh, shutils/tmpl_funcs.sh, shutils/tmpl_vars.sh:
 	shutils: remove tmpl_func.sh, moved to the xbps-templates repo.
 	xbps-src: added XBPS_COMMONVARSDIR that sources all .sh files in
 	setup_tmpl(), this replaces tmpl_funcs.sh.
-
-2009-10-12 12:23 +0200  Juan RP  <xtraeme@gmail.com>  (c9e46fe8a861)
+	[1e73a060daa1]
 
 	* shutils/fetch_funcs.sh, shutils/tmpl_funcs.sh:
 	shutils: added "nofetch" variable to be used in build templates.
@@ -2344,154 +2425,149 @@
 	When it's set, a custom do_fetch() function must be used to fetch
 	sources. $distfiles and $checksum will be ignored in that case. This
 	makes it able to fetch sources from git, svn, bzr, etc.
+	[c9e46fe8a861]
 
-2009-10-10 17:53 +0200  Juan RP  <xtraeme@gmail.com>  (73629e78912d)
+2009-10-10  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-pkgdb/main.c, shutils/builddep_funcs.sh,
 	shutils/pkgtarget_funcs.sh, shutils/stow_funcs.sh:
 	Remove 'automatic' flag while installing via xbps-src, it's not very
 	useful and won't be implemented.
-
-2009-10-10 16:13 +0200  Juan RP  <xtraeme@gmail.com>  (8231d271e414)
+	[73629e78912d]
 
 	* lib/plist.c, lib/requiredby.c:
 	Fix bug #447944: xbps build failure (gcc 4.4.1)
 
 	unsigned int and size_t do not match in size in x86_64, so use
 	unsigned int in functions expecting this type.
-
-2009-10-10 10:17 +0200  Juan RP  <xtraeme@gmail.com>  (e3581f9ca71a)
+	[8231d271e414]
 
 	* shutils/install_funcs.sh:
 	shutils/install_funcs.sh: fix inverted test for
 	$libtool_no_delete_archives.
-
-2009-10-10 08:44 +0200  Juan RP  <xtraeme@gmail.com>  (baf27ca2826c)
+	[e3581f9ca71a]
 
 	* lib/unpack.c:
 	lib/unpack.c: fix a NULL pointer deref when checking configuration
 	files exists or not while unpacking.
+	[baf27ca2826c]
 
-2009-10-08 20:52 +0200  Juan RP  <xtraeme@gmail.com>  (b203085bf2b5)
+2009-10-08  Juan RP  <xtraeme@gmail.com>
 
 	* shutils/chroot.sh:
 	shutils/chroot.sh: only rebuild ldso cache once at creation time.
+	[b203085bf2b5]
 
-2009-10-06 00:42 +0200  Juan RP  <xtraeme@gmail.com>  (4163040b465c)
+2009-10-06  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/check.c, bin/xbps-bin/defs.h, bin/xbps-bin/main.c:
 	xbps-bin: add support to check integrity of all installed packages,
 	through "xbps-bin check all".
-
-2009-10-06 00:06 +0200  Juan RP  <xtraeme@gmail.com>  (f25c75a4e82d)
+	[4163040b465c]
 
 	* bin/xbps-bin/main.c:
 	xbps-bin: rename the 'files' target to 'show-files' for consistency.
-
-2009-10-06 00:01 +0200  Juan RP  <xtraeme@gmail.com>  (cd89715a7e2b)
+	[f25c75a4e82d]
 
 	* bin/xbps-bin/check.c:
 	xbps-bin: do not mark package as broken if the any task in the check
 	target failed, just print the info.
+	[cd89715a7e2b]
 
-2009-10-05 23:12 +0200  Juan RP  <xtraeme@gmail.com>  (d11f9e9d489d)
+2009-10-05  Juan RP  <xtraeme@gmail.com>
 
 	* shutils/make-binpkg.sh:
 	shutils/make-binpkg.sh: reset revision while building binpkgs, so
 	that the archive is created with the correct version.
-
-2009-10-05 21:57 +0200  Juan RP  <xtraeme@gmail.com>  (a1fd81777596)
+	[d11f9e9d489d]
 
 	* lib/depends.c:
 	Fix bug #443436: endless loop if indirect dep missing in repo.
 
 	Make xbps_find_deps_in_pkg() return ENOENT when missing deps are
 	found.
-
-2009-10-05 21:04 +0200  Juan RP  <xtraeme@gmail.com>  (a9ca22d42d62)
+	[a1fd81777596]
 
 	* bin/xbps-bin/install.c:
 	xbps-bin/install.c: improve some printfs.
-
-2009-10-05 16:37 +0200  Juan RP  <xtraeme@gmail.com>  (a23c3ba5b7b4)
+	[a9ca22d42d62]
 
 	* etc/xbps-src.conf:
 	xbps-src.conf: change XBPS_MASTERDIR to
 	$XBPS_DISTRIBUTIONDIR/masterdir.
+	[a23c3ba5b7b4]
 
-2009-10-02 17:24 +0200  Juan RP  <xtraeme@gmail.com>  (9b00841e93cb)
+2009-10-02  Juan RP  <xtraeme@gmail.com>
 
 	* shutils/metadata_scripts.sh:
 	Pass the ${UPDATE} argument to the triggers, to support restarting
 	services while upgrading packages.
-
-2009-10-02 17:23 +0200  Juan RP  <xtraeme@gmail.com>  (6d0a75f2ddb0)
+	[9b00841e93cb]
 
 	* bin/xbps-bin/install.c:
 	While upgrading a package, print informative line about old package
 	being removed.
-
-2009-10-02 13:38 +0200  Juan RP  <xtraeme@gmail.com>  (35249bedc52b)
+	[6d0a75f2ddb0]
 
 	* lib/remove.c:
 	Pass another argument to the REMOVE script to make the script aware
 	of package being upgraded or removed. Will be used later to restart
 	services while upgrading packages.
+	[35249bedc52b]
 
-2009-10-01 07:35 +0200  Juan RP  <xtraeme@gmail.com>  (861a0b643286)
+2009-10-01  Juan RP  <xtraeme@gmail.com>
 
 	* bin/xbps-bin/install.c:
 	Fix #438201 "Upgrading essential pkgs results in duplicated reqby
 	entries"
 
 	Always remove reqby entries while upgrading "essential" packages.
+	[861a0b643286]
 
-2009-09-30 18:29 +0200  Juan RP  <xtraeme@gmail.com>  (422be7735de8)
+2009-09-30  Juan RP  <xtraeme@gmail.com>
 
 	* lib/unpack.c:
 	Fix bug #439457 "Unpacking a package ignores correct perms"
 
 	Simplify logic and fix the mistake of pass-by-value vs pass-by-ref.
+	[422be7735de8]
 
-2009-08-27 07:31 +0200  Juan RP  <xtraeme@gmail.com>  (b4e6b1519bd9)
+2009-08-27  Juan RP  <xtraeme@gmail.com>
 
 	* lib/configure.c:
 	xbps_configure_pkg: pass correct version to the post install script.
+	[b4e6b1519bd9]
 
-2009-08-25 06:05 +0200  Juan RP  <xtraeme@gmail.com>  (7acd1cecea15)
+2009-08-25  Juan RP  <xtraeme@gmail.com>
 
 	* lib/configure.c, lib/remove.c:
 	Check if pkg INSTALL/REMOVE metadata scripts are executable rather
 	than readable, to ensure scripts can be executed.
-
-2009-08-25 06:04 +0200  Juan RP  <xtraeme@gmail.com>  (2e3b2c8197e2)
+	[7acd1cecea15]
 
 	* lib/fexec.c:
 	xbps_file_chdir_exec: check if /bin/sh is executable rather than
 	readable.
-
-2009-08-25 06:03 +0200  Juan RP  <xtraeme@gmail.com>  (959c9d8a725c)
+	[2e3b2c8197e2]
 
 	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, include/xbps_api.h,
 	lib/configure.c:
 	Fix xbps_configure_pkg() reporting old version when upgrading
 	packages.
+	[959c9d8a725c]
 
-2009-08-22 07:41 +0200  Juan RP  <xtraeme@gmail.com>  (1016989c153b)
+2009-08-22  Juan RP  <xtraeme@gmail.com>
 
 	* lib/orphans.c:
 	When finding package orphans, only report those with "installed"
 	state.
-
-2009-08-22 07:22 +0200  Juan RP  <xtraeme@gmail.com>  (78cd4727a7de)
+	[1016989c153b]
 
 	* bin/xbps-bin/show-deps.c:
 	Fix memleaks in xbps_show_pkg_deps() and
 	xbps_show_pkg_reverse_deps().
+	[78cd4727a7de]
 
-2009-08-22 01:12 +0200  Juan RP  <xtraeme@gmail.com>  (29835233f947)
-
-	* bin/xbps-bin/show-deps.c: new file.
 	* bin/xbps-bin/Makefile, bin/xbps-bin/defs.h, bin/xbps-bin/main.c, bin
 	/xbps-bin/show-deps.c, bin/xbps-repo/util.c:
 	xbps-bin: add two new targets 'show-deps' and 'show-revdeps" to
@@ -2499,82 +2575,66 @@
 	respectively.
 
 	'xbps-bin show' no longer prints the deps anymore.
+	[29835233f947]
 
-2009-08-21 12:47 +0200  Juan RP  <xtraeme@gmail.com>  (f6b20b885325 [0.1])
+2009-08-21  Juan RP  <xtraeme@gmail.com>
 
 	* vars.mk:
 	vars.mk: change default PREFIX to /usr/local and conditionalize
 	SHAREDIR based on its value.
-
-2009-08-21 11:55 +0200  Juan RP  <xtraeme@gmail.com>  (fa7d97eee3c7)
+	[f6b20b885325] [0.1]
 
 	* shutils/stow_funcs.sh:
 	xbps-src: when stowning a package, do not copy metadata files.
-
-2009-08-21 11:31 +0200  Juan RP  <xtraeme@gmail.com>  (377e0b62a689)
+	[fa7d97eee3c7]
 
 	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, include/xbps_api.h,
 	lib/configure.c, lib/purge.c:
 	Improve marginally configuring/purging all packages by looking at
 	its state in the object dictionary rather than opening and
 	externalizing the dictionary of every package.
-
-2009-08-21 11:17 +0200  Juan RP  <xtraeme@gmail.com>  (ad2d7e228a5c)
+	[377e0b62a689]
 
 	* Makefile, etc/Makefile, lib/Makefile, prog.mk, shutils/Makefile:
 	Add some PHONYs to the install target in Makefiles.
+	[ad2d7e228a5c]
 
-2009-08-21 11:15 +0200  Juan RP  <xtraeme@gmail.com>  (08e418c34ba2)
-
-	* .bzrignore: new file.
 	* .bzrignore:
 	Ignore some created files.
-
-2009-08-21 08:02 +0200  Juan RP  <xtraeme@gmail.com>  (cd98ba051df8)
+	[08e418c34ba2]
 
 	* doc/BINPKG_REPOSITORY, doc/README, doc/SRCPKG_INFO, doc/TODO:
 	Update documentation to match with reality.
+	[cd98ba051df8]
 
-2009-08-20 04:06 +0200  Juan RP  <xtraeme@gmail.com>  (7ed3ebb2a0c9 [0.1rc2])
+2009-08-20  Juan RP  <xtraeme@gmail.com>
 
 	* etc/Makefile:
 	etc/Makefile: remove modified config file in the clean target.
+	[7ed3ebb2a0c9] [0.1rc2]
 
-2009-08-18 23:59 +0200  Juan RP  <xtraeme@gmail.com>  (79b0a0fe1ca1)
+2009-08-18  Juan RP  <xtraeme@gmail.com>
 
 	* lib/unpack.c:
 	lib/unpack.c: fix the logic of an inverted conditional.
-
-2009-08-18 23:39 +0200  Juan RP  <xtraeme@gmail.com>  (898d1f82f3be)
+	[79b0a0fe1ca1]
 
 	* lib/configure.c:
 	xbps_configure_pkg: chdir(rootdir) before checking for INSTALL
 	script!
-
-2009-08-18 22:50 +0200  Juan RP  <xtraeme@gmail.com>  (d7747ce50993)
+	[898d1f82f3be]
 
 	* lib/unpack.c:
 	xbps_unpack_binary_pkg: switch back to fsync(), to be safe.
 
 	Move the set_pkg_state call just after the fsync call, otherwise
 	strange things can ocurr sometimes.
-
-2009-08-18 19:58 +0200  Juan RP  <xtraeme@gmail.com>  (e58104729df6)
+	[d7747ce50993]
 
 	* etc/Makefile, etc/xbps-src.conf, shutils/chroot.sh:
 	Fix installation of packages in the chroot due to previous changes.
+	[e58104729df6]
 
-2009-08-18 17:37 +0200  Juan RP  <xtraeme@gmail.com>  (0932f55dd530)
-
-	* shutils/Makefile, shutils/build_funcs.sh, shutils/builddep_funcs.sh,
-	shutils/buildvars_funcs.sh, shutils/chroot.sh,
-	shutils/common_funcs.sh, shutils/configure_funcs.sh, shutils/cross-
-	compilation.sh, shutils/extract_funcs.sh, shutils/fetch_funcs.sh,
-	shutils/install_funcs.sh, shutils/libtool_funcs.sh, shutils/make-
-	binpkg.sh, shutils/metadata.sh, shutils/metadata_scripts.sh,
-	shutils/mktoolchain.sh, shutils/patch_funcs.sh,
-	shutils/pkgtarget_funcs.sh, shutils/stow_funcs.sh,
-	shutils/tmpl_funcs.sh, shutils/tmpl_vars.sh: new file.
 	* Makefile, bin/xbps-src/Makefile, bin/xbps-src/main.sh,
 	shutils/Makefile, shutils/build_funcs.sh, shutils/builddep_funcs.sh,
 	shutils/buildvars_funcs.sh, shutils/chroot.sh,
@@ -2588,61 +2648,39 @@
 	Add shell utils required by xbps-src.
 
 	These files are moved from the GIT repository.
-
-2009-08-18 16:05 +0200  Juan RP  <xtraeme@gmail.com>  (48a625963827 [0.1rc1])
+	[0932f55dd530]
 
 	* bin/xbps-repo/index.c:
 	xbps-repo: fix swapped args in xbps_repo_addpkg_index().
-
-2009-08-18 16:04 +0200  Juan RP  <xtraeme@gmail.com>  (b7c914bbdb7b)
+	[48a625963827] [0.1rc1]
 
 	* etc/Makefile, vars.mk:
 	Fix DESTDIR + ETCDIR interaction.
-
-2009-08-18 14:12 +0200  Juan RP  <xtraeme@gmail.com>  (0692c3f50fae)
+	[b7c914bbdb7b]
 
 	* bin/xbps-repo/index.c, bin/xbps-repo/index.h, bin/xbps-repo/main.c:
 	Implement blueprint 'xbps-repo-list-via-cmdline'.
 
 	A new target (add-pkgidx) has been added to the xbps-repo command,
 	that takes two args, local repository dir and path to binpkg.
-
-2009-08-18 01:11 +0200  Juan RP  <xtraeme@gmail.com>  (85dc3ca2a325)
+	[0692c3f50fae]
 
 	* vars.mk:
 	Use DESTDIR to install xbps, if defined.
+	[85dc3ca2a325]
 
-2009-08-18 01:06 +0200  Juan RP  <xtraeme@gmail.com>  (f645a5949065)
-
-	* etc/xbps-src.conf: new file.
-	* etc/xbps.conf: deleted file.
 	* bin/xbps-src/main.sh, etc/Makefile, etc/xbps-src.conf,
 	etc/xbps.conf:
 	Rename xbps.conf to xbps-src.conf, because it's only used by xbps-
 	src.
-
-2009-08-18 00:46 +0200  Juan RP  <xtraeme@gmail.com>  (e7b603e808ed)
+	[f645a5949065]
 
 	* Makefile:
 	Makefile: remove all libxbps files in uninstall target.
+	[e7b603e808ed]
 
-2009-08-17 19:07 +0200  juan  <juan@xbps>  (08cd235b80ee [0.1beta1])
+2009-08-17  juan  <juan@xbps>
 
-	* Makefile, bin/Makefile, bin/xbps-bin/Makefile, bin/xbps-bin/check.c,
-	bin/xbps-bin/defs.h, bin/xbps-bin/install.c, bin/xbps-bin/main.c,
-	bin/xbps-bin/remove.c, bin/xbps-cmpver/Makefile, bin/xbps-
-	cmpver/main.c, bin/xbps-digest/Makefile, bin/xbps-digest/main.c, bin
-	/xbps-pkgdb/Makefile, bin/xbps-pkgdb/main.c, bin/xbps-repo/Makefile,
-	bin/xbps-repo/index.c, bin/xbps-repo/index.h, bin/xbps-repo/main.c,
-	bin/xbps-repo/util.c, bin/xbps-repo/util.h, bin/xbps-src/Makefile,
-	bin/xbps-src/main.sh, doc/BINPKG_INFO, doc/BINPKG_REPOSITORY,
-	doc/README, doc/SRCPKG_INFO, doc/TODO, etc/Makefile, etc/xbps.conf,
-	include/sha256.h, include/xbps_api.h, lib/Makefile, lib/cmpver.c,
-	lib/configure.c, lib/depends.c, lib/fexec.c, lib/findpkg.c,
-	lib/humanize_number.c, lib/orphans.c, lib/plist.c, lib/purge.c,
-	lib/register.c, lib/remove.c, lib/repository.c, lib/requiredby.c,
-	lib/sha256.c, lib/sortdeps.c, lib/state.c, lib/unpack.c, lib/util.c,
-	prog.mk, vars.mk: new file.
 	* Makefile, bin/Makefile, bin/xbps-bin/Makefile, bin/xbps-bin/check.c,
 	bin/xbps-bin/defs.h, bin/xbps-bin/install.c, bin/xbps-bin/main.c,
 	bin/xbps-bin/remove.c, bin/xbps-cmpver/Makefile, bin/xbps-
@@ -2659,4 +2697,5 @@
 	lib/sha256.c, lib/sortdeps.c, lib/state.c, lib/unpack.c, lib/util.c,
 	prog.mk, vars.mk:
 	Initial import of xbps with code as August '09.
+	[08cd235b80ee] [0.1beta1]
 
