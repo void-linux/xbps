@@ -1,3 +1,8 @@
+xbps-0.7.1 (?):
+
+ * Fixed the xbps-uhelper 'unregister' target that was using the old returned
+   type to check for errors.
+
 xbps-0.7.0 (2010-12-15):
  
  * xbps-repo(8): implemented the 'find-files' target to print which packages

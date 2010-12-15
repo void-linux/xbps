@@ -104,7 +104,7 @@ main(int argc, char **argv)
 {
 	prop_dictionary_t dict;
 	const char *version;
-	char *plist, *pkgname, *pkgver, *in_chroot_env, *root = "", *hash;
+	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
 	bool in_chroot = false;
 	int i, c, rv = 0;
 
@@ -112,10 +112,7 @@ main(int argc, char **argv)
 		switch (c) {
 		case 'r':
 			/* To specify the root directory */
-			root = strdup(optarg);
-			if (root == NULL)
-				exit(EXIT_FAILURE);
-			xbps_set_rootdir(root);
+			xbps_set_rootdir(optarg);
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -132,9 +129,10 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
-	xbps_init(false);
+	xbps_init(true);
 
-	plist = xbps_xasprintf("%s/%s/%s", root, XBPS_META_PATH, XBPS_REGPKGDB);
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
 		fprintf(stderr,
 		    "%s=> ERROR: couldn't find regpkdb file (%s)%s\n",
@@ -189,14 +187,15 @@ main(int argc, char **argv)
 		if (argc != 3)
 			usage();
 
-		rv = xbps_remove_pkg_dict_from_file(argv[1], plist);
-		if (rv == ENOENT) {
-			fprintf(stderr, "%s=> ERROR: %s not registered "
-			    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET); 
-		} else if (rv != 0) {
-			fprintf(stderr, "%s=> ERROR: couldn't unregister %s "
-			    "from database (%s)%s\n", MSG_ERROR,
-			    argv[1], strerror(rv), MSG_RESET);
+		if (!xbps_remove_pkg_dict_from_file(argv[1], plist)) {
+			if (errno == ENOENT)
+				fprintf(stderr, "%s=> ERROR: %s not registered "
+				    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET);
+			else
+				fprintf(stderr, "%s=> ERROR: couldn't unregister %s "
+			    	    "from database (%s)%s\n", MSG_ERROR,
+				    argv[1], strerror(errno), MSG_RESET);
+
 			exit(EXIT_FAILURE);
 		}
 
