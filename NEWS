@@ -4,6 +4,9 @@ xbps-0.7.0 (2010-12-15):
    own a file, link, directory, etc. Analogue to the one implemented in
    xbps-bin(8). Works for local and remote repository, fetching info on-the-fly.
 
+ * Fixed a typo in the configure script that broke detection of strlcat(),
+   reported and patch provided by Min Sik Kim in issue 2.
+
  * xbps-bin(8): added -F flag for the remove target. Unless it's set,
    packages that are dependencies of other installed packages won't be removed.
    This flag overrides this behaviour and forces the package removal.
