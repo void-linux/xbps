@@ -1,4 +1,8 @@
 xbps-0.7.0 (?)
+ 
+ * xbps-repo(8): implemented the 'find-files' target to print which packages
+   own a file, link, directory, etc. Analogue to the one implemented in
+   xbps-bin(8). Works for local and remote repository, fetching info on-the-fly.
 
  * xbps-bin(8): added -F flag for the remove target. Unless it's set,
    packages that are dependencies of other installed packages won't be removed.

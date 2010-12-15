@@ -200,6 +200,13 @@ main(int argc, char **argv)
 		rv = show_pkg_files(pkgd);
 		prop_object_release(pkgd);
 
+	} else if (strcasecmp(argv[0], "find-files") == 0) {
+		/* Finds files by patterns, exact matches and components. */
+		if (argc != 2)
+			usage();
+
+		rv = repo_find_files_in_packages(argv[1]);
+
 	} else if (strcasecmp(argv[0], "genindex") == 0) {
 		/* Generates a package repository index plist file. */
 		if (argc != 2)

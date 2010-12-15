@@ -26,6 +26,10 @@
 #ifndef _XBPS_REPO_DEFS_H_
 #define _XBPS_REPO_DEFS_H_
 
+#ifndef __UNCONST
+#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+#endif
+
 /* From index.c */
 int	xbps_repo_genindex(const char *);
 /* From repository.c */
@@ -43,6 +47,8 @@ int	list_strings_in_array(prop_object_t, void *, bool *);
 int	list_strings_sep_in_array(prop_object_t, void *, bool *);
 size_t	find_longest_pkgver(prop_dictionary_t);
 void	print_package_line(const char *);
+/* From find-files.c */
+int	repo_find_files_in_packages(const char *);
 
 struct repo_search_data {
 	char *pattern;
