@@ -150,7 +150,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		}
 		if (remove(oldfilepath) == -1) {
 			fprintf(stderr, "E: Couldn't remove old package file "
-			    "'%s'!\n", oldfilen);
+			    "'%s'! (%s)\n", oldfilepath, strerror(errno));
 			free(oldfilepath);
 			prop_object_release(newpkgd);
 			rv = errno;
@@ -163,8 +163,9 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 			rv = errno;
 			goto out;
 		}
-		if ((rv = xbps_remove_pkg_from_dict(idxdict,
-		    "packages", pkgname)) != 0) {
+		if (!xbps_remove_pkg_from_dict(idxdict, "packages", pkgname)) {
+			fprintf(stderr, "E: couldn't remove %s dict from "
+			    "index (%s)\n", pkgname, strerror(errno));
 			prop_object_release(newpkgd);
 			free(tmpstr);
 			goto out;
