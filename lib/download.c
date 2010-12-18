@@ -227,6 +227,7 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	bool restart = false;
 
 	fetchLastErrCode = 0;
+	fetchTimeout = 30; /* 30 seconds of timeout */
 
 	/*
 	 * Get the filename specified in URI argument.
