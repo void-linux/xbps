@@ -81,6 +81,7 @@ usage(void)
 	"    version\t\t<pkgname>\n"
 	"\n"
 	"  Options shared by all actions:\n"
+	"    -d\t\tDebugging messages to stderr.\n"
 	"    -r\t\t\t<rootdir>\n"
 	"    -V\t\tPrints the xbps release version\n"
 	"\n"
@@ -105,14 +106,17 @@ main(int argc, char **argv)
 	prop_dictionary_t dict;
 	const char *version;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
-	bool in_chroot = false;
+	bool debug = false, in_chroot = false;
 	int i, c, rv = 0;
 
-	while ((c = getopt(argc, argv, "Var:")) != -1) {
+	while ((c = getopt(argc, argv, "Vdr:")) != -1) {
 		switch (c) {
 		case 'r':
 			/* To specify the root directory */
 			xbps_set_rootdir(optarg);
+			break;
+		case 'd':
+			debug = true;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -129,7 +133,7 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
-	xbps_init(true);
+	xbps_init(debug);
 
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
