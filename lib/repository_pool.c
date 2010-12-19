@@ -137,12 +137,11 @@ xbps_repository_pool_init(void)
 			free(rpool->rpi);
 			free(rpool);
 			free(plist);
+			rv = errno;
 			if (errno == ENOENT) {
-				errno = 0;
 				nmissing++;
 				continue;
 			}
-			rv = errno;
 			xbps_dbg_printf("%s: cannot internalize plist %s: %s\n",
 			    __func__, plist, strerror(errno));
 			goto out;
