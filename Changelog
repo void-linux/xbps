@@ -1,8 +1,58 @@
+2010-12-23  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS:
+	NEWS: update for 0.7.1.
+	[73121d919348] [tip]
+
+	* bin/xbps-dgraph/main.c:
+	xbps-dgraph: use PRIu64 to printf uint64_t from <inttypes.h>.
+	[32856f602504]
+
+2010-12-19  Juan RP  <xtraeme@gmail.com>
+
+	* lib/repository_pool.c:
+	xbps_repository_pool_init: don't loop forever if repo pkg-
+	index.plist files cannot be internalized.
+	[4da227a0efff]
+
+2010-12-18  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-uhelper/main.c:
+	xbps-uhelper: added -d flag to enable debugging.
+	[092cf833adb2]
+
+	* lib/download.c:
+	xbps_fetch_file: set a 30seconds timeout.
+	[a8c796037138]
+
+2010-12-16  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-repo/index.c:
+	xbps-repo: fix the 'genindex' target due to 0.7.0 API changes.
+	[d07ddb577902]
+
+	* NEWS, bin/xbps-uhelper/main.c:
+	xbps-uhelper: fix the 'unregister' target, wasn't updated for 0.7.0
+	API changes.
+	[5e3b3e5ff4e6]
+
 2010-12-15  Juan RP  <xtraeme@gmail.com>
+
+	* .hgtags:
+	Added tag 0.7.0 for changeset 4a202e7ed155
+	[a8b91b20a5c5]
+
+	* NEWS:
+	NEWS: mention typo-fix for strlcat.
+	[4a202e7ed155] [0.7.0]
+
+	* Changelog:
+	Changelog: update for 0.7.0.
+	[8ebb5c578547]
 
 	* NEWS:
 	NEWS: 0.7.0 will be released today.
-	[e4c9e061a58d] [tip]
+	[e4c9e061a58d]
 
 	* NEWS, bin/xbps-repo/Makefile, bin/xbps-repo/defs.h, bin/xbps-repo
 	/find-files.c, bin/xbps-repo/main.c, bin/xbps-repo/xbps-repo.8:
