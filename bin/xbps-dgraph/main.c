@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include <xbps_api.h>
 
@@ -330,7 +331,7 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 			    prop_bool_true(keyobj) ? "true" : "false");
 			break;
 		case PROP_TYPE_NUMBER:
-			fprintf(f, ",label=\"%zu\"",
+			fprintf(f, ",label=\"%"PRIu64"\"",
 			    prop_number_unsigned_integer_value(keyobj));
 			break;
 		case PROP_TYPE_STRING:
