@@ -1,7 +1,15 @@
-xbps-0.7.1 (?):
+xbps-0.7.1 (2010-12-23):
 
- * Fixed the xbps-uhelper 'unregister' target that was using the old returned
-   type to check for errors.
+ * xbps-dgraph: fixed small build error on x86 shown in buildbot tests.
+
+ * libxbps: xbps_repository_pool_init(): don't loop forever if repository
+   pkg-index.plist files cannot be internalized.
+
+ * libxbps: xbps_fetch_file(): set a 30 seconds timeout for transfers.
+
+ * xbps-repo(8): fixed the 'genindex' target for the API changes in 0.7.0.
+
+ * xbps-uhelper: fixed the 'unregister' target for the API changes in 0.7.0.
 
 xbps-0.7.0 (2010-12-15):
  
