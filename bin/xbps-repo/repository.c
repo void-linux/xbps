@@ -228,6 +228,8 @@ register_repository(const char *uri)
 	    idxstr, rpi->pkgidxver, rpi->totalpkgs);
 
 out:
+	if (rpi->pkgidxver != NULL)
+		free(rpi->pkgidxver);
 	if (rpi != NULL)
 		free(rpi);
 	if (plist != NULL)
