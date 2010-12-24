@@ -116,6 +116,7 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 			if (rv == -1)
 				break;
 		}
+		prop_object_release(files_keys);
 		prop_object_release(pkg_filesd);
 		if (rv == -1)
 			break;
