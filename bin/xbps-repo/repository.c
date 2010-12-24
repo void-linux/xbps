@@ -259,6 +259,7 @@ repo_show_pkg_info_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		free(url);
 		return errno;
 	}
+	free(url);
 	show_pkg_info_only_repo(repo_pkgd);
 	show_pkg_info(pkg_propsd);
 	prop_object_release(pkg_propsd);
