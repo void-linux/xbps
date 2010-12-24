@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 #include <xbps_api.h>
+#include "strlcpy.h"
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
@@ -80,11 +81,10 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 	if (tmp == NULL)
 		return errno;
 
-	memcpy(tmp, pkgver, lpc->pkgver_len);
+	strlcpy(tmp, pkgver, lpc->pkgver_len + 1);
 	for (i = strlen(tmp); i < lpc->pkgver_len; i++)
 		tmp[i] = ' ';
 
-	tmp[lpc->pkgver_len + 1] = '\0';
 	printf("%s %s\n", tmp, short_desc);
 	free(tmp);
 

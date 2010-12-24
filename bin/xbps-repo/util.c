@@ -32,6 +32,7 @@
 #include <assert.h>
 
 #include <xbps_api.h>
+#include "strlcpy.h"
 #include "defs.h"
 
 void
@@ -230,11 +231,10 @@ show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 		if (tmp == NULL)
 			return errno;
 
-		memcpy(tmp, pkgver, rsd->pkgver_len);
+		strlcpy(tmp, pkgver, rsd->pkgver_len + 1);
 		for (i = strlen(tmp); i < rsd->pkgver_len; i++)
 			tmp[i] = ' ';
 
-		tmp[rsd->pkgver_len + 1] = '\0';
 		printf(" %s %s\n", tmp, desc);
 		free(tmp);
 	}
