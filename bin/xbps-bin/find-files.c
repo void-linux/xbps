@@ -110,6 +110,7 @@ find_files_in_packages(const char *pattern)
 			if (rv == -1)
 				break;
 		}
+		prop_object_release(files_keys);
 		prop_object_release(pkg_filesd);
 		if (rv == -1)
 			break;
