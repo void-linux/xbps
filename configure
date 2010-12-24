@@ -256,7 +256,7 @@ if [ $? -eq 0 ]; then
 	fi
 fi
 if [ $? -eq 0 ]; then
-	echo "CPPFLAGS +=	-D_FORTIFY_SOURCE=2" >>$CONFIG_MK
+	check_compiler_flag "_FORTIFY_SOURCE=2" D
 fi
 check_compiler_flag "visibility=default" f SHAREDLIB_CFLAGS
 check_compiler_flag "std=c99"
