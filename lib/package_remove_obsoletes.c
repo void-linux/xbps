@@ -135,6 +135,7 @@ again:
 		}
 		printf("Removed obsolete obj: %s\n",
 		    prop_string_cstring_nocopy(oldstr));
+		free(file);
 	}
 	if (!dolinks) {
 		/*
