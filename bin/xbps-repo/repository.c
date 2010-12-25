@@ -91,9 +91,8 @@ pkgindex_verify(const char *plist, const char *uri)
 
 	d = prop_dictionary_internalize_from_zfile(plist);
 	if (d == NULL) {
-		fprintf(stderr,
-		    "E: repository %s does not contain any "
-		    "xbps pkgindex file.\n", uri);
+		fprintf(stderr, "E: failed to add '%s' repository: %s\n",
+		    uri, strerror(errno));
 		return NULL;
 	}
 
@@ -228,10 +227,11 @@ register_repository(const char *uri)
 	    idxstr, rpi->pkgidxver, rpi->totalpkgs);
 
 out:
-	if (rpi->pkgidxver != NULL)
-		free(rpi->pkgidxver);
-	if (rpi != NULL)
+	if (rpi != NULL) {
+		if (rpi->pkgidxver != NULL)
+			free(rpi->pkgidxver);
 		free(rpi);
+	}
 	if (plist != NULL)
 		free(plist);
 
