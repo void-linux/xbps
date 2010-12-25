@@ -245,8 +245,10 @@ unpack_archive_fini(struct archive *ar,
 			archive_entry_set_pathname(entry, buf);
 			free(buf);
 
-			if (archive_read_extract(ar, entry, lflags) != 0)
-				return archive_errno(ar);
+			if (archive_read_extract(ar, entry, lflags) != 0) {
+				rv = archive_errno(ar);
+				goto out;
+			}
 
 			propsd =
 			    xbps_get_pkg_dict_from_metadata_plist(pkgname,
@@ -287,10 +289,9 @@ unpack_archive_fini(struct archive *ar,
 		 */
 		if (prop_dictionary_get(propsd, "conf_files")) {
 			if ((rv = xbps_config_file_from_archive_entry(filesd,
-			    propsd, entry, &lflags, &skip_entry)) != 0) {
-				prop_object_release(filesd);
+			    propsd, entry, &lflags, &skip_entry)) != 0)
 				goto out;
-			}
+
 			if (skip_entry) {
 				archive_read_data_skip(ar);
 				skip_entry = false;
@@ -351,8 +352,8 @@ unpack_archive_fini(struct archive *ar,
 		buf = xbps_xasprintf(".%s/metadata/%s/%s",
 		    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
 		if (buf == NULL) {
-			prop_object_release(filesd);
-			return ENOMEM;
+			rv = ENOMEM;
+			goto out;
 		}
 		/*
 		 * Check if files.plist exists and pkg is NOT marked as
@@ -366,14 +367,16 @@ unpack_archive_fini(struct archive *ar,
 				rv = xbps_remove_obsoletes(old_filesd, filesd);
 				if (rv != 0) {
 					prop_object_release(old_filesd);
-					prop_object_release(filesd);
 					free(buf);
-					return rv;
+					rv = errno;
+					goto out;
 				}
+				prop_object_release(old_filesd);
+
 			} else if (errno && errno != ENOENT) {
-				prop_object_release(filesd);
 				free(buf);
-				return errno;
+				rv = errno;
+				goto out;
 			}
 		}
 		/*
@@ -382,9 +385,9 @@ unpack_archive_fini(struct archive *ar,
 		 * is reachable.
 		 */
 		if (!prop_dictionary_externalize_to_zfile(filesd, buf)) {
-			prop_object_release(filesd);
 			free(buf);
-			return errno;
+			rv = errno;
+			goto out;
 		}
 		free(buf);
 	}
