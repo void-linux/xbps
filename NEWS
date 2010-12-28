@@ -1,3 +1,7 @@
+xbps-0.7.2 (2010-12-28):
+
+ * Fixed some memleaks in libxbps and its clients, found by valgrind.
+
 xbps-0.7.1 (2010-12-23):
 
  * xbps-dgraph: fixed small build error on x86 shown in buildbot tests.

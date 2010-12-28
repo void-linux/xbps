@@ -1,8 +1,58 @@
+2010-12-25  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_unpack.c:
+	xbps_unpack_binary_pkg: fix a memleak and make all error paths go to
+	a single point.
+	[25a675190b31] [tip]
+
+	* lib/package_remove_obsoletes.c:
+	libxbps: fix a memleak when removing obsolete files in pkg upgrades.
+	[c1d91fe4b753]
+
+	* bin/xbps-repo/repository.c:
+	xbps-repo: report the errno string when a repository cannot be added
+	and fix a NULL pointer deref.
+	[ad3c74505dd8]
+
+2010-12-24  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-repo/repository.c:
+	xbps-repo: fix a memleak in the 'add' target.
+	[c8799729dc0b]
+
+	* bin/xbps-bin/main.c, bin/xbps-repo/util.c:
+	xbps-{bin,repo}: use strlcpy().
+	[c4454e1e267c]
+
+	* bin/xbps-repo/repository.c:
+	xbps-repo: fix a memleak in the 'show' target.
+	[8714a4627fdb]
+
+	* bin/xbps-repo/find-files.c:
+	xbps-repo: fix a memleak in the 'find-files' target.
+	[43bf5ceaa778]
+
+	* bin/xbps-bin/find-files.c:
+	xbps-bin: fix a memleak in the 'find-files' target.
+	[b578dfaf5458]
+
+	* configure:
+	configure: also check if compiler supports _FORTIFY_SOURCE=2.
+	[1fad8e3aacbe]
+
 2010-12-23  Juan RP  <xtraeme@gmail.com>
+
+	* .hgtags:
+	Added tag 0.7.1 for changeset 6b51cd806257
+	[7cdf6c9f025d]
+
+	* Changelog:
+	Changelog: update for 0.7.1.
+	[6b51cd806257] [0.7.1]
 
 	* NEWS:
 	NEWS: update for 0.7.1.
-	[73121d919348] [tip]
+	[73121d919348]
 
 	* bin/xbps-dgraph/main.c:
 	xbps-dgraph: use PRIu64 to printf uint64_t from <inttypes.h>.
