@@ -155,7 +155,13 @@ else
 fi
 echo "CC = 		$CC" >>$CONFIG_MK
 echo "CFLAGS = 		-fPIC -DPIC" >>$CONFIG_MK
+if [ -n "$CFLAGS" ]; then
+	echo "CFLAGS +=	$CFLAGS" >>$CONFIG_MK
+fi
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib -L\$(LIBDIR)" >>$CONFIG_MK
+if [ -n "$LDFLAGS" ]; then
+	echo "LDFLAGS += $LDFLAGS" >>$CONFIG_MK
+fi
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DHAVE_CONFIG_H" >>$CONFIG_MK
 
@@ -413,6 +419,8 @@ echo "   BUILD_API_DOCS =	$BUILD_API_DOCS_VALUE"
 echo "   BUILD_PIE =		$BUILD_PIE_VAL"
 echo "   DEBUG =		$DEBUG"
 echo "   EXTERNAL PROPLIB =	$EXTERNAL_PROPLIB_VALUE"
+echo "   CFLAGS =		$CFLAGS"
+echo "   LDFLAGS =		$LDFLAGS"
 echo
 echo "  You can now run make && make install clean."
 echo
