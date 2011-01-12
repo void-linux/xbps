@@ -31,6 +31,11 @@ LIBFETCH_SHLIBCFLAGS = -fvisibility=hidden
 LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
+ifdef USE_EXTERNAL_LIBFETCH
+LIBFETCH_OBJS =
+LDFLAGS += -lfetch
+endif
+
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o
 OBJS += package_remove.o package_remove_obsoletes.o package_state.o

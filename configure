@@ -12,6 +12,7 @@ DEBUG=
 BUILD_API_DOCS=
 BUILD_PIE=
 EXTERNAL_PROPLIB=
+EXTERNAL_LIBFETCH=
 
 usage()
 {
@@ -23,17 +24,18 @@ By default, \`make install' will install all the files in
 an installation prefix other than \`/usr/local' using \`--prefix',
 for instance \`--prefix=\$HOME'.
 
---prefix=DIR		install architecture-independent files in PREFIX
---sbindir=DIR		system admin executables [PREFIX/sbin]
---libdir=DIR		object code libraries [PREFIX/lib]
---includedir=DIR	C header files [PREFIX/include]
---mandir=DIR		man documentation [PREFIX/share/man]
---datadir=DIR		read-only architecture-independent data [PREFIX/share]
+--prefix=DIR			install architecture-independent files in PREFIX
+--sbindir=DIR			system admin executables [PREFIX/sbin]
+--libdir=DIR			object code libraries [PREFIX/lib]
+--includedir=DIR		C header files [PREFIX/include]
+--mandir=DIR			man documentation [PREFIX/share/man]
+--datadir=DIR			read-only architecture-independent data [PREFIX/share]
 
---debug			Build with debugging code and symbols
---with-pie		Build XBPS programs as PIE (default disabled)
---with-api-docs		install XBPS API Library documentation (default disabled)
---with-external-proplib	Use external proplib [default disabled]
+--debug				Build with debugging code and symbols
+--with-pie			Build XBPS programs as PIE (default disabled)
+--with-api-docs			install XBPS API Library documentation (default disabled)
+--with-external-proplib		Use external proplib [default disabled]
+--with-external-libfetch	Use external libfetch [default disabled]
 
 _EOF
 	exit 1
@@ -57,6 +59,7 @@ for x; do
 	--with-api-docs) BUILD_API_DOCS=$var;;
 	--with-pie) BUILD_PIE=$var;;
 	--with-external-proplib) EXTERNAL_PROPLIB=$var;;
+	--with-external-libfetch) EXTERNAL_LIBFETCH=$var;;
 	--help) usage;;
 	*) echo "$0: WARNING: unknown option $opt" >&2;;
 	esac
@@ -198,6 +201,18 @@ else
 	echo "STATIC_PROPLIB =	-lprop" >> $CONFIG_MK
 fi
 
+#
+# Check if external libfetch should be used.
+#
+if [ -z "$EXTERNAL_LIBFETCH" ]; then
+	EXTERNAL_LIBFETCH_VALUE=no
+	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
+else
+	EXTERNAL_LIBFETCH_VALUE=yes
+	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
+	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
+	echo "STATIC_FETCH =	-lfetch" >>$CONFIG_MK
+fi
 
 # Add CPPFLAGS and CFLAGS to CC for testing features
 XCC="$CC `$SED -n -e 's/CPPLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
@@ -245,7 +260,7 @@ EOF
 for f in all extra error shadow "format=2" missing-prototypes \
 	missing-declarations nested-externs \
 	cast-align cast-qual pointer-arith comment unused-macros \
-	declaration-after-statement stack-protector; do
+	declaration-after-statement stack-protector "l,--as-needed"; do
 	check_compiler_flag ${f} W
 done
 
@@ -379,7 +394,7 @@ else
 	echo "found version $($PKGCONFIG_BIN --modversion zlib)."
 fi
 
-echo "STATIC_LIBS = -lz \$(STATIC_PROPLIB) -lpthread" >>$CONFIG_MK
+echo "STATIC_LIBS = -lz \$(STATIC_PROPLIB) \$(STATIC_FETCH) -lpthread" >>$CONFIG_MK
 
 #
 # OpenSSL libssl with pkg-config support is required.
@@ -419,6 +434,7 @@ echo "   BUILD_API_DOCS =	$BUILD_API_DOCS_VALUE"
 echo "   BUILD_PIE =		$BUILD_PIE_VAL"
 echo "   DEBUG =		$DEBUG"
 echo "   EXTERNAL PROPLIB =	$EXTERNAL_PROPLIB_VALUE"
+echo "   EXTERNAL_LIBFETCH =	$EXTERNAL_LIBFETCH_VALUE"
 echo "   CFLAGS =		$CFLAGS"
 echo "   LDFLAGS =		$LDFLAGS"
 echo
