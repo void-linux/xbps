@@ -258,7 +258,7 @@ repo_find_pkg_plistd_cb(struct repository_pool_index *rpi, void *arg, bool *done
 prop_dictionary_t
 xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 {
-	prop_dictionary_t plistd;
+	prop_dictionary_t plistd = NULL;
 	struct rpool_index_data *rid;
 	int rv = 0;
 
