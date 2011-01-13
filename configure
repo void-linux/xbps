@@ -188,32 +188,6 @@ linux)
 esac
 
 
-#
-# Check if external proplib should be used instead.
-#
-if [ -z "$EXTERNAL_PROPLIB" ]; then
-	EXTERNAL_PROPLIB_VALUE=no
-	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
-else
-	EXTERNAL_PROPLIB_VALUE=yes
-	echo "USE_EXTERNAL_PROPLIB =	1" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lprop" >>$CONFIG_MK
-	echo "STATIC_PROPLIB =	-lprop" >> $CONFIG_MK
-fi
-
-#
-# Check if external libfetch should be used.
-#
-if [ -z "$EXTERNAL_LIBFETCH" ]; then
-	EXTERNAL_LIBFETCH_VALUE=no
-	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
-else
-	EXTERNAL_LIBFETCH_VALUE=yes
-	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
-	echo "STATIC_FETCH =	-lfetch" >>$CONFIG_MK
-fi
-
 # Add CPPFLAGS and CFLAGS to CC for testing features
 XCC="$CC `$SED -n -e 's/CPPLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
 XCC="$XCC `$SED -n -e 's/CFLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
@@ -236,7 +210,7 @@ int main(void) { return 0; }
 EOF
 	if $XCC -${mode}${flag} _ccflag.c -o _ccflag 2>_ccflag.err; then
 		if ! test -s _ccflag.err; then
-			if [ "$mode" = "W" ]; then
+			if [ "$mode" = "W" -a -z "$var" ]; then
 				echo "CPPFLAGS +=	-${mode}${flag}" >>$CONFIG_MK
 			else
 				echo "$var +=	-${mode}${flag}" >>$CONFIG_MK
@@ -260,7 +234,7 @@ EOF
 for f in all extra error shadow "format=2" missing-prototypes \
 	missing-declarations nested-externs \
 	cast-align cast-qual pointer-arith comment unused-macros \
-	declaration-after-statement stack-protector "l,--as-needed"; do
+	declaration-after-statement stack-protector; do
 	check_compiler_flag ${f} W
 done
 
@@ -281,6 +255,7 @@ if [ $? -eq 0 ]; then
 fi
 check_compiler_flag "visibility=default" f SHAREDLIB_CFLAGS
 check_compiler_flag "std=c99"
+check_compiler_flag "l,--as-needed" W LDFLAGS
 
 #
 # Check if -fPIE and -pie are supported if --build-pie is set.
@@ -386,28 +361,57 @@ fi
 #
 # zlib with pkg-config support is required.
 #
-printf "Checking for zlib via pkg-config ..."
+printf "Checking for zlib via pkg-config ... "
 if ! $PKGCONFIG_BIN --exists zlib; then
 	echo "zlib.pc file not found, exiting."
 	exit 1
 else
 	echo "found version $($PKGCONFIG_BIN --modversion zlib)."
+	echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags zlib)" >>$CONFIG_MK
+	echo "LDFLAGS +=	$($PKGCONFIG_BIN --libs zlib)" >>$CONFIG_MK
+	echo "STATIC_LIBS =	$($PKGCONFIG_BIN --libs --static zlib)" \
+		>>$CONFIG_MK
 fi
 
-echo "STATIC_LIBS = -lz \$(STATIC_PROPLIB) \$(STATIC_FETCH) -lpthread" >>$CONFIG_MK
+#
+# Check if external proplib via pkg-config should be used instead.
+#
+if [ -z "$EXTERNAL_PROPLIB" ]; then
+	EXTERNAL_PROPLIB_VALUE=no
+	echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
+	echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
+	echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
+else
+	EXTERNAL_PROPLIB_VALUE=yes
+	echo "USE_EXTERNAL_PROPLIB =    1" >>$CONFIG_MK
+	printf "Checking for proplib via pkg-config ... "
+	if ! $PKGCONFIG_BIN --exists proplib; then
+		echo "proplib.pc file not found, exiting."
+		exit 1
+	else
+		echo "found version $($PKGCONFIG_BIN --modversion proplib)."
+		echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags proplib)" >>$CONFIG_MK
+		echo "LDFLAGS +=	$($PKGCONFIG_BIN --libs proplib)" \
+			>>$CONFIG_MK
+		echo "STATIC_LIBS +=	$($PKGCONFIG_BIN --libs --static proplib)" \
+			>>$CONFIG_MK
+	fi
+fi
 
 #
 # OpenSSL libssl with pkg-config support is required.
 #
-printf "Checking for OpenSSL via pkg-config ..."
+printf "Checking for OpenSSL via pkg-config ... "
 if ! $PKGCONFIG_BIN --exists libssl; then
 	echo "libssl.pc file not found, exiting."
 	exit 1
 else
 	echo "found version $($PKGCONFIG_BIN --modversion libssl)."
+	echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags libssl)" >>$CONFIG_MK
+	echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libssl)" >>$CONFIG_MK
+	echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libssl)" \
+		>>$CONFIG_MK
 fi
-
-echo "STATIC_LIBS +=	$($PKGCONFIG_BIN --libs --static libssl)" >>$CONFIG_MK
 
 #
 # libarchive >= 2.8.0 with pkg-config support is required.
@@ -418,9 +422,24 @@ if ! $PKGCONFIG_BIN --exists libarchive; then
 	exit 1
 else
 	echo "found version $($PKGCONFIG_BIN --modversion libarchive)."
+	echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags libarchive)" >>$CONFIG_MK
+	echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libarchive)" >>$CONFIG_MK
+	echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libarchive)" \
+		>>$CONFIG_MK
 fi
 
-echo "STATIC_LIBS +=	$($PKGCONFIG_BIN --libs --static libarchive)" >>$CONFIG_MK
+#
+# Check if external libfetch should be used.
+#
+if [ -z "$EXTERNAL_LIBFETCH" ]; then
+	EXTERNAL_LIBFETCH_VALUE=no
+	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
+else
+	EXTERNAL_LIBFETCH_VALUE=yes
+	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
+	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
+	echo "STATIC_LIBS +=	-lfetch" >>$CONFIG_MK
+fi
 
 echo
 echo "  XBPS has been configured with the following options:"
