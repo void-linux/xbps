@@ -237,8 +237,8 @@ EOF
 #
 for f in all extra error shadow "format=2" missing-prototypes \
 	missing-declarations nested-externs vla no-overlength-strings \
-	unsafe-loop-optimizations undef sign-compare format-security \
-	missing-include-dirs format-nonliteral old-style-definition \
+	unsafe-loop-optimizations undef sign-compare \
+	missing-include-dirs old-style-definition \
 	init-self redundant-decls float-equal missing-noreturn \
 	cast-align cast-qual pointer-arith comment unused-macros \
 	declaration-after-statement write-strings stack-protector; do
