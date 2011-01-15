@@ -49,9 +49,10 @@
 
 /*
  * By default all public functions have default visibility, unless
- * gcc >= 4.x and the HIDDEN definition is used.
+ * visibility has been detected by configure and the HIDDEN definition
+ * is used.
  */
-#if __GNUC__ >= 4
+#if HAVE_VISIBILITY
 #define HIDDEN __attribute__ ((visibility("hidden")))
 #else
 #define HIDDEN

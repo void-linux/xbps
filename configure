@@ -14,6 +14,7 @@ BUILD_PIE=
 EXTERNAL_PROPLIB=
 EXTERNAL_LIBFETCH=
 SILENT=
+HAVE_VISIBILITY=no
 
 usage()
 {
@@ -257,6 +258,10 @@ if [ $? -eq 0 ]; then
 	check_compiler_flag "p,-D_FORTIFY_SOURCE=2" W
 fi
 check_compiler_flag "visibility=default" f SHAREDLIB_CFLAGS
+if [ $? -eq 0 ]; then
+	HAVE_VISIBILITY=yes
+	echo "CPPFLAGS +=	-DHAVE_VISIBILITY=1" >>$CONFIG_MK
+fi
 check_compiler_flag "std=c99" "" CFLAGS
 check_compiler_flag "l,--as-needed" W LDFLAGS
 
@@ -380,14 +385,14 @@ fi
 # Check if external proplib via pkg-config should be used instead.
 #
 if [ -z "$EXTERNAL_PROPLIB" ]; then
-	EXTERNAL_PROPLIB_VALUE=no
+	EXTERNAL_PROPLIB_VALUE="no (using internal copy)"
 	echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
 	echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
 else
 	EXTERNAL_PROPLIB_VALUE=yes
 	echo "USE_EXTERNAL_PROPLIB =    1" >>$CONFIG_MK
-	printf "Checking for proplib via pkg-config ... "
+	printf "Checking for portable proplib via pkg-config ... "
 	if ! $PKGCONFIG_BIN --exists proplib; then
 		echo "proplib.pc file not found, exiting."
 		exit 1
@@ -420,7 +425,7 @@ fi
 # Check if external libfetch should be used.
 #
 if [ -z "$EXTERNAL_LIBFETCH" ]; then
-	EXTERNAL_LIBFETCH_VALUE=no
+	EXTERNAL_LIBFETCH_VALUE="no (using internal copy)"
 	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
 else
 	EXTERNAL_LIBFETCH_VALUE=yes
@@ -458,13 +463,21 @@ echo "   LIBDIR =		$LIBDIR"
 echo "   INCLUDEDIR =		$INCLUDEDIR"
 echo "   SHAREDIR =		$SHAREDIR"
 echo "   MANDIR =		$MANDIR"
-echo "   BUILD_API_DOCS =	$BUILD_API_DOCS_VALUE"
-echo "   BUILD_PIE =		$BUILD_PIE_VAL"
-echo "   DEBUG =		$DEBUG"
-echo "   EXTERNAL PROPLIB =	$EXTERNAL_PROPLIB_VALUE"
-echo "   EXTERNAL_LIBFETCH =	$EXTERNAL_LIBFETCH_VALUE"
-echo "   CFLAGS =		$CFLAGS"
-echo "   LDFLAGS =		$LDFLAGS"
+if [ -n "$CFLAGS" ]; then
+	echo "   CFLAGS =		$CFLAGS"
+fi
+if [ -n "$LDFLAGS" ]; then
+	echo "   LDFLAGS =		$LDFLAGS"
+fi
+echo
+echo "   Build API documentation =	$BUILD_API_DOCS_VALUE"
+echo "   Build programs as PIE =	$BUILD_PIE_VAL"
+echo "   Build with debug  =		$DEBUG"
+echo "   Use external proplib =	$EXTERNAL_PROPLIB_VALUE"
+echo "   Use external libfetch =	$EXTERNAL_LIBFETCH_VALUE"
+if [ -n "$HAVE_VISIBILITY" ]; then
+	echo "   Symbol visibility =		$HAVE_VISIBILITY"
+fi
 echo
 echo "  You can now run make && make install clean."
 echo
