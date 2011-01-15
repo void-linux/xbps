@@ -68,7 +68,8 @@ void
 show_pkg_info(prop_dictionary_t dict)
 {
 	prop_object_t obj;
-	char size[64], *sep;
+	const char *sep;
+	char size[64];
 	int rv = 0;
 
 	assert(dict != NULL);
@@ -132,7 +133,7 @@ show_pkg_info(prop_dictionary_t dict)
 		printf("Configuration files:\n");
 		sep = "  ";
 		(void)xbps_callback_array_iter_in_dict(dict, "conf_files",
-		    list_strings_sep_in_array, sep);
+		    list_strings_sep_in_array, __UNCONST(sep));
 		printf("\n");
 	}
 

@@ -55,7 +55,7 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 	}
 }
 
-static void
+static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stderr,

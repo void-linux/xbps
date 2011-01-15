@@ -35,7 +35,7 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-static void
+static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stderr,

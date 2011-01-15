@@ -42,7 +42,7 @@ struct list_pkgver_cb {
 	size_t pkgver_len;
 };
 
-static void
+static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stderr,
@@ -137,7 +137,7 @@ show_orphans(void)
 	return 0;
 }
 
-static void
+static void __attribute__((noreturn))
 cleanup(int signum)
 {
 	xbps_end();

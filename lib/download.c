@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines
+ * Copyright (c) 2009-2011 Juan Romero Pardines
  * Copyright (c) 2000-2004 Dag-Erling Coïdan Smørgrav
  * All rights reserved.
  *
@@ -83,6 +83,22 @@ stat_eta(struct xferstat *xsp)
 	return str;
 }
 
+/** High precision double comparison
+ * \param[in] a The first double to compare
+ * \param[in] b The second double to compare
+ * \return true on equal within precison, false if not equal within defined precision.
+ */
+static inline bool
+compare_double(const double a, const double b)
+{
+	const double precision = 0.00001;
+
+	if ((a - precision) < b && (a + precision) > b)
+		return true;
+	else
+		return false;
+}
+
 /*
  * Compute and display transfer rate
  */
@@ -95,7 +111,7 @@ stat_bps(struct xferstat *xsp)
 
 	delta = (xsp->last.tv_sec + (xsp->last.tv_usec / 1.e6))
 	    - (xsp->start.tv_sec + (xsp->start.tv_usec / 1.e6));
-	if (delta == 0.0) {
+	if (compare_double(delta, 0.0001)) {
 		snprintf(str, sizeof str, "-- stalled --");
 	} else {
 		bps = ((double)(xsp->rcvd - xsp->offset) / delta);

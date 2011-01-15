@@ -83,7 +83,7 @@ struct defprops {
 	{ .sect = "node-sub", .prop = "opt-fillcolor", .val = "grey" }
 };
 
-static void
+static void __attribute__((noreturn))
 die(const char *fmt, ...)
 {
 	va_list ap;
@@ -97,7 +97,7 @@ die(const char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
-static void
+static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stderr,
