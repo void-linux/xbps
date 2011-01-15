@@ -32,13 +32,14 @@ endif
 
 %.o: %.c
 	@printf " [CC]\t\t$@\n"
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
 $(BIN).static: $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
-	@$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(STATIC_LIBS) -o $@
+	${SILENT}$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+		$(STATIC_LIBS) -o $@
 
 $(BIN): $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
-	@$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) -o $@
+	${SILENT}$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) -o $@
 

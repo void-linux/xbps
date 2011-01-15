@@ -13,6 +13,7 @@ BUILD_API_DOCS=
 BUILD_PIE=
 EXTERNAL_PROPLIB=
 EXTERNAL_LIBFETCH=
+SILENT=
 
 usage()
 {
@@ -32,6 +33,7 @@ for instance \`--prefix=\$HOME'.
 --datadir=DIR			read-only architecture-independent data [PREFIX/share]
 
 --debug				Build with debugging code and symbols
+--silent			Build silently, hidding compilation details.
 --with-pie			Build XBPS programs as PIE (default disabled)
 --with-api-docs			install XBPS API Library documentation (default disabled)
 --with-external-proplib		Use external proplib [default disabled]
@@ -57,6 +59,7 @@ for x; do
 	--libdir) LIBDIR=$var;;
 	--datadir|--infodir) ;; # ignore autotools
 	--with-api-docs) BUILD_API_DOCS=$var;;
+	--silent) SILENT=$var;;
 	--with-pie) BUILD_PIE=$var;;
 	--with-external-proplib) EXTERNAL_PROPLIB=$var;;
 	--with-external-libfetch) EXTERNAL_LIBFETCH=$var;;
@@ -436,6 +439,12 @@ else
 	echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libssl)" >>$CONFIG_MK
 	echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libssl)" \
 		>>$CONFIG_MK
+fi
+
+if [ -n "$SILENT" ]; then
+	echo "SILENT = @" >>$CONFIG_MK
+else
+	echo "SILENT =" >>$CONFIG_MK
 fi
 
 echo
