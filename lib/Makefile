@@ -24,8 +24,10 @@ endif
 LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
 LIBFETCH_OBJS += fetch/ftp.o fetch/http.o
 LIBFETCH_CPPFLAGS = -DFTP_COMBINE_CWDS -DNETBSD -DINET6 -DWITH_SSL
-LIBFETCH_CFLAGS = -Wno-unused-macros -Wno-conversion
+LIBFETCH_CFLAGS = -Wno-error -Wno-unused-macros -Wno-conversion
+ifdef HAVE_VISIBILITY
 LIBFETCH_SHLIBCFLAGS = -fvisibility=hidden
+endif
 LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
