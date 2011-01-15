@@ -36,7 +36,7 @@ endif
 
 $(BIN).static: $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
-	@$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) -lxbps $(STATIC_LIBS) -o $@
+	@$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(STATIC_LIBS) -o $@
 
 $(BIN): $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
