@@ -1,9 +1,82 @@
+2011-01-16  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_config_files.c:
+	Fixed a test in config file handling that made all conf_files not
+	properly detected.
+	[9e1a25c1d734] [tip]
+
+2011-01-15  Juan RP  <xtraeme@gmail.com>
+
+	* configure:
+	configure: -Wformat-security and -Wformat-nonliteral are included in
+	-Wformat=2.
+	[d6239a43b60e]
+
+	* lib/Makefile:
+	lib/Makefile: build -Wno-error for included libfetch for now.
+	[e327351d658b]
+
+	* configure:
+	configure: build with -O2 and -pipe if supported.
+	[353af14cc59e]
+
+	* configure, include/xbps_api_impl.h:
+	configure: make symbol visibility dependent in the configure test,
+	misc changes.
+	[b8b0eaa5622e]
+
+	* bin/xbps-bin/main.c, bin/xbps-dgraph/main.c, bin/xbps-repo/main.c,
+	bin/xbps-repo/util.c, bin/xbps-uhelper/main.c, configure,
+	lib/Makefile, lib/download.c:
+	Added another bunch of compiler warnings and fix code.
+	[df53b90473ec]
+
+	* configure, lib/Makefile, prog.mk:
+	configure: added --silent option to hide compilation details.
+	[5c875edcab69]
+
+	* configure, prog.mk:
+	Really enable the compiler detected flags into its correct var.
+	[42611448148b]
+
+2011-01-14  Juan RP  <xtraeme@gmail.com>
+
+	* configure, lib/Makefile, prog.mk:
+	Make configure detect required libraries to link.
+	[73bde00c8151]
+
+2011-01-12  Juan RP  <xtraeme@gmail.com>
+
+	* lib/repository_plist.c:
+	xbps_repository_get_pkg_plist_dict: avoid uninitialized var.
+	[229dcb2f86b2]
+
+	* configure, lib/Makefile:
+	Added "--with-external-libfetch" to build against external libfetch.
+	[73f6bdcae8e7]
+
+2011-01-11  Juan RP  <xtraeme@gmail.com>
+
+	* configure:
+	configure: respect CFLAGS/LDFLAGS passed via env.
+	[b705eefc18cd]
+
+2010-12-28  Juan RP  <xtraeme@gmail.com>
+
+	* Changelog, NEWS:
+	Update to 0.7.2.
+	[67d430917731]
+
+	* .hgtags:
+	Added tag 0.7.2 for changeset 25a675190b31
+	[a6692acd2765]
+
 2010-12-25  Juan RP  <xtraeme@gmail.com>
 
 	* lib/package_unpack.c:
 	xbps_unpack_binary_pkg: fix a memleak and make all error paths go to
 	a single point.
-	[25a675190b31] [tip]
+	[25a675190b31] [0.7.2]
 
 	* lib/package_remove_obsoletes.c:
 	libxbps: fix a memleak when removing obsolete files in pkg upgrades.

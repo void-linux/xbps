@@ -1,3 +1,17 @@
+xbps-0.7.3 (2011-01-16):
+
+ * Fixed a bug that made libxbps fail to detect properly configuration files.
+   This made all updates in configuration files to be lost.
+
+ * It is now possible to properly build against an external portable proplib
+   (with pkg-config support) and libfetch.
+
+ * Enabled a bunch of compiler warnings in the configure script (if supported
+   by the compiler), and made symbol visibility dependent of configure tests.
+
+ * Added --silent argument to the configure script, hiding compilation
+   details in the build process (disabled by default).
+
 xbps-0.7.2 (2010-12-28):
 
  * Fixed some memleaks in libxbps and its clients, found by valgrind.
