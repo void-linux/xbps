@@ -41,18 +41,12 @@ entry_is_conf_file(prop_dictionary_t propsd, struct archive_entry *entry)
 {
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	char *entrytmp, *cffile;
+	char *cffile;
 	int rv = 0;
 
 	iter = xbps_get_array_iter_from_dict(propsd, "conf_files");
 	if (iter == NULL)
 		return -1;
-
-	entrytmp = xbps_xasprintf(".%s", archive_entry_pathname(entry));
-	if (entrytmp == NULL) {
-		rv = -1;
-		goto out;
-	}
 
 	while ((obj = prop_object_iterator_next(iter))) {
 		cffile = xbps_xasprintf(".%s",
@@ -61,7 +55,7 @@ entry_is_conf_file(prop_dictionary_t propsd, struct archive_entry *entry)
 			rv = -1;
 			goto out;
 		}
-		if (strcmp(cffile, entrytmp) == 0) {
+		if (strcmp(cffile, archive_entry_pathname(entry)) == 0) {
 			rv = 1;
 			free(cffile);
 			break;
@@ -71,9 +65,6 @@ entry_is_conf_file(prop_dictionary_t propsd, struct archive_entry *entry)
 
 out:
 	prop_object_iterator_release(iter);
-	if (entrytmp)
-		free(entrytmp);
-
 	return rv;
 }
 
@@ -109,8 +100,14 @@ xbps_config_file_from_archive_entry(prop_dictionary_t filesd,
 	 * installed package.
 	 */
 	prop_dictionary_get_cstring_nocopy(propsd, "pkgname", &pkgname);
+
+	xbps_dbg_printf("%s: processing conf_file %s\n",
+	    pkgname, archive_entry_pathname(entry));
+
 	forigd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (forigd == NULL) {
+		xbps_dbg_printf("%s: conf_file %s not currently installed\n",
+		    pkgname, archive_entry_pathname(entry));
 		install_new = true;
 		goto out;
 	}
@@ -143,6 +140,8 @@ xbps_config_file_from_archive_entry(prop_dictionary_t filesd,
 	 */
 	if (sha256_orig == NULL) {
 		install_new = true;
+		xbps_dbg_printf("%s: conf_file %s unknown orig sha256\n",
+		    pkgname, archive_entry_pathname(entry));
 		goto out;
 	}
 
@@ -170,6 +169,9 @@ xbps_config_file_from_archive_entry(prop_dictionary_t filesd,
 				 * File not installed, install new one.
 				 */
 				install_new = true;
+				xbps_dbg_printf("%s: conf_file %s not "
+				    "installed\n", pkgname,
+				    archive_entry_pathname(entry));
 				break;
 			} else {
 				rv = errno;
@@ -186,6 +188,9 @@ xbps_config_file_from_archive_entry(prop_dictionary_t filesd,
 		    (strcmp(sha256_orig, sha256_new) == 0) &&
 		    (strcmp(sha256_cur, sha256_new) == 0)) {
 			install_new = true;
+			xbps_dbg_printf("%s: conf_file %s orig = X,"
+			    "cur = X, new = X\n", pkgname,
+			    archive_entry_pathname(entry));
 			break;
 		/*
 		 * Orig = X, Curr = X, New = Y
@@ -219,6 +224,9 @@ xbps_config_file_from_archive_entry(prop_dictionary_t filesd,
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
 			install_new = true;
+			xbps_dbg_printf("%s: conf_file %s orig = X,"
+			    "cur = Y, new = Y\n", pkgname,
+			    archive_entry_pathname(entry));
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = Z
@@ -253,6 +261,9 @@ out:
 		free(sha256_cur);
 
 	prop_object_iterator_release(iter);
+
+	xbps_dbg_printf("%s: conf_file %s returned %d\n",
+	    pkgname, archive_entry_pathname(entry));
 
 	return rv;
 }
