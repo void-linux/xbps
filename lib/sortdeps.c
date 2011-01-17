@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,50 +30,38 @@
 
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
-#include "queue.h"
 
-struct sorted_dependency {
-	SIMPLEQ_ENTRY(sorted_dependency) chain;
-	prop_dictionary_t dict;
-};
-
-static SIMPLEQ_HEAD(sdep_head, sorted_dependency) sdep_list =
-    SIMPLEQ_HEAD_INITIALIZER(sdep_list);
-
-static struct sorted_dependency *
-find_sorteddep_by_name(const char *pkgname)
-{
-	struct sorted_dependency *sdep = NULL;
-	const char *curpkgname;
-
-	SIMPLEQ_FOREACH(sdep, &sdep_list, chain) {
-		prop_dictionary_get_cstring_nocopy(sdep->dict,
-		    "pkgname", &curpkgname);
-		if (strcmp(pkgname, curpkgname) == 0)
-			return sdep;
-	}
-
-	return NULL;
-}
-
+/*
+ * Sorting algorithm for packages in the transaction dictionary.
+ * The transaction dictionary contains all package dictionaries found from
+ * the repository plist index file in the "unsorted_deps" array.
+ *
+ * When a package has no rundeps or all rundeps are satisfied, the package
+ * dictionary is added into the "packages" array and it is removed from the
+ * "unsorted_deps" array; that means the package has been sorted in the
+ * transaction.
+ *
+ * It will loop until all packages are processed and will check that
+ * the number of packages added into the "packages" array is the same than
+ * it was in the "unsorted_deps" array.
+ */
 int HIDDEN
-xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
+xbps_sort_pkg_deps(prop_dictionary_t transd)
 {
 	prop_array_t sorted, unsorted, rundeps, missingdeps;
 	prop_object_t obj, obj2;
 	prop_object_iterator_t iter, iter2;
-	struct sorted_dependency *sdep;
 	size_t ndeps = 0, rundepscnt = 0, cnt = 0;
 	const char *pkgname, *pkgver, *str;
 	char *pkgnamedep;
 	int rv = 0;
 
-	assert(chaindeps != NULL);
+	assert(transd != NULL);
 
 	/*
 	 * If there are missing dependencies, bail out.
 	 */
-	missingdeps = prop_dictionary_get(chaindeps, "missing_deps");
+	missingdeps = prop_dictionary_get(transd, "missing_deps");
 	if (prop_array_count(missingdeps) > 0) {
 		xbps_dbg_printf("missing dependencies! won't "
 		    "continue sorting\n");
@@ -85,11 +73,19 @@ xbps_sort_pkg_deps(prop_dictionary_t chaindeps)
 		return ENOMEM;
 
 	/*
+	 * Add sorted packages array into transaction dictionary (empty).
+	 */
+	if (!prop_dictionary_set(transd, "packages", sorted)) {
+		rv = EINVAL;
+		goto out;
+	}
+
+	/*
 	 * All required deps are satisfied (already installed).
 	 */
-	unsorted = prop_dictionary_get(chaindeps, "unsorted_deps");
+	unsorted = prop_dictionary_get(transd, "unsorted_deps");
 	if (prop_array_count(unsorted) == 0) {
-		prop_dictionary_set(chaindeps, "packages", sorted);
+		prop_dictionary_set(transd, "packages", sorted);
 		return 0;
 	}
 	ndeps = prop_array_count(unsorted);
@@ -107,17 +103,14 @@ again:
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dbg_printf("Sorting package '%s': ", pkgver);
-		if (find_sorteddep_by_name(pkgname) != NULL) {
+
+		if (xbps_find_pkg_in_dict_by_name(transd,
+		    "packages", pkgname)) {
 			xbps_dbg_printf_append("skipping, already queued.\n",
 			    pkgname);
 			continue;
 		}
 
-		sdep = malloc(sizeof(struct sorted_dependency));
-		if (sdep == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
 		/*
 		 * Packages that don't have deps go unsorted, because
 		 * it doesn't matter.
@@ -126,15 +119,18 @@ again:
 		if (rundeps == NULL || prop_array_count(rundeps) == 0) {
 			xbps_dbg_printf_append("added (no rundeps) into "
 			    "the sorted queue.\n");
-			sdep->dict = prop_dictionary_copy(obj);
-			SIMPLEQ_INSERT_TAIL(&sdep_list, sdep, chain);
+			prop_array_add(sorted, obj);
+			if (!xbps_remove_pkg_from_dict(transd,
+			    "unsorted_deps", pkgname)) {
+				xbps_dbg_printf("can't remove %s from "
+				    "unsorted_deps array!\n", pkgname);
+			}
 			cnt++;
 			continue;
 		}
 		iter2 = prop_array_iterator(rundeps);
 		if (iter2 == NULL) {
 			rv = ENOMEM;
-			free(sdep);
 			goto out;
 		}
 
@@ -148,13 +144,11 @@ again:
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
 			str = prop_string_cstring_nocopy(obj2);
 			if (str == NULL) {
-				free(sdep);
 				rv = EINVAL;
 				goto out;
 			}
 			pkgnamedep = xbps_get_pkgpattern_name(str);
 			if (pkgnamedep == NULL) {
-				free(sdep);
 				rv = EINVAL;
 				goto out;
 			}
@@ -166,7 +160,8 @@ again:
 			if (xbps_check_is_installed_pkg(str)) {
 				rundepscnt++;
 				xbps_dbg_printf_append("installed.\n");
-			} else if (find_sorteddep_by_name(pkgnamedep) != NULL) {
+			} else if (xbps_find_pkg_in_dict_by_name(transd,
+			    "packages", pkgnamedep)) {
 				xbps_dbg_printf_append("queued.\n");
 				rundepscnt++;
 			} else {
@@ -178,8 +173,12 @@ again:
 
 		/* Add dependency if all its required deps are already added */
 		if (prop_array_count(rundeps) == rundepscnt) {
-			sdep->dict = prop_dictionary_copy(obj);
-			SIMPLEQ_INSERT_TAIL(&sdep_list, sdep, chain);
+			prop_array_add(sorted, obj);
+			if (!xbps_remove_pkg_from_dict(transd,
+			    "unsorted_deps", pkgname)) {
+				xbps_dbg_printf("can't remove %s from "
+				    "unsorted_deps array!\n", pkgname);
+			}
 			xbps_dbg_printf("Added package '%s' to the sorted "
 			    "queue (all rundeps satisfied).\n\n", pkgver);
 			rundepscnt = 0;
@@ -189,32 +188,17 @@ again:
 		xbps_dbg_printf("Unsorted package '%s' has missing "
 		    "rundeps (missing %zu).\n\n", pkgver,
 		    prop_array_count(rundeps) - rundepscnt);
-		free(sdep);
 		rundepscnt = 0;
 	}
-
 	/* Iterate until all deps are processed. */
 	if (cnt < ndeps) {
 		xbps_dbg_printf("Missing required deps! queued: %zu "
 		    "required: %zu.\n", cnt, ndeps);
 		prop_object_iterator_reset(iter);
+		xbps_dbg_printf("total iteratons %zu\n", cnt);
 		goto again;
 	}
 	prop_object_iterator_release(iter);
-
-	/*
-	 * Add all sorted dependencies into the sorted deps array.
-	 */
-	while ((sdep = SIMPLEQ_FIRST(&sdep_list)) != NULL) {
-		if (!prop_array_add(sorted, sdep->dict)) {
-			free(sdep);
-			rv = EINVAL;
-			goto out;
-		}
-		SIMPLEQ_REMOVE(&sdep_list, sdep, sorted_dependency, chain);
-		prop_object_release(sdep->dict);
-		free(sdep);
-	}
 
 	/*
 	 * Sanity check that the array contains the same number of
@@ -224,22 +208,16 @@ again:
 		rv = EINVAL;
 		goto out;
 	}
-
-	if (!prop_dictionary_set(chaindeps, "packages", sorted))
-		rv = EINVAL;
-
-	prop_dictionary_remove(chaindeps, "unsorted_deps");
+	/*
+	 * We are done, all packages were sorted... remove the
+	 * temporary array with unsorted packages.
+	 */
+	prop_dictionary_remove(transd, "unsorted_deps");
 
 out:
-	/*
-	 * Release resources used by temporary sorting.
-	 */
-	prop_object_release(sorted);
-	while ((sdep = SIMPLEQ_FIRST(&sdep_list)) != NULL) {
-		SIMPLEQ_REMOVE(&sdep_list, sdep, sorted_dependency, chain);
-		prop_object_release(sdep->dict);
-		free(sdep);
+	if (rv != 0) {
+		prop_dictionary_remove(transd, "packages");
+		prop_object_release(sorted);
 	}
-
 	return rv;
 }
