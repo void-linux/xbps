@@ -33,7 +33,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/state.c
+ * @file lib/package_state.c
  * @brief Package state handling routines
  * @defgroup pkgstates Package state handling functions
  */

@@ -32,7 +32,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/configure.c
+ * @file lib/package_configure.c
  * @brief Package configuration routines
  * @defgroup configure Package configuration functions
  *

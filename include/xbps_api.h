@@ -597,7 +597,7 @@ int xbps_repository_unregister(const char *uri);
  * @note The function name might be misleading, but is correct because
  * if package is found, it will be marked as "going to be installed".
  *
- * @param pkg Package name or pattern to find.
+ * @param pkgpattern Package name or pattern to find.
  *
  * @return 0 on success, otherwise an errno value.
  */
@@ -703,7 +703,7 @@ struct repository_pool_index {
 	 */
 	prop_dictionary_t rpi_repod;
 	/**
-	 * @var rp_uri
+	 * @var rpi_uri
 	 * 
 	 * URI string associated with repository.
 	 */
@@ -780,6 +780,8 @@ prop_dictionary_t
  * downloaded successfully.
  */
 int xbps_repository_sync_pkg_index(const char *uri);
+
+/*@}*/
 
 /** @addtogroup pkgstates */
 /*@{*/

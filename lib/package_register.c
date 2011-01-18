@@ -32,7 +32,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/register.c
+ * @file lib/package_register.c
  * @brief Package registration routines
  * @defgroup pkg_register Package registration functions
  *

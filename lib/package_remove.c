@@ -35,7 +35,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/remove.c
+ * @file lib/package_remove.c
  * @brief Package removal routines
  * @defgroup pkg_remove Package removal functions
  *

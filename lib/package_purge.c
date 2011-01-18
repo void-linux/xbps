@@ -33,7 +33,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/purge.c
+ * @file lib/package_purge.c
  * @brief Package purging routines
  * @defgroup purge Package purging functions
  *

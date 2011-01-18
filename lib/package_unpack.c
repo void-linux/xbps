@@ -34,7 +34,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/unpack.c
+ * @file lib/package_unpack.c
  * @brief Binary package file unpacking routines
  * @defgroup unpack Binary package file unpacking functions
  *

@@ -34,7 +34,7 @@
 #include "queue.h"
 
 /**
- * @file lib/orphans.c
+ * @file lib/package_orphans.c
  * @brief Package orphans handling routines
  * @defgroup pkg_orphans Package orphans handling functions
  *
