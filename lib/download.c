@@ -106,7 +106,7 @@ static const char *
 stat_bps(struct xferstat *xsp)
 {
 	static char str[16];
-	char size[32];
+	char size[8];
 	double delta, bps;
 
 	delta = (xsp->last.tv_sec + (xsp->last.tv_usec / 1.e6))
@@ -115,9 +115,8 @@ stat_bps(struct xferstat *xsp)
 		snprintf(str, sizeof str, "-- stalled --");
 	} else {
 		bps = ((double)(xsp->rcvd - xsp->offset) / delta);
-		(void)xbps_humanize_number(size, 6, (int64_t)bps, "",
-		    HN_AUTOSCALE, HN_NOSPACE|HN_DECIMAL);
-		snprintf(str, sizeof str, "%sB/s", size);
+		(void)xbps_humanize_number(size, (int64_t)bps);
+		snprintf(str, sizeof str, "%s/s", size);
 	}
 	return str;
 }
@@ -129,18 +128,16 @@ static void
 stat_display(struct xferstat *xsp)
 {
 	struct timeval now;
-	char totsize[32], recvsize[32];
+	char totsize[8], recvsize[8];
 
 	gettimeofday(&now, NULL);
 	if (now.tv_sec <= xsp->last.tv_sec)
 		return;
 	xsp->last = now;
 
-	(void)xbps_humanize_number(totsize, 7, (int64_t)xsp->size, "",
-	    HN_AUTOSCALE, HN_NOSPACE|HN_DECIMAL);
-	(void)xbps_humanize_number(recvsize, 7, (int64_t)xsp->rcvd, "",
-	    HN_AUTOSCALE, HN_NOSPACE|HN_DECIMAL);
-	fprintf(stderr, "\r%s: %sB [%d%% of %sB]",
+	(void)xbps_humanize_number(totsize, (int64_t)xsp->size);
+	(void)xbps_humanize_number(recvsize, (int64_t)xsp->rcvd);
+	fprintf(stderr, "\r%s: %s [%d%% of %s]",
 	    xsp->name, recvsize,
 	    (int)((double)(100.0 * (double)xsp->rcvd) / (double)xsp->size),
 	    totsize);
@@ -181,11 +178,10 @@ stat_update(struct xferstat *xsp, off_t rcvd)
 static void
 stat_end(struct xferstat *xsp)
 {
-	char size[32];
+	char size[8];
 
-	(void)xbps_humanize_number(size, 6, (int64_t)xsp->size, "",
-	    HN_AUTOSCALE, HN_NOSPACE|HN_DECIMAL);
-	fprintf(stderr, "\rDownloaded %sB for %s [avg rate: %s]",
+	(void)xbps_humanize_number(size, (int64_t)xsp->size);
+	fprintf(stderr, "\rDownloaded %s for %s [avg rate: %s]",
 	    size, xsp->name, stat_bps(xsp));
 	fprintf(stderr, "\033[K\n");
 }

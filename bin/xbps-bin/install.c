@@ -195,7 +195,7 @@ show_transaction_sizes(struct transaction *trans)
 	prop_object_t obj;
 	uint64_t dlsize = 0, instsize = 0;
 	const char *tract;
-	char size[64];
+	char size[8];
 	bool trans_inst, trans_up, trans_conf;
 
 	trans_inst = trans_up = trans_conf = false;
@@ -240,15 +240,13 @@ show_transaction_sizes(struct transaction *trans)
 	prop_dictionary_get_uint64(trans->dict, "total-download-size", &dlsize);
 	prop_dictionary_get_uint64(trans->dict, "total-installed-size",
 	    &instsize);
-	if (xbps_humanize_number(size, 5, (int64_t)dlsize,
-	    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE) == -1) {
+	if (xbps_humanize_number(size, (int64_t)dlsize) == -1) {
 		fprintf(stderr, "xbps-bin: error: humanize_number returns "
 		    "%s\n", strerror(errno));
 		return -1;
 	}
 	printf("Total download size: %sB\n", size);
-	if (xbps_humanize_number(size, 5, (int64_t)instsize,
-	    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE) == -1) {
+	if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
 		fprintf(stderr, "xbps-bin: error: humanize_number2 returns "
 		    "%s\n", strerror(errno));
 		return -1;

@@ -39,17 +39,16 @@ void
 show_pkg_info_only_repo(prop_dictionary_t dict)
 {
 	prop_object_t obj;
-	char size[64];
-	int rv = 0;
+	char size[8];
+	int rv;
 
 	obj = prop_dictionary_get(dict, "filename");
 	if (prop_object_type(obj) == PROP_TYPE_STRING) {
 		printf("Filename: %s", prop_string_cstring_nocopy(obj));
 		obj = prop_dictionary_get(dict, "filename-size");
 		if (prop_object_type(obj) == PROP_TYPE_NUMBER) {
-			rv = xbps_humanize_number(size, 5,
-			    (int64_t)prop_number_unsigned_integer_value(obj),
-			    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE);
+			rv = xbps_humanize_number(size,
+			    (int64_t)prop_number_unsigned_integer_value(obj));
 			if (rv == -1)
 				printf(" (size: %ju)\n",
 				    prop_number_unsigned_integer_value(obj));
@@ -69,8 +68,7 @@ show_pkg_info(prop_dictionary_t dict)
 {
 	prop_object_t obj;
 	const char *sep;
-	char size[64];
-	int rv = 0;
+	char size[8];
 
 	assert(dict != NULL);
 	assert(prop_dictionary_count(dict) != 0);
@@ -87,10 +85,8 @@ show_pkg_info(prop_dictionary_t dict)
 	obj = prop_dictionary_get(dict, "installed_size");
 	if (prop_object_type(obj) == PROP_TYPE_NUMBER) {
 		printf("Installed size: ");
-		rv = xbps_humanize_number(size, 5,
-		    (int64_t)prop_number_unsigned_integer_value(obj),
-		    "", HN_AUTOSCALE, HN_B|HN_DECIMAL|HN_NOSPACE);
-		if (rv == -1)
+		if (xbps_humanize_number(size,
+		    (int64_t)prop_number_unsigned_integer_value(obj)) == -1)
 			printf("%ju\n",
 			    prop_number_unsigned_integer_value(obj));
 		else
