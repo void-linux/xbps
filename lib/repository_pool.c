@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
@@ -35,8 +36,8 @@
 
 /**
  * @file lib/repository_pool.c
- * @brief Repository pool init/fini routines
- * @defgroup repopool Repository pool init/fini functions
+ * @brief Repository pool routines
+ * @defgroup repopool Repository pool functions
  */
 
 struct repository_pool {
@@ -49,6 +50,7 @@ static SIMPLEQ_HEAD(rpool_head, repository_pool) rpool_queue =
 
 static size_t repolist_refcnt;
 static bool repolist_initialized;
+static pthread_mutex_t mtx_refcnt = PTHREAD_MUTEX_INITIALIZER;
 
 int
 xbps_repository_pool_init(void)
@@ -62,8 +64,12 @@ xbps_repository_pool_init(void)
 	char *plist;
 	int rv = 0;
 
+	xbps_dbg_printf("%s: repolist_refcnt %zu\n", __func__, repolist_refcnt);
+
 	if (repolist_initialized) {
+		pthread_mutex_lock(&mtx_refcnt);
 		repolist_refcnt++;
+		pthread_mutex_unlock(&mtx_refcnt);
 		return 0;
 	}
 
@@ -156,7 +162,9 @@ xbps_repository_pool_init(void)
 		goto out;
 
 	repolist_initialized = true;
+	pthread_mutex_lock(&mtx_refcnt);
 	repolist_refcnt = 1;
+	pthread_mutex_unlock(&mtx_refcnt);
 	xbps_dbg_printf("%s: initialized ok.\n", __func__);
 out:
 	if (iter)
@@ -174,20 +182,28 @@ void
 xbps_repository_pool_release(void)
 {
 	struct repository_pool *rpool;
+	size_t cnt;
 
-	if (--repolist_refcnt > 0)
+	pthread_mutex_lock(&mtx_refcnt);
+	cnt = repolist_refcnt--;
+	pthread_mutex_unlock(&mtx_refcnt);
+
+	xbps_dbg_printf("%s: repolist_refcnt %zu\n", __func__, cnt);
+	if (cnt != 1)
 		return;
 
 	while ((rpool = SIMPLEQ_FIRST(&rpool_queue)) != NULL) {
 		SIMPLEQ_REMOVE(&rpool_queue, rpool, repository_pool, rp_entries);
-		xbps_dbg_printf("Unregistered repository '%s'\n",
+		xbps_dbg_printf("Unregistering repository '%s'...",
 		    rpool->rpi->rpi_uri);
 		prop_object_release(rpool->rpi->rpi_repod);
 		free(rpool->rpi->rpi_uri);
 		free(rpool->rpi);
 		free(rpool);
+		rpool = NULL;
+		xbps_dbg_printf_append("done\n");
+
 	}
-	repolist_refcnt = 0;
 	repolist_initialized = false;
 	xbps_dbg_printf("%s: released ok.\n", __func__);
 }
@@ -202,7 +218,7 @@ xbps_repository_pool_foreach(
 	bool done = false;
 
 	if (!repolist_initialized)
-		return 0;
+		return EINVAL;
 
 	SIMPLEQ_FOREACH(rpool, &rpool_queue, rp_entries) {
 		rv = (*fn)(rpool->rpi, arg, &done);
@@ -211,4 +227,128 @@ xbps_repository_pool_foreach(
 	}
 
 	return rv;
+}
+
+struct repo_pool_fpkg {
+	prop_dictionary_t pkgd;
+	const char *pattern;
+	bool bypattern;
+	bool newpkg_found;
+};
+
+static int
+repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	struct repo_pool_fpkg *rpf = arg;
+
+	if (rpf->bypattern) {
+		rpf->pkgd = xbps_find_pkg_in_dict_by_pattern(rpi->rpi_repod,
+		    "packages", rpf->pattern);
+	} else {
+		rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
+		    "packages", rpf->pattern);
+	}
+
+	if (rpf->pkgd) {
+		xbps_dbg_printf("Found pkg '%s' (%s)\n",
+		    rpf->pattern, rpi->rpi_uri);
+		/*
+		 * Package dictionary found, add the "repository"
+		 * object with the URI.
+		 */
+		prop_dictionary_set_cstring(rpf->pkgd, "repository",
+		    rpi->rpi_uri);
+		*done = true;
+		errno = 0;
+		return 0;
+	}
+
+	xbps_dbg_printf("Didn't find '%s' (%s)\n",
+	    rpf->pattern, rpi->rpi_uri);
+	/* Not found */
+	errno = ENOENT;
+	return 0;
+}
+
+static int
+repo_find_best_pkg_cb(struct repository_pool_index *rpi,
+		      void *arg,
+		      bool *done)
+{
+	struct repo_pool_fpkg *rpf = arg;
+	prop_dictionary_t instpkgd;
+	const char *instver, *repover;
+
+	rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
+	    "packages", rpf->pattern);
+	if (rpf->pkgd == NULL) {
+		if (errno && errno != ENOENT)
+			return errno;
+
+		xbps_dbg_printf("Package '%s' not found in repository "
+		    "'%s'.\n", rpf->pattern, rpi->rpi_uri);
+	} else {
+		/*
+		 * Check if version in repository is greater than
+		 * the version currently installed.
+		 */
+		instpkgd = xbps_find_pkg_dict_installed(rpf->pattern, false);
+		prop_dictionary_get_cstring_nocopy(instpkgd,
+		    "version", &instver);
+		prop_dictionary_get_cstring_nocopy(rpf->pkgd,
+		    "version", &repover);
+		prop_object_release(instpkgd);
+
+		if (xbps_cmpver(repover, instver) > 0) {
+			xbps_dbg_printf("Found '%s-%s' (installed: %s) "
+			    "in repository '%s'.\n", rpf->pattern, repover,
+			    instver, rpi->rpi_uri);
+			/*
+			 * New package version found, exit from the loop.
+			 */
+			rpf->newpkg_found = true;
+			prop_dictionary_set_cstring(rpf->pkgd, "repository",
+			    rpi->rpi_uri);
+			errno = 0;
+			*done = true;
+			return 0;
+		}
+		xbps_dbg_printf("Skipping '%s-%s' (installed: %s) "
+		    "from repository '%s'\n", rpf->pattern, repover, instver,
+		    rpi->rpi_uri);
+		errno = EEXIST;
+	}
+
+	return 0;
+}
+
+prop_dictionary_t
+xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
+{
+	struct repo_pool_fpkg *rpf;
+	prop_dictionary_t pkgd = NULL;
+	int rv = 0;
+
+	assert(pkg != NULL);
+
+	rpf = calloc(1, sizeof(*rpf));
+	if (rpf == NULL)
+		return NULL;
+
+	rpf->pattern = pkg;
+	rpf->bypattern = bypattern;
+
+	if (best)
+		rv = xbps_repository_pool_foreach(repo_find_best_pkg_cb, rpf);
+	else
+		rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
+
+	if (rv != 0 || (rv == 0 && (errno == ENOENT || errno == EEXIST)))
+		goto out;
+
+	pkgd = prop_dictionary_copy(rpf->pkgd);
+out:
+	free(rpf);
+
+	return pkgd;
 }

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,25 +32,24 @@
 #include "xbps_api_impl.h"
 
 static int
-store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,
-		 const char *repoloc)
+store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkgd)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
-	const char *pkgname, *pkgver;
+	const char *pkgname, *pkgver, *repoloc;
 	int rv = 0;
 	pkg_state_t state = 0;
 
 	assert(trans_dict != NULL);
-	assert(repo_pkg_dict != NULL);
-	assert(repoloc != NULL);
+	assert(repo_pkgd != NULL);
 	/*
 	 * Get some info about dependencies and current repository.
 	 */
-	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(repo_pkgd, "repository", &repoloc);
 
-	dict = prop_dictionary_copy(repo_pkg_dict);
+	dict = prop_dictionary_copy(repo_pkgd);
 	if (dict == NULL)
 		return errno;
 
@@ -69,7 +68,6 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,
 		prop_object_release(dict);
 		return rv;
 	}
-
 	/*
 	 * Overwrite package state in dictionary if it was unpacked
 	 * previously.
@@ -83,10 +81,6 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,
 	/*
 	 * Add required objects into package dep's dictionary.
 	 */
-	if (!prop_dictionary_set_cstring(dict, "repository", repoloc)) {
-		prop_object_release(dict);
-		return errno;
-	}
 	if (!prop_dictionary_set_bool(dict, "automatic-install", true)) {
 		prop_object_release(dict);
 		return errno;
@@ -105,9 +99,8 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkg_dict,
 }
 
 static int
-add_missing_reqdep(prop_dictionary_t trans_dict, const char *reqpkg)
+add_missing_reqdep(prop_array_t missing_rdeps, const char *reqpkg)
 {
-	prop_array_t missing_rdeps;
 	prop_string_t reqpkg_str;
 	prop_object_iterator_t iter = NULL;
 	prop_object_t obj;
@@ -115,7 +108,7 @@ add_missing_reqdep(prop_dictionary_t trans_dict, const char *reqpkg)
 	bool add_pkgdep, pkgfound, update_pkgdep;
 	int rv = 0;
 
-	assert(trans_dict != NULL);
+	assert(missing_rdeps != NULL);
 	assert(reqpkg != NULL);
 
 	add_pkgdep = update_pkgdep = pkgfound = false;
@@ -124,7 +117,6 @@ add_missing_reqdep(prop_dictionary_t trans_dict, const char *reqpkg)
 	if (reqpkg_str == NULL)
 		return errno;
 
-	missing_rdeps = prop_dictionary_get(trans_dict, "missing_deps");
 	iter = prop_array_iterator(missing_rdeps);
 	if (iter == NULL)
 		goto out;
@@ -192,19 +184,17 @@ out:
 }
 
 static int
-remove_missing_reqdep(prop_dictionary_t trans_dict, const char *reqpkg)
+remove_missing_reqdep(prop_array_t missing_rdeps, const char *reqpkg)
 {
-	prop_array_t missing_rdeps;
 	prop_object_iterator_t iter = NULL;
 	prop_object_t obj;
 	size_t idx = 0;
 	int rv = 0;
 	bool found = false;
 
-	assert(trans_dict != NULL);
+	assert(missing_rdeps != NULL);
 	assert(reqpkg != NULL);
 
-	missing_rdeps = prop_dictionary_get(trans_dict, "missing_deps");
 	iter = prop_array_iterator(missing_rdeps);
 	if (iter == NULL)
 		return errno;
@@ -247,16 +237,17 @@ out:
 }
 
 static int
-find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
-	       const char *repoloc, const char *originpkgn,
-	       prop_array_t pkg_rdeps_array)
+find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
+	       prop_array_t mrdeps,		/* missing rundeps array */
+	       const char *originpkgn,		/* origin pkgname */
+	       prop_array_t pkg_rdeps_array)	/* current pkg rundeps array  */
 {
 	prop_dictionary_t curpkgd, tmpd;
 	prop_array_t curpkg_rdeps;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	pkg_state_t state = 0;
-	const char *reqpkg, *reqvers, *pkg_queued, *repo_pkgver;
+	const char *reqpkg, *reqvers, *pkg_queued;
 	char *pkgname;
 	int rv = 0;
 
@@ -269,6 +260,7 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 	 * current package.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		curpkgd = NULL;
 		reqpkg = prop_string_cstring_nocopy(obj);
 		if (reqpkg == NULL) {
 			rv = EINVAL;
@@ -320,7 +312,7 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 				rv = errno;
 				break;
 			}
-		} else if (curpkgd) {
+		} else {
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkg_queued);
 			if (xbps_pkgpattern_match(pkg_queued,
@@ -330,14 +322,14 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 				free(pkgname);
 				continue;
 			}
+			curpkgd = NULL;
 		}
 
 		/*
-		 * If required package is not in repo, add it into the
+		 * If required pkgdep is not in repo, add it into the
 		 * missing deps array and pass to the next one.
 		 */
-		curpkgd = xbps_find_pkg_in_dict_by_name(repo_dict,
-		    "packages", pkgname);
+		curpkgd = xbps_repository_pool_find_pkg(reqpkg, true, false);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				free(pkgname);
@@ -345,7 +337,7 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 				break;
 			}
 
-			rv = add_missing_reqdep(trans_dict, reqpkg);
+			rv = add_missing_reqdep(mrdeps, reqpkg);
 			if (rv != 0 && rv != EEXIST) {
 				xbps_dbg_printf_append("add missing reqdep "
 				    "failed %s\n", reqpkg);
@@ -359,31 +351,23 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 				continue;
 			} else {
 				xbps_dbg_printf_append(
-				    "missing package in repository!\n");
+				    "missing dep '%s' in repository!\n",
+				    reqpkg);
 				free(pkgname);
 				continue;
 			}
 		}
-		/*
-		 * If version in repo does not satisfy the rundep, pass
-		 * to the next rundep.
-		 */
-		prop_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &repo_pkgver);
-		if (xbps_pkgpattern_match(repo_pkgver, __UNCONST(reqpkg)) < 1) {
-			free(pkgname);
-			continue;
-		}
-
 		/*
 		 * If package is installed but version doesn't satisfy
 		 * the dependency mark it as an update, otherwise as
 		 * an install. Packages that were unpacked previously
 		 * will be marked as pending to be configured.
 		 */
-		tmpd = xbps_find_pkg_dict_installed(pkgname, false);
+		tmpd = xbps_find_pkg_dict_installed(reqpkg, true);
 		if (tmpd == NULL) {
 			if (errno && errno != ENOENT) {
 				free(pkgname);
+				prop_object_release(curpkgd);
 				rv = errno;
 				break;
 			}
@@ -394,6 +378,7 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 			if (rv != 0) {
 				free(pkgname);
 				prop_object_release(tmpd);
+				prop_object_release(curpkgd);
 				break;
 			}
 			if (state == XBPS_PKG_STATE_INSTALLED)
@@ -408,11 +393,11 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 		/*
 		 * Package is on repo, add it into the dictionary.
 		 */
-		rv = store_dependency(trans_dict, curpkgd, repoloc);
-		if (rv != 0) {
+		if ((rv = store_dependency(trans_dict, curpkgd)) != 0) {
 			xbps_dbg_printf("store_dependency failed %s",
 			    reqpkg);
 			free(pkgname);
+			prop_object_release(curpkgd);
 			break;
 		}
 
@@ -420,7 +405,7 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 		 * If package was added in the missing_deps array, we
 		 * can remove it now it has been found in current repository.
 		 */
-		rv = remove_missing_reqdep(trans_dict, reqpkg);
+		rv = remove_missing_reqdep(mrdeps, reqpkg);
 		if (rv == ENOENT) {
 			rv = 0;
 		} else if (rv == 0) {
@@ -429,6 +414,7 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 			xbps_dbg_printf("Removing missing dep %s "
 			    "returned %s\n", reqpkg, strerror(rv));
 			free(pkgname);
+			prop_object_release(curpkgd);
 			break;
 		}
 
@@ -438,8 +424,10 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 		curpkg_rdeps = prop_dictionary_get(curpkgd, "run_depends");
 		if (curpkg_rdeps == NULL) {
 			free(pkgname);
+			prop_object_release(curpkgd);
 			continue;
 		}
+		prop_object_release(curpkgd);
 
 		/*
 		 * Iterate on required pkg to find more deps.
@@ -449,8 +437,8 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 			    pkgname, reqvers, originpkgn ? "direct" : "indirect");
 
 		free(pkgname);
-		if ((rv = find_repo_deps(trans_dict, repo_dict, repoloc,
-		     NULL, curpkg_rdeps)) != 0) {
+		rv = find_repo_deps(trans_dict, mrdeps, NULL, curpkg_rdeps);
+		if (rv != 0) {
 			xbps_dbg_printf("Error checking %s for rundeps: %s\n",
 			    reqpkg, strerror(rv));
 			break;
@@ -461,100 +449,34 @@ find_repo_deps(prop_dictionary_t trans_dict, prop_dictionary_t repo_dict,
 	return rv;
 }
 
-struct rpool_index_data {
-	prop_dictionary_t transd;
-	prop_array_t rdeps;
-	const char *pkgname;
-};
-
-static int
-find_repo_deps_in_pool(struct repository_pool_index *rpi, void *arg, bool *done)
-{
-	struct rpool_index_data *rid = arg;
-	int rv;
-
-	(void)done;
-
-	rv = find_repo_deps(rid->transd, rpi->rpi_repod, rpi->rpi_uri,
-	    rid->pkgname, rid->rdeps);
-	return rv;
-}
-
-	
 int HIDDEN
 xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
-			      prop_dictionary_t repo_pkg_dict)
+			      prop_dictionary_t repo_pkgd)
 {
 	prop_array_t pkg_rdeps, missing_rdeps;
-	struct rpool_index_data *rid;
 	const char *pkgname, *pkgver;
 	int rv = 0;
 
 	assert(trans_dict != NULL);
-	assert(repo_pkg_dict != NULL);
+	assert(repo_pkgd != NULL);
 
-	pkg_rdeps = prop_dictionary_get(repo_pkg_dict, "run_depends");
+	pkg_rdeps = prop_dictionary_get(repo_pkgd, "run_depends");
 	if (pkg_rdeps == NULL)
 		return 0;
 
-	rid = malloc(sizeof(struct rpool_index_data));
-	if (rid == NULL)
-		return ENOMEM;
-
-	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(repo_pkg_dict, "pkgver", &pkgver);
-
-	if ((rv = xbps_repository_pool_init()) != 0)
-		goto out;
-
+	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	xbps_dbg_printf("Finding required dependencies for '%s':\n", pkgver);
-
 	/*
-	 * Iterate over the repository pool and find out if we have
-	 * all available binary packages.
-	 */
-	rid->transd = trans_dict;
-	rid->rdeps = pkg_rdeps;
-	rid->pkgname = pkgname;
-
-	/*
-	 * This will find direct and indirect deps,
-	 * if any of them is not there it will be added
-	 * into the missing_deps array.
-	 */
-	rv = xbps_repository_pool_foreach(find_repo_deps_in_pool, rid);
-	if (rv != 0) {
-		xbps_dbg_printf("Error '%s' while checking rundeps!\n",
-		    strerror(errno));
-		goto out;
-	}
-
-	/*
-	 * If there are no missing deps, there's nothing to do.
+	 * This will find direct and indirect deps, if any of them is not
+	 * there it will be added into the missing_deps array.
 	 */
 	missing_rdeps = prop_dictionary_get(trans_dict, "missing_deps");
-	if (prop_array_count(missing_rdeps) == 0)
-		goto out;
-
-	/*
-	 * Iterate one more time, but this time with missing deps
-	 * that were found in previous pass.
-	 */
-	rid->rdeps = missing_rdeps;
-	rid->pkgname = NULL;
-
-	xbps_dbg_printf("Checking for missing deps in %s.\n", pkgname); 
-	rv = xbps_repository_pool_foreach(find_repo_deps_in_pool, rid);
+	rv = find_repo_deps(trans_dict, missing_rdeps, pkgname, pkg_rdeps);
 	if (rv != 0) {
-		xbps_dbg_printf("Error '%s' while checking for "
-		    "missing rundeps!\n", strerror(errno));
-		goto out;
+		xbps_dbg_printf("Error '%s' while checking rundeps!\n",
+		    strerror(rv));
 	}
-out:
-	if (rid)
-		free(rid);
-
-	xbps_repository_pool_release();
 
 	return rv;
 }

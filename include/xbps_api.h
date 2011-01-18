@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20101118"
+#define XBPS_RELVER		"20110118"
 
 /** 
  * @def XBPS_META_PATH
@@ -763,9 +763,9 @@ void xbps_repository_pool_release(void);
  * set to true, otherwise it will only be stopped if it returns a
  * non-zero value.
  *
- * @param fn Function callback to execute for every repository registered in
+ * @param[in] fn Function callback to execute for every repository registered in
  * the pool.
- * @param arg Opaque data passed in to the \a fn function callback for
+ * @param[in] arg Opaque data passed in to the \a fn function callback for
  * client data.
  *
  * @return 0 on success, otherwise an errno value.
@@ -773,6 +773,20 @@ void xbps_repository_pool_release(void);
 int xbps_repository_pool_foreach(
 		int (*fn)(struct repository_pool_index *, void *, bool *),
 		void *arg);
+
+/**
+ * Finds a package dictionary in the repository pool by specifying a
+ * package pattern or a package name.
+ *
+ * @param[in] pkg Package pattern or name.
+ * @param[in] bypattern True if \a pkg is a pattern, false if it is a pkgname.
+ * @param[in] best True to find the best version available in repo, false to
+ * fetch the first package found matching its pkgname.
+ *
+ * @return The package dictionary if found, NULL otherwise.
+ */
+prop_dictionary_t
+	xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best);
 
 /*@}*/
 

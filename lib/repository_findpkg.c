@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -285,117 +285,33 @@ out:
 	return rv;
 }
 
-struct rpool_index_data {
-	prop_dictionary_t pkg_repod;
-	const char *pkgname;
-	const char *repo_uri;
-	bool newpkgfound;
-};
-
-static int
-repo_find_updated_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
-{
-	struct rpool_index_data *rid = arg;
-	prop_dictionary_t instpkgd;
-	const char *repover, *instver;
-
-	/*
-	 * Get the package dictionary from current repository.
-	 * If it's not there, pass to the next repository.
-	 */
-	rid->pkg_repod = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
-	    "packages", rid->pkgname);
-	if (rid->pkg_repod == NULL) {
-		if (errno && errno != ENOENT)
-			return errno;
-
-		xbps_dbg_printf("Package '%s' not found in repository "
-		    "'%s'.\n", rid->pkgname, rpi->rpi_uri);
-	} else {
-		/*
-		 * Check if version in repository is greater than
-		 * the version currently installed.
-		 */
-		instpkgd = xbps_find_pkg_dict_installed(rid->pkgname, false);
-		prop_dictionary_get_cstring_nocopy(instpkgd,
-		    "version", &instver);
-		prop_dictionary_get_cstring_nocopy(rid->pkg_repod,
-		    "version", &repover);
-		prop_object_release(instpkgd);
-
-		if (xbps_cmpver(repover, instver) > 0) {
-			xbps_dbg_printf("Found '%s-%s' (installed: %s) "
-			    "in repository '%s'.\n", rid->pkgname, repover,
-			    instver, rpi->rpi_uri);
-			/*
-			 * New package version found, exit from the loop.
-			 */
-			rid->newpkgfound = true;
-			rid->repo_uri = rpi->rpi_uri;
-			*done = true;
-			return 0;
-		}
-		xbps_dbg_printf("Skipping '%s-%s' (installed: %s) "
-		    "from repository '%s'\n", rid->pkgname, repover, instver,
-		    rpi->rpi_uri);
-	}
-
-	return 0;
-}
-
 int
 xbps_repository_update_pkg(const char *pkgname)
 {
 	prop_array_t unsorted;
-	prop_dictionary_t pkgd;
-	struct rpool_index_data *rid;
+	prop_dictionary_t pkg_repod;
 	int rv = 0;
 
 	assert(pkgname != NULL);
-
-	/*
-	 * Prepare repository pool queue.
-	 */
-	if ((rv = xbps_repository_pool_init()) != 0)
-		return rv;
-
-	rid = calloc(1, sizeof(struct rpool_index_data));
-	if (rid == NULL) {
-		rv = errno;
-		goto out;
-	}
-
 	/*
 	 * Check if package is not installed.
 	 */
-	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
-	if (pkgd == NULL) {
+	pkg_repod = xbps_find_pkg_dict_installed(pkgname, false);
+	if (pkg_repod == NULL) {
 		rv = ENODEV;
 		goto out;
 	}
-	prop_object_release(pkgd);
+	prop_object_release(pkg_repod);
 
 	/*
 	 * Find out if a new package version exists in repositories.
 	 */
-	rid->pkgname = pkgname;
-	rv = xbps_repository_pool_foreach(repo_find_updated_pkg_cb, rid);
-	if (rv != 0)
-		goto out;
-
-	/*
-	 * No new versions found in repository pool.
-	 */
-	if (rid->newpkgfound == false) {
-		rv = EEXIST;
-		goto out;
-	}
-
-	/*
-	 * Package couldn't be found in repository pool.
-	 */
-	if (rid->pkg_repod == NULL) {
-		rv = ENOENT;
+	pkg_repod = xbps_repository_pool_find_pkg(pkgname, false, true);
+	xbps_dbg_printf("xbps_repository_pool_find_pkg returned %s for %s\n",
+	    strerror(errno), pkgname);
+	if (pkg_repod == NULL) {
+		rv = errno;
+		errno = 0;
 		goto out;
 	}
 	/*
@@ -405,18 +321,9 @@ xbps_repository_update_pkg(const char *pkgname)
 		goto out;
 
 	/*
-	 * Set repository in pkg dictionary.
-	 */
-	if (!prop_dictionary_set_cstring(rid->pkg_repod,
-	    "repository", rid->repo_uri)) {
-		rv = errno;
-		goto out;
-	}
-
-	/*
 	 * Construct the dependency chain for this package.
 	 */
-	rv = xbps_repository_find_pkg_deps(trans_dict, rid->pkg_repod);
+	rv = xbps_repository_find_pkg_deps(trans_dict, pkg_repod);
 	if (rv != 0)
 		goto out;
 
@@ -434,13 +341,13 @@ xbps_repository_update_pkg(const char *pkgname)
 	 * Always set "not-installed" package state. Will be overwritten
 	 * to its correct state later.
 	 */
-	if ((rv = set_pkg_state(rid->pkg_repod, pkgname)) != 0)
+	if ((rv = set_pkg_state(pkg_repod, pkgname)) != 0)
 		goto out;
 
 	/*
 	 * Set trans-action obj in pkg dictionary to "update".
 	 */
-	if (!prop_dictionary_set_cstring_nocopy(rid->pkg_repod,
+	if (!prop_dictionary_set_cstring_nocopy(pkg_repod,
 	    "trans-action", "update")) {
 		rv = errno;
 		goto out;
@@ -450,126 +357,66 @@ xbps_repository_update_pkg(const char *pkgname)
 	 * Added package dictionary from repository into the "unsorted"
 	 * array in the transaction dictionary.
 	 */
-	if (!prop_array_add(unsorted, rid->pkg_repod)) {
+	if (!prop_array_add(unsorted, pkg_repod)) {
 		rv = errno;
 		goto out;
 	}
 
 out:
-	if (rid)
-		free(rid);
-
-	xbps_repository_pool_release();
+	if (pkg_repod)
+		prop_object_release(pkg_repod);
 
 	return rv;
-}
-
-static int
-repo_find_new_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
-{
-	struct rpool_index_data *rid = arg;
-	const char *pkgver;
-
-	/*
-	 * Finds a package dictionary from a repository pkg-index dictionary.
-	 */
-	rid->pkg_repod = xbps_find_pkg_in_dict_by_pattern(
-	    rpi->rpi_repod, "packages", rid->pkgname);
-	if (rid->pkg_repod == NULL) {
-		if (errno && errno != ENOENT)
-			return errno;
-	} else {
-		prop_dictionary_get_cstring_nocopy(rid->pkg_repod,
-		    "pkgver", &pkgver);
-		xbps_dbg_printf("Found package '%s' from repository %s.\n",
-		    pkgver, rpi->rpi_uri);
-
-		rid->repo_uri = rpi->rpi_uri;
-		*done = true;
-	}
-
-	return 0;
 }
 
 int
 xbps_repository_install_pkg(const char *pkg)
 {
-	prop_dictionary_t origin_pkgrd = NULL;
+	prop_dictionary_t pkg_repod = NULL, origin_pkgrd = NULL;
 	prop_array_t unsorted;
-	struct rpool_index_data *rid;
 	const char *pkgname;
 	int rv = 0;
 
 	assert(pkg != NULL);
 
-	if ((rv = xbps_repository_pool_init()) != 0)
-		return rv;
-
-	rid = calloc(1, sizeof(struct rpool_index_data));
-	if (rid == NULL) {
-		rv = errno;
-		goto out;
-	}
-
 	/*
 	 * Get the package dictionary from current repository.
 	 * If it's not there, pass to the next repository.
 	 */
-	rid->pkgname = pkg;
-	rv = xbps_repository_pool_foreach(repo_find_new_pkg_cb, rid);
-	if (rv != 0)
-		goto out;
-
-	/*
-	 * Package couldn't be found in repository pool... EAGAIN.
-	 */
-	if (rid->pkg_repod == NULL) {
+	pkg_repod = xbps_repository_pool_find_pkg(pkg, true, false);
+	if (pkg_repod == NULL) {
+		/*
+		 * Package couldn't be found in repository pool... EAGAIN.
+		 */
 		rv = EAGAIN;
 		goto out;
 	}
-
 	/*
 	 * Create the transaction dictionary.
 	 */
 	if ((rv = create_transaction_dictionary()) != 0) 
 		goto out;
 
+	origin_pkgrd = prop_dictionary_copy(pkg_repod);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 	/*
 	 * Check that this pkg hasn't been added previously into
 	 * the transaction.
 	 */
 	if (xbps_find_pkg_in_dict_by_pattern(trans_dict,
-	    "unsorted_deps", pkg))
-		goto out;
-
-	/*
-	 * Set repository location in pkg dictionary.
-	 */
-	if (!prop_dictionary_set_cstring(rid->pkg_repod,
-	    "repository", rid->repo_uri)) {
-		rv = EINVAL;
+	    "unsorted_deps", pkg)) {
+		xbps_dbg_printf("package '%s' already queued in transaction\n",
+		    pkg);
 		goto out;
 	}
-	origin_pkgrd = prop_dictionary_copy(rid->pkg_repod);
-	prop_dictionary_get_cstring_nocopy(rid->pkg_repod, "pkgname", &pkgname);
-
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
-	rv = xbps_repository_find_pkg_deps(trans_dict, rid->pkg_repod);
+	rv = xbps_repository_find_pkg_deps(trans_dict, origin_pkgrd);
 	if (rv != 0)
 		goto out;
 
-	/*
-	 * Add required package dictionary into the unsorted array and
-	 * set package state as not yet installed.
-	 */
-	unsorted = prop_dictionary_get(trans_dict, "unsorted_deps");
-	if (unsorted == NULL) {
-		rv = EINVAL;
-		goto out;
-	}
 	if ((rv = set_pkg_state(origin_pkgrd, pkgname)) != 0)
 		goto out;
 
@@ -578,6 +425,16 @@ xbps_repository_install_pkg(const char *pkg)
 	 */
 	if (!prop_dictionary_set_cstring_nocopy(origin_pkgrd,
 	    "trans-action", "install")) {
+		rv = EINVAL;
+		goto out;
+	}
+
+	/*
+	 * Add required package dictionary into the unsorted array and
+	 * set package state as not yet installed.
+	 */
+	unsorted = prop_dictionary_get(trans_dict, "unsorted_deps");
+	if (unsorted == NULL) {
 		rv = EINVAL;
 		goto out;
 	}
@@ -591,13 +448,13 @@ xbps_repository_install_pkg(const char *pkg)
 	}
 
 out:
-	if (rid)
-		free(rid);
-
+	if (pkg_repod)
+		prop_object_release(pkg_repod);
 	if (origin_pkgrd)
 		prop_object_release(origin_pkgrd);
 
-	xbps_repository_pool_release();
+	xbps_dbg_printf("%s: returned %s for '%s'\n\n",
+	    __func__, strerror(rv), pkg);
 
 	return rv;
 }

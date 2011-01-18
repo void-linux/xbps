@@ -67,7 +67,6 @@ xbps_sort_pkg_deps(prop_dictionary_t transd)
 		    "continue sorting\n");
 		return ENOENT;
 	}
-
 	sorted = prop_array_create();
 	if (sorted == NULL)
 		return ENOMEM;
@@ -79,7 +78,6 @@ xbps_sort_pkg_deps(prop_dictionary_t transd)
 		rv = EINVAL;
 		goto out;
 	}
-
 	/*
 	 * All required deps are satisfied (already installed).
 	 */
@@ -205,6 +203,8 @@ again:
 	 * objects than the total number of required dependencies.
 	 */
 	if (ndeps != prop_array_count(sorted)) {
+		xbps_dbg_printf("wrong sorted deps cnt %zu vs %zu\n",
+		    ndeps, prop_array_count(sorted));
 		rv = EINVAL;
 		goto out;
 	}
@@ -215,9 +215,10 @@ again:
 	prop_dictionary_remove(transd, "unsorted_deps");
 
 out:
-	if (rv != 0) {
+	if (rv != 0)
 		prop_dictionary_remove(transd, "packages");
-		prop_object_release(sorted);
-	}
+
+	prop_object_release(sorted);
+
 	return rv;
 }
