@@ -404,7 +404,7 @@ out:
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 {
-	const char *pkgname, *repoloc, *version;
+	const char *pkgname, *version;
 	struct archive *ar = NULL;
 	char *binfile = NULL;
 	int pkg_fd, rv = 0;
@@ -412,10 +412,9 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 	assert(pkg != NULL);
 
 	prop_dictionary_get_cstring_nocopy(pkg, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(pkg, "repository", &repoloc);
 	prop_dictionary_get_cstring_nocopy(pkg, "version", &version);
 
-	binfile = xbps_get_binpkg_local_path(pkg, repoloc);
+	binfile = xbps_get_binpkg_repo_uri(pkg);
 	if (binfile == NULL)
 		return EINVAL;
 
@@ -423,8 +422,10 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg)
 		rv = errno;
 		xbps_dbg_printf("cannot open '%s' for unpacking %s\n",
 		    binfile, strerror(errno));
+		free(binfile);
 		goto out;
 	}
+	free(binfile);
 
 	ar = archive_read_new();
 	if (ar == NULL) {
@@ -457,8 +458,6 @@ out:
 		archive_read_finish(ar);
 	if (pkg_fd != -1)
 		(void)close(pkg_fd);
-	if (binfile)
-		free(binfile);
 
 	return rv;
 }

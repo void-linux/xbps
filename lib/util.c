@@ -374,22 +374,35 @@ xbps_get_pkg_index_plist(const char *uri)
 }
 
 char *
-xbps_get_binpkg_local_path(prop_dictionary_t pkgd, const char *repoloc)
+xbps_get_binpkg_repo_uri(prop_dictionary_t pkg_repod)
 {
-	const char *filen, *arch, *cdir;
+	const char *filen, *arch, *cdir, *repoloc;
+	char *lbinpkg = NULL;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
-	prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &filen);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "architecture", &arch);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
+
 	cdir = xbps_get_cachedir();
 	if (cdir == NULL)
 		return NULL;
 
-	if (!xbps_check_is_repo_string_remote(repoloc)) {
-		/* local repo */
-		return xbps_xasprintf("%s/%s/%s", repoloc, arch, filen);
-	}
-	/* cachedir */
-	return xbps_xasprintf("%s/%s", cdir, filen);
+	/*
+	 * First check if binpkg is available in cachedir.
+	 */
+	lbinpkg = xbps_xasprintf("%s/%s", cdir, filen);
+	if (lbinpkg == NULL)
+		return NULL;
+
+	if (access(lbinpkg, R_OK) == 0)
+		return lbinpkg;
+
+	free(lbinpkg);
+
+	/*
+	 * Local and remote repositories use the same path.
+	 */
+	return xbps_xasprintf("%s/%s/%s", repoloc, arch, filen);
 }
 
 bool

@@ -91,7 +91,7 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 
 	printf("Looking in repository '%s', please wait...\n", rpi->rpi_uri);
 	while ((obj = prop_object_iterator_next(iter))) {
-		url = xbps_repository_get_path_from_pkg_dict(obj, rpi->rpi_uri);
+		url = xbps_get_binpkg_repo_uri(obj);
 		if (url == NULL) {
 			rv = -1;
 			break;

@@ -70,26 +70,28 @@ show_missing_deps(prop_dictionary_t d)
 	    show_missing_dep_cb, NULL);
 }
 
-static bool
+static int
 check_binpkg_hash(const char *path, const char *filename,
 		  const char *sha256)
 {
-	int rv = 0;
+	int rv;
 
 	printf("Checking %s integrity... ", filename);
 	rv = xbps_check_file_hash(path, sha256);
-	errno = rv;
 	if (rv != 0 && rv != ERANGE) {
 		fprintf(stderr, "\nxbps-bin: unexpected error: %s\n",
 		    strerror(rv));
-		return false;
+		return rv;
 	} else if (rv == ERANGE) {
 		printf("hash mismatch!\n");
-		return false;
+		fprintf(stderr, "Package '%s' has wrong checksum, removing "
+		    "and refetching it again...\n", filename);
+		(void)remove(path);
+		return rv;
 	}
 	printf("OK.\n");
 
-	return true;
+	return 0;
 }
 
 static int
@@ -97,85 +99,76 @@ download_package_list(prop_object_iterator_t iter)
 {
 	prop_object_t obj;
 	const char *pkgver, *repoloc, *filename, *cachedir, *sha256;
-	char *binfile, *lbinfile;
+	char *binfile;
 	int rv = 0;
+	bool cksum;
 
 	cachedir = xbps_get_cachedir();
 	if (cachedir == NULL)
 		return EINVAL;
 
+again:
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		cksum = false;
+		prop_dictionary_get_bool(obj, "checksum_ok", &cksum);
+		if (cksum == true)
+			continue;
+
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
 		prop_dictionary_get_cstring_nocopy(obj,
 		    "filename-sha256", &sha256);
 
-		lbinfile = xbps_get_binpkg_local_path(obj, repoloc);
-		if (lbinfile == NULL)
+		binfile = xbps_get_binpkg_repo_uri(obj);
+		if (binfile == NULL)
 			return errno;
-
-		/*
-		 * If package is in a local repository, check its hash
-		 * and pass to next one.
-		 */
-		if (!xbps_check_is_repo_string_remote(repoloc)) {
-			if (!check_binpkg_hash(lbinfile, filename, sha256)) {
-				free(lbinfile);
-				return errno;
-			}
-			free(lbinfile);
-			continue;
-		}
 		/*
 		 * If downloaded package is in cachedir, check its hash
-		 * and restart it again if doesn't match.
+		 * and refetch the binpkg again if didn't match.
 		 */
-		if (access(lbinfile, R_OK) == 0) {
-			if (check_binpkg_hash(lbinfile, filename, sha256)) {
-				free(lbinfile);
-				continue;
+		if (access(binfile, R_OK) == 0) {
+			rv = check_binpkg_hash(binfile, filename, sha256);
+			free(binfile);
+			if (rv != 0 && rv != ERANGE) {
+				return rv;
+			} else if (rv == ERANGE) {
+				break;
 			}
-			if (errno && errno != ERANGE) {
-				free(lbinfile);
-				return errno;
-			} else if (errno == ERANGE) {
-				(void)remove(lbinfile);
-				printf("Refetching %s again...\n",
-				    filename);
-				errno = 0;
-			}
+			prop_dictionary_set_bool(obj, "checksum_ok", true);
+			continue;
 		}
 		if (xbps_mkpath(__UNCONST(cachedir), 0755) == -1) {
-			free(lbinfile);
-			return errno;
-		}
-		binfile = xbps_repository_get_path_from_pkg_dict(obj, repoloc);
-		if (binfile == NULL) {
-			free(lbinfile);
+			free(binfile);
 			return errno;
 		}
 		printf("Downloading %s binary package ...\n", pkgver);
 		rv = xbps_fetch_file(binfile, cachedir, false, NULL);
-		free(binfile);
 		if (rv == -1) {
 			fprintf(stderr, "xbps-bin: couldn't download `%s'\n",
 			    filename);
 			fprintf(stderr, "xbps-bin: %s returned: `%s'\n",
 			    repoloc, xbps_fetch_error_string());
-			free(lbinfile);
+			free(binfile);
 			return -1;
 		}
-		if (!check_binpkg_hash(lbinfile, filename, sha256)) {
-			fprintf(stderr, "W: removing wrong %s file ...\n",
-			    filename);
-			(void)remove(lbinfile);
-			free(lbinfile);
+		free(binfile);
+		binfile = xbps_get_binpkg_repo_uri(obj);
+		if (binfile == NULL)
 			return errno;
+
+		rv = check_binpkg_hash(binfile, filename, sha256);
+		free(binfile);
+		if (rv != 0 && rv != ERANGE) {
+			return rv;
+		} else if (rv == ERANGE) {
+			break;
 		}
-		free(lbinfile);
+		prop_dictionary_set_bool(obj, "checksum_ok", true);
 	}
 	prop_object_iterator_reset(iter);
+	if (rv == ERANGE)
+		goto again;
 
 	return 0;
 }

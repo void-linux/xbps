@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * Copyright (c) 2008, 2009 Joerg Sonnenberger <joerg (at) NetBSD.org>
  * All rights reserved.
  *
@@ -143,37 +143,6 @@ open_archive(const char *url)
 	return a;
 }
 
-static char *
-binpkg_in_cachedir(prop_dictionary_t d, const char *uri)
-{
-	char *lbinfile;
-
-	lbinfile = xbps_get_binpkg_local_path(d, uri);
-	if (lbinfile == NULL)
-		return NULL;
-
-	if (access(lbinfile, R_OK) == 0)
-		return lbinfile;
-
-	return NULL;
-}
-
-char *
-xbps_repository_get_path_from_pkg_dict(prop_dictionary_t d, const char *uri)
-{
-	const char *arch, *filen;
-	char *path = NULL;
-
-	path = binpkg_in_cachedir(d, uri);
-	if (path)
-		return path;
-
-	prop_dictionary_get_cstring_nocopy(d, "architecture", &arch);
-	prop_dictionary_get_cstring_nocopy(d, "filename", &filen);
-
-	return xbps_xasprintf("%s/%s/%s", uri, arch, filen);
-}
-
 prop_dictionary_t
 xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 {
@@ -225,7 +194,6 @@ prop_dictionary_t
 xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 {
 	prop_dictionary_t pkgd = NULL, plistd = NULL;
-	const char *repoloc;
 	char *url;
 	int rv = 0;
 
@@ -246,8 +214,7 @@ xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 	if (pkgd == NULL)
 		goto out;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
-	url = xbps_repository_get_path_from_pkg_dict(pkgd, repoloc);
+	url = xbps_get_binpkg_repo_uri(pkgd);
 	if (url == NULL) {
 		errno = EINVAL;
 		goto out;

@@ -470,7 +470,7 @@ bool xbps_remove_string_from_array(prop_array_t array, const char *str);
  * @param[in] pkgname Package name to match.
  * @param[in] check_state Set it to true to check that package
  * is in XBPS_PKG_STATE_CONFIG_FILES state.
- *
+ :wq!*
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_purge_pkg(const char *pkgname, bool check_state);
@@ -652,22 +652,6 @@ prop_dictionary_t xbps_repository_get_transaction_dict(void);
 
 /** @addtogroup repo_plist */
 /*@{*/
-
-/**
- * Returns a malloc(3)ed URI string pointing to a binary package file,
- * either from a local or remote repository.
- *
- * @note The caller is responsible to free(3) the returned buffer.
- *
- * @param[in] d Package proplib dictionary as returned by the
- * transaction dictionary, aka xbps_repository_get_transaction_dict().
- * @param[in] uri URI pointing to a repository.
- *
- * @return A string with the full path, NULL otherwise and errno
- * is set appropiately.
- */
-char *xbps_repository_get_path_from_pkg_dict(prop_dictionary_t d,
-					     const char *uri);
 
 /**
  * Iterate over the the repository pool and search for a plist file
@@ -959,20 +943,17 @@ bool xbps_check_is_installed_pkgname(const char *pkgname);
 bool xbps_check_is_repo_string_remote(const char *uri);
 
 /**
- * Gets the full path to a binary package file as returned by a
- * package transaction dictionary \a pkgd, by looking at the
- * repository location \a repoloc.
+ * Gets the full URI to a binary package file as returned by a
+ * package dictionary from a repository in \a pkgd, by looking at the
+ * repository location object "repository" in its dictionary.
  *
  * @param[in] pkgd Package dictionary stored in a transaction dictionary.
- * @param[in] repoloc Repository location as returned by the object
- * <em>repository</em> in the package dictionary of a transaction
- * dictionary.
  *
  * @return A pointer to a malloc(3)ed string, NULL otherwise and
  * errno is set appropiately. The pointer should be free(3)d when it's
  * no longer needed.
  */ 
-char *xbps_get_binpkg_local_path(prop_dictionary_t pkgd, const char *repoloc);
+char *xbps_get_binpkg_repo_uri(prop_dictionary_t pkgd);
 
 /**
  * Gets the full path to a repository package index plist file, as
