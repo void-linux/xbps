@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -238,63 +238,36 @@ out:
 	return rv;
 }
 
-static int
-repo_show_pkg_info_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+int
+show_pkg_info_from_repolist(const char *pkgname)
 {
-	prop_dictionary_t repo_pkgd, pkg_propsd;
-	const char *pkgname = arg;
+	prop_dictionary_t pkgd, pkg_propsd;
+	const char *repoloc;
 	char *url = NULL;
 
-	repo_pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
-	    "packages", pkgname);
-	if (repo_pkgd == NULL)
+	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
+	if (pkgd == NULL)
 		return errno;
 
-	url = xbps_repository_get_path_from_pkg_dict(repo_pkgd, rpi->rpi_uri);
-	if (url == NULL)
+	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
+	url = xbps_repository_get_path_from_pkg_dict(pkgd, repoloc);
+	if (url == NULL) {
+		prop_object_release(pkgd);
 		return errno;
-
-	printf("Fetching info from: %s\n", rpi->rpi_uri);
+	}
+	printf("Fetching info from: %s\n", repoloc);
 	pkg_propsd =
 	    xbps_repository_get_pkg_plist_dict_from_url(url, XBPS_PKGPROPS);
 	if (pkg_propsd == NULL) {
 		free(url);
+		prop_object_release(pkgd);
 		return errno;
 	}
 	free(url);
-	show_pkg_info_only_repo(repo_pkgd);
+	show_pkg_info_only_repo(pkgd);
 	show_pkg_info(pkg_propsd);
 	prop_object_release(pkg_propsd);
-	*done = true;
-	return 0;
-}
-
-int
-show_pkg_info_from_repolist(const char *pkgname)
-{
-	return xbps_repository_pool_foreach(repo_show_pkg_info_cb,
-	    __UNCONST(pkgname));
-}
-
-static int
-repo_show_pkg_deps_cb(struct repository_pool_index *rpi, void *arg, bool *done)
-{
-	prop_dictionary_t pkgd;
-	const char *ver, *pkgname = arg;
-
-	pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
-	    "packages", pkgname);
-	if (pkgd == NULL) {
-		if (errno && errno != ENOENT)
-			return errno;
-
-		return 0;
-	}
-	prop_dictionary_get_cstring_nocopy(pkgd, "version", &ver);
-	printf("Repository %s [pkgver: %s]\n", rpi->rpi_uri, ver);
-	(void)xbps_callback_array_iter_in_dict(pkgd,
-	    "run_depends", list_strings_sep_in_array, NULL);
-	*done = true;
+	prop_object_release(pkgd);
 
 	return 0;
 }
@@ -302,8 +275,22 @@ repo_show_pkg_deps_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 int
 show_pkg_deps_from_repolist(const char *pkgname)
 {
-	return xbps_repository_pool_foreach(repo_show_pkg_deps_cb,
-	    __UNCONST(pkgname));
+	prop_dictionary_t pkgd;
+	const char *ver, *repoloc;
+
+	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
+	if (pkgd == NULL)
+		return errno;
+
+	prop_dictionary_get_cstring_nocopy(pkgd, "version", &ver);
+	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
+
+	printf("Repository %s [pkgver: %s]\n", repoloc, ver);
+	(void)xbps_callback_array_iter_in_dict(pkgd,
+	    "run_depends", list_strings_sep_in_array, NULL);
+
+	prop_object_release(pkgd);
+	return 0;
 }
 
 static int
