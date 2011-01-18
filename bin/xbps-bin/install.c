@@ -245,13 +245,13 @@ show_transaction_sizes(struct transaction *trans)
 		    "%s\n", strerror(errno));
 		return -1;
 	}
-	printf("Total download size: %sB\n", size);
+	printf("Total download size: %s\n", size);
 	if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
 		fprintf(stderr, "xbps-bin: error: humanize_number2 returns "
 		    "%s\n", strerror(errno));
 		return -1;
 	}
-	printf("Total installed size: %sB\n\n", size);
+	printf("Total installed size: %s\n\n", size);
 
 	return 0;
 }
