@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
@@ -58,33 +59,42 @@
  */
 
 static prop_dictionary_t regpkgdb_dict;
-static size_t regpkgdb_refcount;
+static size_t regpkgdb_refcnt;
 static bool regpkgdb_initialized;
+static pthread_mutex_t refcnt_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 prop_dictionary_t
 xbps_regpkgdb_dictionary_get(void)
 {
 	char *plist;
 
-	if (regpkgdb_initialized == false) {
-		plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
-		    XBPS_META_PATH, XBPS_REGPKGDB);
-		if (plist == NULL)
-			return NULL;
+	if (regpkgdb_initialized) {
+		pthread_mutex_lock(&refcnt_mtx);
+		regpkgdb_refcnt++;
+		pthread_mutex_unlock(&refcnt_mtx);
+		return regpkgdb_dict;
+	}
 
-		regpkgdb_dict = prop_dictionary_internalize_from_zfile(plist);
-		if (regpkgdb_dict == NULL) {
-			free(plist);
-			if (errno != ENOENT)
-				xbps_dbg_printf("[regpkgdb] cannot internalize "
-				    "regpkgdb_dict %s\n", strerror(errno));
-			return NULL;
-		}
+	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	    XBPS_META_PATH, XBPS_REGPKGDB);
+	if (plist == NULL)
+		return NULL;
+
+	regpkgdb_dict = prop_dictionary_internalize_from_zfile(plist);
+	if (regpkgdb_dict == NULL) {
 		free(plist);
-		regpkgdb_initialized = true;
-		xbps_dbg_printf("%s: initialized ok.\n", __func__);
-	}	
-	regpkgdb_refcount++;
+		if (errno != ENOENT)
+			xbps_dbg_printf("[regpkgdb] cannot internalize "
+			    "regpkgdb_dict %s\n", strerror(errno));
+		return NULL;
+	}
+	free(plist);
+	regpkgdb_initialized = true;
+	xbps_dbg_printf("%s: initialized ok.\n", __func__);
+
+	pthread_mutex_lock(&refcnt_mtx);
+	regpkgdb_refcnt = 1;
+	pthread_mutex_unlock(&refcnt_mtx);
 
 	return regpkgdb_dict;
 }
@@ -92,7 +102,13 @@ xbps_regpkgdb_dictionary_get(void)
 void
 xbps_regpkgdb_dictionary_release(void)
 {
-	if (--regpkgdb_refcount > 0)
+	size_t cnt;
+
+	pthread_mutex_lock(&refcnt_mtx);
+	cnt = regpkgdb_refcnt--;
+	pthread_mutex_unlock(&refcnt_mtx);
+
+	if (cnt != 1)
 		return;
 
 	prop_object_release(regpkgdb_dict);
