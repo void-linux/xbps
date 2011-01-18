@@ -51,7 +51,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110118"
+#define XBPS_RELVER		"20110119"
 
 /** 
  * @def XBPS_META_PATH
@@ -1080,9 +1080,6 @@ void xbps_set_flags(int flags);
  * @return An integer with flags
  */
 int xbps_get_flags(void);
-
-bool xbps_yesno(const char *, ...);
-bool xbps_noyes(const char *, ...);
 
 /*@}*/
 

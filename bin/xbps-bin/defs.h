@@ -43,5 +43,7 @@ int	xbps_show_pkg_reverse_deps(const char *);
 int	show_pkg_info_from_metadir(const char *);
 int	show_pkg_files_from_metadir(const char *);
 int	find_files_in_packages(const char *);
+bool	xbps_yesno(const char *, ...);
+bool	xbps_noyes(const char *, ...);
 
 #endif /* !_XBPS_BIN_DEFS_H_ */
