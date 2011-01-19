@@ -2,7 +2,6 @@
 
 OBJS	?= main.o
 CFLAGS  += $(PROG_CFLAGS)
-LDFLAGS += -lxbps
 
 .PHONY: all
 all: $(BIN) $(BIN).static

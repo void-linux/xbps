@@ -369,6 +369,22 @@ else
 fi
 
 #
+# Check if external libfetch should be used.
+#
+if [ -z "$EXTERNAL_LIBFETCH" ]; then
+	EXTERNAL_LIBFETCH_VALUE="no (using internal copy)"
+	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
+	echo "PROG_LDFLAGS +=	-lxbps" >>$CONFIG_MK
+	echo "STATIC_LIBS =	-lxbps" >>$CONFIG_MK
+else
+	EXTERNAL_LIBFETCH_VALUE=yes
+	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
+	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
+	echo "PROG_LDFLAGS +=	-lxbps -lfetch" >>$CONFIG_MK
+	echo "STATIC_LIBS =	-lxbps -lfetch" >>$CONFIG_MK
+fi
+
+#
 # zlib with pkg-config support is required.
 #
 printf "Checking for zlib via pkg-config ... "
@@ -379,7 +395,7 @@ else
 	echo "found version $($PKGCONFIG_BIN --modversion zlib)."
 	echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags zlib)" >>$CONFIG_MK
 	echo "LDFLAGS +=	$($PKGCONFIG_BIN --libs zlib)" >>$CONFIG_MK
-	echo "STATIC_LIBS =	$($PKGCONFIG_BIN --libs --static zlib)" \
+	echo "STATIC_LIBS +=	$($PKGCONFIG_BIN --libs --static zlib)" \
 		>>$CONFIG_MK
 fi
 
@@ -421,19 +437,6 @@ else
 	echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libarchive)" >>$CONFIG_MK
 	echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libarchive)" \
 		>>$CONFIG_MK
-fi
-
-#
-# Check if external libfetch should be used.
-#
-if [ -z "$EXTERNAL_LIBFETCH" ]; then
-	EXTERNAL_LIBFETCH_VALUE="no (using internal copy)"
-	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
-else
-	EXTERNAL_LIBFETCH_VALUE=yes
-	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
-	echo "STATIC_LIBS +=	-lfetch" >>$CONFIG_MK
 fi
 
 #
