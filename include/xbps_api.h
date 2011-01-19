@@ -526,7 +526,7 @@ prop_dictionary_t xbps_regpkgdb_dictionary_get(void);
  * Release resources used by the registered packages database.
  *
  * @note This function is reference counted, if the database
- * is in use (its reference count number is not 0), won't be released.
+ * is in use (its reference count number is greater than 1), won't be released.
  */ 
 void xbps_regpkgdb_dictionary_release(void);
 
@@ -728,7 +728,7 @@ int xbps_repository_pool_init(void);
  * in the database.
  *
  * @note This function is reference counted, it won't be released until
- * its reference counter is 0.
+ * its reference counter is 1.
  */
 void xbps_repository_pool_release(void);
 
