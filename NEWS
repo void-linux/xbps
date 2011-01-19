@@ -1,3 +1,18 @@
+xbps-0.8.0 (???):
+
+ * Improved package dependency resolution in repositories by using a new
+   function, xbps_repository_pool_find_pkg() that returns a package dictionary
+   found in the first repository registered in the pool. It can also be used
+   to find the newest version found in all registered repositories.
+
+ * Improved package dependency sorting algorithm that uses less memory
+   and as bonus sorts all packages in the way they should be (previously
+   the sorting was a bit different for packages with no run-time dependencies).
+
+ * Hide implementation details in the API, so the ABI is not compatible
+   anymore with previous versions. ABI will be respected once the API
+   has been stabilized, but not for now.
+
 xbps-0.7.3 (2011-01-16):
 
  * Fixed a bug that made libxbps fail to detect properly configuration files.
