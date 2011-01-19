@@ -4,7 +4,7 @@ LIBXBPS_MAJOR = 0
 LIBXBPS_MINOR = 0
 LIBXBPS_MICRO = 0
 LIBXBPS_SHLIB = libxbps.so.$(LIBXBPS_MAJOR).$(LIBXBPS_MINOR).$(LIBXBPS_MICRO)
-LDFLAGS += -shared -Wl,-soname,libxbps.so.$(LIBXBPS_MAJOR)
+LDFLAGS += -Wl,--export-dynamic -shared -Wl,-soname,libxbps.so.$(LIBXBPS_MAJOR)
 
 # portableproplib
 LIBPROP_OBJS = portableproplib/prop_array.o portableproplib/prop_bool.o
