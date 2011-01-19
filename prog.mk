@@ -1,7 +1,6 @@
 -include $(TOPDIR)/config.mk
 
 OBJS	?= main.o
-CFLAGS  += $(PROG_CFLAGS)
 
 .PHONY: all
 all: $(BIN) $(BIN).static
@@ -40,5 +39,6 @@ $(BIN).static: $(OBJS)
 
 $(BIN): $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
-	${SILENT}$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) -o $@
+	${SILENT}$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(PROG_CFLAGS) \
+		$(LDFLAGS) $(PROG_LDFLAGS) -o $@
 

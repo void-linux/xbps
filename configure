@@ -203,9 +203,7 @@ check_compiler_flag()
 	local var="$3"
 	local rv=0
 
-	if [ -z "$var" ]; then
-		var="CFLAGS"
-	fi
+	[ -z "$var" ] && var="CFLAGS"
 
 	printf "Checking if $CC supports -${mode}${flag} ... "
 	cat <<EOF >_ccflag.c
