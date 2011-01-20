@@ -69,7 +69,7 @@ sanitize_url(const char *path)
 		goto out;
 
 	r = snprintf(buf, sizeof(buf) - 1, "%s/%s", dirnp, basenp);
-	if (r == -1 || r >= (int)sizeof(buf) - 1)
+	if (r < 0 || r >= (int)sizeof(buf) - 1)
 		goto out;
 
 	res = buf;
