@@ -94,11 +94,12 @@ void HIDDEN xbps_fetch_unset_cache_connection(void);
  * @private
  * From lib/package_config_files.c
  */
-int HIDDEN xbps_config_file_from_archive_entry(prop_dictionary_t,
-					       prop_dictionary_t,
-					       struct archive_entry *,
-					       int *,
-					       bool *);
+int HIDDEN xbps_entry_is_a_conf_file(prop_dictionary_t, const char *);
+int HIDDEN xbps_entry_install_conf_file(prop_dictionary_t,
+					struct archive_entry *,
+					const char *,
+					const char *,
+					const char *);
 /**
  * @private
  * From lib/plist.c
