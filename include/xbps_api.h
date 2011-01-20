@@ -942,12 +942,13 @@ bool xbps_check_is_repo_string_remote(const char *uri);
  * repository location object "repository" in its dictionary.
  *
  * @param[in] pkgd Package dictionary stored in a transaction dictionary.
+ * @param[in] repoloc Repository URL location string.
  *
  * @return A pointer to a malloc(3)ed string, NULL otherwise and
  * errno is set appropiately. The pointer should be free(3)d when it's
  * no longer needed.
  */ 
-char *xbps_get_binpkg_repo_uri(prop_dictionary_t pkgd);
+char *xbps_get_binpkg_repo_uri(prop_dictionary_t pkgd, const char *repoloc);
 
 /**
  * Gets the full path to a repository package index plist file, as

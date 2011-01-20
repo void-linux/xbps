@@ -194,6 +194,7 @@ prop_dictionary_t
 xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 {
 	prop_dictionary_t pkgd = NULL, plistd = NULL;
+	const char *repoloc;
 	char *url;
 	int rv = 0;
 
@@ -214,7 +215,8 @@ xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 	if (pkgd == NULL)
 		goto out;
 
-	url = xbps_get_binpkg_repo_uri(pkgd);
+	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
+	url = xbps_get_binpkg_repo_uri(pkgd, repoloc);
 	if (url == NULL) {
 		errno = EINVAL;
 		goto out;

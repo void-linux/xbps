@@ -374,14 +374,17 @@ xbps_get_pkg_index_plist(const char *uri)
 }
 
 char *
-xbps_get_binpkg_repo_uri(prop_dictionary_t pkg_repod)
+xbps_get_binpkg_repo_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 {
-	const char *filen, *arch, *cdir, *repoloc;
+	const char *filen, *arch, *cdir;
 	char *lbinpkg = NULL;
 
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &filen);
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "architecture", &arch);
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
+	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
+	    "filename", &filen))
+		return NULL;
+	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
+	    "architecture", &arch))
+		return NULL;
 
 	cdir = xbps_get_cachedir();
 	if (cdir == NULL)
@@ -398,7 +401,6 @@ xbps_get_binpkg_repo_uri(prop_dictionary_t pkg_repod)
 		return lbinpkg;
 
 	free(lbinpkg);
-
 	/*
 	 * Local and remote repositories use the same path.
 	 */

@@ -250,7 +250,7 @@ show_pkg_info_from_repolist(const char *pkgname)
 		return errno;
 
 	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
-	url = xbps_get_binpkg_repo_uri(pkgd);
+	url = xbps_get_binpkg_repo_uri(pkgd, repoloc);
 	if (url == NULL) {
 		prop_object_release(pkgd);
 		return errno;

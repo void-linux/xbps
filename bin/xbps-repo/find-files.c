@@ -71,7 +71,7 @@ static int
 find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 {
 	prop_dictionary_t pkg_filesd;
-	prop_array_t repo_pkgs, files_keys;
+	prop_array_t files_keys;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pkgname, *pkgver, *pattern = arg;
@@ -81,17 +81,13 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 
 	(void)done;
 
-	repo_pkgs = prop_dictionary_get(rpi->rpi_repod, "packages");
-	if (repo_pkgs == NULL)
-		return -1;
-
-	iter = prop_array_iterator(repo_pkgs);
+	iter = xbps_get_array_iter_from_dict(rpi->rpi_repod, "packages");
 	if (iter == NULL)
 		return -1;
 
 	printf("Looking in repository '%s', please wait...\n", rpi->rpi_uri);
 	while ((obj = prop_object_iterator_next(iter))) {
-		url = xbps_get_binpkg_repo_uri(obj);
+		url = xbps_get_binpkg_repo_uri(obj, rpi->rpi_uri);
 		if (url == NULL) {
 			rv = -1;
 			break;

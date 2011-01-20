@@ -120,7 +120,7 @@ again:
 		prop_dictionary_get_cstring_nocopy(obj,
 		    "filename-sha256", &sha256);
 
-		binfile = xbps_get_binpkg_repo_uri(obj);
+		binfile = xbps_get_binpkg_repo_uri(obj, repoloc);
 		if (binfile == NULL)
 			return errno;
 		/*
@@ -153,7 +153,7 @@ again:
 			return -1;
 		}
 		free(binfile);
-		binfile = xbps_get_binpkg_repo_uri(obj);
+		binfile = xbps_get_binpkg_repo_uri(obj, repoloc);
 		if (binfile == NULL)
 			return errno;
 

@@ -409,7 +409,7 @@ out:
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 {
-	const char *pkgname, *version;
+	const char *pkgname, *version, *repoloc;
 	struct archive *ar = NULL;
 	char *binfile = NULL;
 	int pkg_fd, rv = 0;
@@ -418,8 +418,9 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &version);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
-	binfile = xbps_get_binpkg_repo_uri(pkg_repod);
+	binfile = xbps_get_binpkg_repo_uri(pkg_repod, repoloc);
 	if (binfile == NULL)
 		return EINVAL;
 
