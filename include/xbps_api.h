@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#include <archive.h>
+#include <archive_entry.h>
 #include <prop/proplib.h>
 
 #ifdef  __cplusplus
@@ -119,6 +121,7 @@ __BEGIN_DECLS
 
 void		xbps_dbg_printf(const char *, ...);
 void		xbps_dbg_printf_append(const char *, ...);
+void		xbps_error_printf(const char *, ...);
 
 /** @addtogroup initend */ 
 /*@{*/
@@ -857,17 +860,77 @@ int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
 
 /*@}*/
 
+/** @addtogroup unpack */
+
 /**
- * @ingroup unpack
- *
+ * @struct xbps_progress_kdata xbps_api.h "xbps_api.h"
+ * @brief Structure to be passed to the unpacking progress function callback.
+ */
+struct xbps_progress_data {
+	/*
+	 * @var entry
+	 *
+	 * Entry pathname string (set internally).
+	 */
+	const char *entry;
+	/*
+	 * @var[out] entry_size
+	 *
+	 * Entry file size (set internally).
+	 */
+	int64_t entry_size;
+	/*
+	 * @var[out] entry_extract_count;
+	 *
+	 * Total number of extracted entries (set internally).
+	 */
+	ssize_t entry_extract_count;
+	/*
+	 * @var[out] entry_total_count
+	 *
+	 * Total number of entries in package (set internally).
+	 */
+	ssize_t entry_total_count;
+	/*
+	 * @var[out] entry_is_metadata
+	 *
+	 * If true "entry" is a package metadata file (set internally).
+	 */
+	bool entry_is_metadata;
+	/*
+	 * @var[out] entry_is_conf
+	 *
+	 * If true "entry" is a configuration file (set internally).
+	 */
+	bool entry_is_conf;
+};
+
+/**
  * Unpacks a binary package into specified root directory.
  *
  * @param[in] trans_pkg_dict Package proplib dictionary as stored in the
  * \a packages array returned by the transaction dictionary.
+ * @param[in] Pointer to a function callback to update progress data
+ * while extracting files in package (optional).
+ * @param[in] Pointer to a struct xbps_progress_data to be passed to
+ * the function callback \a unpack_progress_cb.
  *
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict);
+
+/**
+ * Sets a pointer to a function callback to update the unpack
+ * progress while \a xbps_unpack_binary_pkg is running.
+ *
+ * @param[in] fn Pointer to the function callback.
+ * @param[in] xpd Pointer to a "xbps_progress_data" structure
+ * to be passed as argument to the function callback.
+ */
+void xbps_unpack_binary_pkg_set_progress_cb(void (*fn)(void *),
+					    struct xbps_progress_data *xpd);
+
+/*@}*/
 
 /** @addtogroup util */
 /*@{*/

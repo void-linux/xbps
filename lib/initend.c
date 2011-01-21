@@ -76,3 +76,14 @@ xbps_dbg_printf_append(const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 }
+
+void
+xbps_error_printf(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fprintf(stderr, "ERROR: ");
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+}
