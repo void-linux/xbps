@@ -149,10 +149,10 @@ remove_metafile(const char *file, const char *pkgname, const char *version)
  * archive_read_set_progress_callback() from libarchive(3) cannot be used
  * here because sometimes it misses some entries by unknown reasons.
  */
-#define RUN_PROGRESS_CB()					\
-do {								\
-	if (unpack_progress_cb != NULL && xupd != NULL)		\
-		(*unpack_progress_cb)(xupd);			\
+#define RUN_PROGRESS_CB()				\
+do {							\
+	if (progress_cb != NULL && xupd != NULL)	\
+		(*progress_cb)(xupd);			\
 } while (0)
 
 static int
@@ -160,7 +160,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	       struct archive *ar,
 	       const char *pkgname,
 	       const char *version,
-	       void (*unpack_progress_cb)(void *),
+	       void (*progress_cb)(void *),
 	       struct xbps_unpack_progress_data *xupd)
 {
 	prop_dictionary_t propsd, filesd, old_filesd;
@@ -211,7 +211,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		entry_pname = archive_entry_pathname(entry);
 		set_extract_flags(&flags, update);
-		if (unpack_progress_cb != NULL && xupd != NULL) {
+		if (progress_cb != NULL && xupd != NULL) {
 			xupd->entry = entry_pname;
 			xupd->entry_size = archive_entry_size(entry);
 			xupd->entry_is_metadata = false;
@@ -486,7 +486,7 @@ out:
 
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod,
-		       void (*unpack_progress_cb)(void *),
+		       void (*progress_cb)(void *),
 		       struct xbps_unpack_progress_data *xupd)
 {
 	struct archive *ar;
@@ -527,7 +527,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod,
 	/*
 	 * Set extract progress callback if specified.
 	 */
-	if (unpack_progress_cb != NULL && xupd != NULL) {
+	if (progress_cb != NULL && xupd != NULL) {
 		xupd->entry_extract_count = 0;
 		xupd->entry_total_count = 0;
 	}
@@ -535,7 +535,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod,
 	 * Extract archive files.
 	 */
 	rv = unpack_archive(pkg_repod, ar, pkgname, version,
-	    unpack_progress_cb, xupd);
+	    progress_cb, xupd);
 	if (rv != 0) {
 		xbps_error_printf("failed to unpack `%s' binpkg: %s\n",
 		    bpkg, strerror(rv));
