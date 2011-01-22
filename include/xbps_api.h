@@ -294,7 +294,6 @@ const char *xbps_fetch_error_string(void);
 
 /*@}*/
 
-int xbps_humanize_number(char *, int64_t);
 
 /**
  * @ingroup pkg_orphans
@@ -1209,6 +1208,18 @@ void xbps_set_cachedir(const char *cachedir);
  * @return The path to a directory.
  */
 const char *xbps_get_cachedir(void);
+
+/**
+ * Converts the 64 bits signed number specified in \a bytes to
+ * a human parsable string buffer pointed to \a buf.
+ *
+ * @param[out] buf Buffer to store the resulting string. At least
+ * it should have space for 6 chars.
+ * @param[in] bytes 64 bits signed number to convert.
+ *
+ * @return A negative number is returned on error, 0 otherwise.
+ */
+int xbps_humanize_number(char *buf, int64_t bytes);
 
 /**
  * Sets the flag specified in \a flags for internal use.
