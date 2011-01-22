@@ -34,6 +34,7 @@
 #include <xbps_api.h>
 #include "strlcpy.h"
 #include "defs.h"
+#include "../xbps-repo/defs.h"
 
 void
 show_pkg_info_only_repo(prop_dictionary_t dict)

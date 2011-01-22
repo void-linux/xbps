@@ -41,7 +41,7 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 	printf("Removing package %s-%s ...\n", pkgname, version);
 
 	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0) {
-		fprintf(stderr, "\nE: unable to remove %s-%s (%s).\n",
+		xbps_error_printf("unable to remove %s-%s (%s).\n",
 		    pkgname, version, strerror(errno));
 		return rv;
 	}
@@ -49,7 +49,7 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 		printf(" Purging ... ");
 		(void)fflush(stdout);
 		if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
-			fprintf(stderr, "\nE: unable to purge %s-%s "
+			xbps_error_printf("unable to purge %s-%s "
 			    "(%s).\n", pkgname, version,
 			    strerror(errno));
 			return rv;
@@ -149,7 +149,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 		found = true;
 		reqby = prop_dictionary_get(dict, "requiredby");
 		if (reqby != NULL && prop_array_count(reqby) > 0) {
-			printf("WARNING: %s IS REQUIRED BY %u PACKAGES!\n",
+			xbps_warn_printf("%s IS REQUIRED BY %u PACKAGES!\n",
 			    pkgver, prop_array_count(reqby));
 			reqby_force = true;
 		}
@@ -184,7 +184,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 		prop_object_release(sorted_pkgs);
 		return 0;
 	} else if (reqby_force && force_rm_with_deps)
-		printf("WARNING: Forcing removal! you've been alerted.\n");
+		xbps_warn_printf("Forcing removal! you've been alerted.\n");
 
 	for (x = 0; x < prop_array_count(sorted_pkgs); x++) {
 		dict = prop_array_get(sorted_pkgs, x);

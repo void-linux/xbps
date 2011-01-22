@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 #include <xbps_api.h>
+#include "../xbps-bin/defs.h"
 
 /* error messages in bold/red */
 #define MSG_ERROR	"\033[1m\033[31m"
@@ -103,6 +104,7 @@ usage(void)
 int
 main(int argc, char **argv)
 {
+	struct xbps_fetch_progress_data xfpd;
 	prop_dictionary_t dict;
 	const char *version;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
@@ -321,7 +323,8 @@ main(int argc, char **argv)
 			usage();
 
 		for (i = 1; i < argc; i++) {
-			rv = xbps_fetch_file(argv[i], ".", false, "v");
+			rv = xbps_fetch_file(argv[i], ".", false, "v",
+			    fetch_file_progress_cb, &xfpd);
 			if (rv == -1) {
 				printf("%s: %s\n", argv[1],
 				    xbps_fetch_error_string());

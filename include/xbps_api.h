@@ -119,9 +119,11 @@
 
 __BEGIN_DECLS
 
+void		xbps_printf(const char *, ...);
 void		xbps_dbg_printf(const char *, ...);
 void		xbps_dbg_printf_append(const char *, ...);
 void		xbps_error_printf(const char *, ...);
+void		xbps_warn_printf(const char *, ...);
 
 /** @addtogroup initend */ 
 /*@{*/
@@ -194,6 +196,60 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
 /** @addtogroup download */
 /*@{*/
 
+struct xbps_fetch_progress_data {
+	/*
+	 * @var[out] file_size
+	 *
+	 * Filename size for the file to be fetched (set internally).
+	 */
+	off_t file_size;
+	/*
+	 * @var[out] file_offset
+	 *
+	 * Current offset for the filename being fetched (set internally).
+	 */
+	off_t file_offset;
+	/*
+	 * @var[out] file_dloaded;
+	 *
+	 * Bytes downloaded for the file being fetched (set internally).
+	 */
+	off_t file_dloaded;
+	/*
+	 * @var[out] file_name;
+	 *
+	 * File name being fetched (set internally).
+	 */
+	const char *file_name;
+	/*
+	 * @var[out] cb_start
+	 *
+	 * If true the function callback should be prepared to start
+	 * the transfer progress (set internally).
+	 */
+	bool cb_start;
+	/*
+	 * var[out] cb_update
+	 *
+	 * If true the function callback should be prepared to
+	 * update the transfer progress (set internally).
+	 */
+	bool cb_update;
+	/*
+	 * var[out] cb_end
+	 *
+	 * If true the function callback should be prepated to
+	 * end the transfer progress (set internally).
+	 */
+	bool cb_end;
+	/*
+	 * @var[in] cookie
+	 *
+	 * Pointer to private user data.
+	 */
+	void *cookie;
+};
+
 /**
  * Download a file from a remote URL.
  * 
@@ -202,6 +258,10 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
  * @param[in] refetch If true and local/remote size/mtime do not match,
  * fetch the file from scratch.
  * @param[in] flags Flags passed to libfetch's fetchXget().
+ * @param[in] progress_cb Pointer to a function callback to update the
+ * the fetch progress.
+ * @param[in] xfpd Pointer to a xbps_fetch_progress_data struct to be
+ * passed to the \a progress_cb callback as its argument.
  * 
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
  * do not match) and 1 if downloaded successfully.
@@ -209,7 +269,9 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
 int xbps_fetch_file(const char *uri,
 		    const char *outputdir,
 		    bool refetch,
-		    const char *flags);
+		    const char *flags,
+		    void (*progress_cb)(void *),
+		    struct xbps_fetch_progress_data *xfpd);
 
 /**
  * Returns last error string reported by xbps_fetch_file().
@@ -777,12 +839,18 @@ prop_dictionary_t
  * by the \a uri argument (if necessary).
  *
  * @param[in] uri URI to a remote repository.
+ * @param[in] progress_cb Pointer to a function callback to update the
+ * the fetch progress.
+ * @param[in] xfpd Pointer to a xbps_fetch_progress_data struct to be
+ * passed to the \a progress_cb callback as its argument.
  *
  * @return -1 on error (errno is set appropiately), 0 if transfer was
  * not necessary (local/remote size/mtime matched) or 1 if
  * downloaded successfully.
  */
-int xbps_repository_sync_pkg_index(const char *uri);
+int xbps_repository_sync_pkg_index(const char *uri,
+				   void (*progress_cb)(void *),
+				   struct xbps_fetch_progress_data *xfpd);
 
 /*@}*/
 
@@ -863,10 +931,10 @@ int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
 /** @addtogroup unpack */
 
 /**
- * @struct xbps_progress_kdata xbps_api.h "xbps_api.h"
+ * @struct xbps_unpack_progress_data xbps_api.h "xbps_api.h"
  * @brief Structure to be passed to the unpacking progress function callback.
  */
-struct xbps_progress_data {
+struct xbps_unpack_progress_data {
 	/*
 	 * @var entry
 	 *
@@ -910,25 +978,16 @@ struct xbps_progress_data {
  *
  * @param[in] trans_pkg_dict Package proplib dictionary as stored in the
  * \a packages array returned by the transaction dictionary.
- * @param[in] Pointer to a function callback to update progress data
+ * @param[in] unpack_progress_cb Pointer to a function callback to update progress data
  * while extracting files in package (optional).
- * @param[in] Pointer to a struct xbps_progress_data to be passed to
+ * @param[in] xupd Pointer to a struct xbps_unpack_progress_data to be passed to
  * the function callback \a unpack_progress_cb.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict);
-
-/**
- * Sets a pointer to a function callback to update the unpack
- * progress while \a xbps_unpack_binary_pkg is running.
- *
- * @param[in] fn Pointer to the function callback.
- * @param[in] xpd Pointer to a "xbps_progress_data" structure
- * to be passed as argument to the function callback.
- */
-void xbps_unpack_binary_pkg_set_progress_cb(void (*fn)(void *),
-					    struct xbps_progress_data *xpd);
+int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict,
+			   void (*unpack_progress_cb)(void *),
+			   struct xbps_unpack_progress_data *xupd);
 
 /*@}*/
 
