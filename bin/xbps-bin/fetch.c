@@ -180,10 +180,8 @@ fetch_file_progress_cb(void *data)
 
 	if (xfpd->cb_start)
 		stat_start(&xs);
-
-	if (xfpd->cb_update)
+	else if (xfpd->cb_update)
 		stat_update(xfpd, &xs);
-
-	if (xfpd->cb_end)
+	else if (xfpd->cb_end)
 		stat_end(xfpd, &xs);
 }
