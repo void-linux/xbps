@@ -196,54 +196,66 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
 /** @addtogroup download */
 /*@{*/
 
+/**
+ * @struct xbps_fetch_progress_data xbps_api.h "xbps_api.h"
+ * @brief Structure to be passed to the fetch progress function callback.
+ *
+ * This structure is passed as argument to the fetch progress function
+ * callback and its members will be updated when there's any progress.
+ * All members marked as read-only in this struct are set internally by
+ * xbps_unpack_binary_pkg() and shouldn't be modified in the passed
+ * function callback.
+ */
 struct xbps_fetch_progress_data {
-	/*
-	 * @var[out] file_size
+	/**
+	 * @var file_size
 	 *
-	 * Filename size for the file to be fetched (set internally).
+	 * Filename size for the file to be fetched (set internally,
+	 * read only).
 	 */
 	off_t file_size;
-	/*
-	 * @var[out] file_offset
+	/**
+	 * @var file_offset
 	 *
-	 * Current offset for the filename being fetched (set internally).
+	 * Current offset for the filename being fetched (set internally,
+	 * read only).
 	 */
 	off_t file_offset;
-	/*
-	 * @var[out] file_dloaded;
+	/**
+	 * @var file_dloaded
 	 *
 	 * Bytes downloaded for the file being fetched (set internally).
 	 */
 	off_t file_dloaded;
-	/*
-	 * @var[out] file_name;
+	/**
+	 * @var file_name
 	 *
-	 * File name being fetched (set internally).
+	 * File name being fetched (set internally, read only).
 	 */
 	const char *file_name;
-	/*
-	 * @var[out] cb_start
+	/**
+	 * @var cb_start
 	 *
 	 * If true the function callback should be prepared to start
-	 * the transfer progress (set internally).
+	 * the transfer progress (set internally, read only).
 	 */
 	bool cb_start;
-	/*
-	 * var[out] cb_update
+	/**
+	 * var cb_update
 	 *
 	 * If true the function callback should be prepared to
-	 * update the transfer progress (set internally).
+	 * update the transfer progress (set internally, read only).
 	 */
 	bool cb_update;
-	/*
-	 * var[out] cb_end
+	/**
+	 * var cb_end
 	 *
 	 * If true the function callback should be prepated to
-	 * end the transfer progress (set internally).
+	 * end the transfer progress (set internally, read only).
 	 */
 	bool cb_end;
-	/*
-	 * @var[in] cookie
+	/**
+	 * @var cookie
 	 *
 	 * Pointer to private user data.
 	 */
@@ -283,18 +295,6 @@ const char *xbps_fetch_error_string(void);
 /*@}*/
 
 int xbps_humanize_number(char *, int64_t);
-
-/**
- * @ingroup dircreate
- *
- * Creates a directory (and required components if necessary).
- *
- * @param[in] path Path for final directory.
- * @param[in] mode Mode for final directory (0755 if not specified).
- *
- * @return 0 on success, -1 on error and errno set appropiately.
- */
-int xbps_mkpath(char *path, mode_t mode);
 
 /**
  * @ingroup pkg_orphans
@@ -929,46 +929,54 @@ int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
 /*@}*/
 
 /** @addtogroup unpack */
+/*@{*/
 
 /**
  * @struct xbps_unpack_progress_data xbps_api.h "xbps_api.h"
  * @brief Structure to be passed to the unpacking progress function callback.
+ *
+ * This structure is passed as argument to the unpack progress function
+ * callback and its members will be updated when there's any progress.
+ * All members in this struct are set internally by xbps_unpack_binary_pkg()
+ * and should be used in read-only mode in the function callback.
  */
 struct xbps_unpack_progress_data {
-	/*
+	/**
 	 * @var entry
 	 *
-	 * Entry pathname string (set internally).
+	 * Entry pathname string (set internally, read only).
 	 */
 	const char *entry;
-	/*
-	 * @var[out] entry_size
+	/**
+	 * @var entry_size
 	 *
-	 * Entry file size (set internally).
+	 * Entry file size (set internally, read only).
 	 */
 	int64_t entry_size;
-	/*
-	 * @var[out] entry_extract_count;
+	/**
+	 * @var entry_extract_count
 	 *
-	 * Total number of extracted entries (set internally).
+	 * Total number of extracted entries (set internally, read only).
 	 */
 	ssize_t entry_extract_count;
-	/*
-	 * @var[out] entry_total_count
+	/**
+	 * @var entry_total_count
 	 *
-	 * Total number of entries in package (set internally).
+	 * Total number of entries in package (set internally, read only).
 	 */
 	ssize_t entry_total_count;
-	/*
-	 * @var[out] entry_is_metadata
+	/**
+	 * @var entry_is_metadata
 	 *
-	 * If true "entry" is a package metadata file (set internally).
+	 * If true "entry" is a package metadata file (set internally,
+	 * read only).
 	 */
 	bool entry_is_metadata;
-	/*
-	 * @var[out] entry_is_conf
+	/**
+	 * @var entry_is_conf
 	 *
-	 * If true "entry" is a configuration file (set internally).
+	 * If true "entry" is a configuration file (set internally,
+	 * read only).
 	 */
 	bool entry_is_conf;
 };
@@ -978,21 +986,31 @@ struct xbps_unpack_progress_data {
  *
  * @param[in] trans_pkg_dict Package proplib dictionary as stored in the
  * \a packages array returned by the transaction dictionary.
- * @param[in] unpack_progress_cb Pointer to a function callback to update progress data
+ * @param[in] progress_cb Pointer to a function callback to update progress data
  * while extracting files in package (optional).
  * @param[in] xupd Pointer to a struct xbps_unpack_progress_data to be passed to
- * the function callback \a unpack_progress_cb.
+ * the function callback \a progress_cb.
  *
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict,
-			   void (*unpack_progress_cb)(void *),
+			   void (*progress_cb)(void *),
 			   struct xbps_unpack_progress_data *xupd);
 
 /*@}*/
 
 /** @addtogroup util */
 /*@{*/
+
+/**
+ * Creates a directory (and required components if necessary).
+ *
+ * @param[in] path Path for final directory.
+ * @param[in] mode Mode for final directory (0755 if not specified).
+ *
+ * @return 0 on success, -1 on error and errno set appropiately.
+ */
+int xbps_mkpath(char *path, mode_t mode);
 
 /**
  * Returns a string by concatenating its variable argument list

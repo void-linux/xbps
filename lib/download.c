@@ -47,9 +47,9 @@
 /**
  * @file lib/download.c
  * @brief Download routines
- * @defgroup download Internal download functions
+ * @defgroup download Download functions
  *
- * These functions allow you to download files.
+ * XBPS download related functions, frontend for NetBSD's libfetch.
  */
 static const char *
 print_time(time_t *t)

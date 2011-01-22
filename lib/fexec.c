@@ -37,16 +37,6 @@
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
 
-/**
- * @file lib/fexec.c
- * @brief Generic file execution routines
- * @defgroup fexec File execution functions
- *
- * These functions will fork and execute a program in cwd (current working
- * directory), destination directory or changing root directory to
- * destination directory and passing an arbitrary number of arguments to it.
- */
-
 static int
 pfcexec(const char *path, const char *file, const char **argv)
 {

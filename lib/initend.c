@@ -32,6 +32,14 @@
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
 
+/**
+ * @file lib/initend.c
+ * @brief Initialization and finalization routines
+ * @defgroup initend Initialization and finalization functions
+ *
+ * Use these functions to initialize some parameters before starting
+ * using libxbps and finalize usage to release resources at the end.
+ */
 static bool with_debug;
 
 void
