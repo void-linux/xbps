@@ -38,12 +38,6 @@
 
 #include <xbps_api.h>
 
-/**
- * @file lib/mkpath.c
- * @brief Generic directory creation routines
- * @defgroup dircreate Generic directory creation functions
- */
-
 int
 xbps_mkpath(char *path, mode_t mode)
 {
