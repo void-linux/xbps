@@ -117,11 +117,9 @@ int
 xbps_pkgpattern_match(const char *instpkg, char *pattern)
 {
 	const char *fname = instpkg;
-	char *basefname, condchar = '\0', *condition;
+	char *basefname = NULL, condchar = '\0', *condition;
 	size_t len = 0;
 	int rv = 0;
-
-	memset(&basefname, 0, sizeof(basefname));
 
 	/* Check for a full match with strcmp, otherwise try csh_match() */
 	if (strcmp(instpkg, pattern) == 0)
