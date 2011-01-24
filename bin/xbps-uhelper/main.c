@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,7 @@ usage(void)
 	"    digest\t\t<file> <file1+N>\n"
 	"    fetch\t\t<URL> <URL1+N>\n"
 	"    getpkgdepname\t<string>\n"
+	"    getpkgdepversion\t<string>\n"
 	"    getpkgname\t\t<string>\n"
 	"    getpkgrevision\t<string>\n"
 	"    getpkgversion\t<string>\n"
@@ -285,6 +286,16 @@ main(int argc, char **argv)
 
 		printf("%s\n", pkgname);
 		free(pkgname);
+	} else if (strcasecmp(argv[0], "getpkgdepversion") == 0) {
+		/* returns the version of a package pattern dependency */
+		if (argc != 2)
+			usage();
+
+		version = xbps_get_pkgpattern_version(argv[1]);
+		if (version == NULL)
+			exit(EXIT_FAILURE);
+
+		printf("%s\n", version);
 
 	} else if (strcasecmp(argv[0], "pkgmatch") == 0) {
 		/* Matches a pkg with a pattern */
