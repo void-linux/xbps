@@ -69,7 +69,7 @@ question(bool preset, const char *fmt, va_list ap)
 	else
 		fprintf(stderr, " %s ", "[yes/NO]");
 
-	if (fgets(response, 32, stdin)) {
+	if (fgets(response, sizeof(response), stdin)) {
 		(void)strtrim(response);
 		if (strlen(response) == 0)
 			return preset;
