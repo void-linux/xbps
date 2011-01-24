@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -115,7 +115,7 @@ xbps_configure_pkg(const char *pkgname,
 		lver = version;
 	}
 
-	printf("%sonfiguring package %s-%s...\n",
+	xbps_printf("%sonfiguring package `%s-%s' ...\n",
 	    reconfigure ? "Rec" : "C", pkgname, lver);
 
 	buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
@@ -134,8 +134,8 @@ xbps_configure_pkg(const char *pkgname,
 		if (xbps_file_exec(buf, "post",
 		    pkgname, lver, update ? "yes" : "no", NULL) != 0) {
 			free(buf);
-			xbps_dbg_printf("%s: [configure] post INSTALL "
-			    "action returned %s\n", pkgname, strerror(errno));
+			xbps_error_printf("%s: post install script error: %s\n",
+			    pkgname, strerror(errno));
 			return errno;
 		}
 	} else {

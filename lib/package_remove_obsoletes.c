@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -126,14 +126,13 @@ again:
 		 * Obsolete obj found, remove it.
 		 */
 		if (remove(file) == -1) {
-			fprintf(stderr,
-			    "WARNING: couldn't remove obsolete obj: %s (%s)\n",
-			    prop_string_cstring_nocopy(oldstr),
+			xbps_warn_printf("couldn't remove obsole entry "
+			    "`%s': %s\n", prop_string_cstring_nocopy(oldstr),
 			    strerror(errno));
 			free(file);
 			continue;
 		}
-		printf("Removed obsolete obj: %s\n",
+		xbps_printf("Removed obsolete entry: %s\n",
 		    prop_string_cstring_nocopy(oldstr));
 		free(file);
 	}

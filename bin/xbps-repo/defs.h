@@ -38,15 +38,6 @@ int	unregister_repository(const char *);
 int	show_pkg_info_from_repolist(const char *);
 int	show_pkg_deps_from_repolist(const char *);
 int	repository_sync(void);
-/* From util.c */
-int 	show_pkg_files(prop_dictionary_t);
-void	show_pkg_info(prop_dictionary_t);
-void	show_pkg_info_only_repo(prop_dictionary_t);
-int	show_pkg_namedesc(prop_object_t, void *, bool *);
-int	list_strings_in_array(prop_object_t, void *, bool *);
-int	list_strings_sep_in_array(prop_object_t, void *, bool *);
-size_t	find_longest_pkgver(prop_dictionary_t);
-void	print_package_line(const char *);
 /* From find-files.c */
 int	repo_find_files_in_packages(const char *);
 

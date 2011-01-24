@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -123,31 +123,28 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 			    "sha256", &sha256);
 			rv = xbps_check_file_hash(path, sha256);
 			if (rv == ENOENT) {
-				fprintf(stderr,
-				    "WARNING: '%s' doesn't exist!\n", file);
+				xbps_warn_printf("'%s' doesn't exist!\n", file);
 				free(path);
 				rv = 0;
 				continue;
 			} else if (rv == ERANGE) {
 				rv = 0;
-				if (flags & XBPS_FLAG_VERBOSE) {
-					if (flags & XBPS_FLAG_FORCE) {
-						fprintf(stderr,
-						    "WARNING: '%s' SHA256 "
-						    "mismatch, forcing "
-						    "removal...\n", file);
-					} else {
-						fprintf(stderr,
-					    	"WARNING: '%s' SHA256 "
-						"mismatch, preserving...\n",
-						file);
-					}
+				if (flags & XBPS_FLAG_FORCE) {
+					xbps_warn_printf("'%s': SHA256 "
+					    "mismatch, forcing removal...\n",
+					    file);
+				} else {
+					xbps_warn_printf("'%s': SHA256 "
+					    "mismatch, preserving file...\n",
+					    file);
 				}
 				if ((flags & XBPS_FLAG_FORCE) == 0) {
 					free(path);
 					continue;
 				}
 			} else if (rv != 0 && rv != ERANGE) {
+				xbps_error_printf("failed to check hash for "
+				    "`%s': %s\n", file, strerror(rv));
 				free(path);
 				break;
 			}
@@ -156,15 +153,12 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 		 * Remove the object if possible.
 		 */
 		if (remove(path) == -1) {
-			if (flags & XBPS_FLAG_VERBOSE)
-				fprintf(stderr,
-				    "WARNING: can't remove %s %s "
-				    "(%s)\n", curobj, file, strerror(errno));
+			xbps_warn_printf("can't remove %s `%s': %s\n",
+			    curobj, file, strerror(errno));
 
 		} else {
 			/* Success */
-			if (flags & XBPS_FLAG_VERBOSE)
-				printf("Removed %s: %s\n", curobj, file);
+			xbps_printf("Removed %s: `%s'\n", curobj, file);
 		}
 		free(path);
 	}
@@ -207,8 +201,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		rmfile_exists = true;
 		if (xbps_file_exec(buf, "pre", pkgname, version,
 		    update ? "yes" : "no", NULL) != 0) {
-			fprintf(stderr,
-			    "%s: prerm action target error (%s)\n",
+			xbps_error_printf("%s: pre remove script error: %s\n",
 			    pkgname, strerror(errno));
 			free(buf);
 			return errno;
@@ -265,9 +258,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	 */
 	if (rmfile_exists &&
 	    (xbps_file_exec(buf, "post", pkgname, version, "no", NULL) != 0)) {
-		fprintf(stderr,
-		    "%s: postrm action target error (%s)\n", pkgname,
-		    strerror(errno));
+		xbps_error_printf("%s: post remove script error: %s\n",
+		    pkgname, strerror(errno));
 		free(buf);
 		return errno;
 	}

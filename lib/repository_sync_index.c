@@ -82,7 +82,9 @@ xbps_get_remote_repo_string(const char *uri)
  * size and/or mtime match) and 1 if downloaded successfully.
  */
 int
-xbps_repository_sync_pkg_index(const char *uri)
+xbps_repository_sync_pkg_index(const char *uri,
+			       void (*progress_cb)(void *),
+			       struct xbps_fetch_progress_data *xfpd)
 {
 	struct url *url = NULL;
 	struct utsname un;
@@ -160,8 +162,9 @@ xbps_repository_sync_pkg_index(const char *uri)
 	/*
 	 * Download pkg-index.plist file from repository.
 	 */
-	if ((rv = xbps_fetch_file(rpidx, fetch_outputdir,
-	     true, NULL)) == -1) {
+	rv = xbps_fetch_file(rpidx, fetch_outputdir, true, NULL,
+	    progress_cb, xfpd);
+	if (rv == -1) {
 		(void)remove(tmp_metafile);
 		goto out;
 	}

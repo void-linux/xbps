@@ -30,6 +30,8 @@
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 #endif
 
+#include <xbps_api.h>
+
 int	xbps_install_new_pkg(const char *);
 int	xbps_update_pkg(const char *);
 int	xbps_autoupdate_pkgs(bool);
@@ -43,7 +45,22 @@ int	xbps_show_pkg_reverse_deps(const char *);
 int	show_pkg_info_from_metadir(const char *);
 int	show_pkg_files_from_metadir(const char *);
 int	find_files_in_packages(const char *);
+
+/* from question.c */
 bool	xbps_yesno(const char *, ...);
 bool	xbps_noyes(const char *, ...);
+
+/* from fetch.c */
+void	fetch_file_progress_cb(void *);
+
+/* From util.c */
+int     show_pkg_files(prop_dictionary_t);
+void    show_pkg_info(prop_dictionary_t);
+void    show_pkg_info_only_repo(prop_dictionary_t);
+int     show_pkg_namedesc(prop_object_t, void *, bool *);
+int     list_strings_in_array(prop_object_t, void *, bool *);
+int     list_strings_sep_in_array(prop_object_t, void *, bool *);
+size_t  find_longest_pkgver(prop_dictionary_t);
+void    print_package_line(const char *);
 
 #endif /* !_XBPS_BIN_DEFS_H_ */

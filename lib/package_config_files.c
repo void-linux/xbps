@@ -199,7 +199,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 		} else if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_cur, sha256_new))) {
-			printf("Updating configuration file `%s' "
+			xbps_printf("Updating configuration file `%s' "
 			    "with new version.\n", cffile);
 			rv = 1;
 			break;
@@ -211,7 +211,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 		} else if ((strcmp(sha256_orig, sha256_new) == 0) &&
 			   (strcmp(sha256_cur, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
-			printf("Keeping modified configuration file "
+			xbps_printf("Keeping modified configuration file "
 			    "`%s'.\n", cffile);
 			rv = 0;
 			break;
@@ -241,9 +241,9 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 				rv = -1;
 				break;
 			}
-			printf("Keeping modified configuration file "
+			xbps_printf("Keeping modified configuration file "
 			    "`%s'.\n", cffile);
-			printf("Installing new configuration file as "
+			xbps_printf("Installing new configuration file as "
 			    "`%s.new-%s'\n", cffile, version);
 			archive_entry_set_pathname(entry, buf);
 			free(buf);

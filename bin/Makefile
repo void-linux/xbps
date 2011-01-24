@@ -1,9 +1,9 @@
 -include ../config.mk
 
-SUBDIRS =	xbps-uhelper
+SUBDIRS =	xbps-bin
 SUBDIRS +=	xbps-repo
-SUBDIRS +=	xbps-bin
 SUBDIRS +=	xbps-dgraph
+SUBDIRS +=	xbps-uhelper
 
 .PHONY: all
 all:

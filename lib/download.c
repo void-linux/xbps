@@ -47,146 +47,10 @@
 /**
  * @file lib/download.c
  * @brief Download routines
- * @defgroup download Internal download functions
+ * @defgroup download Download functions
  *
- * These functions allow you to download files.
+ * XBPS download related functions, frontend for NetBSD's libfetch.
  */
-struct xferstat {
-	struct timeval	 start;
-	struct timeval	 last;
-	off_t		 size;
-	off_t		 offset;
-	off_t		 rcvd;
-	const char 	 *name;
-};
-
-/*
- * Compute and display ETA
- */
-static const char *
-stat_eta(struct xferstat *xsp)
-{
-	static char str[16];
-	long elapsed, eta;
-	off_t received, expected;
-
-	elapsed = xsp->last.tv_sec - xsp->start.tv_sec;
-	received = xsp->rcvd - xsp->offset;
-	expected = xsp->size - xsp->rcvd;
-	eta = (long)(elapsed * expected / received);
-	if (eta > 3600)
-		snprintf(str, sizeof str, "%02ldh%02ldm",
-		    eta / 3600, (eta % 3600) / 60);
-	else
-		snprintf(str, sizeof str, "%02ldm%02lds",
-		    eta / 60, eta % 60);
-	return str;
-}
-
-/** High precision double comparison
- * \param[in] a The first double to compare
- * \param[in] b The second double to compare
- * \return true on equal within precison, false if not equal within defined precision.
- */
-static inline bool
-compare_double(const double a, const double b)
-{
-	const double precision = 0.00001;
-
-	if ((a - precision) < b && (a + precision) > b)
-		return true;
-	else
-		return false;
-}
-
-/*
- * Compute and display transfer rate
- */
-static const char *
-stat_bps(struct xferstat *xsp)
-{
-	static char str[16];
-	char size[8];
-	double delta, bps;
-
-	delta = (xsp->last.tv_sec + (xsp->last.tv_usec / 1.e6))
-	    - (xsp->start.tv_sec + (xsp->start.tv_usec / 1.e6));
-	if (compare_double(delta, 0.0001)) {
-		snprintf(str, sizeof str, "-- stalled --");
-	} else {
-		bps = ((double)(xsp->rcvd - xsp->offset) / delta);
-		(void)xbps_humanize_number(size, (int64_t)bps);
-		snprintf(str, sizeof str, "%s/s", size);
-	}
-	return str;
-}
-
-/*
- * Update the stats display
- */
-static void
-stat_display(struct xferstat *xsp)
-{
-	struct timeval now;
-	char totsize[8], recvsize[8];
-
-	gettimeofday(&now, NULL);
-	if (now.tv_sec <= xsp->last.tv_sec)
-		return;
-	xsp->last = now;
-
-	(void)xbps_humanize_number(totsize, (int64_t)xsp->size);
-	(void)xbps_humanize_number(recvsize, (int64_t)xsp->rcvd);
-	fprintf(stderr, "\r%s: %s [%d%% of %s]",
-	    xsp->name, recvsize,
-	    (int)((double)(100.0 * (double)xsp->rcvd) / (double)xsp->size),
-	    totsize);
-	fprintf(stderr, " %s", stat_bps(xsp));
-	if (xsp->size > 0 && xsp->rcvd > 0 &&
-	    xsp->last.tv_sec >= xsp->start.tv_sec + 10)
-		fprintf(stderr, " ETA: %s", stat_eta(xsp));
-	fprintf(stderr, "\033[K");
-}
-
-/*
- * Initialize the transfer statistics
- */
-static void
-stat_start(struct xferstat *xsp, const char *name, off_t *size, off_t *offset)
-{
-	gettimeofday(&xsp->start, NULL);
-	xsp->last.tv_sec = xsp->last.tv_usec = 0;
-	xsp->name = name;
-	xsp->size = *size;
-	xsp->offset = *offset;
-	xsp->rcvd = *offset;
-}
-
-/*
- * Update the transfer statistics
- */
-static void
-stat_update(struct xferstat *xsp, off_t rcvd)
-{
-	xsp->rcvd = rcvd + xsp->offset;
-	stat_display(xsp);
-}
-
-/*
- * Finalize the transfer statistics
- */
-static void
-stat_end(struct xferstat *xsp)
-{
-	char size[8];
-
-	(void)xbps_humanize_number(size, (int64_t)xsp->size);
-	fprintf(stderr, "\rDownloaded %s for %s [avg rate: %s]",
-	    size, xsp->name, stat_bps(xsp));
-	fprintf(stderr, "\033[K\n");
-}
-
-#ifdef DEBUG
 static const char *
 print_time(time_t *t)
 {
@@ -196,13 +60,6 @@ print_time(time_t *t)
 	localtime_r(t, &tm);
 	strftime(buf, sizeof(buf), "%d %b %Y %H:%M", &tm);
 	return buf;
-}
-#endif
-
-const char *
-xbps_fetch_error_string(void)
-{
-	return fetchLastErrString;
 }
 
 void HIDDEN
@@ -222,18 +79,27 @@ xbps_fetch_unset_cache_connection(void)
 	fetchConnectionCacheClose();
 }
 
+const char *
+xbps_fetch_error_string(void)
+{
+	return fetchLastErrString;
+}
+
 int
-xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
-		const char *flags)
+xbps_fetch_file(const char *uri,
+		const char *outputdir,
+		bool refetch,
+		const char *flags,
+		void (*progress_cb)(void *),
+		struct xbps_fetch_progress_data *xfpd)
 {
 	struct stat st;
-	struct xferstat xs;
 	struct url *url = NULL;
 	struct url_stat url_st;
 	struct fetchIO *fio = NULL;
 	struct timeval tv[2];
+	off_t bytes_dload = -1;
 	ssize_t bytes_read = -1, bytes_written;
-	off_t bytes_dld = -1;
 	char buf[4096], *filename, *destfile = NULL;
 	int fd = -1, rv = 0;
 	bool restart = false;
@@ -244,11 +110,10 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	/*
 	 * Get the filename specified in URI argument.
 	 */
-	filename = strrchr(uri, '/');
-	if (filename == NULL) {
-		errno = EINVAL;
+	if ((filename = strrchr(uri, '/')) == NULL)
 		return -1;
-	}
+
+	/* Skip first '/' */
 	filename++;
 	/*
 	 * Compute destination file path.
@@ -261,7 +126,6 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	/*
 	 * Check if we have to resume a transfer.
 	 */
-	memset(&st, 0, sizeof(st));
 	if (stat(destfile, &st) == 0) {
 		if (st.st_size > 0)
 			restart = true;
@@ -324,23 +188,23 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		url->offset = st.st_size;
 		fio = fetchXGet(url, &url_st, flags);
 	}
-#ifdef DEBUG
-	printf("st.st_size: %zd\n", (ssize_t)st.st_size);
-	printf("st.st_atime: %s\n", print_time(&st.st_atime));
-	printf("st.st_mtime: %s\n", print_time(&st.st_mtime));
 
-	printf("url->scheme: %s\n", url->scheme);
-	printf("url->host: %s\n", url->host);
-	printf("url->port: %d\n", url->port);
-	printf("url->doc: %s\n", url->doc);
-	printf("url->offset: %zd\n", (ssize_t)url->offset);
-	printf("url->length: %zu\n", url->length);
-	printf("url->last_modified: %s\n", print_time(&url->last_modified));
+	/* debug stuff */
+	xbps_dbg_printf("st.st_size: %zd\n", (ssize_t)st.st_size);
+	xbps_dbg_printf("st.st_atime: %s\n", print_time(&st.st_atime));
+	xbps_dbg_printf("st.st_mtime: %s\n", print_time(&st.st_mtime));
+	xbps_dbg_printf("url->scheme: %s\n", url->scheme);
+	xbps_dbg_printf("url->host: %s\n", url->host);
+	xbps_dbg_printf("url->port: %d\n", url->port);
+	xbps_dbg_printf("url->doc: %s\n", url->doc);
+	xbps_dbg_printf("url->offset: %zd\n", (ssize_t)url->offset);
+	xbps_dbg_printf("url->length: %zu\n", url->length);
+	xbps_dbg_printf("url->last_modified: %s\n",
+	    print_time(&url->last_modified));
+	xbps_dbg_printf("url_stat.size: %zd\n", (ssize_t)url_st.size);
+	xbps_dbg_printf("url_stat.atime: %s\n", print_time(&url_st.atime));
+	xbps_dbg_printf("url_stat.mtime: %s\n", print_time(&url_st.mtime));
 
-	printf("url_stat.size: %zd\n", (ssize_t)url_st.size);
-	printf("url_stat.atime: %s\n", print_time(&url_st.atime));
-	printf("url_stat.mtime: %s\n", print_time(&url_st.mtime));
-#endif
 	if (fio == NULL && fetchLastErrCode != FETCH_OK) {
 		if (!refetch && restart && fetchLastErrCode == FETCH_UNAVAIL) {
 			/*
@@ -356,13 +220,13 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		goto out;
 	}
 	if (url_st.size == -1) {
-		printf("Remote file size is unknown!\n");
+		xbps_error_printf("Remote file size is unknown!\n");
 		errno = EINVAL;
 		rv = -1;
 		goto out;
 	} else if (st.st_size > url_st.size) {
-		printf("Local file %s is greater than remote file!\n",
-		    filename);
+		xbps_error_printf("Local file %s is greater than remote "
+		    "file!\n", filename);
 		errno = EFBIG;
 		rv = -1;
 		goto out;
@@ -371,8 +235,6 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 		/* Local and remote size/mtime match, do nothing. */
 		goto out;
 	}
-	fprintf(stderr, "Connected to %s.\n", url->host);
-
 	/*
 	 * If restarting, open the file for appending otherwise create it.
 	 */
@@ -387,31 +249,63 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	}
 
 	/*
+	 * Initialize data for the fetch progress function callback
+	 * and let the user know that the transfer is going to start
+	 * immediately.
+	 */
+	if (progress_cb != NULL && xfpd != NULL) {
+		xfpd->file_name = filename;
+		xfpd->file_size = url_st.size;
+		xfpd->file_offset = url->offset;
+		xfpd->file_dloaded = -1;
+		xfpd->cb_start = true;
+		xfpd->cb_update = false;
+		xfpd->cb_end = false;
+		progress_cb(xfpd);
+	}
+	/*
 	 * Start fetching requested file.
 	 */
-	stat_start(&xs, filename, &url_st.size, &url->offset);
 	while ((bytes_read = fetchIO_read(fio, buf, sizeof(buf))) > 0) {
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
-			fprintf(stderr, "Couldn't write to %s!\n", destfile);
+			xbps_error_printf("Couldn't write to %s!\n", destfile);
 			rv = -1;
 			goto out;
 		}
-		bytes_dld += bytes_read;
-		stat_update(&xs, bytes_dld);
+		bytes_dload += bytes_read;
+		/*
+		 * Let the fetch progress callback know that
+		 * we are sucking more bytes from it.
+		 */
+		if (progress_cb != NULL && xfpd != NULL) {
+			xfpd->file_dloaded = bytes_dload;
+			xfpd->cb_start = false;
+			xfpd->cb_update = true;
+			progress_cb(xfpd);
+		}
+
+	}
+	/*
+	 * Let the fetch progress callback know that the file
+	 * has been fetched.
+	 */
+	if (progress_cb != NULL && xfpd != NULL) {
+		xfpd->cb_update = false;
+		xfpd->cb_end = true;
+		progress_cb(xfpd);
 	}
 	if (bytes_read == -1) {
-		fprintf(stderr, "IO error while fetching %s: %s\n", filename,
+		xbps_error_printf("IO error while fetching %s: %s\n", filename,
 		    fetchLastErrString);
 		errno = EIO;
 		rv = -1;
 		goto out;
 	}
-	stat_end(&xs);
-
-	if (fd == -1)
+	if (fd == -1) {
+		rv = -1;
 		goto out;
-
+	}
 	/*
 	 * Update mtime in local file to match remote file if transfer
 	 * was successful.
@@ -419,12 +313,13 @@ xbps_fetch_file(const char *uri, const char *outputdir, bool refetch,
 	tv[0].tv_sec = url_st.atime ? url_st.atime : url_st.mtime;
 	tv[1].tv_sec = url_st.mtime;
 	tv[0].tv_usec = tv[1].tv_usec = 0;
-	if (utimes(destfile, tv) == -1)
+	if (utimes(destfile, tv) == -1) {
 		rv = -1;
-	else {
-		/* File downloaded successfully */
-		rv = 1;
+		goto out;
 	}
+
+	/* File downloaded successfully */
+	rv = 1;
 
 out:
 	if (fd != -1)

@@ -34,6 +34,7 @@
 
 #include <xbps_api.h>
 #include "defs.h"
+#include "../xbps-bin/defs.h"
 
 static void __attribute__((noreturn))
 usage(void)

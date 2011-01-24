@@ -34,11 +34,11 @@ endif
 
 $(BIN).static: $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
-	${SILENT}$(CC) -static $^ $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
-		$(STATIC_LIBS) -o $@
+	${SILENT}$(CC) -static $^ $(CPPFLAGS) -L$(TOPDIR)/lib \
+		$(CFLAGS) $(LDFLAGS) $(STATIC_LIBS) -o $@
 
 $(BIN): $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
-	${SILENT}$(CC) $^ $(CPPFLAGS) $(CFLAGS) $(PROG_CFLAGS) \
-		$(LDFLAGS) $(PROG_LDFLAGS) -o $@
+	${SILENT}$(CC) $^ $(CPPFLAGS) -L$(TOPDIR)/lib $(CFLAGS) \
+		$(PROG_CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) -o $@
 

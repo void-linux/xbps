@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,8 +31,10 @@
 #include <ctype.h>
 #include <assert.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <xbps_api.h>
+#include "strlcpy.h"
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
@@ -98,6 +100,7 @@ static int
 download_package_list(prop_object_iterator_t iter)
 {
 	prop_object_t obj;
+	struct xbps_fetch_progress_data xfpd;
 	const char *pkgver, *repoloc, *filename, *cachedir, *sha256;
 	char *binfile;
 	int rv = 0;
@@ -143,7 +146,8 @@ again:
 			return errno;
 		}
 		printf("Downloading %s binary package ...\n", pkgver);
-		rv = xbps_fetch_file(binfile, cachedir, false, NULL);
+		rv = xbps_fetch_file(binfile, cachedir, false, NULL,
+		    fetch_file_progress_cb, &xfpd);
 		if (rv == -1) {
 			fprintf(stderr, "xbps-bin: couldn't download `%s'\n",
 			    filename);
@@ -421,14 +425,48 @@ replace_packages(prop_dictionary_t trans_dict, prop_dictionary_t pkgd,
 	return 0;
 }
 
+static void
+unpack_progress_cb_verbose(void *data)
+{
+	struct xbps_unpack_progress_data *xpd = data;
+
+	if (xpd->entry == NULL || xpd->entry_is_metadata)
+		return;
+	else if (xpd->entry_size <= 0)
+		return;
+
+	fprintf(stderr, "Extracted %sfile `%s' (%" PRIi64 " bytes)\n",
+	    xpd->entry_is_conf ? "configuration " : "", xpd->entry,
+	    xpd->entry_size);
+}
+
+static void
+unpack_progress_cb_percentage(void *data)
+{
+	struct xbps_unpack_progress_data *xpd = data;
+	double percent = 0;
+
+	if (xpd->entry_is_metadata)
+		return;
+
+	percent =
+	    (double)((xpd->entry_extract_count * 100.0) / xpd->entry_total_count);
+	if (percent > 100.0 ||
+	    xpd->entry_extract_count >= xpd->entry_total_count)
+		percent = 100.0;
+
+	printf("\033[s(%3.2f%%)\033[u", percent);
+}
+
 static int
 exec_transaction(struct transaction *trans)
 {
 	prop_dictionary_t instpkgd;
 	prop_object_t obj;
 	prop_object_iterator_t replaces_iter;
-	const char *pkgname, *version, *pkgver, *instver, *filename, *tract;
-	int rv = 0;
+	struct xbps_unpack_progress_data xpd;
+	const char *pkgname, *version, *pkgver, *instver, *filen, *tract;
+	int flags = xbps_get_flags(), rv = 0;
 	bool update, preserve, autoinst;
 	pkg_state_t state = 0;
 
@@ -470,13 +508,13 @@ exec_transaction(struct transaction *trans)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
+		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 
 		assert(pkgname != NULL);
 		assert(version != NULL);
 		assert(pkgver != NULL);
-		assert(filename != NULL);
+		assert(filen != NULL);
 		assert(tract != NULL);
 
 		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
@@ -536,12 +574,24 @@ exec_transaction(struct transaction *trans)
 		/*
 		 * Unpack binary package.
 		 */
-		printf("Unpacking %s (from .../%s) ...\n", pkgver, filename);
-		if ((rv = xbps_unpack_binary_pkg(obj)) != 0) {
+		printf("Unpacking `%s' (from ../%s) ... ", pkgver, filen);
+
+		if (flags & XBPS_FLAG_VERBOSE) {
+			rv = xbps_unpack_binary_pkg(obj,
+			    unpack_progress_cb_verbose, &xpd);
+			printf("\n");
+		} else {
+			rv = xbps_unpack_binary_pkg(obj,
+			    unpack_progress_cb_percentage, &xpd);
+		}
+		if (rv != 0) {
 			fprintf(stderr, "xbps-bin: error unpacking %s "
 			    "(%s)\n", pkgver, strerror(rv));
 			return rv;
 		}
+		if ((flags & XBPS_FLAG_VERBOSE) == 0)
+			printf("\n");
+
 		/*
 		 * Register binary package.
 		 */

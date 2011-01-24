@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,7 @@ remove_pkg_metadata(const char *pkgname)
 	struct dirent *dp;
 	DIR *dirp;
 	char *metadir, *path;
-	int rv = 0, flags = xbps_get_flags();
+	int rv = 0;
 
 	assert(pkgname != NULL);
 
@@ -81,11 +81,10 @@ remove_pkg_metadata(const char *pkgname)
 			return ENOMEM;
 		}
 
-		if (unlink(path) == -1) {
-			if (flags & XBPS_FLAG_VERBOSE)
-				printf("WARNING: can't remove %s (%s)\n",
-				    pkgname, strerror(errno));
-		}
+		if (unlink(path) == -1)
+			xbps_warn_printf("can't remove metadata file: "
+			    "`%s': %s\n", dp->d_name, strerror(errno));
+
 		free(path);
 	}
 	(void)closedir(dirp);
@@ -130,7 +129,7 @@ int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict, pkgd;
-	int rv = 0, flags = xbps_get_flags();
+	int rv = 0;
 	pkg_state_t state = 0;
 
 	assert(pkgname != NULL);
@@ -188,8 +187,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	if ((rv = xbps_unregister_pkg(pkgname)) != 0)
 		goto out;
 
-	if (flags & XBPS_FLAG_VERBOSE)
-		printf("Package %s purged successfully.\n", pkgname);
+	xbps_printf("Package %s purged successfully.\n", pkgname);
 
 out:
 	xbps_regpkgdb_dictionary_release();

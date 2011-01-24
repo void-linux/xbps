@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,21 @@
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
 
+struct state {
+	const char *string;
+	pkg_state_t number;
+};
+
+static const struct state states[] = {
+	{ "unpacked", 		XBPS_PKG_STATE_UNPACKED },
+	{ "installed",		XBPS_PKG_STATE_INSTALLED },
+	{ "broken",		XBPS_PKG_STATE_BROKEN },
+	{ "config-files",	XBPS_PKG_STATE_CONFIG_FILES },
+	{ "not-installed",	XBPS_PKG_STATE_NOT_INSTALLED },
+	{ NULL,			0 }
+};
+
+
 /**
  * @file lib/package_state.c
  * @brief Package state handling routines
@@ -41,36 +56,23 @@
 static int
 set_new_state(prop_dictionary_t dict, pkg_state_t state)
 {
-	const char *pkgname, *state_str;
+	const struct state *stp;
+	const char *pkgname;
 
-	assert(dict != NULL);
 
-	switch (state) {
-	case XBPS_PKG_STATE_UNPACKED:
-		state_str = "unpacked";
-		break;
-	case XBPS_PKG_STATE_INSTALLED:
-		state_str = "installed";
-		break;
-	case XBPS_PKG_STATE_BROKEN:
-		state_str = "broken";
-		break;
-	case XBPS_PKG_STATE_CONFIG_FILES:
-		state_str = "config-files";
-		break;
-	case XBPS_PKG_STATE_NOT_INSTALLED:
-		state_str = "not-installed";
-		break;
-	default:
+	for (stp = states; stp->string != NULL; stp++)
+		if (state == stp->number)
+			break;
+
+	if (stp->string == NULL)
 		return -1;
-	}
 
-	if (!prop_dictionary_set_cstring_nocopy(dict, "state", state_str))
+	if (!prop_dictionary_set_cstring_nocopy(dict, "state", stp->string))
 		return EINVAL;
 
 	if (prop_dictionary_get_cstring_nocopy(dict, "pkgname", &pkgname)) {
 		xbps_dbg_printf("%s: changed pkg state to '%s'\n",
-		    pkgname, state_str);
+		    pkgname, stp->string);
 	}
 
 	return 0;
@@ -79,28 +81,19 @@ set_new_state(prop_dictionary_t dict, pkg_state_t state)
 static pkg_state_t
 get_state(prop_dictionary_t dict)
 {
+	const struct state *stp;
 	const char *state_str;
-	pkg_state_t state = 0;
 
 	assert(dict != NULL);
 
 	prop_dictionary_get_cstring_nocopy(dict, "state", &state_str);
 	assert(state_str != NULL);
 
-	if (strcmp(state_str, "unpacked") == 0)
-		state = XBPS_PKG_STATE_UNPACKED;
-	else if (strcmp(state_str, "installed") == 0)
-		state = XBPS_PKG_STATE_INSTALLED;
-	else if (strcmp(state_str, "broken") == 0)
-		state = XBPS_PKG_STATE_BROKEN;
-	else if (strcmp(state_str, "config-files") == 0)
-		state = XBPS_PKG_STATE_CONFIG_FILES;
-	else if (strcmp(state_str, "not-installed") == 0)
-		state = XBPS_PKG_STATE_NOT_INSTALLED;
-	else
-		return 0;
+	for (stp = states; stp->string != NULL; stp++)
+		if (strcmp(state_str, stp->string) == 0)
+			break;
 
-	return state;
+	return stp->number;
 }
 
 int

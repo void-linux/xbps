@@ -1,5 +1,11 @@
 xbps-0.8.0 (???):
 
+ * Merged the `progress_callback' branch that makes possible to specify a
+   function callback to update progress while unpacking binary packages
+   and while fetching files. xbps-bin(8) now reports a percentage while
+   unpacking package files if -v not set, otherwise it will list the
+   current extracted file with its size in bytes.
+
  * Improved package dependency resolution in repositories by using a new
    function, xbps_repository_pool_find_pkg() that returns a package dictionary
    found in the first repository registered in the pool. It can also be used

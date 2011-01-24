@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,6 @@
 
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
-#include "queue.h"
 
 /**
  * @file lib/package_orphans.c
@@ -61,29 +60,19 @@
  * dictionary.
  */
 
-struct orphan_pkg {
-	SIMPLEQ_ENTRY(orphan_pkg) chain;
-	prop_dictionary_t dict;
-	const char *pkgname;
-};
-
-static SIMPLEQ_HEAD(orphan_head, orphan_pkg) orphan_list =
-    SIMPLEQ_HEAD_INITIALIZER(orphan_list);
-
 static int
 find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 {
-	prop_array_t reqby;
-	prop_object_t obj2;
-	prop_object_iterator_t iter;
-	struct orphan_pkg *orphan;
+	prop_array_t reqby, orphans = arg;
+	prop_object_t obj2, obj3;
+	prop_object_iterator_t iter, iter2;
+	const char *orphan_pkgname;
 	char *pkgname;
 	unsigned int ndep = 0, cnt = 0;
 	bool automatic = false;
 	pkg_state_t state = 0;
 	int rv = 0;
 
-	(void)arg;
 	(void)loop_done;
 
 	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
@@ -97,59 +86,50 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 		return 0;
 
 	reqby = prop_dictionary_get(obj, "requiredby");
-	if (reqby == NULL)
-		return 0;
-	else if (prop_object_type(reqby) != PROP_TYPE_ARRAY)
+	if (prop_object_type(reqby) != PROP_TYPE_ARRAY)
 		return EINVAL;
 
-	if ((cnt = prop_array_count(reqby)) == 0)
-		goto add_orphan;
+	if ((cnt = prop_array_count(reqby)) == 0) {
+		prop_array_add(orphans, obj);
+		return 0;
+	}
 
 	iter = prop_array_iterator(reqby);
 	if (iter == NULL)
-		return errno;
+		return ENOMEM;
 
 	while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
 		pkgname = xbps_get_pkg_name(prop_string_cstring_nocopy(obj2));
-		if (pkgname == NULL)
+		if (pkgname == NULL) {
+			prop_object_iterator_release(iter);
 			return EINVAL;
+		}
 
-		SIMPLEQ_FOREACH(orphan, &orphan_list, chain) {
-			if (strcmp(orphan->pkgname, pkgname) == 0) {
+		iter2 = prop_array_iterator(orphans);
+		if (iter == NULL) {
+			free(pkgname);
+			prop_object_iterator_release(iter);
+			return ENOMEM;
+		}
+		while ((obj3 = prop_object_iterator_next(iter2)) != NULL) {
+			prop_dictionary_get_cstring_nocopy(obj3,
+			    "pkgname", &orphan_pkgname);
+			if (strcmp(orphan_pkgname, pkgname) == 0) {
 				ndep++;
 				break;
 			}
 		}
+		prop_object_iterator_release(iter2);
 		free(pkgname);
 	}
 	prop_object_iterator_release(iter);
+
 	if (ndep != cnt)
 		return 0;
-
-add_orphan:
-	orphan = NULL;
-	orphan = malloc(sizeof(struct orphan_pkg));
-	if (orphan == NULL)
-		return errno;
-
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &orphan->pkgname);
-	orphan->dict = prop_dictionary_copy(obj);
-	SIMPLEQ_INSERT_TAIL(&orphan_list, orphan, chain);
+	if (!prop_array_add(orphans, obj))
+		return EINVAL;
 
 	return 0;
-}
-
-static void
-cleanup(void)
-{
-	struct orphan_pkg *orphan;
-
-	while ((orphan = SIMPLEQ_FIRST(&orphan_list)) != NULL) {
-		SIMPLEQ_REMOVE(&orphan_list, orphan, orphan_pkg, chain);
-		prop_object_release(orphan->dict);
-		free(orphan);
-	}
-	xbps_regpkgdb_dictionary_release();
 }
 
 prop_array_t
@@ -157,39 +137,27 @@ xbps_find_orphan_packages(void)
 {
 	prop_array_t array;
 	prop_dictionary_t dict;
-	struct orphan_pkg *orphan;
 	int rv = 0;
 
 	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL)
 		return NULL;
+	/*
+	 * Prepare an array with all packages previously found.
+	 */
+	if ((array = prop_array_create()) == NULL)
+		return NULL;
+
 	/*
 	 * Find out all orphans by looking at the
 	 * regpkgdb dictionary and iterate in reverse order
 	 * in which packages were installed.
 	 */
 	rv = xbps_callback_array_iter_reverse_in_dict(dict, "packages",
-	    find_orphan_pkg, NULL);
+	    find_orphan_pkg, array);
 	if (rv != 0) {
 		errno = rv;
-		cleanup();
+		prop_object_release(array);
 		return NULL;
-	}
-	/*
-	 * Prepare an array with all packages previously found.
-	 */
-	array = prop_array_create();
-	if (array == NULL) {
-		cleanup();
-		return NULL;
-	}
-	while ((orphan = SIMPLEQ_FIRST(&orphan_list)) != NULL) {
-		if (!prop_array_add(array, orphan->dict)) {
-			cleanup();
-			return NULL;
-		}
-		SIMPLEQ_REMOVE(&orphan_list, orphan, orphan_pkg, chain);
-		prop_object_release(orphan->dict);
-		free(orphan);
 	}
 	xbps_regpkgdb_dictionary_release();
 

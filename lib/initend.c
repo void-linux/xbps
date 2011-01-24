@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010 Juan Romero Pardines.
+ * Copyright (c) 2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,14 @@
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
 
+/**
+ * @file lib/initend.c
+ * @brief Initialization and finalization routines
+ * @defgroup initend Initialization and finalization functions
+ *
+ * Use these functions to initialize some parameters before starting
+ * using libxbps and finalize usage to release resources at the end.
+ */
 static bool with_debug;
 
 void
@@ -50,18 +58,13 @@ xbps_end(void)
 	xbps_fetch_unset_cache_connection();
 }
 
-void
-xbps_dbg_printf(const char *fmt, ...)
+static void
+common_printf(FILE *f, const char *msg, const char *fmt, va_list ap)
 {
-	va_list ap;
+	if (msg != NULL)
+		fprintf(f, "%s", msg);
 
-	if (!with_debug)
-		return;
-
-	va_start(ap, fmt);
-	fprintf(stderr, "[DEBUG] ");
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
+	vfprintf(f, fmt, ap);
 }
 
 void
@@ -73,6 +76,53 @@ xbps_dbg_printf_append(const char *fmt, ...)
 		return;
 
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	common_printf(stderr, NULL, fmt, ap);
+	va_end(ap);
+}
+
+void
+xbps_dbg_printf(const char *fmt, ...)
+{
+	va_list ap;
+
+	if (!with_debug)
+		return;
+
+	va_start(ap, fmt);
+	common_printf(stderr, "[DEBUG] ", fmt, ap);
+	va_end(ap);
+}
+
+void
+xbps_error_printf(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	common_printf(stderr, "ERROR: ", fmt, ap);
+	va_end(ap);
+}
+
+void
+xbps_warn_printf(const char *fmt, ...)
+{
+	int flags = xbps_get_flags();
+	va_list ap;
+
+	if ((flags & XBPS_FLAG_VERBOSE) == 0)
+		return;
+
+	va_start(ap, fmt);
+	common_printf(stderr, "WARNING: ", fmt, ap);
+	va_end(ap);
+}
+
+void
+xbps_printf(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	common_printf(stdout, NULL, fmt, ap);
 	va_end(ap);
 }
