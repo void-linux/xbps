@@ -46,9 +46,10 @@
  * it was in the "unsorted_deps" array.
  */
 int HIDDEN
-xbps_sort_pkg_deps(prop_dictionary_t transd)
+xbps_sort_pkg_deps(void)
 {
-	prop_array_t sorted, unsorted, rundeps, missingdeps;
+	prop_dictionary_t transd;
+	prop_array_t sorted, unsorted, rundeps;
 	prop_object_t obj, obj2;
 	prop_object_iterator_t iter, iter2;
 	size_t ndeps = 0, rundepscnt = 0, cnt = 0;
@@ -56,21 +57,12 @@ xbps_sort_pkg_deps(prop_dictionary_t transd)
 	char *pkgnamedep;
 	int rv = 0;
 
-	assert(transd != NULL);
+	if ((transd = xbps_transaction_dictionary_get()) == NULL)
+		return EINVAL;
 
-	/*
-	 * If there are missing dependencies, bail out.
-	 */
-	missingdeps = prop_dictionary_get(transd, "missing_deps");
-	if (prop_array_count(missingdeps) > 0) {
-		xbps_dbg_printf("missing dependencies! won't "
-		    "continue sorting\n");
-		return ENOENT;
-	}
 	sorted = prop_array_create();
 	if (sorted == NULL)
 		return ENOMEM;
-
 	/*
 	 * Add sorted packages array into transaction dictionary (empty).
 	 */

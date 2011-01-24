@@ -34,11 +34,11 @@
 
 /**
  * @file lib/repository_findpkg.c
- * @brief Repository transaction handling routines
- * @defgroup repo_pkgs Repository transaction handling functions
+ * @brief Repository package handling routines
+ * @defgroup repo_pkgs Repository package handling functions
  *
  * The following image shows off the full transaction dictionary returned
- * by xbps_repository_get_transaction_dict().
+ * by xbps_transaction_prepare().
  *
  * @image html images/xbps_transaction_dictionary.png
  *
@@ -52,120 +52,6 @@
  * Text inside of white boxes are the key associated with the object, its
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
-
-static prop_dictionary_t trans_dict;
-static bool trans_dict_initialized;
-
-/*
- * This creates the transaction dictionary with two arrays, one for
- * dependencies not yet sorted and another one for missing dependencies.
- *
- * Before returning the dictionary to the caller, package dependencies in
- * the "unsorted_deps" array will be sorted and moved to another
- * array called "packages". If there are no missing dependencies, the
- * "missing_deps" array will be removed.
- *
- */
-static int
-create_transaction_dictionary(void)
-{
-	prop_array_t unsorted, missing;
-	int rv = 0;
-
-	if (trans_dict_initialized)
-		return 0;
-
-	trans_dict = prop_dictionary_create();
-	if (trans_dict == NULL)
-		return ENOMEM;
-
-	missing = prop_array_create();
-	if (missing == NULL) {
-		rv = ENOMEM;
-		goto fail;
-	}
-
-        unsorted = prop_array_create();
-        if (unsorted == NULL) {
-		rv = ENOMEM;
-		goto fail2;
-	}
-
-	if (!xbps_add_obj_to_dict(trans_dict, missing, "missing_deps")) {
-		rv = EINVAL;
-		goto fail3;
-        }
-        if (!xbps_add_obj_to_dict(trans_dict, unsorted, "unsorted_deps")) {
-		rv = EINVAL;
-		goto fail3;
-	}
-
-	trans_dict_initialized = true;
-
-	return rv;
-
-fail3:
-	prop_object_release(unsorted);
-fail2:
-	prop_object_release(missing);
-fail:
-	prop_object_release(trans_dict);
-
-	return rv;
-}
-
-static int
-compute_transaction_sizes(void)
-{
-	prop_object_iterator_t iter;
-	prop_object_t obj;
-	uint64_t tsize = 0, dlsize = 0, instsize = 0;
-	int rv = 0;
-	const char *tract;
-
-	iter = xbps_get_array_iter_from_dict(trans_dict, "packages");
-	if (iter == NULL)
-		return EINVAL;
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
-		/*
-		 * Skip pkgs that need to be configured.
-		 */
-		if (strcmp(tract, "configure") == 0)
-			continue;
-
-		prop_dictionary_get_uint64(obj, "filename-size", &tsize);
-		dlsize += tsize;
-		tsize = 0;
-		prop_dictionary_get_uint64(obj, "installed_size", &tsize);
-		instsize += tsize;
-		tsize = 0;
-	}
-
-	/*
-	 * Add object in transaction dictionary with total installed
-	 * size that it will take.
-	 */
-	if (!prop_dictionary_set_uint64(trans_dict,
-	    "total-installed-size", instsize)) {
-		rv = EINVAL;
-		goto out;
-	}
-	/*
-	 * Add object in transaction dictionary with total download
-	 * size that needs to be sucked in.
-	 */
-	if (!prop_dictionary_set_uint64(trans_dict,
-	    "total-download-size", dlsize)) {
-		rv = EINVAL;
-		goto out;
-	}
-out:
-	prop_object_iterator_release(iter);
-
-	return rv;
-}
 
 static int
 set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
@@ -191,46 +77,6 @@ set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
 		rv = 0;
 	
 	return rv;
-}
-
-prop_dictionary_t
-xbps_repository_get_transaction_dict(void)
-{
-	int rv = 0;
-
-	if (trans_dict_initialized == false) {
-		errno = ENXIO;
-		return NULL;
-	}
-
-	/*
-	 * Sort package dependencies if necessary.
-	 */
-	if ((rv = xbps_sort_pkg_deps(trans_dict)) != 0) {
-		errno = rv;
-		/*
-		 * If there are missing deps (ENOENT)
-		 * return the dictionary, the client should always
-		 * check if that's the case.
-		 */
-		return trans_dict;
-	}
-
-	/*
-	 * Add total transaction installed/download sizes
-	 * to the transaction dictionary.
-	 */
-	if ((rv = compute_transaction_sizes()) != 0) {
-		errno = rv;
-		return NULL;
-	}
-
-	/*
-	 * Remove the "missing_deps" array now that it's not needed.
-	 */
-	prop_dictionary_remove(trans_dict, "missing_deps");
-
-	return trans_dict;
 }
 
 int
@@ -288,8 +134,8 @@ out:
 int
 xbps_repository_update_pkg(const char *pkgname)
 {
-	prop_array_t unsorted;
-	prop_dictionary_t pkg_repod;
+	prop_array_t unsorted, mdeps;
+	prop_dictionary_t transd, pkg_repod;
 	int rv = 0;
 
 	assert(pkgname != NULL);
@@ -314,16 +160,18 @@ xbps_repository_update_pkg(const char *pkgname)
 		errno = 0;
 		goto out;
 	}
-	/*
-	 * Create the transaction dictionary.
-	 */
-	if ((rv = create_transaction_dictionary()) != 0)
+	if ((transd = xbps_transaction_dictionary_get()) == NULL) {
+		rv = EINVAL;
 		goto out;
-
+	}
+	if ((mdeps = xbps_transaction_missingdeps_get()) == NULL) {
+		rv = EINVAL;
+		goto out;
+	}
 	/*
 	 * Construct the dependency chain for this package.
 	 */
-	rv = xbps_repository_find_pkg_deps(trans_dict, pkg_repod);
+	rv = xbps_repository_find_pkg_deps(transd, mdeps, pkg_repod);
 	if (rv != 0)
 		goto out;
 
@@ -331,7 +179,7 @@ xbps_repository_update_pkg(const char *pkgname)
 	 * Add required package dictionary into the packages
 	 * dictionary.
 	 */
-	unsorted = prop_dictionary_get(trans_dict, "unsorted_deps");
+	unsorted = prop_dictionary_get(transd, "unsorted_deps");
 	if (unsorted == NULL) {
 		rv = errno;
 		goto out;
@@ -373,7 +221,8 @@ int
 xbps_repository_install_pkg(const char *pkg)
 {
 	prop_dictionary_t pkg_repod = NULL, origin_pkgrd = NULL;
-	prop_array_t unsorted;
+	prop_dictionary_t transd;
+	prop_array_t mdeps, unsorted;
 	const char *pkgname;
 	int rv = 0;
 
@@ -392,10 +241,16 @@ xbps_repository_install_pkg(const char *pkg)
 		goto out;
 	}
 	/*
-	 * Create the transaction dictionary.
+	 * Prepare transaction dictionary and missing deps array.
 	 */
-	if ((rv = create_transaction_dictionary()) != 0) 
+	if ((transd = xbps_transaction_dictionary_get()) == NULL) {
+		rv = EINVAL;
 		goto out;
+	}
+	if ((mdeps = xbps_transaction_missingdeps_get()) == NULL) {
+		rv = EINVAL;
+		goto out;
+	}
 
 	origin_pkgrd = prop_dictionary_copy(pkg_repod);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
@@ -403,8 +258,7 @@ xbps_repository_install_pkg(const char *pkg)
 	 * Check that this pkg hasn't been added previously into
 	 * the transaction.
 	 */
-	if (xbps_find_pkg_in_dict_by_pattern(trans_dict,
-	    "unsorted_deps", pkg)) {
+	if (xbps_find_pkg_in_dict_by_pattern(transd, "unsorted_pkgs", pkg)) {
 		xbps_dbg_printf("package '%s' already queued in transaction\n",
 		    pkg);
 		goto out;
@@ -413,8 +267,8 @@ xbps_repository_install_pkg(const char *pkg)
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
-	rv = xbps_repository_find_pkg_deps(trans_dict, origin_pkgrd);
-	if (rv != 0)
+	if ((rv = xbps_repository_find_pkg_deps(transd, mdeps,
+	    origin_pkgrd)) != 0)
 		goto out;
 
 	if ((rv = set_pkg_state(origin_pkgrd, pkgname)) != 0)
@@ -433,7 +287,7 @@ xbps_repository_install_pkg(const char *pkg)
 	 * Add required package dictionary into the unsorted array and
 	 * set package state as not yet installed.
 	 */
-	unsorted = prop_dictionary_get(trans_dict, "unsorted_deps");
+	unsorted = prop_dictionary_get(transd, "unsorted_deps");
 	if (unsorted == NULL) {
 		rv = EINVAL;
 		goto out;

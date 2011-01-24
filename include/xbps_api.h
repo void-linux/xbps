@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110119"
+#define XBPS_RELVER		"20110124"
 
 /** 
  * @def XBPS_META_PATH
@@ -687,22 +687,36 @@ int xbps_repository_update_pkg(const char *pkgname);
  */
 int xbps_repository_update_allpkgs(void);
 
+/*@}*/
+
+/** @addtogroup transdict */
+/*@{*/
+
 /**
- * Returns the transaction proplib dictionary, as shown above in the image.
+ * Returns the transaction dictionary, as shown above in the image.
+ * Before returning the package list is sorted in the correct order
+ * and total installed/download size for the transaction is computed.
+ *
+ * @return The proplib transaction dictionary on success, otherwise NULL
+ * and errno is set appropiately. ENXIO if the transaction
+ * dictionary and the missing deps array were not created. ENODEV if
+ * there are missing dependencies or any other if there was an error
+ * while sorting packages or computing the transaction size.
  *
  * @note
- *  - If the array \a missing_deps object in the returned transaction
- *    dictionary is not empty, that means that some required package
- *    dependencies could not be found; in that case the caller should stop
- *    immediately the transaction.
- *  - This function won't return anything useful in the proplib
- *    dictionary, if either of xbps_repository_install_pkg() or
- *    xbps_repository_update_pkg() functions are not called previously.
- *
- * @return The transaction dictionary to install/update/replace
- * a package list. NULL on failure and errno is set appropiately.
+ *  - This function will set errno to ENXIO if xbps_repository_install_pkg()
+ *    xbps_repository_update_pkg() functions were not called previously.
  */
-prop_dictionary_t xbps_repository_get_transaction_dict(void);
+prop_dictionary_t xbps_transaction_prepare(void);
+
+/**
+ * Returns the missing deps array if xbps_repository_install_pkg()
+ * or xbps_repository_update_pkg() failed to find required packages
+ * in registered repositories.
+ *
+ * @return The proplib array, NULL if it couldn't created.
+ */
+prop_array_t xbps_transaction_missingdeps_get(void);
 
 /*@}*/
 

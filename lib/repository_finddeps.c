@@ -451,13 +451,15 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 
 int HIDDEN
 xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
+			      prop_array_t mdeps,
 			      prop_dictionary_t repo_pkgd)
 {
-	prop_array_t pkg_rdeps, missing_rdeps;
+	prop_array_t pkg_rdeps;
 	const char *pkgname, *pkgver;
 	int rv = 0;
 
 	assert(trans_dict != NULL);
+	assert(mdeps != NULL);
 	assert(repo_pkgd != NULL);
 
 	pkg_rdeps = prop_dictionary_get(repo_pkgd, "run_depends");
@@ -471,9 +473,7 @@ xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
 	 * This will find direct and indirect deps, if any of them is not
 	 * there it will be added into the missing_deps array.
 	 */
-	missing_rdeps = prop_dictionary_get(trans_dict, "missing_deps");
-	rv = find_repo_deps(trans_dict, missing_rdeps, pkgname, pkg_rdeps);
-	if (rv != 0) {
+	if ((rv = find_repo_deps(trans_dict, mdeps, pkgname, pkg_rdeps)) != 0) {
 		xbps_dbg_printf("Error '%s' while checking rundeps!\n",
 		    strerror(rv));
 	}

@@ -639,21 +639,18 @@ xbps_exec_transaction(bool yes)
 	if (trans == NULL)
 		return rv;
 
-	trans->dict = xbps_repository_get_transaction_dict();
+	trans->dict = xbps_transaction_prepare();
 	if (trans->dict == NULL) {
+		if (errno == ENODEV) {
+			/* missing packages */
+			array = xbps_transaction_missingdeps_get();
+			show_missing_deps(trans->dict);
+			goto out;
+		}
 		xbps_dbg_printf("Empty transaction dictionary: %s\n",
 		    strerror(errno));
 		goto out;
 	}
-	/*
-	 * Bail out if there are unresolved deps.
-	 */
-	array = prop_dictionary_get(trans->dict, "missing_deps");
-	if (array && prop_array_count(array) > 0) {
-		show_missing_deps(trans->dict);
-		goto out;
-	}
-
 	xbps_dbg_printf("Dictionary before transaction happens:\n");
 	xbps_dbg_printf_append("%s", prop_dictionary_externalize(trans->dict));
 
@@ -676,5 +673,6 @@ out:
 		prop_object_release(trans->dict);
 	if (trans)
 		free(trans);
+
 	return rv;
 }
