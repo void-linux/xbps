@@ -322,7 +322,7 @@ xbps_install_new_pkg(const char *pkg)
 		return 0;
 	}
 	if ((rv = xbps_repository_install_pkg(pkgpatt)) != 0) {
-		if (rv == EAGAIN) {
+		if (rv == ENOENT) {
 			fprintf(stderr, "xbps-bin: unable to locate '%s' in "
 			    "repository pool.\n", pkg);
 			rv = -1;
