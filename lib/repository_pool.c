@@ -252,8 +252,6 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	}
 
 	if (rpf->pkgd) {
-		xbps_dbg_printf("Found pkg '%s' (%s)\n",
-		    rpf->pattern, rpi->rpi_uri);
 		/*
 		 * Package dictionary found, add the "repository"
 		 * object with the URI.
