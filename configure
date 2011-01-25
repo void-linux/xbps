@@ -4,6 +4,7 @@
 # Ensure that we do not inherit these from env
 STRLCPY=
 STRLCAT=
+VASPRINTF=
 OS=
 BUILD=
 HOST=
@@ -276,6 +277,29 @@ if [ -n "$BUILD_PIE" ]; then
 fi
 
 #
+# Check for vasprintf().
+#
+printf "Checking for vasprintf() ... "
+cat <<EOF >_vasprintf.c
+#define _GNU_SOURCE
+#include <stdio.h>
+int main(void) {
+	vasprintf(NULL, NULL, NULL);
+	return 0;
+}
+EOF
+if $XCC _vasprintf.c -o _vasprintf 2>/dev/null; then
+	VASPRINTF=yes
+else
+	VASPRINTF=no
+fi
+echo "$VASPRINTF."
+rm -f _vasprint.c _vasprintf
+if [ "$VASPRINTF" = "yes" ]; then
+	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
+fi
+
+#
 # Check for strlcpy().
 #
 printf "Checking for strlcpy() ... "
@@ -298,6 +322,7 @@ rm -f _strlcpy.c _strlcpy
 if [ "$STRLCPY" = no ]; then
 	echo "COMPAT_SRCS +=	compat/strlcpy.o" >>$CONFIG_MK
 	echo "#include \"strlcpy.h\"" >>$CONFIG_H
+else
 	echo "CPPFLAGS +=	-DHAVE_STRLCPY" >> $CONFIG_MK
 fi
 
@@ -323,6 +348,7 @@ rm -f _strlcat.c _strlcat
 if [ "$STRLCAT" = no ]; then
 	echo "COMPAT_SRCS +=	compat/strlcat.o" >>$CONFIG_MK
 	echo "#include \"strlcat.h\"" >>$CONFIG_H
+else
 	echo "CPPFLAGS +=	-DHAVE_STRLCAT" >>$CONFIG_MK
 fi
 

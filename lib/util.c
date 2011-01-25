@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,6 @@
  * @brief Utility routines
  * @defgroup util Utility functions
  */
-
 static const char *rootdir;
 static const char *cachedir;
 static int flags;
@@ -493,6 +492,7 @@ xbps_get_flags(void)
 	return flags;
 }
 
+#ifdef HAVE_VASPRINTF
 char *
 xbps_xasprintf(const char *fmt, ...)
 {
@@ -500,9 +500,38 @@ xbps_xasprintf(const char *fmt, ...)
 	char *buf;
 
 	va_start(ap, fmt);
-	if (vasprintf(&buf, fmt, ap) == -1)
+	if (vasprintf(&buf, fmt, ap) == -1) {
+		va_end(ap);
 		return NULL;
+	}
 	va_end(ap);
 
 	return buf;
 }
+#else
+char *
+xbps_xasprintf(const char *fmt, ...)
+{
+	va_list ap, aq;
+	size_t len;
+	int res;
+	char *buf;
+
+	va_start(aq, fmt);
+	va_copy(ap, aq);
+	len = vsnprintf(NULL, 0, fmt, aq) + 1;
+	if ((buf = malloc(len)) == NULL) {
+		va_end(ap);
+		return NULL;
+	}
+
+	va_start(ap, fmt);
+	res = vsnprintf(buf, len, fmt, ap);
+	if (res < 0 || res >= (int)len) {
+		free(buf);
+		return NULL;
+	}
+
+	return buf;
+}
+#endif /* !HAVE_VASPRINTF */
