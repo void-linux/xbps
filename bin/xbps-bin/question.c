@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 
 #include "defs.h"

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <limits.h>
 #include <libgen.h>
