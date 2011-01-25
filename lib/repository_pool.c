@@ -217,6 +217,8 @@ xbps_repository_pool_foreach(
 	int rv = 0;
 	bool done = false;
 
+	assert(fn != NULL);
+
 	if (!repolist_initialized)
 		return EINVAL;
 

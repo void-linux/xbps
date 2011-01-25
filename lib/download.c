@@ -104,6 +104,9 @@ xbps_fetch_file(const char *uri,
 	int fd = -1, rv = 0;
 	bool restart = false;
 
+	assert(uri != NULL);
+	assert(outputdir != NULL);
+
 	fetchLastErrCode = 0;
 	fetchTimeout = 30; /* 30 seconds of timeout */
 

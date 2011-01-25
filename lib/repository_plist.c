@@ -152,6 +152,9 @@ xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 	const char *curpath, *comptype;
 	int i = 0;
 
+	assert(url != NULL);
+	assert(plistf != NULL);
+
 	if ((a = open_archive(url)) == NULL)
 		return NULL;
 
@@ -197,6 +200,9 @@ xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 	const char *repoloc;
 	char *url;
 	int rv = 0;
+
+	assert(pkgname != NULL);
+	assert(plistf != NULL);
 
 	if ((rv = xbps_repository_pool_init()) != 0) {
 		errno = rv;

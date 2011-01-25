@@ -59,6 +59,8 @@ set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
 	pkg_state_t state = 0;
 	int rv = 0;
 
+	assert(pkgd != NULL);
+
 	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_NOT_INSTALLED);
 	if (rv != 0)
 		return rv;

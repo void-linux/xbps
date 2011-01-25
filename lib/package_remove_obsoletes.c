@@ -49,6 +49,9 @@ xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 	int rv = 0;
 	bool found, dodirs = false, dolinks = false;
 
+	assert(oldd != NULL);
+	assert(newd != NULL);
+
 again:
 	iter = xbps_get_array_iter_from_dict(oldd, array_str);
 	if (iter == NULL)

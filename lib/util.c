@@ -78,6 +78,8 @@ xbps_get_file_hash(const char *file)
 	int fd;
 	bool need_guard = false;
 
+	assert(file != NULL);
+
 	if ((fd = open(file, O_RDONLY)) == -1) {
 		free(buf);
 		return NULL;
@@ -125,6 +127,9 @@ int
 xbps_check_file_hash(const char *file, const char *sha256)
 {
 	char *res;
+
+	assert(file != NULL);
+	assert(sha256 != NULL);
 
 	res = xbps_get_file_hash(file);
 	if (res == NULL)
@@ -342,6 +347,8 @@ get_pkg_index_remote_plist(const char *uri)
 {
 	char *uri_fixed, *repodir;
 
+	assert(uri != NULL);
+
 	uri_fixed = xbps_get_remote_repo_string(uri);
 	if (uri_fixed == NULL)
 		return NULL;
@@ -379,6 +386,9 @@ xbps_get_binpkg_repo_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 	const char *filen, *arch, *cdir;
 	char *lbinpkg = NULL;
 
+	assert(pkg_repod != NULL);
+	assert(repoloc != NULL);
+
 	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
 	    "filename", &filen))
 		return NULL;
@@ -413,6 +423,7 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkg)
 	prop_array_t array;
 
 	assert(pkg != NULL);
+
 	array = prop_dictionary_get(pkg, "run_depends");
 	if (array && prop_array_count(array) > 0)
 		return true;

@@ -92,7 +92,9 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 
 	assert(filesd != NULL);
 	assert(entry != NULL);
+	assert(entry_pname != NULL);
 	assert(pkgname != NULL);
+	assert(version != NULL);
 
 	iter = xbps_get_array_iter_from_dict(filesd, "conf_files");
 	if (iter == NULL)

@@ -156,6 +156,8 @@ humanize_number(char *buf, size_t len, int64_t bytes,
 int
 xbps_humanize_number(char *buf, int64_t bytes)
 {
+	assert(buf != NULL);
+
 	return humanize_number(buf, 6, bytes, "B",
 	    HN_AUTOSCALE, HN_DECIMAL|HN_NOSPACE);
 }

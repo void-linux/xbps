@@ -59,6 +59,7 @@ set_new_state(prop_dictionary_t dict, pkg_state_t state)
 	const struct state *stp;
 	const char *pkgname;
 
+	assert(dict != NULL);
 
 	for (stp = states; stp->string != NULL; stp++)
 		if (state == stp->number)
@@ -102,6 +103,7 @@ xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 	prop_dictionary_t pkgd;
 
 	assert(pkgname != NULL);
+	assert(state != NULL);
 
 	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL)
@@ -119,6 +121,7 @@ int
 xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 {
 	assert(dict != NULL);
+	assert(state != NULL);
 
 	if ((*state = get_state(dict)) == 0)
 		return EINVAL;
@@ -142,6 +145,8 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 	char *plist;
 	int rv = 0;
 	bool newpkg = false;
+
+	assert(pkgname != NULL);
 
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);

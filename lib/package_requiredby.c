@@ -129,6 +129,8 @@ xbps_requiredby_pkg_remove(const char *pkgname)
 	char *plist;
 	int rv = 0;
 
+	assert(pkgname != NULL);
+
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
@@ -168,6 +170,9 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 	const char *reqname, *pkgver, *str;
 	char *rdepname;
 	int rv = 0;
+
+	assert(regar != NULL);
+	assert(pkg != NULL);
 
 	prop_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
 	rdeps = prop_dictionary_get(pkg, "run_depends");

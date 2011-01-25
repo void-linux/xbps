@@ -200,6 +200,8 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 	prop_dictionary_t d, pkgd, rpkgd = NULL;
 	pkg_state_t state = 0;
 
+	assert(str != NULL);
+
 	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
 		return NULL;
 
@@ -488,6 +490,8 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 	size_t have;
 	ssize_t totalsize = 0;
 	int rv = 0;
+
+	assert(xml != NULL);
 
 	/* Decompress the mmap'ed buffer with zlib */
 	strm.zalloc = Z_NULL;
