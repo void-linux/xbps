@@ -61,6 +61,6 @@ int     show_pkg_namedesc(prop_object_t, void *, bool *);
 int     list_strings_in_array(prop_object_t, void *, bool *);
 int     list_strings_sep_in_array(prop_object_t, void *, bool *);
 size_t  find_longest_pkgver(prop_dictionary_t);
-void    print_package_line(const char *);
+void    print_package_line(const char *, bool);
 
 #endif /* !_XBPS_BIN_DEFS_H_ */

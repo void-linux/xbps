@@ -247,7 +247,7 @@ list_strings_in_array(prop_object_t obj, void *arg, bool *loop_done)
 	(void)loop_done;
 
 	assert(prop_object_type(obj) == PROP_TYPE_STRING);
-	print_package_line(prop_string_cstring_nocopy(obj));
+	print_package_line(prop_string_cstring_nocopy(obj), false);
 
 	return 0;
 }
@@ -266,11 +266,16 @@ list_strings_sep_in_array(prop_object_t obj, void *arg, bool *loop_done)
 }
 
 void
-print_package_line(const char *str)
+print_package_line(const char *str, bool reset)
 {
 	static size_t cols;
 	static bool first;
 
+	if (reset) {
+		cols = 0;
+		first = false;
+		return;
+	}
 	cols += strlen(str) + 4;
 	if (cols <= 80) {
 		if (first == false) {

@@ -183,9 +183,10 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		if (strcmp(match, tract))
 			continue;
-		print_package_line(pkgver);
+		print_package_line(pkgver, false);
 	}
 	prop_object_iterator_reset(iter);
+	print_package_line(NULL, true);
 }
 
 static int

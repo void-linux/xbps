@@ -93,7 +93,7 @@ xbps_autoremove_pkgs(bool yes, bool purge)
 	    "(as dependencies) and aren't needed anymore:\n\n");
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		print_package_line(pkgver);
+		print_package_line(pkgver, false);
 	}
 	prop_object_iterator_reset(iter);
 	printf("\n\n");
@@ -168,7 +168,7 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 	for (x = 0; x < prop_array_count(sorted_pkgs); x++) {
 		dict = prop_array_get(sorted_pkgs, x);
 		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
-		print_package_line(pkgver);
+		print_package_line(pkgver, false);
 	}
 	printf("\n\n");
 	if (!yes && !xbps_noyes("Do you want to continue?")) {
