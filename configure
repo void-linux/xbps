@@ -279,8 +279,10 @@ fi
 #
 # Check for vasprintf().
 #
-printf "Checking for vasprintf() ... "
-cat <<EOF >_vasprintf.c
+func=vasprintf
+printf "Checking for $func() ... "
+
+cat <<EOF >_$func.c
 #define _GNU_SOURCE
 #include <stdio.h>
 int main(void) {
@@ -288,13 +290,13 @@ int main(void) {
 	return 0;
 }
 EOF
-if $XCC _vasprintf.c -o _vasprintf 2>/dev/null; then
+if $XCC _$func.c -o _$func 2>/dev/null; then
 	VASPRINTF=yes
 else
 	VASPRINTF=no
 fi
 echo "$VASPRINTF."
-rm -f _vasprint.c _vasprintf
+rm -f _$func.c _$func
 if [ "$VASPRINTF" = "yes" ]; then
 	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
 fi
@@ -302,8 +304,9 @@ fi
 #
 # Check for strlcpy().
 #
-printf "Checking for strlcpy() ... "
-cat <<EOF >_strlcpy.c
+func=strlcpy
+printf "Checking for $func() ... "
+cat <<EOF >_$func.c
 #include <string.h>
 int main(void) {
 	const char s1[] = "foo";
@@ -312,13 +315,13 @@ int main(void) {
 	return 0;
 }
 EOF
-if $XCC _strlcpy.c -o _strlcpy 2>/dev/null; then
+if $XCC _$func.c -o _$func 2>/dev/null; then
 	STRLCPY=yes
 else
 	STRLCPY=no
 fi
 echo "$STRLCPY."
-rm -f _strlcpy.c _strlcpy
+rm -f _$func.c _$func
 if [ "$STRLCPY" = no ]; then
 	echo "COMPAT_SRCS +=	compat/strlcpy.o" >>$CONFIG_MK
 	echo "#include \"strlcpy.h\"" >>$CONFIG_H
@@ -328,7 +331,8 @@ fi
 
 #
 # Check for strlcat().
-printf "Checking for strlcat() ... "
+func=strlcat
+printf "Checking for $func() ... "
 cat <<EOF > _strlcat.c
 #include <string.h>
 int main(void) {
@@ -338,13 +342,13 @@ int main(void) {
 	return 0;
 }
 EOF
-if $XCC _strlcat.c -o _strlcat 2>/dev/null; then
+if $XCC _$func.c -o _$func 2>/dev/null; then
 	STRLCAT=yes
 else
 	STRLCAT=no
 fi
 echo "$STRLCAT."
-rm -f _strlcat.c _strlcat
+rm -f _$func.c _$func
 if [ "$STRLCAT" = no ]; then
 	echo "COMPAT_SRCS +=	compat/strlcat.o" >>$CONFIG_MK
 	echo "#include \"strlcat.h\"" >>$CONFIG_H
