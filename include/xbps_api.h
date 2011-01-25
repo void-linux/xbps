@@ -526,7 +526,7 @@ bool xbps_remove_string_from_array(prop_array_t array, const char *str);
  * @param[in] pkgname Package name to match.
  * @param[in] check_state Set it to true to check that package
  * is in XBPS_PKG_STATE_CONFIG_FILES state.
- :wq!*
+ *
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_purge_pkg(const char *pkgname, bool check_state);
@@ -714,7 +714,7 @@ prop_dictionary_t xbps_transaction_prepare(void);
  * or xbps_repository_update_pkg() failed to find required packages
  * in registered repositories.
  *
- * @return The proplib array, NULL if it couldn't created.
+ * @return The proplib array, NULL if it couldn't be created.
  */
 prop_array_t xbps_transaction_missingdeps_get(void);
 
@@ -792,7 +792,8 @@ struct repository_pool_index {
  * Initializes the repository pool.
  *
  * Once it's initialized, access to the repositories can be done
- * through the \a xbps_repository_pool_foreach() function.
+ * through the \a xbps_repository_pool_foreach() and
+ * \a xbps_repository_pool_find_pkg() functions.
  *
  * @note This function is reference counted, don't forget to call
  * xbps_repository_pool_release() when it's no longer needed.
