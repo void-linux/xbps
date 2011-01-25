@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -76,7 +76,35 @@ xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 }
 
 int
-xbps_callback_array_iter_in_dict(prop_dictionary_t dict, const char *key,
+xbps_callback_array_iter(prop_array_t array,
+			 int (*fn)(prop_object_t, void *, bool *),
+			 void *arg)
+{
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	int rv = 0;
+	bool loop_done = false;
+
+	assert(array != NULL);
+	assert(fn != NULL);
+
+	iter = prop_array_iterator(array);
+	if (iter == NULL)
+		return ENOMEM;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		rv = (*fn)(obj, arg, &loop_done);
+		if (rv != 0 || loop_done)
+			break;
+	}
+	prop_object_iterator_release(iter);
+
+	return rv;
+}
+
+int
+xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
+				 const char *key,
 				 int (*fn)(prop_object_t, void *, bool *),
 				 void *arg)
 {
@@ -106,7 +134,9 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict, const char *key,
 
 int
 xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
-    const char *key, int (*fn)(prop_object_t, void *, bool *), void *arg)
+			const char *key,
+			int (*fn)(prop_object_t, void *, bool *),
+			void *arg)
 {
 	prop_array_t array;
 	prop_object_t obj;

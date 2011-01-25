@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110124"
+#define XBPS_RELVER		"20110125"
 
 /** 
  * @def XBPS_META_PATH
@@ -342,6 +342,22 @@ bool xbps_add_obj_to_dict(prop_dictionary_t dict,
  * @return true on success, false otherwise and xbps_errno set appropiately.
  */
 bool xbps_add_obj_to_array(prop_array_t array, prop_object_t obj);
+
+/**
+ * Executes a function callback specified in \a fn with \a arg paassed
+ * as its argument into they array \a array.
+ *
+ * @param[in] array Proplib array to iterate.
+ * @param[in] fn Function callback to run on every object in the array.
+ * While running the function callback, the hird parameter (a pointer to
+ * a boolean) can be set to true to stop immediately the loop.
+ * @param[in] arg Argument to be passed to the function callback.
+ *
+ * @return 0 on success, otherwise an errno value is set appropiately.
+ */
+int xbps_callback_array_iter(prop_array_t array,
+			     int (*fn)(prop_object_t, void *, bool *),
+			     void *arg);
 
 /**
  * Executes a function callback into the array associated with key \a key,

@@ -50,26 +50,21 @@ struct transaction {
 static int
 show_missing_dep_cb(prop_object_t obj, void *arg, bool *loop_done)
 {
-	const char *reqpkg;
-
         (void)arg;
         (void)loop_done;
 
-	reqpkg = prop_string_cstring_nocopy(obj);
-	if (reqpkg == NULL)
-		return EINVAL;
+	fprintf(stderr, "  * Missing binary package for: %s\n",
+	    prop_string_cstring_nocopy(obj));
 
-	fprintf(stderr, "  * Missing binary package for: %s\n", reqpkg);
 	return 0;
 }
 
 static void
-show_missing_deps(prop_dictionary_t d)
+show_missing_deps(prop_array_t a)
 {
 	fprintf(stderr,
 	    "xbps-bin: unable to locate some required packages:\n");
-	(void)xbps_callback_array_iter_in_dict(d, "missing_deps",
-	    show_missing_dep_cb, NULL);
+	(void)xbps_callback_array_iter(a, show_missing_dep_cb, NULL);
 }
 
 static int
@@ -644,7 +639,7 @@ xbps_exec_transaction(bool yes)
 		if (errno == ENODEV) {
 			/* missing packages */
 			array = xbps_transaction_missingdeps_get();
-			show_missing_deps(trans->dict);
+			show_missing_deps(array);
 			goto out;
 		}
 		xbps_dbg_printf("Empty transaction dictionary: %s\n",
