@@ -129,6 +129,7 @@ xbps_fetch_file(const char *uri,
 	/*
 	 * Check if we have to resume a transfer.
 	 */
+	memset(&st, 0, sizeof(st));
 	if (stat(destfile, &st) == 0) {
 		if (st.st_size > 0)
 			restart = true;
