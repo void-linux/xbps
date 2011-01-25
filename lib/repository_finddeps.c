@@ -62,7 +62,6 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkgd)
 	 * Always set "not-installed" package state. Will be overwritten
 	 * to its correct state later.
 	 */
-	xbps_dbg_printf_append("\n");
 	rv = xbps_set_pkg_state_dictionary(dict, XBPS_PKG_STATE_NOT_INSTALLED);
 	if (rv != 0) {
 		prop_object_release(dict);
@@ -247,7 +246,7 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	pkg_state_t state = 0;
-	const char *reqpkg, *reqvers, *pkg_queued;
+	const char *reqpkg, *reqvers, *pkg_queued, *repopkgver;
 	char *pkgname;
 	int rv = 0;
 
@@ -260,34 +259,19 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 	 * current package.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		curpkgd = NULL;
+		tmpd = curpkgd = NULL;
 		reqpkg = prop_string_cstring_nocopy(obj);
 		if (reqpkg == NULL) {
 			rv = EINVAL;
 			break;
 		}
 		if (originpkgn)
-			xbps_dbg_printf("  %s requires dependency '%s' "
+			xbps_dbg_printf("'%s' requires dependency '%s' "
 			    "[direct]: ", originpkgn, reqpkg);
 		else
-			xbps_dbg_printf("    requires dependency '%s' "
+			xbps_dbg_printf("    Requires dependency '%s' "
 			    "[indirect]: ", reqpkg);
 
-		/*
-		 * Check if required dep is satisfied and installed.
-		 */
-		rv = xbps_check_is_installed_pkg(reqpkg);
-		if (rv == -1) {
-			/* There was an error checking it... */
-			xbps_dbg_printf_append("error matching reqdep %s\n",
-			    reqpkg);
-			break;
-		} else if (rv == 1) {
-			/* Required pkg dependency is satisfied */
-			xbps_dbg_printf_append("satisfied and installed.\n");
-			rv = 0;
-			continue;
-		}
 		pkgname = xbps_get_pkgpattern_name(reqpkg);
 		if (pkgname == NULL) {
 			rv = EINVAL;
@@ -306,25 +290,25 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 		 */
 		curpkgd = xbps_find_pkg_in_dict_by_name(trans_dict,
 		    "unsorted_deps", pkgname);
-		if (curpkgd == NULL) {
-			if (errno && errno != ENOENT) {
-				free(pkgname);
-				rv = errno;
-				break;
-			}
-		} else {
+		if (curpkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkg_queued);
 			if (xbps_pkgpattern_match(pkg_queued,
 			    __UNCONST(reqpkg))) {
 				xbps_dbg_printf_append(
-				    "queued in the transaction.\n");
+				    "'%s' queued in the transaction.\n",
+				    pkg_queued);
 				free(pkgname);
 				continue;
 			}
-			curpkgd = NULL;
+		} else {
+			/* error matching required pkgdep */
+			if (errno && errno != ENOENT) {
+				rv = errno;
+				free(pkgname);
+				break;
+			}
 		}
-
 		/*
 		 * If required pkgdep is not in repo, add it into the
 		 * missing deps array and pass to the next one.
@@ -339,41 +323,48 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 
 			rv = add_missing_reqdep(mrdeps, reqpkg);
 			if (rv != 0 && rv != EEXIST) {
-				xbps_dbg_printf_append("add missing reqdep "
-				    "failed %s\n", reqpkg);
+				xbps_dbg_printf_append("`%s': "
+				    "add_missing_reqdep failed %s\n", reqpkg);
 				free(pkgname);
 				break;
 			} else if (rv == EEXIST) {
-				xbps_dbg_printf_append("missing dep %s "
+				xbps_dbg_printf_append("`%s' missing dep "
 				    "already added.\n", reqpkg);
 				rv = 0;
 				free(pkgname);
 				continue;
 			} else {
-				xbps_dbg_printf_append(
-				    "missing dep '%s' in repository!\n",
-				    reqpkg);
+				xbps_dbg_printf_append("`%s' added "
+				    "into the missing deps array.\n", reqpkg);
 				free(pkgname);
 				continue;
 			}
 		}
 		/*
-		 * If package is installed but version doesn't satisfy
-		 * the dependency mark it as an update, otherwise as
-		 * an install. Packages that were unpacked previously
-		 * will be marked as pending to be configured.
+		 * Check if required pkgdep is installed and matches
+		 * the required version.
 		 */
-		tmpd = xbps_find_pkg_dict_installed(reqpkg, true);
+		tmpd = xbps_find_pkg_dict_installed(pkgname, false);
 		if (tmpd == NULL) {
+			free(pkgname);
 			if (errno && errno != ENOENT) {
-				free(pkgname);
-				prop_object_release(curpkgd);
+				/* error */
 				rv = errno;
 				break;
 			}
+			/* Required pkgdep not installed */
 			prop_dictionary_set_cstring_nocopy(curpkgd,
 			    "trans-action", "install");
-		} else if (tmpd) {
+			xbps_dbg_printf_append("not installed.\n");
+		} else {
+			/*
+			 * Check if installed version matches the
+			 * required pkgdep version.
+			 */
+			prop_dictionary_get_cstring_nocopy(tmpd,
+			    "pkgver", &pkg_queued);
+
+			/* Check its state */
 			rv = xbps_get_pkg_state_installed(pkgname, &state);
 			if (rv != 0) {
 				free(pkgname);
@@ -381,14 +372,47 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 				prop_object_release(curpkgd);
 				break;
 			}
-			if (state == XBPS_PKG_STATE_INSTALLED)
+			free(pkgname);
+			if (xbps_pkgpattern_match(pkg_queued,
+			    __UNCONST(reqpkg)) == 0) {
+				/*
+				 * Package is installed but does not match
+				 * the dependency pattern, an update
+				 * needs to be installed.
+				 */
+				prop_dictionary_get_cstring_nocopy(curpkgd,
+				    "version", &repopkgver);
+				xbps_dbg_printf_append("installed `%s', "
+				    "updating to `%s'...\n",
+				    pkg_queued, repopkgver);
 				prop_dictionary_set_cstring_nocopy(curpkgd,
 				    "trans-action", "update");
-			else
-				prop_dictionary_set_cstring_nocopy(curpkgd,
-				    "trans-action", "configure");
-
-			prop_object_release(tmpd);
+			} else {
+				if (state == XBPS_PKG_STATE_UNPACKED) {
+					/*
+					 * Package matches the dependency
+					 * pattern but was only unpacked,
+					 * mark pkg to be configured.
+					 */
+					prop_dictionary_set_cstring_nocopy(
+					    curpkgd, "trans-action",
+					    "configure");
+					xbps_dbg_printf_append("installed `%s'"
+					    ", but needs to be configured...\n",
+					    pkg_queued);
+				} else {
+					/*
+					 * Package matches the dependency
+					 * pattern and is fully installed,
+					 * skip to the next one.
+					 */
+					xbps_dbg_printf_append("installed "
+					    "`%s'.\n", pkg_queued);
+					prop_object_release(tmpd);
+					prop_object_release(curpkgd);
+					continue;
+				}
+			}
 		}
 		/*
 		 * Package is on repo, add it into the dictionary.
@@ -396,11 +420,9 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 		if ((rv = store_dependency(trans_dict, curpkgd)) != 0) {
 			xbps_dbg_printf("store_dependency failed %s",
 			    reqpkg);
-			free(pkgname);
 			prop_object_release(curpkgd);
 			break;
 		}
-
 		/*
 		 * If package was added in the missing_deps array, we
 		 * can remove it now it has been found in current repository.
@@ -413,30 +435,24 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 		} else {
 			xbps_dbg_printf("Removing missing dep %s "
 			    "returned %s\n", reqpkg, strerror(rv));
-			free(pkgname);
 			prop_object_release(curpkgd);
 			break;
 		}
-
 		/*
 		 * If package doesn't have rundeps, pass to the next one.
 		 */
 		curpkg_rdeps = prop_dictionary_get(curpkgd, "run_depends");
 		if (curpkg_rdeps == NULL) {
-			free(pkgname);
 			prop_object_release(curpkgd);
 			continue;
 		}
 		prop_object_release(curpkgd);
-
 		/*
 		 * Iterate on required pkg to find more deps.
 		 */
-		xbps_dbg_printf_append("\n");
-		xbps_dbg_printf("Finding dependencies for '%s-%s' [%s]:\n",
-			    pkgname, reqvers, originpkgn ? "direct" : "indirect");
-
-		free(pkgname);
+		xbps_dbg_printf("%sFinding dependencies for '%s' [%s]:\n",
+		    originpkgn ? "" : "  ", reqpkg,
+		    originpkgn ? "direct" : "indirect");
 		rv = find_repo_deps(trans_dict, mrdeps, NULL, curpkg_rdeps);
 		if (rv != 0) {
 			xbps_dbg_printf("Error checking %s for rundeps: %s\n",
