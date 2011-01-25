@@ -56,6 +56,7 @@ xbps_sort_pkg_deps(void)
 	const char *pkgname, *pkgver, *str;
 	char *pkgnamedep;
 	int rv = 0;
+	bool done;
 
 	if ((transd = xbps_transaction_dictionary_get()) == NULL)
 		return EINVAL;
@@ -78,12 +79,20 @@ xbps_sort_pkg_deps(void)
 		prop_dictionary_set(transd, "packages", sorted);
 		return 0;
 	}
+	/*
+	 * The sorted array should have the same capacity than
+	 * all objects in the unsorted array.
+	 */
 	ndeps = prop_array_count(unsorted);
-
+	if (!prop_array_ensure_capacity(sorted, ndeps)) {
+		xbps_error_printf("failed to set capacity to the sorted "
+		    "pkgdeps array\n");
+		return ENOMEM;
+	}
 	iter = prop_array_iterator(unsorted);
 	if (iter == NULL) {
-		prop_object_release(sorted);
-		return ENOMEM;
+		rv = ENOMEM;
+		goto out;
 	}
 again:
 	/*
@@ -93,14 +102,16 @@ again:
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dbg_printf("Sorting package '%s': ", pkgver);
-
-		if (xbps_find_pkg_in_dict_by_name(transd,
-		    "packages", pkgname)) {
+		/*
+		 * Check if package was sorted previously and skip.
+		 */
+		done = false;
+		prop_dictionary_get_bool(obj, "sorted", &done);
+		if (done) {
 			xbps_dbg_printf_append("skipping, already queued.\n",
 			    pkgname);
 			continue;
 		}
-
 		/*
 		 * Packages that don't have deps go unsorted, because
 		 * it doesn't matter.
@@ -110,11 +121,7 @@ again:
 			xbps_dbg_printf_append("added (no rundeps) into "
 			    "the sorted queue.\n");
 			prop_array_add(sorted, obj);
-			if (!xbps_remove_pkg_from_dict(transd,
-			    "unsorted_deps", pkgname)) {
-				xbps_dbg_printf("can't remove %s from "
-				    "unsorted_deps array!\n", pkgname);
-			}
+			prop_dictionary_set_bool(obj, "sorted", true);
 			cnt++;
 			continue;
 		}
@@ -123,7 +130,6 @@ again:
 			rv = ENOMEM;
 			goto out;
 		}
-
 		/*
 		 * Iterate over the run_depends array, and find out if they
 		 * were already added in the sorted list.
@@ -164,11 +170,7 @@ again:
 		/* Add dependency if all its required deps are already added */
 		if (prop_array_count(rundeps) == rundepscnt) {
 			prop_array_add(sorted, obj);
-			if (!xbps_remove_pkg_from_dict(transd,
-			    "unsorted_deps", pkgname)) {
-				xbps_dbg_printf("can't remove %s from "
-				    "unsorted_deps array!\n", pkgname);
-			}
+			prop_dictionary_set_bool(obj, "sorted", true);
 			xbps_dbg_printf("Added package '%s' to the sorted "
 			    "queue (all rundeps satisfied).\n\n", pkgver);
 			rundepscnt = 0;
