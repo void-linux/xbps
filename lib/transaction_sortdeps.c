@@ -99,6 +99,10 @@ again:
 	 * Order all deps by looking at its run_depends array.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		/* no more iterations required, pkglist is sorted */
+		if (cnt >= ndeps)
+			break;
+
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dbg_printf("Sorting package '%s': ", pkgver);
@@ -108,7 +112,7 @@ again:
 		done = false;
 		prop_dictionary_get_bool(obj, "sorted", &done);
 		if (done) {
-			xbps_dbg_printf_append("skipping, already queued.\n",
+			xbps_dbg_printf_append("skipping, already sorted.\n",
 			    pkgname);
 			continue;
 		}
@@ -130,13 +134,11 @@ again:
 			rv = ENOMEM;
 			goto out;
 		}
+		xbps_dbg_printf_append("\n");
 		/*
 		 * Iterate over the run_depends array, and find out if they
 		 * were already added in the sorted list.
 		 */
-		xbps_dbg_printf_append("\n");
-		xbps_dbg_printf("Checking '%s' run depends for sorting...\n",
-		    pkgver);
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
 			str = prop_string_cstring_nocopy(obj2);
 			if (str == NULL) {
@@ -172,13 +174,13 @@ again:
 			prop_array_add(sorted, obj);
 			prop_dictionary_set_bool(obj, "sorted", true);
 			xbps_dbg_printf("Added package '%s' to the sorted "
-			    "queue (all rundeps satisfied).\n\n", pkgver);
+			    "queue (all rundeps satisfied).\n", pkgver);
 			rundepscnt = 0;
 			cnt++;
 			continue;
 		}
 		xbps_dbg_printf("Unsorted package '%s' has missing "
-		    "rundeps (missing %zu).\n\n", pkgver,
+		    "rundeps (missing %zu).\n", pkgver,
 		    prop_array_count(rundeps) - rundepscnt);
 		rundepscnt = 0;
 	}
@@ -187,7 +189,6 @@ again:
 		xbps_dbg_printf("Missing required deps! queued: %zu "
 		    "required: %zu.\n", cnt, ndeps);
 		prop_object_iterator_reset(iter);
-		xbps_dbg_printf("total iteratons %zu\n", cnt);
 		goto again;
 	}
 	prop_object_iterator_release(iter);
