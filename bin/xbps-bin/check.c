@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -113,17 +113,11 @@ xbps_check_pkg_integrity(const char *pkgname)
 	 * Check for props.plist metadata file.
 	 */
 	propsd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGPROPS);
-	if (propsd == NULL) {
+	if (prop_object_type(propsd) != PROP_TYPE_DICTIONARY) {
 		fprintf(stderr,
-		    "E: %s: unexistent %s metadata file.\n", pkgname,
+		    "E: %s: unexistent %s or invalid metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = errno;
-		goto out;
-	} else if (prop_object_type(propsd) != PROP_TYPE_DICTIONARY) {
-		fprintf(stderr,
-		    "E: %s: invalid %s metadata file.\n", pkgname,
-		    XBPS_PKGPROPS);
-		rv = EINVAL;
 		goto out;
 	} else if (prop_dictionary_count(propsd) == 0) {
 		fprintf(stderr,
@@ -137,17 +131,11 @@ xbps_check_pkg_integrity(const char *pkgname)
 	 * Check for files.plist metadata file.
 	 */
 	filesd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
-	if (filesd == NULL) {
+	if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY) {
 		fprintf(stderr,
-		    "E: %s: unexistent %s metadata file.\n", pkgname,
+		    "E: %s: unexistent %s or invalid metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		rv = ENOENT;
-		goto out;
-	} else if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY) {
-		fprintf(stderr,
-		    "E: %s: invalid %s metadata file.\n", pkgname,
-		    XBPS_PKGFILES);
-		rv = EINVAL;
 		goto out;
 	} else if (prop_dictionary_count(filesd) == 0) {
 		fprintf(stderr,
