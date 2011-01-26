@@ -162,69 +162,37 @@ xbps_check_is_repo_string_remote(const char *uri)
 	return false;
 }
 
-static const char *
-xbps_get_pkgver_from_dict(prop_dictionary_t d)
-{
-	const char *pkgver = NULL;
-
-	assert(d != NULL);
-
-	prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
-	return pkgver;
-}
-
 int
-xbps_check_is_installed_pkg(const char *pkg)
+xbps_check_is_installed_pkg(const char *pattern)
 {
 	prop_dictionary_t dict;
-	const char *instpkgver = NULL;
-	char *pkgname;
-	int rv = 0;
-	pkg_state_t state = 0;
+	pkg_state_t state;
 
 	assert(pkg != NULL);
 
-	pkgname = xbps_get_pkgpattern_name(pkg);
-	if (pkgname == NULL)
-		return -1;
-
-	dict = xbps_find_pkg_dict_installed(pkgname, false);
+	dict = xbps_find_pkg_dict_installed(pattern, true);
 	if (dict == NULL) {
-		free(pkgname);
 		if (errno == ENOENT) {
 			errno = 0;
 			return 0; /* not installed */
 		}	
-		return -1;
+		return -1; /* error */
 	}
-
 	/*
 	 * Check that package state is fully installed, not
 	 * unpacked or something else.
 	 */
 	if (xbps_get_pkg_state_dictionary(dict, &state) != 0) {
 		prop_object_release(dict);
-		free(pkgname);
-		return -1;
+		return -1; /* error */
 	}
 	if (state != XBPS_PKG_STATE_INSTALLED) {
 		prop_object_release(dict);
-		free(pkgname);
 		return 0; /* not fully installed */
 	}
-	free(pkgname);
-
-	/* Check if installed pkg is matched against pkgdep pattern */
-	instpkgver = xbps_get_pkgver_from_dict(dict);
-	if (instpkgver == NULL) {
-		prop_object_release(dict);
-		return -1;
-	}
-
-	rv = xbps_pkgpattern_match(instpkgver, __UNCONST(pkg));
 	prop_object_release(dict);
 
-	return rv;
+	return 1;
 }
 
 bool
