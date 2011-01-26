@@ -37,13 +37,16 @@
  * the repository plist index file in the "unsorted_deps" array.
  *
  * When a package has no rundeps or all rundeps are satisfied, the package
- * dictionary is added into the "packages" array and it is removed from the
- * "unsorted_deps" array; that means the package has been sorted in the
- * transaction.
+ * dictionary is added into the sorted "packages" array and it is marked as
+ * sorted in its dictionary with a boolean object.
  *
  * It will loop until all packages are processed and will check that
  * the number of packages added into the "packages" array is the same than
  * it was in the "unsorted_deps" array.
+ *
+ * Sure I could make it not iterate so many times but probably it will
+ * also be slower! that's why XBPS uses proplib with its red-black trees,
+ * iterating over them is fast.
  */
 int HIDDEN
 xbps_sort_pkg_deps(void)
