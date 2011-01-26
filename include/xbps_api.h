@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110125"
+#define XBPS_RELVER		"20110126"
 
 /** 
  * @def XBPS_META_PATH
@@ -459,6 +459,26 @@ prop_dictionary_t xbps_find_pkg_from_plist(const char *plist,
  */
 prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
 					       bool bypattern);
+
+/**
+ * Finds a package name matching an string object in a proplib array.
+ *
+ * @param[in] array The proplib array where to look for.
+ * @param[in] pkgname The package name to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_find_pkgname_in_array(prop_array_t array, const char *pkgname);
+
+/**
+ * Finds a package pattern matching an string object in a proplib array.
+ *
+ * @param[in] array The proplib array where to look for.
+ * @param[in] pattern The package pattern to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_find_pkgpattern_in_array(prop_array_t array, const char *pattern);
 
 /**
  * Finds a string matching an object in a proplib array.

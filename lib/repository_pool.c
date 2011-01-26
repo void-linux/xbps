@@ -262,9 +262,6 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		errno = 0;
 		return 0;
 	}
-
-	xbps_dbg_printf("Didn't find '%s' (%s)\n",
-	    rpf->pattern, rpi->rpi_uri);
 	/* Not found */
 	errno = ENOENT;
 	return 0;

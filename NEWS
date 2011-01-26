@@ -1,5 +1,12 @@
 xbps-0.8.0 (???):
 
+ * Added support for virtual packages. A virtual package is one that doesn't
+   exist in the repository, but other packages can provide it. A new array
+   in the package properties dictionary has been added to specify which
+   virtual packages the package supports. As an example, the `rsyslog'
+   package provides the virtual package `syslog-daemon-0'. Other packages
+   can depend in `syslog-daemon>=0' and `rsyslog' will satisfy the dependency.
+
  * Merged the `progress_callback' branch that makes possible to specify a
    function callback to update progress while unpacking binary packages
    and while fetching files. xbps-bin(8) now reports a percentage while
@@ -11,13 +18,15 @@ xbps-0.8.0 (???):
    found in the first repository registered in the pool. It can also be used
    to find the newest version found in all registered repositories.
 
- * Improved package dependency sorting algorithm that uses less memory
-   and as bonus sorts all packages in the way they should be (previously
-   the sorting was a bit different for packages with no run-time dependencies).
+ * Improved package dependency sorting algorithm that uses less memory,
+   it is 15% faster approximately and as bonus sorts all packages in the way
+   they should be (previously the sorting was a bit different for packages
+   with no run-time dependencies).
 
- * Hide implementation details in the API, so the ABI is not compatible
-   anymore with previous versions. ABI will be respected once the API
-   has been stabilized, but not for now.
+ * Many structural changes in the API. Made some stuff private and changed
+   some function arguments in the API, the ABI is not compatible anymore with
+   previous versions... anyway you shouldn't be using libxbps just yet.
+   The API documentation has been modified to stay in sync with reality.
 
 xbps-0.7.3 (2011-01-16):
 

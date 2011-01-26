@@ -233,6 +233,37 @@ out:
 	return rpkgd;
 }
 
+static prop_dictionary_t
+find_virtual_pkg(prop_dictionary_t d,
+		 const char *key,
+		 const char *str,
+		 bool bypattern)
+{
+	prop_object_iterator_t iter;
+	prop_object_t obj;
+	prop_array_t provides;
+	bool found = false;
+
+	if ((iter = xbps_get_array_iter_from_dict(d, key)) == NULL)
+		return NULL;
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		if ((provides = prop_dictionary_get(obj, "provides")) == NULL)
+			continue;
+
+		if (bypattern)
+			found = xbps_find_pkgpattern_in_array(provides, str);
+		else
+			found = xbps_find_pkgname_in_array(provides, str);
+
+		if (found)
+			break;
+	}
+	prop_object_iterator_release(iter);
+
+	return obj;
+}
+
 prop_dictionary_t
 xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
 			      const char *key,
@@ -256,8 +287,15 @@ xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
 	}
 	prop_object_iterator_release(iter);
 	if (obj == NULL) {
-		errno = ENOENT;
-		return NULL;
+		/*
+		 * If a package couldn't be found by its name, try looking
+		 * for a package providing a virtual package, i.e "provides".
+		 */
+		obj = find_virtual_pkg(dict, key, pkgname, false);
+		if (obj == NULL) {
+			errno = ENOENT;
+			return NULL;
+		}
 	}
 
 	return obj;
@@ -286,11 +324,81 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
 	}
 	prop_object_iterator_release(iter);
 	if (obj == NULL) {
-		errno = ENOENT;
-		return NULL;
+		/*
+		 * If a package couldn't be found by a pattern, try looking
+		 * for a package providing a virtual package pattern via
+		 * "provides".
+		 */
+		obj = find_virtual_pkg(dict, key, pattern, true);
+		if (obj == NULL) {
+			errno = ENOENT;
+			return NULL;
+		}
 	}
 
 	return obj;
+}
+
+bool
+xbps_find_pkgname_in_array(prop_array_t array, const char *pkgname)
+{
+	prop_object_iterator_t iter;
+	prop_object_t obj;
+	const char *pkgdep;
+	char *curpkgname;
+	bool found = false;
+
+	assert(array != NULL);
+	assert(pkgname != NULL);
+
+	iter = prop_array_iterator(array);
+	if (iter == NULL)
+		return false;
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		assert(prop_object_type(obj) == PROP_TYPE_STRING);
+		pkgdep = prop_string_cstring_nocopy(obj);
+		curpkgname = xbps_get_pkg_name(pkgdep);
+		if (curpkgname == NULL)
+			break;
+		if (strcmp(curpkgname, pkgname) == 0) {
+			free(curpkgname);
+			found = true;
+			break;
+		}
+		free(curpkgname);
+	}
+	prop_object_iterator_release(iter);
+
+	return found;
+}
+
+bool
+xbps_find_pkgpattern_in_array(prop_array_t array, const char *pattern)
+{
+	prop_object_iterator_t iter;
+	prop_object_t obj;
+	const char *curpkgdep;
+	bool found = false;
+
+	assert(array != NULL);
+	assert(pattern != NULL);
+
+	iter = prop_array_iterator(array);
+	if (iter == NULL)
+		return false;
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		assert(prop_object_type(obj) == PROP_TYPE_STRING);
+		curpkgdep = prop_string_cstring_nocopy(obj);
+		if (xbps_pkgpattern_match(curpkgdep, __UNCONST(pattern))) {
+			found = true;
+			break;
+		}
+	}
+	prop_object_iterator_release(iter);
+
+	return found;
 }
 
 bool
@@ -298,6 +406,7 @@ xbps_find_string_in_array(prop_array_t array, const char *val)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
+	bool found = false;
 
 	assert(array != NULL);
 	assert(val != NULL);
@@ -307,17 +416,15 @@ xbps_find_string_in_array(prop_array_t array, const char *val)
 		return false;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (prop_object_type(obj) != PROP_TYPE_STRING)
-			continue;
+		assert(prop_object_type(obj) == PROP_TYPE_STRING);
 		if (prop_string_equals_cstring(obj, val)) {
-			prop_object_iterator_release(iter);
-			return true;
+			found = true;
+			break;
 		}
 	}
-
 	prop_object_iterator_release(iter);
 
-	return false;
+	return found;
 }
 
 prop_object_iterator_t
