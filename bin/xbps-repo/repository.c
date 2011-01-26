@@ -266,8 +266,8 @@ show_pkg_info_from_repolist(const char *pkgname)
 		return errno;
 	}
 	free(url);
-	show_pkg_info_only_repo(pkgd);
-	show_pkg_info(pkg_propsd);
+	show_pkg_info(pkgd, true);
+	show_pkg_info(pkg_propsd, false);
 	prop_object_release(pkg_propsd);
 	prop_object_release(pkgd);
 

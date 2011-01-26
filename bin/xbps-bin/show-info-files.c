@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,7 @@ show_pkg_info_from_metadir(const char *pkgname)
 	if (d == NULL)
 		return errno;
 
-	show_pkg_info(d);
+	show_pkg_info(d, false);
 	prop_object_release(d);
 
 	return 0;
