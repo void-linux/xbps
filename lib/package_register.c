@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ int
 xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 {
 	prop_dictionary_t dict, pkgd;
-	prop_array_t array;
+	prop_array_t array, provides = NULL;
 	const char *pkgname, *version, *desc, *pkgver;
 	char *plist;
 	int rv = 0;
@@ -59,6 +59,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
+	provides = prop_dictionary_get(pkgrd, "provides");
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
@@ -99,7 +100,13 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 				goto out;
 			}
 		}
-
+		if (provides) {
+			if (!prop_dictionary_set(pkgd, "provides", provides)) {
+				prop_object_release(pkgd);
+				rv = EINVAL;
+				goto out;
+			}
+		}
 		/*
 		 * Add the requiredby objects for dependent packages.
 		 */
