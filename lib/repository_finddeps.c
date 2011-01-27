@@ -193,7 +193,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	pkg_state_t state = 0;
-	const char *reqpkg, *reqvers, *pkgver_q, *repopkgver;
+	const char *reqpkg, *pkgver_q, *repopkgver;
 	char *pkgname;
 	int rv = 0;
 
@@ -219,17 +219,6 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			xbps_dbg_printf("    Requires dependency '%s' "
 			    "[indirect]: ", reqpkg);
 
-		pkgname = xbps_get_pkgpattern_name(reqpkg);
-		if (pkgname == NULL) {
-			rv = EINVAL;
-			break;
-		}
-		reqvers = xbps_get_pkgpattern_version(reqpkg);
-		if (reqvers == NULL) {
-			free(pkgname);
-			rv = EINVAL;
-			break;
-		}
 		/*
 		 * Check if package is already added in the
 		 * array of unsorted deps, and check if current required
@@ -242,13 +231,11 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			    "pkgver", &pkgver_q);
 			xbps_dbg_printf_append("`%s' queued "
 			    "in the transaction.\n", pkgver_q);
-			free(pkgname);
 			continue;
 		} else {
 			/* error matching required pkgdep */
 			if (errno && errno != ENOENT) {
 				rv = errno;
-				free(pkgname);
 				break;
 			}
 		}
@@ -259,7 +246,6 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		curpkgd = xbps_repository_pool_find_pkg(reqpkg, true, false);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
-				free(pkgname);
 				rv = errno;
 				break;
 			}
@@ -268,20 +254,23 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			if (rv != 0 && rv != EEXIST) {
 				xbps_dbg_printf_append("`%s': "
 				    "add_missing_reqdep failed %s\n", reqpkg);
-				free(pkgname);
 				break;
 			} else if (rv == EEXIST) {
 				xbps_dbg_printf_append("`%s' missing dep "
 				    "already added.\n", reqpkg);
 				rv = 0;
-				free(pkgname);
 				continue;
 			} else {
 				xbps_dbg_printf_append("`%s' added "
 				    "into the missing deps array.\n", reqpkg);
-				free(pkgname);
 				continue;
 			}
+		}
+		pkgname = xbps_get_pkgpattern_name(reqpkg);
+		if (pkgname == NULL) {
+			prop_object_release(curpkgd);
+			rv = EINVAL;
+			break;
 		}
 		/*
 		 * Check if required pkgdep is installed and matches
@@ -293,6 +282,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			if (errno && errno != ENOENT) {
 				/* error */
 				rv = errno;
+				prop_object_release(curpkgd);
 				break;
 			}
 			/* Required pkgdep not installed */
