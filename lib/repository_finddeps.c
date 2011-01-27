@@ -384,6 +384,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 				prop_dictionary_set_cstring_nocopy(curpkgd,
 				    "trans-action", "update");
 			} else if (rv == 1) {
+				rv = 0;
 				if (state == XBPS_PKG_STATE_UNPACKED) {
 					/*
 					 * Package matches the dependency
