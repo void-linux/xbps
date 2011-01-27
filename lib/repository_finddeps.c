@@ -183,59 +183,6 @@ out:
 }
 
 static int
-remove_missing_reqdep(prop_array_t missing_rdeps, const char *reqpkg)
-{
-	prop_object_iterator_t iter = NULL;
-	prop_object_t obj;
-	size_t idx = 0;
-	int rv = 0;
-	bool found = false;
-
-	assert(missing_rdeps != NULL);
-	assert(reqpkg != NULL);
-
-	iter = prop_array_iterator(missing_rdeps);
-	if (iter == NULL)
-		return errno;
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		const char *curdep;
-		char *curpkgnamedep, *reqpkgname;
-
-		curdep = prop_string_cstring_nocopy(obj);
-		curpkgnamedep = xbps_get_pkgpattern_name(curdep);
-		if (curpkgnamedep == NULL) {
-			rv = errno;
-			goto out;
-		}
-		reqpkgname = xbps_get_pkgpattern_name(reqpkg);
-		if (reqpkgname == NULL) {
-			free(curpkgnamedep);
-			rv = errno;
-			goto out;
-		}
-		if (strcmp(reqpkgname, curpkgnamedep) == 0)
-			found = true;
-
-		free(curpkgnamedep);
-		free(reqpkgname);
-		if (found)
-			break;
-		idx++;
-	}
-out:
-	prop_object_iterator_release(iter);
-	if (found) {
-		prop_array_remove(missing_rdeps, idx);
-		return 0;
-	}
-	if (rv == 0)
-		rv = ENOENT;
-
-	return rv;
-}
-
-static int
 find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 	       prop_array_t mrdeps,		/* missing rundeps array */
 	       const char *originpkgn,		/* origin pkgname */
@@ -422,21 +369,6 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		if ((rv = store_dependency(transd, curpkgd)) != 0) {
 			xbps_dbg_printf("store_dependency failed %s",
 			    reqpkg);
-			prop_object_release(curpkgd);
-			break;
-		}
-		/*
-		 * If package was added in the missing_deps array, we
-		 * can remove it now it has been found in current repository.
-		 */
-		rv = remove_missing_reqdep(mrdeps, reqpkg);
-		if (rv == ENOENT) {
-			rv = 0;
-		} else if (rv == 0) {
-			xbps_dbg_printf("Removed missing dep %s.\n", reqpkg);
-		} else {
-			xbps_dbg_printf("Removing missing dep %s "
-			    "returned %s\n", reqpkg, strerror(rv));
 			prop_object_release(curpkgd);
 			break;
 		}
