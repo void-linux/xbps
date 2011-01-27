@@ -163,7 +163,8 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 			rv = errno;
 			goto out;
 		}
-		if (!xbps_remove_pkg_from_dict(idxdict, "packages", pkgname)) {
+		if (!xbps_remove_pkg_from_dict_by_name(idxdict,
+		    "packages", pkgname)) {
 			fprintf(stderr, "E: couldn't remove %s dict from "
 			    "index (%s)\n", pkgname, strerror(errno));
 			prop_object_release(newpkgd);

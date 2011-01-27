@@ -195,7 +195,7 @@ main(int argc, char **argv)
 		if (argc != 3)
 			usage();
 
-		if (!xbps_remove_pkg_dict_from_file(argv[1], plist)) {
+		if (!xbps_remove_pkg_dict_from_plist_by_name(argv[1], plist)) {
 			if (errno == ENOENT)
 				fprintf(stderr, "%s=> ERROR: %s not registered "
 				    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET);

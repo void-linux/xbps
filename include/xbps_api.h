@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110126"
+#define XBPS_RELVER		"20110127"
 
 /** 
  * @def XBPS_META_PATH
@@ -520,12 +520,24 @@ prop_dictionary_t xbps_get_pkg_dict_from_metadata_plist(const char *pkgn,
  * Removes the package's proplib dictionary matching \a pkgname
  * in a plist file.
  *
- * @param[in] pkgname Package name to look for.
+ * @param[in] name Package name to match in plist's dictionary.
  * @param[in] plist Path to a plist file.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkg_dict_from_file(const char *pkgname, const char *plist);
+bool xbps_remove_pkg_dict_from_plist_by_name(const char *name,
+					     const char *plist);
+
+/**
+ * Removes the package's proplib dictionary matching \a pkgname
+ * in a proplib array.
+ *
+ * @param[in] array Proplib array where to look for.
+ * @param[in] name Package name to match in the array.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name);
 
 /**
  * Removes the package's proplib dictionary matching \a pkgname,
@@ -533,13 +545,13 @@ bool xbps_remove_pkg_dict_from_file(const char *pkgname, const char *plist);
  *
  * @param[in] dict Proplib dictionary storing the proplib array.
  * @param[in] key Key associated with the proplib array.
- * @param[in] pkgname Package name to look for.
+ * @param[in] name Package name to look for.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkg_from_dict(prop_dictionary_t dict,
-			       const char *key,
-			       const char *pkgname);
+bool xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
+				       const char *key,
+				       const char *name);
 
 /**
  * Removes a string from a proplib's array.

@@ -151,7 +151,7 @@ xbps_unregister_pkg(const char *pkgname)
 	if (plist == NULL)
 		return ENOMEM;
 
-	if (!xbps_remove_pkg_dict_from_file(pkgname, plist))
+	if (!xbps_remove_pkg_dict_from_plist_by_name(pkgname, plist))
 		rv = errno;
 
 	free(plist);
