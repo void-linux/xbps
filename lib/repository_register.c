@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,11 +33,10 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/repository.c
+ * @file lib/repository_register.c
  * @brief Repository registration routines
  * @defgroup repo_register Repository registration functions
  */
-
 int
 xbps_repository_register(const char *uri)
 {
