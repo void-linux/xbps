@@ -43,7 +43,7 @@
  * but currently no other packages are depending on.
  *
  * The following image shown below shows the registered packages database
- * dictionary (the array returned by xbps_find_orphan_packages() will
+ * dictionary (the array returned by xbps_find_pkg_orphans() will
  * contain a package dictionary per orphan found):
  *
  * @image html images/xbps_regpkgdb_dictionary.png
@@ -133,7 +133,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 }
 
 prop_array_t
-xbps_find_orphan_packages(void)
+xbps_find_pkg_orphans(void)
 {
 	prop_array_t array;
 	prop_dictionary_t dict;

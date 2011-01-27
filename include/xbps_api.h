@@ -303,7 +303,7 @@ const char *xbps_fetch_error_string(void);
  * @return A proplib array of dictionaries with all orphans found,
  * on error NULL is returned and errno is set appropiately.
  */
-prop_array_t xbps_find_orphan_packages(void);
+prop_array_t xbps_find_pkg_orphans(void);
 
 /**
  * @ingroup vermatch

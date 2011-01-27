@@ -118,7 +118,7 @@ show_orphans(void)
 	prop_object_t obj;
 	const char *pkgver;
 
-	orphans = xbps_find_orphan_packages();
+	orphans = xbps_find_pkg_orphans();
 	if (orphans == NULL)
 		return EINVAL;
 

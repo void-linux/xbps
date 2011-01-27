@@ -74,7 +74,7 @@ xbps_autoremove_pkgs(bool yes, bool purge)
 	 * as dependency and any installed package does not depend
 	 * on it currently.
 	 */
-	orphans = xbps_find_orphan_packages();
+	orphans = xbps_find_pkg_orphans();
 	if (orphans == NULL)
 		return errno;
 
