@@ -144,10 +144,7 @@ again:
 		 */
 		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
 			str = prop_string_cstring_nocopy(obj2);
-			if (str == NULL) {
-				rv = EINVAL;
-				goto out;
-			}
+			assert(str != NULL);
 			pkgnamedep = xbps_get_pkgpattern_name(str);
 			if (pkgnamedep == NULL) {
 				rv = EINVAL;
@@ -158,7 +155,7 @@ again:
 			 * If dependency is already satisfied or queued,
 			 * pass to the next one.
 			 */
-			if (xbps_check_is_installed_pkg_by_pattern(str)) {
+			if (xbps_check_is_installed_pkg_by_name(pkgnamedep)) {
 				rundepscnt++;
 				xbps_dbg_printf_append("installed.\n");
 			} else if (xbps_find_pkg_in_dict_by_name(transd,
