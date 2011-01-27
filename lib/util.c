@@ -168,7 +168,7 @@ xbps_check_is_installed_pkg_by_pattern(const char *pattern)
 	prop_dictionary_t dict;
 	pkg_state_t state;
 
-	assert(pkg != NULL);
+	assert(pattern != NULL);
 
 	dict = xbps_find_pkg_dict_installed(pattern, true);
 	if (dict == NULL) {

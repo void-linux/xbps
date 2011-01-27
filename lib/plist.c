@@ -336,7 +336,7 @@ find_string_in_array(prop_array_t array, const char *str, int mode)
 	bool found = false;
 
 	assert(array != NULL);
-	assert(pkgname != NULL);
+	assert(str != NULL);
 
 	iter = prop_array_iterator(array);
 	if (iter == NULL)
