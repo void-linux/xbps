@@ -234,19 +234,15 @@ out:
 }
 
 static prop_dictionary_t
-find_virtual_pkg_in_dict(prop_dictionary_t d,
-			 const char *key,
+find_virtual_pkg_in_dict(prop_object_iterator_t iter,
 			 const char *str,
 			 bool bypattern)
 {
-	prop_object_iterator_t iter;
 	prop_object_t obj;
 	prop_array_t provides;
 	bool found = false;
 
-	if ((iter = xbps_get_array_iter_from_dict(d, key)) == NULL)
-		return NULL;
-
+	prop_object_iterator_reset(iter);
 	while ((obj = prop_object_iterator_next(iter))) {
 		if ((provides = prop_dictionary_get(obj, "provides")) == NULL)
 			continue;
@@ -294,22 +290,22 @@ find_pkg_in_dict(prop_dictionary_t d,
 				break;
 		}
 	}
-	prop_object_iterator_release(iter);
 	if (obj == NULL) {
 		/*
 		 * No pkg was found, try virtual package by name
 		 * or by pattern.
 		 */
 		if (bypattern)
-			obj = find_virtual_pkg_in_dict(d, key, str, true);
+			obj = find_virtual_pkg_in_dict(iter, str, true);
 		else
-			obj = find_virtual_pkg_in_dict(d, key, str, false);
+			obj = find_virtual_pkg_in_dict(iter, str, false);
 
 		if (obj == NULL) {
 			errno = ENOENT;
 			return NULL;
 		}
 	}
+	prop_object_iterator_release(iter);
 
 	return obj;
 }
