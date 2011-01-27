@@ -234,10 +234,10 @@ out:
 }
 
 static prop_dictionary_t
-find_virtual_pkg(prop_dictionary_t d,
-		 const char *key,
-		 const char *str,
-		 bool bypattern)
+find_virtual_pkg_in_dict(prop_dictionary_t d,
+			 const char *key,
+			 const char *str,
+			 bool bypattern)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
@@ -264,34 +264,47 @@ find_virtual_pkg(prop_dictionary_t d,
 	return obj;
 }
 
-prop_dictionary_t
-xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
-			      const char *key,
-			      const char *pkgname)
+static prop_dictionary_t
+find_pkg_in_dict(prop_dictionary_t d,
+		 const char *key,
+		 const char *str,
+		 bool bypattern)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj = NULL;
-	const char *dpkgn;
+	const char *dpkgn, *pkgver;
 
-	assert(dict != NULL);
-	assert(pkgname != NULL);
+	assert(d != NULL);
+	assert(str != NULL);
 	assert(key != NULL);
 
-	if ((iter = xbps_get_array_iter_from_dict(dict, key)) == NULL)
+	if ((iter = xbps_get_array_iter_from_dict(d, key)) == NULL)
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &dpkgn);
-		if (strcmp(dpkgn, pkgname) == 0)
-			break;
+		if (bypattern) {
+			prop_dictionary_get_cstring_nocopy(obj,
+			    "pkgver", &pkgver);
+			if (xbps_pkgpattern_match(pkgver, __UNCONST(str)))
+				break;
+		} else {
+			prop_dictionary_get_cstring_nocopy(obj,
+			    "pkgname", &dpkgn);
+			if (strcmp(dpkgn, str) == 0)
+				break;
+		}
 	}
 	prop_object_iterator_release(iter);
 	if (obj == NULL) {
 		/*
-		 * If a package couldn't be found by its name, try looking
-		 * for a package providing a virtual package, i.e "provides".
+		 * No pkg was found, try virtual package by name
+		 * or by pattern.
 		 */
-		obj = find_virtual_pkg(dict, key, pkgname, false);
+		if (bypattern)
+			obj = find_virtual_pkg_in_dict(d, key, str, true);
+		else
+			obj = find_virtual_pkg_in_dict(d, key, str, false);
+
 		if (obj == NULL) {
 			errno = ENOENT;
 			return NULL;
@@ -299,6 +312,14 @@ xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
 	}
 
 	return obj;
+}
+
+prop_dictionary_t
+xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
+			      const char *key,
+			      const char *pkgname)
+{
+	return find_pkg_in_dict(dict, key, pkgname, false);
 }
 
 prop_dictionary_t
@@ -306,41 +327,11 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
 				 const char *key,
 				 const char *pattern)
 {
-	prop_object_iterator_t iter;
-	prop_object_t obj = NULL;
-	const char *pkgver;
-
-	assert(dict != NULL);
-	assert(key != NULL);
-	assert(pattern != NULL);
-
-	if ((iter = xbps_get_array_iter_from_dict(dict, key)) == NULL)
-		return NULL;
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		if (xbps_pkgpattern_match(pkgver, __UNCONST(pattern)))
-			break;
-	}
-	prop_object_iterator_release(iter);
-	if (obj == NULL) {
-		/*
-		 * If a package couldn't be found by a pattern, try looking
-		 * for a package providing a virtual package pattern via
-		 * "provides".
-		 */
-		obj = find_virtual_pkg(dict, key, pattern, true);
-		if (obj == NULL) {
-			errno = ENOENT;
-			return NULL;
-		}
-	}
-
-	return obj;
+	return find_pkg_in_dict(dict, key, pattern, true);
 }
 
-bool
-xbps_find_pkgname_in_array(prop_array_t array, const char *pkgname)
+static bool
+find_string_in_array(prop_array_t array, const char *str, int mode)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
@@ -357,74 +348,54 @@ xbps_find_pkgname_in_array(prop_array_t array, const char *pkgname)
 
 	while ((obj = prop_object_iterator_next(iter))) {
 		assert(prop_object_type(obj) == PROP_TYPE_STRING);
-		pkgdep = prop_string_cstring_nocopy(obj);
-		curpkgname = xbps_get_pkg_name(pkgdep);
-		if (curpkgname == NULL)
-			break;
-		if (strcmp(curpkgname, pkgname) == 0) {
+		if (mode == 0) {
+			/* match by string */
+			if (prop_string_equals_cstring(obj, str)) {
+				found = true;
+				break;
+			}
+		} else if (mode == 1) {
+			/* match by pkgname */
+			pkgdep = prop_string_cstring_nocopy(obj);
+			curpkgname = xbps_get_pkg_name(pkgdep);
+			if (curpkgname == NULL)
+				break;
+			if (strcmp(curpkgname, str) == 0) {
+				free(curpkgname);
+				found = true;
+				break;
+			}
 			free(curpkgname);
-			found = true;
-			break;
+		} else if (mode == 2) {
+			/* match by pkgpattern */
+			pkgdep = prop_string_cstring_nocopy(obj);
+			if (xbps_pkgpattern_match(pkgdep, __UNCONST(str))) {
+				found = true;
+				break;
+			}
 		}
-		free(curpkgname);
 	}
 	prop_object_iterator_release(iter);
 
 	return found;
+}
+
+bool
+xbps_find_string_in_array(prop_array_t array, const char *str)
+{
+	return find_string_in_array(array, str, 0);
+}
+
+bool
+xbps_find_pkgname_in_array(prop_array_t array, const char *pkgname)
+{
+	return find_string_in_array(array, pkgname, 1);
 }
 
 bool
 xbps_find_pkgpattern_in_array(prop_array_t array, const char *pattern)
 {
-	prop_object_iterator_t iter;
-	prop_object_t obj;
-	const char *curpkgdep;
-	bool found = false;
-
-	assert(array != NULL);
-	assert(pattern != NULL);
-
-	iter = prop_array_iterator(array);
-	if (iter == NULL)
-		return false;
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		assert(prop_object_type(obj) == PROP_TYPE_STRING);
-		curpkgdep = prop_string_cstring_nocopy(obj);
-		if (xbps_pkgpattern_match(curpkgdep, __UNCONST(pattern))) {
-			found = true;
-			break;
-		}
-	}
-	prop_object_iterator_release(iter);
-
-	return found;
-}
-
-bool
-xbps_find_string_in_array(prop_array_t array, const char *val)
-{
-	prop_object_iterator_t iter;
-	prop_object_t obj;
-	bool found = false;
-
-	assert(array != NULL);
-	assert(val != NULL);
-
-	iter = prop_array_iterator(array);
-	if (iter == NULL)
-		return false;
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		assert(prop_object_type(obj) == PROP_TYPE_STRING);
-		if (prop_string_equals_cstring(obj, val)) {
-			found = true;
-			break;
-		}
-	}
-	prop_object_iterator_release(iter);
-
-	return found;
+	return find_string_in_array(array, pattern, 2);
 }
 
 prop_object_iterator_t
