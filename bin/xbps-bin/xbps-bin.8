@@ -1,4 +1,4 @@
-.TH "XBPS\-BIN" "8" "03/12/2010" "\ \&" "\ \&"
+.TH "XBPS\-BIN" "8" "27/01/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -37,6 +37,15 @@ of
 \fB\-d\fR
 .RS 4
 Enables extra debugging output to be shown to stderr.
+.RE
+.PP
+\fB\-D\fR
+.RS 4
+Only show the URLs to download the binary packages from repositories.
+This is useful if you want to download them by other means, and later you
+can move them to the \fIcachedir\fR to start the installation.
+This option can be used for the \fIinstall\fR, \fIupdate\fR and \fIautoupdate\fR
+targets.
 .RE
 .PP
 \fB\-F\fR
@@ -344,6 +353,11 @@ $ xbps\-bin find\-files /bin/mount
 .RS 4
 $ xbps\-bin find\-files "/usr/lib/libav\&*"
 .RE
+.PP
+\fBRemove and purge the package \fBproplib-devel\fR:\fR
+.RS 4
+$ xbps\-bin -yp remove proplib\-devel
+.PP
 .SH "BUGS"
 .sp
 Probably, but I try to make this not happen\&. Use it under your own responsability and enjoy your life\&.

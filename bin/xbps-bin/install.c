@@ -42,6 +42,7 @@ struct transaction {
 	prop_dictionary_t dict;
 	prop_object_iterator_t iter;
 	bool yes;
+	bool only_show;
 	size_t inst_pkgcnt;
 	size_t up_pkgcnt;
 	size_t cf_pkgcnt;
@@ -92,7 +93,7 @@ check_binpkg_hash(const char *path, const char *filename,
 }
 
 static int
-download_package_list(prop_object_iterator_t iter)
+download_package_list(prop_object_iterator_t iter, bool only_show)
 {
 	prop_object_t obj;
 	struct xbps_fetch_progress_data xfpd;
@@ -121,6 +122,7 @@ again:
 		binfile = xbps_get_binpkg_repo_uri(obj, repoloc);
 		if (binfile == NULL)
 			return errno;
+
 		/*
 		 * If downloaded package is in cachedir, check its hash
 		 * and refetch the binpkg again if didn't match.
@@ -134,6 +136,11 @@ again:
 				break;
 			}
 			prop_dictionary_set_bool(obj, "checksum_ok", true);
+			continue;
+		}
+		if (only_show) {
+			printf("%s\n", binfile);
+			free(binfile);
 			continue;
 		}
 		if (xbps_mkpath(__UNCONST(cachedir), 0755) == -1) {
@@ -257,7 +264,7 @@ show_transaction_sizes(struct transaction *trans)
 }
 
 int
-xbps_autoupdate_pkgs(bool yes)
+xbps_autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 {
 	int rv = 0;
 
@@ -280,7 +287,7 @@ xbps_autoupdate_pkgs(bool yes)
 		}
 	}
 
-	return xbps_exec_transaction(yes);
+	return xbps_exec_transaction(yes, show_download_pkglist_url);
 }
 
 int
@@ -471,6 +478,12 @@ exec_transaction(struct transaction *trans)
 	assert(trans->iter != NULL);
 
 	/*
+	 * Only show the URLs to download the binary packages.
+	 */
+	if (trans->only_show)
+		return download_package_list(trans->iter, true);
+
+	/*
 	 * Show download/installed size for the transaction.
 	 */
 	if ((rv = show_transaction_sizes(trans)) != 0)
@@ -491,7 +504,7 @@ exec_transaction(struct transaction *trans)
 	 * and check its SHA256 hash.
 	 */
 	printf("[1/3] Downloading/integrity check\n");
-	if ((rv = download_package_list(trans->iter)) != 0)
+	if ((rv = download_package_list(trans->iter, false)) != 0)
 		return rv;
 
 	/*
@@ -625,7 +638,7 @@ exec_transaction(struct transaction *trans)
 }
 
 int
-xbps_exec_transaction(bool yes)
+xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
 {
 	struct transaction *trans;
 	prop_array_t array;
@@ -661,6 +674,7 @@ xbps_exec_transaction(bool yes)
 	}
 
 	trans->yes = yes;
+	trans->only_show = show_download_pkglist_url;
 	rv = exec_transaction(trans);
 out:
 	if (trans->iter)

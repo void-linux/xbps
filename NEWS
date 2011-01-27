@@ -1,5 +1,8 @@
 xbps-0.8.0 (???):
 
+ * xbps-bin(8): added -D option to only show the URLs to download the binary
+   packages required by the "install", "update" and "autoupdate" targets.
+
  * Added support for virtual packages. A virtual package is one that doesn't
    exist in the repository, but other packages can provide it. A new array
    in the package properties dictionary has been added to specify which

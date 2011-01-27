@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,9 +34,9 @@
 
 int	xbps_install_new_pkg(const char *);
 int	xbps_update_pkg(const char *);
-int	xbps_autoupdate_pkgs(bool);
+int	xbps_autoupdate_pkgs(bool, bool);
 int	xbps_autoremove_pkgs(bool, bool);
-int	xbps_exec_transaction(bool);
+int	xbps_exec_transaction(bool, bool);
 int	xbps_remove_installed_pkgs(int, char **, bool, bool, bool);
 int	xbps_check_pkg_integrity(const char *);
 int	xbps_check_pkg_integrity_all(void);

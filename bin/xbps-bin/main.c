@@ -153,17 +153,21 @@ main(int argc, char **argv)
 	struct sigaction sa;
 	int i , c, flags, rv;
 	bool yes, purge, with_debug, force_rm_with_deps;
+	bool show_download_pkglist_url = false;
 
 	i = c = flags = rv = 0;
 	yes = purge = force_rm_with_deps = with_debug = false;
 
-	while ((c = getopt(argc, argv, "VcdFfpr:vy")) != -1) {
+	while ((c = getopt(argc, argv, "VcdDFfpr:vy")) != -1) {
 		switch (c) {
 		case 'c':
 			xbps_set_cachedir(optarg);
 			break;
 		case 'd':
 			with_debug = true;
+			break;
+		case 'D':
+			show_download_pkglist_url = true;
 			break;
 		case 'F':
 			force_rm_with_deps = true;
@@ -278,7 +282,7 @@ main(int argc, char **argv)
 			if ((rv = xbps_install_new_pkg(argv[i])) != 0)
 				goto out;
 
-		rv = xbps_exec_transaction(yes);
+		rv = xbps_exec_transaction(yes, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
@@ -289,7 +293,7 @@ main(int argc, char **argv)
 			if ((rv = xbps_update_pkg(argv[i])) != 0)
 				goto out;
 
-		rv = xbps_exec_transaction(yes);
+		rv = xbps_exec_transaction(yes, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a binary package. */
@@ -338,7 +342,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoupdate_pkgs(yes);
+		rv = xbps_autoupdate_pkgs(yes, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "show-orphans") == 0) {
 		/*
