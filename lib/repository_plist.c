@@ -119,7 +119,7 @@ open_archive(const char *url)
 	struct url *u;
 	struct archive *a;
 
-	if (!xbps_check_is_repo_string_remote(url)) {
+	if (!xbps_check_is_repository_uri_remote(url)) {
 		if ((a = archive_read_new()) == NULL)
 			return NULL;
 

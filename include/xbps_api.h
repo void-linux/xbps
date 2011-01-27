@@ -1106,7 +1106,7 @@ int xbps_check_file_hash(const char *file, const char *sha256);
  * didn't match installed package, 1 if \a pkg pattern fully
  * matched installed package.
  */
-int xbps_check_is_installed_pkg(const char *pkg);
+int xbps_check_is_installed_pkg_by_pattern(const char *pkg);
 
 /**
  * Checks if package \a pkgname is currently installed.
@@ -1115,7 +1115,7 @@ int xbps_check_is_installed_pkg(const char *pkg);
  *
  * @return True if \a pkgname is installed, false otherwise.
  */
-bool xbps_check_is_installed_pkgname(const char *pkgname);
+bool xbps_check_is_installed_pkg_by_name(const char *pkgname);
 
 /**
  * Checks if the URI specified by \a uri is remote or local.
@@ -1124,7 +1124,7 @@ bool xbps_check_is_installed_pkgname(const char *pkgname);
  * 
  * @return true if URI is remote, false if local.
  */
-bool xbps_check_is_repo_string_remote(const char *uri);
+bool xbps_check_is_repository_uri_remote(const char *uri);
 
 /**
  * Gets the full URI to a binary package file as returned by a

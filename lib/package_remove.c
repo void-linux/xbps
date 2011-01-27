@@ -181,7 +181,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	/*
 	 * Check if pkg is installed before anything else.
 	 */
-	if (!xbps_check_is_installed_pkgname(pkgname))
+	if (!xbps_check_is_installed_pkg_by_name(pkgname))
 		return ENOENT;
 
 	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",

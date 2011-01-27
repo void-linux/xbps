@@ -150,7 +150,7 @@ xbps_check_file_hash(const char *file, const char *sha256)
 }
 
 bool
-xbps_check_is_repo_string_remote(const char *uri)
+xbps_check_is_repository_uri_remote(const char *uri)
 {
 	assert(uri != NULL);
 
@@ -163,7 +163,7 @@ xbps_check_is_repo_string_remote(const char *uri)
 }
 
 int
-xbps_check_is_installed_pkg(const char *pattern)
+xbps_check_is_installed_pkg_by_pattern(const char *pattern)
 {
 	prop_dictionary_t dict;
 	pkg_state_t state;
@@ -196,7 +196,7 @@ xbps_check_is_installed_pkg(const char *pattern)
 }
 
 bool
-xbps_check_is_installed_pkgname(const char *pkgname)
+xbps_check_is_installed_pkg_by_name(const char *pkgname)
 {
 	prop_dictionary_t pkgd;
 
@@ -347,7 +347,7 @@ xbps_get_pkg_index_plist(const char *uri)
 	if (uname(&un) == -1)
 		return NULL;
 
-	if (xbps_check_is_repo_string_remote(uri))
+	if (xbps_check_is_repository_uri_remote(uri))
 		return get_pkg_index_remote_plist(uri);
 
 	return xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);

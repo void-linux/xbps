@@ -162,7 +162,7 @@ xbps_repository_unregister(const char *uri)
 	 * If it's a remote repository, also remove the stored XBPS_PKGINDEX
 	 * file and its directory.
 	 */
-	if (xbps_check_is_repo_string_remote(uri)) {
+	if (xbps_check_is_repository_uri_remote(uri)) {
 		pkgindex = xbps_get_pkg_index_plist(uri);
 		if (pkgindex == NULL) {
 			rv = errno;

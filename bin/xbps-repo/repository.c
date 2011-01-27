@@ -173,7 +173,7 @@ register_repository(const char *uri)
 	if ((idxstr = sanitize_url(uri)) == NULL)
 		return errno;
 
-	if (xbps_check_is_repo_string_remote(idxstr)) {
+	if (xbps_check_is_repository_uri_remote(idxstr)) {
 		printf("Fetching remote package index at %s...\n", idxstr);
 		rv = xbps_repository_sync_pkg_index(idxstr,
 		    fetch_file_progress_cb, &xfpd);
@@ -306,7 +306,7 @@ repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	(void)arg;
 	(void)done;
 
-	if (!xbps_check_is_repo_string_remote(rpi->rpi_uri))
+	if (!xbps_check_is_repository_uri_remote(rpi->rpi_uri))
 		return 0;
 
 	printf("Syncing package index from: %s\n", rpi->rpi_uri);
