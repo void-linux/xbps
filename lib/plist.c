@@ -168,7 +168,7 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 }
 
 prop_dictionary_t
-xbps_find_pkg_from_plist(const char *plist, const char *pkgname)
+xbps_find_pkg_dict_from_plist_by_name(const char *plist, const char *pkgname)
 {
 	prop_dictionary_t dict, obj, res;
 

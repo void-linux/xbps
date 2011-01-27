@@ -430,8 +430,8 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
 						   const char *pattern);
 
 /**
- * Finds the package's proplib dictionary by looking at it in
- * a plist file.
+ * Finds the package's proplib dictionary in a plist file by specifying
+ * a package name.
  *
  * @param[in] plist Path to a plist file.
  * @param[in] pkgname Package name to look for.
@@ -441,8 +441,8 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
  * prop_dictionary_copy(), which means that caller is responsible to
  * release the object with prop_object_release() when done.
  */
-prop_dictionary_t xbps_find_pkg_from_plist(const char *plist,
-					   const char *pkgname);
+prop_dictionary_t xbps_find_pkg_dict_from_plist_by_name(const char *plist,
+							const char *pkgname);
 
 /**
  * Finds a package's dictionary searching in the registered packages
