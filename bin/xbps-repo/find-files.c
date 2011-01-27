@@ -94,7 +94,7 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 		}
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		pkg_filesd = xbps_repository_get_pkg_plist_dict_from_url(url,
+		pkg_filesd = xbps_repository_plist_find_pkg_dict_from_url(url,
 		    XBPS_PKGFILES);
 		free(url);
 		if (pkg_filesd == NULL) {

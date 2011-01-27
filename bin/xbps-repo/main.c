@@ -184,7 +184,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		pkgd = xbps_repository_get_pkg_plist_dict(argv[1],
+		pkgd = xbps_repository_plist_find_pkg_dict(argv[1],
 		    XBPS_PKGFILES);
 		if (pkgd == NULL) {
 			if (errno != ENOENT) {

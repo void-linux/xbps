@@ -779,8 +779,8 @@ prop_array_t xbps_transaction_missingdeps_get(void);
  * binary package file has been found but the plist file could not
  * be found.
  */
-prop_dictionary_t xbps_repository_get_pkg_plist_dict(const char *pkgname,
-						     const char *plistf);
+prop_dictionary_t xbps_repository_plist_find_pkg_dict(const char *pkgname,
+						      const char *plistf);
 
 /**
  * Finds a plist file in a binary package file stored local or
@@ -793,8 +793,8 @@ prop_dictionary_t xbps_repository_get_pkg_plist_dict(const char *pkgname,
  * errno is set appropiately.
  */
 prop_dictionary_t
-	xbps_repository_get_pkg_plist_dict_from_url(const char *url,
-						    const char *plistf);
+	xbps_repository_plist_find_pkg_dict_from_url(const char *url,
+						     const char *plistf);
 
 /*@}*/
 

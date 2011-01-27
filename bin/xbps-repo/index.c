@@ -104,7 +104,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		goto out;
 	}
 
-	newpkgd = xbps_repository_get_pkg_plist_dict_from_url(file,
+	newpkgd = xbps_repository_plist_find_pkg_dict_from_url(file,
 	    XBPS_PKGPROPS);
 	if (newpkgd == NULL) {
 		fprintf(stderr, "xbps-repo: can't read %s %s metadata "

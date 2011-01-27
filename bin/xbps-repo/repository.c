@@ -259,7 +259,7 @@ show_pkg_info_from_repolist(const char *pkgname)
 	}
 	printf("Fetching info from: %s\n", repoloc);
 	pkg_propsd =
-	    xbps_repository_get_pkg_plist_dict_from_url(url, XBPS_PKGPROPS);
+	    xbps_repository_plist_find_pkg_dict_from_url(url, XBPS_PKGPROPS);
 	if (pkg_propsd == NULL) {
 		free(url);
 		prop_object_release(pkgd);

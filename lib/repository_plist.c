@@ -144,7 +144,7 @@ open_archive(const char *url)
 }
 
 prop_dictionary_t
-xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
+xbps_repository_plist_find_pkg_dict_from_url(const char *url, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL;
 	struct archive *a;
@@ -194,7 +194,7 @@ xbps_repository_get_pkg_plist_dict_from_url(const char *url, const char *plistf)
 }
 
 prop_dictionary_t
-xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
+xbps_repository_plist_find_pkg_dict(const char *pkgname, const char *plistf)
 {
 	prop_dictionary_t pkgd = NULL, plistd = NULL;
 	const char *repoloc;
@@ -227,7 +227,7 @@ xbps_repository_get_pkg_plist_dict(const char *pkgname, const char *plistf)
 		errno = EINVAL;
 		goto out;
 	}
-	plistd = xbps_repository_get_pkg_plist_dict_from_url(url, plistf);
+	plistd = xbps_repository_plist_find_pkg_dict_from_url(url, plistf);
 	free(url);
 
 out:
