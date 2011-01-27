@@ -32,7 +32,7 @@
 #include "xbps_api_impl.h"
 
 static int
-store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkgd)
+store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
@@ -40,7 +40,7 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkgd)
 	int rv = 0;
 	pkg_state_t state = 0;
 
-	assert(trans_dict != NULL);
+	assert(transd != NULL);
 	assert(repo_pkgd != NULL);
 	/*
 	 * Get some info about dependencies and current repository.
@@ -53,7 +53,7 @@ store_dependency(prop_dictionary_t trans_dict, prop_dictionary_t repo_pkgd)
 	if (dict == NULL)
 		return errno;
 
-	array = prop_dictionary_get(trans_dict, "unsorted_deps");
+	array = prop_dictionary_get(transd, "unsorted_deps");
 	if (array == NULL) {
 		prop_object_release(dict);
 		return errno;
@@ -236,7 +236,7 @@ out:
 }
 
 static int
-find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
+find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 	       prop_array_t mrdeps,		/* missing rundeps array */
 	       const char *originpkgn,		/* origin pkgname */
 	       prop_array_t pkg_rdeps_array)	/* current pkg rundeps array  */
@@ -246,7 +246,7 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	pkg_state_t state = 0;
-	const char *reqpkg, *reqvers, *pkg_queued, *repopkgver;
+	const char *reqpkg, *reqvers, *pkgver_q, *repopkgver;
 	char *pkgname;
 	int rv = 0;
 
@@ -288,19 +288,15 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 		 * array of unsorted deps, and check if current required
 		 * dependency pattern is matched.
 		 */
-		curpkgd = xbps_find_pkg_in_dict_by_name(trans_dict,
-		    "unsorted_deps", pkgname);
+		curpkgd = xbps_find_pkg_in_dict_by_pattern(transd,
+		    "unsorted_deps", reqpkg);
 		if (curpkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "pkgver", &pkg_queued);
-			if (xbps_pkgpattern_match(pkg_queued,
-			    __UNCONST(reqpkg))) {
-				xbps_dbg_printf_append(
-				    "'%s' queued in the transaction.\n",
-				    pkg_queued);
-				free(pkgname);
-				continue;
-			}
+			    "pkgver", &pkgver_q);
+			xbps_dbg_printf_append("`%s' queued "
+			    "in the transaction.\n", pkgver_q);
+			free(pkgname);
+			continue;
 		} else {
 			/* error matching required pkgdep */
 			if (errno && errno != ENOENT) {
@@ -362,7 +358,7 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 			 * required pkgdep version.
 			 */
 			prop_dictionary_get_cstring_nocopy(tmpd,
-			    "pkgver", &pkg_queued);
+			    "pkgver", &pkgver_q);
 
 			/* Check its state */
 			rv = xbps_get_pkg_state_installed(pkgname, &state);
@@ -373,8 +369,8 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 				break;
 			}
 			free(pkgname);
-			if (xbps_pkgpattern_match(pkg_queued,
-			    __UNCONST(reqpkg)) == 0) {
+			rv = xbps_pkgpattern_match(pkgver_q, __UNCONST(reqpkg));
+			if (rv == 0) {
 				/*
 				 * Package is installed but does not match
 				 * the dependency pattern, an update
@@ -384,10 +380,10 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 				    "version", &repopkgver);
 				xbps_dbg_printf_append("installed `%s', "
 				    "updating to `%s'...\n",
-				    pkg_queued, repopkgver);
+				    pkgver_q, repopkgver);
 				prop_dictionary_set_cstring_nocopy(curpkgd,
 				    "trans-action", "update");
-			} else {
+			} else if (rv == 1) {
 				if (state == XBPS_PKG_STATE_UNPACKED) {
 					/*
 					 * Package matches the dependency
@@ -399,25 +395,30 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 					    "configure");
 					xbps_dbg_printf_append("installed `%s'"
 					    ", but needs to be configured...\n",
-					    pkg_queued);
+					    pkgver_q);
 				} else {
 					/*
 					 * Package matches the dependency
 					 * pattern and is fully installed,
-					 * skip to the next one.
+					 * skip and pass to next one.
 					 */
 					xbps_dbg_printf_append("installed "
-					    "`%s'.\n", pkg_queued);
+					    "`%s'.\n", pkgver_q);
 					prop_object_release(tmpd);
 					prop_object_release(curpkgd);
 					continue;
 				}
+			} else {
+				/* error matching pkgpattern */
+				prop_object_release(tmpd);
+				prop_object_release(curpkgd);
+				break;
 			}
 		}
 		/*
 		 * Package is on repo, add it into the dictionary.
 		 */
-		if ((rv = store_dependency(trans_dict, curpkgd)) != 0) {
+		if ((rv = store_dependency(transd, curpkgd)) != 0) {
 			xbps_dbg_printf("store_dependency failed %s",
 			    reqpkg);
 			prop_object_release(curpkgd);
@@ -453,7 +454,7 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 		xbps_dbg_printf("%sFinding dependencies for '%s' [%s]:\n",
 		    originpkgn ? "" : "  ", reqpkg,
 		    originpkgn ? "direct" : "indirect");
-		rv = find_repo_deps(trans_dict, mrdeps, NULL, curpkg_rdeps);
+		rv = find_repo_deps(transd, mrdeps, NULL, curpkg_rdeps);
 		if (rv != 0) {
 			xbps_dbg_printf("Error checking %s for rundeps: %s\n",
 			    reqpkg, strerror(rv));
@@ -466,7 +467,7 @@ find_repo_deps(prop_dictionary_t trans_dict,	/* transaction dictionary */
 }
 
 int HIDDEN
-xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
+xbps_repository_find_pkg_deps(prop_dictionary_t transd,
 			      prop_array_t mdeps,
 			      prop_dictionary_t repo_pkgd)
 {
@@ -474,7 +475,7 @@ xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
 	const char *pkgname, *pkgver;
 	int rv = 0;
 
-	assert(trans_dict != NULL);
+	assert(transd != NULL);
 	assert(mdeps != NULL);
 	assert(repo_pkgd != NULL);
 
@@ -489,7 +490,7 @@ xbps_repository_find_pkg_deps(prop_dictionary_t trans_dict,
 	 * This will find direct and indirect deps, if any of them is not
 	 * there it will be added into the missing_deps array.
 	 */
-	if ((rv = find_repo_deps(trans_dict, mdeps, pkgname, pkg_rdeps)) != 0) {
+	if ((rv = find_repo_deps(transd, mdeps, pkgname, pkg_rdeps)) != 0) {
 		xbps_dbg_printf("Error '%s' while checking rundeps!\n",
 		    strerror(rv));
 	}
