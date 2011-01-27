@@ -58,18 +58,21 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver, *short_desc;
 	char *tmp = NULL;
-	pkg_state_t curstate, *wantstate = &lpc->state;
+	pkg_state_t curstate;
 	size_t i = 0;
 
 	(void)loop_done;
 
-	assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
+	if (xbps_get_pkg_state_dictionary(obj, &curstate))
+		return EINVAL;
 
-	if (wantstate && *wantstate != 0) {
-		if (xbps_get_pkg_state_dictionary(obj, &curstate))
-			return EINVAL;
-
-		if (curstate != *wantstate)
+	if (lpc->state == 0) {
+		/* Only list packages that are fully installed */
+		if (curstate != XBPS_PKG_STATE_INSTALLED)
+			return 0;
+	} else {
+		/* Only list packages with specified state */
+		if (curstate != lpc->state)
 			return 0;
 	}
 
