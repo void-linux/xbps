@@ -258,6 +258,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 				printf("%s: dependency not satisfied: %s\n",
 				    pkgname, reqpkg);
 			}
+			rv = 0;
 		}
 		prop_object_iterator_release(iter);
 		if (rv == ENOENT) {
