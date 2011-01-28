@@ -30,36 +30,227 @@
 
 #include <xbps_api.h>
 #include "xbps_api_impl.h"
+#include "queue.h"
+#include "strlcpy.h"
 
 /*
  * Sorting algorithm for packages in the transaction dictionary.
  * The transaction dictionary contains all package dictionaries found from
  * the repository plist index file in the "unsorted_deps" array.
  *
- * When a package has no rundeps or all rundeps are satisfied, the package
- * dictionary is added into the sorted "packages" array and it is marked as
- * sorted in its dictionary with a boolean object.
+ * Any package in the unsorted_deps array is added into the tail and
+ * later if a package dependency has an index greater than current
+ * package, the package dependency is moved just before it.
  *
- * It will loop until all packages are processed and will check that
- * the number of packages added into the "packages" array is the same than
- * it was in the "unsorted_deps" array.
- *
- * Sure I could make it not iterate so many times but probably it will
- * also be slower! that's why XBPS uses proplib with its red-black trees,
- * iterating over them is fast.
+ * Once that all package dependencies for a package are in the correct
+ * index, the counter is increased. When all packages in the "unsorted_deps"
+ * array are processed the loop is stopped and the counter should have
+ * the same number than the "unsorted_deps" array... otherwise something
+ * went wrong.
  */
+
+struct pkgdep {
+	TAILQ_ENTRY(pkgdep) pkgdep_entries;
+	prop_dictionary_t d;
+	char *name;
+};
+
+static TAILQ_HEAD(pkgdep_head, pkgdep) pkgdep_list =
+    TAILQ_HEAD_INITIALIZER(pkgdep_list);
+
+static struct pkgdep *
+pkgdep_find(const char *name)
+{
+	struct pkgdep *pd = NULL;
+
+	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries)
+		if (strcmp(pd->name, name) == 0)
+			return pd;
+
+	/* not found */
+	return NULL;
+}
+
+static ssize_t
+pkgdep_find_idx(const char *name)
+{
+	struct pkgdep *pd;
+	ssize_t idx = 0;
+
+	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
+		if (strcmp(pd->name, name) == 0)
+			return idx;
+
+		idx++;
+	}
+	/* not found */
+	return -1;
+}
+
+static void
+pkgdep_release(struct pkgdep *pd)
+{
+	if (pd->d != NULL)
+		prop_object_release(pd->d);
+
+	free(pd->name);
+	free(pd);
+	pd = NULL;
+}
+
+static struct pkgdep *
+pkgdep_alloc(prop_dictionary_t d, const char *name)
+{
+	struct pkgdep *pd;
+	size_t len;
+
+	if ((pd = malloc(sizeof(*pd))) == NULL)
+		return NULL;
+
+	len = strlen(name) + 1;
+	if ((pd->name = malloc(len)) == NULL) {
+		free(pd);
+		return NULL;
+	}
+	if (d != NULL)
+		pd->d = prop_dictionary_copy(d);
+	else
+		pd->d = NULL;
+
+	(void)strlcpy(pd->name, name, len);
+
+	return pd;
+}
+
+static void
+pkgdep_end(prop_array_t sorted)
+{
+	struct pkgdep *pd;
+
+	while ((pd = TAILQ_FIRST(&pkgdep_list)) != NULL) {
+		TAILQ_REMOVE(&pkgdep_list, pd, pkgdep_entries);
+		if (sorted != NULL && pd->d != NULL)
+			prop_array_add(sorted, pd->d);
+		pkgdep_release(pd);
+	}
+}
+
+static int
+sort_pkg_rundeps(prop_dictionary_t transd,
+		 struct pkgdep *pd,
+		 prop_array_t pkg_rundeps)
+{
+	prop_dictionary_t curpkgd;
+	prop_object_t obj;
+	struct pkgdep *lpd, *pdn;
+	const char *str;
+	char *pkgnamedep;
+	ssize_t pkgdepidx, curpkgidx = pkgdep_find_idx(pd->name);
+	size_t i, idx = 0;
+	int rv = 0;
+
+	xbps_dbg_printf_append("\n");
+
+again:
+	for (i = idx; i < prop_array_count(pkg_rundeps); i++) {
+		obj = prop_array_get(pkg_rundeps, i);
+		str = prop_string_cstring_nocopy(obj);
+		if (str == NULL) {
+			rv = ENOMEM;
+			break;
+		}
+		pkgnamedep = xbps_get_pkgpattern_name(str);
+		if (pkgnamedep == NULL) {
+			rv = ENOMEM;
+			break;
+		}
+		xbps_dbg_printf("  Required dependency '%s': ", str);
+		pdn = pkgdep_find(pkgnamedep);
+		if ((pdn == NULL) &&
+		    xbps_check_is_installed_pkg_by_name(pkgnamedep)) {
+			/*
+			 * Package dependency is installed, just add to
+			 * the list but just mark it as "installed", to avoid
+			 * calling xbps_check_is_installed_pkg_by_name(),
+			 * which is expensive.
+			 */
+			xbps_dbg_printf_append("installed.\n");
+			lpd = pkgdep_alloc(NULL, pkgnamedep);
+			if (lpd == NULL) {
+				rv = ENOMEM;
+				break;
+			}
+			free(pkgnamedep);
+			TAILQ_INSERT_TAIL(&pkgdep_list, lpd, pkgdep_entries);
+			continue;
+		} else if (pdn != NULL && pdn->d == NULL) {
+			/*
+			 * Package was added previously into the list
+			 * and is installed, skip.
+			 */
+			xbps_dbg_printf_append("installed.\n");
+			free(pkgnamedep);
+			continue;
+		}
+		curpkgd = xbps_find_pkg_in_dict_by_name(transd,
+		    "unsorted_deps", pkgnamedep);
+		assert(curpkgd != NULL);
+		lpd = pkgdep_alloc(curpkgd, pkgnamedep);
+		if (lpd == NULL) {
+			free(pkgnamedep);
+			rv = ENOMEM;
+			break;
+		}
+		if (pdn == NULL) {
+			/*
+			 * If package is not in the list, add to the tail
+			 * and iterate at the same position.
+			 */
+			TAILQ_INSERT_TAIL(&pkgdep_list, lpd, pkgdep_entries);
+			idx = i;
+			xbps_dbg_printf_append("added into the tail, "
+			    "checking again...\n");
+			free(pkgnamedep);
+			goto again;
+		}
+		/*
+		 * Find package dependency index.
+		 */
+		pkgdepidx = pkgdep_find_idx(pkgnamedep);
+		/*
+		 * If package dependency index is less than current
+		 * package index, it's already sorted.
+		 */
+		free(pkgnamedep);
+		if (pkgdepidx < curpkgidx) {
+			xbps_dbg_printf_append("already sorted.\n");
+			pkgdep_release(lpd);
+		} else {
+			/*
+			 * Remove package dependency from list and move
+			 * it before current package.
+			 */
+			TAILQ_REMOVE(&pkgdep_list, pdn, pkgdep_entries);
+			pkgdep_release(pdn);
+			TAILQ_INSERT_BEFORE(pd, lpd, pkgdep_entries);
+			xbps_dbg_printf_append("added before `%s'.\n", pd->name);
+		}
+	}
+
+	return rv;
+}
+
 int HIDDEN
 xbps_sort_pkg_deps(void)
 {
 	prop_dictionary_t transd;
 	prop_array_t sorted, unsorted, rundeps;
-	prop_object_t obj, obj2;
-	prop_object_iterator_t iter, iter2;
-	size_t ndeps = 0, rundepscnt = 0, cnt = 0;
-	const char *pkgname, *pkgver, *str;
-	char *pkgnamedep;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	struct pkgdep *pd;
+	size_t ndeps = 0, cnt = 0;
+	const char *pkgname, *pkgver;
 	int rv = 0;
-	bool done;
 
 	if ((transd = xbps_transaction_dictionary_get()) == NULL)
 		return EINVAL;
@@ -97,27 +288,28 @@ xbps_sort_pkg_deps(void)
 		rv = ENOMEM;
 		goto out;
 	}
-again:
 	/*
-	 * Order all deps by looking at its run_depends array.
+	 * Iterate over the unsorted package dictionaries and sort all
+	 * its package dependencies.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		/* no more iterations required, pkglist is sorted */
-		if (cnt >= ndeps)
-			break;
-
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dbg_printf("Sorting package '%s': ", pkgver);
-		/*
-		 * Check if package was sorted previously and skip.
-		 */
-		done = false;
-		prop_dictionary_get_bool(obj, "sorted", &done);
-		if (done) {
-			xbps_dbg_printf_append("skipping, already sorted.\n",
-			    pkgname);
-			continue;
+
+		pd = pkgdep_find(pkgname);
+		if (pd == NULL) {
+			/*
+			 * If package not in list, just add to the tail.
+			 */
+			pd = pkgdep_alloc(obj, pkgname);
+			if (pd == NULL) {
+				pkgdep_end(NULL);
+				prop_object_iterator_release(iter);
+				rv = ENOMEM;
+				goto out;
+			}
+			TAILQ_INSERT_TAIL(&pkgdep_list, pd, pkgdep_entries);
 		}
 		/*
 		 * Packages that don't have deps go unsorted, because
@@ -127,88 +319,36 @@ again:
 		if (rundeps == NULL || prop_array_count(rundeps) == 0) {
 			xbps_dbg_printf_append("added (no rundeps) into "
 			    "the sorted queue.\n");
-			prop_array_add(sorted, obj);
-			prop_dictionary_set_bool(obj, "sorted", true);
 			cnt++;
 			continue;
 		}
-		iter2 = prop_array_iterator(rundeps);
-		if (iter2 == NULL) {
-			rv = ENOMEM;
+		/*
+		 * Sort package run-time dependencies for this package.
+		 */
+		if ((rv = sort_pkg_rundeps(transd, pd, rundeps)) != 0) {
+			pkgdep_end(NULL);
+			prop_object_iterator_release(iter);
 			goto out;
 		}
-		xbps_dbg_printf_append("\n");
-		/*
-		 * Iterate over the run_depends array, and find out if they
-		 * were already added in the sorted list.
-		 */
-		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
-			str = prop_string_cstring_nocopy(obj2);
-			assert(str != NULL);
-			pkgnamedep = xbps_get_pkgpattern_name(str);
-			if (pkgnamedep == NULL) {
-				rv = EINVAL;
-				goto out;
-			}
-			xbps_dbg_printf("  Required dependency '%s': ", str);
-			/*
-			 * If dependency is already satisfied or queued,
-			 * pass to the next one.
-			 */
-			if (xbps_check_is_installed_pkg_by_name(pkgnamedep)) {
-				rundepscnt++;
-				xbps_dbg_printf_append("installed.\n");
-			} else if (xbps_find_pkg_in_dict_by_name(transd,
-			    "packages", pkgnamedep)) {
-				xbps_dbg_printf_append("queued.\n");
-				rundepscnt++;
-			} else {
-				xbps_dbg_printf_append("not installed.\n");
-			}
-			free(pkgnamedep);
-		}
-		prop_object_iterator_release(iter2);
-
-		/* Add dependency if all its required deps are already added */
-		if (prop_array_count(rundeps) == rundepscnt) {
-			prop_array_add(sorted, obj);
-			prop_dictionary_set_bool(obj, "sorted", true);
-			xbps_dbg_printf("Added package '%s' to the sorted "
-			    "queue (all rundeps satisfied).\n", pkgver);
-			rundepscnt = 0;
-			cnt++;
-			continue;
-		}
-		xbps_dbg_printf("Unsorted package '%s' has missing "
-		    "rundeps (missing %zu).\n", pkgver,
-		    prop_array_count(rundeps) - rundepscnt);
-		rundepscnt = 0;
-	}
-	/* Iterate until all deps are processed. */
-	if (cnt < ndeps) {
-		xbps_dbg_printf("Missing required deps! queued: %zu "
-		    "required: %zu.\n", cnt, ndeps);
-		prop_object_iterator_reset(iter);
-		goto again;
+		cnt++;
 	}
 	prop_object_iterator_release(iter);
-
+	/*
+	 * We are done, now we have to copy all pkg dictionaries
+	 * from the sorted list into the "packages" array, and at
+	 * the same time freeing memory used for temporary sorting.
+	 */
+	pkgdep_end(sorted);
 	/*
 	 * Sanity check that the array contains the same number of
 	 * objects than the total number of required dependencies.
 	 */
-	if (ndeps != prop_array_count(sorted)) {
-		xbps_dbg_printf("wrong sorted deps cnt %zu vs %zu\n",
-		    ndeps, prop_array_count(sorted));
-		rv = EINVAL;
-		goto out;
-	}
+	assert(cnt == prop_array_count(unsorted));
 	/*
 	 * We are done, all packages were sorted... remove the
 	 * temporary array with unsorted packages.
 	 */
 	prop_dictionary_remove(transd, "unsorted_deps");
-
 out:
 	if (rv != 0)
 		prop_dictionary_remove(transd, "packages");
