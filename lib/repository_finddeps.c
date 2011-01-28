@@ -182,20 +182,25 @@ out:
 	return rv;
 }
 
+#define MAX_DEPTH	512
+
 static int
 find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 	       prop_array_t mrdeps,		/* missing rundeps array */
-	       const char *originpkgn,		/* origin pkgname */
-	       prop_array_t pkg_rdeps_array)	/* current pkg rundeps array  */
+	       prop_array_t pkg_rdeps_array,	/* current pkg rundeps array  */
+	       size_t depth)			/* max recursion depth */
 {
 	prop_dictionary_t curpkgd, tmpd;
-	prop_array_t curpkg_rdeps;
+	prop_array_t curpkgrdeps;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	pkg_state_t state = 0;
+	pkg_state_t state;
 	const char *reqpkg, *pkgver_q, *repopkgver;
 	char *pkgname;
 	int rv = 0;
+
+	if (depth >= MAX_DEPTH)
+		return ELOOP;
 
 	iter = prop_array_iterator(pkg_rdeps_array);
 	if (iter == NULL)
@@ -212,12 +217,12 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			rv = EINVAL;
 			break;
 		}
-		if (originpkgn)
-			xbps_dbg_printf("'%s' requires dependency '%s' "
-			    "[direct]: ", originpkgn, reqpkg);
+		if (depth < 1)
+			xbps_dbg_printf("  [direct] Requires "
+			    "dependency '%s' ", reqpkg);
 		else
-			xbps_dbg_printf("    Requires dependency '%s' "
-			    "[indirect]: ", reqpkg);
+			xbps_dbg_printf("    [indirect] Requires "
+			    "dependency '%s' ", reqpkg);
 
 		/*
 		 * Check if package is already added in the
@@ -365,19 +370,18 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		/*
 		 * If package doesn't have rundeps, pass to the next one.
 		 */
-		curpkg_rdeps = prop_dictionary_get(curpkgd, "run_depends");
-		if (curpkg_rdeps == NULL) {
+		curpkgrdeps = prop_dictionary_get(curpkgd, "run_depends");
+		if (curpkgrdeps == NULL) {
 			prop_object_release(curpkgd);
 			continue;
 		}
 		prop_object_release(curpkgd);
 		/*
-		 * Iterate on required pkg to find more deps.
+		 * Recursively find rundeps for current pkg dictionary.
 		 */
-		xbps_dbg_printf("%sFinding dependencies for '%s' [%s]:\n",
-		    originpkgn ? "" : "  ", reqpkg,
-		    originpkgn ? "direct" : "indirect");
-		rv = find_repo_deps(transd, mrdeps, NULL, curpkg_rdeps);
+		xbps_dbg_printf("%s[%sdirect] Finding dependencies for '%s':\n",
+		    depth < 1 ? "" : "  ", depth < 1 ? "" : "in", reqpkg);
+		rv = find_repo_deps(transd, mrdeps, curpkgrdeps, depth++);
 		if (rv != 0) {
 			xbps_dbg_printf("Error checking %s for rundeps: %s\n",
 			    reqpkg, strerror(rv));
@@ -385,6 +389,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		}
 	}
 	prop_object_iterator_release(iter);
+	depth--;
 
 	return rv;
 }
@@ -395,7 +400,7 @@ xbps_repository_find_pkg_deps(prop_dictionary_t transd,
 			      prop_dictionary_t repo_pkgd)
 {
 	prop_array_t pkg_rdeps;
-	const char *pkgname, *pkgver;
+	const char *pkgver;
 	int rv = 0;
 
 	assert(transd != NULL);
@@ -406,14 +411,13 @@ xbps_repository_find_pkg_deps(prop_dictionary_t transd,
 	if (pkg_rdeps == NULL)
 		return 0;
 
-	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	xbps_dbg_printf("Finding required dependencies for '%s':\n", pkgver);
 	/*
 	 * This will find direct and indirect deps, if any of them is not
 	 * there it will be added into the missing_deps array.
 	 */
-	if ((rv = find_repo_deps(transd, mdeps, pkgname, pkg_rdeps)) != 0) {
+	if ((rv = find_repo_deps(transd, mdeps, pkg_rdeps, 0)) != 0) {
 		xbps_dbg_printf("Error '%s' while checking rundeps!\n",
 		    strerror(rv));
 	}
