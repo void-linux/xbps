@@ -63,9 +63,14 @@ pkgdep_find(const char *name)
 {
 	struct pkgdep *pd = NULL;
 
-	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries)
+	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
 		if (strcmp(pd->name, name) == 0)
 			return pd;
+		if (pd->d == NULL)
+			continue;
+		if (xbps_find_virtual_pkg_in_dict(pd->d, name, false))
+			return pd;
+	}
 
 	/* not found */
 	return NULL;
@@ -79,6 +84,10 @@ pkgdep_find_idx(const char *name)
 
 	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
 		if (strcmp(pd->name, name) == 0)
+			return idx;
+		if (pd->d == NULL)
+			continue;
+		if (xbps_find_virtual_pkg_in_dict(pd->d, name, false))
 			return idx;
 
 		idx++;

@@ -233,10 +233,10 @@ out:
 	return rpkgd;
 }
 
-static bool
-find_virtual_pkg_in_dict(prop_dictionary_t d,
-			 const char *str,
-			 bool bypattern)
+bool
+xbps_find_virtual_pkg_in_dict(prop_dictionary_t d,
+			      const char *str,
+			      bool bypattern)
 {
 	prop_array_t provides;
 	bool found = false;
@@ -273,14 +273,14 @@ find_pkg_in_dict(prop_dictionary_t d,
 			    "pkgver", &pkgver);
 			if (xbps_pkgpattern_match(pkgver, __UNCONST(str)))
 				break;
-			if (find_virtual_pkg_in_dict(obj, str, true))
+			if (xbps_find_virtual_pkg_in_dict(obj, str, true))
 				break;
 		} else {
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &dpkgn);
 			if (strcmp(dpkgn, str) == 0)
 				break;
-			if (find_virtual_pkg_in_dict(obj, str, false))
+			if (xbps_find_virtual_pkg_in_dict(obj, str, false))
 				break;
 		}
 	}

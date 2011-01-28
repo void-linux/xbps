@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110127"
+#define XBPS_RELVER		"20110128"
 
 /** 
  * @def XBPS_META_PATH
@@ -459,6 +459,22 @@ prop_dictionary_t xbps_find_pkg_dict_from_plist_by_name(const char *plist,
  */
 prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
 					       bool bypattern);
+
+/**
+ * Finds a virtual package by looking at package's dictionary by
+ * using a package name or a package pattern.
+ *
+ * @param[in] pkgd Package dictionary.
+ * @param[in] str Virtual package name or package pattern.
+ * @param[in] bypattern If true, \a str should be a package name,
+ * otherwise it should be a package pattern.
+ *
+ * @return True if package dictionary matches the virtual package
+ * name or pattern, false otherwise.
+ */
+bool xbps_find_virtual_pkg_in_dict(prop_dictionary_t pkgd,
+				   const char *str,
+				   bool bypattern);
 
 /**
  * Finds a package name matching an string object in a proplib array.
