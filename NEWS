@@ -22,7 +22,7 @@ xbps-0.8.0 (???):
    to find the newest version found in all registered repositories.
 
  * Improved package dependency sorting algorithm that uses less memory,
-   it is 15% faster approximately and as bonus sorts all packages in the way
+   it is 60% faster approximately and as bonus sorts all packages in the way
    they should be (previously the sorting was a bit different for packages
    with no run-time dependencies).
 
