@@ -233,31 +233,21 @@ out:
 	return rpkgd;
 }
 
-static prop_dictionary_t
-find_virtual_pkg_in_dict(prop_object_iterator_t iter,
+static bool
+find_virtual_pkg_in_dict(prop_dictionary_t d,
 			 const char *str,
 			 bool bypattern)
 {
-	prop_object_t obj;
 	prop_array_t provides;
 	bool found = false;
 
-	prop_object_iterator_reset(iter);
-	while ((obj = prop_object_iterator_next(iter))) {
-		if ((provides = prop_dictionary_get(obj, "provides")) == NULL)
-			continue;
-
+	if ((provides = prop_dictionary_get(d, "provides"))) {
 		if (bypattern)
 			found = xbps_find_pkgpattern_in_array(provides, str);
 		else
 			found = xbps_find_pkgname_in_array(provides, str);
-
-		if (found)
-			break;
 	}
-	prop_object_iterator_release(iter);
-
-	return obj;
+	return found;
 }
 
 static prop_dictionary_t
@@ -283,29 +273,22 @@ find_pkg_in_dict(prop_dictionary_t d,
 			    "pkgver", &pkgver);
 			if (xbps_pkgpattern_match(pkgver, __UNCONST(str)))
 				break;
+			if (find_virtual_pkg_in_dict(obj, str, true))
+				break;
 		} else {
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &dpkgn);
 			if (strcmp(dpkgn, str) == 0)
 				break;
-		}
-	}
-	if (obj == NULL) {
-		/*
-		 * No pkg was found, try virtual package by name
-		 * or by pattern.
-		 */
-		if (bypattern)
-			obj = find_virtual_pkg_in_dict(iter, str, true);
-		else
-			obj = find_virtual_pkg_in_dict(iter, str, false);
-
-		if (obj == NULL) {
-			errno = ENOENT;
-			return NULL;
+			if (find_virtual_pkg_in_dict(obj, str, false))
+				break;
 		}
 	}
 	prop_object_iterator_release(iter);
+	if (obj == NULL) {
+		errno = ENOENT;
+		return NULL;
+	}
 
 	return obj;
 }
@@ -439,17 +422,13 @@ xbps_get_pkg_dict_from_metadata_plist(const char *pkgn, const char *plist)
 static bool
 remove_string_from_array(prop_array_t array, const char *str, bool byname)
 {
-	prop_object_iterator_t iter;
 	prop_object_t obj;
 	const char *curname;
-	size_t idx = 0;
+	size_t i, idx = 0;
 	bool found = false;
 
-	iter = prop_array_iterator(array);
-	if (iter == NULL)
-		return false;
-
-	while ((obj = prop_object_iterator_next(iter))) {
+	for (i = 0; i < prop_array_count(array); i++) {
+		obj = prop_array_get(array, i);
 		if (byname) {
 			/* match by name */
 			prop_dictionary_get_cstring_nocopy(obj,
@@ -467,11 +446,8 @@ remove_string_from_array(prop_array_t array, const char *str, bool byname)
 		}
 		idx++;
 	}
-	prop_object_iterator_release(iter);
-	if (!found) {
-		errno = ENOENT;
+	if (!found)
 		return false;
-	}
 
 	prop_array_remove(array, idx);
 	return true;
