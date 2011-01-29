@@ -266,18 +266,18 @@ find_pkg_in_array(prop_array_t array, const char *str, bool bypattern)
 
 	while ((obj = prop_object_iterator_next(iter))) {
 		if (bypattern) {
+			if (xbps_find_virtual_pkg_in_dict(obj, str, true))
+				break;
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &pkgver);
 			if (xbps_pkgpattern_match(pkgver, __UNCONST(str)))
 				break;
-			if (xbps_find_virtual_pkg_in_dict(obj, str, true))
-				break;
 		} else {
+			if (xbps_find_virtual_pkg_in_dict(obj, str, false))
+				break;
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &dpkgn);
 			if (strcmp(dpkgn, str) == 0)
-				break;
-			if (xbps_find_virtual_pkg_in_dict(obj, str, false))
 				break;
 		}
 	}
