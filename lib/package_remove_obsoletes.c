@@ -46,7 +46,7 @@ xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 	const char *array_str = "files";
 	const char *oldhash;
 	char *file;
-	int rv = 0;
+	int rv = 0, flags = xbps_get_flags();
 	bool found, dodirs = false, dolinks = false;
 
 	assert(oldd != NULL);
@@ -135,8 +135,10 @@ again:
 			free(file);
 			continue;
 		}
-		xbps_printf("Removed obsolete entry: %s\n",
-		    prop_string_cstring_nocopy(oldstr));
+		if (flags & XBPS_FLAG_VERBOSE)
+			xbps_printf("Removed obsolete entry: %s\n",
+			    prop_string_cstring_nocopy(oldstr));
+
 		free(file);
 	}
 	if (!dolinks) {
