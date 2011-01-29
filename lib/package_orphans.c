@@ -64,17 +64,18 @@ static int
 find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 {
 	prop_array_t reqby, orphans = arg;
-	prop_object_t obj2, obj3;
-	prop_object_iterator_t iter, iter2;
-	const char *orphan_pkgname;
-	char *pkgname;
+	prop_object_t obj2;
+	prop_object_iterator_t iter;
+	const char *pkgdep;
 	unsigned int ndep = 0, cnt = 0;
 	bool automatic = false;
-	pkg_state_t state = 0;
 	int rv = 0;
+	pkg_state_t state;
 
 	(void)loop_done;
-
+	/*
+	 * Skip packages that were not installed automatically.
+	 */
 	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
 	if (!automatic)
 		return 0;
@@ -82,6 +83,9 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 	if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
 		return rv;
 
+	/*
+	 * Skip packages that aren't fully installed.
+	 */
 	if (state != XBPS_PKG_STATE_INSTALLED)
 		return 0;
 
@@ -93,34 +97,18 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 		prop_array_add(orphans, obj);
 		return 0;
 	}
-
 	iter = prop_array_iterator(reqby);
 	if (iter == NULL)
 		return ENOMEM;
 
 	while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
-		pkgname = xbps_get_pkg_name(prop_string_cstring_nocopy(obj2));
-		if (pkgname == NULL) {
+		pkgdep = prop_string_cstring_nocopy(obj2);
+		if (pkgdep == NULL) {
 			prop_object_iterator_release(iter);
 			return EINVAL;
 		}
-
-		iter2 = prop_array_iterator(orphans);
-		if (iter == NULL) {
-			free(pkgname);
-			prop_object_iterator_release(iter);
-			return ENOMEM;
-		}
-		while ((obj3 = prop_object_iterator_next(iter2)) != NULL) {
-			prop_dictionary_get_cstring_nocopy(obj3,
-			    "pkgname", &orphan_pkgname);
-			if (strcmp(orphan_pkgname, pkgname) == 0) {
-				ndep++;
-				break;
-			}
-		}
-		prop_object_iterator_release(iter2);
-		free(pkgname);
+		if (xbps_find_pkg_in_array_by_pattern(orphans, pkgdep))
+			ndep++;
 	}
 	prop_object_iterator_release(iter);
 
@@ -135,7 +123,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 prop_array_t
 xbps_find_pkg_orphans(void)
 {
-	prop_array_t array;
+	prop_array_t array = NULL;
 	prop_dictionary_t dict;
 	int rv = 0;
 
@@ -145,8 +133,7 @@ xbps_find_pkg_orphans(void)
 	 * Prepare an array with all packages previously found.
 	 */
 	if ((array = prop_array_create()) == NULL)
-		return NULL;
-
+		goto out;
 	/*
 	 * Find out all orphans by looking at the
 	 * regpkgdb dictionary and iterate in reverse order
@@ -157,8 +144,9 @@ xbps_find_pkg_orphans(void)
 	if (rv != 0) {
 		errno = rv;
 		prop_object_release(array);
-		return NULL;
+		array = NULL;
 	}
+out:
 	xbps_regpkgdb_dictionary_release();
 
 	return array;
