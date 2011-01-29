@@ -477,6 +477,28 @@ bool xbps_find_virtual_pkg_in_dict(prop_dictionary_t pkgd,
 				   bool bypattern);
 
 /**
+ * Finds a package dictionary in a proplib array by matching a package name.
+ *
+ * @param[in] array The proplib array where to look for.
+ * @param[in] name The package name to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+prop_dictionary_t xbps_find_pkg_in_array_by_name(prop_array_t array,
+						 const char *name);
+
+/**
+ * Finds a package dictionary in a proplib array by matching a package pattern.
+ *
+ * @param[in] array The proplib array where to look for.
+ * @param[in] pattern The package pattern to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
+						    const char *pattern);
+
+/**
  * Finds a package name matching an string object in a proplib array.
  *
  * @param[in] array The proplib array where to look for.
@@ -578,6 +600,16 @@ bool xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
  * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_remove_string_from_array(prop_array_t array, const char *str);
+
+/**
+ * Removes a string from a proplib's array matched by a package name.
+ *
+ * @param[in] array Proplib array where to look for.
+ * @param[in] name Package name to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_remove_pkgname_from_array(prop_array_t array, const char *name);
 
 /*@}*/
 
