@@ -258,7 +258,7 @@ find_pkg_in_array(prop_array_t array, const char *str, bool bypattern)
 	const char *pkgver, *dpkgn;
 
 	assert(array != NULL);
-	assert(name != NULL);
+	assert(str != NULL);
 
 	iter = prop_array_iterator(array);
 	if (iter == NULL)
