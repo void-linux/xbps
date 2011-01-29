@@ -129,7 +129,7 @@ int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict, pkgd;
-	int rv = 0;
+	int rv = 0, flags = xbps_get_flags();
 	pkg_state_t state = 0;
 
 	assert(pkgname != NULL);
@@ -187,7 +187,8 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	if ((rv = xbps_unregister_pkg(pkgname)) != 0)
 		goto out;
 
-	xbps_printf("Package %s purged successfully.\n", pkgname);
+	if (flags & XBPS_FLAG_VERBOSE)
+		xbps_printf("Package %s purged successfully.\n", pkgname);
 
 out:
 	xbps_regpkgdb_dictionary_release();

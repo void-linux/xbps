@@ -79,12 +79,10 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 	prop_object_t obj;
 	const char *file, *sha256, *curobj = NULL;
 	char *path = NULL;
-	int flags = 0, rv = 0;
+	int flags = xbps_get_flags(), rv = 0;
 
 	assert(dict != NULL);
 	assert(key != NULL);
-
-	flags = xbps_get_flags();
 
 	array = prop_dictionary_get(dict, key);
 	if (array == NULL)
@@ -158,7 +156,8 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 
 		} else {
 			/* Success */
-			xbps_printf("Removed %s: `%s'\n", curobj, file);
+			if (flags & XBPS_FLAG_VERBOSE)
+				xbps_printf("Removed %s: `%s'\n", curobj, file);
 		}
 		free(path);
 	}
