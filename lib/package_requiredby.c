@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,33 +33,36 @@
 #include "xbps_api_impl.h"
 
 static int
-add_pkg_into_reqby(prop_dictionary_t pkgd, const char *reqname)
+add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
 {
-	prop_array_t array;
+	prop_array_t reqby;
 	prop_string_t reqstr;
 	bool alloc = false;
 
-	array = prop_dictionary_get(pkgd, "requiredby");
-	if (array == NULL) {
+	if ((reqby = prop_dictionary_get(pkgd, "requiredby")) == NULL) {
 		alloc = true;
-		array = prop_array_create();
-		if (array == NULL)
+		if ((reqby = prop_array_create()) == NULL)
 			return ENOMEM;
 	}
 
-	if (xbps_find_string_in_array(array, reqname))
-		return EEXIST;
+	if (xbps_find_string_in_array(reqby, pkgver)) {
+		if (alloc)
+			prop_object_release(reqby);
 
-	reqstr = prop_string_create_cstring(reqname);
+		return EEXIST;
+	}
+
+	reqstr = prop_string_create_cstring(pkgver);
 	if (reqstr == NULL) {
 		if (alloc)
-			prop_object_release(array);
+			prop_object_release(reqby);
+
 		return ENOMEM;
 	}
 
-	if (!xbps_add_obj_to_array(array, reqstr)) {
+	if (!xbps_add_obj_to_array(reqby, reqstr)) {
 		if (alloc)
-			prop_object_release(array);
+			prop_object_release(reqby);
 
 		prop_object_release(reqstr);
 		return EINVAL;
@@ -68,9 +71,9 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *reqname)
 	if (!alloc)
 		return 0;
 
-	if (!xbps_add_obj_to_dict(pkgd, array, "requiredby")) {
+	if (!xbps_add_obj_to_dict(pkgd, reqby, "requiredby")) {
 		if (alloc)
-			prop_object_release(array);
+			prop_object_release(reqby);
 
 		return EINVAL;
 	}
@@ -81,43 +84,18 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *reqname)
 static int
 remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 {
-	prop_array_t array;
-	prop_object_t obj2;
-	prop_object_iterator_t iter;
+	prop_array_t reqby;
 	const char *pkgname = arg;
-	char *curpkgname;
-	unsigned int idx = 0;
-	bool found = false;
 
 	(void)loop_done;
 
-	array = prop_dictionary_get(obj, "requiredby");
-	if (array == NULL || prop_array_count(array) == 0)
+	reqby = prop_dictionary_get(obj, "requiredby");
+	if (reqby == NULL || prop_array_count(reqby) == 0)
 		return 0;
 
-	iter = prop_array_iterator(array);
-	if (iter == NULL)
-		return ENOMEM;
-
-	while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
-		curpkgname =
-		    xbps_get_pkg_name(prop_string_cstring_nocopy(obj2));
-		if (curpkgname == NULL) {
-			prop_object_iterator_release(iter);
+	if (xbps_find_pkgname_in_array(reqby, pkgname))
+		if (!xbps_remove_pkgname_from_array(reqby, pkgname))
 			return EINVAL;
-		}
-			
-		if (strcmp(curpkgname, pkgname) == 0) {
-			free(curpkgname);
-			found = true;
-			break;
-		}
-		free(curpkgname);
-		idx++;
-	}
-	prop_object_iterator_release(iter);
-	if (found)
-		prop_array_remove(array, idx);
 
 	return 0;
 }
@@ -162,24 +140,23 @@ out:
 }
 
 int HIDDEN
-xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
+xbps_requiredby_pkg_add(prop_array_t pkgs_array, prop_dictionary_t pkgd)
 {
-	prop_array_t rdeps;
-	prop_object_t obj, obj2;
-	prop_object_iterator_t iter, iter2;
-	const char *reqname, *pkgver, *str;
-	char *rdepname;
+	prop_array_t pkg_rdeps;
+	prop_object_t obj, pkgd_regpkgdb;
+	prop_object_iterator_t iter;
+	const char *pkgver, *str;
 	int rv = 0;
 
-	assert(regar != NULL);
-	assert(pkg != NULL);
+	assert(pkgs_array != NULL);
+	assert(pkgd != NULL);
 
-	prop_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
-	rdeps = prop_dictionary_get(pkg, "run_depends");
-	if (rdeps == NULL || prop_array_count(rdeps) == 0)
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	pkg_rdeps = prop_dictionary_get(pkgd, "run_depends");
+	if (pkg_rdeps == NULL || prop_array_count(pkg_rdeps) == 0)
 		return EINVAL;
 
-	iter = prop_array_iterator(rdeps);
+	iter = prop_array_iterator(pkg_rdeps);
 	if (iter == NULL)
 		return ENOMEM;
 
@@ -187,45 +164,17 @@ xbps_requiredby_pkg_add(prop_array_t regar, prop_dictionary_t pkg)
 		str = prop_string_cstring_nocopy(obj);
 		if (str == NULL) {
 			rv = EINVAL;
-			goto out;
+			break;
 		}
-		rdepname = xbps_get_pkgpattern_name(str);
-		if (rdepname == NULL) {
-			rv = EINVAL;
-			goto out;
-		}
+		pkgd_regpkgdb =
+		    xbps_find_pkg_in_array_by_pattern(pkgs_array, str);
+		if (pkgd_regpkgdb == NULL)
+			return EINVAL;
 
-		iter2 = prop_array_iterator(regar);
-		if (iter2 == NULL) {
-			rv = ENOMEM;
-			free(rdepname);
-			goto out;
-		}
-
-		/*
-		 * Iterate over the array to find the dictionary for the
-		 * current run dependency.
-		 */
-		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
-			prop_dictionary_get_cstring_nocopy(obj2,
-			    "pkgname", &reqname);
-			if (strcmp(rdepname, reqname) == 0) {
-				rv = add_pkg_into_reqby(obj2, pkgver);
-				if (rv == EEXIST)
-					continue;
-				else if (rv != 0) {
-					free(rdepname);
-					prop_object_iterator_release(iter2);
-					goto out;
-				}
-				break;
-			}
-		}
-		prop_object_iterator_release(iter2);
-		free(rdepname);
+		rv = add_pkg_into_reqby(pkgd_regpkgdb, pkgver);
+		if (rv != 0 && rv != EEXIST)
+			break;
 	}
-
-out:
 	prop_object_iterator_release(iter);
 
 	return rv;
