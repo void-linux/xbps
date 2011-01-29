@@ -1,4 +1,4 @@
-.TH "XBPS\-REPO" "8" "15/12/2010" "\ \&" "\ \&"
+.TH "XBPS\-REPO" "8" "29/01/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -83,9 +83,12 @@ it will have to connect remotely to the repository to fetch the information
 .PP
 \fBgenindex\fR \fI/path/to/local/repo\fR
 .RS 4
-Generates a package index for a local repository as specified in its argument\&. It will look for archives with
+Generates a package index for a local repository as specified in its argument\&.
+It will look for archives with
 \fB\&.xbps\fR
-extension and will only add it into the index if version is newer than the one available in the index\&. If a newer package is available, the for old package file will be removed automatically\&.
+extension and will only add it into the index if version is newer than the one
+available in the index\&. If a newer package is available, the old package file
+will be removed automatically\&.
 .RE
 .PP
 \fBlist\fR
