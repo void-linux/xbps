@@ -140,7 +140,7 @@ xbps_remove_installed_pkgs(int argc,
 
 	/*
 	 * If recursively removing packages, find out which packages
-	 * would be orphans if the supplied package names were removed.
+	 * would be orphans if the supplied packages were already removed.
 	 */
 	if (recursive_rm) {
 		orphans_user = prop_array_create();
@@ -157,7 +157,6 @@ xbps_remove_installed_pkgs(int argc,
 			xbps_error_printf("NULL orphans array\n");
 			return EINVAL;
 		}
-		/* in reverse order */
 		for (x = 0; x < prop_array_count(orphans); x++)
 			prop_array_add(sorted_pkgs, prop_array_get(orphans, x));
 
