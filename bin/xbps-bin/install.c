@@ -201,7 +201,7 @@ show_transaction_sizes(struct transaction *trans)
 {
 	prop_object_t obj;
 	uint64_t dlsize = 0, instsize = 0;
-	const char *tract;
+	const char *tract, *p = "s";
 	char size[8];
 	bool trans_inst, trans_up, trans_conf;
 
@@ -252,13 +252,23 @@ show_transaction_sizes(struct transaction *trans)
 		    "%s\n", strerror(errno));
 		return -1;
 	}
-	printf("Total download size: %s\n", size);
+	printf("Total download size:\t%6s\n", size);
 	if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
 		fprintf(stderr, "xbps-bin: error: humanize_number2 returns "
 		    "%s\n", strerror(errno));
 		return -1;
 	}
-	printf("Total installed size: %s\n\n", size);
+	printf("Total installed size:\t%6s\n\n", size);
+
+	if (trans->inst_pkgcnt == 1)
+		p = "";
+	printf("%6zu package%s will be installed.\n", trans->inst_pkgcnt, p);
+	if (trans->up_pkgcnt == 1)
+		p = "";
+	printf("%6zu package%s will be updated.\n", trans->up_pkgcnt, p);
+	if (trans->cf_pkgcnt == 1)
+		p = "";
+	printf("%6zu package%s will be configured.\n\n", trans->cf_pkgcnt, p);
 
 	return 0;
 }

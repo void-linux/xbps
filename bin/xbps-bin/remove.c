@@ -201,6 +201,11 @@ xbps_remove_installed_pkgs(int argc,
 		print_package_line(pkgver, false);
 	}
 	printf("\n\n");
+	printf("%u package%s will be removed%s.\n\n",
+	    prop_array_count(sorted_pkgs),
+	    prop_array_count(sorted_pkgs) == 1 ? "" : "s",
+	    purge ? " and purged" : "");
+
 	if (!yes && !xbps_noyes("Do you want to continue?")) {
 		printf("Cancelling!\n");
 		prop_object_release(sorted_pkgs);
