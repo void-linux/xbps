@@ -109,9 +109,6 @@ xbps_warn_printf(const char *fmt, ...)
 	int flags = xbps_get_flags();
 	va_list ap;
 
-	if ((flags & XBPS_FLAG_VERBOSE) == 0)
-		return;
-
 	va_start(ap, fmt);
 	common_printf(stderr, "WARNING: ", fmt, ap);
 	va_end(ap);
