@@ -213,7 +213,7 @@ xbps_repository_pool_foreach(
 		int (*fn)(struct repository_pool_index *, void *, bool *),
 		void *arg)
 {
-	struct repository_pool *rpool;
+	struct repository_pool *rpool, *rpool_new;
 	int rv = 0;
 	bool done = false;
 
@@ -222,7 +222,7 @@ xbps_repository_pool_foreach(
 	if (!repolist_initialized)
 		return EINVAL;
 
-	SIMPLEQ_FOREACH(rpool, &rpool_queue, rp_entries) {
+	SIMPLEQ_FOREACH_SAFE(rpool, &rpool_queue, rp_entries, rpool_new) {
 		rv = (*fn)(rpool->rpi, arg, &done);
 		if (rv != 0 || done)
 			break;
