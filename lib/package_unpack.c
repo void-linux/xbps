@@ -169,7 +169,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	size_t nmetadata = 0, entry_idx = 0;
 	const char *rootdir, *entry_pname, *transact;
 	char *buf;
-	int rv, flags;
+	int rv, flags, xflags;
 	bool preserve, update, replace_files_in_pkg_update;
 
 	assert(ar != NULL);
@@ -179,6 +179,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 
 	preserve = update = false;
 	rootdir = xbps_get_rootdir();
+	xflags = xbps_get_flags();
 
 	if (chdir(rootdir) == -1) {
 		xbps_error_printf("cannot chdir to rootdir for "
@@ -415,8 +416,10 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				    pkgname, version, strerror(rv));
 				goto out;
 			} else {
-				xbps_warn_printf("ignoring existing "
-				    "entry: %s\n", entry_pname);
+				if (xflags & XBPS_FLAG_VERBOSE)
+					xbps_warn_printf("ignoring existing "
+					    "entry: %s\n", entry_pname);
+
 				RUN_PROGRESS_CB();
 				continue;
 			}

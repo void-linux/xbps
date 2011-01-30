@@ -151,8 +151,9 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 		 * Remove the object if possible.
 		 */
 		if (remove(path) == -1) {
-			xbps_warn_printf("can't remove %s `%s': %s\n",
-			    curobj, file, strerror(errno));
+			if (flags & XBPS_FLAG_VERBOSE)
+				xbps_warn_printf("can't remove %s `%s': %s\n",
+				    curobj, file, strerror(errno));
 
 		} else {
 			/* Success */
