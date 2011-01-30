@@ -113,8 +113,8 @@ main(int argc, char **argv)
 
 	if ((rv = xbps_repository_pool_init()) != 0) {
 		if (rv != ENOENT) {
-			fprintf(stderr, "E: cannot get repository list pool! %s\n",
-			    strerror(rv));
+			xbps_error_printf("xbps-repo: failed to initialize "
+			    "repository pool: %s\n", strerror(rv));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -158,9 +158,9 @@ main(int argc, char **argv)
 
 		rv = show_pkg_info_from_repolist(argv[1]);
 		if (rv == 0 && errno == ENOENT) {
-			fprintf(stderr,
-			    "Unable to locate package '%s' from "
-			    "repository pool.\n", argv[1]);
+			xbps_error_printf("xbps-repo: unable to locate "
+			    "`%s' from repository pool: %s\n", argv[1],
+			    strerror(rv));
 			rv = EINVAL;
 			goto out;
 		}
@@ -172,9 +172,9 @@ main(int argc, char **argv)
 
 		rv = show_pkg_deps_from_repolist(argv[1]);
 		if (rv == 0 && errno == ENOENT) {
-			fprintf(stderr, 
-			    "Unable to locate package '%s' from "
-			    "repository pool.\n", argv[1]);
+			xbps_error_printf("xbps-repo: unable to locate "
+			    "`%s' from repository pool: %s\n", argv[1],
+			    strerror(rv));
 			rv = EINVAL;
 			goto out;
 		}
@@ -188,13 +188,12 @@ main(int argc, char **argv)
 		    XBPS_PKGFILES);
 		if (pkgd == NULL) {
 			if (errno != ENOENT) {
-				fprintf(stderr, "xbps-repo: unexpected "
+				xbps_error_printf("xbps-repo: unexpected "
 				    "error '%s' searching for '%s'\n",
 				    strerror(errno), argv[1]);
 			} else {
-				fprintf(stderr,
-				    "Package '%s' not found in repository "
-				    "pool.\n", argv[1]);
+				xbps_error_printf("xbps-repo: `%s' not found "
+				    "in repository pool.\n", argv[1]);
 			}
 			rv = errno;
 			goto out;

@@ -91,8 +91,8 @@ pkgindex_verify(const char *plist, const char *uri)
 
 	d = prop_dictionary_internalize_from_zfile(plist);
 	if (d == NULL) {
-		fprintf(stderr, "E: failed to add '%s' repository: %s\n",
-		    uri, strerror(errno));
+		xbps_error_printf("xbps-repo: failed to add `%s' "
+		    "repository: %s\n", uri, strerror(errno));
 		return NULL;
 	}
 
@@ -103,22 +103,22 @@ pkgindex_verify(const char *plist, const char *uri)
 
 	if (!prop_dictionary_get_cstring(d,
 	    "pkgindex-version", &rpi->pkgidxver)) {
-		fprintf(stderr,
-		    "E: missing 'pkgindex-version' object!\n");
+		xbps_error_printf("xbps-repo: missing 'pkgindex-version' "
+		    "object!\n");
 		rv = errno;
 		goto out;
 	}
 
 	if (!prop_dictionary_get_uint64(d, "total-pkgs",
 	    &rpi->totalpkgs)) {
-		fprintf(stderr, "E: missing 'total-pkgs' object!\n");
+		xbps_error_printf("xbps-repo: missing 'total-pkgs' object!\n");
 		rv = errno;
 		goto out;
 	}
 
 	/* Reject empty repositories, how could this happen? :-) */
 	if (rpi->totalpkgs == 0) {
-		fprintf(stderr, "E: empty package list!\n");
+		xbps_error_printf("xbps-repo: `%s' empty package list!\n", uri);
 		rv = EINVAL;
 		goto out;
 	}
@@ -126,9 +126,8 @@ pkgindex_verify(const char *plist, const char *uri)
 out:
 	prop_object_release(d);
 	if (rv != 0) {
-		fprintf(stderr,
-		    "W: removing incorrect pkg index file: '%s' ...\n",
-		    plist);
+		xbps_error_printf("xbps-repo: removing incorrect "
+		    "pkg-index file for `%s'.\n", uri);
 		(void)remove(plist);
 		if (rpi) {
 			free(rpi);
@@ -151,11 +150,11 @@ unregister_repository(const char *uri)
 		return 0;
 
 	if (rv == ENOENT) {
-		fprintf(stderr, "Repository '%s' not actually "
+		xbps_error_printf("Repository '%s' not "
 		    "registered.\n", idxstr);
 	} else {
-		fprintf(stderr, "E: couldn't unregister "
-		    "repository (%s)\n", strerror(rv));
+		xbps_error_printf("xbps-repo: couldn't unregister "
+		    "repository: %s\n", strerror(rv));
 	}
 
 	return rv;
@@ -178,9 +177,8 @@ register_repository(const char *uri)
 		rv = xbps_repository_sync_pkg_index(idxstr,
 		    fetch_file_progress_cb, &xfpd);
 		if (rv == -1) {
-			fprintf(stderr,
-			    "E: could not fetch pkg index file: %s.\n",
-			    xbps_fetch_error_string());
+			xbps_error_printf("xbps-repo: couldn't fetch pkg-index"
+			    "file: %s.\n", xbps_fetch_error_string());
 			return rv;
 		} else if (rv == 0) {
 			printf("Package index file is already "
@@ -199,9 +197,8 @@ register_repository(const char *uri)
 			return errno;
 
 		if (xbps_mkpath(metadir, 0755) == -1) {
-			fprintf(stderr,
-			    "E: couldn't create metadata dir! (%s)\n",
-			    strerror(errno));
+			xbps_error_printf("xbps-repo: couldn't create metadata "
+			    "directory: %s.\n", strerror(errno));
 			free(metadir);
 			return EXIT_FAILURE;
 		}
@@ -217,10 +214,10 @@ register_repository(const char *uri)
 
 	if ((rv = xbps_repository_register(idxstr)) != 0) {
 		if (rv == EEXIST) {
-			fprintf(stderr, "W: repository already registered.\n");
+			xbps_warn_printf("repository already registered.\n");
 		} else {
-			fprintf(stderr, "E: couldn't register repository "
-			    "(%s)\n", strerror(errno));
+			xbps_error_printf("xbps-repo: couldn't register "
+			     "repository: %s.\n", strerror(errno));
 		}
 		goto out;
 	}
@@ -313,7 +310,8 @@ repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	rv = xbps_repository_sync_pkg_index(rpi->rpi_uri,
 	    fetch_file_progress_cb, &xfpd);
 	if (rv == -1) {
-		fprintf(stderr, "E: returned: %s\n", xbps_fetch_error_string());
+		xbps_error_printf("xbps-repo: failed to sync `%s': %s\n",
+		    rpi->rpi_uri, xbps_fetch_error_string());
 		return rv;
 	} else if (rv == 0) {
 		printf("Package index file is already up to date.\n");

@@ -98,9 +98,9 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 		    XBPS_PKGFILES);
 		free(url);
 		if (pkg_filesd == NULL) {
-			fprintf(stderr, "E: couldn't get '%s' from '%s' "
-			    "in repo '%s: %s'\n", XBPS_PKGFILES, pkgname, rpi->rpi_uri,
-			    strerror(errno));
+			xbps_error_printf("xbps-repo: couldn't read '%s' "
+			    "from '%s (%s)': %s\n", XBPS_PKGFILES, pkgname,
+			    rpi->rpi_uri, strerror(errno));
 			rv = -1;
 			break;
 		}

@@ -48,28 +48,25 @@ struct transaction {
 	size_t cf_pkgcnt;
 };
 
-static int
-show_missing_dep_cb(prop_object_t obj, void *arg, bool *loop_done)
-{
-        (void)arg;
-        (void)loop_done;
-
-	fprintf(stderr, "  * Missing binary package for: %s\n",
-	    prop_string_cstring_nocopy(obj));
-
-	return 0;
-}
-
 static void
 show_missing_deps(prop_array_t a)
 {
+	prop_object_t obj;
+	size_t i;
+
 	fprintf(stderr,
 	    "xbps-bin: unable to locate some required packages:\n");
-	(void)xbps_callback_array_iter(a, show_missing_dep_cb, NULL);
+
+	for (i = 0; i < prop_array_count(a); i++) {
+		obj = prop_array_get(a, i);
+		fprintf(stderr, "  * Missing binary package for: %s\n",
+		    prop_string_cstring_nocopy(obj));
+	}
 }
 
 static int
-check_binpkg_hash(const char *path, const char *filename,
+check_binpkg_hash(const char *path,
+		  const char *filename,
 		  const char *sha256)
 {
 	int rv;
@@ -77,12 +74,12 @@ check_binpkg_hash(const char *path, const char *filename,
 	printf("Checking %s integrity... ", filename);
 	rv = xbps_check_file_hash(path, sha256);
 	if (rv != 0 && rv != ERANGE) {
-		fprintf(stderr, "\nxbps-bin: unexpected error: %s\n",
+		xbps_error_printf("\nxbps-bin: unexpected error: %s\n",
 		    strerror(rv));
 		return rv;
 	} else if (rv == ERANGE) {
 		printf("hash mismatch!\n");
-		fprintf(stderr, "Package '%s' has wrong checksum, removing "
+		xbps_warn_printf("Package '%s' has wrong checksum, removing "
 		    "and refetching it again...\n", filename);
 		(void)remove(path);
 		return rv;
@@ -151,9 +148,9 @@ again:
 		rv = xbps_fetch_file(binfile, cachedir, false, NULL,
 		    fetch_file_progress_cb, &xfpd);
 		if (rv == -1) {
-			fprintf(stderr, "xbps-bin: couldn't download `%s'\n",
+			xbps_error_printf("xbps-bin: couldn't download `%s'\n",
 			    filename);
-			fprintf(stderr, "xbps-bin: %s returned: `%s'\n",
+			xbps_error_printf("xbps-bin: %s returned: `%s'\n",
 			    repoloc, xbps_fetch_error_string());
 			free(binfile);
 			return -1;
@@ -248,13 +245,13 @@ show_transaction_sizes(struct transaction *trans)
 	prop_dictionary_get_uint64(trans->dict, "total-installed-size",
 	    &instsize);
 	if (xbps_humanize_number(size, (int64_t)dlsize) == -1) {
-		fprintf(stderr, "xbps-bin: error: humanize_number returns "
+		xbps_error_printf("xbps-bin: error: humanize_number returns "
 		    "%s\n", strerror(errno));
 		return -1;
 	}
 	printf("Total download size:\t%6s\n", size);
 	if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
-		fprintf(stderr, "xbps-bin: error: humanize_number2 returns "
+		xbps_error_printf("xbps-bin: error: humanize_number2 returns "
 		    "%s\n", strerror(errno));
 		return -1;
 	}
@@ -291,7 +288,7 @@ xbps_autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 			printf("All packages are up-to-date.\n");
 			return 0;
 		} else {
-			fprintf(stderr, "xbps-bin: unexpected error %s\n",
+			xbps_error_printf("xbps-bin: unexpected error %s\n",
 			    strerror(rv));
 			return -1;
 		}
@@ -340,7 +337,7 @@ xbps_install_new_pkg(const char *pkg)
 			    "repository pool.\n", pkg);
 			rv = -1;
 		} else {
-			fprintf(stderr, "xbps-bin: unexpected error: %s\n",
+			xbps_error_printf("xbps-bin: unexpected error: %s\n",
 			    strerror(rv));
 			rv = -1;
 		}
@@ -367,7 +364,7 @@ xbps_update_pkg(const char *pkgname)
 	else if (rv == ENODEV)
 		printf("Package '%s' not installed.\n", pkgname);
 	else if (rv != 0) {
-		fprintf(stderr, "xbps-bin: unexpected error %s\n",
+		xbps_error_printf("xbps-bin: unexpected error %s\n",
 		    strerror(rv));
 		return -1;
 	}
@@ -428,7 +425,7 @@ replace_packages(prop_dictionary_t trans_dict, prop_dictionary_t pkgd,
 
 		version = xbps_get_pkg_version(pkgver);
 		if ((rv = xbps_remove_pkg(reppkgn, version, false)) != 0) {
-			fprintf(stderr, "xbps-bin: couldn't remove %s (%s)\n",
+			xbps_error_printf("xbps-bin: couldn't remove %s (%s)\n",
 			    reppkgn, strerror(rv));
 			return -1;
 		}
@@ -556,7 +553,7 @@ exec_transaction(struct transaction *trans)
 		if (replaces_iter != NULL) {
 			rv = replace_packages(trans->dict, obj, replaces_iter, pkgver);
 			if (rv != 0) {
-				fprintf(stderr, 
+				xbps_error_printf(
 				    "xbps-bin: couldn't replace some "
 				    "packages! (%s)\n", strerror(rv));
 				return rv;
@@ -567,7 +564,7 @@ exec_transaction(struct transaction *trans)
 		if (strcmp(tract, "update") == 0) {
 			instpkgd = xbps_find_pkg_dict_installed(pkgname, false);
 			if (instpkgd == NULL) {
-				fprintf(stderr, "xbps-bin: error: unable to "
+				xbps_error_printf("xbps-bin: error: unable to "
 				    "find %s installed dict!\n", pkgname);
 				return EINVAL;
 			}
@@ -584,7 +581,7 @@ exec_transaction(struct transaction *trans)
 				    pkgname, instver, version);
 
 			if ((rv = xbps_remove_pkg(pkgname, version, true)) != 0) {
-				fprintf(stderr, "xbps-bin: error "
+				xbps_error_printf("xbps-bin: error "
 				    "replacing %s-%s (%s)\n", pkgname,
 				    instver, strerror(rv));
 				return rv;
@@ -604,7 +601,7 @@ exec_transaction(struct transaction *trans)
 			    unpack_progress_cb_percentage, &xpd);
 		}
 		if (rv != 0) {
-			fprintf(stderr, "xbps-bin: error unpacking %s "
+			xbps_error_printf("xbps-bin: error unpacking %s "
 			    "(%s)\n", pkgver, strerror(rv));
 			return rv;
 		}
@@ -615,7 +612,7 @@ exec_transaction(struct transaction *trans)
 		 * Register binary package.
 		 */
 		if ((rv = xbps_register_pkg(obj, autoinst)) != 0) {
-			fprintf(stderr, "xbps-bin: error registering %s "
+			xbps_error_printf("xbps-bin: error registering %s "
 			    "(%s)\n", pkgver, strerror(rv));
 			return rv;
 		}
@@ -634,7 +631,7 @@ exec_transaction(struct transaction *trans)
 			update = true;
 		rv = xbps_configure_pkg(pkgname, version, false, update);
 		if (rv != 0) {
-			fprintf(stderr, "xbps-bin: error configuring "
+			xbps_error_printf("xbps-bin: error configuring "
 			    "package %s (%s)\n", pkgname, strerror(rv));
 			return rv;
 		}
@@ -678,7 +675,7 @@ xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
 	 */
 	trans->iter = xbps_get_array_iter_from_dict(trans->dict, "packages");
 	if (trans->iter == NULL) {
-		fprintf(stderr, "xbps-bin: error allocating array mem! (%s)\n",
+		xbps_error_printf("xbps-bin: error allocating array mem! (%s)\n",
 		    strerror(errno));
 		goto out;
 	}

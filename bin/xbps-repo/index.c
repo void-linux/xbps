@@ -107,7 +107,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	newpkgd = xbps_repository_plist_find_pkg_dict_from_url(file,
 	    XBPS_PKGPROPS);
 	if (newpkgd == NULL) {
-		fprintf(stderr, "xbps-repo: can't read %s %s metadata "
+		xbps_error_printf("xbps-repo: can't read %s %s metadata "
 		    "file, skipping!\n", file, XBPS_PKGPROPS);
 		goto out;
 	}
@@ -129,7 +129,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 	} else if (curpkgd) {
 		prop_dictionary_get_cstring_nocopy(curpkgd, "version", &regver);
 		if (xbps_cmpver(version, regver) <= 0) {
-			fprintf(stderr, "W: skipping %s. %s-%s already "
+			xbps_warn_printf("skipping %s. %s-%s already "
 			    "registered.\n", filen, pkgname, regver);
 			prop_object_release(newpkgd);
 			rv = EEXIST;
@@ -149,8 +149,9 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 			goto out;
 		}
 		if (remove(oldfilepath) == -1) {
-			fprintf(stderr, "E: Couldn't remove old package file "
-			    "'%s'! (%s)\n", oldfilepath, strerror(errno));
+			xbps_error_printf("xbps-repo: couldn't remove old "
+			    "package file `%s': %s\n", oldfilepath,
+			    strerror(errno));
 			free(oldfilepath);
 			prop_object_release(newpkgd);
 			rv = errno;
@@ -165,13 +166,13 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		}
 		if (!xbps_remove_pkg_from_dict_by_name(idxdict,
 		    "packages", pkgname)) {
-			fprintf(stderr, "E: couldn't remove %s dict from "
-			    "index (%s)\n", pkgname, strerror(errno));
+			xbps_error_printf("xbps-repo: couldn't remove `%s' "
+			    "from plist index: %s\n", pkgname, strerror(errno));
 			prop_object_release(newpkgd);
 			free(tmpstr);
 			goto out;
 		}
-		fprintf(stderr, "W: removed outdated binpkg file for "
+		xbps_warn_printf("xbps-repo: removed outdated binpkg file for "
 		    "'%s'.\n", tmpstr);
 		free(tmpstr);
 	}
@@ -292,8 +293,8 @@ xbps_repo_genindex(const char *pkgdir)
 
 		dirp = opendir(path);
 		if (dirp == NULL) {
-			fprintf(stderr, "E: unexistent '%s' directory!\n",
-			    path);
+			xbps_error_printf("xbps-repo: unexistent '%s' "
+			    "directory!\n", path);
 			free(path);
 			continue;
 		}

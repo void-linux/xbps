@@ -439,5 +439,6 @@ main(int argc, char **argv)
 	}
 
 out:
-	cleanup(rv);
+	xbps_end();
+	exit(rv);
 }

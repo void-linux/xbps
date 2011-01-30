@@ -41,7 +41,7 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 	printf("Removing package %s-%s ...\n", pkgname, version);
 
 	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0) {
-		xbps_error_printf("unable to remove %s-%s (%s).\n",
+		xbps_error_printf("xbps-bin: unable to remove %s-%s (%s).\n",
 		    pkgname, version, strerror(errno));
 		return rv;
 	}
@@ -49,7 +49,7 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 		printf(" Purging ... ");
 		(void)fflush(stdout);
 		if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
-			xbps_error_printf("unable to purge %s-%s "
+			xbps_error_printf("xbps-bin: unable to purge %s-%s "
 			    "(%s).\n", pkgname, version,
 			    strerror(errno));
 			return rv;
