@@ -41,11 +41,10 @@
  * Only packages in XBPS_PKG_STATE_CONFIG_FILES state will be processed
  * (unless overriden). Package purging steps:
  *
- *  - Unmodified configuration files and directories containing them
- *    will be removed (if empty).
- *  - Its metadata directory and all its files will be removed.
- *  - It will be unregistered from the installed packages database with
- *    xbps_unregister_pkg().
+ *  - Unmodified configuration files will be removed.
+ *  - The purge action in the REMOVE script will be executed (if found).
+ *  - Metadata files will be removed and package will be unregistered
+ *    with xbps_unregister_pkg().
  */
 
 static int
@@ -129,11 +128,12 @@ int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	prop_dictionary_t dict, pkgd;
+	const char *version;
+	char *buf;
 	int rv = 0, flags = xbps_get_flags();
-	pkg_state_t state = 0;
+	pkg_state_t state;
 
 	assert(pkgname != NULL);
-
 	/*
 	 * Firstly let's get the pkg dictionary from regpkgdb.
 	 */
@@ -145,48 +145,64 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		rv = errno;
 		goto out;
 	}
-
 	if (check_state) {
 		/*
 		 * Skip packages that aren't in "config-files" state.
 		 */
 		if ((rv = xbps_get_pkg_state_dictionary(pkgd, &state)) != 0)
 			goto out;
-
 		if (state != XBPS_PKG_STATE_CONFIG_FILES)
 			goto out;
 	}
-
 	/*
-	 * Remove unmodified configuration files and directories.
+	 * Remove unmodified configuration files.
 	 */
 	dict = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (dict == NULL) {
 		rv = errno;
 		goto out;
 	}
-
 	if (prop_dictionary_get(dict, "conf_files")) {
 		if ((rv = xbps_remove_pkg_files(dict, "conf_files")) != 0) {
 			prop_object_release(dict);
 			goto out;
 		}
-		if ((rv = xbps_remove_pkg_files(dict, "dirs")) != 0) {
+	}
+	/*
+	 * Execute the purge action in REMOVE script (if found).
+	 */
+	prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
+	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE", XBPS_META_PATH, pkgname);
+	if (buf == NULL) {
+		prop_object_release(dict);
+		rv = ENOMEM;
+		goto out;
+	}
+	if (xbps_file_exec(buf, "purge",
+	    pkgname, version, "no", NULL) != 0) {
+		free(buf);
+		if (errno && errno != ENOENT) {
+			rv = errno;
+			xbps_error_printf("%s: purge action error in REMOVE "
+			"script: %s\n", pkgname, strerror(errno));
 			prop_object_release(dict);
 			goto out;
 		}
 	}
 	prop_object_release(dict);
-
 	/*
 	 * Remove metadata dir and unregister package.
 	 */
-	if ((rv = remove_pkg_metadata(pkgname)) != 0)
+	if ((rv = remove_pkg_metadata(pkgname)) != 0) {
+		xbps_error_printf("%s: couldn't remove metadata files: %s\n",
+		    pkgname, strerror(rv));
 		goto out;
-
-	if ((rv = xbps_unregister_pkg(pkgname)) != 0)
+	}
+	if ((rv = xbps_unregister_pkg(pkgname)) != 0) {
+		xbps_error_printf("%s: couldn't unregister package: %s\n",
+		    pkgname, strerror(rv));
 		goto out;
-
+	}
 	if (flags & XBPS_FLAG_VERBOSE)
 		xbps_printf("Package %s purged successfully.\n", pkgname);
 
