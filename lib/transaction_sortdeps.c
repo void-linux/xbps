@@ -61,9 +61,9 @@ static TAILQ_HEAD(pkgdep_head, pkgdep) pkgdep_list =
 static struct pkgdep *
 pkgdep_find(const char *name)
 {
-	struct pkgdep *pd = NULL;
+	struct pkgdep *pd = NULL, *pd_new = NULL;
 
-	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
+	TAILQ_FOREACH_SAFE(pd, &pkgdep_list, pkgdep_entries, pd_new) {
 		if (strcmp(pd->name, name) == 0)
 			return pd;
 		if (pd->d == NULL)
@@ -79,10 +79,10 @@ pkgdep_find(const char *name)
 static ssize_t
 pkgdep_find_idx(const char *name)
 {
-	struct pkgdep *pd;
+	struct pkgdep *pd, *pd_new;
 	ssize_t idx = 0;
 
-	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
+	TAILQ_FOREACH_SAFE(pd, &pkgdep_list, pkgdep_entries, pd_new) {
 		if (strcmp(pd->name, name) == 0)
 			return idx;
 		if (pd->d == NULL)
