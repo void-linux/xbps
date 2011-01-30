@@ -106,7 +106,6 @@ xbps_error_printf(const char *fmt, ...)
 void
 xbps_warn_printf(const char *fmt, ...)
 {
-	int flags = xbps_get_flags();
 	va_list ap;
 
 	va_start(ap, fmt);
