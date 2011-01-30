@@ -1,4 +1,4 @@
-.TH "XBPS\-BIN" "8" "27/01/2011" "\ \&" "\ \&"
+.TH "XBPS\-BIN" "8" "30/01/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -75,6 +75,14 @@ Used currently in the
 and
 \fIautoremove\fR
 targets, if enabled after removing a package it is also purged\&.
+.RE
+.PP
+\fB\-R\fR
+.RS 4
+Used currently in the
+\fIremove\fR
+target, to recursively remove packages that aren\(cqt required by other installed
+packages and that were installed by the package that we want to remove\&.
 .RE
 .PP
 \fB\-r\fR \fIrootdir\fR
@@ -222,7 +230,7 @@ state, it must be
 \fBpurged\fR
 with the
 \fBpurge\fR
-command\&. If
+command or alternatively use the \fI\-p\fR flag \&. If
 \fB\-f\fR
 option is used, package files will be removed even if its SHA256 hash doesn\(cqt match\&.
 .RE
@@ -329,35 +337,41 @@ directory for downloaded binary packages\&.
 .RE
 .SH "EXAMPLES"
 .PP
-\fBInstall a package by specifying its name:\fR
+Install a package by specifying its name:
 .RS 4
 $ xbps\-bin install foo
 .RE
 .PP
-\fBInstall a package by specifying a package pattern:\fR
+Install a package by specifying a package pattern:
 .RS 4
 $ xbps\-bin install "\fBfoo>=3\&.0\fR"
 .RE
 .PP
-\fBInstall multiple packages by specifying names and package patterns:\fR
+Install multiple packages by specifying names and package patterns:
 .RS 4
 $ xbps\-bin install foo "\fBblah⇐4\&.0\fR" baz\-2\&.0 "\fBblob>4\&.[0\-9]\fR"
 .RE
 .PP
-\fBFind the package that owns the file \fB/bin/mount\fR:\fR
+Find the package that owns the file \fB/bin/mount\fR:
 .RS 4
 $ xbps\-bin find\-files /bin/mount
 .RE
 .PP
-\fBFind the packages that match the pattern "\fB/usr/lib/libav\&*\fR":
+Find the packages that match the pattern "\fB/usr/lib/libav\&*\fR":
 .RS 4
 $ xbps\-bin find\-files "/usr/lib/libav\&*"
 .RE
 .PP
-\fBRemove and purge the package \fBproplib-devel\fR:\fR
+Remove and purge the package \fBproplib-devel\fR:
 .RS 4
 $ xbps\-bin -yp remove proplib\-devel
+.RE
 .PP
+Remove and purge the package \fBbsdtar\fR and recursively all packages that
+were installed automatically by it:
+.RS 4
+$ xbps\-bin -Rp remove bsdtar
+.RE
 .SH "BUGS"
 .sp
 Probably, but I try to make this not happen\&. Use it under your own responsability and enjoy your life\&.

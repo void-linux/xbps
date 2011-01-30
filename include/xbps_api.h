@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110129"
+#define XBPS_RELVER		"20110130"
 
 /** 
  * @def XBPS_META_PATH
@@ -294,16 +294,18 @@ const char *xbps_fetch_error_string(void);
 
 /*@}*/
 
-
 /**
  * @ingroup pkg_orphans
  *
  * Finds all package orphans currently installed.
  *
+ * @param[in] orphans Proplib array of strings with package names of
+ * packages that should be treated as they were already removed (optional).
+ *
  * @return A proplib array of dictionaries with all orphans found,
  * on error NULL is returned and errno is set appropiately.
  */
-prop_array_t xbps_find_pkg_orphans(void);
+prop_array_t xbps_find_pkg_orphans(prop_array_t orphans);
 
 /**
  * @ingroup vermatch

@@ -60,15 +60,23 @@
  * dictionary.
  */
 
+struct orphan_data {
+	prop_array_t array;
+	prop_array_t orphans_user;
+};
+
 static int
 find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 {
-	prop_array_t reqby, orphans = arg;
+	struct orphan_data *od = arg;
+	prop_array_t reqby;
 	prop_object_t obj2;
 	prop_object_iterator_t iter;
-	const char *pkgdep;
+	const char *pkgdep, *curpkgname;
+	char *pkgdepname;
 	unsigned int ndep = 0, cnt = 0;
 	bool automatic = false;
+	size_t i;
 	int rv = 0;
 	pkg_state_t state;
 
@@ -82,7 +90,6 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 
 	if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
 		return rv;
-
 	/*
 	 * Skip packages that aren't fully installed.
 	 */
@@ -92,39 +99,75 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 	reqby = prop_dictionary_get(obj, "requiredby");
 	if (prop_object_type(reqby) != PROP_TYPE_ARRAY)
 		return EINVAL;
-
-	if ((cnt = prop_array_count(reqby)) == 0) {
-		prop_array_add(orphans, obj);
+	/*
+	 * Add packages with empty "requiredby" arrays.
+	 */
+	cnt = prop_array_count(reqby);
+	if (cnt == 0) {
+		prop_array_add(od->array, obj);
 		return 0;
+	}
+	/*
+	 * Add packages that only have 1 entry matching any pkgname
+	 * object in the user supplied array of strings.
+	 */
+	if (od->orphans_user != NULL && cnt == 1) {
+		for (i = 0; i < prop_array_count(od->orphans_user); i++) {
+			prop_array_get_cstring_nocopy(od->orphans_user,
+			    i, &curpkgname);
+			if (xbps_find_pkgname_in_array(reqby, curpkgname)) {
+				prop_array_add(od->array, obj);
+				return 0;
+			}
+		}
 	}
 	iter = prop_array_iterator(reqby);
 	if (iter == NULL)
 		return ENOMEM;
-
+	/*
+	 * Iterate over the requiredby array and add current pkg
+	 * when all pkg dependencies are already in requiredby
+	 * or any pkgname object in the user supplied array of
+	 * strings match.
+	 */
 	while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
 		pkgdep = prop_string_cstring_nocopy(obj2);
 		if (pkgdep == NULL) {
 			prop_object_iterator_release(iter);
 			return EINVAL;
 		}
-		if (xbps_find_pkg_in_array_by_pattern(orphans, pkgdep))
+		if (xbps_find_pkg_in_array_by_pattern(od->array, pkgdep))
 			ndep++;
+		if (od->orphans_user == NULL)
+			continue;
+
+		pkgdepname = xbps_get_pkg_name(pkgdep);
+		assert(pkgdepname != NULL);
+		for (i = 0; i < prop_array_count(od->orphans_user); i++) {
+			prop_array_get_cstring_nocopy(od->orphans_user,
+			    i, &curpkgname);
+			if (strcmp(curpkgname, pkgdepname) == 0) {
+				ndep++;
+				break;
+			}
+		}
 	}
 	prop_object_iterator_release(iter);
 
 	if (ndep != cnt)
 		return 0;
-	if (!prop_array_add(orphans, obj))
+	if (!prop_array_add(od->array, obj))
 		return EINVAL;
 
 	return 0;
 }
 
 prop_array_t
-xbps_find_pkg_orphans(void)
+xbps_find_pkg_orphans(prop_array_t orphans_user)
 {
 	prop_array_t array = NULL;
 	prop_dictionary_t dict;
+	struct orphan_data od;
 	int rv = 0;
 
 	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL)
@@ -132,20 +175,23 @@ xbps_find_pkg_orphans(void)
 	/*
 	 * Prepare an array with all packages previously found.
 	 */
-	if ((array = prop_array_create()) == NULL)
+	if ((od.array = prop_array_create()) == NULL)
 		goto out;
 	/*
 	 * Find out all orphans by looking at the
 	 * regpkgdb dictionary and iterate in reverse order
 	 * in which packages were installed.
 	 */
+	od.orphans_user = orphans_user;
 	rv = xbps_callback_array_iter_reverse_in_dict(dict, "packages",
-	    find_orphan_pkg, array);
+	    find_orphan_pkg, &od);
 	if (rv != 0) {
 		errno = rv;
-		prop_object_release(array);
+		prop_object_release(od.array);
 		array = NULL;
+		goto out;
 	}
+	array = prop_array_copy(od.array);
 out:
 	xbps_regpkgdb_dictionary_release();
 

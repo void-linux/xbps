@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,7 +74,7 @@ xbps_autoremove_pkgs(bool yes, bool purge)
 	 * as dependency and any installed package does not depend
 	 * on it currently.
 	 */
-	orphans = xbps_find_pkg_orphans();
+	orphans = xbps_find_pkg_orphans(NULL);
 	if (orphans == NULL)
 		return errno;
 
@@ -120,11 +120,14 @@ out:
 }
 
 int
-xbps_remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
-			   bool force_rm_with_deps)
+xbps_remove_installed_pkgs(int argc,
+			   char **argv,
+			   bool yes,
+			   bool purge,
+			   bool force_rm_with_deps,
+			   bool recursive_rm)
 {
-	prop_array_t sorted_pkgs;
-	prop_array_t reqby;
+	prop_array_t sorted_pkgs, orphans, reqby, orphans_user = NULL;
 	prop_dictionary_t dict;
 	size_t x;
 	const char *version, *pkgver, *pkgname;
@@ -136,6 +139,32 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 		return -1;
 
 	/*
+	 * If recursively removing packages, find out which packages
+	 * would be orphans if the supplied package names were removed.
+	 */
+	if (recursive_rm) {
+		orphans_user = prop_array_create();
+		if (orphans_user == NULL) {
+			xbps_error_printf("NULL orphans_user array\n");
+			return ENOMEM;
+		}
+		for (x = 0, i = 1; i < argc; i++, x++)
+			prop_array_set_cstring_nocopy(orphans_user, x, argv[i]);
+
+		orphans = xbps_find_pkg_orphans(orphans_user);
+		prop_object_release(orphans_user);
+		if (orphans == NULL) {
+			xbps_error_printf("NULL orphans array\n");
+			return EINVAL;
+		}
+		/* in reverse order */
+		x = prop_array_count(orphans);
+		while (x--)
+			prop_array_add(sorted_pkgs, prop_array_get(orphans, x));
+
+		prop_object_release(orphans);
+	}
+	/*
 	 * First check if package is required by other packages.
 	 */
 	for (i = 1; i < argc; i++) {
@@ -144,13 +173,18 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 			printf("Package %s is not installed.\n", argv[i]);
 			continue;
 		}
+		/*
+		 * Check that current package is not required by
+		 * other installed packages.
+		 */
 		prop_array_add(sorted_pkgs, dict);
 		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
 		found = true;
 		reqby = prop_dictionary_get(dict, "requiredby");
 		if (reqby != NULL && prop_array_count(reqby) > 0) {
-			xbps_warn_printf("%s IS REQUIRED BY %u PACKAGES!\n",
-			    pkgver, prop_array_count(reqby));
+			xbps_printf("WARNING: %s IS REQUIRED BY %u "
+			    "PACKAGE%s!\n", pkgver, prop_array_count(reqby),
+			    prop_array_count(reqby) > 1 ? "S" : "");
 			reqby_force = true;
 		}
 		prop_object_release(dict);
@@ -159,8 +193,6 @@ xbps_remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 		prop_object_release(sorted_pkgs);
 		return 0;
 	}
-
-
 	/*
 	 * Show the list of going-to-be removed packages.
 	 */

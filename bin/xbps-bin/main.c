@@ -121,7 +121,7 @@ show_orphans(void)
 	prop_object_t obj;
 	const char *pkgver;
 
-	orphans = xbps_find_pkg_orphans();
+	orphans = xbps_find_pkg_orphans(NULL);
 	if (orphans == NULL)
 		return EINVAL;
 
@@ -155,13 +155,13 @@ main(int argc, char **argv)
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
 	int i , c, flags, rv;
-	bool yes, purge, with_debug, force_rm_with_deps;
+	bool yes, purge, with_debug, force_rm_with_deps, recursive_rm;
 	bool show_download_pkglist_url = false;
 
 	i = c = flags = rv = 0;
-	yes = purge = force_rm_with_deps = with_debug = false;
+	yes = purge = force_rm_with_deps = recursive_rm = with_debug = false;
 
-	while ((c = getopt(argc, argv, "VcdDFfpr:vy")) != -1) {
+	while ((c = getopt(argc, argv, "VcdDFfpRr:vy")) != -1) {
 		switch (c) {
 		case 'c':
 			xbps_set_cachedir(optarg);
@@ -180,6 +180,9 @@ main(int argc, char **argv)
 			break;
 		case 'p':
 			purge = true;
+			break;
+		case 'R':
+			recursive_rm = true;
 			break;
 		case 'r':
 			/* To specify the root directory */
@@ -304,7 +307,7 @@ main(int argc, char **argv)
 			usage();
 
 		rv = xbps_remove_installed_pkgs(argc, argv, yes, purge,
-		    force_rm_with_deps);
+		    force_rm_with_deps, recursive_rm);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
