@@ -3,6 +3,8 @@ xbps-0.8.0 (???):
  * xbps-bin(8): added -R option for the "remove" target, to recursively
    remove packages that were installed automatically by the package(s)
    that we want to remove, and no other package currently depends on.
+   This is much like the remove and autoremove targets together, i.e
+   "xbps-bin -yp remove foo && xbps-bin -yp autoremove".
 
  * xbps-bin(8): added -D option to only show the URLs to download the binary
    packages required by the "install", "update" and "autoupdate" targets.
