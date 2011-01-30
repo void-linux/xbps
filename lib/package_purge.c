@@ -171,24 +171,36 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Execute the purge action in REMOVE script (if found).
 	 */
-	prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
+	if (chdir(xbps_get_rootdir()) == -1) {
+		rv = errno;
+		prop_object_release(dict);
+		xbps_error_printf("[purge] %s: cannot change to rootdir: %s.\n",
+		    pkgname, strerror(rv));
+		goto out;
+	}
 	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE", XBPS_META_PATH, pkgname);
 	if (buf == NULL) {
 		prop_object_release(dict);
 		rv = ENOMEM;
 		goto out;
 	}
-	if (xbps_file_exec(buf, "purge",
-	    pkgname, version, "no", NULL) != 0) {
-		free(buf);
-		if (errno && errno != ENOENT) {
-			rv = errno;
-			xbps_error_printf("%s: purge action error in REMOVE "
-			"script: %s\n", pkgname, strerror(errno));
-			prop_object_release(dict);
-			goto out;
+	if (access(buf, X_OK) == 0) {
+		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
+
+		if (xbps_file_exec(buf, "purge",
+		    pkgname, version, "no", NULL) != 0) {
+			free(buf);
+			if (errno && errno != ENOENT) {
+				rv = errno;
+				xbps_error_printf("%s: purge action error in "
+				    "REMOVE script: %s\n", pkgname,
+				    strerror(errno));
+				prop_object_release(dict);
+				goto out;
+			}
 		}
 	}
+	free(buf);
 	prop_object_release(dict);
 	/*
 	 * Remove metadata dir and unregister package.
