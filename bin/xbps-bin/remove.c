@@ -158,8 +158,7 @@ xbps_remove_installed_pkgs(int argc,
 			return EINVAL;
 		}
 		/* in reverse order */
-		x = prop_array_count(orphans);
-		while (x--)
+		for (x = 0; x < prop_array_count(orphans); x++)
 			prop_array_add(sorted_pkgs, prop_array_get(orphans, x));
 
 		prop_object_release(orphans);
