@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010 Juan Romero Pardines.
+ * Copyright (c) 2010-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,7 @@
  */
 static const char *optional_objs[] = {
 	"conflicts", "conf_files", "replaces", "run_depends", "preserve",
-	"requiredby"
+	"requiredby", "provides"
 };
 
 /*

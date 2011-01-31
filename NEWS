@@ -1,5 +1,8 @@
 xbps-0.8.0 (???):
 
+ * xbps-dgraph: now parses the "provides" object in the package properties
+   metadata plist file for packages providing virtual packages.
+
  * xbps-bin(8): added -R option for the "remove" target, to recursively
    remove packages that were installed automatically by the package(s)
    that we want to remove, and no other package currently depends on.
