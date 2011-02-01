@@ -367,8 +367,8 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		 * Package is on repo, add it into the dictionary.
 		 */
 		if ((rv = store_dependency(transd, curpkgd)) != 0) {
-			xbps_dbg_printf("store_dependency failed %s",
-			    reqpkg);
+			xbps_dbg_printf("store_dependency failed for "
+			    "`%s': %s\n", reqpkg, strerror(rv));
 			prop_object_release(curpkgd);
 			break;
 		}
