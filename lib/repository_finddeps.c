@@ -48,6 +48,11 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "repository", &repoloc);
+	/*
+	 * Check if this package should replace other installed packages.
+	 */
+	if ((rv = xbps_repository_pkg_replaces(transd, repo_pkgd)) != 0)
+		return rv;
 
 	dict = prop_dictionary_copy(repo_pkgd);
 	if (dict == NULL)

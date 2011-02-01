@@ -184,6 +184,12 @@ repository_find_pkg(const char *pattern, const char *reason)
 		goto out;
 	}
 	/*
+	 * Check if this package should replace other installed packages.
+	 */
+	if ((rv = xbps_repository_pkg_replaces(transd, origin_pkgrd)) != 0)
+		goto out;
+
+	/*
 	 * Add the pkg dictionary from repository's index dictionary into
 	 * the "unsorted" array in transaction dictionary.
 	 */

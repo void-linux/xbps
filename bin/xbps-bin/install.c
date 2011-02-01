@@ -46,6 +46,7 @@ struct transaction {
 	size_t inst_pkgcnt;
 	size_t up_pkgcnt;
 	size_t cf_pkgcnt;
+	size_t rm_pkgcnt;
 };
 
 static void
@@ -110,7 +111,9 @@ again:
 		if (cksum == true)
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "repository", &repoloc))
+			continue;
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
 		prop_dictionary_get_cstring_nocopy(obj,
@@ -119,7 +122,6 @@ again:
 		binfile = xbps_get_binpkg_repo_uri(obj, repoloc);
 		if (binfile == NULL)
 			return errno;
-
 		/*
 		 * If downloaded package is in cachedir, check its hash
 		 * and refetch the binpkg again if didn't match.
@@ -198,11 +200,11 @@ show_transaction_sizes(struct transaction *trans)
 {
 	prop_object_t obj;
 	uint64_t dlsize = 0, instsize = 0;
-	const char *tract, *p = "s";
+	const char *tract;
 	char size[8];
-	bool trans_inst, trans_up, trans_conf;
+	bool trans_inst, trans_up, trans_conf, trans_rm;
 
-	trans_inst = trans_up = trans_conf = false;
+	trans_inst = trans_up = trans_conf = trans_rm = false;
 
 	while ((obj = prop_object_iterator_next(trans->iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
@@ -215,6 +217,9 @@ show_transaction_sizes(struct transaction *trans)
 		} else if (strcmp(tract, "configure") == 0) {
 			trans->cf_pkgcnt++;
 			trans_conf = true;
+		} else if (strcmp(tract, "remove") == 0) {
+			trans->rm_pkgcnt++;
+			trans_rm = true;
 		}
 	}
 	prop_object_iterator_reset(trans->iter);
@@ -237,6 +242,11 @@ show_transaction_sizes(struct transaction *trans)
 		show_package_list(trans->iter, "configure");
 		printf("\n\n");
 	}
+	if (trans_rm) {
+		printf("The following packages will be removed:\n\n");
+		show_package_list(trans->iter, "remove");
+		printf("\n\n");
+	}
 
 	/*
 	 * Show total download/installed size for all required packages.
@@ -257,15 +267,14 @@ show_transaction_sizes(struct transaction *trans)
 	}
 	printf("Total installed size:\t%6s\n\n", size);
 
-	if (trans->inst_pkgcnt == 1)
-		p = "";
-	printf("%6zu package%s will be installed.\n", trans->inst_pkgcnt, p);
-	if (trans->up_pkgcnt == 1)
-		p = "";
-	printf("%6zu package%s will be updated.\n", trans->up_pkgcnt, p);
-	if (trans->cf_pkgcnt == 1)
-		p = "";
-	printf("%6zu package%s will be configured.\n\n", trans->cf_pkgcnt, p);
+	printf("%6zu package%s will be installed.\n", trans->inst_pkgcnt,
+	    trans->inst_pkgcnt == 1 ? "" : "s");
+	printf("%6zu package%s will be updated.\n", trans->up_pkgcnt,
+	    trans->up_pkgcnt == 1 ? "" : "s");
+	printf("%6zu package%s will be configured.\n", trans->cf_pkgcnt,
+	    trans->cf_pkgcnt == 1 ? "" : "s");
+	printf("%6zu package%s will be removed.\n\n", trans->rm_pkgcnt,
+	    trans->rm_pkgcnt == 1 ? "" : "s");
 
 	return 0;
 }
@@ -320,7 +329,6 @@ xbps_install_new_pkg(const char *pkg)
 	pkgname = xbps_get_pkgpattern_name(pkgpatt);
 	if (pkgname == NULL)
 		return -1;
-
 	/*
 	 * Find a package in a repository and prepare for installation.
 	 */
@@ -342,7 +350,6 @@ xbps_install_new_pkg(const char *pkg)
 			rv = -1;
 		}
 	}
-
 	if (pkgmatch)
 		free(pkgpatt);
 	free(pkgname);
@@ -368,70 +375,6 @@ xbps_update_pkg(const char *pkgname)
 		    strerror(rv));
 		return -1;
 	}
-	return 0;
-}
-
-static int
-replace_packages(prop_dictionary_t trans_dict, prop_dictionary_t pkgd,
-		 prop_object_iterator_t replaces_iter, const char *pkgver)
-{
-	prop_dictionary_t instd = NULL, transd = NULL;
-	prop_object_t obj;
-	const char *pattern, *reppkgn, *reppkgver, *version;
-	int rv = 0;
-
-	/*
-	 * This package replaces other package(s), so we remove
-	 * them before upgrading or installing new one. If the package
-	 * to be replaced is in the transaction and to be updated,
-	 * the new package will overwrite its files.
-	 */
-	while ((obj = prop_object_iterator_next(replaces_iter))) {
-		pattern = prop_string_cstring_nocopy(obj);
-		if (pattern == NULL)
-			return errno;
-
-		/*
-		 * If pattern matches an installed package, replace it.
-		 */
-		instd = xbps_find_pkg_dict_installed(pattern, true);
-		if (instd == NULL)
-			continue;
-
-		prop_dictionary_get_cstring_nocopy(instd, "pkgname", &reppkgn);
-		prop_dictionary_get_cstring_nocopy(instd, "pkgver", &reppkgver);
-		/*
-		 * If the package to be replaced is in the transaction due to
-		 * an update, do not remove it; just overwrite its files.
-		 */
-		transd = xbps_find_pkg_in_dict_by_name(trans_dict,
-		    "packages", reppkgn);
-		if (transd) {
-			/*
-			 * Set the bool property 'replace-files-in-pkg-update'.
-			 */
-			prop_dictionary_set_bool(pkgd,
-			    "replace-files-in-pkg-update", true);
-			printf("Replacing some files from '%s (will be "
-			    "updated)' with '%s' (matched by '%s')...\n",
-			    reppkgver, pkgver, pattern);
-			prop_object_release(instd);
-			continue;
-		}
-
-		printf("Replacing package '%s' with '%s' "
-		    "(matched by '%s')...\n", reppkgver, pkgver, pattern);
-		prop_object_release(instd);
-
-		version = xbps_get_pkg_version(pkgver);
-		if ((rv = xbps_remove_pkg(reppkgn, version, false)) != 0) {
-			xbps_error_printf("xbps-bin: couldn't remove %s (%s)\n",
-			    reppkgn, strerror(rv));
-			return -1;
-		}
-	}
-	prop_object_iterator_release(replaces_iter);
-
 	return 0;
 }
 
@@ -473,29 +416,22 @@ exec_transaction(struct transaction *trans)
 {
 	prop_dictionary_t instpkgd;
 	prop_object_t obj;
-	prop_object_iterator_t replaces_iter;
 	struct xbps_unpack_progress_data xpd;
 	const char *pkgname, *version, *pkgver, *instver, *filen, *tract;
 	int flags = xbps_get_flags(), rv = 0;
 	bool update, preserve, autoinst;
-	pkg_state_t state = 0;
-
-	assert(trans != NULL);
-	assert(trans->dict != NULL);
-	assert(trans->iter != NULL);
+	pkg_state_t state;
 
 	/*
 	 * Only show the URLs to download the binary packages.
 	 */
 	if (trans->only_show)
 		return download_package_list(trans->iter, true);
-
 	/*
 	 * Show download/installed size for the transaction.
 	 */
 	if ((rv = show_transaction_sizes(trans)) != 0)
 		return rv;
-
 	/*
 	 * Ask interactively (if -y not set).
 	 */
@@ -505,7 +441,6 @@ exec_transaction(struct transaction *trans)
 			return 0;
 		}
 	}
-
 	/*
 	 * Download binary packages (if they come from a remote repository)
 	 * and check its SHA256 hash.
@@ -513,66 +448,50 @@ exec_transaction(struct transaction *trans)
 	printf("[1/3] Downloading/integrity check\n");
 	if ((rv = download_package_list(trans->iter, false)) != 0)
 		return rv;
-
 	/*
 	 * Iterate over the transaction dictionary.
 	 */
 	printf("\n[2/3] Unpacking\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		autoinst = preserve = false;
-
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
 		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
-
-		assert(pkgname != NULL);
-		assert(version != NULL);
-		assert(pkgver != NULL);
-		assert(filen != NULL);
-		assert(tract != NULL);
-
 		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
 		prop_dictionary_get_bool(obj, "preserve",  &preserve);
-		replaces_iter = xbps_get_array_iter_from_dict(obj, "replaces");
-
 		/*
 		 * If dependency is already unpacked skip this phase.
 		 */
 		state = 0;
 		if (xbps_get_pkg_state_dictionary(obj, &state) != 0)
 			return EINVAL;
-
 		if (state == XBPS_PKG_STATE_UNPACKED)
 			continue;
 
-		/*
-		 * Replace package(s) if necessary.
-		 */
-		if (replaces_iter != NULL) {
-			rv = replace_packages(trans->dict, obj, replaces_iter, pkgver);
+		if (strcmp(tract, "remove") == 0) {
+			/* Remove a package */
+			printf("Removing `%s' package ...\n", pkgver);
+			rv = xbps_remove_pkg(pkgname, version, false);
 			if (rv != 0) {
-				xbps_error_printf(
-				    "xbps-bin: couldn't replace some "
-				    "packages! (%s)\n", strerror(rv));
+				xbps_error_printf("xbps-bin: failed to remove "
+				    "`%s': %s\n", pkgver, strerror(rv));
 				return rv;
 			}
-			replaces_iter = NULL;
-		}
+			continue;
 
-		if (strcmp(tract, "update") == 0) {
+		} else if (strcmp(tract, "update") == 0) {
+			/* Update a package */
 			instpkgd = xbps_find_pkg_dict_installed(pkgname, false);
 			if (instpkgd == NULL) {
 				xbps_error_printf("xbps-bin: error: unable to "
 				    "find %s installed dict!\n", pkgname);
 				return EINVAL;
 			}
-
 			prop_dictionary_get_cstring_nocopy(instpkgd,
 			    "version", &instver);
 			prop_object_release(instpkgd);
-
 			if (preserve)
 				printf("Conserving %s-%s files, installing new "
 				    "version ...\n", pkgname, instver);
@@ -591,7 +510,6 @@ exec_transaction(struct transaction *trans)
 		 * Unpack binary package.
 		 */
 		printf("Unpacking `%s' (from ../%s) ... ", pkgver, filen);
-
 		if (flags & XBPS_FLAG_VERBOSE) {
 			rv = xbps_unpack_binary_pkg(obj,
 			    unpack_progress_cb_verbose, &xpd);
@@ -607,7 +525,6 @@ exec_transaction(struct transaction *trans)
 		}
 		if ((flags & XBPS_FLAG_VERBOSE) == 0)
 			printf("\n");
-
 		/*
 		 * Register binary package.
 		 */
@@ -623,9 +540,11 @@ exec_transaction(struct transaction *trans)
 	 */
 	printf("\n[3/3] Configuring\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		if (strcmp(tract, "remove") == 0)
+			continue;
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
 		update = false;
 		if (strcmp(tract, "update") == 0)
 			update = true;
@@ -638,8 +557,8 @@ exec_transaction(struct transaction *trans)
 		trans->cf_pkgcnt++;
 	}
 	printf("\nxbps-bin: %zu installed, %zu updated, "
-	    "%zu configured.\n", trans->inst_pkgcnt, trans->up_pkgcnt,
-	    trans->cf_pkgcnt);
+	    "%zu configured, %zu removed.\n", trans->inst_pkgcnt,
+	    trans->up_pkgcnt, trans->cf_pkgcnt, trans->rm_pkgcnt);
 
 	return 0;
 }

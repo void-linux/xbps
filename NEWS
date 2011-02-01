@@ -1,5 +1,11 @@
 xbps-0.8.0 (???):
 
+ * Moved the "replaces" handling logic into the API. But instead of
+   removing any package, the packages that should be replaced are
+   added into the transaction dictionary and marked as "remove".
+   The frontend is responsible to install, update, configure and remove
+   all packages by using the properties set in the transaction dictionary.
+
  * xbps-dgraph: now parses the "provides" object in the package properties
    metadata plist file for packages providing virtual packages.
 

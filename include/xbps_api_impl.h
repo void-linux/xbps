@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010 Juan Romero Pardines.
+ * Copyright (c) 2010-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -191,6 +191,13 @@ int HIDDEN xbps_file_exec_skipempty(const char *arg, ...);
  * @return 0 on success, -1 on error and errno set appropiately.
  */
 int HIDDEN xbps_file_chdir_exec(const char *path, const char *arg, ...);
+
+/**
+ * @private
+ * From lib/package_replaces.c
+ */
+int HIDDEN xbps_repository_pkg_replaces(prop_dictionary_t,
+					prop_dictionary_t);
 
 __END_DECLS
 
