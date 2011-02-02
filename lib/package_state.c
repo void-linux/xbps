@@ -87,8 +87,9 @@ get_state(prop_dictionary_t dict)
 
 	assert(dict != NULL);
 
-	prop_dictionary_get_cstring_nocopy(dict, "state", &state_str);
-	assert(state_str != NULL);
+	if (!prop_dictionary_get_cstring_nocopy(dict,
+	    "state", &state_str))
+		return 0;
 
 	for (stp = states; stp->string != NULL; stp++)
 		if (strcmp(state_str, stp->string) == 0)
