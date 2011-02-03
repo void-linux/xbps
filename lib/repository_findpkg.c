@@ -222,13 +222,12 @@ xbps_repository_update_allpkgs(void)
 	 */
 	dict = xbps_regpkgdb_dictionary_get();
 	if (dict == NULL)
-		return errno;
+		return ENOENT;
 
 	iter = xbps_get_array_iter_from_dict(dict, "packages");
 	if (iter == NULL) {
-		rv = errno;
 		xbps_regpkgdb_dictionary_release();
-		return rv;
+		return ENOENT;
 	}
 	/*
 	 * Find out if there is a newer version for all currently
