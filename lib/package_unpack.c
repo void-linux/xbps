@@ -163,7 +163,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	       void (*progress_cb)(void *),
 	       struct xbps_unpack_progress_data *xupd)
 {
-	prop_dictionary_t propsd, filesd, old_filesd;
+	prop_dictionary_t propsd = NULL, filesd = NULL, old_filesd = NULL;
 	prop_array_t array;
 	struct archive_entry *entry;
 	size_t nmetadata = 0, entry_idx = 0;

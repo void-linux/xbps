@@ -93,7 +93,7 @@ repository_find_pkg(const char *pattern, const char *reason)
 
 	assert(pattern != NULL);
 	assert(reason != NULL);
-	success = install = bypattern = bestpkg = false;
+	install = bypattern = false;
 
 	if (strcmp(reason, "install") == 0) {
 		/* install */

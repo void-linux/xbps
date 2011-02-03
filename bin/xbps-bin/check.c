@@ -254,7 +254,6 @@ xbps_check_pkg_integrity(const char *pkgname)
 			}
 			rv = xbps_check_is_installed_pkg_by_pattern(reqpkg);
 			if (rv <= 0) {
-				rv = ENOENT;
 				printf("%s: dependency not satisfied: %s\n",
 				    pkgname, reqpkg);
 			}

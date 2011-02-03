@@ -258,7 +258,6 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 
 		keyobj = prop_dictionary_get_keysym(plistd, dksym);
 		keyname = strip_dashes_from_key(tmpkeyname);
-		optnodetmp = "";
 		optnode = NULL;
 
 		fprintf(f, "	main -> %s [label=\"%s\"];\n",

@@ -76,7 +76,7 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 	 * Overwrite package state in dictionary if it was unpacked
 	 * previously.
 	 */
-	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) == 0) {
+	if (xbps_get_pkg_state_installed(pkgname, &state) == 0) {
 		if ((rv = xbps_set_pkg_state_dictionary(dict, state)) != 0) {
 			prop_object_release(dict);
 			return rv;
@@ -216,7 +216,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 	 * current package.
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		tmpd = curpkgd = NULL;
+		curpkgd = NULL;
 		reqpkg = prop_string_cstring_nocopy(obj);
 		if (reqpkg == NULL) {
 			rv = EINVAL;

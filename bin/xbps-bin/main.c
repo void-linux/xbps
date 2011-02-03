@@ -158,7 +158,7 @@ main(int argc, char **argv)
 	bool yes, purge, with_debug, force_rm_with_deps, recursive_rm;
 	bool show_download_pkglist_url = false;
 
-	i = c = flags = rv = 0;
+	flags = rv = 0;
 	yes = purge = force_rm_with_deps = recursive_rm = with_debug = false;
 
 	while ((c = getopt(argc, argv, "VcdDFfpRr:vy")) != -1) {
