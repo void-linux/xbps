@@ -40,6 +40,7 @@
 static void __attribute__((noreturn))
 usage(void)
 {
+	xbps_end();
 	fprintf(stderr,
 	    "Usage: xbps-repo [options] [action] [arguments]\n"
 	    "See xbps-repo(8) for more information.\n");
