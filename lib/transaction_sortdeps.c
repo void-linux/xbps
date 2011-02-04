@@ -203,7 +203,11 @@ again:
 		}
 		curpkgd = xbps_find_pkg_in_dict_by_name(transd,
 		    "unsorted_deps", pkgnamedep);
-		assert(curpkgd != NULL);
+		if (curpkgd == NULL) {
+			free(pkgnamedep);
+			rv = EINVAL;
+			break;
+		}
 		lpd = pkgdep_alloc(curpkgd, pkgnamedep);
 		if (lpd == NULL) {
 			free(pkgnamedep);
