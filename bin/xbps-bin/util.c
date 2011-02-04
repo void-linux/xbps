@@ -40,7 +40,6 @@ struct object_info {
 	const char *key;
 	const char *descr;
 	const char *sep;
-	prop_type_t type;
 	bool from_repo;
 };
 
@@ -49,118 +48,119 @@ static const struct object_info obj_info[] = {
 		.key = "filename",
 		.descr = "Binary package:",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = true
 	},
 	{
 		.key = "filename-size",
 		.descr = "Binary package size",
 		.sep = NULL,
-		.type = PROP_TYPE_NUMBER,
 		.from_repo = true
 	},
 	{
 		.key = "filename-sha256",
 		.descr = "Binary package SHA256:",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = true
 	},
 	{
 		.key = "archive-compression-type",
 		.descr = "Binary package compression type:",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = false
 	},
 	{
 		.key = "pkgname",
 		.descr = "Package:",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = false
 	},
 	{
 		.key = "installed_size",
 		.descr = "Installed size",
 		.sep = NULL,
-		.type = PROP_TYPE_NUMBER,
 		.from_repo = false
 	},
 	{
 		.key = "maintainer",
 		.descr = "Maintainer:",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = false
 	},
 	{
 		.key = "architecture",
 		.descr = "Architecture:",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = false
 	},
 	{
 		.key = "version",
 		.descr = "Version:",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = false
 	},
 	{
 		.key = "preserve",
 		.descr = "Preserve files",
 		.sep = NULL,
-		.type = PROP_TYPE_BOOL,
 		.from_repo = false
 	},
 	{
 		.key = "replaces",
 		.descr = "Replaces these packages:",
 		.sep = NULL,
-		.type = PROP_TYPE_ARRAY,
 		.from_repo = false
 	},
 	{
 		.key = "provides",
 		.descr = "Provides virtual packages:",
 		.sep = NULL,
-		.type = PROP_TYPE_ARRAY,
 		.from_repo = false
 	},
 	{
 		.key = "conflicts",
 		.descr = "Conflicts with:",
 		.sep = NULL,
-		.type = PROP_TYPE_ARRAY,
+		.from_repo = false
+	},
+	{
+		.key = "hold",
+		.descr = "Hold update",
+		.sep = NULL,
+		.from_repo = false
+	},
+	{
+		.key = "update-first",
+		.descr = "Always update first",
+		.sep = NULL,
+		.from_repo = false
+	},
+	{
+		.key = "virtual-prefer",
+		.descr = "Virtual packages enabled",
+		.sep = NULL,
 		.from_repo = false
 	},
 	{
 		.key = "conf_files",
 		.descr = "Configuration files:\n",
 		.sep = " ",
-		.type = PROP_TYPE_ARRAY,
 		.from_repo = false
 	},
 	{
 		.key = "short_desc",
 		.descr = "Description:",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = false },
 	{
 		.key = "long_desc",
 		.descr = " ",
 		.sep = NULL,
-		.type = PROP_TYPE_STRING,
 		.from_repo = false
 	},
 	{
 		.key = NULL,
 		.descr = NULL,
 		.sep = NULL,
-		.type = PROP_TYPE_UNKNOWN,
 		.from_repo = false
 	}
 };
