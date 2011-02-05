@@ -53,12 +53,14 @@ digraph transaction_dictionary {
 	state -> state_unpacked [label="value"];
 	state_notinst [style=filled,fillcolor="yellowgreen",label="not-installed"];
 	state_unpacked [style=filled,fillcolor="yellowgreen",label="unpacked"];
-	dictionary -> trans_action [label="string"];
-	trans_action [label="transaction"];
-	trans_action -> tract_inst [label="value"];
-	trans_action -> tract_up [label="value"];
-	trans_action -> tract_cf [label="value"];
+	dictionary -> transaction [label="string"];
+	transaction [label="transaction"];
+	transaction -> tract_inst [label="value"];
+	transaction -> tract_up [label="value"];
+	transaction -> tract_cf [label="value"];
+	transaction -> tract_rm [label="value"];
 	tract_inst [style=filled,fillcolor="yellowgreen",label="install"];
 	tract_up [style=filled,fillcolor="yellowgreen",label="update"];
 	tract_cf [style=filled,fillcolor="yellowgreen",label="configure"];
+	tract_rm [style=filled,fillcolor="yellowgreen",label="remove"];
 }
