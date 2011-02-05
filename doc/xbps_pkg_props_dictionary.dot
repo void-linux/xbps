@@ -56,4 +56,10 @@ digraph pkg_props_dictionary {
 	conflicts -> conflict2 [style=filled,label="string"];
 	conflict1 [style=filled,fillcolor="yellowgreen",label="foo<2.0"];
 	conflict2 [style=filled,label="..."];
+	main -> provides [label="array"];
+	provides [style=filled];
+	provides -> provides1 [style=filled,label="string"];
+	provides -> provides2 [style=filled,label="string"];
+	provides1 [style=filled,fillcolor="yellowgreen",label="boom-0"];
+	provides2 [style=filled,label="..."];
 }
