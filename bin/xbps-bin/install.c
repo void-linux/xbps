@@ -228,22 +228,26 @@ show_transaction_sizes(struct transaction *trans)
 	 * Show the list of packages that will be installed.
 	 */
 	if (trans_inst) {
-		printf("The following packages will be installed:\n\n");
+		printf("%zu package%s will be installed:\n\n",
+		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "install");
 		printf("\n\n");
 	}
 	if (trans_up) {
-		printf("The following packages will be updated:\n\n");
+		printf("%zu package%s will be updated:\n\n",
+		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "update");
 		printf("\n\n");
 	}
 	if (trans_conf) {
-		printf("The following packages will be configured:\n\n");
+		printf("%zu package%s will be configured:\n\n",
+		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "configure");
 		printf("\n\n");
 	}
 	if (trans_rm) {
-		printf("The following packages will be removed:\n\n");
+		printf("%zu package%s will be removed:\n\n",
+		    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "remove");
 		printf("\n\n");
 	}
@@ -266,15 +270,6 @@ show_transaction_sizes(struct transaction *trans)
 		return -1;
 	}
 	printf("Total installed size:\t%6s\n\n", size);
-
-	printf("%6zu package%s will be installed.\n", trans->inst_pkgcnt,
-	    trans->inst_pkgcnt == 1 ? "" : "s");
-	printf("%6zu package%s will be updated.\n", trans->up_pkgcnt,
-	    trans->up_pkgcnt == 1 ? "" : "s");
-	printf("%6zu package%s will be configured.\n", trans->cf_pkgcnt,
-	    trans->cf_pkgcnt == 1 ? "" : "s");
-	printf("%6zu package%s will be removed.\n\n", trans->rm_pkgcnt,
-	    trans->rm_pkgcnt == 1 ? "" : "s");
 
 	return 0;
 }
