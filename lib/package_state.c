@@ -216,10 +216,13 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 		}
 		array = prop_dictionary_get(dict, "packages");
 		if (array == NULL) {
-			rv = EINVAL;
-			if (newpkg)
-				prop_object_release(pkgd);
-			goto out;
+			array = prop_array_create();
+			if (!prop_dictionary_set(dict, "packages", array)) {
+				rv = EINVAL;
+				if (newpkg)
+					prop_object_release(pkgd);
+				goto out;
+			}
 		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
 			if (newpkg)

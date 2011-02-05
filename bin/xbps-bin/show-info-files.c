@@ -37,15 +37,31 @@
 int
 show_pkg_info_from_metadir(const char *pkgname)
 {
-	prop_dictionary_t d;
+	prop_dictionary_t d, regpkgd, pkgpropsd;
 
 	d = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGPROPS);
 	if (d == NULL)
-		return errno;
+		return EINVAL;
+
+	regpkgd = xbps_regpkgdb_dictionary_get();
+	pkgpropsd = xbps_find_pkg_in_dict_by_name(regpkgd,
+	    "properties", pkgname);
+	if (pkgpropsd == NULL) {
+		show_pkg_info(d, false);
+		prop_object_release(d);
+		goto out;
+	}
+	if (prop_dictionary_get(pkgpropsd, "hold"))
+		prop_dictionary_set_bool(d, "hold", true);
+	if (prop_dictionary_get(pkgpropsd, "update-first"))
+		prop_dictionary_set_bool(d, "update-first", true);
+	if (prop_dictionary_get(pkgpropsd, "provides"))
+		prop_dictionary_set_bool(d, "virtual-prefer", true);
 
 	show_pkg_info(d, false);
 	prop_object_release(d);
-
+out:
+	xbps_regpkgdb_dictionary_release();
 	return 0;
 }
 
@@ -57,7 +73,7 @@ show_pkg_files_from_metadir(const char *pkgname)
 
 	d = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (d == NULL)
-		return errno;
+		return EINVAL;
 
 	rv = show_pkg_files(d);
 	prop_object_release(d);

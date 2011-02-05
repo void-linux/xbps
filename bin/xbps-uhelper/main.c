@@ -216,7 +216,8 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		dict = xbps_find_pkg_dict_from_plist_by_name(plist, argv[1]);
+		dict = xbps_find_pkg_dict_from_plist_by_name(plist,
+		    "packages", argv[1]);
 		if (dict == NULL)
 			exit(EXIT_FAILURE);
 

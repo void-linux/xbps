@@ -235,8 +235,33 @@ struct repo_pool_fpkg {
 	prop_dictionary_t pkgd;
 	const char *pattern;
 	bool bypattern;
-	bool newpkg_found;
+	bool pkgfound;
 };
+
+static int
+repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	struct repo_pool_fpkg *rpf = arg;
+
+	if (rpf->bypattern) {
+		rpf->pkgd =
+		    xbps_find_virtualpkg_user_in_dict_by_pattern(rpi->rpi_repod,
+		    "packages", rpf->pattern);
+	} else {
+		rpf->pkgd =
+		    xbps_find_virtualpkg_user_in_dict_by_name(rpi->rpi_repod,
+		    "packages", rpf->pattern);
+	}
+	if (rpf->pkgd) {
+		prop_dictionary_set_cstring(rpf->pkgd, "repository",
+		    rpi->rpi_uri);
+		*done = true;
+		rpf->pkgfound = true;
+		return 0;
+	}
+	/* not found */
+	return 0;
+}
 
 static int
 repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
@@ -250,7 +275,6 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
 		    "packages", rpf->pattern);
 	}
-
 	if (rpf->pkgd) {
 		/*
 		 * Package dictionary found, add the "repository"
@@ -259,11 +283,10 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
 		*done = true;
-		errno = 0;
+		rpf->pkgfound = true;
 		return 0;
 	}
 	/* Not found */
-	errno = ENOENT;
 	return 0;
 }
 
@@ -290,6 +313,8 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		 * the version currently installed.
 		 */
 		instpkgd = xbps_find_pkg_dict_installed(rpf->pattern, false);
+		if (instpkgd == NULL)
+			return 0;
 		prop_dictionary_get_cstring_nocopy(instpkgd,
 		    "version", &instver);
 		prop_dictionary_get_cstring_nocopy(rpf->pkgd,
@@ -303,11 +328,11 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 			/*
 			 * New package version found, exit from the loop.
 			 */
-			rpf->newpkg_found = true;
 			prop_dictionary_set_cstring(rpf->pkgd, "repository",
 			    rpi->rpi_uri);
-			errno = 0;
 			*done = true;
+			errno = 0;
+			rpf->pkgfound = true;
 			return 0;
 		}
 		xbps_dbg_printf("Skipping '%s-%s' (installed: %s) "
@@ -315,7 +340,6 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		    rpi->rpi_uri);
 		errno = EEXIST;
 	}
-
 	return 0;
 }
 
@@ -335,14 +359,41 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 	rpf->pattern = pkg;
 	rpf->bypattern = bypattern;
 
-	if (best)
+	if (best) {
+		/*
+		 * Look for the best package version of a package name or
+		 * pattern in all repositories.
+		 */
 		rv = xbps_repository_pool_foreach(repo_find_best_pkg_cb, rpf);
-	else
-		rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
-
-	if (rv != 0 || (rv == 0 && (errno == ENOENT || errno == EEXIST)))
-		goto out;
-
+		if (rv != 0) {
+			errno = rv;
+			goto out;
+		} else if (rpf->pkgfound == false) {
+			goto out;
+		}
+	} else {
+		/*
+		 * Look for any virtual package set by the user matching
+		 * the package name or pattern.
+		 */
+		rv = xbps_repository_pool_foreach(repo_find_virtualpkg_cb, rpf);
+		if (rv != 0) {
+			errno = rv;
+			goto out;
+		} else if (rpf->pkgfound == false) {
+			/*
+			 * No virtual package found. Look for real package
+			 * names or patterns instead.
+			 */
+			rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
+			if (rv != 0) {
+				errno = rv;
+				goto out;
+			} else if (rpf->pkgfound == false) {
+				goto out;
+			}
+		}
+	}
 	pkgd = prop_dictionary_copy(rpf->pkgd);
 out:
 	free(rpf);

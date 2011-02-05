@@ -1,5 +1,23 @@
 xbps-0.8.0 (???):
 
+ * Added the concept of package properties in the API. At this moment
+   only one property is fully working, "virtual". When xbps-bin(8)
+   sets this property for a package, its virtual package list will be
+   set in the XBPS_REGPKGDB plist in a package dictionary and the matching
+   logic will always prefer its virtual packages over the real ones.
+   You can do wonderful things with this, like always using development
+   package versions, or simply customize what packages you want to
+   install rather than the default ones. As a real example, you can now
+   use the 'xbps-devel' package rather than the stable package version
+   'xbps' before installing the system and package dependencies will
+   still be resolved:
+
+   "$ xbps-bin set-prop virtual xbps-devel"
+   "$ xbps-bin install xbps-base-system"
+
+   Only packages that have the "provides" object are valid for the
+   "virtual" property.
+
  * Moved the "replaces" handling logic into the API. But instead of
    removing any package, the packages that should be replaced are
    added into the transaction dictionary and marked as "remove".

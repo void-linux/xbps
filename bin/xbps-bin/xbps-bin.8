@@ -1,4 +1,13 @@
-.TH "XBPS\-BIN" "8" "30/01/2011" "\ \&" "\ \&"
+'\" t
+.\"     Title: xbps-bin
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 02/05/2011
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "XBPS\-BIN" "8" "02/05/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -16,18 +25,15 @@ xbps-bin \- XBPS command for binary packages
 \fBxbps\-bin\fR [\fIoptions\fR] \fItarget\fR [\fIpkgname\fR]
 .SH "DESCRIPTION"
 .sp
-The xbps\-bin(8) command is used to handle binary packages created for the \fBXBPS binary package system\fR\&. You can use it to install, remove, list or show information about any binary package\&. Binary packages can be installed from local (\fIdirectory\fR) or remote repositories (\fIhttp\fR, \fIhttps\fR or \fIftp\fR), see xbps\-repo(8) for information about repositories\&.
+The xbps\-bin(8) command is used to handle binary packages created for the XBPS binary package system\&. You can use it to install, remove, update, list or show information about any binary package\&. Binary packages can be installed from \fIlocal (directories)\fR or \fIremote repositories (http, https or ftp)\fR, see xbps\-repo(8) for information about repositories\&.
 .SH "OPTIONS"
 .PP
 \fB\-c\fR \fIcachedir\fR
 .RS 4
-Sets the
-\fIcache\fR
-directory to store downloaded binary packages from remote repositories\&. By default it\(cqs set to
+Sets the cache directory to store downloaded binary packages from remote repositories\&. By default it\(cqs set to
 \fI/var/cache/xbps\fR
 and it\(cqs always relative to the
-\fIroot\fR
-directory\&. So if you use a
+\fIroot directory\fR\&. So if you use a
 \fIrootdir\fR
 of
 \fI/blah\fR, it will become
@@ -36,22 +42,22 @@ of
 .PP
 \fB\-d\fR
 .RS 4
-Enables extra debugging output to be shown to stderr.
+Enables extra debugging output to be shown to stderr\&.
 .RE
 .PP
 \fB\-D\fR
 .RS 4
-Only show the URLs to download the binary packages from repositories.
-This is useful if you want to download them by other means, and later you
-can move them to the \fIcachedir\fR to start the installation.
-This option can be used for the \fIinstall\fR, \fIupdate\fR and \fIautoupdate\fR
-targets.
+Only show the URLs to download the binary packages from repositories\&. This is useful if you want to download them by other means, and later you can move them to the
+\fIcachedir\fR
+to start the installation\&. This option can be used for the install, update and autoupdate targets\&.
 .RE
 .PP
 \fB\-F\fR
 .RS 4
-Used currently in the \fIremove\fR target. If set, package will be removed even if other packages
-are currently depending on it, i.e package is a dependency of other packages. Use this option with care.
+Used currently in the
+\fIremove\fR
+target\&. If set, package will be removed even if other packages are currently depending on it, i\&.e package is a dependency of other packages\&.
+\fIUse this option with care\fR\&.
 .RE
 .PP
 \fB\-f\fR
@@ -61,8 +67,14 @@ Used currently in the
 \fIreconfigure\fR
 and
 \fIremove\fR
-targets\&. If set, package(s) will be reconfigured regardless of its state if working with the
-\fIreconfigure target, or to force removal of package files even if its hash doesn\(cqt match in the "purge\fR"
+targets\&. If set,
+\fIpackage(s)\fR
+will be
+\fIreconfigured\fR
+regardless of its state in the reconfigure target, or to
+\fIforce\fR
+removal of package files even if its hash doesn\(cqt match in the
+\fIpurge\fR
 and
 \fIremove\fR
 targets\&.
@@ -81,8 +93,7 @@ targets, if enabled after removing a package it is also purged\&.
 .RS 4
 Used currently in the
 \fIremove\fR
-target, to recursively remove packages that aren\(cqt required by other installed
-packages and that were installed by the package that we want to remove\&.
+target, to recursively remove packages that aren\(cqt required by other installed packages and that were installed by the package that we want to remove\&.
 .RE
 .PP
 \fB\-r\fR \fIrootdir\fR
@@ -93,9 +104,7 @@ directory\&. By default the root directory is set to
 \fI/\fR\&. Please note that the database directory is always set to
 \fI/var/db/xbps\fR
 independently of
-\fIrootdir\fR\&. So if you use a
-\fIrootdir\fR
-of
+\fIrootdir\fR\&. So if you use a rootdir of
 \fI/blah\fR, metadata stuff will go into
 \fI/blah/var/db/xbps\fR\&.
 .RE
@@ -107,7 +116,9 @@ Shows verbose messages\&. Useful while installing and removing packages\&.
 .PP
 \fB\-y\fR
 .RS 4
-Assume "yes" to all questions\&. This will bypass all questions and immediately proceed with the task, use this option with care\&.
+Assume
+\fIyes\fR
+to all questions\&. This will bypass all questions and immediately proceed with the task, use this option with care\&.
 .RE
 .PP
 \fB\-V\fR
@@ -116,14 +127,11 @@ Shows the current XBPS release version (library and code)\&.
 .RE
 .SH "TARGETS"
 .sp
-Please note that all targets are \fBcase insensitive\fR\&.
+Please note that all targets are case insensitive\&.
 .PP
 \fBautoremove\fR
 .RS 4
-Removes
-\fIleaf\fR
-packages\&. These packages were installed as dependencies and currently there is not any package depending on it, directly or indirectly\&. Usually it is safe to always answer
-\fIyes\fR\&.
+Removes leaf packages\&. These packages were installed as dependencies and currently there is not any package depending on it, directly or indirectly\&. Usually it is safe to always answer yes\&.
 .RE
 .PP
 \fBautoupdate\fR
@@ -131,108 +139,117 @@ packages\&. These packages were installed as dependencies and currently there is
 Updates all currently installed packages to the most newer version available in repository pool\&.
 .RE
 .PP
-\fBcheck \fR\fB\fIpkgname(s)\fR\fR\fB | \fR\fB\fIall\fR\fR
+\fBcheck \fR\fB\fIpkgname(s) | all\fR\fR
 .RS 4
 Checks for integrity errors in installed packages\&. The checks are to found missing run\-time dependencies, missing and modified package files and metadata files\&. If the
-\fBall\fR
-keyword is used,
 \fIall\fR
-packages currently installed will be checked, otherwise only
-\fBpkgname\fR\&.
+keyword is used, all packages currently installed will be checked, otherwise only
+\fIpkgname(s)\fR\&.
 .RE
 .PP
-\fBfind-files\fR \fR\fB\fIpattern\fR\fR
+\fBfind\-files \fR\fB\fIpattern\fR\fR
 .RS 4
-Prints the name of the installed "\fBpackage(s)\fR" matching the \fBpattern\fR on its file list.
+Prints the name of the installed
+\fIpackage(s)\fR
+matching the pattern on its file list\&.
 .RE
 .PP
-\fBinstall \fR\fB\fIpkgname(s)\fR\fR\fB | \fR\fB\fIpkgpattern(s)\fR\fR
+\fBinstall \fR\fB\fIpkgname(s) | pkgpattern(s)\fR\fR
 .RS 4
-Install binary package(s) from repository pool by specifying "\fBpkgname(s)\fR" or "\fBpackage pattern(s)\fR"\&. The first repository matching the arguments will be used\&. The package(s) will be
+Install binary package(s) from repository pool by specifying
+\fIpkgname(s)\fR
+or
+\fIpackage pattern(s)\fR\&. The first repository matching the arguments will be used\&. The package(s) will be
 \fIdownloaded\fR
 (if found in a remote repository),
 \fIunpacked\fR
 and
 \fIconfigured\fR\&. The
-\fIunpack stage will execute the \fR\fI\fBpre\-install\fR\fR\fI action on its \fR\fI\fBINSTALL\fR\fR\fI script, and unpack its files\&. The "configure\fR"
-stage will run the
-\fBpost\-install\fR
-action set on its
-\fBINSTALL\fR
-script and will change its state to
-\fBinstalled\fR
-in the package database\&.
+\fIunpack\fR
+stage will execute the pre\-install action on its INSTALL script, and unpack its files\&. The
+\fIconfigure\fR
+stage will run the post\-install action set on its INSTALL script and will change its
+\fIstate\fR
+to installed in the package database\&.
 .RE
 .PP
-\fBlist [\fR\fB\fIstate\fR\fR]
+\fBlist [\fR\fB\fIstate\fR\fR\fB]\fR
 .RS 4
-Lists all currently installed packages\&. Optionally another argument can be specified to
-list only packages with the specified \fIstate\fR. By default only packages that are fully
-installed will be listed if no \fIstate\fR has been specified. Accepted states are:
-\fBconfig\-files\fR, \fBunpacked\fR and \fBinstalled\fR.
+Lists all currently installed packages\&. Optionally another argument can be specified to list only packages with the specified
+\fIstate\fR\&. By default only packages that are
+\fIfully installed\fR
+will be listed if
+\fIstate\fR
+has not been specified\&. Accepted states are:
+\fIconfig\-files\fR,
+\fIunpacked\fR
+and
+\fIinstalled\fR\&.
 .RE
 .PP
 \fBlist\-manual\fR
 .RS 4
-Lists packages that were installed
-\fImanually\fR
-by the user, i\&.e not as dependencies of any other package\&.
+Lists packages that were installed manually by the user, i\&.e not as dependencies of any other package\&.
 .RE
 .PP
-\fBpurge \fR\fB\fIpkgname\fR\fR\fB | \fR\fB\fIall\fR\fR
+\fBpurge \fR\fB\fIpkgname | all\fR\fR
 .RS 4
-Purge an installed package,
-\fBpkgname\fR
+Purge an installed package:
+\fIpkgname\fR
 or
-\fBall\fR
-packages\&. The
-\fIpurge\fR
-stage runs the
-\fBpost\-remove\fR
-action set in the
-\fBREMOVE\fR
-script in its metadata directory ( /var/db/xbps/metadata/\fIpkgname\fR
-) and will remove configuration (if they were not modified by the user) and metadata files\&. The package will be fully removed from the system once it has been
-\fBpurged\fR\&. If
+\fIall\fR
+packages\&. The purge stage runs the post\-remove action set in the REMOVE script in its metadata directory
+\fI(/var/db/xbps/metadata/pkgname)\fR
+and will remove configuration (if they were not modified by the user) and metadata files\&. The package will be fully removed from the system once it has been purged\&. If
 \fB\-f\fR
-option is used, configuration files that have been modified
-\fBWILL BE REMOVED, BEWARE WITH THIS!\fR\&.
+option is used, configuration files that have been
+\fImodified WILL BE REMOVED\&. BEWARE WITH THIS!\fR
 .RE
 .PP
-\fBreconfigure \fR\fB\fIpkgname\fR\fR\fB | \fR\fB\fIall\fR\fR
+\fBreconfigure \fR\fB\fIpkgname | all\fR\fR
 .RS 4
-Reconfigure an
-\fBunpacked\fR
-package\&. Packages in this state are not fully installed, because they were not configured for whatever reason\&. The
-\fIconfigure\fR
-stage will run the
-\fIpost\-install\fR
-action set on its
-\fBINSTALL\fR
-script and will change its state to
-\fBinstalled\fR
-in the package database\&. The
+Reconfigure an unpacked package\&. Packages in this state are not fully installed, because they were not configured for whatever reason\&. The configure stage will run the post\-install action set on its INSTALL script and will change its state to installed in the package database\&. The
 \fIall\fR
 keyword can be used to reconfigure all not configured packages\&. If
 \fB\-f\fR
-option is used, the package will be reconfigured even if its state is already
-\fBinstalled\fR\&.
+option is used, the package will be reconfigured even if its state is already installed\&.
 .RE
 .PP
 \fBremove \fR\fB\fIpkgname(s)\fR\fR
 .RS 4
 Removes the installed package
 \fIpkgname(s)\fR\&. Its files will be removed and its state will be changed to
-\fBconfig\-files\fR
+\fIconfig\-files\fR
 in the package database\&. Configuration files, its metadata directory/files and its information in the package database are preserved\&. To fully remove a package in
-\fBconfig\-files\fR
-state, it must be
-\fBpurged\fR
-with the
-\fBpurge\fR
-command or alternatively use the \fI\-p\fR flag \&. If
+\fIconfig\-files\fR
+state, it must be purged with the
+\fIpurge\fR
+command or alternatively use the
+\fB\-p\fR
+flag \&. If
 \fB\-f\fR
-option is used, package files will be removed even if its SHA256 hash doesn\(cqt match\&.
+option is used, package files will be
+\fBremoved even if its SHA256 hash don\(cqt match\fR\&.
+.RE
+.PP
+\fBset\-prop \fR\fB\fIproperty\fR\fR\fB \fR\fB\fIpkgname\fR\fR
+.RS 4
+Sets a
+\fIproperty\fR
+for a package as specified in
+\fIpkgname\fR\&. See the
+\fIPROPERTIES\fR
+section below for more information\&.
+.RE
+.PP
+\fBunset\-prop \fR\fB\fIproperty\fR\fR\fB \fR\fB\fIpkgname\fR\fR
+.RS 4
+Unsets a
+\fIproperty\fR
+for a package as specified in
+\fIpkgname\fR\&. See the
+\fIPROPERTIES\fR
+section below for more information\&.
 .RE
 .PP
 \fBshow \fR\fB\fIpkgname\fR\fR
@@ -243,31 +260,23 @@ Shows information for installed package
 .PP
 \fBshow\-deps \fR\fB\fIpkgname\fR\fR
 .RS 4
-Shows the list of dependencies that
-\fIpkgname\fR
-requires at run time\&.
+Shows the list of dependencies that pkgname requires at run time\&.
 .RE
 .PP
 \fBshow\-files \fR\fB\fIpkgname\fR\fR
 .RS 4
-Shows the list of files that
-\fIpkgname\fR
-contains\&.
+Shows the list of files that pkgname contains\&.
 .RE
 .PP
 \fBshow\-orphans\fR
 .RS 4
-Shows the list of package orphans currently installed. Package orphans
-are packages that were installed as dependencies of another package, but
-no other package currently depends on.
+Shows the list of package orphans currently installed\&. Package orphans are packages that were installed as dependencies of another package, but no other package currently depends on\&.
 .RE
 .PP
 \fBshow\-revdeps \fR\fB\fIpkgname\fR\fR
 .RS 4
 Shows the reverse dependencies for
-\fIpkgname\fR\&. Reverse dependencies are packages that are currently depending in
-\fIpkgname\fR
-directly\&.
+\fIpkgname\fR\&. Reverse dependencies are packages that are currently depending in pkgname directly\&.
 .RE
 .PP
 \fBupdate \fR\fB\fIpkgname(s)\fR\fR
@@ -276,8 +285,8 @@ Updates
 \fIpkgname(s)\fR
 to the most newer version available in repository pool\&. This can be used if only
 \fIpkgname(s)\fR
-needs to be updated, unlike the
-\fBautoupdate\fR
+need to be updated, unlike the
+\fIautoupdate\fR
 target that will update all currently installed packages\&.
 .RE
 .SH "PACKAGE STATES"
@@ -296,17 +305,40 @@ The package has been unpacked in destination root directory, but it is not fully
 .PP
 \fBconfig\-files\fR
 .RS 4
-The package has been removed but configuration files and its metadata directory are still available (and it is still registered in the package database)\&. You can
-\fIpurge\fR
-safely packages that are in this state, modified configuration files will be preserved\&.
+The package has been removed but configuration files and its metadata directory are still available (and it is still registered in the package database)\&. You can purge safely packages that are in this state, modified configuration files will be preserved\&.
+.RE
+.SH "PROPERTIES"
+.sp
+Properties can be specified for packages to control behaviour of some aspects in XBPS\&. The following is the list of properties currently implemented:
+.PP
+\fBhold\fR
+.RS 4
+When this property is set for a package, it will be put on
+\fIhold\fR
+i\&.e the package won\(cqt be updated even if there is a newer version in registered repositories\&.
+.RE
+.PP
+\fBupdate\-first\fR
+.RS 4
+When this property is set, the package will always be updated before all other packages, regardless of its package dependencies\&.
+.RE
+.PP
+\fBvirtual\fR
+.RS 4
+When this property is set, the virtual packages that target package supports via the
+\fBproperties\fR
+object will have preference over other packages matching its
+\fIpackage name\fR\&. A real example is any package that
+\fIprovides\fR
+the
+\fBsyslog\-daemon\-0\fR
+virtual package, if there are two packages supporting this you can choose which one will be installed\&.
 .RE
 .SH "FILES"
 .PP
 \fB/var/db/xbps\fR
 .RS 4
-xbps global
-\fImetadata\fR
-directory\&.
+xbps global metadata directory\&.
 .RE
 .PP
 \fB/var/db/xbps/metadata/<pkgname>\fR
@@ -326,64 +358,80 @@ Installed package metadata properties\&.
 .PP
 \fB/var/db/xbps/regpkgdb\&.plist\fR
 .RS 4
-Registered packages plist database\&.
+xbps master packages/properties database plist file\&.
 .RE
 .PP
 \fB/var/cache/xbps\fR
 .RS 4
-xbps
-\fIcache\fR
-directory for downloaded binary packages\&.
+xbps cache directory for downloaded binary packages\&.
 .RE
 .SH "EXAMPLES"
 .PP
-Install a package by specifying its name:
+\fBInstall\fR a package by specifying its \fBname\fR:
 .RS 4
+
 $ xbps\-bin install foo
 .RE
 .PP
-Install a package by specifying a package pattern:
+\fBInstall\fR a package by specifying a \fBpackage pattern\fR:
 .RS 4
-$ xbps\-bin install "\fBfoo>=3\&.0\fR"
+
+$ xbps\-bin install "foo>=3\&.0"
 .RE
 .PP
-Install multiple packages by specifying names and package patterns:
+\fBInstall multiple\fR packages by specifying \fBnames\fR and \fBpackage patterns\fR:
 .RS 4
-$ xbps\-bin install foo "\fBblah⇐4\&.0\fR" baz\-2\&.0 "\fBblob>4\&.[0\-9]\fR"
+
+$ xbps\-bin install foo "blah<=4\&.0" baz\-2\&.0 "blob>4\&.[0\-9]"
 .RE
 .PP
-Find the package that owns the file \fB/bin/mount\fR:
+\fBFind\fR the package that owns the file \fB/bin/mount\fR:
 .RS 4
+
 $ xbps\-bin find\-files /bin/mount
 .RE
 .PP
-Find the packages that match the pattern "\fB/usr/lib/libav\&*\fR":
+\fBFind\fR the packages that match the pattern \fB"/usr/lib/libav\fR"*:
 .RS 4
-$ xbps\-bin find\-files "/usr/lib/libav\&*"
+
+$ xbps\-bin find\-files "/usr/lib/libav*"
 .RE
 .PP
-Remove and purge the package \fBproplib-devel\fR:
+\fBRemove and purge\fR the package \fBproplib\-devel\fR:
 .RS 4
-$ xbps\-bin -yp remove proplib\-devel
+
+$ xbps\-bin \-yp remove proplib\-devel
 .RE
 .PP
-Remove and purge the package \fBbsdtar\fR and recursively all packages that
-were installed automatically by it:
+\fBRemove and purge\fR the package \fBbsdtar\fR and \fBrecursively\fR all packages that were installed automatically by it:
 .RS 4
-$ xbps\-bin -Rp remove bsdtar
+
+$ xbps\-bin \-Rp remove bsdtar
+.RE
+.PP
+\fBSets\fR the \fIvirtual\fR property in the \fBxbps\-devel\fR package:
+.RS 4
+
+$ xbps\-bin set\-prop virtual xbps\-devel
+.RE
+.PP
+\fBUnsets\fR the \fIhold\fR property in the \fBcoreutils\fR package:
+.RS 4
+
+$ xbps\-bin unset\-prop hold coreutils
 .RE
 .SH "BUGS"
 .sp
 Probably, but I try to make this not happen\&. Use it under your own responsability and enjoy your life\&.
 .sp
-Report bugs in \fIhttp://code\&.google\&.com/p/xbps\fR\&.
+Report bugs in http://code\&.google\&.com/p/xbps\&.
 .SH "SEE ALSO"
 .sp
 xbps\-repo(8), xbps\-src(8)
 .sp
-The XBPS project: \fIhttp://code\&.google\&.com/p/xbps\fR
+The XBPS project: http://code\&.google\&.com/p/xbps
 .sp
-To build binary packages, the xbps\-src(8) shell script is the command designed for this task\&. This must be retrieved from a Mercurial repository, available at \fIhttp://xbps\-src\&.xbps\&.googlecode\&.com/hg/\fR\&.
+To build binary packages, the xbps\-src(8) shell script is the command designed for this task\&. This must be retrieved from a Mercurial repository, available at http://xbps\-src\&.xbps\&.googlecode\&.com/hg/\&.
 .SH "AUTHORS"
 .sp
-The \fBXBPS binary package system\fR has been designed and implemented by Juan Romero Pardines <xtraeme@gmail\&.com>\&.
+The X Binary Package System has been designed and implemented by Juan Romero Pardines <xtraeme@gmail\&.com>\&.

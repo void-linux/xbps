@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110201"
+#define XBPS_RELVER		"20110205"
 
 /** 
  * @def XBPS_META_PATH
@@ -171,6 +171,31 @@ int xbps_configure_pkg(const char *pkgname,
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_configure_all_pkgs(void);
+
+/*@}*/
+
+/** @addtogroup pkgprops */
+/*@{*/
+
+/**
+ * Sets the property \a prop in a package matching the name \a pkgname.
+ *
+ * @param[in] prop Property key to be set.
+ * @param[in] pkgname Package name to set the property.
+ *
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_property_set(const char *prop, const char *pkgname);
+
+/**
+ * Unsets the property \a prop in a package matching the name \a pkgname.
+ *
+ * @param[in] prop Property key to be unset.
+ * @param[in] pkgname Package name to unset the property.
+ *
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_property_unset(const char *prop, const char *pkgname);
 
 /*@}*/
 
@@ -436,7 +461,8 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
  * a package name.
  *
  * @param[in] plist Path to a plist file.
- * @param[in] pkgname Package name to look for.
+ * @param[in] key Proplib array's key name.
+ * @param[in] pkgname Package name to match in array.
  *
  * @return The package's proplib dictionary on success, NULL otherwise and
  * errno is set appropiately. Returned dictionary is copied via
@@ -444,7 +470,24 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
  * release the object with prop_object_release() when done.
  */
 prop_dictionary_t xbps_find_pkg_dict_from_plist_by_name(const char *plist,
+							const char *key,
 							const char *pkgname);
+
+/**
+ * Finds the package's proplib dictionary in a plist file by specifying
+ * a package pattern.
+ *
+ * @param[in] plist Path to a plist file.
+ * @param[in] key Proplib array's key name.
+ * @param[in] pattern Package pattern to match in array.
+ *
+ * @return The package's proplib dictionary on success, NULL otherwise and
+ * errno is set appropiately. Returned dictionary should be released with
+ * prop_object_release() when it's not any longer needed.
+ */
+prop_dictionary_t xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
+							   const char *key,
+							   const char *pattern);
 
 /**
  * Finds a package's dictionary searching in the registered packages

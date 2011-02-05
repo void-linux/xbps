@@ -199,6 +199,19 @@ int HIDDEN xbps_file_chdir_exec(const char *path, const char *arg, ...);
 int HIDDEN xbps_repository_pkg_replaces(prop_dictionary_t,
 					prop_dictionary_t);
 
+/**
+ * @private
+ * From lib/plist.c
+ */
+prop_dictionary_t HIDDEN
+	xbps_find_virtualpkg_user_in_dict_by_name(prop_dictionary_t,
+						  const char *,
+						  const char *);
+prop_dictionary_t HIDDEN
+	xbps_find_virtualpkg_user_in_dict_by_pattern(prop_dictionary_t,
+						     const char *,
+						     const char *);
+
 __END_DECLS
 
 #endif /* !_XBPS_API_IMPL_H_ */

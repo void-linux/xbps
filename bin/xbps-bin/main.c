@@ -46,6 +46,7 @@ struct list_pkgver_cb {
 static void __attribute__((noreturn))
 usage(void)
 {
+	xbps_end();
 	fprintf(stderr,
 	    "Usage: xbps-bin [options] [target] [arguments]\n"
 	    "See xbps-bin(8) for more information.\n");
@@ -433,6 +434,23 @@ main(int argc, char **argv)
 			usage();
 
 		rv = find_files_in_packages(argv[1]);
+
+	} else if (strcasecmp(argv[0], "set-prop") == 0) {
+		if (argc < 2 || argc > 3)
+			usage();
+		/*
+		 * Sets a property in a package.
+		 */
+		rv = xbps_property_set(argv[1], argv[2]);
+
+	} else if (strcasecmp(argv[0], "unset-prop") == 0) {
+		/*
+		 * Unsets a property in a package.
+		 */
+		if (argc < 2 || argc > 3)
+			usage();
+
+		rv = xbps_property_unset(argv[1], argv[2]);
 
 	} else {
 		usage();
