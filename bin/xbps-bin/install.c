@@ -186,7 +186,7 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if (strcmp(match, tract))
 			continue;
 		print_package_line(pkgver, false);
@@ -207,7 +207,7 @@ show_transaction_sizes(struct transaction *trans)
 	trans_inst = trans_up = trans_conf = trans_rm = false;
 
 	while ((obj = prop_object_iterator_next(trans->iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if (strcmp(tract, "install") == 0) {
 			trans->inst_pkgcnt++;
 			trans_inst = true;
@@ -453,7 +453,7 @@ exec_transaction(struct transaction *trans)
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
 		prop_dictionary_get_bool(obj, "preserve",  &preserve);
 		/*
@@ -535,7 +535,7 @@ exec_transaction(struct transaction *trans)
 	 */
 	printf("\n[3/3] Configuring\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if (strcmp(tract, "remove") == 0)
 			continue;
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);

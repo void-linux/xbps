@@ -189,7 +189,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 
 	prop_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	prop_dictionary_get_cstring_nocopy(pkg_repod,
-	    "trans-action", &transact);
+	    "transaction", &transact);
 	assert(transact != NULL);
 
 	if (strcmp(transact, "update") == 0)

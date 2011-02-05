@@ -114,7 +114,7 @@ compute_transaction_sizes(void)
 		return EINVAL;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "trans-action", &tract);
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		/*
 		 * Skip pkgs that need to be configured.
 		 */

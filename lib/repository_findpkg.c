@@ -168,10 +168,10 @@ repository_find_pkg(const char *pattern, const char *reason)
 		goto out;
 
 	/*
-	 * Set trans-action obj in pkg dictionary to "install" or "update".
+	 * Set transaction obj in pkg dictionary to "install" or "update".
 	 */
 	if (!prop_dictionary_set_cstring_nocopy(origin_pkgrd,
-	    "trans-action", reason)) {
+	    "transaction", reason)) {
 		rv = EINVAL;
 		goto out;
 	}

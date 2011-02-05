@@ -84,7 +84,7 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 		 * as to be "removed".
 		 */
 		prop_dictionary_set_cstring_nocopy(instd,
-		    "trans-action", "remove");
+		    "transaction", "remove");
 		if (!xbps_add_obj_to_array(unsorted, instd)) {
 			prop_object_release(instd);
 			prop_object_iterator_release(iter);

@@ -54,7 +54,7 @@ digraph transaction_dictionary {
 	state_notinst [style=filled,fillcolor="yellowgreen",label="not-installed"];
 	state_unpacked [style=filled,fillcolor="yellowgreen",label="unpacked"];
 	dictionary -> trans_action [label="string"];
-	trans_action [label="trans-action"];
+	trans_action [label="transaction"];
 	trans_action -> tract_inst [label="value"];
 	trans_action -> tract_up [label="value"];
 	trans_action -> tract_cf [label="value"];

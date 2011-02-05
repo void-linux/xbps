@@ -297,7 +297,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			}
 			/* Required pkgdep not installed */
 			prop_dictionary_set_cstring_nocopy(curpkgd,
-			    "trans-action", "install");
+			    "transaction", "install");
 			xbps_dbg_printf_append("not installed.\n");
 		} else {
 			/*
@@ -329,7 +329,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 				    "updating to `%s'...\n",
 				    pkgver_q, repopkgver);
 				prop_dictionary_set_cstring_nocopy(curpkgd,
-				    "trans-action", "update");
+				    "transaction", "update");
 			} else if (rv == 1) {
 				rv = 0;
 				if (state == XBPS_PKG_STATE_UNPACKED) {
@@ -339,7 +339,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 					 * mark pkg to be configured.
 					 */
 					prop_dictionary_set_cstring_nocopy(
-					    curpkgd, "trans-action",
+					    curpkgd, "transaction",
 					    "configure");
 					xbps_dbg_printf_append("installed `%s'"
 					    ", but needs to be configured...\n",
