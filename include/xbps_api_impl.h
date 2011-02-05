@@ -102,7 +102,7 @@ int HIDDEN xbps_entry_install_conf_file(prop_dictionary_t,
 					const char *);
 /**
  * @private
- * From lib/plist.c
+ * From lib/plist_archive_entry.c
  *
  * Finds a proplib dictionary in an archive, matching a specific
  * entry on it.
