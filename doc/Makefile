@@ -11,18 +11,22 @@ FILES	+=	xbps_pkg_files_dictionary.$(FORMAT)
 FILES	+=	xbps_binary_pkg_content.$(FORMAT)
 
 .PHONY: all
-all: $(FILES) doxygendocs
+all: $(FILES) doxyfiletrans doxygendocs
 
 $(FILES): %.$(FORMAT): %.dot
 	dot -T$(FORMAT) $< -o images/$@
 
-doxygendocs: $(FILES)
+doxyfiletrans: $(DOXYF).in
+	sed -e "s|@@PROJECT_NUMBER@@|$$(date +%Y%m%d)|" $< > $(DOXYF)
+
+doxygendocs: $(FILES) doxyfiletrans
 	doxygen $(DOXYF)
 
 .PHONY: clean
 clean:
 	-rm -f images/*.$(FORMAT)
 	-rm -rf ../api
+	-rm -f $(DOXYF)
 
 .PHONY: install
 install:

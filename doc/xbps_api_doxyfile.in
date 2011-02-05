@@ -5,7 +5,7 @@
 #---------------------------------------------------------------------------
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "XBPS Library API"
-PROJECT_NUMBER         = 20110126
+PROJECT_NUMBER         = @@PROJECT_NUMBER@@
 PROJECT_BRIEF          = "The X Binary Package System"
 PROJECT_LOGO           = xbps-logo.png
 OUTPUT_DIRECTORY       = ../api
@@ -133,7 +133,7 @@ STRIP_CODE_COMMENTS    = NO
 REFERENCED_BY_RELATION = YES
 REFERENCES_RELATION    = YES
 REFERENCES_LINK_SOURCE = YES
-USE_HTAGS              = YES
+USE_HTAGS              = NO
 VERBATIM_HEADERS       = NO
 #---------------------------------------------------------------------------
 # configuration options related to the alphabetical class index
