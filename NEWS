@@ -1,5 +1,8 @@
 xbps-0.8.0 (???):
 
+ * Fixed a bug that made all registered repositories to fail when the first
+   one couldn't be internalized in xbps_repository_pool_init().
+
  * Added the concept of package properties in the API. At this moment
    only one property is fully working, "virtual". When xbps-bin(8)
    sets this property for a package, its virtual package list will be
