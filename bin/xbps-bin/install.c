@@ -444,16 +444,50 @@ exec_transaction(struct transaction *trans)
 	if ((rv = download_package_list(trans->iter, false)) != 0)
 		return rv;
 	/*
-	 * Iterate over the transaction dictionary.
+	 * Remove packages to be replaced.
+	 */
+	if (trans->rm_pkgcnt > 0) {
+		printf("\n[2/3] Removing packages to be replaced\n");
+		while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
+			prop_dictionary_get_cstring_nocopy(obj, "pkgname",
+			    &pkgname);
+			prop_dictionary_get_cstring_nocopy(obj, "version",
+			    &version);
+			prop_dictionary_get_cstring_nocopy(obj, "pkgver",
+			    &pkgver);
+			prop_dictionary_get_cstring_nocopy(obj, "transaction",
+			    &tract);
+			update = false;
+			prop_dictionary_get_bool(obj, "remove-and-update",
+			    &update);
+
+			if (strcmp(tract, "remove") == 0) {
+				/* Remove a package */
+				printf("Removing `%s' package ...\n", pkgver);
+				rv = xbps_remove_pkg(pkgname, version, update);
+				if (rv != 0) {
+					xbps_error_printf("xbps-bin: failed to "
+					    "remove `%s': %s\n", pkgver,
+					    strerror(rv));
+					return rv;
+				}
+			}
+		}
+		prop_object_iterator_reset(trans->iter);
+	}
+	/*
+	 * Install or update packages in transaction.
 	 */
 	printf("\n[2/3] Unpacking\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		if (strcmp(tract, "remove") == 0)
+			continue;
 		autoinst = preserve = false;
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
 		prop_dictionary_get_bool(obj, "preserve",  &preserve);
 		/*
@@ -465,18 +499,7 @@ exec_transaction(struct transaction *trans)
 		if (state == XBPS_PKG_STATE_UNPACKED)
 			continue;
 
-		if (strcmp(tract, "remove") == 0) {
-			/* Remove a package */
-			printf("Removing `%s' package ...\n", pkgver);
-			rv = xbps_remove_pkg(pkgname, version, false);
-			if (rv != 0) {
-				xbps_error_printf("xbps-bin: failed to remove "
-				    "`%s': %s\n", pkgver, strerror(rv));
-				return rv;
-			}
-			continue;
-
-		} else if (strcmp(tract, "update") == 0) {
+		if (strcmp(tract, "update") == 0) {
 			/* Update a package */
 			instpkgd = xbps_find_pkg_dict_installed(pkgname, false);
 			if (instpkgd == NULL) {

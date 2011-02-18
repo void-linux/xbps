@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110205"
+#define XBPS_RELVER		"20110218"
 
 /** 
  * @def XBPS_META_PATH

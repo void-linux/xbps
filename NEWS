@@ -1,5 +1,20 @@
 xbps-0.8.0 (???):
 
+ * Fixed finally when a package should replace an installed package, but
+   at the same time the package to be replaced also needs to be updated
+   in the transaction. A real example:
+
+	- sg3_utils-1.28 is currently installed.
+	- Installed package udisks-1.0.2_1 depends on sg3_utils-1.28.
+	- sg3_utils-1.28 has been splitted into libsgutils for 1.31,
+	  and libsgutils-1.31 has "replaces=sg3_utils<1.31".
+	- udisks-1.0.2_2 depends on libsgutils-1.31.
+
+   So now the old sg3_utils-1.28 package will be marked in its transaction
+   object as "remove" and the new sg3_utils-1.31 package as "update".
+   Therefore both packages (sg3_utils old/new) will be in the transaction
+   but one will be removed and the other one updated.
+
  * Fixed a bug that made all registered repositories to fail when the first
    one couldn't be internalized in xbps_repository_pool_init().
 

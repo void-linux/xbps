@@ -38,7 +38,7 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 			     prop_dictionary_t pkg_repod)
 {
 	prop_array_t replaces, unsorted;
-	prop_dictionary_t instd;
+	prop_dictionary_t instd, reppkgd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pattern;
@@ -51,8 +51,6 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 	if (iter == NULL)
 		return ENOMEM;
 
-	unsorted = prop_dictionary_get(transd, "unsorted_deps");
-
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		pattern = prop_string_cstring_nocopy(obj);
 		assert(pattern != NULL);
@@ -64,18 +62,15 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 		if (instd == NULL)
 			continue;
 		/*
-		 * If the package to be replaced is in the transaction due to
-		 * an update, do not remove it; just overwrite its files.
+		 * Package contains replaces="pkgpattern", but the
+		 * package that should be replaced is also in the
+		 * transaction and it's going to be updated.
 		 */
-		transd = xbps_find_pkg_in_dict_by_pattern(transd,
-		    "unsorted_deps", pattern);
-		if (transd) {
-			/*
-			 * Set the bool property 'replace-files-in-pkg-update',
-			 * will be used in xbps_unpack_binary_pkg().
-			 */
-			prop_dictionary_set_bool(pkg_repod,
-			    "replace-files-in-pkg-update", true);
+		unsorted = prop_dictionary_get(transd, "unsorted_deps");
+		reppkgd = xbps_find_pkg_in_array_by_pattern(unsorted, pattern);
+		if (reppkgd) {
+			prop_dictionary_set_bool(reppkgd,
+			    "remove-and-update", true);
 			prop_object_release(instd);
 			continue;
 		}

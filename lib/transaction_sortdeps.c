@@ -53,19 +53,24 @@ struct pkgdep {
 	TAILQ_ENTRY(pkgdep) pkgdep_entries;
 	prop_dictionary_t d;
 	char *name;
+	const char *trans;
 };
 
 static TAILQ_HEAD(pkgdep_head, pkgdep) pkgdep_list =
     TAILQ_HEAD_INITIALIZER(pkgdep_list);
 
 static struct pkgdep *
-pkgdep_find(const char *name)
+pkgdep_find(const char *name, const char *trans)
 {
 	struct pkgdep *pd = NULL, *pd_new = NULL;
 
 	TAILQ_FOREACH_SAFE(pd, &pkgdep_list, pkgdep_entries, pd_new) {
-		if (strcmp(pd->name, name) == 0)
-			return pd;
+		if (strcmp(pd->name, name) == 0) {
+			if (trans == NULL)
+				return pd;
+			if (strcmp(pd->trans, trans) == 0)
+				return pd;
+		}
 		if (pd->d == NULL)
 			continue;
 		if (xbps_find_virtual_pkg_in_dict(pd->d, name, false))
@@ -77,14 +82,18 @@ pkgdep_find(const char *name)
 }
 
 static ssize_t
-pkgdep_find_idx(const char *name)
+pkgdep_find_idx(const char *name, const char *trans)
 {
 	struct pkgdep *pd, *pd_new;
 	ssize_t idx = 0;
 
 	TAILQ_FOREACH_SAFE(pd, &pkgdep_list, pkgdep_entries, pd_new) {
-		if (strcmp(pd->name, name) == 0)
-			return idx;
+		if (strcmp(pd->name, name) == 0) {
+			if (trans == NULL)
+				return idx;
+		    	if (strcmp(pd->trans, trans) == 0)
+				return idx;
+		}
 		if (pd->d == NULL)
 			continue;
 		if (xbps_find_virtual_pkg_in_dict(pd->d, name, false))
@@ -108,7 +117,7 @@ pkgdep_release(struct pkgdep *pd)
 }
 
 static struct pkgdep *
-pkgdep_alloc(prop_dictionary_t d, const char *name)
+pkgdep_alloc(prop_dictionary_t d, const char *name, const char *trans)
 {
 	struct pkgdep *pd;
 	size_t len;
@@ -127,6 +136,7 @@ pkgdep_alloc(prop_dictionary_t d, const char *name)
 		pd->d = NULL;
 
 	(void)strlcpy(pd->name, name, len);
+	pd->trans = trans;
 
 	return pd;
 }
@@ -152,13 +162,14 @@ sort_pkg_rundeps(prop_dictionary_t transd,
 	prop_dictionary_t curpkgd;
 	prop_object_t obj;
 	struct pkgdep *lpd, *pdn;
-	const char *str;
+	const char *str, *tract;
 	char *pkgnamedep;
-	ssize_t pkgdepidx, curpkgidx = pkgdep_find_idx(pd->name);
+	ssize_t pkgdepidx, curpkgidx;
 	size_t i, idx = 0;
 	int rv = 0;
 
 	xbps_dbg_printf_append("\n");
+	curpkgidx = pkgdep_find_idx(pd->name, pd->trans);
 
 again:
 	for (i = idx; i < prop_array_count(pkg_rundeps); i++) {
@@ -174,7 +185,7 @@ again:
 			break;
 		}
 		xbps_dbg_printf("  Required dependency '%s': ", str);
-		pdn = pkgdep_find(pkgnamedep);
+		pdn = pkgdep_find(pkgnamedep, NULL);
 		if ((pdn == NULL) &&
 		    xbps_check_is_installed_pkg_by_name(pkgnamedep)) {
 			/*
@@ -184,7 +195,7 @@ again:
 			 * which is expensive.
 			 */
 			xbps_dbg_printf_append("installed.\n");
-			lpd = pkgdep_alloc(NULL, pkgnamedep);
+			lpd = pkgdep_alloc(NULL, pkgnamedep, "installed");
 			if (lpd == NULL) {
 				rv = ENOMEM;
 				break;
@@ -208,7 +219,9 @@ again:
 			rv = EINVAL;
 			break;
 		}
-		lpd = pkgdep_alloc(curpkgd, pkgnamedep);
+		prop_dictionary_get_cstring_nocopy(curpkgd,
+		    "transaction", &tract);
+		lpd = pkgdep_alloc(curpkgd, pkgnamedep, tract);
 		if (lpd == NULL) {
 			free(pkgnamedep);
 			rv = ENOMEM;
@@ -229,7 +242,7 @@ again:
 		/*
 		 * Find package dependency index.
 		 */
-		pkgdepidx = pkgdep_find_idx(pkgnamedep);
+		pkgdepidx = pkgdep_find_idx(pkgnamedep, tract);
 		/*
 		 * If package dependency index is less than current
 		 * package index, it's already sorted.
@@ -262,7 +275,7 @@ xbps_sort_pkg_deps(void)
 	prop_object_iterator_t iter;
 	struct pkgdep *pd;
 	size_t ndeps = 0, cnt = 0;
-	const char *pkgname, *pkgver;
+	const char *pkgname, *pkgver, *tract;
 	int rv = 0;
 
 	if ((transd = xbps_transaction_dictionary_get()) == NULL)
@@ -308,14 +321,15 @@ xbps_sort_pkg_deps(void)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		xbps_dbg_printf("Sorting package '%s': ", pkgver);
 
-		pd = pkgdep_find(pkgname);
+		pd = pkgdep_find(pkgname, tract);
 		if (pd == NULL) {
 			/*
 			 * If package not in list, just add to the tail.
 			 */
-			pd = pkgdep_alloc(obj, pkgname);
+			pd = pkgdep_alloc(obj, pkgname, tract);
 			if (pd == NULL) {
 				pkgdep_end(NULL);
 				prop_object_iterator_release(iter);
