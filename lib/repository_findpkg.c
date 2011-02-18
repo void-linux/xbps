@@ -85,11 +85,11 @@ static int
 repository_find_pkg(const char *pattern, const char *reason)
 {
 	prop_dictionary_t pkg_repod = NULL, origin_pkgrd = NULL;
-	prop_dictionary_t transd;
+	prop_dictionary_t transd, tmpd;
 	prop_array_t mdeps, unsorted;
 	const char *pkgname;
 	int rv = 0;
-	bool success, install, bypattern, bestpkg;
+	bool install, bypattern, bestpkg;
 
 	assert(pattern != NULL);
 	assert(reason != NULL);
@@ -142,13 +142,14 @@ repository_find_pkg(const char *pattern, const char *reason)
 	 * the transaction.
 	 */
 	if (install) {
-		success = xbps_find_pkg_in_dict_by_pattern(transd,
+		tmpd = xbps_find_pkg_in_dict_by_pattern(transd,
 		    "unsorted_pkgs", pattern);
 	} else {
-		success = xbps_find_pkg_in_dict_by_name(transd,
+		tmpd = xbps_find_pkg_in_dict_by_name(transd,
 		    "unsorted_pkgs", pattern);
+
 	}
-	if (success) {
+	if (tmpd) {
 		xbps_dbg_printf("package '%s' already queued in transaction\n",
 		    pattern);
 		goto out;
