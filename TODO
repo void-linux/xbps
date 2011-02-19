@@ -8,3 +8,5 @@
 - xbps-repo: support to verify PGP signed pkg-index.plist repo files
   (I have some preliminar code but need to clean it up, thanks to
    NetBSD's netpgp).
+- xbps-bin: add a flag (or use -f install) to force reinstallation of any
+  installed package preserving requiredby and modified files.
