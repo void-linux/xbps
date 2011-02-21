@@ -159,7 +159,7 @@ unpack_progress_cb_verbose(void *data)
 	else if (xpd->entry_size <= 0)
 		return;
 
-	fprintf(stderr, "Extracted %sfile `%s' (%" PRIi64 " bytes)\n",
+	printf("Extracted %sfile `%s' (%" PRIi64 " bytes)\n",
 	    xpd->entry_is_conf ? "configuration " : "", xpd->entry,
 	    xpd->entry_size);
 }
