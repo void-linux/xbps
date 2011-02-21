@@ -50,7 +50,7 @@
  *  - Finally its state is set to XBPS_PKG_STATE_UNPACKED.
  *
  * The following image shown below represents a transaction dictionary
- * returned by xbps_repository_get_transaction_dict():
+ * returned by xbps_transaction_prepare():
  *
  * @image html images/xbps_transaction_dictionary.png
  *
