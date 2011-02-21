@@ -106,14 +106,14 @@
 /**
  * @def XBPS_FLAG_VERBOSE
  * Verbose flag used in xbps_unpack_binary_pkg() (for now).
- * Must be set through the xbps_set_flags() function.
+ * Must be set through the xbps_init::flags member.
  */
 #define XBPS_FLAG_VERBOSE	0x00000001
 
 /**
  * @def XBPS_FLAG_FORCE
  * Force flag used in xbps_configure_pkg() (for now).
- * Must be set through the xbps_set_flags() function.
+ * Must be set through the xbps_init::flags member.
  */
 #define XBPS_FLAG_FORCE		0x00000002
 
