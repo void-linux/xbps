@@ -80,22 +80,23 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xbps_fetch_progress_data xfpd;
 	prop_dictionary_t pkgd;
-	char *root;
+	const char *rootdir, *cachedir;
 	int c, rv = 0;
 	bool with_debug = false;
 
-	while ((c = getopt(argc, argv, "Vcdr:")) != -1) {
+	rootdir = cachedir = NULL;
+
+	while ((c = getopt(argc, argv, "Vc:dr:")) != -1) {
 		switch (c) {
 		case 'c':
-			xbps_set_cachedir(optarg);
+			cachedir = optarg;
 			break;
 		case 'd':
 			with_debug = true;
 			break;
 		case 'r':
 			/* To specify the root directory */
-			root = optarg;
-			xbps_set_rootdir(root);
+			rootdir = optarg;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -119,6 +120,8 @@ main(int argc, char **argv)
 	xh.with_debug = with_debug;
 	xh.xbps_fetch_cb = fetch_file_progress_cb;
 	xh.xfpd = &xfpd;
+	xh.rootdir = rootdir;
+	xh.cachedir = cachedir;
 	xbps_init(&xh);
 
 	if ((rv = xbps_repository_pool_init()) != 0) {

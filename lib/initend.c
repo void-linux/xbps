@@ -37,11 +37,11 @@
  * @brief Initialization and finalization routines
  * @defgroup initend Initialization and finalization functions
  *
- * Use these functions to initialize some parameters before starting
+ * Use these functions to initialize some parameters before start
  * using libxbps and finalize usage to release resources at the end.
  */
 static bool debug;
-static const struct xbps_handle *xhp;
+static struct xbps_handle *xhp;
 
 void
 xbps_init(struct xbps_handle *xh)
@@ -52,6 +52,13 @@ xbps_init(struct xbps_handle *xh)
 	debug = xhp->with_debug;
 	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN,
 					XBPS_FETCH_CACHECONN_HOST);
+
+	/* If rootdir not set, defaults to '/' */
+	if (xhp->rootdir == NULL)
+		xhp->rootdir = "/";
+	/* If cachedir not set, defaults to XBPS_CACHE_PATH */
+	if (xhp->cachedir == NULL)
+		xhp->cachedir = XBPS_CACHE_PATH;
 }
 
 void
@@ -63,9 +70,10 @@ xbps_end(void)
 	xhp = NULL;
 }
 
-const struct xbps_handle HIDDEN *
+const struct xbps_handle *
 xbps_handle_get(void)
 {
+	assert(xhp != NULL);
 	return xhp;
 }
 

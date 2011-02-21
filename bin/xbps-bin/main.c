@@ -191,17 +191,19 @@ main(int argc, char **argv)
 	struct xbps_fetch_progress_data xfpd;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
+	const char *rootdir, *cachedir;
 	int i , c, flags, rv;
 	bool yes, purge, with_debug, force_rm_with_deps, recursive_rm;
 	bool show_download_pkglist_url = false;
 
+	rootdir = cachedir = NULL;
 	flags = rv = 0;
 	yes = purge = force_rm_with_deps = recursive_rm = with_debug = false;
 
-	while ((c = getopt(argc, argv, "VcdDFfpRr:vy")) != -1) {
+	while ((c = getopt(argc, argv, "Vc:dDFfpRr:vy")) != -1) {
 		switch (c) {
 		case 'c':
-			xbps_set_cachedir(optarg);
+			cachedir = optarg;
 			break;
 		case 'd':
 			with_debug = true;
@@ -223,7 +225,7 @@ main(int argc, char **argv)
 			break;
 		case 'r':
 			/* To specify the root directory */
-			xbps_set_rootdir(optarg);
+			rootdir = optarg;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -246,9 +248,6 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
-	if (flags != 0)
-		xbps_set_flags(flags);
-
 	/*
 	 * Register a signal handler to clean up resources used by libxbps.
 	 */
@@ -270,6 +269,9 @@ main(int argc, char **argv)
 	else
 		xh.xbps_unpack_cb = unpack_progress_cb_percentage;
 	xh.xupd = &xupd;
+	xh.rootdir = rootdir;
+	xh.cachedir = cachedir;
+	xh.flags = flags;
 	xbps_init(&xh);
 
 	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL) {

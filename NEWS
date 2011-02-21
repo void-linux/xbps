@@ -1,5 +1,8 @@
 xbps-0.8.0 (???):
 
+ * xbps-{bin,repo): -c (cachedir) argument now is an absolute path and
+   not relative to the root directory.
+
  * Fixed finally when a package should replace an installed package, but
    at the same time the package to be replaced also needs to be updated
    in the transaction. A real example:

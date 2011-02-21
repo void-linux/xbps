@@ -66,6 +66,7 @@ static pthread_mutex_t refcnt_mtx = PTHREAD_MUTEX_INITIALIZER;
 prop_dictionary_t
 xbps_regpkgdb_dictionary_get(void)
 {
+	const struct xbps_handle *xhp;
 	char *plist;
 
 	if (regpkgdb_initialized) {
@@ -75,7 +76,8 @@ xbps_regpkgdb_dictionary_get(void)
 		return regpkgdb_dict;
 	}
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	xhp = xbps_handle_get();
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return NULL;

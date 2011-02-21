@@ -186,14 +186,16 @@ xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 prop_dictionary_t
 xbps_get_pkg_dict_from_metadata_plist(const char *pkgn, const char *plist)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t plistd = NULL;
 	char *plistf;
 
 	assert(pkgn != NULL);
 	assert(plist != NULL);
+	xhp = xbps_handle_get();
 
 	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-	    xbps_get_rootdir(), XBPS_META_PATH, pkgn, plist);
+	    xhp->rootdir, XBPS_META_PATH, pkgn, plist);
 	if (plistf == NULL)
 		return NULL;
 

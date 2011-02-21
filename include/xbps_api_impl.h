@@ -76,12 +76,6 @@ __BEGIN_DECLS
 
 /**
  * @private
- * From lib/initend.c
- */
-const struct xbps_handle HIDDEN *xbps_handle_get(void);
-
-/**
- * @private
  * From lib/download.c
  */
 void HIDDEN xbps_fetch_set_cache_connection(int, int);

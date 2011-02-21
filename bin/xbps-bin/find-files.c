@@ -71,6 +71,7 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, prop_dictionary_keysym_t ke
 int
 find_files_in_packages(const char *pattern)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t pkg_filesd;
 	prop_array_t files_keys;
 	DIR *dirp;
@@ -79,7 +80,8 @@ find_files_in_packages(const char *pattern)
 	int rv = 0;
 	unsigned int i, count;
 
-	path = xbps_xasprintf("%s/%s/metadata", xbps_get_rootdir(),
+	xhp = xbps_handle_get();
+	path = xbps_xasprintf("%s/%s/metadata", xhp->rootdir,
 	    XBPS_META_PATH);
 	if (path == NULL)
 		return -1;

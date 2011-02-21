@@ -442,9 +442,10 @@ int
 main(int argc, char **argv)
 {
 	prop_dictionary_t plistd, confd = NULL;
+	struct xbps_handle xh;
 	FILE *f = NULL;
 	char *outfile = NULL;
-	const char *conf_file = NULL;
+	const char *conf_file = NULL, *rootdir = NULL;
 	int c;
 	bool revdeps = false;
 
@@ -468,7 +469,7 @@ main(int argc, char **argv)
 			break;
 		case 'r':
 			/* Set different rootdir. */
-			xbps_set_rootdir(optarg);
+			rootdir = optarg;
 			break;
 		case '?':
 		default:
@@ -481,6 +482,11 @@ main(int argc, char **argv)
 
 	if (argc != 1)
 		usage();
+
+	/* Initialize libxbps */
+	memset(&xh, 0, sizeof(xh));
+	xh.rootdir = rootdir;
+	xbps_init(&xh);
 
 	/*
 	 * Output file will be <pkgname>.dot if not specified.

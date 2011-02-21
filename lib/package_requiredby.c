@@ -103,13 +103,15 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 int HIDDEN
 xbps_requiredby_pkg_remove(const char *pkgname)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t dict;
 	char *plist;
 	int rv = 0;
 
 	assert(pkgname != NULL);
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	xhp = xbps_handle_get();
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return ENOMEM;

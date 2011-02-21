@@ -141,6 +141,7 @@ xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 int
 xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t dict = NULL, pkgd;
 	prop_array_t array;
 	char *plist;
@@ -148,8 +149,9 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 	bool newpkg = false;
 
 	assert(pkgname != NULL);
+	xhp = xbps_handle_get();
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return ENOMEM;

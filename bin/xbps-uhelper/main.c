@@ -109,7 +109,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xbps_fetch_progress_data xfpd;
 	prop_dictionary_t dict;
-	const char *version;
+	const char *version, *rootdir = NULL;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
 	bool debug = false, in_chroot = false;
 	int i, c, rv = 0;
@@ -118,7 +118,7 @@ main(int argc, char **argv)
 		switch (c) {
 		case 'r':
 			/* To specify the root directory */
-			xbps_set_rootdir(optarg);
+			rootdir = optarg;
 			break;
 		case 'd':
 			debug = true;
@@ -145,9 +145,10 @@ main(int argc, char **argv)
 	xh.with_debug = debug;
 	xh.xbps_fetch_cb = fetch_file_progress_cb;
 	xh.xfpd = &xfpd;
+	xh.rootdir = rootdir;
 	xbps_init(&xh);
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	plist = xbps_xasprintf("%s/%s/%s", rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
 		fprintf(stderr,

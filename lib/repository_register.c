@@ -40,6 +40,7 @@
 int
 xbps_repository_register(const char *uri)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t dict;
 	prop_array_t array;
 	prop_object_t obj = NULL;
@@ -47,8 +48,9 @@ xbps_repository_register(const char *uri)
 	int rv = 0;
 
 	assert(uri != NULL);
+	xhp = xbps_handle_get();
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REPOLIST);
 	if (plist == NULL)
 		return errno;
@@ -120,6 +122,7 @@ out:
 int
 xbps_repository_unregister(const char *uri)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t dict;
 	prop_array_t array;
 	const char *pkgindexdir;
@@ -127,8 +130,9 @@ xbps_repository_unregister(const char *uri)
 	int rv = 0;
 
 	assert(uri != NULL);
+	xhp = xbps_handle_get();
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REPOLIST);
 	if (plist == NULL)
 		return errno;

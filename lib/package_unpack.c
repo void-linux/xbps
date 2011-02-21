@@ -166,9 +166,9 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	prop_array_t array;
 	struct archive_entry *entry;
 	size_t nmetadata = 0, entry_idx = 0;
-	const char *rootdir, *entry_pname, *transact;
+	const char *entry_pname, *transact;
 	char *buf;
-	int rv, flags, xflags;
+	int rv, flags;
 	bool preserve, update;
 
 	assert(ar != NULL);
@@ -177,10 +177,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	assert(version != NULL);
 
 	preserve = update = false;
-	rootdir = xbps_get_rootdir();
-	xflags = xbps_get_flags();
 
-	if (chdir(rootdir) == -1) {
+	if (chdir(xhp->rootdir) == -1) {
 		xbps_error_printf("cannot chdir to rootdir for "
 		    "`%s-%s': %s\n", pkgname, version, strerror(errno));
 		return errno;
@@ -389,7 +387,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				    pkgname, version, strerror(rv));
 				goto out;
 			} else {
-				if (xflags & XBPS_FLAG_VERBOSE)
+				if (xhp->flags & XBPS_FLAG_VERBOSE)
 					xbps_warn_printf("ignoring existing "
 					    "entry: %s\n", entry_pname);
 

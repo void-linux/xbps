@@ -84,6 +84,7 @@ xbps_get_remote_repo_string(const char *uri)
 int
 xbps_repository_sync_pkg_index(const char *uri)
 {
+	const struct xbps_handle *xhp;
 	struct url *url = NULL;
 	struct utsname un;
 	struct stat st;
@@ -95,6 +96,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 
 	assert(uri != NULL);
 	tmp_metafile = rpidx = lrepodir = lrepofile = NULL;
+	xhp = xbps_handle_get();
 
 	if (uname(&un) == -1)
 		return -1;
@@ -111,8 +113,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	/*
 	 * Create metadir if necessary.
 	 */
-	metadir = xbps_xasprintf("%s/%s", xbps_get_rootdir(),
-	    XBPS_META_PATH);
+	metadir = xbps_xasprintf("%s/%s", xhp->rootdir, XBPS_META_PATH);
 	if (metadir == NULL) {
 		rv = -1;
 		goto out;
@@ -142,7 +143,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	 * package index file.
 	 */
 	lrepodir = xbps_xasprintf("%s/%s/%s",
-	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixedp);
+	    xhp->rootdir, XBPS_META_PATH, uri_fixedp);
 	if (lrepodir == NULL) {
 		rv = -1;
 		goto out;

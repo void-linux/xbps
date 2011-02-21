@@ -43,6 +43,7 @@
 int
 xbps_property_set(const char *key, const char *pkgname)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t d, repo_pkgd = NULL, pkgd = NULL;
 	prop_array_t props, provides = NULL, virtual = NULL;
 	prop_string_t virtualpkg;
@@ -54,6 +55,7 @@ xbps_property_set(const char *key, const char *pkgname)
 	assert(pkgname != NULL);
 
 	regpkgd_alloc = pkgd_alloc = virtual_alloc = propbool = false;
+	xhp = xbps_handle_get();
 
 	if ((d = xbps_regpkgdb_dictionary_get()) == NULL) {
 		/*
@@ -180,7 +182,7 @@ xbps_property_set(const char *key, const char *pkgname)
 	/*
 	 * Write regpkgdb dictionary to plist file.
 	 */
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
 		rv = ENOMEM;
@@ -205,6 +207,7 @@ out:
 int
 xbps_property_unset(const char *key, const char *pkgname)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t d, pkgd;
 	prop_array_t props;
 	char *plist;
@@ -212,6 +215,7 @@ xbps_property_unset(const char *key, const char *pkgname)
 
 	assert(key != NULL);
 	assert(pkgname != NULL);
+	xhp = xbps_handle_get();
 
 	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
 		return ENODEV;
@@ -252,7 +256,7 @@ xbps_property_unset(const char *key, const char *pkgname)
 	/*
 	 * Write regpkgdb dictionary to plist file.
 	 */
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
 		rv = ENOMEM;

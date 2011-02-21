@@ -93,16 +93,14 @@ check_binpkg_hash(const char *path,
 static int
 download_package_list(prop_object_iterator_t iter, bool only_show)
 {
+	const struct xbps_handle *xhp;
 	prop_object_t obj;
-	const char *pkgver, *repoloc, *filename, *cachedir, *sha256;
+	const char *pkgver, *repoloc, *filename, *sha256;
 	char *binfile;
 	int rv = 0;
 	bool cksum;
 
-	cachedir = xbps_get_cachedir();
-	if (cachedir == NULL)
-		return EINVAL;
-
+	xhp = xbps_handle_get();
 again:
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		cksum = false;
@@ -141,12 +139,12 @@ again:
 			free(binfile);
 			continue;
 		}
-		if (xbps_mkpath(__UNCONST(cachedir), 0755) == -1) {
+		if (xbps_mkpath(xhp->cachedir, 0755) == -1) {
 			free(binfile);
 			return errno;
 		}
 		printf("Downloading %s binary package ...\n", pkgver);
-		rv = xbps_fetch_file(binfile, cachedir, false, NULL);
+		rv = xbps_fetch_file(binfile, xhp->cachedir, false, NULL);
 		if (rv == -1) {
 			xbps_error_printf("xbps-bin: couldn't download `%s'\n",
 			    filename);
@@ -374,13 +372,15 @@ xbps_update_pkg(const char *pkgname)
 static int
 exec_transaction(struct transaction *trans)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t instpkgd;
 	prop_object_t obj;
 	const char *pkgname, *version, *pkgver, *instver, *filen, *tract;
-	int flags = xbps_get_flags(), rv = 0;
+	int rv = 0;
 	bool update, preserve, autoinst;
 	pkg_state_t state;
 
+	xhp = xbps_handle_get();
 	/*
 	 * Only show the URLs to download the binary packages.
 	 */
@@ -497,7 +497,7 @@ exec_transaction(struct transaction *trans)
 			    "(%s)\n", pkgver, strerror(rv));
 			return rv;
 		}
-		if ((flags & XBPS_FLAG_VERBOSE) == 0)
+		if ((xhp->flags & XBPS_FLAG_VERBOSE) == 0)
 			printf("\n");
 		/*
 		 * Register binary package.

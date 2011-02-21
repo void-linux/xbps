@@ -48,7 +48,7 @@
  */
 
 static int
-remove_pkg_metadata(const char *pkgname)
+remove_pkg_metadata(const char *pkgname, const char *rootdir)
 {
 	struct dirent *dp;
 	DIR *dirp;
@@ -57,7 +57,7 @@ remove_pkg_metadata(const char *pkgname)
 
 	assert(pkgname != NULL);
 
-	metadir = xbps_xasprintf("%s/%s/metadata/%s", xbps_get_rootdir(),
+	metadir = xbps_xasprintf("%s/%s/metadata/%s", rootdir,
 	     XBPS_META_PATH, pkgname);
 	if (metadir == NULL)
 		return ENOMEM;
@@ -127,13 +127,15 @@ out:
 int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t dict, pkgd;
 	const char *version;
 	char *buf;
-	int rv = 0, flags = xbps_get_flags();
+	int rv = 0;
 	pkg_state_t state;
 
 	assert(pkgname != NULL);
+	xhp = xbps_handle_get();
 	/*
 	 * Firstly let's get the pkg dictionary from regpkgdb.
 	 */
@@ -171,7 +173,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Execute the purge action in REMOVE script (if found).
 	 */
-	if (chdir(xbps_get_rootdir()) == -1) {
+	if (chdir(xhp->rootdir) == -1) {
 		rv = errno;
 		prop_object_release(dict);
 		xbps_error_printf("[purge] %s: cannot change to rootdir: %s.\n",
@@ -205,7 +207,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Remove metadata dir and unregister package.
 	 */
-	if ((rv = remove_pkg_metadata(pkgname)) != 0) {
+	if ((rv = remove_pkg_metadata(pkgname, xhp->rootdir)) != 0) {
 		xbps_error_printf("%s: couldn't remove metadata files: %s\n",
 		    pkgname, strerror(rv));
 		goto out;
@@ -215,7 +217,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		    pkgname, strerror(rv));
 		goto out;
 	}
-	if (flags & XBPS_FLAG_VERBOSE)
+	if (xhp->flags & XBPS_FLAG_VERBOSE)
 		xbps_printf("Package %s purged successfully.\n", pkgname);
 
 out:

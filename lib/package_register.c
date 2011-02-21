@@ -43,6 +43,7 @@
 int
 xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t dict, pkgd;
 	prop_array_t array, provides = NULL;
 	const char *pkgname, *version, *desc, *pkgver;
@@ -50,7 +51,8 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	int rv = 0;
 	bool autoinst = false;
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	xhp = xbps_handle_get();
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return ENOMEM;
@@ -141,12 +143,14 @@ out:
 int
 xbps_unregister_pkg(const char *pkgname)
 {
+	const struct xbps_handle *xhp;
 	char *plist;
 	int rv = 0;
 
 	assert(pkgname != NULL);
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	xhp = xbps_handle_get();
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return ENOMEM;

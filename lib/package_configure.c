@@ -43,9 +43,9 @@
  *    ran successful.
  *
  * @note
- * If the \a XBPS_FLAG_FORCE is set through xbps_set_flags(), the package
- * (or packages) will be reconfigured even if its state is
- * XBPS_PKG_STATE_INSTALLED.
+ * If the \a XBPS_FLAG_FORCE is set through xbps_init() in the flags
+ * member, the package (or packages) will be reconfigured even if its
+ * state is XBPS_PKG_STATE_INSTALLED.
  */
 
 int
@@ -86,14 +86,16 @@ xbps_configure_pkg(const char *pkgname,
 		   bool check_state,
 		   bool update)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t pkgd;
-	const char *lver, *rootdir = xbps_get_rootdir();
+	const char *lver;
 	char *buf;
-	int rv = 0, flags = xbps_get_flags();
+	int rv = 0;
 	pkg_state_t state = 0;
 	bool reconfigure = false;
 
 	assert(pkgname != NULL);
+	xhp = xbps_handle_get();
 
 	if (check_state) {
 		rv = xbps_get_pkg_state_installed(pkgname, &state);
@@ -101,7 +103,7 @@ xbps_configure_pkg(const char *pkgname,
 			return EINVAL;
 
 		if (state == XBPS_PKG_STATE_INSTALLED) {
-			if ((flags & XBPS_FLAG_FORCE) == 0)
+			if ((xhp->flags & XBPS_FLAG_FORCE) == 0)
 				return 0;
 
 			reconfigure = true;
@@ -123,9 +125,9 @@ xbps_configure_pkg(const char *pkgname,
 	if (buf == NULL)
 		return ENOMEM;
 
-	if (chdir(rootdir) == -1) {
+	if (chdir(xhp->rootdir) == -1) {
 		xbps_dbg_printf("%s: [configure] chdir to '%s' returned %s\n",
-		    pkgname, rootdir, strerror(errno));
+		    pkgname, xhp->rootdir, strerror(errno));
 		free(buf);
 		return EINVAL;
 	}

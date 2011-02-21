@@ -133,7 +133,8 @@ void		xbps_warn_printf(const char *, ...);
  * @brief Generic XBPS structure handler for initialization.
  *
  * This structure sets some global properties for libxbps, to set some
- * function callbacks and data to the fetch and unpack functions.
+ * function callbacks and data to the fetch and unpack functions,
+ * the root and cache directory, flags, etc.
  */
 struct xbps_handle {
 	/**
@@ -165,6 +166,28 @@ struct xbps_handle {
 	 */
 	struct xbps_fetch_progress_data *xfpd;
 	/**
+	 * @var flags
+	 *
+	 * Flags to be set globally, possible values:
+	 * 	- XBPS_FLAG_VERBOSE
+	 * 	- XBPS_FLAG_FORCE
+	 */
+	int flags;
+	/**
+	 * @var rootdir
+	 *
+	 * Root directory for all operations in XBPS. If NULL,
+	 * by default it's set to /.
+	 */
+	const char *rootdir;
+	/**
+	 * @var cachedir
+	 *
+	 * Cache directory to store downloaded binary packages.
+	 * If NULL default value in \a XBPS_CACHE_PATH is used.
+	 */
+	const char *cachedir;
+	/**
 	 * @var with_debug
 	 *
 	 * Set to true to enable debugging messages to stderr.
@@ -175,9 +198,12 @@ struct xbps_handle {
 /**
  * Initialize the XBPS library with the following steps:
  *
- *   - Sets the function callbacks for fetching and unpacking.
- *   - Sets default cache connections for libfetch.
- *   - Initializes the debug printfs.
+ *   - Set function callbacks for fetching and unpacking.
+ *   - Set root directory.
+ *   - Set cache directory.
+ *   - Set global flags.
+ *   - Set default cache connections for libfetch.
+ *   - Initialize the debug printfs.
  *
  * @param[in] xh Pointer to an xbps_handle structure. It's
  * assumed that this pointer is not NULL.
@@ -188,6 +214,11 @@ void xbps_init(struct xbps_handle *xh);
  * Releases all resources used by the XBPS library.
  */
 void xbps_end(void);
+
+/**
+ * Returns a pointer to the xbps_handle structure set by xbps_init().
+ */
+const struct xbps_handle *xbps_handle_get(void);
 
 /*@}*/
 
@@ -1193,7 +1224,7 @@ int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict);
  *
  * @return 0 on success, -1 on error and errno set appropiately.
  */
-int xbps_mkpath(char *path, mode_t mode);
+int xbps_mkpath(const char *path, mode_t mode);
 
 /**
  * Returns a string by concatenating its variable argument list
@@ -1364,36 +1395,6 @@ const char *xbps_get_pkg_revision(const char *pkg);
 bool xbps_pkg_has_rundeps(prop_dictionary_t dict);
 
 /**
- * Sets the global root directory.
- *
- * @param[in] path Destination directory.
- */
-void xbps_set_rootdir(const char *path);
-
-/**
- * Gets the global root directory.
- *
- * @return A string with full path to the root directory.
- */
-const char *xbps_get_rootdir(void);
-
-/**
- * Sets globally the cache directory to store downloaded binary
- * packages. Any full path without rootdir is valid.
- *
- * @param[in] cachedir Directory to be set.
- */
-void xbps_set_cachedir(const char *cachedir);
-
-/**
- * Gets the cache directory currently used to store downloaded
- * binary packages.
- *
- * @return The path to a directory.
- */
-const char *xbps_get_cachedir(void);
-
-/**
  * Converts the 64 bits signed number specified in \a bytes to
  * a human parsable string buffer pointed to \a buf.
  *
@@ -1404,20 +1405,6 @@ const char *xbps_get_cachedir(void);
  * @return A negative number is returned on error, 0 otherwise.
  */
 int xbps_humanize_number(char *buf, int64_t bytes);
-
-/**
- * Sets the flag specified in \a flags for internal use.
- *
- * @param[in] flags Flags to be set globally.
- */
-void xbps_set_flags(int flags);
-
-/**
- * Gets the flags currently set internally.
- *
- * @return An integer with flags
- */
-int xbps_get_flags(void);
 
 /*@}*/
 

@@ -37,15 +37,20 @@
 #include <sys/stat.h>
 
 #include <xbps_api.h>
+#include "xbps_api_impl.h"
 
 int
-xbps_mkpath(char *path, mode_t mode)
+xbps_mkpath(const char *path, mode_t mode)
 {
 	struct stat sb;
-	char *slash = path;
+	char *ppath, *slash;
 	int done = 0, rv;
 	mode_t dir_mode;
 
+	if ((ppath = strdup(path)) == NULL)
+		return -1;
+
+	slash = ppath;
 	/*
 	 * The default file mode is a=rwx (0777) with selected permissions
 	 * removed in accordance with the file mode creation mask.  For
@@ -64,7 +69,7 @@ xbps_mkpath(char *path, mode_t mode)
 		done = (*slash == '\0');
 		*slash = '\0';
 
-		rv = mkdir(path, done ? mode : dir_mode);
+		rv = mkdir(ppath, done ? mode : dir_mode);
 		if (rv < 0) {
 			/*
 			 * Can't create; path exists or no perms.
@@ -73,14 +78,16 @@ xbps_mkpath(char *path, mode_t mode)
 			int	sverrno;
 
 			sverrno = errno;
-			if (stat(path, &sb) < 0) {
+			if (stat(ppath, &sb) < 0) {
 					/* Not there; use mkdir()s error */
 				errno = sverrno;
+				free(ppath);
 				return -1;
 			}
 			if (!S_ISDIR(sb.st_mode)) {
 					/* Is there, but isn't a directory */
 				errno = ENOTDIR;
+				free(ppath);
 				return -1;
 			}
 		}
@@ -89,6 +96,7 @@ xbps_mkpath(char *path, mode_t mode)
 
 		*slash = '/';
 	}
+	free(ppath);
 
 	return 0;
 }

@@ -51,10 +51,6 @@
  * @brief Utility routines
  * @defgroup util Utility functions
  */
-static const char *rootdir;
-static const char *cachedir;
-static int flags;
-
 static void
 digest2string(const uint8_t *digest, char *string, size_t len)
 {
@@ -318,16 +314,18 @@ xbps_get_pkgpattern_version(const char *pkg)
 static char *
 get_pkg_index_remote_plist(const char *uri)
 {
+	const struct xbps_handle *xhp;
 	char *uri_fixed, *repodir;
 
 	assert(uri != NULL);
 
+	xhp = xbps_handle_get();
 	uri_fixed = xbps_get_remote_repo_string(uri);
 	if (uri_fixed == NULL)
 		return NULL;
 
 	repodir = xbps_xasprintf("%s/%s/%s/%s",
-	    xbps_get_rootdir(), XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
+	    xhp->rootdir, XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
 	if (repodir == NULL) {
 		free(uri_fixed);
 		return NULL;
@@ -356,7 +354,8 @@ xbps_get_pkg_index_plist(const char *uri)
 char *
 xbps_get_binpkg_repo_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 {
-	const char *filen, *arch, *cdir;
+	const struct xbps_handle *xhp;
+	const char *filen, *arch;
 	char *lbinpkg = NULL;
 
 	assert(pkg_repod != NULL);
@@ -369,14 +368,11 @@ xbps_get_binpkg_repo_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 	    "architecture", &arch))
 		return NULL;
 
-	cdir = xbps_get_cachedir();
-	if (cdir == NULL)
-		return NULL;
-
+	xhp = xbps_handle_get();
 	/*
 	 * First check if binpkg is available in cachedir.
 	 */
-	lbinpkg = xbps_xasprintf("%s/%s", cdir, filen);
+	lbinpkg = xbps_xasprintf("%s/%s", xhp->cachedir, filen);
 	if (lbinpkg == NULL)
 		return NULL;
 
@@ -402,68 +398,6 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkg)
 		return true;
 
 	return false;
-}
-
-void
-xbps_set_rootdir(const char *dir)
-{
-	assert(dir != NULL);
-	rootdir = dir;
-}
-
-const char *
-xbps_get_rootdir(void)
-{
-	if (rootdir == NULL)
-		rootdir = "/";
-
-	return rootdir;
-}
-
-void
-xbps_set_cachedir(const char *dir)
-{
-	static char res[PATH_MAX];
-	int r = 0;
-
-	assert(dir != NULL);
-
-	r = snprintf(res, sizeof(res) - 1, "%s/%s", xbps_get_rootdir(), dir);
-	if (r < 0 || r >= (int)sizeof(res) - 1) {
-		/* If error or truncated set to default */
-		cachedir = XBPS_CACHE_PATH;
-		return;
-	}
-	cachedir = res;
-}
-
-const char *
-xbps_get_cachedir(void)
-{
-	static char res[PATH_MAX];
-	int r = 0;
-
-	if (cachedir == NULL) {
-		r = snprintf(res, sizeof(res) - 1, "%s/%s",
-		    xbps_get_rootdir(), XBPS_CACHE_PATH);
-		if (r < 0 || r >= (int)sizeof(res) - 1)
-			return NULL;
-
-		cachedir = res;
-	}
-	return cachedir;
-}
-
-void
-xbps_set_flags(int lflags)
-{
-	flags = lflags;
-}
-
-int
-xbps_get_flags(void)
-{
-	return flags;
 }
 
 #ifdef HAVE_VASPRINTF

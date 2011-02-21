@@ -45,7 +45,7 @@
  *     will be executed.
  *  -# Its files, dirs and links will be removed. Modified files (not
  *     matching its sha256 hash) are preserved, unless XBPS_FLAG_FORCE
- *     is set via xbps_set_flags().
+ *     is set via xbps_init() in the flags member.
  *  -# Its <b>post-remove</b> target specified in the REMOVE script
  *     will be executed.
  *  -# Its requiredby objects will be removed from the installed packages
@@ -74,15 +74,17 @@
 int
 xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 {
+	const struct xbps_handle *xhp;
 	prop_array_t array;
 	prop_object_iterator_t iter;
 	prop_object_t obj;
 	const char *file, *sha256, *curobj = NULL;
 	char *path = NULL;
-	int flags = xbps_get_flags(), rv = 0;
+	int rv = 0;
 
 	assert(dict != NULL);
 	assert(key != NULL);
+	xhp = xbps_handle_get();
 
 	array = prop_dictionary_get(dict, key);
 	if (array == NULL)
@@ -105,7 +107,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-		path = xbps_xasprintf("%s/%s", xbps_get_rootdir(), file);
+		path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 		if (path == NULL) {
 			rv = ENOMEM;
 			break;
@@ -127,7 +129,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 				continue;
 			} else if (rv == ERANGE) {
 				rv = 0;
-				if (flags & XBPS_FLAG_FORCE) {
+				if (xhp->flags & XBPS_FLAG_FORCE) {
 					xbps_warn_printf("'%s': SHA256 "
 					    "mismatch, forcing removal...\n",
 					    file);
@@ -136,7 +138,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 					    "mismatch, preserving file...\n",
 					    file);
 				}
-				if ((flags & XBPS_FLAG_FORCE) == 0) {
+				if ((xhp->flags & XBPS_FLAG_FORCE) == 0) {
 					free(path);
 					continue;
 				}
@@ -151,13 +153,13 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 		 * Remove the object if possible.
 		 */
 		if (remove(path) == -1) {
-			if (flags & XBPS_FLAG_VERBOSE)
+			if (xhp->flags & XBPS_FLAG_VERBOSE)
 				xbps_warn_printf("can't remove %s `%s': %s\n",
 				    curobj, file, strerror(errno));
 
 		} else {
 			/* Success */
-			if (flags & XBPS_FLAG_VERBOSE)
+			if (xhp->flags & XBPS_FLAG_VERBOSE)
 				xbps_printf("Removed %s: `%s'\n", curobj, file);
 		}
 		free(path);
@@ -170,6 +172,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 int
 xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t dict;
 	char *buf;
 	int rv = 0;
@@ -178,6 +181,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	assert(pkgname != NULL);
 	assert(version != NULL);
 
+	xhp = xbps_handle_get();
 	/*
 	 * Check if pkg is installed before anything else.
 	 */
@@ -189,7 +193,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	if (buf == NULL)
 		return ENOMEM;
 
-	if (chdir(xbps_get_rootdir()) == -1) {
+	if (chdir(xhp->rootdir) == -1) {
 		free(buf);
 		return EINVAL;
 	}

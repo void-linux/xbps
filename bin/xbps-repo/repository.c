@@ -163,11 +163,13 @@ unregister_repository(const char *uri)
 int
 register_repository(const char *uri)
 {
+	const struct xbps_handle *xhp;
 	struct repoinfo *rpi = NULL;
 	const char *idxstr = NULL;
 	char *metadir, *plist;
 	int rv = 0;
 
+	xhp = xbps_handle_get();
 	if ((idxstr = sanitize_url(uri)) == NULL)
 		return errno;
 
@@ -189,7 +191,7 @@ register_repository(const char *uri)
 		/*
 		 * Create metadir if necessary.
 		 */
-		metadir = xbps_xasprintf("%s/%s", xbps_get_rootdir(),
+		metadir = xbps_xasprintf("%s/%s", xhp->rootdir,
 		    XBPS_META_PATH);
 		if (metadir == NULL)
 			return errno;

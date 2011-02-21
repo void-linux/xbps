@@ -39,6 +39,7 @@
 int HIDDEN
 xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 {
+	const struct xbps_handle *xhp;
 	prop_object_iterator_t iter, iter2;
 	prop_object_t obj, obj2;
 	prop_string_t oldstr, newstr;
@@ -46,11 +47,12 @@ xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 	const char *array_str = "files";
 	const char *oldhash;
 	char *file;
-	int rv = 0, flags = xbps_get_flags();
+	int rv = 0;
 	bool found, dodirs = false, dolinks = false;
 
 	assert(oldd != NULL);
 	assert(newd != NULL);
+	xhp = xbps_handle_get();
 
 again:
 	iter = xbps_get_array_iter_from_dict(oldd, array_str);
@@ -135,7 +137,7 @@ again:
 			free(file);
 			continue;
 		}
-		if (flags & XBPS_FLAG_VERBOSE)
+		if (xhp->flags & XBPS_FLAG_VERBOSE)
 			xbps_printf("Removed obsolete entry: %s\n",
 			    prop_string_cstring_nocopy(oldstr));
 

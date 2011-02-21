@@ -55,6 +55,7 @@ static pthread_mutex_t mtx_refcnt = PTHREAD_MUTEX_INITIALIZER;
 int
 xbps_repository_pool_init(void)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t dict = NULL;
 	prop_array_t array;
 	prop_object_t obj;
@@ -64,6 +65,7 @@ xbps_repository_pool_init(void)
 	char *plist;
 	int rv = 0;
 
+	xhp = xbps_handle_get();
 	xbps_dbg_printf("%s: repolist_refcnt %zu\n", __func__, repolist_refcnt);
 
 	if (repolist_initialized) {
@@ -73,7 +75,7 @@ xbps_repository_pool_init(void)
 		return 0;
 	}
 
-	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REPOLIST);
 	if (plist == NULL) {
 		rv = errno;

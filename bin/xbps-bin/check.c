@@ -91,6 +91,7 @@ out:
 int
 xbps_check_pkg_integrity(const char *pkgname)
 {
+	const struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, propsd = NULL, filesd = NULL;
 	prop_array_t array;
 	prop_object_t obj;
@@ -101,6 +102,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	bool broken = false, files_broken = false;
 
 	assert(pkgname != NULL);
+	xhp = xbps_handle_get();
 
 	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
@@ -158,8 +160,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s",
-			    xbps_get_rootdir(), file);
+			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				rv = errno;
@@ -209,8 +210,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 		}
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s",
-			    xbps_get_rootdir(), file);
+			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				rv = ENOMEM;
