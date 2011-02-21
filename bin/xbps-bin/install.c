@@ -445,7 +445,9 @@ exec_transaction(struct transaction *trans)
 	printf("\n[2/3] Unpacking\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		if (strcmp(tract, "remove") == 0)
+		/* Match only packages to be installed or updated */
+		if ((strcmp(tract, "remove") == 0) ||
+		    (strcmp(tract, "configure") == 0))
 			continue;
 		autoinst = preserve = false;
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
@@ -528,7 +530,8 @@ exec_transaction(struct transaction *trans)
 			    "package %s (%s)\n", pkgname, strerror(rv));
 			return rv;
 		}
-		trans->cf_pkgcnt++;
+		if (strcmp(tract, "configure"))
+			trans->cf_pkgcnt++;
 	}
 	printf("\nxbps-bin: %zu installed, %zu updated, "
 	    "%zu configured, %zu removed.\n", trans->inst_pkgcnt,
