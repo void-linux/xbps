@@ -84,7 +84,7 @@ const struct xbps_handle HIDDEN *xbps_handle_get(void);
  * @private
  * From lib/download.c
  */
-void HIDDEN xbps_fetch_set_cache_connection(int global, int per_host);
+void HIDDEN xbps_fetch_set_cache_connection(int, int);
 void HIDDEN xbps_fetch_unset_cache_connection(void);
 
 /**
@@ -102,8 +102,8 @@ int HIDDEN xbps_entry_install_conf_file(prop_dictionary_t,
  * From lib/plist_entry.c
  */
 prop_dictionary_t HIDDEN
-	xbps_read_dict_from_archive_entry(struct archive *ar,
-					  struct archive_entry *entry);
+	xbps_read_dict_from_archive_entry(struct archive *,
+					  struct archive_entry *);
 
 /**
  * @private
@@ -148,9 +148,9 @@ char HIDDEN *xbps_get_remote_repo_string(const char *);
  * @private
  * From lib/fexec.c
  */
-int HIDDEN xbps_file_exec(const char *arg, ...);
-int HIDDEN xbps_file_exec_skipempty(const char *arg, ...);
-int HIDDEN xbps_file_chdir_exec(const char *path, const char *arg, ...);
+int HIDDEN xbps_file_exec(const char *, ...);
+int HIDDEN xbps_file_exec_skipempty(const char *, ...);
+int HIDDEN xbps_file_chdir_exec(const char *, const char *, ...);
 
 /**
  * @private
