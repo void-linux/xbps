@@ -91,7 +91,7 @@ xbps_fetch_file(const char *uri,
 		bool refetch,
 		const char *flags)
 {
-	struct xbps_handle *xhp;
+	const struct xbps_handle *xhp;
 	struct stat st;
 	struct url *url = NULL;
 	struct url_stat url_st;

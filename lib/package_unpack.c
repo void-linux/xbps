@@ -160,7 +160,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	       struct archive *ar,
 	       const char *pkgname,
 	       const char *version,
-	       struct xbps_handle *xhp)
+	       const struct xbps_handle *xhp)
 {
 	prop_dictionary_t propsd = NULL, filesd = NULL, old_filesd = NULL;
 	prop_array_t array;
@@ -463,7 +463,7 @@ out:
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 {
-	struct xbps_handle *xhp;
+	const struct xbps_handle *xhp;
 	struct archive *ar;
 	const char *pkgname, *version, *repoloc;
 	char *bpkg;

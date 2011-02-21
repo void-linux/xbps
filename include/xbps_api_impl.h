@@ -78,7 +78,7 @@ __BEGIN_DECLS
  * @private
  * From lib/initend.c
  */
-struct xbps_handle HIDDEN *xbps_handle_get(void);
+const struct xbps_handle HIDDEN *xbps_handle_get(void);
 
 /**
  * @private

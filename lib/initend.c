@@ -41,7 +41,7 @@
  * using libxbps and finalize usage to release resources at the end.
  */
 static bool debug;
-static struct xbps_handle *xhp;
+static const struct xbps_handle *xhp;
 
 void
 xbps_init(struct xbps_handle *xh)
@@ -63,7 +63,7 @@ xbps_end(void)
 	xhp = NULL;
 }
 
-struct xbps_handle HIDDEN *
+const struct xbps_handle HIDDEN *
 xbps_handle_get(void)
 {
 	return xhp;
