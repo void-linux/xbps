@@ -130,21 +130,19 @@ find_pkg_in_array(prop_array_t array, const char *str, bool bypattern)
 				continue;
 			if (xbps_pkgpattern_match(pkgver, __UNCONST(str)))
 				break;
-			/*
-			 * Finally check if package pattern matches
-			 * any virtual package version in dictionary.
-			 */
-			if (xbps_find_virtual_pkg_in_dict(obj, str, true))
-				break;
 		} else {
 			if (!prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &dpkgn))
 				continue;
 			if (strcmp(dpkgn, str) == 0)
 				break;
-			if (xbps_find_virtual_pkg_in_dict(obj, str, false))
-				break;
 		}
+		/*
+		 * Finally check if package pattern matches
+		 * any virtual package version in dictionary.
+		 */
+		if (xbps_find_virtual_pkg_in_dict(obj, str, bypattern))
+			break;
 	}
 	prop_object_iterator_release(iter);
 	if (obj == NULL) {
