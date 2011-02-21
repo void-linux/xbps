@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110218"
+#define XBPS_RELVER		"20110221"
 
 /** 
  * @def XBPS_META_PATH
@@ -129,15 +129,60 @@ void		xbps_warn_printf(const char *, ...);
 /*@{*/
 
 /**
+ * @struct xbps_handle xbps_api.h "xbps_api.h"
+ * @brief Structure to be passed to xbps_init() and xbps_end() functions.
+ *
+ * This structure sets some global properties for libxbps, to set some
+ * function callbacks and data to the fetch and unpack functions.
+ */
+struct xbps_handle {
+	/**
+	 * @var xbps_unpack_cb
+	 *
+	 * Pointer to the supplied function callback to be used in
+	 * xbps_unpack_binary_pkg().
+	 */
+	void (*xbps_unpack_cb)(void *);
+	/**
+	 * @var xupd
+	 *
+	 * Pointer to a xbps_unpack_progress_data structure to be passed
+	 * as argument to the \a xbps_unpack_cb function callback.
+	 */
+	struct xbps_unpack_progress_data *xupd;
+	/**
+	 * @var xbps_fetch_cb
+	 *
+	 * Pointer to the supplied function callback to be used in
+	 * xbps_fetch_file().
+	 */
+	void (*xbps_fetch_cb)(void *);
+	/**
+	 * @var xfpd
+	 *
+	 * Pointer to a xbps_fetch_progress_data structure to be passed
+	 * as argument to the \a xbps_fetch_cb function callback.
+	 */
+	struct xbps_fetch_progress_data *xfpd;
+	/**
+	 * @var with_debug
+	 *
+	 * Set to true to enable debugging messages to stderr.
+	 */
+	bool with_debug;
+};
+
+/**
  * Initialize the XBPS library with the following steps:
  *
+ *   - Sets the function callbacks for fetching and unpacking.
  *   - Sets default cache connections for libfetch.
- *
  *   - Initializes the debug printfs.
  *
- * @param[in] debug If true, debugging output will be shown to stderr.
+ * @param[in] xh Pointer to an xbps_handle structure. It's
+ * assumed that this pointer is not NULL.
  */
-void xbps_init(bool debug);
+void xbps_init(struct xbps_handle *xh);
 
 /**
  * Releases all resources used by the XBPS library.
@@ -295,10 +340,6 @@ struct xbps_fetch_progress_data {
  * @param[in] refetch If true and local/remote size/mtime do not match,
  * fetch the file from scratch.
  * @param[in] flags Flags passed to libfetch's fetchXget().
- * @param[in] progress_cb Pointer to a function callback to update the
- * the fetch progress.
- * @param[in] xfpd Pointer to a xbps_fetch_progress_data struct to be
- * passed to the \a progress_cb callback as its argument.
  * 
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
  * do not match) and 1 if downloaded successfully.
@@ -306,9 +347,7 @@ struct xbps_fetch_progress_data {
 int xbps_fetch_file(const char *uri,
 		    const char *outputdir,
 		    bool refetch,
-		    const char *flags,
-		    void (*progress_cb)(void *),
-		    struct xbps_fetch_progress_data *xfpd);
+		    const char *flags);
 
 /**
  * Returns last error string reported by xbps_fetch_file().
@@ -995,18 +1034,12 @@ prop_dictionary_t
  * by the \a uri argument (if necessary).
  *
  * @param[in] uri URI to a remote repository.
- * @param[in] progress_cb Pointer to a function callback to update the
- * the fetch progress.
- * @param[in] xfpd Pointer to a xbps_fetch_progress_data struct to be
- * passed to the \a progress_cb callback as its argument.
  *
  * @return -1 on error (errno is set appropiately), 0 if transfer was
  * not necessary (local/remote size/mtime matched) or 1 if
  * downloaded successfully.
  */
-int xbps_repository_sync_pkg_index(const char *uri,
-				   void (*progress_cb)(void *),
-				   struct xbps_fetch_progress_data *xfpd);
+int xbps_repository_sync_pkg_index(const char *uri);
 
 /*@}*/
 
@@ -1142,16 +1175,10 @@ struct xbps_unpack_progress_data {
  *
  * @param[in] trans_pkg_dict Package proplib dictionary as stored in the
  * \a packages array returned by the transaction dictionary.
- * @param[in] progress_cb Pointer to a function callback to update progress data
- * while extracting files in package (optional).
- * @param[in] xupd Pointer to a struct xbps_unpack_progress_data to be passed to
- * the function callback \a progress_cb.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict,
-			   void (*progress_cb)(void *),
-			   struct xbps_unpack_progress_data *xupd);
+int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict);
 
 /*@}*/
 

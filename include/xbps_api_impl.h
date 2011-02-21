@@ -76,18 +76,15 @@ __BEGIN_DECLS
 
 /**
  * @private
- * Sets the libfetch's cache connection limits.
- *
- * @param[in] global Number of global cached connections, if set to 0
- * by default it's set to XBPS_FETCH_CACHECONN.
- * @param[in] per_host Number of per host cached connections, if set to 0
- * by default it's set to XBPS_FETCH_CACHECONN_HOST.
+ * From lib/initend.c
  */
-void HIDDEN xbps_fetch_set_cache_connection(int global, int per_host);
+struct xbps_handle HIDDEN *xbps_handle_get(void);
 
 /**
- * Destroys the libfetch's cache connection established.
+ * @private
+ * From lib/download.c
  */
+void HIDDEN xbps_fetch_set_cache_connection(int global, int per_host);
 void HIDDEN xbps_fetch_unset_cache_connection(void);
 
 /**
@@ -102,16 +99,7 @@ int HIDDEN xbps_entry_install_conf_file(prop_dictionary_t,
 					const char *);
 /**
  * @private
- * From lib/plist_archive_entry.c
- *
- * Finds a proplib dictionary in an archive, matching a specific
- * entry on it.
- *
- * @param[in] ar Pointer to an archive object, as returned by libarchive.
- * @param[in] entry Pointer to an archive entry object, as returned by libarchive.
- *
- * @return The proplib dictionary associated with entry, NULL otherwise
- * and errno is set appropiately.
+ * From lib/plist_entry.c
  */
 prop_dictionary_t HIDDEN
 	xbps_read_dict_from_archive_entry(struct archive *ar,
@@ -152,44 +140,16 @@ prop_dictionary_t HIDDEN xbps_transaction_dictionary_get(void);
 
 /**
  * @private
+ * From lib/repository_sync_index.c
  */
 char HIDDEN *xbps_get_remote_repo_string(const char *);
 
 /**
- * Forks and executes a command in the current working directory
- * with an arbitrary number of arguments.
- *
- * @param[in] arg Arguments passed to execvp(3) when forked, the last
- * argument must be NULL.
- *
- * @return 0 on success, -1 on error and errno set appropiately.
+ * @private
+ * From lib/fexec.c
  */
 int HIDDEN xbps_file_exec(const char *arg, ...);
-
-/**
- * Forks and executes a command in the current working directory
- * with an arbitrary number of arguments.
- *
- * @param[in] arg Arguments passed to execvp(3) when forked, does not need
- * to be terminated with a NULL argument.
- *
- * @return 0 on success, -1 on error and errno set appropiately.
- */
 int HIDDEN xbps_file_exec_skipempty(const char *arg, ...);
-
-/**
- * Forks and executes a command with an arbitrary number of arguments
- * in a specified path.
- * 
- * If uid==0 and /bin/sh (relative to path) exists, a chroot(2) call
- * will be done, otherwise chdir(2) to path.
- * 
- * @param[in] path Destination path to chroot(2) or chdir(2).
- * @param[in] arg Arguments passed to execvp(3) when forked, the last
- * argument must be NULL.
- *
- * @return 0 on success, -1 on error and errno set appropiately.
- */
 int HIDDEN xbps_file_chdir_exec(const char *path, const char *arg, ...);
 
 /**
@@ -201,7 +161,7 @@ int HIDDEN xbps_repository_pkg_replaces(prop_dictionary_t,
 
 /**
  * @private
- * From lib/plist.c
+ * From lib/plist_find.c
  */
 prop_dictionary_t HIDDEN
 	xbps_find_virtualpkg_user_in_dict_by_name(prop_dictionary_t,

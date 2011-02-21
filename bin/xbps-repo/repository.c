@@ -164,7 +164,6 @@ int
 register_repository(const char *uri)
 {
 	struct repoinfo *rpi = NULL;
-	struct xbps_fetch_progress_data xfpd;
 	const char *idxstr = NULL;
 	char *metadir, *plist;
 	int rv = 0;
@@ -174,8 +173,7 @@ register_repository(const char *uri)
 
 	if (xbps_check_is_repository_uri_remote(idxstr)) {
 		printf("Fetching remote package index at %s...\n", idxstr);
-		rv = xbps_repository_sync_pkg_index(idxstr,
-		    fetch_file_progress_cb, &xfpd);
+		rv = xbps_repository_sync_pkg_index(idxstr);
 		if (rv == -1) {
 			xbps_error_printf("xbps-repo: couldn't fetch pkg-index"
 			    "file: %s.\n", xbps_fetch_error_string());
@@ -295,7 +293,6 @@ show_pkg_deps_from_repolist(const char *pkgname)
 static int
 repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 {
-	struct xbps_fetch_progress_data xfpd;
 	struct repoinfo *rp;
 	char *plist;
 	int rv = 0;
@@ -307,8 +304,7 @@ repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		return 0;
 
 	printf("Syncing package index from: %s\n", rpi->rpi_uri);
-	rv = xbps_repository_sync_pkg_index(rpi->rpi_uri,
-	    fetch_file_progress_cb, &xfpd);
+	rv = xbps_repository_sync_pkg_index(rpi->rpi_uri);
 	if (rv == -1) {
 		xbps_error_printf("xbps-repo: failed to sync `%s': %s\n",
 		    rpi->rpi_uri, xbps_fetch_error_string());

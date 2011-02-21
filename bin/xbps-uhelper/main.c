@@ -106,6 +106,7 @@ usage(void)
 int
 main(int argc, char **argv)
 {
+	struct xbps_handle xh;
 	struct xbps_fetch_progress_data xfpd;
 	prop_dictionary_t dict;
 	const char *version;
@@ -137,7 +138,14 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
-	xbps_init(debug);
+	/*
+	 * Initialize the callbacks and debug in libxbps.
+	 */
+	memset(&xh, 0, sizeof(xh));
+	xh.with_debug = debug;
+	xh.xbps_fetch_cb = fetch_file_progress_cb;
+	xh.xfpd = &xfpd;
+	xbps_init(&xh);
 
 	plist = xbps_xasprintf("%s/%s/%s", xbps_get_rootdir(),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
@@ -336,8 +344,7 @@ main(int argc, char **argv)
 			usage();
 
 		for (i = 1; i < argc; i++) {
-			rv = xbps_fetch_file(argv[i], ".", false, "v",
-			    fetch_file_progress_cb, &xfpd);
+			rv = xbps_fetch_file(argv[i], ".", false, "v");
 			if (rv == -1) {
 				printf("%s: %s\n", argv[1],
 				    xbps_fetch_error_string());

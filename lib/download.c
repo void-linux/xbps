@@ -89,10 +89,9 @@ int
 xbps_fetch_file(const char *uri,
 		const char *outputdir,
 		bool refetch,
-		const char *flags,
-		void (*progress_cb)(void *),
-		struct xbps_fetch_progress_data *xfpd)
+		const char *flags)
 {
+	struct xbps_handle *xhp;
 	struct stat st;
 	struct url *url = NULL;
 	struct url_stat url_st;
@@ -110,6 +109,7 @@ xbps_fetch_file(const char *uri,
 	fetchLastErrCode = 0;
 	fetchTimeout = 30; /* 30 seconds of timeout */
 
+	xhp = xbps_handle_get();
 	/*
 	 * Get the filename specified in URI argument.
 	 */
@@ -257,15 +257,15 @@ xbps_fetch_file(const char *uri,
 	 * and let the user know that the transfer is going to start
 	 * immediately.
 	 */
-	if (progress_cb != NULL && xfpd != NULL) {
-		xfpd->file_name = filename;
-		xfpd->file_size = url_st.size;
-		xfpd->file_offset = url->offset;
-		xfpd->file_dloaded = -1;
-		xfpd->cb_start = true;
-		xfpd->cb_update = false;
-		xfpd->cb_end = false;
-		progress_cb(xfpd);
+	if (xhp != NULL && xhp->xbps_fetch_cb != NULL && xhp->xfpd != NULL) {
+		xhp->xfpd->file_name = filename;
+		xhp->xfpd->file_size = url_st.size;
+		xhp->xfpd->file_offset = url->offset;
+		xhp->xfpd->file_dloaded = -1;
+		xhp->xfpd->cb_start = true;
+		xhp->xfpd->cb_update = false;
+		xhp->xfpd->cb_end = false;
+		xhp->xbps_fetch_cb(xhp->xfpd);
 	}
 	/*
 	 * Start fetching requested file.
@@ -282,11 +282,12 @@ xbps_fetch_file(const char *uri,
 		 * Let the fetch progress callback know that
 		 * we are sucking more bytes from it.
 		 */
-		if (progress_cb != NULL && xfpd != NULL) {
-			xfpd->file_dloaded = bytes_dload;
-			xfpd->cb_start = false;
-			xfpd->cb_update = true;
-			progress_cb(xfpd);
+		if (xhp != NULL && xhp->xbps_fetch_cb != NULL &&
+		    xhp->xfpd != NULL) {
+			xhp->xfpd->file_dloaded = bytes_dload;
+			xhp->xfpd->cb_start = false;
+			xhp->xfpd->cb_update = true;
+			xhp->xbps_fetch_cb(xhp->xfpd);
 		}
 
 	}
@@ -294,10 +295,10 @@ xbps_fetch_file(const char *uri,
 	 * Let the fetch progress callback know that the file
 	 * has been fetched.
 	 */
-	if (progress_cb != NULL && xfpd != NULL) {
-		xfpd->cb_update = false;
-		xfpd->cb_end = true;
-		progress_cb(xfpd);
+	if (xhp != NULL && xhp->xbps_fetch_cb != NULL && xhp->xfpd != NULL) {
+		xhp->xfpd->cb_update = false;
+		xhp->xfpd->cb_end = true;
+		xhp->xbps_fetch_cb(xhp->xfpd);
 	}
 	if (bytes_read == -1) {
 		xbps_error_printf("IO error while fetching %s: %s\n", filename,

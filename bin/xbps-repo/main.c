@@ -77,6 +77,8 @@ repo_search_pkgs_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 int
 main(int argc, char **argv)
 {
+	struct xbps_handle xh;
+	struct xbps_fetch_progress_data xfpd;
 	prop_dictionary_t pkgd;
 	char *root;
 	int c, rv = 0;
@@ -110,7 +112,14 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
-	xbps_init(with_debug);
+	/*
+	 * Initialize the function callbacks and debug in libxbps.
+	 */
+	memset(&xh, 0, sizeof(xh));
+	xh.with_debug = with_debug;
+	xh.xbps_fetch_cb = fetch_file_progress_cb;
+	xh.xfpd = &xfpd;
+	xbps_init(&xh);
 
 	if ((rv = xbps_repository_pool_init()) != 0) {
 		if (rv != ENOENT) {

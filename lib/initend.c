@@ -40,14 +40,18 @@
  * Use these functions to initialize some parameters before starting
  * using libxbps and finalize usage to release resources at the end.
  */
-static bool with_debug;
+static bool debug;
+static struct xbps_handle *xhp;
 
 void
-xbps_init(bool debug)
+xbps_init(struct xbps_handle *xh)
 {
+	assert(xh != NULL);
+
+	xhp = xh;
+	debug = xhp->with_debug;
 	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN,
 					XBPS_FETCH_CACHECONN_HOST);
-	with_debug = debug;
 }
 
 void
@@ -56,6 +60,13 @@ xbps_end(void)
 	xbps_regpkgdb_dictionary_release();
 	xbps_repository_pool_release();
 	xbps_fetch_unset_cache_connection();
+	xhp = NULL;
+}
+
+struct xbps_handle HIDDEN *
+xbps_handle_get(void)
+{
+	return xhp;
 }
 
 static void
@@ -72,7 +83,7 @@ xbps_dbg_printf_append(const char *fmt, ...)
 {
 	va_list ap;
 
-	if (!with_debug)
+	if (!debug)
 		return;
 
 	va_start(ap, fmt);
@@ -85,7 +96,7 @@ xbps_dbg_printf(const char *fmt, ...)
 {
 	va_list ap;
 
-	if (!with_debug)
+	if (!debug)
 		return;
 
 	va_start(ap, fmt);
