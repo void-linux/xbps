@@ -130,7 +130,7 @@ void		xbps_warn_printf(const char *, ...);
 
 /**
  * @struct xbps_handle xbps_api.h "xbps_api.h"
- * @brief Structure to be passed to xbps_init() and xbps_end() functions.
+ * @brief Generic XBPS structure handler for initialization.
  *
  * This structure sets some global properties for libxbps, to set some
  * function callbacks and data to the fetch and unpack functions.
