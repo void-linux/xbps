@@ -54,31 +54,26 @@
  */
 
 static int
-set_pkg_state(prop_dictionary_t pkgd, const char *pkgname)
+set_pkg_state(prop_dictionary_t pkgd, pkg_state_t newstate)
 {
-	pkg_state_t state = 0;
 	int rv = 0;
 
 	assert(pkgd != NULL);
-
+	/*
+	 * Always set package state in dictionary to not installed,
+	 * will be overwritten later.
+	 */
 	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_NOT_INSTALLED);
 	if (rv != 0)
 		return rv;
 	/*
-	 * Overwrite package state in dictionary if it was unpacked
-	 * previously.
+	 * Overwrite package state in dictionary with state found
+	 * in regpkgdb's pkg dictionary.
 	 */
-	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) == 0) {
-		if (state == XBPS_PKG_STATE_INSTALLED)
-			return 0;
-		if ((rv = xbps_set_pkg_state_dictionary(pkgd, state)) != 0)
-			return rv;
-	}
-	/* pkg not installed, don't error out */
-	if (rv == ENOENT)
-		rv = 0;
-	
-	return rv;
+	if (newstate == 0)
+		return 0;
+
+	return xbps_set_pkg_state_dictionary(pkgd, newstate);
 }
 
 static int
@@ -90,6 +85,7 @@ repository_find_pkg(const char *pattern, const char *reason)
 	const char *pkgname;
 	int rv = 0;
 	bool install, bypattern, bestpkg;
+	pkg_state_t state = 0;
 
 	assert(pattern != NULL);
 	assert(reason != NULL);
@@ -165,11 +161,22 @@ repository_find_pkg(const char *pattern, const char *reason)
 	/*
 	 * Set package state to the correct one.
 	 */
-	if ((rv = set_pkg_state(origin_pkgrd, pkgname)) != 0)
+	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0) {
+		if (rv == ENOENT) {
+			/* Package not installed, don't error out */
+			rv = 0;
+		} else
+			goto out;
+
+	}
+	if ((rv = set_pkg_state(origin_pkgrd, state)) != 0)
 		goto out;
 
+	if (state == XBPS_PKG_STATE_UNPACKED)
+		reason = "configure";
 	/*
-	 * Set transaction obj in pkg dictionary to "install" or "update".
+	 * Set transaction obj in pkg dictionary to "install", "configure"
+	 * or "update".
 	 */
 	if (!prop_dictionary_set_cstring_nocopy(origin_pkgrd,
 	    "transaction", reason)) {
