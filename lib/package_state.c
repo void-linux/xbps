@@ -138,8 +138,32 @@ xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 	return set_new_state(dict, state);
 }
 
+static int
+set_pkg_objs(prop_dictionary_t pkgd,
+	     const char *pkgname,
+	     const char *version,
+	     const char *pkgver)
+{
+	if (!prop_dictionary_set_cstring_nocopy(pkgd, "pkgname", pkgname))
+		return EINVAL;
+
+	if (version != NULL)
+		if (!prop_dictionary_set_cstring_nocopy(pkgd,
+		    "version", version))
+			return EINVAL;
+	if (pkgver != NULL)
+		if (!prop_dictionary_set_cstring_nocopy(pkgd,
+		    "pkgver", pkgver))
+			return EINVAL;
+
+	return 0;
+}
+
 int
-xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
+xbps_set_pkg_state_installed(const char *pkgname,
+			     const char *version,
+			     const char *pkgver,
+			     pkg_state_t state)
 {
 	const struct xbps_handle *xhp;
 	prop_dictionary_t dict = NULL, pkgd;
@@ -173,10 +197,7 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 			prop_object_release(array);
 			goto out;
 		}
-
-		if (!prop_dictionary_set_cstring_nocopy(pkgd, "pkgname",
-		    pkgname)) {
-			rv = EINVAL;
+		if ((rv = set_pkg_objs(pkgd, pkgname, version, pkgver)) != 0) {
 			prop_object_release(array);
 			prop_object_release(pkgd);
 			goto out;
@@ -209,9 +230,8 @@ xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state)
 
 			newpkg = true;
 			pkgd = prop_dictionary_create();
-			if (!prop_dictionary_set_cstring_nocopy(pkgd,
-			    "pkgname", pkgname)) {
-				rv = EINVAL;
+			if ((rv = set_pkg_objs(pkgd, pkgname,
+			    version, pkgver)) != 0) {
 				prop_object_release(pkgd);
 				goto out;
 			}

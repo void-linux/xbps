@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110221"
+#define XBPS_RELVER		"20110222"
 
 /** 
  * @def XBPS_META_PATH
@@ -1130,11 +1130,16 @@ int xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
  * Sets package state \a state in package \a pkgname.
  *
  * @param[in] pkgname Package name.
+ * @param[in] version Package version (optional).
+ * @param[in] pkgver Package name/version touple (optional).
  * @param[in] state Package state to be set.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_set_pkg_state_installed(const char *pkgname, pkg_state_t state);
+int xbps_set_pkg_state_installed(const char *pkgname,
+				 const char *version,
+				 const char *pkgver,
+				 pkg_state_t state);
 
 /**
  * Sets package state \a state in package dictionary \a dict.

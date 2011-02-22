@@ -463,7 +463,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 {
 	const struct xbps_handle *xhp;
 	struct archive *ar;
-	const char *pkgname, *version, *repoloc;
+	const char *pkgname, *version, *repoloc, *pkgver;
 	char *bpkg;
 	int rv = 0;
 
@@ -471,6 +471,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &version);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
 	bpkg = xbps_get_binpkg_repo_uri(pkg_repod, repoloc);
@@ -514,11 +515,11 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 		    bpkg, strerror(rv));
 		goto out;
 	}
-
 	/*
 	 * Set package state to unpacked.
 	 */
-	rv = xbps_set_pkg_state_installed(pkgname, XBPS_PKG_STATE_UNPACKED);
+	rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
+	    XBPS_PKG_STATE_UNPACKED);
 	if (rv != 0) {
 		xbps_error_printf("failed to set `%s-%s' to unpacked "
 		    "state: %s\n", pkgname, version, strerror(rv));

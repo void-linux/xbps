@@ -174,6 +174,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 {
 	const struct xbps_handle *xhp;
 	prop_dictionary_t dict;
+	const char *pkgver;
 	char *buf;
 	int rv = 0;
 	bool rmfile_exists = false;
@@ -235,6 +236,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		free(buf);
 		return errno;
 	}
+	prop_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
 
 	/* Remove links */
 	if ((rv = xbps_remove_pkg_files(dict, "links")) != 0) {
@@ -278,7 +280,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	/*
 	 * Set package state to "config-files".
 	 */
-	rv = xbps_set_pkg_state_installed(pkgname,
+	rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
 	     XBPS_PKG_STATE_CONFIG_FILES);
 
 

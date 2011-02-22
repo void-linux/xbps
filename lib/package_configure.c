@@ -89,7 +89,7 @@ xbps_configure_pkg(const char *pkgname,
 	const struct xbps_handle *xhp;
 	prop_dictionary_t pkgd;
 	const char *lver;
-	char *buf;
+	char *buf, *pkgver;
 	int rv = 0;
 	pkg_state_t state = 0;
 	bool reconfigure = false;
@@ -147,6 +147,13 @@ xbps_configure_pkg(const char *pkgname,
 		}
 	}
 	free(buf);
+	pkgver = xbps_xasprintf("%s-%s", pkgname, lver);
+	if (pkgver == NULL)
+		return ENOMEM;
 
-	return xbps_set_pkg_state_installed(pkgname, XBPS_PKG_STATE_INSTALLED);
+	rv = xbps_set_pkg_state_installed(pkgname, lver, pkgver,
+	    XBPS_PKG_STATE_INSTALLED);
+	free(pkgver);
+
+	return rv;
 }
