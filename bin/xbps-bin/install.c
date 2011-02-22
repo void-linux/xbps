@@ -304,6 +304,7 @@ xbps_install_new_pkg(const char *pkg)
 	char *pkgname = NULL, *pkgpatt = NULL;
 	int rv = 0;
 	bool pkgmatch = false;
+	pkg_state_t state;
 
 	if (xbps_get_pkgpattern_version(pkg)) {
 		pkgpatt = __UNCONST(pkg);
@@ -324,11 +325,16 @@ xbps_install_new_pkg(const char *pkg)
 	 * Find a package in a repository and prepare for installation.
 	 */
 	if ((pkgd = xbps_find_pkg_dict_installed(pkgname, false))) {
-		printf("Package '%s' is already installed.\n", pkgname);
+		if ((rv = xbps_get_pkg_state_dictionary(pkgd, &state)) != 0) {
+			prop_object_release(pkgd);
+			goto out;
+		}
 		prop_object_release(pkgd);
-		if (pkgmatch)
-			free(pkgname);
-		return 0;
+		if (state == XBPS_PKG_STATE_INSTALLED) {
+			printf("Package '%s' is already installed.\n", pkgname);
+			goto out;
+		}
+		printf("Package `%s' needs to be configured.\n", pkgname);
 	}
 	if ((rv = xbps_repository_install_pkg(pkgpatt)) != 0) {
 		if (rv == ENOENT) {
@@ -341,6 +347,7 @@ xbps_install_new_pkg(const char *pkg)
 			rv = -1;
 		}
 	}
+out:
 	if (pkgmatch)
 		free(pkgpatt);
 	free(pkgname);
@@ -404,37 +411,63 @@ exec_transaction(struct transaction *trans)
 	 * Download binary packages (if they come from a remote repository)
 	 * and check its SHA256 hash.
 	 */
-	printf("[1/3] Downloading/integrity check\n");
+	printf("[*] Downloading/integrity check ...\n");
 	if ((rv = download_package_list(trans->iter, false)) != 0)
 		return rv;
 	/*
 	 * Remove packages to be replaced.
 	 */
 	if (trans->rm_pkgcnt > 0) {
-		printf("\n[2/3] Removing packages to be replaced\n");
+		printf("\n[*] Removing packages to be replaced ...\n");
 		while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
+			prop_dictionary_get_cstring_nocopy(obj, "transaction",
+			    &tract);
+			if (strcmp(tract, "remove"))
+				continue;
+
 			prop_dictionary_get_cstring_nocopy(obj, "pkgname",
 			    &pkgname);
 			prop_dictionary_get_cstring_nocopy(obj, "version",
 			    &version);
 			prop_dictionary_get_cstring_nocopy(obj, "pkgver",
 			    &pkgver);
-			prop_dictionary_get_cstring_nocopy(obj, "transaction",
-			    &tract);
 			update = false;
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
 
-			if (strcmp(tract, "remove") == 0) {
-				/* Remove a package */
-				printf("Removing `%s' package ...\n", pkgver);
-				rv = xbps_remove_pkg(pkgname, version, update);
-				if (rv != 0) {
-					xbps_error_printf("xbps-bin: failed to "
-					    "remove `%s': %s\n", pkgver,
-					    strerror(rv));
-					return rv;
-				}
+			/* Remove a package */
+			printf("Removing `%s' package ...\n", pkgver);
+			rv = xbps_remove_pkg(pkgname, version, update);
+			if (rv != 0) {
+				xbps_error_printf("xbps-bin: failed to "
+				    "remove `%s': %s\n", pkgver,
+				    strerror(rv));
+				return rv;
+			}
+		}
+		prop_object_iterator_reset(trans->iter);
+	}
+	/*
+	 * Configure pending packages.
+	 */
+	if (trans->cf_pkgcnt > 0) {
+		printf("\n[*] Reconfigure unpacked packages ...\n");
+		while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
+			prop_dictionary_get_cstring_nocopy(obj, "transaction",
+			    &tract);
+			if (strcmp(tract, "configure"))
+				continue;
+			prop_dictionary_get_cstring_nocopy(obj, "pkgname",
+			    &pkgname);
+			prop_dictionary_get_cstring_nocopy(obj, "version",
+			    &version);
+			prop_dictionary_get_cstring_nocopy(obj, "pkgver",
+			    &pkgver);
+			rv = xbps_configure_pkg(pkgname, version, false, false);
+			if (rv != 0) {
+				xbps_error_printf("xbps-bin: failed to "
+				    "configure `%s': %s\n", pkgver, strerror(rv));
+				return rv;
 			}
 		}
 		prop_object_iterator_reset(trans->iter);
@@ -442,7 +475,7 @@ exec_transaction(struct transaction *trans)
 	/*
 	 * Install or update packages in transaction.
 	 */
-	printf("\n[2/3] Unpacking\n");
+	printf("\n[*] Unpacking packages to be installed/updated ...\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		/* Match only packages to be installed or updated */
@@ -514,7 +547,7 @@ exec_transaction(struct transaction *trans)
 	/*
 	 * Configure all unpacked packages.
 	 */
-	printf("\n[3/3] Configuring\n");
+	printf("\n[*] Configuring packages installed/updated ...\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if (strcmp(tract, "remove") == 0)
