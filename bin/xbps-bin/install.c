@@ -526,14 +526,12 @@ exec_transaction(struct transaction *trans)
 		/*
 		 * Unpack binary package.
 		 */
-		printf("Unpacking `%s' (from ../%s) ... ", pkgver, filen);
+		printf("Unpacking `%s' (from ../%s) ...\n", pkgver, filen);
 		if ((rv = xbps_unpack_binary_pkg(obj)) != 0) {
 			xbps_error_printf("xbps-bin: error unpacking %s "
 			    "(%s)\n", pkgver, strerror(rv));
 			return rv;
 		}
-		if ((xhp->flags & XBPS_FLAG_VERBOSE) == 0)
-			printf("\n");
 		/*
 		 * Register binary package.
 		 */

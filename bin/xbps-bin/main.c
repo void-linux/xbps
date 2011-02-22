@@ -164,24 +164,6 @@ unpack_progress_cb_verbose(void *data)
 	    xpd->entry_size);
 }
 
-static void
-unpack_progress_cb_percentage(void *data)
-{
-	struct xbps_unpack_progress_data *xpd = data;
-	double percent = 0;
-
-	if (xpd->entry_is_metadata)
-		return;
-
-	percent =
-	    (double)((xpd->entry_extract_count * 100.0) / xpd->entry_total_count);
-	if (percent > 100.0 ||
-	    xpd->entry_extract_count >= xpd->entry_total_count)
-		percent = 100.0;
-
-	printf("\033[s(%3.2f%%)\033[u", percent);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -266,8 +248,6 @@ main(int argc, char **argv)
 	xh.xfpd = &xfpd;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.xbps_unpack_cb = unpack_progress_cb_verbose;
-	else
-		xh.xbps_unpack_cb = unpack_progress_cb_percentage;
 	xh.xupd = &xupd;
 	xh.rootdir = rootdir;
 	xh.cachedir = cachedir;
