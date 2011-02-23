@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110222"
+#define XBPS_RELVER		"20110224"
 
 /** 
  * @def XBPS_META_PATH
@@ -1252,6 +1252,22 @@ char *xbps_xasprintf(const char *fmt, ...);
  * longer needed.
  */
 char *xbps_get_file_hash(const char *file);
+
+/**
+ * Returns a string with the sha256 hash for the file specified
+ * by \a file in an array with key \a key in the proplib dictionary
+ * \a d.
+ *
+ * @param[in] d Proplib dictionary to look in.
+ * @param[in] key Array key to match in dictionary.
+ * @param[in] file Pathname to a file.
+ *
+ * @return The sha256 hash string if found, NULL otherwise
+ * and errno is set appropiately.
+ */
+const char *xbps_get_file_hash_from_dict(prop_dictionary_t d,
+					 const char *key,
+					 const char *file);
 
 /**
  * Compares the sha256 hash of the file \a file with the sha256

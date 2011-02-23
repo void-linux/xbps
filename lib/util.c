@@ -145,6 +145,41 @@ xbps_check_file_hash(const char *file, const char *sha256)
 	return 0;
 }
 
+const char *
+xbps_get_file_hash_from_dict(prop_dictionary_t d,
+			     const char *key,
+			     const char *file)
+{
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	const char *curfile, *sha256;
+
+	assert(d != NULL);
+	assert(key != NULL);
+	assert(file != NULL);
+
+	curfile = sha256 = NULL;
+
+	iter = xbps_get_array_iter_from_dict(d, key);
+	if (iter == NULL)
+		return NULL;
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj,
+		    "file", &curfile);
+		if (strstr(file, curfile) == NULL)
+			continue;
+		/* file matched */
+		prop_dictionary_get_cstring_nocopy(obj,
+		    "sha256", &sha256);
+		break;
+	}
+	prop_object_iterator_release(iter);
+	if (sha256 == NULL)
+		errno = ENOENT;
+
+	return sha256;
+}
+
 bool
 xbps_check_is_repository_uri_remote(const char *uri)
 {
