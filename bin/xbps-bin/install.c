@@ -95,7 +95,7 @@ download_package_list(prop_object_iterator_t iter, bool only_show)
 {
 	const struct xbps_handle *xhp;
 	prop_object_t obj;
-	const char *pkgver, *repoloc, *filename, *sha256;
+	const char *pkgver, *repoloc, *filename, *sha256, *trans;
 	char *binfile;
 	int rv = 0;
 	bool cksum;
@@ -103,6 +103,11 @@ download_package_list(prop_object_iterator_t iter, bool only_show)
 	xhp = xbps_handle_get();
 again:
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
+		if ((strcmp(trans, "remove") == 0) ||
+		    (strcmp(trans, "configure") == 0))
+			continue;
+
 		cksum = false;
 		prop_dictionary_get_bool(obj, "checksum_ok", &cksum);
 		if (cksum == true)
@@ -548,7 +553,8 @@ exec_transaction(struct transaction *trans)
 	printf("\n[*] Configuring packages installed/updated ...\n");
 	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		if (strcmp(tract, "remove") == 0)
+		if ((strcmp(tract, "remove") == 0) ||
+		    (strcmp(tract, "configure") == 0))
 			continue;
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
@@ -561,8 +567,7 @@ exec_transaction(struct transaction *trans)
 			    "package %s (%s)\n", pkgname, strerror(rv));
 			return rv;
 		}
-		if (strcmp(tract, "configure"))
-			trans->cf_pkgcnt++;
+		trans->cf_pkgcnt++;
 	}
 	printf("\nxbps-bin: %zu installed, %zu updated, "
 	    "%zu configured, %zu removed.\n", trans->inst_pkgcnt,
