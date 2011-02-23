@@ -87,19 +87,19 @@ remove_string_from_array(prop_array_t array, const char *str, int mode)
 	return true;
 }
 
-bool
+inline bool
 xbps_remove_string_from_array(prop_array_t array, const char *str)
 {
 	return remove_string_from_array(array, str, 0);
 }
 
-bool
+inline bool
 xbps_remove_pkgname_from_array(prop_array_t array, const char *name)
 {
 	return remove_string_from_array(array, name, 1);
 }
 
-bool
+inline bool
 xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name)
 {
 	return remove_string_from_array(array, name, 2);

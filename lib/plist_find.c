@@ -72,7 +72,7 @@ find_pkg_dict_from_plist(const char *plist,
 	return res;
 }
 
-prop_dictionary_t
+inline prop_dictionary_t
 xbps_find_pkg_dict_from_plist_by_name(const char *plist,
 				      const char *key,
 				      const char *pkgname)
@@ -80,7 +80,7 @@ xbps_find_pkg_dict_from_plist_by_name(const char *plist,
 	return find_pkg_dict_from_plist(plist, key, pkgname, false);
 }
 
-prop_dictionary_t
+inline prop_dictionary_t
 xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
 					 const char *key,
 					 const char *pattern)
@@ -152,13 +152,13 @@ find_pkg_in_array(prop_array_t array, const char *str, bool bypattern)
 	return obj;
 }
 
-prop_dictionary_t
+inline prop_dictionary_t
 xbps_find_pkg_in_array_by_name(prop_array_t array, const char *name)
 {
 	return find_pkg_in_array(array, name, false);
 }
 
-prop_dictionary_t
+inline prop_dictionary_t
 xbps_find_pkg_in_array_by_pattern(prop_array_t array, const char *pattern)
 {
 	return find_pkg_in_array(array, pattern, true);
@@ -268,7 +268,7 @@ find_pkg_in_dict(prop_dictionary_t d,
 	return find_pkg_in_array(array, str, bypattern);
 }
 
-prop_dictionary_t
+inline prop_dictionary_t
 xbps_find_pkg_in_dict_by_name(prop_dictionary_t d,
 			      const char *key,
 			      const char *pkgname)
@@ -276,7 +276,7 @@ xbps_find_pkg_in_dict_by_name(prop_dictionary_t d,
 	return find_pkg_in_dict(d, key, pkgname, false, false);
 }
 
-prop_dictionary_t
+inline prop_dictionary_t
 xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t d,
 				 const char *key,
 				 const char *pattern)
@@ -284,7 +284,7 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t d,
 	return find_pkg_in_dict(d, key, pattern, true, false);
 }
 
-prop_dictionary_t HIDDEN
+inline prop_dictionary_t HIDDEN
 xbps_find_virtualpkg_user_in_dict_by_name(prop_dictionary_t d,
 					  const char *key,
 					  const char *name)
@@ -292,7 +292,7 @@ xbps_find_virtualpkg_user_in_dict_by_name(prop_dictionary_t d,
 	return find_pkg_in_dict(d, key, name, false, true);
 }
 
-prop_dictionary_t HIDDEN
+inline prop_dictionary_t HIDDEN
 xbps_find_virtualpkg_user_in_dict_by_pattern(prop_dictionary_t d,
 					     const char *key,
 					     const char *pattern)
@@ -386,19 +386,19 @@ find_string_in_array(prop_array_t array, const char *str, int mode)
 	return found;
 }
 
-bool
+inline bool
 xbps_find_string_in_array(prop_array_t array, const char *str)
 {
 	return find_string_in_array(array, str, 0);
 }
 
-bool
+inline bool
 xbps_find_pkgname_in_array(prop_array_t array, const char *pkgname)
 {
 	return find_string_in_array(array, pkgname, 1);
 }
 
-bool
+inline bool
 xbps_find_pkgpattern_in_array(prop_array_t array, const char *pattern)
 {
 	return find_string_in_array(array, pattern, 2);

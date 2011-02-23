@@ -245,13 +245,13 @@ xbps_repository_update_allpkgs(void)
 	return rv;
 }
 
-int
+inline int
 xbps_repository_update_pkg(const char *pkgname)
 {
 	return repository_find_pkg(pkgname, "update");
 }
 
-int
+inline int
 xbps_repository_install_pkg(const char *pkgpattern)
 {
 	return repository_find_pkg(pkgpattern, "install");
