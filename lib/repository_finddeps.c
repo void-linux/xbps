@@ -73,14 +73,20 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 		return rv;
 	}
 	/*
-	 * Overwrite package state in dictionary if it was unpacked
-	 * previously.
+	 * Overwrite package state in dictionary with same state than the
+	 * package currently uses, otherwise not-installed.
 	 */
-	if (xbps_get_pkg_state_installed(pkgname, &state) == 0) {
-		if ((rv = xbps_set_pkg_state_dictionary(dict, state)) != 0) {
+	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0) {
+		if (rv != ENOENT) {
 			prop_object_release(dict);
 			return rv;
 		}
+		rv = 0;
+		state = XBPS_PKG_STATE_NOT_INSTALLED;
+	}
+	if ((rv = xbps_set_pkg_state_dictionary(dict, state)) != 0) {
+		prop_object_release(dict);
+		return rv;
 	}
 	/*
 	 * Add required objects into package dep's dictionary.

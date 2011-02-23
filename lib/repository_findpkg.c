@@ -52,30 +52,6 @@
  * Text inside of white boxes are the key associated with the object, its
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
-
-static int
-set_pkg_state(prop_dictionary_t pkgd, pkg_state_t newstate)
-{
-	int rv = 0;
-
-	assert(pkgd != NULL);
-	/*
-	 * Always set package state in dictionary to not installed,
-	 * will be overwritten later.
-	 */
-	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_NOT_INSTALLED);
-	if (rv != 0)
-		return rv;
-	/*
-	 * Overwrite package state in dictionary with state found
-	 * in regpkgdb's pkg dictionary.
-	 */
-	if (newstate == 0)
-		return 0;
-
-	return xbps_set_pkg_state_dictionary(pkgd, newstate);
-}
-
 static int
 repository_find_pkg(const char *pattern, const char *reason)
 {
@@ -159,17 +135,17 @@ repository_find_pkg(const char *pattern, const char *reason)
 		goto out;
 
 	/*
-	 * Set package state to the correct one.
+	 * Set package state in dictionary with same state than the
+	 * package currently uses, otherwise not-installed.
 	 */
 	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0) {
-		if (rv == ENOENT) {
-			/* Package not installed, don't error out */
-			rv = 0;
-		} else
+		if (rv != ENOENT)
 			goto out;
-
+		/* Package not installed, don't error out */
+		rv = 0;
+		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
-	if ((rv = set_pkg_state(origin_pkgrd, state)) != 0)
+	if ((rv = xbps_set_pkg_state_dictionary(origin_pkgrd, state)) != 0)
 		goto out;
 
 	if (state == XBPS_PKG_STATE_UNPACKED)
