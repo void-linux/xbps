@@ -90,6 +90,8 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 		case Z_STREAM_ERROR:
 		case Z_NEED_DICT:
 		case Z_MEM_ERROR:
+		case Z_BUF_ERROR:
+		case Z_VERSION_ERROR:
 			(void)inflateEnd(&strm);
 			free(uncomp_xml);
 			return NULL;
