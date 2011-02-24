@@ -164,6 +164,20 @@ unpack_progress_cb_verbose(void *data)
 	    xpd->entry_size);
 }
 
+static void
+unpack_progress_cb(void *data)
+{
+	struct xbps_unpack_progress_data *xpd = data;
+
+	if (xpd->entry == NULL || xpd->entry_is_metadata)
+		return;
+	else if (xpd->entry_size <= 0)
+		return;
+
+	printf("Extracting `%s'...\n", xpd->entry);
+	printf("\033[1A\033[K");
+}
+
 int
 main(int argc, char **argv)
 {
@@ -248,6 +262,8 @@ main(int argc, char **argv)
 	xh.xfpd = &xfpd;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.xbps_unpack_cb = unpack_progress_cb_verbose;
+	else
+		xh.xbps_unpack_cb = unpack_progress_cb;
 	xh.xupd = &xupd;
 	xh.rootdir = rootdir;
 	xh.cachedir = cachedir;
