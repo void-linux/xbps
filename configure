@@ -162,9 +162,8 @@ else
 	echo "Using compiler $CC"
 fi
 echo "CC = 		$CC" >>$CONFIG_MK
-echo "CFLAGS = 		-fPIC -DPIC" >>$CONFIG_MK
 if [ -n "$CFLAGS" ]; then
-	echo "CFLAGS +=	$CFLAGS" >>$CONFIG_MK
+	echo "CFLAGS =	$CFLAGS" >>$CONFIG_MK
 fi
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib -L\$(LIBDIR)" >>$CONFIG_MK
 if [ -n "$LDFLAGS" ]; then
@@ -246,6 +245,9 @@ done
 #
 # Check for some compiler flags.
 #
+check_compiler_flag pic f CFLAGS
+check_compiler_flag PIC f CFLAGS
+
 check_compiler_flag stack-protector-all f CFLAGS
 if [ $? -eq 0 ]; then
 	if [ "$CC" = "gcc" ]; then
@@ -262,8 +264,8 @@ if [ $? -eq 0 ]; then
 fi
 check_compiler_flag "std=c99" "" CFLAGS
 check_compiler_flag "l,--as-needed" W LDFLAGS
-check_compiler_flag "O2" "" CFLAGS
 check_compiler_flag "pipe" "" CFLAGS
+
 #
 # Check for -Wl,--export-dynamic and if it fails, try -rdynamic.
 #
@@ -276,10 +278,16 @@ fi
 # Check if -fPIE and -pie are supported if --build-pie is set.
 #
 if [ -n "$BUILD_PIE" ]; then
-	BUILD_PIE_VAL=yes
-	echo "Building programs as PIE (Position Independent Executable)."
-	[ "$CC" = "gcc" ] && check_compiler_flag PIE f PROG_CFLAGS
-	check_compiler_flag pie "" PROG_LDFLAGS
+	check_compiler_flag PIE f PROG_CFLAGS
+	if [ $? -eq 0 ]; then
+		check_compiler_flag pie "" PROG_LDFLAGS
+	fi
+	if [ $? -eq 0 ]; then
+		echo "Building programs as PIE (Position Independent Executable)."
+		BUILD_PIE_VAL=yes
+	else
+		BUILD_PIE_VAL=no
+	fi
 fi
 
 #
