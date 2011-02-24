@@ -158,6 +158,6 @@ xbps_humanize_number(char *buf, int64_t bytes)
 {
 	assert(buf != NULL);
 
-	return humanize_number(buf, 6, bytes, "B",
+	return humanize_number(buf, 7, bytes, "B",
 	    HN_AUTOSCALE, HN_DECIMAL|HN_NOSPACE);
 }
