@@ -585,7 +585,7 @@ xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
 
 	trans = calloc(1, sizeof(struct transaction));
 	if (trans == NULL)
-		return rv;
+		return errno;
 
 	trans->dict = xbps_transaction_prepare();
 	if (trans->dict == NULL) {
@@ -593,8 +593,10 @@ xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
 			/* missing packages */
 			array = xbps_transaction_missingdeps_get();
 			show_missing_deps(array);
+			rv = 1;
 			goto out;
 		}
+		rv = errno;
 		xbps_dbg_printf("Empty transaction dictionary: %s\n",
 		    strerror(errno));
 		goto out;
@@ -607,6 +609,7 @@ xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
 	 */
 	trans->iter = xbps_get_array_iter_from_dict(trans->dict, "packages");
 	if (trans->iter == NULL) {
+		rv = errno;
 		xbps_error_printf("xbps-bin: error allocating array mem! (%s)\n",
 		    strerror(errno));
 		goto out;
