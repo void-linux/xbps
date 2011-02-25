@@ -68,7 +68,7 @@ pfcexec(const char *path, const char *file, const char **argv)
 			if (chroot(".") == -1) {
 				if (errno != EPERM)
 					_exit(127);
-				if (chdir(path) == -1)
+				if (chdir(".") == -1)
 					_exit(127);
 			} else {
 				if (chdir("/") == -1)
