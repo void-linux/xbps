@@ -126,21 +126,23 @@ again:
 			free(file);
 			continue;
 		}
-
 		/*
 		 * Obsolete obj found, remove it.
 		 */
 		if (remove(file) == -1) {
-			xbps_warn_printf("couldn't remove obsole entry "
-			    "`%s': %s\n", prop_string_cstring_nocopy(oldstr),
-			    strerror(errno));
+			if (errno != EEXIST &&
+			    errno != ENOTEMPTY &&
+			    errno != EBUSY) {
+				xbps_warn_printf("couldn't remove obsole entry "
+				    "`%s': %s\n",
+				    prop_string_cstring_nocopy(oldstr),
+				    strerror(errno));
+			}
 			free(file);
 			continue;
 		}
-		if (xhp->flags & XBPS_FLAG_VERBOSE)
-			xbps_printf("Removed obsolete entry: %s\n",
-			    prop_string_cstring_nocopy(oldstr));
-
+		xbps_printf("Removed obsolete entry: %s\n",
+		    prop_string_cstring_nocopy(oldstr));
 		free(file);
 	}
 	if (!dolinks) {
