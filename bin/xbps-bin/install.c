@@ -345,7 +345,6 @@ xbps_install_new_pkg(const char *pkg)
 		if (rv == ENOENT) {
 			fprintf(stderr, "xbps-bin: unable to locate '%s' in "
 			    "repository pool.\n", pkg);
-			rv = -1;
 		} else {
 			xbps_error_printf("xbps-bin: unexpected error: %s\n",
 			    strerror(rv));
