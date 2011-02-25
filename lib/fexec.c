@@ -64,11 +64,16 @@ pfcexec(const char *path, const char *file, const char **argv)
 		} else if (path && !do_chroot) {
 			if (chdir(path) == -1)
 				_exit(127);
-		} else if (!path && do_chroot) {
-			if (chroot(".") == -1)
-				_exit(127);
-			if (chdir("/") == -1)
-				_exit(127);
+		} else if (path == NULL && do_chroot) {
+			if (chroot(".") == -1) {
+				if (errno != EPERM)
+					_exit(127);
+				if (chdir(path) == -1)
+					_exit(127);
+			} else {
+				if (chdir("/") == -1)
+					_exit(127);
+			}
 		}
 
 		(void)execv(file, __UNCONST(argv));
