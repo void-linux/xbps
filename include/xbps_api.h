@@ -53,7 +53,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110224"
+#define XBPS_RELVER		"20110225"
 
 /** 
  * @def XBPS_META_PATH
@@ -193,6 +193,23 @@ struct xbps_handle {
 	 * Set to true to enable debugging messages to stderr.
 	 */
 	bool with_debug;
+	/**
+	 * @var install_reason_auto
+	 *
+	 * Set to true to make installed or updated target package
+	 * (and its dependencies) marked with automatic installation,
+	 * thus it will be found as orphan if no packages are depending
+	 * on it.
+	 */
+	bool install_reason_auto;
+	/**
+	 * @var install_reason_manual
+	 *
+	 * Set to true to make installed or updated target package
+	 * (and its dependencies) marked with manual installation, thus
+	 * it will never will be found as orphan.
+	 */
+	bool install_reason_manual;
 };
 
 /**

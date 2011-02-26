@@ -49,7 +49,6 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	const char *pkgname, *version, *desc, *pkgver;
 	char *plist;
 	int rv = 0;
-	bool autoinst = false;
 
 	xhp = xbps_handle_get();
 	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
@@ -93,14 +92,15 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 			rv = EINVAL;
 			goto out;
 		}
-		if (!prop_dictionary_get_bool(pkgd,
-		    "automatic-install", &autoinst)) {
-			if (!prop_dictionary_set_bool(pkgd,
-		    	    "automatic-install", automatic)) {
-				prop_object_release(pkgd);
-				rv = EINVAL;
-				goto out;
-			}
+		if (xhp->install_reason_auto)
+			automatic = true;
+		else if (xhp->install_reason_manual)
+			automatic = false;
+		if (!prop_dictionary_set_bool(pkgd, "automatic-install",
+		    automatic)) {
+			prop_object_release(pkgd);
+			rv = EINVAL;
+			goto out;
 		}
 		if (provides) {
 			if (!prop_dictionary_set(pkgd, "provides", provides)) {
