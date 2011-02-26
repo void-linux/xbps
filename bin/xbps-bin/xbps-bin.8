@@ -2,7 +2,7 @@
 .\"     Title: xbps-bin
 .\"    Author: [see the "AUTHORS" section]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 02/05/2011
+.\"      Date: 02/26/2011
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
@@ -27,6 +27,15 @@ xbps-bin \- XBPS command for binary packages
 .sp
 The xbps\-bin(8) command is used to handle binary packages created for the XBPS binary package system\&. You can use it to install, remove, update, list or show information about any binary package\&. Binary packages can be installed from \fIlocal (directories)\fR or \fIremote repositories (http, https or ftp)\fR, see xbps\-repo(8) for information about repositories\&.
 .SH "OPTIONS"
+.PP
+\fB\-A\fR
+.RS 4
+Sets the \fBautomatic\-install\fR boolean object for a package, therefore explicitly
+setting that package was installed as it were a dependency, even if it is not.
+Use of this option takes effect in the \fIautoupdate\fR, \fIinstall\fR and
+\fIupdate\fR targets and target packages and its required dependencies will be
+matched.
+.RE
 .PP
 \fB\-c\fR \fIcachedir\fR
 .RS 4
@@ -72,6 +81,14 @@ removal of package files even if its hash doesn\(cqt match in the
 and
 \fIremove\fR
 targets\&.
+.RE
+.PP
+\fB-M\fR
+.RS 4
+Sets the \fBautomatic\-install\fR boolean object for package to false, therefore
+explicitly setting that package was installed manually by the user. Use of this
+option takes effect in the \fIautoupdate\fR, \fIinstall\fR and \fIupdate\fR targets
+and target packages and its required dependencies will be matched.
 .RE
 .PP
 \fB\-p\fR

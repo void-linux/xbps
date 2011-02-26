@@ -190,14 +190,18 @@ main(int argc, char **argv)
 	const char *rootdir, *cachedir;
 	int i , c, flags, rv;
 	bool yes, purge, with_debug, force_rm_with_deps, recursive_rm;
-	bool show_download_pkglist_url = false;
+	bool install_auto, install_manual, show_download_pkglist_url;
 
 	rootdir = cachedir = NULL;
 	flags = rv = 0;
 	yes = purge = force_rm_with_deps = recursive_rm = with_debug = false;
+	install_auto = install_manual = show_download_pkglist_url = false;
 
-	while ((c = getopt(argc, argv, "Vc:dDFfpRr:vy")) != -1) {
+	while ((c = getopt(argc, argv, "Ac:dDFfMpRr:Vvy")) != -1) {
 		switch (c) {
+		case 'A':
+			install_auto = true;
+			break;
 		case 'c':
 			cachedir = optarg;
 			break;
@@ -212,6 +216,9 @@ main(int argc, char **argv)
 			break;
 		case 'f':
 			flags |= XBPS_FLAG_FORCE;
+			break;
+		case 'M':
+			install_manual = true;
 			break;
 		case 'p':
 			purge = true;
@@ -244,6 +251,13 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
+	/* Specifying -A and -M is illegal */
+	if (install_manual && install_auto) {
+		xbps_error_printf("xbps-bin: -A and -M options cannot be "
+		    "used together!\n");
+		exit(EXIT_FAILURE);
+	}
+
 	/*
 	 * Register a signal handler to clean up resources used by libxbps.
 	 */
@@ -268,6 +282,8 @@ main(int argc, char **argv)
 	xh.rootdir = rootdir;
 	xh.cachedir = cachedir;
 	xh.flags = flags;
+	xh.install_reason_manual = install_manual;
+	xh.install_reason_auto = install_auto;
 	xbps_init(&xh);
 
 	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL) {
