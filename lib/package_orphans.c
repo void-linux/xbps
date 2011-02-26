@@ -97,13 +97,10 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 		return 0;
 
 	reqby = prop_dictionary_get(obj, "requiredby");
-	if (prop_object_type(reqby) != PROP_TYPE_ARRAY)
-		return EINVAL;
-	/*
-	 * Add packages with empty "requiredby" arrays.
-	 */
-	cnt = prop_array_count(reqby);
-	if (cnt == 0) {
+	if (reqby == NULL || ((cnt = prop_array_count(reqby)) == 0)) {
+		/*
+		 * Add packages with empty or missing "requiredby" arrays.
+		 */
 		prop_array_add(od->array, obj);
 		return 0;
 	}
