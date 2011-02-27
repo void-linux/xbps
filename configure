@@ -162,8 +162,9 @@ else
 	echo "Using compiler $CC"
 fi
 echo "CC = 		$CC" >>$CONFIG_MK
+echo "CFLAGS = -pthread" >>$CONFIG_MK
 if [ -n "$CFLAGS" ]; then
-	echo "CFLAGS =	$CFLAGS" >>$CONFIG_MK
+	echo "CFLAGS +=	$CFLAGS" >>$CONFIG_MK
 fi
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib -L\$(LIBDIR)" >>$CONFIG_MK
 if [ -n "$LDFLAGS" ]; then
@@ -255,7 +256,7 @@ if [ $? -eq 0 ]; then
 	fi
 fi
 if [ $? -eq 0 ]; then
-	check_compiler_flag "_FORTIFY_SOURCE=2" D CPPFLAGS
+	echo "CPPFLAGS += -D_FORTIFY_SOURCE=2" >>$CONFIG_MK
 fi
 check_compiler_flag "visibility=default" f SHAREDLIB_CFLAGS
 if [ $? -eq 0 ]; then
@@ -264,7 +265,6 @@ if [ $? -eq 0 ]; then
 fi
 check_compiler_flag "std=c99" "" CFLAGS
 check_compiler_flag "l,--as-needed" W LDFLAGS
-check_compiler_flag "pipe" "" CFLAGS
 
 #
 # Check for -Wl,--export-dynamic and if it fails, try -rdynamic.
