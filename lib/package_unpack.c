@@ -166,7 +166,7 @@ remove_file_wrong_hash(prop_dictionary_t d, const char *file)
 		if (rv == ERANGE) {
 			(void)unlink(file);
 			xbps_warn_printf("Removed `%s' entry with "
-			   "with unmatched hash.\n", file);
+			   "unmatched hash.\n", file);
 		}
 	}
 	return rv;
