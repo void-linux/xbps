@@ -127,7 +127,7 @@ remove_metafile(const char *file, const char *pkgname, const char *version)
 	char *buf;
 
 	buf = xbps_xasprintf(".%s/metadata/%s/%s",
-	    XBPS_META_PATH, file, pkgname);
+	    XBPS_META_PATH, pkgname, file);
 	if (buf == NULL)
 		return ENOMEM;
 
