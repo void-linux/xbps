@@ -142,7 +142,6 @@ repository_find_pkg(const char *pattern, const char *reason)
 		if (rv != ENOENT)
 			goto out;
 		/* Package not installed, don't error out */
-		rv = 0;
 		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
 	if ((rv = xbps_set_pkg_state_dictionary(origin_pkgrd, state)) != 0)

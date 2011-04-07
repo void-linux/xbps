@@ -25,6 +25,9 @@
 
 #ifdef HAVE_VASPRINTF
 # define _GNU_SOURCE	/* for vasprintf(3) */
+# ifdef _XOPEN_SOURCE
+#   undef _XOPEN_SOURCE
+# endif
 # include <stdio.h>
 # undef _GNU_SOURCE
 #else

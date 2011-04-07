@@ -39,7 +39,6 @@
 int HIDDEN
 xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 {
-	const struct xbps_handle *xhp;
 	prop_object_iterator_t iter, iter2;
 	prop_object_t obj, obj2;
 	prop_string_t oldstr, newstr;
@@ -52,7 +51,6 @@ xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 
 	assert(oldd != NULL);
 	assert(newd != NULL);
-	xhp = xbps_handle_get();
 
 again:
 	iter = xbps_get_array_iter_from_dict(oldd, array_str);

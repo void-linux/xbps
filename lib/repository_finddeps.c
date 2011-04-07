@@ -81,7 +81,6 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 			prop_object_release(dict);
 			return rv;
 		}
-		rv = 0;
 		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
 	if ((rv = xbps_set_pkg_state_dictionary(dict, state)) != 0) {
