@@ -383,7 +383,6 @@ xbps_update_pkg(const char *pkgname)
 static int
 exec_transaction(struct transaction *trans)
 {
-	const struct xbps_handle *xhp;
 	prop_dictionary_t instpkgd;
 	prop_object_t obj;
 	const char *pkgname, *version, *pkgver, *instver, *filen, *tract;
@@ -391,7 +390,6 @@ exec_transaction(struct transaction *trans)
 	bool update, preserve, autoinst;
 	pkg_state_t state;
 
-	xhp = xbps_handle_get();
 	/*
 	 * Only show the URLs to download the binary packages.
 	 */
