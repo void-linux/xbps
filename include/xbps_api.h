@@ -776,14 +776,12 @@ int xbps_purge_all_pkgs(void);
  * Register a package into the installed packages database.
  *
  * @param[in] pkg_dict A dictionary with the following objects:
- * \a pkgname, \a version, \a pkgver, \a short_desc (string)
- * and optionally \a provides (array of strings).
- * @param[in] automatic Set it to true to mark package that has been
- * installed by another package, and not explicitly.
+ * \a pkgname, \a version, \a pkgver, \a short_desc (string),
+ * \a automatic-install (bool) and optionally \a provides (array of strings).
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_register_pkg(prop_dictionary_t pkg_dict, bool automatic);
+int xbps_register_pkg(prop_dictionary_t pkg_dict);
 
 /**
  * Unregister a package from the package database.

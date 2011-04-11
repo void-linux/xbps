@@ -184,7 +184,7 @@ main(int argc, char **argv)
 		if (rv != 0)
 			exit(EXIT_FAILURE);
 
-		rv = xbps_register_pkg(dict, false);
+		rv = xbps_register_pkg(dict);
 		if (rv == EEXIST) {
 			printf("%s%s=> %s-%s already registered.%s\n", MSG_WARN,
 			    in_chroot ? "[chroot] " : "", argv[1], argv[2],

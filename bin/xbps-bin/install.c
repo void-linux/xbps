@@ -387,7 +387,7 @@ exec_transaction(struct transaction *trans)
 	prop_object_t obj;
 	const char *pkgname, *version, *pkgver, *instver, *filen, *tract;
 	int rv = 0;
-	bool update, preserve, autoinst;
+	bool update, preserve;
 	pkg_state_t state;
 
 	/*
@@ -484,12 +484,11 @@ exec_transaction(struct transaction *trans)
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "configure") == 0))
 			continue;
-		autoinst = preserve = false;
+		preserve = false;
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
-		prop_dictionary_get_bool(obj, "automatic-install", &autoinst);
 		prop_dictionary_get_bool(obj, "preserve",  &preserve);
 		/*
 		 * If dependency is already unpacked skip this phase.
@@ -537,7 +536,7 @@ exec_transaction(struct transaction *trans)
 		/*
 		 * Register binary package.
 		 */
-		if ((rv = xbps_register_pkg(obj, autoinst)) != 0) {
+		if ((rv = xbps_register_pkg(obj)) != 0) {
 			xbps_error_printf("xbps-bin: error registering %s "
 			    "(%s)\n", pkgver, strerror(rv));
 			return rv;

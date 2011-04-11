@@ -41,7 +41,7 @@
  */
 
 int
-xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
+xbps_register_pkg(prop_dictionary_t pkgrd)
 {
 	const struct xbps_handle *xhp;
 	prop_dictionary_t dict, pkgd;
@@ -49,6 +49,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	const char *pkgname, *version, *desc, *pkgver;
 	char *plist;
 	int rv = 0;
+	bool autoinst;
 
 	xhp = xbps_handle_get();
 	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
@@ -60,6 +61,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 	prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
+	prop_dictionary_get_bool(pkgrd, "automatic-install", &autoinst);
 	provides = prop_dictionary_get(pkgrd, "provides");
 
 	assert(pkgname != NULL);
@@ -92,12 +94,17 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool automatic)
 			rv = EINVAL;
 			goto out;
 		}
+		prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst);
 		if (xhp->install_reason_auto)
-			automatic = true;
+			autoinst = true;
 		else if (xhp->install_reason_manual)
-			automatic = false;
-		if (!prop_dictionary_set_bool(pkgd, "automatic-install",
-		    automatic)) {
+			autoinst = false;
+
+		xbps_dbg_printf("%s: autoinst %d reason_auto %d reason_manual %d\n",
+		    pkgver, autoinst, xhp->install_reason_auto, xhp->install_reason_manual);
+
+		if (!prop_dictionary_set_bool(pkgd,
+		    "automatic-install", autoinst)) {
 			prop_object_release(pkgd);
 			rv = EINVAL;
 			goto out;
