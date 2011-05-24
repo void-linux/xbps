@@ -1,4 +1,4 @@
-xbps-0.8.0 (???):
+xbps-0.8.0 (2011-05-24):
 
  * xbps-bin(8): added -A and -M options, for setting package install reason
    to automatic or manual. Obviously both cannot be used togeter.
