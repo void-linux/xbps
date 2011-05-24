@@ -1,9 +1,1086 @@
+2011-05-24  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS:
+	NEWS: 0.8.0 will be released today.
+	[f841e5a313f0] [tip]
+
+	* .hgtags:
+	Removed tag 0.8.0
+	[3ff720902eaf]
+
+	* .hgtags:
+	Added tag 0.8.0 for changeset 587da31caa33
+	[bf9571fbc2ad]
+
+2011-04-11  Juan RP  <xtraeme@gmail.com>
+
+	* include/xbps_api.h:
+	Bump XBPS_RELVER for previous change.
+	[587da31caa33]
+
+	* bin/xbps-bin/install.c, bin/xbps-uhelper/main.c, include/xbps_api.h,
+	lib/package_register.c:
+	xbps_register_pkg: remove 'automatic' boolean argument.
+
+	It should be provided in the proplib dictionary with key 'automatic-
+	install'. This fixes a regression not respecting the 'automatic-
+	install' value stored in regpkgdb.
+	[cd1bbe18b5f0]
+
+2011-04-08  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/install.c:
+	xbps-bin::install.c: remove unused var to make this build with
+	gcc-4.6.
+
+	Reported and patch provided by ojab in issue 4.
+	[5a4c7ff55faf]
+
+2011-04-07  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_remove_obsoletes.c, lib/repository_finddeps.c,
+	lib/repository_findpkg.c, lib/util.c:
+	Some dead stores and build fixes reported by LLVM 2.9.
+	[cf61b9d58d60]
+
+2011-03-04  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_unpack.c:
+	xbps_unpack_binary_pkg: fix wrong path to metadata files!
+	[8d7701a6f74d]
+
+2011-03-03  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_unpack.c:
+	Fix a dup'ed word.
+	[6b911bd09e08]
+
+2011-02-27  Juan RP  <xtraeme@gmail.com>
+
+	* configure:
+	configure: build with -pthread unconditionally, don't test for -pipe
+	or -D_FORTIFY_SOURCE.
+	[e785a7231b0c]
+
+2011-02-26  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/xbps-bin.8:
+	xbps-bin.8: bump date.
+	[76192cbeada4]
+
+	* bin/xbps-uhelper/main.c:
+	xbps-uhelper: added two new targets 'setsource' and 'fromsource'.
+
+	Both targets will be used by some upcoming changes in xbps-src,
+	therefore they shouldn't be used manually by the user.
+	[33979f43e5ec]
+
+	* NEWS, bin/xbps-bin/main.c, bin/xbps-bin/xbps-bin.8:
+	xbps-bin: added -A and -M options for explicitly setting install
+	reason to auto or manual.
+	[86edc000904b]
+
+	* include/xbps_api.h, lib/package_register.c:
+	Make it possible to overwrite the "automatic-install" pkg object via
+	xbps_init().
+
+	Two new booleans were added to struct xbps_handle:
+	install_reason_{auto,manual}. The backend is able to force auto or
+	manual installation for a package (and dependencies that were
+	installed/updated) by setting to true any of those booleans. Bump
+	XBPS_RELVER.
+	[291061c81bba]
+
+	* lib/package_orphans.c:
+	Treat pkgs with NULL or empty requiredby arrays as orphans.
+	[d53ff1283415]
+
+2011-02-25  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/install.c:
+	xbps-bin: return rval if 'install' target cannot find a pkg.
+	[50c056380a26]
+
+	* bin/xbps-bin/install.c:
+	xbps-bin: return 1 if there are missing deps, return errno in other
+	errors.
+	[30dfc09b05b8]
+
+	* lib/fexec.c:
+	Fix chdir(2) path in previous.
+	[f46fe1577791]
+
+	* lib/fexec.c:
+	xbps_file_exec: if chroot(2) returns EPERM, don't error out and try
+	chdir(2).
+
+	This makes possible to install a base system with fakeroot (of
+	course some things won't probably work fully).
+	[7f0ad6d1ee39]
+
+	* lib/package_remove.c, lib/package_remove_obsoletes.c:
+	Do not printf a warning if remove(3) returns EEXIST/ENOTEMPTY/EBUSY.
+	[13dce8478319]
+
+2011-02-24  Juan RP  <xtraeme@gmail.com>
+
+	* configure:
+	configure: test correctly PIE and PIC flags, remove -O2 which errors
+	out on pcc.
+	[0ccb14295b48]
+
+	* lib/plist_find.c, lib/plist_remove.c, lib/repository_findpkg.c:
+	Revert revision 581: "Inline some very common functions in the API."
+
+	Some compilers yet don't support fully the inline C99 keyword and
+	there's little benefit anyway.
+	[eaa8120032d6]
+
+	* configure, lib/Makefile:
+	configure: misc compiler flags fixes.
+
+	- Don't use -Wp, some compilers don't understand it. Simply use
+	-D__BLAH___.
+	- Check for -Wl,--export-dynamic and if that fails try -rdynamic.
+	[a78386a4321b]
+
+	* lib/humanize_number.c:
+	xbps_humanize_number: increase by one the output digits.
+	[a274e6d3f845]
+
+	* bin/xbps-bin/main.c:
+	xbps-bin: add a simple unpack cb that mimics the 'check' target.
+	[2008b0b5d119]
+
+	* lib/plist_archive_entry.c:
+	xbps_read_dict_from_archive_entry: handle all erros returned by
+	zlib's inflate().
+	[151e781aec8c]
+
+	* lib/package_unpack.c:
+	While installing a pkg, remove files with wrong hash before
+	unpacking.
+	[4e4a12c5229f]
+
+	* include/xbps_api.h, lib/util.c:
+	Added xbps_get_file_hash_from_dict(), returns the sha256 string obj
+	in a dictionary.
+	[7e1eaee890c9]
+
+2011-02-23  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/install.c:
+	xbps-bin: skip some unneeded stuff in the download and configure
+	phases.
+	[53d7806f09d2]
+
+	* lib/plist_find.c, lib/plist_remove.c, lib/repository_findpkg.c:
+	Inline some very common functions in the API.
+	[d9610ad8d7f9]
+
+	* lib/repository_finddeps.c, lib/repository_findpkg.c:
+	Simplify setting pkg state in transaction's dictionary.
+	[1938c2ee2ee3]
+
+2011-02-22  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS, bin/xbps-bin/install.c, bin/xbps-bin/main.c:
+	xbps-bin: remove the unpack callback with a percentage.
+
+	It messes up some xbps_*printf()s, and removing it makes it look
+	like previous versions (<=0.7.3).
+	[e1b6442a8059]
+
+	* bin/xbps-uhelper/main.c, include/xbps_api.h,
+	lib/package_configure.c, lib/package_remove.c, lib/package_state.c,
+	lib/package_unpack.c:
+	xbps_set_pkg_state_installed: added two new optional arguments:
+	version and pkgver.
+
+	This can be used to avoid some rare cases where the pkg dictionary
+	is regpkgdb is in a state where code can be faulty if those objects
+	are not found.
+	[47c7d0c425de]
+
+	* bin/xbps-bin/install.c:
+	xbps-bin::instal.c: some bugfixes for pkg state and the transaction
+	steps.
+
+	- While installing a package, always check its state and don't
+	ignore it if it was already unpacked, we have to configure it.
+	- Before unpacking packages, configure packages that were unpacked
+	previously.
+	[46a270ddd326]
+
+	* lib/repository_findpkg.c:
+	xbps_repository_{install,update}_pkg: respect pkg state in regpkgdb.
+	[960e78c96d66]
+
+2011-02-21  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/install.c:
+	xbps-bin: skip packages to be configured in the install/update
+	stage, fix configured pkg count.
+	[40bb1dde7bee]
+
+	* lib/plist_find.c:
+	Simplify find_pkg_in_array().
+	[84f8a8f72e64]
+
+	* include/xbps_api.h:
+	xbps_api.h: fix some comments.
+	[19cc362b25d2]
+
+	* lib/package_unpack.c:
+	package_unpack.c: fix a comment.
+	[d9eb33c83f92]
+
+	* NEWS:
+	NEWS: tyopfix.
+	[13b3814d9bba]
+
+	* NEWS, bin/xbps-bin/check.c, bin/xbps-bin/find-files.c, bin/xbps-
+	bin/install.c, bin/xbps-bin/main.c, bin/xbps-bin/xbps-bin.8, bin
+	/xbps-dgraph/main.c, bin/xbps-repo/main.c, bin/xbps-
+	repo/repository.c, bin/xbps-repo/xbps-repo.8, bin/xbps-
+	uhelper/main.c, include/xbps_api.h, include/xbps_api_impl.h,
+	lib/initend.c, lib/mkpath.c, lib/package_configure.c,
+	lib/package_properties.c, lib/package_purge.c,
+	lib/package_register.c, lib/package_remove.c,
+	lib/package_remove_obsoletes.c, lib/package_requiredby.c,
+	lib/package_state.c, lib/package_unpack.c, lib/plist.c,
+	lib/regpkgdb_dictionary.c, lib/repository_pool.c,
+	lib/repository_register.c, lib/repository_sync_index.c, lib/util.c:
+	xbps_init() now sets rootdir, cachedir and flags.
+
+	That means that the following functions were removed:
+		- xbps_set_{cachedir,flags,rootdir}.
+		- xbps_get_{cachedir,flags,rootdir}.
+
+	With this change fixed an obvious typo that made -c argument to not
+	work, and now the cache directory is an absolute path not relative
+	to rootdir.
+	[1ac816372ee1]
+
+	* include/xbps_api_impl.h:
+	xbps_api_impl.h: remove function name arguments in prototypes.
+	[b3925b893b23]
+
+	* include/xbps_api_impl.h, lib/download.c, lib/initend.c,
+	lib/package_unpack.c:
+	Make the xbps_handle struct const internally.
+	[3765d531704f]
+
+	* bin/xbps-bin/main.c:
+	xbps-bin: unpack_progress_cb_verbose printf to stdout for
+	consistency.
+	[57b4beb49fee]
+
+	* include/xbps_api.h:
+	xbps_api.h: fix a comment.
+	[e3fab83e5c8a]
+
+	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, bin/xbps-repo/main.c,
+	bin/xbps-repo/repository.c, bin/xbps-uhelper/main.c,
+	include/xbps_api.h, include/xbps_api_impl.h, lib/download.c,
+	lib/initend.c, lib/package_unpack.c, lib/repository_sync_index.c:
+	Introduce struct xbps_handle and use it for xbps_init().
+
+	This structure sets up function callbacks for fetching files and
+	unpacking binary packages, as well as setting the debug boolean.
+
+	This way the affected functions (xbps_fetch_file() and
+	xbps_unpack_binary_pkg()) do not need to accept the fn cb pointers
+	and data as arguments.
+
+	Bump XBPS_RELVER.
+	[62046ef8e918]
+
+2011-02-19  Juan RP  <xtraeme@gmail.com>
+
+	* TODO:
+	TODO: another item for xbps-bin(8).
+	[a86d752f19ca]
+
+2011-02-18  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS, bin/xbps-bin/install.c, include/xbps_api.h,
+	lib/package_replaces.c, lib/package_unpack.c,
+	lib/transaction_sortdeps.c:
+	Fixed finally another real case when updating and replacing pkgs.
+	[ebe8417c1b63]
+
+	* lib/repository_findpkg.c:
+	xbps_repository_{install,update}_pkg: fixed a stupid logic error.
+	[9a13edeb9bd7]
+
+2011-02-17  Juan RP  <xtraeme@gmail.com>
+
+	* TODO:
+	Added a TODO file with some items.
+	[7eefcf402886]
+
+	* NEWS:
+	NEWS: mention latest bugfix.
+	[5a439762e9d0]
+
+	* lib/repository_pool.c:
+	xbps_repository_pool_init: do not fail to internalize all repos when
+	the first one fails.
+
+	If the first registered repo couldn't be internalized, all other
+	repositories were also failing because it returned error, so simply
+	skip them and return error when all them cannot be internalized.
+	[e5cf57c87dd5]
+
+2011-02-05  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/xbps-bin.8, bin/xbps-repo/xbps-repo.8:
+	Minor nits to the xbps-{bin,repo}.8 manpages.
+	[83c1830aabed]
+
+	* doc/xbps_pkg_props_dictionary.dot:
+	Update the pkgprops graph to match latest code.
+	[76666f48dc7f]
+
+	* doc/Makefile, doc/xbps_api_doxyfile, doc/xbps_api_doxyfile.in:
+	Transform PROJECT_NUMBER in the doxyfile.
+	[3836761c46b0]
+
+	* doc/xbps_transaction_dictionary.dot:
+	Update the graph for the XBPS transaction dictionary.
+	[5c3bc9fe5725]
+
+	* bin/xbps-bin/install.c, doc/xbps_transaction_dictionary.dot,
+	lib/package_replaces.c, lib/package_unpack.c,
+	lib/repository_finddeps.c, lib/repository_findpkg.c,
+	lib/transaction_dictionary.c:
+	Rename the transaction object key to "transaction" rater than
+	"trans-action".
+	[fdda4d882ae8]
+
+	* lib/Makefile, lib/plist.c, lib/plist_find.c, lib/plist_remove.c:
+	Move plist find/remove functions into its own files.
+	[f18eb335a869]
+
+	* include/xbps_api_impl.h, lib/Makefile, lib/plist.c,
+	lib/plist_archive_entry.c:
+	Move xbps_read_dict_from_archive_entry() and friends into its own
+	file.
+	[ffacc6eb8cfa]
+
+	* bin/xbps-bin/install.c:
+	xbps-bin: shorter informative messages for transactions.
+	[98599eb5d185]
+
+	* bin/xbps-bin/xbps-bin.8:
+	xbps-bin.8: fix typo.
+	[d04296fc7435]
+
+	* NEWS, bin/xbps-bin/main.c, bin/xbps-bin/show-info-files.c, bin/xbps-
+	bin/xbps-bin.8, bin/xbps-uhelper/main.c, include/xbps_api.h,
+	include/xbps_api_impl.h, lib/Makefile, lib/package_properties.c,
+	lib/package_state.c, lib/plist.c, lib/repository_pool.c:
+	Added the concept of package properties in the API.
+
+	See the NEWS file and xbps-bin(8) for more information.
+	[35a92fc36c14]
+
+2011-02-04  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/util.c:
+	xbps-bin::show_pkg_info() remove useless prop_object_type_t member.
+	[b0973b3c6e66]
+
+	* bin/xbps-repo/main.c:
+	xbps-repo: call xbps_end() in usage() before exit(3).
+	[95f24d81932a]
+
+	* lib/transaction_sortdeps.c:
+	xbps_sort_pkg_deps: change an assertion into a real check.
+	[e4a56242c3b4]
+
+2011-02-03  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/check.c, bin/xbps-bin/main.c, bin/xbps-dgraph/main.c,
+	lib/package_unpack.c, lib/repository_finddeps.c,
+	lib/repository_findpkg.c:
+	Fix all warnings found by clang analyzer as reported by ojab in
+	issue 3.
+	[34f8ecf51c8a]
+
+	* lib/repository_findpkg.c:
+	xbps_repository_update_allpkgs: return ENOENT if regpkgdb dict
+	cannot be internalized.
+	[c1c74439db0b]
+
+2011-02-02  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_state.c:
+	xbps_get_pkg_state_*: if state object is not available return
+	EINVAL.
+	[0e2cd58b6850]
+
+2011-02-01  Juan RP  <xtraeme@gmail.com>
+
+	* lib/repository_finddeps.c:
+	xbps_repository_find_pkg_deps: improve a debug printf.
+	[5828854ec7af]
+
+	* lib/package_state.c:
+	xbps_get_pkg_state_installed: if pkg dictionary is not found return
+	ENOENT.
+	[3515623dfdcc]
+
+	* NEWS, bin/xbps-bin/install.c, include/xbps_api.h,
+	include/xbps_api_impl.h, lib/Makefile, lib/package_replaces.c,
+	lib/repository_finddeps.c, lib/repository_findpkg.c:
+	Added xbps_repository_pkg_replaces() to handle pkg "replaces" in the
+	transaction.
+
+	The frontend (in that case xbps-bin(8)) is only responsible to
+	remove those packages that have the "trans-action" string object set
+	to "remove".
+	[6f2f24129bc1]
+
+2011-01-31  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS, bin/xbps-dgraph/main.c:
+	xbps-dgraph: parse the "provides" obj for virtual packages.
+	[6db84decff83]
+
+2011-01-30  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_remove.c, lib/package_unpack.c:
+	Make some xbps_warn_printf dependent of XBPS_FLAG_VERBOSE.
+	[882fb8e92b5a]
+
+	* lib/initend.c:
+	xbps_warn_printf: fix previous and remove unused var.
+	[086aa73afbaa]
+
+	* lib/initend.c:
+	xbps_warn_printf: always print regardless of XBPS_FLAG_VERBOSE.
+	[113e428ae33c]
+
+	* bin/xbps-bin/install.c, bin/xbps-bin/main.c, bin/xbps-bin/remove.c,
+	bin/xbps-repo/find-files.c, bin/xbps-repo/index.c, bin/xbps-
+	repo/main.c, bin/xbps-repo/repository.c, bin/xbps-uhelper/main.c:
+	Use xbps_{error,warn}_printf() everywhere.
+	[5f0fb859c5f3]
+
+	* lib/repository_pool.c:
+	xbps_repository_pool_foreach: use SIMPLEQ_FOREACH_SAFE.
+	[ebb27ad67c65]
+
+	* include/queue.h:
+	Update queue.h with latest NetBSD's version.
+	[eb1ec7275a44]
+
+	* lib/transaction_sortdeps.c:
+	xbps_sort_pkg_deps: use TAILQ_FOREACH_SAFE.
+	[937323a1f248]
+
+	* lib/package_purge.c:
+	xbps_purge_pkg: chdir to rootdir, check that REMOVE file exists and
+	is executable.
+	[df658834ad2f]
+
+	* bin/xbps-bin/install.c, bin/xbps-bin/remove.c:
+	xbps-bin: some cosmetic informative printfs.
+	[565f00c58a17]
+
+	* bin/xbps-bin/remove.c:
+	xbps-bin/remove.c: fix some comments.
+	[1df135be6828]
+
+	* lib/package_purge.c:
+	xbps_purge_pkg: execute the "purge" action in REMOVE script (if
+	found).
+
+	This replaces code for removing all directories installed by the
+	package and instead let's the package do whatever is ok in the
+	REMOVE script by executing the "purge" action.
+	[ced74d1bbeee]
+
+	* bin/xbps-bin/remove.c:
+	xbps-bin: there's no need to add objs in inverted order for -R.
+	[547570b8ef6d]
+
+	* NEWS:
+	NEWS: expand latest entry.
+	[a154686ee0a4]
+
+	* NEWS, bin/xbps-bin/defs.h, bin/xbps-bin/main.c, bin/xbps-
+	bin/remove.c, bin/xbps-bin/xbps-bin.8, include/xbps_api.h,
+	lib/package_orphans.c:
+	xbps-bin(8): added -R option to recursively remove pkgs that were
+	instaled automatically.
+	[ef30d2b17315]
+
+	* lib/plist.c:
+	Fix an assertion.
+	[fb0d086c094d]
+
+2011-01-29  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_orphans.c:
+	xbps_find_pkg_orphans: simplify even more.
+	[38694be73354]
+
+	* lib/plist.c:
+	xbps_find_pkg_in_*: search for virtual pkg before the real one.
+	[e927f51f78dd]
+
+	* bin/xbps-repo/xbps-repo.8:
+	xbps-repo(8): fix wrong sentence.
+	[a5647d65472c]
+
+	* NEWS:
+	NEWS: mention another change made for xbps-bin(8).
+	[0a412d09ceae]
+
+	* include/xbps_api.h:
+	Bump XBPS_RELVER for today's changes.
+	[7881964b76da]
+
+	* lib/package_remove_obsoletes.c:
+	xbps_remove_obsoletes: make xbps_printf conditionalized with
+	XBPS_FLAG_VERBOSE.
+	[fd80d9426dca]
+
+	* LICENSE:
+	LICENSE: update copyright year.
+	[f5a7dc575fb1]
+
+	* lib/package_requiredby.c:
+	xbps_requiredby_pkg_{add,remove}: simplify and make them aware of
+	virtual pkgs.
+	[5a7058a107f9]
+
+	* include/xbps_api.h, lib/plist.c:
+	Added three new helper functions to the API.
+
+	xbps_find_pkg_in_array_by_name xbps_find_pkg_in_array_by_pattern
+	xbps_remove_pkgname_from_array
+	[68c5849740ce]
+
+	* lib/package_purge.c, lib/package_remove.c:
+	Make some xbps_printf()s conditioned on XBPS_FLAG_VERBOSE.
+	[493f8e2bac2a]
+
+2011-01-28  Juan RP  <xtraeme@gmail.com>
+
+	* include/xbps_api.h, lib/plist.c, lib/transaction_sortdeps.c:
+	When sorting packages also look for virtual packages.
+
+	A new function xbps_find_virtual_pkg_in_dict() has been made public
+	to the API to make this find duplicate packages in the transaction
+	when updating packages.
+	[08432f8faa38]
+
+	* NEWS:
+	NEWS: note that dependency sorting is now 60% faster than 0.7.3.
+	[8a4ea7cfbd07]
+
+	* lib/transaction_sortdeps.c:
+	A really faster dependency sorting algorithm, 60% faster approx!
+
+	Benchmarks before and after the code for installing "xorg gnome xbmc
+	vlc firefox epdfview":
+
+	OLD
+	----------------- real 0m1.844s user 0m1.841s sys 0m0.003s
+
+	NEW
+	----------------- real 0m0.873s user 0m0.868s sys 0m0.004s
+	[c9aec1f650c6]
+
+	* bin/xbps-bin/check.c:
+	xbps-bin::check.c: reset a var to avoid false positives.
+	[3bda7b41d68d]
+
+	* lib/repository_finddeps.c:
+	xbps_repository_find_pkg_deps: do not recurse more than MAX_DEPTH
+	times, return ELOOP.
+	[ad5f5a7727be]
+
+	* lib/plist.c:
+	Performance improvements for xbps_find_pkg_in_dict_by_* and
+	xbps_find_*_in_array().
+	[ee06b4008f62]
+
+2011-01-27  Juan RP  <xtraeme@gmail.com>
+
+	* lib/repository_finddeps.c:
+	xbps_repository_find_pkg_deps: simplify even more and remove dead
+	code.
+	[c74a4db1c010]
+
+	* lib/repository_finddeps.c:
+	repository_finddeps.c: remove useless code.
+	[f85aa9d0b3b8]
+
+	* lib/repository_finddeps.c:
+	xbps_repository_find_pkg_deps: fix stupid error by reusing a var.
+	[548d474641a2]
+
+	* lib/transaction_sortdeps.c:
+	xbps_sort_pkg_deps: use xbps_check_is_installed_pkg_by_name().
+	[df99437183e8]
+
+	* lib/plist.c, lib/util.c:
+	Fix two asserts.
+	[2f4ba4ae1022]
+
+	* lib/repository_finddeps.c:
+	xbps_repository_find_pkg_deps: simplify and handle an error case.
+	[74d5d1a62620]
+
+	* bin/xbps-repo/index.c, bin/xbps-uhelper/main.c, include/xbps_api.h,
+	lib/package_register.c, lib/plist.c:
+	Make xbps_remove_pkg_from_* use shared code, and add another
+	variant.
+
+	The functions have been renamed to really match what they do.
+	[8a991edd1ed4]
+
+	* lib/plist.c:
+	Performance improvements for xbps_find_pkg_in_dict_by_{name,pattern}
+	with virtual pkgs.
+	[e2a43571ec3d]
+
+	* bin/xbps-bin/main.c:
+	xbps-bin: make 'list' target without arguments to only show pkgs in
+	"installed" state.
+	[26824f99e7f9]
+
+	* bin/xbps-bin/xbps-bin.8:
+	xbps-bin.8: fix a typo.
+	[8a7e1bc2360e]
+
+	* NEWS, bin/xbps-bin/defs.h, bin/xbps-bin/install.c, bin/xbps-
+	bin/main.c, bin/xbps-bin/xbps-bin.8:
+	xbps-bin(8): added -D option to only show the URL to download binary
+	packages.
+	[b7efd6553cd8]
+
+	* bin/xbps-repo/find-files.c, bin/xbps-repo/index.c, bin/xbps-
+	repo/main.c, bin/xbps-repo/repository.c, include/xbps_api.h,
+	lib/repository_plist.c:
+	Rename some symbols in repository_plist.c.
+
+	xbps_repository_get_pkg_plist_dict_from_url ->
+	xbps_repository_plist_find_pkg_dict_from_url
+	xbps_repository_get_pkg_plist_dict ->
+	xbps_repository_plist_find_pkg_dict
+	[77ef6938fdb6]
+
+	* doc/xbps-logo.png, doc/xbps_api_doxyfile:
+	Update doxygen's doxyfile for the API, add the XBPS logo.
+	[b48a57221726]
+
+	* include/xbps_api.h:
+	xbps_api.h: fix xbps_register_pkg() doc.
+	[b1f21b07364e]
+
+	* lib/repository_register.c:
+	repository_register.c: fix doxygen @file mark.
+	[91865e7160e3]
+
+	* bin/xbps-uhelper/main.c, include/xbps_api.h, lib/plist.c:
+	Rename xbps_find_pkg_from_plist to
+	xbps_find_pkg_dict_from_plist_by_name.
+	[8e5fe79da44c]
+
+	* bin/xbps-bin/check.c, bin/xbps-repo/repository.c,
+	include/xbps_api.h, lib/package_remove.c, lib/repository_plist.c,
+	lib/repository_register.c, lib/transaction_sortdeps.c, lib/util.c:
+	Rename a few symbols for clarity.
+
+	xbps_check_is_installed_pkg ->
+	xbps_check_is_installed_pkg_by_pattern
+	xbps_check_is_installed_pkgname ->
+	xbps_check_is_installed_pkg_by_name xbps_check_is_repo_string_remote
+	-> xbps_check_is_remote_uri_remote
+	[f1e45fdcbbfb]
+
+	* bin/xbps-bin/main.c, bin/xbps-bin/remove.c, include/xbps_api.h,
+	lib/package_orphans.c:
+	Rename xbps_find_orphan_packages() to xbps_find_pkg_orphans().
+	[f1c78ee73fbd]
+
+	* lib/plist.c:
+	Shared code for xbps_find_{string,pkgname,pkgpattern}_in_array().
+	[c529102737d1]
+
+2011-01-26  Juan RP  <xtraeme@gmail.com>
+
+	* lib/transaction_sortdeps.c:
+	Improve comments for dependency sorting.
+	[cf0898bce3f7]
+
+	* lib/package_register.c:
+	xbps_register_pkg: also copy the provides object for virtual
+	packages.
+	[9d3aa93f77bf]
+
+	* lib/util.c:
+	xbps_check_is_installed_pkg: simplify.
+	[1a01d9d13efb]
+
+	* NEWS, include/xbps_api.h, lib/plist.c, lib/repository_pool.c:
+	Implemented support for virtual packages.
+
+	The patch adds 150 lines approximately. It is implemented by
+	modifying xbps_find_pkg_in_dict_by_name() and
+	xbps_find_pkg_in_dict_by_pattern().
+
+	When no dictionary is returned if tries to find a virtual package by
+	looking at the "provides" array object, if found.
+	[592ed663e900]
+
+	* bin/xbps-bin/defs.h, bin/xbps-bin/show-info-files.c, bin/xbps-
+	bin/util.c, bin/xbps-repo/repository.c:
+	xbps-{bin,repo}: use static const tables to parse objs in
+	XBPS_PKGPROPS files.
+	[e1b4d4190ca5]
+
+2011-01-25  Juan RP  <xtraeme@gmail.com>
+
+	* lib/repository_finddeps.c:
+	xbps_repository_find_pkg_deps: some performance optimizations.
+	[f295e2315163]
+
+	* lib/repository_pool.c:
+	xbps_repository_pool_find_pkg: remove a debug printf that bothers
+	me.
+	[de750b03ffd3]
+
+	* bin/xbps-bin/defs.h, bin/xbps-bin/install.c, bin/xbps-bin/remove.c,
+	bin/xbps-bin/util.c:
+	xbps-bin: reset some static vars for correct indentation in output.
+	[c8c0e63c7a8c]
+
+	* lib/download.c:
+	xbps_fetch_file: memset the stat(2) struct before using it.
+	[66ca5753dd8f]
+
+	* lib/transaction_sortdeps.c:
+	xbps_sort_pkg_deps: exit from the loop immediately if all pkgs were
+	sorted.
+	[2894dc7c2397]
+
+	* lib/transaction_sortdeps.c:
+	xbps_sort_pkg_deps: optimize one more time, it is 5% faster approx.
+	[cbe53cdf5cd1]
+
+	* bin/xbps-bin/main.c, bin/xbps-bin/question.c, bin/xbps-repo/main.c,
+	bin/xbps-uhelper/main.c, configure, lib/Makefile, lib/cmpver.c,
+	lib/fexec.c, lib/util.c:
+	Don't build code with _GNU_SOURCE, use _XOPEN_SOURCE=500 instead.
+
+	_GNU_SOURCE is only now for xbps_xasprintf() if vasprintf is found,
+	and only for <stdio.h>, it's unset immediately once the header is
+	included.
+	[b538bee19392]
+
+	* configure:
+	configure: use a var with the function name to test.
+	[2376e88441ba]
+
+	* configure, lib/util.c:
+	Check for vasprintf() and add a replacement if it wasn't found.
+	[a488974acf99]
+
+	* lib/Makefile, lib/repository.c, lib/repository_register.c:
+	Rename repository.c to repository_register.c.
+	[6235ad891d36]
+
+	* lib/download.c, lib/humanize_number.c, lib/package_config_files.c,
+	lib/package_remove_obsoletes.c, lib/package_requiredby.c,
+	lib/package_state.c, lib/plist.c, lib/repository_findpkg.c,
+	lib/repository_plist.c, lib/repository_pool.c,
+	lib/repository_sync_index.c, lib/util.c:
+	Sprinkle a couple of assert(3)ions.
+	[955e2b67f037]
+
+	* bin/xbps-bin/check.c:
+	xbps-bin/check.c: save some lines by using prop_object_type()
+	directly.
+	[dde2ae7f85a6]
+
+	* bin/xbps-bin/install.c, include/xbps_api.h, lib/plist.c:
+	Added xbps_callback_array_iter() and use it in xbps-bin to list
+	missing pkgdeps.
+	[fa730bcbe67d]
+
+	* include/xbps_api.h:
+	xbps_api.h: fix some comments.
+	[c38fe486078f]
+
+2011-01-24  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/question.c:
+	xbps-bin/question.c: use sizeof().
+	[2ef99e7c0e0b]
+
+	* bin/xbps-uhelper/main.c:
+	xbps-uhelper: added 'getpkgdepversion' target.
+	[206503e7740b]
+
+	* bin/xbps-bin/install.c, lib/repository_findpkg.c:
+	Simplify and share common code in
+	xbps_repository_{update,install}_pkg().
+	[b7cab3eacc0f]
+
+	* bin/xbps-bin/install.c, include/xbps_api.h, include/xbps_api_impl.h,
+	lib/Makefile, lib/repository_finddeps.c, lib/repository_findpkg.c,
+	lib/sortdeps.c, lib/transaction_dictionary.c,
+	lib/transaction_sortdeps.c:
+	Start moving code from repository_find* to transaction_*.
+	[2e5b9b02e24b]
+
+	* Close this branch, it has been merged to default.
+	[5c2d6cdf3076] <progress_callback>
+
+	* bin/xbps-repo/util.c:
+	Merged `progress_callback' branch.
+	[5f95a6a8c6ac]
+
+	* NEWS:
+	NEWS: update for this branch.
+	[9a2ed7d64bf3] <progress_callback>
+
+2011-01-23  Juan RP  <xtraeme@gmail.com>
+
+	* prog.mk:
+	prog.mk: look for libxbps in $(TOPDIR)/lib first rather than
+	$(PREFIX)/lib.
+	[fc7662880845] <progress_callback>
+
+2011-01-22  Juan RP  <xtraeme@gmail.com>
+
+	* lib/package_state.c:
+	libxbps: simplify package states code.
+	[02d9b575a43e] <progress_callback>
+
+	* lib/pkgmatch.c:
+	xbps_pkgpattern_match: remove a wrong memset(3) call.
+	[245d08c7a4fe] <progress_callback>
+
+	* lib/package_orphans.c:
+	Simplify xbps_find_orphan_packages() by not using a temporary
+	SIMPLEQUEU.
+	[814d98722f15] <progress_callback>
+
+	* lib/mkpath.c:
+	lib/mkpath.c: don't document this file, it's included in the util
+	group.
+	[dded6d352c48] <progress_callback>
+
+	* include/xbps_api.h:
+	Document xbps_humanize_number() in the API.
+	[8cfe41f1aae8] <progress_callback>
+
+	* include/xbps_api.h, lib/download.c, lib/fexec.c, lib/initend.c:
+	Update API documentation for recent changes.
+	[1ce33076fae6] <progress_callback>
+
+	* bin/xbps-bin/fetch.c:
+	xbps-bin/fetch.c: use else if conditionals.
+	[87940902eaaf] <progress_callback>
+
+	* lib/package_unpack.c:
+	xbps_unpack_binary_pkg: rename fn callback arg to be shorter.
+	[ec8bae3f7101] <progress_callback>
+
+	* bin/xbps-bin/fetch.c:
+	Added fetch.c for xbps-bin, with the fetch function callback.
+	[2adf5f4f9d8a] <progress_callback>
+
+	* bin/Makefile, bin/xbps-bin/Makefile, bin/xbps-bin/defs.h, bin/xbps-
+	bin/install.c, bin/xbps-bin/remove.c, bin/xbps-bin/util.c, bin/xbps-
+	repo/Makefile, bin/xbps-repo/defs.h, bin/xbps-repo/main.c, bin/xbps-
+	repo/repository.c, bin/xbps-repo/util.c, bin/xbps-uhelper/Makefile,
+	bin/xbps-uhelper/main.c, include/xbps_api.h, lib/download.c,
+	lib/initend.c, lib/package_config_files.c, lib/package_configure.c,
+	lib/package_purge.c, lib/package_remove.c,
+	lib/package_remove_obsoletes.c, lib/package_unpack.c,
+	lib/repository_sync_index.c:
+	Make xbps_fetch_file accept a callback to update its progress.
+
+	This also makes xbps_unpack_binary_pkg follow this convention by
+	avoiding static variables.
+	[4db3b6a1aa0f] <progress_callback>
+
+2011-01-21  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/install.c, include/xbps_api.h, lib/initend.c,
+	lib/package_unpack.c:
+	WIP checkpoint for progress callbacks in the API.
+
+	At this moment I've only implemented the part for unpacking, other
+	parts will also use progress callbacks.
+	[0135e91b1ebc] <progress_callback>
+
+	* bin/xbps-repo/repository.c, lib/util.c:
+	Check that return value of snprintf(3) is not negative, rather than
+	only -1.
+	[6da99a2499e2]
+
+2011-01-20  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/install.c, bin/xbps-repo/find-files.c, bin/xbps-
+	repo/repository.c, include/xbps_api.h, lib/package_unpack.c,
+	lib/repository_plist.c, lib/util.c:
+	libxbps: modify xbps_get_binpkg_repo_uri() to accept repository URL
+	as 2nd arg.
+	[ba692b8f6c8d]
+
+	* include/xbps_api_impl.h, lib/package_config_files.c,
+	lib/package_unpack.c:
+	libxbps: simplify how configuration files are handled, use cached
+	values if possible.
+	[07593f746527]
+
+2011-01-19  Juan RP  <xtraeme@gmail.com>
+
+	* NEWS:
+	NEWS: update with past days changes.
+	[9adff620f0a6]
+
+	* configure, prog.mk:
+	Don't build static bins with PIE, only for dynamic.
+	[64822ac217b4]
+
+	* configure, prog.mk:
+	configure: fixes for building with an installed static libxbps.
+	[12a435441079]
+
+	* lib/Makefile:
+	lib/Makefile: build libxbps with --export-dynamic.
+	[6a107dba2338]
+
+	* include/xbps_api.h:
+	xbps_api.h: fix API comments for refcnts.
+	[6d9b59e49d86]
+
+	* include/xbps_api.h, lib/package_configure.c, lib/package_orphans.c,
+	lib/package_purge.c, lib/package_register.c, lib/package_remove.c,
+	lib/package_state.c, lib/package_unpack.c:
+	Fixed API documentation comments for doxygen.
+	[35b241acd533]
+
+2011-01-18  Juan RP  <xtraeme@gmail.com>
+
+	* bin/xbps-bin/Makefile, bin/xbps-bin/defs.h, bin/xbps-bin/question.c,
+	include/xbps_api.h, lib/util.c:
+	libxbps: xbps_yesno/noyes() are only used in xbps-bin(8), remove
+	from API.
+	[a6156bbae1ec]
+
+	* bin/xbps-bin/install.c:
+	xbps-bin: remove spurios chars in two printf()s.
+	[4f66ebd26f2f]
+
+	* bin/xbps-bin/install.c, bin/xbps-repo/util.c, include/xbps_api.h,
+	lib/download.c, lib/humanize_number.c:
+	libxbps::xbps_humanize_number(): use common values and hide
+	implementation details from API.
+
+	So now its prototype is the following:
+
+	int xbps_humanize_number(char *buf, int64_t bytes)
+
+	It is a wrapper around NetBSD's humanize_number(3) which uses 6
+	digits for max length, HN_AUTOSCALE and HN_NOSPACE|HN_DECIMAL. All
+	users have been updated.
+	[dd17f211b877]
+
+	* lib/regpkgdb_dictionary.c:
+	regpkgdb_dictionary.c: bump copyright year for previous changes.
+	[905e902abc34]
+
+	* lib/regpkgdb_dictionary.c:
+	libxbps: regpkgdb: use a mutex for {inc,dec}rementing the refcnt.
+	[c968cbc8b00d]
+
+	* bin/xbps-bin/install.c, bin/xbps-repo/find-files.c, bin/xbps-
+	repo/repository.c, include/xbps_api.h, lib/package_unpack.c,
+	lib/repository_plist.c, lib/util.c:
+	libxbps: modify the API, new func xbps_get_binpkg_repo_uri().
+
+	This function replaces xbps_repository_get_path_from_pkg_dict() and
+	xbps_get_binpkg_local_path(). It takes a pkg dictionary as returned
+	by a repository pkg index or a transaction dictionary and returns a
+	string with the full path to the binary pkg, either in local repos,
+	cachedir or remote repos.
+
+	Update all code to use this function... sorry I broke ABI
+	compatiblity.
+	[4245ddc43ff5]
+
+	* lib/repository_plist.c:
+	xbps_repository_get_pkg_plist_dict: use
+	xbps_repository_pool_find_pkg().
+	[d897ab8598fe]
+
+	* bin/xbps-repo/repository.c:
+	xbps-repo: use xbps_repository_pool_find_pkg().
+	[22984e743652]
+
+	* include/xbps_api.h, lib/repository_finddeps.c,
+	lib/repository_findpkg.c, lib/repository_pool.c, lib/sortdeps.c:
+	libxbps: extend the API, new func: xbps_repository_pool_find_pkg.
+
+	prop_dictionary_t xbps_repository_pool_find_pkg(const char *pkg,
+	bool bypattern, bool best)
+
+	This function iterates over the repository pool and returns a pkg
+	dictionary matching its pkgname if "bypattern" is false, otherwise
+	if "pkg" matches the pkgdep pattern. If "best" is true, it will look
+	in all repos and will return the newer version, otherwise the first
+	one that matches the arguments specified.
+
+	With this addition supporting many small registered repos is cheap,
+	because it checks by-package rather than by-package-list. This also
+	helped to removed some duplicated code and fix some rare bugs.
+
+	Bump XBPS_RELVER to 20110118.
+	[a1b921d5fef7]
+
+2011-01-17  Juan RP  <xtraeme@gmail.com>
+
+	* lib/sortdeps.c:
+	libxbps: simplify the algorithm for sorting deps in the transaction.
+
+	Rather than using a SIMPLEQ to copy the package dictionary and later
+	on adding all items into the sorted array, just add the pkg
+	dictionary into the sorted array directly and removing it from the
+	unsorted array.
+
+	This reduces memory usage and greatly sorts all packages that aren't
+	installed automatically in the correct order in the transaction.
+
+	Also added a large comment explaining how the algorithm works and
+	what it is supposed to do and when.
+	[beac9c352141]
+
 2011-01-16  Juan RP  <xtraeme@gmail.com>
+
+	* .hgtags:
+	Added tag 0.7.3 for changeset b373dfd04ef2
+	[c2a81eab8b34]
+
+	* Changelog, NEWS:
+	NEWS, Changelog: update for 0.7.3.
+	[b373dfd04ef2] [0.7.3]
 
 	* lib/package_config_files.c:
 	Fixed a test in config file handling that made all conf_files not
 	properly detected.
-	[9e1a25c1d734] [tip]
+	[9e1a25c1d734]
 
 2011-01-15  Juan RP  <xtraeme@gmail.com>
 
