@@ -17,7 +17,11 @@ $(FILES): %.$(FORMAT): %.dot
 	dot -T$(FORMAT) $< -o images/$@
 
 doxyfiletrans: $(DOXYF).in
+ifdef DISTVER
+	sed -e "s|@@PROJECT_NUMBER@@|${DISTVER}|" $< > $(DOXYF)
+else
 	sed -e "s|@@PROJECT_NUMBER@@|$$(date +%Y%m%d)|" $< > $(DOXYF)
+endif
 
 doxygendocs: $(FILES) doxyfiletrans
 	doxygen $(DOXYF)
