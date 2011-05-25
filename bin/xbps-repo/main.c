@@ -170,11 +170,13 @@ main(int argc, char **argv)
 			usage();
 
 		rv = show_pkg_info_from_repolist(argv[1]);
-		if (rv == 0 && errno == ENOENT) {
-			xbps_error_printf("xbps-repo: unable to locate "
-			    "`%s' from repository pool: %s\n", argv[1],
-			    strerror(rv));
-			rv = EINVAL;
+		if (rv == ENOENT) {
+			xbps_printf("Unable to locate package "
+			    "`%s' in repository pool.\n", argv[1]);
+			goto out;
+		} else if (rv != 0 && rv != ENOENT) {
+			xbps_error_printf("xbps-repo: unexpected error '%s' ",
+			    "searching for '%s'\n", strerror(rv), argv[1]);
 			goto out;
 		}
 
@@ -184,11 +186,13 @@ main(int argc, char **argv)
 			usage();
 
 		rv = show_pkg_deps_from_repolist(argv[1]);
-		if (rv == 0 && errno == ENOENT) {
-			xbps_error_printf("xbps-repo: unable to locate "
-			    "`%s' from repository pool: %s\n", argv[1],
-			    strerror(rv));
-			rv = EINVAL;
+		if (rv == ENOENT) {
+			xbps_printf("Unable to locate package "
+			    "`%s' in repository pool.\n", argv[1]);
+			goto out;
+		} else if (rv != 0 && rv != ENOENT) {
+			xbps_error_printf("xbps-repo: unexpected error '%s' "
+			    "searching for '%s'\n", strerror(errno), argv[1]);
 			goto out;
 		}
 
@@ -205,7 +209,7 @@ main(int argc, char **argv)
 				    "error '%s' searching for '%s'\n",
 				    strerror(errno), argv[1]);
 			} else {
-				xbps_error_printf("xbps-repo: `%s' not found "
+				xbps_printf("Unable to locate package `%s' "
 				    "in repository pool.\n", argv[1]);
 			}
 			rv = errno;
