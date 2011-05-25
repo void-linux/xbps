@@ -177,7 +177,7 @@ register_repository(const char *uri)
 		printf("Fetching remote package index at %s...\n", idxstr);
 		rv = xbps_repository_sync_pkg_index(idxstr);
 		if (rv == -1) {
-			xbps_error_printf("xbps-repo: couldn't fetch pkg-index"
+			xbps_error_printf("xbps-repo: couldn't fetch pkg-index "
 			    "file: %s.\n", xbps_fetch_error_string());
 			return rv;
 		} else if (rv == 0) {
