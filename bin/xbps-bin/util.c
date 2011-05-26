@@ -99,6 +99,24 @@ static const struct object_info obj_info[] = {
 		.from_repo = false
 	},
 	{
+		.key = "homepage",
+		.descr = "Upstream URL:",
+		.sep = NULL,
+		.from_repo = false
+	},
+	{
+		.key = "license",
+		.descr = "License(s):",
+		.sep = NULL,
+		.from_repo = false
+	},
+	{
+		.key = "build_date",
+		.descr = "Package build date:",
+		.sep = NULL,
+		.from_repo = false
+	},
+	{
 		.key = "preserve",
 		.descr = "Preserve files",
 		.sep = NULL,
