@@ -8,6 +8,12 @@ digraph pkg_props_dictionary {
 	main -> pkgname [label="string"];
 	pkgname -> pkgname_value;
 	pkgname_value [style=filled,fillcolor="yellowgreen",label="xbps"];
+	main -> homepage [label="string"];
+	homepage -> homepage_value;
+	homepage_value [style=filled,fillcolor="yellowgreen",label="http://code.google.com/p/xbps"];
+	main -> license [label="string"];
+	license -> license_value;
+	license_value [style=filled,fillcolor="yellowgreen",label="BSD"];
 	main -> version [label="string"];
 	version -> version_value;
 	version_value [style=filled,fillcolor="yellowgreen",label="0.5.2.2"];
@@ -29,6 +35,10 @@ digraph pkg_props_dictionary {
 	instsize -> instsize_value;
 	instsize_value [style=filled,fillcolor="yellowgreen",label="389120"];
 	instsize [label="installed_size"];
+	main -> builddate [label="string"];
+	builddate [label="build_date"];
+	builddate -> builddate_value;
+	builddate_value [style=filled,fillcolor="yellowgreen",label="Friday 27 May, 2011, 06:58:13 UTC"];
 	main -> short_desc [label="string"]
 	short_desc -> shortdesc_val;
 	shortdesc_val [style=filled,fillcolor="yellowgreen",label="The XBPS package system utilities"];
