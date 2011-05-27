@@ -45,7 +45,7 @@
  */
 static const char *optional_objs[] = {
 	"conflicts", "conf_files", "replaces", "run_depends", "preserve",
-	"requiredby", "provides"
+	"requiredby", "provides", "homepage", "license"
 };
 
 /*
