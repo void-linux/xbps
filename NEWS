@@ -1,3 +1,14 @@
+xbps-0.8.1 (2011-05-27):
+
+ * xbps-bin(8)/xbps-repo(8): more meaningful messages when a package couldn't
+   be found in the show, show-deps and show-files targets, rather than exiting
+   silently with only the error return value.
+
+ * Added three new objects for the package props.plist metadata file to
+   specify homepage, license and build date.
+
+ * Minor improvements to the generation of API documentation.
+
 xbps-0.8.0 (2011-05-24):
 
  * xbps-bin(8): added -A and -M options, for setting package install reason
