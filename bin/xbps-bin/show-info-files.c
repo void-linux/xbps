@@ -47,7 +47,7 @@ show_pkg_info_from_metadir(const char *pkgname)
 	pkgpropsd = xbps_find_pkg_in_dict_by_name(regpkgd,
 	    "properties", pkgname);
 	if (pkgpropsd == NULL) {
-		show_pkg_info(d, false);
+		show_pkg_info(d);
 		prop_object_release(d);
 		goto out;
 	}
@@ -58,7 +58,7 @@ show_pkg_info_from_metadir(const char *pkgname)
 	if (prop_dictionary_get(pkgpropsd, "provides"))
 		prop_dictionary_set_bool(d, "virtual-prefer", true);
 
-	show_pkg_info(d, false);
+	show_pkg_info(d);
 	prop_object_release(d);
 out:
 	xbps_regpkgdb_dictionary_release();

@@ -1,4 +1,4 @@
-.TH "XBPS\-REPO" "8" "02/21/2011" "\ \&" "\ \&"
+.TH "XBPS\-REPO" "8" "05/27/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -115,7 +115,6 @@ values in repository pool\&.
 .RS 4
 Shows information about binary package
 \fIpkgname\fR\&. This will print the size it takes in filesystem, description, maintainer, architecture and other information\&. The first repository in the pool wins\&.
-\fBNOTE: if a remote repository is the winner and binary package is not available in cachedir, it will fetch remotely and \fR\fB\fIon\-the\-fly\fR\fR\fB the info\fR\&.
 .RE
 .PP
 \fBshow\-deps \fR\fB\fIpkgname\fR\fR
@@ -129,7 +128,7 @@ Shows run time dependencies for binary package
 Shows the file list for a binary package
 \fIpkgname\fR
 by searching it in repository pool\&. The first repository in the pool wins\&.
-\fBNOTE: if a remote repository is the winner and binary package is not available in \fR\fBcachedir\fR\fB, it will fetch remotely and \fR\fB\fIon\-the\-fly\fR\fR\fB the info\fR\&.
+\fBNOTE: if a remote repository is the winner and binary package is not available in \fR\fBcachedir\fR\fB, it will fetch remotely and \fR\fB\fIon\-the\-fly\fR\fR\fB the info\fR\& from target repository.
 .RE
 .PP
 \fBsync\fR

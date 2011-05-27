@@ -1,3 +1,9 @@
+xbps-0.8.2 (???):
+
+ * Improved repository package index format (v1.2). The index now contains all
+   package objects, so that it's not necessary to fetch info from binpkgs.
+   The file will also be a bit bigger, but not to worry about.
+
 xbps-0.8.1 (2011-05-27):
 
  * xbps-bin(8)/xbps-repo(8): more meaningful messages when a package couldn't

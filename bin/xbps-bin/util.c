@@ -39,152 +39,109 @@
 struct object_info {
 	const char *key;
 	const char *descr;
-	const char *sep;
-	bool from_repo;
 };
 
 static const struct object_info obj_info[] = {
 	{
+		.key = "repository",
+		.descr = "Repository: "
+	},
+	{
 		.key = "filename",
-		.descr = "Binary package:",
-		.sep = NULL,
-		.from_repo = true
+		.descr = "Binary package: "
 	},
 	{
 		.key = "filename-size",
-		.descr = "Binary package size",
-		.sep = NULL,
-		.from_repo = true
+		.descr = "Binary package size"
 	},
 	{
 		.key = "filename-sha256",
-		.descr = "Binary package SHA256:",
-		.sep = NULL,
-		.from_repo = true
+		.descr = "Binary package SHA256: "
 	},
 	{
 		.key = "archive-compression-type",
-		.descr = "Binary package compression type:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Binary package compression type: "
 	},
 	{
 		.key = "pkgname",
-		.descr = "Package:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Package: "
 	},
 	{
 		.key = "installed_size",
-		.descr = "Installed size",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Installed size"
 	},
 	{
 		.key = "maintainer",
-		.descr = "Maintainer:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Maintainer: "
 	},
 	{
 		.key = "architecture",
-		.descr = "Architecture:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Architecture: "
 	},
 	{
 		.key = "version",
-		.descr = "Version:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Version: "
 	},
 	{
 		.key = "homepage",
-		.descr = "Upstream URL:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Upstream URL: "
 	},
 	{
 		.key = "license",
-		.descr = "License(s):",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "License(s): "
 	},
 	{
 		.key = "build_date",
-		.descr = "Package build date:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Package build date: "
 	},
 	{
 		.key = "preserve",
-		.descr = "Preserve files",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Preserve files"
 	},
 	{
 		.key = "replaces",
-		.descr = "Replaces these packages:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Replaces these packages"
 	},
 	{
 		.key = "provides",
-		.descr = "Provides virtual packages:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Provides virtual packages"
 	},
 	{
 		.key = "conflicts",
-		.descr = "Conflicts with:",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Conflicts with"
 	},
 	{
 		.key = "hold",
-		.descr = "Hold update",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Hold update"
 	},
 	{
 		.key = "update-first",
-		.descr = "Always update first",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Always update first"
 	},
 	{
 		.key = "virtual-prefer",
-		.descr = "Virtual packages enabled",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "Virtual packages enabled"
 	},
 	{
 		.key = "conf_files",
-		.descr = "Configuration files:\n",
-		.sep = " ",
-		.from_repo = false
+		.descr = "Configuration files"
 	},
 	{
 		.key = "short_desc",
-		.descr = "Description:",
-		.sep = NULL,
-		.from_repo = false },
+		.descr = "Description: "
+	},
 	{
 		.key = "long_desc",
-		.descr = " ",
-		.sep = NULL,
-		.from_repo = false
+		.descr = "",
 	},
 	{
 		.key = NULL,
-		.descr = NULL,
-		.sep = NULL,
-		.from_repo = false
+		.descr = NULL
 	}
 };
 
 void
-show_pkg_info(prop_dictionary_t dict, bool only_repo)
+show_pkg_info(prop_dictionary_t dict)
 {
 	const struct object_info *oip;
 	prop_object_t obj;
@@ -194,13 +151,10 @@ show_pkg_info(prop_dictionary_t dict, bool only_repo)
 	assert(prop_dictionary_count(dict) != 0);
 
 	for (oip = obj_info; oip->key != NULL; oip++) {
-		if (only_repo && oip->from_repo == false)
-			continue;
-
 		obj = prop_dictionary_get(dict, oip->key);
 		switch (prop_object_type(obj)) {
 		case PROP_TYPE_STRING:
-			printf("%s %s\n", oip->descr,
+			printf("%s%s\n", oip->descr,
 			    prop_string_cstring_nocopy(obj));
 			break;
 		case PROP_TYPE_NUMBER:
@@ -217,9 +171,9 @@ show_pkg_info(prop_dictionary_t dict, bool only_repo)
 			    prop_bool_true(obj) ? "yes" : "no");
 			break;
 		case PROP_TYPE_ARRAY:
-			printf("%s ", oip->descr);
+			printf("%s:\n", oip->descr);
 			(void)xbps_callback_array_iter_in_dict(dict, oip->key,
-		    	    list_strings_sep_in_array, __UNCONST(oip->sep));
+		    	    list_strings_sep_in_array, __UNCONST(" "));
 			break;
 		default:
 			break;

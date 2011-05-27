@@ -50,10 +50,16 @@
  */
 
 /**
+ * @def XBPS_PKGINDEX_VERSION
+ * Current version for the repository package index format.
+ */
+#define XBPS_PKGINDEX_VERSION	"1.2"
+
+/**
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"20110411"
+#define XBPS_RELVER		"API: 20110411, Repository index: " XBPS_PKGINDEX_VERSION
 
 /** 
  * @def XBPS_META_PATH
@@ -97,11 +103,6 @@
  */
 #define XBPS_PKGINDEX		"pkg-index.plist"
 
-/**
- * @def XBPS_PKGINDEX_VERSION
- * Current version for the repository package index format.
- */
-#define XBPS_PKGINDEX_VERSION	"1.1"
 
 /**
  * @def XBPS_FLAG_VERBOSE

@@ -240,32 +240,13 @@ out:
 int
 show_pkg_info_from_repolist(const char *pkgname)
 {
-	prop_dictionary_t pkgd, pkg_propsd;
-	const char *repoloc;
-	char *url = NULL;
+	prop_dictionary_t pkgd;
 
 	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
 	if (pkgd == NULL)
 		return errno;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
-	url = xbps_get_binpkg_repo_uri(pkgd, repoloc);
-	if (url == NULL) {
-		prop_object_release(pkgd);
-		return errno;
-	}
-	printf("Fetching info from: %s\n", repoloc);
-	pkg_propsd =
-	    xbps_repository_plist_find_pkg_dict_from_url(url, XBPS_PKGPROPS);
-	if (pkg_propsd == NULL) {
-		free(url);
-		prop_object_release(pkgd);
-		return errno;
-	}
-	free(url);
-	show_pkg_info(pkgd, true);
-	show_pkg_info(pkg_propsd, false);
-	prop_object_release(pkg_propsd);
+	show_pkg_info(pkgd);
 	prop_object_release(pkgd);
 
 	return 0;

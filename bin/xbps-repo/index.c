@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -217,17 +217,6 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		rv = errno;
 		goto out;
 	}
-
-	/*
-	 * Remove some unneeded and large objects.
-	 */
-	prop_dictionary_remove(newpkgd, "long_desc");
-	prop_dictionary_remove(newpkgd, "maintainer");
-	prop_dictionary_remove(newpkgd, "conf_files");
-	prop_dictionary_remove(newpkgd, "homepage");
-	prop_dictionary_remove(newpkgd, "build_date");
-	prop_dictionary_remove(newpkgd, "license");
-
 	/*
 	 * Add dictionary into the index and update package count.
 	 */
