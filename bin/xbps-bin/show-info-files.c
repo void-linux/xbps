@@ -39,7 +39,7 @@ show_pkg_info_from_metadir(const char *pkgname)
 {
 	prop_dictionary_t d, regpkgd, pkgpropsd;
 
-	d = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGPROPS);
+	d = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGPROPS);
 	if (d == NULL)
 		return EINVAL;
 
@@ -71,7 +71,7 @@ show_pkg_files_from_metadir(const char *pkgname)
 	prop_dictionary_t d;
 	int rv = 0;
 
-	d = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	d = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (d == NULL)
 		return EINVAL;
 

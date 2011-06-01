@@ -94,7 +94,7 @@ remove_pkg_metadata(const char *pkgname, const char *rootdir)
 }
 
 int
-xbps_purge_all_pkgs(void)
+xbps_purge_packages(void)
 {
 
 	prop_dictionary_t d;
@@ -106,7 +106,7 @@ xbps_purge_all_pkgs(void)
 	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
 		return errno;
 
-	iter = xbps_get_array_iter_from_dict(d, "packages");
+	iter = xbps_array_iter_from_dict(d, "packages");
 	if (iter == NULL) {
 		rv = errno;
 		goto out;
@@ -151,7 +151,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		/*
 		 * Skip packages that aren't in "config-files" state.
 		 */
-		if ((rv = xbps_get_pkg_state_dictionary(pkgd, &state)) != 0)
+		if ((rv = xbps_pkg_state_dictionary(pkgd, &state)) != 0)
 			goto out;
 		if (state != XBPS_PKG_STATE_CONFIG_FILES)
 			goto out;
@@ -159,7 +159,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Remove unmodified configuration files.
 	 */
-	dict = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	dict = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (dict == NULL) {
 		rv = errno;
 		goto out;

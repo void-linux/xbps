@@ -36,9 +36,9 @@
 #include "fetch.h"
 
 /**
- * @file lib/repository_plist.c
- * @brief Repository plist file handling routines
- * @defgroup repo_plist Repository plist file handling functions
+ * @file lib/plist_fetch.c
+ * @brief Package URL metadata files handling
+ * @defgroup plist_fetch Package URL metadata files handling
  */
 
 struct fetch_archive {
@@ -144,7 +144,7 @@ open_archive(const char *url)
 }
 
 prop_dictionary_t
-xbps_repository_plist_find_pkg_dict_from_url(const char *url, const char *plistf)
+xbps_dictionary_metadata_plist_by_url(const char *url, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL;
 	struct archive *a;
@@ -189,53 +189,6 @@ xbps_repository_plist_find_pkg_dict_from_url(const char *url, const char *plistf
 		break;
 	}
 	archive_read_finish(a);
-
-	return plistd;
-}
-
-prop_dictionary_t
-xbps_repository_plist_find_pkg_dict(const char *pkgname, const char *plistf)
-{
-	prop_dictionary_t pkgd = NULL, plistd = NULL;
-	const char *repoloc;
-	char *url;
-	int rv = 0;
-
-	assert(pkgname != NULL);
-	assert(plistf != NULL);
-
-	if ((rv = xbps_repository_pool_init()) != 0) {
-		errno = rv;
-		return NULL;
-	}
-	/*
-	 * Iterate over the the repository pool and search for a plist file
-	 * in the binary package named 'pkgname'. The plist file will be
-	 * internalized to a proplib dictionary.
-	 *
-	 * The first repository that has it wins and the loop is stopped.
-	 * This will work locally and remotely, thanks to libarchive and
-	 * libfetch!
-	 */
-	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
-	if (pkgd == NULL)
-		goto out;
-
-	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
-	url = xbps_get_binpkg_repo_uri(pkgd, repoloc);
-	if (url == NULL) {
-		errno = EINVAL;
-		goto out;
-	}
-	plistd = xbps_repository_plist_find_pkg_dict_from_url(url, plistf);
-	free(url);
-
-out:
-	xbps_repository_pool_release();
-	if (plistd == NULL)
-		errno = ENOENT;
-	if (pkgd)
-		prop_object_release(pkgd);
 
 	return plistd;
 }

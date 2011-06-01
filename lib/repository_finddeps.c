@@ -76,7 +76,7 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 	 * Overwrite package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
 	 */
-	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0) {
+	if ((rv = xbps_pkg_state_installed(pkgname, &state)) != 0) {
 		if (rv != ENOENT) {
 			prop_object_release(dict);
 			return rv;
@@ -136,14 +136,14 @@ add_missing_reqdep(prop_array_t missing_rdeps, const char *reqpkg)
 
 		assert(prop_object_type(obj) == PROP_TYPE_STRING);
 		curdep = prop_string_cstring_nocopy(obj);
-		curver = xbps_get_pkgpattern_version(curdep);
-		pkgver = xbps_get_pkgpattern_version(reqpkg);
+		curver = xbps_pkgpattern_version(curdep);
+		pkgver = xbps_pkgpattern_version(reqpkg);
 		if (curver == NULL || pkgver == NULL)
 			goto out;
-		curpkgnamedep = xbps_get_pkgpattern_name(curdep);
+		curpkgnamedep = xbps_pkgpattern_name(curdep);
 		if (curpkgnamedep == NULL)
 			goto out;
-		pkgnamedep = xbps_get_pkgpattern_name(reqpkg);
+		pkgnamedep = xbps_pkgpattern_name(reqpkg);
 		if (pkgnamedep == NULL) {
 			free(curpkgnamedep);
 			goto out;
@@ -281,7 +281,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 				continue;
 			}
 		}
-		pkgname = xbps_get_pkgpattern_name(reqpkg);
+		pkgname = xbps_pkgpattern_name(reqpkg);
 		if (pkgname == NULL) {
 			prop_object_release(curpkgd);
 			rv = EINVAL;
@@ -313,7 +313,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			    "pkgver", &pkgver_q);
 
 			/* Check its state */
-			rv = xbps_get_pkg_state_installed(pkgname, &state);
+			rv = xbps_pkg_state_installed(pkgname, &state);
 			if (rv != 0) {
 				free(pkgname);
 				prop_object_release(tmpd);

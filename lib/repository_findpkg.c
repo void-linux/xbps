@@ -138,7 +138,7 @@ repository_find_pkg(const char *pattern, const char *reason)
 	 * Set package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
 	 */
-	if ((rv = xbps_get_pkg_state_installed(pkgname, &state)) != 0) {
+	if ((rv = xbps_pkg_state_installed(pkgname, &state)) != 0) {
 		if (rv != ENOENT)
 			goto out;
 		/* Package not installed, don't error out */
@@ -191,7 +191,7 @@ out:
 }
 
 int
-xbps_repository_update_allpkgs(void)
+xbps_repository_update_packages(void)
 {
 	prop_dictionary_t dict;
 	prop_object_t obj;
@@ -207,7 +207,7 @@ xbps_repository_update_allpkgs(void)
 	if (dict == NULL)
 		return ENOENT;
 
-	iter = xbps_get_array_iter_from_dict(dict, "packages");
+	iter = xbps_array_iter_from_dict(dict, "packages");
 	if (iter == NULL) {
 		xbps_regpkgdb_dictionary_release();
 		return ENOENT;

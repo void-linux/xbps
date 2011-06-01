@@ -46,7 +46,7 @@ repoidx_getdict(const char *pkgdir)
 	prop_array_t array;
 	char *plist;
 
-	plist = xbps_get_pkg_index_plist(pkgdir);
+	plist = xbps_pkg_index_plist(pkgdir);
 	if (plist == NULL)
 		return NULL;
 
@@ -104,8 +104,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		goto out;
 	}
 
-	newpkgd = xbps_repository_plist_find_pkg_dict_from_url(file,
-	    XBPS_PKGPROPS);
+	newpkgd = xbps_dictionary_metadata_plist_by_url(file, XBPS_PKGPROPS);
 	if (newpkgd == NULL) {
 		xbps_error_printf("xbps-repo: can't read %s %s metadata "
 		    "file, skipping!\n", file, XBPS_PKGPROPS);
@@ -186,7 +185,7 @@ xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
 		rv = errno;
 		goto out;
 	}
-	sha256 = xbps_get_file_hash(file);
+	sha256 = xbps_file_hash(file);
 	if (sha256 == NULL) {
 		prop_object_release(newpkgd);
 		rv = errno;
@@ -262,7 +261,7 @@ xbps_repo_genindex(const char *pkgdir)
 	if (idxdict == NULL)
 		return errno;
 
-	plist = xbps_get_pkg_index_plist(pkgdir);
+	plist = xbps_pkg_index_plist(pkgdir);
 	if (plist == NULL) {
 		prop_object_release(idxdict);
 		return errno;

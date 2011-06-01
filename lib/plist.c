@@ -116,7 +116,7 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 	assert(key != NULL);
 	assert(fn != NULL);
 
-	iter = xbps_get_array_iter_from_dict(dict, key);
+	iter = xbps_array_iter_from_dict(dict, key);
 	if (iter == NULL)
 		return EINVAL;
 
@@ -167,7 +167,7 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 }
 
 prop_object_iterator_t
-xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
+xbps_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 {
 	prop_array_t array;
 
@@ -184,18 +184,19 @@ xbps_get_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 }
 
 prop_dictionary_t
-xbps_get_pkg_dict_from_metadata_plist(const char *pkgn, const char *plist)
+xbps_dictionary_from_metadata_plist(const char *pkgname,
+				    const char *plist)
 {
 	const struct xbps_handle *xhp;
 	prop_dictionary_t plistd = NULL;
 	char *plistf;
 
-	assert(pkgn != NULL);
+	assert(pkgname != NULL);
 	assert(plist != NULL);
 	xhp = xbps_handle_get();
 
 	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-	    xhp->rootdir, XBPS_META_PATH, pkgn, plist);
+	    xhp->rootdir, XBPS_META_PATH, pkgname, plist);
 	if (plistf == NULL)
 		return NULL;
 
@@ -203,7 +204,7 @@ xbps_get_pkg_dict_from_metadata_plist(const char *pkgn, const char *plist)
 	free(plistf);
 	if (plistd == NULL) {
 		xbps_dbg_printf("cannot read from plist file %s for %s: %s\n",
-		    plist, pkgn, strerror(errno));
+		    plist, pkgname, strerror(errno));
 		return NULL;
 	}
 

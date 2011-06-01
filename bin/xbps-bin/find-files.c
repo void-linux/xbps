@@ -96,7 +96,7 @@ find_files_in_packages(const char *pattern)
 		    (strcmp(dp->d_name, "..") == 0))
 			continue;
 
-		pkg_filesd = xbps_get_pkg_dict_from_metadata_plist(dp->d_name,
+		pkg_filesd = xbps_dictionary_from_metadata_plist(dp->d_name,
 		    XBPS_PKGFILES);
 		if (pkg_filesd == NULL) {
 			if (errno == ENOENT)

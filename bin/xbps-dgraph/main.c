@@ -513,7 +513,7 @@ main(int argc, char **argv)
 	/*
 	 * Internalize the plist file of the target installed package.
 	 */
-	plistd = xbps_get_pkg_dict_from_metadata_plist(argv[0], XBPS_PKGPROPS);
+	plistd = xbps_dictionary_from_metadata_plist(argv[0], XBPS_PKGPROPS);
 	if (plistd == NULL)
 		die("cannot internalize %s from %s", XBPS_PKGPROPS, argv[0]);
 

@@ -53,10 +53,10 @@ xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
 	assert(newd != NULL);
 
 again:
-	iter = xbps_get_array_iter_from_dict(oldd, array_str);
+	iter = xbps_array_iter_from_dict(oldd, array_str);
 	if (iter == NULL)
 		return errno;
-	iter2 = xbps_get_array_iter_from_dict(newd, array_str);
+	iter2 = xbps_array_iter_from_dict(newd, array_str);
 	if (iter2 == NULL) {
 		prop_object_iterator_release(iter);
 		return errno;
@@ -82,7 +82,7 @@ again:
 		if (strcmp(array_str, "files") == 0) {
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "sha256", &oldhash);
-			rv = xbps_check_file_hash(file, oldhash);
+			rv = xbps_file_hash_check(file, oldhash);
 			if (rv == ENOENT || rv == ERANGE) {
 				/*
 				 * Skip unexistent and files that do not

@@ -166,7 +166,7 @@ xbps_repository_unregister(const char *uri)
 	 * file and its directory.
 	 */
 	if (xbps_check_is_repository_uri_remote(uri)) {
-		pkgindex = xbps_get_pkg_index_plist(uri);
+		pkgindex = xbps_pkg_index_plist(uri);
 		if (pkgindex == NULL) {
 			rv = errno;
 			goto out;

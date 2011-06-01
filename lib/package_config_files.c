@@ -49,7 +49,7 @@ xbps_entry_is_a_conf_file(prop_dictionary_t propsd,
 	if (!prop_dictionary_get(propsd, "conf_files"))
 		return 0;
 
-	iter = xbps_get_array_iter_from_dict(propsd, "conf_files");
+	iter = xbps_array_iter_from_dict(propsd, "conf_files");
 	if (iter == NULL)
 		return -1;
 
@@ -96,7 +96,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 	assert(pkgname != NULL);
 	assert(version != NULL);
 
-	iter = xbps_get_array_iter_from_dict(filesd, "conf_files");
+	iter = xbps_array_iter_from_dict(filesd, "conf_files");
 	if (iter == NULL)
 		return -1;
 
@@ -107,7 +107,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 	xbps_dbg_printf("%s: processing conf_file %s\n",
 	    pkgname, entry_pname);
 
-	forigd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	forigd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (forigd == NULL) {
 		xbps_dbg_printf("%s: conf_file %s not currently installed\n",
 		    pkgname, entry_pname);
@@ -115,7 +115,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 		goto out;
 	}
 
-	iter2 = xbps_get_array_iter_from_dict(forigd, "conf_files");
+	iter2 = xbps_array_iter_from_dict(forigd, "conf_files");
 	if (iter2 != NULL) {
 		while ((obj2 = prop_object_iterator_next(iter2))) {
 			prop_dictionary_get_cstring_nocopy(obj2,
@@ -163,7 +163,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 			buf = NULL;
 			continue;
 		}
-		sha256_cur = xbps_get_file_hash(buf);
+		sha256_cur = xbps_file_hash(buf);
 		free(buf);
 		prop_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
 		if (sha256_cur == NULL) {

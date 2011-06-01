@@ -88,7 +88,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 	if (!automatic)
 		return 0;
 
-	if ((rv = xbps_get_pkg_state_dictionary(obj, &state)) != 0)
+	if ((rv = xbps_pkg_state_dictionary(obj, &state)) != 0)
 		return rv;
 	/*
 	 * Skip packages that aren't fully installed.
@@ -138,7 +138,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 		if (od->orphans_user == NULL)
 			continue;
 
-		pkgdepname = xbps_get_pkg_name(pkgdep);
+		pkgdepname = xbps_pkg_name(pkgdep);
 		assert(pkgdepname != NULL);
 		for (i = 0; i < prop_array_count(od->orphans_user); i++) {
 			prop_array_get_cstring_nocopy(od->orphans_user,

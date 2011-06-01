@@ -288,7 +288,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		version = xbps_get_pkg_version(argv[1]);
+		version = xbps_pkg_version(argv[1]);
 		if (version == NULL) {
 			fprintf(stderr,
 			    "Invalid string, expected <string>-<version>\n");
@@ -301,7 +301,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		pkgname = xbps_get_pkg_name(argv[1]);
+		pkgname = xbps_pkg_name(argv[1]);
 		if (pkgname == NULL) {
 			fprintf(stderr,
 			    "Invalid string, expected <string>-<version>\n");
@@ -315,7 +315,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		version = xbps_get_pkg_revision(argv[1]);
+		version = xbps_pkg_revision(argv[1]);
 		if (version == NULL)
 			exit(EXIT_SUCCESS);
 
@@ -326,7 +326,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		pkgname = xbps_get_pkgpattern_name(argv[1]);
+		pkgname = xbps_pkgpattern_name(argv[1]);
 		if (pkgname == NULL)
 			exit(EXIT_FAILURE);
 
@@ -337,7 +337,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		version = xbps_get_pkgpattern_version(argv[1]);
+		version = xbps_pkgpattern_version(argv[1]);
 		if (version == NULL)
 			exit(EXIT_FAILURE);
 
@@ -363,7 +363,7 @@ main(int argc, char **argv)
 			usage();
 
 		for (i = 1; i < argc; i++) {
-			hash = xbps_get_file_hash(argv[i]);
+			hash = xbps_file_hash(argv[i]);
 			if (hash == NULL) {
 				fprintf(stderr,
 				    "E: couldn't get hash for %s (%s)\n",

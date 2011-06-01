@@ -49,7 +49,7 @@
  */
 
 int
-xbps_configure_all_pkgs(void)
+xbps_configure_packages(void)
 {
 	prop_dictionary_t d;
 	prop_object_t obj;
@@ -60,7 +60,7 @@ xbps_configure_all_pkgs(void)
 	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
 		return errno;
 
-	iter = xbps_get_array_iter_from_dict(d, "packages");
+	iter = xbps_array_iter_from_dict(d, "packages");
 	if (iter == NULL) {
 		rv = errno;
 		goto out;
@@ -98,7 +98,7 @@ xbps_configure_pkg(const char *pkgname,
 	xhp = xbps_handle_get();
 
 	if (check_state) {
-		rv = xbps_get_pkg_state_installed(pkgname, &state);
+		rv = xbps_pkg_state_installed(pkgname, &state);
 		if (rv != 0)
 			return EINVAL;
 

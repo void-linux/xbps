@@ -59,7 +59,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"API: 20110411, Repository index: " XBPS_PKGINDEX_VERSION
+#define XBPS_RELVER		"API: 20110601 INDEX: " XBPS_PKGINDEX_VERSION
 
 /** 
  * @def XBPS_META_PATH
@@ -264,7 +264,7 @@ int xbps_configure_pkg(const char *pkgname,
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_configure_all_pkgs(void);
+int xbps_configure_packages(void);
 
 /*@}*/
 
@@ -671,21 +671,21 @@ bool xbps_find_string_in_array(prop_array_t array, const char *val);
  * @return A proplib object iterator on success, NULL otherwise and
  * errno is set appropiately.
  */
-prop_object_iterator_t xbps_get_array_iter_from_dict(prop_dictionary_t dict,
-						     const char *key);
+prop_object_iterator_t xbps_array_iter_from_dict(prop_dictionary_t dict,
+						 const char *key);
 
 /**
  * Get a proplib object dictionary associated with the installed package
- * \a pkgn, by internalizing its plist file defined by \a plist.
+ * \a pkgname, by internalizing its plist file defined by \a plist.
  *
- * @param[in] pkgn Package name of installed package.
+ * @param[in] pkgname Package name of installed package.
  * @param[in] plist Package metadata property list file.
  *
  * @return The proplib object dictionary on success, NULL otherwise and
  * errno is set appropiately.
  */
-prop_dictionary_t xbps_get_pkg_dict_from_metadata_plist(const char *pkgn,
-							const char *plist);
+prop_dictionary_t xbps_dictionary_from_metadata_plist(const char *pkgname,
+						      const char *plist);
 
 /**
  * Removes the package's proplib dictionary matching \a pkgname
@@ -766,7 +766,7 @@ int xbps_purge_pkg(const char *pkgname, bool check_state);
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_purge_all_pkgs(void);
+int xbps_purge_packages(void);
 
 /*@}*/
 
@@ -913,7 +913,7 @@ int xbps_repository_update_pkg(const char *pkgname);
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_repository_update_allpkgs(void);
+int xbps_repository_update_packages(void);
 
 /*@}*/
 
@@ -948,44 +948,21 @@ prop_array_t xbps_transaction_missingdeps_get(void);
 
 /*@}*/
 
-/** @addtogroup repo_plist */
+/** @addtogroup plist_fetch */
 /*@{*/
 
 /**
- * Iterate over the the repository pool and search for a plist file
- * in the binary package named 'pkgname'. The plist file will be
- * internalized to a proplib dictionary.
- *
- * The first repository that has it wins and the loop is stopped.
- * This will work locally and remotely, thanks to libarchive and
- * libfetch!
- *
- * @param[in] pkgname Package name to match.
- * @param[in] plistf Plist file name to match.
- *
- * @return An internalized proplib dictionary, otherwise NULL and
- * errno is set appropiately.
- *
- * @note if NULL is returned and errno is ENOENT, that means that
- * binary package file has been found but the plist file could not
- * be found.
- */
-prop_dictionary_t xbps_repository_plist_find_pkg_dict(const char *pkgname,
-						      const char *plistf);
-
-/**
- * Finds a plist file in a binary package file stored local or
+ * Internalizes a plist file in a binary package file stored locally or
  * remotely as specified in the URL.
  *
- * @param[in] url URL to binary package file.
- * @param[in] plistf Plist file name to match.
+ * @param[in] url URL to binary package file (full local or remote path).
+ * @param[in] plistf Plist file name to internalize.
  *
  * @return An internalized proplib dictionary, otherwise NULL and
  * errno is set appropiately.
  */
-prop_dictionary_t
-	xbps_repository_plist_find_pkg_dict_from_url(const char *url,
-						     const char *plistf);
+prop_dictionary_t xbps_dictionary_metadata_plist_by_url(const char *url,
+							const char *plistf);
 
 /*@}*/
 
@@ -1071,6 +1048,30 @@ int xbps_repository_pool_foreach(
 prop_dictionary_t
 	xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best);
 
+/**
+ * Iterate over the the repository pool and search for a metadata plist
+ * file in a binary package named 'pkgname'. If a package is matched by
+ * \a pkgname, the plist file \a plistf will be internalized into a
+ * proplib dictionary.
+ *
+ * The first repository that has it wins and the loop is stopped.
+ * This will work locally and remotely, thanks to libarchive and
+ * libfetch!
+ *
+ * @param[in] pkgname Package name to match.
+ * @param[in] plistf Plist file name to match.
+ *
+ * @return An internalized proplib dictionary of \a plistf, otherwise NULL
+ * and errno is set appropiately.
+ *
+ * @note if NULL is returned and errno is ENOENT, that means that
+ * binary package file has been found but the plist file could not
+ * be found.
+ */
+prop_dictionary_t
+	xbps_repository_pool_dictionary_metadata_plist(const char *pkgname,
+						       const char *plistf);
+
 /*@}*/
 
 /** @addtogroup reposync */
@@ -1129,7 +1130,7 @@ typedef enum pkg_state {
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state);
+int xbps_pkg_state_installed(const char *pkgname, pkg_state_t *state);
 
 /**
  * Gets package state from a package dictionary \a dict, and sets its
@@ -1140,7 +1141,7 @@ int xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state);
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
+int xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
 
 /**
  * Sets package state \a state in package \a pkgname.
@@ -1267,7 +1268,7 @@ char *xbps_xasprintf(const char *fmt, ...);
  * is set appropiately. The pointer should be free(3)d when it's no
  * longer needed.
  */
-char *xbps_get_file_hash(const char *file);
+char *xbps_file_hash(const char *file);
 
 /**
  * Returns a string with the sha256 hash for the file specified
@@ -1281,9 +1282,9 @@ char *xbps_get_file_hash(const char *file);
  * @return The sha256 hash string if found, NULL otherwise
  * and errno is set appropiately.
  */
-const char *xbps_get_file_hash_from_dict(prop_dictionary_t d,
-					 const char *key,
-					 const char *file);
+const char *xbps_file_hash_from_dictionary(prop_dictionary_t d,
+					   const char *key,
+					   const char *file);
 
 /**
  * Compares the sha256 hash of the file \a file with the sha256
@@ -1295,7 +1296,7 @@ const char *xbps_get_file_hash_from_dict(prop_dictionary_t d,
  * @return 0 if \a file and \a sha256 have the same hash, ERANGE
  * if it differs, or any other errno value on error.
  */
-int xbps_check_file_hash(const char *file, const char *sha256);
+int xbps_file_hash_check(const char *file, const char *sha256);
 
 /**
  * Checks if a package is currently installed by matching a package
@@ -1339,7 +1340,7 @@ bool xbps_check_is_repository_uri_remote(const char *uri);
  * errno is set appropiately. The pointer should be free(3)d when it's
  * no longer needed.
  */ 
-char *xbps_get_binpkg_repo_uri(prop_dictionary_t pkgd, const char *repoloc);
+char *xbps_path_from_repository_uri(prop_dictionary_t pkgd, const char *repoloc);
 
 /**
  * Gets the full path to a repository package index plist file, as
@@ -1351,7 +1352,7 @@ char *xbps_get_binpkg_repo_uri(prop_dictionary_t pkgd, const char *repoloc);
  * errno is set appropiately. The pointer should be free(3)d when it's
  * no longer needed.
  */
-char *xbps_get_pkg_index_plist(const char *uri);
+char *xbps_pkg_index_plist(const char *uri);
 
 /**
  * Gets the name of a package string. Package strings are composed
@@ -1364,7 +1365,7 @@ char *xbps_get_pkg_index_plist(const char *uri);
  * errno is set appropiately. The pointer should be free(3)d when it's
  * no longer needed.
  */
-char *xbps_get_pkg_name(const char *pkg);
+char *xbps_pkg_name(const char *pkg);
 
 /**
  * Gets a the package name of a package pattern string specified by
@@ -1378,7 +1379,7 @@ char *xbps_get_pkg_name(const char *pkg);
  * NULL otherwise and errno is set appropiately. The pointer should be
  * free(3)d when it's no longer needed.
  */
-char *xbps_get_pkgpattern_name(const char *pattern);
+char *xbps_pkgpattern_name(const char *pattern);
 
 /**
  * Gets the package epoch version in a package string, i.e <b>foo-2.0:epoch</b>.
@@ -1388,7 +1389,7 @@ char *xbps_get_pkgpattern_name(const char *pattern);
  * @return A string with the epoch version string, NULL if it couldn't find
  * the epoch component.
  */
-const char *xbps_get_pkg_epoch(const char *pkg);
+const char *xbps_pkg_epoch(const char *pkg);
 
 /**
  * Gets the package version in a package string, i.e <b>foo-2.0</b>.
@@ -1398,7 +1399,7 @@ const char *xbps_get_pkg_epoch(const char *pkg);
  * @return A string with the version string, NULL if it couldn't
  * find the version component.
  */
-const char *xbps_get_pkg_version(const char *pkg);
+const char *xbps_pkg_version(const char *pkg);
 
 /**
  * Gets the package version of a package pattern string specified by
@@ -1410,7 +1411,7 @@ const char *xbps_get_pkg_version(const char *pkg);
  * @return A string with the pattern version, NULL otherwise and
  * errno is set appropiately.
  */
-const char *xbps_get_pkgpattern_version(const char *pattern);
+const char *xbps_pkgpattern_version(const char *pattern);
 
 /**
  * Gets the package version revision in a package string.
@@ -1420,7 +1421,7 @@ const char *xbps_get_pkgpattern_version(const char *pattern);
  * @return A string with the revision number, NULL if it couldn't
  * find the revision component.
  */
-const char *xbps_get_pkg_revision(const char *pkg);
+const char *xbps_pkg_revision(const char *pkg);
 
 /**
  * Checks if a package has run dependencies.

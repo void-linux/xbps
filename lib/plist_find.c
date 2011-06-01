@@ -177,7 +177,7 @@ find_virtualpkg_user_in_regpkgdb(const char *virtualpkg, bool bypattern)
 	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
 		return NULL;
 
-	if ((iter = xbps_get_array_iter_from_dict(d, "properties")) == NULL) {
+	if ((iter = xbps_array_iter_from_dict(d, "properties")) == NULL) {
 		xbps_regpkgdb_dictionary_release();
 		return NULL;
 	}
@@ -315,7 +315,7 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 	if (pkgd == NULL)
 		goto out;
 
-	if (xbps_get_pkg_state_dictionary(pkgd, &state) != 0)
+	if (xbps_pkg_state_dictionary(pkgd, &state) != 0)
 		goto out;
 
 	switch (state) {
@@ -363,7 +363,7 @@ find_string_in_array(prop_array_t array, const char *str, int mode)
 		} else if (mode == 1) {
 			/* match by pkgname */
 			pkgdep = prop_string_cstring_nocopy(obj);
-			curpkgname = xbps_get_pkg_name(pkgdep);
+			curpkgname = xbps_pkg_name(pkgdep);
 			if (curpkgname == NULL)
 				break;
 			if (strcmp(curpkgname, str) == 0) {

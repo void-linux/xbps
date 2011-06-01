@@ -111,7 +111,7 @@ xbps_repository_pool_init(void)
 		 * for current repository into the queue.
 		 */
 		plist =
-		    xbps_get_pkg_index_plist(prop_string_cstring_nocopy(obj));
+		    xbps_pkg_index_plist(prop_string_cstring_nocopy(obj));
 		if (plist == NULL) {
 			rv = errno;
 			goto out;
@@ -402,4 +402,52 @@ out:
 	free(rpf);
 
 	return pkgd;
+}
+
+prop_dictionary_t
+xbps_repository_pool_dictionary_metadata_plist(const char *pkgname,
+					       const char *plistf)
+{
+	prop_dictionary_t pkgd = NULL, plistd = NULL;
+	const char *repoloc;
+	char *url;
+	int rv = 0;
+
+	assert(pkgname != NULL);
+	assert(plistf != NULL);
+
+	if ((rv = xbps_repository_pool_init()) != 0) {
+		errno = rv;
+		return NULL;
+	}
+	/*
+	 * Iterate over the the repository pool and search for a plist file
+	 * in the binary package named 'pkgname'. The plist file will be
+	 * internalized to a proplib dictionary.
+	 *
+	 * The first repository that has it wins and the loop is stopped.
+	 * This will work locally and remotely, thanks to libarchive and
+	 * libfetch!
+	 */
+	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
+	if (pkgd == NULL)
+		goto out;
+
+	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
+	url = xbps_path_from_repository_uri(pkgd, repoloc);
+	if (url == NULL) {
+		errno = EINVAL;
+		goto out;
+	}
+	plistd = xbps_dictionary_metadata_plist_by_url(url, plistf);
+	free(url);
+
+out:
+	xbps_repository_pool_release();
+	if (plistd == NULL)
+		errno = ENOENT;
+	if (pkgd)
+		prop_object_release(pkgd);
+
+	return plistd;
 }

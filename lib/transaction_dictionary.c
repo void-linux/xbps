@@ -109,7 +109,7 @@ compute_transaction_sizes(void)
 	int rv = 0;
 	const char *tract;
 
-	iter = xbps_get_array_iter_from_dict(transd, "packages");
+	iter = xbps_array_iter_from_dict(transd, "packages");
 	if (iter == NULL)
 		return EINVAL;
 

@@ -186,7 +186,7 @@ register_repository(const char *uri)
 			return 0;
 		}
 
-		plist = xbps_get_pkg_index_plist(idxstr);
+		plist = xbps_pkg_index_plist(idxstr);
 	} else {
 		/*
 		 * Create metadir if necessary.
@@ -203,7 +203,7 @@ register_repository(const char *uri)
 			return EXIT_FAILURE;
 		}
 		free(metadir);
-		plist = xbps_get_pkg_index_plist(idxstr);
+		plist = xbps_pkg_index_plist(idxstr);
 	}
 
 	if (plist == NULL)
@@ -296,7 +296,7 @@ repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		printf("Package index file is already up to date.\n");
 		return 0;
 	}
-	if ((plist = xbps_get_pkg_index_plist(rpi->rpi_uri)) == NULL)
+	if ((plist = xbps_pkg_index_plist(rpi->rpi_uri)) == NULL)
 		return EINVAL;
 
 	if ((rp = pkgindex_verify(plist, rpi->rpi_uri)) == NULL)

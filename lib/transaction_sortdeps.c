@@ -179,7 +179,7 @@ again:
 			rv = ENOMEM;
 			break;
 		}
-		pkgnamedep = xbps_get_pkgpattern_name(str);
+		pkgnamedep = xbps_pkgpattern_name(str);
 		if (pkgnamedep == NULL) {
 			rv = ENOMEM;
 			break;

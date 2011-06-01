@@ -72,7 +72,7 @@ digest2string(const uint8_t *digest, char *string, size_t len)
 }
 
 char *
-xbps_get_file_hash(const char *file)
+xbps_file_hash(const char *file)
 {
 	struct stat st;
 	size_t pgsize = (size_t)sysconf(_SC_PAGESIZE);
@@ -128,14 +128,14 @@ xbps_get_file_hash(const char *file)
 }
 
 int
-xbps_check_file_hash(const char *file, const char *sha256)
+xbps_file_hash_check(const char *file, const char *sha256)
 {
 	char *res;
 
 	assert(file != NULL);
 	assert(sha256 != NULL);
 
-	res = xbps_get_file_hash(file);
+	res = xbps_file_hash(file);
 	if (res == NULL)
 		return errno;
 
@@ -149,9 +149,9 @@ xbps_check_file_hash(const char *file, const char *sha256)
 }
 
 const char *
-xbps_get_file_hash_from_dict(prop_dictionary_t d,
-			     const char *key,
-			     const char *file)
+xbps_file_hash_from_dictionary(prop_dictionary_t d,
+			       const char *key,
+			       const char *file)
 {
 	prop_object_t obj;
 	prop_object_iterator_t iter;
@@ -163,7 +163,7 @@ xbps_get_file_hash_from_dict(prop_dictionary_t d,
 
 	curfile = sha256 = NULL;
 
-	iter = xbps_get_array_iter_from_dict(d, key);
+	iter = xbps_array_iter_from_dict(d, key);
 	if (iter == NULL)
 		return NULL;
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
@@ -216,7 +216,7 @@ xbps_check_is_installed_pkg_by_pattern(const char *pattern)
 	 * Check that package state is fully installed, not
 	 * unpacked or something else.
 	 */
-	if (xbps_get_pkg_state_dictionary(dict, &state) != 0) {
+	if (xbps_pkg_state_dictionary(dict, &state) != 0) {
 		prop_object_release(dict);
 		return -1; /* error */
 	}
@@ -246,7 +246,7 @@ xbps_check_is_installed_pkg_by_name(const char *pkgname)
 }
 
 const char *
-xbps_get_pkg_epoch(const char *pkg)
+xbps_pkg_epoch(const char *pkg)
 {
 	const char *tmp;
 
@@ -260,7 +260,7 @@ xbps_get_pkg_epoch(const char *pkg)
 }
 
 const char *
-xbps_get_pkg_version(const char *pkg)
+xbps_pkg_version(const char *pkg)
 {
 	const char *tmp;
 
@@ -275,7 +275,7 @@ xbps_get_pkg_version(const char *pkg)
 }
 
 const char *
-xbps_get_pkg_revision(const char *pkg)
+xbps_pkg_revision(const char *pkg)
 {
 	const char *tmp;
 
@@ -290,7 +290,7 @@ xbps_get_pkg_revision(const char *pkg)
 }
 
 char *
-xbps_get_pkg_name(const char *pkg)
+xbps_pkg_name(const char *pkg)
 {
 	const char *tmp;
 	char *pkgname;
@@ -314,7 +314,7 @@ xbps_get_pkg_name(const char *pkg)
 }
 
 char *
-xbps_get_pkgpattern_name(const char *pkg)
+xbps_pkgpattern_name(const char *pkg)
 {
 	char *res, *pkgname;
 	size_t len;
@@ -336,7 +336,7 @@ xbps_get_pkgpattern_name(const char *pkg)
 }
 
 const char *
-xbps_get_pkgpattern_version(const char *pkg)
+xbps_pkgpattern_version(const char *pkg)
 {
 	char *res;
 
@@ -374,7 +374,7 @@ get_pkg_index_remote_plist(const char *uri)
 }
 
 char *
-xbps_get_pkg_index_plist(const char *uri)
+xbps_pkg_index_plist(const char *uri)
 {
 	struct utsname un;
 
@@ -390,7 +390,7 @@ xbps_get_pkg_index_plist(const char *uri)
 }
 
 char *
-xbps_get_binpkg_repo_uri(prop_dictionary_t pkg_repod, const char *repoloc)
+xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 {
 	const struct xbps_handle *xhp;
 	const char *filen, *arch;

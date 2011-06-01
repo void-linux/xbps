@@ -99,7 +99,7 @@ get_state(prop_dictionary_t dict)
 }
 
 int
-xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
+xbps_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 {
 	prop_dictionary_t pkgd;
 
@@ -119,7 +119,7 @@ xbps_get_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 }
 
 int
-xbps_get_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
+xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 {
 	assert(dict != NULL);
 	assert(state != NULL);

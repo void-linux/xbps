@@ -52,7 +52,7 @@ xbps_show_pkg_deps(const char *pkgname)
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGPROPS);
+	propsd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGPROPS);
 	if (propsd == NULL) {
 		fprintf(stderr,
 		    "%s: unexistent %s metadata file.\n", pkgname,

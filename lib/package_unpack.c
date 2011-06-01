@@ -160,9 +160,9 @@ remove_file_wrong_hash(prop_dictionary_t d, const char *file)
 		return 0;
 
 	/* Only check for regular files, not symlinks, dirs or conffiles. */
-	hash = xbps_get_file_hash_from_dict(d, "files", file);
+	hash = xbps_file_hash_from_dictionary(d, "files", file);
 	if (hash) {
-		rv = xbps_check_file_hash(file, hash);
+		rv = xbps_file_hash_check(file, hash);
 		if (rv == ERANGE) {
 			(void)unlink(file);
 			xbps_warn_printf("Removed `%s' entry with "
@@ -319,7 +319,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 			if (rv != 0)
 				goto out;
 
-			propsd = xbps_get_pkg_dict_from_metadata_plist(
+			propsd = xbps_dictionary_from_metadata_plist(
 			    pkgname, XBPS_PKGPROPS);
 			if (propsd == NULL) {
 				rv = errno;
@@ -518,7 +518,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
-	bpkg = xbps_get_binpkg_repo_uri(pkg_repod, repoloc);
+	bpkg = xbps_path_from_repository_uri(pkg_repod, repoloc);
 	if (bpkg == NULL) {
 		xbps_error_printf("cannot determine binary pkg file "
 		    "for `%s-%s': %s\n", pkgname, version, strerror(errno));

@@ -64,7 +64,7 @@ xbps_check_pkg_integrity_all(void)
 	if (d == NULL)
 		return ENODEV;
 
-	iter = xbps_get_array_iter_from_dict(d, "packages");
+	iter = xbps_array_iter_from_dict(d, "packages");
 	if (iter == NULL) {
 		rv = ENOENT;
 		goto out;
@@ -117,7 +117,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGPROPS);
+	propsd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGPROPS);
 	if (prop_object_type(propsd) != PROP_TYPE_DICTIONARY) {
 		fprintf(stderr,
 		    "E: %s: unexistent %s or invalid metadata file.\n", pkgname,
@@ -135,7 +135,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	/*
 	 * Check for files.plist metadata file.
 	 */
-	filesd = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	filesd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY) {
 		fprintf(stderr,
 		    "E: %s: unexistent %s or invalid metadata file.\n", pkgname,
@@ -156,7 +156,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	array = prop_dictionary_get(filesd, "links");
 	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
 	     prop_array_count(array) > 0) {
-		iter = xbps_get_array_iter_from_dict(filesd, "links");
+		iter = xbps_array_iter_from_dict(filesd, "links");
 		if (iter == NULL) {
 			rv = ENOMEM;
 			goto out;
@@ -186,7 +186,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	array = prop_dictionary_get(filesd, "files");
 	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
 	     prop_array_count(array) > 0) {
-		iter = xbps_get_array_iter_from_dict(filesd, "files");
+		iter = xbps_array_iter_from_dict(filesd, "files");
 		if (iter == NULL) {
 			rv = ENOMEM;
 			goto out;
@@ -201,7 +201,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 			}
                         prop_dictionary_get_cstring_nocopy(obj,
                             "sha256", &sha256);
-			rv = xbps_check_file_hash(path, sha256);
+			rv = xbps_file_hash_check(path, sha256);
 			switch (rv) {
 			case 0:
 				break;
@@ -236,7 +236,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	array = prop_dictionary_get(filesd, "conf_files");
 	if (array && prop_object_type(array) == PROP_TYPE_ARRAY &&
 	    prop_array_count(array) > 0) {
-		iter = xbps_get_array_iter_from_dict(filesd, "conf_files");
+		iter = xbps_array_iter_from_dict(filesd, "conf_files");
 		if (iter == NULL) {
 			rv = ENOMEM;
 			goto out;
@@ -273,7 +273,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 	 * Check for missing run time dependencies.
 	 */
 	if (xbps_pkg_has_rundeps(propsd)) {
-		iter = xbps_get_array_iter_from_dict(propsd, "run_depends");
+		iter = xbps_array_iter_from_dict(propsd, "run_depends");
 		if (iter == NULL) {
 			rv = ENOMEM;
 			goto out;

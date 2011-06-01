@@ -203,7 +203,7 @@ show_pkg_files(prop_dictionary_t filesd)
 		if (array == NULL || prop_array_count(array) == 0)
 			continue;
 
-		iter = xbps_get_array_iter_from_dict(filesd, array_str);
+		iter = xbps_array_iter_from_dict(filesd, array_str);
 		if (iter == NULL)
 			return EINVAL;
 

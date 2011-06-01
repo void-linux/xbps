@@ -64,7 +64,7 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 
 	(void)loop_done;
 
-	if (xbps_get_pkg_state_dictionary(obj, &curstate))
+	if (xbps_pkg_state_dictionary(obj, &curstate))
 		return EINVAL;
 
 	if (lpc->state == 0) {
@@ -439,7 +439,7 @@ main(int argc, char **argv)
 			usage();
 
 		if (strcasecmp(argv[1], "all") == 0)
-			rv = xbps_purge_all_pkgs();
+			rv = xbps_purge_packages();
 		else
 			rv = xbps_purge_pkg(argv[1], true);
 
@@ -451,7 +451,7 @@ main(int argc, char **argv)
 			usage();
 
 		if (strcasecmp(argv[1], "all") == 0)
-			rv = xbps_configure_all_pkgs();
+			rv = xbps_configure_packages();
 		else
 			rv = xbps_configure_pkg(argv[1], NULL, true, false);
 

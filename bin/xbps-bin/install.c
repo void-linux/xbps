@@ -73,7 +73,7 @@ check_binpkg_hash(const char *path,
 	int rv;
 
 	printf("Checking %s integrity... ", filename);
-	rv = xbps_check_file_hash(path, sha256);
+	rv = xbps_file_hash_check(path, sha256);
 	if (rv != 0 && rv != ERANGE) {
 		xbps_error_printf("\nxbps-bin: unexpected error: %s\n",
 		    strerror(rv));
@@ -121,7 +121,7 @@ again:
 		prop_dictionary_get_cstring_nocopy(obj,
 		    "filename-sha256", &sha256);
 
-		binfile = xbps_get_binpkg_repo_uri(obj, repoloc);
+		binfile = xbps_path_from_repository_uri(obj, repoloc);
 		if (binfile == NULL)
 			return errno;
 		/*
@@ -159,7 +159,7 @@ again:
 			return -1;
 		}
 		free(binfile);
-		binfile = xbps_get_binpkg_repo_uri(obj, repoloc);
+		binfile = xbps_path_from_repository_uri(obj, repoloc);
 		if (binfile == NULL)
 			return errno;
 
@@ -285,7 +285,7 @@ xbps_autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 	 * "xbps-bin autoupdate".
 	 */
 	printf("Finding new packages...\n");
-	if ((rv = xbps_repository_update_allpkgs()) != 0) {
+	if ((rv = xbps_repository_update_packages()) != 0) {
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
 			return 0;
@@ -311,7 +311,7 @@ xbps_install_new_pkg(const char *pkg)
 	bool pkgmatch = false;
 	pkg_state_t state;
 
-	if (xbps_get_pkgpattern_version(pkg)) {
+	if (xbps_pkgpattern_version(pkg)) {
 		pkgpatt = __UNCONST(pkg);
 	} else {
 		/* 
@@ -323,14 +323,14 @@ xbps_install_new_pkg(const char *pkg)
 		if (pkgpatt == NULL)
 			return -1;
 	}
-	pkgname = xbps_get_pkgpattern_name(pkgpatt);
+	pkgname = xbps_pkgpattern_name(pkgpatt);
 	if (pkgname == NULL)
 		return -1;
 	/*
 	 * Find a package in a repository and prepare for installation.
 	 */
 	if ((pkgd = xbps_find_pkg_dict_installed(pkgname, false))) {
-		if ((rv = xbps_get_pkg_state_dictionary(pkgd, &state)) != 0) {
+		if ((rv = xbps_pkg_state_dictionary(pkgd, &state)) != 0) {
 			prop_object_release(pkgd);
 			goto out;
 		}
@@ -494,7 +494,7 @@ exec_transaction(struct transaction *trans)
 		 * If dependency is already unpacked skip this phase.
 		 */
 		state = 0;
-		if (xbps_get_pkg_state_dictionary(obj, &state) != 0)
+		if (xbps_pkg_state_dictionary(obj, &state) != 0)
 			return EINVAL;
 		if (state == XBPS_PKG_STATE_UNPACKED)
 			continue;
@@ -603,7 +603,7 @@ xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
 	/*
 	 * It's time to run the transaction!
 	 */
-	trans->iter = xbps_get_array_iter_from_dict(trans->dict, "packages");
+	trans->iter = xbps_array_iter_from_dict(trans->dict, "packages");
 	if (trans->iter == NULL) {
 		rv = errno;
 		xbps_error_printf("xbps-bin: error allocating array mem! (%s)\n",

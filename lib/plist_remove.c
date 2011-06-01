@@ -60,7 +60,7 @@ remove_string_from_array(prop_array_t array, const char *str, int mode)
 		} else if (mode == 1) {
 			/* match by pkgname, obj is a string */
 			pkgdep = prop_string_cstring_nocopy(obj);
-			curpkgname = xbps_get_pkg_name(pkgdep);
+			curpkgname = xbps_pkg_name(pkgdep);
 			if (curpkgname == NULL)
 				break;
 			if (strcmp(curpkgname, str) == 0) {

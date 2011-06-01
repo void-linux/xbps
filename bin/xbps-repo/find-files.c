@@ -81,20 +81,20 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 
 	(void)done;
 
-	iter = xbps_get_array_iter_from_dict(rpi->rpi_repod, "packages");
+	iter = xbps_array_iter_from_dict(rpi->rpi_repod, "packages");
 	if (iter == NULL)
 		return -1;
 
 	printf("Looking in repository '%s', please wait...\n", rpi->rpi_uri);
 	while ((obj = prop_object_iterator_next(iter))) {
-		url = xbps_get_binpkg_repo_uri(obj, rpi->rpi_uri);
+		url = xbps_path_from_repository_uri(obj, rpi->rpi_uri);
 		if (url == NULL) {
 			rv = -1;
 			break;
 		}
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		pkg_filesd = xbps_repository_plist_find_pkg_dict_from_url(url,
+		pkg_filesd = xbps_dictionary_metadata_plist_by_url(url,
 		    XBPS_PKGFILES);
 		free(url);
 		if (pkg_filesd == NULL) {

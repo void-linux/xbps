@@ -92,7 +92,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 	else if (prop_array_count(array) == 0)
 		return 0;
 
-	iter = xbps_get_array_iter_from_dict(dict, key);
+	iter = xbps_array_iter_from_dict(dict, key);
 	if (iter == NULL)
 		return ENOMEM;
 
@@ -121,7 +121,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 			 */
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "sha256", &sha256);
-			rv = xbps_check_file_hash(path, sha256);
+			rv = xbps_file_hash_check(path, sha256);
 			if (rv == ENOENT) {
 				xbps_warn_printf("'%s' doesn't exist!\n", file);
 				free(path);
@@ -232,7 +232,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	/*
 	 * Remove links, files and dirs.
 	 */
-	dict = xbps_get_pkg_dict_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	dict = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (dict == NULL) {
 		free(buf);
 		return errno;
