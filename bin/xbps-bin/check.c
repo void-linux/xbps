@@ -30,18 +30,21 @@
 #include <errno.h>
 #include <assert.h>
 #include <unistd.h>
+#include <sys/param.h>
 
 #include <xbps_api.h>
 #include "defs.h"
 
 /*
  * Checks package integrity of an installed package. This
- * consists in four tasks:
+ * consists in five tasks:
  *
  * 	o Check for metadata files (files.plist and props.plist),
  * 	  we only check if the file exists and its dictionary can
  * 	  be externalized and is not empty.
  * 	o Check for missing installed files.
+ * 	o Check for target file in symlinks, so that we can check that
+ * 	  they have not been modified.
  * 	o Check the hash for all installed files, except
  * 	  configuration files (which is expected if they are modified).
  * 	o Check for missing run time dependencies.
@@ -96,8 +99,8 @@ xbps_check_pkg_integrity(const char *pkgname)
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *file, *sha256, *reqpkg;
-	char *path;
+	const char *file, *sha256, *reqpkg, *tgt = NULL;
+	char *path, buf[PATH_MAX];
 	int rv = 0;
 	bool broken = false, files_broken = false;
 
@@ -145,6 +148,36 @@ xbps_check_pkg_integrity(const char *pkgname)
 		    XBPS_PKGFILES);
 		rv = EINVAL;
 		goto out;
+	}
+
+	/*
+	 * Check for target files in symlinks.
+	 */
+	array = prop_dictionary_get(filesd, "links");
+	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
+	     prop_array_count(array) > 0) {
+		iter = xbps_get_array_iter_from_dict(filesd, "links");
+		if (iter == NULL) {
+			rv = ENOMEM;
+			goto out;
+		}
+		while ((obj = prop_object_iterator_next(iter))) {
+			if (!prop_dictionary_get_cstring_nocopy(obj, "target", &tgt))
+				continue;
+			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+			if (realpath(file, buf) == NULL) {
+				prop_object_iterator_release(iter);
+				rv = errno;
+				goto out;
+			}
+			if (strcmp(buf, tgt)) {
+				fprintf(stderr, "%s: modified symlink `%s', "
+				    "target: `%s' (shall be: `%s')\n",
+				    pkgname, file, buf, tgt);
+				files_broken = true;
+			}
+		}
+		prop_object_iterator_release(iter);
 	}
 
 	/*
