@@ -1,4 +1,12 @@
-xbps-0.8.2 (???):
+xbps-0.9.0 (???):
+
+ * API/ABI break. Renamed some functions to reflect its description
+   a bit better... expect some more breakage in the future as well.
+
+ * xbps-bin(8): the 'check' target now also checks for modified symlinks,
+   and warns if any of them has been modified. For this to work, the package
+   metadata files.plist should contain the 'target' object in the 'links'
+   array (created automatically by xbps-src since 20110531).
 
  * Improved repository package index format (v1.2). The index now contains all
    package objects, so that it's not necessary to fetch info from binpkgs.
