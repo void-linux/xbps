@@ -93,11 +93,11 @@ int HIDDEN xbps_entry_install_conf_file(prop_dictionary_t,
 					const char *);
 /**
  * @private
- * From lib/plist_entry.c
+ * From lib/plist_archive_entry.c
  */
 prop_dictionary_t HIDDEN
-	xbps_read_dict_from_archive_entry(struct archive *,
-					  struct archive_entry *);
+	xbps_dictionary_from_archive_entry(struct archive *,
+					   struct archive_entry *);
 
 /**
  * @private

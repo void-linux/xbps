@@ -178,7 +178,7 @@ xbps_dictionary_metadata_plist_by_url(const char *url, const char *plistf)
 			i++;
 			continue;
 		}
-		plistd = xbps_read_dict_from_archive_entry(a, entry);
+		plistd = xbps_dictionary_from_archive_entry(a, entry);
 		if (plistd == NULL) {
 			errno = EINVAL;
 			break;

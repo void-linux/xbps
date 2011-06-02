@@ -300,7 +300,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 			 * to check for obsolete files if updating a package.
 			 * It will be extracted to disk at the end.
 			 */
-			filesd = xbps_read_dict_from_archive_entry(ar, entry);
+			filesd = xbps_dictionary_from_archive_entry(ar, entry);
 			if (filesd == NULL) {
 				rv = errno;
 				goto out;

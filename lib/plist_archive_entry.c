@@ -110,8 +110,8 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 #undef _READ_CHUNK
 
 prop_dictionary_t HIDDEN
-xbps_read_dict_from_archive_entry(struct archive *ar,
-				  struct archive_entry *entry)
+xbps_dictionary_from_archive_entry(struct archive *ar,
+				   struct archive_entry *entry)
 {
 	prop_dictionary_t d = NULL;
 	size_t buflen = 0;
