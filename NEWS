@@ -1,5 +1,11 @@
 xbps-0.9.0 (???):
 
+ * The configuration file now accepts new options to change rootdir
+   (same than -r in xbps-bin(8)), cachedir (same than -c in xbps-bin(8))
+   and fetching cache connection limits. If settings are specified via
+   the flags -r and -c in xbps-bin(8)/xbps-repo(8), they are prefered
+   over the ones in the configuration file.
+
  * Fixed some bugs with virtual packages, to not adding duplicate package
    dictionaries in the transaction dictionary.
 
