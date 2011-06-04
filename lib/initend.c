@@ -45,27 +45,18 @@ static struct xbps_handle *xhp;
 int
 xbps_init(struct xbps_handle *xh)
 {
+	const char *conf_rootdir = NULL, *conf_cachedir = NULL;
+	uint16_t fetch_cache_conn = 0, fetch_cache_conn_host = 0;
 	int rv;
 
 	assert(xh != NULL);
 
 	xhp = xh;
 	debug = xhp->with_debug;
-	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN,
-					XBPS_FETCH_CACHECONN_HOST);
 
-	/* If rootdir not set, defaults to '/' */
-	if (xhp->rootdir == NULL)
-		xhp->rootdir = "/";
-	/* If cachedir not set, defaults to XBPS_CACHE_PATH */
-	if (xhp->cachedir == NULL)
-		xhp->cachedir = XBPS_CACHE_PATH;
 	/* If conffile not set, defaults to XBPS_CONF_PATH */
 	if (xhp->conffile == NULL)
 		xhp->conffile = XBPS_CONF_PATH "/" XBPS_CONF_PLIST;
-
-	xbps_dbg_printf("%s: rootdir: %s cachedir: %s conf: %s\n", __func__,
-	    xhp->rootdir, xhp->cachedir, xhp->conffile);
 
 	/*
 	 * Internalize the XBPS_CONF_PLIST dictionary.
@@ -81,7 +72,53 @@ xbps_init(struct xbps_handle *xh)
 		}
 		xbps_dbg_printf("%s: conf_dictionary not internalized.\n",
 		    __func__);
+	} else {
+		/*
+		 * Get defaults from configuration file.
+		 */
+		prop_dictionary_get_cstring_nocopy(xhp->conf_dictionary,
+		    "root-directory", &conf_rootdir);
+		prop_dictionary_get_cstring_nocopy(xhp->conf_dictionary,
+		    "cache-directory", &conf_cachedir);
+		prop_dictionary_get_uint16(xhp->conf_dictionary,
+		    "fetch-cache-connections", &fetch_cache_conn);
+		prop_dictionary_get_uint16(xhp->conf_dictionary,
+		    "fetch-cache-connections-per-host", &fetch_cache_conn_host);
 	}
+
+	/*
+	 * Client supplied values in xbps_handle will be choosen over the
+	 * same values in configuration file. If not specified, use defaults.
+	 */
+	if (xhp->rootdir == NULL) {
+		if (conf_rootdir != NULL)
+			xhp->rootdir = conf_rootdir;
+		else {
+			/* If rootdir not set, defaults to '/' */
+			xhp->rootdir = "/";
+		}
+	}
+	if (xhp->cachedir == NULL) {
+		if (conf_cachedir != NULL)
+			xhp->cachedir = conf_cachedir;
+		else {
+			/* If cachedir not set, defaults to XBPS_CACHE_PATH */
+			xhp->cachedir = XBPS_CACHE_PATH;
+		}
+	}
+	if (fetch_cache_conn == 0)
+		fetch_cache_conn = XBPS_FETCH_CACHECONN;
+	if (fetch_cache_conn_host != 0)
+		fetch_cache_conn_host = XBPS_FETCH_CACHECONN_HOST;
+
+	xbps_fetch_set_cache_connection(fetch_cache_conn,
+	    fetch_cache_conn_host);
+
+	xbps_dbg_printf("%s: rootdir: `%s' cachedir: `%s' conf: `%s'\n",
+	    __func__, xhp->rootdir, xhp->cachedir, xhp->conffile);
+	xbps_dbg_printf("%s: fetch_cache_conn: %zu fetch_cache_host: %zu\n",
+	    __func__, fetch_cache_conn, fetch_cache_conn_host);
+
 	/*
 	 * Initialize repository pool.
 	 */

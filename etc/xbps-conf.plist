@@ -2,6 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Default root directory, defaults to / -->
+	<key>root-directory</key>
+	<string>/</string>
+
+	<!-- Default cache directory to store downloaded binary packages -->
+	<key>cache-directory</key>
+	<string>/var/cache/xbps</string>
+
+	<!-- Default global limit of cached connections when fetching -->
+	<key>fetch-cache-connections</key>
+	<integer>10</integer>
+
+	<!-- Default per-host limit of cached connections when fetching -->
+	<key>fetch-cache-connections-per-host</key>
+	<integer>6</integer>
+
+	<!-- Repository list -->
 	<key>repositories</key>
 	<array>
 		<!-- You can specify here your list of repositories,
@@ -19,6 +36,8 @@
 		     the path to the directory. -->
 		<string>http://xbps.nopcode.org/repos/stable</string>
 	</array>
+
+	<!-- Virtual packages -->
 	<key>package-virtual</key>
 	<array>
 		<!-- This dictionary sets that we _always_ want
