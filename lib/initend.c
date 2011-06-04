@@ -64,6 +64,9 @@ xbps_init(struct xbps_handle *xh)
 	if (xhp->conffile == NULL)
 		xhp->conffile = XBPS_CONF_PATH "/" XBPS_CONF_PLIST;
 
+	xbps_dbg_printf("%s: rootdir: %s cachedir: %s conf: %s\n", __func__,
+	    xhp->rootdir, xhp->cachedir, xhp->conffile);
+
 	/*
 	 * Internalize the XBPS_CONF_PLIST dictionary.
 	 */
