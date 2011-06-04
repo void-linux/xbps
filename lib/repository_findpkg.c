@@ -29,7 +29,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 /**
@@ -56,20 +55,18 @@ static int
 repository_find_pkg(const char *pattern, const char *reason)
 {
 	prop_dictionary_t pkg_repod = NULL, origin_pkgrd = NULL;
-	prop_dictionary_t transd, tmpd;
+	prop_dictionary_t transd;
 	prop_array_t mdeps, unsorted;
 	const char *pkgname;
 	int rv = 0;
-	bool install, bypattern, bestpkg;
+	bool bypattern = false, bestpkg;
 	pkg_state_t state = 0;
 
 	assert(pattern != NULL);
 	assert(reason != NULL);
-	install = bypattern = false;
 
 	if (strcmp(reason, "install") == 0) {
 		/* install */
-		install = true;
 		bypattern = true;
 		bestpkg = false;
 	} else {
@@ -109,23 +106,6 @@ repository_find_pkg(const char *pattern, const char *reason)
 
 	origin_pkgrd = prop_dictionary_copy(pkg_repod);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
-	/*
-	 * Check that this pkg hasn't been added previously into
-	 * the transaction.
-	 */
-	if (install) {
-		tmpd = xbps_find_pkg_in_dict_by_pattern(transd,
-		    "unsorted_pkgs", pattern);
-	} else {
-		tmpd = xbps_find_pkg_in_dict_by_name(transd,
-		    "unsorted_pkgs", pattern);
-
-	}
-	if (tmpd) {
-		xbps_dbg_printf("package '%s' already queued in transaction\n",
-		    pattern);
-		goto out;
-	}
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
@@ -193,25 +173,17 @@ out:
 int
 xbps_repository_update_packages(void)
 {
-	prop_dictionary_t dict;
+	const struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pkgname;
 	int rv = 0;
 	bool newpkg_found = false;
 
-	/*
-	 * Prepare dictionary with all registered packages.
-	 */
-	dict = xbps_regpkgdb_dictionary_get();
-	if (dict == NULL)
+	xhp = xbps_handle_get();
+	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
+	if (iter == NULL)
 		return ENOENT;
-
-	iter = xbps_array_iter_from_dict(dict, "packages");
-	if (iter == NULL) {
-		xbps_regpkgdb_dictionary_release();
-		return ENOENT;
-	}
 	/*
 	 * Find out if there is a newer version for all currently
 	 * installed packages.
@@ -236,7 +208,6 @@ xbps_repository_update_packages(void)
 		newpkg_found = true;
 	}
 	prop_object_iterator_release(iter);
-	xbps_regpkgdb_dictionary_release();
 
 	if (!newpkg_found)
 		rv = ENXIO;

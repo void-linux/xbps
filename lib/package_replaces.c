@@ -30,7 +30,6 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 int HIDDEN
@@ -41,7 +40,7 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 	prop_dictionary_t instd, reppkgd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pattern;
+	const char *pattern, *pkgname, *curpkgname;
 
 	replaces = prop_dictionary_get(pkg_repod, "replaces");
 	if (replaces == NULL || prop_array_count(replaces) == 0)
@@ -61,6 +60,16 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 		instd = xbps_find_pkg_dict_installed(pattern, true);
 		if (instd == NULL)
 			continue;
+		/*
+		 * Check that we are not replacing the same package, due
+		 * to virtual packages.
+		 */
+		prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(instd, "pkgname", &curpkgname);
+		if (strcmp(pkgname, curpkgname) == 0) {
+			prop_object_release(instd);
+			continue;
+		}
 		/*
 		 * Package contains replaces="pkgpattern", but the
 		 * package that should be replaced is also in the

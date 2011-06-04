@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <string.h>
 
-#include "strlcpy.h"
+#include "xbps_api_impl.h"
 
 /*
  * Copy src to string dst of size siz.  At most siz-1 characters

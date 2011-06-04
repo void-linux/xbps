@@ -33,7 +33,6 @@
 #include <unistd.h>
 #include <libgen.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 int HIDDEN

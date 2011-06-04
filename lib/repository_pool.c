@@ -28,11 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <pthread.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
-#include "queue.h"
 
 /**
  * @file lib/repository_pool.c
@@ -48,56 +45,32 @@ struct repository_pool {
 static SIMPLEQ_HEAD(rpool_head, repository_pool) rpool_queue =
     SIMPLEQ_HEAD_INITIALIZER(rpool_queue);
 
-static size_t repolist_refcnt;
 static bool repolist_initialized;
-static pthread_mutex_t mtx_refcnt = PTHREAD_MUTEX_INITIALIZER;
 
-int
+int HIDDEN
 xbps_repository_pool_init(void)
 {
 	const struct xbps_handle *xhp;
-	prop_dictionary_t dict = NULL;
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter = NULL;
 	struct repository_pool *rpool;
 	size_t ntotal = 0, nmissing = 0;
+	const char *repouri;
 	char *plist;
 	int rv = 0;
+	bool duprepo;
 
 	xhp = xbps_handle_get();
-	xbps_dbg_printf("%s: repolist_refcnt %zu\n", __func__, repolist_refcnt);
 
-	if (repolist_initialized) {
-		pthread_mutex_lock(&mtx_refcnt);
-		repolist_refcnt++;
-		pthread_mutex_unlock(&mtx_refcnt);
+	if (repolist_initialized)
 		return 0;
-	}
 
-	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-	    XBPS_META_PATH, XBPS_REPOLIST);
-	if (plist == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	dict = prop_dictionary_internalize_from_zfile(plist);
-	if (dict == NULL) {
-		rv = errno;
-                free(plist);
-		xbps_dbg_printf("%s: cannot internalize plist %s: %s\n",
-		    __func__, plist, strerror(errno));
-		goto out;
-	}
-	free(plist);
-
-	array = prop_dictionary_get(dict, "repository-list");
+	array = prop_dictionary_get(xhp->conf_dictionary, "repositories");
 	if (array == NULL) {
 		rv = errno;
 		goto out;
 	}
-
 	iter = prop_array_iterator(array);
 	if (iter == NULL) {
 		rv = errno;
@@ -105,27 +78,58 @@ xbps_repository_pool_init(void)
 	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		/*
+		 * Check that we do not register duplicate repositories.
+		 */
+		duprepo = false;
+		repouri = prop_string_cstring_nocopy(obj);
+		SIMPLEQ_FOREACH(rpool, &rpool_queue, rp_entries) {
+			if (strcmp(rpool->rpi->rpi_uri, repouri) == 0) {
+				duprepo = true;
+				break;
+			}
+		}
+		if (duprepo)
+			continue;
+
+		plist = xbps_pkg_index_plist(repouri);
+		if (plist == NULL) {
+			rv = errno;
+			goto out;
+		}
+		/*
+		 * For remote repositories, check that its pkg-index.plist
+		 * file is there, otherwise we have to fetch it.
+		 */
+		if (xbps_check_is_repository_uri_remote(repouri)) {
+			if ((access(plist, R_OK) == -1) && errno == ENOENT) {
+				/* file not found, fetch it */
+				xbps_printf("Synchronizing package index for "
+				    "`%s'...\n", repouri);
+				if (xbps_repository_sync_pkg_index(repouri) == -1) {
+					xbps_error_printf("failed to fetch "
+					    "pkg-index.plist for `%s': %s\n",
+					   repouri, xbps_fetch_error_string());
+				}
+			}
+		}
 		ntotal++;
 		/*
 		 * Iterate over the repository pool and add the dictionary
 		 * for current repository into the queue.
 		 */
-		plist =
-		    xbps_pkg_index_plist(prop_string_cstring_nocopy(obj));
-		if (plist == NULL) {
-			rv = errno;
-			goto out;
-		}
 
 		rpool = malloc(sizeof(struct repository_pool));
 		if (rpool == NULL) {
 			rv = errno;
+			free(plist);
 			goto out;
 		}
 
 		rpool->rpi = malloc(sizeof(struct repository_pool_index));
 		if (rpool->rpi == NULL) {
 			rv = errno;
+			free(plist);
 			free(rpool);
 			goto out;
 		}
@@ -147,6 +151,8 @@ xbps_repository_pool_init(void)
 			free(plist);
 			if (errno == ENOENT) {
 				errno = 0;
+				xbps_dbg_printf("%s: missing pkg-index.plist "
+				    "for '%s' repository.\n", __func__, repouri);
 				nmissing++;
 				continue;
 			}
@@ -165,15 +171,10 @@ xbps_repository_pool_init(void)
 		goto out;
 
 	repolist_initialized = true;
-	pthread_mutex_lock(&mtx_refcnt);
-	repolist_refcnt = 1;
-	pthread_mutex_unlock(&mtx_refcnt);
 	xbps_dbg_printf("%s: initialized ok.\n", __func__);
 out:
 	if (iter)
 		prop_object_iterator_release(iter);
-	if (dict)
-		prop_object_release(dict);
 	if (rv != 0) 
 		xbps_repository_pool_release();
 
@@ -181,18 +182,12 @@ out:
 
 }
 
-void
+void HIDDEN
 xbps_repository_pool_release(void)
 {
 	struct repository_pool *rpool;
-	size_t cnt;
 
-	pthread_mutex_lock(&mtx_refcnt);
-	cnt = repolist_refcnt--;
-	pthread_mutex_unlock(&mtx_refcnt);
-
-	xbps_dbg_printf("%s: repolist_refcnt %zu\n", __func__, cnt);
-	if (cnt != 1)
+	if (!repolist_initialized)
 		return;
 
 	while ((rpool = SIMPLEQ_FIRST(&rpool_queue)) != NULL) {
@@ -221,9 +216,7 @@ xbps_repository_pool_foreach(
 	bool done = false;
 
 	assert(fn != NULL);
-
-	if (!repolist_initialized)
-		return EINVAL;
+	assert(repolist_initialized != false);
 
 	SIMPLEQ_FOREACH_SAFE(rpool, &rpool_queue, rp_entries, rpool_new) {
 		rv = (*fn)(rpool->rpi, arg, &done);
@@ -354,6 +347,7 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 	int rv = 0;
 
 	assert(pkg != NULL);
+	assert(repolist_initialized != false);
 
 	rpf = calloc(1, sizeof(*rpf));
 	if (rpf == NULL)
@@ -411,15 +405,11 @@ xbps_repository_pool_dictionary_metadata_plist(const char *pkgname,
 	prop_dictionary_t pkgd = NULL, plistd = NULL;
 	const char *repoloc;
 	char *url;
-	int rv = 0;
 
 	assert(pkgname != NULL);
 	assert(plistf != NULL);
+	assert(repolist_initialized != false);
 
-	if ((rv = xbps_repository_pool_init()) != 0) {
-		errno = rv;
-		return NULL;
-	}
 	/*
 	 * Iterate over the the repository pool and search for a plist file
 	 * in the binary package named 'pkgname'. The plist file will be
@@ -443,7 +433,6 @@ xbps_repository_pool_dictionary_metadata_plist(const char *pkgname,
 	free(url);
 
 out:
-	xbps_repository_pool_release();
 	if (plistd == NULL)
 		errno = ENOENT;
 	if (pkgd)

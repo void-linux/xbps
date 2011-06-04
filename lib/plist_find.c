@@ -29,7 +29,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 /**
@@ -128,7 +127,7 @@ find_pkg_in_array(prop_array_t array, const char *str, bool bypattern)
 			if (!prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &pkgver))
 				continue;
-			if (xbps_pkgpattern_match(pkgver, __UNCONST(str)))
+			if (xbps_pkgpattern_match(pkgver, str))
 				break;
 		} else {
 			if (!prop_dictionary_get_cstring_nocopy(obj,
@@ -165,44 +164,44 @@ xbps_find_pkg_in_array_by_pattern(prop_array_t array, const char *pattern)
 }
 
 static const char *
-find_virtualpkg_user_in_regpkgdb(const char *virtualpkg, bool bypattern)
+find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 {
-	prop_array_t virtual;
-	prop_dictionary_t d;
+	const struct xbps_handle *xhp;
 	prop_object_iterator_t iter;
 	prop_object_t obj;
-	const char *pkg = NULL;
-	bool found = false;
+	const char *vpkgver, *pkg = NULL;
+	char *vpkgname = NULL;
 
-	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
+	xhp = xbps_handle_get();
+
+	if ((iter = xbps_array_iter_from_dict(xhp->conf_dictionary,
+	    "package-virtual")) == NULL)
 		return NULL;
 
-	if ((iter = xbps_array_iter_from_dict(d, "properties")) == NULL) {
-		xbps_regpkgdb_dictionary_release();
-		return NULL;
-	}
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		virtual = prop_dictionary_get(obj, "provides");
-		if (virtual == NULL)
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "virtual-pkgver", &vpkgver))
 			continue;
-		if (bypattern)
-			found = xbps_find_pkgpattern_in_array(virtual, virtualpkg);
-		else
-			found = xbps_find_pkgname_in_array(virtual, virtualpkg);
 
-		if (!found)
-			continue;
-		if (bypattern)
-			prop_dictionary_get_cstring_nocopy(obj,
-			    "pkgpattern", &pkg);
-		else
-			prop_dictionary_get_cstring_nocopy(obj,
-			    "pkgname", &pkg);
-
-		break;
+                if (bypattern) {
+			if (xbps_pkgpattern_match(vpkgver, vpkg)) {
+				prop_dictionary_get_cstring_nocopy(obj,
+				    "target-pkgpattern", &pkg);
+				break;
+			}
+		} else {
+			vpkgname = xbps_pkgpattern_name(vpkgver);
+			if (vpkgname == NULL)
+				break;
+				
+			if (strcmp(vpkg, vpkgname) == 0) {
+				pkg = vpkgname;
+				free(vpkgname);
+				break;
+			}
+		}
 	}
 	prop_object_iterator_release(iter);
-	xbps_regpkgdb_dictionary_release();
 
 	return pkg;
 }
@@ -219,7 +218,7 @@ find_virtualpkg_user_in_array(prop_array_t array,
 	assert(array != NULL);
 	assert(str != NULL);
 
-	virtualpkg = find_virtualpkg_user_in_regpkgdb(str, bypattern);
+	virtualpkg = find_virtualpkg_user_in_conf(str, bypattern);
 	if (virtualpkg == NULL)
 		return NULL;
 
@@ -231,8 +230,7 @@ find_virtualpkg_user_in_array(prop_array_t array,
 		if (bypattern) {
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &pkgver);
-			if (xbps_pkgpattern_match(pkgver,
-			    __UNCONST(virtualpkg)))
+			if (xbps_pkgpattern_match(pkgver, virtualpkg))
 				break;
 		} else {
 			prop_dictionary_get_cstring_nocopy(obj,
@@ -303,20 +301,23 @@ xbps_find_virtualpkg_user_in_dict_by_pattern(prop_dictionary_t d,
 prop_dictionary_t
 xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 {
-	prop_dictionary_t d, pkgd, rpkgd = NULL;
+	const struct xbps_handle *xhp;
+	prop_dictionary_t pkgd, rpkgd = NULL;
 	pkg_state_t state = 0;
 
 	assert(str != NULL);
 
-	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
+	xhp = xbps_handle_get();
+	if (xhp->regpkgdb_dictionary == NULL)
 		return NULL;
 
-	pkgd = find_pkg_in_dict(d, "packages", str, bypattern, false);
+	pkgd = find_pkg_in_dict(xhp->regpkgdb_dictionary,
+	    "packages", str, bypattern, false);
 	if (pkgd == NULL)
-		goto out;
+		return rpkgd;
 
 	if (xbps_pkg_state_dictionary(pkgd, &state) != 0)
-		goto out;
+		return rpkgd;
 
 	switch (state) {
 	case XBPS_PKG_STATE_INSTALLED:
@@ -331,8 +332,7 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 	default:
 		break;
 	}
-out:
-	xbps_regpkgdb_dictionary_release();
+
 	return rpkgd;
 }
 
@@ -375,7 +375,7 @@ find_string_in_array(prop_array_t array, const char *str, int mode)
 		} else if (mode == 2) {
 			/* match by pkgpattern */
 			pkgdep = prop_string_cstring_nocopy(obj);
-			if (xbps_pkgpattern_match(pkgdep, __UNCONST(str))) {
+			if (xbps_pkgpattern_match(pkgdep, str)) {
 				found = true;
 				break;
 			}

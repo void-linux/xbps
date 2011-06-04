@@ -59,7 +59,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"API: 20110601 INDEX: " XBPS_PKGINDEX_VERSION
+#define XBPS_RELVER		"API: 20110604 INDEX: " XBPS_PKGINDEX_VERSION
 
 /** 
  * @def XBPS_META_PATH
@@ -72,12 +72,6 @@
  * Default cache PATH to store downloaded binpkgs.
  */
 #define XBPS_CACHE_PATH		"/var/cache/xbps"
-
-/**
- * @def XBPS_REPOLIST
- * Filename for the global repository property list.
- */
-#define XBPS_REPOLIST		"repositories.plist"
 
 /** 
  * @def XBPS_REGPKGDB
@@ -103,6 +97,19 @@
  */
 #define XBPS_PKGINDEX		"pkg-index.plist"
 
+/**
+ * @def XBPS_CONF_PATH
+ * Default configuration PATH to find XBPS_CONF_PLIST.
+ */
+#ifndef XBPS_CONF_PATH
+#define XBPS_CONF_PATH		"/etc"
+#endif
+
+/**
+ * @def XBPS_CONF_PLIST
+ * Filename for the XBPS plist configuration file.
+ */
+#define XBPS_CONF_PLIST		"xbps-conf.plist"
 
 /**
  * @def XBPS_FLAG_VERBOSE
@@ -138,6 +145,20 @@ void		xbps_warn_printf(const char *, ...);
  * the root and cache directory, flags, etc.
  */
 struct xbps_handle {
+	/**
+	 * @private conf_dictionary
+	 *
+	 * Internalized proplib dictionary from conffile member.
+	 * Used internally by xbps_init().
+	 */
+	prop_dictionary_t conf_dictionary;
+	/**
+	 * @var regpkgdb_dictionary.
+	 *
+	 * Internalized proplib dictionary with the registed package database
+	 * stored in XBPS_META_PATH/XBPS_REGPKGDB.
+	 */
+	prop_dictionary_t regpkgdb_dictionary;
 	/**
 	 * @var xbps_unpack_cb
 	 *
@@ -189,6 +210,12 @@ struct xbps_handle {
 	 */
 	const char *cachedir;
 	/**
+	 * @var conffile
+	 *
+	 * Full path to the XBPS_CONF_PLIST configuration file.
+	 */
+	const char *conffile;
+	/**
 	 * @var with_debug
 	 *
 	 * Set to true to enable debugging messages to stderr.
@@ -217,16 +244,21 @@ struct xbps_handle {
  * Initialize the XBPS library with the following steps:
  *
  *   - Set function callbacks for fetching and unpacking.
- *   - Set root directory.
- *   - Set cache directory.
+ *   - Set root directory (if not set, defaults to /).
+ *   - Set cache directory (if not set, defaults to XBPS_CACHE_PATH).
  *   - Set global flags.
  *   - Set default cache connections for libfetch.
  *   - Initialize the debug printfs.
+ *   - Internalize the proplib dictionary in config file.
+ *   - Internalize the regpkgdb dictionary (if available).
+ *   - Initialize the repository pool interface (if available).
  *
  * @param[in] xh Pointer to an xbps_handle structure. It's
  * assumed that this pointer is not NULL.
+ *
+ * @return 0 on success, an errno value otherwise.
  */
-void xbps_init(struct xbps_handle *xh);
+int xbps_init(struct xbps_handle *xh);
 
 /**
  * Releases all resources used by the XBPS library.
@@ -265,31 +297,6 @@ int xbps_configure_pkg(const char *pkgname,
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_configure_packages(void);
-
-/*@}*/
-
-/** @addtogroup pkgprops */
-/*@{*/
-
-/**
- * Sets the property \a prop in a package matching the name \a pkgname.
- *
- * @param[in] prop Property key to be set.
- * @param[in] pkgname Package name to set the property.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_property_set(const char *prop, const char *pkgname);
-
-/**
- * Unsets the property \a prop in a package matching the name \a pkgname.
- *
- * @param[in] prop Property key to be unset.
- * @param[in] pkgname Package name to unset the property.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_property_unset(const char *prop, const char *pkgname);
 
 /*@}*/
 
@@ -430,7 +437,7 @@ prop_array_t xbps_find_pkg_orphans(prop_array_t orphans);
  *
  * @return 1 if \a instpkg is matched against \a pattern, 0 if no match.
  */
-int xbps_pkgpattern_match(const char *instpkg, char *pattern);
+int xbps_pkgpattern_match(const char *instpkg, const char *pattern);
 
 /** @addtogroup plist */
 /*@{*/
@@ -795,35 +802,6 @@ int xbps_unregister_pkg(const char *pkgname);
 
 /*@}*/
 
-/** @addtogroup regpkgdb */
-/*@{*/
-
-/**
- * Initialize resources used by the registered packages database dictionary
- * and returns the internalized proplib dictionary.
- *
- * @note This function is reference counted, if the database has
- * been initialized previously, the counter will be increased by one
- * and dictionary stored in memory will be returned.
- *
- * @warning Don't forget to always use xbps_regpkgdb_dictionary_release()
- * when its dictionary is no longer needed.
- *
- * @return A dictionary as shown above in the Detailed description
- * graph on success, or NULL otherwise and errno is set appropiately.
- */
-prop_dictionary_t xbps_regpkgdb_dictionary_get(void);
-
-/**
- * Release resources used by the registered packages database.
- *
- * @note This function is reference counted, if the database
- * is in use (its reference count number is greater than 1), won't be released.
- */ 
-void xbps_regpkgdb_dictionary_release(void);
-
-/*@}*/
-
 /** @addtogroup pkg_remove */
 /*@{*/
 
@@ -852,29 +830,6 @@ int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_remove_pkg_files(prop_dictionary_t dict, const char *key);
-
-/*@}*/
-
-/** @addtogroup repo_register */
-/*@{*/
-
-/**
- * Registers a repository into the database.
- *
- * @param[in] uri URI pointing to the repository.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_repository_register(const char *uri);
-
-/**
- * Unregisters a repository from the database.
- *
- * @param[in] uri URI pointing to the repository.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_repository_unregister(const char *uri);
 
 /*@}*/
 
@@ -992,29 +947,6 @@ struct repository_pool_index {
 	 */
 	char *rpi_uri;
 };
-
-/**
- * Initializes the repository pool.
- *
- * Once it's initialized, access to the repositories can be done
- * through the \a xbps_repository_pool_foreach() and
- * \a xbps_repository_pool_find_pkg() functions.
- *
- * @note This function is reference counted, don't forget to call
- * xbps_repository_pool_release() when it's no longer needed.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_repository_pool_init(void);
-
-/**
- * Releases the repository pool with all registered repositories
- * in the database.
- *
- * @note This function is reference counted, it won't be released until
- * its reference counter is 1.
- */
-void xbps_repository_pool_release(void);
 
 /**
  * Iterates over the repository pool and executes the \a fn function

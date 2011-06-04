@@ -1,8 +1,6 @@
 - conflicts: the object is there but is not handled yet.
 - properties: (hold) still unimplemented.
 - properties: (update-first) still unimplemented.
-- A configuration file? I think we can survive without it...
-- xbps-repo: a way to change the order of registered repos (push/pop enough?)
 - xbps-bin: a target to clean outdated binpkgs in cachedir
   (like apt-get autoclean).
 - xbps-repo: support to verify PGP signed pkg-index.plist repo files

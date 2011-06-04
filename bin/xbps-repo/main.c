@@ -50,10 +50,16 @@ usage(void)
 static int
 repo_list_uri_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 {
+	const char *pkgidx;
+	uint64_t npkgs;
+
 	(void)arg;
 	(void)done;
 
-	printf("%s\n", rpi->rpi_uri);
+	prop_dictionary_get_cstring_nocopy(rpi->rpi_repod,
+	    "pkgindex-version", &pkgidx);
+	prop_dictionary_get_uint64(rpi->rpi_repod, "total-pkgs", &npkgs);
+	printf("%s (index %s, %zu packages)\n", rpi->rpi_uri, pkgidx, npkgs);
 
 	return 0;
 }
@@ -80,19 +86,22 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xbps_fetch_progress_data xfpd;
 	prop_dictionary_t pkgd;
-	const char *rootdir, *cachedir;
+	const char *rootdir = NULL, *cachedir = NULL, *conffile = NULL;
 	int c, rv = 0;
-	bool with_debug = false;
+	bool debug = false;
 
 	rootdir = cachedir = NULL;
 
-	while ((c = getopt(argc, argv, "Vc:dr:")) != -1) {
+	while ((c = getopt(argc, argv, "C:c:dr:V")) != -1) {
 		switch (c) {
+		case 'C':
+			conffile = optarg;
+			break;
 		case 'c':
 			cachedir = optarg;
 			break;
 		case 'd':
-			with_debug = true;
+			debug = true;
 			break;
 		case 'r':
 			/* To specify the root directory */
@@ -114,45 +123,28 @@ main(int argc, char **argv)
 		usage();
 
 	/*
-	 * Initialize the function callbacks and debug in libxbps.
+	 * Initialize XBPS subsystems.
 	 */
 	memset(&xh, 0, sizeof(xh));
-	xh.with_debug = with_debug;
+	xh.with_debug = debug;
 	xh.xbps_fetch_cb = fetch_file_progress_cb;
 	xh.xfpd = &xfpd;
 	xh.rootdir = rootdir;
 	xh.cachedir = cachedir;
-	xbps_init(&xh);
+	xh.conffile = conffile;
 
-	if ((rv = xbps_repository_pool_init()) != 0) {
-		if (rv != ENOENT) {
-			xbps_error_printf("xbps-repo: failed to initialize "
-			    "repository pool: %s\n", strerror(rv));
-			exit(EXIT_FAILURE);
-		}
+	if ((rv = xbps_init(&xh)) != 0) {
+		xbps_error_printf("xbps-repo: couldn't initialize library: %s\n",
+		    strerror(errno));
+		exit(EXIT_FAILURE);
 	}
 
-	if (strcasecmp(argv[0], "add") == 0) {
-		/* Adds a new repository to the pool. */
-		if (argc != 2)
-			usage();
-
-		rv = register_repository(argv[1]);
-
-	} else if (strcasecmp(argv[0], "list") == 0) {
+	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists all repositories registered in pool. */
 		if (argc != 1)
 			usage();
 
 		xbps_repository_pool_foreach(repo_list_uri_cb, NULL);
-
-	} else if ((strcasecmp(argv[0], "rm") == 0) ||
-		   (strcasecmp(argv[0], "remove") == 0)) {
-		/* Remove a repository from the pool. */
-		if (argc != 2)
-			usage();
-
-		rv = unregister_repository(argv[1]);
 
 	} else if (strcasecmp(argv[0], "search") == 0) {
 		/*

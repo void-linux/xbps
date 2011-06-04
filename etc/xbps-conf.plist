@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>repositories</key>
+	<array>
+		<!-- You can specify here your list of repositories,
+		     the first repository that contains a package will
+		     be used for most targets in xbps-bin(8) and
+		     xbps-repo(8), with the exception for updating
+		     on which all repositories will be looked at and
+		     the newest version will be choosen.
+		     
+		     The order matters, and the top-most matching a package
+		     pattern or name will be used.
+
+		     By default we use the official "public" repository,
+		     you can add your own local repositories by specifying
+		     the path to the directory. -->
+		<string>http://xbps.nopcode.org/repos/stable</string>
+	</array>
+	<key>package-virtual</key>
+	<array>
+		<!-- This dictionary sets that we _always_ want
+		     the "dcron" package to be the default cron-daemon
+		     package, over other alternatives.
+
+		     Another option might be to change it to the
+		     "cronie" package, or any package that "provides"
+		     "cron-daemon-0". -->
+		<dict>
+			<key>virtual-pkgver</key>
+			<string>cron-daemon-0</string>
+			<key>target-pkgpattern</key>
+			<string>dcron>=0</string>
+		</dict>
+
+		<!-- Uncomment this dictionary to prefer the "xbps-devel"
+		     package (snapshot from mercurial repository) rather
+		     than the official stable version (don't do this if
+		     you are not a developer :-) -->
+
+		<!-- #### REMOVE THIS LINE TO ENABLE ####
+		<dict>
+			<key>virtual-pkgver</key>
+			<string>xbps-9999</string>
+			<key>target-pkgpattern</key>
+			<string>xbps-devel>=0</string>
+		</dict>
+		     #### REMOVE THIS LINE TO ENABLE #### -->
+	</array>
+</dict>
+</plist>

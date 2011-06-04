@@ -187,7 +187,7 @@ show_pkg_files(prop_dictionary_t filesd)
 	prop_array_t array;
 	prop_object_iterator_t iter = NULL;
 	prop_object_t obj;
-	const char *file, *array_str;
+	const char *file, *array_str, *target;
 	int i = 0;
 
 	/* This will print links, conf_files and files respectively. */
@@ -209,7 +209,11 @@ show_pkg_files(prop_dictionary_t filesd)
 
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			printf("%s\n", file);
+			printf("%s", file);
+			if (prop_dictionary_get_cstring_nocopy(obj,
+			    "target", &target))
+				printf(" -> %s", target);
+			printf("\n");
 		}
 		prop_object_iterator_release(iter);
 	}

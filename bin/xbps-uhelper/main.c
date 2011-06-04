@@ -60,6 +60,8 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 static void __attribute__((noreturn))
 usage(void)
 {
+	xbps_end();
+
 	fprintf(stderr,
 	"usage: xbps-uhelper [options] [action] [args]\n"
 	"\n"
@@ -84,6 +86,7 @@ usage(void)
 	"    version\t\t<pkgname>\n"
 	"\n"
 	"  Options shared by all actions:\n"
+	"    -C\t\tPath to xbps-conf.plist file.\n"
 	"    -d\t\tDebugging messages to stderr.\n"
 	"    -r\t\t\t<rootdir>\n"
 	"    -V\t\tPrints the xbps release version\n"
@@ -110,13 +113,16 @@ main(int argc, char **argv)
 	struct xbps_fetch_progress_data xfpd;
 	prop_dictionary_t dict, pkgd;
 	prop_array_t array;
-	const char *version, *rootdir = NULL;
+	const char *version, *rootdir = NULL, *conffile = NULL;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
 	bool fromsrc = false, debug = false, in_chroot = false;
 	int i, c, rv = 0;
 
-	while ((c = getopt(argc, argv, "Vdr:")) != -1) {
+	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
 		switch (c) {
+		case 'C':
+			conffile = optarg;
+			break;
 		case 'r':
 			/* To specify the root directory */
 			rootdir = optarg;
@@ -147,14 +153,18 @@ main(int argc, char **argv)
 	xh.xbps_fetch_cb = fetch_file_progress_cb;
 	xh.xfpd = &xfpd;
 	xh.rootdir = rootdir;
-	xbps_init(&xh);
+	xh.conffile = conffile;
+
+	if ((rv = xbps_init(&xh)) != 0) {
+		xbps_error_printf("xbps-uhelper: failed to "
+		    "initialize libxbps.\n");
+		exit(EXIT_FAILURE);
+	}
 
 	plist = xbps_xasprintf("%s/%s/%s", rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
-		fprintf(stderr,
-		    "%s=> ERROR: couldn't find regpkdb file (%s)%s\n",
-		    MSG_ERROR, strerror(errno), MSG_RESET);
+		xbps_end();
 		exit(EXIT_FAILURE);
 	}
 

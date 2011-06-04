@@ -42,44 +42,6 @@ struct repoinfo {
 	uint64_t totalpkgs;
 };
 
-static const char *
-sanitize_url(const char *path)
-{
-	static char buf[PATH_MAX];
-	const char *res = NULL;
-	char *dirnp, *basenp, *dir, *base;
-	int r = 0;
-
-	memset(&buf, 0, sizeof(buf));
-
-	if ((dir = strdup(path)) == NULL)
-		return NULL;
-
-	if ((base = strdup(path)) == NULL) {
-		free(dir);
-		return NULL;
-	}
-
-	dirnp = dirname(dir);
-	if (strcmp(dirnp, ".") == 0)
-		goto out;
-
-	basenp = basename(base);
-	if (strcmp(basenp, base) == 0)
-		goto out;
-
-	r = snprintf(buf, sizeof(buf) - 1, "%s/%s", dirnp, basenp);
-	if (r < 0 || r >= (int)sizeof(buf) - 1)
-		goto out;
-
-	res = buf;
-out:
-	free(dir);
-	free(base);
-
-	return res;
-}
-
 static struct repoinfo *
 pkgindex_verify(const char *plist, const char *uri)
 {
@@ -138,106 +100,6 @@ out:
 }
 
 int
-unregister_repository(const char *uri)
-{
-	const char *idxstr = NULL;
-	int rv = 0;
-
-	if ((idxstr = sanitize_url(uri)) == NULL)
-		return errno;
-
-	if ((rv = xbps_repository_unregister(idxstr)) == 0)
-		return 0;
-
-	if (rv == ENOENT) {
-		xbps_error_printf("Repository '%s' not "
-		    "registered.\n", idxstr);
-	} else {
-		xbps_error_printf("xbps-repo: couldn't unregister "
-		    "repository: %s\n", strerror(rv));
-	}
-
-	return rv;
-}
-
-int
-register_repository(const char *uri)
-{
-	const struct xbps_handle *xhp;
-	struct repoinfo *rpi = NULL;
-	const char *idxstr = NULL;
-	char *metadir, *plist;
-	int rv = 0;
-
-	xhp = xbps_handle_get();
-	if ((idxstr = sanitize_url(uri)) == NULL)
-		return errno;
-
-	if (xbps_check_is_repository_uri_remote(idxstr)) {
-		printf("Fetching remote package index at %s...\n", idxstr);
-		rv = xbps_repository_sync_pkg_index(idxstr);
-		if (rv == -1) {
-			xbps_error_printf("xbps-repo: couldn't fetch pkg-index "
-			    "file: %s.\n", xbps_fetch_error_string());
-			return rv;
-		} else if (rv == 0) {
-			printf("Package index file is already "
-			    "up to date.\n");
-			return 0;
-		}
-
-		plist = xbps_pkg_index_plist(idxstr);
-	} else {
-		/*
-		 * Create metadir if necessary.
-		 */
-		metadir = xbps_xasprintf("%s/%s", xhp->rootdir,
-		    XBPS_META_PATH);
-		if (metadir == NULL)
-			return errno;
-
-		if (xbps_mkpath(metadir, 0755) == -1) {
-			xbps_error_printf("xbps-repo: couldn't create metadata "
-			    "directory: %s.\n", strerror(errno));
-			free(metadir);
-			return EXIT_FAILURE;
-		}
-		free(metadir);
-		plist = xbps_pkg_index_plist(idxstr);
-	}
-
-	if (plist == NULL)
-		return errno;
-
-	if ((rpi = pkgindex_verify(plist, idxstr)) == NULL)
-		goto out;
-
-	if ((rv = xbps_repository_register(idxstr)) != 0) {
-		if (rv == EEXIST) {
-			xbps_warn_printf("repository already registered.\n");
-		} else {
-			xbps_error_printf("xbps-repo: couldn't register "
-			     "repository: %s.\n", strerror(errno));
-		}
-		goto out;
-	}
-
-	printf("Added package index at %s (v%s) with %ju packages.\n",
-	    idxstr, rpi->pkgidxver, rpi->totalpkgs);
-
-out:
-	if (rpi != NULL) {
-		if (rpi->pkgidxver != NULL)
-			free(rpi->pkgidxver);
-		free(rpi);
-	}
-	if (plist != NULL)
-		free(plist);
-
-	return rv;
-}
-
-int
 show_pkg_info_from_repolist(const char *pkgname)
 {
 	prop_dictionary_t pkgd;
@@ -286,7 +148,7 @@ repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	if (!xbps_check_is_repository_uri_remote(rpi->rpi_uri))
 		return 0;
 
-	printf("Syncing package index from: %s\n", rpi->rpi_uri);
+	printf("Synchronizing package index for `%s' ...\n", rpi->rpi_uri);
 	rv = xbps_repository_sync_pkg_index(rpi->rpi_uri);
 	if (rv == -1) {
 		xbps_error_printf("xbps-repo: failed to sync `%s': %s\n",

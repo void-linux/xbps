@@ -29,7 +29,6 @@
 #include <errno.h>
 #include <stdarg.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 /**
@@ -43,9 +42,11 @@
 static bool debug;
 static struct xbps_handle *xhp;
 
-void
+int
 xbps_init(struct xbps_handle *xh)
 {
+	int rv;
+
 	assert(xh != NULL);
 
 	xhp = xh;
@@ -59,6 +60,45 @@ xbps_init(struct xbps_handle *xh)
 	/* If cachedir not set, defaults to XBPS_CACHE_PATH */
 	if (xhp->cachedir == NULL)
 		xhp->cachedir = XBPS_CACHE_PATH;
+	/* If conffile not set, defaults to XBPS_CONF_PATH */
+	if (xhp->conffile == NULL)
+		xhp->conffile = XBPS_CONF_PATH "/" XBPS_CONF_PLIST;
+
+	/*
+	 * Internalize the XBPS_CONF_PLIST dictionary.
+	 */
+	xhp->conf_dictionary =
+	    prop_dictionary_internalize_from_file(xhp->conffile);
+	if (xhp->conf_dictionary == NULL) {
+		xbps_dbg_printf("%s: cannot internalize conf "
+		    "dictionary: %s\n", strerror(errno));
+		xbps_end();
+		return errno;
+	}
+	/*
+	 * Initialize repository pool.
+	 */
+	if ((rv = xbps_repository_pool_init()) != 0) {
+		if (rv != ENOENT) {
+			xbps_dbg_printf("%s: couldn't initialize "
+			    "repository pool: %s\n", strerror(rv));
+			xbps_end();
+			return rv;
+		}
+	}
+	/*
+	 * Initialize regpkgdb dictionary.
+	 */
+        if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
+               if (rv != ENOENT) {
+		       xbps_dbg_printf("%s: couldn't initialize "
+			    "regpkgdb: %s\n", strerror(rv));
+		       xbps_end();
+		       return rv;
+	       }
+	}
+
+	return 0;
 }
 
 void
@@ -67,6 +107,12 @@ xbps_end(void)
 	xbps_regpkgdb_dictionary_release();
 	xbps_repository_pool_release();
 	xbps_fetch_unset_cache_connection();
+	if (xhp == NULL)
+		return;
+
+	if (prop_object_type(xhp->conf_dictionary) == PROP_TYPE_DICTIONARY)
+		prop_object_release(xhp->conf_dictionary);
+
 	xhp = NULL;
 }
 

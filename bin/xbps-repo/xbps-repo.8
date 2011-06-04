@@ -1,4 +1,4 @@
-.TH "XBPS\-REPO" "8" "05/27/2011" "\ \&" "\ \&"
+.TH "XBPS\-REPO" "8" "06/04/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -18,6 +18,11 @@ xbps-repo \- XBPS command for binary package repositories
 .sp
 The xbps\-repo(8) command is used to handle local or remote binary package repositories in the \fBXBPS binary package system\fR\&. You can use it to create a package index for a local repository, add or remove local and remote repositories, search for packages and show information about a binary package in repository pool\&.
 .SH "OPTIONS"
+.PP
+\fB\-C\fR \fIconffile\fR
+.RS 4
+Full path to the \fIxbps-conf.plist\fR plist configuration file.
+.RE
 .PP
 \fB\-c\fR \fIcachedir\fR
 .RS 4
@@ -49,20 +54,11 @@ of
 .PP
 \fB\-V\fR
 .RS 4
-Shows the current XBPS release version (library and code)\&.
+Shows the current XBPS API and INDEX versions\&.
 .RE
 .SH "TARGETS"
 .sp
 Please note that all targets are \fBcase insensitive\fR\&.
-.PP
-\fBadd\fR \fIURI\fR
-.RS 4
-Adds a repository as specified in
-\fIURI\fR
-to the repository pool\&. Local (by specifying a
-\fBdirectory\fR) and remote (by specifiying an
-\fBHTTP/HTTPS/FTP URL\fR) repositories can be specified\&.
-.RE
 .PP
 \fBfind\-files\fR \fIpattern\fR
 .RS 4
@@ -86,18 +82,7 @@ will be removed automatically\&.
 .PP
 \fBlist\fR
 .RS 4
-Lists all currently registered repositories in repository pool\&.
-.RE
-.PP
-\fBremove\fR \fIURI\fR
-.RS 4
-Removes a repository from repository pool as specified by the
-\fIURI\fR
-argument\&. You have to use the same
-\fIURI\fR
-that was used in the
-\fBadd\fR
-target\&.
+Lists all working repositories in repository pool\&.
 .RE
 .PP
 \fBsearch\fR \fIpattern\fR
@@ -136,6 +121,11 @@ by searching it in repository pool\&. The first repository in the pool wins\&.
 Syncs the package index file for all registered remote repositories\&. The new file will be fetched if local and remote size/mtime do not match\&.
 .RE
 .SH "FILES"
+.PP
+\fB/etc/xbps-conf.plist\fR
+.RS 4
+Default XBPS configuration file\&.
+.RE
 .PP
 \fB/var/db/xbps/repositories\&.plist\fR
 .RS 4

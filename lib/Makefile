@@ -40,12 +40,12 @@ endif
 OBJS = package_configure.o package_config_files.o package_orphans.o
 OBJS += package_remove.o package_remove_obsoletes.o package_state.o
 OBJS += package_unpack.o package_requiredby.o package_register.o
-OBJS += package_purge.o package_replaces.o package_properties.o
+OBJS += package_purge.o package_replaces.o
 OBJS += transaction_dictionary.o transaction_sortdeps.o
 OBJS += cmpver.o download.o fexec.o humanize_number.o plist.o
 OBJS += plist_archive_entry.o plist_find.o plist_remove.o
-OBJS += plist_fetch.o util.o pkgmatch.o mkpath.o initend.o
-OBJS += regpkgdb_dictionary.o repository_register.o
+OBJS += plist_fetch.o util.o mkpath.o initend.o
+OBJS += regpkgdb_dictionary.o match.o dewey.o
 OBJS += repository_findpkg.o repository_finddeps.o
 OBJS += repository_pool.o repository_sync_index.o
 OBJS += $(COMPAT_SRCS)

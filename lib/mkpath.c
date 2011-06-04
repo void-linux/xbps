@@ -36,7 +36,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 int

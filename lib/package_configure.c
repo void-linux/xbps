@@ -28,7 +28,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 /**
@@ -51,20 +50,16 @@
 int
 xbps_configure_packages(void)
 {
-	prop_dictionary_t d;
+	const struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pkgname, *version;
 	int rv = 0;
 
-	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
+	xhp = xbps_handle_get();
+	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
+	if (iter == NULL)
 		return errno;
-
-	iter = xbps_array_iter_from_dict(d, "packages");
-	if (iter == NULL) {
-		rv = errno;
-		goto out;
-	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
@@ -74,8 +69,6 @@ xbps_configure_packages(void)
 			break;
 	}
 	prop_object_iterator_release(iter);
-out:
-	xbps_regpkgdb_dictionary_release();
 
 	return rv;
 }

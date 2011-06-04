@@ -29,7 +29,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 /**
@@ -162,35 +161,30 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 prop_array_t
 xbps_find_pkg_orphans(prop_array_t orphans_user)
 {
+	const struct xbps_handle *xhp;
 	prop_array_t array = NULL;
-	prop_dictionary_t dict;
 	struct orphan_data od;
 	int rv = 0;
 
-	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL)
-		return NULL;
+	xhp = xbps_handle_get();
 	/*
 	 * Prepare an array with all packages previously found.
 	 */
 	if ((od.array = prop_array_create()) == NULL)
-		goto out;
+		return NULL;
 	/*
 	 * Find out all orphans by looking at the
 	 * regpkgdb dictionary and iterate in reverse order
 	 * in which packages were installed.
 	 */
 	od.orphans_user = orphans_user;
-	rv = xbps_callback_array_iter_reverse_in_dict(dict, "packages",
-	    find_orphan_pkg, &od);
+	rv = xbps_callback_array_iter_reverse_in_dict(xhp->regpkgdb_dictionary,
+	    "packages", find_orphan_pkg, &od);
 	if (rv != 0) {
 		errno = rv;
 		prop_object_release(od.array);
-		array = NULL;
-		goto out;
+		return NULL;
 	}
 	array = prop_array_copy(od.array);
-out:
-	xbps_regpkgdb_dictionary_release();
-
 	return array;
 }

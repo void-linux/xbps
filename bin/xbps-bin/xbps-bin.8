@@ -1,13 +1,4 @@
-'\" t
-.\"     Title: xbps-bin
-.\"    Author: [see the "AUTHORS" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 02/26/2011
-.\"    Manual: \ \&
-.\"    Source: \ \&
-.\"  Language: English
-.\"
-.TH "XBPS\-BIN" "8" "02/26/2011" "\ \&" "\ \&"
+.TH "XBPS\-BIN" "8" "06/04/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -35,6 +26,11 @@ setting that package was installed as it were a dependency, even if it is not.
 Use of this option takes effect in the \fIautoupdate\fR, \fIinstall\fR and
 \fIupdate\fR targets and target packages and its required dependencies will be
 matched.
+.RE
+.PP
+\fB\-C\fR \fIconffile\fR
+.RS 4
+Full path to the \fIxbps-conf.plist\fR plist configuration file.
 .RE
 .PP
 \fB\-c\fR \fIcachedir\fR
@@ -243,26 +239,6 @@ option is used, package files will be
 \fBremoved even if its SHA256 hash don\(cqt match\fR\&.
 .RE
 .PP
-\fBset\-prop \fR\fB\fIproperty\fR\fR\fB \fR\fB\fIpkgname\fR\fR
-.RS 4
-Sets a
-\fIproperty\fR
-for a package as specified in
-\fIpkgname\fR\&. See the
-\fIPROPERTIES\fR
-section below for more information\&.
-.RE
-.PP
-\fBunset\-prop \fR\fB\fIproperty\fR\fR\fB \fR\fB\fIpkgname\fR\fR
-.RS 4
-Unsets a
-\fIproperty\fR
-for a package as specified in
-\fIpkgname\fR\&. See the
-\fIPROPERTIES\fR
-section below for more information\&.
-.RE
-.PP
 \fBshow \fR\fB\fIpkgname\fR\fR
 .RS 4
 Shows information for installed package
@@ -318,34 +294,13 @@ The package has been unpacked in destination root directory, but it is not fully
 .RS 4
 The package has been removed but configuration files and its metadata directory are still available (and it is still registered in the package database)\&. You can purge safely packages that are in this state, modified configuration files will be preserved\&.
 .RE
-.SH "PROPERTIES"
-.sp
-Properties can be specified for packages to control behaviour of some aspects in XBPS\&. The following is the list of properties currently implemented:
 .PP
-\fBhold\fR
-.RS 4
-When this property is set for a package, it will be put on
-\fIhold\fR
-i\&.e the package won\(cqt be updated even if there is a newer version in registered repositories\&.
-.RE
-.PP
-\fBupdate\-first\fR
-.RS 4
-When this property is set, the package will always be updated before all other packages, regardless of its package dependencies\&.
-.RE
-.PP
-\fBvirtual\fR
-.RS 4
-When this property is set, the virtual packages that target package supports via the
-\fBprovides\fR
-object will have preference over other packages matching its
-\fIpackage name\fR\&. A real example is any package that
-\fIprovides\fR
-the
-\fBsyslog\-daemon\-0\fR
-virtual package, if there are two packages supporting this you can choose which one will be installed\&.
-.RE
 .SH "FILES"
+.PP
+\fB/etc/xbps-conf.plist\fR
+.RS 4
+Default XBPS configuration file\&.
+.RE
 .PP
 \fB/var/db/xbps\fR
 .RS 4
@@ -418,18 +373,6 @@ $ xbps\-bin \-yp remove proplib\-devel
 .RS 4
 
 $ xbps\-bin \-Rp remove bsdtar
-.RE
-.PP
-\fBSets\fR the \fIvirtual\fR property in the \fBxbps\-devel\fR package:
-.RS 4
-
-$ xbps\-bin set\-prop virtual xbps\-devel
-.RE
-.PP
-\fBUnsets\fR the \fIhold\fR property in the \fBcoreutils\fR package:
-.RS 4
-
-$ xbps\-bin unset\-prop hold coreutils
 .RE
 .SH "BUGS"
 .sp

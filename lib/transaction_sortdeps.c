@@ -28,10 +28,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
-#include "queue.h"
-#include "strlcpy.h"
 
 /*
  * Sorting algorithm for packages in the transaction dictionary.
@@ -144,12 +141,31 @@ pkgdep_alloc(prop_dictionary_t d, const char *name, const char *trans)
 static void
 pkgdep_end(prop_array_t sorted)
 {
+	prop_dictionary_t sorted_pkgd;
 	struct pkgdep *pd;
+	const char *trans;
 
 	while ((pd = TAILQ_FIRST(&pkgdep_list)) != NULL) {
 		TAILQ_REMOVE(&pkgdep_list, pd, pkgdep_entries);
-		if (sorted != NULL && pd->d != NULL)
-			prop_array_add(sorted, pd->d);
+		if (sorted != NULL && pd->d != NULL) {
+			/*
+			 * Do not add duplicate pkg dictionaries with the
+			 * same transaction reason into the sorted array.
+			 */
+			sorted_pkgd = xbps_find_pkg_in_array_by_name(sorted,
+			   pd->name);
+			if (sorted_pkgd == NULL) {
+				prop_array_add(sorted, pd->d);
+				pkgdep_release(pd);
+				continue;
+			}
+			prop_dictionary_get_cstring_nocopy(sorted_pkgd,
+			    "transaction", &trans);
+			if (strcmp(trans, pd->trans) == 0) {
+				pkgdep_release(pd);
+				continue;
+			}
+		}
 		pkgdep_release(pd);
 	}
 }

@@ -181,13 +181,13 @@ unpack_progress_cb(void *data)
 int
 main(int argc, char **argv)
 {
-	prop_dictionary_t dict;
+	const struct xbps_handle *xhp;
 	struct xbps_handle xh;
 	struct xbps_unpack_progress_data xupd;
 	struct xbps_fetch_progress_data xfpd;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
-	const char *rootdir, *cachedir;
+	const char *rootdir, *cachedir, *conffile;
 	int i , c, flags, rv;
 	bool yes, purge, with_debug, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
@@ -197,10 +197,13 @@ main(int argc, char **argv)
 	yes = purge = force_rm_with_deps = recursive_rm = with_debug = false;
 	install_auto = install_manual = show_download_pkglist_url = false;
 
-	while ((c = getopt(argc, argv, "Ac:dDFfMpRr:Vvy")) != -1) {
+	while ((c = getopt(argc, argv, "AC:c:dDFfMpRr:Vvy")) != -1) {
 		switch (c) {
 		case 'A':
 			install_auto = true;
+			break;
+		case 'C':
+			conffile = optarg;
 			break;
 		case 'c':
 			cachedir = optarg;
@@ -282,34 +285,23 @@ main(int argc, char **argv)
 	xh.rootdir = rootdir;
 	xh.cachedir = cachedir;
 	xh.flags = flags;
+	xh.conffile = conffile;
 	xh.install_reason_manual = install_manual;
 	xh.install_reason_auto = install_auto;
-	xbps_init(&xh);
 
-	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL) {
-		if (errno && errno != ENOENT) {
-			fprintf(stderr,
-			    "E: couldn't initialize regpkgdb dict: %s\n",
-			    strerror(errno));
-			goto out;
-		}
+	if ((rv = xbps_init(&xh)) != 0) {
+		xbps_error_printf("xbps-bin: couldn't initialize library: %s\n",
+		    strerror(errno));
+		exit(EXIT_FAILURE);
 	}
-
-	if ((rv = xbps_repository_pool_init()) != 0) {
-		if (rv != ENOENT) {
-			fprintf(stderr,
-			    "E: couldn't initialize repository pool: %s\n",
-			    strerror(rv));
-			goto out;
-		}
-	}
+	xhp = xbps_handle_get();
 
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
 		if (argc < 1 || argc > 2)
 			usage();
 
-		if (dict == NULL) {
+		if (xhp->regpkgdb_dictionary == NULL) {
 			printf("No packages currently installed.\n");
 			goto out;
 		}
@@ -335,9 +327,9 @@ main(int argc, char **argv)
 		/*
 		 * Find the longest pkgver string to pretty print the output.
 		 */
-		lpc.pkgver_len = find_longest_pkgver(dict);
-		rv = xbps_callback_array_iter_in_dict(dict, "packages",
-		    list_pkgs_in_dict, &lpc);
+		lpc.pkgver_len = find_longest_pkgver(xhp->regpkgdb_dictionary);
+		rv = xbps_callback_array_iter_in_dict(xhp->regpkgdb_dictionary,
+		    "packages", list_pkgs_in_dict, &lpc);
 
 	} else if (strcasecmp(argv[0], "install") == 0) {
 		/* Installs a binary package and required deps. */
@@ -472,8 +464,8 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_callback_array_iter_in_dict(dict, "packages",
-		    list_manual_packages, NULL);
+		rv = xbps_callback_array_iter_in_dict(xhp->regpkgdb_dictionary,
+		    "packages", list_manual_packages, NULL);
 
 	} else if (strcasecmp(argv[0], "show-revdeps") == 0) {
 		/*
@@ -493,23 +485,6 @@ main(int argc, char **argv)
 			usage();
 
 		rv = find_files_in_packages(argv[1]);
-
-	} else if (strcasecmp(argv[0], "set-prop") == 0) {
-		if (argc < 2 || argc > 3)
-			usage();
-		/*
-		 * Sets a property in a package.
-		 */
-		rv = xbps_property_set(argv[1], argv[2]);
-
-	} else if (strcasecmp(argv[0], "unset-prop") == 0) {
-		/*
-		 * Unsets a property in a package.
-		 */
-		if (argc < 2 || argc > 3)
-			usage();
-
-		rv = xbps_property_unset(argv[1], argv[2]);
 
 	} else {
 		usage();

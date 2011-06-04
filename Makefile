@@ -1,6 +1,6 @@
 -include config.mk
 
-SUBDIRS	= include lib bin
+SUBDIRS	= include lib bin etc
 
 ifdef BUILD_API_DOCS
 SUBDIRS += doc
@@ -20,8 +20,10 @@ install:
 	@echo
 	@echo "Binaries have been installed into $(DESTDIR)$(SBINDIR)."
 	@echo "Librares have been installed into $(DESTDIR)$(LIBDIR)."
+	@echo "Configuration file has been installed into $(DESTDIR)$(ETCDIR)."
 	@echo
-	@echo "WARNING: Don't forget to rerun ldconfig(1)."
+	@echo "WARNING: Don't forget to rerun ldconfig(1) if $(LIBDIR) is not"
+	@echo "WARNING: in your ld.so.conf by default."
 	@echo
 
 .PHONY: uninstall

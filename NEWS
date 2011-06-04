@@ -1,7 +1,26 @@
 xbps-0.9.0 (???):
 
- * API/ABI break. Renamed some functions to reflect its description
-   a bit better... expect some more breakage in the future as well.
+ * Fixed some bugs with virtual packages, to not adding duplicate package
+   dictionaries in the transaction dictionary.
+
+ * xbps-bin(8)/xbps-repo(8): the 'show-files' target now prints the target
+   file on symlinks, i.e: "/sbin/foo -> /sbin/blah".
+
+ * Changed the package pattern match code to the one available on NetBSD.
+   It's much better and provides more alternative pattern matching options.
+
+ * A new configuration file in plist format to specify repositories and
+   virtual packages has been created, defaults to "/etc/xbps-conf.plist".
+   That means that you no longer need to register/unregister repositories;
+   just add your favourite local or remote repository and the first time
+   XBPS needs to access the pkg-index file it will be downloaded.
+
+   More options and properties will be added to the configuration file in
+   the future. By default we use the official public remote repository,
+   and "dcron" package for a cron daemon package.
+
+   The ABI/API is not compatible anymore with previous versions, you've
+   been advised :-)
 
  * xbps-bin(8): the 'check' target now also checks for modified symlinks,
    and warns if any of them has been modified. For this to work, the package

@@ -29,7 +29,6 @@
 #include <errno.h>
 #include <dirent.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 /**
@@ -96,21 +95,16 @@ remove_pkg_metadata(const char *pkgname, const char *rootdir)
 int
 xbps_purge_packages(void)
 {
-
-	prop_dictionary_t d;
+	const struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pkgname;
 	int rv = 0;
 
-	if ((d = xbps_regpkgdb_dictionary_get()) == NULL)
+	xhp = xbps_handle_get();
+	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
+	if (iter == NULL)
 		return errno;
-
-	iter = xbps_array_iter_from_dict(d, "packages");
-	if (iter == NULL) {
-		rv = errno;
-		goto out;
-	}
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
@@ -118,9 +112,6 @@ xbps_purge_packages(void)
 			break;
 	}
 	prop_object_iterator_release(iter);
-out:
-	xbps_regpkgdb_dictionary_release();
-
 	return rv;
 }
 
@@ -139,35 +130,31 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Firstly let's get the pkg dictionary from regpkgdb.
 	 */
-	if ((dict = xbps_regpkgdb_dictionary_get()) == NULL)
+	pkgd = xbps_find_pkg_in_dict_by_name(xhp->regpkgdb_dictionary,
+	    "packages", pkgname);
+	if (pkgd == NULL)
 		return errno;
 
-	pkgd = xbps_find_pkg_in_dict_by_name(dict, "packages", pkgname);
-	if (pkgd == NULL) {
-		rv = errno;
-		goto out;
-	}
 	if (check_state) {
 		/*
 		 * Skip packages that aren't in "config-files" state.
 		 */
 		if ((rv = xbps_pkg_state_dictionary(pkgd, &state)) != 0)
-			goto out;
+			return rv;
 		if (state != XBPS_PKG_STATE_CONFIG_FILES)
-			goto out;
+			return rv;
 	}
 	/*
 	 * Remove unmodified configuration files.
 	 */
 	dict = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
-	if (dict == NULL) {
-		rv = errno;
-		goto out;
-	}
+	if (dict == NULL)
+		return errno;
+
 	if (prop_dictionary_get(dict, "conf_files")) {
 		if ((rv = xbps_remove_pkg_files(dict, "conf_files")) != 0) {
 			prop_object_release(dict);
-			goto out;
+			return rv;
 		}
 	}
 	/*
@@ -178,13 +165,13 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		prop_object_release(dict);
 		xbps_error_printf("[purge] %s: cannot change to rootdir: %s.\n",
 		    pkgname, strerror(rv));
-		goto out;
+		return rv;
 	}
 	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE", XBPS_META_PATH, pkgname);
 	if (buf == NULL) {
 		prop_object_release(dict);
 		rv = ENOMEM;
-		goto out;
+		return rv;
 	}
 	if (access(buf, X_OK) == 0) {
 		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
@@ -198,7 +185,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 				    "REMOVE script: %s\n", pkgname,
 				    strerror(errno));
 				prop_object_release(dict);
-				goto out;
+				return rv;
 			}
 		}
 	}
@@ -210,18 +197,15 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	if ((rv = remove_pkg_metadata(pkgname, xhp->rootdir)) != 0) {
 		xbps_error_printf("%s: couldn't remove metadata files: %s\n",
 		    pkgname, strerror(rv));
-		goto out;
+		return rv;
 	}
 	if ((rv = xbps_unregister_pkg(pkgname)) != 0) {
 		xbps_error_printf("%s: couldn't unregister package: %s\n",
 		    pkgname, strerror(rv));
-		goto out;
+		return rv;
 	}
 	if (xhp->flags & XBPS_FLAG_VERBOSE)
 		xbps_printf("Package %s purged successfully.\n", pkgname);
-
-out:
-	xbps_regpkgdb_dictionary_release();
 
 	return rv;
 }

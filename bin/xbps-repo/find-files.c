@@ -60,7 +60,7 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, prop_dictionary_keysym_t ke
 		prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
 		if ((strcmp(filestr, pattern) == 0) ||
 		    (strstr(filestr, pattern)) ||
-		    (xbps_pkgpattern_match(filestr, __UNCONST(pattern)) == 1))
+		    (xbps_pkgpattern_match(filestr, pattern) == 1))
 			printf(" %s: %s (%s)\n", pkgver, filestr, typestr);
 	}
 	prop_object_iterator_release(iter);

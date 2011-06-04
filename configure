@@ -33,6 +33,7 @@ for instance \`--prefix=\$HOME'.
 --includedir=DIR		C header files [PREFIX/include]
 --mandir=DIR			man documentation [PREFIX/share/man]
 --datadir=DIR			read-only architecture-independent data [PREFIX/share]
+--etcdir=DIR			configuration files [PREFIX/etc]
 
 --debug				Build with debugging code and symbols
 --silent			Build silently, hidding compilation details.
@@ -58,6 +59,7 @@ for x; do
 	--host) HOST=$var;;
 	--target) TARGET=$var;;
 	--includedir) INCLUDEDIR=$var;;
+	--etcdir) ETCDIR=$var;;
 	--libdir) LIBDIR=$var;;
 	--datadir|--infodir) ;; # ignore autotools
 	--with-api-docs) BUILD_API_DOCS=$var;;
@@ -79,6 +81,7 @@ done
 : ${SHAREDIR:=${PREFIX}/share}
 : ${MANDIR:=${PREFIX}/share/man}
 : ${INCLUDEDIR:=${PREFIX}/include}
+: ${ETCDIR:=${PREFIX}/etc}
 : ${TOPDIR:=..}
 
 _which()
@@ -137,6 +140,7 @@ echo "INCLUDEDIR ?=	$INCLUDEDIR" >>$CONFIG_MK
 echo "LIBDIR ?=	$LIBDIR" >>$CONFIG_MK
 echo "MANDIR ?=	$MANDIR" >>$CONFIG_MK
 echo "SHAREDIR ?= $SHAREDIR" >>$CONFIG_MK
+echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 
 [ -z "$DEBUG" ] && DEBUG=no
 [ -z "$BUILD_PIE" ] && BUILD_PIE_VAL=no
@@ -172,6 +176,7 @@ if [ -n "$LDFLAGS" ]; then
 fi
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DHAVE_CONFIG_H" >>$CONFIG_MK
+echo "CPPFLAGS +=	-DXBPS_CONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 
 if [ -n "$DEBUG" -a "$DEBUG" != no -a "$DEBUG" != false ]; then
 	echo "Building with debugging symbols."
@@ -510,6 +515,8 @@ echo "   LIBDIR =		$LIBDIR"
 echo "   INCLUDEDIR =		$INCLUDEDIR"
 echo "   SHAREDIR =		$SHAREDIR"
 echo "   MANDIR =		$MANDIR"
+echo "   ETCDIR =		$ETCDIR"
+
 if [ -n "$CFLAGS" ]; then
 	echo "   CFLAGS =		$CFLAGS"
 fi

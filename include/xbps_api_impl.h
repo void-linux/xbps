@@ -35,6 +35,10 @@
 #include <archive_entry.h>
 
 #include <xbps_api.h>
+#include "queue.h"
+#include "strlcpy.h"
+#include "strlcat.h"
+#include "fetch.h"
 
 #define ARCHIVE_READ_BLOCKSIZE	10240
 
@@ -73,6 +77,26 @@
 #define XBPS_FETCH_CACHECONN_HOST       2
 
 __BEGIN_DECLS
+
+/**
+ * @private
+ * From lib/dewey.c
+ */
+int HIDDEN dewey_match(const char *, const char *);
+
+/**
+ * @private
+ * From lib/regpkgdb_dictionary.c
+ */
+int HIDDEN xbps_regpkgdb_dictionary_init(struct xbps_handle *xhp);
+void HIDDEN xbps_regpkgdb_dictionary_release(void);
+
+/**
+ * @private
+ * From lib/repository_pool.c
+ */
+int HIDDEN xbps_repository_pool_init(void);
+void HIDDEN xbps_repository_pool_release(void);
 
 /**
  * @private

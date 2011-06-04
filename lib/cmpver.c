@@ -25,7 +25,6 @@
 #include <strings.h>
 #include <ctype.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 /*

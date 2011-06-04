@@ -33,8 +33,6 @@
 /* From index.c */
 int	xbps_repo_genindex(const char *);
 /* From repository.c */
-int	register_repository(const char *);
-int	unregister_repository(const char *);
 int	show_pkg_info_from_repolist(const char *);
 int	show_pkg_deps_from_repolist(const char *);
 int	repository_sync(void);

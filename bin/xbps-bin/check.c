@@ -53,18 +53,15 @@
 int
 xbps_check_pkg_integrity_all(void)
 {
-	prop_dictionary_t d;
+	const struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter = NULL;
 	const char *pkgname, *version;
 	int rv = 0;
 	size_t npkgs = 0, nbrokenpkgs = 0;
 
-	d = xbps_regpkgdb_dictionary_get();
-	if (d == NULL)
-		return ENODEV;
-
-	iter = xbps_array_iter_from_dict(d, "packages");
+	xhp = xbps_handle_get();
+	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
 	if (iter == NULL) {
 		rv = ENOENT;
 		goto out;
@@ -85,8 +82,6 @@ xbps_check_pkg_integrity_all(void)
 out:
 	if (iter)
 		prop_object_iterator_release(iter);
-
-	xbps_regpkgdb_dictionary_release();
 
 	return rv;
 }

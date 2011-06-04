@@ -46,7 +46,7 @@
 
 #include "config.h"
 #include <openssl/sha.h>
-#include <xbps_api.h>
+
 #include "xbps_api_impl.h"
 
 /**

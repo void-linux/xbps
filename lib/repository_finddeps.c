@@ -28,7 +28,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <xbps_api.h>
 #include "xbps_api_impl.h"
 
 static int
@@ -36,7 +35,7 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
-	const char *pkgname, *pkgver, *repoloc;
+	const char *pkgname, *pkgver, *repoloc, *reason;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -64,15 +63,6 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 		return errno;
 	}
 	/*
-	 * Always set "not-installed" package state. Will be overwritten
-	 * to its correct state later.
-	 */
-	rv = xbps_set_pkg_state_dictionary(dict, XBPS_PKG_STATE_NOT_INSTALLED);
-	if (rv != 0) {
-		prop_object_release(dict);
-		return rv;
-	}
-	/*
 	 * Overwrite package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
 	 */
@@ -81,11 +71,26 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 			prop_object_release(dict);
 			return rv;
 		}
+		/* pkg not installed */
 		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
 	if ((rv = xbps_set_pkg_state_dictionary(dict, state)) != 0) {
 		prop_object_release(dict);
 		return rv;
+	}
+	/*
+	 * If pkg dependency is already installed, skip it if the transaction
+	 * reason is "install". 
+	 */
+	if (state == XBPS_PKG_STATE_INSTALLED) {
+		prop_dictionary_get_cstring_nocopy(repo_pkgd,
+		    "transaction", &reason);
+		if (strcmp(reason, "install") == 0) {
+			xbps_dbg_printf("%s: skipping, already installed.\n",
+			    pkgver);
+			prop_object_release(dict);
+			return 0;
+		}
 	}
 	/*
 	 * Add required objects into package dep's dictionary.
@@ -321,7 +326,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 				break;
 			}
 			free(pkgname);
-			rv = xbps_pkgpattern_match(pkgver_q, __UNCONST(reqpkg));
+			rv = xbps_pkgpattern_match(pkgver_q, reqpkg);
 			if (rv == 0) {
 				/*
 				 * Package is installed but does not match
