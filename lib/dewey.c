@@ -254,7 +254,7 @@ vtest(arr_t *lhs, int tst, arr_t *rhs)
 }
 
 /*
- * Compare two dewey decimal numbers
+ * Compare two dewey decimal numbers.
  */
 static int
 dewey_cmp(const char *lhs, int op, const char *rhs)
@@ -273,6 +273,22 @@ dewey_cmp(const char *lhs, int op, const char *rhs)
 	freeversion(&left);
 	freeversion(&right);
 	return retval;
+}
+
+/*
+ * Returns -1, 0 or 1 depending on if the version components of
+ * pkg1 is less than, equal to or greater than pkg2. No comparison
+ * comparison of the basenames is done.
+ */
+int
+xbps_cmpver(const char *pkg1, const char *pkg2)
+{
+	if (dewey_cmp(pkg1, DEWEY_LT, pkg2))
+		return -1;
+	else if (dewey_cmp(pkg1, DEWEY_GT, pkg2))
+		return 1;
+	else
+		return 0;
 }
 
 /*
