@@ -82,7 +82,10 @@ xbps_init(struct xbps_handle *xh)
 	 * Initialize repository pool.
 	 */
 	if ((rv = xbps_repository_pool_init()) != 0) {
-		if (rv != ENOENT) {
+		if (rv == ENOTSUP) {
+			xbps_dbg_printf("%s: empty repository list.\n",
+			    __func__);
+		} else if (rv != ENOENT && rv != ENOTSUP) {
 			xbps_dbg_printf("%s: couldn't initialize "
 			    "repository pool: %s\n", strerror(rv));
 			xbps_end();

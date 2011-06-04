@@ -67,10 +67,12 @@ xbps_repository_pool_init(void)
 		return 0;
 
 	array = prop_dictionary_get(xhp->conf_dictionary, "repositories");
-	if (array == NULL) {
-		rv = errno;
-		goto out;
-	}
+	if (array == NULL)
+		return errno;
+
+	if (prop_array_count(array) == 0)
+		return ENOTSUP;
+
 	iter = prop_array_iterator(array);
 	if (iter == NULL) {
 		rv = errno;
