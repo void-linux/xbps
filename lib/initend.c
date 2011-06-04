@@ -73,10 +73,14 @@ xbps_init(struct xbps_handle *xh)
 	xhp->conf_dictionary =
 	    prop_dictionary_internalize_from_file(xhp->conffile);
 	if (xhp->conf_dictionary == NULL) {
-		xbps_dbg_printf("%s: cannot internalize conf "
-		    "dictionary: %s\n", strerror(errno));
-		xbps_end();
-		return errno;
+		if (errno != ENOENT) {
+			xbps_dbg_printf("%s: cannot internalize conf "
+			    "dictionary: %s\n", strerror(errno));
+			xbps_end();
+			return errno;
+		}
+		xbps_dbg_printf("%s: conf_dictionary not internalized.\n",
+		    __func__);
 	}
 	/*
 	 * Initialize repository pool.

@@ -62,6 +62,8 @@ xbps_repository_pool_init(void)
 	bool duprepo;
 
 	xhp = xbps_handle_get();
+	if (xhp->conf_dictionary == NULL)
+		return ENOTSUP;
 
 	if (repolist_initialized)
 		return 0;
