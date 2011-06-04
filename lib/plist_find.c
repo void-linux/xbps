@@ -177,7 +177,7 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 		return NULL;
 
 	if ((iter = xbps_array_iter_from_dict(xhp->conf_dictionary,
-	    "package-virtual")) == NULL)
+	    "virtual-packages")) == NULL)
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {

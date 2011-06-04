@@ -38,7 +38,7 @@
 	</array>
 
 	<!-- Virtual packages -->
-	<key>package-virtual</key>
+	<key>virtual-packages</key>
 	<array>
 		<!-- This dictionary sets that we _always_ want
 		     the "dcron" package to be the default cron-daemon
