@@ -192,7 +192,7 @@ main(int argc, char **argv)
 	bool yes, purge, with_debug, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
 
-	rootdir = cachedir = NULL;
+	rootdir = cachedir = conffile = NULL;
 	flags = rv = 0;
 	yes = purge = force_rm_with_deps = recursive_rm = with_debug = false;
 	install_auto = install_manual = show_download_pkglist_url = false;

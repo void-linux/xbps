@@ -86,11 +86,11 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xbps_fetch_progress_data xfpd;
 	prop_dictionary_t pkgd;
-	const char *rootdir = NULL, *cachedir = NULL, *conffile = NULL;
+	const char *rootdir, *cachedir, *conffile;
 	int c, rv = 0;
 	bool debug = false;
 
-	rootdir = cachedir = NULL;
+	rootdir = cachedir = conffile = NULL;
 
 	while ((c = getopt(argc, argv, "C:c:dr:V")) != -1) {
 		switch (c) {
