@@ -269,7 +269,6 @@ if [ $? -eq 0 ]; then
 	echo "CPPFLAGS +=	-DHAVE_VISIBILITY=1" >>$CONFIG_MK
 fi
 check_compiler_flag "std=c99" "" CFLAGS
-check_compiler_flag "l,--as-needed" W LDFLAGS
 
 #
 # Check for -Wl,--export-dynamic and if it fails, try -rdynamic.
