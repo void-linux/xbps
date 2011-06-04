@@ -421,14 +421,14 @@ fi
 if [ -z "$EXTERNAL_LIBFETCH" ]; then
 	EXTERNAL_LIBFETCH_VALUE="no (using internal copy)"
 	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
-	echo "PROG_LDFLAGS +=	-lxbps" >>$CONFIG_MK
-	echo "STATIC_LIBS =	-lxbps" >>$CONFIG_MK
+	echo "PROG_LDFLAGS +=	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
+	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 else
 	EXTERNAL_LIBFETCH_VALUE=yes
 	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
-	echo "PROG_LDFLAGS +=	-lxbps -lfetch" >>$CONFIG_MK
-	echo "STATIC_LIBS =	-lxbps -lfetch" >>$CONFIG_MK
+	echo "PROG_LDFLAGS +=	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
+	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
 fi
 
 #
