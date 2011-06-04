@@ -108,7 +108,7 @@ xbps_init(struct xbps_handle *xh)
 	}
 	if (fetch_cache_conn == 0)
 		fetch_cache_conn = XBPS_FETCH_CACHECONN;
-	if (fetch_cache_conn_host != 0)
+	if (fetch_cache_conn_host == 0)
 		fetch_cache_conn_host = XBPS_FETCH_CACHECONN_HOST;
 
 	xbps_fetch_set_cache_connection(fetch_cache_conn,
