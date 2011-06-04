@@ -42,102 +42,27 @@ struct object_info {
 };
 
 static const struct object_info obj_info[] = {
-	{
-		.key = "repository",
-		.descr = "Repository: "
-	},
-	{
-		.key = "filename",
-		.descr = "Binary package: "
-	},
-	{
-		.key = "filename-size",
-		.descr = "Binary package size"
-	},
-	{
-		.key = "filename-sha256",
-		.descr = "Binary package SHA256: "
-	},
-	{
-		.key = "archive-compression-type",
-		.descr = "Binary package compression type: "
-	},
-	{
-		.key = "pkgname",
-		.descr = "Package: "
-	},
-	{
-		.key = "installed_size",
-		.descr = "Installed size"
-	},
-	{
-		.key = "maintainer",
-		.descr = "Maintainer: "
-	},
-	{
-		.key = "architecture",
-		.descr = "Architecture: "
-	},
-	{
-		.key = "version",
-		.descr = "Version: "
-	},
-	{
-		.key = "homepage",
-		.descr = "Upstream URL: "
-	},
-	{
-		.key = "license",
-		.descr = "License(s): "
-	},
-	{
-		.key = "build_date",
-		.descr = "Package build date: "
-	},
-	{
-		.key = "preserve",
-		.descr = "Preserve files"
-	},
-	{
-		.key = "replaces",
-		.descr = "Replaces these packages"
-	},
-	{
-		.key = "provides",
-		.descr = "Provides virtual packages"
-	},
-	{
-		.key = "conflicts",
-		.descr = "Conflicts with"
-	},
-	{
-		.key = "hold",
-		.descr = "Hold update"
-	},
-	{
-		.key = "update-first",
-		.descr = "Always update first"
-	},
-	{
-		.key = "virtual-prefer",
-		.descr = "Virtual packages enabled"
-	},
-	{
-		.key = "conf_files",
-		.descr = "Configuration files"
-	},
-	{
-		.key = "short_desc",
-		.descr = "Description: "
-	},
-	{
-		.key = "long_desc",
-		.descr = "",
-	},
-	{
-		.key = NULL,
-		.descr = NULL
-	}
+	{ "repository", "Repository: " },
+	{ "filename", "Binary package: " },
+	{ "filename-size", "Binary package size" },
+	{ "filename-sha256", "Binary package SHA256: " },
+	{ "archive-compression-type", "Binary package compression type: " },
+	{ "pkgname", "Package name: " },
+	{ "version", "Version: " },
+	{ "installed_size", "Installed size" },
+	{ "maintainer", "Maintainer: " },
+	{ "architecture", "Architecture: " },
+	{ "homepage", "Upstream URL: " },
+	{ "license", "License(s): " },
+	{ "build_date", "Package build date: " },
+	{ "preserve", "Preserve files" },
+	{ "replaces", "Replaces these packages" },
+	{ "provides", "Provides these virtual packages" },
+	{ "conflicts", "Conflicts with" },
+	{ "conf_files", "Configuration files" },
+	{ "short_desc", "Description: " },
+	{ "long_desc", "" },
+	{ NULL, NULL }
 };
 
 void
