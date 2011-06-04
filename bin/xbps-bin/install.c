@@ -145,6 +145,8 @@ again:
 			continue;
 		}
 		if (xbps_mkpath(xhp->cachedir, 0755) == -1) {
+			xbps_error_printf("xbps-bin: cannot mkdir cachedir "
+			    "`%s': %s.\n", xhp->cachedir, strerror(errno));
 			free(binfile);
 			return errno;
 		}
