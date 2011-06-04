@@ -32,7 +32,6 @@
 #include <errno.h>
 
 #include "xbps_api_impl.h"
-#include "fetch.h"
 
 /**
  * @file lib/plist_fetch.c
@@ -53,6 +52,8 @@ fetch_archive_open(struct archive *a, void *client_data)
 
 	(void)a;
 
+	xbps_dbg_printf("%s: establishing connection to `%s'...\n",
+	    __func__, f->url->host);
 	f->fetch = fetchGet(f->url, NULL);
 	if (f->fetch == NULL)
 		return ENOENT;
@@ -68,6 +69,9 @@ fetch_archive_read(struct archive *a, void *client_data, const void **buf)
 	(void)a;
 	*buf = f->buffer;
 
+	xbps_dbg_printf("%s: fetching data from `%s'...\n",
+	    __func__, f->url->doc);
+
 	return fetchIO_read(f->fetch, f->buffer, sizeof(f->buffer));
 }
 
@@ -78,8 +82,11 @@ fetch_archive_close(struct archive *a, void *client_data)
 
 	(void)a;
 
-	if (f->fetch != NULL)
+	if (f->fetch != NULL) {
+		xbps_dbg_printf("%s: closing connection to `%s'...\n",
+		    __func__, f->url->host);
 		fetchIO_close(f->fetch);
+	}
 	free(f);
 
 	return 0;
