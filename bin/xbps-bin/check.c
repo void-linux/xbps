@@ -212,7 +212,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 				break;
 			default:
 				fprintf(stderr,
-				    "%s: unexpected error for %s (%s)\n",
+				    "%s: can't check `%s' (%s)\n",
 				    pkgname, file, strerror(rv));
 				break;
 			}
@@ -252,8 +252,8 @@ xbps_check_pkg_integrity(const char *pkgname)
 					broken = true;
 				} else
 					fprintf(stderr,
-					    "%s: unexpected error for "
-					    "%s (%s)\n", pkgname, file,
+					    "%s: can't check `%s' (%s)\n",
+					    pkgname, file,
 					    strerror(errno));
 			}
 			free(path);
