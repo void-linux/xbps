@@ -146,8 +146,8 @@ mkcomponent(arr_t *ap, const char *num)
 			}
 		} else {
 			ap->size *= 2;
-			if ((ap->v = realloc(ap->v, ap->size * sizeof(int)))
-			    == NULL) {
+			ap->v = realloc(ap->v, ap->size * sizeof(int));
+			if (ap->v == NULL) {
 				xbps_dbg_printf("%s: realloc ENOMEM\n",
 				    __func__);
 				exit(EXIT_FAILURE);
@@ -342,8 +342,7 @@ dewey_match(const char *pattern, const char *pkg)
 		strlcpy(ver, sep, MIN((ssize_t)sizeof(ver), sep2-sep+1));
 		if (dewey_cmp(version, op, ver))
 			return 1;
-	}
-	else {
+	} else {
 		if (dewey_cmp(version, op, sep))
 			return 1;
 	}
