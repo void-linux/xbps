@@ -1314,16 +1314,6 @@ char *xbps_pkg_name(const char *pkg);
 char *xbps_pkgpattern_name(const char *pattern);
 
 /**
- * Gets the package epoch version in a package string, i.e <b>foo-2.0:epoch</b>.
- *
- * @param[in] pkg Package string.
- * 
- * @return A string with the epoch version string, NULL if it couldn't find
- * the epoch component.
- */
-const char *xbps_pkg_epoch(const char *pkg);
-
-/**
  * Gets the package version in a package string, i.e <b>foo-2.0</b>.
  * 
  * @param[in] pkg Package string.
