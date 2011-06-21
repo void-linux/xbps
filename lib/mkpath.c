@@ -78,13 +78,13 @@ xbps_mkpath(const char *path, mode_t mode)
 
 			sverrno = errno;
 			if (stat(ppath, &sb) < 0) {
-					/* Not there; use mkdir()s error */
+				/* Not there; use mkdir()s error */
 				errno = sverrno;
 				free(ppath);
 				return -1;
 			}
 			if (!S_ISDIR(sb.st_mode)) {
-					/* Is there, but isn't a directory */
+				/* Is there, but isn't a directory */
 				errno = ENOTDIR;
 				free(ppath);
 				return -1;
