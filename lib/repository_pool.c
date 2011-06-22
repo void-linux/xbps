@@ -111,7 +111,7 @@ xbps_repository_pool_init(void)
 				xbps_printf("Synchronizing package index for "
 				    "`%s'...\n", repouri);
 				rv = xbps_repository_sync_pkg_index(repouri);
-				if (rv != 0) {
+				if (rv == -1) {
 					xbps_error_printf("failed to sync `%s'"
 					    ": %s %s\n",
 					   repouri, strerror(errno),
@@ -225,7 +225,20 @@ xbps_repository_pool_foreach(
 	bool done = false;
 
 	assert(fn != NULL);
-	assert(repolist_initialized != false);
+	/*
+	 * Initialize repository pool.
+	 */
+	if ((rv = xbps_repository_pool_init()) != 0) {
+		if (rv == ENOTSUP) {
+			xbps_dbg_printf("%s: empty repository list.\n",
+			    __func__);
+		} else if (rv != ENOENT && rv != ENOTSUP) {
+			xbps_dbg_printf("%s: couldn't initialize "
+			    "repository pool: %s\n", __func__, strerror(rv));
+		}
+		xbps_end();
+		return rv;
+	}
 
 	SIMPLEQ_FOREACH_SAFE(rpool, &rpool_queue, rp_entries, rpool_new) {
 		rv = (*fn)(rpool->rpi, arg, &done);
@@ -356,7 +369,20 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 	int rv = 0;
 
 	assert(pkg != NULL);
-	assert(repolist_initialized != false);
+	/*
+	 * Initialize repository pool.
+	 */
+	if ((rv = xbps_repository_pool_init()) != 0) {
+		if (rv == ENOTSUP) {
+			xbps_dbg_printf("%s: empty repository list.\n",
+			    __func__);
+		} else if (rv != ENOENT && rv != ENOTSUP) {
+			xbps_dbg_printf("%s: couldn't initialize "
+			    "repository pool: %s\n", __func__, strerror(rv));
+		}
+		xbps_end();
+		return NULL;
+	}
 
 	rpf = calloc(1, sizeof(*rpf));
 	if (rpf == NULL)
@@ -417,7 +443,6 @@ xbps_repository_pool_dictionary_metadata_plist(const char *pkgname,
 
 	assert(pkgname != NULL);
 	assert(plistf != NULL);
-	assert(repolist_initialized != false);
 
 	/*
 	 * Iterate over the the repository pool and search for a plist file

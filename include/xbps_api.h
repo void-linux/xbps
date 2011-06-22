@@ -259,7 +259,6 @@ struct xbps_handle {
  *   - Initialize the debug printfs.
  *   - Internalize the proplib dictionary in config file.
  *   - Internalize the regpkgdb dictionary (if available).
- *   - Initialize the repository pool interface (if available).
  *
  * @param[in] xh Pointer to an xbps_handle structure. It's
  * assumed that this pointer is not NULL.

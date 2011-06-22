@@ -124,20 +124,6 @@ xbps_init(struct xbps_handle *xh)
 	    xhp->fetch_timeout);
 
 	/*
-	 * Initialize repository pool.
-	 */
-	if ((rv = xbps_repository_pool_init()) != 0) {
-		if (rv == ENOTSUP) {
-			xbps_dbg_printf("%s: empty repository list.\n",
-			    __func__);
-		} else if (rv != ENOENT && rv != ENOTSUP) {
-			xbps_dbg_printf("%s: couldn't initialize "
-			    "repository pool: %s\n", __func__, strerror(rv));
-			xbps_end();
-			return rv;
-		}
-	}
-	/*
 	 * Initialize regpkgdb dictionary.
 	 */
         if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
