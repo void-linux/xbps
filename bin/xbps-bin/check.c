@@ -161,7 +161,7 @@ xbps_check_pkg_integrity(const char *pkgname)
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			if (strcmp(tgt, "") == 0) {
 				if (xhp->flags & XBPS_FLAG_VERBOSE)
-					fprintf(stderr, "%s: `%s' symlink with"
+					fprintf(stderr, "%s: `%s' symlink with "
 					    "empty target object!\n", pkgname,
 					    file);
 				continue;
