@@ -74,7 +74,6 @@ xbps_check_pkg_integrity_all(void)
 		if ((rv = xbps_check_pkg_integrity(pkgname)) != 0)
 			nbrokenpkgs++;
 		npkgs++;
-		printf("\033[1A\033[K");
 	}
 	printf("%zu package%s processed: %zu broken.\n", npkgs,
 	    npkgs == 1 ? "" : "s", nbrokenpkgs);
@@ -159,9 +158,14 @@ xbps_check_pkg_integrity(const char *pkgname)
 		while ((obj = prop_object_iterator_next(iter))) {
 			if (!prop_dictionary_get_cstring_nocopy(obj, "target", &tgt))
 				continue;
-			if (strcmp(tgt, "") == 0)
-				continue;
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+			if (strcmp(tgt, "") == 0) {
+				if (xhp->flags & XBPS_FLAG_VERBOSE)
+					fprintf(stderr, "%s: `%s' symlink with"
+					    "empty target object!\n", pkgname,
+					    file);
+				continue;
+			}
 			if (realpath(file, buf) == NULL) {
 				prop_object_iterator_release(iter);
 				rv = errno;
@@ -284,7 +288,8 @@ xbps_check_pkg_integrity(const char *pkgname)
 			}
 			rv = xbps_check_is_installed_pkg_by_pattern(reqpkg);
 			if (rv <= 0) {
-				printf("%s: dependency not satisfied: %s\n",
+				fprintf(stderr,
+				    "%s: dependency not satisfied: %s\n",
 				    pkgname, reqpkg);
 			}
 			rv = 0;
