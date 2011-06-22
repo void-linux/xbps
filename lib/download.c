@@ -233,11 +233,13 @@ xbps_fetch_file(const char *uri,
 		rv = -1;
 		goto out;
 	} else if (st.st_size > url_st.size) {
-		xbps_error_printf("Local file %s is greater than remote "
-		    "file!\n", filename);
-		errno = EFBIG;
-		rv = -1;
-		goto out;
+		/*
+		 * Remove local file if bigger than remote, and refetch the
+		 * whole shit again.
+		 */
+		xbps_warn_printf("Local file %s is greater than remote, "
+		    "removing local file and refetching...\n", filename);
+		(void)remove(destfile);
 	} else if (restart && url_st.mtime && url_st.size &&
 		   url_st.size == st.st_size && url_st.mtime == st.st_mtime) {
 		/* Local and remote size/mtime match, do nothing. */
