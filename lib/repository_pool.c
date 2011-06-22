@@ -110,10 +110,15 @@ xbps_repository_pool_init(void)
 				/* file not found, fetch it */
 				xbps_printf("Synchronizing package index for "
 				    "`%s'...\n", repouri);
-				if (xbps_repository_sync_pkg_index(repouri) == -1) {
-					xbps_error_printf("failed to fetch "
-					    "pkg-index.plist for `%s': %s\n",
-					   repouri, xbps_fetch_error_string());
+				rv = xbps_repository_sync_pkg_index(repouri);
+				if (rv != 0) {
+					xbps_error_printf("failed to sync `%s'"
+					    ": %s %s\n",
+					   repouri, strerror(errno),
+					   xbps_fetch_error_string());
+					rv = errno;
+					free(plist);
+					goto out;
 				}
 			}
 		}
