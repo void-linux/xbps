@@ -90,7 +90,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	const char *fetch_outputdir;
 	char *rpidx, *lrepodir, *uri_fixedp;
 	char *metadir, *tmp_metafile, *lrepofile;
-	int rv = 0;
+	int sverrno, rv = 0;
 	bool only_sync = false;
 
 	assert(uri != NULL);
@@ -117,9 +117,11 @@ xbps_repository_sync_pkg_index(const char *uri)
 		rv = -1;
 		goto out;
 	}
-	if ((rv = xbps_mkpath(metadir, 0755)) == -1)
+	if ((rv = xbps_mkpath(metadir, 0755)) == -1) {
+		xbps_dbg_printf("%s: failed to create metadir `%s': %s\n",
+		    __func__, metadir, strerror(errno));
 		goto out;
-
+	}
 	/*
 	 * Remote repository pkg-index.plist full URL.
 	 */
@@ -163,7 +165,11 @@ xbps_repository_sync_pkg_index(const char *uri)
 	 */
 	rv = xbps_fetch_file(rpidx, fetch_outputdir, true, NULL);
 	if (rv == -1) {
+		sverrno = errno;
+		xbps_dbg_printf("%s: failed to sync: %s %s\n",
+		    __func__, strerror(errno), xbps_fetch_error_string());
 		(void)remove(tmp_metafile);
+		errno = sverrno;
 		goto out;
 	}
 	if (only_sync)
