@@ -18,6 +18,10 @@
 	<key>fetch-cache-connections-per-host</key>
 	<integer>6</integer>
 
+	<!-- Default timeout limit for connections, in seconds. -->
+	<key>fetch-timeout-connection</key>
+	<integer>30</integer>
+
 	<!-- Repository list -->
 	<key>repositories</key>
 	<array>

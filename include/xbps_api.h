@@ -59,7 +59,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"API: 20110604 INDEX: " XBPS_PKGINDEX_VERSION
+#define XBPS_RELVER		"API: 20110622 INDEX: " XBPS_PKGINDEX_VERSION
 
 /** 
  * @def XBPS_META_PATH
@@ -187,6 +187,14 @@ struct xbps_handle {
 	 * as argument to the \a xbps_fetch_cb function callback.
 	 */
 	struct xbps_fetch_progress_data *xfpd;
+	/**
+	 * @private fetch_timeout
+	 *
+	 * Unsigned integer to specify libfetch's timeout limit.
+	 * If not set, it defaults to 30 (in seconds). This is set internally
+	 * by the API from a setting in configuration file.
+	 */
+	uint16_t fetch_timeout;
 	/**
 	 * @var flags
 	 *

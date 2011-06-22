@@ -1,5 +1,10 @@
 xbps-0.9.0 (???):
 
+ * The configuration file now accepts a new option "fetch-timeout-connection",
+   to specify the limit to wait (in seconds) of timed out connections when
+   fetching files. It's set to 30 in configuration file, and if not set it
+   also defaults to 30 seconds.
+
  * The configuration file now accepts new options to change rootdir
    (same than -r in xbps-bin(8)), cachedir (same than -c in xbps-bin(8))
    and fetching cache connection limits. If settings are specified via

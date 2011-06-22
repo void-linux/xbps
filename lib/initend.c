@@ -84,6 +84,8 @@ xbps_init(struct xbps_handle *xh)
 		    "fetch-cache-connections", &fetch_cache_conn);
 		prop_dictionary_get_uint16(xhp->conf_dictionary,
 		    "fetch-cache-connections-per-host", &fetch_cache_conn_host);
+		prop_dictionary_get_uint16(xhp->conf_dictionary,
+		    "fetch-timeout-connection", &xhp->fetch_timeout);
 	}
 
 	/*
@@ -118,6 +120,8 @@ xbps_init(struct xbps_handle *xh)
 	    __func__, xhp->rootdir, xhp->cachedir, xhp->conffile);
 	xbps_dbg_printf("%s: fetch_cache_conn: %zu fetch_cache_host: %zu\n",
 	    __func__, fetch_cache_conn, fetch_cache_conn_host);
+	xbps_dbg_printf("%s: fetch_timeout: %zu\n", __func__,
+	    xhp->fetch_timeout);
 
 	/*
 	 * Initialize repository pool.

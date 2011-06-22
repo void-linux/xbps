@@ -106,9 +106,14 @@ xbps_fetch_file(const char *uri,
 	assert(outputdir != NULL);
 
 	fetchLastErrCode = 0;
-	fetchTimeout = 30; /* 30 seconds of timeout */
 
 	xhp = xbps_handle_get();
+
+	if (xhp->fetch_timeout != 0)
+		fetchTimeout = xhp->fetch_timeout;
+	else
+		fetchTimeout = 30; /* 30s if not set in configuration file. */
+
 	/*
 	 * Get the filename specified in URI argument.
 	 */
