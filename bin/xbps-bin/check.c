@@ -159,6 +159,8 @@ xbps_check_pkg_integrity(const char *pkgname)
 		while ((obj = prop_object_iterator_next(iter))) {
 			if (!prop_dictionary_get_cstring_nocopy(obj, "target", &tgt))
 				continue;
+			if (strcmp(tgt, "") == 0)
+				continue;
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			if (realpath(file, buf) == NULL) {
 				prop_object_iterator_release(iter);
