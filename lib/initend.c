@@ -132,7 +132,7 @@ xbps_init(struct xbps_handle *xh)
 			    __func__);
 		} else if (rv != ENOENT && rv != ENOTSUP) {
 			xbps_dbg_printf("%s: couldn't initialize "
-			    "repository pool: %s\n", strerror(rv));
+			    "repository pool: %s\n", __func__, strerror(rv));
 			xbps_end();
 			return rv;
 		}
