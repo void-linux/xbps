@@ -439,13 +439,18 @@ exec_transaction(struct transaction *trans)
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
 
-			/* Remove a package */
+			/* Remove and purge packages that shall be replaced */
 			printf("Removing `%s' package ...\n", pkgver);
 			rv = xbps_remove_pkg(pkgname, version, update);
 			if (rv != 0) {
 				xbps_error_printf("xbps-bin: failed to "
-				    "remove `%s': %s\n", pkgver,
-				    strerror(rv));
+				    "remove `%s': %s\n", pkgver, strerror(rv));
+				return rv;
+			}
+			printf("Purging `%s' package...\n", pkgver);
+			if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
+				xbps_error_printf("xbps-bin: failed to "
+				    "purge `%s': %s\n", pkgver, strerror(rv));
 				return rv;
 			}
 		}
