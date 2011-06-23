@@ -326,6 +326,19 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 				break;
 			}
 			free(pkgname);
+			if (xbps_find_virtual_pkg_in_dict(tmpd,
+			    reqpkg, true)) {
+				/*
+				 * Check if required dependency is a virtual
+				 * package and is satisfied by an
+				 * installed package.
+				 */
+				xbps_dbg_printf_append("[virtual] satisfied by "
+				    "`%s'.\n", pkgver_q);
+				prop_object_release(tmpd);
+				prop_object_release(curpkgd);
+				continue;
+			}
 			rv = xbps_pkgpattern_match(pkgver_q, reqpkg);
 			if (rv == 0) {
 				/*
