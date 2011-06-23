@@ -327,9 +327,9 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 		rpkgd = prop_dictionary_copy(pkgd);
 		break;
 	case XBPS_PKG_STATE_CONFIG_FILES:
-		errno = ENOENT;
 		xbps_dbg_printf("'%s' installed but its state is "
-		    "config-files\n",str);
+		    "config-files, ignoring...\n", str);
+		errno = ENOENT;
 		break;
 	default:
 		break;
