@@ -187,6 +187,7 @@ main(int argc, char **argv)
 		if (pkgver == NULL)
 			exit(EXIT_FAILURE);
 		prop_dictionary_set_cstring(dict, "pkgver", pkgver);
+		prop_dictionary_set_bool(dict, "automatic-install", false);
 		free(pkgver);
 
 		rv = xbps_set_pkg_state_installed(argv[1], argv[2], pkgver,
