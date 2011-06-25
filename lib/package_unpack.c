@@ -151,10 +151,11 @@ remove_file_wrong_hash(prop_dictionary_t d, const char *file)
 	const char *hash;
 	int rv = 0;
 
-	if (stat(file, &st) == -1)
-		if (errno != ENOENT)
-			return errno;
-
+	if (stat(file, &st) == -1) {
+		if (errno == ENOENT)
+			return 0;
+		return errno;
+	}
 	if (!S_ISREG(st.st_mode))
 		return 0;
 
@@ -166,6 +167,9 @@ remove_file_wrong_hash(prop_dictionary_t d, const char *file)
 			(void)unlink(file);
 			xbps_warn_printf("Removed `%s' entry with "
 			   "unmatched hash.\n", file);
+		} else if (rv == ENOENT) {
+			/* simply ignore */
+			rv = 0;
 		}
 	}
 	return rv;
