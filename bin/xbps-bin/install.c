@@ -447,6 +447,8 @@ exec_transaction(struct transaction *trans)
 				    "remove `%s': %s\n", pkgver, strerror(rv));
 				return rv;
 			}
+			if (!update)
+				continue;
 			printf("Purging `%s' package...\n", pkgver);
 			if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
 				xbps_error_printf("xbps-bin: failed to "
