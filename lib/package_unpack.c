@@ -167,6 +167,7 @@ remove_file_wrong_hash(prop_dictionary_t d, const char *file)
 			(void)unlink(file);
 			xbps_warn_printf("Removed `%s' entry with "
 			   "unmatched hash.\n", file);
+			rv = 0;
 		} else if (rv == ENOENT) {
 			/* simply ignore */
 			rv = 0;
