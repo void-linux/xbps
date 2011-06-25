@@ -165,6 +165,7 @@ pkgdep_end(prop_array_t sorted)
 				pkgdep_release(pd);
 				continue;
 			}
+			prop_array_add(sorted, pd->d);
 		}
 		pkgdep_release(pd);
 	}
