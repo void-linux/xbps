@@ -68,6 +68,7 @@ typedef struct arr_t {
 	unsigned	c;              /* # of version numbers */
 	unsigned	size;           /* size of array */
 	int	       *v;              /* array of decimal numbers */
+	int		netbsd;         /* any "nb" suffix */
 } arr_t;
 
 /* this struct describes a test */
@@ -130,9 +131,10 @@ dewey_mktest(int *op, const char *test)
 static int
 mkcomponent(arr_t *ap, const char *num)
 {
-	const test_t *modp;
-	int n;
-	const char *cp;
+	static const char       alphas[] = "abcdefghijklmnopqrstuvwxyz";
+	const test_t	       *modp;
+	int                 n;
+	const char             *cp;
 
 	if (ap->c == ap->size) {
 		if (ap->size == 0) {
@@ -165,6 +167,26 @@ mkcomponent(arr_t *ap, const char *num)
 			return modp->len;
 		}
 	}
+	if (strncasecmp(num, "nb", 2) == 0) {
+		for (cp = num, num += 2, n = 0 ; isdigit((unsigned char)*num) ; num++) {
+			n = (n * 10) + (*num - '0');
+		}
+		ap->netbsd = n;
+		return (int)(num - cp);
+	}
+	if (isalpha((unsigned char)*num)) {
+		ap->v[ap->c++] = Dot;
+		cp = strchr(alphas, tolower((unsigned char)*num));
+		if (ap->c == ap->size) {
+			ap->size *= 2;
+			if ((ap->v = realloc(ap->v, ap->size * sizeof(int))) == NULL) {
+				xbps_dbg_printf("%s: ENOMEM!\n", __func__);
+				exit(EXIT_FAILURE);
+			}
+		}
+		ap->v[ap->c++] = (int)(cp - alphas) + 1;
+		return 1;
+	}
 	return 1;
 }
 
@@ -175,6 +197,7 @@ mkversion(arr_t *ap, const char *num)
 	ap->c = 0;
 	ap->size = 0;
 	ap->v = NULL;
+	ap->netbsd = 0;
 
 	while (*num) {
 		num += mkcomponent(ap, num);
@@ -227,7 +250,7 @@ vtest(arr_t *lhs, int tst, arr_t *rhs)
 			return result(cmp, tst);
 		}
 	}
-	return 0;
+	return result(lhs->netbsd - rhs->netbsd, tst);
 }
 
 /*
@@ -260,10 +283,10 @@ dewey_cmp(const char *lhs, int op, const char *rhs)
 int
 xbps_cmpver(const char *pkg1, const char *pkg2)
 {
-	if (dewey_cmp(pkg1, DEWEY_GT, pkg2))
-		return 1;
-	else if (dewey_cmp(pkg1, DEWEY_LT, pkg2))
+	if (dewey_cmp(pkg1, DEWEY_LT, pkg2))
 		return -1;
+	else if (dewey_cmp(pkg1, DEWEY_GT, pkg2))
+		return 1;
 	else
 		return 0;
 }
