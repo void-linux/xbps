@@ -151,8 +151,9 @@ repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	printf("Synchronizing package index for `%s' ...\n", rpi->rpi_uri);
 	rv = xbps_repository_sync_pkg_index(rpi->rpi_uri);
 	if (rv == -1) {
-		xbps_error_printf("xbps-repo: failed to sync `%s': (%s %s)\n",
-		    rpi->rpi_uri, strerror(rv), xbps_fetch_error_string());
+		xbps_error_printf("xbps-repo: failed to sync `%s': %s%s\n",
+		    rpi->rpi_uri, strerror(errno), xbps_fetch_error_string() ?
+		    xbps_fetch_error_string() : "");
 		return rv;
 	} else if (rv == 0) {
 		printf("Package index file is already up to date.\n");
