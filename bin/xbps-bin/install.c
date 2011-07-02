@@ -598,7 +598,7 @@ xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
 			/* missing packages */
 			array = xbps_transaction_missingdeps_get();
 			show_missing_deps(array);
-			rv = 1;
+			rv = errno;
 			goto out;
 		}
 		rv = errno;
