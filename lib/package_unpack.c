@@ -144,38 +144,6 @@ remove_metafile(const char *file, const char *pkgname, const char *version)
 	return 0;
 }
 
-static int
-remove_file_wrong_hash(prop_dictionary_t d, const char *file)
-{
-	struct stat st;
-	const char *hash;
-	int rv = 0;
-
-	if (stat(file, &st) == -1) {
-		if (errno == ENOENT)
-			return 0;
-		return errno;
-	}
-	if (!S_ISREG(st.st_mode))
-		return 0;
-
-	/* Only check for regular files, not symlinks, dirs or conffiles. */
-	hash = xbps_file_hash_from_dictionary(d, "files", file);
-	if (hash) {
-		rv = xbps_file_hash_check(file, hash);
-		if (rv == ERANGE) {
-			(void)unlink(file);
-			xbps_warn_printf("Removed `%s' entry with "
-			   "unmatched hash.\n", file);
-			rv = 0;
-		} else if (rv == ENOENT) {
-			/* simply ignore */
-			rv = 0;
-		}
-	}
-	return rv;
-}
-
 /*
  * Execute the unpack progress function callback if set and its
  * private data is also set. It's so sad that
@@ -410,21 +378,6 @@ unpack_archive(prop_dictionary_t pkg_repod,
 			}
 		}
 		/*
-		 * Check if current entry already exists on disk and
-		 * if the sha256 hash doesn't match, remove the file.
-		 * Only do this if we are _installing_ a package.
-		 */
-		if (!update) {
-			rv = remove_file_wrong_hash(filesd, entry_pname);
-			if (rv != 0) {
-				xbps_dbg_printf("remove_file_wrong_hash "
-				    "failed for `%s': %s\n", entry_pname,
-				    strerror(rv));
-				goto out;
-			}
-		}
-
-		/*
 		 * Extract entry from archive.
 		 */
 		if (archive_read_extract(ar, entry, flags) != 0) {
@@ -435,10 +388,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				    pkgname, version, strerror(rv));
 				goto out;
 			} else {
-				if (xhp->flags & XBPS_FLAG_VERBOSE)
-					xbps_warn_printf("ignoring existing "
-					    "entry: %s\n", entry_pname);
-
+				xbps_warn_printf("ignoring existing "
+				    "entry: %s\n", entry_pname);
 				RUN_PROGRESS_CB();
 				continue;
 			}
