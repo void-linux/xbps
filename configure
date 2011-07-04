@@ -375,6 +375,39 @@ else
 fi
 
 #
+# zlib is required.
+#
+func=InflateInit2
+printf "Checking for zlib $func() ... "
+cat <<EOF > _$func.c
+#include <zlib.h>
+int main(void) {
+	z_stream strm;
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.avail_in = 0;
+	strm.next_in = Z_NULL;
+	inflateInit2(&strm, 15+16);
+	return 0;
+}
+EOF
+if $XCC -lz _$func.c -o _$func 2>/dev/null; then
+	ZLIB=yes
+else
+	ZLIB=no
+fi
+echo "$ZLIB."
+rm -f _$func.c _$func
+if [ "$ZLIB" = "no" ]; then
+	echo "Failed to link with your system's zlib, can't continue..."
+	exit 1
+else
+	echo "LDFLAGS +=	-lz" >>$CONFIG_MK
+	echo "STATIC_LIBS +=	-lz" >>$CONFIG_MK
+fi
+
+#
 # If building API library documentation, doxygen and graphviz are required.
 #
 if [ -n "$BUILD_API_DOCS" ]; then
@@ -428,21 +461,6 @@ else
 	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
 	echo "PROG_LDFLAGS +=	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
 	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
-fi
-
-#
-# zlib with pkg-config support is required.
-#
-printf "Checking for zlib via pkg-config ... "
-if ! $PKGCONFIG_BIN --exists zlib; then
-	echo "zlib.pc file not found, exiting."
-	exit 1
-else
-	echo "found version $($PKGCONFIG_BIN --modversion zlib)."
-	echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags zlib)" >>$CONFIG_MK
-	echo "LDFLAGS +=	$($PKGCONFIG_BIN --libs zlib)" >>$CONFIG_MK
-	echo "STATIC_LIBS +=	$($PKGCONFIG_BIN --libs --static zlib)" \
-		>>$CONFIG_MK
 fi
 
 #
