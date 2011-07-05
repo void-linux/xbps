@@ -1,5 +1,9 @@
 xbps-0.9.0 (???):
 
+ * configure doesn't require a zlib package with a pkg-config file, to
+   workaround some distribution that don't provide it (hi Ubuntu!). Rather
+   it now checks for a required function. Fixes issue 6 in googlecode.
+
  * The configuration file now accepts a new option "fetch-timeout-connection",
    to specify the limit to wait (in seconds) of timed out connections when
    fetching files. It's set to 30 in configuration file, and if not set it
