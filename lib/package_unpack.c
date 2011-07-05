@@ -388,8 +388,10 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				    pkgname, version, strerror(rv));
 				goto out;
 			} else {
-				xbps_warn_printf("ignoring existing "
-				    "entry: %s\n", entry_pname);
+				if (xhp->flags & XBPS_FLAG_VERBOSE)
+					xbps_warn_printf("ignoring existing "
+					    "entry: %s\n", entry_pname);
+
 				RUN_PROGRESS_CB();
 				continue;
 			}
