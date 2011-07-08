@@ -46,4 +46,4 @@ ifndef REV
 	@exit 1
 endif
 	@echo "Building distribution tarball for revision/tag: $(REV) ..."
-	-@hg archive --rev $(REV) --type tgz ~/xbps-$(REV).tar.gz
+	-@git archive --format=tar --prefix=xbps-$(REV)/ $(REV) | gzip -9 > ~/xbps-$(REV).tar.gz
