@@ -129,6 +129,9 @@ repository_find_pkg(const char *pattern, const char *reason)
 
 	if (state == XBPS_PKG_STATE_UNPACKED)
 		reason = "configure";
+	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
+		reason = "install";
+
 	/*
 	 * Set transaction obj in pkg dictionary to "install", "configure"
 	 * or "update".

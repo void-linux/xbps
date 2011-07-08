@@ -315,8 +315,9 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		      bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
-	prop_dictionary_t instpkgd;
+	prop_dictionary_t instpkgd, vpkgd;
 	const char *instver, *repover;
+	char *vpattern = NULL;
 
 	rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
 	    "packages", rpf->pattern);
@@ -340,24 +341,60 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		    "version", &repover);
 		prop_object_release(instpkgd);
 
-		if (xbps_cmpver(repover, instver) > 0) {
-			xbps_dbg_printf("Found '%s-%s' (installed: %s) "
-			    "in repository '%s'.\n", rpf->pattern, repover,
-			    instver, rpi->rpi_uri);
+		if (xbps_cmpver(repover, instver) <= 0) {
+			xbps_dbg_printf("Skipping '%s-%s' (installed: %s) "
+			    "from repository '%s'\n", rpf->pattern, repover, instver,
+			    rpi->rpi_uri);
+			errno = EEXIST;
+			return 0;
+		}
+		/*
+		 * New package version is greater than current installed, but first
+		 * check if this is a virtual package and it's set specifically
+		 * in the configuration file.
+		 */
+		vpattern = xbps_xasprintf("%s>=0", rpf->pattern);
+		if (vpattern == NULL)
+			return EINVAL;
+
+		vpkgd = xbps_find_virtualpkg_user_in_dict_by_pattern(
+		    rpi->rpi_repod, "packages", vpattern);
+		if (vpkgd) {
 			/*
-			 * New package version found, exit from the loop.
+			 * Virtual package enabled in conf file and new
+			 * version found.
 			 */
-			prop_dictionary_set_cstring(rpf->pkgd, "repository",
+			free(vpattern);
+			prop_dictionary_set_cstring(vpkgd, "repository",
 			    rpi->rpi_uri);
 			*done = true;
 			errno = 0;
 			rpf->pkgfound = true;
 			return 0;
+		} else {
+			/*
+			 * Virtual package not enabled in conf file but it's
+			 * currently proviving the same virtual package that
+			 * we are updating... ignore it.
+			 */
+			if (xbps_find_virtual_pkg_in_dict(rpf->pkgd,
+			    vpattern, true)) {
+				free(vpattern);
+				return 0;
+			}
+			free(vpattern);
 		}
-		xbps_dbg_printf("Skipping '%s-%s' (installed: %s) "
-		    "from repository '%s'\n", rpf->pattern, repover, instver,
+		/*
+		 * New package version found, exit from the loop.
+		 */
+		xbps_dbg_printf("Found '%s-%s' (installed: %s) "
+		    "in repository '%s'.\n", rpf->pattern, repover,
+		    instver, rpi->rpi_uri);
+		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
-		errno = EEXIST;
+		*done = true;
+		errno = 0;
+		rpf->pkgfound = true;
 	}
 	return 0;
 }
