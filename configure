@@ -315,8 +315,40 @@ else
 fi
 echo "$VASPRINTF."
 rm -f _$func.c _$func
-if [ "$VASPRINTF" = "yes" ]; then
+if [ "$VASPRINTF" = "no" ]; then
+	echo "COMPAT_SRCS+=	compat/vasprintf.o" >>$CONFIG_MK
+	echo "#include \"compat.h\"" >>$CONFIG_H
+else
 	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
+fi
+
+#
+# Check for strcasestr().
+#
+func=strcasestr
+printf "Checking for $func() ..."
+cat <<EOF >_$func.c
+#define _GNU_SOURCE
+#include <string.h>
+int main(void) {
+	const char *h = "NEEDCOFEE";
+	const char *n = "IneedCoffee";
+	strcasestr(n, h);
+	return 0;
+}
+EOF
+if $XCC _$func.c -o _$func 2>/dev/null; then
+	STRCASESTR=yes
+else
+	STRCASESTR=no
+fi
+echo "$STRCASESTR."
+rm -f _$func _$func.c
+if [ "$STRCASESTR" = no ]; then
+	echo "COMPAT_SRCS +=	compat/strcasestr.o" >>$CONFIG_MK
+	echo "#include \"compat.h\"" >>$CONFIG_H
+else
+	echo "CPPFLAGS +=	-DHAVE_STRCASESTR" >>$CONFIG_MK
 fi
 
 #
@@ -342,7 +374,7 @@ echo "$STRLCPY."
 rm -f _$func.c _$func
 if [ "$STRLCPY" = no ]; then
 	echo "COMPAT_SRCS +=	compat/strlcpy.o" >>$CONFIG_MK
-	echo "#include \"strlcpy.h\"" >>$CONFIG_H
+	echo "#include \"compat.h\"" >>$CONFIG_H
 else
 	echo "CPPFLAGS +=	-DHAVE_STRLCPY" >> $CONFIG_MK
 fi
@@ -369,7 +401,7 @@ echo "$STRLCAT."
 rm -f _$func.c _$func
 if [ "$STRLCAT" = no ]; then
 	echo "COMPAT_SRCS +=	compat/strlcat.o" >>$CONFIG_MK
-	echo "#include \"strlcat.h\"" >>$CONFIG_H
+	echo "#include \"compat.h\"" >>$CONFIG_H
 else
 	echo "CPPFLAGS +=	-DHAVE_STRLCAT" >>$CONFIG_MK
 fi

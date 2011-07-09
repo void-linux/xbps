@@ -35,9 +35,8 @@
 #include <archive_entry.h>
 
 #include <xbps_api.h>
+#include "compat.h"
 #include "queue.h"
-#include "strlcpy.h"
-#include "strlcat.h"
 #include "fetch.h"
 
 #define ARCHIVE_READ_BLOCKSIZE	10240

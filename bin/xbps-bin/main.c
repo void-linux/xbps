@@ -34,7 +34,7 @@
 #include <unistd.h>
 
 #include <xbps_api.h>
-#include "strlcpy.h"
+#include "compat.h"
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 

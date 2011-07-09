@@ -25,14 +25,9 @@
 
 #ifdef HAVE_VASPRINTF
 # define _GNU_SOURCE	/* for vasprintf(3) */
-# ifdef _XOPEN_SOURCE
-#   undef _XOPEN_SOURCE
-# endif
-# include <stdio.h>
-# undef _GNU_SOURCE
-#else
-# include <stdio.h>
 #endif
+
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -440,30 +435,4 @@ xbps_xasprintf(const char *fmt, ...)
 
 	return buf;
 }
-#else
-char *
-xbps_xasprintf(const char *fmt, ...)
-{
-	va_list ap, aq;
-	size_t len;
-	int res;
-	char *buf;
-
-	va_start(aq, fmt);
-	va_copy(ap, aq);
-	len = vsnprintf(NULL, 0, fmt, aq) + 1;
-	if ((buf = malloc(len)) == NULL) {
-		va_end(ap);
-		return NULL;
-	}
-
-	va_start(ap, fmt);
-	res = vsnprintf(buf, len, fmt, ap);
-	if (res < 0 || res >= (int)len) {
-		free(buf);
-		return NULL;
-	}
-
-	return buf;
-}
-#endif /* !HAVE_VASPRINTF */
+#endif /* HAVE_VASPRINTF */

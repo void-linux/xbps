@@ -1,4 +1,14 @@
-xbps-0.9.0 (???):
+xbps-0.9.1 (???):
+
+ * xbps-repo(8): the 'search' target now matches patterns in
+   case insensitive mode.
+
+ * A bug has been fixed while updating a package and another package
+   providing a virtual package with a greater version was available
+   in repositories. Only accept this if the virtual package is explicitly
+   enabled in the "virtual-packages" section in the configuration file.
+
+xbps-0.9.0 (2011-07-08):
 
  * configure doesn't require a zlib package with a pkg-config file, to
    workaround some distribution that don't provide it (hi Ubuntu!). Rather

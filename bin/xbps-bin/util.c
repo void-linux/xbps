@@ -23,16 +23,20 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_STRCASESTR
+# define _GNU_SOURCE    /* for strcasestr(3) */
+#endif
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
 #include <errno.h>
 #include <fnmatch.h>
 #include <assert.h>
+#include <string.h>
+#include <strings.h>
 
 #include <xbps_api.h>
-#include "strlcpy.h"
+#include "compat.h"
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
@@ -190,8 +194,9 @@ show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 
 	if ((xbps_pkgpattern_match(pkgver, rsd->pattern) == 1) ||
 	    (xbps_pkgpattern_match(desc, rsd->pattern) == 1)  ||
-	    (strcmp(pkgname, rsd->pattern) == 0) ||
-	    (strstr(pkgver, rsd->pattern)) || (strstr(desc, rsd->pattern))) {
+	    (strcasecmp(pkgname, rsd->pattern) == 0) ||
+	    (strcasestr(pkgver, rsd->pattern)) ||
+	    (strcasestr(desc, rsd->pattern))) {
 		tmp = calloc(1, rsd->pkgver_len + 1);
 		if (tmp == NULL)
 			return errno;
