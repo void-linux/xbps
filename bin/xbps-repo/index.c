@@ -281,6 +281,18 @@ xbps_repo_genindex(const char *pkgdir)
 			rv = errno;
 			goto out;
 		}
+		/*
+		 * If repo/<noarch|un.machine> does not exist,
+		 * create it.
+		 */
+		if ((access(path, X_OK) == -1) && errno == ENOENT) {
+			if (xbps_mkpath(path, 0755) == -1) {
+				xbps_error_printf("xbps-repo: cannot "
+				    "create %s directory: %s\n",
+				    path, strerror(errno));
+				return -1;
+			}
+		}
 
 		dirp = opendir(path);
 		if (dirp == NULL) {
