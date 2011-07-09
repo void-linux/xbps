@@ -39,12 +39,90 @@
 /* Array of valid architectures */
 static const char *archdirs[] = { "i686", "x86_64", "noarch", NULL };
 
+/*
+ * Removes stalled pkg entries in repository's pkg-index.plist file, if any
+ * binary package cannot be read (unavailable, not enough perms, etc).
+ */
+static int
+remove_missing_binpkg_entries(const char *repodir)
+{
+	prop_array_t pkgarray;
+	prop_dictionary_t idxd, pkgd;
+	const char *pkgname, *arch, *filen;
+	char *binpkg, *plist;
+	size_t i;
+	int rv = 0;
+	bool found = false;
+
+	plist = xbps_pkg_index_plist(repodir);
+	if (plist == NULL)
+		return -1;
+
+	idxd = prop_dictionary_internalize_from_zfile(plist);
+	if (idxd == NULL) {
+		if (errno != ENOENT) {
+			xbps_error_printf("xbps-repo: cannot read `%s': %s\n",
+			    plist, strerror(errno));
+			exit(EXIT_FAILURE);
+		} else {
+			free(plist);
+			return 0;
+		}
+	}
+
+again:
+	pkgarray = prop_dictionary_get(idxd, "packages");
+	if (prop_object_type(pkgarray) != PROP_TYPE_ARRAY)
+		return -1;
+
+	for (i = 0; i < prop_array_count(pkgarray); i++) {
+		pkgd = prop_array_get(pkgarray, i);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
+		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
+		binpkg = xbps_xasprintf("%s/%s/%s", repodir, arch, filen);
+		if (binpkg == NULL) {
+			errno = ENOMEM;
+			rv = -1;
+			break;
+		}
+		if (access(binpkg, R_OK) == -1) {
+			xbps_warn_printf("xbps-repo: `%s' unavailable, "
+			    "removing entry from index... (%s)\n",
+			    filen, strerror(errno));
+			prop_array_remove(pkgarray, i);
+			free(binpkg);
+			found = true;
+			goto again;
+		}
+		free(binpkg);
+	}
+	if (found) {
+		prop_dictionary_set_uint64(idxd, "total-pkgs",
+		    prop_array_count(pkgarray));
+		prop_dictionary_set(idxd, "packages", pkgarray);
+		if (!prop_dictionary_externalize_to_zfile(idxd, plist))
+			rv = errno;
+	}
+	free(plist);
+
+	return rv;
+}
+
 static prop_dictionary_t
 repoidx_getdict(const char *pkgdir)
 {
 	prop_dictionary_t dict;
 	prop_array_t array;
 	char *plist;
+	int rv;
+
+	/*
+	 * Remove entries in repositories pkg-index for unexistent
+	 * packages, i.e dangling entries.
+	 */
+	if ((rv = remove_missing_binpkg_entries(pkgdir)) != 0)
+		return NULL;
 
 	plist = xbps_pkg_index_plist(pkgdir);
 	if (plist == NULL)
@@ -76,13 +154,13 @@ repoidx_getdict(const char *pkgdir)
 	}
 out:
 	free(plist);
-
 	return dict;
 }
 
 static int
-xbps_repo_addpkg_index(prop_dictionary_t idxdict, const char *filedir,
-		       const char *file)
+add_binpkg_to_index(prop_dictionary_t idxdict,
+		    const char *filedir,
+		    const char *file)
 {
 	prop_dictionary_t newpkgd, curpkgd;
 	prop_array_t pkgar;
@@ -266,7 +344,6 @@ xbps_repo_genindex(const char *pkgdir)
 		prop_object_release(idxdict);
 		return errno;
 	}
-
 	/*
 	 * Iterate over the known architecture directories to find
 	 * binary packages.
@@ -319,7 +396,7 @@ xbps_repo_genindex(const char *pkgdir)
 				rv = errno;
 				goto out;
 			}
-			rv = xbps_repo_addpkg_index(idxdict, path, binfile);
+			rv = add_binpkg_to_index(idxdict, path, binfile);
 			free(binfile);
 			if (rv == EEXIST) {
 				rv = 0;

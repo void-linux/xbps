@@ -1,5 +1,10 @@
 xbps-0.9.1 (???):
 
+ * xbps-repo(8): the 'genindex' target now removes entries in existent
+   package index files for unexistent packages that were previously
+   registered (removed, not enough permissions, etc). Fixes issue #1
+   in github.com/vanilla/xbps.
+
  * xbps-repo(8): the 'genindex' target creates required directories
    in local repositories if it's necessary. Fixes issue #3 in
    github.com/vanilla/xbps.
