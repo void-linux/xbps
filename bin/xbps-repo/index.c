@@ -48,7 +48,7 @@ remove_missing_binpkg_entries(const char *repodir)
 {
 	prop_array_t pkgarray;
 	prop_dictionary_t idxd, pkgd;
-	const char *pkgname, *arch, *filen;
+	const char *arch, *filen;
 	char *binpkg, *plist;
 	size_t i;
 	int rv = 0;
@@ -77,7 +77,6 @@ again:
 
 	for (i = 0; i < prop_array_count(pkgarray); i++) {
 		pkgd = prop_array_get(pkgarray, i);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
 		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
 		binpkg = xbps_xasprintf("%s/%s/%s", repodir, arch, filen);
