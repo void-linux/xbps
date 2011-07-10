@@ -176,20 +176,33 @@ xbps_remove_installed_pkgs(int argc,
 		 * other installed packages.
 		 */
 		prop_array_add(sorted_pkgs, dict);
-		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
 		found = true;
+		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
 		reqby = prop_dictionary_get(dict, "requiredby");
-		if (reqby != NULL && prop_array_count(reqby) > 0) {
-			xbps_printf("WARNING: %s IS REQUIRED BY %u "
-			    "PACKAGE%s!\n", pkgver, prop_array_count(reqby),
-			    prop_array_count(reqby) > 1 ? "S" : "");
-			reqby_force = true;
+		if (reqby == NULL || prop_array_count(reqby) == 0) {
+			prop_object_release(dict);
+			continue;
 		}
+
+		xbps_printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
+		    pkgver, prop_array_count(reqby),
+		    prop_array_count(reqby) > 1 ? "S" : "");
+		for (x = 0; x < prop_array_count(reqby); x++) {
+			prop_array_get_cstring_nocopy(reqby, x, &pkgver);
+			print_package_line(pkgver, false);
+		}
+		printf("\n\n");
+		print_package_line(NULL, true);
+		reqby_force = true;
 		prop_object_release(dict);
 	}
 	if (!found) {
 		prop_object_release(sorted_pkgs);
 		return 0;
+	}
+	if (reqby_force && !force_rm_with_deps) {
+		prop_object_release(sorted_pkgs);
+		return EINVAL;
 	}
 	/*
 	 * Show the list of going-to-be removed packages.
@@ -211,15 +224,6 @@ xbps_remove_installed_pkgs(int argc,
 		prop_object_release(sorted_pkgs);
 		return 0;
 	}
-	if (reqby_force && !force_rm_with_deps) {
-		printf("\nYou haven't specified the -F flag to force removal with dependencies. The package(s)\n"
-		    "you are going to remove are required by other installed packages, therefore\n"
-		    "it might break packages that currently depend on them. If you are entirely sure\n"
-		    "that's what you want, use 'xbps-bin -F remove ...' to continue with the operation.\n");
-		prop_object_release(sorted_pkgs);
-		return 0;
-	} else if (reqby_force && force_rm_with_deps)
-		xbps_warn_printf("Forcing removal! you've been alerted.\n");
 
 	for (x = 0; x < prop_array_count(sorted_pkgs); x++) {
 		dict = prop_array_get(sorted_pkgs, x);
