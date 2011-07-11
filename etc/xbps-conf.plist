@@ -35,9 +35,10 @@
 		     The order matters, and the top-most matching a package
 		     pattern or name will be used.
 
-		     By default we use the official "public" repository,
+		     By default we use the official "public" repositories.
 		     you can add your own local repositories by specifying
 		     the path to the directory. -->
+		<string>http://xbps.nopcode.org/repos/current</string>
 		<string>http://xbps.nopcode.org/repos/stable</string>
 	</array>
 
