@@ -203,6 +203,15 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 			goto out;
 		}
 	} else if (curpkgd) {
+		/*
+		 * Ignore packages providing virtual packages greater than or
+		 * equal than current package.
+		 */
+		if (xbps_find_virtual_pkg_in_dict(curpkgd, pkgname, false)) {
+			prop_object_release(newpkgd);
+			rv = EEXIST;
+			goto out;
+		}
 		prop_dictionary_get_cstring_nocopy(curpkgd, "version", &regver);
 		if (xbps_cmpver(version, regver) <= 0) {
 			xbps_warn_printf("skipping %s. %s-%s already "
