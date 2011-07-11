@@ -26,7 +26,7 @@ Almost all code in XBPS uses the following license
  */
 
 This product uses some code with the following license
-(lib/mkpath.c, include/queue.h):
+(lib/mkpath.c, lib/compat/strcasestr.c, include/queue.h):
 
 /*
  * Copyright (c) 1991, 1993
