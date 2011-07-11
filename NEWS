@@ -1,5 +1,9 @@
 xbps-0.9.1 (???):
 
+ * xbps-repo(8): the 'genindex' failed to register in pkg-index
+   packages less than on equal than any other package providing the
+   same package name. Ignore packages providing virtual packages.
+
  * xbps-repo(8): the 'genindex' target now removes entries in existent
    package index files for unexistent packages that were previously
    registered (removed, not enough permissions, etc). Fixes issue #1
