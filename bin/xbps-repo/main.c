@@ -32,6 +32,7 @@
 #include <limits.h>
 #include <libgen.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -59,7 +60,8 @@ repo_list_uri_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	prop_dictionary_get_cstring_nocopy(rpi->rpi_repod,
 	    "pkgindex-version", &pkgidx);
 	prop_dictionary_get_uint64(rpi->rpi_repod, "total-pkgs", &npkgs);
-	printf("%s (index %s, %zu packages)\n", rpi->rpi_uri, pkgidx, npkgs);
+	printf("%s (index %s, " "%" PRIu64 " packages)\n",
+	    rpi->rpi_uri, pkgidx, npkgs);
 
 	return 0;
 }
