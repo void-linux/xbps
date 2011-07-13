@@ -39,7 +39,6 @@
 		     you can add your own local repositories by specifying
 		     the path to the directory. -->
 		<string>http://xbps.nopcode.org/repos/current</string>
-		<string>http://xbps.nopcode.org/repos/stable</string>
 	</array>
 
 	<!-- Virtual packages -->
