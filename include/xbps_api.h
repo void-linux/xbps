@@ -59,7 +59,7 @@
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"API: 20110622 INDEX: " XBPS_PKGINDEX_VERSION
+#define XBPS_RELVER		"API: 20110714 INDEX: " XBPS_PKGINDEX_VERSION
 
 /** 
  * @def XBPS_META_PATH

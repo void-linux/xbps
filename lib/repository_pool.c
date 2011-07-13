@@ -47,6 +47,12 @@ static SIMPLEQ_HEAD(rpool_head, repository_pool) rpool_queue =
 
 static bool repolist_initialized;
 
+#define FETCH_ERROR(x)	((x == FETCH_UNAVAIL) || \
+			 (x == FETCH_NETWORK) || \
+			 (x == FETCH_ABORT) || \
+			 (x == FETCH_TIMEOUT) || \
+			 (x == FETCH_DOWN))
+
 int HIDDEN
 xbps_repository_pool_init(void)
 {
@@ -112,10 +118,25 @@ xbps_repository_pool_init(void)
 				    "`%s'...\n", repouri);
 				rv = xbps_repository_sync_pkg_index(repouri);
 				if (rv == -1) {
-					xbps_error_printf("failed to sync `%s'"
-					    ": %s %s\n",
-					   repouri, strerror(errno),
-					   xbps_fetch_error_string());
+					const char *fetcherr =
+					    xbps_fetch_error_string();
+
+					xbps_error_printf("failed to sync "
+					    "repository `%s': %s%s\n",
+					   repouri,
+					   errno ? strerror(errno) : "",
+					   fetchLastErrCode ? fetcherr : "");
+
+					/*
+					 * Ignore if the file cannot be
+					 * fetched due to network, missing
+					 * file, moved, etc.
+					 */
+					if (FETCH_ERROR(fetchLastErrCode)) {
+						rv = 0;
+						free(plist);
+						continue;
+					}
 					rv = errno;
 					free(plist);
 					goto out;

@@ -1,5 +1,10 @@
 xbps-0.9.1 (???):
 
+ * libxbps: xbps_repository_pool no longer loops forever if a package
+   index plist file cannot be fetched due to network problems, or
+   if the file is not available anymore; the repository will be
+   ignored.
+
  * xbps-repo(8): the 'genindex' failed to register in pkg-index
    packages less than on equal than any other package providing the
    same package name. Ignore packages providing virtual packages.
