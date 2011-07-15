@@ -1,4 +1,15 @@
-xbps-0.9.1 (???):
+xbps-0.10.0 (???):
+
+ * libxbps: revamped virtual package handling. The public API find
+   functions (xbps_find_pkg_*) don't know anything about virtual packages.
+   To find virtual packages the xbps_find_virtualpkg_* functions must be
+   used instead of the "classic" ones.
+
+ * libxbps: the xbps_find_foo_in_array functions have been renamed
+   to xbps_match_foo_in_array because its task is only matching against
+   the provided package name, package pattern or string.
+
+xbps-0.9.1 (2011-07-15):
 
  * libxbps: xbps_repository_pool no longer loops forever if a package
    index plist file cannot be fetched due to network problems, or

@@ -55,11 +55,16 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
+#define XBPS_API_VERSION	"20110715"
+#define XBPS_VERSION		"0.10.0"
+
 /**
  * @def XBPS_RELVER
  * Current library release date.
  */
-#define XBPS_RELVER		"API: 20110714 INDEX: " XBPS_PKGINDEX_VERSION
+#define XBPS_RELVER		"XBPS: " XBPS_VERSION \
+				" API: " XBPS_API_VERSION \
+				" INDEX: " XBPS_PKGINDEX_VERSION
 
 /** 
  * @def XBPS_META_PATH
@@ -607,19 +612,36 @@ prop_dictionary_t xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
 prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
 					       bool bypattern);
 
+
 /**
- * Finds a virtual package by looking at package's dictionary by
- * using a package name or a package pattern.
+ * Finds a virtual package's dictionary searching in the registered packages
+ * database by using a package name or a package pattern.
+ *
+ * @param[in] str Virtual package name or package pattern to match.
+ * @param[in] bypattern Set it to true to find the package dictionary
+ * by using a package pattern. If false, \a str is assumed to be a package name.
+ *
+ * @return The virtual package's dictionary on success, NULL otherwise and
+ * errno is set appropiately. Returned dictionary is copied via
+ * prop_dictionary_copy(), which means that caller is responsible to
+ * release the object with prop_object_release() when done.
+ */
+prop_dictionary_t xbps_find_virtualpkg_dict_installed(const char *str,
+						      bool bypattern);
+
+/**
+ * Match a virtual package name or pattern by looking at package's
+ * dictionary "provides" array object.
  *
  * @param[in] pkgd Package dictionary.
- * @param[in] str Virtual package name or package pattern.
+ * @param[in] str Virtual package name or package pattern to match.
  * @param[in] bypattern If true, \a str should be a package name,
  * otherwise it should be a package pattern.
  *
- * @return True if package dictionary matches the virtual package
- * name or pattern, false otherwise.
+ * @return True if \a str matches a virtual package in \a pkgd, false
+ * otherwise.
  */
-bool xbps_find_virtual_pkg_in_dict(prop_dictionary_t pkgd,
+bool xbps_match_virtual_pkg_in_dict(prop_dictionary_t pkgd,
 				   const char *str,
 				   bool bypattern);
 
@@ -646,34 +668,34 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
 						    const char *pattern);
 
 /**
- * Finds a package name matching an string object in a proplib array.
+ * Match a package name in the specified array of strings.
  *
  * @param[in] array The proplib array where to look for.
  * @param[in] pkgname The package name to match.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_find_pkgname_in_array(prop_array_t array, const char *pkgname);
+bool xbps_match_pkgname_in_array(prop_array_t array, const char *pkgname);
 
 /**
- * Finds a package pattern matching an string object in a proplib array.
+ * Match a package pattern in the specified array of strings.
  *
  * @param[in] array The proplib array where to look for.
  * @param[in] pattern The package pattern to match.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_find_pkgpattern_in_array(prop_array_t array, const char *pattern);
+bool xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern);
 
 /**
- * Finds a string matching an object in a proplib array.
+ * Match a string (exact match) in the specified array of strings.
  *
  * @param[in] array The proplib array where to look for.
  * @param[in] val The value of string to match.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_find_string_in_array(prop_array_t array, const char *val);
+bool xbps_match_string_in_array(prop_array_t array, const char *val);
 
 /**
  * Gets a proplib object iterator associated with an array, contained

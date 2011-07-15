@@ -199,7 +199,8 @@ xbps_check_is_installed_pkg_by_pattern(const char *pattern)
 
 	assert(pattern != NULL);
 
-	dict = xbps_find_pkg_dict_installed(pattern, true);
+	if ((dict = xbps_find_pkg_dict_installed(pattern, true)) == NULL)
+		dict = xbps_find_virtualpkg_dict_installed(pattern, true);
 	if (dict == NULL) {
 		if (errno == ENOENT) {
 			errno = 0;

@@ -111,7 +111,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 		for (i = 0; i < prop_array_count(od->orphans_user); i++) {
 			prop_array_get_cstring_nocopy(od->orphans_user,
 			    i, &curpkgname);
-			if (xbps_find_pkgname_in_array(reqby, curpkgname)) {
+			if (xbps_match_pkgname_in_array(reqby, curpkgname)) {
 				prop_array_add(od->array, obj);
 				return 0;
 			}

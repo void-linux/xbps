@@ -39,73 +39,28 @@
  * These functions manipulate plist files and objects shared by almost
  * all library functions.
  */
-static prop_dictionary_t
-find_pkg_dict_from_plist(const char *plist,
-			 const char *key,
-			 const char *str,
-			 bool bypattern)
-{
-	prop_dictionary_t dict, obj, res;
-
-	assert(plist != NULL);
-	assert(str != NULL);
-
-	dict = prop_dictionary_internalize_from_zfile(plist);
-	if (dict == NULL) {
-		xbps_dbg_printf("cannot internalize %s for pkg %s: %s",
-		    plist, str, strerror(errno));
-		return NULL;
-	}
-	if (bypattern)
-		obj = xbps_find_pkg_in_dict_by_pattern(dict, key, str);
-	else
-		obj = xbps_find_pkg_in_dict_by_name(dict, key, str);
-
-	if (obj == NULL) {
-		prop_object_release(dict);
-		return NULL;
-	}
-	res = prop_dictionary_copy(obj);
-	prop_object_release(dict);
-
-	return res;
-}
-
-prop_dictionary_t
-xbps_find_pkg_dict_from_plist_by_name(const char *plist,
-				      const char *key,
-				      const char *pkgname)
-{
-	return find_pkg_dict_from_plist(plist, key, pkgname, false);
-}
-
-prop_dictionary_t
-xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
-					 const char *key,
-					 const char *pattern)
-{
-	return find_pkg_dict_from_plist(plist, key, pattern, true);
-}
-
 bool
-xbps_find_virtual_pkg_in_dict(prop_dictionary_t d,
-			      const char *str,
-			      bool bypattern)
+xbps_match_virtual_pkg_in_dict(prop_dictionary_t d,
+			       const char *str,
+			       bool bypattern)
 {
 	prop_array_t provides;
 	bool found = false;
 
 	if ((provides = prop_dictionary_get(d, "provides"))) {
 		if (bypattern)
-			found = xbps_find_pkgpattern_in_array(provides, str);
+			found = xbps_match_pkgpattern_in_array(provides, str);
 		else
-			found = xbps_find_pkgname_in_array(provides, str);
+			found = xbps_match_pkgname_in_array(provides, str);
 	}
 	return found;
 }
 
 static prop_dictionary_t
-find_pkg_in_array(prop_array_t array, const char *str, bool bypattern)
+find_pkg_in_array(prop_array_t array,
+		  const char *str,
+		  bool bypattern,
+		  bool virtual)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj = NULL;
@@ -136,11 +91,13 @@ find_pkg_in_array(prop_array_t array, const char *str, bool bypattern)
 			if (strcmp(dpkgn, str) == 0)
 				break;
 		}
+		if (!virtual)
+			continue;
 		/*
 		 * Finally check if package pattern matches
 		 * any virtual package version in dictionary.
 		 */
-		if (xbps_find_virtual_pkg_in_dict(obj, str, bypattern))
+		if (xbps_match_virtual_pkg_in_dict(obj, str, bypattern))
 			break;
 	}
 	prop_object_iterator_release(iter);
@@ -148,19 +105,20 @@ find_pkg_in_array(prop_array_t array, const char *str, bool bypattern)
 		errno = ENOENT;
 		return NULL;
 	}
+
 	return obj;
 }
 
 prop_dictionary_t
 xbps_find_pkg_in_array_by_name(prop_array_t array, const char *name)
 {
-	return find_pkg_in_array(array, name, false);
+	return find_pkg_in_array(array, name, false, false);
 }
 
 prop_dictionary_t
 xbps_find_pkg_in_array_by_pattern(prop_array_t array, const char *pattern)
 {
-	return find_pkg_in_array(array, pattern, true);
+	return find_pkg_in_array(array, pattern, true, false);
 }
 
 static const char *
@@ -250,9 +208,11 @@ find_pkg_in_dict(prop_dictionary_t d,
 		 const char *key,
 		 const char *str,
 		 bool bypattern,
-		 bool virtual)
+		 bool virtual,
+		 bool virtual_in_conf)
 {
 	prop_array_t array;
+	prop_dictionary_t vpkgd;
 
 	assert(d != NULL);
 	assert(str != NULL);
@@ -262,10 +222,13 @@ find_pkg_in_dict(prop_dictionary_t d,
 	if (prop_object_type(array) != PROP_TYPE_ARRAY)
 		return NULL;
 
-	if (virtual)
-		return find_virtualpkg_user_in_array(array, str, bypattern);
+	if (virtual_in_conf) {
+		vpkgd = find_virtualpkg_user_in_array(array, str, bypattern);
+		if (vpkgd != NULL)
+			return vpkgd;
+	}
 
-	return find_pkg_in_array(array, str, bypattern);
+	return find_pkg_in_array(array, str, bypattern, virtual);
 }
 
 prop_dictionary_t
@@ -273,7 +236,7 @@ xbps_find_pkg_in_dict_by_name(prop_dictionary_t d,
 			      const char *key,
 			      const char *pkgname)
 {
-	return find_pkg_in_dict(d, key, pkgname, false, false);
+	return find_pkg_in_dict(d, key, pkgname, false, false, false);
 }
 
 prop_dictionary_t
@@ -281,27 +244,87 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t d,
 				 const char *key,
 				 const char *pattern)
 {
-	return find_pkg_in_dict(d, key, pattern, true, false);
+	return find_pkg_in_dict(d, key, pattern, true, false, false);
 }
 
 prop_dictionary_t HIDDEN
-xbps_find_virtualpkg_user_in_dict_by_name(prop_dictionary_t d,
+xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t d,
 					  const char *key,
 					  const char *name)
 {
-	return find_pkg_in_dict(d, key, name, false, true);
+	return find_pkg_in_dict(d, key, name, false, true, false);
 }
 
 prop_dictionary_t HIDDEN
-xbps_find_virtualpkg_user_in_dict_by_pattern(prop_dictionary_t d,
+xbps_find_virtualpkg_in_dict_by_pattern(prop_dictionary_t d,
 					     const char *key,
 					     const char *pattern)
 {
-	return find_pkg_in_dict(d, key, pattern, true, true);
+	return find_pkg_in_dict(d, key, pattern, true, true, false);
+}
+
+prop_dictionary_t HIDDEN
+xbps_find_virtualpkg_conf_in_dict_by_name(prop_dictionary_t d,
+					  const char *key,
+					  const char *name)
+{
+	return find_pkg_in_dict(d, key, name, false, false, true);
+}
+
+prop_dictionary_t HIDDEN
+xbps_find_virtualpkg_conf_in_dict_by_pattern(prop_dictionary_t d,
+					     const char *key,
+					     const char *pattern)
+{
+	return find_pkg_in_dict(d, key, pattern, true, false, true);
+}
+
+static prop_dictionary_t
+find_pkg_dict_from_plist(const char *plist,
+			 const char *key,
+			 const char *str,
+			 bool bypattern)
+{
+	prop_dictionary_t dict, obj, res;
+
+	assert(plist != NULL);
+	assert(str != NULL);
+
+	dict = prop_dictionary_internalize_from_zfile(plist);
+	if (dict == NULL) {
+		xbps_dbg_printf("cannot internalize %s for pkg %s: %s",
+		    plist, str, strerror(errno));
+		return NULL;
+	}
+	obj = find_pkg_in_dict(dict, key, str, bypattern, true, true);
+	if (obj == NULL) {
+		prop_object_release(dict);
+		return NULL;
+	}
+	res = prop_dictionary_copy(obj);
+	prop_object_release(dict);
+
+	return res;
 }
 
 prop_dictionary_t
-xbps_find_pkg_dict_installed(const char *str, bool bypattern)
+xbps_find_pkg_dict_from_plist_by_name(const char *plist,
+				      const char *key,
+				      const char *pkgname)
+{
+	return find_pkg_dict_from_plist(plist, key, pkgname, false);
+}
+
+prop_dictionary_t
+xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
+					 const char *key,
+					 const char *pattern)
+{
+	return find_pkg_dict_from_plist(plist, key, pattern, true);
+}
+
+static prop_dictionary_t
+find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 {
 	const struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, rpkgd = NULL;
@@ -314,7 +337,7 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 		return NULL;
 
 	pkgd = find_pkg_in_dict(xhp->regpkgdb_dictionary,
-	    "packages", str, bypattern, false);
+	    "packages", str, bypattern, virtual, true);
 	if (pkgd == NULL)
 		return rpkgd;
 
@@ -338,8 +361,20 @@ xbps_find_pkg_dict_installed(const char *str, bool bypattern)
 	return rpkgd;
 }
 
+prop_dictionary_t
+xbps_find_pkg_dict_installed(const char *str, bool bypattern)
+{
+	return find_pkgd_installed(str, bypattern, false);
+}
+
+prop_dictionary_t
+xbps_find_virtualpkg_dict_installed(const char *str, bool bypattern)
+{
+	return find_pkgd_installed(str, bypattern, true);
+}
+
 static bool
-find_string_in_array(prop_array_t array, const char *str, int mode)
+match_string_in_array(prop_array_t array, const char *str, int mode)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
@@ -389,19 +424,19 @@ find_string_in_array(prop_array_t array, const char *str, int mode)
 }
 
 bool
-xbps_find_string_in_array(prop_array_t array, const char *str)
+xbps_match_string_in_array(prop_array_t array, const char *str)
 {
-	return find_string_in_array(array, str, 0);
+	return match_string_in_array(array, str, 0);
 }
 
 bool
-xbps_find_pkgname_in_array(prop_array_t array, const char *pkgname)
+xbps_match_pkgname_in_array(prop_array_t array, const char *pkgname)
 {
-	return find_string_in_array(array, pkgname, 1);
+	return match_string_in_array(array, pkgname, 1);
 }
 
 bool
-xbps_find_pkgpattern_in_array(prop_array_t array, const char *pattern)
+xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern)
 {
-	return find_string_in_array(array, pattern, 2);
+	return match_string_in_array(array, pattern, 2);
 }

@@ -181,13 +181,22 @@ int HIDDEN xbps_repository_pkg_replaces(prop_dictionary_t,
  * From lib/plist_find.c
  */
 prop_dictionary_t HIDDEN
-	xbps_find_virtualpkg_user_in_dict_by_name(prop_dictionary_t,
-						  const char *,
-						  const char *);
+	xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t,
+					     const char *,
+					     const char *);
 prop_dictionary_t HIDDEN
-	xbps_find_virtualpkg_user_in_dict_by_pattern(prop_dictionary_t,
-						     const char *,
-						     const char *);
+	xbps_find_virtualpkg_in_dict_by_pattern(prop_dictionary_t,
+						const char *,
+						const char *);
+
+prop_dictionary_t HIDDEN
+	xbps_find_virtualpkg_conf_in_dict_by_name(prop_dictionary_t,
+					     const char *,
+					     const char *);
+prop_dictionary_t HIDDEN
+	xbps_find_virtualpkg_conf_in_dict_by_pattern(prop_dictionary_t,
+						const char *,
+						const char *);
 
 __END_DECLS
 

@@ -44,7 +44,7 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
 			return ENOMEM;
 	}
 
-	if (xbps_find_string_in_array(reqby, pkgver)) {
+	if (xbps_match_string_in_array(reqby, pkgver)) {
 		if (alloc)
 			prop_object_release(reqby);
 
@@ -92,7 +92,7 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 	if (reqby == NULL || prop_array_count(reqby) == 0)
 		return 0;
 
-	if (xbps_find_pkgname_in_array(reqby, pkgname))
+	if (xbps_match_pkgname_in_array(reqby, pkgname))
 		if (!xbps_remove_pkgname_from_array(reqby, pkgname))
 			return EINVAL;
 

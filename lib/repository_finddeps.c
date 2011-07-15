@@ -326,8 +326,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 				break;
 			}
 			free(pkgname);
-			if (xbps_find_virtual_pkg_in_dict(tmpd,
-			    reqpkg, true)) {
+			if (xbps_match_virtual_pkg_in_dict(tmpd,reqpkg,true)) {
 				/*
 				 * Check if required dependency is a virtual
 				 * package and is satisfied by an

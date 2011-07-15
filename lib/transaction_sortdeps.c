@@ -70,7 +70,7 @@ pkgdep_find(const char *name, const char *trans)
 		}
 		if (pd->d == NULL)
 			continue;
-		if (xbps_find_virtual_pkg_in_dict(pd->d, name, false))
+		if (xbps_match_virtual_pkg_in_dict(pd->d, name, false))
 			return pd;
 	}
 
@@ -93,7 +93,7 @@ pkgdep_find_idx(const char *name, const char *trans)
 		}
 		if (pd->d == NULL)
 			continue;
-		if (xbps_find_virtual_pkg_in_dict(pd->d, name, false))
+		if (xbps_match_virtual_pkg_in_dict(pd->d, name, false))
 			return idx;
 
 		idx++;
@@ -231,6 +231,10 @@ again:
 		}
 		curpkgd = xbps_find_pkg_in_dict_by_name(transd,
 		    "unsorted_deps", pkgnamedep);
+		if (curpkgd == NULL) {
+			curpkgd = xbps_find_virtualpkg_in_dict_by_name(transd,
+			    "unsorted_deps", pkgnamedep);
+		}
 		if (curpkgd == NULL) {
 			free(pkgnamedep);
 			rv = EINVAL;
