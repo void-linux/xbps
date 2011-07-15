@@ -111,11 +111,10 @@ main(int argc, char **argv)
 {
 	struct xbps_handle xh;
 	struct xbps_fetch_progress_data xfpd;
-	prop_dictionary_t dict, pkgd;
-	prop_array_t array;
+	prop_dictionary_t dict;
 	const char *version, *rootdir = NULL, *conffile = NULL;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
-	bool fromsrc = false, debug = false, in_chroot = false;
+	bool debug = false, in_chroot = false;
 	int i, c, rv = 0;
 
 	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
@@ -232,39 +231,6 @@ main(int argc, char **argv)
 		printf("%s%s=> %s-%s unregistered successfully.%s\n",
 		    MSG_NORMAL, in_chroot ? "[chroot] " : "", argv[1],
 		    argv[2], MSG_RESET);
-
-	} else if (strcasecmp(argv[0], "setsource") == 0) {
-		if (argc != 2)
-			usage();
-
-		dict = prop_dictionary_internalize_from_zfile(plist);
-		if (dict == NULL)
-			exit(EXIT_FAILURE);
-
-		array = prop_dictionary_get(dict, "packages");
-		if (array == NULL)
-			exit(EXIT_FAILURE);
-
-		pkgd = xbps_find_pkg_in_array_by_name(array, argv[1]);
-		if (pkgd == NULL)
-			exit(EXIT_FAILURE);
-
-		prop_dictionary_set_bool(pkgd, "installed-from-source", true);
-		write_plist_file(dict, plist);
-
-	} else if (strcasecmp(argv[0], "fromsource") == 0) {
-		if (argc != 2)
-			usage();
-
-		dict = xbps_find_pkg_dict_installed(argv[1], false);
-		if (dict == NULL)
-			exit(EXIT_FAILURE);
-
-		fromsrc = false;
-		prop_dictionary_get_bool(dict, "installed-from-source",
-		    &fromsrc);
-		printf("%s\n", fromsrc ? "yes" : "no");
-		prop_object_release(dict);
 
 	} else if (strcasecmp(argv[0], "version") == 0) {
 		/* Prints version of an installed package */
