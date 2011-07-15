@@ -38,7 +38,9 @@ digraph pkg_files_dictionary {
 	links_dict [style=filled,label="dictionary[0]"];
 	links_dict1 [style=filled,label="dictionary[N+1]"];
 	links_dict -> link_file [label=string];
+	links_dict -> link_target [label=string];
 	link_file [label=file];
+	link_target [label=target];
 	links_dict1 -> links_dict1_objs [style=filled,label="objects"];
 	links_dict1_objs [style=filled,label="..."];
 	main -> dirs [label=array];
