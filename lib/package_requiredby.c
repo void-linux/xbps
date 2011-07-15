@@ -168,7 +168,7 @@ xbps_requiredby_pkg_add(prop_array_t pkgs_array, prop_dictionary_t pkgd)
 			break;
 		}
 		pkgd_regpkgdb =
-		    xbps_find_pkg_in_array_by_pattern(pkgs_array, str);
+		    xbps_find_virtualpkg_in_array_by_pattern(pkgs_array, str);
 		if (pkgd_regpkgdb == NULL)
 			return EINVAL;
 

@@ -121,6 +121,18 @@ xbps_find_pkg_in_array_by_pattern(prop_array_t array, const char *pattern)
 	return find_pkg_in_array(array, pattern, true, false);
 }
 
+prop_dictionary_t
+xbps_find_virtualpkg_in_array_by_name(prop_array_t array, const char *name)
+{
+	return find_pkg_in_array(array, name, false, true);
+}
+
+prop_dictionary_t
+xbps_find_virtualpkg_in_array_by_pattern(prop_array_t array, const char *pattern)
+{
+	return find_pkg_in_array(array, pattern, true, true);
+}
+
 static const char *
 find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 {

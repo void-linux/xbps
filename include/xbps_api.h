@@ -668,6 +668,29 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
 						    const char *pattern);
 
 /**
+ * Finds a virtual package dictionary in a proplib array by matching a
+ * package name.
+ *
+ * @param[in] array The proplib array where to look for.
+ * @param[in] name The virtual package name to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+prop_dictionary_t xbps_find_virtualpkg_in_array_by_name(prop_array_t array,
+							const char *name);
+
+/**
+ * Finds a virtual package dictionary in a proplib array by matching a
+ * package pattern.
+ *
+ * @param[in] array The proplib array where to look for.
+ * @param[in] pattern The virtual package pattern to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+prop_dictionary_t xbps_find_virtualpkg_in_array_by_pattern(prop_array_t array,
+							   const char *pattern);
+/**
  * Match a package name in the specified array of strings.
  *
  * @param[in] array The proplib array where to look for.
