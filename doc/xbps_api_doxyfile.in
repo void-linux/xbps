@@ -105,14 +105,14 @@ INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c \
                          *.h
 RECURSIVE              = YES
-EXCLUDE                = ../.hg \
+EXCLUDE                = ../.git \
                          ../bin \
                          ../lib/fetch \
                          ../include/sha256.h \
                          ../include/fetch.h \
                          ../lib/portableproplib
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       = .hg \
+EXCLUDE_PATTERNS       = .git \
                          *.mk \
                          Makefile
 EXCLUDE_SYMBOLS        =
