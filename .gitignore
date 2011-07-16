@@ -1,1 +1,18 @@
-.hgignore
+syntax: glob
+
+config.h
+config.mk
+bin/xbps-bin/xbps-bin
+bin/xbps-repo/xbps-repo
+bin/xbps-uhelper/xbps-uhelper
+bin/xbps-dgraph/xbps-dgraph
+*.static
+*.so*
+*.o
+*.a
+*.xml
+*.png
+api/
+doc/xbps_api_doxyfile
+ftperr.h
+httperr.h
