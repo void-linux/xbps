@@ -39,22 +39,6 @@
  * These functions manipulate plist files and objects shared by almost
  * all library functions.
  */
-bool
-xbps_match_virtual_pkg_in_dict(prop_dictionary_t d,
-			       const char *str,
-			       bool bypattern)
-{
-	prop_array_t provides;
-	bool found = false;
-
-	if ((provides = prop_dictionary_get(d, "provides"))) {
-		if (bypattern)
-			found = xbps_match_pkgpattern_in_array(provides, str);
-		else
-			found = xbps_match_pkgname_in_array(provides, str);
-	}
-	return found;
-}
 
 static prop_dictionary_t
 find_pkg_in_array(prop_array_t array,
@@ -383,72 +367,4 @@ prop_dictionary_t
 xbps_find_virtualpkg_dict_installed(const char *str, bool bypattern)
 {
 	return find_pkgd_installed(str, bypattern, true);
-}
-
-static bool
-match_string_in_array(prop_array_t array, const char *str, int mode)
-{
-	prop_object_iterator_t iter;
-	prop_object_t obj;
-	const char *pkgdep;
-	char *curpkgname;
-	bool found = false;
-
-	assert(array != NULL);
-	assert(str != NULL);
-
-	iter = prop_array_iterator(array);
-	if (iter == NULL)
-		return false;
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		assert(prop_object_type(obj) == PROP_TYPE_STRING);
-		if (mode == 0) {
-			/* match by string */
-			if (prop_string_equals_cstring(obj, str)) {
-				found = true;
-				break;
-			}
-		} else if (mode == 1) {
-			/* match by pkgname */
-			pkgdep = prop_string_cstring_nocopy(obj);
-			curpkgname = xbps_pkg_name(pkgdep);
-			if (curpkgname == NULL)
-				break;
-			if (strcmp(curpkgname, str) == 0) {
-				free(curpkgname);
-				found = true;
-				break;
-			}
-			free(curpkgname);
-		} else if (mode == 2) {
-			/* match by pkgpattern */
-			pkgdep = prop_string_cstring_nocopy(obj);
-			if (xbps_pkgpattern_match(pkgdep, str)) {
-				found = true;
-				break;
-			}
-		}
-	}
-	prop_object_iterator_release(iter);
-
-	return found;
-}
-
-bool
-xbps_match_string_in_array(prop_array_t array, const char *str)
-{
-	return match_string_in_array(array, str, 0);
-}
-
-bool
-xbps_match_pkgname_in_array(prop_array_t array, const char *pkgname)
-{
-	return match_string_in_array(array, pkgname, 1);
-}
-
-bool
-xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern)
-{
-	return match_string_in_array(array, pattern, 2);
 }
