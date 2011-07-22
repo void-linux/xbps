@@ -318,9 +318,9 @@ int xbps_configure_packages(void);
  * Compares package version strings.
  *
  * The package version is defined by:
- * ${VERSION}[_${REVISION}][:${EPOCH}].
+ * ${VERSION}[_${REVISION}].
  *
- * ${EPOCH} supersedes ${VERSION} supersedes ${REVISION}.
+ * ${VERSION} supersedes ${REVISION}.
  *
  * @param[in] pkg1 a package version string.
  * @param[in] pkg2 a package version string.
