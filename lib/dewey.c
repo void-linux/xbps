@@ -68,7 +68,7 @@ typedef struct arr_t {
 	unsigned	c;              /* # of version numbers */
 	unsigned	size;           /* size of array */
 	int	       *v;              /* array of decimal numbers */
-	int		netbsd;         /* any "nb" suffix */
+	int		revision;       /* any "_" suffix */
 } arr_t;
 
 /* this struct describes a test */
@@ -96,7 +96,6 @@ const test_t	modifiers[] = {
 	{	"pre",		3,	RC	},
 	{	"rc",		2,	RC	},
 	{	"pl",		2,	Dot	},
-	{	"_",		1,	Dot	},
 	{	".",		1,	Dot	},
 	{	NULL,		0,	0	}
 };
@@ -121,12 +120,11 @@ dewey_mktest(int *op, const char *test)
 /*
  * make a component of a version number.
  * '.' encodes as Dot which is '0'
- * '_' encodes as 'patch level', or 'Dot', which is 0.
  * 'pl' encodes as 'patch level', or 'Dot', which is 0.
  * 'alpha' encodes as 'alpha version', or Alpha, which is -3.
  * 'beta' encodes as 'beta version', or Beta, which is -2.
  * 'rc' encodes as 'release candidate', or RC, which is -1.
- * 'nb' encodes as 'netbsd version', which is used after all other tests
+ * '_' encodes as 'xbps revision', which is used after all other tests
  */
 static int
 mkcomponent(arr_t *ap, const char *num)
@@ -167,11 +165,11 @@ mkcomponent(arr_t *ap, const char *num)
 			return modp->len;
 		}
 	}
-	if (strncasecmp(num, "nb", 2) == 0) {
-		for (cp = num, num += 2, n = 0 ; isdigit((unsigned char)*num) ; num++) {
+	if (strncasecmp(num, "_", 1) == 0) {
+		for (cp = num, num += 1, n = 0 ; isdigit((unsigned char)*num) ; num++) {
 			n = (n * 10) + (*num - '0');
 		}
-		ap->netbsd = n;
+		ap->revision = n;
 		return (int)(num - cp);
 	}
 	if (isalpha((unsigned char)*num)) {
@@ -197,7 +195,7 @@ mkversion(arr_t *ap, const char *num)
 	ap->c = 0;
 	ap->size = 0;
 	ap->v = NULL;
-	ap->netbsd = 0;
+	ap->revision = 0;
 
 	while (*num) {
 		num += mkcomponent(ap, num);
@@ -250,7 +248,7 @@ vtest(arr_t *lhs, int tst, arr_t *rhs)
 			return result(cmp, tst);
 		}
 	}
-	return result(lhs->netbsd - rhs->netbsd, tst);
+	return result(lhs->revision - rhs->revision, tst);
 }
 
 /*
