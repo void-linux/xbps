@@ -1,4 +1,4 @@
-.TH "XBPS\-REPO" "8" "07/09/2011" "\ \&" "\ \&"
+.TH "XBPS\-REPO" "8" "07/23/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -16,7 +16,7 @@ xbps-repo \- XBPS command for binary package repositories
 \fBxbps\-repo\fR [\fIoptions\fR] \fItarget\fR [\fIarguments\fR]
 .SH "DESCRIPTION"
 .sp
-The xbps\-repo(8) command is used to handle local or remote binary package repositories in the \fBXBPS binary package system\fR\&. You can use it to create a package index for a local repository, add or remove local and remote repositories, search for packages and show information about a binary package in repository pool\&.
+The xbps\-repo(8) command is used to handle local or remote binary package repositories in the \fBXBPS binary package system\fR\&. You can use it to create a package index for a local repository, list repositories, search for packages and show information about a binary package in repository pool\&.
 .SH "OPTIONS"
 .PP
 \fB\-C\fR \fIconffile\fR
@@ -54,7 +54,7 @@ of
 .PP
 \fB\-V\fR
 .RS 4
-Shows the current XBPS API and INDEX versions\&.
+Shows the current XBPS, API and INDEX versions\&.
 .RE
 .SH "TARGETS"
 .sp
@@ -126,11 +126,6 @@ Syncs the package index file for all registered remote repositories\&. The new f
 \fB/etc/xbps-conf.plist\fR
 .RS 4
 Default XBPS configuration file\&.
-.RE
-.PP
-\fB/var/db/xbps/repositories\&.plist\fR
-.RS 4
-Registered repository list\&.
 .RE
 .PP
 \fB/var/db/xbps/<remoterepodir>/pkg\-index\&.plist\fR

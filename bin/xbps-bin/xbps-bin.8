@@ -1,4 +1,4 @@
-.TH "XBPS\-BIN" "8" "06/20/2011" "\ \&" "\ \&"
+.TH "XBPS\-BIN" "8" "07/23/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -138,20 +138,20 @@ Please note that all targets are case insensitive\&.
 .PP
 \fBautoremove\fR
 .RS 4
-Removes leaf packages\&. These packages were installed as dependencies and currently there is not any package depending on it, directly or indirectly\&. Usually it is safe to always answer yes\&.
+Removes package orphans\&. These packages were installed as dependencies and currently there is not any package depending on it, directly or indirectly\&. Usually it is safe to always answer yes\&.
 .RE
 .PP
 \fBautoupdate\fR
 .RS 4
-Updates all currently installed packages to the most newer version available in repository pool\&.
+Updates all currently installed packages to the newest version available in all repositories\&.
 .RE
 .PP
-\fBcheck \fR\fB\fIpkgname(s) | all\fR\fR
+\fBcheck \fR\fB\fIpkgname | all\fR\fR
 .RS 4
 Checks for integrity errors in installed packages\&. The checks are to found missing run\-time dependencies, missing and modified package files and metadata files\&. If the
 \fIall\fR
 keyword is used, all packages currently installed will be checked, otherwise only
-\fIpkgname(s)\fR\&.
+\fIpkgname\fR\&.
 .RE
 .PP
 \fBfind\-files \fR\fB\fIpattern\fR\fR
