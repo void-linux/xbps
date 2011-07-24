@@ -100,24 +100,72 @@ create_transaction_missingdeps(void)
 }
 
 static int
-compute_transaction_sizes(void)
+compute_transaction_stats(void)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
-	uint64_t tsize = 0, dlsize = 0, instsize = 0;
+	uint64_t tsize, dlsize, instsize;
+	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt;
 	int rv = 0;
 	const char *tract;
+
+	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = 0;
+	tsize = dlsize = instsize = 0;
 
 	iter = xbps_array_iter_from_dict(transd, "packages");
 	if (iter == NULL)
 		return EINVAL;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		/*
+		 * Count number of pkgs to be removed, configured,
+		 * installed and updated.
+		 */
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		if (strcmp(tract, "install") == 0)
+			inst_pkgcnt++;
+		else if (strcmp(tract, "update") == 0)
+			up_pkgcnt++;
+		else if (strcmp(tract, "configure") == 0)
+			cf_pkgcnt++;
+		else if (strcmp(tract, "remove") == 0)
+			rm_pkgcnt++;
+	}
+
+	if (inst_pkgcnt &&
+	    !prop_dictionary_set_uint32(transd, "total-install-pkgs",
+	    inst_pkgcnt)) {
+		rv = EINVAL;
+		goto out;
+	}
+	if (up_pkgcnt &&
+	    !prop_dictionary_set_uint32(transd, "total-update-pkgs",
+	    up_pkgcnt)) {
+		rv = EINVAL;
+		goto out;
+	}
+	if (cf_pkgcnt &&
+	    !prop_dictionary_set_uint32(transd, "total-configure-pkgs",
+	    cf_pkgcnt)) {
+		rv = EINVAL;
+		goto out;
+	}
+	if (rm_pkgcnt &&
+	    !prop_dictionary_set_uint32(transd, "total-remove-pkgs",
+	    rm_pkgcnt)) {
+		rv = EINVAL;
+		goto out;
+	}
+
+	prop_object_iterator_reset(iter);
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		/*
-		 * Skip pkgs that need to be configured.
+		 * Only process pkgs to be installed or updated.
 		 */
-		if (strcmp(tract, "configure") == 0)
+		if ((strcmp(tract, "configure") == 0) ||
+		    (strcmp(tract, "remove") == 0))
 			continue;
 
 		prop_dictionary_get_uint64(obj, "filename-size", &tsize);
@@ -197,10 +245,11 @@ xbps_transaction_prepare(void)
 		return NULL;
 	}
 	/*
-	 * Add total transaction installed/download sizes
-	 * to the transaction dictionary.
+	 * Add transaction stats for total download/installed size,
+	 * number of packages to be installed, updated, configured
+	 * and removed to the transaction dictionary.
 	 */
-	if ((rv = compute_transaction_sizes()) != 0) {
+	if ((rv = compute_transaction_stats()) != 0) {
 		errno = rv;
 		prop_object_release(transd);
 		prop_object_release(trans_mdeps);

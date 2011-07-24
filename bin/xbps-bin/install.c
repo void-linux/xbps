@@ -43,10 +43,10 @@ struct transaction {
 	prop_object_iterator_t iter;
 	bool yes;
 	bool only_show;
-	size_t inst_pkgcnt;
-	size_t up_pkgcnt;
-	size_t cf_pkgcnt;
-	size_t rm_pkgcnt;
+	uint32_t inst_pkgcnt;
+	uint32_t up_pkgcnt;
+	uint32_t cf_pkgcnt;
+	uint32_t rm_pkgcnt;
 };
 
 static void
@@ -201,55 +201,36 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 static int
 show_transaction_sizes(struct transaction *trans)
 {
-	prop_object_t obj;
 	uint64_t dlsize = 0, instsize = 0;
-	const char *tract;
 	char size[8];
-	bool trans_inst, trans_up, trans_conf, trans_rm;
-
-	trans_inst = trans_up = trans_conf = trans_rm = false;
-
-	while ((obj = prop_object_iterator_next(trans->iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		if (strcmp(tract, "install") == 0) {
-			trans->inst_pkgcnt++;
-			trans_inst = true;
-		} else if (strcmp(tract, "update") == 0) {
-			trans->up_pkgcnt++;
-			trans_up = true;
-		} else if (strcmp(tract, "configure") == 0) {
-			trans->cf_pkgcnt++;
-			trans_conf = true;
-		} else if (strcmp(tract, "remove") == 0) {
-			trans->rm_pkgcnt++;
-			trans_rm = true;
-		}
-	}
-	prop_object_iterator_reset(trans->iter);
 
 	/*
 	 * Show the list of packages that will be installed.
 	 */
-	if (trans_inst) {
-		printf("%zu package%s will be installed:\n\n",
+	if (prop_dictionary_get_uint32(trans->dict, "total-install-pkgs",
+	    &trans->inst_pkgcnt)) {
+		printf("%u package%s will be installed:\n\n",
 		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "install");
 		printf("\n\n");
 	}
-	if (trans_up) {
-		printf("%zu package%s will be updated:\n\n",
+	if (prop_dictionary_get_uint32(trans->dict, "total-update-pkgs",
+	    &trans->up_pkgcnt)) {
+		printf("%u package%s will be updated:\n\n",
 		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "update");
 		printf("\n\n");
 	}
-	if (trans_conf) {
-		printf("%zu package%s will be configured:\n\n",
+	if (prop_dictionary_get_uint32(trans->dict, "total-configure-pkgs",
+	    &trans->cf_pkgcnt)) {
+		printf("%u package%s will be configured:\n\n",
 		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "configure");
 		printf("\n\n");
 	}
-	if (trans_rm) {
-		printf("%zu package%s will be removed:\n\n",
+	if (prop_dictionary_get_uint32(trans->dict, "total-remove-pkgs",
+	    &trans->rm_pkgcnt)) {
+		printf("%u package%s will be removed:\n\n",
 		    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "remove");
 		printf("\n\n");
@@ -421,7 +402,7 @@ exec_transaction(struct transaction *trans)
 	/*
 	 * Remove packages to be replaced.
 	 */
-	if (trans->rm_pkgcnt > 0) {
+	if (trans->rm_pkgcnt) {
 		printf("\n[*] Removing packages to be replaced ...\n");
 		while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 			prop_dictionary_get_cstring_nocopy(obj, "transaction",
@@ -461,7 +442,7 @@ exec_transaction(struct transaction *trans)
 	/*
 	 * Configure pending packages.
 	 */
-	if (trans->cf_pkgcnt > 0) {
+	if (trans->cf_pkgcnt) {
 		printf("\n[*] Reconfigure unpacked packages ...\n");
 		while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
 			prop_dictionary_get_cstring_nocopy(obj, "transaction",
@@ -574,8 +555,9 @@ exec_transaction(struct transaction *trans)
 		}
 		trans->cf_pkgcnt++;
 	}
-	printf("\nxbps-bin: %zu installed, %zu updated, "
-	    "%zu configured, %zu removed.\n", trans->inst_pkgcnt,
+
+	printf("\nxbps-bin: %u installed, %u updated, "
+	    "%u configured, %u removed.\n", trans->inst_pkgcnt,
 	    trans->up_pkgcnt, trans->cf_pkgcnt, trans->rm_pkgcnt);
 
 	return 0;
