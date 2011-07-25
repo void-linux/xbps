@@ -1,5 +1,8 @@
 xbps-0.10.0 (???):
 
+ * libxbps: fixed NetBSD's dewey matching code to properly identify
+   that a version X.Y.Z should be greater than X.Y_Z.
+
  * libxbps: revamped virtual package handling. The public API find
    functions (xbps_find_pkg_*) don't know anything about virtual packages.
    To find virtual packages the xbps_find_virtualpkg_* functions must be
