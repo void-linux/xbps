@@ -187,15 +187,23 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 				    const char *plist)
 {
 	const struct xbps_handle *xhp;
-	prop_dictionary_t plistd = NULL;
+	prop_dictionary_t pkgd, plistd = NULL;
+	const char *rpkgname;
 	char *plistf;
 
 	assert(pkgname != NULL);
 	assert(plist != NULL);
 	xhp = xbps_handle_get();
 
+	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
+	if (pkgd == NULL)
+		return NULL;
+
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &rpkgname);
+	prop_object_release(pkgd);
+
 	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-	    xhp->rootdir, XBPS_META_PATH, pkgname, plist);
+	    xhp->rootdir, XBPS_META_PATH, rpkgname, plist);
 	if (plistf == NULL)
 		return NULL;
 
@@ -203,7 +211,7 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 	free(plistf);
 	if (plistd == NULL) {
 		xbps_dbg_printf("cannot read from plist file %s for %s: %s\n",
-		    plist, pkgname, strerror(errno));
+		    plist, rpkgname, strerror(errno));
 		return NULL;
 	}
 

@@ -1,5 +1,8 @@
 xbps-0.10.0 (???):
 
+ * xbps-bin(8): the 'show', 'show-deps' and 'show-revdeps' targets now
+   work with virtual packages.
+
  * libxbps: fixed NetBSD's dewey matching code to properly identify
    that a version X.Y.Z should be greater than X.Y_Z.
 
