@@ -37,30 +37,21 @@
 int
 xbps_show_pkg_deps(const char *pkgname)
 {
-	prop_dictionary_t pkgd, propsd;
-	const char *rpkgname;
+	prop_dictionary_t propsd;
 	int rv = 0;
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
-	if (pkgd == NULL) {
-		printf("Package %s is not installed.\n", pkgname);
-		return 0;
-	}
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &rpkgname);
-	prop_object_release(pkgd);
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_dictionary_from_metadata_plist(rpkgname, XBPS_PKGPROPS);
+	propsd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGPROPS);
 	if (propsd == NULL) {
 		fprintf(stderr,
-		    "%s: unexistent %s metadata file.\n", rpkgname,
+		    "%s: unexistent %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		return errno;
 	}
-
 	rv = xbps_callback_array_iter_in_dict(propsd, "run_depends",
 	     list_strings_sep_in_array, NULL);
 	prop_object_release(propsd);
@@ -79,7 +70,6 @@ xbps_show_pkg_reverse_deps(const char *pkgname)
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;
 	}
-
 	rv = xbps_callback_array_iter_in_dict(pkgd, "requiredby",
 	    list_strings_sep_in_array, NULL);
 	prop_object_release(pkgd);
