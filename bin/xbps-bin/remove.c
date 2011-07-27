@@ -61,7 +61,7 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 }
 
 int
-xbps_autoremove_pkgs(bool yes, bool purge)
+autoremove_pkgs(bool yes, bool purge)
 {
 	prop_array_t orphans = NULL;
 	prop_object_t obj = NULL;
@@ -98,7 +98,7 @@ xbps_autoremove_pkgs(bool yes, bool purge)
 	prop_object_iterator_reset(iter);
 	printf("\n\n");
 
-	if (!yes && !xbps_noyes("Do you want to continue?")) {
+	if (!yes && !noyes("Do you want to continue?")) {
 		printf("Cancelled!\n");
 		goto out;
 	}
@@ -120,12 +120,8 @@ out:
 }
 
 int
-xbps_remove_installed_pkgs(int argc,
-			   char **argv,
-			   bool yes,
-			   bool purge,
-			   bool force_rm_with_deps,
-			   bool recursive_rm)
+remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
+		      bool force_rm_with_deps, bool recursive_rm)
 {
 	prop_array_t sorted_pkgs, orphans, reqby, orphans_user = NULL;
 	prop_dictionary_t dict;
@@ -219,7 +215,7 @@ xbps_remove_installed_pkgs(int argc,
 	    prop_array_count(sorted_pkgs) == 1 ? "" : "s",
 	    purge ? " and purged" : "");
 
-	if (!yes && !xbps_noyes("Do you want to continue?")) {
+	if (!yes && !noyes("Do you want to continue?")) {
 		printf("Cancelling!\n");
 		prop_object_release(sorted_pkgs);
 		return 0;

@@ -203,7 +203,7 @@ xbps_pkgpattern_version(const char *pkg)
 static char *
 get_pkg_index_remote_plist(const char *uri)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	char *uri_fixed, *repodir;
 
 	assert(uri != NULL);
@@ -243,7 +243,7 @@ xbps_pkg_index_plist(const char *uri)
 char *
 xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	const char *filen, *arch;
 	char *lbinpkg = NULL;
 

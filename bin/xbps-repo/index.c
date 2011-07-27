@@ -316,7 +316,7 @@ out:
 }
 
 int
-xbps_repo_genindex(const char *pkgdir)
+repo_genindex(const char *pkgdir)
 {
 	prop_dictionary_t idxdict = NULL;
 	struct dirent *dp;

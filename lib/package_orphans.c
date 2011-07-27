@@ -147,6 +147,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 				break;
 			}
 		}
+		free(pkgdepname);
 	}
 	prop_object_iterator_release(iter);
 
@@ -161,7 +162,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 prop_array_t
 xbps_find_pkg_orphans(prop_array_t orphans_user)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_array_t array = NULL;
 	struct orphan_data od;
 	int rv = 0;
@@ -186,5 +187,6 @@ xbps_find_pkg_orphans(prop_array_t orphans_user)
 		return NULL;
 	}
 	array = prop_array_copy(od.array);
+	prop_object_release(od.array);
 	return array;
 }

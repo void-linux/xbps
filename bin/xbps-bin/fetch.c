@@ -52,7 +52,7 @@ struct xferstat {
  * Compute and display ETA
  */
 static const char *
-stat_eta(struct xbps_fetch_progress_data *xfpd, struct xferstat *xsp)
+stat_eta(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
 {
 	static char str[16];
 	long elapsed, eta;
@@ -92,7 +92,7 @@ compare_double(const double a, const double b)
  * Compute and display transfer rate
  */
 static const char *
-stat_bps(struct xbps_fetch_progress_data *xfpd, struct xferstat *xsp)
+stat_bps(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
 {
 	static char str[16];
 	char size[8];
@@ -115,7 +115,7 @@ stat_bps(struct xbps_fetch_progress_data *xfpd, struct xferstat *xsp)
  * Update the stats display
  */
 static void
-stat_display(struct xbps_fetch_progress_data *xfpd, struct xferstat *xsp)
+stat_display(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
 {
 	struct timeval now;
 	char totsize[8], recvsize[8];
@@ -152,7 +152,7 @@ stat_start(struct xferstat *xsp)
  * Update the transfer statistics
  */
 static void
-stat_update(struct xbps_fetch_progress_data *xfpd, struct xferstat *xsp)
+stat_update(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
 {
 	xfpd->file_dloaded += xfpd->file_offset;
 	stat_display(xfpd, xsp);
@@ -162,7 +162,7 @@ stat_update(struct xbps_fetch_progress_data *xfpd, struct xferstat *xsp)
  * Finalize the transfer statistics
  */
 static void
-stat_end(struct xbps_fetch_progress_data *xfpd, struct xferstat *xsp)
+stat_end(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
 {
 	char size[8];
 
@@ -173,9 +173,8 @@ stat_end(struct xbps_fetch_progress_data *xfpd, struct xferstat *xsp)
 }
 
 void
-fetch_file_progress_cb(void *data)
+fetch_file_progress_cb(struct xbps_fetch_cb_data *xfpd)
 {
-	struct xbps_fetch_progress_data *xfpd = data;
 	static struct xferstat xs;
 
 	if (xfpd->cb_start)

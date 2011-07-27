@@ -83,7 +83,7 @@ xbps_get_remote_repo_string(const char *uri)
 int
 xbps_repository_sync_pkg_index(const char *uri)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	struct url *url = NULL;
 	struct utsname un;
 	struct stat st;

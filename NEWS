@@ -1,5 +1,16 @@
 xbps-0.10.0 (???):
 
+ * Moved install transaction code to libxbps. The API has been extended
+   with xbps_transaction_commit() which expects the transaction dictionary
+   as its argument. This function will execute transaction tasks, like
+   removing, updating, installing and configuring packages as defined
+   in the transaction dictionary.
+
+ * The 'cachedir' option in configuration file now can be changed to
+   be relative to the rootdir if the first character is not '/'. The
+   -c flag in xbps-bin(8) still expects a full path and if set, overrides
+   the setting in configuration file.
+
  * xbps-bin(8): the 'show', 'show-deps' and 'show-revdeps' targets now
    work with virtual packages.
 

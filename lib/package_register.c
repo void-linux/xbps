@@ -42,13 +42,13 @@
 int
 xbps_register_pkg(prop_dictionary_t pkgrd)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t dict, pkgd;
 	prop_array_t array, provides = NULL;
 	const char *pkgname, *version, *desc, *pkgver;
 	char *plist;
 	int rv = 0;
-	bool autoinst;
+	bool autoinst = false;
 
 	xhp = xbps_handle_get();
 	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
@@ -149,7 +149,7 @@ out:
 int
 xbps_unregister_pkg(const char *pkgname)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	char *plist;
 	int rv = 0;
 

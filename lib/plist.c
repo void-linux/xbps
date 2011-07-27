@@ -186,7 +186,7 @@ prop_dictionary_t
 xbps_dictionary_from_metadata_plist(const char *pkgname,
 				    const char *plist)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, plistd = NULL;
 	const char *rpkgname;
 	char *plistf;

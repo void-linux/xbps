@@ -41,7 +41,9 @@
 static void __attribute__((noreturn))
 usage(void)
 {
-	xbps_end();
+	struct xbps_handle *xhp = xbps_handle_get();
+
+	xbps_end(xhp);
 	fprintf(stderr,
 	    "Usage: xbps-repo [options] [action] [arguments]\n"
 	    "See xbps-repo(8) for more information.\n");
@@ -85,8 +87,7 @@ repo_search_pkgs_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 int
 main(int argc, char **argv)
 {
-	struct xbps_handle xh;
-	struct xbps_fetch_progress_data xfpd;
+	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd;
 	const char *rootdir, *cachedir, *conffile;
 	int c, rv = 0;
@@ -127,15 +128,18 @@ main(int argc, char **argv)
 	/*
 	 * Initialize XBPS subsystems.
 	 */
-	memset(&xh, 0, sizeof(xh));
-	xh.with_debug = debug;
-	xh.xbps_fetch_cb = fetch_file_progress_cb;
-	xh.xfpd = &xfpd;
-	xh.rootdir = rootdir;
-	xh.cachedir = cachedir;
-	xh.conffile = conffile;
+	xhp = xbps_handle_alloc();
+	if (xhp == NULL) {
+		xbps_error_printf("xbps-repo: failed to allocate resources.\n");
+		exit(EXIT_FAILURE);
+	}
+	xhp->debug = debug;
+	xhp->xbps_fetch_cb = fetch_file_progress_cb;
+	xhp->rootdir = rootdir;
+	xhp->cachedir = cachedir;
+	xhp->conffile = conffile;
 
-	if ((rv = xbps_init(&xh)) != 0) {
+	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-repo: couldn't initialize library: %s\n",
 		    strerror(errno));
 		exit(EXIT_FAILURE);
@@ -224,7 +228,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		rv = xbps_repo_genindex(argv[1]);
+		rv = repo_genindex(argv[1]);
 
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
@@ -238,6 +242,6 @@ main(int argc, char **argv)
 	}
 
 out:
-	xbps_end();
+	xbps_end(xhp);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

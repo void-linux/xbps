@@ -6,9 +6,11 @@
 	<key>root-directory</key>
 	<string>/</string>
 
-	<!-- Default cache directory to store downloaded binary packages -->
+	<!-- Default cache directory to store downloaded binary packages.
+	     If string begins with '/' it will be treated as full path,
+	     otherwise it will be treated as relative to the root-directory. -->
 	<key>cache-directory</key>
-	<string>/var/cache/xbps</string>
+	<string>var/cache/xbps</string>
 
 	<!-- Default global limit of cached connections when fetching -->
 	<key>fetch-cache-connections</key>

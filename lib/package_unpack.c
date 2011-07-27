@@ -152,8 +152,8 @@ remove_metafile(const char *file, const char *pkgname, const char *version)
  */
 #define RUN_PROGRESS_CB()							\
 do {										\
-	if (xhp != NULL && xhp->xbps_unpack_cb != NULL && xhp->xupd != NULL)	\
-		(*xhp->xbps_unpack_cb)(xhp->xupd);				\
+	if (xhp != NULL && xhp->xbps_unpack_cb != NULL && xhp->xucd != NULL)	\
+		(*xhp->xbps_unpack_cb)(xhp->xucd);				\
 } while (0)
 
 static int
@@ -161,7 +161,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	       struct archive *ar,
 	       const char *pkgname,
 	       const char *version,
-	       const struct xbps_handle *xhp)
+	       struct xbps_handle *xhp)
 {
 	prop_dictionary_t propsd = NULL, filesd = NULL, old_filesd = NULL;
 	prop_array_t array;
@@ -211,11 +211,11 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		entry_pname = archive_entry_pathname(entry);
 		set_extract_flags(&flags, update);
 		if (xhp != NULL && xhp->xbps_unpack_cb != NULL &&
-		    xhp->xupd != NULL) {
-			xhp->xupd->entry = entry_pname;
-			xhp->xupd->entry_size = archive_entry_size(entry);
-			xhp->xupd->entry_is_metadata = false;
-			xhp->xupd->entry_is_conf = false;
+		    xhp->xucd != NULL) {
+			xhp->xucd->entry = entry_pname;
+			xhp->xucd->entry_size = archive_entry_size(entry);
+			xhp->xucd->entry_is_metadata = false;
+			xhp->xucd->entry_is_conf = false;
 		}
 
 		if (strcmp("./INSTALL", entry_pname) == 0) {
@@ -245,9 +245,9 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			nmetadata++;
-			if (xhp->xupd != NULL) {
-				xhp->xupd->entry_is_metadata = true;
-				xhp->xupd->entry_extract_count++;
+			if (xhp->xucd != NULL) {
+				xhp->xucd->entry_is_metadata = true;
+				xhp->xucd->entry_extract_count++;
 			}
 			RUN_PROGRESS_CB();
 			continue;
@@ -259,9 +259,9 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 
 			nmetadata++;
-			if (xhp->xupd != NULL) {
-				xhp->xupd->entry_is_metadata = true;
-				xhp->xupd->entry_extract_count++;
+			if (xhp->xucd != NULL) {
+				xhp->xucd->entry_is_metadata = true;
+				xhp->xucd->entry_extract_count++;
 			}
 			RUN_PROGRESS_CB();
 			continue;
@@ -278,9 +278,9 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			nmetadata++;
-			if (xhp->xupd != NULL) {
-				xhp->xupd->entry_is_metadata = true;
-				xhp->xupd->entry_extract_count++;
+			if (xhp->xucd != NULL) {
+				xhp->xucd->entry_is_metadata = true;
+				xhp->xucd->entry_extract_count++;
 			}
 			RUN_PROGRESS_CB();
 			continue;
@@ -298,9 +298,9 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			nmetadata++;
-			if (xhp->xupd != NULL) {
-				xhp->xupd->entry_is_metadata = true;
-				xhp->xupd->entry_extract_count++;
+			if (xhp->xucd != NULL) {
+				xhp->xucd->entry_is_metadata = true;
+				xhp->xucd->entry_extract_count++;
 			}
 			RUN_PROGRESS_CB();
 			continue;
@@ -329,16 +329,16 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		 * Compute total entries in progress data, if set.
 		 * total_entries = metadata + files + conf_files + links.
 		 */
-		if (xhp->xupd != NULL) {
-			xhp->xupd->entry_total_count = nmetadata;
+		if (xhp->xucd != NULL) {
+			xhp->xucd->entry_total_count = nmetadata;
 			array = prop_dictionary_get(filesd, "files");
-			xhp->xupd->entry_total_count +=
+			xhp->xucd->entry_total_count +=
 			    (ssize_t)prop_array_count(array);
 			array = prop_dictionary_get(filesd, "conf_files");
-			xhp->xupd->entry_total_count +=
+			xhp->xucd->entry_total_count +=
 			    (ssize_t)prop_array_count(array);
 			array = prop_dictionary_get(filesd, "links");
-			xhp->xupd->entry_total_count +=
+			xhp->xucd->entry_total_count +=
 			    (ssize_t)prop_array_count(array);
 		}
 
@@ -353,8 +353,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 			/* error */
 			goto out;
 		} else if (rv == 1) {
-			if (xhp->xupd != NULL)
-				xhp->xupd->entry_is_conf = true;
+			if (xhp->xucd != NULL)
+				xhp->xucd->entry_is_conf = true;
 
 			rv = xbps_entry_install_conf_file(filesd,
 			    entry, entry_pname, pkgname, version);
@@ -396,8 +396,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				continue;
 			}
 		}
-		if (xhp->xupd != NULL)
-			xhp->xupd->entry_extract_count++;
+		if (xhp->xucd != NULL)
+			xhp->xucd->entry_extract_count++;
 
 		RUN_PROGRESS_CB();
 	}
@@ -462,7 +462,7 @@ out:
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	struct archive *ar;
 	const char *pkgname, *version, *repoloc, *pkgver;
 	char *bpkg;
@@ -503,9 +503,9 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	 * Set extract progress callback if specified.
 	 */
 	xhp = xbps_handle_get();
-	if (xhp != NULL && xhp->xbps_unpack_cb != NULL && xhp->xupd != NULL) {
-		xhp->xupd->entry_extract_count = 0;
-		xhp->xupd->entry_total_count = 0;
+	if (xhp != NULL && xhp->xbps_unpack_cb != NULL && xhp->xucd != NULL) {
+		xhp->xucd->entry_extract_count = 0;
+		xhp->xucd->entry_total_count = 0;
 	}
 	/*
 	 * Extract archive files.

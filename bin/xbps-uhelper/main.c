@@ -60,7 +60,7 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 static void __attribute__((noreturn))
 usage(void)
 {
-	xbps_end();
+	xbps_end(xbps_handle_get());
 
 	fprintf(stderr,
 	"usage: xbps-uhelper [options] [action] [args]\n"
@@ -109,8 +109,7 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-	struct xbps_handle xh;
-	struct xbps_fetch_progress_data xfpd;
+	struct xbps_handle *xhp;
 	prop_dictionary_t dict;
 	const char *version, *rootdir = NULL, *conffile = NULL;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
@@ -147,14 +146,17 @@ main(int argc, char **argv)
 	/*
 	 * Initialize the callbacks and debug in libxbps.
 	 */
-	memset(&xh, 0, sizeof(xh));
-	xh.with_debug = debug;
-	xh.xbps_fetch_cb = fetch_file_progress_cb;
-	xh.xfpd = &xfpd;
-	xh.rootdir = rootdir;
-	xh.conffile = conffile;
+	xhp = xbps_handle_alloc();
+	if (xhp == NULL) {
+		xbps_error_printf("xbps-uhelper: failed to allocate resources\n");
+		exit(EXIT_FAILURE);
+	}
+	xhp->debug = debug;
+	xhp->xbps_fetch_cb = fetch_file_progress_cb;
+	xhp->rootdir = rootdir;
+	xhp->conffile = conffile;
 
-	if ((rv = xbps_init(&xh)) != 0) {
+	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-uhelper: failed to "
 		    "initialize libxbps.\n");
 		exit(EXIT_FAILURE);
@@ -163,7 +165,7 @@ main(int argc, char **argv)
 	plist = xbps_xasprintf("%s/%s/%s", rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
-		xbps_end();
+		xbps_end(xhp);
 		exit(EXIT_FAILURE);
 	}
 
@@ -372,7 +374,7 @@ main(int argc, char **argv)
 		usage();
 	}
 
-	xbps_end();
+	xbps_end(xhp);
 
 	exit(EXIT_SUCCESS);
 }

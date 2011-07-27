@@ -35,7 +35,7 @@
 #include "../xbps-repo/defs.h"
 
 int
-xbps_show_pkg_deps(const char *pkgname)
+show_pkg_deps(const char *pkgname)
 {
 	prop_dictionary_t propsd;
 	int rv = 0;
@@ -60,7 +60,7 @@ xbps_show_pkg_deps(const char *pkgname)
 }
 
 int
-xbps_show_pkg_reverse_deps(const char *pkgname)
+show_pkg_reverse_deps(const char *pkgname)
 {
 	prop_dictionary_t pkgd;
 	int rv = 0;

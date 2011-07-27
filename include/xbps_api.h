@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
-#define XBPS_API_VERSION	"20110725"
+#define XBPS_API_VERSION	"20110727"
 #define XBPS_VERSION		"0.10.0"
 
 /**
@@ -142,201 +142,90 @@ void		xbps_warn_printf(const char *, ...);
 /*@{*/
 
 /**
- * @struct xbps_handle xbps_api.h "xbps_api.h"
- * @brief Generic XBPS structure handler for initialization.
+ * @enum trans_state_t
  *
- * This structure sets some global properties for libxbps, to set some
- * function callbacks and data to the fetch and unpack functions,
- * the root and cache directory, flags, etc.
+ * Integer representing the transaction state. Possible values:
+ *
+ * <b>XBPS_TRANS_STATE_UKKNOWN</b>: unknown, transaction hasn't been
+ * prepared or some unknown error ocurred.
+ * <b>XBPS_TRANS_STATE_DOWNLOAD</b>: a binary package is being downloaded.
+ * <b>XBPS_TRANS_STATE_VERIFY</b>: a binary package is being verified.
+ * <b>XBPS_TRANS_STATE_REMOVE</b>: a package is being removed.
+ * <b>XBPS_TRANS_STATE_PURGE</b>: a package is being purged.
+ * <b>XBPS_TRANS_STATE_REPLACE</b>: a package is being replaced.
+ * <b>XBPS_TRANS_STATE_INSTALL</b>: a package is being installed.
+ * <b>XBPS_TRANS_STATE_UPDATE</b>: a package is being updated.
+ * <b>XBPS_TRANS_STATE_UNPACK</b>: a package is being unpacked.
+ * <b>XBPS_TRANS_STATE_CONFIGURE</b>: a package is being configured.
+ * <b>XBPS_TRANS_STATE_REGISTER</b>: a package is being registered.
  */
-struct xbps_handle {
+typedef enum trans_state {
+	XBPS_TRANS_STATE_UNKNOWN = 0,
+	XBPS_TRANS_STATE_DOWNLOAD,
+	XBPS_TRANS_STATE_VERIFY,
+	XBPS_TRANS_STATE_REMOVE,
+	XBPS_TRANS_STATE_PURGE,
+	XBPS_TRANS_STATE_REPLACE,
+	XBPS_TRANS_STATE_INSTALL,
+	XBPS_TRANS_STATE_UPDATE,
+	XBPS_TRANS_STATE_UNPACK,
+	XBPS_TRANS_STATE_CONFIGURE,
+	XBPS_TRANS_STATE_REGISTER
+} trans_state_t;
+
+/**
+ * @struct xbps_transaction_cb_data xbps_api.h "xbps_api.h"
+ * @brief Structure to be passed as argument to the transaction
+ * function callbacks.
+ */
+struct xbps_transaction_cb_data {
 	/**
-	 * @private conf_dictionary
+	 * @var state
 	 *
-	 * Internalized proplib dictionary from conffile member.
-	 * Used internally by xbps_init().
+	 * Transaction's state (read-only).
 	 */
-	prop_dictionary_t conf_dictionary;
+	trans_state_t state;
 	/**
-	 * @var regpkgdb_dictionary.
+	 * @var desc
 	 *
-	 * Internalized proplib dictionary with the registed package database
-	 * stored in XBPS_META_PATH/XBPS_REGPKGDB.
+	 * Transaction's string description (read-only).
 	 */
-	prop_dictionary_t regpkgdb_dictionary;
+	const char *desc;
 	/**
-	 * @var xbps_unpack_cb
+	 * @var pkgver
 	 *
-	 * Pointer to the supplied function callback to be used in
-	 * xbps_unpack_binary_pkg().
+	 * Transaction's current pkgname/version string (read-only).
 	 */
-	void (*xbps_unpack_cb)(void *);
+	const char *pkgver;
 	/**
-	 * @var xupd
+	 * @var binpkg_fname
 	 *
-	 * Pointer to a xbps_unpack_progress_data structure to be passed
-	 * as argument to the \a xbps_unpack_cb function callback.
+	 * Binary package's filename (read-only).
 	 */
-	struct xbps_unpack_progress_data *xupd;
+	const char *binpkg_fname;
 	/**
-	 * @var xbps_fetch_cb
+	 * @var binpkg_repourl
 	 *
-	 * Pointer to the supplied function callback to be used in
-	 * xbps_fetch_file().
+	 * Binary package's repository URL (read-only).
 	 */
-	void (*xbps_fetch_cb)(void *);
+	const char *binpkg_repourl;
 	/**
-	 * @var xfpd
+	 * @var err
 	 *
-	 * Pointer to a xbps_fetch_progress_data structure to be passed
-	 * as argument to the \a xbps_fetch_cb function callback.
+	 * Transaction error value (read-only).
 	 */
-	struct xbps_fetch_progress_data *xfpd;
+	int err;
 	/**
-	 * @private fetch_timeout
+	 * @var cookie
 	 *
-	 * Unsigned integer to specify libfetch's timeout limit.
-	 * If not set, it defaults to 30 (in seconds). This is set internally
-	 * by the API from a setting in configuration file.
+	 * Pointer to user supplied data.
 	 */
-	uint16_t fetch_timeout;
-	/**
-	 * @var flags
-	 *
-	 * Flags to be set globally, possible values:
-	 * 	- XBPS_FLAG_VERBOSE
-	 * 	- XBPS_FLAG_FORCE
-	 */
-	int flags;
-	/**
-	 * @var rootdir
-	 *
-	 * Root directory for all operations in XBPS. If NULL,
-	 * by default it's set to /.
-	 */
-	const char *rootdir;
-	/**
-	 * @var cachedir
-	 *
-	 * Cache directory to store downloaded binary packages.
-	 * If NULL default value in \a XBPS_CACHE_PATH is used.
-	 */
-	const char *cachedir;
-	/**
-	 * @var conffile
-	 *
-	 * Full path to the XBPS_CONF_PLIST configuration file.
-	 */
-	const char *conffile;
-	/**
-	 * @var with_debug
-	 *
-	 * Set to true to enable debugging messages to stderr.
-	 */
-	bool with_debug;
-	/**
-	 * @var install_reason_auto
-	 *
-	 * Set to true to make installed or updated target package
-	 * (and its dependencies) marked with automatic installation,
-	 * thus it will be found as orphan if no packages are depending
-	 * on it.
-	 */
-	bool install_reason_auto;
-	/**
-	 * @var install_reason_manual
-	 *
-	 * Set to true to make installed or updated target package
-	 * (and its dependencies) marked with manual installation, thus
-	 * it will never will be found as orphan.
-	 */
-	bool install_reason_manual;
+	void *cookie;
 };
 
 /**
- * Initialize the XBPS library with the following steps:
- *
- *   - Set function callbacks for fetching and unpacking.
- *   - Set root directory (if not set, defaults to /).
- *   - Set cache directory (if not set, defaults to XBPS_CACHE_PATH).
- *   - Set global flags.
- *   - Set default cache connections for libfetch.
- *   - Initialize the debug printfs.
- *   - Internalize the proplib dictionary in config file.
- *   - Internalize the regpkgdb dictionary (if available).
- *
- * @param[in] xh Pointer to an xbps_handle structure. It's
- * assumed that this pointer is not NULL.
- *
- * @return 0 on success, an errno value otherwise.
- */
-int xbps_init(struct xbps_handle *xh);
-
-/**
- * Releases all resources used by the XBPS library.
- */
-void xbps_end(void);
-
-/**
- * Returns a pointer to the xbps_handle structure set by xbps_init().
- */
-const struct xbps_handle *xbps_handle_get(void);
-
-/*@}*/
-
-/** @addtogroup configure */
-/*@{*/
-
-/**
- * Configure (or force reconfiguration of) a package.
- *
- * @param[in] pkgname Package name to configure.
- * @param[in] version Package version (<b>optional</b>).
- * @param[in] check_state Set it to true to check that package is
- * in unpacked state.
- * @param[in] update Set it to true if this package is being updated.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_configure_pkg(const char *pkgname,
-		       const char *version,
-		       bool check_state,
-		       bool update);
-
-/**
- * Configure (or force reconfiguration of) all packages.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_configure_packages(void);
-
-/*@}*/
-
-/**
- * @ingroup vermatch
- *
- * Compares package version strings.
- *
- * The package version is defined by:
- * ${VERSION}[_${REVISION}].
- *
- * ${VERSION} supersedes ${REVISION}.
- *
- * @param[in] pkg1 a package version string.
- * @param[in] pkg2 a package version string.
- *
- * @return -1, 0 or 1 depending if pkg1 is less than, equal to or
- * greater than pkg2.
- */
-int xbps_cmpver(const char *pkg1, const char *pkg2);
-
-
-/** @addtogroup download */
-/*@{*/
-
-/**
- * @struct xbps_fetch_progress_data xbps_api.h "xbps_api.h"
- * @brief Structure to be passed to the fetch progress function callback.
+ * @struct xbps_fetch_cb_data xbps_api.h "xbps_api.h"
+ * @brief Structure to be passed to the fetch function callback.
  *
  * This structure is passed as argument to the fetch progress function
  * callback and its members will be updated when there's any progress.
@@ -344,7 +233,7 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
  * xbps_unpack_binary_pkg() and shouldn't be modified in the passed
  * function callback.
  */
-struct xbps_fetch_progress_data {
+struct xbps_fetch_cb_data {
 	/**
 	 * @var file_size
 	 *
@@ -399,6 +288,298 @@ struct xbps_fetch_progress_data {
 	 */
 	void *cookie;
 };
+
+/**
+ * @struct xbps_unpack_cb_data xbps_api.h "xbps_api.h"
+ * @brief Structure to be passed to the unpack function callback.
+ *
+ * This structure is passed as argument to the unpack progress function
+ * callback and its members will be updated when there's any progress.
+ * All members in this struct are set internally by xbps_unpack_binary_pkg()
+ * and should be used in read-only mode in the function callback.
+ * The \a cookie member can be used to pass user supplied data.
+ */
+struct xbps_unpack_cb_data {
+	/**
+	 * @var entry
+	 *
+	 * Entry pathname string (set internally, read only).
+	 */
+	const char *entry;
+	/**
+	 * @var entry_size
+	 *
+	 * Entry file size (set internally, read only).
+	 */
+	int64_t entry_size;
+	/**
+	 * @var entry_extract_count
+	 *
+	 * Total number of extracted entries (set internally, read only).
+	 */
+	ssize_t entry_extract_count;
+	/**
+	 * @var entry_total_count
+	 *
+	 * Total number of entries in package (set internally, read only).
+	 */
+	ssize_t entry_total_count;
+	/**
+	 * @var entry_is_metadata
+	 *
+	 * If true "entry" is a package metadata file (set internally,
+	 * read only).
+	 */
+	bool entry_is_metadata;
+	/**
+	 * @var entry_is_conf
+	 *
+	 * If true "entry" is a configuration file (set internally,
+	 * read only).
+	 */
+	bool entry_is_conf;
+	/**
+	 * @var cookie
+	 *
+	 * Pointer to private user data.
+	 */
+	void *cookie;
+};
+
+/**
+ * @struct xbps_handle xbps_api.h "xbps_api.h"
+ * @brief Generic XBPS structure handler for initialization.
+ *
+ * This structure sets some global properties for libxbps, to set some
+ * function callbacks and data to the fetch, transaction and unpack functions,
+ * the root and cache directory, flags, etc.
+ */
+struct xbps_handle {
+	/**
+	 * @private conf_dictionary
+	 *
+	 * Internalized proplib dictionary from conffile member.
+	 * Used internally by xbps_init().
+	 */
+	prop_dictionary_t conf_dictionary;
+	/**
+	 * @var regpkgdb_dictionary.
+	 *
+	 * Internalized proplib dictionary with the registed package database
+	 * stored in XBPS_META_PATH/XBPS_REGPKGDB.
+	 */
+	prop_dictionary_t regpkgdb_dictionary;
+	/**
+	 * @var xbps_transaction_cb
+	 *
+	 * Pointer to the supplifed function callback to be used
+	 * in a transaction.
+	 */
+	void (*xbps_transaction_cb)(struct xbps_transaction_cb_data *);
+	/**
+	 * @var xbps_transaction_err_cb
+	 *
+	 * Pointer the the supplied function callback to be used in
+	 * a transaction when an error happens.
+	 */
+	void (*xbps_transaction_err_cb)(struct xbps_transaction_cb_data *);
+	/**
+	 * @var xtcd
+	 *
+	 * Pointer to a xbps_transaction_cb_data structure, to be passed as
+	 * argument to the \a xbps_transaction_cb and
+	 * \a xbps_transaction_err_cb function callbacks.
+	 */
+	struct xbps_transaction_cb_data *xtcd;
+	/**
+	 * @var xbps_unpack_cb
+	 *
+	 * Pointer to the supplied function callback to be used in
+	 * xbps_unpack_binary_pkg().
+	 */
+	void (*xbps_unpack_cb)(struct xbps_unpack_cb_data *);
+	/**
+	 * @var xucd
+	 *
+	 * Pointer to a xbps_unpack_cb_data structure to be passed
+	 * as argument to the \a xbps_unpack_cb function callback.
+	 */
+	struct xbps_unpack_cb_data *xucd;
+	/**
+	 * @var xbps_fetch_cb
+	 *
+	 * Pointer to the supplied function callback to be used in
+	 * xbps_fetch_file().
+	 */
+	void (*xbps_fetch_cb)(struct xbps_fetch_cb_data *);
+	/**
+	 * @var xfcd
+	 *
+	 * Pointer to a xbps_fetch_cb_data structure to be passed
+	 * as argument to the \a xbps_fetch_cb function callback.
+	 */
+	struct xbps_fetch_cb_data *xfcd;
+	/**
+	 * @private fetch_timeout
+	 *
+	 * Unsigned integer to specify libfetch's timeout limit.
+	 * If not set, it defaults to 30 (in seconds). This is set internally
+	 * by the API from a setting in configuration file.
+	 */
+	uint16_t fetch_timeout;
+	/**
+	 * @var flags
+	 *
+	 * Flags to be set globally, possible values:
+	 * 	- XBPS_FLAG_VERBOSE
+	 * 	- XBPS_FLAG_FORCE
+	 */
+	int flags;
+	/**
+	 * @var rootdir
+	 *
+	 * Root directory for all operations in XBPS. If NULL,
+	 * by default it's set to /.
+	 */
+	const char *rootdir;
+	/**
+	 * @var cachedir
+	 *
+	 * Cache directory to store downloaded binary packages.
+	 * If NULL default value in \a XBPS_CACHE_PATH is used.
+	 */
+	const char *cachedir;
+	/**
+	 * @private pstring_cachedir
+	 *
+	 * Used internally by xbps_init(), do not use it.
+	 */
+	prop_string_t pstring_cachedir;
+	/**
+	 * @var conffile
+	 *
+	 * Full path to the XBPS_CONF_PLIST configuration file.
+	 */
+	const char *conffile;
+	/**
+	 * @var debug
+	 *
+	 * Set to true to enable debugging messages to stderr.
+	 */
+	bool debug;
+	/**
+	 * @var install_reason_auto
+	 *
+	 * Set to true to make installed or updated target package
+	 * (and its dependencies) marked with automatic installation,
+	 * thus it will be found as orphan if no packages are depending
+	 * on it.
+	 */
+	bool install_reason_auto;
+	/**
+	 * @var install_reason_manual
+	 *
+	 * Set to true to make installed or updated target package
+	 * (and its dependencies) marked with manual installation, thus
+	 * it will never will be found as orphan.
+	 */
+	bool install_reason_manual;
+};
+
+/**
+ * Initialize the XBPS library with the following steps:
+ *
+ *   - Set function callbacks for fetching and unpacking.
+ *   - Set root directory (if not set, defaults to /).
+ *   - Set cache directory (if not set, defaults to XBPS_CACHE_PATH).
+ *   - Set global flags.
+ *   - Set default cache connections for libfetch.
+ *   - Initialize the debug printfs.
+ *   - Internalize the proplib dictionary in config file.
+ *   - Internalize the regpkgdb dictionary (if available).
+ *
+ * @param[in] xhp Pointer to an xbps_handle structure, as returned by
+ * \a xbps_handle_alloc().
+ * @note It's assumed that \a xhp is a valid pointer.
+ *
+ * @return 0 on success, an errno value otherwise.
+ */
+int xbps_init(struct xbps_handle *xhp);
+
+/**
+ * Releases all resources used by libxbps.
+ *
+ * @param[in] xhp Pointer to an xbps_handle structure, as returned
+ * by \a xbps_handle_alloc().
+ * @note It's assumed that \a xhp is a valid pointer.
+ */
+void xbps_end(struct xbps_handle *xhp);
+
+/**
+ * Allocated an xbps_handle structure.
+ *
+ * @return A pointer to the allocated xbps_handle structure, NULL
+ * otherwise.
+ */
+struct xbps_handle *xbps_handle_alloc(void);
+
+/**
+ * Returns a pointer to the xbps_handle structure set by xbps_init().
+ */
+struct xbps_handle *xbps_handle_get(void);
+
+/*@}*/
+
+/** @addtogroup configure */
+/*@{*/
+
+/**
+ * Configure (or force reconfiguration of) a package.
+ *
+ * @param[in] pkgname Package name to configure.
+ * @param[in] version Package version (<b>optional</b>).
+ * @param[in] check_state Set it to true to check that package is
+ * in unpacked state.
+ * @param[in] update Set it to true if this package is being updated.
+ *
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_configure_pkg(const char *pkgname,
+		       const char *version,
+		       bool check_state,
+		       bool update);
+
+/**
+ * Configure (or force reconfiguration of) all packages.
+ *
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_configure_packages(void);
+
+/*@}*/
+
+/**
+ * @ingroup vermatch
+ *
+ * Compares package version strings.
+ *
+ * The package version is defined by:
+ * ${VERSION}[_${REVISION}].
+ *
+ * ${VERSION} supersedes ${REVISION}.
+ *
+ * @param[in] pkg1 a package version string.
+ * @param[in] pkg2 a package version string.
+ *
+ * @return -1, 0 or 1 depending if pkg1 is less than, equal to or
+ * greater than pkg2.
+ */
+int xbps_cmpver(const char *pkg1, const char *pkg2);
+
+
+/** @addtogroup download */
+/*@{*/
+
 
 /**
  * Download a file from a remote URL.
@@ -945,6 +1126,16 @@ int xbps_repository_update_packages(void);
 prop_dictionary_t xbps_transaction_prepare(void);
 
 /**
+ * Commit a transaction. The transaction dictionary contains all steps
+ * to be executed in the transaction, as returned by xbps_transaction_prepare().
+ *
+ * @param[in] transd The transaction dictionary.
+ *
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_transaction_commit(prop_dictionary_t transd);
+
+/**
  * Returns the missing deps array if xbps_repository_install_pkg()
  * or xbps_repository_update_pkg() failed to find required packages
  * in registered repositories.
@@ -1157,55 +1348,6 @@ int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
 /** @addtogroup unpack */
 /*@{*/
 
-/**
- * @struct xbps_unpack_progress_data xbps_api.h "xbps_api.h"
- * @brief Structure to be passed to the unpacking progress function callback.
- *
- * This structure is passed as argument to the unpack progress function
- * callback and its members will be updated when there's any progress.
- * All members in this struct are set internally by xbps_unpack_binary_pkg()
- * and should be used in read-only mode in the function callback.
- */
-struct xbps_unpack_progress_data {
-	/**
-	 * @var entry
-	 *
-	 * Entry pathname string (set internally, read only).
-	 */
-	const char *entry;
-	/**
-	 * @var entry_size
-	 *
-	 * Entry file size (set internally, read only).
-	 */
-	int64_t entry_size;
-	/**
-	 * @var entry_extract_count
-	 *
-	 * Total number of extracted entries (set internally, read only).
-	 */
-	ssize_t entry_extract_count;
-	/**
-	 * @var entry_total_count
-	 *
-	 * Total number of entries in package (set internally, read only).
-	 */
-	ssize_t entry_total_count;
-	/**
-	 * @var entry_is_metadata
-	 *
-	 * If true "entry" is a package metadata file (set internally,
-	 * read only).
-	 */
-	bool entry_is_metadata;
-	/**
-	 * @var entry_is_conf
-	 *
-	 * If true "entry" is a configuration file (set internally,
-	 * read only).
-	 */
-	bool entry_is_conf;
-};
 
 /**
  * Unpacks a binary package into specified root directory.

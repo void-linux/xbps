@@ -51,7 +51,7 @@
  */
 
 int
-xbps_check_pkg_integrity_all(void)
+check_pkg_integrity_all(void)
 {
 	const struct xbps_handle *xhp;
 	prop_object_t obj;
@@ -71,7 +71,7 @@ xbps_check_pkg_integrity_all(void)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		printf("Checking %s-%s ...\n", pkgname, version);
-		if ((rv = xbps_check_pkg_integrity(pkgname)) != 0)
+		if ((rv = check_pkg_integrity(pkgname)) != 0)
 			nbrokenpkgs++;
 		npkgs++;
 	}
@@ -86,9 +86,9 @@ out:
 }
 
 int
-xbps_check_pkg_integrity(const char *pkgname)
+check_pkg_integrity(const char *pkgname)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, propsd = NULL, filesd = NULL;
 	prop_array_t array;
 	prop_object_t obj;

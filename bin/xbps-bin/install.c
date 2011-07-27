@@ -39,10 +39,8 @@
 #include "../xbps-repo/defs.h"
 
 struct transaction {
-	prop_dictionary_t dict;
+	prop_dictionary_t d;
 	prop_object_iterator_t iter;
-	bool yes;
-	bool only_show;
 	uint32_t inst_pkgcnt;
 	uint32_t up_pkgcnt;
 	uint32_t cf_pkgcnt;
@@ -66,118 +64,40 @@ show_missing_deps(prop_array_t a)
 }
 
 static int
-check_binpkg_hash(const char *path,
-		  const char *filename,
-		  const char *sha256)
+show_binpkgs_url(prop_object_iterator_t iter)
 {
-	int rv;
-
-	printf("Checking %s integrity... ", filename);
-	rv = xbps_file_hash_check(path, sha256);
-	if (rv != 0 && rv != ERANGE) {
-		xbps_error_printf("\nxbps-bin: unexpected error: %s\n",
-		    strerror(rv));
-		return rv;
-	} else if (rv == ERANGE) {
-		printf("hash mismatch!\n");
-		xbps_warn_printf("Package '%s' has wrong checksum, removing "
-		    "and refetching it again...\n", filename);
-		(void)remove(path);
-		return rv;
-	}
-	printf("OK.\n");
-
-	return 0;
-}
-
-static int
-download_package_list(prop_object_iterator_t iter, bool only_show)
-{
-	const struct xbps_handle *xhp;
 	prop_object_t obj;
-	const char *pkgver, *repoloc, *filename, *sha256, *trans;
+	const char *repoloc, *trans;
 	char *binfile;
-	int rv = 0;
-	bool cksum;
 
-	xhp = xbps_handle_get();
-again:
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
 		if ((strcmp(trans, "remove") == 0) ||
 		    (strcmp(trans, "configure") == 0))
 			continue;
 
-		cksum = false;
-		prop_dictionary_get_bool(obj, "checksum_ok", &cksum);
-		if (cksum == true)
-			continue;
-
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "repository", &repoloc))
 			continue;
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
-		prop_dictionary_get_cstring_nocopy(obj,
-		    "filename-sha256", &sha256);
+
+		/* ignore pkgs from local repositories */
+		if (!xbps_check_is_repository_uri_remote(repoloc))
+			continue;
 
 		binfile = xbps_path_from_repository_uri(obj, repoloc);
 		if (binfile == NULL)
 			return errno;
 		/*
-		 * If downloaded package is in cachedir, check its hash
-		 * and refetch the binpkg again if didn't match.
+		 * If downloaded package is in cachedir, ignore it.
 		 */
 		if (access(binfile, R_OK) == 0) {
-			rv = check_binpkg_hash(binfile, filename, sha256);
-			free(binfile);
-			if (rv != 0 && rv != ERANGE) {
-				return rv;
-			} else if (rv == ERANGE) {
-				break;
-			}
-			prop_dictionary_set_bool(obj, "checksum_ok", true);
-			continue;
-		}
-		if (only_show) {
-			printf("%s\n", binfile);
 			free(binfile);
 			continue;
 		}
-		if (xbps_mkpath(xhp->cachedir, 0755) == -1) {
-			xbps_error_printf("xbps-bin: cannot mkdir cachedir "
-			    "`%s': %s.\n", xhp->cachedir, strerror(errno));
-			free(binfile);
-			return errno;
-		}
-		printf("Downloading %s binary package ...\n", pkgver);
-		rv = xbps_fetch_file(binfile, xhp->cachedir, false, NULL);
-		if (rv == -1) {
-			xbps_error_printf("xbps-bin: couldn't download `%s'\n",
-			    filename);
-			xbps_error_printf("xbps-bin: %s returned: `%s'\n",
-			    repoloc, xbps_fetch_error_string());
-			free(binfile);
-			return -1;
-		}
+		printf("%s\n", binfile);
 		free(binfile);
-		binfile = xbps_path_from_repository_uri(obj, repoloc);
-		if (binfile == NULL)
-			return errno;
-
-		rv = check_binpkg_hash(binfile, filename, sha256);
-		free(binfile);
-		if (rv != 0 && rv != ERANGE) {
-			return rv;
-		} else if (rv == ERANGE) {
-			break;
-		}
-		prop_dictionary_set_bool(obj, "checksum_ok", true);
 	}
 	prop_object_iterator_reset(iter);
-	if (rv == ERANGE)
-		goto again;
-
 	return 0;
 }
 
@@ -207,28 +127,28 @@ show_transaction_sizes(struct transaction *trans)
 	/*
 	 * Show the list of packages that will be installed.
 	 */
-	if (prop_dictionary_get_uint32(trans->dict, "total-install-pkgs",
+	if (prop_dictionary_get_uint32(trans->d, "total-install-pkgs",
 	    &trans->inst_pkgcnt)) {
 		printf("%u package%s will be installed:\n\n",
 		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "install");
 		printf("\n\n");
 	}
-	if (prop_dictionary_get_uint32(trans->dict, "total-update-pkgs",
+	if (prop_dictionary_get_uint32(trans->d, "total-update-pkgs",
 	    &trans->up_pkgcnt)) {
 		printf("%u package%s will be updated:\n\n",
 		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "update");
 		printf("\n\n");
 	}
-	if (prop_dictionary_get_uint32(trans->dict, "total-configure-pkgs",
+	if (prop_dictionary_get_uint32(trans->d, "total-configure-pkgs",
 	    &trans->cf_pkgcnt)) {
 		printf("%u package%s will be configured:\n\n",
 		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "configure");
 		printf("\n\n");
 	}
-	if (prop_dictionary_get_uint32(trans->dict, "total-remove-pkgs",
+	if (prop_dictionary_get_uint32(trans->d, "total-remove-pkgs",
 	    &trans->rm_pkgcnt)) {
 		printf("%u package%s will be removed:\n\n",
 		    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
@@ -239,8 +159,8 @@ show_transaction_sizes(struct transaction *trans)
 	/*
 	 * Show total download/installed size for all required packages.
 	 */
-	prop_dictionary_get_uint64(trans->dict, "total-download-size", &dlsize);
-	prop_dictionary_get_uint64(trans->dict, "total-installed-size",
+	prop_dictionary_get_uint64(trans->d, "total-download-size", &dlsize);
+	prop_dictionary_get_uint64(trans->d, "total-installed-size",
 	    &instsize);
 	if (xbps_humanize_number(size, (int64_t)dlsize) == -1) {
 		xbps_error_printf("xbps-bin: error: humanize_number returns "
@@ -259,7 +179,7 @@ show_transaction_sizes(struct transaction *trans)
 }
 
 int
-xbps_autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
+autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 {
 	int rv = 0;
 
@@ -282,11 +202,11 @@ xbps_autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 		}
 	}
 
-	return xbps_exec_transaction(yes, show_download_pkglist_url);
+	return exec_transaction(yes, show_download_pkglist_url);
 }
 
 int
-xbps_install_new_pkg(const char *pkg)
+install_new_pkg(const char *pkg)
 {
 	prop_dictionary_t pkgd;
 	char *pkgname = NULL, *pkgpatt = NULL;
@@ -343,7 +263,7 @@ out:
 }
 
 int
-xbps_update_pkg(const char *pkgname)
+update_pkg(const char *pkgname)
 {
 	int rv = 0;
 
@@ -363,219 +283,99 @@ xbps_update_pkg(const char *pkgname)
 	return 0;
 }
 
-static int
-exec_transaction(struct transaction *trans)
+void
+transaction_cb(struct xbps_transaction_cb_data *xtcd)
 {
-	prop_dictionary_t instpkgd;
-	prop_object_t obj;
-	const char *pkgname, *version, *pkgver, *instver, *filen, *tract;
-	int rv = 0;
-	bool update, preserve;
-	pkg_state_t state;
-
-	/*
-	 * Only show the URLs to download the binary packages.
-	 */
-	if (trans->only_show)
-		return download_package_list(trans->iter, true);
-	/*
-	 * Show download/installed size for the transaction.
-	 */
-	if ((rv = show_transaction_sizes(trans)) != 0)
-		return rv;
-	/*
-	 * Ask interactively (if -y not set).
-	 */
-	if (trans->yes == false) {
-		if (xbps_noyes("Do you want to continue?") == false) {
-			printf("Aborting!\n");
-			return 0;
-		}
-	}
-	/*
-	 * Download binary packages (if they come from a remote repository)
-	 * and check its SHA256 hash.
-	 */
-	printf("[*] Downloading/integrity check ...\n");
-	if ((rv = download_package_list(trans->iter, false)) != 0)
-		return rv;
-	/*
-	 * Remove packages to be replaced.
-	 */
-	if (trans->rm_pkgcnt) {
-		printf("\n[*] Removing packages to be replaced ...\n");
-		while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-			prop_dictionary_get_cstring_nocopy(obj, "transaction",
-			    &tract);
-			if (strcmp(tract, "remove"))
-				continue;
-
-			prop_dictionary_get_cstring_nocopy(obj, "pkgname",
-			    &pkgname);
-			prop_dictionary_get_cstring_nocopy(obj, "version",
-			    &version);
-			prop_dictionary_get_cstring_nocopy(obj, "pkgver",
-			    &pkgver);
-			update = false;
-			prop_dictionary_get_bool(obj, "remove-and-update",
-			    &update);
-
-			/* Remove and purge packages that shall be replaced */
-			printf("Removing `%s' package ...\n", pkgver);
-			rv = xbps_remove_pkg(pkgname, version, update);
-			if (rv != 0) {
-				xbps_error_printf("xbps-bin: failed to "
-				    "remove `%s': %s\n", pkgver, strerror(rv));
-				return rv;
-			}
-			if (!update)
-				continue;
-			printf("Purging `%s' package...\n", pkgver);
-			if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
-				xbps_error_printf("xbps-bin: failed to "
-				    "purge `%s': %s\n", pkgver, strerror(rv));
-				return rv;
-			}
-		}
-		prop_object_iterator_reset(trans->iter);
-	}
-	/*
-	 * Configure pending packages.
-	 */
-	if (trans->cf_pkgcnt) {
-		printf("\n[*] Reconfigure unpacked packages ...\n");
-		while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-			prop_dictionary_get_cstring_nocopy(obj, "transaction",
-			    &tract);
-			if (strcmp(tract, "configure"))
-				continue;
-			prop_dictionary_get_cstring_nocopy(obj, "pkgname",
-			    &pkgname);
-			prop_dictionary_get_cstring_nocopy(obj, "version",
-			    &version);
-			prop_dictionary_get_cstring_nocopy(obj, "pkgver",
-			    &pkgver);
-			rv = xbps_configure_pkg(pkgname, version, false, false);
-			if (rv != 0) {
-				xbps_error_printf("xbps-bin: failed to "
-				    "configure `%s': %s\n", pkgver, strerror(rv));
-				return rv;
-			}
-		}
-		prop_object_iterator_reset(trans->iter);
-	}
-	/*
-	 * Install or update packages in transaction.
-	 */
-	printf("\n[*] Unpacking packages to be installed/updated ...\n");
-	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		/* Match only packages to be installed or updated */
-		if ((strcmp(tract, "remove") == 0) ||
-		    (strcmp(tract, "configure") == 0))
-			continue;
-		preserve = false;
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
-		prop_dictionary_get_bool(obj, "preserve",  &preserve);
-		/*
-		 * If dependency is already unpacked skip this phase.
-		 */
-		state = 0;
-		if (xbps_pkg_state_dictionary(obj, &state) != 0)
-			return EINVAL;
-		if (state == XBPS_PKG_STATE_UNPACKED)
-			continue;
-
-		if (strcmp(tract, "update") == 0) {
-			/* Update a package */
-			instpkgd = xbps_find_pkg_dict_installed(pkgname, false);
-			if (instpkgd == NULL) {
-				xbps_error_printf("xbps-bin: error: unable to "
-				    "find %s installed dict!\n", pkgname);
-				return EINVAL;
-			}
-			prop_dictionary_get_cstring_nocopy(instpkgd,
-			    "version", &instver);
-			prop_object_release(instpkgd);
-			if (preserve)
-				printf("Conserving %s-%s files, installing new "
-				    "version ...\n", pkgname, instver);
-			else
-				printf("Replacing %s files (%s -> %s) ...\n",
-				    pkgname, instver, version);
-
-			if ((rv = xbps_remove_pkg(pkgname, version, true)) != 0) {
-				xbps_error_printf("xbps-bin: error "
-				    "replacing %s-%s (%s)\n", pkgname,
-				    instver, strerror(rv));
-				return rv;
-			}
-		}
-		/*
-		 * Unpack binary package.
-		 */
-		printf("Unpacking `%s' (from ../%s) ...\n", pkgver, filen);
-		if ((rv = xbps_unpack_binary_pkg(obj)) != 0) {
-			xbps_error_printf("xbps-bin: error unpacking %s "
-			    "(%s)\n", pkgver, strerror(rv));
-			return rv;
-		}
-		/*
-		 * Register binary package.
-		 */
-		if ((rv = xbps_register_pkg(obj)) != 0) {
-			xbps_error_printf("xbps-bin: error registering %s "
-			    "(%s)\n", pkgver, strerror(rv));
-			return rv;
-		}
-	}
-	prop_object_iterator_reset(trans->iter);
-	/*
-	 * Configure all unpacked packages.
-	 */
-	printf("\n[*] Configuring packages installed/updated ...\n");
-	while ((obj = prop_object_iterator_next(trans->iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		if ((strcmp(tract, "remove") == 0) ||
-		    (strcmp(tract, "configure") == 0))
-			continue;
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		update = false;
-		if (strcmp(tract, "update") == 0)
-			update = true;
-		rv = xbps_configure_pkg(pkgname, version, false, update);
-		if (rv != 0) {
-			xbps_error_printf("xbps-bin: error configuring "
-			    "package %s (%s)\n", pkgname, strerror(rv));
-			return rv;
-		}
-		trans->cf_pkgcnt++;
+	if (xtcd->desc != NULL && xtcd->pkgver == NULL) {
+		printf("\n%s ...\n", xtcd->desc);
+		return;
 	}
 
-	printf("\nxbps-bin: %u installed, %u updated, "
-	    "%u configured, %u removed.\n", trans->inst_pkgcnt,
-	    trans->up_pkgcnt, trans->cf_pkgcnt, trans->rm_pkgcnt);
+	switch (xtcd->state) {
+	case XBPS_TRANS_STATE_DOWNLOAD:
+		printf("Downloading `%s' (from %s) ...\n",
+		    xtcd->pkgver, xtcd->binpkg_repourl);
+		break;
+	case XBPS_TRANS_STATE_VERIFY:
+		printf("Checking `%s' integrity ...\n", xtcd->binpkg_fname);
+		break;
+	case XBPS_TRANS_STATE_REMOVE:
+		printf("Removing `%s' ...\n", xtcd->pkgver);
+		break;
+	case XBPS_TRANS_STATE_PURGE:
+		printf("Purging `%s' ...\n", xtcd->pkgver);
+		break;
+	case XBPS_TRANS_STATE_CONFIGURE:
+		printf("Configuring `%s' ...\n", xtcd->pkgver);
+		break;
+	case XBPS_TRANS_STATE_REGISTER:
+	case XBPS_TRANS_STATE_INSTALL:
+		break;
+	case XBPS_TRANS_STATE_UPDATE:
+		printf("Updating `%s' ...\n", xtcd->pkgver);
+		break;
+	case XBPS_TRANS_STATE_UNPACK:
+		printf("Unpacking `%s' (from ../%s) ...\n",
+		    xtcd->pkgver, xtcd->binpkg_fname);
+		break;
+	default:
+		xbps_dbg_printf("%s: unknown transaction state %d %s\n",
+		    xtcd->pkgver, xtcd->state, xtcd->desc);
+		break;
+	}
+}
 
-	return 0;
+void
+transaction_err_cb(struct xbps_transaction_cb_data *xtcd)
+{
+	const char *state_descr = NULL;
+
+	switch (xtcd->state) {
+	case XBPS_TRANS_STATE_DOWNLOAD:
+		state_descr = "failed to download binary package";
+		break;
+	case XBPS_TRANS_STATE_VERIFY:
+		state_descr = "failed to verify binary package SHA256";
+		break;
+	case XBPS_TRANS_STATE_REMOVE:
+		state_descr = "failed to remove package";
+		break;
+	case XBPS_TRANS_STATE_PURGE:
+		state_descr = "failed to purge package";
+		break;
+	case XBPS_TRANS_STATE_CONFIGURE:
+		state_descr = "failed to configure package";
+		break;
+	case XBPS_TRANS_STATE_UPDATE:
+		state_descr = "failed to update package";
+		break;
+	case XBPS_TRANS_STATE_UNPACK:
+		state_descr = "failed to unpack binary package";
+		break;
+	case XBPS_TRANS_STATE_REGISTER:
+		state_descr = "failed to register package";
+		break;
+	default:
+		state_descr = "unknown transaction state";
+		break;
+	}
+
+	xbps_error_printf("%s: %s: %s\n",
+	    xtcd->pkgver, state_descr, strerror(xtcd->err));
 }
 
 int
-xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
+exec_transaction(bool yes, bool show_download_urls)
 {
 	struct transaction *trans;
 	prop_array_t array;
 	int rv = 0;
 
-	trans = calloc(1, sizeof(struct transaction));
+	trans = calloc(1, sizeof(*trans));
 	if (trans == NULL)
-		return errno;
+		return ENOMEM;
 
-	trans->dict = xbps_transaction_prepare();
-	if (trans->dict == NULL) {
+	if ((trans->d = xbps_transaction_prepare()) == NULL) {
 		if (errno == ENODEV) {
 			/* missing packages */
 			array = xbps_transaction_missingdeps_get();
@@ -583,33 +383,54 @@ xbps_exec_transaction(bool yes, bool show_download_pkglist_url)
 			rv = errno;
 			goto out;
 		}
-		rv = errno;
 		xbps_dbg_printf("Empty transaction dictionary: %s\n",
 		    strerror(errno));
-		goto out;
+		return errno;
 	}
 	xbps_dbg_printf("Dictionary before transaction happens:\n");
-	xbps_dbg_printf_append("%s", prop_dictionary_externalize(trans->dict));
+	xbps_dbg_printf_append("%s", prop_dictionary_externalize(trans->d));
 
-	/*
-	 * It's time to run the transaction!
-	 */
-	trans->iter = xbps_array_iter_from_dict(trans->dict, "packages");
+	trans->iter = xbps_array_iter_from_dict(trans->d, "packages");
 	if (trans->iter == NULL) {
 		rv = errno;
 		xbps_error_printf("xbps-bin: error allocating array mem! (%s)\n",
 		    strerror(errno));
 		goto out;
 	}
-
-	trans->yes = yes;
-	trans->only_show = show_download_pkglist_url;
-	rv = exec_transaction(trans);
+	/*
+	 * Only show URLs to download binary packages.
+	 */
+	if (show_download_urls) {
+		rv = show_binpkgs_url(trans->iter);
+		goto out;
+	}
+	/*
+	 * Show download/installed size for the transaction.
+	 */
+	if ((rv = show_transaction_sizes(trans)) != 0)
+		goto out;
+	/*
+	 * Ask interactively (if -y not set).
+	 */
+	if (!yes && !noyes("Do you want to continue?")) {
+		printf("Aborting!\n");
+		goto out;
+	}
+	/*
+	 * It's time to run the transaction!
+	 */
+	rv = xbps_transaction_commit(trans->d);
+	if (rv == 0) {
+		printf("\nxbps-bin: %u installed, %u updated, "
+		    "%u configured, %u removed.\n", trans->inst_pkgcnt,
+		    trans->up_pkgcnt, trans->cf_pkgcnt + trans->inst_pkgcnt,
+		    trans->rm_pkgcnt);
+	}
 out:
 	if (trans->iter)
 		prop_object_iterator_release(trans->iter);
-	if (trans->dict)
-		prop_object_release(trans->dict);
+	if (trans->d)
+		prop_object_release(trans->d);
 	if (trans)
 		free(trans);
 

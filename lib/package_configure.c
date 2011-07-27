@@ -50,7 +50,7 @@
 int
 xbps_configure_packages(void)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pkgname, *version;
@@ -79,13 +79,12 @@ xbps_configure_pkg(const char *pkgname,
 		   bool check_state,
 		   bool update)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd;
 	const char *lver;
 	char *buf, *pkgver;
 	int rv = 0;
 	pkg_state_t state = 0;
-	bool reconfigure = false;
 
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
@@ -98,8 +97,6 @@ xbps_configure_pkg(const char *pkgname,
 		if (state == XBPS_PKG_STATE_INSTALLED) {
 			if ((xhp->flags & XBPS_FLAG_FORCE) == 0)
 				return 0;
-
-			reconfigure = true;
 		} else if (state != XBPS_PKG_STATE_UNPACKED)
 			return EINVAL;
 	
@@ -110,18 +107,31 @@ xbps_configure_pkg(const char *pkgname,
 		lver = version;
 	}
 
-	xbps_printf("%sonfiguring package `%s-%s' ...\n",
-	    reconfigure ? "Rec" : "C", pkgname, lver);
+	pkgver = xbps_xasprintf("%s-%s", pkgname, lver);
+	if (pkgver == NULL)
+		return ENOMEM;
+
+	if (xhp->xbps_transaction_cb) {
+		xhp->xtcd->desc = NULL;
+		xhp->xtcd->binpkg_fname = NULL;
+		xhp->xtcd->binpkg_repourl = NULL;
+		xhp->xtcd->state = XBPS_TRANS_STATE_CONFIGURE;
+		xhp->xtcd->pkgver = pkgver;
+		xhp->xbps_transaction_cb(xhp->xtcd);
+	}
 
 	buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
 	    XBPS_META_PATH, pkgname);
-	if (buf == NULL)
+	if (buf == NULL) {
+		free(pkgver);
 		return ENOMEM;
+	}
 
 	if (chdir(xhp->rootdir) == -1) {
 		xbps_dbg_printf("%s: [configure] chdir to '%s' returned %s\n",
 		    pkgname, xhp->rootdir, strerror(errno));
 		free(buf);
+		free(pkgver);
 		return EINVAL;
 	}
 
@@ -129,6 +139,7 @@ xbps_configure_pkg(const char *pkgname,
 		if (xbps_file_exec(buf, "post",
 		    pkgname, lver, update ? "yes" : "no", NULL) != 0) {
 			free(buf);
+			free(pkgver);
 			xbps_error_printf("%s: post install script error: %s\n",
 			    pkgname, strerror(errno));
 			return errno;
@@ -136,14 +147,11 @@ xbps_configure_pkg(const char *pkgname,
 	} else {
 		if (errno != ENOENT) {
 			free(buf);
+			free(pkgver);
 			return errno;
 		}
 	}
 	free(buf);
-	pkgver = xbps_xasprintf("%s-%s", pkgname, lver);
-	if (pkgver == NULL)
-		return ENOMEM;
-
 	rv = xbps_set_pkg_state_installed(pkgname, lver, pkgver,
 	    XBPS_PKG_STATE_INSTALLED);
 	free(pkgver);

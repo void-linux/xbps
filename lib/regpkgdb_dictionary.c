@@ -90,7 +90,7 @@ xbps_regpkgdb_dictionary_init(struct xbps_handle *xhp)
 void HIDDEN
 xbps_regpkgdb_dictionary_release(void)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 
 	if (!regpkgdb_initialized)
 		return;

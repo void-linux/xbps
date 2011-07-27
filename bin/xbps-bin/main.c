@@ -46,7 +46,7 @@ struct list_pkgver_cb {
 static void __attribute__((noreturn))
 usage(void)
 {
-	xbps_end();
+	xbps_end(xbps_handle_get());
 	fprintf(stderr,
 	    "Usage: xbps-bin [options] [target] [arguments]\n"
 	    "See xbps-bin(8) for more information.\n");
@@ -145,15 +145,15 @@ show_orphans(void)
 static void __attribute__((noreturn))
 cleanup(int signum)
 {
-	xbps_end();
+	struct xbps_handle *xhp = xbps_handle_get();
+
+	xbps_end(xhp);
 	exit(signum);
 }
 
 static void
-unpack_progress_cb_verbose(void *data)
+unpack_progress_cb_verbose(struct xbps_unpack_cb_data *xpd)
 {
-	struct xbps_unpack_progress_data *xpd = data;
-
 	if (xpd->entry == NULL || xpd->entry_is_metadata)
 		return;
 	else if (xpd->entry_size <= 0)
@@ -165,10 +165,8 @@ unpack_progress_cb_verbose(void *data)
 }
 
 static void
-unpack_progress_cb(void *data)
+unpack_progress_cb(struct xbps_unpack_cb_data *xpd)
 {
-	struct xbps_unpack_progress_data *xpd = data;
-
 	if (xpd->entry == NULL || xpd->entry_is_metadata)
 		return;
 	else if (xpd->entry_size <= 0)
@@ -181,20 +179,17 @@ unpack_progress_cb(void *data)
 int
 main(int argc, char **argv)
 {
-	const struct xbps_handle *xhp;
-	struct xbps_handle xh;
-	struct xbps_unpack_progress_data xupd;
-	struct xbps_fetch_progress_data xfpd;
+	struct xbps_handle *xhp;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
 	const char *rootdir, *cachedir, *conffile;
 	int i , c, flags, rv;
-	bool yes, purge, with_debug, force_rm_with_deps, recursive_rm;
+	bool yes, purge, debug, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
 
 	rootdir = cachedir = conffile = NULL;
 	flags = rv = 0;
-	yes = purge = force_rm_with_deps = recursive_rm = with_debug = false;
+	yes = purge = force_rm_with_deps = recursive_rm = debug = false;
 	install_auto = install_manual = show_download_pkglist_url = false;
 
 	while ((c = getopt(argc, argv, "AC:c:dDFfMpRr:Vvy")) != -1) {
@@ -209,7 +204,7 @@ main(int argc, char **argv)
 			cachedir = optarg;
 			break;
 		case 'd':
-			with_debug = true;
+			debug = true;
 			break;
 		case 'D':
 			show_download_pkglist_url = true;
@@ -273,28 +268,31 @@ main(int argc, char **argv)
 	/*
 	 * Initialize stuff for libxbps.
 	 */
-	memset(&xh, 0, sizeof(xh));
-	xh.with_debug = with_debug;
-	xh.xbps_fetch_cb = fetch_file_progress_cb;
-	xh.xfpd = &xfpd;
+	xhp = xbps_handle_alloc();
+	if (xhp == NULL) {
+		xbps_error_printf("xbps-bin: failed to allocate resources.\n");
+		exit(EXIT_FAILURE);
+	}
+	xhp->debug = debug;
+	xhp->xbps_transaction_cb = transaction_cb;
+	xhp->xbps_transaction_err_cb = transaction_err_cb;
+	xhp->xbps_fetch_cb = fetch_file_progress_cb;
 	if (flags & XBPS_FLAG_VERBOSE)
-		xh.xbps_unpack_cb = unpack_progress_cb_verbose;
+		xhp->xbps_unpack_cb = unpack_progress_cb_verbose;
 	else
-		xh.xbps_unpack_cb = unpack_progress_cb;
-	xh.xupd = &xupd;
-	xh.rootdir = rootdir;
-	xh.cachedir = cachedir;
-	xh.flags = flags;
-	xh.conffile = conffile;
-	xh.install_reason_manual = install_manual;
-	xh.install_reason_auto = install_auto;
+		xhp->xbps_unpack_cb = unpack_progress_cb;
+	xhp->rootdir = rootdir;
+	xhp->cachedir = cachedir;
+	xhp->flags = flags;
+	xhp->conffile = conffile;
+	xhp->install_reason_manual = install_manual;
+	xhp->install_reason_auto = install_auto;
 
-	if ((rv = xbps_init(&xh)) != 0) {
+	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-bin: couldn't initialize library: %s\n",
 		    strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	xhp = xbps_handle_get();
 
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
@@ -337,10 +335,10 @@ main(int argc, char **argv)
 			usage();
 
 		for (i = 1; i < argc; i++)
-			if ((rv = xbps_install_new_pkg(argv[i])) != 0)
+			if ((rv = install_new_pkg(argv[i])) != 0)
 				goto out;
 
-		rv = xbps_exec_transaction(yes, show_download_pkglist_url);
+		rv = exec_transaction(yes, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
@@ -348,17 +346,17 @@ main(int argc, char **argv)
 			usage();
 
 		for (i = 1; i < argc; i++)
-			if ((rv = xbps_update_pkg(argv[i])) != 0)
+			if ((rv = update_pkg(argv[i])) != 0)
 				goto out;
 
-		rv = xbps_exec_transaction(yes, show_download_pkglist_url);
+		rv = exec_transaction(yes, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a binary package. */
 		if (argc < 2)
 			usage();
 
-		rv = xbps_remove_installed_pkgs(argc, argv, yes, purge,
+		rv = remove_installed_pkgs(argc, argv, yes, purge,
 		    force_rm_with_deps, recursive_rm);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
@@ -389,9 +387,9 @@ main(int argc, char **argv)
 			usage();
 
 		if (strcasecmp(argv[1], "all") == 0)
-			rv = xbps_check_pkg_integrity_all();
+			rv = check_pkg_integrity_all();
 		else
-			rv = xbps_check_pkg_integrity(argv[1]);
+			rv = check_pkg_integrity(argv[1]);
 
 	} else if (strcasecmp(argv[0], "autoupdate") == 0) {
 		/*
@@ -400,7 +398,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoupdate_pkgs(yes, show_download_pkglist_url);
+		rv = autoupdate_pkgs(yes, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "show-orphans") == 0) {
 		/*
@@ -421,7 +419,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_autoremove_pkgs(yes, purge);
+		rv = autoremove_pkgs(yes, purge);
 
 	} else if (strcasecmp(argv[0], "purge") == 0) {
 		/*
@@ -454,7 +452,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		rv = xbps_show_pkg_deps(argv[1]);
+		rv = show_pkg_deps(argv[1]);
 
 	} else if (strcasecmp(argv[0], "list-manual") == 0) {
 		/*
@@ -474,7 +472,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		rv = xbps_show_pkg_reverse_deps(argv[1]);
+		rv = show_pkg_reverse_deps(argv[1]);
 
 	} else if (strcasecmp(argv[0], "find-files") == 0) {
 		/*
@@ -491,6 +489,6 @@ main(int argc, char **argv)
 	}
 
 out:
-	xbps_end();
+	xbps_end(xhp);
 	exit(rv);
 }

@@ -73,7 +73,7 @@
 int
 xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_array_t array;
 	prop_object_iterator_t iter;
 	prop_object_t obj;
@@ -172,7 +172,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 int
 xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t dict;
 	const char *pkgver;
 	char *buf;

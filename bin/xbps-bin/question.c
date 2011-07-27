@@ -84,7 +84,7 @@ question(bool preset, const char *fmt, va_list ap)
 }
 
 bool
-xbps_yesno(const char *fmt, ...)
+yesno(const char *fmt, ...)
 {
 	va_list ap;
 	bool res;
@@ -97,7 +97,7 @@ xbps_yesno(const char *fmt, ...)
 }
 
 bool
-xbps_noyes(const char *fmt, ...)
+noyes(const char *fmt, ...)
 {
 	va_list ap;
 	bool res;

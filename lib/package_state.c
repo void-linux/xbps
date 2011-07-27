@@ -164,7 +164,7 @@ xbps_set_pkg_state_installed(const char *pkgname,
 			     const char *pkgver,
 			     pkg_state_t state)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t dict = NULL, pkgd;
 	prop_array_t array;
 	char *plist;

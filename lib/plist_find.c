@@ -322,7 +322,7 @@ xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
 static prop_dictionary_t
 find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, rpkgd = NULL;
 	pkg_state_t state = 0;
 

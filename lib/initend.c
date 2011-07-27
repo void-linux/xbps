@@ -52,7 +52,7 @@ xbps_init(struct xbps_handle *xh)
 	assert(xh != NULL);
 
 	xhp = xh;
-	debug = xhp->with_debug;
+	debug = xhp->debug;
 
 	/* If conffile not set, defaults to XBPS_CONF_PATH */
 	if (xhp->conffile == NULL)
@@ -67,7 +67,7 @@ xbps_init(struct xbps_handle *xh)
 		if (errno != ENOENT) {
 			xbps_dbg_printf("%s: cannot internalize conf "
 			    "dictionary: %s\n", strerror(errno));
-			xbps_end();
+			xbps_end(xh);
 			return errno;
 		}
 		xbps_dbg_printf("%s: conf_dictionary not internalized.\n",
@@ -101,9 +101,22 @@ xbps_init(struct xbps_handle *xh)
 		}
 	}
 	if (xhp->cachedir == NULL) {
-		if (conf_cachedir != NULL)
-			xhp->cachedir = conf_cachedir;
-		else {
+		if (conf_cachedir != NULL) {
+			if (conf_cachedir[0] == '/') {
+				/* full path */
+				xhp->cachedir = conf_cachedir;
+			} else {
+				/* relative to rootdir */
+				xhp->pstring_cachedir =
+				    prop_string_create_cstring(xhp->rootdir);
+				prop_string_append_cstring(
+				    xhp->pstring_cachedir, "/");
+				prop_string_append_cstring(
+				    xhp->pstring_cachedir, conf_cachedir);
+				xhp->cachedir = prop_string_cstring_nocopy(
+				    xhp->pstring_cachedir);
+			}
+		} else {
 			/* If cachedir not set, defaults to XBPS_CACHE_PATH */
 			xhp->cachedir = XBPS_CACHE_PATH;
 		}
@@ -130,7 +143,7 @@ xbps_init(struct xbps_handle *xh)
                if (rv != ENOENT) {
 		       xbps_dbg_printf("%s: couldn't initialize "
 			    "regpkgdb: %s\n", strerror(rv));
-		       xbps_end();
+		       xbps_end(xh);
 		       return rv;
 	       }
 	}
@@ -139,25 +152,66 @@ xbps_init(struct xbps_handle *xh)
 }
 
 void
-xbps_end(void)
+xbps_end(struct xbps_handle *xh)
 {
 	xbps_regpkgdb_dictionary_release();
 	xbps_repository_pool_release();
 	xbps_fetch_unset_cache_connection();
-	if (xhp == NULL)
+	if (xh == NULL)
 		return;
 
-	if (prop_object_type(xhp->conf_dictionary) == PROP_TYPE_DICTIONARY)
-		prop_object_release(xhp->conf_dictionary);
+	if (prop_object_type(xh->conf_dictionary) == PROP_TYPE_DICTIONARY)
+		prop_object_release(xh->conf_dictionary);
+	if (prop_object_type(xh->pstring_cachedir) == PROP_TYPE_STRING)
+		prop_object_release(xh->pstring_cachedir);
 
+	if (xh->xfcd != NULL)
+		free(xh->xfcd);
+	if (xh->xucd != NULL)
+		free(xh->xucd);
+	if (xh->xtcd != NULL)
+		free(xh->xtcd);
+
+	free(xh);
+	xh = NULL;
 	xhp = NULL;
 }
 
-const struct xbps_handle *
+struct xbps_handle *
 xbps_handle_get(void)
 {
 	assert(xhp != NULL);
 	return xhp;
+}
+
+struct xbps_handle *
+xbps_handle_alloc(void)
+{
+	struct xbps_handle *xh;
+
+	xh = calloc(1, sizeof(struct xbps_handle));
+	if (xh == NULL)
+		return NULL;
+	xh->xtcd = calloc(1, sizeof(struct xbps_transaction_cb_data));
+	if (xh->xtcd == NULL) {
+		free(xh);
+		return NULL;
+	}
+	xh->xucd = calloc(1, sizeof(struct xbps_unpack_cb_data));
+	if (xh->xucd == NULL) {
+		free(xh->xtcd);
+		free(xh);
+		return NULL;
+	}
+	xh->xfcd = calloc(1, sizeof(struct xbps_fetch_cb_data));
+	if (xh->xfcd == NULL) {
+		free(xh->xucd);
+		free(xh->xtcd);
+		free(xh);
+		return NULL;
+	}
+
+	return xh;
 }
 
 static void

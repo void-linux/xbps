@@ -56,7 +56,7 @@ static bool repolist_initialized;
 int HIDDEN
 xbps_repository_pool_init(void)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter = NULL;
@@ -258,7 +258,7 @@ xbps_repository_pool_foreach(
 			xbps_dbg_printf("%s: couldn't initialize "
 			    "repository pool: %s\n", __func__, strerror(rv));
 		}
-		xbps_end();
+		xbps_end(xbps_handle_get());
 		return rv;
 	}
 

@@ -32,26 +32,38 @@
 
 #include <xbps_api.h>
 
-int	xbps_install_new_pkg(const char *);
-int	xbps_update_pkg(const char *);
-int	xbps_autoupdate_pkgs(bool, bool);
-int	xbps_autoremove_pkgs(bool, bool);
-int	xbps_exec_transaction(bool, bool);
-int	xbps_remove_installed_pkgs(int, char **, bool, bool, bool, bool);
-int	xbps_check_pkg_integrity(const char *);
-int	xbps_check_pkg_integrity_all(void);
-int	xbps_show_pkg_deps(const char *);
-int	xbps_show_pkg_reverse_deps(const char *);
+/* from install.c */
+int	install_new_pkg(const char *);
+int	update_pkg(const char *);
+int	autoupdate_pkgs(bool, bool);
+int	autoremove_pkgs(bool, bool);
+int	exec_transaction(bool, bool);
+void	transaction_cb(struct xbps_transaction_cb_data *);
+void	transaction_err_cb(struct xbps_transaction_cb_data *);
+
+int	remove_installed_pkgs(int, char **, bool, bool, bool, bool);
+
+/* from check.c */
+int	check_pkg_integrity(const char *);
+int	check_pkg_integrity_all(void);
+
+/* from show-deps.c */
+int	show_pkg_deps(const char *);
+int	show_pkg_reverse_deps(const char *);
+
+/* from show-info-files.c */
 int	show_pkg_info_from_metadir(const char *);
 int	show_pkg_files_from_metadir(const char *);
+
+/* from find-files.c */
 int	find_files_in_packages(const char *);
 
 /* from question.c */
-bool	xbps_yesno(const char *, ...);
-bool	xbps_noyes(const char *, ...);
+bool	yesno(const char *, ...);
+bool	noyes(const char *, ...);
 
 /* from fetch.c */
-void	fetch_file_progress_cb(void *);
+void	fetch_file_progress_cb(struct xbps_fetch_cb_data *);
 
 /* From util.c */
 int     show_pkg_files(prop_dictionary_t);

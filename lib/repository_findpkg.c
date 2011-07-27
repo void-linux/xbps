@@ -176,7 +176,7 @@ out:
 int
 xbps_repository_update_packages(void)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pkgname;

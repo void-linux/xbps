@@ -95,7 +95,7 @@ remove_pkg_metadata(const char *pkgname, const char *rootdir)
 int
 xbps_purge_packages(void)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pkgname;
@@ -118,7 +118,7 @@ xbps_purge_packages(void)
 int
 xbps_purge_pkg(const char *pkgname, bool check_state)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t dict, pkgd;
 	const char *version;
 	char *buf;

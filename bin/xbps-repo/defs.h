@@ -31,7 +31,7 @@
 #endif
 
 /* From index.c */
-int	xbps_repo_genindex(const char *);
+int	repo_genindex(const char *);
 /* From repository.c */
 int	show_pkg_info_from_repolist(const char *);
 int	show_pkg_deps_from_repolist(const char *);

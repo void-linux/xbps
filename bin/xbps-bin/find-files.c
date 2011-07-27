@@ -71,7 +71,7 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, prop_dictionary_keysym_t ke
 int
 find_files_in_packages(const char *pattern)
 {
-	const struct xbps_handle *xhp;
+	struct xbps_handle *xhp;
 	prop_dictionary_t pkg_filesd;
 	prop_array_t files_keys;
 	DIR *dirp;
