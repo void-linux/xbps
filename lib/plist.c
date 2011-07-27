@@ -196,14 +196,14 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 	xhp = xbps_handle_get();
 
 	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
-	if (pkgd == NULL)
-		return NULL;
-
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &rpkgname);
-	prop_object_release(pkgd);
+	if (pkgd) {
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &rpkgname);
+		prop_object_release(pkgd);
+		pkgname = rpkgname;
+	}
 
 	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-	    xhp->rootdir, XBPS_META_PATH, rpkgname, plist);
+	    xhp->rootdir, XBPS_META_PATH, pkgname, plist);
 	if (plistf == NULL)
 		return NULL;
 
@@ -211,7 +211,7 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 	free(plistf);
 	if (plistd == NULL) {
 		xbps_dbg_printf("cannot read from plist file %s for %s: %s\n",
-		    plist, rpkgname, strerror(errno));
+		    plist, pkgname, strerror(errno));
 		return NULL;
 	}
 
