@@ -148,15 +148,25 @@ void		xbps_warn_printf(const char *, ...);
  *
  * <b>XBPS_TRANS_STATE_UKKNOWN</b>: unknown, transaction hasn't been
  * prepared or some unknown error ocurred.
+ *
  * <b>XBPS_TRANS_STATE_DOWNLOAD</b>: a binary package is being downloaded.
+ *
  * <b>XBPS_TRANS_STATE_VERIFY</b>: a binary package is being verified.
+ *
  * <b>XBPS_TRANS_STATE_REMOVE</b>: a package is being removed.
+ *
  * <b>XBPS_TRANS_STATE_PURGE</b>: a package is being purged.
+ *
  * <b>XBPS_TRANS_STATE_REPLACE</b>: a package is being replaced.
+ *
  * <b>XBPS_TRANS_STATE_INSTALL</b>: a package is being installed.
+ *
  * <b>XBPS_TRANS_STATE_UPDATE</b>: a package is being updated.
+ *
  * <b>XBPS_TRANS_STATE_UNPACK</b>: a package is being unpacked.
+ *
  * <b>XBPS_TRANS_STATE_CONFIGURE</b>: a package is being configured.
+ *
  * <b>XBPS_TRANS_STATE_REGISTER</b>: a package is being registered.
  */
 typedef enum trans_state {
@@ -182,37 +192,38 @@ struct xbps_transaction_cb_data {
 	/**
 	 * @var state
 	 *
-	 * Transaction's state (read-only).
+	 * Transaction's state (set internally, read-only).
 	 */
 	trans_state_t state;
 	/**
 	 * @var desc
 	 *
-	 * Transaction's string description (read-only).
+	 * Transaction's string description (set internally, read-only).
 	 */
 	const char *desc;
 	/**
 	 * @var pkgver
 	 *
-	 * Transaction's current pkgname/version string (read-only).
+	 * Transaction's current pkgname/version string
+	 * (set internally, read-only).
 	 */
 	const char *pkgver;
 	/**
 	 * @var binpkg_fname
 	 *
-	 * Binary package's filename (read-only).
+	 * Binary package's filename (set internally, read-only).
 	 */
 	const char *binpkg_fname;
 	/**
 	 * @var binpkg_repourl
 	 *
-	 * Binary package's repository URL (read-only).
+	 * Binary package's repository URL (set internally, read-only).
 	 */
 	const char *binpkg_repourl;
 	/**
 	 * @var err
 	 *
-	 * Transaction error value (read-only).
+	 * Transaction error value (set internally, read-only).
 	 */
 	int err;
 	/**
@@ -238,47 +249,48 @@ struct xbps_fetch_cb_data {
 	 * @var file_size
 	 *
 	 * Filename size for the file to be fetched (set internally,
-	 * read only).
+	 * read-only).
 	 */
 	off_t file_size;
 	/**
 	 * @var file_offset
 	 *
 	 * Current offset for the filename being fetched (set internally,
-	 * read only).
+	 * read-only).
 	 */
 	off_t file_offset;
 	/**
 	 * @var file_dloaded
 	 *
-	 * Bytes downloaded for the file being fetched (set internally).
+	 * Bytes downloaded for the file being fetched
+	 * (set internally, read-only).
 	 */
 	off_t file_dloaded;
 	/**
 	 * @var file_name
 	 *
-	 * File name being fetched (set internally, read only).
+	 * File name being fetched (set internally, read-only).
 	 */
 	const char *file_name;
 	/**
 	 * @var cb_start
 	 *
 	 * If true the function callback should be prepared to start
-	 * the transfer progress (set internally, read only).
+	 * the transfer progress (set internally, read-only).
 	 */
 	bool cb_start;
 	/**
-	 * var cb_update
+	 * @var cb_update
 	 *
 	 * If true the function callback should be prepared to
-	 * update the transfer progress (set internally, read only).
+	 * update the transfer progress (set internally, read-only).
 	 */
 	bool cb_update;
 	/**
-	 * var cb_end
+	 * @var cb_end
 	 *
 	 * If true the function callback should be prepated to
-	 * end the transfer progress (set internally, read only).
+	 * end the transfer progress (set internally, read-only).
 	 */
 	bool cb_end;
 	/**
@@ -303,39 +315,39 @@ struct xbps_unpack_cb_data {
 	/**
 	 * @var entry
 	 *
-	 * Entry pathname string (set internally, read only).
+	 * Entry pathname string (set internally, read-only).
 	 */
 	const char *entry;
 	/**
 	 * @var entry_size
 	 *
-	 * Entry file size (set internally, read only).
+	 * Entry file size (set internally, read-only).
 	 */
 	int64_t entry_size;
 	/**
 	 * @var entry_extract_count
 	 *
-	 * Total number of extracted entries (set internally, read only).
+	 * Total number of extracted entries (set internally, read-only).
 	 */
 	ssize_t entry_extract_count;
 	/**
 	 * @var entry_total_count
 	 *
-	 * Total number of entries in package (set internally, read only).
+	 * Total number of entries in package (set internally, read-only).
 	 */
 	ssize_t entry_total_count;
 	/**
 	 * @var entry_is_metadata
 	 *
 	 * If true "entry" is a package metadata file (set internally,
-	 * read only).
+	 * read-only).
 	 */
 	bool entry_is_metadata;
 	/**
 	 * @var entry_is_conf
 	 *
 	 * If true "entry" is a configuration file (set internally,
-	 * read only).
+	 * read-only).
 	 */
 	bool entry_is_conf;
 	/**
@@ -431,8 +443,10 @@ struct xbps_handle {
 	 * @var flags
 	 *
 	 * Flags to be set globally, possible values:
-	 * 	- XBPS_FLAG_VERBOSE
-	 * 	- XBPS_FLAG_FORCE
+	 *
+	 * - XBPS_FLAG_VERBOSE
+	 *
+	 * - XBPS_FLAG_FORCE
 	 */
 	int flags;
 	/**
