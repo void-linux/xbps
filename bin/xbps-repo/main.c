@@ -88,6 +88,7 @@ int
 main(int argc, char **argv)
 {
 	struct xbps_handle *xhp;
+	struct xferstat xfer;
 	prop_dictionary_t pkgd;
 	const char *rootdir, *cachedir, *conffile;
 	int c, rv = 0;
@@ -135,6 +136,7 @@ main(int argc, char **argv)
 	}
 	xhp->debug = debug;
 	xhp->xbps_fetch_cb = fetch_file_progress_cb;
+	xhp->xfcd->cookie = &xfer;
 	xhp->rootdir = rootdir;
 	xhp->cachedir = cachedir;
 	xhp->conffile = conffile;

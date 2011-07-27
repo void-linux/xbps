@@ -30,7 +30,13 @@
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 #endif
 
+#include <sys/time.h>
 #include <xbps_api.h>
+
+struct xferstat {
+	struct timeval start;
+	struct timeval last;
+};
 
 /* from install.c */
 int	install_new_pkg(const char *);

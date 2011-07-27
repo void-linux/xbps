@@ -43,17 +43,13 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-struct xferstat {
-	struct timeval start;
-	struct timeval last;
-};
-
 /*
  * Compute and display ETA
  */
 static const char *
-stat_eta(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
+stat_eta(struct xbps_fetch_cb_data *xfpd)
 {
+	struct xferstat *xsp = xfpd->cookie;
 	static char str[16];
 	long elapsed, eta;
 	off_t received, expected;
@@ -92,8 +88,9 @@ compare_double(const double a, const double b)
  * Compute and display transfer rate
  */
 static const char *
-stat_bps(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
+stat_bps(struct xbps_fetch_cb_data *xfpd)
 {
+	struct xferstat *xsp = xfpd->cookie;
 	static char str[16];
 	char size[8];
 	double delta, bps;
@@ -115,8 +112,9 @@ stat_bps(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
  * Update the stats display
  */
 static void
-stat_display(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
+stat_display(struct xbps_fetch_cb_data *xfpd)
 {
+	struct xferstat *xsp = xfpd->cookie;
 	struct timeval now;
 	char totsize[8], recvsize[8];
 
@@ -130,10 +128,10 @@ stat_display(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
 	fprintf(stderr,"\r%s: %s [%d%% of %s]", xfpd->file_name, recvsize,
 	    (int)((double)(100.0 *
 	    (double)xfpd->file_dloaded) / (double)xfpd->file_size), totsize);
-	fprintf(stderr," %s", stat_bps(xfpd, xsp));
+	fprintf(stderr," %s", stat_bps(xfpd));
 	if (xfpd->file_size > 0 && xfpd->file_dloaded > 0 &&
 	    xsp->last.tv_sec >= xsp->start.tv_sec + 10)
-		fprintf(stderr," ETA: %s", stat_eta(xfpd, xsp));
+		fprintf(stderr," ETA: %s", stat_eta(xfpd));
 
 	fprintf(stderr,"\033[K");
 }
@@ -152,35 +150,35 @@ stat_start(struct xferstat *xsp)
  * Update the transfer statistics
  */
 static void
-stat_update(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
+stat_update(struct xbps_fetch_cb_data *xfpd)
 {
 	xfpd->file_dloaded += xfpd->file_offset;
-	stat_display(xfpd, xsp);
+	stat_display(xfpd);
 }
 
 /*
  * Finalize the transfer statistics
  */
 static void
-stat_end(struct xbps_fetch_cb_data *xfpd, struct xferstat *xsp)
+stat_end(struct xbps_fetch_cb_data *xfpd)
 {
 	char size[8];
 
 	(void)xbps_humanize_number(size, (int64_t)xfpd->file_size);
 	fprintf(stderr,"\rDownloaded %s for %s [avg rate: %s]",
-	    size, xfpd->file_name, stat_bps(xfpd, xsp));
+	    size, xfpd->file_name, stat_bps(xfpd));
 	fprintf(stderr,"\033[K\n");
 }
 
 void
 fetch_file_progress_cb(struct xbps_fetch_cb_data *xfpd)
 {
-	static struct xferstat xs;
+	struct xferstat *xsp = xfpd->cookie;
 
 	if (xfpd->cb_start)
-		stat_start(&xs);
+		stat_start(xsp);
 	else if (xfpd->cb_update)
-		stat_update(xfpd, &xs);
+		stat_update(xfpd);
 	else if (xfpd->cb_end)
-		stat_end(xfpd, &xs);
+		stat_end(xfpd);
 }

@@ -110,6 +110,7 @@ int
 main(int argc, char **argv)
 {
 	struct xbps_handle *xhp;
+	struct xferstat xfer;
 	prop_dictionary_t dict;
 	const char *version, *rootdir = NULL, *conffile = NULL;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
@@ -153,6 +154,7 @@ main(int argc, char **argv)
 	}
 	xhp->debug = debug;
 	xhp->xbps_fetch_cb = fetch_file_progress_cb;
+	xhp->xfcd->cookie = &xfer;
 	xhp->rootdir = rootdir;
 	xhp->conffile = conffile;
 

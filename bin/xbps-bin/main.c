@@ -180,6 +180,7 @@ int
 main(int argc, char **argv)
 {
 	struct xbps_handle *xhp;
+	struct xferstat xfer;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
 	const char *rootdir, *cachedir, *conffile;
@@ -277,6 +278,7 @@ main(int argc, char **argv)
 	xhp->xbps_transaction_cb = transaction_cb;
 	xhp->xbps_transaction_err_cb = transaction_err_cb;
 	xhp->xbps_fetch_cb = fetch_file_progress_cb;
+	xhp->xfcd->cookie = &xfer;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xhp->xbps_unpack_cb = unpack_progress_cb_verbose;
 	else
