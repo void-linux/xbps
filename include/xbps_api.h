@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
-#define XBPS_API_VERSION	"20110727"
+#define XBPS_API_VERSION	"20110728"
 #define XBPS_VERSION		"0.10.0"
 
 /**
@@ -168,6 +168,9 @@ void		xbps_warn_printf(const char *, ...);
  * <b>XBPS_TRANS_STATE_CONFIGURE</b>: a package is being configured.
  *
  * <b>XBPS_TRANS_STATE_REGISTER</b>: a package is being registered.
+ *
+ * <b>XBPS_TRANS_STATE_REPOSYNC</b>. a remote repository's
+ * pkg index is being synced.
  */
 typedef enum trans_state {
 	XBPS_TRANS_STATE_UNKNOWN = 0,
@@ -180,7 +183,8 @@ typedef enum trans_state {
 	XBPS_TRANS_STATE_UPDATE,
 	XBPS_TRANS_STATE_UNPACK,
 	XBPS_TRANS_STATE_CONFIGURE,
-	XBPS_TRANS_STATE_REGISTER
+	XBPS_TRANS_STATE_REGISTER,
+	XBPS_TRANS_STATE_REPOSYNC
 } trans_state_t;
 
 /**
@@ -217,9 +221,9 @@ struct xbps_transaction_cb_data {
 	/**
 	 * @var binpkg_repourl
 	 *
-	 * Binary package's repository URL (set internally, read-only).
+	 * Repository URL (set internally, read-only).
 	 */
-	const char *binpkg_repourl;
+	const char *repourl;
 	/**
 	 * @var err
 	 *

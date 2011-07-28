@@ -44,8 +44,6 @@ int	update_pkg(const char *);
 int	autoupdate_pkgs(bool, bool);
 int	autoremove_pkgs(bool, bool);
 int	exec_transaction(bool, bool);
-void	transaction_cb(struct xbps_transaction_cb_data *);
-void	transaction_err_cb(struct xbps_transaction_cb_data *);
 
 int	remove_installed_pkgs(int, char **, bool, bool, bool, bool);
 
@@ -68,8 +66,12 @@ int	find_files_in_packages(const char *);
 bool	yesno(const char *, ...);
 bool	noyes(const char *, ...);
 
-/* from fetch.c */
+/* from fetch_cb.c */
 void	fetch_file_progress_cb(struct xbps_fetch_cb_data *);
+
+/* from trans_cb.c */
+void	transaction_cb(struct xbps_transaction_cb_data *);
+void	transaction_err_cb(struct xbps_transaction_cb_data *);
 
 /* From util.c */
 int     show_pkg_files(prop_dictionary_t);

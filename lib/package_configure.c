@@ -114,7 +114,7 @@ xbps_configure_pkg(const char *pkgname,
 	if (xhp->xbps_transaction_cb) {
 		xhp->xtcd->desc = NULL;
 		xhp->xtcd->binpkg_fname = NULL;
-		xhp->xtcd->binpkg_repourl = NULL;
+		xhp->xtcd->repourl = NULL;
 		xhp->xtcd->state = XBPS_TRANS_STATE_CONFIGURE;
 		xhp->xtcd->pkgver = pkgver;
 		xhp->xbps_transaction_cb(xhp->xtcd);

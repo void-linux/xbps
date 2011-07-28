@@ -47,11 +47,27 @@ static SIMPLEQ_HEAD(rpool_head, repository_pool) rpool_queue =
 
 static bool repolist_initialized;
 
-#define FETCH_ERROR(x)	((x == FETCH_UNAVAIL) || \
-			 (x == FETCH_NETWORK) || \
-			 (x == FETCH_ABORT) || \
-			 (x == FETCH_TIMEOUT) || \
-			 (x == FETCH_DOWN))
+#define FETCH_ERROR(x) ((x == FETCH_UNAVAIL) || \
+			(x == FETCH_NETWORK) || \
+			(x == FETCH_ABORT) || \
+			(x == FETCH_TIMEOUT) || \
+			(x == FETCH_DOWN))
+static int
+sync_remote_repo(const char *plist, const char *repourl)
+{
+	/* if file is there, continue */
+	if (access(plist, R_OK) == 0)
+		return 0;
+
+	/* file not found, fetch it */
+	if (xbps_repository_sync_pkg_index(repourl) == -1) {
+		if (FETCH_ERROR(fetchLastErrCode))
+			return -1;
+	}
+
+	return 0;
+}
+#undef FETCH_ERROR
 
 int HIDDEN
 xbps_repository_pool_init(void)
@@ -107,42 +123,10 @@ xbps_repository_pool_init(void)
 			rv = errno;
 			goto out;
 		}
-		/*
-		 * For remote repositories, check that its pkg-index.plist
-		 * file is there, otherwise we have to fetch it.
-		 */
-		if (xbps_check_is_repository_uri_remote(repouri)) {
-			if ((access(plist, R_OK) == -1) && errno == ENOENT) {
-				/* file not found, fetch it */
-				xbps_printf("Synchronizing package index for "
-				    "`%s'...\n", repouri);
-				rv = xbps_repository_sync_pkg_index(repouri);
-				if (rv == -1) {
-					const char *fetcherr =
-					    xbps_fetch_error_string();
-
-					xbps_error_printf("failed to sync "
-					    "repository `%s': %s%s\n",
-					   repouri,
-					   errno ? strerror(errno) : "",
-					   fetchLastErrCode ? fetcherr : "");
-
-					/*
-					 * Ignore if the file cannot be
-					 * fetched due to network, missing
-					 * file, moved, etc.
-					 */
-					if (FETCH_ERROR(fetchLastErrCode)) {
-						rv = 0;
-						free(plist);
-						continue;
-					}
-					rv = errno;
-					free(plist);
-					goto out;
-				}
-				rv = 0;
-			}
+		if (sync_remote_repo(plist, repouri) == -1) {
+			nmissing++;
+			free(plist);
+			continue;
 		}
 		ntotal++;
 		/*

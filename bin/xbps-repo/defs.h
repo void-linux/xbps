@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2010 Juan Romero Pardines.
+ * Copyright (c) 2009-2011 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,12 +30,16 @@
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 #endif
 
+#include <xbps_api.h>
+
 /* From index.c */
 int	repo_genindex(const char *);
+
 /* From repository.c */
 int	show_pkg_info_from_repolist(const char *);
 int	show_pkg_deps_from_repolist(const char *);
 int	repository_sync(void);
+
 /* From find-files.c */
 int	repo_find_files_in_packages(const char *);
 

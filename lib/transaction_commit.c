@@ -35,16 +35,16 @@
 
 #include "xbps_api_impl.h"
 
-#define RUN_TRANS_CB(s, d, p, bf, burl)				\
-do {								\
-	if (xhp->xbps_transaction_cb != NULL) {			\
-		xhp->xtcd->state = s;				\
-		xhp->xtcd->desc = d;				\
-		xhp->xtcd->pkgver = p;				\
-		xhp->xtcd->binpkg_fname = bf;			\
-		xhp->xtcd->binpkg_repourl = burl;		\
-		(*xhp->xbps_transaction_cb)(xhp->xtcd);		\
-	}							\
+#define RUN_TRANS_CB(s, d, p, bf, burl) 		\
+do {							\
+	if (xhp->xbps_transaction_cb != NULL) {		\
+		xhp->xtcd->state = s;			\
+		xhp->xtcd->desc = d;			\
+		xhp->xtcd->pkgver = p;			\
+		xhp->xtcd->binpkg_fname = bf;		\
+		xhp->xtcd->repourl = burl;		\
+		(*xhp->xbps_transaction_cb)(xhp->xtcd);	\
+	}						\
 } while (0)
 
 #define RUN_TRANS_ERR_CB(s, p, r)				\

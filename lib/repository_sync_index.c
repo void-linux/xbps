@@ -97,6 +97,10 @@ xbps_repository_sync_pkg_index(const char *uri)
 	tmp_metafile = rpidx = lrepodir = lrepofile = NULL;
 	xhp = xbps_handle_get();
 
+	/* ignore non remote repositories */
+	if (!xbps_check_is_repository_uri_remote(uri))
+		return 0;
+
 	if (uname(&un) == -1)
 		return -1;
 
@@ -160,15 +164,28 @@ xbps_repository_sync_pkg_index(const char *uri)
 	} else
 		fetch_outputdir = metadir;
 
+	if (xhp->xbps_transaction_cb) {
+		xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
+		xhp->xtcd->repourl = uri;
+		xhp->xbps_transaction_cb(xhp->xtcd);
+	}
 	/*
 	 * Download pkg-index.plist file from repository.
 	 */
-	rv = xbps_fetch_file(rpidx, fetch_outputdir, true, NULL);
-	if (rv == -1) {
+	if (xbps_fetch_file(rpidx, fetch_outputdir, true, NULL) == -1) {
 		sverrno = errno;
-		xbps_dbg_printf("%s: failed to sync: %s %s\n",
-		    __func__, strerror(errno), xbps_fetch_error_string());
-		(void)remove(tmp_metafile);
+		if (fetchLastErrCode)
+			rv = fetchLastErrCode;
+		else
+			rv = errno;
+
+		if (xhp->xbps_transaction_err_cb) {
+			xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
+			xhp->xtcd->repourl = uri;
+			xhp->xtcd->err = rv;
+			xhp->xbps_transaction_cb(xhp->xtcd);
+		}
+		rv = -1;
 		errno = sverrno;
 		goto out;
 	}
