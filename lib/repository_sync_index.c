@@ -183,7 +183,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 			xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
 			xhp->xtcd->repourl = uri;
 			xhp->xtcd->err = rv;
-			xhp->xbps_transaction_cb(xhp->xtcd);
+			xhp->xbps_transaction_err_cb(xhp->xtcd);
 		}
 		rv = -1;
 		errno = sverrno;
