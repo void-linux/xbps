@@ -57,32 +57,28 @@ check_pkg_integrity_all(void)
 	prop_object_t obj;
 	prop_object_iterator_t iter = NULL;
 	const char *pkgname, *version;
-	int rv = 0;
 	size_t npkgs = 0, nbrokenpkgs = 0;
 
 	xhp = xbps_handle_get();
 	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
-	if (iter == NULL) {
-		rv = ENOENT;
-		goto out;
-	}
+	if (iter == NULL)
+		return -1;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		printf("Checking %s-%s ...\n", pkgname, version);
-		if ((rv = check_pkg_integrity(pkgname)) != 0)
+		if (check_pkg_integrity(pkgname) != 0)
 			nbrokenpkgs++;
+
 		npkgs++;
 	}
+	prop_object_iterator_release(iter);
+
 	printf("%zu package%s processed: %zu broken.\n", npkgs,
 	    npkgs == 1 ? "" : "s", nbrokenpkgs);
 
-out:
-	if (iter)
-		prop_object_iterator_release(iter);
-
-	return rv;
+	return 0;
 }
 
 int
@@ -96,7 +92,7 @@ check_pkg_integrity(const char *pkgname)
 	const char *file, *sha256, *reqpkg, *tgt = NULL;
 	char *path, buf[PATH_MAX];
 	int rv = 0;
-	bool broken = false, files_broken = false;
+	bool broken = false, test_broken = false;
 
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
@@ -113,16 +109,14 @@ check_pkg_integrity(const char *pkgname)
 	 */
 	propsd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGPROPS);
 	if (prop_object_type(propsd) != PROP_TYPE_DICTIONARY) {
-		fprintf(stderr,
-		    "E: %s: unexistent %s or invalid metadata file.\n", pkgname,
-		    XBPS_PKGPROPS);
-		rv = errno;
+		xbps_error_printf("%s: unexistent %s or invalid metadata "
+		    "file.\n", pkgname, XBPS_PKGPROPS);
+		broken = true;
 		goto out;
 	} else if (prop_dictionary_count(propsd) == 0) {
-		fprintf(stderr,
-		    "E: %s: incomplete %s metadata file.\n", pkgname,
-		    XBPS_PKGPROPS);
-		rv = EINVAL;
+		xbps_error_printf("%s: incomplete %s metadata file.\n",
+		    pkgname, XBPS_PKGPROPS);
+		broken = true;
 		goto out;
 	}
 
@@ -131,16 +125,14 @@ check_pkg_integrity(const char *pkgname)
 	 */
 	filesd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY) {
-		fprintf(stderr,
-		    "E: %s: unexistent %s or invalid metadata file.\n", pkgname,
-		    XBPS_PKGPROPS);
-		rv = ENOENT;
+		xbps_error_printf("%s: unexistent %s or invalid metadata "
+		    "file.\n", pkgname, XBPS_PKGFILES);
+		broken = true;
 		goto out;
 	} else if (prop_dictionary_count(filesd) == 0) {
-		fprintf(stderr,
-		    "E: %s: incomplete %s metadata file.\n", pkgname,
-		    XBPS_PKGFILES);
-		rv = EINVAL;
+		xbps_error_printf("%s: incomplete %s metadata file.\n",
+		    pkgname, XBPS_PKGFILES);
+		broken = true;
 		goto out;
 	}
 
@@ -151,34 +143,46 @@ check_pkg_integrity(const char *pkgname)
 	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
 	     prop_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(filesd, "links");
-		if (iter == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
+		if (iter == NULL)
+			abort();
+
 		while ((obj = prop_object_iterator_next(iter))) {
 			if (!prop_dictionary_get_cstring_nocopy(obj, "target", &tgt))
 				continue;
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			if (strcmp(tgt, "") == 0) {
-				if (xhp->flags & XBPS_FLAG_VERBOSE)
-					fprintf(stderr, "%s: `%s' symlink with "
-					    "empty target object!\n", pkgname,
-					    file);
+				xbps_warn_printf("%s: `%s' symlink with "
+				    "empty target object!\n", pkgname, file);
 				continue;
 			}
-			if (realpath(file, buf) == NULL) {
-				prop_object_iterator_release(iter);
-				rv = errno;
-				goto out;
-			}
-			if (strcmp(buf, tgt)) {
-				fprintf(stderr, "%s: modified symlink `%s', "
+			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+			if (path == NULL)
+				abort();
+
+			memset(&buf, 0, sizeof(buf));
+			if (realpath(path, buf) == NULL)
+				abort();
+
+			free(path);
+			if (strcmp(xhp->rootdir, "/") && strstr(buf, xhp->rootdir))
+				path = buf + strlen(xhp->rootdir);
+			else
+				path = buf;
+
+			if (strcmp(path, tgt)) {
+				xbps_error_printf("%s: modified symlink `%s', "
 				    "target: `%s' (shall be: `%s')\n",
-				    pkgname, file, buf, tgt);
-				files_broken = true;
+				    pkgname, file, tgt, path);
+				test_broken = true;
 			}
+			path = NULL;
 		}
 		prop_object_iterator_release(iter);
+	}
+	if (test_broken) {
+		test_broken = false;
+		xbps_error_printf("%s: links check FAILED.\n", pkgname);
+		broken = true;
 	}
 
 	/*
@@ -188,17 +192,15 @@ check_pkg_integrity(const char *pkgname)
 	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
 	     prop_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(filesd, "files");
-		if (iter == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
+		if (iter == NULL)
+			abort();
+
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
-				rv = errno;
-				goto out;
+				abort();
 			}
                         prop_dictionary_get_cstring_nocopy(obj,
                             "sha256", &sha256);
@@ -207,17 +209,17 @@ check_pkg_integrity(const char *pkgname)
 			case 0:
 				break;
 			case ENOENT:
-				fprintf(stderr, "%s: unexistent file %s.\n",
+				xbps_error_printf("%s: unexistent file %s.\n",
 				    pkgname, file);
-				files_broken = true;
+				test_broken = true;
 				break;
 			case ERANGE:
-                                fprintf(stderr, "%s: hash mismatch for %s.\n",
+                                xbps_error_printf("%s: hash mismatch for %s.\n",
 				    pkgname, file);
-				files_broken = true;
+				test_broken = true;
 				break;
 			default:
-				fprintf(stderr,
+				xbps_error_printf(
 				    "%s: can't check `%s' (%s)\n",
 				    pkgname, file, strerror(rv));
 				break;
@@ -225,10 +227,11 @@ check_pkg_integrity(const char *pkgname)
 			free(path);
                 }
                 prop_object_iterator_release(iter);
-		if (files_broken) {
-			broken = true;
-			printf("%s: files check FAILED.\n", pkgname);
-		}
+	}
+	if (test_broken) {
+		test_broken = false;
+		broken = true;
+		xbps_error_printf("%s: files check FAILED.\n", pkgname);
 	}
 
 	/*
@@ -238,26 +241,24 @@ check_pkg_integrity(const char *pkgname)
 	if (array && prop_object_type(array) == PROP_TYPE_ARRAY &&
 	    prop_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(filesd, "conf_files");
-		if (iter == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
+		if (iter == NULL)
+			abort();
+
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
-				rv = ENOMEM;
-				goto out;
+				abort();
 			}
 			if ((rv = access(path, R_OK)) == -1) {
 				if (errno == ENOENT) {
-					fprintf(stderr,
+					xbps_error_printf(
 					    "%s: unexistent file %s\n",
 					    pkgname, file);
-					broken = true;
+					test_broken = true;
 				} else
-					fprintf(stderr,
+					xbps_error_printf(
 					    "%s: can't check `%s' (%s)\n",
 					    pkgname, file,
 					    strerror(errno));
@@ -265,41 +266,39 @@ check_pkg_integrity(const char *pkgname)
 			free(path);
 		}
 		prop_object_iterator_release(iter);
-		if (rv != 0)
-			printf("%s: configuration files check FAILED.\n",
-			    pkgname);
+	}
+	if (test_broken) {
+		test_broken = false;
+		xbps_error_printf("%s: conf files check FAILED.\n", pkgname);
+		broken = true;
 	}
 
 	/*
 	 * Check for missing run time dependencies.
 	 */
-	if (xbps_pkg_has_rundeps(propsd)) {
-		iter = xbps_array_iter_from_dict(propsd, "run_depends");
-		if (iter == NULL) {
-			rv = ENOMEM;
-			goto out;
+	if (!xbps_pkg_has_rundeps(propsd))
+		goto out;
+
+	iter = xbps_array_iter_from_dict(propsd, "run_depends");
+	if (iter == NULL)
+		abort();
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		reqpkg = prop_string_cstring_nocopy(obj);
+		if (reqpkg == NULL) {
+			prop_object_iterator_release(iter);
+			abort();
 		}
-		while ((obj = prop_object_iterator_next(iter))) {
-			reqpkg = prop_string_cstring_nocopy(obj);
-			if (reqpkg == NULL) {
-				prop_object_iterator_release(iter);
-				rv = EINVAL;
-				goto out;
-			}
-			rv = xbps_check_is_installed_pkg_by_pattern(reqpkg);
-			if (rv <= 0) {
-				fprintf(stderr,
-				    "%s: dependency not satisfied: %s\n",
-				    pkgname, reqpkg);
-			}
-			rv = 0;
+		if (xbps_check_is_installed_pkg_by_pattern(reqpkg) <= 0) {
+			xbps_error_printf("%s: dependency not satisfied: %s\n",
+			    pkgname, reqpkg);
+			test_broken = true;
 		}
-		prop_object_iterator_release(iter);
-		if (rv == ENOENT) {
-			printf("%s: run-time dependency check FAILED.\n",
-			    pkgname);
-			broken = true;
-		}
+	}
+	prop_object_iterator_release(iter);
+	if (test_broken) {
+		xbps_error_printf("%s: rundeps check FAILED.\n", pkgname);
+		broken = true;
 	}
 
 out:
@@ -308,7 +307,7 @@ out:
 	if (propsd)
 		prop_object_release(propsd);
 	if (broken)
-		rv = EINVAL;
+		return -1;
 
-	return rv;
+	return 0;
 }
