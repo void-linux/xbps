@@ -42,6 +42,7 @@ static const struct state states[] = {
 	{ "broken",		XBPS_PKG_STATE_BROKEN },
 	{ "config-files",	XBPS_PKG_STATE_CONFIG_FILES },
 	{ "not-installed",	XBPS_PKG_STATE_NOT_INSTALLED },
+	{ "half-unpacked",	XBPS_PKG_STATE_HALF_UNPACKED },
 	{ NULL,			0 }
 };
 
@@ -167,18 +168,21 @@ xbps_set_pkg_state_installed(const char *pkgname,
 	struct xbps_handle *xhp;
 	prop_dictionary_t dict = NULL, pkgd;
 	prop_array_t array;
-	char *plist;
+	char *metadir, *plist;
 	int rv = 0;
 	bool newpkg = false;
 
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
 
-	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-	    XBPS_META_PATH, XBPS_REGPKGDB);
-	if (plist == NULL)
+	metadir = xbps_xasprintf("%s/%s", xhp->rootdir, XBPS_META_PATH);
+	if (metadir == NULL)
 		return ENOMEM;
-
+	plist = xbps_xasprintf("%s/%s", metadir, XBPS_REGPKGDB);
+	if (plist == NULL) {
+		free(metadir);
+		return ENOMEM;
+	}
 	if ((dict = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
 		dict = prop_dictionary_create();
 		if (dict == NULL) {
@@ -257,6 +261,19 @@ xbps_set_pkg_state_installed(const char *pkgname,
 		}
 	}
 
+	/* Create metadir if doesn't exist */
+	if (access(metadir, X_OK) == -1) {
+		if (errno == ENOENT) {
+			if (xbps_mkpath(metadir, 0750) != 0) {
+				xbps_dbg_printf("[pkgstate] failed to create "
+				    "metadir %s: %s\n", metadir,
+				    strerror(errno));
+				rv = errno;
+				goto out;
+			}
+		}
+	}
+	/* Externalize regpkgdb plist file */
 	if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
 		rv = errno;
 		xbps_dbg_printf("[pkgstate] cannot write plist '%s': %s\n",
@@ -266,6 +283,8 @@ xbps_set_pkg_state_installed(const char *pkgname,
 out:
 	if (dict)
 		prop_object_release(dict);
+	if (metadir)
+		free(metadir);
 	if (plist)
 		free(plist);
 

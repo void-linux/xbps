@@ -129,7 +129,8 @@ repository_find_pkg(const char *pattern, const char *reason)
 
 	if (state == XBPS_PKG_STATE_UNPACKED)
 		reason = "configure";
-	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
+	else if (state == XBPS_PKG_STATE_NOT_INSTALLED ||
+		 state == XBPS_PKG_STATE_HALF_UNPACKED)
 		reason = "install";
 
 	/*

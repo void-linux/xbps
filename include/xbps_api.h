@@ -1293,6 +1293,9 @@ int xbps_repository_sync_pkg_index(const char *uri);
  * Integer representing a state on which a package may be. Possible
  * values for this are:
  *
+ * <b>XBPS_PKG_STATE_HALF_UNPACKED</b>: Package was being unpacked
+ * but didn't finish properly.
+ *
  * <b>XBPS_PKG_STATE_UNPACKED</b>: Package has been unpacked correctly
  * but has not been configured due to unknown reasons.
  *
@@ -1311,7 +1314,8 @@ typedef enum pkg_state {
 	XBPS_PKG_STATE_INSTALLED,
 	XBPS_PKG_STATE_BROKEN,
 	XBPS_PKG_STATE_CONFIG_FILES,
-	XBPS_PKG_STATE_NOT_INSTALLED
+	XBPS_PKG_STATE_NOT_INSTALLED,
+	XBPS_PKG_STATE_HALF_UNPACKED
 } pkg_state_t;
 
 /**

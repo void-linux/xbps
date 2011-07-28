@@ -310,6 +310,8 @@ main(int argc, char **argv)
 		if (argv[1]) {
 			if (strcmp(argv[1], "installed") == 0)
 				lpc.state = XBPS_PKG_STATE_INSTALLED;
+			if (strcmp(argv[1], "half-unpacked") == 0)
+				lpc.state = XBPS_PKG_STATE_HALF_UNPACKED;
 			else if (strcmp(argv[1], "unpacked") == 0)
 				lpc.state = XBPS_PKG_STATE_UNPACKED;
 			else if (strcmp(argv[1], "config-files") == 0)

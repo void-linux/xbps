@@ -66,25 +66,17 @@
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 
-static void
-set_extract_flags(int *flags, bool update)
+static int
+set_extract_flags(void)
 {
-	int lflags = 0;
+	int flags;
 
-	if (getuid() == 0)
-		lflags = FEXTRACT_FLAGS;
+	if (geteuid() == 0)
+		flags = FEXTRACT_FLAGS;
 	else
-		lflags = EXTRACT_FLAGS;
+		flags = EXTRACT_FLAGS;
 
-	if (!update) {
-		/*
-		 * Only overwrite files while updating.
-		 */
-		lflags |= ARCHIVE_EXTRACT_NO_OVERWRITE;
-		lflags |= ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
-	}
-
-	*flags = lflags;
+	return flags;
 }
 
 static int
@@ -150,10 +142,10 @@ remove_metafile(const char *file, const char *pkgname, const char *version)
  * archive_read_set_progress_callback() from libarchive(3) cannot be used
  * here because sometimes it misses some entries by unknown reasons.
  */
-#define RUN_PROGRESS_CB()							\
-do {										\
-	if (xhp != NULL && xhp->xbps_unpack_cb != NULL && xhp->xucd != NULL)	\
-		(*xhp->xbps_unpack_cb)(xhp->xucd);				\
+#define RUN_PROGRESS_CB()				\
+do {							\
+	if (xhp->xbps_unpack_cb != NULL)		\
+		(*xhp->xbps_unpack_cb)(xhp->xucd);	\
 } while (0)
 
 static int
@@ -209,9 +201,9 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	 */
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		entry_pname = archive_entry_pathname(entry);
-		set_extract_flags(&flags, update);
-		if (xhp != NULL && xhp->xbps_unpack_cb != NULL &&
-		    xhp->xucd != NULL) {
+		flags = set_extract_flags();
+
+		if (xhp->xbps_unpack_cb != NULL) {
 			xhp->xucd->entry = entry_pname;
 			xhp->xucd->entry_size = archive_entry_size(entry);
 			xhp->xucd->entry_is_metadata = false;
@@ -245,10 +237,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			nmetadata++;
-			if (xhp->xucd != NULL) {
-				xhp->xucd->entry_is_metadata = true;
-				xhp->xucd->entry_extract_count++;
-			}
+			xhp->xucd->entry_is_metadata = true;
+			xhp->xucd->entry_extract_count++;
 			RUN_PROGRESS_CB();
 			continue;
 
@@ -259,10 +249,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 
 			nmetadata++;
-			if (xhp->xucd != NULL) {
-				xhp->xucd->entry_is_metadata = true;
-				xhp->xucd->entry_extract_count++;
-			}
+			xhp->xucd->entry_is_metadata = true;
+			xhp->xucd->entry_extract_count++;
 			RUN_PROGRESS_CB();
 			continue;
 
@@ -278,10 +266,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			nmetadata++;
-			if (xhp->xucd != NULL) {
-				xhp->xucd->entry_is_metadata = true;
-				xhp->xucd->entry_extract_count++;
-			}
+			xhp->xucd->entry_is_metadata = true;
+			xhp->xucd->entry_extract_count++;
 			RUN_PROGRESS_CB();
 			continue;
 
@@ -298,10 +284,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			nmetadata++;
-			if (xhp->xucd != NULL) {
-				xhp->xucd->entry_is_metadata = true;
-				xhp->xucd->entry_extract_count++;
-			}
+			xhp->xucd->entry_is_metadata = true;
+			xhp->xucd->entry_extract_count++;
 			RUN_PROGRESS_CB();
 			continue;
 		}
@@ -329,18 +313,16 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		 * Compute total entries in progress data, if set.
 		 * total_entries = metadata + files + conf_files + links.
 		 */
-		if (xhp->xucd != NULL) {
-			xhp->xucd->entry_total_count = nmetadata;
-			array = prop_dictionary_get(filesd, "files");
-			xhp->xucd->entry_total_count +=
-			    (ssize_t)prop_array_count(array);
-			array = prop_dictionary_get(filesd, "conf_files");
-			xhp->xucd->entry_total_count +=
-			    (ssize_t)prop_array_count(array);
-			array = prop_dictionary_get(filesd, "links");
-			xhp->xucd->entry_total_count +=
-			    (ssize_t)prop_array_count(array);
-		}
+		xhp->xucd->entry_total_count = nmetadata;
+		array = prop_dictionary_get(filesd, "files");
+		xhp->xucd->entry_total_count +=
+		    (ssize_t)prop_array_count(array);
+		array = prop_dictionary_get(filesd, "conf_files");
+		xhp->xucd->entry_total_count +=
+		    (ssize_t)prop_array_count(array);
+		array = prop_dictionary_get(filesd, "links");
+		xhp->xucd->entry_total_count +=
+		    (ssize_t)prop_array_count(array);
 
 		/*
 		 * Handle configuration files. Check if current entry is
@@ -361,13 +343,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 			if (rv == -1) {
 				/* error */
 				goto out;
-			} else if (rv == 1) {
-				/*
-				 * Configuration file should be installed.
-				 */
-				flags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE;
-				flags &= ~ARCHIVE_EXTRACT_NO_OVERWRITE_NEWER;
-			} else {
+			} else if (rv == 0) {
 				/*
 				 * Keep current configuration file
 				 * as is now and pass to next entry.
@@ -396,9 +372,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				continue;
 			}
 		}
-		if (xhp->xucd != NULL)
-			xhp->xucd->entry_extract_count++;
-
+		xhp->xucd->entry_extract_count++;
 		RUN_PROGRESS_CB();
 	}
 
@@ -482,8 +456,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 		return errno;
 	}
 
-	ar = archive_read_new();
-	if (ar == NULL) {
+	if ((ar = archive_read_new()) == NULL) {
 		rv = ENOMEM;
 		goto out;
 	}
@@ -503,15 +476,23 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	 * Set extract progress callback if specified.
 	 */
 	xhp = xbps_handle_get();
-	if (xhp != NULL && xhp->xbps_unpack_cb != NULL && xhp->xucd != NULL) {
+	if (xhp->xbps_unpack_cb != NULL) {
 		xhp->xucd->entry_extract_count = 0;
 		xhp->xucd->entry_total_count = 0;
 	}
 	/*
+	 * Set package state to half-unpacked.
+	 */
+	if ((rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
+	    XBPS_PKG_STATE_HALF_UNPACKED)) != 0) {
+		xbps_error_printf("failed to set `%s' to half-unpacked "
+		    "state: %s\n", pkgver, strerror(rv));
+		goto out;
+	}
+	/*
 	 * Extract archive files.
 	 */
-	rv = unpack_archive(pkg_repod, ar, pkgname, version, xhp);
-	if (rv != 0) {
+	if ((rv = unpack_archive(pkg_repod, ar, pkgname, version, xhp)) != 0) {
 		xbps_error_printf("failed to unpack `%s' binpkg: %s\n",
 		    bpkg, strerror(rv));
 		goto out;
@@ -519,11 +500,10 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	/*
 	 * Set package state to unpacked.
 	 */
-	rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
-	    XBPS_PKG_STATE_UNPACKED);
-	if (rv != 0) {
-		xbps_error_printf("failed to set `%s-%s' to unpacked "
-		    "state: %s\n", pkgname, version, strerror(rv));
+	if ((rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
+	    XBPS_PKG_STATE_UNPACKED)) != 0) {
+		xbps_error_printf("failed to set `%s' to unpacked "
+		    "state: %s\n", pkgver, strerror(rv));
 	}
 out:
 	if (bpkg)

@@ -1,4 +1,4 @@
-.TH "XBPS\-BIN" "8" "07/23/2011" "\ \&" "\ \&"
+.TH "XBPS\-BIN" "8" "07/28/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -189,7 +189,8 @@ will be listed if
 \fIstate\fR
 has not been specified\&. Accepted states are:
 \fIconfig\-files\fR,
-\fIunpacked\fR
+\fIhalf-unpacked\fR,
+\fIunpacked\fR,
 and
 \fIinstalled\fR\&.
 .RE
@@ -283,6 +284,10 @@ A package can be in a different state while it is being installed, removed, unpa
 \fBinstalled\fR
 .RS 4
 The package is fully installed, that means it was unpacked and configured correctly\&.
+.RE
+.PP
+\fBhalf\-unpacked\fR
+The package was being unpacked but didn't finish properly for unknown reasons.
 .RE
 .PP
 \fBunpacked\fR
