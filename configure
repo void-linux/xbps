@@ -5,6 +5,8 @@
 STRLCPY=
 STRLCAT=
 VASPRINTF=
+LIBFETCH=
+PROPLIB=
 OS=
 BUILD=
 HOST=
@@ -12,9 +14,7 @@ TARGET=
 DEBUG=
 BUILD_API_DOCS=
 BUILD_PIE=
-EXTERNAL_PROPLIB=
-EXTERNAL_LIBFETCH=
-SILENT=
+SILENT=yes
 HAVE_VISIBILITY=no
 
 usage()
@@ -36,11 +36,9 @@ for instance \`--prefix=\$HOME'.
 --etcdir=DIR			configuration files [PREFIX/etc]
 
 --debug				Build with debugging code and symbols
---silent			Build silently, hidding compilation details.
+--verbose			Disable silent build to see compilation details
 --with-pie			Build XBPS programs as PIE (default disabled)
 --with-api-docs			install XBPS API Library documentation (default disabled)
---with-external-proplib		Use external proplib [default disabled]
---with-external-libfetch	Use external libfetch [default disabled]
 
 _EOF
 	exit 1
@@ -63,10 +61,8 @@ for x; do
 	--libdir) LIBDIR=$var;;
 	--datadir|--infodir) ;; # ignore autotools
 	--with-api-docs) BUILD_API_DOCS=$var;;
-	--silent) SILENT=$var;;
+	--verbose) unset SILENT;;
 	--with-pie) BUILD_PIE=$var;;
-	--with-external-proplib) EXTERNAL_PROPLIB=$var;;
-	--with-external-libfetch) EXTERNAL_LIBFETCH=$var;;
 	--help) usage;;
 	*) echo "$0: WARNING: unknown option $opt" >&2;;
 	esac
@@ -299,7 +295,6 @@ fi
 #
 func=vasprintf
 printf "Checking for $func() ... "
-
 cat <<EOF >_$func.c
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -310,17 +305,14 @@ int main(void) {
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
 	VASPRINTF=yes
+	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
 else
 	VASPRINTF=no
+	echo "COMPAT_SRCS+=	compat/vasprintf.o" >>$CONFIG_MK
+	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
 echo "$VASPRINTF."
 rm -f _$func.c _$func
-if [ "$VASPRINTF" = "no" ]; then
-	echo "COMPAT_SRCS+=	compat/vasprintf.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
-else
-	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
-fi
 
 #
 # Check for strcasestr().
@@ -339,17 +331,14 @@ int main(void) {
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
 	STRCASESTR=yes
+	echo "CPPFLAGS +=	-DHAVE_STRCASESTR" >>$CONFIG_MK
 else
 	STRCASESTR=no
+	echo "COMPAT_SRCS +=	compat/strcasestr.o" >>$CONFIG_MK
+	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
 echo "$STRCASESTR."
 rm -f _$func _$func.c
-if [ "$STRCASESTR" = no ]; then
-	echo "COMPAT_SRCS +=	compat/strcasestr.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
-else
-	echo "CPPFLAGS +=	-DHAVE_STRCASESTR" >>$CONFIG_MK
-fi
 
 #
 # Check for strlcpy().
@@ -367,23 +356,20 @@ int main(void) {
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
 	STRLCPY=yes
+	echo "CPPFLAGS +=	-DHAVE_STRLCPY" >> $CONFIG_MK
 else
 	STRLCPY=no
+	echo "COMPAT_SRCS +=	compat/strlcpy.o" >>$CONFIG_MK
+	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
 echo "$STRLCPY."
 rm -f _$func.c _$func
-if [ "$STRLCPY" = no ]; then
-	echo "COMPAT_SRCS +=	compat/strlcpy.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
-else
-	echo "CPPFLAGS +=	-DHAVE_STRLCPY" >> $CONFIG_MK
-fi
 
 #
 # Check for strlcat().
 func=strlcat
 printf "Checking for $func() ... "
-cat <<EOF > _strlcat.c
+cat <<EOF > _$func.c
 #include <string.h>
 int main(void) {
 	const char src[] = "foo";
@@ -394,23 +380,74 @@ int main(void) {
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
 	STRLCAT=yes
+	echo "CPPFLAGS +=	-DHAVE_STRLCAT" >>$CONFIG_MK
 else
 	STRLCAT=no
+	echo "COMPAT_SRCS +=	compat/strlcat.o" >>$CONFIG_MK
+	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
 echo "$STRLCAT."
 rm -f _$func.c _$func
-if [ "$STRLCAT" = no ]; then
-	echo "COMPAT_SRCS +=	compat/strlcat.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
+
+#
+# Check for libfetch's fetchIO_read().
+#
+func=fetchIO_read
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <fetch.h>
+int main(void) {
+	fetchIO_read(NULL, NULL, 0);
+	return 0;
+}
+EOF
+if $XCC -lfetch _$func.c -o _$func 2>/dev/null; then
+	LIBFETCH=yes
+	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
+	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
+	echo "PROG_LDFLAGS +=	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
+	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
 else
-	echo "CPPFLAGS +=	-DHAVE_STRLCAT" >>$CONFIG_MK
+	LIBFETCH=no
+	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
+	echo "PROG_LDFLAGS +=	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
+	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 fi
+echo "$LIBFETCH."
+rm -f _$func.c _$func
+
+#
+# Check for prop_dictionary_internalize_from_zfile().
+#
+func=prop_dictionary_internalize_from_zfile
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <stdio.h>
+#include <prop/proplib.h>
+int main(void) {
+	prop_dictionary_internalize_from_zfile(NULL);
+	return 0;
+}
+EOF
+if $XCC -lprop _$func.c -o _$func 2>/dev/null; then
+	PROPLIB=yes
+	echo "USE_EXTERNAL_PROPLIB =	1" >>$CONFIG_MK
+	echo "LDFLAGS +=	-lz -lpthread -lprop" >>$CONFIG_MK
+	echo "STATIC_LIBS +=	-lprop -lz -lpthread" >>$CONFIG_MK
+else
+	PROPLIB=no
+	echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
+	echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
+	echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
+fi
+echo "$PROPLIB."
+rm -f _$func.c _$func
 
 #
 # zlib is required.
 #
 func=InflateInit2
-printf "Checking for zlib $func() ... "
+printf "Checking for $func() ... "
 cat <<EOF > _$func.c
 #include <zlib.h>
 int main(void) {
@@ -426,6 +463,8 @@ int main(void) {
 EOF
 if $XCC -lz _$func.c -o _$func 2>/dev/null; then
 	ZLIB=yes
+	echo "LDFLAGS +=	-lz" >>$CONFIG_MK
+	echo "STATIC_LIBS +=	-lz" >>$CONFIG_MK
 else
 	ZLIB=no
 fi
@@ -434,9 +473,6 @@ rm -f _$func.c _$func
 if [ "$ZLIB" = "no" ]; then
 	echo "Failed to link with your system's zlib, can't continue..."
 	exit 1
-else
-	echo "LDFLAGS +=	-lz" >>$CONFIG_MK
-	echo "STATIC_LIBS +=	-lz" >>$CONFIG_MK
 fi
 
 #
@@ -477,47 +513,6 @@ if [ -z "$PKGCONFIG_BIN" ]; then
 	exit 1
 else
 	echo yes
-fi
-
-#
-# Check if external libfetch should be used.
-#
-if [ -z "$EXTERNAL_LIBFETCH" ]; then
-	EXTERNAL_LIBFETCH_VALUE="no (using internal copy)"
-	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
-	echo "PROG_LDFLAGS +=	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
-	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
-else
-	EXTERNAL_LIBFETCH_VALUE=yes
-	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
-	echo "PROG_LDFLAGS +=	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
-	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
-fi
-
-#
-# Check if external proplib via pkg-config should be used instead.
-#
-if [ -z "$EXTERNAL_PROPLIB" ]; then
-	EXTERNAL_PROPLIB_VALUE="no (using internal copy)"
-	echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
-	echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
-else
-	EXTERNAL_PROPLIB_VALUE=yes
-	echo "USE_EXTERNAL_PROPLIB =    1" >>$CONFIG_MK
-	printf "Checking for portable proplib via pkg-config ... "
-	if ! $PKGCONFIG_BIN --exists proplib; then
-		echo "proplib.pc file not found, exiting."
-		exit 1
-	else
-		echo "found version $($PKGCONFIG_BIN --modversion proplib)."
-		echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags proplib)" >>$CONFIG_MK
-		echo "LDFLAGS +=	$($PKGCONFIG_BIN --libs proplib)" \
-			>>$CONFIG_MK
-		echo "STATIC_LIBS +=	$($PKGCONFIG_BIN --libs --static proplib)" \
-			>>$CONFIG_MK
-	fi
 fi
 
 #
@@ -576,8 +571,8 @@ echo
 echo "   Build API documentation =	$BUILD_API_DOCS_VALUE"
 echo "   Build programs as PIE =	$BUILD_PIE_VAL"
 echo "   Build with debug  =		$DEBUG"
-echo "   Use external proplib =	$EXTERNAL_PROPLIB_VALUE"
-echo "   Use external libfetch =	$EXTERNAL_LIBFETCH_VALUE"
+echo "   Use external proplib = 	$PROPLIB"
+echo "   Use external libfetch =	$LIBFETCH"
 if [ -n "$HAVE_VISIBILITY" ]; then
 	echo "   Symbol visibility =		$HAVE_VISIBILITY"
 fi
