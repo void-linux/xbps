@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include <xbps_api.h>
 #include "defs.h"
@@ -30,6 +31,10 @@
 void
 transaction_cb(struct xbps_transaction_cb_data *xtcd)
 {
+	prop_dictionary_t pkgd;
+	const char *opkgver;
+	char *pkgname;
+
 	if (xtcd->desc != NULL && xtcd->pkgver == NULL) {
 		printf("\n%s ...\n", xtcd->desc);
 		return;
@@ -56,7 +61,17 @@ transaction_cb(struct xbps_transaction_cb_data *xtcd)
 	case XBPS_TRANS_STATE_INSTALL:
 		break;
 	case XBPS_TRANS_STATE_UPDATE:
-		printf("Updating `%s' ...\n", xtcd->pkgver);
+		pkgname = xbps_pkg_name(xtcd->pkgver);
+		if (pkgname == NULL) {
+			xbps_error_printf("%s: failed to alloc pkgname!\n",
+			    __func__);
+			exit(EXIT_FAILURE);
+		}
+		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &opkgver);
+		prop_object_release(pkgd);
+		free(pkgname);
+		printf("Updating `%s' to `%s'...\n", opkgver, xtcd->pkgver);
 		break;
 	case XBPS_TRANS_STATE_UNPACK:
 		printf("Unpacking `%s' (from ../%s) ...\n",
