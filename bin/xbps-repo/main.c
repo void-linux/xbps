@@ -154,7 +154,13 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		xbps_repository_pool_foreach(repo_list_uri_cb, NULL);
+		rv = xbps_repository_pool_foreach(repo_list_uri_cb, NULL);
+		if (rv == ENOTSUP)
+			xbps_error_printf("xbps-repo: no repositories "
+			    "currently registered!\n");
+		else if (rv != 0 && rv != ENOTSUP)
+			xbps_error_printf("xbps-repo: failed to initialize "
+			    "rpool: %s\n", strerror(rv));
 
 	} else if (strcasecmp(argv[0], "search") == 0) {
 		/*
@@ -164,7 +170,13 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		xbps_repository_pool_foreach(repo_search_pkgs_cb, argv[1]);
+		rv = xbps_repository_pool_foreach(repo_search_pkgs_cb, argv[1]);
+		if (rv == ENOTSUP)
+			xbps_error_printf("xbps-repo: no repositories "
+			    "currently registered!\n");
+		else if (rv != 0 && rv != ENOTSUP)
+			xbps_error_printf("xbps-repo: failed to initialize "
+			    "rpool: %s\n", strerror(rv));
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about a binary package. */
@@ -175,11 +187,12 @@ main(int argc, char **argv)
 		if (rv == ENOENT) {
 			xbps_printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);
-			goto out;
+		} else if (rv == ENOTSUP) {
+			xbps_error_printf("xbps-repo: no repositories "
+			    "currently registered!\n");
 		} else if (rv != 0 && rv != ENOENT) {
 			xbps_error_printf("xbps-repo: unexpected error '%s' ",
 			    "searching for '%s'\n", strerror(rv), argv[1]);
-			goto out;
 		}
 
 	} else if (strcasecmp(argv[0], "show-deps") == 0) {
@@ -191,11 +204,12 @@ main(int argc, char **argv)
 		if (rv == ENOENT) {
 			xbps_printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);
-			goto out;
+		} else if (rv == ENOTSUP) {
+			xbps_error_printf("xbps-repo: no repositories "
+			    "currently registered!\n");
 		} else if (rv != 0 && rv != ENOENT) {
 			xbps_error_printf("xbps-repo: unexpected error '%s' "
 			    "searching for '%s'\n", strerror(errno), argv[1]);
-			goto out;
 		}
 
 	} else if (strcasecmp(argv[0], "show-files") == 0) {
@@ -206,13 +220,16 @@ main(int argc, char **argv)
 		pkgd = xbps_repository_pool_dictionary_metadata_plist(argv[1],
 		    XBPS_PKGFILES);
 		if (pkgd == NULL) {
-			if (errno != ENOENT) {
+			if (errno == ENOTSUP) {
+				xbps_error_printf("xbps-repo: no repositories "
+				    "currently registered!\n");
+			} else if (errno == ENOENT) {
+				xbps_printf("Unable to locate package `%s' "
+				    "in repository pool.\n", argv[1]);
+			} else {
 				xbps_error_printf("xbps-repo: unexpected "
 				    "error '%s' searching for '%s'\n",
 				    strerror(errno), argv[1]);
-			} else {
-				xbps_printf("Unable to locate package `%s' "
-				    "in repository pool.\n", argv[1]);
 			}
 			rv = errno;
 			goto out;
@@ -226,6 +243,10 @@ main(int argc, char **argv)
 			usage();
 
 		rv = repo_find_files_in_packages(argv[1]);
+		if (rv == ENOTSUP) {
+			xbps_error_printf("xbps-repo: no repositories "
+			    "currently registered!\n");
+		}
 
 	} else if (strcasecmp(argv[0], "genindex") == 0) {
 		/* Generates a package repository index plist file. */
@@ -240,6 +261,10 @@ main(int argc, char **argv)
 			usage();
 
 		rv = repository_sync();
+		if (rv == ENOTSUP) {
+			xbps_error_printf("xbps-repo: no repositories "
+			    "currently registered!\n");
+		}
 
 	} else {
 		usage();

@@ -192,9 +192,13 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
 			return 0;
-		} else if (rv == ENXIO) {
+		} else if (rv == EEXIST) {
 			printf("All packages are up-to-date.\n");
 			return 0;
+		} else if (rv == ENOTSUP) {
+			xbps_error_printf("xbps-bin: no repositories currently "
+			    "registered!\n");
+			return -1;
 		} else {
 			xbps_error_printf("xbps-bin: unexpected error %s\n",
 			    strerror(rv));
@@ -246,8 +250,11 @@ install_new_pkg(const char *pkg)
 	}
 	if ((rv = xbps_repository_install_pkg(pkgpatt)) != 0) {
 		if (rv == ENOENT) {
-			fprintf(stderr, "xbps-bin: unable to locate '%s' in "
+			xbps_error_printf("xbps-bin: unable to locate '%s' in "
 			    "repository pool.\n", pkg);
+		} else if (rv == ENOTSUP) {
+			xbps_error_printf("xbps-bin: no repositories  "
+			    "currently registered!\n");
 		} else {
 			xbps_error_printf("xbps-bin: unexpected error: %s\n",
 			    strerror(rv));
@@ -275,6 +282,9 @@ update_pkg(const char *pkgname)
 		    "repository pool.\n", pkgname);
 	else if (rv == ENODEV)
 		printf("Package '%s' not installed.\n", pkgname);
+	else if (rv == ENOTSUP)
+		xbps_error_printf("xbps-bin: no repositories currently "
+		    "registered!\n");
 	else if (rv != 0) {
 		xbps_error_printf("xbps-bin: unexpected error %s\n",
 		    strerror(rv));

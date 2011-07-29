@@ -123,12 +123,12 @@ xbps_repository_pool_init(void)
 			rv = errno;
 			goto out;
 		}
+		ntotal++;
 		if (sync_remote_repo(plist, repouri) == -1) {
 			nmissing++;
 			free(plist);
 			continue;
 		}
-		ntotal++;
 		/*
 		 * Iterate over the repository pool and add the dictionary
 		 * for current repository into the queue.
@@ -166,14 +166,14 @@ xbps_repository_pool_init(void)
 			free(plist);
 			if (errno == ENOENT) {
 				errno = 0;
-				xbps_dbg_printf("%s: missing pkg-index.plist "
-				    "for '%s' repository.\n", __func__, repouri);
+				xbps_dbg_printf("[rpool] missing pkg-index.plist "
+				    "for '%s' repository.\n", repouri);
 				nmissing++;
 				continue;
 			}
 			rv = errno;
-			xbps_dbg_printf("%s: cannot internalize plist %s: %s\n",
-			    __func__, plist, strerror(rv));
+			xbps_dbg_printf("[rpool] cannot internalize plist %s: %s\n",
+			    plist, strerror(rv));
 			goto out;
 		}
 		free(plist);
@@ -182,11 +182,14 @@ xbps_repository_pool_init(void)
 		SIMPLEQ_INSERT_TAIL(&rpool_queue, rpool, rp_entries);
 	}
 
-	if (ntotal - nmissing == 0)
+	if (ntotal - nmissing == 0) {
+		/* no repositories available, error out */
+		rv = ENOTSUP;
 		goto out;
+	}
 
 	repolist_initialized = true;
-	xbps_dbg_printf("%s: initialized ok.\n", __func__);
+	xbps_dbg_printf("[rpool] initialized ok.\n");
 out:
 	if (iter)
 		prop_object_iterator_release(iter);
@@ -218,7 +221,7 @@ xbps_repository_pool_release(void)
 
 	}
 	repolist_initialized = false;
-	xbps_dbg_printf("%s: released ok.\n", __func__);
+	xbps_dbg_printf("[rpool] released ok.\n");
 }
 
 int
@@ -236,13 +239,11 @@ xbps_repository_pool_foreach(
 	 */
 	if ((rv = xbps_repository_pool_init()) != 0) {
 		if (rv == ENOTSUP) {
-			xbps_dbg_printf("%s: empty repository list.\n",
-			    __func__);
+			xbps_dbg_printf("[rpool] empty repository list.\n");
 		} else if (rv != ENOENT && rv != ENOTSUP) {
-			xbps_dbg_printf("%s: couldn't initialize "
-			    "repository pool: %s\n", __func__, strerror(rv));
+			xbps_dbg_printf("[rpool] couldn't initialize: %s\n",
+			    strerror(rv));
 		}
-		xbps_end(xbps_handle_get());
 		return rv;
 	}
 
@@ -339,7 +340,7 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		if (errno && errno != ENOENT)
 			return errno;
 
-		xbps_dbg_printf("Package '%s' not found in repository "
+		xbps_dbg_printf("[rpool] Package '%s' not found in repository "
 		    "'%s'.\n", rpf->pattern, rpi->rpi_uri);
 	} else {
 		/*
@@ -356,8 +357,9 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		prop_object_release(instpkgd);
 
 		if (xbps_cmpver(repover, instver) <= 0) {
-			xbps_dbg_printf("Skipping '%s-%s' (installed: %s) "
-			    "from repository '%s'\n", rpf->pattern, repover, instver,
+			xbps_dbg_printf("[rpool] Skipping '%s-%s' "
+			    "(installed: %s) from repository `%s'\n",
+			    rpf->pattern, repover, instver,
 			    rpi->rpi_uri);
 			errno = EEXIST;
 			return 0;
@@ -365,7 +367,7 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		/*
 		 * New package version found, exit from the loop.
 		 */
-		xbps_dbg_printf("Found '%s-%s' (installed: %s) "
+		xbps_dbg_printf("[rpool] Found '%s-%s' (installed: %s) "
 		    "in repository '%s'.\n", rpf->pattern, repover,
 		    instver, rpi->rpi_uri);
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",

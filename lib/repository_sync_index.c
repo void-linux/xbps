@@ -122,8 +122,8 @@ xbps_repository_sync_pkg_index(const char *uri)
 		goto out;
 	}
 	if ((rv = xbps_mkpath(metadir, 0755)) == -1) {
-		xbps_dbg_printf("%s: failed to create metadir `%s': %s\n",
-		    __func__, metadir, strerror(errno));
+		xbps_dbg_printf("[rsyncidx] failed to create metadir `%s': "
+		    "%s\n", metadir, strerror(errno));
 		goto out;
 	}
 	/*
@@ -144,8 +144,8 @@ xbps_repository_sync_pkg_index(const char *uri)
 		goto out;
 	}
 	/*
-	 * Full path to local repository directory to store the
-	 * package index file.
+	 * Full path to repository directory to store the pkg-index.plist
+	 * file.
 	 */
 	lrepodir = xbps_xasprintf("%s/%s/%s",
 	    xhp->rootdir, XBPS_META_PATH, uri_fixedp);
@@ -200,14 +200,20 @@ xbps_repository_sync_pkg_index(const char *uri)
 	/*
 	 * Create local repodir to store pkg-index.plist file.
 	 */
-	if ((rv = xbps_mkpath(lrepodir, 0755)) == -1)
+	if ((rv = xbps_mkpath(lrepodir, 0755)) == -1) {
+		xbps_dbg_printf("[rsyncidx] failed to create repodir "
+		    "`%s': %s\n", lrepodir, strerror(errno));
 		goto out;
+	}
 
 	/*
 	 * Rename to destination file now it has been fetched successfully.
 	 */
-	if ((rv = rename(tmp_metafile, lrepofile)) == 0)
-		rv = 1;
+	if ((rv = rename(tmp_metafile, lrepofile)) == -1)
+		xbps_dbg_printf("[rsyncidx] failed to rename `%s' to "
+		    "`%s': %s\n", tmp_metafile, lrepofile, strerror(errno));
+	else
+		rv = 1; /* success */
 
 out:
 	if (rpidx)

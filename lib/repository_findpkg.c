@@ -185,6 +185,9 @@ xbps_repository_update_packages(void)
 	bool newpkg_found = false;
 
 	xhp = xbps_handle_get();
+	if (xhp->regpkgdb_dictionary == NULL)
+		return ENOENT;
+
 	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
 	if (iter == NULL)
 		return ENOENT;
@@ -214,7 +217,7 @@ xbps_repository_update_packages(void)
 	prop_object_iterator_release(iter);
 
 	if (!newpkg_found)
-		rv = ENXIO;
+		rv = EEXIST;
 
 	return rv;
 }
