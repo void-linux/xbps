@@ -120,7 +120,7 @@ transaction_err_cb(struct xbps_transaction_cb_data *xtcd)
 		break;
 	case XBPS_TRANS_STATE_REPOSYNC:
 		xbps_error_printf("Failed to sync pkg-index: %s\n",
-		    xtcd->err);
+		    strerror(xtcd->err));
 		return;
 	default:
 		state_descr = "unknown transaction state";
