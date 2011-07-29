@@ -438,7 +438,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 {
 	struct xbps_handle *xhp;
 	struct archive *ar;
-	const char *pkgname, *version, *repoloc, *pkgver;
+	const char *pkgname, *version, *repoloc, *pkgver, *fname;
 	char *bpkg;
 	int rv = 0;
 
@@ -448,6 +448,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &version);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &fname);
 
 	bpkg = xbps_path_from_repository_uri(pkg_repod, repoloc);
 	if (bpkg == NULL) {
@@ -469,7 +470,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	if (archive_read_open_filename(ar, bpkg, ARCHIVE_READ_BLOCKSIZE) != 0) {
 		rv = archive_errno(ar);
 		xbps_error_printf("failed to open `%s' binpkg: %s\n",
-		    bpkg, strerror(rv));
+		    fname, strerror(rv));
 		goto out;
 	}
 	/*
@@ -492,11 +493,9 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	/*
 	 * Extract archive files.
 	 */
-	if ((rv = unpack_archive(pkg_repod, ar, pkgname, version, xhp)) != 0) {
-		xbps_error_printf("failed to unpack `%s' binpkg: %s\n",
-		    bpkg, strerror(rv));
+	if ((rv = unpack_archive(pkg_repod, ar, pkgname, version, xhp)) != 0)
 		goto out;
-	}
+
 	/*
 	 * Set package state to unpacked.
 	 */
