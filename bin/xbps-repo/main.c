@@ -39,11 +39,11 @@
 #include "../xbps-bin/defs.h"
 
 static void __attribute__((noreturn))
-usage(void)
+usage(struct xbps_handle *xhp)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
+	if (xhp != NULL)
+		xbps_end(xhp);
 
-	xbps_end(xhp);
 	fprintf(stderr,
 	    "Usage: xbps-repo [options] [action] [arguments]\n"
 	    "See xbps-repo(8) for more information.\n");
@@ -116,7 +116,7 @@ main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		case '?':
 		default:
-			usage();
+			usage(NULL);
 		}
 	}
 
@@ -124,7 +124,7 @@ main(int argc, char **argv)
 	argv += optind;
 
 	if (argc < 1)
-		usage();
+		usage(NULL);
 
 	/*
 	 * Initialize XBPS subsystems.
@@ -152,7 +152,7 @@ main(int argc, char **argv)
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists all repositories registered in pool. */
 		if (argc != 1)
-			usage();
+			usage(xhp);
 
 		rv = xbps_repository_pool_foreach(repo_list_uri_cb, NULL);
 		if (rv == ENOTSUP)
@@ -168,7 +168,7 @@ main(int argc, char **argv)
 		 * by using shell style match patterns (fnmatch(3)).
 		 */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = xbps_repository_pool_foreach(repo_search_pkgs_cb, argv[1]);
 		if (rv == ENOTSUP)
@@ -181,7 +181,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about a binary package. */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = show_pkg_info_from_repolist(argv[1]);
 		if (rv == ENOENT) {
@@ -198,7 +198,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show-deps") == 0) {
 		/* Shows the required run dependencies for a package. */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = show_pkg_deps_from_repolist(argv[1]);
 		if (rv == ENOENT) {
@@ -215,7 +215,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show-files") == 0) {
 		/* Shows the package files in a binary package */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		pkgd = xbps_repository_pool_dictionary_metadata_plist(argv[1],
 		    XBPS_PKGFILES);
@@ -240,7 +240,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "find-files") == 0) {
 		/* Finds files by patterns, exact matches and components. */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = repo_find_files_in_packages(argv[1]);
 		if (rv == ENOTSUP) {
@@ -251,14 +251,14 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "genindex") == 0) {
 		/* Generates a package repository index plist file. */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = repo_genindex(argv[1]);
 
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
 		if (argc != 1)
-			usage();
+			usage(xhp);
 
 		rv = repository_sync();
 		if (rv == ENOTSUP) {
@@ -267,7 +267,7 @@ main(int argc, char **argv)
 		}
 
 	} else {
-		usage();
+		usage(xhp);
 	}
 
 out:

@@ -44,9 +44,11 @@ struct list_pkgver_cb {
 };
 
 static void __attribute__((noreturn))
-usage(void)
+usage(struct xbps_handle *xhp)
 {
-	xbps_end(xbps_handle_get());
+	if (xhp != NULL)
+		xbps_end(xhp);
+
 	fprintf(stderr,
 	    "Usage: xbps-bin [options] [target] [arguments]\n"
 	    "See xbps-bin(8) for more information.\n");
@@ -240,7 +242,7 @@ main(int argc, char **argv)
 			break;
 		case '?':
 		default:
-			usage();
+			usage(NULL);
 		}
 	}
 
@@ -248,7 +250,7 @@ main(int argc, char **argv)
 	argv += optind;
 
 	if (argc < 1)
-		usage();
+		usage(NULL);
 
 	/* Specifying -A and -M is illegal */
 	if (install_manual && install_auto) {
@@ -299,7 +301,7 @@ main(int argc, char **argv)
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
 		if (argc < 1 || argc > 2)
-			usage();
+			usage(xhp);
 
 		if (xhp->regpkgdb_dictionary == NULL) {
 			printf("No packages currently installed.\n");
@@ -336,7 +338,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "install") == 0) {
 		/* Installs a binary package and required deps. */
 		if (argc < 2)
-			usage();
+			usage(xhp);
 
 		for (i = 1; i < argc; i++)
 			if ((rv = install_new_pkg(argv[i])) != 0)
@@ -347,7 +349,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
 		if (argc < 2)
-			usage();
+			usage(xhp);
 
 		for (i = 1; i < argc; i++)
 			if ((rv = update_pkg(argv[i])) != 0)
@@ -358,7 +360,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a binary package. */
 		if (argc < 2)
-			usage();
+			usage(xhp);
 
 		rv = remove_installed_pkgs(argc, argv, yes, purge,
 		    force_rm_with_deps, recursive_rm);
@@ -366,7 +368,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = show_pkg_info_from_metadir(argv[1]);
 		if (rv != 0) {
@@ -377,7 +379,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show-files") == 0) {
 		/* Shows files installed by a binary package. */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = show_pkg_files_from_metadir(argv[1]);
 		if (rv != 0) {
@@ -388,7 +390,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "check") == 0) {
 		/* Checks the integrity of an installed package. */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		if (strcasecmp(argv[1], "all") == 0)
 			rv = check_pkg_integrity_all();
@@ -400,7 +402,7 @@ main(int argc, char **argv)
 		 * To update all packages currently installed.
 		 */
 		if (argc != 1)
-			usage();
+			usage(xhp);
 
 		rv = autoupdate_pkgs(yes, show_download_pkglist_url);
 
@@ -410,7 +412,7 @@ main(int argc, char **argv)
 		 * orphans.
 		 */
 		if (argc != 1)
-			usage();
+			usage(xhp);
 
 		rv = show_orphans();
 
@@ -421,7 +423,7 @@ main(int argc, char **argv)
 		 * on it currently.
 		 */
 		if (argc != 1)
-			usage();
+			usage(xhp);
 
 		rv = autoremove_pkgs(yes, purge);
 
@@ -430,7 +432,7 @@ main(int argc, char **argv)
 		 * Purge a package completely.
 		 */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		if (strcasecmp(argv[1], "all") == 0)
 			rv = xbps_purge_packages();
@@ -442,7 +444,7 @@ main(int argc, char **argv)
 		 * Reconfigure a package.
 		 */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		if (strcasecmp(argv[1], "all") == 0)
 			rv = xbps_configure_packages();
@@ -454,7 +456,7 @@ main(int argc, char **argv)
 		 * Show dependencies for a package.
 		 */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = show_pkg_deps(argv[1]);
 
@@ -464,7 +466,7 @@ main(int argc, char **argv)
 		 * dependencies.
 		 */
 		if (argc != 1)
-			usage();
+			usage(xhp);
 
 		rv = xbps_callback_array_iter_in_dict(xhp->regpkgdb_dictionary,
 		    "packages", list_manual_packages, NULL);
@@ -474,7 +476,7 @@ main(int argc, char **argv)
 		 * Show reverse dependencies for a package.
 		 */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = show_pkg_reverse_deps(argv[1]);
 
@@ -484,12 +486,12 @@ main(int argc, char **argv)
 		 * packages.
 		 */
 		if (argc != 2)
-			usage();
+			usage(xhp);
 
 		rv = find_files_in_packages(argv[1]);
 
 	} else {
-		usage();
+		usage(xhp);
 	}
 
 out:
