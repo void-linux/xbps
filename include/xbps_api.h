@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
-#define XBPS_API_VERSION	"20110729"
+#define XBPS_API_VERSION	"20110731"
 #define XBPS_VERSION		"0.10.0"
 
 /**
@@ -1430,9 +1430,9 @@ char *xbps_file_hash(const char *file);
  * @return The sha256 hash string if found, NULL otherwise
  * and errno is set appropiately.
  */
-const char *xbps_file_hash_from_dictionary(prop_dictionary_t d,
-					   const char *key,
-					   const char *file);
+const char *xbps_file_hash_dictionary(prop_dictionary_t d,
+				      const char *key,
+				      const char *file);
 
 /**
  * Compares the sha256 hash of the file \a file with the sha256
@@ -1445,6 +1445,20 @@ const char *xbps_file_hash_from_dictionary(prop_dictionary_t d,
  * if it differs, or any other errno value on error.
  */
 int xbps_file_hash_check(const char *file, const char *sha256);
+
+/**
+ * Checks if \a file matches the sha256 hash specified in the array
+ * with key \a key in the proplib dictionary \a d.
+ *
+ * @param[in] d Proplib dictionary to look in.
+ * @param[in] key Proplib array key to match for file.
+ * @param[in] file Pathname to a file.
+ *
+ * @return 0 if hash is matched, -1 on error and 1 if no match.
+ */
+int xbps_file_hash_check_dictionary(prop_dictionary_t d,
+				    const char *key,
+				    const char *file);
 
 /**
  * Checks if a package is currently installed by matching a package

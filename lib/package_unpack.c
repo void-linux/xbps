@@ -157,6 +157,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 {
 	prop_dictionary_t propsd = NULL, filesd = NULL, old_filesd = NULL;
 	prop_array_t array;
+	const struct stat *entry_statp;
 	struct archive_entry *entry;
 	size_t nmetadata = 0, entry_idx = 0;
 	const char *entry_pname, *transact;
@@ -200,6 +201,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	 * Process the archive files.
 	 */
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
+		entry_statp = archive_entry_stat(entry);
 		entry_pname = archive_entry_pathname(entry);
 		flags = set_extract_flags();
 
@@ -324,33 +326,56 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		xhp->xucd->entry_total_count +=
 		    (ssize_t)prop_array_count(array);
 
-		/*
-		 * Handle configuration files. Check if current entry is
-		 * a configuration file and take action if required. Skip
-		 * packages that don't have the "conf_files" array in
-		 * the XBPS_PKGPROPS dictionary.
-		 */
-		rv = xbps_entry_is_a_conf_file(propsd, entry_pname);
-		if (rv == -1) {
-			/* error */
-			goto out;
-		} else if (rv == 1) {
-			if (xhp->xucd != NULL)
-				xhp->xucd->entry_is_conf = true;
-
-			rv = xbps_entry_install_conf_file(filesd,
-			    entry, entry_pname, pkgname, version);
+		if (update && S_ISREG(entry_statp->st_mode)) {
+			/*
+			 * Handle configuration files. Check if current entry is
+			 * a configuration file and take action if required. Skip
+			 * packages that don't have the "conf_files" array in
+			 * the XBPS_PKGPROPS dictionary.
+			 */
+			rv = xbps_entry_is_a_conf_file(propsd, entry_pname);
 			if (rv == -1) {
 				/* error */
 				goto out;
-			} else if (rv == 0) {
+			} else if (rv == 1) {
+				if (xhp->xucd != NULL)
+					xhp->xucd->entry_is_conf = true;
+
+				rv = xbps_entry_install_conf_file(filesd,
+				    entry, entry_pname, pkgname, version);
+				if (rv == -1) {
+					/* error */
+					goto out;
+				} else if (rv == 0) {
+					/*
+					 * Keep current configuration file
+					 * as is now and pass to next entry.
+					 */
+					archive_read_data_skip(ar);
+					RUN_PROGRESS_CB();
+					continue;
+				}
+			} else {
 				/*
-				 * Keep current configuration file
-				 * as is now and pass to next entry.
+				 * Current entry is not a configuration file,
+				 * check if installed file matches sha256 hash.
+				 * If true, there is no need to extract it.
 				 */
-				archive_read_data_skip(ar);
-				RUN_PROGRESS_CB();
-				continue;
+				rv = xbps_file_hash_check_dictionary(filesd,
+				    "files", entry_pname);
+				if (rv == -1) {
+					xbps_dbg_printf("%s-%s: failed to check"
+					    " hash for `%s': %s\n", pkgname,
+					    version, entry_pname,
+					    strerror(errno));
+					/* error */
+					goto out;
+				} else if (rv == 0) {
+					/* hash match, skip */
+					archive_read_data_skip(ar);
+					RUN_PROGRESS_CB();
+					continue;
+				}
 			}
 		}
 		/*

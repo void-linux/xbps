@@ -137,9 +137,9 @@ xbps_file_hash_check(const char *file, const char *sha256)
 }
 
 const char *
-xbps_file_hash_from_dictionary(prop_dictionary_t d,
-			       const char *key,
-			       const char *file)
+xbps_file_hash_dictionary(prop_dictionary_t d,
+			  const char *key,
+			  const char *file)
 {
 	prop_object_t obj;
 	prop_object_iterator_t iter;
@@ -152,8 +152,10 @@ xbps_file_hash_from_dictionary(prop_dictionary_t d,
 	curfile = sha256 = NULL;
 
 	iter = xbps_array_iter_from_dict(d, key);
-	if (iter == NULL)
+	if (iter == NULL) {
+		errno = ENOENT;
 		return NULL;
+	}
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj,
 		    "file", &curfile);
@@ -169,4 +171,33 @@ xbps_file_hash_from_dictionary(prop_dictionary_t d,
 		errno = ENOENT;
 
 	return sha256;
+}
+
+int
+xbps_file_hash_check_dictionary(prop_dictionary_t d,
+				const char *key,
+				const char *file)
+{
+	const char *sha256d;
+	int rv;
+
+	assert(d != NULL);
+	assert(key != NULL);
+	assert(file != NULL);
+
+	sha256d = xbps_file_hash_dictionary(d, key, file);
+	if (sha256d == NULL) {
+		if (errno == ENOENT)
+			return 1; /* no match, file not found */
+
+		return -1; /* error */
+	}
+
+	rv = xbps_file_hash_check(file, sha256d);
+	if (rv == 0)
+		return 0; /* matched */
+	else if (rv == ERANGE || rv == ENOENT)
+		return 1; /* no match */
+	else
+		return -1; /* error */
 }
