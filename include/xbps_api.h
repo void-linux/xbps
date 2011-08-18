@@ -219,7 +219,7 @@ struct xbps_transaction_cb_data {
 	 */
 	const char *binpkg_fname;
 	/**
-	 * @var binpkg_repourl
+	 * @var repourl
 	 *
 	 * Repository URL (set internally, read-only).
 	 */
