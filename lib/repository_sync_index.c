@@ -177,7 +177,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 		if (fetchLastErrCode)
 			rv = fetchLastErrCode;
 		else
-			rv = errno;
+			rv = sverrno;
 
 		if (xhp->xbps_transaction_err_cb) {
 			xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
