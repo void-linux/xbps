@@ -65,7 +65,7 @@ static const struct object_info obj_info[] = {
 	{ "conflicts", "Conflicts with" },
 	{ "conf_files", "Configuration files" },
 	{ "short_desc", "Description: " },
-	{ "long_desc", "" },
+	{ "long_desc", "---------------------------------------------------------------------------" },
 	{ NULL, NULL }
 };
 
