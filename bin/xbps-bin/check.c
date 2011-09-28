@@ -160,8 +160,12 @@ check_pkg_integrity(const char *pkgname)
 				abort();
 
 			memset(&buf, 0, sizeof(buf));
-			if (realpath(path, buf) == NULL)
-				abort();
+			if (realpath(path, buf) == NULL) {
+				xbps_error_printf("%s: broken symlink `%s': "
+				    "%s\n", pkgname, file, strerror(errno));
+				test_broken = true;
+				continue;
+			}
 
 			free(path);
 			if (strcmp(xhp->rootdir, "/") && strstr(buf, xhp->rootdir))
