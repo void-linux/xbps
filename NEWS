@@ -1,5 +1,8 @@
 xbps-0.10.0 (???):
 
+ * xbps-bin(8): the 'check' target now detects broken symlinks and marks
+   them as critical errors.
+
  * libxbps: when updating packages, only files that have been modified
    (compared to current installed file) are now unpacked. This should
    save some writes to storage and make the process a bit smoother as well.
