@@ -56,14 +56,20 @@ xbps_get_remote_repo_string(const char *uri)
 	 * Replace '.' ':' and '/' characters with underscores, so that
 	 * provided URL:
 	 *
-	 * 	http://www.foo.org/blah/xbps/binpkg-repo
+	 * 	http://nocturno.local:8080/blah/xbps/binpkg-repo
 	 *
 	 * becomes:
 	 *
-	 * 	http___www_foo_org_blah_xbps_binpkg_repo
+	 * 	http___nocturno_local_8080_blah_xbps_binpkg_repo
 	 * 	
 	 */
-	p = xbps_xasprintf("%s://%s%s", url->scheme, url->host, url->doc);
+	if (url->port != 0)
+		p = xbps_xasprintf("%s://%s:%u%s", url->scheme,
+		    url->host, url->port, url->doc);
+	else
+		p = xbps_xasprintf("%s://%s%s", url->scheme,
+		    url->host, url->doc);
+
 	fetchFreeURL(url);
 	if (p == NULL)
 		return NULL;

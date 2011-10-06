@@ -33,7 +33,12 @@
 		     xbps-repo(8), with the exception for updating
 		     on which all repositories will be looked at and
 		     the newest version will be choosen.
-		     
+
+		     Optionally a non default HTTP port can also be
+		     specified like that:
+
+			http://foo.local:8080/xbps-repo
+
 		     The order matters, and the top-most matching a package
 		     pattern or name will be used.
 
