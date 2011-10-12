@@ -228,7 +228,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 				    pkgver, rv);
 				goto out;
 			}
-			if (!update)
+			if (update)
 				continue;
 
 			RUN_TRANS_CB(XBPS_TRANS_STATE_PURGE,
