@@ -155,6 +155,7 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 				free(vpkgname);
 				break;
 			}
+			free(vpkgname);
 		}
 	}
 	prop_object_iterator_release(iter);
@@ -200,15 +201,12 @@ find_virtualpkg_user_in_array(prop_array_t array,
 }
 
 static prop_dictionary_t
-find_pkg_in_dict(prop_dictionary_t d,
-		 const char *key,
-		 const char *str,
-		 bool bypattern,
-		 bool virtual,
-		 bool virtual_in_conf)
+find_virtualpkg_user_in_dict(prop_dictionary_t d,
+			     const char *key,
+			     const char *str,
+			     bool bypattern)
 {
 	prop_array_t array;
-	prop_dictionary_t vpkgd;
 
 	assert(d != NULL);
 	assert(str != NULL);
@@ -218,11 +216,25 @@ find_pkg_in_dict(prop_dictionary_t d,
 	if (prop_object_type(array) != PROP_TYPE_ARRAY)
 		return NULL;
 
-	if (virtual_in_conf) {
-		vpkgd = find_virtualpkg_user_in_array(array, str, bypattern);
-		if (vpkgd != NULL)
-			return vpkgd;
-	}
+	return find_virtualpkg_user_in_array(array, str, bypattern);
+}
+
+static prop_dictionary_t
+find_pkg_in_dict(prop_dictionary_t d,
+		 const char *key,
+		 const char *str,
+		 bool bypattern,
+		 bool virtual)
+{
+	prop_array_t array;
+
+	assert(d != NULL);
+	assert(str != NULL);
+	assert(key != NULL);
+
+	array = prop_dictionary_get(d, key);
+	if (prop_object_type(array) != PROP_TYPE_ARRAY)
+		return NULL;
 
 	return find_pkg_in_array(array, str, bypattern, virtual);
 }
@@ -232,7 +244,7 @@ xbps_find_pkg_in_dict_by_name(prop_dictionary_t d,
 			      const char *key,
 			      const char *pkgname)
 {
-	return find_pkg_in_dict(d, key, pkgname, false, false, false);
+	return find_pkg_in_dict(d, key, pkgname, false, false);
 }
 
 prop_dictionary_t
@@ -240,7 +252,7 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t d,
 				 const char *key,
 				 const char *pattern)
 {
-	return find_pkg_in_dict(d, key, pattern, true, false, false);
+	return find_pkg_in_dict(d, key, pattern, true, false);
 }
 
 prop_dictionary_t HIDDEN
@@ -248,7 +260,7 @@ xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t d,
 					  const char *key,
 					  const char *name)
 {
-	return find_pkg_in_dict(d, key, name, false, true, false);
+	return find_pkg_in_dict(d, key, name, false, true);
 }
 
 prop_dictionary_t HIDDEN
@@ -256,7 +268,7 @@ xbps_find_virtualpkg_in_dict_by_pattern(prop_dictionary_t d,
 					     const char *key,
 					     const char *pattern)
 {
-	return find_pkg_in_dict(d, key, pattern, true, true, false);
+	return find_pkg_in_dict(d, key, pattern, true, true);
 }
 
 prop_dictionary_t HIDDEN
@@ -264,7 +276,7 @@ xbps_find_virtualpkg_conf_in_dict_by_name(prop_dictionary_t d,
 					  const char *key,
 					  const char *name)
 {
-	return find_pkg_in_dict(d, key, name, false, false, true);
+	return find_virtualpkg_user_in_dict(d, key, name, false);
 }
 
 prop_dictionary_t HIDDEN
@@ -272,7 +284,7 @@ xbps_find_virtualpkg_conf_in_dict_by_pattern(prop_dictionary_t d,
 					     const char *key,
 					     const char *pattern)
 {
-	return find_pkg_in_dict(d, key, pattern, true, false, true);
+	return find_virtualpkg_user_in_dict(d, key, pattern, true);
 }
 
 static prop_dictionary_t
@@ -292,10 +304,13 @@ find_pkg_dict_from_plist(const char *plist,
 		    plist, str, strerror(errno));
 		return NULL;
 	}
-	obj = find_pkg_in_dict(dict, key, str, bypattern, true, true);
+	obj = find_virtualpkg_user_in_dict(dict, key, str, bypattern);
 	if (obj == NULL) {
-		prop_object_release(dict);
-		return NULL;
+		obj = find_pkg_in_dict(dict, key, str, bypattern, true);
+		if (obj == NULL) {
+			prop_object_release(dict);
+			return NULL;
+		}
 	}
 	res = prop_dictionary_copy(obj);
 	prop_object_release(dict);
@@ -332,10 +347,14 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 	if (xhp->regpkgdb_dictionary == NULL)
 		return NULL;
 
-	pkgd = find_pkg_in_dict(xhp->regpkgdb_dictionary,
-	    "packages", str, bypattern, virtual, true);
+	pkgd = find_virtualpkg_user_in_dict(xhp->regpkgdb_dictionary,
+	    "packages", str, bypattern);
+	if (pkgd == NULL) {
+		pkgd = find_pkg_in_dict(xhp->regpkgdb_dictionary,
+		    "packages", str, bypattern, virtual);
+	}
 	if (pkgd == NULL)
-		return rpkgd;
+		return NULL;
 
 	if (xbps_pkg_state_dictionary(pkgd, &state) != 0)
 		return rpkgd;
