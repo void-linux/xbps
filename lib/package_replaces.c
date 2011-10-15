@@ -58,8 +58,15 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 		 * to be replaced.
 		 */
 		instd = xbps_find_pkg_dict_installed(pattern, true);
-		if (instd == NULL)
-			continue;
+		if (instd == NULL) {
+			/*
+			 * No package installed has been matched, try looking
+			 * for a virtual package.
+			 */
+			instd = xbps_find_virtualpkg_dict_installed(pattern, true);
+			if (instd == NULL)
+				continue;
+		}
 		/*
 		 * Check that we are not replacing the same package, due
 		 * to virtual packages.
