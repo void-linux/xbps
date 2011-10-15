@@ -36,7 +36,7 @@ int HIDDEN
 xbps_repository_pkg_replaces(prop_dictionary_t transd,
 			     prop_dictionary_t pkg_repod)
 {
-	prop_array_t replaces, unsorted;
+	prop_array_t replaces, unsorted, instd_reqby;
 	prop_dictionary_t instd, reppkgd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
@@ -83,6 +83,20 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 			prop_object_release(instd);
 			continue;
 		}
+		/*
+		 * If new package is providing a virtual package to the
+		 * package that we want to replace we should respect
+		 * its requiredby object, so copy it to the pkg's dictionary
+		 * in transaction.
+		 */
+		if (xbps_match_virtual_pkg_in_dict(pkg_repod,
+		    pattern, true)) {
+			instd_reqby = prop_dictionary_get(instd, "requiredby");
+			if (instd_reqby && prop_array_count(instd_reqby))
+				prop_dictionary_set(pkg_repod,
+				    "requiredby", instd_reqby);
+		}
+
 		/*
 		 * Add package dictionary into the transaction and mark it
 		 * as to be "removed".

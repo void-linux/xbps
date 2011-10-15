@@ -44,7 +44,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 {
 	struct xbps_handle *xhp;
 	prop_dictionary_t dict, pkgd;
-	prop_array_t array, provides = NULL;
+	prop_array_t array, provides = NULL, reqby;
 	const char *pkgname, *version, *desc, *pkgver;
 	char *plist;
 	int rv = 0;
@@ -62,6 +62,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
 	prop_dictionary_get_bool(pkgrd, "automatic-install", &autoinst);
 	provides = prop_dictionary_get(pkgrd, "provides");
+	reqby = prop_dictionary_get(pkgrd, "requiredby");
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
@@ -89,6 +90,11 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 		}
 		if (!prop_dictionary_set_cstring_nocopy(pkgd,
 		    "short_desc", desc)) {
+			prop_object_release(pkgd);
+			rv = EINVAL;
+			goto out;
+		}
+		if (reqby && !prop_dictionary_set(pkgd, "requiredby", reqby)) {
 			prop_object_release(pkgd);
 			rv = EINVAL;
 			goto out;
