@@ -70,8 +70,10 @@ pkgdep_find(const char *name, const char *trans)
 		}
 		if (pd->d == NULL)
 			continue;
-		if (xbps_match_virtual_pkg_in_dict(pd->d, name, false))
-			return pd;
+		if (xbps_match_virtual_pkg_in_dict(pd->d, name, false)) {
+			if (trans == pd->trans)
+				return pd;
+		}
 	}
 
 	/* not found */
@@ -93,8 +95,10 @@ pkgdep_find_idx(const char *name, const char *trans)
 		}
 		if (pd->d == NULL)
 			continue;
-		if (xbps_match_virtual_pkg_in_dict(pd->d, name, false))
-			return idx;
+		if (xbps_match_virtual_pkg_in_dict(pd->d, name, false)) {
+			if (trans == pd->trans)
+				return idx;
+		}
 
 		idx++;
 	}
@@ -343,7 +347,7 @@ xbps_sort_pkg_deps(void)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		xbps_dbg_printf("Sorting package '%s': ", pkgver);
+		xbps_dbg_printf("Sorting package '%s' (%s): ", pkgver, tract);
 
 		pd = pkgdep_find(pkgname, tract);
 		if (pd == NULL) {
