@@ -1,4 +1,12 @@
 xbps-0.10.0 (???):
+
+ * It is possible now to reinstall packages that provide virtual packages
+   and put it back the original package, such as jpeg <-> libjpeg-turbo
+   multiple times, without loosing important objects set when the
+   original package was installed, i.e reverse dependencies and
+   automatic installation. This is a requisite to really make a system
+   that can be fully customizable and restored back to its original
+   state with the virtual packages feature.
  
  * Fixed issue 10 "HTTP repositories in non standard HTTP port currently segfault".
    You can now use any HTTP server in non standard ports, such as:
