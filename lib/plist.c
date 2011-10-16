@@ -195,17 +195,24 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 	assert(plist != NULL);
 	xhp = xbps_handle_get();
 
-	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
-	if (pkgd) {
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &rpkgname);
-		prop_object_release(pkgd);
-		pkgname = rpkgname;
-	}
-
 	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
 	    xhp->rootdir, XBPS_META_PATH, pkgname, plist);
 	if (plistf == NULL)
 		return NULL;
+
+	if (access(plistf, R_OK) == -1) {
+		pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
+		if (pkgd) {
+			prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &rpkgname);
+			prop_object_release(pkgd);
+			pkgname = rpkgname;
+		}
+		free(plistf);
+		plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
+		    xhp->rootdir, XBPS_META_PATH, pkgname, plist);
+		if (plistf == NULL)
+			return NULL;
+	}
 
 	plistd = prop_dictionary_internalize_from_zfile(plistf);
 	free(plistf);
