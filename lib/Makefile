@@ -47,7 +47,7 @@ OBJS += plist_archive_entry.o plist_find.o plist_match.o plist_remove.o
 OBJS += plist_fetch.o util.o util_hash.o mkpath.o initend.o
 OBJS += regpkgdb_dictionary.o match.o dewey.o
 OBJS += repository_findpkg.o repository_finddeps.o
-OBJS += repository_pool.o repository_sync_index.o
+OBJS += repository_pool.o repository_pool_find.o repository_sync_index.o
 OBJS += $(COMPAT_SRCS)
 
 .PHONY: all
