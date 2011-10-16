@@ -146,13 +146,14 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 				break;
 			}
 		} else {
-			vpkgname = xbps_pkgpattern_name(vpkgver);
+			vpkgname = xbps_pkg_name(vpkgver);
 			if (vpkgname == NULL)
 				break;
-				
+
 			if (strcmp(vpkg, vpkgname) == 0) {
-				pkg = vpkgname;
 				free(vpkgname);
+				prop_dictionary_get_cstring_nocopy(obj,
+				    "target-pkgpattern", &pkg);
 				break;
 			}
 			free(vpkgname);
@@ -170,7 +171,7 @@ find_virtualpkg_user_in_array(prop_array_t array,
 {
 	prop_object_t obj = NULL;
 	prop_object_iterator_t iter;
-	const char *pkgver, *dpkgn, *virtualpkg;
+	const char *pkgver, *virtualpkg;
 
 	assert(array != NULL);
 	assert(str != NULL);
@@ -184,17 +185,10 @@ find_virtualpkg_user_in_array(prop_array_t array,
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		if (bypattern) {
-			prop_dictionary_get_cstring_nocopy(obj,
-			    "pkgver", &pkgver);
-			if (xbps_pkgpattern_match(pkgver, virtualpkg))
-				break;
-		} else {
-			prop_dictionary_get_cstring_nocopy(obj,
-			    "pkgname", &dpkgn);
-			if (strcmp(dpkgn, virtualpkg) == 0)
-				break;
-		}
+		prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgver", &pkgver);
+		if (xbps_pkgpattern_match(pkgver, virtualpkg))
+			break;
 	}
 	prop_object_iterator_release(iter);
 	return obj;
