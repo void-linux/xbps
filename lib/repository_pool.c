@@ -278,6 +278,10 @@ repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done
 		    "packages", rpf->pattern);
 	}
 	if (rpf->pkgd) {
+#ifdef DEBUG
+		xbps_dbg_printf("%s: found pkg in repository\n", __func__);
+		xbps_dbg_printf_append("%s", prop_dictionary_externalize(rpf->pkgd));
+#endif
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
 		*done = true;
@@ -315,6 +319,10 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		 * Package dictionary found, add the "repository"
 		 * object with the URI.
 		 */
+#ifdef DEBUG
+		xbps_dbg_printf("%s: found pkg in repository\n", __func__);
+		xbps_dbg_printf_append("%s", prop_dictionary_externalize(rpf->pkgd));
+#endif
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
 		*done = true;
@@ -388,12 +396,14 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 
 	assert(pkg != NULL);
 
-	rpf = calloc(1, sizeof(*rpf));
+	rpf = malloc(sizeof(*rpf));
 	if (rpf == NULL)
 		return NULL;
 
 	rpf->pattern = pkg;
 	rpf->bypattern = bypattern;
+	rpf->pkgfound = false;
+	rpf->pkgd = NULL;
 
 	if (best) {
 		/*
