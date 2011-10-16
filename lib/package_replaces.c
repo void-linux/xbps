@@ -41,6 +41,7 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pattern, *pkgname, *curpkgname;
+	bool instd_auto = false;
 
 	replaces = prop_dictionary_get(pkg_repod, "replaces");
 	if (replaces == NULL || prop_array_count(replaces) == 0)
@@ -93,17 +94,22 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 		/*
 		 * If new package is providing a virtual package to the
 		 * package that we want to replace we should respect
-		 * its requiredby object, so copy it to the pkg's dictionary
-		 * in transaction.
+		 * its requiredby and automatic-install objects, so copy
+		 * them to the pkg's dictionary in transaction.
 		 */
-		if (xbps_match_virtual_pkg_in_dict(pkg_repod,
-		    pattern, true)) {
+		if (xbps_match_virtual_pkg_in_dict(pkg_repod, pattern, true) ||
+		    xbps_match_virtual_pkg_in_dict(instd, pkgname, false)) {
 			instd_reqby = prop_dictionary_get(instd, "requiredby");
-			if (instd_reqby && prop_array_count(instd_reqby))
+			if (instd_reqby && prop_array_count(instd_reqby)) {
 				prop_dictionary_set(pkg_repod,
 				    "requiredby", instd_reqby);
+			}
+			if (prop_dictionary_get_bool(instd,
+			    "automatic-install", &instd_auto)) {
+				prop_dictionary_set_bool(pkg_repod,
+				    "automatic-install", instd_auto);
+			}
 		}
-
 		/*
 		 * Add package dictionary into the transaction and mark it
 		 * as to be "removed".
