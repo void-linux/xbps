@@ -1229,7 +1229,8 @@ int xbps_repository_pool_foreach(
 
 /**
  * Finds a package dictionary in the repository pool by specifying a
- * package pattern or a package name.
+ * package pattern or a package name. This function does not take into
+ * account virtual packages set in configuration file.
  *
  * @param[in] pkg Package pattern or name.
  * @param[in] bypattern True if \a pkg is a pattern, false if it is a pkgname.
@@ -1240,6 +1241,22 @@ int xbps_repository_pool_foreach(
  */
 prop_dictionary_t
 	xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best);
+
+/**
+ * Finds a package dictionary in repository pool by specifying a
+ * package pattern or a package name. Only virtual packages set in
+ * configuration file will be matched.
+ *
+ * @param[in] pkg Virtual package pattern or name.
+ * @param[in] bypattern True if \a pkg is a pattern, false if it is a pkgname.
+ * @param[in] best True to find the best version available in repo, false to
+ * fetch the first package found matching its pkgname.
+ *
+ * @return The package dictionary if found, NULL otherwise.
+ */
+prop_dictionary_t
+	xbps_repository_pool_find_virtualpkg(const char *pkg,
+					     bool bypattern, bool best);
 
 /**
  * Iterate over the the repository pool and search for a metadata plist

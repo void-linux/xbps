@@ -387,11 +387,10 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 	return 0;
 }
 
-prop_dictionary_t
-xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
+static struct repo_pool_fpkg *
+repo_find_pkg(const char *pkg, bool bypattern, bool best, bool virtual)
 {
 	struct repo_pool_fpkg *rpf;
-	prop_dictionary_t pkgd = NULL;
 	int rv = 0;
 
 	assert(pkg != NULL);
@@ -411,37 +410,57 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 		 * pattern in all repositories.
 		 */
 		rv = xbps_repository_pool_foreach(repo_find_best_pkg_cb, rpf);
-		if (rv != 0) {
+		if (rv != 0)
 			errno = rv;
-			goto out;
-		} else if (rpf->pkgfound == false) {
-			goto out;
-		}
 	} else {
-		/*
-		 * Look for any virtual package set by the user matching
-		 * the package name or pattern.
-		 */
-		rv = xbps_repository_pool_foreach(repo_find_virtualpkg_cb, rpf);
-		if (rv != 0) {
-			errno = rv;
-			goto out;
-		} else if (rpf->pkgfound == false) {
+		if (virtual) {
 			/*
-			 * No virtual package found. Look for real package
-			 * names or patterns instead.
+			 * No package found. Look for virtual package
+			 * set by the user or any virtual pkg available.
+			 */
+			rv = xbps_repository_pool_foreach(repo_find_virtualpkg_cb, rpf);
+			if (rv != 0)
+				errno = rv;
+		} else {
+			/*
+			 * Look for a package (non virtual) in repositories.
 			 */
 			rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
-			if (rv != 0) {
+			if (rv != 0)
 				errno = rv;
-				goto out;
-			} else if (rpf->pkgfound == false) {
-				goto out;
-			}
 		}
 	}
-	pkgd = prop_dictionary_copy(rpf->pkgd);
-out:
+
+	return rpf;
+}
+
+prop_dictionary_t
+xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern, bool best)
+{
+	struct repo_pool_fpkg *rpf;
+	prop_dictionary_t pkgd = NULL;
+
+	assert(pkg != NULL);
+
+	rpf = repo_find_pkg(pkg, bypattern, best, true);
+	if (rpf->pkgfound && rpf->pkgd != NULL)
+		pkgd = prop_dictionary_copy(rpf->pkgd);
+	free(rpf);
+
+	return pkgd;
+}
+
+prop_dictionary_t
+xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
+{
+	struct repo_pool_fpkg *rpf;
+	prop_dictionary_t pkgd = NULL;
+
+	assert(pkg != NULL);
+
+	rpf = repo_find_pkg(pkg, bypattern, best, false);
+	if (rpf->pkgfound && rpf->pkgd != NULL)
+		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);
 
 	return pkgd;

@@ -71,7 +71,8 @@ pkgdep_find(const char *name, const char *trans)
 		if (pd->d == NULL)
 			continue;
 		if (xbps_match_virtual_pkg_in_dict(pd->d, name, false)) {
-			if (trans == pd->trans)
+			if (trans && pd->trans &&
+			    (strcmp(trans, pd->trans) == 0))
 				return pd;
 		}
 	}
@@ -96,7 +97,8 @@ pkgdep_find_idx(const char *name, const char *trans)
 		if (pd->d == NULL)
 			continue;
 		if (xbps_match_virtual_pkg_in_dict(pd->d, name, false)) {
-			if (trans == pd->trans)
+			if (trans && pd->trans &&
+			    (strcmp(trans, pd->trans) == 0))
 				return idx;
 		}
 
@@ -156,8 +158,14 @@ pkgdep_end(prop_array_t sorted)
 			 * Do not add duplicate pkg dictionaries with the
 			 * same transaction reason into the sorted array.
 			 */
-			sorted_pkgd = xbps_find_pkg_in_array_by_name(sorted,
-			   pd->name);
+			sorted_pkgd =
+			    xbps_find_pkg_in_array_by_name(sorted, pd->name);
+			if (sorted_pkgd == NULL) {
+				/* find virtualpkg if no match */
+				sorted_pkgd =
+				    xbps_find_virtualpkg_in_array_by_name(
+				    sorted, pd->name);
+			}
 			if (sorted_pkgd == NULL) {
 				prop_array_add(sorted, pd->d);
 				pkgdep_release(pd);
@@ -233,10 +241,13 @@ again:
 			free(pkgnamedep);
 			continue;
 		}
+		/* Find pkg by name */
 		curpkgd = xbps_find_pkg_in_dict_by_name(transd,
 		    "unsorted_deps", pkgnamedep);
 		if (curpkgd == NULL) {
-			curpkgd = xbps_find_virtualpkg_in_dict_by_name(transd,
+			/* find virtualpkg by name if no match */
+			curpkgd =
+			    xbps_find_virtualpkg_in_dict_by_name(transd,
 			    "unsorted_deps", pkgnamedep);
 		}
 		if (curpkgd == NULL) {

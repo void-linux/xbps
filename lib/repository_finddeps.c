@@ -242,10 +242,20 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		/*
 		 * Check if package is already added in the
 		 * array of unsorted deps, and check if current required
-		 * dependency pattern is matched.
+		 * dependency pattern is matched. First checking if required
+		 * dependency is supplied by a virtual pkg set in
+		 * the configuration file.
 		 */
-		curpkgd = xbps_find_pkg_in_dict_by_pattern(transd,
+		curpkgd = xbps_find_virtualpkg_conf_in_dict_by_pattern(transd,
 		    "unsorted_deps", reqpkg);
+		if (curpkgd == NULL) {
+			/*
+			 * Look for a real package matching pattern
+			 * if no match.
+			 */
+			curpkgd = xbps_find_pkg_in_dict_by_pattern(transd,
+			    "unsorted_deps", reqpkg);
+		}
 		if (curpkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkgver_q);
@@ -260,30 +270,35 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			}
 		}
 		/*
-		 * If required pkgdep is not in repo, add it into the
-		 * missing deps array and pass to the next one.
+		 * If required pkgdep (first virtual pkg in conf, otherwise
+		 * real pkg) is not in repo, add it into the missing deps
+		 * array and pass to the next one.
 		 */
-		curpkgd = xbps_repository_pool_find_pkg(reqpkg, true, false);
+		curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true, false);
 		if (curpkgd == NULL) {
-			if (errno && errno != ENOENT) {
-				rv = errno;
-				break;
-			}
+			curpkgd = xbps_repository_pool_find_pkg(reqpkg, true, false);
+			if (curpkgd == NULL) {
+				/* pkg not found, there was some error */
+				if (errno && errno != ENOENT) {
+					rv = errno;
+					break;
+				}
 
-			rv = add_missing_reqdep(mrdeps, reqpkg);
-			if (rv != 0 && rv != EEXIST) {
-				xbps_dbg_printf_append("`%s': "
-				    "add_missing_reqdep failed %s\n", reqpkg);
-				break;
-			} else if (rv == EEXIST) {
-				xbps_dbg_printf_append("`%s' missing dep "
-				    "already added.\n", reqpkg);
-				rv = 0;
-				continue;
-			} else {
-				xbps_dbg_printf_append("`%s' added "
-				    "into the missing deps array.\n", reqpkg);
-				continue;
+				rv = add_missing_reqdep(mrdeps, reqpkg);
+				if (rv != 0 && rv != EEXIST) {
+					xbps_dbg_printf_append("`%s': "
+					    "add_missing_reqdep failed %s\n", reqpkg);
+					break;
+				} else if (rv == EEXIST) {
+					xbps_dbg_printf_append("`%s' missing dep "
+					    "already added.\n", reqpkg);
+					rv = 0;
+					continue;
+				} else {
+					xbps_dbg_printf_append("`%s' added "
+					    "into the missing deps array.\n", reqpkg);
+					continue;
+				}
 			}
 		}
 		pkgname = xbps_pkgpattern_name(reqpkg);
