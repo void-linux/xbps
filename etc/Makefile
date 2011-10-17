@@ -1,6 +1,6 @@
 -include ../config.mk
 
-CONF_FILE =	conf.plist repositories.plist
+CONF_FILES =	conf.plist repositories.plist
 
 .PHONY: all
 all:
@@ -8,9 +8,11 @@ all:
 .PHONY: install
 install:
 	install -d $(DESTDIR)$(ETCDIR)
-	if [ ! -f $(DESTDIR)$(ETCDIR)/$(CONF_FILE) ]; then	\
-		install -m644 $(CONF_FILE) $(DESTDIR)$(ETCDIR);	\
-	fi
+	for f in $(CONF_FILES); do				\
+		if [ ! -f $(DESTDIR)$(ETCDIR)/$$f ]; then	\
+			install -m644 $$f $(DESTDIR)$(ETCDIR);	\
+		fi;						\
+	done
 
 .PHONY: uninstall
 uninstall:
