@@ -113,7 +113,7 @@ main(int argc, char **argv)
 	struct xbps_handle *xhp;
 	struct xferstat xfer;
 	prop_dictionary_t dict;
-	const char *version, *rootdir = NULL, *conffile = NULL;
+	const char *version, *rootdir = NULL, *confdir = NULL;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
 	bool debug = false, in_chroot = false;
 	int i, c, rv = 0;
@@ -121,7 +121,7 @@ main(int argc, char **argv)
 	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
 		switch (c) {
 		case 'C':
-			conffile = optarg;
+			confdir = optarg;
 			break;
 		case 'r':
 			/* To specify the root directory */
@@ -158,8 +158,8 @@ main(int argc, char **argv)
 	xhp->xfcd->cookie = &xfer;
 	if (rootdir)
 		xhp->rootdir = prop_string_create_cstring(rootdir);
-	if (conffile)
-		xhp->conffile = prop_string_create_cstring(conffile);
+	if (confdir)
+		xhp->confdir = prop_string_create_cstring(confdir);
 
 	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-uhelper: failed to "

@@ -37,25 +37,36 @@
  * @brief Initialization of virtual package settings.
  */
 
-#define _VPKGDIR	XBPS_SYSCONF_PATH "/" XBPS_VIRTUALPKGD_PATH
-
 void HIDDEN
 xbps_init_virtual_pkgs(struct xbps_handle *xh)
 {
 	struct dirent *dp;
 	DIR *dirp;
 	prop_dictionary_t vpkgd;
+	prop_string_t vpkgdir;
 	char *vpkgfile;
 
+	if (prop_object_type(xh->confdir) != PROP_TYPE_STRING) {
+		vpkgdir = prop_string_create_cstring(XBPS_SYSCONF_PATH);
+		prop_string_append_cstring(vpkgdir, "/");
+		prop_string_append_cstring(vpkgdir, XBPS_VIRTUALPKGD_PATH);
+	} else {
+		vpkgdir = prop_string_copy(xh->confdir);
+		prop_string_append_cstring(vpkgdir, "/");
+		prop_string_append_cstring(vpkgdir, XBPS_VIRTUALPKGD_PATH);
+	}
+
 	/*
-	 * Internalize all plist files from _VPKGDIR and add them
+	 * Internalize all plist files from vpkgdir and add them
 	 * into xhp->virtualpkgs_array.
 	 */
-	dirp = opendir(_VPKGDIR);
+	dirp = opendir(prop_string_cstring_nocopy(vpkgdir));
 	if (dirp == NULL) {
 		xbps_dbg_printf("%s: cannot access to %s for virtual "
-		    "packages: %s\n", __func__, _VPKGDIR,
+		    "packages: %s\n", __func__,
+		    prop_string_cstring_nocopy(vpkgdir),
 		    strerror(errno));
+		prop_object_release(vpkgdir);
 		return;
 	}
 	while ((dp = readdir(dirp)) != NULL) {
@@ -66,7 +77,8 @@ xbps_init_virtual_pkgs(struct xbps_handle *xh)
 		if (strstr(dp->d_name, ".plist") == NULL)
 			continue;
 
-		vpkgfile = xbps_xasprintf("%s/%s", _VPKGDIR, dp->d_name);
+		vpkgfile = xbps_xasprintf("%s/%s",
+		    prop_string_cstring_nocopy(vpkgdir), dp->d_name);
 		if (vpkgfile == NULL) {
 			(void)closedir(dirp);
 			xbps_dbg_printf("%s: failed to alloc mem for %s\n",
@@ -96,4 +108,5 @@ xbps_init_virtual_pkgs(struct xbps_handle *xh)
 		    __func__, dp->d_name);
 	}
 	(void)closedir(dirp);
+	prop_object_release(vpkgdir);
 }

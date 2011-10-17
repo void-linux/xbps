@@ -1,4 +1,4 @@
-.TH "XBPS\-BIN" "8" "07/28/2011" "\ \&" "\ \&"
+.TH "XBPS\-BIN" "8" "17/10/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -28,9 +28,10 @@ Use of this option takes effect in the \fIautoupdate\fR, \fIinstall\fR and
 matched.
 .RE
 .PP
-\fB\-C\fR \fIconffile\fR
+\fB\-C\fR \fIconfdir\fR
 .RS 4
-Full path to the \fIxbps-conf.plist\fR plist configuration file.
+Full path to the XBPS configuration directory where the configuration files are available\&.
+By default it\(cqs set to \fIETCDIR/xbps\fR\&.
 .RE
 .PP
 \fB\-c\fR \fIcachedir\fR
@@ -287,6 +288,7 @@ The package is fully installed, that means it was unpacked and configured correc
 .RE
 .PP
 \fBhalf\-unpacked\fR
+.RS 4
 The package was being unpacked but didn't finish properly for unknown reasons.
 .RE
 .PP
@@ -302,9 +304,14 @@ The package has been removed but configuration files and its metadata directory 
 .PP
 .SH "FILES"
 .PP
-\fB/etc/xbps-conf.plist\fR
+\fB/etc/xbps/conf.plist\fR
 .RS 4
 Default XBPS configuration file\&.
+.RE
+.PP
+\fB/etc/xbps/repositories.plist\fR
+.RS 4
+Defaults XBPS repositories configuration file\&.
 .RE
 .PP
 \fB/var/db/xbps\fR

@@ -49,6 +49,7 @@ int
 xbps_init(struct xbps_handle *xh)
 {
 	prop_dictionary_t confd;
+	prop_string_t conffile = NULL, repofile = NULL;
 	const char *conf_rootdir = NULL, *conf_cachedir = NULL;
 	uint16_t fetch_cache_conn = 0, fetch_cache_conn_host = 0;
 	int rv;
@@ -58,18 +59,29 @@ xbps_init(struct xbps_handle *xh)
 	xhp = xh;
 	debug = xhp->debug;
 
-	/* If conffile not set, defaults to XBPS_SYSCONF_PATH */
-	if (prop_object_type(xhp->conffile) != PROP_TYPE_STRING)
-		xhp->conffile = prop_string_create_cstring(_CONFFILE);
+	/* If confdir not set, defaults to XBPS_SYSCONF_PATH */
+	if (prop_object_type(xhp->confdir) != PROP_TYPE_STRING) {
+		conffile = prop_string_create_cstring(_CONFFILE);
+		repofile = prop_string_create_cstring(_REPOFILE);
+	} else {
+		conffile = prop_string_copy(xhp->confdir);
+		prop_string_append_cstring(conffile, "/");
+		prop_string_append_cstring(conffile, XBPS_CONF_PLIST);
+
+		repofile = prop_string_copy(xhp->confdir);
+		prop_string_append_cstring(repofile, "/");
+		prop_string_append_cstring(repofile, XBPS_CONF_REPOS_PLIST);
+	}
 	/*
 	 * Internalize the XBPS_CONF_REPOS_PLIST array.
 	 */
-	xhp->repos_array = prop_array_internalize_from_file(_REPOFILE);
+	xhp->repos_array =
+	    prop_array_internalize_from_file(prop_string_cstring_nocopy(repofile));
 	/*
 	 * Internalize the XBPS_CONF_PLIST dictionary.
 	 */
 	confd = prop_dictionary_internalize_from_file(
-	    prop_string_cstring_nocopy(xhp->conffile));
+	    prop_string_cstring_nocopy(conffile));
 	if (confd == NULL) {
 		if (errno != ENOENT) {
 			xbps_dbg_printf("%s: cannot internalize conf "
@@ -140,11 +152,15 @@ xbps_init(struct xbps_handle *xh)
 	xbps_dbg_printf("cachedir: %s\n",
 	    prop_string_cstring_nocopy(xhp->cachedir));
 	xbps_dbg_printf("conffile: %s\n",
-	    prop_string_cstring_nocopy(xhp->conffile));
-	xbps_dbg_printf("repofile: %s\n", _REPOFILE);
-	xbps_dbg_printf("fetch_cache_conn: %zu\n", fetch_cache_conn);
-	xbps_dbg_printf("fetch_cacche_conn_host: %zu\n", fetch_cache_conn_host);
-	xbps_dbg_printf("fetch_timeout: %zu\n", xhp->fetch_timeout);
+	    prop_string_cstring_nocopy(conffile));
+	xbps_dbg_printf("repofile: %s\n",
+	    prop_string_cstring_nocopy(repofile));
+	xbps_dbg_printf("fetch_cache_conn: %zu\n",
+	    fetch_cache_conn);
+	xbps_dbg_printf("fetch_cacche_conn_host: %zu\n",
+	    fetch_cache_conn_host);
+	xbps_dbg_printf("fetch_timeout: %zu\n",
+	    xhp->fetch_timeout);
 
 	/*
 	 * Initialize regpkgdb dictionary.
@@ -157,12 +173,12 @@ xbps_init(struct xbps_handle *xh)
 		       return rv;
 	       }
 	}
-	/* We don't need the confd dictionary internalized anymore */
 	if (prop_object_type(confd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(confd);
-	/* We don't need the conffile string anymore */
-	if (prop_object_type(xh->conffile) == PROP_TYPE_STRING)
-		prop_object_release(xh->conffile);
+	if (prop_object_type(conffile) == PROP_TYPE_STRING)
+		prop_object_release(conffile);
+	if (prop_object_type(repofile) == PROP_TYPE_STRING)
+		prop_object_release(repofile);
 
 	/* Initialize virtual package settings */
 	xbps_init_virtual_pkgs(xhp);
@@ -179,6 +195,8 @@ xbps_end(struct xbps_handle *xh)
 
 	if (xh == NULL)
 		return;
+	if (prop_object_type(xh->confdir) == PROP_TYPE_STRING)
+		prop_object_release(xh->confdir);
 	if (prop_object_type(xh->rootdir) == PROP_TYPE_STRING)
 		prop_object_release(xh->rootdir);
 	if (prop_object_type(xh->cachedir) == PROP_TYPE_STRING)

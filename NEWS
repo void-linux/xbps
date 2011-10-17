@@ -1,5 +1,9 @@
 xbps-0.10.0 (???):
 
+ * xbps-bin(8), xbps-repo(8): the -C flag now expects a path to a
+   directory where the configuration files (conf.plist and
+   repositories.plist) are stored.
+
  * New configuration scheme for virtual packages as defined in
 	http://code.google.com/p/xbps/issues/detail?id=12
 

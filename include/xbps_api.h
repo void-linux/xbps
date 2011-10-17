@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
-#define XBPS_API_VERSION	"20111017-1"
+#define XBPS_API_VERSION	"20111017-2"
 #define XBPS_VERSION		"0.10.0"
 
 /**
@@ -468,11 +468,11 @@ struct xbps_handle {
 	 */
 	prop_string_t cachedir;
 	/**
-	 * @var conffile
+	 * @var confdir
 	 *
-	 * Full path to the XBPS_CONF_PLIST configuration file.
+	 * Full path to the XBPS_SYSCONF_PATH directory.
 	 */
-	prop_string_t conffile;
+	prop_string_t confdir;
 	/**
 	 * @private fetch_timeout
 	 *

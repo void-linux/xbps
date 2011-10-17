@@ -90,16 +90,16 @@ main(int argc, char **argv)
 	struct xbps_handle *xhp;
 	struct xferstat xfer;
 	prop_dictionary_t pkgd;
-	const char *rootdir, *cachedir, *conffile;
+	const char *rootdir, *cachedir, *confdir;
 	int c, rv = 0;
 	bool debug = false;
 
-	rootdir = cachedir = conffile = NULL;
+	rootdir = cachedir = confdir = NULL;
 
 	while ((c = getopt(argc, argv, "C:c:dr:V")) != -1) {
 		switch (c) {
 		case 'C':
-			conffile = optarg;
+			confdir = optarg;
 			break;
 		case 'c':
 			cachedir = optarg;
@@ -143,8 +143,8 @@ main(int argc, char **argv)
 		xhp->rootdir = prop_string_create_cstring(rootdir);
 	if (cachedir)
 		xhp->cachedir = prop_string_create_cstring(cachedir);
-	if (conffile)
-		xhp->conffile = prop_string_create_cstring(conffile);
+	if (confdir)
+		xhp->confdir = prop_string_create_cstring(confdir);
 
 	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-repo: couldn't initialize library: %s\n",

@@ -185,12 +185,12 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
-	const char *rootdir, *cachedir, *conffile;
+	const char *rootdir, *cachedir, *confdir;
 	int i , c, flags, rv;
 	bool yes, purge, debug, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
 
-	rootdir = cachedir = conffile = NULL;
+	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
 	yes = purge = force_rm_with_deps = recursive_rm = debug = false;
 	install_auto = install_manual = show_download_pkglist_url = false;
@@ -201,7 +201,7 @@ main(int argc, char **argv)
 			install_auto = true;
 			break;
 		case 'C':
-			conffile = optarg;
+			confdir = optarg;
 			break;
 		case 'c':
 			cachedir = optarg;
@@ -290,8 +290,8 @@ main(int argc, char **argv)
 		xhp->rootdir = prop_string_create_cstring(rootdir);
 	if (cachedir)
 		xhp->cachedir = prop_string_create_cstring(cachedir);
-	if (conffile)
-		xhp->conffile = prop_string_create_cstring(conffile);
+	if (confdir)
+		xhp->confdir = prop_string_create_cstring(confdir);
 
 	xhp->flags = flags;
 	xhp->install_reason_manual = install_manual;
