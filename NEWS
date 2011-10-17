@@ -1,5 +1,18 @@
 xbps-0.10.0 (???):
 
+ * New configuration scheme for virtual packages as defined in
+	http://code.google.com/p/xbps/issues/detail?id=12
+
+   XBPS now reads all plist files in PREFIX/etc/xbps/virtualpkg.d.wants
+   directory with settings for the wanted virtual packages.
+
+ * New configuration scheme as defined in
+	http://code.google.com/p/xbps/issues/detail?id=12
+
+   A directory to store XBPS configuration files is now used, by default
+   set to PREFIX/etc/xbps. Configuration options are now set via
+   conf.plist, and repositories in repositories.plist.
+
  * It is possible now to reinstall packages that provide virtual packages
    and put it back the original package, such as jpeg <-> libjpeg-turbo
    multiple times, without loosing important objects set when the

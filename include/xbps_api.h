@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
-#define XBPS_API_VERSION	"20111017"
+#define XBPS_API_VERSION	"20111017-1"
 #define XBPS_VERSION		"0.10.0"
 
 /**
@@ -388,7 +388,7 @@ struct xbps_handle {
 	/**
 	 * @private
 	 */
-	prop_dictionary_t virtualpkg_dictionary;
+	prop_array_t virtualpkgs_array;
 	/**
 	 * @private repos_array
 	 *

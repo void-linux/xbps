@@ -198,6 +198,11 @@ prop_dictionary_t HIDDEN
 	xbps_find_virtualpkg_conf_in_dict_by_pattern(prop_dictionary_t,
 						const char *,
 						const char *);
+/**
+ * @private
+ * From lib/init_virtual_pkgs.c
+ */
+void HIDDEN xbps_init_virtual_pkgs(struct xbps_handle *);
 
 __END_DECLS
 

@@ -164,6 +164,9 @@ xbps_init(struct xbps_handle *xh)
 	if (prop_object_type(xh->conffile) == PROP_TYPE_STRING)
 		prop_object_release(xh->conffile);
 
+	/* Initialize virtual package settings */
+	xbps_init_virtual_pkgs(xhp);
+
 	return 0;
 }
 
@@ -180,6 +183,8 @@ xbps_end(struct xbps_handle *xh)
 		prop_object_release(xh->rootdir);
 	if (prop_object_type(xh->cachedir) == PROP_TYPE_STRING)
 		prop_object_release(xh->cachedir);
+	if (prop_object_type(xh->virtualpkgs_array) == PROP_TYPE_ARRAY)
+		prop_object_release(xh->virtualpkgs_array);
 	if (xh->xfcd != NULL)
 		free(xh->xfcd);
 	if (xh->xucd != NULL)
