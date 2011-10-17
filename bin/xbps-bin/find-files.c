@@ -81,8 +81,8 @@ find_files_in_packages(const char *pattern)
 	unsigned int i, count;
 
 	xhp = xbps_handle_get();
-	path = xbps_xasprintf("%s/%s/metadata", xhp->rootdir,
-	    XBPS_META_PATH);
+	path = xbps_xasprintf("%s/%s/metadata",
+	    prop_string_cstring_nocopy(xhp->rootdir), XBPS_META_PATH);
 	if (path == NULL)
 		return -1;
 

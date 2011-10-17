@@ -1,6 +1,6 @@
 -include ../config.mk
 
-CONF_FILE =	xbps-conf.plist
+CONF_FILE =	conf.plist repositories.plist
 
 .PHONY: all
 all:

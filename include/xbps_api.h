@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
-#define XBPS_API_VERSION	"20111016-1"
+#define XBPS_API_VERSION	"20111017"
 #define XBPS_VERSION		"0.10.0"
 
 /**
@@ -103,18 +103,32 @@
 #define XBPS_PKGINDEX		"pkg-index.plist"
 
 /**
- * @def XBPS_CONF_PATH
+ * @def XBPS_SYSCONF_PATH
  * Default configuration PATH to find XBPS_CONF_PLIST.
  */
-#ifndef XBPS_CONF_PATH
-#define XBPS_CONF_PATH		"/etc"
+#define XBPS_SYSDIR		"/xbps"
+#ifndef XBPS_SYSCONF_PATH
+#define XBPS_SYSCONF_PATH	"/etc" XBPS_SYSDIR
 #endif
 
 /**
  * @def XBPS_CONF_PLIST
  * Filename for the XBPS plist configuration file.
  */
-#define XBPS_CONF_PLIST		"xbps-conf.plist"
+#define XBPS_CONF_PLIST		"conf.plist"
+
+/**
+ * @def XBPS_CONF_REPOS_PLIST
+ * Filename for the XBPS repositories plist configuration file.
+ */
+#define XBPS_CONF_REPOS_PLIST	"repositories.plist"
+
+/**
+ * @def XBPS_VIRTUALPKGD_PATH
+ * Default directory to load virtualpkg plist files, by default set
+ * to XBPS_SYSCONF_PATH + "/" + XBPS_VIRTUALPKGD_PATH.
+ */
+#define XBPS_VIRTUALPKGD_PATH	"virtualpkg.d.wants"
 
 /**
  * @def XBPS_FLAG_VERBOSE
@@ -372,12 +386,16 @@ struct xbps_unpack_cb_data {
  */
 struct xbps_handle {
 	/**
-	 * @private conf_dictionary
-	 *
-	 * Internalized proplib dictionary from conffile member.
-	 * Used internally by xbps_init().
+	 * @private
 	 */
-	prop_dictionary_t conf_dictionary;
+	prop_dictionary_t virtualpkg_dictionary;
+	/**
+	 * @private repos_array
+	 *
+	 * Internalized proplib array from XBPS_CONF_REPOS_PLIST file.
+	 * Used internally by xbps_init(), do not use it.
+	 */
+	prop_array_t repos_array;
 	/**
 	 * @var regpkgdb_dictionary.
 	 *
@@ -436,6 +454,26 @@ struct xbps_handle {
 	 */
 	struct xbps_fetch_cb_data *xfcd;
 	/**
+	 * @var rootdir
+	 *
+	 * Root directory for all operations in XBPS. If NULL,
+	 * by default it's set to /.
+	 */
+	prop_string_t rootdir;
+	/**
+	 * @var cachedir
+	 *
+	 * Cache directory to store downloaded binary packages.
+	 * If NULL default value in \a XBPS_CACHE_PATH is used.
+	 */
+	prop_string_t cachedir;
+	/**
+	 * @var conffile
+	 *
+	 * Full path to the XBPS_CONF_PLIST configuration file.
+	 */
+	prop_string_t conffile;
+	/**
 	 * @private fetch_timeout
 	 *
 	 * Unsigned integer to specify libfetch's timeout limit.
@@ -453,32 +491,6 @@ struct xbps_handle {
 	 * - XBPS_FLAG_FORCE
 	 */
 	int flags;
-	/**
-	 * @var rootdir
-	 *
-	 * Root directory for all operations in XBPS. If NULL,
-	 * by default it's set to /.
-	 */
-	const char *rootdir;
-	/**
-	 * @var cachedir
-	 *
-	 * Cache directory to store downloaded binary packages.
-	 * If NULL default value in \a XBPS_CACHE_PATH is used.
-	 */
-	const char *cachedir;
-	/**
-	 * @private pstring_cachedir
-	 *
-	 * Used internally by xbps_init(), do not use it.
-	 */
-	prop_string_t pstring_cachedir;
-	/**
-	 * @var conffile
-	 *
-	 * Full path to the XBPS_CONF_PLIST configuration file.
-	 */
-	const char *conffile;
 	/**
 	 * @var debug
 	 *

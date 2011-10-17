@@ -110,7 +110,8 @@ xbps_requiredby_pkg_remove(const char *pkgname)
 	assert(pkgname != NULL);
 
 	xhp = xbps_handle_get();
-	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
+	plist = xbps_xasprintf("%s/%s/%s",
+	    prop_string_cstring_nocopy(xhp->rootdir),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return ENOMEM;

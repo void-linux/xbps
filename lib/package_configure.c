@@ -127,9 +127,10 @@ xbps_configure_pkg(const char *pkgname,
 		return ENOMEM;
 	}
 
-	if (chdir(xhp->rootdir) == -1) {
+	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
 		xbps_dbg_printf("%s: [configure] chdir to '%s' returned %s\n",
-		    pkgname, xhp->rootdir, strerror(errno));
+		    pkgname, prop_string_cstring_nocopy(xhp->rootdir),
+		    strerror(errno));
 		free(buf);
 		free(pkgver);
 		return EINVAL;

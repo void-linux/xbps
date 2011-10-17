@@ -73,7 +73,6 @@ int HIDDEN
 xbps_repository_pool_init(void)
 {
 	struct xbps_handle *xhp;
-	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter = NULL;
 	struct repository_pool *rpool;
@@ -84,20 +83,16 @@ xbps_repository_pool_init(void)
 	bool duprepo;
 
 	xhp = xbps_handle_get();
-	if (xhp->conf_dictionary == NULL)
+	if (xhp->repos_array == NULL)
 		return ENOTSUP;
 
 	if (repolist_initialized)
 		return 0;
 
-	array = prop_dictionary_get(xhp->conf_dictionary, "repositories");
-	if (array == NULL)
-		return errno;
-
-	if (prop_array_count(array) == 0)
+	if (prop_array_count(xhp->repos_array) == 0)
 		return ENOTSUP;
 
-	iter = prop_array_iterator(array);
+	iter = prop_array_iterator(xhp->repos_array);
 	if (iter == NULL) {
 		rv = errno;
 		goto out;
@@ -189,6 +184,7 @@ xbps_repository_pool_init(void)
 	}
 
 	repolist_initialized = true;
+	prop_object_release(xhp->repos_array);
 	xbps_dbg_printf("[rpool] initialized ok.\n");
 out:
 	if (iter)

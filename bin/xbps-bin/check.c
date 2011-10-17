@@ -155,7 +155,8 @@ check_pkg_integrity(const char *pkgname)
 				    "empty target object!\n", pkgname, file);
 				continue;
 			}
-			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+			path = xbps_xasprintf("%s/%s",
+			    prop_string_cstring_nocopy(xhp->rootdir), file);
 			if (path == NULL)
 				abort();
 
@@ -168,8 +169,9 @@ check_pkg_integrity(const char *pkgname)
 			}
 
 			free(path);
-			if (strcmp(xhp->rootdir, "/") && strstr(buf, xhp->rootdir))
-				path = buf + strlen(xhp->rootdir);
+			if (!prop_string_equals_cstring(xhp->rootdir, "/") &&
+			    strstr(buf, prop_string_cstring_nocopy(xhp->rootdir)))
+				path = buf + prop_string_size(xhp->rootdir);
 			else
 				path = buf;
 
@@ -201,7 +203,8 @@ check_pkg_integrity(const char *pkgname)
 
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+			path = xbps_xasprintf("%s/%s",
+			    prop_string_cstring_nocopy(xhp->rootdir), file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				abort();
@@ -250,7 +253,8 @@ check_pkg_integrity(const char *pkgname)
 
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+			path = xbps_xasprintf("%s/%s",
+			    prop_string_cstring_nocopy(xhp->rootdir), file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				abort();

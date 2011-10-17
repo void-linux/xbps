@@ -285,10 +285,15 @@ main(int argc, char **argv)
 		xhp->xbps_unpack_cb = unpack_progress_cb_verbose;
 	else
 		xhp->xbps_unpack_cb = unpack_progress_cb;
-	xhp->rootdir = rootdir;
-	xhp->cachedir = cachedir;
+
+	if (rootdir)
+		xhp->rootdir = prop_string_create_cstring(rootdir);
+	if (cachedir)
+		xhp->cachedir = prop_string_create_cstring(cachedir);
+	if (conffile)
+		xhp->conffile = prop_string_create_cstring(conffile);
+
 	xhp->flags = flags;
-	xhp->conffile = conffile;
 	xhp->install_reason_manual = install_manual;
 	xhp->install_reason_auto = install_auto;
 

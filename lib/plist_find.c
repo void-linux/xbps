@@ -127,10 +127,10 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 	char *vpkgname = NULL;
 
 	xhp = xbps_handle_get();
-	if (xhp->conf_dictionary == NULL)
+	if (xhp->virtualpkg_dictionary == NULL)
 		return NULL;
 
-	if ((iter = xbps_array_iter_from_dict(xhp->conf_dictionary,
+	if ((iter = xbps_array_iter_from_dict(xhp->virtualpkg_dictionary,
 	    "virtual-packages")) == NULL)
 		return NULL;
 

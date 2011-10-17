@@ -156,8 +156,10 @@ main(int argc, char **argv)
 	xhp->debug = debug;
 	xhp->xbps_fetch_cb = fetch_file_progress_cb;
 	xhp->xfcd->cookie = &xfer;
-	xhp->rootdir = rootdir;
-	xhp->conffile = conffile;
+	if (rootdir)
+		xhp->rootdir = prop_string_create_cstring(rootdir);
+	if (conffile)
+		xhp->conffile = prop_string_create_cstring(conffile);
 
 	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-uhelper: failed to "

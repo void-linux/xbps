@@ -136,6 +136,8 @@ echo "INCLUDEDIR ?=	$INCLUDEDIR" >>$CONFIG_MK
 echo "LIBDIR ?=	$LIBDIR" >>$CONFIG_MK
 echo "MANDIR ?=	$MANDIR" >>$CONFIG_MK
 echo "SHAREDIR ?= $SHAREDIR" >>$CONFIG_MK
+
+ETCDIR="${ETCDIR}/xbps"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 
 [ -z "$DEBUG" ] && DEBUG=no
@@ -172,7 +174,7 @@ if [ -n "$LDFLAGS" ]; then
 fi
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DHAVE_CONFIG_H" >>$CONFIG_MK
-echo "CPPFLAGS +=	-DXBPS_CONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
+echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 
 if [ -n "$DEBUG" -a "$DEBUG" != no -a "$DEBUG" != false ]; then
 	echo "Building with debugging symbols."

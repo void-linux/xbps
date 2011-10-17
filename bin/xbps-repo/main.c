@@ -139,9 +139,12 @@ main(int argc, char **argv)
 	xhp->xbps_transaction_err_cb = transaction_err_cb;
 	xhp->xbps_fetch_cb = fetch_file_progress_cb;
 	xhp->xfcd->cookie = &xfer;
-	xhp->rootdir = rootdir;
-	xhp->cachedir = cachedir;
-	xhp->conffile = conffile;
+	if (rootdir)
+		xhp->rootdir = prop_string_create_cstring(rootdir);
+	if (cachedir)
+		xhp->cachedir = prop_string_create_cstring(cachedir);
+	if (conffile)
+		xhp->conffile = prop_string_create_cstring(conffile);
 
 	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-repo: couldn't initialize library: %s\n",

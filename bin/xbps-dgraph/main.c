@@ -442,7 +442,7 @@ int
 main(int argc, char **argv)
 {
 	prop_dictionary_t plistd, confd = NULL;
-	struct xbps_handle xh;
+	struct xbps_handle *xhp;
 	FILE *f = NULL;
 	char *outfile = NULL;
 	const char *conf_file = NULL, *rootdir = NULL;
@@ -484,9 +484,13 @@ main(int argc, char **argv)
 		usage();
 
 	/* Initialize libxbps */
-	memset(&xh, 0, sizeof(xh));
-	xh.rootdir = rootdir;
-	xbps_init(&xh);
+	xhp = xbps_handle_alloc();
+	if (xhp == NULL)
+		die("failed to allocate resources");
+	if (rootdir)
+		xhp->rootdir = prop_string_create_cstring(rootdir);
+	if (xbps_init(xhp))
+		die("failed to initialize libxbps");
 
 	/*
 	 * Output file will be <pkgname>.dot if not specified.

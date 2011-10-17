@@ -160,7 +160,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Execute the purge action in REMOVE script (if found).
 	 */
-	if (chdir(xhp->rootdir) == -1) {
+	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
 		rv = errno;
 		prop_object_release(dict);
 		xbps_error_printf("[purge] %s: cannot change to rootdir: %s.\n",
@@ -194,7 +194,8 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Remove metadata dir and unregister package.
 	 */
-	if ((rv = remove_pkg_metadata(pkgname, xhp->rootdir)) != 0) {
+	if ((rv = remove_pkg_metadata(pkgname,
+	    prop_string_cstring_nocopy(xhp->rootdir))) != 0) {
 		xbps_error_printf("%s: couldn't remove metadata files: %s\n",
 		    pkgname, strerror(rv));
 		return rv;

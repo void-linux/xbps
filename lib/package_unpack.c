@@ -172,7 +172,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 
 	preserve = update = false;
 
-	if (chdir(xhp->rootdir) == -1) {
+	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
 		xbps_error_printf("cannot chdir to rootdir for "
 		    "`%s-%s': %s\n", pkgname, version, strerror(errno));
 		return errno;

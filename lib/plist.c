@@ -196,7 +196,8 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 	xhp = xbps_handle_get();
 
 	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-	    xhp->rootdir, XBPS_META_PATH, pkgname, plist);
+	    prop_string_cstring_nocopy(xhp->rootdir),
+	    XBPS_META_PATH, pkgname, plist);
 	if (plistf == NULL)
 		return NULL;
 
@@ -209,7 +210,8 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 		}
 		free(plistf);
 		plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-		    xhp->rootdir, XBPS_META_PATH, pkgname, plist);
+		    prop_string_cstring_nocopy(xhp->rootdir),
+		    XBPS_META_PATH, pkgname, plist);
 		if (plistf == NULL)
 			return NULL;
 	}

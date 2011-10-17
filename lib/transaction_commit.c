@@ -137,9 +137,12 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		/*
 		 * Create cachedir.
 		 */
-		if (xbps_mkpath(xhp->cachedir, 0755) == -1) {
+		if (xbps_mkpath(prop_string_cstring_nocopy(xhp->cachedir),
+		    0755) == -1) {
 			xbps_error_printf("xbps-bin: cannot mkdir cachedir "
-			    "`%s': %s.\n", xhp->cachedir, strerror(errno));
+			    "`%s': %s.\n",
+			    prop_string_cstring_nocopy(xhp->cachedir),
+			    strerror(errno));
 			free(binfile);
 			rv = errno;
 			break;
@@ -149,7 +152,8 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		/*
 		 * Fetch binary package.
 		 */
-		rv = xbps_fetch_file(binfile, xhp->cachedir, false, NULL);
+		rv = xbps_fetch_file(binfile,
+		    prop_string_cstring_nocopy(xhp->cachedir), false, NULL);
 		if (rv == -1) {
 			RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_DOWNLOAD, pkgver, errno);
 			free(binfile);
