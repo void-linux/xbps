@@ -43,7 +43,7 @@ bool
 xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 		       const char *key)
 {
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(obj != NULL);
 	assert(key != NULL);
 
@@ -60,7 +60,7 @@ xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 bool
 xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 {
-	assert(array != NULL);
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(obj != NULL);
 
 	if (!prop_array_add(array, obj)) {
@@ -83,7 +83,7 @@ xbps_callback_array_iter(prop_array_t array,
 	int rv = 0;
 	bool loop_done = false;
 
-	assert(array != NULL);
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(fn != NULL);
 
 	iter = prop_array_iterator(array);
@@ -111,7 +111,7 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 	int rv = 0;
 	bool cbloop_done = false;
 
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(fn != NULL);
 
@@ -142,7 +142,7 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 	bool cbloop_done = false;
 	unsigned int cnt = 0;
 
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(fn != NULL);
 
@@ -170,7 +170,7 @@ xbps_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 {
 	prop_array_t array;
 
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 
 	array = prop_dictionary_get(dict, key);
@@ -180,6 +180,34 @@ xbps_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 	}
 
 	return prop_array_iterator(array);
+}
+
+int
+xbps_array_replace_dict_by_name(prop_array_t array,
+				prop_dictionary_t dict,
+				const char *pkgname)
+{
+	prop_object_t obj;
+	size_t i;
+	const char *curpkgname;
+
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(pkgname != NULL);
+
+	for (i = 0; i < prop_array_count(array); i++) {
+		obj = prop_array_get(array, i);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &curpkgname);
+		if (strcmp(curpkgname, pkgname) == 0) {
+			/* pkgname match, we know the index */
+			if (!prop_array_set(array, i, dict))
+				return EINVAL;
+
+			return 0;
+		}
+	}
+	/* no match */
+	return ENOENT;
 }
 
 prop_dictionary_t

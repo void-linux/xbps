@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
-#define XBPS_API_VERSION	"20111017-2"
+#define XBPS_API_VERSION	"20111019"
 #define XBPS_VERSION		"0.10.0"
 
 /**
@@ -1013,6 +1013,21 @@ bool xbps_remove_string_from_array(prop_array_t array, const char *str);
  * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_remove_pkgname_from_array(prop_array_t array, const char *name);
+
+/**
+ * Replaces a dictionary with another dictionary in \a dict, in the
+ * array \array by matching its "pkgname" object with \a pkgname.
+ *
+ * @param[in] array Proplib array where to look for.
+ * @param[in] dict Proplib dictionary to be added in \a array.
+ * @param[in] pkgname Package name to be matched.
+ *
+ * @return 0 on success, EINVAL if dictionary couldn't be set in
+ * array or ENOENT if no match.
+ */
+int xbps_array_replace_dict_by_name(prop_array_t array,
+				    prop_dictionary_t dict,
+				    const char *pkgname);
 
 /*@}*/
 
