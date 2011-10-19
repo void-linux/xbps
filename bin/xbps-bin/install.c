@@ -127,27 +127,26 @@ show_transaction_sizes(struct transaction *trans)
 	/*
 	 * Show the list of packages that will be installed.
 	 */
-	printf("\n");
 	if (prop_dictionary_get_uint32(trans->d, "total-install-pkgs",
 	    &trans->inst_pkgcnt)) {
 		printf("%u package%s will be installed:\n",
 		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "install");
-		printf("\n\n");
+		printf("\n");
 	}
 	if (prop_dictionary_get_uint32(trans->d, "total-update-pkgs",
 	    &trans->up_pkgcnt)) {
 		printf("%u package%s will be updated:\n",
 		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "update");
-		printf("\n\n");
+		printf("\n");
 	}
 	if (prop_dictionary_get_uint32(trans->d, "total-configure-pkgs",
 	    &trans->cf_pkgcnt)) {
 		printf("%u package%s will be configured:\n",
 		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "configure");
-		printf("\n\n");
+		printf("\n");
 	}
 	if (prop_dictionary_get_uint32(trans->d, "total-remove-pkgs",
 	    &trans->rm_pkgcnt)) {
@@ -174,7 +173,7 @@ show_transaction_sizes(struct transaction *trans)
 		    "%s\n", strerror(errno));
 		return -1;
 	}
-	printf("Total installed size:\t%6s\n", size);
+	printf("Total installed size:\t%6s\n\n", size);
 
 	return 0;
 }
@@ -188,7 +187,7 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 	 * Update all currently installed packages, aka
 	 * "xbps-bin autoupdate".
 	 */
-	printf("Finding new packages...\n");
+	printf("Finding new packages...\n\n");
 	if ((rv = xbps_repository_update_packages()) != 0) {
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
