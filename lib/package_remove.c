@@ -81,7 +81,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict, const char *key)
 	char *path = NULL;
 	int rv = 0;
 
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 	xhp = xbps_handle_get();
 

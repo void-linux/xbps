@@ -55,6 +55,7 @@ remove_pkg_metadata(const char *pkgname, const char *rootdir)
 	int rv = 0;
 
 	assert(pkgname != NULL);
+	assert(rootdir != NULL);
 
 	metadir = xbps_xasprintf("%s/%s/metadata/%s", rootdir,
 	     XBPS_META_PATH, pkgname);

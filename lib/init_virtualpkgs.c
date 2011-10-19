@@ -46,6 +46,8 @@ xbps_init_virtual_pkgs(struct xbps_handle *xh)
 	prop_string_t vpkgdir;
 	char *vpkgfile;
 
+	assert(xh != NULL);
+
 	if (prop_object_type(xh->confdir) != PROP_TYPE_STRING) {
 		vpkgdir = prop_string_create_cstring(XBPS_SYSCONF_PATH);
 		prop_string_append_cstring(vpkgdir, "/");

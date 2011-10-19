@@ -50,6 +50,8 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 	int rv = 0;
 	bool autoinst = false;
 
+	assert(prop_object_type(pkgrd) == PROP_TYPE_DICTIONARY);
+
 	xhp = xbps_handle_get();
 	plist = xbps_xasprintf("%s/%s/%s",
 	    prop_string_cstring_nocopy(xhp->rootdir),

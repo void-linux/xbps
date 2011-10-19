@@ -50,7 +50,7 @@ find_pkg_in_array(prop_array_t array,
 	prop_object_t obj = NULL;
 	const char *pkgver, *dpkgn;
 
-	assert(array != NULL);
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(str != NULL);
 
 	iter = prop_array_iterator(array);
@@ -172,7 +172,7 @@ find_virtualpkg_user_in_array(prop_array_t array,
 	prop_object_iterator_t iter;
 	const char *pkgver, *virtualpkg;
 
-	assert(array != NULL);
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(str != NULL);
 
 	virtualpkg = find_virtualpkg_user_in_conf(str, bypattern);
@@ -201,7 +201,7 @@ find_virtualpkg_user_in_dict(prop_dictionary_t d,
 {
 	prop_array_t array;
 
-	assert(d != NULL);
+	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
 	assert(str != NULL);
 	assert(key != NULL);
 
@@ -221,7 +221,7 @@ find_pkg_in_dict(prop_dictionary_t d,
 {
 	prop_array_t array;
 
-	assert(d != NULL);
+	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
 	assert(str != NULL);
 	assert(key != NULL);
 

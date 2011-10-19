@@ -39,8 +39,8 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 	int rv = 0;
 	pkg_state_t state = 0;
 
-	assert(transd != NULL);
-	assert(repo_pkgd != NULL);
+	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
+	assert(prop_object_type(repo_pkgd) == PROP_TYPE_DICTIONARY);
 	/*
 	 * Get some info about dependencies and current repository.
 	 */
@@ -122,7 +122,7 @@ add_missing_reqdep(prop_array_t missing_rdeps, const char *reqpkg)
 	bool add_pkgdep, pkgfound, update_pkgdep;
 	int rv = 0;
 
-	assert(missing_rdeps != NULL);
+	assert(prop_object_type(missing_rdeps) == PROP_TYPE_ARRAY);
 	assert(reqpkg != NULL);
 
 	add_pkgdep = update_pkgdep = pkgfound = false;
@@ -213,6 +213,10 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 	const char *reqpkg, *pkgver_q, *repopkgver;
 	char *pkgname;
 	int rv = 0;
+
+	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
+	assert(prop_object_type(mrdeps) == PROP_TYPE_ARRAY);
+	assert(prop_object_type(pkg_rdeps_array) == PROP_TYPE_ARRAY);
 
 	if (depth >= MAX_DEPTH)
 		return ELOOP;
@@ -445,9 +449,9 @@ xbps_repository_find_pkg_deps(prop_dictionary_t transd,
 	const char *pkgver;
 	int rv = 0;
 
-	assert(transd != NULL);
-	assert(mdeps != NULL);
-	assert(repo_pkgd != NULL);
+	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
+	assert(prop_object_type(mdeps) == PROP_TYPE_ARRAY);
+	assert(prop_object_type(repo_pkgd) == PROP_TYPE_DICTIONARY);
 
 	pkg_rdeps = prop_dictionary_get(repo_pkgd, "run_depends");
 	if (pkg_rdeps == NULL)

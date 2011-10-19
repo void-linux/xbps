@@ -165,8 +165,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	int rv, flags;
 	bool preserve, update;
 
+	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
-	assert(pkg_repod != NULL);
 	assert(pkgname != NULL);
 	assert(version != NULL);
 
@@ -467,7 +467,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	char *bpkg;
 	int rv = 0;
 
-	assert(pkg_repod != NULL);
+	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &version);

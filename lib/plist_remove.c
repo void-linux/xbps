@@ -48,6 +48,8 @@ remove_string_from_array(prop_array_t array, const char *str, int mode)
 	size_t i, idx = 0;
 	bool found = false;
 
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+
 	for (i = 0; i < prop_array_count(array); i++) {
 		obj = prop_array_get(array, i);
 		if (mode == 0) {
@@ -111,7 +113,7 @@ xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
 {
 	prop_array_t array;
 
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(pkgname != NULL);
 

@@ -59,7 +59,7 @@ set_new_state(prop_dictionary_t dict, pkg_state_t state)
 	const struct state *stp;
 	const char *pkgname;
 
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 
 	for (stp = states; stp->string != NULL; stp++)
 		if (state == stp->number)
@@ -85,7 +85,7 @@ get_state(prop_dictionary_t dict)
 	const struct state *stp;
 	const char *state_str;
 
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 
 	if (!prop_dictionary_get_cstring_nocopy(dict,
 	    "state", &state_str))
@@ -121,7 +121,7 @@ xbps_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 int
 xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 {
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(state != NULL);
 
 	if ((*state = get_state(dict)) == 0)
@@ -133,7 +133,7 @@ xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 int
 xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 {
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 
 	return set_new_state(dict, state);
 }

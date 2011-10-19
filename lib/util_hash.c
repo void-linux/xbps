@@ -145,7 +145,7 @@ xbps_file_hash_dictionary(prop_dictionary_t d,
 	prop_object_iterator_t iter;
 	const char *curfile, *sha256;
 
-	assert(d != NULL);
+	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(file != NULL);
 
@@ -181,7 +181,7 @@ xbps_file_hash_check_dictionary(prop_dictionary_t d,
 	const char *sha256d;
 	int rv;
 
-	assert(d != NULL);
+	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(file != NULL);
 

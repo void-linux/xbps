@@ -47,6 +47,8 @@ xbps_match_virtual_pkg_in_dict(prop_dictionary_t d,
 	prop_array_t provides;
 	bool found = false;
 
+	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
+
 	if ((provides = prop_dictionary_get(d, "provides"))) {
 		if (bypattern)
 			found = xbps_match_pkgpattern_in_array(provides, str);
@@ -65,7 +67,7 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 	char *curpkgname;
 	bool found = false;
 
-	assert(array != NULL);
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(str != NULL);
 
 	iter = prop_array_iterator(array);

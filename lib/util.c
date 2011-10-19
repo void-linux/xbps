@@ -248,7 +248,7 @@ xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 	const char *filen, *arch;
 	char *lbinpkg = NULL;
 
-	assert(pkg_repod != NULL);
+	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(repoloc != NULL);
 
 	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
@@ -278,13 +278,13 @@ xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 }
 
 bool
-xbps_pkg_has_rundeps(prop_dictionary_t pkg)
+xbps_pkg_has_rundeps(prop_dictionary_t pkgd)
 {
 	prop_array_t array;
 
-	assert(pkg != NULL);
+	assert(prop_object_type(pkgd) == PROP_TYPE_DICTIONARY);
 
-	array = prop_dictionary_get(pkg, "run_depends");
+	array = prop_dictionary_get(pkgd, "run_depends");
 	if (array && prop_array_count(array) > 0)
 		return true;
 

@@ -48,6 +48,8 @@ repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done
 {
 	struct repo_pool_fpkg *rpf = arg;
 
+	assert(rpi != NULL);
+
 	if (rpf->bypattern) {
 		rpf->pkgd =
 		    xbps_find_virtualpkg_conf_in_dict_by_pattern(rpi->rpi_repod,
@@ -76,6 +78,8 @@ static int
 repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
+
+	assert(rpi != NULL);
 
 	if (rpf->bypattern) {
 		rpf->pkgd = xbps_find_pkg_in_dict_by_pattern(rpi->rpi_repod,
@@ -121,6 +125,8 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 	struct repo_pool_fpkg *rpf = arg;
 	prop_dictionary_t instpkgd;
 	const char *instver, *repover;
+
+	assert(rpi != NULL);
 
 	rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
 	    "packages", rpf->pattern);

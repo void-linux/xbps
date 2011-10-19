@@ -43,6 +43,9 @@ xbps_repository_pkg_replaces(prop_dictionary_t transd,
 	const char *pattern, *pkgname, *curpkgname;
 	bool instd_auto = false;
 
+	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
+	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
+
 	replaces = prop_dictionary_get(pkg_repod, "replaces");
 	if (replaces == NULL || prop_array_count(replaces) == 0)
 		return 0;

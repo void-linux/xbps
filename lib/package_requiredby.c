@@ -38,6 +38,8 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
 	prop_string_t reqstr;
 	bool alloc = false;
 
+	assert(prop_object_type(pkgd) == PROP_TYPE_DICTIONARY);
+
 	if ((reqby = prop_dictionary_get(pkgd, "requiredby")) == NULL) {
 		alloc = true;
 		if ((reqby = prop_array_create()) == NULL)
@@ -150,8 +152,8 @@ xbps_requiredby_pkg_add(prop_array_t pkgs_array, prop_dictionary_t pkgd)
 	const char *pkgver, *str;
 	int rv = 0;
 
-	assert(pkgs_array != NULL);
-	assert(pkgd != NULL);
+	assert(prop_object_type(pkgs_array) == PROP_TYPE_ARRAY);
+	assert(prop_object_type(pkgd) == PROP_TYPE_DICTIONARY);
 
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	pkg_rdeps = prop_dictionary_get(pkgd, "run_depends");

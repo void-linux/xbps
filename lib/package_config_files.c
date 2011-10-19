@@ -42,7 +42,7 @@ xbps_entry_is_a_conf_file(prop_dictionary_t propsd,
 	char *cffile;
 	int rv = 0;
 
-	assert(propsd != NULL);
+	assert(prop_object_type(propsd) == PROP_TYPE_DICTIONARY);
 	assert(entry_pname != NULL);
 
 	if (!prop_dictionary_get(propsd, "conf_files"))
@@ -89,7 +89,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 	char *buf, *sha256_cur = NULL, *sha256_orig = NULL;
 	int rv = 0;
 
-	assert(filesd != NULL);
+	assert(prop_object_type(filesd) == PROP_TYPE_DICTIONARY);
 	assert(entry != NULL);
 	assert(entry_pname != NULL);
 	assert(pkgname != NULL);
