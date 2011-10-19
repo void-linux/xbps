@@ -36,18 +36,28 @@
 #include "defs.h"
 
 /*
- * Checks package integrity of an installed package. This
- * consists in five tasks:
+ * Checks package integrity of an installed package.
+ * The following tasks are processed in that order:
+ *
+ * 	o Check if package was installed manually, but currently
+ * 	  other packages are depending on it. This package shall be
+ * 	  changed to automatic mode, i.e installed as dependency of
+ * 	  those packages.
  *
  * 	o Check for metadata files (files.plist and props.plist),
  * 	  we only check if the file exists and its dictionary can
  * 	  be externalized and is not empty.
+ *
  * 	o Check for missing installed files.
+ *
  * 	o Check for target file in symlinks, so that we can check that
  * 	  they have not been modified.
+ *
  * 	o Check the hash for all installed files, except
  * 	  configuration files (which is expected if they are modified).
+ *
  * 	o Check for missing run time dependencies.
+ *
  */
 
 int
@@ -85,14 +95,14 @@ int
 check_pkg_integrity(const char *pkgname)
 {
 	struct xbps_handle *xhp;
-	prop_dictionary_t pkgd, propsd = NULL, filesd = NULL;
-	prop_array_t array;
+	prop_dictionary_t pkgd, dict, propsd = NULL, filesd = NULL;
+	prop_array_t array, reqby;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *file, *sha256, *reqpkg, *tgt = NULL;
 	char *path, buf[PATH_MAX];
 	int rv = 0;
-	bool broken = false, test_broken = false;
+	bool broken = false, test_broken = false, autoinst = false;
 
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
@@ -101,6 +111,53 @@ check_pkg_integrity(const char *pkgname)
 	if (pkgd == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;
+	}
+	/*
+	 * Check if package has been installed manually but any other
+	 * package is currently depending on it; in that case the package
+	 * must be in automatic mode.
+	 */
+	if (prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst)) {
+		reqby = prop_dictionary_get(pkgd, "requiredby");
+		if (((prop_object_type(reqby) == PROP_TYPE_ARRAY)) &&
+		    ((prop_array_count(reqby) > 0) && !autoinst)) {
+		        path = xbps_xasprintf("%s/%s/%s",
+			    prop_string_cstring_nocopy(xhp->rootdir),
+			    XBPS_META_PATH, XBPS_REGPKGDB);
+			assert(path != NULL);
+
+			/* pkg has reversedeps and was installed manually */
+			prop_dictionary_set_bool(pkgd,
+			    "automatic-install", true);
+
+			dict = prop_dictionary_internalize_from_zfile(path);
+			if (dict == NULL) {
+				xbps_error_printf("%s: [0] failed to set "
+				    "automatic mode (%s)\n", pkgname, strerror(errno));
+				return rv;
+			}
+			array = prop_dictionary_get(dict, "packages");
+			rv = xbps_array_replace_dict_by_name(array, pkgd, pkgname);
+			if (rv != 0) {
+				xbps_error_printf("%s: [1] failed to set "
+				    "automatic mode (%s)\n", pkgname, strerror(rv));
+				return rv;
+			}
+			if (!prop_dictionary_set(dict, "packages", array)) {
+				xbps_error_printf("%s: [2] failed to set "
+				    "automatic mode (%s)\n", pkgname, strerror(rv));
+				return rv;
+			}
+			if (!prop_dictionary_externalize_to_zfile(dict, path)) {
+				xbps_error_printf("%s: [3] failed to set "
+				    "automatic mode (%s)\n", pkgname, strerror(errno));
+				return rv;
+			}
+			free(path);
+			path = NULL;
+			xbps_warn_printf("%s: was installed manually and has "
+			    "reverse dependencies (FIXED)\n", pkgname);
+		}
 	}
 	prop_object_release(pkgd);
 

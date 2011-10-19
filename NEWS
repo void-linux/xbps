@@ -1,5 +1,10 @@
 xbps-0.10.0 (???):
 
+ * xbps-bin(8): the 'check' target now is able to detect if a package
+   was installed manually and other packages are currently depending
+   on it and change its mode to "automatic", i.e as dependency of those
+   packages.
+
  * xbps-bin(8), xbps-repo(8): the -C flag now expects a path to a
    directory where the configuration files (conf.plist and
    repositories.plist) are stored.
