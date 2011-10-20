@@ -54,7 +54,7 @@
 static int
 repository_find_pkg(const char *pattern, const char *reason)
 {
-	prop_dictionary_t pkg_repod = NULL, origin_pkgrd = NULL;
+	prop_dictionary_t pkg_repod = NULL;
 	prop_dictionary_t transd;
 	prop_array_t mdeps, unsorted;
 	const char *pkgname;
@@ -108,13 +108,12 @@ repository_find_pkg(const char *pattern, const char *reason)
 		goto out;
 	}
 
-	origin_pkgrd = prop_dictionary_copy(pkg_repod);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
-	rv = xbps_repository_find_pkg_deps(transd, mdeps, origin_pkgrd);
+	rv = xbps_repository_find_pkg_deps(transd, mdeps, pkg_repod);
 	if (rv != 0)
 		goto out;
 
@@ -128,7 +127,7 @@ repository_find_pkg(const char *pattern, const char *reason)
 		/* Package not installed, don't error out */
 		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
-	if ((rv = xbps_set_pkg_state_dictionary(origin_pkgrd, state)) != 0)
+	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod, state)) != 0)
 		goto out;
 
 	if (state == XBPS_PKG_STATE_UNPACKED)
@@ -141,7 +140,7 @@ repository_find_pkg(const char *pattern, const char *reason)
 	 * Set transaction obj in pkg dictionary to "install", "configure"
 	 * or "update".
 	 */
-	if (!prop_dictionary_set_cstring_nocopy(origin_pkgrd,
+	if (!prop_dictionary_set_cstring_nocopy(pkg_repod,
 	    "transaction", reason)) {
 		rv = EINVAL;
 		goto out;
@@ -155,16 +154,10 @@ repository_find_pkg(const char *pattern, const char *reason)
 		goto out;
 	}
 	/*
-	 * Check if this package should replace other installed packages.
-	 */
-	if ((rv = xbps_repository_pkg_replaces(transd, origin_pkgrd)) != 0)
-		goto out;
-
-	/*
 	 * Add the pkg dictionary from repository's index dictionary into
 	 * the "unsorted" array in transaction dictionary.
 	 */
-	if (!prop_array_add(unsorted, origin_pkgrd)) {
+	if (!prop_array_add(unsorted, pkg_repod)) {
 		rv = errno;
 		goto out;
 	}
@@ -172,8 +165,6 @@ repository_find_pkg(const char *pattern, const char *reason)
 out:
 	if (pkg_repod)
 		prop_object_release(pkg_repod);
-	if (origin_pkgrd)
-		prop_object_release(origin_pkgrd);
 
 	return rv;
 }

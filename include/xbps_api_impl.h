@@ -172,10 +172,9 @@ int HIDDEN xbps_file_chdir_exec(const char *, const char *, ...);
 
 /**
  * @private
- * From lib/package_replaces.c
+ * From lib/transaction_package_replace.c
  */
-int HIDDEN xbps_repository_pkg_replaces(prop_dictionary_t,
-					prop_dictionary_t);
+int HIDDEN xbps_transaction_package_replace(prop_dictionary_t);
 
 /**
  * @private

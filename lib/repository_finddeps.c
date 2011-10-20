@@ -33,7 +33,6 @@
 static int
 store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 {
-	prop_dictionary_t dict;
 	prop_array_t array;
 	const char *pkgname, *pkgver, *repoloc, *reason;
 	int rv = 0;
@@ -47,37 +46,19 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "repository", &repoloc);
-	/*
-	 * Check if this package should replace other installed packages.
-	 */
-	if ((rv = xbps_repository_pkg_replaces(transd, repo_pkgd)) != 0)
-		return rv;
 
-	dict = prop_dictionary_copy(repo_pkgd);
-	if (dict == NULL)
-		return errno;
-
-	array = prop_dictionary_get(transd, "unsorted_deps");
-	if (array == NULL) {
-		prop_object_release(dict);
-		return errno;
-	}
 	/*
 	 * Overwrite package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
 	 */
 	if ((rv = xbps_pkg_state_installed(pkgname, &state)) != 0) {
-		if (rv != ENOENT) {
-			prop_object_release(dict);
+		if (rv != ENOENT)
 			return rv;
-		}
 		/* pkg not installed */
 		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
-	if ((rv = xbps_set_pkg_state_dictionary(dict, state)) != 0) {
-		prop_object_release(dict);
+	if ((rv = xbps_set_pkg_state_dictionary(repo_pkgd, state)) != 0)
 		return rv;
-	}
 	/*
 	 * If pkg dependency is already installed, skip it if the transaction
 	 * reason is "install". 
@@ -88,24 +69,24 @@ store_dependency(prop_dictionary_t transd, prop_dictionary_t repo_pkgd)
 		if (strcmp(reason, "install") == 0) {
 			xbps_dbg_printf("%s: skipping, already installed.\n",
 			    pkgver);
-			prop_object_release(dict);
 			return 0;
 		}
 	}
 	/*
 	 * Add required objects into package dep's dictionary.
 	 */
-	if (!prop_dictionary_set_bool(dict, "automatic-install", true)) {
-		prop_object_release(dict);
+	if (!prop_dictionary_set_bool(repo_pkgd, "automatic-install", true))
 		return errno;
-	}
 	/*
 	 * Add the dictionary into the array.
 	 */
-	if (!xbps_add_obj_to_array(array, dict)) {
-		prop_object_release(dict);
+	array = prop_dictionary_get(transd, "unsorted_deps");
+	if (array == NULL)
+		return errno;
+
+	if (!prop_array_add(array, repo_pkgd))
 		return EINVAL;
-	}
+
 	xbps_dbg_printf("Added package '%s' into "
 	    "the transaction (%s).\n", pkgver, repoloc);
 

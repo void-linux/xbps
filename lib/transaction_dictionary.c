@@ -236,6 +236,15 @@ xbps_transaction_prepare(void)
 		return NULL;
 	}
 	/*
+	 * Check for packages to be replaced.
+	 */
+	if ((rv = xbps_transaction_package_replace(transd)) != 0) {
+		errno = rv;
+		prop_object_release(transd);
+		prop_object_release(trans_mdeps);
+		return NULL;
+	}
+	/*
 	 * Sort package dependencies if necessary.
 	 */
 	if ((rv = xbps_sort_pkg_deps()) != 0) {

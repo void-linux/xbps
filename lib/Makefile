@@ -40,7 +40,7 @@ endif
 OBJS = package_configure.o package_config_files.o package_orphans.o
 OBJS += package_remove.o package_remove_obsoletes.o package_state.o
 OBJS += package_unpack.o package_requiredby.o package_register.o
-OBJS += package_purge.o package_replaces.o transaction_commit.o
+OBJS += package_purge.o transaction_commit.o transaction_package_replace.o
 OBJS += transaction_dictionary.o transaction_sortdeps.o
 OBJS += download.o fexec.o humanize_number.o plist.o
 OBJS += plist_archive_entry.o plist_find.o plist_match.o plist_remove.o

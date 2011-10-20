@@ -205,6 +205,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	    "[*] Running transaction tasks", NULL, NULL, NULL);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		update = false;
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
@@ -215,7 +216,6 @@ xbps_transaction_commit(prop_dictionary_t transd)
 			/*
 			 * Remove a package.
 			 */
-			update = false;
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
 			RUN_TRANS_CB(XBPS_TRANS_STATE_REMOVE,
