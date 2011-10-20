@@ -91,8 +91,17 @@ xbps_configure_pkg(const char *pkgname,
 
 	if (check_state) {
 		rv = xbps_pkg_state_installed(pkgname, &state);
-		if (rv != 0)
+		if (rv == ENOENT) {
+			/*
+			 * package not installed or has been removed
+			 * (must be purged) so ignore it.
+			 */
+			return 0;
+		} else if (rv != 0) {
+			xbps_dbg_printf("%s: [configure] failed to get "
+			    "pkg state: %s\n", pkgname, strerror(rv));
 			return EINVAL;
+		}
 
 		if (state == XBPS_PKG_STATE_INSTALLED) {
 			if ((xhp->flags & XBPS_FLAG_FORCE) == 0)
