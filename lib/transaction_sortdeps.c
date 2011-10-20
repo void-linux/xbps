@@ -372,16 +372,23 @@ xbps_sort_pkg_deps(void)
 				rv = ENOMEM;
 				goto out;
 			}
-			TAILQ_INSERT_TAIL(&pkgdep_list, pd, pkgdep_entries);
+			if (strcmp(pd->trans, "remove") == 0) {
+				xbps_dbg_printf_append("added into head.");
+				TAILQ_INSERT_HEAD(&pkgdep_list, pd,
+				    pkgdep_entries);
+			} else {
+				xbps_dbg_printf_append("added into tail.");
+				TAILQ_INSERT_TAIL(&pkgdep_list, pd,
+				    pkgdep_entries);
+			}
 		}
 		/*
-		 * Packages that don't have deps go unsorted, because
+		 * Packages that don't have deps go at head, because
 		 * it doesn't matter.
 		 */
 		rundeps = prop_dictionary_get(obj, "run_depends");
 		if (rundeps == NULL || prop_array_count(rundeps) == 0) {
-			xbps_dbg_printf_append("added (no rundeps) into "
-			    "the sorted queue.\n");
+			xbps_dbg_printf_append("\n");
 			cnt++;
 			continue;
 		}
