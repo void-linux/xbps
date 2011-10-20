@@ -1,5 +1,8 @@
 xbps-0.10.0 (???):
 
+ * Fixed issue 11 "xbps-bin fails to update properly some pkgs".
+	http://code.google.com/p/xbps/issues/detail?id=11
+
  * xbps-bin(8): the 'check' target now is able to detect if a package
    was installed manually and other packages are currently depending
    on it and change its mode to "automatic", i.e as dependency of those
