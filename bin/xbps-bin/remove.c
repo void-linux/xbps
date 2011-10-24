@@ -123,17 +123,20 @@ int
 remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 		      bool force_rm_with_deps, bool recursive_rm)
 {
-	prop_array_t sorted_pkgs, orphans, reqby, orphans_user = NULL;
+	prop_array_t sorted, unsorted, orphans, reqby, orphans_user = NULL;
 	prop_dictionary_t dict;
 	size_t x;
 	const char *version, *pkgver, *pkgname;
 	int i, rv = 0;
 	bool found = false, reqby_force = false;
 
-	sorted_pkgs = prop_array_create();
-	if (sorted_pkgs == NULL)
+	unsorted = prop_array_create();
+	if (unsorted == NULL)
 		return -1;
 
+	sorted = prop_array_create();
+	if (sorted == NULL)
+		return -1;
 	/*
 	 * If recursively removing packages, find out which packages
 	 * would be orphans if the supplied packages were already removed.
@@ -154,7 +157,7 @@ remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 			return EINVAL;
 		}
 		for (x = 0; x < prop_array_count(orphans); x++)
-			prop_array_add(sorted_pkgs, prop_array_get(orphans, x));
+			prop_array_add(unsorted, prop_array_get(orphans, x));
 
 		prop_object_release(orphans);
 	}
@@ -171,7 +174,7 @@ remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 		 * Check that current package is not required by
 		 * other installed packages.
 		 */
-		prop_array_add(sorted_pkgs, dict);
+		prop_array_add(sorted, dict);
 		found = true;
 		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
 		reqby = prop_dictionary_get(dict, "requiredby");
@@ -193,44 +196,50 @@ remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 		prop_object_release(dict);
 	}
 	if (!found) {
-		prop_object_release(sorted_pkgs);
+		prop_object_release(unsorted);
 		return 0;
 	}
 	if (reqby_force && !force_rm_with_deps) {
-		prop_object_release(sorted_pkgs);
+		prop_object_release(unsorted);
+		prop_object_release(sorted);
 		return EINVAL;
 	}
+	for (x = 0; x < prop_array_count(unsorted); x++) {
+		dict = prop_array_get(unsorted, x);
+		prop_array_add(sorted, dict);
+	}
+	prop_object_release(unsorted);
 	/*
 	 * Show the list of going-to-be removed packages.
 	 */
 	printf("The following packages will be removed:\n\n");
-	for (x = 0; x < prop_array_count(sorted_pkgs); x++) {
-		dict = prop_array_get(sorted_pkgs, x);
+	for (x = 0; x < prop_array_count(sorted); x++) {
+		dict = prop_array_get(sorted, x);
 		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
 		print_package_line(pkgver, false);
 	}
 	printf("\n\n");
 	printf("%u package%s will be removed%s.\n\n",
-	    prop_array_count(sorted_pkgs),
-	    prop_array_count(sorted_pkgs) == 1 ? "" : "s",
+	    prop_array_count(sorted),
+	    prop_array_count(sorted) == 1 ? "" : "s",
 	    purge ? " and purged" : "");
 
 	if (!yes && !noyes("Do you want to continue?")) {
 		printf("Cancelling!\n");
-		prop_object_release(sorted_pkgs);
+		prop_object_release(sorted);
 		return 0;
 	}
 
-	for (x = 0; x < prop_array_count(sorted_pkgs); x++) {
-		dict = prop_array_get(sorted_pkgs, x);
+	for (x = 0; x < prop_array_count(sorted); x++) {
+		dict = prop_array_get(sorted, x);
 		prop_dictionary_get_cstring_nocopy(dict, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 		if ((rv = pkg_remove_and_purge(pkgname, version, purge)) != 0) {
-			prop_object_release(sorted_pkgs);
+			prop_object_release(sorted);
 			return rv;
 		}
 	}
-	prop_object_release(sorted_pkgs);
+	prop_object_release(sorted);
 
 	return 0;
 }
