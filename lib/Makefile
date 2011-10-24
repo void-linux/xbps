@@ -36,19 +36,22 @@ ifdef USE_EXTERNAL_LIBFETCH
 LIBFETCH_OBJS =
 endif
 
+# External code used by libxbps
+EXTOBJS = external/dewey.o external/fexec.o external/humanize_number.o
+EXTOBJS += external/match.o external/mkpath.o
+
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o
 OBJS += package_remove.o package_remove_obsoletes.o package_state.o
 OBJS += package_unpack.o package_requiredby.o package_register.o
 OBJS += package_purge.o transaction_commit.o transaction_package_replace.o
-OBJS += transaction_dictionary.o transaction_sortdeps.o
-OBJS += download.o fexec.o humanize_number.o plist.o
-OBJS += plist_archive_entry.o plist_find.o plist_match.o plist_remove.o
-OBJS += plist_fetch.o util.o util_hash.o mkpath.o initend.o
-OBJS += regpkgdb_dictionary.o match.o dewey.o init_virtualpkgs.o
+OBJS += transaction_dictionary.o transaction_sortdeps.o download.o
+OBJS += plist.o plist_archive_entry.o plist_find.o plist_match.o
+OBJS += plist_remove.o plist_fetch.o util.o util_hash.o
+OBJS += initend.o regpkgdb_dictionary.o init_virtualpkgs.o
 OBJS += repository_findpkg.o repository_finddeps.o
 OBJS += repository_pool.o repository_pool_find.o repository_sync_index.o
-OBJS += $(COMPAT_SRCS)
+OBJS += $(EXTOBJS) $(COMPAT_SRCS)
 
 .PHONY: all
 all: libxbps.so libxbps.a
