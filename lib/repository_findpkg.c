@@ -81,6 +81,8 @@ repository_find_pkg(const char *pattern, const char *reason)
 		bestpkg = true;
 	}
 
+	xbps_dbg_printf("%s: pattern %s reason %s\n", __func__, pattern, reason);
+
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
