@@ -172,7 +172,7 @@ xbps_pkgpattern_name(const char *pkg)
 
 	assert(pkg != NULL);
 
-	res = strpbrk(pkg, "><=");
+	res = strpbrk(pkg, "><-");
 	if (res == NULL)
 		return NULL;
 
@@ -193,7 +193,7 @@ xbps_pkgpattern_version(const char *pkg)
 
 	assert(pkg != NULL);
 
-	res = strpbrk(pkg, "><=");
+	res = strpbrk(pkg, "><-");
 	if (res == NULL)
 		return NULL;
 
