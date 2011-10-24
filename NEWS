@@ -1,5 +1,9 @@
 xbps-0.11.0 (???):
 
+ * xbps-bin(8): 'remove' with recursive flag (-R) now removes first
+   the specified packages and puts its automatic dependencies at the
+   tail of the array.
+
  * libxbps: xbps_pkgpattern_{name,version} now return expected
    pkgname/version if the pattern is a shell wildcard pattern
    (fnmatch(3)).
