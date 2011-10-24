@@ -1,3 +1,13 @@
+xbps-0.11.0 (???):
+
+ * libxbps: xbps_pkgpattern_{name,version} now return expected
+   pkgname/version if the pattern is a shell wildcard pattern
+   (fnmatch(3)).
+
+ * libxbps: removed csh alternate code from the NetBSD's match code.
+   We weren't using this code anyway and this only slowed down
+   xbps_pkgpattern_match().
+
 xbps-0.10.0 (2011-10-21):
 
  * Fixed issue 11 "xbps-bin fails to update properly some pkgs".
