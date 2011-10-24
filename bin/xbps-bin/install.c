@@ -223,10 +223,10 @@ install_new_pkg(const char *pkg)
 	} else {
 		/* 
 		 * If only pkgname has been specified, always append
-		 * '>=0' at the end, will be easier to parse.
+		 * '-[0-9]*' at the end, will be easier to parse.
 		 */
 		pkgmatch = true;
-		pkgpatt = xbps_xasprintf("%s%s", pkg, ">=0");
+		pkgpatt = xbps_xasprintf("%s%s", pkg, "-[0-9]*");
 		if (pkgpatt == NULL)
 			return -1;
 	}
