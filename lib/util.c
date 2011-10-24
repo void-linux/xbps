@@ -172,11 +172,14 @@ xbps_pkgpattern_name(const char *pkg)
 
 	assert(pkg != NULL);
 
-	res = strpbrk(pkg, "><-");
+	res = strpbrk(pkg, "><*?[]");
 	if (res == NULL)
 		return NULL;
 
 	len = strlen(pkg) - strlen(res) + 1;
+	if (pkg[len-2] == '-')
+		len--;
+
 	pkgname = malloc(len);
 	if (pkgname == NULL)
 		return NULL;
@@ -193,7 +196,7 @@ xbps_pkgpattern_version(const char *pkg)
 
 	assert(pkg != NULL);
 
-	res = strpbrk(pkg, "><-");
+	res = strpbrk(pkg, "><*?[]");
 	if (res == NULL)
 		return NULL;
 
