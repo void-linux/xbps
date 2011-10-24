@@ -1,9 +1,21 @@
 XBPS includes the following software from third parties for
 internal use in the code:
 
-- queue.h from NetBSD (include/queue.h).
-- package pattern matching code from NetBSD (lib/dewey.c lib/match.c).
-- strlcat and strlcpy functions from OpenBSD (lib/compat/strlc{at,cpy}.c)
-- libfetch-2.31 from NetBSD (lib/fetch).
+- queue.h from NetBSD: include/queue.h.
+
+- package pattern matching code from NetBSD:
+  lib/external/dewey.c and lib/external/match.c
+
+- strlcat and strlcpy functions from OpenBSD:
+  lib/compat/strlc{at,cpy}.c
+
+- humanize_number(3) from NetBSD: lib/external/humanize_number.c
+
+- mkpath from NetBSD's mkdir(1): lib/external/mkpath.c
+
+- fexec from NetBSD's pkg_install: lib/external/fexec.c
+
+- libfetch-2.31 from NetBSD: lib/fetch
+
 - portableproplib-0.4.1 (lib/portableproplib) from
   http://code.google.com/p/portableproplib
