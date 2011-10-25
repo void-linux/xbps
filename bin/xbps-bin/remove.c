@@ -212,17 +212,17 @@ remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 	/*
 	 * Show the list of going-to-be removed packages.
 	 */
-	printf("The following packages will be removed:\n\n");
+	printf("%u package%s will be removed%s:\n",
+	    prop_array_count(sorted),
+	    prop_array_count(sorted) == 1 ? "" : "s",
+	    purge ? " and purged" : "");
+
 	for (x = 0; x < prop_array_count(sorted); x++) {
 		dict = prop_array_get(sorted, x);
 		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
 		print_package_line(pkgver, false);
 	}
 	printf("\n\n");
-	printf("%u package%s will be removed%s.\n\n",
-	    prop_array_count(sorted),
-	    prop_array_count(sorted) == 1 ? "" : "s",
-	    purge ? " and purged" : "");
 
 	if (!yes && !noyes("Do you want to continue?")) {
 		printf("Cancelling!\n");
