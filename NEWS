@@ -1,6 +1,6 @@
-xbps-0.11.0 (???):
+xbps-0.10.1 (2011-10-26):
 
- * libxbps: fixed multiple free(3)s (multiple closedir(3) calls)
+ * libxbps: fixed multiple free(3) calls in error paths (via closedir(3))
    when some virtualpkg plist file couldn't be internalized.
 
  * xbps-bin(8): 'remove' with recursive flag (-R) now removes first
@@ -8,8 +8,7 @@ xbps-0.11.0 (???):
    tail of the array.
 
  * libxbps: xbps_pkgpattern_{name,version} now return expected
-   pkgname/version if the pattern is a shell wildcard pattern
-   (fnmatch(3)).
+   pkgname/version if pattern is a shell wildcard pattern (fnmatch(3)).
 
  * libxbps: removed csh alternate code from the NetBSD's match code.
    We weren't using this code anyway and this only slowed down
