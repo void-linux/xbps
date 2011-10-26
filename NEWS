@@ -1,5 +1,8 @@
 xbps-0.11.0 (???):
 
+ * libxbps: fixed multiple free(3)s (multiple closedir(3) calls)
+   when some virtualpkg plist file couldn't be internalized.
+
  * xbps-bin(8): 'remove' with recursive flag (-R) now removes first
    the specified packages and puts its automatic dependencies at the
    tail of the array.

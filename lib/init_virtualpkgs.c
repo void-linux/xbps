@@ -82,7 +82,6 @@ xbps_init_virtual_pkgs(struct xbps_handle *xh)
 		vpkgfile = xbps_xasprintf("%s/%s",
 		    prop_string_cstring_nocopy(vpkgdir), dp->d_name);
 		if (vpkgfile == NULL) {
-			(void)closedir(dirp);
 			xbps_dbg_printf("%s: failed to alloc mem for %s\n",
 			    __func__, dp->d_name);
 			continue;
@@ -93,7 +92,6 @@ xbps_init_virtual_pkgs(struct xbps_handle *xh)
 		if (vpkgd == NULL) {
 			xbps_dbg_printf("%s: failed to internalize %s: %s\n",
 			    __func__, dp->d_name, strerror(errno));
-			(void)closedir(dirp);
 			continue;
 		}
 		if (prop_object_type(xh->virtualpkgs_array) == PROP_TYPE_UNKNOWN)
@@ -103,7 +101,6 @@ xbps_init_virtual_pkgs(struct xbps_handle *xh)
 			xbps_dbg_printf("%s: failed to add %s virtualpkg "
 			    "dictionary!\n", __func__, dp->d_name);
 			prop_object_release(vpkgd);
-			(void)closedir(dirp);
 			continue;
 		}
 		xbps_dbg_printf("%s: added virtualpkg from: %s\n",
