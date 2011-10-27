@@ -1,5 +1,7 @@
 xbps-0.10.2 (???):
 
+ * xbps-bin(8): the 'check' target now works virtual packages.
+
  * libxbps: failed to properly match installed virtualpkgs that were
    dependencies in a transaction, therefore resulting in real packages
    being reinstalled and replacing installed virtual packages.

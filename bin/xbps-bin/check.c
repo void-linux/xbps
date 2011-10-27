@@ -109,6 +109,10 @@ check_pkg_integrity(const char *pkgname)
 
 	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
+		/* try looking for a virtual pkg */
+		pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
+	}
+	if (pkgd == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;
 	}
