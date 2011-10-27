@@ -45,11 +45,20 @@ int	autoupdate_pkgs(bool, bool);
 int	autoremove_pkgs(bool, bool);
 int	exec_transaction(bool, bool);
 
+/* from remove.c */
 int	remove_installed_pkgs(int, char **, bool, bool, bool, bool);
 
 /* from check.c */
 int	check_pkg_integrity(const char *);
 int	check_pkg_integrity_all(void);
+
+#define CHECK_PKG_DECL(type)					\
+int check_pkg_##type (prop_dictionary_t, prop_dictionary_t, prop_dictionary_t)
+
+CHECK_PKG_DECL(autoinstall);
+CHECK_PKG_DECL(files);
+CHECK_PKG_DECL(rundeps);
+CHECK_PKG_DECL(symlinks);
 
 /* from show-deps.c */
 int	show_pkg_deps(const char *);

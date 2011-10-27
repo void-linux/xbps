@@ -35,30 +35,17 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-/*
- * Checks package integrity of an installed package.
- * The following tasks are processed in that order:
- *
- * 	o Check if package was installed manually, but currently
- * 	  other packages are depending on it. This package shall be
- * 	  changed to automatic mode, i.e installed as dependency of
- * 	  those packages.
- *
- * 	o Check for metadata files (files.plist and props.plist),
- * 	  we only check if the file exists and its dictionary can
- * 	  be externalized and is not empty.
- *
- * 	o Check for missing installed files.
- *
- * 	o Check for target file in symlinks, so that we can check that
- * 	  they have not been modified.
- *
- * 	o Check the hash for all installed files, except
- * 	  configuration files (which is expected if they are modified).
- *
- * 	o Check for missing run time dependencies.
- *
- */
+#define RUN_PKG_CHECK(name)					\
+do {								\
+	rv = check_pkg_##name(pkgd, propsd, filesd);		\
+	if (rv)							\
+		broken = true;					\
+	else if (rv == -1) {					\
+		xbps_error_printf("%s: the %s test "		\
+		    "returned error!\n", pkgname, #name);	\
+		goto out;					\
+	}							\
+} while (0)
 
 int
 check_pkg_integrity_all(void)
@@ -94,77 +81,20 @@ check_pkg_integrity_all(void)
 int
 check_pkg_integrity(const char *pkgname)
 {
-	struct xbps_handle *xhp;
-	prop_dictionary_t pkgd, dict, propsd = NULL, filesd = NULL;
-	prop_array_t array, reqby;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	const char *file, *sha256, *reqpkg, *tgt = NULL;
-	char *path, buf[PATH_MAX];
+	prop_dictionary_t pkgd, propsd, filesd;
 	int rv = 0;
-	bool broken = false, test_broken = false, autoinst = false;
+	bool broken = false;
 
-	assert(pkgname != NULL);
-	xhp = xbps_handle_get();
-
+	/* find real pkg by name */
 	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
-		/* try looking for a virtual pkg */
+		/* find virtual pkg by name */
 		pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
 	}
 	if (pkgd == NULL) {
 		printf("Package %s is not installed.\n", pkgname);
 		return 0;
 	}
-	/*
-	 * Check if package has been installed manually but any other
-	 * package is currently depending on it; in that case the package
-	 * must be in automatic mode.
-	 */
-	if (prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst)) {
-		reqby = prop_dictionary_get(pkgd, "requiredby");
-		if (((prop_object_type(reqby) == PROP_TYPE_ARRAY)) &&
-		    ((prop_array_count(reqby) > 0) && !autoinst)) {
-		        path = xbps_xasprintf("%s/%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir),
-			    XBPS_META_PATH, XBPS_REGPKGDB);
-			assert(path != NULL);
-
-			/* pkg has reversedeps and was installed manually */
-			prop_dictionary_set_bool(pkgd,
-			    "automatic-install", true);
-
-			dict = prop_dictionary_internalize_from_zfile(path);
-			if (dict == NULL) {
-				xbps_error_printf("%s: [0] failed to set "
-				    "automatic mode (%s)\n", pkgname, strerror(errno));
-				return rv;
-			}
-			array = prop_dictionary_get(dict, "packages");
-			rv = xbps_array_replace_dict_by_name(array, pkgd, pkgname);
-			if (rv != 0) {
-				xbps_error_printf("%s: [1] failed to set "
-				    "automatic mode (%s)\n", pkgname, strerror(rv));
-				return rv;
-			}
-			if (!prop_dictionary_set(dict, "packages", array)) {
-				xbps_error_printf("%s: [2] failed to set "
-				    "automatic mode (%s)\n", pkgname, strerror(rv));
-				return rv;
-			}
-			if (!prop_dictionary_externalize_to_zfile(dict, path)) {
-				xbps_error_printf("%s: [3] failed to set "
-				    "automatic mode (%s)\n", pkgname, strerror(errno));
-				return rv;
-			}
-			free(path);
-			path = NULL;
-			xbps_warn_printf("%s: was installed manually and has "
-			    "reverse dependencies (FIXED)\n", pkgname);
-		}
-	}
-	prop_object_release(pkgd);
-
 	/*
 	 * Check for props.plist metadata file.
 	 */
@@ -180,7 +110,6 @@ check_pkg_integrity(const char *pkgname)
 		broken = true;
 		goto out;
 	}
-
 	/*
 	 * Check for files.plist metadata file.
 	 */
@@ -197,186 +126,21 @@ check_pkg_integrity(const char *pkgname)
 		goto out;
 	}
 
-	/*
-	 * Check for target files in symlinks.
-	 */
-	array = prop_dictionary_get(filesd, "links");
-	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
-	     prop_array_count(array) > 0) {
-		iter = xbps_array_iter_from_dict(filesd, "links");
-		if (iter == NULL)
-			abort();
-
-		while ((obj = prop_object_iterator_next(iter))) {
-			if (!prop_dictionary_get_cstring_nocopy(obj, "target", &tgt))
-				continue;
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			if (strcmp(tgt, "") == 0) {
-				xbps_warn_printf("%s: `%s' symlink with "
-				    "empty target object!\n", pkgname, file);
-				continue;
-			}
-			path = xbps_xasprintf("%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir), file);
-			if (path == NULL)
-				abort();
-
-			memset(&buf, 0, sizeof(buf));
-			if (realpath(path, buf) == NULL) {
-				xbps_error_printf("%s: broken symlink `%s': "
-				    "%s\n", pkgname, file, strerror(errno));
-				test_broken = true;
-				continue;
-			}
-
-			free(path);
-			if (!prop_string_equals_cstring(xhp->rootdir, "/") &&
-			    strstr(buf, prop_string_cstring_nocopy(xhp->rootdir)))
-				path = buf + prop_string_size(xhp->rootdir);
-			else
-				path = buf;
-
-			if (strcmp(path, tgt)) {
-				xbps_error_printf("%s: modified symlink `%s', "
-				    "target: `%s' (shall be: `%s')\n",
-				    pkgname, file, tgt, path);
-				test_broken = true;
-			}
-			path = NULL;
-		}
-		prop_object_iterator_release(iter);
-	}
-	if (test_broken) {
-		test_broken = false;
-		xbps_error_printf("%s: links check FAILED.\n", pkgname);
-		broken = true;
-	}
-
-	/*
-	 * Check for missing files and its hash.
-	 */
-	array = prop_dictionary_get(filesd, "files");
-	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
-	     prop_array_count(array) > 0) {
-		iter = xbps_array_iter_from_dict(filesd, "files");
-		if (iter == NULL)
-			abort();
-
-		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir), file);
-			if (path == NULL) {
-				prop_object_iterator_release(iter);
-				abort();
-			}
-                        prop_dictionary_get_cstring_nocopy(obj,
-                            "sha256", &sha256);
-			rv = xbps_file_hash_check(path, sha256);
-			switch (rv) {
-			case 0:
-				break;
-			case ENOENT:
-				xbps_error_printf("%s: unexistent file %s.\n",
-				    pkgname, file);
-				test_broken = true;
-				break;
-			case ERANGE:
-                                xbps_error_printf("%s: hash mismatch for %s.\n",
-				    pkgname, file);
-				test_broken = true;
-				break;
-			default:
-				xbps_error_printf(
-				    "%s: can't check `%s' (%s)\n",
-				    pkgname, file, strerror(rv));
-				break;
-			}
-			free(path);
-                }
-                prop_object_iterator_release(iter);
-	}
-	if (test_broken) {
-		test_broken = false;
-		broken = true;
-		xbps_error_printf("%s: files check FAILED.\n", pkgname);
-	}
-
-	/*
-	 * Check for missing configuration files.
-	 */
-	array = prop_dictionary_get(filesd, "conf_files");
-	if (array && prop_object_type(array) == PROP_TYPE_ARRAY &&
-	    prop_array_count(array) > 0) {
-		iter = xbps_array_iter_from_dict(filesd, "conf_files");
-		if (iter == NULL)
-			abort();
-
-		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir), file);
-			if (path == NULL) {
-				prop_object_iterator_release(iter);
-				abort();
-			}
-			if ((rv = access(path, R_OK)) == -1) {
-				if (errno == ENOENT) {
-					xbps_error_printf(
-					    "%s: unexistent file %s\n",
-					    pkgname, file);
-					test_broken = true;
-				} else
-					xbps_error_printf(
-					    "%s: can't check `%s' (%s)\n",
-					    pkgname, file,
-					    strerror(errno));
-			}
-			free(path);
-		}
-		prop_object_iterator_release(iter);
-	}
-	if (test_broken) {
-		test_broken = false;
-		xbps_error_printf("%s: conf files check FAILED.\n", pkgname);
-		broken = true;
-	}
-
-	/*
-	 * Check for missing run time dependencies.
-	 */
-	if (!xbps_pkg_has_rundeps(propsd))
-		goto out;
-
-	iter = xbps_array_iter_from_dict(propsd, "run_depends");
-	if (iter == NULL)
-		abort();
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		reqpkg = prop_string_cstring_nocopy(obj);
-		if (reqpkg == NULL) {
-			prop_object_iterator_release(iter);
-			abort();
-		}
-		if (xbps_check_is_installed_pkg_by_pattern(reqpkg) <= 0) {
-			xbps_error_printf("%s: dependency not satisfied: %s\n",
-			    pkgname, reqpkg);
-			test_broken = true;
-		}
-	}
-	prop_object_iterator_release(iter);
-	if (test_broken) {
-		xbps_error_printf("%s: rundeps check FAILED.\n", pkgname);
-		broken = true;
-	}
+	/* Execute pkg checks */
+	RUN_PKG_CHECK(autoinstall);
+	RUN_PKG_CHECK(files);
+	RUN_PKG_CHECK(symlinks);
+	RUN_PKG_CHECK(rundeps);
 
 out:
-	if (filesd)
+	if (prop_object_type(filesd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(filesd);
-	if (propsd)
+	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(propsd);
+	if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY)
+		prop_object_release(pkgd);
 	if (broken)
-		return -1;
+		return 1;
 
 	return 0;
 }
