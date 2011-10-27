@@ -35,33 +35,22 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-#define RUN_PKG_CHECK(name)					\
-do {								\
-	rv = check_pkg_##name(pkgd, propsd, filesd);		\
-	if (rv)							\
-		broken = true;					\
-	else if (rv == -1) {					\
-		xbps_error_printf("%s: the %s test "		\
-		    "returned error!\n", pkgname, #name);	\
-		goto out;					\
-	}							\
-} while (0)
-
 int
 check_pkg_integrity_all(void)
 {
 	const struct xbps_handle *xhp;
+	prop_array_t regpkgs;
 	prop_object_t obj;
-	prop_object_iterator_t iter = NULL;
 	const char *pkgname, *version;
-	size_t npkgs = 0, nbrokenpkgs = 0;
+	size_t i, npkgs = 0, nbrokenpkgs = 0;
 
 	xhp = xbps_handle_get();
-	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
-	if (iter == NULL)
-		return -1;
+	regpkgs = prop_dictionary_get(xhp->regpkgdb_dictionary, "packages");
+	if (prop_object_type(regpkgs) != PROP_TYPE_ARRAY)
+		return 0;
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+	for (i = 0; i < prop_array_count(regpkgs); i++) {
+		obj = prop_array_get(regpkgs, i);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		printf("Checking %s-%s ...\n", pkgname, version);
@@ -70,8 +59,6 @@ check_pkg_integrity_all(void)
 
 		npkgs++;
 	}
-	prop_object_iterator_release(iter);
-
 	printf("%zu package%s processed: %zu broken.\n", npkgs,
 	    npkgs == 1 ? "" : "s", nbrokenpkgs);
 
@@ -126,11 +113,26 @@ check_pkg_integrity(const char *pkgname)
 		goto out;
 	}
 
+#define RUN_PKG_CHECK(name)					\
+do {								\
+	rv = check_pkg_##name(pkgd, propsd, filesd);		\
+	if (rv)							\
+		broken = true;					\
+	else if (rv == -1) {					\
+		xbps_error_printf("%s: the %s test "		\
+		    "returned error!\n", pkgname, #name);	\
+		goto out;					\
+	}							\
+} while (0)
+
 	/* Execute pkg checks */
 	RUN_PKG_CHECK(autoinstall);
 	RUN_PKG_CHECK(files);
 	RUN_PKG_CHECK(symlinks);
 	RUN_PKG_CHECK(rundeps);
+	RUN_PKG_CHECK(requiredby);
+
+#undef RUN_PKG_CHECK
 
 out:
 	if (prop_object_type(filesd) == PROP_TYPE_DICTIONARY)

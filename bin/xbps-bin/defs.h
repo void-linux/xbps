@@ -59,6 +59,7 @@ CHECK_PKG_DECL(autoinstall);
 CHECK_PKG_DECL(files);
 CHECK_PKG_DECL(rundeps);
 CHECK_PKG_DECL(symlinks);
+CHECK_PKG_DECL(requiredby);
 
 /* from show-deps.c */
 int	show_pkg_deps(const char *);

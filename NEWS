@@ -1,5 +1,9 @@
 xbps-0.10.2 (???):
 
+ * xbps-bin(8): new test for the 'check' target to fix missing
+   entries in requiredby array, i.e reverse dependencies in
+   the package database plist.
+
  * xbps-bin(8): the 'check' target now works virtual packages.
 
  * libxbps: failed to properly match installed virtualpkgs that were
