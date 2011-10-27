@@ -1,3 +1,9 @@
+xbps-0.10.2 (???):
+
+ * libxbps: failed to properly match installed virtualpkgs that were
+   dependencies in a transaction, therefore resulting in real packages
+   being reinstalled and replacing installed virtual packages.
+
 xbps-0.10.1 (2011-10-26):
 
  * libxbps: fixed multiple free(3) calls in error paths (via closedir(3))
