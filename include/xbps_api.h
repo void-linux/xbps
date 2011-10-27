@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.2"
 
-#define XBPS_API_VERSION	"20111027"
+#define XBPS_API_VERSION	"20111027-1"
 #define XBPS_VERSION		"0.10.2"
 
 /**
@@ -855,6 +855,19 @@ prop_dictionary_t xbps_find_virtualpkg_dict_installed(const char *str,
 bool xbps_match_virtual_pkg_in_dict(prop_dictionary_t pkgd,
 				   const char *str,
 				   bool bypattern);
+
+/**
+ * Match any virtual package from array \a provides in they array \a rundeps
+ * with dependencies.
+ *
+ * @param[in] rundeps Proplib array with dependencies as strings, i.e foo>=2.0.
+ * @param[in] provides Proplib array of strings with virtual pkgdeps, i.e
+ * foo-1.0 blah-2.0.
+ *
+ * @return True if \a any virtualpkg has been matched, false otherwise.
+ */
+bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
+					  prop_array_t provides);
 
 /**
  * Finds a package dictionary in a proplib array by matching a package name.

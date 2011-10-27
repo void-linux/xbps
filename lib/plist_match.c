@@ -58,6 +58,29 @@ xbps_match_virtual_pkg_in_dict(prop_dictionary_t d,
 	return found;
 }
 
+bool
+xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
+				     prop_array_t provides)
+{
+	const char *vpkgver, *pkgpattern;
+	size_t i, x;
+	bool found = false;
+
+	for (i = 0; i < prop_array_count(provides); i++) {
+		prop_array_get_cstring_nocopy(provides, i, &vpkgver);
+		for (x = 0; x < prop_array_count(rundeps); x++) {
+			prop_array_get_cstring_nocopy(rundeps, x, &pkgpattern);
+			if (xbps_pkgpattern_match(vpkgver, pkgpattern)) {
+				found = true;
+				break;
+			}
+			if (found)
+				break;
+		}
+	}
+	return found;
+}
+
 static bool
 match_string_in_array(prop_array_t array, const char *str, int mode)
 {
