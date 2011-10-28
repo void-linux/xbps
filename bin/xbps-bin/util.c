@@ -40,54 +40,31 @@
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
-struct object_info {
-	const char *key;
-	const char *descr;
-};
-
-static const struct object_info obj_info[] = {
-	{ "repository", "Repository: " },
-	{ "filename", "Binary package: " },
-	{ "filename-size", "Binary package size" },
-	{ "filename-sha256", "Binary package SHA256: " },
-	{ "archive-compression-type", "Binary package compression type: " },
-	{ "pkgname", "Package name: " },
-	{ "version", "Version: " },
-	{ "installed_size", "Installed size" },
-	{ "maintainer", "Maintainer: " },
-	{ "architecture", "Architecture: " },
-	{ "homepage", "Upstream URL: " },
-	{ "license", "License(s): " },
-	{ "build_date", "Package build date: " },
-	{ "preserve", "Preserve files" },
-	{ "replaces", "Replaces these packages" },
-	{ "provides", "Provides these virtual packages" },
-	{ "conflicts", "Conflicts with" },
-	{ "conf_files", "Configuration files" },
-	{ "short_desc", "Description: " },
-	{ "long_desc", "---------------------------------------------------------------------------" },
-	{ NULL, NULL }
-};
-
 void
 show_pkg_info(prop_dictionary_t dict)
 {
-	const struct object_info *oip;
-	prop_object_t obj;
+	prop_array_t all_keys;
+	prop_object_t obj, keysym;
+	const char *keyname;
 	char size[8];
+	size_t i;
 
-	assert(dict != NULL);
+	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(prop_dictionary_count(dict) != 0);
 
-	for (oip = obj_info; oip->key != NULL; oip++) {
-		obj = prop_dictionary_get(dict, oip->key);
+	all_keys = prop_dictionary_all_keys(dict);
+	for (i = 0; i < prop_array_count(all_keys); i++) {
+		keysym = prop_array_get(all_keys, i);
+		keyname = prop_dictionary_keysym_cstring_nocopy(keysym);
+		obj = prop_dictionary_get_keysym(dict, keysym);
+
 		switch (prop_object_type(obj)) {
 		case PROP_TYPE_STRING:
-			printf("%s%s\n", oip->descr,
+			printf("%s: %s\n", keyname,
 			    prop_string_cstring_nocopy(obj));
 			break;
 		case PROP_TYPE_NUMBER:
-			printf("%s: ", oip->descr);
+			printf("%s: ", keyname);
 			if (xbps_humanize_number(size,
 		    	    (int64_t)prop_number_unsigned_integer_value(obj)) == -1)
 				printf("%ju\n",
@@ -96,15 +73,20 @@ show_pkg_info(prop_dictionary_t dict)
 				printf("%s\n", size);
 			break;
 		case PROP_TYPE_BOOL:
-			printf("%s: %s\n", oip->descr,
+			printf("%s: %s\n", keyname,
 			    prop_bool_true(obj) ? "yes" : "no");
 			break;
 		case PROP_TYPE_ARRAY:
-			printf("%s:\n", oip->descr);
-			(void)xbps_callback_array_iter_in_dict(dict, oip->key,
-		    	    list_strings_sep_in_array, __UNCONST(" "));
+			/* ignore run_depends, it's shown via 'show-deps' */
+			if (strcmp(keyname, "run_depends") == 0)
+				break;
+			printf("%s:\n", keyname);
+			(void)xbps_callback_array_iter_in_dict(dict, keyname,
+			    list_strings_sep_in_array, __UNCONST("\t"));
 			break;
 		default:
+			xbps_warn_printf("unknown obj type (key %s)\n",
+			    keyname);
 			break;
 		}
 	}
