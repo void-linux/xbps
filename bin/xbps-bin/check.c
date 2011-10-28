@@ -72,6 +72,8 @@ check_pkg_integrity(const char *pkgname)
 	int rv = 0;
 	bool broken = false;
 
+	propsd = filesd = NULL;
+
 	/* find real pkg by name */
 	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
