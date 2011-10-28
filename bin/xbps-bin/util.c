@@ -95,38 +95,34 @@ show_pkg_info(prop_dictionary_t dict)
 int
 show_pkg_files(prop_dictionary_t filesd)
 {
-	prop_array_t array;
-	prop_object_iterator_t iter = NULL;
+	prop_array_t array, allkeys;
 	prop_object_t obj;
-	const char *file, *array_str, *target;
-	int i = 0;
+	prop_dictionary_keysym_t ksym;
+	const char *keyname, *file;
+	size_t i, x;
 
-	/* This will print links, conf_files and files respectively. */
-	for (i = 0; i < 3; i++) {
-		if (i == 0)
-			array_str = "links";
-		else if (i == 1)
-			array_str = "conf_files";
-		else
-			array_str = "files";
-
-		array = prop_dictionary_get(filesd, array_str);
-		if (array == NULL || prop_array_count(array) == 0)
+	allkeys = prop_dictionary_all_keys(filesd);
+	for (i = 0; i < prop_array_count(allkeys); i++) {
+		ksym = prop_array_get(allkeys, i);
+		keyname = prop_dictionary_keysym_cstring_nocopy(ksym);
+		if (strcmp(keyname, "dirs") == 0)
 			continue;
 
-		iter = xbps_array_iter_from_dict(filesd, array_str);
-		if (iter == NULL)
-			return EINVAL;
+		array = prop_dictionary_get(filesd, keyname);
+		if (prop_object_type(array) != PROP_TYPE_ARRAY ||
+		    prop_array_count(array) == 0)
+			continue;
 
-		while ((obj = prop_object_iterator_next(iter))) {
+		for (x = 0; x < prop_array_count(array); x++) {
+			obj = prop_array_get(array, x);
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			printf("%s", file);
 			if (prop_dictionary_get_cstring_nocopy(obj,
-			    "target", &target))
-				printf(" -> %s", target);
+			    "target", &file))
+				printf(" -> %s", file);
+
 			printf("\n");
 		}
-		prop_object_iterator_release(iter);
 	}
 
 	return 0;
