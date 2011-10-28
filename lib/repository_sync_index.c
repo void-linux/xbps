@@ -89,6 +89,7 @@ xbps_get_remote_repo_string(const char *uri)
 int
 xbps_repository_sync_pkg_index(const char *uri)
 {
+	prop_dictionary_t tmpd;
 	struct xbps_handle *xhp;
 	struct url *url = NULL;
 	struct utsname un;
@@ -198,6 +199,20 @@ xbps_repository_sync_pkg_index(const char *uri)
 	}
 	if (only_sync)
 		goto out;
+	/*
+	 * Make sure that downloaded plist file can be internalized, i.e
+	 * some HTTP servers don't return proper errors and sometimes
+	 * you get an HTML ASCII file :-)
+	 */
+	tmpd = prop_dictionary_internalize_from_zfile(tmp_metafile);
+	if (tmpd == NULL) {
+		xbps_error_printf("[rsyncidx] downloaded pkg-index.plist "
+		    "file cannot be read! removing...\n");
+		(void)unlink(tmp_metafile);
+		rv = -1;
+		goto out;
+	}
+	prop_object_release(tmpd);
 
 	lrepofile = xbps_xasprintf("%s/%s", lrepodir, XBPS_PKGINDEX);
 	if (lrepofile == NULL) {

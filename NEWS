@@ -1,5 +1,9 @@
 xbps-0.10.2 (???):
 
+ * libxbpps: when fetching new pkg-index.plist from a repository,
+   make sure that it's a plist file and can be internalized; otherwise
+   remove downloaded file and return error.
+
  * xbps-bin(8): new test for the 'check' target to fix missing
    entries in requiredby array, i.e reverse dependencies in
    the package database plist.
