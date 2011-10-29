@@ -128,7 +128,6 @@ xbps_repository_pool_init(void)
 		 * Iterate over the repository pool and add the dictionary
 		 * for current repository into the queue.
 		 */
-
 		rpool = malloc(sizeof(struct repository_pool));
 		if (rpool == NULL) {
 			rv = errno;
@@ -172,7 +171,7 @@ xbps_repository_pool_init(void)
 			goto out;
 		}
 		free(plist);
-		xbps_dbg_printf("Registered repository '%s'\n",
+		xbps_dbg_printf("[rpool] registered repository '%s'\n",
 		    rpool->rpi->rpi_uri);
 		SIMPLEQ_INSERT_TAIL(&rpool_queue, rpool, rp_entries);
 	}
@@ -206,15 +205,13 @@ xbps_repository_pool_release(void)
 
 	while ((rpool = SIMPLEQ_FIRST(&rpool_queue)) != NULL) {
 		SIMPLEQ_REMOVE(&rpool_queue, rpool, repository_pool, rp_entries);
-		xbps_dbg_printf("Unregistering repository '%s'...",
+		xbps_dbg_printf("[rpool] unregistered repository '%s'\n",
 		    rpool->rpi->rpi_uri);
 		prop_object_release(rpool->rpi->rpi_repod);
 		free(rpool->rpi->rpi_uri);
 		free(rpool->rpi);
 		free(rpool);
 		rpool = NULL;
-		xbps_dbg_printf_append("done\n");
-
 	}
 	repolist_initialized = false;
 	xbps_dbg_printf("[rpool] released ok.\n");
