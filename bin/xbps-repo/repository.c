@@ -37,68 +37,6 @@
 #include "defs.h"
 #include "config.h"
 
-struct repoinfo {
-	char *pkgidxver;
-	uint64_t totalpkgs;
-};
-
-static struct repoinfo *
-pkgindex_verify(const char *plist, const char *uri)
-{
-	struct repoinfo *rpi = NULL;
-	prop_dictionary_t d;
-	int rv = 0;
-
-	assert(plist != NULL);
-
-	d = prop_dictionary_internalize_from_zfile(plist);
-	if (d == NULL) {
-		xbps_error_printf("xbps-repo: failed to add `%s' "
-		    "repository: %s\n", uri, strerror(errno));
-		return NULL;
-	}
-
-	if ((rpi = malloc(sizeof(*rpi))) == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	if (!prop_dictionary_get_cstring(d,
-	    "pkgindex-version", &rpi->pkgidxver)) {
-		xbps_error_printf("xbps-repo: missing 'pkgindex-version' "
-		    "object!\n");
-		rv = errno;
-		goto out;
-	}
-
-	if (!prop_dictionary_get_uint64(d, "total-pkgs",
-	    &rpi->totalpkgs)) {
-		xbps_error_printf("xbps-repo: missing 'total-pkgs' object!\n");
-		rv = errno;
-		goto out;
-	}
-
-	/* Reject empty repositories, how could this happen? :-) */
-	if (rpi->totalpkgs == 0) {
-		xbps_error_printf("xbps-repo: `%s' empty package list!\n", uri);
-		rv = EINVAL;
-		goto out;
-	}
-
-out:
-	prop_object_release(d);
-	if (rv != 0) {
-		xbps_error_printf("xbps-repo: removing incorrect "
-		    "pkg-index file for `%s'.\n", uri);
-		(void)remove(plist);
-		if (rpi) {
-			free(rpi);
-			rpi = NULL;
-		}
-	}
-	return rpi;
-}
-
 int
 show_pkg_info_from_repolist(const char *pkgname, const char *option)
 {
@@ -148,32 +86,30 @@ show_pkg_deps_from_repolist(const char *pkgname)
 static int
 repo_sync_pkg_index_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 {
-	struct repoinfo *rp;
+	prop_dictionary_t d;
+	const char *idxver;
+	uint64_t totalpkgs;
 	char *plist;
 	int rv = 0;
 
 	(void)arg;
 	(void)done;
 
-	if (!xbps_check_is_repository_uri_remote(rpi->rpi_uri))
+	if ((rv = xbps_repository_sync_pkg_index(rpi->rpi_uri)) == 0) {
+		printf("Package index file is up to date.\n");
 		return 0;
-
-	rv = xbps_repository_sync_pkg_index(rpi->rpi_uri);
-	if (rv == -1) {
+	} else if (rv == -1)
 		return rv;
-	} else if (rv == 0) {
-		printf("Package index file is already up to date.\n");
-		return 0;
-	}
+
 	if ((plist = xbps_pkg_index_plist(rpi->rpi_uri)) == NULL)
 		return EINVAL;
 
-	if ((rp = pkgindex_verify(plist, rpi->rpi_uri)) == NULL)
-		return errno;
-
+	d = prop_dictionary_internalize_from_zfile(plist);
+	prop_dictionary_get_cstring_nocopy(d, "pkgindex-version", &idxver);
+	prop_dictionary_get_uint64(d, "total-pkgs", &totalpkgs);
 	printf("Updated package index at %s (v%s) with %ju packages.\n",
-	    rpi->rpi_uri, rp->pkgidxver, rp->totalpkgs);
-	free(rp);
+	    rpi->rpi_uri, idxver, totalpkgs);
+	prop_object_release(d);
 	free(plist);
 
 	return 0;
