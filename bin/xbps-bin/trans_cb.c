@@ -78,7 +78,7 @@ transaction_cb(struct xbps_transaction_cb_data *xtcd)
 		    xtcd->pkgver, xtcd->binpkg_fname);
 		break;
 	case XBPS_TRANS_STATE_REPOSYNC:
-		printf("Syncing repository pkg-index for `%s' ...\n",
+		printf("Synchronizing pkg-index for `%s' ...\n",
 		    xtcd->repourl);
 		break;
 	default:
