@@ -36,7 +36,6 @@
  * @file lib/init_virtualpkg.c
  * @brief Initialization of virtual package settings.
  */
-
 void HIDDEN
 xbps_init_virtual_pkgs(struct xbps_handle *xh)
 {
@@ -64,8 +63,8 @@ xbps_init_virtual_pkgs(struct xbps_handle *xh)
 	 */
 	dirp = opendir(prop_string_cstring_nocopy(vpkgdir));
 	if (dirp == NULL) {
-		xbps_dbg_printf("%s: cannot access to %s for virtual "
-		    "packages: %s\n", __func__,
+		xbps_dbg_printf("[init_virtualpkgs] cannot access "
+		    "to %s for virtual packages: %s\n",
 		    prop_string_cstring_nocopy(vpkgdir),
 		    strerror(errno));
 		prop_object_release(vpkgdir);
@@ -82,29 +81,30 @@ xbps_init_virtual_pkgs(struct xbps_handle *xh)
 		vpkgfile = xbps_xasprintf("%s/%s",
 		    prop_string_cstring_nocopy(vpkgdir), dp->d_name);
 		if (vpkgfile == NULL) {
-			xbps_dbg_printf("%s: failed to alloc mem for %s\n",
-			    __func__, dp->d_name);
+			xbps_dbg_printf("[init_virtualpkgs] failed to "
+			    "alloc mem for %s\n", dp->d_name);
 			continue;
 		}
 		vpkgd = prop_dictionary_internalize_from_file(vpkgfile);
 		free(vpkgfile);
 
 		if (vpkgd == NULL) {
-			xbps_dbg_printf("%s: failed to internalize %s: %s\n",
-			    __func__, dp->d_name, strerror(errno));
+			xbps_dbg_printf("[init_virtualpkgs] failed to "
+			    "internalize %s: %s\n",
+			    dp->d_name, strerror(errno));
 			continue;
 		}
 		if (prop_object_type(xh->virtualpkgs_array) == PROP_TYPE_UNKNOWN)
 			xh->virtualpkgs_array = prop_array_create();
 
 		if (!xbps_add_obj_to_array(xh->virtualpkgs_array, vpkgd)) {
-			xbps_dbg_printf("%s: failed to add %s virtualpkg "
-			    "dictionary!\n", __func__, dp->d_name);
+			xbps_dbg_printf("[init_virtualpkgs] failed to add %s "
+			    "virtuapkg dictionary!\n", dp->d_name);
 			prop_object_release(vpkgd);
 			continue;
 		}
-		xbps_dbg_printf("%s: added virtualpkg from: %s\n",
-		    __func__, dp->d_name);
+		xbps_dbg_printf("[init_virtualpkgs] registered virtualpkg "
+		    "'%s'\n", dp->d_name);
 	}
 	(void)closedir(dirp);
 	prop_object_release(vpkgdir);

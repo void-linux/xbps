@@ -83,7 +83,7 @@ xbps_regpkgdb_dictionary_init(struct xbps_handle *xhp)
 	}
 	free(plist);
 	regpkgdb_initialized = true;
-	xbps_dbg_printf("%s: initialized ok.\n", __func__);
+	xbps_dbg_printf("[regpkgdb] initialized ok.\n");
 
 	return 0;
 }
@@ -99,5 +99,5 @@ xbps_regpkgdb_dictionary_release(void)
 	xhp = xbps_handle_get();
 	prop_object_release(xhp->regpkgdb_dictionary);
 	regpkgdb_initialized = false;
-	xbps_dbg_printf("%s: released ok.\n", __func__);
+	xbps_dbg_printf("[regpkgdb] released ok.\n");
 }
