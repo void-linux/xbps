@@ -100,7 +100,7 @@ out:
 }
 
 int
-show_pkg_info_from_repolist(const char *pkgname)
+show_pkg_info_from_repolist(const char *pkgname, const char *option)
 {
 	prop_dictionary_t pkgd;
 
@@ -111,7 +111,11 @@ show_pkg_info_from_repolist(const char *pkgname)
 			return errno;
 	}
 
-	show_pkg_info(pkgd);
+	if (option)
+		show_pkg_info_one(pkgd, option);
+	else
+		show_pkg_info(pkgd);
+
 	prop_object_release(pkgd);
 
 	return 0;

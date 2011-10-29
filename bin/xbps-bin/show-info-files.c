@@ -35,7 +35,7 @@
 #include "defs.h"
 
 int
-show_pkg_info_from_metadir(const char *pkgname)
+show_pkg_info_from_metadir(const char *pkgname, const char *option)
 {
 	prop_dictionary_t d;
 
@@ -43,7 +43,11 @@ show_pkg_info_from_metadir(const char *pkgname)
 	if (d == NULL)
 		return EINVAL;
 
-	show_pkg_info(d);
+	if (option == NULL)
+		show_pkg_info(d);
+	else
+		show_pkg_info_one(d, option);
+
 	prop_object_release(d);
 	return 0;
 }

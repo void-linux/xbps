@@ -1,4 +1,4 @@
-.TH "XBPS\-BIN" "8" "17/10/2011" "\ \&" "\ \&"
+.TH "XBPS\-BIN" "8" "29/10/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -86,6 +86,14 @@ Sets the \fBautomatic\-install\fR boolean object for package to false, therefore
 explicitly setting that package was installed manually by the user. Use of this
 option takes effect in the \fIautoupdate\fR, \fIinstall\fR and \fIupdate\fR targets
 and target packages and its required dependencies will be matched.
+.RE
+.PP
+\fB-o\fR \fIkey[,key2...]\fR
+.RS 4
+Used currently in the
+\fIshow\fR
+target\&. Prints the value of specified key(s) from package's properties dictionary.
+Multiple keys can be specified delimited by the comma character.
 .RE
 .PP
 \fB\-p\fR

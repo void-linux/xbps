@@ -90,13 +90,13 @@ main(int argc, char **argv)
 	struct xbps_handle *xhp;
 	struct xferstat xfer;
 	prop_dictionary_t pkgd;
-	const char *rootdir, *cachedir, *confdir;
+	const char *rootdir, *cachedir, *confdir, *option;
 	int c, rv = 0;
 	bool debug = false;
 
-	rootdir = cachedir = confdir = NULL;
+	rootdir = cachedir = confdir = option = NULL;
 
-	while ((c = getopt(argc, argv, "C:c:dr:V")) != -1) {
+	while ((c = getopt(argc, argv, "C:c:do:r:V")) != -1) {
 		switch (c) {
 		case 'C':
 			confdir = optarg;
@@ -106,6 +106,9 @@ main(int argc, char **argv)
 			break;
 		case 'd':
 			debug = true;
+			break;
+		case 'o':
+			option = optarg;
 			break;
 		case 'r':
 			/* To specify the root directory */
@@ -186,7 +189,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(xhp);
 
-		rv = show_pkg_info_from_repolist(argv[1]);
+		rv = show_pkg_info_from_repolist(argv[1], option);
 		if (rv == ENOENT) {
 			xbps_printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);

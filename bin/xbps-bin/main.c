@@ -185,17 +185,17 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
-	const char *rootdir, *cachedir, *confdir;
+	const char *rootdir, *cachedir, *confdir, *option;
 	int i , c, flags, rv;
 	bool yes, purge, debug, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
 
-	rootdir = cachedir = confdir = NULL;
+	rootdir = cachedir = confdir = option = NULL;
 	flags = rv = 0;
 	yes = purge = force_rm_with_deps = recursive_rm = debug = false;
 	install_auto = install_manual = show_download_pkglist_url = false;
 
-	while ((c = getopt(argc, argv, "AC:c:dDFfMpRr:Vvy")) != -1) {
+	while ((c = getopt(argc, argv, "AC:c:dDFfMo:pRr:Vvy")) != -1) {
 		switch (c) {
 		case 'A':
 			install_auto = true;
@@ -220,6 +220,9 @@ main(int argc, char **argv)
 			break;
 		case 'M':
 			install_manual = true;
+			break;
+		case 'o':
+			option = optarg;
 			break;
 		case 'p':
 			purge = true;
@@ -375,7 +378,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(xhp);
 
-		rv = show_pkg_info_from_metadir(argv[1]);
+		rv = show_pkg_info_from_metadir(argv[1], option);
 		if (rv != 0) {
 			printf("Package %s not installed.\n", argv[1]);
 			goto out;

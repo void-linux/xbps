@@ -40,13 +40,86 @@
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
+static void
+print_value_obj(const char *keyname, prop_object_t obj, bool raw)
+{
+	const char *value;
+	size_t i;
+	char size[8];
+
+	switch (prop_object_type(obj)) {
+	case PROP_TYPE_STRING:
+		if (!raw)
+			printf("%s: ", keyname);
+		printf("%s\n", prop_string_cstring_nocopy(obj));
+		break;
+	case PROP_TYPE_NUMBER:
+		if (!raw)
+			printf("%s: ", keyname);
+		if (xbps_humanize_number(size,
+		    (int64_t)prop_number_unsigned_integer_value(obj)) == -1)
+			printf("%ju\n",
+			    prop_number_unsigned_integer_value(obj));
+		else
+			printf("%s\n", size);
+		break;
+	case PROP_TYPE_BOOL:
+		if (!raw)
+			printf("%s: ", keyname);
+		printf("%s\n", prop_bool_true(obj) ? "yes" : "no");
+		break;
+	case PROP_TYPE_ARRAY:
+		if (!raw)
+			printf("%s:\n", keyname);
+		for (i = 0; i < prop_array_count(obj); i++) {
+			prop_array_get_cstring_nocopy(obj, i, &value);
+			printf("%s%s%s", !raw ? "\t" : "", value,
+			    !raw ? "\n" : " ");
+		}
+		if (raw)
+			printf("\n");
+		break;
+	default:
+		xbps_warn_printf("unknown obj type (key %s)\n",
+		    keyname);
+		break;
+	}
+}
+
+void
+show_pkg_info_one(prop_dictionary_t d, const char *keys)
+{
+	prop_object_t obj;
+	char *key, *p, *saveptr;
+
+	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
+	assert(keys != NULL);
+
+	if (strchr(keys, ',') == NULL) {
+		obj = prop_dictionary_get(d, keys);
+		if (obj == NULL)
+			return;
+		print_value_obj(keys, obj, true);
+		return;
+	}
+	key = strdup(keys);
+	assert(key != NULL);
+	for ((p = strtok_r(key, ",", &saveptr)); p;
+	    (p = strtok_r(NULL, ",", &saveptr))) {
+		obj = prop_dictionary_get(d, p);
+		if (obj == NULL)
+			continue;
+		print_value_obj(p, obj, true);
+	}
+	free(key);
+}
+
 void
 show_pkg_info(prop_dictionary_t dict)
 {
 	prop_array_t all_keys;
 	prop_object_t obj, keysym;
 	const char *keyname;
-	char size[8];
 	size_t i;
 
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
@@ -57,38 +130,11 @@ show_pkg_info(prop_dictionary_t dict)
 		keysym = prop_array_get(all_keys, i);
 		keyname = prop_dictionary_keysym_cstring_nocopy(keysym);
 		obj = prop_dictionary_get_keysym(dict, keysym);
+		/* ignore run_depends, it's shown via 'show-deps' */
+		if (strcmp(keyname, "run_depends") == 0)
+			break;
 
-		switch (prop_object_type(obj)) {
-		case PROP_TYPE_STRING:
-			printf("%s: %s\n", keyname,
-			    prop_string_cstring_nocopy(obj));
-			break;
-		case PROP_TYPE_NUMBER:
-			printf("%s: ", keyname);
-			if (xbps_humanize_number(size,
-		    	    (int64_t)prop_number_unsigned_integer_value(obj)) == -1)
-				printf("%ju\n",
-				    prop_number_unsigned_integer_value(obj));
-			else
-				printf("%s\n", size);
-			break;
-		case PROP_TYPE_BOOL:
-			printf("%s: %s\n", keyname,
-			    prop_bool_true(obj) ? "yes" : "no");
-			break;
-		case PROP_TYPE_ARRAY:
-			/* ignore run_depends, it's shown via 'show-deps' */
-			if (strcmp(keyname, "run_depends") == 0)
-				break;
-			printf("%s:\n", keyname);
-			(void)xbps_callback_array_iter_in_dict(dict, keyname,
-			    list_strings_sep_in_array, __UNCONST("\t"));
-			break;
-		default:
-			xbps_warn_printf("unknown obj type (key %s)\n",
-			    keyname);
-			break;
-		}
+		print_value_obj(keyname, obj, false);
 	}
 }
 

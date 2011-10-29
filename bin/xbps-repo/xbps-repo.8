@@ -1,4 +1,4 @@
-.TH "XBPS\-REPO" "8" "17/10/2011" "\ \&" "\ \&"
+.TH "XBPS\-REPO" "8" "28/10/2011" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -36,6 +36,14 @@ directory to store downloaded binary packages from remote repositories\&. By def
 \fB\-d\fR
 .RS 4
 Enables extra debugging output to be shown to stderr.
+.RE
+.PP
+\fB-o\fR \fIkey[,key2...]\fR
+.RS 4
+Used currently in the
+\fIshow\fR
+target\&. Prints the value of specified key(s) from package's properties dictionary.
+Multiple keys can be specified delimited by the comma character.
 .RE
 .PP
 \fB\-r\fR \fIrootdir\fR
