@@ -33,10 +33,13 @@
 static int
 store_dependency(prop_dictionary_t transd,
 		 prop_dictionary_t repo_pkgd,
-		 pkg_state_t repo_pkg_state)
+		 pkg_state_t repo_pkg_state,
+		 size_t *depth)
 {
+	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t array;
 	const char *pkgname, *pkgver, *repoloc;
+	size_t x;
 	int rv = 0;
 
 	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
@@ -68,8 +71,15 @@ store_dependency(prop_dictionary_t transd,
 	if (!prop_array_add(array, repo_pkgd))
 		return EINVAL;
 
-	xbps_dbg_printf("Added package '%s' into "
-	    "the transaction (%s).\n", pkgver, repoloc);
+	if (xhp->debug) {
+		xbps_dbg_printf_append("\n");
+		xbps_dbg_printf(" ");
+		for (x = 0; x < *depth; x++)
+			xbps_dbg_printf_append(" ");
+
+		xbps_dbg_printf_append("%s: added into "
+		    "the transaction (%s).\n", pkgver, repoloc);
+	}
 
 	return 0;
 }
@@ -165,13 +175,16 @@ static int
 find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 	       prop_array_t mrdeps,		/* missing rundeps array */
 	       prop_array_t pkg_rdeps_array,	/* current pkg rundeps array  */
-	       size_t depth)			/* max recursion depth */
+	       const char *curpkg,		/* current pkgver */
+	       size_t *depth)			/* max recursion depth */
 {
 	prop_dictionary_t curpkgd, tmpd;
 	prop_array_t curpkgrdeps;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	pkg_state_t state;
+	const struct xbps_handle *xhp = xbps_handle_get();
+	size_t x;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
 	char *pkgname;
 	int rv = 0;
@@ -180,7 +193,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 	assert(prop_object_type(mrdeps) == PROP_TYPE_ARRAY);
 	assert(prop_object_type(pkg_rdeps_array) == PROP_TYPE_ARRAY);
 
-	if (depth >= MAX_DEPTH)
+	if (*depth >= MAX_DEPTH)
 		return ELOOP;
 
 	iter = prop_array_iterator(pkg_rdeps_array);
@@ -198,13 +211,13 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			rv = EINVAL;
 			break;
 		}
-		if (depth < 1)
-			xbps_dbg_printf("  [direct] Requires "
-			    "dependency '%s' ", reqpkg);
-		else
-			xbps_dbg_printf("    [indirect] Requires "
-			    "dependency '%s' ", reqpkg);
-
+		if (xhp->debug) {
+			xbps_dbg_printf("");
+			for (x = 0; x < *depth; x++)
+				xbps_dbg_printf_append(" ");
+			xbps_dbg_printf_append("%s requires dependency '%s' ",
+			    curpkg ? curpkg : " ", reqpkg);
+		}
 		/*
 		 * Pass 1: check if required dependency is already installed
 		 * and its version is fully matched.
@@ -246,7 +259,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 				break;
 			}
 			/* Required pkgdep not installed */
-			xbps_dbg_printf_append("not installed.\n");
+			xbps_dbg_printf_append("not installed");
 			reason = "install";
 			state = XBPS_PKG_STATE_NOT_INSTALLED;
 		} else {
@@ -335,8 +348,8 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		if (curpkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkgver_q);
-			xbps_dbg_printf_append("`%s' queued "
-			    "in the transaction.\n", pkgver_q);
+			xbps_dbg_printf_append(" (%s queued "
+			    "in transaction).\n", pkgver_q);
 			continue;
 		} else {
 			/* error matching required pkgdep */
@@ -383,10 +396,12 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		 * Set pkg transaction reason.
 		 */
 		prop_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
+		prop_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
 		/*
 		 * Package is on repo, add it into the transaction dictionary.
 		 */
-		if ((rv = store_dependency(transd, curpkgd, state)) != 0) {
+		rv = store_dependency(transd, curpkgd, state, depth);
+		if (rv != 0) {
 			xbps_dbg_printf("store_dependency failed for "
 			    "`%s': %s\n", reqpkg, strerror(rv));
 			prop_object_release(curpkgd);
@@ -401,12 +416,20 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			continue;
 		}
 		prop_object_release(curpkgd);
+		if (xhp->debug) {
+			xbps_dbg_printf("");
+			for (x = 0; x < *depth; x++)
+				xbps_dbg_printf_append(" ");
+
+			xbps_dbg_printf_append(" %s: finding dependencies:\n",
+			    pkgver_q);
+		}
 		/*
 		 * Recursively find rundeps for current pkg dictionary.
 		 */
-		xbps_dbg_printf("%s[%sdirect] Finding dependencies for '%s':\n",
-		    depth < 1 ? "" : "  ", depth < 1 ? "" : "in", reqpkg);
-		rv = find_repo_deps(transd, mrdeps, curpkgrdeps, depth++);
+		(*depth)++;
+		rv = find_repo_deps(transd, mrdeps, curpkgrdeps,
+		    pkgver_q, depth);
 		if (rv != 0) {
 			xbps_dbg_printf("Error checking %s for rundeps: %s\n",
 			    reqpkg, strerror(rv));
@@ -414,7 +437,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		}
 	}
 	prop_object_iterator_release(iter);
-	depth--;
+	(*depth)--;
 
 	return rv;
 }
@@ -426,6 +449,7 @@ xbps_repository_find_pkg_deps(prop_dictionary_t transd,
 {
 	prop_array_t pkg_rdeps;
 	const char *pkgver;
+	size_t depth = 0;
 	int rv = 0;
 
 	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
@@ -442,7 +466,8 @@ xbps_repository_find_pkg_deps(prop_dictionary_t transd,
 	 * This will find direct and indirect deps, if any of them is not
 	 * there it will be added into the missing_deps array.
 	 */
-	if ((rv = find_repo_deps(transd, mdeps, pkg_rdeps, 0)) != 0) {
+	if ((rv = find_repo_deps(transd, mdeps, pkg_rdeps,
+	    pkgver, &depth)) != 0) {
 		xbps_dbg_printf("Error '%s' while checking rundeps!\n",
 		    strerror(rv));
 	}

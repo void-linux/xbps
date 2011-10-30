@@ -57,7 +57,9 @@ static int
 set_new_state(prop_dictionary_t dict, pkg_state_t state)
 {
 	const struct state *stp;
+#ifdef DEBUG
 	const char *pkgname;
+#endif
 
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 
@@ -71,10 +73,12 @@ set_new_state(prop_dictionary_t dict, pkg_state_t state)
 	if (!prop_dictionary_set_cstring_nocopy(dict, "state", stp->string))
 		return EINVAL;
 
+#ifdef DEBUG
 	if (prop_dictionary_get_cstring_nocopy(dict, "pkgname", &pkgname)) {
 		xbps_dbg_printf("%s: changed pkg state to '%s'\n",
 		    pkgname, stp->string);
 	}
+#endif
 
 	return 0;
 }

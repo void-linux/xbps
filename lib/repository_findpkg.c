@@ -57,7 +57,7 @@ repository_find_pkg(const char *pattern, const char *reason)
 	prop_dictionary_t pkg_repod = NULL;
 	prop_dictionary_t transd;
 	prop_array_t mdeps, unsorted;
-	const char *pkgname;
+	const char *pkgname, *pkgver, *repoloc;
 	int rv = 0;
 	bool bypattern = false, bestpkg;
 	pkg_state_t state = 0;
@@ -111,6 +111,8 @@ repository_find_pkg(const char *pattern, const char *reason)
 	}
 
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
@@ -163,6 +165,8 @@ repository_find_pkg(const char *pattern, const char *reason)
 		rv = errno;
 		goto out;
 	}
+	xbps_dbg_printf("%s: added into the transaction (%s).\n",
+	    pkgver, repoloc);
 
 out:
 	if (pkg_repod)
