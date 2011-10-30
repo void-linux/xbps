@@ -65,8 +65,7 @@ xbps_check_is_installed_pkg_by_pattern(const char *pattern)
 
 	assert(pattern != NULL);
 
-	if ((dict = xbps_find_pkg_dict_installed(pattern, true)) == NULL)
-		dict = xbps_find_virtualpkg_dict_installed(pattern, true);
+	dict = xbps_find_virtualpkg_dict_installed(pattern, true);
 	if (dict == NULL) {
 		if (errno == ENOENT) {
 			errno = 0;
@@ -98,10 +97,7 @@ xbps_check_is_installed_pkg_by_name(const char *pkgname)
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
-	if (pkgd == NULL)
-		pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
-
+	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
 	if (pkgd) {
 		prop_object_release(pkgd);
 		return true;
