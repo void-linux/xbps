@@ -163,7 +163,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	const char *entry_pname, *transact;
 	char *buf;
 	int rv, flags;
-	bool preserve, update;
+	bool preserve, update, replace;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
@@ -326,6 +326,23 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		xhp->xucd->entry_total_count +=
 		    (ssize_t)prop_array_count(array);
 
+		replace = false;
+		if (prop_dictionary_get_bool(pkg_repod,
+		    "replacing-package", &replace) && replace) {
+			/*
+			 * The package we are currently unpacking replaced
+			 * another package that it was removed, respect
+			 * configuration files if they exist.
+			 */
+			if (S_ISREG(entry_statp->st_mode) &&
+			    xbps_entry_is_a_conf_file(propsd, entry_pname) &&
+			    (access(entry_pname, R_OK) == 0)) {
+				xbps_dbg_printf("%s: preserving conf_file %s.\n",
+				    pkgname, entry_pname);
+				archive_read_data_skip(ar);
+				continue;
+			}
+		}
 		if (update && S_ISREG(entry_statp->st_mode)) {
 			/*
 			 * Handle configuration files. Check if current entry is
@@ -338,6 +355,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				/* error */
 				goto out;
 			} else if (rv == 1) {
+				/* configuration file */
 				if (xhp->xucd != NULL)
 					xhp->xucd->entry_is_conf = true;
 
@@ -352,7 +370,6 @@ unpack_archive(prop_dictionary_t pkg_repod,
 					 * as is now and pass to next entry.
 					 */
 					archive_read_data_skip(ar);
-					RUN_PROGRESS_CB();
 					continue;
 				}
 			} else {
@@ -372,8 +389,11 @@ unpack_archive(prop_dictionary_t pkg_repod,
 					goto out;
 				} else if (rv == 0) {
 					/* hash match, skip */
+					xbps_dbg_printf("%s-%s: entry %s "
+					    "matches current SHA256, "
+					    "skipping...\n", pkgname,
+					    version, entry_pname);
 					archive_read_data_skip(ar);
-					RUN_PROGRESS_CB();
 					continue;
 				}
 			}
@@ -392,8 +412,6 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				if (xhp->flags & XBPS_FLAG_VERBOSE)
 					xbps_warn_printf("ignoring existing "
 					    "entry: %s\n", entry_pname);
-
-				RUN_PROGRESS_CB();
 				continue;
 			}
 		}

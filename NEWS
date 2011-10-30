@@ -1,5 +1,9 @@
 xbps-0.11.0 (???):
 
+ * libxbps: when unpacking a package that replaced another package
+   due to virtual packages, preserve its configuration files if
+   they already existed.
+
  * xbps-bin(8)/xbps-repo(8): new flag '-o' (option). This can be used
    in the 'show' target to print only a set of objects stored in package's
    properties dictionary, example:
