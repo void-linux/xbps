@@ -216,39 +216,40 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 {
 	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, plistd = NULL;
-	const char *rpkgname;
+	const char *savedpkgname;
 	char *plistf;
 
 	assert(pkgname != NULL);
 	assert(plist != NULL);
 	xhp = xbps_handle_get();
 
+	savedpkgname = pkgname;
 	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
 	    prop_string_cstring_nocopy(xhp->rootdir),
-	    XBPS_META_PATH, pkgname, plist);
+	    XBPS_META_PATH, savedpkgname, plist);
 	if (plistf == NULL)
 		return NULL;
 
 	if (access(plistf, R_OK) == -1) {
 		pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
 		if (pkgd) {
-			prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &rpkgname);
+			free(plistf);
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "pkgname", &savedpkgname);
+			plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
+			    prop_string_cstring_nocopy(xhp->rootdir),
+			    XBPS_META_PATH, savedpkgname, plist);
 			prop_object_release(pkgd);
-			pkgname = rpkgname;
+			if (plistf == NULL)
+				return NULL;
 		}
-		free(plistf);
-		plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-		    prop_string_cstring_nocopy(xhp->rootdir),
-		    XBPS_META_PATH, pkgname, plist);
-		if (plistf == NULL)
-			return NULL;
 	}
 
 	plistd = prop_dictionary_internalize_from_zfile(plistf);
 	free(plistf);
 	if (plistd == NULL) {
-		xbps_dbg_printf("cannot read from plist file %s for %s: %s\n",
-		    plist, pkgname, strerror(errno));
+		xbps_dbg_printf("cannot read from metadata %s for %s: %s\n",
+		    plist, savedpkgname, strerror(errno));
 		return NULL;
 	}
 
