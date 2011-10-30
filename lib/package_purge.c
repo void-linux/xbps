@@ -133,8 +133,11 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	 */
 	pkgd = xbps_find_pkg_in_dict_by_name(xhp->regpkgdb_dictionary,
 	    "packages", pkgname);
-	if (pkgd == NULL)
+	if (pkgd == NULL) {
+		xbps_dbg_printf("[purge] %s: missing pkg dictionary (%s)\n",
+		    pkgname, strerror(errno));
 		return errno;
+	}
 
 	if (check_state) {
 		/*
@@ -142,20 +145,27 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		 */
 		if ((rv = xbps_pkg_state_dictionary(pkgd, &state)) != 0)
 			return rv;
-		if (state != XBPS_PKG_STATE_CONFIG_FILES)
+		if (state != XBPS_PKG_STATE_CONFIG_FILES) {
+			xbps_dbg_printf("[purge] %s not in config-files "
+			    "state.\n", pkgname);
 			return rv;
+		}
 	}
 	/*
 	 * Remove unmodified configuration files.
 	 */
 	dict = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
-	if (dict == NULL)
-		return errno;
-
-	if (prop_dictionary_get(dict, "conf_files")) {
-		if ((rv = xbps_remove_pkg_files(dict, "conf_files")) != 0) {
+	if (dict == NULL) {
+		xbps_dbg_printf("[purge] %s: failed to read files.plist (%s)\n",
+		    pkgname, strerror(errno));
+		if (errno != ENOENT)
+			return errno;
+	} else {
+		if (prop_dictionary_get(dict, "conf_files")) {
+			rv = xbps_remove_pkg_files(dict, "conf_files");
 			prop_object_release(dict);
-			return rv;
+			if (rv != 0)
+				return rv;
 		}
 	}
 	/*
@@ -163,14 +173,12 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	 */
 	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
 		rv = errno;
-		prop_object_release(dict);
-		xbps_error_printf("[purge] %s: cannot change to rootdir: %s.\n",
-		    pkgname, strerror(rv));
+		xbps_error_printf("[purge] %s: cannot change to rootdir "
+		    "(%s)\n", pkgname, strerror(rv));
 		return rv;
 	}
 	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE", XBPS_META_PATH, pkgname);
 	if (buf == NULL) {
-		prop_object_release(dict);
 		rv = ENOMEM;
 		return rv;
 	}
@@ -185,21 +193,20 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 				xbps_error_printf("%s: purge action error in "
 				    "REMOVE script: %s\n", pkgname,
 				    strerror(errno));
-				prop_object_release(dict);
 				return rv;
 			}
 		}
 	}
 	free(buf);
-	prop_object_release(dict);
 	/*
 	 * Remove metadata dir and unregister package.
 	 */
 	if ((rv = remove_pkg_metadata(pkgname,
 	    prop_string_cstring_nocopy(xhp->rootdir))) != 0) {
-		xbps_error_printf("%s: couldn't remove metadata files: %s\n",
-		    pkgname, strerror(rv));
-		return rv;
+		xbps_dbg_printf("[purge] %s: failed to remove metadata "
+		    "files (%s)\n", pkgname, strerror(rv));
+		if (rv != ENOENT)
+			return rv;
 	}
 	if ((rv = xbps_unregister_pkg(pkgname)) != 0) {
 		xbps_error_printf("%s: couldn't unregister package: %s\n",
