@@ -142,8 +142,11 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		 * the version currently installed.
 		 */
 		instpkgd = xbps_find_pkg_dict_installed(rpf->pattern, false);
-		if (instpkgd == NULL)
-			return 0;
+		if (instpkgd == NULL) {
+			xbps_dbg_printf("[rpool] `%s' not installed, "
+			    "ignoring...\n", rpf->pattern);
+			return ENODEV;
+		}
 		prop_dictionary_get_cstring_nocopy(instpkgd,
 		    "version", &instver);
 		prop_dictionary_get_cstring_nocopy(rpf->pkgd,
