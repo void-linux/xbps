@@ -290,7 +290,7 @@ update_pkg(const char *pkgname)
 		    strerror(rv));
 		return -1;
 	}
-	return 0;
+	return rv;
 }
 
 int
