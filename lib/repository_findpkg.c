@@ -73,7 +73,7 @@ repository_find_pkg(const char *pattern, const char *reason)
 		/* update */
 		pkg_repod = xbps_find_pkg_dict_installed(pattern, false);
 		if (pkg_repod == NULL) {
-			rv = errno;
+			rv = ENODEV;
 			goto out;
 		}
 		prop_object_release(pkg_repod);
