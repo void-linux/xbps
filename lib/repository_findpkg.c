@@ -82,7 +82,6 @@ repository_find_pkg(const char *pattern, const char *reason)
 	}
 
 	xbps_dbg_printf("%s: pattern %s reason %s\n", __func__, pattern, reason);
-
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
@@ -117,10 +116,11 @@ repository_find_pkg(const char *pattern, const char *reason)
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
-	rv = xbps_repository_find_pkg_deps(transd, mdeps, pkg_repod);
-	if (rv != 0)
-		goto out;
-
+	if (xbps_pkg_has_rundeps(pkg_repod)) {
+		rv = xbps_repository_find_pkg_deps(transd, mdeps, pkg_repod);
+		if (rv != 0)
+			goto out;
+	}
 	/*
 	 * Set package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
@@ -169,7 +169,7 @@ repository_find_pkg(const char *pattern, const char *reason)
 	    pkgver, repoloc);
 
 out:
-	if (pkg_repod)
+	if (prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY)
 		prop_object_release(pkg_repod);
 
 	return rv;

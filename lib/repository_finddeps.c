@@ -457,7 +457,7 @@ xbps_repository_find_pkg_deps(prop_dictionary_t transd,
 	assert(prop_object_type(repo_pkgd) == PROP_TYPE_DICTIONARY);
 
 	pkg_rdeps = prop_dictionary_get(repo_pkgd, "run_depends");
-	if (pkg_rdeps == NULL)
+	if (prop_object_type(pkg_rdeps) != PROP_TYPE_ARRAY)
 		return 0;
 
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
