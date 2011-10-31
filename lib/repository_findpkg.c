@@ -88,8 +88,10 @@ repository_find_pkg(const char *pattern, const char *reason)
 	pkg_repod = xbps_repository_pool_find_pkg(pattern,
 	    bypattern, bestpkg);
 	if (pkg_repod == NULL) {
-		pkg_repod = xbps_repository_pool_find_virtualpkg(pattern,
-		    bypattern, bestpkg);
+		if (bestpkg == false) {
+			pkg_repod = xbps_repository_pool_find_virtualpkg(
+			    pattern, bypattern, bestpkg);
+		}
 		if (pkg_repod == NULL) {
 			/* not found */
 			rv = errno;
