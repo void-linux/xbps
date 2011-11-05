@@ -110,11 +110,11 @@ usage(struct xbps_handle *xhp)
 int
 main(int argc, char **argv)
 {
-	struct xbps_handle *xhp;
+	struct xbps_handle *xhp = NULL;
 	struct xferstat xfer;
 	prop_dictionary_t dict;
 	const char *version, *rootdir = NULL, *confdir = NULL;
-	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
+	char *plist = NULL, *pkgname, *pkgver, *in_chroot_env, *hash;
 	bool debug = false, in_chroot = false;
 	int i, c, rv = 0;
 
@@ -145,33 +145,38 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage(NULL);
 
-	/*
-	 * Initialize the callbacks and debug in libxbps.
-	 */
-	xhp = xbps_handle_alloc();
-	if (xhp == NULL) {
-		xbps_error_printf("xbps-uhelper: failed to allocate resources\n");
-		exit(EXIT_FAILURE);
-	}
-	xhp->debug = debug;
-	xhp->xbps_fetch_cb = fetch_file_progress_cb;
-	xhp->xfcd->cookie = &xfer;
-	if (rootdir)
-		xhp->rootdir = prop_string_create_cstring(rootdir);
-	if (confdir)
-		xhp->confdir = prop_string_create_cstring(confdir);
+	if ((strcasecmp(argv[0], "register") == 0) ||
+	    (strcasecmp(argv[0], "unregister") == 0) ||
+	    (strcasecmp(argv[0], "version") == 0) ||
+	    (strcasecmp(argv[0], "fetch") == 0)) {
+		/*
+		* Initialize the callbacks and debug in libxbps.
+		*/
+		xhp = xbps_handle_alloc();
+		if (xhp == NULL) {
+			xbps_error_printf("xbps-uhelper: failed to allocate resources\n");
+			exit(EXIT_FAILURE);
+		}
+		xhp->debug = debug;
+		xhp->xbps_fetch_cb = fetch_file_progress_cb;
+		xhp->xfcd->cookie = &xfer;
+		if (rootdir)
+			xhp->rootdir = prop_string_create_cstring(rootdir);
+		if (confdir)
+			xhp->confdir = prop_string_create_cstring(confdir);
 
-	if ((rv = xbps_init(xhp)) != 0) {
-		xbps_error_printf("xbps-uhelper: failed to "
-		    "initialize libxbps.\n");
-		exit(EXIT_FAILURE);
-	}
+		if ((rv = xbps_init(xhp)) != 0) {
+			xbps_error_printf("xbps-uhelper: failed to "
+			    "initialize libxbps.\n");
+			exit(EXIT_FAILURE);
+		}
 
-	plist = xbps_xasprintf("%s/%s/%s", rootdir,
-	    XBPS_META_PATH, XBPS_REGPKGDB);
-	if (plist == NULL) {
-		xbps_end(xhp);
-		exit(EXIT_FAILURE);
+		plist = xbps_xasprintf("%s/%s/%s", rootdir,
+		    XBPS_META_PATH, XBPS_REGPKGDB);
+		if (plist == NULL) {
+			xbps_end(xhp);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	in_chroot_env = getenv("in_chroot");
