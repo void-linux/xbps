@@ -241,7 +241,7 @@ for f in all extra error shadow "format=2" missing-prototypes \
 	unsafe-loop-optimizations undef sign-compare \
 	missing-include-dirs old-style-definition \
 	init-self redundant-decls float-equal missing-noreturn \
-	cast-align cast-qual pointer-arith comment unused-macros \
+	cast-align cast-qual pointer-arith comment \
 	declaration-after-statement write-strings stack-protector; do
 	check_compiler_flag ${f} W
 done
@@ -249,7 +249,6 @@ done
 #
 # Check for some compiler flags.
 #
-check_compiler_flag pic f CFLAGS
 check_compiler_flag PIC f CFLAGS
 
 check_compiler_flag stack-protector-all f CFLAGS
