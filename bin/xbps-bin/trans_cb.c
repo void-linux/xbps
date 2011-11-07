@@ -92,6 +92,7 @@ void
 transaction_err_cb(struct xbps_transaction_cb_data *xtcd)
 {
 	const char *state_descr = NULL;
+	const char *res = xbps_fetch_error_string();
 
 	switch (xtcd->state) {
 	case XBPS_TRANS_STATE_DOWNLOAD:
@@ -120,7 +121,7 @@ transaction_err_cb(struct xbps_transaction_cb_data *xtcd)
 		break;
 	case XBPS_TRANS_STATE_REPOSYNC:
 		xbps_error_printf("Failed to sync pkg-index: %s\n",
-		    strerror(xtcd->err));
+		    res ? res : strerror(xtcd->err));
 		return;
 	default:
 		state_descr = "unknown transaction state";
