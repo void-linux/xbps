@@ -8,7 +8,7 @@ xbps-0.11.0 (???):
 
  * libxbps: improve xbps_purge_pkg() in case that the process was
    unexpectedly interrupted, do not error out unless the unregister
-   phase return an error value.
+   phase returns an error value.
 
  * libxbps: when unpacking a package that replaced another package
    due to virtual packages, preserve its configuration files if
