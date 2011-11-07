@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/utsname.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -47,11 +48,6 @@ static SIMPLEQ_HEAD(rpool_head, repository_pool) rpool_queue =
 
 static bool repolist_initialized;
 
-#define FETCH_ERROR(x) ((x == FETCH_UNAVAIL) || \
-			(x == FETCH_NETWORK) || \
-			(x == FETCH_ABORT) || \
-			(x == FETCH_TIMEOUT) || \
-			(x == FETCH_DOWN))
 static int
 sync_remote_repo(const char *plist, const char *repourl)
 {
@@ -60,14 +56,36 @@ sync_remote_repo(const char *plist, const char *repourl)
 		return 0;
 
 	/* file not found, fetch it */
-	if (xbps_repository_sync_pkg_index(repourl) == -1) {
-		if (FETCH_ERROR(fetchLastErrCode))
-			return -1;
-	}
+	if (xbps_repository_sync_pkg_index(repourl) == -1)
+		return -1;
 
 	return 0;
 }
-#undef FETCH_ERROR
+
+/*
+ * Returns true if repository URI contains "noarch" or matching architecture
+ * in last component, false otherwise.
+ */
+static bool
+check_repo_arch(const char *uri)
+{
+	struct utsname un;
+	char *p;
+
+	uname(&un);
+	p = strrchr(uri, '/');
+	if (p == NULL)
+		return false;
+	p++;
+	if (*p == '\0')
+		return false;
+	else if (strcmp(p, "noarch") == 0)
+		return true;
+	else if (strcmp(p, un.machine) == 0)
+		return true;
+
+	return false;
+}
 
 int HIDDEN
 xbps_repository_pool_init(void)
@@ -113,20 +131,33 @@ xbps_repository_pool_init(void)
 		if (duprepo)
 			continue;
 
+		ntotal++;
+		/*
+		 * Check if repository doesn't match our architecture.
+		 */
+		if (!check_repo_arch(repouri)) {
+			xbps_dbg_printf("[rpool] `%s' arch not matched, "
+			    "ignoring.\n", repouri);
+			nmissing++;
+			continue;
+		}
 		plist = xbps_pkg_index_plist(repouri);
 		if (plist == NULL) {
 			rv = errno;
 			goto out;
 		}
-		ntotal++;
+		/*
+		 * If it's a remote repository and index file is not available,
+		 * fetch it for the first time.
+		 */
 		if (sync_remote_repo(plist, repouri) == -1) {
 			nmissing++;
 			free(plist);
 			continue;
 		}
 		/*
-		 * Iterate over the repository pool and add the dictionary
-		 * for current repository into the queue.
+		 * Internalize repository's index dictionary and add it
+		 * into the queue.
 		 */
 		rpool = malloc(sizeof(struct repository_pool));
 		if (rpool == NULL) {

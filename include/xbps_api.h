@@ -53,9 +53,9 @@
  * @def XBPS_PKGINDEX_VERSION
  * Current version for the repository package index format.
  */
-#define XBPS_PKGINDEX_VERSION	"1.2"
+#define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111031-1"
+#define XBPS_API_VERSION	"20111107"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -100,7 +100,7 @@
  * @def XBPS_PKGINDEX
  * Filename for the repository package index property list.
  */
-#define XBPS_PKGINDEX		"pkg-index.plist"
+#define XBPS_PKGINDEX		"index.plist"
 
 /**
  * @def XBPS_SYSCONF_PATH

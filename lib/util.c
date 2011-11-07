@@ -34,7 +34,6 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
-#include <sys/utsname.h>
 
 #include "config.h"
 #include "xbps_api_impl.h"
@@ -227,24 +226,19 @@ get_pkg_index_remote_plist(const char *uri)
 char *
 xbps_pkg_index_plist(const char *uri)
 {
-	struct utsname un;
-
 	assert(uri != NULL);
-
-	if (uname(&un) == -1)
-		return NULL;
 
 	if (xbps_check_is_repository_uri_remote(uri))
 		return get_pkg_index_remote_plist(uri);
 
-	return xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
+	return xbps_xasprintf("%s/%s", uri, XBPS_PKGINDEX);
 }
 
 char *
 xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 {
 	struct xbps_handle *xhp;
-	const char *filen, *arch;
+	const char *filen;
 	char *lbinpkg = NULL;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
@@ -252,9 +246,6 @@ xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 
 	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
 	    "filename", &filen))
-		return NULL;
-	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
-	    "architecture", &arch))
 		return NULL;
 
 	xhp = xbps_handle_get();
@@ -273,7 +264,7 @@ xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 	/*
 	 * Local and remote repositories use the same path.
 	 */
-	return xbps_xasprintf("%s/%s/%s", repoloc, arch, filen);
+	return xbps_xasprintf("%s/%s", repoloc, filen);
 }
 
 bool

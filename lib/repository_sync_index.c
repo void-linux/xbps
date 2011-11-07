@@ -23,7 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/utsname.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,11 +55,11 @@ xbps_get_remote_repo_string(const char *uri)
 	 * Replace '.' ':' and '/' characters with underscores, so that
 	 * provided URL:
 	 *
-	 * 	http://nocturno.local:8080/blah/xbps/binpkg-repo
+	 * 	http://nocturno.local:8080/repo/x86_64
 	 *
 	 * becomes:
 	 *
-	 * 	http___nocturno_local_8080_blah_xbps_binpkg_repo
+	 * 	http___nocturno_local_8080_repo_x86_64
 	 * 	
 	 */
 	if (url->port != 0)
@@ -92,12 +91,11 @@ xbps_repository_sync_pkg_index(const char *uri)
 	prop_dictionary_t tmpd;
 	struct xbps_handle *xhp;
 	struct url *url = NULL;
-	struct utsname un;
 	struct stat st;
 	const char *fetch_outputdir;
 	char *rpidx, *lrepodir, *uri_fixedp;
 	char *metadir, *tmp_metafile, *lrepofile;
-	int sverrno, rv = 0;
+	int rv = 0;
 	bool only_sync = false;
 
 	assert(uri != NULL);
@@ -108,9 +106,6 @@ xbps_repository_sync_pkg_index(const char *uri)
 	if (!xbps_check_is_repository_uri_remote(uri))
 		return 0;
 
-	if (uname(&un) == -1)
-		return -1;
-
 	if ((url = fetchParseURL(uri)) == NULL)
 		return -1;
 
@@ -119,7 +114,6 @@ xbps_repository_sync_pkg_index(const char *uri)
 		fetchFreeURL(url);
 		return -1;
 	}
-
 	/*
 	 * Create metadir if necessary.
 	 */
@@ -137,7 +131,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	/*
 	 * Remote repository pkg-index.plist full URL.
 	 */
-	rpidx = xbps_xasprintf("%s/%s/%s", uri, un.machine, XBPS_PKGINDEX);
+	rpidx = xbps_xasprintf("%s/%s", uri, XBPS_PKGINDEX);
 	if (rpidx == NULL) {
 		rv = -1;
 		goto out;
@@ -181,20 +175,13 @@ xbps_repository_sync_pkg_index(const char *uri)
 	 * Download pkg-index.plist file from repository.
 	 */
 	if (xbps_fetch_file(rpidx, fetch_outputdir, true, NULL) == -1) {
-		sverrno = errno;
-		if (fetchLastErrCode)
-			rv = fetchLastErrCode;
-		else
-			rv = sverrno;
-
 		if (xhp->xbps_transaction_err_cb) {
 			xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
 			xhp->xtcd->repourl = uri;
-			xhp->xtcd->err = rv;
+			xhp->xtcd->err = fetchLastErrCode;
 			xhp->xbps_transaction_err_cb(xhp->xtcd);
 		}
 		rv = -1;
-		errno = sverrno;
 		goto out;
 	}
 	if (only_sync)

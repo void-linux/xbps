@@ -1,5 +1,11 @@
 xbps-0.11.0 (???):
 
+ * Implemented "New repository scheme and configuration file" from issue 16.
+   The plist index file has been renamed to "index.plist", version bumped
+   to 1.3. The configuration file (repositories.plist) now expect the full
+   path to the directory storing the index.plist file. This will allow us
+   to use other directories (such as non-free, or alike) for such purpose.
+
  * libxbps: improve xbps_purge_pkg() in case that the process was
    unexpectedly interrupted, do not error out unless the unregister
    phase return an error value.

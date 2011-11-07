@@ -157,7 +157,7 @@ xbps_init(struct xbps_handle *xh)
 	    prop_string_cstring_nocopy(repofile));
 	xbps_dbg_printf("fetch_cache_conn: %zu\n",
 	    fetch_cache_conn);
-	xbps_dbg_printf("fetch_cacche_conn_host: %zu\n",
+	xbps_dbg_printf("fetch_cache_conn_host: %zu\n",
 	    fetch_cache_conn_host);
 	xbps_dbg_printf("fetch_timeout: %zu\n",
 	    xhp->fetch_timeout);

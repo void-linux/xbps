@@ -36,9 +36,6 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-/* Array of valid architectures */
-static const char *archdirs[] = { "i686", "x86_64", "noarch", NULL };
-
 /*
  * Removes stalled pkg entries in repository's pkg-index.plist file, if any
  * binary package cannot be read (unavailable, not enough perms, etc).
@@ -48,7 +45,7 @@ remove_missing_binpkg_entries(const char *repodir)
 {
 	prop_array_t pkgarray;
 	prop_dictionary_t idxd, pkgd;
-	const char *arch, *filen;
+	const char *filen;
 	char *binpkg, *plist;
 	size_t i;
 	int rv = 0;
@@ -77,9 +74,8 @@ again:
 
 	for (i = 0; i < prop_array_count(pkgarray); i++) {
 		pkgd = prop_array_get(pkgarray, i);
-		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
 		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
-		binpkg = xbps_xasprintf("%s/%s/%s", repodir, arch, filen);
+		binpkg = xbps_xasprintf("%s/%s", repodir, filen);
 		if (binpkg == NULL) {
 			errno = ENOMEM;
 			rv = -1;
@@ -321,15 +317,10 @@ repo_genindex(const char *pkgdir)
 	prop_dictionary_t idxdict = NULL;
 	struct dirent *dp;
 	DIR *dirp;
-	struct utsname un;
 	uint64_t npkgcnt = 0;
-	char *binfile, *path, *plist;
-	size_t i;
+	char *binfile, *plist;
 	int rv = 0;
 	bool registered_newpkgs = false, foundpkg = false;
-
-	if (uname(&un) == -1)
-		return errno;
 
 	/*
 	 * Create or read existing package index plist file.
@@ -343,74 +334,43 @@ repo_genindex(const char *pkgdir)
 		prop_object_release(idxdict);
 		return errno;
 	}
-	/*
-	 * Iterate over the known architecture directories to find
-	 * binary packages.
-	 */
-	for (i = 0; archdirs[i] != NULL; i++) {
-		if ((strcmp(archdirs[i], un.machine)) &&
-		    (strcmp(archdirs[i], "noarch")))
+
+	dirp = opendir(pkgdir);
+	if (dirp == NULL) {
+		xbps_error_printf("xbps-repo: cannot open `%s': %s\n",
+		    pkgdir, strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	while ((dp = readdir(dirp)) != NULL) {
+		if ((strcmp(dp->d_name, ".") == 0) ||
+		    (strcmp(dp->d_name, "..") == 0))
 			continue;
 
-		path = xbps_xasprintf("%s/%s", pkgdir, archdirs[i]);
-		if (path == NULL) {
+		/* Ignore unknown files */
+		if (strstr(dp->d_name, ".xbps") == NULL)
+			continue;
+
+		foundpkg = true;
+		binfile = xbps_xasprintf("%s/%s", pkgdir, dp->d_name);
+		if (binfile == NULL) {
+			(void)closedir(dirp);
 			rv = errno;
 			goto out;
 		}
-		/*
-		 * If repo/<noarch|un.machine> does not exist,
-		 * create it.
-		 */
-		if ((access(path, X_OK) == -1) && errno == ENOENT) {
-			if (xbps_mkpath(path, 0755) == -1) {
-				xbps_error_printf("xbps-repo: cannot "
-				    "create %s directory: %s\n",
-				    path, strerror(errno));
-				return -1;
-			}
-		}
-
-		dirp = opendir(path);
-		if (dirp == NULL) {
-			xbps_error_printf("xbps-repo: unexistent '%s' "
-			    "directory!\n", path);
-			free(path);
+		rv = add_binpkg_to_index(idxdict, pkgdir, binfile);
+		free(binfile);
+		if (rv == EEXIST) {
+			rv = 0;
 			continue;
 		}
-
-		while ((dp = readdir(dirp)) != NULL) {
-			if ((strcmp(dp->d_name, ".") == 0) ||
-			    (strcmp(dp->d_name, "..") == 0))
-				continue;
-
-			/* Ignore unknown files */
-			if (strstr(dp->d_name, ".xbps") == NULL)
-				continue;
-
-			foundpkg = true;
-			binfile = xbps_xasprintf("%s/%s", path, dp->d_name);
-			if (binfile == NULL) {
-				(void)closedir(dirp);
-				free(path);
-				rv = errno;
-				goto out;
-			}
-			rv = add_binpkg_to_index(idxdict, path, binfile);
-			free(binfile);
-			if (rv == EEXIST) {
-				rv = 0;
-				continue;
-			}
-			else if (rv != 0) {
-				(void)closedir(dirp);
-				free(path);
-				goto out;
-			}
-			registered_newpkgs = true;
+		else if (rv != 0) {
+			(void)closedir(dirp);
+			goto out;
 		}
-		(void)closedir(dirp);
-		free(path);
+		registered_newpkgs = true;
 	}
+	(void)closedir(dirp);
 
 	if (foundpkg == false) {
 		/* No packages were found in directory */
