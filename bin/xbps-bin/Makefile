@@ -10,4 +10,4 @@ OBJS += check_pkg_rundeps.o check_pkg_symlinks.o
 OBJS += check_pkg_requiredby.o
 MAN = $(BIN).8
 
-include $(TOPDIR)/prog.mk
+include $(TOPDIR)/bin/prog.mk

@@ -7,4 +7,4 @@ OBJS += ../xbps-bin/fetch_cb.o ../xbps-bin/util.o
 OBJS += ../xbps-bin/trans_cb.o
 MAN = $(BIN).8
 
-include $(TOPDIR)/prog.mk
+include $(TOPDIR)/bin/prog.mk
