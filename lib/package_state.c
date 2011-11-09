@@ -269,7 +269,7 @@ xbps_set_pkg_state_installed(const char *pkgname,
 	/* Create metadir if doesn't exist */
 	if (access(metadir, X_OK) == -1) {
 		if (errno == ENOENT) {
-			if (xbps_mkpath(metadir, 0750) != 0) {
+			if (xbps_mkpath(metadir, 0755) != 0) {
 				xbps_dbg_printf("[pkgstate] failed to create "
 				    "metadir %s: %s\n", metadir,
 				    strerror(errno));
