@@ -161,7 +161,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	struct archive_entry *entry;
 	size_t nmetadata = 0, entry_idx = 0;
 	const char *entry_pname, *transact;
-	char *buf;
+	char *buf = NULL, *pkgfilesd = NULL;
 	int rv, flags;
 	bool preserve, update, replace;
 
@@ -204,14 +204,22 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		entry_statp = archive_entry_stat(entry);
 		entry_pname = archive_entry_pathname(entry);
 		flags = set_extract_flags();
-
+		/*
+		 * Ignore directories from archive.
+		 */
+		if (S_ISDIR(entry_statp->st_mode)) {
+			archive_read_data_skip(ar);
+			continue;
+		}
+		/*
+		 * Prepare unpack callback ops.
+		 */
 		if (xhp->xbps_unpack_cb != NULL) {
 			xhp->xucd->entry = entry_pname;
 			xhp->xucd->entry_size = archive_entry_size(entry);
 			xhp->xucd->entry_is_metadata = false;
 			xhp->xucd->entry_is_conf = false;
 		}
-
 		if (strcmp("./INSTALL", entry_pname) == 0) {
 			/*
 			 * Extract the INSTALL script first to execute
@@ -409,67 +417,81 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				    pkgname, version, strerror(rv));
 				goto out;
 			} else {
-				if (xhp->flags & XBPS_FLAG_VERBOSE)
-					xbps_warn_printf("ignoring existing "
-					    "entry: %s\n", entry_pname);
-				continue;
+				xbps_warn_printf("ignoring existing "
+				    "entry: %s\n", entry_pname);
 			}
 		}
 		xhp->xucd->entry_extract_count++;
 		RUN_PROGRESS_CB();
 	}
-
-	if ((rv = archive_errno(ar)) == 0) {
-		buf = xbps_xasprintf(".%s/metadata/%s/%s",
-		    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
-		if (buf == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
-		/*
-		 * Check if files.plist exists and pkg is NOT marked as
-		 * preserve, in that case we need to check for obsolete files
-		 * and remove them if necessary.
-		 */
-		if (!preserve) {
-			old_filesd =
-			    prop_dictionary_internalize_from_zfile(buf);
-			if (old_filesd) {
-				rv = xbps_remove_obsoletes(old_filesd, filesd);
-				if (rv != 0) {
-					prop_object_release(old_filesd);
-					free(buf);
-					rv = errno;
-					goto out;
-				}
-				prop_object_release(old_filesd);
-
-			} else if (errno && errno != ENOENT) {
-				free(buf);
-				rv = errno;
-				goto out;
-			}
-		}
-		/*
-		 * Now that all files were successfully unpacked, we
-		 * can safely externalize files.plist because the path
-		 * is reachable.
-		 */
-		if (!prop_dictionary_externalize_to_zfile(filesd, buf)) {
-			rv = errno;
-			xbps_error_printf("failed to extract metadata %s file"
-			    "for `%s-%s': %s\n", XBPS_PKGFILES, pkgname,
-			    version, strerror(rv));
-			free(buf);
-			goto out;
-		}
-		free(buf);
+	/*
+	 * If there was any error extracting files from archive, error out.
+	 */
+	if ((rv = archive_errno(ar)) != 0) {
+		xbps_dbg_printf("%s-%s: error extracting pkg files: %s\n",
+		    pkgname, version, archive_errno(ar));
+		goto out;
 	}
-
+	/*
+	 * On pkgs that set the preserve keyword or while installing
+	 * new packages, do not check for obsolete files.
+	 */
+	pkgfilesd = xbps_xasprintf(".%s/metadata/%s/%s",
+	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
+	if (pkgfilesd == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	if (preserve || !update)
+		goto out1;
+	/*
+	 * Check for obsolete files.
+	 */
+	old_filesd = prop_dictionary_internalize_from_zfile(pkgfilesd);
+	if (prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY) {
+		if ((rv = xbps_remove_obsoletes(old_filesd, filesd)) != 0) {
+			prop_object_release(old_filesd);
+			rv = errno;
+			goto out;
+		}
+		prop_object_release(old_filesd);
+	} else if (errno && errno != ENOENT) {
+		rv = errno;
+		goto out;
+	}
+out1:
+	/*
+	 * Create pkg metadata directory.
+	 */
+	buf = xbps_xasprintf(".%s/metadata/%s", XBPS_META_PATH, pkgname);
+	if (buf == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	if (xbps_mkpath(buf, 0755) == -1) {
+		xbps_dbg_printf("%s-%s: failed to create pkg metadir: %s\n",
+		    pkgname, version, strerror(errno));
+		rv = errno;
+		goto out;
+	}
+	/*
+	 * Externalize XBPS_PKGFILES into pkg metadata directory.
+	 */
+	if (!prop_dictionary_externalize_to_zfile(filesd, pkgfilesd)) {
+		rv = errno;
+		xbps_error_printf("failed to extract metadata %s file"
+		    "for `%s-%s': %s\n", XBPS_PKGFILES, pkgname,
+		    version, strerror(rv));
+		goto out;
+	}
 out:
-	if (filesd)
+	if (pkgfilesd != NULL)
+		free(pkgfilesd);
+	if (buf != NULL)
+		free(buf);
+	if (prop_object_type(filesd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(filesd);
-	if (propsd)
+	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(propsd);
 
 	return rv;
