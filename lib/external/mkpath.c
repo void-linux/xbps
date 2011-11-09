@@ -43,7 +43,7 @@ xbps_mkpath(const char *path, mode_t mode)
 {
 	struct stat sb;
 	char *ppath, *slash;
-	int done = 0, rv;
+	int done = 0;
 	mode_t dir_mode;
 
 	if ((ppath = strdup(path)) == NULL)
@@ -59,7 +59,7 @@ xbps_mkpath(const char *path, mode_t mode)
 	if (mode == 0)
 		mode = (S_IRWXU | S_IRWXG | S_IRWXO) & ~umask(0);
 
-	dir_mode = mode | S_IWUSR | S_IXUSR;
+	dir_mode = mode | S_IRUSR | S_IXUSR | S_IROTH | S_IXOTH;
 
 	for (;;) {
 		slash += strspn(slash, "/");
@@ -68,8 +68,7 @@ xbps_mkpath(const char *path, mode_t mode)
 		done = (*slash == '\0');
 		*slash = '\0';
 
-		rv = mkdir(ppath, done ? mode : dir_mode);
-		if (rv < 0) {
+		if (mkdir(ppath, done ? mode : dir_mode) == -1) {
 			/*
 			 * Can't create; path exists or no perms.
 			 * stat() path to determine what's there now.
