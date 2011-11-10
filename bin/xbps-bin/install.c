@@ -187,7 +187,6 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 	 * Update all currently installed packages, aka
 	 * "xbps-bin autoupdate".
 	 */
-	printf("Finding new packages...\n\n");
 	if ((rv = xbps_repository_update_packages()) != 0) {
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
@@ -205,7 +204,6 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 			return -1;
 		}
 	}
-
 	return exec_transaction(yes, show_download_pkglist_url);
 }
 
