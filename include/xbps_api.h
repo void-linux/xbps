@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111109"
+#define XBPS_API_VERSION	"20111110"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -183,8 +183,8 @@ void		xbps_warn_printf(const char *, ...);
  *
  * <b>XBPS_TRANS_STATE_REGISTER</b>: a package is being registered.
  *
- * <b>XBPS_TRANS_STATE_REPOSYNC</b>. a remote repository's
- * pkg index is being synced.
+ * <b>XBPS_TRANS_STATE_REPOSYNC</b>: a remote repository's
+ * pkg index is being synchronized.
  */
 typedef enum trans_state {
 	XBPS_TRANS_STATE_UNKNOWN = 0,
@@ -1248,6 +1248,15 @@ struct repository_pool_index {
 	 */
 	char *rpi_uri;
 };
+
+/**
+ * Synchronizes the package index file for all remote repositories
+ * as specified in the configuration file, repositories.plist.
+ *
+ * @return 0 on success, ENOTSUP if no repositories were found in
+ * the configuration file.
+ */
+int xbps_repository_pool_sync(void);
 
 /**
  * Iterates over the repository pool and executes the \a fn function

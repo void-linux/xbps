@@ -165,6 +165,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	} else
 		fetch_outputdir = metadir;
 
+	/* reposync start cb */
 	if (xhp->xbps_transaction_cb) {
 		xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
 		xhp->xtcd->repourl = uri;
@@ -174,6 +175,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	 * Download index.plist file from repository.
 	 */
 	if (xbps_fetch_file(rpidx, fetch_outputdir, true, NULL) == -1) {
+		/* reposync error cb */
 		if (xhp->xbps_transaction_err_cb) {
 			xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
 			xhp->xtcd->repourl = uri;
@@ -192,7 +194,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	 */
 	tmpd = prop_dictionary_internalize_from_zfile(tmp_metafile);
 	if (tmpd == NULL) {
-		xbps_error_printf("[rsyncidx] downloaded index.plist "
+		xbps_dbg_printf("[rsyncidx] downloaded index.plist "
 		    "file cannot be read! removing...\n");
 		(void)unlink(tmp_metafile);
 		rv = -1;

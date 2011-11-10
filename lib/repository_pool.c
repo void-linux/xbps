@@ -48,20 +48,6 @@ static SIMPLEQ_HEAD(rpool_head, repository_pool) rpool_queue =
 
 static bool repolist_initialized;
 
-static int
-sync_remote_repo(const char *plist, const char *repourl)
-{
-	/* if file is there, continue */
-	if (access(plist, R_OK) == 0)
-		return 0;
-
-	/* file not found, fetch it */
-	if (xbps_repository_sync_pkg_index(repourl) == -1)
-		return -1;
-
-	return 0;
-}
-
 /*
  * Returns true if repository URI contains "noarch" or matching architecture
  * in last component, false otherwise.
@@ -141,20 +127,6 @@ xbps_repository_pool_init(void)
 			nmissing++;
 			continue;
 		}
-		plist = xbps_pkg_index_plist(repouri);
-		if (plist == NULL) {
-			rv = errno;
-			goto out;
-		}
-		/*
-		 * If it's a remote repository and index file is not available,
-		 * fetch it for the first time.
-		 */
-		if (sync_remote_repo(plist, repouri) == -1) {
-			nmissing++;
-			free(plist);
-			continue;
-		}
 		/*
 		 * Internalize repository's index dictionary and add it
 		 * into the queue.
@@ -162,14 +134,12 @@ xbps_repository_pool_init(void)
 		rpool = malloc(sizeof(struct repository_pool));
 		if (rpool == NULL) {
 			rv = errno;
-			free(plist);
 			goto out;
 		}
 
 		rpool->rpi = malloc(sizeof(struct repository_pool_index));
 		if (rpool->rpi == NULL) {
 			rv = errno;
-			free(plist);
 			free(rpool);
 			goto out;
 		}
@@ -179,7 +149,11 @@ xbps_repository_pool_init(void)
 			rv = errno;
 			free(rpool->rpi);
 			free(rpool);
-			free(plist);
+			goto out;
+		}
+		plist = xbps_pkg_index_plist(repouri);
+		if (plist == NULL) {
+			rv = errno;
 			goto out;
 		}
 		rpool->rpi->rpi_repod =
@@ -191,8 +165,8 @@ xbps_repository_pool_init(void)
 			free(plist);
 			if (errno == ENOENT) {
 				errno = 0;
-				xbps_dbg_printf("[rpool] missing index file "
-				    "for '%s' repository.\n", repouri);
+				xbps_dbg_printf("[rpool] `%s' missing "
+				    "index file, ignoring.\n", repouri);
 				nmissing++;
 				continue;
 			}
@@ -246,6 +220,44 @@ xbps_repository_pool_release(void)
 	}
 	repolist_initialized = false;
 	xbps_dbg_printf("[rpool] released ok.\n");
+}
+
+int
+xbps_repository_pool_sync(void)
+{
+	const struct xbps_handle *xhp;
+	const char *repouri;
+	size_t i;
+	int rv;
+
+	xhp = xbps_handle_get();
+	if (xhp->repos_array == NULL)
+		return ENOTSUP;
+
+	if (prop_array_count(xhp->repos_array) == 0)
+		return ENOTSUP;
+
+	for (i = 0; i < prop_array_count(xhp->repos_array); i++) {
+		prop_array_get_cstring_nocopy(xhp->repos_array, i, &repouri);
+		/*
+		 * Check if repository doesn't match our architecture.
+		 */
+		if (!check_repo_arch(repouri)) {
+			xbps_dbg_printf("[rpool] `%s' arch not matched, "
+			    "ignoring.\n", repouri);
+			continue;
+		}
+		/*
+		 * Fetch repository index file.
+		 */
+		rv = xbps_repository_sync_pkg_index(repouri);
+		if (rv == -1) {
+			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
+			    repouri, xbps_fetch_error_string());
+			continue;
+		}
+	}
+	return 0;
 }
 
 int

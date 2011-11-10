@@ -266,7 +266,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(xhp);
 
-		rv = repository_sync();
+		rv = xbps_repository_pool_sync();
 		if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");

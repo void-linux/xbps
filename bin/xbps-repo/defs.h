@@ -38,7 +38,6 @@ int	repo_genindex(const char *);
 /* From repository.c */
 int	show_pkg_info_from_repolist(const char *, const char *);
 int	show_pkg_deps_from_repolist(const char *);
-int	repository_sync(void);
 
 /* From find-files.c */
 int	repo_find_files_in_packages(const char *);
