@@ -35,7 +35,7 @@
 /* From index.c */
 int	repo_genindex(const char *);
 
-/* From repository.c */
+/* From show.c */
 int	show_pkg_info_from_repolist(const char *, const char *);
 int	show_pkg_deps_from_repolist(const char *);
 
