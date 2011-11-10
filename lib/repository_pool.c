@@ -251,7 +251,8 @@ xbps_repository_pool_sync(void)
 		rv = xbps_repository_sync_pkg_index(repouri);
 		if (rv == -1) {
 			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
-			    repouri, xbps_fetch_error_string());
+			    repouri, fetchLastErrCode == 0 ?
+			    strerror(errno) : xbps_fetch_error_string());
 			continue;
 		}
 	}
