@@ -1237,7 +1237,7 @@ struct repository_pool_index {
 	/**
 	 * @var rpi_repod
 	 * 
-	 * Internalized Proplib dictionary of the pkg-index plist file
+	 * Internalized Proplib dictionary of the index plist file
 	 * associated with repository.
 	 */
 	prop_dictionary_t rpi_repod;

@@ -37,7 +37,7 @@
 #include "defs.h"
 
 /*
- * Removes stalled pkg entries in repository's pkg-index.plist file, if any
+ * Removes stalled pkg entries in repository's index.plist file, if any
  * binary package cannot be read (unavailable, not enough perms, etc).
  */
 static int
@@ -113,7 +113,7 @@ repoidx_getdict(const char *pkgdir)
 	int rv;
 
 	/*
-	 * Remove entries in repositories pkg-index for unexistent
+	 * Remove entries in repositories index for unexistent
 	 * packages, i.e dangling entries.
 	 */
 	if ((rv = remove_missing_binpkg_entries(pkgdir)) != 0)

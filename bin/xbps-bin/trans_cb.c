@@ -78,7 +78,7 @@ transaction_cb(struct xbps_transaction_cb_data *xtcd)
 		    xtcd->pkgver, xtcd->binpkg_fname);
 		break;
 	case XBPS_TRANS_STATE_REPOSYNC:
-		printf("Synchronizing pkg-index for `%s' ...\n",
+		printf("Synchronizing index for `%s' ...\n",
 		    xtcd->repourl);
 		break;
 	default:
@@ -120,7 +120,7 @@ transaction_err_cb(struct xbps_transaction_cb_data *xtcd)
 		state_descr = "failed to register package";
 		break;
 	case XBPS_TRANS_STATE_REPOSYNC:
-		xbps_error_printf("Failed to sync pkg-index: %s\n",
+		xbps_error_printf("Failed to sync index: %s\n",
 		    res ? res : strerror(xtcd->err));
 		return;
 	default:

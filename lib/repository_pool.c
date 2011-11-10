@@ -191,7 +191,7 @@ xbps_repository_pool_init(void)
 			free(plist);
 			if (errno == ENOENT) {
 				errno = 0;
-				xbps_dbg_printf("[rpool] missing pkg-index.plist "
+				xbps_dbg_printf("[rpool] missing index file "
 				    "for '%s' repository.\n", repouri);
 				nmissing++;
 				continue;

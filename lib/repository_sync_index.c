@@ -129,7 +129,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 		goto out;
 	}
 	/*
-	 * Remote repository pkg-index.plist full URL.
+	 * Remote repository index.plist full URL.
 	 */
 	rpidx = xbps_xasprintf("%s/%s", uri, XBPS_PKGINDEX);
 	if (rpidx == NULL) {
@@ -146,8 +146,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 		goto out;
 	}
 	/*
-	 * Full path to repository directory to store the pkg-index.plist
-	 * file.
+	 * Full path to repository directory to store the index.plist file.
 	 */
 	lrepodir = xbps_xasprintf("%s/%s/%s",
 	    prop_string_cstring_nocopy(xhp->rootdir), XBPS_META_PATH, uri_fixedp);
@@ -156,7 +155,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 		goto out;
 	}
 	/*
-	 * If directory exists probably the pkg-index.plist file
+	 * If directory exists probably the index.plist file
 	 * was downloaded previously...
 	 */
 	rv = stat(lrepodir, &st);
@@ -172,7 +171,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 		xhp->xbps_transaction_cb(xhp->xtcd);
 	}
 	/*
-	 * Download pkg-index.plist file from repository.
+	 * Download index.plist file from repository.
 	 */
 	if (xbps_fetch_file(rpidx, fetch_outputdir, true, NULL) == -1) {
 		if (xhp->xbps_transaction_err_cb) {
@@ -193,7 +192,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	 */
 	tmpd = prop_dictionary_internalize_from_zfile(tmp_metafile);
 	if (tmpd == NULL) {
-		xbps_error_printf("[rsyncidx] downloaded pkg-index.plist "
+		xbps_error_printf("[rsyncidx] downloaded index.plist "
 		    "file cannot be read! removing...\n");
 		(void)unlink(tmp_metafile);
 		rv = -1;
@@ -207,7 +206,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 		goto out;
 	}
 	/*
-	 * Create local repodir to store pkg-index.plist file.
+	 * Create local repodir to store index.plist file.
 	 */
 	if ((rv = xbps_mkpath(lrepodir, 0755)) == -1) {
 		xbps_dbg_printf("[rsyncidx] failed to create repodir "
