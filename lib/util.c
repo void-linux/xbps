@@ -215,7 +215,7 @@ get_pkg_index_remote_plist(const char *uri)
 		repodir = xbps_xasprintf("%s/%s/%s",
 		    XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
 	} else {
-		repodir = xbps_xasprintf("%s/%s/%s",
+		repodir = xbps_xasprintf("%s/%s/%s/%s",
 		    prop_string_cstring_nocopy(xhp->rootdir),
 		    XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
 	}
