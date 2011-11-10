@@ -81,6 +81,9 @@ xbps_fetch_unset_cache_connection(void)
 const char *
 xbps_fetch_error_string(void)
 {
+	if (fetchLastErrCode == 0 || fetchLastErrCode == FETCH_OK)
+		return NULL;
+
 	return fetchLastErrString;
 }
 
