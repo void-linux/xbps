@@ -76,38 +76,32 @@ check_repo_arch(const char *uri)
 int HIDDEN
 xbps_repository_pool_init(void)
 {
+	prop_string_t obj;
 	struct xbps_handle *xhp;
-	prop_object_t obj;
-	prop_object_iterator_t iter = NULL;
 	struct repository_pool *rpool;
-	size_t ntotal = 0, nmissing = 0;
+	size_t i, ntotal = 0, nmissing = 0;
 	const char *repouri;
 	char *plist;
 	int rv = 0;
 	bool duprepo;
 
-	xhp = xbps_handle_get();
-	if (xhp->repos_array == NULL)
-		return ENOTSUP;
-
 	if (repolist_initialized)
 		return 0;
+
+	xhp = xbps_handle_get();
+	if (prop_object_type(xhp->repos_array) != PROP_TYPE_ARRAY)
+		return ENOTSUP;
 
 	if (prop_array_count(xhp->repos_array) == 0)
 		return ENOTSUP;
 
-	iter = prop_array_iterator(xhp->repos_array);
-	if (iter == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+	for (i = 0; i < prop_array_count(xhp->repos_array); i++) {
+		obj = prop_array_get(xhp->repos_array, i);
+		repouri = prop_string_cstring_nocopy(obj);
 		/*
 		 * Check that we do not register duplicate repositories.
 		 */
 		duprepo = false;
-		repouri = prop_string_cstring_nocopy(obj);
 		SIMPLEQ_FOREACH(rpool, &rpool_queue, rp_entries) {
 			if (strcmp(rpool->rpi->rpi_uri, repouri) == 0) {
 				duprepo = true;
@@ -119,11 +113,27 @@ xbps_repository_pool_init(void)
 
 		ntotal++;
 		/*
+		 * If index file is not there, skip.
+		 */
+		plist = xbps_pkg_index_plist(repouri);
+		if (plist == NULL) {
+			rv = errno;
+			goto out;
+		}
+		if (access(plist, R_OK) == -1) {
+			xbps_dbg_printf("[rpool] `%s' missing index "
+			    "file, ignoring.\n", repouri);
+			free(plist);
+			nmissing++;
+			continue;
+		}
+		/*
 		 * Check if repository doesn't match our architecture.
 		 */
 		if (!check_repo_arch(repouri)) {
 			xbps_dbg_printf("[rpool] `%s' arch not matched, "
 			    "ignoring.\n", repouri);
+			free(plist);
 			nmissing++;
 			continue;
 		}
@@ -134,6 +144,7 @@ xbps_repository_pool_init(void)
 		rpool = malloc(sizeof(struct repository_pool));
 		if (rpool == NULL) {
 			rv = errno;
+			free(plist);
 			goto out;
 		}
 
@@ -141,6 +152,7 @@ xbps_repository_pool_init(void)
 		if (rpool->rpi == NULL) {
 			rv = errno;
 			free(rpool);
+			free(plist);
 			goto out;
 		}
 
@@ -149,35 +161,23 @@ xbps_repository_pool_init(void)
 			rv = errno;
 			free(rpool->rpi);
 			free(rpool);
-			goto out;
-		}
-		plist = xbps_pkg_index_plist(repouri);
-		if (plist == NULL) {
-			rv = errno;
+			free(plist);
 			goto out;
 		}
 		rpool->rpi->rpi_repod =
 		    prop_dictionary_internalize_from_zfile(plist);
 		if (rpool->rpi->rpi_repod == NULL) {
+			rv = errno;
 			free(rpool->rpi->rpi_uri);
 			free(rpool->rpi);
 			free(rpool);
 			free(plist);
-			if (errno == ENOENT) {
-				errno = 0;
-				xbps_dbg_printf("[rpool] `%s' missing "
-				    "index file, ignoring.\n", repouri);
-				nmissing++;
-				continue;
-			}
-			rv = errno;
 			xbps_dbg_printf("[rpool] cannot internalize plist %s: %s\n",
 			    plist, strerror(rv));
 			goto out;
 		}
 		free(plist);
-		xbps_dbg_printf("[rpool] registered repository '%s'\n",
-		    rpool->rpi->rpi_uri);
+		xbps_dbg_printf("[rpool] `%s' registered.\n", repouri);
 		SIMPLEQ_INSERT_TAIL(&rpool_queue, rpool, rp_entries);
 	}
 
@@ -191,8 +191,6 @@ xbps_repository_pool_init(void)
 	prop_object_release(xhp->repos_array);
 	xbps_dbg_printf("[rpool] initialized ok.\n");
 out:
-	if (iter)
-		prop_object_iterator_release(iter);
 	if (rv != 0) 
 		xbps_repository_pool_release();
 
