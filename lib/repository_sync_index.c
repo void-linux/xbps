@@ -166,24 +166,24 @@ xbps_repository_sync_pkg_index(const char *uri)
 		fetch_outputdir = metadir;
 
 	/* reposync start cb */
-	if (xhp->xbps_transaction_cb) {
-		xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
-		xhp->xtcd->repourl = uri;
-		xhp->xbps_transaction_cb(xhp->xtcd);
+	if (xhp->xbps_state_cb) {
+		xhp->xscd->state = XBPS_STATE_REPOSYNC;
+		xhp->xscd->repourl = uri;
+		xhp->xbps_state_cb(xhp->xscd);
 	}
 	/*
 	 * Download index.plist file from repository.
 	 */
 	if (xbps_fetch_file(rpidx, fetch_outputdir, true, NULL) == -1) {
 		/* reposync error cb */
-		if (xhp->xbps_transaction_err_cb) {
-			xhp->xtcd->state = XBPS_TRANS_STATE_REPOSYNC;
-			xhp->xtcd->repourl = uri;
+		if (xhp->xbps_state_cb) {
+			xhp->xscd->state = XBPS_STATE_REPOSYNC_FAIL;
+			xhp->xscd->repourl = uri;
 			if (fetchLastErrCode != 0)
-				xhp->xtcd->err = fetchLastErrCode;
+				xhp->xscd->err = fetchLastErrCode;
 			else
-				xhp->xtcd->err = errno;
-			xhp->xbps_transaction_err_cb(xhp->xtcd);
+				xhp->xscd->err = errno;
+			xhp->xbps_state_cb(xhp->xscd);
 		}
 		rv = -1;
 		goto out;

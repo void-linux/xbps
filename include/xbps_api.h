@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111110"
+#define XBPS_API_VERSION	"20111111"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -156,73 +156,82 @@ void		xbps_warn_printf(const char *, ...);
 /*@{*/
 
 /**
- * @enum trans_state_t
+ * @enum xbps_state_t
  *
- * Integer representing the transaction state. Possible values:
+ * Integer representing the xbps callback returned state. Possible values:
  *
- * <b>XBPS_TRANS_STATE_UKKNOWN</b>: unknown, transaction hasn't been
+ * <b>XBPS_STATE_UKKNOWN</b>: unknown, state hasn't been
  * prepared or some unknown error ocurred.
  *
- * <b>XBPS_TRANS_STATE_DOWNLOAD</b>: a binary package is being downloaded.
+ * <b>XBPS_STATE_DOWNLOAD</b>: a binary package is being downloaded.
  *
- * <b>XBPS_TRANS_STATE_VERIFY</b>: a binary package is being verified.
+ * <b>XBPS_STATE_VERIFY</b>: a binary package is being verified.
  *
- * <b>XBPS_TRANS_STATE_REMOVE</b>: a package is being removed.
+ * <b>XBPS_STATE_REMOVE</b>: a package is being removed.
  *
- * <b>XBPS_TRANS_STATE_PURGE</b>: a package is being purged.
+ * <b>XBPS_STATE_PURGE</b>: a package is being purged.
  *
- * <b>XBPS_TRANS_STATE_REPLACE</b>: a package is being replaced.
+ * <b>XBPS_STATE_REPLACE</b>: a package is being replaced.
  *
- * <b>XBPS_TRANS_STATE_INSTALL</b>: a package is being installed.
+ * <b>XBPS_STATE_INSTALL</b>: a package is being installed.
  *
- * <b>XBPS_TRANS_STATE_UPDATE</b>: a package is being updated.
+ * <b>XBPS_STATE_UPDATE</b>: a package is being updated.
  *
- * <b>XBPS_TRANS_STATE_UNPACK</b>: a package is being unpacked.
+ * <b>XBPS_STATE_UNPACK</b>: a package is being unpacked.
  *
- * <b>XBPS_TRANS_STATE_CONFIGURE</b>: a package is being configured.
+ * <b>XBPS_STATE_CONFIGURE</b>: a package is being configured.
  *
- * <b>XBPS_TRANS_STATE_REGISTER</b>: a package is being registered.
+ * <b>XBPS_STATE_REGISTER</b>: a package is being registered.
  *
- * <b>XBPS_TRANS_STATE_REPOSYNC</b>: a remote repository's
+ * <b>XBPS_STATE_REPOSYNC</b>: a remote repository's
  * pkg index is being synchronized.
  */
-typedef enum trans_state {
-	XBPS_TRANS_STATE_UNKNOWN = 0,
-	XBPS_TRANS_STATE_DOWNLOAD,
-	XBPS_TRANS_STATE_VERIFY,
-	XBPS_TRANS_STATE_REMOVE,
-	XBPS_TRANS_STATE_PURGE,
-	XBPS_TRANS_STATE_REPLACE,
-	XBPS_TRANS_STATE_INSTALL,
-	XBPS_TRANS_STATE_UPDATE,
-	XBPS_TRANS_STATE_UNPACK,
-	XBPS_TRANS_STATE_CONFIGURE,
-	XBPS_TRANS_STATE_REGISTER,
-	XBPS_TRANS_STATE_REPOSYNC
-} trans_state_t;
+typedef enum xbps_state {
+	XBPS_STATE_UNKNOWN = 0,
+	XBPS_STATE_DOWNLOAD,
+	XBPS_STATE_VERIFY,
+	XBPS_STATE_REMOVE,
+	XBPS_STATE_PURGE,
+	XBPS_STATE_REPLACE,
+	XBPS_STATE_INSTALL,
+	XBPS_STATE_UPDATE,
+	XBPS_STATE_UNPACK,
+	XBPS_STATE_CONFIGURE,
+	XBPS_STATE_REGISTER,
+	XBPS_STATE_REPOSYNC,
+	XBPS_STATE_VERIFY_FAIL,
+	XBPS_STATE_DOWNLOAD_FAIL,
+	XBPS_STATE_REMOVE_FAIL,
+	XBPS_STATE_PURGE_FAIL,
+	XBPS_STATE_CONFIGURE_FAIL,
+	XBPS_STATE_UPDATE_FAIL,
+	XBPS_STATE_UNPACK_FAIL,
+	XBPS_STATE_REGISTER_FAIL,
+	XBPS_STATE_REPOSYNC_FAIL
+} xbps_state_t;
 
 /**
- * @struct xbps_transaction_cb_data xbps_api.h "xbps_api.h"
- * @brief Structure to be passed as argument to the transaction
+ * @struct xbps_cb_data xbps_api.h "xbps_api.h"
+ * @brief Structure to be passed as argument to the state
  * function callbacks.
  */
-struct xbps_transaction_cb_data {
+struct xbps_state_cb_data {
 	/**
 	 * @var state
 	 *
-	 * Transaction's state (set internally, read-only).
+	 * Returned xbps state (set internally, read-only).
 	 */
-	trans_state_t state;
+	xbps_state_t state;
 	/**
 	 * @var desc
 	 *
-	 * Transaction's string description (set internally, read-only).
+	 * XBPS state string description (set internally, read-only).
 	 */
 	const char *desc;
 	/**
 	 * @var pkgver
 	 *
-	 * Transaction's current pkgname/version string
+	 * XBPS state current pkgname/version string
 	 * (set internally, read-only).
 	 */
 	const char *pkgver;
@@ -241,7 +250,7 @@ struct xbps_transaction_cb_data {
 	/**
 	 * @var err
 	 *
-	 * Transaction error value (set internally, read-only).
+	 * XBPS state error value (set internally, read-only).
 	 */
 	int err;
 	/**
@@ -404,27 +413,19 @@ struct xbps_handle {
 	 */
 	prop_dictionary_t regpkgdb_dictionary;
 	/**
-	 * @var xbps_transaction_cb
+	 * @var xbps_state_cb
 	 *
 	 * Pointer to the supplifed function callback to be used
-	 * in a transaction.
+	 * in the XBPS possible states.
 	 */
-	void (*xbps_transaction_cb)(struct xbps_transaction_cb_data *);
+	void (*xbps_state_cb)(struct xbps_state_cb_data *);
 	/**
-	 * @var xbps_transaction_err_cb
+	 * @var xscd
 	 *
-	 * Pointer the the supplied function callback to be used in
-	 * a transaction when an error happens.
+	 * Pointer to a xbps_state_cb_data structure. It's allocated by
+	 * xbps_handle_alloc(), set internally.
 	 */
-	void (*xbps_transaction_err_cb)(struct xbps_transaction_cb_data *);
-	/**
-	 * @var xtcd
-	 *
-	 * Pointer to a xbps_transaction_cb_data structure, to be passed as
-	 * argument to the \a xbps_transaction_cb and
-	 * \a xbps_transaction_err_cb function callbacks.
-	 */
-	struct xbps_transaction_cb_data *xtcd;
+	struct xbps_state_cb_data *xscd;
 	/**
 	 * @var xbps_unpack_cb
 	 *

@@ -120,13 +120,14 @@ xbps_configure_pkg(const char *pkgname,
 	if (pkgver == NULL)
 		return ENOMEM;
 
-	if (xhp->xbps_transaction_cb) {
-		xhp->xtcd->desc = NULL;
-		xhp->xtcd->binpkg_fname = NULL;
-		xhp->xtcd->repourl = NULL;
-		xhp->xtcd->state = XBPS_TRANS_STATE_CONFIGURE;
-		xhp->xtcd->pkgver = pkgver;
-		xhp->xbps_transaction_cb(xhp->xtcd);
+	if (xhp->xbps_state_cb) {
+		xhp->xscd->desc = NULL;
+		xhp->xscd->binpkg_fname = NULL;
+		xhp->xscd->repourl = NULL;
+		xhp->xscd->err = 0;
+		xhp->xscd->state = XBPS_STATE_CONFIGURE;
+		xhp->xscd->pkgver = pkgver;
+		xhp->xbps_state_cb(xhp->xscd);
 	}
 
 	buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
@@ -165,6 +166,13 @@ xbps_configure_pkg(const char *pkgname,
 	rv = xbps_set_pkg_state_installed(pkgname, lver, pkgver,
 	    XBPS_PKG_STATE_INSTALLED);
 	free(pkgver);
+
+	if (rv != 0 && xhp->xbps_state_cb) {
+		xhp->xscd->pkgver = pkgver;
+		xhp->xscd->err = rv;
+		xhp->xscd->state = XBPS_STATE_CONFIGURE_FAIL;
+		xhp->xbps_state_cb(xhp->xscd);
+	}
 
 	return rv;
 }

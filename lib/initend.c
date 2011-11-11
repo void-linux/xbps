@@ -207,8 +207,8 @@ xbps_end(struct xbps_handle *xh)
 		free(xh->xfcd);
 	if (xh->xucd != NULL)
 		free(xh->xucd);
-	if (xh->xtcd != NULL)
-		free(xh->xtcd);
+	if (xh->xscd != NULL)
+		free(xh->xscd);
 
 	free(xh);
 	xh = NULL;
@@ -227,24 +227,24 @@ xbps_handle_alloc(void)
 {
 	struct xbps_handle *xh;
 
-	xh = calloc(1, sizeof(struct xbps_handle));
+	xh = malloc(sizeof *xh);
 	if (xh == NULL)
 		return NULL;
-	xh->xtcd = calloc(1, sizeof(struct xbps_transaction_cb_data));
-	if (xh->xtcd == NULL) {
+	xh->xscd = malloc(sizeof *xh->xscd);
+	if (xh->xscd == NULL) {
 		free(xh);
 		return NULL;
 	}
-	xh->xucd = calloc(1, sizeof(struct xbps_unpack_cb_data));
+	xh->xucd = malloc(sizeof *xh->xucd);
 	if (xh->xucd == NULL) {
-		free(xh->xtcd);
+		free(xh->xscd);
 		free(xh);
 		return NULL;
 	}
-	xh->xfcd = calloc(1, sizeof(struct xbps_fetch_cb_data));
+	xh->xfcd = malloc(sizeof *xh->xfcd);
 	if (xh->xfcd == NULL) {
 		free(xh->xucd);
-		free(xh->xtcd);
+		free(xh->xscd);
 		free(xh);
 		return NULL;
 	}

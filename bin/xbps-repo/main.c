@@ -138,8 +138,7 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	xhp->debug = debug;
-	xhp->xbps_transaction_cb = transaction_cb;
-	xhp->xbps_transaction_err_cb = transaction_err_cb;
+	xhp->xbps_state_cb = state_cb;
 	xhp->xbps_fetch_cb = fetch_file_progress_cb;
 	xhp->xfcd->cookie = &xfer;
 	if (rootdir)

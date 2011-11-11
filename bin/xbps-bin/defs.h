@@ -79,9 +79,8 @@ bool	noyes(const char *, ...);
 /* from fetch_cb.c */
 void	fetch_file_progress_cb(struct xbps_fetch_cb_data *);
 
-/* from trans_cb.c */
-void	transaction_cb(struct xbps_transaction_cb_data *);
-void	transaction_err_cb(struct xbps_transaction_cb_data *);
+/* from state_cb.c */
+void	state_cb(struct xbps_state_cb_data *);
 
 /* From util.c */
 int	show_pkg_files(prop_dictionary_t);

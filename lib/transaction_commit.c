@@ -35,33 +35,33 @@
 
 #include "xbps_api_impl.h"
 
-#define RUN_TRANS_CB(s, d, p, bf, burl) 		\
+#define RUN_STATE_CB(s, d, p, bf, burl) 		\
 do {							\
-	if (xhp->xbps_transaction_cb != NULL) {		\
-		xhp->xtcd->state = s;			\
-		xhp->xtcd->desc = d;			\
-		xhp->xtcd->pkgver = p;			\
-		xhp->xtcd->binpkg_fname = bf;		\
-		xhp->xtcd->repourl = burl;		\
-		(*xhp->xbps_transaction_cb)(xhp->xtcd);	\
+	if (xhp->xbps_state_cb != NULL) {		\
+		xhp->xscd->state = s;			\
+		xhp->xscd->desc = d;			\
+		xhp->xscd->pkgver = p;			\
+		xhp->xscd->binpkg_fname = bf;		\
+		xhp->xscd->repourl = burl;		\
+		(*xhp->xbps_state_cb)(xhp->xscd);	\
 	}						\
 } while (0)
 
-#define RUN_TRANS_ERR_CB(s, p, r)				\
-do {								\
-	if (xhp->xbps_transaction_err_cb != NULL) {		\
-		xhp->xtcd->state = s;				\
-		xhp->xtcd->pkgver = p;				\
-		xhp->xtcd->err = r;				\
-		(*xhp->xbps_transaction_err_cb)(xhp->xtcd);	\
-	}							\
+#define RUN_STATE_ERR_CB(s, p, r)			\
+do {							\
+	if (xhp->xbps_state_cb != NULL) {		\
+		xhp->xscd->state = s;			\
+		xhp->xscd->pkgver = p;			\
+		xhp->xscd->err = r;			\
+		(*xhp->xbps_state_cb)(xhp->xscd);	\
+	}						\
 } while (0)
 
 static int
 check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 {
 	prop_object_t obj;
-	const char *pkgver, *repoloc, *filename, *sha256, *trans;
+	const char *pkgver, *repoloc, *filen, *sha256, *trans;
 	char *binfile;
 	int rv = 0;
 
@@ -75,8 +75,8 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		assert(repoloc != NULL);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		assert(pkgver != NULL);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
-		assert(filename != NULL);
+		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
+		assert(filen != NULL);
 		prop_dictionary_get_cstring_nocopy(obj,
 		    "filename-sha256", &sha256);
 		assert(sha256 != NULL);
@@ -86,12 +86,11 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 			rv = EINVAL;
 			break;
 		}
-		RUN_TRANS_CB(XBPS_TRANS_STATE_VERIFY,
-		    NULL, pkgver, filename, repoloc);
+		RUN_STATE_CB(XBPS_STATE_VERIFY, NULL, pkgver, filen, repoloc);
 		rv = xbps_file_hash_check(binfile, sha256);
 		if (rv != 0) {
 			free(binfile);
-			RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_VERIFY, pkgver, rv);
+			RUN_STATE_ERR_CB(XBPS_STATE_VERIFY_FAIL, pkgver, rv);
 			break;
 		}
 		free(binfile);
@@ -105,7 +104,7 @@ static int
 download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 {
 	prop_object_t obj;
-	const char *pkgver, *repoloc, *filename, *trans;
+	const char *pkgver, *repoloc, *filen, *trans;
 	char *binfile;
 	int rv = 0;
 
@@ -119,8 +118,8 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		assert(repoloc != NULL);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		assert(pkgver != NULL);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filename);
-		assert(filename != NULL);
+		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
+		assert(filen != NULL);
 
 		binfile = xbps_path_from_repository_uri(obj, repoloc);
 		if (binfile == NULL) {
@@ -147,15 +146,15 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 			rv = errno;
 			break;
 		}
-		RUN_TRANS_CB(XBPS_TRANS_STATE_DOWNLOAD,
-		    NULL, pkgver, filename, repoloc);
+		RUN_STATE_CB(XBPS_STATE_DOWNLOAD, NULL, pkgver, filen, repoloc);
 		/*
 		 * Fetch binary package.
 		 */
 		rv = xbps_fetch_file(binfile,
 		    prop_string_cstring_nocopy(xhp->cachedir), false, NULL);
 		if (rv == -1) {
-			RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_DOWNLOAD, pkgver, errno);
+			RUN_STATE_ERR_CB(XBPS_STATE_DOWNLOAD_FAIL,
+			    pkgver, errno);
 			free(binfile);
 			break;
 		}
@@ -186,14 +185,14 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	/*
 	 * Download binary packages (if they come from a remote repository).
 	 */
-	RUN_TRANS_CB(XBPS_TRANS_STATE_DOWNLOAD,
+	RUN_STATE_CB(XBPS_STATE_DOWNLOAD,
 	    "[*] Downloading binary packages", NULL, NULL, NULL);
 	if ((rv = download_binpkgs(xhp, iter)) != 0)
 		goto out;
 	/*
 	 * Check SHA256 hashes for binary packages in transaction.
 	 */
-	RUN_TRANS_CB(XBPS_TRANS_STATE_VERIFY,
+	RUN_STATE_CB(XBPS_STATE_VERIFY,
 	    "[*] Verifying binary package integrity", NULL, NULL, NULL);
 	if ((rv = check_binpkgs_hash(xhp, iter)) != 0)
 		goto out;
@@ -201,7 +200,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	 * Install, update, configure or remove packages as specified
 	 * in the transaction dictionary.
 	 */
-	RUN_TRANS_CB(XBPS_TRANS_STATE_INSTALL,
+	RUN_STATE_CB(XBPS_STATE_INSTALL,
 	    "[*] Running transaction tasks", NULL, NULL, NULL);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
@@ -218,21 +217,21 @@ xbps_transaction_commit(prop_dictionary_t transd)
 			 */
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
-			RUN_TRANS_CB(XBPS_TRANS_STATE_REMOVE,
+			RUN_STATE_CB(XBPS_STATE_REMOVE,
 			    NULL, pkgver, NULL, NULL);
 			rv = xbps_remove_pkg(pkgname, version, update);
 			if (rv != 0) {
-				RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_REMOVE,
+				RUN_STATE_ERR_CB(XBPS_STATE_REMOVE_FAIL,
 				    pkgver, rv);
 				goto out;
 			}
 			if (update)
 				continue;
 
-			RUN_TRANS_CB(XBPS_TRANS_STATE_PURGE,
+			RUN_STATE_CB(XBPS_STATE_PURGE,
 			    NULL, pkgver, NULL, NULL);
 			if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
-				RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_PURGE,
+				RUN_STATE_ERR_CB(XBPS_STATE_PURGE_FAIL,
 				    pkgver, rv);
 				goto out;
 			}
@@ -242,7 +241,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 			 */
 			rv = xbps_configure_pkg(pkgname, version, false, false);
 			if (rv != 0) {
-				RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_CONFIGURE,
+				RUN_STATE_ERR_CB(XBPS_STATE_CONFIGURE_FAIL,
 				    pkgver, rv);
 				goto out;
 			}
@@ -258,11 +257,11 @@ xbps_transaction_commit(prop_dictionary_t transd)
 				 * Update a package: execute pre-remove
 				 * action if found before unpacking.
 				 */
-				RUN_TRANS_CB(XBPS_TRANS_STATE_UPDATE,
+				RUN_STATE_CB(XBPS_STATE_UPDATE,
 				    NULL, pkgver, filen, NULL);
 				rv = xbps_remove_pkg(pkgname, version, true);
 				if (rv != 0) {
-					RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_UPDATE,
+					RUN_STATE_ERR_CB(XBPS_STATE_UPDATE_FAIL,
 					    pkgver, rv);
 					goto out;
 				}
@@ -270,20 +269,20 @@ xbps_transaction_commit(prop_dictionary_t transd)
 			/*
 			 * Unpack binary package.
 			 */
-			RUN_TRANS_CB(XBPS_TRANS_STATE_UNPACK, NULL,
+			RUN_STATE_CB(XBPS_STATE_UNPACK, NULL,
 			    pkgver, filen, NULL);
 			if ((rv = xbps_unpack_binary_pkg(obj)) != 0) {
-				RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_UNPACK,
+				RUN_STATE_ERR_CB(XBPS_STATE_UNPACK_FAIL,
 				    pkgver, rv);
 				goto out;
 			}
 			/*
 			 * Register package.
 			 */
-			RUN_TRANS_CB(XBPS_TRANS_STATE_REGISTER,
+			RUN_STATE_CB(XBPS_STATE_REGISTER,
 			    NULL, pkgver, filen, NULL);
 			if ((rv = xbps_register_pkg(obj)) != 0) {
-				RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_REGISTER,
+				RUN_STATE_ERR_CB(XBPS_STATE_REGISTER_FAIL,
 				    pkgver, rv);
 				goto out;
 			}
@@ -293,7 +292,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	/*
 	 * Configure all unpacked packages.
 	 */
-	RUN_TRANS_CB(XBPS_TRANS_STATE_CONFIGURE,
+	RUN_STATE_CB(XBPS_STATE_CONFIGURE,
 	    "[*] Configuring unpacked packages", NULL, NULL, NULL);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
@@ -309,8 +308,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 
 		if ((rv = xbps_configure_pkg(pkgname, version,
 		    false, update)) != 0) {
-			RUN_TRANS_ERR_CB(XBPS_TRANS_STATE_CONFIGURE,
-			    pkgver, rv);
+			RUN_STATE_ERR_CB(XBPS_STATE_CONFIGURE_FAIL, pkgver, rv);
 			goto out;
 		}
 	}
