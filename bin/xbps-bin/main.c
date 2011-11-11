@@ -38,11 +38,6 @@
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
-struct list_pkgver_cb {
-	pkg_state_t state;
-	size_t pkgver_len;
-};
-
 static void __attribute__((noreturn))
 usage(struct xbps_handle *xhp)
 {
@@ -55,95 +50,6 @@ usage(struct xbps_handle *xhp)
 	exit(EXIT_FAILURE);
 }
 
-static int
-list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
-{
-	struct list_pkgver_cb *lpc = arg;
-	const char *pkgver, *short_desc;
-	char *tmp = NULL;
-	pkg_state_t curstate;
-	size_t i = 0;
-
-	(void)loop_done;
-
-	if (xbps_pkg_state_dictionary(obj, &curstate))
-		return EINVAL;
-
-	if (lpc->state == 0) {
-		/* Only list packages that are fully installed */
-		if (curstate != XBPS_PKG_STATE_INSTALLED)
-			return 0;
-	} else {
-		/* Only list packages with specified state */
-		if (curstate != lpc->state)
-			return 0;
-	}
-
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
-	if (!pkgver && !short_desc)
-		return EINVAL;
-
-	tmp = calloc(1, lpc->pkgver_len + 1);
-	if (tmp == NULL)
-		return errno;
-
-	strlcpy(tmp, pkgver, lpc->pkgver_len + 1);
-	for (i = strlen(tmp); i < lpc->pkgver_len; i++)
-		tmp[i] = ' ';
-
-	printf("%s %s\n", tmp, short_desc);
-	free(tmp);
-
-	return 0;
-}
-
-static int
-list_manual_packages(prop_object_t obj, void *arg, bool *loop_done)
-{
-	const char *pkgver;
-	bool automatic = false;
-
-	(void)arg;
-	(void)loop_done;
-
-	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
-	if (automatic == false) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		printf("%s\n", pkgver);
-	}
-
-	return 0;
-}
-
-static int
-show_orphans(void)
-{
-	prop_array_t orphans;
-	prop_object_iterator_t iter;
-	prop_object_t obj;
-	const char *pkgver;
-
-	orphans = xbps_find_pkg_orphans(NULL);
-	if (orphans == NULL)
-		return EINVAL;
-
-	if (prop_array_count(orphans) == 0)
-		return 0;
-
-	iter = prop_array_iterator(orphans);
-	if (iter == NULL)
-		return ENOMEM;
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		printf("%s\n", pkgver);
-	}
-	prop_object_iterator_release(iter);
-
-	return 0;
-}
-
 static void __attribute__((noreturn))
 cleanup(int signum)
 {
@@ -151,31 +57,6 @@ cleanup(int signum)
 
 	xbps_end(xhp);
 	exit(signum);
-}
-
-static void
-unpack_progress_cb_verbose(struct xbps_unpack_cb_data *xpd)
-{
-	if (xpd->entry == NULL || xpd->entry_is_metadata)
-		return;
-	else if (xpd->entry_size <= 0)
-		return;
-
-	printf("Extracted %sfile `%s' (%" PRIi64 " bytes)\n",
-	    xpd->entry_is_conf ? "configuration " : "", xpd->entry,
-	    xpd->entry_size);
-}
-
-static void
-unpack_progress_cb(struct xbps_unpack_cb_data *xpd)
-{
-	if (xpd->entry == NULL || xpd->entry_is_metadata)
-		return;
-	else if (xpd->entry_size <= 0)
-		return;
-
-	printf("Extracting `%s'...\n", xpd->entry);
-	printf("\033[1A\033[K");
 }
 
 int
@@ -476,7 +357,7 @@ main(int argc, char **argv)
 			usage(xhp);
 
 		rv = xbps_callback_array_iter_in_dict(xhp->regpkgdb_dictionary,
-		    "packages", list_manual_packages, NULL);
+		    "packages", list_manual_pkgs, NULL);
 
 	} else if (strcasecmp(argv[0], "show-revdeps") == 0) {
 		/*

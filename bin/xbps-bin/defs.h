@@ -38,6 +38,11 @@ struct xferstat {
 	struct timeval last;
 };
 
+struct list_pkgver_cb {
+	pkg_state_t state;
+	size_t pkgver_len;
+};
+
 /* from install.c */
 int	install_new_pkg(const char *);
 int	update_pkg(const char *);
@@ -69,6 +74,9 @@ int	show_pkg_reverse_deps(const char *);
 int	show_pkg_info_from_metadir(const char *, const char *);
 int	show_pkg_files_from_metadir(const char *);
 
+/* from show-orphans.c */
+int	show_orphans(void);
+
 /* from find-files.c */
 int	find_files_in_packages(const char *);
 
@@ -82,6 +90,10 @@ void	fetch_file_progress_cb(struct xbps_fetch_cb_data *);
 /* from state_cb.c */
 void	state_cb(struct xbps_state_cb_data *);
 
+/* from unpack_cb.c */
+void	unpack_progress_cb_verbose(struct xbps_unpack_cb_data *);
+void	unpack_progress_cb(struct xbps_unpack_cb_data *);
+
 /* From util.c */
 int	show_pkg_files(prop_dictionary_t);
 void	show_pkg_info(prop_dictionary_t);
@@ -91,5 +103,9 @@ int	list_strings_in_array(prop_object_t, void *, bool *);
 int	list_strings_sep_in_array(prop_object_t, void *, bool *);
 size_t	find_longest_pkgver(prop_dictionary_t);
 void	print_package_line(const char *, bool);
+
+/* from list.c */
+int	list_pkgs_in_dict(prop_object_t, void *, bool *);
+int	list_manual_pkgs(prop_object_t, void *, bool *);
 
 #endif /* !_XBPS_BIN_DEFS_H_ */
