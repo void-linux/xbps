@@ -32,7 +32,7 @@ void
 state_cb(struct xbps_state_cb_data *xscd)
 {
 	prop_dictionary_t pkgd;
-	const char *opkgver, *state_descr, *fetchstr;
+	const char *opkgver, *state_descr = NULL, *fetchstr;
 	char *pkgname;
 
 	if (xscd->desc != NULL && xscd->pkgver == NULL && xscd->err == 0) {
