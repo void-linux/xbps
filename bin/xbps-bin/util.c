@@ -132,7 +132,7 @@ show_pkg_info(prop_dictionary_t dict)
 		obj = prop_dictionary_get_keysym(dict, keysym);
 		/* ignore run_depends, it's shown via 'show-deps' */
 		if (strcmp(keyname, "run_depends") == 0)
-			break;
+			continue;
 
 		print_value_obj(keyname, obj, false);
 	}
