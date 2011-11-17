@@ -127,8 +127,11 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 	char *vpkgname = NULL;
 
 	xhp = xbps_handle_get();
-	if (prop_object_type(xhp->virtualpkgs_array) != PROP_TYPE_ARRAY)
+	if (prop_object_type(xhp->virtualpkgs_array) != PROP_TYPE_ARRAY) {
+		xbps_dbg_printf("%s: invalid virtualpkgs_array "
+		    "type\n", __func__);
 		return NULL;
+	}
 
 	if ((iter = prop_array_iterator(xhp->virtualpkgs_array)) == NULL)
 		return NULL;
@@ -170,7 +173,7 @@ find_virtualpkg_user_in_array(prop_array_t array,
 {
 	prop_object_t obj = NULL;
 	prop_object_iterator_t iter;
-	const char *pkgver, *virtualpkg;
+	const char *virtualpkg;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(str != NULL);
@@ -184,9 +187,11 @@ find_virtualpkg_user_in_array(prop_array_t array,
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj,
-		    "pkgver", &pkgver);
-		if (xbps_pkgpattern_match(pkgver, virtualpkg))
+		/*
+		 * force pattern match because virtualpkg is
+		 * always a pkgpattern.
+		 */
+		if (xbps_match_virtual_pkg_in_dict(obj, virtualpkg, true))
 			break;
 	}
 	prop_object_iterator_release(iter);
