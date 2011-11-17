@@ -46,12 +46,9 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
 			return ENOMEM;
 	}
 
-	if (xbps_match_string_in_array(reqby, pkgver)) {
-		if (alloc)
-			prop_object_release(reqby);
-
-		return EEXIST;
-	}
+	/* the entry already exists, do nothing */
+	if (xbps_match_string_in_array(reqby, pkgver))
+		return 0;
 
 	reqstr = prop_string_create_cstring(pkgver);
 	if (reqstr == NULL) {
@@ -176,7 +173,7 @@ xbps_requiredby_pkg_add(prop_array_t pkgs_array, prop_dictionary_t pkgd)
 			return EINVAL;
 
 		rv = add_pkg_into_reqby(pkgd_regpkgdb, pkgver);
-		if (rv != 0 && rv != EEXIST)
+		if (rv != 0)
 			break;
 	}
 	prop_object_iterator_release(iter);
