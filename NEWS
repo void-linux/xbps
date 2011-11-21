@@ -1,5 +1,13 @@
 xbps-0.11.0 (???):
 
+ * libxbps: when registering new packages, existing entries in
+   requiredby matching the same pkgname/version touple are now
+   simply skipped.
+
+ * Repositories with missing index file are now simply ignored.
+   It's expected that user executes 'xbps-repo sync' to fetch the
+   index for all remote repositories specified in configuration file.
+
  * Faster binary package unpacking. Only files and symlinks are now
    extracted from binary packages, thus directories are not extracted
    anymore. The package builder is responsible to create required
