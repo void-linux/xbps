@@ -203,12 +203,6 @@ xbps_end(struct xbps_handle *xh)
 		prop_object_release(xh->cachedir);
 	if (prop_object_type(xh->virtualpkgs_array) == PROP_TYPE_ARRAY)
 		prop_object_release(xh->virtualpkgs_array);
-	if (xh->xfcd != NULL)
-		free(xh->xfcd);
-	if (xh->xucd != NULL)
-		free(xh->xucd);
-	if (xh->xscd != NULL)
-		free(xh->xscd);
 
 	free(xh);
 	xh = NULL;
@@ -225,31 +219,7 @@ xbps_handle_get(void)
 struct xbps_handle *
 xbps_handle_alloc(void)
 {
-	struct xbps_handle *xh;
-
-	xh = malloc(sizeof *xh);
-	if (xh == NULL)
-		return NULL;
-	xh->xscd = malloc(sizeof *xh->xscd);
-	if (xh->xscd == NULL) {
-		free(xh);
-		return NULL;
-	}
-	xh->xucd = malloc(sizeof *xh->xucd);
-	if (xh->xucd == NULL) {
-		free(xh->xscd);
-		free(xh);
-		return NULL;
-	}
-	xh->xfcd = malloc(sizeof *xh->xfcd);
-	if (xh->xfcd == NULL) {
-		free(xh->xucd);
-		free(xh->xscd);
-		free(xh);
-		return NULL;
-	}
-
-	return xh;
+	return malloc(sizeof(struct xbps_handle));
 }
 
 static void
@@ -304,15 +274,5 @@ xbps_warn_printf(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	common_printf(stderr, "WARNING: ", fmt, ap);
-	va_end(ap);
-}
-
-void
-xbps_printf(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	common_printf(stdout, NULL, fmt, ap);
 	va_end(ap);
 }

@@ -35,7 +35,9 @@
 #include <errno.h>
 #include <ctype.h>
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 #include "xbps_api_impl.h"
 
 /**
@@ -281,7 +283,6 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkgd)
 	return false;
 }
 
-#ifdef HAVE_VASPRINTF
 char *
 xbps_xasprintf(const char *fmt, ...)
 {
@@ -297,4 +298,3 @@ xbps_xasprintf(const char *fmt, ...)
 
 	return buf;
 }
-#endif /* HAVE_VASPRINTF */

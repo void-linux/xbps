@@ -179,7 +179,6 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 				break;
 			}
 		}
-
 		/*
 		 * Orig = X, Curr = X, New = X
 		 *
@@ -200,38 +199,39 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 		} else if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_cur, sha256_new))) {
-			xbps_printf("Updating configuration file `%s' "
-			    "with new version.\n", cffile);
+			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE,
+			    0, pkgname, version,
+			    "Updating configuration file `%s' provided "
+			    "by version `%s'.", cffile, version);
 			rv = 1;
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = X
-		 *
 		 * Keep current file as is.
 		 */
 		} else if ((strcmp(sha256_orig, sha256_new) == 0) &&
 			   (strcmp(sha256_cur, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
-			xbps_printf("Keeping modified configuration file "
-			    "`%s'.\n", cffile);
+			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE,
+			    0, pkgname, version,
+			    "Keeping modified configuration file `%s'.",
+			    cffile);
 			rv = 0;
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = Y
-		 *
-		 * Install new file.
+		 * Keep current file as is.
 		 */
 		} else if ((strcmp(sha256_cur, sha256_new) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
 			xbps_dbg_printf("%s: conf_file %s orig = X,"
 			    "cur = Y, new = Y\n", pkgname, entry_pname);
-			rv = 1;
+			rv = 0;
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = Z
-		 *
-		 * Install new file as file.new-<pkg_version>
+		 * Install new file as <file>.new-<version>
 		 */
 		} else  if ((strcmp(sha256_orig, sha256_cur)) &&
 			    (strcmp(sha256_cur, sha256_new)) &&
@@ -242,10 +242,10 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 				rv = -1;
 				break;
 			}
-			xbps_printf("Keeping modified configuration file "
-			    "`%s'.\n", cffile);
-			xbps_printf("Installing new configuration file as "
-			    "`%s.new-%s'\n", cffile, version);
+			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE,
+			    0, pkgname, version,
+			    "Installing new configuration file to "
+			    "`%s.new-%s'.", cffile, version);
 			archive_entry_set_pathname(entry, buf);
 			free(buf);
 			rv = 1;

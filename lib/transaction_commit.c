@@ -35,33 +35,12 @@
 
 #include "xbps_api_impl.h"
 
-#define RUN_STATE_CB(s, d, p, bf, burl) 		\
-do {							\
-	if (xhp->xbps_state_cb != NULL) {		\
-		xhp->xscd->state = s;			\
-		xhp->xscd->desc = d;			\
-		xhp->xscd->pkgver = p;			\
-		xhp->xscd->binpkg_fname = bf;		\
-		xhp->xscd->repourl = burl;		\
-		(*xhp->xbps_state_cb)(xhp->xscd);	\
-	}						\
-} while (0)
-
-#define RUN_STATE_ERR_CB(s, p, r)			\
-do {							\
-	if (xhp->xbps_state_cb != NULL) {		\
-		xhp->xscd->state = s;			\
-		xhp->xscd->pkgver = p;			\
-		xhp->xscd->err = r;			\
-		(*xhp->xbps_state_cb)(xhp->xscd);	\
-	}						\
-} while (0)
-
 static int
-check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
+check_binpkgs_hash(prop_object_iterator_t iter)
 {
 	prop_object_t obj;
 	const char *pkgver, *repoloc, *filen, *sha256, *trans;
+	const char *pkgname, *version;
 	char *binfile;
 	int rv = 0;
 
@@ -71,6 +50,8 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		    (strcmp(trans, "configure") == 0))
 			continue;
 
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
 		assert(repoloc != NULL);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -86,11 +67,15 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 			rv = EINVAL;
 			break;
 		}
-		RUN_STATE_CB(XBPS_STATE_VERIFY, NULL, pkgver, filen, repoloc);
+		xbps_set_cb_state(XBPS_STATE_VERIFY, 0, pkgname, version,
+		    "Verifying `%s' package integrity...", filen, repoloc);
 		rv = xbps_file_hash_check(binfile, sha256);
 		if (rv != 0) {
 			free(binfile);
-			RUN_STATE_ERR_CB(XBPS_STATE_VERIFY_FAIL, pkgver, rv);
+			xbps_set_cb_state(XBPS_STATE_VERIFY_FAIL,
+			    rv, pkgname, version,
+			    "Failed to verify `%s' package integrity: %s",
+			    filen, strerror(rv));
 			break;
 		}
 		free(binfile);
@@ -105,6 +90,7 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 {
 	prop_object_t obj;
 	const char *pkgver, *repoloc, *filen, *trans;
+	const char *pkgname, *version;
 	char *binfile;
 	int rv = 0;
 
@@ -114,6 +100,8 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		    (strcmp(trans, "configure") == 0))
 			continue;
 
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
 		assert(repoloc != NULL);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -138,23 +126,30 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		 */
 		if (xbps_mkpath(prop_string_cstring_nocopy(xhp->cachedir),
 		    0755) == -1) {
-			xbps_error_printf("xbps-bin: cannot mkdir cachedir "
-			    "`%s': %s.\n",
-			    prop_string_cstring_nocopy(xhp->cachedir),
+			xbps_set_cb_state(XBPS_STATE_DOWNLOAD_FAIL,
+			    errno, pkgname, version,
+			    "%s: [trans] cannot create cachedir `%s': %s",
+			    pkgver, prop_string_cstring_nocopy(xhp->cachedir),
 			    strerror(errno));
 			free(binfile);
 			rv = errno;
 			break;
 		}
-		RUN_STATE_CB(XBPS_STATE_DOWNLOAD, NULL, pkgver, filen, repoloc);
+		xbps_set_cb_state(XBPS_STATE_DOWNLOAD,
+		    0, pkgname, version,
+		    "Downloading binary package `%s' (from `%s')...",
+		    filen, repoloc);
 		/*
 		 * Fetch binary package.
 		 */
 		rv = xbps_fetch_file(binfile,
 		    prop_string_cstring_nocopy(xhp->cachedir), false, NULL);
 		if (rv == -1) {
-			RUN_STATE_ERR_CB(XBPS_STATE_DOWNLOAD_FAIL,
-			    pkgver, errno);
+			xbps_set_cb_state(XBPS_STATE_DOWNLOAD_FAIL,
+			    errno, pkgname, version,
+			    "%s: [trans] failed to download binary package "
+			    "`%s' from `%s': %s", pkgver, filen, repoloc,
+			    strerror(errno));
 			free(binfile);
 			break;
 		}
@@ -185,23 +180,23 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	/*
 	 * Download binary packages (if they come from a remote repository).
 	 */
-	RUN_STATE_CB(XBPS_STATE_DOWNLOAD,
-	    "[*] Downloading binary packages", NULL, NULL, NULL);
+	xbps_set_cb_state(XBPS_STATE_TRANS_DOWNLOAD, 0, NULL, NULL,
+	    "[*] Downloading binary packages");
 	if ((rv = download_binpkgs(xhp, iter)) != 0)
 		goto out;
 	/*
 	 * Check SHA256 hashes for binary packages in transaction.
 	 */
-	RUN_STATE_CB(XBPS_STATE_VERIFY,
-	    "[*] Verifying binary package integrity", NULL, NULL, NULL);
-	if ((rv = check_binpkgs_hash(xhp, iter)) != 0)
+	xbps_set_cb_state(XBPS_STATE_TRANS_VERIFY, 0, NULL, NULL,
+	    "[*] Verifying binary package integrity");
+	if ((rv = check_binpkgs_hash(iter)) != 0)
 		goto out;
 	/*
 	 * Install, update, configure or remove packages as specified
 	 * in the transaction dictionary.
 	 */
-	RUN_STATE_CB(XBPS_STATE_INSTALL,
-	    "[*] Running transaction tasks", NULL, NULL, NULL);
+	xbps_set_cb_state(XBPS_STATE_TRANS_RUN, 0, NULL, NULL,
+	    "[*] Running transaction tasks");
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		update = false;
@@ -217,34 +212,21 @@ xbps_transaction_commit(prop_dictionary_t transd)
 			 */
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
-			RUN_STATE_CB(XBPS_STATE_REMOVE,
-			    NULL, pkgver, NULL, NULL);
 			rv = xbps_remove_pkg(pkgname, version, update);
-			if (rv != 0) {
-				RUN_STATE_ERR_CB(XBPS_STATE_REMOVE_FAIL,
-				    pkgver, rv);
+			if (rv != 0)
 				goto out;
-			}
 			if (update)
 				continue;
 
-			RUN_STATE_CB(XBPS_STATE_PURGE,
-			    NULL, pkgver, NULL, NULL);
-			if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
-				RUN_STATE_ERR_CB(XBPS_STATE_PURGE_FAIL,
-				    pkgver, rv);
+			if ((rv = xbps_purge_pkg(pkgname, false)) != 0)
 				goto out;
-			}
 		} else if (strcmp(tract, "configure") == 0) {
 			/*
 			 * Reconfigure pending package.
 			 */
 			rv = xbps_configure_pkg(pkgname, version, false, false);
-			if (rv != 0) {
-				RUN_STATE_ERR_CB(XBPS_STATE_CONFIGURE_FAIL,
-				    pkgver, rv);
+			if (rv != 0)
 				goto out;
-			}
 		} else {
 			/*
 			 * Install or update a package.
@@ -257,43 +239,41 @@ xbps_transaction_commit(prop_dictionary_t transd)
 				 * Update a package: execute pre-remove
 				 * action if found before unpacking.
 				 */
-				RUN_STATE_CB(XBPS_STATE_UPDATE,
-				    NULL, pkgver, filen, NULL);
+				xbps_set_cb_state(XBPS_STATE_UPDATE,
+				    0, pkgname, version, NULL);
 				rv = xbps_remove_pkg(pkgname, version, true);
 				if (rv != 0) {
-					RUN_STATE_ERR_CB(XBPS_STATE_UPDATE_FAIL,
-					    pkgver, rv);
+					xbps_set_cb_state(
+					    XBPS_STATE_UPDATE_FAIL,
+					    rv, pkgname, version,
+					    "%s: [trans] failed to update "
+					    "package to `%s': %s", pkgver,
+					    version, strerror(rv));
 					goto out;
 				}
+			} else {
+				/* Install a package */
+				xbps_set_cb_state(XBPS_STATE_INSTALL,
+				    0, pkgname, version, NULL);
 			}
 			/*
 			 * Unpack binary package.
 			 */
-			RUN_STATE_CB(XBPS_STATE_UNPACK, NULL,
-			    pkgver, filen, NULL);
-			if ((rv = xbps_unpack_binary_pkg(obj)) != 0) {
-				RUN_STATE_ERR_CB(XBPS_STATE_UNPACK_FAIL,
-				    pkgver, rv);
+			if ((rv = xbps_unpack_binary_pkg(obj)) != 0)
 				goto out;
-			}
 			/*
 			 * Register package.
 			 */
-			RUN_STATE_CB(XBPS_STATE_REGISTER,
-			    NULL, pkgver, filen, NULL);
-			if ((rv = xbps_register_pkg(obj)) != 0) {
-				RUN_STATE_ERR_CB(XBPS_STATE_REGISTER_FAIL,
-				    pkgver, rv);
+			if ((rv = xbps_register_pkg(obj)) != 0)
 				goto out;
-			}
 		}
 	}
 	prop_object_iterator_reset(iter);
 	/*
 	 * Configure all unpacked packages.
 	 */
-	RUN_STATE_CB(XBPS_STATE_CONFIGURE,
-	    "[*] Configuring unpacked packages", NULL, NULL, NULL);
+	xbps_set_cb_state(XBPS_STATE_TRANS_CONFIGURE, 0, NULL, NULL,
+	    "[*] Configuring unpacked packages");
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
@@ -306,11 +286,9 @@ xbps_transaction_commit(prop_dictionary_t transd)
 		if (strcmp(tract, "update") == 0)
 			update = true;
 
-		if ((rv = xbps_configure_pkg(pkgname, version,
-		    false, update)) != 0) {
-			RUN_STATE_ERR_CB(XBPS_STATE_CONFIGURE_FAIL, pkgver, rv);
+		rv = xbps_configure_pkg(pkgname, version, false, update);
+		if (rv != 0)
 			goto out;
-		}
 	}
 
 out:

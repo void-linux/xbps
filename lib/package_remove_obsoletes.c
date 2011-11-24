@@ -36,7 +36,11 @@
 #include "xbps_api_impl.h"
 
 int HIDDEN
-xbps_remove_obsoletes(prop_dictionary_t oldd, prop_dictionary_t newd)
+xbps_remove_obsoletes(const char *pkgname,
+		      const char *version,
+		      const char *pkgver,
+		      prop_dictionary_t oldd,
+		      prop_dictionary_t newd)
 {
 	prop_object_iterator_t iter, iter2;
 	prop_object_t obj, obj2;
@@ -127,19 +131,16 @@ again:
 		 * Obsolete obj found, remove it.
 		 */
 		if (remove(file) == -1) {
-			if (errno != EEXIST &&
-			    errno != ENOTEMPTY &&
-			    errno != EBUSY) {
-				xbps_warn_printf("couldn't remove obsole entry "
-				    "`%s': %s\n",
-				    prop_string_cstring_nocopy(oldstr),
-				    strerror(errno));
-			}
+			xbps_set_cb_state(XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
+			    errno, pkgname, version,
+			    "%s: failed to remove obsolete entry `%s': %s",
+			    pkgver, file, strerror(errno));
 			free(file);
 			continue;
 		}
-		xbps_printf("Removed obsolete entry: %s\n",
-		    prop_string_cstring_nocopy(oldstr));
+		xbps_set_cb_state(XBPS_STATE_REMOVE_FILE_OBSOLETE,
+		    0, pkgname, version,
+		    "Removed obsolete entry: %s", file);
 		free(file);
 	}
 	if (!dolinks) {

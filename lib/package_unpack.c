@@ -83,18 +83,25 @@ static int
 extract_metafile(struct archive *ar,
 		 struct archive_entry *entry,
 		 const char *file,
-		 const char *pkgname,
-		 const char *version,
+		 const char *pkgver,
 		 bool exec,
 		 int flags)
 {
-	char *buf;
+	const char *version;
+	char *buf, *pkgname;
 	int rv;
+
+	pkgname = xbps_pkg_name(pkgver);
+	if (pkgname == NULL)
+		return ENOMEM;
+	version = xbps_pkg_version(pkgver);
 
 	buf = xbps_xasprintf(".%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, file);
-	if (buf == NULL)
+	if (buf == NULL) {
+		free(pkgname);
 		return ENOMEM;
+	}
 
 	archive_entry_set_pathname(entry, buf);
 	free(buf);
@@ -102,86 +109,99 @@ extract_metafile(struct archive *ar,
 		archive_entry_set_perm(entry, 0750);
 
 	if (archive_read_extract(ar, entry, flags) != 0) {
-		if ((rv = archive_errno(ar)) != EEXIST) {
-			xbps_error_printf("failed to extract metadata file `%s'"
-			    "for `%s-%s': %s\n", file, pkgname, version,
-			    strerror(rv));
-		}
+		rv = archive_errno(ar);
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgname, version,
+		    "%s: [unpack] failed to extract metafile `%s': %s",
+		    pkgver, file, strerror(rv));
+		free(pkgname);
+		return rv;
 	}
+	free(pkgname);
 
 	return 0;
 }
 
 static int
-remove_metafile(const char *file, const char *pkgname, const char *version)
+remove_metafile(const char *file, const char *pkgver)
 {
-	char *buf;
+	const char *version;
+	char *buf, *pkgname;
+
+	pkgname = xbps_pkg_name(pkgver);
+	if (pkgname == NULL)
+		return ENOMEM;
+	version = xbps_pkg_version(pkgver);
 
 	buf = xbps_xasprintf(".%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, file);
-	if (buf == NULL)
+	if (buf == NULL) {
+		free(pkgname);
 		return ENOMEM;
-
+	}
 	if (unlink(buf) == -1) {
 		if (errno && errno != ENOENT) {
-			xbps_error_printf("failed to remove metadata file "
-			    "`%s' while unpacking `%s-%s': %s\n", file,
-			    pkgname, version, strerror(errno));
+			xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+			    errno, pkgname, version,
+			    "%s: [unpack] failed to remove metafile `%s': %s",
+			    pkgver, file, strerror(errno));
+			free(pkgname);
 			free(buf);
 			return errno;
 		}
 	}
 	free(buf);
+	free(pkgname);
 
 	return 0;
 }
 
-/*
- * Execute the unpack progress function callback if set and its
- * private data is also set. It's so sad that
- * archive_read_set_progress_callback() from libarchive(3) cannot be used
- * here because sometimes it misses some entries by unknown reasons.
- */
-#define RUN_PROGRESS_CB()				\
-do {							\
-	if (xhp->xbps_unpack_cb != NULL)		\
-		(*xhp->xbps_unpack_cb)(xhp->xucd);	\
-} while (0)
-
 static int
-unpack_archive(prop_dictionary_t pkg_repod,
-	       struct archive *ar,
-	       const char *pkgname,
-	       const char *version,
-	       struct xbps_handle *xhp)
+unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 {
 	prop_dictionary_t propsd = NULL, filesd = NULL, old_filesd = NULL;
 	prop_array_t array;
+	const struct xbps_handle *xhp = xbps_handle_get();
 	const struct stat *entry_statp;
+	struct xbps_unpack_cb_data *xucd = NULL;
 	struct archive_entry *entry;
 	size_t nmetadata = 0, entry_idx = 0;
-	const char *entry_pname, *transact;
+	const char *entry_pname, *transact, *pkgname, *version, *pkgver, *fname;
 	char *buf = NULL, *pkgfilesd = NULL;
 	int rv, flags;
 	bool preserve, update, replace;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
-	assert(pkgname != NULL);
-	assert(version != NULL);
 
 	preserve = update = false;
-
-	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
-		xbps_error_printf("cannot chdir to rootdir for "
-		    "`%s-%s': %s\n", pkgname, version, strerror(errno));
-		return errno;
-	}
-
 	prop_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	prop_dictionary_get_cstring_nocopy(pkg_repod,
 	    "transaction", &transact);
-	assert(transact != NULL);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &version);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &fname);
+
+	if (xhp->unpack_cb != NULL) {
+		/* initialize data for unpack cb */
+		xucd = malloc(sizeof(*xucd));
+		if (xucd == NULL)
+			return ENOMEM;
+
+		xucd->entry_extract_count = 0;
+		xucd->entry_total_count = 0;
+	}
+
+	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    errno, pkgname, version,
+		    "%s: [unpack] failed to chdir to rootdir `%s': %s",
+		    pkgver, prop_string_cstring_nocopy(xhp->rootdir),
+		    strerror(errno));
+		rv = errno;
+		goto out;
+	}
 
 	if (strcmp(transact, "update") == 0)
 		update = true;
@@ -192,10 +212,10 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	 * anymore.
 	 */
 	if (update) {
-		if ((rv = remove_metafile("INSTALL", pkgname, version)) != 0)
-			return rv;
-		if ((rv = remove_metafile("REMOVE", pkgname, version)) != 0)
-			return rv;
+		if ((rv = remove_metafile("INSTALL", pkgver)) != 0)
+			goto out;
+		if ((rv = remove_metafile("REMOVE", pkgver)) != 0)
+			goto out;
 	}
 	/*
 	 * Process the archive files.
@@ -214,11 +234,11 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		/*
 		 * Prepare unpack callback ops.
 		 */
-		if (xhp->xbps_unpack_cb != NULL) {
-			xhp->xucd->entry = entry_pname;
-			xhp->xucd->entry_size = archive_entry_size(entry);
-			xhp->xucd->entry_is_metadata = false;
-			xhp->xucd->entry_is_conf = false;
+		if (xucd != NULL) {
+			xucd->entry = entry_pname;
+			xucd->entry_size = archive_entry_size(entry);
+			xucd->entry_is_metadata = false;
+			xucd->entry_is_conf = false;
 		}
 		if (strcmp("./INSTALL", entry_pname) == 0) {
 			/*
@@ -232,7 +252,7 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			rv = extract_metafile(ar, entry, "INSTALL",
-			    pkgname, version, true, flags);
+			    pkgver, true, flags);
 			if (rv != 0) {
 				free(buf);
 				goto out;
@@ -241,27 +261,33 @@ unpack_archive(prop_dictionary_t pkg_repod,
 			     pkgname, version, update ? "yes" : "no", NULL);
 			free(buf);
 			if (rv != 0) {
-				xbps_error_printf("%s-%s: pre-install script "
-				    "error: %s\n", pkgname, version,
-				    strerror(rv));
+				xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+				    rv, pkgname, version,
+				    "%s: [unpack] INSTALL script failed "
+				    "to execute pre ACTION: %s",
+				    pkgver, strerror(rv));
 				goto out;
 			}
 			nmetadata++;
-			xhp->xucd->entry_is_metadata = true;
-			xhp->xucd->entry_extract_count++;
-			RUN_PROGRESS_CB();
+			if (xucd != NULL) {
+				xucd->entry_is_metadata = true;
+				xucd->entry_extract_count++;
+				(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
+			}
 			continue;
 
 		} else if (strcmp("./REMOVE", entry_pname) == 0) {
 			rv = extract_metafile(ar, entry, "REMOVE",
-			    pkgname, version, true, flags);
+			    pkgver, true, flags);
 			if (rv != 0)
 				goto out;
 
 			nmetadata++;
-			xhp->xucd->entry_is_metadata = true;
-			xhp->xucd->entry_extract_count++;
-			RUN_PROGRESS_CB();
+			if (xucd != NULL) {
+				xucd->entry_is_metadata = true;
+				xucd->entry_extract_count++;
+				(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
+			}
 			continue;
 
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
@@ -276,14 +302,16 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			nmetadata++;
-			xhp->xucd->entry_is_metadata = true;
-			xhp->xucd->entry_extract_count++;
-			RUN_PROGRESS_CB();
+			if (xucd != NULL) {
+				xucd->entry_is_metadata = true;
+				xucd->entry_extract_count++;
+				(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
+			}
 			continue;
 
 		} else if (strcmp("./props.plist", entry_pname) == 0) {
 			rv = extract_metafile(ar, entry, XBPS_PKGPROPS,
-			    pkgname, version, false, flags);
+			    pkgver, false, flags);
 			if (rv != 0)
 				goto out;
 
@@ -294,9 +322,11 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			}
 			nmetadata++;
-			xhp->xucd->entry_is_metadata = true;
-			xhp->xucd->entry_extract_count++;
-			RUN_PROGRESS_CB();
+			if (xucd != NULL) {
+				xucd->entry_is_metadata = true;
+				xucd->entry_extract_count++;
+				(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
+			}
 			continue;
 		}
 		/*
@@ -311,9 +341,12 @@ unpack_archive(prop_dictionary_t pkg_repod,
 			 * This is not an XBPS binary package.
 			 */
 			if (entry_idx >= 3) {
-				xbps_error_printf("invalid binary pkg archive"
-				    "for `%s-%s'\n", pkgname, version);
-				return ENODEV;
+				xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+				    ENODEV, pkgname, version,
+				    "%s: [unpack] invalid binary package `%s'.",
+				    pkgver, fname);
+				rv = ENODEV;
+				goto out;
 			}
 
 			entry_idx++;
@@ -323,17 +356,18 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		 * Compute total entries in progress data, if set.
 		 * total_entries = metadata + files + conf_files + links.
 		 */
-		xhp->xucd->entry_total_count = nmetadata;
-		array = prop_dictionary_get(filesd, "files");
-		xhp->xucd->entry_total_count +=
-		    (ssize_t)prop_array_count(array);
-		array = prop_dictionary_get(filesd, "conf_files");
-		xhp->xucd->entry_total_count +=
-		    (ssize_t)prop_array_count(array);
-		array = prop_dictionary_get(filesd, "links");
-		xhp->xucd->entry_total_count +=
-		    (ssize_t)prop_array_count(array);
-
+		if (xucd != NULL) {
+			xucd->entry_total_count = nmetadata;
+			array = prop_dictionary_get(filesd, "files");
+			xucd->entry_total_count +=
+			    (ssize_t)prop_array_count(array);
+			array = prop_dictionary_get(filesd, "conf_files");
+			xucd->entry_total_count +=
+			    (ssize_t)prop_array_count(array);
+			array = prop_dictionary_get(filesd, "links");
+			xucd->entry_total_count +=
+			    (ssize_t)prop_array_count(array);
+		}
 		replace = false;
 		if (prop_dictionary_get_bool(pkg_repod,
 		    "replacing-package", &replace) && replace) {
@@ -364,8 +398,8 @@ unpack_archive(prop_dictionary_t pkg_repod,
 				goto out;
 			} else if (rv == 1) {
 				/* configuration file */
-				if (xhp->xucd != NULL)
-					xhp->xucd->entry_is_conf = true;
+				if (xucd != NULL)
+					xucd->entry_is_conf = true;
 
 				rv = xbps_entry_install_conf_file(filesd,
 				    entry, entry_pname, pkgname, version);
@@ -411,25 +445,24 @@ unpack_archive(prop_dictionary_t pkg_repod,
 		 */
 		if (archive_read_extract(ar, entry, flags) != 0) {
 			rv = archive_errno(ar);
-			if (rv != EEXIST) {
-				xbps_error_printf("failed to extract `%s' "
-				    "from `%s-%s': %s\n", entry_pname,
-				    pkgname, version, strerror(rv));
-				goto out;
-			} else {
-				xbps_warn_printf("ignoring existing "
-				    "entry: %s\n", entry_pname);
-			}
+			xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+			    rv, pkgname, version,
+			    "%s: [unpack] failed to extract file `%s': %s",
+			    pkgver, entry_pname, strerror(rv));
 		}
-		xhp->xucd->entry_extract_count++;
-		RUN_PROGRESS_CB();
+		if (xucd != NULL) {
+			xucd->entry_extract_count++;
+			(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
+		}
 	}
 	/*
 	 * If there was any error extracting files from archive, error out.
 	 */
 	if ((rv = archive_errno(ar)) != 0) {
-		xbps_dbg_printf("%s-%s: error extracting pkg files: %s\n",
-		    pkgname, version, archive_errno(ar));
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgname, version,
+		    "%s: [unpack] error while extracting files from `%s': %s",
+		    pkgver, fname, strerror(rv));
 		goto out;
 	}
 	/*
@@ -449,7 +482,9 @@ unpack_archive(prop_dictionary_t pkg_repod,
 	 */
 	old_filesd = prop_dictionary_internalize_from_zfile(pkgfilesd);
 	if (prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY) {
-		if ((rv = xbps_remove_obsoletes(old_filesd, filesd)) != 0) {
+		rv = xbps_remove_obsoletes(pkgname, version,
+		    pkgver, old_filesd, filesd);
+		if (rv != 0) {
 			prop_object_release(old_filesd);
 			rv = errno;
 			goto out;
@@ -469,8 +504,10 @@ out1:
 		goto out;
 	}
 	if (xbps_mkpath(buf, 0755) == -1) {
-		xbps_dbg_printf("%s-%s: failed to create pkg metadir: %s\n",
-		    pkgname, version, strerror(errno));
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    errno, pkgname, version,
+		    "%s: [unpack] failed to create pkg metadir `%s': %s",
+		    buf, pkgver, strerror(errno));
 		rv = errno;
 		goto out;
 	}
@@ -479,12 +516,15 @@ out1:
 	 */
 	if (!prop_dictionary_externalize_to_zfile(filesd, pkgfilesd)) {
 		rv = errno;
-		xbps_error_printf("failed to extract metadata %s file"
-		    "for `%s-%s': %s\n", XBPS_PKGFILES, pkgname,
-		    version, strerror(rv));
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    errno, pkgname, version,
+		    "%s: [unpack] failed to extract metadata file `%s': %s",
+		    pkgver, XBPS_PKGFILES, strerror(errno));
 		goto out;
 	}
 out:
+	if (xucd != NULL)
+		free(xucd);
 	if (pkgfilesd != NULL)
 		free(pkgfilesd);
 	if (buf != NULL)
@@ -496,12 +536,10 @@ out:
 
 	return rv;
 }
-#undef RUN_PROGRESS_CB
 
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 {
-	struct xbps_handle *xhp;
 	struct archive *ar;
 	const char *pkgname, *version, *repoloc, *pkgver, *fname;
 	char *bpkg;
@@ -515,10 +553,16 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &fname);
 
+	xbps_set_cb_state(XBPS_STATE_UNPACK,
+	    0, pkgname, version,
+	    "Unpacking package `%s'...", pkgver);
+
 	bpkg = xbps_path_from_repository_uri(pkg_repod, repoloc);
 	if (bpkg == NULL) {
-		xbps_error_printf("cannot determine binary pkg file "
-		    "for `%s-%s': %s\n", pkgname, version, strerror(errno));
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    errno, pkgname, version,
+		    "%s: [unpack] cannot determine binary package "
+		    "file for `%s': %s", pkgver, fname, strerror(errno));
 		return errno;
 	}
 
@@ -534,40 +578,43 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 
 	if (archive_read_open_filename(ar, bpkg, ARCHIVE_READ_BLOCKSIZE) != 0) {
 		rv = archive_errno(ar);
-		xbps_error_printf("failed to open `%s' binpkg: %s\n",
-		    fname, strerror(rv));
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgname, version,
+		    "%s: [unpack] failed to open binary package `%s': %s",
+		    pkgver, fname, strerror(rv));
 		goto out;
-	}
-	/*
-	 * Set extract progress callback if specified.
-	 */
-	xhp = xbps_handle_get();
-	if (xhp->xbps_unpack_cb != NULL) {
-		xhp->xucd->entry_extract_count = 0;
-		xhp->xucd->entry_total_count = 0;
 	}
 	/*
 	 * Set package state to half-unpacked.
 	 */
 	if ((rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
 	    XBPS_PKG_STATE_HALF_UNPACKED)) != 0) {
-		xbps_error_printf("failed to set `%s' to half-unpacked "
-		    "state: %s\n", pkgver, strerror(rv));
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgname, version,
+		    "%s: [unpack] failed to set state to half-unpacked: %s",
+		    pkgver, strerror(rv));
 		goto out;
 	}
 	/*
 	 * Extract archive files.
 	 */
-	if ((rv = unpack_archive(pkg_repod, ar, pkgname, version, xhp)) != 0)
+	rv = unpack_archive(pkg_repod, ar);
+	if (rv != 0) {
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgname, version,
+		    "%s: [unpack] failed to unpack files on archive: %s",
+		    pkgver, strerror(rv));
 		goto out;
-
+	}
 	/*
 	 * Set package state to unpacked.
 	 */
 	if ((rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
 	    XBPS_PKG_STATE_UNPACKED)) != 0) {
-		xbps_error_printf("failed to set `%s' to unpacked "
-		    "state: %s\n", pkgver, strerror(rv));
+		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgname, version,
+		    "%s: [unpack] failed to set state to unpacked: %s",
+		    pkgver, strerror(rv));
 	}
 out:
 	if (bpkg)

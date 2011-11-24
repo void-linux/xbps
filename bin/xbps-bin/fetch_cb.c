@@ -47,14 +47,14 @@
  * Compute and display ETA
  */
 static const char *
-stat_eta(struct xbps_fetch_cb_data *xfpd)
+stat_eta(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 {
-	struct xferstat *xsp = xfpd->cookie;
+	struct xferstat *xfer = cbdata;
 	static char str[16];
 	long elapsed, eta;
 	off_t received, expected;
 
-	elapsed = xsp->last.tv_sec - xsp->start.tv_sec;
+	elapsed = xfer->last.tv_sec - xfer->start.tv_sec;
 	received = xfpd->file_dloaded - xfpd->file_offset;
 	expected = xfpd->file_size - xfpd->file_dloaded;
 	eta = (long)(elapsed * expected / received);
@@ -68,11 +68,6 @@ stat_eta(struct xbps_fetch_cb_data *xfpd)
 	return str;
 }
 
-/** High precision double comparison
- * \param[in] a The first double to compare
- * \param[in] b The second double to compare
- * \return true on equal within precison, false if not equal within defined precision.
- */
 static inline bool
 compare_double(const double a, const double b)
 {
@@ -88,15 +83,15 @@ compare_double(const double a, const double b)
  * Compute and display transfer rate
  */
 static const char *
-stat_bps(struct xbps_fetch_cb_data *xfpd)
+stat_bps(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 {
-	struct xferstat *xsp = xfpd->cookie;
+	struct xferstat *xfer = cbdata;
 	static char str[16];
 	char size[8];
 	double delta, bps;
 
-	delta = (xsp->last.tv_sec + (xsp->last.tv_usec / 1.e6))
-	    - (xsp->start.tv_sec + (xsp->start.tv_usec / 1.e6));
+	delta = (xfer->last.tv_sec + (xfer->last.tv_usec / 1.e6))
+	    - (xfer->start.tv_sec + (xfer->start.tv_usec / 1.e6));
 	if (compare_double(delta, 0.0001)) {
 		snprintf(str, sizeof str, "-- stalled --");
 	} else {
@@ -112,73 +107,48 @@ stat_bps(struct xbps_fetch_cb_data *xfpd)
  * Update the stats display
  */
 static void
-stat_display(struct xbps_fetch_cb_data *xfpd)
+stat_display(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 {
-	struct xferstat *xsp = xfpd->cookie;
+	struct xferstat *xfer = cbdata;
 	struct timeval now;
 	char totsize[8], recvsize[8];
 
 	gettimeofday(&now, NULL);
-	if (now.tv_sec <= xsp->last.tv_sec)
+	if (now.tv_sec <= xfer->last.tv_sec)
 		return;
-	xsp->last = now;
+	xfer->last = now;
 
 	(void)xbps_humanize_number(totsize, (int64_t)xfpd->file_size);
 	(void)xbps_humanize_number(recvsize, (int64_t)xfpd->file_dloaded);
 	fprintf(stderr,"\r%s: %s [%d%% of %s]", xfpd->file_name, recvsize,
 	    (int)((double)(100.0 *
 	    (double)xfpd->file_dloaded) / (double)xfpd->file_size), totsize);
-	fprintf(stderr," %s", stat_bps(xfpd));
+	fprintf(stderr," %s", stat_bps(xfpd, xfer));
 	if (xfpd->file_size > 0 && xfpd->file_dloaded > 0 &&
-	    xsp->last.tv_sec >= xsp->start.tv_sec + 10)
-		fprintf(stderr," ETA: %s", stat_eta(xfpd));
+	    xfer->last.tv_sec >= xfer->start.tv_sec + 10)
+		fprintf(stderr," ETA: %s", stat_eta(xfpd, xfer));
 
 	fprintf(stderr,"\033[K");
 }
 
-/*
- * Initialize the transfer statistics
- */
-static void
-stat_start(struct xferstat *xsp)
+void
+fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 {
-	gettimeofday(&xsp->start, NULL);
-	xsp->last.tv_sec = xsp->last.tv_usec = 0;
-}
-
-/*
- * Update the transfer statistics
- */
-static void
-stat_update(struct xbps_fetch_cb_data *xfpd)
-{
-	xfpd->file_dloaded += xfpd->file_offset;
-	stat_display(xfpd);
-}
-
-/*
- * Finalize the transfer statistics
- */
-static void
-stat_end(struct xbps_fetch_cb_data *xfpd)
-{
+	struct xferstat *xfer = cbdata;
 	char size[8];
 
-	(void)xbps_humanize_number(size, (int64_t)xfpd->file_size);
-	fprintf(stderr,"\rDownloaded %s for %s [avg rate: %s]",
-	    size, xfpd->file_name, stat_bps(xfpd));
-	fprintf(stderr,"\033[K\n");
-}
-
-void
-fetch_file_progress_cb(struct xbps_fetch_cb_data *xfpd)
-{
-	struct xferstat *xsp = xfpd->cookie;
-
-	if (xfpd->cb_start)
-		stat_start(xsp);
-	else if (xfpd->cb_update)
-		stat_update(xfpd);
-	else if (xfpd->cb_end)
-		stat_end(xfpd);
+	if (xfpd->cb_start) {
+		/* start transfer stats */
+		gettimeofday(&xfer->start, NULL);
+		xfer->last.tv_sec = xfer->last.tv_usec = 0;
+	} else if (xfpd->cb_update) {
+		/* update transfer stats */
+		stat_display(xfpd, xfer);
+	} else if (xfpd->cb_end) {
+		/* end transfer stats */
+		(void)xbps_humanize_number(size, (int64_t)xfpd->file_size);
+		fprintf(stderr,"\rDownloaded %s for %s [avg rate: %s]",
+		    size, xfpd->file_name, stat_bps(xfpd, xfer));
+		fprintf(stderr,"\033[K\n");
+	}
 }

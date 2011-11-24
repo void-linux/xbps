@@ -25,98 +25,73 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <xbps_api.h>
 #include "defs.h"
 
 void
-state_cb(struct xbps_state_cb_data *xscd)
+state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 {
+	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd;
-	const char *opkgver, *state_descr = NULL, *fetchstr;
-	char *pkgname;
+	const char *pkgver;
 
-	if (xscd->desc != NULL && xscd->pkgver == NULL && xscd->err == 0) {
-		printf("\n%s ...\n", xscd->desc);
-		return;
-	}
+	(void)cbdata;
 
 	switch (xscd->state) {
 	case XBPS_STATE_DOWNLOAD:
-		printf("Downloading `%s' (from %s) ...\n",
-		    xscd->pkgver, xscd->repourl);
-		break;
-	case XBPS_STATE_DOWNLOAD_FAIL:
-		state_descr = "failed to download binary package";
-		break;
 	case XBPS_STATE_VERIFY:
-		printf("Checking `%s' integrity ...\n", xscd->binpkg_fname);
-		break;
-	case XBPS_STATE_VERIFY_FAIL:
-		state_descr = "failed to verify binary package SHA256";
-		break;
 	case XBPS_STATE_REMOVE:
-		printf("Removing `%s' ...\n", xscd->pkgver);
-		break;
-	case XBPS_STATE_REMOVE_FAIL:
-		state_descr = "failed to remove package";
-		break;
 	case XBPS_STATE_PURGE:
-		printf("Purging `%s' ...\n", xscd->pkgver);
-		break;
-	case XBPS_STATE_PURGE_FAIL:
-		state_descr = "failed to purge package";
-		break;
 	case XBPS_STATE_CONFIGURE:
-		printf("Configuring `%s' ...\n", xscd->pkgver);
-		break;
-	case XBPS_STATE_CONFIGURE_FAIL:
-		state_descr = "failed to configure package";
-		break;
-	case XBPS_STATE_REGISTER_FAIL:
-		state_descr = "failed to register package";
-		break;
 	case XBPS_STATE_REGISTER:
+	case XBPS_STATE_UNREGISTER:
 	case XBPS_STATE_INSTALL:
+	case XBPS_STATE_UNPACK:
+	case XBPS_STATE_REPOSYNC:
+	case XBPS_STATE_CONFIG_FILE:
+		printf("%s\n", xscd->desc);
 		break;
 	case XBPS_STATE_UPDATE:
-		pkgname = xbps_pkg_name(xscd->pkgver);
-		if (pkgname == NULL) {
-			xbps_error_printf("%s: failed to alloc pkgname!\n",
-			    __func__);
-			exit(EXIT_FAILURE);
-		}
-		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &opkgver);
+		pkgd = xbps_find_pkg_dict_installed(xscd->pkgname, false);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_object_release(pkgd);
-		free(pkgname);
-		printf("Updating `%s' to `%s'...\n", opkgver, xscd->pkgver);
+		printf("Updating `%s' to `%s-%s'...\n", pkgver,
+		    xscd->pkgname, xscd->version);
 		break;
-	case XBPS_STATE_UPDATE_FAIL:
-		state_descr = "failed to update package";
-		break;
-	case XBPS_STATE_UNPACK:
-		printf("Unpacking `%s' (from ../%s) ...\n",
-		    xscd->pkgver, xscd->binpkg_fname);
+	case XBPS_STATE_REMOVE_FILE:
+	case XBPS_STATE_REMOVE_FILE_OBSOLETE:
+		if (xhp->flags & XBPS_FLAG_VERBOSE)
+			printf("%s\n", xscd->desc);
+		else {
+			printf("%s\n", xscd->desc);
+			printf("\033[1A\033[K");
+		}
 		break;
 	case XBPS_STATE_UNPACK_FAIL:
-		state_descr = "failed to unpack binary package";
-		break;
-	case XBPS_STATE_REPOSYNC:
-		printf("Synchronizing index for `%s' ...\n",
-		    xscd->repourl);
-		break;
+	case XBPS_STATE_UPDATE_FAIL:
+	case XBPS_STATE_CONFIGURE_FAIL:
+	case XBPS_STATE_REGISTER_FAIL:
+	case XBPS_STATE_UNREGISTER_FAIL:
+	case XBPS_STATE_PURGE_FAIL:
+	case XBPS_STATE_REMOVE_FAIL:
+	case XBPS_STATE_VERIFY_FAIL:
+	case XBPS_STATE_DOWNLOAD_FAIL:
 	case XBPS_STATE_REPOSYNC_FAIL:
-		fetchstr = xbps_fetch_error_string();
-		xbps_error_printf("Failed to sync index: %s\n",
-		    fetchstr ? fetchstr : strerror(xscd->err));
-		return;
+	case XBPS_STATE_CONFIG_FILE_FAIL:
+		xbps_error_printf("%s\n", xscd->desc);
+		break;
+	case XBPS_STATE_REMOVE_FILE_FAIL:
+	case XBPS_STATE_REMOVE_FILE_HASH_FAIL:
+	case XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL:
+		/* Ignore errors due to not empty directories */
+		if (xscd->err == ENOTEMPTY)
+			return;
+
+		xbps_error_printf("%s\n", xscd->desc);
+		break;
 	default:
-		xbps_dbg_printf("%s: unknown state %d %s\n",
-		    xscd->pkgver, xscd->state, xscd->desc);
+		xbps_dbg_printf("unknown state %d\n", xscd->state);
 		break;
 	}
-
-	if (state_descr != NULL && xscd->err != 0)
-		xbps_error_printf("%s: %s: %s\n",
-		    xscd->pkgver, state_descr, strerror(xscd->err));
 }

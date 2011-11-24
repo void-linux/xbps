@@ -31,9 +31,6 @@
 #  define NDEBUG
 #endif
 #include <assert.h>
-#include <archive.h>
-#include <archive_entry.h>
-
 #include <xbps_api.h>
 #include "compat.h"
 #include "queue.h"
@@ -127,7 +124,11 @@ prop_dictionary_t HIDDEN
  * @private
  * From lib/package_remove_obsoletes.c
  */
-int HIDDEN xbps_remove_obsoletes(prop_dictionary_t, prop_dictionary_t);
+int HIDDEN xbps_remove_obsoletes(const char *,
+				 const char *,
+				 const char *,
+				 prop_dictionary_t,
+				 prop_dictionary_t);
 
 /**
  * @private
@@ -202,6 +203,17 @@ prop_dictionary_t HIDDEN
  * From lib/init_virtual_pkgs.c
  */
 void HIDDEN xbps_init_virtual_pkgs(struct xbps_handle *);
+
+/**
+ * @private
+ * From lib/cb_util.c
+ */
+void HIDDEN xbps_set_cb_fetch(off_t, off_t, off_t, const char *,
+			      bool, bool, bool);
+void HIDDEN xbps_set_cb_state(xbps_state_t, int, const char *,
+			      const char *, const char *, ...);
+void HIDDEN xbps_set_cb_unpack(const char *, int64_t, ssize_t,
+			       ssize_t, bool, bool);
 
 __END_DECLS
 

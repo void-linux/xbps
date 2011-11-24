@@ -225,7 +225,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		pkgname = xbps_pkgpattern_name(reqpkg);
 		if (pkgname == NULL) {
 			rv = EINVAL;
-			xbps_error_printf("failed to get "
+			xbps_dbg_printf("failed to get "
 			    "pkgname from `%s'!", reqpkg);
 			break;
 		}
@@ -237,7 +237,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			if (errno && errno != ENOENT) {
 				/* error */
 				rv = errno;
-				xbps_error_printf("failed to find "
+				xbps_dbg_printf("failed to find "
 				    "installed pkg for `%s': %s\n",
 				    reqpkg, strerror(errno));
 				break;
@@ -253,7 +253,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			if (errno && errno != ENOENT) {
 				/* error */
 				rv = errno;
-				xbps_error_printf("failed to find "
+				xbps_dbg_printf("failed to find "
 				    "installed virtual pkg for `%s': %s\n",
 				    reqpkg, strerror(errno));
 				break;
@@ -325,7 +325,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			} else {
 				/* error matching pkgpattern */
 				prop_object_release(tmpd);
-				xbps_error_printf("failed to match "
+				xbps_dbg_printf("failed to match "
 				    "pattern %s with %s\n", reqpkg, pkgver_q);
 				break;
 			}
@@ -368,7 +368,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 			if (curpkgd == NULL) {
 				/* pkg not found, there was some error */
 				if (errno && errno != ENOENT) {
-					xbps_error_printf("failed to find pkg "
+					xbps_dbg_printf("failed to find pkg "
 					    "for `%s' in rpool: %s\n",
 					    reqpkg, strerror(errno));
 					rv = errno;

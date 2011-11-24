@@ -35,7 +35,10 @@
 #include <xbps_api.h>
 #include "../xbps-bin/defs.h"
 #include "defs.h"
+
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 int
 show_pkg_info_from_repolist(const char *pkgname, const char *option)

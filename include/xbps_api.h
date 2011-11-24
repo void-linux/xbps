@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111117"
+#define XBPS_API_VERSION	"20111124"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -146,7 +146,6 @@
 
 __BEGIN_DECLS
 
-void		xbps_printf(const char *, ...);
 void		xbps_dbg_printf(const char *, ...);
 void		xbps_dbg_printf_append(const char *, ...);
 void		xbps_error_printf(const char *, ...);
@@ -160,53 +159,81 @@ void		xbps_warn_printf(const char *, ...);
  *
  * Integer representing the xbps callback returned state. Possible values:
  *
- * <b>XBPS_STATE_UKKNOWN</b>: unknown, state hasn't been
- * prepared or some unknown error ocurred.
- *
- * <b>XBPS_STATE_DOWNLOAD</b>: a binary package is being downloaded.
- *
- * <b>XBPS_STATE_VERIFY</b>: a binary package is being verified.
- *
- * <b>XBPS_STATE_REMOVE</b>: a package is being removed.
- *
- * <b>XBPS_STATE_PURGE</b>: a package is being purged.
- *
- * <b>XBPS_STATE_REPLACE</b>: a package is being replaced.
- *
- * <b>XBPS_STATE_INSTALL</b>: a package is being installed.
- *
- * <b>XBPS_STATE_UPDATE</b>: a package is being updated.
- *
- * <b>XBPS_STATE_UNPACK</b>: a package is being unpacked.
- *
- * <b>XBPS_STATE_CONFIGURE</b>: a package is being configured.
- *
- * <b>XBPS_STATE_REGISTER</b>: a package is being registered.
- *
- * <b>XBPS_STATE_REPOSYNC</b>: a remote repository's
- * pkg index is being synchronized.
+ * XBPS_STATE_UKKNOWN: unknown, state hasn't been prepared or unknown error.
+ * XBPS_STATE_TRANS_DOWNLOAD: transaction is downloading binary packages.
+ * XBPS_STATE_TRANS_VERIFY: transaction is verifying binary package integrity.
+ * XBPS_STATE_TRANS_RUN: transaction is performing operations:
+ * install, update, remove and replace.
+ * XBPS_STATE_TRANS_CONFIGURE: transaction is configuring all
+ * unpacked packages.
+ * XBPS_STATE_DOWNLOAD: a binary package is being downloaded.
+ * XBPS_STATE_VERIFY: a binary package is being verified.
+ * XBPS_STATE_REMOVE: a package is being removed.
+ * XBPS_STATE_REMOVE_FILE: a package file is being removed.
+ * XBPS_STATE_REMOVE_OBSOLETE: an obsolete package file is being removed.
+ * XBPS_STATE_PURGE: a package is being purged.
+ * XBPS_STATE_REPLACE: a package is being replaced.
+ * XBPS_STATE_INSTALL: a package is being installed.
+ * XBPS_STATE_UPDATE: a package is being updated.
+ * XBPS_STATE_UNPACK: a package is being unpacked.
+ * XBPS_STATE_CONFIGURE: a package is being configured.
+ * XBPS_STATE_CONFIG_FILE: a package configuration file is being processed.
+ * XBPS_STATE_REGISTER: a package is being registered.
+ * XBPS_STATE_UNREGISTER: a package is being unregistered.
+ * XBPS_STATE_REPOSYNC: a remote repository's package index is being
+ * synchronized.
+ * XBPS_STATE_VERIFY_FAIL: binary package integrity has failed.
+ * XBPS_STATE_DOWNLOAD_FAIL: binary package download has failed.
+ * XBPS_STATE_REMOVE_FAIL: a package removal has failed.
+ * XBPS_STATE_REMOVE_FILE_FAIL: a package file removal has failed.
+ * XBPS_STATE_REMOVE_FILE_HASH_FAIL: a package file removal due to
+ * its hash has failed.
+ * XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL: an obsolete package file
+ * removal has failed.
+ * XBPS_STATE_PURGE_FAIL: package purge has failed.
+ * XBPS_STATE_CONFIGURE_FAIL: package configure has failed.
+ * XBPS_STATE_CONFIG_FILE_FAIL: package configuration file operation
+ * has failed.
+ * XBPS_STATE_UPDATE_FAIL: package update has failed.
+ * XBPS_STATE_UNPACK_FAIL: package unpack has failed.
+ * XBPS_STATE_REGISTER_FAIL: package register has failed.
+ * XBPS_STATE_UNREGISTER_FAIL: package unregister has failed.
+ * XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  */
 typedef enum xbps_state {
 	XBPS_STATE_UNKNOWN = 0,
+	XBPS_STATE_TRANS_DOWNLOAD,
+	XBPS_STATE_TRANS_VERIFY,
+	XBPS_STATE_TRANS_RUN,
+	XBPS_STATE_TRANS_CONFIGURE,
 	XBPS_STATE_DOWNLOAD,
 	XBPS_STATE_VERIFY,
 	XBPS_STATE_REMOVE,
+	XBPS_STATE_REMOVE_FILE,
+	XBPS_STATE_REMOVE_FILE_OBSOLETE,
 	XBPS_STATE_PURGE,
 	XBPS_STATE_REPLACE,
 	XBPS_STATE_INSTALL,
 	XBPS_STATE_UPDATE,
 	XBPS_STATE_UNPACK,
 	XBPS_STATE_CONFIGURE,
+	XBPS_STATE_CONFIG_FILE,
 	XBPS_STATE_REGISTER,
+	XBPS_STATE_UNREGISTER,
 	XBPS_STATE_REPOSYNC,
 	XBPS_STATE_VERIFY_FAIL,
 	XBPS_STATE_DOWNLOAD_FAIL,
 	XBPS_STATE_REMOVE_FAIL,
+	XBPS_STATE_REMOVE_FILE_FAIL,
+	XBPS_STATE_REMOVE_FILE_HASH_FAIL,
+	XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
 	XBPS_STATE_PURGE_FAIL,
 	XBPS_STATE_CONFIGURE_FAIL,
+	XBPS_STATE_CONFIG_FILE_FAIL,
 	XBPS_STATE_UPDATE_FAIL,
 	XBPS_STATE_UNPACK_FAIL,
 	XBPS_STATE_REGISTER_FAIL,
+	XBPS_STATE_UNREGISTER_FAIL,
 	XBPS_STATE_REPOSYNC_FAIL
 } xbps_state_t;
 
@@ -229,36 +256,23 @@ struct xbps_state_cb_data {
 	 */
 	const char *desc;
 	/**
-	 * @var pkgver
+	 * @var pkgname
 	 *
-	 * XBPS state current pkgname/version string
-	 * (set internally, read-only).
+	 * Package name string (set internally, read-only).
 	 */
-	const char *pkgver;
+	const char *pkgname;
 	/**
-	 * @var binpkg_fname
+	 * @var version
 	 *
-	 * Binary package's filename (set internally, read-only).
+	 * Package version string (set internally, read-only).
 	 */
-	const char *binpkg_fname;
-	/**
-	 * @var repourl
-	 *
-	 * Repository URL (set internally, read-only).
-	 */
-	const char *repourl;
+	const char *version;
 	/**
 	 * @var err
 	 *
 	 * XBPS state error value (set internally, read-only).
 	 */
 	int err;
-	/**
-	 * @var cookie
-	 *
-	 * Pointer to user supplied data.
-	 */
-	void *cookie;
 };
 
 /**
@@ -275,57 +289,48 @@ struct xbps_fetch_cb_data {
 	/**
 	 * @var file_size
 	 *
-	 * Filename size for the file to be fetched (set internally,
-	 * read-only).
+	 * Filename size for the file to be fetched.
 	 */
 	off_t file_size;
 	/**
 	 * @var file_offset
 	 *
-	 * Current offset for the filename being fetched (set internally,
-	 * read-only).
+	 * Current offset for the filename being fetched.
 	 */
 	off_t file_offset;
 	/**
 	 * @var file_dloaded
 	 *
-	 * Bytes downloaded for the file being fetched
-	 * (set internally, read-only).
+	 * Bytes downloaded for the file being fetched.
 	 */
 	off_t file_dloaded;
 	/**
 	 * @var file_name
 	 *
-	 * File name being fetched (set internally, read-only).
+	 * File name being fetched.
 	 */
 	const char *file_name;
 	/**
 	 * @var cb_start
 	 *
 	 * If true the function callback should be prepared to start
-	 * the transfer progress (set internally, read-only).
+	 * the transfer progress.
 	 */
 	bool cb_start;
 	/**
 	 * @var cb_update
 	 *
 	 * If true the function callback should be prepared to
-	 * update the transfer progress (set internally, read-only).
+	 * update the transfer progress.
 	 */
 	bool cb_update;
 	/**
 	 * @var cb_end
 	 *
 	 * If true the function callback should be prepated to
-	 * end the transfer progress (set internally, read-only).
+	 * end the transfer progress.
 	 */
 	bool cb_end;
-	/**
-	 * @var cookie
-	 *
-	 * Pointer to private user data.
-	 */
-	void *cookie;
 };
 
 /**
@@ -342,47 +347,39 @@ struct xbps_unpack_cb_data {
 	/**
 	 * @var entry
 	 *
-	 * Entry pathname string (set internally, read-only).
+	 * Entry pathname string.
 	 */
 	const char *entry;
 	/**
 	 * @var entry_size
 	 *
-	 * Entry file size (set internally, read-only).
+	 * Entry file size.
 	 */
 	int64_t entry_size;
 	/**
 	 * @var entry_extract_count
 	 *
-	 * Total number of extracted entries (set internally, read-only).
+	 * Total number of extracted entries.
 	 */
 	ssize_t entry_extract_count;
 	/**
 	 * @var entry_total_count
 	 *
-	 * Total number of entries in package (set internally, read-only).
+	 * Total number of entries in package.
 	 */
 	ssize_t entry_total_count;
 	/**
 	 * @var entry_is_metadata
 	 *
-	 * If true "entry" is a package metadata file (set internally,
-	 * read-only).
+	 * If true "entry" is a metadata file.
 	 */
 	bool entry_is_metadata;
 	/**
 	 * @var entry_is_conf
 	 *
-	 * If true "entry" is a configuration file (set internally,
-	 * read-only).
+	 * If true "entry" is a configuration file.
 	 */
 	bool entry_is_conf;
-	/**
-	 * @var cookie
-	 *
-	 * Pointer to private user data.
-	 */
-	void *cookie;
 };
 
 /**
@@ -418,42 +415,42 @@ struct xbps_handle {
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
 	 */
-	void (*xbps_state_cb)(struct xbps_state_cb_data *);
+	void (*state_cb)(const struct xbps_state_cb_data *, void *);
 	/**
-	 * @var xscd
+	 * @var state_cb_data
 	 *
-	 * Pointer to a xbps_state_cb_data structure. It's allocated by
-	 * xbps_handle_alloc(), set internally.
+	 * Pointer to user supplied data to be passed as argument to
+	 * the \a xbps_state_cb function callback.
 	 */
-	struct xbps_state_cb_data *xscd;
+	void *state_cb_data;
 	/**
 	 * @var xbps_unpack_cb
 	 *
 	 * Pointer to the supplied function callback to be used in
 	 * xbps_unpack_binary_pkg().
 	 */
-	void (*xbps_unpack_cb)(struct xbps_unpack_cb_data *);
+	void (*unpack_cb)(const struct xbps_unpack_cb_data *, void *);
 	/**
-	 * @var xucd
+	 * @var unpack_cb_data
 	 *
-	 * Pointer to a xbps_unpack_cb_data structure to be passed
-	 * as argument to the \a xbps_unpack_cb function callback.
+	 * Pointer to user supplied data to be passed as argument to
+	 * the \a xbps_unpack_cb function callback.
 	 */
-	struct xbps_unpack_cb_data *xucd;
+	void *unpack_cb_data;
 	/**
 	 * @var xbps_fetch_cb
 	 *
 	 * Pointer to the supplied function callback to be used in
 	 * xbps_fetch_file().
 	 */
-	void (*xbps_fetch_cb)(struct xbps_fetch_cb_data *);
+	void (*fetch_cb)(const struct xbps_fetch_cb_data *, void *);
 	/**
-	 * @var xfcd
+	 * @var fetch_cb_data
 	 *
-	 * Pointer to a xbps_fetch_cb_data structure to be passed
-	 * as argument to the \a xbps_fetch_cb function callback.
+	 * Pointer to user supplied data to be passed as argument to
+	 * the \a xbps_fetch_cb function callback.
 	 */
-	struct xbps_fetch_cb_data *xfcd;
+	void *fetch_cb_data;
 	/**
 	 * @var rootdir
 	 *
@@ -488,7 +485,6 @@ struct xbps_handle {
 	 * Flags to be set globally, possible values:
 	 *
 	 * - XBPS_FLAG_VERBOSE
-	 *
 	 * - XBPS_FLAG_FORCE
 	 */
 	int flags;
@@ -1087,10 +1083,11 @@ int xbps_register_pkg(prop_dictionary_t pkg_dict);
  * Unregister a package from the package database.
  *
  * @param[in] pkgname Package name.
+ * @param[in] version Package version.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_unregister_pkg(const char *pkgname);
+int xbps_unregister_pkg(const char *pkgname, const char *version);
 
 /*@}*/
 
@@ -1118,10 +1115,13 @@ int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
  * The image in Detailed description shows off its structure.
  * @param[in] key Key of the array object to match, valid values are:
  * <b>files</b>, <b>dirs</b>, <b>links</b> and <b>conf_files</b>.
+ * @param[in] pkgver Package/version string matching package dictionary.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_remove_pkg_files(prop_dictionary_t dict, const char *key);
+int xbps_remove_pkg_files(prop_dictionary_t dict,
+			  const char *key,
+			  const char *pkgver);
 
 /*@}*/
 

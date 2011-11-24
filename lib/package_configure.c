@@ -120,15 +120,8 @@ xbps_configure_pkg(const char *pkgname,
 	if (pkgver == NULL)
 		return ENOMEM;
 
-	if (xhp->xbps_state_cb) {
-		xhp->xscd->desc = NULL;
-		xhp->xscd->binpkg_fname = NULL;
-		xhp->xscd->repourl = NULL;
-		xhp->xscd->err = 0;
-		xhp->xscd->state = XBPS_STATE_CONFIGURE;
-		xhp->xscd->pkgver = pkgver;
-		xhp->xbps_state_cb(xhp->xscd);
-	}
+	xbps_set_cb_state(XBPS_STATE_CONFIGURE, 0, pkgname, lver,
+	    "Configuring package `%s' ...", pkgver);
 
 	buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
 	    XBPS_META_PATH, pkgname);
@@ -138,8 +131,10 @@ xbps_configure_pkg(const char *pkgname,
 	}
 
 	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
-		xbps_dbg_printf("%s: [configure] chdir to '%s' returned %s\n",
-		    pkgname, prop_string_cstring_nocopy(xhp->rootdir),
+		xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, errno,
+		    pkgname, lver,
+		    "%s: [configure] failed to chdir to rootdir `%s': %s",
+		    pkgver, prop_string_cstring_nocopy(xhp->rootdir),
 		    strerror(errno));
 		free(buf);
 		free(pkgver);
@@ -149,10 +144,12 @@ xbps_configure_pkg(const char *pkgname,
 	if (access(buf, X_OK) == 0) {
 		if (xbps_file_exec(buf, "post",
 		    pkgname, lver, update ? "yes" : "no", NULL) != 0) {
+			xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, errno,
+			    pkgname, lver,
+			    "%s: [configure] INSTALL script failed to execute "
+			    "the post ACTION: %s", pkgver, strerror(errno));
 			free(buf);
 			free(pkgver);
-			xbps_error_printf("%s: post install script error: %s\n",
-			    pkgname, strerror(errno));
 			return errno;
 		}
 	} else {
@@ -165,14 +162,13 @@ xbps_configure_pkg(const char *pkgname,
 	free(buf);
 	rv = xbps_set_pkg_state_installed(pkgname, lver, pkgver,
 	    XBPS_PKG_STATE_INSTALLED);
-	free(pkgver);
-
-	if (rv != 0 && xhp->xbps_state_cb) {
-		xhp->xscd->pkgver = pkgver;
-		xhp->xscd->err = rv;
-		xhp->xscd->state = XBPS_STATE_CONFIGURE_FAIL;
-		xhp->xbps_state_cb(xhp->xscd);
+	if (rv != 0) {
+		xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, rv,
+		    pkgname, lver,
+		    "%s: [configure] failed to set state to installed: %s",
+		    pkgver, strerror(rv));
 	}
+	free(pkgver);
 
 	return rv;
 }

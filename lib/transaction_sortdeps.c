@@ -341,7 +341,7 @@ xbps_sort_pkg_deps(void)
 	 */
 	ndeps = prop_array_count(unsorted);
 	if (!prop_array_ensure_capacity(sorted, ndeps)) {
-		xbps_error_printf("failed to set capacity to the sorted "
+		xbps_dbg_printf("failed to set capacity to the sorted "
 		    "pkgdeps array\n");
 		return ENOMEM;
 	}

@@ -138,9 +138,9 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	xhp->debug = debug;
-	xhp->xbps_state_cb = state_cb;
-	xhp->xbps_fetch_cb = fetch_file_progress_cb;
-	xhp->xfcd->cookie = &xfer;
+	xhp->state_cb = state_cb;
+	xhp->fetch_cb = fetch_file_progress_cb;
+	xhp->fetch_cb_data = &xfer;
 	if (rootdir)
 		xhp->rootdir = prop_string_create_cstring(rootdir);
 	if (cachedir)
@@ -190,7 +190,7 @@ main(int argc, char **argv)
 
 		rv = show_pkg_info_from_repolist(argv[1], option);
 		if (rv == ENOENT) {
-			xbps_printf("Unable to locate package "
+			printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);
 		} else if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
@@ -207,7 +207,7 @@ main(int argc, char **argv)
 
 		rv = show_pkg_deps_from_repolist(argv[1]);
 		if (rv == ENOENT) {
-			xbps_printf("Unable to locate package "
+			printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);
 		} else if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
@@ -229,7 +229,7 @@ main(int argc, char **argv)
 				xbps_error_printf("xbps-repo: no repositories "
 				    "currently registered!\n");
 			} else if (errno == ENOENT) {
-				xbps_printf("Unable to locate package `%s' "
+				printf("Unable to locate package `%s' "
 				    "in repository pool.\n", argv[1]);
 			} else {
 				xbps_error_printf("xbps-repo: unexpected "

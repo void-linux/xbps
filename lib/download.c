@@ -231,7 +231,7 @@ xbps_fetch_file(const char *uri,
 		goto out;
 	}
 	if (url_st.size == -1) {
-		xbps_error_printf("Remote file size is unknown!\n");
+		xbps_dbg_printf("Remote file size is unknown!\n");
 		errno = EINVAL;
 		rv = -1;
 		goto out;
@@ -240,7 +240,7 @@ xbps_fetch_file(const char *uri,
 		 * Remove local file if bigger than remote, and refetch the
 		 * whole shit again.
 		 */
-		xbps_warn_printf("Local file %s is greater than remote, "
+		xbps_dbg_printf("Local file %s is greater than remote, "
 		    "removing local file and refetching...\n", filename);
 		(void)remove(destfile);
 	} else if (restart && url_st.mtime && url_st.size &&
@@ -260,29 +260,20 @@ xbps_fetch_file(const char *uri,
 		rv = -1;
 		goto out;
 	}
-
 	/*
 	 * Initialize data for the fetch progress function callback
 	 * and let the user know that the transfer is going to start
 	 * immediately.
 	 */
-	if (xhp != NULL && xhp->xbps_fetch_cb != NULL && xhp->xfcd != NULL) {
-		xhp->xfcd->file_name = filename;
-		xhp->xfcd->file_size = url_st.size;
-		xhp->xfcd->file_offset = url->offset;
-		xhp->xfcd->file_dloaded = -1;
-		xhp->xfcd->cb_start = true;
-		xhp->xfcd->cb_update = false;
-		xhp->xfcd->cb_end = false;
-		xhp->xbps_fetch_cb(xhp->xfcd);
-	}
+	xbps_set_cb_fetch(url_st.size, url->offset, -1,
+	    filename, true, false, false);
 	/*
 	 * Start fetching requested file.
 	 */
 	while ((bytes_read = fetchIO_read(fio, buf, sizeof(buf))) > 0) {
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
-			xbps_error_printf("Couldn't write to %s!\n", destfile);
+			xbps_dbg_printf("Couldn't write to %s!\n", destfile);
 			rv = -1;
 			goto out;
 		}
@@ -291,26 +282,11 @@ xbps_fetch_file(const char *uri,
 		 * Let the fetch progress callback know that
 		 * we are sucking more bytes from it.
 		 */
-		if (xhp != NULL && xhp->xbps_fetch_cb != NULL &&
-		    xhp->xfcd != NULL) {
-			xhp->xfcd->file_dloaded = bytes_dload;
-			xhp->xfcd->cb_start = false;
-			xhp->xfcd->cb_update = true;
-			xhp->xbps_fetch_cb(xhp->xfcd);
-		}
-
-	}
-	/*
-	 * Let the fetch progress callback know that the file
-	 * has been fetched.
-	 */
-	if (xhp != NULL && xhp->xbps_fetch_cb != NULL && xhp->xfcd != NULL) {
-		xhp->xfcd->cb_update = false;
-		xhp->xfcd->cb_end = true;
-		xhp->xbps_fetch_cb(xhp->xfcd);
+		xbps_set_cb_fetch(url_st.size, url->offset, bytes_dload,
+		    filename, false, true, false);
 	}
 	if (bytes_read == -1) {
-		xbps_error_printf("IO error while fetching %s: %s\n", filename,
+		xbps_dbg_printf("IO error while fetching %s: %s\n", filename,
 		    fetchLastErrString);
 		errno = EIO;
 		rv = -1;
@@ -320,6 +296,12 @@ xbps_fetch_file(const char *uri,
 		rv = -1;
 		goto out;
 	}
+	/*
+	 * Let the fetch progress callback know that the file
+	 * has been fetched.
+	 */
+	xbps_set_cb_fetch(url_st.size, url->offset, bytes_dload,
+	    filename, false, false, true);
 	/*
 	 * Update mtime in local file to match remote file if transfer
 	 * was successful.
@@ -331,7 +313,6 @@ xbps_fetch_file(const char *uri,
 		rv = -1;
 		goto out;
 	}
-
 	/* File downloaded successfully */
 	rv = 1;
 

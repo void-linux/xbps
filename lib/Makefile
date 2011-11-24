@@ -49,7 +49,7 @@ OBJS += transaction_dictionary.o transaction_sortdeps.o download.o
 OBJS += plist.o plist_archive_entry.o plist_find.o plist_match.o
 OBJS += plist_remove.o plist_fetch.o util.o util_hash.o
 OBJS += initend.o regpkgdb_dictionary.o init_virtualpkgs.o
-OBJS += repository_findpkg.o repository_finddeps.o
+OBJS += repository_findpkg.o repository_finddeps.o cb_util.o
 OBJS += repository_pool.o repository_pool_find.o repository_sync_index.o
 OBJS += $(EXTOBJS) $(COMPAT_SRCS)
 

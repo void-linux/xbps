@@ -30,8 +30,10 @@
 #include "defs.h"
 
 void
-unpack_progress_cb_verbose(struct xbps_unpack_cb_data *xpd)
+unpack_progress_cb_verbose(const struct xbps_unpack_cb_data *xpd, void *cbdata)
 {
+	(void)cbdata;
+
 	if (xpd->entry == NULL || xpd->entry_is_metadata)
 		return;
 	else if (xpd->entry_size <= 0)
@@ -43,8 +45,10 @@ unpack_progress_cb_verbose(struct xbps_unpack_cb_data *xpd)
 }
 
 void
-unpack_progress_cb(struct xbps_unpack_cb_data *xpd)
+unpack_progress_cb(const struct xbps_unpack_cb_data *xpd, void *cbdata)
 {
+	(void)cbdata;
+
 	if (xpd->entry == NULL || xpd->entry_is_metadata)
 		return;
 	else if (xpd->entry_size <= 0)

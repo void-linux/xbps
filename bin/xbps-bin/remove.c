@@ -38,24 +38,12 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 {
 	int rv = 0;
 
-	printf("Removing package %s-%s ...\n", pkgname, version);
-
-	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0) {
-		xbps_error_printf("xbps-bin: unable to remove %s-%s (%s).\n",
-		    pkgname, version, strerror(errno));
+	if ((rv = xbps_remove_pkg(pkgname, version, false)) != 0)
 		return rv;
-	}
-	if (purge) {
-		printf(" Purging ... ");
-		(void)fflush(stdout);
-		if ((rv = xbps_purge_pkg(pkgname, false)) != 0) {
-			xbps_error_printf("xbps-bin: unable to purge %s-%s "
-			    "(%s).\n", pkgname, version,
-			    strerror(errno));
+
+	if (purge)
+		if ((rv = xbps_purge_pkg(pkgname, false)) != 0)
 			return rv;
-		}
-		printf("done.\n");
-	}
 
 	return rv;
 }
@@ -183,7 +171,7 @@ remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 			continue;
 		}
 
-		xbps_printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
+		printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
 		    pkgver, prop_array_count(reqby),
 		    prop_array_count(reqby) > 1 ? "S" : "");
 		for (x = 0; x < prop_array_count(reqby); x++) {

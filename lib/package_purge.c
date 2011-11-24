@@ -47,7 +47,10 @@
  */
 
 static int
-remove_pkg_metadata(const char *pkgname, const char *rootdir)
+remove_pkg_metadata(const char *pkgname,
+		    const char *version,
+		    const char *pkgver,
+		    const char *rootdir)
 {
 	struct dirent *dp;
 	DIR *dirp;
@@ -80,10 +83,12 @@ remove_pkg_metadata(const char *pkgname, const char *rootdir)
 			return ENOMEM;
 		}
 
-		if (unlink(path) == -1)
-			xbps_warn_printf("can't remove metadata file: "
-			    "`%s': %s\n", dp->d_name, strerror(errno));
-
+		if (unlink(path) == -1) {
+			xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
+			    errno, pkgname, version,
+			    "%s: [purge] failed to remove metafile `%s': %s",
+			    pkgver, path, strerror(errno));
+		}
 		free(path);
 	}
 	(void)closedir(dirp);
@@ -121,13 +126,14 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 {
 	struct xbps_handle *xhp;
 	prop_dictionary_t dict, pkgd;
-	const char *version;
+	const char *version, *pkgver;
 	char *buf;
 	int rv = 0;
 	pkg_state_t state;
 
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
+
 	/*
 	 * Firstly let's get the pkg dictionary from regpkgdb.
 	 */
@@ -138,6 +144,10 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		    pkgname, strerror(errno));
 		return errno;
 	}
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
+	xbps_set_cb_state(XBPS_STATE_PURGE, 0, pkgname, version,
+	    "Purging package `%s'...", pkgver);
 
 	if (check_state) {
 		/*
@@ -156,16 +166,24 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	 */
 	dict = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (dict == NULL) {
-		xbps_dbg_printf("[purge] %s: failed to read files.plist (%s)\n",
-		    pkgname, strerror(errno));
+		xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
+		    errno, pkgname, version,
+		    "%s: [purge] failed to read metafile `%s': %s",
+		    pkgver, XBPS_PKGFILES, strerror(errno));
 		if (errno != ENOENT)
 			return errno;
 	} else {
 		if (prop_dictionary_get(dict, "conf_files")) {
-			rv = xbps_remove_pkg_files(dict, "conf_files");
+			rv = xbps_remove_pkg_files(dict, "conf_files", pkgver);
 			prop_object_release(dict);
-			if (rv != 0)
+			if (rv != 0) {
+				xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
+				    rv, pkgname, version,
+				    "%s: [purge] failed to remove "
+				    "configuration files: %s",
+				    pkgver, strerror(rv));
 				return rv;
+			}
 		}
 	}
 	/*
@@ -173,8 +191,11 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	 */
 	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
 		rv = errno;
-		xbps_error_printf("[purge] %s: cannot change to rootdir "
-		    "(%s)\n", pkgname, strerror(rv));
+		xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
+		    rv, pkgname, version,
+		    "%s: [purge] failed to chdir to rootdir `%s': %s",
+		    pkgver, prop_string_cstring_nocopy(xhp->rootdir),
+		    strerror(rv));
 		return rv;
 	}
 	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE", XBPS_META_PATH, pkgname);
@@ -183,16 +204,15 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		return rv;
 	}
 	if (access(buf, X_OK) == 0) {
-		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
-
-		if (xbps_file_exec(buf, "purge",
-		    pkgname, version, "no", NULL) != 0) {
+		rv = xbps_file_exec(buf, "purge", pkgname, version, "no", NULL);
+		if (rv != 0) {
 			free(buf);
 			if (errno && errno != ENOENT) {
-				rv = errno;
-				xbps_error_printf("%s: purge action error in "
-				    "REMOVE script: %s\n", pkgname,
-				    strerror(errno));
+				xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
+				    errno, pkgname, version,
+				    "%s: [purge] REMOVE script failed to "
+				    "execute purge ACTION: %s",
+				    pkgver, strerror(errno));
 				return rv;
 			}
 		}
@@ -201,20 +221,17 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Remove metadata dir and unregister package.
 	 */
-	if ((rv = remove_pkg_metadata(pkgname,
+	if ((rv = remove_pkg_metadata(pkgname, version, pkgver,
 	    prop_string_cstring_nocopy(xhp->rootdir))) != 0) {
-		xbps_dbg_printf("[purge] %s: failed to remove metadata "
-		    "files (%s)\n", pkgname, strerror(rv));
+		xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
+		    rv, pkgname, version,
+		    "%s: [purge] failed to remove metadata files: %s",
+		    pkgver, strerror(rv));
 		if (rv != ENOENT)
 			return rv;
 	}
-	if ((rv = xbps_unregister_pkg(pkgname)) != 0) {
-		xbps_error_printf("%s: couldn't unregister package: %s\n",
-		    pkgname, strerror(rv));
+	if ((rv = xbps_unregister_pkg(pkgname, version)) != 0)
 		return rv;
-	}
-	if (xhp->flags & XBPS_FLAG_VERBOSE)
-		xbps_printf("Package %s purged successfully.\n", pkgname);
 
 	return rv;
 }

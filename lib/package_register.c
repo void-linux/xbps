@@ -67,6 +67,9 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 	provides = prop_dictionary_get(pkgrd, "provides");
 	reqby = prop_dictionary_get(pkgrd, "requiredby");
 
+	xbps_set_cb_state(XBPS_STATE_REGISTER, 0, pkgname, version,
+	    "Registering package `%s'...", pkgver);
+
 	assert(pkgname != NULL);
 	assert(version != NULL);
 	assert(desc != NULL);
@@ -108,9 +111,6 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 		else if (xhp->install_reason_manual)
 			autoinst = false;
 
-		xbps_dbg_printf("%s: autoinst %d reason_auto %d reason_manual %d\n",
-		    pkgver, autoinst, xhp->install_reason_auto, xhp->install_reason_manual);
-
 		if (!prop_dictionary_set_bool(pkgd,
 		    "automatic-install", autoinst)) {
 			prop_object_release(pkgd);
@@ -149,6 +149,12 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 		return ENOENT;
 	}
 out:
+	if (rv != 0) {
+		xbps_set_cb_state(XBPS_STATE_REGISTER_FAIL,
+		    rv, pkgname, version,
+		    "%s: failed to register package: %s",
+		    pkgver, strerror(rv));
+	}
 	prop_object_release(dict);
 	free(plist);
 
@@ -156,7 +162,7 @@ out:
 }
 
 int
-xbps_unregister_pkg(const char *pkgname)
+xbps_unregister_pkg(const char *pkgname, const char *version)
 {
 	struct xbps_handle *xhp;
 	char *plist;
@@ -164,17 +170,28 @@ xbps_unregister_pkg(const char *pkgname)
 
 	assert(pkgname != NULL);
 
+	xbps_set_cb_state(XBPS_STATE_UNREGISTER, 0, pkgname, version,
+	    "Unregistering package `%s'...", pkgname);
+
 	xhp = xbps_handle_get();
 	plist = xbps_xasprintf("%s/%s/%s",
 	    prop_string_cstring_nocopy(xhp->rootdir),
 	    XBPS_META_PATH, XBPS_REGPKGDB);
-	if (plist == NULL)
-		return ENOMEM;
-
-	if (!xbps_remove_pkg_dict_from_plist_by_name(pkgname, plist))
+	if (plist == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	if (!xbps_remove_pkg_dict_from_plist_by_name(pkgname, plist)) {
 		rv = errno;
-
+		goto out;
+	}
+out:
+	if (rv != 0) {
+		xbps_set_cb_state(XBPS_STATE_UNREGISTER_FAIL,
+		    rv, pkgname, version,
+		    "%s: failed to unregister package: %s",
+		    pkgname, strerror(rv));
+	}
 	free(plist);
-
 	return rv;
 }

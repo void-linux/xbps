@@ -161,13 +161,13 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	xhp->debug = debug;
-	xhp->xbps_state_cb = state_cb;
-	xhp->xbps_fetch_cb = fetch_file_progress_cb;
-	xhp->xfcd->cookie = &xfer;
+	xhp->state_cb = state_cb;
+	xhp->fetch_cb = fetch_file_progress_cb;
+	xhp->fetch_cb_data = &xfer;
 	if (flags & XBPS_FLAG_VERBOSE)
-		xhp->xbps_unpack_cb = unpack_progress_cb_verbose;
+		xhp->unpack_cb = unpack_progress_cb_verbose;
 	else
-		xhp->xbps_unpack_cb = unpack_progress_cb;
+		xhp->unpack_cb = unpack_progress_cb;
 
 	if (rootdir)
 		xhp->rootdir = prop_string_create_cstring(rootdir);
