@@ -39,6 +39,10 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	(void)cbdata;
 
 	switch (xscd->state) {
+	case XBPS_STATE_TRANS_DOWNLOAD:
+	case XBPS_STATE_TRANS_VERIFY:
+	case XBPS_STATE_TRANS_RUN:
+	case XBPS_STATE_TRANS_CONFIGURE:
 	case XBPS_STATE_DOWNLOAD:
 	case XBPS_STATE_VERIFY:
 	case XBPS_STATE_REMOVE:
