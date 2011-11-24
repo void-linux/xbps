@@ -97,7 +97,8 @@ main(int argc, char **argv)
 			force_rm_with_deps = true;
 			break;
 		case 'f':
-			flags |= XBPS_FLAG_FORCE;
+			flags |= XBPS_FLAG_FORCE_CONFIGURE;
+			flags |= XBPS_FLAG_FORCE_REMOVE_FILES;
 			break;
 		case 'M':
 			install_manual = true;

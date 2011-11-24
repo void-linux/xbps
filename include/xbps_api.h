@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111124"
+#define XBPS_API_VERSION	"20111124-1"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -132,17 +132,26 @@
 
 /**
  * @def XBPS_FLAG_VERBOSE
- * Verbose flag used in xbps_unpack_binary_pkg() (for now).
- * Must be set through the xbps_init::flags member.
+ * Verbose flag that can be used in the function callbacks to alter
+ * its behaviour. Must be set through the xbps_init::flags member.
  */
-#define XBPS_FLAG_VERBOSE	0x00000001
+#define XBPS_FLAG_VERBOSE		0x00000001
 
 /**
- * @def XBPS_FLAG_FORCE
- * Force flag used in xbps_configure_pkg() (for now).
+ * @def XBPS_FLAG_FORCE_CONFIGURE
+ * Force flag used in xbps_configure_pkg(), if set the package(s)
+ * will be reconfigured even if its state is XBPS_PKG_STATE_INSTALLED.
  * Must be set through the xbps_init::flags member.
  */
-#define XBPS_FLAG_FORCE		0x00000002
+#define XBPS_FLAG_FORCE_CONFIGURE	0x00000002
+
+/**
+ * @def XBPS_FLAG_FORCE_REMOVE_FILES
+ * Force flag used in xbps_remove_pkg_files(), if set the package
+ * files will be removed even if its SHA256 hash don't match.
+ * Must be set through the xbps_init::flags member.
+ */
+#define XBPS_FLAG_FORCE_REMOVE_FILES	0x00000004
 
 __BEGIN_DECLS
 

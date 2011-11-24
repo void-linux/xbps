@@ -42,11 +42,10 @@
  *    ran successful.
  *
  * @note
- * If the \a XBPS_FLAG_FORCE is set through xbps_init() in the flags
+ * If the \a XBPS_FLAG_FORCE_CONFIGURE is set through xbps_init() in the flags
  * member, the package (or packages) will be reconfigured even if its
  * state is XBPS_PKG_STATE_INSTALLED.
  */
-
 int
 xbps_configure_packages(void)
 {
@@ -104,7 +103,7 @@ xbps_configure_pkg(const char *pkgname,
 		}
 
 		if (state == XBPS_PKG_STATE_INSTALLED) {
-			if ((xhp->flags & XBPS_FLAG_FORCE) == 0)
+			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0)
 				return 0;
 		} else if (state != XBPS_PKG_STATE_UNPACKED)
 			return EINVAL;

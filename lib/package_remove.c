@@ -43,8 +43,8 @@
  *  -# Its <b>pre-remove</b> target specified in the REMOVE script
  *     will be executed.
  *  -# Its files, dirs and links will be removed. Modified files (not
- *     matching its sha256 hash) are preserved, unless XBPS_FLAG_FORCE
- *     is set via xbps_init() in the flags member.
+ *     matching its sha256 hash) are preserved, unless
+ *     XBPS_FLAG_FORCE_REMOVE_FILES flag is set via xbps_init::flags member.
  *  -# Its <b>post-remove</b> target specified in the REMOVE script
  *     will be executed.
  *  -# Its requiredby objects will be removed from the installed packages
@@ -69,7 +69,6 @@
  * Text inside of white boxes are the key associated with the object, its
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
-
 int
 xbps_remove_pkg_files(prop_dictionary_t dict,
 		      const char *key,
@@ -139,7 +138,8 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 				continue;
 			} else if (rv == ERANGE) {
 				rv = 0;
-				if ((xhp->flags & XBPS_FLAG_FORCE) == 0) {
+				if ((xhp->flags &
+				    XBPS_FLAG_FORCE_REMOVE_FILES) == 0) {
 					xbps_set_cb_state(
 					    XBPS_STATE_REMOVE_FILE_HASH_FAIL,
 					    0, pkgname, version,
