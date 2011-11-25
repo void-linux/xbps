@@ -553,9 +553,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &fname);
 
-	xbps_set_cb_state(XBPS_STATE_UNPACK,
-	    0, pkgname, version,
-	    "Unpacking package `%s'...", pkgver);
+	xbps_set_cb_state(XBPS_STATE_UNPACK, 0, pkgname, version, NULL);
 
 	bpkg = xbps_path_from_repository_uri(pkg_repod, repoloc);
 	if (bpkg == NULL) {

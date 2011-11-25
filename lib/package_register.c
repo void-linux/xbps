@@ -67,8 +67,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 	provides = prop_dictionary_get(pkgrd, "provides");
 	reqby = prop_dictionary_get(pkgrd, "requiredby");
 
-	xbps_set_cb_state(XBPS_STATE_REGISTER, 0, pkgname, version,
-	    "Registering package `%s'...", pkgver);
+	xbps_set_cb_state(XBPS_STATE_REGISTER, 0, pkgname, version, NULL);
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
@@ -170,8 +169,7 @@ xbps_unregister_pkg(const char *pkgname, const char *version)
 
 	assert(pkgname != NULL);
 
-	xbps_set_cb_state(XBPS_STATE_UNREGISTER, 0, pkgname, version,
-	    "Unregistering package `%s'...", pkgname);
+	xbps_set_cb_state(XBPS_STATE_UNREGISTER, 0, pkgname, version, NULL);
 
 	xhp = xbps_handle_get();
 	plist = xbps_xasprintf("%s/%s/%s",

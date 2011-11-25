@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111124-1"
+#define XBPS_API_VERSION	"20111125"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -168,7 +168,7 @@ void		xbps_warn_printf(const char *, ...);
  *
  * Integer representing the xbps callback returned state. Possible values:
  *
- * XBPS_STATE_UKKNOWN: unknown, state hasn't been prepared or unknown error.
+ * XBPS_STATE_UKKNOWN: state hasn't been prepared or unknown error.
  * XBPS_STATE_TRANS_DOWNLOAD: transaction is downloading binary packages.
  * XBPS_STATE_TRANS_VERIFY: transaction is verifying binary package integrity.
  * XBPS_STATE_TRANS_RUN: transaction is performing operations:
@@ -178,12 +178,16 @@ void		xbps_warn_printf(const char *, ...);
  * XBPS_STATE_DOWNLOAD: a binary package is being downloaded.
  * XBPS_STATE_VERIFY: a binary package is being verified.
  * XBPS_STATE_REMOVE: a package is being removed.
+ * XBPS_STATE_REMOVE_DONE: a package has been removed successfully.
  * XBPS_STATE_REMOVE_FILE: a package file is being removed.
  * XBPS_STATE_REMOVE_OBSOLETE: an obsolete package file is being removed.
  * XBPS_STATE_PURGE: a package is being purged.
+ * XBPS_STATE_PURGE_DONE: a package has been purged successfully.
  * XBPS_STATE_REPLACE: a package is being replaced.
  * XBPS_STATE_INSTALL: a package is being installed.
+ * XBPS_STATE_INSTALL_DONE: a package has been installed successfully.
  * XBPS_STATE_UPDATE: a package is being updated.
+ * XBPS_STATE_UPDATE_DONE: a package has been updated successfully.
  * XBPS_STATE_UNPACK: a package is being unpacked.
  * XBPS_STATE_CONFIGURE: a package is being configured.
  * XBPS_STATE_CONFIG_FILE: a package configuration file is being processed.
@@ -218,12 +222,16 @@ typedef enum xbps_state {
 	XBPS_STATE_DOWNLOAD,
 	XBPS_STATE_VERIFY,
 	XBPS_STATE_REMOVE,
+	XBPS_STATE_REMOVE_DONE,
 	XBPS_STATE_REMOVE_FILE,
 	XBPS_STATE_REMOVE_FILE_OBSOLETE,
 	XBPS_STATE_PURGE,
+	XBPS_STATE_PURGE_DONE,
 	XBPS_STATE_REPLACE,
 	XBPS_STATE_INSTALL,
+	XBPS_STATE_INSTALL_DONE,
 	XBPS_STATE_UPDATE,
+	XBPS_STATE_UPDATE_DONE,
 	XBPS_STATE_UNPACK,
 	XBPS_STATE_CONFIGURE,
 	XBPS_STATE_CONFIG_FILE,

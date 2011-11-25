@@ -213,8 +213,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	if (pkgver == NULL)
 		return ENOMEM;
 
-	xbps_set_cb_state(XBPS_STATE_REMOVE, 0, pkgname, version,
-	    "Removing package `%s'...", pkgver);
+	xbps_set_cb_state(XBPS_STATE_REMOVE, 0, pkgname, version, NULL);
 
 	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
 	    XBPS_META_PATH, pkgname);
@@ -342,6 +341,9 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		    rv, pkgname, version,
 		    "%s: [remove] failed to set state to config-files: %s",
 		    pkgver, strerror(rv));
+	} else {
+		xbps_set_cb_state(XBPS_STATE_REMOVE_DONE,
+		     0, pkgname, version, NULL);
 	}
 	free(pkgver);
 

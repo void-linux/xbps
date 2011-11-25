@@ -146,8 +146,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	}
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
-	xbps_set_cb_state(XBPS_STATE_PURGE, 0, pkgname, version,
-	    "Purging package `%s'...", pkgver);
+	xbps_set_cb_state(XBPS_STATE_PURGE, 0, pkgname, version, NULL);
 
 	if (check_state) {
 		/*
@@ -232,6 +231,8 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	}
 	if ((rv = xbps_unregister_pkg(pkgname, version)) != 0)
 		return rv;
+
+	xbps_set_cb_state(XBPS_STATE_PURGE_DONE, 0, pkgname, version, NULL);
 
 	return rv;
 }

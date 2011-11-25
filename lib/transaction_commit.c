@@ -167,7 +167,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pkgname, *version, *pkgver, *filen, *tract;
+	const char *pkgname, *version, *pkgver, *tract;
 	int rv = 0;
 	bool update;
 
@@ -180,23 +180,20 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	/*
 	 * Download binary packages (if they come from a remote repository).
 	 */
-	xbps_set_cb_state(XBPS_STATE_TRANS_DOWNLOAD, 0, NULL, NULL,
-	    "[*] Downloading binary packages");
+	xbps_set_cb_state(XBPS_STATE_TRANS_DOWNLOAD, 0, NULL, NULL, NULL);
 	if ((rv = download_binpkgs(xhp, iter)) != 0)
 		goto out;
 	/*
 	 * Check SHA256 hashes for binary packages in transaction.
 	 */
-	xbps_set_cb_state(XBPS_STATE_TRANS_VERIFY, 0, NULL, NULL,
-	    "[*] Verifying binary package integrity");
+	xbps_set_cb_state(XBPS_STATE_TRANS_VERIFY, 0, NULL, NULL, NULL);
 	if ((rv = check_binpkgs_hash(iter)) != 0)
 		goto out;
 	/*
 	 * Install, update, configure or remove packages as specified
 	 * in the transaction dictionary.
 	 */
-	xbps_set_cb_state(XBPS_STATE_TRANS_RUN, 0, NULL, NULL,
-	    "[*] Running transaction tasks");
+	xbps_set_cb_state(XBPS_STATE_TRANS_RUN, 0, NULL, NULL, NULL);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		update = false;
@@ -204,7 +201,6 @@ xbps_transaction_commit(prop_dictionary_t transd)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
 
 		if (strcmp(tract, "remove") == 0) {
 			/*
@@ -239,8 +235,8 @@ xbps_transaction_commit(prop_dictionary_t transd)
 				 * Update a package: execute pre-remove
 				 * action if found before unpacking.
 				 */
-				xbps_set_cb_state(XBPS_STATE_UPDATE,
-				    0, pkgname, version, NULL);
+				xbps_set_cb_state(XBPS_STATE_UPDATE, 0,
+				    pkgname, version, NULL);
 				rv = xbps_remove_pkg(pkgname, version, true);
 				if (rv != 0) {
 					xbps_set_cb_state(
@@ -253,8 +249,8 @@ xbps_transaction_commit(prop_dictionary_t transd)
 				}
 			} else {
 				/* Install a package */
-				xbps_set_cb_state(XBPS_STATE_INSTALL,
-				    0, pkgname, version, NULL);
+				xbps_set_cb_state(XBPS_STATE_INSTALL, 0,
+				    pkgname, version, NULL);
 			}
 			/*
 			 * Unpack binary package.
@@ -272,8 +268,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	/*
 	 * Configure all unpacked packages.
 	 */
-	xbps_set_cb_state(XBPS_STATE_TRANS_CONFIGURE, 0, NULL, NULL,
-	    "[*] Configuring unpacked packages");
+	xbps_set_cb_state(XBPS_STATE_TRANS_CONFIGURE, 0, NULL, NULL, NULL);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
@@ -289,6 +284,17 @@ xbps_transaction_commit(prop_dictionary_t transd)
 		rv = xbps_configure_pkg(pkgname, version, false, update);
 		if (rv != 0)
 			goto out;
+		/*
+		 * Notify client callback when a package has been
+		 * installed or updated.
+		 */
+		if (update) {
+			xbps_set_cb_state(XBPS_STATE_UPDATE_DONE, 0,
+			    pkgname, version, NULL);
+		} else {
+			xbps_set_cb_state(XBPS_STATE_INSTALL_DONE, 0,
+			    pkgname, version, NULL);
+		}
 	}
 
 out:

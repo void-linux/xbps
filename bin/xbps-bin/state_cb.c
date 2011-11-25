@@ -34,35 +34,60 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 {
 	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd;
-	const char *pkgver;
+	const char *version;
 
 	(void)cbdata;
 
 	switch (xscd->state) {
+	/* notifications */
 	case XBPS_STATE_TRANS_DOWNLOAD:
+		printf("[*] Downloading binary packages\n");
+		break;
 	case XBPS_STATE_TRANS_VERIFY:
+		printf("[*] Verifying binary package integrity\n");
+		break;
 	case XBPS_STATE_TRANS_RUN:
+		printf("[*] Running transaction tasks\n");
+		break;
 	case XBPS_STATE_TRANS_CONFIGURE:
+		printf("[*] Configuring unpacked packages\n");
+		break;
+	case XBPS_STATE_REPOSYNC:
 	case XBPS_STATE_DOWNLOAD:
 	case XBPS_STATE_VERIFY:
+	case XBPS_STATE_CONFIG_FILE:
+		if (xscd->desc != NULL)
+			printf("%s\n", xscd->desc);
+		break;
 	case XBPS_STATE_REMOVE:
+		printf("Removing `%s-%s' ...\n", xscd->pkgname, xscd->version);
+		break;
 	case XBPS_STATE_PURGE:
+		printf("Purging `%s-%s' ...\n", xscd->pkgname, xscd->version);
+		break;
 	case XBPS_STATE_CONFIGURE:
+		printf("Configuring `%s-%s' ...\n", xscd->pkgname,
+		    xscd->version);
+		break;
 	case XBPS_STATE_REGISTER:
 	case XBPS_STATE_UNREGISTER:
-	case XBPS_STATE_INSTALL:
+		/* empty */
+		break;
 	case XBPS_STATE_UNPACK:
-	case XBPS_STATE_REPOSYNC:
-	case XBPS_STATE_CONFIG_FILE:
-		printf("%s\n", xscd->desc);
+		printf("Unpacking `%s-%s' ...\n", xscd->pkgname, xscd->version);
+		break;
+	case XBPS_STATE_INSTALL:
+		printf("Installing `%s-%s' ...\n",
+		    xscd->pkgname, xscd->version);
 		break;
 	case XBPS_STATE_UPDATE:
 		pkgd = xbps_find_pkg_dict_installed(xscd->pkgname, false);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
 		prop_object_release(pkgd);
-		printf("Updating `%s' to `%s-%s'...\n", pkgver,
-		    xscd->pkgname, xscd->version);
+		printf("Updating `%s' (`%s' to `%s') ...\n", xscd->pkgname,
+		    version, xscd->version);
 		break;
+	/* success */
 	case XBPS_STATE_REMOVE_FILE:
 	case XBPS_STATE_REMOVE_FILE_OBSOLETE:
 		if (xhp->flags & XBPS_FLAG_VERBOSE)
@@ -72,6 +97,23 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 			printf("\033[1A\033[K");
 		}
 		break;
+	case XBPS_STATE_INSTALL_DONE:
+		printf("Installed `%s-%s' successfully.\n",
+		    xscd->pkgname, xscd->version);
+		break;
+	case XBPS_STATE_UPDATE_DONE:
+		printf("Updated `%s' to `%s' successfully.\n",
+		    xscd->pkgname, xscd->version);
+		break;
+	case XBPS_STATE_REMOVE_DONE:
+		printf("Removed `%s-%s' successfully.\n",
+		    xscd->pkgname, xscd->version);
+		break;
+	case XBPS_STATE_PURGE_DONE:
+		printf("Purged `%s-%s' successfully.\n",
+		     xscd->pkgname, xscd->version);
+		break;
+	/* errors */
 	case XBPS_STATE_UNPACK_FAIL:
 	case XBPS_STATE_UPDATE_FAIL:
 	case XBPS_STATE_CONFIGURE_FAIL:

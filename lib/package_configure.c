@@ -119,8 +119,7 @@ xbps_configure_pkg(const char *pkgname,
 	if (pkgver == NULL)
 		return ENOMEM;
 
-	xbps_set_cb_state(XBPS_STATE_CONFIGURE, 0, pkgname, lver,
-	    "Configuring package `%s' ...", pkgver);
+	xbps_set_cb_state(XBPS_STATE_CONFIGURE, 0, pkgname, lver, NULL);
 
 	buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
 	    XBPS_META_PATH, pkgname);
