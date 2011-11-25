@@ -169,10 +169,11 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	prop_object_iterator_t iter;
 	const char *pkgname, *version, *pkgver, *tract;
 	int rv = 0;
-	bool update;
+	bool update, install, purge;
 
 	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
 
+	update = install = purge = false;
 	xhp = xbps_handle_get();
 	iter = xbps_array_iter_from_dict(transd, "packages");
 	if (iter == NULL)
@@ -203,15 +204,18 @@ xbps_transaction_commit(prop_dictionary_t transd)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
 		if (strcmp(tract, "remove") == 0) {
+			purge = update = false;
 			/*
-			 * Remove a package.
+			 * Remove and optionally also purge package.
 			 */
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
+			prop_dictionary_get_bool(obj, "remove-and-purge",
+			    &purge);
 			rv = xbps_remove_pkg(pkgname, version, update);
 			if (rv != 0)
 				goto out;
-			if (update)
+			if (update || !purge)
 				continue;
 
 			if ((rv = xbps_purge_pkg(pkgname, false)) != 0)
@@ -229,6 +233,8 @@ xbps_transaction_commit(prop_dictionary_t transd)
 			 */
 			if (strcmp(tract, "update") == 0)
 				update = true;
+			else
+				install = true;
 
 			if (update) {
 				/*
@@ -265,6 +271,10 @@ xbps_transaction_commit(prop_dictionary_t transd)
 		}
 	}
 	prop_object_iterator_reset(iter);
+
+	/* if there are no packages to install or update we are done */
+	if (!update && !install)
+		goto out;
 	/*
 	 * Configure all unpacked packages.
 	 */

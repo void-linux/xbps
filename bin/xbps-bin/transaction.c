@@ -208,6 +208,24 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 }
 
 int
+autoremove_pkgs(bool yes, bool purge)
+{
+	int rv = 0;
+
+	if ((rv = xbps_transaction_autoremove_pkgs(purge)) != 0) {
+		if (rv == ENOENT) {
+			printf("No package orphans were found.\n");
+			return 0;
+		} else {
+			printf("Failed to autoremove packages: %s\n",
+			    strerror(rv));
+			return rv;
+		}
+	}
+	return exec_transaction(yes, false);
+}
+
+int
 install_new_pkg(const char *pkg)
 {
 	prop_dictionary_t pkgd;

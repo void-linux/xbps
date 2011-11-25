@@ -43,7 +43,7 @@ struct list_pkgver_cb {
 	size_t pkgver_len;
 };
 
-/* from install.c */
+/* from transaction.c */
 int	install_new_pkg(const char *);
 int	update_pkg(const char *);
 int	autoupdate_pkgs(bool, bool);

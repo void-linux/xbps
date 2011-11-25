@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111125-1"
+#define XBPS_API_VERSION	"20111125-2"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -1175,6 +1175,17 @@ int xbps_transaction_update_pkg(const char *pkgname);
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_transaction_update_packages(void);
+
+/**
+ * Finds all package orphans currently installed and adds them into
+ * the transaction dictionary.
+ *
+ * @param[in] purge If true packages will also be purged.
+ *
+ * @return 0 on succcess, ENOENT if no package orphans were found, ENXIO
+ * or EINVAL if a problem ocurred in the process.
+ */
+int xbps_transaction_autoremove_pkgs(bool purge);
 
 /**
  * Returns the transaction dictionary, as shown above in the image.

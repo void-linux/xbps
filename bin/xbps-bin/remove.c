@@ -49,65 +49,6 @@ pkg_remove_and_purge(const char *pkgname, const char *version, bool purge)
 }
 
 int
-autoremove_pkgs(bool yes, bool purge)
-{
-	prop_array_t orphans = NULL;
-	prop_object_t obj = NULL;
-	prop_object_iterator_t iter = NULL;
-	const char *pkgver, *pkgname, *version;
-	int rv = 0;
-
-	/*
-	 * Removes orphan pkgs. These packages were installed
-	 * as dependency and any installed package does not depend
-	 * on it currently.
-	 */
-	orphans = xbps_find_pkg_orphans(NULL);
-	if (orphans == NULL)
-		return errno;
-
-	if (prop_array_count(orphans) == 0) {
-		printf("There are not orphaned packages currently.\n");
-		goto out;
-	}
-
-	iter = prop_array_iterator(orphans);
-	if (iter == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	printf("The following packages were installed automatically\n"
-	    "(as dependencies) and aren't needed anymore:\n\n");
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		print_package_line(pkgver, false);
-	}
-	prop_object_iterator_reset(iter);
-	printf("\n\n");
-
-	if (!yes && !noyes("Do you want to continue?")) {
-		printf("Cancelled!\n");
-		goto out;
-	}
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		if ((rv = pkg_remove_and_purge(pkgname, version, purge)) != 0)
-			goto out;
-	}
-
-out:
-	if (iter)
-		prop_object_iterator_release(iter);
-	if (orphans)
-		prop_object_release(orphans);
-
-	return rv;
-}
-
-int
 remove_installed_pkgs(int argc, char **argv, bool yes, bool purge,
 		      bool force_rm_with_deps, bool recursive_rm)
 {

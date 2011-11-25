@@ -236,3 +236,55 @@ xbps_transaction_install_pkg(const char *pkgpattern)
 {
 	return transaction_find_pkg(pkgpattern, "install");
 }
+
+int
+xbps_transaction_autoremove_pkgs(bool purge)
+{
+	prop_dictionary_t transd;
+	prop_array_t orphans, mdeps, unsorted;
+	prop_object_t obj;
+	const char *pkgver;
+	size_t count;
+	int rv = 0;
+
+	orphans = xbps_find_pkg_orphans(NULL);
+	if (prop_object_type(orphans) != PROP_TYPE_ARRAY)
+		return EINVAL;
+
+	count = prop_array_count(orphans);
+	if (count == 0) {
+		/* no orphans? we are done */
+		rv = ENOENT;
+		goto out;
+	}
+	/*
+	 * Prepare transaction dictionary and missing deps array.
+	 */
+	if ((transd = xbps_transaction_dictionary_get()) == NULL) {
+		rv = ENXIO;
+		goto out;
+	}
+	if ((mdeps = xbps_transaction_missingdeps_get()) == NULL) {
+		rv = ENXIO;
+		goto out;
+	}
+	/*
+	 * Add pkg orphan dictionary into the unsorted_deps array.
+	 */
+	unsorted = prop_dictionary_get(transd, "unsorted_deps");
+	while (count--) {
+		obj = prop_array_get(orphans, count);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		prop_dictionary_set_cstring_nocopy(obj,
+		    "transaction", "remove");
+		if (purge)
+			prop_dictionary_set_bool(obj, "remove-and-purge", true);
+		prop_array_add(unsorted, obj);
+		xbps_dbg_printf("%s: added into transaction (remove).\n",
+		    pkgver);
+	}
+out:
+	if (prop_object_type(orphans) == PROP_TYPE_ARRAY)
+		prop_object_release(orphans);
+	return rv;
+}
