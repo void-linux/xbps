@@ -55,7 +55,7 @@ xbps_set_cb_fetch(off_t file_size,
 	if (xhp->fetch_cb == NULL)
 		return;
 
-	xfcd = malloc(sizeof(*xfcd));
+	xfcd = calloc(1, sizeof(*xfcd));
 	if (xfcd == NULL)
 		return;
 
@@ -87,7 +87,7 @@ xbps_set_cb_state(xbps_state_t state,
 	if (xhp->state_cb == NULL)
 		return;
 
-	xscd = malloc(sizeof(*xscd));
+	xscd = calloc(1, sizeof(*xscd));
 	if (xscd == NULL)
 		return;
 
@@ -99,7 +99,7 @@ xbps_set_cb_state(xbps_state_t state,
 		va_start(va, fmt);
 		retval = vasprintf(&buf, fmt, va);
 		va_end(va);
-		if (retval == -1)
+		if (retval <= 0)
 			xscd->desc = NULL;
 		else
 			xscd->desc = buf;
@@ -125,7 +125,7 @@ xbps_set_cb_unpack(const char *entry,
 	if (xhp->unpack_cb == NULL)
 		return;
 
-	xucd = malloc(sizeof(*xucd));
+	xucd = calloc(1, sizeof(*xucd));
 	if (xucd == NULL)
 		return;
 
