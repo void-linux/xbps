@@ -2,7 +2,7 @@ TOPDIR = ../..
 -include $(TOPDIR)/config.mk
 
 BIN = xbps-bin
-OBJS =  install.o main.o remove.o show-deps.o
+OBJS =  transaction.o main.o remove.o show-deps.o
 OBJS += show-info-files.o util.o find-files.o
 OBJS += question.o fetch_cb.o state_cb.o
 OBJS += check.o check_pkg_automatic.o check_pkg_files.o

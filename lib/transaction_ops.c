@@ -32,9 +32,9 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/repository_findpkg.c
- * @brief Repository package handling routines
- * @defgroup repo_pkgs Repository package handling functions
+ * @file lib/transaction_ops.c
+ * @brief Transaction package handling routines
+ * @defgroup repo_pkgs Transaction package handling functions
  *
  * The following image shows off the full transaction dictionary returned
  * by xbps_transaction_prepare().
@@ -52,7 +52,7 @@
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 static int
-repository_find_pkg(const char *pattern, const char *reason)
+transaction_find_pkg(const char *pattern, const char *reason)
 {
 	prop_dictionary_t pkg_repod = NULL;
 	prop_dictionary_t transd;
@@ -178,7 +178,7 @@ out:
 }
 
 int
-xbps_repository_update_packages(void)
+xbps_transaction_update_packages(void)
 {
 	struct xbps_handle *xhp;
 	prop_object_t obj;
@@ -200,7 +200,7 @@ xbps_repository_update_packages(void)
 	 */
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		if ((rv = xbps_repository_update_pkg(pkgname)) != 0) {
+		if ((rv = xbps_transaction_update_pkg(pkgname)) != 0) {
 			if (rv == ENOENT || rv == EEXIST) {
 				/*
 				 * missing pkg or installed version is
@@ -226,13 +226,13 @@ xbps_repository_update_packages(void)
 }
 
 int
-xbps_repository_update_pkg(const char *pkgname)
+xbps_transaction_update_pkg(const char *pkgname)
 {
-	return repository_find_pkg(pkgname, "update");
+	return transaction_find_pkg(pkgname, "update");
 }
 
 int
-xbps_repository_install_pkg(const char *pkgpattern)
+xbps_transaction_install_pkg(const char *pkgpattern)
 {
-	return repository_find_pkg(pkgpattern, "install");
+	return transaction_find_pkg(pkgpattern, "install");
 }

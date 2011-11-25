@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111125"
+#define XBPS_API_VERSION	"20111125-1"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -1142,7 +1142,7 @@ int xbps_remove_pkg_files(prop_dictionary_t dict,
 
 /*@}*/
 
-/** @addtogroup repo_pkgs */
+/** @addtogroup transdict */
 /*@{*/
 
 /**
@@ -1150,14 +1150,11 @@ int xbps_remove_pkg_files(prop_dictionary_t dict,
  * the transaction dictionary for future use. The first repository in
  * the pool that matched the pattern wins.
  *
- * @note The function name might be misleading, but is correct because
- * if package is found, it will be marked as "going to be installed".
- *
  * @param pkgpattern Package name or pattern to find.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_repository_install_pkg(const char *pkgpattern);
+int xbps_transaction_install_pkg(const char *pkgpattern);
 
 /**
  * Marks a package as "going to be updated" in the transaction dictionary.
@@ -1168,7 +1165,7 @@ int xbps_repository_install_pkg(const char *pkgpattern);
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_repository_update_pkg(const char *pkgname);
+int xbps_transaction_update_pkg(const char *pkgname);
 
 /**
  * Finds newer versions for all installed packages by looking at the
@@ -1177,12 +1174,7 @@ int xbps_repository_update_pkg(const char *pkgname);
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_repository_update_packages(void);
-
-/*@}*/
-
-/** @addtogroup transdict */
-/*@{*/
+int xbps_transaction_update_packages(void);
 
 /**
  * Returns the transaction dictionary, as shown above in the image.
@@ -1196,8 +1188,8 @@ int xbps_repository_update_packages(void);
  * while sorting packages or computing the transaction size.
  *
  * @note
- *  - This function will set errno to ENXIO if xbps_repository_install_pkg()
- *    xbps_repository_update_pkg() functions were not called previously.
+ *  - This function will set errno to ENXIO if xbps_transaction_install_pkg()
+ *    or xbps_transaction_update_pkg() functions were not called previously.
  */
 prop_dictionary_t xbps_transaction_prepare(void);
 
@@ -1212,8 +1204,8 @@ prop_dictionary_t xbps_transaction_prepare(void);
 int xbps_transaction_commit(prop_dictionary_t transd);
 
 /**
- * Returns the missing deps array if xbps_repository_install_pkg()
- * or xbps_repository_update_pkg() failed to find required packages
+ * Returns the missing deps array if xbps_transaction_install_pkg()
+ * or xbps_transaction_update_pkg() failed to find required packages
  * in registered repositories.
  *
  * @return The proplib array, NULL if it couldn't be created.

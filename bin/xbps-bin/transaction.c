@@ -187,7 +187,7 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 	 * Update all currently installed packages, aka
 	 * "xbps-bin autoupdate".
 	 */
-	if ((rv = xbps_repository_update_packages()) != 0) {
+	if ((rv = xbps_transaction_update_packages()) != 0) {
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
 			return 0;
@@ -219,7 +219,7 @@ install_new_pkg(const char *pkg)
 	if (xbps_pkgpattern_version(pkg)) {
 		pkgpatt = __UNCONST(pkg);
 	} else {
-		/* 
+		/*
 		 * If only pkgname has been specified, always append
 		 * '-[0-9]*' at the end, will be easier to parse.
 		 */
@@ -246,7 +246,7 @@ install_new_pkg(const char *pkg)
 		}
 		printf("Package `%s' needs to be configured.\n", pkgname);
 	}
-	if ((rv = xbps_repository_install_pkg(pkgpatt)) != 0) {
+	if ((rv = xbps_transaction_install_pkg(pkgpatt)) != 0) {
 		if (rv == ENOENT) {
 			xbps_error_printf("xbps-bin: unable to locate '%s' in "
 			    "repository pool.\n", pkg);
@@ -272,7 +272,7 @@ update_pkg(const char *pkgname)
 {
 	int rv = 0;
 
-	rv = xbps_repository_update_pkg(pkgname);
+	rv = xbps_transaction_update_pkg(pkgname);
 	if (rv == EEXIST)
 		printf("Package '%s' is up to date.\n", pkgname);
 	else if (rv == ENOENT)
