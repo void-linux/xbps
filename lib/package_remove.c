@@ -213,7 +213,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	if (pkgver == NULL)
 		return ENOMEM;
 
-	xbps_set_cb_state(XBPS_STATE_REMOVE, 0, pkgname, version, NULL);
+	if (!update)
+		xbps_set_cb_state(XBPS_STATE_REMOVE, 0, pkgname, version, NULL);
 
 	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE",
 	    XBPS_META_PATH, pkgname);
