@@ -332,7 +332,7 @@ remove_pkg(const char *pkgname, bool purge, bool recursive)
 	else if (rv == ENOENT) {
 		printf("Package `%s' is not currently installed.\n", pkgname);
 		return 0;
-	} else {
+	} else if (rv != 0) {
 		xbps_error_printf("Failed to queue `%s' for removing: %s\n",
 		    pkgname, strerror(rv));
 		return rv;
