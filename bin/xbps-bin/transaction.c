@@ -121,7 +121,7 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 static int
 show_transaction_sizes(struct transaction *trans)
 {
-	uint64_t dlsize = 0, instsize = 0;
+	uint64_t dlsize = 0, instsize = 0, rmsize = 0;
 	char size[8];
 
 	/*
@@ -155,26 +155,38 @@ show_transaction_sizes(struct transaction *trans)
 		show_package_list(trans->iter, "remove");
 		printf("\n");
 	}
-
 	/*
-	 * Show total download/installed size for all required packages.
+	 * Show total download/installed/removed size for all required packages.
 	 */
+	printf("\n");
 	prop_dictionary_get_uint64(trans->d, "total-download-size", &dlsize);
+	if (dlsize > 0) {
+		if (xbps_humanize_number(size, (int64_t)dlsize) == -1) {
+			xbps_error_printf("xbps-bin: error: humanize_number returns "
+			    "%s\n", strerror(errno));
+			return -1;
+		}
+		printf("Total download size:\t%6s\n", size);
+	}
 	prop_dictionary_get_uint64(trans->d, "total-installed-size",
 	    &instsize);
-	if (xbps_humanize_number(size, (int64_t)dlsize) == -1) {
-		xbps_error_printf("xbps-bin: error: humanize_number returns "
-		    "%s\n", strerror(errno));
-		return -1;
+	if (instsize > 0) {
+		if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
+			xbps_error_printf("xbps-bin: error: humanize_number2 returns "
+			    "%s\n", strerror(errno));
+			return -1;
+		}
+		printf("Total installed size:\t%6s\n\n", size);
 	}
-	printf("\nTotal download size:\t%6s\n", size);
-	if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
-		xbps_error_printf("xbps-bin: error: humanize_number2 returns "
-		    "%s\n", strerror(errno));
-		return -1;
+	prop_dictionary_get_uint64(trans->d, "total-removed-size", &rmsize);
+	if (rmsize > 0) {
+		if (xbps_humanize_number(size, (int64_t)rmsize) == -1) {
+			xbps_error_printf("xbps-bin: error: humanize_number3 returns "
+			    "%s\n", strerror(errno));
+			return -1;
+		}
+		printf("Total removed size:\t%6s\n\n", size);
 	}
-	printf("Total installed size:\t%6s\n\n", size);
-
 	return 0;
 }
 
@@ -307,6 +319,26 @@ update_pkg(const char *pkgname)
 		return -1;
 	}
 	return rv;
+}
+
+int
+remove_pkg(const char *pkgname, bool purge, bool recursive)
+{
+	int rv;
+
+	rv = xbps_transaction_remove_pkg(pkgname, purge, recursive);
+	if (rv == EEXIST)
+		return rv;
+	else if (rv == ENOENT) {
+		printf("Package `%s' is not currently installed.\n", pkgname);
+		return 0;
+	} else {
+		xbps_error_printf("Failed to queue `%s' for removing: %s\n",
+		    pkgname, strerror(rv));
+		return rv;
+	}
+
+	return 0;
 }
 
 int

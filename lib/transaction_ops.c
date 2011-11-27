@@ -238,6 +238,90 @@ xbps_transaction_install_pkg(const char *pkgpattern)
 }
 
 int
+xbps_transaction_remove_pkg(const char *pkgname, bool purge, bool recursive)
+{
+	prop_dictionary_t transd, pkgd;
+	prop_array_t mdeps, orphans, orphans_pkg, unsorted, reqby;
+	prop_object_t obj;
+	const char *pkgver;
+	size_t count;
+	int rv = 0;
+
+	assert(pkgname != NULL);
+
+	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+	if (prop_object_type(pkgd) != PROP_TYPE_DICTIONARY) {
+		/* pkg not installed */
+		rv = ENOENT;
+		goto out;
+	}
+	/*
+	 * Prepare transaction dictionary and missing deps array.
+	 */
+	if ((transd = xbps_transaction_dictionary_get()) == NULL) {
+		rv = ENXIO;
+		goto out;
+	}
+	if ((mdeps = xbps_transaction_missingdeps_get()) == NULL) {
+		rv = ENXIO;
+		goto out;
+	}
+	unsorted = prop_dictionary_get(transd, "unsorted_deps");
+	if (!recursive)
+		goto rmpkg;
+	/*
+	 * If recursive is set, find out which packages would be orphans
+	 * if the supplied package were already removed.
+	 */
+	orphans_pkg = prop_array_create();
+	if (orphans_pkg == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	prop_array_set_cstring_nocopy(orphans_pkg, 0, pkgname);
+	orphans = xbps_find_pkg_orphans(orphans_pkg);
+	prop_object_release(orphans_pkg);
+	if (prop_object_type(orphans) != PROP_TYPE_ARRAY) {
+		rv = EINVAL;
+		goto out;
+	}
+	count = prop_array_count(orphans);
+	while (count--) {
+		obj = prop_array_get(orphans, count);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		prop_dictionary_set_cstring_nocopy(obj, "transaction", "remove");
+		if (purge)
+			prop_dictionary_set_bool(obj, "remove-and-purge", true);
+		prop_array_add(unsorted, obj);
+		xbps_dbg_printf("%s: added into transaction (remove).\n", pkgver);
+	}
+	prop_object_release(orphans);
+rmpkg:
+	/*
+	 * Add pkg dictionary into the unsorted_deps array.
+	 */
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	prop_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
+	if (purge)
+		prop_dictionary_set_bool(pkgd, "remove-and-purge", true);
+	prop_array_add(unsorted, pkgd);
+	xbps_dbg_printf("%s: added into transaction (remove).\n", pkgver);
+	reqby = prop_dictionary_get(pkgd, "requiredby");
+	/*
+	 * If target pkg is required by any installed pkg, the client must be aware
+	 * of this to take appropiate action.
+	 */
+	if ((prop_object_type(reqby) == PROP_TYPE_ARRAY) &&
+	    (prop_array_count(reqby) > 0))
+		rv = EEXIST;
+out:
+	if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY)
+		prop_object_release(pkgd);
+
+	return rv;
+}
+
+int
 xbps_transaction_autoremove_pkgs(bool purge)
 {
 	prop_dictionary_t transd;

@@ -102,15 +102,16 @@ create_transaction_missingdeps(void)
 static int
 compute_transaction_stats(void)
 {
+	prop_dictionary_t pkg_metad;
 	prop_object_iterator_t iter;
 	prop_object_t obj;
-	uint64_t tsize, dlsize, instsize;
+	uint64_t tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt;
 	int rv = 0;
-	const char *tract;
+	const char *tract, *pkgname;
 
 	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = 0;
-	tsize = dlsize = instsize = 0;
+	tsize = dlsize = instsize = rmsize = 0;
 
 	iter = xbps_array_iter_from_dict(transd, "packages");
 	if (iter == NULL)
@@ -160,22 +161,39 @@ compute_transaction_stats(void)
 	prop_object_iterator_reset(iter);
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		/*
 		 * Only process pkgs to be installed or updated.
 		 */
-		if ((strcmp(tract, "configure") == 0) ||
-		    (strcmp(tract, "remove") == 0))
+		if (strcmp(tract, "configure") == 0)
 			continue;
 
-		prop_dictionary_get_uint64(obj, "filename-size", &tsize);
-		dlsize += tsize;
 		tsize = 0;
-		prop_dictionary_get_uint64(obj, "installed_size", &tsize);
-		instsize += tsize;
-		tsize = 0;
+		/*
+		 * If removing a package, get installed_size from
+		 * pkg's metadata dictionary.
+		 */
+		if (strcmp(tract, "remove") == 0) {
+			pkg_metad =
+			    xbps_dictionary_from_metadata_plist(pkgname,
+				XBPS_PKGPROPS);
+			prop_dictionary_get_uint64(pkg_metad,
+			    "installed_size", &tsize);
+			prop_object_release(pkg_metad);
+			rmsize += tsize;
+		} else {
+			prop_dictionary_get_uint64(obj,
+			    "installed_size", &tsize);
+			instsize += tsize;
+			prop_dictionary_get_uint64(obj,
+			    "filename-size", &tsize);
+			dlsize += tsize;
+		}
 	}
-
+	/* installed - removed */
+	if (rmsize > 0 && instsize > 0)
+		instsize -= rmsize;
 	/*
 	 * Add object in transaction dictionary with total installed
 	 * size that it will take.
@@ -191,6 +209,15 @@ compute_transaction_stats(void)
 	 */
 	if (!prop_dictionary_set_uint64(transd,
 	    "total-download-size", dlsize)) {
+		rv = EINVAL;
+		goto out;
+	}
+	/*
+	 * Add object in transaction dictionary with total size to be
+	 * freed from packages to be removed.
+	 */
+	if (!prop_dictionary_set_uint64(transd,
+	    "total-removed-size", rmsize)) {
 		rv = EINVAL;
 		goto out;
 	}

@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111125-2"
+#define XBPS_API_VERSION	"20111127"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -1175,6 +1175,23 @@ int xbps_transaction_update_pkg(const char *pkgname);
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_transaction_update_packages(void);
+
+/**
+ * Removes a package currently installed. The package dictionary will
+ * be added into the transaction dictionary.
+ *
+ * @param[in] pkgname Package name to be removed.
+ * @param[in] purge If true package will also be purged.
+ * @param[in] recursive If true, all packages that are currently depending
+ * on the package to be removed, and if they are orphans, will be added.
+ *
+ * @return 0 on success, ENOENT if pkg is not installed, EEXIST if package
+ * has reverse dependencies, EINVAL or ENXIO if a problem ocurred in the
+ * process.
+ */
+int xbps_transaction_remove_pkg(const char *pkgname,
+				bool purge,
+				bool recursive);
 
 /**
  * Finds all package orphans currently installed and adds them into

@@ -62,18 +62,22 @@ cleanup(int signum)
 int
 main(int argc, char **argv)
 {
+	prop_dictionary_t pkgd;
+	prop_array_t reqby;
 	struct xbps_handle *xhp;
 	struct xferstat xfer;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
-	const char *rootdir, *cachedir, *confdir, *option;
-	int i , c, flags, rv;
-	bool yes, purge, debug, force_rm_with_deps, recursive_rm;
+	const char *rootdir, *cachedir, *confdir, *option, *pkgver;
+	size_t x;
+	int i, c, flags, rv;
+	bool yes, purge, debug, reqby_force, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
 
 	rootdir = cachedir = confdir = option = NULL;
 	flags = rv = 0;
-	yes = purge = force_rm_with_deps = recursive_rm = debug = false;
+	reqby_force = yes = purge = force_rm_with_deps = false;
+	recursive_rm = debug = false;
 	install_auto = install_manual = show_download_pkglist_url = false;
 
 	while ((c = getopt(argc, argv, "AC:c:dDFfMo:pRr:Vvy")) != -1) {
@@ -247,12 +251,39 @@ main(int argc, char **argv)
 		rv = exec_transaction(yes, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
-		/* Removes a binary package. */
+		/* Removes a package. */
 		if (argc < 2)
 			usage(xhp);
 
-		rv = remove_installed_pkgs(argc, argv, yes, purge,
-		    force_rm_with_deps, recursive_rm);
+		for (i = 1; i < argc; i++) {
+			rv = remove_pkg(argv[i], purge, recursive_rm);
+			if (rv == 0)
+				continue;
+			else if (rv != EEXIST)
+				goto out;
+
+			/* pkg has revdeps */
+			pkgd = xbps_find_pkg_dict_installed(argv[i], false);
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "pkgver", &pkgver);
+			reqby = prop_dictionary_get(pkgd, "requiredby");
+			prop_object_release(pkgd);
+			printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
+			    pkgver, prop_array_count(reqby),
+			    prop_array_count(reqby) > 1 ? "S" : "");
+			for (x = 0; x < prop_array_count(reqby); x++) {
+				prop_array_get_cstring_nocopy(reqby, x, &pkgver);
+				print_package_line(pkgver, false);
+			}
+			printf("\n\n");
+			print_package_line(NULL, true);
+			reqby_force = true;
+		}
+		if (reqby_force && !force_rm_with_deps) {
+			rv = EINVAL;
+			goto out;
+		}
+		rv = exec_transaction(yes, false);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
