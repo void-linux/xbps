@@ -55,7 +55,7 @@ check_pkg_symlinks(prop_dictionary_t pkgd_regpkgdb,
 	prop_object_iterator_t iter;
 	const char *pkgname, *file, *tgt = NULL;
 	char *path, buf[PATH_MAX];
-	bool test_broken = false;
+	bool broken = false, test_broken = false;
 
 	(void)pkg_propsd;
 	prop_dictionary_get_cstring_nocopy(pkgd_regpkgdb, "pkgname", &pkgname);
@@ -106,5 +106,9 @@ check_pkg_symlinks(prop_dictionary_t pkgd_regpkgdb,
 		}
 		prop_object_iterator_release(iter);
 	}
-	return test_broken;
+        if (test_broken) {
+		xbps_error_printf("%s: symlinks check FAILED.\n", pkgname);
+		broken = true;
+	}
+	return broken;
 }
