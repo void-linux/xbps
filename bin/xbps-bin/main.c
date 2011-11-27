@@ -62,14 +62,11 @@ cleanup(int signum)
 int
 main(int argc, char **argv)
 {
-	prop_dictionary_t pkgd;
-	prop_array_t reqby;
 	struct xbps_handle *xhp;
 	struct xferstat xfer;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
-	const char *rootdir, *cachedir, *confdir, *option, *pkgver;
-	size_t x;
+	const char *rootdir, *cachedir, *confdir, *option;
 	int i, c, flags, rv;
 	bool yes, purge, debug, reqby_force, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
@@ -261,23 +258,8 @@ main(int argc, char **argv)
 				continue;
 			else if (rv != EEXIST)
 				goto out;
-
-			/* pkg has revdeps */
-			pkgd = xbps_find_pkg_dict_installed(argv[i], false);
-			prop_dictionary_get_cstring_nocopy(pkgd,
-			    "pkgver", &pkgver);
-			reqby = prop_dictionary_get(pkgd, "requiredby");
-			prop_object_release(pkgd);
-			printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
-			    pkgver, prop_array_count(reqby),
-			    prop_array_count(reqby) > 1 ? "S" : "");
-			for (x = 0; x < prop_array_count(reqby); x++) {
-				prop_array_get_cstring_nocopy(reqby, x, &pkgver);
-				print_package_line(pkgver, false);
-			}
-			printf("\n\n");
-			print_package_line(NULL, true);
-			reqby_force = true;
+			else
+				reqby_force = true;
 		}
 		if (reqby_force && !force_rm_with_deps) {
 			rv = EINVAL;

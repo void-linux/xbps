@@ -324,12 +324,30 @@ update_pkg(const char *pkgname)
 int
 remove_pkg(const char *pkgname, bool purge, bool recursive)
 {
+	prop_dictionary_t pkgd;
+	prop_array_t reqby;
+	const char *pkgver;
+	size_t x;
 	int rv;
 
 	rv = xbps_transaction_remove_pkg(pkgname, purge, recursive);
-	if (rv == EEXIST)
+	if (rv == EEXIST) {
+		/* pkg has revdeps */
+		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		reqby = prop_dictionary_get(pkgd, "requiredby");
+		prop_object_release(pkgd);
+		printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
+		    pkgver, prop_array_count(reqby),
+		    prop_array_count(reqby) > 1 ? "S" : "");
+		for (x = 0; x < prop_array_count(reqby); x++) {
+			prop_array_get_cstring_nocopy(reqby, x, &pkgver);
+			print_package_line(pkgver, false);
+		}
+		printf("\n\n");
+		print_package_line(NULL, true);
 		return rv;
-	else if (rv == ENOENT) {
+	} else if (rv == ENOENT) {
 		printf("Package `%s' is not currently installed.\n", pkgname);
 		return 0;
 	} else if (rv != 0) {
