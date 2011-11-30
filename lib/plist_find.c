@@ -371,12 +371,9 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 	case XBPS_PKG_STATE_UNPACKED:
 		rpkgd = prop_dictionary_copy(pkgd);
 		break;
-	case XBPS_PKG_STATE_CONFIG_FILES:
-		xbps_dbg_printf("'%s' installed but its state is "
-		    "config-files, ignoring...\n", str);
-		errno = ENOENT;
-		break;
 	default:
+		/* not fully installed */
+		errno = ENOENT;
 		break;
 	}
 
