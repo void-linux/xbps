@@ -57,7 +57,7 @@ stat_eta(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	elapsed = xfer->last.tv_sec - xfer->start.tv_sec;
 	received = xfpd->file_dloaded - xfpd->file_offset;
 	expected = xfpd->file_size - xfpd->file_dloaded;
-	eta = (long)(elapsed * expected / received);
+	eta = (long)(elapsed * (long)expected / (long)received);
 	if (eta > 3600)
 		snprintf(str, sizeof str, "%02ldh%02ldm",
 		    eta / 3600, (eta % 3600) / 60);
@@ -124,10 +124,7 @@ stat_display(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	    (int)((double)(100.0 *
 	    (double)xfpd->file_dloaded) / (double)xfpd->file_size), totsize);
 	fprintf(stderr," %s", stat_bps(xfpd, xfer));
-	if (xfpd->file_size > 0 && xfpd->file_dloaded > 0 &&
-	    xfer->last.tv_sec >= xfer->start.tv_sec + 10)
-		fprintf(stderr," ETA: %s", stat_eta(xfpd, xfer));
-
+	fprintf(stderr," ETA: %s", stat_eta(xfpd, xfer));
 	fprintf(stderr,"\033[K");
 }
 

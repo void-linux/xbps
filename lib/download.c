@@ -265,7 +265,7 @@ xbps_fetch_file(const char *uri,
 	 * and let the user know that the transfer is going to start
 	 * immediately.
 	 */
-	xbps_set_cb_fetch(url_st.size, url->offset, -1,
+	xbps_set_cb_fetch(url_st.size, url->offset, url->offset,
 	    filename, true, false, false);
 	/*
 	 * Start fetching requested file.
@@ -282,7 +282,7 @@ xbps_fetch_file(const char *uri,
 		 * Let the fetch progress callback know that
 		 * we are sucking more bytes from it.
 		 */
-		xbps_set_cb_fetch(url_st.size, url->offset, bytes_dload,
+		xbps_set_cb_fetch(url_st.size, url->offset, url->offset + bytes_dload,
 		    filename, false, true, false);
 	}
 	if (bytes_read == -1) {
