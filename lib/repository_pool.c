@@ -79,7 +79,7 @@ xbps_repository_pool_init(void)
 	prop_string_t obj;
 	struct xbps_handle *xhp;
 	struct repository_pool *rpool;
-	size_t i, ntotal = 0, nmissing = 0;
+	size_t i, ntotal = 0, nmissing = 0, repocnt = 0;
 	const char *repouri;
 	char *plist;
 	int rv = 0;
@@ -178,7 +178,9 @@ xbps_repository_pool_init(void)
 		}
 		free(plist);
 		xbps_dbg_printf("[rpool] `%s' registered.\n", repouri);
+		rpool->rpi->rpi_index = repocnt;
 		SIMPLEQ_INSERT_TAIL(&rpool_queue, rpool, rp_entries);
+		repocnt++;
 	}
 
 	if (ntotal - nmissing == 0) {

@@ -94,6 +94,13 @@ will be removed automatically\&.
 Lists all working repositories in repository pool\&.
 .RE
 .PP
+\fBpkg\-list [\fR\fB\fIindex\fR\fR\fB]\fR
+.RS 4
+Lists all currently registered packages in repository index as specified in the \fIindex\fR argument.
+If argument is not specified, all repositories will be used to list packages\&. The argument
+expects a decimal number starting from 0, matching the output of the \fIlist\fR target.
+.RE
+.PP
 \fBsearch\fR \fIpattern\fR
 .RS 4
 Search for packages containing the shell

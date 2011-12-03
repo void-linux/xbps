@@ -41,6 +41,7 @@ struct xferstat {
 struct list_pkgver_cb {
 	pkg_state_t state;
 	size_t pkgver_len;
+	bool check_state;
 };
 
 /* from transaction.c */

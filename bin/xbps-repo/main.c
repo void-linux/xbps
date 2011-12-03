@@ -51,6 +51,30 @@ usage(struct xbps_handle *xhp)
 }
 
 static int
+repo_pkg_list_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+{
+	struct list_pkgver_cb lpc;
+	uint16_t idx;
+	char *cp;
+
+	(void)done;
+	if (arg != NULL) {
+		idx = (uint16_t)strtoul(arg, &cp, 0);
+		if (rpi->rpi_index != idx)
+			return 0;
+	}
+	lpc.check_state = false;
+	lpc.state = 0;
+	lpc.pkgver_len = find_longest_pkgver(rpi->rpi_repod);
+
+	printf("From %s repository ...\n", rpi->rpi_uri);
+	(void)xbps_callback_array_iter_in_dict(rpi->rpi_repod,
+	    "packages", list_pkgs_in_dict, &lpc);
+
+	return 0;
+}
+
+static int
 repo_list_uri_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 {
 	const char *pkgidx;
@@ -62,8 +86,8 @@ repo_list_uri_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	prop_dictionary_get_cstring_nocopy(rpi->rpi_repod,
 	    "pkgindex-version", &pkgidx);
 	prop_dictionary_get_uint64(rpi->rpi_repod, "total-pkgs", &npkgs);
-	printf("%s (index %s, " "%" PRIu64 " packages)\n",
-	    rpi->rpi_uri, pkgidx, npkgs);
+	printf("[%u] %s (index %s, " "%" PRIu64 " packages)\n",
+	    rpi->rpi_index, rpi->rpi_uri, pkgidx, npkgs);
 
 	return 0;
 }
@@ -166,7 +190,20 @@ main(int argc, char **argv)
 		else if (rv != 0 && rv != ENOTSUP)
 			xbps_error_printf("xbps-repo: failed to initialize "
 			    "rpool: %s\n", strerror(rv));
+	} else if (strcasecmp(argv[0], "pkg-list") == 0) {
+		/*
+		 * Only list packages for the target repository.
+		 */
+		if (argc < 1 || argc > 2)
+			usage(xhp);
 
+		rv = xbps_repository_pool_foreach(repo_pkg_list_cb, argv[1]);
+		if (rv == ENOTSUP)
+			xbps_error_printf("xbps-repo: no repositories "
+			    "currently registered!\n");
+		else if (rv != 0)
+			xbps_error_printf("xbps-repo: failed to initialize "
+			    "rpool: %s\n", strerror(rv));
 	} else if (strcasecmp(argv[0], "search") == 0) {
 		/*
 		 * Search for a package by looking at pkgname/short_desc
@@ -182,7 +219,6 @@ main(int argc, char **argv)
 		else if (rv != 0 && rv != ENOTSUP)
 			xbps_error_printf("xbps-repo: failed to initialize "
 			    "rpool: %s\n", strerror(rv));
-
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about a binary package. */
 		if (argc != 2)
@@ -199,7 +235,6 @@ main(int argc, char **argv)
 			xbps_error_printf("xbps-repo: unexpected error '%s' ",
 			    "searching for '%s'\n", strerror(rv), argv[1]);
 		}
-
 	} else if (strcasecmp(argv[0], "show-deps") == 0) {
 		/* Shows the required run dependencies for a package. */
 		if (argc != 2)
@@ -216,7 +251,6 @@ main(int argc, char **argv)
 			xbps_error_printf("xbps-repo: unexpected error '%s' "
 			    "searching for '%s'\n", strerror(errno), argv[1]);
 		}
-
 	} else if (strcasecmp(argv[0], "show-files") == 0) {
 		/* Shows the package files in a binary package */
 		if (argc != 2)
@@ -241,7 +275,6 @@ main(int argc, char **argv)
 		}
 		rv = show_pkg_files(pkgd);
 		prop_object_release(pkgd);
-
 	} else if (strcasecmp(argv[0], "find-files") == 0) {
 		/* Finds files by patterns, exact matches and components. */
 		if (argc != 2)
@@ -252,14 +285,12 @@ main(int argc, char **argv)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
 		}
-
 	} else if (strcasecmp(argv[0], "genindex") == 0) {
 		/* Generates a package repository index plist file. */
 		if (argc != 2)
 			usage(xhp);
 
 		rv = repo_genindex(argv[1]);
-
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
 		if (argc != 1)
@@ -270,7 +301,6 @@ main(int argc, char **argv)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
 		}
-
 	} else {
 		usage(xhp);
 	}

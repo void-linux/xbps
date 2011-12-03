@@ -198,6 +198,7 @@ main(int argc, char **argv)
 			goto out;
 		}
 
+		lpc.check_state = true;
 		lpc.state = 0;
 		if (argv[1]) {
 			if (strcmp(argv[1], "installed") == 0)

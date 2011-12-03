@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111130"
+#define XBPS_API_VERSION	"20111203"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -1285,6 +1285,12 @@ struct repository_pool_index {
 	 * URI string associated with repository.
 	 */
 	char *rpi_uri;
+	/**
+	 * @var rpi_index
+	 *
+	 * Repository index in pool.
+	 */
+	uint16_t rpi_index;
 };
 
 /**

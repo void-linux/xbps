@@ -1,5 +1,9 @@
 xbps-0.11.0 (???):
 
+ * xbps-repo(8): new target: pkg-list [index]. This target will list all
+   packages from repository with index [index]. If optional argument
+   [index] (decimal) not set, all repositories will be used.
+
  * libxbps: when registering new packages, existing entries in
    requiredby matching the same pkgname/version touple are now
    simply skipped.
