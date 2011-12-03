@@ -50,64 +50,6 @@ usage(struct xbps_handle *xhp)
 	exit(EXIT_FAILURE);
 }
 
-static int
-repo_pkg_list_cb(struct repository_pool_index *rpi, void *arg, bool *done)
-{
-	struct list_pkgver_cb lpc;
-	uint16_t idx;
-	char *cp;
-
-	(void)done;
-	if (arg != NULL) {
-		idx = (uint16_t)strtoul(arg, &cp, 0);
-		if (rpi->rpi_index != idx)
-			return 0;
-	}
-	lpc.check_state = false;
-	lpc.state = 0;
-	lpc.pkgver_len = find_longest_pkgver(rpi->rpi_repod);
-
-	printf("From %s repository ...\n", rpi->rpi_uri);
-	(void)xbps_callback_array_iter_in_dict(rpi->rpi_repod,
-	    "packages", list_pkgs_in_dict, &lpc);
-
-	return 0;
-}
-
-static int
-repo_list_uri_cb(struct repository_pool_index *rpi, void *arg, bool *done)
-{
-	const char *pkgidx;
-	uint64_t npkgs;
-
-	(void)arg;
-	(void)done;
-
-	prop_dictionary_get_cstring_nocopy(rpi->rpi_repod,
-	    "pkgindex-version", &pkgidx);
-	prop_dictionary_get_uint64(rpi->rpi_repod, "total-pkgs", &npkgs);
-	printf("[%u] %s (index %s, " "%" PRIu64 " packages)\n",
-	    rpi->rpi_index, rpi->rpi_uri, pkgidx, npkgs);
-
-	return 0;
-}
-
-static int
-repo_search_pkgs_cb(struct repository_pool_index *rpi, void *arg, bool *done)
-{
-	struct repo_search_data rsd;
-	(void)done;
-
-	rsd.pattern = arg;
-	rsd.pkgver_len = find_longest_pkgver(rpi->rpi_repod);
-
-	printf("From %s repository ...\n", rpi->rpi_uri);
-	(void)xbps_callback_array_iter_in_dict(rpi->rpi_repod,
-	    "packages", show_pkg_namedesc, &rsd);
-
-	return 0;
-}
-
 int
 main(int argc, char **argv)
 {

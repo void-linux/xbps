@@ -32,19 +32,25 @@
 
 #include <xbps_api.h>
 
+struct repo_search_data {
+	char *pattern;
+	size_t pkgver_len;
+};
+
 /* From index.c */
 int	repo_genindex(const char *);
+
+/* From find-files.c */
+int	repo_find_files_in_packages(const char *);
+
+/* From list.c */
+int	repo_pkg_list_cb(struct repository_pool_index *, void *, bool *);
+int	repo_list_uri_cb(struct repository_pool_index *, void *, bool *);
+int	repo_search_pkgs_cb(struct repository_pool_index *, void *, bool *);
 
 /* From show.c */
 int	show_pkg_info_from_repolist(const char *, const char *);
 int	show_pkg_deps_from_repolist(const char *);
 
-/* From find-files.c */
-int	repo_find_files_in_packages(const char *);
-
-struct repo_search_data {
-	char *pattern;
-	size_t pkgver_len;
-};
 
 #endif /* !_XBPS_REPO_DEFS_H_ */
