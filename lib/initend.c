@@ -162,6 +162,9 @@ xbps_init(struct xbps_handle *xh)
 	xbps_dbg_printf("fetch_timeout: %zu\n",
 	    xhp->fetch_timeout);
 
+	prop_dictionary_get_bool(confd, "syslog-enabled", &xhp->syslog_enabled);
+	xbps_dbg_printf("syslog logging: %d\n", xhp->syslog_enabled);
+
 	/*
 	 * Initialize regpkgdb dictionary.
 	 */

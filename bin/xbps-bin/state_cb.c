@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <syslog.h>
 #include <xbps_api.h>
 #include "defs.h"
 
@@ -37,6 +38,9 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	const char *version;
 
 	(void)cbdata;
+
+	if (xhp->syslog_enabled)
+		openlog("xbps-bin", LOG_CONS, LOG_USER);
 
 	switch (xscd->state) {
 	/* notifications */
@@ -100,18 +104,34 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_INSTALL_DONE:
 		printf("Installed `%s-%s' successfully.\n",
 		    xscd->pkgname, xscd->version);
+		if (xhp->syslog_enabled)
+			syslog(LOG_NOTICE, "Installed `%s-%s' successfully "
+			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    prop_string_cstring_nocopy(xhp->rootdir));
 		break;
 	case XBPS_STATE_UPDATE_DONE:
 		printf("Updated `%s' to `%s' successfully.\n",
 		    xscd->pkgname, xscd->version);
+		if (xhp->syslog_enabled)
+			syslog(LOG_NOTICE, "Updated `%s' to `%s' successfully "
+			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    prop_string_cstring_nocopy(xhp->rootdir));
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("Removed `%s-%s' successfully.\n",
 		    xscd->pkgname, xscd->version);
+		if (xhp->syslog_enabled)
+			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
+			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    prop_string_cstring_nocopy(xhp->rootdir));
 		break;
 	case XBPS_STATE_PURGE_DONE:
 		printf("Purged `%s-%s' successfully.\n",
 		     xscd->pkgname, xscd->version);
+		if (xhp->syslog_enabled)
+			syslog(LOG_NOTICE, "Purged `%s-%s' successfully "
+			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    prop_string_cstring_nocopy(xhp->rootdir));
 		break;
 	/* errors */
 	case XBPS_STATE_UNPACK_FAIL:
@@ -126,6 +146,8 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_REPOSYNC_FAIL:
 	case XBPS_STATE_CONFIG_FILE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
+		if (xhp->syslog_enabled)
+			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	case XBPS_STATE_REMOVE_FILE_FAIL:
 	case XBPS_STATE_REMOVE_FILE_HASH_FAIL:
@@ -135,6 +157,8 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 			return;
 
 		xbps_error_printf("%s\n", xscd->desc);
+		if (xhp->syslog_enabled)
+			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	default:
 		xbps_dbg_printf("unknown state %d\n", xscd->state);

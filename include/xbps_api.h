@@ -55,7 +55,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111203"
+#define XBPS_API_VERSION	"20111206"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -528,6 +528,14 @@ struct xbps_handle {
 	 * it will never will be found as orphan.
 	 */
 	bool install_reason_manual;
+	/**
+	 * @var syslog_enabled
+	 *
+	 * Set to true to make the client aware that some operations
+	 * shall be sent to the syslog daemon if the option has been
+	 * enabled in configuration file.
+	 */
+	bool syslog_enabled;
 };
 
 /**

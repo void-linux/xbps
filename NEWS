@@ -1,5 +1,10 @@
 xbps-0.11.0 (???):
 
+ * Support for syslog logging common operations, such as install, update,
+   remove and purge via LOG_NOTICE, and errors with LOG_ERR.
+   By default we enable this in configuration file `conf.plist', set the
+   boolean `syslog-enabled' key to false to disable.
+
  * xbps-repo(8): new target: pkg-list [index]. This target will list all
    packages from repository with index [index]. If optional argument
    [index] (decimal) not set, all repositories will be used.

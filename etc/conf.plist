@@ -23,5 +23,9 @@
 	<!-- Default timeout limit for connections, in seconds. -->
 	<key>fetch-timeout-connection</key>
 	<integer>30</integer>
+
+	<!-- Enable syslog messages, set the value to false to disable. -->
+	<key>syslog-enabled</key>
+	<true/>
 </dict>
 </plist>
