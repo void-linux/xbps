@@ -42,6 +42,24 @@
 static bool debug;
 static struct xbps_handle *xhp;
 
+static void
+get_cachedir(struct xbps_handle *xh)
+{
+	if (xh->cachedir[0] == '/')
+		/* full path */
+		xh->cachedir_priv = strdup(xh->cachedir);
+	else {
+		/* relative to rootdir */
+		if (strcmp(xh->rootdir, "/") == 0)
+			xh->cachedir_priv =
+			    xbps_xasprintf("/%s", xh->cachedir);
+		else
+			xh->cachedir_priv =
+			    xbps_xasprintf("%s/%s", xh->rootdir,
+			    xh->cachedir);
+	}
+}
+
 static int
 cb_validate_virtual(cfg_t *cfg, cfg_opt_t *opt)
 {
@@ -133,6 +151,9 @@ xbps_init(struct xbps_handle *xh)
 		else
 			xhp->cachedir = cfg_getstr(xhp->cfg, "cachedir");
 	}
+	get_cachedir(xhp);
+	xhp->cachedir = xhp->cachedir_priv;
+
 	if (xhp->cfg == NULL) {
 		xhp->syslog_enabled = true;
 		xhp->fetch_timeout = XBPS_FETCH_TIMEOUT;
@@ -179,6 +200,7 @@ xbps_end(struct xbps_handle *xh)
 	if (xh->cfg != NULL)
 		cfg_free(xh->cfg);
 
+	free(xh->cachedir_priv);
 	free(xh);
 	xh = NULL;
 	xhp = NULL;

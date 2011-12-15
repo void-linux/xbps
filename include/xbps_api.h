@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111215-1"
+#define XBPS_API_VERSION	"20111215-2"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -481,6 +481,10 @@ struct xbps_handle {
 	 * If NULL default value in \a XBPS_CACHE_PATH is used.
 	 */
 	const char *cachedir;
+	/**
+	 * @private
+	 */
+	char *cachedir_priv;
 	/**
 	 * @var confdir
 	 *
