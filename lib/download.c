@@ -111,12 +111,7 @@ xbps_fetch_file(const char *uri,
 	fetchLastErrCode = 0;
 
 	xhp = xbps_handle_get();
-
-	if (xhp->fetch_timeout != 0)
-		fetchTimeout = xhp->fetch_timeout;
-	else
-		fetchTimeout = 30; /* 30s if not set in configuration file. */
-
+	fetchTimeout = xhp->fetch_timeout;
 	/*
 	 * Get the filename specified in URI argument.
 	 */

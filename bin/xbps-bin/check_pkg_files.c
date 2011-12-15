@@ -72,8 +72,7 @@ check_pkg_files(prop_dictionary_t pkgd_regpkgdb,
 
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir), file);
+			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				return -1;
@@ -122,8 +121,7 @@ check_pkg_files(prop_dictionary_t pkgd_regpkgdb,
 
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir), file);
+			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (path == NULL) {
 				prop_object_iterator_release(iter);
 				return -1;

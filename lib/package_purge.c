@@ -188,16 +188,15 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	/*
 	 * Execute the purge action in REMOVE script (if found).
 	 */
-	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
+	if (chdir(xhp->rootdir) == -1) {
 		rv = errno;
 		xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
 		    rv, pkgname, version,
 		    "%s: [purge] failed to chdir to rootdir `%s': %s",
-		    pkgver, prop_string_cstring_nocopy(xhp->rootdir),
-		    strerror(rv));
+		    pkgver, xhp->rootdir, strerror(rv));
 		return rv;
 	}
-	buf = xbps_xasprintf(".%s/metadata/%s/REMOVE", XBPS_META_PATH, pkgname);
+	buf = xbps_xasprintf("%s/metadata/%s/REMOVE", XBPS_META_PATH, pkgname);
 	if (buf == NULL) {
 		rv = ENOMEM;
 		return rv;
@@ -221,7 +220,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	 * Remove metadata dir and unregister package.
 	 */
 	if ((rv = remove_pkg_metadata(pkgname, version, pkgver,
-	    prop_string_cstring_nocopy(xhp->rootdir))) != 0) {
+	    xhp->rootdir)) != 0) {
 		xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
 		    rv, pkgname, version,
 		    "%s: [purge] failed to remove metadata files: %s",

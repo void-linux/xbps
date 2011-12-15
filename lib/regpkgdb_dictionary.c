@@ -66,8 +66,7 @@ xbps_regpkgdb_dictionary_init(struct xbps_handle *xhp)
 	if (regpkgdb_initialized)
 		return 0;
 
-	plist = xbps_xasprintf("%s/%s/%s",
-	    prop_string_cstring_nocopy(xhp->rootdir),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return ENOMEM;

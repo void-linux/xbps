@@ -53,8 +53,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 	assert(prop_object_type(pkgrd) == PROP_TYPE_DICTIONARY);
 
 	xhp = xbps_handle_get();
-	plist = xbps_xasprintf("%s/%s/%s",
-	    prop_string_cstring_nocopy(xhp->rootdir),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL)
 		return ENOMEM;
@@ -172,8 +171,7 @@ xbps_unregister_pkg(const char *pkgname, const char *version)
 	xbps_set_cb_state(XBPS_STATE_UNREGISTER, 0, pkgname, version, NULL);
 
 	xhp = xbps_handle_get();
-	plist = xbps_xasprintf("%s/%s/%s",
-	    prop_string_cstring_nocopy(xhp->rootdir),
+	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (plist == NULL) {
 		rv = ENOMEM;

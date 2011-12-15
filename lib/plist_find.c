@@ -121,48 +121,45 @@ static const char *
 find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 {
 	const struct xbps_handle *xhp;
-	prop_object_iterator_t iter;
-	prop_object_t obj;
 	const char *vpkgver, *pkg = NULL;
 	char *vpkgname = NULL;
+	size_t i, j, cnt;
 
 	xhp = xbps_handle_get();
-	if (prop_object_type(xhp->virtualpkgs_array) != PROP_TYPE_ARRAY) {
-		xbps_dbg_printf("%s: invalid virtualpkgs_array "
-		    "type\n", __func__);
+	if (xhp->cfg == NULL)
+		return NULL;
+
+	if ((cnt = cfg_size(xhp->cfg, "virtual-package")) == 0) {
+		/* no virtual packages configured */
 		return NULL;
 	}
 
-	if ((iter = prop_array_iterator(xhp->virtualpkgs_array)) == NULL)
-		return NULL;
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (!prop_dictionary_get_cstring_nocopy(obj,
-		    "virtual-pkgver", &vpkgver))
-			continue;
-
-                if (bypattern) {
-			if (xbps_pkgpattern_match(vpkgver, vpkg)) {
-				prop_dictionary_get_cstring_nocopy(obj,
-				    "target-pkgpattern", &pkg);
-				break;
-			}
-		} else {
+	for (i = 0; i < cnt; i++) {
+		cfg_t *sec = cfg_getnsec(xhp->cfg, "virtual-package", i);
+		for (j = 0; j < cfg_size(sec, "targets"); j++) {
+			vpkgver = cfg_getnstr(sec, "targets", j);
 			vpkgname = xbps_pkg_name(vpkgver);
 			if (vpkgname == NULL)
 				break;
-
-			if (strcmp(vpkg, vpkgname) == 0) {
-				free(vpkgname);
-				prop_dictionary_get_cstring_nocopy(obj,
-				    "target-pkgpattern", &pkg);
-				break;
+			if (bypattern) {
+				if (!xbps_pkgpattern_match(vpkgver, vpkg)) {
+					free(vpkgname);
+					continue;
+				}
+			} else {
+				if (strcmp(vpkg, vpkgname)) {
+					free(vpkgname);
+					continue;
+				}
 			}
+			/* virtual package matched in conffile */
+			pkg = cfg_title(sec);
+			xbps_dbg_printf("matched vpkg in conf `%s' for %s\n",
+			    pkg, vpkg);
 			free(vpkgname);
+			break;
 		}
 	}
-	prop_object_iterator_release(iter);
-
 	return pkg;
 }
 
@@ -171,31 +168,16 @@ find_virtualpkg_user_in_array(prop_array_t array,
 			      const char *str,
 			      bool bypattern)
 {
-	prop_object_t obj = NULL;
-	prop_object_iterator_t iter;
-	const char *virtualpkg;
+	const char *vpkgname;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(str != NULL);
 
-	virtualpkg = find_virtualpkg_user_in_conf(str, bypattern);
-	if (virtualpkg == NULL)
+	vpkgname = find_virtualpkg_user_in_conf(str, bypattern);
+	if (vpkgname == NULL)
 		return NULL;
 
-	iter = prop_array_iterator(array);
-	if (iter == NULL)
-		return NULL;
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		/*
-		 * force pattern match because virtualpkg is
-		 * always a pkgpattern.
-		 */
-		if (xbps_match_virtual_pkg_in_dict(obj, virtualpkg, true))
-			break;
-	}
-	prop_object_iterator_release(iter);
-	return obj;
+	return find_pkg_in_array(array, vpkgname, false, false);
 }
 
 static prop_dictionary_t

@@ -56,16 +56,16 @@ main(int argc, char **argv)
 	struct xbps_handle *xhp;
 	struct xferstat xfer;
 	prop_dictionary_t pkgd;
-	const char *rootdir, *cachedir, *confdir, *option;
+	const char *rootdir, *cachedir, *conffile, *option;
 	int c, rv = 0;
 	bool debug = false;
 
-	rootdir = cachedir = confdir = option = NULL;
+	rootdir = cachedir = conffile = option = NULL;
 
 	while ((c = getopt(argc, argv, "C:c:do:r:V")) != -1) {
 		switch (c) {
 		case 'C':
-			confdir = optarg;
+			conffile = optarg;
 			break;
 		case 'c':
 			cachedir = optarg;
@@ -107,16 +107,13 @@ main(int argc, char **argv)
 	xhp->state_cb = state_cb;
 	xhp->fetch_cb = fetch_file_progress_cb;
 	xhp->fetch_cb_data = &xfer;
-	if (rootdir)
-		xhp->rootdir = prop_string_create_cstring(rootdir);
-	if (cachedir)
-		xhp->cachedir = prop_string_create_cstring(cachedir);
-	if (confdir)
-		xhp->confdir = prop_string_create_cstring(confdir);
+	xhp->rootdir = rootdir;
+	xhp->cachedir = cachedir;
+	xhp->conffile = conffile;
 
 	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-repo: couldn't initialize library: %s\n",
-		    strerror(errno));
+		    strerror(rv));
 		exit(EXIT_FAILURE);
 	}
 
@@ -238,7 +235,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(xhp);
 
-		rv = xbps_repository_pool_sync();
+		rv = xbps_repository_pool_sync(xhp);
 		if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");

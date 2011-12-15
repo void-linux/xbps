@@ -33,6 +33,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <prop/proplib.h>
+#include <confuse.h>
 
 #ifdef  __cplusplus
 # define __BEGIN_DECLS  extern "C" {
@@ -55,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111206"
+#define XBPS_API_VERSION	"20111215"
 #define XBPS_VERSION		"0.11.0"
 
 /**
@@ -70,13 +71,13 @@
  * @def XBPS_META_PATH
  * Default root PATH to store metadata info.
  */
-#define XBPS_META_PATH		"/var/db/xbps"
+#define XBPS_META_PATH		"var/db/xbps"
 
 /** 
  * @def XBPS_CACHE_PATH
  * Default cache PATH to store downloaded binpkgs.
  */
-#define XBPS_CACHE_PATH		"/var/cache/xbps"
+#define XBPS_CACHE_PATH		"var/cache/xbps"
 
 /** 
  * @def XBPS_REGPKGDB
@@ -106,29 +107,16 @@
  * @def XBPS_SYSCONF_PATH
  * Default configuration PATH to find XBPS_CONF_PLIST.
  */
-#define XBPS_SYSDIR		"/xbps"
+#define XBPS_SYSDIR            "/xbps"
 #ifndef XBPS_SYSCONF_PATH
-#define XBPS_SYSCONF_PATH	"/etc" XBPS_SYSDIR
+#define XBPS_SYSCONF_PATH      "/etc" XBPS_SYSDIR
 #endif
 
 /**
  * @def XBPS_CONF_PLIST
  * Filename for the XBPS plist configuration file.
  */
-#define XBPS_CONF_PLIST		"conf.plist"
-
-/**
- * @def XBPS_CONF_REPOS_PLIST
- * Filename for the XBPS repositories plist configuration file.
- */
-#define XBPS_CONF_REPOS_PLIST	"repositories.plist"
-
-/**
- * @def XBPS_VIRTUALPKGD_PATH
- * Default directory to load virtualpkg plist files, by default set
- * to XBPS_SYSCONF_PATH + "/" + XBPS_VIRTUALPKGD_PATH.
- */
-#define XBPS_VIRTUALPKGD_PATH	"virtualpkg.d.wants"
+#define XBPS_CONF_DEF		XBPS_SYSCONF_PATH "/xbps.conf"
 
 /**
  * @def XBPS_FLAG_VERBOSE
@@ -152,6 +140,24 @@
  * Must be set through the xbps_init::flags member.
  */
 #define XBPS_FLAG_FORCE_REMOVE_FILES	0x00000004
+
+/**
+ * @def XBPS_FETCH_CACHECONN
+ * Default (global) limit of cached connections used in libfetch.
+ */
+#define XBPS_FETCH_CACHECONN            6
+
+/**
+ * @def XBPS_FETCH_CACHECONN_HOST
+ * Default (per host) limit of cached connections used in libfetch.
+ */
+#define XBPS_FETCH_CACHECONN_HOST       2
+
+/**
+ * @def XBPS_FETCH_TIMEOUT
+ * Default timeout limit (in seconds) to wait for stalled connections.
+ */
+#define XBPS_FETCH_TIMEOUT		30
 
 __BEGIN_DECLS
 
@@ -411,14 +417,7 @@ struct xbps_handle {
 	/**
 	 * @private
 	 */
-	prop_array_t virtualpkgs_array;
-	/**
-	 * @private repos_array
-	 *
-	 * Internalized proplib array from XBPS_CONF_REPOS_PLIST file.
-	 * Used internally by xbps_init(), do not use it.
-	 */
-	prop_array_t repos_array;
+	cfg_t *cfg;
 	/**
 	 * @var regpkgdb_dictionary.
 	 *
@@ -474,20 +473,20 @@ struct xbps_handle {
 	 * Root directory for all operations in XBPS. If NULL,
 	 * by default it's set to /.
 	 */
-	prop_string_t rootdir;
+	const char *rootdir;
 	/**
 	 * @var cachedir
 	 *
 	 * Cache directory to store downloaded binary packages.
 	 * If NULL default value in \a XBPS_CACHE_PATH is used.
 	 */
-	prop_string_t cachedir;
+	const char *cachedir;
 	/**
 	 * @var confdir
 	 *
 	 * Full path to the XBPS_SYSCONF_PATH directory.
 	 */
-	prop_string_t confdir;
+	const char *conffile;
 	/**
 	 * @private fetch_timeout
 	 *
@@ -1292,7 +1291,7 @@ struct repository_pool_index {
 	 * 
 	 * URI string associated with repository.
 	 */
-	char *rpi_uri;
+	const char *rpi_uri;
 	/**
 	 * @var rpi_index
 	 *
@@ -1308,7 +1307,7 @@ struct repository_pool_index {
  * @return 0 on success, ENOTSUP if no repositories were found in
  * the configuration file.
  */
-int xbps_repository_pool_sync(void);
+int xbps_repository_pool_sync(const struct xbps_handle *xhp);
 
 /**
  * Iterates over the repository pool and executes the \a fn function

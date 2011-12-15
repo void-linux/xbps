@@ -1,9 +1,13 @@
 xbps-0.11.0 (???):
 
+ * New shared configuration file via libconfuse that replaces the
+   plist configuration files: xbps.conf. That means that libxbps
+   now requires confuse >= 2.7 available at
+   http://www.nongnu.org/confuse/.
+
  * Support for syslog logging common operations, such as install, update,
    remove and purge via LOG_NOTICE, and errors with LOG_ERR.
-   By default we enable this in configuration file `conf.plist', set the
-   boolean `syslog-enabled' key to false to disable.
+   By default it's always enabled, can be disabled thru the conf file.
 
  * xbps-repo(8): new target: pkg-list [index]. This target will list all
    packages from repository with index [index]. If optional argument

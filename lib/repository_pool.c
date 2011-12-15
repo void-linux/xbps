@@ -74,10 +74,8 @@ check_repo_arch(const char *uri)
 }
 
 int HIDDEN
-xbps_repository_pool_init(void)
+xbps_repository_pool_init(const struct xbps_handle *xhp)
 {
-	prop_string_t obj;
-	struct xbps_handle *xhp;
 	struct repository_pool *rpool;
 	size_t i, ntotal = 0, nmissing = 0, repocnt = 0;
 	const char *repouri;
@@ -87,17 +85,11 @@ xbps_repository_pool_init(void)
 
 	if (repolist_initialized)
 		return 0;
-
-	xhp = xbps_handle_get();
-	if (prop_object_type(xhp->repos_array) != PROP_TYPE_ARRAY)
+	else if (xhp->cfg == NULL)
 		return ENOTSUP;
 
-	if (prop_array_count(xhp->repos_array) == 0)
-		return ENOTSUP;
-
-	for (i = 0; i < prop_array_count(xhp->repos_array); i++) {
-		obj = prop_array_get(xhp->repos_array, i);
-		repouri = prop_string_cstring_nocopy(obj);
+	for (i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
+		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
 		/*
 		 * Check that we do not register duplicate repositories.
 		 */
@@ -156,19 +148,11 @@ xbps_repository_pool_init(void)
 			goto out;
 		}
 
-		rpool->rpi->rpi_uri = prop_string_cstring(obj);
-		if (rpool->rpi->rpi_uri == NULL) {
-			rv = errno;
-			free(rpool->rpi);
-			free(rpool);
-			free(plist);
-			goto out;
-		}
+		rpool->rpi->rpi_uri = repouri;
 		rpool->rpi->rpi_repod =
 		    prop_dictionary_internalize_from_zfile(plist);
 		if (rpool->rpi->rpi_repod == NULL) {
 			rv = errno;
-			free(rpool->rpi->rpi_uri);
 			free(rpool->rpi);
 			free(rpool);
 			free(plist);
@@ -190,7 +174,6 @@ xbps_repository_pool_init(void)
 	}
 
 	repolist_initialized = true;
-	prop_object_release(xhp->repos_array);
 	xbps_dbg_printf("[rpool] initialized ok.\n");
 out:
 	if (rv != 0) 
@@ -213,7 +196,6 @@ xbps_repository_pool_release(void)
 		xbps_dbg_printf("[rpool] unregistered repository '%s'\n",
 		    rpool->rpi->rpi_uri);
 		prop_object_release(rpool->rpi->rpi_repod);
-		free(rpool->rpi->rpi_uri);
 		free(rpool->rpi);
 		free(rpool);
 		rpool = NULL;
@@ -223,22 +205,17 @@ xbps_repository_pool_release(void)
 }
 
 int
-xbps_repository_pool_sync(void)
+xbps_repository_pool_sync(const struct xbps_handle *xhp)
 {
-	const struct xbps_handle *xhp;
 	const char *repouri;
 	size_t i;
 	int rv;
 
-	xhp = xbps_handle_get();
-	if (xhp->repos_array == NULL)
+	if (xhp->cfg == NULL)
 		return ENOTSUP;
 
-	if (prop_array_count(xhp->repos_array) == 0)
-		return ENOTSUP;
-
-	for (i = 0; i < prop_array_count(xhp->repos_array); i++) {
-		prop_array_get_cstring_nocopy(xhp->repos_array, i, &repouri);
+	for (i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
+		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
 		/*
 		 * Check if repository doesn't match our architecture.
 		 */
@@ -266,6 +243,7 @@ xbps_repository_pool_foreach(
 		int (*fn)(struct repository_pool_index *, void *, bool *),
 		void *arg)
 {
+	const struct xbps_handle *xhp = xbps_handle_get();
 	struct repository_pool *rpool, *rpool_new;
 	int rv = 0;
 	bool done = false;
@@ -274,7 +252,7 @@ xbps_repository_pool_foreach(
 	/*
 	 * Initialize repository pool.
 	 */
-	if ((rv = xbps_repository_pool_init()) != 0) {
+	if ((rv = xbps_repository_pool_init(xhp)) != 0) {
 		if (rv == ENOTSUP) {
 			xbps_dbg_printf("[rpool] empty repository list.\n");
 		} else if (rv != ENOENT && rv != ENOTSUP) {

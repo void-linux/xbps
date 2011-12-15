@@ -66,12 +66,12 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
-	const char *rootdir, *cachedir, *confdir, *option;
+	const char *rootdir, *cachedir, *conffile, *option;
 	int i, c, flags, rv;
 	bool yes, purge, debug, reqby_force, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
 
-	rootdir = cachedir = confdir = option = NULL;
+	rootdir = cachedir = conffile = option = NULL;
 	flags = rv = 0;
 	reqby_force = yes = purge = force_rm_with_deps = false;
 	recursive_rm = debug = false;
@@ -83,7 +83,7 @@ main(int argc, char **argv)
 			install_auto = true;
 			break;
 		case 'C':
-			confdir = optarg;
+			conffile = optarg;
 			break;
 		case 'c':
 			cachedir = optarg;
@@ -155,7 +155,7 @@ main(int argc, char **argv)
 	sigaction(SIGQUIT, &sa, NULL);
 
 	/*
-	 * Initialize stuff for libxbps.
+	 * Initialize libxbps.
 	 */
 	xhp = xbps_handle_alloc();
 	if (xhp == NULL) {
@@ -166,25 +166,20 @@ main(int argc, char **argv)
 	xhp->state_cb = state_cb;
 	xhp->fetch_cb = fetch_file_progress_cb;
 	xhp->fetch_cb_data = &xfer;
+	xhp->rootdir = rootdir;
+	xhp->cachedir = cachedir;
+	xhp->conffile = conffile;
+	xhp->flags = flags;
+	xhp->install_reason_manual = install_manual;
+	xhp->install_reason_auto = install_auto;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xhp->unpack_cb = unpack_progress_cb_verbose;
 	else
 		xhp->unpack_cb = unpack_progress_cb;
 
-	if (rootdir)
-		xhp->rootdir = prop_string_create_cstring(rootdir);
-	if (cachedir)
-		xhp->cachedir = prop_string_create_cstring(cachedir);
-	if (confdir)
-		xhp->confdir = prop_string_create_cstring(confdir);
-
-	xhp->flags = flags;
-	xhp->install_reason_manual = install_manual;
-	xhp->install_reason_auto = install_auto;
-
 	if ((rv = xbps_init(xhp)) != 0) {
 		xbps_error_printf("xbps-bin: couldn't initialize library: %s\n",
-		    strerror(errno));
+		    strerror(rv));
 		exit(EXIT_FAILURE);
 	}
 

@@ -213,12 +213,12 @@ get_pkg_index_remote_plist(const char *uri)
 	if (uri_fixed == NULL)
 		return NULL;
 
-	if (prop_string_equals_cstring(xhp->rootdir, "/")) {
+	if (strcmp(xhp->rootdir, "/") == 0) {
 		repodir = xbps_xasprintf("%s/%s/%s",
 		    XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
 	} else {
 		repodir = xbps_xasprintf("%s/%s/%s/%s",
-		    prop_string_cstring_nocopy(xhp->rootdir),
+		    xhp->rootdir,
 		    XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
 	}
 	free(uri_fixed);
@@ -254,8 +254,7 @@ xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 	/*
 	 * First check if binpkg is available in cachedir.
 	 */
-	lbinpkg = xbps_xasprintf("%s/%s",
-	    prop_string_cstring_nocopy(xhp->cachedir), filen);
+	lbinpkg = xbps_xasprintf("%s/%s", xhp->cachedir, filen);
 	if (lbinpkg == NULL)
 		return NULL;
 

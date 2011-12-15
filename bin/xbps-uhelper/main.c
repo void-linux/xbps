@@ -150,7 +150,7 @@ main(int argc, char **argv)
 	    (strcasecmp(argv[0], "version") == 0) ||
 	    (strcasecmp(argv[0], "fetch") == 0)) {
 		/*
-		* Initialize the callbacks and debug in libxbps.
+		* Initialize libxbps.
 		*/
 		xhp = xbps_handle_alloc();
 		if (xhp == NULL) {
@@ -160,14 +160,12 @@ main(int argc, char **argv)
 		xhp->debug = debug;
 		xhp->fetch_cb = fetch_file_progress_cb;
 		xhp->fetch_cb_data = &xfer;
-		if (rootdir)
-			xhp->rootdir = prop_string_create_cstring(rootdir);
-		if (confdir)
-			xhp->confdir = prop_string_create_cstring(confdir);
+		xhp->rootdir = rootdir;
+		xhp->conffile = confdir;
 
 		if ((rv = xbps_init(xhp)) != 0) {
 			xbps_error_printf("xbps-uhelper: failed to "
-			    "initialize libxbps.\n");
+			    "initialize libxbps: %s.\n", strerror(rv));
 			exit(EXIT_FAILURE);
 		}
 

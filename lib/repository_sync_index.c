@@ -117,8 +117,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	/*
 	 * Create metadir if necessary.
 	 */
-	metadir = xbps_xasprintf("%s/%s",
-	    prop_string_cstring_nocopy(xhp->rootdir), XBPS_META_PATH);
+	metadir = xbps_xasprintf("%s/%s", xhp->rootdir, XBPS_META_PATH);
 	if (metadir == NULL) {
 		rv = -1;
 		goto out;
@@ -151,7 +150,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	 * Full path to repository directory to store the index.plist file.
 	 */
 	lrepodir = xbps_xasprintf("%s/%s/%s",
-	    prop_string_cstring_nocopy(xhp->rootdir), XBPS_META_PATH, uri_fixedp);
+	    xhp->rootdir, XBPS_META_PATH, uri_fixedp);
 	if (lrepodir == NULL) {
 		rv = -1;
 		goto out;

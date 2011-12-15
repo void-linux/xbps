@@ -107,7 +107,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 		if (xhp->syslog_enabled)
 			syslog(LOG_NOTICE, "Installed `%s-%s' successfully "
 			    "(rootdir: %s).", xscd->pkgname, xscd->version,
-			    prop_string_cstring_nocopy(xhp->rootdir));
+			    xhp->rootdir);
 		break;
 	case XBPS_STATE_UPDATE_DONE:
 		printf("Updated `%s' to `%s' successfully.\n",
@@ -115,7 +115,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 		if (xhp->syslog_enabled)
 			syslog(LOG_NOTICE, "Updated `%s' to `%s' successfully "
 			    "(rootdir: %s).", xscd->pkgname, xscd->version,
-			    prop_string_cstring_nocopy(xhp->rootdir));
+			    xhp->rootdir);
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("Removed `%s-%s' successfully.\n",
@@ -123,7 +123,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 		if (xhp->syslog_enabled)
 			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
 			    "(rootdir: %s).", xscd->pkgname, xscd->version,
-			    prop_string_cstring_nocopy(xhp->rootdir));
+			    xhp->rootdir);
 		break;
 	case XBPS_STATE_PURGE_DONE:
 		printf("Purged `%s-%s' successfully.\n",
@@ -131,7 +131,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 		if (xhp->syslog_enabled)
 			syslog(LOG_NOTICE, "Purged `%s-%s' successfully "
 			    "(rootdir: %s).", xscd->pkgname, xscd->version,
-			    prop_string_cstring_nocopy(xhp->rootdir));
+			    xhp->rootdir);
 		break;
 	/* errors */
 	case XBPS_STATE_UNPACK_FAIL:

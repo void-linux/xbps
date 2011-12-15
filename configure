@@ -531,6 +531,21 @@ else
 fi
 
 #
+# confuse >= 2.7 with pkg-config support is required.
+#
+printf "Checking for confuse via pkg-config ..."
+if ! $PKGCONFIG_BIN --exists libconfuse; then
+	echo "libconfuse.pc not found, exiting."
+	exit 1
+else
+	echo "found version $($PKGCONFIG_BIN --modversion libconfuse)."
+	echo "CFLAGS += $($PKGCONFIG_BIN --cflags libconfuse)" >>$CONFIG_MK
+	echo "LDFLAGS += $($PKGCONFIG_BIN --libs libconfuse)" >>$CONFIG_MK
+	echo "STATIC_LIBS += $($PKGCONFIG_BIN --libs --static libconfuse)" \
+		>>$CONFIG_MK
+fi
+
+#
 # OpenSSL libssl with pkg-config support is required.
 #
 printf "Checking for OpenSSL via pkg-config ... "

@@ -224,8 +224,7 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 	xhp = xbps_handle_get();
 
 	savedpkgname = pkgname;
-	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-	    prop_string_cstring_nocopy(xhp->rootdir),
+	plistf = xbps_xasprintf("%s/%s/metadata/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, savedpkgname, plist);
 	if (plistf == NULL)
 		return NULL;
@@ -237,7 +236,7 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgname", &savedpkgname);
 			plistf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir),
+			    xhp->rootdir,
 			    XBPS_META_PATH, savedpkgname, plist);
 			prop_object_release(pkgd);
 			if (plistf == NULL)

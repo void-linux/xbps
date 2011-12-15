@@ -179,8 +179,7 @@ xbps_set_pkg_state_installed(const char *pkgname,
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
 
-	metadir = xbps_xasprintf("%s/%s",
-	    prop_string_cstring_nocopy(xhp->rootdir), XBPS_META_PATH);
+	metadir = xbps_xasprintf("%s/%s", xhp->rootdir, XBPS_META_PATH);
 	if (metadir == NULL)
 		return ENOMEM;
 	plist = xbps_xasprintf("%s/%s", metadir, XBPS_REGPKGDB);

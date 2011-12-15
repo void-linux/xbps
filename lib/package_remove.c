@@ -110,8 +110,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-		path = xbps_xasprintf("%s/%s",
-		    prop_string_cstring_nocopy(xhp->rootdir), file);
+		path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 		if (path == NULL) {
 			rv = ENOMEM;
 			break;
@@ -224,13 +223,12 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		return rv;
 	}
 
-	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
+	if (chdir(xhp->rootdir) == -1) {
 		rv = errno;
 		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		   "%s: [remove] failed to chdir to rootdir `%s': %s",
-		    pkgver, prop_string_cstring_nocopy(xhp->rootdir),
-		    strerror(rv));
+		    pkgver, xhp->rootdir, strerror(rv));
 		free(buf);
 		free(pkgver);
 		return rv;

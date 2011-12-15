@@ -128,12 +128,11 @@ xbps_configure_pkg(const char *pkgname,
 		return ENOMEM;
 	}
 
-	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
+	if (chdir(xhp->rootdir) == -1) {
 		xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, errno,
 		    pkgname, lver,
 		    "%s: [configure] failed to chdir to rootdir `%s': %s",
-		    pkgver, prop_string_cstring_nocopy(xhp->rootdir),
-		    strerror(errno));
+		    pkgver, xhp->rootdir, strerror(errno));
 		free(buf);
 		free(pkgver);
 		return EINVAL;

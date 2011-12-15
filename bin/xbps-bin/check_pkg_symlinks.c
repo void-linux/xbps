@@ -76,8 +76,7 @@ check_pkg_symlinks(prop_dictionary_t pkgd_regpkgdb,
 				    "empty target object!\n", pkgname, file);
 				continue;
 			}
-			path = xbps_xasprintf("%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir), file);
+			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (path == NULL)
 				return -1;
 
@@ -90,9 +89,9 @@ check_pkg_symlinks(prop_dictionary_t pkgd_regpkgdb,
 			}
 
 			free(path);
-			if (!prop_string_equals_cstring(xhp->rootdir, "/") &&
-			    strstr(buf, prop_string_cstring_nocopy(xhp->rootdir)))
-				path = buf + prop_string_size(xhp->rootdir);
+			if (strcmp(xhp->rootdir, "/") &&
+			    strstr(buf, xhp->rootdir))
+				path = buf + strlen(xhp->rootdir);
 			else
 				path = buf;
 

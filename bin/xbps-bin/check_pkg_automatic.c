@@ -73,8 +73,7 @@ check_pkg_autoinstall(prop_dictionary_t pkgd_regpkgdb,
 		reqby = prop_dictionary_get(pkgd_regpkgdb, "requiredby");
 		if (((prop_object_type(reqby) == PROP_TYPE_ARRAY)) &&
 		    ((prop_array_count(reqby) > 0) && !autoinst)) {
-		        path = xbps_xasprintf("%s/%s/%s",
-			    prop_string_cstring_nocopy(xhp->rootdir),
+		        path = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 			    XBPS_META_PATH, XBPS_REGPKGDB);
 			assert(path != NULL);
 

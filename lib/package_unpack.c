@@ -96,7 +96,7 @@ extract_metafile(struct archive *ar,
 		return ENOMEM;
 	version = xbps_pkg_version(pkgver);
 
-	buf = xbps_xasprintf(".%s/metadata/%s/%s",
+	buf = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, file);
 	if (buf == NULL) {
 		free(pkgname);
@@ -133,7 +133,7 @@ remove_metafile(const char *file, const char *pkgver)
 		return ENOMEM;
 	version = xbps_pkg_version(pkgver);
 
-	buf = xbps_xasprintf(".%s/metadata/%s/%s",
+	buf = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, file);
 	if (buf == NULL) {
 		free(pkgname);
@@ -193,12 +193,11 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		xucd->entry_total_count = 0;
 	}
 
-	if (chdir(prop_string_cstring_nocopy(xhp->rootdir)) == -1) {
+	if (chdir(xhp->rootdir) == -1) {
 		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
 		    errno, pkgname, version,
 		    "%s: [unpack] failed to chdir to rootdir `%s': %s",
-		    pkgver, prop_string_cstring_nocopy(xhp->rootdir),
-		    strerror(errno));
+		    pkgver, xhp->rootdir, strerror(errno));
 		rv = errno;
 		goto out;
 	}
@@ -245,7 +244,7 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 			 * Extract the INSTALL script first to execute
 			 * the pre install target.
 			 */
-			buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
+			buf = xbps_xasprintf("%s/metadata/%s/INSTALL",
 			    XBPS_META_PATH, pkgname);
 			if (buf == NULL) {
 				rv = ENOMEM;
@@ -469,7 +468,7 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	 * On pkgs that set the preserve keyword or while installing
 	 * new packages, do not check for obsolete files.
 	 */
-	pkgfilesd = xbps_xasprintf(".%s/metadata/%s/%s",
+	pkgfilesd = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
 	if (pkgfilesd == NULL) {
 		rv = ENOMEM;
@@ -484,12 +483,11 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	if (prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY) {
 		rv = xbps_remove_obsoletes(pkgname, version,
 		    pkgver, old_filesd, filesd);
+		prop_object_release(old_filesd);
 		if (rv != 0) {
-			prop_object_release(old_filesd);
 			rv = errno;
 			goto out;
 		}
-		prop_object_release(old_filesd);
 	} else if (errno && errno != ENOENT) {
 		rv = errno;
 		goto out;
@@ -498,7 +496,7 @@ out1:
 	/*
 	 * Create pkg metadata directory.
 	 */
-	buf = xbps_xasprintf(".%s/metadata/%s", XBPS_META_PATH, pkgname);
+	buf = xbps_xasprintf("%s/metadata/%s", XBPS_META_PATH, pkgname);
 	if (buf == NULL) {
 		rv = ENOMEM;
 		goto out;

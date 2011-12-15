@@ -6,6 +6,7 @@ To build this you'll need:
   - zlib (development package with static libs)
   - openssl (development package with static libs)
   - libarchive >= 2.8.0 (development package with static libs)
+  - confuse >= 2.7 (development package with static libs)
 
 Optionally to build the API documentation:
 

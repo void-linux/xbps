@@ -56,8 +56,7 @@ write_pkgd_to_regpkgdb(prop_dictionary_t pkgd,
 		    "packages array: %s", pkgn, strerror(errno));
 		return -1;
 	}
-	path = xbps_xasprintf("%s/%s/%s",
-	    prop_string_cstring_nocopy(xhp->rootdir),
+	path = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
 	    XBPS_META_PATH, XBPS_REGPKGDB);
 	if (path == NULL)
 		return -1;

@@ -59,20 +59,6 @@
 #define HIDDEN
 #endif
 
-/**
- * @def XBPS_FETCH_CACHECONN
- *
- * Default (global) limit of cached connections used in libfetch.
- */
-#define XBPS_FETCH_CACHECONN            6
-
-/**
- * @def XBPS_FETCH_CACHECONN_HOST
- *
- * Default (per host) limit of cached connections used in libfetch.
- */
-#define XBPS_FETCH_CACHECONN_HOST       2
-
 __BEGIN_DECLS
 
 /**
@@ -92,7 +78,7 @@ void HIDDEN xbps_regpkgdb_dictionary_release(void);
  * @private
  * From lib/repository_pool.c
  */
-int HIDDEN xbps_repository_pool_init(void);
+int HIDDEN xbps_repository_pool_init(const struct xbps_handle *);
 void HIDDEN xbps_repository_pool_release(void);
 
 /**

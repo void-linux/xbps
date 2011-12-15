@@ -446,7 +446,7 @@ main(int argc, char **argv)
 	FILE *f = NULL;
 	char *outfile = NULL;
 	const char *conf_file = NULL, *rootdir = NULL;
-	int c;
+	int c, rv;
 	bool revdeps = false;
 
 	while ((c = getopt(argc, argv, "c:gRr:o:")) != -1) {
@@ -487,10 +487,9 @@ main(int argc, char **argv)
 	xhp = xbps_handle_alloc();
 	if (xhp == NULL)
 		die("failed to allocate resources");
-	if (rootdir)
-		xhp->rootdir = prop_string_create_cstring(rootdir);
-	if (xbps_init(xhp))
-		die("failed to initialize libxbps");
+	xhp->rootdir = rootdir;
+	if ((rv = xbps_init(xhp)) != 0)
+		die("failed to initialize libxbps: %s", strerror(rv));
 
 	/*
 	 * Output file will be <pkgname>.dot if not specified.
