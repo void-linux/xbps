@@ -240,7 +240,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	if (access(buf, X_OK) == 0) {
 		rmfile_exists = true;
 		if (xbps_file_exec(buf, "pre", pkgname, version,
-		    update ? "yes" : "no", NULL) != 0) {
+		    update ? "yes" : "no", xhp->conffile, NULL) != 0) {
 			xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
 			    errno, pkgname, version,
 			    "%s: [remove] REMOVE script failed to "
@@ -307,7 +307,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	 * updating the package.
 	 */
 	if (rmfile_exists &&
-	    (xbps_file_exec(buf, "post", pkgname, version, "no", NULL) != 0)) {
+	    (xbps_file_exec(buf, "post", pkgname, version, "no",
+	     xhp->conffile, NULL) != 0)) {
 		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
 		    errno, pkgname, version,
 		    "%s: [remove] REMOVE script failed to execute "

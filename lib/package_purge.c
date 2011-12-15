@@ -202,7 +202,8 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 		return rv;
 	}
 	if (access(buf, X_OK) == 0) {
-		rv = xbps_file_exec(buf, "purge", pkgname, version, "no", NULL);
+		rv = xbps_file_exec(buf, "purge", pkgname, version,
+		    "no", xhp->conffile, NULL);
 		if (rv != 0) {
 			free(buf);
 			if (errno && errno != ENOENT) {

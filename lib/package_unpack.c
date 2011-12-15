@@ -257,7 +257,8 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 				goto out;
 			}
 			rv = xbps_file_exec(buf, "pre",
-			     pkgname, version, update ? "yes" : "no", NULL);
+			     pkgname, version, update ? "yes" : "no",
+			     xhp->conffile, NULL);
 			free(buf);
 			if (rv != 0) {
 				xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,

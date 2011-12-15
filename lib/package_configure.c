@@ -140,7 +140,8 @@ xbps_configure_pkg(const char *pkgname,
 
 	if (access(buf, X_OK) == 0) {
 		if (xbps_file_exec(buf, "post",
-		    pkgname, lver, update ? "yes" : "no", NULL) != 0) {
+		    pkgname, lver, update ? "yes" : "no",
+		    xhp->conffile, NULL) != 0) {
 			xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, errno,
 			    pkgname, lver,
 			    "%s: [configure] INSTALL script failed to execute "
