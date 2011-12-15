@@ -62,24 +62,25 @@ int
 xbps_init(struct xbps_handle *xh)
 {
 	cfg_opt_t vpkg_opts[] = {
-		CFG_STR_LIST((char *)"targets", NULL, CFGF_NONE),
+		CFG_STR_LIST(__UNCONST("targets"), NULL, CFGF_NONE),
 		CFG_END()
 	};
 	cfg_opt_t opts[] = {
 		/* Defaults if not set in configuration file */
-		CFG_STR((char *)"rootdir", (char *)"/", CFGF_NONE),
-		CFG_STR((char *)"cachedir", (char *)XBPS_CACHE_PATH, CFGF_NONE),
-		CFG_INT((char *)"fetch-cache-connections",
+		CFG_STR(__UNCONST("rootdir"), __UNCONST("/"), CFGF_NONE),
+		CFG_STR(__UNCONST("cachedir"),
+		    __UNCONST(XBPS_CACHE_PATH), CFGF_NONE),
+		CFG_INT(__UNCONST("fetch-cache-connections"),
 		    XBPS_FETCH_CACHECONN, CFGF_NONE),
-		CFG_INT((char *)"fetch-cache-connections-per-host",
+		CFG_INT(__UNCONST("fetch-cache-connections-per-host"),
 		    XBPS_FETCH_CACHECONN_HOST, CFGF_NONE),
-		CFG_INT((char *)"fetch-timeout-connection",
+		CFG_INT(__UNCONST("fetch-timeout-connection"),
 		    XBPS_FETCH_TIMEOUT, CFGF_NONE),
-		CFG_BOOL((char *)"syslog", true, CFGF_NONE),
-		CFG_STR_LIST((char *)"repositories", NULL, CFGF_MULTI),
-		CFG_SEC((char *)"virtual-package",
+		CFG_BOOL(__UNCONST("syslog"), true, CFGF_NONE),
+		CFG_STR_LIST(__UNCONST("repositories"), NULL, CFGF_MULTI),
+		CFG_SEC(__UNCONST("virtual-package"),
 		    vpkg_opts, CFGF_MULTI|CFGF_TITLE),
-		CFG_FUNC((char *)"include", &cfg_include),
+		CFG_FUNC(__UNCONST("include"), &cfg_include),
 		CFG_END()
 	};
 	int rv, cc, cch;
