@@ -121,7 +121,7 @@ xbps_configure_pkg(const char *pkgname,
 
 	xbps_set_cb_state(XBPS_STATE_CONFIGURE, 0, pkgname, lver, NULL);
 
-	buf = xbps_xasprintf(".%s/metadata/%s/INSTALL",
+	buf = xbps_xasprintf("%s/metadata/%s/INSTALL",
 	    XBPS_META_PATH, pkgname);
 	if (buf == NULL) {
 		free(pkgver);
