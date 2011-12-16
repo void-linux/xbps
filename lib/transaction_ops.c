@@ -201,7 +201,7 @@ xbps_transaction_update_packages(void)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		if ((rv = xbps_transaction_update_pkg(pkgname)) != 0) {
-			if (rv == ENOENT || rv == EEXIST) {
+			if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
 				/*
 				 * missing pkg or installed version is
 				 * greater than or equal than pkg
