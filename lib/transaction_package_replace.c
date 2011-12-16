@@ -121,7 +121,8 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 			 * If new package is providing a virtual package to the
 			 * package that we want to replace we should respect
 			 * its requiredby and automatic-install objects, so copy
-			 * them to the pkg's dictionary in transaction.
+			 * them to the pkg's dictionary in transaction. Also
+			 * make sure that replaced package is also purged.
 			 */
 			if (xbps_match_virtual_pkg_in_dict(pkg_repod,
 			    pattern, true) ||
@@ -136,6 +137,8 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 				    "automatic-install", instd_auto);
 				prop_dictionary_set_bool(pkg_repod,
 				    "replacing-package", true);
+				prop_dictionary_set_bool(instd,
+				    "remove-and-purge", true);
 			}
 			/*
 			 * Add package dictionary into the transaction and mark
