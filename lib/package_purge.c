@@ -174,8 +174,8 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 	} else {
 		if (prop_dictionary_get(dict, "conf_files")) {
 			rv = xbps_remove_pkg_files(dict, "conf_files", pkgver);
-			prop_object_release(dict);
 			if (rv != 0) {
+				prop_object_release(dict);
 				xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
 				    rv, pkgname, version,
 				    "%s: [purge] failed to remove "
@@ -184,6 +184,7 @@ xbps_purge_pkg(const char *pkgname, bool check_state)
 				return rv;
 			}
 		}
+		prop_object_release(dict);
 	}
 	/*
 	 * Execute the purge action in REMOVE script (if found).
