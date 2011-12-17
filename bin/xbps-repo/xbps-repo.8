@@ -1,175 +1,131 @@
-.TH "XBPS\-REPO" "8" "15/12/2011" "\ \&" "\ \&"
-.\" -----------------------------------------------------------------
-.\" * set default formatting
-.\" -----------------------------------------------------------------
-.\" disable hyphenation
-.nh
-.\" disable justification (adjust text to left margin only)
-.ad l
-.\" -----------------------------------------------------------------
-.\" * MAIN CONTENT STARTS HERE *
-.\" -----------------------------------------------------------------
-.SH "NAME"
-xbps-repo \- XBPS command for binary package repositories
-.SH "SYNOPSIS"
-.sp
-\fBxbps\-repo\fR [\fIoptions\fR] \fItarget\fR [\fIarguments\fR]
-.SH "DESCRIPTION"
-.sp
-The xbps\-repo(8) command is used to handle local or remote binary package repositories in the \fBXBPS binary package system\fR\&. You can use it to create a package index for a local repository, list repositories, search for packages and show information about a binary package in repository pool\&.
-.SH "OPTIONS"
-.PP
-\fB\-C\fR \fIconffile\fR
-.RS 4
-Full path to the XBPS configuration file\&.
-By default it\(cqs set to \fIETCDIR/xbps/xbps.conf\fR\&.
-.RE
-.PP
-\fB\-c\fR \fIcachedir\fR
-.RS 4
+.Dd December 15, 2011
+.Os Void GNU/Linux
+.Dt xbps-repo 8
+.Sh NAME
+.Nm xbps-repo
+.Nd XBPS command for binary package repositories
+.Sh SYNOPSYS
+.Nm xbps-repo
+.Op options
+.Ar target
+.Op arguments
+.Sh DESCRIPTION
+The
+.Nm
+command is able to interact with binary packages stored in local or
+remote repositories. It is able to create a package index for local
+repositories, list repositories, search for packages and show information
+of a binary package in repository pool, among other things.
+.Sh OPTIONS
+.Bl -tag -width Fl
+.It Fl C Ar conffile
+Full path to the XBPS configuration file. By default set to
+.Pa /etc/xbps/xbps.conf .
+.It Fl c Ar cachedir
 Sets the
-\fIcache\fR
-directory to store downloaded binary packages from remote repositories\&. By default it\(cqs set to
-\fI/var/cache/xbps\fR\&.
-.RE
-.PP
-\fB\-d\fR
-.RS 4
+.Em cache
+directory to store downloaded binary packages from remote
+repositories. By default set to
+.Pa /var/cache/xbps .
+.It Fl d
 Enables extra debugging output to be shown to stderr.
-.RE
-.PP
-\fB-o\fR \fIkey[,key2...]\fR
-.RS 4
+.It Fl o Ar key Op key2,...
 Used currently in the
-\fIshow\fR
-target\&. Prints the value of specified key(s) from package's properties dictionary.
-Multiple keys can be specified delimited by the comma character.
-.RE
-.PP
-\fB\-r\fR \fIrootdir\fR
-.RS 4
+.Em show
+target. Prints the value of specified key(s) from
+package's properties dictionary. Multiple keys can be specified delimited by
+the comma character.
+.It Fl r Ar rootdir
 Sets the
-\fIroot\fR
-directory\&. By default the root directory is set to
-\fI/\fR\&. Please note that the database directory is always set to
-\fI/var/db/xbps\fR
-independently of
-\fIrootdir\fR\&. So if you use a
-\fIrootdir\fR
-of
-\fI/blah\fR, metadata stuff will go into
-\fI/blah/var/db/xbps\fR\&.
-.RE
-.PP
-\fB\-V\fR
-.RS 4
-Shows the current XBPS, API and INDEX versions\&.
-.RE
-.SH "TARGETS"
-.sp
-Please note that all targets are \fBcase insensitive\fR\&.
-.PP
-\fBfind\-files\fR \fIpattern\fR
-.RS 4
-Prints the name for any package registered in the repository pool, that owns
-the file matched by \fIpattern\fR\&. Exact matches and wildcards can be
-specified\&. Please note that this will look in all packages registered
-from all repositories currently registered, so if packages are not in \fIcachedir\fR
-it will have to connect remotely to the repository to fetch the information
-\fIon the fly\fR.
-.RE
-.PP
-\fBgenindex\fR \fI/path/to/local/repo\fR
-.RS 4
-Generates a package index for a local repository as specified in its argument\&.
-It will look for archives with
-\fB\&.xbps\fR
+.Em root
+directory. By default the root directory is set to
+.Em / .
+Please note that the database directory is always set to
+.Pa /var/db/xbps
+independently of rootdir setting. So if you use a rootdir of
+.Pa /blah ,
+metadata stuff will go into
+.Pa /blah/var/db/xbps .
+.It Fl v
+Shows verbose messages. Useful while installing and removing packages.
+.It Fl V
+Shows the current XBPS release version (version, API, index).
+.Sh TARGETS
+Please note that all targets are case insensitive.
+.Pp
+.Bl -tag -width ident
+.It Sy find-files Ar pattern
+Prints the name of
+.Em package(s)
+matching the pattern on its file list by looking in all repositories index files.
+.It Sy genindex Pa /path/to/local/repo
+Generates a package index for a local repository as specified in its argument.
+It will look for archives with the
+.Sy .xbps
 extension and will only add it into the index if version is newer than the one
-available in the index\&. If a newer package is available, the old package file
-will be removed automatically\&.
-.RE
-.PP
-\fBlist\fR
-.RS 4
-Lists all working repositories in repository pool\&.
-.RE
-.PP
-\fBpkg\-list [\fR\fB\fIindex\fR\fR\fB]\fR
-.RS 4
-Lists all currently registered packages in repository index as specified in the \fIindex\fR argument.
-If argument is not specified, all repositories will be used to list packages\&. The argument
-expects a decimal number starting from 0, matching the output of the \fIlist\fR target.
-.RE
-.PP
-\fBsearch\fR \fIpattern\fR
-.RS 4
+available in the index. If a newer package is available, the old package file
+will be removed automatically.
+.It Sy list
+Lists all working repositories in repository pool.
+.It Sy pkg-list Op index
+Lists all currently registered packages in repository index as specified
+in the
+.Ar index
+argument. If argument is not specified, any package contained in all repositories
+will be shown. The argument expects a decimal number starting from 0,
+matching the output of the
+.Ar list
+target.
+.It Sy search Ar pattern
 Search for packages containing the shell
-\fIpattern\fR
-(see fnmatch(3)) in its
-\fBpkgname\fR
+.Em pattern
+(see
+.Xr fnmatch 3 )
+in its
+.Em pkgname
 or
-\fBdescription\fR
-values in repository pool\&. Please note that patterns are matched in case
+.Em description
+values in repository pool. Please note that patterns are matched in case
 insensitive mode.
-.RE
-.PP
-\fBshow \fR\fB\fIpkgname\fR\fR
-.RS 4
+.It Sy show Ar pkgname
 Shows information about binary package
-\fIpkgname\fR\&. This will print the size it takes in filesystem, description, maintainer, architecture and other information\&. The first repository in the pool wins\&.
-.RE
-.PP
-\fBshow\-deps \fR\fB\fIpkgname\fR\fR
-.RS 4
-Shows run time dependencies for binary package
-\fIpkgname\fR\&. The first repository in the pool wins\&.
-.RE
-.PP
-\fBshow\-files \fR\fB\fIpkgname\fR\fR
-.RS 4
-Shows the file list for a binary package
-\fIpkgname\fR
-by searching it in repository pool\&. The first repository in the pool wins\&.
-\fBNOTE: if a remote repository is the winner and binary package is not available in \fR\fBcachedir\fR\fB, it will fetch remotely and \fR\fB\fIon\-the\-fly\fR\fR\fB the info\fR\& from target repository.
-.RE
-.PP
-\fBsync\fR
-.RS 4
-Syncs the package index file for all registered remote repositories\&. The new file will be fetched if local and remote size/mtime do not match\&.
-.RE
-.SH "FILES"
-.PP
-\fB/etc/xbps/conf.plist\fR
-.RS 4
-Default XBPS configuration file\&.
-.RE
-.PP
-\fB/etc/xbps/repositories.plist\fR
-.RS 4
-Default XBPS repositories configuration file\&.
-.RE
-.PP
-\fB/var/db/xbps/<remoterepodir>/index\&.plist\fR
-.RS 4
-Remote repository package index file\&.
-.RE
-.PP
-\fB/var/cache/xbps\fR
-.RS 4
-xbps
-\fIcache\fR
-directory for downloaded binary packages\&.
-.RE
-.SH "BUGS"
-.sp
-Probably, but I try to make this not happen\&. Use it under your own responsability and enjoy your life\&.
-.sp
-Report bugs in \fIhttp://code\&.google\&.com/p/xbps\fR\&.
-.SH "SEE ALSO"
-.sp
-xbps\-bin(8)
-.sp
-The XBPS project: \fIhttp://code\&.google\&.com/p/xbps\fR
-.SH "AUTHORS"
-.sp
-\fBXBPS\fR has been designed and implemented by Juan Romero Pardines <xtraeme@gmail\&.com>\&.
+.Em pkgname .
+This will print the size it takes in filesystem, description, maintainer,
+architecture and other information. The first repository in the pool wins.
+.It Sy show-deps Ar pkgname
+Shows run time dependencies for the binary package
+.Ar pkgname .
+The first repository in the pool wins.
+.It Sy show-files Ar pkgname
+Shows the file list for the binary package
+.Ar pkgname .
+The first repository containing the matching
+.Ar pkgname
+in the pool wins.
+.Em NOTE :
+if a remote repository is the winner and binary package is not available in
+.Em cachedir ,
+it will fetch remotely and
+.Em on the fly
+the info from target repository.
+.It Sy sync
+Syncs the package index file for all registered remote repositories.
+The index file will be fetched if local and remote size/mtime do not match.
+.Sh FILES
+.Bl -tag -width  /var/db/xbps/<remoterepodir>/index.plist -compact
+.It Pa /etc/xbps/xbps.conf
+Default XBPS configuration file.
+.It Pa /var/db/xbps/<remoterepodir>/index.plist
+Remote repository package index file.
+.It Pa /var/cache/xbps
+XBPS cache directory for downloaded binary packages.
+.Sh SEE ALSO
+.Xr xbps-bin 8 ,
+.Xr http://code.google.com/p/xbps
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in http://code.google.com/p/xbps.
