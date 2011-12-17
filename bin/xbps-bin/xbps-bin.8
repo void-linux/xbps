@@ -1,409 +1,337 @@
-.TH "XBPS\-BIN" "8" "15/12/2011" "\ \&" "\ \&"
-.\" -----------------------------------------------------------------
-.\" * set default formatting
-.\" -----------------------------------------------------------------
-.\" disable hyphenation
-.nh
-.\" disable justification (adjust text to left margin only)
-.ad l
-.\" -----------------------------------------------------------------
-.\" * MAIN CONTENT STARTS HERE *
-.\" -----------------------------------------------------------------
-.SH "NAME"
-xbps-bin \- XBPS command for binary packages
-.SH "SYNOPSIS"
-.sp
-\fBxbps\-bin\fR [\fIoptions\fR] \fItarget\fR [\fIpkgname\fR]
-.SH "DESCRIPTION"
-.sp
-The xbps\-bin(8) command is used to handle binary packages created for the XBPS binary package system\&. You can use it to install, remove, update, list or show information about any binary package\&. Binary packages can be installed from \fIlocal (directories)\fR or \fIremote repositories (http, https or ftp)\fR, see xbps\-repo(8) for information about repositories\&.
-.SH "OPTIONS"
-.PP
-\fB\-A\fR
-.RS 4
-Sets the \fBautomatic\-install\fR boolean object for a package, therefore explicitly
-setting that package was installed as it were a dependency, even if it is not.
-Use of this option takes effect in the \fIautoupdate\fR, \fIinstall\fR and
-\fIupdate\fR targets and target packages and its required dependencies will be
-matched.
-.RE
-.PP
-\fB\-C\fR \fIconffile\fR
-.RS 4
-Full path to the XBPS configuration file\&.
-By default it\(cqs set to \fIETCDIR/xbps/xbps.conf\fR\&.
-.RE
-.PP
-\fB\-c\fR \fIcachedir\fR
-.RS 4
-Sets the cache directory to store downloaded binary packages from remote repositories\&. By default it\(cqs set to
-\fI/var/cache/xbps\fR\&.
-.RE
-.PP
-\fB\-d\fR
-.RS 4
-Enables extra debugging output to be shown to stderr\&.
-.RE
-.PP
-\fB\-D\fR
-.RS 4
-Only show the URLs to download the binary packages from repositories\&. This is useful if you want to download them by other means, and later you can move them to the
-\fIcachedir\fR
-to start the installation\&. This option can be used for the install, update and autoupdate targets\&.
-.RE
-.PP
-\fB\-F\fR
-.RS 4
-Used currently in the
-\fIremove\fR
-target\&. If set, package will be removed even if other packages are currently depending on it, i\&.e package is a dependency of other packages\&.
-\fIUse this option with care\fR\&.
-.RE
-.PP
-\fB\-f\fR
-.RS 4
-Used currently in the
-\fIpurge\fR,
-\fIreconfigure\fR
-and
-\fIremove\fR
-targets\&. If set,
-\fIpackage(s)\fR
-will be
-\fIreconfigured\fR
-regardless of its state in the reconfigure target, or to
-\fIforce\fR
-removal of package files even if its hash doesn\(cqt match in the
-\fIpurge\fR
-and
-\fIremove\fR
-targets\&.
-.RE
-.PP
-\fB-M\fR
-.RS 4
-Sets the \fBautomatic\-install\fR boolean object for package to false, therefore
-explicitly setting that package was installed manually by the user. Use of this
-option takes effect in the \fIautoupdate\fR, \fIinstall\fR and \fIupdate\fR targets
-and target packages and its required dependencies will be matched.
-.RE
-.PP
-\fB-o\fR \fIkey[,key2...]\fR
-.RS 4
-Used currently in the
-\fIshow\fR
-target\&. Prints the value of specified key(s) from package's properties dictionary.
-Multiple keys can be specified delimited by the comma character.
-.RE
-.PP
-\fB\-p\fR
-.RS 4
-Used currently in the
-\fIremove\fR
-and
-\fIautoremove\fR
-targets, if enabled after removing a package it is also purged\&.
-.RE
-.PP
-\fB\-R\fR
-.RS 4
-Used currently in the
-\fIremove\fR
-target, to recursively remove packages that aren\(cqt required by other installed packages and that were installed by the package that we want to remove\&.
-.RE
-.PP
-\fB\-r\fR \fIrootdir\fR
-.RS 4
+.Dd December 15, 2011
+.Os Void GNU/Linux
+.Dt xbps-bin 8
+.Sh NAME
+.Nm xbps-bin
+.Nd XBPS command for binary packages
+.Sh SYNOPSYS
+.Nm xbps-bin
+.Op options
+.Op target
+.Op pkgname(s)|pkgpattern(s)
+.Sh DESCRIPTION
+The
+.Nm
+ommand is used to handle binary packages created for the XBPS binary
+package system. You can use it to install, remove, update, list or show information
+about any binary package. Binary packages can be installed from
+.Em local
+(directories)
+or
+.Em remote
+repositories (http, https or ftp), see
+.Xr xbps-repo 8
+for information about repositories.
+.Sh OPTIONS
+.Bl -tag -width Fl
+.It Fl A
 Sets the
-\fIroot\fR
-directory\&. By default the root directory is set to
-\fI/\fR\&. Please note that the database directory is always set to
-\fI/var/db/xbps\fR
-independently of
-\fIrootdir\fR\&. So if you use a rootdir of
-\fI/blah\fR, metadata stuff will go into
-\fI/blah/var/db/xbps\fR\&.
-.RE
-.PP
-\fB\-v\fR
-.RS 4
-Shows verbose messages\&. Useful while installing and removing packages\&.
-.RE
-.PP
-\fB\-y\fR
-.RS 4
+.Em automatic-install
+boolean object for a package, therefore explicitly
+setting that package was installed as it were a dependency, even if it is not.
+Use of this option takes effect in the
+.Em autoupdate ,
+.Em install
+and
+.Em update
+targets.
+Targetted packages and its required dependencies will be matched.
+.It Fl C Ar conffile
+Full path to the XBPS configuration file. By default set to
+.Pa /etc/xbps/xbps.conf .
+.It Fl c Ar cachedir
+Sets the
+.Em cache
+directory to store downloaded binary packages from remote
+repositories. By default set to
+.Pa /var/cache/xbps .
+.It Fl d
+Enables extra debugging output to be shown to stderr.
+.It Fl D
+Only show the URLs to download the binary packages from repositories. This is
+useful if you want to download them by other means, and later you can move
+them to the cachedir to start the installation. This option can be used for
+the install, update and autoupdate targets.
+.It Fl F
+Used currently in the
+.Em remove
+target. If set, package will be removed even if other packages are currently
+depending on it, i.e package is a dependency of any other installed package.
+.It Fl f
+Used currently in the
+.Em purge ,
+.Em reconfigure
+and
+.Em remove
+targets. If set, package(s) will be reconfigured regardless of its state in
+.Em reconfigure
+target, or to
+.Em force
+removal of package files even if its hash does not match in the
+.Em purge
+and
+.Em remove
+targets.
+.It Fl M
+Sets the
+.Em automatic-install
+boolean object for package to false, therefore
+explicitly setting that package was installed manually by the user. Use of this
+option takes effect in the
+.Em autoupdate ,
+.Em install
+and
+.Em update
+targets
+and target packages and its required dependencies will be matched.
+.It Fl o Ar key Op key2,...
+Used currently in the
+.Em show
+target. Prints the value of specified key(s) from
+package's properties dictionary. Multiple keys can be specified delimited by
+the comma character.
+.It Fl p
+Used currently in the
+.Em remove
+and
+.Em autoremove
+targets. If enabled, after removing
+a package it is also purged.
+.It Fl R
+Used currently in the
+.Em remove
+target. If set, recursively removes packages that
+are not required by any other installed package and that were installed by
+the package that we want to remove.
+.It Fl r Ar rootdir
+Sets the
+.Em root
+directory. By default the root directory is set to
+.Em / .
+Please note that the database directory is always set to
+.Pa /var/db/xbps
+independently of rootdir setting. So if you use a rootdir of
+.Pa /blah ,
+metadata stuff will go into
+.Pa /blah/var/db/xbps .
+.It Fl v
+Shows verbose messages. Useful while installing and removing packages.
+.It Fl y
 Assume
-\fIyes\fR
-to all questions\&. This will bypass all questions and immediately proceed with the task, use this option with care\&.
-.RE
-.PP
-\fB\-V\fR
-.RS 4
-Shows the current XBPS release version (library and code)\&.
-.RE
-.SH "TARGETS"
-.sp
-Please note that all targets are case insensitive\&.
-.PP
-\fBautoremove\fR
-.RS 4
-Removes package orphans\&. These packages were installed as dependencies and currently there is not any package depending on it, directly or indirectly\&. Usually it is safe to always answer yes\&.
-.RE
-.PP
-\fBautoupdate\fR
-.RS 4
-Updates all currently installed packages to the newest version available in all repositories\&.
-.RE
-.PP
-\fBcheck \fR\fB\fIpkgname | all\fR\fR
-.RS 4
-Checks for integrity errors in installed packages\&. The checks are to found missing run\-time dependencies, missing and modified package files and metadata files\&. If the
-\fIall\fR
-keyword is used, all packages currently installed will be checked, otherwise only
-\fIpkgname\fR\&.
-.RE
-.PP
-\fBfind\-files \fR\fB\fIpattern\fR\fR
-.RS 4
+.Em yes
+to all questions. This will bypass all questions and immediately proceed
+with the task.
+.It Fl V
+Shows the current XBPS release version (version, API, index).
+.Sh TARGETS
+Please note that all targets are case insensitive.
+.Pp
+.Bl -tag -width ident
+.It Sy autoremove
+Removes package orphans. These packages were installed as dependencies and
+currently there is not any package depending on it, directly or indirectly.
+Usually it is safe to always answer yes.
+.It Sy autoupdate
+Updates all currently installed packages to the newest version available in
+all repositories.
+.It Sy check Ar pkgname | Ar all
+Checks for integrity errors in installed packages. The checks are to found
+missing run-time dependencies, missing and modified package files and
+metadata files. If the all keyword is used, all packages currently installed
+will be checked, otherwise just pkgname.
+.It Sy find-files Ar pattern
 Prints the name of the installed
-\fIpackage(s)\fR
-matching the pattern on its file list\&.
-.RE
-.PP
-\fBinstall \fR\fB\fIpkgname(s) | pkgpattern(s)\fR\fR
-.RS 4
+.Em package(s)
+matching the pattern on its file list.
+.It Sy install Ar pkgname(s) | Ar pkgpattern(s)
 Install binary package(s) from repository pool by specifying
-\fIpkgname(s)\fR
+.Em pkgname(s)
 or
-\fIpackage pattern(s)\fR\&. The first repository matching the arguments will be used\&. The package(s) will be
-\fIdownloaded\fR
+.Em package pattern(s) .
+The first repository matching the arguments will be used. The package(s) will be
+.Em downloaded
 (if found in a remote repository),
-\fIunpacked\fR
+.Em unpacked
 and
-\fIconfigured\fR\&. The
-\fIunpack\fR
-stage will execute the pre\-install action on its INSTALL script, and unpack its files\&. The
-\fIconfigure\fR
-stage will run the post\-install action set on its INSTALL script and will change its
-\fIstate\fR
-to installed in the package database\&.
-.RE
-.PP
-\fBlist [\fR\fB\fIstate\fR\fR\fB]\fR
-.RS 4
-Lists all currently installed packages\&. Optionally another argument can be specified to list only packages with the specified
-\fIstate\fR\&. By default only packages that are
-\fIfully installed\fR
-will be listed if
-\fIstate\fR
-has not been specified\&. Accepted states are:
-\fIconfig\-files\fR,
-\fIhalf-unpacked\fR,
-\fIunpacked\fR,
+.EM configured .
+The
+.Em unpack
+stage will execute the pre-install action on its INSTALL script, and unpack its files.
+The
+.Em configure
+stage will run the post-install action set on its INSTALL script and will change its
+.Em state
+to installed in the package database.
+.It Sy list Op state
+Lists all currently installed packages. Optionally another argument can be specified
+to list only packages with the specified
+.Op state .
+By default only packages fully installed will be listed if
+.Em state
+has not been specified. Accepted states are:
+.Em config-files ,
+.Em half-unpacked ,
+.Em unpacked ,
 and
-\fIinstalled\fR\&.
-.RE
-.PP
-\fBlist\-manual\fR
-.RS 4
-Lists packages that were installed manually by the user, i\&.e not as dependencies of any other package\&.
-.RE
-.PP
-\fBpurge \fR\fB\fIpkgname | all\fR\fR
-.RS 4
+.Em installed .
+.It Sy list-manual
+Lists packages that were installed manually by the user, i.e not as dependencies
+of any other package.
+.It Sy purge Ar pkgname | Ar all
 Purge an installed package:
-\fIpkgname\fR
+.Em pkgname
 or
-\fIall\fR
-packages\&. The purge stage runs the post\-remove action set in the REMOVE script in its metadata directory
-\fI(/var/db/xbps/metadata/pkgname)\fR
-and will remove configuration (if they were not modified by the user) and metadata files\&. The package will be fully removed from the system once it has been purged\&. If
-\fB\-f\fR
+.Em all
+packages. The purge stage runs the post-remove action set in the REMOVE script
+in its metadata directory
+.Pa (/var/db/xbps/metadata/pkgname)
+and will remove configuration (if they were not modified by the user) and
+metadata files. The package will be fully removed from the system once it
+has been purged. If
+.Ql -f
 option is used, configuration files that have been
-\fImodified WILL BE REMOVED\&. BEWARE WITH THIS!\fR
-.RE
-.PP
-\fBreconfigure \fR\fB\fIpkgname | all\fR\fR
-.RS 4
-Reconfigure an unpacked package\&. Packages in this state are not fully installed, because they were not configured for whatever reason\&. The configure stage will run the post\-install action set on its INSTALL script and will change its state to installed in the package database\&. The
-\fIall\fR
-keyword can be used to reconfigure all not configured packages\&. If
-\fB\-f\fR
-option is used, the package will be reconfigured even if its state is already installed\&.
-.RE
-.PP
-\fBremove \fR\fB\fIpkgname(s)\fR\fR
-.RS 4
+.Em modified WILL BE REMOVED. BEWARE WITH THIS!
+.It Sy reconfigure Ar pkgname | Ar all
+Reconfigure an unpacked package. Packages in this state are not fully installed,
+because they were not configured for whatever reason. The configure stage will
+run the post-install action set on its INSTALL script and will change its state
+to installed in the package database. The
+.Em all
+keyword can be used to reconfigure all not configured packages. If
+.Ql -f
+option is used, the package will be reconfigured even if its state is already installed.
+.It Sy remove Ar pkgname(s)
 Removes the installed package
-\fIpkgname(s)\fR\&. Its files will be removed and its state will be changed to
-\fIconfig\-files\fR
-in the package database\&. Configuration files, its metadata directory/files and its information in the package database are preserved\&. To fully remove a package in
-\fIconfig\-files\fR
+.Em pkgname(s) .
+Its files will be removed and its state will be changed to
+.Em config-files
+in the package database. Configuration files, its metadata directory/files and its
+information in the package database are preserved. To fully remove a package in
+.Em config-files
 state, it must be purged with the
-\fIpurge\fR
+.Em purge
 command or alternatively use the
-\fB\-p\fR
-flag \&. If
-\fB\-f\fR
+.Ql -p
+flag. If
+.Ql -f
 option is used, package files will be
-\fBremoved even if its SHA256 hash don\(cqt match\fR\&.
-.RE
-.PP
-\fBshow \fR\fB\fIpkgname\fR\fR
-.RS 4
+.Em removed even if its SHA256 hash don't match .
+.It Sy show Ar pkgname
 Shows information for installed package
-\fIpkgname\fR\&. This will print the size it takes in filesystem, description, maintainer, architecture and other information\&.
-.RE
-.PP
-\fBshow\-deps \fR\fB\fIpkgname\fR\fR
-.RS 4
-Shows the list of dependencies that pkgname requires at run time\&.
-.RE
-.PP
-\fBshow\-files \fR\fB\fIpkgname\fR\fR
-.RS 4
-Shows the list of files that pkgname contains\&.
-.RE
-.PP
-\fBshow\-orphans\fR
-.RS 4
-Shows the list of package orphans currently installed\&. Package orphans are packages that were installed as dependencies of another package, but no other package currently depends on\&.
-.RE
-.PP
-\fBshow\-revdeps \fR\fB\fIpkgname\fR\fR
-.RS 4
+.Em pkgname .
+This will print the size it takes in filesystem, description, maintainer,
+architecture and other useful information.
+.It Sy show-deps Ar pkgname
+Shows the list of dependencies that
+.Em pkgname
+requires at run time.
+.It Sy show-files Ar pkgname
+Shows the list of files that
+.Em pkgname
+contains.
+.It Sy show-orphans
+Shows the list of package orphans currently installed. Package orphans are
+packages that were installed as dependencies of another package, but no other
+package currently depends on.
+.It Sy show-revdeps Ar pkgname
 Shows the reverse dependencies for
-\fIpkgname\fR\&. Reverse dependencies are packages that are currently depending in pkgname directly\&.
-.RE
-.PP
-\fBupdate \fR\fB\fIpkgname(s)\fR\fR
-.RS 4
+.Em pkgname .
+Reverse dependencies are packages that are currently depending in
+.Em pkgname
+directly.
+.It Sy update Ar pkgname(s)
 Updates
-\fIpkgname(s)\fR
-to the most newer version available in repository pool\&. This can be used if only
-\fIpkgname(s)\fR
+.Em pkgname(s)
+to the most newer version available in repository pool. This can be used if only
+.Em pkgname(s)
 need to be updated, unlike the
-\fIautoupdate\fR
-target that will update all currently installed packages\&.
-.RE
-.SH "PACKAGE STATES"
-.sp
-A package can be in a different state while it is being installed, removed, unpacked, configured or purged\&. The following states are available:
-.PP
-\fBinstalled\fR
-.RS 4
-The package is fully installed, that means it was unpacked and configured correctly\&.
-.RE
-.PP
-\fBhalf\-unpacked\fR
-.RS 4
+.Em autoupdate
+target that will update all currently installed packages.
+.Sh PACKAGE STATES
+A package can be in a different state while it is being
+.Em installed ,
+.Em removed ,
+.Em unpacked ,
+.Em configured
+or
+.Em purged .
+The following states are available:
+.Bl -tag -width ident
+.It Sy installed
+The package is fully installed, that means it was unpacked and configured correctly.
+.It Sy half-unpacked
 The package was being unpacked but didn't finish properly for unknown reasons.
-.RE
-.PP
-\fBunpacked\fR
-.RS 4
-The package has been unpacked in destination root directory, but it is not fully installed because it was not yet configured\&. Please note, that some packages will do not work if they are only unpacked\&.
-.RE
-.PP
-\fBconfig\-files\fR
-.RS 4
-The package has been removed but configuration files and its metadata directory are still available (and it is still registered in the package database)\&. You can purge safely packages that are in this state, modified configuration files will be preserved\&.
-.RE
-.PP
-.SH "FILES"
-.PP
-\fB/etc/xbps/conf.plist\fR
-.RS 4
-Default XBPS configuration file\&.
-.RE
-.PP
-\fB/etc/xbps/repositories.plist\fR
-.RS 4
-Defaults XBPS repositories configuration file\&.
-.RE
-.PP
-\fB/var/db/xbps\fR
-.RS 4
-xbps global metadata directory\&.
-.RE
-.PP
-\fB/var/db/xbps/metadata/<pkgname>\fR
-.RS 4
-Installed package metadata directory\&.
-.RE
-.PP
-\fB/var/db/xbps/metadata/<pkgname>/files\&.plist\fR
-.RS 4
-Installed package metadata list of files\&.
-.RE
-.PP
-\fB/var/db/xbps/metadata/<pkgname>/prop\&.plist\fR
-.RS 4
-Installed package metadata properties\&.
-.RE
-.PP
-\fB/var/db/xbps/regpkgdb\&.plist\fR
-.RS 4
-xbps master packages/properties database plist file\&.
-.RE
-.PP
-\fB/var/cache/xbps\fR
-.RS 4
-xbps cache directory for downloaded binary packages\&.
-.RE
-.SH "EXAMPLES"
-.PP
-\fBInstall\fR a package by specifying its \fBname\fR:
-.RS 4
-
-$ xbps\-bin install foo
-.RE
-.PP
-\fBInstall\fR a package by specifying a \fBpackage pattern\fR:
-.RS 4
-
-$ xbps\-bin install "foo>=3\&.0"
-.RE
-.PP
-\fBInstall multiple\fR packages by specifying \fBnames\fR and \fBpackage patterns\fR:
-.RS 4
-
-$ xbps\-bin install foo "blah<=4\&.0" baz\-2\&.0 "blob>4\&.[0\-9]"
-.RE
-.PP
-\fBFind\fR the package that owns the file \fB/bin/mount\fR:
-.RS 4
-
-$ xbps\-bin find\-files /bin/mount
-.RE
-.PP
-\fBFind\fR the packages that match the pattern \fB"/usr/lib/libav\fR"*:
-.RS 4
-
-$ xbps\-bin find\-files "/usr/lib/libav*"
-.RE
-.PP
-\fBRemove and purge\fR the package \fBproplib\-devel\fR:
-.RS 4
-
-$ xbps\-bin \-yp remove proplib\-devel
-.RE
-.PP
-\fBRemove and purge\fR the package \fBbsdtar\fR and \fBrecursively\fR all packages that were installed automatically by it:
-.RS 4
-
-$ xbps\-bin \-Rp remove bsdtar
-.RE
-.SH "BUGS"
-.sp
-Probably, but I try to make this not happen\&. Use it under your own responsability and enjoy your life\&.
-.sp
-Report bugs in http://code\&.google\&.com/p/xbps\&.
-.SH "SEE ALSO"
-.sp
-xbps\-repo(8)
-.sp
-The XBPS project: http://code\&.google\&.com/p/xbps
-.SH "AUTHORS"
-.sp
-\fBXBPS\fR has been designed and implemented by Juan Romero Pardines <xtraeme@gmail\&.com>\&.
+.It Sy unpacked
+The package has been unpacked in destination root directory, but it is not fully
+installed because it was not yet configured. Please note that some packages will
+do not work if they are only unpacked.
+.It Sy config-files
+The package has been removed but configuration files and its metadata directory
+are still available (and it is still registered in the package database).
+You can purge safely packages that are in this state, modified configuration
+files will be preserved.
+.Sh FILES
+.Bl -tag -width /var/db/xbps/metadata/<pkgname>/props.plist -compact
+.It Pa /etc/xbps/xbps.conf
+Default XBPS configuration file.
+.It Pa /var/db/xbps
+XBPS global metadata directory.
+.It Pa /var/db/xbps/metadata/<pkgname>/files.plist
+Installed package metadata list of files.
+.It Pa /var/db/xbps/metadata/<pkgname>/props.plist
+Installed package metadata properties.
+.It Pa /var/db/xbps/regpkgdb.plist
+XBPS master packages/properties database plist file.
+.It Pa /var/cache/xbps
+XBPS cache directory for downloaded binary packages.
+.Sh EXAMPLES
+Install a package by specifying a
+.Em pkgname :
+.Pp
+.Dl $ xbps-bin install foo
+.Pp
+Install a package by specifying a
+.Em package pattern :
+.Pp
+.Dl $ xbps-bin install \*qfoo>=3.0\*q
+.Pp
+Install multiple packages by specifying
+.Em pkgnames
+and
+.Em package patterns :
+.Pp
+.Dl $ xbps-bin install foo \*qblah<=4.0\*q baz-2.0 \*qblob>4.[0-9]\*q
+.Pp
+Find the package that owns the file
+.Pa /bin/mount :
+.Pp
+.Dl $ xbps-bin find-files /bin/mount
+.Pp
+Find the packages that match the pattern
+.Pa "/usr/lib/libav*" :
+.Pp
+.Dl $ xbps-bin find-files \*q/usr/lib/libav*\*q
+.Pp
+Remove and purge the package
+.Em proplib-devel :
+.Pp
+.Dl $ xbps-bin -yp remove proplib-devel
+.Pp
+Remove and purge the package
+.Em bsdtar
+and
+.Em recursively
+all packages that were installed automatically by it:
+.Pp
+.Dl $ xbps-bin -Rp remove bsdtar
+.Pp
+.Sh SEE ALSO
+.Xr xbps-repo 8 ,
+.Xr http://code.google.com/p/xbps
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in http://code.google.com/p/xbps.
