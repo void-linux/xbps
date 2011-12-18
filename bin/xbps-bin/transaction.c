@@ -176,7 +176,7 @@ show_transaction_sizes(struct transaction *trans)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Total installed size:\t%6s\n\n", size);
+		printf("Total installed size:\t%6s\n", size);
 	}
 	prop_dictionary_get_uint64(trans->d, "total-removed-size", &rmsize);
 	if (rmsize > 0) {
@@ -185,8 +185,10 @@ show_transaction_sizes(struct transaction *trans)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Total removed size:\t%6s\n\n", size);
+		printf("Total removed size:\t%6s\n", size);
 	}
+	printf("\n");
+
 	return 0;
 }
 
