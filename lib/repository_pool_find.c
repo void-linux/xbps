@@ -40,7 +40,6 @@ struct repo_pool_fpkg {
 	prop_dictionary_t pkgd;
 	const char *pattern;
 	bool bypattern;
-	bool pkgfound;
 };
 
 static int
@@ -67,7 +66,6 @@ repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
 		*done = true;
-		rpf->pkgfound = true;
 		return 0;
 	}
 	/* not found */
@@ -110,7 +108,6 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
 		*done = true;
-		rpf->pkgfound = true;
 		return 0;
 	}
 	/* Not found */
@@ -145,6 +142,7 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		if (instpkgd == NULL) {
 			xbps_dbg_printf("[rpool] `%s' not installed, "
 			    "ignoring...\n", rpf->pattern);
+			rpf->pkgd = NULL;
 			return ENODEV;
 		}
 		prop_dictionary_get_cstring_nocopy(instpkgd,
@@ -158,6 +156,7 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 			    "(installed: %s) from repository `%s'\n",
 			    rpf->pattern, repover, instver,
 			    rpi->rpi_uri);
+			rpf->pkgd = NULL;
 			errno = EEXIST;
 			return 0;
 		}
@@ -170,8 +169,6 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
 		*done = true;
-		errno = 0;
-		rpf->pkgfound = true;
 	}
 	return 0;
 }
@@ -190,7 +187,6 @@ repo_find_pkg(const char *pkg, bool bypattern, bool best, bool virtual)
 
 	rpf->pattern = pkg;
 	rpf->bypattern = bypattern;
-	rpf->pkgfound = false;
 	rpf->pkgd = NULL;
 
 	if (best) {
@@ -232,7 +228,7 @@ xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern, bool best)
 	assert(pkg != NULL);
 
 	rpf = repo_find_pkg(pkg, bypattern, best, true);
-	if (rpf->pkgfound && rpf->pkgd != NULL)
+	if (rpf->pkgd != NULL)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);
 
@@ -248,7 +244,7 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 	assert(pkg != NULL);
 
 	rpf = repo_find_pkg(pkg, bypattern, best, false);
-	if (rpf->pkgfound && rpf->pkgd != NULL)
+	if (rpf->pkgd != NULL)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);
 
