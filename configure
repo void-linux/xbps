@@ -444,6 +444,29 @@ echo "$PROPLIB."
 rm -f _$func.c _$func
 
 #
+# Check for clock_gettime(3).
+#
+func=clock_gettime
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <time.h>
+int main(void) {
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return 0;
+}
+EOF
+if $XCC -lrt _$func.c -o _$func 2>/dev/null; then
+	echo yes.
+	echo "CPPFLAGS	+= -DHAVE_CLOCK_GETTIME" >>$CONFIG_MK
+	echo "LDFLAGS += -lrt" >>$CONFIG_MK
+	echo "STATIC_LIBS += -lrt" >>$CONFIG_MK
+else
+	echo no.
+fi
+rm -f _$func.c _$func
+
+#
 # zlib is required.
 #
 func=InflateInit2

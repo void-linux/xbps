@@ -42,6 +42,20 @@
 
 #include <xbps_api.h>
 #include "defs.h"
+#include "config.h"
+
+static void
+get_time(struct timeval *tvp)
+{
+#ifdef HAVE_CLOCK_GETTIME
+	struct timespec ts;
+	(void)clock_gettime(CLOCK_MONOTONIC, &ts);
+	tvp->tv_sec = ts.tv_sec;
+	tvp->tv_usec = ts.tv_nsec / 1000;
+#else
+	(void)gettimeofday(tvp, NULL);
+#endif
+}
 
 /*
  * Compute and display ETA
@@ -113,7 +127,7 @@ stat_display(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	struct timeval now;
 	char totsize[8], recvsize[8];
 
-	gettimeofday(&now, NULL);
+	get_time(&now);
 	if (now.tv_sec <= xfer->last.tv_sec)
 		return;
 	xfer->last = now;
@@ -136,7 +150,7 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 
 	if (xfpd->cb_start) {
 		/* start transfer stats */
-		gettimeofday(&xfer->start, NULL);
+		get_time(&xfer->start);
 		xfer->last.tv_sec = xfer->last.tv_usec = 0;
 	} else if (xfpd->cb_update) {
 		/* update transfer stats */
