@@ -135,8 +135,6 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 				}
 				prop_dictionary_set_bool(pkg_repod,
 				    "automatic-install", instd_auto);
-				prop_dictionary_set_bool(pkg_repod,
-				    "replacing-package", true);
 				prop_dictionary_set_bool(instd,
 				    "remove-and-purge", true);
 			}

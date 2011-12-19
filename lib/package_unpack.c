@@ -169,12 +169,12 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	const char *entry_pname, *transact, *pkgname, *version, *pkgver, *fname;
 	char *buf = NULL, *pkgfilesd = NULL;
 	int rv, flags;
-	bool preserve, update, replace;
+	bool preserve, update, conf_file, file_exists;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
 
-	preserve = update = false;
+	preserve = update = conf_file = file_exists = false;
 	prop_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	prop_dictionary_get_cstring_nocopy(pkg_repod,
 	    "transaction", &transact);
@@ -368,60 +368,21 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 			xucd->entry_total_count +=
 			    (ssize_t)prop_array_count(array);
 		}
-		replace = false;
-		if (prop_dictionary_get_bool(pkg_repod,
-		    "replacing-package", &replace) && replace) {
-			/*
-			 * The package we are currently unpacking replaced
-			 * another package that it was removed, respect
-			 * configuration files if they exist.
-			 */
-			if (S_ISREG(entry_statp->st_mode) &&
-			    xbps_entry_is_a_conf_file(propsd, entry_pname) &&
-			    (access(entry_pname, R_OK) == 0)) {
-				xbps_dbg_printf("%s: preserving conf_file %s.\n",
-				    pkgname, entry_pname);
-				archive_read_data_skip(ar);
-				continue;
-			}
-		}
-		if (update && S_ISREG(entry_statp->st_mode)) {
-			/*
-			 * Handle configuration files. Check if current entry is
-			 * a configuration file and take action if required. Skip
-			 * packages that don't have the "conf_files" array in
-			 * the XBPS_PKGPROPS dictionary.
-			 */
-			rv = xbps_entry_is_a_conf_file(propsd, entry_pname);
-			if (rv == -1) {
-				/* error */
-				goto out;
-			} else if (rv == 1) {
-				/* configuration file */
-				if (xucd != NULL)
-					xucd->entry_is_conf = true;
-
-				rv = xbps_entry_install_conf_file(filesd,
-				    entry, entry_pname, pkgname, version);
-				if (rv == -1) {
-					/* error */
-					goto out;
-				} else if (rv == 0) {
-					/*
-					 * Keep current configuration file
-					 * as is now and pass to next entry.
-					 */
-					archive_read_data_skip(ar);
-					continue;
-				}
-			} else {
-				/*
-				 * Current entry is not a configuration file,
-				 * check if installed file matches sha256 hash.
-				 * If true, there is no need to extract it.
-				 */
+		/*
+		 * Always check that extracted file exists and hash
+		 * doesn't match, in that case overwrite the file.
+		 * Otherwise skip extracting it.
+		 */
+		conf_file = false;
+		file_exists = false;
+		if (S_ISREG(entry_statp->st_mode)) {
+			if (xbps_entry_is_a_conf_file(propsd, entry_pname))
+				conf_file = true;
+			if (access(entry_pname, R_OK) == 0) {
+				file_exists = true;
 				rv = xbps_file_hash_check_dictionary(filesd,
-				    "files", entry_pname);
+				    conf_file ? "conf_files" : "files",
+				    entry_pname);
 				if (rv == -1) {
 					xbps_dbg_printf("%s-%s: failed to check"
 					    " hash for `%s': %s\n", pkgname,
@@ -438,7 +399,45 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 					archive_read_data_skip(ar);
 					continue;
 				}
+				rv = 0;
 			}
+		}
+		if (!update && conf_file && file_exists) {
+			/*
+			 * If installing new package preserve old configuration
+			 * file but renaming it to <file>.old.
+			 */
+			buf = xbps_xasprintf("%s.old", entry_pname);
+			(void)rename(entry_pname, buf);
+			free(buf);
+			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE, 0,
+			    pkgname, version,
+			    "Renamed old configuration file "
+			    "`%s' to `%s.old'.", entry_pname, entry_pname);
+		} else if (update && conf_file && file_exists) {
+			/*
+			 * Handle configuration files. Check if current entry is
+			 * a configuration file and take action if required. Skip
+			 * packages that don't have the "conf_files" array in
+			 * the XBPS_PKGPROPS dictionary.
+			 */
+			if (xucd != NULL)
+				xucd->entry_is_conf = true;
+
+			rv = xbps_entry_install_conf_file(filesd,
+			    entry, entry_pname, pkgname, version);
+			if (rv == -1) {
+				/* error */
+				goto out;
+			} else if (rv == 0) {
+				/*
+				 * Keep current configuration file
+				 * as is now and pass to next entry.
+				 */
+				archive_read_data_skip(ar);
+				continue;
+			}
+			rv = 0;
 		}
 		/*
 		 * Extract entry from archive.

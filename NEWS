@@ -1,5 +1,12 @@
 xbps-0.11.0 (???):
 
+ * While unpacking a binary package, always check that file to be extracted
+   exists on filesystem, if true and its hash is matched, skip extraction.
+
+ * While installing a package always preserve configuration files if they
+   exist, but if hash don't match rename configuration files to
+   <filename>.old.
+
  * New shared configuration file via libconfuse that replaces the
    plist configuration files: xbps.conf. That means that libxbps
    now requires confuse >= 2.7 available at
