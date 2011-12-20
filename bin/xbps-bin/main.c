@@ -70,11 +70,12 @@ main(int argc, char **argv)
 	int i, c, flags, rv;
 	bool yes, purge, debug, reqby_force, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
+	bool reinstall;
 
 	rootdir = cachedir = conffile = option = NULL;
 	flags = rv = 0;
 	reqby_force = yes = purge = force_rm_with_deps = false;
-	recursive_rm = debug = false;
+	recursive_rm = debug = reinstall = false;
 	install_auto = install_manual = show_download_pkglist_url = false;
 
 	while ((c = getopt(argc, argv, "AC:c:dDFfMo:pRr:Vvy")) != -1) {
@@ -98,6 +99,7 @@ main(int argc, char **argv)
 			force_rm_with_deps = true;
 			break;
 		case 'f':
+			reinstall = true;
 			flags |= XBPS_FLAG_FORCE_CONFIGURE;
 			flags |= XBPS_FLAG_FORCE_REMOVE_FILES;
 			break;
@@ -227,7 +229,7 @@ main(int argc, char **argv)
 			usage(xhp);
 
 		for (i = 1; i < argc; i++)
-			if ((rv = install_new_pkg(argv[i])) != 0)
+			if ((rv = install_new_pkg(argv[i], reinstall)) != 0)
 				goto out;
 
 		rv = exec_transaction(yes, show_download_pkglist_url);

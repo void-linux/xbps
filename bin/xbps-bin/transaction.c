@@ -240,7 +240,7 @@ autoremove_pkgs(bool yes, bool purge)
 }
 
 int
-install_new_pkg(const char *pkg)
+install_new_pkg(const char *pkg, bool reinstall)
 {
 	prop_dictionary_t pkgd;
 	char *pkgname = NULL, *pkgpatt = NULL;
@@ -273,10 +273,14 @@ install_new_pkg(const char *pkg)
 		}
 		prop_object_release(pkgd);
 		if (state == XBPS_PKG_STATE_INSTALLED) {
-			printf("Package '%s' is already installed.\n", pkgname);
-			goto out;
+			if (!reinstall) {
+				printf("Package '%s' is already installed.\n",
+				    pkgname);
+				goto out;
+			}
+		} else {
+			printf("Package `%s' needs to be configured.\n", pkgname);
 		}
-		printf("Package `%s' needs to be configured.\n", pkgname);
 	}
 	if ((rv = xbps_transaction_install_pkg(pkgpatt)) != 0) {
 		if (rv == ENOENT) {

@@ -45,7 +45,7 @@ struct list_pkgver_cb {
 };
 
 /* from transaction.c */
-int	install_new_pkg(const char *);
+int	install_new_pkg(const char *, bool);
 int	update_pkg(const char *);
 int	remove_pkg(const char *, bool, bool);
 int	autoupdate_pkgs(bool, bool);

@@ -1,5 +1,9 @@
 xbps-0.11.0 (???):
 
+ * xbps-bin(8): it is possible now to reinstall a package even if it's
+   installed with the '-f' option. If reinstalling the same package version,
+   only unexistent files or files not matching its hash will be extracted.
+
  * While unpacking a binary package, always check that file to be extracted
    exists on filesystem, if true and its hash is matched, skip extraction.
 

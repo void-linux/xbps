@@ -3,12 +3,6 @@ libxbps:
  - properties: (hold) still unimplemented.
  - properties: (update-first) still unimplemented.
 
-xbps-bin:
- - Add a flag (or use -f install) to force reinstallation of any
-   installed package (if same version is available) and preserve
-   requiredby entries, but overwritting those files that weren't
-   matched by the hash.
-
 xbps-repo:
  - New target to clean binpkgs in cachedir that aren't available on
    any registered repository or its hash doesn't match.
