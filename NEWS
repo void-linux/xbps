@@ -1,4 +1,4 @@
-xbps-0.11.0 (???):
+xbps-0.11.0 (2011-12-20):
 
  * xbps-bin(8): it is possible now to reinstall a package even if it's
    installed with the '-f' option. If reinstalling the same package version,
