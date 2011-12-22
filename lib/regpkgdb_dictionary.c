@@ -100,3 +100,31 @@ xbps_regpkgdb_dictionary_release(void)
 	regpkgdb_initialized = false;
 	xbps_dbg_printf("[regpkgdb] released ok.\n");
 }
+
+int
+xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+			     void *arg)
+{
+	prop_array_t array;
+	prop_object_t obj;
+	struct xbps_handle *xhp = xbps_handle_get();
+	size_t i;
+	int rv;
+	bool done = false;
+
+	/* initialize regpkgdb */
+	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0)
+		return rv;
+
+	array = prop_dictionary_get(xhp->regpkgdb_dictionary, "packages");
+	if (prop_object_type(array) != PROP_TYPE_ARRAY)
+		return EINVAL;
+
+	for (i = 0; i < prop_array_count(array); i++) {
+		obj = prop_array_get(array, i);
+		rv = (*fn)(obj, arg, &done);
+		if (rv != 0 || done)
+			break;
+	}
+	return rv;
+}

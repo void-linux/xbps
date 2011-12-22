@@ -295,7 +295,7 @@ main(int argc, char **argv)
 		if (strcasecmp(argv[1], "all") == 0)
 			rv = check_pkg_integrity_all();
 		else
-			rv = check_pkg_integrity(argv[1]);
+			rv = check_pkg_integrity(NULL, argv[1]);
 
 	} else if (strcasecmp(argv[0], "autoupdate") == 0) {
 		/*

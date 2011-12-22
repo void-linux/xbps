@@ -35,54 +35,67 @@
 #include <xbps_api.h>
 #include "defs.h"
 
+struct checkpkg {
+	size_t npkgs;
+	size_t nbrokenpkgs;
+};
+
+static int
+cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
+{
+	struct checkpkg *cpkg = arg;
+	const char *pkgname, *version;
+
+	(void)done;
+
+	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+	printf("Checking %s-%s ...\n", pkgname, version);
+	if (check_pkg_integrity(obj, pkgname) != 0)
+		cpkg->nbrokenpkgs++;
+
+	cpkg->npkgs++;
+	return 0;
+}
+
 int
 check_pkg_integrity_all(void)
 {
-	const struct xbps_handle *xhp;
-	prop_array_t regpkgs;
-	prop_object_t obj;
-	const char *pkgname, *version;
-	size_t i, npkgs = 0, nbrokenpkgs = 0;
+	struct checkpkg *cpkg;
 
-	xhp = xbps_handle_get();
-	regpkgs = prop_dictionary_get(xhp->regpkgdb_dictionary, "packages");
-	if (prop_object_type(regpkgs) != PROP_TYPE_ARRAY)
-		return 0;
+	cpkg = calloc(1, sizeof(*cpkg));
+	if (cpkg == NULL)
+		return ENOMEM;
 
-	for (i = 0; i < prop_array_count(regpkgs); i++) {
-		obj = prop_array_get(regpkgs, i);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		printf("Checking %s-%s ...\n", pkgname, version);
-		if (check_pkg_integrity(pkgname) != 0)
-			nbrokenpkgs++;
-
-		npkgs++;
-	}
-	printf("%zu package%s processed: %zu broken.\n", npkgs,
-	    npkgs == 1 ? "" : "s", nbrokenpkgs);
+	(void)xbps_regpkgdb_foreach_pkg_cb(cb_pkg_integrity, cpkg);
+	printf("%zu package%s processed: %zu broken.\n", cpkg->npkgs,
+	    cpkg->npkgs == 1 ? "" : "s", cpkg->nbrokenpkgs);
+	free(cpkg);
 
 	return 0;
 }
 
 int
-check_pkg_integrity(const char *pkgname)
+check_pkg_integrity(prop_dictionary_t pkgd, const char *pkgname)
 {
-	prop_dictionary_t pkgd, propsd, filesd;
+	prop_dictionary_t opkgd, propsd, filesd;
 	int rv = 0;
 	bool broken = false;
 
-	propsd = filesd = NULL;
+	propsd = filesd = opkgd = NULL;
 
 	/* find real pkg by name */
-	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
-		/* find virtual pkg by name */
-		pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
-	}
-	if (pkgd == NULL) {
-		printf("Package %s is not installed.\n", pkgname);
-		return 0;
+		opkgd = xbps_find_pkg_dict_installed(pkgname, false);
+		if (opkgd == NULL) {
+			/* find virtual pkg by name */
+			pkgd = xbps_find_virtualpkg_dict_installed(pkgname,
+			    false);
+		}
+		if (opkgd == NULL) {
+			printf("Package %s is not installed.\n", pkgname);
+			return 0;
+		}
 	}
 	/*
 	 * Check for props.plist metadata file.
@@ -115,16 +128,16 @@ check_pkg_integrity(const char *pkgname)
 		goto out;
 	}
 
-#define RUN_PKG_CHECK(name)					\
-do {								\
-	rv = check_pkg_##name(pkgd, propsd, filesd);		\
-	if (rv)							\
-		broken = true;					\
-	else if (rv == -1) {					\
-		xbps_error_printf("%s: the %s test "		\
-		    "returned error!\n", pkgname, #name);	\
-		goto out;					\
-	}							\
+#define RUN_PKG_CHECK(name)						\
+do {									\
+	rv = check_pkg_##name(pkgd ? pkgd : opkgd, propsd, filesd);	\
+	if (rv)								\
+		broken = true;						\
+	else if (rv == -1) {						\
+		xbps_error_printf("%s: the %s test "			\
+		    "returned error!\n", pkgname, #name);		\
+		goto out;						\
+	}								\
 } while (0)
 
 	/* Execute pkg checks */
@@ -141,8 +154,8 @@ out:
 		prop_object_release(filesd);
 	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(propsd);
-	if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY)
-		prop_object_release(pkgd);
+	if (prop_object_type(opkgd) == PROP_TYPE_DICTIONARY)
+		prop_object_release(opkgd);
 	if (broken)
 		return 1;
 

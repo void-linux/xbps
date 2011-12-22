@@ -56,7 +56,7 @@ int	exec_transaction(bool, bool);
 int	remove_installed_pkgs(int, char **, bool, bool, bool, bool);
 
 /* from check.c */
-int	check_pkg_integrity(const char *);
+int	check_pkg_integrity(prop_dictionary_t, const char *);
 int	check_pkg_integrity_all(void);
 
 #define CHECK_PKG_DECL(type)					\

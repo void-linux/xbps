@@ -56,8 +56,8 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111219"
-#define XBPS_VERSION		"0.11.0"
+#define XBPS_API_VERSION	"20111222"
+#define XBPS_VERSION		"0.12"
 
 /**
  * @def XBPS_RELVER
@@ -419,7 +419,7 @@ struct xbps_handle {
 	 */
 	cfg_t *cfg;
 	/**
-	 * @var regpkgdb_dictionary.
+	 * @private regpkgdb_dictionary.
 	 *
 	 * Internalized proplib dictionary with the registed package database
 	 * stored in XBPS_META_PATH/XBPS_REGPKGDB.
@@ -545,13 +545,8 @@ struct xbps_handle {
  * Initialize the XBPS library with the following steps:
  *
  *   - Set function callbacks for fetching and unpacking.
- *   - Set root directory (if not set, defaults to /).
- *   - Set cache directory (if not set, defaults to XBPS_CACHE_PATH).
- *   - Set global flags.
  *   - Set default cache connections for libfetch.
- *   - Initialize the debug printfs.
- *   - Internalize the proplib dictionary in config file.
- *   - Internalize the regpkgdb dictionary (if available).
+ *   - Parse configuration file.
  *
  * @param[in] xhp Pointer to an xbps_handle structure, as returned by
  * \a xbps_handle_alloc().
@@ -768,6 +763,19 @@ int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 			const char *key,
 			int (*fn)(prop_object_t, void *, bool *),
 			void *arg);
+
+/**
+ * Executes a function callback per a package dictionary registered
+ * in "regpkgdb" plist.
+ *
+ * @param[in] fn Function callback to run for any pkg dictionary.
+ * @param[in] arg Argument to be passed to the function callback.
+ *
+ * @return 0 on success (all objects were processed), otherwise an
+ * errno value.
+ */
+int xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+				 void *arg);
 
 /**
  * Finds the proplib's dictionary associated with a package, by looking
