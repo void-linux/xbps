@@ -152,6 +152,10 @@ xbps_init(struct xbps_handle *xh)
 			xhp->cachedir = cfg_getstr(xhp->cfg, "cachedir");
 	}
 	get_cachedir(xhp);
+	if (xhp->cachedir_priv == NULL) {
+		xbps_end(xh);
+		return ENOMEM;
+	}
 	xhp->cachedir = xhp->cachedir_priv;
 
 	if (xhp->cfg == NULL) {
@@ -199,8 +203,9 @@ xbps_end(struct xbps_handle *xh)
 		return;
 	if (xh->cfg != NULL)
 		cfg_free(xh->cfg);
+	if (xh->cachedir_priv != NULL)
+		free(xh->cachedir_priv);
 
-	free(xh->cachedir_priv);
 	free(xh);
 	xh = NULL;
 	xhp = NULL;

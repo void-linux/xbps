@@ -138,7 +138,10 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 			continue;
 
 		pkgdepname = xbps_pkg_name(pkgdep);
-		assert(pkgdepname != NULL);
+		if (pkgdepname == NULL) {
+			prop_object_iterator_release(iter);
+			return ENOMEM;
+		}
 		for (i = 0; i < prop_array_count(od->orphans_user); i++) {
 			prop_array_get_cstring_nocopy(od->orphans_user,
 			    i, &curpkgname);

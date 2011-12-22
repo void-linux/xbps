@@ -285,7 +285,7 @@ xbps_set_pkg_state_installed(const char *pkgname,
 	}
 
 out:
-	if (dict)
+	if (prop_object_type(dict) == PROP_TYPE_DICTIONARY)
 		prop_object_release(dict);
 	if (metadir)
 		free(metadir);

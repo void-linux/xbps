@@ -99,7 +99,7 @@ xbps_check_is_installed_pkg_by_name(const char *pkgname)
 	assert(pkgname != NULL);
 
 	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
-	if (pkgd) {
+	if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY) {
 		prop_object_release(pkgd);
 		return true;
 	}
@@ -276,7 +276,8 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkgd)
 	assert(prop_object_type(pkgd) == PROP_TYPE_DICTIONARY);
 
 	array = prop_dictionary_get(pkgd, "run_depends");
-	if (array && prop_array_count(array) > 0)
+	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
+	     prop_array_count(array) > 0)
 		return true;
 
 	return false;

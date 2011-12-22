@@ -408,6 +408,10 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 			 * file but renaming it to <file>.old.
 			 */
 			buf = xbps_xasprintf("%s.old", entry_pname);
+			if (buf == NULL) {
+				rv = ENOMEM;
+				goto out;
+			}
 			(void)rename(entry_pname, buf);
 			free(buf);
 			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE, 0,
@@ -538,9 +542,9 @@ out:
 int
 xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 {
-	struct archive *ar;
+	struct archive *ar = NULL;
 	const char *pkgname, *version, *repoloc, *pkgver, *fname;
-	char *bpkg;
+	char *bpkg = NULL;
 	int rv = 0;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
@@ -563,8 +567,8 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	}
 
 	if ((ar = archive_read_new()) == NULL) {
-		rv = ENOMEM;
-		goto out;
+		free(bpkg);
+		return ENOMEM;
 	}
 	/*
 	 * Enable support for tar format and all compression methods.
@@ -578,8 +582,12 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 		    rv, pkgname, version,
 		    "%s: [unpack] failed to open binary package `%s': %s",
 		    pkgver, fname, strerror(rv));
-		goto out;
+		free(bpkg);
+		archive_read_finish(ar);
+		return rv;
 	}
+	free(bpkg);
+
 	/*
 	 * Set package state to half-unpacked.
 	 */
@@ -613,8 +621,6 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 		    pkgver, strerror(rv));
 	}
 out:
-	if (bpkg)
-		free(bpkg);
 	if (ar)
 		archive_read_finish(ar);
 

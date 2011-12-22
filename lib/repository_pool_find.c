@@ -228,7 +228,7 @@ xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern, bool best)
 	assert(pkg != NULL);
 
 	rpf = repo_find_pkg(pkg, bypattern, best, true);
-	if (rpf->pkgd != NULL)
+	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);
 
@@ -244,7 +244,7 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 	assert(pkg != NULL);
 
 	rpf = repo_find_pkg(pkg, bypattern, best, false);
-	if (rpf->pkgd != NULL)
+	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);
 
@@ -287,7 +287,7 @@ xbps_repository_pool_dictionary_metadata_plist(const char *pkgname,
 out:
 	if (plistd == NULL)
 		errno = ENOENT;
-	if (pkgd)
+	if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(pkgd);
 
 	return plistd;
