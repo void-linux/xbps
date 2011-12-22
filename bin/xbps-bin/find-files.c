@@ -36,13 +36,17 @@
 #include "defs.h"
 
 static int
-match_files_by_pattern(prop_dictionary_t pkg_filesd, prop_dictionary_keysym_t key,
-		       const char *pattern, const char *pkgname)
+match_files_by_pattern(prop_dictionary_t pkg_filesd,
+		       prop_dictionary_keysym_t key,
+		       int npatterns,
+		       char **patterns,
+		       const char *pkgname)
 {
 	prop_object_iterator_t iter;
 	prop_array_t array;
 	prop_object_t obj;
 	const char *keyname, *filestr, *typestr;
+	int i;
 
 	keyname = prop_dictionary_keysym_cstring_nocopy(key);
 	array = prop_dictionary_get_keysym(pkg_filesd, key);
@@ -59,9 +63,11 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, prop_dictionary_keysym_t ke
 	iter = prop_array_iterator(array);
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
-		if ((strcmp(filestr, pattern) == 0) ||
-		    (xbps_pkgpattern_match(filestr, pattern) == 1))
-			printf("%s: %s (%s)\n", pkgname, filestr, typestr);
+		for (i = 1; i < npatterns; i++) {
+			if ((strcmp(filestr, patterns[i]) == 0) ||
+			    (xbps_pkgpattern_match(filestr, patterns[i]) == 1))
+				printf("%s: %s (%s)\n", pkgname, filestr, typestr);
+		}
 	}
 	prop_object_iterator_release(iter);
 
@@ -69,7 +75,7 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, prop_dictionary_keysym_t ke
 }
 
 int
-find_files_in_packages(const char *pattern)
+find_files_in_packages(int npatterns, char **patterns)
 {
 	struct xbps_handle *xhp;
 	prop_dictionary_t pkg_filesd;
@@ -107,7 +113,8 @@ find_files_in_packages(const char *pattern)
 		count = prop_array_count(files_keys);
 		for (i = 0; i < count; i++) {
 			rv = match_files_by_pattern(pkg_filesd,
-			    prop_array_get(files_keys, i), pattern, dp->d_name);
+			    prop_array_get(files_keys, i),
+			    npatterns, patterns, dp->d_name);
 			if (rv == -1)
 				break;
 		}

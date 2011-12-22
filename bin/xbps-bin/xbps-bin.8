@@ -1,4 +1,4 @@
-.Dd December 20, 2011
+.Dd December 22, 2011
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -144,10 +144,11 @@ Checks for integrity errors in installed packages. The checks are to found
 missing run-time dependencies, missing and modified package files and
 metadata files. If the all keyword is used, all packages currently installed
 will be checked, otherwise just pkgname.
-.It Sy find-files Ar pattern
+.It Sy find-files Ar pattern Ar [patterns ...]
 Prints the name of the installed
 .Em package(s)
-matching the pattern on its file list.
+matching the pattern on its file list. Multiple patterns can be specified
+as arguments.
 .It Sy install Ar pkgname(s) | Ar pkgpattern(s)
 Install binary package(s) from repository pool by specifying
 .Em pkgname(s)

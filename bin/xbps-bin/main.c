@@ -385,10 +385,10 @@ main(int argc, char **argv)
 		 * Find files matched by a pattern from installed
 		 * packages.
 		 */
-		if (argc != 2)
+		if (argc < 2)
 			usage(xhp);
 
-		rv = find_files_in_packages(argv[1]);
+		rv = find_files_in_packages(argc, argv);
 
 	} else {
 		usage(xhp);

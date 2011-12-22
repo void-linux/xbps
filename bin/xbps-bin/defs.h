@@ -80,7 +80,7 @@ int	show_pkg_files_from_metadir(const char *);
 int	show_orphans(void);
 
 /* from find-files.c */
-int	find_files_in_packages(const char *);
+int	find_files_in_packages(int, char **);
 
 /* from question.c */
 bool	yesno(const char *, ...);
