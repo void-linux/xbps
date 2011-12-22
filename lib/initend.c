@@ -211,7 +211,7 @@ xbps_handle_get(void)
 struct xbps_handle *
 xbps_handle_alloc(void)
 {
-	return malloc(sizeof(struct xbps_handle));
+	return calloc(1, sizeof(struct xbps_handle));
 }
 
 static void
