@@ -23,6 +23,14 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_STRCASESTR
+# define _GNU_SOURCE    /* for strcasestr(3) */
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -35,10 +43,6 @@
 #include <xbps_api.h>
 #include "../xbps-bin/defs.h"
 #include "defs.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 int
 show_pkg_info_from_repolist(const char *pkgname, const char *option)
@@ -83,5 +87,44 @@ show_pkg_deps_from_repolist(const char *pkgname)
 	    "run_depends", list_strings_sep_in_array, NULL);
 
 	prop_object_release(pkgd);
+	return 0;
+}
+
+int
+show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
+{
+	struct repo_search_data *rsd = arg;
+	const char *pkgver, *pkgname, *desc;
+	char *tmp = NULL;
+	size_t i, x;
+
+	(void)loop_done;
+
+	assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
+	assert(rsd->patterns != NULL);
+
+	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
+
+	for (i = 1; i < (size_t)rsd->npatterns; i++) {
+		if ((xbps_pkgpattern_match(pkgver, rsd->patterns[i]) == 1) ||
+		    (xbps_pkgpattern_match(desc, rsd->patterns[i]) == 1)  ||
+		    (strcasecmp(pkgname, rsd->patterns[i]) == 0) ||
+		    (strcasestr(pkgver, rsd->patterns[i])) ||
+		    (strcasestr(desc, rsd->patterns[i]))) {
+			tmp = calloc(1, rsd->pkgver_len + 1);
+			if (tmp == NULL)
+				return errno;
+
+			strlcpy(tmp, pkgver, rsd->pkgver_len + 1);
+			for (x = strlen(tmp); x < rsd->pkgver_len; x++)
+				tmp[x] = ' ';
+
+			printf(" %s %s\n", tmp, desc);
+			free(tmp);
+		}
+	}
+
 	return 0;
 }

@@ -33,7 +33,8 @@
 #include <xbps_api.h>
 
 struct repo_search_data {
-	char *pattern;
+	int npatterns;
+	char **patterns;
 	size_t pkgver_len;
 };
 
@@ -51,6 +52,7 @@ int	repo_search_pkgs_cb(struct repository_pool_index *, void *, bool *);
 /* From show.c */
 int	show_pkg_info_from_repolist(const char *, const char *);
 int	show_pkg_deps_from_repolist(const char *);
+int 	show_pkg_namedesc(prop_object_t, void *, bool *);
 
 
 #endif /* !_XBPS_REPO_DEFS_H_ */

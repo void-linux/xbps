@@ -1,4 +1,4 @@
-.Dd December 15, 2011
+.Dd December 22, 2011
 .Os Void GNU/Linux
 .Dt xbps-repo 8
 .Sh NAME
@@ -76,7 +76,7 @@ will be shown. The argument expects a decimal number starting from 0,
 matching the output of the
 .Ar list
 target.
-.It Sy search Ar pattern
+.It Sy search Ar pattern Ar [patterns ...]
 Search for packages containing the shell
 .Em pattern
 (see
@@ -86,7 +86,7 @@ in its
 or
 .Em description
 values in repository pool. Please note that patterns are matched in case
-insensitive mode.
+insensitive mode. Multiple patterns can be specified as arguments.
 .It Sy show Ar pkgname
 Shows information about binary package
 .Em pkgname .

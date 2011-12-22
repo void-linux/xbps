@@ -55,6 +55,7 @@ main(int argc, char **argv)
 {
 	struct xbps_handle *xhp;
 	struct xferstat xfer;
+	struct repo_search_data *rsd = NULL;
 	prop_dictionary_t pkgd;
 	const char *rootdir, *cachedir, *conffile, *option;
 	int c, rv = 0;
@@ -148,10 +149,18 @@ main(int argc, char **argv)
 		 * Search for a package by looking at pkgname/short_desc
 		 * by using shell style match patterns (fnmatch(3)).
 		 */
-		if (argc != 2)
+		if (argc < 2)
 			usage(xhp);
 
-		rv = xbps_repository_pool_foreach(repo_search_pkgs_cb, argv[1]);
+		rsd = malloc(sizeof(*rsd));
+		if (rsd == NULL) {
+			rv = ENOMEM;
+			goto out;
+		}
+		rsd->npatterns = argc;
+		rsd->patterns = argv;
+		rv = xbps_repository_pool_foreach(repo_search_pkgs_cb, rsd);
+		free(rsd);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");

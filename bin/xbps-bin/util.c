@@ -23,9 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_STRCASESTR
-# define _GNU_SOURCE    /* for strcasestr(3) */
-#endif
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -36,7 +33,6 @@
 #include <strings.h>
 
 #include <xbps_api.h>
-#include "compat.h"
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
@@ -198,42 +194,6 @@ find_longest_pkgver(prop_dictionary_t d)
 	    _find_longest_pkgver_cb, &len);
 
 	return len;
-}
-int
-show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
-{
-	struct repo_search_data *rsd = arg;
-	const char *pkgver, *pkgname, *desc;
-	char *tmp = NULL;
-	size_t i;
-
-	(void)loop_done;
-
-	assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
-	assert(rsd->pattern != NULL);
-
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
-
-	if ((xbps_pkgpattern_match(pkgver, rsd->pattern) == 1) ||
-	    (xbps_pkgpattern_match(desc, rsd->pattern) == 1)  ||
-	    (strcasecmp(pkgname, rsd->pattern) == 0) ||
-	    (strcasestr(pkgver, rsd->pattern)) ||
-	    (strcasestr(desc, rsd->pattern))) {
-		tmp = calloc(1, rsd->pkgver_len + 1);
-		if (tmp == NULL)
-			return errno;
-
-		strlcpy(tmp, pkgver, rsd->pkgver_len + 1);
-		for (i = strlen(tmp); i < rsd->pkgver_len; i++)
-			tmp[i] = ' ';
-
-		printf(" %s %s\n", tmp, desc);
-		free(tmp);
-	}
-
-	return 0;
 }
 
 int

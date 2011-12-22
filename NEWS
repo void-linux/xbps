@@ -1,3 +1,11 @@
+xbps-0.11.1 (???):
+
+ * libxbps: more paranoid type checking and allocation results, to make
+   sure that out of memory conditions are handled gracefully.
+
+ * xbps-repo(8): the 'search' target accepts multiple patterns, such as:
+	$ xbps-repo search 'foo-[0-9]*' '*blah*' ...
+
 xbps-0.11.0 (2011-12-20):
 
  * xbps-bin(8): it is possible now to reinstall a package even if it's
