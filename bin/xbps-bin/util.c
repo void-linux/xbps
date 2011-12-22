@@ -190,8 +190,12 @@ find_longest_pkgver(prop_dictionary_t d)
 {
 	size_t len = 0;
 
-	(void)xbps_callback_array_iter_in_dict(d, "packages",
-	    _find_longest_pkgver_cb, &len);
+	if (prop_object_type(d) == PROP_TYPE_DICTIONARY)
+		(void)xbps_callback_array_iter_in_dict(d, "packages",
+		    _find_longest_pkgver_cb, &len);
+	else
+		(void)xbps_regpkgdb_foreach_pkg_cb(
+		    _find_longest_pkgver_cb, &len);
 
 	return len;
 }

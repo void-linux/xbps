@@ -190,11 +190,6 @@ main(int argc, char **argv)
 		if (argc < 1 || argc > 2)
 			usage(xhp);
 
-		if (xhp->regpkgdb_dictionary == NULL) {
-			printf("No packages currently installed.\n");
-			goto out;
-		}
-
 		lpc.check_state = true;
 		lpc.state = 0;
 		if (argv[1]) {
@@ -219,9 +214,12 @@ main(int argc, char **argv)
 		/*
 		 * Find the longest pkgver string to pretty print the output.
 		 */
-		lpc.pkgver_len = find_longest_pkgver(xhp->regpkgdb_dictionary);
-		rv = xbps_callback_array_iter_in_dict(xhp->regpkgdb_dictionary,
-		    "packages", list_pkgs_in_dict, &lpc);
+		lpc.pkgver_len = find_longest_pkgver(NULL);
+		rv = xbps_regpkgdb_foreach_pkg_cb(list_pkgs_in_dict, &lpc);
+		if (rv == ENOENT) {
+			printf("No packages currently registered.\n");
+			rv = 0;
+		}
 
 	} else if (strcasecmp(argv[0], "install") == 0) {
 		/* Installs a binary package and required deps. */
@@ -368,8 +366,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(xhp);
 
-		rv = xbps_callback_array_iter_in_dict(xhp->regpkgdb_dictionary,
-		    "packages", list_manual_pkgs, NULL);
+		rv = xbps_regpkgdb_foreach_pkg_cb(list_manual_pkgs, NULL);
 
 	} else if (strcasecmp(argv[0], "show-revdeps") == 0) {
 		/*
