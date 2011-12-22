@@ -148,16 +148,15 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 	xbps_dbg_printf("[rpool] initialized ok.\n");
 out:
 	if (rv != 0) 
-		xbps_repository_pool_release();
+		xbps_repository_pool_release(xhp);
 
 	return rv;
 
 }
 
 void HIDDEN
-xbps_repository_pool_release(void)
+xbps_repository_pool_release(struct xbps_handle *xhp)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t d;
 	size_t i;
 	const char *uri;

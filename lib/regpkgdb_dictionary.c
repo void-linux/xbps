@@ -88,14 +88,11 @@ xbps_regpkgdb_dictionary_init(struct xbps_handle *xhp)
 }
 
 void HIDDEN
-xbps_regpkgdb_dictionary_release(void)
+xbps_regpkgdb_dictionary_release(struct xbps_handle *xhp)
 {
-	struct xbps_handle *xhp;
-
 	if (!regpkgdb_initialized)
 		return;
 
-	xhp = xbps_handle_get();
 	prop_object_release(xhp->regpkgdb_dictionary);
 	regpkgdb_initialized = false;
 	xbps_dbg_printf("[regpkgdb] released ok.\n");

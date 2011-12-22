@@ -71,15 +71,15 @@ int HIDDEN dewey_match(const char *, const char *);
  * @private
  * From lib/regpkgdb_dictionary.c
  */
-int HIDDEN xbps_regpkgdb_dictionary_init(struct xbps_handle *xhp);
-void HIDDEN xbps_regpkgdb_dictionary_release(void);
+int HIDDEN xbps_regpkgdb_dictionary_init(struct xbps_handle *);
+void HIDDEN xbps_regpkgdb_dictionary_release(struct xbps_handle *);
 
 /**
  * @private
  * From lib/repository_pool.c
  */
 int HIDDEN xbps_repository_pool_init(struct xbps_handle *);
-void HIDDEN xbps_repository_pool_release(void);
+void HIDDEN xbps_repository_pool_release(struct xbps_handle *);
 
 /**
  * @private

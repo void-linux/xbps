@@ -184,12 +184,13 @@ xbps_init(struct xbps_handle *xh)
 void
 xbps_end(struct xbps_handle *xh)
 {
-	xbps_regpkgdb_dictionary_release();
-	xbps_repository_pool_release();
-	xbps_fetch_unset_cache_connection();
-
 	if (xh == NULL)
 		return;
+
+	xbps_regpkgdb_dictionary_release(xh);
+	xbps_repository_pool_release(xh);
+	xbps_fetch_unset_cache_connection();
+
 	if (xh->cfg != NULL)
 		cfg_free(xh->cfg);
 	if (xh->cachedir_priv != NULL)
