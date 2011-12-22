@@ -105,6 +105,15 @@ xbps_repository_pool_init(const struct xbps_handle *xhp)
 
 		ntotal++;
 		/*
+		 * Check if repository doesn't match our architecture.
+		 */
+		if (!check_repo_arch(repouri)) {
+			xbps_dbg_printf("[rpool] `%s' arch not matched, "
+			    "ignoring.\n", repouri);
+			nmissing++;
+			continue;
+		}
+		/*
 		 * If index file is not there, skip.
 		 */
 		plist = xbps_pkg_index_plist(repouri);
@@ -115,16 +124,6 @@ xbps_repository_pool_init(const struct xbps_handle *xhp)
 		if (access(plist, R_OK) == -1) {
 			xbps_dbg_printf("[rpool] `%s' missing index "
 			    "file, ignoring.\n", repouri);
-			free(plist);
-			nmissing++;
-			continue;
-		}
-		/*
-		 * Check if repository doesn't match our architecture.
-		 */
-		if (!check_repo_arch(repouri)) {
-			xbps_dbg_printf("[rpool] `%s' arch not matched, "
-			    "ignoring.\n", repouri);
 			free(plist);
 			nmissing++;
 			continue;
