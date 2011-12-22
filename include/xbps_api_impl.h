@@ -78,7 +78,7 @@ void HIDDEN xbps_regpkgdb_dictionary_release(void);
  * @private
  * From lib/repository_pool.c
  */
-int HIDDEN xbps_repository_pool_init(const struct xbps_handle *);
+int HIDDEN xbps_repository_pool_init(struct xbps_handle *);
 void HIDDEN xbps_repository_pool_release(void);
 
 /**

@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111222"
+#define XBPS_API_VERSION	"20111222-1"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -425,6 +425,12 @@ struct xbps_handle {
 	 * stored in XBPS_META_PATH/XBPS_REGPKGDB.
 	 */
 	prop_dictionary_t regpkgdb_dictionary;
+	/**
+	 * @private
+	 *
+	 * Array of dictionaries with all registered repositories.
+	 */
+	prop_array_t repo_pool;
 	/**
 	 * @var xbps_state_cb
 	 *
