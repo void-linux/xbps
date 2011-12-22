@@ -32,14 +32,22 @@
 #include <xbps_api.h>
 #include "defs.h"
 
+struct ffdata {
+	int npatterns;
+	char **patterns;
+};
+
 static int
-match_files_by_pattern(prop_dictionary_t pkg_filesd, prop_dictionary_keysym_t key,
-		       const char *pattern, const char *pkgver)
+match_files_by_pattern(prop_dictionary_t pkg_filesd,
+		       prop_dictionary_keysym_t key,
+		       struct ffdata *ffd,
+		       const char *pkgver)
 {
 	prop_object_iterator_t iter;
 	prop_array_t array;
 	prop_object_t obj;
 	const char *keyname, *filestr, *typestr;
+	int i;
 
 	keyname = prop_dictionary_keysym_cstring_nocopy(key);
 	array = prop_dictionary_get_keysym(pkg_filesd, key);
@@ -58,10 +66,13 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, prop_dictionary_keysym_t ke
 	iter = prop_array_iterator(array);
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
-		if ((strcmp(filestr, pattern) == 0) ||
-		    (strstr(filestr, pattern)) ||
-		    (xbps_pkgpattern_match(filestr, pattern) == 1))
-			printf(" %s: %s (%s)\n", pkgver, filestr, typestr);
+		for (i = 1; i < ffd->npatterns; i++) {
+			if ((strcmp(filestr, ffd->patterns[i]) == 0) ||
+			    (strstr(filestr, ffd->patterns[i])) ||
+			    (xbps_pkgpattern_match(filestr,
+						   ffd->patterns[i]) == 1))
+				printf(" %s: %s (%s)\n", pkgver, filestr, typestr);
+		}
 	}
 	prop_object_iterator_release(iter);
 	return 0;
@@ -74,7 +85,8 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 	prop_array_t files_keys;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pkgname, *pkgver, *pattern = arg;
+	struct ffdata *ffd = arg;
+	const char *pkgname, *pkgver;
 	char *url;
 	int rv = 0;
 	unsigned int i, count;
@@ -108,7 +120,7 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 		count = prop_array_count(files_keys);
 		for (i = 0; i < count; i++) {
 			rv = match_files_by_pattern(pkg_filesd,
-			    prop_array_get(files_keys, i), pattern, pkgver);
+			    prop_array_get(files_keys, i), ffd, pkgver);
 			if (rv == -1)
 				break;
 		}
@@ -122,8 +134,18 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 }
 
 int
-repo_find_files_in_packages(const char *pattern)
+repo_find_files_in_packages(int npatterns, char **patterns)
 {
-	return xbps_repository_pool_foreach(find_files_in_package,
-	    __UNCONST(pattern));
+	struct ffdata *ffd;
+	int rv;
+
+	ffd = malloc(sizeof(*ffd));
+	if (ffd == NULL)
+		return ENOMEM;
+
+	ffd->npatterns = npatterns;
+	ffd->patterns = patterns;
+	rv = xbps_repository_pool_foreach(find_files_in_package, ffd);
+	free(ffd);
+	return rv;
 }

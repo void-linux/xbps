@@ -1,5 +1,8 @@
 xbps-0.11.1 (???):
 
+ * xbps-repo(8): the 'find-files' target accepts multiple patterns, such as:
+	$ xbps-repo find-files /bin/cat '/bin/f*' ...
+
  * xbps-bin(8): the 'find-files' target accepts multiple patterns, such as:
 	$ xbps-bin find-files /bin/cat '/bin/f*' ...
 

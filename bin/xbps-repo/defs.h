@@ -42,7 +42,7 @@ struct repo_search_data {
 int	repo_genindex(const char *);
 
 /* From find-files.c */
-int	repo_find_files_in_packages(const char *);
+int	repo_find_files_in_packages(int, char **);
 
 /* From list.c */
 int	repo_pkg_list_cb(struct repository_pool_index *, void *, bool *);

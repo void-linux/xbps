@@ -225,10 +225,10 @@ main(int argc, char **argv)
 		prop_object_release(pkgd);
 	} else if (strcasecmp(argv[0], "find-files") == 0) {
 		/* Finds files by patterns, exact matches and components. */
-		if (argc != 2)
+		if (argc < 2)
 			usage(xhp);
 
-		rv = repo_find_files_in_packages(argv[1]);
+		rv = repo_find_files_in_packages(argc, argv);
 		if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
