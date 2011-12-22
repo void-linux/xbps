@@ -177,17 +177,6 @@ xbps_init(struct xbps_handle *xh)
 	xbps_dbg_printf("fetch-cacheconn=%u\n", cc);
 	xbps_dbg_printf("fetch-cacheconn-host=%u\n", cch);
 	xbps_dbg_printf("syslog=%u\n", xhp->syslog_enabled);
-	/*
-	 * Initialize regpkgdb dictionary.
-	 */
-        if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
-               if (rv != ENOENT) {
-		       xbps_dbg_printf("%s: couldn't initialize "
-			    "regpkgdb: %s\n", strerror(rv));
-		       xbps_end(xh);
-		       return EINVAL;
-	       }
-	}
 
 	return 0;
 }

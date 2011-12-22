@@ -320,12 +320,19 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, rpkgd = NULL;
 	pkg_state_t state = 0;
+	int rv;
 
 	assert(str != NULL);
 
 	xhp = xbps_handle_get();
-	if (xhp->regpkgdb_dictionary == NULL)
-		return NULL;
+	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
+		if (rv != ENOENT) {
+			xbps_dbg_printf("%s: couldn't initialize "
+			    "regpkgdb: %s\n", strerror(rv));
+			return NULL;
+		} else if (rv == ENOENT)
+			return NULL;
+	}
 
 	/* try normal pkg */
 	if (virtual == false) {

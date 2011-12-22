@@ -56,6 +56,11 @@ xbps_configure_packages(void)
 	int rv = 0;
 
 	xhp = xbps_handle_get();
+	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
+		xbps_dbg_printf("%s: couldn't initialize "
+		    "regpkgdb: %s\n", strerror(rv));
+		return rv;
+	}
 	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
 	if (iter == NULL)
 		return errno;

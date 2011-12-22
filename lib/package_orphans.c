@@ -182,6 +182,11 @@ xbps_find_pkg_orphans(prop_array_t orphans_user)
 	 * in which packages were installed.
 	 */
 	od.orphans_user = orphans_user;
+	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
+		xbps_dbg_printf("%s: couldn't initialize "
+		    "regpkgdb: %s\n", strerror(rv));
+		return NULL;
+	}
 	rv = xbps_callback_array_iter_reverse_in_dict(xhp->regpkgdb_dictionary,
 	    "packages", find_orphan_pkg, &od);
 	if (rv != 0) {

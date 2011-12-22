@@ -188,9 +188,11 @@ xbps_transaction_update_packages(void)
 	bool newpkg_found = false;
 
 	xhp = xbps_handle_get();
-	if (xhp->regpkgdb_dictionary == NULL)
-		return ENOENT;
-
+	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
+		xbps_dbg_printf("%s: couldn't initialize "
+		    "regpkgdb: %s\n", strerror(rv));
+		return rv;
+	}
 	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
 	if (iter == NULL)
 		return ENOENT;
