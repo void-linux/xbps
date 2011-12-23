@@ -177,50 +177,37 @@ out:
 	return rv;
 }
 
+static int
+update_pkgs_cb(prop_object_t obj, void *arg, bool *done)
+{
+	const char *pkgname;
+	bool *newpkg_found = arg;
+	int rv = 0;
+
+	(void)done;
+
+	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	rv = xbps_transaction_update_pkg(pkgname);
+	if (rv == 0)
+		*newpkg_found = true;
+	else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
+		/*
+		 * missing pkg or installed version is greater than or
+		 * equal than pkg in repositories.
+		 */
+		rv = 0;
+	}
+
+	return rv;
+}
+
 int
 xbps_transaction_update_packages(void)
 {
-	struct xbps_handle *xhp;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	const char *pkgname;
-	int rv = 0;
 	bool newpkg_found = false;
+	int rv;
 
-	xhp = xbps_handle_get();
-	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
-		xbps_dbg_printf("%s: couldn't initialize "
-		    "regpkgdb: %s\n", strerror(rv));
-		return rv;
-	}
-	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
-	if (iter == NULL)
-		return ENOENT;
-	/*
-	 * Find out if there is a newer version for all currently
-	 * installed packages.
-	 */
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		if ((rv = xbps_transaction_update_pkg(pkgname)) != 0) {
-			if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
-				/*
-				 * missing pkg or installed version is
-				 * greater than or equal than pkg
-				 * in repositories.
-				 */
-				rv = 0;
-				continue;
-			}
-
-			xbps_dbg_printf("[update-all] '%s' returned: %s\n",
-			    pkgname, strerror(rv));
-			break;
-		}
-		newpkg_found = true;
-	}
-	prop_object_iterator_release(iter);
-
+	rv = xbps_regpkgdb_foreach_pkg_cb(update_pkgs_cb, &newpkg_found);
 	if (!newpkg_found)
 		rv = EEXIST;
 

@@ -165,12 +165,10 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 prop_array_t
 xbps_find_pkg_orphans(prop_array_t orphans_user)
 {
-	struct xbps_handle *xhp;
 	prop_array_t array = NULL;
 	struct orphan_data od;
 	int rv = 0;
 
-	xhp = xbps_handle_get();
 	/*
 	 * Prepare an array with all packages previously found.
 	 */
@@ -182,13 +180,7 @@ xbps_find_pkg_orphans(prop_array_t orphans_user)
 	 * in which packages were installed.
 	 */
 	od.orphans_user = orphans_user;
-	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
-		xbps_dbg_printf("%s: couldn't initialize "
-		    "regpkgdb: %s\n", strerror(rv));
-		return NULL;
-	}
-	rv = xbps_callback_array_iter_reverse_in_dict(xhp->regpkgdb_dictionary,
-	    "packages", find_orphan_pkg, &od);
+	rv = xbps_regpkgdb_foreach_reverse_pkg_cb(find_orphan_pkg, &od);
 	if (rv != 0) {
 		errno = rv;
 		prop_object_release(od.array);

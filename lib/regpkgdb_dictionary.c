@@ -98,14 +98,15 @@ xbps_regpkgdb_dictionary_release(struct xbps_handle *xhp)
 	xbps_dbg_printf("[regpkgdb] released ok.\n");
 }
 
-int
-xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
-			     void *arg)
+static int
+foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+	       void *arg,
+	       bool reverse)
 {
 	prop_array_t array;
 	prop_object_t obj;
 	struct xbps_handle *xhp = xbps_handle_get();
-	size_t i;
+	size_t i, cnt;
 	int rv;
 	bool done = false;
 
@@ -117,11 +118,35 @@ xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
 	if (prop_object_type(array) != PROP_TYPE_ARRAY)
 		return EINVAL;
 
-	for (i = 0; i < prop_array_count(array); i++) {
-		obj = prop_array_get(array, i);
-		rv = (*fn)(obj, arg, &done);
-		if (rv != 0 || done)
-			break;
+	cnt = prop_array_count(array);
+	if (reverse) {
+		while (cnt--) {
+			obj = prop_array_get(array, cnt);
+			rv = (*fn)(obj, arg, &done);
+			if (rv != 0 || done)
+				break;
+		}
+	} else {
+		for (i = 0; i < cnt; i++) {
+			obj = prop_array_get(array, i);
+			rv = (*fn)(obj, arg, &done);
+			if (rv != 0 || done)
+				break;
+		}
 	}
 	return rv;
+}
+
+int
+xbps_regpkgdb_foreach_reverse_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+				     void *arg)
+{
+	return foreach_pkg_cb(fn, arg, true);
+}
+
+int
+xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+			     void *arg)
+{
+	return foreach_pkg_cb(fn, arg, false);
 }

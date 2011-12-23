@@ -98,32 +98,21 @@ remove_pkg_metadata(const char *pkgname,
 	return rv;
 }
 
+static int
+purge_pkgs_cb(prop_object_t obj, void *arg, bool *done)
+{
+	const char *pkgname;
+
+	(void)arg;
+	(void)done;
+
+	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	return xbps_purge_pkg(pkgname, true);
+}
 int
 xbps_purge_packages(void)
 {
-	struct xbps_handle *xhp;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	const char *pkgname;
-	int rv = 0;
-
-	xhp = xbps_handle_get();
-	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
-		xbps_dbg_printf("%s: couldn't initialize "
-		    "regpkgdb: %s\n", strerror(rv));
-		return rv;
-	}
-	iter = xbps_array_iter_from_dict(xhp->regpkgdb_dictionary, "packages");
-	if (iter == NULL)
-		return errno;
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		if ((rv = xbps_purge_pkg(pkgname, true)) != 0)
-			break;
-	}
-	prop_object_iterator_release(iter);
-	return rv;
+	return xbps_regpkgdb_foreach_pkg_cb(purge_pkgs_cb, NULL);
 }
 
 int

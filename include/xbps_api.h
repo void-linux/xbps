@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111222-1"
+#define XBPS_API_VERSION	"20111223"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -772,7 +772,7 @@ int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 
 /**
  * Executes a function callback per a package dictionary registered
- * in "regpkgdb" plist.
+ * in "regpkgdb" plist (downwards).
  *
  * @param[in] fn Function callback to run for any pkg dictionary.
  * @param[in] arg Argument to be passed to the function callback.
@@ -782,6 +782,20 @@ int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
  */
 int xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
 				 void *arg);
+
+/**
+ * Executes a function callback per a package dictionary registered
+ * in "regpkgdb" plist, in reverse order (upwards).
+ *
+ * @param[in] fn Function callback to run for any pkg dictionary.
+ * @param[in] arg Argument to be passed to the function callback.
+ *
+ * @return 0 on success (all objects were processed), otherwise an
+ * errno value.
+ */
+int xbps_regpkgdb_foreach_reverse_pkg_cb(
+		int (*fn)(prop_object_t, void *, bool *),
+		void *arg);
 
 /**
  * Finds the proplib's dictionary associated with a package, by looking
