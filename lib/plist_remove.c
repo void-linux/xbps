@@ -126,13 +126,12 @@ xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
 	assert(pkgname != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if (array == NULL)
+	if (array == NULL) {
+		errno = ENOENT;
 		return false;
+	}
 
-	if (!xbps_remove_pkg_from_array_by_name(array, pkgname))
-		return false;
-
-	return prop_dictionary_set(dict, key, array);
+	return xbps_remove_pkg_from_array_by_name(array, pkgname);
 }
 
 bool
