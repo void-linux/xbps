@@ -180,29 +180,31 @@ main(int argc, char **argv)
 			usage(xhp);
 
 		dict = prop_dictionary_create();
-		if (dict == NULL)
-			exit(EXIT_FAILURE);
+		if (dict == NULL) {
+			rv = -1;
+			goto out;
+		}
 		prop_dictionary_set_cstring_nocopy(dict, "pkgname", argv[1]);
 		prop_dictionary_set_cstring_nocopy(dict, "version", argv[2]);
 		prop_dictionary_set_cstring_nocopy(dict, "short_desc", argv[3]);
 		pkgver = xbps_xasprintf("%s-%s", argv[1], argv[2]);
-		if (pkgver == NULL)
-			exit(EXIT_FAILURE);
+		if (pkgver == NULL) {
+			rv = -1;
+			goto out;
+		}
 		prop_dictionary_set_cstring(dict, "pkgver", pkgver);
 		prop_dictionary_set_bool(dict, "automatic-install", false);
 		free(pkgver);
 
+		(void)xbps_regpkgdb_update(xhp, false);
+
 		rv = xbps_set_pkg_state_installed(argv[1], argv[2], pkgver,
 		    XBPS_PKG_STATE_INSTALLED);
 		if (rv != 0)
-			exit(EXIT_FAILURE);
+			goto out;
 
 		rv = xbps_register_pkg(dict);
-		if (rv == EEXIST) {
-			printf("%s%s=> %s-%s already registered.%s\n", MSG_WARN,
-			    in_chroot ? "[chroot] " : "", argv[1], argv[2],
-			    MSG_RESET);
-		} else if (rv != 0) {
+		if (rv != 0) {
 			fprintf(stderr, "%s%s=> couldn't register %s-%s "
 			    "(%s).%s\n", MSG_ERROR,
 			    in_chroot ? "[chroot] " : "" , argv[1], argv[2],
@@ -230,13 +232,15 @@ main(int argc, char **argv)
 				fprintf(stderr, "%s=> ERROR: couldn't unregister %s "
 			    	    "from database (%s)%s\n", MSG_ERROR,
 				    argv[1], strerror(errno), MSG_RESET);
+		} else {
+			rv = xbps_regpkgdb_update(xhp, true);
+			if (rv != 0)
+				goto out;
 
-			exit(EXIT_FAILURE);
+			printf("%s%s=> %s-%s unregistered successfully.%s\n",
+			    MSG_NORMAL, in_chroot ? "[chroot] " : "", argv[1],
+			    argv[2], MSG_RESET);
 		}
-
-		printf("%s%s=> %s-%s unregistered successfully.%s\n",
-		    MSG_NORMAL, in_chroot ? "[chroot] " : "", argv[1],
-		    argv[2], MSG_RESET);
 
 	} else if (strcasecmp(argv[0], "version") == 0) {
 		/* Prints version of an installed package */
@@ -244,9 +248,10 @@ main(int argc, char **argv)
 			usage(xhp);
 
 		dict = xbps_regpkgdb_get_pkgd(argv[1], false);
-		if (dict == NULL)
-			exit(EXIT_FAILURE);
-
+		if (dict == NULL) {
+			rv = errno;
+			goto out;
+		}
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 		printf("%s\n", version);
 		prop_object_release(dict);
@@ -366,7 +371,7 @@ main(int argc, char **argv)
 			if (rv == -1) {
 				printf("%s: %s\n", argv[1],
 				    xbps_fetch_error_string());
-				exit(EXIT_FAILURE);
+				goto out;
 			} else if (rv == 0) {
 				printf("%s: file is identical than remote.\n",
 				    argv[1]);
@@ -377,7 +382,7 @@ main(int argc, char **argv)
 		usage(xhp);
 	}
 
+out:
 	xbps_end(xhp);
-
-	exit(EXIT_SUCCESS);
+	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }
