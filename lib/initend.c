@@ -88,12 +88,14 @@ xbps_init(struct xbps_handle *xh)
 		CFG_STR(__UNCONST("rootdir"), __UNCONST("/"), CFGF_NONE),
 		CFG_STR(__UNCONST("cachedir"),
 		    __UNCONST(XBPS_CACHE_PATH), CFGF_NONE),
-		CFG_INT(__UNCONST("fetch-cache-connections"),
+		CFG_INT(__UNCONST("FetchCacheConnections"),
 		    XBPS_FETCH_CACHECONN, CFGF_NONE),
-		CFG_INT(__UNCONST("fetch-cache-connections-per-host"),
+		CFG_INT(__UNCONST("FetchCacheConnectionsPerHost"),
 		    XBPS_FETCH_CACHECONN_HOST, CFGF_NONE),
-		CFG_INT(__UNCONST("fetch-timeout-connection"),
+		CFG_INT(__UNCONST("FetchTimeoutConnection"),
 		    XBPS_FETCH_TIMEOUT, CFGF_NONE),
+		CFG_INT(__UNCONST("TransactionFrequencyFlush"),
+		    XBPS_TRANS_FLUSH, CFGF_NONE),
 		CFG_BOOL(__UNCONST("syslog"), true, CFGF_NONE),
 		CFG_STR_LIST(__UNCONST("repositories"), NULL, CFGF_MULTI),
 		CFG_SEC(__UNCONST("virtual-package"),
@@ -161,22 +163,27 @@ xbps_init(struct xbps_handle *xh)
 	if (xhp->cfg == NULL) {
 		xhp->syslog_enabled = true;
 		xhp->fetch_timeout = XBPS_FETCH_TIMEOUT;
+		xhp->transaction_frequency_flush = XBPS_TRANS_FLUSH;
 		cc = XBPS_FETCH_CACHECONN;
 		cch = XBPS_FETCH_CACHECONN_HOST;
 	} else {
 		xhp->syslog_enabled = cfg_getbool(xhp->cfg, "syslog");
-		xhp->fetch_timeout = cfg_getint(xhp->cfg, "fetch-timeout-connection");
-		cc = cfg_getint(xhp->cfg, "fetch-cache-connections");
-		cch = cfg_getint(xhp->cfg, "fetch-cache-connections-per-host");
+		xhp->fetch_timeout = cfg_getint(xhp->cfg, "FetchTimeoutConnection");
+		cc = cfg_getint(xhp->cfg, "FetchCacheConnections");
+		cch = cfg_getint(xhp->cfg, "FetchCacheConnectionsPerHost");
+		xhp->transaction_frequency_flush =
+		    cfg_getint(xhp->cfg, "TransactionFrequencyFlush");
 	}
 	xbps_fetch_set_cache_connection(cc, cch);
 
-	xbps_dbg_printf("rootdir=%s\n", xhp->rootdir);
-	xbps_dbg_printf("cachedir=%s\n", xhp->cachedir);
-	xbps_dbg_printf("fetch-timeout=%u\n", xhp->fetch_timeout);
-	xbps_dbg_printf("fetch-cacheconn=%u\n", cc);
-	xbps_dbg_printf("fetch-cacheconn-host=%u\n", cch);
-	xbps_dbg_printf("syslog=%u\n", xhp->syslog_enabled);
+	xbps_dbg_printf("Rootdir=%s\n", xhp->rootdir);
+	xbps_dbg_printf("Cachedir=%s\n", xhp->cachedir);
+	xbps_dbg_printf("FetchTimeout=%u\n", xhp->fetch_timeout);
+	xbps_dbg_printf("FetchCacheconn=%u\n", cc);
+	xbps_dbg_printf("FetchCacheconnHost=%u\n", cch);
+	xbps_dbg_printf("Syslog=%u\n", xhp->syslog_enabled);
+	xbps_dbg_printf("TransactionFrequencyFlush=%u\n",
+	    xhp->transaction_frequency_flush);
 
 	return 0;
 }

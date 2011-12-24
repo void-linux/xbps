@@ -178,6 +178,8 @@ compute_transaction_stats(void)
 			pkg_metad =
 			    xbps_dictionary_from_metadata_plist(pkgname,
 				XBPS_PKGPROPS);
+			if (pkg_metad == NULL)
+				continue;
 			prop_dictionary_get_uint64(pkg_metad,
 			    "installed_size", &tsize);
 			prop_object_release(pkg_metad);

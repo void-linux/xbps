@@ -17,11 +17,13 @@ digraph regpkgdb_dictionary {
 	pkgdict -> pkgver [label="string"];
 	pkgdict -> state [label="string"];
 	state -> state_inst [label="value"];
-	state -> state_cffiles [label="value"];
+	state -> state_hfuned [label="value"];
 	state -> state_unpack [label="value"];
+	state -> state_hfrmed [label="value"];
 	state_inst [style=filled,fillcolor="yellowgreen",label="installed"];
-	state_cffiles [style=filled,fillcolor="yellowgreen",label="config-files"];
+	state_hfuned [style=filled,fillcolor="yellowgreen",label="half-unpacked"];
 	state_unpack [style=filled,fillcolor="yellowgreen",label="unpacked"];
+	state_hfrmed [style=filled,fillcolor="yellowgreen",label="half-removed"];
 	pkgdict -> automatic [label="bool"];
 	automatic [label="automatic-install"];
 	pkgdict -> short_desc [label="string"]

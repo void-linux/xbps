@@ -86,8 +86,7 @@ xbps_configure_pkg(const char *pkgname,
 		rv = xbps_pkg_state_installed(pkgname, &state);
 		if (rv == ENOENT) {
 			/*
-			 * package not installed or has been removed
-			 * (must be purged) so ignore it.
+			 * package not installed or has been removed.
 			 */
 			return 0;
 		} else if (rv != 0) {

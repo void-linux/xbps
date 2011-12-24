@@ -66,9 +66,6 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_REMOVE:
 		printf("Removing `%s-%s' ...\n", xscd->pkgname, xscd->version);
 		break;
-	case XBPS_STATE_PURGE:
-		printf("Purging `%s-%s' ...\n", xscd->pkgname, xscd->version);
-		break;
 	case XBPS_STATE_CONFIGURE:
 		printf("Configuring `%s-%s' ...\n", xscd->pkgname,
 		    xscd->version);
@@ -125,21 +122,12 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 			    "(rootdir: %s).", xscd->pkgname, xscd->version,
 			    xhp->rootdir);
 		break;
-	case XBPS_STATE_PURGE_DONE:
-		printf("Purged `%s-%s' successfully.\n",
-		     xscd->pkgname, xscd->version);
-		if (xhp->syslog_enabled)
-			syslog(LOG_NOTICE, "Purged `%s-%s' successfully "
-			    "(rootdir: %s).", xscd->pkgname, xscd->version,
-			    xhp->rootdir);
-		break;
 	/* errors */
 	case XBPS_STATE_UNPACK_FAIL:
 	case XBPS_STATE_UPDATE_FAIL:
 	case XBPS_STATE_CONFIGURE_FAIL:
 	case XBPS_STATE_REGISTER_FAIL:
 	case XBPS_STATE_UNREGISTER_FAIL:
-	case XBPS_STATE_PURGE_FAIL:
 	case XBPS_STATE_REMOVE_FAIL:
 	case XBPS_STATE_VERIFY_FAIL:
 	case XBPS_STATE_DOWNLOAD_FAIL:

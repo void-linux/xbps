@@ -40,7 +40,7 @@ static const struct state states[] = {
 	{ "unpacked", 		XBPS_PKG_STATE_UNPACKED },
 	{ "installed",		XBPS_PKG_STATE_INSTALLED },
 	{ "broken",		XBPS_PKG_STATE_BROKEN },
-	{ "config-files",	XBPS_PKG_STATE_CONFIG_FILES },
+	{ "half-removed",	XBPS_PKG_STATE_HALF_REMOVED },
 	{ "not-installed",	XBPS_PKG_STATE_NOT_INSTALLED },
 	{ "half-unpacked",	XBPS_PKG_STATE_HALF_UNPACKED },
 	{ NULL,			0 }
@@ -68,7 +68,7 @@ set_new_state(prop_dictionary_t dict, pkg_state_t state)
 			break;
 
 	if (stp->string == NULL)
-		return -1;
+		return EINVAL;
 
 	if (!prop_dictionary_set_cstring_nocopy(dict, "state", stp->string))
 		return EINVAL;
@@ -110,7 +110,7 @@ xbps_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 	assert(pkgname != NULL);
 	assert(state != NULL);
 
-	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+	pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
 	if (pkgd == NULL)
 		return ENOENT;
 
@@ -170,127 +170,80 @@ xbps_set_pkg_state_installed(const char *pkgname,
 			     pkg_state_t state)
 {
 	struct xbps_handle *xhp;
-	prop_dictionary_t dict = NULL, pkgd;
+	prop_dictionary_t pkgd;
 	prop_array_t array;
-	char *metadir, *plist;
-	int rv = 0;
 	bool newpkg = false;
+	int rv;
 
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
 
-	metadir = xbps_xasprintf("%s/%s", xhp->rootdir, XBPS_META_PATH);
-	if (metadir == NULL)
-		return ENOMEM;
-	plist = xbps_xasprintf("%s/%s", metadir, XBPS_REGPKGDB);
-	if (plist == NULL) {
-		free(metadir);
-		return ENOMEM;
-	}
-	if ((dict = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
-		dict = prop_dictionary_create();
-		if (dict == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
+	if (xhp->regpkgdb == NULL) {
+		xhp->regpkgdb = prop_dictionary_create();
+		if (xhp->regpkgdb == NULL)
+			return ENOMEM;
+
 		array = prop_array_create();
-		if (array == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
+		if (array == NULL)
+			return ENOMEM;
+
 		pkgd = prop_dictionary_create();
 		if (pkgd == NULL) {
-			rv = ENOMEM;
 			prop_object_release(array);
-			goto out;
+			return ENOMEM;
 		}
 		if ((rv = set_pkg_objs(pkgd, pkgname, version, pkgver)) != 0) {
 			prop_object_release(array);
 			prop_object_release(pkgd);
-			goto out;
+			return rv;
 		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
 			prop_object_release(array);
 			prop_object_release(pkgd);
-			goto out;
+			return rv;
 		}
 		if (!xbps_add_obj_to_array(array, pkgd)) {
-			rv = EINVAL;
 			prop_object_release(array);
 			prop_object_release(pkgd);
-			goto out;
+			return EINVAL;
 		}
-		if (!xbps_add_obj_to_dict(dict, array, "packages")) {
-			rv = EINVAL;
+		if (!xbps_add_obj_to_dict(xhp->regpkgdb, array, "packages")) {
 			prop_object_release(array);
-			goto out;
+			return EINVAL;
 		}
 
 	} else {
-		pkgd = xbps_find_pkg_in_dict_by_name(dict,
-		    "packages", pkgname);
+		pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
 		if (pkgd == NULL) {
-			if (errno && errno != ENOENT) {
-				rv = errno;
-				goto out;
-			}
-
 			newpkg = true;
 			pkgd = prop_dictionary_create();
 			if ((rv = set_pkg_objs(pkgd, pkgname,
 			    version, pkgver)) != 0) {
 				prop_object_release(pkgd);
-				goto out;
-			}
-		}
-		array = prop_dictionary_get(dict, "packages");
-		if (array == NULL) {
-			array = prop_array_create();
-			if (!prop_dictionary_set(dict, "packages", array)) {
-				rv = EINVAL;
-				if (newpkg)
-					prop_object_release(pkgd);
-				goto out;
+				return rv;
 			}
 		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
 			if (newpkg)
 				prop_object_release(pkgd);
-			goto out;
+			return rv;
 		}
-		if (newpkg && !xbps_add_obj_to_array(array, pkgd)) {
-			rv = EINVAL;
-			prop_object_release(pkgd);
-			goto out;
-		}
-	}
-
-	/* Create metadir if doesn't exist */
-	if (access(metadir, X_OK) == -1) {
-		if (errno == ENOENT) {
-			if (xbps_mkpath(metadir, 0755) != 0) {
-				xbps_dbg_printf("[pkgstate] failed to create "
-				    "metadir %s: %s\n", metadir,
-				    strerror(errno));
-				rv = errno;
-				goto out;
+		array = prop_dictionary_get(xhp->regpkgdb, "packages");
+		if (newpkg) {
+			if (!xbps_add_obj_to_array(array, pkgd)) {
+				prop_object_release(pkgd);
+				return EINVAL;
 			}
-		}
-	}
-	/* Externalize regpkgdb plist file */
-	if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
-		rv = errno;
-		xbps_dbg_printf("[pkgstate] cannot write plist '%s': %s\n",
-		    plist, strerror(errno));
-	}
+		} else {
+			if ((rv = xbps_array_replace_dict_by_name(array,
+			    pkgd, pkgname)) != 0)
+				return rv;
 
-out:
-	if (prop_object_type(dict) == PROP_TYPE_DICTIONARY)
-		prop_object_release(dict);
-	if (metadir)
-		free(metadir);
-	if (plist)
-		free(plist);
+			prop_object_release(pkgd);
+		}
+		if (!prop_dictionary_set(xhp->regpkgdb, "packages", array))
+			return EINVAL;
+	}
 
 	return rv;
 }

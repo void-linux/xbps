@@ -43,20 +43,15 @@ int
 xbps_register_pkg(prop_dictionary_t pkgrd)
 {
 	struct xbps_handle *xhp;
-	prop_dictionary_t dict, pkgd;
-	prop_array_t array, provides = NULL, reqby;
+	prop_dictionary_t pkgd;
+	prop_array_t provides, reqby, array;
 	const char *pkgname, *version, *desc, *pkgver;
-	char *plist;
 	int rv = 0;
 	bool autoinst = false;
 
 	assert(prop_object_type(pkgrd) == PROP_TYPE_DICTIONARY);
 
 	xhp = xbps_handle_get();
-	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-	    XBPS_META_PATH, XBPS_REGPKGDB);
-	if (plist == NULL)
-		return ENOMEM;
 
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version);
@@ -72,80 +67,72 @@ xbps_register_pkg(prop_dictionary_t pkgrd)
 	assert(version != NULL);
 	assert(desc != NULL);
 	assert(pkgver != NULL);
+	assert(xhp->regpkgdb != NULL);
 
-	if ((dict = prop_dictionary_internalize_from_zfile(plist)) != NULL) {
-		pkgd = xbps_find_pkg_in_dict_by_name(dict,
-		    "packages", pkgname);
-		if (pkgd == NULL) {
-			rv = errno;
-			goto out;
-		}
-		if (!prop_dictionary_set_cstring_nocopy(pkgd,
-		    "version", version)) {
-			prop_object_release(pkgd);
-			rv = EINVAL;
-			goto out;
-		}
-		if (!prop_dictionary_set_cstring_nocopy(pkgd,
-		    "pkgver", pkgver)) {
-			prop_object_release(pkgd);
-			rv = EINVAL;
-			goto out;
-		}
-		if (!prop_dictionary_set_cstring_nocopy(pkgd,
-		    "short_desc", desc)) {
-			prop_object_release(pkgd);
-			rv = EINVAL;
-			goto out;
-		}
-		if (reqby && !prop_dictionary_set(pkgd, "requiredby", reqby)) {
-			prop_object_release(pkgd);
-			rv = EINVAL;
-			goto out;
-		}
-		prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst);
-		if (xhp->install_reason_auto)
-			autoinst = true;
-		else if (xhp->install_reason_manual)
-			autoinst = false;
-
-		if (!prop_dictionary_set_bool(pkgd,
-		    "automatic-install", autoinst)) {
-			prop_object_release(pkgd);
-			rv = EINVAL;
-			goto out;
-		}
-		if (provides) {
-			if (!prop_dictionary_set(pkgd, "provides", provides)) {
-				prop_object_release(pkgd);
-				rv = EINVAL;
-				goto out;
-			}
-		}
-		/*
-		 * Add the requiredby objects for dependent packages.
-		 */
-		if (pkgrd && xbps_pkg_has_rundeps(pkgrd)) {
-			array = prop_dictionary_get(dict, "packages");
-			if (array == NULL) {
-				prop_object_release(pkgd);
-				rv = EINVAL;
-				goto out;
-			}
-			if ((rv = xbps_requiredby_pkg_add(array, pkgrd)) != 0)
-				goto out;
-		}
-		/*
-		 * Write plist file to storage.
-		 */
-		if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
-			rv = errno;
-			goto out;
-		}
-	} else {
-		free(plist);
-		return ENOENT;
+	pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
+	if (pkgd == NULL) {
+		rv = ENOENT;
+		goto out;
 	}
+	if (!prop_dictionary_set_cstring_nocopy(pkgd,
+	    "version", version)) {
+		prop_object_release(pkgd);
+		rv = EINVAL;
+		goto out;
+	}
+	if (!prop_dictionary_set_cstring_nocopy(pkgd,
+	    "pkgver", pkgver)) {
+		prop_object_release(pkgd);
+		rv = EINVAL;
+		goto out;
+	}
+	if (!prop_dictionary_set_cstring_nocopy(pkgd,
+	    "short_desc", desc)) {
+		prop_object_release(pkgd);
+		rv = EINVAL;
+		goto out;
+	}
+	if (reqby && !prop_dictionary_set(pkgd, "requiredby", reqby)) {
+		prop_object_release(pkgd);
+		rv = EINVAL;
+		goto out;
+	}
+	prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst);
+	if (xhp->install_reason_auto)
+		autoinst = true;
+	else if (xhp->install_reason_manual)
+		autoinst = false;
+
+	if (!prop_dictionary_set_bool(pkgd,
+	    "automatic-install", autoinst)) {
+		prop_object_release(pkgd);
+		rv = EINVAL;
+		goto out;
+	}
+	if (provides) {
+		if (!prop_dictionary_set(pkgd, "provides", provides)) {
+			prop_object_release(pkgd);
+			rv = EINVAL;
+			goto out;
+		}
+	}
+	array = prop_dictionary_get(xhp->regpkgdb, "packages");
+	rv = xbps_array_replace_dict_by_name(array, pkgd, pkgname);
+	if (rv != 0) {
+		prop_object_release(pkgd);
+		goto out;
+	}
+	/*
+	 * Add the requiredby objects for dependent packages.
+	 */
+	if (pkgrd && xbps_pkg_has_rundeps(pkgrd)) {
+		if ((rv = xbps_requiredby_pkg_add(xhp, pkgrd)) != 0) {
+			prop_object_release(pkgd);
+			goto out;
+		}
+	}
+	prop_object_release(pkgd);
+
 out:
 	if (rv != 0) {
 		xbps_set_cb_state(XBPS_STATE_REGISTER_FAIL,
@@ -153,8 +140,6 @@ out:
 		    "%s: failed to register package: %s",
 		    pkgver, strerror(rv));
 	}
-	prop_object_release(dict);
-	free(plist);
 
 	return rv;
 }
@@ -163,31 +148,24 @@ int
 xbps_unregister_pkg(const char *pkgname, const char *version)
 {
 	struct xbps_handle *xhp;
-	char *plist;
-	int rv = 0;
+	int rv;
 
 	assert(pkgname != NULL);
 
+	xhp = xbps_handle_get();
+	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0)
+		return rv;
+
 	xbps_set_cb_state(XBPS_STATE_UNREGISTER, 0, pkgname, version, NULL);
 
-	xhp = xbps_handle_get();
-	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-	    XBPS_META_PATH, XBPS_REGPKGDB);
-	if (plist == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
-	if (!xbps_remove_pkg_dict_from_plist_by_name(pkgname, plist)) {
-		rv = errno;
-		goto out;
-	}
-out:
-	if (rv != 0) {
+	if (!xbps_remove_pkg_from_dict_by_name(xhp->regpkgdb,
+	    "packages", pkgname)) {
 		xbps_set_cb_state(XBPS_STATE_UNREGISTER_FAIL,
-		    rv, pkgname, version,
+		    errno, pkgname, version,
 		    "%s: failed to unregister package: %s",
-		    pkgname, strerror(rv));
+		    pkgname, strerror(errno));
+		return errno;
 	}
-	free(plist);
-	return rv;
+
+	return 0;
 }

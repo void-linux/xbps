@@ -90,9 +90,10 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 	if ((rv = xbps_pkg_state_dictionary(obj, &state)) != 0)
 		return rv;
 	/*
-	 * Skip packages that aren't fully installed.
+	 * Skip packages that aren't fully installed or half removed.
 	 */
-	if (state != XBPS_PKG_STATE_INSTALLED)
+	if (state != XBPS_PKG_STATE_INSTALLED &&
+	    state != XBPS_PKG_STATE_HALF_REMOVED)
 		return 0;
 
 	reqby = prop_dictionary_get(obj, "requiredby");

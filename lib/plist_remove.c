@@ -42,16 +42,20 @@
 static bool
 remove_string_from_array(prop_array_t array, const char *str, int mode)
 {
+	prop_object_iterator_t iter;
 	prop_object_t obj;
 	const char *curname, *pkgdep;
 	char *curpkgname;
-	size_t i, idx = 0;
+	size_t idx = 0;
 	bool found = false;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 
-	for (i = 0; i < prop_array_count(array); i++) {
-		obj = prop_array_get(array, i);
+	iter = prop_array_iterator(array);
+	if (iter == NULL)
+		return false;
+
+	while ((obj = prop_object_iterator_next(iter))) {
 		if (mode == 0) {
 			/* exact match, obj is a string */
 			if (prop_string_equals_cstring(obj, str)) {
@@ -81,8 +85,12 @@ remove_string_from_array(prop_array_t array, const char *str, int mode)
 		}
 		idx++;
 	}
-	if (!found)
+	prop_object_iterator_release(iter);
+
+	if (!found) {
+		errno = ENOENT;
 		return false;
+	}
 
 	prop_array_remove(array, idx);
 	return true;
@@ -121,7 +129,10 @@ xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
 	if (array == NULL)
 		return false;
 
-	return xbps_remove_pkg_from_array_by_name(array, pkgname);
+	if (!xbps_remove_pkg_from_array_by_name(array, pkgname))
+		return false;
+
+	return prop_dictionary_set(dict, key, array);
 }
 
 bool

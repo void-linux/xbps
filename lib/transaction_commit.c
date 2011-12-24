@@ -164,13 +164,14 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	struct xbps_handle *xhp;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
+	size_t i;
 	const char *pkgname, *version, *pkgver, *tract;
 	int rv = 0;
-	bool update, install, purge;
+	bool update, install;
 
 	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
 
-	update = install = purge = false;
+	update = install = false;
 	xhp = xbps_handle_get();
 	iter = xbps_array_iter_from_dict(transd, "packages");
 	if (iter == NULL)
@@ -193,7 +194,16 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	 */
 	xbps_set_cb_state(XBPS_STATE_TRANS_RUN, 0, NULL, NULL, NULL);
 
+	i = 0;
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		if ((xhp->transaction_frequency_flush > 0) &&
+		    (++i >= xhp->transaction_frequency_flush)) {
+			rv = xbps_regpkgdb_update(xhp, true);
+			if (rv != 0 && rv != ENOENT)
+				goto out;
+
+			i = 0;
+		}
 		update = false;
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
@@ -201,21 +211,14 @@ xbps_transaction_commit(prop_dictionary_t transd)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
 		if (strcmp(tract, "remove") == 0) {
-			purge = update = false;
+			update = false;
 			/*
-			 * Remove and optionally also purge package.
+			 * Remove package.
 			 */
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
-			prop_dictionary_get_bool(obj, "remove-and-purge",
-			    &purge);
 			rv = xbps_remove_pkg(pkgname, version, update);
 			if (rv != 0)
-				goto out;
-			if (update || !purge)
-				continue;
-
-			if ((rv = xbps_purge_pkg(pkgname, false)) != 0)
 				goto out;
 		} else if (strcmp(tract, "configure") == 0) {
 			/*
@@ -269,6 +272,10 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	}
 	prop_object_iterator_reset(iter);
 
+	/* force a flush now packages were removed/unpacked */
+	if ((rv = xbps_regpkgdb_update(xhp, true)) != 0)
+		goto out;
+
 	/* if there are no packages to install or update we are done */
 	if (!update && !install)
 		goto out;
@@ -277,11 +284,21 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	 */
 	xbps_set_cb_state(XBPS_STATE_TRANS_CONFIGURE, 0, NULL, NULL, NULL);
 
+	i = 0;
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		if (xhp->transaction_frequency_flush > 0 &&
+		    ++i >= xhp->transaction_frequency_flush) {
+			if ((rv = xbps_regpkgdb_update(xhp, true)) != 0)
+				goto out;
+
+			i = 0;
+		}
+
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "configure") == 0))
 			continue;
+
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		update = false;
@@ -304,6 +321,8 @@ xbps_transaction_commit(prop_dictionary_t transd)
 		}
 	}
 
+	/* Force a flush now that packages are configured */
+	rv = xbps_regpkgdb_update(xhp, true);
 out:
 	prop_object_iterator_release(iter);
 

@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111223"
+#define XBPS_API_VERSION	"20111224"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -159,6 +159,13 @@
  */
 #define XBPS_FETCH_TIMEOUT		30
 
+/**
+ * @def XBPS_TRANS_FLUSH
+ * Default number of packages to be processed in a transaction to
+ * trigger a flush to the master package database XBPS_REGPKGDB.
+ */
+#define XBPS_TRANS_FLUSH		5
+
 __BEGIN_DECLS
 
 void		xbps_dbg_printf(const char *, ...);
@@ -187,8 +194,6 @@ void		xbps_warn_printf(const char *, ...);
  * XBPS_STATE_REMOVE_DONE: a package has been removed successfully.
  * XBPS_STATE_REMOVE_FILE: a package file is being removed.
  * XBPS_STATE_REMOVE_OBSOLETE: an obsolete package file is being removed.
- * XBPS_STATE_PURGE: a package is being purged.
- * XBPS_STATE_PURGE_DONE: a package has been purged successfully.
  * XBPS_STATE_REPLACE: a package is being replaced.
  * XBPS_STATE_INSTALL: a package is being installed.
  * XBPS_STATE_INSTALL_DONE: a package has been installed successfully.
@@ -209,7 +214,6 @@ void		xbps_warn_printf(const char *, ...);
  * its hash has failed.
  * XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL: an obsolete package file
  * removal has failed.
- * XBPS_STATE_PURGE_FAIL: package purge has failed.
  * XBPS_STATE_CONFIGURE_FAIL: package configure has failed.
  * XBPS_STATE_CONFIG_FILE_FAIL: package configuration file operation
  * has failed.
@@ -419,12 +423,12 @@ struct xbps_handle {
 	 */
 	cfg_t *cfg;
 	/**
-	 * @private regpkgdb_dictionary.
+	 * @private regpkgdb.
 	 *
 	 * Internalized proplib dictionary with the registed package database
 	 * stored in XBPS_META_PATH/XBPS_REGPKGDB.
 	 */
-	prop_dictionary_t regpkgdb_dictionary;
+	prop_dictionary_t regpkgdb;
 	/**
 	 * @private
 	 *
@@ -498,13 +502,20 @@ struct xbps_handle {
 	 */
 	const char *conffile;
 	/**
-	 * @private fetch_timeout
+	 * @var fetch_timeout
 	 *
 	 * Unsigned integer to specify libfetch's timeout limit.
 	 * If not set, it defaults to 30 (in seconds). This is set internally
 	 * by the API from a setting in configuration file.
 	 */
 	uint16_t fetch_timeout;
+	/**
+	 * @var transaction_frequency_flush
+	 *
+	 * Number of packages to be processed in a transaction to
+	 * trigger a flush to the master databases.
+	 */
+	uint16_t transaction_frequency_flush;
 	/**
 	 * @var flags
 	 *
@@ -554,8 +565,8 @@ struct xbps_handle {
  *   - Set default cache connections for libfetch.
  *   - Parse configuration file.
  *
- * @param[in] xhp Pointer to an xbps_handle structure, as returned by
- * \a xbps_handle_alloc().
+ * @param[in] xhp The xbps_handle structure previously allocated
+ * by \a xbps_handle_alloc().
  * @note It's assumed that \a xhp is a valid pointer.
  *
  * @return 0 on success, an errno value otherwise.
@@ -796,6 +807,32 @@ int xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
 int xbps_regpkgdb_foreach_reverse_pkg_cb(
 		int (*fn)(prop_object_t, void *, bool *),
 		void *arg);
+
+/**
+ * Returns a package dictionary from regpkgdb plist, matching pkgname or
+ * pkgver specified in \a pkg.
+ *
+ * @param[in] pkg Package name or name-version tuple to match.
+ * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a pkgver.
+ *
+ * @return The matching proplib package dictionary from regpkgdb copied
+ * with \a prop_dictionary_copy() so it must be released when not required
+ * anymore with prop_object_release().
+ */
+prop_dictionary_t xbps_regpkgdb_get_pkgd(const char *pkg, bool bypattern);
+
+/**
+ * Updates the regpkgdb plist with new contents from disk to the cached copy
+ * in memory.
+ *
+ * @param[in] xhp Pointer to our xbps_handle struct, as returned by
+ * \a xbps_handle_get() or xbps_handle_alloc().
+ * @param[in] flush If true the regpkgdb plist contents in memory will
+ * be flushed atomically to disk.
+ *
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_regpkgdb_update(struct xbps_handle *xhp, bool flush);
 
 /**
  * Finds the proplib's dictionary associated with a package, by looking
@@ -1097,30 +1134,6 @@ int xbps_array_replace_dict_by_name(prop_array_t array,
 
 /*@}*/
 
-/** @addtogroup purge */
-/*@{*/
-
-/**
- * Purge an installed package.
- *
- * @param[in] pkgname Package name to match.
- * @param[in] check_state Set it to true to check that package
- * is in XBPS_PKG_STATE_CONFIG_FILES state.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_purge_pkg(const char *pkgname, bool check_state);
-
-/**
- * Purge all installed packages. Packages that aren't in
- * XBPS_PKG_STATE_CONFIG_FILES state will be ignored.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_purge_packages(void);
-
-/*@}*/
-
 /** @addtogroup pkg_register */
 /*@{*/
 
@@ -1220,7 +1233,6 @@ int xbps_transaction_update_packages(void);
  * be added into the transaction dictionary.
  *
  * @param[in] pkgname Package name to be removed.
- * @param[in] purge If true package will also be purged.
  * @param[in] recursive If true, all packages that are currently depending
  * on the package to be removed, and if they are orphans, will be added.
  *
@@ -1229,19 +1241,16 @@ int xbps_transaction_update_packages(void);
  * process.
  */
 int xbps_transaction_remove_pkg(const char *pkgname,
-				bool purge,
 				bool recursive);
 
 /**
  * Finds all package orphans currently installed and adds them into
  * the transaction dictionary.
  *
- * @param[in] purge If true packages will also be purged.
- *
  * @return 0 on succcess, ENOENT if no package orphans were found, ENXIO
  * or EINVAL if a problem ocurred in the process.
  */
-int xbps_transaction_autoremove_pkgs(bool purge);
+int xbps_transaction_autoremove_pkgs(void);
 
 /**
  * Returns the transaction dictionary, as shown above in the image.
@@ -1452,8 +1461,9 @@ int xbps_repository_sync_pkg_index(const char *uri);
  *
  * <b>XBPS_PKG_STATE_BROKEN</b>: not yet used.
  *
- * <b>XBPS_PKG_STATE_CONFIG_FILES</b>: Package has been removed but not
- * yet purged.
+ * <b>XBPS_PKG_STATE_HALF_REMOVED</b>: Package has been removed but not
+ * completely: the purge action in REMOVE script wasn't executed, pkg
+ * metadata directory still exists and is registered in package database.
  *
  * <b>XBPS_PKG_STATE_NOT_INSTALLED</b>: Package going to be installed in
  * a transaction dictionary but that has not been yet unpacked.
@@ -1462,7 +1472,7 @@ typedef enum pkg_state {
 	XBPS_PKG_STATE_UNPACKED = 1,
 	XBPS_PKG_STATE_INSTALLED,
 	XBPS_PKG_STATE_BROKEN,
-	XBPS_PKG_STATE_CONFIG_FILES,
+	XBPS_PKG_STATE_HALF_REMOVED,
 	XBPS_PKG_STATE_NOT_INSTALLED,
 	XBPS_PKG_STATE_HALF_UNPACKED
 } pkg_state_t;

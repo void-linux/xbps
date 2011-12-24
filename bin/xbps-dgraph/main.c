@@ -94,6 +94,7 @@ die(const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, " (%s)\n", strerror(save_errno));
 	va_end(ap);
+	xbps_end(xbps_handle_get());
 	exit(EXIT_FAILURE);
 }
 

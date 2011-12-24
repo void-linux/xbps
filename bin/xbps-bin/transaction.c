@@ -222,11 +222,11 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 }
 
 int
-autoremove_pkgs(bool yes, bool purge)
+autoremove_pkgs(bool yes)
 {
 	int rv = 0;
 
-	if ((rv = xbps_transaction_autoremove_pkgs(purge)) != 0) {
+	if ((rv = xbps_transaction_autoremove_pkgs()) != 0) {
 		if (rv == ENOENT) {
 			printf("No package orphans were found.\n");
 			return 0;
@@ -328,7 +328,7 @@ update_pkg(const char *pkgname)
 }
 
 int
-remove_pkg(const char *pkgname, bool purge, bool recursive)
+remove_pkg(const char *pkgname, bool recursive)
 {
 	prop_dictionary_t pkgd;
 	prop_array_t reqby;
@@ -336,7 +336,7 @@ remove_pkg(const char *pkgname, bool purge, bool recursive)
 	size_t x;
 	int rv;
 
-	rv = xbps_transaction_remove_pkg(pkgname, purge, recursive);
+	rv = xbps_transaction_remove_pkg(pkgname, recursive);
 	if (rv == EEXIST) {
 		/* pkg has revdeps */
 		pkgd = xbps_find_pkg_dict_installed(pkgname, false);

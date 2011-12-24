@@ -128,7 +128,7 @@ int HIDDEN xbps_repository_find_pkg_deps(prop_dictionary_t,
  * @private
  * From lib/package_requiredby.c
  */
-int HIDDEN xbps_requiredby_pkg_add(prop_array_t, prop_dictionary_t);
+int HIDDEN xbps_requiredby_pkg_add(struct xbps_handle *, prop_dictionary_t);
 int HIDDEN xbps_requiredby_pkg_remove(const char *);
 
 /**

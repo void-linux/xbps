@@ -215,6 +215,9 @@ main(int argc, char **argv)
 			    in_chroot ? "[chroot] " : "" , argv[1], argv[2],
 			    strerror(rv), MSG_RESET);
 		} else {
+			if ((rv = xbps_regpkgdb_update(xhp, true)) != 0)
+				exit(EXIT_FAILURE);
+
 			printf("%s%s=> %s-%s registered successfully.%s\n",
 			    MSG_NORMAL, in_chroot ? "[chroot] " : "",
 			    argv[1], argv[2], MSG_RESET);

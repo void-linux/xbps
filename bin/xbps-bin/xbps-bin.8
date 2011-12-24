@@ -1,4 +1,4 @@
-.Dd December 22, 2011
+.Dd December 23, 2011
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -60,7 +60,6 @@ depending on it, i.e package is a dependency of any other installed package.
 .It Fl f
 Used currently in the
 .Em install ,
-.Em purge ,
 .Em reconfigure
 and
 .Em remove
@@ -69,10 +68,8 @@ targets. If set, package(s) will be reconfigured regardless of its state in
 target, or to
 .Em force
 removal of package files even if its hash does not match in the
-.Em purge
-and
 .Em remove
-targets. If set, package(s) will be reinstalled even if its state is
+target. If set, package(s) will be reinstalled even if its state is
 .Em installed
 when used with the
 .Em install
@@ -95,13 +92,6 @@ Used currently in the
 target. Prints the value of specified key(s) from
 package's properties dictionary. Multiple keys can be specified delimited by
 the comma character.
-.It Fl p
-Used currently in the
-.Em remove
-and
-.Em autoremove
-targets. If enabled, after removing
-a package it is also purged.
 .It Fl R
 Used currently in the
 .Em remove
@@ -175,28 +165,14 @@ to list only packages with the specified
 By default only packages fully installed will be listed if
 .Em state
 has not been specified. Accepted states are:
-.Em config-files ,
+.Em half-removed ,
 .Em half-unpacked ,
-.Em unpacked ,
+.Em installed
 and
-.Em installed .
+.Em unpacked .
 .It Sy list-manual
 Lists packages that were installed manually by the user, i.e not as dependencies
 of any other package.
-.It Sy purge Ar pkgname | Ar all
-Purge an installed package:
-.Em pkgname
-or
-.Em all
-packages. The purge stage runs the post-remove action set in the REMOVE script
-in its metadata directory
-.Pa (/var/db/xbps/metadata/pkgname)
-and will remove configuration (if they were not modified by the user) and
-metadata files. The package will be fully removed from the system once it
-has been purged. If
-.Ql -f
-option is used, configuration files that have been
-.Em modified WILL BE REMOVED. BEWARE WITH THIS!
 .It Sy reconfigure Ar pkgname | Ar all
 Reconfigure an unpacked package. Packages in this state are not fully installed,
 because they were not configured for whatever reason. The configure stage will
@@ -209,16 +185,7 @@ option is used, the package will be reconfigured even if its state is already in
 .It Sy remove Ar pkgname(s)
 Removes the installed package
 .Em pkgname(s) .
-Its files will be removed and its state will be changed to
-.Em config-files
-in the package database. Configuration files, its metadata directory/files and its
-information in the package database are preserved. To fully remove a package in
-.Em config-files
-state, it must be purged with the
-.Em purge
-command or alternatively use the
-.Ql -p
-flag. If
+Files not matching the original SHA256 hash will be preserved. If
 .Ql -f
 option is used, package files will be
 .Em removed even if its SHA256 hash don't match .
@@ -257,10 +224,9 @@ target that will update all currently installed packages.
 A package can be in a different state while it is being
 .Em installed ,
 .Em removed ,
-.Em unpacked ,
-.Em configured
+.Em unpacked
 or
-.Em purged .
+.Em configured .
 The following states are available:
 .Bl -tag -width ident
 .It Sy installed
@@ -271,11 +237,13 @@ The package was being unpacked but didn't finish properly for unknown reasons.
 The package has been unpacked in destination root directory, but it is not fully
 installed because it was not yet configured. Please note that some packages will
 do not work if they are only unpacked.
-.It Sy config-files
-The package has been removed but configuration files and its metadata directory
-are still available (and it is still registered in the package database).
-You can purge safely packages that are in this state, modified configuration
-files will be preserved.
+.It Sy half-remove
+The package removal did not finish for unknown reasons (power outage, process killed, etc).
+The
+.Em purge
+action in its metadata REMOVE script has not been yet executed. The package
+metadata directory is still available and it is registered in package database.
+Packages in this state can be still removed.
 .Sh FILES
 .Bl -tag -width /var/db/xbps/metadata/<pkgname>/props.plist -compact
 .It Pa /etc/xbps/xbps.conf

@@ -1,4 +1,25 @@
-xbps-0.11.1 (???):
+xbps-0.12.0 (???):
+
+ * Renamed some options in xbps.conf to not have dashes, such as:
+	fetch-timeout-connection -> FetchTimeoutConnection
+	fetch-cache-connections-host -> FetchCacheConnections
+	fetch-cache-connections-per-host -> FetchCacheConnectionsPerHost
+
+ * Implemented memory caching for regpkgdb and configurarable transaction
+   flushing. Can be changed in xbps.conf with "TransactionFrequencyFlusing".
+   By default set to 5. That means that every 5 packages processed in
+   a transaction there will be a regpkgdb plist flush to disk.
+
+   Setting it to 0 enables automatic mode which will only flush in
+   two required points. Setting it to 1 makes the behaviour used in XBPS<=0.11,
+   which flushed it on every package.
+
+   That feature provides a 25% (and in some cases even more!) of performance
+   when executing a transaction.
+
+ * Merged purge code into remove. It wasn't necessary to have this splitted,
+   so it now has been merged into xbps_remove_pkg(). That also means that
+   '-p' flag in xbps-bin(8) and xbps-repo(8) doesn't exist anymore.
 
  * xbps-repo(8): the 'find-files' target accepts multiple patterns, such as:
 	$ xbps-repo find-files /bin/cat '/bin/f*' ...

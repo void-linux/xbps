@@ -91,9 +91,10 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 	if (reqby == NULL || prop_array_count(reqby) == 0)
 		return 0;
 
-	if (xbps_match_pkgname_in_array(reqby, pkgname))
+	if (xbps_match_pkgname_in_array(reqby, pkgname)) {
 		if (!xbps_remove_pkgname_from_array(reqby, pkgname))
 			return EINVAL;
+	}
 
 	return 0;
 }
@@ -101,46 +102,12 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 int HIDDEN
 xbps_requiredby_pkg_remove(const char *pkgname)
 {
-	struct xbps_handle *xhp;
-	prop_dictionary_t dict;
-	char *plist;
-	int rv = 0;
-
 	assert(pkgname != NULL);
-
-	xhp = xbps_handle_get();
-	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-	    XBPS_META_PATH, XBPS_REGPKGDB);
-	if (plist == NULL)
-		return ENOMEM;
-
-	if ((dict = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
-		free(plist);
-		xbps_dbg_printf("[reqby-rm] cannot internalize "
-		    "regpkgdb plist for '%s': %s\n", pkgname, strerror(errno));
-		return errno;
-	}
-
-	rv = xbps_callback_array_iter_in_dict(dict, "packages",
-	    remove_pkg_from_reqby, __UNCONST(pkgname));
-	if (rv != 0)
-		goto out;
-
-	if (!prop_dictionary_externalize_to_zfile(dict, plist)) {
-		xbps_dbg_printf("[reqby-rm] cannot externalize plist for "
-		    "'%s': %s\n", pkgname, strerror(errno));
-		rv = errno;
-	}
-
-out:
-	prop_object_release(dict);
-	free(plist);
-
-	return rv;
+	return xbps_regpkgdb_foreach_pkg_cb(remove_pkg_from_reqby, __UNCONST(pkgname));
 }
 
 int HIDDEN
-xbps_requiredby_pkg_add(prop_array_t pkgs_array, prop_dictionary_t pkgd)
+xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 {
 	prop_array_t pkg_rdeps;
 	prop_object_t obj, pkgd_regpkgdb;
@@ -148,7 +115,6 @@ xbps_requiredby_pkg_add(prop_array_t pkgs_array, prop_dictionary_t pkgd)
 	const char *pkgver, *str;
 	int rv = 0;
 
-	assert(prop_object_type(pkgs_array) == PROP_TYPE_ARRAY);
 	assert(prop_object_type(pkgd) == PROP_TYPE_DICTIONARY);
 
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
@@ -166,8 +132,8 @@ xbps_requiredby_pkg_add(prop_array_t pkgs_array, prop_dictionary_t pkgd)
 			rv = EINVAL;
 			break;
 		}
-		pkgd_regpkgdb =
-		    xbps_find_virtualpkg_in_array_by_pattern(pkgs_array, str);
+		pkgd_regpkgdb = xbps_find_virtualpkg_in_dict_by_pattern(
+		    xhp->regpkgdb, "packages", str);
 		if (pkgd_regpkgdb == NULL)
 			return EINVAL;
 

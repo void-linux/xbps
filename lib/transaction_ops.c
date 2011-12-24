@@ -227,7 +227,7 @@ xbps_transaction_install_pkg(const char *pkgpattern)
 }
 
 int
-xbps_transaction_remove_pkg(const char *pkgname, bool purge, bool recursive)
+xbps_transaction_remove_pkg(const char *pkgname, bool recursive)
 {
 	prop_dictionary_t transd, pkgd;
 	prop_array_t mdeps, orphans, orphans_pkg, unsorted, reqby;
@@ -238,11 +238,9 @@ xbps_transaction_remove_pkg(const char *pkgname, bool purge, bool recursive)
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_find_pkg_dict_installed(pkgname, false);
-	if (prop_object_type(pkgd) != PROP_TYPE_DICTIONARY) {
+	if ((pkgd = xbps_regpkgdb_get_pkgd(pkgname, false)) == NULL) {
 		/* pkg not installed */
-		rv = ENOENT;
-		goto out;
+		return ENOENT;
 	}
 	/*
 	 * Prepare transaction dictionary and missing deps array.
@@ -267,6 +265,7 @@ xbps_transaction_remove_pkg(const char *pkgname, bool purge, bool recursive)
 		rv = ENOMEM;
 		goto out;
 	}
+
 	prop_array_set_cstring_nocopy(orphans_pkg, 0, pkgname);
 	orphans = xbps_find_pkg_orphans(orphans_pkg);
 	prop_object_release(orphans_pkg);
@@ -274,13 +273,12 @@ xbps_transaction_remove_pkg(const char *pkgname, bool purge, bool recursive)
 		rv = EINVAL;
 		goto out;
 	}
+
 	count = prop_array_count(orphans);
 	while (count--) {
 		obj = prop_array_get(orphans, count);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_set_cstring_nocopy(obj, "transaction", "remove");
-		if (purge)
-			prop_dictionary_set_bool(obj, "remove-and-purge", true);
 		prop_array_add(unsorted, obj);
 		xbps_dbg_printf("%s: added into transaction (remove).\n", pkgver);
 	}
@@ -291,8 +289,6 @@ rmpkg:
 	 */
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	prop_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
-	if (purge)
-		prop_dictionary_set_bool(pkgd, "remove-and-purge", true);
 	prop_array_add(unsorted, pkgd);
 	xbps_dbg_printf("%s: added into transaction (remove).\n", pkgver);
 	reqby = prop_dictionary_get(pkgd, "requiredby");
@@ -303,15 +299,15 @@ rmpkg:
 	if ((prop_object_type(reqby) == PROP_TYPE_ARRAY) &&
 	    (prop_array_count(reqby) > 0))
 		rv = EEXIST;
+
 out:
-	if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY)
-		prop_object_release(pkgd);
+	prop_object_release(pkgd);
 
 	return rv;
 }
 
 int
-xbps_transaction_autoremove_pkgs(bool purge)
+xbps_transaction_autoremove_pkgs(void)
 {
 	prop_dictionary_t transd;
 	prop_array_t orphans, mdeps, unsorted;
@@ -350,8 +346,6 @@ xbps_transaction_autoremove_pkgs(bool purge)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_set_cstring_nocopy(obj,
 		    "transaction", "remove");
-		if (purge)
-			prop_dictionary_set_bool(obj, "remove-and-purge", true);
 		prop_array_add(unsorted, obj);
 		xbps_dbg_printf("%s: added into transaction (remove).\n",
 		    pkgver);

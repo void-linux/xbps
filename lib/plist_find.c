@@ -336,15 +336,15 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 
 	/* try normal pkg */
 	if (virtual == false) {
-		pkgd = find_pkg_in_dict(xhp->regpkgdb_dictionary,
+		pkgd = find_pkg_in_dict(xhp->regpkgdb,
 		    "packages", str, bypattern, false);
 	} else {
 		/* virtual pkg set by user in conf */
-		pkgd = find_virtualpkg_user_in_dict(xhp->regpkgdb_dictionary,
+		pkgd = find_virtualpkg_user_in_dict(xhp->regpkgdb,
 		    "packages", str, bypattern);
 		if (pkgd == NULL) {
 			/* any virtual pkg in dictionary matching pattern */
-			pkgd = find_pkg_in_dict(xhp->regpkgdb_dictionary,
+			pkgd = find_pkg_in_dict(xhp->regpkgdb,
 			    "packages", str, bypattern, true);
 		}
 	}

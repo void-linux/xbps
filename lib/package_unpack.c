@@ -192,7 +192,16 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		xucd->entry_extract_count = 0;
 		xucd->entry_total_count = 0;
 	}
-
+	if (access(xhp->rootdir, R_OK) == -1) {
+		if (errno != ENOENT) {
+			rv = errno;
+			goto out;
+		}
+		if (xbps_mkpath(xhp->rootdir, 0750) == -1) {
+			rv = errno;
+			goto out;
+		}
+	}
 	if (chdir(xhp->rootdir) == -1) {
 		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
 		    errno, pkgname, version,

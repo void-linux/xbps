@@ -68,17 +68,17 @@ main(int argc, char **argv)
 	struct sigaction sa;
 	const char *rootdir, *cachedir, *conffile, *option;
 	int i, c, flags, rv;
-	bool yes, purge, debug, reqby_force, force_rm_with_deps, recursive_rm;
+	bool yes, debug, reqby_force, force_rm_with_deps, recursive_rm;
 	bool install_auto, install_manual, show_download_pkglist_url;
 	bool reinstall;
 
 	rootdir = cachedir = conffile = option = NULL;
 	flags = rv = 0;
-	reqby_force = yes = purge = force_rm_with_deps = false;
+	reqby_force = yes = force_rm_with_deps = false;
 	recursive_rm = debug = reinstall = false;
 	install_auto = install_manual = show_download_pkglist_url = false;
 
-	while ((c = getopt(argc, argv, "AC:c:dDFfMo:pRr:Vvy")) != -1) {
+	while ((c = getopt(argc, argv, "AC:c:dDFfMo:Rr:Vvy")) != -1) {
 		switch (c) {
 		case 'A':
 			install_auto = true;
@@ -108,9 +108,6 @@ main(int argc, char **argv)
 			break;
 		case 'o':
 			option = optarg;
-			break;
-		case 'p':
-			purge = true;
 			break;
 		case 'R':
 			recursive_rm = true;
@@ -148,15 +145,6 @@ main(int argc, char **argv)
 	}
 
 	/*
-	 * Register a signal handler to clean up resources used by libxbps.
-	 */
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = cleanup;
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
-	sigaction(SIGQUIT, &sa, NULL);
-
-	/*
 	 * Initialize libxbps.
 	 */
 	xhp = xbps_handle_alloc();
@@ -185,6 +173,14 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	/*
+	 * Register a signal handler to clean up resources used by libxbps.
+	 */
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = cleanup;
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
 		if (argc < 1 || argc > 2)
@@ -199,12 +195,12 @@ main(int argc, char **argv)
 				lpc.state = XBPS_PKG_STATE_HALF_UNPACKED;
 			else if (strcmp(argv[1], "unpacked") == 0)
 				lpc.state = XBPS_PKG_STATE_UNPACKED;
-			else if (strcmp(argv[1], "config-files") == 0)
-				lpc.state = XBPS_PKG_STATE_CONFIG_FILES;
+			else if (strcmp(argv[1], "half-removed") == 0)
+				lpc.state = XBPS_PKG_STATE_HALF_REMOVED;
 			else {
 				fprintf(stderr,
 				    "E: invalid state `%s'. Accepted values: "
-				    "config-files, unpacked, "
+				    "half-removed, unpacked, half-unpacked, "
 				    "installed [default]\n", argv[1]);
 				rv = -1;
 				goto out;
@@ -249,7 +245,7 @@ main(int argc, char **argv)
 			usage(xhp);
 
 		for (i = 1; i < argc; i++) {
-			rv = remove_pkg(argv[i], purge, recursive_rm);
+			rv = remove_pkg(argv[i], recursive_rm);
 			if (rv == 0)
 				continue;
 			else if (rv != EEXIST)
@@ -323,19 +319,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(xhp);
 
-		rv = autoremove_pkgs(yes, purge);
-
-	} else if (strcasecmp(argv[0], "purge") == 0) {
-		/*
-		 * Purge a package completely.
-		 */
-		if (argc != 2)
-			usage(xhp);
-
-		if (strcasecmp(argv[1], "all") == 0)
-			rv = xbps_purge_packages();
-		else
-			rv = xbps_purge_pkg(argv[1], true);
+		rv = autoremove_pkgs(yes);
 
 	} else if (strcasecmp(argv[0], "reconfigure") == 0) {
 		/*

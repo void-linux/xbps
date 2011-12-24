@@ -35,44 +35,6 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-static int
-write_pkgd_to_regpkgdb(prop_dictionary_t pkgd,
-		       prop_array_t regpkgs,
-		       const char *pkgn)
-{
-	struct xbps_handle *xhp = xbps_handle_get();
-	char *path;
-	int rv;
-
-	rv = xbps_array_replace_dict_by_name(regpkgs, pkgd, pkgn);
-	if (rv != 0) {
-		xbps_error_printf("%s: failed to replace pkgd: %s\n",
-		    pkgn, strerror(rv));
-		return -1;
-	}
-	if (!prop_dictionary_set(xhp->regpkgdb_dictionary,
-	    "packages", regpkgs)) {
-		xbps_error_printf("%s: failed to set new regpkgdb "
-		    "packages array: %s", pkgn, strerror(errno));
-		return -1;
-	}
-	path = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-	    XBPS_META_PATH, XBPS_REGPKGDB);
-	if (path == NULL)
-		return -1;
-
-	if (!prop_dictionary_externalize_to_zfile(
-	    xhp->regpkgdb_dictionary, path)) {
-		xbps_error_printf("%s: failed to write regpkgdb plist:"
-		    " %s\n", pkgn, strerror(errno));
-		free(path);
-		return -1;
-	}
-	free(path);
-
-	return 0;
-}
-
 /*
  * Checks package integrity of an installed package.
  * The following task is accomplished in this file:
@@ -94,6 +56,8 @@ check_pkg_requiredby(prop_dictionary_t pkgd_regpkgdb,
 	struct xbps_handle *xhp = xbps_handle_get();
 	const char *curpkgn, *pkgname, *pkgver;
 	size_t i;
+	int rv;
+	bool pkg_fixed = false;
 
 	(void)pkg_propsd;
 	(void)pkg_filesd;
@@ -101,7 +65,7 @@ check_pkg_requiredby(prop_dictionary_t pkgd_regpkgdb,
 	prop_dictionary_get_cstring_nocopy(pkgd_regpkgdb, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkgd_regpkgdb, "pkgver", &pkgver);
 
-	regpkgs = prop_dictionary_get(xhp->regpkgdb_dictionary, "packages");
+	regpkgs = prop_dictionary_get(xhp->regpkgdb, "packages");
 
 	for (i = 0; i < prop_array_count(regpkgs); i++) {
 		obj = prop_array_get(regpkgs, i);
@@ -181,13 +145,30 @@ check_pkg_requiredby(prop_dictionary_t pkgd_regpkgdb,
 		 */
 		prop_array_add(reqby, curpkgver);
 		prop_dictionary_set(pkgd_regpkgdb, "requiredby", reqby);
-		if (write_pkgd_to_regpkgdb(pkgd_regpkgdb, regpkgs, pkgname) != 0)
+		rv = xbps_array_replace_dict_by_name(regpkgs, obj, curpkgn);
+		if (rv != 0) {
+			xbps_error_printf("%s: failed to replace pkgd: %s\n",
+			    curpkgn, strerror(rv));
 			return -1;
-
+		}
+		if (!prop_dictionary_set(xhp->regpkgdb, "packages", regpkgs)) {
+			xbps_error_printf("%s: failed to set new regpkgdb "
+			    "packages array: %s", curpkgn, strerror(errno));
+			return -1;
+		}
+		pkg_fixed = true;
 		printf("%s: added requiredby entry for %s.\n",
 		    pkgver, prop_string_cstring_nocopy(curpkgver));
 		prop_object_release(curpkg_propsd);
 	}
+	if (pkg_fixed == false)
+		return rv;
 
-	return 0;
+	if ((rv = xbps_regpkgdb_update(xhp, true)) != 0) {
+		xbps_error_printf("failed to write regpkgdb plist: "
+		    " %s\n", strerror(rv));
+		return rv;
+	}
+
+	return rv;
 }
