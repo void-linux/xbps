@@ -371,11 +371,11 @@ main(int argc, char **argv)
 			if (rv == -1) {
 				printf("%s: %s\n", argv[1],
 				    xbps_fetch_error_string());
-				goto out;
 			} else if (rv == 0) {
 				printf("%s: file is identical than remote.\n",
 				    argv[1]);
-			}
+			} else
+				rv = 0;
 		}
 
 	} else {
