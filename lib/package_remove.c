@@ -307,6 +307,11 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		}
 	} else {
 		if (errno != ENOENT) {
+			xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+			    errno, pkgname, version,
+			    "%s: [remove] REMOVE script failed to "
+			    "execute pre ACTION: %s",
+			    pkgver, strerror(errno));
 			rv = errno;
 			goto out;
 		}
