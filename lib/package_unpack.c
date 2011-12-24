@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include "xbps_api_impl.h"
 
@@ -88,23 +89,44 @@ extract_metafile(struct archive *ar,
 		 int flags)
 {
 	const char *version;
-	char *buf, *pkgname;
+	char *buf, *dirc, *dname, *pkgname;
 	int rv;
 
 	pkgname = xbps_pkg_name(pkgver);
 	if (pkgname == NULL)
 		return ENOMEM;
 	version = xbps_pkg_version(pkgver);
-
+	if (version == NULL) {
+		free(pkgname);
+		return ENOMEM;
+	}
 	buf = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, file);
 	if (buf == NULL) {
 		free(pkgname);
 		return ENOMEM;
 	}
-
 	archive_entry_set_pathname(entry, buf);
+	dirc = strdup(buf);
+	if (dirc == NULL) {
+		free(buf);
+		free(pkgname);
+		return ENOMEM;
+	}
 	free(buf);
+	dname = dirname(dirc);
+	if (access(dname, X_OK) == -1) {
+		if (xbps_mkpath(dname, 0755) == -1) {
+			xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
+			    errno, pkgname, version,
+			    "%s: [unpack] failed to create metadir `%s': %s",
+			    pkgver, dname, strerror(errno));
+			free(dirc);
+			free(pkgname);
+			return errno;
+
+		}
+	}
 	if (exec)
 		archive_entry_set_perm(entry, 0750);
 
@@ -132,7 +154,10 @@ remove_metafile(const char *file, const char *pkgver)
 	if (pkgname == NULL)
 		return ENOMEM;
 	version = xbps_pkg_version(pkgver);
-
+	if (version == NULL) {
+		free(pkgname);
+		return ENOMEM;
+	}
 	buf = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, file);
 	if (buf == NULL) {
@@ -261,14 +286,14 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 			}
 			rv = extract_metafile(ar, entry, "INSTALL",
 			    pkgver, true, flags);
-			if (rv != 0) {
-				free(buf);
+			if (rv != 0)
 				goto out;
-			}
+
 			rv = xbps_file_exec(buf, "pre",
 			     pkgname, version, update ? "yes" : "no",
 			     xhp->conffile, NULL);
 			free(buf);
+			buf = NULL;
 			if (rv != 0) {
 				xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
 				    rv, pkgname, version,
@@ -423,6 +448,7 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 			}
 			(void)rename(entry_pname, buf);
 			free(buf);
+			buf = NULL;
 			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE, 0,
 			    pkgname, version,
 			    "Renamed old configuration file "
@@ -615,7 +641,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	if (rv != 0) {
 		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgname, version,
-		    "%s: [unpack] failed to unpack files on archive: %s",
+		    "%s: [unpack] failed to unpack files from archive: %s",
 		    pkgver, strerror(rv));
 		goto out;
 	}
