@@ -201,3 +201,16 @@ xbps_regpkgdb_get_pkgd(const char *pkg, bool bypattern)
 
 	return prop_dictionary_copy(pkgd);
 }
+
+bool
+xbps_regpkgdb_remove_pkgd(const char *pkgname)
+{
+
+	struct xbps_handle *xhp = xbps_handle_get();
+
+	if (xbps_regpkgdb_dictionary_init(xhp) != 0)
+		return false;
+
+	return xbps_remove_pkg_from_dict_by_name(xhp->regpkgdb,
+	    "packages", pkgname);
+}

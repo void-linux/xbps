@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111224"
+#define XBPS_API_VERSION	"20111224-1"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -820,6 +820,16 @@ int xbps_regpkgdb_foreach_reverse_pkg_cb(
  * anymore with prop_object_release().
  */
 prop_dictionary_t xbps_regpkgdb_get_pkgd(const char *pkg, bool bypattern);
+
+/**
+ * Removes a package dictionary from regpkgdb plist matching the key
+ * \a pkgname.
+ *
+ * @param[in] pkgname Package name to match in a dictionary.
+ *
+ * @return true on success, false otherwise.
+ */
+bool xbps_regpkgdb_remove_pkgd(const char *pkgname);
 
 /**
  * Updates the regpkgdb plist with new contents from disk to the cached copy

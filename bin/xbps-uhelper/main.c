@@ -114,7 +114,7 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	prop_dictionary_t dict;
 	const char *version, *rootdir = NULL, *confdir = NULL;
-	char *plist = NULL, *pkgname, *pkgver, *in_chroot_env, *hash;
+	char *pkgname, *pkgver, *in_chroot_env, *hash;
 	bool debug = false, in_chroot = false;
 	int i, c, rv = 0;
 
@@ -166,13 +166,6 @@ main(int argc, char **argv)
 		if ((rv = xbps_init(xhp)) != 0) {
 			xbps_error_printf("xbps-uhelper: failed to "
 			    "initialize libxbps: %s.\n", strerror(rv));
-			exit(EXIT_FAILURE);
-		}
-
-		plist = xbps_xasprintf("%s/%s/%s", rootdir,
-		    XBPS_META_PATH, XBPS_REGPKGDB);
-		if (plist == NULL) {
-			xbps_end(xhp);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -229,7 +222,7 @@ main(int argc, char **argv)
 		if (argc != 3)
 			usage(xhp);
 
-		if (!xbps_remove_pkg_dict_from_plist_by_name(argv[1], plist)) {
+		if (!xbps_regpkgdb_remove_pkgd(argv[1])) {
 			if (errno == ENOENT)
 				fprintf(stderr, "%s=> ERROR: %s not registered "
 				    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET);
@@ -250,8 +243,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(xhp);
 
-		dict = xbps_find_pkg_dict_from_plist_by_name(plist,
-		    "packages", argv[1]);
+		dict = xbps_regpkgdb_get_pkgd(argv[1], false);
 		if (dict == NULL)
 			exit(EXIT_FAILURE);
 
