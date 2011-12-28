@@ -130,8 +130,10 @@ xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
 		errno = ENOENT;
 		return false;
 	}
+	if (!xbps_remove_pkg_from_array_by_name(array, pkgname))
+		return false;
 
-	return xbps_remove_pkg_from_array_by_name(array, pkgname);
+	return prop_dictionary_set(dict, key, array);
 }
 
 bool
