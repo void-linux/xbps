@@ -43,6 +43,7 @@ int
 xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 {
 	struct xbps_handle *xhp;
+	prop_array_t array;
 	prop_dictionary_t pkgd = NULL;
 	prop_array_t provides, reqby;
 	const char *pkgname, *version, *desc, *pkgver;
@@ -67,7 +68,6 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 	assert(version != NULL);
 	assert(desc != NULL);
 	assert(pkgver != NULL);
-	assert(xhp->regpkgdb != NULL);
 
 	pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
 	if (pkgd == NULL) {
@@ -125,6 +125,10 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 			goto out;
 		}
 	}
+	array = prop_dictionary_get(xhp->regpkgdb, "packages");
+	rv = xbps_array_replace_dict_by_name(array, pkgd, pkgname);
+	if (rv != 0)
+		goto out;
 	if (flush)
 		rv = xbps_regpkgdb_update(xhp, true);
 
