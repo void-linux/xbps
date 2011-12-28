@@ -112,8 +112,8 @@ main(int argc, char **argv)
 {
 	struct xbps_handle *xhp = NULL;
 	struct xferstat xfer;
-	prop_dictionary_t dict;
-	const char *version, *rootdir = NULL, *confdir = NULL;
+	prop_dictionary_t dict, pkgd;
+	const char *pkgn, *version, *rootdir = NULL, *confdir = NULL;
 	char *pkgname, *pkgver, *in_chroot_env, *hash;
 	bool debug = false, in_chroot = false;
 	int i, c, rv = 0;
@@ -194,29 +194,37 @@ main(int argc, char **argv)
 		}
 		prop_dictionary_set_cstring(dict, "pkgver", pkgver);
 		prop_dictionary_set_bool(dict, "automatic-install", false);
-		free(pkgver);
 
-		(void)xbps_regpkgdb_update(xhp, false);
-
-		rv = xbps_set_pkg_state_installed(argv[1], argv[2], pkgver,
-		    XBPS_PKG_STATE_INSTALLED);
-		if (rv != 0)
-			goto out;
-
-		rv = xbps_register_pkg(dict);
-		if (rv != 0) {
-			fprintf(stderr, "%s%s=> couldn't register %s-%s "
-			    "(%s).%s\n", MSG_ERROR,
-			    in_chroot ? "[chroot] " : "" , argv[1], argv[2],
-			    strerror(rv), MSG_RESET);
+		pkgd = xbps_regpkgdb_get_pkgd(argv[1], false);
+		if (pkgd != NULL) {
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "pkgname", &pkgn);
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "version", &version);
+			prop_object_release(pkgd);
+			fprintf(stderr, "%s%s=> ERROR: `%s-%s' is already "
+			    "registered!%s\n", MSG_ERROR,
+			    in_chroot ? "[chroot] " : "",
+			    pkgn, version, MSG_RESET);
 		} else {
-			if ((rv = xbps_regpkgdb_update(xhp, true)) != 0)
-				exit(EXIT_FAILURE);
+			rv = xbps_set_pkg_state_installed(argv[1], argv[2],
+			    pkgver, XBPS_PKG_STATE_INSTALLED);
+			if (rv != 0)
+				goto out;
 
-			printf("%s%s=> %s-%s registered successfully.%s\n",
-			    MSG_NORMAL, in_chroot ? "[chroot] " : "",
-			    argv[1], argv[2], MSG_RESET);
+			rv = xbps_register_pkg(dict, true);
+			if (rv != 0) {
+				fprintf(stderr, "%s%s=> couldn't register %s-%s "
+				    "(%s).%s\n", MSG_ERROR,
+				    in_chroot ? "[chroot] " : "" , argv[1],
+				    argv[2], strerror(rv), MSG_RESET);
+			} else {
+				printf("%s%s=> %s-%s registered successfully.%s\n",
+				    MSG_NORMAL, in_chroot ? "[chroot] " : "",
+				    argv[1], argv[2], MSG_RESET);
+			}
 		}
+		free(pkgver);
 		prop_object_release(dict);
 
 	} else if (strcasecmp(argv[0], "unregister") == 0) {
@@ -224,19 +232,15 @@ main(int argc, char **argv)
 		if (argc != 3)
 			usage(xhp);
 
-		if (!xbps_regpkgdb_remove_pkgd(argv[1])) {
-			if (errno == ENOENT)
-				fprintf(stderr, "%s=> ERROR: %s not registered "
-				    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET);
-			else
-				fprintf(stderr, "%s=> ERROR: couldn't unregister %s "
-			    	    "from database (%s)%s\n", MSG_ERROR,
-				    argv[1], strerror(errno), MSG_RESET);
+		rv = xbps_unregister_pkg(argv[1], argv[2], true);
+		if (rv == ENOENT) {
+			fprintf(stderr, "%s=> ERROR: %s not registered "
+			    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET);
+		} else if (rv != 0 && rv != ENOENT) {
+			fprintf(stderr, "%s=> ERROR: couldn't unregister %s "
+			    "from database (%s)%s\n", MSG_ERROR,
+			    argv[1], strerror(errno), MSG_RESET);
 		} else {
-			rv = xbps_regpkgdb_update(xhp, true);
-			if (rv != 0)
-				goto out;
-
 			printf("%s%s=> %s-%s unregistered successfully.%s\n",
 			    MSG_NORMAL, in_chroot ? "[chroot] " : "", argv[1],
 			    argv[2], MSG_RESET);
