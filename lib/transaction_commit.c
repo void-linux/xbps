@@ -266,7 +266,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 			/*
 			 * Register package.
 			 */
-			if ((rv = xbps_register_pkg(obj)) != 0)
+			if ((rv = xbps_register_pkg(obj, false)) != 0)
 				goto out;
 		}
 	}

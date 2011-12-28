@@ -415,7 +415,7 @@ purge:
 	/*
 	 * Unregister package from regpkgdb.
 	 */
-	if ((rv = xbps_unregister_pkg(pkgname, version)) != 0)
+	if ((rv = xbps_unregister_pkg(pkgname, version, false)) != 0)
 		goto out;
 
 	xbps_set_cb_state(XBPS_STATE_REMOVE_DONE,

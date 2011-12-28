@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111224-2"
+#define XBPS_API_VERSION	"20111228"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -1153,20 +1153,24 @@ int xbps_array_replace_dict_by_name(prop_array_t array,
  * @param[in] pkg_dict A dictionary with the following objects:
  * \a pkgname, \a version, \a pkgver, \a short_desc (string),
  * \a automatic-install (bool) and optionally \a provides (array of strings).
+ * @param[in] flush Set to true to make sure that regpkgdb plist
+ * is written to storage on success.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_register_pkg(prop_dictionary_t pkg_dict);
+int xbps_register_pkg(prop_dictionary_t pkg_dict, bool flush);
 
 /**
  * Unregister a package from the package database.
  *
  * @param[in] pkgname Package name.
  * @param[in] version Package version.
+ * @param[in] flush Set to true to make sure that regpkgdb plist
+ * is written to storage on success.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_unregister_pkg(const char *pkgname, const char *version);
+int xbps_unregister_pkg(const char *pkgname, const char *version, bool flush);
 
 /*@}*/
 
