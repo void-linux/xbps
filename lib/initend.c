@@ -137,6 +137,8 @@ xbps_init(struct xbps_handle *xh)
 			return ENOTSUP;
 		}
 	}
+	xbps_dbg_printf("Configuration file: %s\n",
+	    xhp->conffile ? xhp->conffile : "unset");
 	/*
 	 * Respect client setting in struct xbps_handle for {root,cache}dir;
 	 * otherwise use values from configuration file or defaults if unset.
