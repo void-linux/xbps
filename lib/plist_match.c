@@ -120,7 +120,7 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 		} else if (mode == 2) {
 			/* match by pkgpattern */
 			pkgdep = prop_string_cstring_nocopy(obj);
-			if (xbps_pkgpattern_match(pkgdep, str)) {
+			if (xbps_pkgpattern_match(str, pkgdep)) {
 				found = true;
 				break;
 			}
