@@ -45,25 +45,18 @@
  * Returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_requiredby(prop_dictionary_t pkgd_regpkgdb,
-		     prop_dictionary_t pkg_propsd,
-		     prop_dictionary_t pkg_filesd)
+check_pkg_requiredby(const char *pkgname, void *arg)
 {
 	prop_array_t regpkgs, reqby, curpkg_rdeps, provides;
-	prop_dictionary_t curpkg_propsd;
+	prop_dictionary_t curpkg_propsd, pkgd = arg;
 	prop_object_t obj;
 	prop_string_t curpkgver;
 	struct xbps_handle *xhp = xbps_handle_get();
-	const char *curpkgn, *pkgname, *pkgver;
+	const char *curpkgn, *pkgver;
 	size_t i;
 	int rv;
-	bool pkg_fixed = false;
 
-	(void)pkg_propsd;
-	(void)pkg_filesd;
-
-	prop_dictionary_get_cstring_nocopy(pkgd_regpkgdb, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(pkgd_regpkgdb, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
 	regpkgs = prop_dictionary_get(xhp->regpkgdb, "packages");
 
@@ -100,7 +93,7 @@ check_pkg_requiredby(prop_dictionary_t pkgd_regpkgdb,
 			 * package and is matched against any object in
 			 * run_depends.
 			 */
-			provides = prop_dictionary_get(pkgd_regpkgdb, "provides");
+			provides = prop_dictionary_get(pkgd, "provides");
 			if (prop_object_type(provides) != PROP_TYPE_ARRAY) {
 				/* doesn't provide any virtual pkg */
 				prop_object_release(curpkg_propsd);
@@ -113,7 +106,7 @@ check_pkg_requiredby(prop_dictionary_t pkgd_regpkgdb,
 				continue;
 			}
 		}
-		reqby = prop_dictionary_get(pkgd_regpkgdb, "requiredby");
+		reqby = prop_dictionary_get(pkgd, "requiredby");
 		curpkgver = prop_dictionary_get(curpkg_propsd, "pkgver");
 		if (prop_object_type(reqby) == PROP_TYPE_ARRAY) {
 			/*
@@ -144,7 +137,7 @@ check_pkg_requiredby(prop_dictionary_t pkgd_regpkgdb,
 		 * file to disk.
 		 */
 		prop_array_add(reqby, curpkgver);
-		prop_dictionary_set(pkgd_regpkgdb, "requiredby", reqby);
+		prop_dictionary_set(pkgd, "requiredby", reqby);
 		rv = xbps_array_replace_dict_by_name(regpkgs, obj, curpkgn);
 		if (rv != 0) {
 			xbps_error_printf("%s: failed to replace pkgd: %s\n",
@@ -156,19 +149,14 @@ check_pkg_requiredby(prop_dictionary_t pkgd_regpkgdb,
 			    "packages array: %s", curpkgn, strerror(errno));
 			return -1;
 		}
-		pkg_fixed = true;
+		if ((rv = xbps_regpkgdb_update(xhp, true)) != 0) {
+			xbps_error_printf("failed to write regpkgdb plist: "
+			    " %s\n", strerror(rv));
+			return rv;
+		}
 		printf("%s: added requiredby entry for %s.\n",
 		    pkgver, prop_string_cstring_nocopy(curpkgver));
 		prop_object_release(curpkg_propsd);
 	}
-	if (pkg_fixed == false)
-		return rv;
-
-	if ((rv = xbps_regpkgdb_update(xhp, true)) != 0) {
-		xbps_error_printf("failed to write regpkgdb plist: "
-		    " %s\n", strerror(rv));
-		return rv;
-	}
-
 	return rv;
 }

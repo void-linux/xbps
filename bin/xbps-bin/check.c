@@ -128,24 +128,24 @@ check_pkg_integrity(prop_dictionary_t pkgd, const char *pkgname)
 		goto out;
 	}
 
-#define RUN_PKG_CHECK(name)						\
-do {									\
-	rv = check_pkg_##name(pkgd ? pkgd : opkgd, propsd, filesd);	\
-	if (rv)								\
-		broken = true;						\
-	else if (rv == -1) {						\
-		xbps_error_printf("%s: the %s test "			\
-		    "returned error!\n", pkgname, #name);		\
-		goto out;						\
-	}								\
+#define RUN_PKG_CHECK(name, arg)				\
+do {								\
+	rv = check_pkg_##name(pkgname, arg);			\
+	if (rv)							\
+		broken = true;					\
+	else if (rv == -1) {					\
+		xbps_error_printf("%s: the %s test "		\
+		    "returned error!\n", pkgname, #name);	\
+		goto out;					\
+	}							\
 } while (0)
 
 	/* Execute pkg checks */
-	RUN_PKG_CHECK(autoinstall);
-	RUN_PKG_CHECK(files);
-	RUN_PKG_CHECK(symlinks);
-	RUN_PKG_CHECK(rundeps);
-	RUN_PKG_CHECK(requiredby);
+	RUN_PKG_CHECK(requiredby, pkgd);
+	RUN_PKG_CHECK(autoinstall, pkgd);
+	RUN_PKG_CHECK(files, filesd);
+	RUN_PKG_CHECK(symlinks, filesd);
+	RUN_PKG_CHECK(rundeps, propsd);
 
 #undef RUN_PKG_CHECK
 

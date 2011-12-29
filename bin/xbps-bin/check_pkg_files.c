@@ -47,21 +47,17 @@
  * Return 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_files(prop_dictionary_t pkgd_regpkgdb,
-		prop_dictionary_t pkg_propsd,
-		prop_dictionary_t pkg_filesd)
+check_pkg_files(const char *pkgname, void *arg)
 {
 	struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pkgname, *file, *sha256;
+	prop_dictionary_t pkg_filesd = arg;
+	const char *file, *sha256;
 	char *path;
 	int rv = 0;
 	bool broken = false, test_broken = false;
-
-	(void)pkg_propsd;
-	prop_dictionary_get_cstring_nocopy(pkgd_regpkgdb, "pkgname", &pkgname);
 
 	array = prop_dictionary_get(pkg_filesd, "files");
 	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&

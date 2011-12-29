@@ -47,70 +47,50 @@
  * Returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_autoinstall(prop_dictionary_t pkgd_regpkgdb,
-		      prop_dictionary_t pkg_propsd,
-		      prop_dictionary_t pkg_filesd)
+check_pkg_autoinstall(const char *pkgname, void *arg)
 {
-	const struct xbps_handle *xhp = xbps_handle_get();
-	prop_dictionary_t dict;
+	struct xbps_handle *xhp = xbps_handle_get();
+	prop_dictionary_t pkgd = arg;
 	prop_array_t array, reqby;
-	const char *pkgname;
-	char *path;
 	int rv = 0;
 	bool autoinst = false;
 
-	(void)pkg_propsd;
-	(void)pkg_filesd;
-
-	prop_dictionary_get_cstring_nocopy(pkgd_regpkgdb, "pkgname", &pkgname);
 	/*
 	 * Check if package has been installed manually but any other
 	 * package is currently depending on it; in that case the package
 	 * must be in automatic mode.
 	 */
-	if (prop_dictionary_get_bool(pkgd_regpkgdb,
-	    "automatic-install", &autoinst)) {
-		reqby = prop_dictionary_get(pkgd_regpkgdb, "requiredby");
+	if (prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst)) {
+		reqby = prop_dictionary_get(pkgd, "requiredby");
 		if (((prop_object_type(reqby) == PROP_TYPE_ARRAY)) &&
 		    ((prop_array_count(reqby) > 0) && !autoinst)) {
-		        path = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-			    XBPS_META_PATH, XBPS_REGPKGDB);
-			assert(path != NULL);
 
 			/* pkg has reversedeps and was installed manually */
-			prop_dictionary_set_bool(pkgd_regpkgdb,
+			prop_dictionary_set_bool(pkgd,
 			    "automatic-install", true);
 
-			dict = prop_dictionary_internalize_from_zfile(path);
-			if (dict == NULL) {
-				xbps_error_printf("%s: [0] failed to set "
-				    "automatic mode (%s)\n", pkgname,
-				    strerror(errno));
-				return -1;
-			}
-			array = prop_dictionary_get(dict, "packages");
+			array = prop_dictionary_get(xhp->regpkgdb, "packages");
 			rv = xbps_array_replace_dict_by_name(array,
-			    pkgd_regpkgdb, pkgname);
+			    pkgd, pkgname);
 			if (rv != 0) {
 				xbps_error_printf("%s: [1] failed to set "
 				    "automatic mode (%s)\n", pkgname,
 				    strerror(rv));
 				return -1;
 			}
-			if (!prop_dictionary_set(dict, "packages", array)) {
+			if (!prop_dictionary_set(xhp->regpkgdb,
+			    "packages", array)) {
 				xbps_error_printf("%s: [2] failed to set "
 				    "automatic mode (%s)\n", pkgname,
 				    strerror(rv));
 				return -1;
 			}
-			if (!prop_dictionary_externalize_to_zfile(dict, path)) {
-				xbps_error_printf("%s: [3] failed to set "
-				    "automatic mode (%s)\n", pkgname,
-				    strerror(errno));
+			if ((rv = xbps_regpkgdb_update(xhp, true)) != 0) {
+				xbps_error_printf("%s: failed to write "
+				    "regpkgdb plist: %s\n", pkgname,
+				    strerror(rv));
 				return -1;
 			}
-			free(path);
-			path = NULL;
 			xbps_warn_printf("%s: was installed manually and has "
 			    "reverse dependencies (FIXED)\n", pkgname);
 		}

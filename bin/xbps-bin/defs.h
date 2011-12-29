@@ -59,8 +59,8 @@ int	remove_installed_pkgs(int, char **, bool, bool, bool, bool);
 int	check_pkg_integrity(prop_dictionary_t, const char *);
 int	check_pkg_integrity_all(void);
 
-#define CHECK_PKG_DECL(type)					\
-int check_pkg_##type (prop_dictionary_t, prop_dictionary_t, prop_dictionary_t)
+#define CHECK_PKG_DECL(type)			\
+int check_pkg_##type (const char *, void *)
 
 CHECK_PKG_DECL(autoinstall);
 CHECK_PKG_DECL(files);

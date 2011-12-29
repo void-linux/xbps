@@ -45,17 +45,13 @@
  */
 
 int
-check_pkg_rundeps(prop_dictionary_t pkgd_regpkgdb,
-		  prop_dictionary_t pkg_propsd,
-		  prop_dictionary_t pkg_filesd)
+check_pkg_rundeps(const char *pkgname, void *arg)
 {
+	prop_dictionary_t pkg_propsd = arg;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *reqpkg, *pkgname;
+	const char *reqpkg;
 	bool test_broken = false;
-
-	(void)pkg_filesd;
-	prop_dictionary_get_cstring_nocopy(pkgd_regpkgdb, "pkgname", &pkgname);
 
 	if (!xbps_pkg_has_rundeps(pkg_propsd))
 		return 0;
