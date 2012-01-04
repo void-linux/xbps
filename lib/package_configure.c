@@ -66,8 +66,8 @@ xbps_configure_packages(bool flush)
 	struct xbps_handle *xhp = xbps_handle_get();
 	int rv;
 
-	rv = xbps_regpkgdb_foreach_pkg_cb(configure_pkgs_cb, &flush);
-	if (rv == 0)
+	rv = xbps_regpkgdb_foreach_pkg_cb(configure_pkgs_cb, NULL);
+	if (rv == 0 && flush)
 		rv = xbps_regpkgdb_update(xhp, true);
 
 	return rv;
