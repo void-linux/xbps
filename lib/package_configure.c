@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,20 +57,28 @@ configure_pkgs_cb(prop_object_t obj, void *arg, bool *done)
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 
-	return xbps_configure_pkg(pkgname, version, true, false);
+	return xbps_configure_pkg(pkgname, version, true, false, false);
 }
 
 int
-xbps_configure_packages(void)
+xbps_configure_packages(bool flush)
 {
-	return xbps_regpkgdb_foreach_pkg_cb(configure_pkgs_cb, NULL);
+	struct xbps_handle *xhp = xbps_handle_get();
+	int rv;
+
+	rv = xbps_regpkgdb_foreach_pkg_cb(configure_pkgs_cb, &flush);
+	if (rv == 0)
+		rv = xbps_regpkgdb_update(xhp, true);
+
+	return rv;
 }
 
 int
 xbps_configure_pkg(const char *pkgname,
 		   const char *version,
 		   bool check_state,
-		   bool update)
+		   bool update,
+		   bool flush)
 {
 	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd;
@@ -160,6 +168,8 @@ xbps_configure_pkg(const char *pkgname,
 		    pkgver, strerror(rv));
 	}
 	free(pkgver);
+	if (flush)
+		rv = xbps_regpkgdb_update(xhp, true);
 
 	return rv;
 }

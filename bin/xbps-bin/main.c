@@ -329,9 +329,9 @@ main(int argc, char **argv)
 			usage(xhp);
 
 		if (strcasecmp(argv[1], "all") == 0)
-			rv = xbps_configure_packages();
+			rv = xbps_configure_packages(true);
 		else
-			rv = xbps_configure_pkg(argv[1], NULL, true, false);
+			rv = xbps_configure_pkg(argv[1], NULL, true, false, true);
 
 	} else if (strcasecmp(argv[0], "show-deps") == 0) {
 		/*

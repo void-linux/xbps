@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20111229"
+#define XBPS_API_VERSION	"20120104"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -608,20 +608,23 @@ struct xbps_handle *xbps_handle_get(void);
  * @param[in] check_state Set it to true to check that package is
  * in unpacked state.
  * @param[in] update Set it to true if this package is being updated.
+ * @param[in] flush Set it to true to flush state to regpkgdb.
  *
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_configure_pkg(const char *pkgname,
 		       const char *version,
 		       bool check_state,
-		       bool update);
+		       bool update,
+		       bool flush);
 
 /**
  * Configure (or force reconfiguration of) all packages.
+ * @param[in] flush Set it to true to flush state to regpkgdb.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_configure_packages(void);
+int xbps_configure_packages(bool flush);
 
 /*@}*/
 

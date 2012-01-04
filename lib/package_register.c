@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -76,24 +76,24 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 	}
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "version", version)) {
-		prop_object_release(pkgd);
+		xbps_dbg_printf("%s: invalid version for %s\n", __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "pkgver", pkgver)) {
-		prop_object_release(pkgd);
+		xbps_dbg_printf("%s: invalid pkgver for %s\n", __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "short_desc", desc)) {
-		prop_object_release(pkgd);
+		xbps_dbg_printf("%s: invalid short_desc for %s\n", __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
 	if (reqby && !prop_dictionary_set(pkgd, "requiredby", reqby)) {
-		prop_object_release(pkgd);
+		xbps_dbg_printf("%s: invalid requiredby for %s\n", __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
@@ -105,13 +105,14 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 
 	if (!prop_dictionary_set_bool(pkgd,
 	    "automatic-install", autoinst)) {
-		prop_object_release(pkgd);
+		xbps_dbg_printf("%s: invalid autoinst for %s\n", __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
 	if (provides) {
 		if (!prop_dictionary_set(pkgd, "provides", provides)) {
-			prop_object_release(pkgd);
+			xbps_dbg_printf("%s: invalid provides for %s\n",
+			    __func__, pkgname);
 			rv = EINVAL;
 			goto out;
 		}
@@ -121,14 +122,18 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 	 */
 	if (pkgrd && xbps_pkg_has_rundeps(pkgrd)) {
 		if ((rv = xbps_requiredby_pkg_add(xhp, pkgrd)) != 0) {
-			prop_object_release(pkgd);
+			xbps_dbg_printf("%s: requiredby add failed for %s\n",
+			    __func__, pkgname);
 			goto out;
 		}
 	}
 	array = prop_dictionary_get(xhp->regpkgdb, "packages");
 	rv = xbps_array_replace_dict_by_name(array, pkgd, pkgname);
-	if (rv != 0)
+	if (rv != 0) {
+		xbps_dbg_printf("%s: failed to replace pkgd dict for %s\n",
+		    __func__, pkgname);
 		goto out;
+	}
 	if (flush)
 		rv = xbps_regpkgdb_update(xhp, true);
 
