@@ -132,11 +132,21 @@ xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 			rv = EINVAL;
 			break;
 		}
-		pkgd_regpkgdb = xbps_find_virtualpkg_in_dict_by_pattern(
-		    xhp->regpkgdb, "packages", str);
-		if (pkgd_regpkgdb == NULL)
-			return EINVAL;
+		xbps_dbg_printf("%s: adding reqby entry for %s\n", __func__, str);
 
+		pkgd_regpkgdb = xbps_find_virtualpkg_conf_in_dict_by_pattern(
+		    xhp->regpkgdb, "packages", str);
+		if (pkgd_regpkgdb == NULL) {
+			pkgd_regpkgdb =
+			    xbps_find_virtualpkg_in_dict_by_pattern(
+			    xhp->regpkgdb, "packages", str);
+			if (pkgd_regpkgdb == NULL) {
+				rv = ENOENT;
+				xbps_dbg_printf("%s: couldnt find `%s' "
+				     "entry in regpkgdb\n", __func__, str);
+				break;
+			}
+		}
 		rv = add_pkg_into_reqby(pkgd_regpkgdb, pkgver);
 		if (rv != 0)
 			break;
