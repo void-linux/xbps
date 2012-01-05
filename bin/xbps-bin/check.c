@@ -89,7 +89,7 @@ check_pkg_integrity(prop_dictionary_t pkgd, const char *pkgname)
 		opkgd = xbps_find_pkg_dict_installed(pkgname, false);
 		if (opkgd == NULL) {
 			/* find virtual pkg by name */
-			pkgd = xbps_find_virtualpkg_dict_installed(pkgname,
+			opkgd = xbps_find_virtualpkg_dict_installed(pkgname,
 			    false);
 		}
 		if (opkgd == NULL) {
@@ -141,8 +141,8 @@ do {								\
 } while (0)
 
 	/* Execute pkg checks */
-	RUN_PKG_CHECK(requiredby, pkgd);
-	RUN_PKG_CHECK(autoinstall, pkgd);
+	RUN_PKG_CHECK(requiredby, pkgd ? pkgd : opkgd);
+	RUN_PKG_CHECK(autoinstall, pkgd ? pkgd : opkgd);
 	RUN_PKG_CHECK(files, filesd);
 	RUN_PKG_CHECK(symlinks, filesd);
 	RUN_PKG_CHECK(rundeps, propsd);
