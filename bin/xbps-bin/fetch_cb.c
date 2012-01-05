@@ -68,6 +68,9 @@ stat_eta(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	long elapsed, eta;
 	off_t received, expected;
 
+	if (xfpd->file_size == -1)
+		return "unknown";
+
 	elapsed = xfer->last.tv_sec - xfer->start.tv_sec;
 	received = xfpd->file_dloaded - xfpd->file_offset;
 	expected = xfpd->file_size - xfpd->file_dloaded;
@@ -126,17 +129,24 @@ stat_display(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	struct xferstat *xfer = cbdata;
 	struct timeval now;
 	char totsize[8], recvsize[8];
+	int percentage;
 
 	get_time(&now);
 	if (now.tv_sec <= xfer->last.tv_sec)
 		return;
 	xfer->last = now;
 
-	(void)xbps_humanize_number(totsize, (int64_t)xfpd->file_size);
+	if (xfpd->file_size == -1) {
+		percentage = 0;
+		snprintf(totsize, 3, "0B");
+	} else {
+		percentage = (int)((double)(100.0 *
+		    (double)xfpd->file_dloaded) / (double)xfpd->file_size);
+		(void)xbps_humanize_number(totsize, (int64_t)xfpd->file_size);
+	}
 	(void)xbps_humanize_number(recvsize, (int64_t)xfpd->file_dloaded);
 	fprintf(stderr,"\r%s: %s [%d%% of %s]", xfpd->file_name, recvsize,
-	    (int)((double)(100.0 *
-	    (double)xfpd->file_dloaded) / (double)xfpd->file_size), totsize);
+	    percentage, totsize);
 	fprintf(stderr," %s", stat_bps(xfpd, xfer));
 	fprintf(stderr," ETA: %s", stat_eta(xfpd, xfer));
 	fprintf(stderr,"\033[K");
@@ -157,7 +167,7 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 		stat_display(xfpd, xfer);
 	} else if (xfpd->cb_end) {
 		/* end transfer stats */
-		(void)xbps_humanize_number(size, (int64_t)xfpd->file_size);
+		(void)xbps_humanize_number(size, (int64_t)xfpd->file_dloaded);
 		fprintf(stderr,"\rDownloaded %s for %s [avg rate: %s]",
 		    size, xfpd->file_name, stat_bps(xfpd, xfer));
 		fprintf(stderr,"\033[K\n");

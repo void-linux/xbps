@@ -226,10 +226,9 @@ xbps_fetch_file(const char *uri,
 		goto out;
 	}
 	if (url_st.size == -1) {
-		xbps_dbg_printf("Remote file size is unknown!\n");
-		errno = EINVAL;
-		rv = -1;
-		goto out;
+		xbps_dbg_printf("Remote file size is unknown, resume "
+		     "not possible...\n");
+		restart = false;
 	} else if (st.st_size > url_st.size) {
 		/*
 		 * Remove local file if bigger than remote, and refetch the

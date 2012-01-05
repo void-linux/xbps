@@ -1,5 +1,10 @@
 xbps-0.12.0 (???):
 
+ * It's now possible to fetch files thru xbps_fetch_file() from HTTP
+   servers that don't set the Content-Length header. This fixes issue 19:
+   "xbps-src cannot fetch source with unknown Content-Length" reported
+   by ojab.
+
  * Renamed some options in xbps.conf to not have dashes, such as:
 	fetch-timeout-connection -> FetchTimeoutConnection
 	fetch-cache-connections-host -> FetchCacheConnections
