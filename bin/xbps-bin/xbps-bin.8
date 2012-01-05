@@ -1,4 +1,4 @@
-.Dd December 23, 2011
+.Dd January 5, 2012
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -237,7 +237,7 @@ The package was being unpacked but didn't finish properly for unknown reasons.
 The package has been unpacked in destination root directory, but it is not fully
 installed because it was not yet configured. Please note that some packages will
 do not work if they are only unpacked.
-.It Sy half-remove
+.It Sy half-removed
 The package removal did not finish for unknown reasons (power outage, process killed, etc).
 The
 .Em purge
@@ -286,18 +286,19 @@ Find the packages that match the pattern
 .Pp
 .Dl $ xbps-bin find-files \*q/usr/lib/libav*\*q
 .Pp
-Remove and purge the package
-.Em proplib-devel :
+Remove the package
+.Em proplib-devel
+without confirmation:
 .Pp
-.Dl $ xbps-bin -yp remove proplib-devel
+.Dl $ xbps-bin -y remove proplib-devel
 .Pp
-Remove and purge the package
+Remove the package
 .Em bsdtar
 and
 .Em recursively
 all packages that were installed automatically by it:
 .Pp
-.Dl $ xbps-bin -Rp remove bsdtar
+.Dl $ xbps-bin -R remove bsdtar
 .Pp
 .Sh SEE ALSO
 .Xr xbps-repo 8 ,
