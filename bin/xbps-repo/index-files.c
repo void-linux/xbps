@@ -127,7 +127,7 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 int
 repo_genindex_files(const char *pkgdir)
 {
-	prop_dictionary_t idxdict, idxfilesd;
+	prop_dictionary_t idxdict;
 	struct index_files_data *ifd;
 	char *plist, *files_plist;
 	int rv;
@@ -164,31 +164,20 @@ repo_genindex_files(const char *pkgdir)
 		free(ifd);
 		return rv;
 	}
-	idxfilesd = prop_dictionary_create();
-	/* add array into the index-files dictionary */
-	if (!prop_dictionary_set(idxfilesd, "packages", ifd->idxfiles)) {
-		prop_object_release(ifd->idxfiles);
-		prop_object_release(idxfilesd);
-		free(ifd);
-		return EINVAL;
-	}
 	files_plist = xbps_pkg_index_files_plist(pkgdir);
 	if (files_plist == NULL) {
 		prop_object_release(ifd->idxfiles);
-		prop_object_release(idxfilesd);
 		free(ifd);
 		return ENOMEM;
 	}
 	/* externalize index-files dictionary to the plist file */
-	if (!prop_dictionary_externalize_to_zfile(idxfilesd, files_plist)) {
+	if (!prop_array_externalize_to_zfile(ifd->idxfiles, files_plist)) {
 		free(files_plist);
 		prop_object_release(ifd->idxfiles);
-		prop_object_release(idxfilesd);
 		free(ifd);
 		return errno;
 	}
 	free(files_plist);
-	prop_object_release(idxfilesd);
 	prop_object_release(ifd->idxfiles);
 	free(ifd);
 

@@ -86,8 +86,7 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, struct ffdata *ffd)
 static int
 find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 {
-	prop_dictionary_t idxfilesd;
-	prop_array_t files_keys;
+	prop_array_t idxfiles;
 	struct ffdata *ffd = arg;
 	char *plist;
 	unsigned int i;
@@ -99,18 +98,17 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 	if (plist == NULL)
 		return ENOMEM;
 
-	idxfilesd = prop_dictionary_internalize_from_zfile(plist);
-	if (idxfilesd == NULL) {
+	idxfiles = prop_array_internalize_from_zfile(plist);
+	if (idxfiles == NULL) {
 		free(plist);
 		return errno;
 	}
 	free(plist);
 
-	files_keys = prop_dictionary_get(idxfilesd, "packages");
-	for (i = 0; i < prop_array_count(files_keys); i++)
-		match_files_by_pattern(prop_array_get(files_keys, i), ffd);
+	for (i = 0; i < prop_array_count(idxfiles); i++)
+		match_files_by_pattern(prop_array_get(idxfiles, i), ffd);
 
-	prop_object_release(idxfilesd);
+	prop_object_release(idxfiles);
 	return 0;
 }
 
