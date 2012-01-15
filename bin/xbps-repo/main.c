@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -239,6 +239,9 @@ main(int argc, char **argv)
 			usage(xhp);
 
 		rv = repo_genindex(argv[1]);
+		if (rv == 0)
+			rv = repo_genindex_files(argv[1]);
+
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
 		if (argc != 1)

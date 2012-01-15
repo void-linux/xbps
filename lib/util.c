@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -201,7 +201,7 @@ xbps_pkgpattern_version(const char *pkg)
 }
 
 static char *
-get_pkg_index_remote_plist(const char *uri)
+get_pkg_index_remote_plist(const char *uri, const char *plistf)
 {
 	struct xbps_handle *xhp;
 	char *uri_fixed, *repodir;
@@ -215,11 +215,11 @@ get_pkg_index_remote_plist(const char *uri)
 
 	if (strcmp(xhp->rootdir, "/") == 0) {
 		repodir = xbps_xasprintf("/%s/%s/%s",
-		    XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
+		    XBPS_META_PATH, uri_fixed, plistf);
 	} else {
 		repodir = xbps_xasprintf("%s/%s/%s/%s",
 		    xhp->rootdir,
-		    XBPS_META_PATH, uri_fixed, XBPS_PKGINDEX);
+		    XBPS_META_PATH, uri_fixed, plistf);
 	}
 	free(uri_fixed);
 	return repodir;
@@ -231,9 +231,19 @@ xbps_pkg_index_plist(const char *uri)
 	assert(uri != NULL);
 
 	if (xbps_check_is_repository_uri_remote(uri))
-		return get_pkg_index_remote_plist(uri);
+		return get_pkg_index_remote_plist(uri, XBPS_PKGINDEX);
 
 	return xbps_xasprintf("%s/%s", uri, XBPS_PKGINDEX);
+}
+
+char *
+xbps_pkg_index_files_plist(const char *uri)
+{
+	assert(uri != NULL);
+	if (xbps_check_is_repository_uri_remote(uri))
+		return get_pkg_index_remote_plist(uri, XBPS_PKGINDEX_FILES);
+
+	return xbps_xasprintf("%s/%s", uri, XBPS_PKGINDEX_FILES);
 }
 
 char *

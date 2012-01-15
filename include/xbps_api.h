@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20120105"
+#define XBPS_API_VERSION	"20120115"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -102,6 +102,12 @@
  * Filename for the repository package index property list.
  */
 #define XBPS_PKGINDEX		"index.plist"
+
+/**
+ * @def XBPS_PKGINDEX_FILES
+ * Filename for the repository package index files property list.
+ */
+#define XBPS_PKGINDEX_FILES	"index-files.plist"
 
 /**
  * @def XBPS_SYSCONF_PATH
@@ -1450,12 +1456,13 @@ prop_dictionary_t
  * by the \a uri argument (if necessary).
  *
  * @param[in] uri URI to a remote repository.
+ * @param[in] plistf Plist file to sync.
  *
  * @return -1 on error (errno is set appropiately), 0 if transfer was
  * not necessary (local/remote size/mtime matched) or 1 if
  * downloaded successfully.
  */
-int xbps_repository_sync_pkg_index(const char *uri);
+int xbps_repository_sync_pkg_index(const char *uri, const char *plistf);
 
 /*@}*/
 
@@ -1691,6 +1698,18 @@ char *xbps_path_from_repository_uri(prop_dictionary_t pkgd, const char *repoloc)
  * no longer needed.
  */
 char *xbps_pkg_index_plist(const char *uri);
+
+/**
+ * Returns the full path to a repository package index files plist file,
+ * as specified by \a uri.
+ *
+ * @param[in] uri Repository URI.
+ *
+ * @return A pointer to a malloc(3)ed string, NULL otherwise and
+ * errno is set appropiately. The pointer should be free(3)d when it's
+ * no longer needded.
+ */
+char *xbps_pkg_index_files_plist(const char *uri);
 
 /**
  * Gets the name of a package string. Package strings are composed

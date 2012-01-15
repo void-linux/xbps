@@ -1,5 +1,13 @@
 xbps-0.12.0 (???):
 
+ * xbps-repo(8): the 'genindex' target now creates a plist file to cache
+   all files provided by binary packages in a repository. This makes
+   the 'find-files' target marginally faster, because this avoids having
+   to fetch data from network in remote repositories. The new file
+   'index-files.plist' will be downloaded every time the 'sync' target
+   is issued but only iff the file has been modified.
+   This fixes Issue 21 "`xbps-repo find-files` is awfully slow".
+
  * It's now possible to fetch files thru xbps_fetch_file() from HTTP
    servers that don't set the Content-Length header. This fixes issue 19:
    "xbps-src cannot fetch source with unknown Content-Length" reported

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,9 @@ struct repo_search_data {
 
 /* From index.c */
 int	repo_genindex(const char *);
+
+/* From index-files.c */
+int	repo_genindex_files(const char *);
 
 /* From find-files.c */
 int	repo_find_files_in_packages(int, char **);

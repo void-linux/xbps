@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010 Juan Romero Pardines.
+ * Copyright (c) 2010-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,100 +37,81 @@ struct ffdata {
 	char **patterns;
 };
 
-static int
-match_files_by_pattern(prop_dictionary_t pkg_filesd,
-		       prop_dictionary_keysym_t key,
-		       struct ffdata *ffd,
-		       const char *pkgver)
+static void
+match_files_by_pattern(prop_dictionary_t pkg_filesd, struct ffdata *ffd)
 {
 	prop_object_iterator_t iter;
-	prop_array_t array;
+	prop_array_t array, allkeys;
 	prop_object_t obj;
-	const char *keyname, *filestr, *typestr;
-	int i;
+	prop_dictionary_keysym_t key;
+	const char *keyname, *filestr, *typestr, *pkgver;
+	size_t i;
+	int x;
 
-	keyname = prop_dictionary_keysym_cstring_nocopy(key);
-	array = prop_dictionary_get_keysym(pkg_filesd, key);
-	if (prop_object_type(array) != PROP_TYPE_ARRAY)
-		return 0;
+	allkeys = prop_dictionary_all_keys(pkg_filesd);
+	for (i = 0; i < prop_array_count(allkeys); i++) {
+		key = prop_array_get(allkeys, i);
+		keyname = prop_dictionary_keysym_cstring_nocopy(key);
+		array = prop_dictionary_get_keysym(pkg_filesd, key);
+		if (prop_object_type(array) != PROP_TYPE_ARRAY)
+			break;
 
-	if (strcmp(keyname, "files") == 0)
-		typestr = "regular file";
-	else if (strcmp(keyname, "dirs") == 0)
-		typestr = "directory";
-	else if (strcmp(keyname, "links") == 0)
-		typestr = "link";
-	else
-		typestr = "configuration file";
+		if (strcmp(keyname, "files") == 0)
+			typestr = "regular file";
+		else if (strcmp(keyname, "links") == 0)
+			typestr = "link";
+		else
+			typestr = "configuration file";
 
-	iter = prop_array_iterator(array);
-	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
-		for (i = 1; i < ffd->npatterns; i++) {
-			if ((strcmp(filestr, ffd->patterns[i]) == 0) ||
-			    (strstr(filestr, ffd->patterns[i])) ||
-			    (xbps_pkgpattern_match(filestr,
-						   ffd->patterns[i]) == 1))
-				printf(" %s: %s (%s)\n", pkgver, filestr, typestr);
+		iter = prop_array_iterator(array);
+		while ((obj = prop_object_iterator_next(iter))) {
+			prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
+			for (x = 1; x < ffd->npatterns; x++) {
+				if ((strcmp(filestr, ffd->patterns[x]) == 0) ||
+				    (strstr(filestr, ffd->patterns[x])) ||
+				     (xbps_pkgpattern_match(filestr,
+				      ffd->patterns[x]) == 1)) {
+					prop_dictionary_get_cstring_nocopy(
+					    pkg_filesd, "pkgver", &pkgver);
+					printf(" %s: %s (%s)\n",
+					    pkgver, filestr, typestr);
+				}
+			}
 		}
+		prop_object_iterator_release(iter);
 	}
-	prop_object_iterator_release(iter);
-	return 0;
+	prop_object_release(allkeys);
 }
 
 static int
 find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 {
-	prop_dictionary_t pkg_filesd;
+	prop_dictionary_t idxfilesd;
 	prop_array_t files_keys;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
 	struct ffdata *ffd = arg;
-	const char *pkgname, *pkgver;
-	char *url;
-	int rv = 0;
-	unsigned int i, count;
+	char *plist;
+	unsigned int i;
 
 	(void)done;
 
-	iter = xbps_array_iter_from_dict(rpi->rpi_repod, "packages");
-	if (iter == NULL)
-		return -1;
-
 	printf("Looking in repository '%s', please wait...\n", rpi->rpi_uri);
-	while ((obj = prop_object_iterator_next(iter))) {
-		url = xbps_path_from_repository_uri(obj, rpi->rpi_uri);
-		if (url == NULL) {
-			rv = -1;
-			break;
-		}
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		pkg_filesd = xbps_dictionary_metadata_plist_by_url(url,
-		    XBPS_PKGFILES);
-		free(url);
-		if (pkg_filesd == NULL) {
-			xbps_error_printf("xbps-repo: couldn't read '%s' "
-			    "from '%s (%s)': %s\n", XBPS_PKGFILES, pkgname,
-			    rpi->rpi_uri, strerror(errno));
-			rv = -1;
-			break;
-		}
-		files_keys = prop_dictionary_all_keys(pkg_filesd);
-		count = prop_array_count(files_keys);
-		for (i = 0; i < count; i++) {
-			rv = match_files_by_pattern(pkg_filesd,
-			    prop_array_get(files_keys, i), ffd, pkgver);
-			if (rv == -1)
-				break;
-		}
-		prop_object_release(files_keys);
-		prop_object_release(pkg_filesd);
-		if (rv == -1)
-			break;
+	plist = xbps_pkg_index_files_plist(rpi->rpi_uri);
+	if (plist == NULL)
+		return ENOMEM;
+
+	idxfilesd = prop_dictionary_internalize_from_zfile(plist);
+	if (idxfilesd == NULL) {
+		free(plist);
+		return errno;
 	}
-	prop_object_iterator_release(iter);
-	return rv;
+	free(plist);
+
+	files_keys = prop_dictionary_get(idxfilesd, "packages");
+	for (i = 0; i < prop_array_count(files_keys); i++)
+		match_files_by_pattern(prop_array_get(files_keys, i), ffd);
+
+	prop_object_release(idxfilesd);
+	return 0;
 }
 
 int

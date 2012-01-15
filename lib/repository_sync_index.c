@@ -86,7 +86,7 @@ xbps_get_remote_repo_string(const char *uri)
  * size and/or mtime match) and 1 if downloaded successfully.
  */
 int
-xbps_repository_sync_pkg_index(const char *uri)
+xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 {
 	prop_dictionary_t tmpd;
 	struct xbps_handle *xhp;
@@ -132,7 +132,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	/*
 	 * Remote repository index.plist full URL.
 	 */
-	rpidx = xbps_xasprintf("%s/%s", uri, XBPS_PKGINDEX);
+	rpidx = xbps_xasprintf("%s/%s", uri, plistf);
 	if (rpidx == NULL) {
 		rv = -1;
 		goto out;
@@ -141,7 +141,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	 * Save temporary file in XBPS_META_PATH, and rename if it
 	 * was downloaded successfully.
 	 */
-	tmp_metafile = xbps_xasprintf("%s/%s", metadir, XBPS_PKGINDEX);
+	tmp_metafile = xbps_xasprintf("%s/%s", metadir, plistf);
 	if (tmp_metafile == NULL) {
 		rv = -1;
 		goto out;
@@ -200,7 +200,7 @@ xbps_repository_sync_pkg_index(const char *uri)
 	}
 	prop_object_release(tmpd);
 
-	lrepofile = xbps_xasprintf("%s/%s", lrepodir, XBPS_PKGINDEX);
+	lrepofile = xbps_xasprintf("%s/%s", lrepodir, plistf);
 	if (lrepofile == NULL) {
 		rv = -1;
 		goto out;
