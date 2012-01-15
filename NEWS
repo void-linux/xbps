@@ -1,5 +1,8 @@
 xbps-0.12.0 (???):
 
+ * Fixed registerring repositories with trailing '/' chars in
+   configuration file: xbps.conf.
+
  * xbps-repo(8): the 'genindex' target now creates a plist file to cache
    all files provided by binary packages in a repository. This makes
    the 'find-files' target marginally faster, because this avoids having

@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <libgen.h>
 #include <string.h>
 #include <errno.h>
 
@@ -46,21 +47,18 @@ static bool
 check_repo_arch(const char *uri)
 {
 	struct utsname un;
-	char *p;
+	char *p, *b;
+
+	if ((p = strdup(uri)) == NULL)
+		return false;
 
 	uname(&un);
-	p = strrchr(uri, '/');
-	if (p == NULL)
+	b = basename(p);
+	free(p);
+	if ((strcmp(b, "noarch")) && (strcmp(b, un.machine)))
 		return false;
-	p++;
-	if (*p == '\0')
-		return false;
-	else if (strcmp(p, "noarch") == 0)
-		return true;
-	else if (strcmp(p, un.machine) == 0)
-		return true;
 
-	return false;
+	return true;
 }
 
 int HIDDEN
