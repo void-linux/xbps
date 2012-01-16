@@ -1,6 +1,6 @@
 xbps-0.12.0 (???):
 
- * Fixed registerring repositories with trailing '/' chars in
+ * Fixed registering repositories with trailing '/' chars in
    configuration file: xbps.conf.
 
  * xbps-repo(8): the 'genindex' target now creates a plist file to cache
@@ -21,7 +21,7 @@ xbps-0.12.0 (???):
 	fetch-cache-connections-host -> FetchCacheConnections
 	fetch-cache-connections-per-host -> FetchCacheConnectionsPerHost
 
- * Implemented memory caching for regpkgdb and configurarable transaction
+ * Implemented memory caching for regpkgdb and configurable transaction
    flushing. Can be changed in xbps.conf with "TransactionFrequencyFlusing".
    By default set to 5. That means that every 5 packages processed in
    a transaction there will be a regpkgdb plist flush to disk.
