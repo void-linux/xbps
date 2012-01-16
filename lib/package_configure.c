@@ -56,7 +56,6 @@ configure_pkgs_cb(prop_object_t obj, void *arg, bool *done)
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-
 	return xbps_configure_pkg(pkgname, version, true, false, false);
 }
 
@@ -92,6 +91,7 @@ xbps_configure_pkg(const char *pkgname,
 
 	if (check_state) {
 		rv = xbps_pkg_state_installed(pkgname, &state);
+		xbps_dbg_printf("%s-%s: state %d\n", pkgname, version, state);
 		if (rv == ENOENT) {
 			/*
 			 * package not installed or has been removed.
@@ -109,7 +109,7 @@ xbps_configure_pkg(const char *pkgname,
 		} else if (state != XBPS_PKG_STATE_UNPACKED)
 			return EINVAL;
 	
-		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+		pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
 		prop_dictionary_get_cstring_nocopy(pkgd, "version", &lver);
 		prop_object_release(pkgd);
 	} else {

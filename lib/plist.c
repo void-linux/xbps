@@ -106,8 +106,9 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 				 int (*fn)(prop_object_t, void *, bool *),
 				 void *arg)
 {
-	prop_object_iterator_t iter;
 	prop_object_t obj;
+	prop_array_t array;
+	size_t i;
 	int rv = 0;
 	bool cbloop_done = false;
 
@@ -115,17 +116,16 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 	assert(key != NULL);
 	assert(fn != NULL);
 
-	iter = xbps_array_iter_from_dict(dict, key);
-	if (iter == NULL)
+	array = prop_dictionary_get(dict, key);
+	if (prop_object_type(array) != PROP_TYPE_ARRAY)
 		return EINVAL;
 
-	while ((obj = prop_object_iterator_next(iter))) {
+	for (i = 0; i < prop_array_count(array); i++) {
+		obj = prop_array_get(array, i);
 		rv = (*fn)(obj, arg, &cbloop_done);
 		if (rv != 0 || cbloop_done)
 			break;
 	}
-
-	prop_object_iterator_release(iter);
 
 	return rv;
 }
