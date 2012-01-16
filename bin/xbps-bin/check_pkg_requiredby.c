@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -87,7 +87,7 @@ check_pkg_requiredby(const char *pkgname, void *arg)
 		/*
 		 * Check for pkgpattern match with real packages...
 		 */
-		if (!xbps_match_pkgpattern_in_array(curpkg_rdeps, pkgver)) {
+		if (!xbps_match_pkgdep_in_array(curpkg_rdeps, pkgver)) {
 			/*
 			 * ... otherwise check if package provides any virtual
 			 * package and is matched against any object in

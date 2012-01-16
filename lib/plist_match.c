@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -118,7 +118,14 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 			}
 			free(curpkgname);
 		} else if (mode == 2) {
-			/* match by pkgpattern */
+			/* match pkgpattern against pkgdep */
+			pkgdep = prop_string_cstring_nocopy(obj);
+			if (xbps_pkgpattern_match(pkgdep, str)) {
+				found = true;
+				break;
+			}
+		} else if (mode == 3) {
+			/* match pkgdep against pkgpattern */
 			pkgdep = prop_string_cstring_nocopy(obj);
 			if (xbps_pkgpattern_match(str, pkgdep)) {
 				found = true;
@@ -147,4 +154,10 @@ bool
 xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern)
 {
 	return match_string_in_array(array, pattern, 2);
+}
+
+bool
+xbps_match_pkgdep_in_array(prop_array_t array, const char *pkgver)
+{
+	return match_string_in_array(array, pkgver, 3);
 }

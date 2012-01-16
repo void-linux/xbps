@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20120116"
+#define XBPS_API_VERSION	"20120116-1"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -1042,6 +1042,17 @@ bool xbps_match_pkgname_in_array(prop_array_t array, const char *pkgname);
  * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern);
+
+/**
+ * Match a package dependency against any package pattern in the specified
+ * array of strings.
+ *
+ * @param[in] array The proplib array where to look for.
+ * @param[in] pkgver The package name-version tuple to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_match_pkgdep_in_array(prop_array_t array, const char *pkgver);
 
 /**
  * Match a string (exact match) in the specified array of strings.
