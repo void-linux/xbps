@@ -202,7 +202,7 @@ int
 repo_genindex_files(const char *pkgdir)
 {
 	prop_dictionary_t idxdict;
-	struct index_files_data *ifd;
+	struct index_files_data *ifd = NULL;
 	char *plist;
 	int rv;
 
