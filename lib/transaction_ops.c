@@ -51,44 +51,48 @@
  * Text inside of white boxes are the key associated with the object, its
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
+enum {
+	TRANS_INSTALL = 1,
+	TRANS_UPDATE
+};
+
 static int
-transaction_find_pkg(const char *pattern, const char *reason)
+transaction_find_pkg(const char *pattern, int action)
 {
-	prop_dictionary_t pkg_repod = NULL;
+	prop_dictionary_t pkg_regpkgdb, pkg_repod = NULL;
 	prop_dictionary_t transd;
 	prop_array_t mdeps, unsorted;
-	const char *pkgname, *pkgver, *repoloc;
+	const char *pkgname, *pkgver, *repoloc, *repover, *instver, *reason;
 	int rv = 0;
-	bool bypattern = false, bestpkg;
+	bool bypattern, bestpkg;
 	pkg_state_t state = 0;
 
 	assert(pattern != NULL);
-	assert(reason != NULL);
 
-	if (strcmp(reason, "install") == 0) {
+	if (action == TRANS_INSTALL) {
 		/* install */
 		bypattern = true;
 		bestpkg = false;
+		reason = "install";
 	} else {
 		/* update */
-		pkg_repod = xbps_find_pkg_dict_installed(pattern, false);
-		if (pkg_repod == NULL) {
+		pkg_regpkgdb = xbps_find_pkg_dict_installed(pattern, false);
+		if (pkg_regpkgdb == NULL) {
 			rv = ENODEV;
 			goto out;
 		}
-		prop_object_release(pkg_repod);
-		pkg_repod = NULL;
+		bypattern = false;
 		bestpkg = true;
+		reason = "update";
 	}
 
-	xbps_dbg_printf("%s: pattern %s reason %s\n", __func__, pattern, reason);
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
 	pkg_repod = xbps_repository_pool_find_pkg(pattern,
 	    bypattern, bestpkg);
 	if (pkg_repod == NULL) {
-		if (bestpkg == false) {
+		if (!bestpkg) {
 			pkg_repod = xbps_repository_pool_find_virtualpkg(
 			    pattern, bypattern, bestpkg);
 		}
@@ -96,6 +100,27 @@ transaction_find_pkg(const char *pattern, const char *reason)
 			/* not found */
 			rv = errno;
 			errno = 0;
+			goto out;
+		}
+	}
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
+
+	if (bestpkg) {
+		/*
+		 * Compare installed version vs best pkg available in repos.
+		 */
+		prop_dictionary_get_cstring_nocopy(pkg_regpkgdb,
+		    "version", &instver);
+		prop_dictionary_get_cstring_nocopy(pkg_repod,
+		    "version", &repover);
+		prop_object_release(pkg_regpkgdb);
+		if (xbps_cmpver(repover, instver) <= 0) {
+			xbps_dbg_printf("[rpool] Skipping `%s' "
+			    "(installed: %s) from repository `%s'\n",
+			    pkgver, instver, repoloc);
+			rv = EEXIST;
 			goto out;
 		}
 	}
@@ -111,9 +136,6 @@ transaction_find_pkg(const char *pattern, const char *reason)
 		goto out;
 	}
 
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
@@ -217,13 +239,13 @@ xbps_transaction_update_packages(void)
 int
 xbps_transaction_update_pkg(const char *pkgname)
 {
-	return transaction_find_pkg(pkgname, "update");
+	return transaction_find_pkg(pkgname, TRANS_UPDATE);
 }
 
 int
 xbps_transaction_install_pkg(const char *pkgpattern)
 {
-	return transaction_find_pkg(pkgpattern, "install");
+	return transaction_find_pkg(pkgpattern, TRANS_INSTALL);
 }
 
 int

@@ -443,7 +443,7 @@ int
 main(int argc, char **argv)
 {
 	prop_dictionary_t plistd, confd = NULL;
-	struct xbps_handle *xhp;
+	struct xbps_handle xh;
 	FILE *f = NULL;
 	char *outfile = NULL;
 	const char *conf_file = NULL, *rootdir = NULL;
@@ -485,11 +485,9 @@ main(int argc, char **argv)
 		usage();
 
 	/* Initialize libxbps */
-	xhp = xbps_handle_alloc();
-	if (xhp == NULL)
-		die("failed to allocate resources");
-	xhp->rootdir = rootdir;
-	if ((rv = xbps_init(xhp)) != 0)
+	memset(&xh, 0, sizeof(xh));
+	xh.rootdir = rootdir;
+	if ((rv = xbps_init(&xh)) != 0)
 		die("failed to initialize libxbps: %s", strerror(rv));
 
 	/*

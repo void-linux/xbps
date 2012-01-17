@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -110,7 +110,7 @@ usage(struct xbps_handle *xhp)
 int
 main(int argc, char **argv)
 {
-	struct xbps_handle *xhp = NULL;
+	struct xbps_handle xh;
 	struct xferstat xfer;
 	prop_dictionary_t dict, pkgd;
 	const char *pkgn, *version, *rootdir = NULL, *confdir = NULL;
@@ -152,18 +152,13 @@ main(int argc, char **argv)
 		/*
 		* Initialize libxbps.
 		*/
-		xhp = xbps_handle_alloc();
-		if (xhp == NULL) {
-			xbps_error_printf("xbps-uhelper: failed to allocate resources\n");
-			exit(EXIT_FAILURE);
-		}
-		xhp->debug = debug;
-		xhp->fetch_cb = fetch_file_progress_cb;
-		xhp->fetch_cb_data = &xfer;
-		xhp->rootdir = rootdir;
-		xhp->conffile = confdir;
-
-		if ((rv = xbps_init(xhp)) != 0) {
+		memset(&xh, 0, sizeof(xh));
+		xh.debug = debug;
+		xh.fetch_cb = fetch_file_progress_cb;
+		xh.fetch_cb_data = &xfer;
+		xh.rootdir = rootdir;
+		xh.conffile = confdir;
+		if ((rv = xbps_init(&xh)) != 0) {
 			xbps_error_printf("xbps-uhelper: failed to "
 			    "initialize libxbps: %s.\n", strerror(rv));
 			exit(EXIT_FAILURE);
@@ -177,7 +172,7 @@ main(int argc, char **argv)
 	if (strcasecmp(argv[0], "register") == 0) {
 		/* Registers a package into the database */
 		if (argc != 4)
-			usage(xhp);
+			usage(&xh);
 
 		dict = prop_dictionary_create();
 		if (dict == NULL) {
@@ -230,7 +225,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "unregister") == 0) {
 		/* Unregisters a package from the database */
 		if (argc != 3)
-			usage(xhp);
+			usage(&xh);
 
 		rv = xbps_unregister_pkg(argv[1], argv[2], true);
 		if (rv == ENOENT) {
@@ -249,7 +244,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "version") == 0) {
 		/* Prints version of an installed package */
 		if (argc != 2)
-			usage(xhp);
+			usage(&xh);
 
 		dict = xbps_regpkgdb_get_pkgd(argv[1], false);
 		if (dict == NULL) {
@@ -263,7 +258,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "sanitize-plist") == 0) {
 		/* Sanitize a plist file (properly indent the file) */
 		if (argc != 2)
-			usage(xhp);
+			usage(NULL);
 
 		dict = prop_dictionary_internalize_from_zfile(argv[1]);
 		if (dict == NULL) {
@@ -277,7 +272,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "getpkgversion") == 0) {
 		/* Returns the version of a pkg string */
 		if (argc != 2)
-			usage(xhp);
+			usage(NULL);
 
 		version = xbps_pkg_version(argv[1]);
 		if (version == NULL) {
@@ -290,7 +285,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "getpkgname") == 0) {
 		/* Returns the name of a pkg string */
 		if (argc != 2)
-			usage(xhp);
+			usage(NULL);
 
 		pkgname = xbps_pkg_name(argv[1]);
 		if (pkgname == NULL) {
@@ -304,7 +299,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "getpkgrevision") == 0) {
 		/* Returns the revision of a pkg string */
 		if (argc != 2)
-			usage(xhp);
+			usage(NULL);
 
 		version = xbps_pkg_revision(argv[1]);
 		if (version == NULL)
@@ -315,7 +310,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "getpkgdepname") == 0) {
 		/* Returns the pkgname of a dependency */
 		if (argc != 2)
-			usage(xhp);
+			usage(NULL);
 
 		pkgname = xbps_pkgpattern_name(argv[1]);
 		if (pkgname == NULL)
@@ -326,7 +321,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "getpkgdepversion") == 0) {
 		/* returns the version of a package pattern dependency */
 		if (argc != 2)
-			usage(xhp);
+			usage(NULL);
 
 		version = xbps_pkgpattern_version(argv[1]);
 		if (version == NULL)
@@ -337,21 +332,21 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "pkgmatch") == 0) {
 		/* Matches a pkg with a pattern */
 		if (argc != 3)
-			usage(xhp);
+			usage(NULL);
 
 		exit(xbps_pkgpattern_match(argv[1], argv[2]));
 
 	} else if (strcasecmp(argv[0], "cmpver") == 0) {
 		/* Compare two version strings, installed vs required */
 		if (argc != 3)
-			usage(xhp);
+			usage(NULL);
 
 		exit(xbps_cmpver(argv[1], argv[2]));
 
 	} else if (strcasecmp(argv[0], "digest") == 0) {
 		/* Prints SHA256 hashes for specified files */
 		if (argc < 2)
-			usage(xhp);
+			usage(NULL);
 
 		for (i = 1; i < argc; i++) {
 			hash = xbps_file_hash(argv[i]);
@@ -368,7 +363,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */
 		if (argc != 2)
-			usage(xhp);
+			usage(&xh);
 
 		for (i = 1; i < argc; i++) {
 			rv = xbps_fetch_file(argv[i], ".", false, "v");
@@ -383,10 +378,10 @@ main(int argc, char **argv)
 		}
 
 	} else {
-		usage(xhp);
+		usage(NULL);
 	}
 
 out:
-	xbps_end(xhp);
+	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

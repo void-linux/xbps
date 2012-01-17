@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -574,7 +574,7 @@ out:
 	return rv;
 }
 
-int
+int HIDDEN
 xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 {
 	struct archive *ar = NULL;

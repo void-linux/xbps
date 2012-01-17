@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -205,8 +205,6 @@ xbps_end(struct xbps_handle *xh)
 	if (xh->cachedir_priv != NULL)
 		free(xh->cachedir_priv);
 
-	free(xh);
-	xh = NULL;
 	xhp = NULL;
 }
 
@@ -215,12 +213,6 @@ xbps_handle_get(void)
 {
 	assert(xhp != NULL);
 	return xhp;
-}
-
-struct xbps_handle *
-xbps_handle_alloc(void)
-{
-	return calloc(1, sizeof(struct xbps_handle));
 }
 
 static void

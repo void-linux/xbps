@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,10 @@
 struct repo_pool_fpkg {
 	prop_dictionary_t pkgd;
 	const char *pattern;
+	const char *bestpkgver;
+	const char *repo_bestmatch;
 	bool bypattern;
+	bool exact;
 };
 
 static int
@@ -79,7 +82,16 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 
 	assert(rpi != NULL);
 
-	if (rpf->bypattern) {
+	if (rpf->exact) {
+		if (rpf->repo_bestmatch != NULL) {
+			if (strcmp(rpf->repo_bestmatch, rpi->rpi_uri))
+				return 0;
+		}
+		/* exact match by pkgver */
+		rpf->pkgd = xbps_find_pkg_in_dict_by_pkgver(rpi->rpi_repod,
+		    "packages", rpf->pattern);
+	} else if (rpf->bypattern) {
+		/* match by pkgpattern in pkgver*/
 		rpf->pkgd = xbps_find_pkg_in_dict_by_pattern(rpi->rpi_repod,
 		    "packages", rpf->pattern);
 		/* If no pkg exists matching pattern, look for virtual packages */
@@ -88,6 +100,7 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 			    rpi->rpi_repod, "packages", rpf->pattern);
 		}
 	} else {
+		/* match by pkgname */
 		rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
 		    "packages", rpf->pattern);
 		/* If no pkg exists matching pattern, look for virtual packages */
@@ -101,10 +114,6 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		 * Package dictionary found, add the "repository"
 		 * object with the URI.
 		 */
-#ifdef DEBUG
-		xbps_dbg_printf("%s: found pkg in repository\n", __func__);
-		xbps_dbg_printf_append("%s", prop_dictionary_externalize(rpf->pkgd));
-#endif
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
 		*done = true;
@@ -120,61 +129,52 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		      bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
-	prop_dictionary_t instpkgd;
-	const char *instver, *repover;
+	const char *repopkgver;
 
 	assert(rpi != NULL);
 
-	rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
-	    "packages", rpf->pattern);
+	(void)done;
+
+	if (rpf->bypattern) {
+		rpf->pkgd = xbps_find_pkg_in_dict_by_pattern(rpi->rpi_repod,
+		    "packages", rpf->pattern);
+	} else {
+		rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
+		    "packages", rpf->pattern);
+	}
 	if (rpf->pkgd == NULL) {
 		if (errno && errno != ENOENT)
 			return errno;
 
 		xbps_dbg_printf("[rpool] Package '%s' not found in repository "
 		    "'%s'.\n", rpf->pattern, rpi->rpi_uri);
-	} else {
-		/*
-		 * Check if version in repository is greater than
-		 * the version currently installed.
-		 */
-		instpkgd = xbps_find_pkg_dict_installed(rpf->pattern, false);
-		if (instpkgd == NULL) {
-			xbps_dbg_printf("[rpool] `%s' not installed, "
-			    "ignoring...\n", rpf->pattern);
-			rpf->pkgd = NULL;
-			return ENODEV;
-		}
-		prop_dictionary_get_cstring_nocopy(instpkgd,
-		    "version", &instver);
-		prop_dictionary_get_cstring_nocopy(rpf->pkgd,
-		    "version", &repover);
-		prop_object_release(instpkgd);
-
-		if (xbps_cmpver(repover, instver) <= 0) {
-			xbps_dbg_printf("[rpool] Skipping '%s-%s' "
-			    "(installed: %s) from repository `%s'\n",
-			    rpf->pattern, repover, instver,
-			    rpi->rpi_uri);
-			rpf->pkgd = NULL;
-			errno = EEXIST;
-			return 0;
-		}
-		/*
-		 * New package version found, exit from the loop.
-		 */
-		xbps_dbg_printf("[rpool] Found '%s-%s' (installed: %s) "
-		    "in repository '%s'.\n", rpf->pattern, repover,
-		    instver, rpi->rpi_uri);
-		prop_dictionary_set_cstring(rpf->pkgd, "repository",
-		    rpi->rpi_uri);
-		*done = true;
+		return 0;
+	}
+	prop_dictionary_get_cstring_nocopy(rpf->pkgd,
+	    "pkgver", &repopkgver);
+	if (rpf->bestpkgver == NULL) {
+		xbps_dbg_printf("[rpool] Found best match '%s' (%s).\n",
+		    repopkgver, rpi->rpi_uri);
+		rpf->bestpkgver = repopkgver;
+		rpf->repo_bestmatch = rpi->rpi_uri;
+		return 0;
+	}
+	/*
+	 * Compare current stored version against new
+	 * version from current package in repository.
+	 */
+	if (xbps_cmpver(repopkgver, rpf->bestpkgver)) {
+		xbps_dbg_printf("[rpool] Found best match '%s' (%s).\n",
+		    repopkgver, rpi->rpi_uri);
+		rpf->bestpkgver = repopkgver;
+		rpf->repo_bestmatch = rpi->rpi_uri;
 	}
 	return 0;
 }
 
 static struct repo_pool_fpkg *
-repo_find_pkg(const char *pkg, bool bypattern, bool best, bool virtual)
+repo_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
+	      bool virtual)
 {
 	struct repo_pool_fpkg *rpf;
 	int rv = 0;
@@ -187,9 +187,19 @@ repo_find_pkg(const char *pkg, bool bypattern, bool best, bool virtual)
 
 	rpf->pattern = pkg;
 	rpf->bypattern = bypattern;
+	rpf->exact = exact;
 	rpf->pkgd = NULL;
+	rpf->bestpkgver = NULL;
+	rpf->repo_bestmatch = NULL;
 
-	if (best) {
+	if (exact) {
+		/*
+		 * Look for exact package match with pkgver in all repos.
+		 */
+		rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
+		if (rv != 0)
+			errno = rv;
+	} else if (best) {
 		/*
 		 * Look for the best package version of a package name or
 		 * pattern in all repositories.
@@ -197,6 +207,10 @@ repo_find_pkg(const char *pkg, bool bypattern, bool best, bool virtual)
 		rv = xbps_repository_pool_foreach(repo_find_best_pkg_cb, rpf);
 		if (rv != 0)
 			errno = rv;
+
+		if (rpf->bestpkgver != NULL)
+			rpf->pkgd =
+			    xbps_repository_pool_find_pkg_exact(rpf->bestpkgver);
 	} else {
 		if (virtual) {
 			/*
@@ -227,7 +241,7 @@ xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern, bool best)
 
 	assert(pkg != NULL);
 
-	rpf = repo_find_pkg(pkg, bypattern, best, true);
+	rpf = repo_find_pkg(pkg, bypattern, best, false, true);
 	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);
@@ -243,7 +257,23 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 
 	assert(pkg != NULL);
 
-	rpf = repo_find_pkg(pkg, bypattern, best, false);
+	rpf = repo_find_pkg(pkg, bypattern, best, false, false);
+	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
+		pkgd = prop_dictionary_copy(rpf->pkgd);
+	free(rpf);
+
+	return pkgd;
+}
+
+prop_dictionary_t
+xbps_repository_pool_find_pkg_exact(const char *pkgver)
+{
+	struct repo_pool_fpkg *rpf;
+	prop_dictionary_t pkgd = NULL;
+
+	assert(pkgver != NULL);
+
+	rpf = repo_find_pkg(pkgver, false, false, true, false);
 	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);

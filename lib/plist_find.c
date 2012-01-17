@@ -266,6 +266,24 @@ xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t d,
 	return find_pkg_in_dict(d, key, pattern, true, false);
 }
 
+prop_dictionary_t
+xbps_find_pkg_in_dict_by_pkgver(prop_dictionary_t d,
+				const char *key,
+				const char *pkgver)
+{
+	prop_array_t array;
+
+	assert(d != NULL);
+	assert(key != NULL);
+	assert(pkgver != NULL);
+
+	array = prop_dictionary_get(d, key);
+	if (array == NULL)
+		return NULL;
+
+	return xbps_find_pkg_in_array_by_pkgver(array, pkgver);
+}
+
 prop_dictionary_t HIDDEN
 xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t d,
 					  const char *key,

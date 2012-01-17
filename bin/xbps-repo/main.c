@@ -53,7 +53,7 @@ usage(struct xbps_handle *xhp)
 int
 main(int argc, char **argv)
 {
-	struct xbps_handle *xhp;
+	struct xbps_handle xh;
 	struct xferstat xfer;
 	struct repo_search_data *rsd = NULL;
 	prop_dictionary_t pkgd;
@@ -99,20 +99,16 @@ main(int argc, char **argv)
 	/*
 	 * Initialize XBPS subsystems.
 	 */
-	xhp = xbps_handle_alloc();
-	if (xhp == NULL) {
-		xbps_error_printf("xbps-repo: failed to allocate resources.\n");
-		exit(EXIT_FAILURE);
-	}
-	xhp->debug = debug;
-	xhp->state_cb = state_cb;
-	xhp->fetch_cb = fetch_file_progress_cb;
-	xhp->fetch_cb_data = &xfer;
-	xhp->rootdir = rootdir;
-	xhp->cachedir = cachedir;
-	xhp->conffile = conffile;
+	memset(&xh, 0, sizeof(xh));
+	xh.debug = debug;
+	xh.state_cb = state_cb;
+	xh.fetch_cb = fetch_file_progress_cb;
+	xh.fetch_cb_data = &xfer;
+	xh.rootdir = rootdir;
+	xh.cachedir = cachedir;
+	xh.conffile = conffile;
 
-	if ((rv = xbps_init(xhp)) != 0) {
+	if ((rv = xbps_init(&xh)) != 0) {
 		xbps_error_printf("xbps-repo: couldn't initialize library: %s\n",
 		    strerror(rv));
 		exit(EXIT_FAILURE);
@@ -121,7 +117,7 @@ main(int argc, char **argv)
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists all repositories registered in pool. */
 		if (argc != 1)
-			usage(xhp);
+			usage(&xh);
 
 		rv = xbps_repository_pool_foreach(repo_list_uri_cb, NULL);
 		if (rv == ENOTSUP)
@@ -135,7 +131,7 @@ main(int argc, char **argv)
 		 * Only list packages for the target repository.
 		 */
 		if (argc < 1 || argc > 2)
-			usage(xhp);
+			usage(&xh);
 
 		rv = xbps_repository_pool_foreach(repo_pkg_list_cb, argv[1]);
 		if (rv == ENOTSUP)
@@ -150,7 +146,7 @@ main(int argc, char **argv)
 		 * by using shell style match patterns (fnmatch(3)).
 		 */
 		if (argc < 2)
-			usage(xhp);
+			usage(&xh);
 
 		rsd = malloc(sizeof(*rsd));
 		if (rsd == NULL) {
@@ -170,7 +166,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about a binary package. */
 		if (argc != 2)
-			usage(xhp);
+			usage(&xh);
 
 		rv = show_pkg_info_from_repolist(argv[1], option);
 		if (rv == ENOENT) {
@@ -186,7 +182,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show-deps") == 0) {
 		/* Shows the required run dependencies for a package. */
 		if (argc != 2)
-			usage(xhp);
+			usage(&xh);
 
 		rv = show_pkg_deps_from_repolist(argv[1]);
 		if (rv == ENOENT) {
@@ -202,7 +198,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show-files") == 0) {
 		/* Shows the package files in a binary package */
 		if (argc != 2)
-			usage(xhp);
+			usage(&xh);
 
 		pkgd = xbps_repository_pool_dictionary_metadata_plist(argv[1],
 		    XBPS_PKGFILES);
@@ -226,7 +222,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "find-files") == 0) {
 		/* Finds files by patterns, exact matches and components. */
 		if (argc < 2)
-			usage(xhp);
+			usage(&xh);
 
 		rv = repo_find_files_in_packages(argc, argv);
 		if (rv == ENOTSUP) {
@@ -236,7 +232,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "genindex") == 0) {
 		/* Generates a package repository index plist file. */
 		if (argc != 2)
-			usage(xhp);
+			usage(&xh);
 
 		rv = repo_genindex(argv[1]);
 		if (rv == 0)
@@ -245,18 +241,18 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
 		if (argc != 1)
-			usage(xhp);
+			usage(&xh);
 
-		rv = xbps_repository_pool_sync(xhp);
+		rv = xbps_repository_pool_sync(&xh);
 		if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
 		}
 	} else {
-		usage(xhp);
+		usage(&xh);
 	}
 
 out:
-	xbps_end(xhp);
+	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20120117"
+#define XBPS_API_VERSION	"20120117-1"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -571,8 +571,7 @@ struct xbps_handle {
  *   - Set default cache connections for libfetch.
  *   - Parse configuration file.
  *
- * @param[in] xhp The xbps_handle structure previously allocated
- * by \a xbps_handle_alloc().
+ * @param[in] xhp Pointer to an xbps_handle strcucture.
  * @note It's assumed that \a xhp is a valid pointer.
  *
  * @return 0 on success, an errno value otherwise.
@@ -582,19 +581,10 @@ int xbps_init(struct xbps_handle *xhp);
 /**
  * Releases all resources used by libxbps.
  *
- * @param[in] xhp Pointer to an xbps_handle structure, as returned
- * by \a xbps_handle_alloc().
+ * @param[in] xhp Pointer to an xbps_handle structure.
  * @note It's assumed that \a xhp is a valid pointer.
  */
 void xbps_end(struct xbps_handle *xhp);
-
-/**
- * Allocated an xbps_handle structure.
- *
- * @return A pointer to the allocated xbps_handle structure, NULL
- * otherwise.
- */
-struct xbps_handle *xbps_handle_alloc(void);
 
 /**
  * Returns a pointer to the xbps_handle structure set by xbps_init().
@@ -641,8 +631,6 @@ int xbps_configure_packages(bool flush);
  *
  * The package version is defined by:
  * ${VERSION}[_${REVISION}].
- *
- * ${VERSION} supersedes ${REVISION}.
  *
  * @param[in] pkg1 a package version string.
  * @param[in] pkg2 a package version string.
@@ -701,18 +689,20 @@ prop_array_t xbps_find_pkg_orphans(prop_array_t orphans);
  *
  * Package pattern matching.
  *
- * @param[in] instpkg Package/version string of an installed package.
- * @param[in] pattern Pattern required for \a instpkg to match.
+ * @param[in] pkgver Package name/version, i.e `foo-1.0'.
+ * @param[in] pattern Package pattern to match against \a pkgver, i.e
+ * `foo>=0' or `foo<1'.
  *
- * @return 1 if \a instpkg is matched against \a pattern, 0 if no match.
+ * @return 1 if \a pkgver is matched against \a pattern, 0 if no match.
  */
-int xbps_pkgpattern_match(const char *instpkg, const char *pattern);
+int xbps_pkgpattern_match(const char *pkgver, const char *pattern);
 
 /** @addtogroup plist */
 /*@{*/
 
 /**
  * Adds a proplib object into a proplib dictionary with specified key.
+ * The object is always released.
  *
  * @param[in] dict Proplib dictionary to insert the object to.
  * @param[in] obj Proplib object to be inserted.
@@ -726,6 +716,7 @@ bool xbps_add_obj_to_dict(prop_dictionary_t dict,
 
 /**
  * Adds a proplib object into a proplib array.
+ * The object is always released.
  *
  * @param[in] array Proplib array to insert the object to.
  * @param[in] obj Proplib object to be inserted.
@@ -735,7 +726,7 @@ bool xbps_add_obj_to_dict(prop_dictionary_t dict,
 bool xbps_add_obj_to_array(prop_array_t array, prop_object_t obj);
 
 /**
- * Executes a function callback specified in \a fn with \a arg paassed
+ * Executes a function callback specified in \a fn with \a arg passed
  * as its argument into they array \a array.
  *
  * @param[in] array Proplib array to iterate.
@@ -744,7 +735,8 @@ bool xbps_add_obj_to_array(prop_array_t array, prop_object_t obj);
  * a boolean) can be set to true to stop immediately the loop.
  * @param[in] arg Argument to be passed to the function callback.
  *
- * @return 0 on success, otherwise an errno value is set appropiately.
+ * @return 0 on success, otherwise the value returned by the function
+ * callback.
  */
 int xbps_callback_array_iter(prop_array_t array,
 			     int (*fn)(prop_object_t, void *, bool *),
@@ -762,8 +754,8 @@ int xbps_callback_array_iter(prop_array_t array,
  * immediately the loop.
  * @param[in] arg Argument to be passed to the function callback.
  *
- * @return 0 on success (all objects were processed), otherwise an
- * errno value is set appropiately.
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the function callback.
  */
 int xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 			const char *key,
@@ -782,8 +774,8 @@ int xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
  * immediately the loop.
  * @param[in] arg Argument to be passed to the function callback.
  *
- * @return 0 on success (all objects were processed), otherwise an
- * errno value is set appropiately.
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the function callback.
  */
 int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 			const char *key,
@@ -797,8 +789,8 @@ int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
  * @param[in] fn Function callback to run for any pkg dictionary.
  * @param[in] arg Argument to be passed to the function callback.
  *
- * @return 0 on success (all objects were processed), otherwise an
- * errno value.
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the function callback.
  */
 int xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
 				 void *arg);
@@ -810,8 +802,8 @@ int xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
  * @param[in] fn Function callback to run for any pkg dictionary.
  * @param[in] arg Argument to be passed to the function callback.
  *
- * @return 0 on success (all objects were processed), otherwise an
- * errno value.
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the funcion callback.
  */
 int xbps_regpkgdb_foreach_reverse_pkg_cb(
 		int (*fn)(prop_object_t, void *, bool *),
@@ -821,12 +813,13 @@ int xbps_regpkgdb_foreach_reverse_pkg_cb(
  * Returns a package dictionary from regpkgdb plist, matching pkgname or
  * pkgver specified in \a pkg.
  *
- * @param[in] pkg Package name or name-version tuple to match.
- * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a pkgver.
+ * @param[in] pkg Package name or name-version to match.
+ * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
+ * package pattern, i.e `foo>=0' or `foo<1'.
  *
  * @return The matching proplib package dictionary from regpkgdb copied
  * with \a prop_dictionary_copy() so it must be released when not required
- * anymore with prop_object_release().
+ * anymore with prop_object_release(). NULL otherwise.
  */
 prop_dictionary_t xbps_regpkgdb_get_pkgd(const char *pkg, bool bypattern);
 
@@ -845,7 +838,7 @@ bool xbps_regpkgdb_remove_pkgd(const char *pkgname);
  * in memory.
  *
  * @param[in] xhp Pointer to our xbps_handle struct, as returned by
- * \a xbps_handle_get() or xbps_handle_alloc().
+ * \a xbps_handle_get().
  * @param[in] flush If true the regpkgdb plist contents in memory will
  * be flushed atomically to disk.
  *
@@ -884,6 +877,22 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
 						   const char *pattern);
 
 /**
+ * Finds the proplib's dictionary associated with a package, by matching
+ * its \a pkgver object in its dictionary.
+ *
+ * @param[in] dict Proplib dictionary to look for the package dictionary.
+ * @param[in] key Key associated with the array storing the package's
+ * dictionary.
+ * @param[in] pkgver Package name/version to match, i.e `foo-1.0'.
+ *
+ * @return The package's proplib dictionary on success, NULL otherwise
+ * and errno is set appropiately.
+ */
+prop_dictionary_t xbps_find_pkg_in_dict_by_pkgver(prop_dictionary_t dict,
+						  const char *key,
+						  const char *pkgver);
+
+/**
  * Finds the package's proplib dictionary in a plist file by specifying
  * a package name.
  *
@@ -892,9 +901,9 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
  * @param[in] pkgname Package name to match in array.
  *
  * @return The package's proplib dictionary on success, NULL otherwise and
- * errno is set appropiately. Returned dictionary is copied via
- * prop_dictionary_copy(), which means that caller is responsible to
- * release the object with prop_object_release() when done.
+ * errno is set appropiately.
+ * @note When returned dictionary is no longer needed, it must be released
+ * with prop_object_release(3).
  */
 prop_dictionary_t xbps_find_pkg_dict_from_plist_by_name(const char *plist,
 							const char *key,
@@ -909,8 +918,9 @@ prop_dictionary_t xbps_find_pkg_dict_from_plist_by_name(const char *plist,
  * @param[in] pattern Package pattern to match in array.
  *
  * @return The package's proplib dictionary on success, NULL otherwise and
- * errno is set appropiately. Returned dictionary should be released with
- * prop_object_release() when it's not any longer needed.
+ * errno is set appropiately.
+ * @note When returned dictionary is no longer needed, it must be released
+ * with prop_object_release(3).
  */
 prop_dictionary_t xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
 							   const char *key,
@@ -925,9 +935,9 @@ prop_dictionary_t xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
  * by using a package pattern. If false, \a str is assumed to be a package name.
  *
  * @return The package's dictionary on success, NULL otherwise and
- * errno is set appropiately. Returned dictionary is copied via
- * prop_dictionary_copy(), which means that caller is responsible to
- * release the object with prop_object_release() when done.
+ * errno is set appropiately.
+ * @note When returned dictionary is no longer needed, it must be released
+ * with prop_object_release(3).
  */
 prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
 					       bool bypattern);
@@ -942,9 +952,9 @@ prop_dictionary_t xbps_find_pkg_dict_installed(const char *str,
  * by using a package pattern. If false, \a str is assumed to be a package name.
  *
  * @return The virtual package's dictionary on success, NULL otherwise and
- * errno is set appropiately. Returned dictionary is copied via
- * prop_dictionary_copy(), which means that caller is responsible to
- * release the object with prop_object_release() when done.
+ * errno is set appropiately.
+ * @note When returned dictionary is no longer needed, it must be released
+ * with prop_object_release(3).
  */
 prop_dictionary_t xbps_find_virtualpkg_dict_installed(const char *str,
 						      bool bypattern);
@@ -956,7 +966,7 @@ prop_dictionary_t xbps_find_virtualpkg_dict_installed(const char *str,
  * @param[in] pkgd Package dictionary.
  * @param[in] str Virtual package name or package pattern to match.
  * @param[in] bypattern If true, \a str should be a package name,
- * otherwise it should be a package pattern.
+ * otherwise it should be a package pattern, i.e `foo>=0' or `foo<1'.
  *
  * @return True if \a str matches a virtual package in \a pkgd, false
  * otherwise.
@@ -981,7 +991,7 @@ bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
 /**
  * Finds a package dictionary in a proplib array by matching a package name.
  *
- * @param[in] array The proplib array where to look for.
+ * @param[in] array The proplib array to search on.
  * @param[in] name The package name to match.
  *
  * @return The package dictionary, otherwise NULL is returned.
@@ -992,8 +1002,8 @@ prop_dictionary_t xbps_find_pkg_in_array_by_name(prop_array_t array,
 /**
  * Finds a package dictionary in a proplib array by matching a package pattern.
  *
- * @param[in] array The proplib array where to look for.
- * @param[in] pattern The package pattern to match.
+ * @param[in] array The proplib array to search on.
+ * @param[in] pattern The package pattern to match, i.e `foo>=0' or `foo<1'.
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
@@ -1004,8 +1014,8 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
  * Finds a package dictionary in a proplib array by matching a \a pkgver
  * object.
  *
- * @param[in] array The proplib array where to look for.
- * @param[in] pkgver The package name/version tuple to match, i.e `foo-1.0'.
+ * @param[in] array The proplib array to search on.
+ * @param[in] pkgver The package name/version to match, i.e `foo-1.0'.
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
@@ -1016,7 +1026,7 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pkgver(prop_array_t array,
  * Finds a virtual package dictionary in a proplib array by matching a
  * package name.
  *
- * @param[in] array The proplib array where to look for.
+ * @param[in] array The proplib array to search on.
  * @param[in] name The virtual package name to match.
  *
  * @return The package dictionary, otherwise NULL is returned.
@@ -1028,8 +1038,9 @@ prop_dictionary_t xbps_find_virtualpkg_in_array_by_name(prop_array_t array,
  * Finds a virtual package dictionary in a proplib array by matching a
  * package pattern.
  *
- * @param[in] array The proplib array where to look for.
- * @param[in] pattern The virtual package pattern to match.
+ * @param[in] array The proplib array to search on.
+ * @param[in] pattern The virtual package pattern to match, i.e
+ * `foo>=0' or `foo<1'.
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
@@ -1038,7 +1049,7 @@ prop_dictionary_t xbps_find_virtualpkg_in_array_by_pattern(prop_array_t array,
 /**
  * Match a package name in the specified array of strings.
  *
- * @param[in] array The proplib array where to look for.
+ * @param[in] array The proplib array to search on.
  * @param[in] pkgname The package name to match.
  *
  * @return true on success, false otherwise and errno is set appropiately.
@@ -1048,8 +1059,8 @@ bool xbps_match_pkgname_in_array(prop_array_t array, const char *pkgname);
 /**
  * Match a package pattern in the specified array of strings.
  *
- * @param[in] array The proplib array where to look for.
- * @param[in] pattern The package pattern to match.
+ * @param[in] array The proplib array to search on.
+ * @param[in] pattern The package pattern to match, i.e `foo>=0' or `foo<1'.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
@@ -1059,8 +1070,8 @@ bool xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern);
  * Match a package dependency against any package pattern in the specified
  * array of strings.
  *
- * @param[in] array The proplib array where to look for.
- * @param[in] pkgver The package name-version tuple to match.
+ * @param[in] array The proplib array to search on.
+ * @param[in] pkgver The package name-version to match, i.e `foo-1.0'.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
@@ -1069,16 +1080,16 @@ bool xbps_match_pkgdep_in_array(prop_array_t array, const char *pkgver);
 /**
  * Match a string (exact match) in the specified array of strings.
  *
- * @param[in] array The proplib array where to look for.
- * @param[in] val The value of string to match.
+ * @param[in] array The proplib array to search on.
+ * @param[in] val The string to be matched.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_match_string_in_array(prop_array_t array, const char *val);
 
 /**
- * Gets a proplib object iterator associated with an array, contained
- * in a proplib dictionary matching a key.
+ * Returns a proplib object iterator associated with an array, contained
+ * in a proplib dictionary matching the specified key.
  *
  * @param[in] dict Proplib dictionary where to look for the array.
  * @param[in] key Key associated with the array.
@@ -1090,8 +1101,8 @@ prop_object_iterator_t xbps_array_iter_from_dict(prop_dictionary_t dict,
 						 const char *key);
 
 /**
- * Get a proplib object dictionary associated with the installed package
- * \a pkgname, by internalizing its plist file defined by \a plist.
+ * Returns a proplib object dictionary associated with the installed package
+ * \a pkgname, by internalizing its plist file defined in \a plist.
  *
  * @param[in] pkgname Package name of installed package.
  * @param[in] plist Package metadata property list file.
@@ -1106,12 +1117,12 @@ prop_dictionary_t xbps_dictionary_from_metadata_plist(const char *pkgname,
  * Removes the package's proplib dictionary matching \a pkgname
  * in a plist file.
  *
- * @param[in] name Package name to match in plist's dictionary.
+ * @param[in] pkgname Package name to match in plist's dictionary.
  * @param[in] plist Path to a plist file.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkg_dict_from_plist_by_name(const char *name,
+bool xbps_remove_pkg_dict_from_plist_by_name(const char *pkgname,
 					     const char *plist);
 
 /**
@@ -1130,7 +1141,7 @@ bool xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name);
  * object in a proplib array of dictionaries.
  *
  * @param[in] array Proplib array where to look for.
- * @param[in] pkgver Package name/version tuple to match, i.e `foo-1.0'.
+ * @param[in] pkgver Package name/version to match, i.e `foo-1.0'.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
@@ -1142,7 +1153,7 @@ bool xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *pkgver
  *
  * @param[in] dict Proplib dictionary storing the proplib array.
  * @param[in] key Key associated with the proplib array.
- * @param[in] name Package name to look for.
+ * @param[in] name Package name to match.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
@@ -1151,7 +1162,7 @@ bool xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
 				       const char *name);
 
 /**
- * Removes a string from a proplib's array.
+ * Removes a string from a proplib's array of strings.
  *
  * @param[in] array Proplib array where to look for.
  * @param[in] str String to match in the array.
@@ -1241,7 +1252,8 @@ int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
  * The image in Detailed description shows off its structure.
  * @param[in] key Key of the array object to match, valid values are:
  * <b>files</b>, <b>dirs</b>, <b>links</b> and <b>conf_files</b>.
- * @param[in] pkgver Package/version string matching package dictionary.
+ * @param[in] pkgver Package/version string matching package dictionary,
+ * i.e `foo-1.0'.
  *
  * @return 0 on success, otherwise an errno value.
  */
@@ -1259,7 +1271,7 @@ int xbps_remove_pkg_files(prop_dictionary_t dict,
  * the transaction dictionary for future use. The first repository in
  * the pool that matched the pattern wins.
  *
- * @param pkgpattern Package name or pattern to find.
+ * @param pkgpattern Package pattern, i.e `foo>=0' or 'foo<2.0'.
  *
  * @return 0 on success, otherwise an errno value.
  */
@@ -1267,8 +1279,9 @@ int xbps_transaction_install_pkg(const char *pkgpattern);
 
 /**
  * Marks a package as "going to be updated" in the transaction dictionary.
- * All repositories in the pool will be used, and if a newer version
- * is available the package dictionary will be enqueued.
+ * All repositories in the pool will be used, and newest version
+ * available will be enqueued if it's greater than current installed
+ * version.
  *
  * @param pkgname The package name to update.
  *
@@ -1436,9 +1449,23 @@ int xbps_repository_pool_foreach(
  * fetch the first package found matching its pkgname.
  *
  * @return The package dictionary if found, NULL otherwise.
+ * @note When returned dictionary is no longer needed, you must release it
+ * with prop_object_release(3).
  */
 prop_dictionary_t
 	xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best);
+
+/**
+ * Finds a package dictionary in repository pool by matching its \a pkgver
+ * object.
+ *
+ * @param[in] pkgver Package name/version to match, i.e `foo-1.0'.
+ *
+ * @return The package dictionary if found, NULL otherwise.
+ * @note When returned dictionary is no longer needed, you must release it
+ * with prop_object_release(3).
+ */
+prop_dictionary_t xbps_repository_pool_find_pkg_exact(const char *pkgver);
 
 /**
  * Finds a package dictionary in repository pool by specifying a
@@ -1451,6 +1478,8 @@ prop_dictionary_t
  * fetch the first package found matching its pkgname.
  *
  * @return The package dictionary if found, NULL otherwise.
+ * @note When returned dictionary is no longer needed, you must release it
+ * with prop_object_release(3).
  */
 prop_dictionary_t
 	xbps_repository_pool_find_virtualpkg(const char *pkg,
@@ -1562,7 +1591,7 @@ int xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
  *
  * @param[in] pkgname Package name.
  * @param[in] version Package version (optional).
- * @param[in] pkgver Package name/version touple (optional).
+ * @param[in] pkgver Package name/version (optional).
  * @param[in] state Package state to be set.
  *
  * @return 0 on success, otherwise an errno value.
@@ -1581,22 +1610,6 @@ int xbps_set_pkg_state_installed(const char *pkgname,
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
-
-/*@}*/
-
-/** @addtogroup unpack */
-/*@{*/
-
-
-/**
- * Unpacks a binary package into specified root directory.
- *
- * @param[in] trans_pkg_dict Package proplib dictionary as stored in the
- * \a packages array returned by the transaction dictionary.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_unpack_binary_pkg(prop_dictionary_t trans_pkg_dict);
 
 /*@}*/
 
