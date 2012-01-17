@@ -161,7 +161,7 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 	prop_array_t pkgar;
 	struct stat st;
 	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
-	char *sha256, *filen, *tmpfilen, *oldfilepath;
+	char *sha256, *filen, *tmpfilen, *oldfilepath, *buf;
 	int rv = 0;
 
 	if (idxdict == NULL || file == NULL)
@@ -216,19 +216,27 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 		    "filename", &oldfilen);
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "pkgver", &oldpkgver);
+		buf = strdup(oldpkgver);
+		if (buf == NULL) {
+			prop_object_release(newpkgd);
+			rv = ENOMEM;
+			goto out;
+		}
 		oldfilepath = xbps_xasprintf("%s/%s", filedir, oldfilen);
 		if (oldfilepath == NULL) {
-			prop_object_release(newpkgd);
 			rv = errno;
+			prop_object_release(newpkgd);
+			free(buf);
 			goto out;
 		}
 		if (remove(oldfilepath) == -1) {
+			rv = errno;
 			xbps_error_printf("failed to remove old "
 			    "package file `%s': %s\n", oldfilepath,
 			    strerror(errno));
 			free(oldfilepath);
 			prop_object_release(newpkgd);
-			rv = errno;
+			free(buf);
 			goto out;
 		}
 		free(oldfilepath);
@@ -237,10 +245,12 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 			xbps_error_printf("failed to remove `%s' "
 			    "from plist index: %s\n", pkgname, strerror(errno));
 			prop_object_release(newpkgd);
+			free(buf);
 			goto out;
 		}
-		printf("Removed obsole package entry/binpkg for `%s'.\n",
-		    oldpkgver);
+		printf("Removed obsolete package entry/binpkg for `%s'.\n",
+		    buf);
+		free(buf);
 	}
 
 	/*
