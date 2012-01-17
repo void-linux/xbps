@@ -1,5 +1,13 @@
 xbps-0.12.0 (???):
 
+ * Added a pkg-config file to simplify writing code with libxbps.
+
+ * libxbps: improved support for finding newest package versions available
+   in repository pool.
+
+ * libxbps: added support for finding exact package name/version matches
+   in repository pool.
+
  * Fixed registering repositories with trailing '/' chars in
    configuration file: xbps.conf.
 

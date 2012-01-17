@@ -12,6 +12,7 @@ bin/xbps-dgraph/xbps-dgraph
 *.a
 *.xml
 *.png
+*.pc
 api/
 doc/xbps_api_doxyfile
 ftperr.h

@@ -78,6 +78,7 @@ done
 : ${MANDIR:=${PREFIX}/share/man}
 : ${INCLUDEDIR:=${PREFIX}/include}
 : ${ETCDIR:=${PREFIX}/etc}
+: ${PKGCONFIGDIR:=${LIBDIR}/pkgconfig}
 : ${TOPDIR:=..}
 
 _which()
@@ -136,6 +137,7 @@ echo "INCLUDEDIR ?=	$INCLUDEDIR" >>$CONFIG_MK
 echo "LIBDIR ?=	$LIBDIR" >>$CONFIG_MK
 echo "MANDIR ?=	$MANDIR" >>$CONFIG_MK
 echo "SHAREDIR ?= $SHAREDIR" >>$CONFIG_MK
+echo "PKGCONFIGDIR ?= $PKGCONFIGDIR" >>$CONFIG_MK
 
 ETCDIR="${ETCDIR}/xbps"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
