@@ -35,6 +35,7 @@
 struct index_files_data {
 	prop_dictionary_t idxdict;
 	prop_array_t idxfiles;
+	prop_array_t obsoletes;
 	const char *pkgdir;
 	bool flush;
 	bool new;
@@ -44,32 +45,25 @@ static int
 rmobsoletes_files_cb(prop_object_t obj, void *arg, bool *done)
 {
 	prop_array_t array;
+	prop_string_t ps;
 	struct index_files_data *ifd = arg;
 	const char *pkgver;
-	char *buf;
 
 	(void)done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	buf = strdup(pkgver);
-	if (buf == NULL)
-		return ENOMEM;
-
 	array = prop_dictionary_get(ifd->idxdict, "packages");
 	if (xbps_find_pkg_in_array_by_pkgver(array, pkgver)) {
 		/* pkg found, do nothing */
-		free(buf);
 		return 0;
 	}
-	/* remove obsolete pkg dictionary */
-	if (!xbps_remove_pkg_from_array_by_pkgver(ifd->idxfiles, pkgver)) {
-		free(buf);
+	ps = prop_string_create_cstring(pkgver);
+	if (ps == NULL)
 		return EINVAL;
-	}
-	printf("Removed obsolete entry for `%s'.\n", buf);
-	free(buf);
-	ifd->flush = true;
+	if (!xbps_add_obj_to_array(ifd->obsoletes, ps))
+		return EINVAL;
 
+	ifd->flush = true;
 	return 0;
 }
 
@@ -203,6 +197,8 @@ repo_genindex_files(const char *pkgdir)
 {
 	prop_dictionary_t idxdict;
 	struct index_files_data *ifd = NULL;
+	size_t idx;
+	const char *pkgver;
 	char *plist;
 	int rv;
 
@@ -232,6 +228,7 @@ repo_genindex_files(const char *pkgdir)
 	ifd->pkgdir = pkgdir;
 	ifd->idxfiles = prop_array_internalize_from_zfile(plist);
 	ifd->idxdict = prop_dictionary_copy(idxdict);
+	ifd->obsoletes = prop_array_create();
 	if (ifd->idxfiles == NULL) {
 		/* missing file, create new one */
 		ifd->idxfiles = prop_array_create();
@@ -250,6 +247,16 @@ repo_genindex_files(const char *pkgdir)
 		    rmobsoletes_files_cb, ifd);
 		if (rv != 0)
 			goto out;
+		for (idx = 0; idx < prop_array_count(ifd->obsoletes); idx++) {
+			prop_array_get_cstring_nocopy(ifd->obsoletes,
+			    idx, &pkgver);
+			if (!xbps_remove_pkg_from_array_by_pkgver(
+			    ifd->idxfiles, pkgver)) {
+				rv = EINVAL;
+				goto out;
+			}
+			printf("Removed obsolete entry for `%s'.\n", pkgver);
+		}
 	}
 	if (!ifd->flush)
 		goto out;
@@ -263,6 +270,8 @@ out:
 	if (rv == 0)
 		printf("%u packages registered in repository files index.\n",
 		    prop_array_count(ifd->idxfiles));
+	if (ifd->obsoletes != NULL)
+		prop_object_release(ifd->obsoletes);
 	if (ifd->idxfiles != NULL)
 		prop_object_release(ifd->idxfiles);
 	if (ifd->idxdict != NULL)
