@@ -106,6 +106,37 @@ xbps_find_pkg_in_array_by_pattern(prop_array_t array, const char *pattern)
 }
 
 prop_dictionary_t
+xbps_find_pkg_in_array_by_pkgver(prop_array_t array, const char *pkgver)
+{
+	prop_object_iterator_t iter;
+	prop_object_t obj = NULL;
+	const char *rpkgver;
+	bool found = false;
+
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+	assert(pkgver != NULL);
+
+	iter = prop_array_iterator(array);
+	if (iter == NULL)
+		return NULL;
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		if (!prop_dictionary_get_cstring_nocopy(obj,
+		    "pkgver", &rpkgver))
+			continue;
+		if (strcmp(pkgver, rpkgver) == 0) {
+			found = true;
+			break;
+		}
+	}
+	prop_object_iterator_release(iter);
+	if (found)
+		return obj;
+
+	return NULL;
+}
+
+prop_dictionary_t
 xbps_find_virtualpkg_in_array_by_name(prop_array_t array, const char *name)
 {
 	return find_pkg_in_array(array, name, false, true);

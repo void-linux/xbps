@@ -82,6 +82,14 @@ remove_string_from_array(prop_array_t array, const char *str, int mode)
 				found = true;
 				break;
 			}
+		} else if (mode == 3) {
+			/* match by pkgver, obj is a dictionary */
+			prop_dictionary_get_cstring_nocopy(obj,
+			    "pkgver", &curname);
+			if (strcmp(curname, str) == 0) {
+				found = true;
+				break;
+			}
 		}
 		idx++;
 	}
@@ -112,6 +120,12 @@ bool
 xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name)
 {
 	return remove_string_from_array(array, name, 2);
+}
+
+bool
+xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *pkgver)
+{
+	return remove_string_from_array(array, pkgver, 3);
 }
 
 bool

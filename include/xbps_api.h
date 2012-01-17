@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20120116-1"
+#define XBPS_API_VERSION	"20120117"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -984,7 +984,7 @@ bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
  * @param[in] array The proplib array where to look for.
  * @param[in] name The package name to match.
  *
- * @return true on success, false otherwise and errno is set appropiately.
+ * @return The package dictionary, otherwise NULL is returned.
  */
 prop_dictionary_t xbps_find_pkg_in_array_by_name(prop_array_t array,
 						 const char *name);
@@ -995,10 +995,22 @@ prop_dictionary_t xbps_find_pkg_in_array_by_name(prop_array_t array,
  * @param[in] array The proplib array where to look for.
  * @param[in] pattern The package pattern to match.
  *
- * @return true on success, false otherwise and errno is set appropiately.
+ * @return The package dictionary, otherwise NULL is returned.
  */
 prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
 						    const char *pattern);
+
+/**
+ * Finds a package dictionary in a proplib array by matching a \a pkgver
+ * object.
+ *
+ * @param[in] array The proplib array where to look for.
+ * @param[in] pkgver The package name/version tuple to match, i.e `foo-1.0'.
+ *
+ * @return The package dictionary, otherwise NULL is returned.
+ */
+prop_dictionary_t xbps_find_pkg_in_array_by_pkgver(prop_array_t array,
+						   const char *pkgver);
 
 /**
  * Finds a virtual package dictionary in a proplib array by matching a
@@ -1007,7 +1019,7 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
  * @param[in] array The proplib array where to look for.
  * @param[in] name The virtual package name to match.
  *
- * @return true on success, false otherwise and errno is set appropiately.
+ * @return The package dictionary, otherwise NULL is returned.
  */
 prop_dictionary_t xbps_find_virtualpkg_in_array_by_name(prop_array_t array,
 							const char *name);
@@ -1019,7 +1031,7 @@ prop_dictionary_t xbps_find_virtualpkg_in_array_by_name(prop_array_t array,
  * @param[in] array The proplib array where to look for.
  * @param[in] pattern The virtual package pattern to match.
  *
- * @return true on success, false otherwise and errno is set appropiately.
+ * @return The package dictionary, otherwise NULL is returned.
  */
 prop_dictionary_t xbps_find_virtualpkg_in_array_by_pattern(prop_array_t array,
 							   const char *pattern);
@@ -1112,6 +1124,17 @@ bool xbps_remove_pkg_dict_from_plist_by_name(const char *name,
  * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name);
+
+/**
+ * Removes the package's proplib dictionary matching the \a pkgver
+ * object in a proplib array of dictionaries.
+ *
+ * @param[in] array Proplib array where to look for.
+ * @param[in] pkgver Package name/version tuple to match, i.e `foo-1.0'.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *pkgver);
 
 /**
  * Removes the package's proplib dictionary matching \a pkgname,

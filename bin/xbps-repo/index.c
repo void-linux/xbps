@@ -160,8 +160,8 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 	prop_dictionary_t newpkgd, curpkgd;
 	prop_array_t pkgar;
 	struct stat st;
-	const char *pkgname, *version, *regver, *oldfilen;
-	char *sha256, *filen, *tmpfilen, *tmpstr, *oldfilepath;
+	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
+	char *sha256, *filen, *tmpfilen, *oldfilepath;
 	int rv = 0;
 
 	if (idxdict == NULL || file == NULL)
@@ -179,8 +179,8 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 
 	newpkgd = xbps_dictionary_metadata_plist_by_url(file, XBPS_PKGPROPS);
 	if (newpkgd == NULL) {
-		xbps_error_printf("xbps-repo: can't read %s %s metadata "
-		    "file, skipping!\n", file, XBPS_PKGPROPS);
+		xbps_error_printf("failed to read %s metadata for `%s',"
+		    " skipping!\n", XBPS_PKGPROPS, file);
 		goto out;
 	}
 	prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname", &pkgname);
@@ -201,7 +201,7 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 	} else if (curpkgd) {
 		prop_dictionary_get_cstring_nocopy(curpkgd, "version", &regver);
 		if (xbps_cmpver(version, regver) <= 0) {
-			xbps_warn_printf("skipping %s. %s-%s already "
+			xbps_warn_printf("skipping `%s', `%s-%s' already "
 			    "registered.\n", filen, pkgname, regver);
 			prop_object_release(newpkgd);
 			rv = EEXIST;
@@ -214,6 +214,8 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 		 */
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "filename", &oldfilen);
+		prop_dictionary_get_cstring_nocopy(curpkgd,
+		    "pkgver", &oldpkgver);
 		oldfilepath = xbps_xasprintf("%s/%s", filedir, oldfilen);
 		if (oldfilepath == NULL) {
 			prop_object_release(newpkgd);
@@ -221,7 +223,7 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 			goto out;
 		}
 		if (remove(oldfilepath) == -1) {
-			xbps_error_printf("xbps-repo: couldn't remove old "
+			xbps_error_printf("failed to remove old "
 			    "package file `%s': %s\n", oldfilepath,
 			    strerror(errno));
 			free(oldfilepath);
@@ -230,23 +232,15 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 			goto out;
 		}
 		free(oldfilepath);
-		tmpstr = strdup(oldfilen);
-		if (tmpstr == NULL) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			goto out;
-		}
 		if (!xbps_remove_pkg_from_dict_by_name(idxdict,
 		    "packages", pkgname)) {
-			xbps_error_printf("xbps-repo: couldn't remove `%s' "
+			xbps_error_printf("failed to remove `%s' "
 			    "from plist index: %s\n", pkgname, strerror(errno));
 			prop_object_release(newpkgd);
-			free(tmpstr);
 			goto out;
 		}
-		xbps_warn_printf("xbps-repo: removed outdated binpkg file for "
-		    "'%s'.\n", tmpstr);
-		free(tmpstr);
+		printf("Removed obsole package entry/binpkg for `%s'.\n",
+		    oldpkgver);
 	}
 
 	/*
@@ -297,7 +291,7 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 		rv = EINVAL;
 		goto out;
 	}
-	printf("Registered %s-%s (%s) in package index.\n",
+	printf("Registered `%s-%s' (%s) in repository index.\n",
 	    pkgname, version, filen);
 
 	if (!prop_dictionary_set_uint64(idxdict, "total-pkgs",
@@ -380,7 +374,7 @@ repo_genindex(const char *pkgdir)
 		 * Show total count registered packages.
 		 */
 		prop_dictionary_get_uint64(idxdict, "total-pkgs", &npkgcnt);
-		printf("%ju packages registered in package index.\n", npkgcnt);
+		printf("%ju packages registered in repository index.\n", npkgcnt);
 		/*
 		 * Don't write plist file if no packages were registered.
 		 */

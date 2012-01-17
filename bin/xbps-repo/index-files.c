@@ -33,18 +33,54 @@
 #include "defs.h"
 
 struct index_files_data {
+	prop_dictionary_t idxdict;
 	prop_array_t idxfiles;
 	const char *pkgdir;
+	bool flush;
+	bool new;
 };
+
+static int
+rmobsoletes_files_cb(prop_object_t obj, void *arg, bool *done)
+{
+	prop_array_t array;
+	struct index_files_data *ifd = arg;
+	const char *pkgver;
+	char *buf;
+
+	(void)done;
+
+	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	buf = strdup(pkgver);
+	if (buf == NULL)
+		return ENOMEM;
+
+	array = prop_dictionary_get(ifd->idxdict, "packages");
+	if (xbps_find_pkg_in_array_by_pkgver(array, pkgver)) {
+		/* pkg found, do nothing */
+		free(buf);
+		return 0;
+	}
+	/* remove obsolete pkg dictionary */
+	if (!xbps_remove_pkg_from_array_by_pkgver(ifd->idxfiles, pkgver)) {
+		free(buf);
+		return EINVAL;
+	}
+	printf("Removed obsolete entry for `%s'.\n", buf);
+	free(buf);
+	ifd->flush = true;
+
+	return 0;
+}
 
 static int
 genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 {
-	prop_dictionary_t pkg_filesd, pkgd;
+	prop_dictionary_t pkg_filesd, pkgd, regpkgd;
 	prop_array_t array;
 	struct index_files_data *ifd = arg;
-	const char *binpkg, *pkgver;
-	char *file;
+	const char *binpkg, *pkgver, *rpkgver, *version;
+	char *file, *pkgname, *pattern;
 	bool found = false;
 
 	(void)done;
@@ -52,6 +88,42 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 	prop_dictionary_get_cstring_nocopy(obj, "filename", &binpkg);
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
+	if (ifd->new)
+		goto start;
+
+	pkgname = xbps_pkg_name(pkgver);
+	if (pkgname == NULL)
+		return ENOMEM;
+	version = xbps_pkg_version(pkgver);
+	if (version == NULL) {
+		free(pkgname);
+		return EINVAL;
+	}
+	pattern = xbps_xasprintf("%s>=0", pkgname);
+	if (pattern == NULL) {
+		free(pkgname);
+		return ENOMEM;
+	}
+	free(pkgname);
+	regpkgd = xbps_find_pkg_in_array_by_pattern(ifd->idxfiles, pattern);
+	if (regpkgd) {
+		/*
+		 * pkg already registered, check if same version
+		 * is registered.
+		 */
+		prop_dictionary_get_cstring_nocopy(regpkgd, "pkgver", &rpkgver);
+		if (strcmp(pkgver, rpkgver) == 0) {
+			/* same pkg */
+			xbps_warn_printf("skipping `%s', already registered.\n",
+			    rpkgver);
+			return 0;
+		}
+		/* pkgver does not match, remove it from index-files */
+		if (!xbps_remove_pkg_from_array_by_pkgver(ifd->idxfiles, rpkgver))
+			return EINVAL;
+	}
+
+start:
 	file = xbps_xasprintf("%s/%s", ifd->pkgdir, binpkg);
 	if (file == NULL)
 		return ENOMEM;
@@ -117,6 +189,8 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 		return EINVAL;
 	}
 	prop_object_release(pkgd);
+	ifd->flush = true;
+	printf("Registered `%s' in repository files index.\n", pkgver);
 
 	return 0;
 }
@@ -129,7 +203,7 @@ repo_genindex_files(const char *pkgdir)
 {
 	prop_dictionary_t idxdict;
 	struct index_files_data *ifd;
-	char *plist, *files_plist;
+	char *plist;
 	int rv;
 
 	plist = xbps_pkg_index_plist(pkgdir);
@@ -142,44 +216,63 @@ repo_genindex_files(const char *pkgdir)
 		free(plist);
 		return errno;
 	}
+	free(plist);
 
-	ifd = malloc(sizeof(*ifd));
+	/* internalize repository index-files plist (if exists) */
+	plist = xbps_pkg_index_files_plist(pkgdir);
+	if (plist == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	ifd = calloc(1, sizeof(*ifd));
 	if (ifd == NULL) {
-		prop_object_release(idxdict);
-		free(plist);
-		return ENOMEM;
+		rv = ENOMEM;
+		goto out;
 	}
 	ifd->pkgdir = pkgdir;
-	ifd->idxfiles = prop_array_create();
-
-	printf("Creating repository's index files cache...\n");
+	ifd->idxfiles = prop_array_internalize_from_zfile(plist);
+	ifd->idxdict = prop_dictionary_copy(idxdict);
+	if (ifd->idxfiles == NULL) {
+		/* missing file, create new one */
+		ifd->idxfiles = prop_array_create();
+		ifd->new = true;
+	}
 
 	/* iterate over index.plist packages array */
 	rv = xbps_callback_array_iter_in_dict(idxdict,
 	    "packages", genindex_files_cb, ifd);
-	prop_object_release(idxdict);
-	free(plist);
-	if (rv != 0) {
-		prop_object_release(ifd->idxfiles);
-		free(ifd);
-		return rv;
-	}
-	files_plist = xbps_pkg_index_files_plist(pkgdir);
-	if (files_plist == NULL) {
-		prop_object_release(ifd->idxfiles);
-		free(ifd);
-		return ENOMEM;
-	}
-	/* externalize index-files dictionary to the plist file */
-	if (!prop_array_externalize_to_zfile(ifd->idxfiles, files_plist)) {
-		free(files_plist);
-		prop_object_release(ifd->idxfiles);
-		free(ifd);
-		return errno;
-	}
-	free(files_plist);
-	prop_object_release(ifd->idxfiles);
-	free(ifd);
+	if (rv != 0)
+		goto out;
 
-	return 0;
+	/* remove obsolete pkg entries */
+	if (!ifd->new) {
+		rv = xbps_callback_array_iter(ifd->idxfiles,
+		    rmobsoletes_files_cb, ifd);
+		if (rv != 0)
+			goto out;
+	}
+	if (!ifd->flush)
+		goto out;
+
+	/* externalize index-files dictionary to the plist file */
+	if (!prop_array_externalize_to_zfile(ifd->idxfiles, plist)) {
+		rv = errno;
+		goto out;
+	}
+out:
+	if (rv == 0)
+		printf("%u packages registered in repository files index.\n",
+		    prop_array_count(ifd->idxfiles));
+	if (ifd->idxfiles != NULL)
+		prop_object_release(ifd->idxfiles);
+	if (ifd->idxdict != NULL)
+		prop_object_release(ifd->idxdict);
+	if (plist != NULL)
+		free(plist);
+	if (ifd != NULL)
+		free(ifd);
+	if (idxdict != NULL)
+		prop_object_release(idxdict);
+
+	return rv;
 }
