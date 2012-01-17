@@ -34,6 +34,7 @@ for instance \`--prefix=\$HOME'.
 --mandir=DIR			man documentation [PREFIX/share/man]
 --datadir=DIR			read-only architecture-independent data [PREFIX/share]
 --etcdir=DIR			configuration files [PREFIX/etc]
+--pkgconfigdir=DIR		pkg-config directory [PREFIX/lib/pkgconfig]
 
 --debug				Build with debugging code and symbols
 --verbose			Disable silent build to see compilation details
@@ -63,6 +64,7 @@ for x; do
 	--with-api-docs) BUILD_API_DOCS=$var;;
 	--verbose) unset SILENT;;
 	--with-pie) BUILD_PIE=$var;;
+	--pkgconfigdir) PKGCONFIGDIR=$var;;
 	--help) usage;;
 	*) echo "$0: WARNING: unknown option $opt" >&2;;
 	esac
