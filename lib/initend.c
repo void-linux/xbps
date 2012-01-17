@@ -40,6 +40,7 @@
  * using libxbps and finalize usage to release resources at the end.
  */
 static bool debug;
+static bool xbps_initialized;
 static struct xbps_handle *xhp;
 
 static void
@@ -125,7 +126,6 @@ xbps_init(struct xbps_handle *xh)
 				 * We'll use defaults without any repo or
 				 * virtual packages.
 				 */
-				xbps_end(xh);
 				return rv;
 			}
 			errno = 0;
@@ -133,7 +133,6 @@ xbps_init(struct xbps_handle *xh)
 			/*
 			 * Parser error from configuration file.
 			 */
-			xbps_end(xh);
 			return ENOTSUP;
 		}
 	}
@@ -156,10 +155,9 @@ xbps_init(struct xbps_handle *xh)
 			xhp->cachedir = cfg_getstr(xhp->cfg, "cachedir");
 	}
 	get_cachedir(xhp);
-	if (xhp->cachedir_priv == NULL) {
-		xbps_end(xh);
+	if (xhp->cachedir_priv == NULL)
 		return ENOMEM;
-	}
+
 	xhp->cachedir = xhp->cachedir_priv;
 
 	if (xhp->cfg == NULL) {
@@ -187,31 +185,33 @@ xbps_init(struct xbps_handle *xh)
 	xbps_dbg_printf("TransactionFrequencyFlush=%u\n",
 	    xhp->transaction_frequency_flush);
 
+	xbps_initialized = true;
+
 	return 0;
 }
 
 void
-xbps_end(struct xbps_handle *xh)
+xbps_end(void)
 {
-	if (xh == NULL)
+	if (!xbps_initialized)
 		return;
 
-	xbps_regpkgdb_dictionary_release(xh);
-	xbps_repository_pool_release(xh);
+	xbps_regpkgdb_dictionary_release(xhp);
+	xbps_repository_pool_release(xhp);
 	xbps_fetch_unset_cache_connection();
 
-	if (xh->cfg != NULL)
-		cfg_free(xh->cfg);
-	if (xh->cachedir_priv != NULL)
-		free(xh->cachedir_priv);
+	if (xhp->cfg != NULL)
+		cfg_free(xhp->cfg);
+	if (xhp->cachedir_priv != NULL)
+		free(xhp->cachedir_priv);
 
 	xhp = NULL;
+	xbps_initialized = false;
 }
 
 struct xbps_handle *
 xbps_handle_get(void)
 {
-	assert(xhp != NULL);
 	return xhp;
 }
 

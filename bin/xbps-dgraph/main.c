@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2011 Juan Romero Pardines.
+ * Copyright (c) 2010-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -94,7 +94,7 @@ die(const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, " (%s)\n", strerror(save_errno));
 	va_end(ap);
-	xbps_end(xbps_handle_get());
+	xbps_end();
 	exit(EXIT_FAILURE);
 }
 

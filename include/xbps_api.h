@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20120117-1"
+#define XBPS_API_VERSION	"20120117-2"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -580,14 +580,11 @@ int xbps_init(struct xbps_handle *xhp);
 
 /**
  * Releases all resources used by libxbps.
- *
- * @param[in] xhp Pointer to an xbps_handle structure.
- * @note It's assumed that \a xhp is a valid pointer.
  */
-void xbps_end(struct xbps_handle *xhp);
+void xbps_end(void);
 
 /**
- * Returns a pointer to the xbps_handle structure set by xbps_init().
+ * Returns a pointer to the xbps_handle structure passed to xbps_init().
  */
 struct xbps_handle *xbps_handle_get(void);
 
