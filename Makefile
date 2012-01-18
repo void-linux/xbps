@@ -37,7 +37,7 @@ clean:
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir clean || exit 1;	\
 	done
-	-rm -f config.h config.mk
+	-rm -f config.h config.mk _ccflag.{,c,err}
 
 dist:
 ifndef REV
