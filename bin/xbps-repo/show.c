@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@ show_pkg_info_from_repolist(const char *pkgname, const char *option)
 {
 	prop_dictionary_t pkgd;
 
-	pkgd = xbps_repository_pool_find_virtualpkg(pkgname, false, false);
+	pkgd = xbps_repository_pool_find_virtualpkg(pkgname, false);
 	if (pkgd == NULL) {
 		pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
 		if (pkgd == NULL)
@@ -72,7 +72,7 @@ show_pkg_deps_from_repolist(const char *pkgname)
 	prop_dictionary_t pkgd;
 	const char *ver, *repoloc;
 
-	pkgd = xbps_repository_pool_find_virtualpkg(pkgname, false, false);
+	pkgd = xbps_repository_pool_find_virtualpkg(pkgname, false);
 	if (pkgd == NULL) {
 		pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
 		if (pkgd == NULL)

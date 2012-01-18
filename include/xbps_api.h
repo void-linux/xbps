@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.3"
 
-#define XBPS_API_VERSION	"20120117-2"
+#define XBPS_API_VERSION	"20120118"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -1441,7 +1441,8 @@ int xbps_repository_pool_foreach(
  * account virtual packages set in configuration file.
  *
  * @param[in] pkg Package pattern or name.
- * @param[in] bypattern True if \a pkg is a pattern, false if it is a pkgname.
+ * @param[in] bypattern Set it to true if \a pkg is a pkgpattern (foo>=0),
+ * false if it is a pkgname.
  * @param[in] best True to find the best version available in repo, false to
  * fetch the first package found matching its pkgname.
  *
@@ -1469,18 +1470,16 @@ prop_dictionary_t xbps_repository_pool_find_pkg_exact(const char *pkgver);
  * package pattern or a package name. Only virtual packages set in
  * configuration file will be matched.
  *
- * @param[in] pkg Virtual package pattern or name.
- * @param[in] bypattern True if \a pkg is a pattern, false if it is a pkgname.
- * @param[in] best True to find the best version available in repo, false to
- * fetch the first package found matching its pkgname.
+ * @param[in] pkg Virtual package pattern or name to match.
+ * @param[in] bypattern Set it to true if \a pkg is a pkgpattern (foo>=0),
+ * false if it is a pkgname.
  *
  * @return The package dictionary if found, NULL otherwise.
  * @note When returned dictionary is no longer needed, you must release it
  * with prop_object_release(3).
  */
 prop_dictionary_t
-	xbps_repository_pool_find_virtualpkg(const char *pkg,
-					     bool bypattern, bool best);
+	xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern);
 
 /**
  * Iterate over the the repository pool and search for a metadata plist

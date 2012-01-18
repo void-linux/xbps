@@ -234,14 +234,14 @@ repo_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
 }
 
 prop_dictionary_t
-xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern, bool best)
+xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern)
 {
 	struct repo_pool_fpkg *rpf;
 	prop_dictionary_t pkgd = NULL;
 
 	assert(pkg != NULL);
 
-	rpf = repo_find_pkg(pkg, bypattern, best, false, true);
+	rpf = repo_find_pkg(pkg, bypattern, false, false, true);
 	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);

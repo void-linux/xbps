@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,10 +92,8 @@ transaction_find_pkg(const char *pattern, int action)
 	pkg_repod = xbps_repository_pool_find_pkg(pattern,
 	    bypattern, bestpkg);
 	if (pkg_repod == NULL) {
-		if (!bestpkg) {
-			pkg_repod = xbps_repository_pool_find_virtualpkg(
-			    pattern, bypattern, bestpkg);
-		}
+		pkg_repod =
+		    xbps_repository_pool_find_virtualpkg(pattern, bypattern);
 		if (pkg_repod == NULL) {
 			/* not found */
 			rv = errno;

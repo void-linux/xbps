@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -362,7 +362,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		 * Pass 3: if required dependency is not in repository,
 		 * add pkg into the missing deps array and pass to next one.
 		 */
-		curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true, false);
+		curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true);
 		if (curpkgd == NULL) {
 			curpkgd = xbps_repository_pool_find_pkg(reqpkg, true, false);
 			if (curpkgd == NULL) {
