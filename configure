@@ -28,13 +28,14 @@ an installation prefix other than \`/usr/local' using \`--prefix',
 for instance \`--prefix=\$HOME'.
 
 --prefix=DIR			install architecture-independent files in PREFIX
+--exec-prefix=DIR		install architecture-dependent files in EPREFIX
 --sbindir=DIR			system admin executables [PREFIX/sbin]
 --libdir=DIR			object code libraries [PREFIX/lib]
---includedir=DIR		C header files [PREFIX/include]
---mandir=DIR			man documentation [PREFIX/share/man]
---datadir=DIR			read-only architecture-independent data [PREFIX/share]
+--includedir=DIR		C header files [EPREFIX/include]
+--mandir=DIR			man documentation [EPREFIX/share/man]
+--datadir=DIR			read-only architecture-independent data [EPREFIX/share]
 --etcdir=DIR			configuration files [PREFIX/etc]
---pkgconfigdir=DIR		pkg-config directory [PREFIX/lib/pkgconfig]
+--pkgconfigdir=DIR		pkg-config directory [EPREFIX/lib/pkgconfig]
 
 --debug				Build with debugging code and symbols
 --verbose			Disable silent build to see compilation details
@@ -51,6 +52,7 @@ for x; do
 	case "$opt" in
 	--debug) DEBUG=yes;;
 	--prefix) PREFIX=$var;;
+	--exec-prefix) EPREFIX=$var;;
 	--sbindir) SBINDIR=$var;;
 	--mandir) MANDIR=$var;;
 	--datadir) SHAREDIR=$var;;
@@ -73,12 +75,13 @@ done
 : ${SED:=sed}
 
 : ${PREFIX:=/usr/local}
+: ${EPREFIX:=${PREFIX}}
 : ${SYSCONFDIR:=${PREFIX}/etc}
 : ${SBINDIR:=${PREFIX}/sbin}
-: ${LIBDIR:=${PREFIX}/lib}
-: ${SHAREDIR:=${PREFIX}/share}
-: ${MANDIR:=${PREFIX}/share/man}
-: ${INCLUDEDIR:=${PREFIX}/include}
+: ${LIBDIR:=${EPREFIX}/lib}
+: ${SHAREDIR:=${EPREFIX}/share}
+: ${MANDIR:=${EPREFIX}/share/man}
+: ${INCLUDEDIR:=${EPREFIX}/include}
 : ${ETCDIR:=${PREFIX}/etc}
 : ${PKGCONFIGDIR:=${LIBDIR}/pkgconfig}
 : ${TOPDIR:=..}
@@ -134,6 +137,7 @@ echo "/* $OS */" >$CONFIG_H
 
 echo "TOPDIR ?=	$TOPDIR" >>$CONFIG_MK
 echo "PREFIX ?=	$PREFIX" >>$CONFIG_MK
+echo "EPREFIX ?= $EPREFIX" >>$CONFIG_MK
 echo "SBINDIR ?= $SBINDIR" >>$CONFIG_MK
 echo "INCLUDEDIR ?=	$INCLUDEDIR" >>$CONFIG_MK
 echo "LIBDIR ?=	$LIBDIR" >>$CONFIG_MK
@@ -596,6 +600,8 @@ fi
 echo
 echo "  XBPS has been configured with the following options:"
 echo
+echo "   PREFIX = 		$PREFIX"
+echo "   EPREFIX = 		$EPREFIX"
 echo "   SBINDIR =		$SBINDIR"
 echo "   LIBDIR =		$LIBDIR"
 echo "   INCLUDEDIR =		$INCLUDEDIR"

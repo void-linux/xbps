@@ -1,10 +1,10 @@
 prefix=@@PREFIX@@
-exec_prefix=${prefix}
+exec_prefix=@@EPREFIX@@
 libdir=${exec_prefix}/lib
-includedir=${prefix}/include
+includedir=${exec_prefix}/include
 
 Name: XBPS API Library
 Description: The X Binary Package System library
 Version: @@VERSION@@
-Libs: -lprop -lxbps
-Cflags: -I${includedir} -L${libdir}
+Libs: -lprop -lxbps -L${libdir}
+Cflags: -I${includedir}

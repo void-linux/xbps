@@ -5,7 +5,9 @@ PCFILE = libxbps.pc
 
 .PHONY: all
 all:
-	sed -e "s|@@VERSION@@|${VERSION}|g;s|@@PREFIX@@|${PREFIX}|g" \
+	sed -e "s|@@VERSION@@|${VERSION}|g" \
+		-e "s|@@PREFIX@@|${PREFIX}|g" \
+		-e "s|@@EPREFIX@@|${EPREFIX}|g" \
 		${PCFILE}.in > ${PCFILE}
 
 .PHONY: install
