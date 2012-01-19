@@ -33,7 +33,7 @@
 #include "defs.h"
 
 struct index_files_data {
-	prop_dictionary_t idxdict;
+	prop_array_t idx;
 	prop_array_t idxfiles;
 	prop_array_t obsoletes;
 	const char *pkgdir;
@@ -44,7 +44,6 @@ struct index_files_data {
 static int
 rmobsoletes_files_cb(prop_object_t obj, void *arg, bool *done)
 {
-	prop_array_t array;
 	prop_string_t ps;
 	struct index_files_data *ifd = arg;
 	const char *pkgver;
@@ -52,8 +51,7 @@ rmobsoletes_files_cb(prop_object_t obj, void *arg, bool *done)
 	(void)done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	array = prop_dictionary_get(ifd->idxdict, "packages");
-	if (xbps_find_pkg_in_array_by_pkgver(array, pkgver)) {
+	if (xbps_find_pkg_in_array_by_pkgver(ifd->idx, pkgver)) {
 		/* pkg found, do nothing */
 		return 0;
 	}
@@ -195,9 +193,9 @@ start:
 int
 repo_genindex_files(const char *pkgdir)
 {
-	prop_dictionary_t idxdict;
+	prop_array_t idx;
 	struct index_files_data *ifd = NULL;
-	size_t idx;
+	size_t i;
 	const char *pkgver;
 	char *plist;
 	int rv;
@@ -207,8 +205,8 @@ repo_genindex_files(const char *pkgdir)
 		return ENOMEM;
 
 	/* internalize repository index plist */
-	idxdict = prop_dictionary_internalize_from_zfile(plist);
-	if (idxdict == NULL) {
+	idx = prop_array_internalize_from_zfile(plist);
+	if (idx == NULL) {
 		free(plist);
 		return errno;
 	}
@@ -227,7 +225,7 @@ repo_genindex_files(const char *pkgdir)
 	}
 	ifd->pkgdir = pkgdir;
 	ifd->idxfiles = prop_array_internalize_from_zfile(plist);
-	ifd->idxdict = prop_dictionary_copy(idxdict);
+	ifd->idx = prop_array_copy(idx);
 	ifd->obsoletes = prop_array_create();
 	if (ifd->idxfiles == NULL) {
 		/* missing file, create new one */
@@ -236,8 +234,7 @@ repo_genindex_files(const char *pkgdir)
 	}
 
 	/* iterate over index.plist packages array */
-	rv = xbps_callback_array_iter_in_dict(idxdict,
-	    "packages", genindex_files_cb, ifd);
+	rv = xbps_callback_array_iter(idx, genindex_files_cb, ifd);
 	if (rv != 0)
 		goto out;
 
@@ -247,9 +244,9 @@ repo_genindex_files(const char *pkgdir)
 		    rmobsoletes_files_cb, ifd);
 		if (rv != 0)
 			goto out;
-		for (idx = 0; idx < prop_array_count(ifd->obsoletes); idx++) {
+		for (i = 0; i < prop_array_count(ifd->obsoletes); i++) {
 			prop_array_get_cstring_nocopy(ifd->obsoletes,
-			    idx, &pkgver);
+			    i, &pkgver);
 			if (!xbps_remove_pkg_from_array_by_pkgver(
 			    ifd->idxfiles, pkgver)) {
 				rv = EINVAL;
@@ -274,14 +271,14 @@ out:
 		prop_object_release(ifd->obsoletes);
 	if (ifd->idxfiles != NULL)
 		prop_object_release(ifd->idxfiles);
-	if (ifd->idxdict != NULL)
-		prop_object_release(ifd->idxdict);
+	if (ifd->idx != NULL)
+		prop_object_release(ifd->idx);
 	if (plist != NULL)
 		free(plist);
 	if (ifd != NULL)
 		free(ifd);
-	if (idxdict != NULL)
-		prop_object_release(idxdict);
+	if (idx != NULL)
+		prop_object_release(idx);
 
 	return rv;
 }

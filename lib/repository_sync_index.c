@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -130,7 +130,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 		goto out;
 	}
 	/*
-	 * Remote repository index.plist full URL.
+	 * Remote repository plist index full URL.
 	 */
 	rpidx = xbps_xasprintf("%s/%s", uri, plistf);
 	if (rpidx == NULL) {
@@ -147,7 +147,8 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 		goto out;
 	}
 	/*
-	 * Full path to repository directory to store the index.plist file.
+	 * Full path to repository directory to store the plist
+	 * index file.
 	 */
 	lrepodir = xbps_xasprintf("%s/%s/%s",
 	    xhp->rootdir, XBPS_META_PATH, uri_fixedp);
@@ -156,7 +157,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 		goto out;
 	}
 	/*
-	 * If directory exists probably the index.plist file
+	 * If directory exists probably the plist index file
 	 * was downloaded previously...
 	 */
 	rv = stat(lrepodir, &st);
@@ -170,7 +171,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 	xbps_set_cb_state(XBPS_STATE_REPOSYNC, 0, NULL, NULL,
 	    "Synchronizing index for `%s'...", uri);
 	/*
-	 * Download index.plist file from repository.
+	 * Download plist index file from repository.
 	 */
 	if (xbps_fetch_file(rpidx, fetch_outputdir, true, NULL) == -1) {
 		/* reposync error cb */
@@ -206,7 +207,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 		goto out;
 	}
 	/*
-	 * Create local repodir to store index.plist file.
+	 * Create local repodir to store plist index file.
 	 */
 	if ((rv = xbps_mkpath(lrepodir, 0755)) == -1) {
 		xbps_set_cb_state(XBPS_STATE_REPOSYNC_FAIL, errno, NULL, NULL,

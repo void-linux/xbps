@@ -54,12 +54,12 @@ repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done
 
 	if (rpf->bypattern) {
 		rpf->pkgd =
-		    xbps_find_virtualpkg_conf_in_dict_by_pattern(rpi->rpi_repod,
-		    "packages", rpf->pattern);
+		    xbps_find_virtualpkg_conf_in_array_by_pattern(rpi->rpi_repo,
+		    rpf->pattern);
 	} else {
 		rpf->pkgd =
-		    xbps_find_virtualpkg_conf_in_dict_by_name(rpi->rpi_repod,
-		    "packages", rpf->pattern);
+		    xbps_find_virtualpkg_conf_in_array_by_name(rpi->rpi_repo,
+		    rpf->pattern);
 	}
 	if (rpf->pkgd) {
 #ifdef DEBUG
@@ -88,25 +88,25 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 				return 0;
 		}
 		/* exact match by pkgver */
-		rpf->pkgd = xbps_find_pkg_in_dict_by_pkgver(rpi->rpi_repod,
-		    "packages", rpf->pattern);
+		rpf->pkgd = xbps_find_pkg_in_array_by_pkgver(rpi->rpi_repo,
+		    rpf->pattern);
 	} else if (rpf->bypattern) {
 		/* match by pkgpattern in pkgver*/
-		rpf->pkgd = xbps_find_pkg_in_dict_by_pattern(rpi->rpi_repod,
-		    "packages", rpf->pattern);
+		rpf->pkgd = xbps_find_pkg_in_array_by_pattern(rpi->rpi_repo,
+		    rpf->pattern);
 		/* If no pkg exists matching pattern, look for virtual packages */
 		if (rpf->pkgd == NULL) {
-			rpf->pkgd = xbps_find_virtualpkg_in_dict_by_pattern(
-			    rpi->rpi_repod, "packages", rpf->pattern);
+			rpf->pkgd = xbps_find_virtualpkg_in_array_by_pattern(
+			    rpi->rpi_repo, rpf->pattern);
 		}
 	} else {
 		/* match by pkgname */
-		rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
-		    "packages", rpf->pattern);
+		rpf->pkgd = xbps_find_pkg_in_array_by_name(rpi->rpi_repo,
+		    rpf->pattern);
 		/* If no pkg exists matching pattern, look for virtual packages */
 		if (rpf->pkgd == NULL) {
-			rpf->pkgd = xbps_find_virtualpkg_in_dict_by_name(
-			    rpi->rpi_repod, "packages", rpf->pattern);
+			rpf->pkgd = xbps_find_virtualpkg_in_array_by_name(
+			    rpi->rpi_repo, rpf->pattern);
 		}
 	}
 	if (rpf->pkgd) {
@@ -136,11 +136,11 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 	(void)done;
 
 	if (rpf->bypattern) {
-		rpf->pkgd = xbps_find_pkg_in_dict_by_pattern(rpi->rpi_repod,
-		    "packages", rpf->pattern);
+		rpf->pkgd = xbps_find_pkg_in_array_by_pattern(rpi->rpi_repo,
+		    rpf->pattern);
 	} else {
-		rpf->pkgd = xbps_find_pkg_in_dict_by_name(rpi->rpi_repod,
-		    "packages", rpf->pattern);
+		rpf->pkgd = xbps_find_pkg_in_array_by_name(rpi->rpi_repo,
+		    rpf->pattern);
 	}
 	if (rpf->pkgd == NULL) {
 		if (errno && errno != ENOENT)

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -186,12 +186,12 @@ _find_longest_pkgver_cb(prop_object_t obj, void *arg, bool *loop_done)
 }
 
 size_t
-find_longest_pkgver(prop_dictionary_t d)
+find_longest_pkgver(prop_object_t o)
 {
 	size_t len = 0;
 
-	if (prop_object_type(d) == PROP_TYPE_DICTIONARY)
-		(void)xbps_callback_array_iter_in_dict(d, "packages",
+	if (prop_object_type(o) == PROP_TYPE_ARRAY)
+		(void)xbps_callback_array_iter(o,
 		    _find_longest_pkgver_cb, &len);
 	else
 		(void)xbps_regpkgdb_foreach_pkg_cb(

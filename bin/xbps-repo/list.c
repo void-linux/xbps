@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,29 +49,22 @@ repo_pkg_list_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	}
 	lpc.check_state = false;
 	lpc.state = 0;
-	lpc.pkgver_len = find_longest_pkgver(rpi->rpi_repod);
+	lpc.pkgver_len = find_longest_pkgver(rpi->rpi_repo);
 
 	printf("From %s repository ...\n", rpi->rpi_uri);
-	(void)xbps_callback_array_iter_in_dict(rpi->rpi_repod,
-	    "packages", list_pkgs_in_dict, &lpc);
-
+	(void)xbps_callback_array_iter(rpi->rpi_repo, list_pkgs_in_dict, &lpc);
 	return 0;
 }
 
 int
 repo_list_uri_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 {
-	const char *pkgidx;
-	uint64_t npkgs;
-
 	(void)arg;
 	(void)done;
 
-	prop_dictionary_get_cstring_nocopy(rpi->rpi_repod,
-	    "pkgindex-version", &pkgidx);
-	prop_dictionary_get_uint64(rpi->rpi_repod, "total-pkgs", &npkgs);
-	printf("[%u] %s (index %s, " "%" PRIu64 " packages)\n",
-	    rpi->rpi_index, rpi->rpi_uri, pkgidx, npkgs);
+	printf("[%u] %s (%zu packages)\n",
+	    rpi->rpi_index, rpi->rpi_uri,
+	    (size_t)prop_array_count(rpi->rpi_repo));
 
 	return 0;
 }
@@ -82,11 +75,9 @@ repo_search_pkgs_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	struct repo_search_data *rsd = arg;
 	(void)done;
 
-	rsd->pkgver_len = find_longest_pkgver(rpi->rpi_repod);
+	rsd->pkgver_len = find_longest_pkgver(rpi->rpi_repo);
 
 	printf("From %s repository ...\n", rpi->rpi_uri);
-	(void)xbps_callback_array_iter_in_dict(rpi->rpi_repod,
-	    "packages", show_pkg_namedesc, rsd);
-
+	(void)xbps_callback_array_iter(rpi->rpi_repo, show_pkg_namedesc, rsd);
 	return 0;
 }

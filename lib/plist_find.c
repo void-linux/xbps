@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -209,6 +209,18 @@ find_virtualpkg_user_in_array(prop_array_t array,
 		return NULL;
 
 	return find_pkg_in_array(array, vpkgname, false, false);
+}
+
+prop_dictionary_t HIDDEN
+xbps_find_virtualpkg_conf_in_array_by_name(prop_array_t array, const char *name)
+{
+	return find_virtualpkg_user_in_array(array, name, false);
+}
+
+prop_dictionary_t HIDDEN
+xbps_find_virtualpkg_conf_in_array_by_pattern(prop_array_t array, const char *p)
+{
+	return find_virtualpkg_user_in_array(array, p, true);
 }
 
 static prop_dictionary_t

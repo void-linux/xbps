@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -122,7 +122,7 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 			goto out;
 		}
 		if (!xbps_add_obj_to_dict(d,
-		    prop_dictionary_internalize_from_zfile(plist),
+		    prop_array_internalize_from_zfile(plist),
 		    "index")) {
 			rv = EINVAL;
 			prop_object_release(d);
@@ -194,7 +194,7 @@ xbps_repository_pool_sync(const struct xbps_handle *xhp)
 			continue;
 		}
 		/*
-		 * Fetch repository index.plist.
+		 * Fetch repository plist index.
 		 */
 		rv = xbps_repository_sync_pkg_index(repouri, XBPS_PKGINDEX);
 		if (rv == -1) {
@@ -204,7 +204,7 @@ xbps_repository_pool_sync(const struct xbps_handle *xhp)
 			continue;
 		}
 		/*
-		 * Fetch repository index-files.plist.
+		 * Fetch repository plist files index.
 		 */
 		rv = xbps_repository_sync_pkg_index(repouri,
 		    XBPS_PKGINDEX_FILES);
@@ -249,7 +249,7 @@ xbps_repository_pool_foreach(
 
 		d = prop_array_get(xhp->repo_pool, i);
 		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi->rpi_uri);
-		rpi->rpi_repod = prop_dictionary_get(d, "index");
+		rpi->rpi_repo = prop_dictionary_get(d, "index");
 		rpi->rpi_index = i;
 
 		rv = (*fn)(rpi, arg, &done);

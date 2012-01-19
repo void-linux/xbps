@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,8 +43,8 @@
 static int
 remove_missing_binpkg_entries(const char *repodir)
 {
-	prop_array_t pkgarray;
-	prop_dictionary_t idxd, pkgd;
+	prop_array_t array;
+	prop_dictionary_t pkgd;
 	const char *filen;
 	char *binpkg, *plist;
 	size_t i;
@@ -55,8 +55,8 @@ remove_missing_binpkg_entries(const char *repodir)
 	if (plist == NULL)
 		return -1;
 
-	idxd = prop_dictionary_internalize_from_zfile(plist);
-	if (idxd == NULL) {
+	array = prop_array_internalize_from_zfile(plist);
+	if (array == NULL) {
 		if (errno != ENOENT) {
 			xbps_error_printf("xbps-repo: cannot read `%s': %s\n",
 			    plist, strerror(errno));
@@ -68,12 +68,8 @@ remove_missing_binpkg_entries(const char *repodir)
 	}
 
 again:
-	pkgarray = prop_dictionary_get(idxd, "packages");
-	if (prop_object_type(pkgarray) != PROP_TYPE_ARRAY)
-		return -1;
-
-	for (i = 0; i < prop_array_count(pkgarray); i++) {
-		pkgd = prop_array_get(pkgarray, i);
+	for (i = 0; i < prop_array_count(array); i++) {
+		pkgd = prop_array_get(array, i);
 		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
 		binpkg = xbps_xasprintf("%s/%s", repodir, filen);
 		if (binpkg == NULL) {
@@ -85,7 +81,7 @@ again:
 			xbps_warn_printf("xbps-repo: `%s' unavailable, "
 			    "removing entry from index... (%s)\n",
 			    filen, strerror(errno));
-			prop_array_remove(pkgarray, i);
+			prop_array_remove(array, i);
 			free(binpkg);
 			found = true;
 			goto again;
@@ -93,10 +89,7 @@ again:
 		free(binpkg);
 	}
 	if (found) {
-		prop_dictionary_set_uint64(idxd, "total-pkgs",
-		    prop_array_count(pkgarray));
-		prop_dictionary_set(idxd, "packages", pkgarray);
-		if (!prop_dictionary_externalize_to_zfile(idxd, plist))
+		if (!prop_array_externalize_to_zfile(array, plist))
 			rv = errno;
 	}
 	free(plist);
@@ -104,14 +97,12 @@ again:
 	return rv;
 }
 
-static prop_dictionary_t
-repoidx_getdict(const char *pkgdir)
+static prop_array_t
+repoidx_get(const char *pkgdir)
 {
-	prop_dictionary_t dict;
 	prop_array_t array;
 	char *plist;
 	int rv;
-
 	/*
 	 * Remove entries in repositories index for unexistent
 	 * packages, i.e dangling entries.
@@ -123,49 +114,24 @@ repoidx_getdict(const char *pkgdir)
 	if (plist == NULL)
 		return NULL;
 
-	dict = prop_dictionary_internalize_from_zfile(plist);
-	if (dict == NULL) {
-		dict = prop_dictionary_create();
-		if (dict == NULL)
-			goto out;
-
-		array = prop_array_create();
-		if (array == NULL) {
-			prop_object_release(dict);
-			goto out;
-		}
-
-		if (!prop_dictionary_set(dict, "packages", array)) {
-			prop_object_release(dict);
-			prop_object_release(array);
-			goto out;
-		}
-		prop_object_release(array);
-		if (!prop_dictionary_set_cstring_nocopy(dict,
-		    "pkgindex-version", XBPS_PKGINDEX_VERSION)) {
-			prop_object_release(dict);
-			goto out;
-		}
-	}
-out:
+	array = prop_array_internalize_from_zfile(plist);
 	free(plist);
-	return dict;
+	if (array == NULL)
+		array = prop_array_create();
+
+	return array;
 }
 
 static int
-add_binpkg_to_index(prop_dictionary_t idxdict,
+add_binpkg_to_index(prop_array_t idx,
 		    const char *filedir,
 		    const char *file)
 {
 	prop_dictionary_t newpkgd, curpkgd;
-	prop_array_t pkgar;
 	struct stat st;
 	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
 	char *sha256, *filen, *tmpfilen, *oldfilepath, *buf;
 	int rv = 0;
-
-	if (idxdict == NULL || file == NULL)
-		return EINVAL;
 
 	tmpfilen = strdup(file);
 	if (tmpfilen == NULL)
@@ -191,7 +157,7 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 	 * than current registered package, update the index; otherwise
 	 * pass to the next one.
 	 */
-	curpkgd = xbps_find_pkg_in_dict_by_name(idxdict, "packages", pkgname);
+	curpkgd = xbps_find_pkg_in_array_by_name(idx, pkgname);
 	if (curpkgd == NULL) {
 		if (errno && errno != ENOENT) {
 			prop_object_release(newpkgd);
@@ -240,8 +206,7 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 			goto out;
 		}
 		free(oldfilepath);
-		if (!xbps_remove_pkg_from_dict_by_name(idxdict,
-		    "packages", pkgname)) {
+		if (!xbps_remove_pkg_from_array_by_name(idx, pkgname)) {
 			xbps_error_printf("failed to remove `%s' "
 			    "from plist index: %s\n", pkgname, strerror(errno));
 			prop_object_release(newpkgd);
@@ -286,27 +251,15 @@ add_binpkg_to_index(prop_dictionary_t idxdict,
 		rv = errno;
 		goto out;
 	}
-	/* Get package array in repo index file */
-	pkgar = prop_dictionary_get(idxdict, "packages");
-	if (pkgar == NULL) {
-		prop_object_release(newpkgd);
-		rv = errno;
-		goto out;
-	}
 	/*
 	 * Add dictionary into the index and update package count.
 	 */
-	if (!xbps_add_obj_to_array(pkgar, newpkgd)) {
-		prop_object_release(newpkgd);
+	if (!xbps_add_obj_to_array(idx, newpkgd)) {
 		rv = EINVAL;
 		goto out;
 	}
 	printf("Registered `%s-%s' (%s) in repository index.\n",
 	    pkgname, version, filen);
-
-	if (!prop_dictionary_set_uint64(idxdict, "total-pkgs",
-	    prop_array_count(pkgar)))
-		rv = errno;
 
 out:
 	if (tmpfilen)
@@ -318,10 +271,9 @@ out:
 int
 repo_genindex(const char *pkgdir)
 {
-	prop_dictionary_t idxdict = NULL;
+	prop_array_t idx = NULL;
 	struct dirent *dp;
 	DIR *dirp;
-	uint64_t npkgcnt = 0;
 	char *binfile, *plist;
 	int rv = 0;
 	bool registered_newpkgs = false, foundpkg = false;
@@ -329,13 +281,13 @@ repo_genindex(const char *pkgdir)
 	/*
 	 * Create or read existing package index plist file.
 	 */
-	idxdict = repoidx_getdict(pkgdir);
-	if (idxdict == NULL)
+	idx = repoidx_get(pkgdir);
+	if (idx == NULL)
 		return errno;
 
 	plist = xbps_pkg_index_plist(pkgdir);
 	if (plist == NULL) {
-		prop_object_release(idxdict);
+		prop_object_release(idx);
 		return errno;
 	}
 
@@ -362,7 +314,7 @@ repo_genindex(const char *pkgdir)
 			rv = errno;
 			goto out;
 		}
-		rv = add_binpkg_to_index(idxdict, pkgdir, binfile);
+		rv = add_binpkg_to_index(idx, pkgdir, binfile);
 		free(binfile);
 		if (rv == EEXIST) {
 			rv = 0;
@@ -383,8 +335,8 @@ repo_genindex(const char *pkgdir)
 		/*
 		 * Show total count registered packages.
 		 */
-		prop_dictionary_get_uint64(idxdict, "total-pkgs", &npkgcnt);
-		printf("%ju packages registered in repository index.\n", npkgcnt);
+		printf("%zu packages registered in repository index.\n",
+		    (size_t)prop_array_count(idx));
 		/*
 		 * Don't write plist file if no packages were registered.
 		 */
@@ -394,12 +346,12 @@ repo_genindex(const char *pkgdir)
 		 * If any package was registered in package index, write
 		 * plist file to storage.
 		 */
-		if (!prop_dictionary_externalize_to_zfile(idxdict, plist))
+		if (!prop_array_externalize_to_zfile(idx, plist))
 			rv = errno;
 	}
 out:
 	free(plist);
-	prop_object_release(idxdict);
+	prop_object_release(idx);
 
 	return rv;
 }

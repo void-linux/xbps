@@ -54,9 +54,9 @@
  * @def XBPS_PKGINDEX_VERSION
  * Current version for the repository package index format.
  */
-#define XBPS_PKGINDEX_VERSION	"1.3"
+#define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120118"
+#define XBPS_API_VERSION	"20120119"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -101,13 +101,13 @@
  * @def XBPS_PKGINDEX
  * Filename for the repository package index property list.
  */
-#define XBPS_PKGINDEX		"index.plist"
+#define XBPS_PKGINDEX		"rindex.plist"
 
 /**
  * @def XBPS_PKGINDEX_FILES
  * Filename for the repository package index files property list.
  */
-#define XBPS_PKGINDEX_FILES	"index-files.plist"
+#define XBPS_PKGINDEX_FILES	"rindex-files.plist"
 
 /**
  * @def XBPS_SYSCONF_PATH
@@ -1388,12 +1388,12 @@ prop_dictionary_t xbps_dictionary_metadata_plist_by_url(const char *url,
  */
 struct repository_pool_index {
 	/**
-	 * @var rpi_repod
+	 * @var rpi_repo
 	 * 
-	 * Internalized Proplib dictionary of the index plist file
+	 * Internalized proplib array of the index plist file
 	 * associated with repository.
 	 */
-	prop_dictionary_t rpi_repod;
+	prop_array_t rpi_repo;
 	/**
 	 * @var rpi_uri
 	 * 
