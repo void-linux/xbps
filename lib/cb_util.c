@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,24 +50,19 @@ xbps_set_cb_fetch(off_t file_size,
 		  bool cb_end)
 {
 	const struct xbps_handle *xhp = xbps_handle_get();
-	struct xbps_fetch_cb_data *xfcd;
+	struct xbps_fetch_cb_data xfcd;
 
 	if (xhp->fetch_cb == NULL)
 		return;
 
-	xfcd = calloc(1, sizeof(*xfcd));
-	if (xfcd == NULL)
-		return;
-
-	xfcd->file_size = file_size;
-	xfcd->file_offset = file_offset;
-	xfcd->file_dloaded = file_dloaded;
-	xfcd->file_name = file_name;
-	xfcd->cb_start = cb_start;
-	xfcd->cb_update = cb_update;
-	xfcd->cb_end = cb_end;
-	(*xhp->fetch_cb)(xfcd, xhp->fetch_cb_data);
-	free(xfcd);
+	xfcd.file_size = file_size;
+	xfcd.file_offset = file_offset;
+	xfcd.file_dloaded = file_dloaded;
+	xfcd.file_name = file_name;
+	xfcd.cb_start = cb_start;
+	xfcd.cb_update = cb_update;
+	xfcd.cb_end = cb_end;
+	(*xhp->fetch_cb)(&xfcd, xhp->fetch_cb_data);
 }
 
 void HIDDEN
@@ -78,7 +73,7 @@ xbps_set_cb_state(xbps_state_t state,
 		  const char *fmt,
 		  ...)
 {
-	struct xbps_state_cb_data *xscd;
+	struct xbps_state_cb_data xscd;
 	const struct xbps_handle *xhp = xbps_handle_get();
 	char *buf = NULL;
 	va_list va;
@@ -87,28 +82,22 @@ xbps_set_cb_state(xbps_state_t state,
 	if (xhp->state_cb == NULL)
 		return;
 
-	xscd = calloc(1, sizeof(*xscd));
-	if (xscd == NULL)
-		return;
-
-	xscd->state = state;
-	xscd->err = err;
-	xscd->pkgname = pkgname;
-	xscd->version = version;
+	xscd.state = state;
+	xscd.err = err;
+	xscd.pkgname = pkgname;
+	xscd.version = version;
 	if (fmt != NULL) {
 		va_start(va, fmt);
 		retval = vasprintf(&buf, fmt, va);
 		va_end(va);
 		if (retval <= 0)
-			xscd->desc = NULL;
+			xscd.desc = NULL;
 		else
-			xscd->desc = buf;
+			xscd.desc = buf;
 	}
-	(*xhp->state_cb)(xscd, xhp->fetch_cb_data);
+	(*xhp->state_cb)(&xscd, xhp->fetch_cb_data);
 	if (buf != NULL)
 		free(buf);
-
-	free(xscd);
 }
 
 void HIDDEN
@@ -120,21 +109,16 @@ xbps_set_cb_unpack(const char *entry,
 		   bool entry_is_conf)
 {
 	const struct xbps_handle *xhp = xbps_handle_get();
-	struct xbps_unpack_cb_data *xucd;
+	struct xbps_unpack_cb_data xucd;
 
 	if (xhp->unpack_cb == NULL)
 		return;
 
-	xucd = calloc(1, sizeof(*xucd));
-	if (xucd == NULL)
-		return;
-
-	xucd->entry = entry;
-	xucd->entry_size = entry_size;
-	xucd->entry_extract_count = entry_extract_count;
-	xucd->entry_total_count = entry_total_count;
-	xucd->entry_is_metadata = entry_is_metadata;
-	xucd->entry_is_conf = entry_is_conf;
-	(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
-	free(xucd);
+	xucd.entry = entry;
+	xucd.entry_size = entry_size;
+	xucd.entry_extract_count = entry_extract_count;
+	xucd.entry_total_count = entry_total_count;
+	xucd.entry_is_metadata = entry_is_metadata;
+	xucd.entry_is_conf = entry_is_conf;
+	(*xhp->unpack_cb)(&xucd, xhp->unpack_cb_data);
 }
