@@ -5,7 +5,7 @@
 DOXYF	?=	xbps_api_doxyfile
 FORMAT	?=	png
 FILES	=	xbps_transaction_dictionary.$(FORMAT)
-FILES	+=	xbps_regpkgdb_dictionary.$(FORMAT)
+FILES	+=	xbps_pkgdb_array.$(FORMAT)
 FILES	+=	xbps_pkg_props_dictionary.$(FORMAT)
 FILES	+=	xbps_pkg_files_dictionary.$(FORMAT)
 FILES	+=	xbps_binary_pkg_content.$(FORMAT)

@@ -45,7 +45,7 @@
  * dictionary (the array returned by xbps_find_pkg_orphans() will
  * contain a package dictionary per orphan found):
  *
- * @image html images/xbps_regpkgdb_dictionary.png
+ * @image html images/xbps_pkgdb_array.png
  *
  * Legend:
  *  - <b>Salmon filled box</b>: \a XBPS_REGPKGDB_PLIST file internalized.
