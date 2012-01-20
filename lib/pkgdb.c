@@ -237,8 +237,8 @@ xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
 	else
 		rv = xbps_array_replace_dict_by_name(xhp->pkgdb, pkgd, pkg);
 
-	if (!flush || rv != 0)
-		return rv;
+	if (!flush)
+		return rv != 0 ? false : true;
 
 	if ((xbps_pkgdb_update(xhp, true)) != 0)
 		return false;
