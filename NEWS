@@ -1,5 +1,11 @@
 xbps-0.12.0 (???):
 
+ * Massive pkgdb API rototill. The xbps-uhelper command gained support
+   for the 'updatepkgdb' target which will migrate old pkgdb
+   format to the new 0.12 format. ALERT: make sure to execute
+   "xbps-uhelper -r <rootdir> updatepkgdb" to update to the new 0.12
+   pkgdb format before installing/removing/updating any package.
+
  * Repository index 1.4: the file is now externalized to a proplib array
    and has been renamed to "rindex.plist" to not break compatibility
    with previous XBPS versions. This helps in simplifying the API
