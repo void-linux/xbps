@@ -65,9 +65,9 @@ xbps_configure_packages(bool flush)
 	struct xbps_handle *xhp = xbps_handle_get();
 	int rv;
 
-	rv = xbps_regpkgdb_foreach_pkg_cb(configure_pkgs_cb, NULL);
+	rv = xbps_pkgdb_foreach_pkg_cb(configure_pkgs_cb, NULL);
 	if (rv == 0 && flush)
-		rv = xbps_regpkgdb_update(xhp, true);
+		rv = xbps_pkgdb_update(xhp, true);
 
 	return rv;
 }
@@ -109,7 +109,7 @@ xbps_configure_pkg(const char *pkgname,
 		} else if (state != XBPS_PKG_STATE_UNPACKED)
 			return EINVAL;
 	
-		pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
+		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
 		prop_dictionary_get_cstring_nocopy(pkgd, "version", &lver);
 		prop_object_release(pkgd);
 	} else {
@@ -169,7 +169,7 @@ xbps_configure_pkg(const char *pkgname,
 	}
 	free(pkgver);
 	if (flush)
-		rv = xbps_regpkgdb_update(xhp, true);
+		rv = xbps_pkgdb_update(xhp, true);
 
 	return rv;
 }

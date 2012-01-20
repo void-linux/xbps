@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -100,7 +100,7 @@ xbps_pkg_state_installed(const char *pkgname, pkg_state_t *state)
 	assert(pkgname != NULL);
 	assert(state != NULL);
 
-	pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
+	pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
 	if (pkgd == NULL)
 		return ENOENT;
 
@@ -161,49 +161,43 @@ xbps_set_pkg_state_installed(const char *pkgname,
 {
 	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd;
-	prop_array_t array;
 	bool newpkg = false;
 	int rv;
 
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
 
-	if (xhp->regpkgdb == NULL) {
-		xhp->regpkgdb = prop_dictionary_create();
-		if (xhp->regpkgdb == NULL)
-			return ENOMEM;
-
-		array = prop_array_create();
-		if (array == NULL)
+	if (xhp->pkgdb == NULL) {
+		xhp->pkgdb = prop_array_create();
+		if (xhp->pkgdb == NULL)
 			return ENOMEM;
 
 		pkgd = prop_dictionary_create();
 		if (pkgd == NULL) {
-			prop_object_release(array);
+			prop_object_release(xhp->pkgdb);
+			xhp->pkgdb = NULL;
 			return ENOMEM;
 		}
 		if ((rv = set_pkg_objs(pkgd, pkgname, version, pkgver)) != 0) {
-			prop_object_release(array);
+			prop_object_release(xhp->pkgdb);
 			prop_object_release(pkgd);
+			xhp->pkgdb = NULL;
 			return rv;
 		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
-			prop_object_release(array);
+			prop_object_release(xhp->pkgdb);
 			prop_object_release(pkgd);
+			xhp->pkgdb = NULL;
 			return rv;
 		}
-		if (!xbps_add_obj_to_array(array, pkgd)) {
-			prop_object_release(array);
+		if (!xbps_add_obj_to_array(xhp->pkgdb, pkgd)) {
+			prop_object_release(xhp->pkgdb);
 			prop_object_release(pkgd);
+			xhp->pkgdb = NULL;
 			return EINVAL;
 		}
-		if (!xbps_add_obj_to_dict(xhp->regpkgdb, array, "packages")) {
-			prop_object_release(array);
-			return EINVAL;
-		}
-
 	} else {
-		pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
+		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
 		if (pkgd == NULL) {
 			newpkg = true;
 			pkgd = prop_dictionary_create();
@@ -218,21 +212,18 @@ xbps_set_pkg_state_installed(const char *pkgname,
 				prop_object_release(pkgd);
 			return rv;
 		}
-		array = prop_dictionary_get(xhp->regpkgdb, "packages");
 		if (newpkg) {
-			if (!xbps_add_obj_to_array(array, pkgd)) {
+			if (!xbps_add_obj_to_array(xhp->pkgdb, pkgd)) {
 				prop_object_release(pkgd);
 				return EINVAL;
 			}
 		} else {
-			if ((rv = xbps_array_replace_dict_by_name(array,
+			if ((rv = xbps_array_replace_dict_by_name(xhp->pkgdb,
 			    pkgd, pkgname)) != 0)
 				return rv;
 
 			prop_object_release(pkgd);
 		}
-		if (!prop_dictionary_set(xhp->regpkgdb, "packages", array))
-			return EINVAL;
 	}
 
 	return rv;

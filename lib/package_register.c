@@ -43,7 +43,6 @@ int
 xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 {
 	struct xbps_handle *xhp;
-	prop_array_t array;
 	prop_dictionary_t pkgd = NULL;
 	prop_array_t provides, reqby;
 	const char *pkgname, *version, *desc, *pkgver;
@@ -69,7 +68,7 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 	assert(desc != NULL);
 	assert(pkgver != NULL);
 
-	pkgd = xbps_regpkgdb_get_pkgd(pkgname, false);
+	pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
 	if (pkgd == NULL) {
 		rv = ENOENT;
 		goto out;
@@ -127,16 +126,11 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 			goto out;
 		}
 	}
-	array = prop_dictionary_get(xhp->regpkgdb, "packages");
-	rv = xbps_array_replace_dict_by_name(array, pkgd, pkgname);
-	if (rv != 0) {
+	if (!xbps_pkgdb_replace_pkgd(pkgd, pkgname, false, flush)) {
 		xbps_dbg_printf("%s: failed to replace pkgd dict for %s\n",
 		    __func__, pkgname);
 		goto out;
 	}
-	if (flush)
-		rv = xbps_regpkgdb_update(xhp, true);
-
 out:
 	if (pkgd != NULL)
 		prop_object_release(pkgd);
@@ -154,23 +148,16 @@ out:
 int
 xbps_unregister_pkg(const char *pkgname, const char *version, bool flush)
 {
-	struct xbps_handle *xhp;
-
 	assert(pkgname != NULL);
 
 	xbps_set_cb_state(XBPS_STATE_UNREGISTER, 0, pkgname, version, NULL);
 
-	if (!xbps_regpkgdb_remove_pkgd(pkgname)) {
+	if (!xbps_pkgdb_remove_pkgd(pkgname, false, flush)) {
 		xbps_set_cb_state(XBPS_STATE_UNREGISTER_FAIL,
 		    errno, pkgname, version,
 		    "%s: failed to unregister package: %s",
 		    pkgname, strerror(errno));
 		return errno;
 	}
-	if (flush) {
-		xhp = xbps_handle_get();
-		return xbps_regpkgdb_update(xhp, true);
-	}
-
 	return 0;
 }

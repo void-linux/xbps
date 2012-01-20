@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <assert.h>
 #include <unistd.h>
 #include <sys/param.h>
 
@@ -47,7 +46,7 @@
  * Return 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_files(const char *pkgname, void *arg)
+check_pkg_files(const char *pkgname, void *arg, bool *pkgdb_update)
 {
 	struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t array;
@@ -59,9 +58,10 @@ check_pkg_files(const char *pkgname, void *arg)
 	int rv = 0;
 	bool broken = false, test_broken = false;
 
+	(void)pkgdb_update;
+
 	array = prop_dictionary_get(pkg_filesd, "files");
-	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
-	     prop_array_count(array) > 0) {
+	if (array != NULL && prop_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(pkg_filesd, "files");
 		if (iter == NULL)
 			return -1;
@@ -109,8 +109,7 @@ check_pkg_files(const char *pkgname, void *arg)
 	 * Check for missing configuration files.
 	 */
 	array = prop_dictionary_get(pkg_filesd, "conf_files");
-	if (array && prop_object_type(array) == PROP_TYPE_ARRAY &&
-	    prop_array_count(array) > 0) {
+	if (array != NULL && prop_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(pkg_filesd, "conf_files");
 		if (iter == NULL)
 			return -1;

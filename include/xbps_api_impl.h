@@ -69,10 +69,10 @@ int HIDDEN dewey_match(const char *, const char *);
 
 /**
  * @private
- * From lib/regpkgdb_dictionary.c
+ * From lib/pkgdb.c
  */
-int HIDDEN xbps_regpkgdb_dictionary_init(struct xbps_handle *);
-void HIDDEN xbps_regpkgdb_dictionary_release(struct xbps_handle *);
+int HIDDEN xbps_pkgdb_init(struct xbps_handle *);
+void HIDDEN xbps_pkgdb_release(struct xbps_handle *);
 
 /**
  * @private

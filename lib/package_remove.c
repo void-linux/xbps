@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -413,7 +413,7 @@ purge:
 			goto out;
 	}
 	/*
-	 * Unregister package from regpkgdb.
+	 * Unregister package from pkgdb.
 	 */
 	if ((rv = xbps_unregister_pkg(pkgname, version, false)) != 0)
 		goto out;

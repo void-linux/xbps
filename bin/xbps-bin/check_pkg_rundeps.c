@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,13 +45,15 @@
  */
 
 int
-check_pkg_rundeps(const char *pkgname, void *arg)
+check_pkg_rundeps(const char *pkgname, void *arg, bool *pkgdb_update)
 {
 	prop_dictionary_t pkg_propsd = arg;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *reqpkg;
 	bool test_broken = false;
+
+	(void)pkgdb_update;
 
 	if (!xbps_pkg_has_rundeps(pkg_propsd))
 		return 0;

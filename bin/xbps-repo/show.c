@@ -38,7 +38,6 @@
 #include <errno.h>
 #include <limits.h>
 #include <libgen.h>
-#include <assert.h>
 
 #include <xbps_api.h>
 #include "../xbps-bin/defs.h"
@@ -99,9 +98,6 @@ show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 	size_t i, x;
 
 	(void)loop_done;
-
-	assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
-	assert(rsd->patterns != NULL);
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -176,12 +176,11 @@ xbps_find_pkg_orphans(prop_array_t orphans_user)
 	if ((od.array = prop_array_create()) == NULL)
 		return NULL;
 	/*
-	 * Find out all orphans by looking at the
-	 * regpkgdb dictionary and iterate in reverse order
-	 * in which packages were installed.
+	 * Find out all orphans by looking at pkgdb and iterating in reverse
+	 * order in which packages were installed.
 	 */
 	od.orphans_user = orphans_user;
-	rv = xbps_regpkgdb_foreach_reverse_pkg_cb(find_orphan_pkg, &od);
+	rv = xbps_pkgdb_foreach_reverse_pkg_cb(find_orphan_pkg, &od);
 	if (rv != 0) {
 		errno = rv;
 		prop_object_release(od.array);

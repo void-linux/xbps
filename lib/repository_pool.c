@@ -54,10 +54,11 @@ check_repo_arch(const char *uri)
 
 	uname(&un);
 	b = basename(p);
-	free(p);
-	if ((strcmp(b, "noarch")) && (strcmp(b, un.machine)))
+	if ((strcmp(b, "noarch")) && (strcmp(b, un.machine))) {
+		free(p);
 		return false;
-
+	}
+	free(p);
 	return true;
 }
 

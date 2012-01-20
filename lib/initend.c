@@ -196,7 +196,7 @@ xbps_end(void)
 	if (!xbps_initialized)
 		return;
 
-	xbps_regpkgdb_dictionary_release(xhp);
+	xbps_pkgdb_release(xhp);
 	xbps_repository_pool_release(xhp);
 	xbps_fetch_unset_cache_connection();
 

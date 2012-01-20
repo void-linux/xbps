@@ -136,10 +136,12 @@ extract_metafile(struct archive *ar,
 		    rv, pkgname, version,
 		    "%s: [unpack] failed to extract metafile `%s': %s",
 		    pkgver, file, strerror(rv));
+		free(dirc);
 		free(pkgname);
 		return rv;
 	}
 	free(pkgname);
+	free(dirc);
 
 	return 0;
 }

@@ -198,7 +198,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if ((xhp->transaction_frequency_flush > 0) &&
 		    (++i >= xhp->transaction_frequency_flush)) {
-			rv = xbps_regpkgdb_update(xhp, true);
+			rv = xbps_pkgdb_update(xhp, true);
 			if (rv != 0 && rv != ENOENT)
 				goto out;
 
@@ -274,7 +274,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	prop_object_iterator_reset(iter);
 
 	/* force a flush now packages were removed/unpacked */
-	if ((rv = xbps_regpkgdb_update(xhp, true)) != 0)
+	if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
 		goto out;
 
 	/* if there are no packages to install or update we are done */
@@ -289,7 +289,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (xhp->transaction_frequency_flush > 0 &&
 		    ++i >= xhp->transaction_frequency_flush) {
-			if ((rv = xbps_regpkgdb_update(xhp, true)) != 0)
+			if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
 				goto out;
 
 			i = 0;
@@ -323,7 +323,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	}
 
 	/* Force a flush now that packages are configured */
-	rv = xbps_regpkgdb_update(xhp, true);
+	rv = xbps_pkgdb_update(xhp, true);
 out:
 	prop_object_iterator_release(iter);
 

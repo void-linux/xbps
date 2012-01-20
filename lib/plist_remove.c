@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
  * all library functions.
  */
 static bool
-remove_string_from_array(prop_array_t array, const char *str, int mode)
+remove_obj_from_array(prop_array_t array, const char *str, int mode)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
@@ -90,6 +90,14 @@ remove_string_from_array(prop_array_t array, const char *str, int mode)
 				found = true;
 				break;
 			}
+		} else if (mode == 4) {
+			/* match by pattern, obj is a dictionary */
+			prop_dictionary_get_cstring_nocopy(obj,
+			    "pkgver", &curname);
+			if (xbps_pkgpattern_match(curname, str)) {
+				found = true;
+				break;
+			}
 		}
 		idx++;
 	}
@@ -107,25 +115,31 @@ remove_string_from_array(prop_array_t array, const char *str, int mode)
 bool
 xbps_remove_string_from_array(prop_array_t array, const char *str)
 {
-	return remove_string_from_array(array, str, 0);
+	return remove_obj_from_array(array, str, 0);
 }
 
 bool
 xbps_remove_pkgname_from_array(prop_array_t array, const char *name)
 {
-	return remove_string_from_array(array, name, 1);
+	return remove_obj_from_array(array, name, 1);
 }
 
 bool
 xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name)
 {
-	return remove_string_from_array(array, name, 2);
+	return remove_obj_from_array(array, name, 2);
 }
 
 bool
 xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *pkgver)
 {
-	return remove_string_from_array(array, pkgver, 3);
+	return remove_obj_from_array(array, pkgver, 3);
+}
+
+bool
+xbps_remove_pkg_from_array_by_pattern(prop_array_t array, const char *p)
+{
+	return remove_obj_from_array(array, p, 4);
 }
 
 bool

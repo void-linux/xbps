@@ -386,10 +386,10 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 	assert(str != NULL);
 
 	xhp = xbps_handle_get();
-	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0) {
+	if ((rv = xbps_pkgdb_init(xhp)) != 0) {
 		if (rv != ENOENT) {
 			xbps_dbg_printf("%s: couldn't initialize "
-			    "regpkgdb: %s\n", strerror(rv));
+			    "pkgdb: %s\n", strerror(rv));
 			return NULL;
 		} else if (rv == ENOENT)
 			return NULL;
@@ -397,16 +397,15 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 
 	/* try normal pkg */
 	if (virtual == false) {
-		pkgd = find_pkg_in_dict(xhp->regpkgdb,
-		    "packages", str, bypattern, false);
+		pkgd = find_pkg_in_array(xhp->pkgdb, str, bypattern, false);
 	} else {
 		/* virtual pkg set by user in conf */
-		pkgd = find_virtualpkg_user_in_dict(xhp->regpkgdb,
-		    "packages", str, bypattern);
+		pkgd = find_virtualpkg_user_in_array(xhp->pkgdb,
+		    str, bypattern);
 		if (pkgd == NULL) {
-			/* any virtual pkg in dictionary matching pattern */
-			pkgd = find_pkg_in_dict(xhp->regpkgdb,
-			    "packages", str, bypattern, true);
+			/* any virtual pkg in array matching pattern */
+			pkgd = find_pkg_in_array(xhp->pkgdb,
+			    str, bypattern, true);
 		}
 	}
 	/* pkg not found */

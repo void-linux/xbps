@@ -59,7 +59,7 @@ enum {
 static int
 transaction_find_pkg(const char *pattern, int action)
 {
-	prop_dictionary_t pkg_regpkgdb, pkg_repod = NULL;
+	prop_dictionary_t pkg_pkgdb, pkg_repod = NULL;
 	prop_dictionary_t transd;
 	prop_array_t mdeps, unsorted;
 	const char *pkgname, *pkgver, *repoloc, *repover, *instver, *reason;
@@ -76,8 +76,8 @@ transaction_find_pkg(const char *pattern, int action)
 		reason = "install";
 	} else {
 		/* update */
-		pkg_regpkgdb = xbps_find_pkg_dict_installed(pattern, false);
-		if (pkg_regpkgdb == NULL) {
+		pkg_pkgdb = xbps_find_pkg_dict_installed(pattern, false);
+		if (pkg_pkgdb == NULL) {
 			rv = ENODEV;
 			goto out;
 		}
@@ -109,11 +109,11 @@ transaction_find_pkg(const char *pattern, int action)
 		/*
 		 * Compare installed version vs best pkg available in repos.
 		 */
-		prop_dictionary_get_cstring_nocopy(pkg_regpkgdb,
+		prop_dictionary_get_cstring_nocopy(pkg_pkgdb,
 		    "version", &instver);
 		prop_dictionary_get_cstring_nocopy(pkg_repod,
 		    "version", &repover);
-		prop_object_release(pkg_regpkgdb);
+		prop_object_release(pkg_pkgdb);
 		if (xbps_cmpver(repover, instver) <= 0) {
 			xbps_dbg_printf("[rpool] Skipping `%s' "
 			    "(installed: %s) from repository `%s'\n",
@@ -227,7 +227,7 @@ xbps_transaction_update_packages(void)
 	bool newpkg_found = false;
 	int rv;
 
-	rv = xbps_regpkgdb_foreach_pkg_cb(update_pkgs_cb, &newpkg_found);
+	rv = xbps_pkgdb_foreach_pkg_cb(update_pkgs_cb, &newpkg_found);
 	if (!newpkg_found)
 		rv = EEXIST;
 
@@ -258,7 +258,7 @@ xbps_transaction_remove_pkg(const char *pkgname, bool recursive)
 
 	assert(pkgname != NULL);
 
-	if ((pkgd = xbps_regpkgdb_get_pkgd(pkgname, false)) == NULL) {
+	if ((pkgd = xbps_pkgdb_get_pkgd(pkgname, false)) == NULL) {
 		/* pkg not installed */
 		return ENOENT;
 	}

@@ -188,7 +188,7 @@ main(int argc, char **argv)
 		prop_dictionary_set_cstring(dict, "pkgver", pkgver);
 		prop_dictionary_set_bool(dict, "automatic-install", false);
 
-		pkgd = xbps_regpkgdb_get_pkgd(argv[1], false);
+		pkgd = xbps_pkgdb_get_pkgd(argv[1], false);
 		if (pkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgname", &pkgn);
@@ -244,7 +244,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		dict = xbps_regpkgdb_get_pkgd(argv[1], false);
+		dict = xbps_pkgdb_get_pkgd(argv[1], false);
 		if (dict == NULL) {
 			rv = errno;
 			goto out;

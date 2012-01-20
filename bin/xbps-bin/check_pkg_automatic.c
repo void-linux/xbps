@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,12 +47,10 @@
  * Returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_autoinstall(const char *pkgname, void *arg)
+check_pkg_autoinstall(const char *pkgname, void *arg, bool *pkgdb_update)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd = arg;
-	prop_array_t array, reqby;
-	int rv = 0;
+	prop_array_t reqby;
 	bool autoinst = false;
 
 	/*
@@ -62,39 +60,14 @@ check_pkg_autoinstall(const char *pkgname, void *arg)
 	 */
 	if (prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst)) {
 		reqby = prop_dictionary_get(pkgd, "requiredby");
-		if (((prop_object_type(reqby) == PROP_TYPE_ARRAY)) &&
-		    ((prop_array_count(reqby) > 0) && !autoinst)) {
-
+		if (reqby != NULL && prop_array_count(reqby) && !autoinst) {
 			/* pkg has reversedeps and was installed manually */
 			prop_dictionary_set_bool(pkgd,
 			    "automatic-install", true);
-
-			array = prop_dictionary_get(xhp->regpkgdb, "packages");
-			rv = xbps_array_replace_dict_by_name(array,
-			    pkgd, pkgname);
-			if (rv != 0) {
-				xbps_error_printf("%s: [1] failed to set "
-				    "automatic mode (%s)\n", pkgname,
-				    strerror(rv));
-				return -1;
-			}
-			if (!prop_dictionary_set(xhp->regpkgdb,
-			    "packages", array)) {
-				xbps_error_printf("%s: [2] failed to set "
-				    "automatic mode (%s)\n", pkgname,
-				    strerror(rv));
-				return -1;
-			}
-			if ((rv = xbps_regpkgdb_update(xhp, true)) != 0) {
-				xbps_error_printf("%s: failed to write "
-				    "regpkgdb plist: %s\n", pkgname,
-				    strerror(rv));
-				return -1;
-			}
-			xbps_warn_printf("%s: was installed manually and has "
-			    "reverse dependencies (FIXED)\n", pkgname);
+			*pkgdb_update = true;
+			printf("%s: changed to automatic install mode.\n",
+			    pkgname);
 		}
 	}
-
 	return 0;
 }

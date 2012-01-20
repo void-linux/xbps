@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fnmatch.h>
-#include <assert.h>
 #include <string.h>
 #include <strings.h>
 
@@ -88,9 +87,6 @@ show_pkg_info_one(prop_dictionary_t d, const char *keys)
 	prop_object_t obj;
 	char *key, *p, *saveptr;
 
-	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
-	assert(keys != NULL);
-
 	if (strchr(keys, ',') == NULL) {
 		obj = prop_dictionary_get(d, keys);
 		if (obj == NULL)
@@ -99,7 +95,8 @@ show_pkg_info_one(prop_dictionary_t d, const char *keys)
 		return;
 	}
 	key = strdup(keys);
-	assert(key != NULL);
+	if (key == NULL)
+		abort();
 	for ((p = strtok_r(key, ",", &saveptr)); p;
 	    (p = strtok_r(NULL, ",", &saveptr))) {
 		obj = prop_dictionary_get(d, p);
@@ -117,9 +114,6 @@ show_pkg_info(prop_dictionary_t dict)
 	prop_object_t obj, keysym;
 	const char *keyname;
 	size_t i;
-
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
-	assert(prop_dictionary_count(dict) != 0);
 
 	all_keys = prop_dictionary_all_keys(dict);
 	for (i = 0; i < prop_array_count(all_keys); i++) {
@@ -151,8 +145,7 @@ show_pkg_files(prop_dictionary_t filesd)
 			continue;
 
 		array = prop_dictionary_get(filesd, keyname);
-		if (prop_object_type(array) != PROP_TYPE_ARRAY ||
-		    prop_array_count(array) == 0)
+		if (array == NULL || prop_array_count(array) == 0)
 			continue;
 
 		for (x = 0; x < prop_array_count(array); x++) {
@@ -194,7 +187,7 @@ find_longest_pkgver(prop_object_t o)
 		(void)xbps_callback_array_iter(o,
 		    _find_longest_pkgver_cb, &len);
 	else
-		(void)xbps_regpkgdb_foreach_pkg_cb(
+		(void)xbps_pkgdb_foreach_pkg_cb(
 		    _find_longest_pkgver_cb, &len);
 
 	return len;
@@ -206,7 +199,6 @@ list_strings_in_array(prop_object_t obj, void *arg, bool *loop_done)
 	(void)arg;
 	(void)loop_done;
 
-	assert(prop_object_type(obj) == PROP_TYPE_STRING);
 	print_package_line(prop_string_cstring_nocopy(obj), false);
 
 	return 0;
@@ -219,7 +211,6 @@ list_strings_sep_in_array(prop_object_t obj, void *arg, bool *loop_done)
 
 	(void)loop_done;
 
-	assert(prop_object_type(obj) == PROP_TYPE_STRING);
 	printf("%s%s\n", sep ? sep : "", prop_string_cstring_nocopy(obj));
 
 	return 0;

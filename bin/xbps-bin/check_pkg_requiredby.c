@@ -28,135 +28,152 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <assert.h>
 #include <unistd.h>
 #include <sys/param.h>
 
 #include <xbps_api.h>
 #include "defs.h"
 
+struct check_reqby_data {
+	prop_dictionary_t pkgd;
+	prop_array_t pkgd_reqby;
+	const char *pkgname;
+	const char *pkgver;
+	bool pkgdb_update;
+	bool pkgd_reqby_alloc;
+};
+
+static int
+check_reqby_pkg_cb(prop_object_t obj, void *arg, bool *done)
+{
+	struct check_reqby_data *crd = arg;
+	prop_array_t curpkg_rdeps, provides;
+	prop_dictionary_t curpkg_propsd;
+	prop_string_t curpkgver;
+	const char *curpkgn;
+
+	(void)done;
+
+	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &curpkgn);
+	/* skip same pkg */
+	if (strcmp(curpkgn, crd->pkgname) == 0)
+		return 0;
+
+	/*
+	 * Internalize current pkg props dictionary from its
+	 * installed metadata directory.
+	 */
+	curpkg_propsd =
+	    xbps_dictionary_from_metadata_plist(curpkgn, XBPS_PKGPROPS);
+	if (curpkg_propsd == NULL) {
+		xbps_error_printf("%s: missing %s metadata file!\n",
+		    curpkgn, XBPS_PKGPROPS);
+		return -1;
+	}
+	curpkg_rdeps =
+	    prop_dictionary_get(curpkg_propsd, "run_depends");
+	if (curpkg_rdeps == NULL) {
+		/* package has no rundeps, skip */
+		prop_object_release(curpkg_propsd);
+		return 0;
+	}
+	/*
+	 * Check for pkgpattern match with real packages...
+	 */
+	if (!xbps_match_pkgdep_in_array(curpkg_rdeps, crd->pkgver)) {
+		/*
+		 * ... otherwise check if package provides any virtual
+		 * package and is matched against any object in
+		 * run_depends.
+		 */
+		provides = prop_dictionary_get(obj, "provides");
+		if (provides == NULL) {
+			/* doesn't provide any virtual pkg */
+			prop_object_release(curpkg_propsd);
+			return 0;
+		}
+		if (!xbps_match_any_virtualpkg_in_rundeps(curpkg_rdeps,
+		    provides)) {
+			/* doesn't match any virtual pkg */
+			prop_object_release(curpkg_propsd);
+			return 0;
+		}
+	}
+	crd->pkgd_reqby = prop_dictionary_get(crd->pkgd, "requiredby");
+	curpkgver = prop_dictionary_get(curpkg_propsd, "pkgver");
+	if (crd->pkgd_reqby != NULL) {
+		/*
+		 * Now check that current pkgver has been registered into
+		 * its requiredby array.
+		 */
+		if (xbps_match_string_in_array(crd->pkgd_reqby,
+		    prop_string_cstring_nocopy(curpkgver))) {
+			/*
+			 * Current package already requires our package,
+			 * this is good so skip it.
+			 */
+			prop_object_release(curpkg_propsd);
+			return 0;
+		}
+	} else {
+		/*
+		 * Missing requiredby array object, create it.
+		 */
+		crd->pkgd_reqby = prop_array_create();
+		if (crd->pkgd_reqby == NULL) {
+			prop_object_release(curpkg_propsd);
+			return -1;
+		}
+		crd->pkgd_reqby_alloc = true;
+	}
+	/*
+	 * Added pkgdep into pkg's requiredby array.
+	 */
+	if (!prop_array_add(crd->pkgd_reqby, curpkgver)) {
+		prop_object_release(curpkg_propsd);
+		return -1;
+	}
+	printf("%s: added missing requiredby entry for %s.\n",
+	    crd->pkgname, prop_string_cstring_nocopy(curpkgver));
+	prop_object_release(curpkg_propsd);
+	crd->pkgdb_update = true;
+
+	return 0;
+}
+
 /*
  * Checks package integrity of an installed package.
  * The following task is accomplished in this file:
  *
  * 	o Check for missing reverse dependencies (aka requiredby)
- * 	  entries in pkg's regpkgdb dictionary.
+ * 	  entries in pkg's pkgdb dictionary.
  *
  * Returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_requiredby(const char *pkgname, void *arg)
+check_pkg_requiredby(const char *pkgname, void *arg, bool *pkgdb_update)
 {
-	prop_array_t regpkgs, reqby, curpkg_rdeps, provides;
-	prop_dictionary_t curpkg_propsd, pkgd = arg;
-	prop_object_t obj;
-	prop_string_t curpkgver;
-	struct xbps_handle *xhp = xbps_handle_get();
-	const char *curpkgn, *pkgver;
-	size_t i;
+	struct check_reqby_data crd;
 	int rv;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	crd.pkgd = arg;
+	crd.pkgd_reqby = NULL;
+	crd.pkgd_reqby_alloc = false;
+	crd.pkgname = pkgname;
+	crd.pkgdb_update = false;
+	prop_dictionary_get_cstring_nocopy(crd.pkgd, "pkgver", &crd.pkgver);
 
-	regpkgs = prop_dictionary_get(xhp->regpkgdb, "packages");
+	rv = xbps_pkgdb_foreach_pkg_cb(check_reqby_pkg_cb, &crd);
+	*pkgdb_update = crd.pkgdb_update;
 
-	for (i = 0; i < prop_array_count(regpkgs); i++) {
-		obj = prop_array_get(regpkgs, i);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &curpkgn);
-		/* skip same pkg */
-		if (strcmp(curpkgn, pkgname) == 0)
-			continue;
-		/*
-		 * Internalize current pkg props dictionary from its
-		 * installed metadata directory.
-		 */
-		curpkg_propsd =
-		    xbps_dictionary_from_metadata_plist(curpkgn, XBPS_PKGPROPS);
-		if (curpkg_propsd == NULL) {
-			xbps_error_printf("%s: missing %s metadata file!\n",
-			    curpkgn, XBPS_PKGPROPS);
-			return -1;
-		}
-		curpkg_rdeps =
-		    prop_dictionary_get(curpkg_propsd, "run_depends");
-		if (prop_object_type(curpkg_rdeps) != PROP_TYPE_ARRAY) {
-			/* package has no rundeps, skip */
-			prop_object_release(curpkg_propsd);
-			continue;
-		}
-		/*
-		 * Check for pkgpattern match with real packages...
-		 */
-		if (!xbps_match_pkgdep_in_array(curpkg_rdeps, pkgver)) {
-			/*
-			 * ... otherwise check if package provides any virtual
-			 * package and is matched against any object in
-			 * run_depends.
-			 */
-			provides = prop_dictionary_get(pkgd, "provides");
-			if (prop_object_type(provides) != PROP_TYPE_ARRAY) {
-				/* doesn't provide any virtual pkg */
-				prop_object_release(curpkg_propsd);
-				continue;
-			}
-			if (!xbps_match_any_virtualpkg_in_rundeps(curpkg_rdeps,
-			    provides)) {
-				/* doesn't match any virtual pkg */
-				prop_object_release(curpkg_propsd);
-				continue;
-			}
-		}
-		reqby = prop_dictionary_get(pkgd, "requiredby");
-		curpkgver = prop_dictionary_get(curpkg_propsd, "pkgver");
-		if (prop_object_type(reqby) == PROP_TYPE_ARRAY) {
-			/*
-			 * Now check that current pkgver has been registered into
-			 * its requiredby array.
-			 */
-			if (xbps_match_string_in_array(reqby,
-			    prop_string_cstring_nocopy(curpkgver))) {
-				/*
-				 * Current package already requires our package,
-				 * this is good so skip it.
-				 */
-				prop_object_release(curpkg_propsd);
-				continue;
-			}
-		} else {
-			/*
-			 * Missing requiredby array object, create it.
-			 */
-			reqby = prop_array_create();
-			if (reqby == NULL) {
-				prop_object_release(curpkg_propsd);
-				return -1;
-			}
-		}
-		/*
-		 * Replace current obj in regpkgdb and write new plist
-		 * file to disk.
-		 */
-		prop_array_add(reqby, curpkgver);
-		prop_dictionary_set(pkgd, "requiredby", reqby);
-		rv = xbps_array_replace_dict_by_name(regpkgs, obj, curpkgn);
-		if (rv != 0) {
-			xbps_error_printf("%s: failed to replace pkgd: %s\n",
-			    curpkgn, strerror(rv));
-			return -1;
-		}
-		if (!prop_dictionary_set(xhp->regpkgdb, "packages", regpkgs)) {
-			xbps_error_printf("%s: failed to set new regpkgdb "
-			    "packages array: %s", curpkgn, strerror(errno));
-			return -1;
-		}
-		if ((rv = xbps_regpkgdb_update(xhp, true)) != 0) {
-			xbps_error_printf("failed to write regpkgdb plist: "
-			    " %s\n", strerror(rv));
-			return rv;
-		}
-		printf("%s: added requiredby entry for %s.\n",
-		    pkgver, prop_string_cstring_nocopy(curpkgver));
-		prop_object_release(curpkg_propsd);
+	if (crd.pkgdb_update) {
+		if (!prop_dictionary_set(crd.pkgd, "requiredby", crd.pkgd_reqby))
+			rv = -1;
+		if (crd.pkgd_reqby_alloc)
+			prop_object_release(crd.pkgd_reqby);
 	}
+	if (rv != 0)
+		*pkgdb_update = false;
+
 	return rv;
 }

@@ -235,7 +235,7 @@ static void
 parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 			      prop_dictionary_t sub_confd,
 			      prop_array_t allkeys,
-			      bool parse_regpkgdb)
+			      bool parse_pkgdb)
 {
 	prop_dictionary_keysym_t dksym;
 	prop_object_t keyobj, sub_keyobj;
@@ -248,11 +248,11 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 		tmpkeyname = prop_dictionary_keysym_cstring_nocopy(dksym);
 
 		/*
-		 * While parsing package's dictionary from regpkgdb, we are
+		 * While parsing package's dictionary from pkgdb, we are
 		 * only interested in the "automatic-install" and "requiredby"
 		 * objects.
 		 */
-		if (parse_regpkgdb &&
+		if (parse_pkgdb &&
 		    (strcmp(tmpkeyname, "automatic-install")) &&
 		    (strcmp(tmpkeyname, "requiredby")))
 			continue;
@@ -418,14 +418,14 @@ create_dot_graph(FILE *f,
 	parse_array_in_pkg_dictionary(f, plistd, sub_confd, allkeys, false);
 
 	/*
-	 * Process all objects in package's dictionary from regpkgdb property
-	 * list file, aka XBPS_META_PATH/XBPS_REGPKGDB.
+	 * Process all objects in package's dictionary from pkgdb property
+	 * list file, aka XBPS_META_PATH/XBPS_PKGDB.
 	 */
 	if (revdeps) {
 		regpkgd = xbps_find_pkg_dict_installed(pkgn, false);
 		if (regpkgd == NULL)
 			die("cannot find '%s' dictionary on %s!",
-			    pkgn, XBPS_REGPKGDB);
+			    pkgn, XBPS_PKGDB);
 
 		allkeys = prop_dictionary_all_keys(regpkgd);
 		parse_array_in_pkg_dictionary(f, regpkgd, sub_confd,

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -122,8 +122,38 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 
 	for (i = 0; i < prop_array_count(array); i++) {
 		obj = prop_array_get(array, i);
+		if (obj == NULL)
+			continue;
 		rv = (*fn)(obj, arg, &cbloop_done);
 		if (rv != 0 || cbloop_done)
+			break;
+	}
+
+	return rv;
+}
+
+int
+xbps_callback_array_iter_reverse(prop_array_t array,
+				 int (*fn)(prop_object_t, void *, bool *),
+				 void *arg)
+{
+	prop_object_t obj;
+	unsigned int cnt;
+	int rv;
+	bool loop_done = false;
+
+	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+	assert(fn != NULL);
+
+	if ((cnt = prop_array_count(array)) == 0)
+		return 0;
+
+	while (cnt--) {
+		obj = prop_array_get(array, cnt);
+		if (obj == NULL)
+			continue;
+		rv = (*fn)(obj, arg, &loop_done);
+		if (rv != 0 || loop_done)
 			break;
 	}
 
@@ -137,10 +167,6 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 			void *arg)
 {
 	prop_array_t array;
-	prop_object_t obj;
-	int rv = 0;
-	bool cbloop_done = false;
-	unsigned int cnt = 0;
 
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
@@ -152,17 +178,7 @@ xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 		return EINVAL;
 	}
 
-	if ((cnt = prop_array_count(array)) == 0)
-		return 0;
-
-	while (cnt--) {
-		obj = prop_array_get(array, cnt);
-		rv = (*fn)(obj, arg, &cbloop_done);
-		if (rv != 0 || cbloop_done)
-			break;
-	}
-
-	return rv;
+	return xbps_callback_array_iter_reverse(array, fn, arg);
 }
 
 prop_object_iterator_t
@@ -182,10 +198,11 @@ xbps_array_iter_from_dict(prop_dictionary_t dict, const char *key)
 	return prop_array_iterator(array);
 }
 
-int
-xbps_array_replace_dict_by_name(prop_array_t array,
-				prop_dictionary_t dict,
-				const char *pkgname)
+static int
+array_replace_dict(prop_array_t array,
+		   prop_dictionary_t dict,
+		   const char *str,
+		   bool bypattern)
 {
 	prop_object_t obj;
 	size_t i;
@@ -193,21 +210,52 @@ xbps_array_replace_dict_by_name(prop_array_t array,
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
-	assert(pkgname != NULL);
+	assert(str != NULL);
 
 	for (i = 0; i < prop_array_count(array); i++) {
 		obj = prop_array_get(array, i);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &curpkgname);
-		if (strcmp(curpkgname, pkgname) == 0) {
-			/* pkgname match, we know the index */
-			if (!prop_array_set(array, i, dict))
-				return EINVAL;
+		if (obj == NULL)
+			continue;
+		if (bypattern) {
+			/* pkgpattern match */
+			prop_dictionary_get_cstring_nocopy(obj,
+			    "pkgver", &curpkgname);
+			if (xbps_pkgpattern_match(curpkgname, str)) {
+				if (!prop_array_set(array, i, dict))
+					return EINVAL;
 
-			return 0;
+				return 0;
+			}
+		} else {
+			/* pkgname match */
+			prop_dictionary_get_cstring_nocopy(obj,
+			    "pkgname", &curpkgname);
+			if (strcmp(curpkgname, str) == 0) {
+				if (!prop_array_set(array, i, dict))
+					return EINVAL;
+
+				return 0;
+			}
 		}
 	}
 	/* no match */
 	return ENOENT;
+}
+
+int
+xbps_array_replace_dict_by_name(prop_array_t array,
+				prop_dictionary_t dict,
+				const char *pkgname)
+{
+	return array_replace_dict(array, dict, pkgname, false);
+}
+
+int
+xbps_array_replace_dict_by_pattern(prop_array_t array,
+				   prop_dictionary_t dict,
+				   const char *pattern)
+{
+	return array_replace_dict(array, dict, pattern, true);
 }
 
 prop_dictionary_t

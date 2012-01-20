@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,66 +31,41 @@
 
 #include "xbps_api_impl.h"
 
-/**
- * @file lib/regpkgdb_dictionary.c
- * @brief Package register database routines
- * @defgroup regpkgdb Package register database functions
- *
- * These functions will initialize and release (resources of)
- * the registered packages database plist file (defined by XBPS_REGPKGDB).
- *
- * The returned dictionary by xbps_regpkgs_dictionary_init() uses
- * the structure as shown in the next graph:
- *
- * @image html images/xbps_regpkgdb_dictionary.png
- *
- * Legend:
- *  - <b>Salmon filled box</b>: \a XBPS_REGPKGDB_PLIST file internalized.
- *  - <b>White filled box</b>: mandatory objects.
- *  - <b>Grey filled box</b>: optional objects.
- *  - <b>Green filled box</b>: possible value set in the object, only one
- *    of them is set.
- *
- * Text inside of white boxes are the key associated with the object, its
- * data type is specified on its edge, i.e array, bool, integer, string,
- * dictionary.
- */
-
 int HIDDEN
-xbps_regpkgdb_dictionary_init(struct xbps_handle *xhp)
+xbps_pkgdb_init(struct xbps_handle *xhp)
 {
 	int rv;
 
 	assert(xhp != NULL);
 
-	if (xhp->regpkgdb != NULL)
+	if (xhp->pkgdb != NULL)
 		return 0;
 
-	rv = xbps_regpkgdb_update(xhp, false);
+	rv = xbps_pkgdb_update(xhp, false);
 	if (rv != 0) {
 		if (rv != ENOENT)
-			xbps_dbg_printf("[regpkgdb] cannot internalize "
-			    "regpkgdb dictionary: %s\n", strerror(rv));
+			xbps_dbg_printf("[pkgdb] cannot internalize "
+			    "pkgdb array: %s\n", strerror(rv));
 
 		return rv;
 	}
-	xbps_dbg_printf("[regpkgdb] initialized ok.\n");
+	xbps_dbg_printf("[pkgdb] initialized ok.\n");
 
 	return 0;
 }
 
 int
-xbps_regpkgdb_update(struct xbps_handle *xhp, bool flush)
+xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 {
 	char *plist, *metadir;
 	int rv = 0;
 
 	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-	    XBPS_META_PATH, XBPS_REGPKGDB);
+	    XBPS_META_PATH, XBPS_PKGDB);
 	if (plist == NULL)
 		return ENOMEM;
 
-	if (xhp->regpkgdb != NULL && flush) {
+	if (xhp->pkgdb != NULL && flush) {
 		metadir = xbps_xasprintf("%s/%s", xhp->rootdir,
 		    XBPS_META_PATH);
 		if (metadir == NULL) {
@@ -101,7 +76,7 @@ xbps_regpkgdb_update(struct xbps_handle *xhp, bool flush)
 		if (access(metadir, X_OK) == -1) {
 			if (errno == ENOENT) {
 				if (xbps_mkpath(metadir, 0755) != 0) {
-					xbps_dbg_printf("[regpkgdb] failed to "
+					xbps_dbg_printf("[pkgdb] failed to "
 					    "create metadir %s: %s\n", metadir,
 					    strerror(errno));
 					rv = errno;
@@ -116,17 +91,16 @@ xbps_regpkgdb_update(struct xbps_handle *xhp, bool flush)
 		}
 		free(metadir);
 		/* flush dictionary to storage */
-		if (!prop_dictionary_externalize_to_zfile(xhp->regpkgdb,
-		    plist)) {
+		if (!prop_array_externalize_to_zfile(xhp->pkgdb, plist)) {
 			free(plist);
 			return errno;
 		}
-		prop_object_release(xhp->regpkgdb);
-		xhp->regpkgdb = NULL;
+		prop_object_release(xhp->pkgdb);
+		xhp->pkgdb = NULL;
 	}
 	/* update copy in memory */
-	xhp->regpkgdb = prop_dictionary_internalize_from_zfile(plist);
-	if (xhp->regpkgdb == NULL)
+	xhp->pkgdb = prop_array_internalize_from_zfile(plist);
+	if (xhp->pkgdb == NULL)
 		rv = errno;
 
 	free(plist);
@@ -135,16 +109,16 @@ xbps_regpkgdb_update(struct xbps_handle *xhp, bool flush)
 }
 
 void HIDDEN
-xbps_regpkgdb_dictionary_release(struct xbps_handle *xhp)
+xbps_pkgdb_release(struct xbps_handle *xhp)
 {
 	assert(xhp != NULL);
 
-	if (xhp->regpkgdb == NULL)
+	if (xhp->pkgdb == NULL)
 		return;
 
-	prop_object_release(xhp->regpkgdb);
-	xhp->regpkgdb = NULL;
-	xbps_dbg_printf("[regpkgdb] released ok.\n");
+	prop_object_release(xhp->pkgdb);
+	xhp->pkgdb = NULL;
+	xbps_dbg_printf("[pkgdb] released ok.\n");
 }
 
 static int
@@ -155,62 +129,96 @@ foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
 	struct xbps_handle *xhp = xbps_handle_get();
 	int rv;
 
-	/* initialize regpkgdb */
-	if ((rv = xbps_regpkgdb_dictionary_init(xhp)) != 0)
+	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	if (reverse) {
-		rv = xbps_callback_array_iter_reverse_in_dict(
-		    xhp->regpkgdb, "packages", fn, arg);
-	} else {
-		rv = xbps_callback_array_iter_in_dict(
-		    xhp->regpkgdb, "packages", fn, arg);
-	}
+	if (reverse)
+		rv = xbps_callback_array_iter_reverse(xhp->pkgdb, fn, arg);
+	else
+		rv = xbps_callback_array_iter(xhp->pkgdb, fn, arg);
+
 	return rv;
 }
 
 int
-xbps_regpkgdb_foreach_reverse_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
-				     void *arg)
+xbps_pkgdb_foreach_reverse_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+				  void *arg)
 {
 	return foreach_pkg_cb(fn, arg, true);
 }
 
 int
-xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
-			     void *arg)
+xbps_pkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+			  void *arg)
 {
 	return foreach_pkg_cb(fn, arg, false);
 }
 
 prop_dictionary_t
-xbps_regpkgdb_get_pkgd(const char *pkg, bool bypattern)
+xbps_pkgdb_get_pkgd(const char *pkg, bool bypattern)
 {
 	struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd = NULL;
 
-	if (xbps_regpkgdb_dictionary_init(xhp) != 0)
+	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
 
 	if (bypattern)
-		pkgd = xbps_find_pkg_in_dict_by_pattern(xhp->regpkgdb,
-		    "packages", pkg);
+		pkgd = xbps_find_pkg_in_array_by_pattern(xhp->pkgdb, pkg);
 	else
-		pkgd = xbps_find_pkg_in_dict_by_name(xhp->regpkgdb,
-		    "packages", pkg);
+		pkgd = xbps_find_pkg_in_array_by_name(xhp->pkgdb, pkg);
 
-	return prop_dictionary_copy(pkgd);
+	if (pkgd != NULL)
+		return prop_dictionary_copy(pkgd);
+
+	return NULL;
 }
 
 bool
-xbps_regpkgdb_remove_pkgd(const char *pkgname)
+xbps_pkgdb_remove_pkgd(const char *pkg, bool bypattern, bool flush)
 {
-
 	struct xbps_handle *xhp = xbps_handle_get();
+	bool rv = false;
 
-	if (xbps_regpkgdb_dictionary_init(xhp) != 0)
+	if (xbps_pkgdb_init(xhp) != 0)
 		return false;
 
-	return xbps_remove_pkg_from_dict_by_name(xhp->regpkgdb,
-	    "packages", pkgname);
+	if (bypattern)
+		rv = xbps_remove_pkg_from_array_by_pattern(xhp->pkgdb, pkg);
+	else
+		rv = xbps_remove_pkg_from_array_by_name(xhp->pkgdb, pkg);
+
+	if (!flush || !rv)
+		return rv;
+
+	if ((xbps_pkgdb_update(xhp, true)) != 0)
+		return false;
+
+	return true;
+}
+
+bool
+xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
+			const char *pkg,
+			bool bypattern,
+			bool flush)
+{
+	struct xbps_handle *xhp = xbps_handle_get();
+	int rv;
+
+	if (xbps_pkgdb_init(xhp) != 0)
+		return false;
+
+	if (bypattern)
+		rv = xbps_array_replace_dict_by_pattern(xhp->pkgdb, pkgd, pkg);
+	else
+		rv = xbps_array_replace_dict_by_name(xhp->pkgdb, pkgd, pkg);
+
+	if (!flush || rv != 0)
+		return rv;
+
+	if ((xbps_pkgdb_update(xhp, true)) != 0)
+		return false;
+
+	return true;
 }

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,7 @@
  * returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_symlinks(const char *pkgname, void *arg)
+check_pkg_symlinks(const char *pkgname, void *arg, bool *pkgdb_update)
 {
 	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t array;
@@ -55,6 +55,8 @@ check_pkg_symlinks(const char *pkgname, void *arg)
 	const char *file, *tgt = NULL;
 	char *path, buf[PATH_MAX];
 	bool broken = false, test_broken = false;
+
+	(void)pkgdb_update;
 
 	array = prop_dictionary_get(pkg_filesd, "links");
 	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&

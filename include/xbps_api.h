@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120119"
+#define XBPS_API_VERSION	"20120120"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -80,10 +80,10 @@
 #define XBPS_CACHE_PATH		"var/cache/xbps"
 
 /** 
- * @def XBPS_REGPKGDB
- * Filename for the global package register database.
+ * @def XBPS_PKGDB
+ * Filename for the master package database.
  */
-#define XBPS_REGPKGDB		"regpkgdb.plist"
+#define XBPS_PKGDB		"pkgdb.plist"
 
 /** 
  * @def XBPS_PKGPROPS
@@ -429,18 +429,18 @@ struct xbps_handle {
 	 */
 	cfg_t *cfg;
 	/**
-	 * @private regpkgdb.
-	 *
-	 * Internalized proplib dictionary with the registed package database
-	 * stored in XBPS_META_PATH/XBPS_REGPKGDB.
-	 */
-	prop_dictionary_t regpkgdb;
-	/**
 	 * @private
 	 *
 	 * Array of dictionaries with all registered repositories.
 	 */
 	prop_array_t repo_pool;
+	/**
+	 * @private pkgdb.
+	 *
+	 * Internalized proplib array with the master package database
+	 * stored in XBPS_META_PATH/XBPS_PKGDB.
+	 */
+	prop_array_t pkgdb;
 	/**
 	 * @var xbps_state_cb
 	 *
@@ -601,7 +601,7 @@ struct xbps_handle *xbps_handle_get(void);
  * @param[in] check_state Set it to true to check that package is
  * in unpacked state.
  * @param[in] update Set it to true if this package is being updated.
- * @param[in] flush Set it to true to flush state to regpkgdb.
+ * @param[in] flush Set it to true to flush state to pkgdb.
  *
  * @return 0 on success, otherwise an errno value.
  */
@@ -613,7 +613,7 @@ int xbps_configure_pkg(const char *pkgname,
 
 /**
  * Configure (or force reconfiguration of) all packages.
- * @param[in] flush Set it to true to flush state to regpkgdb.
+ * @param[in] flush Set it to true to flush state to pkgdb.
  *
  * @return 0 on success, otherwise an errno value.
  */
@@ -740,6 +740,23 @@ int xbps_callback_array_iter(prop_array_t array,
 			     void *arg);
 
 /**
+ * Executes a function callback specified in \a fn with \a arg passed
+ * as its argument into they array \a array in reverse order (upwards).
+ *
+ * @param[in] array Proplib array to iterate.
+ * @param[in] fn Function callback to run on every object in the array.
+ * While running the function callback, the hird parameter (a pointer to
+ * a boolean) can be set to true to stop immediately the loop.
+ * @param[in] arg Argument to be passed to the function callback.
+ *
+ * @return 0 on success, otherwise the value returned by the function
+ * callback.
+ */
+int xbps_callback_array_iter_reverse(prop_array_t array,
+				     int (*fn)(prop_object_t, void *, bool *),
+				     void *arg);
+
+/**
  * Executes a function callback into the array associated with key \a key,
  * contained in a proplib dictionary.
  *
@@ -781,7 +798,7 @@ int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 
 /**
  * Executes a function callback per a package dictionary registered
- * in "regpkgdb" plist (downwards).
+ * in master package database (pkgdb) plist (downwards).
  *
  * @param[in] fn Function callback to run for any pkg dictionary.
  * @param[in] arg Argument to be passed to the function callback.
@@ -789,12 +806,12 @@ int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
  * @return 0 on success (all objects were processed), otherwise
  * the value returned by the function callback.
  */
-int xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
-				 void *arg);
+int xbps_pkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+			      void *arg);
 
 /**
  * Executes a function callback per a package dictionary registered
- * in "regpkgdb" plist, in reverse order (upwards).
+ * in master package database (pkgdb) plist, in reverse order (upwards).
  *
  * @param[in] fn Function callback to run for any pkg dictionary.
  * @param[in] arg Argument to be passed to the function callback.
@@ -802,46 +819,68 @@ int xbps_regpkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
  * @return 0 on success (all objects were processed), otherwise
  * the value returned by the funcion callback.
  */
-int xbps_regpkgdb_foreach_reverse_pkg_cb(
+int xbps_pkgdb_foreach_reverse_pkg_cb(
 		int (*fn)(prop_object_t, void *, bool *),
 		void *arg);
 
 /**
- * Returns a package dictionary from regpkgdb plist, matching pkgname or
- * pkgver specified in \a pkg.
+ * Returns a package dictionary from master package database (pkgdb) plist,
+ * matching pkgname or pkgver object in \a pkg.
  *
  * @param[in] pkg Package name or name-version to match.
  * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
  * package pattern, i.e `foo>=0' or `foo<1'.
  *
- * @return The matching proplib package dictionary from regpkgdb copied
+ * @return The matching proplib package dictionary from kgdb copied
  * with \a prop_dictionary_copy() so it must be released when not required
  * anymore with prop_object_release(). NULL otherwise.
  */
-prop_dictionary_t xbps_regpkgdb_get_pkgd(const char *pkg, bool bypattern);
+prop_dictionary_t xbps_pkgdb_get_pkgd(const char *pkg, bool bypattern);
 
 /**
- * Removes a package dictionary from regpkgdb plist matching the key
- * \a pkgname.
+ * Removes a package dictionary from master package database (pkgdb) plist,
+ * matching pkgname or pkgver object in \a pkg.
  *
- * @param[in] pkgname Package name to match in a dictionary.
+ * @param[in] pkg Package name or pattern to match in a package dictionary.
+ * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
+ * package pattern, i.e `foo>=0' or `foo<1'.
+ * @param[in] flush If true, after successful replace the pkgdb contents
+ * in memory will be flushed atomically to storage.
  *
  * @return true on success, false otherwise.
  */
-bool xbps_regpkgdb_remove_pkgd(const char *pkgname);
+bool xbps_pkgdb_remove_pkgd(const char *pkg, bool bypattern, bool flush);
 
 /**
- * Updates the regpkgdb plist with new contents from disk to the cached copy
- * in memory.
+ * Replaces a package dictionary with \a dict in the master package database
+ * (pkgdb) plist, matching pkgname or pkgver object.
+ *
+ * @param[in] dict Proplib dictionary to be added into pkgdb.
+ * @param[in] pkg Package name or pattern to match in a package dictionary.
+ * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
+ * package pattern, i.e `foo>=0' or `foo<1'.
+ * @param[in] flush If true, after successful replace the pkgdb contents in
+ * memory will be flushed atomically to storage.
+ *
+ * @return true on success, false otherwise.
+ */
+bool xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
+			     const char *pkg,
+			     bool bypattern,
+			     bool flush);
+
+/**
+ * Updates the master package database (pkgdb) plist with new contents from
+ * disk to the cached copy in memory.
  *
  * @param[in] xhp Pointer to our xbps_handle struct, as returned by
  * \a xbps_handle_get().
- * @param[in] flush If true the regpkgdb plist contents in memory will
- * be flushed atomically to disk.
+ * @param[in] flush If true the pkgdb plist contents in memory will
+ * be flushed atomically to storage.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_regpkgdb_update(struct xbps_handle *xhp, bool flush);
+int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
 
 /**
  * Finds the proplib's dictionary associated with a package, by looking
@@ -1134,6 +1173,18 @@ bool xbps_remove_pkg_dict_from_plist_by_name(const char *pkgname,
 bool xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name);
 
 /**
+ * Removes the package's proplib dictionary matching the pkgver object
+ * with a package pattern from \a pattern in a proplib array.
+ *
+ * @param[in] array Proplib array where to look for.
+ * @param[in] pattern Package pattern to match, i.e `foo>=0' or `foo<1'.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_remove_pkg_from_array_by_pattern(prop_array_t array,
+					   const char *pattern);
+
+/**
  * Removes the package's proplib dictionary matching the \a pkgver
  * object in a proplib array of dictionaries.
  *
@@ -1142,7 +1193,8 @@ bool xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name);
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *pkgver);
+bool xbps_remove_pkg_from_array_by_pkgver(prop_array_t array,
+					  const char *pkgver);
 
 /**
  * Removes the package's proplib dictionary matching \a pkgname,
@@ -1193,6 +1245,22 @@ int xbps_array_replace_dict_by_name(prop_array_t array,
 				    prop_dictionary_t dict,
 				    const char *pkgname);
 
+/**
+ * Replaces a dictionary with another dictionary in \a dict, in
+ * the array \a array by matching its pkgver object with a package pattern,
+ * i.e `foo>=0' or `foo<1'.
+ *
+ * @param[in] array Proplib array where to look for.
+ * @param[in] dict Proplib dictionary to be added in \a array.
+ * @param[in] pattern Package pattern to be matched, i.e `foo>=0'.
+ *
+ * @return 0 on success, EINVAL id dictionary couldn't be set in the array
+ * or ENOENT if no match.
+ */
+int xbps_array_replace_dict_by_pattern(prop_array_t array,
+				       prop_dictionary_t dict,
+				       const char *pattern);
+
 /*@}*/
 
 /** @addtogroup pkg_register */
@@ -1204,7 +1272,7 @@ int xbps_array_replace_dict_by_name(prop_array_t array,
  * @param[in] pkg_dict A dictionary with the following objects:
  * \a pkgname, \a version, \a pkgver, \a short_desc (string),
  * \a automatic-install (bool) and optionally \a provides (array of strings).
- * @param[in] flush Set to true to make sure that regpkgdb plist
+ * @param[in] flush Set to true to make sure that pkgdb plist
  * is written to storage on success.
  *
  * @return 0 on success, otherwise an errno value.
@@ -1216,7 +1284,7 @@ int xbps_register_pkg(prop_dictionary_t pkg_dict, bool flush);
  *
  * @param[in] pkgname Package name.
  * @param[in] version Package version.
- * @param[in] flush Set to true to make sure that regpkgdb plist
+ * @param[in] flush Set to true to make sure that pkgdb plist
  * is written to storage on success.
  *
  * @return 0 on success, otherwise an errno value.

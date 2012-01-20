@@ -1,13 +1,12 @@
-digraph regpkgdb_dictionary {
+digraph pkgdb_array {
 	graph [rankdir=LR,rank=same,ranksep=".10"];
 	edge [arrowhead="vee",arrowsize="0.2",fontname="DejaVuSansCondensed",fontsize="9"];
 	node [height=".1",shape=box,fontname="DejaVuSansCondensed",fontsize="9"];
-	regpkgdb_plist -> main;
-	regpkgdb_plist [style=filled,fillcolor="darksalmon",label="regpkgdb.plist"];
-	main [label="Main dictionary"];
-	main -> packages [label="array"];
-	packages -> pkgdict [label="dictionary"];
-	packages -> pkgdict2 [label="dictionary"];
+	pkgdb_plist -> main;
+	pkgdb_plist [style=filled,fillcolor="darksalmon",label="pkgdb.plist"];
+	main [label="Main array"];
+	main -> pkgdict [label="dictionary"];
+	main -> pkgdict2 [label="dictionary"];
 	pkgdict [style=filled,label="Package[0]"];
 	pkgdict2 [style=filled,label="Package[N+1]"];
 	pkgdict2 -> pkgdict2_objs [label="objects"];

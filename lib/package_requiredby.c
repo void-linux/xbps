@@ -103,14 +103,14 @@ int HIDDEN
 xbps_requiredby_pkg_remove(const char *pkgname)
 {
 	assert(pkgname != NULL);
-	return xbps_regpkgdb_foreach_pkg_cb(remove_pkg_from_reqby, __UNCONST(pkgname));
+	return xbps_pkgdb_foreach_pkg_cb(remove_pkg_from_reqby, __UNCONST(pkgname));
 }
 
 int HIDDEN
 xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 {
 	prop_array_t pkg_rdeps;
-	prop_object_t obj, pkgd_regpkgdb;
+	prop_object_t obj, pkgd_pkgdb;
 	prop_object_iterator_t iter;
 	const char *pkgver, *str;
 	int rv = 0;
@@ -134,20 +134,20 @@ xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 		}
 		xbps_dbg_printf("%s: adding reqby entry for %s\n", __func__, str);
 
-		pkgd_regpkgdb = xbps_find_virtualpkg_conf_in_dict_by_pattern(
-		    xhp->regpkgdb, "packages", str);
-		if (pkgd_regpkgdb == NULL) {
-			pkgd_regpkgdb =
-			    xbps_find_virtualpkg_in_dict_by_pattern(
-			    xhp->regpkgdb, "packages", str);
-			if (pkgd_regpkgdb == NULL) {
+		pkgd_pkgdb = xbps_find_virtualpkg_conf_in_array_by_pattern(
+		    xhp->pkgdb, str);
+		if (pkgd_pkgdb == NULL) {
+			pkgd_pkgdb =
+			    xbps_find_virtualpkg_in_array_by_pattern(
+			    xhp->pkgdb, str);
+			if (pkgd_pkgdb == NULL) {
 				rv = ENOENT;
 				xbps_dbg_printf("%s: couldnt find `%s' "
-				     "entry in regpkgdb\n", __func__, str);
+				     "entry in pkgdb\n", __func__, str);
 				break;
 			}
 		}
-		rv = add_pkg_into_reqby(pkgd_regpkgdb, pkgver);
+		rv = add_pkg_into_reqby(pkgd_pkgdb, pkgver);
 		if (rv != 0)
 			break;
 	}
