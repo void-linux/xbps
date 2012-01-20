@@ -67,7 +67,7 @@ usage(void)
 	"  Available actions:\n"
 	"    cmpver, digest, fetch, getpkgdepname, getpkgname, getpkgrevision,\n"
 	"    getpkgversion, pkgmatch, register, sanitize-plist, unregister,\n"
-	"    version\n"
+	"    updatepkgdb, version\n"
 	"\n"
 	"  Action arguments:\n"
 	"    cmpver\t\t<instver> <reqver>\n"
@@ -85,21 +85,25 @@ usage(void)
 	"    version\t\t<pkgname>\n"
 	"\n"
 	"  Options shared by all actions:\n"
-	"    -C\t\tPath to xbps-conf.plist file.\n"
+	"    -C\t\tPath to xbps.conf file.\n"
 	"    -d\t\tDebugging messages to stderr.\n"
 	"    -r\t\t\t<rootdir>\n"
 	"    -V\t\tPrints the xbps release version\n"
 	"\n"
 	"  Examples:\n"
 	"    $ xbps-uhelper cmpver 'foo-1.0' 'foo-2.1'\n"
-	"    $ xbps-uhelper digest /foo/blah.txt ...\n"
+	"    $ xbps-uhelper digest file ...\n"
 	"    $ xbps-uhelper fetch http://www.foo.org/file.blob ...\n"
+	"    $ xbps-uhelper getpkgdepname 'foo>=0'\n"
+	"    $ xbps-uhelper getpkgdepversion 'foo>=0'\n"
 	"    $ xbps-uhelper getpkgname foo-2.0\n"
 	"    $ xbps-uhelper getpkgrevision foo-2.0_1\n"
 	"    $ xbps-uhelper getpkgversion foo-2.0\n"
+	"    $ xbps-uhelper pkgmatch foo-1.0 'foo>=1.0'\n"
 	"    $ xbps-uhelper register pkgname 2.0 \"A short description\"\n"
-	"    $ xbps-uhelper sanitize-plist /blah/foo.plist\n"
+	"    $ xbps-uhelper sanitize-plist foo.plist\n"
 	"    $ xbps-uhelper unregister pkgname 2.0\n"
+	"    $ xbps-uhelper updatepkgdb\n"
 	"    $ xbps-uhelper version pkgname\n");
 
 	exit(EXIT_FAILURE);
@@ -108,11 +112,12 @@ usage(void)
 int
 main(int argc, char **argv)
 {
+	prop_dictionary_t dict, pkgd;
+	prop_array_t array;
 	struct xbps_handle xh;
 	struct xferstat xfer;
-	prop_dictionary_t dict, pkgd;
 	const char *pkgn, *version, *rootdir = NULL, *confdir = NULL;
-	char *pkgname, *pkgver, *in_chroot_env, *hash;
+	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
 	bool debug = false, in_chroot = false;
 	int i, c, rv = 0;
 
@@ -146,7 +151,8 @@ main(int argc, char **argv)
 	if ((strcasecmp(argv[0], "register") == 0) ||
 	    (strcasecmp(argv[0], "unregister") == 0) ||
 	    (strcasecmp(argv[0], "version") == 0) ||
-	    (strcasecmp(argv[0], "fetch") == 0)) {
+	    (strcasecmp(argv[0], "fetch") == 0) ||
+	    (strcasecmp(argv[0], "updatepkgdb") == 0)) {
 		/*
 		* Initialize libxbps.
 		*/
@@ -219,7 +225,6 @@ main(int argc, char **argv)
 		}
 		free(pkgver);
 		prop_object_release(dict);
-
 	} else if (strcasecmp(argv[0], "unregister") == 0) {
 		/* Unregisters a package from the database */
 		if (argc != 3)
@@ -238,7 +243,6 @@ main(int argc, char **argv)
 			    MSG_NORMAL, in_chroot ? "[chroot] " : "", argv[1],
 			    argv[2], MSG_RESET);
 		}
-
 	} else if (strcasecmp(argv[0], "version") == 0) {
 		/* Prints version of an installed package */
 		if (argc != 2)
@@ -252,7 +256,6 @@ main(int argc, char **argv)
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 		printf("%s\n", version);
 		prop_object_release(dict);
-
 	} else if (strcasecmp(argv[0], "sanitize-plist") == 0) {
 		/* Sanitize a plist file (properly indent the file) */
 		if (argc != 2)
@@ -266,7 +269,6 @@ main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 		write_plist_file(dict, argv[1]);
-
 	} else if (strcasecmp(argv[0], "getpkgversion") == 0) {
 		/* Returns the version of a pkg string */
 		if (argc != 2)
@@ -279,7 +281,6 @@ main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 		printf("%s\n", version);
-
 	} else if (strcasecmp(argv[0], "getpkgname") == 0) {
 		/* Returns the name of a pkg string */
 		if (argc != 2)
@@ -293,7 +294,6 @@ main(int argc, char **argv)
 		}
 		printf("%s\n", pkgname);
 		free(pkgname);
-
 	} else if (strcasecmp(argv[0], "getpkgrevision") == 0) {
 		/* Returns the revision of a pkg string */
 		if (argc != 2)
@@ -304,7 +304,6 @@ main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 
 		printf("%s\n", version);
-
 	} else if (strcasecmp(argv[0], "getpkgdepname") == 0) {
 		/* Returns the pkgname of a dependency */
 		if (argc != 2)
@@ -326,21 +325,18 @@ main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 
 		printf("%s\n", version);
-
 	} else if (strcasecmp(argv[0], "pkgmatch") == 0) {
 		/* Matches a pkg with a pattern */
 		if (argc != 3)
 			usage();
 
 		exit(xbps_pkgpattern_match(argv[1], argv[2]));
-
 	} else if (strcasecmp(argv[0], "cmpver") == 0) {
 		/* Compare two version strings, installed vs required */
 		if (argc != 3)
 			usage();
 
 		exit(xbps_cmpver(argv[1], argv[2]));
-
 	} else if (strcasecmp(argv[0], "digest") == 0) {
 		/* Prints SHA256 hashes for specified files */
 		if (argc < 2)
@@ -357,7 +353,6 @@ main(int argc, char **argv)
 			printf("%s\n", hash);
 			free(hash);
 		}
-
 	} else if (strcasecmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */
 		if (argc != 2)
@@ -374,11 +369,38 @@ main(int argc, char **argv)
 			} else
 				rv = 0;
 		}
+	} else if (strcasecmp(argv[0], "updatepkgdb") == 0) {
+		/* update regpkgdb to pkgdb */
+		plist = xbps_xasprintf("%s/%s/regpkgdb.plist",
+		    xh.rootdir, XBPS_META_PATH);
+	        if (plist == NULL) {
+			rv = ENOMEM;
+			goto out;
+		}
 
+		dict = prop_dictionary_internalize_from_zfile(plist);
+		free(plist);
+		if (dict != NULL) {
+			array = prop_dictionary_get(dict, "packages");
+			if (array == NULL) {
+				prop_object_release(dict);
+				rv = EINVAL;
+				goto out;
+			}
+		        xh.pkgdb = prop_array_copy(array);
+		        prop_object_release(dict);
+			rv = xbps_pkgdb_update(&xh, true);
+			if (rv == 0) {
+				printf("Migrated regpkgdb to pkgdb "
+				    "successfully.\n");
+			} else {
+				xbps_error_printf("failed to write "
+				    "pkgdb plist: %s\n", strerror(rv));
+			}
+		}
 	} else {
 		usage();
 	}
-
 out:
 	xbps_end();
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
