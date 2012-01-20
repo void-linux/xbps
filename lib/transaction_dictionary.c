@@ -34,7 +34,7 @@
 /**
  * @file lib/transaction_dictionary.c
  * @brief Transaction handling routines
- * @defgroup transdict Transaction handling functions
+ * @defgroup transaction Transaction handling functions
  *
  * The following image shows off the full transaction dictionary returned
  * by xbps_transaction_prepare().

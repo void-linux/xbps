@@ -119,7 +119,7 @@
 #endif
 
 /**
- * @def XBPS_CONF_PLIST
+ * @def XBPS_CONF_DEF
  * Filename for the XBPS plist configuration file.
  */
 #define XBPS_CONF_DEF		XBPS_SYSCONF_PATH "/xbps.conf"
@@ -187,47 +187,47 @@ void		xbps_warn_printf(const char *, ...);
  *
  * Integer representing the xbps callback returned state. Possible values:
  *
- * XBPS_STATE_UKKNOWN: state hasn't been prepared or unknown error.
- * XBPS_STATE_TRANS_DOWNLOAD: transaction is downloading binary packages.
- * XBPS_STATE_TRANS_VERIFY: transaction is verifying binary package integrity.
- * XBPS_STATE_TRANS_RUN: transaction is performing operations:
+ * - XBPS_STATE_UKKNOWN: state hasn't been prepared or unknown error.
+ * - XBPS_STATE_TRANS_DOWNLOAD: transaction is downloading binary packages.
+ * - XBPS_STATE_TRANS_VERIFY: transaction is verifying binary package integrity.
+ * - XBPS_STATE_TRANS_RUN: transaction is performing operations:
  * install, update, remove and replace.
- * XBPS_STATE_TRANS_CONFIGURE: transaction is configuring all
+ * - XBPS_STATE_TRANS_CONFIGURE: transaction is configuring all
  * unpacked packages.
- * XBPS_STATE_DOWNLOAD: a binary package is being downloaded.
- * XBPS_STATE_VERIFY: a binary package is being verified.
- * XBPS_STATE_REMOVE: a package is being removed.
- * XBPS_STATE_REMOVE_DONE: a package has been removed successfully.
- * XBPS_STATE_REMOVE_FILE: a package file is being removed.
- * XBPS_STATE_REMOVE_OBSOLETE: an obsolete package file is being removed.
- * XBPS_STATE_REPLACE: a package is being replaced.
- * XBPS_STATE_INSTALL: a package is being installed.
- * XBPS_STATE_INSTALL_DONE: a package has been installed successfully.
- * XBPS_STATE_UPDATE: a package is being updated.
- * XBPS_STATE_UPDATE_DONE: a package has been updated successfully.
- * XBPS_STATE_UNPACK: a package is being unpacked.
- * XBPS_STATE_CONFIGURE: a package is being configured.
- * XBPS_STATE_CONFIG_FILE: a package configuration file is being processed.
- * XBPS_STATE_REGISTER: a package is being registered.
- * XBPS_STATE_UNREGISTER: a package is being unregistered.
- * XBPS_STATE_REPOSYNC: a remote repository's package index is being
+ * - XBPS_STATE_DOWNLOAD: a binary package is being downloaded.
+ * - XBPS_STATE_VERIFY: a binary package is being verified.
+ * - XBPS_STATE_REMOVE: a package is being removed.
+ * - XBPS_STATE_REMOVE_DONE: a package has been removed successfully.
+ * - XBPS_STATE_REMOVE_FILE: a package file is being removed.
+ * - XBPS_STATE_REMOVE_OBSOLETE: an obsolete package file is being removed.
+ * - XBPS_STATE_REPLACE: a package is being replaced.
+ * - XBPS_STATE_INSTALL: a package is being installed.
+ * - XBPS_STATE_INSTALL_DONE: a package has been installed successfully.
+ * - XBPS_STATE_UPDATE: a package is being updated.
+ * - XBPS_STATE_UPDATE_DONE: a package has been updated successfully.
+ * - XBPS_STATE_UNPACK: a package is being unpacked.
+ * - XBPS_STATE_CONFIGURE: a package is being configured.
+ * - XBPS_STATE_CONFIG_FILE: a package configuration file is being processed.
+ * - XBPS_STATE_REGISTER: a package is being registered.
+ * - XBPS_STATE_UNREGISTER: a package is being unregistered.
+ * - XBPS_STATE_REPOSYNC: a remote repository's package index is being
  * synchronized.
- * XBPS_STATE_VERIFY_FAIL: binary package integrity has failed.
- * XBPS_STATE_DOWNLOAD_FAIL: binary package download has failed.
- * XBPS_STATE_REMOVE_FAIL: a package removal has failed.
- * XBPS_STATE_REMOVE_FILE_FAIL: a package file removal has failed.
- * XBPS_STATE_REMOVE_FILE_HASH_FAIL: a package file removal due to
+ * - XBPS_STATE_VERIFY_FAIL: binary package integrity has failed.
+ * - XBPS_STATE_DOWNLOAD_FAIL: binary package download has failed.
+ * - XBPS_STATE_REMOVE_FAIL: a package removal has failed.
+ * - XBPS_STATE_REMOVE_FILE_FAIL: a package file removal has failed.
+ * - XBPS_STATE_REMOVE_FILE_HASH_FAIL: a package file removal due to
  * its hash has failed.
- * XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL: an obsolete package file
+ * - XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL: an obsolete package file
  * removal has failed.
- * XBPS_STATE_CONFIGURE_FAIL: package configure has failed.
- * XBPS_STATE_CONFIG_FILE_FAIL: package configuration file operation
+ * - XBPS_STATE_CONFIGURE_FAIL: package configure has failed.
+ * - XBPS_STATE_CONFIG_FILE_FAIL: package configuration file operation
  * has failed.
- * XBPS_STATE_UPDATE_FAIL: package update has failed.
- * XBPS_STATE_UNPACK_FAIL: package unpack has failed.
- * XBPS_STATE_REGISTER_FAIL: package register has failed.
- * XBPS_STATE_UNREGISTER_FAIL: package unregister has failed.
- * XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
+ * - XBPS_STATE_UPDATE_FAIL: package update has failed.
+ * - XBPS_STATE_UNPACK_FAIL: package unpack has failed.
+ * - XBPS_STATE_REGISTER_FAIL: package register has failed.
+ * - XBPS_STATE_UNREGISTER_FAIL: package unregister has failed.
+ * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  */
 typedef enum xbps_state {
 	XBPS_STATE_UNKNOWN = 0,
@@ -271,9 +271,8 @@ typedef enum xbps_state {
 } xbps_state_t;
 
 /**
- * @struct xbps_cb_data xbps_api.h "xbps_api.h"
- * @brief Structure to be passed as argument to the state
- * function callbacks.
+ * @struct xbps_state_cb_data xbps_api.h "xbps_api.h"
+ * @brief Structure to be passed as argument to the state function callback.
  */
 struct xbps_state_cb_data {
 	/**
@@ -442,36 +441,26 @@ struct xbps_handle {
 	 */
 	prop_array_t pkgdb;
 	/**
-	 * @var xbps_state_cb
-	 *
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
 	 */
 	void (*state_cb)(const struct xbps_state_cb_data *, void *);
 	/**
-	 * @var state_cb_data
-	 *
 	 * Pointer to user supplied data to be passed as argument to
 	 * the \a xbps_state_cb function callback.
 	 */
 	void *state_cb_data;
 	/**
-	 * @var xbps_unpack_cb
-	 *
 	 * Pointer to the supplied function callback to be used in
 	 * xbps_unpack_binary_pkg().
 	 */
 	void (*unpack_cb)(const struct xbps_unpack_cb_data *, void *);
 	/**
-	 * @var unpack_cb_data
-	 *
 	 * Pointer to user supplied data to be passed as argument to
 	 * the \a xbps_unpack_cb function callback.
 	 */
 	void *unpack_cb_data;
 	/**
-	 * @var xbps_fetch_cb
-	 *
 	 * Pointer to the supplied function callback to be used in
 	 * xbps_fetch_file().
 	 */
@@ -502,9 +491,9 @@ struct xbps_handle {
 	 */
 	char *cachedir_priv;
 	/**
-	 * @var confdir
+	 * @var conffile
 	 *
-	 * Full path to the XBPS_SYSCONF_PATH directory.
+	 * Full path to the xbps configuration file.
 	 */
 	const char *conffile;
 	/**
@@ -585,6 +574,8 @@ void xbps_end(void);
 
 /**
  * Returns a pointer to the xbps_handle structure passed to xbps_init().
+ *
+ * @return A pointer the struct xbps_handle passed to xbps_init().
  */
 struct xbps_handle *xbps_handle_get(void);
 
@@ -620,23 +611,6 @@ int xbps_configure_pkg(const char *pkgname,
 int xbps_configure_packages(bool flush);
 
 /*@}*/
-
-/**
- * @ingroup vermatch
- *
- * Compares package version strings.
- *
- * The package version is defined by:
- * ${VERSION}[_${REVISION}].
- *
- * @param[in] pkg1 a package version string.
- * @param[in] pkg2 a package version string.
- *
- * @return -1, 0 or 1 depending if pkg1 is less than, equal to or
- * greater than pkg2.
- */
-int xbps_cmpver(const char *pkg1, const char *pkg2);
-
 
 /** @addtogroup download */
 /*@{*/
@@ -681,18 +655,96 @@ const char *xbps_fetch_error_string(void);
  */
 prop_array_t xbps_find_pkg_orphans(prop_array_t orphans);
 
+/** @addtogroup pkgdb */
+/*@{*/
+
 /**
- * @ingroup vermatch
+ * Executes a function callback per a package dictionary registered
+ * in master package database (pkgdb) plist (downwards).
  *
- * Package pattern matching.
+ * @param[in] fn Function callback to run for any pkg dictionary.
+ * @param[in] arg Argument to be passed to the function callback.
  *
- * @param[in] pkgver Package name/version, i.e `foo-1.0'.
- * @param[in] pattern Package pattern to match against \a pkgver, i.e
- * `foo>=0' or `foo<1'.
- *
- * @return 1 if \a pkgver is matched against \a pattern, 0 if no match.
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the function callback.
  */
-int xbps_pkgpattern_match(const char *pkgver, const char *pattern);
+int xbps_pkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+			      void *arg);
+
+/**
+ * Executes a function callback per a package dictionary registered
+ * in master package database (pkgdb) plist, in reverse order (upwards).
+ *
+ * @param[in] fn Function callback to run for any pkg dictionary.
+ * @param[in] arg Argument to be passed to the function callback.
+ *
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the funcion callback.
+ */
+int xbps_pkgdb_foreach_reverse_pkg_cb(
+		int (*fn)(prop_object_t, void *, bool *),
+		void *arg);
+
+/**
+ * Returns a package dictionary from master package database (pkgdb) plist,
+ * matching pkgname or pkgver object in \a pkg.
+ *
+ * @param[in] pkg Package name or name-version to match.
+ * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
+ * package pattern, i.e `foo>=0' or `foo<1'.
+ *
+ * @return The matching proplib package dictionary from kgdb copied
+ * with \a prop_dictionary_copy() so it must be released when not required
+ * anymore with prop_object_release(). NULL otherwise.
+ */
+prop_dictionary_t xbps_pkgdb_get_pkgd(const char *pkg, bool bypattern);
+
+/**
+ * Removes a package dictionary from master package database (pkgdb) plist,
+ * matching pkgname or pkgver object in \a pkg.
+ *
+ * @param[in] pkg Package name or pattern to match in a package dictionary.
+ * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
+ * package pattern, i.e `foo>=0' or `foo<1'.
+ * @param[in] flush If true, after successful replace the pkgdb contents
+ * in memory will be flushed atomically to storage.
+ *
+ * @return true on success, false otherwise.
+ */
+bool xbps_pkgdb_remove_pkgd(const char *pkg, bool bypattern, bool flush);
+
+/**
+ * Replaces a package dictionary with \a dict in the master package database
+ * (pkgdb) plist, matching pkgname or pkgver object.
+ *
+ * @param[in] pkgd Proplib dictionary to be added into pkgdb.
+ * @param[in] pkg Package name or pattern to match in a package dictionary.
+ * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
+ * package pattern, i.e `foo>=0' or `foo<1'.
+ * @param[in] flush If true, after successful replace the pkgdb contents in
+ * memory will be flushed atomically to storage.
+ *
+ * @return true on success, false otherwise.
+ */
+bool xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
+			     const char *pkg,
+			     bool bypattern,
+			     bool flush);
+
+/**
+ * Updates the master package database (pkgdb) plist with new contents from
+ * disk to the cached copy in memory.
+ *
+ * @param[in] xhp Pointer to our xbps_handle struct, as returned by
+ * \a xbps_handle_get().
+ * @param[in] flush If true the pkgdb plist contents in memory will
+ * be flushed atomically to storage.
+ *
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
+
+/*@}*/
 
 /** @addtogroup plist */
 /*@{*/
@@ -795,93 +847,6 @@ int xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
 			const char *key,
 			int (*fn)(prop_object_t, void *, bool *),
 			void *arg);
-
-/**
- * Executes a function callback per a package dictionary registered
- * in master package database (pkgdb) plist (downwards).
- *
- * @param[in] fn Function callback to run for any pkg dictionary.
- * @param[in] arg Argument to be passed to the function callback.
- *
- * @return 0 on success (all objects were processed), otherwise
- * the value returned by the function callback.
- */
-int xbps_pkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
-			      void *arg);
-
-/**
- * Executes a function callback per a package dictionary registered
- * in master package database (pkgdb) plist, in reverse order (upwards).
- *
- * @param[in] fn Function callback to run for any pkg dictionary.
- * @param[in] arg Argument to be passed to the function callback.
- *
- * @return 0 on success (all objects were processed), otherwise
- * the value returned by the funcion callback.
- */
-int xbps_pkgdb_foreach_reverse_pkg_cb(
-		int (*fn)(prop_object_t, void *, bool *),
-		void *arg);
-
-/**
- * Returns a package dictionary from master package database (pkgdb) plist,
- * matching pkgname or pkgver object in \a pkg.
- *
- * @param[in] pkg Package name or name-version to match.
- * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
- * package pattern, i.e `foo>=0' or `foo<1'.
- *
- * @return The matching proplib package dictionary from kgdb copied
- * with \a prop_dictionary_copy() so it must be released when not required
- * anymore with prop_object_release(). NULL otherwise.
- */
-prop_dictionary_t xbps_pkgdb_get_pkgd(const char *pkg, bool bypattern);
-
-/**
- * Removes a package dictionary from master package database (pkgdb) plist,
- * matching pkgname or pkgver object in \a pkg.
- *
- * @param[in] pkg Package name or pattern to match in a package dictionary.
- * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
- * package pattern, i.e `foo>=0' or `foo<1'.
- * @param[in] flush If true, after successful replace the pkgdb contents
- * in memory will be flushed atomically to storage.
- *
- * @return true on success, false otherwise.
- */
-bool xbps_pkgdb_remove_pkgd(const char *pkg, bool bypattern, bool flush);
-
-/**
- * Replaces a package dictionary with \a dict in the master package database
- * (pkgdb) plist, matching pkgname or pkgver object.
- *
- * @param[in] dict Proplib dictionary to be added into pkgdb.
- * @param[in] pkg Package name or pattern to match in a package dictionary.
- * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
- * package pattern, i.e `foo>=0' or `foo<1'.
- * @param[in] flush If true, after successful replace the pkgdb contents in
- * memory will be flushed atomically to storage.
- *
- * @return true on success, false otherwise.
- */
-bool xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
-			     const char *pkg,
-			     bool bypattern,
-			     bool flush);
-
-/**
- * Updates the master package database (pkgdb) plist with new contents from
- * disk to the cached copy in memory.
- *
- * @param[in] xhp Pointer to our xbps_handle struct, as returned by
- * \a xbps_handle_get().
- * @param[in] flush If true the pkgdb plist contents in memory will
- * be flushed atomically to storage.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
-
 /**
  * Finds the proplib's dictionary associated with a package, by looking
  * it via its name in a proplib dictionary.
@@ -1232,7 +1197,7 @@ bool xbps_remove_pkgname_from_array(prop_array_t array, const char *name);
 
 /**
  * Replaces a dictionary with another dictionary in \a dict, in the
- * array \array by matching its "pkgname" object with \a pkgname.
+ * array \a array by matching its "pkgname" object with \a pkgname.
  *
  * @param[in] array Proplib array where to look for.
  * @param[in] dict Proplib dictionary to be added in \a array.
@@ -1328,7 +1293,7 @@ int xbps_remove_pkg_files(prop_dictionary_t dict,
 
 /*@}*/
 
-/** @addtogroup transdict */
+/** @addtogroup transaction */
 /*@{*/
 
 /**
@@ -1480,6 +1445,9 @@ struct repository_pool_index {
  * Synchronizes the package index file for all remote repositories
  * as specified in the configuration file, repositories.plist.
  *
+ * @param[in] xhp Pointer to a struct xbps_handle, as returned by
+ * xbps_handle_get().
+ *
  * @return 0 on success, ENOTSUP if no repositories were found in
  * the configuration file.
  */
@@ -1602,21 +1570,16 @@ int xbps_repository_sync_pkg_index(const char *uri, const char *plistf);
  * Integer representing a state on which a package may be. Possible
  * values for this are:
  *
- * <b>XBPS_PKG_STATE_HALF_UNPACKED</b>: Package was being unpacked
+ * - XBPS_PKG_STATE_HALF_UNPACKED: Package was being unpacked
  * but didn't finish properly.
- *
- * <b>XBPS_PKG_STATE_UNPACKED</b>: Package has been unpacked correctly
+ * - XBPS_PKG_STATE_UNPACKED: Package has been unpacked correctly
  * but has not been configured due to unknown reasons.
- *
- * <b>XBPS_PKG_STATE_INSTALLED</b>: Package has been installed successfully.
- *
- * <b>XBPS_PKG_STATE_BROKEN</b>: not yet used.
- *
- * <b>XBPS_PKG_STATE_HALF_REMOVED</b>: Package has been removed but not
+ * - XBPS_PKG_STATE_INSTALLED: Package has been installed successfully.
+ * - XBPS_PKG_STATE_BROKEN: not yet used.
+ * - XBPS_PKG_STATE_HALF_REMOVED: Package has been removed but not
  * completely: the purge action in REMOVE script wasn't executed, pkg
  * metadata directory still exists and is registered in package database.
- *
- * <b>XBPS_PKG_STATE_NOT_INSTALLED</b>: Package going to be installed in
+ * - XBPS_PKG_STATE_NOT_INSTALLED: Package going to be installed in
  * a transaction dictionary but that has not been yet unpacked.
  */
 typedef enum pkg_state {
@@ -1872,6 +1835,17 @@ const char *xbps_pkg_version(const char *pkg);
 const char *xbps_pkgpattern_version(const char *pattern);
 
 /**
+ * Package pattern matching.
+ *
+ * @param[in] pkgver Package name/version, i.e `foo-1.0'.
+ * @param[in] pattern Package pattern to match against \a pkgver, i.e
+ * `foo>=0' or `foo<1'.
+ *
+ * @return 1 if \a pkgver is matched against \a pattern, 0 if no match.
+ */
+int xbps_pkgpattern_match(const char *pkgver, const char *pattern);
+
+/**
  * Gets the package version revision in a package string.
  *
  * @param[in] pkg Package string, i.e <b>foo-2.0_1</b>.
@@ -1901,6 +1875,20 @@ bool xbps_pkg_has_rundeps(prop_dictionary_t dict);
  * @return A negative number is returned on error, 0 otherwise.
  */
 int xbps_humanize_number(char *buf, int64_t bytes);
+
+/**
+ * Compares package version strings.
+ *
+ * The package version is defined by:
+ * ${VERSION}[_${REVISION}].
+ *
+ * @param[in] pkg1 a package version string.
+ * @param[in] pkg2 a package version string.
+ *
+ * @return -1, 0 or 1 depending if pkg1 is less than, equal to or
+ * greater than pkg2.
+ */
+int xbps_cmpver(const char *pkg1, const char *pkg2);
 
 /*@}*/
 

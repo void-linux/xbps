@@ -31,6 +31,29 @@
 
 #include "xbps_api_impl.h"
 
+/**
+ * @file lib/pkgdb.c
+ * @brief Package database handling routines
+ * @defgroup pkgdb Package database handling functions
+ *
+ * Functions to manipulate the main package database plist file (pkgdb).
+ *
+ * The following image shown below shows the proplib structure used
+ * by the main package database plist:
+ *
+ * @image html images/xbps_pkgdb_array.png
+ *
+ * Legend:
+ *  - <b>Salmon filled box</b>: \a XBPS_PKGDB file internalized.
+ *  - <b>White filled box</b>: mandatory objects.
+ *  - <b>Grey filled box</b>: optional objects.
+ *  - <b>Green filled box</b>: possible value set in the object, only one
+ *    of them is set.
+ *
+ * Text inside of white boxes are the key associated with the object, its
+ * data type is specified on its edge, i.e array, bool, integer, string,
+ * dictionary.
+ */
 int HIDDEN
 xbps_pkgdb_init(struct xbps_handle *xhp)
 {

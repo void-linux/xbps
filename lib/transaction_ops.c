@@ -33,8 +33,8 @@
 
 /**
  * @file lib/transaction_ops.c
- * @brief Transaction package handling routines
- * @defgroup repo_pkgs Transaction package handling functions
+ * @brief Transaction handling routines
+ * @defgroup transaction Transaction handling functions
  *
  * The following image shows off the full transaction dictionary returned
  * by xbps_transaction_prepare().
