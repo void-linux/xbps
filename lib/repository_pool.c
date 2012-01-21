@@ -66,6 +66,7 @@ int HIDDEN
 xbps_repository_pool_init(struct xbps_handle *xhp)
 {
 	prop_dictionary_t d = NULL;
+	prop_array_t array;
 	size_t i, ntotal = 0, nmissing = 0;
 	const char *repouri;
 	char *plist;
@@ -122,15 +123,20 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 			free(plist);
 			goto out;
 		}
-		if (!xbps_add_obj_to_dict(d,
-		    prop_array_internalize_from_zfile(plist),
-		    "index")) {
+		array = prop_array_internalize_from_zfile(plist);
+		if (array == NULL) {
 			rv = EINVAL;
 			prop_object_release(d);
 			free(plist);
 			goto out;
 		}
 		free(plist);
+		prop_array_make_immutable(array);
+		if (!xbps_add_obj_to_dict(d, array, "index")) {
+			rv = EINVAL;
+			prop_object_release(d);
+			goto out;
+		}
 		if (!prop_array_add(xhp->repo_pool, d)) {
 			rv = EINVAL;
 			prop_object_release(d);
