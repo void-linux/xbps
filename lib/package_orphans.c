@@ -187,6 +187,7 @@ xbps_find_pkg_orphans(prop_array_t orphans_user)
 		return NULL;
 	}
 	array = prop_array_copy(od.array);
+	prop_array_make_immutable(array);
 	prop_object_release(od.array);
 	return array;
 }
