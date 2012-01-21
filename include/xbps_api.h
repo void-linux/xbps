@@ -668,8 +668,8 @@ prop_array_t xbps_find_pkg_orphans(prop_array_t orphans);
  * @return 0 on success (all objects were processed), otherwise
  * the value returned by the function callback.
  */
-int xbps_pkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
-			      void *arg);
+int xbps_pkgdb_foreach_cb(int (*fn)(prop_object_t, void *, bool *),
+			  void *arg);
 
 /**
  * Executes a function callback per a package dictionary registered
@@ -681,7 +681,7 @@ int xbps_pkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
  * @return 0 on success (all objects were processed), otherwise
  * the value returned by the funcion callback.
  */
-int xbps_pkgdb_foreach_reverse_pkg_cb(
+int xbps_pkgdb_foreach_reverse_cb(
 		int (*fn)(prop_object_t, void *, bool *),
 		void *arg);
 

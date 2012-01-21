@@ -187,7 +187,7 @@ find_longest_pkgver(prop_object_t o)
 		(void)xbps_callback_array_iter(o,
 		    _find_longest_pkgver_cb, &len);
 	else
-		(void)xbps_pkgdb_foreach_pkg_cb(
+		(void)xbps_pkgdb_foreach_cb(
 		    _find_longest_pkgver_cb, &len);
 
 	return len;

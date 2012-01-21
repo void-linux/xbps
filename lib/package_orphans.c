@@ -180,7 +180,7 @@ xbps_find_pkg_orphans(prop_array_t orphans_user)
 	 * order in which packages were installed.
 	 */
 	od.orphans_user = orphans_user;
-	rv = xbps_pkgdb_foreach_reverse_pkg_cb(find_orphan_pkg, &od);
+	rv = xbps_pkgdb_foreach_reverse_cb(find_orphan_pkg, &od);
 	if (rv != 0) {
 		errno = rv;
 		prop_object_release(od.array);

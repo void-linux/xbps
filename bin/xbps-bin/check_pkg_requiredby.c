@@ -163,7 +163,7 @@ check_pkg_requiredby(const char *pkgname, void *arg, bool *pkgdb_update)
 	crd.pkgdb_update = false;
 	prop_dictionary_get_cstring_nocopy(crd.pkgd, "pkgver", &crd.pkgver);
 
-	rv = xbps_pkgdb_foreach_pkg_cb(check_reqby_pkg_cb, &crd);
+	rv = xbps_pkgdb_foreach_cb(check_reqby_pkg_cb, &crd);
 	*pkgdb_update = crd.pkgdb_update;
 
 	if (crd.pkgdb_update) {

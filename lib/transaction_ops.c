@@ -227,7 +227,7 @@ xbps_transaction_update_packages(void)
 	bool newpkg_found = false;
 	int rv;
 
-	rv = xbps_pkgdb_foreach_pkg_cb(update_pkgs_cb, &newpkg_found);
+	rv = xbps_pkgdb_foreach_cb(update_pkgs_cb, &newpkg_found);
 	if (!newpkg_found)
 		rv = EEXIST;
 

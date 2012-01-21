@@ -163,15 +163,15 @@ foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
 }
 
 int
-xbps_pkgdb_foreach_reverse_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
-				  void *arg)
+xbps_pkgdb_foreach_reverse_cb(int (*fn)(prop_object_t, void *, bool *),
+			      void *arg)
 {
 	return foreach_pkg_cb(fn, arg, true);
 }
 
 int
-xbps_pkgdb_foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
-			  void *arg)
+xbps_pkgdb_foreach_cb(int (*fn)(prop_object_t, void *, bool *),
+		      void *arg)
 {
 	return foreach_pkg_cb(fn, arg, false);
 }

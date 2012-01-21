@@ -68,7 +68,7 @@ check_pkg_integrity_all(void)
 	int rv;
 
 	memset(&cpkg, 0, sizeof(cpkg));
-	(void)xbps_pkgdb_foreach_pkg_cb(cb_pkg_integrity, &cpkg);
+	(void)xbps_pkgdb_foreach_cb(cb_pkg_integrity, &cpkg);
 	if (cpkg.flush) {
 		if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
 			xbps_error_printf("failed to write pkgdb: %s\n",

@@ -203,7 +203,7 @@ main(int argc, char **argv)
 		 * Find the longest pkgver string to pretty print the output.
 		 */
 		lpc.pkgver_len = find_longest_pkgver(NULL);
-		rv = xbps_pkgdb_foreach_pkg_cb(list_pkgs_in_dict, &lpc);
+		rv = xbps_pkgdb_foreach_cb(list_pkgs_in_dict, &lpc);
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
 			rv = 0;
@@ -342,7 +342,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = xbps_pkgdb_foreach_pkg_cb(list_manual_pkgs, NULL);
+		rv = xbps_pkgdb_foreach_cb(list_manual_pkgs, NULL);
 
 	} else if (strcasecmp(argv[0], "show-revdeps") == 0) {
 		/*

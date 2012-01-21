@@ -103,7 +103,7 @@ int HIDDEN
 xbps_requiredby_pkg_remove(const char *pkgname)
 {
 	assert(pkgname != NULL);
-	return xbps_pkgdb_foreach_pkg_cb(remove_pkg_from_reqby, __UNCONST(pkgname));
+	return xbps_pkgdb_foreach_cb(remove_pkg_from_reqby, __UNCONST(pkgname));
 }
 
 int HIDDEN
