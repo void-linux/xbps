@@ -127,7 +127,7 @@
 /**
  * @def XBPS_FLAG_VERBOSE
  * Verbose flag that can be used in the function callbacks to alter
- * its behaviour. Must be set through the xbps_init::flags member.
+ * its behaviour. Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_VERBOSE		0x00000001
 
@@ -135,7 +135,7 @@
  * @def XBPS_FLAG_FORCE_CONFIGURE
  * Force flag used in xbps_configure_pkg(), if set the package(s)
  * will be reconfigured even if its state is XBPS_PKG_STATE_INSTALLED.
- * Must be set through the xbps_init::flags member.
+ * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_FORCE_CONFIGURE	0x00000002
 
@@ -143,7 +143,7 @@
  * @def XBPS_FLAG_FORCE_REMOVE_FILES
  * Force flag used in xbps_remove_pkg_files(), if set the package
  * files will be removed even if its SHA256 hash don't match.
- * Must be set through the xbps_init::flags member.
+ * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_FORCE_REMOVE_FILES	0x00000004
 
