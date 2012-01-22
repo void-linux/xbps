@@ -548,10 +548,14 @@ struct xbps_handle {
 	/**
 	 * @var flags
 	 *
-	 * Flags to be set globally, possible values:
-	 *
-	 * - XBPS_FLAG_VERBOSE
-	 * - XBPS_FLAG_FORCE
+	 * Flags to be set globally by ORing them, possible values:
+	 *  - XBPS_FLAG_VERBOSE
+	 *  - XBPS_FLAG_FORCE_CONFIGURE
+	 *  - XBPS_FLAG_FORCE_REMOVE_FILES
+	 *  - XBPS_FLAG_DEBUG
+	 *  - XBPS_FLAG_SYSLOG
+	 *  - XBPS_FLAG_INSTALL_AUTO
+	 *  - XBPS_FLAG_INSTALL_MANUAL
 	 */
 	int flags;
 };
