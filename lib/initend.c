@@ -40,6 +40,7 @@
  * using libxbps and finalize usage to release resources at the end.
  */
 static bool debug;
+static bool syslog_enabled;
 static bool xbps_initialized;
 static struct xbps_handle *xhp;
 
@@ -109,7 +110,8 @@ xbps_init(struct xbps_handle *xh)
 	assert(xh != NULL);
 
 	xhp = xh;
-	debug = xhp->debug;
+	if (xhp->flags & XBPS_FLAG_DEBUG)
+		debug = true;
 
 	if (xhp->conffile == NULL)
 		xhp->conffile = XBPS_CONF_DEF;
@@ -161,19 +163,24 @@ xbps_init(struct xbps_handle *xh)
 	xhp->cachedir = xhp->cachedir_priv;
 
 	if (xhp->cfg == NULL) {
-		xhp->syslog_enabled = true;
+		xhp->flags |= XBPS_FLAG_SYSLOG;
 		xhp->fetch_timeout = XBPS_FETCH_TIMEOUT;
 		xhp->transaction_frequency_flush = XBPS_TRANS_FLUSH;
 		cc = XBPS_FETCH_CACHECONN;
 		cch = XBPS_FETCH_CACHECONN_HOST;
 	} else {
-		xhp->syslog_enabled = cfg_getbool(xhp->cfg, "syslog");
+		syslog_enabled = cfg_getbool(xhp->cfg, "syslog");
+		if (syslog_enabled)
+			xhp->flags |= XBPS_FLAG_SYSLOG;
 		xhp->fetch_timeout = cfg_getint(xhp->cfg, "FetchTimeoutConnection");
 		cc = cfg_getint(xhp->cfg, "FetchCacheConnections");
 		cch = cfg_getint(xhp->cfg, "FetchCacheConnectionsPerHost");
 		xhp->transaction_frequency_flush =
 		    cfg_getint(xhp->cfg, "TransactionFrequencyFlush");
 	}
+	if (!syslog_enabled && (xhp->flags & XBPS_FLAG_SYSLOG))
+		syslog_enabled = true;
+
 	xbps_fetch_set_cache_connection(cc, cch);
 
 	xbps_dbg_printf("Rootdir=%s\n", xhp->rootdir);
@@ -181,7 +188,7 @@ xbps_init(struct xbps_handle *xh)
 	xbps_dbg_printf("FetchTimeout=%u\n", xhp->fetch_timeout);
 	xbps_dbg_printf("FetchCacheconn=%u\n", cc);
 	xbps_dbg_printf("FetchCacheconnHost=%u\n", cch);
-	xbps_dbg_printf("Syslog=%u\n", xhp->syslog_enabled);
+	xbps_dbg_printf("Syslog=%u\n", syslog_enabled);
 	xbps_dbg_printf("TransactionFrequencyFlush=%u\n",
 	    xhp->transaction_frequency_flush);
 

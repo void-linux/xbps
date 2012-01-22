@@ -97,9 +97,9 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 		goto out;
 	}
 	prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst);
-	if (xhp->install_reason_auto)
+	if (xhp->flags & XBPS_FLAG_INSTALL_AUTO)
 		autoinst = true;
-	else if (xhp->install_reason_manual)
+	else if (xhp->flags & XBPS_FLAG_INSTALL_MANUAL)
 		autoinst = false;
 
 	if (!prop_dictionary_set_bool(pkgd,

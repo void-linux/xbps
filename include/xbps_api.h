@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120122"
+#define XBPS_API_VERSION	"20120122-1"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -146,6 +146,33 @@
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_FORCE_REMOVE_FILES	0x00000004
+
+/**
+ * @def XBPS_FLAG_SYSLOG
+ * Enable syslog logging flag. To make clients aware that syslog
+ * will be used.
+ */
+#define XBPS_FLAG_SYSLOG		0x00000008
+
+/**
+ * @def XBPS_FLAG_INSTALL_AUTO
+ * Enabled automatic install mode for a package and all dependencies
+ * installed direct and indirectly.
+ */
+#define XBPS_FLAG_INSTALL_AUTO		0x00000010
+
+/**
+ * @def XBPS_FLAG_INSTALL_MANUAL
+ * Enabled manual install mode for a package and all dependencies
+ * installed direct and indirectly.
+ */
+#define XBPS_FLAG_INSTALL_MANUAL	0x00000020
+
+/**
+ * @def XBPS_FLAG_DEBUG
+ * Enable debug mode to output debugging printfs to stdout/stderr.
+ */
+#define XBPS_FLAG_DEBUG 		0x00000040
 
 /**
  * @def XBPS_FETCH_CACHECONN
@@ -527,37 +554,6 @@ struct xbps_handle {
 	 * - XBPS_FLAG_FORCE
 	 */
 	int flags;
-	/**
-	 * @var debug
-	 *
-	 * Set to true to enable debugging messages to stderr.
-	 */
-	bool debug;
-	/**
-	 * @var install_reason_auto
-	 *
-	 * Set to true to make installed or updated target package
-	 * (and its dependencies) marked with automatic installation,
-	 * thus it will be found as orphan if no packages are depending
-	 * on it.
-	 */
-	bool install_reason_auto;
-	/**
-	 * @var install_reason_manual
-	 *
-	 * Set to true to make installed or updated target package
-	 * (and its dependencies) marked with manual installation, thus
-	 * it will never will be found as orphan.
-	 */
-	bool install_reason_manual;
-	/**
-	 * @var syslog_enabled
-	 *
-	 * Set to true to make the client aware that some operations
-	 * shall be sent to the syslog daemon if the option has been
-	 * enabled in configuration file.
-	 */
-	bool syslog_enabled;
 };
 
 /**

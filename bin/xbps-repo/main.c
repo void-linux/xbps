@@ -56,8 +56,7 @@ main(int argc, char **argv)
 	struct repo_search_data *rsd = NULL;
 	prop_dictionary_t pkgd;
 	const char *rootdir, *cachedir, *conffile, *option;
-	int c, rv = 0;
-	bool debug = false;
+	int flags = 0, c, rv = 0;
 
 	rootdir = cachedir = conffile = option = NULL;
 
@@ -70,7 +69,7 @@ main(int argc, char **argv)
 			cachedir = optarg;
 			break;
 		case 'd':
-			debug = true;
+			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'o':
 			option = optarg;
@@ -98,7 +97,7 @@ main(int argc, char **argv)
 	 * Initialize XBPS subsystems.
 	 */
 	memset(&xh, 0, sizeof(xh));
-	xh.debug = debug;
+	xh.flags = flags;
 	xh.state_cb = state_cb;
 	xh.fetch_cb = fetch_file_progress_cb;
 	xh.fetch_cb_data = &xfer;

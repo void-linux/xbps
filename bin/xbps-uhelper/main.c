@@ -118,8 +118,8 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	const char *pkgn, *version, *rootdir = NULL, *confdir = NULL;
 	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
-	bool debug = false, in_chroot = false;
-	int i, c, rv = 0;
+	bool in_chroot = false;
+	int flags = 0, i, c, rv = 0;
 
 	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
 		switch (c) {
@@ -131,7 +131,7 @@ main(int argc, char **argv)
 			rootdir = optarg;
 			break;
 		case 'd':
-			debug = true;
+			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -157,7 +157,7 @@ main(int argc, char **argv)
 		* Initialize libxbps.
 		*/
 		memset(&xh, 0, sizeof(xh));
-		xh.debug = debug;
+		xh.flags = flags;
 		xh.fetch_cb = fetch_file_progress_cb;
 		xh.fetch_cb_data = &xfer;
 		xh.rootdir = rootdir;

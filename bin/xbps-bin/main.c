@@ -64,20 +64,18 @@ main(int argc, char **argv)
 	struct sigaction sa;
 	const char *rootdir, *cachedir, *conffile, *option;
 	int i, c, flags, rv;
-	bool yes, debug, reqby_force, force_rm_with_deps, recursive_rm;
-	bool install_auto, install_manual, show_download_pkglist_url;
-	bool reinstall;
+	bool yes, reqby_force, force_rm_with_deps, recursive_rm;
+	bool reinstall, show_download_pkglist_url;
 
 	rootdir = cachedir = conffile = option = NULL;
 	flags = rv = 0;
 	reqby_force = yes = force_rm_with_deps = false;
-	recursive_rm = debug = reinstall = false;
-	install_auto = install_manual = show_download_pkglist_url = false;
+	recursive_rm = reinstall = show_download_pkglist_url = false;
 
 	while ((c = getopt(argc, argv, "AC:c:dDFfMo:Rr:Vvy")) != -1) {
 		switch (c) {
 		case 'A':
-			install_auto = true;
+			flags |= XBPS_FLAG_INSTALL_AUTO;
 			break;
 		case 'C':
 			conffile = optarg;
@@ -86,7 +84,7 @@ main(int argc, char **argv)
 			cachedir = optarg;
 			break;
 		case 'd':
-			debug = true;
+			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'D':
 			show_download_pkglist_url = true;
@@ -100,7 +98,7 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_FORCE_REMOVE_FILES;
 			break;
 		case 'M':
-			install_manual = true;
+			flags |= XBPS_FLAG_INSTALL_MANUAL;
 			break;
 		case 'o':
 			option = optarg;
@@ -134,7 +132,8 @@ main(int argc, char **argv)
 		usage();
 
 	/* Specifying -A and -M is illegal */
-	if (install_manual && install_auto) {
+	if ((flags & XBPS_FLAG_INSTALL_AUTO) &&
+	    (flags & XBPS_FLAG_INSTALL_MANUAL)) {
 		xbps_error_printf("xbps-bin: -A and -M options cannot be "
 		    "used together!\n");
 		exit(EXIT_FAILURE);
@@ -144,7 +143,6 @@ main(int argc, char **argv)
 	 * Initialize libxbps.
 	 */
 	memset(&xh, 0, sizeof(xh));
-	xh.debug = debug;
 	xh.state_cb = state_cb;
 	xh.fetch_cb = fetch_file_progress_cb;
 	xh.fetch_cb_data = &xfer;
@@ -152,8 +150,6 @@ main(int argc, char **argv)
 	xh.cachedir = cachedir;
 	xh.conffile = conffile;
 	xh.flags = flags;
-	xh.install_reason_manual = install_manual;
-	xh.install_reason_auto = install_auto;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.unpack_cb = unpack_progress_cb_verbose;
 	else

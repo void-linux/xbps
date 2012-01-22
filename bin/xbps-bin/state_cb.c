@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,11 +36,14 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd;
 	const char *version;
+	bool syslog_enabled;
 
 	(void)cbdata;
 
-	if (xhp->syslog_enabled)
+	if (xhp->flags & XBPS_FLAG_SYSLOG) {
+		syslog_enabled = true;
 		openlog("xbps-bin", LOG_CONS, LOG_USER);
+	}
 
 	switch (xscd->state) {
 	/* notifications */
@@ -101,7 +104,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_INSTALL_DONE:
 		printf("Installed `%s-%s' successfully.\n",
 		    xscd->pkgname, xscd->version);
-		if (xhp->syslog_enabled)
+		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Installed `%s-%s' successfully "
 			    "(rootdir: %s).", xscd->pkgname, xscd->version,
 			    xhp->rootdir);
@@ -109,7 +112,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_UPDATE_DONE:
 		printf("Updated `%s' to `%s' successfully.\n",
 		    xscd->pkgname, xscd->version);
-		if (xhp->syslog_enabled)
+		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Updated `%s' to `%s' successfully "
 			    "(rootdir: %s).", xscd->pkgname, xscd->version,
 			    xhp->rootdir);
@@ -117,7 +120,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_REMOVE_DONE:
 		printf("Removed `%s-%s' successfully.\n",
 		    xscd->pkgname, xscd->version);
-		if (xhp->syslog_enabled)
+		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
 			    "(rootdir: %s).", xscd->pkgname, xscd->version,
 			    xhp->rootdir);
@@ -134,7 +137,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_REPOSYNC_FAIL:
 	case XBPS_STATE_CONFIG_FILE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
-		if (xhp->syslog_enabled)
+		if (syslog_enabled)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	case XBPS_STATE_REMOVE_FILE_FAIL:
@@ -145,7 +148,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 			return;
 
 		xbps_error_printf("%s\n", xscd->desc);
-		if (xhp->syslog_enabled)
+		if (syslog_enabled)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	default:

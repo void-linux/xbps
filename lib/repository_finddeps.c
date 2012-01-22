@@ -71,7 +71,7 @@ store_dependency(prop_dictionary_t transd,
 	if (!prop_array_add(array, repo_pkgd))
 		return EINVAL;
 
-	if (xhp->debug) {
+	if (xhp->flags & XBPS_FLAG_DEBUG) {
 		xbps_dbg_printf_append("\n");
 		xbps_dbg_printf(" ");
 		for (x = 0; x < *depth; x++)
@@ -211,7 +211,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			rv = EINVAL;
 			break;
 		}
-		if (xhp->debug) {
+		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf("");
 			for (x = 0; x < *depth; x++)
 				xbps_dbg_printf_append(" ");
@@ -419,7 +419,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			continue;
 		}
 		prop_object_release(curpkgd);
-		if (xhp->debug) {
+		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf("");
 			for (x = 0; x < *depth; x++)
 				xbps_dbg_printf_append(" ");
