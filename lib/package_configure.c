@@ -62,12 +62,11 @@ configure_pkgs_cb(prop_object_t obj, void *arg, bool *done)
 int
 xbps_configure_packages(bool flush)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	int rv;
 
 	rv = xbps_pkgdb_foreach_cb(configure_pkgs_cb, NULL);
 	if (rv == 0 && flush)
-		rv = xbps_pkgdb_update(xhp, true);
+		rv = xbps_pkgdb_update(true);
 
 	return rv;
 }
@@ -169,7 +168,7 @@ xbps_configure_pkg(const char *pkgname,
 	}
 	free(pkgver);
 	if (flush)
-		rv = xbps_pkgdb_update(xhp, true);
+		rv = xbps_pkgdb_update(true);
 
 	return rv;
 }

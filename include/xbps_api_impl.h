@@ -120,8 +120,7 @@ int HIDDEN xbps_remove_obsoletes(const char *,
  * @private
  * From lib/repository_finddeps.c
  */
-int HIDDEN xbps_repository_find_pkg_deps(prop_dictionary_t,
-					 prop_array_t,
+int HIDDEN xbps_repository_find_pkg_deps(struct xbps_handle *,
 					 prop_dictionary_t);
 
 /**
@@ -135,13 +134,13 @@ int HIDDEN xbps_requiredby_pkg_remove(const char *);
  * @private
  * From lib/transaction_sortdeps.c
  */
-int HIDDEN xbps_sort_pkg_deps(void);
+int HIDDEN xbps_transaction_sort_pkg_deps(struct xbps_handle *);
 
 /**
  * @private
  * From lib/transaction_dictionary.c
  */
-prop_dictionary_t HIDDEN xbps_transaction_dictionary_get(void);
+int HIDDEN xbps_transaction_init(struct xbps_handle *);
 
 /**
  * @private

@@ -180,9 +180,9 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 }
 
 int
-xbps_transaction_commit(prop_dictionary_t transd)
+xbps_transaction_commit(void)
 {
-	struct xbps_handle *xhp;
+	struct xbps_handle *xhp = xbps_handle_get();
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	size_t i;
@@ -190,11 +190,10 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	int rv = 0;
 	bool update, install;
 
-	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
+	assert(prop_object_type(xhp->transd) == PROP_TYPE_DICTIONARY);
 
 	update = install = false;
-	xhp = xbps_handle_get();
-	iter = xbps_array_iter_from_dict(transd, "packages");
+	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	if (iter == NULL)
 		return EINVAL;
 	/*
@@ -219,7 +218,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if ((xhp->transaction_frequency_flush > 0) &&
 		    (++i >= xhp->transaction_frequency_flush)) {
-			rv = xbps_pkgdb_update(xhp, true);
+			rv = xbps_pkgdb_update(true);
 			if (rv != 0 && rv != ENOENT)
 				goto out;
 
@@ -295,7 +294,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	prop_object_iterator_reset(iter);
 
 	/* force a flush now packages were removed/unpacked */
-	if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
+	if ((rv = xbps_pkgdb_update(true)) != 0)
 		goto out;
 
 	/* if there are no packages to install or update we are done */
@@ -310,7 +309,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		if (xhp->transaction_frequency_flush > 0 &&
 		    ++i >= xhp->transaction_frequency_flush) {
-			if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
+			if ((rv = xbps_pkgdb_update(true)) != 0)
 				goto out;
 
 			i = 0;
@@ -344,7 +343,7 @@ xbps_transaction_commit(prop_dictionary_t transd)
 	}
 
 	/* Force a flush now that packages are configured */
-	rv = xbps_pkgdb_update(xhp, true);
+	rv = xbps_pkgdb_update(true);
 out:
 	prop_object_iterator_release(iter);
 

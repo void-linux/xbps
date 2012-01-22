@@ -389,7 +389,7 @@ main(int argc, char **argv)
 			}
 		        xh.pkgdb = prop_array_copy(array);
 		        prop_object_release(dict);
-			rv = xbps_pkgdb_update(&xh, true);
+			rv = xbps_pkgdb_update(true);
 			if (rv == 0) {
 				printf("Migrated regpkgdb to pkgdb "
 				    "successfully.\n");

@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120120-1"
+#define XBPS_API_VERSION	"20120122"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -441,6 +441,13 @@ struct xbps_handle {
 	 */
 	prop_array_t pkgdb;
 	/**
+	 * @var transd;
+	 *
+	 * Proplib dictionary with transaction details, required by
+	 * xbps_transaction_commit().
+	 */
+	prop_dictionary_t transd;
+	/**
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
 	 */
@@ -735,14 +742,12 @@ bool xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
  * Updates the master package database (pkgdb) plist with new contents from
  * disk to the cached copy in memory.
  *
- * @param[in] xhp Pointer to our xbps_handle struct, as returned by
- * \a xbps_handle_get().
  * @param[in] flush If true the pkgdb plist contents in memory will
  * be flushed atomically to storage.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
+int xbps_pkgdb_update(bool flush);
 
 /*@}*/
 
@@ -1203,8 +1208,9 @@ bool xbps_remove_pkgname_from_array(prop_array_t array, const char *name);
  * @param[in] dict Proplib dictionary to be added in \a array.
  * @param[in] pkgname Package name to be matched.
  *
- * @return 0 on success, EINVAL if dictionary couldn't be set in
- * array or ENOENT if no match.
+ * @retval 0 success.
+ * @retval EINVAL Dictionary couldn't be set in array.
+ * @retval ENOENT No match.
  */
 int xbps_array_replace_dict_by_name(prop_array_t array,
 				    prop_dictionary_t dict,
@@ -1219,8 +1225,9 @@ int xbps_array_replace_dict_by_name(prop_array_t array,
  * @param[in] dict Proplib dictionary to be added in \a array.
  * @param[in] pattern Package pattern to be matched, i.e `foo>=0'.
  *
- * @return 0 on success, EINVAL id dictionary couldn't be set in the array
- * or ENOENT if no match.
+ * @retval 0 success.
+ * @retval EINVAL Dictionary couldn't be set in array.
+ * @retval ENOENT No match.
  */
 int xbps_array_replace_dict_by_pattern(prop_array_t array,
 				       prop_dictionary_t dict,
@@ -1336,9 +1343,11 @@ int xbps_transaction_update_packages(void);
  * @param[in] recursive If true, all packages that are currently depending
  * on the package to be removed, and if they are orphans, will be added.
  *
- * @return 0 on success, ENOENT if pkg is not installed, EEXIST if package
- * has reverse dependencies, EINVAL or ENXIO if a problem ocurred in the
- * process.
+ * @retval 0 success.
+ * @retval ENOENT Package is not installed.
+ * @retval EEXIST Package has reverse dependencies.
+ * @retval EINVAL
+ * @retval ENXIO A problem ocurred in the process.
  */
 int xbps_transaction_remove_pkg(const char *pkgname,
 				bool recursive);
@@ -1347,8 +1356,10 @@ int xbps_transaction_remove_pkg(const char *pkgname,
  * Finds all package orphans currently installed and adds them into
  * the transaction dictionary.
  *
- * @return 0 on succcess, ENOENT if no package orphans were found, ENXIO
- * or EINVAL if a problem ocurred in the process.
+ * @retval 0 success.
+ * @retval ENOENT No package orphans were found.
+ * @retval ENXIO
+ * @retval EINVAL A problem ocurred in the process.
  */
 int xbps_transaction_autoremove_pkgs(void);
 
@@ -1357,36 +1368,25 @@ int xbps_transaction_autoremove_pkgs(void);
  * Before returning the package list is sorted in the correct order
  * and total installed/download size for the transaction is computed.
  *
- * @return The proplib transaction dictionary on success, otherwise NULL
- * and errno is set appropiately. ENXIO if the transaction
- * dictionary and the missing deps array were not created. ENODEV if
- * there are missing dependencies or any other if there was an error
- * while sorting packages or computing the transaction size.
- *
- * @note
- *  - This function will set errno to ENXIO if xbps_transaction_install_pkg()
- *    or xbps_transaction_update_pkg() functions were not called previously.
+ * @retval 0 success.
+ * @retval ENXIO if transaction dictionary and missing deps array were not created,
+ *  due to xbps_transaction_install_pkg() or xbps_transaction_update_pkg() not
+ *  previously called.
+ * @retval ENODEV if there are missing dependencies in transaction ("missing_deps"
+ *  array of strings object in xhp->transd dictionary).
+ * @retval EINVAL There was an error sorting packages or computing the transaction
+ * sizes.
  */
-prop_dictionary_t xbps_transaction_prepare(void);
+int xbps_transaction_prepare(void);
 
 /**
- * Commit a transaction. The transaction dictionary contains all steps
- * to be executed in the transaction, as returned by xbps_transaction_prepare().
- *
- * @param[in] transd The transaction dictionary.
+ * Commit a transaction. The transaction dictionary in xhp->transd contains all
+ * steps to be executed in the transaction, as prepared by
+ * xbps_transaction_prepare().
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_transaction_commit(prop_dictionary_t transd);
-
-/**
- * Returns the missing deps array if xbps_transaction_install_pkg()
- * or xbps_transaction_update_pkg() failed to find required packages
- * in registered repositories.
- *
- * @return The proplib array, NULL if it couldn't be created.
- */
-prop_array_t xbps_transaction_missingdeps_get(void);
+int xbps_transaction_commit(void);
 
 /*@}*/
 
@@ -1445,13 +1445,10 @@ struct repository_pool_index {
  * Synchronizes the package index file for all remote repositories
  * as specified in the configuration file, repositories.plist.
  *
- * @param[in] xhp Pointer to a struct xbps_handle, as returned by
- * xbps_handle_get().
- *
  * @return 0 on success, ENOTSUP if no repositories were found in
  * the configuration file.
  */
-int xbps_repository_pool_sync(const struct xbps_handle *xhp);
+int xbps_repository_pool_sync(void);
 
 /**
  * Iterates over the repository pool and executes the \a fn function

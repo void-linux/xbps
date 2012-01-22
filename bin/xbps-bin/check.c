@@ -63,14 +63,13 @@ cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
 int
 check_pkg_integrity_all(void)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	struct checkpkg cpkg;
 	int rv;
 
 	memset(&cpkg, 0, sizeof(cpkg));
 	(void)xbps_pkgdb_foreach_cb(cb_pkg_integrity, &cpkg);
 	if (cpkg.flush) {
-		if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
+		if ((rv = xbps_pkgdb_update(true)) != 0) {
 			xbps_error_printf("failed to write pkgdb: %s\n",
 			    strerror(rv));
 			return rv;

@@ -181,8 +181,9 @@ xbps_repository_pool_release(struct xbps_handle *xhp)
 }
 
 int
-xbps_repository_pool_sync(const struct xbps_handle *xhp)
+xbps_repository_pool_sync(void)
 {
+	const struct xbps_handle *xhp = xbps_handle_get();
 	const char *repouri;
 	size_t i;
 	int rv;

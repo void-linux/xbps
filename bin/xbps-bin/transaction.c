@@ -368,30 +368,32 @@ remove_pkg(const char *pkgname, bool recursive)
 int
 exec_transaction(bool yes, bool show_download_urls)
 {
+	prop_array_t mdeps;
 	struct transaction *trans;
-	prop_array_t array;
+	struct xbps_handle *xhp = xbps_handle_get();
 	int rv = 0;
 
 	trans = calloc(1, sizeof(*trans));
 	if (trans == NULL)
 		return ENOMEM;
 
-	if ((trans->d = xbps_transaction_prepare()) == NULL) {
-		if (errno == ENODEV) {
+	if ((rv = xbps_transaction_prepare()) != 0) {
+		if (rv == ENODEV) {
+			mdeps =
+			    prop_dictionary_get(xhp->transd, "missing_deps");
 			/* missing packages */
-			array = xbps_transaction_missingdeps_get();
-			show_missing_deps(array);
-			rv = errno;
+			show_missing_deps(mdeps);
 			goto out;
 		}
 		xbps_dbg_printf("Empty transaction dictionary: %s\n",
 		    strerror(errno));
-		return errno;
+		return rv;
 	}
 	xbps_dbg_printf("Dictionary before transaction happens:\n");
-	xbps_dbg_printf_append("%s", prop_dictionary_externalize(trans->d));
+	xbps_dbg_printf_append("%s", prop_dictionary_externalize(xhp->transd));
 
-	trans->iter = xbps_array_iter_from_dict(trans->d, "packages");
+	trans->d = xhp->transd;
+	trans->iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	if (trans->iter == NULL) {
 		rv = errno;
 		xbps_error_printf("xbps-bin: error allocating array mem! (%s)\n",
@@ -420,8 +422,7 @@ exec_transaction(bool yes, bool show_download_urls)
 	/*
 	 * It's time to run the transaction!
 	 */
-	rv = xbps_transaction_commit(trans->d);
-	if (rv == 0) {
+	if ((rv = xbps_transaction_commit()) == 0) {
 		printf("\nxbps-bin: %u installed, %u updated, "
 		    "%u configured, %u removed.\n", trans->inst_pkgcnt,
 		    trans->up_pkgcnt, trans->cf_pkgcnt + trans->inst_pkgcnt,
@@ -430,8 +431,6 @@ exec_transaction(bool yes, bool show_download_urls)
 out:
 	if (trans->iter)
 		prop_object_iterator_release(trans->iter);
-	if (trans->d)
-		prop_object_release(trans->d);
 	if (trans)
 		free(trans);
 

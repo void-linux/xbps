@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,55 +52,8 @@
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 
-static prop_dictionary_t transd;
-static prop_array_t trans_mdeps;
-static bool transd_initialized;
-static bool trans_mdeps_initialized;
-
 static int
-create_transaction_dictionary(void)
-{
-	prop_array_t unsorted;
-
-	if (transd_initialized)
-		return 0;
-
-	transd = prop_dictionary_create();
-	if (transd == NULL)
-		return ENOMEM;
-
-        unsorted = prop_array_create();
-        if (unsorted == NULL) {
-		prop_object_release(transd);
-		return ENOMEM;
-	}
-
-        if (!xbps_add_obj_to_dict(transd, unsorted, "unsorted_deps")) {
-		prop_object_release(unsorted);
-		prop_object_release(transd);
-		return EINVAL;
-	}
-
-	transd_initialized = true;
-	return 0;
-}
-
-static int
-create_transaction_missingdeps(void)
-{
-	if (trans_mdeps_initialized)
-		return 0;
-
-	trans_mdeps = prop_array_create();
-	if (trans_mdeps == NULL)
-		return ENOMEM;
-
-	trans_mdeps_initialized = true;
-	return 0;
-}
-
-static int
-compute_transaction_stats(void)
+compute_transaction_stats(prop_dictionary_t transd)
 {
 	prop_dictionary_t pkg_metad;
 	prop_object_iterator_t iter;
@@ -229,74 +182,93 @@ out:
 	return rv;
 }
 
-prop_dictionary_t HIDDEN
-xbps_transaction_dictionary_get(void)
+int HIDDEN
+xbps_transaction_init(struct xbps_handle *xhp)
 {
-	if (create_transaction_dictionary() != 0)
-		return NULL;
+	prop_array_t unsorted, mdeps;
 
-	return transd;
+	if (xhp->transd != NULL)
+		return 0;
+
+	xhp->transd = prop_dictionary_create();
+	if (xhp->transd == NULL)
+		return ENOMEM;
+
+        unsorted = prop_array_create();
+        if (unsorted == NULL) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return ENOMEM;
+	}
+
+        if (!xbps_add_obj_to_dict(xhp->transd, unsorted, "unsorted_deps")) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
+	mdeps = prop_array_create();
+	if (mdeps == NULL) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return ENOMEM;
+	}
+	if (!xbps_add_obj_to_dict(xhp->transd, mdeps, "missing_deps")) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
+
+	return 0;
 }
 
-prop_array_t
-xbps_transaction_missingdeps_get(void)
-{
-	if (create_transaction_missingdeps() != 0)
-		return NULL;
-
-	return trans_mdeps;
-}
-
-prop_dictionary_t
+int
 xbps_transaction_prepare(void)
 {
+	prop_array_t mdeps;
+	struct xbps_handle *xhp = xbps_handle_get();
 	int rv = 0;
 
-	if (!transd_initialized && !trans_mdeps_initialized) {
-		errno = ENXIO;
-		return NULL;
-	}
+	if (xhp->transd == NULL)
+		return ENXIO;
+
 	/*
 	 * If there are missing deps bail out.
 	 */
-	if (prop_array_count(trans_mdeps) > 0) {
-		prop_object_release(transd);
-		errno = ENODEV;
-		return NULL;
-	}
+	mdeps = prop_dictionary_get(xhp->transd, "missing_deps");
+	if (prop_array_count(mdeps) > 0)
+		return ENODEV;
+
 	/*
 	 * Check for packages to be replaced.
 	 */
-	if ((rv = xbps_transaction_package_replace(transd)) != 0) {
-		errno = rv;
-		prop_object_release(transd);
-		prop_object_release(trans_mdeps);
-		return NULL;
+	if ((rv = xbps_transaction_package_replace(xhp->transd)) != 0) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return rv;
 	}
 	/*
 	 * Sort package dependencies if necessary.
 	 */
-	if ((rv = xbps_sort_pkg_deps()) != 0) {
-		errno = rv;
-		prop_object_release(transd);
-		prop_object_release(trans_mdeps);
-		return NULL;
+	if ((rv = xbps_transaction_sort_pkg_deps(xhp)) != 0) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return rv;
 	}
 	/*
 	 * Add transaction stats for total download/installed size,
 	 * number of packages to be installed, updated, configured
 	 * and removed to the transaction dictionary.
 	 */
-	if ((rv = compute_transaction_stats()) != 0) {
-		errno = rv;
-		prop_object_release(transd);
-		prop_object_release(trans_mdeps);
-		return NULL;
+	if ((rv = compute_transaction_stats(xhp->transd)) != 0) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return rv;
 	}
 	/*
 	 * The missing deps array is not necessary anymore.
 	 */
-	prop_object_release(trans_mdeps);
+	prop_dictionary_remove(xhp->transd, "missing_deps");
+	prop_dictionary_make_immutable(xhp->transd);
 
-	return prop_dictionary_copy(transd);
+	return 0;
 }

@@ -60,8 +60,8 @@ static int
 transaction_find_pkg(const char *pattern, int action)
 {
 	prop_dictionary_t pkg_pkgdb, pkg_repod = NULL;
-	prop_dictionary_t transd;
-	prop_array_t mdeps, unsorted;
+	prop_array_t unsorted;
+	struct xbps_handle *xhp = xbps_handle_get();
 	const char *pkgname, *pkgver, *repoloc, *repover, *instver, *reason;
 	int rv = 0;
 	bool bypattern, bestpkg;
@@ -125,21 +125,15 @@ transaction_find_pkg(const char *pattern, int action)
 	/*
 	 * Prepare transaction dictionary and missing deps array.
 	 */
-	if ((transd = xbps_transaction_dictionary_get()) == NULL) {
-		rv = EINVAL;
+	if ((rv = xbps_transaction_init(xhp)) != 0)
 		goto out;
-	}
-	if ((mdeps = xbps_transaction_missingdeps_get()) == NULL) {
-		rv = EINVAL;
-		goto out;
-	}
 
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
 	if (xbps_pkg_has_rundeps(pkg_repod)) {
-		rv = xbps_repository_find_pkg_deps(transd, mdeps, pkg_repod);
+		rv = xbps_repository_find_pkg_deps(xhp, pkg_repod);
 		if (rv != 0)
 			goto out;
 	}
@@ -174,7 +168,7 @@ transaction_find_pkg(const char *pattern, int action)
 	/*
 	 * Add required package dictionary into the unsorted array.
 	 */
-	unsorted = prop_dictionary_get(transd, "unsorted_deps");
+	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 	if (unsorted == NULL) {
 		rv = EINVAL;
 		goto out;
@@ -191,7 +185,7 @@ transaction_find_pkg(const char *pattern, int action)
 	    pkgver, repoloc);
 
 out:
-	if (prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY)
+	if (pkg_repod != NULL)
 		prop_object_release(pkg_repod);
 
 	return rv;
@@ -249,9 +243,10 @@ xbps_transaction_install_pkg(const char *pkgpattern)
 int
 xbps_transaction_remove_pkg(const char *pkgname, bool recursive)
 {
-	prop_dictionary_t transd, pkgd;
-	prop_array_t mdeps, orphans, orphans_pkg, unsorted, reqby;
+	prop_dictionary_t pkgd;
+	prop_array_t orphans, orphans_pkg, unsorted, reqby;
 	prop_object_t obj;
+	struct xbps_handle *xhp = xbps_handle_get();
 	const char *pkgver;
 	size_t count;
 	int rv = 0;
@@ -265,15 +260,10 @@ xbps_transaction_remove_pkg(const char *pkgname, bool recursive)
 	/*
 	 * Prepare transaction dictionary and missing deps array.
 	 */
-	if ((transd = xbps_transaction_dictionary_get()) == NULL) {
-		rv = ENXIO;
+	if ((rv = xbps_transaction_init(xhp)) != 0)
 		goto out;
-	}
-	if ((mdeps = xbps_transaction_missingdeps_get()) == NULL) {
-		rv = ENXIO;
-		goto out;
-	}
-	unsorted = prop_dictionary_get(transd, "unsorted_deps");
+
+	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 	if (!recursive)
 		goto rmpkg;
 	/*
@@ -329,9 +319,9 @@ out:
 int
 xbps_transaction_autoremove_pkgs(void)
 {
-	prop_dictionary_t transd;
-	prop_array_t orphans, mdeps, unsorted;
+	prop_array_t orphans, unsorted;
 	prop_object_t obj;
+	struct xbps_handle *xhp = xbps_handle_get();
 	const char *pkgver;
 	size_t count;
 	int rv = 0;
@@ -349,18 +339,12 @@ xbps_transaction_autoremove_pkgs(void)
 	/*
 	 * Prepare transaction dictionary and missing deps array.
 	 */
-	if ((transd = xbps_transaction_dictionary_get()) == NULL) {
-		rv = ENXIO;
+	if ((rv = xbps_transaction_init(xhp)) != 0)
 		goto out;
-	}
-	if ((mdeps = xbps_transaction_missingdeps_get()) == NULL) {
-		rv = ENXIO;
-		goto out;
-	}
 	/*
 	 * Add pkg orphan dictionary into the unsorted_deps array.
 	 */
-	unsorted = prop_dictionary_get(transd, "unsorted_deps");
+	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 	while (count--) {
 		obj = prop_array_get(orphans, count);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -371,7 +355,7 @@ xbps_transaction_autoremove_pkgs(void)
 		    pkgver);
 	}
 out:
-	if (prop_object_type(orphans) == PROP_TYPE_ARRAY)
+	if (orphans != NULL)
 		prop_object_release(orphans);
 	return rv;
 }

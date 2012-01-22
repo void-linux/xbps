@@ -172,25 +172,25 @@ out:
 #define MAX_DEPTH	512
 
 static int
-find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
-	       prop_array_t mrdeps,		/* missing rundeps array */
+find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
+	       prop_array_t trans_mdeps,	/* transaction missing deps array */
 	       prop_array_t pkg_rdeps_array,	/* current pkg rundeps array  */
 	       const char *curpkg,		/* current pkgver */
 	       size_t *depth)			/* max recursion depth */
 {
+	struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t curpkgd, tmpd;
 	prop_array_t curpkgrdeps;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	pkg_state_t state;
-	const struct xbps_handle *xhp = xbps_handle_get();
 	size_t x;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
 	char *pkgname;
 	int rv = 0;
 
 	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
-	assert(prop_object_type(mrdeps) == PROP_TYPE_ARRAY);
+	assert(prop_object_type(trans_mdeps) == PROP_TYPE_ARRAY);
 	assert(prop_object_type(pkg_rdeps_array) == PROP_TYPE_ARRAY);
 
 	if (*depth >= MAX_DEPTH)
@@ -335,15 +335,15 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		 * the array of unsorted dependencies, and check if the pattern
 		 * was matched.
 		 */
-		curpkgd = xbps_find_virtualpkg_conf_in_dict_by_pattern(transd,
-		    "unsorted_deps", reqpkg);
+		curpkgd = xbps_find_virtualpkg_conf_in_dict_by_pattern(
+		    transd, "unsorted_deps", reqpkg);
 		if (curpkgd == NULL) {
 			/*
 			 * Look for a real package matching pattern
 			 * if no match.
 			 */
-			curpkgd = xbps_find_pkg_in_dict_by_pattern(transd,
-			    "unsorted_deps", reqpkg);
+			curpkgd = xbps_find_pkg_in_dict_by_pattern(
+			    transd, "unsorted_deps", reqpkg);
 		}
 		if (curpkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(curpkgd,
@@ -364,7 +364,8 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		 */
 		curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true);
 		if (curpkgd == NULL) {
-			curpkgd = xbps_repository_pool_find_pkg(reqpkg, true, false);
+			curpkgd = xbps_repository_pool_find_pkg(reqpkg, true,
+			    false);
 			if (curpkgd == NULL) {
 				/* pkg not found, there was some error */
 				if (errno && errno != ENOENT) {
@@ -375,19 +376,21 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 					break;
 				}
 
-				rv = add_missing_reqdep(mrdeps, reqpkg);
+				rv = add_missing_reqdep(trans_mdeps, reqpkg);
 				if (rv != 0 && rv != EEXIST) {
 					xbps_dbg_printf_append("`%s': "
-					    "add_missing_reqdep failed %s\n", reqpkg);
+					    "add_missing_reqdep failed %s\n",
+					    reqpkg);
 					break;
 				} else if (rv == EEXIST) {
-					xbps_dbg_printf_append("`%s' missing dep "
-					    "already added.\n", reqpkg);
+					xbps_dbg_printf_append("`%s' missing "
+					    "dep already added.\n", reqpkg);
 					rv = 0;
 					continue;
 				} else {
 					xbps_dbg_printf_append("`%s' added "
-					    "into the missing deps array.\n", reqpkg);
+					    "into the missing deps array.\n",
+					    reqpkg);
 					continue;
 				}
 			}
@@ -428,7 +431,7 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 		 * Recursively find rundeps for current pkg dictionary.
 		 */
 		(*depth)++;
-		rv = find_repo_deps(transd, mrdeps, curpkgrdeps,
+		rv = find_repo_deps(transd, trans_mdeps, curpkgrdeps,
 		    pkgver_q, depth);
 		if (rv != 0) {
 			xbps_dbg_printf("Error checking %s for rundeps: %s\n",
@@ -443,17 +446,15 @@ find_repo_deps(prop_dictionary_t transd,	/* transaction dictionary */
 }
 
 int HIDDEN
-xbps_repository_find_pkg_deps(prop_dictionary_t transd,
-			      prop_array_t mdeps,
+xbps_repository_find_pkg_deps(struct xbps_handle *xhp,
 			      prop_dictionary_t repo_pkgd)
 {
-	prop_array_t pkg_rdeps;
+	prop_array_t mdeps, pkg_rdeps;
 	const char *pkgver;
 	size_t depth = 0;
 	int rv = 0;
 
-	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
-	assert(prop_object_type(mdeps) == PROP_TYPE_ARRAY);
+	assert(prop_object_type(xhp->transd) == PROP_TYPE_DICTIONARY);
 	assert(prop_object_type(repo_pkgd) == PROP_TYPE_DICTIONARY);
 
 	pkg_rdeps = prop_dictionary_get(repo_pkgd, "run_depends");
@@ -462,11 +463,12 @@ xbps_repository_find_pkg_deps(prop_dictionary_t transd,
 
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	xbps_dbg_printf("Finding required dependencies for '%s':\n", pkgver);
+	mdeps = prop_dictionary_get(xhp->transd, "missing_deps");
 	/*
 	 * This will find direct and indirect deps, if any of them is not
 	 * there it will be added into the missing_deps array.
 	 */
-	if ((rv = find_repo_deps(transd, mdeps, pkg_rdeps,
+	if ((rv = find_repo_deps(xhp->transd, mdeps, pkg_rdeps,
 	    pkgver, &depth)) != 0) {
 		xbps_dbg_printf("Error '%s' while checking rundeps!\n",
 		    strerror(rv));

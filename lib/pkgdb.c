@@ -64,7 +64,7 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 	if (xhp->pkgdb != NULL)
 		return 0;
 
-	if ((rv = xbps_pkgdb_update(xhp, false)) != 0) {
+	if ((rv = xbps_pkgdb_update(false)) != 0) {
 		if (rv != ENOENT)
 			xbps_dbg_printf("[pkgdb] cannot internalize "
 			    "pkgdb array: %s\n", strerror(rv));
@@ -77,8 +77,9 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 }
 
 int
-xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
+xbps_pkgdb_update(bool flush)
 {
+	struct xbps_handle *xhp = xbps_handle_get();
 	char *plist, *metadir;
 	int rv = 0;
 
@@ -213,7 +214,7 @@ xbps_pkgdb_remove_pkgd(const char *pkg, bool bypattern, bool flush)
 	if (!flush || !rv)
 		return rv;
 
-	if ((xbps_pkgdb_update(xhp, true)) != 0)
+	if ((xbps_pkgdb_update(true)) != 0)
 		return false;
 
 	return true;
@@ -239,7 +240,7 @@ xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
 	if (!flush)
 		return rv != 0 ? false : true;
 
-	if ((xbps_pkgdb_update(xhp, true)) != 0)
+	if ((xbps_pkgdb_update(true)) != 0)
 		return false;
 
 	return true;

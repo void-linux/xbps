@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -303,9 +303,8 @@ again:
 }
 
 int HIDDEN
-xbps_sort_pkg_deps(void)
+xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 {
-	prop_dictionary_t transd;
 	prop_array_t sorted, unsorted, rundeps;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
@@ -314,25 +313,22 @@ xbps_sort_pkg_deps(void)
 	const char *pkgname, *pkgver, *tract;
 	int rv = 0;
 
-	if ((transd = xbps_transaction_dictionary_get()) == NULL)
-		return EINVAL;
-
 	sorted = prop_array_create();
 	if (sorted == NULL)
 		return ENOMEM;
 	/*
 	 * Add sorted packages array into transaction dictionary (empty).
 	 */
-	if (!prop_dictionary_set(transd, "packages", sorted)) {
+	if (!prop_dictionary_set(xhp->transd, "packages", sorted)) {
 		rv = EINVAL;
 		goto out;
 	}
 	/*
 	 * All required deps are satisfied (already installed).
 	 */
-	unsorted = prop_dictionary_get(transd, "unsorted_deps");
+	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 	if (prop_array_count(unsorted) == 0) {
-		prop_dictionary_set(transd, "packages", sorted);
+		prop_dictionary_set(xhp->transd, "packages", sorted);
 		return 0;
 	}
 	/*
@@ -395,7 +391,7 @@ xbps_sort_pkg_deps(void)
 		/*
 		 * Sort package run-time dependencies for this package.
 		 */
-		if ((rv = sort_pkg_rundeps(transd, pd, rundeps)) != 0) {
+		if ((rv = sort_pkg_rundeps(xhp->transd, pd, rundeps)) != 0) {
 			pkgdep_end(NULL);
 			prop_object_iterator_release(iter);
 			goto out;
@@ -418,10 +414,10 @@ xbps_sort_pkg_deps(void)
 	 * We are done, all packages were sorted... remove the
 	 * temporary array with unsorted packages.
 	 */
-	prop_dictionary_remove(transd, "unsorted_deps");
+	prop_dictionary_remove(xhp->transd, "unsorted_deps");
 out:
 	if (rv != 0)
-		prop_dictionary_remove(transd, "packages");
+		prop_dictionary_remove(xhp->transd, "packages");
 
 	prop_object_release(sorted);
 
