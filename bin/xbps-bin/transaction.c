@@ -252,11 +252,11 @@ install_new_pkg(const char *pkg, bool reinstall)
 		pkgpatt = __UNCONST(pkg);
 	} else {
 		/*
-		 * If only pkgname has been specified, always append
-		 * '-[0-9]*' at the end, will be easier to parse.
+		 * If only pkgname has been specified, always make it
+		 * use a package pattern, i.e 'foo>=0'.
 		 */
 		pkgmatch = true;
-		pkgpatt = xbps_xasprintf("%s%s", pkg, "-[0-9]*");
+		pkgpatt = xbps_xasprintf("%s%s", pkg, ">=0");
 		if (pkgpatt == NULL)
 			return -1;
 	}
