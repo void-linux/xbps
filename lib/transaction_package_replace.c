@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011 Juan Romero Pardines.
+ * Copyright (c) 2011-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 	prop_dictionary_t instd, pkg_repod, reppkgd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pattern, *pkgname, *curpkgname;
+	const char *pattern, *pkgname, *curpkgname, *pkgver, *curpkgver;
 	bool instd_auto;
 	size_t idx;
 
@@ -75,16 +75,20 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 				if (instd == NULL)
 					continue;
 			}
-			xbps_dbg_printf("installed pkg to be replaced "
-			    "matched with `%s'\n", pattern);
+			prop_dictionary_get_cstring_nocopy(pkg_repod,
+			    "pkgname", &pkgname);
+			prop_dictionary_get_cstring_nocopy(pkg_repod,
+			    "pkgver", &pkgver);
+			prop_dictionary_get_cstring_nocopy(instd,
+			    "pkgname", &curpkgname);
+			prop_dictionary_get_cstring_nocopy(instd,
+			    "pkgver", &curpkgver);
+			xbps_dbg_printf("Package `%s' will be replaced by `%s', "
+			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 			/*
 			 * Check that we are not replacing the same package,
 			 * due to virtual packages.
 			 */
-			prop_dictionary_get_cstring_nocopy(pkg_repod,
-			    "pkgname", &pkgname);
-			prop_dictionary_get_cstring_nocopy(instd,
-			    "pkgname", &curpkgname);
 			if (strcmp(pkgname, curpkgname) == 0) {
 				xbps_dbg_printf("replaced and new package "
 				    "are equal (%s)\n", pkgname);
