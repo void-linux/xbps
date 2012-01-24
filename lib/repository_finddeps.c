@@ -72,7 +72,6 @@ store_dependency(prop_dictionary_t transd,
 		return EINVAL;
 
 	if (xhp->flags & XBPS_FLAG_DEBUG) {
-		xbps_dbg_printf_append("\n");
 		xbps_dbg_printf(" ");
 		for (x = 0; x < *depth; x++)
 			xbps_dbg_printf_append(" ");
@@ -215,7 +214,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			xbps_dbg_printf("");
 			for (x = 0; x < *depth; x++)
 				xbps_dbg_printf_append(" ");
-			xbps_dbg_printf_append("%s requires dependency '%s' ",
+			xbps_dbg_printf_append("%s requires dependency '%s': ",
 			    curpkg ? curpkg : " ", reqpkg);
 		}
 		/*
@@ -293,12 +292,8 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			if (rv == 0) {
 				/*
 				 * Package is installed but does not match
-				 * the dependency pattern, an update
-				 * needs to be installed.
+				 * the dependency pattern.
 				 */
-				xbps_dbg_printf_append("installed `%s', must "
-				    "be updated.\n", pkgver_q);
-				reason = "update";
 			} else if (rv == 1) {
 				rv = 0;
 				if (state == XBPS_PKG_STATE_UNPACKED) {
@@ -359,8 +354,9 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			}
 		}
 		/*
-		 * Pass 3: if required dependency is not in repository,
-		 * add pkg into the missing deps array and pass to next one.
+		 * Pass 3: find required dependency in repository pool.
+		 * If dependency does not match add pkg into the missing
+		 * deps array and pass to next one.
 		 */
 		curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true);
 		if (curpkgd == NULL) {
@@ -396,10 +392,40 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			}
 		}
 		/*
-		 * Set pkg transaction reason.
+		 * Pass 4: check if new dependency is already installed, due
+		 * to virtual packages.
 		 */
-		prop_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
 		prop_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
+		tmpd = xbps_find_pkg_dict_installed(pkgver_q, true);
+		if (tmpd == NULL)
+			tmpd = xbps_find_virtualpkg_dict_installed(pkgver_q, true);
+
+		if (tmpd == NULL) {
+			/* dependency not installed */
+			reason = "install";
+			xbps_dbg_printf_append("satisfied by `%s', "
+			    "installing...\n", pkgver_q);
+		} else {
+			/* dependency installed, check its state */
+			state = 0;
+			if ((rv = xbps_pkg_state_dictionary(tmpd, &state)) != 0) {
+				prop_object_release(tmpd);
+				xbps_dbg_printf("failed to check pkg state "
+				    "for `%s': %s\n", pkgver_q, strerror(rv));
+				break;
+			}
+			if (state == XBPS_PKG_STATE_INSTALLED) {
+				reason = "update";
+				xbps_dbg_printf_append("satisfied by `%s', "
+				    "updating...\n", pkgver_q);
+			} else if (state == XBPS_PKG_STATE_UNPACKED) {
+				reason = "install";
+				xbps_dbg_printf_append("satisfied by `%s', "
+				    "installing...\n", pkgver_q);
+			}
+			prop_object_release(tmpd);
+		}
+		prop_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
 		/*
 		 * Package is on repo, add it into the transaction dictionary.
 		 */
