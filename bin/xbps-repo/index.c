@@ -45,7 +45,7 @@ remove_missing_binpkg_entries(const char *repodir)
 {
 	prop_array_t array;
 	prop_dictionary_t pkgd;
-	const char *filen;
+	const char *filen, *pkgver;
 	char *binpkg, *plist;
 	size_t i;
 	int rv = 0;
@@ -70,6 +70,7 @@ remove_missing_binpkg_entries(const char *repodir)
 again:
 	for (i = 0; i < prop_array_count(array); i++) {
 		pkgd = prop_array_get(array, i);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
 		binpkg = xbps_xasprintf("%s/%s", repodir, filen);
 		if (binpkg == NULL) {
@@ -78,9 +79,8 @@ again:
 			break;
 		}
 		if (access(binpkg, R_OK) == -1) {
-			xbps_warn_printf("xbps-repo: `%s' unavailable, "
-			    "removing entry from index... (%s)\n",
-			    filen, strerror(errno));
+			printf("Removed obsolete entry for `%s' "
+			    "from index.\n", pkgver);
 			prop_array_remove(array, i);
 			free(binpkg);
 			found = true;
