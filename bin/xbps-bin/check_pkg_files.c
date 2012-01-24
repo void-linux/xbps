@@ -56,7 +56,7 @@ check_pkg_files(const char *pkgname, void *arg, bool *pkgdb_update)
 	const char *file, *sha256;
 	char *path;
 	int rv = 0;
-	bool broken = false, test_broken = false;
+	bool mutable, broken = false, test_broken = false;
 
 	(void)pkgdb_update;
 
@@ -85,9 +85,14 @@ check_pkg_files(const char *pkgname, void *arg, bool *pkgdb_update)
 				test_broken = true;
 				break;
 			case ERANGE:
-                                xbps_error_printf("%s: hash mismatch for %s.\n",
-				    pkgname, file);
-				test_broken = true;
+				mutable = false;
+				prop_dictionary_get_bool(obj,
+				    "mutable", &mutable);
+				if (!mutable) {
+					xbps_error_printf("%s: hash mismatch "
+					    "for %s.\n", pkgname, file);
+					test_broken = true;
+				}
 				break;
 			default:
 				xbps_error_printf(
