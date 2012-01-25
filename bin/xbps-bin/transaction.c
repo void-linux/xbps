@@ -224,7 +224,7 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 int
 autoremove_pkgs(bool yes)
 {
-	int rv = 0;
+	int rv;
 
 	if ((rv = xbps_transaction_autoremove_pkgs()) != 0) {
 		if (rv == ENOENT) {
@@ -242,48 +242,12 @@ autoremove_pkgs(bool yes)
 int
 install_new_pkg(const char *pkg, bool reinstall)
 {
-	prop_dictionary_t pkgd;
-	char *pkgname = NULL, *pkgpatt = NULL;
-	int rv = 0;
-	bool pkgmatch = false;
-	pkg_state_t state;
+	int rv;
 
-	if (xbps_pkgpattern_version(pkg)) {
-		pkgpatt = __UNCONST(pkg);
-	} else {
-		/*
-		 * If only pkgname has been specified, always make it
-		 * use a package pattern, i.e 'foo>=0'.
-		 */
-		pkgmatch = true;
-		pkgpatt = xbps_xasprintf("%s%s", pkg, ">=0");
-		if (pkgpatt == NULL)
-			return -1;
-	}
-	pkgname = xbps_pkgpattern_name(pkgpatt);
-	if (pkgname == NULL)
-		return -1;
-	/*
-	 * Find a package in a repository and prepare for installation.
-	 */
-	if ((pkgd = xbps_find_pkg_dict_installed(pkgname, false))) {
-		if ((rv = xbps_pkg_state_dictionary(pkgd, &state)) != 0) {
-			prop_object_release(pkgd);
-			goto out;
-		}
-		prop_object_release(pkgd);
-		if (state == XBPS_PKG_STATE_INSTALLED) {
-			if (!reinstall) {
-				printf("Package '%s' is already installed.\n",
-				    pkgname);
-				goto out;
-			}
-		} else {
-			printf("Package `%s' needs to be configured.\n", pkgname);
-		}
-	}
-	if ((rv = xbps_transaction_install_pkg(pkgpatt)) != 0) {
-		if (rv == ENOENT) {
+	if ((rv = xbps_transaction_install_pkg(pkg, reinstall)) != 0) {
+		if (rv == ENODEV) {
+			printf("Package `%s' already installed.\n", pkg);
+		} else if (rv == ENOENT) {
 			xbps_error_printf("xbps-bin: unable to locate '%s' in "
 			    "repository pool.\n", pkg);
 		} else if (rv == ENOTSUP) {
@@ -295,18 +259,13 @@ install_new_pkg(const char *pkg, bool reinstall)
 			rv = -1;
 		}
 	}
-out:
-	if (pkgmatch)
-		free(pkgpatt);
-	free(pkgname);
-
 	return rv;
 }
 
 int
 update_pkg(const char *pkgname)
 {
-	int rv = 0;
+	int rv;
 
 	rv = xbps_transaction_update_pkg(pkgname);
 	if (rv == EEXIST)

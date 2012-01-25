@@ -1,5 +1,12 @@
 xbps-0.12.0 (???):
 
+ * xbps-bin: the install target will now install the best package
+   version available in repository pool if just package name has
+   been specified, otherwise the first repository matching the
+   specified pattern wins, i.e:
+
+	$ xbps-bin install foo 'blah>=1.2<2.0'
+
  * Massive pkgdb API rototill. The xbps-uhelper command gained support
    for the 'updatepkgdb' target which will migrate old pkgdb
    format to the new 0.12 format. ALERT: make sure to execute

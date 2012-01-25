@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120124"
+#define XBPS_API_VERSION	"20120125"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -1304,15 +1304,23 @@ int xbps_remove_pkg_files(prop_dictionary_t dict,
 /*@{*/
 
 /**
- * Finds a package by a pattern and enqueues it into
- * the transaction dictionary for future use. The first repository in
- * the pool that matched the pattern wins.
+ * Finds a package by name or by pattern and enqueues it into
+ * the transaction dictionary for future use. If pkg is a pkgname, the best
+ * package version in repository pool will be queued, otherwise the first
+ * repository matching the package pattern wins.
  *
- * @param pkgpattern Package pattern, i.e `foo>=0' or 'foo<2.0'.
+ * @param str Package name or package pattern to match, i.e
+ * `foo>=0' or 'foo<1'.
+ * @param reinstall If true, package will be queued (if \a str matches)
+ * even if package is already installed.
  *
  * @return 0 on success, otherwise an errno value.
+ * @retval ENODEV Package is already installed (reinstall wasn't enabled).
+ * @retval ENOENT Package not matched in repository pool.
+ * @retval ENOTSUP No repositories are available.
+ * @retval EINVAL Any other error ocurred in the process.
  */
-int xbps_transaction_install_pkg(const char *pkgpattern);
+int xbps_transaction_install_pkg(const char *pkg, bool reinstall);
 
 /**
  * Marks a package as "going to be updated" in the transaction dictionary.

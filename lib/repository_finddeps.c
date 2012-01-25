@@ -214,7 +214,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			xbps_dbg_printf("");
 			for (x = 0; x < *depth; x++)
 				xbps_dbg_printf_append(" ");
-			xbps_dbg_printf_append("%s requires dependency '%s': ",
+			xbps_dbg_printf_append("%s: requires dependency '%s': ",
 			    curpkg ? curpkg : " ", reqpkg);
 		}
 		/*
@@ -258,7 +258,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 				break;
 			}
 			/* Required pkgdep not installed */
-			xbps_dbg_printf_append("not installed");
+			xbps_dbg_printf_append("not installed. ");
 			reason = "install";
 			state = XBPS_PKG_STATE_NOT_INSTALLED;
 		} else {
@@ -403,8 +403,8 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 		if (tmpd == NULL) {
 			/* dependency not installed */
 			reason = "install";
-			xbps_dbg_printf_append("satisfied by `%s', "
-			    "installing...\n", pkgver_q);
+			xbps_dbg_printf_append("(found `%s')\n",
+			    pkgver_q);
 		} else {
 			/* dependency installed, check its state */
 			state = 0;
@@ -416,12 +416,12 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			}
 			if (state == XBPS_PKG_STATE_INSTALLED) {
 				reason = "update";
-				xbps_dbg_printf_append("satisfied by `%s', "
-				    "updating...\n", pkgver_q);
+				xbps_dbg_printf_append("(found `%s')\n",
+				    pkgver_q);
 			} else if (state == XBPS_PKG_STATE_UNPACKED) {
 				reason = "install";
-				xbps_dbg_printf_append("satisfied by `%s', "
-				    "installing...\n", pkgver_q);
+				xbps_dbg_printf_append("(found `%s')\n",
+				    pkgver_q);
 			}
 			prop_object_release(tmpd);
 		}
