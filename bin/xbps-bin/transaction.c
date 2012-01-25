@@ -185,7 +185,7 @@ show_transaction_sizes(struct transaction *trans)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Total removed size:\t%6s\n", size);
+		printf("Total freed size:\t%6s\n", size);
 	}
 	printf("\n");
 

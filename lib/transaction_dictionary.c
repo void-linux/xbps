@@ -75,7 +75,9 @@ compute_transaction_stats(prop_dictionary_t transd)
 		 * Count number of pkgs to be removed, configured,
 		 * installed and updated.
 		 */
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+
 		if (strcmp(tract, "install") == 0)
 			inst_pkgcnt++;
 		else if (strcmp(tract, "update") == 0)
@@ -84,38 +86,7 @@ compute_transaction_stats(prop_dictionary_t transd)
 			cf_pkgcnt++;
 		else if (strcmp(tract, "remove") == 0)
 			rm_pkgcnt++;
-	}
 
-	if (inst_pkgcnt &&
-	    !prop_dictionary_set_uint32(transd, "total-install-pkgs",
-	    inst_pkgcnt)) {
-		rv = EINVAL;
-		goto out;
-	}
-	if (up_pkgcnt &&
-	    !prop_dictionary_set_uint32(transd, "total-update-pkgs",
-	    up_pkgcnt)) {
-		rv = EINVAL;
-		goto out;
-	}
-	if (cf_pkgcnt &&
-	    !prop_dictionary_set_uint32(transd, "total-configure-pkgs",
-	    cf_pkgcnt)) {
-		rv = EINVAL;
-		goto out;
-	}
-	if (rm_pkgcnt &&
-	    !prop_dictionary_set_uint32(transd, "total-remove-pkgs",
-	    rm_pkgcnt)) {
-		rv = EINVAL;
-		goto out;
-	}
-
-	prop_object_iterator_reset(iter);
-
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		/*
 		 * Only process pkgs to be installed or updated.
 		 */
@@ -146,9 +117,39 @@ compute_transaction_stats(prop_dictionary_t transd)
 			dlsize += tsize;
 		}
 	}
-	/* installed - removed */
-	if (rmsize > 0 && instsize > 0)
+
+	if (inst_pkgcnt &&
+	    !prop_dictionary_set_uint32(transd, "total-install-pkgs",
+	    inst_pkgcnt)) {
+		rv = EINVAL;
+		goto out;
+	}
+	if (up_pkgcnt &&
+	    !prop_dictionary_set_uint32(transd, "total-update-pkgs",
+	    up_pkgcnt)) {
+		rv = EINVAL;
+		goto out;
+	}
+	if (cf_pkgcnt &&
+	    !prop_dictionary_set_uint32(transd, "total-configure-pkgs",
+	    cf_pkgcnt)) {
+		rv = EINVAL;
+		goto out;
+	}
+	if (rm_pkgcnt &&
+	    !prop_dictionary_set_uint32(transd, "total-remove-pkgs",
+	    rm_pkgcnt)) {
+		rv = EINVAL;
+		goto out;
+	}
+
+	if (instsize > rmsize) {
 		instsize -= rmsize;
+		rmsize = 0;
+	} else if (rmsize > instsize) {
+		rmsize -= instsize;
+		instsize = 0;
+	}
 	/*
 	 * Add object in transaction dictionary with total installed
 	 * size that it will take.
