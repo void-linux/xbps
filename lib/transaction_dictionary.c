@@ -95,10 +95,11 @@ compute_transaction_stats(prop_dictionary_t transd)
 
 		tsize = 0;
 		/*
-		 * If removing a package, get installed_size from
-		 * pkg's metadata dictionary.
+		 * If removing or updating a package, get installed_size
+		 * from pkg's metadata dictionary.
 		 */
-		if (strcmp(tract, "remove") == 0) {
+		if ((strcmp(tract, "remove") == 0) ||
+		    (strcmp(tract, "update") == 0)) {
 			pkg_metad =
 			    xbps_dictionary_from_metadata_plist(pkgname,
 				XBPS_PKGPROPS);
@@ -108,7 +109,9 @@ compute_transaction_stats(prop_dictionary_t transd)
 			    "installed_size", &tsize);
 			prop_object_release(pkg_metad);
 			rmsize += tsize;
-		} else {
+		}
+		if ((strcmp(tract, "install") == 0) ||
+		    (strcmp(tract, "update") == 0)) {
 			prop_dictionary_get_uint64(obj,
 			    "installed_size", &tsize);
 			instsize += tsize;
@@ -149,7 +152,9 @@ compute_transaction_stats(prop_dictionary_t transd)
 	} else if (rmsize > instsize) {
 		rmsize -= instsize;
 		instsize = 0;
-	}
+	} else
+		instsize = rmsize = 0;
+
 	/*
 	 * Add object in transaction dictionary with total installed
 	 * size that it will take.
