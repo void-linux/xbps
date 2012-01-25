@@ -59,7 +59,7 @@ enum {
 static int
 transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 {
-	prop_dictionary_t pkg_pkgdb, pkg_repod = NULL;
+	prop_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
 	prop_array_t unsorted;
 	struct xbps_handle *xhp = xbps_handle_get();
 	const char *pkgname, *pkgver, *repoloc, *repover, *instver, *reason;
