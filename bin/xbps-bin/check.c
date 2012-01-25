@@ -54,6 +54,8 @@ cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
 	printf("Checking %s-%s ...\n", pkgname, version);
 	if (check_pkg_integrity(obj, pkgname, false, &flush) != 0)
 		cpkg->nbrokenpkgs++;
+	else
+		printf("\033[1A\033[K");
 
 	cpkg->flush = flush;
 	cpkg->npkgs++;
