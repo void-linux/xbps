@@ -40,7 +40,6 @@
  * using libxbps and finalize usage to release resources at the end.
  */
 static bool debug;
-static bool syslog_enabled;
 static bool xbps_initialized;
 static struct xbps_handle *xhp;
 
@@ -106,6 +105,7 @@ xbps_init(struct xbps_handle *xh)
 		CFG_END()
 	};
 	int rv, cc, cch;
+	bool syslog_enabled = false;
 
 	assert(xh != NULL);
 
@@ -169,8 +169,7 @@ xbps_init(struct xbps_handle *xh)
 		cc = XBPS_FETCH_CACHECONN;
 		cch = XBPS_FETCH_CACHECONN_HOST;
 	} else {
-		syslog_enabled = cfg_getbool(xhp->cfg, "syslog");
-		if (syslog_enabled)
+		if (cfg_getbool(xhp->cfg, "syslog"))
 			xhp->flags |= XBPS_FLAG_SYSLOG;
 		xhp->fetch_timeout = cfg_getint(xhp->cfg, "FetchTimeoutConnection");
 		cc = cfg_getint(xhp->cfg, "FetchCacheConnections");
@@ -178,7 +177,7 @@ xbps_init(struct xbps_handle *xh)
 		xhp->transaction_frequency_flush =
 		    cfg_getint(xhp->cfg, "TransactionFrequencyFlush");
 	}
-	if (!syslog_enabled && (xhp->flags & XBPS_FLAG_SYSLOG))
+	if (xhp->flags & XBPS_FLAG_SYSLOG)
 		syslog_enabled = true;
 
 	xbps_fetch_set_cache_connection(cc, cch);
