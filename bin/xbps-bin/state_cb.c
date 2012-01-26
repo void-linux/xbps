@@ -36,7 +36,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd;
 	const char *version;
-	bool syslog_enabled;
+	bool syslog_enabled = false;
 
 	(void)cbdata;
 
