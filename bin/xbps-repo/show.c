@@ -48,12 +48,9 @@ show_pkg_info_from_repolist(const char *pkgname, const char *option)
 {
 	prop_dictionary_t pkgd;
 
-	pkgd = xbps_repository_pool_find_virtualpkg(pkgname, false);
-	if (pkgd == NULL) {
-		pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
-		if (pkgd == NULL)
-			return errno;
-	}
+	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
+	if (pkgd == NULL)
+		return errno;
 
 	if (option)
 		show_pkg_info_one(pkgd, option);
@@ -71,12 +68,9 @@ show_pkg_deps_from_repolist(const char *pkgname)
 	prop_dictionary_t pkgd;
 	const char *ver, *repoloc;
 
-	pkgd = xbps_repository_pool_find_virtualpkg(pkgname, false);
-	if (pkgd == NULL) {
-		pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
-		if (pkgd == NULL)
-			return errno;
-	}
+	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
+	if (pkgd == NULL)
+		return errno;
 
 	prop_dictionary_get_cstring_nocopy(pkgd, "version", &ver);
 	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
