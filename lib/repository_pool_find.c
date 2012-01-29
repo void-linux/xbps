@@ -163,7 +163,7 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 	 * Compare current stored version against new
 	 * version from current package in repository.
 	 */
-	if (xbps_cmpver(repopkgver, rpf->bestpkgver)) {
+	if (xbps_cmpver(repopkgver, rpf->bestpkgver) == 1) {
 		xbps_dbg_printf("[rpool] Found best match '%s' (%s).\n",
 		    repopkgver, rpi->rpi_uri);
 		rpf->bestpkgver = repopkgver;
