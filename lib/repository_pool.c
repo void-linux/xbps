@@ -72,7 +72,7 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 	char *plist;
 	int rv = 0;
 
-	if (prop_object_type(xhp->repo_pool) == PROP_TYPE_ARRAY)
+	if (xhp->repo_pool != NULL)
 		return 0;
 	else if (xhp->cfg == NULL)
 		return ENOTSUP;
@@ -233,7 +233,7 @@ xbps_repository_pool_foreach(
 {
 	prop_dictionary_t d;
 	struct xbps_handle *xhp = xbps_handle_get();
-	struct repository_pool_index *rpi;
+	struct repository_pool_index rpi;
 	size_t i;
 	int rv = 0;
 	bool done = false;
@@ -251,21 +251,14 @@ xbps_repository_pool_foreach(
 	}
 	/* Iterate over repository pool */
 	for (i = 0; i < prop_array_count(xhp->repo_pool); i++) {
-		rpi = malloc(sizeof(*rpi));
-		if (rpi == NULL)
-			return ENOMEM;
-
 		d = prop_array_get(xhp->repo_pool, i);
-		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi->rpi_uri);
-		rpi->rpi_repo = prop_dictionary_get(d, "index");
-		rpi->rpi_index = i;
+		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi.rpi_uri);
+		rpi.rpi_repo = prop_dictionary_get(d, "index");
+		rpi.rpi_index = i;
 
-		rv = (*fn)(rpi, arg, &done);
-		if (rv != 0 || done) {
-			free(rpi);
+		rv = (*fn)(&rpi, arg, &done);
+		if (rv != 0 || done)
 			break;
-		}
-		free(rpi);
 	}
 
 	return rv;
