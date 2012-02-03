@@ -63,6 +63,24 @@ show_missing_deps(prop_array_t a)
 	}
 }
 
+static void
+show_actions(prop_object_iterator_t iter)
+{
+	prop_object_t obj;
+	const char *repoloc, *trans, *pkgname, *version;
+
+	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		printf("%s %s %s", pkgname, trans, version);
+		if (prop_dictionary_get_cstring_nocopy(obj,
+		    "repository", &repoloc))
+			printf(" %s", repoloc);
+		printf("\n");
+	}
+}
+
 static int
 show_binpkgs_url(prop_object_iterator_t iter)
 {
@@ -193,7 +211,7 @@ show_transaction_sizes(struct transaction *trans)
 }
 
 int
-autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
+autoupdate_pkgs(bool yes, bool dry_run, bool show_download_pkglist_url)
 {
 	int rv = 0;
 
@@ -218,11 +236,11 @@ autoupdate_pkgs(bool yes, bool show_download_pkglist_url)
 			return -1;
 		}
 	}
-	return exec_transaction(yes, show_download_pkglist_url);
+	return exec_transaction(yes, dry_run, show_download_pkglist_url);
 }
 
 int
-autoremove_pkgs(bool yes)
+autoremove_pkgs(bool yes, bool dry_run)
 {
 	int rv;
 
@@ -236,7 +254,7 @@ autoremove_pkgs(bool yes)
 			return rv;
 		}
 	}
-	return exec_transaction(yes, false);
+	return exec_transaction(yes, dry_run, false);
 }
 
 int
@@ -325,7 +343,7 @@ remove_pkg(const char *pkgname, bool recursive)
 }
 
 int
-exec_transaction(bool yes, bool show_download_urls)
+exec_transaction(bool yes, bool dry_run, bool show_download_urls)
 {
 	prop_array_t mdeps;
 	struct transaction *trans;
@@ -357,6 +375,13 @@ exec_transaction(bool yes, bool show_download_urls)
 		rv = errno;
 		xbps_error_printf("xbps-bin: error allocating array mem! (%s)\n",
 		    strerror(errno));
+		goto out;
+	}
+	/*
+	 * dry-run mode, show what would be done but don't run anything.
+	 */
+	if (dry_run) {
+		show_actions(trans->iter);
 		goto out;
 	}
 	/*

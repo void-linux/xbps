@@ -1,5 +1,16 @@
 xbps-0.12.0 (???):
 
+ * xbps-bin: new dry-run mode (-n) to show the actions that would
+   be executed in a transaction. This mode takes effect in the
+   autoremove, autoupdate, install, remove and update targets. Example:
+
+	$ xbps-bin -n install kernel-snapshot
+	kernel-snapshot install 3.3.0rc2 /mnt/xbps_builder/host/binpkgs/x86_64
+	$
+
+   The format is "%s %s %s[ %s]\n" for `pkgname', `action', `version'
+   and `repository' (optional).
+
  * xbps-bin: the install target will now install the best package
    version available in repository pool if just package name has
    been specified, otherwise the first repository matching the

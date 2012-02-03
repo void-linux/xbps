@@ -65,14 +65,14 @@ main(int argc, char **argv)
 	const char *rootdir, *cachedir, *conffile, *option;
 	int i, c, flags, rv;
 	bool yes, reqby_force, force_rm_with_deps, recursive_rm;
-	bool reinstall, show_download_pkglist_url;
+	bool reinstall, show_download_pkglist_url, dry_run;
 
 	rootdir = cachedir = conffile = option = NULL;
 	flags = rv = 0;
-	reqby_force = yes = force_rm_with_deps = false;
+	reqby_force = yes = dry_run = force_rm_with_deps = false;
 	recursive_rm = reinstall = show_download_pkglist_url = false;
 
-	while ((c = getopt(argc, argv, "AC:c:dDFfMo:Rr:Vvy")) != -1) {
+	while ((c = getopt(argc, argv, "AC:c:dDFfMno:Rr:Vvy")) != -1) {
 		switch (c) {
 		case 'A':
 			flags |= XBPS_FLAG_INSTALL_AUTO;
@@ -99,6 +99,9 @@ main(int argc, char **argv)
 			break;
 		case 'M':
 			flags |= XBPS_FLAG_INSTALL_MANUAL;
+			break;
+		case 'n':
+			dry_run = true;
 			break;
 		case 'o':
 			option = optarg;
@@ -214,7 +217,7 @@ main(int argc, char **argv)
 			if ((rv = install_new_pkg(argv[i], reinstall)) != 0)
 				goto out;
 
-		rv = exec_transaction(yes, show_download_pkglist_url);
+		rv = exec_transaction(yes, dry_run, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
@@ -225,7 +228,7 @@ main(int argc, char **argv)
 			if ((rv = update_pkg(argv[i])) != 0)
 				goto out;
 
-		rv = exec_transaction(yes, show_download_pkglist_url);
+		rv = exec_transaction(yes, dry_run, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a package. */
@@ -245,7 +248,7 @@ main(int argc, char **argv)
 			rv = EINVAL;
 			goto out;
 		}
-		rv = exec_transaction(yes, false);
+		rv = exec_transaction(yes, dry_run, false);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
@@ -286,7 +289,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = autoupdate_pkgs(yes, show_download_pkglist_url);
+		rv = autoupdate_pkgs(yes, dry_run, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "show-orphans") == 0) {
 		/*
@@ -307,7 +310,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		rv = autoremove_pkgs(yes);
+		rv = autoremove_pkgs(yes, dry_run);
 
 	} else if (strcasecmp(argv[0], "reconfigure") == 0) {
 		/*

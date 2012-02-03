@@ -1,4 +1,4 @@
-.Dd January 19, 2012
+.Dd February 3, 2012
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -86,6 +86,17 @@ and
 .Em update
 targets
 and target packages and its required dependencies will be matched.
+.It Fl n
+Enables dry-run mode.
+To show the actions that would be executed in a transaction.
+This mode takes effect in the
+.Em autoremove ,
+.Em autoupdate ,
+.Em install ,
+.Rm remove
+and
+.Em update
+targets.
 .It Fl o Ar key Op key2,...
 Used currently in the
 .Em show
