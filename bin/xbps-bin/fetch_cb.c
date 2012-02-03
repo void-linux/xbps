@@ -149,7 +149,6 @@ stat_display(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	    percentage, totsize);
 	fprintf(stderr," %s", stat_bps(xfpd, xfer));
 	fprintf(stderr," ETA: %s", stat_eta(xfpd, xfer));
-	fprintf(stderr,"\033[K");
 }
 
 void
@@ -168,8 +167,7 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	} else if (xfpd->cb_end) {
 		/* end transfer stats */
 		(void)xbps_humanize_number(size, (int64_t)xfpd->file_dloaded);
-		fprintf(stderr,"\rDownloaded %s for %s [avg rate: %s]",
+		fprintf(stderr,"\rDownloaded %s for %s [avg rate: %s]\r\n",
 		    size, xfpd->file_name, stat_bps(xfpd, xfer));
-		fprintf(stderr,"\033[K\n");
 	}
 }
