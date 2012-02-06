@@ -1309,7 +1309,7 @@ int xbps_remove_pkg_files(prop_dictionary_t dict,
  * package version in repository pool will be queued, otherwise the first
  * repository matching the package pattern wins.
  *
- * @param str Package name or package pattern to match, i.e
+ * @param pkg Package name or package pattern to match, i.e
  * `foo>=0' or 'foo<1'.
  * @param reinstall If true, package will be queued (if \a str matches)
  * even if package is already installed.
