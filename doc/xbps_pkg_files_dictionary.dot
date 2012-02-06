@@ -12,10 +12,12 @@ digraph pkg_files_dictionary {
 	files_dict1 [style=filled,label="dictionary[N+1]"];
 	files_dict -> file [label=string];
 	files_dict -> file_sha256 [label=string];
+	files_dict -> file_mutable [label=bool];
 	file -> file_value;
 	file_value [style=filled,fillcolor="yellowgreen",label="/bin/file"];
 	file_sha256 [label=sha256];
 	file_sha256 -> sha256_value;
+	file_mutable [style=filled,label=mutable];
 	sha256_value [style=filled,fillcolor="yellowgreen",label="..."];
 	files_dict1 -> files_dict1_objs [style=filled,label="objects"];
 	files_dict1_objs [style=filled,label="..."];
