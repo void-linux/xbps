@@ -1,4 +1,4 @@
-.Dd December 22, 2011
+.Dd February 5, 2012
 .Os Void GNU/Linux
 .Dt xbps-repo 8
 .Sh NAME
@@ -113,11 +113,13 @@ the info from target repository.
 Syncs the package index file for all registered remote repositories.
 The index file will be fetched if local and remote size/mtime do not match.
 .Sh FILES
-.Bl -tag -width  /var/db/xbps/<remoterepodir>/index.plist -compact
+.Bl -tag -width  /var/db/xbps/<repodir>/rindex-files.plist -compact
 .It Pa /etc/xbps/xbps.conf
 Default XBPS configuration file.
-.It Pa /var/db/xbps/<remoterepodir>/index.plist
+.It Pa /var/db/xbps/<repodir>/rindex.plist
 Remote repository package index file.
+.It Pa /var/db/xbps/<repodir>/rindex-files.plist
+Remote repository package files cache file.
 .It Pa /var/cache/xbps
 XBPS cache directory for downloaded binary packages.
 .Sh SEE ALSO
