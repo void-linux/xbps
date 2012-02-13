@@ -252,7 +252,7 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 		prop_object_release(pkgd);
 		if ((state == XBPS_PKG_STATE_INSTALLED) && !reinstall) {
 			/* error out if pkg installed and no reinstall */
-			return ENODEV;
+			return EEXIST;
 		}
 	}
 

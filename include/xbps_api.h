@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120129"
+#define XBPS_API_VERSION	"20120214"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -1315,7 +1315,7 @@ int xbps_remove_pkg_files(prop_dictionary_t dict,
  * even if package is already installed.
  *
  * @return 0 on success, otherwise an errno value.
- * @retval ENODEV Package is already installed (reinstall wasn't enabled).
+ * @retval EEXIST Package is already installed (reinstall wasn't enabled).
  * @retval ENOENT Package not matched in repository pool.
  * @retval ENOTSUP No repositories are available.
  * @retval EINVAL Any other error ocurred in the process.
