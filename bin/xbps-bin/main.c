@@ -39,13 +39,61 @@
 #include "../xbps-repo/defs.h"
 
 static void __attribute__((noreturn))
-usage(void)
+usage(bool fail)
 {
 	xbps_end();
 	fprintf(stderr,
-	    "Usage: xbps-bin [options] [target] [arguments]\n"
-	    "See xbps-bin(8) for more information.\n");
-	exit(EXIT_FAILURE);
+	    "Usage: xbps-bin [options] target [arguments]\n\n"
+	    "[options]\n"
+	    " -A           Enable Automatic installation (shown as orphan)\n"
+	    " -C file      Full path to configuration file\n"
+	    " -c cachedir  Full path to cachedir, to store downloaded binpkgs\n"
+	    " -d           Debug mode shown to stderr\n"
+	    " -D           Print URLs when packages need to be downloaded\n"
+	    " -F           Force package removal even if there are reverse dependencies\n"
+	    " -f           Force package installation, configuration or removal\n"
+	    " -h           Print usage help\n"
+	    " -M           Enable Manual installation\n"
+	    " -n           Dry-run mode\n"
+	    " -o key[,key] Print package metadata keys in show target\n"
+	    " -R           Remove recursively packages\n"
+	    " -r rootdir   Full path to rootdir\n"
+	    " -v           Verbose messages\n"
+	    " -y           Assume yes to all questions\n"
+	    " -V           Show XBPS version\n\n"
+	    "[targets]\n"
+	    " autoremove\n"
+	    "   Auto remove all package orphans.\n"
+	    " autoupdate\n"
+	    "   Auto update all packages to newest versions.\n"
+	    " check <pkgname|all>\n"
+	    "   Package integrity check for `pkgname' or `all' packages.\n"
+	    " find-files <pattern> [patterns]\n"
+	    "   Print package name/version for any pattern matched.\n"
+	    " install <pattern> [patterns]\n"
+	    "   Install package by specifying pkgnames or package patterns.\n"
+	    " list [state]\n"
+	    "   List installed packages, and optionally matching `state'.\n"
+	    "   Possible states: half-removed, half-unpacked, installed, unpacked.\n"
+	    " reconfigure <pkgname|all>\n"
+	    "   Reconfigure `pkgname' or `all' packages.\n"
+	    " remove <pkgname> [pkgnames]\n"
+	    "   Remove a list of packages.\n"
+	    " show <pkgname>\n"
+	    "   Print package information for `pkgname'.\n"
+	    " show-deps <pkgname>\n"
+	    "   Print package's required dependencies for `pkgname'.\n"
+	    " show-files <pkgname>\n"
+	    "   Print package's files list for `pkgname'.\n"
+	    " show-orphans\n"
+	    "   List all package orphans currently installed.\n"
+	    " show-revdeps <pkgname>\n"
+	    "   Print package's reverse dependencies for `pkgname'.\n"
+	    " update <pkgname> [pkgnames]\n"
+	    "   Update a list of packages by specifing its names.\n\n"
+	    "Refer to xbps-bin(8) for a more detailed description.\n");
+
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 static void __attribute__((noreturn))
@@ -72,7 +120,7 @@ main(int argc, char **argv)
 	reqby_force = yes = dry_run = force_rm_with_deps = false;
 	recursive_rm = reinstall = show_download_pkglist_url = false;
 
-	while ((c = getopt(argc, argv, "AC:c:dDFfMno:Rr:Vvy")) != -1) {
+	while ((c = getopt(argc, argv, "AC:c:dDFfhMno:Rr:Vvy")) != -1) {
 		switch (c) {
 		case 'A':
 			flags |= XBPS_FLAG_INSTALL_AUTO;
@@ -96,6 +144,9 @@ main(int argc, char **argv)
 			reinstall = true;
 			flags |= XBPS_FLAG_FORCE_CONFIGURE;
 			flags |= XBPS_FLAG_FORCE_REMOVE_FILES;
+			break;
+		case 'h':
+			usage(false);
 			break;
 		case 'M':
 			flags |= XBPS_FLAG_INSTALL_MANUAL;
@@ -124,7 +175,7 @@ main(int argc, char **argv)
 			break;
 		case '?':
 		default:
-			usage();
+			usage(true);
 		}
 	}
 
@@ -132,7 +183,7 @@ main(int argc, char **argv)
 	argv += optind;
 
 	if (argc < 1)
-		usage();
+		usage(true);
 
 	/* Specifying -A and -M is illegal */
 	if ((flags & XBPS_FLAG_INSTALL_AUTO) &&
@@ -175,7 +226,7 @@ main(int argc, char **argv)
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
 		if (argc < 1 || argc > 2)
-			usage();
+			usage(true);
 
 		lpc.check_state = true;
 		lpc.state = 0;
@@ -211,7 +262,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "install") == 0) {
 		/* Installs a binary package and required deps. */
 		if (argc < 2)
-			usage();
+			usage(true);
 
 		for (i = 1; i < argc; i++)
 			if ((rv = install_new_pkg(argv[i], reinstall)) != 0)
@@ -222,7 +273,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
 		if (argc < 2)
-			usage();
+			usage(true);
 
 		for (i = 1; i < argc; i++)
 			if ((rv = update_pkg(argv[i])) != 0)
@@ -233,7 +284,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a package. */
 		if (argc < 2)
-			usage();
+			usage(true);
 
 		for (i = 1; i < argc; i++) {
 			rv = remove_pkg(argv[i], recursive_rm);
@@ -253,7 +304,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
 		if (argc != 2)
-			usage();
+			usage(true);
 
 		rv = show_pkg_info_from_metadir(argv[1], option);
 		if (rv != 0) {
@@ -264,7 +315,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "show-files") == 0) {
 		/* Shows files installed by a binary package. */
 		if (argc != 2)
-			usage();
+			usage(true);
 
 		rv = show_pkg_files_from_metadir(argv[1]);
 		if (rv != 0) {
@@ -275,7 +326,7 @@ main(int argc, char **argv)
 	} else if (strcasecmp(argv[0], "check") == 0) {
 		/* Checks the integrity of an installed package. */
 		if (argc != 2)
-			usage();
+			usage(true);
 
 		if (strcasecmp(argv[1], "all") == 0)
 			rv = check_pkg_integrity_all();
@@ -287,7 +338,7 @@ main(int argc, char **argv)
 		 * To update all packages currently installed.
 		 */
 		if (argc != 1)
-			usage();
+			usage(true);
 
 		rv = autoupdate_pkgs(yes, dry_run, show_download_pkglist_url);
 
@@ -297,7 +348,7 @@ main(int argc, char **argv)
 		 * orphans.
 		 */
 		if (argc != 1)
-			usage();
+			usage(true);
 
 		rv = show_orphans();
 
@@ -308,7 +359,7 @@ main(int argc, char **argv)
 		 * on it currently.
 		 */
 		if (argc != 1)
-			usage();
+			usage(true);
 
 		rv = autoremove_pkgs(yes, dry_run);
 
@@ -317,7 +368,7 @@ main(int argc, char **argv)
 		 * Reconfigure a package.
 		 */
 		if (argc != 2)
-			usage();
+			usage(true);
 
 		if (strcasecmp(argv[1], "all") == 0)
 			rv = xbps_configure_packages(true);
@@ -329,7 +380,7 @@ main(int argc, char **argv)
 		 * Show dependencies for a package.
 		 */
 		if (argc != 2)
-			usage();
+			usage(true);
 
 		rv = show_pkg_deps(argv[1]);
 
@@ -339,7 +390,7 @@ main(int argc, char **argv)
 		 * dependencies.
 		 */
 		if (argc != 1)
-			usage();
+			usage(true);
 
 		rv = xbps_pkgdb_foreach_cb(list_manual_pkgs, NULL);
 
@@ -348,7 +399,7 @@ main(int argc, char **argv)
 		 * Show reverse dependencies for a package.
 		 */
 		if (argc != 2)
-			usage();
+			usage(true);
 
 		rv = show_pkg_reverse_deps(argv[1]);
 
@@ -358,12 +409,12 @@ main(int argc, char **argv)
 		 * packages.
 		 */
 		if (argc < 2)
-			usage();
+			usage(true);
 
 		rv = find_files_in_packages(argc, argv);
 
 	} else {
-		usage();
+		usage(true);
 	}
 
 out:
