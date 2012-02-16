@@ -815,7 +815,7 @@ bool
 _prop_object_externalize_write_file(const char *fname, const char *xml,
     size_t len, bool do_compress)
 {
-	gzFile *gzf = NULL;
+	gzFile gzf = NULL;
 	char tname[PATH_MAX];
 #ifndef HAVE_STRLCAT
 	char *otname;
