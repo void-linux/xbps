@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120214"
+#define XBPS_API_VERSION	"20120214-1"
 #define XBPS_VERSION		"0.12"
 
 /**
@@ -1524,16 +1524,14 @@ prop_dictionary_t
 
 /**
  * Iterate over the the repository pool and search for a metadata plist
- * file in a binary package named 'pkgname'. If a package is matched by
- * \a pkgname, the plist file \a plistf will be internalized into a
- * proplib dictionary.
+ * file in a binary package matching `pattern'. If a package is matched
+ * the plist file \a plistf will be internalized into a proplib dictionary.
  *
- * The first repository that has it wins and the loop is stopped.
- * This will work locally and remotely, thanks to libarchive and
- * libfetch!
+ * When \a pattern is a pkgname, the newest package available in repositories
+ * will be used. Otherwise the first repository matching \a pattern.
  *
- * @param[in] pkgname Package name to match.
- * @param[in] plistf Plist file name to match.
+ * @param[in] pattern Package name or package pattern to match, i.e `foo>=1.0'.
+ * @param[in] plistf Plist file name to match, i.e XBPS_PKGPROPS or XBPS_PKGFILES.
  *
  * @return An internalized proplib dictionary of \a plistf, otherwise NULL
  * and errno is set appropiately.
@@ -1543,7 +1541,7 @@ prop_dictionary_t
  * be found.
  */
 prop_dictionary_t
-	xbps_repository_pool_dictionary_metadata_plist(const char *pkgname,
+	xbps_repository_pool_dictionary_metadata_plist(const char *pattern,
 						       const char *plistf);
 
 /*@}*/

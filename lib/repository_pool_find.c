@@ -282,26 +282,29 @@ xbps_repository_pool_find_pkg_exact(const char *pkgver)
 }
 
 prop_dictionary_t
-xbps_repository_pool_dictionary_metadata_plist(const char *pkgname,
+xbps_repository_pool_dictionary_metadata_plist(const char *pattern,
 					       const char *plistf)
 {
 	prop_dictionary_t pkgd = NULL, plistd = NULL;
 	const char *repoloc;
 	char *url;
 
-	assert(pkgname != NULL);
+	assert(pattern != NULL);
 	assert(plistf != NULL);
-
 	/*
 	 * Iterate over the the repository pool and search for a plist file
-	 * in the binary package named 'pkgname'. The plist file will be
+	 * in the binary package matching `pattern'. The plist file will be
 	 * internalized to a proplib dictionary.
 	 *
 	 * The first repository that has it wins and the loop is stopped.
 	 * This will work locally and remotely, thanks to libarchive and
 	 * libfetch!
 	 */
-	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
+	if (xbps_pkgpattern_version(pattern))
+		pkgd = xbps_repository_pool_find_pkg(pattern, true, false);
+	else
+		pkgd = xbps_repository_pool_find_pkg(pattern, false, true);
+
 	if (pkgd == NULL)
 		goto out;
 
