@@ -44,11 +44,15 @@
 #include "defs.h"
 
 int
-show_pkg_info_from_repolist(const char *pkgname, const char *option)
+show_pkg_info_from_repolist(const char *pattern, const char *option)
 {
 	prop_dictionary_t pkgd;
 
-	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
+	if (xbps_pkgpattern_version(pattern))
+		pkgd = xbps_repository_pool_find_pkg(pattern, true, false);
+	else
+		pkgd = xbps_repository_pool_find_pkg(pattern, false, true);
+
 	if (pkgd == NULL)
 		return errno;
 
@@ -63,12 +67,16 @@ show_pkg_info_from_repolist(const char *pkgname, const char *option)
 }
 
 int
-show_pkg_deps_from_repolist(const char *pkgname)
+show_pkg_deps_from_repolist(const char *pattern)
 {
 	prop_dictionary_t pkgd;
 	const char *ver, *repoloc;
 
-	pkgd = xbps_repository_pool_find_pkg(pkgname, false, false);
+	if (xbps_pkgpattern_version(pattern))
+		pkgd = xbps_repository_pool_find_pkg(pattern, true, false);
+	else
+		pkgd = xbps_repository_pool_find_pkg(pattern, false, true);
+
 	if (pkgd == NULL)
 		return errno;
 
