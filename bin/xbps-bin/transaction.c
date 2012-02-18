@@ -267,7 +267,7 @@ install_new_pkg(const char *pkg, bool reinstall)
 	int rv;
 
 	if ((rv = xbps_transaction_install_pkg(pkg, reinstall)) != 0) {
-		if (rv == ENODEV) {
+		if (rv == EEXIST) {
 			printf("Package `%s' already installed.\n", pkg);
 		} else if (rv == ENOENT) {
 			xbps_error_printf("xbps-bin: unable to locate '%s' in "
