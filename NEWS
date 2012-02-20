@@ -1,4 +1,4 @@
-xbps-0.13.0 (???):
+xbps-0.13.0 (2012-02-20):
 
  * libxbps: skip checking for obsolete files if a package in a transaction
    replaces another one that is going to be updated. In such cases that means
