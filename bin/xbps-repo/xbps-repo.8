@@ -1,4 +1,4 @@
-.Dd February 5, 2012
+.Dd February 20, 2012
 .Os Void GNU/Linux
 .Dt xbps-repo 8
 .Sh NAME
@@ -88,21 +88,31 @@ or
 .Em description
 values in repository pool. Please note that patterns are matched in case
 insensitive mode. Multiple patterns can be specified as arguments.
-.It Sy show Ar pkgname
-Shows information about binary package
-.Em pkgname .
-This will print the size it takes in filesystem, description, maintainer,
-architecture and other information. The first repository in the pool wins.
-.It Sy show-deps Ar pkgname
-Shows run time dependencies for the binary package
-.Ar pkgname .
-The first repository in the pool wins.
-.It Sy show-files Ar pkgname
-Shows the file list for the binary package
-.Ar pkgname .
-The first repository containing the matching
+.It Sy show Ar pkgname | pkgpattern
+Shows information for binary package
 .Ar pkgname
-in the pool wins.
+or a package matching
+.Ar pkgpattern .
+This will print the size it takes in filesystem, description, maintainer,
+architecture and other information. If specifying a pkgname, the newest
+version available in repositories will be shown, otherwise the first
+repository matching the pkgpattern will be used.
+.It Sy show-deps Ar pkgname | pkgpattern
+Shows run time dependencies for binary package
+.Ar pkgname
+or a package matching
+.Ar pkgpattern .
+The same rules than in the
+.Em show
+target also apply here.
+.It Sy show-files Ar pkgname | pkgpattern
+Shows the file list for the binary package
+.Ar pkgname
+or a package matching
+.Ar pkgpattern .
+The same rules than in the
+.Em show
+target also apply here.
 .Em NOTE :
 if a remote repository is the winner and binary package is not available in
 .Em cachedir ,
