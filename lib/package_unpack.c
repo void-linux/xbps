@@ -164,13 +164,14 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	const char *entry_pname, *transact, *pkgname, *version, *pkgver, *fname;
 	char *buf = NULL, *pkgfilesd = NULL;
 	int rv, flags;
-	bool preserve, update, conf_file, file_exists;
+	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
 
-	preserve = update = conf_file = file_exists = false;
+	preserve = update = conf_file = file_exists = skip_obsoletes = false;
 	prop_dictionary_get_bool(pkg_repod, "preserve", &preserve);
+	prop_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
 	prop_dictionary_get_cstring_nocopy(pkg_repod,
 	    "transaction", &transact);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
@@ -474,8 +475,10 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		goto out;
 	}
 	/*
-	 * On pkgs that set the preserve keyword or while installing
-	 * new packages, do not check for obsolete files.
+	 * Skip checking for obsolete files on:
+	 *  - New package installation.
+	 *  - Package with "preserve" keyword.
+	 *  - Package with "skip-obsoletes" keyword.
 	 */
 	pkgfilesd = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
@@ -483,7 +486,7 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		rv = ENOMEM;
 		goto out;
 	}
-	if (preserve || !update)
+	if (skip_obsoletes || preserve || !update)
 		goto out1;
 	/*
 	 * Check for obsolete files.

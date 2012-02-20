@@ -1,4 +1,9 @@
-xbps-0.12.1 (2012-02-14):
+xbps-0.13.0 (???):
+
+ * libxbps: skip checking for obsolete files if a package in a transaction
+   replaces another one that is going to be updated. In such cases that means
+   new package now owns some files previously owned by the package to be
+   updated, therefore the updated package must not check for obsolete files.
 
  * xbps-repo(8): the `show', `show-deps' and `show-files' targets now accept
    package patterns, i.e "xbps-repo show 'foo>=2.0'". If only a `pkgname`

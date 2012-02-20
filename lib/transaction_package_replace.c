@@ -118,6 +118,8 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 				}
 				prop_dictionary_set_bool(reppkgd,
 				    "automatic-install", instd_auto);
+				prop_dictionary_set_bool(reppkgd,
+				    "skip-obsoletes", true);
 				xbps_array_replace_dict_by_name(transd_unsorted,
 				   reppkgd, curpkgname);
 			}
