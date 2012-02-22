@@ -40,7 +40,6 @@ struct repo_pool_fpkg {
 	prop_dictionary_t pkgd;
 	const char *pattern;
 	const char *bestpkgver;
-	const char *repo_bestmatch;
 	bool bypattern;
 	bool exact;
 };
@@ -83,10 +82,6 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	assert(rpi != NULL);
 
 	if (rpf->exact) {
-		if (rpf->repo_bestmatch != NULL) {
-			if (strcmp(rpf->repo_bestmatch, rpi->rpi_uri))
-				return 0;
-		}
 		/* exact match by pkgver */
 		rpf->pkgd = xbps_find_pkg_in_array_by_pkgver(rpi->rpi_repo,
 		    rpf->pattern);
@@ -130,19 +125,20 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 {
 	struct repo_pool_fpkg *rpf = arg;
 	const char *repopkgver;
+	prop_dictionary_t pkgd;
 
 	assert(rpi != NULL);
 
 	(void)done;
 
 	if (rpf->bypattern) {
-		rpf->pkgd = xbps_find_pkg_in_array_by_pattern(rpi->rpi_repo,
+		pkgd = xbps_find_pkg_in_array_by_pattern(rpi->rpi_repo,
 		    rpf->pattern);
 	} else {
-		rpf->pkgd = xbps_find_pkg_in_array_by_name(rpi->rpi_repo,
+		pkgd = xbps_find_pkg_in_array_by_name(rpi->rpi_repo,
 		    rpf->pattern);
 	}
-	if (rpf->pkgd == NULL) {
+	if (pkgd == NULL) {
 		if (errno && errno != ENOENT)
 			return errno;
 
@@ -150,13 +146,14 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 		    "'%s'.\n", rpf->pattern, rpi->rpi_uri);
 		return 0;
 	}
-	prop_dictionary_get_cstring_nocopy(rpf->pkgd,
+	prop_dictionary_get_cstring_nocopy(pkgd,
 	    "pkgver", &repopkgver);
 	if (rpf->bestpkgver == NULL) {
 		xbps_dbg_printf("[rpool] Found best match '%s' (%s).\n",
 		    repopkgver, rpi->rpi_uri);
+		rpf->pkgd = pkgd;
+		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->rpi_uri);
 		rpf->bestpkgver = repopkgver;
-		rpf->repo_bestmatch = rpi->rpi_uri;
 		return 0;
 	}
 	/*
@@ -166,8 +163,9 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 	if (xbps_cmpver(repopkgver, rpf->bestpkgver) == 1) {
 		xbps_dbg_printf("[rpool] Found best match '%s' (%s).\n",
 		    repopkgver, rpi->rpi_uri);
+		rpf->pkgd = pkgd;
+		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->rpi_uri);
 		rpf->bestpkgver = repopkgver;
-		rpf->repo_bestmatch = rpi->rpi_uri;
 	}
 	return 0;
 }
@@ -190,7 +188,6 @@ repo_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
 	rpf->exact = exact;
 	rpf->pkgd = NULL;
 	rpf->bestpkgver = NULL;
-	rpf->repo_bestmatch = NULL;
 
 	if (exact) {
 		/*
@@ -207,10 +204,6 @@ repo_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
 		rv = xbps_repository_pool_foreach(repo_find_best_pkg_cb, rpf);
 		if (rv != 0)
 			errno = rv;
-
-		if (rpf->bestpkgver != NULL)
-			rpf->pkgd =
-			    xbps_repository_pool_find_pkg_exact(rpf->bestpkgver);
 	} else {
 		if (virtual) {
 			/*
