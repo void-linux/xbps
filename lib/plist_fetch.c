@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * Copyright (c) 2008, 2009 Joerg Sonnenberger <joerg (at) NetBSD.org>
  * All rights reserved.
  *
@@ -107,7 +107,9 @@ open_archive_by_url(struct url *url)
 		free(f);
 		return NULL;
 	}
-	archive_read_support_compression_all(a);
+	archive_read_support_compression_gzip(a);
+	archive_read_support_compression_bzip2(a);
+	archive_read_support_compression_xz(a);
 	archive_read_support_format_tar(a);
 
 	if (archive_read_open(a, f, fetch_archive_open, fetch_archive_read,
@@ -129,7 +131,9 @@ open_archive(const char *url)
 		if ((a = archive_read_new()) == NULL)
 			return NULL;
 
-		archive_read_support_compression_all(a);
+		archive_read_support_compression_gzip(a);
+		archive_read_support_compression_bzip2(a);
+		archive_read_support_compression_xz(a);
 		archive_read_support_format_tar(a);
 
 		if (archive_read_open_filename(a, url,

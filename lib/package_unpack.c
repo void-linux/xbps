@@ -579,9 +579,11 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 		return ENOMEM;
 	}
 	/*
-	 * Enable support for tar format and all compression methods.
+	 * Enable support for tar format and gzip/bzip2/lzma compression methods.
 	 */
-	archive_read_support_compression_all(ar);
+	archive_read_support_compression_gzip(ar);
+	archive_read_support_compression_bzip2(ar);
+	archive_read_support_compression_xz(ar);
 	archive_read_support_format_tar(ar);
 
 	if (archive_read_open_filename(ar, bpkg, ARCHIVE_READ_BLOCKSIZE) != 0) {
