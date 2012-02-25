@@ -240,8 +240,8 @@ main(int argc, char **argv)
 			else if (strcmp(argv[1], "half-removed") == 0)
 				lpc.state = XBPS_PKG_STATE_HALF_REMOVED;
 			else {
-				fprintf(stderr,
-				    "E: invalid state `%s'. Accepted values: "
+				xbps_error_printf(
+				    "invalid state `%s'. Accepted values: "
 				    "half-removed, unpacked, half-unpacked, "
 				    "installed [default]\n", argv[1]);
 				rv = -1;

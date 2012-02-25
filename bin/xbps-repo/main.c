@@ -199,7 +199,7 @@ main(int argc, char **argv)
 
 		rv = show_pkg_info_from_repolist(argv[1], option);
 		if (rv == ENOENT) {
-			printf("Unable to locate package "
+			xbps_error_printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);
 		} else if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
@@ -215,7 +215,7 @@ main(int argc, char **argv)
 
 		rv = show_pkg_deps_from_repolist(argv[1]);
 		if (rv == ENOENT) {
-			printf("Unable to locate package "
+			xbps_error_printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);
 		} else if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
@@ -236,7 +236,7 @@ main(int argc, char **argv)
 				xbps_error_printf("xbps-repo: no repositories "
 				    "currently registered!\n");
 			} else if (errno == ENOENT) {
-				printf("Unable to locate package `%s' "
+				xbps_error_printf("Unable to locate package `%s' "
 				    "in repository pool.\n", argv[1]);
 			} else {
 				xbps_error_printf("xbps-repo: unexpected "
