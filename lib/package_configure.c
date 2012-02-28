@@ -46,26 +46,27 @@
  * member, the package (or packages) will be reconfigured even if its
  * state is XBPS_PKG_STATE_INSTALLED.
  */
-static int
-configure_pkgs_cb(prop_object_t obj, void *arg, bool *done)
-{
-	const char *pkgname, *version;
-
-	(void)arg;
-	(void)done;
-
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-	return xbps_configure_pkg(pkgname, version, true, false, false);
-}
-
 int
 xbps_configure_packages(bool flush)
 {
+	struct xbps_handle *xhp = xbps_handle_get();
+	prop_object_t obj;
+	const char *pkgname, *version;
+	size_t i;
 	int rv;
 
-	rv = xbps_pkgdb_foreach_cb(configure_pkgs_cb, NULL);
-	if (rv == 0 && flush)
+	if ((rv = xbps_pkgdb_init(xhp)) != 0)
+		return rv;
+
+	for (i = 0; i < prop_array_count(xhp->pkgdb); i++) {
+		obj = prop_array_get(xhp->pkgdb, i);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		rv = xbps_configure_pkg(pkgname, version, true, false, false);
+		if (rv != 0)
+			break;
+	}
+	if (flush)
 		rv = xbps_pkgdb_update(true);
 
 	return rv;

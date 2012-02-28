@@ -1,5 +1,7 @@
 xbps-0.14 (???):
 
+ * Fixed 'xbps-bin reconfigure all' (regression added in 0.13).
+
  * While resolving dependencies check if required dependency is matched
    any virtual package already added in transaction, on match use it.
 
