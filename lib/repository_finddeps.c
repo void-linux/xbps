@@ -326,19 +326,27 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			}
 		}
 		/*
-		 * Pass 2: check if required dependency was already added in
-		 * the array of unsorted dependencies, and check if the pattern
-		 * was matched.
+		 * Pass 2:
+		 * check if required dependency was already added
+		 * in the transaction.
+		 *
+		 * 1/3: match any virtual pkg in configuration file.
 		 */
 		curpkgd = xbps_find_virtualpkg_conf_in_dict_by_pattern(
 		    transd, "unsorted_deps", reqpkg);
 		if (curpkgd == NULL) {
 			/*
-			 * Look for a real package matching pattern
-			 * if no match.
+			 * 2/3: match any virtual pkg in transaction.
 			 */
-			curpkgd = xbps_find_pkg_in_dict_by_pattern(
+			curpkgd = xbps_find_virtualpkg_in_dict_by_pattern(
 			    transd, "unsorted_deps", reqpkg);
+			if (curpkgd == NULL) {
+				/*
+				 * 3/3: match a real pkg in transaction.
+				 */
+				curpkgd = xbps_find_pkg_in_dict_by_pattern(
+				    transd, "unsorted_deps", reqpkg);
+			}
 		}
 		if (curpkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(curpkgd,
