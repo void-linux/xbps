@@ -1,4 +1,4 @@
-xbps-0.14 (???):
+xbps-0.14 (2012-02-28):
 
  * Fixed 'xbps-bin reconfigure all' (regression added in 0.13).
 
