@@ -130,7 +130,7 @@ xbps_init(struct xbps_handle *xh)
 				 */
 				return rv;
 			}
-			errno = 0;
+			xhp->conffile = NULL;
 		} else if (rv == CFG_PARSE_ERROR) {
 			/*
 			 * Parser error from configuration file.
@@ -139,7 +139,7 @@ xbps_init(struct xbps_handle *xh)
 		}
 	}
 	xbps_dbg_printf("Configuration file: %s\n",
-	    xhp->conffile ? xhp->conffile : "unset");
+	    xhp->conffile ? xhp->conffile : "not found");
 	/*
 	 * Respect client setting in struct xbps_handle for {root,cache}dir;
 	 * otherwise use values from configuration file or defaults if unset.
