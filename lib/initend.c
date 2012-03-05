@@ -121,7 +121,7 @@ xbps_init(struct xbps_handle *xh)
 	cfg_set_validate_func(xhp->cfg, "virtual-package", &cb_validate_virtual);
 
 	if ((rv = cfg_parse(xhp->cfg, xhp->conffile)) != CFG_SUCCESS) {
-		if (rv == CFG_PARSE_ERROR) {
+		if (rv == CFG_FILE_ERROR) {
 			if (errno != ENOENT) {
 				/*
 				 * Don't error out if config file not found.
