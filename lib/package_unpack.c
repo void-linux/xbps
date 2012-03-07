@@ -158,6 +158,7 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	prop_array_t array;
 	const struct xbps_handle *xhp = xbps_handle_get();
 	const struct stat *entry_statp;
+	struct stat st;
 	struct xbps_unpack_cb_data *xucd = NULL;
 	struct archive_entry *entry;
 	size_t nmetadata = 0, entry_idx = 0;
@@ -383,20 +384,44 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		if (S_ISREG(entry_statp->st_mode)) {
 			if (xbps_entry_is_a_conf_file(propsd, entry_pname))
 				conf_file = true;
-			if (access(entry_pname, R_OK) == 0) {
+			if (stat(entry_pname, &st) == 0) {
 				file_exists = true;
 				rv = xbps_file_hash_check_dictionary(filesd,
 				    conf_file ? "conf_files" : "files",
 				    entry_pname);
 				if (rv == -1) {
+					/* error */
 					xbps_dbg_printf("%s-%s: failed to check"
 					    " hash for `%s': %s\n", pkgname,
 					    version, entry_pname,
 					    strerror(errno));
-					/* error */
 					goto out;
+				} else if (rv == 1) {
+					/* hash doesn't match, extract file */
+					rv = 0;
 				} else if (rv == 0) {
-					/* hash match, skip */
+					/*
+					 * Always set entry perms in existing
+					 * file, even when hash is matched.
+					 */
+					if (chmod(entry_pname,
+					    entry_statp->st_mode) != 0) {
+						xbps_dbg_printf("%s-%s: failed "
+						    "to set perms %s to %s: %s\n",
+						    pkgname, version,
+						    archive_entry_strmode(entry),
+						    entry_pname,
+						    strerror(errno));
+						rv = EINVAL;
+						goto out;
+					}
+					xbps_dbg_printf("%s-%s: entry %s perms "
+					    "to %s.\n", pkgname, version,
+					    entry_pname,
+					    archive_entry_strmode(entry));
+					/*
+					 * hash match, skip extraction.
+					 */
 					xbps_dbg_printf("%s-%s: entry %s "
 					    "matches current SHA256, "
 					    "skipping...\n", pkgname,
@@ -404,7 +429,6 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 					archive_read_data_skip(ar);
 					continue;
 				}
-				rv = 0;
 			}
 		}
 		if (!update && conf_file && file_exists) {

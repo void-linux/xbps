@@ -1,3 +1,9 @@
+xbps-0.15 (???):
+
+ * Fixed issue 22: "Updating a package doesn't set correct perms when
+  file not modified". When extracting package files, always set
+  permissions from binary package, even if file has not been modified.
+
 xbps-0.14 (2012-02-28):
 
  * Fixed 'xbps-bin reconfigure all' (regression added in 0.13).
