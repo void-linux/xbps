@@ -74,9 +74,9 @@ xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
 				found = true;
 				break;
 			}
-			if (found)
-				break;
 		}
+		if (found)
+			break;
 	}
 	return found;
 }
