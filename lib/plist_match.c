@@ -64,21 +64,16 @@ xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
 {
 	const char *vpkgver, *pkgpattern;
 	size_t i, x;
-	bool found = false;
 
 	for (i = 0; i < prop_array_count(provides); i++) {
 		prop_array_get_cstring_nocopy(provides, i, &vpkgver);
 		for (x = 0; x < prop_array_count(rundeps); x++) {
 			prop_array_get_cstring_nocopy(rundeps, x, &pkgpattern);
-			if (xbps_pkgpattern_match(vpkgver, pkgpattern)) {
-				found = true;
-				break;
-			}
+			if (xbps_pkgpattern_match(vpkgver, pkgpattern))
+				return true;
 		}
-		if (found)
-			break;
 	}
-	return found;
+	return false;
 }
 
 static bool
