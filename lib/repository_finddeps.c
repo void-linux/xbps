@@ -292,18 +292,15 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			if (rv == 0) {
 				/*
 				 * Package is installed but does not match
-				 * the dependency pattern, update pkg.
+				 * the dependency pattern.
 				 */
-				xbps_dbg_printf_append("installed `%s', "
-				    "must be updated.\n", pkgver_q);
-				reason = "update";
 			} else if (rv == 1) {
 				rv = 0;
 				if (state == XBPS_PKG_STATE_UNPACKED) {
 					/*
 					 * Package matches the dependency
 					 * pattern but was only unpacked,
-					 * configure pkg.
+					 * mark pkg to be configured.
 					 */
 					xbps_dbg_printf_append("installed `%s'"
 					    ", must be configured.\n",
@@ -313,7 +310,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 					/*
 					 * Package matches the dependency
 					 * pattern and is fully installed,
-					 * skip to next one.
+					 * skip and pass to next one.
 					 */
 					xbps_dbg_printf_append("installed "
 					    "`%s'.\n", pkgver_q);
@@ -402,8 +399,41 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 				}
 			}
 		}
-		prop_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
+		/*
+		 * Pass 4: check if new dependency is already installed, due
+		 * to virtual packages.
+		 */
 		prop_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
+		tmpd = xbps_find_pkg_dict_installed(pkgver_q, true);
+		if (tmpd == NULL)
+			tmpd = xbps_find_virtualpkg_dict_installed(pkgver_q, true);
+
+		if (tmpd == NULL) {
+			/* dependency not installed */
+			reason = "install";
+			xbps_dbg_printf_append("(found `%s')\n",
+			    pkgver_q);
+		} else {
+			/* dependency installed, check its state */
+			state = 0;
+			if ((rv = xbps_pkg_state_dictionary(tmpd, &state)) != 0) {
+				prop_object_release(tmpd);
+				xbps_dbg_printf("failed to check pkg state "
+				    "for `%s': %s\n", pkgver_q, strerror(rv));
+				break;
+			}
+			if (state == XBPS_PKG_STATE_INSTALLED) {
+				reason = "update";
+				xbps_dbg_printf_append("(found `%s')\n",
+				    pkgver_q);
+			} else if (state == XBPS_PKG_STATE_UNPACKED) {
+				reason = "install";
+				xbps_dbg_printf_append("(found `%s')\n",
+				    pkgver_q);
+			}
+			prop_object_release(tmpd);
+		}
+		prop_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
 		/*
 		 * Package is on repo, add it into the transaction dictionary.
 		 */
