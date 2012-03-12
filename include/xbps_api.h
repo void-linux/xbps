@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120307"
+#define XBPS_API_VERSION	"20120312"
 #define XBPS_VERSION		"0.15"
 
 /**
@@ -898,6 +898,42 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pkgver(prop_dictionary_t dict,
 						  const char *key,
 						  const char *pkgver);
 
+/**
+ * Finds the proplib's dictionary associated with a package, by matching
+ * a pkgname in \a name on any of the virtual package in
+ * the "provides" array object.
+ *
+ * @param[in] d Proplib dictionary to look for the package dictionary.
+ * @param[in] key Key associated with the array storing the package's
+ * dictionary.
+ * @param[in] name The virtual package name to match.
+ *
+ * @return The package dictionary, otherwise NULL is returned and errno
+ * is set appropiately.
+ * Finds a virtual package dictionary in a proplib array by matching a
+ * package name.
+ */
+prop_dictionary_t xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t d,
+						       const char *key,
+						       const char *name);
+
+/**
+ * Finds the proplib's dictionary associated with a package, by matching
+ * a pkg pattern in \a pattern on any of the virtual package in
+ * the "provides" array object.
+ *
+ * @param[in] d Proplib dictionary to look for the package dictionary.
+ * @param[in] key Key associated with the array storing the package's
+ * dictionary.
+ * @param[in] pattern The virtual package pattern to match, i.e
+ * `foo>=0' or `foo<1'.
+ *
+ * @return The package dictionary, otherwise NULL is returned and errno
+ * is set appropiately.
+ */
+prop_dictionary_t xbps_find_virtualpkg_in_dict_by_pattern(prop_dictionary_t d,
+							  const char *key,
+							  const char *pattern);
 /**
  * Finds the package's proplib dictionary in a plist file by specifying
  * a package name.

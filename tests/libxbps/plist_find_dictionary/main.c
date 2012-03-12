@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *-
  */
+#include <string.h>
 #include <atf-c.h>
 #include <xbps_api.h>
 
@@ -40,6 +41,10 @@ static const char dictxml[] =
 "			<string>1.1</string>\n"
 "			<key>pkgver</key>\n"
 "			<string>afoo-1.1</string>\n"
+"			<key>provides</key>\n"
+"			<array>\n"
+"				<string>virtualpkg-9999</string>\n"
+"			</array>\n"
 "		</dict>\n"
 "		<dict>\n"
 "			<key>pkgname</key>\n"
@@ -104,10 +109,53 @@ ATF_TC_BODY(find_pkg_in_dict_by_pkgver_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 }
 
+ATF_TC(find_virtualpkg_in_dict_by_pattern_test);
+ATF_TC_HEAD(find_virtualpkg_in_dict_by_pattern_test, tc)
+{
+	atf_tc_set_md_var(tc, "descr", "Test xbps_find_virtualpkg_in_dict_by_pattern");
+}
+ATF_TC_BODY(find_virtualpkg_in_dict_by_pattern_test, tc)
+{
+	prop_dictionary_t d, dr;
+	const char *pkgver;
+
+	d = prop_dictionary_internalize(dictxml);
+	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
+
+	/* match virtualpkg by pattern */
+	dr = xbps_find_virtualpkg_in_dict_by_pattern(d, "packages", "virtualpkg<=9999");
+	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
+	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
+	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1");
+}
+
+ATF_TC(find_virtualpkg_in_dict_by_name_test);
+ATF_TC_HEAD(find_virtualpkg_in_dict_by_name_test, tc)
+{
+	atf_tc_set_md_var(tc, "descr", "Test xbps_find_virtualpkg_in_dict_by_name");
+}
+ATF_TC_BODY(find_virtualpkg_in_dict_by_name_test, tc)
+{
+	prop_dictionary_t d, dr;
+	const char *pkgver;
+
+	d = prop_dictionary_internalize(dictxml);
+	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
+
+	/* match virtualpkg by name */
+	dr = xbps_find_virtualpkg_in_dict_by_name(d, "packages", "virtualpkg");
+	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
+	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
+	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, find_pkg_in_dict_by_name_test);
 	ATF_TP_ADD_TC(tp, find_pkg_in_dict_by_pattern_test);
 	ATF_TP_ADD_TC(tp, find_pkg_in_dict_by_pkgver_test);
+	ATF_TP_ADD_TC(tp, find_virtualpkg_in_dict_by_name_test);
+	ATF_TP_ADD_TC(tp, find_virtualpkg_in_dict_by_pattern_test);
+
 	return atf_no_error();
 }
