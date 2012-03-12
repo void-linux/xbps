@@ -85,7 +85,7 @@ ATF_TC_BODY(array_replace_dict_by_name_test, tc)
 {
 	prop_array_t orig, new;
 	prop_dictionary_t d;
-	
+
 	orig = prop_array_internalize(axml);
 	ATF_REQUIRE_EQ(prop_object_type(orig), PROP_TYPE_ARRAY);
 
@@ -113,7 +113,7 @@ ATF_TC_BODY(array_replace_dict_by_pattern_test, tc)
 {
 	prop_array_t orig, new;
 	prop_dictionary_t d;
-	
+
 	orig = prop_array_internalize(axml);
 	ATF_REQUIRE_EQ(prop_object_type(orig), PROP_TYPE_ARRAY);
 

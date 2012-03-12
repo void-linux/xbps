@@ -64,7 +64,7 @@ ATF_TC_BODY(find_pkg_in_array_by_name_test, tc)
 {
 	prop_array_t a;
 	prop_dictionary_t dr;
-	
+
 	a = prop_array_internalize(arrayxml);
 	ATF_REQUIRE_EQ(prop_object_type(a), PROP_TYPE_ARRAY);
 
@@ -82,7 +82,7 @@ ATF_TC_BODY(find_pkg_in_array_by_pattern_test, tc)
 {
 	prop_array_t a;
 	prop_dictionary_t dr;
-	
+
 	a = prop_array_internalize(arrayxml);
 	ATF_REQUIRE_EQ(prop_object_type(a), PROP_TYPE_ARRAY);
 
@@ -100,7 +100,7 @@ ATF_TC_BODY(find_pkg_in_array_by_pkgver_test, tc)
 {
 	prop_array_t a;
 	prop_dictionary_t dr;
-	
+
 	a = prop_array_internalize(arrayxml);
 	ATF_REQUIRE_EQ(prop_object_type(a), PROP_TYPE_ARRAY);
 

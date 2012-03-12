@@ -61,7 +61,7 @@ ATF_TC_HEAD(find_pkg_in_dict_by_name_test, tc)
 ATF_TC_BODY(find_pkg_in_dict_by_name_test, tc)
 {
 	prop_dictionary_t d, dr;
-	
+
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
@@ -78,7 +78,7 @@ ATF_TC_HEAD(find_pkg_in_dict_by_pattern_test, tc)
 ATF_TC_BODY(find_pkg_in_dict_by_pattern_test, tc)
 {
 	prop_dictionary_t d, dr;
-	
+
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 

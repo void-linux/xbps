@@ -50,7 +50,7 @@ provides_init(void)
 
 	prop_array_add_cstring_nocopy(a, "cron-daemon-0");
 	prop_array_add_cstring_nocopy(a, "xbps-9999");
-	
+
 	return a;
 }
 

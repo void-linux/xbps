@@ -102,7 +102,7 @@ ATF_TC_BODY(remove_pkg_from_array_by_name_test, tc)
 {
 	prop_array_t a;
 	prop_dictionary_t d, d2;
-	
+
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
@@ -125,7 +125,7 @@ ATF_TC_BODY(remove_pkg_from_array_by_pattern_test, tc)
 {
 	prop_array_t a;
 	prop_dictionary_t d, d2;
-	
+
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
@@ -148,7 +148,7 @@ ATF_TC_BODY(remove_pkg_from_array_by_pkgver_test, tc)
 {
 	prop_array_t a;
 	prop_dictionary_t d, d2;
-	
+
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
@@ -170,7 +170,7 @@ ATF_TC_HEAD(remove_string_from_array_test, tc)
 ATF_TC_BODY(remove_string_from_array_test, tc)
 {
 	prop_array_t a, a2;
-	
+
 	a = prop_array_internalize(axml);
 	ATF_REQUIRE_EQ(prop_object_type(a), PROP_TYPE_ARRAY);
 
@@ -191,7 +191,7 @@ ATF_TC_HEAD(remove_pkgname_from_array_test, tc)
 ATF_TC_BODY(remove_pkgname_from_array_test, tc)
 {
 	prop_array_t a, a2;
-	
+
 	a = prop_array_internalize(axml);
 	ATF_REQUIRE_EQ(prop_object_type(a), PROP_TYPE_ARRAY);
 
@@ -212,7 +212,7 @@ ATF_TC_HEAD(remove_pkg_from_dict_by_name_test, tc)
 ATF_TC_BODY(remove_pkg_from_dict_by_name_test, tc)
 {
 	prop_dictionary_t d, d2;
-	
+
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
