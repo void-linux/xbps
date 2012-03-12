@@ -4,6 +4,9 @@ xbps-0.15 (???):
   file not modified". When extracting package files, always set
   permissions from binary package, even if file has not been modified.
 
+ * Enabled assertions by default even if --debug not enabled. We want
+  to enforce correct behaviour even in release builds.
+
 xbps-0.14 (2012-02-28):
 
  * Fixed 'xbps-bin reconfigure all' (regression added in 0.13).
