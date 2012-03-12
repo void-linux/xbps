@@ -1,11 +1,18 @@
 xbps-0.15 (???):
 
+ * Started a test suite for libxbps. Tests are written for Kyua
+  (http://code.google.com/p/kyua) and can be built and installed
+  with the --with-tests configure option, by default will be installed
+  to EPREFIX/tests but can be overriden with --testsdir. ATF 0.15
+  (part of Kyua) is required to build the test suite.
+
+ * Enabled assertions by default even if --debug not enabled. We want
+  to enforce correct behaviour even in release builds.
+
  * Fixed issue 22: "Updating a package doesn't set correct perms when
   file not modified". When extracting package files, always set
   permissions from binary package, even if file has not been modified.
 
- * Enabled assertions by default even if --debug not enabled. We want
-  to enforce correct behaviour even in release builds.
 
 xbps-0.14 (2012-02-28):
 
