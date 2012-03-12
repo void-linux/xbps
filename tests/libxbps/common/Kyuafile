@@ -11,3 +11,5 @@ atf_test_program{name="plist_match_test"}
 atf_test_program{name="plist_match_virtual_test"}
 atf_test_program{name="plist_remove_test"}
 atf_test_program{name="plist_array_replace_test"}
+
+include("plist_find_virtualpkg_conf/Kyuafile")

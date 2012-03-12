@@ -13,6 +13,11 @@ clean:
 install: all
 	install -d $(DESTDIR)$(TESTSDIR)/$(TESTSSUBDIR)
 	install -m755 $(TEST) $(DESTDIR)$(TESTSDIR)/$(TESTSSUBDIR)
+ifdef EXTRA_FILES
+	for f in $(EXTRA_FILES); do \
+		install -m644 $${f} $(DESTDIR)$(TESTSDIR)/$(TESTSSUBDIR); \
+	done
+endif
 
 .PHONY: uninstall
 uninstall:
