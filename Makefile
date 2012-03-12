@@ -6,6 +6,10 @@ ifdef BUILD_API_DOCS
 SUBDIRS += doc
 endif
 
+ifdef BUILD_TESTS
+SUBDIRS += tests
+endif
+
 .PHONY: all
 all:
 	@for dir in $(SUBDIRS); do		\

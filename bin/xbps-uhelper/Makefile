@@ -4,4 +4,4 @@ TOPDIR = ../..
 BIN = xbps-uhelper
 OBJS = main.o ../xbps-bin/fetch_cb.o
 
-include $(TOPDIR)/bin/prog.mk
+include $(TOPDIR)/mk/prog.mk

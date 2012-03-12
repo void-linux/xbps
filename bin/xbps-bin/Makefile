@@ -11,4 +11,4 @@ OBJS += check_pkg_requiredby.o
 OBJS += show-orphans.o unpack_cb.o list.o
 MAN = $(BIN).8
 
-include $(TOPDIR)/bin/prog.mk
+include $(TOPDIR)/mk/prog.mk

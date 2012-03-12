@@ -12,6 +12,7 @@ BUILD=
 HOST=
 TARGET=
 DEBUG=
+BUILD_TESTS=
 BUILD_API_DOCS=
 BUILD_PIE=
 SILENT=yes
@@ -40,8 +41,9 @@ for instance \`--prefix=\$HOME'.
 --debug				Build with debugging code and symbols
 --verbose			Disable silent build to see compilation details
 --with-pie			Build XBPS programs as PIE (default disabled)
---with-api-docs			install XBPS API Library documentation (default disabled)
-
+--with-api-docs			Install XBPS API Library documentation (default disabled)
+--with-tests			Build and install Kyua tests (default disabled)
+				Needs atf >= 0.15 (http://code.google.com/p/kyua)
 _EOF
 	exit 1
 }
@@ -67,6 +69,7 @@ for x; do
 	--verbose) unset SILENT;;
 	--with-pie) BUILD_PIE=$var;;
 	--pkgconfigdir) PKGCONFIGDIR=$var;;
+	--with-tests) BUILD_TESTS=yes;;
 	--help) usage;;
 	*) echo "$0: WARNING: unknown option $opt" >&2;;
 	esac
@@ -84,6 +87,7 @@ done
 : ${INCLUDEDIR:=${EPREFIX}/include}
 : ${ETCDIR:=${PREFIX}/etc}
 : ${PKGCONFIGDIR:=${LIBDIR}/pkgconfig}
+: ${TESTSDIR:=${EPREFIX}/tests}
 : ${TOPDIR:=..}
 
 _which()
@@ -144,6 +148,7 @@ echo "LIBDIR ?=	$LIBDIR" >>$CONFIG_MK
 echo "MANDIR ?=	$MANDIR" >>$CONFIG_MK
 echo "SHAREDIR ?= $SHAREDIR" >>$CONFIG_MK
 echo "PKGCONFIGDIR ?= $PKGCONFIGDIR" >>$CONFIG_MK
+echo "TESTSDIR ?= $TESTSDIR" >>$CONFIG_MK
 
 ETCDIR="${ETCDIR}/xbps"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
@@ -591,6 +596,24 @@ else
 		>>$CONFIG_MK
 fi
 
+#
+# If --with-tests enabled, check for ATF >= 0.15 via pkg-config.
+#
+if [ "$BUILD_TESTS" = "yes" ]; then
+	printf "Checking for ATF via pkg-config ... "
+	if ! $PKGCONFIG_BIN --atleast-version=0.15 atf-c; then
+		echo "ATF >= 0.15 not found in PKG_CONFIG_LIBDIR, exiting."
+		exit 1
+	fi
+	echo "found version $($PKGCONFIG_BIN --modversion atf-c)."
+	echo "TEST_CFLAGS += $($PKGCONFIG_BIN --cflags atf-c)" >>$CONFIG_MK
+	echo "TEST_LDFLAGS += $($PKGCONFIG_BIN --libs atf-c)" >>$CONFIG_MK
+	echo "BUILD_TESTS = yes" >>$CONFIG_MK
+	BUILD_TESTS_VALUE=yes
+else
+	BUILD_TESTS_VALUE=no
+fi
+
 if [ -n "$SILENT" ]; then
 	echo "SILENT = @" >>$CONFIG_MK
 else
@@ -617,6 +640,7 @@ if [ -n "$LDFLAGS" ]; then
 fi
 echo
 echo "   Build API documentation =	$BUILD_API_DOCS_VALUE"
+echo "   Build Kyua test suite =	$BUILD_TESTS_VALUE"
 echo "   Build programs as PIE =	$BUILD_PIE_VAL"
 echo "   Build with debug  =		$DEBUG"
 echo "   Use external proplib = 	$PROPLIB"

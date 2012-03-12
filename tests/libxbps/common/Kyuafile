@@ -1,0 +1,13 @@
+syntax("kyuafile", 1)
+
+test_suite("libxbps")
+
+atf_test_program{name="util_test"}
+atf_test_program{name="cmpver_test"}
+atf_test_program{name="pkgpattern_match_test"}
+atf_test_program{name="plist_find_dictionary_test"}
+atf_test_program{name="plist_find_array_test"}
+atf_test_program{name="plist_match_test"}
+atf_test_program{name="plist_match_virtual_test"}
+atf_test_program{name="plist_remove_test"}
+atf_test_program{name="plist_array_replace_test"}

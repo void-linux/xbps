@@ -3,4 +3,4 @@ TOPDIR = ../..
 
 BIN = xbps-dgraph
 
-include $(TOPDIR)/bin/prog.mk
+include $(TOPDIR)/mk/prog.mk

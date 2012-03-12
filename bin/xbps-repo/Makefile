@@ -8,4 +8,4 @@ OBJS += ../xbps-bin/fetch_cb.o ../xbps-bin/util.o
 OBJS += ../xbps-bin/state_cb.o ../xbps-bin/list.o
 MAN = $(BIN).8
 
-include $(TOPDIR)/bin/prog.mk
+include $(TOPDIR)/mk/prog.mk
