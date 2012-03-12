@@ -2,15 +2,16 @@ See http://code.google.com/p/xbps for information.
 
 To build this you'll need:
 
-  - pkg-config
-  - zlib (development package with static libs)
-  - openssl (development package with static libs)
-  - libarchive >= 2.8.0 (development package with static libs)
-  - confuse >= 2.7 (development package with static libs)
+  - pkg-config.
+  - zlib (development package with static libs).
+  - openssl (development package with static libs).
+  - libarchive >= 2.8.0 (development package with static libs) [0].
+  - confuse >= 2.7 (development package with static libs) [1].
 
-Optionally to build the API documentation:
+and optionally:
 
-  - graphviz and doxygen.
+  - graphviz and doxygen (--with-api-docs) to build API documentation.
+  - atf >= 0.15 (--with-tests) to build the Kyua test suite [2].
 
 Just run ./configure && make && make install. By default PREFIX is set
 to `/usr/local', can be changed by setting --prefix. The DESTDIR variable
@@ -20,3 +21,7 @@ There are some more options that can be tweaked, see them with
 `./configure --help'.
 
 Good luck!
+
+[0] http://libarchive.github.com
+[1] http://libconfuse.nongnu.org
+[2] http://code.google.com/p/kyua
