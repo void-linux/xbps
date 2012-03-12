@@ -37,6 +37,7 @@ for instance \`--prefix=\$HOME'.
 --datadir=DIR			read-only architecture-independent data [EPREFIX/share]
 --etcdir=DIR			configuration files [PREFIX/etc]
 --pkgconfigdir=DIR		pkg-config directory [EPREFIX/lib/pkgconfig]
+--testsdir=DIR			test suite directory [EPREFIX/tests]
 
 --debug				Build with debugging code and symbols
 --verbose			Disable silent build to see compilation details
@@ -70,6 +71,7 @@ for x; do
 	--with-pie) BUILD_PIE=$var;;
 	--pkgconfigdir) PKGCONFIGDIR=$var;;
 	--with-tests) BUILD_TESTS=yes;;
+	--testsdir) TESTSDIR=$var;;
 	--help) usage;;
 	*) echo "$0: WARNING: unknown option $opt" >&2;;
 	esac
