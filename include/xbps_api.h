@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120312-1"
+#define XBPS_API_VERSION	"20120313"
 #define XBPS_VERSION		"0.15"
 
 /**
@@ -521,9 +521,17 @@ struct xbps_handle {
 	 */
 	const char *cachedir;
 	/**
+	 * @var metadir
+	 *
+	 * Metadata directory for all operations in XBPS.
+	 * If NULL, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
+	 */
+	const char *metadir;
+	/**
 	 * @private
 	 */
 	char *cachedir_priv;
+	char *metadir_priv;
 	/**
 	 * @var conffile
 	 *

@@ -80,30 +80,23 @@ int
 xbps_pkgdb_update(bool flush)
 {
 	struct xbps_handle *xhp = xbps_handle_get();
-	char *plist, *metadir;
+	char *plist;
 	int rv = 0;
 
-	plist = xbps_xasprintf("%s/%s/%s", xhp->rootdir,
-	    XBPS_META_PATH, XBPS_PKGDB);
+	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
 	if (plist == NULL)
 		return ENOMEM;
 
 	if (xhp->pkgdb != NULL && flush) {
-		metadir = xbps_xasprintf("%s/%s", xhp->rootdir,
-		    XBPS_META_PATH);
-		if (metadir == NULL) {
-			free(plist);
-			return ENOMEM;
-		}
 		/* Create metadir if doesn't exist */
-		if (access(metadir, X_OK) == -1) {
+		if (access(xhp->metadir, X_OK) == -1) {
 			if (errno == ENOENT) {
-				if (xbps_mkpath(metadir, 0755) != 0) {
+				if (xbps_mkpath(xhp->metadir, 0755) != 0) {
 					xbps_dbg_printf("[pkgdb] failed to "
-					    "create metadir %s: %s\n", metadir,
+					    "create metadir %s: %s\n",
+					    xhp->metadir,
 					    strerror(errno));
 					rv = errno;
-					free(metadir);
 					free(plist);
 					return rv;
 				}
@@ -112,7 +105,6 @@ xbps_pkgdb_update(bool flush)
 				return errno;
 			}
 		}
-		free(metadir);
 		/* flush dictionary to storage */
 		if (!prop_array_externalize_to_zfile(xhp->pkgdb, plist)) {
 			free(plist);

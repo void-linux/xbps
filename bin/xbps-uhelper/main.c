@@ -371,8 +371,7 @@ main(int argc, char **argv)
 		}
 	} else if (strcasecmp(argv[0], "updatepkgdb") == 0) {
 		/* update regpkgdb to pkgdb */
-		plist = xbps_xasprintf("%s/%s/regpkgdb.plist",
-		    xh.rootdir, XBPS_META_PATH);
+		plist = xbps_xasprintf("%s/regpkgdb.plist", xh.metadir);
 	        if (plist == NULL) {
 			rv = ENOMEM;
 			goto out;

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010 Juan Romero Pardines.
+ * Copyright (c) 2010-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -87,7 +87,7 @@ find_files_in_packages(int npatterns, char **patterns)
 	unsigned int i, count;
 
 	xhp = xbps_handle_get();
-	path = xbps_xasprintf("%s/%s/metadata", xhp->rootdir, XBPS_META_PATH);
+	path = xbps_xasprintf("%s/metadata", xhp->metadir);
 	if (path == NULL)
 		return -1;
 

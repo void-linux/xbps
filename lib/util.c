@@ -213,14 +213,7 @@ get_pkg_index_remote_plist(const char *uri, const char *plistf)
 	if (uri_fixed == NULL)
 		return NULL;
 
-	if (strcmp(xhp->rootdir, "/") == 0) {
-		repodir = xbps_xasprintf("/%s/%s/%s",
-		    XBPS_META_PATH, uri_fixed, plistf);
-	} else {
-		repodir = xbps_xasprintf("%s/%s/%s/%s",
-		    xhp->rootdir,
-		    XBPS_META_PATH, uri_fixed, plistf);
-	}
+	repodir = xbps_xasprintf("%s/%s/%s", xhp->metadir, uri_fixed, plistf);
 	free(uri_fixed);
 	return repodir;
 }

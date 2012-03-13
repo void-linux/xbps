@@ -94,7 +94,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 	struct stat st;
 	const char *fetch_outputdir, *fetchstr = NULL;
 	char *rpidx, *lrepodir, *uri_fixedp;
-	char *metadir, *tmp_metafile, *lrepofile;
+	char *tmp_metafile, *lrepofile;
 	int rv = 0;
 	bool only_sync = false;
 
@@ -117,16 +117,11 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 	/*
 	 * Create metadir if necessary.
 	 */
-	metadir = xbps_xasprintf("%s/%s", xhp->rootdir, XBPS_META_PATH);
-	if (metadir == NULL) {
-		rv = -1;
-		goto out;
-	}
-	if ((rv = xbps_mkpath(metadir, 0755)) == -1) {
+	if ((rv = xbps_mkpath(xhp->metadir, 0755)) == -1) {
 		xbps_set_cb_state(XBPS_STATE_REPOSYNC_FAIL,
 		    errno, NULL, NULL,
 		    "[reposync] failed to create metadir `%s': %s",
-		    metadir, strerror(errno));
+		    xhp->metadir, strerror(errno));
 		goto out;
 	}
 	/*
@@ -138,10 +133,10 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 		goto out;
 	}
 	/*
-	 * Save temporary file in XBPS_META_PATH, and rename if it
+	 * Save temporary file in metadir, and rename if it
 	 * was downloaded successfully.
 	 */
-	tmp_metafile = xbps_xasprintf("%s/%s", metadir, plistf);
+	tmp_metafile = xbps_xasprintf("%s/%s", xhp->metadir, plistf);
 	if (tmp_metafile == NULL) {
 		rv = -1;
 		goto out;
@@ -150,8 +145,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 	 * Full path to repository directory to store the plist
 	 * index file.
 	 */
-	lrepodir = xbps_xasprintf("%s/%s/%s",
-	    xhp->rootdir, XBPS_META_PATH, uri_fixedp);
+	lrepodir = xbps_xasprintf("%s/%s", xhp->metadir, uri_fixedp);
 	if (lrepodir == NULL) {
 		rv = -1;
 		goto out;
@@ -165,7 +159,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 		only_sync = true;
 		fetch_outputdir = lrepodir;
 	} else
-		fetch_outputdir = metadir;
+		fetch_outputdir = xhp->metadir;
 
 	/* reposync start cb */
 	xbps_set_cb_state(XBPS_STATE_REPOSYNC, 0, NULL, NULL,
@@ -232,8 +226,6 @@ out:
 		free(rpidx);
 	if (lrepodir)
 		free(lrepodir);
-	if (metadir)
-		free(metadir);
 	if (tmp_metafile)
 		free(tmp_metafile);
 	if (lrepofile)

@@ -43,21 +43,32 @@ static bool debug;
 static bool xbps_initialized;
 static struct xbps_handle *xhp;
 
-static void
-get_cachedir(struct xbps_handle *xh)
+static char *
+set_cachedir(struct xbps_handle *xh)
 {
-	if (xh->cachedir[0] == '/')
+	if (xh->cachedir[0] == '/') {
 		/* full path */
-		xh->cachedir_priv = strdup(xh->cachedir);
-	else {
+		return strdup(xh->cachedir);
+	} else {
 		/* relative to rootdir */
 		if (strcmp(xh->rootdir, "/") == 0)
-			xh->cachedir_priv =
-			    xbps_xasprintf("/%s", xh->cachedir);
+			return xbps_xasprintf("/%s", xh->cachedir);
 		else
-			xh->cachedir_priv =
-			    xbps_xasprintf("%s/%s", xh->rootdir,
+			return xbps_xasprintf("%s/%s", xh->rootdir,
 			    xh->cachedir);
+	}
+}
+
+static char *
+set_metadir(struct xbps_handle *xh)
+{
+	if (xh->metadir == NULL) {
+		if (strcmp(xh->rootdir, "/") == 0)
+			return xbps_xasprintf("/%s", XBPS_META_PATH);
+		else
+			return xbps_xasprintf("%s/%s", xh->rootdir, XBPS_META_PATH);
+	} else {
+		return strdup(xh->metadir);
 	}
 }
 
@@ -156,11 +167,13 @@ xbps_init(struct xbps_handle *xh)
 		else
 			xhp->cachedir = cfg_getstr(xhp->cfg, "cachedir");
 	}
-	get_cachedir(xhp);
-	if (xhp->cachedir_priv == NULL)
+	if ((xhp->cachedir_priv = set_cachedir(xhp)) == NULL)
 		return ENOMEM;
-
 	xhp->cachedir = xhp->cachedir_priv;
+
+	if ((xhp->metadir_priv = set_metadir(xhp)) == NULL)
+		return ENOMEM;
+	xhp->metadir = xhp->metadir_priv;
 
 	if (xhp->cfg == NULL) {
 		xhp->flags |= XBPS_FLAG_SYSLOG;
@@ -183,6 +196,7 @@ xbps_init(struct xbps_handle *xh)
 	xbps_fetch_set_cache_connection(cc, cch);
 
 	xbps_dbg_printf("Rootdir=%s\n", xhp->rootdir);
+	xbps_dbg_printf("Metadir=%s\n", xhp->metadir);
 	xbps_dbg_printf("Cachedir=%s\n", xhp->cachedir);
 	xbps_dbg_printf("FetchTimeout=%u\n", xhp->fetch_timeout);
 	xbps_dbg_printf("FetchCacheconn=%u\n", cc);
@@ -210,6 +224,8 @@ xbps_end(void)
 		cfg_free(xhp->cfg);
 	if (xhp->cachedir_priv != NULL)
 		free(xhp->cachedir_priv);
+	if (xhp->metadir_priv != NULL)
+		free(xhp->metadir_priv);
 
 	xhp = NULL;
 	xbps_initialized = false;
