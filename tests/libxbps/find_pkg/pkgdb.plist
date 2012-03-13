@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgname</key>
+		<string>xbps</string>
+		<key>pkgver</key>
+		<string>xbps-0.14</string>
+		<key>short_desc</key>
+		<string>The XBPS package system</string>
+		<key>state</key>
+		<string>installed</string>
+		<key>version</key>
+		<string>0.14</string>
+	</dict>
+        <dict>
+                <key>automatic-install</key>
+                <false/>
+                <key>pkgname</key>
+                <string>xbps-src-git</string>
+                <key>pkgver</key>
+                <string>xbps-src-git-20120312</string>
+                <key>provides</key>
+                <array>
+                        <string>xbps-src-9999</string>
+                </array>
+                <key>short_desc</key>
+                <string>The XBPS package system - binary package builder (git snaphost)</string>
+                <key>state</key>
+                <string>installed</string>
+                <key>version</key>
+                <string>20120312</string>
+        </dict>
+</array>
+</plist>

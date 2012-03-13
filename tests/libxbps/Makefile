@@ -11,6 +11,6 @@ SUBDIRS += plist_match
 SUBDIRS += plist_match_virtual
 SUBDIRS += plist_remove
 SUBDIRS += util
-SUBDIRS += plist_find_virtualpkg_conf
+SUBDIRS += find_pkg
 
 include ../../mk/subdir.mk
