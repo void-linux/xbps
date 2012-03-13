@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120313"
+#define XBPS_API_VERSION	"20120313-1"
 #define XBPS_VERSION		"0.15"
 
 /**
@@ -1096,41 +1096,6 @@ prop_dictionary_t xbps_find_virtualpkg_in_array_by_name(prop_array_t array,
  */
 prop_dictionary_t xbps_find_virtualpkg_in_array_by_pattern(prop_array_t array,
 							   const char *pattern);
-
-/**
- * Finds a package dictionary in a proplib array by matching a pkgname
- * in \a name as set by the virtual package settings in xbps.conf.
- *
- * @param[in] array The proplib array to search on.
- * @param[in] name The virtual package name to match.
- *
- * @return The package dictionary on match, otherwise NULL is returned.
- */
-prop_dictionary_t xbps_find_virtualpkg_conf_in_array_by_name(prop_array_t array,
-							     const char *name);
-
-/**
- * Finds a package dictionary in a proplib array by matching a pkgpattern
- * in \a pattern as set by the virtual package settings in xbps.conf.
- *
- * @param[in] array The proplib array to search on.
- * @param[in] pattern The virtual package pattern to match, i.e
- * `foo>=0' or `foo<1'.
- *
- * @return The package dictionary on match, otherwise NULL is returned.
- */
-prop_dictionary_t
-	xbps_find_virtualpkg_conf_in_array_by_pattern(prop_array_t array,
-						      const char *pattern);
-
-prop_dictionary_t
-	xbps_find_virtualpkg_conf_in_dict_by_name(prop_dictionary_t d,
-						  const char *key,
-						  const char *name);
-prop_dictionary_t
-	xbps_find_virtualpkg_conf_in_dict_by_pattern(prop_dictionary_t d,
-						     const char *key,
-						     const char *pattern);
 
 /**
  * Match a package name in the specified array of strings.

@@ -129,6 +129,24 @@ int HIDDEN xbps_requiredby_pkg_remove(const char *);
 
 /**
  * @private
+ * From lib/plist_find.c
+ */
+prop_dictionary_t HIDDEN
+	xbps_find_virtualpkg_conf_in_array_by_name(prop_array_t, const char *);
+prop_dictionary_t HIDDEN
+	xbps_find_virtualpkg_conf_in_dict_by_name(prop_dictionary_t,
+						  const char *,
+						  const char *);
+prop_dictionary_t HIDDEN
+	xbps_find_virtualpkg_conf_in_array_by_pattern(prop_array_t,
+						      const char *);
+prop_dictionary_t HIDDEN
+	xbps_find_virtualpkg_conf_in_dict_by_pattern(prop_dictionary_t,
+						     const char *,
+						     const char *);
+
+/**
+ * @private
  * From lib/transaction_sortdeps.c
  */
 int HIDDEN xbps_transaction_sort_pkg_deps(struct xbps_handle *);
