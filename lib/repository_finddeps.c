@@ -38,7 +38,8 @@ store_dependency(prop_dictionary_t transd,
 {
 	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t array;
-	const char *pkgname, *pkgver, *repoloc;
+	prop_dictionary_t curpkgd;
+	const char *pkgname, *pkgver, *repoloc, *curpkgver;
 	size_t x;
 	int rv = 0;
 
@@ -51,6 +52,21 @@ store_dependency(prop_dictionary_t transd,
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "repository", &repoloc);
 	/*
+	 * Check if same pkg is already in transaction, and if current pkg version
+	 * is greater add it, otherwise drop it.
+	 */
+	curpkgd = xbps_find_pkg_in_dict_by_name(transd, "unsorted_deps", pkgname);
+	if (curpkgd != NULL) {
+		prop_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &curpkgver);
+		rv = xbps_cmpver(pkgver, curpkgver);
+		if (rv == 1) {
+			xbps_remove_pkg_from_dict_by_name(transd,
+			    "unsorted_deps", pkgname);
+			xbps_dbg_printf("%s: found pkg `%s' in transaction, replaced by `%s'.\n",
+			    __func__, curpkgver, pkgver);
+		}
+	}
+	/*
 	 * Overwrite package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
 	 */
@@ -61,6 +77,7 @@ store_dependency(prop_dictionary_t transd,
 	 */
 	if (!prop_dictionary_set_bool(repo_pkgd, "automatic-install", true))
 		return errno;
+
 	/*
 	 * Add the dictionary into the array.
 	 */
@@ -372,7 +389,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 		curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true);
 		if (curpkgd == NULL) {
 			curpkgd = xbps_repository_pool_find_pkg(reqpkg, true,
-			    false);
+			    true);
 			if (curpkgd == NULL) {
 				/* pkg not found, there was some error */
 				if (errno && errno != ENOENT) {

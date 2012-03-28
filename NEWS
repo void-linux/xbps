@@ -1,5 +1,8 @@
 xbps-0.15 (???):
 
+ * When resolving required dependencies also find the best pkg
+   available in repository pool. Thanks to dave for testing!
+
  * Started a test suite for libxbps. Tests are written for Kyua
   (http://code.google.com/p/kyua) and can be built and installed
   with the --with-tests configure option, by default will be installed
