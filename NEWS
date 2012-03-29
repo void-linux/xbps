@@ -1,5 +1,9 @@
 xbps-0.15 (???):
 
+ * When sorting required dependencies make sure that a pkg with
+   required version is taken into account, not just the first
+   one matching its pkgname.
+
  * When resolving required dependencies also find the best pkg
    available in repository pool. Thanks to dave for testing!
 

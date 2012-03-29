@@ -216,7 +216,7 @@ again:
 		xbps_dbg_printf("  Required dependency '%s': ", str);
 		pdn = pkgdep_find(pkgnamedep, NULL);
 		if ((pdn == NULL) &&
-		    xbps_check_is_installed_pkg_by_name(pkgnamedep)) {
+		    xbps_check_is_installed_pkg_by_pattern(str)) {
 			/*
 			 * Package dependency is installed, just add to
 			 * the list but just mark it as "installed", to avoid
