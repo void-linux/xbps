@@ -26,7 +26,7 @@ xbps-0.14 (2012-02-28):
  * Fixed 'xbps-bin reconfigure all' (regression added in 0.13).
 
  * While resolving dependencies check if required dependency is matched
-   any virtual package already added in transaction, on match use it.
+   with any virtual package already added in transaction, on match use it.
 
  * Only accept binary packages compressed in gzip, bzip2 and xz formats.
    Profiling tests showed that libarchive wasted a considerable amount of

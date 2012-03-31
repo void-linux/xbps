@@ -91,7 +91,7 @@ xbps_configure_pkg(const char *pkgname,
 
 	if (check_state) {
 		rv = xbps_pkg_state_installed(pkgname, &state);
-		xbps_dbg_printf("%s-%s: state %d\n", pkgname, version, state);
+		xbps_dbg_printf("%s: state %d rv %d\n", pkgname, state, rv);
 		if (rv == ENOENT) {
 			/*
 			 * package not installed or has been removed.
@@ -153,6 +153,10 @@ xbps_configure_pkg(const char *pkgname,
 		}
 	} else {
 		if (errno != ENOENT) {
+			xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, errno,
+			    pkgname, lver,
+			    "%s: [configure] INSTALL script cannot be "
+			    "executed: %s", pkgver, strerror(errno));
 			free(buf);
 			free(pkgver);
 			return errno;
@@ -168,8 +172,13 @@ xbps_configure_pkg(const char *pkgname,
 		    pkgver, strerror(rv));
 	}
 	free(pkgver);
-	if (flush)
-		rv = xbps_pkgdb_update(true);
-
+	if (flush) {
+		if ((rv = xbps_pkgdb_update(true)) != 0) {
+			xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, rv,
+			    pkgname, lver,
+			    "%s: [configure] failed to update pkgdb: %s\n",
+			    pkgver, strerror(rv));
+		}
+	}
 	return rv;
 }
