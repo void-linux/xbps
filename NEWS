@@ -1,5 +1,8 @@
 xbps-0.15 (???):
 
+ * When reinstalling existing packages (xbps-bin -f install), make sure
+   to remove previous entry in the "requiredby" pkgdb's array object.
+
  * When sorting required dependencies make sure that a pkg with
    required version is taken into account, not just the first
    one matching its pkgname.

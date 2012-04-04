@@ -36,6 +36,7 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
 {
 	prop_array_t reqby;
 	prop_string_t reqstr;
+	char *pkgname;
 	bool alloc = false;
 
 	assert(prop_object_type(pkgd) == PROP_TYPE_DICTIONARY);
@@ -46,9 +47,23 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
 			return ENOMEM;
 	}
 
-	/* the entry already exists, do nothing */
-	if (xbps_match_string_in_array(reqby, pkgver))
-		return 0;
+	/*
+	 * If an existing entry matching pkgname exists remove it
+	 * and add new pkgver object.
+	 */
+	pkgname = xbps_pkg_name(pkgver);
+	if (pkgname == NULL)
+		return ENOMEM;
+
+	if (xbps_match_pkgname_in_array(reqby, pkgname)) {
+		if (!xbps_remove_pkgname_from_array(reqby, pkgname)) {
+			xbps_dbg_printf("%s: failed to remove %s reqby entry: "
+			    "%s\n", __func__, pkgname, strerror(errno));
+			free(pkgname);
+			return EINVAL;
+		}
+	}
+	free(pkgname);
 
 	reqstr = prop_string_create_cstring(pkgver);
 	if (reqstr == NULL) {
