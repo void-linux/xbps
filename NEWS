@@ -1,5 +1,8 @@
 xbps-0.15 (???):
 
+ * xbps-bin(8): a new test for the 'check' target to find stale entries
+   in 'requiredby' package metadata object from pkgdb.
+
  * When reinstalling existing packages (xbps-bin -f install), make sure
    to remove previous entry in the "requiredby" pkgdb's array object.
 

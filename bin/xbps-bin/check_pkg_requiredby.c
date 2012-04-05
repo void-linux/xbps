@@ -39,7 +39,6 @@ struct check_reqby_data {
 	prop_array_t pkgd_reqby;
 	const char *pkgname;
 	const char *pkgver;
-	bool pkgdb_update;
 	bool pkgd_reqby_alloc;
 };
 
@@ -133,12 +132,47 @@ check_reqby_pkg_cb(prop_object_t obj, void *arg, bool *done)
 		prop_object_release(curpkg_propsd);
 		return -1;
 	}
-	printf("%s: added missing requiredby entry for %s.\n",
-	    crd->pkgname, prop_string_cstring_nocopy(curpkgver));
+	printf("%s: added missing requiredby entry for %s.\n\n",
+	    crd->pkgver, prop_string_cstring_nocopy(curpkgver));
 	prop_object_release(curpkg_propsd);
-	crd->pkgdb_update = true;
+	return 1;
+}
 
-	return 0;
+/*
+ * Removes unused entries in pkg's requiredby array.
+ */
+static bool
+remove_stale_entries_in_reqby(struct check_reqby_data *crd)
+{
+	prop_array_t reqby;
+	prop_dictionary_t pkgd;
+	const char *str;
+	size_t i;
+	bool needs_update = false;
+
+	reqby = prop_dictionary_get(crd->pkgd, "requiredby");
+	if (reqby == NULL || prop_array_count(reqby) == 0)
+		return false;
+
+	crd->pkgd_reqby = prop_dictionary_get(crd->pkgd, "requiredby");
+
+	for (i = 0; i < prop_array_count(reqby); i++) {
+		prop_array_get_cstring_nocopy(reqby, i, &str);
+		if ((pkgd = xbps_pkgdb_get_pkgd_by_pkgver(str)) != NULL) {
+			prop_object_release(pkgd);
+			continue;
+		}
+		printf("%s: found stale entry in requiredby `%s' (fixed)\n",
+		    crd->pkgver, str);
+		if (xbps_remove_string_from_array(crd->pkgd_reqby, str))
+			needs_update = true;
+	}
+	if (needs_update) {
+		prop_dictionary_set(crd->pkgd, "requiredby", crd->pkgd_reqby);
+		printf("%s: requiredby fix done!\n\n", crd->pkgver);
+		return true;
+	}
+	return false;
 }
 
 /*
@@ -153,27 +187,31 @@ check_reqby_pkg_cb(prop_object_t obj, void *arg, bool *done)
 int
 check_pkg_requiredby(const char *pkgname, void *arg, bool *pkgdb_update)
 {
+	prop_dictionary_t pkgd = arg;
 	struct check_reqby_data crd;
 	int rv;
 
-	crd.pkgd = arg;
+	crd.pkgd = pkgd;
 	crd.pkgd_reqby = NULL;
 	crd.pkgd_reqby_alloc = false;
 	crd.pkgname = pkgname;
-	crd.pkgdb_update = false;
-	prop_dictionary_get_cstring_nocopy(crd.pkgd, "pkgver", &crd.pkgver);
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &crd.pkgver);
 
+	/* missing reqby entries in pkgs */
 	rv = xbps_pkgdb_foreach_cb(check_reqby_pkg_cb, &crd);
-	*pkgdb_update = crd.pkgdb_update;
-
-	if (crd.pkgdb_update) {
-		if (!prop_dictionary_set(crd.pkgd, "requiredby", crd.pkgd_reqby))
-			rv = -1;
+	if (rv < 0) {
+		return rv;
+	} else if (rv == 1) {
+		*pkgdb_update = true;
+		prop_dictionary_set(pkgd, "requiredby", crd.pkgd_reqby);
 		if (crd.pkgd_reqby_alloc)
 			prop_object_release(crd.pkgd_reqby);
-	}
-	if (rv != 0)
-		*pkgdb_update = false;
 
-	return rv;
+		printf("%s: requiredby fix done!\n\n", crd.pkgver);
+	}
+	/* remove stale entries in pkg's reqby */
+	if (remove_stale_entries_in_reqby(&crd))
+		*pkgdb_update = true;
+
+	return 0;
 }

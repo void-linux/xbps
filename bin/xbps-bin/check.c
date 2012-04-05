@@ -57,7 +57,8 @@ cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
 	else
 		printf("\033[1A\033[K");
 
-	cpkg->flush = flush;
+	if (flush && !cpkg->flush)
+		cpkg->flush = flush;
 	cpkg->npkgs++;
 	return 0;
 }
@@ -151,11 +152,11 @@ do {								\
 } while (0)
 
 	/* Execute pkg checks */
-	RUN_PKG_CHECK(requiredby, pkgd ? pkgd : opkgd, &pkgdb_update);
-	RUN_PKG_CHECK(autoinstall, pkgd ? pkgd : opkgd, &pkgdb_update);
 	RUN_PKG_CHECK(files, filesd, &pkgdb_update);
 	RUN_PKG_CHECK(symlinks, filesd, &pkgdb_update);
 	RUN_PKG_CHECK(rundeps, propsd, &pkgdb_update);
+	RUN_PKG_CHECK(requiredby, pkgd ? pkgd : opkgd, &pkgdb_update);
+	RUN_PKG_CHECK(autoinstall, pkgd ? pkgd : opkgd, &pkgdb_update);
 
 	if (flush && pkgdb_update) {
 		if (!xbps_pkgdb_replace_pkgd(opkgd, pkgname, false, true)) {
@@ -163,7 +164,7 @@ do {								\
 			goto out;
 		}
 	}
-	if (pkgdb_update && setflush != NULL)
+	if (setflush && pkgdb_update)
 		*setflush = true;
 
 #undef RUN_PKG_CHECK
