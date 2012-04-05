@@ -189,6 +189,22 @@ xbps_pkgdb_get_pkgd(const char *pkg, bool bypattern)
 	return NULL;
 }
 
+prop_dictionary_t
+xbps_pkgdb_get_pkgd_by_pkgver(const char *pkgver)
+{
+	struct xbps_handle *xhp = xbps_handle_get();
+	prop_dictionary_t pkgd = NULL;
+
+	if (xbps_pkgdb_init(xhp) != 0)
+		return NULL;
+
+	pkgd = xbps_find_pkg_in_array_by_pkgver(xhp->pkgdb, pkgver);
+	if (pkgd != NULL)
+		return prop_dictionary_copy(pkgd);
+
+	return NULL;
+}
+
 bool
 xbps_pkgdb_remove_pkgd(const char *pkg, bool bypattern, bool flush)
 {

@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120404"
+#define XBPS_API_VERSION	"20120405"
 #define XBPS_VERSION		"0.15"
 
 /**
@@ -708,11 +708,23 @@ int xbps_pkgdb_foreach_reverse_cb(
  * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
  * package pattern, i.e `foo>=0' or `foo<1'.
  *
- * @return The matching proplib package dictionary from kgdb copied
+ * @return The matching proplib package dictionary from pkgdb copied
  * with \a prop_dictionary_copy() so it must be released when not required
  * anymore with prop_object_release(). NULL otherwise.
  */
 prop_dictionary_t xbps_pkgdb_get_pkgd(const char *pkg, bool bypattern);
+
+/**
+ * Returns a package dictionary from master package database (pkgdb) plist,
+ * matching the pkgver object in \a pkg dictionary.
+ *
+ * @param[in] pkgver Package name-version to match, i.e 'foo-1.0'.
+ *
+ * @return The matching proplib package dictionary from pkgdb copied
+ * with \a prop_dictionary_copy() so it must be released when not required
+ * anymore with prop_object_release(). NULL otherwise.
+ */
+prop_dictionary_t xbps_pkgdb_get_pkgd_by_pkgver(const char *pkgver);
 
 /**
  * Removes a package dictionary from master package database (pkgdb) plist,
