@@ -603,7 +603,6 @@ struct xbps_handle *xbps_handle_get(void);
  * Configure (or force reconfiguration of) a package.
  *
  * @param[in] pkgname Package name to configure.
- * @param[in] version Package version (<b>optional</b>).
  * @param[in] check_state Set it to true to check that package is
  * in unpacked state.
  * @param[in] update Set it to true if this package is being updated.
@@ -612,7 +611,6 @@ struct xbps_handle *xbps_handle_get(void);
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_configure_pkg(const char *pkgname,
-		       const char *version,
 		       bool check_state,
 		       bool update,
 		       bool flush);

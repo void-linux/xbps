@@ -244,8 +244,7 @@ xbps_transaction_commit(void)
 			/*
 			 * Reconfigure pending package.
 			 */
-			rv = xbps_configure_pkg(pkgname, version,
-			    false, false, false);
+			rv = xbps_configure_pkg(pkgname, false, false, false);
 			if (rv != 0)
 				goto out;
 		} else {
@@ -326,7 +325,7 @@ xbps_transaction_commit(void)
 		if (strcmp(tract, "update") == 0)
 			update = true;
 
-		rv = xbps_configure_pkg(pkgname, version, false, update, false);
+		rv = xbps_configure_pkg(pkgname, false, update, false);
 		if (rv != 0)
 			goto out;
 		/*

@@ -51,7 +51,7 @@ xbps_configure_packages(bool flush)
 {
 	struct xbps_handle *xhp = xbps_handle_get();
 	prop_object_t obj;
-	const char *pkgname, *version;
+	const char *pkgname;
 	size_t i;
 	int rv;
 
@@ -61,8 +61,7 @@ xbps_configure_packages(bool flush)
 	for (i = 0; i < prop_array_count(xhp->pkgdb); i++) {
 		obj = prop_array_get(xhp->pkgdb, i);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		rv = xbps_configure_pkg(pkgname, version, true, false, false);
+		rv = xbps_configure_pkg(pkgname, true, false, false);
 		if (rv != 0)
 			break;
 	}
@@ -74,108 +73,98 @@ xbps_configure_packages(bool flush)
 
 int
 xbps_configure_pkg(const char *pkgname,
-		   const char *version,
 		   bool check_state,
 		   bool update,
 		   bool flush)
 {
 	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd;
-	const char *lver;
-	char *buf, *pkgver;
+	const char *version, *pkgver;
+	char *buf;
 	int rv = 0;
 	pkg_state_t state = 0;
 
 	assert(pkgname != NULL);
 	xhp = xbps_handle_get();
 
+	pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
+	if (pkgd == NULL)
+		return ENOENT;
+
+	prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+
 	if (check_state) {
-		rv = xbps_pkg_state_installed(pkgname, &state);
+		rv = xbps_pkg_state_dictionary(pkgd, &state);
 		xbps_dbg_printf("%s: state %d rv %d\n", pkgname, state, rv);
-		if (rv == ENOENT) {
-			/*
-			 * package not installed or has been removed.
-			 */
-			return 0;
-		} else if (rv != 0) {
+		if (rv != 0) {
 			xbps_dbg_printf("%s: [configure] failed to get "
 			    "pkg state: %s\n", pkgname, strerror(rv));
+			prop_object_release(pkgd);
 			return EINVAL;
 		}
 
 		if (state == XBPS_PKG_STATE_INSTALLED) {
-			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0)
+			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0) {
+				prop_object_release(pkgd);
 				return 0;
-		} else if (state != XBPS_PKG_STATE_UNPACKED)
+			}
+		} else if (state != XBPS_PKG_STATE_UNPACKED) {
+			prop_object_release(pkgd);
 			return EINVAL;
-	
-		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
-		prop_dictionary_get_cstring_nocopy(pkgd, "version", &lver);
-		prop_object_release(pkgd);
-	} else {
-		lver = version;
+		}
 	}
-
-	pkgver = xbps_xasprintf("%s-%s", pkgname, lver);
-	if (pkgver == NULL)
-		return ENOMEM;
-
-	xbps_set_cb_state(XBPS_STATE_CONFIGURE, 0, pkgname, lver, NULL);
+	prop_object_release(pkgd);
+	xbps_set_cb_state(XBPS_STATE_CONFIGURE, 0, pkgname, version, NULL);
 
 	buf = xbps_xasprintf("%s/metadata/%s/INSTALL",
 	    XBPS_META_PATH, pkgname);
-	if (buf == NULL) {
-		free(pkgver);
+	if (buf == NULL)
 		return ENOMEM;
-	}
 
 	if (chdir(xhp->rootdir) == -1) {
 		xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, errno,
-		    pkgname, lver,
+		    pkgname, version,
 		    "%s: [configure] failed to chdir to rootdir `%s': %s",
 		    pkgver, xhp->rootdir, strerror(errno));
 		free(buf);
-		free(pkgver);
 		return EINVAL;
 	}
 
 	if (access(buf, X_OK) == 0) {
 		if (xbps_file_exec(buf, "post",
-		    pkgname, lver, update ? "yes" : "no",
+		    pkgname, version, update ? "yes" : "no",
 		    xhp->conffile, NULL) != 0) {
 			xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, errno,
-			    pkgname, lver,
+			    pkgname, version,
 			    "%s: [configure] INSTALL script failed to execute "
 			    "the post ACTION: %s", pkgver, strerror(errno));
 			free(buf);
-			free(pkgver);
 			return errno;
 		}
 	} else {
 		if (errno != ENOENT) {
 			xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, errno,
-			    pkgname, lver,
+			    pkgname, version,
 			    "%s: [configure] INSTALL script cannot be "
 			    "executed: %s", pkgver, strerror(errno));
 			free(buf);
-			free(pkgver);
 			return errno;
 		}
 	}
 	free(buf);
-	rv = xbps_set_pkg_state_installed(pkgname, lver,
+	rv = xbps_set_pkg_state_installed(pkgname, version,
 	    XBPS_PKG_STATE_INSTALLED);
 	if (rv != 0) {
 		xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, rv,
-		    pkgname, lver,
+		    pkgname, version,
 		    "%s: [configure] failed to set state to installed: %s",
 		    pkgver, strerror(rv));
 	}
-	free(pkgver);
 	if (flush) {
 		if ((rv = xbps_pkgdb_update(true)) != 0) {
 			xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, rv,
-			    pkgname, lver,
+			    pkgname, version,
 			    "%s: [configure] failed to update pkgdb: %s\n",
 			    pkgver, strerror(rv));
 		}

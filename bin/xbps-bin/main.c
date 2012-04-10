@@ -373,7 +373,7 @@ main(int argc, char **argv)
 		if (strcasecmp(argv[1], "all") == 0)
 			rv = xbps_configure_packages(true);
 		else
-			rv = xbps_configure_pkg(argv[1], NULL, true, false, true);
+			rv = xbps_configure_pkg(argv[1], true, false, true);
 
 	} else if (strcasecmp(argv[0], "show-deps") == 0) {
 		/*
