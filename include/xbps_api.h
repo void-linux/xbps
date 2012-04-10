@@ -56,8 +56,8 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120405"
-#define XBPS_VERSION		"0.15"
+#define XBPS_API_VERSION	"20120410"
+#define XBPS_VERSION		"0.16"
 
 /**
  * @def XBPS_RELVER
@@ -1677,15 +1677,13 @@ int xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
  * Sets package state \a state in package \a pkgname.
  *
  * @param[in] pkgname Package name.
- * @param[in] version Package version (optional).
- * @param[in] pkgver Package name/version (optional).
+ * @param[in] version Package version.
  * @param[in] state Package state to be set.
  *
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_set_pkg_state_installed(const char *pkgname,
 				 const char *version,
-				 const char *pkgver,
 				 pkg_state_t state);
 
 /**

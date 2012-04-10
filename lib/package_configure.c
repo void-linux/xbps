@@ -163,7 +163,7 @@ xbps_configure_pkg(const char *pkgname,
 		}
 	}
 	free(buf);
-	rv = xbps_set_pkg_state_installed(pkgname, lver, pkgver,
+	rv = xbps_set_pkg_state_installed(pkgname, lver,
 	    XBPS_PKG_STATE_INSTALLED);
 	if (rv != 0) {
 		xbps_set_cb_state(XBPS_STATE_CONFIGURE_FAIL, rv,

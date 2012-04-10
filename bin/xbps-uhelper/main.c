@@ -117,7 +117,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *pkgn, *version, *rootdir = NULL, *confdir = NULL;
-	char *plist, *pkgname, *pkgver, *in_chroot_env, *hash;
+	char *plist, *pkgname, *in_chroot_env, *hash;
 	bool in_chroot = false;
 	int flags = 0, i, c, rv = 0;
 
@@ -186,12 +186,6 @@ main(int argc, char **argv)
 		prop_dictionary_set_cstring_nocopy(dict, "pkgname", argv[1]);
 		prop_dictionary_set_cstring_nocopy(dict, "version", argv[2]);
 		prop_dictionary_set_cstring_nocopy(dict, "short_desc", argv[3]);
-		pkgver = xbps_xasprintf("%s-%s", argv[1], argv[2]);
-		if (pkgver == NULL) {
-			rv = -1;
-			goto out;
-		}
-		prop_dictionary_set_cstring(dict, "pkgver", pkgver);
 		prop_dictionary_set_bool(dict, "automatic-install", false);
 
 		pkgd = xbps_pkgdb_get_pkgd(argv[1], false);
@@ -207,7 +201,7 @@ main(int argc, char **argv)
 			    pkgn, version, MSG_RESET);
 		} else {
 			rv = xbps_set_pkg_state_installed(argv[1], argv[2],
-			    pkgver, XBPS_PKG_STATE_INSTALLED);
+			    XBPS_PKG_STATE_INSTALLED);
 			if (rv != 0)
 				goto out;
 
@@ -223,7 +217,6 @@ main(int argc, char **argv)
 				    argv[1], argv[2], MSG_RESET);
 			}
 		}
-		free(pkgver);
 		prop_object_release(dict);
 	} else if (strcasecmp(argv[0], "unregister") == 0) {
 		/* Unregisters a package from the database */

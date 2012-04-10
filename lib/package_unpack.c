@@ -625,7 +625,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	/*
 	 * Set package state to half-unpacked.
 	 */
-	if ((rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
+	if ((rv = xbps_set_pkg_state_installed(pkgname, version,
 	    XBPS_PKG_STATE_HALF_UNPACKED)) != 0) {
 		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgname, version,
@@ -647,7 +647,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	/*
 	 * Set package state to unpacked.
 	 */
-	if ((rv = xbps_set_pkg_state_installed(pkgname, version, pkgver,
+	if ((rv = xbps_set_pkg_state_installed(pkgname, version,
 	    XBPS_PKG_STATE_UNPACKED)) != 0) {
 		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgname, version,
