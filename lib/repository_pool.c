@@ -101,10 +101,11 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 			rv = errno;
 			goto out;
 		}
-		if (access(plist, R_OK) == -1) {
-			xbps_dbg_printf("[rpool] `%s' missing index "
-			    "file, ignoring.\n", repouri);
-			free(plist);
+		array = prop_array_internalize_from_zfile(plist);
+		free(plist);
+		if (array == NULL) {
+			xbps_dbg_printf("[rpool] `%s' cannot be internalized:"
+			    " %s\n", repouri, strerror(errno));
 			nmissing++;
 			continue;
 		}
@@ -114,23 +115,15 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 		d = prop_dictionary_create();
 		if (d == NULL) {
 			rv = ENOMEM;
-			free(plist);
+			prop_object_release(array);
 			goto out;
 		}
 		if (!prop_dictionary_set_cstring_nocopy(d, "uri", repouri)) {
 			rv = EINVAL;
+			prop_object_release(array);
 			prop_object_release(d);
-			free(plist);
 			goto out;
 		}
-		array = prop_array_internalize_from_zfile(plist);
-		if (array == NULL) {
-			rv = EINVAL;
-			prop_object_release(d);
-			free(plist);
-			goto out;
-		}
-		free(plist);
 		prop_array_make_immutable(array);
 		if (!xbps_add_obj_to_dict(d, array, "index")) {
 			rv = EINVAL;
@@ -162,6 +155,7 @@ out:
 void HIDDEN
 xbps_repository_pool_release(struct xbps_handle *xhp)
 {
+	prop_array_t idx;
 	prop_dictionary_t d;
 	size_t i;
 	const char *uri;
@@ -171,11 +165,12 @@ xbps_repository_pool_release(struct xbps_handle *xhp)
 
 	for (i = 0; i < prop_array_count(xhp->repo_pool); i++) {
 		d = prop_array_get(xhp->repo_pool, i);
+		idx = prop_dictionary_get(d, "index");
 		prop_dictionary_get_cstring_nocopy(d, "uri", &uri);
 		xbps_dbg_printf("[rpool] unregistered repository '%s'\n", uri);
+		prop_object_release(idx);
 		prop_object_release(d);
 	}
-	prop_object_release(xhp->repo_pool);
 	xhp->repo_pool = NULL;
 	xbps_dbg_printf("[rpool] released ok.\n");
 }
