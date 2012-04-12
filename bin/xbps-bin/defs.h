@@ -26,10 +26,6 @@
 #ifndef _XBPS_BIN_DEFS_H_
 #define _XBPS_BIN_DEFS_H_
 
-#ifndef __UNCONST
-#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
-#endif
-
 #include <sys/time.h>
 #include <xbps_api.h>
 
@@ -100,7 +96,6 @@ void	unpack_progress_cb(const struct xbps_unpack_cb_data *, void *);
 int	show_pkg_files(prop_dictionary_t);
 void	show_pkg_info(prop_dictionary_t);
 void	show_pkg_info_one(prop_dictionary_t, const char *);
-int	list_strings_in_array(prop_object_t, void *, bool *);
 int	list_strings_sep_in_array(prop_object_t, void *, bool *);
 size_t	find_longest_pkgver(prop_object_t);
 void	print_package_line(const char *, bool);

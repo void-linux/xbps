@@ -26,10 +26,6 @@
 #ifndef _XBPS_REPO_DEFS_H_
 #define _XBPS_REPO_DEFS_H_
 
-#ifndef __UNCONST
-#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
-#endif
-
 #include <xbps_api.h>
 
 struct repo_search_data {
@@ -56,6 +52,5 @@ int	repo_search_pkgs_cb(struct repository_pool_index *, void *, bool *);
 int	show_pkg_info_from_repolist(const char *, const char *);
 int	show_pkg_deps_from_repolist(const char *);
 int 	show_pkg_namedesc(prop_object_t, void *, bool *);
-
 
 #endif /* !_XBPS_REPO_DEFS_H_ */

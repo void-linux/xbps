@@ -159,6 +159,7 @@ show_pkg_files(prop_dictionary_t filesd)
 			printf("\n");
 		}
 	}
+	prop_object_release(allkeys);
 
 	return 0;
 }
@@ -191,17 +192,6 @@ find_longest_pkgver(prop_object_t o)
 		    _find_longest_pkgver_cb, &len);
 
 	return len;
-}
-
-int
-list_strings_in_array(prop_object_t obj, void *arg, bool *loop_done)
-{
-	(void)arg;
-	(void)loop_done;
-
-	print_package_line(prop_string_cstring_nocopy(obj), false);
-
-	return 0;
 }
 
 int
