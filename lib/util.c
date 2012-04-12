@@ -68,11 +68,14 @@ xbps_check_is_installed_pkg_by_pattern(const char *pattern)
 
 	dict = xbps_find_virtualpkg_dict_installed(pattern, true);
 	if (dict == NULL) {
-		if (errno == ENOENT) {
-			errno = 0;
-			return 0; /* not installed */
-		}	
-		return -1; /* error */
+		dict = xbps_find_pkg_dict_installed(pattern, true);
+		if (dict == NULL) {
+			if (errno == ENOENT) {
+				errno = 0;
+				return 0; /* not installed */
+			}
+			return -1; /* error */
+		}
 	}
 	/*
 	 * Check that package state is fully installed, not

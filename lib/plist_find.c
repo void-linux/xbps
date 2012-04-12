@@ -58,7 +58,14 @@ find_pkg_in_array(prop_array_t array,
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		if (bypattern) {
+		if (virtual) {
+			/*
+			 * Check if package pattern matches
+			 * any virtual package version in dictionary.
+			 */
+			if (xbps_match_virtual_pkg_in_dict(obj, str, bypattern))
+				break;
+		} else if (bypattern) {
 			/*
 			 * Check if package pattern matches the
 			 * pkgver string object in dictionary.
@@ -75,14 +82,6 @@ find_pkg_in_array(prop_array_t array,
 			if (strcmp(dpkgn, str) == 0)
 				break;
 		}
-		if (!virtual)
-			continue;
-		/*
-		 * Finally check if package pattern matches
-		 * any virtual package version in dictionary.
-		 */
-		if (xbps_match_virtual_pkg_in_dict(obj, str, bypattern))
-			break;
 	}
 	prop_object_iterator_release(iter);
 	if (obj == NULL) {
