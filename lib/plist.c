@@ -279,7 +279,10 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 
 	if (access(plistf, R_OK) == -1) {
 		pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
-		if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY) {
+		if (pkgd == NULL)
+			pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+
+		if (pkgd != NULL) {
 			free(plistf);
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgname", &savedpkgname);
