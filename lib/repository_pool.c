@@ -124,7 +124,6 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 			prop_object_release(d);
 			goto out;
 		}
-		prop_array_make_immutable(array);
 		if (!xbps_add_obj_to_dict(d, array, "index")) {
 			rv = EINVAL;
 			prop_object_release(d);
@@ -143,6 +142,7 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 		goto out;
 	}
 
+	prop_array_make_immutable(xhp->repo_pool);
 	xbps_dbg_printf("[rpool] initialized ok.\n");
 out:
 	if (rv != 0) 
