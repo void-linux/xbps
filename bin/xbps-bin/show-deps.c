@@ -67,8 +67,11 @@ show_pkg_reverse_deps(const char *pkgname)
 
 	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
 	if (pkgd == NULL) {
-		printf("Package %s is not installed.\n", pkgname);
-		return 0;
+		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+		if (pkgd == NULL) {
+			printf("Package %s is not installed.\n", pkgname);
+			return 0;
+		}
 	}
 	rv = xbps_callback_array_iter_in_dict(pkgd, "requiredby",
 	    list_strings_sep_in_array, NULL);
