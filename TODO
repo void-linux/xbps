@@ -1,6 +1,6 @@
 libxbps:
- - conflicts: the object is there but is not handled yet.
- - properties: (hold) still unimplemented.
+ - conflicts: the object is there but is not handled yet (ETA 0.16)
+ - properties: (hold) still unimplemented (ETA 0.16)
  - properties: (update-first) still unimplemented.
 
 xbps-repo:
