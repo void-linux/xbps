@@ -1,4 +1,4 @@
-.Dd February 20, 2012
+.Dd May 5, 2012
 .Os Void GNU/Linux
 .Dt xbps-repo 8
 .Sh NAME
@@ -54,6 +54,11 @@ Shows the current XBPS release version (version, API, index).
 Please note that all targets are case insensitive.
 .Pp
 .Bl -tag -width ident
+.It Sy clean
+Cleans the
+.Em cachedir
+and removes obsolete binary packages, either because they are not available
+anymore in repository pool or because its sha256 hash doesn't match.
 .It Sy find-files Ar pattern Ar [patterns ...]
 Prints the name of
 .Em package(s)

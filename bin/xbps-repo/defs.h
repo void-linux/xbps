@@ -53,4 +53,7 @@ int	show_pkg_info_from_repolist(const char *, const char *);
 int	show_pkg_deps_from_repolist(const char *);
 int 	show_pkg_namedesc(prop_object_t, void *, bool *);
 
+/* From clean.c */
+int	cachedir_clean(void);
+
 #endif /* !_XBPS_REPO_DEFS_H_ */

@@ -1,3 +1,12 @@
+xbps-0.16 (???):
+
+ * xbps-repo(8): new target: 'clean'. This removes obsolete binpkgs
+   from cachedir, either because the binpkg is not available in repository
+   pool anymore or because its sha256 hash that doesn't match with the
+   one matched in repository index file.
+
+ * Miscellanous API cleanups (API/ABI incompat changes).
+
 xbps-0.15 (2012-04-06):
 
  * xbps-bin(8): a new test for the 'check' target to find stale entries

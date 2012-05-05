@@ -53,6 +53,8 @@ usage(bool fail)
 	    " -r rootdir   Full path to rootdir\n"
 	    " -V           Show XBPS version\n\n"
 	    "[targets]\n"
+	    " clean\n"
+	    "   Removes obsolete binary packages from cachedir.\n"
 	    " find-files <pattern> [patterns]\n"
 	    "   Print package name/version for any pattern matched.\n"
 	    " genindex <directory>\n"
@@ -277,6 +279,12 @@ main(int argc, char **argv)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
 		}
+	} else if (strcasecmp(argv[0], "clean") == 0) {
+		/* Cleans up cache directory */
+		if (argc != 1)
+			usage(true);
+
+		rv = cachedir_clean();
 	} else {
 		usage(true);
 	}
