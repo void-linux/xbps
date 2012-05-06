@@ -111,7 +111,7 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 {
 	prop_object_t obj;
 	const char *pkgver, *repoloc, *filen, *trans;
-	const char *pkgname, *version;
+	const char *pkgname, *version, *fetchstr;
 	char *binfile;
 	int rv = 0;
 
@@ -163,11 +163,13 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		 */
 		rv = xbps_fetch_file(binfile, xhp->cachedir, false, NULL);
 		if (rv == -1) {
+			fetchstr = xbps_fetch_error_string();
 			xbps_set_cb_state(XBPS_STATE_DOWNLOAD_FAIL,
-			    errno, pkgname, version,
+			    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
+			    pkgname, version,
 			    "%s: [trans] failed to download binary package "
 			    "`%s' from `%s': %s", pkgver, filen, repoloc,
-			    strerror(errno));
+			    fetchstr ? fetchstr : strerror(errno));
 			free(binfile);
 			break;
 		}
