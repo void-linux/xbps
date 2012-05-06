@@ -166,7 +166,7 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	} else if (xfpd->cb_end) {
 		/* end transfer stats */
 		(void)xbps_humanize_number(size, (int64_t)xfpd->file_dloaded);
-		fprintf(stderr,"Downloaded %s for %s [avg rate: %s]\n",
+		fprintf(stderr,"Downloaded %s for %s [avg rate: %s]\033[K\n",
 		    size, xfpd->file_name, stat_bps(xfpd, xfer));
 	}
 }
