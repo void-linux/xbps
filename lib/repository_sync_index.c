@@ -163,7 +163,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 
 	/* reposync start cb */
 	xbps_set_cb_state(XBPS_STATE_REPOSYNC, 0, NULL, NULL,
-	    "Synchronizing index for `%s'...", uri);
+	    "Synchronizing %s for `%s'...", plistf, uri);
 	/*
 	 * Download plist index file from repository.
 	 */
