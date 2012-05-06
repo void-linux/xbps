@@ -4,8 +4,6 @@ libxbps:
  - properties: (update-first) still unimplemented.
 
 xbps-repo:
- - New target to clean binpkgs in cachedir that aren't available on
-   any registered repository or its hash doesn't match.
  - support to verify PGP signed pkg-index.plist repo files.
    I have some preliminar code but need to clean it up, thanks
    to NetBSD's netpgp).
