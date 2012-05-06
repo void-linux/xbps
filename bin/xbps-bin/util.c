@@ -30,6 +30,7 @@
 #include <fnmatch.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/ioctl.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -211,6 +212,13 @@ print_package_line(const char *str, bool reset)
 {
 	static size_t cols;
 	static bool first;
+	struct winsize ws;
+	size_t maxcols;
+
+	if (ioctl(1, TIOCGWINSZ, &ws) == 0)
+		maxcols = ws.ws_col;
+	else
+		maxcols = 80;
 
 	if (reset) {
 		cols = 0;
@@ -218,7 +226,7 @@ print_package_line(const char *str, bool reset)
 		return;
 	}
 	cols += strlen(str) + 4;
-	if (cols <= 80) {
+	if (cols <= maxcols) {
 		if (first == false) {
 			printf("  ");
 			first = true;
