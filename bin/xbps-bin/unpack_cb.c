@@ -34,12 +34,11 @@ unpack_progress_cb_verbose(const struct xbps_unpack_cb_data *xpd, void *cbdata)
 {
 	(void)cbdata;
 
-	if (xpd->entry == NULL || xpd->entry_is_metadata)
-		return;
-	else if (xpd->entry_size <= 0)
+	if (xpd->entry == NULL || xpd->entry_total_count <= 0)
 		return;
 
-	printf("Extracted %sfile `%s' (%" PRIi64 " bytes)\n",
+	printf("%s: unpacked %sfile `%s' (%" PRIi64 " bytes)\n",
+	    xpd->pkgver,
 	    xpd->entry_is_conf ? "configuration " : "", xpd->entry,
 	    xpd->entry_size);
 }
@@ -49,11 +48,10 @@ unpack_progress_cb(const struct xbps_unpack_cb_data *xpd, void *cbdata)
 {
 	(void)cbdata;
 
-	if (xpd->entry == NULL || xpd->entry_is_metadata)
-		return;
-	else if (xpd->entry_size <= 0)
+	if (xpd->entry_total_count <= 0)
 		return;
 
-	printf("Extracting `%s'...\n", xpd->entry);
+	printf("%s: unpacked %zd of %zd files...\n",
+	    xpd->pkgver, xpd->entry_extract_count, xpd->entry_total_count);
 	printf("\033[1A\033[K");
 }

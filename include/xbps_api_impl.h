@@ -185,8 +185,6 @@ void HIDDEN xbps_set_cb_fetch(off_t, off_t, off_t, const char *,
 			      bool, bool, bool);
 void HIDDEN xbps_set_cb_state(xbps_state_t, int, const char *,
 			      const char *, const char *, ...);
-void HIDDEN xbps_set_cb_unpack(const char *, int64_t, ssize_t,
-			       ssize_t, bool, bool);
 
 /**
  * @private

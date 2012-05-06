@@ -240,9 +240,9 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		 * Prepare unpack callback ops.
 		 */
 		if (xucd != NULL) {
+			xucd->pkgver = pkgver;
 			xucd->entry = entry_pname;
 			xucd->entry_size = archive_entry_size(entry);
-			xucd->entry_is_metadata = false;
 			xucd->entry_is_conf = false;
 		}
 		if (strcmp("./INSTALL", entry_pname) == 0) {
@@ -275,11 +275,6 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 				goto out;
 			}
 			nmetadata++;
-			if (xucd != NULL) {
-				xucd->entry_is_metadata = true;
-				xucd->entry_extract_count++;
-				(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
-			}
 			continue;
 
 		} else if (strcmp("./REMOVE", entry_pname) == 0) {
@@ -289,11 +284,6 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 				goto out;
 
 			nmetadata++;
-			if (xucd != NULL) {
-				xucd->entry_is_metadata = true;
-				xucd->entry_extract_count++;
-				(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
-			}
 			continue;
 
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
@@ -308,11 +298,6 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 				goto out;
 			}
 			nmetadata++;
-			if (xucd != NULL) {
-				xucd->entry_is_metadata = true;
-				xucd->entry_extract_count++;
-				(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
-			}
 			continue;
 
 		} else if (strcmp("./props.plist", entry_pname) == 0) {
@@ -328,11 +313,6 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 				goto out;
 			}
 			nmetadata++;
-			if (xucd != NULL) {
-				xucd->entry_is_metadata = true;
-				xucd->entry_extract_count++;
-				(*xhp->unpack_cb)(xucd, xhp->unpack_cb_data);
-			}
 			continue;
 		}
 		/*
@@ -360,10 +340,10 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		}
 		/*
 		 * Compute total entries in progress data, if set.
-		 * total_entries = metadata + files + conf_files + links.
+		 * total_entries = files + conf_files + links.
 		 */
 		if (xucd != NULL) {
-			xucd->entry_total_count = nmetadata;
+			xucd->entry_total_count = 0;
 			array = prop_dictionary_get(filesd, "files");
 			xucd->entry_total_count +=
 			    (ssize_t)prop_array_count(array);

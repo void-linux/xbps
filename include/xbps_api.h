@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120506"
+#define XBPS_API_VERSION	"20120506-1"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -404,6 +404,12 @@ struct xbps_fetch_cb_data {
  */
 struct xbps_unpack_cb_data {
 	/**
+	 * @var pkgver
+	 *
+	 * Package name/version string of package being unpacked.
+	 */
+	const char *pkgver;
+	/**
 	 * @var entry
 	 *
 	 * Entry pathname string.
@@ -427,12 +433,6 @@ struct xbps_unpack_cb_data {
 	 * Total number of entries in package.
 	 */
 	ssize_t entry_total_count;
-	/**
-	 * @var entry_is_metadata
-	 *
-	 * If true "entry" is a metadata file.
-	 */
-	bool entry_is_metadata;
 	/**
 	 * @var entry_is_conf
 	 *

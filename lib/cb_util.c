@@ -99,26 +99,3 @@ xbps_set_cb_state(xbps_state_t state,
 	if (buf != NULL)
 		free(buf);
 }
-
-void HIDDEN
-xbps_set_cb_unpack(const char *entry,
-		   int64_t entry_size,
-		   ssize_t entry_extract_count,
-		   ssize_t entry_total_count,
-		   bool entry_is_metadata,
-		   bool entry_is_conf)
-{
-	const struct xbps_handle *xhp = xbps_handle_get();
-	struct xbps_unpack_cb_data xucd;
-
-	if (xhp->unpack_cb == NULL)
-		return;
-
-	xucd.entry = entry;
-	xucd.entry_size = entry_size;
-	xucd.entry_extract_count = entry_extract_count;
-	xucd.entry_total_count = entry_total_count;
-	xucd.entry_is_metadata = entry_is_metadata;
-	xucd.entry_is_conf = entry_is_conf;
-	(*xhp->unpack_cb)(&xucd, xhp->unpack_cb_data);
-}
