@@ -35,6 +35,7 @@
 #include "defs.h"
 
 struct checkpkg {
+	size_t totalpkgs;
 	size_t npkgs;
 	size_t nbrokenpkgs;
 	bool flush;
@@ -51,11 +52,13 @@ cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-	printf("Checking %s-%s ...\n", pkgname, version);
+	printf("[%zu/%zu] checking %s-%s ...\n",
+	    cpkg->npkgs, cpkg->totalpkgs, pkgname, version);
 	if (check_pkg_integrity(obj, pkgname, false, &flush) != 0)
 		cpkg->nbrokenpkgs++;
 	else
 		printf("\033[1A\033[K");
+
 
 	if (flush && !cpkg->flush)
 		cpkg->flush = flush;
@@ -66,10 +69,15 @@ cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
 int
 check_pkg_integrity_all(void)
 {
+	struct xbps_handle *xhp = xbps_handle_get();
 	struct checkpkg cpkg;
 	int rv;
 
 	memset(&cpkg, 0, sizeof(cpkg));
+	/* force an update to get total pkg count */
+	(void)xbps_pkgdb_update(false);
+	cpkg.totalpkgs = prop_array_count(xhp->pkgdb);
+
 	(void)xbps_pkgdb_foreach_cb(cb_pkg_integrity, &cpkg);
 	if (cpkg.flush) {
 		if ((rv = xbps_pkgdb_update(true)) != 0) {
