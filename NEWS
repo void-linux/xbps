@@ -1,7 +1,7 @@
 xbps-0.16 (???):
 
  * xbps-bin(8): renamed "autoupdate" target to "dist-upgrade" and
-   "autoremove" to "remove-orphans."
+   "autoremove" to "remove-orphans".
 
  * Added support to put packages "on hold". Packages on hold
    won't be updated by system upgrades even if there is a newer version.
