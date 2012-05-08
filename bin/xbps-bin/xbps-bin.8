@@ -1,4 +1,4 @@
-.Dd February 3, 2012
+.Dd May 8, 2012
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -30,7 +30,7 @@ Sets the
 boolean object for a package, therefore explicitly
 setting that package was installed as it were a dependency, even if it is not.
 Use of this option takes effect in the
-.Em autoupdate ,
+.Em dist-upgrade ,
 .Em install
 and
 .Em update
@@ -51,7 +51,7 @@ Enables extra debugging output to be shown to stderr.
 Only show the URLs to download the binary packages from repositories. This is
 useful if you want to download them by other means, and later you can move
 them to the cachedir to start the installation. This option can be used for
-the install, update and autoupdate targets.
+the install, update and dist-upgrade targets.
 .It Fl F
 Used currently in the
 .Em remove
@@ -80,7 +80,7 @@ Sets the
 boolean object for package to false, therefore
 explicitly setting that package was installed manually by the user. Use of this
 option takes effect in the
-.Em autoupdate ,
+.Em dist-upgrade ,
 .Em install
 and
 .Em update
@@ -91,7 +91,7 @@ Enables dry-run mode.
 To show the actions that would be executed in a transaction.
 This mode takes effect in the
 .Em autoremove ,
-.Em autoupdate ,
+.Em dist-upgrade ,
 .Em install ,
 .Rm remove
 and
@@ -137,14 +137,14 @@ Please note that all targets are case insensitive.
 Removes package orphans. These packages were installed as dependencies and
 currently there is not any package depending on it, directly or indirectly.
 Usually it is safe to always answer yes.
-.It Sy autoupdate
-Updates all currently installed packages to the newest version available in
-all repositories.
 .It Sy check Ar pkgname | Ar all
 Checks for integrity errors in installed packages. The checks are to found
 missing run-time dependencies, missing and modified package files and
 metadata files. If the all keyword is used, all packages currently installed
 will be checked, otherwise just pkgname.
+.It Sy dist-upgrade
+Updates all currently installed packages to the newest version available in
+all repositories.
 .It Sy find-files Ar pattern Ar [patterns ...]
 Prints the name of the installed
 .Em package(s)
@@ -229,7 +229,7 @@ Updates
 to the most newer version available in repository pool. This can be used if only
 .Em pkgname(s)
 need to be updated, unlike the
-.Em autoupdate
+.Em dist-upgrade
 target that will update all currently installed packages.
 .Sh PACKAGE STATES
 A package can be in a different state while it is being

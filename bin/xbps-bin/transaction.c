@@ -215,7 +215,7 @@ show_transaction_sizes(struct transaction *trans)
 }
 
 int
-autoupdate_pkgs(bool yes, bool dry_run, bool show_download_pkglist_url)
+dist_upgrade(bool yes, bool dry_run, bool show_download_pkglist_url)
 {
 	int rv = 0;
 

@@ -64,10 +64,10 @@ usage(bool fail)
 	    "[targets]\n"
 	    " autoremove\n"
 	    "   Auto remove all package orphans.\n"
-	    " autoupdate\n"
-	    "   Auto update all packages to newest versions.\n"
 	    " check <pkgname|all>\n"
 	    "   Package integrity check for `pkgname' or `all' packages.\n"
+	    " dist-upgrade\n"
+	    "   Update all currently installed packages to newest versions.\n"
 	    " find-files <pattern> [patterns]\n"
 	    "   Print package name/version for any pattern matched.\n"
 	    " install <pattern> [patterns]\n"
@@ -333,14 +333,14 @@ main(int argc, char **argv)
 		else
 			rv = check_pkg_integrity(NULL, argv[1], true, NULL);
 
-	} else if (strcasecmp(argv[0], "autoupdate") == 0) {
+	} else if (strcasecmp(argv[0], "dist-upgrade") == 0) {
 		/*
 		 * To update all packages currently installed.
 		 */
 		if (argc != 1)
 			usage(true);
 
-		rv = autoupdate_pkgs(yes, dry_run, show_download_pkglist_url);
+		rv = dist_upgrade(yes, dry_run, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "show-orphans") == 0) {
 		/*
