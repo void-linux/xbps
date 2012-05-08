@@ -10,12 +10,12 @@ xbps-0.16 (???):
    The configuration string list "PackagesOnHold" in xbps.conf expects
    a list of package names.
 
- * xbps-bin(8): miscellaneous improvements while unpacking package files,
-   and add a counter for the 'check all' target.
+ * xbps-bin(8): miscellaneous cosmetic improvements while unpacking
+   package files and add a counter for the 'check all' target.
 
  * xbps-repo(8): new target: 'clean'. This removes obsolete binpkgs
    from cachedir, either because the binpkg is not available in repository
-   pool anymore or because its sha256 hash that doesn't match with the
+   pool anymore or because its sha256 hash doesn't match with the
    one matched in repository index file.
 
  * Miscellanous API cleanups (API/ABI incompat changes).
