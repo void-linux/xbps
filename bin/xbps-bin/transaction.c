@@ -244,7 +244,7 @@ dist_upgrade(bool yes, bool dry_run, bool show_download_pkglist_url)
 }
 
 int
-autoremove_pkgs(bool yes, bool dry_run)
+remove_pkg_orphans(bool yes, bool dry_run)
 {
 	int rv;
 
@@ -253,7 +253,7 @@ autoremove_pkgs(bool yes, bool dry_run)
 			printf("No package orphans were found.\n");
 			return 0;
 		} else {
-			printf("Failed to autoremove packages: %s\n",
+			printf("Failed to remove package orphans: %s\n",
 			    strerror(rv));
 			return rv;
 		}

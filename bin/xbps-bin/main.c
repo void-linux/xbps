@@ -62,8 +62,6 @@ usage(bool fail)
 	    " -y           Assume yes to all questions\n"
 	    " -V           Show XBPS version\n\n"
 	    "[targets]\n"
-	    " autoremove\n"
-	    "   Auto remove all package orphans.\n"
 	    " check <pkgname|all>\n"
 	    "   Package integrity check for `pkgname' or `all' packages.\n"
 	    " dist-upgrade\n"
@@ -79,6 +77,8 @@ usage(bool fail)
 	    "   Reconfigure `pkgname' or `all' packages.\n"
 	    " remove <pkgname> [pkgnames]\n"
 	    "   Remove a list of packages.\n"
+	    " remove-orphans\n"
+	    "   Remove all package orphans from system.\n"
 	    " show <pkgname>\n"
 	    "   Print package information for `pkgname'.\n"
 	    " show-deps <pkgname>\n"
@@ -352,7 +352,7 @@ main(int argc, char **argv)
 
 		rv = show_orphans();
 
-	} else if (strcasecmp(argv[0], "autoremove") == 0) {
+	} else if (strcasecmp(argv[0], "remove-orphans") == 0) {
 		/*
 		 * Removes orphan pkgs. These packages were installed
 		 * as dependency and any installed package does not depend
@@ -361,7 +361,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = autoremove_pkgs(yes, dry_run);
+		rv = remove_pkg_orphans(yes, dry_run);
 
 	} else if (strcasecmp(argv[0], "reconfigure") == 0) {
 		/*

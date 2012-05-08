@@ -90,7 +90,7 @@ and target packages and its required dependencies will be matched.
 Enables dry-run mode.
 To show the actions that would be executed in a transaction.
 This mode takes effect in the
-.Em autoremove ,
+.Em remove-orphans ,
 .Em dist-upgrade ,
 .Em install ,
 .Rm remove
@@ -133,10 +133,6 @@ Shows the current XBPS release version (version, API, index).
 Please note that all targets are case insensitive.
 .Pp
 .Bl -tag -width ident
-.It Sy autoremove
-Removes package orphans. These packages were installed as dependencies and
-currently there is not any package depending on it, directly or indirectly.
-Usually it is safe to always answer yes.
 .It Sy check Ar pkgname | Ar all
 Checks for integrity errors in installed packages. The checks are to found
 missing run-time dependencies, missing and modified package files and
@@ -200,6 +196,10 @@ Files not matching the original SHA256 hash will be preserved. If
 .Ql -f
 option is used, package files will be
 .Em removed even if its SHA256 hash don't match .
+.It Sy remove-orphans
+Removes package orphans. These packages were installed as dependencies and
+currently there is not any package depending on it, directly or indirectly.
+Usually it is safe to always answer yes.
 .It Sy show Ar pkgname
 Shows information for installed package
 .Em pkgname .
