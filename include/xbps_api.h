@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120506-1"
+#define XBPS_API_VERSION	"20120508"
 #define XBPS_VERSION		"0.16"
 
 /**

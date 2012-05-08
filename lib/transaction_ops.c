@@ -188,13 +188,23 @@ out:
 static int
 update_pkgs_cb(prop_object_t obj, void *arg, bool *done)
 {
-	const char *pkgname;
+	struct xbps_handle *xhp = xbps_handle_get();
+	const char *pkgname, *holdpkgname;
 	bool *newpkg_found = arg;
 	int rv = 0;
+	size_t i;
 
 	(void)done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	for (i = 0; i < cfg_size(xhp->cfg, "PackagesOnHold"); i++) {
+		holdpkgname = cfg_getnstr(xhp->cfg, "PackagesOnHold", i);
+		if (strcmp(pkgname, holdpkgname) == 0) {
+			xbps_dbg_printf("[rpool] package %s on hold, "
+			    "ignoring updates.\n", pkgname);
+			return 0;
+		}
+	}
 	rv = xbps_transaction_update_pkg(pkgname);
 	if (rv == 0)
 		*newpkg_found = true;

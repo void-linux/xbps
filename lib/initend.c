@@ -110,6 +110,7 @@ xbps_init(struct xbps_handle *xh)
 		    XBPS_TRANS_FLUSH, CFGF_NONE),
 		CFG_BOOL(__UNCONST("syslog"), true, CFGF_NONE),
 		CFG_STR_LIST(__UNCONST("repositories"), NULL, CFGF_MULTI),
+		CFG_STR_LIST(__UNCONST("PackagesOnHold"), NULL, CFGF_MULTI),
 		CFG_SEC(__UNCONST("virtual-package"),
 		    vpkg_opts, CFGF_MULTI|CFGF_TITLE),
 		CFG_FUNC(__UNCONST("include"), &cfg_include),
