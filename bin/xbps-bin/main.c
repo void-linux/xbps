@@ -333,7 +333,8 @@ main(int argc, char **argv)
 		else
 			rv = check_pkg_integrity(NULL, argv[1], true, NULL);
 
-	} else if (strcasecmp(argv[0], "dist-upgrade") == 0) {
+	} else if ((strcasecmp(argv[0], "dist-upgrade") == 0) ||
+		   (strcasecmp(argv[0], "autoupdate") == 0)) {
 		/*
 		 * To update all packages currently installed.
 		 */
@@ -352,7 +353,8 @@ main(int argc, char **argv)
 
 		rv = show_orphans();
 
-	} else if (strcasecmp(argv[0], "remove-orphans") == 0) {
+	} else if ((strcasecmp(argv[0], "remove-orphans") == 0) ||
+		   (strcasecmp(argv[0], "autoremove") == 0)) {
 		/*
 		 * Removes orphan pkgs. These packages were installed
 		 * as dependency and any installed package does not depend
