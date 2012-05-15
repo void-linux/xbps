@@ -117,7 +117,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *pkgn, *version, *rootdir = NULL, *confdir = NULL;
-	char *plist, *pkgname, *in_chroot_env, *hash;
+	char *plist, *pkgname, *in_chroot_env, *hash, *tmp;
 	bool in_chroot = false;
 	int flags = 0, i, c, rv = 0;
 
@@ -187,6 +187,10 @@ main(int argc, char **argv)
 		prop_dictionary_set_cstring_nocopy(dict, "version", argv[2]);
 		prop_dictionary_set_cstring_nocopy(dict, "short_desc", argv[3]);
 		prop_dictionary_set_bool(dict, "automatic-install", false);
+
+		tmp = xbps_xasprintf("%s-%s", argv[1], argv[2]);
+		assert(tmp != NULL);
+		prop_dictionary_set_cstring_nocopy(dict, "pkgver", tmp);
 
 		pkgd = xbps_pkgdb_get_pkgd(argv[1], false);
 		if (pkgd != NULL) {
