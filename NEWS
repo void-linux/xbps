@@ -1,5 +1,9 @@
 xbps-0.16 (???):
 
+ * libxbps: when removing package files and if metadata files.plist wasn't
+   found, do not error out and rather just continue until the package is
+   fully removed.
+
  * xbps-bin(8): renamed "autoupdate" target to "dist-upgrade" and
    "autoremove" to "remove-orphans". For compatibility with previous
    versions the old targets are still kept, but will be removed in future

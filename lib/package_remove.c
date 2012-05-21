@@ -328,38 +328,31 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 	}
 
 	pkgd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
-	if (pkgd == NULL) {
-		rv = errno;
-		goto out;
+	if (pkgd) {
+		/* Remove links */
+		if ((rv = xbps_remove_pkg_files(pkgd, "links", pkgver)) != 0)
+			goto out;
+		/* Remove regular files */
+		if ((rv = xbps_remove_pkg_files(pkgd, "files", pkgver)) != 0)
+			goto out;
+		/* Remove configuration files */
+		if ((rv = xbps_remove_pkg_files(pkgd, "conf_files", pkgver)) != 0)
+			goto out;
+		/* Remove dirs */
+		if ((rv = xbps_remove_pkg_files(pkgd, "dirs", pkgver)) != 0)
+			goto out;
 	}
-	/* Remove links */
-	if ((rv = xbps_remove_pkg_files(pkgd, "links", pkgver)) != 0)
-		goto out;
-
-	/* Remove regular files */
-	if ((rv = xbps_remove_pkg_files(pkgd, "files", pkgver)) != 0)
-		goto out;
-
-	/* Remove configuration files */
-	if ((rv = xbps_remove_pkg_files(pkgd, "conf_files", pkgver)) != 0)
-		goto out;
-
-	/* Remove dirs */
-	if ((rv = xbps_remove_pkg_files(pkgd, "dirs", pkgver)) != 0)
-		goto out;
-
 	/*
 	 * Execute the post REMOVE action if file exists and we aren't
 	 * updating the package.
 	 */
 	if (rmfile_exists &&
-	    (xbps_file_exec(buf, "post", pkgname, version, "no",
-	     xhp->conffile, NULL) != 0)) {
+	    ((rv = xbps_file_exec(buf, "post", pkgname, version, "no",
+	     xhp->conffile, NULL)) != 0)) {
 		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
-		    errno, pkgname, version,
+		    rv, pkgname, version,
 		    "%s: [remove] REMOVE script failed to execute "
-		    "post ACTION: %s", pkgver, strerror(errno));
-		rv = errno;
+		    "post ACTION: %s", pkgver, strerror(rv));
 		goto out;
 	}
 	/*
@@ -390,13 +383,12 @@ purge:
 	 * Execute the purge REMOVE action if file exists.
 	 */
 	if (access(buf, X_OK) == 0) {
-	    if (xbps_file_exec(buf, "purge", pkgname, version, "no",
-	        xhp->conffile, NULL) != 0) {
-		rv = errno;
+	    if ((rv = xbps_file_exec(buf, "purge", pkgname, version, "no",
+	        xhp->conffile, NULL)) != 0) {
 		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
-		    errno, pkgname, version,
+		    rv, pkgname, version,
 		    "%s: REMOVE script failed to execute "
-		    "purge ACTION: %s", pkgver, strerror(errno));
+		    "purge ACTION: %s", pkgver, strerror(rv));
 		goto out;
 	    }
 	}
