@@ -131,11 +131,13 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 		      const char *pkgver)
 {
 	struct xbps_handle *xhp;
+	struct stat st;
 	prop_array_t array;
 	prop_object_iterator_t iter;
 	prop_object_t obj;
 	const char *file, *sha256, *version, *curobj = NULL;
 	char *path = NULL, *pkgname = NULL;
+	char buf[PATH_MAX];
 	int rv = 0;
 
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
@@ -219,6 +221,22 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 				    strerror(rv));
 				free(path);
 				break;
+			}
+		} else if (strcmp(key, "links") == 0) {
+			/*
+			 * All regular files from package were removed at this
+			 * point, so we will only remove dangling symlinks.
+			 */
+			if (realpath(path, buf) == NULL) {
+				if (errno != ENOENT) {
+					free(path);
+					rv = errno;
+					break;
+				}
+			}
+			if (stat(buf, &st) == 0) {
+				free(path);
+				continue;
 			}
 		}
 		/*
@@ -329,14 +347,14 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 
 	pkgd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
 	if (pkgd) {
-		/* Remove links */
-		if ((rv = xbps_remove_pkg_files(pkgd, "links", pkgver)) != 0)
-			goto out;
 		/* Remove regular files */
 		if ((rv = xbps_remove_pkg_files(pkgd, "files", pkgver)) != 0)
 			goto out;
 		/* Remove configuration files */
 		if ((rv = xbps_remove_pkg_files(pkgd, "conf_files", pkgver)) != 0)
+			goto out;
+		/* Remove links */
+		if ((rv = xbps_remove_pkg_files(pkgd, "links", pkgver)) != 0)
 			goto out;
 		/* Remove dirs */
 		if ((rv = xbps_remove_pkg_files(pkgd, "dirs", pkgver)) != 0)

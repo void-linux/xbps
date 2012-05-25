@@ -1,5 +1,14 @@
 xbps-0.16 (???):
 
+ * libxbps: change the order in which package files are removed:
+
+	current: files, conf_files, links, directories.
+	previous: links, files, conf_files, directories.
+
+   This is required to avoid removing working symlinks, which could be
+   owned by another installed package. Now only dangling symlinks are now
+   removed.
+
  * libxbps: when removing package files and if metadata files.plist wasn't
    found, do not error out and rather just continue until the package is
    fully removed.
