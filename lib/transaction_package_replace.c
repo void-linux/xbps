@@ -29,17 +29,20 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include "xbps_api_impl.h"
 
 int HIDDEN
 xbps_transaction_package_replace(prop_dictionary_t transd)
 {
+	struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t replaces, instd_reqby, transd_unsorted;
-	prop_dictionary_t instd, pkg_repod, reppkgd;
+	prop_dictionary_t instd, pkg_repod, reppkgd, filesd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pattern, *pkgname, *curpkgname, *pkgver, *curpkgver;
+	char *dirc, *buf, *dname;
 	bool instd_auto, sr;
 	size_t idx;
 
@@ -144,7 +147,9 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 			/*
 			 * Copy requiredby and automatic-install objects
 			 * from replaced package into pkg's dictionary
-			 * for "softreplace" packages.
+			 * for "softreplace" packages. Also externalize
+			 * PKGFILES from package being replaced to remove
+			 * obsolete files.
 			 */
 			sr = false;
 			prop_dictionary_get_bool(pkg_repod, "softreplace", &sr);
@@ -158,6 +163,39 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 				    "automatic-install", instd_auto);
 				prop_dictionary_set_bool(instd,
 				    "softreplace", true);
+				buf = xbps_xasprintf("%s/%s/metadata/%s/%s",
+				    xhp->rootdir, XBPS_META_PATH, curpkgname,
+				    XBPS_PKGFILES);
+				assert(buf != NULL);
+				filesd = prop_dictionary_internalize_from_zfile(buf);
+				free(buf);
+				assert(filesd != NULL);
+				buf = xbps_xasprintf("%s/%s/metadata/%s/%s",
+				    xhp->rootdir, XBPS_META_PATH, pkgname,
+				    XBPS_PKGFILES);
+				assert(buf != NULL);
+				dirc = strdup(buf);
+				assert(dirc != NULL);
+				dname = dirname(dirc);
+				if (xbps_mkpath(dname, 0755) == -1) {
+					if (errno != EEXIST) {
+						free(buf);
+						prop_object_release(instd);
+						prop_object_iterator_release(iter);
+						return errno;
+					}
+				}
+				if (!prop_dictionary_externalize_to_zfile(filesd, buf)) {
+					free(buf);
+					free(dirc);
+					prop_object_release(filesd);
+					prop_object_release(instd);
+					prop_object_iterator_release(iter);
+					return errno;
+				}
+				prop_object_release(filesd);
+				free(buf);
+				free(dirc);
 			}
 			/*
 			 * Add package dictionary into the transaction and mark

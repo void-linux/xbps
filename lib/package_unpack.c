@@ -166,13 +166,17 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	char *buf = NULL, *pkgfilesd = NULL;
 	int rv, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
+	bool softreplace;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
 
-	preserve = update = conf_file = file_exists = skip_obsoletes = false;
+	preserve = update = conf_file = file_exists = false;
+	skip_obsoletes = softreplace = false;
+
 	prop_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	prop_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
+	prop_dictionary_get_bool(pkg_repod, "softreplace", &softreplace);
 	prop_dictionary_get_cstring_nocopy(pkg_repod,
 	    "transaction", &transact);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
@@ -480,9 +484,9 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	}
 	/*
 	 * Skip checking for obsolete files on:
-	 *  - New package installation.
-	 *  - Package with "preserve" keyword.
-	 *  - Package with "skip-obsoletes" keyword.
+	 * 	- New package installation without "softreplace" keyword.
+	 * 	- Package with "preserve" keyword.
+	 * 	- Package with "skip-obsoletes" keyword.
 	 */
 	pkgfilesd = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
@@ -490,10 +494,12 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		rv = ENOMEM;
 		goto out;
 	}
-	if (skip_obsoletes || preserve || !update)
+	if (skip_obsoletes || preserve || (!softreplace && !update))
 		goto out1;
 	/*
-	 * Check for obsolete files.
+	 * Check for obsolete files on:
+	 * 	- Package upgrade.
+	 * 	- Package with "softreplace" keyword.
 	 */
 	old_filesd = prop_dictionary_internalize_from_zfile(pkgfilesd);
 	if (prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY) {
