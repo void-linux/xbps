@@ -94,9 +94,9 @@ check_pkg_symlinks(const char *pkgname, void *arg, bool *pkgdb_update)
 				path = buf;
 
 			if (strcmp(path, tgt)) {
-				xbps_error_printf("%s: modified symlink `%s', "
-				    "target: `%s' (shall be: `%s')\n",
-				    pkgname, file, tgt, path);
+				xbps_error_printf("%s: modified symlink `%s' "
+				    "points to: `%s' (shall be: `%s')\n",
+				    pkgname, file, path, tgt);
 				test_broken = true;
 			}
 			path = NULL;
