@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120525"
+#define XBPS_API_VERSION	"20120525-1"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -1330,10 +1330,13 @@ int xbps_unregister_pkg(const char *pkgname, const char *version, bool flush);
  * @param[in] version Package version associated.
  * @param[in] update If true, some steps will be skipped. See in the
  * detailed description above for more information.
+ * @param[in] soft_replace If true, some steps will be skipped. See in
+ * the detailed description above for more information.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_remove_pkg(const char *pkgname, const char *version, bool update);
+int xbps_remove_pkg(const char *pkgname, const char *version, bool update,
+		    bool soft_replace);
 
 /**
  * Remove files defined in a proplib array as specified by \a key

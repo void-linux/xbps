@@ -264,7 +264,8 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 }
 
 int
-xbps_remove_pkg(const char *pkgname, const char *version, bool update)
+xbps_remove_pkg(const char *pkgname, const char *version, bool update,
+		bool soft_replace)
 {
 	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd = NULL;
@@ -343,6 +344,13 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		free(pkgver);
 		free(buf);
 		return xbps_requiredby_pkg_remove(pkgname);
+	} else if (soft_replace) {
+		/*
+		 * Soft replace a package. Do not remove its files, but
+		 * execute PURGE action, remove metadata files and unregister
+		 * from pkgdb.
+		 */
+		goto softreplace;
 	}
 
 	pkgd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
@@ -383,6 +391,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update)
 		    pkgver, strerror(rv));
 		goto out;
 	}
+
+softreplace:
 	/*
 	 * Set package state to "half-removed".
 	 */

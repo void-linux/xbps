@@ -190,7 +190,7 @@ xbps_transaction_commit(void)
 	size_t i;
 	const char *pkgname, *version, *pkgver, *tract;
 	int rv = 0;
-	bool update, install;
+	bool update, install, sr;
 
 	assert(prop_object_type(xhp->transd) == PROP_TYPE_DICTIONARY);
 
@@ -234,12 +234,14 @@ xbps_transaction_commit(void)
 
 		if (strcmp(tract, "remove") == 0) {
 			update = false;
+			sr = false;
 			/*
 			 * Remove package.
 			 */
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
-			rv = xbps_remove_pkg(pkgname, version, update);
+			prop_dictionary_get_bool(obj, "softreplace", &sr);
+			rv = xbps_remove_pkg(pkgname, version, update, sr);
 			if (rv != 0)
 				goto out;
 		} else if (strcmp(tract, "configure") == 0) {
@@ -265,7 +267,8 @@ xbps_transaction_commit(void)
 				 */
 				xbps_set_cb_state(XBPS_STATE_UPDATE, 0,
 				    pkgname, version, NULL);
-				rv = xbps_remove_pkg(pkgname, version, true);
+				rv = xbps_remove_pkg(pkgname, version,
+						     true, false);
 				if (rv != 0) {
 					xbps_set_cb_state(
 					    XBPS_STATE_UPDATE_FAIL,

@@ -40,7 +40,7 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pattern, *pkgname, *curpkgname, *pkgver, *curpkgver;
-	bool instd_auto;
+	bool instd_auto, sr;
 	size_t idx;
 
 	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
@@ -133,6 +133,22 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 			    pattern, true) ||
 			    xbps_match_virtual_pkg_in_dict(instd,
 			    pkgname, false)) {
+				if (instd_reqby &&
+				    prop_array_count(instd_reqby)) {
+					prop_dictionary_set(pkg_repod,
+					    "requiredby", instd_reqby);
+				}
+				prop_dictionary_set_bool(pkg_repod,
+				    "automatic-install", instd_auto);
+			}
+			/*
+			 * Copy requiredby and automatic-install objects
+			 * from replaced package into pkg's dictionary
+			 * for "softreplace" packages.
+			 */
+			sr = false;
+			prop_dictionary_get_bool(pkg_repod, "softreplace", &sr);
+			if (sr) {
 				if (instd_reqby &&
 				    prop_array_count(instd_reqby)) {
 					prop_dictionary_set(pkg_repod,
