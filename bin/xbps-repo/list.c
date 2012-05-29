@@ -51,7 +51,9 @@ repo_pkg_list_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 	lpc.state = 0;
 	lpc.pkgver_len = find_longest_pkgver(rpi->rpi_repo);
 
-	printf("From %s repository ...\n", rpi->rpi_uri);
+	if (arg == NULL)
+		printf("From %s repository ...\n", rpi->rpi_uri);
+
 	(void)xbps_callback_array_iter(rpi->rpi_repo, list_pkgs_in_dict, &lpc);
 	return 0;
 }
