@@ -38,43 +38,30 @@
 #include "xbps_api_impl.h"
 
 static int
-pfcexec(const char *path, const char *file, const char **argv)
+pfcexec(const char *file, const char **argv)
 {
-	pid_t			child;
-	int			status;
-	bool			do_chroot = false;
+	struct xbps_handle *xhp;
+	pid_t child;
+	int status;
 
 	child = vfork();
 	switch (child) {
 	case 0:
-		if (getuid() == 0 && access("./bin/sh", X_OK) == 0)
-			do_chroot = true;
-
 		/*
-		 * If uid==0 and /bin/sh exists, we can change root directory,
-		 * fork and execute the command. Otherwise just change current
-		 * directory and fork/execute.
+		 * If rootdir != / and uid==0 and bin/sh exists,
+		 * change root directory and exec command.
+		 *
+		 * It's assumed that cwd is the target rootdir.
 		 */
-		if (path && do_chroot) {
-			if (chroot(path) == -1)
-				_exit(127);
-			if (chdir("/") == -1)
-				_exit(127);
-		} else if (path && !do_chroot) {
-			if (chdir(path) == -1)
-				_exit(127);
-		} else if (path == NULL && do_chroot) {
-			if (chroot(".") == -1) {
-				if (errno != EPERM)
-					_exit(127);
-				if (chdir(".") == -1)
-					_exit(127);
-			} else {
+		xhp = xbps_handle_get();
+		if (strcmp(xhp->rootdir, "/")) {
+			if (getuid() == 0 && access("bin/sh", X_OK) == 0) {
+				if (chroot(xhp->rootdir) == -1)
+					_exit(128);
 				if (chdir("/") == -1)
-					_exit(127);
+					_exit(129);
 			}
 		}
-
 		(void)execv(file, __UNCONST(argv));
 		_exit(127);
 		/* NOTREACHED */
@@ -94,7 +81,7 @@ pfcexec(const char *path, const char *file, const char **argv)
 }
 
 static int
-vfcexec(const char *path, int skipempty, const char *arg, va_list ap)
+vfcexec(const char *arg, va_list ap)
 {
 	const char **argv;
 	size_t argv_size, argc;
@@ -120,14 +107,11 @@ vfcexec(const char *path, int skipempty, const char *arg, va_list ap)
 		}
 
 		arg = va_arg(ap, const char *);
-		if (skipempty && arg && strlen(arg) == 0)
-		    continue;
-
 		argv[argc++] = arg;
 
 	} while (arg != NULL);
 
-	retval = pfcexec(path, argv[0], argv);
+	retval = pfcexec(argv[0], argv);
 	free(argv);
 
 	return retval;
@@ -140,33 +124,7 @@ xbps_file_exec(const char *arg, ...)
 	int	result;
 
 	va_start(ap, arg);
-	result = vfcexec(NULL, 0, arg, ap);
-	va_end(ap);
-
-	return result;
-}
-
-int HIDDEN
-xbps_file_exec_skipempty(const char *arg, ...)
-{
-	va_list	ap;
-	int	result;
-
-	va_start(ap, arg);
-	result = vfcexec(NULL, 1, arg, ap);
-	va_end(ap);
-
-	return result;
-}
-
-int HIDDEN
-xbps_file_chdir_exec(const char *path, const char *arg, ...)
-{
-	va_list	ap;
-	int	result;
-
-	va_start(ap, arg);
-	result = vfcexec(path, 0, arg, ap);
+	result = vfcexec(arg, ap);
 	va_end(ap);
 
 	return result;
