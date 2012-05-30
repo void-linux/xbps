@@ -187,5 +187,5 @@ out:
 	if (broken)
 		return 1;
 
-	return 0;
+	return rv;
 }
