@@ -3,8 +3,8 @@ internal use in the code:
 
 - queue.h from NetBSD: include/queue.h.
 
-- package pattern matching code from NetBSD:
-  lib/external/dewey.c and lib/external/match.c
+- relational dewey version matching code from NetBSD:
+  lib/external/dewey.c
 
 - strlcat and strlcpy functions from OpenBSD:
   lib/compat/strlc{at,cpy}.c

@@ -38,7 +38,7 @@ endif
 
 # External code used by libxbps
 EXTOBJS = external/dewey.o external/fexec.o external/humanize_number.o
-EXTOBJS += external/match.o external/mkpath.o
+EXTOBJS += external/mkpath.o
 
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o
