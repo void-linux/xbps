@@ -1,5 +1,8 @@
 xbps-0.16 (???):
 
+ * libxbps: renamed xbps_repository_pool_xxx to xbps_rpool_xxx
+   (API/ABI incompat changes).
+
  * libxbps: extended rpool with a new function:
    xbps_repository_pool_find_virtualpkg_conf. This function will match
    a virtual package as was specified in configuration file. That means
