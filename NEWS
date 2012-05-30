@@ -1,8 +1,5 @@
 xbps-0.16 (???):
 
- * libxbps: implemented xbps_file_exec thru posix_spawn. That means
-   posix_spawn() is now required in xbps.
-
  * libxbps: renamed xbps_repository_pool_xxx to xbps_rpool_xxx
    (API/ABI incompat changes).
 

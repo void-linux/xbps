@@ -13,6 +13,8 @@ internal use in the code:
 
 - mkpath from NetBSD's mkdir(1): lib/external/mkpath.c
 
+- fexec from NetBSD's pkg_install: lib/external/fexec.c
+
 - libfetch-2.31 from NetBSD: lib/fetch
 
 - portableproplib-0.4.1 (lib/portableproplib) from

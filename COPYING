@@ -140,7 +140,7 @@ This product uses some code with the following license
  */
 
 This product uses some code with the following license
-(lib/humanize_number.c):
+(lib/humanize_number.c, lib/fexec.c):
 
 /*
  * Copyright (c) 2003 The NetBSD Foundation, Inc.
