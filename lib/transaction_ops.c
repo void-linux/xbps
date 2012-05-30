@@ -84,16 +84,13 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
-	pkg_repod = xbps_repository_pool_find_pkg(pkg, bypattern, bestpkg);
-	if (pkg_repod == NULL) {
-		pkg_repod =
-		    xbps_repository_pool_find_virtualpkg(pkg, bypattern);
-		if (pkg_repod == NULL) {
-			/* not found */
-			rv = errno;
-			errno = 0;
-			goto out;
-		}
+	if (((pkg_repod = xbps_repository_pool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
+	    ((pkg_repod = xbps_repository_pool_find_pkg(pkg, bypattern, bestpkg)) == NULL) &&
+	    ((pkg_repod = xbps_repository_pool_find_virtualpkg(pkg, bypattern)) == NULL)) {
+		/* not found */
+		rv = errno;
+		errno = 0;
+		goto out;
 	}
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);

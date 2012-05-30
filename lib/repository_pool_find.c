@@ -53,6 +53,33 @@ repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done
 
 	if (rpf->bypattern) {
 		rpf->pkgd =
+		    xbps_find_virtualpkg_in_array_by_pattern(rpi->rpi_repo,
+		    rpf->pattern);
+	} else {
+		rpf->pkgd =
+		    xbps_find_virtualpkg_in_array_by_name(rpi->rpi_repo,
+		    rpf->pattern);
+	}
+	if (rpf->pkgd) {
+		prop_dictionary_set_cstring(rpf->pkgd, "repository",
+		    rpi->rpi_uri);
+		*done = true;
+		return 0;
+	}
+	/* not found */
+	return 0;
+}
+
+static int
+repo_find_virtualpkg_conf_cb(struct repository_pool_index *rpi,
+			    void *arg, bool *done)
+{
+	struct repo_pool_fpkg *rpf = arg;
+
+	assert(rpi != NULL);
+
+	if (rpf->bypattern) {
+		rpf->pkgd =
 		    xbps_find_virtualpkg_conf_in_array_by_pattern(rpi->rpi_repo,
 		    rpf->pattern);
 	} else {
@@ -61,10 +88,6 @@ repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done
 		    rpf->pattern);
 	}
 	if (rpf->pkgd) {
-#ifdef DEBUG
-		xbps_dbg_printf("%s: found pkg in repository\n", __func__);
-		xbps_dbg_printf_append("%s", prop_dictionary_externalize(rpf->pkgd));
-#endif
 		prop_dictionary_set_cstring(rpf->pkgd, "repository",
 		    rpi->rpi_uri);
 		*done = true;
@@ -89,20 +112,10 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 		/* match by pkgpattern in pkgver*/
 		rpf->pkgd = xbps_find_pkg_in_array_by_pattern(rpi->rpi_repo,
 		    rpf->pattern);
-		/* If no pkg exists matching pattern, look for virtual packages */
-		if (rpf->pkgd == NULL) {
-			rpf->pkgd = xbps_find_virtualpkg_in_array_by_pattern(
-			    rpi->rpi_repo, rpf->pattern);
-		}
 	} else {
 		/* match by pkgname */
 		rpf->pkgd = xbps_find_pkg_in_array_by_name(rpi->rpi_repo,
 		    rpf->pattern);
-		/* If no pkg exists matching pattern, look for virtual packages */
-		if (rpf->pkgd == NULL) {
-			rpf->pkgd = xbps_find_virtualpkg_in_array_by_name(
-			    rpi->rpi_repo, rpf->pattern);
-		}
 	}
 	if (rpf->pkgd) {
 		/*
@@ -170,9 +183,16 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 	return 0;
 }
 
+typedef enum {
+	BEST_PKG = 1,
+	EXACT_PKG,
+	VIRTUAL_PKG,
+	VIRTUAL_CONF_PKG,
+	REAL_PKG
+} pkg_repo_type_t;
+
 static struct repo_pool_fpkg *
-repo_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
-	      bool virtual)
+repo_find_pkg(const char *pkg, bool bypattern, pkg_repo_type_t type)
 {
 	struct repo_pool_fpkg *rpf;
 	int rv = 0;
@@ -185,43 +205,45 @@ repo_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
 
 	rpf->pattern = pkg;
 	rpf->bypattern = bypattern;
-	rpf->exact = exact;
+	rpf->exact = false;
 	rpf->pkgd = NULL;
 	rpf->bestpkgver = NULL;
 
-	if (exact) {
+	switch (type) {
+	case EXACT_PKG:
 		/*
-		 * Look for exact package match with pkgver in all repos.
+		 * Find exact pkg version.
 		 */
+		rpf->exact = true;
 		rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
-		if (rv != 0)
-			errno = rv;
-	} else if (best) {
+		break;
+	case BEST_PKG:
 		/*
-		 * Look for the best package version of a package name or
-		 * pattern in all repositories.
+		 * Find best pkg version.
 		 */
 		rv = xbps_repository_pool_foreach(repo_find_best_pkg_cb, rpf);
-		if (rv != 0)
-			errno = rv;
-	} else {
-		if (virtual) {
-			/*
-			 * No package found. Look for virtual package
-			 * set by the user or any virtual pkg available.
-			 */
-			rv = xbps_repository_pool_foreach(repo_find_virtualpkg_cb, rpf);
-			if (rv != 0)
-				errno = rv;
-		} else {
-			/*
-			 * Look for a package (non virtual) in repositories.
-			 */
-			rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
-			if (rv != 0)
-				errno = rv;
-		}
+		break;
+	case VIRTUAL_PKG:
+		/*
+		 * Find virtual pkg.
+		 */
+		rv = xbps_repository_pool_foreach(repo_find_virtualpkg_cb, rpf);
+		break;
+	case VIRTUAL_CONF_PKG:
+		/*
+		 * Find virtual pkg as specified in configuration file.
+		 */
+		rv = xbps_repository_pool_foreach(repo_find_virtualpkg_conf_cb, rpf);
+		break;
+	case REAL_PKG:
+		/*
+		 * Find real pkg.
+		 */
+		rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
+		break;
 	}
+	if (rv != 0)
+		errno = rv;
 
 	return rpf;
 }
@@ -234,7 +256,23 @@ xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern)
 
 	assert(pkg != NULL);
 
-	rpf = repo_find_pkg(pkg, bypattern, false, false, true);
+	rpf = repo_find_pkg(pkg, bypattern, VIRTUAL_PKG);
+	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
+		pkgd = prop_dictionary_copy(rpf->pkgd);
+	free(rpf);
+
+	return pkgd;
+}
+
+prop_dictionary_t
+xbps_repository_pool_find_virtualpkg_conf(const char *pkg, bool bypattern)
+{
+	struct repo_pool_fpkg *rpf;
+	prop_dictionary_t pkgd = NULL;
+
+	assert(pkg != NULL);
+
+	rpf = repo_find_pkg(pkg, bypattern, VIRTUAL_CONF_PKG);
 	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);
@@ -250,7 +288,11 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 
 	assert(pkg != NULL);
 
-	rpf = repo_find_pkg(pkg, bypattern, best, false, false);
+	if (best)
+		rpf = repo_find_pkg(pkg, bypattern, BEST_PKG);
+	else
+		rpf = repo_find_pkg(pkg, bypattern, REAL_PKG);
+
 	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);
@@ -266,7 +308,7 @@ xbps_repository_pool_find_pkg_exact(const char *pkgver)
 
 	assert(pkgver != NULL);
 
-	rpf = repo_find_pkg(pkgver, false, false, true, false);
+	rpf = repo_find_pkg(pkgver, false, EXACT_PKG);
 	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
 		pkgd = prop_dictionary_copy(rpf->pkgd);
 	free(rpf);

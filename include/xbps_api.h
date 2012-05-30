@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120525-3"
+#define XBPS_API_VERSION	"20120530"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -1537,13 +1537,13 @@ int xbps_repository_pool_foreach(
 /**
  * Finds a package dictionary in the repository pool by specifying a
  * package pattern or a package name. This function does not take into
- * account virtual packages set in configuration file.
+ * account virtual packages, just matches real packages.
  *
  * @param[in] pkg Package pattern or name.
  * @param[in] bypattern Set it to true if \a pkg is a pkgpattern (foo>=0),
  * false if it is a pkgname.
  * @param[in] best True to find the best version available in repo, false to
- * fetch the first package found matching its pkgname.
+ * fetch the first package found matching \a pkg.
  *
  * @return The package dictionary if found, NULL otherwise.
  * @note When returned dictionary is no longer needed, you must release it
@@ -1566,6 +1566,21 @@ prop_dictionary_t xbps_repository_pool_find_pkg_exact(const char *pkgver);
 
 /**
  * Finds a package dictionary in repository pool by specifying a
+ * virtual package pattern or a package name.
+ *
+ * @param[in] pkg Virtual package pattern or name to match.
+ * @param[in] bypattern Set it to true if \a pkg is a pkgpattern (foo>=0),
+ * false if it is a pkgname.
+ *
+ * @return The package dictionary if found, NULL otherwise.
+ * @note When returned dictionary is no longer needed, you must release it
+ * with prop_object_release(3).
+ */
+prop_dictionary_t
+	xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern);
+
+/**
+ * Finds a package dictionary in repository pool by specifying a
  * package pattern or a package name. Only virtual packages set in
  * configuration file will be matched.
  *
@@ -1578,7 +1593,7 @@ prop_dictionary_t xbps_repository_pool_find_pkg_exact(const char *pkgver);
  * with prop_object_release(3).
  */
 prop_dictionary_t
-	xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern);
+	xbps_repository_pool_find_virtualpkg_conf(const char *pkg, bool bypattern);
 
 /**
  * Iterate over the the repository pool and search for a metadata plist

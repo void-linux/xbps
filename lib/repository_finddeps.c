@@ -386,37 +386,33 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 		 * If dependency does not match add pkg into the missing
 		 * deps array and pass to next one.
 		 */
-		curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true);
-		if (curpkgd == NULL) {
-			curpkgd = xbps_repository_pool_find_pkg(reqpkg, true,
-			    true);
-			if (curpkgd == NULL) {
-				/* pkg not found, there was some error */
-				if (errno && errno != ENOENT) {
-					xbps_dbg_printf("failed to find pkg "
-					    "for `%s' in rpool: %s\n",
-					    reqpkg, strerror(errno));
-					rv = errno;
-					break;
-				}
-
-				rv = add_missing_reqdep(trans_mdeps, reqpkg);
-				if (rv != 0 && rv != EEXIST) {
-					xbps_dbg_printf_append("`%s': "
-					    "add_missing_reqdep failed %s\n",
-					    reqpkg);
-					break;
-				} else if (rv == EEXIST) {
-					xbps_dbg_printf_append("`%s' missing "
-					    "dep already added.\n", reqpkg);
-					rv = 0;
-					continue;
-				} else {
-					xbps_dbg_printf_append("`%s' added "
-					    "into the missing deps array.\n",
-					    reqpkg);
-					continue;
-				}
+		if (((curpkgd = xbps_repository_pool_find_virtualpkg_conf(reqpkg, true)) == NULL) &&
+		    ((curpkgd = xbps_repository_pool_find_pkg(reqpkg, true, true)) == NULL) &&
+		    ((curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true)) == NULL)) {
+			/* pkg not found, there was some error */
+			if (errno && errno != ENOENT) {
+				xbps_dbg_printf("failed to find pkg "
+				    "for `%s' in rpool: %s\n",
+				    reqpkg, strerror(errno));
+				rv = errno;
+				break;
+			}
+			rv = add_missing_reqdep(trans_mdeps, reqpkg);
+			if (rv != 0 && rv != EEXIST) {
+				xbps_dbg_printf_append("`%s': "
+				    "add_missing_reqdep failed %s\n",
+				    reqpkg);
+				break;
+			} else if (rv == EEXIST) {
+				xbps_dbg_printf_append("`%s' missing "
+				    "dep already added.\n", reqpkg);
+				rv = 0;
+				continue;
+			} else {
+				xbps_dbg_printf_append("`%s' added "
+				    "into the missing deps array.\n",
+				    reqpkg);
+				continue;
 			}
 		}
 		prop_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);

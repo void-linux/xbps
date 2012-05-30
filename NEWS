@@ -1,5 +1,16 @@
 xbps-0.16 (???):
 
+ * libxbps: extended rpool with a new function:
+   xbps_repository_pool_find_virtualpkg_conf. This function will match
+   a virtual package as was specified in configuration file. That means
+   that the find_xxx functions now do exactly what the API documents.
+   While resolving packages, the order to look for them is the following:
+
+	find_virtualpkg_conf -> find_pkg -> find_virtualpkg
+
+   If no virtual pkg from conf matched, look for a real pkg, otherwise
+   use the first virtual package from rpool that matches our pattern.
+
  * libxbps: introduce the concept of "soft replace". When a package
    contains that boolean object set in pkg's metadata props.plist,
    some steps will be skipped at remove time for the package being
