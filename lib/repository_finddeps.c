@@ -38,8 +38,7 @@ store_dependency(prop_dictionary_t transd,
 {
 	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t array;
-	prop_dictionary_t curpkgd;
-	const char *pkgname, *pkgver, *repoloc, *curpkgver;
+	const char *pkgname, *pkgver, *repoloc;
 	size_t x;
 	int rv = 0;
 
@@ -51,21 +50,6 @@ store_dependency(prop_dictionary_t transd,
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "repository", &repoloc);
-	/*
-	 * Check if same pkg is already in transaction, and if current pkg version
-	 * is greater add it, otherwise drop it.
-	 */
-	curpkgd = xbps_find_pkg_in_dict_by_name(transd, "unsorted_deps", pkgname);
-	if (curpkgd != NULL) {
-		prop_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &curpkgver);
-		rv = xbps_cmpver(pkgver, curpkgver);
-		if (rv == 1) {
-			xbps_remove_pkg_from_dict_by_name(transd,
-			    "unsorted_deps", pkgname);
-			xbps_dbg_printf("%s: found pkg `%s' in transaction, replaced by `%s'.\n",
-			    __func__, curpkgver, pkgver);
-		}
-	}
 	/*
 	 * Overwrite package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
@@ -196,7 +180,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 {
 	struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t curpkgd, tmpd;
-	prop_array_t curpkgrdeps;
+	prop_array_t curpkgrdeps, unsorted;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	pkg_state_t state;
@@ -349,37 +333,22 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 		 * Pass 2:
 		 * check if required dependency was already added
 		 * in the transaction.
-		 *
-		 * 1/3: match any virtual pkg in configuration file.
 		 */
-		curpkgd = xbps_find_virtualpkg_conf_in_dict_by_pattern(
-		    transd, "unsorted_deps", reqpkg);
-		if (curpkgd == NULL) {
-			/*
-			 * 2/3: match any virtual pkg in transaction.
-			 */
-			curpkgd = xbps_find_virtualpkg_in_dict_by_pattern(
-			    transd, "unsorted_deps", reqpkg);
-			if (curpkgd == NULL) {
-				/*
-				 * 3/3: match a real pkg in transaction.
-				 */
-				curpkgd = xbps_find_pkg_in_dict_by_pattern(
-				    transd, "unsorted_deps", reqpkg);
-			}
-		}
-		if (curpkgd != NULL) {
-			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "pkgver", &pkgver_q);
-			xbps_dbg_printf_append(" (%s queued "
-			    "in transaction).\n", pkgver_q);
-			continue;
-		} else {
+		unsorted = prop_dictionary_get(transd, "unsorted_deps");
+		if (((curpkgd = xbps_find_virtualpkg_conf_in_array_by_pattern(unsorted, reqpkg)) == NULL) &&
+		    ((curpkgd = xbps_find_pkg_in_array_by_pattern(unsorted, reqpkg)) == NULL) &&
+		    ((curpkgd = xbps_find_virtualpkg_in_array_by_pattern(unsorted, reqpkg)) == NULL)) {
 			/* error matching required pkgdep */
 			if (errno && errno != ENOENT) {
 				rv = errno;
 				break;
 			}
+		} else {
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "pkgver", &pkgver_q);
+			xbps_dbg_printf_append(" (%s queued "
+			    "in transaction).\n", pkgver_q);
+			continue;
 		}
 		/*
 		 * Pass 3: find required dependency in repository pool.
