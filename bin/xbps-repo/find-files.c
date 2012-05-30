@@ -124,7 +124,7 @@ repo_find_files_in_packages(int npatterns, char **patterns)
 
 	ffd->npatterns = npatterns;
 	ffd->patterns = patterns;
-	rv = xbps_repository_pool_foreach(find_files_in_package, ffd);
+	rv = xbps_rpool_foreach(find_files_in_package, ffd);
 	free(ffd);
 	return rv;
 }

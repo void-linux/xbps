@@ -218,7 +218,7 @@ xbps_end(void)
 		return;
 
 	xbps_pkgdb_release(xhp);
-	xbps_repository_pool_release(xhp);
+	xbps_rpool_release(xhp);
 	xbps_fetch_unset_cache_connection();
 
 	if (xhp->cfg != NULL)

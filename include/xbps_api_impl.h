@@ -75,8 +75,8 @@ void HIDDEN xbps_pkgdb_release(struct xbps_handle *);
  * @private
  * From lib/repository_pool.c
  */
-int HIDDEN xbps_repository_pool_init(struct xbps_handle *);
-void HIDDEN xbps_repository_pool_release(struct xbps_handle *);
+int HIDDEN xbps_rpool_init(struct xbps_handle *);
+void HIDDEN xbps_rpool_release(struct xbps_handle *);
 
 /**
  * @private

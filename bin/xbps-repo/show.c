@@ -49,9 +49,9 @@ show_pkg_info_from_repolist(const char *pattern, const char *option)
 	prop_dictionary_t pkgd;
 
 	if (xbps_pkgpattern_version(pattern))
-		pkgd = xbps_repository_pool_find_pkg(pattern, true, false);
+		pkgd = xbps_rpool_find_pkg(pattern, true, false);
 	else
-		pkgd = xbps_repository_pool_find_pkg(pattern, false, true);
+		pkgd = xbps_rpool_find_pkg(pattern, false, true);
 
 	if (pkgd == NULL)
 		return errno;
@@ -73,9 +73,9 @@ show_pkg_deps_from_repolist(const char *pattern)
 	const char *ver, *repoloc;
 
 	if (xbps_pkgpattern_version(pattern))
-		pkgd = xbps_repository_pool_find_pkg(pattern, true, false);
+		pkgd = xbps_rpool_find_pkg(pattern, true, false);
 	else
-		pkgd = xbps_repository_pool_find_pkg(pattern, false, true);
+		pkgd = xbps_rpool_find_pkg(pattern, false, true);
 
 	if (pkgd == NULL)
 		return errno;

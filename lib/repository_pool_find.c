@@ -215,31 +215,31 @@ repo_find_pkg(const char *pkg, bool bypattern, pkg_repo_type_t type)
 		 * Find exact pkg version.
 		 */
 		rpf->exact = true;
-		rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_pkg_cb, rpf);
 		break;
 	case BEST_PKG:
 		/*
 		 * Find best pkg version.
 		 */
-		rv = xbps_repository_pool_foreach(repo_find_best_pkg_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_best_pkg_cb, rpf);
 		break;
 	case VIRTUAL_PKG:
 		/*
 		 * Find virtual pkg.
 		 */
-		rv = xbps_repository_pool_foreach(repo_find_virtualpkg_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_virtualpkg_cb, rpf);
 		break;
 	case VIRTUAL_CONF_PKG:
 		/*
 		 * Find virtual pkg as specified in configuration file.
 		 */
-		rv = xbps_repository_pool_foreach(repo_find_virtualpkg_conf_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_virtualpkg_conf_cb, rpf);
 		break;
 	case REAL_PKG:
 		/*
 		 * Find real pkg.
 		 */
-		rv = xbps_repository_pool_foreach(repo_find_pkg_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_pkg_cb, rpf);
 		break;
 	}
 	if (rv != 0)
@@ -249,7 +249,7 @@ repo_find_pkg(const char *pkg, bool bypattern, pkg_repo_type_t type)
 }
 
 prop_dictionary_t
-xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern)
+xbps_rpool_find_virtualpkg(const char *pkg, bool bypattern)
 {
 	struct repo_pool_fpkg *rpf;
 	prop_dictionary_t pkgd = NULL;
@@ -265,7 +265,7 @@ xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern)
 }
 
 prop_dictionary_t
-xbps_repository_pool_find_virtualpkg_conf(const char *pkg, bool bypattern)
+xbps_rpool_find_virtualpkg_conf(const char *pkg, bool bypattern)
 {
 	struct repo_pool_fpkg *rpf;
 	prop_dictionary_t pkgd = NULL;
@@ -281,7 +281,7 @@ xbps_repository_pool_find_virtualpkg_conf(const char *pkg, bool bypattern)
 }
 
 prop_dictionary_t
-xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
+xbps_rpool_find_pkg(const char *pkg, bool bypattern, bool best)
 {
 	struct repo_pool_fpkg *rpf;
 	prop_dictionary_t pkgd = NULL;
@@ -301,7 +301,7 @@ xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best)
 }
 
 prop_dictionary_t
-xbps_repository_pool_find_pkg_exact(const char *pkgver)
+xbps_rpool_find_pkg_exact(const char *pkgver)
 {
 	struct repo_pool_fpkg *rpf;
 	prop_dictionary_t pkgd = NULL;
@@ -317,8 +317,7 @@ xbps_repository_pool_find_pkg_exact(const char *pkgver)
 }
 
 prop_dictionary_t
-xbps_repository_pool_dictionary_metadata_plist(const char *pattern,
-					       const char *plistf)
+xbps_rpool_dictionary_metadata_plist(const char *pattern, const char *plistf)
 {
 	prop_dictionary_t pkgd = NULL, plistd = NULL;
 	const char *repoloc;
@@ -336,9 +335,9 @@ xbps_repository_pool_dictionary_metadata_plist(const char *pattern,
 	 * libfetch!
 	 */
 	if (xbps_pkgpattern_version(pattern))
-		pkgd = xbps_repository_pool_find_pkg(pattern, true, false);
+		pkgd = xbps_rpool_find_pkg(pattern, true, false);
 	else
-		pkgd = xbps_repository_pool_find_pkg(pattern, false, true);
+		pkgd = xbps_rpool_find_pkg(pattern, false, true);
 
 	if (pkgd == NULL)
 		goto out;

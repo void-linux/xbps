@@ -63,7 +63,7 @@ check_repo_arch(const char *uri)
 }
 
 int HIDDEN
-xbps_repository_pool_init(struct xbps_handle *xhp)
+xbps_rpool_init(struct xbps_handle *xhp)
 {
 	prop_dictionary_t d = NULL;
 	prop_array_t array;
@@ -146,14 +146,14 @@ xbps_repository_pool_init(struct xbps_handle *xhp)
 	xbps_dbg_printf("[rpool] initialized ok.\n");
 out:
 	if (rv != 0) 
-		xbps_repository_pool_release(xhp);
+		xbps_rpool_release(xhp);
 
 	return rv;
 
 }
 
 void HIDDEN
-xbps_repository_pool_release(struct xbps_handle *xhp)
+xbps_rpool_release(struct xbps_handle *xhp)
 {
 	prop_array_t idx;
 	prop_dictionary_t d;
@@ -176,7 +176,7 @@ xbps_repository_pool_release(struct xbps_handle *xhp)
 }
 
 int
-xbps_repository_pool_sync(void)
+xbps_rpool_sync(void)
 {
 	const struct xbps_handle *xhp = xbps_handle_get();
 	const char *repouri;
@@ -222,9 +222,8 @@ xbps_repository_pool_sync(void)
 }
 
 int
-xbps_repository_pool_foreach(
-		int (*fn)(struct repository_pool_index *, void *, bool *),
-		void *arg)
+xbps_rpool_foreach(int (*fn)(struct repository_pool_index *, void *, bool *),
+		   void *arg)
 {
 	prop_dictionary_t d;
 	struct xbps_handle *xhp = xbps_handle_get();
@@ -235,7 +234,7 @@ xbps_repository_pool_foreach(
 
 	assert(fn != NULL);
 	/* Initialize repository pool */
-	if ((rv = xbps_repository_pool_init(xhp)) != 0) {
+	if ((rv = xbps_rpool_init(xhp)) != 0) {
 		if (rv == ENOTSUP) {
 			xbps_dbg_printf("[rpool] empty repository list.\n");
 		} else if (rv != ENOENT && rv != ENOTSUP) {

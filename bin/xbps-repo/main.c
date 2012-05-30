@@ -150,7 +150,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = xbps_repository_pool_foreach(repo_list_uri_cb, NULL);
+		rv = xbps_rpool_foreach(repo_list_uri_cb, NULL);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
@@ -164,7 +164,7 @@ main(int argc, char **argv)
 		if (argc < 1 || argc > 2)
 			usage(true);
 
-		rv = xbps_repository_pool_foreach(repo_pkg_list_cb, argv[1]);
+		rv = xbps_rpool_foreach(repo_pkg_list_cb, argv[1]);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
@@ -186,7 +186,7 @@ main(int argc, char **argv)
 		}
 		rsd->npatterns = argc;
 		rsd->patterns = argv;
-		rv = xbps_repository_pool_foreach(repo_search_pkgs_cb, rsd);
+		rv = xbps_rpool_foreach(repo_search_pkgs_cb, rsd);
 		free(rsd);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
@@ -231,8 +231,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		pkgd = xbps_repository_pool_dictionary_metadata_plist(argv[1],
-		    XBPS_PKGFILES);
+		pkgd = xbps_rpool_dictionary_metadata_plist(argv[1], XBPS_PKGFILES);
 		if (pkgd == NULL) {
 			if (errno == ENOTSUP) {
 				xbps_error_printf("xbps-repo: no repositories "
@@ -274,7 +273,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = xbps_repository_pool_sync();
+		rv = xbps_rpool_sync();
 		if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");

@@ -386,9 +386,9 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 		 * If dependency does not match add pkg into the missing
 		 * deps array and pass to next one.
 		 */
-		if (((curpkgd = xbps_repository_pool_find_virtualpkg_conf(reqpkg, true)) == NULL) &&
-		    ((curpkgd = xbps_repository_pool_find_pkg(reqpkg, true, true)) == NULL) &&
-		    ((curpkgd = xbps_repository_pool_find_virtualpkg(reqpkg, true)) == NULL)) {
+		if (((curpkgd = xbps_rpool_find_virtualpkg_conf(reqpkg, true)) == NULL) &&
+		    ((curpkgd = xbps_rpool_find_pkg(reqpkg, true, true)) == NULL) &&
+		    ((curpkgd = xbps_rpool_find_virtualpkg(reqpkg, true)) == NULL)) {
 			/* pkg not found, there was some error */
 			if (errno && errno != ENOENT) {
 				xbps_dbg_printf("failed to find pkg "

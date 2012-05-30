@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.4"
 
-#define XBPS_API_VERSION	"20120530"
+#define XBPS_API_VERSION	"20120530-1"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -1514,7 +1514,7 @@ struct repository_pool_index {
  * @return 0 on success, ENOTSUP if no repositories were found in
  * the configuration file.
  */
-int xbps_repository_pool_sync(void);
+int xbps_rpool_sync(void);
 
 /**
  * Iterates over the repository pool and executes the \a fn function
@@ -1530,7 +1530,7 @@ int xbps_repository_pool_sync(void);
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_repository_pool_foreach(
+int xbps_rpool_foreach(
 		int (*fn)(struct repository_pool_index *, void *, bool *),
 		void *arg);
 
@@ -1549,8 +1549,7 @@ int xbps_repository_pool_foreach(
  * @note When returned dictionary is no longer needed, you must release it
  * with prop_object_release(3).
  */
-prop_dictionary_t
-	xbps_repository_pool_find_pkg(const char *pkg, bool bypattern, bool best);
+prop_dictionary_t xbps_rpool_find_pkg(const char *pkg, bool bypattern, bool best);
 
 /**
  * Finds a package dictionary in repository pool by matching its \a pkgver
@@ -1562,7 +1561,7 @@ prop_dictionary_t
  * @note When returned dictionary is no longer needed, you must release it
  * with prop_object_release(3).
  */
-prop_dictionary_t xbps_repository_pool_find_pkg_exact(const char *pkgver);
+prop_dictionary_t xbps_rpool_find_pkg_exact(const char *pkgver);
 
 /**
  * Finds a package dictionary in repository pool by specifying a
@@ -1576,8 +1575,7 @@ prop_dictionary_t xbps_repository_pool_find_pkg_exact(const char *pkgver);
  * @note When returned dictionary is no longer needed, you must release it
  * with prop_object_release(3).
  */
-prop_dictionary_t
-	xbps_repository_pool_find_virtualpkg(const char *pkg, bool bypattern);
+prop_dictionary_t xbps_rpool_find_virtualpkg(const char *pkg, bool bypattern);
 
 /**
  * Finds a package dictionary in repository pool by specifying a
@@ -1592,8 +1590,7 @@ prop_dictionary_t
  * @note When returned dictionary is no longer needed, you must release it
  * with prop_object_release(3).
  */
-prop_dictionary_t
-	xbps_repository_pool_find_virtualpkg_conf(const char *pkg, bool bypattern);
+prop_dictionary_t xbps_rpool_find_virtualpkg_conf(const char *pkg, bool bypattern);
 
 /**
  * Iterate over the the repository pool and search for a metadata plist
@@ -1613,8 +1610,7 @@ prop_dictionary_t
  * binary package file has been found but the plist file could not
  * be found.
  */
-prop_dictionary_t
-	xbps_repository_pool_dictionary_metadata_plist(const char *pattern,
+prop_dictionary_t xbps_rpool_dictionary_metadata_plist(const char *pattern,
 						       const char *plistf);
 
 /*@}*/

@@ -78,7 +78,7 @@ cachedir_clean(void)
 		 * Remove binary pkg if it's not registered in any repository
 		 * or if hash doesn't match.
 		 */
-		repo_pkgd = xbps_repository_pool_find_pkg_exact(pkgver);
+		repo_pkgd = xbps_rpool_find_pkg_exact(pkgver);
 		if (repo_pkgd) {
 			prop_dictionary_get_cstring_nocopy(repo_pkgd,
 			    "filename-sha256", &rsha256);

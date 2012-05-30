@@ -84,9 +84,9 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
-	if (((pkg_repod = xbps_repository_pool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
-	    ((pkg_repod = xbps_repository_pool_find_pkg(pkg, bypattern, bestpkg)) == NULL) &&
-	    ((pkg_repod = xbps_repository_pool_find_virtualpkg(pkg, bypattern)) == NULL)) {
+	if (((pkg_repod = xbps_rpool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
+	    ((pkg_repod = xbps_rpool_find_pkg(pkg, bypattern, bestpkg)) == NULL) &&
+	    ((pkg_repod = xbps_rpool_find_virtualpkg(pkg, bypattern)) == NULL)) {
 		/* not found */
 		rv = errno;
 		errno = 0;
