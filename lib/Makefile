@@ -37,7 +37,7 @@ LIBFETCH_OBJS =
 endif
 
 # External code used by libxbps
-EXTOBJS = external/dewey.o external/fexec.o external/humanize_number.o
+EXTOBJS = external/dewey.o external/humanize_number.o
 EXTOBJS += external/match.o external/mkpath.o
 
 # libxbps
@@ -46,7 +46,7 @@ OBJS += package_remove.o package_remove_obsoletes.o package_state.o
 OBJS += package_unpack.o package_requiredby.o package_register.o
 OBJS += transaction_commit.o transaction_package_replace.o
 OBJS += transaction_dictionary.o transaction_sortdeps.o transaction_ops.o
-OBJS += download.o initend.o pkgdb.o
+OBJS += download.o initend.o pkgdb.o file_exec.o
 OBJS += plist.o plist_archive_entry.o plist_find.o plist_match.o
 OBJS += plist_remove.o plist_fetch.o util.o util_hash.o 
 OBJS += repository_finddeps.o cb_util.o

@@ -306,6 +306,28 @@ if [ -n "$BUILD_PIE" ]; then
 fi
 
 #
+# Check for posix_spawn (required).
+#
+func=posix_spawn
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <stdio.h>
+#include <spawn.h>
+int main(void) {
+	posix_spawn(NULL, NULL, NULL, NULL, NULL, NULL);
+	return 0;
+}
+EOF
+if $XCC _${func}.c -o _${func} 2>/dev/null; then
+	rm -f _$func.c _$func
+	echo "yes."
+else
+	echo "not found! $func is required by xbps, exiting..."
+	rm -f _$func.c _$func
+	exit 1
+fi
+
+#
 # Check for vasprintf().
 #
 func=vasprintf

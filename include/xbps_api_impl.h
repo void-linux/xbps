@@ -165,11 +165,9 @@ char HIDDEN *xbps_get_remote_repo_string(const char *);
 
 /**
  * @private
- * From lib/fexec.c
+ * From lib/file_exec.c
  */
 int HIDDEN xbps_file_exec(const char *, ...);
-int HIDDEN xbps_file_exec_skipempty(const char *, ...);
-int HIDDEN xbps_file_chdir_exec(const char *, const char *, ...);
 
 /**
  * @private
