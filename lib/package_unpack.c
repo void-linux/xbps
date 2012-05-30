@@ -380,9 +380,6 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 					    version, entry_pname,
 					    strerror(errno));
 					goto out;
-				} else if (rv == 1) {
-					/* hash doesn't match, extract file */
-					rv = 0;
 				} else if (rv == 0) {
 					/*
 					 * Always set entry perms in existing
@@ -455,7 +452,6 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 				archive_read_data_skip(ar);
 				continue;
 			}
-			rv = 0;
 		}
 		/*
 		 * Extract entry from archive.
