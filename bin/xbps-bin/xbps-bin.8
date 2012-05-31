@@ -1,4 +1,4 @@
-.Dd May 8, 2012
+.Dd May 31, 2012
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -120,6 +120,14 @@ independently of rootdir setting. So if you use a rootdir of
 .Pa /blah ,
 metadata stuff will go into
 .Pa /blah/var/db/xbps .
+.It Fl S
+Sync remote repository index files before executing the target.
+Used currently in the
+.Em dist-upgrade ,
+.Em install
+and
+.Em update
+targets.
 .It Fl v
 Shows verbose messages. Useful while installing and removing packages.
 .It Fl y

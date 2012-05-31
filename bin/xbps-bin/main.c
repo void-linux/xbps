@@ -58,6 +58,7 @@ usage(bool fail)
 	    " -o key[,key] Print package metadata keys in show target\n"
 	    " -R           Remove recursively packages\n"
 	    " -r rootdir   Full path to rootdir\n"
+	    " -S           Sync repository index\n"
 	    " -v           Verbose messages\n"
 	    " -y           Assume yes to all questions\n"
 	    " -V           Show XBPS version\n\n"
@@ -112,15 +113,15 @@ main(int argc, char **argv)
 	struct sigaction sa;
 	const char *rootdir, *cachedir, *conffile, *option;
 	int i, c, flags, rv;
-	bool yes, reqby_force, force_rm_with_deps, recursive_rm;
+	bool sync, yes, reqby_force, force_rm_with_deps, recursive_rm;
 	bool reinstall, show_download_pkglist_url, dry_run;
 
 	rootdir = cachedir = conffile = option = NULL;
 	flags = rv = 0;
-	reqby_force = yes = dry_run = force_rm_with_deps = false;
+	reqby_force = sync = yes = dry_run = force_rm_with_deps = false;
 	recursive_rm = reinstall = show_download_pkglist_url = false;
 
-	while ((c = getopt(argc, argv, "AC:c:dDFfhMno:Rr:Vvy")) != -1) {
+	while ((c = getopt(argc, argv, "AC:c:dDFfhMno:Rr:SVvy")) != -1) {
 		switch (c) {
 		case 'A':
 			flags |= XBPS_FLAG_INSTALL_AUTO;
@@ -163,6 +164,9 @@ main(int argc, char **argv)
 		case 'r':
 			/* To specify the root directory */
 			rootdir = optarg;
+			break;
+		case 'S':
+			sync = true;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -264,6 +268,9 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
+		if (sync && ((rv = xbps_rpool_sync()) != 0))
+			goto out;
+
 		for (i = 1; i < argc; i++)
 			if ((rv = install_new_pkg(argv[i], reinstall)) != 0)
 				goto out;
@@ -274,6 +281,9 @@ main(int argc, char **argv)
 		/* Update an installed package. */
 		if (argc < 2)
 			usage(true);
+
+		if (sync && ((rv = xbps_rpool_sync()) != 0))
+			goto out;
 
 		for (i = 1; i < argc; i++)
 			if ((rv = update_pkg(argv[i])) != 0)
@@ -340,6 +350,9 @@ main(int argc, char **argv)
 		 */
 		if (argc != 1)
 			usage(true);
+
+		if (sync && ((rv = xbps_rpool_sync()) != 0))
+			goto out;
 
 		rv = dist_upgrade(yes, dry_run, show_download_pkglist_url);
 

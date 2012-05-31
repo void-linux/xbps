@@ -1,5 +1,8 @@
 xbps-0.16 (???):
 
+ * xbps-bin(8): new flag: -S which syncs rpool indexes before executing
+   the "dist-upgrade", "install" or "update" targets.
+
  * libxbps: renamed xbps_repository_pool_xxx to xbps_rpool_xxx
    (API/ABI incompat changes).
 
