@@ -232,8 +232,9 @@ repo_genindex_files(const char *pkgdir)
 {
 	prop_array_t idx;
 	struct index_files_data *ifd = NULL;
-	size_t i;
-	char *plist, *tmppkgver, *pkgver, *arch, *saveptr;
+	size_t i, x;
+	const char *p, *arch;
+	char *plist, *pkgver;
 	int rv;
 
 	plist = xbps_pkg_index_plist(pkgdir);
@@ -281,16 +282,23 @@ repo_genindex_files(const char *pkgdir)
 		if (rv != 0)
 			goto out;
 		for (i = 0; i < prop_array_count(ifd->obsoletes); i++) {
-			prop_array_get_cstring(ifd->obsoletes, i, &tmppkgver);
-			pkgver = strtok_r(tmppkgver, ",", &saveptr);
-			arch = strtok_r(NULL, ",", &saveptr);
-			free(tmppkgver);
+			prop_array_get_cstring_nocopy(ifd->obsoletes, i, &p);
+			pkgver = strdup(p);
+			for (x = 0; x < strlen(p); x++) {
+				if ((pkgver[x] = p[x]) == ',') {
+					pkgver[x] = '\0';
+					break;
+				}
+			}
+			arch = strchr(p, ',') + 1;
 			if (!xbps_remove_pkg_from_array_by_pkgver(
 			    ifd->idxfiles, pkgver, arch)) {
+				free(pkgver);
 				rv = EINVAL;
 				goto out;
 			}
 			printf("Removed obsolete entry for `%s'.\n", pkgver);
+			free(pkgver);
 		}
 	}
 	if (!ifd->flush)
