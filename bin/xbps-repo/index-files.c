@@ -37,6 +37,7 @@ struct index_files_data {
 	prop_array_t idxfiles;
 	prop_array_t obsoletes;
 	const char *pkgdir;
+	const char *targetarch;
 	bool flush;
 	bool new;
 };
@@ -44,9 +45,9 @@ struct index_files_data {
 static int
 rmobsoletes_files_cb(prop_object_t obj, void *arg, bool *done)
 {
-	prop_string_t ps;
 	struct index_files_data *ifd = arg;
 	const char *pkgver, *arch;
+	char *str;
 
 	(void)done;
 
@@ -56,13 +57,16 @@ rmobsoletes_files_cb(prop_object_t obj, void *arg, bool *done)
 		/* pkg found, do nothing */
 		return 0;
 	}
-	ps = prop_string_create_cstring(pkgver);
-	if (ps == NULL)
-		return EINVAL;
-	if (!xbps_add_obj_to_array(ifd->obsoletes, ps))
-		return EINVAL;
+	if ((str = xbps_xasprintf("%s,%s", pkgver, arch)) == NULL)
+		return ENOMEM;
 
+	if (!prop_array_add_cstring(ifd->obsoletes, str)) {
+		free(str);
+		return EINVAL;
+	}
+	free(str);
 	ifd->flush = true;
+
 	return 0;
 }
 
@@ -229,8 +233,7 @@ repo_genindex_files(const char *pkgdir)
 	prop_array_t idx;
 	struct index_files_data *ifd = NULL;
 	size_t i;
-	const char *pkgver;
-	char *plist;
+	char *plist, *tmppkgver, *pkgver, *arch, *saveptr;
 	int rv;
 
 	plist = xbps_pkg_index_plist(pkgdir);
@@ -278,10 +281,12 @@ repo_genindex_files(const char *pkgdir)
 		if (rv != 0)
 			goto out;
 		for (i = 0; i < prop_array_count(ifd->obsoletes); i++) {
-			prop_array_get_cstring_nocopy(ifd->obsoletes,
-			    i, &pkgver);
+			prop_array_get_cstring(ifd->obsoletes, i, &tmppkgver);
+			pkgver = strtok_r(tmppkgver, ",", &saveptr);
+			arch = strtok_r(NULL, ",", &saveptr);
+			free(tmppkgver);
 			if (!xbps_remove_pkg_from_array_by_pkgver(
-			    ifd->idxfiles, pkgver, NULL)) {
+			    ifd->idxfiles, pkgver, arch)) {
 				rv = EINVAL;
 				goto out;
 			}
