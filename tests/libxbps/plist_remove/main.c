@@ -110,7 +110,7 @@ ATF_TC_BODY(remove_pkg_from_array_by_name_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(d2), PROP_TYPE_DICTIONARY);
 
 	a = prop_dictionary_get(d, "packages");
-	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_name(a, "afoo"), true);
+	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_name(a, "afoo", NULL), true);
 	ATF_REQUIRE_EQ(prop_dictionary_equals(d, d2), true);
 }
 
@@ -133,7 +133,7 @@ ATF_TC_BODY(remove_pkg_from_array_by_pattern_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(d2), PROP_TYPE_DICTIONARY);
 
 	a = prop_dictionary_get(d, "packages");
-	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pattern(a, "afoo>=1.0"), true);
+	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pattern(a, "afoo>=1.0", NULL), true);
 	ATF_REQUIRE_EQ(prop_dictionary_equals(d, d2), true);
 }
 
@@ -156,7 +156,7 @@ ATF_TC_BODY(remove_pkg_from_array_by_pkgver_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(d2), PROP_TYPE_DICTIONARY);
 
 	a = prop_dictionary_get(d, "packages");
-	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pkgver(a, "afoo-1.1"), true);
+	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pkgver(a, "afoo-1.1", NULL), true);
 	ATF_REQUIRE_EQ(prop_dictionary_equals(d, d2), true);
 }
 
@@ -202,27 +202,6 @@ ATF_TC_BODY(remove_pkgname_from_array_test, tc)
 	ATF_REQUIRE_EQ(prop_array_equals(a, a2), true);
 }
 
-ATF_TC(remove_pkg_from_dict_by_name_test);
-
-ATF_TC_HEAD(remove_pkg_from_dict_by_name_test, tc)
-{
-	atf_tc_set_md_var(tc, "descr", "Test xbps_remove_pkg_from_dict_by_name");
-}
-
-ATF_TC_BODY(remove_pkg_from_dict_by_name_test, tc)
-{
-	prop_dictionary_t d, d2;
-
-	d = prop_dictionary_internalize(dictxml);
-	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
-
-	d2 = prop_dictionary_internalize(dictxml2);
-	ATF_REQUIRE_EQ(prop_object_type(d2), PROP_TYPE_DICTIONARY);
-
-	ATF_REQUIRE_EQ(xbps_remove_pkg_from_dict_by_name(d, "packages", "afoo"), true);
-	ATF_REQUIRE_EQ(prop_dictionary_equals(d, d2), true);
-}
-
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, remove_pkg_from_array_by_name_test);
@@ -230,7 +209,6 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, remove_pkg_from_array_by_pkgver_test);
 	ATF_TP_ADD_TC(tp, remove_string_from_array_test);
 	ATF_TP_ADD_TC(tp, remove_pkgname_from_array_test);
-	ATF_TP_ADD_TC(tp, remove_pkg_from_dict_by_name_test);
 
 	return atf_no_error();
 }

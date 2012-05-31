@@ -36,12 +36,17 @@ int
 list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 {
 	struct list_pkgver_cb *lpc = arg;
-	const char *pkgver, *short_desc;
+	const char *pkgver, *short_desc, *arch;
 	char *tmp = NULL;
 	pkg_state_t curstate;
 	size_t i = 0;
+	bool chkarch;
 
 	(void)loop_done;
+
+	chkarch = prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+	if (chkarch && !xbps_pkg_arch_match(arch, NULL))
+		return 0;
 
 	if (lpc->check_state) {
 		if (xbps_pkg_state_dictionary(obj, &curstate))

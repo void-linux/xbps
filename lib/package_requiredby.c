@@ -157,7 +157,7 @@ xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 			    xhp->pkgdb, str);
 			if (pkgd_pkgdb == NULL) {
 				pkgd_pkgdb = xbps_find_pkg_in_array_by_pattern(
-				    xhp->pkgdb, str);
+				    xhp->pkgdb, str, NULL);
 				if (pkgd_pkgdb == NULL) {
 					rv = ENOENT;
 					xbps_dbg_printf("%s: couldnt find `%s' "

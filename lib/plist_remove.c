@@ -40,14 +40,15 @@
  * all library functions.
  */
 static bool
-remove_obj_from_array(prop_array_t array, const char *str, int mode)
+remove_obj_from_array(prop_array_t array, const char *str, int mode,
+		     const char *targetarch)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
-	const char *curname, *pkgdep;
+	const char *curname, *pkgdep, *arch;
 	char *curpkgname;
 	size_t idx = 0;
-	bool found = false;
+	bool found = false, chkarch;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 
@@ -76,6 +77,10 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 			free(curpkgname);
 		} else if (mode == 2) {
 			/* match by pkgname, obj is a dictionary  */
+			chkarch = prop_dictionary_get_cstring_nocopy(obj,
+			    "architecture", &arch);
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+				continue;
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &curname);
 			if (strcmp(curname, str) == 0) {
@@ -83,6 +88,10 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 				break;
 			}
 		} else if (mode == 3) {
+			chkarch = prop_dictionary_get_cstring_nocopy(obj,
+			    "architecture", &arch);
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+				continue;
 			/* match by pkgver, obj is a dictionary */
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
@@ -91,6 +100,10 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 				break;
 			}
 		} else if (mode == 4) {
+			chkarch = prop_dictionary_get_cstring_nocopy(obj,
+			    "architecture", &arch);
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+				continue;
 			/* match by pattern, obj is a dictionary */
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
@@ -115,83 +128,32 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 bool
 xbps_remove_string_from_array(prop_array_t array, const char *str)
 {
-	return remove_obj_from_array(array, str, 0);
+	return remove_obj_from_array(array, str, 0, NULL);
 }
 
 bool
 xbps_remove_pkgname_from_array(prop_array_t array, const char *name)
 {
-	return remove_obj_from_array(array, name, 1);
+	return remove_obj_from_array(array, name, 1, NULL);
 }
 
 bool
-xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name)
+xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name,
+				   const char *targetarch)
 {
-	return remove_obj_from_array(array, name, 2);
+	return remove_obj_from_array(array, name, 2, targetarch);
 }
 
 bool
-xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *pkgver)
+xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *pkgver,
+				     const char *targetarch)
 {
-	return remove_obj_from_array(array, pkgver, 3);
+	return remove_obj_from_array(array, pkgver, 3, targetarch);
 }
 
 bool
-xbps_remove_pkg_from_array_by_pattern(prop_array_t array, const char *p)
+xbps_remove_pkg_from_array_by_pattern(prop_array_t array, const char *p,
+				      const char *targetarch)
 {
-	return remove_obj_from_array(array, p, 4);
-}
-
-bool
-xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
-				  const char *key,
-				  const char *pkgname)
-{
-	prop_array_t array;
-
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
-	assert(key != NULL);
-	assert(pkgname != NULL);
-
-	array = prop_dictionary_get(dict, key);
-	if (array == NULL) {
-		errno = ENOENT;
-		return false;
-	}
-	if (!xbps_remove_pkg_from_array_by_name(array, pkgname))
-		return false;
-
-	return prop_dictionary_set(dict, key, array);
-}
-
-bool
-xbps_remove_pkg_dict_from_plist_by_name(const char *pkg, const char *plist)
-{
-	prop_dictionary_t pdict;
-
-	assert(pkg != NULL);
-	assert(plist != NULL);
-
-	pdict = prop_dictionary_internalize_from_zfile(plist);
-	if (pdict == NULL) {
-		xbps_dbg_printf("'%s' cannot read from file %s: %s\n",
-		    pkg, plist, strerror(errno));
-		return false;
-	}
-
-	if (!xbps_remove_pkg_from_dict_by_name(pdict, "packages", pkg)) {
-		prop_object_release(pdict);
-		return false;
-	}
-
-	if (!prop_dictionary_externalize_to_zfile(pdict, plist)) {
-		xbps_dbg_printf("'%s' cannot write plist file %s: %s\n",
-		    pkg, plist, strerror(errno));
-		prop_object_release(pdict);
-		return false;
-	}
-
-	prop_object_release(pdict);
-
-	return true;
+	return remove_obj_from_array(array, p, 4, targetarch);
 }

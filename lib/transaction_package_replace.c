@@ -108,7 +108,7 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 			 * transaction and it's going to be updated.
 			 */
 			reppkgd = xbps_find_pkg_in_array_by_name(
-			    transd_unsorted, curpkgname);
+			    transd_unsorted, curpkgname, NULL);
 			if (reppkgd) {
 				xbps_dbg_printf("found replaced pkg "
 				    "in transaction\n");

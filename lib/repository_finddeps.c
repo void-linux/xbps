@@ -336,7 +336,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 		 */
 		unsorted = prop_dictionary_get(transd, "unsorted_deps");
 		if (((curpkgd = xbps_find_virtualpkg_conf_in_array_by_pattern(unsorted, reqpkg)) == NULL) &&
-		    ((curpkgd = xbps_find_pkg_in_array_by_pattern(unsorted, reqpkg)) == NULL) &&
+		    ((curpkgd = xbps_find_pkg_in_array_by_pattern(unsorted, reqpkg, NULL)) == NULL) &&
 		    ((curpkgd = xbps_find_virtualpkg_in_array_by_pattern(unsorted, reqpkg)) == NULL)) {
 			/* error matching required pkgdep */
 			if (errno && errno != ENOENT) {

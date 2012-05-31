@@ -30,11 +30,17 @@
 #include <errno.h>
 #include <dirent.h>
 #include <libgen.h>
-#include <sys/utsname.h>
+#include <assert.h>
 #include <sys/stat.h>
 
 #include <xbps_api.h>
 #include "defs.h"
+
+#ifndef __arraycount
+#define __arraycount(a) (sizeof(a) / sizeof(*a))
+#endif
+
+static const char *archs[] = { "noarch", "i686", "x86_64" };
 
 /*
  * Removes stalled pkg entries in repository's index.plist file, if any
@@ -45,7 +51,7 @@ remove_missing_binpkg_entries(const char *repodir)
 {
 	prop_array_t array;
 	prop_dictionary_t pkgd;
-	const char *filen, *pkgver;
+	const char *filen, *pkgver, *arch;
 	char *binpkg, *plist;
 	size_t i;
 	int rv = 0;
@@ -72,7 +78,8 @@ again:
 		pkgd = prop_array_get(array, i);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
-		binpkg = xbps_xasprintf("%s/%s", repodir, filen);
+		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
+		binpkg = xbps_xasprintf("%s/%s/%s", repodir, arch, filen);
 		if (binpkg == NULL) {
 			errno = ENOMEM;
 			rv = -1;
@@ -129,7 +136,7 @@ add_binpkg_to_index(prop_array_t idx,
 {
 	prop_dictionary_t newpkgd, curpkgd;
 	struct stat st;
-	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
+	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver, *arch;
 	char *sha256, *filen, *tmpfilen, *oldfilepath, *buf;
 	int rv = 0;
 
@@ -151,20 +158,21 @@ add_binpkg_to_index(prop_array_t idx,
 	}
 	prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(newpkgd, "version", &version);
+	prop_dictionary_get_cstring_nocopy(newpkgd, "architecture", &arch);
 	/*
 	 * Check if this package exists already in the index, but first
 	 * checking the version. If current package version is greater
 	 * than current registered package, update the index; otherwise
 	 * pass to the next one.
 	 */
-	curpkgd = xbps_find_pkg_in_array_by_name(idx, pkgname);
+	curpkgd = xbps_find_pkg_in_array_by_name(idx, pkgname, arch);
 	if (curpkgd == NULL) {
 		if (errno && errno != ENOENT) {
 			prop_object_release(newpkgd);
 			rv = errno;
 			goto out;
 		}
-	} else if (curpkgd) {
+	} else {
 		prop_dictionary_get_cstring_nocopy(curpkgd, "version", &regver);
 		if (xbps_cmpver(version, regver) <= 0) {
 			xbps_warn_printf("skipping `%s', `%s-%s' already "
@@ -206,7 +214,7 @@ add_binpkg_to_index(prop_array_t idx,
 			goto out;
 		}
 		free(oldfilepath);
-		if (!xbps_remove_pkg_from_array_by_name(idx, pkgname)) {
+		if (!xbps_remove_pkg_from_array_by_name(idx, pkgname, arch)) {
 			xbps_error_printf("failed to remove `%s' "
 			    "from plist index: %s\n", pkgname, strerror(errno));
 			prop_object_release(newpkgd);
@@ -274,6 +282,8 @@ repo_genindex(const char *pkgdir)
 	prop_array_t idx = NULL;
 	struct dirent *dp;
 	DIR *dirp;
+	size_t i;
+	char *curdir;
 	char *binfile, *plist;
 	int rv = 0;
 	bool registered_newpkgs = false, foundpkg = false;
@@ -291,42 +301,50 @@ repo_genindex(const char *pkgdir)
 		return errno;
 	}
 
-	dirp = opendir(pkgdir);
-	if (dirp == NULL) {
-		xbps_error_printf("xbps-repo: cannot open `%s': %s\n",
-		    pkgdir, strerror(errno));
-		exit(EXIT_FAILURE);
+	for (i = 0; i < __arraycount(archs); i++) {
+		curdir = xbps_xasprintf("%s/%s", pkgdir, archs[i]);
+		assert(curdir != NULL);
+
+		dirp = opendir(curdir);
+		if (dirp == NULL) {
+			if (errno == ENOENT) {
+				free(curdir);
+				continue;
+			}
+			xbps_error_printf("xbps-repo: cannot open `%s': %s\n",
+			    curdir, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		while ((dp = readdir(dirp)) != NULL) {
+			if ((strcmp(dp->d_name, ".") == 0) ||
+			    (strcmp(dp->d_name, "..") == 0))
+				continue;
+			/* Ignore unknown files */
+			if (strstr(dp->d_name, ".xbps") == NULL)
+				continue;
+
+			foundpkg = true;
+			binfile = xbps_xasprintf("%s/%s", curdir, dp->d_name);
+			if (binfile == NULL) {
+				(void)closedir(dirp);
+				rv = errno;
+				goto out;
+			}
+			rv = add_binpkg_to_index(idx, curdir, binfile);
+			free(binfile);
+			if (rv == EEXIST) {
+				rv = 0;
+				continue;
+			} else if (rv != 0) {
+				(void)closedir(dirp);
+				free(curdir);
+				goto out;
+			}
+			registered_newpkgs = true;
+		}
+		(void)closedir(dirp);
+		free(curdir);
 	}
-
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, ".") == 0) ||
-		    (strcmp(dp->d_name, "..") == 0))
-			continue;
-
-		/* Ignore unknown files */
-		if (strstr(dp->d_name, ".xbps") == NULL)
-			continue;
-
-		foundpkg = true;
-		binfile = xbps_xasprintf("%s/%s", pkgdir, dp->d_name);
-		if (binfile == NULL) {
-			(void)closedir(dirp);
-			rv = errno;
-			goto out;
-		}
-		rv = add_binpkg_to_index(idx, pkgdir, binfile);
-		free(binfile);
-		if (rv == EEXIST) {
-			rv = 0;
-			continue;
-		}
-		else if (rv != 0) {
-			(void)closedir(dirp);
-			goto out;
-		}
-		registered_newpkgs = true;
-	}
-	(void)closedir(dirp);
 
 	if (foundpkg == false) {
 		/* No packages were found in directory */

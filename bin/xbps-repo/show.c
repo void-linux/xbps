@@ -95,11 +95,15 @@ int
 show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
 {
 	struct repo_search_data *rsd = arg;
-	const char *pkgver, *pkgname, *desc;
+	const char *pkgver, *pkgname, *desc, *arch;
 	char *tmp = NULL;
 	size_t i, x;
 
 	(void)loop_done;
+
+	prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+	if (!xbps_pkg_arch_match(arch, NULL))
+		return 0;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);

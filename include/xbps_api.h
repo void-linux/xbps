@@ -54,9 +54,9 @@
  * @def XBPS_PKGINDEX_VERSION
  * Current version for the repository package index format.
  */
-#define XBPS_PKGINDEX_VERSION	"1.4"
+#define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20120530-4"
+#define XBPS_API_VERSION	"20120531"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -101,13 +101,13 @@
  * @def XBPS_PKGINDEX
  * Filename for the repository package index property list.
  */
-#define XBPS_PKGINDEX		"rindex.plist"
+#define XBPS_PKGINDEX		"index.plist"
 
 /**
  * @def XBPS_PKGINDEX_FILES
  * Filename for the repository package index files property list.
  */
-#define XBPS_PKGINDEX_FILES	"rindex-files.plist"
+#define XBPS_PKGINDEX_FILES	"index-files.plist"
 
 /**
  * @def XBPS_SYSCONF_PATH
@@ -1053,22 +1053,28 @@ bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
  *
  * @param[in] array The proplib array to search on.
  * @param[in] name The package name to match.
+ * @param[in] targetarch If set, package will be matched against this
+ * architecture.
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
 prop_dictionary_t xbps_find_pkg_in_array_by_name(prop_array_t array,
-						 const char *name);
+						 const char *name,
+						 const char *targetarch);
 
 /**
  * Finds a package dictionary in a proplib array by matching a package pattern.
  *
  * @param[in] array The proplib array to search on.
  * @param[in] pattern The package pattern to match, i.e `foo>=0' or `foo<1'.
+ * @param[in] targetarch If set, package will be matched against this
+ * architecture.
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
 prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
-						    const char *pattern);
+						    const char *pattern,
+						    const char *targetarch);
 
 /**
  * Finds a package dictionary in a proplib array by matching a \a pkgver
@@ -1076,11 +1082,14 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
  *
  * @param[in] array The proplib array to search on.
  * @param[in] pkgver The package name/version to match, i.e `foo-1.0'.
+ * @param[in] targetarch If set, package will be matched against this
+ * architecture.
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
 prop_dictionary_t xbps_find_pkg_in_array_by_pkgver(prop_array_t array,
-						   const char *pkgver);
+						   const char *pkgver,
+						   const char *targetarch);
 
 /**
  * Finds a virtual package dictionary in a proplib array by matching a
@@ -1176,26 +1185,18 @@ prop_dictionary_t xbps_dictionary_from_metadata_plist(const char *pkgname,
 
 /**
  * Removes the package's proplib dictionary matching \a pkgname
- * in a plist file.
- *
- * @param[in] pkgname Package name to match in plist's dictionary.
- * @param[in] plist Path to a plist file.
- *
- * @return true on success, false otherwise and errno is set appropiately.
- */
-bool xbps_remove_pkg_dict_from_plist_by_name(const char *pkgname,
-					     const char *plist);
-
-/**
- * Removes the package's proplib dictionary matching \a pkgname
  * in a proplib array.
  *
  * @param[in] array Proplib array where to look for.
  * @param[in] name Package name to match in the array.
+ * @param[in] targetarch If set, package will be matched against this
+ * architecture.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name);
+bool xbps_remove_pkg_from_array_by_name(prop_array_t array,
+					const char *name,
+					const char *targetarch);
 
 /**
  * Removes the package's proplib dictionary matching the pkgver object
@@ -1203,11 +1204,14 @@ bool xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name);
  *
  * @param[in] array Proplib array where to look for.
  * @param[in] pattern Package pattern to match, i.e `foo>=0' or `foo<1'.
+ * @param[in] targetarch If set, package will be matched against this
+ * architecture.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_remove_pkg_from_array_by_pattern(prop_array_t array,
-					   const char *pattern);
+					   const char *pattern,
+					   const char *targetarch);
 
 /**
  * Removes the package's proplib dictionary matching the \a pkgver
@@ -1215,25 +1219,14 @@ bool xbps_remove_pkg_from_array_by_pattern(prop_array_t array,
  *
  * @param[in] array Proplib array where to look for.
  * @param[in] pkgver Package name/version to match, i.e `foo-1.0'.
+ * @param[in] targetarch If set, package will be matched against this
+ * architecture.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_remove_pkg_from_array_by_pkgver(prop_array_t array,
-					  const char *pkgver);
-
-/**
- * Removes the package's proplib dictionary matching \a pkgname,
- * in an array with key \a key stored in a proplib dictionary.
- *
- * @param[in] dict Proplib dictionary storing the proplib array.
- * @param[in] key Key associated with the proplib array.
- * @param[in] name Package name to match.
- *
- * @return true on success, false otherwise and errno is set appropiately.
- */
-bool xbps_remove_pkg_from_dict_by_name(prop_dictionary_t dict,
-				       const char *key,
-				       const char *name);
+					  const char *pkgver,
+					  const char *targetarch);
 
 /**
  * Removes a string from a proplib's array of strings.
@@ -1478,33 +1471,33 @@ prop_dictionary_t xbps_dictionary_metadata_plist_by_url(const char *url,
 /*@{*/
 
 /**
- * @struct repository_pool_index xbps_api.h "xbps_api.h"
+ * @struct xbps_rpool_index xbps_api.h "xbps_api.h"
  * @brief Repository pool dictionary structure
  *
  * Repository index object structure registered in a private simple queue.
  * The structure contains a dictionary and the URI associated with the
  * registered repository index.
  */
-struct repository_pool_index {
+struct xbps_rpool_index {
 	/**
 	 * @var rpi_repo
 	 * 
 	 * Internalized proplib array of the index plist file
 	 * associated with repository.
 	 */
-	prop_array_t rpi_repo;
+	prop_array_t repo;
 	/**
 	 * @var rpi_uri
 	 * 
 	 * URI string associated with repository.
 	 */
-	const char *rpi_uri;
+	const char *uri;
 	/**
 	 * @var rpi_index
 	 *
 	 * Repository index in pool.
 	 */
-	uint16_t rpi_index;
+	uint16_t index;
 };
 
 /**
@@ -1530,9 +1523,7 @@ int xbps_rpool_sync(void);
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_rpool_foreach(
-		int (*fn)(struct repository_pool_index *, void *, bool *),
-		void *arg);
+int xbps_rpool_foreach(int (*fn)(struct xbps_rpool_index *, void *, bool *), void *arg);
 
 /**
  * Finds a package dictionary in the repository pool by specifying a
@@ -1908,8 +1899,11 @@ const char *xbps_pkgpattern_version(const char *pattern);
  * Package pattern matching.
  *
  * @param[in] pkgver Package name/version, i.e `foo-1.0'.
- * @param[in] pattern Package pattern to match against \a pkgver, i.e
- * `foo>=0' or `foo<1'.
+ * @param[in] pattern Package pattern to match against \a pkgver.
+ * There are 3 strategies for version matching:
+ *  - simple compare: pattern equals to pkgver.
+ *  - shell wildcards: see fnmatch(3).
+ *  - relational dewey matching: '>' '<' '>=' '<='.
  *
  * @return 1 if \a pkgver is matched against \a pattern, 0 if no match.
  */
@@ -1933,6 +1927,17 @@ const char *xbps_pkg_revision(const char *pkg);
  * @return True if package has run dependencies, false otherwise.
  */
 bool xbps_pkg_has_rundeps(prop_dictionary_t dict);
+
+/**
+ * Returns true if provided string is valid for target architecture.
+ *
+ * @param[in] orig Architecture to match.
+ * @param[in] target If not NULL, \a orig will be matched against it
+ * rather than returned value of uname(2).
+ *
+ * @return True on match, false otherwise.
+ */
+bool xbps_pkg_arch_match(const char *orig, const char *target);
 
 /**
  * Converts the 64 bits signed number specified in \a bytes to

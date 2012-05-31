@@ -39,29 +39,6 @@
  * @defgroup repopool Repository pool functions
  */
 
-/*
- * Returns true if repository URI contains "noarch" or matching architecture
- * in last component, false otherwise.
- */
-static bool
-check_repo_arch(const char *uri)
-{
-	struct utsname un;
-	char *p, *b;
-
-	if ((p = strdup(uri)) == NULL)
-		return false;
-
-	uname(&un);
-	b = basename(p);
-	if ((strcmp(b, "noarch")) && (strcmp(b, un.machine))) {
-		free(p);
-		return false;
-	}
-	free(p);
-	return true;
-}
-
 int HIDDEN
 xbps_rpool_init(struct xbps_handle *xhp)
 {
@@ -84,15 +61,6 @@ xbps_rpool_init(struct xbps_handle *xhp)
 	for (i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
 		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
 		ntotal++;
-		/*
-		 * Check if repository doesn't match our architecture.
-		 */
-		if (!check_repo_arch(repouri)) {
-			xbps_dbg_printf("[rpool] `%s' arch not matched, "
-			    "ignoring.\n", repouri);
-			nmissing++;
-			continue;
-		}
 		/*
 		 * If index file is not there, skip.
 		 */
@@ -189,14 +157,6 @@ xbps_rpool_sync(void)
 	for (i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
 		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
 		/*
-		 * Check if repository doesn't match our architecture.
-		 */
-		if (!check_repo_arch(repouri)) {
-			xbps_dbg_printf("[rpool] `%s' arch not matched, "
-			    "ignoring.\n", repouri);
-			continue;
-		}
-		/*
 		 * Fetch repository plist index.
 		 */
 		rv = xbps_repository_sync_pkg_index(repouri, XBPS_PKGINDEX);
@@ -222,12 +182,11 @@ xbps_rpool_sync(void)
 }
 
 int
-xbps_rpool_foreach(int (*fn)(struct repository_pool_index *, void *, bool *),
-		   void *arg)
+xbps_rpool_foreach(int (*fn)(struct xbps_rpool_index *, void *, bool *), void *arg)
 {
 	prop_dictionary_t d;
 	struct xbps_handle *xhp = xbps_handle_get();
-	struct repository_pool_index rpi;
+	struct xbps_rpool_index rpi;
 	size_t i;
 	int rv = 0;
 	bool done = false;
@@ -246,9 +205,9 @@ xbps_rpool_foreach(int (*fn)(struct repository_pool_index *, void *, bool *),
 	/* Iterate over repository pool */
 	for (i = 0; i < prop_array_count(xhp->repo_pool); i++) {
 		d = prop_array_get(xhp->repo_pool, i);
-		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi.rpi_uri);
-		rpi.rpi_repo = prop_dictionary_get(d, "index");
-		rpi.rpi_index = i;
+		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi.uri);
+		rpi.repo = prop_dictionary_get(d, "index");
+		rpi.index = i;
 
 		rv = (*fn)(&rpi, arg, &done);
 		if (rv != 0 || done)

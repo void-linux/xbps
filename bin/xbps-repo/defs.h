@@ -44,9 +44,9 @@ int	repo_genindex_files(const char *);
 int	repo_find_files_in_packages(int, char **);
 
 /* From list.c */
-int	repo_pkg_list_cb(struct repository_pool_index *, void *, bool *);
-int	repo_list_uri_cb(struct repository_pool_index *, void *, bool *);
-int	repo_search_pkgs_cb(struct repository_pool_index *, void *, bool *);
+int	repo_pkg_list_cb(struct xbps_rpool_index *, void *, bool *);
+int	repo_list_uri_cb(struct xbps_rpool_index *, void *, bool *);
+int	repo_search_pkgs_cb(struct xbps_rpool_index *, void *, bool *);
 
 /* From show.c */
 int	show_pkg_info_from_repolist(const char *, const char *);

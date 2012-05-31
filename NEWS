@@ -1,5 +1,28 @@
 xbps-0.16 (???):
 
+ * Repository index format 1.5. The files are now named properly:
+   index.plist for XBPS_PKGINDEX and index-files.plist for XBPS_PKGINDEX_FILES.
+   The difference in XBPS_PKGINDEX is that now a single plist file can store
+   all metadata from any package with any architecture. XBPS_PKGINDEX_FILES
+   has been modified to speed up 'xbps-repo find-files'. That means
+   that in xbps.conf now you'd only have to use the directory where the
+   index.plist is stored, i.e:
+
+	/path/to/my/repo <- 1st repository
+	|-- i686
+	|-- index-files.plist
+	|-- index.plist
+	|-- noarch
+	|-- nonfree      <- 2nd repository
+	|   |-- i686
+	|   |-- noarch
+	|   `-- x86_64
+	`-- x86_64
+
+   Any other directory not named "noarch" or "$(uname -m)" must be specified
+   as another different repository, such case is "nonfree" or any other with
+   unmatched names.
+
  * xbps-bin(8): new flag: -S which syncs rpool indexes before executing
    the "dist-upgrade", "install" or "update" targets.
 

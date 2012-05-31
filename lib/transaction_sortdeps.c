@@ -159,7 +159,7 @@ pkgdep_end(prop_array_t sorted)
 			 * same transaction reason into the sorted array.
 			 */
 			sorted_pkgd =
-			    xbps_find_pkg_in_array_by_name(sorted, pd->name);
+			    xbps_find_pkg_in_array_by_name(sorted, pd->name, NULL);
 			if (sorted_pkgd == NULL) {
 				/* find virtualpkg if no match */
 				sorted_pkgd =

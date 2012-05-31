@@ -69,7 +69,7 @@ ATF_TC_BODY(find_pkg_in_array_by_name_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(a), PROP_TYPE_ARRAY);
 
 	/* match by pkgname */
-	dr = xbps_find_pkg_in_array_by_name(a, "foo");
+	dr = xbps_find_pkg_in_array_by_name(a, "foo", NULL);
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 }
 
@@ -87,7 +87,7 @@ ATF_TC_BODY(find_pkg_in_array_by_pattern_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(a), PROP_TYPE_ARRAY);
 
 	/* match by pkgpattern */
-	dr = xbps_find_pkg_in_array_by_pattern(a, "foo>=2.0");
+	dr = xbps_find_pkg_in_array_by_pattern(a, "foo>=2.0", NULL);
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 }
 
@@ -105,7 +105,7 @@ ATF_TC_BODY(find_pkg_in_array_by_pkgver_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(a), PROP_TYPE_ARRAY);
 
 	/* exact match by pkgver */
-	dr = xbps_find_pkg_in_array_by_pkgver(a, "foo-2.0");
+	dr = xbps_find_pkg_in_array_by_pkgver(a, "foo-2.0", NULL);
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 }
 

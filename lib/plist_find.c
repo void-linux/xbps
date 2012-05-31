@@ -39,16 +39,17 @@
  * These functions manipulate plist files and objects shared by almost
  * all library functions.
  */
-
 static prop_dictionary_t
 find_pkg_in_array(prop_array_t array,
 		  const char *str,
 		  bool bypattern,
-		  bool virtual)
+		  bool virtual,
+		  const char *targetarch)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj = NULL;
-	const char *pkgver, *dpkgn;
+	const char *pkgver, *dpkgn, *arch;
+	bool chkarch;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(str != NULL);
@@ -58,14 +59,21 @@ find_pkg_in_array(prop_array_t array,
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
+		chkarch = prop_dictionary_get_cstring_nocopy(obj,
+		    "architecture", &arch);
 		if (virtual) {
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+				continue;
 			/*
 			 * Check if package pattern matches
 			 * any virtual package version in dictionary.
 			 */
 			if (xbps_match_virtual_pkg_in_dict(obj, str, bypattern))
 				break;
+
 		} else if (bypattern) {
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+				continue;
 			/*
 			 * Check if package pattern matches the
 			 * pkgver string object in dictionary.
@@ -76,6 +84,8 @@ find_pkg_in_array(prop_array_t array,
 			if (xbps_pkgpattern_match(pkgver, str))
 				break;
 		} else {
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+				continue;
 			if (!prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &dpkgn))
 				continue;
@@ -93,24 +103,27 @@ find_pkg_in_array(prop_array_t array,
 }
 
 prop_dictionary_t
-xbps_find_pkg_in_array_by_name(prop_array_t array, const char *name)
+xbps_find_pkg_in_array_by_name(prop_array_t array, const char *name,
+			       const char *targetarch)
 {
-	return find_pkg_in_array(array, name, false, false);
+	return find_pkg_in_array(array, name, false, false, targetarch);
 }
 
 prop_dictionary_t
-xbps_find_pkg_in_array_by_pattern(prop_array_t array, const char *pattern)
+xbps_find_pkg_in_array_by_pattern(prop_array_t array, const char *pattern,
+				  const char *targetarch)
 {
-	return find_pkg_in_array(array, pattern, true, false);
+	return find_pkg_in_array(array, pattern, true, false, targetarch);
 }
 
 prop_dictionary_t
-xbps_find_pkg_in_array_by_pkgver(prop_array_t array, const char *pkgver)
+xbps_find_pkg_in_array_by_pkgver(prop_array_t array, const char *pkgver,
+				 const char *targetarch)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj = NULL;
-	const char *rpkgver;
-	bool found = false;
+	const char *rpkgver, *arch;
+	bool chkarch, found = false;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(pkgver != NULL);
@@ -120,8 +133,12 @@ xbps_find_pkg_in_array_by_pkgver(prop_array_t array, const char *pkgver)
 		return NULL;
 
 	while ((obj = prop_object_iterator_next(iter))) {
+		chkarch = prop_dictionary_get_cstring_nocopy(obj,
+		    "architecture", &arch);
 		if (!prop_dictionary_get_cstring_nocopy(obj,
 		    "pkgver", &rpkgver))
+			continue;
+		if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
 			continue;
 		if (strcmp(pkgver, rpkgver) == 0) {
 			found = true;
@@ -138,13 +155,13 @@ xbps_find_pkg_in_array_by_pkgver(prop_array_t array, const char *pkgver)
 prop_dictionary_t
 xbps_find_virtualpkg_in_array_by_name(prop_array_t array, const char *name)
 {
-	return find_pkg_in_array(array, name, false, true);
+	return find_pkg_in_array(array, name, false, true, NULL);
 }
 
 prop_dictionary_t
 xbps_find_virtualpkg_in_array_by_pattern(prop_array_t array, const char *pattern)
 {
-	return find_pkg_in_array(array, pattern, true, true);
+	return find_pkg_in_array(array, pattern, true, true, NULL);
 }
 
 static const char *
@@ -207,7 +224,7 @@ find_virtualpkg_user_in_array(prop_array_t array,
 	if (vpkgname == NULL)
 		return NULL;
 
-	return find_pkg_in_array(array, vpkgname, false, false);
+	return find_pkg_in_array(array, vpkgname, false, false, NULL);
 }
 
 prop_dictionary_t HIDDEN
@@ -258,7 +275,7 @@ find_pkg_in_dict(prop_dictionary_t d,
 	if (prop_object_type(array) != PROP_TYPE_ARRAY)
 		return NULL;
 
-	return find_pkg_in_array(array, str, bypattern, virtual);
+	return find_pkg_in_array(array, str, bypattern, virtual, NULL);
 }
 
 prop_dictionary_t
@@ -292,7 +309,7 @@ xbps_find_pkg_in_dict_by_pkgver(prop_dictionary_t d,
 	if (array == NULL)
 		return NULL;
 
-	return xbps_find_pkg_in_array_by_pkgver(array, pkgver);
+	return xbps_find_pkg_in_array_by_pkgver(array, pkgver, NULL);
 }
 
 prop_dictionary_t
@@ -396,7 +413,8 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 
 	/* try normal pkg */
 	if (virtual == false) {
-		pkgd = find_pkg_in_array(xhp->pkgdb, str, bypattern, false);
+		pkgd =
+		    find_pkg_in_array(xhp->pkgdb, str, bypattern, false, NULL);
 	} else {
 		/* virtual pkg set by user in conf */
 		pkgd = find_virtualpkg_user_in_array(xhp->pkgdb,
@@ -404,7 +422,7 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 		if (pkgd == NULL) {
 			/* any virtual pkg in array matching pattern */
 			pkgd = find_pkg_in_array(xhp->pkgdb,
-			    str, bypattern, true);
+			    str, bypattern, true, NULL);
 		}
 	}
 	/* pkg not found */

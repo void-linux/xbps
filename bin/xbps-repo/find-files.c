@@ -35,56 +35,38 @@
 struct ffdata {
 	int npatterns;
 	char **patterns;
+	const char *repouri;
 };
 
 static void
 match_files_by_pattern(prop_dictionary_t pkg_filesd, struct ffdata *ffd)
 {
-	prop_object_iterator_t iter;
-	prop_array_t array, allkeys;
-	prop_object_t obj;
-	prop_dictionary_keysym_t key;
-	const char *keyname, *filestr, *typestr, *pkgver;
+	prop_array_t array;
+	const char *filestr, *pkgver, *arch;
 	size_t i;
 	int x;
 
-	allkeys = prop_dictionary_all_keys(pkg_filesd);
-	for (i = 0; i < prop_array_count(allkeys); i++) {
-		key = prop_array_get(allkeys, i);
-		keyname = prop_dictionary_keysym_cstring_nocopy(key);
-		array = prop_dictionary_get_keysym(pkg_filesd, key);
-		if (prop_object_type(array) != PROP_TYPE_ARRAY)
-			break;
+	prop_dictionary_get_cstring_nocopy(pkg_filesd, "architecture", &arch);
+	if (!xbps_pkg_arch_match(arch, NULL))
+		return;
 
-		if (strcmp(keyname, "files") == 0)
-			typestr = "regular file";
-		else if (strcmp(keyname, "links") == 0)
-			typestr = "link";
-		else
-			typestr = "configuration file";
-
-		iter = prop_array_iterator(array);
-		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
-			for (x = 1; x < ffd->npatterns; x++) {
-				if ((strcmp(filestr, ffd->patterns[x]) == 0) ||
-				    (strstr(filestr, ffd->patterns[x])) ||
-				     (xbps_pkgpattern_match(filestr,
-				      ffd->patterns[x]) == 1)) {
-					prop_dictionary_get_cstring_nocopy(
-					    pkg_filesd, "pkgver", &pkgver);
-					printf(" %s: %s (%s)\n",
-					    pkgver, filestr, typestr);
-				}
+	array = prop_dictionary_get(pkg_filesd, "files");
+	for (i = 0; i < prop_array_count(array); i++) {
+		prop_array_get_cstring_nocopy(array, i, &filestr);
+		for (x = 1; x < ffd->npatterns; x++) {
+			if ((xbps_pkgpattern_match(filestr, ffd->patterns[x])) ||
+			    (strstr(filestr, ffd->patterns[x]))) {
+				prop_dictionary_get_cstring_nocopy(pkg_filesd,
+				    "pkgver", &pkgver);
+				printf("%s: %s (%s)\n",
+				    pkgver, filestr, ffd->repouri);
 			}
 		}
-		prop_object_iterator_release(iter);
 	}
-	prop_object_release(allkeys);
 }
 
 static int
-find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
+find_files_in_package(struct xbps_rpool_index *rpi, void *arg, bool *done)
 {
 	prop_array_t idxfiles;
 	struct ffdata *ffd = arg;
@@ -93,17 +75,15 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 
 	(void)done;
 
-	printf("Looking in repository '%s', please wait...\n", rpi->rpi_uri);
-	plist = xbps_pkg_index_files_plist(rpi->rpi_uri);
-	if (plist == NULL)
+	if ((plist = xbps_pkg_index_files_plist(rpi->uri)) == NULL)
 		return ENOMEM;
 
-	idxfiles = prop_array_internalize_from_zfile(plist);
-	if (idxfiles == NULL) {
+	if ((idxfiles = prop_array_internalize_from_zfile(plist)) == NULL) {
 		free(plist);
 		return errno;
 	}
 	free(plist);
+	ffd->repouri = rpi->uri;
 
 	for (i = 0; i < prop_array_count(idxfiles); i++)
 		match_files_by_pattern(prop_array_get(idxfiles, i), ffd);
@@ -115,16 +95,10 @@ find_files_in_package(struct repository_pool_index *rpi, void *arg, bool *done)
 int
 repo_find_files_in_packages(int npatterns, char **patterns)
 {
-	struct ffdata *ffd;
-	int rv;
+	struct ffdata ffd;
 
-	ffd = malloc(sizeof(*ffd));
-	if (ffd == NULL)
-		return ENOMEM;
+	ffd.npatterns = npatterns;
+	ffd.patterns = patterns;
 
-	ffd->npatterns = npatterns;
-	ffd->patterns = patterns;
-	rv = xbps_rpool_foreach(find_files_in_package, ffd);
-	free(ffd);
-	return rv;
+	return xbps_rpool_foreach(find_files_in_package, &ffd);
 }

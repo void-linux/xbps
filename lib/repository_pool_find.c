@@ -45,7 +45,7 @@ struct repo_pool_fpkg {
 };
 
 static int
-repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+repo_find_virtualpkg_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
 
@@ -53,16 +53,15 @@ repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done
 
 	if (rpf->bypattern) {
 		rpf->pkgd =
-		    xbps_find_virtualpkg_in_array_by_pattern(rpi->rpi_repo,
+		    xbps_find_virtualpkg_in_array_by_pattern(rpi->repo,
 		    rpf->pattern);
 	} else {
 		rpf->pkgd =
-		    xbps_find_virtualpkg_in_array_by_name(rpi->rpi_repo,
+		    xbps_find_virtualpkg_in_array_by_name(rpi->repo,
 		    rpf->pattern);
 	}
 	if (rpf->pkgd) {
-		prop_dictionary_set_cstring(rpf->pkgd, "repository",
-		    rpi->rpi_uri);
+		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->uri);
 		*done = true;
 		return 0;
 	}
@@ -71,8 +70,7 @@ repo_find_virtualpkg_cb(struct repository_pool_index *rpi, void *arg, bool *done
 }
 
 static int
-repo_find_virtualpkg_conf_cb(struct repository_pool_index *rpi,
-			    void *arg, bool *done)
+repo_find_virtualpkg_conf_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
 
@@ -80,16 +78,15 @@ repo_find_virtualpkg_conf_cb(struct repository_pool_index *rpi,
 
 	if (rpf->bypattern) {
 		rpf->pkgd =
-		    xbps_find_virtualpkg_conf_in_array_by_pattern(rpi->rpi_repo,
+		    xbps_find_virtualpkg_conf_in_array_by_pattern(rpi->repo,
 		    rpf->pattern);
 	} else {
 		rpf->pkgd =
-		    xbps_find_virtualpkg_conf_in_array_by_name(rpi->rpi_repo,
+		    xbps_find_virtualpkg_conf_in_array_by_name(rpi->repo,
 		    rpf->pattern);
 	}
 	if (rpf->pkgd) {
-		prop_dictionary_set_cstring(rpf->pkgd, "repository",
-		    rpi->rpi_uri);
+		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->uri);
 		*done = true;
 		return 0;
 	}
@@ -98,7 +95,7 @@ repo_find_virtualpkg_conf_cb(struct repository_pool_index *rpi,
 }
 
 static int
-repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
+repo_find_pkg_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
 
@@ -106,24 +103,23 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 
 	if (rpf->exact) {
 		/* exact match by pkgver */
-		rpf->pkgd = xbps_find_pkg_in_array_by_pkgver(rpi->rpi_repo,
-		    rpf->pattern);
+		rpf->pkgd = xbps_find_pkg_in_array_by_pkgver(rpi->repo,
+		    rpf->pattern, NULL);
 	} else if (rpf->bypattern) {
 		/* match by pkgpattern in pkgver*/
-		rpf->pkgd = xbps_find_pkg_in_array_by_pattern(rpi->rpi_repo,
-		    rpf->pattern);
+		rpf->pkgd = xbps_find_pkg_in_array_by_pattern(rpi->repo,
+		    rpf->pattern, NULL);
 	} else {
 		/* match by pkgname */
-		rpf->pkgd = xbps_find_pkg_in_array_by_name(rpi->rpi_repo,
-		    rpf->pattern);
+		rpf->pkgd = xbps_find_pkg_in_array_by_name(rpi->repo,
+		    rpf->pattern, NULL);
 	}
 	if (rpf->pkgd) {
 		/*
 		 * Package dictionary found, add the "repository"
 		 * object with the URI.
 		 */
-		prop_dictionary_set_cstring(rpf->pkgd, "repository",
-		    rpi->rpi_uri);
+		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->uri);
 		*done = true;
 		return 0;
 	}
@@ -132,9 +128,7 @@ repo_find_pkg_cb(struct repository_pool_index *rpi, void *arg, bool *done)
 }
 
 static int
-repo_find_best_pkg_cb(struct repository_pool_index *rpi,
-		      void *arg,
-		      bool *done)
+repo_find_best_pkg_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
 	const char *repopkgver;
@@ -145,27 +139,27 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 	(void)done;
 
 	if (rpf->bypattern) {
-		pkgd = xbps_find_pkg_in_array_by_pattern(rpi->rpi_repo,
-		    rpf->pattern);
+		pkgd = xbps_find_pkg_in_array_by_pattern(rpi->repo,
+		    rpf->pattern, NULL);
 	} else {
-		pkgd = xbps_find_pkg_in_array_by_name(rpi->rpi_repo,
-		    rpf->pattern);
+		pkgd = xbps_find_pkg_in_array_by_name(rpi->repo,
+		    rpf->pattern, NULL);
 	}
 	if (pkgd == NULL) {
 		if (errno && errno != ENOENT)
 			return errno;
 
 		xbps_dbg_printf("[rpool] Package '%s' not found in repository "
-		    "'%s'.\n", rpf->pattern, rpi->rpi_uri);
+		    "'%s'.\n", rpf->pattern, rpi->uri);
 		return 0;
 	}
 	prop_dictionary_get_cstring_nocopy(pkgd,
 	    "pkgver", &repopkgver);
 	if (rpf->bestpkgver == NULL) {
 		xbps_dbg_printf("[rpool] Found best match '%s' (%s).\n",
-		    repopkgver, rpi->rpi_uri);
+		    repopkgver, rpi->uri);
 		rpf->pkgd = pkgd;
-		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->rpi_uri);
+		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->uri);
 		rpf->bestpkgver = repopkgver;
 		return 0;
 	}
@@ -175,9 +169,9 @@ repo_find_best_pkg_cb(struct repository_pool_index *rpi,
 	 */
 	if (xbps_cmpver(repopkgver, rpf->bestpkgver) == 1) {
 		xbps_dbg_printf("[rpool] Found best match '%s' (%s).\n",
-		    repopkgver, rpi->rpi_uri);
+		    repopkgver, rpi->uri);
 		rpf->pkgd = pkgd;
-		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->rpi_uri);
+		prop_dictionary_set_cstring(rpf->pkgd, "repository", rpi->uri);
 		rpf->bestpkgver = repopkgver;
 	}
 	return 0;

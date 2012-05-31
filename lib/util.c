@@ -34,6 +34,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <sys/utsname.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -246,7 +247,7 @@ char *
 xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 {
 	struct xbps_handle *xhp;
-	const char *filen;
+	const char *filen, *arch;
 	char *lbinpkg = NULL;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
@@ -268,10 +269,13 @@ xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 		return lbinpkg;
 
 	free(lbinpkg);
+	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
+	    "architecture", &arch))
+		return NULL;
 	/*
 	 * Local and remote repositories use the same path.
 	 */
-	return xbps_xasprintf("%s/%s", repoloc, filen);
+	return xbps_xasprintf("%s/%s/%s", repoloc, arch, filen);
 }
 
 bool
@@ -287,6 +291,22 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkgd)
 		return true;
 
 	return false;
+}
+
+bool
+xbps_pkg_arch_match(const char *orig, const char *target)
+{
+	struct utsname un;
+
+	if (target == NULL) {
+		uname(&un);
+		if (strcmp(orig, "noarch") && strcmp(orig, un.machine))
+			return false;
+	} else {
+		if (strcmp(orig, "noarch") && strcmp(orig, target))
+			return false;
+	}
+	return true;
 }
 
 char *
