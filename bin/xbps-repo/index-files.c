@@ -77,8 +77,8 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 	prop_dictionary_t pkg_filesd, pkgd, regpkgd;
 	prop_array_t array, files;
 	struct index_files_data *ifd = arg;
-	const char *binpkg, *pkgver, *rpkgver, *version, *arch;
-	char *file, *pkgname, *pattern;
+	const char *binpkg, *pkgver, *rpkgver, *arch;
+	char *file;
 	bool found = false;
 	size_t i;
 
@@ -91,21 +91,7 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 	if (ifd->new)
 		goto start;
 
-	pkgname = xbps_pkg_name(pkgver);
-	if (pkgname == NULL)
-		return ENOMEM;
-	version = xbps_pkg_version(pkgver);
-	if (version == NULL) {
-		free(pkgname);
-		return EINVAL;
-	}
-	pattern = xbps_xasprintf("%s>=0", pkgname);
-	if (pattern == NULL) {
-		free(pkgname);
-		return ENOMEM;
-	}
-	free(pkgname);
-	regpkgd = xbps_find_pkg_in_array_by_pattern(ifd->idxfiles, pattern, arch);
+	regpkgd = xbps_find_pkg_in_array_by_pkgver(ifd->idxfiles, pkgver, arch);
 	if (regpkgd) {
 		/*
 		 * pkg already registered, check if same version
@@ -122,6 +108,8 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 		if (!xbps_remove_pkg_from_array_by_pkgver(ifd->idxfiles,
 							  rpkgver, arch))
 			return EINVAL;
+		printf("Removed obsolete entry for `%s' from "
+		    "files index.\n", rpkgver);
 	}
 
 start:
@@ -297,7 +285,8 @@ repo_genindex_files(const char *pkgdir)
 				rv = EINVAL;
 				goto out;
 			}
-			printf("Removed obsolete entry for `%s'.\n", pkgver);
+			printf("Removed obsolete entry for `%s' "
+			    "from files index.\n", pkgver);
 			free(pkgver);
 		}
 	}
