@@ -403,7 +403,7 @@ exec_transaction(bool yes, bool dry_run, bool show_download_urls)
 	/*
 	 * Ask interactively (if -y not set).
 	 */
-	if (!yes && !noyes("Do you want to continue?")) {
+	if (!yes && !yesno("Do you want to continue?")) {
 		printf("Aborting!\n");
 		goto out;
 	}
