@@ -149,7 +149,6 @@ xbps_rpool_sync(const char *uri)
 	const struct xbps_handle *xhp = xbps_handle_get();
 	const char *repouri;
 	size_t i;
-	int rv = 0;
 
 	if (xhp->cfg == NULL)
 		return ENOTSUP;
@@ -163,7 +162,6 @@ xbps_rpool_sync(const char *uri)
 		 * Fetch repository index.
 		 */
 		if (xbps_repository_sync_pkg_index(repouri, XBPS_PKGINDEX) == -1) {
-			rv = fetchLastErrCode != 0 ? fetchLastErrCode : errno;
 			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
 			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
 			    xbps_fetch_error_string());
@@ -174,14 +172,13 @@ xbps_rpool_sync(const char *uri)
 		 */
 		if (xbps_repository_sync_pkg_index(repouri,
 		    XBPS_PKGINDEX_FILES) == -1) {
-			rv = fetchLastErrCode != 0 ? fetchLastErrCode : errno;
 			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
 			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
 			    xbps_fetch_error_string());
 			continue;
 		}
 	}
-	return rv;
+	return 0;
 }
 
 int
