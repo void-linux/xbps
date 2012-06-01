@@ -67,19 +67,20 @@ static void
 show_actions(prop_object_iterator_t iter)
 {
 	prop_object_t obj;
-	const char *repoloc, *trans, *pkgname, *version, *fname;
+	const char *repoloc, *trans, *pkgname, *version, *fname, *arch;
+
+	repoloc = trans = pkgname = version = fname = arch = NULL;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		printf("%s %s %s", pkgname, trans, version);
-		if (prop_dictionary_get_cstring_nocopy(obj,
-		    "repository", &repoloc))
-			printf(" %s ", repoloc);
-		if (prop_dictionary_get_cstring_nocopy(obj,
-		    "filename", &fname))
-			printf("%s", fname);
+		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		prop_dictionary_get_cstring_nocopy(obj, "filename", &fname);
+		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+		if (repoloc && fname && arch)
+			printf(" %s %s %s", repoloc, fname, arch);
 
 		printf("\n");
 	}

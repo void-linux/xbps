@@ -1,5 +1,8 @@
 xbps-0.16 (???):
 
+ * xbps-bin(8): -n flag (dry-run mode) now also prints the pkg architecture
+   as last component and if the transaction reason supports it.
+
  * Repository index format 1.5. The files are now named properly:
    index.plist for XBPS_PKGINDEX and index-files.plist for XBPS_PKGINDEX_FILES.
    The difference in XBPS_PKGINDEX is that now a single plist file can store
