@@ -202,6 +202,7 @@ add_binpkg_to_index(prop_array_t idx,
 			prop_object_release(newpkgd);
 			printf("index: removed obsolete binpkg %s.\n", buf);
 			free(buf);
+			rv = EEXIST;
 			goto out;
 		}
 		/* current binpkg is greater than idx version */
@@ -257,8 +258,7 @@ add_binpkg_to_index(prop_array_t idx,
 		rv = errno;
 		goto out;
 	}
-	sha256 = xbps_file_hash(file);
-	if (sha256 == NULL) {
+	if ((sha256 = xbps_file_hash(file)) == NULL) {
 		prop_object_release(newpkgd);
 		rv = errno;
 		goto out;
