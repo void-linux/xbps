@@ -160,9 +160,20 @@ xbps_rpool_sync(const char *uri)
 		if (uri && strcmp(repouri, uri))
 			continue;
 		/*
-		 * Fetch repository plist index.
+		 * Fetch repository index.
 		 */
 		if (xbps_repository_sync_pkg_index(repouri, XBPS_PKGINDEX) == -1) {
+			rv = fetchLastErrCode != 0 ? fetchLastErrCode : errno;
+			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
+			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
+			    xbps_fetch_error_string());
+			continue;
+		}
+		/*
+		 * Fetch repository files index.
+		 */
+		if (xbps_repository_sync_pkg_index(repouri,
+		    XBPS_PKGINDEX_FILES) == -1) {
 			rv = fetchLastErrCode != 0 ? fetchLastErrCode : errno;
 			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
 			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
