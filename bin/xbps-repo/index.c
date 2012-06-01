@@ -139,7 +139,7 @@ add_binpkg_to_index(prop_array_t idx,
 	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
 	const char *arch, *oldarch;
 	char *sha256, *filen, *tmpfilen, *oldfilepath, *buf;
-	int rv = 0;
+	int ret = 0, rv = 0;
 
 	tmpfilen = strdup(file);
 	if (tmpfilen == NULL)
@@ -175,25 +175,43 @@ add_binpkg_to_index(prop_array_t idx,
 		}
 	} else {
 		prop_dictionary_get_cstring_nocopy(curpkgd, "version", &regver);
-		if (xbps_cmpver(version, regver) <= 0) {
+		ret = xbps_cmpver(version, regver);
+		if (ret == 0) {
+			/* same version */
 			fprintf(stderr, "index: skipping `%s-%s' (%s), `%s-%s' already "
 			    "registered.\n", pkgname, version,
 			    arch, pkgname, regver);
 			prop_object_release(newpkgd);
 			rv = EEXIST;
 			goto out;
+		} else if (ret == -1) {
+			/* idx version is greater, remove current binpkg */
+			oldfilepath = xbps_xasprintf("%s/%s", filedir, filen);
+			assert(oldfilepath != NULL);
+			if (remove(oldfilepath) == -1) {
+				rv = errno;
+				xbps_error_printf("failed to remove old binpkg "
+				    "`%s': %s\n", oldfilepath, strerror(rv));
+				free(oldfilepath);
+				prop_object_release(newpkgd);
+				goto out;
+			}
+			free(oldfilepath);
+			buf = xbps_xasprintf("`%s-%s' (%s)", pkgname, version, arch);
+			assert(buf != NULL);
+			prop_object_release(newpkgd);
+			printf("index: removed obsolete binpkg %s.\n", buf);
+			free(buf);
+			goto out;
 		}
-		/*
-		 * Current binpkg is newer than the one registered
-		 * in package index, remove outdated binpkg file
-		 * and its dictionary from the pkg index.
-		 */
+		/* current binpkg is greater than idx version */
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "filename", &oldfilen);
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "pkgver", &oldpkgver);
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "architecture", &oldarch);
+
 		buf = strdup(oldpkgver);
 		if (buf == NULL) {
 			prop_object_release(newpkgd);

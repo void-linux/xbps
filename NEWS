@@ -1,5 +1,8 @@
 xbps-0.16 (???):
 
+ * xbps-repo(8): 'genindex' target is now able to remove binary packages
+   when a greater version exists on the index.
+
  * xbps-repo(8): 'sync' target now is able to sync just a single repository
    by passing the repository URI as argument, i.e:
 
