@@ -267,7 +267,7 @@ main(int argc, char **argv)
 
 		rv = repo_genindex(argv[1]);
 		if (rv == 0)
-			rv = repo_genindex_files(argv[1])
+			rv = repo_genindex_files(argv[1]);
 
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
