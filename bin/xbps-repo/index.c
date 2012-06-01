@@ -86,8 +86,8 @@ again:
 			break;
 		}
 		if (access(binpkg, R_OK) == -1) {
-			printf("Removed obsolete entry for `%s' "
-			    "from index.\n", pkgver);
+			printf("index: removed obsolete entry `%s' (%s)\n",
+			    pkgver, arch);
 			prop_array_remove(array, i);
 			free(binpkg);
 			found = true;
@@ -136,7 +136,8 @@ add_binpkg_to_index(prop_array_t idx,
 {
 	prop_dictionary_t newpkgd, curpkgd;
 	struct stat st;
-	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver, *arch;
+	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
+	const char *arch, *oldarch;
 	char *sha256, *filen, *tmpfilen, *oldfilepath, *buf;
 	int rv = 0;
 
@@ -175,8 +176,9 @@ add_binpkg_to_index(prop_array_t idx,
 	} else {
 		prop_dictionary_get_cstring_nocopy(curpkgd, "version", &regver);
 		if (xbps_cmpver(version, regver) <= 0) {
-			xbps_warn_printf("skipping `%s', `%s-%s' already "
-			    "registered.\n", filen, pkgname, regver);
+			fprintf(stderr, "index: skipping `%s-%s' (%s), `%s-%s' already "
+			    "registered.\n", pkgname, version,
+			    arch, pkgname, regver);
 			prop_object_release(newpkgd);
 			rv = EEXIST;
 			goto out;
@@ -190,6 +192,8 @@ add_binpkg_to_index(prop_array_t idx,
 		    "filename", &oldfilen);
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "pkgver", &oldpkgver);
+		prop_dictionary_get_cstring_nocopy(curpkgd,
+		    "architecture", &oldarch);
 		buf = strdup(oldpkgver);
 		if (buf == NULL) {
 			prop_object_release(newpkgd);
@@ -214,15 +218,15 @@ add_binpkg_to_index(prop_array_t idx,
 			goto out;
 		}
 		free(oldfilepath);
-		if (!xbps_remove_pkg_from_array_by_name(idx, pkgname, arch)) {
+		if (!xbps_remove_pkg_from_array_by_pkgver(idx, buf, oldarch)) {
 			xbps_error_printf("failed to remove `%s' "
-			    "from plist index: %s\n", pkgname, strerror(errno));
+			    "from plist index: %s\n", buf, strerror(errno));
 			prop_object_release(newpkgd);
 			free(buf);
 			goto out;
 		}
-		printf("Removed obsolete package entry/binpkg for `%s'.\n",
-		    buf);
+		printf("index: removed obsolete entry/binpkg `%s' "
+		    "(%s).\n", buf, arch);
 		free(buf);
 	}
 
@@ -266,8 +270,7 @@ add_binpkg_to_index(prop_array_t idx,
 		rv = EINVAL;
 		goto out;
 	}
-	printf("Registered `%s-%s' (%s) in repository index.\n",
-	    pkgname, version, filen);
+	printf("index: added `%s-%s' (%s).\n", pkgname, version, arch);
 
 out:
 	if (tmpfilen)
@@ -353,7 +356,7 @@ repo_genindex(const char *pkgdir)
 		/*
 		 * Show total count registered packages.
 		 */
-		printf("%zu packages registered in repository index.\n",
+		printf("index: %zu packages registered.\n",
 		    (size_t)prop_array_count(idx));
 		/*
 		 * Don't write plist file if no packages were registered.
