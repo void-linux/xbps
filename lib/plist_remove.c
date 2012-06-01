@@ -79,8 +79,10 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode,
 			/* match by pkgname, obj is a dictionary  */
 			chkarch = prop_dictionary_get_cstring_nocopy(obj,
 			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch)) {
+				idx++;
 				continue;
+			}
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &curname);
 			if (strcmp(curname, str) == 0) {
@@ -90,8 +92,10 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode,
 		} else if (mode == 3) {
 			chkarch = prop_dictionary_get_cstring_nocopy(obj,
 			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch)) {
+				idx++;
 				continue;
+			}
 			/* match by pkgver, obj is a dictionary */
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
@@ -102,8 +106,10 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode,
 		} else if (mode == 4) {
 			chkarch = prop_dictionary_get_cstring_nocopy(obj,
 			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+			if (chkarch && !xbps_pkg_arch_match(arch, targetarch)) {
+				idx++;
 				continue;
+			}
 			/* match by pattern, obj is a dictionary */
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
