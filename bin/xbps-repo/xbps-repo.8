@@ -65,12 +65,12 @@ Prints the name of
 matching the pattern on its file list by looking in all repositories index files.
 Multiple patterns can be specified as arguments.
 .It Sy genindex Pa /path/to/local/repo
-Generates a package index for a local repository as specified in its argument.
+Generates the package index files for a local repository as specified in its argument.
 It will look for archives with the
 .Sy .xbps
-extension and will only add it into the index if version is newer than the one
-available in the index. If a newer package is available, the old package file
-will be removed automatically.
+extension and will only add them onto the index if version is newer than the one
+currently stored. If a newer package is available, the old binary package will be
+removed automatically.
 .It Sy list
 Lists all working repositories in repository pool.
 .It Sy pkg-list Op repository
