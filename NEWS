@@ -15,6 +15,8 @@ xbps-0.16 (???):
 	|-- noarch
 	|-- nonfree      <- 2nd repository
 	|   |-- i686
+	|   |-- index-files.plist
+	|   |-- index.plist
 	|   |-- noarch
 	|   `-- x86_64
 	`-- x86_64
