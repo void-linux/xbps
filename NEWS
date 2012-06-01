@@ -1,5 +1,15 @@
 xbps-0.16 (???):
 
+ * xbps-repo(8): 'sync' target now is able to sync just a single repository
+   by passing the repository URI as argument, i.e:
+
+	$ xbps-repo sync http://xbps.mirror.org/repo
+
+ * xbps-repo(8): 'pkg-list' target now expects the repository URI than
+   the index number, i.e:
+
+	$ xbps-repo pkg-list http://xbps.mirror.org/repo
+
  * xbps-bin(8): -n flag (dry-run mode) now also prints the pkg architecture
    as last component and if the transaction reason supports it.
 

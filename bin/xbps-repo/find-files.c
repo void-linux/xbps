@@ -80,6 +80,11 @@ find_files_in_package(struct xbps_rpool_index *rpi, void *arg, bool *done)
 
 	if ((idxfiles = prop_array_internalize_from_zfile(plist)) == NULL) {
 		free(plist);
+		if (errno == ENOENT) {
+			fprintf(stderr, "%s: index-files missing! "
+			    "ignoring...\n", rpi->uri);
+			return 0;
+		}
 		return errno;
 	}
 	free(plist);

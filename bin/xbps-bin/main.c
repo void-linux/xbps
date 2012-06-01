@@ -268,7 +268,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync()) != 0))
+		if (sync && ((rv = xbps_rpool_sync(NULL)) != 0))
 			goto out;
 
 		for (i = 1; i < argc; i++)
@@ -282,7 +282,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync()) != 0))
+		if (sync && ((rv = xbps_rpool_sync(NULL)) != 0))
 			goto out;
 
 		for (i = 1; i < argc; i++)
@@ -351,7 +351,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync()) != 0))
+		if (sync && ((rv = xbps_rpool_sync(NULL)) != 0))
 			goto out;
 
 		rv = dist_upgrade(yes, dry_run, show_download_pkglist_url);

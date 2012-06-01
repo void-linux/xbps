@@ -61,9 +61,9 @@ usage(bool fail)
 	    "   Generate a local repository in `directory'.\n"
 	    " list\n"
 	    "   List registered repositories.\n"
-	    " pkg-list [index]\n"
-	    "   Print packages in repository matching `index' number.\n"
-	    "   If `index' not specified, all registered repositories will be used.\n"
+	    " pkg-list [repo]\n"
+	    "   Print packages in repository matching `repo' URI.\n"
+	    "   If `repo' not specified, all registered repositories will be used.\n"
 	    " search <pattern> [patterns]\n"
 	    "   Search for packages in repositories matching the patterns.\n"
 	    " show <pkgname|pkgpattern>\n"
@@ -72,8 +72,9 @@ usage(bool fail)
 	    "   Print package's required dependencies for `pkgname' or `pkgpattern'.\n"
 	    " show-files <pkgname|pkgpattern>\n"
 	    "   Print package's files list for `pkgname' or `pkgpattern'.\n"
-	    " sync\n"
-	    "   Synchronize package index files for all registered repositories.\n\n"
+	    " sync [repo]\n"
+	    "   Synchronize package index file for `repo'.\n"
+	    "   If `repo' not specified, all remote repositories will be used. \n\n"
 	    "Refer to xbps-repo(8) for a more detailed description.\n");
 
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -266,14 +267,14 @@ main(int argc, char **argv)
 
 		rv = repo_genindex(argv[1]);
 		if (rv == 0)
-			rv = repo_genindex_files(argv[1]);
+			rv = repo_genindex_files(argv[1])
 
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
-		if (argc != 1)
+		if (argc < 1 || argc > 2)
 			usage(true);
 
-		rv = xbps_rpool_sync();
+		rv = xbps_rpool_sync(argv[1]);
 		if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");

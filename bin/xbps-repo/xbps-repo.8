@@ -73,12 +73,11 @@ available in the index. If a newer package is available, the old package file
 will be removed automatically.
 .It Sy list
 Lists all working repositories in repository pool.
-.It Sy pkg-list Op index
-Lists all currently registered packages in repository index as specified
-in the
-.Ar index
-argument. If argument is not specified, any package contained in all repositories
-will be shown. The argument expects a decimal number starting from 0,
+.It Sy pkg-list Op repository
+Lists all currently registered packages from all repositories, or just from
+.Ar repository .
+If argument is not specified, any package contained in all repositories
+will be shown. The argument expects the repository URI.
 matching the output of the
 .Ar list
 target.
@@ -124,8 +123,9 @@ if a remote repository is the winner and binary package is not available in
 it will fetch remotely and
 .Em on the fly
 the info from target repository.
-.It Sy sync
-Syncs the package index file for all registered remote repositories.
+.It Sy sync Op repository
+Syncs the package index file for all remote repositories or just for
+.Ar repository .
 The index file will be fetched if local and remote size/mtime do not match.
 .Sh FILES
 .Bl -tag -width  /var/db/xbps/<repodir>/index-files.plist -compact

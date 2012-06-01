@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20120601"
+#define XBPS_API_VERSION	"20120601-1"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -1492,22 +1492,19 @@ struct xbps_rpool_index {
 	 * URI string associated with repository.
 	 */
 	const char *uri;
-	/**
-	 * @var rpi_index
-	 *
-	 * Repository index in pool.
-	 */
-	uint16_t index;
 };
 
 /**
  * Synchronizes the package index file for all remote repositories
- * as specified in the configuration file, repositories.plist.
+ * as specified in the configuration file or if \a uri argument is
+ * set, just sync the index file for that repository.
+ *
+ * @param[in] uri Repository URI to match for sync (optional).
  *
  * @return 0 on success, ENOTSUP if no repositories were found in
  * the configuration file.
  */
-int xbps_rpool_sync(void);
+int xbps_rpool_sync(const char *uri);
 
 /**
  * Iterates over the repository pool and executes the \a fn function

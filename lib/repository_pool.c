@@ -144,41 +144,33 @@ xbps_rpool_release(struct xbps_handle *xhp)
 }
 
 int
-xbps_rpool_sync(void)
+xbps_rpool_sync(const char *uri)
 {
 	const struct xbps_handle *xhp = xbps_handle_get();
 	const char *repouri;
 	size_t i;
-	int rv;
+	int rv = 0;
 
 	if (xhp->cfg == NULL)
 		return ENOTSUP;
 
 	for (i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
 		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
+		/* If argument was set just process that repository */
+		if (uri && strcmp(repouri, uri))
+			continue;
 		/*
 		 * Fetch repository plist index.
 		 */
-		rv = xbps_repository_sync_pkg_index(repouri, XBPS_PKGINDEX);
-		if (rv == -1) {
+		if (xbps_repository_sync_pkg_index(repouri, XBPS_PKGINDEX) == -1) {
+			rv = fetchLastErrCode != 0 ? fetchLastErrCode : errno;
 			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
-			    repouri, fetchLastErrCode == 0 ?
-			    strerror(errno) : xbps_fetch_error_string());
-			continue;
-		}
-		/*
-		 * Fetch repository plist files index.
-		 */
-		rv = xbps_repository_sync_pkg_index(repouri,
-		    XBPS_PKGINDEX_FILES);
-		if (rv == -1) {
-			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
-			    repouri, fetchLastErrCode == 0 ?
-			    strerror(errno) : xbps_fetch_error_string());
+			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
+			    xbps_fetch_error_string());
 			continue;
 		}
 	}
-	return 0;
+	return rv;
 }
 
 int
@@ -207,8 +199,6 @@ xbps_rpool_foreach(int (*fn)(struct xbps_rpool_index *, void *, bool *), void *a
 		d = prop_array_get(xhp->repo_pool, i);
 		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi.uri);
 		rpi.repo = prop_dictionary_get(d, "index");
-		rpi.index = i;
-
 		rv = (*fn)(&rpi, arg, &done);
 		if (rv != 0 || done)
 			break;

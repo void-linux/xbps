@@ -38,15 +38,12 @@ int
 repo_pkg_list_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 {
 	struct list_pkgver_cb lpc;
-	uint16_t idx;
-	char *cp;
+	const char *repo = arg;
 
 	(void)done;
-	if (arg != NULL) {
-		idx = (uint16_t)strtoul(arg, &cp, 0);
-		if (rpi->index != idx)
-			return 0;
-	}
+	if (repo && strcmp(rpi->uri, repo))
+		return 0;
+
 	lpc.check_state = false;
 	lpc.state = 0;
 	lpc.pkgver_len = find_longest_pkgver(rpi->repo);
@@ -64,8 +61,8 @@ repo_list_uri_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 	(void)arg;
 	(void)done;
 
-	printf("[%u] %s (%zu packages)\n",
-	    rpi->index, rpi->uri, (size_t)prop_array_count(rpi->repo));
+	printf("%s (%zu packages)\n", rpi->uri,
+	    (size_t)prop_array_count(rpi->repo));
 
 	return 0;
 }
