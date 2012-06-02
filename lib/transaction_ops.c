@@ -254,16 +254,21 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 		exact = true;
 		bypattern = false;
 		best = false;
-		pkgd = xbps_pkgdb_get_pkgd(pkg, bypattern);
-		pkgname = xbps_pkg_name(pkg);
-		assert(pkgname != NULL);
-		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
-		free(pkgname);
 	} else {
 		exact = false;
 		bypattern = false;
 		best = true;
 	}
+
+	if (exact) {
+		pkgname = xbps_pkg_name(pkg);
+		assert(pkgname != NULL);
+		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
+		free(pkgname);
+	} else {
+		pkgd = xbps_pkgdb_get_pkgd(pkg, bypattern);
+	}
+
 	if (pkgd != NULL) {
 		if (xbps_pkg_state_dictionary(pkgd, &state) != 0) {
 			prop_object_release(pkgd);
