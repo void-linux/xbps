@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20120601-2"
+#define XBPS_API_VERSION	"20120602"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -1360,8 +1360,8 @@ int xbps_remove_pkg_files(prop_dictionary_t dict,
  * package version in repository pool will be queued, otherwise the first
  * repository matching the package pattern wins.
  *
- * @param pkg Package name or package pattern to match, i.e
- * `foo>=0' or 'foo<1'.
+ * @param pkg Package name, package/version or package pattern to match, i.e
+ * `foo', `foo-1.0' or `foo>=1.2'.
  * @param reinstall If true, package will be queued (if \a str matches)
  * even if package is already installed.
  *

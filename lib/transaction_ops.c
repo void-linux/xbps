@@ -57,12 +57,13 @@ enum {
 };
 
 static int
-transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
+transaction_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
+		     int action)
 {
 	prop_dictionary_t pkg_pkgdb, pkg_repod;
 	prop_array_t unsorted;
 	struct xbps_handle *xhp = xbps_handle_get();
-	const char *pkgname, *pkgver, *repoloc, *repover, *instver, *reason;
+	const char *pkgname, *repoloc, *repover, *instver, *reason;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -83,12 +84,20 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 	 * Find out if the pkg has been found in repository pool.
 	 */
 	if (action == TRANS_INSTALL) {
-		if (((pkg_repod = xbps_rpool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
-		    ((pkg_repod = xbps_rpool_find_pkg(pkg, bypattern, bestpkg)) == NULL) &&
-		    ((pkg_repod = xbps_rpool_find_virtualpkg(pkg, bypattern)) == NULL)) {
-			/* not found */
-			rv = errno;
-			goto out;
+		if (exact) {
+			if ((pkg_repod = xbps_rpool_find_pkg_exact(pkg)) == NULL) {
+				/* not found */
+				rv = errno;
+				goto out;
+			}
+		} else {
+			if (((pkg_repod = xbps_rpool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
+			    ((pkg_repod = xbps_rpool_find_pkg(pkg, bypattern, best)) == NULL) &&
+			    ((pkg_repod = xbps_rpool_find_virtualpkg(pkg, bypattern)) == NULL)) {
+				/* not found */
+				rv = errno;
+				goto out;
+			}
 		}
 	} else {
 		if ((pkg_repod = xbps_rpool_find_pkg(pkg, false, true)) == NULL) {
@@ -101,7 +110,7 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &repover);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
-	if (bestpkg && (action == TRANS_UPDATE)) {
+	if (best && (action == TRANS_UPDATE)) {
 		/*
 		 * Compare installed version vs best pkg available in repos.
 		 */
@@ -207,7 +216,8 @@ xbps_transaction_update_packages(void)
 				continue;
 			}
 		}
-		rv = transaction_find_pkg(pkgname, false, true, TRANS_UPDATE);
+		rv = transaction_find_pkg(pkgname, false, true,
+					  false, TRANS_UPDATE);
 		if (rv == 0)
 			newpkg_found = true;
 		else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
@@ -225,7 +235,7 @@ xbps_transaction_update_packages(void)
 int
 xbps_transaction_update_pkg(const char *pkgname)
 {
-	return transaction_find_pkg(pkgname, false, true, TRANS_UPDATE);
+	return transaction_find_pkg(pkgname, false, true, false, TRANS_UPDATE);
 }
 
 int
@@ -233,17 +243,27 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 {
 	prop_dictionary_t pkgd;
 	pkg_state_t state;
-	bool bypattern, bestpkg;
+	char *pkgname;
+	bool bypattern, best, exact;
 
 	if (xbps_pkgpattern_version(pkg)) {
 		bypattern = true;
-		bestpkg = false;
-	} else {
+		best = false;
+		exact = false;
+	} else if (xbps_pkg_version(pkg)) {
+		exact = true;
 		bypattern = false;
-		bestpkg = true;
+		best = false;
+		pkgd = xbps_pkgdb_get_pkgd(pkg, bypattern);
+		pkgname = xbps_pkg_name(pkg);
+		assert(pkgname != NULL);
+		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
+		free(pkgname);
+	} else {
+		exact = false;
+		bypattern = false;
+		best = true;
 	}
-
-	pkgd = xbps_pkgdb_get_pkgd(pkg, bypattern);
 	if (pkgd != NULL) {
 		if (xbps_pkg_state_dictionary(pkgd, &state) != 0) {
 			prop_object_release(pkgd);
@@ -255,8 +275,7 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 			return EEXIST;
 		}
 	}
-
-	return transaction_find_pkg(pkg, bypattern, bestpkg, TRANS_INSTALL);
+	return transaction_find_pkg(pkg, bypattern, best, exact, TRANS_INSTALL);
 }
 
 int
