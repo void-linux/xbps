@@ -95,10 +95,9 @@ again:
 		}
 		free(binpkg);
 	}
-	if (found) {
-		if (!prop_array_externalize_to_zfile(array, plist))
-			rv = errno;
-	}
+	if (found && !prop_array_externalize_to_zfile(array, plist))
+		rv = errno;
+
 	free(plist);
 
 	return rv;
