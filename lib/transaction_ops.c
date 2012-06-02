@@ -59,7 +59,7 @@ enum {
 static int
 transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 {
-	prop_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
+	prop_dictionary_t pkg_pkgdb, pkg_repod;
 	prop_array_t unsorted;
 	struct xbps_handle *xhp = xbps_handle_get();
 	const char *pkgname, *pkgver, *repoloc, *repover, *instver, *reason;
@@ -73,28 +73,33 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 		reason = "install";
 	} else {
 		/* update */
-		pkg_pkgdb = xbps_find_pkg_dict_installed(pkg, false);
-		if (pkg_pkgdb == NULL) {
-			rv = ENODEV;
-			goto out;
-		}
+		if ((pkg_pkgdb = xbps_pkgdb_get_pkgd(pkg, false)) == NULL)
+			return ENODEV;
+
 		reason = "update";
 	}
 
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
-	if (((pkg_repod = xbps_rpool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
-	    ((pkg_repod = xbps_rpool_find_pkg(pkg, bypattern, bestpkg)) == NULL) &&
-	    ((pkg_repod = xbps_rpool_find_virtualpkg(pkg, bypattern)) == NULL)) {
-		/* not found */
-		rv = errno;
-		errno = 0;
-		goto out;
+	if (action == TRANS_INSTALL) {
+		if (((pkg_repod = xbps_rpool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
+		    ((pkg_repod = xbps_rpool_find_pkg(pkg, bypattern, bestpkg)) == NULL) &&
+		    ((pkg_repod = xbps_rpool_find_virtualpkg(pkg, bypattern)) == NULL)) {
+			/* not found */
+			rv = errno;
+			goto out;
+		}
+	} else {
+		if ((pkg_repod = xbps_rpool_find_pkg(pkg, false, true)) == NULL) {
+			/* not found */
+			rv = errno;
+			goto out;
+		}
 	}
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &repover);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
 	if (bestpkg && (action == TRANS_UPDATE)) {
 		/*
@@ -102,13 +107,11 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 		 */
 		prop_dictionary_get_cstring_nocopy(pkg_pkgdb,
 		    "version", &instver);
-		prop_dictionary_get_cstring_nocopy(pkg_repod,
-		    "version", &repover);
 		prop_object_release(pkg_pkgdb);
 		if (xbps_cmpver(repover, instver) <= 0) {
-			xbps_dbg_printf("[rpool] Skipping `%s' "
-			    "(installed: %s) from repository `%s'\n",
-			    pkgver, instver, repoloc);
+			xbps_dbg_printf("[rpool] Skipping `%s-%s' "
+			    "(installed: %s-%s) from repository `%s'\n",
+			    pkgname, repover, pkgname, instver, repoloc);
 			rv = EEXIST;
 			goto out;
 		}
@@ -123,11 +126,9 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
-	if (xbps_pkg_has_rundeps(pkg_repod)) {
-		rv = xbps_repository_find_pkg_deps(xhp, pkg_repod);
-		if (rv != 0)
+	if ((xbps_pkg_has_rundeps(pkg_repod)) &&
+	    ((rv = xbps_repository_find_pkg_deps(xhp, pkg_repod)) != 0))
 			goto out;
-	}
 	/*
 	 * Set package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
@@ -172,8 +173,8 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool bestpkg, int action)
 		rv = errno;
 		goto out;
 	}
-	xbps_dbg_printf("%s: added into the transaction (%s).\n",
-	    pkgver, repoloc);
+	xbps_dbg_printf("%s-%s: added into the transaction (%s).\n",
+	    pkgname, repover, repoloc);
 
 out:
 	if (pkg_repod != NULL)
@@ -182,51 +183,43 @@ out:
 	return rv;
 }
 
-static int
-update_pkgs_cb(prop_object_t obj, void *arg, bool *done)
-{
-	struct xbps_handle *xhp = xbps_handle_get();
-	const char *pkgname, *holdpkgname;
-	bool *newpkg_found = arg;
-	int rv = 0;
-	size_t i;
-
-	(void)done;
-
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	for (i = 0; i < cfg_size(xhp->cfg, "PackagesOnHold"); i++) {
-		holdpkgname = cfg_getnstr(xhp->cfg, "PackagesOnHold", i);
-		if (strcmp(pkgname, holdpkgname) == 0) {
-			xbps_dbg_printf("[rpool] package %s on hold, "
-			    "ignoring updates.\n", pkgname);
-			return 0;
-		}
-	}
-	rv = xbps_transaction_update_pkg(pkgname);
-	if (rv == 0)
-		*newpkg_found = true;
-	else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
-		/*
-		 * missing pkg or installed version is greater than or
-		 * equal than pkg in repositories.
-		 */
-		rv = 0;
-	}
-
-	return rv;
-}
-
 int
 xbps_transaction_update_packages(void)
 {
+	prop_object_t obj;
+	struct xbps_handle *xhp = xbps_handle_get();
+	const char *pkgname, *holdpkgname;
 	bool newpkg_found = false;
-	int rv;
+	int rv = 0;
+	size_t i, x;
 
-	rv = xbps_pkgdb_foreach_cb(update_pkgs_cb, &newpkg_found);
-	if (!newpkg_found)
-		rv = EEXIST;
+	if ((rv = xbps_pkgdb_init(xhp)) != 0)
+		return rv;
 
-	return rv;
+	for (i = 0; i < prop_array_count(xhp->pkgdb); i++) {
+		obj = prop_array_get(xhp->pkgdb, i);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		for (x = 0; x < cfg_size(xhp->cfg, "PackagesOnHold"); x++) {
+			holdpkgname = cfg_getnstr(xhp->cfg, "PackagesOnHold", x);
+			if (strcmp(pkgname, holdpkgname) == 0) {
+				xbps_dbg_printf("[rpool] package %s on hold, "
+				    "ignoring updates.\n", pkgname);
+				continue;
+			}
+		}
+		rv = transaction_find_pkg(pkgname, false, true, TRANS_UPDATE);
+		if (rv == 0)
+			newpkg_found = true;
+		else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
+			/*
+			 * missing pkg or installed version is greater than or
+			 * equal than pkg in repositories.
+			 */
+			rv = 0;
+		}
+	}
+
+	return newpkg_found ? rv : EEXIST;
 }
 
 int
