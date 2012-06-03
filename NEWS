@@ -3,9 +3,10 @@ xbps-0.16 (???):
  * xbps-bin(8): the 'install' target now can (re)install an exact package
    version as specified on its arguments, i.e:
 
-	$ xbps-bin install foo-1.0
+	$ xbps-bin install foo=1.0
 
    If that version is not available no other version will be installed.
+   The equal sign must be used to specify exact versions.
 
  * xbps-repo(8): 'genindex' target is now able to remove binary packages
    when a greater version exists on the index.
