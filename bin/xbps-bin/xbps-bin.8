@@ -1,4 +1,4 @@
-.Dd May 31, 2012
+.Dd June 3, 2012
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -159,6 +159,15 @@ Install binary package(s) from repository pool by specifying
 .Em pkgname(s)
 or
 .Em package pattern(s) .
+Three different ways exist to install packages: by specifying just the
+.Em package name ,
+the best available version from repositories will be installed; by specifying a
+.Em package pattern
+with '>' '<' '>=' or '<='
+.Em ( foo>=2.0 )
+or by specifying an exact package version delimited
+by the equal sign, i.e
+.Em ( foo=1.0) .
 The first repository matching the arguments will be used. The package(s) will be
 .Em downloaded
 (if found in a remote repository),
