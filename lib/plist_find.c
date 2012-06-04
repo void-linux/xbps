@@ -345,53 +345,6 @@ xbps_find_virtualpkg_conf_in_dict_by_pattern(prop_dictionary_t d,
 }
 
 static prop_dictionary_t
-find_pkg_dict_from_plist(const char *plist,
-			 const char *key,
-			 const char *str,
-			 bool bypattern)
-{
-	prop_dictionary_t dict, obj, res;
-
-	assert(plist != NULL);
-	assert(str != NULL);
-
-	dict = prop_dictionary_internalize_from_zfile(plist);
-	if (dict == NULL) {
-		xbps_dbg_printf("cannot internalize %s for pkg %s: %s",
-		    plist, str, strerror(errno));
-		return NULL;
-	}
-	obj = find_virtualpkg_user_in_dict(dict, key, str, bypattern);
-	if (obj == NULL) {
-		obj = find_pkg_in_dict(dict, key, str, bypattern, true);
-		if (obj == NULL) {
-			prop_object_release(dict);
-			return NULL;
-		}
-	}
-	res = prop_dictionary_copy(obj);
-	prop_object_release(dict);
-
-	return res;
-}
-
-prop_dictionary_t
-xbps_find_pkg_dict_from_plist_by_name(const char *plist,
-				      const char *key,
-				      const char *pkgname)
-{
-	return find_pkg_dict_from_plist(plist, key, pkgname, false);
-}
-
-prop_dictionary_t
-xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
-					 const char *key,
-					 const char *pattern)
-{
-	return find_pkg_dict_from_plist(plist, key, pattern, true);
-}
-
-static prop_dictionary_t
 find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 {
 	struct xbps_handle *xhp;

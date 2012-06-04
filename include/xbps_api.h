@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20120603"
+#define XBPS_API_VERSION	"20120604"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -952,39 +952,6 @@ prop_dictionary_t xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t d,
 prop_dictionary_t xbps_find_virtualpkg_in_dict_by_pattern(prop_dictionary_t d,
 							  const char *key,
 							  const char *pattern);
-/**
- * Finds the package's proplib dictionary in a plist file by specifying
- * a package name.
- *
- * @param[in] plist Path to a plist file.
- * @param[in] key Proplib array's key name.
- * @param[in] pkgname Package name to match in array.
- *
- * @return The package's proplib dictionary on success, NULL otherwise and
- * errno is set appropiately.
- * @note When returned dictionary is no longer needed, it must be released
- * with prop_object_release(3).
- */
-prop_dictionary_t xbps_find_pkg_dict_from_plist_by_name(const char *plist,
-							const char *key,
-							const char *pkgname);
-
-/**
- * Finds the package's proplib dictionary in a plist file by specifying
- * a package pattern.
- *
- * @param[in] plist Path to a plist file.
- * @param[in] key Proplib array's key name.
- * @param[in] pattern Package pattern to match in array.
- *
- * @return The package's proplib dictionary on success, NULL otherwise and
- * errno is set appropiately.
- * @note When returned dictionary is no longer needed, it must be released
- * with prop_object_release(3).
- */
-prop_dictionary_t xbps_find_pkg_dict_from_plist_by_pattern(const char *plist,
-							   const char *key,
-							   const char *pattern);
 
 /**
  * Finds a package's dictionary searching in the registered packages
