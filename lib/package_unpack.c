@@ -211,21 +211,17 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 		rv = errno;
 		goto out;
 	}
-
 	if (strcmp(transact, "update") == 0)
 		update = true;
-
 	/*
-	 * While updating, always remove current INSTALL/REMOVE
-	 * scripts, because a package upgrade might not have those
-	 * anymore.
+	 * Always remove current INSTALL/REMOVE scripts in pkg's metadir,
+	 * as security measures.
 	 */
-	if (update) {
-		if ((rv = remove_metafile("INSTALL", pkgver)) != 0)
-			goto out;
-		if ((rv = remove_metafile("REMOVE", pkgver)) != 0)
-			goto out;
-	}
+	if ((rv = remove_metafile("INSTALL", pkgver)) != 0)
+		goto out;
+	if ((rv = remove_metafile("REMOVE", pkgver)) != 0)
+		goto out;
+
 	/*
 	 * Process the archive files.
 	 */
