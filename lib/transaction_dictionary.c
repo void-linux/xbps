@@ -61,7 +61,7 @@ compute_transaction_stats(prop_dictionary_t transd)
 	uint64_t tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt;
 	int rv = 0;
-	const char *tract, *pkgname;
+	const char *tract, *pkgname, *repo;
 
 	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = 0;
 	tsize = dlsize = instsize = rmsize = 0;
@@ -77,6 +77,7 @@ compute_transaction_stats(prop_dictionary_t transd)
 		 */
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		prop_dictionary_get_cstring_nocopy(obj, "repository", &repo);
 
 		if (strcmp(tract, "install") == 0)
 			inst_pkgcnt++;
@@ -115,9 +116,11 @@ compute_transaction_stats(prop_dictionary_t transd)
 			prop_dictionary_get_uint64(obj,
 			    "installed_size", &tsize);
 			instsize += tsize;
-			prop_dictionary_get_uint64(obj,
-			    "filename-size", &tsize);
-			dlsize += tsize;
+			if (xbps_check_is_repository_uri_remote(repo)) {
+				prop_dictionary_get_uint64(obj,
+				    "filename-size", &tsize);
+				dlsize += tsize;
+			}
 		}
 	}
 
