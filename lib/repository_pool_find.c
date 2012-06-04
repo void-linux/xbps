@@ -49,8 +49,6 @@ repo_find_virtualpkg_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
 
-	assert(rpi != NULL);
-
 	if (rpf->bypattern) {
 		rpf->pkgd =
 		    xbps_find_virtualpkg_in_array_by_pattern(rpi->repo,
@@ -74,8 +72,6 @@ repo_find_virtualpkg_conf_cb(struct xbps_rpool_index *rpi, void *arg, bool *done
 {
 	struct repo_pool_fpkg *rpf = arg;
 
-	assert(rpi != NULL);
-
 	if (rpf->bypattern) {
 		rpf->pkgd =
 		    xbps_find_virtualpkg_conf_in_array_by_pattern(rpi->repo,
@@ -98,8 +94,6 @@ static int
 repo_find_pkg_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 {
 	struct repo_pool_fpkg *rpf = arg;
-
-	assert(rpi != NULL);
 
 	if (rpf->exact) {
 		/* exact match by pkgver */
@@ -133,8 +127,6 @@ repo_find_best_pkg_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 	struct repo_pool_fpkg *rpf = arg;
 	const char *repopkgver;
 	prop_dictionary_t pkgd;
-
-	assert(rpi != NULL);
 
 	(void)done;
 
@@ -185,129 +177,92 @@ typedef enum {
 	REAL_PKG
 } pkg_repo_type_t;
 
-static struct repo_pool_fpkg *
+static prop_dictionary_t
 repo_find_pkg(const char *pkg, bool bypattern, pkg_repo_type_t type)
 {
-	struct repo_pool_fpkg *rpf;
+	struct repo_pool_fpkg rpf;
 	int rv = 0;
 
-	assert(pkg != NULL);
-
-	rpf = malloc(sizeof(*rpf));
-	if (rpf == NULL)
-		return NULL;
-
-	rpf->pattern = pkg;
-	rpf->bypattern = bypattern;
-	rpf->exact = false;
-	rpf->pkgd = NULL;
-	rpf->bestpkgver = NULL;
+	rpf.pattern = pkg;
+	rpf.bypattern = bypattern;
+	rpf.exact = false;
+	rpf.pkgd = NULL;
+	rpf.bestpkgver = NULL;
 
 	switch (type) {
 	case EXACT_PKG:
 		/*
 		 * Find exact pkg version.
 		 */
-		rpf->exact = true;
-		rv = xbps_rpool_foreach(repo_find_pkg_cb, rpf);
+		rpf.exact = true;
+		rv = xbps_rpool_foreach(repo_find_pkg_cb, &rpf);
 		break;
 	case BEST_PKG:
 		/*
 		 * Find best pkg version.
 		 */
-		rv = xbps_rpool_foreach(repo_find_best_pkg_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_best_pkg_cb, &rpf);
 		break;
 	case VIRTUAL_PKG:
 		/*
 		 * Find virtual pkg.
 		 */
-		rv = xbps_rpool_foreach(repo_find_virtualpkg_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_virtualpkg_cb, &rpf);
 		break;
 	case VIRTUAL_CONF_PKG:
 		/*
 		 * Find virtual pkg as specified in configuration file.
 		 */
-		rv = xbps_rpool_foreach(repo_find_virtualpkg_conf_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_virtualpkg_conf_cb, &rpf);
 		break;
 	case REAL_PKG:
 		/*
 		 * Find real pkg.
 		 */
-		rv = xbps_rpool_foreach(repo_find_pkg_cb, rpf);
+		rv = xbps_rpool_foreach(repo_find_pkg_cb, &rpf);
 		break;
 	}
-	if (rv != 0)
+	if (rv != 0) {
 		errno = rv;
+		return NULL;
+	}
 
-	return rpf;
+	return prop_dictionary_copy(rpf.pkgd);
 }
 
 prop_dictionary_t
 xbps_rpool_find_virtualpkg(const char *pkg, bool bypattern)
 {
-	struct repo_pool_fpkg *rpf;
-	prop_dictionary_t pkgd = NULL;
-
 	assert(pkg != NULL);
 
-	rpf = repo_find_pkg(pkg, bypattern, VIRTUAL_PKG);
-	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
-		pkgd = prop_dictionary_copy(rpf->pkgd);
-	free(rpf);
-
-	return pkgd;
+	return repo_find_pkg(pkg, bypattern, VIRTUAL_PKG);
 }
 
 prop_dictionary_t
 xbps_rpool_find_virtualpkg_conf(const char *pkg, bool bypattern)
 {
-	struct repo_pool_fpkg *rpf;
-	prop_dictionary_t pkgd = NULL;
-
 	assert(pkg != NULL);
 
-	rpf = repo_find_pkg(pkg, bypattern, VIRTUAL_CONF_PKG);
-	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
-		pkgd = prop_dictionary_copy(rpf->pkgd);
-	free(rpf);
-
-	return pkgd;
+	return repo_find_pkg(pkg, bypattern, VIRTUAL_CONF_PKG);
 }
 
 prop_dictionary_t
 xbps_rpool_find_pkg(const char *pkg, bool bypattern, bool best)
 {
-	struct repo_pool_fpkg *rpf;
-	prop_dictionary_t pkgd = NULL;
-
 	assert(pkg != NULL);
 
 	if (best)
-		rpf = repo_find_pkg(pkg, bypattern, BEST_PKG);
-	else
-		rpf = repo_find_pkg(pkg, bypattern, REAL_PKG);
+		return repo_find_pkg(pkg, bypattern, BEST_PKG);
 
-	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
-		pkgd = prop_dictionary_copy(rpf->pkgd);
-	free(rpf);
-
-	return pkgd;
+	return repo_find_pkg(pkg, bypattern, REAL_PKG);
 }
 
 prop_dictionary_t
 xbps_rpool_find_pkg_exact(const char *pkgver)
 {
-	struct repo_pool_fpkg *rpf;
-	prop_dictionary_t pkgd = NULL;
-
 	assert(pkgver != NULL);
 
-	rpf = repo_find_pkg(pkgver, false, EXACT_PKG);
-	if (prop_object_type(rpf->pkgd) == PROP_TYPE_DICTIONARY)
-		pkgd = prop_dictionary_copy(rpf->pkgd);
-	free(rpf);
-
-	return pkgd;
+	return repo_find_pkg(pkgver, false, EXACT_PKG);
 }
 
 prop_dictionary_t

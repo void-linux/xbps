@@ -61,9 +61,10 @@ find_pkg_in_array(prop_array_t array,
 	while ((obj = prop_object_iterator_next(iter))) {
 		chkarch = prop_dictionary_get_cstring_nocopy(obj,
 		    "architecture", &arch);
+		if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
+			continue;
+
 		if (virtual) {
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
-				continue;
 			/*
 			 * Check if package pattern matches
 			 * any virtual package version in dictionary.
@@ -72,8 +73,6 @@ find_pkg_in_array(prop_array_t array,
 				break;
 
 		} else if (bypattern) {
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
-				continue;
 			/*
 			 * Check if package pattern matches the
 			 * pkgver string object in dictionary.
@@ -84,8 +83,6 @@ find_pkg_in_array(prop_array_t array,
 			if (xbps_pkgpattern_match(pkgver, str))
 				break;
 		} else {
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch))
-				continue;
 			if (!prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &dpkgn))
 				continue;
@@ -240,25 +237,6 @@ xbps_find_virtualpkg_conf_in_array_by_pattern(prop_array_t array, const char *p)
 }
 
 static prop_dictionary_t
-find_virtualpkg_user_in_dict(prop_dictionary_t d,
-			     const char *key,
-			     const char *str,
-			     bool bypattern)
-{
-	prop_array_t array;
-
-	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
-	assert(str != NULL);
-	assert(key != NULL);
-
-	array = prop_dictionary_get(d, key);
-	if (prop_object_type(array) != PROP_TYPE_ARRAY)
-		return NULL;
-
-	return find_virtualpkg_user_in_array(array, str, bypattern);
-}
-
-static prop_dictionary_t
 find_pkg_in_dict(prop_dictionary_t d,
 		 const char *key,
 		 const char *str,
@@ -326,22 +304,6 @@ xbps_find_virtualpkg_in_dict_by_pattern(prop_dictionary_t d,
 					     const char *pattern)
 {
 	return find_pkg_in_dict(d, key, pattern, true, true);
-}
-
-prop_dictionary_t HIDDEN
-xbps_find_virtualpkg_conf_in_dict_by_name(prop_dictionary_t d,
-					  const char *key,
-					  const char *name)
-{
-	return find_virtualpkg_user_in_dict(d, key, name, false);
-}
-
-prop_dictionary_t HIDDEN
-xbps_find_virtualpkg_conf_in_dict_by_pattern(prop_dictionary_t d,
-					     const char *key,
-					     const char *pattern)
-{
-	return find_virtualpkg_user_in_dict(d, key, pattern, true);
 }
 
 static prop_dictionary_t

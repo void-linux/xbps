@@ -79,20 +79,16 @@ compute_transaction_stats(prop_dictionary_t transd)
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repo);
 
-		if (strcmp(tract, "install") == 0)
-			inst_pkgcnt++;
-		else if (strcmp(tract, "update") == 0)
-			up_pkgcnt++;
-		else if (strcmp(tract, "configure") == 0)
+		if (strcmp(tract, "configure") == 0) {
 			cf_pkgcnt++;
-		else if (strcmp(tract, "remove") == 0)
-			rm_pkgcnt++;
-
-		/*
-		 * Only process pkgs to be installed or updated.
-		 */
-		if (strcmp(tract, "configure") == 0)
 			continue;
+		} else if (strcmp(tract, "install") == 0) {
+			inst_pkgcnt++;
+		} else if (strcmp(tract, "update") == 0) {
+			up_pkgcnt++;
+		} else if (strcmp(tract, "remove") == 0) {
+			rm_pkgcnt++;
+		}
 
 		tsize = 0;
 		/*
@@ -199,24 +195,20 @@ xbps_transaction_init(struct xbps_handle *xhp)
 	if (xhp->transd != NULL)
 		return 0;
 
-	xhp->transd = prop_dictionary_create();
-	if (xhp->transd == NULL)
+	if ((xhp->transd = prop_dictionary_create()) == NULL)
 		return ENOMEM;
 
-        unsorted = prop_array_create();
-        if (unsorted == NULL) {
+        if ((unsorted = prop_array_create()) == NULL) {
 		prop_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
-
         if (!xbps_add_obj_to_dict(xhp->transd, unsorted, "unsorted_deps")) {
 		prop_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
 	}
-	mdeps = prop_array_create();
-	if (mdeps == NULL) {
+	if ((mdeps = prop_array_create()) == NULL) {
 		prop_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;

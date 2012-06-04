@@ -110,7 +110,7 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &repover);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
-	if (best && (action == TRANS_UPDATE)) {
+	if (action == TRANS_UPDATE) {
 		/*
 		 * Compare installed version vs best pkg available in repos.
 		 */
@@ -130,13 +130,11 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
 	 */
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		goto out;
-
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
-	if ((xbps_pkg_has_rundeps(pkg_repod)) &&
-	    ((rv = xbps_repository_find_pkg_deps(xhp, pkg_repod)) != 0))
+	if ((rv = xbps_repository_find_pkg_deps(xhp, pkg_repod)) != 0)
 			goto out;
 	/*
 	 * Set package state in dictionary with same state than the
