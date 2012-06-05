@@ -164,7 +164,7 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	size_t nmetadata = 0, entry_idx = 0;
 	const char *entry_pname, *transact, *pkgname, *version, *pkgver, *fname;
 	char *buf = NULL, *pkgfilesd = NULL;
-	int rv, flags;
+	int ar_rv, rv, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool softreplace;
 
@@ -225,7 +225,13 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	/*
 	 * Process the archive files.
 	 */
-	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
+	for (;;) {
+		ar_rv = archive_read_next_header(ar, &entry);
+		if (ar_rv == ARCHIVE_EOF || ar_rv == ARCHIVE_FATAL)
+			break;
+		else if (ar_rv == ARCHIVE_RETRY)
+			continue;
+
 		entry_statp = archive_entry_stat(entry);
 		entry_pname = archive_entry_pathname(entry);
 		flags = set_extract_flags();
@@ -470,8 +476,8 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	if ((rv = archive_errno(ar)) != 0) {
 		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgname, version,
-		    "%s: [unpack] error while extracting files from `%s': %s",
-		    pkgver, fname, strerror(rv));
+		    "%s: [unpack] failed to extract files: %s",
+		    pkgver, fname, archive_error_string(ar));
 		goto out;
 	}
 	/*
@@ -614,8 +620,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 	/*
 	 * Extract archive files.
 	 */
-	rv = unpack_archive(pkg_repod, ar);
-	if (rv != 0) {
+	if ((rv = unpack_archive(pkg_repod, ar)) != 0) {
 		xbps_set_cb_state(XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgname, version,
 		    "%s: [unpack] failed to unpack files from archive: %s",
@@ -633,8 +638,9 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 		    pkgver, strerror(rv));
 	}
 out:
-	if (ar)
-		archive_read_finish(ar);
-
+	if (ar) {
+		archive_read_close(ar);
+		archive_read_free(ar);
+	}
 	return rv;
 }
