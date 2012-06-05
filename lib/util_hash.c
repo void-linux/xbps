@@ -159,12 +159,12 @@ xbps_file_hash_dictionary(prop_dictionary_t d,
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj,
 		    "file", &curfile);
-		if (strstr(file, curfile) == NULL)
-			continue;
-		/* file matched */
-		prop_dictionary_get_cstring_nocopy(obj,
-		    "sha256", &sha256);
-		break;
+		if (strcmp(file, curfile) == 0) {
+			/* file matched */
+			prop_dictionary_get_cstring_nocopy(obj,
+			    "sha256", &sha256);
+			break;
+		}
 	}
 	prop_object_iterator_release(iter);
 	if (sha256 == NULL)
@@ -193,8 +193,7 @@ xbps_file_hash_check_dictionary(prop_dictionary_t d,
 		return -1; /* error */
 	}
 
-	rv = xbps_file_hash_check(file, sha256d);
-	if (rv == 0)
+	if ((rv = xbps_file_hash_check(file, sha256d)) == 0)
 		return 0; /* matched */
 	else if (rv == ERANGE || rv == ENOENT)
 		return 1; /* no match */
