@@ -239,8 +239,9 @@ xbps_transaction_update_pkg(const char *pkgname)
 int
 xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 {
-	prop_dictionary_t pkgd;
+	prop_dictionary_t pkgd = NULL;
 	pkg_state_t state;
+	char *pkgname;
 	bool bypattern, best, exact;
 	int rv;
 
@@ -248,7 +249,7 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 		bypattern = true;
 		best = false;
 		exact = false;
-	} else if (xbps_pkg_name(pkg)) {
+	} else if ((pkgname = xbps_pkg_name(pkg)) != NULL) {
 		exact = true;
 		bypattern = false;
 		best = false;
@@ -258,7 +259,13 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 		best = true;
 	}
 
-	if ((pkgd = xbps_pkgdb_get_pkgd(pkg, bypattern)) != NULL) {
+	if (exact) {
+		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
+		free(pkgname);
+	} else
+		pkgd = xbps_pkgdb_get_pkgd(pkg, bypattern);
+
+	if (pkgd) {
 		if (xbps_pkg_state_dictionary(pkgd, &state) != 0) {
 			prop_object_release(pkgd);
 			return EINVAL;
