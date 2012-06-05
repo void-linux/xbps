@@ -36,16 +36,23 @@ ATF_TC_HEAD(util_test, tc)
 
 ATF_TC_BODY(util_test, tc)
 {
-	ATF_REQUIRE_STREQ(xbps_pkg_name("font-adobe-100dpi-7.8"), "font-adobe-100dpi");
+	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-100dpi-7.8"), NULL);
+	ATF_CHECK_EQ(xbps_pkg_version("font-adobe-100dpi"), NULL);
+	ATF_CHECK_EQ(xbps_pkg_version("font-adobe-100dpi-7.8"), NULL);
+	ATF_REQUIRE_STREQ(xbps_pkg_name("font-adobe-100dpi-7.8_2"), "font-adobe-100dpi");
 	ATF_REQUIRE_STREQ(xbps_pkg_name("systemd-43_1"), "systemd");
 	ATF_REQUIRE_STREQ(xbps_pkg_name("font-adobe-100dpi-1.8_blah"), "font-adobe-100dpi");
+	ATF_REQUIRE_STREQ(xbps_pkg_version("font-adobe-100dpi-7.8_2"), "7.8_2");
 	ATF_REQUIRE_STREQ(xbps_pkg_version("font-adobe-100dpi-1.8_blah"), "1.8_blah");
 	ATF_REQUIRE_STREQ(xbps_pkg_revision("systemd-43_1_0"), "0");
 	ATF_REQUIRE_STREQ(xbps_pkg_revision("systemd_21-43_0"), "0");
 	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>=43"), "systemd");
-	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>=43"), "systemd");
+	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>43"), "systemd");
+	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd<43"), "systemd");
+	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd<=43"), "systemd");
 	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd-[0-9]*"), "systemd");
 	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>4[3-9]?"), "systemd");
+	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd<4_1?"), "systemd");
 }
 
 ATF_TP_ADD_TCS(tp)

@@ -1,12 +1,17 @@
 xbps-0.16 (???):
 
+ * Always require an underscore at package versions, if any provided
+   pkgver (i.e 'foo-1.0_1') does not contain an underscore the name/version
+   won't be detected for a string. That means that now any package can contain
+   any character in pkgname and version, and as bonus there's no need to
+   make some tricks to perform installation of exact package versions.
+
  * xbps-bin(8): the 'install' target now can (re)install an exact package
    version as specified on its arguments, i.e:
 
-	$ xbps-bin install foo=1.0
+	$ xbps-bin install foo-1.0_1
 
    If that version is not available no other version will be installed.
-   The equal sign must be used to specify exact versions.
 
  * xbps-repo(8): 'genindex' target is now able to remove binary packages
    when a greater version exists on the index.

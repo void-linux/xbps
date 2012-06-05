@@ -241,8 +241,6 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 {
 	prop_dictionary_t pkgd;
 	pkg_state_t state;
-	size_t len, i;
-	char *pkgname, *pkgstr = NULL;
 	bool bypattern, best, exact;
 	int rv;
 
@@ -250,7 +248,7 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 		bypattern = true;
 		best = false;
 		exact = false;
-	} else if (strchr(pkg, '=')) {
+	} else if (xbps_pkg_name(pkg)) {
 		exact = true;
 		bypattern = false;
 		best = false;
@@ -260,29 +258,7 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 		best = true;
 	}
 
-	if (exact) {
-		/* find out pkgname */
-		pkgname = strdup(pkg);
-		assert(pkgname != NULL);
-		len = strcspn(pkg, "=");
-		for (i = 0; i < len; i++)
-			pkgname[i] = pkg[i];
-		pkgname[i] = '\0';
-		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
-		free(pkgname);
-		/* replace equal with an hyphen */
-		pkgstr = strdup(pkg);
-		for (i = 0; i < strlen(pkgstr); i++) {
-			if (pkgstr[i] == '=') {
-				pkgstr[i] = '-';
-				break;
-			}
-		}
-	} else {
-		pkgd = xbps_pkgdb_get_pkgd(pkg, bypattern);
-	}
-
-	if (pkgd != NULL) {
+	if ((pkgd = xbps_pkgdb_get_pkgd(pkg, bypattern)) != NULL) {
 		if (xbps_pkg_state_dictionary(pkgd, &state) != 0) {
 			prop_object_release(pkgd);
 			return EINVAL;
@@ -293,11 +269,7 @@ xbps_transaction_install_pkg(const char *pkg, bool reinstall)
 			return EEXIST;
 		}
 	}
-	rv = transaction_find_pkg(pkgstr ? pkgstr : pkg, bypattern,
-	    best, exact, TRANS_INSTALL);
-	if (pkgstr != NULL)
-		free(pkgstr);
-
+	rv = transaction_find_pkg(pkg, bypattern, best, exact, TRANS_INSTALL);
 	return rv;
 }
 

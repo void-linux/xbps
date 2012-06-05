@@ -102,67 +102,61 @@ xbps_check_is_installed_pkg_by_name(const char *pkgname)
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
-	if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY) {
-		prop_object_release(pkgd);
-		return true;
-	}
+	if (((pkgd = xbps_find_pkg_dict_installed(pkgname, false)) == NULL) &&
+	    ((pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false)) == NULL))
+		return false;
 
-	return false;
+	prop_object_release(pkgd);
+	return true;
 }
 
 const char *
 xbps_pkg_version(const char *pkg)
 {
-	const char *tmp;
+	const char *p;
 
-	assert(pkg != NULL);
-
-	/* Get the required version */
-	tmp = strrchr(pkg, '-');
-	if (tmp == NULL)
+	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	return tmp + 1; /* skip first '-' */
+	if (strrchr(p, '_') == NULL)
+		return NULL;
+
+	return p + 1; /* skip first '_' */
 }
 
 const char *
 xbps_pkg_revision(const char *pkg)
 {
-	const char *tmp;
+	const char *p;
 
 	assert(pkg != NULL);
 
 	/* Get the required revision */
-	tmp = strrchr(pkg, '_');
-	if (tmp == NULL)
+	if ((p = strrchr(pkg, '_')) == NULL)
 		return NULL;
 
-	return tmp + 1; /* skip first '_' */
+	return p + 1; /* skip first '_' */
 }
 
 char *
 xbps_pkg_name(const char *pkg)
 {
-	const char *tmp;
-	char *pkgname;
-	size_t len = 0;
+	const char *p;
+	char *buf;
+	size_t len;
 
-	assert(pkg != NULL);
-
-	/* Get package name */
-	tmp = strrchr(pkg, '-');
-	if (tmp == NULL)
+	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	len = strlen(pkg) - strlen(tmp) + 1;
-	pkgname = malloc(len);
-	if (pkgname == NULL)
+	if (strrchr(p, '_') == NULL)
 		return NULL;
 
-	strlcpy(pkgname, pkg, len);
+	len = strlen(pkg) - strlen(p) + 1;
+	buf = malloc(len);
+	assert(buf != NULL);
+	strlcpy(buf, pkg, len);
 
-	return pkgname;
+	return buf;
 }
 
 char *
@@ -173,8 +167,7 @@ xbps_pkgpattern_name(const char *pkg)
 
 	assert(pkg != NULL);
 
-	res = strpbrk(pkg, "><*?[]");
-	if (res == NULL)
+	if ((res = strpbrk(pkg, "><*?[]")) == NULL)
 		return NULL;
 
 	len = strlen(pkg) - strlen(res) + 1;
@@ -182,9 +175,7 @@ xbps_pkgpattern_name(const char *pkg)
 		len--;
 
 	pkgname = malloc(len);
-	if (pkgname == NULL)
-		return NULL;
-
+	assert(pkgname != NULL);
 	strlcpy(pkgname, pkg, len);
 
 	return pkgname;
@@ -193,15 +184,9 @@ xbps_pkgpattern_name(const char *pkg)
 const char *
 xbps_pkgpattern_version(const char *pkg)
 {
-	char *res;
-
 	assert(pkg != NULL);
 
-	res = strpbrk(pkg, "><*?[]");
-	if (res == NULL)
-		return NULL;
-
-	return res;
+	return strpbrk(pkg, "><*?[]");
 }
 
 static char *

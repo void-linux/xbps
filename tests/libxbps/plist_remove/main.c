@@ -37,17 +37,17 @@ static const char dictxml[] =
 "			<key>pkgname</key>\n"
 "			<string>afoo</string>\n"
 "			<key>version</key>\n"
-"			<string>1.1</string>\n"
+"			<string>1.1_1</string>\n"
 "			<key>pkgver</key>\n"
-"			<string>afoo-1.1</string>\n"
+"			<string>afoo-1.1_1</string>\n"
 "		</dict>\n"
 "		<dict>\n"
 "			<key>pkgname</key>\n"
 "			<string>foo</string>\n"
 "			<key>version</key>\n"
-"			<string>2.0</string>\n"
+"			<string>2.0_1</string>\n"
 "			<key>pkgver</key>\n"
-"			<string>foo-2.0</string>\n"
+"			<string>foo-2.0_1</string>\n"
 "		</dict>\n"
 "	</array>\n"
 "</dict>\n"
@@ -64,9 +64,9 @@ static const char dictxml2[] =
 "			<key>pkgname</key>\n"
 "			<string>foo</string>\n"
 "			<key>version</key>\n"
-"			<string>2.0</string>\n"
+"			<string>2.0_1</string>\n"
 "			<key>pkgver</key>\n"
-"			<string>foo-2.0</string>\n"
+"			<string>foo-2.0_1</string>\n"
 "		</dict>\n"
 "	</array>\n"
 "</dict>\n"
@@ -77,8 +77,8 @@ static const char axml[] =
 "<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
 "<plist version=\"1.0\">\n"
 "<array>\n"
-"	<string>foo-1.0</string>\n"
-"	<string>blah-2.0</string>\n"
+"	<string>foo-1.0_1</string>\n"
+"	<string>blah-2.0_1</string>\n"
 "</array>\n"
 "</plist>\n";
 
@@ -87,7 +87,7 @@ static const char axml2[] =
 "<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
 "<plist version=\"1.0\">\n"
 "<array>\n"
-"	<string>blah-2.0</string>\n"
+"	<string>blah-2.0_1</string>\n"
 "</array>\n"
 "</plist>\n";
 
@@ -156,7 +156,7 @@ ATF_TC_BODY(remove_pkg_from_array_by_pkgver_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(d2), PROP_TYPE_DICTIONARY);
 
 	a = prop_dictionary_get(d, "packages");
-	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pkgver(a, "afoo-1.1", NULL), true);
+	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pkgver(a, "afoo-1.1_1", NULL), true);
 	ATF_REQUIRE_EQ(prop_dictionary_equals(d, d2), true);
 }
 
@@ -177,7 +177,7 @@ ATF_TC_BODY(remove_string_from_array_test, tc)
 	a2 = prop_array_internalize(axml2);
 	ATF_REQUIRE_EQ(prop_object_type(a2), PROP_TYPE_ARRAY);
 
-	ATF_REQUIRE_EQ(xbps_remove_string_from_array(a, "foo-1.0"), true);
+	ATF_REQUIRE_EQ(xbps_remove_string_from_array(a, "foo-1.0_1"), true);
 	ATF_REQUIRE_EQ(prop_array_equals(a, a2), true);
 }
 

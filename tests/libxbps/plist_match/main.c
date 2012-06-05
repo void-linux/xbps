@@ -33,8 +33,8 @@ array_init(void)
 
 	a = prop_array_create();
 	ATF_REQUIRE(a != NULL);
-	prop_array_add_cstring_nocopy(a, "foo-2.0");
-	prop_array_add_cstring_nocopy(a, "blah-2.1");
+	prop_array_add_cstring_nocopy(a, "foo-2.0_1");
+	prop_array_add_cstring_nocopy(a, "blah-2.1_1");
 
 	return a;
 }
@@ -48,8 +48,8 @@ ATF_TC_HEAD(match_string_test, tc)
 ATF_TC_BODY(match_string_test, tc)
 {
 	prop_array_t a = array_init();
-	ATF_REQUIRE_EQ(xbps_match_string_in_array(a, "foo-2.0"), true);
-	ATF_REQUIRE_EQ(xbps_match_string_in_array(a, "foo-2.1"), false);
+	ATF_REQUIRE_EQ(xbps_match_string_in_array(a, "foo-2.0_1"), true);
+	ATF_REQUIRE_EQ(xbps_match_string_in_array(a, "foo-2.1_1"), false);
 }
 
 ATF_TC(match_pkgname_test);
@@ -87,7 +87,7 @@ ATF_TC_HEAD(match_pkgdep_test, tc)
 ATF_TC_BODY(match_pkgdep_test, tc)
 {
 	prop_array_t a = array_init();
-	ATF_REQUIRE_EQ(xbps_match_pkgdep_in_array(a, "foo-2.0"), true);
+	ATF_REQUIRE_EQ(xbps_match_pkgdep_in_array(a, "foo-2.0_1"), true);
 }
 
 ATF_TP_ADD_TCS(tp)

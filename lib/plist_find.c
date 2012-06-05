@@ -71,7 +71,6 @@ find_pkg_in_array(prop_array_t array,
 			 */
 			if (xbps_match_virtual_pkg_in_dict(obj, str, bypattern))
 				break;
-
 		} else if (bypattern) {
 			/*
 			 * Check if package pattern matches the
@@ -166,7 +165,7 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 {
 	const struct xbps_handle *xhp;
 	const char *vpkgver, *pkg = NULL;
-	char *vpkgname = NULL;
+	char *vpkgname = NULL, *tmp;
 	size_t i, j, cnt;
 
 	xhp = xbps_handle_get();
@@ -181,8 +180,16 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 	for (i = 0; i < cnt; i++) {
 		cfg_t *sec = cfg_getnsec(xhp->cfg, "virtual-package", i);
 		for (j = 0; j < cfg_size(sec, "targets"); j++) {
+			tmp = NULL;
 			vpkgver = cfg_getnstr(sec, "targets", j);
-			vpkgname = xbps_pkg_name(vpkgver);
+			if (strchr(vpkgver, '_') == NULL) {
+				tmp = xbps_xasprintf("%s_1", vpkgver);
+				assert(tmp != NULL);
+				vpkgname = xbps_pkg_name(tmp);
+				free(tmp);
+			} else {
+				vpkgname = xbps_pkg_name(vpkgver);
+			}
 			if (vpkgname == NULL)
 				break;
 			if (bypattern) {

@@ -1,4 +1,4 @@
-.Dd June 3, 2012
+.Dd June 5, 2012
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -154,26 +154,25 @@ Prints the name of the installed
 .Em package(s)
 matching the pattern on its file list. Multiple patterns can be specified
 as arguments.
-.It Sy install Ar pkgname(s) | Ar pkgpattern(s)
-Install binary package(s) from repository pool by specifying
-.Em pkgname(s)
-or
-.Em package pattern(s) .
+.It Sy install Ar pattern Ar [patterns ...]
+Install binary package(s) from repository pool by specifying a
+.Em pattern .
 Three different ways exist to install packages: by specifying just the
 .Em package name ,
 the best available version from repositories will be installed; by specifying a
 .Em package pattern
 with '>' '<' '>=' or '<='
 .Em ( foo>=2.0 )
-or by specifying an exact package version delimited
-by the equal sign, i.e
-.Em ( foo=1.0) .
-The first repository matching the arguments will be used. The package(s) will be
+or by specifying an exact package version, i.e
+.Em ( foo-1.0_1) .
+The first repository matching
+.Em pattern
+will be used. The package(s) will be
 .Em downloaded
 (if found in a remote repository),
 .Em unpacked
 and
-.EM configured .
+.Em configured .
 The
 .Em unpack
 stage will execute the pre-install action on its INSTALL script, and unpack its files.
@@ -206,13 +205,17 @@ to installed in the package database. The
 keyword can be used to reconfigure all not configured packages. If
 .Ql -f
 option is used, the package will be reconfigured even if its state is already installed.
-.It Sy remove Ar pkgname(s)
+.It Sy remove Ar pkgname Ar [pkgnames ...]
 Removes the installed package
 .Em pkgname(s) .
 Files not matching the original SHA256 hash will be preserved. If
 .Ql -f
 option is used, package files will be
 .Em removed even if its SHA256 hash don't match .
+If
+.Ql -F
+option is used, package will be removed even if there are
+.Em installed reverse dependencies .
 .It Sy remove-orphans
 Removes package orphans. These packages were installed as dependencies and
 currently there is not any package depending on it, directly or indirectly.
@@ -240,11 +243,11 @@ Shows the reverse dependencies for
 Reverse dependencies are packages that are currently depending in
 .Em pkgname
 directly.
-.It Sy update Ar pkgname(s)
+.It Sy update Ar pkgname Ar [pkgnames ...]
 Updates
-.Em pkgname(s)
-to the most newer version available in repository pool. This can be used if only
-.Em pkgname(s)
+.Em pkgname
+to the newest version available in repository pool. This can be used if only
+.Em pkgname
 need to be updated, unlike the
 .Em dist-upgrade
 target that will update all currently installed packages.
@@ -287,7 +290,7 @@ XBPS master package database plist file.
 .It Pa /var/cache/xbps
 XBPS cache directory for downloaded binary packages.
 .Sh EXAMPLES
-Install a package by specifying a
+Install best package version by specifying a
 .Em pkgname :
 .Pp
 .Dl $ xbps-bin install foo
@@ -297,12 +300,19 @@ Install a package by specifying a
 .Pp
 .Dl $ xbps-bin install \*qfoo>=3.0\*q
 .Pp
+Install an exact
+.Em package version :
+.Pp
+.Dl $ xbps-bin install foo-1.0_1
+.Pp
 Install multiple packages by specifying
 .Em pkgnames
 and
-.Em package patterns :
+.Em package patterns
+and
+.Em exact package versions :
 .Pp
-.Dl $ xbps-bin install foo \*qblah<=4.0\*q baz-2.0 \*qblob>4.[0-9]\*q
+.Dl $ xbps-bin install foo \*qblah<=4.0\*q baz-2.0_1 \*qblob>1.0<1.8\*q
 .Pp
 Find the package that owns the file
 .Pa /bin/mount :
@@ -326,7 +336,7 @@ and
 .Em recursively
 all packages that were installed automatically by it:
 .Pp
-.Dl $ xbps-bin -R remove bsdtar
+.Dl $ xbps-bin -Ry remove bsdtar
 .Pp
 .Sh SEE ALSO
 .Xr xbps-repo 8 ,

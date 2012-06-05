@@ -38,21 +38,21 @@ static const char dictxml[] =
 "			<key>pkgname</key>\n"
 "			<string>afoo</string>\n"
 "			<key>version</key>\n"
-"			<string>1.1</string>\n"
+"			<string>1.1_1</string>\n"
 "			<key>pkgver</key>\n"
-"			<string>afoo-1.1</string>\n"
+"			<string>afoo-1.1_1</string>\n"
 "			<key>provides</key>\n"
 "			<array>\n"
-"				<string>virtualpkg-9999</string>\n"
+"				<string>virtualpkg-9999_1</string>\n"
 "			</array>\n"
 "		</dict>\n"
 "		<dict>\n"
 "			<key>pkgname</key>\n"
 "			<string>foo</string>\n"
 "			<key>version</key>\n"
-"			<string>2.0</string>\n"
+"			<string>2.0_1</string>\n"
 "			<key>pkgver</key>\n"
-"			<string>foo-2.0</string>\n"
+"			<string>foo-2.0_1</string>\n"
 "		</dict>\n"
 "	</array>\n"
 "</dict>\n"
@@ -105,7 +105,7 @@ ATF_TC_BODY(find_pkg_in_dict_by_pkgver_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
 	/* exact match by pkgver */
-	dr = xbps_find_pkg_in_dict_by_pkgver(d, "packages", "foo-2.0");
+	dr = xbps_find_pkg_in_dict_by_pkgver(d, "packages", "foo-2.0_1");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 }
 
@@ -123,10 +123,15 @@ ATF_TC_BODY(find_virtualpkg_in_dict_by_pattern_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
 	/* match virtualpkg by pattern */
-	dr = xbps_find_virtualpkg_in_dict_by_pattern(d, "packages", "virtualpkg<=9999");
+	dr = xbps_find_virtualpkg_in_dict_by_pattern(d, "packages", "virtualpkg>=9999");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
-	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1");
+	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1_1");
+
+	dr = xbps_find_virtualpkg_in_dict_by_pattern(d, "packages", "virtualpkg<=9999_1");
+	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
+	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
+	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1_1");
 }
 
 ATF_TC(find_virtualpkg_in_dict_by_name_test);
@@ -146,7 +151,7 @@ ATF_TC_BODY(find_virtualpkg_in_dict_by_name_test, tc)
 	dr = xbps_find_virtualpkg_in_dict_by_name(d, "packages", "virtualpkg");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
-	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1");
+	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1_1");
 }
 
 ATF_TP_ADD_TCS(tp)

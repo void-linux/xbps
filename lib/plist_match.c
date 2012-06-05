@@ -63,15 +63,27 @@ xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
 				     prop_array_t provides)
 {
 	const char *vpkgver, *pkgpattern;
+	char *tmp;
 	size_t i, x;
 
 	for (i = 0; i < prop_array_count(provides); i++) {
+		tmp = NULL;
 		prop_array_get_cstring_nocopy(provides, i, &vpkgver);
+		if (strchr(vpkgver, '_') == NULL) {
+			tmp = xbps_xasprintf("%s_1", vpkgver);
+			assert(tmp != NULL);
+			vpkgver = tmp;
+		}
 		for (x = 0; x < prop_array_count(rundeps); x++) {
 			prop_array_get_cstring_nocopy(rundeps, x, &pkgpattern);
-			if (xbps_pkgpattern_match(vpkgver, pkgpattern))
+			if (xbps_pkgpattern_match(vpkgver, pkgpattern)) {
+				if (tmp != NULL)
+					free(tmp);
 				return true;
+			}
 		}
+		if (tmp != NULL)
+			free(tmp);
 	}
 	return false;
 }
@@ -82,7 +94,7 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 	prop_object_iterator_t iter;
 	prop_object_t obj;
 	const char *pkgdep;
-	char *curpkgname;
+	char *curpkgname, *tmp;
 	bool found = false;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
@@ -93,7 +105,7 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 		return false;
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		assert(prop_object_type(obj) == PROP_TYPE_STRING);
+		tmp = NULL;
 		if (mode == 0) {
 			/* match by string */
 			if (prop_string_equals_cstring(obj, str)) {
@@ -103,7 +115,14 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 		} else if (mode == 1) {
 			/* match by pkgname */
 			pkgdep = prop_string_cstring_nocopy(obj);
-			curpkgname = xbps_pkg_name(pkgdep);
+			if (strchr(pkgdep, '_') == NULL) {
+				tmp = xbps_xasprintf("%s_1", pkgdep);
+				assert(tmp != NULL);
+				curpkgname = xbps_pkg_name(tmp);
+				free(tmp);
+			} else {
+				curpkgname = xbps_pkg_name(pkgdep);
+			}
 			if (curpkgname == NULL)
 				break;
 			if (strcmp(curpkgname, str) == 0) {
@@ -115,17 +134,36 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 		} else if (mode == 2) {
 			/* match pkgpattern against pkgdep */
 			pkgdep = prop_string_cstring_nocopy(obj);
+			if (strchr(pkgdep, '_') == NULL) {
+				tmp = xbps_xasprintf("%s_1", pkgdep);
+				assert(tmp != NULL);
+				pkgdep = tmp;
+			}
 			if (xbps_pkgpattern_match(pkgdep, str)) {
+				if (tmp != NULL)
+					free(tmp);
 				found = true;
 				break;
 			}
+			if (tmp != NULL)
+				free(tmp);
+
 		} else if (mode == 3) {
 			/* match pkgdep against pkgpattern */
 			pkgdep = prop_string_cstring_nocopy(obj);
+			if (strchr(pkgdep, '_') == NULL) {
+				tmp = xbps_xasprintf("%s_1", pkgdep);
+				assert(tmp != NULL);
+				pkgdep = tmp;
+			}
 			if (xbps_pkgpattern_match(str, pkgdep)) {
+				if (tmp != NULL)
+					free(tmp);
 				found = true;
 				break;
 			}
+			if (tmp != NULL)
+				free(tmp);
 		}
 	}
 	prop_object_iterator_release(iter);
