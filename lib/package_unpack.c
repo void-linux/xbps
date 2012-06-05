@@ -164,6 +164,7 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 	size_t nmetadata = 0, entry_idx = 0;
 	const char *entry_pname, *transact, *pkgname, *version, *pkgver, *fname;
 	char *buf = NULL, *pkgfilesd = NULL;
+	size_t i, x;
 	int ar_rv, rv, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool softreplace;
@@ -371,10 +372,17 @@ unpack_archive(prop_dictionary_t pkg_repod, struct archive *ar)
 			if (xbps_entry_is_a_conf_file(propsd, entry_pname))
 				conf_file = true;
 			if (stat(entry_pname, &st) == 0) {
+				/* remove first char, i.e '.' */
+				buf = strdup(entry_pname);
+				assert(buf != NULL);
+				for (i = 1, x = 0; i < strlen(entry_pname); x++, i++)
+					buf[x] = entry_pname[i];
+				buf[x] = '\0';
 				file_exists = true;
 				rv = xbps_file_hash_check_dictionary(filesd,
-				    conf_file ? "conf_files" : "files",
-				    entry_pname);
+				    conf_file ? "conf_files" : "files", buf);
+				free(buf);
+
 				if (rv == -1) {
 					/* error */
 					xbps_dbg_printf("%s-%s: failed to check"
