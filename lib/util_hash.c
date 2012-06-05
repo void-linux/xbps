@@ -143,7 +143,7 @@ xbps_file_hash_dictionary(prop_dictionary_t d,
 {
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *curfile, *sha256;
+	const char *curfile = NULL, *sha256 = NULL;
 
 	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
@@ -178,22 +178,31 @@ xbps_file_hash_check_dictionary(prop_dictionary_t d,
 				const char *key,
 				const char *file)
 {
-	const char *sha256d;
+	struct xbps_handle *xhp = xbps_handle_get();
+	const char *sha256d = NULL;
+	char *buf;
 	int rv;
 
 	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(file != NULL);
 
-	sha256d = xbps_file_hash_dictionary(d, key, file);
-	if (sha256d == NULL) {
+	if ((sha256d = xbps_file_hash_dictionary(d, key, file)) == NULL) {
 		if (errno == ENOENT)
 			return 1; /* no match, file not found */
 
 		return -1; /* error */
 	}
 
-	if ((rv = xbps_file_hash_check(file, sha256d)) == 0)
+	if (strcmp(xhp->rootdir, "/") == 0) {
+		rv = xbps_file_hash_check(file, sha256d);
+	} else {
+		buf = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+		assert(buf != NULL);
+		rv = xbps_file_hash_check(buf, sha256d);
+		free(buf);
+	}
+	if (rv == 0)
 		return 0; /* matched */
 	else if (rv == ERANGE || rv == ENOENT)
 		return 1; /* no match */
