@@ -98,7 +98,7 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 		return ENOMEM;
 
 	/* internalize files.plist from binary package archive */
-	pkg_filesd = xbps_dictionary_metadata_plist_by_url(file, XBPS_PKGFILES);
+	pkg_filesd = xbps_dictionary_metadata_plist_by_url(file, "./files.plist");
 	if (pkg_filesd == NULL) {
 		free(file);
 		return EINVAL;

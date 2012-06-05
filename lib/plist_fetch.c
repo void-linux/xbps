@@ -175,7 +175,7 @@ xbps_dictionary_metadata_plist_by_url(const char *url, const char *plistf)
 
 	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
 		curpath = archive_entry_pathname(entry);
-		if (strstr(curpath, plistf) == 0) {
+		if (strcmp(curpath, plistf)) {
 			archive_read_data_skip(a);
 			if (i >= 3) {
 				/*

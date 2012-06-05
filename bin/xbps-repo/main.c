@@ -232,7 +232,8 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		pkgd = xbps_rpool_dictionary_metadata_plist(argv[1], XBPS_PKGFILES);
+		pkgd = xbps_rpool_dictionary_metadata_plist(argv[1],
+		    "./files.plist");
 		if (pkgd == NULL) {
 			if (errno == ENOTSUP) {
 				xbps_error_printf("xbps-repo: no repositories "

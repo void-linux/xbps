@@ -150,7 +150,7 @@ add_binpkg_to_index(prop_array_t idx,
 		goto out;
 	}
 
-	newpkgd = xbps_dictionary_metadata_plist_by_url(file, XBPS_PKGPROPS);
+	newpkgd = xbps_dictionary_metadata_plist_by_url(file, "./props.plist");
 	if (newpkgd == NULL) {
 		xbps_error_printf("failed to read %s metadata for `%s',"
 		    " skipping!\n", XBPS_PKGPROPS, file);
