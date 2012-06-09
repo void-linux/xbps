@@ -121,6 +121,8 @@ remove_pkg_metadata(const char *pkgname,
 	(void)closedir(dirp);
 	rv = rmdir(metadir);
 	free(metadir);
+	if (rv != 0)
+		rv = errno;
 
 	return rv;
 }
