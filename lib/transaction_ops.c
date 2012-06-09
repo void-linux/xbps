@@ -91,8 +91,8 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
 				goto out;
 			}
 		} else {
-			if (((pkg_repod = xbps_rpool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
-			    ((pkg_repod = xbps_rpool_find_pkg(pkg, bypattern, best)) == NULL) &&
+			if (((pkg_repod = xbps_rpool_find_pkg(pkg, bypattern, best)) == NULL) &&
+			    ((pkg_repod = xbps_rpool_find_virtualpkg_conf(pkg, bypattern)) == NULL) &&
 			    ((pkg_repod = xbps_rpool_find_virtualpkg(pkg, bypattern)) == NULL)) {
 				/* not found */
 				rv = errno;
