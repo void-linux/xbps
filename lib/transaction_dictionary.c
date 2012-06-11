@@ -190,7 +190,7 @@ out:
 int HIDDEN
 xbps_transaction_init(struct xbps_handle *xhp)
 {
-	prop_array_t unsorted, mdeps;
+	prop_array_t unsorted, mdeps, conflicts;
 
 	if (xhp->transd != NULL)
 		return 0;
@@ -218,6 +218,16 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return EINVAL;
 	}
+	if ((conflicts = prop_array_create()) == NULL) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return ENOMEM;
+	}
+	if (!xbps_add_obj_to_dict(xhp->transd, conflicts, "conflicts")) {
+		prop_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
 
 	return 0;
 }
@@ -225,7 +235,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 int
 xbps_transaction_prepare(void)
 {
-	prop_array_t mdeps;
+	prop_array_t mdeps, conflicts;
 	struct xbps_handle *xhp = xbps_handle_get();
 	int rv = 0;
 
@@ -238,6 +248,13 @@ xbps_transaction_prepare(void)
 	mdeps = prop_dictionary_get(xhp->transd, "missing_deps");
 	if (prop_array_count(mdeps) > 0)
 		return ENODEV;
+
+	/*
+	 * If there are package conflicts bail out.
+	 */
+	conflicts = prop_dictionary_get(xhp->transd, "conflicts");
+	if (prop_array_count(conflicts) > 0)
+		return EAGAIN;
 
 	/*
 	 * Check for packages to be replaced.
@@ -266,9 +283,10 @@ xbps_transaction_prepare(void)
 		return rv;
 	}
 	/*
-	 * The missing deps array is not necessary anymore.
+	 * The missing deps and conflicts arrays are not necessary anymore.
 	 */
 	prop_dictionary_remove(xhp->transd, "missing_deps");
+	prop_dictionary_remove(xhp->transd, "conflicts");
 	prop_dictionary_make_immutable(xhp->transd);
 
 	return 0;

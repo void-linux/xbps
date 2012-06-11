@@ -181,6 +181,12 @@ void HIDDEN xbps_set_cb_state(xbps_state_t, int, const char *,
  */
 int HIDDEN xbps_unpack_binary_pkg(prop_dictionary_t);
 
+/**
+ * @private
+ * From lib/package_conflicts.c
+ */
+void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *, prop_dictionary_t);
+
 __END_DECLS
 
 #endif /* !_XBPS_API_IMPL_H_ */

@@ -126,16 +126,22 @@ transaction_find_pkg(const char *pkg, bool bypattern, bool best, bool exact,
 		}
 	}
 	/*
-	 * Prepare transaction dictionary and missing deps array.
+	 * Prepare transaction dictionary.
 	 */
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		goto out;
+
+	/*
+	 * Find out if package has matched conflicts.
+	 */
+	xbps_pkg_find_conflicts(xhp, pkg_repod);
+
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
 	if ((rv = xbps_repository_find_pkg_deps(xhp, pkg_repod)) != 0)
-			goto out;
+		goto out;
 	/*
 	 * Set package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.

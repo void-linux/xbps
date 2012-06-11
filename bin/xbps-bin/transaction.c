@@ -50,16 +50,26 @@ struct transaction {
 static void
 show_missing_deps(prop_array_t a)
 {
-	prop_object_t obj;
 	size_t i;
+	const char *str;
 
-	fprintf(stderr,
-	    "xbps-bin: unable to locate some required packages:\n");
-
+	fprintf(stderr, "xbps-bin: unable to locate some required packages:\n");
 	for (i = 0; i < prop_array_count(a); i++) {
-		obj = prop_array_get(a, i);
-		fprintf(stderr, "  * Missing binary package for: %s\n",
-		    prop_string_cstring_nocopy(obj));
+		prop_array_get_cstring_nocopy(a, i, &str);
+		fprintf(stderr, "  * Missing binary package for: %s\n", str);
+	}
+}
+
+static void
+show_conflicts(prop_array_t a)
+{
+	size_t i;
+	const char *str;
+
+	fprintf(stderr, "xbps-bin: conflicting packages were found:\n");
+	for (i = 0; i < prop_array_count(a); i++) {
+		prop_array_get_cstring_nocopy(a, i, &str);
+		fprintf(stderr, " %s\n", str);
 	}
 }
 
@@ -350,7 +360,7 @@ remove_pkg(const char *pkgname, bool recursive)
 int
 exec_transaction(bool yes, bool dry_run, bool show_download_urls)
 {
-	prop_array_t mdeps;
+	prop_array_t mdeps, cflicts;
 	struct transaction *trans;
 	struct xbps_handle *xhp = xbps_handle_get();
 	int rv = 0;
@@ -365,6 +375,11 @@ exec_transaction(bool yes, bool dry_run, bool show_download_urls)
 			    prop_dictionary_get(xhp->transd, "missing_deps");
 			/* missing packages */
 			show_missing_deps(mdeps);
+			goto out;
+		} else if (rv == EAGAIN) {
+			/* conflicts */
+			cflicts = prop_dictionary_get(xhp->transd, "conflicts");
+			show_conflicts(cflicts);
 			goto out;
 		}
 		xbps_dbg_printf("Empty transaction dictionary: %s\n",

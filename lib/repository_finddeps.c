@@ -360,6 +360,10 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 			}
 		}
 		/*
+		 * Check if package has matched conflicts.
+		 */
+		xbps_pkg_find_conflicts(xhp, curpkgd);
+		/*
 		 * Package is on repo, add it into the transaction dictionary.
 		 */
 		prop_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);

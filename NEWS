@@ -1,5 +1,10 @@
 xbps-0.16 (???):
 
+ * Added support for package conflicts. If any conflicting pkg has been found
+   in a transaction, xbps_transaction_prepare() will return EAGAIN and
+   the array object "conflicts" in transaction dictionary must be inspected
+   to know what conflicts have been found.
+
  * Always require an underscore at package versions, if any provided
    pkgver (i.e 'foo-1.0_1') does not contain an underscore the name/version
    won't be detected for a string. That means that now any package can contain
