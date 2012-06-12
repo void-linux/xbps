@@ -609,7 +609,7 @@ xbps_unpack_binary_pkg(prop_dictionary_t pkg_repod)
 		    "%s: [unpack] failed to open binary package `%s': %s",
 		    pkgver, fname, strerror(rv));
 		free(bpkg);
-		archive_read_finish(ar);
+		archive_read_free(ar);
 		return rv;
 	}
 	free(bpkg);

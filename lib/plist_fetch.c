@@ -198,7 +198,8 @@ xbps_dictionary_metadata_plist_by_url(const char *url, const char *plistf)
 
 		break;
 	}
-	archive_read_finish(a);
+	archive_read_close(a);
+	archive_read_free(a);
 
 	return plistd;
 }
