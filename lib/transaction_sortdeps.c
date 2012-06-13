@@ -189,7 +189,6 @@ sort_pkg_rundeps(prop_dictionary_t transd,
 		 prop_array_t pkg_rundeps)
 {
 	prop_dictionary_t curpkgd;
-	prop_object_t obj;
 	struct pkgdep *lpd, *pdn;
 	const char *str, *tract;
 	char *pkgnamedep;
@@ -202,12 +201,7 @@ sort_pkg_rundeps(prop_dictionary_t transd,
 
 again:
 	for (i = idx; i < prop_array_count(pkg_rundeps); i++) {
-		obj = prop_array_get(pkg_rundeps, i);
-		str = prop_string_cstring_nocopy(obj);
-		if (str == NULL) {
-			rv = ENOMEM;
-			break;
-		}
+		prop_array_get_cstring_nocopy(pkg_rundeps, i, &str);
 		pkgnamedep = xbps_pkgpattern_name(str);
 		if (pkgnamedep == NULL) {
 			rv = ENOMEM;

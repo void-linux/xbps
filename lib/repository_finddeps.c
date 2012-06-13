@@ -170,7 +170,6 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 	struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t curpkgd, tmpd;
 	prop_array_t curpkgrdeps, unsorted;
-	prop_object_t obj;
 	pkg_state_t state;
 	size_t i, x;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
@@ -185,11 +184,7 @@ find_repo_deps(prop_dictionary_t transd, 	/* transaction dictionary */
 	 * current package.
 	 */
 	for (i = 0; i < prop_array_count(pkg_rdeps_array); i++) {
-		obj = prop_array_get(pkg_rdeps_array, i);
-		if ((reqpkg = prop_string_cstring_nocopy(obj)) == NULL) {
-			rv = EINVAL;
-			break;
-		}
+		prop_array_get_cstring_nocopy(pkg_rdeps_array, i, &reqpkg);
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf("");
 			for (x = 0; x < *depth; x++)
