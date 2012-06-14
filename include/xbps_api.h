@@ -1505,14 +1505,14 @@ prop_dictionary_t xbps_dictionary_metadata_plist_by_url(const char *url,
  */
 struct xbps_rpool_index {
 	/**
-	 * @var rpi_repo
+	 * @var repo
 	 * 
 	 * Internalized proplib array of the index plist file
 	 * associated with repository.
 	 */
 	prop_array_t repo;
 	/**
-	 * @var rpi_uri
+	 * @var uri
 	 * 
 	 * URI string associated with repository.
 	 */
