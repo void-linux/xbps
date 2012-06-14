@@ -47,12 +47,12 @@ ATF_TC_BODY(find_pkg_dict_installed_test, tc)
 	xh.metadir = tcsdir;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
-	dr = xbps_find_pkg_dict_installed("xbps", false);
+	dr = xbps_find_pkg_dict_installed(&xh, "xbps", false);
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "xbps-0.14");
 
-	xbps_end();
+	xbps_end(&xh);
 }
 
 ATF_TC(find_virtualpkg_dict_installed_test);
@@ -79,12 +79,12 @@ ATF_TC_BODY(find_virtualpkg_dict_installed_test, tc)
 	xh.metadir = tcsdir;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
-	dr = xbps_find_virtualpkg_dict_installed("xbps-src>=24", true);
+	dr = xbps_find_virtualpkg_dict_installed(&xh, "xbps-src>=24", true);
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "xbps-src-git-20120312");
 
-	xbps_end();
+	xbps_end(&xh);
 }
 
 ATF_TP_ADD_TCS(tp)
