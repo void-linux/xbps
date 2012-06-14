@@ -158,9 +158,14 @@ pkgdep_end(prop_array_t sorted)
 			d = xbps_find_pkg_in_array_by_name(sorted,
 			    pd->name, NULL);
 			if (d == NULL) {
-				prop_array_add(sorted, pd->d);
-				pkgdep_release(pd);
-				continue;
+				/* find a virtual pkg otherwise */
+				d = xbps_find_virtualpkg_in_array_by_name(
+				    sorted, pd->name);
+				if (d == NULL) {
+					prop_array_add(sorted, pd->d);
+					pkgdep_release(pd);
+					continue;
+				}
 			}
 			prop_dictionary_get_cstring_nocopy(d,
 			    "transaction", &trans);
