@@ -819,6 +819,7 @@ bool xbps_add_obj_to_array(prop_array_t array, prop_object_t obj);
  * Executes a function callback specified in \a fn with \a arg passed
  * as its argument into they array \a array.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array Proplib array to iterate.
  * @param[in] fn Function callback to run on every object in the array.
  * While running the function callback, the hird parameter (a pointer to
@@ -837,6 +838,7 @@ int xbps_callback_array_iter(struct xbps_handle *xhp,
  * Executes a function callback specified in \a fn with \a arg passed
  * as its argument into they array \a array in reverse order (upwards).
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array Proplib array to iterate.
  * @param[in] fn Function callback to run on every object in the array.
  * While running the function callback, the hird parameter (a pointer to
@@ -855,6 +857,7 @@ int xbps_callback_array_iter_reverse(struct xbps_handle *xhp,
  * Executes a function callback into the array associated with key \a key,
  * contained in a proplib dictionary.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] dict Proplib dictionary where the array resides.
  * @param[in] key Key associated with array.
  * @param[in] fn Function callback to run on every
@@ -876,6 +879,7 @@ int xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
  * Executes a function callback (in reverse order) into the array
  * associated with key \a key, contained in a proplib dictionary.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] dict Proplib dictionary where the array resides.
  * @param[in] key Key associated with array.
  * @param[in] fn Function callback to run on every
