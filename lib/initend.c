@@ -39,9 +39,7 @@
  * Use these functions to initialize some parameters before start
  * using libxbps and finalize usage to release resources at the end.
  */
-static bool debug;
 static bool xbps_initialized;
-static struct xbps_handle *xhp;
 
 static char *
 set_cachedir(struct xbps_handle *xh)
@@ -89,7 +87,7 @@ cb_validate_virtual(cfg_t *cfg, cfg_opt_t *opt)
 }
 
 int
-xbps_init(struct xbps_handle *xh)
+xbps_init(struct xbps_handle *xhp)
 {
 	cfg_opt_t vpkg_opts[] = {
 		CFG_STR_LIST(__UNCONST("targets"), NULL, CFGF_NONE),
@@ -119,11 +117,7 @@ xbps_init(struct xbps_handle *xh)
 	int rv, cc, cch;
 	bool syslog_enabled = false;
 
-	assert(xh != NULL);
-
-	xhp = xh;
-	if (xhp->flags & XBPS_FLAG_DEBUG)
-		debug = true;
+	assert(xhp != NULL);
 
 	if (xhp->conffile == NULL)
 		xhp->conffile = XBPS_CONF_DEF;
@@ -150,7 +144,7 @@ xbps_init(struct xbps_handle *xh)
 			return ENOTSUP;
 		}
 	}
-	xbps_dbg_printf("Configuration file: %s\n",
+	xbps_dbg_printf(xhp, "Configuration file: %s\n",
 	    xhp->conffile ? xhp->conffile : "not found");
 	/*
 	 * Respect client setting in struct xbps_handle for {root,cache}dir;
@@ -196,14 +190,14 @@ xbps_init(struct xbps_handle *xh)
 
 	xbps_fetch_set_cache_connection(cc, cch);
 
-	xbps_dbg_printf("Rootdir=%s\n", xhp->rootdir);
-	xbps_dbg_printf("Metadir=%s\n", xhp->metadir);
-	xbps_dbg_printf("Cachedir=%s\n", xhp->cachedir);
-	xbps_dbg_printf("FetchTimeout=%u\n", xhp->fetch_timeout);
-	xbps_dbg_printf("FetchCacheconn=%u\n", cc);
-	xbps_dbg_printf("FetchCacheconnHost=%u\n", cch);
-	xbps_dbg_printf("Syslog=%u\n", syslog_enabled);
-	xbps_dbg_printf("TransactionFrequencyFlush=%u\n",
+	xbps_dbg_printf(xhp, "Rootdir=%s\n", xhp->rootdir);
+	xbps_dbg_printf(xhp, "Metadir=%s\n", xhp->metadir);
+	xbps_dbg_printf(xhp, "Cachedir=%s\n", xhp->cachedir);
+	xbps_dbg_printf(xhp, "FetchTimeout=%u\n", xhp->fetch_timeout);
+	xbps_dbg_printf(xhp, "FetchCacheconn=%u\n", cc);
+	xbps_dbg_printf(xhp, "FetchCacheconnHost=%u\n", cch);
+	xbps_dbg_printf(xhp, "Syslog=%u\n", syslog_enabled);
+	xbps_dbg_printf(xhp, "TransactionFrequencyFlush=%u\n",
 	    xhp->transaction_frequency_flush);
 
 	xbps_initialized = true;
@@ -212,7 +206,7 @@ xbps_init(struct xbps_handle *xh)
 }
 
 void
-xbps_end(void)
+xbps_end(struct xbps_handle *xhp)
 {
 	if (!xbps_initialized)
 		return;
@@ -232,12 +226,6 @@ xbps_end(void)
 	xbps_initialized = false;
 }
 
-struct xbps_handle *
-xbps_handle_get(void)
-{
-	return xhp;
-}
-
 static void
 common_printf(FILE *f, const char *msg, const char *fmt, va_list ap)
 {
@@ -248,11 +236,11 @@ common_printf(FILE *f, const char *msg, const char *fmt, va_list ap)
 }
 
 void
-xbps_dbg_printf_append(const char *fmt, ...)
+xbps_dbg_printf_append(struct xbps_handle *xhp, const char *fmt, ...)
 {
 	va_list ap;
 
-	if (!debug)
+	if ((xhp->flags & XBPS_FLAG_DEBUG) == 0)
 		return;
 
 	va_start(ap, fmt);
@@ -261,11 +249,11 @@ xbps_dbg_printf_append(const char *fmt, ...)
 }
 
 void
-xbps_dbg_printf(const char *fmt, ...)
+xbps_dbg_printf(struct xbps_handle *xhp, const char *fmt, ...)
 {
 	va_list ap;
 
-	if (!debug)
+	if ((xhp->flags & XBPS_FLAG_DEBUG) == 0)
 		return;
 
 	va_start(ap, fmt);

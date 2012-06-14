@@ -41,7 +41,6 @@
 static void __attribute__((noreturn))
 usage(bool fail)
 {
-	xbps_end();
 	fprintf(stderr,
 	    "Usage: xbps-repo [options] target [arguments]\n\n"
 	    "[options]\n"
@@ -151,7 +150,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = xbps_rpool_foreach(repo_list_uri_cb, NULL);
+		rv = xbps_rpool_foreach(&xh, repo_list_uri_cb, NULL);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
@@ -165,7 +164,7 @@ main(int argc, char **argv)
 		if (argc < 1 || argc > 2)
 			usage(true);
 
-		rv = xbps_rpool_foreach(repo_pkg_list_cb, argv[1]);
+		rv = xbps_rpool_foreach(&xh, repo_pkg_list_cb, argv[1]);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
@@ -187,7 +186,7 @@ main(int argc, char **argv)
 		}
 		rsd->npatterns = argc;
 		rsd->patterns = argv;
-		rv = xbps_rpool_foreach(repo_search_pkgs_cb, rsd);
+		rv = xbps_rpool_foreach(&xh, repo_search_pkgs_cb, rsd);
 		free(rsd);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
@@ -200,7 +199,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		rv = show_pkg_info_from_repolist(argv[1], option);
+		rv = show_pkg_info_from_repolist(&xh, argv[1], option);
 		if (rv == ENOENT) {
 			xbps_error_printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);
@@ -216,7 +215,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		rv = show_pkg_deps_from_repolist(argv[1]);
+		rv = show_pkg_deps_from_repolist(&xh, argv[1]);
 		if (rv == ENOENT) {
 			xbps_error_printf("Unable to locate package "
 			    "`%s' in repository pool.\n", argv[1]);
@@ -232,7 +231,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		pkgd = xbps_rpool_dictionary_metadata_plist(argv[1],
+		pkgd = xbps_rpool_dictionary_metadata_plist(&xh, argv[1],
 		    "./files.plist");
 		if (pkgd == NULL) {
 			if (errno == ENOTSUP) {
@@ -256,7 +255,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
-		rv = repo_find_files_in_packages(argc, argv);
+		rv = repo_find_files_in_packages(&xh, argc, argv);
 		if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
@@ -266,16 +265,16 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		rv = repo_genindex(argv[1]);
+		rv = repo_genindex(&xh, argv[1]);
 		if (rv == 0)
-			rv = repo_genindex_files(argv[1]);
+			rv = repo_genindex_files(&xh, argv[1]);
 
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */
 		if (argc < 1 || argc > 2)
 			usage(true);
 
-		rv = xbps_rpool_sync(argv[1]);
+		rv = xbps_rpool_sync(&xh, argv[1]);
 		if (rv == ENOTSUP) {
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
@@ -285,12 +284,12 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = cachedir_clean();
+		rv = cachedir_clean(&xh);
 	} else {
 		usage(true);
 	}
 
 out:
-	xbps_end();
+	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

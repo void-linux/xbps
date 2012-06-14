@@ -137,19 +137,12 @@ mkcomponent(arr_t *ap, const char *num)
 	if (ap->c == ap->size) {
 		if (ap->size == 0) {
 			ap->size = 62;
-			if ((ap->v = malloc(ap->size * sizeof(int))) == NULL) {
-				xbps_dbg_printf("%s: malloc ENOMEM\n",
-				    __func__);
-				exit(EXIT_FAILURE);
-			}
+			ap->v = malloc(ap->size * sizeof(int));
+			assert(ap->v != NULL);
 		} else {
 			ap->size *= 2;
 			ap->v = realloc(ap->v, ap->size * sizeof(int));
-			if (ap->v == NULL) {
-				xbps_dbg_printf("%s: realloc ENOMEM\n",
-				    __func__);
-				exit(EXIT_FAILURE);
-			}
+			assert(ap->v != NULL);
 		}
 	}
 	if (isdigit((unsigned char)*num)) {
@@ -177,10 +170,8 @@ mkcomponent(arr_t *ap, const char *num)
 		cp = strchr(alphas, tolower((unsigned char)*num));
 		if (ap->c == ap->size) {
 			ap->size *= 2;
-			if ((ap->v = realloc(ap->v, ap->size * sizeof(int))) == NULL) {
-				xbps_dbg_printf("%s: ENOMEM!\n", __func__);
-				exit(EXIT_FAILURE);
-			}
+			ap->v = realloc(ap->v, ap->size * sizeof(int));
+			assert(ap->v != NULL);
 		}
 		ap->v[ap->c++] = (int)(cp - alphas) + 1;
 		return 1;

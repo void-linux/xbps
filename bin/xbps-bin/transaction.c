@@ -97,7 +97,7 @@ show_actions(prop_object_iterator_t iter)
 }
 
 static int
-show_binpkgs_url(prop_object_iterator_t iter)
+show_binpkgs_url(struct xbps_handle *xhp, prop_object_iterator_t iter)
 {
 	prop_object_t obj;
 	const char *repoloc, *trans;
@@ -117,7 +117,7 @@ show_binpkgs_url(prop_object_iterator_t iter)
 		if (!xbps_check_is_repository_uri_remote(repoloc))
 			continue;
 
-		binfile = xbps_path_from_repository_uri(obj, repoloc);
+		binfile = xbps_path_from_repository_uri(xhp, obj, repoloc);
 		if (binfile == NULL)
 			return errno;
 		/*
@@ -226,7 +226,10 @@ show_transaction_sizes(struct transaction *trans)
 }
 
 int
-dist_upgrade(bool yes, bool dry_run, bool show_download_pkglist_url)
+dist_upgrade(struct xbps_handle *xhp,
+	     bool yes,
+	     bool dry_run,
+	     bool show_download_pkglist_url)
 {
 	int rv = 0;
 
@@ -234,7 +237,7 @@ dist_upgrade(bool yes, bool dry_run, bool show_download_pkglist_url)
 	 * Update all currently installed packages, aka
 	 * "xbps-bin autoupdate".
 	 */
-	if ((rv = xbps_transaction_update_packages()) != 0) {
+	if ((rv = xbps_transaction_update_packages(xhp)) != 0) {
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
 			return 0;
@@ -251,15 +254,15 @@ dist_upgrade(bool yes, bool dry_run, bool show_download_pkglist_url)
 			return -1;
 		}
 	}
-	return exec_transaction(yes, dry_run, show_download_pkglist_url);
+	return exec_transaction(xhp, yes, dry_run, show_download_pkglist_url);
 }
 
 int
-remove_pkg_orphans(bool yes, bool dry_run)
+remove_pkg_orphans(struct xbps_handle *xhp, bool yes, bool dry_run)
 {
 	int rv;
 
-	if ((rv = xbps_transaction_autoremove_pkgs()) != 0) {
+	if ((rv = xbps_transaction_autoremove_pkgs(xhp)) != 0) {
 		if (rv == ENOENT) {
 			printf("No package orphans were found.\n");
 			return 0;
@@ -269,15 +272,15 @@ remove_pkg_orphans(bool yes, bool dry_run)
 			return rv;
 		}
 	}
-	return exec_transaction(yes, dry_run, false);
+	return exec_transaction(xhp, yes, dry_run, false);
 }
 
 int
-install_new_pkg(const char *pkg, bool reinstall)
+install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 {
 	int rv;
 
-	if ((rv = xbps_transaction_install_pkg(pkg, reinstall)) != 0) {
+	if ((rv = xbps_transaction_install_pkg(xhp, pkg, reinstall)) != 0) {
 		if (rv == EEXIST) {
 			printf("Package `%s' already installed.\n", pkg);
 		} else if (rv == ENOENT) {
@@ -296,11 +299,11 @@ install_new_pkg(const char *pkg, bool reinstall)
 }
 
 int
-update_pkg(const char *pkgname)
+update_pkg(struct xbps_handle *xhp, const char *pkgname)
 {
 	int rv;
 
-	rv = xbps_transaction_update_pkg(pkgname);
+	rv = xbps_transaction_update_pkg(xhp, pkgname);
 	if (rv == EEXIST)
 		printf("Package '%s' is up to date.\n", pkgname);
 	else if (rv == ENOENT)
@@ -320,7 +323,7 @@ update_pkg(const char *pkgname)
 }
 
 int
-remove_pkg(const char *pkgname, bool recursive)
+remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive)
 {
 	prop_dictionary_t pkgd;
 	prop_array_t reqby;
@@ -328,10 +331,10 @@ remove_pkg(const char *pkgname, bool recursive)
 	size_t x;
 	int rv;
 
-	rv = xbps_transaction_remove_pkg(pkgname, recursive);
+	rv = xbps_transaction_remove_pkg(xhp, pkgname, recursive);
 	if (rv == EEXIST) {
 		/* pkg has revdeps */
-		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+		pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		reqby = prop_dictionary_get(pkgd, "requiredby");
 		prop_object_release(pkgd);
@@ -358,18 +361,20 @@ remove_pkg(const char *pkgname, bool recursive)
 }
 
 int
-exec_transaction(bool yes, bool dry_run, bool show_download_urls)
+exec_transaction(struct xbps_handle *xhp,
+		 bool yes,
+		 bool dry_run,
+		 bool show_download_urls)
 {
 	prop_array_t mdeps, cflicts;
 	struct transaction *trans;
-	struct xbps_handle *xhp = xbps_handle_get();
 	int rv = 0;
 
 	trans = calloc(1, sizeof(*trans));
 	if (trans == NULL)
 		return ENOMEM;
 
-	if ((rv = xbps_transaction_prepare()) != 0) {
+	if ((rv = xbps_transaction_prepare(xhp)) != 0) {
 		if (rv == ENODEV) {
 			mdeps =
 			    prop_dictionary_get(xhp->transd, "missing_deps");
@@ -382,12 +387,13 @@ exec_transaction(bool yes, bool dry_run, bool show_download_urls)
 			show_conflicts(cflicts);
 			goto out;
 		}
-		xbps_dbg_printf("Empty transaction dictionary: %s\n",
+		xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
 		    strerror(errno));
 		return rv;
 	}
-	xbps_dbg_printf("Dictionary before transaction happens:\n");
-	xbps_dbg_printf_append("%s", prop_dictionary_externalize(xhp->transd));
+	xbps_dbg_printf(xhp, "Dictionary before transaction happens:\n");
+	xbps_dbg_printf_append(xhp, "%s",
+	    prop_dictionary_externalize(xhp->transd));
 
 	trans->d = xhp->transd;
 	trans->iter = xbps_array_iter_from_dict(xhp->transd, "packages");
@@ -408,7 +414,7 @@ exec_transaction(bool yes, bool dry_run, bool show_download_urls)
 	 * Only show URLs to download binary packages.
 	 */
 	if (show_download_urls) {
-		rv = show_binpkgs_url(trans->iter);
+		rv = show_binpkgs_url(xhp, trans->iter);
 		goto out;
 	}
 	/*
@@ -426,7 +432,7 @@ exec_transaction(bool yes, bool dry_run, bool show_download_urls)
 	/*
 	 * It's time to run the transaction!
 	 */
-	if ((rv = xbps_transaction_commit()) == 0) {
+	if ((rv = xbps_transaction_commit(xhp)) == 0) {
 		printf("\nxbps-bin: %u installed, %u updated, "
 		    "%u configured, %u removed.\n", trans->inst_pkgcnt,
 		    trans->up_pkgcnt, trans->cf_pkgcnt + trans->inst_pkgcnt,

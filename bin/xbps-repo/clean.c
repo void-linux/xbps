@@ -34,10 +34,9 @@
 #include "defs.h"
 
 int
-cachedir_clean(void)
+cachedir_clean(struct xbps_handle *xhp)
 {
 	prop_dictionary_t pkg_propsd, repo_pkgd;
-	struct xbps_handle *xhp = xbps_handle_get();
 	DIR *dirp;
 	struct dirent *dp;
 	const char *pkgver, *rsha256;
@@ -78,7 +77,7 @@ cachedir_clean(void)
 		 * Remove binary pkg if it's not registered in any repository
 		 * or if hash doesn't match.
 		 */
-		repo_pkgd = xbps_rpool_find_pkg_exact(pkgver);
+		repo_pkgd = xbps_rpool_find_pkg_exact(xhp, pkgver);
 		if (repo_pkgd) {
 			prop_dictionary_get_cstring_nocopy(repo_pkgd,
 			    "filename-sha256", &rsha256);

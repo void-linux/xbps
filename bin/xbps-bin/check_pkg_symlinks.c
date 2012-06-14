@@ -45,9 +45,11 @@
  * returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_symlinks(const char *pkgname, void *arg, bool *pkgdb_update)
+check_pkg_symlinks(struct xbps_handle *xhp,
+		   const char *pkgname,
+		   void *arg,
+		   bool *pkgdb_update)
 {
-	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t array;
 	prop_object_t obj;
 	prop_object_iterator_t iter;

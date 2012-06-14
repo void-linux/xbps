@@ -42,12 +42,16 @@ struct index_files_data {
 };
 
 static int
-rmobsoletes_files_cb(prop_object_t obj, void *arg, bool *done)
+rmobsoletes_files_cb(struct xbps_handle *xhp,
+		     prop_object_t obj,
+		     void *arg,
+		     bool *done)
 {
 	struct index_files_data *ifd = arg;
 	const char *pkgver, *arch;
 	char *str;
 
+	(void)xhp;
 	(void)done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -70,7 +74,10 @@ rmobsoletes_files_cb(prop_object_t obj, void *arg, bool *done)
 }
 
 static int
-genindex_files_cb(prop_object_t obj, void *arg, bool *done)
+genindex_files_cb(struct xbps_handle *xhp,
+		  prop_object_t obj,
+		  void *arg,
+		  bool *done)
 {
 	prop_object_t obj2, fileobj;
 	prop_dictionary_t pkg_filesd, pkgd;
@@ -81,6 +88,7 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
 	bool found = false;
 	size_t i;
 
+	(void)xhp;
 	(void)done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "filename", &binpkg);
@@ -211,7 +219,7 @@ genindex_files_cb(prop_object_t obj, void *arg, bool *done)
  * Create the index files cache for all packages in repository.
  */
 int
-repo_genindex_files(const char *pkgdir)
+repo_genindex_files(struct xbps_handle *xhp, const char *pkgdir)
 {
 	prop_array_t idx;
 	struct index_files_data *ifd = NULL;
@@ -220,7 +228,7 @@ repo_genindex_files(const char *pkgdir)
 	char *plist, *pkgver;
 	int rv;
 
-	plist = xbps_pkg_index_plist(pkgdir);
+	plist = xbps_pkg_index_plist(xhp, pkgdir);
 	if (plist == NULL)
 		return ENOMEM;
 
@@ -233,7 +241,7 @@ repo_genindex_files(const char *pkgdir)
 	free(plist);
 
 	/* internalize repository index-files plist (if exists) */
-	plist = xbps_pkg_index_files_plist(pkgdir);
+	plist = xbps_pkg_index_files_plist(xhp, pkgdir);
 	if (plist == NULL) {
 		rv = ENOMEM;
 		goto out;
@@ -255,7 +263,7 @@ repo_genindex_files(const char *pkgdir)
 
 	/* remove obsolete pkg entries */
 	if (!ifd->new) {
-		rv = xbps_callback_array_iter(ifd->idxfiles,
+		rv = xbps_callback_array_iter(xhp, ifd->idxfiles,
 		    rmobsoletes_files_cb, ifd);
 		if (rv != 0)
 			goto out;
@@ -281,7 +289,7 @@ repo_genindex_files(const char *pkgdir)
 		}
 	}
 	/* iterate over index.plist array */
-	if ((rv = xbps_callback_array_iter(idx, genindex_files_cb, ifd)) != 0)
+	if ((rv = xbps_callback_array_iter(xhp, idx, genindex_files_cb, ifd)) != 0)
 		goto out;
 
 	if (!ifd->flush)

@@ -35,7 +35,10 @@
 #include "../xbps-bin/defs.h"
 
 int
-repo_pkg_list_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
+repo_pkg_list_cb(struct xbps_handle *xhp,
+		 struct xbps_rpool_index *rpi,
+		 void *arg,
+		 bool *done)
 {
 	struct list_pkgver_cb lpc;
 	const char *repo = arg;
@@ -46,18 +49,22 @@ repo_pkg_list_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 
 	lpc.check_state = false;
 	lpc.state = 0;
-	lpc.pkgver_len = find_longest_pkgver(rpi->repo);
+	lpc.pkgver_len = find_longest_pkgver(xhp, rpi->repo);
 
 	if (arg == NULL)
 		printf("From %s repository ...\n", rpi->uri);
 
-	(void)xbps_callback_array_iter(rpi->repo, list_pkgs_in_dict, &lpc);
+	(void)xbps_callback_array_iter(xhp, rpi->repo, list_pkgs_in_dict, &lpc);
 	return 0;
 }
 
 int
-repo_list_uri_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
+repo_list_uri_cb(struct xbps_handle *xhp,
+		 struct xbps_rpool_index *rpi,
+		 void *arg,
+		 bool *done)
 {
+	(void)xhp;
 	(void)arg;
 	(void)done;
 
@@ -68,14 +75,17 @@ repo_list_uri_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
 }
 
 int
-repo_search_pkgs_cb(struct xbps_rpool_index *rpi, void *arg, bool *done)
+repo_search_pkgs_cb(struct xbps_handle *xhp,
+		    struct xbps_rpool_index *rpi,
+		    void *arg,
+		    bool *done)
 {
 	struct repo_search_data *rsd = arg;
 	(void)done;
 
-	rsd->pkgver_len = find_longest_pkgver(rpi->repo);
+	rsd->pkgver_len = find_longest_pkgver(xhp, rpi->repo);
 
 	printf("From %s repository ...\n", rpi->uri);
-	(void)xbps_callback_array_iter(rpi->repo, show_pkg_namedesc, rsd);
+	(void)xbps_callback_array_iter(xhp, rpi->repo, show_pkg_namedesc, rsd);
 	return 0;
 }

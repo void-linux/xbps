@@ -90,7 +90,8 @@ void HIDDEN xbps_fetch_unset_cache_connection(void);
  * From lib/package_config_files.c
  */
 int HIDDEN xbps_entry_is_a_conf_file(prop_dictionary_t, const char *);
-int HIDDEN xbps_entry_install_conf_file(prop_dictionary_t,
+int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
+					prop_dictionary_t,
 					struct archive_entry *,
 					const char *,
 					const char *,
@@ -107,7 +108,8 @@ prop_dictionary_t HIDDEN
  * @private
  * From lib/package_remove_obsoletes.c
  */
-int HIDDEN xbps_remove_obsoletes(const char *,
+int HIDDEN xbps_remove_obsoletes(struct xbps_handle *xhp,
+				 const char *,
 				 const char *,
 				 const char *,
 				 prop_dictionary_t,
@@ -125,16 +127,20 @@ int HIDDEN xbps_repository_find_pkg_deps(struct xbps_handle *,
  * From lib/package_requiredby.c
  */
 int HIDDEN xbps_requiredby_pkg_add(struct xbps_handle *, prop_dictionary_t);
-int HIDDEN xbps_requiredby_pkg_remove(const char *);
+int HIDDEN xbps_requiredby_pkg_remove(struct xbps_handle *, const char *);
 
 /**
  * @private
  * From lib/plist_find.c
  */
 prop_dictionary_t HIDDEN
-	xbps_find_virtualpkg_conf_in_array_by_name(prop_array_t, const char *);
+	xbps_find_virtualpkg_conf_in_array_by_name(struct xbps_handle *,
+						   prop_array_t,
+						   const char *);
 prop_dictionary_t HIDDEN
-	xbps_find_virtualpkg_conf_in_array_by_pattern(prop_array_t, const char *);
+	xbps_find_virtualpkg_conf_in_array_by_pattern(struct xbps_handle *,
+						      prop_array_t,
+						      const char *);
 
 /**
  * @private
@@ -158,28 +164,28 @@ char HIDDEN *xbps_get_remote_repo_string(const char *);
  * @private
  * From lib/external/fexec.c
  */
-int HIDDEN xbps_file_exec(const char *, ...);
+int HIDDEN xbps_file_exec(struct xbps_handle *, const char *, ...);
 
 /**
  * @private
  * From lib/transaction_package_replace.c
  */
-int HIDDEN xbps_transaction_package_replace(prop_dictionary_t);
+int HIDDEN xbps_transaction_package_replace(struct xbps_handle *);
 
 /**
  * @private
  * From lib/cb_util.c
  */
-void HIDDEN xbps_set_cb_fetch(off_t, off_t, off_t, const char *,
-			      bool, bool, bool);
-void HIDDEN xbps_set_cb_state(xbps_state_t, int, const char *,
-			      const char *, const char *, ...);
+void HIDDEN xbps_set_cb_fetch(struct xbps_handle *, off_t, off_t, off_t,
+			      const char *, bool, bool, bool);
+void HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
+			      const char *, const char *, const char *, ...);
 
 /**
  * @private
  * From lib/package_unpack.c
  */
-int HIDDEN xbps_unpack_binary_pkg(prop_dictionary_t);
+int HIDDEN xbps_unpack_binary_pkg(struct xbps_handle *, prop_dictionary_t);
 
 /**
  * @private

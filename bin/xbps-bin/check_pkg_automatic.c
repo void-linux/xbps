@@ -47,12 +47,16 @@
  * Returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_autoinstall(const char *pkgname, void *arg, bool *pkgdb_update)
+check_pkg_autoinstall(struct xbps_handle *xhp,
+		      const char *pkgname,
+		      void *arg,
+		      bool *pkgdb_update)
 {
 	prop_dictionary_t pkgd = arg;
 	prop_array_t reqby;
 	bool autoinst = false;
 
+	(void)xhp;
 	/*
 	 * Check if package has been installed manually but any other
 	 * package is currently depending on it; in that case the package

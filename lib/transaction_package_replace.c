@@ -34,9 +34,8 @@
 #include "xbps_api_impl.h"
 
 int HIDDEN
-xbps_transaction_package_replace(prop_dictionary_t transd)
+xbps_transaction_package_replace(struct xbps_handle *xhp)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	prop_array_t replaces, instd_reqby, transd_unsorted;
 	prop_dictionary_t instd, pkg_repod, reppkgd, filesd;
 	prop_object_t obj;
@@ -46,9 +45,7 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 	bool instd_auto, sr;
 	size_t idx;
 
-	assert(prop_object_type(transd) == PROP_TYPE_DICTIONARY);
-
-	transd_unsorted = prop_dictionary_get(transd, "unsorted_deps");
+	transd_unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 
 	for (idx = 0; idx < prop_array_count(transd_unsorted); idx++) {
 		pkg_repod = prop_array_get(transd_unsorted, idx);
@@ -67,14 +64,15 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 			 * Find the installed package that matches the pattern
 			 * to be replaced.
 			 */
-			instd = xbps_find_pkg_dict_installed(pattern, true);
+			instd =
+			    xbps_find_pkg_dict_installed(xhp, pattern, true);
 			if (instd == NULL) {
 				/*
 				 * No package installed has been matched,
 				 * try looking for a virtual package.
 				 */
 				instd = xbps_find_virtualpkg_dict_installed(
-				    pattern, true);
+				    xhp, pattern, true);
 				if (instd == NULL)
 					continue;
 			}
@@ -86,14 +84,16 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 			    "pkgname", &curpkgname);
 			prop_dictionary_get_cstring_nocopy(instd,
 			    "pkgver", &curpkgver);
-			xbps_dbg_printf("Package `%s' will be replaced by `%s', "
+			xbps_dbg_printf(xhp,
+			    "Package `%s' will be replaced by `%s', "
 			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 			/*
 			 * Check that we are not replacing the same package,
 			 * due to virtual packages.
 			 */
 			if (strcmp(pkgname, curpkgname) == 0) {
-				xbps_dbg_printf("replaced and new package "
+				xbps_dbg_printf(xhp,
+				    "replaced and new package "
 				    "are equal (%s)\n", pkgname);
 				prop_object_release(instd);
 				continue;
@@ -110,7 +110,8 @@ xbps_transaction_package_replace(prop_dictionary_t transd)
 			reppkgd = xbps_find_pkg_in_array_by_name(
 			    transd_unsorted, curpkgname, NULL);
 			if (reppkgd) {
-				xbps_dbg_printf("found replaced pkg "
+				xbps_dbg_printf(xhp,
+				    "found replaced pkg "
 				    "in transaction\n");
 				prop_dictionary_set_bool(instd,
 				    "remove-and-update", true);

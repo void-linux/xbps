@@ -161,14 +161,14 @@ xbps_find_virtualpkg_in_array_by_pattern(prop_array_t array, const char *pattern
 }
 
 static const char *
-find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
+find_virtualpkg_user_in_conf(struct xbps_handle *xhp,
+			     const char *vpkg,
+			     bool bypattern)
 {
-	const struct xbps_handle *xhp;
 	const char *vpkgver, *pkg = NULL;
 	char *vpkgname = NULL, *tmp;
 	size_t i, j, cnt;
 
-	xhp = xbps_handle_get();
 	if (xhp->cfg == NULL)
 		return NULL;
 
@@ -205,7 +205,8 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 			}
 			/* virtual package matched in conffile */
 			pkg = cfg_title(sec);
-			xbps_dbg_printf("matched vpkg in conf `%s' for %s\n",
+			xbps_dbg_printf(xhp,
+			    "matched vpkg in conf `%s' for %s\n",
 			    pkg, vpkg);
 			free(vpkgname);
 			break;
@@ -215,7 +216,8 @@ find_virtualpkg_user_in_conf(const char *vpkg, bool bypattern)
 }
 
 static prop_dictionary_t
-find_virtualpkg_user_in_array(prop_array_t array,
+find_virtualpkg_user_in_array(struct xbps_handle *xhp,
+			      prop_array_t array,
 			      const char *str,
 			      bool bypattern)
 {
@@ -224,7 +226,7 @@ find_virtualpkg_user_in_array(prop_array_t array,
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(str != NULL);
 
-	vpkgname = find_virtualpkg_user_in_conf(str, bypattern);
+	vpkgname = find_virtualpkg_user_in_conf(xhp, str, bypattern);
 	if (vpkgname == NULL)
 		return NULL;
 
@@ -232,15 +234,19 @@ find_virtualpkg_user_in_array(prop_array_t array,
 }
 
 prop_dictionary_t HIDDEN
-xbps_find_virtualpkg_conf_in_array_by_name(prop_array_t array, const char *name)
+xbps_find_virtualpkg_conf_in_array_by_name(struct xbps_handle *xhp,
+					   prop_array_t array,
+					   const char *name)
 {
-	return find_virtualpkg_user_in_array(array, name, false);
+	return find_virtualpkg_user_in_array(xhp, array, name, false);
 }
 
 prop_dictionary_t HIDDEN
-xbps_find_virtualpkg_conf_in_array_by_pattern(prop_array_t array, const char *p)
+xbps_find_virtualpkg_conf_in_array_by_pattern(struct xbps_handle *xhp,
+					      prop_array_t array,
+					      const char *p)
 {
-	return find_virtualpkg_user_in_array(array, p, true);
+	return find_virtualpkg_user_in_array(xhp, array, p, true);
 }
 
 static prop_dictionary_t
@@ -314,19 +320,20 @@ xbps_find_virtualpkg_in_dict_by_pattern(prop_dictionary_t d,
 }
 
 static prop_dictionary_t
-find_pkgd_installed(const char *str, bool bypattern, bool virtual)
+find_pkgd_installed(struct xbps_handle *xhp,
+		    const char *str,
+		    bool bypattern,
+		    bool virtual)
 {
-	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, rpkgd = NULL;
 	pkg_state_t state = 0;
 	int rv;
 
 	assert(str != NULL);
 
-	xhp = xbps_handle_get();
 	if ((rv = xbps_pkgdb_init(xhp)) != 0) {
 		if (rv != ENOENT) {
-			xbps_dbg_printf("%s: couldn't initialize "
+			xbps_dbg_printf(xhp, "%s: couldn't initialize "
 			    "pkgdb: %s\n", strerror(rv));
 			return NULL;
 		} else if (rv == ENOENT)
@@ -339,7 +346,7 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 		    find_pkg_in_array(xhp->pkgdb, str, bypattern, false, NULL);
 	} else {
 		/* virtual pkg set by user in conf */
-		pkgd = find_virtualpkg_user_in_array(xhp->pkgdb,
+		pkgd = find_virtualpkg_user_in_array(xhp, xhp->pkgdb,
 		    str, bypattern);
 		if (pkgd == NULL) {
 			/* any virtual pkg in array matching pattern */
@@ -369,13 +376,17 @@ find_pkgd_installed(const char *str, bool bypattern, bool virtual)
 }
 
 prop_dictionary_t
-xbps_find_pkg_dict_installed(const char *str, bool bypattern)
+xbps_find_pkg_dict_installed(struct xbps_handle *xhp,
+			     const char *str,
+			     bool bypattern)
 {
-	return find_pkgd_installed(str, bypattern, false);
+	return find_pkgd_installed(xhp, str, bypattern, false);
 }
 
 prop_dictionary_t
-xbps_find_virtualpkg_dict_installed(const char *str, bool bypattern)
+xbps_find_virtualpkg_dict_installed(struct xbps_handle *xhp,
+				    const char *str,
+				    bool bypattern)
 {
-	return find_pkgd_installed(str, bypattern, true);
+	return find_pkgd_installed(xhp, str, bypattern, true);
 }

@@ -45,7 +45,10 @@
  */
 
 int
-check_pkg_rundeps(const char *pkgname, void *arg, bool *pkgdb_update)
+check_pkg_rundeps(struct xbps_handle *xhp,
+		  const char *pkgname,
+		  void *arg,
+		  bool *pkgdb_update)
 {
 	prop_dictionary_t pkg_propsd = arg;
 	prop_object_t obj;
@@ -68,7 +71,7 @@ check_pkg_rundeps(const char *pkgname, void *arg, bool *pkgdb_update)
 			prop_object_iterator_release(iter);
 			return -1;
 		}
-		if (xbps_check_is_installed_pkg_by_pattern(reqpkg) <= 0) {
+		if (xbps_check_is_installed_pkg_by_pattern(xhp, reqpkg) <= 0) {
 			xbps_error_printf("%s: dependency not satisfied: %s\n",
 			    pkgname, reqpkg);
 			test_broken = true;

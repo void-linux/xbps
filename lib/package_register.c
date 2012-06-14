@@ -40,9 +40,8 @@
  */
 
 int
-xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
+xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 {
-	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd = NULL;
 	prop_array_t provides, reqby;
 	const char *pkgname, *version, *desc, *pkgver;
@@ -50,8 +49,6 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 	bool autoinst = false;
 
 	assert(prop_object_type(pkgrd) == PROP_TYPE_DICTIONARY);
-
-	xhp = xbps_handle_get();
 
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version);
@@ -61,38 +58,42 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 	provides = prop_dictionary_get(pkgrd, "provides");
 	reqby = prop_dictionary_get(pkgrd, "requiredby");
 
-	xbps_set_cb_state(XBPS_STATE_REGISTER, 0, pkgname, version, NULL);
+	xbps_set_cb_state(xhp, XBPS_STATE_REGISTER, 0, pkgname, version, NULL);
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
 	assert(desc != NULL);
 	assert(pkgver != NULL);
 
-	pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
+	pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
 	if (pkgd == NULL) {
 		rv = ENOENT;
 		goto out;
 	}
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "version", version)) {
-		xbps_dbg_printf("%s: invalid version for %s\n", __func__, pkgname);
+		xbps_dbg_printf(xhp, "%s: invalid version for %s\n",
+		    __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "pkgver", pkgver)) {
-		xbps_dbg_printf("%s: invalid pkgver for %s\n", __func__, pkgname);
+		xbps_dbg_printf(xhp, "%s: invalid pkgver for %s\n",
+		    __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "short_desc", desc)) {
-		xbps_dbg_printf("%s: invalid short_desc for %s\n", __func__, pkgname);
+		xbps_dbg_printf(xhp, "%s: invalid short_desc for %s\n",
+		    __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
 	if (reqby && !prop_dictionary_set(pkgd, "requiredby", reqby)) {
-		xbps_dbg_printf("%s: invalid requiredby for %s\n", __func__, pkgname);
+		xbps_dbg_printf(xhp, "%s: invalid requiredby for %s\n",
+		    __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
@@ -104,13 +105,15 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 
 	if (!prop_dictionary_set_bool(pkgd,
 	    "automatic-install", autoinst)) {
-		xbps_dbg_printf("%s: invalid autoinst for %s\n", __func__, pkgname);
+		xbps_dbg_printf(xhp, "%s: invalid autoinst for %s\n",
+		    __func__, pkgname);
 		rv = EINVAL;
 		goto out;
 	}
 	if (provides) {
 		if (!prop_dictionary_set(pkgd, "provides", provides)) {
-			xbps_dbg_printf("%s: invalid provides for %s\n",
+			xbps_dbg_printf(xhp,
+			    "%s: invalid provides for %s\n",
 			    __func__, pkgname);
 			rv = EINVAL;
 			goto out;
@@ -121,13 +124,15 @@ xbps_register_pkg(prop_dictionary_t pkgrd, bool flush)
 	 */
 	if (pkgrd && xbps_pkg_has_rundeps(pkgrd)) {
 		if ((rv = xbps_requiredby_pkg_add(xhp, pkgrd)) != 0) {
-			xbps_dbg_printf("%s: requiredby add failed for %s\n",
+			xbps_dbg_printf(xhp,
+			    "%s: requiredby add failed for %s\n",
 			    __func__, pkgname);
 			goto out;
 		}
 	}
-	if (!xbps_pkgdb_replace_pkgd(pkgd, pkgname, false, flush)) {
-		xbps_dbg_printf("%s: failed to replace pkgd dict for %s\n",
+	if (!xbps_pkgdb_replace_pkgd(xhp, pkgd, pkgname, false, flush)) {
+		xbps_dbg_printf(xhp,
+		    "%s: failed to replace pkgd dict for %s\n",
 		    __func__, pkgname);
 		goto out;
 	}
@@ -136,7 +141,7 @@ out:
 		prop_object_release(pkgd);
 
 	if (rv != 0) {
-		xbps_set_cb_state(XBPS_STATE_REGISTER_FAIL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REGISTER_FAIL,
 		    rv, pkgname, version,
 		    "%s: failed to register package: %s",
 		    pkgver, strerror(rv));
@@ -146,14 +151,17 @@ out:
 }
 
 int
-xbps_unregister_pkg(const char *pkgname, const char *version, bool flush)
+xbps_unregister_pkg(struct xbps_handle *xhp,
+		    const char *pkgname,
+		    const char *version,
+		    bool flush)
 {
 	assert(pkgname != NULL);
 
-	xbps_set_cb_state(XBPS_STATE_UNREGISTER, 0, pkgname, version, NULL);
+	xbps_set_cb_state(xhp, XBPS_STATE_UNREGISTER, 0, pkgname, version, NULL);
 
-	if (!xbps_pkgdb_remove_pkgd(pkgname, false, flush)) {
-		xbps_set_cb_state(XBPS_STATE_UNREGISTER_FAIL,
+	if (!xbps_pkgdb_remove_pkgd(xhp, pkgname, false, flush)) {
+		xbps_set_cb_state(xhp, XBPS_STATE_UNREGISTER_FAIL,
 		    errno, pkgname, version,
 		    "%s: failed to unregister package: %s",
 		    pkgname, strerror(errno));

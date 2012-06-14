@@ -86,10 +86,11 @@ xbps_get_remote_repo_string(const char *uri)
  * size and/or mtime match) and 1 if downloaded successfully.
  */
 int
-xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
+xbps_repository_sync_pkg_index(struct xbps_handle *xhp,
+			       const char *uri,
+			       const char *plistf)
 {
 	prop_array_t array;
-	struct xbps_handle *xhp;
 	struct url *url = NULL;
 	struct stat st;
 	const char *fetch_outputdir, *fetchstr = NULL;
@@ -100,7 +101,6 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 
 	assert(uri != NULL);
 	tmp_metafile = rpidx = lrepodir = lrepofile = NULL;
-	xhp = xbps_handle_get();
 
 	/* ignore non remote repositories */
 	if (!xbps_check_is_repository_uri_remote(uri))
@@ -118,7 +118,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 	 * Create metadir if necessary.
 	 */
 	if ((rv = xbps_mkpath(xhp->metadir, 0755)) == -1) {
-		xbps_set_cb_state(XBPS_STATE_REPOSYNC_FAIL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
 		    errno, NULL, NULL,
 		    "[reposync] failed to create metadir `%s': %s",
 		    xhp->metadir, strerror(errno));
@@ -162,15 +162,15 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 		fetch_outputdir = xhp->metadir;
 
 	/* reposync start cb */
-	xbps_set_cb_state(XBPS_STATE_REPOSYNC, 0, NULL, NULL,
+	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, NULL, NULL,
 	    "Synchronizing %s for `%s'...", plistf, uri);
 	/*
 	 * Download plist index file from repository.
 	 */
-	if (xbps_fetch_file(rpidx, fetch_outputdir, true, NULL) == -1) {
+	if (xbps_fetch_file(xhp, rpidx, fetch_outputdir, true, NULL) == -1) {
 		/* reposync error cb */
 		fetchstr = xbps_fetch_error_string();
-		xbps_set_cb_state(XBPS_STATE_REPOSYNC_FAIL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
 		    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
 		    NULL, NULL,
 		    "[reposync] failed to fetch file `%s': %s",
@@ -183,11 +183,11 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 	/*
 	 * Make sure that downloaded plist file can be internalized, i.e
 	 * some HTTP servers don't return proper errors and sometimes
-	 * you get an HTML ASCII file :-)
+	  you get an HTML ASCII file :-)
 	 */
 	array = prop_array_internalize_from_zfile(tmp_metafile);
 	if (array == NULL) {
-		xbps_set_cb_state(XBPS_STATE_REPOSYNC_FAIL, 0, NULL, NULL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL, 0, NULL, NULL,
 		    "[reposync] downloaded file `%s' is not valid.", rpidx);
 		(void)unlink(tmp_metafile);
 		rv = -1;
@@ -204,7 +204,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 	 * Create local repodir to store plist index file.
 	 */
 	if ((rv = xbps_mkpath(lrepodir, 0755)) == -1) {
-		xbps_set_cb_state(XBPS_STATE_REPOSYNC_FAIL, errno, NULL, NULL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL, errno, NULL, NULL,
 		    "[reposync] failed to create repodir for `%s': %s",
 		    lrepodir, strerror(rv));
 		goto out;
@@ -214,7 +214,7 @@ xbps_repository_sync_pkg_index(const char *uri, const char *plistf)
 	 * Rename to destination file now it has been fetched successfully.
 	 */
 	if ((rv = rename(tmp_metafile, lrepofile)) == -1) {
-		xbps_set_cb_state(XBPS_STATE_REPOSYNC_FAIL, errno, NULL, NULL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL, errno, NULL, NULL,
 		    "[reposync] failed to rename index file `%s' to `%s': %s",
 		    tmp_metafile, lrepofile, strerror(errno));
 	} else {

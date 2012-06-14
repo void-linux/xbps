@@ -94,7 +94,6 @@ die(const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, " (%s)\n", strerror(save_errno));
 	va_end(ap);
-	xbps_end();
 	exit(EXIT_FAILURE);
 }
 
@@ -357,7 +356,8 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 }
 
 static void
-create_dot_graph(FILE *f,
+create_dot_graph(struct xbps_handle *xhp,
+		 FILE *f,
 		 prop_dictionary_t plistd,
 		 prop_dictionary_t confd,
 		 bool revdeps)
@@ -422,7 +422,7 @@ create_dot_graph(FILE *f,
 	 * list file, aka XBPS_META_PATH/XBPS_PKGDB.
 	 */
 	if (revdeps) {
-		regpkgd = xbps_find_pkg_dict_installed(pkgn, false);
+		regpkgd = xbps_find_pkg_dict_installed(xhp, pkgn, false);
 		if (regpkgd == NULL)
 			die("cannot find '%s' dictionary on %s!",
 			    pkgn, XBPS_PKGDB);
@@ -515,7 +515,7 @@ main(int argc, char **argv)
 	/*
 	 * Internalize the plist file of the target installed package.
 	 */
-	plistd = xbps_dictionary_from_metadata_plist(argv[0], XBPS_PKGPROPS);
+	plistd = xbps_dictionary_from_metadata_plist(&xh, argv[0], XBPS_PKGPROPS);
 	if (plistd == NULL)
 		die("cannot internalize %s from %s", XBPS_PKGPROPS, argv[0]);
 
@@ -528,10 +528,11 @@ main(int argc, char **argv)
 	/*
 	 * Create the dot(1) graph!
 	 */
-	create_dot_graph(f, plistd, confd, revdeps);
+	create_dot_graph(&xh, f, plistd, confd, revdeps);
 
 	prop_object_release(plistd);
 	prop_object_release(confd);
+	xbps_end(&xh);
 
 	exit(EXIT_SUCCESS);
 }

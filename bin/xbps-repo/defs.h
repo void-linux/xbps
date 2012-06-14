@@ -35,25 +35,36 @@ struct repo_search_data {
 };
 
 /* From index.c */
-int	repo_genindex(const char *);
+int	repo_genindex(struct xbps_handle *, const char *);
 
 /* From index-files.c */
-int	repo_genindex_files(const char *);
+int	repo_genindex_files(struct xbps_handle *, const char *);
 
 /* From find-files.c */
-int	repo_find_files_in_packages(int, char **);
+int	repo_find_files_in_packages(struct xbps_handle *, int, char **);
 
 /* From list.c */
-int	repo_pkg_list_cb(struct xbps_rpool_index *, void *, bool *);
-int	repo_list_uri_cb(struct xbps_rpool_index *, void *, bool *);
-int	repo_search_pkgs_cb(struct xbps_rpool_index *, void *, bool *);
+int	repo_pkg_list_cb(struct xbps_handle *,
+			 struct xbps_rpool_index *,
+			 void *,
+			 bool *);
+int	repo_list_uri_cb(struct xbps_handle *,
+			 struct xbps_rpool_index *,
+			 void *,
+			 bool *);
+int	repo_search_pkgs_cb(struct xbps_handle *,
+			    struct xbps_rpool_index *,
+			    void *,
+			    bool *);
 
 /* From show.c */
-int	show_pkg_info_from_repolist(const char *, const char *);
-int	show_pkg_deps_from_repolist(const char *);
-int 	show_pkg_namedesc(prop_object_t, void *, bool *);
+int	show_pkg_info_from_repolist(struct xbps_handle *,
+				    const char *,
+				    const char *);
+int	show_pkg_deps_from_repolist(struct xbps_handle *, const char *);
+int 	show_pkg_namedesc(struct xbps_handle *, prop_object_t, void *, bool *);
 
 /* From clean.c */
-int	cachedir_clean(void);
+int	cachedir_clean(struct xbps_handle *);
 
 #endif /* !_XBPS_REPO_DEFS_H_ */

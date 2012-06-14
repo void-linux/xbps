@@ -174,11 +174,11 @@ xbps_file_hash_dictionary(prop_dictionary_t d,
 }
 
 int
-xbps_file_hash_check_dictionary(prop_dictionary_t d,
+xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
+				prop_dictionary_t d,
 				const char *key,
 				const char *file)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	const char *sha256d = NULL;
 	char *buf;
 	int rv;

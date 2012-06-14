@@ -74,9 +74,10 @@ xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 }
 
 int
-xbps_callback_array_iter(prop_array_t array,
-			 int (*fn)(prop_object_t, void *, bool *),
-			 void *arg)
+xbps_callback_array_iter(struct xbps_handle *xhp,
+	prop_array_t array,
+	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	void *arg)
 {
 	prop_object_t obj;
 	prop_object_iterator_t iter;
@@ -91,7 +92,7 @@ xbps_callback_array_iter(prop_array_t array,
 		return ENOMEM;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		rv = (*fn)(obj, arg, &loop_done);
+		rv = (*fn)(xhp, obj, arg, &loop_done);
 		if (rv != 0 || loop_done)
 			break;
 	}
@@ -101,10 +102,11 @@ xbps_callback_array_iter(prop_array_t array,
 }
 
 int
-xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
-				 const char *key,
-				 int (*fn)(prop_object_t, void *, bool *),
-				 void *arg)
+xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
+	prop_dictionary_t dict,
+	const char *key,
+	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	void *arg)
 {
 	prop_object_t obj;
 	prop_array_t array;
@@ -113,6 +115,7 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 	bool cbloop_done = false;
 
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xhp != NULL);
 	assert(key != NULL);
 	assert(fn != NULL);
 
@@ -124,7 +127,7 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 		obj = prop_array_get(array, i);
 		if (obj == NULL)
 			continue;
-		rv = (*fn)(obj, arg, &cbloop_done);
+		rv = (*fn)(xhp, obj, arg, &cbloop_done);
 		if (rv != 0 || cbloop_done)
 			break;
 	}
@@ -133,9 +136,10 @@ xbps_callback_array_iter_in_dict(prop_dictionary_t dict,
 }
 
 int
-xbps_callback_array_iter_reverse(prop_array_t array,
-				 int (*fn)(prop_object_t, void *, bool *),
-				 void *arg)
+xbps_callback_array_iter_reverse(struct xbps_handle *xhp,
+	prop_array_t array,
+	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	void *arg)
 {
 	prop_object_t obj;
 	unsigned int cnt;
@@ -144,6 +148,7 @@ xbps_callback_array_iter_reverse(prop_array_t array,
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(fn != NULL);
+	assert(xhp != NULL);
 
 	if ((cnt = prop_array_count(array)) == 0)
 		return 0;
@@ -152,7 +157,7 @@ xbps_callback_array_iter_reverse(prop_array_t array,
 		obj = prop_array_get(array, cnt);
 		if (obj == NULL)
 			continue;
-		rv = (*fn)(obj, arg, &loop_done);
+		rv = (*fn)(xhp, obj, arg, &loop_done);
 		if (rv != 0 || loop_done)
 			break;
 	}
@@ -161,24 +166,26 @@ xbps_callback_array_iter_reverse(prop_array_t array,
 }
 
 int
-xbps_callback_array_iter_reverse_in_dict(prop_dictionary_t dict,
-			const char *key,
-			int (*fn)(prop_object_t, void *, bool *),
-			void *arg)
+xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
+	prop_dictionary_t dict,
+	const char *key,
+	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	void *arg)
 {
 	prop_array_t array;
 
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(fn != NULL);
+	assert(xhp != NULL);
 
 	array = prop_dictionary_get(dict, key);
 	if (prop_object_type(array) != PROP_TYPE_ARRAY) {
-		xbps_dbg_printf("invalid key '%s' for dictionary", key);
+		xbps_dbg_printf(xhp, "invalid key '%s' for dictionary", key);
 		return EINVAL;
 	}
 
-	return xbps_callback_array_iter_reverse(array, fn, arg);
+	return xbps_callback_array_iter_reverse(xhp, array, fn, arg);
 }
 
 prop_object_iterator_t
@@ -259,17 +266,16 @@ xbps_array_replace_dict_by_pattern(prop_array_t array,
 }
 
 prop_dictionary_t
-xbps_dictionary_from_metadata_plist(const char *pkgname,
+xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
+				    const char *pkgname,
 				    const char *plist)
 {
-	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd, plistd = NULL;
 	const char *savedpkgname;
 	char *plistf;
 
 	assert(pkgname != NULL);
 	assert(plist != NULL);
-	xhp = xbps_handle_get();
 
 	savedpkgname = pkgname;
 	plistf = xbps_xasprintf("%s/metadata/%s/%s", xhp->metadir,
@@ -278,9 +284,9 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 		return NULL;
 
 	if (access(plistf, R_OK) == -1) {
-		pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
+		pkgd = xbps_find_virtualpkg_dict_installed(xhp, pkgname, false);
 		if (pkgd == NULL)
-			pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+			pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
 
 		if (pkgd != NULL) {
 			free(plistf);
@@ -297,7 +303,7 @@ xbps_dictionary_from_metadata_plist(const char *pkgname,
 	plistd = prop_dictionary_internalize_from_zfile(plistf);
 	free(plistf);
 	if (plistd == NULL) {
-		xbps_dbg_printf("cannot read from metadata %s for %s: %s\n",
+		xbps_dbg_printf(xhp, "cannot read from metadata %s for %s: %s\n",
 		    plist, savedpkgname, strerror(errno));
 		return NULL;
 	}

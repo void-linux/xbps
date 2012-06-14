@@ -75,9 +75,8 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 }
 
 int
-find_files_in_packages(int npatterns, char **patterns)
+find_files_in_packages(struct xbps_handle *xhp, int npatterns, char **patterns)
 {
-	struct xbps_handle *xhp;
 	prop_dictionary_t pkg_filesd;
 	prop_array_t files_keys;
 	DIR *dirp;
@@ -86,7 +85,6 @@ find_files_in_packages(int npatterns, char **patterns)
 	int rv = 0;
 	unsigned int i, count;
 
-	xhp = xbps_handle_get();
 	path = xbps_xasprintf("%s/metadata", xhp->metadir);
 	if (path == NULL)
 		return -1;
@@ -101,8 +99,8 @@ find_files_in_packages(int npatterns, char **patterns)
 		    (strcmp(dp->d_name, "..") == 0))
 			continue;
 
-		pkg_filesd = xbps_dictionary_from_metadata_plist(dp->d_name,
-		    XBPS_PKGFILES);
+		pkg_filesd = xbps_dictionary_from_metadata_plist(xhp,
+		    dp->d_name, XBPS_PKGFILES);
 		if (pkg_filesd == NULL) {
 			if (errno == ENOENT)
 				continue;

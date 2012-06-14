@@ -47,7 +47,7 @@ static const char *archs[] = { "noarch", "i686", "x86_64" };
  * binary package cannot be read (unavailable, not enough perms, etc).
  */
 static int
-remove_missing_binpkg_entries(const char *repodir)
+remove_missing_binpkg_entries(struct xbps_handle *xhp, const char *repodir)
 {
 	prop_array_t array;
 	prop_dictionary_t pkgd;
@@ -57,7 +57,7 @@ remove_missing_binpkg_entries(const char *repodir)
 	int rv = 0;
 	bool found = false;
 
-	plist = xbps_pkg_index_plist(repodir);
+	plist = xbps_pkg_index_plist(xhp, repodir);
 	if (plist == NULL)
 		return -1;
 
@@ -104,7 +104,7 @@ again:
 }
 
 static prop_array_t
-repoidx_get(const char *pkgdir)
+repoidx_get(struct xbps_handle *xhp, const char *pkgdir)
 {
 	prop_array_t array;
 	char *plist;
@@ -113,10 +113,10 @@ repoidx_get(const char *pkgdir)
 	 * Remove entries in repositories index for unexistent
 	 * packages, i.e dangling entries.
 	 */
-	if ((rv = remove_missing_binpkg_entries(pkgdir)) != 0)
+	if ((rv = remove_missing_binpkg_entries(xhp, pkgdir)) != 0)
 		return NULL;
 
-	plist = xbps_pkg_index_plist(pkgdir);
+	plist = xbps_pkg_index_plist(xhp, pkgdir);
 	if (plist == NULL)
 		return NULL;
 
@@ -297,7 +297,7 @@ out:
 }
 
 int
-repo_genindex(const char *pkgdir)
+repo_genindex(struct xbps_handle *xhp, const char *pkgdir)
 {
 	prop_array_t idx = NULL;
 	struct dirent *dp;
@@ -311,11 +311,11 @@ repo_genindex(const char *pkgdir)
 	/*
 	 * Create or read existing package index plist file.
 	 */
-	idx = repoidx_get(pkgdir);
+	idx = repoidx_get(xhp, pkgdir);
 	if (idx == NULL)
 		return errno;
 
-	plist = xbps_pkg_index_plist(pkgdir);
+	plist = xbps_pkg_index_plist(xhp, pkgdir);
 	if (plist == NULL) {
 		prop_object_release(idx);
 		return errno;

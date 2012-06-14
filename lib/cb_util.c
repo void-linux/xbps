@@ -41,7 +41,8 @@
 #include "xbps_api_impl.h"
 
 void HIDDEN
-xbps_set_cb_fetch(off_t file_size,
+xbps_set_cb_fetch(struct xbps_handle *xhp,
+		  off_t file_size,
 		  off_t file_offset,
 		  off_t file_dloaded,
 		  const char *file_name,
@@ -49,7 +50,6 @@ xbps_set_cb_fetch(off_t file_size,
 		  bool cb_update,
 		  bool cb_end)
 {
-	const struct xbps_handle *xhp = xbps_handle_get();
 	struct xbps_fetch_cb_data xfcd;
 
 	if (xhp->fetch_cb == NULL)
@@ -62,11 +62,12 @@ xbps_set_cb_fetch(off_t file_size,
 	xfcd.cb_start = cb_start;
 	xfcd.cb_update = cb_update;
 	xfcd.cb_end = cb_end;
-	(*xhp->fetch_cb)(&xfcd, xhp->fetch_cb_data);
+	(*xhp->fetch_cb)(xhp, &xfcd, xhp->fetch_cb_data);
 }
 
 void HIDDEN
-xbps_set_cb_state(xbps_state_t state,
+xbps_set_cb_state(struct xbps_handle *xhp,
+		  xbps_state_t state,
 		  int err,
 		  const char *pkgname,
 		  const char *version,
@@ -74,7 +75,6 @@ xbps_set_cb_state(xbps_state_t state,
 		  ...)
 {
 	struct xbps_state_cb_data xscd;
-	const struct xbps_handle *xhp = xbps_handle_get();
 	char *buf = NULL;
 	va_list va;
 	int retval;
@@ -95,7 +95,7 @@ xbps_set_cb_state(xbps_state_t state,
 		else
 			xscd.desc = buf;
 	}
-	(*xhp->state_cb)(&xscd, xhp->fetch_cb_data);
+	(*xhp->state_cb)(xhp, &xscd, xhp->fetch_cb_data);
 	if (buf != NULL)
 		free(buf);
 }

@@ -60,7 +60,6 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 static void __attribute__((noreturn))
 usage(void)
 {
-	xbps_end();
 	fprintf(stderr,
 	"usage: xbps-uhelper [options] [action] [args]\n"
 	"\n"
@@ -192,7 +191,7 @@ main(int argc, char **argv)
 		assert(tmp != NULL);
 		prop_dictionary_set_cstring_nocopy(dict, "pkgver", tmp);
 
-		pkgd = xbps_pkgdb_get_pkgd(argv[1], false);
+		pkgd = xbps_pkgdb_get_pkgd(&xh, argv[1], false);
 		if (pkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgname", &pkgn);
@@ -204,12 +203,12 @@ main(int argc, char **argv)
 			    in_chroot ? "[chroot] " : "",
 			    pkgn, version, MSG_RESET);
 		} else {
-			rv = xbps_set_pkg_state_installed(argv[1], argv[2],
+			rv = xbps_set_pkg_state_installed(&xh, argv[1], argv[2],
 			    XBPS_PKG_STATE_INSTALLED);
 			if (rv != 0)
 				goto out;
 
-			rv = xbps_register_pkg(dict, true);
+			rv = xbps_register_pkg(&xh, dict, true);
 			if (rv != 0) {
 				fprintf(stderr, "%s%s=> couldn't register %s-%s "
 				    "(%s).%s\n", MSG_ERROR,
@@ -227,7 +226,7 @@ main(int argc, char **argv)
 		if (argc != 3)
 			usage();
 
-		rv = xbps_unregister_pkg(argv[1], argv[2], true);
+		rv = xbps_unregister_pkg(&xh, argv[1], argv[2], true);
 		if (rv == ENOENT) {
 			fprintf(stderr, "%s=> ERROR: %s not registered "
 			    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET);
@@ -245,7 +244,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		dict = xbps_pkgdb_get_pkgd(argv[1], false);
+		dict = xbps_pkgdb_get_pkgd(&xh, argv[1], false);
 		if (dict == NULL) {
 			rv = errno;
 			goto out;
@@ -356,7 +355,7 @@ main(int argc, char **argv)
 			usage();
 
 		for (i = 1; i < argc; i++) {
-			rv = xbps_fetch_file(argv[i], ".", false, "v");
+			rv = xbps_fetch_file(&xh, argv[i], ".", false, "v");
 			if (rv == -1) {
 				printf("%s: %s\n", argv[1],
 				    xbps_fetch_error_string());
@@ -385,7 +384,7 @@ main(int argc, char **argv)
 			}
 		        xh.pkgdb = prop_array_copy(array);
 		        prop_object_release(dict);
-			rv = xbps_pkgdb_update(true);
+			rv = xbps_pkgdb_update(&xh, true);
 			if (rv == 0) {
 				printf("Migrated regpkgdb to pkgdb "
 				    "successfully.\n");
@@ -398,6 +397,6 @@ main(int argc, char **argv)
 		usage();
 	}
 out:
-	xbps_end();
+	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

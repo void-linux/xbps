@@ -30,14 +30,14 @@
 #include "defs.h"
 
 int
-show_orphans(void)
+show_orphans(struct xbps_handle *xhp)
 {
 	prop_array_t orphans;
 	prop_object_iterator_t iter;
 	prop_object_t obj;
 	const char *pkgver;
 
-	orphans = xbps_find_pkg_orphans(NULL);
+	orphans = xbps_find_pkg_orphans(xhp, NULL);
 	if (orphans == NULL)
 		return EINVAL;
 

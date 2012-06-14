@@ -76,7 +76,8 @@ out:
  * Returns 1 if entry should be installed, 0 if don't or -1 on error.
  */
 int HIDDEN
-xbps_entry_install_conf_file(prop_dictionary_t filesd,
+xbps_entry_install_conf_file(struct xbps_handle *xhp,
+			     prop_dictionary_t filesd,
 			     struct archive_entry *entry,
 			     const char *entry_pname,
 			     const char *pkgname,
@@ -103,12 +104,12 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 	 * Get original hash for the file from current
 	 * installed package.
 	 */
-	xbps_dbg_printf("%s: processing conf_file %s\n",
+	xbps_dbg_printf(xhp, "%s: processing conf_file %s\n",
 	    pkgname, entry_pname);
 
-	forigd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	forigd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
 	if (forigd == NULL) {
-		xbps_dbg_printf("%s: conf_file %s not currently installed\n",
+		xbps_dbg_printf(xhp, "%s: conf_file %s not currently installed\n",
 		    pkgname, entry_pname);
 		rv = 1;
 		goto out;
@@ -141,7 +142,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 	 * First case: original hash not found, install new file.
 	 */
 	if (sha256_orig == NULL) {
-		xbps_dbg_printf("%s: conf_file %s unknown orig sha256\n",
+		xbps_dbg_printf(xhp, "%s: conf_file %s unknown orig sha256\n",
 		    pkgname, entry_pname);
 		rv = 1;
 		goto out;
@@ -170,7 +171,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 				/*
 				 * File not installed, install new one.
 				 */
-				xbps_dbg_printf("%s: conf_file %s not "
+				xbps_dbg_printf(xhp, "%s: conf_file %s not "
 				    "installed\n", pkgname, entry_pname);
 				rv = 1;
 				break;
@@ -187,7 +188,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 		if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 		    (strcmp(sha256_orig, sha256_new) == 0) &&
 		    (strcmp(sha256_cur, sha256_new) == 0)) {
-			xbps_dbg_printf("%s: conf_file %s orig = X,"
+			xbps_dbg_printf(xhp, "%s: conf_file %s orig = X,"
 			    "cur = X, new = X\n", pkgname, entry_pname);
 			rv = 1;
 			break;
@@ -199,7 +200,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 		} else if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_cur, sha256_new))) {
-			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE,
+			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgname, version,
 			    "Updating configuration file `%s' provided "
 			    "by version `%s'.", cffile, version);
@@ -212,7 +213,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 		} else if ((strcmp(sha256_orig, sha256_new) == 0) &&
 			   (strcmp(sha256_cur, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
-			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE,
+			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgname, version,
 			    "Keeping modified configuration file `%s'.",
 			    cffile);
@@ -225,7 +226,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 		} else if ((strcmp(sha256_cur, sha256_new) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
-			xbps_dbg_printf("%s: conf_file %s orig = X,"
+			xbps_dbg_printf(xhp, "%s: conf_file %s orig = X,"
 			    "cur = Y, new = Y\n", pkgname, entry_pname);
 			rv = 0;
 			break;
@@ -242,7 +243,7 @@ xbps_entry_install_conf_file(prop_dictionary_t filesd,
 				rv = -1;
 				break;
 			}
-			xbps_set_cb_state(XBPS_STATE_CONFIG_FILE,
+			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgname, version,
 			    "Installing new configuration file to "
 			    "`%s.new-%s'.", cffile, version);
@@ -261,7 +262,7 @@ out:
 
 	prop_object_iterator_release(iter);
 
-	xbps_dbg_printf("%s: conf_file %s returned %d\n",
+	xbps_dbg_printf(xhp, "%s: conf_file %s returned %d\n",
 	    pkgname, entry_pname, rv);
 
 	return rv;

@@ -52,7 +52,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		/*
 		 * Check if current pkg conflicts with an installed package.
 		 */
-		if ((pkgd = xbps_pkgdb_get_pkgd(cfpkg, true))) {
+		if ((pkgd = xbps_pkgdb_get_pkgd(xhp, cfpkg, true))) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			buf = xbps_xasprintf("%s conflicts with "

@@ -74,10 +74,10 @@
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 static int
-remove_pkg_metadata(const char *pkgname,
+remove_pkg_metadata(struct xbps_handle *xhp,
+		    const char *pkgname,
 		    const char *version,
-		    const char *pkgver,
-		    const char *rootdir)
+		    const char *pkgver)
 {
 	struct dirent *dp;
 	DIR *dirp;
@@ -85,9 +85,8 @@ remove_pkg_metadata(const char *pkgname,
 	int rv = 0;
 
 	assert(pkgname != NULL);
-	assert(rootdir != NULL);
 
-	metadir = xbps_xasprintf("%s/%s/metadata/%s", rootdir,
+	metadir = xbps_xasprintf("%s/%s/metadata/%s", xhp->rootdir,
 	     XBPS_META_PATH, pkgname);
 	if (metadir == NULL)
 		return ENOMEM;
@@ -111,7 +110,7 @@ remove_pkg_metadata(const char *pkgname,
 		}
 
 		if (unlink(path) == -1) {
-			xbps_set_cb_state(XBPS_STATE_PURGE_FAIL,
+			xbps_set_cb_state(xhp, XBPS_STATE_PURGE_FAIL,
 			    errno, pkgname, version,
 			    "%s: [purge] failed to remove metafile `%s': %s",
 			    pkgver, path, strerror(errno));
@@ -128,11 +127,11 @@ remove_pkg_metadata(const char *pkgname,
 }
 
 int
-xbps_remove_pkg_files(prop_dictionary_t dict,
+xbps_remove_pkg_files(struct xbps_handle *xhp,
+		      prop_dictionary_t dict,
 		      const char *key,
 		      const char *pkgver)
 {
-	struct xbps_handle *xhp;
 	struct stat st;
 	prop_array_t array;
 	prop_object_iterator_t iter;
@@ -144,7 +143,6 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
 	assert(key != NULL);
-	xhp = xbps_handle_get();
 
 	array = prop_dictionary_get(dict, key);
 	if ((prop_object_type(array) != PROP_TYPE_ARRAY) ||
@@ -186,7 +184,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 			rv = xbps_file_hash_check(path, sha256);
 			if (rv == ENOENT) {
 				/* missing file, ignore it */
-				xbps_set_cb_state(
+				xbps_set_cb_state(xhp,
 				    XBPS_STATE_REMOVE_FILE_HASH_FAIL,
 				    rv, pkgname, version,
 				    "%s: failed to check hash for %s `%s': %s",
@@ -198,7 +196,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 				rv = 0;
 				if ((xhp->flags &
 				    XBPS_FLAG_FORCE_REMOVE_FILES) == 0) {
-					xbps_set_cb_state(
+					xbps_set_cb_state(xhp,
 					    XBPS_STATE_REMOVE_FILE_HASH_FAIL,
 					    0, pkgname, version,
 					    "%s: %s `%s' SHA256 mismatch, "
@@ -207,7 +205,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 					free(path);
 					continue;
 				} else {
-					xbps_set_cb_state(
+					xbps_set_cb_state(xhp,
 					    XBPS_STATE_REMOVE_FILE_HASH_FAIL,
 					    0, pkgname, version,
 					    "%s: %s `%s' SHA256 mismatch, "
@@ -215,7 +213,7 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 					    curobj, file);
 				}
 			} else if (rv != 0 && rv != ERANGE) {
-				xbps_set_cb_state(
+				xbps_set_cb_state(xhp,
 				    XBPS_STATE_REMOVE_FILE_HASH_FAIL,
 				    rv, pkgname, version,
 				    "%s: [remove] failed to check hash for "
@@ -245,14 +243,14 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 		 * Remove the object if possible.
 		 */
 		if (remove(path) == -1) {
-			xbps_set_cb_state(XBPS_STATE_REMOVE_FILE_FAIL,
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE_FAIL,
 			    errno, pkgname, version,
 			    "%s: failed to remove %s `%s': %s", pkgver,
 			    curobj, file, strerror(errno));
 			errno = 0;
 		} else {
 			/* success */
-			xbps_set_cb_state(XBPS_STATE_REMOVE_FILE,
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE,
 			    0, pkgname, version,
 			    "Removed %s `%s'", curobj, file);
 		}
@@ -266,10 +264,12 @@ xbps_remove_pkg_files(prop_dictionary_t dict,
 }
 
 int
-xbps_remove_pkg(const char *pkgname, const char *version, bool update,
+xbps_remove_pkg(struct xbps_handle *xhp,
+		const char *pkgname,
+		const char *version,
+		bool update,
 		bool soft_replace)
 {
-	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd = NULL;
 	char *buf = NULL, *pkgver = NULL;
 	int rv = 0;
@@ -278,8 +278,6 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update,
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
-
-	xhp = xbps_handle_get();
 
 	buf = xbps_xasprintf("%s/metadata/%s/REMOVE",
 	    XBPS_META_PATH, pkgname);
@@ -294,15 +292,15 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update,
 		goto out;
 	}
 
-	if ((rv = xbps_pkg_state_installed(pkgname, &state)) != 0)
+	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0)
 		goto out;
 
 	if (!update)
-		xbps_set_cb_state(XBPS_STATE_REMOVE, 0, pkgname, version, NULL);
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE, 0, pkgname, version, NULL);
 
 	if (chdir(xhp->rootdir) == -1) {
 		rv = errno;
-		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		   "%s: [remove] failed to chdir to rootdir `%s': %s",
 		    pkgver, xhp->rootdir, strerror(rv));
@@ -316,9 +314,9 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update,
 	 */
 	if (access(buf, X_OK) == 0) {
 		rmfile_exists = true;
-		if (xbps_file_exec(buf, "pre", pkgname, version,
+		if (xbps_file_exec(xhp, buf, "pre", pkgname, version,
 		    update ? "yes" : "no", xhp->conffile, NULL) != 0) {
-			xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 			    errno, pkgname, version,
 			    "%s: [remove] REMOVE script failed to "
 			    "execute pre ACTION: %s",
@@ -328,7 +326,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update,
 		}
 	} else {
 		if (errno != ENOENT) {
-			xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 			    errno, pkgname, version,
 			    "%s: [remove] REMOVE script failed to "
 			    "execute pre ACTION: %s",
@@ -345,7 +343,7 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update,
 	if (update) {
 		free(pkgver);
 		free(buf);
-		return xbps_requiredby_pkg_remove(pkgname);
+		return xbps_requiredby_pkg_remove(xhp, pkgname);
 	} else if (soft_replace) {
 		/*
 		 * Soft replace a package. Do not remove its files, but
@@ -355,19 +353,19 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update,
 		goto softreplace;
 	}
 
-	pkgd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	pkgd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
 	if (pkgd) {
 		/* Remove regular files */
-		if ((rv = xbps_remove_pkg_files(pkgd, "files", pkgver)) != 0)
+		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "files", pkgver)) != 0)
 			goto out;
 		/* Remove configuration files */
-		if ((rv = xbps_remove_pkg_files(pkgd, "conf_files", pkgver)) != 0)
+		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "conf_files", pkgver)) != 0)
 			goto out;
 		/* Remove links */
-		if ((rv = xbps_remove_pkg_files(pkgd, "links", pkgver)) != 0)
+		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "links", pkgver)) != 0)
 			goto out;
 		/* Remove dirs */
-		if ((rv = xbps_remove_pkg_files(pkgd, "dirs", pkgver)) != 0)
+		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "dirs", pkgver)) != 0)
 			goto out;
 	}
 	/*
@@ -375,9 +373,9 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update,
 	 * updating the package.
 	 */
 	if (rmfile_exists &&
-	    ((rv = xbps_file_exec(buf, "post", pkgname, version, "no",
+	    ((rv = xbps_file_exec(xhp, buf, "post", pkgname, version, "no",
 	     xhp->conffile, NULL)) != 0)) {
-		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		    "%s: [remove] REMOVE script failed to execute "
 		    "post ACTION: %s", pkgver, strerror(rv));
@@ -386,8 +384,8 @@ xbps_remove_pkg(const char *pkgname, const char *version, bool update,
 	/*
 	 * Update the requiredby array of all required dependencies.
 	 */
-	if ((rv = xbps_requiredby_pkg_remove(pkgname)) != 0) {
-		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+	if ((rv = xbps_requiredby_pkg_remove(xhp, pkgname)) != 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		    "%s: [remove] failed to remove requiredby entries: %s",
 		    pkgver, strerror(rv));
@@ -398,10 +396,10 @@ softreplace:
 	/*
 	 * Set package state to "half-removed".
 	 */
-	rv = xbps_set_pkg_state_installed(pkgname, version,
+	rv = xbps_set_pkg_state_installed(xhp, pkgname, version,
 	     XBPS_PKG_STATE_HALF_REMOVED);
 	if (rv != 0) {
-		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		    "%s: [remove] failed to set state to half-removed: %s",
 		    pkgver, strerror(rv));
@@ -413,9 +411,9 @@ purge:
 	 * Execute the purge REMOVE action if file exists.
 	 */
 	if (access(buf, X_OK) == 0) {
-	    if ((rv = xbps_file_exec(buf, "purge", pkgname, version, "no",
+	    if ((rv = xbps_file_exec(xhp, buf, "purge", pkgname, version, "no",
 	        xhp->conffile, NULL)) != 0) {
-		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		    "%s: REMOVE script failed to execute "
 		    "purge ACTION: %s", pkgver, strerror(rv));
@@ -425,9 +423,9 @@ purge:
 	/*
 	 * Remove package metadata directory.
 	 */
-	rv = remove_pkg_metadata(pkgname, version, pkgver, xhp->rootdir);
+	rv = remove_pkg_metadata(xhp, pkgname, version, pkgver);
 	if (rv != 0) {
-		xbps_set_cb_state(XBPS_STATE_REMOVE_FAIL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		    "%s: failed to remove metadata files: %s",
 		    pkgver, strerror(rv));
@@ -437,10 +435,10 @@ purge:
 	/*
 	 * Unregister package from pkgdb.
 	 */
-	if ((rv = xbps_unregister_pkg(pkgname, version, false)) != 0)
+	if ((rv = xbps_unregister_pkg(xhp, pkgname, version, false)) != 0)
 		goto out;
 
-	xbps_set_cb_state(XBPS_STATE_REMOVE_DONE,
+	xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_DONE,
 	     0, pkgname, version, NULL);
 
 out:

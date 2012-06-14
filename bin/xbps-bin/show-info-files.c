@@ -35,11 +35,13 @@
 #include "defs.h"
 
 int
-show_pkg_info_from_metadir(const char *pkgname, const char *option)
+show_pkg_info_from_metadir(struct xbps_handle *xhp,
+			   const char *pkgname,
+			   const char *option)
 {
 	prop_dictionary_t d;
 
-	d = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGPROPS);
+	d = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGPROPS);
 	if (d == NULL)
 		return EINVAL;
 
@@ -53,12 +55,12 @@ show_pkg_info_from_metadir(const char *pkgname, const char *option)
 }
 
 int
-show_pkg_files_from_metadir(const char *pkgname)
+show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkgname)
 {
 	prop_dictionary_t d;
 	int rv = 0;
 
-	d = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	d = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
 	if (d == NULL)
 		return EINVAL;
 

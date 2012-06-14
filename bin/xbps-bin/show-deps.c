@@ -35,7 +35,7 @@
 #include "../xbps-repo/defs.h"
 
 int
-show_pkg_deps(const char *pkgname)
+show_pkg_deps(struct xbps_handle *xhp, const char *pkgname)
 {
 	prop_dictionary_t propsd;
 	int rv = 0;
@@ -45,14 +45,15 @@ show_pkg_deps(const char *pkgname)
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGPROPS);
+	propsd = xbps_dictionary_from_metadata_plist(xhp,
+	    pkgname, XBPS_PKGPROPS);
 	if (propsd == NULL) {
 		fprintf(stderr,
 		    "%s: unexistent %s metadata file.\n", pkgname,
 		    XBPS_PKGPROPS);
 		return errno;
 	}
-	rv = xbps_callback_array_iter_in_dict(propsd, "run_depends",
+	rv = xbps_callback_array_iter_in_dict(xhp, propsd, "run_depends",
 	     list_strings_sep_in_array, NULL);
 	prop_object_release(propsd);
 
@@ -60,20 +61,20 @@ show_pkg_deps(const char *pkgname)
 }
 
 int
-show_pkg_reverse_deps(const char *pkgname)
+show_pkg_reverse_deps(struct xbps_handle *xhp, const char *pkgname)
 {
 	prop_dictionary_t pkgd;
 	int rv = 0;
 
-	pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false);
+	pkgd = xbps_find_virtualpkg_dict_installed(xhp, pkgname, false);
 	if (pkgd == NULL) {
-		pkgd = xbps_find_pkg_dict_installed(pkgname, false);
+		pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
 		if (pkgd == NULL) {
 			printf("Package %s is not installed.\n", pkgname);
 			return 0;
 		}
 	}
-	rv = xbps_callback_array_iter_in_dict(pkgd, "requiredby",
+	rv = xbps_callback_array_iter_in_dict(xhp, pkgd, "requiredby",
 	    list_strings_sep_in_array, NULL);
 	prop_object_release(pkgd);
 

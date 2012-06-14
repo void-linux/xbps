@@ -93,14 +93,16 @@ get_state(prop_dictionary_t dict)
 }
 
 int
-xbps_pkg_state_installed(const char *pkgname, pkg_state_t *state)
+xbps_pkg_state_installed(struct xbps_handle *xhp,
+			 const char *pkgname,
+			 pkg_state_t *state)
 {
 	prop_dictionary_t pkgd;
 
 	assert(pkgname != NULL);
 	assert(state != NULL);
 
-	pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
+	pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
 	if (pkgd == NULL)
 		return ENOENT;
 
@@ -156,17 +158,16 @@ set_pkg_objs(prop_dictionary_t pkgd, const char *name, const char *version)
 }
 
 int
-xbps_set_pkg_state_installed(const char *pkgname,
+xbps_set_pkg_state_installed(struct xbps_handle *xhp,
+			     const char *pkgname,
 			     const char *version,
 			     pkg_state_t state)
 {
-	struct xbps_handle *xhp;
 	prop_dictionary_t pkgd;
 	bool newpkg = false;
 	int rv;
 
 	assert(pkgname != NULL);
-	xhp = xbps_handle_get();
 
 	if (xhp->pkgdb == NULL) {
 		xhp->pkgdb = prop_array_create();
@@ -198,7 +199,7 @@ xbps_set_pkg_state_installed(const char *pkgname,
 			return EINVAL;
 		}
 	} else {
-		pkgd = xbps_pkgdb_get_pkgd(pkgname, false);
+		pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
 		if (pkgd == NULL) {
 			newpkg = true;
 			pkgd = prop_dictionary_create();

@@ -66,7 +66,10 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, struct ffdata *ffd)
 }
 
 static int
-find_files_in_package(struct xbps_rpool_index *rpi, void *arg, bool *done)
+find_files_in_package(struct xbps_handle *xhp,
+		      struct xbps_rpool_index *rpi,
+		      void *arg,
+		      bool *done)
 {
 	prop_array_t idxfiles;
 	struct ffdata *ffd = arg;
@@ -75,7 +78,7 @@ find_files_in_package(struct xbps_rpool_index *rpi, void *arg, bool *done)
 
 	(void)done;
 
-	if ((plist = xbps_pkg_index_files_plist(rpi->uri)) == NULL)
+	if ((plist = xbps_pkg_index_files_plist(xhp, rpi->uri)) == NULL)
 		return ENOMEM;
 
 	if ((idxfiles = prop_array_internalize_from_zfile(plist)) == NULL) {
@@ -98,12 +101,14 @@ find_files_in_package(struct xbps_rpool_index *rpi, void *arg, bool *done)
 }
 
 int
-repo_find_files_in_packages(int npatterns, char **patterns)
+repo_find_files_in_packages(struct xbps_handle *xhp,
+			    int npatterns,
+			    char **patterns)
 {
 	struct ffdata ffd;
 
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
 
-	return xbps_rpool_foreach(find_files_in_package, &ffd);
+	return xbps_rpool_foreach(xhp, find_files_in_package, &ffd);
 }

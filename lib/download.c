@@ -88,12 +88,12 @@ xbps_fetch_error_string(void)
 }
 
 int
-xbps_fetch_file(const char *uri,
+xbps_fetch_file(struct xbps_handle *xhp,
+		const char *uri,
 		const char *outputdir,
 		bool refetch,
 		const char *flags)
 {
-	struct xbps_handle *xhp;
 	struct stat st;
 	struct url *url = NULL;
 	struct url_stat url_st;
@@ -110,7 +110,6 @@ xbps_fetch_file(const char *uri,
 
 	fetchLastErrCode = 0;
 
-	xhp = xbps_handle_get();
 	fetchTimeout = xhp->fetch_timeout;
 	/*
 	 * Get the filename specified in URI argument.
@@ -196,20 +195,20 @@ xbps_fetch_file(const char *uri,
 	}
 
 	/* debug stuff */
-	xbps_dbg_printf("st.st_size: %zd\n", (ssize_t)st.st_size);
-	xbps_dbg_printf("st.st_atime: %s\n", print_time(&st.st_atime));
-	xbps_dbg_printf("st.st_mtime: %s\n", print_time(&st.st_mtime));
-	xbps_dbg_printf("url->scheme: %s\n", url->scheme);
-	xbps_dbg_printf("url->host: %s\n", url->host);
-	xbps_dbg_printf("url->port: %d\n", url->port);
-	xbps_dbg_printf("url->doc: %s\n", url->doc);
-	xbps_dbg_printf("url->offset: %zd\n", (ssize_t)url->offset);
-	xbps_dbg_printf("url->length: %zu\n", url->length);
-	xbps_dbg_printf("url->last_modified: %s\n",
+	xbps_dbg_printf(xhp, "st.st_size: %zd\n", (ssize_t)st.st_size);
+	xbps_dbg_printf(xhp, "st.st_atime: %s\n", print_time(&st.st_atime));
+	xbps_dbg_printf(xhp, "st.st_mtime: %s\n", print_time(&st.st_mtime));
+	xbps_dbg_printf(xhp, "url->scheme: %s\n", url->scheme);
+	xbps_dbg_printf(xhp, "url->host: %s\n", url->host);
+	xbps_dbg_printf(xhp, "url->port: %d\n", url->port);
+	xbps_dbg_printf(xhp, "url->doc: %s\n", url->doc);
+	xbps_dbg_printf(xhp, "url->offset: %zd\n", (ssize_t)url->offset);
+	xbps_dbg_printf(xhp, "url->length: %zu\n", url->length);
+	xbps_dbg_printf(xhp, "url->last_modified: %s\n",
 	    print_time(&url->last_modified));
-	xbps_dbg_printf("url_stat.size: %zd\n", (ssize_t)url_st.size);
-	xbps_dbg_printf("url_stat.atime: %s\n", print_time(&url_st.atime));
-	xbps_dbg_printf("url_stat.mtime: %s\n", print_time(&url_st.mtime));
+	xbps_dbg_printf(xhp, "url_stat.size: %zd\n", (ssize_t)url_st.size);
+	xbps_dbg_printf(xhp, "url_stat.atime: %s\n", print_time(&url_st.atime));
+	xbps_dbg_printf(xhp, "url_stat.mtime: %s\n", print_time(&url_st.mtime));
 
 	if (fio == NULL && fetchLastErrCode != FETCH_OK) {
 		if (!refetch && restart && fetchLastErrCode == FETCH_UNAVAIL) {
@@ -226,7 +225,7 @@ xbps_fetch_file(const char *uri,
 		goto out;
 	}
 	if (url_st.size == -1) {
-		xbps_dbg_printf("Remote file size is unknown, resume "
+		xbps_dbg_printf(xhp, "Remote file size is unknown, resume "
 		     "not possible...\n");
 		restart = false;
 	} else if (st.st_size > url_st.size) {
@@ -234,7 +233,7 @@ xbps_fetch_file(const char *uri,
 		 * Remove local file if bigger than remote, and refetch the
 		 * whole shit again.
 		 */
-		xbps_dbg_printf("Local file %s is greater than remote, "
+		xbps_dbg_printf(xhp, "Local file %s is greater than remote, "
 		    "removing local file and refetching...\n", filename);
 		(void)remove(destfile);
 	} else if (restart && url_st.mtime && url_st.size &&
@@ -259,7 +258,7 @@ xbps_fetch_file(const char *uri,
 	 * and let the user know that the transfer is going to start
 	 * immediately.
 	 */
-	xbps_set_cb_fetch(url_st.size, url->offset, url->offset,
+	xbps_set_cb_fetch(xhp, url_st.size, url->offset, url->offset,
 	    filename, true, false, false);
 	/*
 	 * Start fetching requested file.
@@ -267,7 +266,7 @@ xbps_fetch_file(const char *uri,
 	while ((bytes_read = fetchIO_read(fio, buf, sizeof(buf))) > 0) {
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
-			xbps_dbg_printf("Couldn't write to %s!\n", destfile);
+			xbps_dbg_printf(xhp, "Couldn't write to %s!\n", destfile);
 			rv = -1;
 			goto out;
 		}
@@ -276,11 +275,12 @@ xbps_fetch_file(const char *uri,
 		 * Let the fetch progress callback know that
 		 * we are sucking more bytes from it.
 		 */
-		xbps_set_cb_fetch(url_st.size, url->offset, url->offset + bytes_dload,
+		xbps_set_cb_fetch(xhp, url_st.size, url->offset,
+		    url->offset + bytes_dload,
 		    filename, false, true, false);
 	}
 	if (bytes_read == -1) {
-		xbps_dbg_printf("IO error while fetching %s: %s\n", filename,
+		xbps_dbg_printf(xhp, "IO error while fetching %s: %s\n", filename,
 		    fetchLastErrString);
 		errno = EIO;
 		rv = -1;
@@ -294,7 +294,7 @@ xbps_fetch_file(const char *uri,
 	 * Let the fetch progress callback know that the file
 	 * has been fetched.
 	 */
-	xbps_set_cb_fetch(url_st.size, url->offset, bytes_dload,
+	xbps_set_cb_fetch(xhp, url_st.size, url->offset, bytes_dload,
 	    filename, false, false, true);
 	/*
 	 * Update mtime in local file to match remote file if transfer

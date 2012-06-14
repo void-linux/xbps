@@ -43,7 +43,10 @@ struct check_reqby_data {
 };
 
 static int
-check_reqby_pkg_cb(prop_object_t obj, void *arg, bool *done)
+check_reqby_pkg_cb(struct xbps_handle *xhp,
+		   prop_object_t obj,
+		   void *arg,
+		   bool *done)
 {
 	struct check_reqby_data *crd = arg;
 	prop_array_t curpkg_rdeps, provides;
@@ -63,7 +66,7 @@ check_reqby_pkg_cb(prop_object_t obj, void *arg, bool *done)
 	 * installed metadata directory.
 	 */
 	curpkg_propsd =
-	    xbps_dictionary_from_metadata_plist(curpkgn, XBPS_PKGPROPS);
+	    xbps_dictionary_from_metadata_plist(xhp, curpkgn, XBPS_PKGPROPS);
 	if (curpkg_propsd == NULL) {
 		xbps_error_printf("%s: missing %s metadata file!\n",
 		    curpkgn, XBPS_PKGPROPS);
@@ -142,7 +145,8 @@ check_reqby_pkg_cb(prop_object_t obj, void *arg, bool *done)
  * Removes unused entries in pkg's requiredby array.
  */
 static bool
-remove_stale_entries_in_reqby(struct check_reqby_data *crd)
+remove_stale_entries_in_reqby(struct xbps_handle *xhp,
+			      struct check_reqby_data *crd)
 {
 	prop_array_t reqby;
 	prop_dictionary_t pkgd;
@@ -158,7 +162,7 @@ remove_stale_entries_in_reqby(struct check_reqby_data *crd)
 
 	for (i = 0; i < prop_array_count(reqby); i++) {
 		prop_array_get_cstring_nocopy(reqby, i, &str);
-		if ((pkgd = xbps_pkgdb_get_pkgd_by_pkgver(str)) != NULL) {
+		if ((pkgd = xbps_pkgdb_get_pkgd_by_pkgver(xhp, str)) != NULL) {
 			prop_object_release(pkgd);
 			continue;
 		}
@@ -185,7 +189,10 @@ remove_stale_entries_in_reqby(struct check_reqby_data *crd)
  * Returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_requiredby(const char *pkgname, void *arg, bool *pkgdb_update)
+check_pkg_requiredby(struct xbps_handle *xhp,
+		     const char *pkgname,
+		     void *arg,
+		     bool *pkgdb_update)
 {
 	prop_dictionary_t pkgd = arg;
 	struct check_reqby_data crd;
@@ -198,7 +205,7 @@ check_pkg_requiredby(const char *pkgname, void *arg, bool *pkgdb_update)
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &crd.pkgver);
 
 	/* missing reqby entries in pkgs */
-	rv = xbps_pkgdb_foreach_cb(check_reqby_pkg_cb, &crd);
+	rv = xbps_pkgdb_foreach_cb(xhp, check_reqby_pkg_cb, &crd);
 	if (rv < 0) {
 		return rv;
 	} else if (rv == 1) {
@@ -210,7 +217,7 @@ check_pkg_requiredby(const char *pkgname, void *arg, bool *pkgdb_update)
 		printf("%s: requiredby fix done!\n\n", crd.pkgver);
 	}
 	/* remove stale entries in pkg's reqby */
-	if (remove_stale_entries_in_reqby(&crd))
+	if (remove_stale_entries_in_reqby(xhp, &crd))
 		*pkgdb_update = true;
 
 	return 0;

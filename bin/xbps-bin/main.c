@@ -41,7 +41,6 @@
 static void __attribute__((noreturn))
 usage(bool fail)
 {
-	xbps_end();
 	fprintf(stderr,
 	    "Usage: xbps-bin [options] target [arguments]\n\n"
 	    "[options]\n"
@@ -100,7 +99,6 @@ usage(bool fail)
 static void __attribute__((noreturn))
 cleanup(int signum)
 {
-	xbps_end();
 	exit(signum);
 }
 
@@ -256,8 +254,8 @@ main(int argc, char **argv)
 		/*
 		 * Find the longest pkgver string to pretty print the output.
 		 */
-		lpc.pkgver_len = find_longest_pkgver(NULL);
-		rv = xbps_pkgdb_foreach_cb(list_pkgs_in_dict, &lpc);
+		lpc.pkgver_len = find_longest_pkgver(&xh, NULL);
+		rv = xbps_pkgdb_foreach_cb(&xh, list_pkgs_in_dict, &lpc);
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
 			rv = 0;
@@ -268,28 +266,28 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync(NULL)) != 0))
+		if (sync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
 			goto out;
 
 		for (i = 1; i < argc; i++)
-			if ((rv = install_new_pkg(argv[i], reinstall)) != 0)
+			if ((rv = install_new_pkg(&xh, argv[i], reinstall)) != 0)
 				goto out;
 
-		rv = exec_transaction(yes, dry_run, show_download_pkglist_url);
+		rv = exec_transaction(&xh, yes, dry_run, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
 		if (argc < 2)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync(NULL)) != 0))
+		if (sync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
 			goto out;
 
 		for (i = 1; i < argc; i++)
-			if ((rv = update_pkg(argv[i])) != 0)
+			if ((rv = update_pkg(&xh, argv[i])) != 0)
 				goto out;
 
-		rv = exec_transaction(yes, dry_run, show_download_pkglist_url);
+		rv = exec_transaction(&xh, yes, dry_run, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a package. */
@@ -297,7 +295,7 @@ main(int argc, char **argv)
 			usage(true);
 
 		for (i = 1; i < argc; i++) {
-			rv = remove_pkg(argv[i], recursive_rm);
+			rv = remove_pkg(&xh, argv[i], recursive_rm);
 			if (rv == 0)
 				continue;
 			else if (rv != EEXIST)
@@ -309,14 +307,14 @@ main(int argc, char **argv)
 			rv = EINVAL;
 			goto out;
 		}
-		rv = exec_transaction(yes, dry_run, false);
+		rv = exec_transaction(&xh, yes, dry_run, false);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
 		if (argc != 2)
 			usage(true);
 
-		rv = show_pkg_info_from_metadir(argv[1], option);
+		rv = show_pkg_info_from_metadir(&xh, argv[1], option);
 		if (rv != 0) {
 			printf("Package %s not installed.\n", argv[1]);
 			goto out;
@@ -327,7 +325,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		rv = show_pkg_files_from_metadir(argv[1]);
+		rv = show_pkg_files_from_metadir(&xh, argv[1]);
 		if (rv != 0) {
 			printf("Package %s not installed.\n", argv[1]);
 			goto out;
@@ -339,9 +337,9 @@ main(int argc, char **argv)
 			usage(true);
 
 		if (strcasecmp(argv[1], "all") == 0)
-			rv = check_pkg_integrity_all();
+			rv = check_pkg_integrity_all(&xh);
 		else
-			rv = check_pkg_integrity(NULL, argv[1], true, NULL);
+			rv = check_pkg_integrity(&xh, NULL, argv[1], true, NULL);
 
 	} else if ((strcasecmp(argv[0], "dist-upgrade") == 0) ||
 		   (strcasecmp(argv[0], "autoupdate") == 0)) {
@@ -351,10 +349,10 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync(NULL)) != 0))
+		if (sync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
 			goto out;
 
-		rv = dist_upgrade(yes, dry_run, show_download_pkglist_url);
+		rv = dist_upgrade(&xh, yes, dry_run, show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "show-orphans") == 0) {
 		/*
@@ -364,7 +362,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = show_orphans();
+		rv = show_orphans(&xh);
 
 	} else if ((strcasecmp(argv[0], "remove-orphans") == 0) ||
 		   (strcasecmp(argv[0], "autoremove") == 0)) {
@@ -376,7 +374,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = remove_pkg_orphans(yes, dry_run);
+		rv = remove_pkg_orphans(&xh, yes, dry_run);
 
 	} else if (strcasecmp(argv[0], "reconfigure") == 0) {
 		/*
@@ -386,9 +384,9 @@ main(int argc, char **argv)
 			usage(true);
 
 		if (strcasecmp(argv[1], "all") == 0)
-			rv = xbps_configure_packages(true);
+			rv = xbps_configure_packages(&xh, true);
 		else
-			rv = xbps_configure_pkg(argv[1], true, false, true);
+			rv = xbps_configure_pkg(&xh, argv[1], true, false, true);
 
 	} else if (strcasecmp(argv[0], "show-deps") == 0) {
 		/*
@@ -397,7 +395,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		rv = show_pkg_deps(argv[1]);
+		rv = show_pkg_deps(&xh, argv[1]);
 
 	} else if (strcasecmp(argv[0], "list-manual") == 0) {
 		/*
@@ -407,7 +405,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = xbps_pkgdb_foreach_cb(list_manual_pkgs, NULL);
+		rv = xbps_pkgdb_foreach_cb(&xh, list_manual_pkgs, NULL);
 
 	} else if (strcasecmp(argv[0], "show-revdeps") == 0) {
 		/*
@@ -416,7 +414,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage(true);
 
-		rv = show_pkg_reverse_deps(argv[1]);
+		rv = show_pkg_reverse_deps(&xh, argv[1]);
 
 	} else if (strcasecmp(argv[0], "find-files") == 0) {
 		/*
@@ -426,13 +424,13 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
-		rv = find_files_in_packages(argc, argv);
+		rv = find_files_in_packages(&xh, argc, argv);
 
 	} else {
 		usage(true);
 	}
 
 out:
-	xbps_end();
+	xbps_end(&xh);
 	exit(rv);
 }

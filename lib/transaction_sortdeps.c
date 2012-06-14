@@ -147,44 +147,19 @@ pkgdep_alloc(prop_dictionary_t d, const char *name, const char *trans)
 static void
 pkgdep_end(prop_array_t sorted)
 {
-	prop_dictionary_t sorted_pkgd;
 	struct pkgdep *pd;
-	const char *trans;
 
 	while ((pd = TAILQ_FIRST(&pkgdep_list)) != NULL) {
 		TAILQ_REMOVE(&pkgdep_list, pd, pkgdep_entries);
-		if (sorted != NULL && pd->d != NULL) {
-			/*
-			 * Do not add duplicate pkg dictionaries with the
-			 * same transaction reason into the sorted array.
-			 */
-			sorted_pkgd =
-			    xbps_find_pkg_in_array_by_name(sorted, pd->name, NULL);
-			if (sorted_pkgd == NULL) {
-				/* find virtualpkg if no match */
-				sorted_pkgd =
-				    xbps_find_virtualpkg_in_array_by_name(
-				    sorted, pd->name);
-			}
-			if (sorted_pkgd == NULL) {
-				prop_array_add(sorted, pd->d);
-				pkgdep_release(pd);
-				continue;
-			}
-			prop_dictionary_get_cstring_nocopy(sorted_pkgd,
-			    "transaction", &trans);
-			if (strcmp(trans, pd->trans) == 0) {
-				pkgdep_release(pd);
-				continue;
-			}
+		if (sorted != NULL && pd->d != NULL)
 			prop_array_add(sorted, pd->d);
-		}
+
 		pkgdep_release(pd);
 	}
 }
 
 static int
-sort_pkg_rundeps(prop_dictionary_t transd,
+sort_pkg_rundeps(struct xbps_handle *xhp,
 		 struct pkgdep *pd,
 		 prop_array_t pkg_rundeps)
 {
@@ -196,7 +171,7 @@ sort_pkg_rundeps(prop_dictionary_t transd,
 	size_t i, idx = 0;
 	int rv = 0;
 
-	xbps_dbg_printf_append("\n");
+	xbps_dbg_printf_append(xhp, "\n");
 	curpkgidx = pkgdep_find_idx(pd->name, pd->trans);
 
 again:
@@ -207,17 +182,17 @@ again:
 			rv = ENOMEM;
 			break;
 		}
-		xbps_dbg_printf("  Required dependency '%s': ", str);
+		xbps_dbg_printf(xhp, "  Required dependency '%s': ", str);
 		pdn = pkgdep_find(pkgnamedep, NULL);
 		if ((pdn == NULL) &&
-		    xbps_check_is_installed_pkg_by_pattern(str)) {
+		    xbps_check_is_installed_pkg_by_name(xhp, pkgnamedep)) {
 			/*
 			 * Package dependency is installed, just add to
 			 * the list but just mark it as "installed", to avoid
 			 * calling xbps_check_is_installed_pkg_by_name(),
 			 * which is expensive.
 			 */
-			xbps_dbg_printf_append("installed.\n");
+			xbps_dbg_printf_append(xhp, "installed.\n");
 			lpd = pkgdep_alloc(NULL, pkgnamedep, "installed");
 			if (lpd == NULL) {
 				rv = ENOMEM;
@@ -231,17 +206,17 @@ again:
 			 * Package was added previously into the list
 			 * and is installed, skip.
 			 */
-			xbps_dbg_printf_append("installed.\n");
+			xbps_dbg_printf_append(xhp, "installed.\n");
 			free(pkgnamedep);
 			continue;
 		}
 		/* Find pkg by name */
-		curpkgd = xbps_find_pkg_in_dict_by_name(transd,
+		curpkgd = xbps_find_pkg_in_dict_by_name(xhp->transd,
 		    "unsorted_deps", pkgnamedep);
 		if (curpkgd == NULL) {
 			/* find virtualpkg by name if no match */
 			curpkgd =
-			    xbps_find_virtualpkg_in_dict_by_name(transd,
+			    xbps_find_virtualpkg_in_dict_by_name(xhp->transd,
 			    "unsorted_deps", pkgnamedep);
 		}
 		if (curpkgd == NULL) {
@@ -264,7 +239,7 @@ again:
 			 */
 			TAILQ_INSERT_TAIL(&pkgdep_list, lpd, pkgdep_entries);
 			idx = i;
-			xbps_dbg_printf_append("added into the tail, "
+			xbps_dbg_printf_append(xhp, "added into the tail, "
 			    "checking again...\n");
 			free(pkgnamedep);
 			goto again;
@@ -279,7 +254,7 @@ again:
 		 */
 		free(pkgnamedep);
 		if (pkgdepidx < curpkgidx) {
-			xbps_dbg_printf_append("already sorted.\n");
+			xbps_dbg_printf_append(xhp, "already sorted.\n");
 			pkgdep_release(lpd);
 		} else {
 			/*
@@ -289,7 +264,8 @@ again:
 			TAILQ_REMOVE(&pkgdep_list, pdn, pkgdep_entries);
 			pkgdep_release(pdn);
 			TAILQ_INSERT_BEFORE(pd, lpd, pkgdep_entries);
-			xbps_dbg_printf_append("added before `%s'.\n", pd->name);
+			xbps_dbg_printf_append(xhp,
+			    "added before `%s'.\n", pd->name);
 		}
 	}
 
@@ -301,14 +277,12 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 {
 	prop_array_t sorted, unsorted, rundeps;
 	prop_object_t obj;
-	prop_object_iterator_t iter;
 	struct pkgdep *pd;
-	size_t ndeps = 0, cnt = 0;
+	size_t i, ndeps = 0, cnt = 0;
 	const char *pkgname, *pkgver, *tract;
 	int rv = 0;
 
-	sorted = prop_array_create();
-	if (sorted == NULL)
+	if ((sorted = prop_array_create()) == NULL)
 		return ENOMEM;
 	/*
 	 * Add sorted packages array into transaction dictionary (empty).
@@ -330,25 +304,16 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 	 * all objects in the unsorted array.
 	 */
 	ndeps = prop_array_count(unsorted);
-	if (!prop_array_ensure_capacity(sorted, ndeps)) {
-		xbps_dbg_printf("failed to set capacity to the sorted "
-		    "pkgdeps array\n");
-		return ENOMEM;
-	}
-	iter = prop_array_iterator(unsorted);
-	if (iter == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
 	/*
 	 * Iterate over the unsorted package dictionaries and sort all
 	 * its package dependencies.
 	 */
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+	for (i = 0; i < ndeps; i++) {
+		obj = prop_array_get(unsorted, i);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		xbps_dbg_printf("Sorting package '%s' (%s): ", pkgver, tract);
+		xbps_dbg_printf(xhp, "Sorting package '%s' (%s): ", pkgver, tract);
 
 		pd = pkgdep_find(pkgname, tract);
 		if (pd == NULL) {
@@ -358,16 +323,15 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 			pd = pkgdep_alloc(obj, pkgname, tract);
 			if (pd == NULL) {
 				pkgdep_end(NULL);
-				prop_object_iterator_release(iter);
 				rv = ENOMEM;
 				goto out;
 			}
 			if (strcmp(pd->trans, "remove") == 0) {
-				xbps_dbg_printf_append("added into head.");
+				xbps_dbg_printf_append(xhp, "added into head.");
 				TAILQ_INSERT_HEAD(&pkgdep_list, pd,
 				    pkgdep_entries);
 			} else {
-				xbps_dbg_printf_append("added into tail.");
+				xbps_dbg_printf_append(xhp, "added into tail.");
 				TAILQ_INSERT_TAIL(&pkgdep_list, pd,
 				    pkgdep_entries);
 			}
@@ -378,21 +342,19 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 		 */
 		rundeps = prop_dictionary_get(obj, "run_depends");
 		if (rundeps == NULL || prop_array_count(rundeps) == 0) {
-			xbps_dbg_printf_append("\n");
+			xbps_dbg_printf_append(xhp, "\n");
 			cnt++;
 			continue;
 		}
 		/*
 		 * Sort package run-time dependencies for this package.
 		 */
-		if ((rv = sort_pkg_rundeps(xhp->transd, pd, rundeps)) != 0) {
+		if ((rv = sort_pkg_rundeps(xhp, pd, rundeps)) != 0) {
 			pkgdep_end(NULL);
-			prop_object_iterator_release(iter);
 			goto out;
 		}
 		cnt++;
 	}
-	prop_object_iterator_release(iter);
 	/*
 	 * We are done, now we have to copy all pkg dictionaries
 	 * from the sorted list into the "packages" array, and at

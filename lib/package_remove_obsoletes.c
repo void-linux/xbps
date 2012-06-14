@@ -36,7 +36,8 @@
 #include "xbps_api_impl.h"
 
 int HIDDEN
-xbps_remove_obsoletes(const char *pkgname,
+xbps_remove_obsoletes(struct xbps_handle *xhp,
+		      const char *pkgname,
 		      const char *version,
 		      const char *pkgver,
 		      prop_dictionary_t oldd,
@@ -131,14 +132,16 @@ again:
 		 * Obsolete obj found, remove it.
 		 */
 		if (remove(file) == -1) {
-			xbps_set_cb_state(XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
+			xbps_set_cb_state(xhp,
+			    XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
 			    errno, pkgname, version,
 			    "%s: failed to remove obsolete entry `%s': %s",
 			    pkgver, file, strerror(errno));
 			free(file);
 			continue;
 		}
-		xbps_set_cb_state(XBPS_STATE_REMOVE_FILE_OBSOLETE,
+		xbps_set_cb_state(xhp,
+		    XBPS_STATE_REMOVE_FILE_OBSOLETE,
 		    0, pkgname, version,
 		    "Removed obsolete entry: %s", file);
 		free(file);

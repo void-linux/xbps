@@ -33,7 +33,10 @@
 #include "compat.h"
 
 int
-list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
+list_pkgs_in_dict(struct xbps_handle *xhp,
+		  prop_object_t obj,
+		  void *arg,
+		  bool *loop_done)
 {
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver, *short_desc, *arch;
@@ -42,6 +45,7 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 	size_t i = 0;
 	bool chkarch;
 
+	(void)xhp;
 	(void)loop_done;
 
 	chkarch = prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
@@ -82,11 +86,15 @@ list_pkgs_in_dict(prop_object_t obj, void *arg, bool *loop_done)
 }
 
 int
-list_manual_pkgs(prop_object_t obj, void *arg, bool *loop_done)
+list_manual_pkgs(struct xbps_handle *xhp,
+		 prop_object_t obj,
+		 void *arg,
+		 bool *loop_done)
 {
 	const char *pkgver;
 	bool automatic = false;
 
+	(void)xhp;
 	(void)arg;
 	(void)loop_done;
 

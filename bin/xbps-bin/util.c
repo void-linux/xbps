@@ -166,11 +166,15 @@ show_pkg_files(prop_dictionary_t filesd)
 }
 
 static int
-_find_longest_pkgver_cb(prop_object_t obj, void *arg, bool *loop_done)
+_find_longest_pkgver_cb(struct xbps_handle *xhp,
+			prop_object_t obj,
+			void *arg,
+			bool *loop_done)
 {
 	size_t *len = arg;
 	const char *pkgver;
 
+	(void)xhp;
 	(void)loop_done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -181,25 +185,29 @@ _find_longest_pkgver_cb(prop_object_t obj, void *arg, bool *loop_done)
 }
 
 size_t
-find_longest_pkgver(prop_object_t o)
+find_longest_pkgver(struct xbps_handle *xhp, prop_object_t o)
 {
 	size_t len = 0;
 
 	if (prop_object_type(o) == PROP_TYPE_ARRAY)
-		(void)xbps_callback_array_iter(o,
+		(void)xbps_callback_array_iter(xhp, o,
 		    _find_longest_pkgver_cb, &len);
 	else
-		(void)xbps_pkgdb_foreach_cb(
+		(void)xbps_pkgdb_foreach_cb(xhp,
 		    _find_longest_pkgver_cb, &len);
 
 	return len;
 }
 
 int
-list_strings_sep_in_array(prop_object_t obj, void *arg, bool *loop_done)
+list_strings_sep_in_array(struct xbps_handle *xhp,
+			  prop_object_t obj,
+			  void *arg,
+			  bool *loop_done)
 {
 	const char *sep = arg;
 
+	(void)xhp;
 	(void)loop_done;
 
 	printf("%s%s\n", sep ? sep : "", prop_string_cstring_nocopy(obj));

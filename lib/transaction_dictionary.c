@@ -53,7 +53,7 @@
  */
 
 static int
-compute_transaction_stats(prop_dictionary_t transd)
+compute_transaction_stats(struct xbps_handle *xhp)
 {
 	prop_dictionary_t pkg_metad;
 	prop_object_iterator_t iter;
@@ -66,7 +66,7 @@ compute_transaction_stats(prop_dictionary_t transd)
 	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = 0;
 	tsize = dlsize = instsize = rmsize = 0;
 
-	iter = xbps_array_iter_from_dict(transd, "packages");
+	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	if (iter == NULL)
 		return EINVAL;
 
@@ -98,8 +98,8 @@ compute_transaction_stats(prop_dictionary_t transd)
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "update") == 0)) {
 			pkg_metad =
-			    xbps_dictionary_from_metadata_plist(pkgname,
-				XBPS_PKGPROPS);
+			    xbps_dictionary_from_metadata_plist(xhp,
+				pkgname, XBPS_PKGPROPS);
 			if (pkg_metad == NULL)
 				continue;
 			prop_dictionary_get_uint64(pkg_metad,
@@ -121,25 +121,25 @@ compute_transaction_stats(prop_dictionary_t transd)
 	}
 
 	if (inst_pkgcnt &&
-	    !prop_dictionary_set_uint32(transd, "total-install-pkgs",
+	    !prop_dictionary_set_uint32(xhp->transd, "total-install-pkgs",
 	    inst_pkgcnt)) {
 		rv = EINVAL;
 		goto out;
 	}
 	if (up_pkgcnt &&
-	    !prop_dictionary_set_uint32(transd, "total-update-pkgs",
+	    !prop_dictionary_set_uint32(xhp->transd, "total-update-pkgs",
 	    up_pkgcnt)) {
 		rv = EINVAL;
 		goto out;
 	}
 	if (cf_pkgcnt &&
-	    !prop_dictionary_set_uint32(transd, "total-configure-pkgs",
+	    !prop_dictionary_set_uint32(xhp->transd, "total-configure-pkgs",
 	    cf_pkgcnt)) {
 		rv = EINVAL;
 		goto out;
 	}
 	if (rm_pkgcnt &&
-	    !prop_dictionary_set_uint32(transd, "total-remove-pkgs",
+	    !prop_dictionary_set_uint32(xhp->transd, "total-remove-pkgs",
 	    rm_pkgcnt)) {
 		rv = EINVAL;
 		goto out;
@@ -158,7 +158,7 @@ compute_transaction_stats(prop_dictionary_t transd)
 	 * Add object in transaction dictionary with total installed
 	 * size that it will take.
 	 */
-	if (!prop_dictionary_set_uint64(transd,
+	if (!prop_dictionary_set_uint64(xhp->transd,
 	    "total-installed-size", instsize)) {
 		rv = EINVAL;
 		goto out;
@@ -167,7 +167,7 @@ compute_transaction_stats(prop_dictionary_t transd)
 	 * Add object in transaction dictionary with total download
 	 * size that needs to be sucked in.
 	 */
-	if (!prop_dictionary_set_uint64(transd,
+	if (!prop_dictionary_set_uint64(xhp->transd,
 	    "total-download-size", dlsize)) {
 		rv = EINVAL;
 		goto out;
@@ -176,7 +176,7 @@ compute_transaction_stats(prop_dictionary_t transd)
 	 * Add object in transaction dictionary with total size to be
 	 * freed from packages to be removed.
 	 */
-	if (!prop_dictionary_set_uint64(transd,
+	if (!prop_dictionary_set_uint64(xhp->transd,
 	    "total-removed-size", rmsize)) {
 		rv = EINVAL;
 		goto out;
@@ -233,10 +233,9 @@ xbps_transaction_init(struct xbps_handle *xhp)
 }
 
 int
-xbps_transaction_prepare(void)
+xbps_transaction_prepare(struct xbps_handle *xhp)
 {
 	prop_array_t mdeps, conflicts;
-	struct xbps_handle *xhp = xbps_handle_get();
 	int rv = 0;
 
 	if (xhp->transd == NULL)
@@ -259,7 +258,7 @@ xbps_transaction_prepare(void)
 	/*
 	 * Check for packages to be replaced.
 	 */
-	if ((rv = xbps_transaction_package_replace(xhp->transd)) != 0) {
+	if ((rv = xbps_transaction_package_replace(xhp)) != 0) {
 		prop_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return rv;
@@ -277,7 +276,7 @@ xbps_transaction_prepare(void)
 	 * number of packages to be installed, updated, configured
 	 * and removed to the transaction dictionary.
 	 */
-	if ((rv = compute_transaction_stats(xhp->transd)) != 0) {
+	if ((rv = compute_transaction_stats(xhp)) != 0) {
 		prop_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return rv;

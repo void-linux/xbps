@@ -38,9 +38,8 @@
 #include "xbps_api_impl.h"
 
 static int
-pfcexec(const char *file, const char **argv)
+pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 {
-	struct xbps_handle *xhp;
 	pid_t child;
 	int status;
 
@@ -53,7 +52,6 @@ pfcexec(const char *file, const char **argv)
 		 *
 		 * It's assumed that cwd is the target rootdir.
 		 */
-		xhp = xbps_handle_get();
 		if (strcmp(xhp->rootdir, "/")) {
 			if (getuid() == 0 && access("bin/sh", X_OK) == 0) {
 				if (chroot(xhp->rootdir) == -1)
@@ -81,7 +79,7 @@ pfcexec(const char *file, const char **argv)
 }
 
 static int
-vfcexec(const char *arg, va_list ap)
+vfcexec(struct xbps_handle *xhp, const char *arg, va_list ap)
 {
 	const char **argv;
 	size_t argv_size, argc;
@@ -111,20 +109,20 @@ vfcexec(const char *arg, va_list ap)
 
 	} while (arg != NULL);
 
-	retval = pfcexec(argv[0], argv);
+	retval = pfcexec(xhp, argv[0], argv);
 	free(argv);
 
 	return retval;
 }
 
 int HIDDEN
-xbps_file_exec(const char *arg, ...)
+xbps_file_exec(struct xbps_handle *xhp, const char *arg, ...)
 {
 	va_list	ap;
 	int	result;
 
 	va_start(ap, arg);
-	result = vfcexec(arg, ap);
+	result = vfcexec(xhp, arg, ap);
 	va_end(ap);
 
 	return result;

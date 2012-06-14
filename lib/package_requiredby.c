@@ -32,7 +32,9 @@
 #include "xbps_api_impl.h"
 
 static int
-add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
+add_pkg_into_reqby(struct xbps_handle *xhp,
+		   prop_dictionary_t pkgd,
+		   const char *pkgver)
 {
 	prop_array_t reqby;
 	prop_string_t reqstr;
@@ -57,7 +59,7 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
 
 	if (xbps_match_pkgname_in_array(reqby, pkgname)) {
 		if (!xbps_remove_pkgname_from_array(reqby, pkgname)) {
-			xbps_dbg_printf("%s: failed to remove %s reqby entry: "
+			xbps_dbg_printf(xhp, "%s: failed to remove %s reqby entry: "
 			    "%s\n", __func__, pkgname, strerror(errno));
 			free(pkgname);
 			return EINVAL;
@@ -95,11 +97,15 @@ add_pkg_into_reqby(prop_dictionary_t pkgd, const char *pkgver)
 }
 
 static int
-remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
+remove_pkg_from_reqby(struct xbps_handle *xhp,
+		      prop_object_t obj,
+		      void *arg,
+		      bool *loop_done)
 {
 	prop_array_t reqby;
 	const char *pkgname = arg;
 
+	(void)xhp;
 	(void)loop_done;
 
 	reqby = prop_dictionary_get(obj, "requiredby");
@@ -115,10 +121,10 @@ remove_pkg_from_reqby(prop_object_t obj, void *arg, bool *loop_done)
 }
 
 int HIDDEN
-xbps_requiredby_pkg_remove(const char *pkgname)
+xbps_requiredby_pkg_remove(struct xbps_handle *xhp, const char *pkgname)
 {
 	assert(pkgname != NULL);
-	return xbps_pkgdb_foreach_cb(remove_pkg_from_reqby, __UNCONST(pkgname));
+	return xbps_pkgdb_foreach_cb(xhp, remove_pkg_from_reqby, __UNCONST(pkgname));
 }
 
 int HIDDEN
@@ -147,10 +153,11 @@ xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 			rv = EINVAL;
 			break;
 		}
-		xbps_dbg_printf("%s: adding reqby entry for %s\n", __func__, str);
+		xbps_dbg_printf(xhp, "%s: adding reqby entry for %s\n",
+		    __func__, str);
 
 		pkgd_pkgdb = xbps_find_virtualpkg_conf_in_array_by_pattern(
-		    xhp->pkgdb, str);
+		    xhp, xhp->pkgdb, str);
 		if (pkgd_pkgdb == NULL) {
 			pkgd_pkgdb =
 			    xbps_find_virtualpkg_in_array_by_pattern(
@@ -160,13 +167,14 @@ xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 				    xhp->pkgdb, str, NULL);
 				if (pkgd_pkgdb == NULL) {
 					rv = ENOENT;
-					xbps_dbg_printf("%s: couldnt find `%s' "
+					xbps_dbg_printf(xhp,
+					    "%s: couldnt find `%s' "
 					    "entry in pkgdb\n", __func__, str);
 					break;
 				}
 			}
 		}
-		rv = add_pkg_into_reqby(pkgd_pkgdb, pkgver);
+		rv = add_pkg_into_reqby(xhp, pkgd_pkgdb, pkgver);
 		if (rv != 0)
 			break;
 	}

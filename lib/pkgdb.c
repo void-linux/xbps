@@ -64,22 +64,21 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 	if (xhp->pkgdb != NULL)
 		return 0;
 
-	if ((rv = xbps_pkgdb_update(false)) != 0) {
+	if ((rv = xbps_pkgdb_update(xhp, false)) != 0) {
 		if (rv != ENOENT)
-			xbps_dbg_printf("[pkgdb] cannot internalize "
+			xbps_dbg_printf(xhp, "[pkgdb] cannot internalize "
 			    "pkgdb array: %s\n", strerror(rv));
 
 		return rv;
 	}
-	xbps_dbg_printf("[pkgdb] initialized ok.\n");
+	xbps_dbg_printf(xhp, "[pkgdb] initialized ok.\n");
 
 	return 0;
 }
 
 int
-xbps_pkgdb_update(bool flush)
+xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	char *plist;
 	int rv = 0;
 
@@ -92,7 +91,8 @@ xbps_pkgdb_update(bool flush)
 		if (access(xhp->metadir, X_OK) == -1) {
 			if (errno == ENOENT) {
 				if (xbps_mkpath(xhp->metadir, 0755) != 0) {
-					xbps_dbg_printf("[pkgdb] failed to "
+					xbps_dbg_printf(xhp,
+					    "[pkgdb] failed to "
 					    "create metadir %s: %s\n",
 					    xhp->metadir,
 					    strerror(errno));
@@ -133,46 +133,47 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 
 	prop_object_release(xhp->pkgdb);
 	xhp->pkgdb = NULL;
-	xbps_dbg_printf("[pkgdb] released ok.\n");
+	xbps_dbg_printf(xhp, "[pkgdb] released ok.\n");
 }
 
 static int
-foreach_pkg_cb(int (*fn)(prop_object_t, void *, bool *),
+foreach_pkg_cb(struct xbps_handle *xhp,
+	       int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
 	       void *arg,
 	       bool reverse)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	int rv;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
 	if (reverse)
-		rv = xbps_callback_array_iter_reverse(xhp->pkgdb, fn, arg);
+		rv = xbps_callback_array_iter_reverse(xhp, xhp->pkgdb, fn, arg);
 	else
-		rv = xbps_callback_array_iter(xhp->pkgdb, fn, arg);
+		rv = xbps_callback_array_iter(xhp, xhp->pkgdb, fn, arg);
 
 	return rv;
 }
 
 int
-xbps_pkgdb_foreach_reverse_cb(int (*fn)(prop_object_t, void *, bool *),
+xbps_pkgdb_foreach_reverse_cb(struct xbps_handle *xhp,
+			      int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
 			      void *arg)
 {
-	return foreach_pkg_cb(fn, arg, true);
+	return foreach_pkg_cb(xhp, fn, arg, true);
 }
 
 int
-xbps_pkgdb_foreach_cb(int (*fn)(prop_object_t, void *, bool *),
+xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
+		      int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
 		      void *arg)
 {
-	return foreach_pkg_cb(fn, arg, false);
+	return foreach_pkg_cb(xhp, fn, arg, false);
 }
 
 prop_dictionary_t
-xbps_pkgdb_get_pkgd(const char *pkg, bool bypattern)
+xbps_pkgdb_get_pkgd(struct xbps_handle *xhp, const char *pkg, bool bypattern)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd = NULL;
 
 	if (xbps_pkgdb_init(xhp) != 0)
@@ -190,9 +191,8 @@ xbps_pkgdb_get_pkgd(const char *pkg, bool bypattern)
 }
 
 prop_dictionary_t
-xbps_pkgdb_get_pkgd_by_pkgver(const char *pkgver)
+xbps_pkgdb_get_pkgd_by_pkgver(struct xbps_handle *xhp, const char *pkgver)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd = NULL;
 
 	if (xbps_pkgdb_init(xhp) != 0)
@@ -206,9 +206,11 @@ xbps_pkgdb_get_pkgd_by_pkgver(const char *pkgver)
 }
 
 bool
-xbps_pkgdb_remove_pkgd(const char *pkg, bool bypattern, bool flush)
+xbps_pkgdb_remove_pkgd(struct xbps_handle *xhp,
+		       const char *pkg,
+		       bool bypattern,
+		       bool flush)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	bool rv = false;
 
 	if (xbps_pkgdb_init(xhp) != 0)
@@ -222,19 +224,19 @@ xbps_pkgdb_remove_pkgd(const char *pkg, bool bypattern, bool flush)
 	if (!flush || !rv)
 		return rv;
 
-	if ((xbps_pkgdb_update(true)) != 0)
+	if ((xbps_pkgdb_update(xhp, true)) != 0)
 		return false;
 
 	return true;
 }
 
 bool
-xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
+xbps_pkgdb_replace_pkgd(struct xbps_handle *xhp,
+			prop_dictionary_t pkgd,
 			const char *pkg,
 			bool bypattern,
 			bool flush)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	int rv;
 
 	if (xbps_pkgdb_init(xhp) != 0)
@@ -248,7 +250,7 @@ xbps_pkgdb_replace_pkgd(prop_dictionary_t pkgd,
 	if (!flush)
 		return rv != 0 ? false : true;
 
-	if ((xbps_pkgdb_update(true)) != 0)
+	if ((xbps_pkgdb_update(xhp, true)) != 0)
 		return false;
 
 	return true;

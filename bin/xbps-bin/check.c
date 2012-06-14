@@ -42,7 +42,10 @@ struct checkpkg {
 };
 
 static int
-cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
+cb_pkg_integrity(struct xbps_handle *xhp,
+		 prop_object_t obj,
+		 void *arg,
+		 bool *done)
 {
 	struct checkpkg *cpkg = arg;
 	const char *pkgname, *version;
@@ -54,7 +57,7 @@ cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
 	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 	printf("[%zu/%zu] checking %s-%s ...\n",
 	    cpkg->npkgs, cpkg->totalpkgs, pkgname, version);
-	if (check_pkg_integrity(obj, pkgname, false, &flush) != 0)
+	if (check_pkg_integrity(xhp, obj, pkgname, false, &flush) != 0)
 		cpkg->nbrokenpkgs++;
 	else
 		printf("\033[1A\033[K");
@@ -67,20 +70,19 @@ cb_pkg_integrity(prop_object_t obj, void *arg, bool *done)
 }
 
 int
-check_pkg_integrity_all(void)
+check_pkg_integrity_all(struct xbps_handle *xhp)
 {
-	struct xbps_handle *xhp = xbps_handle_get();
 	struct checkpkg cpkg;
 	int rv;
 
 	memset(&cpkg, 0, sizeof(cpkg));
 	/* force an update to get total pkg count */
-	(void)xbps_pkgdb_update(false);
+	(void)xbps_pkgdb_update(xhp, false);
 	cpkg.totalpkgs = prop_array_count(xhp->pkgdb);
 
-	(void)xbps_pkgdb_foreach_cb(cb_pkg_integrity, &cpkg);
+	(void)xbps_pkgdb_foreach_cb(xhp, cb_pkg_integrity, &cpkg);
 	if (cpkg.flush) {
-		if ((rv = xbps_pkgdb_update(true)) != 0) {
+		if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
 			xbps_error_printf("failed to write pkgdb: %s\n",
 			    strerror(rv));
 			return rv;
@@ -92,7 +94,8 @@ check_pkg_integrity_all(void)
 }
 
 int
-check_pkg_integrity(prop_dictionary_t pkgd,
+check_pkg_integrity(struct xbps_handle *xhp,
+		    prop_dictionary_t pkgd,
 		    const char *pkgname,
 		    bool flush,
 		    bool *setflush)
@@ -105,11 +108,11 @@ check_pkg_integrity(prop_dictionary_t pkgd,
 
 	/* find real pkg by name */
 	if (pkgd == NULL) {
-		opkgd = xbps_find_pkg_dict_installed(pkgname, false);
+		opkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
 		if (opkgd == NULL) {
 			/* find virtual pkg by name */
-			opkgd = xbps_find_virtualpkg_dict_installed(pkgname,
-			    false);
+			opkgd = xbps_find_virtualpkg_dict_installed(xhp,
+			    pkgname, false);
 		}
 		if (opkgd == NULL) {
 			printf("Package %s is not installed.\n", pkgname);
@@ -119,7 +122,7 @@ check_pkg_integrity(prop_dictionary_t pkgd,
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGPROPS);
+	propsd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGPROPS);
 	if (propsd == NULL) {
 		xbps_error_printf("%s: unexistent %s or invalid metadata "
 		    "file.\n", pkgname, XBPS_PKGPROPS);
@@ -134,7 +137,7 @@ check_pkg_integrity(prop_dictionary_t pkgd,
 	/*
 	 * Check for files.plist metadata file.
 	 */
-	filesd = xbps_dictionary_from_metadata_plist(pkgname, XBPS_PKGFILES);
+	filesd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
 	if (filesd == NULL) {
 		xbps_error_printf("%s: unexistent %s or invalid metadata "
 		    "file.\n", pkgname, XBPS_PKGFILES);
@@ -147,9 +150,9 @@ check_pkg_integrity(prop_dictionary_t pkgd,
 		goto out;
 	}
 
-#define RUN_PKG_CHECK(name, arg, arg2)				\
+#define RUN_PKG_CHECK(x, name, arg, arg2)			\
 do {								\
-	rv = check_pkg_##name(pkgname, arg, arg2);		\
+	rv = check_pkg_##name(x, pkgname, arg, arg2);		\
 	if (rv)							\
 		broken = true;					\
 	else if (rv == -1) {					\
@@ -160,14 +163,14 @@ do {								\
 } while (0)
 
 	/* Execute pkg checks */
-	RUN_PKG_CHECK(files, filesd, &pkgdb_update);
-	RUN_PKG_CHECK(symlinks, filesd, &pkgdb_update);
-	RUN_PKG_CHECK(rundeps, propsd, &pkgdb_update);
-	RUN_PKG_CHECK(requiredby, pkgd ? pkgd : opkgd, &pkgdb_update);
-	RUN_PKG_CHECK(autoinstall, pkgd ? pkgd : opkgd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, files, filesd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, symlinks, filesd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, rundeps, propsd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, requiredby, pkgd ? pkgd : opkgd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, autoinstall, pkgd ? pkgd : opkgd, &pkgdb_update);
 
 	if (flush && pkgdb_update) {
-		if (!xbps_pkgdb_replace_pkgd(opkgd, pkgname, false, true)) {
+		if (!xbps_pkgdb_replace_pkgd(xhp, opkgd, pkgname, false, true)) {
 			rv = EINVAL;
 			goto out;
 		}

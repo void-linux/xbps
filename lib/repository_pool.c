@@ -64,7 +64,7 @@ xbps_rpool_init(struct xbps_handle *xhp)
 		/*
 		 * If index file is not there, skip.
 		 */
-		plist = xbps_pkg_index_plist(repouri);
+		plist = xbps_pkg_index_plist(xhp, repouri);
 		if (plist == NULL) {
 			rv = errno;
 			goto out;
@@ -72,7 +72,8 @@ xbps_rpool_init(struct xbps_handle *xhp)
 		array = prop_array_internalize_from_zfile(plist);
 		free(plist);
 		if (array == NULL) {
-			xbps_dbg_printf("[rpool] `%s' cannot be internalized:"
+			xbps_dbg_printf(xhp,
+			    "[rpool] `%s' cannot be internalized:"
 			    " %s\n", repouri, strerror(errno));
 			nmissing++;
 			continue;
@@ -102,7 +103,7 @@ xbps_rpool_init(struct xbps_handle *xhp)
 			prop_object_release(d);
 			goto out;
 		}
-		xbps_dbg_printf("[rpool] `%s' registered.\n", repouri);
+		xbps_dbg_printf(xhp, "[rpool] `%s' registered.\n", repouri);
 	}
 	if (ntotal - nmissing == 0) {
 		/* no repositories available, error out */
@@ -111,7 +112,7 @@ xbps_rpool_init(struct xbps_handle *xhp)
 	}
 
 	prop_array_make_immutable(xhp->repo_pool);
-	xbps_dbg_printf("[rpool] initialized ok.\n");
+	xbps_dbg_printf(xhp, "[rpool] initialized ok.\n");
 out:
 	if (rv != 0) 
 		xbps_rpool_release(xhp);
@@ -135,18 +136,18 @@ xbps_rpool_release(struct xbps_handle *xhp)
 		d = prop_array_get(xhp->repo_pool, i);
 		idx = prop_dictionary_get(d, "index");
 		prop_dictionary_get_cstring_nocopy(d, "uri", &uri);
-		xbps_dbg_printf("[rpool] unregistered repository '%s'\n", uri);
+		xbps_dbg_printf(xhp, "[rpool] unregistered repository '%s'\n",
+		    uri);
 		prop_object_release(idx);
 		prop_object_release(d);
 	}
 	xhp->repo_pool = NULL;
-	xbps_dbg_printf("[rpool] released ok.\n");
+	xbps_dbg_printf(xhp, "[rpool] released ok.\n");
 }
 
 int
-xbps_rpool_sync(const char *uri)
+xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 {
-	const struct xbps_handle *xhp = xbps_handle_get();
 	const char *repouri;
 	size_t i;
 
@@ -161,8 +162,9 @@ xbps_rpool_sync(const char *uri)
 		/*
 		 * Fetch repository index.
 		 */
-		if (xbps_repository_sync_pkg_index(repouri, XBPS_PKGINDEX) == -1) {
-			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
+		if (xbps_repository_sync_pkg_index(xhp, repouri, XBPS_PKGINDEX) == -1) {
+			xbps_dbg_printf(xhp,
+			    "[rpool] `%s' failed to fetch: %s\n",
 			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
 			    xbps_fetch_error_string());
 			continue;
@@ -170,9 +172,10 @@ xbps_rpool_sync(const char *uri)
 		/*
 		 * Fetch repository files index.
 		 */
-		if (xbps_repository_sync_pkg_index(repouri,
+		if (xbps_repository_sync_pkg_index(xhp, repouri,
 		    XBPS_PKGINDEX_FILES) == -1) {
-			xbps_dbg_printf("[rpool] `%s' failed to fetch: %s\n",
+			xbps_dbg_printf(xhp,
+			    "[rpool] `%s' failed to fetch: %s\n",
 			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
 			    xbps_fetch_error_string());
 			continue;
@@ -182,10 +185,11 @@ xbps_rpool_sync(const char *uri)
 }
 
 int
-xbps_rpool_foreach(int (*fn)(struct xbps_rpool_index *, void *, bool *), void *arg)
+xbps_rpool_foreach(struct xbps_handle *xhp,
+		   int (*fn)(struct xbps_handle *, struct xbps_rpool_index *, void *, bool *),
+		   void *arg)
 {
 	prop_dictionary_t d;
-	struct xbps_handle *xhp = xbps_handle_get();
 	struct xbps_rpool_index rpi;
 	size_t i;
 	int rv = 0;
@@ -195,9 +199,11 @@ xbps_rpool_foreach(int (*fn)(struct xbps_rpool_index *, void *, bool *), void *a
 	/* Initialize repository pool */
 	if ((rv = xbps_rpool_init(xhp)) != 0) {
 		if (rv == ENOTSUP) {
-			xbps_dbg_printf("[rpool] empty repository list.\n");
+			xbps_dbg_printf(xhp,
+			    "[rpool] empty repository list.\n");
 		} else if (rv != ENOENT && rv != ENOTSUP) {
-			xbps_dbg_printf("[rpool] couldn't initialize: %s\n",
+			xbps_dbg_printf(xhp,
+			    "[rpool] couldn't initialize: %s\n",
 			    strerror(rv));
 		}
 		return rv;
@@ -207,7 +213,7 @@ xbps_rpool_foreach(int (*fn)(struct xbps_rpool_index *, void *, bool *), void *a
 		d = prop_array_get(xhp->repo_pool, i);
 		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi.uri);
 		rpi.repo = prop_dictionary_get(d, "index");
-		rv = (*fn)(&rpi, arg, &done);
+		rv = (*fn)(xhp, &rpi, arg, &done);
 		if (rv != 0 || done)
 			break;
 	}

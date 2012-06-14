@@ -60,16 +60,17 @@ xbps_check_is_repository_uri_remote(const char *uri)
 }
 
 int
-xbps_check_is_installed_pkg_by_pattern(const char *pattern)
+xbps_check_is_installed_pkg_by_pattern(struct xbps_handle *xhp,
+				       const char *pattern)
 {
 	prop_dictionary_t dict;
 	pkg_state_t state;
 
 	assert(pattern != NULL);
 
-	dict = xbps_find_virtualpkg_dict_installed(pattern, true);
+	dict = xbps_find_virtualpkg_dict_installed(xhp, pattern, true);
 	if (dict == NULL) {
-		dict = xbps_find_pkg_dict_installed(pattern, true);
+		dict = xbps_find_pkg_dict_installed(xhp, pattern, true);
 		if (dict == NULL) {
 			if (errno == ENOENT) {
 				errno = 0;
@@ -96,14 +97,15 @@ xbps_check_is_installed_pkg_by_pattern(const char *pattern)
 }
 
 bool
-xbps_check_is_installed_pkg_by_name(const char *pkgname)
+xbps_check_is_installed_pkg_by_name(struct xbps_handle *xhp,
+				    const char *pkgname)
 {
 	prop_dictionary_t pkgd;
 
 	assert(pkgname != NULL);
 
-	if (((pkgd = xbps_find_pkg_dict_installed(pkgname, false)) == NULL) &&
-	    ((pkgd = xbps_find_virtualpkg_dict_installed(pkgname, false)) == NULL))
+	if (((pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false)) == NULL) &&
+	    ((pkgd = xbps_find_virtualpkg_dict_installed(xhp, pkgname, false)) == NULL))
 		return false;
 
 	prop_object_release(pkgd);
@@ -190,14 +192,14 @@ xbps_pkgpattern_version(const char *pkg)
 }
 
 static char *
-get_pkg_index_remote_plist(const char *uri, const char *plistf)
+get_pkg_index_remote_plist(struct xbps_handle *xhp,
+			   const char *uri,
+			   const char *plistf)
 {
-	struct xbps_handle *xhp;
 	char *uri_fixed, *repodir;
 
 	assert(uri != NULL);
 
-	xhp = xbps_handle_get();
 	uri_fixed = xbps_get_remote_repo_string(uri);
 	if (uri_fixed == NULL)
 		return NULL;
@@ -208,30 +210,31 @@ get_pkg_index_remote_plist(const char *uri, const char *plistf)
 }
 
 char *
-xbps_pkg_index_plist(const char *uri)
+xbps_pkg_index_plist(struct xbps_handle *xhp, const char *uri)
 {
 	assert(uri != NULL);
 
 	if (xbps_check_is_repository_uri_remote(uri))
-		return get_pkg_index_remote_plist(uri, XBPS_PKGINDEX);
+		return get_pkg_index_remote_plist(xhp, uri, XBPS_PKGINDEX);
 
 	return xbps_xasprintf("%s/%s", uri, XBPS_PKGINDEX);
 }
 
 char *
-xbps_pkg_index_files_plist(const char *uri)
+xbps_pkg_index_files_plist(struct xbps_handle *xhp, const char *uri)
 {
 	assert(uri != NULL);
 	if (xbps_check_is_repository_uri_remote(uri))
-		return get_pkg_index_remote_plist(uri, XBPS_PKGINDEX_FILES);
+		return get_pkg_index_remote_plist(xhp, uri, XBPS_PKGINDEX_FILES);
 
 	return xbps_xasprintf("%s/%s", uri, XBPS_PKGINDEX_FILES);
 }
 
 char *
-xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
+xbps_path_from_repository_uri(struct xbps_handle *xhp,
+			      prop_dictionary_t pkg_repod,
+			      const char *repoloc)
 {
-	struct xbps_handle *xhp;
 	const char *filen, *arch;
 	char *lbinpkg = NULL;
 
@@ -242,7 +245,6 @@ xbps_path_from_repository_uri(prop_dictionary_t pkg_repod, const char *repoloc)
 	    "filename", &filen))
 		return NULL;
 
-	xhp = xbps_handle_get();
 	/*
 	 * First check if binpkg is available in cachedir.
 	 */

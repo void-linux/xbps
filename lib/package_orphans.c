@@ -65,7 +65,10 @@ struct orphan_data {
 };
 
 static int
-find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
+find_orphan_pkg(struct xbps_handle *xhp,
+		prop_object_t obj,
+		void *arg,
+		bool *loop_done)
 {
 	struct orphan_data *od = arg;
 	prop_array_t reqby;
@@ -79,6 +82,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 	int rv = 0;
 	pkg_state_t state;
 
+	(void)xhp;
 	(void)loop_done;
 	/*
 	 * Skip packages that were not installed automatically.
@@ -164,7 +168,7 @@ find_orphan_pkg(prop_object_t obj, void *arg, bool *loop_done)
 }
 
 prop_array_t
-xbps_find_pkg_orphans(prop_array_t orphans_user)
+xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans_user)
 {
 	prop_array_t array = NULL;
 	struct orphan_data od;
@@ -180,7 +184,7 @@ xbps_find_pkg_orphans(prop_array_t orphans_user)
 	 * order in which packages were installed.
 	 */
 	od.orphans_user = orphans_user;
-	rv = xbps_pkgdb_foreach_reverse_cb(find_orphan_pkg, &od);
+	rv = xbps_pkgdb_foreach_reverse_cb(xhp, find_orphan_pkg, &od);
 	if (rv != 0) {
 		errno = rv;
 		prop_object_release(od.array);

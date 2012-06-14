@@ -44,14 +44,16 @@
 #include "defs.h"
 
 int
-show_pkg_info_from_repolist(const char *pattern, const char *option)
+show_pkg_info_from_repolist(struct xbps_handle *xhp,
+			    const char *pattern,
+			    const char *option)
 {
 	prop_dictionary_t pkgd;
 
 	if (xbps_pkgpattern_version(pattern))
-		pkgd = xbps_rpool_find_pkg(pattern, true, false);
+		pkgd = xbps_rpool_find_pkg(xhp, pattern, true, false);
 	else
-		pkgd = xbps_rpool_find_pkg(pattern, false, true);
+		pkgd = xbps_rpool_find_pkg(xhp, pattern, false, true);
 
 	if (pkgd == NULL)
 		return errno;
@@ -67,15 +69,15 @@ show_pkg_info_from_repolist(const char *pattern, const char *option)
 }
 
 int
-show_pkg_deps_from_repolist(const char *pattern)
+show_pkg_deps_from_repolist(struct xbps_handle *xhp, const char *pattern)
 {
 	prop_dictionary_t pkgd;
 	const char *ver, *repoloc;
 
 	if (xbps_pkgpattern_version(pattern))
-		pkgd = xbps_rpool_find_pkg(pattern, true, false);
+		pkgd = xbps_rpool_find_pkg(xhp, pattern, true, false);
 	else
-		pkgd = xbps_rpool_find_pkg(pattern, false, true);
+		pkgd = xbps_rpool_find_pkg(xhp, pattern, false, true);
 
 	if (pkgd == NULL)
 		return errno;
@@ -84,7 +86,7 @@ show_pkg_deps_from_repolist(const char *pattern)
 	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
 
 	printf("Repository %s [pkgver: %s]\n", repoloc, ver);
-	(void)xbps_callback_array_iter_in_dict(pkgd,
+	(void)xbps_callback_array_iter_in_dict(xhp, pkgd,
 	    "run_depends", list_strings_sep_in_array, NULL);
 
 	prop_object_release(pkgd);
@@ -92,13 +94,17 @@ show_pkg_deps_from_repolist(const char *pattern)
 }
 
 int
-show_pkg_namedesc(prop_object_t obj, void *arg, bool *loop_done)
+show_pkg_namedesc(struct xbps_handle *xhp,
+		  prop_object_t obj,
+		  void *arg,
+		  bool *loop_done)
 {
 	struct repo_search_data *rsd = arg;
 	const char *pkgver, *pkgname, *desc, *arch;
 	char *tmp = NULL;
 	size_t i, x;
 
+	(void)xhp;
 	(void)loop_done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);

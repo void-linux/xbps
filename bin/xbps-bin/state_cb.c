@@ -31,9 +31,10 @@
 #include "defs.h"
 
 void
-state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
+state_cb(struct xbps_handle *xhp,
+	 struct xbps_state_cb_data *xscd,
+	 void *cbdata)
 {
-	const struct xbps_handle *xhp = xbps_handle_get();
 	prop_dictionary_t pkgd;
 	const char *version;
 	bool syslog_enabled = false;
@@ -85,7 +86,8 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 		    xscd->pkgname, xscd->version);
 		break;
 	case XBPS_STATE_UPDATE:
-		pkgd = xbps_find_pkg_dict_installed(xscd->pkgname, false);
+		pkgd = xbps_find_pkg_dict_installed(xhp,
+		     xscd->pkgname, false);
 		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
 		prop_object_release(pkgd);
 		printf("Updating `%s' (`%s' to `%s') ...\n", xscd->pkgname,
@@ -152,7 +154,8 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	default:
-		xbps_dbg_printf("unknown state %d\n", xscd->state);
+		xbps_dbg_printf(xhp,
+		    "unknown state %d\n", xscd->state);
 		break;
 	}
 }
