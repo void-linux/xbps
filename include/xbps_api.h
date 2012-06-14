@@ -575,7 +575,7 @@ void xbps_warn_printf(const char *, ...);
  *   - Set default cache connections for libfetch.
  *   - Parse configuration file.
  *
- * @param[in] xhp Pointer to an xbps_handle strcucture.
+ * @param[in] xhp Pointer to an xbps_handle struct.
  * @note It's assumed that \a xhp is a valid pointer.
  *
  * @return 0 on success, an errno value otherwise.
@@ -585,7 +585,7 @@ int xbps_init(struct xbps_handle *xhp);
 /**
  * Releases all resources used by libxbps.
  *
- * @param[in] xhp Pointer to an xbps_handle strcucture.
+ * @param[in] xhp Pointer to an xbps_handle struct.
  */
 void xbps_end(struct xbps_handle *xhp);
 
@@ -597,7 +597,7 @@ void xbps_end(struct xbps_handle *xhp);
 /**
  * Configure (or force reconfiguration of) a package.
  *
- * @param[in] xhp Pointer to an xbps_handle strcucture.
+ * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] pkgname Package name to configure.
  * @param[in] check_state Set it to true to check that package is
  * in unpacked state.
@@ -615,7 +615,7 @@ int xbps_configure_pkg(struct xbps_handle *xhp,
 /**
  * Configure (or force reconfiguration of) all packages.
  *
- * @param[in] xhp Pointer to an xbps_handle strcucture.
+ * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] flush Set it to true to flush state to pkgdb.
  *
  * @return 0 on success, otherwise an errno value.
@@ -631,7 +631,7 @@ int xbps_configure_packages(struct xbps_handle *xhp, bool flush);
 /**
  * Download a file from a remote URL.
  * 
- * @param[in] xhp Pointer to an xbps_handle strcucture.
+ * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] uri Remote URI string.
  * @param[in] outputdir Directory string to store downloaded file.
  * @param[in] refetch If true and local/remote size/mtime do not match,
@@ -661,7 +661,7 @@ const char *xbps_fetch_error_string(void);
  *
  * Finds all package orphans currently installed.
  *
- * @param[in] xhp Pointer to an xbps_handle strcucture.
+ * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] orphans Proplib array of strings with package names of
  * packages that should be treated as they were already removed (optional).
  *
@@ -1456,6 +1456,8 @@ int xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp);
  *  due to xbps_transaction_install_pkg() or xbps_transaction_update_pkg() not
  *  previously called.
  * @retval ENODEV if there are missing dependencies in transaction ("missing_deps"
+ *  array of strings object in xhp->transd dictionary).
+ * @retval EAGAIN if there are package conflicts in transaction ("conflicts"
  *  array of strings object in xhp->transd dictionary).
  * @retval EINVAL There was an error sorting packages or computing the transaction
  * sizes.
