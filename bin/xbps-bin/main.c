@@ -38,6 +38,8 @@
 #include "defs.h"
 #include "../xbps-repo/defs.h"
 
+static struct xbps_handle xh;
+
 static void __attribute__((noreturn))
 usage(bool fail)
 {
@@ -99,13 +101,13 @@ usage(bool fail)
 static void __attribute__((noreturn))
 cleanup(int signum)
 {
+	xbps_end(&xh);
 	exit(signum);
 }
 
 int
 main(int argc, char **argv)
 {
-	struct xbps_handle xh;
 	struct xferstat xfer;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
@@ -222,6 +224,7 @@ main(int argc, char **argv)
 	 */
 	memset(&sa, 0, sizeof(sa));
 	sa.sa_handler = cleanup;
+	sigaction(SIGHUP, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
 
