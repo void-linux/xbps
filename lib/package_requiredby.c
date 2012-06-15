@@ -58,7 +58,7 @@ add_pkg_into_reqby(struct xbps_handle *xhp,
 		return ENOMEM;
 
 	if (xbps_match_pkgname_in_array(reqby, pkgname)) {
-		if (!xbps_remove_pkgname_from_array(reqby, pkgname)) {
+		if (!xbps_remove_pkgname_from_array(xhp, reqby, pkgname)) {
 			xbps_dbg_printf(xhp, "%s: failed to remove %s reqby entry: "
 			    "%s\n", __func__, pkgname, strerror(errno));
 			free(pkgname);
@@ -113,7 +113,7 @@ remove_pkg_from_reqby(struct xbps_handle *xhp,
 		return 0;
 
 	if (xbps_match_pkgname_in_array(reqby, pkgname)) {
-		if (!xbps_remove_pkgname_from_array(reqby, pkgname))
+		if (!xbps_remove_pkgname_from_array(xhp, reqby, pkgname))
 			return EINVAL;
 	}
 
@@ -161,10 +161,10 @@ xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 		if (pkgd_pkgdb == NULL) {
 			pkgd_pkgdb =
 			    xbps_find_virtualpkg_in_array_by_pattern(
-			    xhp->pkgdb, str);
+			    xhp, xhp->pkgdb, str);
 			if (pkgd_pkgdb == NULL) {
 				pkgd_pkgdb = xbps_find_pkg_in_array_by_pattern(
-				    xhp->pkgdb, str, NULL);
+				    xhp, xhp->pkgdb, str, NULL);
 				if (pkgd_pkgdb == NULL) {
 					rv = ENOENT;
 					xbps_dbg_printf(xhp,

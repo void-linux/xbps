@@ -108,7 +108,7 @@ show_pkg_namedesc(struct xbps_handle *xhp,
 	(void)loop_done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-	if (!xbps_pkg_arch_match(arch, NULL))
+	if (!xbps_pkg_arch_match(xhp, arch, NULL))
 		return 0;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);

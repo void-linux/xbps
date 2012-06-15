@@ -168,7 +168,7 @@ remove_stale_entries_in_reqby(struct xbps_handle *xhp,
 		}
 		printf("%s: found stale entry in requiredby `%s' (fixed)\n",
 		    crd->pkgver, str);
-		if (xbps_remove_string_from_array(crd->pkgd_reqby, str))
+		if (xbps_remove_string_from_array(xhp, crd->pkgd_reqby, str))
 			needs_update = true;
 	}
 	if (needs_update) {

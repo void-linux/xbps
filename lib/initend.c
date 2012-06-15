@@ -28,6 +28,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <sys/utsname.h>
 
 #include "xbps_api_impl.h"
 
@@ -114,6 +115,7 @@ xbps_init(struct xbps_handle *xhp)
 		CFG_FUNC(__UNCONST("include"), &cfg_include),
 		CFG_END()
 	};
+	struct utsname un;
 	int rv, cc, cch;
 	bool syslog_enabled = false;
 
@@ -170,6 +172,10 @@ xbps_init(struct xbps_handle *xhp)
 		return ENOMEM;
 	xhp->metadir = xhp->metadir_priv;
 
+	uname(&un);
+	xhp->un_machine = strdup(un.machine);
+	assert(xhp->un_machine);
+
 	if (xhp->cfg == NULL) {
 		xhp->flags |= XBPS_FLAG_SYSLOG;
 		xhp->fetch_timeout = XBPS_FETCH_TIMEOUT;
@@ -199,6 +205,7 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "Syslog=%u\n", syslog_enabled);
 	xbps_dbg_printf(xhp, "TransactionFrequencyFlush=%u\n",
 	    xhp->transaction_frequency_flush);
+	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->un_machine);
 
 	xbps_initialized = true;
 
@@ -217,10 +224,10 @@ xbps_end(struct xbps_handle *xhp)
 
 	if (xhp->cfg != NULL)
 		cfg_free(xhp->cfg);
-	if (xhp->cachedir_priv != NULL)
-		free(xhp->cachedir_priv);
-	if (xhp->metadir_priv != NULL)
-		free(xhp->metadir_priv);
+
+	free(xhp->cachedir_priv);
+	free(xhp->metadir_priv);
+	free(xhp->un_machine);
 
 	xhp = NULL;
 	xbps_initialized = false;

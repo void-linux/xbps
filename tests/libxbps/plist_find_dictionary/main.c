@@ -65,13 +65,16 @@ ATF_TC_HEAD(find_pkg_in_dict_by_name_test, tc)
 }
 ATF_TC_BODY(find_pkg_in_dict_by_name_test, tc)
 {
+	struct xbps_handle xh;
 	prop_dictionary_t d, dr;
 
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
 	/* match by pkgname */
-	dr = xbps_find_pkg_in_dict_by_name(d, "packages", "foo");
+	dr = xbps_find_pkg_in_dict_by_name(&xh, d, "packages", "foo");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 }
 
@@ -82,13 +85,16 @@ ATF_TC_HEAD(find_pkg_in_dict_by_pattern_test, tc)
 }
 ATF_TC_BODY(find_pkg_in_dict_by_pattern_test, tc)
 {
+	struct xbps_handle xh;
 	prop_dictionary_t d, dr;
 
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
 	/* match by pkgpattern */
-	dr = xbps_find_pkg_in_dict_by_pattern(d, "packages", "foo>=2.0");
+	dr = xbps_find_pkg_in_dict_by_pattern(&xh, d, "packages", "foo>=2.0");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 }
 
@@ -99,13 +105,16 @@ ATF_TC_HEAD(find_pkg_in_dict_by_pkgver_test, tc)
 }
 ATF_TC_BODY(find_pkg_in_dict_by_pkgver_test, tc)
 {
+	struct xbps_handle xh;
 	prop_dictionary_t d, dr;
 	
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
 	/* exact match by pkgver */
-	dr = xbps_find_pkg_in_dict_by_pkgver(d, "packages", "foo-2.0_1");
+	dr = xbps_find_pkg_in_dict_by_pkgver(&xh, d, "packages", "foo-2.0_1");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 }
 
@@ -116,6 +125,7 @@ ATF_TC_HEAD(find_virtualpkg_in_dict_by_pattern_test, tc)
 }
 ATF_TC_BODY(find_virtualpkg_in_dict_by_pattern_test, tc)
 {
+	struct xbps_handle xh;
 	prop_dictionary_t d, dr;
 	const char *pkgver;
 
@@ -123,12 +133,14 @@ ATF_TC_BODY(find_virtualpkg_in_dict_by_pattern_test, tc)
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
 	/* match virtualpkg by pattern */
-	dr = xbps_find_virtualpkg_in_dict_by_pattern(d, "packages", "virtualpkg>=9999");
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
+	dr = xbps_find_virtualpkg_in_dict_by_pattern(&xh, d, "packages", "virtualpkg>=9999");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1_1");
 
-	dr = xbps_find_virtualpkg_in_dict_by_pattern(d, "packages", "virtualpkg<=9999_1");
+	dr = xbps_find_virtualpkg_in_dict_by_pattern(&xh, d, "packages", "virtualpkg<=9999_1");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1_1");
@@ -141,14 +153,17 @@ ATF_TC_HEAD(find_virtualpkg_in_dict_by_name_test, tc)
 }
 ATF_TC_BODY(find_virtualpkg_in_dict_by_name_test, tc)
 {
+	struct xbps_handle xh;
 	prop_dictionary_t d, dr;
 	const char *pkgver;
 
 	d = prop_dictionary_internalize(dictxml);
 	ATF_REQUIRE_EQ(prop_object_type(d), PROP_TYPE_DICTIONARY);
 
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
 	/* match virtualpkg by name */
-	dr = xbps_find_virtualpkg_in_dict_by_name(d, "packages", "virtualpkg");
+	dr = xbps_find_virtualpkg_in_dict_by_name(&xh, d, "packages", "virtualpkg");
 	ATF_REQUIRE_EQ(prop_object_type(dr), PROP_TYPE_DICTIONARY);
 	prop_dictionary_get_cstring_nocopy(dr, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "afoo-1.1_1");

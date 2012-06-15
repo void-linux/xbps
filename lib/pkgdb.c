@@ -80,31 +80,16 @@ int
 xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 {
 	char *plist;
+	static int cached_rv;
 	int rv = 0;
 
-	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
-	if (plist == NULL)
-		return ENOMEM;
+	if (cached_rv && !flush)
+		return cached_rv;
 
-	if (xhp->pkgdb != NULL && flush) {
-		/* Create metadir if doesn't exist */
-		if (access(xhp->metadir, X_OK) == -1) {
-			if (errno == ENOENT) {
-				if (xbps_mkpath(xhp->metadir, 0755) != 0) {
-					xbps_dbg_printf(xhp,
-					    "[pkgdb] failed to "
-					    "create metadir %s: %s\n",
-					    xhp->metadir,
-					    strerror(errno));
-					rv = errno;
-					free(plist);
-					return rv;
-				}
-			} else {
-				free(plist);
-				return errno;
-			}
-		}
+	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
+	assert(plist);
+
+	if (xhp->pkgdb && flush) {
 		/* flush dictionary to storage */
 		if (!prop_array_externalize_to_zfile(xhp->pkgdb, plist)) {
 			free(plist);
@@ -112,11 +97,11 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		}
 		prop_object_release(xhp->pkgdb);
 		xhp->pkgdb = NULL;
+		cached_rv = 0;
 	}
 	/* update copy in memory */
-	xhp->pkgdb = prop_array_internalize_from_zfile(plist);
-	if (xhp->pkgdb == NULL)
-		rv = errno;
+	if ((xhp->pkgdb = prop_array_internalize_from_zfile(plist)) == NULL)
+		cached_rv = rv = errno;
 
 	free(plist);
 
@@ -180,9 +165,9 @@ xbps_pkgdb_get_pkgd(struct xbps_handle *xhp, const char *pkg, bool bypattern)
 		return NULL;
 
 	if (bypattern)
-		pkgd = xbps_find_pkg_in_array_by_pattern(xhp->pkgdb, pkg, NULL);
+		pkgd = xbps_find_pkg_in_array_by_pattern(xhp, xhp->pkgdb, pkg, NULL);
 	else
-		pkgd = xbps_find_pkg_in_array_by_name(xhp->pkgdb, pkg, NULL);
+		pkgd = xbps_find_pkg_in_array_by_name(xhp, xhp->pkgdb, pkg, NULL);
 
 	if (pkgd != NULL)
 		return prop_dictionary_copy(pkgd);
@@ -198,7 +183,7 @@ xbps_pkgdb_get_pkgd_by_pkgver(struct xbps_handle *xhp, const char *pkgver)
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
 
-	pkgd = xbps_find_pkg_in_array_by_pkgver(xhp->pkgdb, pkgver, NULL);
+	pkgd = xbps_find_pkg_in_array_by_pkgver(xhp, xhp->pkgdb, pkgver, NULL);
 	if (pkgd != NULL)
 		return prop_dictionary_copy(pkgd);
 
@@ -217,9 +202,11 @@ xbps_pkgdb_remove_pkgd(struct xbps_handle *xhp,
 		return false;
 
 	if (bypattern)
-		rv = xbps_remove_pkg_from_array_by_pattern(xhp->pkgdb, pkg, NULL);
+		rv = xbps_remove_pkg_from_array_by_pattern(xhp,
+		    xhp->pkgdb, pkg, NULL);
 	else
-		rv = xbps_remove_pkg_from_array_by_name(xhp->pkgdb, pkg, NULL);
+		rv = xbps_remove_pkg_from_array_by_name(xhp,
+		    xhp->pkgdb, pkg, NULL);
 
 	if (!flush || !rv)
 		return rv;

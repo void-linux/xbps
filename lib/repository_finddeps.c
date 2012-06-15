@@ -310,9 +310,9 @@ find_repo_deps(struct xbps_handle *xhp,
 		 * added in the transaction dictionary.
 		 */
 		unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
-		if (((curpkgd = xbps_find_pkg_in_array_by_pattern(unsorted, reqpkg, NULL)) == NULL) &&
+		if (((curpkgd = xbps_find_pkg_in_array_by_pattern(xhp, unsorted, reqpkg, NULL)) == NULL) &&
 		    ((curpkgd = xbps_find_virtualpkg_conf_in_array_by_pattern(xhp, unsorted, reqpkg)) == NULL) &&
-		    ((curpkgd = xbps_find_virtualpkg_in_array_by_pattern(unsorted, reqpkg)) == NULL)) {
+		    ((curpkgd = xbps_find_virtualpkg_in_array_by_pattern(xhp, unsorted, reqpkg)) == NULL)) {
 			/* error matching required pkgdep */
 			if (errno && errno != ENOENT) {
 				rv = errno;

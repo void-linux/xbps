@@ -39,7 +39,9 @@ struct ffdata {
 };
 
 static void
-match_files_by_pattern(prop_dictionary_t pkg_filesd, struct ffdata *ffd)
+match_files_by_pattern(struct xbps_handle *xhp,
+		       prop_dictionary_t pkg_filesd,
+		       struct ffdata *ffd)
 {
 	prop_array_t array;
 	const char *filestr, *pkgver, *arch;
@@ -47,7 +49,7 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd, struct ffdata *ffd)
 	int x;
 
 	prop_dictionary_get_cstring_nocopy(pkg_filesd, "architecture", &arch);
-	if (!xbps_pkg_arch_match(arch, NULL))
+	if (!xbps_pkg_arch_match(xhp, arch, NULL))
 		return;
 
 	array = prop_dictionary_get(pkg_filesd, "files");
@@ -94,7 +96,7 @@ find_files_in_package(struct xbps_handle *xhp,
 	ffd->repouri = rpi->uri;
 
 	for (i = 0; i < prop_array_count(idxfiles); i++)
-		match_files_by_pattern(prop_array_get(idxfiles, i), ffd);
+		match_files_by_pattern(xhp, prop_array_get(idxfiles, i), ffd);
 
 	prop_object_release(idxfiles);
 	return 0;

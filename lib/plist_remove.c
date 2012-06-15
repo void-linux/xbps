@@ -40,8 +40,11 @@
  * all library functions.
  */
 static bool
-remove_obj_from_array(prop_array_t array, const char *str, int mode,
-		     const char *targetarch)
+remove_obj_from_array(struct xbps_handle *xhp,
+		      prop_array_t array,
+		      const char *str,
+		      int mode,
+		      const char *targetarch)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
@@ -79,7 +82,8 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode,
 			/* match by pkgname, obj is a dictionary  */
 			chkarch = prop_dictionary_get_cstring_nocopy(obj,
 			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch)) {
+			if (chkarch && !xbps_pkg_arch_match(xhp, arch,
+			    targetarch)) {
 				idx++;
 				continue;
 			}
@@ -92,7 +96,8 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode,
 		} else if (mode == 3) {
 			chkarch = prop_dictionary_get_cstring_nocopy(obj,
 			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch)) {
+			if (chkarch && !xbps_pkg_arch_match(xhp, arch,
+			    targetarch)) {
 				idx++;
 				continue;
 			}
@@ -106,7 +111,8 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode,
 		} else if (mode == 4) {
 			chkarch = prop_dictionary_get_cstring_nocopy(obj,
 			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(arch, targetarch)) {
+			if (chkarch && !xbps_pkg_arch_match(xhp, arch,
+			    targetarch)) {
 				idx++;
 				continue;
 			}
@@ -132,34 +138,44 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode,
 }
 
 bool
-xbps_remove_string_from_array(prop_array_t array, const char *str)
+xbps_remove_string_from_array(struct xbps_handle *xhp,
+			      prop_array_t array,
+			      const char *str)
 {
-	return remove_obj_from_array(array, str, 0, NULL);
+	return remove_obj_from_array(xhp, array, str, 0, NULL);
 }
 
 bool
-xbps_remove_pkgname_from_array(prop_array_t array, const char *name)
+xbps_remove_pkgname_from_array(struct xbps_handle *xhp,
+			      prop_array_t array,
+			      const char *name)
 {
-	return remove_obj_from_array(array, name, 1, NULL);
+	return remove_obj_from_array(xhp, array, name, 1, NULL);
 }
 
 bool
-xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *name,
+xbps_remove_pkg_from_array_by_name(struct xbps_handle *xhp,
+				   prop_array_t array,
+				   const char *name,
 				   const char *targetarch)
 {
-	return remove_obj_from_array(array, name, 2, targetarch);
+	return remove_obj_from_array(xhp, array, name, 2, targetarch);
 }
 
 bool
-xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *pkgver,
+xbps_remove_pkg_from_array_by_pkgver(struct xbps_handle *xhp,
+				     prop_array_t array,
+				     const char *pkgver,
 				     const char *targetarch)
 {
-	return remove_obj_from_array(array, pkgver, 3, targetarch);
+	return remove_obj_from_array(xhp, array, pkgver, 3, targetarch);
 }
 
 bool
-xbps_remove_pkg_from_array_by_pattern(prop_array_t array, const char *p,
+xbps_remove_pkg_from_array_by_pattern(struct xbps_handle *xhp,
+				      prop_array_t array,
+				      const char *p,
 				      const char *targetarch)
 {
-	return remove_obj_from_array(array, p, 4, targetarch);
+	return remove_obj_from_array(xhp, array, p, 4, targetarch);
 }

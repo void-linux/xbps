@@ -66,7 +66,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		/*
 		 * Check if current pkg conflicts with any pkg in transaction.
 		 */
-		pkgd = xbps_find_pkg_in_dict_by_pattern(xhp->transd,
+		pkgd = xbps_find_pkg_in_dict_by_pattern(xhp, xhp->transd,
 		    "unsorted_deps", cfpkg);
 		if (pkgd != NULL) {
 			prop_dictionary_get_cstring_nocopy(pkgd,

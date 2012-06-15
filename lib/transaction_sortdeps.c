@@ -145,7 +145,7 @@ pkgdep_alloc(prop_dictionary_t d, const char *name, const char *trans)
 }
 
 static void
-pkgdep_end(prop_array_t sorted)
+pkgdep_end(struct xbps_handle *xhp, prop_array_t sorted)
 {
 	prop_dictionary_t d;
 	struct pkgdep *pd;
@@ -155,12 +155,12 @@ pkgdep_end(prop_array_t sorted)
 		TAILQ_REMOVE(&pkgdep_list, pd, pkgdep_entries);
 		if (sorted != NULL && pd->d != NULL) {
 			/* do not add duplicates due to vpkgs */
-			d = xbps_find_pkg_in_array_by_name(sorted,
+			d = xbps_find_pkg_in_array_by_name(xhp, sorted,
 			    pd->name, NULL);
 			if (d == NULL) {
 				/* find a virtual pkg otherwise */
 				d = xbps_find_virtualpkg_in_array_by_name(
-				    sorted, pd->name);
+				    xhp, sorted, pd->name);
 				if (d == NULL) {
 					prop_array_add(sorted, pd->d);
 					pkgdep_release(pd);
@@ -232,13 +232,13 @@ again:
 			continue;
 		}
 		/* Find pkg by name */
-		curpkgd = xbps_find_pkg_in_dict_by_name(xhp->transd,
+		curpkgd = xbps_find_pkg_in_dict_by_name(xhp, xhp->transd,
 		    "unsorted_deps", pkgnamedep);
 		if (curpkgd == NULL) {
 			/* find virtualpkg by name if no match */
 			curpkgd =
-			    xbps_find_virtualpkg_in_dict_by_name(xhp->transd,
-			    "unsorted_deps", pkgnamedep);
+			    xbps_find_virtualpkg_in_dict_by_name(xhp,
+			    xhp->transd, "unsorted_deps", pkgnamedep);
 		}
 		if (curpkgd == NULL) {
 			free(pkgnamedep);
@@ -343,7 +343,7 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 			 */
 			pd = pkgdep_alloc(obj, pkgname, tract);
 			if (pd == NULL) {
-				pkgdep_end(NULL);
+				pkgdep_end(xhp, NULL);
 				rv = ENOMEM;
 				goto out;
 			}
@@ -371,7 +371,7 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 		 * Sort package run-time dependencies for this package.
 		 */
 		if ((rv = sort_pkg_rundeps(xhp, pd, rundeps)) != 0) {
-			pkgdep_end(NULL);
+			pkgdep_end(xhp, NULL);
 			goto out;
 		}
 		cnt++;
@@ -381,7 +381,7 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 	 * from the sorted list into the "packages" array, and at
 	 * the same time freeing memory used for temporary sorting.
 	 */
-	pkgdep_end(sorted);
+	pkgdep_end(xhp, sorted);
 	/*
 	 * Sanity check that the array contains the same number of
 	 * objects than the total number of required dependencies.

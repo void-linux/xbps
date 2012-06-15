@@ -49,7 +49,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 	(void)loop_done;
 
 	chkarch = prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-	if (chkarch && !xbps_pkg_arch_match(arch, NULL))
+	if (chkarch && !xbps_pkg_arch_match(xhp, arch, NULL))
 		return 0;
 
 	if (lpc->check_state) {

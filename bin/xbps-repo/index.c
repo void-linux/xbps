@@ -129,7 +129,8 @@ repoidx_get(struct xbps_handle *xhp, const char *pkgdir)
 }
 
 static int
-add_binpkg_to_index(prop_array_t idx,
+add_binpkg_to_index(struct xbps_handle *xhp,
+		    prop_array_t idx,
 		    const char *filedir,
 		    const char *file)
 {
@@ -165,7 +166,7 @@ add_binpkg_to_index(prop_array_t idx,
 	 * than current registered package, update the index; otherwise
 	 * pass to the next one.
 	 */
-	curpkgd = xbps_find_pkg_in_array_by_name(idx, pkgname, arch);
+	curpkgd = xbps_find_pkg_in_array_by_name(xhp, idx, pkgname, arch);
 	if (curpkgd == NULL) {
 		if (errno && errno != ENOENT) {
 			prop_object_release(newpkgd);
@@ -236,7 +237,8 @@ add_binpkg_to_index(prop_array_t idx,
 			goto out;
 		}
 		free(oldfilepath);
-		if (!xbps_remove_pkg_from_array_by_pkgver(idx, buf, oldarch)) {
+		if (!xbps_remove_pkg_from_array_by_pkgver(xhp, idx,
+		    buf, oldarch)) {
 			xbps_error_printf("failed to remove `%s' "
 			    "from plist index: %s\n", buf, strerror(errno));
 			prop_object_release(newpkgd);
@@ -350,7 +352,7 @@ repo_genindex(struct xbps_handle *xhp, const char *pkgdir)
 				rv = errno;
 				goto out;
 			}
-			rv = add_binpkg_to_index(idx, curdir, binfile);
+			rv = add_binpkg_to_index(xhp, idx, curdir, binfile);
 			free(binfile);
 			if (rv == EEXIST) {
 				rv = 0;

@@ -56,11 +56,11 @@ repo_find_virtualpkg_cb(struct xbps_handle *xhp,
 
 	if (rpf->bypattern) {
 		rpf->pkgd =
-		    xbps_find_virtualpkg_in_array_by_pattern(rpi->repo,
+		    xbps_find_virtualpkg_in_array_by_pattern(xhp, rpi->repo,
 		    rpf->pattern);
 	} else {
 		rpf->pkgd =
-		    xbps_find_virtualpkg_in_array_by_name(rpi->repo,
+		    xbps_find_virtualpkg_in_array_by_name(xhp, rpi->repo,
 		    rpf->pattern);
 	}
 	if (rpf->pkgd) {
@@ -110,15 +110,15 @@ repo_find_pkg_cb(struct xbps_handle *xhp,
 
 	if (rpf->exact) {
 		/* exact match by pkgver */
-		rpf->pkgd = xbps_find_pkg_in_array_by_pkgver(rpi->repo,
+		rpf->pkgd = xbps_find_pkg_in_array_by_pkgver(xhp, rpi->repo,
 		    rpf->pattern, NULL);
 	} else if (rpf->bypattern) {
 		/* match by pkgpattern in pkgver*/
-		rpf->pkgd = xbps_find_pkg_in_array_by_pattern(rpi->repo,
+		rpf->pkgd = xbps_find_pkg_in_array_by_pattern(xhp, rpi->repo,
 		    rpf->pattern, NULL);
 	} else {
 		/* match by pkgname */
-		rpf->pkgd = xbps_find_pkg_in_array_by_name(rpi->repo,
+		rpf->pkgd = xbps_find_pkg_in_array_by_name(xhp, rpi->repo,
 		    rpf->pattern, NULL);
 	}
 	if (rpf->pkgd) {
@@ -148,10 +148,10 @@ repo_find_best_pkg_cb(struct xbps_handle *xhp,
 	(void)xhp;
 
 	if (rpf->bypattern) {
-		pkgd = xbps_find_pkg_in_array_by_pattern(rpi->repo,
+		pkgd = xbps_find_pkg_in_array_by_pattern(xhp, rpi->repo,
 		    rpf->pattern, NULL);
 	} else {
-		pkgd = xbps_find_pkg_in_array_by_name(rpi->repo,
+		pkgd = xbps_find_pkg_in_array_by_name(xhp, rpi->repo,
 		    rpf->pattern, NULL);
 	}
 	if (pkgd == NULL) {

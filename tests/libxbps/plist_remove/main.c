@@ -25,6 +25,7 @@
  */
 #include <atf-c.h>
 #include <xbps_api.h>
+#include <string.h>
 
 static const char dictxml[] =
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -100,6 +101,7 @@ ATF_TC_HEAD(remove_pkg_from_array_by_name_test, tc)
 
 ATF_TC_BODY(remove_pkg_from_array_by_name_test, tc)
 {
+	struct xbps_handle xh;
 	prop_array_t a;
 	prop_dictionary_t d, d2;
 
@@ -109,8 +111,10 @@ ATF_TC_BODY(remove_pkg_from_array_by_name_test, tc)
 	d2 = prop_dictionary_internalize(dictxml2);
 	ATF_REQUIRE_EQ(prop_object_type(d2), PROP_TYPE_DICTIONARY);
 
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
 	a = prop_dictionary_get(d, "packages");
-	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_name(a, "afoo", NULL), true);
+	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_name(&xh, a, "afoo", NULL), true);
 	ATF_REQUIRE_EQ(prop_dictionary_equals(d, d2), true);
 }
 
@@ -123,6 +127,7 @@ ATF_TC_HEAD(remove_pkg_from_array_by_pattern_test, tc)
 
 ATF_TC_BODY(remove_pkg_from_array_by_pattern_test, tc)
 {
+	struct xbps_handle xh;
 	prop_array_t a;
 	prop_dictionary_t d, d2;
 
@@ -132,8 +137,10 @@ ATF_TC_BODY(remove_pkg_from_array_by_pattern_test, tc)
 	d2 = prop_dictionary_internalize(dictxml2);
 	ATF_REQUIRE_EQ(prop_object_type(d2), PROP_TYPE_DICTIONARY);
 
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
 	a = prop_dictionary_get(d, "packages");
-	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pattern(a, "afoo>=1.0", NULL), true);
+	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pattern(&xh, a, "afoo>=1.0", NULL), true);
 	ATF_REQUIRE_EQ(prop_dictionary_equals(d, d2), true);
 }
 
@@ -146,6 +153,7 @@ ATF_TC_HEAD(remove_pkg_from_array_by_pkgver_test, tc)
 
 ATF_TC_BODY(remove_pkg_from_array_by_pkgver_test, tc)
 {
+	struct xbps_handle xh;
 	prop_array_t a;
 	prop_dictionary_t d, d2;
 
@@ -155,8 +163,10 @@ ATF_TC_BODY(remove_pkg_from_array_by_pkgver_test, tc)
 	d2 = prop_dictionary_internalize(dictxml2);
 	ATF_REQUIRE_EQ(prop_object_type(d2), PROP_TYPE_DICTIONARY);
 
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
 	a = prop_dictionary_get(d, "packages");
-	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pkgver(a, "afoo-1.1_1", NULL), true);
+	ATF_REQUIRE_EQ(xbps_remove_pkg_from_array_by_pkgver(&xh, a, "afoo-1.1_1", NULL), true);
 	ATF_REQUIRE_EQ(prop_dictionary_equals(d, d2), true);
 }
 
@@ -169,6 +179,7 @@ ATF_TC_HEAD(remove_string_from_array_test, tc)
 
 ATF_TC_BODY(remove_string_from_array_test, tc)
 {
+	struct xbps_handle xh;
 	prop_array_t a, a2;
 
 	a = prop_array_internalize(axml);
@@ -177,7 +188,9 @@ ATF_TC_BODY(remove_string_from_array_test, tc)
 	a2 = prop_array_internalize(axml2);
 	ATF_REQUIRE_EQ(prop_object_type(a2), PROP_TYPE_ARRAY);
 
-	ATF_REQUIRE_EQ(xbps_remove_string_from_array(a, "foo-1.0_1"), true);
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
+	ATF_REQUIRE_EQ(xbps_remove_string_from_array(&xh, a, "foo-1.0_1"), true);
 	ATF_REQUIRE_EQ(prop_array_equals(a, a2), true);
 }
 
@@ -190,6 +203,7 @@ ATF_TC_HEAD(remove_pkgname_from_array_test, tc)
 
 ATF_TC_BODY(remove_pkgname_from_array_test, tc)
 {
+	struct xbps_handle xh;
 	prop_array_t a, a2;
 
 	a = prop_array_internalize(axml);
@@ -198,7 +212,9 @@ ATF_TC_BODY(remove_pkgname_from_array_test, tc)
 	a2 = prop_array_internalize(axml2);
 	ATF_REQUIRE_EQ(prop_object_type(a2), PROP_TYPE_ARRAY);
 
-	ATF_REQUIRE_EQ(xbps_remove_pkgname_from_array(a, "foo"), true);
+	memset(&xh, 0, sizeof(xh));
+	xbps_init(&xh);
+	ATF_REQUIRE_EQ(xbps_remove_pkgname_from_array(&xh, a, "foo"), true);
 	ATF_REQUIRE_EQ(prop_array_equals(a, a2), true);
 }
 

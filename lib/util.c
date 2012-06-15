@@ -281,13 +281,12 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkgd)
 }
 
 bool
-xbps_pkg_arch_match(const char *orig, const char *target)
+xbps_pkg_arch_match(struct xbps_handle *xhp,
+		    const char *orig,
+		    const char *target)
 {
-	struct utsname un;
-
 	if (target == NULL) {
-		uname(&un);
-		if (strcmp(orig, "noarch") && strcmp(orig, un.machine))
+		if (strcmp(orig, "noarch") && strcmp(orig, xhp->un_machine))
 			return false;
 	} else {
 		if (strcmp(orig, "noarch") && strcmp(orig, target))

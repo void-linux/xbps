@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20120614-2"
+#define XBPS_API_VERSION	"20120615"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -527,6 +527,7 @@ struct xbps_handle {
 	 */
 	char *cachedir_priv;
 	char *metadir_priv;
+	char *un_machine;
 	/**
 	 * @var conffile
 	 *
@@ -901,6 +902,7 @@ int xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
  * Finds the proplib's dictionary associated with a package, by looking
  * it via its name in a proplib dictionary.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] dict Proplib dictionary to look for the package dictionary.
  * @param[in] key Key associated with the array that stores package's dictionary.
  * @param[in] pkgname Package name to look for.
@@ -908,7 +910,8 @@ int xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
  * @return The package's proplib dictionary on success, NULL otherwise and
  * errno is set appropiately.
  */
-prop_dictionary_t xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
+prop_dictionary_t xbps_find_pkg_in_dict_by_name(struct xbps_handle *xhp,
+						prop_dictionary_t dict,
 						const char *key,
 						const char *pkgname);
 
@@ -916,6 +919,7 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
  * Finds the proplib's dictionary associated with a package, by looking
  * at it via a package pattern in a proplib dictionary.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] dict Proplib dictionary to look for the package dictionary.
  * @param[in] key Key associated with the array storing the package's dictionary.
  * @param[in] pattern Package pattern to match.
@@ -923,7 +927,8 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_name(prop_dictionary_t dict,
  * @return The package's proplib dictionary on success, NULL otherwise
  * and errno is set appropiately.
  */
-prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
+prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(struct xbps_handle *xhp,
+						   prop_dictionary_t dict,
 						   const char *key,
 						   const char *pattern);
 
@@ -931,15 +936,17 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(prop_dictionary_t dict,
  * Finds the proplib's dictionary associated with a package, by matching
  * its \a pkgver object in its dictionary.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] dict Proplib dictionary to look for the package dictionary.
  * @param[in] key Key associated with the array storing the package's
  * dictionary.
- * @param[in] pkgver Package name/version to match, i.e `foo-1.0'.
+ * @param[in] pkgver Package name/version to match, i.e `foo-1.0_1'.
  *
  * @return The package's proplib dictionary on success, NULL otherwise
  * and errno is set appropiately.
  */
-prop_dictionary_t xbps_find_pkg_in_dict_by_pkgver(prop_dictionary_t dict,
+prop_dictionary_t xbps_find_pkg_in_dict_by_pkgver(struct xbps_handle *xhp,
+						  prop_dictionary_t dict,
 						  const char *key,
 						  const char *pkgver);
 
@@ -948,6 +955,7 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pkgver(prop_dictionary_t dict,
  * a pkgname in \a name on any of the virtual package in
  * the "provides" array object.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] d Proplib dictionary to look for the package dictionary.
  * @param[in] key Key associated with the array storing the package's
  * dictionary.
@@ -958,7 +966,8 @@ prop_dictionary_t xbps_find_pkg_in_dict_by_pkgver(prop_dictionary_t dict,
  * Finds a virtual package dictionary in a proplib array by matching a
  * package name.
  */
-prop_dictionary_t xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t d,
+prop_dictionary_t xbps_find_virtualpkg_in_dict_by_name(struct xbps_handle *xhp,
+						       prop_dictionary_t d,
 						       const char *key,
 						       const char *name);
 
@@ -967,6 +976,7 @@ prop_dictionary_t xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t d,
  * a pkg pattern in \a pattern on any of the virtual package in
  * the "provides" array object.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] d Proplib dictionary to look for the package dictionary.
  * @param[in] key Key associated with the array storing the package's
  * dictionary.
@@ -976,7 +986,8 @@ prop_dictionary_t xbps_find_virtualpkg_in_dict_by_name(prop_dictionary_t d,
  * @return The package dictionary, otherwise NULL is returned and errno
  * is set appropiately.
  */
-prop_dictionary_t xbps_find_virtualpkg_in_dict_by_pattern(prop_dictionary_t d,
+prop_dictionary_t xbps_find_virtualpkg_in_dict_by_pattern(struct xbps_handle *xhp,
+							  prop_dictionary_t d,
 							  const char *key,
 							  const char *pattern);
 
@@ -1049,6 +1060,7 @@ bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
 /**
  * Finds a package dictionary in a proplib array by matching a package name.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array The proplib array to search on.
  * @param[in] name The package name to match.
  * @param[in] targetarch If set, package will be matched against this
@@ -1056,13 +1068,15 @@ bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
-prop_dictionary_t xbps_find_pkg_in_array_by_name(prop_array_t array,
+prop_dictionary_t xbps_find_pkg_in_array_by_name(struct xbps_handle *xhp,
+						 prop_array_t array,
 						 const char *name,
 						 const char *targetarch);
 
 /**
  * Finds a package dictionary in a proplib array by matching a package pattern.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array The proplib array to search on.
  * @param[in] pattern The package pattern to match, i.e `foo>=0' or `foo<1'.
  * @param[in] targetarch If set, package will be matched against this
@@ -1070,7 +1084,8 @@ prop_dictionary_t xbps_find_pkg_in_array_by_name(prop_array_t array,
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
-prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
+prop_dictionary_t xbps_find_pkg_in_array_by_pattern(struct xbps_handle *xhp,
+						    prop_array_t array,
 						    const char *pattern,
 						    const char *targetarch);
 
@@ -1078,6 +1093,7 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
  * Finds a package dictionary in a proplib array by matching a \a pkgver
  * object.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array The proplib array to search on.
  * @param[in] pkgver The package name/version to match, i.e `foo-1.0'.
  * @param[in] targetarch If set, package will be matched against this
@@ -1085,7 +1101,8 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pattern(prop_array_t array,
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
-prop_dictionary_t xbps_find_pkg_in_array_by_pkgver(prop_array_t array,
+prop_dictionary_t xbps_find_pkg_in_array_by_pkgver(struct xbps_handle *xhp,
+						   prop_array_t array,
 						   const char *pkgver,
 						   const char *targetarch);
 
@@ -1093,26 +1110,31 @@ prop_dictionary_t xbps_find_pkg_in_array_by_pkgver(prop_array_t array,
  * Finds a virtual package dictionary in a proplib array by matching a
  * package name.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array The proplib array to search on.
  * @param[in] name The virtual package name to match.
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
-prop_dictionary_t xbps_find_virtualpkg_in_array_by_name(prop_array_t array,
+prop_dictionary_t xbps_find_virtualpkg_in_array_by_name(struct xbps_handle *xhp,
+							prop_array_t array,
 							const char *name);
 
 /**
  * Finds a virtual package dictionary in a proplib array by matching a
  * package pattern.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array The proplib array to search on.
  * @param[in] pattern The virtual package pattern to match, i.e
  * `foo>=0' or `foo<1'.
  *
  * @return The package dictionary, otherwise NULL is returned.
  */
-prop_dictionary_t xbps_find_virtualpkg_in_array_by_pattern(prop_array_t array,
-							   const char *pattern);
+prop_dictionary_t
+	xbps_find_virtualpkg_in_array_by_pattern(struct xbps_handle *xhp,
+						 prop_array_t array,
+						 const char *pattern);
 
 /**
  * Match a package name in the specified array of strings.
@@ -1187,6 +1209,7 @@ prop_dictionary_t xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
  * Removes the package's proplib dictionary matching \a pkgname
  * in a proplib array.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array Proplib array where to look for.
  * @param[in] name Package name to match in the array.
  * @param[in] targetarch If set, package will be matched against this
@@ -1194,7 +1217,8 @@ prop_dictionary_t xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkg_from_array_by_name(prop_array_t array,
+bool xbps_remove_pkg_from_array_by_name(struct xbps_handle *xhp,
+					prop_array_t array,
 					const char *name,
 					const char *targetarch);
 
@@ -1202,6 +1226,7 @@ bool xbps_remove_pkg_from_array_by_name(prop_array_t array,
  * Removes the package's proplib dictionary matching the pkgver object
  * with a package pattern from \a pattern in a proplib array.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array Proplib array where to look for.
  * @param[in] pattern Package pattern to match, i.e `foo>=0' or `foo<1'.
  * @param[in] targetarch If set, package will be matched against this
@@ -1209,7 +1234,8 @@ bool xbps_remove_pkg_from_array_by_name(prop_array_t array,
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkg_from_array_by_pattern(prop_array_t array,
+bool xbps_remove_pkg_from_array_by_pattern(struct xbps_handle *xhp,
+					   prop_array_t array,
 					   const char *pattern,
 					   const char *targetarch);
 
@@ -1217,6 +1243,7 @@ bool xbps_remove_pkg_from_array_by_pattern(prop_array_t array,
  * Removes the package's proplib dictionary matching the \a pkgver
  * object in a proplib array of dictionaries.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array Proplib array where to look for.
  * @param[in] pkgver Package name/version to match, i.e `foo-1.0'.
  * @param[in] targetarch If set, package will be matched against this
@@ -1224,29 +1251,36 @@ bool xbps_remove_pkg_from_array_by_pattern(prop_array_t array,
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkg_from_array_by_pkgver(prop_array_t array,
+bool xbps_remove_pkg_from_array_by_pkgver(struct xbps_handle *xhp,
+					  prop_array_t array,
 					  const char *pkgver,
 					  const char *targetarch);
 
 /**
  * Removes a string from a proplib's array of strings.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array Proplib array where to look for.
  * @param[in] str String to match in the array.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_string_from_array(prop_array_t array, const char *str);
+bool xbps_remove_string_from_array(struct xbps_handle *xhp,
+				   prop_array_t array,
+				   const char *str);
 
 /**
  * Removes a string from a proplib's array matched by a package name.
  *
+ * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] array Proplib array where to look for.
  * @param[in] name Package name to match.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_remove_pkgname_from_array(prop_array_t array, const char *name);
+bool xbps_remove_pkgname_from_array(struct xbps_handle *xhp,
+				    prop_array_t array,
+				    const char *name);
 
 /**
  * Replaces a dictionary with another dictionary in \a dict, in the
@@ -1992,13 +2026,16 @@ bool xbps_pkg_has_rundeps(prop_dictionary_t dict);
 /**
  * Returns true if provided string is valid for target architecture.
  *
+ * @param[in] xhp The pointer to an xbps_handle struct.
  * @param[in] orig Architecture to match.
  * @param[in] target If not NULL, \a orig will be matched against it
  * rather than returned value of uname(2).
  *
  * @return True on match, false otherwise.
  */
-bool xbps_pkg_arch_match(const char *orig, const char *target);
+bool xbps_pkg_arch_match(struct xbps_handle *xhp,
+			 const char *orig,
+			 const char *target);
 
 /**
  * Converts the 64 bits signed number specified in \a bytes to

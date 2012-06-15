@@ -56,7 +56,7 @@ rmobsoletes_files_cb(struct xbps_handle *xhp,
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-	if (xbps_find_pkg_in_array_by_pkgver(ifd->idx, pkgver, arch)) {
+	if (xbps_find_pkg_in_array_by_pkgver(xhp, ifd->idx, pkgver, arch)) {
 		/* pkg found, do nothing */
 		return 0;
 	}
@@ -95,7 +95,7 @@ genindex_files_cb(struct xbps_handle *xhp,
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 
-	if (xbps_find_pkg_in_array_by_pkgver(ifd->idxfiles, pkgver, arch))  {
+	if (xbps_find_pkg_in_array_by_pkgver(xhp, ifd->idxfiles, pkgver, arch))  {
 		fprintf(stderr, "index-files: skipping `%s' (%s), "
 		    "already registered.\n", pkgver, arch);
 		return 0;
@@ -278,7 +278,7 @@ repo_genindex_files(struct xbps_handle *xhp, const char *pkgdir)
 			}
 			arch = strchr(p, ',') + 1;
 			if (!xbps_remove_pkg_from_array_by_pkgver(
-			    ifd->idxfiles, pkgver, arch)) {
+			    xhp, ifd->idxfiles, pkgver, arch)) {
 				free(pkgver);
 				rv = EINVAL;
 				goto out;
