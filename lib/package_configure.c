@@ -103,16 +103,11 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		}
 
 		if (state == XBPS_PKG_STATE_INSTALLED) {
-			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0) {
-				prop_object_release(pkgd);
+			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0)
 				return 0;
-			}
-		} else if (state != XBPS_PKG_STATE_UNPACKED) {
-			prop_object_release(pkgd);
+		} else if (state != XBPS_PKG_STATE_UNPACKED)
 			return EINVAL;
-		}
 	}
-	prop_object_release(pkgd);
 	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgname, version, NULL);
 
 	buf = xbps_xasprintf("%s/metadata/%s/INSTALL",

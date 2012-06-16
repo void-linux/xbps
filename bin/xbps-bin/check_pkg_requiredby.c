@@ -162,10 +162,8 @@ remove_stale_entries_in_reqby(struct xbps_handle *xhp,
 
 	for (i = 0; i < prop_array_count(reqby); i++) {
 		prop_array_get_cstring_nocopy(reqby, i, &str);
-		if ((pkgd = xbps_pkgdb_get_pkgd_by_pkgver(xhp, str)) != NULL) {
-			prop_object_release(pkgd);
+		if ((pkgd = xbps_pkgdb_get_pkgd_by_pkgver(xhp, str)) != NULL)
 			continue;
-		}
 		printf("%s: found stale entry in requiredby `%s' (fixed)\n",
 		    crd->pkgver, str);
 		if (xbps_remove_string_from_array(xhp, crd->pkgd_reqby, str))

@@ -89,7 +89,6 @@ state_cb(struct xbps_handle *xhp,
 		pkgd = xbps_find_pkg_dict_installed(xhp,
 		     xscd->pkgname, false);
 		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
-		prop_object_release(pkgd);
 		printf("Updating `%s' (`%s' to `%s') ...\n", xscd->pkgname,
 		    version, xscd->version);
 		break;

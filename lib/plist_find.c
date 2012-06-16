@@ -342,7 +342,7 @@ find_pkgd_installed(struct xbps_handle *xhp,
 		    bool bypattern,
 		    bool virtual)
 {
-	prop_dictionary_t pkgd, rpkgd = NULL;
+	prop_dictionary_t pkgd = NULL;
 	pkg_state_t state = 0;
 	int rv;
 
@@ -376,20 +376,20 @@ find_pkgd_installed(struct xbps_handle *xhp,
 		return NULL;
 
 	if (xbps_pkg_state_dictionary(pkgd, &state) != 0)
-		return rpkgd;
+		return NULL;
 
 	switch (state) {
 	case XBPS_PKG_STATE_INSTALLED:
 	case XBPS_PKG_STATE_UNPACKED:
-		rpkgd = prop_dictionary_copy(pkgd);
-		break;
+		return pkgd;
+		/* NOTREACHED */
 	default:
 		/* not fully installed */
 		errno = ENOENT;
 		break;
 	}
 
-	return rpkgd;
+	return NULL;
 }
 
 prop_dictionary_t

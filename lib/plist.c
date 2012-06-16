@@ -294,7 +294,6 @@ xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
 			    "pkgname", &savedpkgname);
 			plistf = xbps_xasprintf("%s/metadata/%s/%s",
 			    xhp->metadir, savedpkgname, plist);
-			prop_object_release(pkgd);
 			if (plistf == NULL)
 				return NULL;
 		}

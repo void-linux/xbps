@@ -245,11 +245,8 @@ find_repo_deps(struct xbps_handle *xhp,
 			    "pkgver", &pkgver_q);
 
 			/* Check its state */
-			rv = xbps_pkg_state_dictionary(tmpd, &state);
-			if (rv != 0) {
-				prop_object_release(tmpd);
+			if ((rv = xbps_pkg_state_dictionary(tmpd, &state)) != 0)
 				break;
-			}
 			if (xbps_match_virtual_pkg_in_dict(tmpd,reqpkg,true)) {
 				/*
 				 * Check if required dependency is a virtual
@@ -259,7 +256,6 @@ find_repo_deps(struct xbps_handle *xhp,
 				xbps_dbg_printf_append(xhp,
 				    "[virtual] satisfied by "
 				    "`%s'.\n", pkgver_q);
-				prop_object_release(tmpd);
 				continue;
 			}
 			rv = xbps_pkgpattern_match(pkgver_q, reqpkg);
@@ -294,12 +290,10 @@ find_repo_deps(struct xbps_handle *xhp,
 					xbps_dbg_printf_append(xhp,
 					    "installed "
 					    "`%s'.\n", pkgver_q);
-					prop_object_release(tmpd);
 					continue;
 				}
 			} else {
 				/* error matching pkgpattern */
-				prop_object_release(tmpd);
 				xbps_dbg_printf(xhp, "failed to match "
 				    "pattern %s with %s\n", reqpkg, pkgver_q);
 				break;

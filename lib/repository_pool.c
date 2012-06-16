@@ -135,9 +135,11 @@ xbps_rpool_release(struct xbps_handle *xhp)
 	for (i = 0; i < prop_array_count(xhp->repo_pool); i++) {
 		d = prop_array_get(xhp->repo_pool, i);
 		idx = prop_dictionary_get(d, "index");
-		prop_dictionary_get_cstring_nocopy(d, "uri", &uri);
-		xbps_dbg_printf(xhp, "[rpool] unregistered repository '%s'\n",
-		    uri);
+		if (xhp->flags & XBPS_FLAG_DEBUG) {
+			prop_dictionary_get_cstring_nocopy(d, "uri", &uri);
+			xbps_dbg_printf(xhp, "[rpool] unregistered "
+			    "repository '%s'\n", uri);
+		}
 		prop_object_release(idx);
 		prop_object_release(d);
 	}

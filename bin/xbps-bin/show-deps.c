@@ -76,7 +76,6 @@ show_pkg_reverse_deps(struct xbps_handle *xhp, const char *pkgname)
 	}
 	rv = xbps_callback_array_iter_in_dict(xhp, pkgd, "requiredby",
 	    list_strings_sep_in_array, NULL);
-	prop_object_release(pkgd);
 
 	return rv;
 }

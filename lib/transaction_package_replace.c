@@ -95,7 +95,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				xbps_dbg_printf(xhp,
 				    "replaced and new package "
 				    "are equal (%s)\n", pkgname);
-				prop_object_release(instd);
 				continue;
 			}
 			instd_reqby = prop_dictionary_get(instd, "requiredby");
@@ -181,7 +180,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				if (xbps_mkpath(dname, 0755) == -1) {
 					if (errno != EEXIST) {
 						free(buf);
-						prop_object_release(instd);
 						prop_object_iterator_release(iter);
 						return errno;
 					}
@@ -190,7 +188,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 					free(buf);
 					free(dirc);
 					prop_object_release(filesd);
-					prop_object_release(instd);
 					prop_object_iterator_release(iter);
 					return errno;
 				}
@@ -205,7 +202,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			prop_dictionary_set_cstring_nocopy(instd,
 			    "transaction", "remove");
 			if (!xbps_add_obj_to_array(transd_unsorted, instd)) {
-				prop_object_release(instd);
 				prop_object_iterator_release(iter);
 				return EINVAL;
 			}

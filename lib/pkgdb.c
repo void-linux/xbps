@@ -169,25 +169,16 @@ xbps_pkgdb_get_pkgd(struct xbps_handle *xhp, const char *pkg, bool bypattern)
 	else
 		pkgd = xbps_find_pkg_in_array_by_name(xhp, xhp->pkgdb, pkg, NULL);
 
-	if (pkgd != NULL)
-		return prop_dictionary_copy(pkgd);
-
-	return NULL;
+	return pkgd;
 }
 
 prop_dictionary_t
 xbps_pkgdb_get_pkgd_by_pkgver(struct xbps_handle *xhp, const char *pkgver)
 {
-	prop_dictionary_t pkgd = NULL;
-
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
 
-	pkgd = xbps_find_pkg_in_array_by_pkgver(xhp, xhp->pkgdb, pkgver, NULL);
-	if (pkgd != NULL)
-		return prop_dictionary_copy(pkgd);
-
-	return NULL;
+	return xbps_find_pkg_in_array_by_pkgver(xhp, xhp->pkgdb, pkgver, NULL);
 }
 
 bool

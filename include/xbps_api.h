@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20120615"
+#define XBPS_API_VERSION	"20120616"
 #define XBPS_VERSION		"0.16"
 
 /**
@@ -714,9 +714,7 @@ int xbps_pkgdb_foreach_reverse_cb(
  * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
  * package pattern, i.e `foo>=0' or `foo<1'.
  *
- * @return The matching proplib package dictionary from pkgdb copied
- * with \a prop_dictionary_copy() so it must be released when not required
- * anymore with prop_object_release(). NULL otherwise.
+ * @return The matching proplib package dictionary, NULL otherwise.
  */
 prop_dictionary_t xbps_pkgdb_get_pkgd(struct xbps_handle *xhp,
 				      const char *pkg,
@@ -729,9 +727,7 @@ prop_dictionary_t xbps_pkgdb_get_pkgd(struct xbps_handle *xhp,
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] pkgver Package name-version to match, i.e 'foo-1.0'.
  *
- * @return The matching proplib package dictionary from pkgdb copied
- * with \a prop_dictionary_copy() so it must be released when not required
- * anymore with prop_object_release(). NULL otherwise.
+ * @return The matching proplib package dictionary, NULL otherwise.
  */
 prop_dictionary_t xbps_pkgdb_get_pkgd_by_pkgver(struct xbps_handle *xhp,
 						const char *pkgver);
@@ -1002,8 +998,6 @@ prop_dictionary_t xbps_find_virtualpkg_in_dict_by_pattern(struct xbps_handle *xh
  *
  * @return The package's dictionary on success, NULL otherwise and
  * errno is set appropiately.
- * @note When returned dictionary is no longer needed, it must be released
- * with prop_object_release(3).
  */
 prop_dictionary_t xbps_find_pkg_dict_installed(struct xbps_handle *xhp,
 					       const char *str,
@@ -1021,8 +1015,6 @@ prop_dictionary_t xbps_find_pkg_dict_installed(struct xbps_handle *xhp,
  *
  * @return The virtual package's dictionary on success, NULL otherwise and
  * errno is set appropiately.
- * @note When returned dictionary is no longer needed, it must be released
- * with prop_object_release(3).
  */
 prop_dictionary_t xbps_find_virtualpkg_dict_installed(struct xbps_handle *xhp,
 						      const char *str,

@@ -197,7 +197,6 @@ main(int argc, char **argv)
 			    "pkgname", &pkgn);
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "version", &version);
-			prop_object_release(pkgd);
 			fprintf(stderr, "%s%s=> ERROR: `%s-%s' is already "
 			    "registered!%s\n", MSG_ERROR,
 			    in_chroot ? "[chroot] " : "",
@@ -251,7 +250,6 @@ main(int argc, char **argv)
 		}
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 		printf("%s\n", version);
-		prop_object_release(dict);
 	} else if (strcasecmp(argv[0], "sanitize-plist") == 0) {
 		/* Sanitize a plist file (properly indent the file) */
 		if (argc != 2)

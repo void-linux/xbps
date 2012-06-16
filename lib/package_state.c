@@ -107,7 +107,6 @@ xbps_pkg_state_installed(struct xbps_handle *xhp,
 		return ENOENT;
 
 	*state = get_state(pkgd);
-	prop_object_release(pkgd);
 	if (*state == 0)
 		return EINVAL;
 
@@ -203,11 +202,8 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 		if (pkgd == NULL) {
 			newpkg = true;
 			pkgd = prop_dictionary_create();
-			rv = set_pkg_objs(pkgd, pkgname, version);
-			if (rv != 0) {
-				prop_object_release(pkgd);
+			if ((rv = set_pkg_objs(pkgd, pkgname, version)) != 0)
 				return rv;
-			}
 		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
 			if (newpkg)
@@ -223,8 +219,6 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			if ((rv = xbps_array_replace_dict_by_name(xhp->pkgdb,
 			    pkgd, pkgname)) != 0)
 				return rv;
-
-			prop_object_release(pkgd);
 		}
 	}
 

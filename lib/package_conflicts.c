@@ -59,7 +59,6 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 			    "installed pkg %s", repopkgver, pkgver);
 			assert(buf != NULL);
 			prop_array_add_cstring(trans_cflicts, buf);
-			prop_object_release(pkgd);
 			free(buf);
 			continue;
 		}

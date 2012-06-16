@@ -137,9 +137,6 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 		goto out;
 	}
 out:
-	if (pkgd != NULL)
-		prop_object_release(pkgd);
-
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REGISTER_FAIL,
 		    rv, pkgname, version,

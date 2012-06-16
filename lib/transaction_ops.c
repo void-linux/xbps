@@ -121,7 +121,6 @@ transaction_find_pkg(struct xbps_handle *xhp,
 		 */
 		prop_dictionary_get_cstring_nocopy(pkg_pkgdb,
 		    "version", &instver);
-		prop_object_release(pkg_pkgdb);
 		if (xbps_cmpver(repover, instver) <= 0) {
 			xbps_dbg_printf(xhp, "[rpool] Skipping `%s-%s' "
 			    "(installed: %s-%s) from repository `%s'\n",
@@ -279,11 +278,8 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp,
 		pkgd = xbps_pkgdb_get_pkgd(xhp, pkg, bypattern);
 
 	if (pkgd) {
-		if (xbps_pkg_state_dictionary(pkgd, &state) != 0) {
-			prop_object_release(pkgd);
+		if (xbps_pkg_state_dictionary(pkgd, &state) != 0)
 			return EINVAL;
-		}
-		prop_object_release(pkgd);
 		if ((state == XBPS_PKG_STATE_INSTALLED) && !reinstall) {
 			/* error out if pkg installed and no reinstall */
 			return EEXIST;
@@ -315,7 +311,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	 * Prepare transaction dictionary and missing deps array.
 	 */
 	if ((rv = xbps_transaction_init(xhp)) != 0)
-		goto out;
+		return rv;
 
 	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 	if (!recursive)
@@ -324,19 +320,14 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	 * If recursive is set, find out which packages would be orphans
 	 * if the supplied package were already removed.
 	 */
-	orphans_pkg = prop_array_create();
-	if (orphans_pkg == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
+	if ((orphans_pkg = prop_array_create()) == NULL)
+		return ENOMEM;
 
 	prop_array_set_cstring_nocopy(orphans_pkg, 0, pkgname);
 	orphans = xbps_find_pkg_orphans(xhp, orphans_pkg);
 	prop_object_release(orphans_pkg);
-	if (prop_object_type(orphans) != PROP_TYPE_ARRAY) {
-		rv = EINVAL;
-		goto out;
-	}
+	if (prop_object_type(orphans) != PROP_TYPE_ARRAY)
+		return EINVAL;
 
 	count = prop_array_count(orphans);
 	while (count--) {
@@ -363,9 +354,6 @@ rmpkg:
 	if ((prop_object_type(reqby) == PROP_TYPE_ARRAY) &&
 	    (prop_array_count(reqby) > 0))
 		rv = EEXIST;
-
-out:
-	prop_object_release(pkgd);
 
 	return rv;
 }

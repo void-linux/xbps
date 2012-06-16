@@ -83,15 +83,10 @@ xbps_check_is_installed_pkg_by_pattern(struct xbps_handle *xhp,
 	 * Check that package state is fully installed, not
 	 * unpacked or something else.
 	 */
-	if (xbps_pkg_state_dictionary(dict, &state) != 0) {
-		prop_object_release(dict);
+	if (xbps_pkg_state_dictionary(dict, &state) != 0)
 		return -1; /* error */
-	}
-	if (state != XBPS_PKG_STATE_INSTALLED) {
-		prop_object_release(dict);
+	if (state != XBPS_PKG_STATE_INSTALLED)
 		return 0; /* not fully installed */
-	}
-	prop_object_release(dict);
 
 	return 1;
 }
@@ -108,7 +103,6 @@ xbps_check_is_installed_pkg_by_name(struct xbps_handle *xhp,
 	    ((pkgd = xbps_find_virtualpkg_dict_installed(xhp, pkgname, false)) == NULL))
 		return false;
 
-	prop_object_release(pkgd);
 	return true;
 }
 

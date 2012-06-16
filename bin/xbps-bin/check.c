@@ -185,8 +185,6 @@ out:
 		prop_object_release(filesd);
 	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(propsd);
-	if (prop_object_type(opkgd) == PROP_TYPE_DICTIONARY)
-		prop_object_release(opkgd);
 	if (broken)
 		return 1;
 

@@ -337,7 +337,6 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive)
 		pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		reqby = prop_dictionary_get(pkgd, "requiredby");
-		prop_object_release(pkgd);
 		printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
 		    pkgver, prop_array_count(reqby),
 		    prop_array_count(reqby) > 1 ? "S" : "");
