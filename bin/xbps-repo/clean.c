@@ -63,8 +63,8 @@ cachedir_clean(struct xbps_handle *xhp)
 		/* Internalize props.plist dictionary from binary pkg */
 		binpkg = xbps_xasprintf("%s/%s", xhp->cachedir, dp->d_name);
 		assert(binpkg != NULL);
-		pkg_propsd =
-		    xbps_dictionary_metadata_plist_by_url(binpkg, XBPS_PKGPROPS);
+		pkg_propsd = xbps_dictionary_metadata_plist_by_url(binpkg,
+		    "./props.plist");
 		if (pkg_propsd == NULL) {
 			xbps_error_printf("Failed to read from %s: %s\n",
 			    dp->d_name, strerror(errno));
