@@ -111,9 +111,6 @@ pkgdep_find_idx(const char *name, const char *trans)
 static void
 pkgdep_release(struct pkgdep *pd)
 {
-	if (pd->d != NULL)
-		prop_object_release(pd->d);
-
 	free(pd->name);
 	free(pd);
 	pd = NULL;
@@ -133,12 +130,9 @@ pkgdep_alloc(prop_dictionary_t d, const char *name, const char *trans)
 		free(pd);
 		return NULL;
 	}
-	if (d != NULL)
-		pd->d = prop_dictionary_copy(d);
-	else
-		pd->d = NULL;
-
-	(void)strlcpy(pd->name, name, len);
+	pd->d = d;
+	memcpy(pd->name, name, len-1);
+	pd->name[len-1] = '\0';
 	pd->trans = trans;
 
 	return pd;
@@ -318,6 +312,7 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 	if (prop_array_count(unsorted) == 0) {
 		prop_dictionary_set(xhp->transd, "packages", sorted);
+		prop_object_release(sorted);
 		return 0;
 	}
 	/*

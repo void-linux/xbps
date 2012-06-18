@@ -222,9 +222,7 @@ xbps_end(struct xbps_handle *xhp)
 	xbps_rpool_release(xhp);
 	xbps_fetch_unset_cache_connection();
 
-	if (xhp->cfg != NULL)
-		cfg_free(xhp->cfg);
-
+	cfg_free(xhp->cfg);
 	free(xhp->cachedir_priv);
 	free(xhp->metadir_priv);
 	free(xhp->un_machine);

@@ -150,7 +150,9 @@ xbps_pkg_name(const char *pkg)
 	len = strlen(pkg) - strlen(p) + 1;
 	buf = malloc(len);
 	assert(buf != NULL);
-	strlcpy(buf, pkg, len);
+
+	memcpy(buf, pkg, len-1);
+	buf[len-1] = '\0';
 
 	return buf;
 }
@@ -172,7 +174,9 @@ xbps_pkgpattern_name(const char *pkg)
 
 	pkgname = malloc(len);
 	assert(pkgname != NULL);
-	strlcpy(pkgname, pkg, len);
+
+	memcpy(pkgname, pkg, len-1);
+	pkgname[len-1] = '\0';
 
 	return pkgname;
 }

@@ -81,8 +81,7 @@ xbps_rpool_init(struct xbps_handle *xhp)
 		/*
 		 * Register repository into the array.
 		 */
-		d = prop_dictionary_create();
-		if (d == NULL) {
+		if ((d = prop_dictionary_create()) == NULL) {
 			rv = ENOMEM;
 			prop_object_release(array);
 			goto out;
@@ -93,11 +92,13 @@ xbps_rpool_init(struct xbps_handle *xhp)
 			prop_object_release(d);
 			goto out;
 		}
-		if (!xbps_add_obj_to_dict(d, array, "index")) {
+		if (!prop_dictionary_set(d, "index", array)) {
 			rv = EINVAL;
+			prop_object_release(array);
 			prop_object_release(d);
 			goto out;
 		}
+		prop_object_release(array);
 		if (!prop_array_add(xhp->repo_pool, d)) {
 			rv = EINVAL;
 			prop_object_release(d);
@@ -124,7 +125,6 @@ out:
 void HIDDEN
 xbps_rpool_release(struct xbps_handle *xhp)
 {
-	prop_array_t idx;
 	prop_dictionary_t d;
 	size_t i;
 	const char *uri;
@@ -134,15 +134,14 @@ xbps_rpool_release(struct xbps_handle *xhp)
 
 	for (i = 0; i < prop_array_count(xhp->repo_pool); i++) {
 		d = prop_array_get(xhp->repo_pool, i);
-		idx = prop_dictionary_get(d, "index");
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			prop_dictionary_get_cstring_nocopy(d, "uri", &uri);
 			xbps_dbg_printf(xhp, "[rpool] unregistered "
 			    "repository '%s'\n", uri);
 		}
-		prop_object_release(idx);
 		prop_object_release(d);
 	}
+	prop_object_release(xhp->repo_pool);
 	xhp->repo_pool = NULL;
 	xbps_dbg_printf(xhp, "[rpool] released ok.\n");
 }
