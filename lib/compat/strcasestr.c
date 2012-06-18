@@ -40,7 +40,7 @@
 /*
  * Find the first occurrence of find in s, ignore case.
  */
-char *
+char HIDDEN *
 strcasestr(const char *s, const char *find)
 {
 	char c, sc;

@@ -26,7 +26,7 @@
  * will be copied.  Always NUL terminates (unless siz == 0).
  * Returns strlen(src); if retval >= siz, truncation occurred.
  */
-size_t
+size_t HIDDEN
 strlcpy(char *dst, const char *src, size_t siz)
 {
 	char *d = dst;

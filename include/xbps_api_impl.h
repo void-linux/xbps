@@ -29,6 +29,17 @@
 
 #include <assert.h>
 #include <xbps_api.h>
+/*
+ * By default all public functions have default visibility, unless
+ * visibility has been detected by configure and the HIDDEN definition
+ * is used.
+ */
+#if HAVE_VISIBILITY
+#define HIDDEN __attribute__ ((visibility("hidden")))
+#else
+#define HIDDEN
+#endif
+
 #include "compat.h"
 #include "queue.h"
 #include "fetch.h"
@@ -43,17 +54,6 @@
 
 #ifndef __UNCONST
 #define __UNCONST(a)	((void *)(unsigned long)(const void *)(a))
-#endif
-
-/*
- * By default all public functions have default visibility, unless
- * visibility has been detected by configure and the HIDDEN definition
- * is used.
- */
-#if HAVE_VISIBILITY
-#define HIDDEN __attribute__ ((visibility("hidden")))
-#else
-#define HIDDEN
 #endif
 
 __BEGIN_DECLS

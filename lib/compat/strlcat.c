@@ -28,7 +28,7 @@
  * Returns strlen(src) + MIN(siz, strlen(initial dst)).
  * If retval >= siz, truncation occurred.
  */
-size_t
+size_t HIDDEN
 strlcat(char *dst, const char *src, size_t siz)
 {
 	char *d = dst;

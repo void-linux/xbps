@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-int
+int HIDDEN
 vasprintf(char **ret, const char *fmt, va_list ap)
 {
 	char *buf, *new_buf;
