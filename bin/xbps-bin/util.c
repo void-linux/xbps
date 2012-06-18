@@ -127,6 +127,7 @@ show_pkg_info(prop_dictionary_t dict)
 
 		print_value_obj(keyname, obj, false);
 	}
+	prop_object_release(all_keys);
 }
 
 int
