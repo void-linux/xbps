@@ -141,7 +141,6 @@ xbps_rpool_release(struct xbps_handle *xhp)
 		}
 		prop_object_release(d);
 	}
-	prop_object_release(xhp->repo_pool);
 	xhp->repo_pool = NULL;
 	xbps_dbg_printf(xhp, "[rpool] released ok.\n");
 }
