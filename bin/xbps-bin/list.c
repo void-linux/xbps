@@ -28,9 +28,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <assert.h>
 
 #include "defs.h"
-#include "compat.h"
 
 int
 list_pkgs_in_dict(struct xbps_handle *xhp,
@@ -72,13 +72,12 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 		return EINVAL;
 
 	tmp = calloc(1, lpc->pkgver_len + 1);
-	if (tmp == NULL)
-		return errno;
-
-	strlcpy(tmp, pkgver, lpc->pkgver_len + 1);
+	assert(tmp);
+	memcpy(tmp, pkgver, lpc->pkgver_len);
 	for (i = strlen(tmp); i < lpc->pkgver_len; i++)
 		tmp[i] = ' ';
 
+	tmp[i] = '\0';
 	printf("%s %s\n", tmp, short_desc);
 	free(tmp);
 

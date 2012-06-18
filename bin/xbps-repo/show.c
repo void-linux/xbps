@@ -122,13 +122,12 @@ show_pkg_namedesc(struct xbps_handle *xhp,
 		    (strcasestr(pkgver, rsd->patterns[i])) ||
 		    (strcasestr(desc, rsd->patterns[i]))) {
 			tmp = calloc(1, rsd->pkgver_len + 1);
-			if (tmp == NULL)
-				return errno;
-
-			strlcpy(tmp, pkgver, rsd->pkgver_len + 1);
+			assert(tmp);
+			memcpy(tmp, pkgver, rsd->pkgver_len);
 			for (x = strlen(tmp); x < rsd->pkgver_len; x++)
 				tmp[x] = ' ';
 
+			tmp[x] = '\0';
 			printf(" %s %s\n", tmp, desc);
 			free(tmp);
 		}
