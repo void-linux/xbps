@@ -43,12 +43,8 @@ cachedir_clean(struct xbps_handle *xhp)
 	char *binpkg;
 	int rv = 0;
 
-	dirp = opendir(xhp->cachedir);
-	if (dirp == NULL) {
-		xbps_error_printf("cannot access to cachedir %s: %s\n",
-		    xhp->cachedir, strerror(errno));
-		return errno;
-	}
+	if ((dirp = opendir(xhp->cachedir)) == NULL)
+		return 0;
 
 	while ((dp = readdir(dirp)) != NULL) {
 		if ((strcmp(dp->d_name, ".") == 0) ||
@@ -86,7 +82,6 @@ cachedir_clean(struct xbps_handle *xhp)
 				    dp->d_name);
 				unlink(binpkg);
 			}
-			prop_object_release(repo_pkgd);
 			free(binpkg);
 			continue;
 		}
