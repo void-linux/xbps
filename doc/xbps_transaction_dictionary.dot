@@ -4,10 +4,15 @@ digraph transaction_dictionary {
 	node [shape=box,fontname="DejaVuSansCondensed",fontsize="8",height=".1",width=".1"];
 	main -> packages [label="array"];
 	main -> missing_deps [label="array"];
+	main -> conflicts [label="array"];
 	missing_deps -> mdep1 [label="string"];
 	missing_deps -> mdep2 [label="string"];
+	conflicts -> conflict1 [label="string"];
+	conflicts -> conflict2 [label="string"];
 	mdep1 [style=filled,label="blob>=3.0<4.1"];
 	mdep2 [style=filled,label="..."];
+	conflict1 [style=filled,label="blob<4.0.1"];
+	conflict2 [style=filled,label="..."];
 	main -> totalsize [label="integer"];
 	main -> totaldlsize [label="integer"];
 	main [style=filled,fillcolor="darksalmon",label="Main dictionary"];
