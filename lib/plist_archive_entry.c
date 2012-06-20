@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,13 +36,13 @@
  * Takes a compressed data buffer, decompresses it and returns the
  * new buffer uncompressed if all was right.
  */
-#define _READ_CHUNK	512
+#define _READ_CHUNK	8192
 
 static char *
 _xbps_uncompress_plist_data(char *xml, size_t len)
 {
 	z_stream strm;
-	unsigned char out[_READ_CHUNK];
+	unsigned char *out;
 	char *uncomp_xml = NULL;
 	size_t have;
 	ssize_t totalsize = 0;
@@ -65,9 +65,15 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 	strm.next_in = (unsigned char *)xml;
 
 	/* Output buffer (uncompressed) */
-	uncomp_xml = malloc(_READ_CHUNK);
-	if (uncomp_xml == NULL) {
+	if ((uncomp_xml = malloc(_READ_CHUNK)) == NULL) {
 		(void)inflateEnd(&strm);
+		return NULL;
+	}
+
+	/* temp output buffer for inflate */
+	if ((out = malloc(_READ_CHUNK)) == NULL) {
+		(void)inflateEnd(&strm);
+		free(uncomp_xml);
 		return NULL;
 	}
 
@@ -84,6 +90,7 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 			 */
 			(void)inflateEnd(&strm);
 			free(uncomp_xml);
+			free(out);
 			errno = EAGAIN;
 			return NULL;
 		case Z_STREAM_ERROR:
@@ -93,6 +100,7 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 		case Z_VERSION_ERROR:
 			(void)inflateEnd(&strm);
 			free(uncomp_xml);
+			free(out);
 			return NULL;
 		}
 		have = _READ_CHUNK - strm.avail_out;
@@ -103,6 +111,7 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 
 	/* we are done */
 	(void)inflateEnd(&strm);
+	free(out);
 
 	return uncomp_xml;
 }
@@ -132,30 +141,20 @@ xbps_dictionary_from_archive_entry(struct archive *ar,
 	}
 
 	uncomp_buf = _xbps_uncompress_plist_data(buf, buflen);
+	free(buf);
 	if (uncomp_buf == NULL) {
 		if (errno && errno != EAGAIN) {
 			/* Error while decompressing */
-			free(buf);
 			return NULL;
 		} else if (errno == EAGAIN) {
 			/* Not a compressed data, try again */
 			errno = 0;
 			d = prop_dictionary_internalize(buf);
-			free(buf);
 		}
 	} else {
 		/* We have the uncompressed data */
 		d = prop_dictionary_internalize(uncomp_buf);
 		free(uncomp_buf);
-		free(buf);
 	}
-
-	if (d == NULL)
-		return NULL;
-	else if (prop_object_type(d) != PROP_TYPE_DICTIONARY) {
-		prop_object_release(d);
-		return NULL;
-	}
-
 	return d;
 }
