@@ -131,7 +131,7 @@ repoidx_get(struct xbps_handle *xhp, const char *pkgdir)
 static int
 add_binpkg_to_index(struct xbps_handle *xhp,
 		    prop_array_t idx,
-		    const char *filedir,
+		    const char *repodir,
 		    const char *file)
 {
 	prop_dictionary_t newpkgd, curpkgd;
@@ -186,7 +186,8 @@ add_binpkg_to_index(struct xbps_handle *xhp,
 			goto out;
 		} else if (ret == -1) {
 			/* idx version is greater, remove current binpkg */
-			oldfilepath = xbps_xasprintf("%s/%s", filedir, filen);
+			oldfilepath = xbps_xasprintf("%s/%s/%s",
+			    repodir, arch, filen);
 			assert(oldfilepath != NULL);
 			if (remove(oldfilepath) == -1) {
 				rv = errno;
@@ -219,7 +220,8 @@ add_binpkg_to_index(struct xbps_handle *xhp,
 			rv = ENOMEM;
 			goto out;
 		}
-		oldfilepath = xbps_xasprintf("%s/%s", filedir, oldfilen);
+		oldfilepath = xbps_xasprintf("%s/%s/%s",
+		    repodir, oldarch, oldfilen);
 		if (oldfilepath == NULL) {
 			rv = errno;
 			prop_object_release(newpkgd);
@@ -352,7 +354,7 @@ repo_genindex(struct xbps_handle *xhp, const char *pkgdir)
 				rv = errno;
 				goto out;
 			}
-			rv = add_binpkg_to_index(xhp, idx, curdir, binfile);
+			rv = add_binpkg_to_index(xhp, idx, pkgdir, binfile);
 			free(binfile);
 			if (rv == EEXIST) {
 				rv = 0;

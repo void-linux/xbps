@@ -1,4 +1,10 @@
-xbps-0.16 (???):
+xbps-0.16.1 (2012-06-30):
+
+ * xbps-repo(8): fixed a regression in the 'genindex' target. It was looking
+   at wrong repository subdirectory when removing obsolete files.
+   This also fixes issue 24 from googlecode.
+
+xbps-0.16 (2012-06-20):
 
  * Added support for package conflicts. If any conflicting pkg has been found
    in a transaction, xbps_transaction_prepare() will return EAGAIN and
