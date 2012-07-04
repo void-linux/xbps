@@ -271,7 +271,8 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		bool soft_replace)
 {
 	prop_dictionary_t pkgd = NULL;
-	char *buf = NULL, *pkgver = NULL;
+	char *tmpname = NULL, *buf = NULL, *pkgver = NULL;
+	const char *tmpver = NULL;
 	int rv = 0;
 	bool rmfile_exists = false;
 	pkg_state_t state = 0;
@@ -438,8 +439,14 @@ purge:
 	if ((rv = xbps_unregister_pkg(xhp, pkgname, version, false)) != 0)
 		goto out;
 
+	tmpname = xbps_pkg_name(pkgver);
+	assert(tmpname);
+	tmpver = xbps_pkg_version(pkgver);
+	assert(tmpver);
+
 	xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_DONE,
-	     0, pkgname, version, NULL);
+	     0, tmpname, tmpver, NULL);
+	free(tmpname);
 
 out:
 	if (buf != NULL)

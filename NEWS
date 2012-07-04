@@ -1,3 +1,8 @@
+xbps-0.16.2 (???):
+
+ * libxbps: after removing a pkg the state cb was passing dangling pointers in
+   its pkgname and version members.
+
 xbps-0.16.1 (2012-06-30):
 
  * xbps-repo(8): fixed a regression in the 'genindex' target. It was looking
