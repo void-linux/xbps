@@ -66,7 +66,7 @@ transaction_find_pkg(struct xbps_handle *xhp,
 {
 	prop_dictionary_t pkg_pkgdb, pkg_repod;
 	prop_array_t unsorted;
-	const char *pkgname, *repoloc, *repover, *instver, *reason;
+	const char *pkgname, *repoloc, *repover, *repopkgver, *instver, *reason;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -91,28 +91,26 @@ transaction_find_pkg(struct xbps_handle *xhp,
 			pkg_repod = xbps_rpool_find_pkg_exact(xhp, pkg);
 			if (pkg_repod == NULL) {
 				/* not found */
-				rv = errno;
-				goto out;
+				return errno;
 			}
 		} else {
 			if (((pkg_repod = xbps_rpool_find_pkg(xhp, pkg, bypattern, best)) == NULL) &&
 			    ((pkg_repod = xbps_rpool_find_virtualpkg_conf(xhp, pkg, bypattern)) == NULL) &&
 			    ((pkg_repod = xbps_rpool_find_virtualpkg(xhp, pkg, bypattern)) == NULL)) {
 				/* not found */
-				rv = errno;
-				goto out;
+				return errno;
 			}
 		}
 	} else {
 		pkg_repod = xbps_rpool_find_pkg(xhp, pkg, false, true);
 		if (pkg_repod == NULL) {
 			/* not found */
-			rv = errno;
-			goto out;
+			return errno;
 		}
 	}
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &repover);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
 	if (action == TRANS_UPDATE) {
@@ -125,39 +123,54 @@ transaction_find_pkg(struct xbps_handle *xhp,
 			xbps_dbg_printf(xhp, "[rpool] Skipping `%s-%s' "
 			    "(installed: %s-%s) from repository `%s'\n",
 			    pkgname, repover, pkgname, instver, repoloc);
-			rv = EEXIST;
-			goto out;
+			return EEXIST;
 		}
 	}
 	/*
 	 * Prepare transaction dictionary.
 	 */
 	if ((rv = xbps_transaction_init(xhp)) != 0)
-		goto out;
+		return rv;
 
 	/*
 	 * Find out if package has matched conflicts.
 	 */
 	xbps_pkg_find_conflicts(xhp, pkg_repod);
 
+	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
+	if (unsorted == NULL)
+		return EINVAL;
+	/*
+	 * Find out if package being updated matches the one already
+	 * in transaction, in that case ignore it.
+	 */
+	if (action == TRANS_UPDATE) {
+		if (xbps_find_pkg_in_array_by_pkgver(xhp,
+		    unsorted, repopkgver, NULL)) {
+			xbps_dbg_printf(xhp, "[update] `%s' already queued in "
+			    "transaction.\n", repopkgver);
+			return EEXIST;
+		}
+	}
+
 	/*
 	 * Prepare required package dependencies and add them into the
 	 * "unsorted" array in transaction dictionary.
 	 */
 	if ((rv = xbps_repository_find_pkg_deps(xhp, pkg_repod)) != 0)
-		goto out;
+		return rv;
 	/*
 	 * Set package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
 	 */
 	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0) {
 		if (rv != ENOENT)
-			goto out;
+			return rv;
 		/* Package not installed, don't error out */
 		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
 	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod, state)) != 0)
-		goto out;
+		return rv;
 
 	if (state == XBPS_PKG_STATE_UNPACKED)
 		reason = "configure";
@@ -170,32 +183,18 @@ transaction_find_pkg(struct xbps_handle *xhp,
 	 * or "update".
 	 */
 	if (!prop_dictionary_set_cstring_nocopy(pkg_repod,
-	    "transaction", reason)) {
-		rv = EINVAL;
-		goto out;
-	}
-	/*
-	 * Add required package dictionary into the unsorted array.
-	 */
-	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
-	if (unsorted == NULL) {
-		rv = EINVAL;
-		goto out;
-	}
+	    "transaction", reason))
+		return EINVAL;
+
 	/*
 	 * Add the pkg dictionary from repository's index dictionary into
 	 * the "unsorted" array in transaction dictionary.
 	 */
-	if (!prop_array_add(unsorted, pkg_repod)) {
-		rv = errno;
-		goto out;
-	}
+	if (!prop_array_add(unsorted, pkg_repod))
+		return errno;
+
 	xbps_dbg_printf(xhp, "%s-%s: added into the transaction (%s).\n",
 	    pkgname, repover, repoloc);
-
-out:
-	if (pkg_repod != NULL)
-		prop_object_release(pkg_repod);
 
 	return rv;
 }
