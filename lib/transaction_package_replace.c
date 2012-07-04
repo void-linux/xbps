@@ -84,19 +84,16 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			    "pkgname", &curpkgname);
 			prop_dictionary_get_cstring_nocopy(instd,
 			    "pkgver", &curpkgver);
-			xbps_dbg_printf(xhp,
-			    "Package `%s' will be replaced by `%s', "
-			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 			/*
 			 * Check that we are not replacing the same package,
 			 * due to virtual packages.
 			 */
-			if (strcmp(pkgname, curpkgname) == 0) {
-				xbps_dbg_printf(xhp,
-				    "replaced and new package "
-				    "are equal (%s)\n", pkgname);
+			if (strcmp(pkgname, curpkgname) == 0)
 				continue;
-			}
+
+			xbps_dbg_printf(xhp,
+			    "Package `%s' will be replaced by `%s', "
+			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 			instd_reqby = prop_dictionary_get(instd, "requiredby");
 			instd_auto = false;
 			prop_dictionary_get_bool(instd,
