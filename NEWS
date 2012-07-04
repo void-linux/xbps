@@ -1,3 +1,7 @@
+xbps-0.16.3 (2012-07-04):
+
+ * libxbps: fixed a regression in 0.16.2.
+
 xbps-0.16.2 (2012-07-04):
 
  * libxbps: fixed 2 bugs while updating packages.

@@ -72,10 +72,8 @@ xbps_check_is_installed_pkg_by_pattern(struct xbps_handle *xhp,
 	if (dict == NULL) {
 		dict = xbps_find_pkg_dict_installed(xhp, pattern, true);
 		if (dict == NULL) {
-			if (errno == ENOENT) {
-				errno = 0;
+			if (errno == ENOENT)
 				return 0; /* not installed */
-			}
 			return -1; /* error */
 		}
 	}
