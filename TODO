@@ -1,7 +1,12 @@
 libxbps:
+ - switch to libcurl and drop libfetch.
  - properties: (update-first) still unimplemented.
 
+xbps-bin:
+ - Improve help output and add description at the same line than target.
+
 xbps-repo:
+ - Improve help output and add description at the same line than target.
  - support to verify PGP signed pkg-index.plist repo files.
    I have some preliminar code but need to clean it up, thanks
    to NetBSD's netpgp).
