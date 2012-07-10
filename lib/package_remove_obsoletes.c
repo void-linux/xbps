@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@ xbps_remove_obsoletes(struct xbps_handle *xhp,
 	prop_string_t oldstr, newstr;
 	struct stat st;
 	const char *array_str = "files";
-	const char *oldhash;
+	const char *oldhash, *hash;
 	char *file;
 	int rv = 0;
 	bool found, dodirs = false, dolinks = false;
@@ -118,13 +118,35 @@ again:
 				rv = errno;
 				goto out;
 			}
+			/*
+			 * Skip files with same path and/or hash.
+			 */
 			if (prop_string_equals(oldstr, newstr)) {
+				found = true;
+				break;
+			}
+
+			hash = NULL;
+			prop_dictionary_get_cstring_nocopy(obj2,
+			    "sha256", &hash);
+			if (hash && strcmp(hash, oldhash) == 0) {
 				found = true;
 				break;
 			}
 		}
 		prop_object_iterator_reset(iter2);
 		if (found) {
+			free(file);
+			continue;
+		}
+		/*
+		 * Do not remove required symlinks for the
+		 * system transition to /usr.
+		 */
+		if ((strcmp(file, "./bin") == 0) ||
+		    (strcmp(file, "./sbin") == 0) ||
+		    (strcmp(file, "./lib") == 0) ||
+		    (strcmp(file, "./lib64") == 0)) {
 			free(file);
 			continue;
 		}
@@ -143,7 +165,7 @@ again:
 		xbps_set_cb_state(xhp,
 		    XBPS_STATE_REMOVE_FILE_OBSOLETE,
 		    0, pkgname, version,
-		    "Removed obsolete entry: %s", file);
+		    "%s: removed obsolete entry: %s", pkgver, file);
 		free(file);
 	}
 	if (!dolinks) {

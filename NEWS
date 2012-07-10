@@ -1,3 +1,9 @@
+xbps-0.16.4 (???):
+
+ * libxbps: when finding obsolete files also match against sha256, not
+   just the filename. Also ignore symlinks found in rootfs to make
+   the system transition to /usr fully work.
+
 xbps-0.16.3 (2012-07-04):
 
  * libxbps: fixed a regression in 0.16.2.
