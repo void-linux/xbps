@@ -41,10 +41,6 @@
 
 #include <zlib.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /*
  * _prop_object_init --
  *	Initialize an object.  Called when sub-classes create
@@ -816,10 +812,7 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
     size_t len, bool do_compress)
 {
 	gzFile gzf = NULL;
-	char tname[PATH_MAX];
-#ifndef HAVE_STRLCAT
-	char *otname;
-#endif
+	char tname[PATH_MAX], *otname;
 	int fd;
 	int save_errno;
 	mode_t myumask;
@@ -865,7 +858,11 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
 			goto bad;
 	}
 
+#ifdef HAVE_FDATASYNC
+	if (fdatasync(fd) == -1)
+#else
 	if (fsync(fd) == -1)
+#endif
 		goto bad;
 
 	myumask = umask(0);
@@ -1190,6 +1187,8 @@ prop_object_equals_with_error(prop_object_t obj1, prop_object_t obj2,
 		if (!_prop_stack_pop(&stack, &obj1, &obj2,
 				     &stored_pointer1, &stored_pointer2))
 			return true;
+		po1 = obj1;
+		po2 = obj2;
 		goto continue_subtree;
 	}
 	_PROP_ASSERT(ret == _PROP_OBJECT_EQUALS_RECURSE);

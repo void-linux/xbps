@@ -1,4 +1,4 @@
-/*	$NetBSD: prop_object_impl.h,v 1.28 2008/11/30 00:17:07 haad Exp $	*/
+/*	$NetBSD: prop_object_impl.h,v 1.30 2009/09/13 18:45:10 pooka Exp $	*/
 
 /*-
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
@@ -32,7 +32,11 @@
 #ifndef _PROPLIB_PROP_OBJECT_IMPL_H_
 #define	_PROPLIB_PROP_OBJECT_IMPL_H_
 
+#if defined(_KERNEL) || defined(_STANDALONE)
+#include <lib/libkern/libkern.h>
+#else
 #include <inttypes.h>
+#endif
 
 #include "prop_stack.h"
 
@@ -143,9 +147,9 @@ struct _prop_object_internalize_context *
 void		_prop_object_internalize_context_free(
 				struct _prop_object_internalize_context *);
 
+#if !defined(_KERNEL) && !defined(_STANDALONE)
 bool		_prop_object_externalize_write_file(const char *,
-						    const char *,
-						    size_t, bool);
+						    const char *, size_t, bool);
 
 struct _prop_object_internalize_mapped_file {
 	char *	poimf_xml;
@@ -156,6 +160,7 @@ struct _prop_object_internalize_mapped_file *
 		_prop_object_internalize_map_file(const char *);
 void		_prop_object_internalize_unmap_file(
 				struct _prop_object_internalize_mapped_file *);
+#endif /* !_KERNEL && !_STANDALONE */
 
 typedef bool (*prop_object_internalizer_t)(prop_stack_t, prop_object_t *,
 				struct _prop_object_internalize_context *);
@@ -226,6 +231,110 @@ struct _prop_object_iterator {
 	uint32_t	pi_version;
 };
 
+#define _PROP_NOTHREAD_ONCE_DECL(x)	static bool x = false;
+#define _PROP_NOTHREAD_ONCE_RUN(x,f)					\
+	do {								\
+		if ((x) == false) {					\
+			f();						\
+			x = true;					\
+		}							\
+	} while (/*CONSTCOND*/0)
+
+#if defined(_KERNEL)
+
+/*
+ * proplib in the kernel...
+ */
+
+#include <sys/param.h>
+#include <sys/malloc.h>
+#include <sys/pool.h>
+#include <sys/systm.h>
+#include <sys/rwlock.h>
+#include <sys/once.h>
+
+#define	_PROP_ASSERT(x)			KASSERT(x)
+
+#define	_PROP_MALLOC(s, t)		malloc((s), (t), M_WAITOK)
+#define	_PROP_CALLOC(s, t)		malloc((s), (t), M_WAITOK | M_ZERO)
+#define	_PROP_REALLOC(v, s, t)		realloc((v), (s), (t), M_WAITOK)
+#define	_PROP_FREE(v, t)		free((v), (t))
+
+#define	_PROP_POOL_GET(p)		pool_get(&(p), PR_WAITOK)
+#define	_PROP_POOL_PUT(p, v)		pool_put(&(p), (v))
+
+struct prop_pool_init {
+	struct pool *pp;
+	size_t size;
+	const char *wchan;
+};
+#define	_PROP_POOL_INIT(pp, size, wchan)				\
+struct pool pp;								\
+static const struct prop_pool_init _link_ ## pp[1] = {			\
+	{ &pp, size, wchan }						\
+};									\
+__link_set_add_rodata(prop_linkpools, _link_ ## pp);
+
+#define	_PROP_MALLOC_DEFINE(t, s, l)					\
+		MALLOC_DEFINE(t, s, l);
+
+#define	_PROP_MUTEX_DECL_STATIC(x)	static kmutex_t x;
+#define	_PROP_MUTEX_INIT(x)		mutex_init(&(x),MUTEX_DEFAULT,IPL_NONE)
+#define	_PROP_MUTEX_LOCK(x)		mutex_enter(&(x))
+#define	_PROP_MUTEX_UNLOCK(x)		mutex_exit(&(x))
+
+#define	_PROP_RWLOCK_DECL(x)		krwlock_t x ;
+#define	_PROP_RWLOCK_INIT(x)		rw_init(&(x))
+#define	_PROP_RWLOCK_RDLOCK(x)		rw_enter(&(x), RW_READER)
+#define	_PROP_RWLOCK_WRLOCK(x)		rw_enter(&(x), RW_WRITER)
+#define	_PROP_RWLOCK_UNLOCK(x)		rw_exit(&(x))
+#define	_PROP_RWLOCK_DESTROY(x)		rw_destroy(&(x))
+
+#define _PROP_ONCE_DECL(x)		static ONCE_DECL(x);
+#define _PROP_ONCE_RUN(x,f)		RUN_ONCE(&(x), f)
+
+#elif defined(_STANDALONE)
+
+/*
+ * proplib in a standalone environment...
+ */
+
+#include <lib/libsa/stand.h>
+
+void *		_prop_standalone_calloc(size_t);
+void *		_prop_standalone_realloc(void *, size_t);
+
+#define	_PROP_ASSERT(x)			/* nothing */
+
+#define	_PROP_MALLOC(s, t)		alloc((s))
+#define	_PROP_CALLOC(s, t)		_prop_standalone_calloc((s))
+#define	_PROP_REALLOC(v, s, t)		_prop_standalone_realloc((v), (s))
+#define	_PROP_FREE(v, t)		dealloc((v), 0)		/* XXX */
+
+#define	_PROP_POOL_GET(p)		alloc((p))
+#define	_PROP_POOL_PUT(p, v)		dealloc((v), (p))
+
+#define	_PROP_POOL_INIT(p, s, d)	static const size_t p = s;
+
+#define	_PROP_MALLOC_DEFINE(t, s, l)	/* nothing */
+
+#define	_PROP_MUTEX_DECL_STATIC(x)	/* nothing */
+#define	_PROP_MUTEX_INIT(x)		/* nothing */
+#define	_PROP_MUTEX_LOCK(x)		/* nothing */
+#define	_PROP_MUTEX_UNLOCK(x)		/* nothing */
+
+#define	_PROP_RWLOCK_DECL(x)		/* nothing */
+#define	_PROP_RWLOCK_INIT(x)		/* nothing */
+#define	_PROP_RWLOCK_RDLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_WRLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_UNLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_DESTROY(x)		/* nothing */
+
+#define _PROP_ONCE_DECL(x)		_PROP_NOTHREAD_ONCE_DECL(x)
+#define _PROP_ONCE_RUN(x,f)		_PROP_NOTHREAD_ONCE_RUN(x,f)
+
+#else
+
 /*
  * proplib in user space...
  */
@@ -250,12 +359,53 @@ struct _prop_object_iterator {
 
 #define	_PROP_MALLOC_DEFINE(t, s, l)	/* nothing */
 
+#if defined(__NetBSD__) && defined(_LIBPROP)
+/*
+ * Use the same mechanism as libc; we get pthread mutexes for threaded
+ * programs and do-nothing stubs for non-threaded programs.
+ */
+#include "reentrant.h"
+#define	_PROP_MUTEX_DECL_STATIC(x)	static mutex_t x;
+#define	_PROP_MUTEX_INIT(x)		mutex_init(&(x), NULL)
+#define	_PROP_MUTEX_LOCK(x)		mutex_lock(&(x))
+#define	_PROP_MUTEX_UNLOCK(x)		mutex_unlock(&(x))
+
+#define	_PROP_RWLOCK_DECL(x)		rwlock_t x ;
+#define	_PROP_RWLOCK_INIT(x)		rwlock_init(&(x), NULL)
+#define	_PROP_RWLOCK_RDLOCK(x)		rwlock_rdlock(&(x))
+#define	_PROP_RWLOCK_WRLOCK(x)		rwlock_wrlock(&(x))
+#define	_PROP_RWLOCK_UNLOCK(x)		rwlock_unlock(&(x))
+#define	_PROP_RWLOCK_DESTROY(x)		rwlock_destroy(&(x))
+
+#define _PROP_ONCE_DECL(x)						\
+	static pthread_once_t x = PTHREAD_ONCE_INIT;
+#define _PROP_ONCE_RUN(x,f)		thr_once(&(x), (void(*)(void))f);
+
+#elif defined(HAVE_NBTOOL_CONFIG_H)
+/*
+ * None of NetBSD's build tools are multi-threaded.
+ */
+#define	_PROP_MUTEX_DECL_STATIC(x)	/* nothing */
+#define	_PROP_MUTEX_INIT(x)		/* nothing */
+#define	_PROP_MUTEX_LOCK(x)		/* nothing */
+#define	_PROP_MUTEX_UNLOCK(x)		/* nothing */
+
+#define	_PROP_RWLOCK_DECL(x)		/* nothing */
+#define	_PROP_RWLOCK_INIT(x)		/* nothing */
+#define	_PROP_RWLOCK_RDLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_WRLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_UNLOCK(x)		/* nothing */
+#define	_PROP_RWLOCK_DESTROY(x)		/* nothing */
+
+#define _PROP_ONCE_DECL(x)		_PROP_NOTHREAD_ONCE_DECL(x)
+#define _PROP_ONCE_RUN(x,f)		_PROP_NOTHREAD_ONCE_RUN(x,f)
+#else
 /*
  * Use pthread mutexes everywhere else.
  */
 #include <pthread.h>
-#define	_PROP_MUTEX_DECL_STATIC(x)					\
-		static pthread_mutex_t x = PTHREAD_MUTEX_INITIALIZER;
+#define	_PROP_MUTEX_DECL_STATIC(x)	static pthread_mutex_t x;
+#define	_PROP_MUTEX_INIT(x)		pthread_mutex_init(&(x), NULL)
 #define	_PROP_MUTEX_LOCK(x)		pthread_mutex_lock(&(x))
 #define	_PROP_MUTEX_UNLOCK(x)		pthread_mutex_unlock(&(x))
 
@@ -266,9 +416,21 @@ struct _prop_object_iterator {
 #define	_PROP_RWLOCK_UNLOCK(x)		pthread_rwlock_unlock(&(x))
 #define	_PROP_RWLOCK_DESTROY(x)		pthread_rwlock_destroy(&(x))
 
+#define _PROP_ONCE_DECL(x)						\
+	static pthread_once_t x = PTHREAD_ONCE_INIT;
+#define _PROP_ONCE_RUN(x,f)		pthread_once(&(x),(void(*)(void))f)
+#endif
+
+#endif /* _KERNEL */
+
 /*
  * Language features.
  */
+#if defined(__NetBSD__)
+#include <sys/cdefs.h>
+#define	_PROP_ARG_UNUSED		__unused
+#else
 #define	_PROP_ARG_UNUSED		/* delete */
+#endif /* __NetBSD__ */
 
 #endif /* _PROPLIB_PROP_OBJECT_IMPL_H_ */

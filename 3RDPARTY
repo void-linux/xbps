@@ -17,5 +17,5 @@ internal use in the code:
 
 - libfetch-2.31 from NetBSD: lib/fetch
 
-- portableproplib-0.4.1 (lib/portableproplib) from
+- portableproplib-0.6.1 (lib/portableproplib) from
   http://code.google.com/p/portableproplib

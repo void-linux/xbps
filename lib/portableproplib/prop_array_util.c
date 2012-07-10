@@ -218,6 +218,21 @@ prop_array_get_cstring ## variant (prop_array_t array,		        \
 }									\
 									\
 bool									\
+prop_array_add_cstring ## variant (prop_array_t array,			\
+					const char *cp)			\
+{									\
+	prop_string_t str;						\
+	bool rv;							\
+									\
+	str = prop_string_create_cstring ## variant (cp);		\
+	if (str == NULL)						\
+		return false;						\
+	rv = prop_array_add(array, str);				\
+	prop_object_release(str);					\
+	return rv;							\
+}									\
+									\
+bool									\
 prop_array_set_cstring ## variant (prop_array_t array,			\
 					unsigned int indx,		\
 					const char *cp)			\
@@ -238,3 +253,14 @@ TEMPLATE(,)
 TEMPLATE(_nocopy,const)
 
 #undef TEMPLATE
+
+bool
+prop_array_add_and_rel(prop_array_t array, prop_object_t po)
+{
+	bool ret;
+	if (po == NULL)
+		return false;
+	ret = prop_array_add(array, po);
+	prop_object_release(po);
+	return ret;
+}

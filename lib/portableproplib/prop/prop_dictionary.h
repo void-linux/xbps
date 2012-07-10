@@ -90,6 +90,8 @@ bool		prop_dictionary_keysym_equals(prop_dictionary_keysym_t,
  * Utility routines to make it more convenient to work with values
  * stored in dictionaries.
  */
+bool		prop_dictionary_get_dict(prop_dictionary_t, const char *,
+					 prop_dictionary_t *);
 bool		prop_dictionary_get_bool(prop_dictionary_t, const char *,
 					 bool *);
 bool		prop_dictionary_set_bool(prop_dictionary_t, const char *,
@@ -142,6 +144,9 @@ bool		prop_dictionary_get_cstring_nocopy(prop_dictionary_t,
 bool		prop_dictionary_set_cstring_nocopy(prop_dictionary_t,
 						   const char *,
 						   const char *);
+bool		prop_dictionary_set_and_rel(prop_dictionary_t,
+					    const char *,
+					    prop_object_t);
 
 __END_DECLS
 

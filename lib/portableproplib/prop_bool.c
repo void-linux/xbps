@@ -1,4 +1,4 @@
-/*	$NetBSD: prop_bool.c,v 1.16 2008/08/03 04:00:12 thorpej Exp $	*/
+/*	$NetBSD: prop_bool.c,v 1.17 2009/01/03 18:31:33 pooka Exp $	*/
 
 /*-
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
@@ -39,9 +39,6 @@ struct _prop_bool {
 
 static struct _prop_bool _prop_bool_true;
 static struct _prop_bool _prop_bool_false;
-
-_PROP_MUTEX_DECL_STATIC(_prop_bool_initialized_mutex)
-static bool	_prop_bool_initialized;
 
 static _prop_object_free_rv_t
 		_prop_bool_free(prop_stack_t, prop_object_t *);
@@ -109,27 +106,29 @@ _prop_bool_equals(prop_object_t v1, prop_object_t v2,
 		return (_PROP_OBJECT_EQUALS_FALSE);
 }
 
+_PROP_ONCE_DECL(_prop_bool_init_once)
+
+static int
+_prop_bool_init(void)
+{
+
+	_prop_object_init(&_prop_bool_true.pb_obj,
+	    &_prop_object_type_bool);
+	_prop_bool_true.pb_value = true;
+
+	_prop_object_init(&_prop_bool_false.pb_obj,
+	    &_prop_object_type_bool);
+	_prop_bool_false.pb_value = false;
+
+	return 0;
+}
+
 static prop_bool_t
 _prop_bool_alloc(bool val)
 {
 	prop_bool_t pb;
 
-	if (! _prop_bool_initialized) {
-		_PROP_MUTEX_LOCK(_prop_bool_initialized_mutex);
-		if (! _prop_bool_initialized) {
-			_prop_object_init(&_prop_bool_true.pb_obj,
-					  &_prop_object_type_bool);
-			_prop_bool_true.pb_value = true;
-
-			_prop_object_init(&_prop_bool_false.pb_obj,
-					  &_prop_object_type_bool);
-			_prop_bool_false.pb_value = false;
-
-			_prop_bool_initialized = true;
-		}
-		_PROP_MUTEX_UNLOCK(_prop_bool_initialized_mutex);
-	}
-
+	_PROP_ONCE_RUN(_prop_bool_init_once, _prop_bool_init);
 	pb = val ? &_prop_bool_true : &_prop_bool_false;
 	prop_object_retain(pb);
 

@@ -1,31 +1,6 @@
 /*	$NetBSD: prop_array.c,v 1.20 2008/08/11 05:54:21 christos Exp $	*/
 
 /*-
- * Copyright (c) 2010 Juan Romero Pardines (zlib/gzip support).
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*-
  * Copyright (c) 2006, 2007 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
@@ -56,9 +31,11 @@
 
 #include <prop/prop_array.h>
 #include "prop_object_impl.h"
-#include <errno.h>
 
-#include <zlib.h>
+#if !defined(_KERNEL) && !defined(_STANDALONE)
+#include <errno.h>
+#define __unused	/* empty */
+#endif
 
 struct _prop_array {
 	struct _prop_object	pa_obj;
@@ -364,7 +341,7 @@ static prop_object_t
 _prop_array_iterator_next_object(void *v)
 {
 	struct _prop_array_iterator *pai = v;
-	prop_array_t pa = pai->pai_base.pi_obj;
+	prop_array_t pa __unused = pai->pai_base.pi_obj;
 	prop_object_t po;
 
 	_PROP_ASSERT(prop_object_is_array(pa));
@@ -391,7 +368,7 @@ static void
 _prop_array_iterator_reset(void *v)
 {
 	struct _prop_array_iterator *pai = v;
-	prop_array_t pa = pai->pai_base.pi_obj;
+	prop_array_t pa __unused = pai->pai_base.pi_obj;
 
 	_PROP_ASSERT(prop_object_is_array(pa));
 
@@ -889,6 +866,7 @@ prop_array_internalize(const char *xml)
 	return _prop_generic_internalize(xml, "array");
 }
 
+#if !defined(_KERNEL) && !defined(_STANDALONE)
 /*
  * prop_array_externalize_to_file --
  *	Externalize an array to the specified file.
@@ -903,8 +881,7 @@ prop_array_externalize_to_file(prop_array_t array, const char *fname)
 	xml = prop_array_externalize(array);
 	if (xml == NULL)
 		return (false);
-	rv = _prop_object_externalize_write_file(fname, xml,
-			strlen(xml), false);
+	rv = _prop_object_externalize_write_file(fname, xml, strlen(xml), false);
 	if (rv == false)
 		save_errno = errno;
 	_PROP_FREE(xml, M_TEMP);
@@ -912,31 +889,6 @@ prop_array_externalize_to_file(prop_array_t array, const char *fname)
 		errno = save_errno;
 
 	return (rv);
-}
-
-/*
- * prop_array_externalize_to_zfile ---
- * 	Externalize an array to the specified file, and on the fly
- * 	compressing the result with gzip (via zlib).
- */
-bool
-prop_array_externalize_to_zfile(prop_array_t array, const char *fname)
-{
-	char *xml;
-	bool rv;
-	int save_errno = 0;
-
-	xml = prop_array_externalize(array);
-	if (xml == NULL)
-		return false;
-	rv = _prop_object_externalize_write_file(fname, xml, strlen(xml), true);
-	if (rv == false)
-		save_errno = errno;
-	_PROP_FREE(xml, M_TEMP);
-	if (rv == false)
-		errno = save_errno;
-
-	return rv;
 }
 
 /*
@@ -957,88 +909,4 @@ prop_array_internalize_from_file(const char *fname)
 
 	return (array);
 }
-
-#define _READ_CHUNK	512
-/*
- * prop_array_internalize_from_zfile ---
- * 	Internalize an array from a compressed gzip file.
- */
-prop_array_t
-prop_array_internalize_from_zfile(const char *fname)
-{
-	struct _prop_object_internalize_mapped_file *mf;
-	prop_array_t array;
-	z_stream strm;
-	unsigned char out[_READ_CHUNK];
-	char *uncomp_xml = NULL;
-	size_t have;
-	ssize_t totalsize = 0;
-	int rv = 0;
-
-	mf = _prop_object_internalize_map_file(fname);
-	if (mf == NULL)
-		return NULL;
-
-	/* Decompress the mmap'ed buffer with zlib */
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-
-	/* 15+16 to use gzip method */
-	if (inflateInit2(&strm, 15+16) != Z_OK) {
-		_prop_object_internalize_unmap_file(mf);
-		return NULL;
-	}
-
-	strm.avail_in = mf->poimf_mapsize;
-	strm.next_in = (unsigned char *)mf->poimf_xml;
-
-	/* Output buffer (decompressed) */
-	uncomp_xml = _PROP_MALLOC(_READ_CHUNK, M_TEMP);
-	if (uncomp_xml == NULL) {
-		_prop_object_internalize_unmap_file(mf);
-		(void)inflateEnd(&strm);
-		return NULL;
-	}
-
-	/* Inflate the input buffer and copy into 'dest' */
-	do {
-		strm.avail_out = _READ_CHUNK;
-		strm.next_out = out;
-		rv = inflate(&strm, Z_NO_FLUSH);
-		switch (rv) {
-		case Z_DATA_ERROR:
-			/*
-			 * Wrong compressed data or uncompressed, try
-			 * normal method as last resort.
-			 */
-			(void)inflateEnd(&strm);
-			_PROP_FREE(uncomp_xml, M_TEMP);
-			array = prop_array_internalize(mf->poimf_xml);
-			_prop_object_internalize_unmap_file(mf);
-			return array;
-		case Z_STREAM_ERROR:
-		case Z_NEED_DICT:
-		case Z_MEM_ERROR:
-			(void)inflateEnd(&strm);
-			_PROP_FREE(uncomp_xml, M_TEMP);
-			_prop_object_internalize_unmap_file(mf);
-			errno = rv;
-			return NULL;
-		}
-		have = _READ_CHUNK - strm.avail_out;
-		totalsize += have;
-		uncomp_xml = _PROP_REALLOC(uncomp_xml, totalsize, M_TEMP);
-		memcpy(uncomp_xml + totalsize - have, out, have);
-	} while (strm.avail_out == 0);
-
-	/* we are done */
-	(void)inflateEnd(&strm);
-	array = prop_array_internalize(uncomp_xml);
-	_PROP_FREE(uncomp_xml, M_TEMP);
-	_prop_object_internalize_unmap_file(mf);
-
-	return array;
-}
+#endif /* _KERNEL && !_STANDALONE */

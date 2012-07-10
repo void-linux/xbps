@@ -9,10 +9,10 @@ LDFLAGS += $(LIBXBPS_LDFLAGS) -shared -Wl,-soname,libxbps.so.$(LIBXBPS_MAJOR)
 # portableproplib
 LIBPROP_OBJS = portableproplib/prop_array.o portableproplib/prop_bool.o
 LIBPROP_OBJS += portableproplib/prop_dictionary.o portableproplib/prop_ingest.o
-LIBPROP_OBJS += portableproplib/prop_object.o portableproplib/prop_rb.o
+LIBPROP_OBJS += portableproplib/prop_object.o portableproplib/rb.o
 LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
 LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
-LIBPROP_OBJS += portableproplib/prop_dictionary_util.o
+LIBPROP_OBJS += portableproplib/prop_dictionary_util.o portableproplib/prop_zlib.o
 LIBPROP_OBJS += portableproplib/prop_data.o
 LIBPROP_CPPFLAGS = -D_GNU_SOURCE
 LIBPROP_CFLAGS = -Wno-old-style-definition -Wno-cast-qual -Wno-unused-parameter

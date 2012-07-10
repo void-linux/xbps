@@ -129,13 +129,16 @@ bool		prop_array_get_cstring(prop_array_t, unsigned int,
 					     char **);
 bool		prop_array_set_cstring(prop_array_t, unsigned int,
 					    const char *);
-
+bool		prop_array_add_cstring(prop_array_t, const char *);
+bool		prop_array_add_cstring_nocopy(prop_array_t,
+						const char *);
 bool		prop_array_get_cstring_nocopy(prop_array_t,
                                                    unsigned int,
 						   const char **);
 bool		prop_array_set_cstring_nocopy(prop_array_t,
 						   unsigned int,
 						   const char *);
+bool		prop_array_add_and_rel(prop_array_t, prop_object_t);
 
 __END_DECLS
 
