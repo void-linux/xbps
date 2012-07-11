@@ -1,3 +1,12 @@
+xbps-0.16.5 (???):
+
+ * libxbps: at package register time a new string object in pkgdb is added
+   "install-date" that records the package installation date with the following
+   strftime(3) format: "%F %R %Z".
+
+ * xbps-bin(8): the 'show' target now prints some objects from pkgdb if found:
+   "install-date" and "automatic-install".
+
 xbps-0.16.4 (2012-07-10):
 
  * Imported proplib 0.6.1 from http://code.google.com/p/portableproplib.

@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include "xbps_api_impl.h"
 
@@ -44,6 +45,9 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 {
 	prop_dictionary_t pkgd = NULL;
 	prop_array_t provides, reqby;
+	char outstr[64];
+	time_t t;
+	struct tm *tmp;
 	const char *pkgname, *version, *desc, *pkgver;
 	int rv = 0;
 	bool autoinst = false;
@@ -110,6 +114,28 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 		rv = EINVAL;
 		goto out;
 	}
+	/*
+	 * Set the "install-date" object to know the pkg installation date.
+	 */
+	t = time(NULL);
+	if ((tmp = localtime(&t)) == NULL) {
+		xbps_dbg_printf(xhp, "%s: localtime failed: %s\n",
+		    pkgname, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
+	if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", tmp) == 0) {
+		xbps_dbg_printf(xhp, "%s: strftime failed: %s\n",
+		    pkgname, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
+	if (!prop_dictionary_set_cstring(pkgd, "install-date", outstr)) {
+		xbps_dbg_printf(xhp, "%s: install-date set failed!\n", pkgname);
+		rv = EINVAL;
+		goto out;
+	}
+
 	if (provides) {
 		if (!prop_dictionary_set(pkgd, "provides", provides)) {
 			xbps_dbg_printf(xhp,

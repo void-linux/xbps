@@ -39,11 +39,26 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 			   const char *pkgname,
 			   const char *option)
 {
-	prop_dictionary_t d;
+	prop_dictionary_t d, pkgdb_d;
+	const char *instdate;
+	bool autoinst;
 
 	d = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGPROPS);
 	if (d == NULL)
 		return EINVAL;
+
+	pkgdb_d = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
+	if (pkgdb_d == NULL) {
+		prop_object_release(d);
+		return EINVAL;
+	}
+	if (prop_dictionary_get_cstring_nocopy(pkgdb_d,
+	    "install-date", &instdate))
+		prop_dictionary_set_cstring_nocopy(d, "install-date",
+		    instdate);
+
+	if (prop_dictionary_get_bool(pkgdb_d, "automatic-install", &autoinst))
+		prop_dictionary_set_bool(d, "automatic-install", autoinst);
 
 	if (option == NULL)
 		show_pkg_info(d);
