@@ -1,4 +1,9 @@
-xbps-0.16.5 (???):
+xbps-0.16.5 (2012-07-14):
+
+ * xbps.conf: remove obsolete remote repositories.
+
+ * libxbps: extend the list of ignored symlinks in rootfs if they were found
+   as obsoletes at package upgrade time.
 
  * libxbps: at package register time a new string object in pkgdb is added
    "install-date" that records the package installation date with the following

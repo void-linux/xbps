@@ -48,7 +48,7 @@ xbps_remove_obsoletes(struct xbps_handle *xhp,
 	prop_string_t oldstr, newstr;
 	struct stat st;
 	const char *array_str = "files";
-	const char *oldhash, *hash;
+	const char *oldhash;
 	char *file;
 	int rv = 0;
 	bool found, dodirs = false, dolinks = false;
@@ -119,17 +119,9 @@ again:
 				goto out;
 			}
 			/*
-			 * Skip files with same path and/or hash.
+			 * Skip files with same path.
 			 */
 			if (prop_string_equals(oldstr, newstr)) {
-				found = true;
-				break;
-			}
-
-			hash = NULL;
-			prop_dictionary_get_cstring_nocopy(obj2,
-			    "sha256", &hash);
-			if (hash && strcmp(hash, oldhash) == 0) {
 				found = true;
 				break;
 			}
@@ -144,8 +136,12 @@ again:
 		 * system transition to /usr.
 		 */
 		if ((strcmp(file, "./bin") == 0) ||
+		    (strcmp(file, "./bin/") == 0) ||
 		    (strcmp(file, "./sbin") == 0) ||
+		    (strcmp(file, "./sbin/") == 0) ||
 		    (strcmp(file, "./lib") == 0) ||
+		    (strcmp(file, "./lib/") == 0) ||
+		    (strcmp(file, "./lib64/") == 0) ||
 		    (strcmp(file, "./lib64") == 0)) {
 			free(file);
 			continue;
