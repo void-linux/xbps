@@ -10,6 +10,9 @@ xbps-0.16.6 (???):
 
 	$ xbps-repo index-clean /path/to/repo
 
+   File locking has been implemented for these targets to only allow a client
+   to update the index files.
+
 xbps-0.16.5 (2012-07-14):
 
  * xbps.conf: remove obsolete remote repositories.
