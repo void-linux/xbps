@@ -35,10 +35,16 @@ struct repo_search_data {
 };
 
 /* From index.c */
-int	repo_genindex(struct xbps_handle *, const char *);
+int	repo_index_add(struct xbps_handle *, int, char **);
+int	repo_index_clean(struct xbps_handle *, const char *);
 
 /* From index-files.c */
-int	repo_genindex_files(struct xbps_handle *, const char *);
+int	repo_index_files_add(struct xbps_handle *, int, char **);
+int	repo_index_files_clean(struct xbps_handle *, const char *);
+
+/* From index-common.c */
+int	acquire_repo_lock(const char *, char **);
+void	release_repo_lock(char **, int);
 
 /* From find-files.c */
 int	repo_find_files_in_packages(struct xbps_handle *, int, char **);

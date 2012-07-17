@@ -28,290 +28,348 @@
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <libgen.h>
+#include <assert.h>
 
 #include <xbps_api.h>
 #include "defs.h"
 
-struct index_files_data {
-	prop_array_t idx;
-	prop_array_t idxfiles;
-	prop_array_t obsoletes;
-	const char *pkgdir;
-	bool flush;
-	bool new;
-};
-
-static int
-rmobsoletes_files_cb(struct xbps_handle *xhp,
-		     prop_object_t obj,
-		     void *arg,
-		     bool *done)
-{
-	struct index_files_data *ifd = arg;
-	const char *pkgver, *arch;
-	char *str;
-
-	(void)xhp;
-	(void)done;
-
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-	if (xbps_find_pkg_in_array_by_pkgver(xhp, ifd->idx, pkgver, arch)) {
-		/* pkg found, do nothing */
-		return 0;
-	}
-	if ((str = xbps_xasprintf("%s,%s", pkgver, arch)) == NULL)
-		return ENOMEM;
-
-	if (!prop_array_add_cstring(ifd->obsoletes, str)) {
-		free(str);
-		return EINVAL;
-	}
-	free(str);
-	ifd->flush = true;
-
-	return 0;
-}
-
-static int
-genindex_files_cb(struct xbps_handle *xhp,
-		  prop_object_t obj,
-		  void *arg,
-		  bool *done)
-{
-	prop_object_t obj2, fileobj;
-	prop_dictionary_t pkg_filesd, pkgd;
-	prop_array_t files, pkg_cffiles, pkg_files, pkg_links;
-	struct index_files_data *ifd = arg;
-	const char *binpkg, *pkgver, *arch;
-	char *file;
-	bool found = false;
-	size_t i;
-
-	(void)xhp;
-	(void)done;
-
-	prop_dictionary_get_cstring_nocopy(obj, "filename", &binpkg);
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-
-	if (xbps_find_pkg_in_array_by_pkgver(xhp, ifd->idxfiles, pkgver, arch))  {
-		fprintf(stderr, "index-files: skipping `%s' (%s), "
-		    "already registered.\n", pkgver, arch);
-		return 0;
-	}
-
-	file = xbps_xasprintf("%s/%s/%s", ifd->pkgdir, arch, binpkg);
-	if (file == NULL)
-		return ENOMEM;
-
-	/* internalize files.plist from binary package archive */
-	pkg_filesd = xbps_dictionary_metadata_plist_by_url(file, "./files.plist");
-	if (pkg_filesd == NULL) {
-		free(file);
-		return EINVAL;
-	}
-	free(file);
-
-	/* Find out if binary pkg stored in index contain any file */
-	pkg_cffiles = prop_dictionary_get(pkg_filesd, "conf_files");
-	if (pkg_cffiles != NULL && prop_array_count(pkg_cffiles))
-		found = true;
-	else
-		pkg_cffiles = NULL;
-
-	pkg_files = prop_dictionary_get(pkg_filesd, "files");
-	if (pkg_files != NULL && prop_array_count(pkg_files))
-		found = true;
-	else
-		pkg_files = NULL;
-
-	pkg_links = prop_dictionary_get(pkg_filesd, "links");
-	if (pkg_links != NULL && prop_array_count(pkg_links))
-		found = true;
-	else
-		pkg_links = NULL;
-
-	/* If pkg does not contain any file, ignore it */
-	if (!found) {
-		prop_object_release(pkg_filesd);
-		return 0;
-	}
-
-	/* create pkg dictionary */
-	if ((pkgd = prop_dictionary_create()) == NULL) {
-		prop_object_release(pkg_filesd);
-		return ENOMEM;
-	}
-	/* add pkgver and architecture objects into pkg dictionary */
-	if (!prop_dictionary_set_cstring(pkgd, "architecture", arch)) {
-		prop_object_release(pkg_filesd);
-		prop_object_release(pkgd);
-		return EINVAL;
-	}
-	if (!prop_dictionary_set_cstring(pkgd, "pkgver", pkgver)) {
-		prop_object_release(pkg_filesd);
-		prop_object_release(pkgd);
-		return EINVAL;
-	}
-	/* add files array obj into pkg dictionary */
-	if ((files = prop_array_create()) == NULL) {
-		prop_object_release(pkg_filesd);
-		prop_object_release(pkgd);
-		return EINVAL;
-	}
-	if (!prop_dictionary_set(pkgd, "files", files)) {
-		prop_object_release(pkg_filesd);
-		prop_object_release(pkgd);
-		return EINVAL;
-	}
-
-	/* add conf_files in pkgd */
-	if (pkg_cffiles != NULL) {
-		for (i = 0; i < prop_array_count(pkg_cffiles); i++) {
-			obj2 = prop_array_get(pkg_cffiles, i);
-			fileobj = prop_dictionary_get(obj2, "file");
-			if (!prop_array_add(files, fileobj)) {
-				prop_object_release(pkgd);
-				prop_object_release(pkg_filesd);
-				return EINVAL;
-			}
-		}
-	}
-	/* add files array in pkgd */
-	if (pkg_files != NULL) {
-		for (i = 0; i < prop_array_count(pkg_files); i++) {
-			obj2 = prop_array_get(pkg_files, i);
-			fileobj = prop_dictionary_get(obj2, "file");
-			if (!prop_array_add(files, fileobj)) {
-				prop_object_release(pkgd);
-				prop_object_release(pkg_filesd);
-				return EINVAL;
-			}
-		}
-	}
-	/* add links array in pkgd */
-	if (pkg_links != NULL) {
-		for (i = 0; i < prop_array_count(pkg_links); i++) {
-			obj2 = prop_array_get(pkg_links, i);
-			fileobj = prop_dictionary_get(obj2, "file");
-			if (!prop_array_add(files, fileobj)) {
-				prop_object_release(pkgd);
-				prop_object_release(pkg_filesd);
-				return EINVAL;
-			}
-		}
-	}
-	prop_object_release(pkg_filesd);
-	/* add pkgd into provided array */
-	if (!prop_array_add(ifd->idxfiles, pkgd)) {
-		prop_object_release(pkgd);
-		return EINVAL;
-	}
-	printf("index-files: added `%s' (%s)\n", pkgver, arch);
-	prop_object_release(pkgd);
-	ifd->flush = true;
-
-	return 0;
-}
-
-/*
- * Create the index files cache for all packages in repository.
- */
 int
-repo_genindex_files(struct xbps_handle *xhp, const char *pkgdir)
+repo_index_files_clean(struct xbps_handle *xhp, const char *repodir)
 {
-	prop_array_t idx;
-	struct index_files_data *ifd = NULL;
-	size_t i, x;
-	const char *p, *arch;
-	char *plist, *pkgver;
-	int rv;
+	prop_object_t obj;
+	prop_array_t idx, idxfiles, obsoletes;
+	char *plist, *plistf, *plistf_lock, *pkgver, *str;
+	const char *p, *arch, *ipkgver, *iarch;
+	size_t x, i;
+	int rv = 0, fdlock;
+	bool flush = false;
 
-	plist = xbps_pkg_index_plist(xhp, pkgdir);
-	if (plist == NULL)
-		return ENOMEM;
+	plist = plistf = plistf_lock = pkgver = str = NULL;
+	idx = idxfiles = obsoletes = NULL;
 
-	/* internalize repository index plist */
-	idx = prop_array_internalize_from_zfile(plist);
-	if (idx == NULL) {
-		free(plist);
-		return errno;
+	/* Internalize index-files.plist if found */
+	if ((plistf = xbps_pkg_index_files_plist(xhp, repodir)) == NULL)
+		return EINVAL;
+	if ((idxfiles = prop_array_internalize_from_zfile(plistf)) == NULL) {
+		free(plistf);
+		return 0;
 	}
-	free(plist);
+	/* Acquire exclusive file lock */
+	if ((fdlock = acquire_repo_lock(plistf, &plistf_lock)) == -1) {
+		free(plistf);
+		prop_object_release(idxfiles);
+		return -1;
+	}
 
-	/* internalize repository index-files plist (if exists) */
-	plist = xbps_pkg_index_files_plist(xhp, pkgdir);
-	if (plist == NULL) {
-		rv = ENOMEM;
+	/* Internalize index.plist */
+	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL) {
+		rv = EINVAL;
 		goto out;
 	}
-	ifd = calloc(1, sizeof(*ifd));
-	if (ifd == NULL) {
-		rv = ENOMEM;
+	if ((idx = prop_array_internalize_from_zfile(plist)) == NULL) {
+		release_repo_lock(&plistf_lock, fdlock);
+		rv = EINVAL;
 		goto out;
 	}
-	ifd->pkgdir = pkgdir;
-	ifd->idxfiles = prop_array_internalize_from_zfile(plist);
-	ifd->idx = idx;
-	ifd->obsoletes = prop_array_create();
-	if (ifd->idxfiles == NULL) {
-		/* missing file, create new one */
-		ifd->idxfiles = prop_array_create();
-		ifd->new = true;
-	}
-
-	/* remove obsolete pkg entries */
-	if (!ifd->new) {
-		rv = xbps_callback_array_iter(xhp, ifd->idxfiles,
-		    rmobsoletes_files_cb, ifd);
-		if (rv != 0)
+	printf("Cleaning `%s' index-files, please wait...\n", repodir);
+	/*
+	 * Iterate over index-files array to find obsolete entries.
+	 */
+	for (x = 0; x < prop_array_count(idx); x++) {
+		obj = prop_array_get(idx, x);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &ipkgver);
+		prop_dictionary_get_cstring_nocopy(obj, "architecture", &iarch);
+		if (xbps_find_pkg_in_array_by_pkgver(xhp, idx, ipkgver, iarch)) {
+			/* pkg found, do nothing */
+			continue;
+		}
+		if ((str = xbps_xasprintf("%s,%s", ipkgver, iarch)) == NULL) {
+			rv = ENOMEM;
 			goto out;
-		for (i = 0; i < prop_array_count(ifd->obsoletes); i++) {
-			prop_array_get_cstring_nocopy(ifd->obsoletes, i, &p);
-			pkgver = strdup(p);
-			for (x = 0; x < strlen(p); x++) {
-				if ((pkgver[x] = p[x]) == ',') {
-					pkgver[x] = '\0';
-					break;
+		}
+		if (!prop_array_add_cstring(obsoletes, str)) {
+			free(str);
+			rv = EINVAL;
+			goto out;
+		}
+		free(str);
+	}
+	/*
+	 * Iterate over the obsoletes and array and remove entries
+	 * from index-files array.
+	 */
+	for (i = 0; i < prop_array_count(obsoletes); i++) {
+		prop_array_get_cstring_nocopy(obsoletes, i, &p);
+		pkgver = strdup(p);
+		for (x = 0; x < strlen(p); x++) {
+			if ((pkgver[x] = p[x]) == ',') {
+				pkgver[x] = '\0';
+				break;
+			}
+		}
+		arch = strchr(p, ',') + 1;
+		if (!xbps_remove_pkg_from_array_by_pkgver(
+		    xhp, idxfiles, pkgver, arch)) {
+			free(pkgver);
+			rv = EINVAL;
+			goto out;
+		}
+		printf("index-files: removed obsolete entry `%s' "
+		    "(%s)\n", pkgver, arch);
+		free(pkgver);
+		flush = true;
+	}
+	/* Externalize index-files array to plist when necessary */
+	if (flush && !prop_array_externalize_to_zfile(idxfiles, plistf))
+		rv = errno;
+
+	printf("index-files: %u packages registered.\n",
+	    prop_array_count(idxfiles));
+
+out:
+	release_repo_lock(&plistf_lock, fdlock);
+
+	if (obsoletes)
+		prop_object_release(obsoletes);
+	if (idx)
+		prop_object_release(idx);
+	if (idxfiles)
+		prop_object_release(idxfiles);
+	if (plist)
+		free(plist);
+	if (plistf)
+		free(plistf);
+
+	return rv;
+}
+
+int
+repo_index_files_add(struct xbps_handle *xhp, int argc, char **argv)
+{
+	prop_array_t idxfiles = NULL;
+	prop_object_t obj, fileobj;
+	prop_dictionary_t pkgprops, pkg_filesd, pkgd;
+	prop_array_t files, pkg_cffiles, pkg_files, pkg_links;
+	const char *binpkg, *pkgver, *arch;
+	char *plist, *repodir, *p, *plist_lock;
+	size_t x;
+	int i, fdlock = -1, rv = 0;
+	bool found, flush;
+
+	found = flush = false;
+	plist = plist_lock = repodir = p = NULL;
+	obj = fileobj = NULL;
+	pkgprops = pkg_filesd = pkgd = NULL;
+	files = NULL;
+
+        if ((p = strdup(argv[1])) == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	repodir = dirname(p);
+	if ((plist = xbps_pkg_index_files_plist(xhp, repodir)) == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	/* Acquire exclusive file lock or wait for it.
+	 */
+	if ((fdlock = acquire_repo_lock(plist, &plist_lock)) == -1) {
+		free(p);
+		free(plist);
+		return -1;
+	}
+	/*
+	 * Internalize index-files.plist if found and process argv.
+	 */
+	if ((idxfiles = prop_array_internalize_from_zfile(plist)) == NULL) {
+		if (errno == ENOENT) {
+			idxfiles = prop_array_create();
+			assert(idxfiles);
+		} else {
+			rv = errno;
+			goto out;
+		}
+	}
+
+	for (i = 1; i < argc; i++) {
+		found = false;
+		pkgprops = xbps_dictionary_metadata_plist_by_url(argv[i],
+				"./props.plist");
+		if (pkgprops == NULL) {
+			fprintf(stderr, "index-files: cannot internalize "
+			    "%s props.plist: %s\n", argv[i], strerror(errno));
+			continue;
+		}
+		prop_dictionary_get_cstring_nocopy(pkgprops,
+		    "filename", &binpkg);
+		prop_dictionary_get_cstring_nocopy(pkgprops,
+		    "pkgver", &pkgver);
+		prop_dictionary_get_cstring_nocopy(pkgprops,
+		    "architecture", &arch);
+
+		if (xbps_find_pkg_in_array_by_pkgver(xhp, idxfiles,
+		    pkgver, arch))  {
+			fprintf(stderr, "index-files: skipping `%s' (%s), "
+			    "already registered.\n", pkgver, arch);
+			prop_object_release(pkgprops);
+			pkgprops = NULL;
+			continue;
+		}
+
+		/* internalize files.plist from binary package archive */
+		pkg_filesd = xbps_dictionary_metadata_plist_by_url(argv[i],
+				"./files.plist");
+		if (pkg_filesd == NULL) {
+			prop_object_release(pkgprops);
+			rv = EINVAL;
+			goto out;
+		}
+
+		/* Find out if binary pkg stored in index contain any file */
+		pkg_cffiles = prop_dictionary_get(pkg_filesd, "conf_files");
+		if (pkg_cffiles != NULL && prop_array_count(pkg_cffiles))
+			found = true;
+		else
+			pkg_cffiles = NULL;
+
+		pkg_files = prop_dictionary_get(pkg_filesd, "files");
+		if (pkg_files != NULL && prop_array_count(pkg_files))
+			found = true;
+		else
+			pkg_files = NULL;
+
+		pkg_links = prop_dictionary_get(pkg_filesd, "links");
+		if (pkg_links != NULL && prop_array_count(pkg_links))
+			found = true;
+		else
+			pkg_links = NULL;
+
+		/* If pkg does not contain any file, ignore it */
+		if (!found) {
+			prop_object_release(pkgprops);
+			prop_object_release(pkg_filesd);
+			continue;
+		}
+		/* create pkg dictionary */
+		if ((pkgd = prop_dictionary_create()) == NULL) {
+			prop_object_release(pkgprops);
+			prop_object_release(pkg_filesd);
+			rv = EINVAL;
+			goto out;
+		}
+		/* add pkgver and architecture objects into pkg dictionary */
+		if (!prop_dictionary_set_cstring(pkgd, "architecture", arch)) {
+			prop_object_release(pkgprops);
+			prop_object_release(pkg_filesd);
+			prop_object_release(pkgd);
+			rv = EINVAL;
+			goto out;
+		}
+		if (!prop_dictionary_set_cstring(pkgd, "pkgver", pkgver)) {
+			prop_object_release(pkgprops);
+			prop_object_release(pkg_filesd);
+			prop_object_release(pkgd);
+			rv = EINVAL;
+			goto out;
+		}
+		/* add files array obj into pkg dictionary */
+		if ((files = prop_array_create()) == NULL) {
+			prop_object_release(pkgprops);
+			prop_object_release(pkg_filesd);
+			prop_object_release(pkgd);
+			rv = EINVAL;
+			goto out;
+		}
+		if (!prop_dictionary_set(pkgd, "files", files)) {
+			prop_object_release(pkgprops);
+			prop_object_release(pkg_filesd);
+			prop_object_release(files);
+			prop_object_release(pkgd);
+			rv = EINVAL;
+			goto out;
+		}
+		/* add conf_files in pkgd */
+		if (pkg_cffiles != NULL) {
+			for (x = 0; x < prop_array_count(pkg_cffiles); x++) {
+				obj = prop_array_get(pkg_cffiles, x);
+				fileobj = prop_dictionary_get(obj, "file");
+				if (!prop_array_add(files, fileobj)) {
+					prop_object_release(pkgprops);
+					prop_object_release(pkg_filesd);
+					prop_object_release(files);
+					prop_object_release(pkgd);
+					rv = EINVAL;
+					goto out;
 				}
 			}
-			arch = strchr(p, ',') + 1;
-			if (!xbps_remove_pkg_from_array_by_pkgver(
-			    xhp, ifd->idxfiles, pkgver, arch)) {
-				free(pkgver);
-				rv = EINVAL;
-				goto out;
-			}
-			printf("index-files: removed obsolete entry `%s' "
-			    "(%s)\n", pkgver, arch);
-			free(pkgver);
 		}
+		/* add files array in pkgd */
+		if (pkg_files != NULL) {
+			for (x = 0; x < prop_array_count(pkg_files); x++) {
+				obj = prop_array_get(pkg_files, x);
+				fileobj = prop_dictionary_get(obj, "file");
+				if (!prop_array_add(files, fileobj)) {
+					prop_object_release(pkgprops);
+					prop_object_release(pkg_filesd);
+					prop_object_release(files);
+					prop_object_release(pkgd);
+					rv = EINVAL;
+					goto out;
+				}
+			}
+		}
+		/* add links array in pkgd */
+		if (pkg_links != NULL) {
+			for (x = 0; x < prop_array_count(pkg_links); x++) {
+				obj = prop_array_get(pkg_links, x);
+				fileobj = prop_dictionary_get(obj, "file");
+				if (!prop_array_add(files, fileobj)) {
+					prop_object_release(pkgprops);
+					prop_object_release(pkg_filesd);
+					prop_object_release(files);
+					prop_object_release(pkgd);
+					rv = EINVAL;
+					goto out;
+				}
+			}
+		}
+		/* add pkgd into the index-files array */
+		if (!prop_array_add(idxfiles, pkgd)) {
+			prop_object_release(pkgprops);
+			prop_object_release(pkg_filesd);
+			prop_object_release(files);
+			prop_object_release(pkgd);
+			rv = EINVAL;
+			goto out;
+		}
+		flush = true;
+		printf("index-files: added `%s' (%s)\n", pkgver, arch);
+		prop_object_release(pkgprops);
+		prop_object_release(pkg_filesd);
+		prop_object_release(files);
+		prop_object_release(pkgd);
+		pkgprops = pkg_filesd = pkgd = NULL;
+		files = NULL;
 	}
-	/* iterate over index.plist array */
-	if ((rv = xbps_callback_array_iter(xhp, idx, genindex_files_cb, ifd)) != 0)
-		goto out;
 
-	if (!ifd->flush)
-		goto out;
-
-	/* externalize index-files array */
-	if (!prop_array_externalize_to_zfile(ifd->idxfiles, plist)) {
+	if (flush && !prop_array_externalize_to_zfile(idxfiles, plist)) {
+		fprintf(stderr, "failed to externalize %s: %s\n",
+		    plist, strerror(errno));
 		rv = errno;
-		goto out;
 	}
+	printf("index-files: %u packages registered.\n",
+	    prop_array_count(idxfiles));
+
 out:
-	if (rv == 0)
-		printf("index-files: %u packages registered.\n",
-		    prop_array_count(ifd->idxfiles));
-	if (ifd->idxfiles != NULL)
-		prop_object_release(ifd->idxfiles);
-	if (plist != NULL)
+	release_repo_lock(&plist_lock, fdlock);
+
+	if (p)
+		free(p);
+	if (plist)
 		free(plist);
-	if (ifd != NULL)
-		free(ifd);
-	if (idx != NULL)
-		prop_object_release(idx);
+	if (idxfiles)
+		prop_object_release(idxfiles);
 
 	return rv;
 }

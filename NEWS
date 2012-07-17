@@ -1,3 +1,15 @@
+xbps-0.16.6 (???):
+
+ * xbps-repo(8): the 'genindex' target has been replaced by the 'index-add' and
+   'index-clean' targets. The 'index-add' expects a list of binary packages to
+   be added to repository's index:
+
+	$ xbps-repo index-add /path/to/repo/*.xbps
+
+   The 'index-clean' removes obsolete entries in repository's index:
+
+	$ xbps-repo index-clean /path/to/repo
+
 xbps-0.16.5 (2012-07-14):
 
  * xbps.conf: remove obsolete remote repositories.

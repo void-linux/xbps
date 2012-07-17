@@ -260,14 +260,25 @@ main(int argc, char **argv)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
 		}
-	} else if (strcasecmp(argv[0], "genindex") == 0) {
-		/* Generates a package repository index plist file. */
+	} else if (strcasecmp(argv[0], "index-add") == 0) {
+		/* Registers a binary package into the repository's index. */
+		if (argc < 2)
+			usage(true);
+
+		if ((rv = repo_index_add(&xh, argc, argv)) != 0)
+			goto out;
+		if ((rv = repo_index_files_add(&xh, argc, argv)) != 0)
+			goto out;
+
+	} else if (strcasecmp(argv[0], "index-clean") == 0) {
+		/* Removes obsolete pkg entries from index in a repository */
 		if (argc != 2)
 			usage(true);
 
-		rv = repo_genindex(&xh, argv[1]);
-		if (rv == 0)
-			rv = repo_genindex_files(&xh, argv[1]);
+		if ((rv = repo_index_clean(&xh, argv[1])) != 0)
+			goto out;
+
+		rv = repo_index_files_clean(&xh, argv[1]);
 
 	} else if (strcasecmp(argv[0], "sync") == 0) {
 		/* Syncs the pkg index for all registered remote repos */

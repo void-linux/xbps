@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -31,50 +32,51 @@
 #include <dirent.h>
 #include <libgen.h>
 #include <assert.h>
-#include <sys/stat.h>
 
 #include <xbps_api.h>
 #include "defs.h"
-
-#ifndef __arraycount
-#define __arraycount(a) (sizeof(a) / sizeof(*a))
-#endif
-
-static const char *archs[] = { "noarch", "i686", "x86_64" };
 
 /*
  * Removes stalled pkg entries in repository's index.plist file, if any
  * binary package cannot be read (unavailable, not enough perms, etc).
  */
-static int
-remove_missing_binpkg_entries(struct xbps_handle *xhp, const char *repodir)
+int
+repo_index_clean(struct xbps_handle *xhp, const char *repodir)
 {
 	prop_array_t array;
 	prop_dictionary_t pkgd;
 	const char *filen, *pkgver, *arch;
-	char *binpkg, *plist;
-	size_t i;
-	int rv = 0;
-	bool found = false;
+	char *binpkg, *plist, *plist_lock;
+	size_t i, idx = 0;
+	int fdlock, rv = 0;
+	bool flush = false;
 
-	plist = xbps_pkg_index_plist(xhp, repodir);
-	if (plist == NULL)
+	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL)
 		return -1;
+
+	if ((fdlock = acquire_repo_lock(plist, &plist_lock)) == -1) {
+		free(plist);
+		return -1;
+	}
 
 	array = prop_array_internalize_from_zfile(plist);
 	if (array == NULL) {
 		if (errno != ENOENT) {
 			xbps_error_printf("xbps-repo: cannot read `%s': %s\n",
 			    plist, strerror(errno));
-			exit(EXIT_FAILURE);
+			free(plist);
+			release_repo_lock(&plist_lock, fdlock);
+			return -1;
 		} else {
+			release_repo_lock(&plist_lock, fdlock);
 			free(plist);
 			return 0;
 		}
 	}
+	printf("Cleaning `%s' index, please wait...\n", repodir);
 
 again:
-	for (i = 0; i < prop_array_count(array); i++) {
+	for (i = idx; i < prop_array_count(array); i++) {
 		pkgd = prop_array_get(array, i);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
@@ -90,310 +92,281 @@ again:
 			    pkgver, arch);
 			prop_array_remove(array, i);
 			free(binpkg);
-			found = true;
+			flush = true;
+			idx = i;
 			goto again;
 		}
 		free(binpkg);
 	}
-	if (found && !prop_array_externalize_to_zfile(array, plist))
+	if (flush && !prop_array_externalize_to_zfile(array, plist))
 		rv = errno;
 
 	free(plist);
+	printf("index: %u packages registered.\n", prop_array_count(array));
+	prop_object_release(array);
+	release_repo_lock(&plist_lock, fdlock);
 
 	return rv;
 }
 
-static prop_array_t
-repoidx_get(struct xbps_handle *xhp, const char *pkgdir)
+/*
+ * Adds a binary package into the index and removes old binary package
+ * and entry when it's necessary.
+ */
+int
+repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 {
-	prop_array_t array;
-	char *plist;
-	int rv;
-	/*
-	 * Remove entries in repositories index for unexistent
-	 * packages, i.e dangling entries.
-	 */
-	if ((rv = remove_missing_binpkg_entries(xhp, pkgdir)) != 0)
-		return NULL;
-
-	plist = xbps_pkg_index_plist(xhp, pkgdir);
-	if (plist == NULL)
-		return NULL;
-
-	array = prop_array_internalize_from_zfile(plist);
-	free(plist);
-	if (array == NULL)
-		array = prop_array_create();
-
-	return array;
-}
-
-static int
-add_binpkg_to_index(struct xbps_handle *xhp,
-		    prop_array_t idx,
-		    const char *repodir,
-		    const char *file)
-{
-	prop_dictionary_t newpkgd, curpkgd;
+	prop_array_t idx = NULL;
+	prop_dictionary_t newpkgd = NULL, curpkgd;
 	struct stat st;
 	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
 	const char *arch, *oldarch;
-	char *sha256, *filen, *tmpfilen, *oldfilepath, *buf;
-	int ret = 0, rv = 0;
+	char *sha256, *filen, *repodir, *oldfilepath, *buf;
+	char *tmpfilen = NULL, *tmprepodir = NULL, *plist = NULL;
+	char *plist_lock = NULL;
+	int i, ret = 0, rv = 0, fdlock = -1;
+	bool flush = false;
 
-	tmpfilen = strdup(file);
-	if (tmpfilen == NULL)
-		return errno;
+	if ((tmprepodir = strdup(argv[1])) == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	repodir = dirname(tmprepodir);
 
-	filen = basename(tmpfilen);
-	if (strcmp(tmpfilen, filen) == 0) {
-		rv = EINVAL;
+	/* Internalize plist file or create it if doesn't exist */
+	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL)
+		return -1;
+
+	/* Acquire exclusive file lock */
+	if ((fdlock = acquire_repo_lock(plist, &plist_lock)) == -1) {
+		rv = fdlock;
 		goto out;
 	}
 
-	newpkgd = xbps_dictionary_metadata_plist_by_url(file, "./props.plist");
-	if (newpkgd == NULL) {
-		xbps_error_printf("failed to read %s metadata for `%s',"
-		    " skipping!\n", XBPS_PKGPROPS, file);
-		goto out;
+	if ((idx = prop_array_internalize_from_zfile(plist)) == NULL) {
+		if (errno != ENOENT) {
+			xbps_error_printf("xbps-repo: cannot read `%s': %s\n",
+			    plist, strerror(errno));
+			rv = -1;
+			goto out;
+		} else {
+			idx = prop_array_create();
+			assert(idx);
+		}
 	}
-	prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(newpkgd, "version", &version);
-	prop_dictionary_get_cstring_nocopy(newpkgd, "architecture", &arch);
+
 	/*
-	 * Check if this package exists already in the index, but first
-	 * checking the version. If current package version is greater
-	 * than current registered package, update the index; otherwise
-	 * pass to the next one.
+	 * Process all packages specified in argv.
 	 */
-	curpkgd = xbps_find_pkg_in_array_by_name(xhp, idx, pkgname, arch);
-	if (curpkgd == NULL) {
-		if (errno && errno != ENOENT) {
-			prop_object_release(newpkgd);
-			rv = errno;
-			goto out;
-		}
-	} else {
-		prop_dictionary_get_cstring_nocopy(curpkgd, "version", &regver);
-		ret = xbps_cmpver(version, regver);
-		if (ret == 0) {
-			/* same version */
-			fprintf(stderr, "index: skipping `%s-%s' (%s), `%s-%s' already "
-			    "registered.\n", pkgname, version,
-			    arch, pkgname, regver);
-			prop_object_release(newpkgd);
-			rv = EEXIST;
-			goto out;
-		} else if (ret == -1) {
-			/* idx version is greater, remove current binpkg */
-			oldfilepath = xbps_xasprintf("%s/%s/%s",
-			    repodir, arch, filen);
-			assert(oldfilepath != NULL);
-			if (remove(oldfilepath) == -1) {
-				rv = errno;
-				xbps_error_printf("failed to remove old binpkg "
-				    "`%s': %s\n", oldfilepath, strerror(rv));
-				free(oldfilepath);
-				prop_object_release(newpkgd);
-				goto out;
-			}
-			free(oldfilepath);
-			buf = xbps_xasprintf("`%s-%s' (%s)", pkgname, version, arch);
-			assert(buf != NULL);
-			prop_object_release(newpkgd);
-			printf("index: removed obsolete binpkg %s.\n", buf);
-			free(buf);
-			rv = EEXIST;
-			goto out;
-		}
-		/* current binpkg is greater than idx version */
-		prop_dictionary_get_cstring_nocopy(curpkgd,
-		    "filename", &oldfilen);
-		prop_dictionary_get_cstring_nocopy(curpkgd,
-		    "pkgver", &oldpkgver);
-		prop_dictionary_get_cstring_nocopy(curpkgd,
-		    "architecture", &oldarch);
-
-		buf = strdup(oldpkgver);
-		if (buf == NULL) {
-			prop_object_release(newpkgd);
+	for (i = 1; i < argc; i++) {
+		if ((tmpfilen = strdup(argv[i])) == NULL) {
 			rv = ENOMEM;
 			goto out;
 		}
-		oldfilepath = xbps_xasprintf("%s/%s/%s",
-		    repodir, oldarch, oldfilen);
-		if (oldfilepath == NULL) {
-			rv = errno;
-			prop_object_release(newpkgd);
-			free(buf);
-			goto out;
+		filen = basename(tmpfilen);
+		/*
+		 * Read metadata props plist dictionary from binary package.
+		 */
+		newpkgd = xbps_dictionary_metadata_plist_by_url(argv[i],
+		    "./props.plist");
+		if (newpkgd == NULL) {
+			xbps_error_printf("failed to read %s metadata for `%s',"
+			    " skipping!\n", XBPS_PKGPROPS, argv[i]);
+			free(tmpfilen);
+			filen = NULL;
+			continue;
 		}
-		if (remove(oldfilepath) == -1) {
-			rv = errno;
-			xbps_error_printf("failed to remove old "
-			    "package file `%s': %s\n", oldfilepath,
-			    strerror(errno));
-			free(oldfilepath);
-			prop_object_release(newpkgd);
-			free(buf);
-			goto out;
-		}
-		free(oldfilepath);
-		if (!xbps_remove_pkg_from_array_by_pkgver(xhp, idx,
-		    buf, oldarch)) {
-			xbps_error_printf("failed to remove `%s' "
-			    "from plist index: %s\n", buf, strerror(errno));
-			prop_object_release(newpkgd);
-			free(buf);
-			goto out;
-		}
-		printf("index: removed obsolete entry/binpkg `%s' "
-		    "(%s).\n", buf, arch);
-		free(buf);
-	}
-
-	/*
-	 * We have the dictionary now, add the required
-	 * objects for the index.
-	 */
-	if (!prop_dictionary_set_cstring(newpkgd, "filename", filen)) {
-		prop_object_release(newpkgd);
-		rv = errno;
-		goto out;
-	}
-	if ((sha256 = xbps_file_hash(file)) == NULL) {
-		prop_object_release(newpkgd);
-		rv = errno;
-		goto out;
-	}
-	if (!prop_dictionary_set_cstring(newpkgd, "filename-sha256", sha256)) {
-		prop_object_release(newpkgd);
-		free(sha256);
-		rv = errno;
-		goto out;
-	}
-	free(sha256);
-	if (stat(file, &st) == -1) {
-		prop_object_release(newpkgd);
-		rv = errno;
-		goto out;
-	}
-	if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
-	    (uint64_t)st.st_size)) {
-		prop_object_release(newpkgd);
-		rv = errno;
-		goto out;
-	}
-	/*
-	 * Add dictionary into the index and update package count.
-	 */
-	if (!xbps_add_obj_to_array(idx, newpkgd)) {
-		rv = EINVAL;
-		goto out;
-	}
-	printf("index: added `%s-%s' (%s).\n", pkgname, version, arch);
-
-out:
-	if (tmpfilen)
-		free(tmpfilen);
-
-	return rv;
-}
-
-int
-repo_genindex(struct xbps_handle *xhp, const char *pkgdir)
-{
-	prop_array_t idx = NULL;
-	struct dirent *dp;
-	DIR *dirp;
-	size_t i;
-	char *curdir;
-	char *binfile, *plist;
-	int rv = 0;
-	bool registered_newpkgs = false, foundpkg = false;
-
-	/*
-	 * Create or read existing package index plist file.
-	 */
-	idx = repoidx_get(xhp, pkgdir);
-	if (idx == NULL)
-		return errno;
-
-	plist = xbps_pkg_index_plist(xhp, pkgdir);
-	if (plist == NULL) {
-		prop_object_release(idx);
-		return errno;
-	}
-
-	for (i = 0; i < __arraycount(archs); i++) {
-		curdir = xbps_xasprintf("%s/%s", pkgdir, archs[i]);
-		assert(curdir != NULL);
-
-		dirp = opendir(curdir);
-		if (dirp == NULL) {
-			if (errno == ENOENT) {
-				free(curdir);
-				continue;
-			}
-			xbps_error_printf("xbps-repo: cannot open `%s': %s\n",
-			    curdir, strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		while ((dp = readdir(dirp)) != NULL) {
-			if ((strcmp(dp->d_name, ".") == 0) ||
-			    (strcmp(dp->d_name, "..") == 0))
-				continue;
-			/* Ignore unknown files */
-			if (strstr(dp->d_name, ".xbps") == NULL)
-				continue;
-
-			foundpkg = true;
-			binfile = xbps_xasprintf("%s/%s", curdir, dp->d_name);
-			if (binfile == NULL) {
-				(void)closedir(dirp);
+		prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname",
+		    &pkgname);
+		prop_dictionary_get_cstring_nocopy(newpkgd, "version",
+		    &version);
+		prop_dictionary_get_cstring_nocopy(newpkgd, "architecture",
+		    &arch);
+		/*
+		 * Check if this package exists already in the index, but first
+		 * checking the version. If current package version is greater
+		 * than current registered package, update the index; otherwise
+		 * pass to the next one.
+		 */
+		curpkgd =
+		    xbps_find_pkg_in_array_by_name(xhp, idx, pkgname, arch);
+		if (curpkgd == NULL) {
+			if (errno && errno != ENOENT) {
+				prop_object_release(newpkgd);
+				free(tmpfilen);
 				rv = errno;
 				goto out;
 			}
-			rv = add_binpkg_to_index(xhp, idx, pkgdir, binfile);
-			free(binfile);
-			if (rv == EEXIST) {
-				rv = 0;
+		} else {
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "version", &regver);
+			ret = xbps_cmpver(version, regver);
+			if (ret == 0) {
+				/* Same version */
+				fprintf(stderr, "index: skipping `%s-%s' "
+				    "(%s), `%s-%s' already registered.\n",
+				    pkgname, version, arch, pkgname, regver);
+				prop_object_release(newpkgd);
+				free(tmpfilen);
+				newpkgd = NULL;
+				filen = NULL;
 				continue;
-			} else if (rv != 0) {
-				(void)closedir(dirp);
-				free(curdir);
+			} else if (ret == -1) {
+				/*
+				 * Index version is greater, remove current
+				 * package.
+				 */
+				oldfilepath = xbps_xasprintf("%s/%s/%s",
+					repodir, arch, filen);
+				assert(oldfilepath != NULL);
+				if (remove(oldfilepath) == -1) {
+					rv = errno;
+					xbps_error_printf("failed to remove "
+					    "old binpkg `%s': %s\n",
+					    oldfilepath, strerror(rv));
+					prop_object_release(newpkgd);
+					free(tmpfilen);
+					free(oldfilepath);
+					goto out;
+				}
+				free(oldfilepath);
+				buf = xbps_xasprintf("`%s-%s' (%s)",
+				    pkgname, version, arch);
+				assert(buf != NULL);
+				printf("index: removed obsolete binpkg %s.\n",
+				    buf);
+				free(buf);
+				prop_object_release(newpkgd);
+				free(tmpfilen);
+				newpkgd = NULL;
+				filen = NULL;
+				continue;
+			}
+			/*
+			 * Current package version is greater than
+			 * index version.
+			 */
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "filename", &oldfilen);
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "pkgver", &oldpkgver);
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "architecture", &oldarch);
+
+			if ((buf = strdup(oldpkgver)) == NULL) {
+				rv = ENOMEM;
 				goto out;
 			}
-			registered_newpkgs = true;
+			oldfilepath = xbps_xasprintf("%s/%s/%s",
+			    repodir, oldarch, oldfilen);
+			if (oldfilepath == NULL) {
+				rv = errno;
+				free(buf);
+				prop_object_release(newpkgd);
+				free(tmpfilen);
+				goto out;
+			}
+			if (remove(oldfilepath) == -1) {
+				rv = errno;
+				xbps_error_printf("failed to remove old "
+				    "package file `%s': %s\n", oldfilepath,
+				    strerror(errno));
+				free(oldfilepath);
+				free(buf);
+				prop_object_release(newpkgd);
+				free(tmpfilen);
+				goto out;
+			}
+			free(oldfilepath);
+			if (!xbps_remove_pkg_from_array_by_pkgver(xhp, idx,
+			    buf, oldarch)) {
+				xbps_error_printf("failed to remove `%s' "
+				    "from plist index: %s\n", buf,
+				    strerror(errno));
+				rv = errno;
+				free(buf);
+				prop_object_release(newpkgd);
+				free(tmpfilen);
+				goto out;
+			}
+			printf("index: removed obsolete entry/binpkg `%s' "
+			     "(%s).\n", buf, arch);
+			free(buf);
 		}
-		(void)closedir(dirp);
-		free(curdir);
+		/*
+		 * We have the dictionary now, add the required
+		 * objects for the index.
+		 */
+		if (!prop_dictionary_set_cstring(newpkgd, "filename", filen)) {
+			rv = errno;
+			prop_object_release(newpkgd);
+			free(tmpfilen);
+			goto out;
+		}
+		if ((sha256 = xbps_file_hash(argv[i])) == NULL) {
+			rv = errno;
+			prop_object_release(newpkgd);
+			free(tmpfilen);
+			goto out;
+		}
+		if (!prop_dictionary_set_cstring(newpkgd, "filename-sha256",
+		    sha256)) {
+			free(sha256);
+			prop_object_release(newpkgd);
+			free(tmpfilen);
+			rv = errno;
+			goto out;
+		}
+		free(sha256);
+		if (stat(argv[i], &st) == -1) {
+			prop_object_release(newpkgd);
+			free(tmpfilen);
+			rv = errno;
+			goto out;
+		}
+		if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
+		    (uint64_t)st.st_size)) {
+			prop_object_release(newpkgd);
+			free(tmpfilen);
+			rv = errno;
+			goto out;
+		}
+		/*
+		 * Add new pkg dictionary into the index.
+		 */
+		if (!prop_array_add(idx, newpkgd)) {
+			prop_object_release(newpkgd);
+			free(tmpfilen);
+			rv = EINVAL;
+			goto out;
+		}
+		flush = true;
+		printf("index: added `%s-%s' (%s).\n", pkgname, version, arch);
+		free(tmpfilen);
+		prop_object_release(newpkgd);
+		newpkgd = NULL;
+		sha256 = NULL;
+		filen = NULL;
+		oldfilen = oldarch = oldpkgver = NULL;
+		pkgname = version = arch = NULL;
 	}
 
-	if (foundpkg == false) {
-		/* No packages were found in directory */
-		rv = ENOENT;
-	} else {
-		/*
-		 * Show total count registered packages.
-		 */
-		printf("index: %zu packages registered.\n",
-		    (size_t)prop_array_count(idx));
-		/*
-		 * Don't write plist file if no packages were registered.
-		 */
-		if (registered_newpkgs == false)
-			goto out;
-		/*
-		 * If any package was registered in package index, write
-		 * plist file to storage.
-		 */
-		if (!prop_array_externalize_to_zfile(idx, plist))
-			rv = errno;
+	if (flush && !prop_array_externalize_to_zfile(idx, plist)) {
+		xbps_error_printf("failed to externalize plist: %s\n",
+		    strerror(errno));
+		rv = errno;
 	}
+	printf("index: %u packages registered.\n", prop_array_count(idx));
+
 out:
-	free(plist);
-	prop_object_release(idx);
+	release_repo_lock(&plist_lock, fdlock);
+
+	if (tmprepodir)
+		free(tmprepodir);
+	if (plist)
+		free(plist);
+	if (idx)
+		prop_object_release(idx);
 
 	return rv;
 }

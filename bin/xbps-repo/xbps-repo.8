@@ -1,4 +1,4 @@
-.Dd June 5, 2012
+.Dd July 17, 2012
 .Os Void GNU/Linux
 .Dt xbps-repo 8
 .Sh NAME
@@ -64,13 +64,12 @@ Prints the name of
 .Em package(s)
 matching the pattern on its file list by looking in all repositories index files.
 Multiple patterns can be specified as arguments.
-.It Sy genindex Pa /path/to/local/repo
-Generates the package index files for a local repository as specified in its argument.
-It will look for archives with the
-.Sy .xbps
-extension and will only add them onto the index if version is newer than the one
-currently stored. If a newer package is available, the old binary package will be
-removed automatically.
+.It Sy index-add Ar /path/to/local/repository/foo-1.0.arch.xbps
+This will register the binary package into the local repository's index files, and remove
+old entry and binary package if any old version exists.
+Multiple binary packages can be specified.
+.It Sy index-clean Ar /path/to/local/repository
+This will remove any obsolete entry found in the local repository's index files.
 .It Sy list
 Lists all working repositories in repository pool.
 .It Sy pkg-list Op repository
