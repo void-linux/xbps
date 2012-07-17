@@ -109,6 +109,39 @@ again:
 	return rv;
 }
 
+static int
+remove_oldpkg(const char *repodir, const char *arch, const char *file)
+{
+	char *filepath;
+	int rv;
+
+	/* Remove real binpkg */
+	filepath = xbps_xasprintf("%s/%s/%s", repodir, arch, file);
+	assert(filepath);
+	if (remove(filepath) == -1) {
+		rv = errno;
+		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
+		    file, strerror(rv));
+		free(filepath);
+		return rv;
+	}
+	free(filepath);
+
+	/* Remove symlink to binpkg */
+	filepath = xbps_xasprintf("%s/%s", repodir, file);
+	assert(filepath);
+	if (remove(filepath) == -1) {
+		rv = errno;
+		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
+		    file, strerror(rv));
+		free(filepath);
+		return rv;
+	}
+	free(filepath);
+
+	return 0;
+}
+
 /*
  * Adds a binary package into the index and removes old binary package
  * and entry when it's necessary.
@@ -121,7 +154,7 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 	struct stat st;
 	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
 	const char *arch, *oldarch;
-	char *sha256, *filen, *repodir, *oldfilepath, *buf;
+	char *sha256, *filen, *repodir, *buf;
 	char *tmpfilen = NULL, *tmprepodir = NULL, *plist = NULL;
 	char *plist_lock = NULL;
 	int i, ret = 0, rv = 0, fdlock = -1;
@@ -204,8 +237,8 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 			if (ret == 0) {
 				/* Same version */
 				fprintf(stderr, "index: skipping `%s-%s' "
-				    "(%s), `%s-%s' already registered.\n",
-				    pkgname, version, arch, pkgname, regver);
+				    "(%s), already registered.\n",
+				    pkgname, version, arch);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
 				newpkgd = NULL;
@@ -216,23 +249,15 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 				 * Index version is greater, remove current
 				 * package.
 				 */
-				oldfilepath = xbps_xasprintf("%s/%s/%s",
-					repodir, arch, filen);
-				assert(oldfilepath != NULL);
-				if (remove(oldfilepath) == -1) {
-					rv = errno;
-					xbps_error_printf("failed to remove "
-					    "old binpkg `%s': %s\n",
-					    oldfilepath, strerror(rv));
+				rv = remove_oldpkg(repodir, arch, filen);
+				if (rv != 0) {
 					prop_object_release(newpkgd);
 					free(tmpfilen);
-					free(oldfilepath);
 					goto out;
 				}
-				free(oldfilepath);
 				buf = xbps_xasprintf("`%s-%s' (%s)",
 				    pkgname, version, arch);
-				assert(buf != NULL);
+				assert(buf);
 				printf("index: removed obsolete binpkg %s.\n",
 				    buf);
 				free(buf);
@@ -254,30 +279,18 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 			    "architecture", &oldarch);
 
 			if ((buf = strdup(oldpkgver)) == NULL) {
+				prop_object_release(newpkgd);
+				free(tmpfilen);
 				rv = ENOMEM;
 				goto out;
 			}
-			oldfilepath = xbps_xasprintf("%s/%s/%s",
-			    repodir, oldarch, oldfilen);
-			if (oldfilepath == NULL) {
-				rv = errno;
+			rv = remove_oldpkg(repodir, oldarch, oldfilen);
+			if (rv != 0) {
 				free(buf);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
 				goto out;
 			}
-			if (remove(oldfilepath) == -1) {
-				rv = errno;
-				xbps_error_printf("failed to remove old "
-				    "package file `%s': %s\n", oldfilepath,
-				    strerror(errno));
-				free(oldfilepath);
-				free(buf);
-				prop_object_release(newpkgd);
-				free(tmpfilen);
-				goto out;
-			}
-			free(oldfilepath);
 			if (!xbps_remove_pkg_from_array_by_pkgver(xhp, idx,
 			    buf, oldarch)) {
 				xbps_error_printf("failed to remove `%s' "

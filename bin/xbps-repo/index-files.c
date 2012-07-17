@@ -76,8 +76,11 @@ repo_index_files_clean(struct xbps_handle *xhp, const char *repodir)
 	/*
 	 * Iterate over index-files array to find obsolete entries.
 	 */
-	for (x = 0; x < prop_array_count(idx); x++) {
-		obj = prop_array_get(idx, x);
+	obsoletes = prop_array_create();
+	assert(obsoletes);
+
+	for (x = 0; x < prop_array_count(idxfiles); x++) {
+		obj = prop_array_get(idxfiles, x);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &ipkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "architecture", &iarch);
 		if (xbps_find_pkg_in_array_by_pkgver(xhp, idx, ipkgver, iarch)) {
