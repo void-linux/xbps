@@ -113,12 +113,12 @@ main(int argc, char **argv)
 	struct sigaction sa;
 	const char *rootdir, *cachedir, *conffile, *option;
 	int i, c, flags, rv;
-	bool sync, yes, reqby_force, force_rm_with_deps, recursive_rm;
+	bool rsync, yes, reqby_force, force_rm_with_deps, recursive_rm;
 	bool reinstall, show_download_pkglist_url, dry_run;
 
 	rootdir = cachedir = conffile = option = NULL;
 	flags = rv = 0;
-	reqby_force = sync = yes = dry_run = force_rm_with_deps = false;
+	reqby_force = rsync = yes = dry_run = force_rm_with_deps = false;
 	recursive_rm = reinstall = show_download_pkglist_url = false;
 
 	while ((c = getopt(argc, argv, "AC:c:dDFfhMno:Rr:SVvy")) != -1) {
@@ -166,7 +166,7 @@ main(int argc, char **argv)
 			rootdir = optarg;
 			break;
 		case 'S':
-			sync = true;
+			rsync = true;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -269,7 +269,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
+		if (rsync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
 			goto out;
 
 		for (i = 1; i < argc; i++)
@@ -283,7 +283,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
+		if (rsync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
 			goto out;
 
 		for (i = 1; i < argc; i++)
@@ -352,7 +352,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		if (sync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
+		if (rsync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
 			goto out;
 
 		rv = dist_upgrade(&xh, yes, dry_run, show_download_pkglist_url);
