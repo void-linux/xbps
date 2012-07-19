@@ -213,9 +213,12 @@ linux)
 esac
 
 
-# Add CPPFLAGS and CFLAGS to CC for testing features
+# Add CPPFLAGS/CFLAGS/LDFLAGS to CC for testing features
 XCC="$CC `$SED -n -e 's/CPPLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
 XCC="$XCC `$SED -n -e 's/CFLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
+XCC="$XCC `$SED -n -e 's/LDFLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
+# Make sure to disable --as-needed for CC tests.
+XCC="$XCC -Wl,--no-as-needed"
 
 check_compiler_flag()
 {
