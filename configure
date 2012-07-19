@@ -179,7 +179,7 @@ else
 	echo "Using compiler $CC"
 fi
 echo "CC = 		$CC" >>$CONFIG_MK
-echo "CFLAGS = -pthread" >>$CONFIG_MK
+echo "CFLAGS = -O2 -pthread" >>$CONFIG_MK
 if [ -n "$CFLAGS" ]; then
 	echo "CFLAGS +=	$CFLAGS" >>$CONFIG_MK
 fi
