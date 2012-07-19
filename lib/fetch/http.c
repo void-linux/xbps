@@ -63,9 +63,6 @@
  * SUCH DAMAGE.
  */
 
-/* Needed for gmtime_r on Interix */
-#define _REENTRANT
-
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif

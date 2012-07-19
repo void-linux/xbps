@@ -320,7 +320,7 @@ ftp_cwd(conn_t *conn, const char *path, int subdir)
 	} else if (strcmp(conn->ftp_home, "/") == 0) {
 		dst = strdup(path - 1);
 	} else {
-		asprintf(&dst, "%s/%s", conn->ftp_home, path);
+		e = asprintf(&dst, "%s/%s", conn->ftp_home, path);
 	}
 	if (dst == NULL) {
 		fetch_syserr();
@@ -614,7 +614,6 @@ static void
 ftp_closefn(void *v)
 {
 	struct ftpio *io;
-	int r;
 
 	io = (struct ftpio *)v;
 	if (io == NULL) {
@@ -630,7 +629,7 @@ ftp_closefn(void *v)
 	fetch_close(io->dconn);
 	io->dconn = NULL;
 	io->dir = -1;
-	r = ftp_chkerr(io->cconn);
+	ftp_chkerr(io->cconn);
 	fetch_cache_put(io->cconn, ftp_disconnect);
 	free(io);
 	return;
@@ -672,14 +671,13 @@ ftp_transfer(conn_t *conn, const char *oper, const char *file, const char *op_ar
 	const char *bindaddr;
 	const char *filename;
 	int filenamelen, type;
-	int low, pasv, verbose;
+	int pasv, verbose;
 	int e, sd = -1;
 	socklen_t l;
 	char *s;
 	fetchIO *df;
 
 	/* check flags */
-	low = CHECK_FLAG('l');
 	pasv = !CHECK_FLAG('a');
 	verbose = CHECK_FLAG('v');
 
