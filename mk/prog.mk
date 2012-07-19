@@ -50,5 +50,5 @@ $(BIN).static: $(OBJS)
 $(BIN): $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
 	${SILENT}$(CC) $^ $(CPPFLAGS) -L$(TOPDIR)/lib $(CFLAGS) \
-		$(PROG_CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) -o $@
+		$(PROG_CFLAGS) $(LDFLAGS) -lxbps -o $@
 

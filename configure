@@ -423,12 +423,10 @@ if $XCC -lfetch _$func.c -o _$func 2>/dev/null; then
 	LIBFETCH=yes
 	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
-	echo "PROG_LDFLAGS +=	-lxbps -lfetch" >>$CONFIG_MK
 	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
 else
 	LIBFETCH=no
 	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
-	echo "PROG_LDFLAGS +=	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 fi
 echo "$LIBFETCH."
