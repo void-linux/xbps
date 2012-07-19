@@ -1,5 +1,8 @@
 xbps-0.16.6 (???):
 
+ * configure: fixes for Ubuntu, which uses ld(1) --as-needed by default and
+   some function tests were failiing due to this.
+
  * configure: added "--with-static" and if enabled, the static executables
    will also be built and installed. By default it's disabled.
 
