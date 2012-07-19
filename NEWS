@@ -1,5 +1,8 @@
 xbps-0.16.6 (???):
 
+ * configure: added "--with-static" and if enabled, the static executables
+   will also be built and installed. By default it's disabled.
+
  * xbps-repo(8): the 'genindex' target has been replaced by the 'index-add' and
    'index-clean' targets. The 'index-add' expects a list of binary packages to
    be added to repository's index:

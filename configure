@@ -15,6 +15,7 @@ DEBUG=
 BUILD_TESTS=
 BUILD_API_DOCS=
 BUILD_PIE=
+BUILD_STATIC=
 SILENT=yes
 HAVE_VISIBILITY=no
 
@@ -41,8 +42,9 @@ for instance \`--prefix=\$HOME'.
 
 --debug				Build with debugging code and symbols
 --verbose			Disable silent build to see compilation details
---with-pie			Build XBPS programs as PIE (default disabled)
 --with-api-docs			Install XBPS API Library documentation (default disabled)
+--with-pie			Build XBPS programs as PIE (default disabled)
+--with-static			Build XBPS static utils (default disabled)
 --with-tests			Build and install Kyua tests (default disabled)
 				Needs atf >= 0.15 (http://code.google.com/p/kyua)
 _EOF
@@ -71,6 +73,7 @@ for x; do
 	--with-pie) BUILD_PIE=$var;;
 	--pkgconfigdir) PKGCONFIGDIR=$var;;
 	--with-tests) BUILD_TESTS=yes;;
+	--with-static) BUILD_STATIC=yes;;
 	--testsdir) TESTSDIR=$var;;
 	--help) usage;;
 	*) echo "$0: WARNING: unknown option $opt" >&2;;
@@ -156,7 +159,7 @@ ETCDIR="${ETCDIR}/xbps"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 
 [ -z "$DEBUG" ] && DEBUG=no
-[ -z "$BUILD_PIE" ] && BUILD_PIE_VAL=no
+[ -z "$BUILD_PIE" ] && BUILD_PIE_VALUE=no
 
 if [ -z "$CC" ]; then
 	printf "Looking for compiler ... "
@@ -299,9 +302,9 @@ if [ -n "$BUILD_PIE" ]; then
 	fi
 	if [ $? -eq 0 ]; then
 		echo "Building programs as PIE (Position Independent Executable)."
-		BUILD_PIE_VAL=yes
+		BUILD_PIE_VALUE=yes
 	else
-		BUILD_PIE_VAL=no
+		BUILD_PIE_VALUE=no
 	fi
 fi
 
@@ -599,6 +602,16 @@ else
 fi
 
 #
+# If --with-static enabled, build static binaries.
+#
+if [ "$BUILD_STATIC" = "yes" ]; then
+	echo "BUILD_STATIC = yes" >>$CONFIG_MK
+	BUILD_STATIC_VALUE=yes
+else
+	BUILD_STATIC_VALUE=no
+fi
+
+#
 # If --with-tests enabled, check for ATF >= 0.15 via pkg-config.
 #
 if [ "$BUILD_TESTS" = "yes" ]; then
@@ -643,7 +656,8 @@ fi
 echo
 echo "   Build API documentation =	$BUILD_API_DOCS_VALUE"
 echo "   Build Kyua test suite =	$BUILD_TESTS_VALUE"
-echo "   Build programs as PIE =	$BUILD_PIE_VAL"
+echo "   Build programs as PIE =	$BUILD_PIE_VALUE"
+echo "   Build static programs =	$BUILD_STATIC_VALUE"
 echo "   Build with debug  =		$DEBUG"
 echo "   Use external proplib = 	$PROPLIB"
 echo "   Use external libfetch =	$LIBFETCH"

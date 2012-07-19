@@ -2,8 +2,14 @@
 
 OBJS	?= main.o
 
+BINS = $(BIN)
+
+ifdef BUILD_STATIC
+BINS += $(BIN).static
+endif
+
 .PHONY: all
-all: $(BIN) $(BIN).static
+all: $(BINS)
 
 .PHONY: clean
 clean:
@@ -14,7 +20,9 @@ clean:
 install: all
 	install -d $(DESTDIR)$(SBINDIR)
 	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(DESTDIR)$(SBINDIR)
+ifdef BUILD_STATIC
 	install $(INSTALL_STRIPPED) -m 755 $(BIN).static $(DESTDIR)$(SBINDIR)
+endif
 ifdef MAN
 	install -d $(DESTDIR)$(MANDIR)/man8
 	install -m 644 $(MAN) $(DESTDIR)$(MANDIR)/man8
@@ -23,7 +31,9 @@ endif
 .PHONY: uninstall
 uninstall:
 	-rm -f $(DESTDIR)$(SBINDIR)/$(BIN)
+ifdef BUILD_STATIC
 	-rm -f $(DESTDIR)$(SBINDIR)/$(BIN).static
+endif
 ifdef MAN
 	-rm -f $(DESTDIR)$(MANDIR)/man8/$(MAN)
 endif
