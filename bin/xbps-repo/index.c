@@ -290,8 +290,8 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 				goto out;
 			}
 			if (!xbps_remove_pkg_from_array_by_pkgver(xhp, idx,
-			    buf2, NULL)) {
-				xbps_error_printf("failed to remove `%s' "
+			    buf2, oldarch)) {
+				xbps_error_printf("failed to remove %s "
 				    "from plist index: %s\n", buf,
 				    strerror(errno));
 				rv = errno;
