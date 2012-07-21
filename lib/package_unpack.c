@@ -473,6 +473,11 @@ unpack_archive(struct xbps_handle *xhp,
 				archive_read_data_skip(ar);
 				continue;
 			}
+			/*
+			 * Reset entry_pname again because if entry's pathname
+			 * has been changed it will become a dangling pointer.
+			 */
+			entry_pname = archive_entry_pathname(entry);
 		}
 		/*
 		 * Extract entry from archive.
