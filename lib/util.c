@@ -282,13 +282,15 @@ xbps_pkg_arch_match(struct xbps_handle *xhp,
 		    const char *target)
 {
 	if (target == NULL) {
-		if (strcmp(orig, "noarch") && strcmp(orig, xhp->un_machine))
-			return false;
+		if ((strcmp(orig, "noarch") == 0) ||
+		    (strcmp(orig, xhp->un_machine) == 0))
+			return true;
 	} else {
-		if (strcmp(orig, "noarch") && strcmp(orig, target))
-			return false;
+		if ((strcmp(orig, "noarch") == 0) ||
+		    (strcmp(orig, target) == 0))
+			return true;
 	}
-	return true;
+	return false;
 }
 
 char *
