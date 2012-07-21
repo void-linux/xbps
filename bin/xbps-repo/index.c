@@ -154,7 +154,7 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 	struct stat st;
 	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
 	const char *arch, *oldarch;
-	char *sha256, *filen, *repodir, *buf;
+	char *sha256, *filen, *repodir, *buf, *buf2;
 	char *tmpfilen = NULL, *tmprepodir = NULL, *plist = NULL;
 	char *plist_lock = NULL;
 	int i, ret = 0, rv = 0, fdlock = -1;
@@ -222,7 +222,7 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 * pass to the next one.
 		 */
 		curpkgd =
-		    xbps_find_pkg_in_array_by_name(xhp, idx, pkgname, arch);
+		    xbps_find_pkg_in_array_by_name(xhp, idx, pkgname, NULL);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				prop_object_release(newpkgd);
@@ -231,6 +231,12 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 				goto out;
 			}
 		} else {
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "filename", &oldfilen);
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "pkgver", &oldpkgver);
+			prop_dictionary_get_cstring_nocopy(curpkgd,
+			    "architecture", &oldarch);
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "version", &regver);
 			ret = xbps_cmpver(version, regver);
@@ -249,62 +255,56 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 				 * Index version is greater, remove current
 				 * package.
 				 */
-				rv = remove_oldpkg(repodir, arch, filen);
+				buf = xbps_xasprintf("`%s' (%s)",
+				    oldpkgver, oldarch);
+				assert(buf);
+				rv = remove_oldpkg(repodir, oldarch, oldfilen);
 				if (rv != 0) {
 					prop_object_release(newpkgd);
 					free(tmpfilen);
+					free(buf);
 					goto out;
 				}
-				buf = xbps_xasprintf("`%s-%s' (%s)",
-				    pkgname, version, arch);
-				assert(buf);
-				printf("index: removed obsolete binpkg %s.\n",
-				    buf);
+				printf("index: removed obsolete binpkg %s.\n", buf);
 				free(buf);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
 				newpkgd = NULL;
-				filen = NULL;
+				filen = buf = NULL;
 				continue;
 			}
 			/*
 			 * Current package version is greater than
 			 * index version.
 			 */
-			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "filename", &oldfilen);
-			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "pkgver", &oldpkgver);
-			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "architecture", &oldarch);
-
-			if ((buf = strdup(oldpkgver)) == NULL) {
-				prop_object_release(newpkgd);
-				free(tmpfilen);
-				rv = ENOMEM;
-				goto out;
-			}
+			buf = xbps_xasprintf("`%s' (%s)", oldpkgver, oldarch);
+			assert(buf);
+			buf2 = strdup(oldpkgver);
+			assert(buf2);
 			rv = remove_oldpkg(repodir, oldarch, oldfilen);
 			if (rv != 0) {
 				free(buf);
+				free(buf2);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
 				goto out;
 			}
 			if (!xbps_remove_pkg_from_array_by_pkgver(xhp, idx,
-			    buf, oldarch)) {
+			    buf2, NULL)) {
 				xbps_error_printf("failed to remove `%s' "
 				    "from plist index: %s\n", buf,
 				    strerror(errno));
 				rv = errno;
 				free(buf);
+				free(buf2);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
 				goto out;
 			}
-			printf("index: removed obsolete entry/binpkg `%s' "
-			     "(%s).\n", buf, arch);
+			free(buf2);
+			printf("index: removed obsolete entry/binpkg %s.\n", buf);
 			free(buf);
+			buf = buf2 = NULL;
 		}
 		/*
 		 * We have the dictionary now, add the required
