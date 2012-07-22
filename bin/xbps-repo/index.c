@@ -36,6 +36,95 @@
 #include <xbps_api.h>
 #include "defs.h"
 
+static int
+remove_oldpkg(const char *repodir, const char *arch, const char *file)
+{
+	char *filepath;
+	int rv;
+
+	/* Remove real binpkg */
+	filepath = xbps_xasprintf("%s/%s/%s", repodir, arch, file);
+	assert(filepath);
+	if (remove(filepath) == -1) {
+		rv = errno;
+		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
+		    file, strerror(rv));
+		free(filepath);
+		return rv;
+	}
+	free(filepath);
+
+	/* Remove symlink to binpkg */
+	filepath = xbps_xasprintf("%s/%s", repodir, file);
+	assert(filepath);
+	if (remove(filepath) == -1) {
+		rv = errno;
+		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
+		    file, strerror(rv));
+		free(filepath);
+		return rv;
+	}
+	free(filepath);
+
+	return 0;
+}
+
+static int
+remove_obsolete_binpkgs(struct xbps_handle *xhp,
+			prop_array_t idx,
+			const char *repodir)
+{
+	prop_dictionary_t pkgd;
+	DIR *dirp;
+	struct dirent *dp;
+	const char *pkgver, *arch;
+	int rv = 0;
+
+	if (chdir(repodir) == -1) {
+		fprintf(stderr, "cannot chdir to %s: %s\n",
+		    repodir, strerror(errno));
+		return errno;
+	}
+	if ((dirp = opendir(repodir)) == NULL) {
+		fprintf(stderr, "failed to open %s: %s\n",
+		    repodir, strerror(errno));
+		return errno;
+	}
+	while ((dp = readdir(dirp))) {
+		if (strcmp(dp->d_name, "..") == 0)
+			continue;
+		if (!strstr(dp->d_name, ".xbps"))
+			continue;
+
+		pkgd = xbps_dictionary_metadata_plist_by_url(dp->d_name,
+		    "./props.plist");
+		if (pkgd == NULL) {
+			fprintf(stderr, "failed to read metadata for `%s',"
+			    " skipping!\n", dp->d_name);
+			continue;
+		}
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
+		/*
+		 * If binpkg is not registered in index, remove binpkg.
+		 */
+		if (!xbps_find_pkg_in_array_by_pkgver(xhp, idx, pkgver, arch)) {
+			rv = remove_oldpkg(repodir, arch, dp->d_name);
+			if (rv != 0) {
+				fprintf(stderr, "index: failed to remove "
+				    "package `%s': %s\n", dp->d_name,
+				    strerror(rv));
+				prop_object_release(pkgd);
+				break;
+			}
+			printf("Removed obsolete package `%s'.\n", dp->d_name);
+		}
+		prop_object_release(pkgd);
+	}
+	(void)closedir(dirp);
+	return rv;
+}
+
 /*
  * Removes stalled pkg entries in repository's index.plist file, if any
  * binary package cannot be read (unavailable, not enough perms, etc).
@@ -98,48 +187,20 @@ again:
 		}
 		free(binpkg);
 	}
+	rv = remove_obsolete_binpkgs(xhp, array, repodir);
+	if (rv != 0)
+		goto out;
+
 	if (flush && !prop_array_externalize_to_zfile(array, plist))
 		rv = errno;
 
-	free(plist);
 	printf("index: %u packages registered.\n", prop_array_count(array));
+out:
+	free(plist);
 	prop_object_release(array);
 	release_repo_lock(&plist_lock, fdlock);
 
 	return rv;
-}
-
-static int
-remove_oldpkg(const char *repodir, const char *arch, const char *file)
-{
-	char *filepath;
-	int rv;
-
-	/* Remove real binpkg */
-	filepath = xbps_xasprintf("%s/%s/%s", repodir, arch, file);
-	assert(filepath);
-	if (remove(filepath) == -1) {
-		rv = errno;
-		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
-		    file, strerror(rv));
-		free(filepath);
-		return rv;
-	}
-	free(filepath);
-
-	/* Remove symlink to binpkg */
-	filepath = xbps_xasprintf("%s/%s", repodir, file);
-	assert(filepath);
-	if (remove(filepath) == -1) {
-		rv = errno;
-		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
-		    file, strerror(rv));
-		free(filepath);
-		return rv;
-	}
-	free(filepath);
-
-	return 0;
 }
 
 /*
@@ -206,7 +267,6 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 			xbps_error_printf("failed to read %s metadata for `%s',"
 			    " skipping!\n", XBPS_PKGPROPS, argv[i]);
 			free(tmpfilen);
-			filen = NULL;
 			continue;
 		}
 		prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname",
@@ -247,8 +307,6 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 				    pkgname, version, arch);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
-				newpkgd = NULL;
-				filen = NULL;
 				continue;
 			} else if (ret == -1) {
 				/*
@@ -269,8 +327,6 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 				free(buf);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
-				newpkgd = NULL;
-				filen = buf = NULL;
 				continue;
 			}
 			/*
@@ -304,7 +360,6 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 			free(buf2);
 			printf("index: removed obsolete entry/binpkg %s.\n", buf);
 			free(buf);
-			buf = buf2 = NULL;
 		}
 		/*
 		 * We have the dictionary now, add the required
@@ -357,11 +412,6 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 		printf("index: added `%s-%s' (%s).\n", pkgname, version, arch);
 		free(tmpfilen);
 		prop_object_release(newpkgd);
-		newpkgd = NULL;
-		sha256 = NULL;
-		filen = NULL;
-		oldfilen = oldarch = oldpkgver = NULL;
-		pkgname = version = arch = NULL;
 	}
 
 	if (flush && !prop_array_externalize_to_zfile(idx, plist)) {
