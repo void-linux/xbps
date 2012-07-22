@@ -46,7 +46,7 @@ repo_index_clean(struct xbps_handle *xhp, const char *repodir)
 	prop_array_t array;
 	prop_dictionary_t pkgd;
 	const char *filen, *pkgver, *arch;
-	char *binpkg, *plist, *plist_lock;
+	char *plist, *plist_lock;
 	size_t i, idx = 0;
 	int fdlock, rv = 0;
 	bool flush = false;
@@ -73,6 +73,12 @@ repo_index_clean(struct xbps_handle *xhp, const char *repodir)
 			return 0;
 		}
 	}
+	if (chdir(repodir) == -1) {
+		fprintf(stderr, "cannot chdir to %s: %s\n",
+		    repodir, strerror(errno));
+		rv = errno;
+		goto out;
+	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
 again:
@@ -81,22 +87,14 @@ again:
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
 		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
-		binpkg = xbps_xasprintf("%s/%s/%s", repodir, arch, filen);
-		if (binpkg == NULL) {
-			errno = ENOMEM;
-			rv = -1;
-			break;
-		}
-		if (access(binpkg, R_OK) == -1) {
+		if (access(filen, R_OK) == -1) {
 			printf("index: removed obsolete entry `%s' (%s)\n",
 			    pkgver, arch);
 			prop_array_remove(array, i);
-			free(binpkg);
 			flush = true;
 			idx = i;
 			goto again;
 		}
-		free(binpkg);
 	}
 	if (flush && !prop_array_externalize_to_zfile(array, plist)) {
 		rv = errno;
