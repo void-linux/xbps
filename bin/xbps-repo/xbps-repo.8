@@ -1,4 +1,4 @@
-.Dd July 17, 2012
+.Dd July 22, 2012
 .Os Void GNU/Linux
 .Dt xbps-repo 8
 .Sh NAME
@@ -91,6 +91,11 @@ or
 .Em description
 values in repository pool. Please note that patterns are matched in case
 insensitive mode. Multiple patterns can be specified as arguments.
+.It Sy remove-obsoletes Ar /path/to/local/repository
+Removes obsolete packages from
+.Ar repository .
+Packages that are not currently registered in repository's index will
+be removed.
 .It Sy show Ar pkgname | pkgpattern
 Shows information for binary package
 .Ar pkgname

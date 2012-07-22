@@ -66,6 +66,9 @@ usage(bool fail)
 	    " pkg-list [repo]\n"
 	    "   Print packages in repository matching `repo' URI.\n"
 	    "   If `repo' not specified, all registered repositories will be used.\n"
+	    " remove-obsoletes <repository>\n"
+	    "   Removes obsolete packages (not registered in index any longer) from\n"
+	    "   local repository \"<repository>\".\n"
 	    " search <pattern> [patterns]\n"
 	    "   Search for packages in repositories matching the patterns.\n"
 	    " show <pkgname|pkgpattern>\n"
@@ -263,6 +266,13 @@ main(int argc, char **argv)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
 		}
+	} else if (strcasecmp(argv[0], "remove-obsoletes") == 0) {
+		if (argc < 2)
+			usage(true);
+
+		if ((rv = repo_remove_obsoletes(&xh, argv[1])) != 0)
+			goto out;
+
 	} else if (strcasecmp(argv[0], "index-add") == 0) {
 		/* Registers a binary package into the repository's index. */
 		if (argc < 2)

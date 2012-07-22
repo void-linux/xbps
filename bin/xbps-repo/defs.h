@@ -34,6 +34,9 @@ struct repo_search_data {
 	size_t pkgver_len;
 };
 
+/* From common.c */
+int	repo_remove_pkg(const char *, const char *, const char *);
+
 /* From index.c */
 int	repo_index_add(struct xbps_handle *, int, char **);
 int	repo_index_clean(struct xbps_handle *, const char *);
@@ -42,7 +45,7 @@ int	repo_index_clean(struct xbps_handle *, const char *);
 int	repo_index_files_add(struct xbps_handle *, int, char **);
 int	repo_index_files_clean(struct xbps_handle *, const char *);
 
-/* From index-common.c */
+/* From index-lock.c */
 int	acquire_repo_lock(const char *, char **);
 void	release_repo_lock(char **, int);
 
@@ -62,6 +65,9 @@ int	repo_search_pkgs_cb(struct xbps_handle *,
 			    struct xbps_rpool_index *,
 			    void *,
 			    bool *);
+
+/* From remove-obsoletes.c */
+int	repo_remove_obsoletes(struct xbps_handle *, const char *);
 
 /* From show.c */
 int	show_pkg_info_from_repolist(struct xbps_handle *,
