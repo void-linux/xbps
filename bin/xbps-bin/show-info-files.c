@@ -40,14 +40,15 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 			   const char *option)
 {
 	prop_dictionary_t d, pkgdb_d;
-	const char *instdate;
+	const char *instdate, *pname;
 	bool autoinst;
 
 	d = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGPROPS);
 	if (d == NULL)
 		return EINVAL;
 
-	pkgdb_d = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
+	prop_dictionary_get_cstring_nocopy(d, "pkgname", &pname);
+	pkgdb_d = xbps_pkgdb_get_pkgd(xhp, pname, false);
 	if (pkgdb_d == NULL) {
 		prop_object_release(d);
 		return EINVAL;
