@@ -100,9 +100,9 @@ show_pkg_namedesc(struct xbps_handle *xhp,
 		  bool *loop_done)
 {
 	struct repo_search_data *rsd = arg;
-	const char *pkgver, *pkgname, *desc, *arch;
-	char *tmp = NULL;
-	size_t i, x;
+	const char *pkgver, *pkgname, *desc, *arch, *inststr;
+	char *tmp = NULL, *out = NULL;
+	size_t i, x, len;
 
 	(void)xhp;
 	(void)loop_done;
@@ -129,11 +129,22 @@ show_pkg_namedesc(struct xbps_handle *xhp,
 
 			tmp[x] = '\0';
 			if (xbps_pkgdb_get_pkgd_by_pkgver(xhp, pkgver))
-				printf(" * ");
+				inststr = "[*] ";
 			else
-				printf("   ");
-			printf("%s %s\n", tmp, desc);
-			free(tmp);
+				inststr = "[ ] ";
+
+			len = strlen(inststr) + strlen(tmp) + strlen(desc) + 1;
+			if (len > rsd->maxcols) {
+				out = malloc(rsd->maxcols);
+				assert(out);
+				snprintf(out, rsd->maxcols-2, "%s%s %s",
+				    inststr, tmp, desc);
+				strncat(out, "...", rsd->maxcols);
+				printf("%s\n", out);
+				free(out);
+			} else {
+				printf("%s%s %s\n", inststr, tmp, desc);
+			}
 		}
 	}
 

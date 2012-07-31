@@ -50,11 +50,10 @@ repo_pkg_list_cb(struct xbps_handle *xhp,
 	lpc.check_state = false;
 	lpc.state = 0;
 	lpc.pkgver_len = find_longest_pkgver(xhp, rpi->repo);
-
-	if (arg == NULL)
-		printf("From %s repository ...\n", rpi->uri);
+	lpc.maxcols = get_maxcols();
 
 	(void)xbps_callback_array_iter(xhp, rpi->repo, list_pkgs_in_dict, &lpc);
+
 	return 0;
 }
 
@@ -83,9 +82,10 @@ repo_search_pkgs_cb(struct xbps_handle *xhp,
 	struct repo_search_data *rsd = arg;
 	(void)done;
 
+	rsd->maxcols = get_maxcols();
 	rsd->pkgver_len = find_longest_pkgver(xhp, rpi->repo);
 
-	printf("From %s repository ...\n", rpi->uri);
 	(void)xbps_callback_array_iter(xhp, rpi->repo, show_pkg_namedesc, rsd);
+
 	return 0;
 }

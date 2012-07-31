@@ -216,18 +216,22 @@ list_strings_sep_in_array(struct xbps_handle *xhp,
 	return 0;
 }
 
+size_t
+get_maxcols(void)
+{
+	struct winsize ws;
+
+	if (ioctl(1, TIOCGWINSZ, &ws) == 0)
+		return ws.ws_col;
+
+	return 80;
+}
+
 void
-print_package_line(const char *str, bool reset)
+print_package_line(const char *str, size_t maxcols, bool reset)
 {
 	static size_t cols;
 	static bool first;
-	struct winsize ws;
-	size_t maxcols;
-
-	if (ioctl(1, TIOCGWINSZ, &ws) == 0)
-		maxcols = ws.ws_col;
-	else
-		maxcols = 80;
 
 	if (reset) {
 		cols = 0;

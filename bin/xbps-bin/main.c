@@ -115,11 +115,13 @@ main(int argc, char **argv)
 	int i, c, flags, rv;
 	bool rsync, yes, reqby_force, force_rm_with_deps, recursive_rm;
 	bool reinstall, show_download_pkglist_url, dry_run;
+	size_t maxcols;
 
 	rootdir = cachedir = conffile = option = NULL;
 	flags = rv = 0;
 	reqby_force = rsync = yes = dry_run = force_rm_with_deps = false;
 	recursive_rm = reinstall = show_download_pkglist_url = false;
+
 
 	while ((c = getopt(argc, argv, "AC:c:dDFfhMno:Rr:SVvy")) != -1) {
 		switch (c) {
@@ -228,6 +230,8 @@ main(int argc, char **argv)
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
 
+	maxcols = get_maxcols();
+
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
 		if (argc < 1 || argc > 2)
@@ -258,6 +262,7 @@ main(int argc, char **argv)
 		 * Find the longest pkgver string to pretty print the output.
 		 */
 		lpc.pkgver_len = find_longest_pkgver(&xh, NULL);
+		lpc.maxcols = maxcols;
 		rv = xbps_pkgdb_foreach_cb(&xh, list_pkgs_in_dict, &lpc);
 		if (rv == ENOENT) {
 			printf("No packages currently registered.\n");
@@ -276,7 +281,8 @@ main(int argc, char **argv)
 			if ((rv = install_new_pkg(&xh, argv[i], reinstall)) != 0)
 				goto out;
 
-		rv = exec_transaction(&xh, yes, dry_run, show_download_pkglist_url);
+		rv = exec_transaction(&xh, maxcols, yes, dry_run,
+		    show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "update") == 0) {
 		/* Update an installed package. */
@@ -290,7 +296,8 @@ main(int argc, char **argv)
 			if ((rv = update_pkg(&xh, argv[i])) != 0)
 				goto out;
 
-		rv = exec_transaction(&xh, yes, dry_run, show_download_pkglist_url);
+		rv = exec_transaction(&xh, yes, maxcols, dry_run,
+		    show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "remove") == 0) {
 		/* Removes a package. */
@@ -298,7 +305,7 @@ main(int argc, char **argv)
 			usage(true);
 
 		for (i = 1; i < argc; i++) {
-			rv = remove_pkg(&xh, argv[i], recursive_rm);
+			rv = remove_pkg(&xh, argv[i], maxcols, recursive_rm);
 			if (rv == 0)
 				continue;
 			else if (rv != EEXIST)
@@ -310,7 +317,7 @@ main(int argc, char **argv)
 			rv = EINVAL;
 			goto out;
 		}
-		rv = exec_transaction(&xh, yes, dry_run, false);
+		rv = exec_transaction(&xh, maxcols, yes, dry_run, false);
 
 	} else if (strcasecmp(argv[0], "show") == 0) {
 		/* Shows info about an installed binary package. */
@@ -355,7 +362,8 @@ main(int argc, char **argv)
 		if (rsync && ((rv = xbps_rpool_sync(&xh, NULL)) != 0))
 			goto out;
 
-		rv = dist_upgrade(&xh, yes, dry_run, show_download_pkglist_url);
+		rv = dist_upgrade(&xh, maxcols, yes, dry_run,
+		    show_download_pkglist_url);
 
 	} else if (strcasecmp(argv[0], "show-orphans") == 0) {
 		/*
@@ -377,7 +385,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage(true);
 
-		rv = remove_pkg_orphans(&xh, yes, dry_run);
+		rv = remove_pkg_orphans(&xh, maxcols, yes, dry_run);
 
 	} else if (strcasecmp(argv[0], "reconfigure") == 0) {
 		/*

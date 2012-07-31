@@ -135,7 +135,7 @@ show_binpkgs_url(struct xbps_handle *xhp, prop_object_iterator_t iter)
 }
 
 static void
-show_package_list(prop_object_iterator_t iter, const char *match)
+show_package_list(prop_object_iterator_t iter, const char *match, size_t cols)
 {
 	prop_object_t obj;
 	const char *pkgver, *tract;
@@ -145,14 +145,14 @@ show_package_list(prop_object_iterator_t iter, const char *match)
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if (strcmp(match, tract))
 			continue;
-		print_package_line(pkgver, false);
+		print_package_line(pkgver, cols, false);
 	}
 	prop_object_iterator_reset(iter);
-	print_package_line(NULL, true);
+	print_package_line(NULL, cols, true);
 }
 
 static int
-show_transaction_sizes(struct transaction *trans)
+show_transaction_sizes(struct transaction *trans, size_t cols)
 {
 	uint64_t dlsize = 0, instsize = 0, rmsize = 0;
 	char size[8];
@@ -164,28 +164,28 @@ show_transaction_sizes(struct transaction *trans)
 	    &trans->inst_pkgcnt)) {
 		printf("%u package%s will be installed:\n",
 		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans->iter, "install");
+		show_package_list(trans->iter, "install", cols);
 		printf("\n");
 	}
 	if (prop_dictionary_get_uint32(trans->d, "total-update-pkgs",
 	    &trans->up_pkgcnt)) {
 		printf("%u package%s will be updated:\n",
 		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans->iter, "update");
+		show_package_list(trans->iter, "update", cols);
 		printf("\n");
 	}
 	if (prop_dictionary_get_uint32(trans->d, "total-configure-pkgs",
 	    &trans->cf_pkgcnt)) {
 		printf("%u package%s will be configured:\n",
 		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans->iter, "configure");
+		show_package_list(trans->iter, "configure", cols);
 		printf("\n");
 	}
 	if (prop_dictionary_get_uint32(trans->d, "total-remove-pkgs",
 	    &trans->rm_pkgcnt)) {
 		printf("%u package%s will be removed:\n",
 		    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans->iter, "remove");
+		show_package_list(trans->iter, "remove", cols);
 		printf("\n");
 	}
 	/*
@@ -227,6 +227,7 @@ show_transaction_sizes(struct transaction *trans)
 
 int
 dist_upgrade(struct xbps_handle *xhp,
+	     size_t cols,
 	     bool yes,
 	     bool dry_run,
 	     bool show_download_pkglist_url)
@@ -254,11 +255,12 @@ dist_upgrade(struct xbps_handle *xhp,
 			return -1;
 		}
 	}
-	return exec_transaction(xhp, yes, dry_run, show_download_pkglist_url);
+	return exec_transaction(xhp, cols, yes, dry_run,
+	    show_download_pkglist_url);
 }
 
 int
-remove_pkg_orphans(struct xbps_handle *xhp, bool yes, bool dry_run)
+remove_pkg_orphans(struct xbps_handle *xhp, size_t cols, bool yes, bool dry_run)
 {
 	int rv;
 
@@ -272,7 +274,7 @@ remove_pkg_orphans(struct xbps_handle *xhp, bool yes, bool dry_run)
 			return rv;
 		}
 	}
-	return exec_transaction(xhp, yes, dry_run, false);
+	return exec_transaction(xhp, cols, yes, dry_run, false);
 }
 
 int
@@ -323,7 +325,8 @@ update_pkg(struct xbps_handle *xhp, const char *pkgname)
 }
 
 int
-remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive)
+remove_pkg(struct xbps_handle *xhp, const char *pkgname, size_t cols,
+		bool recursive)
 {
 	prop_dictionary_t pkgd;
 	prop_array_t reqby;
@@ -342,10 +345,10 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive)
 		    prop_array_count(reqby) > 1 ? "S" : "");
 		for (x = 0; x < prop_array_count(reqby); x++) {
 			prop_array_get_cstring_nocopy(reqby, x, &pkgver);
-			print_package_line(pkgver, false);
+			print_package_line(pkgver, cols, false);
 		}
 		printf("\n\n");
-		print_package_line(NULL, true);
+		print_package_line(NULL, cols, true);
 		return rv;
 	} else if (rv == ENOENT) {
 		printf("Package `%s' is not currently installed.\n", pkgname);
@@ -361,6 +364,7 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive)
 
 int
 exec_transaction(struct xbps_handle *xhp,
+		 size_t maxcols,
 		 bool yes,
 		 bool dry_run,
 		 bool show_download_urls)
@@ -419,7 +423,7 @@ exec_transaction(struct xbps_handle *xhp,
 	/*
 	 * Show download/installed size for the transaction.
 	 */
-	if ((rv = show_transaction_sizes(trans)) != 0)
+	if ((rv = show_transaction_sizes(trans, maxcols)) != 0)
 		goto out;
 	/*
 	 * Ask interactively (if -y not set).

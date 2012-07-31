@@ -41,16 +41,17 @@ struct xferstat {
 struct list_pkgver_cb {
 	pkg_state_t state;
 	size_t pkgver_len;
+	size_t maxcols;
 	bool check_state;
 };
 
 /* from transaction.c */
 int	install_new_pkg(struct xbps_handle *, const char *, bool);
 int	update_pkg(struct xbps_handle *, const char *);
-int	remove_pkg(struct xbps_handle *, const char *, bool);
-int	remove_pkg_orphans(struct xbps_handle *, bool, bool);
-int	dist_upgrade(struct xbps_handle *, bool, bool, bool);
-int	exec_transaction(struct xbps_handle *, bool, bool, bool);
+int	remove_pkg(struct xbps_handle *, const char *, size_t, bool);
+int	remove_pkg_orphans(struct xbps_handle *, size_t, bool, bool);
+int	dist_upgrade(struct xbps_handle *, size_t, bool, bool, bool);
+int	exec_transaction(struct xbps_handle *, size_t, bool, bool, bool);
 
 /* from remove.c */
 int	remove_installed_pkgs(int, char **, bool, bool, bool, bool);
@@ -116,8 +117,9 @@ int	list_strings_sep_in_array(struct xbps_handle *,
 				  prop_object_t,
 				  void *,
 				  bool *);
-size_t	find_longest_pkgver(struct xbps_handle *, prop_object_t);
-void	print_package_line(const char *, bool);
+size_t find_longest_pkgver(struct xbps_handle *, prop_object_t);
+void	print_package_line(const char *, size_t, bool);
+size_t	get_maxcols(void);
 
 /* from list.c */
 int	list_pkgs_in_dict(struct xbps_handle *, prop_object_t, void *, bool *);

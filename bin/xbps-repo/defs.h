@@ -32,6 +32,7 @@ struct repo_search_data {
 	int npatterns;
 	char **patterns;
 	size_t pkgver_len;
+	size_t maxcols;
 };
 
 /* From common.c */
