@@ -1,4 +1,4 @@
-.Dd July 22, 2012
+.Dd July 31, 2012
 .Os Void GNU/Linux
 .Dt xbps-repo 8
 .Sh NAME
@@ -90,7 +90,10 @@ in its
 or
 .Em description
 values in repository pool. Please note that patterns are matched in case
-insensitive mode. Multiple patterns can be specified as arguments.
+insensitive mode. Multiple patterns can be specified as arguments. Packages that
+have the
+.Sy *
+character as prefix are currently installed.
 .It Sy remove-obsoletes Ar /path/to/local/repository
 Removes obsolete packages from
 .Ar repository .

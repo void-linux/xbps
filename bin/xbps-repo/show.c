@@ -128,7 +128,11 @@ show_pkg_namedesc(struct xbps_handle *xhp,
 				tmp[x] = ' ';
 
 			tmp[x] = '\0';
-			printf(" %s %s\n", tmp, desc);
+			if (xbps_pkgdb_get_pkgd_by_pkgver(xhp, pkgver))
+				printf(" * ");
+			else
+				printf("   ");
+			printf("%s %s\n", tmp, desc);
 			free(tmp);
 		}
 	}
