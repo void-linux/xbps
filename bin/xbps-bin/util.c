@@ -221,7 +221,7 @@ get_maxcols(void)
 {
 	struct winsize ws;
 
-	if (ioctl(1, TIOCGWINSZ, &ws) == 0)
+	if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) == 0)
 		return ws.ws_col;
 
 	return 80;
