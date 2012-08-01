@@ -90,7 +90,7 @@ main(int argc, char **argv)
 {
 	struct xbps_handle xh;
 	struct xferstat xfer;
-	struct repo_search_data *rsd = NULL;
+	struct repo_search_data rsd;
 	prop_dictionary_t pkgd;
 	const char *rootdir, *cachedir, *conffile, *option;
 	int flags = 0, c, rv = 0;
@@ -170,7 +170,11 @@ main(int argc, char **argv)
 		if (argc < 1 || argc > 2)
 			usage(true);
 
-		rv = xbps_rpool_foreach(&xh, repo_pkg_list_cb, argv[1]);
+		rsd.arg = argv[1];
+		rsd.pkgver_len = repo_find_longest_pkgver(&xh);
+		rsd.maxcols = get_maxcols();
+
+		rv = xbps_rpool_foreach(&xh, repo_pkg_list_cb, &rsd);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");
@@ -185,15 +189,12 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage(true);
 
-		rsd = malloc(sizeof(*rsd));
-		if (rsd == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
-		rsd->npatterns = argc;
-		rsd->patterns = argv;
-		rv = xbps_rpool_foreach(&xh, repo_search_pkgs_cb, rsd);
-		free(rsd);
+		rsd.npatterns = argc;
+		rsd.patterns = argv;
+		rsd.pkgver_len = repo_find_longest_pkgver(&xh);
+		rsd.maxcols = get_maxcols();
+
+		rv = xbps_rpool_foreach(&xh, repo_search_pkgs_cb, &rsd);
 		if (rv == ENOTSUP)
 			xbps_error_printf("xbps-repo: no repositories "
 			    "currently registered!\n");

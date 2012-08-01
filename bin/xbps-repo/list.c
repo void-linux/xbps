@@ -34,6 +34,37 @@
 #include "defs.h"
 #include "../xbps-bin/defs.h"
 
+static int
+repo_longest_pkgver(struct xbps_handle *xhp,
+		    struct xbps_rpool_index *rpi,
+		    void *arg,
+		    bool *done)
+{
+	size_t *len = arg, olen = 0;
+
+	(void)done;
+
+	if (*len == 0) {
+		*len = find_longest_pkgver(xhp, rpi->repo);
+		return 0;
+	}
+	olen = find_longest_pkgver(xhp, rpi->repo);
+	if (olen > *len)
+		*len = olen;
+
+	return 0;
+}
+
+size_t
+repo_find_longest_pkgver(struct xbps_handle *xhp)
+{
+	size_t len = 0;
+
+	xbps_rpool_foreach(xhp, repo_longest_pkgver, &len);
+
+	return len;
+}
+
 int
 repo_pkg_list_cb(struct xbps_handle *xhp,
 		 struct xbps_rpool_index *rpi,
@@ -41,16 +72,16 @@ repo_pkg_list_cb(struct xbps_handle *xhp,
 		 bool *done)
 {
 	struct list_pkgver_cb lpc;
-	const char *repo = arg;
+	struct repo_search_data *rsd = arg;
 
 	(void)done;
-	if (repo && strcmp(rpi->uri, repo))
+	if (rsd->arg && strcmp(rpi->uri, rsd->arg))
 		return 0;
 
 	lpc.check_state = false;
 	lpc.state = 0;
-	lpc.pkgver_len = find_longest_pkgver(xhp, rpi->repo);
-	lpc.maxcols = get_maxcols();
+	lpc.pkgver_len = rsd->pkgver_len;
+	lpc.maxcols = rsd->maxcols;
 
 	(void)xbps_callback_array_iter(xhp, rpi->repo, list_pkgs_in_dict, &lpc);
 
@@ -81,9 +112,6 @@ repo_search_pkgs_cb(struct xbps_handle *xhp,
 {
 	struct repo_search_data *rsd = arg;
 	(void)done;
-
-	rsd->maxcols = get_maxcols();
-	rsd->pkgver_len = find_longest_pkgver(xhp, rpi->repo);
 
 	(void)xbps_callback_array_iter(xhp, rpi->repo, show_pkg_namedesc, rsd);
 

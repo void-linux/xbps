@@ -31,6 +31,7 @@
 struct repo_search_data {
 	int npatterns;
 	char **patterns;
+	void *arg;
 	size_t pkgver_len;
 	size_t maxcols;
 };
@@ -54,6 +55,7 @@ void	release_repo_lock(char **, int);
 int	repo_find_files_in_packages(struct xbps_handle *, int, char **);
 
 /* From list.c */
+size_t	repo_find_longest_pkgver(struct xbps_handle *);
 int	repo_pkg_list_cb(struct xbps_handle *,
 			 struct xbps_rpool_index *,
 			 void *,
