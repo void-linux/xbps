@@ -129,21 +129,21 @@ show_pkg_namedesc(struct xbps_handle *xhp,
 
 			tmp[x] = '\0';
 			if (xbps_pkgdb_get_pkgd_by_pkgver(xhp, pkgver))
-				inststr = "[*] ";
+				inststr = "[*]";
 			else
-				inststr = "[ ] ";
+				inststr = "[-]";
 
 			len = strlen(inststr) + strlen(tmp) + strlen(desc) + 1;
 			if (len > rsd->maxcols) {
 				out = malloc(rsd->maxcols);
 				assert(out);
-				snprintf(out, rsd->maxcols-2, "%s%s %s",
+				snprintf(out, rsd->maxcols-2, "%s %s %s",
 				    inststr, tmp, desc);
 				strncat(out, "...", rsd->maxcols);
 				printf("%s\n", out);
 				free(out);
 			} else {
-				printf("%s%s %s\n", inststr, tmp, desc);
+				printf("%s %s %s\n", inststr, tmp, desc);
 			}
 		}
 	}
