@@ -232,6 +232,25 @@ main(int argc, char **argv)
 
 	maxcols = get_maxcols();
 
+	/*
+	 * Check that we have write permission on rootdir, metadir and cachedir.
+	 */
+	if (((strcasecmp(argv[0], "install") == 0) ||
+	    (strcasecmp(argv[0], "update") == 0) ||
+	    (strcasecmp(argv[0], "remove") == 0) ||
+	    (strcasecmp(argv[0], "dist-upgrade") == 0) ||
+	    (strcasecmp(argv[0], "remove-orphans") == 0)) && !dry_run) {
+		if ((access(xh.rootdir, W_OK) == -1) ||
+		    (access(xh.metadir, W_OK) == -1) ||
+		    (access(xh.cachedir, W_OK) == -1)) {
+			xbps_error_printf("xbps-bin: cannot write to "
+			    "rootdir/cachedir/metadir: %s\n",
+			    strerror(errno));
+			xbps_end(&xh);
+			exit(EXIT_FAILURE);
+		}
+	}
+
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists packages currently registered in database. */
 		if (argc < 1 || argc > 2)

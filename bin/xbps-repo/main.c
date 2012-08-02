@@ -151,6 +151,20 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	/*
+	 * Check that we have write permission on cachedir/metadir.
+	 */
+	if ((strcasecmp(argv[0], "sync") == 0) ||
+	    (strcasecmp(argv[0], "clean") == 0)) {
+		if ((access(xh.metadir, W_OK) == -1) ||
+		    (access(xh.cachedir, W_OK) == -1)) {
+			xbps_error_printf("xbps-repo: cannot write to "
+			    "cachedir/metadir: %s\n", strerror(errno));
+			xbps_end(&xh);
+			exit(EXIT_FAILURE);
+		}
+	}
+
 	if (strcasecmp(argv[0], "list") == 0) {
 		/* Lists all repositories registered in pool. */
 		if (argc != 1)
