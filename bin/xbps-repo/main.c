@@ -158,10 +158,12 @@ main(int argc, char **argv)
 	    (strcasecmp(argv[0], "clean") == 0)) {
 		if ((access(xh.metadir, W_OK) == -1) ||
 		    (access(xh.cachedir, W_OK) == -1)) {
-			xbps_error_printf("xbps-repo: cannot write to "
-			    "cachedir/metadir: %s\n", strerror(errno));
-			xbps_end(&xh);
-			exit(EXIT_FAILURE);
+			if (errno != ENOENT) {
+				xbps_error_printf("xbps-repo: cannot write to "
+				    "cachedir/metadir: %s\n", strerror(errno));
+				xbps_end(&xh);
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 

@@ -243,11 +243,13 @@ main(int argc, char **argv)
 		if ((access(xh.rootdir, W_OK) == -1) ||
 		    (access(xh.metadir, W_OK) == -1) ||
 		    (access(xh.cachedir, W_OK) == -1)) {
-			xbps_error_printf("xbps-bin: cannot write to "
-			    "rootdir/cachedir/metadir: %s\n",
-			    strerror(errno));
-			xbps_end(&xh);
-			exit(EXIT_FAILURE);
+			if (errno != ENOENT) {
+				xbps_error_printf("xbps-bin: cannot write to "
+				    "rootdir/cachedir/metadir: %s\n",
+				strerror(errno));
+				xbps_end(&xh);
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 
