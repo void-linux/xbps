@@ -44,7 +44,7 @@ repo_remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	DIR *dirp;
 	struct dirent *dp;
 	const char *pkgver, *arch;
-	char *plist;
+	char *plist, *ext;
 	int rv = 0;
 
 	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL)
@@ -77,7 +77,9 @@ repo_remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	while ((dp = readdir(dirp))) {
 		if (strcmp(dp->d_name, "..") == 0)
 			continue;
-		if (!strstr(dp->d_name, ".xbps"))
+		if ((ext = strrchr(dp->d_name, '.')) == NULL)
+			continue;
+		if (strcmp(ext, ".xbps"))
 			continue;
 
 		pkgd = xbps_dictionary_metadata_plist_by_url(dp->d_name,

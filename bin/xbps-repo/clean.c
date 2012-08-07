@@ -40,7 +40,7 @@ cachedir_clean(struct xbps_handle *xhp)
 	DIR *dirp;
 	struct dirent *dp;
 	const char *pkgver, *rsha256;
-	char *binpkg;
+	char *binpkg, *ext;
 	int rv = 0;
 
 	if ((dirp = opendir(xhp->cachedir)) == NULL)
@@ -52,7 +52,9 @@ cachedir_clean(struct xbps_handle *xhp)
 			continue;
 
 		/* only process xbps binary packages, ignore something else */
-		if (!strstr(dp->d_name, ".xbps")) {
+		if ((ext = strrchr(dp->d_name, '.')) == NULL)
+			continue;
+		if (strcmp(ext, ".xbps")) {
 			printf("ignoring unknown file: %s\n", dp->d_name);
 			continue;
 		}
