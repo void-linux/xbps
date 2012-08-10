@@ -63,8 +63,6 @@ show_pkg_info_from_repolist(struct xbps_handle *xhp,
 	else
 		show_pkg_info(pkgd);
 
-	prop_object_release(pkgd);
-
 	return 0;
 }
 
@@ -72,7 +70,6 @@ int
 show_pkg_deps_from_repolist(struct xbps_handle *xhp, const char *pattern)
 {
 	prop_dictionary_t pkgd;
-	const char *ver, *repoloc;
 
 	if (xbps_pkgpattern_version(pattern))
 		pkgd = xbps_rpool_find_pkg(xhp, pattern, true, false);
@@ -82,14 +79,9 @@ show_pkg_deps_from_repolist(struct xbps_handle *xhp, const char *pattern)
 	if (pkgd == NULL)
 		return errno;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "version", &ver);
-	prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
-
-	printf("Repository %s [pkgver: %s]\n", repoloc, ver);
 	(void)xbps_callback_array_iter_in_dict(xhp, pkgd,
 	    "run_depends", list_strings_sep_in_array, NULL);
 
-	prop_object_release(pkgd);
 	return 0;
 }
 

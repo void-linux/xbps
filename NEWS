@@ -1,7 +1,10 @@
-xbps-0.16.6 (???):
+xbps-0.17 (???):
+
+ * xbps-repo(8): the 'show-deps' target does not show the repository from
+   the matching target package, just the list of dependencies.
 
  * xbps-repo(8): the 'search' target now shows which packages are currently
-   installed through the '*' character as prefix in the results.
+   installed "[*]" or not installed "[-]".
 
  * xbps-repo(8): a new target has been added: 'remove-obsoletes'. This removes
    obsolete packages found in a local repository; obsoletes are packages not
