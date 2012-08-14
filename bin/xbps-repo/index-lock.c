@@ -71,8 +71,8 @@ acquire_repo_lock(const char *plist, char **plist_lock)
 		if (errno == EAGAIN || errno == EACCES) {
 			if (++try < WAIT_SECONDS) {
 				fprintf(stderr,"Repository index file "
-				    "is busy! retrying in 5 sec...\n");
-				sleep(5);
+				    "is busy! retrying in 1 sec...\n");
+				sleep(1);
 				continue;
 			}
 		}
