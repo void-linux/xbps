@@ -46,18 +46,13 @@ repo_index_clean(struct xbps_handle *xhp, const char *repodir)
 	prop_array_t array;
 	prop_dictionary_t pkgd;
 	const char *filen, *pkgver, *arch;
-	char *plist, *plist_lock;
+	char *plist;
 	size_t i, idx = 0;
-	int fdlock, rv = 0;
+	int rv = 0;
 	bool flush = false;
 
 	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL)
 		return -1;
-
-	if ((fdlock = acquire_repo_lock(plist, &plist_lock)) == -1) {
-		free(plist);
-		return -1;
-	}
 
 	array = prop_array_internalize_from_zfile(plist);
 	if (array == NULL) {
@@ -65,10 +60,8 @@ repo_index_clean(struct xbps_handle *xhp, const char *repodir)
 			xbps_error_printf("xbps-repo: cannot read `%s': %s\n",
 			    plist, strerror(errno));
 			free(plist);
-			release_repo_lock(&plist_lock, fdlock);
 			return -1;
 		} else {
-			release_repo_lock(&plist_lock, fdlock);
 			free(plist);
 			return 0;
 		}
@@ -104,7 +97,6 @@ again:
 out:
 	free(plist);
 	prop_object_release(array);
-	release_repo_lock(&plist_lock, fdlock);
 
 	return rv;
 }
@@ -123,8 +115,7 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 	const char *arch, *oldarch;
 	char *sha256, *filen, *repodir, *buf, *buf2;
 	char *tmpfilen = NULL, *tmprepodir = NULL, *plist = NULL;
-	char *plist_lock = NULL;
-	int i, ret = 0, rv = 0, fdlock = -1;
+	int i, ret = 0, rv = 0;
 	bool flush = false;
 
 	if ((tmprepodir = strdup(argv[1])) == NULL) {
@@ -136,12 +127,6 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 	/* Internalize plist file or create it if doesn't exist */
 	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL)
 		return -1;
-
-	/* Acquire exclusive file lock */
-	if ((fdlock = acquire_repo_lock(plist, &plist_lock)) == -1) {
-		rv = fdlock;
-		goto out;
-	}
 
 	if ((idx = prop_array_internalize_from_zfile(plist)) == NULL) {
 		if (errno != ENOENT) {
@@ -329,8 +314,6 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 	printf("index: %u packages registered.\n", prop_array_count(idx));
 
 out:
-	release_repo_lock(&plist_lock, fdlock);
-
 	if (tmprepodir)
 		free(tmprepodir);
 	if (plist)

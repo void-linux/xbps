@@ -39,13 +39,13 @@ repo_index_files_clean(struct xbps_handle *xhp, const char *repodir)
 {
 	prop_object_t obj;
 	prop_array_t idx, idxfiles, obsoletes;
-	char *plist, *plistf, *plistf_lock, *pkgver, *str;
+	char *plist, *plistf, *pkgver, *str;
 	const char *p, *arch, *ipkgver, *iarch;
 	size_t x, i;
-	int rv = 0, fdlock;
+	int rv = 0;
 	bool flush = false;
 
-	plist = plistf = plistf_lock = pkgver = str = NULL;
+	plist = plistf = pkgver = str = NULL;
 	idx = idxfiles = obsoletes = NULL;
 
 	/* Internalize index-files.plist if found */
@@ -55,20 +55,12 @@ repo_index_files_clean(struct xbps_handle *xhp, const char *repodir)
 		free(plistf);
 		return 0;
 	}
-	/* Acquire exclusive file lock */
-	if ((fdlock = acquire_repo_lock(plistf, &plistf_lock)) == -1) {
-		free(plistf);
-		prop_object_release(idxfiles);
-		return -1;
-	}
-
 	/* Internalize index.plist */
 	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL) {
 		rv = EINVAL;
 		goto out;
 	}
 	if ((idx = prop_array_internalize_from_zfile(plist)) == NULL) {
-		release_repo_lock(&plistf_lock, fdlock);
 		rv = EINVAL;
 		goto out;
 	}
@@ -131,8 +123,6 @@ repo_index_files_clean(struct xbps_handle *xhp, const char *repodir)
 	    prop_array_count(idxfiles));
 
 out:
-	release_repo_lock(&plistf_lock, fdlock);
-
 	if (obsoletes)
 		prop_object_release(obsoletes);
 	if (idx)
@@ -155,13 +145,13 @@ repo_index_files_add(struct xbps_handle *xhp, int argc, char **argv)
 	prop_dictionary_t pkgprops, pkg_filesd, pkgd;
 	prop_array_t files, pkg_cffiles, pkg_files, pkg_links;
 	const char *binpkg, *pkgver, *arch;
-	char *plist, *repodir, *p, *plist_lock;
+	char *plist, *repodir, *p;
 	size_t x;
-	int i, fdlock = -1, rv = 0;
+	int i, rv = 0;
 	bool found, flush;
 
 	found = flush = false;
-	plist = plist_lock = repodir = p = NULL;
+	plist = repodir = p = NULL;
 	obj = fileobj = NULL;
 	pkgprops = pkg_filesd = pkgd = NULL;
 	files = NULL;
@@ -174,13 +164,6 @@ repo_index_files_add(struct xbps_handle *xhp, int argc, char **argv)
 	if ((plist = xbps_pkg_index_files_plist(xhp, repodir)) == NULL) {
 		rv = ENOMEM;
 		goto out;
-	}
-	/* Acquire exclusive file lock or wait for it.
-	 */
-	if ((fdlock = acquire_repo_lock(plist, &plist_lock)) == -1) {
-		free(p);
-		free(plist);
-		return -1;
 	}
 	/*
 	 * Internalize index-files.plist if found and process argv.
@@ -365,8 +348,6 @@ repo_index_files_add(struct xbps_handle *xhp, int argc, char **argv)
 	    prop_array_count(idxfiles));
 
 out:
-	release_repo_lock(&plist_lock, fdlock);
-
 	if (p)
 		free(p);
 	if (plist)
