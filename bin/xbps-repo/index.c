@@ -173,7 +173,7 @@ repo_index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 * pass to the next one.
 		 */
 		curpkgd =
-		    xbps_find_pkg_in_array_by_name(xhp, idx, pkgname, NULL);
+		    xbps_find_pkg_in_array_by_name(xhp, idx, pkgname, arch);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				prop_object_release(newpkgd);
