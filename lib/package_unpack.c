@@ -163,7 +163,7 @@ unpack_archive(struct xbps_handle *xhp,
 	prop_array_t array;
 	const struct stat *entry_statp;
 	struct stat st;
-	struct xbps_unpack_cb_data *xucd = NULL;
+	struct xbps_unpack_cb_data xucd;
 	struct archive_entry *entry;
 	size_t nmetadata = 0, entry_idx = 0;
 	const char *entry_pname, *transact, *pkgname, *version, *pkgver, *fname;
@@ -191,12 +191,7 @@ unpack_archive(struct xbps_handle *xhp,
 
 	if (xhp->unpack_cb != NULL) {
 		/* initialize data for unpack cb */
-		xucd = malloc(sizeof(*xucd));
-		if (xucd == NULL)
-			return ENOMEM;
-
-		xucd->entry_extract_count = 0;
-		xucd->entry_total_count = 0;
+		memset(&xucd, 0, sizeof(xucd));
 	}
 	if (access(xhp->rootdir, R_OK) == -1) {
 		if (errno != ENOENT) {
@@ -250,11 +245,11 @@ unpack_archive(struct xbps_handle *xhp,
 		/*
 		 * Prepare unpack callback ops.
 		 */
-		if (xucd != NULL) {
-			xucd->pkgver = pkgver;
-			xucd->entry = entry_pname;
-			xucd->entry_size = archive_entry_size(entry);
-			xucd->entry_is_conf = false;
+		if (xhp->unpack_cb != NULL) {
+			xucd.pkgver = pkgver;
+			xucd.entry = entry_pname;
+			xucd.entry_size = archive_entry_size(entry);
+			xucd.entry_is_conf = false;
 		}
 		if (strcmp("./INSTALL", entry_pname) == 0) {
 			/*
@@ -355,16 +350,16 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Compute total entries in progress data, if set.
 		 * total_entries = files + conf_files + links.
 		 */
-		if (xucd != NULL) {
-			xucd->entry_total_count = 0;
+		if (xhp->unpack_cb != NULL) {
+			xucd.entry_total_count = 0;
 			array = prop_dictionary_get(filesd, "files");
-			xucd->entry_total_count +=
+			xucd.entry_total_count +=
 			    (ssize_t)prop_array_count(array);
 			array = prop_dictionary_get(filesd, "conf_files");
-			xucd->entry_total_count +=
+			xucd.entry_total_count +=
 			    (ssize_t)prop_array_count(array);
 			array = prop_dictionary_get(filesd, "links");
-			xucd->entry_total_count +=
+			xucd.entry_total_count +=
 			    (ssize_t)prop_array_count(array);
 		}
 		/*
@@ -457,8 +452,8 @@ unpack_archive(struct xbps_handle *xhp,
 			 * packages that don't have the "conf_files" array in
 			 * the XBPS_PKGPROPS dictionary.
 			 */
-			if (xucd != NULL)
-				xucd->entry_is_conf = true;
+			if (xhp->unpack_cb != NULL)
+				xucd.entry_is_conf = true;
 
 			rv = xbps_entry_install_conf_file(xhp, filesd,
 			    entry, entry_pname, pkgname, version);
@@ -489,9 +484,9 @@ unpack_archive(struct xbps_handle *xhp,
 			    "%s: [unpack] failed to extract file `%s': %s",
 			    pkgver, entry_pname, strerror(rv));
 		}
-		if (xucd != NULL) {
-			xucd->entry_extract_count++;
-			(*xhp->unpack_cb)(xhp, xucd, xhp->unpack_cb_data);
+		if (xhp->unpack_cb != NULL) {
+			xucd.entry_extract_count++;
+			(*xhp->unpack_cb)(xhp, &xucd, xhp->unpack_cb_data);
 		}
 	}
 	/*
