@@ -1,5 +1,7 @@
 xbps-0.17 (???):
 
+ * configure: if compiler supports PIE and RELRO, enable them by default.
+
  * xbps-repo(8): the 'show-deps' target does not show the repository from
    the matching target package, just the list of dependencies.
 

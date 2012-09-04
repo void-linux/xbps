@@ -14,7 +14,6 @@ TARGET=
 DEBUG=
 BUILD_TESTS=
 BUILD_API_DOCS=
-BUILD_PIE=
 BUILD_STATIC=
 SILENT=yes
 HAVE_VISIBILITY=no
@@ -43,7 +42,6 @@ for instance \`--prefix=\$HOME'.
 --debug				Build with debugging code and symbols
 --verbose			Disable silent build to see compilation details
 --with-api-docs			Install XBPS API Library documentation (default disabled)
---with-pie			Build XBPS programs as PIE (default disabled)
 --with-static			Build XBPS static utils (default disabled)
 --with-tests			Build and install Kyua tests (default disabled)
 				Needs atf >= 0.15 (http://code.google.com/p/kyua)
@@ -70,7 +68,6 @@ for x; do
 	--datadir|--infodir) ;; # ignore autotools
 	--with-api-docs) BUILD_API_DOCS=$var;;
 	--verbose) unset SILENT;;
-	--with-pie) BUILD_PIE=$var;;
 	--pkgconfigdir) PKGCONFIGDIR=$var;;
 	--with-tests) BUILD_TESTS=yes;;
 	--with-static) BUILD_STATIC=yes;;
@@ -159,7 +156,6 @@ ETCDIR="${ETCDIR}/xbps"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 
 [ -z "$DEBUG" ] && DEBUG=no
-[ -z "$BUILD_PIE" ] && BUILD_PIE_VALUE=no
 
 if [ -z "$CC" ]; then
 	printf "Looking for compiler ... "
@@ -211,7 +207,6 @@ linux)
 *)
 	;;
 esac
-
 
 # Add CPPFLAGS/CFLAGS/LDFLAGS to CC for testing features
 XCC="$CC `$SED -n -e 's/CPPLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
@@ -296,19 +291,21 @@ if [ $? -ne 0 ]; then
 fi
 
 #
+# Check for -Wl,-z,relro,-z,now
+check_compiler_flag "l,-z,relro,-z,now" W LDFLAGS
+
+#
 # Check if -fPIE and -pie are supported if --build-pie is set.
 #
-if [ -n "$BUILD_PIE" ]; then
-	check_compiler_flag PIE f PROG_CFLAGS
-	if [ $? -eq 0 ]; then
-		check_compiler_flag pie "" PROG_LDFLAGS
-	fi
-	if [ $? -eq 0 ]; then
-		echo "Building programs as PIE (Position Independent Executable)."
-		BUILD_PIE_VALUE=yes
-	else
-		BUILD_PIE_VALUE=no
-	fi
+check_compiler_flag PIE f PROG_CFLAGS
+if [ $? -eq 0 ]; then
+	check_compiler_flag pie "" PROG_LDFLAGS
+fi
+if [ $? -eq 0 ]; then
+	echo "Building programs as PIE (Position Independent Executable)."
+	BUILD_PIE_VALUE=yes
+else
+	BUILD_PIE_VALUE=no
 fi
 
 #
