@@ -302,7 +302,6 @@ if [ $? -eq 0 ]; then
 	check_compiler_flag pie "" PROG_LDFLAGS
 fi
 if [ $? -eq 0 ]; then
-	echo "Building programs as PIE (Position Independent Executable)."
 	BUILD_PIE_VALUE=yes
 else
 	BUILD_PIE_VALUE=no
