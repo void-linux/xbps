@@ -6,6 +6,7 @@ bin/xbps-bin/xbps-bin
 bin/xbps-repo/xbps-repo
 bin/xbps-uhelper/xbps-uhelper
 bin/xbps-dgraph/xbps-dgraph
+bin/xbps-create/xbps-create
 *.static
 *.so*
 *.o
