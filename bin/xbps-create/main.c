@@ -182,7 +182,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 	assert(xe);
 	xe->file = strdup(fpath);
 	assert(xe->file);
-	
+
 	if ((strcmp(fpath, "./INSTALL") == 0) ||
 	    (strcmp(fpath, "./REMOVE") == 0)) {
 		/* metadata file */
@@ -202,7 +202,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 		memset(&buf, 0, sizeof(buf));
 		if (realpath(fpath, buf) == NULL)
 			die("failed to process symlink `%s':", filep);
-	
+
 		filep = buf + strlen(destdir);
 		xe->target = strdup(filep);
 		assert(xe->target);
@@ -212,7 +212,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 		 * Find out if it's a configuration file or not
 		 * and calculate sha256 hash.
 		 */
-		if (entry_is_conf_file(filep))	
+		if (entry_is_conf_file(filep))
 			xe->type = strdup("conf_files");
 		else
 			xe->type = strdup("files");
