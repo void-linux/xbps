@@ -235,13 +235,13 @@ out:
 }
 
 static void
-process_xentry(const char *key)
+process_xentry(const char *key, const char *mutable_files)
 {
 	prop_array_t a;
 	prop_dictionary_t d;
 	struct xentry *xe;
-	char *p;
-	bool found = false;
+	char *p, *saveptr, *args, *tok;
+	bool found = false, mutable_found = false;
 
 	a = prop_array_create();
 	assert(a);
@@ -255,6 +255,31 @@ process_xentry(const char *key)
 		assert(d);
 		/* sanitize file path */
 		p = strchr(xe->file, '.') + 1;
+		/*
+		 * Find out if this file is mutable.
+		 */
+		if (mutable_files) {
+			if ((strchr(mutable_files, ' ') == NULL) &&
+			    (strcmp(mutable_files, p) == 0))
+				prop_dictionary_set_bool(d, "mutable", true);
+			else {
+				args = strdup(mutable_files);
+				assert(args);
+				for ((tok = strtok_r(args, " ", &saveptr)); tok;
+				    (tok = strtok_r(NULL, " ", &saveptr))) {
+					if (strcmp(tok, p) == 0) {
+						mutable_found = true;
+						break;
+					}
+				}
+				free(args);
+				if (mutable_found) {
+					prop_dictionary_set_bool(d, "mutable",
+					    true);
+					mutable_found = false;
+				}
+			}
+		}
 		prop_dictionary_set_cstring(d, "file", p);
 		if (xe->target)
 			prop_dictionary_set_cstring(d, "target", xe->target);
@@ -270,22 +295,22 @@ process_xentry(const char *key)
 }
 
 static void
-process_destdir(void)
+process_destdir(const char *mutable_files)
 {
 	if (nftw(".", ftw_cb, 20, FTW_PHYS|FTW_MOUNT) != 0)
 		die("failed to process destdir files (nftw):");
 
 	/* Process regular files */
-	process_xentry("files");
+	process_xentry("files", mutable_files);
 
 	/* Process configuration files */
-	process_xentry("conf_files");
+	process_xentry("conf_files", NULL);
 
 	/* Process symlinks */
-	process_xentry("links");
+	process_xentry("links", NULL);
 
 	/* Process directories */
-	process_xentry("dirs");
+	process_xentry("dirs", NULL);
 }
 
 static void
@@ -597,7 +622,7 @@ main(int argc, char **argv)
 	 */
 	pkg_filesd = prop_dictionary_create();
 	assert(pkg_filesd);
-	process_destdir();
+	process_destdir(mutable_files);
 
 	/* Back to original cwd after file tree walk processing */
 	if (chdir(cwd) == -1)
