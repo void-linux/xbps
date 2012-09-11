@@ -40,9 +40,6 @@
 #include <xbps_api.h>
 #include "queue.h"
 
-/*
- * XXX: Add a flag to set "packaged-with" object in XBPS_PKGPROPS?
- */
 #define _PROGNAME	"xbps-create"
 
 struct xentry {
@@ -64,6 +61,7 @@ usage(void)
 	"usage: %s [options] [file1] [file2] ...\n\n"
 	"  Options:\n"
 	"    -A, --architecture   Package architecture (e.g: noarch, i686, etc).\n"
+	"    -B, --built-with     Package builder string (e.g: xbps-src-30).\n"
 	"    -C, --conflicts      Conflicts (blank separated list,\n"
 	"                         e.g: 'foo>=2.0 blah<=2.0').\n"
 	"    -D, --dependencies   Dependencies (blank separated list,\n"
@@ -465,6 +463,7 @@ main(int argc, char **argv)
 {
 	struct option longopts[] = {
 		{ "architecture", required_argument, NULL, 'A' },
+		{ "built-with", required_argument, NULL, 'B' },
 		{ "conflicts", required_argument, NULL, 'C' },
 		{ "dependencies", required_argument, NULL, 'D' },
 		{ "destdir", required_argument, NULL, 'd' },
@@ -484,7 +483,7 @@ main(int argc, char **argv)
 	};
 	struct archive *ar;
 	struct stat st;
-	const char *conflicts, *deps, *homepage, *license, *maint;
+	const char *conflicts, *deps, *homepage, *license, *maint, *bwith;
 	const char *provides, *pkgver, *replaces, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
@@ -493,14 +492,17 @@ main(int argc, char **argv)
 	mode_t myumask;
 
 	arch = conflicts = deps = homepage = license = maint = NULL;
-	provides = pkgver = replaces = desc = ldesc = NULL;
+	provides = pkgver = replaces = desc = ldesc = bwith = NULL;
 	config_files = mutable_files = NULL;
 
 	while ((c = getopt_long(argc, argv,
-		"A:C:D:d:F:h:l:M:m:n:P:pR:S:s:V", longopts, &c)) != -1) {
+		"A:B:C:D:d:F:h:l:M:m:n:P:pR:S:s:V", longopts, &c)) != -1) {
 		switch (c) {
 		case 'A':
 			arch = optarg;
+			break;
+		case 'B':
+			bwith = optarg;
 			break;
 		case 'C':
 			conflicts = optarg;
@@ -593,13 +595,20 @@ main(int argc, char **argv)
 
 	/* Optional properties */
 	if (homepage)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd, "homepage", homepage);
+		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+				"homepage", homepage);
 	if (license)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd, "license", license);
+		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+				"license", license);
 	if (maint)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd, "maintainer", maint);
+		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+				"maintainer", maint);
 	if (ldesc)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd, "long_desc", ldesc);
+		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+				"long_desc", ldesc);
+	if (bwith)
+		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+				"packaged-with", bwith);
 	if (preserve)
 		prop_dictionary_set_bool(pkg_propsd, "preserve", true);
 
