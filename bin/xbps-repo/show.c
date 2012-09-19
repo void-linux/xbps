@@ -127,11 +127,12 @@ show_pkg_namedesc(struct xbps_handle *xhp,
 
 			len = strlen(inststr) + strlen(tmp) + strlen(desc) + 1;
 			if (len > rsd->maxcols) {
-				out = malloc(rsd->maxcols);
+				out = malloc(rsd->maxcols+1);
 				assert(out);
-				snprintf(out, rsd->maxcols-2, "%s %s %s",
+				snprintf(out, rsd->maxcols-3, "%s %s %s",
 				    inststr, tmp, desc);
 				strncat(out, "...", rsd->maxcols);
+				out[rsd->maxcols+1] = '\0';
 				printf("%s\n", out);
 				free(out);
 			} else {
