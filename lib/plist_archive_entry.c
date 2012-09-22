@@ -141,10 +141,10 @@ xbps_dictionary_from_archive_entry(struct archive *ar,
 	}
 
 	uncomp_buf = _xbps_uncompress_plist_data(buf, buflen);
-	free(buf);
 	if (uncomp_buf == NULL) {
 		if (errno && errno != EAGAIN) {
 			/* Error while decompressing */
+			free(buf);
 			return NULL;
 		} else if (errno == EAGAIN) {
 			/* Not a compressed data, try again */
@@ -156,5 +156,6 @@ xbps_dictionary_from_archive_entry(struct archive *ar,
 		d = prop_dictionary_internalize(uncomp_buf);
 		free(uncomp_buf);
 	}
+	free(buf);
 	return d;
 }
