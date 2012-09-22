@@ -78,6 +78,7 @@ usage(void)
 	"    -P, --provides       Provides (blank separated list,\n"
 	"                         e.g: 'foo-9999 blah-1.0').\n"
 	"    -p, --preserve       Enable package preserve boolean.\n"
+	"    -q, --quiet          Work silently.\n"
 	"    -R, --replaces       Replaces (blank separated list,\n"
 	"                         e.g: 'foo>=1.0 blah<2.0').\n"
 	"    -S, --long-desc      Long description (80 cols per line).\n"
@@ -171,7 +172,8 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 	if ((strcmp(fpath, ".") == 0) ||
 	    (strcmp(fpath, "./props.plist") == 0) ||
 	    (strcmp(fpath, "./files.plist") == 0) ||
-	    (strcmp(fpath, "./flist") == 0))
+	    (strcmp(fpath, "./flist") == 0) ||
+	    (strcmp(fpath, "./rdeps") == 0))
 		return 0;
 
 	/* sanitized file path */
@@ -398,7 +400,7 @@ destroy_xentry(struct xentry *xe)
 }
 
 static void
-process_archive(struct archive *ar, const char *pkgver)
+process_archive(struct archive *ar, const char *pkgver, bool quiet)
 {
 	struct xentry *xe;
 	char *xml;
@@ -433,8 +435,10 @@ process_archive(struct archive *ar, const char *pkgver)
 			destroy_xentry(xe);
 			continue;
 		}
-		printf("%s: adding `%s' ...\n", pkgver, xe->file);
-		fflush(stdout);
+		if (!quiet) {
+			printf("%s: adding `%s' ...\n", pkgver, xe->file);
+			fflush(stdout);
+		}
 		process_entry_file(ar, xe, NULL);
 		destroy_xentry(xe);
 	}
@@ -475,6 +479,7 @@ main(int argc, char **argv)
 		{ "pkgver", required_argument, NULL, 'n' },
 		{ "provides", required_argument, NULL, 'P' },
 		{ "preserve", no_argument, NULL, 'p' },
+		{ "quiet", no_argument, NULL, 'q' },
 		{ "replaces", required_argument, NULL, 'R' },
 		{ "long-desc", required_argument, NULL, 'S' },
 		{ "desc", required_argument, NULL, 's' },
@@ -487,7 +492,7 @@ main(int argc, char **argv)
 	const char *provides, *pkgver, *replaces, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
-	bool preserve = false;
+	bool quiet = false, preserve = false;
 	int c, pkg_fd;
 	mode_t myumask;
 
@@ -496,7 +501,10 @@ main(int argc, char **argv)
 	config_files = mutable_files = NULL;
 
 	while ((c = getopt_long(argc, argv,
-		"A:B:C:D:d:F:h:l:M:m:n:P:pR:S:s:V", longopts, &c)) != -1) {
+		"A:B:C:D:d:F:h:l:M:m:n:P:pqR:S:s:V", longopts, &c)) != -1) {
+		if (optarg && strcmp(optarg, "") == 0)
+			optarg = NULL;
+
 		switch (c) {
 		case 'A':
 			arch = optarg;
@@ -536,6 +544,9 @@ main(int argc, char **argv)
 			break;
 		case 'p':
 			preserve = true;
+			break;
+		case 'q':
+			quiet = true;
 			break;
 		case 'R':
 			replaces = optarg;
@@ -655,7 +666,7 @@ main(int argc, char **argv)
 	if (archive_write_open_fd(ar, pkg_fd) != 0)
 		die("Failed to open %s fd for writing:", tname);
 
-	process_archive(ar, pkgver);
+	process_archive(ar, pkgver, quiet);
 	archive_write_free(ar);
 	/*
 	 * Archive was created successfully; flush data to storage,
@@ -676,7 +687,9 @@ main(int argc, char **argv)
 		die("cannot rename %s to %s:", tname, binpkg);
 
 	/* Success, release resources */
-	printf("%s: binary package created successfully (%s)\n", pkgver, binpkg);
+	if (!quiet)
+		printf("%s: binary package created successfully (%s)\n",
+		    pkgver, binpkg);
 
 	free(binpkg);
 	free(pkgname);
