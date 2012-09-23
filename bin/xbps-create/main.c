@@ -318,7 +318,8 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 {
 	struct archive *ard;
 	struct archive_entry *entry;
-	char buf[BUFSIZ], *p;
+	struct stat st;
+	char *buf, *p;
 	int fd;
 	size_t len;
 
@@ -341,19 +342,28 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 	assert(p);
 
 	if ((fd = open(p, O_RDONLY)) == -1)
-		die("failed to add entry (open) %s %s to archive:", xe->file);
+		die("failed to add entry (open) %s to archive:", xe->file);
+
+	if (fstat(fd, &st) == -1)
+		die("failed to add entry (fstat) %s to archive:", xe->file);
+
+	if (st.st_size >= SSIZE_MAX)
+		die("failed to add entry (SSIZE_MAX) %s to archive:", xe->file);
 
 	if ((archive_read_disk_entry_from_file(ard, entry, fd, NULL)) != 0)
 		die("failed to add entry %s to archive:", xe->file);
 
 	archive_write_header(ar, entry);
-
-	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		archive_write_data(ar, buf, len);
+	buf = malloc(st.st_size+1);
+	assert(buf);
+	len = read(fd, buf, st.st_size);
+	archive_write_data(ar, buf, len);
+	free(buf);
 
 	free(p);
 	close(fd);
 	archive_entry_free(entry);
+	archive_read_close(ard);
 	archive_read_free(ard);
 }
 
@@ -668,6 +678,8 @@ main(int argc, char **argv)
 
 	process_archive(ar, pkgver, quiet);
 	archive_write_free(ar);
+	prop_object_release(pkg_propsd);
+	prop_object_release(pkg_filesd);
 	/*
 	 * Archive was created successfully; flush data to storage,
 	 * set permissions and rename to dest file; from the caller's
@@ -694,8 +706,6 @@ main(int argc, char **argv)
 	free(binpkg);
 	free(pkgname);
 	close(pkg_fd);
-	prop_object_release(pkg_propsd);
-	prop_object_release(pkg_filesd);
 
 	exit(EXIT_SUCCESS);
 }
