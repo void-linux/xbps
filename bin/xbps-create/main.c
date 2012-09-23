@@ -36,6 +36,7 @@
 #include <getopt.h>
 #include <ftw.h>
 #include <fcntl.h>
+#include <libgen.h>
 
 #include <xbps_api.h>
 #include "queue.h"
@@ -164,7 +165,8 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 {
 	struct xentry *xe = NULL;
 	const char *filep = NULL;
-	char buf[PATH_MAX];
+	char *buf, *p, *dname;
+	ssize_t r;
 
 	(void)ftwbuf;
 
@@ -199,13 +201,29 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 		 */
 		xe->type = strdup("links");
 		assert(xe->type);
-		memset(&buf, 0, sizeof(buf));
-		if (realpath(fpath, buf) == NULL)
-			die("failed to process symlink `%s':", filep);
+		buf = malloc(sb->st_size+1);
+		assert(buf);
+		r = readlink(fpath, buf, sb->st_size+1);
+		if (r < 0 || r > sb->st_size)
+			die("failed to process symlink %s:", fpath);
 
-		filep = buf + strlen(destdir);
-		xe->target = strdup(filep);
+		buf[sb->st_size] = '\0';
+		/*
+		 * Check if symlink is absolute or relative; on the former
+		 * make it absolute for the target object.
+		 */
+		if (strchr(buf, '/') == NULL) {
+			p = strdup(filep);
+			assert(p);
+			dname = dirname(p);
+			assert(dname);
+			xe->target = xbps_xasprintf("%s/%s", dname, buf);
+			free(p);
+		} else {
+			xe->target = strdup(buf);
+		}
 		assert(xe->target);
+		free(buf);
 	} else if (type == FTW_F) {
 		/*
 		 * Regular files.
@@ -320,7 +338,8 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 	struct archive_entry *entry;
 	struct stat st;
 	char *buf, *p;
-	int fd;
+	int fd = -1;
+	ssize_t r;
 	size_t len;
 
 	assert(ar);
@@ -336,35 +355,44 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 
 	entry = archive_entry_new();
 	assert(entry);
-	archive_entry_set_pathname(entry, xe->file);
-
 	p = xbps_xasprintf("%s/%s", destdir, xe->file);
 	assert(p);
+	archive_entry_set_pathname(entry, xe->file);
+	archive_entry_copy_sourcepath(entry, p);
 
-	if ((fd = open(p, O_RDONLY)) == -1)
-		die("failed to add entry (open) %s to archive:", xe->file);
-
-	if (fstat(fd, &st) == -1)
+	if (lstat(p, &st) == -1)
 		die("failed to add entry (fstat) %s to archive:", xe->file);
 
 	if (st.st_size >= SSIZE_MAX)
 		die("failed to add entry (SSIZE_MAX) %s to archive:", xe->file);
 
-	if ((archive_read_disk_entry_from_file(ard, entry, fd, NULL)) != 0)
+	if ((archive_read_disk_entry_from_file(ard, entry, -1, &st)) != 0)
 		die("failed to add entry %s to archive:", xe->file);
 
 	archive_write_header(ar, entry);
-	buf = malloc(st.st_size+1);
+	len = st.st_size + 1;
+	buf = malloc(len);
 	assert(buf);
-	len = read(fd, buf, st.st_size);
-	archive_write_data(ar, buf, len);
-	free(buf);
-
-	free(p);
-	close(fd);
+	if (S_ISLNK(st.st_mode)) {
+		r = readlink(p, buf, len);
+		if (r < 0 || r > st.st_size)
+			die("failed to add entry %s (readlink) to archive:",
+			    xe->file);
+	} else {
+		fd = open(p, O_RDONLY);
+		assert(fd != -1);
+		r = read(fd, buf, len);
+		if (r < 0 || r > SSIZE_MAX)
+			die("failed to add entry %s (read) to archive:",
+			   xe->file);
+		close(fd);
+	}
+	archive_write_data(ar, buf, r);
 	archive_entry_free(entry);
 	archive_read_close(ard);
 	archive_read_free(ard);
+	free(buf);
+	free(p);
 }
 
 static void
