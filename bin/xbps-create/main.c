@@ -212,7 +212,12 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 		 * Check if symlink is absolute or relative; on the former
 		 * make it absolute for the target object.
 		 */
-		if (strchr(buf, '/') == NULL) {
+		if (strncmp(buf, "../", 3) == 0) {
+			p = realpath(fpath, NULL);
+			assert(p);
+			xe->target = strdup(p + strlen(destdir));
+			free(p);
+		} else if (strchr(buf, '/') == NULL) {
 			p = strdup(filep);
 			assert(p);
 			dname = dirname(p);
