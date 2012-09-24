@@ -1,4 +1,4 @@
-.Dd June 5, 2012
+.Dd September 24, 2012
 .Os Void GNU/Linux
 .Dt xbps-bin 8
 .Sh NAME
@@ -36,6 +36,9 @@ and
 .Em update
 targets.
 Targetted packages and its required dependencies will be matched.
+.It Fl B Ar repository
+If a configuration file cannot be found, this repository will be used as
+as primary source to install packages.
 .It Fl C Ar conffile
 Full path to the XBPS configuration file. By default set to
 .Pa /etc/xbps/xbps.conf .

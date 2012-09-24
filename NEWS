@@ -1,5 +1,8 @@
 xbps-0.17 (???):
 
+ * xbps-bin(8), xbps-repo(8): added a new flag -B to set default repository
+   to install packages, in case xbps.conf couldn't be found.
+
  * xbps-create(8): a new utility to create XBPS binary packages; package
    files must be installed to a directory prior to executing this utility.
 

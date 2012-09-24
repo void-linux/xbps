@@ -528,6 +528,13 @@ struct xbps_handle {
 	char *cachedir_priv;
 	char *metadir_priv;
 	char *un_machine;
+	/*
+	 * @var repository
+	 *
+	 * Default repository to be used if a configuration file
+	 * couldn't be found.
+	 */
+	const char *repository;
 	/**
 	 * @var conffile
 	 *

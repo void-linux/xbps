@@ -131,15 +131,25 @@ xbps_init(struct xbps_handle *xhp)
 
 	if ((rv = cfg_parse(xhp->cfg, xhp->conffile)) != CFG_SUCCESS) {
 		if (rv == CFG_FILE_ERROR) {
-			if (errno != ENOENT) {
-				/*
-				 * Don't error out if config file not found.
-				 * We'll use defaults without any repo or
-				 * virtual packages.
-				 */
+			/*
+			 * Don't error out if config file not found.
+			 * If a default repository is set, use it; otherwise
+			 * use defaults (no repos and no virtual packages).
+			 */
+			if (errno != ENOENT)
 				return rv;
-			}
+
 			xhp->conffile = NULL;
+			if (xhp->repository) {
+				char *buf;
+
+				buf = xbps_xasprintf("repositories = { %s }",
+				    xhp->repository);
+				assert(buf);
+				if ((rv = cfg_parse_buf(xhp->cfg, buf)) != 0)
+					return rv;
+				free(buf);
+			}
 		} else if (rv == CFG_PARSE_ERROR) {
 			/*
 			 * Parser error from configuration file.

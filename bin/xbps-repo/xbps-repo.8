@@ -1,4 +1,4 @@
-.Dd July 31, 2012
+.Dd September 24, 2012
 .Os Void GNU/Linux
 .Dt xbps-repo 8
 .Sh NAME
@@ -18,6 +18,9 @@ repositories, list repositories, search for packages and show information
 of a binary package in repository pool, among other things.
 .Sh OPTIONS
 .Bl -tag -width Fl
+.It Fl B Ar repository
+If a configuration file cannot be found, this repository will be used as
+as primary source to install packages.
 .It Fl C Ar conffile
 Full path to the XBPS configuration file. By default set to
 .Pa /etc/xbps/xbps.conf .

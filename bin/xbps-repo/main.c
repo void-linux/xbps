@@ -44,6 +44,7 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-repo [options] target [arguments]\n\n"
 	    "[options]\n"
+	    " -B repo      Set <repo> as default repository if xbps.conf not found.\n"
 	    " -C file      Full path to configuration file\n"
 	    " -c cachedir  Full path to cachedir to store downloaded binpkgs\n"
 	    " -d           Debug mode shown to stderr\n"
@@ -92,13 +93,16 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	struct repo_search_data rsd;
 	prop_dictionary_t pkgd;
-	const char *rootdir, *cachedir, *conffile, *option;
+	const char *rootdir, *cachedir, *conffile, *option, *defrepo;
 	int flags = 0, c, rv = 0;
 
-	rootdir = cachedir = conffile = option = NULL;
+	rootdir = cachedir = conffile = option = defrepo = NULL;
 
-	while ((c = getopt(argc, argv, "C:c:dho:r:V")) != -1) {
+	while ((c = getopt(argc, argv, "B:C:c:dho:r:V")) != -1) {
 		switch (c) {
+		case 'B':
+			defrepo = optarg;
+			break;
 		case 'C':
 			conffile = optarg;
 			break;
@@ -144,6 +148,7 @@ main(int argc, char **argv)
 	xh.rootdir = rootdir;
 	xh.cachedir = cachedir;
 	xh.conffile = conffile;
+	xh.repository = defrepo;
 
 	if ((rv = xbps_init(&xh)) != 0) {
 		xbps_error_printf("xbps-repo: couldn't initialize library: %s\n",

@@ -47,6 +47,7 @@ usage(bool fail)
 	    "Usage: xbps-bin [options] target [arguments]\n\n"
 	    "[options]\n"
 	    " -A           Enable Automatic installation (shown as orphan)\n"
+	    " -B repo      Set <repo> as default repository if xbps.conf not found.\n"
 	    " -C file      Full path to configuration file\n"
 	    " -c cachedir  Full path to cachedir, to store downloaded binpkgs\n"
 	    " -d           Debug mode shown to stderr\n"
@@ -111,22 +112,25 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	struct list_pkgver_cb lpc;
 	struct sigaction sa;
-	const char *rootdir, *cachedir, *conffile, *option;
+	const char *rootdir, *cachedir, *conffile, *option, *defrepo;
 	int i, c, flags, rv;
 	bool rsync, yes, reqby_force, force_rm_with_deps, recursive_rm;
 	bool reinstall, show_download_pkglist_url, dry_run;
 	size_t maxcols;
 
-	rootdir = cachedir = conffile = option = NULL;
+	rootdir = cachedir = conffile = option = defrepo = NULL;
 	flags = rv = 0;
 	reqby_force = rsync = yes = dry_run = force_rm_with_deps = false;
 	recursive_rm = reinstall = show_download_pkglist_url = false;
 
 
-	while ((c = getopt(argc, argv, "AC:c:dDFfhMno:Rr:SVvy")) != -1) {
+	while ((c = getopt(argc, argv, "AB:C:c:dDFfhMno:Rr:SVvy")) != -1) {
 		switch (c) {
 		case 'A':
 			flags |= XBPS_FLAG_INSTALL_AUTO;
+			break;
+		case 'B':
+			defrepo = optarg;
 			break;
 		case 'C':
 			conffile = optarg;
@@ -210,6 +214,7 @@ main(int argc, char **argv)
 	xh.cachedir = cachedir;
 	xh.conffile = conffile;
 	xh.flags = flags;
+	xh.repository = defrepo;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.unpack_cb = unpack_progress_cb_verbose;
 	else
