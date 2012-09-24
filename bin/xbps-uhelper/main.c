@@ -36,14 +36,6 @@
 #include <xbps_api.h>
 #include "../xbps-bin/defs.h"
 
-/* error messages in bold/red */
-#define MSG_ERROR	"\033[1m\033[31m"
-/* warn messages in bold/yellow */
-#define MSG_WARN	"\033[1m\033[33m"
-/* normal messages in bold */
-#define MSG_NORMAL	"\033[1m"
-#define MSG_RESET	"\033[m"
-
 static void
 write_plist_file(prop_dictionary_t dict, const char *file)
 {
@@ -65,8 +57,7 @@ usage(void)
 	"\n"
 	"  Available actions:\n"
 	"    cmpver, digest, fetch, getpkgdepname, getpkgname, getpkgrevision,\n"
-	"    getpkgversion, pkgmatch, register, sanitize-plist, unregister,\n"
-	"    updatepkgdb, version\n"
+	"    getpkgversion, pkgmatch, sanitize-plist, version.\n"
 	"\n"
 	"  Action arguments:\n"
 	"    cmpver\t\t<instver> <reqver>\n"
@@ -78,31 +69,26 @@ usage(void)
 	"    getpkgrevision\t<string>\n"
 	"    getpkgversion\t<string>\n"
 	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
-	"    register\t\t<pkgname> <version> <shortdesc>\n"
 	"    sanitize-plist\t<plist>\n"
-	"    unregister\t\t<pkgname> <version>\n"
 	"    version\t\t<pkgname>\n"
 	"\n"
 	"  Options shared by all actions:\n"
 	"    -C\t\tPath to xbps.conf file.\n"
 	"    -d\t\tDebugging messages to stderr.\n"
-	"    -r\t\t\t<rootdir>\n"
+	"    -r\t\t<rootdir>\n"
 	"    -V\t\tPrints the xbps release version\n"
 	"\n"
 	"  Examples:\n"
-	"    $ xbps-uhelper cmpver 'foo-1.0' 'foo-2.1'\n"
+	"    $ xbps-uhelper cmpver 'foo-1.0_1' 'foo-2.1_1'\n"
 	"    $ xbps-uhelper digest file ...\n"
 	"    $ xbps-uhelper fetch http://www.foo.org/file.blob ...\n"
 	"    $ xbps-uhelper getpkgdepname 'foo>=0'\n"
 	"    $ xbps-uhelper getpkgdepversion 'foo>=0'\n"
-	"    $ xbps-uhelper getpkgname foo-2.0\n"
+	"    $ xbps-uhelper getpkgname foo-2.0_1\n"
 	"    $ xbps-uhelper getpkgrevision foo-2.0_1\n"
-	"    $ xbps-uhelper getpkgversion foo-2.0\n"
-	"    $ xbps-uhelper pkgmatch foo-1.0 'foo>=1.0'\n"
-	"    $ xbps-uhelper register pkgname 2.0 \"A short description\"\n"
+	"    $ xbps-uhelper getpkgversion foo-2.0_1\n"
+	"    $ xbps-uhelper pkgmatch foo-1.0_1 'foo>=1.0'\n"
 	"    $ xbps-uhelper sanitize-plist foo.plist\n"
-	"    $ xbps-uhelper unregister pkgname 2.0\n"
-	"    $ xbps-uhelper updatepkgdb\n"
 	"    $ xbps-uhelper version pkgname\n");
 
 	exit(EXIT_FAILURE);
@@ -111,13 +97,11 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-	prop_dictionary_t dict, pkgd;
-	prop_array_t array;
+	prop_dictionary_t dict;
 	struct xbps_handle xh;
 	struct xferstat xfer;
-	const char *pkgn, *version, *rootdir = NULL, *confdir = NULL;
-	char *plist, *pkgname, *in_chroot_env, *hash, *tmp;
-	bool in_chroot = false;
+	const char *version, *rootdir = NULL, *confdir = NULL;
+	char *pkgname, *hash;
 	int flags = 0, i, c, rv = 0;
 
 	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
@@ -149,11 +133,8 @@ main(int argc, char **argv)
 
 	memset(&xh, 0, sizeof(xh));
 
-	if ((strcasecmp(argv[0], "register") == 0) ||
-	    (strcasecmp(argv[0], "unregister") == 0) ||
-	    (strcasecmp(argv[0], "version") == 0) ||
-	    (strcasecmp(argv[0], "fetch") == 0) ||
-	    (strcasecmp(argv[0], "updatepkgdb") == 0)) {
+	if ((strcasecmp(argv[0], "version") == 0) ||
+	    (strcasecmp(argv[0], "fetch") == 0)) {
 		/*
 		* Initialize libxbps.
 		*/
@@ -169,82 +150,12 @@ main(int argc, char **argv)
 		}
 	}
 
-	in_chroot_env = getenv("in_chroot");
-	if (in_chroot_env != NULL)
-		in_chroot = true;
-
-	if (strcasecmp(argv[0], "register") == 0) {
-		/* Registers a package into the database */
-		if (argc != 4)
-			usage();
-
-		dict = prop_dictionary_create();
-		if (dict == NULL) {
-			rv = -1;
-			goto out;
-		}
-		prop_dictionary_set_cstring_nocopy(dict, "pkgname", argv[1]);
-		prop_dictionary_set_cstring_nocopy(dict, "version", argv[2]);
-		prop_dictionary_set_cstring_nocopy(dict, "short_desc", argv[3]);
-		prop_dictionary_set_bool(dict, "automatic-install", false);
-
-		tmp = xbps_xasprintf("%s-%s", argv[1], argv[2]);
-		assert(tmp != NULL);
-		prop_dictionary_set_cstring_nocopy(dict, "pkgver", tmp);
-
-		pkgd = xbps_pkgdb_get_pkgd(&xh, argv[1], false);
-		if (pkgd != NULL) {
-			prop_dictionary_get_cstring_nocopy(pkgd,
-			    "pkgname", &pkgn);
-			prop_dictionary_get_cstring_nocopy(pkgd,
-			    "version", &version);
-			fprintf(stderr, "%s%s=> ERROR: `%s-%s' is already "
-			    "registered!%s\n", MSG_ERROR,
-			    in_chroot ? "[chroot] " : "",
-			    pkgn, version, MSG_RESET);
-		} else {
-			rv = xbps_set_pkg_state_installed(&xh, argv[1], argv[2],
-			    XBPS_PKG_STATE_INSTALLED);
-			if (rv != 0)
-				goto out;
-
-			rv = xbps_register_pkg(&xh, dict, true);
-			if (rv != 0) {
-				fprintf(stderr, "%s%s=> couldn't register %s-%s "
-				    "(%s).%s\n", MSG_ERROR,
-				    in_chroot ? "[chroot] " : "" , argv[1],
-				    argv[2], strerror(rv), MSG_RESET);
-			} else {
-				printf("%s%s=> %s-%s registered successfully.%s\n",
-				    MSG_NORMAL, in_chroot ? "[chroot] " : "",
-				    argv[1], argv[2], MSG_RESET);
-			}
-		}
-		prop_object_release(dict);
-	} else if (strcasecmp(argv[0], "unregister") == 0) {
-		/* Unregisters a package from the database */
-		if (argc != 3)
-			usage();
-
-		rv = xbps_unregister_pkg(&xh, argv[1], argv[2], true);
-		if (rv == ENOENT) {
-			fprintf(stderr, "%s=> ERROR: %s not registered "
-			    "in database.%s\n", MSG_WARN, argv[1], MSG_RESET);
-		} else if (rv != 0 && rv != ENOENT) {
-			fprintf(stderr, "%s=> ERROR: couldn't unregister %s "
-			    "from database (%s)%s\n", MSG_ERROR,
-			    argv[1], strerror(errno), MSG_RESET);
-		} else {
-			printf("%s%s=> %s-%s unregistered successfully.%s\n",
-			    MSG_NORMAL, in_chroot ? "[chroot] " : "", argv[1],
-			    argv[2], MSG_RESET);
-		}
-	} else if (strcasecmp(argv[0], "version") == 0) {
+	if (strcasecmp(argv[0], "version") == 0) {
 		/* Prints version of an installed package */
 		if (argc != 2)
 			usage();
 
-		dict = xbps_pkgdb_get_pkgd(&xh, argv[1], false);
+		dict = xbps_find_pkg_dict_installed(&xh, argv[1], false);
 		if (dict == NULL) {
 			rv = errno;
 			goto out;
@@ -363,34 +274,6 @@ main(int argc, char **argv)
 				    argv[1]);
 			} else
 				rv = 0;
-		}
-	} else if (strcasecmp(argv[0], "updatepkgdb") == 0) {
-		/* update regpkgdb to pkgdb */
-		plist = xbps_xasprintf("%s/regpkgdb.plist", xh.metadir);
-	        if (plist == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
-
-		dict = prop_dictionary_internalize_from_zfile(plist);
-		free(plist);
-		if (dict != NULL) {
-			array = prop_dictionary_get(dict, "packages");
-			if (array == NULL) {
-				prop_object_release(dict);
-				rv = EINVAL;
-				goto out;
-			}
-		        xh.pkgdb = prop_array_copy(array);
-		        prop_object_release(dict);
-			rv = xbps_pkgdb_update(&xh, true);
-			if (rv == 0) {
-				printf("Migrated regpkgdb to pkgdb "
-				    "successfully.\n");
-			} else {
-				xbps_error_printf("failed to write "
-				    "pkgdb plist: %s\n", strerror(rv));
-			}
 		}
 	} else {
 		usage();
