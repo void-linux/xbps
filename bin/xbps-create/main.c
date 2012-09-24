@@ -59,7 +59,7 @@ static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stdout,
-	"usage: %s [options] [file1] [file2] ...\n\n"
+	"usage: %s [options]\n\n"
 	"  Options:\n"
 	"    -A, --architecture   Package architecture (e.g: noarch, i686, etc).\n"
 	"    -B, --built-with     Package builder string (e.g: xbps-src-30).\n"
@@ -70,7 +70,8 @@ usage(void)
 	"    -d, --destdir        Package destdir.\n"
 	"    -F, --config-files   Configuration files (blank separated list,\n"
 	"                         e.g '/etc/foo.conf /etc/foo-blah.conf').\n"
-	"    -h, --homepage       Homepage.\n"
+	"    -H, --homepage       Homepage.\n"
+	"    -h, --help           Show help.\n"
 	"    -l, --license        License.\n"
 	"    -M, --mutable-files  Mutable files list (blank separated list,\n"
 	"                         e.g: '/usr/lib/foo /usr/bin/blah').\n"
@@ -84,8 +85,10 @@ usage(void)
 	"                         e.g: 'foo>=1.0 blah<2.0').\n"
 	"    -S, --long-desc      Long description (80 cols per line).\n"
 	"    -s, --desc           Short description (max 80 characters).\n"
-	"    -V, --version        Prints the xbps release version\n\n"
-	"  Example:\n"
+	"    -V, --version        Prints XBPS release version.\n\n"
+	"  NOTE:\n"
+	"    At least four flags are required: architecture, destdir, pkgver and desc.\n\n"
+	"  EXAMPLE:\n"
 	"    $ %s -A noarch -n foo-1.0_1 -s \"foo pkg\" -d dir\n",
 	_PROGNAME, _PROGNAME);
 	exit(EXIT_FAILURE);
@@ -515,7 +518,8 @@ main(int argc, char **argv)
 		{ "dependencies", required_argument, NULL, 'D' },
 		{ "destdir", required_argument, NULL, 'd' },
 		{ "config-files", required_argument, NULL, 'F' },
-		{ "homepage", required_argument, NULL, 'h' },
+		{ "homepage", required_argument, NULL, 'H' },
+		{ "help", no_argument, NULL, 'h' },
 		{ "license", required_argument, NULL, 'l' },
 		{ "mutable-files", required_argument, NULL, 'M' },
 		{ "maintainer", required_argument, NULL, 'm' },
@@ -544,7 +548,7 @@ main(int argc, char **argv)
 	config_files = mutable_files = NULL;
 
 	while ((c = getopt_long(argc, argv,
-		"A:B:C:D:d:F:h:l:M:m:n:P:pqR:S:s:V", longopts, &c)) != -1) {
+		"A:B:C:D:d:F:H:hl:M:m:n:P:pqR:S:s:V", longopts, &c)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
 			optarg = NULL;
 
@@ -568,6 +572,9 @@ main(int argc, char **argv)
 			config_files = optarg;
 			break;
 		case 'h':
+			usage();
+			break;
+		case 'H':
 			homepage = optarg;
 			break;
 		case 'l':
