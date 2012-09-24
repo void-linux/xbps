@@ -147,6 +147,8 @@ main(int argc, char **argv)
 	if (argc < 1)
 		usage();
 
+	memset(&xh, 0, sizeof(xh));
+
 	if ((strcasecmp(argv[0], "register") == 0) ||
 	    (strcasecmp(argv[0], "unregister") == 0) ||
 	    (strcasecmp(argv[0], "version") == 0) ||
@@ -155,7 +157,6 @@ main(int argc, char **argv)
 		/*
 		* Initialize libxbps.
 		*/
-		memset(&xh, 0, sizeof(xh));
 		xh.flags = flags;
 		xh.fetch_cb = fetch_file_progress_cb;
 		xh.fetch_cb_data = &xfer;
