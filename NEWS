@@ -1,5 +1,8 @@
 xbps-0.17 (???):
 
+ * xbps-create(8): a new utility to create XBPS binary packages; package
+   files must be installed to a directory prior to executing this utility.
+
  * configure: if compiler supports PIE and RELRO, enable them by default.
 
  * xbps-repo(8): the 'show-deps' target does not show the repository from
