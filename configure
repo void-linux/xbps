@@ -444,7 +444,7 @@ int main(void) {
 	return 0;
 }
 EOF
-if ! $XCC -lprop _$func.c -o _$func 2>/dev/null; then
+if $XCC -lprop _$func.c -o _$func 2>/dev/null; then
 	PROPLIB=yes
 	echo "USE_EXTERNAL_PROPLIB =	1" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lz -lpthread -lprop" >>$CONFIG_MK
