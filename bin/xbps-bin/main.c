@@ -43,7 +43,7 @@ static struct xbps_handle xh;
 static void __attribute__((noreturn))
 usage(bool fail)
 {
-	fprintf(stderr,
+	fprintf(stdout,
 	    "Usage: xbps-bin [options] target [arguments]\n\n"
 	    "[options]\n"
 	    " -A           Enable Automatic installation (shown as orphan)\n"

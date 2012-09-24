@@ -60,7 +60,7 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 static void __attribute__((noreturn))
 usage(void)
 {
-	fprintf(stderr,
+	fprintf(stdout,
 	"usage: xbps-uhelper [options] [action] [args]\n"
 	"\n"
 	"  Available actions:\n"

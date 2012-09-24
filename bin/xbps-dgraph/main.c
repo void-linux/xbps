@@ -100,7 +100,7 @@ die(const char *fmt, ...)
 static void __attribute__((noreturn))
 usage(void)
 {
-	fprintf(stderr,
+	fprintf(stdout,
 	"Usage: xbps-dgraph [options] <pkgname>\n\n"
 	" Options\n"
 	"    -c\t\tPath to configuration file\n"

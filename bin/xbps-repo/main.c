@@ -41,7 +41,7 @@
 static void __attribute__((noreturn))
 usage(bool fail)
 {
-	fprintf(stderr,
+	fprintf(stdout,
 	    "Usage: xbps-repo [options] target [arguments]\n\n"
 	    "[options]\n"
 	    " -C file      Full path to configuration file\n"

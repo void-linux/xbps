@@ -58,7 +58,7 @@ static const char *destdir;
 static void __attribute__((noreturn))
 usage(void)
 {
-	fprintf(stderr,
+	fprintf(stdout,
 	"usage: %s [options] [file1] [file2] ...\n\n"
 	"  Options:\n"
 	"    -A, --architecture   Package architecture (e.g: noarch, i686, etc).\n"
