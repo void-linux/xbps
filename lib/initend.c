@@ -40,8 +40,6 @@
  * Use these functions to initialize some parameters before start
  * using libxbps and finalize usage to release resources at the end.
  */
-static bool xbps_initialized;
-
 static char *
 set_cachedir(struct xbps_handle *xh)
 {
@@ -120,6 +118,9 @@ xbps_init(struct xbps_handle *xhp)
 	bool syslog_enabled = false;
 
 	assert(xhp != NULL);
+
+	if (xhp->initialized)
+		return 0;
 
 	if (xhp->conffile == NULL)
 		xhp->conffile = XBPS_CONF_DEF;
@@ -207,7 +208,7 @@ xbps_init(struct xbps_handle *xhp)
 	    xhp->transaction_frequency_flush);
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->un_machine);
 
-	xbps_initialized = true;
+	xhp->initialized = true;
 
 	return 0;
 }
@@ -215,7 +216,9 @@ xbps_init(struct xbps_handle *xhp)
 void
 xbps_end(struct xbps_handle *xhp)
 {
-	if (!xbps_initialized)
+	assert(xhp);
+
+	if (!xhp->initialized)
 		return;
 
 	xbps_pkgdb_release(xhp);
@@ -227,8 +230,8 @@ xbps_end(struct xbps_handle *xhp)
 	free(xhp->metadir_priv);
 	free(xhp->un_machine);
 
+	xhp->initialized = false;
 	xhp = NULL;
-	xbps_initialized = false;
 }
 
 static void

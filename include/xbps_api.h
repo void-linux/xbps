@@ -81,7 +81,7 @@
 
 /** 
  * @def XBPS_PKGDB
- * Filename for the master package database.
+ * Filename for the package database.
  */
 #define XBPS_PKGDB		"pkgdb.plist"
 
@@ -562,6 +562,10 @@ struct xbps_handle {
 	 *  - XBPS_FLAG_INSTALL_MANUAL
 	 */
 	int flags;
+	/**
+	 * @private
+	 */
+	bool initialized;
 };
 
 void xbps_dbg_printf(struct xbps_handle *, const char *, ...);
