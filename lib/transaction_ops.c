@@ -204,7 +204,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
 	prop_object_t obj;
 	const char *pkgname, *holdpkgname;
-	bool newpkg_found = false;
+	bool foundhold = false, newpkg_found = false;
 	int rv = 0;
 	size_t i, x;
 
@@ -219,8 +219,13 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 			if (strcmp(pkgname, holdpkgname) == 0) {
 				xbps_dbg_printf(xhp, "[rpool] package %s on hold, "
 				    "ignoring updates.\n", pkgname);
-				continue;
+				foundhold = true;
+				break;
 			}
+		}
+		if (foundhold) {
+			foundhold = false;
+			continue;
 		}
 		rv = transaction_find_pkg(xhp, pkgname, false, true,
 					  false, TRANS_UPDATE);
