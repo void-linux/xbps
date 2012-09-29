@@ -560,8 +560,6 @@ out1:
 		goto out;
 	}
 out:
-	if (xucd != NULL)
-		free(xucd);
 	if (pkgfilesd != NULL)
 		free(pkgfilesd);
 	if (buf != NULL)
