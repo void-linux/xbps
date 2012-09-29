@@ -282,8 +282,14 @@ Packages in this state can be still removed.
 .Bl -tag -width /var/db/xbps/metadata/<pkgname>/props.plist -compact
 .It Pa /etc/xbps/xbps.conf
 Default XBPS configuration file.
+.It Pa /var/db/xbps
+XBPS global metadata directory.
+.It Pa /var/db/xbps/metadata/<pkgname>/files.plist
+Installed package metadata list of files.
+.It Pa /var/db/xbps/metadata/<pkgname>/props.plist
+Installed package metadata properties.
 .It Pa /var/db/xbps/pkgdb.plist
-XBPS package database plist file.
+XBPS master package database plist file.
 .It Pa /var/cache/xbps
 XBPS cache directory for downloaded binary packages.
 .Sh EXAMPLES
