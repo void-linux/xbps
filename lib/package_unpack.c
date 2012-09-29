@@ -165,10 +165,9 @@ unpack_archive(struct xbps_handle *xhp,
 	struct stat st;
 	struct xbps_unpack_cb_data xucd;
 	struct archive_entry *entry;
-	size_t nmetadata = 0, entry_idx = 0;
+	size_t entry_idx = 0;
 	const char *entry_pname, *transact, *pkgname, *version, *pkgver, *fname;
-	char *buf = NULL, *pkgfilesd = NULL;
-	size_t i, x;
+	char *buf = NULL, *pkgfilesd = NULL, *pkgpropsd = NULL;
 	int ar_rv, rv, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool softreplace;
@@ -281,7 +280,6 @@ unpack_archive(struct xbps_handle *xhp,
 				    pkgver, strerror(rv));
 				goto out;
 			}
-			nmetadata++;
 			continue;
 
 		} else if (strcmp("./REMOVE", entry_pname) == 0) {
@@ -290,7 +288,6 @@ unpack_archive(struct xbps_handle *xhp,
 			if (rv != 0)
 				goto out;
 
-			nmetadata++;
 			continue;
 
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
@@ -304,22 +301,14 @@ unpack_archive(struct xbps_handle *xhp,
 				rv = errno;
 				goto out;
 			}
-			nmetadata++;
 			continue;
 
 		} else if (strcmp("./props.plist", entry_pname) == 0) {
-			rv = extract_metafile(xhp, ar, entry, XBPS_PKGPROPS,
-			    pkgver, false, flags);
-			if (rv != 0)
-				goto out;
-
-			propsd = xbps_dictionary_from_metadata_plist(xhp,
-			    pkgname, XBPS_PKGPROPS);
+			propsd = xbps_dictionary_from_archive_entry(ar, entry);
 			if (propsd == NULL) {
 				rv = errno;
 				goto out;
 			}
-			nmetadata++;
 			continue;
 		}
 		/*
@@ -367,22 +356,17 @@ unpack_archive(struct xbps_handle *xhp,
 		 * doesn't match, in that case overwrite the file.
 		 * Otherwise skip extracting it.
 		 */
-		conf_file = false;
-		file_exists = false;
+		conf_file = file_exists = false;
 		if (S_ISREG(entry_statp->st_mode)) {
 			if (xbps_entry_is_a_conf_file(propsd, entry_pname))
 				conf_file = true;
 			if (stat(entry_pname, &st) == 0) {
 				/* remove first char, i.e '.' */
-				buf = strdup(entry_pname);
+				buf = strchr(entry_pname, '.') + 1;
 				assert(buf != NULL);
-				for (i = 1, x = 0; i < strlen(entry_pname); x++, i++)
-					buf[x] = entry_pname[i];
-				buf[x] = '\0';
 				file_exists = true;
 				rv = xbps_file_hash_check_dictionary(xhp, filesd,
 				    conf_file ? "conf_files" : "files", buf);
-				free(buf);
 
 				if (rv == -1) {
 					/* error */
@@ -433,10 +417,7 @@ unpack_archive(struct xbps_handle *xhp,
 			 * file but renaming it to <file>.old.
 			 */
 			buf = xbps_xasprintf("%s.old", entry_pname);
-			if (buf == NULL) {
-				rv = ENOMEM;
-				goto out;
-			}
+			assert(buf);
 			(void)rename(entry_pname, buf);
 			free(buf);
 			buf = NULL;
@@ -545,13 +526,16 @@ out1:
 		    errno, pkgname, version,
 		    "%s: [unpack] failed to create pkg metadir `%s': %s",
 		    buf, pkgver, strerror(errno));
+		free(buf);
 		rv = errno;
 		goto out;
 	}
+	free(buf);
 	/*
-	 * Externalize XBPS_PKGFILES into pkg metadata directory.
+	 * Externalize XBPS_PKGFILES and XBPS_PKGPROPS into pkg's
+	 * metadata directory.
 	 */
-	if (!prop_dictionary_externalize_to_zfile(filesd, pkgfilesd)) {
+	if (!prop_dictionary_externalize_to_file(filesd, pkgfilesd)) {
 		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    errno, pkgname, version,
@@ -559,11 +543,25 @@ out1:
 		    pkgver, XBPS_PKGFILES, strerror(errno));
 		goto out;
 	}
+	pkgpropsd = xbps_xasprintf("%s/metadata/%s/%s",
+	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
+	if (pkgpropsd == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
+	if (!prop_dictionary_externalize_to_file(propsd, pkgpropsd)) {
+		rv = errno;
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+		    errno, pkgname, version,
+		    "%s: [unpack] failed to extract metadata file `%s': %s",
+		    pkgver, XBPS_PKGPROPS, strerror(errno));
+		goto out;
+	}
 out:
 	if (pkgfilesd != NULL)
 		free(pkgfilesd);
-	if (buf != NULL)
-		free(buf);
+	if (pkgpropsd != NULL)
+		free(pkgpropsd);
 	if (prop_object_type(filesd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(filesd);
 	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
