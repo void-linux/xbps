@@ -91,7 +91,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 
 	if (xhp->pkgdb && flush) {
 		/* flush dictionary to storage */
-		if (!prop_array_externalize_to_zfile(xhp->pkgdb, plist)) {
+		if (!prop_array_externalize_to_file(xhp->pkgdb, plist)) {
 			free(plist);
 			return errno;
 		}
