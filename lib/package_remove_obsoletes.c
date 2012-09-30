@@ -59,12 +59,11 @@ xbps_remove_obsoletes(struct xbps_handle *xhp,
 again:
 	iter = xbps_array_iter_from_dict(oldd, array_str);
 	if (iter == NULL)
-		return errno;
+		goto out1;
 	iter2 = xbps_array_iter_from_dict(newd, array_str);
-	if (iter2 == NULL) {
-		prop_object_iterator_release(iter);
-		return errno;
-	}
+	if (iter2 == NULL)
+		goto out1;
+
 	/*
 	 * Check for obsolete files, i.e files/links/dirs available in
 	 * the old package list not found in new package list.
@@ -164,15 +163,18 @@ again:
 		    "%s: removed obsolete entry: %s", pkgver, file);
 		free(file);
 	}
+out1:
 	if (!dolinks) {
 		/*
 		 * Now look for obsolete links.
 		 */
 		dolinks = true;
 		array_str = "links";
-		prop_object_iterator_release(iter2);
-		prop_object_iterator_release(iter);
-		iter2 = NULL;
+		if (iter2)
+			prop_object_iterator_release(iter2);
+		if (iter)
+			prop_object_iterator_release(iter);
+		iter2 = iter = NULL;
 		goto again;
 	}
 	if (!dodirs) {
@@ -181,15 +183,19 @@ again:
 		 */
 		dodirs = true;
 		array_str = "dirs";
-		prop_object_iterator_release(iter2);
-		prop_object_iterator_release(iter);
-		iter2 = NULL;
+		if (iter2)
+			prop_object_iterator_release(iter2);
+		if (iter)
+			prop_object_iterator_release(iter);
+		iter2 = iter = NULL;
 		goto again;
 	}
 
 out:
-	prop_object_iterator_release(iter2);
-	prop_object_iterator_release(iter);
+	if (iter2)
+		prop_object_iterator_release(iter2);
+	if (iter)
+		prop_object_iterator_release(iter);
 
 	return rv;
 }
