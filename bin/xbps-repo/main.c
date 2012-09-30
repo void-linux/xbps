@@ -277,7 +277,6 @@ main(int argc, char **argv)
 			goto out;
 		}
 		rv = show_pkg_files(pkgd);
-		prop_object_release(pkgd);
 	} else if (strcasecmp(argv[0], "find-files") == 0) {
 		/* Finds files by patterns, exact matches and components. */
 		if (argc < 2)
