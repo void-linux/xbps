@@ -358,12 +358,11 @@ unpack_archive(struct xbps_handle *xhp,
 		 */
 		conf_file = file_exists = false;
 		if (S_ISREG(entry_statp->st_mode)) {
-			if (xbps_entry_is_a_conf_file(propsd, entry_pname))
+			buf = strchr(entry_pname, '.') + 1;
+			assert(buf != NULL);
+			if (xbps_entry_is_a_conf_file(propsd, buf))
 				conf_file = true;
 			if (stat(entry_pname, &st) == 0) {
-				/* remove first char, i.e '.' */
-				buf = strchr(entry_pname, '.') + 1;
-				assert(buf != NULL);
 				file_exists = true;
 				rv = xbps_file_hash_check_dictionary(xhp, filesd,
 				    conf_file ? "conf_files" : "files", buf);

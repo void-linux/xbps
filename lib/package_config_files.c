@@ -31,45 +31,29 @@
 #include "xbps_api_impl.h"
 
 /*
- * Returns 1 if entry is a configuration file, 0 if don't or -1 on error.
+ * Returns true if entry is a configuration file, false otherwise.
  */
 int HIDDEN
 xbps_entry_is_a_conf_file(prop_dictionary_t propsd,
 			  const char *entry_pname)
 {
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	char *cffile;
-	int rv = 0;
+	prop_array_t array;
+	const char *cffile;
+	size_t i;
 
 	assert(prop_object_type(propsd) == PROP_TYPE_DICTIONARY);
 	assert(entry_pname != NULL);
 
-	if (!prop_dictionary_get(propsd, "conf_files"))
-		return 0;
+	array = prop_dictionary_get(propsd, "conf_files");
+	if (array == NULL || prop_array_count(array) == 0)
+		return false;
 
-	iter = xbps_array_iter_from_dict(propsd, "conf_files");
-	if (iter == NULL)
-		return -1;
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		cffile = xbps_xasprintf(".%s",
-		    prop_string_cstring_nocopy(obj));
-		if (cffile == NULL) {
-			rv = -1;
-			goto out;
-		}
-		if (strcmp(cffile, entry_pname) == 0) {
-			rv = 1;
-			free(cffile);
-			break;
-		}
-		free(cffile);
+	for (i = 0; i < prop_array_count(array); i++) {
+		prop_array_get_cstring_nocopy(array, i, &cffile);
+		if (strcmp(cffile, entry_pname) == 0)
+			return true;
 	}
-
-out:
-	prop_object_iterator_release(iter);
-	return rv;
+	return false;
 }
 
 /*
