@@ -59,7 +59,7 @@ static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stdout,
-	"usage: %s [options]\n\n"
+	"usage: %s [options] destdir\n\n"
 	"  Options:\n"
 	"    -A, --architecture   Package architecture (e.g: noarch, i686, etc).\n"
 	"    -B, --built-with     Package builder string (e.g: xbps-src-30).\n"
@@ -67,7 +67,6 @@ usage(void)
 	"                         e.g: 'foo>=2.0 blah<=2.0').\n"
 	"    -D, --dependencies   Dependencies (blank separated list,\n"
 	"                         e.g: 'foo>=1.0_1 blah<2.1').\n"
-	"    -d, --destdir        Package destdir.\n"
 	"    -F, --config-files   Configuration files (blank separated list,\n"
 	"                         e.g '/etc/foo.conf /etc/foo-blah.conf').\n"
 	"    -H, --homepage       Homepage.\n"
@@ -87,9 +86,9 @@ usage(void)
 	"    -s, --desc           Short description (max 80 characters).\n"
 	"    -V, --version        Prints XBPS release version.\n\n"
 	"  NOTE:\n"
-	"    At least four flags are required: architecture, destdir, pkgver and desc.\n\n"
+	"    At least three flags are required: architecture, pkgver and desc.\n\n"
 	"  EXAMPLE:\n"
-	"    $ %s -A noarch -n foo-1.0_1 -s \"foo pkg\" -d dir\n",
+	"    $ %s -A noarch -n foo-1.0_1 -s \"foo pkg\" dir\n",
 	_PROGNAME, _PROGNAME);
 	exit(EXIT_FAILURE);
 }
@@ -516,7 +515,6 @@ main(int argc, char **argv)
 		{ "built-with", required_argument, NULL, 'B' },
 		{ "conflicts", required_argument, NULL, 'C' },
 		{ "dependencies", required_argument, NULL, 'D' },
-		{ "destdir", required_argument, NULL, 'd' },
 		{ "config-files", required_argument, NULL, 'F' },
 		{ "homepage", required_argument, NULL, 'H' },
 		{ "help", no_argument, NULL, 'h' },
@@ -548,7 +546,7 @@ main(int argc, char **argv)
 	config_files = mutable_files = NULL;
 
 	while ((c = getopt_long(argc, argv,
-		"A:B:C:D:d:F:H:hl:M:m:n:P:pqR:S:s:V", longopts, &c)) != -1) {
+		"A:B:C:D:F:H:hl:M:m:n:P:pqR:S:s:V", longopts, &c)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
 			optarg = NULL;
 
@@ -564,9 +562,6 @@ main(int argc, char **argv)
 			break;
 		case 'D':
 			deps = optarg;
-			break;
-		case 'd':
-			destdir = optarg;
 			break;
 		case 'F':
 			config_files = optarg;
@@ -618,9 +613,12 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (destdir == NULL)
-		die("destdir not set!");
-	else if (pkgver == NULL)
+	if (argc != 1)
+		usage();
+
+	destdir = argv[0];
+
+	if (pkgver == NULL)
 		die("pkgver not set!");
 	else if (desc == NULL)
 		die("short description not set!");
