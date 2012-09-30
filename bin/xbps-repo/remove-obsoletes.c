@@ -85,9 +85,15 @@ repo_remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		pkgd = xbps_dictionary_metadata_plist_by_url(dp->d_name,
 		    "./props.plist");
 		if (pkgd == NULL) {
-			fprintf(stderr, "failed to read metadata for `%s',"
-			    " skipping!\n", dp->d_name);
-			continue;
+			rv = repo_remove_pkg(repodir, arch, dp->d_name);
+			if (rv != 0) {
+				fprintf(stderr, "index: failed to remove "
+				    "package `%s': %s\n", dp->d_name,
+				    strerror(rv));
+				prop_object_release(pkgd);
+				break;
+			}
+			printf("Removed broken package `%s'.\n", dp->d_name);
 		}
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
