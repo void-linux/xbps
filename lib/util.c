@@ -231,7 +231,7 @@ xbps_path_from_repository_uri(struct xbps_handle *xhp,
 			      prop_dictionary_t pkg_repod,
 			      const char *repoloc)
 {
-	const char *filen, *arch;
+	const char *filen;
 	char *lbinpkg = NULL;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
@@ -252,13 +252,10 @@ xbps_path_from_repository_uri(struct xbps_handle *xhp,
 		return lbinpkg;
 
 	free(lbinpkg);
-	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
-	    "architecture", &arch))
-		return NULL;
 	/*
 	 * Local and remote repositories use the same path.
 	 */
-	return xbps_xasprintf("%s/%s/%s", repoloc, arch, filen);
+	return xbps_xasprintf("%s/%s", repoloc, filen);
 }
 
 bool
@@ -315,7 +312,7 @@ xbps_xasprintf(const char *fmt, ...)
 int
 xbps_pkgpattern_match(const char *pkg, const char *pattern)
 {
-	/* simple match on "pkg" against "pattern */
+	/* simple match on "pkg" against "pattern" */
 	if (strcmp(pattern, pkg) == 0)
 		return 1;
 
