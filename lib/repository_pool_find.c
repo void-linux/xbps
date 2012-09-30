@@ -340,8 +340,6 @@ xbps_rpool_dictionary_metadata_plist(struct xbps_handle *xhp,
 out:
 	if (plistd == NULL)
 		errno = ENOENT;
-	if (prop_object_type(pkgd) == PROP_TYPE_DICTIONARY)
-		prop_object_release(pkgd);
 
 	return plistd;
 }
