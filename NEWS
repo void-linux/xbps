@@ -1,5 +1,10 @@
 xbps-0.17 (???):
 
+ * Fixed "packages on hold". Regression added in 0.16.2.
+
+ * xbps-repo(8): fixed crash in the 'search' target when the terminal has
+   been resized, reported by pancake.
+
  * xbps-bin(8), xbps-repo(8): added a new flag -B to set default repository
    to install packages, in case xbps.conf couldn't be found.
 
