@@ -20,7 +20,7 @@ of a binary package in repository pool, among other things.
 .Bl -tag -width Fl
 .It Fl B Ar repository
 If a configuration file cannot be found, this repository will be used as
-as primary source to install packages.
+as the primary source to install packages.
 .It Fl C Ar conffile
 Full path to the XBPS configuration file. By default set to
 .Pa /etc/xbps/xbps.conf .
@@ -61,7 +61,7 @@ Please note that all targets are case insensitive.
 Cleans the
 .Em cachedir
 and removes obsolete binary packages, either because they are not available
-anymore in repository pool or because its sha256 hash doesn't match.
+anymore in the repository pool or because its sha256 hash doesn't match.
 .It Sy find-files Ar pattern Ar [patterns ...]
 Prints the name of
 .Em package(s)
