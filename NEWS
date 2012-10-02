@@ -1,5 +1,8 @@
 xbps-0.17 (???):
 
+ * Package metadata files and pkgdb plist are now stored uncompressed.
+   This improves performance when those files store large chunks of data.
+
  * Fixed "packages on hold". Regression added in 0.16.2.
 
  * xbps-repo(8): fixed crash in the 'search' target when the terminal has
