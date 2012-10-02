@@ -145,9 +145,11 @@ Please note that all targets are case insensitive.
 .Pp
 .Bl -tag -width ident
 .It Sy check Ar pkgname | Ar all
-Checks for integrity errors in installed packages. The checks are to found
+Checks for integrity errors in installed packages. The checks are to find
 missing run-time dependencies, missing and modified package files and
-metadata files. If the all keyword is used, all packages currently installed
+metadata files. If the the
+.Em all
+keyword is used, all packages currently installed
 will be checked, otherwise just pkgname.
 .It Sy dist-upgrade
 Updates all currently installed packages to the newest version available in
