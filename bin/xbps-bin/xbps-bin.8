@@ -216,7 +216,7 @@ Removes the installed package
 Files not matching the original SHA256 hash will be preserved. If
 .Ql -f
 option is used, package files will be
-.Em removed even if its SHA256 hash don't match .
+.Em removed even if its SHA256 hash doesn't match .
 If
 .Ql -F
 option is used, package will be removed even if there are
@@ -253,7 +253,7 @@ Updates
 .Em pkgname
 to the newest version available in repository pool. This can be used if only
 .Em pkgname
-need to be updated, unlike the
+needs to be updated, unlike the
 .Em dist-upgrade
 target that will update all currently installed packages.
 .Sh PACKAGE STATES
@@ -272,14 +272,14 @@ The package was being unpacked but didn't finish properly for unknown reasons.
 .It Sy unpacked
 The package has been unpacked in destination root directory, but it is not fully
 installed because it was not yet configured. Please note that some packages will
-do not work if they are only unpacked.
+not work if they are only unpacked.
 .It Sy half-removed
 The package removal did not finish for unknown reasons (power outage, process killed, etc).
 The
 .Em purge
 action in its metadata REMOVE script has not been yet executed. The package
 metadata directory is still available and it is registered in package database.
-Packages in this state can be still removed.
+Packages in this state can still be removed.
 .Sh FILES
 .Bl -tag -width /var/db/xbps/metadata/<pkgname>/props.plist -compact
 .It Pa /etc/xbps/xbps.conf
