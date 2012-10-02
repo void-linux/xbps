@@ -1,4 +1,4 @@
-xbps-0.17 (???):
+xbps-0.17 (2012-10-02):
 
  * Package metadata files and pkgdb plist are now stored uncompressed.
    This improves performance when those files store large chunks of data.
