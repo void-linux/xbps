@@ -1,6 +1,5 @@
 -include ../config.mk
 
-VERSION = 0.12
 PCFILE = libxbps.pc
 
 .PHONY: all

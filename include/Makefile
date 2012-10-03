@@ -4,6 +4,7 @@ INCS =	xbps_api.h
 
 .PHONY: all
 all:
+	sed -e "s|@@VERSION@@|${VERSION}|g" ${INCS}.in > ${INCS}
 
 .PHONY: install
 install:
@@ -16,3 +17,4 @@ uninstall:
 
 .PHONY: clean
 clean:
+	-rm -f ${INCS}

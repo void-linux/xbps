@@ -1,6 +1,8 @@
 #!/bin/sh
 # Try and be like autotools configure, but without autotools
 
+VERSION=0.18
+
 # Ensure that we do not inherit these from env
 STRLCPY=
 STRLCAT=
@@ -141,6 +143,7 @@ rm -f $CONFIG_H $CONFIG_MK
 echo "# Common vars used by XBPS on $OS." >$CONFIG_MK
 echo "/* $OS */" >$CONFIG_H
 
+echo "VERSION = $VERSION" >>$CONFIG_MK
 echo "TOPDIR ?=	$TOPDIR" >>$CONFIG_MK
 echo "PREFIX ?=	$PREFIX" >>$CONFIG_MK
 echo "EPREFIX ?= $EPREFIX" >>$CONFIG_MK
@@ -189,6 +192,7 @@ fi
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DHAVE_CONFIG_H" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
+echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
 
 if [ -n "$DEBUG" -a "$DEBUG" != no -a "$DEBUG" != false ]; then
 	echo "Building with debugging symbols."
