@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -352,6 +353,7 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 	struct archive *ard;
 	struct archive_entry *entry;
 	struct stat st;
+	void *map = NULL;
 	char *buf, *p;
 	int fd = -1;
 	ssize_t r;
@@ -378,7 +380,7 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 	if (lstat(p, &st) == -1)
 		die("failed to add entry (fstat) %s to archive:", xe->file);
 
-	if (st.st_size >= SSIZE_MAX)
+	if (st.st_size > SSIZE_MAX - 1)
 		die("failed to add entry (SSIZE_MAX) %s to archive:", xe->file);
 
 	if ((archive_read_disk_entry_from_file(ard, entry, -1, &st)) != 0)
@@ -393,16 +395,19 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 		if (r < 0 || r > st.st_size)
 			die("failed to add entry %s (readlink) to archive:",
 			    xe->file);
+		buf[len-1] = '\0';
+		archive_write_data(ar, buf, len);
 	} else {
 		fd = open(p, O_RDONLY);
 		assert(fd != -1);
-		r = read(fd, buf, len);
-		if (r < 0 || r > SSIZE_MAX)
-			die("failed to add entry %s (read) to archive:",
+		map = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
+		if (map == MAP_FAILED)
+			die("failed to add entry %s (mmap) to archive:",
 			   xe->file);
 		close(fd);
+		archive_write_data(ar, map, len);
+		munmap(map, len);
 	}
-	archive_write_data(ar, buf, r);
 	archive_entry_free(entry);
 	archive_read_close(ard);
 	archive_read_free(ard);
