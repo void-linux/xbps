@@ -216,9 +216,17 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 		 */
 		if (strncmp(buf, "../", 3) == 0) {
 			p = realpath(fpath, NULL);
-			assert(p);
-			xe->target = strdup(p + strlen(destdir));
-			free(p);
+			if (p == NULL) {
+				/*
+				 * This symlink points to an unexistent file,
+				 * which might be provided in another package.
+				 * So let's use the same target.
+				 */
+				xe->target = strdup(buf);
+			} else {
+				xe->target = strdup(p + strlen(destdir));
+				free(p);
+			}
 		} else if (strchr(buf, '/') == NULL) {
 			p = strdup(filep);
 			assert(p);
