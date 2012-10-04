@@ -1,3 +1,9 @@
+xbps-0.18 (???):
+
+ * xbps-create(8): fixed an assertion that happened when resolving the
+   target file of a symlink, which was unexistent because the real file was
+   provided by another pkg. In this case just keep the target file as is.
+
 xbps-0.17 (2012-10-02):
 
  * Package metadata files and pkgdb plist are now stored uncompressed.
