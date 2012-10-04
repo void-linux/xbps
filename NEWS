@@ -1,5 +1,8 @@
 xbps-0.18 (???):
 
+ * xbps-bin(8): the 'check' target now checks the target file in relative
+   symlinks, or multiple levels of symlinks.
+
  * xbps-create(8): fixed an assertion that happened when resolving the
    target file of a symlink, which was unexistent because the real file was
    provided by another pkg. In this case just keep the target file as is.

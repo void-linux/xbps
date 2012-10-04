@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <unistd.h>
+#include <libgen.h>
 #include <sys/param.h>
 
 #include <xbps_api.h>
@@ -55,7 +56,7 @@ check_pkg_symlinks(struct xbps_handle *xhp,
 	prop_object_iterator_t iter;
 	prop_dictionary_t pkg_filesd = arg;
 	const char *file, *tgt = NULL;
-	char *path, buf[PATH_MAX];
+	char *path, *buf, *buf2, *buf3, *dname, *path_target;
 	bool broken = false, test_broken = false;
 
 	(void)pkgdb_update;
@@ -80,28 +81,37 @@ check_pkg_symlinks(struct xbps_handle *xhp,
 			if (path == NULL)
 				return -1;
 
-			memset(&buf, 0, sizeof(buf));
-			if (realpath(path, buf) == NULL) {
+			if ((buf = realpath(path, NULL)) == NULL) {
 				xbps_error_printf("%s: broken symlink `%s': "
 				    "%s\n", pkgname, file, strerror(errno));
 				test_broken = true;
 				continue;
 			}
-
-			free(path);
-			if (strcmp(xhp->rootdir, "/") &&
-			    strstr(buf, xhp->rootdir))
-				path = buf + strlen(xhp->rootdir);
-			else
-				path = buf;
-
-			if (strcmp(path, tgt)) {
+			if (strncmp(tgt, "../", 3) == 0) {
+				/* relative symlink target */
+				dname = dirname(path);
+				buf2 = xbps_xasprintf("%s/%s", dname, tgt);
+				assert(buf2);
+				buf3 = realpath(buf2, NULL);
+				assert(buf3);
+				free(buf2);
+				path_target = buf3;
+			} else {
+				path_target = buf;
+			}
+			if (strcmp(buf, path_target)) {
 				xbps_error_printf("%s: modified symlink `%s' "
 				    "points to: `%s' (shall be: `%s')\n",
-				    pkgname, file, path, tgt);
+				    pkgname, file, buf, path_target);
 				test_broken = true;
 			}
-			path = NULL;
+			free(buf);
+			free(path);
+			if (buf3)
+				free(buf3);
+
+			path = buf = buf2 = buf3 = NULL;
+
 		}
 		prop_object_iterator_release(iter);
 	}
