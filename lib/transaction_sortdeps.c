@@ -51,6 +51,7 @@ struct pkgdep {
 	prop_dictionary_t d;
 	char *name;
 	const char *trans;
+	const char *pkgver;
 };
 
 static TAILQ_HEAD(pkgdep_head, pkgdep) pkgdep_list =
@@ -134,6 +135,8 @@ pkgdep_alloc(prop_dictionary_t d, const char *name, const char *trans)
 	memcpy(pd->name, name, len-1);
 	pd->name[len-1] = '\0';
 	pd->trans = trans;
+	if (d != NULL)
+		prop_dictionary_get_cstring_nocopy(pd->d, "pkgver", &pd->pkgver);
 
 	return pd;
 }
@@ -143,12 +146,11 @@ pkgdep_end(struct xbps_handle *xhp, prop_array_t sorted)
 {
 	prop_dictionary_t d;
 	struct pkgdep *pd;
-	const char *trans;
+	const char *trans, *pkgver;
 
 	while ((pd = TAILQ_FIRST(&pkgdep_list)) != NULL) {
 		TAILQ_REMOVE(&pkgdep_list, pd, pkgdep_entries);
-		if (sorted != NULL && pd->d != NULL) {
-			/* do not add duplicates due to vpkgs */
+		if (pd->d != NULL && pd->pkgver != NULL) {
 			d = xbps_find_pkg_in_array_by_name(xhp, sorted,
 			    pd->name, NULL);
 			if (d == NULL) {
@@ -163,9 +165,14 @@ pkgdep_end(struct xbps_handle *xhp, prop_array_t sorted)
 			}
 			prop_dictionary_get_cstring_nocopy(d,
 			    "transaction", &trans);
-			if (strcmp(trans, pd->trans) == 0) {
-				pkgdep_release(pd);
-				continue;
+			prop_dictionary_get_cstring_nocopy(d,
+			    "pkgver", &pkgver);
+			if ((strcmp(trans, pd->trans) == 0) &&
+			    (strcmp(pkgver, pd->pkgver) == 0)) {
+				xbps_dbg_printf(xhp, "[sortdeps] removing dup "
+				    "match '%s %s'\n", pd->pkgver, pd->trans);
+				xbps_remove_pkg_from_array_by_name(xhp,
+				    sorted, pd->name, NULL);
 			}
 			prop_array_add(sorted, pd->d);
 		}
