@@ -290,12 +290,14 @@ again:
 int HIDDEN
 xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 {
-	prop_array_t sorted, unsorted, rundeps;
+	prop_array_t provides, sorted, unsorted, rundeps;
 	prop_object_t obj;
 	struct pkgdep *pd;
-	size_t i, ndeps = 0, cnt = 0;
-	const char *pkgname, *pkgver, *tract;
+	size_t i, j, ndeps = 0, cnt = 0;
+	char *vpkg, *vpkgname;
+	const char *pkgname, *pkgver, *tract, *vpkgdep;
 	int rv = 0;
+	bool vpkg_found;
 
 	if ((sorted = prop_array_create()) == NULL)
 		return ENOMEM;
@@ -325,14 +327,43 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 	 * its package dependencies.
 	 */
 	for (i = 0; i < ndeps; i++) {
+		vpkg_found = false;
 		obj = prop_array_get(unsorted, i);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		provides = prop_dictionary_get(obj, "provides");
 		xbps_dbg_printf(xhp, "Sorting package '%s' (%s): ", pkgver, tract);
 
-		pd = pkgdep_find(pkgname, tract);
-		if (pd == NULL) {
+		if (provides) {
+			/*
+			 * If current pkgdep provides any virtual pkg check
+			 * if any of them was previously added. If true, don't
+			 * add it into the list again just order its deps.
+			 */
+			for (j = 0; j < prop_array_count(provides); j++) {
+				prop_array_get_cstring_nocopy(provides,
+				    j, &vpkgdep);
+				if (strchr(vpkgdep, '_') == NULL) {
+					vpkg = xbps_xasprintf("%s_1", vpkgdep);
+					assert(vpkg);
+					vpkgname = xbps_pkg_name(vpkg);
+					free(vpkg);
+				} else {
+					vpkgname = xbps_pkg_name(vpkgdep);
+				}
+				assert(vpkgname);
+				pd = pkgdep_find(vpkgname, tract);
+				free(vpkgname);
+				if (pd != NULL) {
+					xbps_dbg_printf_append(xhp, "already "
+					    "sorted via `%s' vpkg.", vpkgdep);
+					vpkg_found = true;
+					break;
+				}
+			}
+		}
+		if (!vpkg_found && (pd = pkgdep_find(pkgname, tract)) == NULL) {
 			/*
 			 * If package not in list, just add to the tail.
 			 */
