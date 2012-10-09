@@ -1,5 +1,10 @@
 xbps-0.18 (???):
 
+ * Add support to resolve exact dependencies such as "foo-1.0_1".
+
+ * Fixed a bug in the dependency sort code that in some cases and due to
+   virtual packages added duplicate matches and broke the dependency order.
+
  * xbps-bin(8): the 'check' target now checks the target file in relative
    symlinks, or multiple levels of symlinks.
 
