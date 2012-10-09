@@ -192,8 +192,8 @@ sort_pkg_rundeps(struct xbps_handle *xhp,
 again:
 	for (i = idx; i < prop_array_count(pkg_rundeps); i++) {
 		prop_array_get_cstring_nocopy(pkg_rundeps, i, &str);
-		pkgnamedep = xbps_pkgpattern_name(str);
-		if (pkgnamedep == NULL) {
+		if (((pkgnamedep = xbps_pkgpattern_name(str)) == NULL) &&
+		    ((pkgnamedep = xbps_pkg_name(str)) == NULL)) {
 			rv = ENOMEM;
 			break;
 		}

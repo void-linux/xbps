@@ -196,7 +196,8 @@ find_repo_deps(struct xbps_handle *xhp,
 		 * Pass 1: check if required dependency is already installed
 		 * and its version is fully matched.
 		 */
-		if ((pkgname = xbps_pkgpattern_name(reqpkg)) == NULL) {
+		if (((pkgname = xbps_pkgpattern_name(reqpkg)) == NULL) &&
+		    ((pkgname = xbps_pkg_name(reqpkg)) == NULL)) {
 			rv = EINVAL;
 			xbps_dbg_printf(xhp, "failed to get "
 			    "pkgname from `%s'!", reqpkg);
