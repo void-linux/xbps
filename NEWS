@@ -1,5 +1,9 @@
 xbps-0.18 (???):
 
+ * Improved finding and removing obsolete files after upgrading a package
+   in a transaction. Any obsolete link (not just dangling links) and
+   configuration files are now removed if they are obsoletes.
+
  * Add support to resolve exact dependencies such as "foo-1.0_1".
 
  * Fixed a bug in the dependency sort code that in some cases and due to

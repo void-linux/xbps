@@ -160,13 +160,15 @@ unpack_archive(struct xbps_handle *xhp,
 	       struct archive *ar)
 {
 	prop_dictionary_t propsd = NULL, filesd = NULL, old_filesd = NULL;
-	prop_array_t array;
+	prop_array_t array, obsoletes;
+	prop_object_t obj;
 	const struct stat *entry_statp;
 	struct stat st;
 	struct xbps_unpack_cb_data xucd;
 	struct archive_entry *entry;
-	size_t entry_idx = 0;
-	const char *entry_pname, *transact, *pkgname, *version, *pkgver, *fname;
+	size_t i, entry_idx = 0;
+	const char *file, *entry_pname, *transact, *pkgname;
+	const char *version, *pkgver, *fname;
 	char *buf = NULL, *pkgfilesd = NULL, *pkgpropsd = NULL;
 	int ar_rv, rv, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
@@ -494,22 +496,31 @@ unpack_archive(struct xbps_handle *xhp,
 	if (skip_obsoletes || preserve || (!softreplace && !update))
 		goto out1;
 	/*
-	 * Check for obsolete files on:
+	 * Check and remove obsolete files on:
 	 * 	- Package upgrade.
 	 * 	- Package with "softreplace" keyword.
 	 */
 	old_filesd = prop_dictionary_internalize_from_zfile(pkgfilesd);
 	if (prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY) {
-		rv = xbps_remove_obsoletes(xhp, pkgname, version,
-		    pkgver, old_filesd, filesd);
-		prop_object_release(old_filesd);
-		if (rv != 0) {
-			rv = errno;
-			goto out;
+		obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
+		for (i = 0; i < prop_array_count(obsoletes); i++) {
+			obj = prop_array_get(obsoletes, i);
+			file = prop_string_cstring_nocopy(obj);
+			if (remove(file) == -1) {
+				xbps_set_cb_state(xhp,
+				    XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
+				    errno, pkgname, version,
+				    "%s: failed to remove obsolete entry `%s': %s",
+				    pkgver, file, strerror(errno));
+				continue;
+			}
+			xbps_set_cb_state(xhp,
+			    XBPS_STATE_REMOVE_FILE_OBSOLETE,
+			    0, pkgname, version,
+			    "%s: removed obsolete entry: %s", pkgver, file);
+			prop_object_release(obj);
 		}
-	} else if (errno && errno != ENOENT) {
-		rv = errno;
-		goto out;
+		prop_object_release(old_filesd);
 	}
 out1:
 	/*

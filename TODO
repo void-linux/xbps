@@ -1,7 +1,6 @@
 libxbps:
  - transaction: avoid fetching the whole pkg when updating and only fetch
    modified files from target pkg.
- - remove-obsoletes: remove obsolete links, not just dangling links.
  - properties: (update-first) still unimplemented.
 
 xbps-bin:

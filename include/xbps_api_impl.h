@@ -106,17 +106,6 @@ prop_dictionary_t HIDDEN
 
 /**
  * @private
- * From lib/package_remove_obsoletes.c
- */
-int HIDDEN xbps_remove_obsoletes(struct xbps_handle *xhp,
-				 const char *,
-				 const char *,
-				 const char *,
-				 prop_dictionary_t,
-				 prop_dictionary_t);
-
-/**
- * @private
  * From lib/repository_finddeps.c
  */
 int HIDDEN xbps_repository_find_pkg_deps(struct xbps_handle *,

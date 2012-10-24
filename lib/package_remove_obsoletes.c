@@ -23,66 +23,58 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <libgen.h>
 
 #include "xbps_api_impl.h"
 
-int HIDDEN
-xbps_remove_obsoletes(struct xbps_handle *xhp,
-		      const char *pkgname,
-		      const char *version,
-		      const char *pkgver,
-		      prop_dictionary_t oldd,
-		      prop_dictionary_t newd)
+prop_array_t
+xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
+			prop_dictionary_t instd,
+			prop_dictionary_t newd)
 {
-	prop_object_iterator_t iter, iter2;
+	prop_array_t array, array2, obsoletes;
 	prop_object_t obj, obj2;
 	prop_string_t oldstr, newstr;
-	struct stat st;
+	size_t i, x;
 	const char *array_str = "files";
 	const char *oldhash;
 	char *file;
 	int rv = 0;
-	bool found, dodirs = false, dolinks = false;
+	bool found, dodirs, dolinks, docffiles;
 
-	assert(prop_object_type(oldd) == PROP_TYPE_DICTIONARY);
+	dodirs = dolinks = docffiles = false;
+
+	assert(prop_object_type(instd) == PROP_TYPE_DICTIONARY);
 	assert(prop_object_type(newd) == PROP_TYPE_DICTIONARY);
 
+	obsoletes = prop_array_create();
+	assert(obsoletes);
+
 again:
-	iter = xbps_array_iter_from_dict(oldd, array_str);
-	if (iter == NULL)
-		goto out1;
-	iter2 = xbps_array_iter_from_dict(newd, array_str);
-	if (iter2 == NULL)
+	array = prop_dictionary_get(instd, array_str);
+	if (array == NULL || prop_array_count(array) == 0)
 		goto out1;
 
 	/*
-	 * Check for obsolete files, i.e files/links/dirs available in
-	 * the old package list not found in new package list.
+	 * Iterate over files list from installed package.
 	 */
-	while ((obj = prop_object_iterator_next(iter))) {
-		rv = 0;
+	for (i = 0; i < prop_array_count(array); i++) {
 		found = false;
+		obj = prop_array_get(array, i);
 		oldstr = prop_dictionary_get(obj, "file");
-		if (oldstr == NULL) {
-			rv = errno;
-			goto out;
-		}
+		assert(oldstr);
+
 		file = xbps_xasprintf(".%s",
 		    prop_string_cstring_nocopy(oldstr));
-		if (file == NULL) {
-			rv = errno;
-			goto out;
-		}
-		if (strcmp(array_str, "files") == 0) {
+		assert(file);
+
+		if ((strcmp(array_str, "files") == 0) ||
+		    (strcmp(array_str, "conf_files") == 0)) {
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "sha256", &oldhash);
 			rv = xbps_file_hash_check(file, oldhash);
@@ -92,46 +84,30 @@ again:
 				 * match the hash.
 				 */
 				free(file);
-				rv = 0;
 				continue;
 			}
-		} else if (strcmp(array_str, "links") == 0) {
-			/*
-			 * Only remove dangling symlinks.
-			 */
-			if (stat(file, &st) == -1) {
-				if (errno != ENOENT) {
-					free(file);
-					rv = errno;
-					goto out;
+		}
+		array2 = prop_dictionary_get(newd, array_str);
+		if (array2 && prop_array_count(array2)) {
+			for (x = 0; x < prop_array_count(array2); x++) {
+				obj2 = prop_array_get(array2, x);
+				newstr = prop_dictionary_get(obj2, "file");
+				assert(newstr);
+				/*
+				 * Skip files with same path.
+				 */
+				if (prop_string_equals(oldstr, newstr)) {
+					found = true;
+					break;
 				}
-			} else {
-				free(file);
-				continue;
 			}
 		}
-
-		while ((obj2 = prop_object_iterator_next(iter2))) {
-			newstr = prop_dictionary_get(obj2, "file");
-			if (newstr == NULL) {
-				rv = errno;
-				goto out;
-			}
-			/*
-			 * Skip files with same path.
-			 */
-			if (prop_string_equals(oldstr, newstr)) {
-				found = true;
-				break;
-			}
-		}
-		prop_object_iterator_reset(iter2);
 		if (found) {
 			free(file);
 			continue;
 		}
 		/*
-		 * Do not remove required symlinks for the
+		 * Do not add required symlinks for the
 		 * system transition to /usr.
 		 */
 		if ((strcmp(file, "./bin") == 0) ||
@@ -146,56 +122,28 @@ again:
 			continue;
 		}
 		/*
-		 * Obsolete obj found, remove it.
+		 * Obsolete found, add onto the array.
 		 */
-		if (remove(file) == -1) {
-			xbps_set_cb_state(xhp,
-			    XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
-			    errno, pkgname, version,
-			    "%s: failed to remove obsolete entry `%s': %s",
-			    pkgver, file, strerror(errno));
-			free(file);
-			continue;
-		}
-		xbps_set_cb_state(xhp,
-		    XBPS_STATE_REMOVE_FILE_OBSOLETE,
-		    0, pkgname, version,
-		    "%s: removed obsolete entry: %s", pkgver, file);
+		xbps_dbg_printf(xhp, "found obsolete: %s (%s)\n",
+		    file, array_str);
+
+		prop_array_add_cstring(obsoletes, file);
 		free(file);
 	}
 out1:
 	if (!dolinks) {
-		/*
-		 * Now look for obsolete links.
-		 */
 		dolinks = true;
 		array_str = "links";
-		if (iter2)
-			prop_object_iterator_release(iter2);
-		if (iter)
-			prop_object_iterator_release(iter);
-		iter2 = iter = NULL;
 		goto again;
-	}
-	if (!dodirs) {
-		/*
-		 * Look for obsolete dirs.
-		 */
+	} else if (!docffiles) {
+		docffiles = true;
+		array_str = "conf_files";
+		goto again;
+	} else if (!dodirs) {
 		dodirs = true;
 		array_str = "dirs";
-		if (iter2)
-			prop_object_iterator_release(iter2);
-		if (iter)
-			prop_object_iterator_release(iter);
-		iter2 = iter = NULL;
 		goto again;
 	}
 
-out:
-	if (iter2)
-		prop_object_iterator_release(iter2);
-	if (iter)
-		prop_object_iterator_release(iter);
-
-	return rv;
+	return obsoletes;
 }
