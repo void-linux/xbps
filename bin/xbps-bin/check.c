@@ -143,11 +143,6 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    "file.\n", pkgname, XBPS_PKGFILES);
 		broken = true;
 		goto out;
-	} else if (prop_dictionary_count(filesd) == 0) {
-		xbps_error_printf("%s: incomplete %s metadata file.\n",
-		    pkgname, XBPS_PKGFILES);
-		broken = true;
-		goto out;
 	}
 
 #define RUN_PKG_CHECK(x, name, arg, arg2)			\
