@@ -68,6 +68,7 @@ int	check_pkg_integrity_all(struct xbps_handle *);
 int check_pkg_##type (struct xbps_handle *, const char *, void *, bool *)
 
 CHECK_PKG_DECL(autoinstall);
+CHECK_PKG_DECL(unneeded);
 CHECK_PKG_DECL(files);
 CHECK_PKG_DECL(rundeps);
 CHECK_PKG_DECL(symlinks);

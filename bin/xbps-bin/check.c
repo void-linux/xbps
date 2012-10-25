@@ -163,6 +163,7 @@ do {								\
 	RUN_PKG_CHECK(xhp, rundeps, propsd, &pkgdb_update);
 	RUN_PKG_CHECK(xhp, requiredby, pkgd ? pkgd : opkgd, &pkgdb_update);
 	RUN_PKG_CHECK(xhp, autoinstall, pkgd ? pkgd : opkgd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, unneeded, pkgd ? pkgd : opkgd, &pkgdb_update);
 
 	if (flush && pkgdb_update) {
 		if (!xbps_pkgdb_replace_pkgd(xhp, opkgd, pkgname, false, true)) {

@@ -156,6 +156,12 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 			goto out;
 		}
 	}
+	/*
+	 * Remove unneeded objs from pkg dictionary.
+	 */
+	prop_dictionary_remove(pkgd, "remove-and-update");
+	prop_dictionary_remove(pkgd, "transaction");
+
 	if (!xbps_pkgdb_replace_pkgd(xhp, pkgd, pkgname, false, flush)) {
 		xbps_dbg_printf(xhp,
 		    "%s: failed to replace pkgd dict for %s\n",

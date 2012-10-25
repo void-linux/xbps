@@ -1,5 +1,9 @@
 xbps-0.18 (???):
 
+ * When registering a pkg to pkgdb make sure to remove unneeded meta objs
+   from its pkg dictionary. Also add a check to xbps-bin(8) to remove those
+   objects if found.
+
  * Improved finding and removing obsolete files after upgrading a package
    in a transaction. Any obsolete link (not just dangling links) and
    configuration files are now removed if they are obsoletes.
