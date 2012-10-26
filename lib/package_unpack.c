@@ -196,7 +196,7 @@ unpack_archive(struct xbps_handle *xhp,
 	size_t i, entry_idx = 0;
 	const char *file, *entry_pname, *transact, *pkgname;
 	const char *version, *pkgver, *fname, *tgtlnk;
-	char *buf, *buf2, *p, *p2, *pkgfilesd = NULL, *pkgpropsd = NULL;
+	char *dname, *buf, *buf2, *p, *p2, *pkgfilesd = NULL, *pkgpropsd = NULL;
 	int ar_rv, rv, rv_stat, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool softreplace, skip_extract;
@@ -454,17 +454,31 @@ unpack_archive(struct xbps_handle *xhp,
 			if (file_exists) {
 				buf = realpath(entry_pname, NULL);
 				assert(buf);
-				p = strlen(xhp->rootdir) + buf;
+				if (strcmp(xhp->rootdir, "/"))
+					p = strlen(xhp->rootdir) + buf;
+				else
+					p = buf;
 				assert(p);
 				tgtlnk = find_pkg_symlink_target(filesd,
 				    entry_pname);
 				assert(tgtlnk);
-				p2 = xbps_xasprintf(".%s", tgtlnk);
-				assert(p2);
+				if (strncmp(tgtlnk, "./", 2) == 0) {
+					dname = dirname(__UNCONST(entry_pname));
+					p2 = xbps_xasprintf("%s/%s", dname, tgtlnk);
+					assert(p2);
+				} else {
+					p2 = xbps_xasprintf(".%s", tgtlnk);
+					assert(p2);
+				}
+				printf("p %s tgtlink %s p2 %s\n", p, tgtlnk, p2);
 				buf2 = realpath(p2, NULL);
 				assert(buf2);
 				free(p2);
-				p2 = strlen(xhp->rootdir) + buf2;
+				if (strcmp(xhp->rootdir, "/"))
+					p2 = strlen(xhp->rootdir) + buf2;
+				else
+					p2 = buf2;
+
 				if (strcmp(p, p2) == 0) {
 					xbps_dbg_printf(xhp, "%s-%s: symlink "
 					    "%s matched, skipping...\n",
