@@ -154,6 +154,33 @@ remove_metafile(struct xbps_handle *xhp,
 	return 0;
 }
 
+static const char *
+find_pkg_symlink_target(prop_dictionary_t d, const char *file)
+{
+	prop_array_t links;
+	prop_object_t obj;
+	size_t i;
+	const char *pkgfile, *tgt = NULL;
+	char *rfile;
+
+	assert(d);
+
+	links = prop_dictionary_get(d, "links");
+	assert(links);
+
+	for (i = 0; i < prop_array_count(links); i++) {
+		rfile = strchr(file, '.') + 1;
+		obj = prop_array_get(links, i);
+		prop_dictionary_get_cstring_nocopy(obj, "file", &pkgfile);
+		if (strcmp(rfile, pkgfile) == 0) {
+			prop_dictionary_get_cstring_nocopy(obj, "target", &tgt);
+			break;
+		}
+	}
+
+	return tgt;
+}
+
 static int
 unpack_archive(struct xbps_handle *xhp,
 	       prop_dictionary_t pkg_repod,
@@ -168,11 +195,11 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	size_t i, entry_idx = 0;
 	const char *file, *entry_pname, *transact, *pkgname;
-	const char *version, *pkgver, *fname;
-	char *buf = NULL, *pkgfilesd = NULL, *pkgpropsd = NULL;
-	int ar_rv, rv, flags;
+	const char *version, *pkgver, *fname, *tgtlnk;
+	char *buf, *buf2, *p, *p2, *pkgfilesd = NULL, *pkgpropsd = NULL;
+	int ar_rv, rv, rv_stat, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
-	bool softreplace;
+	bool softreplace, skip_extract;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
@@ -233,6 +260,7 @@ unpack_archive(struct xbps_handle *xhp,
 		else if (ar_rv == ARCHIVE_RETRY)
 			continue;
 
+		skip_extract = false;
 		entry_statp = archive_entry_stat(entry);
 		entry_pname = archive_entry_pathname(entry);
 		flags = set_extract_flags();
@@ -359,60 +387,115 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Otherwise skip extracting it.
 		 */
 		conf_file = file_exists = false;
+		rv_stat = stat(entry_pname, &st);
+
 		if (S_ISREG(entry_statp->st_mode)) {
 			buf = strchr(entry_pname, '.') + 1;
 			assert(buf != NULL);
-			if (xbps_entry_is_a_conf_file(propsd, buf))
-				conf_file = true;
-			if (stat(entry_pname, &st) == 0) {
+			if (rv_stat == 0) {
 				file_exists = true;
-				rv = xbps_file_hash_check_dictionary(xhp, filesd,
-				    conf_file ? "conf_files" : "files", buf);
+				/*
+				 * Handle configuration files. Check if current
+				 * entry is a configuration file and take action
+				 * if required. Skip packages that don't have
+				 * "conf_files" array on its XBPS_PKGPROPS
+				 * dictionary.
+				 */
+				if (xbps_entry_is_a_conf_file(propsd, buf)) {
+					conf_file = true;
+					if (xhp->unpack_cb != NULL)
+						xucd.entry_is_conf = true;
 
-				if (rv == -1) {
-					/* error */
-					xbps_dbg_printf(xhp,
-					    "%s-%s: failed to check"
-					    " hash for `%s': %s\n", pkgname,
-					    version, entry_pname,
-					    strerror(errno));
-					goto out;
-				} else if (rv == 0) {
-					/*
-					 * Always set entry perms in existing
-					 * file, even when hash is matched.
-					 */
-					if (chmod(entry_pname,
-					    entry_statp->st_mode) != 0) {
+					rv = xbps_entry_install_conf_file(xhp,
+					    filesd, entry, entry_pname,
+					    pkgname, version);
+					if (rv == -1) {
+						/* error */
+						goto out;
+					} else if (rv == 0) {
+						/*
+						 * Keep curfile as is.
+						 */
+						skip_extract = true;
+					}
+				} else {
+					rv = xbps_file_hash_check_dictionary(
+					    xhp, filesd, "files", buf);
+					if (rv == -1) {
+						/* error */
 						xbps_dbg_printf(xhp,
-						    "%s-%s: failed "
-						    "to set perms %s to %s: %s\n",
+						    "%s-%s: failed to check"
+						    " hash for `%s': %s\n",
 						    pkgname, version,
-						    archive_entry_strmode(entry),
 						    entry_pname,
 						    strerror(errno));
-						rv = EINVAL;
 						goto out;
+					} else if (rv == 0) {
+						/*
+						 * hash match, skip extraction.
+						 */
+						xbps_dbg_printf(xhp,
+						    "%s-%s: file %s "
+						    "matches existing SHA256, "
+						    "skipping...\n", pkgname,
+						    version, entry_pname);
+						skip_extract = true;
 					}
-					xbps_dbg_printf(xhp,
-					    "%s-%s: entry %s perms "
-					    "to %s.\n", pkgname, version,
-					    entry_pname,
-					    archive_entry_strmode(entry));
-					/*
-					 * hash match, skip extraction.
-					 */
-					xbps_dbg_printf(xhp,
-					    "%s-%s: entry %s "
-					    "matches current SHA256, "
-					    "skipping...\n", pkgname,
-					    version, entry_pname);
-					archive_read_data_skip(ar);
-					continue;
 				}
 			}
+		} else if (S_ISLNK(entry_statp->st_mode)) {
+			/*
+			 * Check if current link from binpkg hasn't been
+			 * modified, otherwise extract new link.
+			 */
+			if (stat(entry_pname, &st) == 0) {
+				buf = realpath(entry_pname, NULL);
+				assert(buf);
+				p = strlen(xhp->rootdir) + buf;
+				assert(p);
+				tgtlnk = find_pkg_symlink_target(filesd,
+				    entry_pname);
+				assert(tgtlnk);
+				p2 = xbps_xasprintf(".%s", tgtlnk);
+				assert(p2);
+				buf2 = realpath(p2, NULL);
+				assert(buf2);
+				free(p2);
+				p2 = strlen(xhp->rootdir) + buf2;
+				if (strcmp(p, p2) == 0) {
+					xbps_dbg_printf(xhp, "%s-%s: symlink "
+					    "%s matched, skipping...\n",
+					    pkgname, version, entry_pname);
+					skip_extract = true;
+				}
+				free(buf);
+				free(buf2);
+			}
 		}
-		if (!update && conf_file && file_exists) {
+		/*
+		 * Check if current file mode differs from file mode
+		 * in binpkg and apply perms if true.
+		 */
+		if (file_exists && (entry_statp->st_mode != st.st_mode)) {
+			if (chmod(entry_pname,
+			    entry_statp->st_mode) != 0) {
+				xbps_dbg_printf(xhp,
+				    "%s-%s: failed "
+				    "to set perms %s to %s: %s\n",
+				    pkgname, version,
+				    archive_entry_strmode(entry),
+				    entry_pname,
+				    strerror(errno));
+				rv = EINVAL;
+				goto out;
+			}
+			xbps_dbg_printf(xhp, "%s-%s: entry %s perms "
+			    "to %s.\n", pkgname, version, entry_pname,
+			    archive_entry_strmode(entry));
+			skip_extract = true;
+		}
+
+		if (!update && conf_file && file_exists && !skip_extract) {
 			/*
 			 * If installing new package preserve old configuration
 			 * file but renaming it to <file>.old.
@@ -427,29 +510,11 @@ unpack_archive(struct xbps_handle *xhp,
 			    pkgname, version,
 			    "Renamed old configuration file "
 			    "`%s' to `%s.old'.", entry_pname, entry_pname);
-		} else if (update && conf_file && file_exists) {
-			/*
-			 * Handle configuration files. Check if current entry is
-			 * a configuration file and take action if required. Skip
-			 * packages that don't have the "conf_files" array in
-			 * the XBPS_PKGPROPS dictionary.
-			 */
-			if (xhp->unpack_cb != NULL)
-				xucd.entry_is_conf = true;
+		}
 
-			rv = xbps_entry_install_conf_file(xhp, filesd,
-			    entry, entry_pname, pkgname, version);
-			if (rv == -1) {
-				/* error */
-				goto out;
-			} else if (rv == 0) {
-				/*
-				 * Keep current configuration file
-				 * as is now and pass to next entry.
-				 */
-				archive_read_data_skip(ar);
-				continue;
-			}
+		if (skip_extract) {
+			archive_read_data_skip(ar);
+			continue;
 		}
 		/*
 		 * Reset entry_pname again because if entry's pathname
@@ -465,10 +530,11 @@ unpack_archive(struct xbps_handle *xhp,
 			    rv, pkgname, version,
 			    "%s: [unpack] failed to extract file `%s': %s",
 			    pkgver, entry_pname, strerror(rv));
-		}
-		if (xhp->unpack_cb != NULL) {
-			xucd.entry_extract_count++;
-			(*xhp->unpack_cb)(xhp, &xucd, xhp->unpack_cb_data);
+		} else {
+			if (xhp->unpack_cb != NULL) {
+				xucd.entry_extract_count++;
+				(*xhp->unpack_cb)(xhp, &xucd, xhp->unpack_cb_data);
+			}
 		}
 	}
 	/*
@@ -524,21 +590,23 @@ unpack_archive(struct xbps_handle *xhp,
 	}
 out1:
 	/*
-	 * Create pkg metadata directory.
+	 * Create pkg metadata directory if doesn't exist.
 	 */
 	buf = xbps_xasprintf("%s/metadata/%s", XBPS_META_PATH, pkgname);
 	if (buf == NULL) {
 		rv = ENOMEM;
 		goto out;
 	}
-	if (xbps_mkpath(buf, 0755) == -1) {
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-		    errno, pkgname, version,
-		    "%s: [unpack] failed to create pkg metadir `%s': %s",
-		    buf, pkgver, strerror(errno));
-		free(buf);
-		rv = errno;
-		goto out;
+	if (access(buf, R_OK|X_OK) == -1) {
+		if (xbps_mkpath(buf, 0755) == -1) {
+			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+			    errno, pkgname, version,
+			    "%s: [unpack] failed to create pkg metadir "
+			    "`%s': %s", buf, pkgver, strerror(errno));
+			free(buf);
+			rv = errno;
+			goto out;
+		}
 	}
 	free(buf);
 	/*
