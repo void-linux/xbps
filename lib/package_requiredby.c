@@ -38,6 +38,7 @@ add_pkg_into_reqby(struct xbps_handle *xhp,
 {
 	prop_array_t reqby;
 	prop_string_t reqstr;
+	const char *curpkgver;
 	char *pkgname;
 	bool alloc = false;
 
@@ -48,7 +49,11 @@ add_pkg_into_reqby(struct xbps_handle *xhp,
 		if ((reqby = prop_array_create()) == NULL)
 			return ENOMEM;
 	}
-
+	/*
+	 * If the same entry already exist we are done.
+	 */
+	if (xbps_match_string_in_array(reqby, pkgver))
+		return 0;
 	/*
 	 * If an existing entry matching pkgname exists remove it
 	 * and add new pkgver object.
@@ -74,6 +79,9 @@ add_pkg_into_reqby(struct xbps_handle *xhp,
 
 		return ENOMEM;
 	}
+
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
+	xbps_dbg_printf(xhp, "%s: added reqby entry `%s'\n", curpkgver, pkgver);
 
 	if (!xbps_add_obj_to_array(reqby, reqstr)) {
 		if (alloc)
@@ -153,9 +161,6 @@ xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 			rv = EINVAL;
 			break;
 		}
-		xbps_dbg_printf(xhp, "%s: adding reqby entry for %s\n",
-		    __func__, str);
-
 		pkgd_pkgdb = xbps_find_virtualpkg_conf_in_array_by_pattern(
 		    xhp, xhp->pkgdb, str);
 		if (pkgd_pkgdb == NULL) {
