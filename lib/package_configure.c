@@ -92,22 +92,23 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 	prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
-	if (check_state) {
-		rv = xbps_pkg_state_dictionary(pkgd, &state);
-		xbps_dbg_printf(xhp, "%s: state %d rv %d\n", pkgname, state, rv);
-		if (rv != 0) {
-			xbps_dbg_printf(xhp, "%s: [configure] failed to get "
-			    "pkg state: %s\n", pkgname, strerror(rv));
-			prop_object_release(pkgd);
-			return EINVAL;
-		}
+	rv = xbps_pkg_state_dictionary(pkgd, &state);
+	xbps_dbg_printf(xhp, "%s: state %d rv %d\n", pkgname, state, rv);
+	if (rv != 0) {
+		xbps_dbg_printf(xhp, "%s: [configure] failed to get "
+		    "pkg state: %s\n", pkgname, strerror(rv));
+		prop_object_release(pkgd);
+		return EINVAL;
+	}
 
+	if (check_state) {
 		if (state == XBPS_PKG_STATE_INSTALLED) {
 			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0)
 				return 0;
 		} else if (state != XBPS_PKG_STATE_UNPACKED)
 			return EINVAL;
 	}
+
 	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgname, version, NULL);
 
 	buf = xbps_xasprintf("%s/metadata/%s/INSTALL",
@@ -146,6 +147,10 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		}
 	}
 	free(buf);
+
+	if (state == XBPS_PKG_STATE_INSTALLED)
+		return rv;
+
 	rv = xbps_set_pkg_state_installed(xhp, pkgname, version,
 	    XBPS_PKG_STATE_INSTALLED);
 	if (rv != 0) {
