@@ -470,7 +470,6 @@ unpack_archive(struct xbps_handle *xhp,
 					p2 = xbps_xasprintf(".%s", tgtlnk);
 					assert(p2);
 				}
-				printf("p %s tgtlink %s p2 %s\n", p, tgtlnk, p2);
 				buf2 = realpath(p2, NULL);
 				assert(buf2);
 				free(p2);
@@ -478,6 +477,9 @@ unpack_archive(struct xbps_handle *xhp,
 					p2 = strlen(xhp->rootdir) + buf2;
 				else
 					p2 = buf2;
+
+				xbps_dbg_printf(xhp, "[unpack] symlink cur "
+				    "target: %s new target: %s\n", p, p2);
 
 				if (strcmp(p, p2) == 0) {
 					xbps_dbg_printf(xhp, "%s-%s: symlink "
