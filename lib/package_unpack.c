@@ -186,7 +186,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       prop_dictionary_t pkg_repod,
 	       struct archive *ar)
 {
-	prop_dictionary_t propsd = NULL, filesd = NULL, old_filesd = NULL;
+	prop_dictionary_t propsd, filesd, old_filesd;
 	prop_array_t array, obsoletes;
 	prop_object_t obj;
 	const struct stat *entry_statp;
@@ -196,7 +196,7 @@ unpack_archive(struct xbps_handle *xhp,
 	size_t i, entry_idx = 0;
 	const char *file, *entry_pname, *transact, *pkgname;
 	const char *version, *pkgver, *fname, *tgtlnk;
-	char *dname, *buf, *buf2, *p, *p2, *pkgfilesd = NULL, *pkgpropsd = NULL;
+	char *dname, *buf, *buf2, *p, *p2, *p3, *pkgfilesd, *pkgpropsd;
 	int ar_rv, rv, rv_stat, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool softreplace, skip_extract;
@@ -205,6 +205,8 @@ unpack_archive(struct xbps_handle *xhp,
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
 
+	propsd = filesd = old_filesd = NULL;
+	pkgfilesd = pkgpropsd = NULL;
 	preserve = update = conf_file = file_exists = false;
 	skip_obsoletes = softreplace = false;
 
@@ -463,9 +465,12 @@ unpack_archive(struct xbps_handle *xhp,
 				    entry_pname);
 				assert(tgtlnk);
 				if (strncmp(tgtlnk, "./", 2) == 0) {
-					dname = dirname(__UNCONST(entry_pname));
+					p3 = strdup(entry_pname);
+					assert(p3);
+					dname = dirname(p3);
 					p2 = xbps_xasprintf("%s/%s", dname, tgtlnk);
 					assert(p2);
+					free(p3);
 				} else {
 					p2 = xbps_xasprintf(".%s", tgtlnk);
 					assert(p2);
@@ -478,8 +483,8 @@ unpack_archive(struct xbps_handle *xhp,
 				else
 					p2 = buf2;
 
-				xbps_dbg_printf(xhp, "[unpack] symlink cur "
-				    "target: %s new target: %s\n", p, p2);
+				xbps_dbg_printf(xhp, "%s: symlink %s cur: %s "
+				    "new: %s\n", pkgver, entry_pname, p, p2);
 
 				if (strcmp(p, p2) == 0) {
 					xbps_dbg_printf(xhp, "%s-%s: symlink "
