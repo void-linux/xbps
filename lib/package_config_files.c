@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2011 Juan Romero Pardines.
+ * Copyright (c) 2009-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -88,13 +88,13 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	 * Get original hash for the file from current
 	 * installed package.
 	 */
-	xbps_dbg_printf(xhp, "%s: processing conf_file %s\n",
-	    pkgname, entry_pname);
+	xbps_dbg_printf(xhp, "%s-%s: processing conf_file %s\n",
+	    pkgname, version, entry_pname);
 
 	forigd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
 	if (forigd == NULL) {
-		xbps_dbg_printf(xhp, "%s: conf_file %s not currently installed\n",
-		    pkgname, entry_pname);
+		xbps_dbg_printf(xhp, "%s-%s: conf_file %s not currently "
+		    "installed\n", pkgname, version, entry_pname);
 		rv = 1;
 		goto out;
 	}
@@ -126,8 +126,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	 * First case: original hash not found, install new file.
 	 */
 	if (sha256_orig == NULL) {
-		xbps_dbg_printf(xhp, "%s: conf_file %s unknown orig sha256\n",
-		    pkgname, entry_pname);
+		xbps_dbg_printf(xhp, "%s-%s: conf_file %s not installed\n",
+		    pkgname, version, entry_pname);
 		rv = 1;
 		goto out;
 	}
@@ -155,8 +155,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 				/*
 				 * File not installed, install new one.
 				 */
-				xbps_dbg_printf(xhp, "%s: conf_file %s not "
-				    "installed\n", pkgname, entry_pname);
+				xbps_dbg_printf(xhp, "%s-%s: conf_file %s not "
+				    "installed\n", pkgname, version,
+				    entry_pname);
 				rv = 1;
 				break;
 			} else {
@@ -167,19 +168,20 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		/*
 		 * Orig = X, Curr = X, New = X
 		 *
-		 * Install new file.
+		 * Keep file as is (no changes).
 		 */
 		if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 		    (strcmp(sha256_orig, sha256_new) == 0) &&
 		    (strcmp(sha256_cur, sha256_new) == 0)) {
-			xbps_dbg_printf(xhp, "%s: conf_file %s orig = X,"
-			    "cur = X, new = X\n", pkgname, entry_pname);
-			rv = 1;
+			xbps_dbg_printf(xhp, "%s-%s: conf_file %s orig = X, "
+			    "cur = X, new = X\n", pkgname, version,
+			    entry_pname);
+			rv = 0;
 			break;
 		/*
 		 * Orig = X, Curr = X, New = Y
 		 *
-		 * Install new file.
+		 * Install new file (installed file hasn't been modified).
 		 */
 		} else if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
@@ -192,7 +194,10 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = X
-		 * Keep current file as is.
+		 *
+		 * Keep installed file as is because it has been modified,
+		 * but new package doesn't contain new changes compared
+		 * to the original version.
 		 */
 		} else if ((strcmp(sha256_orig, sha256_new) == 0) &&
 			   (strcmp(sha256_cur, sha256_new)) &&
@@ -205,17 +210,21 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = Y
-		 * Keep current file as is.
+		 *
+		 * Keep file as is because changes made are compatible
+		 * with new version.
 		 */
 		} else if ((strcmp(sha256_cur, sha256_new) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
-			xbps_dbg_printf(xhp, "%s: conf_file %s orig = X,"
-			    "cur = Y, new = Y\n", pkgname, entry_pname);
+			xbps_dbg_printf(xhp, "%s-%s: conf_file %s orig = X, "
+			    "cur = Y, new = Y\n", pkgname, version,
+			    entry_pname);
 			rv = 0;
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = Z
+		 *
 		 * Install new file as <file>.new-<version>
 		 */
 		} else  if ((strcmp(sha256_orig, sha256_cur)) &&
@@ -246,8 +255,8 @@ out:
 
 	prop_object_iterator_release(iter);
 
-	xbps_dbg_printf(xhp, "%s: conf_file %s returned %d\n",
-	    pkgname, entry_pname, rv);
+	xbps_dbg_printf(xhp, "%s-%s: conf_file %s returned %d\n",
+	    pkgname, version, entry_pname, rv);
 
 	return rv;
 }
