@@ -92,15 +92,17 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 
 	if (xhp->pkgdb && flush) {
 		pkgdb_storage = prop_array_internalize_from_zfile(plist);
-		assert(pkgdb_storage);
-		if (!prop_array_equals(xhp->pkgdb, pkgdb_storage)) {
+		if (pkgdb_storage == NULL ||
+		    !prop_array_equals(xhp->pkgdb, pkgdb_storage)) {
 			/* flush dictionary to storage */
 			if (!prop_array_externalize_to_file(xhp->pkgdb, plist)) {
 				free(plist);
 				return errno;
 			}
 		}
-		prop_object_release(pkgdb_storage);
+		if (pkgdb_storage)
+			prop_object_release(pkgdb_storage);
+
 		prop_object_release(xhp->pkgdb);
 		xhp->pkgdb = NULL;
 		cached_rv = 0;
