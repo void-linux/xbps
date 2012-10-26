@@ -79,6 +79,7 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 int
 xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 {
+	prop_array_t pkgdb_storage;
 	char *plist;
 	static int cached_rv;
 	int rv = 0;
@@ -90,11 +91,16 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 	assert(plist);
 
 	if (xhp->pkgdb && flush) {
-		/* flush dictionary to storage */
-		if (!prop_array_externalize_to_file(xhp->pkgdb, plist)) {
-			free(plist);
-			return errno;
+		pkgdb_storage = prop_array_internalize_from_zfile(plist);
+		assert(pkgdb_storage);
+		if (!prop_array_equals(xhp->pkgdb, pkgdb_storage)) {
+			/* flush dictionary to storage */
+			if (!prop_array_externalize_to_file(xhp->pkgdb, plist)) {
+				free(plist);
+				return errno;
+			}
 		}
+		prop_object_release(pkgdb_storage);
 		prop_object_release(xhp->pkgdb);
 		xhp->pkgdb = NULL;
 		cached_rv = 0;
