@@ -36,11 +36,11 @@
 #include "xbps_api_impl.h"
 
 static int
-set_extract_flags(void)
+set_extract_flags(uid_t euid)
 {
 	int flags;
 
-	if (geteuid() == 0)
+	if (euid == 0)
 		flags = FEXTRACT_FLAGS;
 	else
 		flags = EXTRACT_FLAGS;
@@ -200,6 +200,7 @@ unpack_archive(struct xbps_handle *xhp,
 	int ar_rv, rv, rv_stat, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool softreplace, skip_extract;
+	uid_t euid;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
@@ -216,6 +217,8 @@ unpack_archive(struct xbps_handle *xhp,
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &version);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &fname);
+
+	euid = geteuid();
 
 	if (xhp->unpack_cb != NULL) {
 		/* initialize data for unpack cb */
@@ -260,10 +263,9 @@ unpack_archive(struct xbps_handle *xhp,
 		else if (ar_rv == ARCHIVE_RETRY)
 			continue;
 
-		skip_extract = false;
 		entry_statp = archive_entry_stat(entry);
 		entry_pname = archive_entry_pathname(entry);
-		flags = set_extract_flags();
+		flags = set_extract_flags(euid);
 		/*
 		 * Ignore directories from archive.
 		 */
@@ -386,14 +388,15 @@ unpack_archive(struct xbps_handle *xhp,
 		 * doesn't match, in that case overwrite the file.
 		 * Otherwise skip extracting it.
 		 */
-		conf_file = file_exists = false;
-		rv_stat = stat(entry_pname, &st);
+		conf_file = skip_extract = file_exists = false;
+		rv_stat = lstat(entry_pname, &st);
+		if (rv_stat == 0)
+			file_exists = true;
 
 		if (S_ISREG(entry_statp->st_mode)) {
 			buf = strchr(entry_pname, '.') + 1;
 			assert(buf != NULL);
-			if (rv_stat == 0) {
-				file_exists = true;
+			if (file_exists) {
 				/*
 				 * Handle configuration files. Check if current
 				 * entry is a configuration file and take action
@@ -448,7 +451,7 @@ unpack_archive(struct xbps_handle *xhp,
 			 * Check if current link from binpkg hasn't been
 			 * modified, otherwise extract new link.
 			 */
-			if (stat(entry_pname, &st) == 0) {
+			if (file_exists) {
 				buf = realpath(entry_pname, NULL);
 				assert(buf);
 				p = strlen(xhp->rootdir) + buf;
@@ -476,7 +479,8 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Check if current file mode differs from file mode
 		 * in binpkg and apply perms if true.
 		 */
-		if (file_exists && (entry_statp->st_mode != st.st_mode)) {
+		if (file_exists && skip_extract &&
+		    (entry_statp->st_mode != st.st_mode)) {
 			if (chmod(entry_pname,
 			    entry_statp->st_mode) != 0) {
 				xbps_dbg_printf(xhp,
@@ -489,10 +493,31 @@ unpack_archive(struct xbps_handle *xhp,
 				rv = EINVAL;
 				goto out;
 			}
-			xbps_dbg_printf(xhp, "%s-%s: entry %s perms "
-			    "to %s.\n", pkgname, version, entry_pname,
+			xbps_dbg_printf(xhp, "%s-%s: entry %s changed file "
+			    "mode to %s.\n", pkgname, version, entry_pname,
 			    archive_entry_strmode(entry));
-			skip_extract = true;
+		}
+		/*
+		 * Check if current uid/gid differs from file in binpkg,
+		 * and change permissions if true.
+		 */
+		if ((file_exists && skip_extract && (euid == 0)) &&
+		    (((entry_statp->st_uid != st.st_uid)) ||
+		    ((entry_statp->st_gid != st.st_gid)))) {
+			if (chown(entry_pname,
+			    entry_statp->st_uid, entry_statp->st_gid) != 0) {
+				xbps_dbg_printf(xhp,
+				    "%s-%s: failed "
+				    "to set uid/gid to %u:%u (%s)\n",
+				    pkgname, version,
+				    entry_statp->st_uid, entry_statp->st_gid,
+				    strerror(errno));
+			} else {
+				xbps_dbg_printf(xhp, "%s-%s: entry %s changed "
+				    "uid/gid to %u:%u.\n", pkgname, version,
+				    entry_pname,
+				    entry_statp->st_uid, entry_statp->st_gid);
+			}
 		}
 
 		if (!update && conf_file && file_exists && !skip_extract) {
