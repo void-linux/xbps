@@ -196,7 +196,7 @@ unpack_archive(struct xbps_handle *xhp,
 	size_t i, entry_idx = 0;
 	const char *file, *entry_pname, *transact, *pkgname;
 	const char *version, *pkgver, *fname, *tgtlnk;
-	char *dname, *buf, *buf2, *p, *p2, *p3, *pkgfilesd, *pkgpropsd;
+	char *dname, *buf, *buf2, *p, *p2, *pkgfilesd, *pkgpropsd;
 	int ar_rv, rv, rv_stat, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool softreplace, skip_extract;
@@ -456,30 +456,26 @@ unpack_archive(struct xbps_handle *xhp,
 			if (file_exists) {
 				buf = realpath(entry_pname, NULL);
 				assert(buf);
-				if (strcmp(xhp->rootdir, "/"))
-					p = strlen(xhp->rootdir) + buf;
-				else
+				if (strcmp(xhp->rootdir, "/")) {
+					p = buf;
+					p += strlen(xhp->rootdir);
+				} else
 					p = buf;
 				assert(p);
 				tgtlnk = find_pkg_symlink_target(filesd,
 				    entry_pname);
 				assert(tgtlnk);
 				if (strncmp(tgtlnk, "./", 2) == 0) {
-					p3 = strdup(entry_pname);
-					assert(p3);
-					dname = dirname(p3);
-					buf2 = xbps_xasprintf("%s/%s", dname, tgtlnk);
+					buf2 = strdup(entry_pname);
 					assert(buf2);
-					free(p3);
+					dname = dirname(buf2);
+					p2 = xbps_xasprintf("%s/%s", dname, tgtlnk);
+					assert(p2);
+					free(buf2);
 				} else {
-					buf2 = strdup(tgtlnk);
-					assert(buf2);
+					p2 = strdup(tgtlnk);
+					assert(p2);
 				}
-				if (strcmp(xhp->rootdir, "/"))
-					p2 = strlen(xhp->rootdir) + buf2;
-				else
-					p2 = buf2;
-
 				xbps_dbg_printf(xhp, "%s: symlink %s cur: %s "
 				    "new: %s\n", pkgver, entry_pname, p, p2);
 
@@ -490,7 +486,6 @@ unpack_archive(struct xbps_handle *xhp,
 					skip_extract = true;
 				}
 				free(buf);
-				free(buf2);
 			}
 		}
 		/*
