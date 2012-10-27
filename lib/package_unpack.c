@@ -468,16 +468,13 @@ unpack_archive(struct xbps_handle *xhp,
 					p3 = strdup(entry_pname);
 					assert(p3);
 					dname = dirname(p3);
-					p2 = xbps_xasprintf("%s/%s", dname, tgtlnk);
-					assert(p2);
+					buf2 = xbps_xasprintf("%s/%s", dname, tgtlnk);
+					assert(buf2);
 					free(p3);
 				} else {
-					p2 = xbps_xasprintf(".%s", tgtlnk);
-					assert(p2);
+					buf2 = xbps_xasprintf(".%s", tgtlnk);
+					assert(buf2);
 				}
-				buf2 = realpath(p2, NULL);
-				assert(buf2);
-				free(p2);
 				if (strcmp(xhp->rootdir, "/"))
 					p2 = strlen(xhp->rootdir) + buf2;
 				else
