@@ -472,7 +472,7 @@ unpack_archive(struct xbps_handle *xhp,
 					assert(buf2);
 					free(p3);
 				} else {
-					buf2 = xbps_xasprintf(".%s", tgtlnk);
+					buf2 = strdup(tgtlnk);
 					assert(buf2);
 				}
 				if (strcmp(xhp->rootdir, "/"))
