@@ -4,9 +4,15 @@ config.h
 config.mk
 bin/xbps-bin/xbps-bin
 bin/xbps-repo/xbps-repo
-bin/xbps-uhelper/xbps-uhelper
-bin/xbps-dgraph/xbps-dgraph
 bin/xbps-create/xbps-create
+bin/xbps-dgraph/xbps-dgraph
+bin/xbps-install/xbps-install
+bin/xbps-pkgdb/xbps-pkgdb
+bin/xbps-query/xbps-query
+bin/xbps-reconfigure/xbps-reconfigure
+bin/xbps-remove/xbps-remove
+bin/xbps-rindex/xbps-rindex
+bin/xbps-uhelper/xbps-uhelper
 *.static
 *.so*
 *.o
