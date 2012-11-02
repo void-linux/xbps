@@ -60,36 +60,36 @@ static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stdout,
-	"usage: %s [options] destdir\n\n"
-	"  Options:\n"
-	"    -A, --architecture   Package architecture (e.g: noarch, i686, etc).\n"
-	"    -B, --built-with     Package builder string (e.g: xbps-src-30).\n"
-	"    -C, --conflicts      Conflicts (blank separated list,\n"
-	"                         e.g: 'foo>=2.0 blah<=2.0').\n"
-	"    -D, --dependencies   Dependencies (blank separated list,\n"
-	"                         e.g: 'foo>=1.0_1 blah<2.1').\n"
-	"    -F, --config-files   Configuration files (blank separated list,\n"
-	"                         e.g '/etc/foo.conf /etc/foo-blah.conf').\n"
-	"    -H, --homepage       Homepage.\n"
-	"    -h, --help           Show help.\n"
-	"    -l, --license        License.\n"
-	"    -M, --mutable-files  Mutable files list (blank separated list,\n"
-	"                         e.g: '/usr/lib/foo /usr/bin/blah').\n"
-	"    -m, --maintainer     Maintainer.\n"
-	"    -n, --pkgver         Package name/version tuple (e.g `foo-1.0_1').\n"
-	"    -P, --provides       Provides (blank separated list,\n"
-	"                         e.g: 'foo-9999 blah-1.0').\n"
-	"    -p, --preserve       Enable package preserve boolean.\n"
-	"    -q, --quiet          Work silently.\n"
-	"    -R, --replaces       Replaces (blank separated list,\n"
-	"                         e.g: 'foo>=1.0 blah<2.0').\n"
-	"    -S, --long-desc      Long description (80 cols per line).\n"
-	"    -s, --desc           Short description (max 80 characters).\n"
-	"    -V, --version        Prints XBPS release version.\n\n"
-	"  NOTE:\n"
-	"    At least three flags are required: architecture, pkgver and desc.\n\n"
-	"  EXAMPLE:\n"
-	"    $ %s -A noarch -n foo-1.0_1 -s \"foo pkg\" dir\n",
+	"Usage: %s [OPTIONS] destdir\n\n"
+	"OPTIONS\n"
+	" -A --architecture   Package architecture (e.g: noarch, i686, etc).\n"
+	" -B --built-with     Package builder string (e.g: xbps-src-30).\n"
+	" -C --conflicts      Conflicts (blank separated list,\n"
+	"                     e.g: 'foo>=2.0 blah<=2.0').\n"
+	" -D --dependencies   Dependencies (blank separated list,\n"
+	"                     e.g: 'foo>=1.0_1 blah<2.1').\n"
+	" -F --config-files   Configuration files (blank separated list,\n"
+	"                     e.g '/etc/foo.conf /etc/foo-blah.conf').\n"
+	" -H --homepage       Homepage.\n"
+	" -h --help           Show help.\n"
+	" -l --license        License.\n"
+	" -M --mutable-files  Mutable files list (blank separated list,\n"
+	"                     e.g: '/usr/lib/foo /usr/bin/blah').\n"
+	" -m --maintainer     Maintainer.\n"
+	" -n --pkgver         Package name/version tuple (e.g `foo-1.0_1').\n"
+	" -P --provides       Provides (blank separated list,\n"
+	"                     e.g: 'foo-9999 blah-1.0').\n"
+	" -p --preserve       Enable package preserve boolean.\n"
+	" -q --quiet          Work silently.\n"
+	" -R --replaces       Replaces (blank separated list,\n"
+	"                     e.g: 'foo>=1.0 blah<2.0').\n"
+	" -S --long-desc      Long description (80 cols per line).\n"
+	" -s --desc           Short description (max 80 characters).\n"
+	" -V --version        Prints XBPS release version.\n\n"
+	"NOTE:\n"
+	" At least three flags are required: architecture, pkgver and desc.\n\n"
+	"EXAMPLE:\n"
+	" $ %s -A noarch -n foo-1.0_1 -s \"foo pkg\" destdir\n",
 	_PROGNAME, _PROGNAME);
 	exit(EXIT_FAILURE);
 }
@@ -523,7 +523,8 @@ set_build_date(void)
 int
 main(int argc, char **argv)
 {
-	struct option longopts[] = {
+	const char *shortopts = "A:B:C:D:F:H:hl:M:m:n:P:pqR:S:s:V";
+	const struct option longopts[] = {
 		{ "architecture", required_argument, NULL, 'A' },
 		{ "built-with", required_argument, NULL, 'B' },
 		{ "conflicts", required_argument, NULL, 'C' },
@@ -542,7 +543,7 @@ main(int argc, char **argv)
 		{ "long-desc", required_argument, NULL, 'S' },
 		{ "desc", required_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
-		{ 0, 0, 0, 0 }
+		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
 	struct stat st;
@@ -558,8 +559,7 @@ main(int argc, char **argv)
 	provides = pkgver = replaces = desc = ldesc = bwith = NULL;
 	config_files = mutable_files = NULL;
 
-	while ((c = getopt_long(argc, argv,
-		"A:B:C:D:F:H:hl:M:m:n:P:pqR:S:s:V", longopts, &c)) != -1) {
+	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
 			optarg = NULL;
 
@@ -623,13 +623,10 @@ main(int argc, char **argv)
 			usage();
 		}
 	}
-	argc -= optind;
-	argv += optind;
-
-	if (argc != 1)
+	if (argc == optind)
 		usage();
 
-	destdir = argv[0];
+	destdir = argv[optind];
 
 	if (pkgver == NULL)
 		die("pkgver not set!");
