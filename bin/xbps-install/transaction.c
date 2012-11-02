@@ -34,9 +34,7 @@
 #include <limits.h>
 
 #include <xbps_api.h>
-#include "compat.h"
 #include "defs.h"
-#include "../xbps-repo/defs.h"
 
 struct transaction {
 	prop_dictionary_t d;

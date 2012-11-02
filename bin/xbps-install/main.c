@@ -215,10 +215,10 @@ main(int argc, char **argv)
 			goto out;
 	}
 
-	if (update && !argc) {
+	if (update && (argc == optind)) {
 		/* Update all installed packages */
 		rv = dist_upgrade(&xh, maxcols, yes, drun);
-	} else if (update && argc) {
+	} else if (update) {
 		/* Update target packages */
 		for (i = optind; i < argc; i++) {
 			rv = update_pkg(&xh, argv[i]);
@@ -226,7 +226,7 @@ main(int argc, char **argv)
 				goto out;
 		}
 		rv = exec_transaction(&xh, maxcols, yes, drun);
-	} else if (!update && argc) {
+	} else if (!update) {
 		/* Install target packages */
 		for (i = optind; i < argc; i++) {
 			rv = install_new_pkg(&xh, argv[i], reinstall);
