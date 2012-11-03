@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <dirent.h>
+#include <syslog.h>
 
 #include <xbps_api.h>
 #include "../xbps-install/defs.h"
@@ -69,6 +70,68 @@ cleanup_sighandler(int signum)
 {
 	xbps_end(&xh);
 	_exit(signum);
+}
+
+static void
+state_cb_rm(struct xbps_handle *xhp,
+	    struct xbps_state_cb_data *xscd,
+	    void *cbdata)
+{
+	bool syslog_enabled = false;
+
+	(void)cbdata;
+
+	if (xhp->flags & XBPS_FLAG_SYSLOG) {
+		syslog_enabled = true;
+		openlog("xbps-remove", LOG_CONS, LOG_USER);
+	}
+
+	switch (xscd->state) {
+	/* notifications */
+	case XBPS_STATE_REMOVE:
+		printf("Removing `%s-%s' ...\n", xscd->pkgname, xscd->version);
+		break;
+	/* success */
+	case XBPS_STATE_REMOVE_FILE:
+	case XBPS_STATE_REMOVE_FILE_OBSOLETE:
+		if (xhp->flags & XBPS_FLAG_VERBOSE)
+			printf("%s\n", xscd->desc);
+		else {
+			printf("%s\n", xscd->desc);
+			printf("\033[1A\033[K");
+		}
+		break;
+	case XBPS_STATE_REMOVE_DONE:
+		printf("Removed `%s-%s' successfully.\n",
+		    xscd->pkgname, xscd->version);
+		if (syslog_enabled)
+			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
+			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    xhp->rootdir);
+		break;
+	/* errors */
+	case XBPS_STATE_UNREGISTER_FAIL:
+	case XBPS_STATE_REMOVE_FAIL:
+		xbps_error_printf("%s\n", xscd->desc);
+		if (syslog_enabled)
+			syslog(LOG_ERR, "%s", xscd->desc);
+		break;
+	case XBPS_STATE_REMOVE_FILE_FAIL:
+	case XBPS_STATE_REMOVE_FILE_HASH_FAIL:
+	case XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL:
+		/* Ignore errors due to not empty directories */
+		if (xscd->err == ENOTEMPTY)
+			return;
+
+		xbps_error_printf("%s\n", xscd->desc);
+		if (syslog_enabled)
+			syslog(LOG_ERR, "%s", xscd->desc);
+		break;
+	default:
+		xbps_dbg_printf(xhp,
+		    "unknown state %d\n", xscd->state);
+		break;
+	}
 }
 
 static int
@@ -270,7 +333,7 @@ main(int argc, char **argv)
 	 * Initialize libxbps.
 	 */
 	memset(&xh, 0, sizeof(xh));
-	xh.state_cb = state_cb;
+	xh.state_cb = state_cb_rm;
 	xh.rootdir = rootdir;
 	xh.cachedir = cachedir;
 	xh.conffile = conffile;
