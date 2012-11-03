@@ -12,6 +12,45 @@
 The
 .Nm
 command removes installed packages in the target root directory.
+Removing a package involves some steps:
+.Pp
+.Sy *
+The
+.Sy pre-remove
+action on its
+.Sy REMOVE
+script is executed.
+.Pp
+.Sy *
+Package files are removed if those have not been modified.
+The
+.Ar -f
+option overrides this behaviour and forcefully removes the files.
+.Pp
+.Sy *
+The
+.Sy post-remove
+action on its
+.Sy REMOVE
+script is executed.
+.Pp
+.Sy *
+Package state is changed to
+.Sy XBPS_PKG_STATE_HALF_REMOVED .
+.Pp
+.Sy *
+The
+.Sy purge
+action on its
+.Sy REMOVE
+script is executed.
+.Pp
+.Sy *
+Package metadata files are removed.
+.Pp
+.Sy *
+Package is unregistered from package database.
+.Pp
 .Sh OPTIONS
 .Bl -tag -width -XXXXXXXX
 .It Fl C, -config Ar file
