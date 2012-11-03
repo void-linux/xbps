@@ -29,9 +29,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <syslog.h>
 
 #include <xbps_api.h>
-#include "../xbps-bin/defs.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
@@ -48,6 +48,37 @@ usage(bool fail)
 	    " -v --verbose        Verbose messages\n"
 	    " -V --version        Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+
+static void
+state_cb(struct xbps_handle *xhp, struct xbps_state_cb_data *xscd, void *cbd)
+{
+	bool syslog_enabled = false;
+
+	(void)cbd;
+
+	if (xhp->flags & XBPS_FLAG_SYSLOG) {
+		syslog_enabled = true;
+		openlog("xbps-reconfigure", LOG_CONS, LOG_USER);
+	}
+
+	switch (xscd->state) {
+	/* notifications */
+	case XBPS_STATE_CONFIGURE:
+		printf("Configuring `%s-%s' ...\n", xscd->pkgname,
+		    xscd->version);
+		break;
+	/* errors */
+	case XBPS_STATE_CONFIGURE_FAIL:
+		xbps_error_printf("%s\n", xscd->desc);
+		if (syslog_enabled)
+			syslog(LOG_ERR, "%s", xscd->desc);
+		break;
+	default:
+		xbps_dbg_printf(xhp,
+		    "unknown state %d\n", xscd->state);
+		break;
+	}
 }
 
 int
