@@ -1,0 +1,75 @@
+.Dd November 3, 2012
+.Os Void GNU/Linux
+.Dt xbps-remove 8
+.Sh NAME
+.Nm xbps-remove
+.Nd XBPS utility to remove packages
+.Sh SYNOPSYS
+.Nm xbps-remove
+.Op OPTIONS
+.Op PKGNAME...
+.Sh DESCRIPTION
+The
+.Nm
+command removes installed packages in the target root directory.
+.Sh OPTIONS
+.Bl -tag -width -XXXXXXXX
+.It Fl C, -config Ar file
+Specifies a full path to the XBPS configuration file.
+.It Fl c, -cachedir Ar dir
+Specifies a full path to the cache directory, where binary packages are stored.
+.It Fl d, -debug
+Enables extra debugging shown to stderr.
+.It Fl f, -force
+Forcefully remove package files even if they have been modified.
+.It Fl h, -help
+Show the help usage.
+.It Fl i, -ignore-revdeps
+Ignore reverse dependencies when removing packages.
+.It Fl n, -dry-run
+Dry-run mode. Show what actions would be done but don't remove anything.
+.It Fl O, -clean-cache
+Cleans cache directory removing obsolete binary packages.
+.It Fl o, -remove-orphans
+Removes installed package orphans that were installed automatically
+(as dependencies) and are not currently dependencies of any installed package.
+.It Fl p, -print-format Ar fmt
+Specifies the
+.Xr printf 3
+format used by the
+.Ar dry-run
+mode.
+.It Fl R, -recursive
+Recursively remove packages that were installed by
+.Ar PKGNAME
+and aren't required by other installed packages.
+.It Fl r, -rootdir dir
+Specifies a full path for the target root directory.
+.It Fl v, -verbose
+Enables verbose messages.
+.It Fl y, -yes
+Assume yes to all questions and avoid interactive questions.
+.It Fl V, -version
+Shows the XBPS version.
+be removed.
+.Sh FILES
+.Bl -tag -width xxxxxxxxxxxxxxxxxxxx
+.It Ar /etc/xbps/xbps.conf
+Default XBPS configuration file.
+.It Ar /var/cache/xbps
+Default XBPS cache directory.
+.Sh SEE ALSO
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-rindex 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in http://code.google.com/p/xbps.
