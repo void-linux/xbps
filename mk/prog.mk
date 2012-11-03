@@ -14,7 +14,7 @@ all: $(BINS)
 .PHONY: clean
 clean:
 	-rm -f $(BIN) $(BIN).static
-	-rm -f $(OBJS)
+	-rm -f *.o
 
 .PHONY: install
 install: all
