@@ -43,7 +43,7 @@ state_cb(struct xbps_handle *xhp,
 
 	if (xhp->flags & XBPS_FLAG_SYSLOG) {
 		syslog_enabled = true;
-		openlog("xbps-bin", LOG_CONS, LOG_USER);
+		openlog("xbps-install", LOG_CONS, LOG_USER);
 	}
 
 	switch (xscd->state) {
