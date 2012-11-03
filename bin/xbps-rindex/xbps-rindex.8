@@ -1,0 +1,51 @@
+.Dd November 3, 2012
+.Os Void GNU/Linux
+.Dt xbps-rindex 8
+.Sh NAME
+.Nm xbps-rindex
+.Nd XBPS utility to handle local binary package repositories
+.Sh SYNOPSYS
+.Nm xbps-rindex
+.Op OPTIONS
+.Ar MODE
+.Op ARGUMENTS
+.Sh DESCRIPTION
+The
+.Nm
+command creates, updates and removes obsolete binary packages stored
+in local repositories.
+.Sh OPTIONS
+.Bl -tag -width -versionXXXXXXXX
+.It Fl h -help
+Show the help usage.
+.It Fl V -version
+Show the XBPS version.
+.Sh MODE
+.Pp
+.Bl -tag -width ident
+.It Sy -a, --add Ar /path/to/repo/binpkg.xbps ...
+Registers the binary package into the local repository and if an older
+binary package exists it's removed and a new entry is added into the index.
+Multiple binary packages can be specified as arguments.
+.It Sy -c, --clean Ar repository
+Removes obsolete entries found in the local repository's index.
+.It Sy -r, --remove-obsoletes Ar repository
+Removes obsolete packages from
+.Ar repository .
+Packages that are not currently registered in repository's index will
+be removed.
+.Sh SEE ALSO
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-remove 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in http://code.google.com/p/xbps.
