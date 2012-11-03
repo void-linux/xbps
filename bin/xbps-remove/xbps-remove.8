@@ -15,11 +15,11 @@ command removes installed packages in the target root directory.
 Removing a package involves some steps:
 .Pp
 .Sy *
-The
+Executes the
 .Sy pre-remove
 action on its
 .Sy REMOVE
-script is executed.
+script.
 .Pp
 .Sy *
 Package files are removed if those have not been modified.
@@ -28,22 +28,22 @@ The
 option overrides this behaviour and forcefully removes the files.
 .Pp
 .Sy *
-The
+Executes the
 .Sy post-remove
 action on its
 .Sy REMOVE
-script is executed.
+script.
 .Pp
 .Sy *
-Package state is changed to
+Changes package state to
 .Sy XBPS_PKG_STATE_HALF_REMOVED .
 .Pp
 .Sy *
-The
+Executes the
 .Sy purge
 action on its
 .Sy REMOVE
-script is executed.
+script.
 .Pp
 .Sy *
 Package metadata files are removed.
