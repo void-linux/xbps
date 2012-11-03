@@ -1,0 +1,64 @@
+.Dd November 3, 2012
+.Os Void GNU/Linux
+.Dt xbps-reconfigure 8
+.Sh NAME
+.Nm xbps-reconfigure
+.Nd XBPS utility to configure installed packages
+.Sh SYNOPSYS
+.Nm xbps-reconfigure
+.Op OPTIONS
+.Op PKGNAME...
+.Sh DESCRIPTION
+The
+.Nm
+command configures packages in target root directory. Configuration
+involves two steps:
+.Pp
+.Sy *
+Executes the
+.Sy post-install
+action on its
+.Sy INSTALL
+script.
+.Pp
+.Sy *
+Changes package state to
+.Sy XBPS_PKG_STATE_INSTALLED
+if previous step ran successfully.
+.Pp
+Only packages that weren't configured previously will be processed,
+unless the
+.Ar -f
+option is specified.
+.Sh OPTIONS
+.Bl -tag -width xxxxxxxxxxxxxxxxxxxxxxx
+.It Fl a, -all
+Configures all packages.
+.It Fl C, -config Ar file
+Specifies a full path to the XBPS configuration file.
+.It Fl d, -debug
+Enables extra debugging shown to stderr.
+.It Fl f, -force
+Forcefully reconfigure package even if it was configured previously.
+.It Fl h, -help
+Show the help usage.
+.It Fl r, -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl v, -verbose
+Enables verbose messages.
+.It Fl V, -version
+Shows the XBPS version.
+.Sh SEE ALSO
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-remove 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in http://code.google.com/p/xbps.
