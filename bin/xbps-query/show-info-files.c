@@ -176,7 +176,7 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 
 	d = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGPROPS);
 	if (d == NULL)
-		return EINVAL;
+		return ENOENT;
 
 	prop_dictionary_get_cstring_nocopy(d, "pkgname", &pname);
 	pkgdb_d = xbps_pkgdb_get_pkgd(xhp, pname, false);
@@ -209,7 +209,7 @@ show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkgname)
 
 	d = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
 	if (d == NULL)
-		return EINVAL;
+		return ENOENT;
 
 	rv = show_pkg_files(d);
 	prop_object_release(d);

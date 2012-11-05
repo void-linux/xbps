@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <errno.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -220,23 +221,33 @@ main(int argc, char **argv)
 		/* show mode */
 		if (repo_mode)
 			rv = repo_show_pkg_info(&xh, argv[optind], props);
-		else
+		else {
 			rv = show_pkg_info_from_metadir(&xh,
 			    argv[optind], props);
+			if (rv == ENOENT)
+				rv = repo_show_pkg_info(&xh,
+				    argv[optind], props);
+		}
 
 	} else if (show_files) {
 		/* show-files mode */
 		if (repo_mode)
 			rv =  repo_show_pkg_files(&xh, argv[optind]);
-		else
+		else {
 			rv = show_pkg_files_from_metadir(&xh, argv[optind]);
+			if (rv == ENOENT)
+				rv = repo_show_pkg_files(&xh, argv[optind]);
+		}
 
 	} else if (show_deps) {
 		/* show-deps mode */
 		if (repo_mode)
 			rv = repo_show_pkg_deps(&xh, argv[optind]);
-		else
+		else {
 			rv = show_pkg_deps(&xh, argv[optind]);
+			if (rv == ENOENT)
+				rv = repo_show_pkg_deps(&xh, argv[optind]);
+		}
 
 	} else if (show_rdeps) {
 		/* show-rdeps mode */

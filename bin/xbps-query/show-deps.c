@@ -47,7 +47,7 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname)
 	propsd = xbps_dictionary_from_metadata_plist(xhp,
 	    pkgname, XBPS_PKGPROPS);
 	if (propsd == NULL)
-		return errno;
+		return ENOENT;
 
 	rv = xbps_callback_array_iter_in_dict(xhp, propsd, "run_depends",
 	     list_strings_sep_in_array, NULL);
@@ -66,7 +66,7 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkgname)
 	if (pkgd == NULL) {
 		pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
 		if (pkgd == NULL)
-			return 0;
+			return ENOENT;
 	}
 	rv = xbps_callback_array_iter_in_dict(xhp, pkgd, "requiredby",
 	    list_strings_sep_in_array, NULL);
