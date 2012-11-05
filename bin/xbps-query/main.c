@@ -170,6 +170,8 @@ main(int argc, char **argv)
 		show = true;
 	else if (!opmode && argc == optind)
 		usage(true);
+	else if ((search || own) && (argc == optind))
+		usage(true);
 
 	/*
 	 * Initialize libxbps.
