@@ -1,4 +1,4 @@
-.Dd November 3, 2012
+.Dd November 5, 2012
 .Os Void GNU/Linux
 .Dt xbps-reconfigure 8
 .Sh NAME
@@ -11,7 +11,7 @@
 .Sh DESCRIPTION
 The
 .Nm
-command configures packages in target root directory. Configuration
+utility configures packages in target root directory. Configuration
 involves two steps:
 .Pp
 .Sy *
@@ -32,21 +32,21 @@ unless the
 option is specified.
 .Sh OPTIONS
 .Bl -tag -width xxxxxxxxxxxxxxxxxxxxxxx
-.It Fl a, -all
+.It Fl a, Fl -all
 Configures all packages.
-.It Fl C, -config Ar file
+.It Fl C, Fl -config Ar file
 Specifies a full path to the XBPS configuration file.
-.It Fl d, -debug
+.It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
-.It Fl f, -force
+.It Fl f, Fl -force
 Forcefully reconfigure package even if it was configured previously.
-.It Fl h, -help
+.It Fl h, Fl -help
 Show the help usage.
-.It Fl r, -rootdir Ar dir
+.It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
-.It Fl v, -verbose
+.It Fl v, Fl -verbose
 Enables verbose messages.
-.It Fl V, -version
+.It Fl V, Fl -version
 Shows the XBPS version.
 .Sh SEE ALSO
 .Xr xbps-create 8 ,
