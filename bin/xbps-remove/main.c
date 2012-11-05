@@ -243,7 +243,7 @@ int
 main(int argc, char **argv)
 {
 	const char *shortopts = "C:c:dfhinOop:Rr:vVy";
-	struct option longopts[] = {
+	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
@@ -401,7 +401,7 @@ main(int argc, char **argv)
 		goto out;
 	}
 
-	if (orphans || argc)
+	if (orphans || (argc > optind))
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 
 out:
