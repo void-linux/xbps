@@ -1,9 +1,6 @@
 -include ../config.mk
 
-SUBDIRS +=	xbps-bin
-SUBDIRS +=	xbps-repo
-
-SUBDIRS +=	xbps-create
+SUBDIRS =	xbps-create
 SUBDIRS +=	xbps-dgraph
 SUBDIRS +=	xbps-install
 SUBDIRS +=	xbps-pkgdb

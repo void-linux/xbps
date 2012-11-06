@@ -34,7 +34,7 @@
 #include <unistd.h>
 
 #include <xbps_api.h>
-#include "../xbps-bin/defs.h"
+#include "../xbps-install/defs.h"
 
 static void
 write_plist_file(prop_dictionary_t dict, const char *file)
