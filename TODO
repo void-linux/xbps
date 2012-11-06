@@ -3,21 +3,14 @@ libxbps:
    modified files from target pkg.
  - properties: (update-first) still unimplemented.
 
-xbps-bin:
- - Improve help output and add description at the same line than target.
-
 xbps-create:
  - Move all configuration files to <prefix>/share/<pkgname>/conf/<cffile>.
  - Add -i --installed option to create binpkg from an installed version.
 
-xbps-repo:
- - Improve help output and add description at the same line than target.
+All:
  - Add support to sign with PGP or RSA the repository index files.
  - Add requiredby support to pkg's dictionaries in repository's index,
    to know reverse deps from remote repos.
-
-All:
- - Maybe merge xbps-bin(8) and xbps-repo(8) onto xbps(8).
 
 Issues listed at http://code.google.com/p/xbps/issues/list
 
