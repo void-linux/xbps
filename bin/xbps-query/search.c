@@ -136,6 +136,7 @@ show_pkg_namedesc(struct xbps_handle *xhp,
 			} else {
 				printf("%s %s %s\n", inststr, tmp, desc);
 			}
+			free(tmp);
 		}
 	}
 
