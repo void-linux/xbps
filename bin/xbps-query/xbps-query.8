@@ -1,0 +1,126 @@
+.Dd November 6, 2012
+.Os Void Linux
+.Dt xbps-query 8
+.Sh NAME
+.Nm xbps-query
+.Nd XBPS utility to query for package and repository information
+.Sh SYNOPSYS
+.Nm xbps-query
+.Op OPTIONS
+.Ar MODE
+.Op PKG
+.Sh DESCRIPTION
+The
+.Nm
+utility prints information of a specific package or packages stored
+in target root directory or in registered repositories.
+Three different ways are valid for
+.Ar PKG :
+by specifying just the
+package name (best available version from repositories will be installed);
+by specifying a package pattern with '>' '<' '>=' or '<=' (foo>=2.0) or
+by specifying an exact package version, i.e (foo-1.0_1).
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl C, Fl -config Ar file
+Specifies a full path to the XBPS configuration file.
+.It Fl c, Fl -cachedir Ar dir
+Specifies a full path to the cache directory, where binary packages are stored.
+.It Fl D, Fl -defrepo Ar uri
+Default repository to be used if no repository is specified in configuration file.
+.It Fl d, Fl -debug
+Enables extra debugging shown to stderr.
+.It Fl h, Fl -help
+Show the help usage.
+.It Fl R, Fl -repository
+Enable repository mode. This mode explicitly looks in repositories.
+.Ar PKG
+is matched.
+.It Fl r, Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl v, Fl -verbose
+Enables verbose messages.
+.It Fl V, Fl -version
+Shows the XBPS version.
+.Sh MODE
+Only one of the following modes can be used at a time.
+By default and unless the
+.Fl R
+option is specified, the target
+.Ar PKG
+will be queried in the root directory, and if this fails, it will be
+queried in registered repositories.
+.Bl -tag -width -x
+.It Fl l, Fl -list-pkgs
+Lists registered packages in the package database (pkgdb).
+.It Fl L, Fl -list-repos
+Lists registered and working repositories.
+.It Fl m, Fl -list-manual-pkgs
+Lists registered packages in the package database (pkgdb) that were installed
+manually by the user (i.e not as dependency of any package).
+.It Fl M, Fl -list-orphans
+Lists package orphans in the package database (pkgdb), i.e packages that
+were installed as dependencies and no package is currently depending on them
+directly.
+.It Fl o, Fl -ownedby Ar PATTERN...
+Search for packages owning the files specified by
+.Ar PATTERN .
+The
+.Ar PATTERN
+can be a shell wildcard pattern (see
+.Xr fnmatch 3),
+a simple string, or a
+.Ar package pattern
+(i.e package name separated by any of the following version comparators:
+\'<' '>' '<=' '>=', 'foo>2.0').
+Multiple patterns may be specified.
+.It Fl s, Fl -search Ar PATTERN...
+Search for packages matching
+.Ar PATTERN
+on its
+.Em pkgver
+and/or
+.Em description
+properties. The same rules explained in the
+.Fl -ownedby
+option are applied.
+.It Fl f, Fl -files Ar PKG
+Show the package files for
+.Ar PKG .
+.It Fl p, Fl -property Ar PROP[,...] Ar PKG
+Show a property for
+.Ar PKG .
+Multiple properties can be specified by delimiting them with commas.
+.It Fl x, Fl -deps Ar PKG
+Show the required dependencies for
+.Ar PKG .
+.It Fl X, Fl -revdeps Ar PKG
+Show the reverse dependencies for
+.Ar PKG .
+.Sh FILES
+.Bl -tag -width /var/db/xbps/metadata/<pkgname>/files.plist
+.It Ar /etc/xbps/xbps.conf
+Default XBPS configuration file.
+.It Ar /var/db/xbps/metadata/<pkgname>/files.plist
+Installed package metadata list of files.
+.It Ar /var/db/xbps/metadata/<pkgname>/props.plist
+Installed package metadata properties.
+.It Ar /var/db/xbps/pkgdb.plist
+XBPS master package database plist file.
+.It Ar /var/cache/xbps
+Default XBPS cache directory.
+.Sh SEE ALSO
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-remove 8 ,
+.Xr xbps-rindex 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in http://code.google.com/p/xbps.
