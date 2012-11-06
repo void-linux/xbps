@@ -380,10 +380,12 @@ main(int argc, char **argv)
 	if (orphans) {
 		if ((rv = xbps_transaction_autoremove_pkgs(&xh)) != 0) {
 			if (rv != ENOENT) {
-				fprintf(stderr, "Failed to remove package "
+				fprintf(stderr, "Failed to queue package "
 				    "orphans: %s\n", strerror(rv));
 				goto out;
 			}
+			rv = 0;
+			goto out;
 		}
 	}
 
