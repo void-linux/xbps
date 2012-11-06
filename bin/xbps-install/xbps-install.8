@@ -1,0 +1,87 @@
+.Dd November 6, 2012
+.Os Void Linux
+.Dt xbps-install 8
+.Sh NAME
+.Nm xbps-install
+.Nd XBPS utility to install and update packages
+.Sh SYNOPSYS
+.Nm xbps-install
+.Op OPTIONS
+.Op PKG...
+.Sh DESCRIPTION
+The
+.Nm
+utility installs and updates packages in the target root directory.
+Three different ways are valid for
+.Ar PKG :
+by specifying just the
+package name (best available version from repositories will be installed);
+by specifying a package pattern with '>' '<' '>=' or '<=' (foo>=2.0) or
+by specifying an exact package version, i.e (foo-1.0_1).
+.Sh OPTIONS
+.Bl -tag -width -XXXXXXXX
+.It Fl A, Fl -automatic
+Enables automatic installation mode, i.e. package will be treated as orphan
+if no package is depending on it directly.
+.It Fl C, Fl -config Ar file
+Specifies a full path to the XBPS configuration file.
+.It Fl c, Fl -cachedir Ar dir
+Specifies a full path to the cache directory, where binary packages are stored.
+.It Fl d, Fl -debug
+Enables extra debugging shown to stderr.
+.It Fl f, Fl -force
+Forcefully install target package even if another version is already installed,
+overwritting its package files.
+.It Fl h, Fl -help
+Show the help usage.
+.It Fl n, Fl -dry-run
+Dry-run mode. Show what actions would be done but don't remove anything.
+.It Fl p, Fl -print-format Ar fmt
+Specifies the
+.Xr printf 3
+format used by the
+.Ar dry-run
+mode.
+.It Fl R, Fl -repository Ar uri
+Default repository to be used if no repository is specified in configuration file.
+.It Fl r, Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl s, Fl -skip-sync
+Skip synchronizing remote repository index files.
+.It Fl u, Fl -update
+Update target package(s) rather than install. If
+.Op PKGNAME
+not set, all installed packages will be updated.
+.It Fl v, Fl -verbose
+Enables verbose messages.
+.It Fl y, Fl -yes
+Assume yes to all questions and avoid interactive questions.
+.It Fl V, Fl -version
+Shows the XBPS version.
+.Sh FILES
+.Bl -tag -width /var/db/xbps/metadata/<pkgname>/files.plist
+.It Ar /etc/xbps/xbps.conf
+Default XBPS configuration file.
+.It Ar /var/db/xbps/metadata/<pkgname>/files.plist
+Installed package metadata list of files.
+.It Ar /var/db/xbps/metadata/<pkgname>/props.plist
+Installed package metadata properties.
+.It Ar /var/db/xbps/pkgdb.plist
+XBPS master package database plist file.
+.It Ar /var/cache/xbps
+Default XBPS cache directory.
+.Sh SEE ALSO
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-remove 8 ,
+.Xr xbps-rindex 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in http://code.google.com/p/xbps.
