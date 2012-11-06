@@ -691,7 +691,7 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 {
 	struct archive *ar = NULL;
 	const char *pkgname, *version, *repoloc, *pkgver, *fname;
-	char *bpkg = NULL;
+	char *bpkg;
 	int rv = 0;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);

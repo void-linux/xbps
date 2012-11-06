@@ -98,7 +98,7 @@ main(int argc, char **argv)
 	rootdir = cachedir = conffile = defrepo = props = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = orphans = search = own = false;
-	list_manual = show_prop = show_files = search = false;
+	list_manual = show_prop = show_files = false;
 	show = show_deps = show_rdeps = false;
 	repo_mode = opmode = false;
 

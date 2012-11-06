@@ -271,7 +271,7 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		bool soft_replace)
 {
 	prop_dictionary_t pkgd = NULL;
-	char *tmpname = NULL, *buf = NULL, *pkgver = NULL;
+	char *tmpname, *buf, *pkgver = NULL;
 	const char *tmpver = NULL;
 	int rv = 0;
 	bool rmfile_exists = false;

@@ -149,8 +149,6 @@ xbps_file_hash_dictionary(prop_dictionary_t d,
 	assert(key != NULL);
 	assert(file != NULL);
 
-	curfile = sha256 = NULL;
-
 	iter = xbps_array_iter_from_dict(d, key);
 	if (iter == NULL) {
 		errno = ENOENT;

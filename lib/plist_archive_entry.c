@@ -122,7 +122,7 @@ xbps_dictionary_from_archive_entry(struct archive *ar,
 				   struct archive_entry *entry)
 {
 	prop_dictionary_t d = NULL;
-	size_t buflen = 0;
+	size_t buflen;
 	ssize_t nbytes = -1;
 	char *buf, *uncomp_buf;
 

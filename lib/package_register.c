@@ -43,7 +43,7 @@
 int
 xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 {
-	prop_dictionary_t pkgd = NULL;
+	prop_dictionary_t pkgd;
 	prop_array_t provides, reqby;
 	char outstr[64];
 	time_t t;
