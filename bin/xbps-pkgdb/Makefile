@@ -6,6 +6,6 @@ OBJS =	main.o check.o check_pkg_automatic.o check_pkg_files.o
 OBJS +=	check_pkg_requiredby.o check_pkg_rundeps.o
 OBJS +=	check_pkg_symlinks.o check_pkg_unneeded.o
 
-#MAN = $(BIN).8
+MAN = $(BIN).8
 
 include $(TOPDIR)/mk/prog.mk

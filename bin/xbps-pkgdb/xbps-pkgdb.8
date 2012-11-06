@@ -1,0 +1,52 @@
+.Dd November 6, 2012
+.Os Void Linux
+.Dt xbps-pkgdb 8
+.Sh NAME
+.Nm xbps-pkgdb
+.Nd XBPS utility to report and fix issues in pkgdb
+.Sh SYNOPSYS
+.Nm xbps-pkgdb
+.Op OPTIONS
+.Op PKGNAME...
+.Sh DESCRIPTION
+The
+.Nm
+utility checks and fix issues in the package database (pkgdb).
+It's able to check missing dependencies, modified files and symlinks,
+fix wrong or missing reverse dependencies, and more errors that have been
+fixed in newer versions of xbps.
+.Sh OPTIONS
+.Bl -tag -width -XXXXXXXX
+.It Fl a, Fl -all
+Process all registered packages, regardless of its state.
+.It Fl C, Fl -config Ar file
+Specifies a full path to the XBPS configuration file.
+.It Fl d, Fl -debug
+Enables extra debugging shown to stderr.
+.It Fl h, Fl -help
+Show the help usage.
+.It Fl r, Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl v, Fl -verbose
+Enables verbose messages.
+.It Fl V, Fl -version
+Shows the XBPS version.
+.Sh FILES
+.Bl -tag -width xxxxxxxxxxxxxxxxxxxx
+.It Ar /etc/xbps/xbps.conf
+Default XBPS configuration file.
+.Sh SEE ALSO
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-remove 8 ,
+.Xr xbps-rindex 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in http://code.google.com/p/xbps.
