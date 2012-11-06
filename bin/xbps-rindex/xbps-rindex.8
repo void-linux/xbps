@@ -15,17 +15,17 @@ The
 utility creates, updates and removes obsolete binary packages stored
 in local repositories.
 .Sh OPTIONS
-.Bl -tag -width -versionXXXXXXXX
+.Bl -tag -width -x
 .It Fl h -help
 Show the help usage.
 .It Fl V -version
 Show the XBPS version.
 .Sh MODE
 .Pp
-.Bl -tag -width ident
+.Bl -tag -width x
 .It Sy -a, --add Ar /path/to/repo/binpkg.xbps ...
 Registers the binary package into the local repository and if an older
-binary package exists it's removed and a new entry is added into the index.
+binary package exists, it's removed and new entry is added to the index.
 Multiple binary packages can be specified as arguments.
 .It Sy -c, --clean Ar repository
 Removes obsolete entries found in the local repository's index.
