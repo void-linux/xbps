@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20121107"
+#define XBPS_API_VERSION	"20121107-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1575,17 +1575,18 @@ struct xbps_rpool_index {
 };
 
 /**
- * Synchronizes the package index file for all remote repositories
+ * Synchronizes \a file for all remote repositories
  * as specified in the configuration file or if \a uri argument is
- * set, just sync the index file for that repository.
+ * set, just sync \a file for that repository.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
+ * @param[in] file File to synchronize.
  * @param[in] uri Repository URI to match for sync (optional).
  *
  * @return 0 on success, ENOTSUP if no repositories were found in
  * the configuration file.
  */
-int xbps_rpool_sync(struct xbps_handle *xhp, const char *uri);
+int xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri);
 
 /**
  * Iterates over the repository pool and executes the \a fn function

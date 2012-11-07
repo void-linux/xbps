@@ -147,7 +147,7 @@ xbps_rpool_release(struct xbps_handle *xhp)
 }
 
 int
-xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
+xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri)
 {
 	const char *repouri;
 	size_t i;
@@ -160,24 +160,12 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 		/* If argument was set just process that repository */
 		if (uri && strcmp(repouri, uri))
 			continue;
-		/*
-		 * Fetch repository index.
-		 */
-		if (xbps_repository_sync_pkg_index(xhp, repouri, XBPS_PKGINDEX) == -1) {
+
+		if (xbps_repository_sync_pkg_index(xhp, repouri, file) == -1) {
 			xbps_dbg_printf(xhp,
-			    "[rpool] `%s' failed to fetch: %s\n",
-			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
-			    xbps_fetch_error_string());
-			continue;
-		}
-		/*
-		 * Fetch repository files index.
-		 */
-		if (xbps_repository_sync_pkg_index(xhp, repouri,
-		    XBPS_PKGINDEX_FILES) == -1) {
-			xbps_dbg_printf(xhp,
-			    "[rpool] `%s' failed to fetch: %s\n",
-			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
+			    "[rpool] `%s' failed to fetch `%s': %s\n",
+			    repouri, file,
+			    fetchLastErrCode == 0 ? strerror(errno) :
 			    xbps_fetch_error_string());
 			continue;
 		}
