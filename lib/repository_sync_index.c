@@ -162,8 +162,7 @@ xbps_repository_sync_pkg_index(struct xbps_handle *xhp,
 		fetch_outputdir = xhp->metadir;
 
 	/* reposync start cb */
-	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, NULL, NULL,
-	    "Synchronizing %s for `%s'...", plistf, uri);
+	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, plistf, uri, NULL);
 	/*
 	 * Download plist index file from repository.
 	 */
