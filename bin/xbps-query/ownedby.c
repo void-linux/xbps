@@ -201,9 +201,13 @@ int
 repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 {
 	struct ffdata ffd;
+	int rv;
 
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
+
+	if ((rv = xbps_rpool_sync(xhp, XBPS_PKGINDEX_FILES, NULL)) != 0)
+		return rv;
 
 	return xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
 }
