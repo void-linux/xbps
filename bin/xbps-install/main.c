@@ -210,7 +210,7 @@ main(int argc, char **argv)
 
 	/* Sync remote repository index files by default */
 	if (!skip_sync || !drun) {
-		rv = xbps_rpool_sync(&xh, NULL);
+		rv = xbps_rpool_sync(&xh, XBPS_PKGINDEX, NULL);
 		if (rv != 0)
 			goto out;
 	}
