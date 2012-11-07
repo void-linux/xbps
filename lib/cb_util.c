@@ -69,8 +69,8 @@ void HIDDEN
 xbps_set_cb_state(struct xbps_handle *xhp,
 		  xbps_state_t state,
 		  int err,
-		  const char *pkgname,
-		  const char *version,
+		  const char *arg0,
+		  const char *arg1,
 		  const char *fmt,
 		  ...)
 {
@@ -84,8 +84,8 @@ xbps_set_cb_state(struct xbps_handle *xhp,
 
 	xscd.state = state;
 	xscd.err = err;
-	xscd.pkgname = pkgname;
-	xscd.version = version;
+	xscd.arg0 = arg0;
+	xscd.arg1 = arg1;
 	if (fmt != NULL) {
 		va_start(va, fmt);
 		retval = vasprintf(&buf, fmt, va);
@@ -95,7 +95,7 @@ xbps_set_cb_state(struct xbps_handle *xhp,
 		else
 			xscd.desc = buf;
 	}
-	(*xhp->state_cb)(xhp, &xscd, xhp->fetch_cb_data);
+	(*xhp->state_cb)(xhp, &xscd, xhp->state_cb_data);
 	if (buf != NULL)
 		free(buf);
 }

@@ -89,7 +89,7 @@ state_cb_rm(struct xbps_handle *xhp,
 	switch (xscd->state) {
 	/* notifications */
 	case XBPS_STATE_REMOVE:
-		printf("Removing `%s-%s' ...\n", xscd->pkgname, xscd->version);
+		printf("Removing `%s-%s' ...\n", xscd->arg0, xscd->arg1);
 		break;
 	/* success */
 	case XBPS_STATE_REMOVE_FILE:
@@ -103,10 +103,10 @@ state_cb_rm(struct xbps_handle *xhp,
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("Removed `%s-%s' successfully.\n",
-		    xscd->pkgname, xscd->version);
+		    xscd->arg0, xscd->arg1);
 		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
-			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
 			    xhp->rootdir);
 		break;
 	/* errors */

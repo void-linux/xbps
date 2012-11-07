@@ -61,36 +61,35 @@ state_cb(struct xbps_handle *xhp,
 		printf("[*] Configuring unpacked packages\n");
 		break;
 	case XBPS_STATE_REPOSYNC:
-	case XBPS_STATE_DOWNLOAD:
+		printf("[*] Updating `%s/%s' ...\n",
+		    xscd->arg0, xscd->arg1);
+		break;
 	case XBPS_STATE_VERIFY:
 	case XBPS_STATE_CONFIG_FILE:
 		if (xscd->desc != NULL)
 			printf("%s\n", xscd->desc);
 		break;
 	case XBPS_STATE_REMOVE:
-		printf("Removing `%s-%s' ...\n", xscd->pkgname, xscd->version);
+		printf("Removing `%s-%s' ...\n", xscd->arg0, xscd->arg1);
 		break;
 	case XBPS_STATE_CONFIGURE:
-		printf("Configuring `%s-%s' ...\n", xscd->pkgname,
-		    xscd->version);
+		printf("Configuring `%s-%s' ...\n", xscd->arg0, xscd->arg1);
 		break;
 	case XBPS_STATE_REGISTER:
 	case XBPS_STATE_UNREGISTER:
 		/* empty */
 		break;
 	case XBPS_STATE_UNPACK:
-		printf("Unpacking `%s-%s' ...\n", xscd->pkgname, xscd->version);
+		printf("Unpacking `%s-%s' ...\n", xscd->arg0, xscd->arg1);
 		break;
 	case XBPS_STATE_INSTALL:
-		printf("Installing `%s-%s' ...\n",
-		    xscd->pkgname, xscd->version);
+		printf("Installing `%s-%s' ...\n", xscd->arg0, xscd->arg1);
 		break;
 	case XBPS_STATE_UPDATE:
-		pkgd = xbps_find_pkg_dict_installed(xhp,
-		     xscd->pkgname, false);
+		pkgd = xbps_find_pkg_dict_installed(xhp, xscd->arg0, false);
 		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
-		printf("Updating `%s' (`%s' to `%s') ...\n", xscd->pkgname,
-		    version, xscd->version);
+		printf("Updating `%s' (`%s' to `%s') ...\n", xscd->arg0,
+		    version, xscd->arg1);
 		break;
 	/* success */
 	case XBPS_STATE_REMOVE_FILE:
@@ -104,26 +103,26 @@ state_cb(struct xbps_handle *xhp,
 		break;
 	case XBPS_STATE_INSTALL_DONE:
 		printf("Installed `%s-%s' successfully.\n",
-		    xscd->pkgname, xscd->version);
+		    xscd->arg0, xscd->arg1);
 		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Installed `%s-%s' successfully "
-			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
 			    xhp->rootdir);
 		break;
 	case XBPS_STATE_UPDATE_DONE:
 		printf("Updated `%s' to `%s' successfully.\n",
-		    xscd->pkgname, xscd->version);
+		    xscd->arg0, xscd->arg1);
 		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Updated `%s' to `%s' successfully "
-			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
 			    xhp->rootdir);
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("Removed `%s-%s' successfully.\n",
-		    xscd->pkgname, xscd->version);
+		    xscd->arg0, xscd->arg1);
 		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
-			    "(rootdir: %s).", xscd->pkgname, xscd->version,
+			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
 			    xhp->rootdir);
 		break;
 	/* errors */

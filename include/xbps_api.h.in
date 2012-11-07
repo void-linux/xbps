@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20121026"
+#define XBPS_API_VERSION	"20121107"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -298,36 +298,33 @@ typedef enum xbps_state {
 /**
  * @struct xbps_state_cb_data xbps_api.h "xbps_api.h"
  * @brief Structure to be passed as argument to the state function callback.
+ * All members are read-only and set internally by libxbps.
  */
 struct xbps_state_cb_data {
 	/**
 	 * @var state
 	 *
-	 * Returned xbps state (set internally, read-only).
+	 * Current state.
 	 */
 	xbps_state_t state;
 	/**
 	 * @var desc
 	 *
-	 * XBPS state string description (set internally, read-only).
+	 * Current state string description.
 	 */
 	const char *desc;
 	/**
-	 * @var pkgname
+	 * @var arg[0-1]
 	 *
-	 * Package name string (set internally, read-only).
+	 * State string arguments arg[0-1]. Strings set on these
+	 * variables may change depending on \a state.
 	 */
-	const char *pkgname;
-	/**
-	 * @var version
-	 *
-	 * Package version string (set internally, read-only).
-	 */
-	const char *version;
+	const char *arg0;
+	const char *arg1;
 	/**
 	 * @var err
 	 *
-	 * XBPS state error value (set internally, read-only).
+	 * Current state error value (set internally, read-only).
 	 */
 	int err;
 };

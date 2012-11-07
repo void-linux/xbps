@@ -65,8 +65,7 @@ state_cb(struct xbps_handle *xhp, struct xbps_state_cb_data *xscd, void *cbd)
 	switch (xscd->state) {
 	/* notifications */
 	case XBPS_STATE_CONFIGURE:
-		printf("Configuring `%s-%s' ...\n", xscd->pkgname,
-		    xscd->version);
+		printf("Configuring `%s-%s' ...\n", xscd->arg0, xscd->arg1);
 		break;
 	/* errors */
 	case XBPS_STATE_CONFIGURE_FAIL:
