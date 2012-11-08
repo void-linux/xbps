@@ -111,6 +111,7 @@ xbps_fetch_file(struct xbps_handle *xhp,
 	fetchLastErrCode = 0;
 
 	fetchTimeout = xhp->fetch_timeout;
+	fetchRestartCalls = 1;
 	/*
 	 * Get the filename specified in URI argument.
 	 */
