@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <fnmatch.h>
 
 #include "xbps_api_impl.h"
 
@@ -72,21 +73,11 @@ transaction_find_pkg(struct xbps_handle *xhp,
 
 	assert(pkg != NULL);
 
-	if (action == TRANS_INSTALL) {
-		/* install */
-		reason = "install";
-	} else {
-		/* update */
-		if ((pkg_pkgdb = xbps_pkgdb_get_pkgd(xhp, pkg, false)) == NULL)
-			return ENODEV;
-
-		reason = "update";
-	}
-
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
 	if (action == TRANS_INSTALL) {
+		reason = "install";
 		if (exact) {
 			pkg_repod = xbps_rpool_find_pkg_exact(xhp, pkg);
 			if (pkg_repod == NULL) {
@@ -102,6 +93,10 @@ transaction_find_pkg(struct xbps_handle *xhp,
 			}
 		}
 	} else {
+		if ((pkg_pkgdb = xbps_pkgdb_get_pkgd(xhp, pkg, false)) == NULL)
+			return ENODEV;
+
+		reason = "update";
 		pkg_repod = xbps_rpool_find_pkg(xhp, pkg, false, true);
 		if (pkg_repod == NULL) {
 			/* not found */
@@ -202,7 +197,7 @@ int
 xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
 	prop_object_t obj;
-	const char *pkgname, *holdpkgname;
+	const char *pkgname, *holdpkg;
 	bool foundhold = false, newpkg_found = false;
 	int rv = 0;
 	size_t i, x;
@@ -213,11 +208,13 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	for (i = 0; i < prop_array_count(xhp->pkgdb); i++) {
 		obj = prop_array_get(xhp->pkgdb, i);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+
 		for (x = 0; x < cfg_size(xhp->cfg, "PackagesOnHold"); x++) {
-			holdpkgname = cfg_getnstr(xhp->cfg, "PackagesOnHold", x);
-			if (strcmp(pkgname, holdpkgname) == 0) {
-				xbps_dbg_printf(xhp, "[rpool] package %s on hold, "
-				    "ignoring updates.\n", pkgname);
+			holdpkg = cfg_getnstr(xhp->cfg, "PackagesOnHold", x);
+			if ((strcmp(holdpkg, pkgname) == 0) ||
+			    (fnmatch(holdpkg, pkgname, FNM_PERIOD) == 0)) {
+				xbps_dbg_printf(xhp, "[rpool] package `%s' "
+				    "on hold, ignoring updates.\n", pkgname);
 				foundhold = true;
 				break;
 			}

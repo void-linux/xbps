@@ -1,5 +1,8 @@
 xbps-0.18 (???):
 
+ * Shell wildcard patterns (fnmatch(3)) can now be used in the
+   PackagesOnHold configuration option.
+
  * New utilities replacing xbps-bin(8) and xbps-repo(8):
 
 	- xbps-install(8): to install and update packages.
