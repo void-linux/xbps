@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _BSD_SOURCE	/* for vfork and chroot */
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>

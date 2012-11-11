@@ -265,7 +265,7 @@ main(int argc, char **argv)
 			usage();
 
 		for (i = 1; i < argc; i++) {
-			rv = xbps_fetch_file(&xh, argv[i], ".", false, "v");
+			rv = xbps_fetch_file(&xh, argv[i], "v");
 			if (rv == -1) {
 				printf("%s: %s\n", argv[1],
 				    xbps_fetch_error_string());

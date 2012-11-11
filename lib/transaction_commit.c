@@ -74,14 +74,10 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		assert(repoloc != NULL);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		assert(pkgver != NULL);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
-		assert(filen != NULL);
 		prop_dictionary_get_cstring_nocopy(obj,
 		    "filename-sha256", &sha256);
-		assert(sha256 != NULL);
 
 		binfile = xbps_path_from_repository_uri(xhp, obj, repoloc);
 		if (binfile == NULL) {
@@ -124,11 +120,8 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		assert(repoloc != NULL);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		assert(pkgver != NULL);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
-		assert(filen != NULL);
 
 		binfile = xbps_path_from_repository_uri(xhp, obj, repoloc);
 		if (binfile == NULL) {
@@ -145,14 +138,17 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		/*
 		 * Create cachedir.
 		 */
-		if (xbps_mkpath(xhp->cachedir, 0755) == -1) {
-			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
-			    errno, pkgname, version,
-			    "%s: [trans] cannot create cachedir `%s': %s",
-			    pkgver, xhp->cachedir, strerror(errno));
-			free(binfile);
-			rv = errno;
-			break;
+		if (access(xhp->cachedir, R_OK|X_OK|W_OK) == -1) {
+			if (xbps_mkpath(xhp->cachedir, 0755) == -1) {
+				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
+				    errno, pkgname, version,
+				    "%s: [trans] cannot create cachedir `%s':"
+				    "%s", pkgver, xhp->cachedir,
+				    strerror(errno));
+				free(binfile);
+				rv = errno;
+				break;
+			}
 		}
 		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD,
 		    0, pkgname, version,
@@ -161,7 +157,18 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		/*
 		 * Fetch binary package.
 		 */
-		rv = xbps_fetch_file(xhp, binfile, xhp->cachedir, false, NULL);
+		if (chdir(xhp->cachedir) == -1) {
+			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
+			    errno, pkgname, version,
+			    "%s: [trans] failed to change dir to cachedir"
+			    "`%s': %s", pkgver, xhp->cachedir,
+			    strerror(errno));
+			rv = errno;
+			free(binfile);
+			break;
+		}
+
+		rv = xbps_fetch_file(xhp, binfile, NULL);
 		if (rv == -1) {
 			fetchstr = xbps_fetch_error_string();
 			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
