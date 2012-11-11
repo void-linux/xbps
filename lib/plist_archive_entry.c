@@ -84,15 +84,6 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 		rv = inflate(&strm, Z_NO_FLUSH);
 		switch (rv) {
 		case Z_DATA_ERROR:
-			/*
-			 * Wrong compressed data or uncompressed, try
-			 * normal method as last resort.
-			 */
-			(void)inflateEnd(&strm);
-			free(uncomp_xml);
-			free(out);
-			errno = EAGAIN;
-			return NULL;
 		case Z_STREAM_ERROR:
 		case Z_NEED_DICT:
 		case Z_MEM_ERROR:
@@ -140,22 +131,24 @@ xbps_dictionary_from_archive_entry(struct archive *ar,
 		return NULL;
 	}
 
+	/* If blob is already a dictionary we are done */
+	d = prop_dictionary_internalize(buf);
+	if (prop_object_type(d) == PROP_TYPE_DICTIONARY)
+		goto out;
+
+	/* Try to uncompress blob */
 	uncomp_buf = _xbps_uncompress_plist_data(buf, buflen);
 	if (uncomp_buf == NULL) {
-		if (errno && errno != EAGAIN) {
-			/* Error while decompressing */
-			free(buf);
-			return NULL;
-		} else if (errno == EAGAIN) {
-			/* Not a compressed data, try again */
-			errno = 0;
-			d = prop_dictionary_internalize(buf);
-		}
+		/* Error while decompressing */
+		free(buf);
+		return NULL;
 	} else {
 		/* We have the uncompressed data */
 		d = prop_dictionary_internalize(uncomp_buf);
 		free(uncomp_buf);
 	}
+
+out:
 	free(buf);
 	return d;
 }
