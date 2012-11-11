@@ -145,7 +145,6 @@ xbps_init(struct xbps_handle *xhp)
 
 				buf = xbps_xasprintf("repositories = { %s }",
 				    xhp->repository);
-				assert(buf);
 				if ((rv = cfg_parse_buf(xhp->cfg, buf)) != 0)
 					return rv;
 				free(buf);

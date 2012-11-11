@@ -79,10 +79,7 @@ index_files_clean(struct xbps_handle *xhp, const char *repodir)
 			/* pkg found, do nothing */
 			continue;
 		}
-		if ((str = xbps_xasprintf("%s,%s", ipkgver, iarch)) == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
+		str = xbps_xasprintf("%s,%s", ipkgver, iarch);
 		if (!prop_array_add_cstring(obsoletes, str)) {
 			free(str);
 			rv = EINVAL;

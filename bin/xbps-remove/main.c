@@ -161,7 +161,6 @@ cachedir_clean(struct xbps_handle *xhp)
 		}
 		/* Internalize props.plist dictionary from binary pkg */
 		binpkg = xbps_xasprintf("%s/%s", xhp->cachedir, dp->d_name);
-		assert(binpkg != NULL);
 		pkg_propsd = xbps_dictionary_metadata_plist_by_url(binpkg,
 		    "./props.plist");
 		if (pkg_propsd == NULL) {

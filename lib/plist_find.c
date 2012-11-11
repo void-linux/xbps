@@ -195,7 +195,6 @@ find_virtualpkg_user_in_conf(struct xbps_handle *xhp,
 			vpkgver = cfg_getnstr(sec, "targets", j);
 			if (strchr(vpkgver, '_') == NULL) {
 				tmp = xbps_xasprintf("%s_1", vpkgver);
-				assert(tmp != NULL);
 				vpkgname = xbps_pkg_name(tmp);
 				free(tmp);
 			} else {

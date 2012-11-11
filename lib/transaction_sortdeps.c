@@ -346,7 +346,6 @@ xbps_transaction_sort_pkg_deps(struct xbps_handle *xhp)
 				    j, &vpkgdep);
 				if (strchr(vpkgdep, '_') == NULL) {
 					vpkg = xbps_xasprintf("%s_1", vpkgdep);
-					assert(vpkg);
 					vpkgname = xbps_pkg_name(vpkg);
 					free(vpkg);
 				} else {

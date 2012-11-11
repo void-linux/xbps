@@ -88,9 +88,6 @@ remove_pkg_metadata(struct xbps_handle *xhp,
 
 	metadir = xbps_xasprintf("%s/%s/metadata/%s", xhp->rootdir,
 	     XBPS_META_PATH, pkgname);
-	if (metadir == NULL)
-		return ENOMEM;
-
 	dirp = opendir(metadir);
 	if (dirp == NULL) {
 		free(metadir);
@@ -103,12 +100,6 @@ remove_pkg_metadata(struct xbps_handle *xhp,
 			continue;
 
 		path = xbps_xasprintf("%s/%s", metadir, dp->d_name);
-		if (path == NULL) {
-			(void)closedir(dirp);
-			free(metadir);
-			return ENOMEM;
-		}
-
 		if (unlink(path) == -1) {
 			xbps_set_cb_state(xhp, XBPS_STATE_PURGE_FAIL,
 			    errno, pkgname, version,
@@ -168,10 +159,6 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 		path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-		if (path == NULL) {
-			rv = ENOMEM;
-			break;
-		}
 
 		if ((strcmp(key, "files") == 0) ||
 		    (strcmp(key, "conf_files") == 0)) {
@@ -282,16 +269,8 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 
 	buf = xbps_xasprintf("%s/metadata/%s/REMOVE",
 	    XBPS_META_PATH, pkgname);
-	if (buf == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
 
 	pkgver = xbps_xasprintf("%s-%s", pkgname, version);
-	if (pkgver == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
 
 	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0)
 		goto out;

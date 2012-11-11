@@ -245,9 +245,6 @@ xbps_path_from_repository_uri(struct xbps_handle *xhp,
 	 * First check if binpkg is available in cachedir.
 	 */
 	lbinpkg = xbps_xasprintf("%s/%s", xhp->cachedir, filen);
-	if (lbinpkg == NULL)
-		return NULL;
-
 	if (access(lbinpkg, R_OK) == 0)
 		return lbinpkg;
 
@@ -294,14 +291,15 @@ char *
 xbps_xasprintf(const char *fmt, ...)
 {
 	va_list ap;
-	char *buf;
+	char *buf = NULL;
 
 	va_start(ap, fmt);
 	if (vasprintf(&buf, fmt, ap) == -1) {
 		va_end(ap);
-		return NULL;
+		assert(buf);
 	}
 	va_end(ap);
+	assert(buf);
 
 	return buf;
 }

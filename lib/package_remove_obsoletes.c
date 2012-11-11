@@ -71,7 +71,6 @@ again:
 
 		file = xbps_xasprintf(".%s",
 		    prop_string_cstring_nocopy(oldstr));
-		assert(file);
 
 		if ((strcmp(array_str, "files") == 0) ||
 		    (strcmp(array_str, "conf_files") == 0)) {

@@ -269,9 +269,6 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 			if (strcmp(keyname, optional_objs[x]) == 0) {
 				optnode = xbps_xasprintf("[style=\"%s\"",
 				    cfprop);
-				if (optnode == NULL)
-					die("alloc optnode");
-
 				break;
 			}
 		}
@@ -495,8 +492,6 @@ main(int argc, char **argv)
 	 */
 	if (outfile == NULL) {
 		outfile = xbps_xasprintf("%s.dot", argv[0]);
-		if (outfile == NULL)
-			die("alloc outfile");
 	}
 
 	/*

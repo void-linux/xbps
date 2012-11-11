@@ -105,11 +105,6 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			prop_dictionary_get_cstring_nocopy(obj2,
 			    "file", &cffile);
 			buf = xbps_xasprintf(".%s", cffile);
-			if (buf == NULL) {
-				prop_object_iterator_release(iter2);
-				rv = -1;
-				goto out;
-			}
 			if (strcmp(entry_pname, buf) == 0) {
 				prop_dictionary_get_cstring(obj2, "sha256",
 				    &sha256_orig);
@@ -138,10 +133,6 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "file", &cffile);
 		buf = xbps_xasprintf(".%s", cffile);
-		if (buf == NULL) {
-			prop_object_iterator_release(iter);
-			return -1;
-		}
 		if (strcmp(entry_pname, buf)) {
 			free(buf);
 			buf = NULL;
@@ -232,10 +223,6 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			    (strcmp(sha256_orig, sha256_new))) {
 			buf = xbps_xasprintf(".%s.new-%s",
 			    cffile, version);
-			if (buf == NULL) {
-				rv = -1;
-				break;
-			}
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgname, version,
 			    "Installing new configuration file to "

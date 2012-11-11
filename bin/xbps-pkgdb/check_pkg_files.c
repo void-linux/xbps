@@ -71,10 +71,6 @@ check_pkg_files(struct xbps_handle *xhp,
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-			if (path == NULL) {
-				prop_object_iterator_release(iter);
-				return -1;
-			}
                         prop_dictionary_get_cstring_nocopy(obj,
                             "sha256", &sha256);
 			rv = xbps_file_hash_check(path, sha256);
@@ -124,10 +120,6 @@ check_pkg_files(struct xbps_handle *xhp,
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-			if (path == NULL) {
-				prop_object_iterator_release(iter);
-				return -1;
-			}
 			if ((rv = access(path, R_OK)) == -1) {
 				if (errno == ENOENT) {
 					xbps_error_printf(

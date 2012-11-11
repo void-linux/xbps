@@ -196,7 +196,6 @@ xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 		rv = xbps_file_hash_check(file, sha256d);
 	} else {
 		buf = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-		assert(buf != NULL);
 		rv = xbps_file_hash_check(buf, sha256d);
 		free(buf);
 	}

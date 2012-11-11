@@ -44,7 +44,6 @@ remove_pkg(const char *repodir, const char *arch, const char *file)
 
 	/* Remove real binpkg */
 	filepath = xbps_xasprintf("%s/%s/%s", repodir, arch, file);
-	assert(filepath);
 	if (remove(filepath) == -1) {
 		rv = errno;
 		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
@@ -56,7 +55,6 @@ remove_pkg(const char *repodir, const char *arch, const char *file)
 
 	/* Remove symlink to binpkg */
 	filepath = xbps_xasprintf("%s/%s", repodir, file);
-	assert(filepath);
 	if (remove(filepath) == -1) {
 		rv = errno;
 		xbps_error_printf("failed to remove old binpkg `%s': %s\n",

@@ -78,9 +78,6 @@ check_pkg_symlinks(struct xbps_handle *xhp,
 				continue;
 			}
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-			if (path == NULL)
-				return -1;
-
 			if ((buf = realpath(path, NULL)) == NULL) {
 				xbps_error_printf("%s: broken symlink `%s': "
 				    "%s\n", pkgname, file, strerror(errno));
@@ -91,7 +88,6 @@ check_pkg_symlinks(struct xbps_handle *xhp,
 				/* relative symlink target */
 				dname = dirname(path);
 				buf2 = xbps_xasprintf("%s/%s", dname, tgt);
-				assert(buf2);
 				buf3 = realpath(buf2, NULL);
 				assert(buf3);
 				free(buf2);

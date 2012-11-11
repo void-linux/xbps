@@ -113,9 +113,6 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	buf = xbps_xasprintf("%s/metadata/%s/INSTALL",
 	    XBPS_META_PATH, pkgname);
-	if (buf == NULL)
-		return ENOMEM;
-
 	if (chdir(xhp->rootdir) == -1) {
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
 		    errno, pkgname, version,

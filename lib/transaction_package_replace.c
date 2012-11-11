@@ -163,14 +163,12 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				buf = xbps_xasprintf("%s/%s/metadata/%s/%s",
 				    xhp->rootdir, XBPS_META_PATH, curpkgname,
 				    XBPS_PKGFILES);
-				assert(buf != NULL);
 				filesd = prop_dictionary_internalize_from_zfile(buf);
 				free(buf);
 				assert(filesd != NULL);
 				buf = xbps_xasprintf("%s/%s/metadata/%s/%s",
 				    xhp->rootdir, XBPS_META_PATH, pkgname,
 				    XBPS_PKGFILES);
-				assert(buf != NULL);
 				dirc = strdup(buf);
 				assert(dirc != NULL);
 				dname = dirname(dirc);

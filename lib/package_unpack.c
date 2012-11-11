@@ -71,10 +71,6 @@ extract_metafile(struct xbps_handle *xhp,
 	}
 	buf = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, file);
-	if (buf == NULL) {
-		free(pkgname);
-		return ENOMEM;
-	}
 	archive_entry_set_pathname(entry, buf);
 	dirc = strdup(buf);
 	if (dirc == NULL) {
@@ -133,10 +129,6 @@ remove_metafile(struct xbps_handle *xhp,
 	}
 	buf = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, file);
-	if (buf == NULL) {
-		free(pkgname);
-		return ENOMEM;
-	}
 	if (unlink(buf) == -1) {
 		if (errno && errno != ENOENT) {
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
@@ -291,10 +283,6 @@ unpack_archive(struct xbps_handle *xhp,
 			 */
 			buf = xbps_xasprintf("%s/metadata/%s/INSTALL",
 			    XBPS_META_PATH, pkgname);
-			if (buf == NULL) {
-				rv = ENOMEM;
-				goto out;
-			}
 			rv = extract_metafile(xhp, ar, entry,
 			    "INSTALL", pkgver, true, flags);
 			if (rv != 0)
@@ -470,7 +458,6 @@ unpack_archive(struct xbps_handle *xhp,
 					assert(buf2);
 					dname = dirname(buf2);
 					p2 = xbps_xasprintf("%s/%s", dname, tgtlnk);
-					assert(p2);
 					free(buf2);
 				} else {
 					p2 = strdup(tgtlnk);
@@ -539,7 +526,6 @@ unpack_archive(struct xbps_handle *xhp,
 			 * file but renaming it to <file>.old.
 			 */
 			buf = xbps_xasprintf("%s.old", entry_pname);
-			assert(buf);
 			(void)rename(entry_pname, buf);
 			free(buf);
 			buf = NULL;
@@ -593,10 +579,6 @@ unpack_archive(struct xbps_handle *xhp,
 	 */
 	pkgfilesd = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, XBPS_PKGFILES);
-	if (pkgfilesd == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
 	if (skip_obsoletes || preserve || (!softreplace && !update))
 		goto out1;
 	/*
@@ -631,10 +613,6 @@ out1:
 	 * Create pkg metadata directory if doesn't exist.
 	 */
 	buf = xbps_xasprintf("%s/metadata/%s", XBPS_META_PATH, pkgname);
-	if (buf == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
 	if (access(buf, R_OK|X_OK) == -1) {
 		if (xbps_mkpath(buf, 0755) == -1) {
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
@@ -661,10 +639,6 @@ out1:
 	}
 	pkgpropsd = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
-	if (pkgpropsd == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
 	if (!prop_dictionary_externalize_to_file(propsd, pkgpropsd)) {
 		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,

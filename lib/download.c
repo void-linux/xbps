@@ -124,10 +124,6 @@ xbps_fetch_file(struct xbps_handle *xhp,
 	 * Compute destination file path.
 	 */
 	destfile = xbps_xasprintf("%s/%s", outputdir, filename);
-	if (destfile == NULL) {
-		rv = -1;
-		goto out;
-	}
 	/*
 	 * Check if we have to resume a transfer.
 	 */

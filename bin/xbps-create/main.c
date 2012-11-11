@@ -373,7 +373,6 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 	entry = archive_entry_new();
 	assert(entry);
 	p = xbps_xasprintf("%s/%s", destdir, xe->file);
-	assert(p);
 	archive_entry_set_pathname(entry, xe->file);
 	archive_entry_copy_sourcepath(entry, p);
 
@@ -710,7 +709,6 @@ main(int argc, char **argv)
 	 * Create a temp file to store archive data.
 	 */
 	tname = xbps_xasprintf(".xbps-pkg-XXXXXX");
-	assert(tname);
 	pkg_fd = mkstemp(tname);
 	assert(pkg_fd != -1);
 	/*
@@ -734,7 +732,6 @@ main(int argc, char **argv)
 	 * perspective it's atomic.
 	 */
 	binpkg = xbps_xasprintf("%s.%s.xbps", pkgver, arch);
-	assert(binpkg);
 
 	(void)fsync(pkg_fd);
 	myumask = umask(0);

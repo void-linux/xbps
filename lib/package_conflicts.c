@@ -57,7 +57,6 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 			    "pkgver", &pkgver);
 			buf = xbps_xasprintf("%s conflicts with "
 			    "installed pkg %s", repopkgver, pkgver);
-			assert(buf != NULL);
 			prop_array_add_cstring(trans_cflicts, buf);
 			free(buf);
 			continue;
@@ -72,7 +71,6 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 			    "pkgver", &pkgver);
 			buf = xbps_xasprintf("%s conflicts with "
 			   "%s in transaction", repopkgver, pkgver);
-			assert(buf != NULL);
 			prop_array_add_cstring(trans_cflicts, buf);
 			free(buf);
 			continue;

@@ -280,8 +280,6 @@ xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
 	savedpkgname = pkgname;
 	plistf = xbps_xasprintf("%s/metadata/%s/%s", xhp->metadir,
 	    savedpkgname, plist);
-	if (plistf == NULL)
-		return NULL;
 
 	if (access(plistf, R_OK) == -1) {
 		pkgd = xbps_find_virtualpkg_dict_installed(xhp, pkgname, false);
@@ -294,8 +292,6 @@ xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
 			    "pkgname", &savedpkgname);
 			plistf = xbps_xasprintf("%s/metadata/%s/%s",
 			    xhp->metadir, savedpkgname, plist);
-			if (plistf == NULL)
-				return NULL;
 		}
 	}
 

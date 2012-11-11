@@ -70,7 +70,6 @@ ATF_TC_BODY(find_virtualpkg_dict_installed_test, tc)
 	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 	cffile = xbps_xasprintf("%s/xbps.conf", tcsdir);
-	ATF_REQUIRE(cffile != NULL);
 
 	/* initialize xbps */
 	memset(&xh, 0, sizeof(xh));

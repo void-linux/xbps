@@ -88,8 +88,6 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		return cached_rv;
 
 	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
-	assert(plist);
-
 	if (xhp->pkgdb && flush) {
 		pkgdb_storage = prop_array_internalize_from_zfile(plist);
 		if (pkgdb_storage == NULL ||

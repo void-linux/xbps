@@ -206,7 +206,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 				 */
 				buf = xbps_xasprintf("`%s' (%s)",
 				    oldpkgver, oldarch);
-				assert(buf);
 				rv = remove_pkg(repodir,
 				    oldarch, oldfilen);
 				if (rv != 0) {
@@ -226,7 +225,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 			 * index version.
 			 */
 			buf = xbps_xasprintf("`%s' (%s)", oldpkgver, oldarch);
-			assert(buf);
 			buf2 = strdup(oldpkgver);
 			assert(buf2);
 			rv = remove_pkg(repodir, oldarch, oldfilen);

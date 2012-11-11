@@ -70,9 +70,6 @@ xbps_get_remote_repo_string(const char *uri)
 		    url->host, url->doc);
 
 	fetchFreeURL(url);
-	if (p == NULL)
-		return NULL;
-
 	for (i = 0; i < strlen(p); i++) {
 		if (p[i] == '.' || p[i] == '/' || p[i] == ':')
 			p[i] = '_';
@@ -128,28 +125,16 @@ xbps_repository_sync_pkg_index(struct xbps_handle *xhp,
 	 * Remote repository plist index full URL.
 	 */
 	rpidx = xbps_xasprintf("%s/%s", uri, plistf);
-	if (rpidx == NULL) {
-		rv = -1;
-		goto out;
-	}
 	/*
 	 * Save temporary file in metadir, and rename if it
 	 * was downloaded successfully.
 	 */
 	tmp_metafile = xbps_xasprintf("%s/%s", xhp->metadir, plistf);
-	if (tmp_metafile == NULL) {
-		rv = -1;
-		goto out;
-	}
 	/*
 	 * Full path to repository directory to store the plist
 	 * index file.
 	 */
 	lrepodir = xbps_xasprintf("%s/%s", xhp->metadir, uri_fixedp);
-	if (lrepodir == NULL) {
-		rv = -1;
-		goto out;
-	}
 	/*
 	 * If directory exists probably the plist index file
 	 * was downloaded previously...
@@ -195,10 +180,6 @@ xbps_repository_sync_pkg_index(struct xbps_handle *xhp,
 	prop_object_release(array);
 
 	lrepofile = xbps_xasprintf("%s/%s", lrepodir, plistf);
-	if (lrepofile == NULL) {
-		rv = -1;
-		goto out;
-	}
 	/*
 	 * Create local repodir to store plist index file.
 	 */

@@ -85,9 +85,6 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 	unsigned int i, count;
 
 	path = xbps_xasprintf("%s/metadata", xhp->metadir);
-	if (path == NULL)
-		return -1;
-
 	if ((dirp = opendir(path)) == NULL) {
 		free(path);
 		return -1;
