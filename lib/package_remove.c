@@ -49,7 +49,7 @@
  *     will be executed.
  *  -# Its requiredby objects will be removed from the installed packages
  *     database.
- *  -# Its state will be changed to XBPS_PKG_STATE_HALF_UNPACKED.
+ *  -# Its state will be changed to XBPS_PKG_STATE_HALF_REMOVED.
  *  -# Its <b>purge-remove</b> target specified in the REMOVE script
  *     will be executed.
  *  -# Its package metadata directory will be removed.

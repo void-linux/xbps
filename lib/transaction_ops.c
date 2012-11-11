@@ -174,8 +174,7 @@ transaction_find_pkg(struct xbps_handle *xhp,
 
 	if (state == XBPS_PKG_STATE_UNPACKED)
 		reason = "configure";
-	else if (state == XBPS_PKG_STATE_NOT_INSTALLED ||
-		 state == XBPS_PKG_STATE_HALF_UNPACKED)
+	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
 		reason = "install";
 
 	/*

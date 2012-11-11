@@ -42,7 +42,6 @@ static const struct state states[] = {
 	{ "broken",		XBPS_PKG_STATE_BROKEN },
 	{ "half-removed",	XBPS_PKG_STATE_HALF_REMOVED },
 	{ "not-installed",	XBPS_PKG_STATE_NOT_INSTALLED },
-	{ "half-unpacked",	XBPS_PKG_STATE_HALF_UNPACKED },
 	{ NULL,			0 }
 };
 

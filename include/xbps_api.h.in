@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20121107-1"
+#define XBPS_API_VERSION	"20121111"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1732,8 +1732,6 @@ int xbps_repository_sync_pkg_index(struct xbps_handle *xhp,
  * Integer representing a state on which a package may be. Possible
  * values for this are:
  *
- * - XBPS_PKG_STATE_HALF_UNPACKED: Package was being unpacked
- * but didn't finish properly.
  * - XBPS_PKG_STATE_UNPACKED: Package has been unpacked correctly
  * but has not been configured due to unknown reasons.
  * - XBPS_PKG_STATE_INSTALLED: Package has been installed successfully.
@@ -1750,7 +1748,6 @@ typedef enum pkg_state {
 	XBPS_PKG_STATE_BROKEN,
 	XBPS_PKG_STATE_HALF_REMOVED,
 	XBPS_PKG_STATE_NOT_INSTALLED,
-	XBPS_PKG_STATE_HALF_UNPACKED
 } pkg_state_t;
 
 /**

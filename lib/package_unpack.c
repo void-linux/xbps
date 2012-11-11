@@ -710,18 +710,6 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		return rv;
 	}
 	free(bpkg);
-
-	/*
-	 * Set package state to half-unpacked.
-	 */
-	if ((rv = xbps_set_pkg_state_installed(xhp, pkgname, version,
-	    XBPS_PKG_STATE_HALF_UNPACKED)) != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-		    rv, pkgname, version,
-		    "%s: [unpack] failed to set state to half-unpacked: %s",
-		    pkgver, strerror(rv));
-		goto out;
-	}
 	/*
 	 * Extract archive files.
 	 */
