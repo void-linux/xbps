@@ -106,9 +106,12 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		cached_rv = 0;
 	}
 	/* update copy in memory */
-	if ((xhp->pkgdb = prop_array_internalize_from_zfile(plist)) == NULL)
-		cached_rv = rv = errno;
+	if ((xhp->pkgdb = prop_array_internalize_from_zfile(plist)) == NULL) {
+		if (errno == ENOENT)
+			xhp->pkgdb = prop_array_create();
 
+		cached_rv = rv = errno;
+	}
 	free(plist);
 
 	return rv;

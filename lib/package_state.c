@@ -162,63 +162,35 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			     pkg_state_t state)
 {
 	prop_dictionary_t pkgd;
-	bool newpkg = false;
-	int rv;
+	int rv = 0;
 
 	assert(pkgname != NULL);
 
-	if (xhp->pkgdb == NULL) {
-		xhp->pkgdb = prop_array_create();
-		if (xhp->pkgdb == NULL)
+	pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
+	if (pkgd == NULL) {
+		pkgd = prop_dictionary_create();
+		if (pkgd == NULL)
 			return ENOMEM;
 
-		pkgd = prop_dictionary_create();
-		if (pkgd == NULL) {
-			prop_object_release(xhp->pkgdb);
-			xhp->pkgdb = NULL;
-			return ENOMEM;
-		}
 		if ((rv = set_pkg_objs(pkgd, pkgname, version)) != 0) {
-			prop_object_release(xhp->pkgdb);
 			prop_object_release(pkgd);
-			xhp->pkgdb = NULL;
 			return rv;
 		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
-			prop_object_release(xhp->pkgdb);
 			prop_object_release(pkgd);
-			xhp->pkgdb = NULL;
 			return rv;
 		}
 		if (!xbps_add_obj_to_array(xhp->pkgdb, pkgd)) {
-			prop_object_release(xhp->pkgdb);
 			prop_object_release(pkgd);
-			xhp->pkgdb = NULL;
 			return EINVAL;
 		}
 	} else {
-		pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
-		if (pkgd == NULL) {
-			newpkg = true;
-			pkgd = prop_dictionary_create();
-			if ((rv = set_pkg_objs(pkgd, pkgname, version)) != 0)
-				return rv;
-		}
-		if ((rv = set_new_state(pkgd, state)) != 0) {
-			if (newpkg)
-				prop_object_release(pkgd);
+		if ((rv = set_new_state(pkgd, state)) != 0)
 			return rv;
-		}
-		if (newpkg) {
-			if (!xbps_add_obj_to_array(xhp->pkgdb, pkgd)) {
-				prop_object_release(pkgd);
-				return EINVAL;
-			}
-		} else {
-			if ((rv = xbps_array_replace_dict_by_name(xhp->pkgdb,
-			    pkgd, pkgname)) != 0)
-				return rv;
-		}
+
+		if ((rv = xbps_array_replace_dict_by_name(xhp->pkgdb,
+		    pkgd, pkgname)) != 0)
+			return rv;
 	}
 
 	return rv;
