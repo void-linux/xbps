@@ -441,15 +441,13 @@ unpack_archive(struct xbps_handle *xhp,
 			 * Check if current link from binpkg hasn't been
 			 * modified, otherwise extract new link.
 			 */
-			if (file_exists) {
-				buf = realpath(entry_pname, NULL);
-				assert(buf);
+			buf = realpath(entry_pname, NULL);
+			if (buf) {
 				if (strcmp(xhp->rootdir, "/")) {
 					p = buf;
 					p += strlen(xhp->rootdir);
 				} else
 					p = buf;
-				assert(p);
 				tgtlnk = find_pkg_symlink_target(filesd,
 				    entry_pname);
 				assert(tgtlnk);
