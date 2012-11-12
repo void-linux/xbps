@@ -6,7 +6,7 @@ xbps-0.18 (???):
  * New utilities replacing xbps-bin(8) and xbps-repo(8):
 
 	- xbps-install(8): to install and update packages.
-	- xps-pkgdb(8): to report and fix errors in pkgdb.
+	- xbps-pkgdb(8): to report and fix errors in pkgdb.
 	- xbps-query(8): to query packages and/or repositories.
 	- xbps-reconfigure(8): to (re)configure packages.
 	- xbps-remove(8): to remove packages.
