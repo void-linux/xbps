@@ -178,7 +178,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       prop_dictionary_t pkg_repod,
 	       struct archive *ar)
 {
-	prop_dictionary_t propsd, filesd, old_filesd;
+	prop_dictionary_t filesd, old_filesd;
 	prop_array_t array, obsoletes;
 	prop_object_t obj;
 	const struct stat *entry_statp;
@@ -197,7 +197,7 @@ unpack_archive(struct xbps_handle *xhp,
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
 
-	propsd = filesd = old_filesd = NULL;
+	filesd = old_filesd = NULL;
 	pkgfilesd = pkgpropsd = NULL;
 	preserve = update = conf_file = file_exists = false;
 	skip_obsoletes = softreplace = false;
@@ -324,20 +324,12 @@ unpack_archive(struct xbps_handle *xhp,
 				goto out;
 			}
 			continue;
-
-		} else if (strcmp("./props.plist", entry_pname) == 0) {
-			propsd = xbps_dictionary_from_archive_entry(ar, entry);
-			if (propsd == NULL) {
-				rv = errno;
-				goto out;
-			}
-			continue;
 		}
 		/*
 		 * If XBPS_PKGFILES or XBPS_PKGPROPS weren't found
 		 * in the archive at this phase, skip all data.
 		 */
-		if (propsd == NULL || filesd == NULL) {
+		if (filesd == NULL) {
 			archive_read_data_skip(ar);
 			/*
 			 * If we have processed 4 entries and the two
@@ -394,7 +386,7 @@ unpack_archive(struct xbps_handle *xhp,
 				 * "conf_files" array on its XBPS_PKGPROPS
 				 * dictionary.
 				 */
-				if (xbps_entry_is_a_conf_file(propsd, buf)) {
+				if (xbps_entry_is_a_conf_file(pkg_repod, buf)) {
 					conf_file = true;
 					if (xhp->unpack_cb != NULL)
 						xucd.entry_is_conf = true;
@@ -624,8 +616,7 @@ out1:
 	}
 	free(buf);
 	/*
-	 * Externalize XBPS_PKGFILES and XBPS_PKGPROPS into pkg's
-	 * metadata directory.
+	 * Externalize XBPS_PKGFILES into pkg's metadir.
 	 */
 	if (!prop_dictionary_externalize_to_file(filesd, pkgfilesd)) {
 		rv = errno;
@@ -635,9 +626,18 @@ out1:
 		    pkgver, XBPS_PKGFILES, strerror(errno));
 		goto out;
 	}
+
+	/* Remove unneeded objs from transaction */
+	prop_dictionary_remove(pkg_repod, "remove-and-update");
+	prop_dictionary_remove(pkg_repod, "transaction");
+	prop_dictionary_remove(pkg_repod, "state");
+
+	/*
+	 * Externalize XBPS_PKGPROPS into pkg's metadir.
+	 */
 	pkgpropsd = xbps_xasprintf("%s/metadata/%s/%s",
 	    XBPS_META_PATH, pkgname, XBPS_PKGPROPS);
-	if (!prop_dictionary_externalize_to_file(propsd, pkgpropsd)) {
+	if (!prop_dictionary_externalize_to_file(pkg_repod, pkgpropsd)) {
 		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    errno, pkgname, version,
@@ -652,8 +652,6 @@ out:
 		free(pkgpropsd);
 	if (prop_object_type(filesd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(filesd);
-	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
-		prop_object_release(propsd);
 
 	return rv;
 }
