@@ -324,6 +324,10 @@ unpack_archive(struct xbps_handle *xhp,
 				goto out;
 			}
 			continue;
+		} else if (strcmp("./props.plist") == 0) {
+			/* ignore this one; we use pkg data from repo index */
+			archive_read_data_skip(ar);
+			continue;
 		}
 		/*
 		 * If XBPS_PKGFILES or XBPS_PKGPROPS weren't found
