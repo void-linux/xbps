@@ -58,12 +58,8 @@ enum {
 };
 
 static int
-transaction_find_pkg(struct xbps_handle *xhp,
-		     const char *pkg,
-		     bool bypattern,
-		     bool best,
-		     bool exact,
-		     int action)
+trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool bypattern,
+	      bool best, bool exact, int action)
 {
 	prop_dictionary_t pkg_pkgdb, pkg_repod;
 	prop_array_t unsorted;
@@ -223,8 +219,8 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 			foundhold = false;
 			continue;
 		}
-		rv = transaction_find_pkg(xhp, pkgname, false, true,
-					  false, TRANS_UPDATE);
+		rv = trans_find_pkg(xhp, pkgname, false, true,
+				   false, TRANS_UPDATE);
 		if (rv == 0)
 			newpkg_found = true;
 		else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
@@ -242,8 +238,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 int
 xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname)
 {
-	return transaction_find_pkg(xhp, pkgname, false,
-				    true, false, TRANS_UPDATE);
+	return trans_find_pkg(xhp, pkgname, false, true, false, TRANS_UPDATE);
 }
 
 int
@@ -255,7 +250,6 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp,
 	pkg_state_t state;
 	char *pkgname;
 	bool bypattern, best, exact;
-	int rv;
 
 	if (xbps_pkgpattern_version(pkg)) {
 		bypattern = true;
@@ -285,8 +279,8 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp,
 			return EEXIST;
 		}
 	}
-	rv = transaction_find_pkg(xhp, pkg, bypattern, best, exact, TRANS_INSTALL);
-	return rv;
+
+	return trans_find_pkg(xhp, pkg, bypattern, best, exact, TRANS_INSTALL);
 }
 
 int
