@@ -368,18 +368,15 @@ find_repo_deps(struct xbps_handle *xhp,
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "store_dependency failed for "
 			    "`%s': %s\n", reqpkg, strerror(rv));
-			prop_object_release(curpkgd);
 			break;
 		}
 		/*
 		 * If package doesn't have rundeps, pass to the next one.
 		 */
 		curpkgrdeps = prop_dictionary_get(curpkgd, "run_depends");
-		if (curpkgrdeps == NULL) {
-			prop_object_release(curpkgd);
+		if (curpkgrdeps == NULL)
 			continue;
-		}
-		prop_object_release(curpkgd);
+
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf(xhp, "");
 			for (x = 0; x < *depth; x++)
@@ -414,6 +411,8 @@ xbps_repository_find_pkg_deps(struct xbps_handle *xhp,
 
 	pkg_rdeps = prop_dictionary_get(repo_pkgd, "run_depends");
 	if (prop_object_type(pkg_rdeps) != PROP_TYPE_ARRAY)
+		return 0;
+	else if (prop_array_count(pkg_rdeps) == 0)
 		return 0;
 
 	prop_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
