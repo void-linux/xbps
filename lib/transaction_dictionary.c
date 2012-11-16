@@ -97,9 +97,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		 */
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "update") == 0)) {
-			pkg_metad =
-			    xbps_dictionary_from_metadata_plist(xhp,
-				pkgname, XBPS_PKGPROPS);
+			pkg_metad = xbps_pkgd_from_metadir(xhp, pkgname);
 			if (pkg_metad == NULL)
 				continue;
 			prop_dictionary_get_uint64(pkg_metad,

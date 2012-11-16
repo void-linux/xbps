@@ -65,8 +65,7 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 	 * Internalize current pkg props dictionary from its
 	 * installed metadata directory.
 	 */
-	curpkg_propsd =
-	    xbps_dictionary_from_metadata_plist(xhp, curpkgn, XBPS_PKGPROPS);
+	curpkg_propsd = xbps_pkgd_from_metadir(xhp, curpkgn);
 	if (curpkg_propsd == NULL) {
 		xbps_error_printf("%s: missing %s metadata file!\n",
 		    curpkgn, XBPS_PKGPROPS);

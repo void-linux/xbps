@@ -34,6 +34,12 @@
 #include <xbps_api.h>
 #include "defs.h"
 
+struct ffdata {
+	int npatterns;
+	char **patterns;
+	const char *repouri;
+};
+
 static int
 match_files_by_pattern(prop_dictionary_t pkg_filesd,
 		       prop_dictionary_keysym_t key,
@@ -48,7 +54,6 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 	int i;
 
 	keyname = prop_dictionary_keysym_cstring_nocopy(key);
-	array = prop_dictionary_get_keysym(pkg_filesd, key);
 
 	if (strcmp(keyname, "files") == 0)
 		typestr = "regular file";
@@ -56,10 +61,14 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 		typestr = "directory";
 	else if (strcmp(keyname, "links") == 0)
 		typestr = "link";
-	else
+	else if (strcmp(keyname, "conf_files") == 0)
 		typestr = "configuration file";
+	else
+		return 0;
 
+	array = prop_dictionary_get_keysym(pkg_filesd, key);
 	iter = prop_array_iterator(array);
+
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
 		for (i = 0; i < npatterns; i++) {
@@ -73,61 +82,45 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 	return 0;
 }
 
-int
-ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
+static int
+ownedby_pkgdb_cb(struct xbps_handle *xhp, prop_object_t obj, void *arg, bool *done)
 {
-	prop_dictionary_t pkg_filesd;
+	prop_dictionary_t pkgmetad;
 	prop_array_t files_keys;
-	DIR *dirp;
-	struct dirent *dp;
-	char *path;
+	struct ffdata *ffd = arg;
+	unsigned int i;
+	const char *pkgname;
 	int rv = 0;
-	unsigned int i, count;
 
-	path = xbps_xasprintf("%s/metadata", xhp->metadir);
-	if ((dirp = opendir(path)) == NULL) {
-		free(path);
-		return -1;
-	}
+	(void)done;
 
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, ".") == 0) ||
-		    (strcmp(dp->d_name, "..") == 0))
-			continue;
+	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	pkgmetad = xbps_pkgd_from_metadir(xhp, pkgname);
 
-		pkg_filesd = xbps_dictionary_from_metadata_plist(xhp,
-		    dp->d_name, XBPS_PKGFILES);
-		if (pkg_filesd == NULL) {
-			if (errno == ENOENT)
-				continue;
-			rv = -1;
-			break;
-		}
-		files_keys = prop_dictionary_all_keys(pkg_filesd);
-		count = prop_array_count(files_keys);
-		for (i = 0; i < count; i++) {
-			rv = match_files_by_pattern(pkg_filesd,
-			    prop_array_get(files_keys, i),
-			    npatterns, patterns, dp->d_name);
-			if (rv == -1)
-				break;
-		}
-		prop_object_release(files_keys);
-		prop_object_release(pkg_filesd);
+	files_keys = prop_dictionary_all_keys(pkgmetad);
+	for (i = 0; i < prop_array_count(files_keys); i++) {
+		rv = match_files_by_pattern(pkgmetad,
+		    prop_array_get(files_keys, i),
+		    ffd->npatterns, ffd->patterns, pkgname);
 		if (rv == -1)
 			break;
 	}
-	(void)closedir(dirp);
-	free(path);
+	prop_object_release(files_keys);
+	prop_object_release(pkgmetad);
 
 	return rv;
 }
 
-struct ffdata {
-	int npatterns;
-	char **patterns;
-	const char *repouri;
-};
+int
+ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
+{
+	struct ffdata ffd;
+
+	ffd.npatterns = npatterns;
+	ffd.patterns = patterns;
+
+	return xbps_pkgdb_foreach_cb(xhp, ownedby_pkgdb_cb, &ffd);
+}
 
 static void
 repo_match_files_by_pattern(struct xbps_handle *xhp,

@@ -91,11 +91,12 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	xbps_dbg_printf(xhp, "%s-%s: processing conf_file %s\n",
 	    pkgname, version, entry_pname);
 
-	forigd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
+	forigd = xbps_pkgd_from_metadir(xhp, pkgname);
 	if (forigd == NULL) {
 		xbps_dbg_printf(xhp, "%s-%s: conf_file %s not currently "
 		    "installed\n", pkgname, version, entry_pname);
 		rv = 1;
+		prop_object_release(forigd);
 		goto out;
 	}
 

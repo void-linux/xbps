@@ -44,8 +44,7 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname)
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_dictionary_from_metadata_plist(xhp,
-	    pkgname, XBPS_PKGPROPS);
+	propsd = xbps_pkgd_from_metadir(xhp, pkgname);
 	if (propsd == NULL)
 		return ENOENT;
 

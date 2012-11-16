@@ -59,9 +59,6 @@ cb_pkg_integrity(struct xbps_handle *xhp,
 	    cpkg->npkgs, cpkg->totalpkgs, pkgname, version);
 	if (check_pkg_integrity(xhp, obj, pkgname, false, &flush) != 0)
 		cpkg->nbrokenpkgs++;
-	else
-		printf("\033[1A\033[K");
-
 
 	if (flush && !cpkg->flush)
 		cpkg->flush = flush;
@@ -100,13 +97,16 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    bool flush,
 		    bool *setflush)
 {
-	prop_dictionary_t opkgd, propsd, filesd;
+	prop_dictionary_t opkgd, propsd;
+	const char *sha256;
+	char *buf;
 	int rv = 0;
 	bool pkgdb_update = false, broken = false;
 
-	propsd = filesd = opkgd = NULL;
+	propsd = opkgd = NULL;
 
 	/* find real pkg by name */
+	opkgd = pkgd;
 	if (pkgd == NULL) {
 		opkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
 		if (opkgd == NULL) {
@@ -122,27 +122,33 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGPROPS);
+	propsd = xbps_pkgd_from_metadir(xhp, pkgname);
 	if (propsd == NULL) {
-		xbps_error_printf("%s: unexistent %s or invalid metadata "
-		    "file.\n", pkgname, XBPS_PKGPROPS);
-		broken = true;
-		goto out;
+		printf("%s: unexistent metafile, converting to 0.18 "
+		    "format...\n", pkgname);
+		if ((rv = convert_pkgd_metadir(xhp, opkgd)) != 0)
+			goto out;
+
+		pkgdb_update = true;
+		goto out1;
 	} else if (prop_dictionary_count(propsd) == 0) {
-		xbps_error_printf("%s: incomplete %s metadata file.\n",
-		    pkgname, XBPS_PKGPROPS);
+		xbps_error_printf("%s: incomplete metadata file.\n", pkgname);
 		broken = true;
 		goto out;
 	}
-	/*
-	 * Check for files.plist metadata file.
-	 */
-	filesd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
-	if (filesd == NULL) {
-		xbps_error_printf("%s: unexistent %s or invalid metadata "
-		    "file.\n", pkgname, XBPS_PKGFILES);
-		broken = true;
-		goto out;
+
+	prop_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256);
+	if (sha256 != NULL) {
+		buf = xbps_xasprintf("%s/.%s.plist",
+		    xhp->metadir, pkgname);
+		rv = xbps_file_hash_check(buf, sha256);
+		free(buf);
+		if (rv == ERANGE) {
+			broken = true;
+			fprintf(stderr, "%s: metadata file has been "
+			    "modified!\n", pkgname);
+			goto out;
+		}
 	}
 
 #define RUN_PKG_CHECK(x, name, arg, arg2)			\
@@ -158,13 +164,13 @@ do {								\
 } while (0)
 
 	/* Execute pkg checks */
-	RUN_PKG_CHECK(xhp, files, filesd, &pkgdb_update);
-	RUN_PKG_CHECK(xhp, symlinks, filesd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, files, propsd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, symlinks, propsd, &pkgdb_update);
 	RUN_PKG_CHECK(xhp, rundeps, propsd, &pkgdb_update);
-	RUN_PKG_CHECK(xhp, requiredby, pkgd ? pkgd : opkgd, &pkgdb_update);
-	RUN_PKG_CHECK(xhp, autoinstall, pkgd ? pkgd : opkgd, &pkgdb_update);
-	RUN_PKG_CHECK(xhp, unneeded, pkgd ? pkgd : opkgd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, requiredby, opkgd, &pkgdb_update);
+	RUN_PKG_CHECK(xhp, unneeded, opkgd, &pkgdb_update);
 
+out1:
 	if (flush && pkgdb_update) {
 		if (!xbps_pkgdb_replace_pkgd(xhp, opkgd, pkgname, false, true)) {
 			rv = EINVAL;
@@ -177,8 +183,6 @@ do {								\
 #undef RUN_PKG_CHECK
 
 out:
-	if (prop_object_type(filesd) == PROP_TYPE_DICTIONARY)
-		prop_object_release(filesd);
 	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(propsd);
 	if (broken)

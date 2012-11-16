@@ -510,9 +510,9 @@ main(int argc, char **argv)
 	/*
 	 * Internalize the plist file of the target installed package.
 	 */
-	plistd = xbps_dictionary_from_metadata_plist(&xh, argv[0], XBPS_PKGPROPS);
+	plistd = xbps_pkgd_from_metadir(&xh, argv[0]);
 	if (plistd == NULL)
-		die("cannot internalize %s from %s", XBPS_PKGPROPS, argv[0]);
+		die("cannot internalize %s metadata file", argv[0]);
 
 	/*
 	 * Create the output FILE.

@@ -69,15 +69,15 @@ xbps_rpool_init(struct xbps_handle *xhp)
 			rv = errno;
 			goto out;
 		}
-		array = prop_array_internalize_from_zfile(plist);
-		free(plist);
-		if (array == NULL) {
-			xbps_dbg_printf(xhp,
-			    "[rpool] `%s' cannot be internalized:"
-			    " %s\n", repouri, strerror(errno));
+		if (access(plist, R_OK) == -1) {
+			xbps_dbg_printf(xhp, "[rpool] `%s' cannot be "
+			    "internalized: %s\n", repouri, strerror(errno));
 			nmissing++;
 			continue;
 		}
+		array = prop_array_internalize_from_zfile(plist);
+		free(plist);
+		assert(array);
 		/*
 		 * Register repository into the array.
 		 */

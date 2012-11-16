@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20121111-1"
+#define XBPS_API_VERSION	"20121116"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1204,19 +1204,51 @@ prop_object_iterator_t xbps_array_iter_from_dict(prop_dictionary_t dict,
 						 const char *key);
 
 /**
- * Returns a proplib object dictionary associated with the installed package
- * \a pkgname, by internalizing its plist file defined in \a plist.
+ * Returns a proplib dictionary associated with the installed package
+ * \a name, by internalizing its plist file from metadir.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgname Package name of installed package.
- * @param[in] plist Package metadata property list file.
+ * @param[in] name Package name of installed package.
  *
- * @return The proplib object dictionary on success, NULL otherwise and
+ * @return The proplib dictionary on success, NULL otherwise and
  * errno is set appropiately.
  */
-prop_dictionary_t xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
-						      const char *pkgname,
-						      const char *plist);
+prop_dictionary_t xbps_pkgd_from_metadir(struct xbps_handle *xhp,
+					 const char *name);
+
+/**
+ * Creates a temporary file and executes it in rootdir.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] blob The buffer pointer where the data is stored.
+ * @param[in] blobsiz The size of the buffer data.
+ * @param[in] pkgname The package name associated.
+ * @param[in] version The package version associated.
+ * @param[in] action The action to execute on the temporary file.
+ * @param[in] update Set to true if package is being updated.
+ */
+int xbps_pkg_exec_buffer(struct xbps_handle *xhp,
+			 const void *blob,
+			 const size_t blobsiz,
+			 const char *pkgname,
+			 const char *version,
+			 const char *action,
+			 bool update);
+
+/**
+ * Creates a temporary file and executes it in rootdir.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] d Package dictionary where the script data is stored.
+ * @param[in] script Key associated with the script in dictionary.
+ * @param[in] action The action to execute on the temporary file.
+ * @param[in] update Set to true if package is being updated.
+ */
+int xbps_pkg_exec_script(struct xbps_handle *xhp,
+			 prop_dictionary_t d,
+			 const char *script,
+			 const char *action,
+			 bool update);
 
 /**
  * Removes the package's proplib dictionary matching \a pkgname

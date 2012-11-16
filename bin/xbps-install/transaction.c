@@ -314,7 +314,7 @@ exec_transaction(struct xbps_handle *xhp, size_t maxcols, bool yes, bool drun)
 	 * It's time to run the transaction!
 	 */
 	if ((rv = xbps_transaction_commit(xhp)) == 0) {
-		printf("%u installed, %u updated, "
+		printf("\n%u installed, %u updated, "
 		    "%u configured, %u removed.\n", trans->inst_pkgcnt,
 		    trans->up_pkgcnt, trans->cf_pkgcnt + trans->inst_pkgcnt,
 		    trans->rm_pkgcnt);

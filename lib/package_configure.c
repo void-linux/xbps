@@ -77,9 +77,8 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		   bool update,
 		   bool flush)
 {
-	prop_dictionary_t pkgd;
+	prop_dictionary_t pkgd, pkgmetad;
 	const char *version, *pkgver;
-	char *buf;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -111,39 +110,19 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgname, version, NULL);
 
-	buf = xbps_xasprintf("%s/metadata/%s/INSTALL",
-	    XBPS_META_PATH, pkgname);
-	if (chdir(xhp->rootdir) == -1) {
+	pkgmetad = xbps_pkgd_from_metadir(xhp, pkgname);
+	assert(pkgmetad);
+
+	rv = xbps_pkg_exec_script(xhp, pkgmetad, "install-script", "post", update);
+	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
 		    errno, pkgname, version,
-		    "%s: [configure] failed to chdir to rootdir `%s': %s",
-		    pkgver, xhp->rootdir, strerror(errno));
-		free(buf);
-		return EINVAL;
+		    "%s: [configure] INSTALL script failed to execute "
+		    "the post ACTION: %s", pkgver, strerror(rv));
+		prop_object_release(pkgmetad);
+		return rv;
 	}
-
-	if (access(buf, X_OK) == 0) {
-		if (xbps_file_exec(xhp, buf, "post",
-		    pkgname, version, update ? "yes" : "no",
-		    xhp->conffile, NULL) != 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
-			    errno, pkgname, version,
-			    "%s: [configure] INSTALL script failed to execute "
-			    "the post ACTION: %s", pkgver, strerror(errno));
-			free(buf);
-			return errno;
-		}
-	} else {
-		if (errno != ENOENT) {
-			xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
-			    errno, pkgname, version,
-			    "%s: [configure] INSTALL script cannot be "
-			    "executed: %s", pkgver, strerror(errno));
-			free(buf);
-			return errno;
-		}
-	}
-	free(buf);
+	prop_object_release(pkgmetad);
 
 	if (state == XBPS_PKG_STATE_INSTALLED)
 		return rv;

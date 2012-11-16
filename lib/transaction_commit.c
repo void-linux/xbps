@@ -84,7 +84,7 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 			rv = EINVAL;
 			break;
 		}
-		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgname, version,
+		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver, filen,
 		    "Verifying `%s' package integrity...", filen, repoloc);
 		rv = xbps_file_hash_check(binfile, sha256);
 		if (rv != 0) {
@@ -110,6 +110,7 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 	const char *pkgname, *version, *fetchstr;
 	char *binfile;
 	int rv = 0;
+	bool state_dload = false;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
@@ -149,6 +150,11 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 				rv = errno;
 				break;
 			}
+		}
+		if (state_dload == false) {
+			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_DOWNLOAD,
+			    0, NULL, NULL, NULL);
+			state_dload = true;
 		}
 		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD,
 		    0, pkgname, version,
@@ -207,7 +213,6 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	/*
 	 * Download binary packages (if they come from a remote repository).
 	 */
-	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_DOWNLOAD, 0, NULL, NULL, NULL);
 	if ((rv = download_binpkgs(xhp, iter)) != 0)
 		goto out;
 	/*

@@ -1,5 +1,23 @@
 xbps-0.18 (???):
 
+ * Structured pkg metadata stored on disk, and added new functionality:
+
+	- A single plist containing pkg properties, files and
+	  INSTALL/REMOVE scripts added as prop_data(3) objects.
+
+	- pkgdb's pkg dictionary now contains a sha256 hash to know if the
+	  plist from metadir has been modified.
+
+	- prop_data(3) objects can be seen with xbps-query(8) --property.
+
+	- pkg plists are now kept in <metadir>/.<pkgname>.plist.
+
+	- In a future revision libxbps could make a backup of pkgdb and
+	  plist files in metadir before a transaction is committed.
+  
+   Users must run 'xbps-pkgdb [-r <rootdir>] -a' to upgrade pkg metadata
+   to the 0.18 format.
+
  * Shell wildcard patterns (fnmatch(3)) can now be used in the
    PackagesOnHold configuration option.
 

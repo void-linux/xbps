@@ -52,7 +52,7 @@
  *  -# Its state will be changed to XBPS_PKG_STATE_HALF_REMOVED.
  *  -# Its <b>purge-remove</b> target specified in the REMOVE script
  *     will be executed.
- *  -# Its package metadata directory will be removed.
+ *  -# Its package metadata file will be removed.
  *  -# Package will be unregistered from package database.
  *
  * @note
@@ -73,50 +73,6 @@
  * Text inside of white boxes are the key associated with the object, its
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
-static int
-remove_pkg_metadata(struct xbps_handle *xhp,
-		    const char *pkgname,
-		    const char *version,
-		    const char *pkgver)
-{
-	struct dirent *dp;
-	DIR *dirp;
-	char *metadir, *path;
-	int rv = 0;
-
-	assert(pkgname != NULL);
-
-	metadir = xbps_xasprintf("%s/%s/metadata/%s", xhp->rootdir,
-	     XBPS_META_PATH, pkgname);
-	dirp = opendir(metadir);
-	if (dirp == NULL) {
-		free(metadir);
-		return errno;
-	}
-
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, ".") == 0) ||
-		    (strcmp(dp->d_name, "..") == 0))
-			continue;
-
-		path = xbps_xasprintf("%s/%s", metadir, dp->d_name);
-		if (unlink(path) == -1) {
-			xbps_set_cb_state(xhp, XBPS_STATE_PURGE_FAIL,
-			    errno, pkgname, version,
-			    "%s: [purge] failed to remove metafile `%s': %s",
-			    pkgver, path, strerror(errno));
-		}
-		free(path);
-	}
-	(void)closedir(dirp);
-	rv = rmdir(metadir);
-	free(metadir);
-	if (rv != 0)
-		rv = errno;
-
-	return rv;
-}
-
 int
 xbps_remove_pkg_files(struct xbps_handle *xhp,
 		      prop_dictionary_t dict,
@@ -154,6 +110,7 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		curobj = "directory";
 
 	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
 	version = xbps_pkg_version(pkgver);
 
 	while ((obj = prop_object_iterator_next(iter))) {
@@ -244,8 +201,7 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		free(path);
 	}
 	prop_object_iterator_release(iter);
-	if (pkgname)
-		free(pkgname);
+	free(pkgname);
 
 	return rv;
 }
@@ -258,25 +214,21 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		bool soft_replace)
 {
 	prop_dictionary_t pkgd = NULL;
-	char *tmpname, *buf, *pkgver = NULL;
+	char *tmpname, *buf = NULL, *pkgver = NULL;
 	const char *tmpver = NULL;
 	int rv = 0;
-	bool rmfile_exists = false;
 	pkg_state_t state = 0;
 
 	assert(pkgname != NULL);
 	assert(version != NULL);
-
-	buf = xbps_xasprintf("%s/metadata/%s/REMOVE",
-	    XBPS_META_PATH, pkgname);
-
-	pkgver = xbps_xasprintf("%s-%s", pkgname, version);
 
 	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0)
 		goto out;
 
 	if (!update)
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE, 0, pkgname, version, NULL);
+
+	pkgver = xbps_xasprintf("%s-%s", pkgname, version);
 
 	if (chdir(xhp->rootdir) == -1) {
 		rv = errno;
@@ -286,34 +238,24 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		    pkgver, xhp->rootdir, strerror(rv));
 		goto out;
 	}
+	pkgd = xbps_pkgd_from_metadir(xhp, pkgname);
+	assert(pkgd);
+
 	/* If package was "half-removed", remove it fully. */
 	if (state == XBPS_PKG_STATE_HALF_REMOVED)
 		goto purge;
 	/*
 	 * Run the pre remove action.
 	 */
-	if (access(buf, X_OK) == 0) {
-		rmfile_exists = true;
-		if (xbps_file_exec(xhp, buf, "pre", pkgname, version,
-		    update ? "yes" : "no", xhp->conffile, NULL) != 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-			    errno, pkgname, version,
-			    "%s: [remove] REMOVE script failed to "
-			    "execute pre ACTION: %s",
-			    pkgver, strerror(errno));
-			rv = errno;
-			goto out;
-		}
-	} else {
-		if (errno != ENOENT) {
-			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-			    errno, pkgname, version,
-			    "%s: [remove] REMOVE script failed to "
-			    "execute pre ACTION: %s",
-			    pkgver, strerror(errno));
-			rv = errno;
-			goto out;
-		}
+	rv = xbps_pkg_exec_script(xhp, pkgd, "remove", "pre", update);
+	if (rv != 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
+		    errno, pkgname, version,
+		    "%s: [remove] REMOVE script failed to "
+		    "execute pre ACTION: %s",
+		    pkgver, strerror(errno));
+		rv = errno;
+		goto out;
 	}
 	/*
 	 * If updating a package, we just need to execute the current
@@ -322,7 +264,7 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	 */
 	if (update) {
 		free(pkgver);
-		free(buf);
+		prop_object_release(pkgd);
 		return xbps_requiredby_pkg_remove(xhp, pkgname);
 	} else if (soft_replace) {
 		/*
@@ -333,7 +275,6 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		goto softreplace;
 	}
 
-	pkgd = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
 	if (pkgd) {
 		/* Remove regular files */
 		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "files", pkgver)) != 0)
@@ -352,9 +293,8 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	 * Execute the post REMOVE action if file exists and we aren't
 	 * updating the package.
 	 */
-	if (rmfile_exists &&
-	    ((rv = xbps_file_exec(xhp, buf, "post", pkgname, version, "no",
-	     xhp->conffile, NULL)) != 0)) {
+	rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "post", false);
+	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		    "%s: [remove] REMOVE script failed to execute "
@@ -390,26 +330,27 @@ purge:
 	/*
 	 * Execute the purge REMOVE action if file exists.
 	 */
-	if (access(buf, X_OK) == 0) {
-	    if ((rv = xbps_file_exec(xhp, buf, "purge", pkgname, version, "no",
-	        xhp->conffile, NULL)) != 0) {
+	rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "purge", false);
+	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
 		    "%s: REMOVE script failed to execute "
 		    "purge ACTION: %s", pkgver, strerror(rv));
 		goto out;
-	    }
 	}
 	/*
-	 * Remove package metadata directory.
+	 * Remove package metadata plist.
 	 */
-	rv = remove_pkg_metadata(xhp, pkgname, version, pkgver);
-	if (rv != 0) {
+	prop_object_release(pkgd);
+	pkgd = NULL;
+
+	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
+	if (remove(buf) == -1) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 		    rv, pkgname, version,
-		    "%s: failed to remove metadata files: %s",
-		    pkgver, strerror(rv));
-		if (rv != ENOENT)
+		    "%s: failed to remove metadata file: %s",
+		    pkgver, strerror(errno));
+		if (errno != ENOENT)
 			goto out;
 	}
 	/*

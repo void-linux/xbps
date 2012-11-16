@@ -49,6 +49,7 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 	time_t t;
 	struct tm *tmp;
 	const char *pkgname, *version, *desc, *pkgver;
+	char *buf, *sha256;
 	int rv = 0;
 	bool autoinst = false;
 
@@ -156,6 +157,15 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 			goto out;
 		}
 	}
+	/*
+	 * Create a hash for the pkg's metafile.
+	 */
+	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
+	sha256 = xbps_file_hash(buf);
+	assert(sha256);
+	prop_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
+	free(sha256);
+	free(buf);
 	/*
 	 * Remove unneeded objs from pkg dictionary.
 	 */

@@ -41,7 +41,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pattern, *pkgname, *curpkgname, *pkgver, *curpkgver;
-	char *dirc, *buf, *dname;
+	char *buf;
 	bool instd_auto, sr;
 	size_t idx;
 
@@ -160,35 +160,21 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				    "automatic-install", instd_auto);
 				prop_dictionary_set_bool(instd,
 				    "softreplace", true);
-				buf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-				    xhp->rootdir, XBPS_META_PATH, curpkgname,
-				    XBPS_PKGFILES);
+				buf = xbps_xasprintf("%s/.%s.plist",
+				    xhp->metadir, curpkgname);
 				filesd = prop_dictionary_internalize_from_zfile(buf);
 				free(buf);
 				assert(filesd != NULL);
-				buf = xbps_xasprintf("%s/%s/metadata/%s/%s",
-				    xhp->rootdir, XBPS_META_PATH, pkgname,
-				    XBPS_PKGFILES);
-				dirc = strdup(buf);
-				assert(dirc != NULL);
-				dname = dirname(dirc);
-				if (xbps_mkpath(dname, 0755) == -1) {
-					if (errno != EEXIST) {
-						free(buf);
-						prop_object_iterator_release(iter);
-						return errno;
-					}
-				}
+				buf = xbps_xasprintf("%s/.%s.plist",
+				    xhp->metadir, pkgname);
 				if (!prop_dictionary_externalize_to_zfile(filesd, buf)) {
 					free(buf);
-					free(dirc);
 					prop_object_release(filesd);
 					prop_object_iterator_release(iter);
 					return errno;
 				}
 				prop_object_release(filesd);
 				free(buf);
-				free(dirc);
 			}
 			/*
 			 * Add package dictionary into the transaction and mark

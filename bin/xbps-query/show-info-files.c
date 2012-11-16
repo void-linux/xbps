@@ -31,26 +31,33 @@
 #include <limits.h>
 #include <libgen.h>
 #include <fnmatch.h>
+#include <assert.h>
 
 #include <xbps_api.h>
 #include "defs.h"
 
 static void
-print_value_obj(const char *keyname, prop_object_t obj, bool raw)
+print_value_obj(const char *keyname, prop_object_t obj,
+		const char *indent, bool raw)
 {
-	const char *value;
+	prop_array_t allkeys;
+	prop_object_t obj2, keysym;
+	const char *ksymname, *value;
 	size_t i;
 	char size[8];
+
+	if (indent == NULL)
+		indent = "";
 
 	switch (prop_object_type(obj)) {
 	case PROP_TYPE_STRING:
 		if (!raw)
-			printf("%s: ", keyname);
+			printf("%s%s: ", indent, keyname);
 		printf("%s\n", prop_string_cstring_nocopy(obj));
 		break;
 	case PROP_TYPE_NUMBER:
 		if (!raw)
-			printf("%s: ", keyname);
+			printf("%s%s: ", indent, keyname);
 		if (xbps_humanize_number(size,
 		    (int64_t)prop_number_unsigned_integer_value(obj)) == -1)
 			printf("%ju\n",
@@ -60,19 +67,52 @@ print_value_obj(const char *keyname, prop_object_t obj, bool raw)
 		break;
 	case PROP_TYPE_BOOL:
 		if (!raw)
-			printf("%s: ", keyname);
+			printf("%s%s: ", indent, keyname);
 		printf("%s\n", prop_bool_true(obj) ? "yes" : "no");
 		break;
 	case PROP_TYPE_ARRAY:
 		if (!raw)
-			printf("%s:\n", keyname);
+			printf("%s%s:\n", indent, keyname);
 		for (i = 0; i < prop_array_count(obj); i++) {
-			prop_array_get_cstring_nocopy(obj, i, &value);
-			printf("%s%s%s", !raw ? "\t" : "", value,
-			    !raw ? "\n" : " ");
+			obj2 = prop_array_get(obj, i);
+			if (prop_object_type(obj2) == PROP_TYPE_STRING) {
+				value = prop_string_cstring_nocopy(obj2);
+				printf("%s%s%s%s", indent, !raw ? "\t" : "",
+				    value, !raw ? "\n" : "");
+			} else {
+				print_value_obj(keyname, obj2, "  ", raw);
+			}
 		}
 		if (raw)
 			printf("\n");
+		break;
+	case PROP_TYPE_DICTIONARY:
+		allkeys = prop_dictionary_all_keys(obj);
+		for (i = 0; i < prop_array_count(allkeys); i++) {
+			keysym = prop_array_get(allkeys, i);
+			ksymname = prop_dictionary_keysym_cstring_nocopy(keysym);
+			obj2 = prop_dictionary_get_keysym(obj, keysym);
+			print_value_obj(ksymname, obj2, "  ", raw);
+		}
+		prop_object_release(allkeys);
+		if (raw)
+			printf("\n");
+		break;
+	case PROP_TYPE_DATA:
+		if (!raw) {
+			xbps_humanize_number(size, (int64_t)prop_data_size(obj));
+			printf("%s%s: %s\n", indent, keyname, size);
+		} else {
+			FILE *f;
+			char buf[BUFSIZ-1];
+
+			f = fmemopen(prop_data_data(obj),
+				     prop_data_size(obj), "r");
+			assert(f);
+			while (fgets(buf, BUFSIZ-1, f))
+				printf("%s", buf);
+			fclose(f);
+		}
 		break;
 	default:
 		xbps_warn_printf("unknown obj type (key %s)\n",
@@ -91,7 +131,7 @@ show_pkg_info_one(prop_dictionary_t d, const char *keys)
 		obj = prop_dictionary_get(d, keys);
 		if (obj == NULL)
 			return;
-		print_value_obj(keys, obj, true);
+		print_value_obj(keys, obj, NULL, true);
 		return;
 	}
 	key = strdup(keys);
@@ -102,7 +142,7 @@ show_pkg_info_one(prop_dictionary_t d, const char *keys)
 		obj = prop_dictionary_get(d, p);
 		if (obj == NULL)
 			continue;
-		print_value_obj(p, obj, true);
+		print_value_obj(p, obj, NULL, true);
 	}
 	free(key);
 }
@@ -120,11 +160,15 @@ show_pkg_info(prop_dictionary_t dict)
 		keysym = prop_array_get(all_keys, i);
 		keyname = prop_dictionary_keysym_cstring_nocopy(keysym);
 		obj = prop_dictionary_get_keysym(dict, keysym);
-		/* ignore run_depends, it's shown via 'show-deps' */
-		if (strcmp(keyname, "run_depends") == 0)
+		/* ignore objs shown by other targets */
+		if ((strcmp(keyname, "run_depends") == 0) ||
+		    (strcmp(keyname, "requiredby") == 0) ||
+		    (strcmp(keyname, "files") == 0) ||
+		    (strcmp(keyname, "dirs") == 0) ||
+		    (strcmp(keyname, "links") == 0))
 			continue;
 
-		print_value_obj(keyname, obj, false);
+		print_value_obj(keyname, obj, NULL, false);
 	}
 	prop_object_release(all_keys);
 }
@@ -142,7 +186,9 @@ show_pkg_files(prop_dictionary_t filesd)
 	for (i = 0; i < prop_array_count(allkeys); i++) {
 		ksym = prop_array_get(allkeys, i);
 		keyname = prop_dictionary_keysym_cstring_nocopy(ksym);
-		if (strcmp(keyname, "dirs") == 0)
+		if ((strcmp(keyname, "files") &&
+		    (strcmp(keyname, "conf_files") &&
+		    (strcmp(keyname, "links")))))
 			continue;
 
 		array = prop_dictionary_get(filesd, keyname);
@@ -174,7 +220,7 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 	const char *instdate, *pname;
 	bool autoinst;
 
-	d = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGPROPS);
+	d = xbps_pkgd_from_metadir(xhp, pkgname);
 	if (d == NULL)
 		return ENOENT;
 
@@ -207,7 +253,7 @@ show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkgname)
 	prop_dictionary_t d;
 	int rv = 0;
 
-	d = xbps_dictionary_from_metadata_plist(xhp, pkgname, XBPS_PKGFILES);
+	d = xbps_pkgd_from_metadir(xhp, pkgname);
 	if (d == NULL)
 		return ENOENT;
 

@@ -266,32 +266,28 @@ xbps_array_replace_dict_by_pattern(prop_array_t array,
 }
 
 prop_dictionary_t
-xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
-				    const char *pkgname,
-				    const char *plist)
+xbps_pkgd_from_metadir(struct xbps_handle *xhp, const char *name)
 {
 	prop_dictionary_t pkgd, plistd = NULL;
 	const char *savedpkgname;
 	char *plistf;
 
-	assert(pkgname != NULL);
-	assert(plist != NULL);
+	assert(name != NULL);
 
-	savedpkgname = pkgname;
-	plistf = xbps_xasprintf("%s/metadata/%s/%s", xhp->metadir,
-	    savedpkgname, plist);
+	savedpkgname = name;
+	plistf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, name);
 
 	if (access(plistf, R_OK) == -1) {
-		pkgd = xbps_find_virtualpkg_dict_installed(xhp, pkgname, false);
+		pkgd = xbps_find_virtualpkg_dict_installed(xhp, name, false);
 		if (pkgd == NULL)
-			pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
+			pkgd = xbps_find_pkg_dict_installed(xhp, name, false);
 
 		if (pkgd != NULL) {
 			free(plistf);
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgname", &savedpkgname);
-			plistf = xbps_xasprintf("%s/metadata/%s/%s",
-			    xhp->metadir, savedpkgname, plist);
+			plistf = xbps_xasprintf("%s/.%s.plist",
+			    xhp->metadir, savedpkgname);
 		}
 	}
 
@@ -299,7 +295,7 @@ xbps_dictionary_from_metadata_plist(struct xbps_handle *xhp,
 	free(plistf);
 	if (plistd == NULL) {
 		xbps_dbg_printf(xhp, "cannot read from metadata %s for %s: %s\n",
-		    plist, savedpkgname, strerror(errno));
+		    plistf, savedpkgname, strerror(errno));
 		return NULL;
 	}
 

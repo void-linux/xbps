@@ -173,8 +173,6 @@ main(int argc, char **argv)
 	xh.repository = defrepo;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.unpack_cb = unpack_progress_cb_verbose;
-	else
-		xh.unpack_cb = unpack_progress_cb;
 
 	if ((rv = xbps_init(&xh)) != 0) {
 		xbps_error_printf("Failed to initialize libxbps: %s\n",

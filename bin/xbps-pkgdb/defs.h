@@ -40,11 +40,13 @@ int	check_pkg_integrity_all(struct xbps_handle *);
 #define CHECK_PKG_DECL(type)			\
 int check_pkg_##type (struct xbps_handle *, const char *, void *, bool *)
 
-CHECK_PKG_DECL(autoinstall);
 CHECK_PKG_DECL(unneeded);
 CHECK_PKG_DECL(files);
 CHECK_PKG_DECL(rundeps);
 CHECK_PKG_DECL(symlinks);
 CHECK_PKG_DECL(requiredby);
+
+/* from convert.c */
+int	convert_pkgd_metadir(struct xbps_handle *, prop_dictionary_t);
 
 #endif /* !_XBPS_PKGDB_DEFS_H_ */
