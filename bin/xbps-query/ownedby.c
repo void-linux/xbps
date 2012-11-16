@@ -95,7 +95,7 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp, prop_object_t obj, void *arg, bool *do
 	(void)done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	pkgmetad = xbps_pkgd_from_metadir(xhp, pkgname);
+	pkgmetad = xbps_metadir_get_pkgd(xhp, pkgname);
 
 	files_keys = prop_dictionary_all_keys(pkgmetad);
 	for (i = 0; i < prop_array_count(files_keys); i++) {
@@ -106,7 +106,6 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp, prop_object_t obj, void *arg, bool *do
 			break;
 	}
 	prop_object_release(files_keys);
-	prop_object_release(pkgmetad);
 
 	return rv;
 }

@@ -122,7 +122,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_pkgd_from_metadir(xhp, pkgname);
+	propsd = xbps_metadir_get_pkgd(xhp, pkgname);
 	if (propsd == NULL) {
 		printf("%s: unexistent metafile, converting to 0.18 "
 		    "format...\n", pkgname);
@@ -183,8 +183,6 @@ out1:
 #undef RUN_PKG_CHECK
 
 out:
-	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
-		prop_object_release(propsd);
 	if (broken)
 		return 1;
 

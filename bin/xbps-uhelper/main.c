@@ -43,7 +43,7 @@ write_plist_file(prop_dictionary_t dict, const char *file)
 
 	if (!prop_dictionary_externalize_to_zfile(dict, file)) {
 		prop_object_release(dict);
-		xbps_error_printf("xbps-uhelper: couldn't write to %s: %s",
+		xbps_error_printf("xbps-uhelper: couldn't write to %s: %s\n",
 		    file, strerror(errno));
 		exit(EXIT_FAILURE);
 	}

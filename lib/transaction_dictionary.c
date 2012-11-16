@@ -97,12 +97,11 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		 */
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "update") == 0)) {
-			pkg_metad = xbps_pkgd_from_metadir(xhp, pkgname);
+			pkg_metad = xbps_metadir_get_pkgd(xhp, pkgname);
 			if (pkg_metad == NULL)
 				continue;
 			prop_dictionary_get_uint64(pkg_metad,
 			    "installed_size", &tsize);
-			prop_object_release(pkg_metad);
 			rmsize += tsize;
 		}
 		if ((strcmp(tract, "install") == 0) ||

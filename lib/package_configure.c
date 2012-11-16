@@ -110,7 +110,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgname, version, NULL);
 
-	pkgmetad = xbps_pkgd_from_metadir(xhp, pkgname);
+	pkgmetad = xbps_metadir_get_pkgd(xhp, pkgname);
 	assert(pkgmetad);
 
 	rv = xbps_pkg_exec_script(xhp, pkgmetad, "install-script", "post", update);
@@ -119,11 +119,8 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		    errno, pkgname, version,
 		    "%s: [configure] INSTALL script failed to execute "
 		    "the post ACTION: %s", pkgver, strerror(rv));
-		prop_object_release(pkgmetad);
 		return rv;
 	}
-	prop_object_release(pkgmetad);
-
 	if (state == XBPS_PKG_STATE_INSTALLED)
 		return rv;
 

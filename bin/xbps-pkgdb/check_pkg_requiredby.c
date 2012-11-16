@@ -29,7 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <sys/param.h>
+#include <assert.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -65,7 +65,7 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 	 * Internalize current pkg props dictionary from its
 	 * installed metadata directory.
 	 */
-	curpkg_propsd = xbps_pkgd_from_metadir(xhp, curpkgn);
+	curpkg_propsd = xbps_metadir_get_pkgd(xhp, curpkgn);
 	if (curpkg_propsd == NULL) {
 		xbps_error_printf("%s: missing %s metadata file!\n",
 		    curpkgn, XBPS_PKGPROPS);
@@ -75,7 +75,6 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 	    prop_dictionary_get(curpkg_propsd, "run_depends");
 	if (curpkg_rdeps == NULL) {
 		/* package has no rundeps, skip */
-		prop_object_release(curpkg_propsd);
 		return 0;
 	}
 	/*
@@ -90,13 +89,11 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 		provides = prop_dictionary_get(obj, "provides");
 		if (provides == NULL) {
 			/* doesn't provide any virtual pkg */
-			prop_object_release(curpkg_propsd);
 			return 0;
 		}
 		if (!xbps_match_any_virtualpkg_in_rundeps(curpkg_rdeps,
 		    provides)) {
 			/* doesn't match any virtual pkg */
-			prop_object_release(curpkg_propsd);
 			return 0;
 		}
 	}
@@ -113,7 +110,6 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 			 * Current package already requires our package,
 			 * this is good so skip it.
 			 */
-			prop_object_release(curpkg_propsd);
 			return 0;
 		}
 	} else {
@@ -121,22 +117,18 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 		 * Missing requiredby array object, create it.
 		 */
 		crd->pkgd_reqby = prop_array_create();
-		if (crd->pkgd_reqby == NULL) {
-			prop_object_release(curpkg_propsd);
-			return -1;
-		}
+		assert(crd->pkgd_reqby);
 		crd->pkgd_reqby_alloc = true;
 	}
 	/*
 	 * Added pkgdep into pkg's requiredby array.
 	 */
-	if (!prop_array_add(crd->pkgd_reqby, curpkgver)) {
-		prop_object_release(curpkg_propsd);
+	if (!prop_array_add(crd->pkgd_reqby, curpkgver))
 		return -1;
-	}
+
 	printf("%s: added missing requiredby entry for %s.\n\n",
 	    crd->pkgver, prop_string_cstring_nocopy(curpkgver));
-	prop_object_release(curpkg_propsd);
+
 	return 1;
 }
 
@@ -170,7 +162,6 @@ remove_stale_entries_in_reqby(struct xbps_handle *xhp,
 	}
 	if (needs_update) {
 		prop_dictionary_set(crd->pkgd, "requiredby", crd->pkgd_reqby);
-		printf("%s: requiredby fix done!\n\n", crd->pkgver);
 		return true;
 	}
 	return false;

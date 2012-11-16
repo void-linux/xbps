@@ -44,13 +44,12 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname)
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_pkgd_from_metadir(xhp, pkgname);
+	propsd = xbps_metadir_get_pkgd(xhp, pkgname);
 	if (propsd == NULL)
 		return ENOENT;
 
 	rv = xbps_callback_array_iter_in_dict(xhp, propsd, "run_depends",
 	     list_strings_sep_in_array, NULL);
-	prop_object_release(propsd);
 
 	return rv;
 }

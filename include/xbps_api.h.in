@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20121116"
+#define XBPS_API_VERSION	"20121116-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -455,6 +455,12 @@ struct xbps_handle {
 	 * Array of dictionaries with all registered repositories.
 	 */
 	prop_array_t repo_pool;
+	/**
+	 * @private
+	 *
+	 * Array of pkg dictionaries from metadir.
+	 */
+	prop_array_t metadir_pool;
 	/**
 	 * @private pkgdb.
 	 *
@@ -1213,8 +1219,8 @@ prop_object_iterator_t xbps_array_iter_from_dict(prop_dictionary_t dict,
  * @return The proplib dictionary on success, NULL otherwise and
  * errno is set appropiately.
  */
-prop_dictionary_t xbps_pkgd_from_metadir(struct xbps_handle *xhp,
-					 const char *name);
+prop_dictionary_t xbps_metadir_get_pkgd(struct xbps_handle *xhp,
+					const char *name);
 
 /**
  * Creates a temporary file and executes it in rootdir.

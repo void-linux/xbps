@@ -220,16 +220,15 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 	const char *instdate, *pname;
 	bool autoinst;
 
-	d = xbps_pkgd_from_metadir(xhp, pkgname);
+	d = xbps_metadir_get_pkgd(xhp, pkgname);
 	if (d == NULL)
 		return ENOENT;
 
 	prop_dictionary_get_cstring_nocopy(d, "pkgname", &pname);
 	pkgdb_d = xbps_pkgdb_get_pkgd(xhp, pname, false);
-	if (pkgdb_d == NULL) {
-		prop_object_release(d);
+	if (pkgdb_d == NULL)
 		return EINVAL;
-	}
+
 	if (prop_dictionary_get_cstring_nocopy(pkgdb_d,
 	    "install-date", &instdate))
 		prop_dictionary_set_cstring_nocopy(d, "install-date",
@@ -243,7 +242,6 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 	else
 		show_pkg_info_one(d, option);
 
-	prop_object_release(d);
 	return 0;
 }
 
@@ -253,12 +251,11 @@ show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkgname)
 	prop_dictionary_t d;
 	int rv = 0;
 
-	d = xbps_pkgd_from_metadir(xhp, pkgname);
+	d = xbps_metadir_get_pkgd(xhp, pkgname);
 	if (d == NULL)
 		return ENOENT;
 
 	rv = show_pkg_files(d);
-	prop_object_release(d);
 
 	return rv;
 }

@@ -510,7 +510,7 @@ main(int argc, char **argv)
 	/*
 	 * Internalize the plist file of the target installed package.
 	 */
-	plistd = xbps_pkgd_from_metadir(&xh, argv[0]);
+	plistd = xbps_metadir_get_pkgd(&xh, argv[0]);
 	if (plistd == NULL)
 		die("cannot internalize %s metadata file", argv[0]);
 
@@ -525,7 +525,6 @@ main(int argc, char **argv)
 	 */
 	create_dot_graph(&xh, f, plistd, confd, revdeps);
 
-	prop_object_release(plistd);
 	prop_object_release(confd);
 	xbps_end(&xh);
 

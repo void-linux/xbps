@@ -91,12 +91,11 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	xbps_dbg_printf(xhp, "%s-%s: processing conf_file %s\n",
 	    pkgname, version, entry_pname);
 
-	forigd = xbps_pkgd_from_metadir(xhp, pkgname);
+	forigd = xbps_metadir_get_pkgd(xhp, pkgname);
 	if (forigd == NULL) {
 		xbps_dbg_printf(xhp, "%s-%s: conf_file %s not currently "
 		    "installed\n", pkgname, version, entry_pname);
 		rv = 1;
-		prop_object_release(forigd);
 		goto out;
 	}
 
@@ -117,7 +116,6 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		}
 		prop_object_iterator_release(iter2);
 	}
-	prop_object_release(forigd);
 	/*
 	 * First case: original hash not found, install new file.
 	 */

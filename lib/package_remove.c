@@ -238,7 +238,7 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		    pkgver, xhp->rootdir, strerror(rv));
 		goto out;
 	}
-	pkgd = xbps_pkgd_from_metadir(xhp, pkgname);
+	pkgd = xbps_metadir_get_pkgd(xhp, pkgname);
 	assert(pkgd);
 
 	/* If package was "half-removed", remove it fully. */
@@ -341,9 +341,6 @@ purge:
 	/*
 	 * Remove package metadata plist.
 	 */
-	prop_object_release(pkgd);
-	pkgd = NULL;
-
 	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	if (remove(buf) == -1) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
@@ -373,8 +370,6 @@ out:
 		free(buf);
 	if (pkgver != NULL)
 		free(pkgver);
-	if (pkgd != NULL)
-		prop_object_release(pkgd);
 
 	return rv;
 }

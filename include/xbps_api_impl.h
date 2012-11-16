@@ -182,6 +182,9 @@ int HIDDEN xbps_unpack_binary_pkg(struct xbps_handle *, prop_dictionary_t);
  */
 void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *, prop_dictionary_t);
 
+void HIDDEN xbps_metadir_init(struct xbps_handle *);
+void HIDDEN xbps_metadir_release(struct xbps_handle *);
+
 __END_DECLS
 
 #endif /* !_XBPS_API_IMPL_H_ */
