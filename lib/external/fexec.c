@@ -50,15 +50,13 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 		/*
 		 * If rootdir != / and uid==0 and bin/sh exists,
 		 * change root directory and exec command.
-		 *
-		 * It's assumed that cwd is the target rootdir.
 		 */
 		if (strcmp(xhp->rootdir, "/")) {
-			if (getuid() == 0 && access("bin/sh", X_OK) == 0) {
-				if (chroot(xhp->rootdir) == -1)
-					_exit(128);
-				if (chdir("/") == -1)
-					_exit(129);
+			if (geteuid() == 0 && access("bin/sh", X_OK) == 0) {
+				if (chroot(xhp->rootdir) == 0) {
+					if (chdir("/") == -1)
+						_exit(129);
+				}
 			}
 		}
 		(void)execv(file, __UNCONST(argv));
