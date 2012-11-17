@@ -56,7 +56,6 @@ xbps_metadir_release(struct xbps_handle *xhp)
 		obj = prop_array_get(xhp->metadir_pool, i);
 		prop_object_release(obj);
 	}
-	prop_object_release(xhp->metadir_pool);
 	xhp->metadir_pool = NULL;
 }
 
