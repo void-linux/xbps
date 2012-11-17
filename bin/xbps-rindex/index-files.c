@@ -141,8 +141,8 @@ index_files_add(struct xbps_handle *xhp, int argc, char **argv)
 	prop_object_t obj, fileobj;
 	prop_dictionary_t pkgprops, pkg_filesd, pkgd;
 	prop_array_t files, pkg_cffiles, pkg_files, pkg_links;
-	const char *binpkg, *pkgver, *arch;
-	char *plist, *repodir, *p;
+	const char *binpkg, *pkgver, *arch, *version;
+	char *plist, *repodir, *p, *pkgname;
 	size_t x;
 	int i, rv = 0;
 	bool found, flush;
@@ -328,12 +328,33 @@ index_files_add(struct xbps_handle *xhp, int argc, char **argv)
 		}
 		flush = true;
 		printf("index-files: added `%s' (%s)\n", pkgver, arch);
-		prop_object_release(pkgprops);
 		prop_object_release(pkg_filesd);
 		prop_object_release(files);
 		prop_object_release(pkgd);
-		pkgprops = pkg_filesd = pkgd = NULL;
+		pkg_filesd = pkgd = NULL;
 		files = NULL;
+		/*
+		 * Remove old entry (if exists).
+		 */
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+		version = xbps_pkg_version(pkgver);
+		assert(version);
+
+		p = xbps_xasprintf("%s<%s", pkgname, version);
+		pkgd = xbps_find_pkg_in_array_by_pattern(xhp, idxfiles, p, NULL);
+		if (pkgd) {
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			     "pkgver", &pkgver);
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			     "architecture", &arch);
+			printf("index-files: remove obsolete entry `%s' (%s)\n",
+			    pkgver, arch);
+			xbps_remove_pkg_from_array_by_pkgver(xhp,
+			     idxfiles, pkgver, NULL);
+		}
+		prop_object_release(pkgprops);
+		free(pkgname);
 	}
 
 	if (flush && !prop_array_externalize_to_zfile(idxfiles, plist)) {
