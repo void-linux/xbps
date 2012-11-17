@@ -50,11 +50,15 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	assert(version);
 	assert(action);
 
-	tmpdir = getenv("TMPDIR");
-	if (tmpdir == NULL)
-		tmpdir = P_tmpdir;
+	if (strcmp(xhp->rootdir, "/") == 0) {
+		tmpdir = getenv("TMPDIR");
+		if (tmpdir == NULL)
+			tmpdir = P_tmpdir;
 
-	fpath = xbps_xasprintf("%s/.xbps-script-XXXXXX", tmpdir);
+		fpath = xbps_xasprintf("%s/.xbps-script-XXXXXX", tmpdir);
+	} else {
+		fpath = strdup(".xbps-script-XXXXXX");
+	}
 
 	/* Create temp file to run script */
 	if ((fd = mkstemp(fpath)) == -1) {
