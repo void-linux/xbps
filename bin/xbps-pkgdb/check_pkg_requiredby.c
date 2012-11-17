@@ -119,7 +119,7 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 	if (!prop_array_add(pkgd_reqby, curpkgver))
 		return -1;
 
-	printf("%s: added requiredby entry for %s.\n\n",
+	printf("%s: added requiredby entry for %s.\n",
 	    pkgver, prop_string_cstring_nocopy(curpkgver));
 
 	return 0;
@@ -132,7 +132,8 @@ static void
 remove_stale_entries_in_reqby(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 {
 	prop_array_t reqby;
-	const char *str, *pkgver;
+	const char *pkgver;
+	char *str;
 	size_t i;
 
 	reqby = prop_dictionary_get(pkgd, "requiredby");
@@ -142,7 +143,7 @@ remove_stale_entries_in_reqby(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
 	for (i = 0; i < prop_array_count(reqby); i++) {
-		prop_array_get_cstring_nocopy(reqby, i, &str);
+		prop_array_get_cstring(reqby, i, &str);
 		if ((pkgd = xbps_pkgdb_get_pkgd_by_pkgver(xhp, str)) != NULL)
 			continue;
 

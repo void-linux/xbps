@@ -163,5 +163,8 @@ do {								\
 
 #undef RUN_PKG_CHECK
 
+	if (pkgd == NULL)
+		(void)xbps_pkgdb_update(xhp, true);
+
 	return 0;
 }
