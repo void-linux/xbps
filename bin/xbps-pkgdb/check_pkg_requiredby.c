@@ -34,31 +34,25 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-struct check_reqby_data {
-	prop_dictionary_t pkgd;
-	prop_array_t pkgd_reqby;
-	const char *pkgname;
-	const char *pkgver;
-	bool pkgd_reqby_alloc;
-};
-
 static int
 check_reqby_pkg_cb(struct xbps_handle *xhp,
 		   prop_object_t obj,
 		   void *arg,
 		   bool *done)
 {
-	struct check_reqby_data *crd = arg;
-	prop_array_t curpkg_rdeps, provides;
+	prop_dictionary_t pkgd = arg;
+	prop_array_t curpkg_rdeps, provides, pkgd_reqby;
 	prop_dictionary_t curpkg_propsd;
 	prop_string_t curpkgver;
-	const char *curpkgn;
+	const char *curpkgn, *pkgname, *pkgver;
 
 	(void)done;
 
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &curpkgn);
 	/* skip same pkg */
-	if (strcmp(curpkgn, crd->pkgname) == 0)
+	if (strcmp(curpkgn, pkgname) == 0)
 		return 0;
 
 	/*
@@ -80,13 +74,13 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 	/*
 	 * Check for pkgpattern match with real packages...
 	 */
-	if (!xbps_match_pkgdep_in_array(curpkg_rdeps, crd->pkgver)) {
+	if (!xbps_match_pkgdep_in_array(curpkg_rdeps, pkgver)) {
 		/*
 		 * ... otherwise check if package provides any virtual
 		 * package and is matched against any object in
 		 * run_depends.
 		 */
-		provides = prop_dictionary_get(obj, "provides");
+		provides = prop_dictionary_get(pkgd, "provides");
 		if (provides == NULL) {
 			/* doesn't provide any virtual pkg */
 			return 0;
@@ -97,14 +91,14 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 			return 0;
 		}
 	}
-	crd->pkgd_reqby = prop_dictionary_get(crd->pkgd, "requiredby");
+	pkgd_reqby = prop_dictionary_get(pkgd, "requiredby");
 	curpkgver = prop_dictionary_get(curpkg_propsd, "pkgver");
-	if (crd->pkgd_reqby != NULL) {
+	if (pkgd_reqby != NULL) {
 		/*
 		 * Now check that current pkgver has been registered into
 		 * its requiredby array.
 		 */
-		if (xbps_match_string_in_array(crd->pkgd_reqby,
+		if (xbps_match_string_in_array(pkgd_reqby,
 		    prop_string_cstring_nocopy(curpkgver))) {
 			/*
 			 * Current package already requires our package,
@@ -116,55 +110,49 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 		/*
 		 * Missing requiredby array object, create it.
 		 */
-		crd->pkgd_reqby = prop_array_create();
-		assert(crd->pkgd_reqby);
-		crd->pkgd_reqby_alloc = true;
+		pkgd_reqby = prop_array_create();
+		assert(pkgd_reqby);
 	}
 	/*
 	 * Added pkgdep into pkg's requiredby array.
 	 */
-	if (!prop_array_add(crd->pkgd_reqby, curpkgver))
+	if (!prop_array_add(pkgd_reqby, curpkgver))
 		return -1;
 
-	printf("%s: added missing requiredby entry for %s.\n\n",
-	    crd->pkgver, prop_string_cstring_nocopy(curpkgver));
+	printf("%s: added requiredby entry for %s.\n\n",
+	    pkgver, prop_string_cstring_nocopy(curpkgver));
 
-	return 1;
+	return 0;
 }
 
 /*
  * Removes unused entries in pkg's requiredby array.
  */
-static bool
-remove_stale_entries_in_reqby(struct xbps_handle *xhp,
-			      struct check_reqby_data *crd)
+static void
+remove_stale_entries_in_reqby(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 {
 	prop_array_t reqby;
-	prop_dictionary_t pkgd;
-	const char *str;
+	const char *str, *pkgver;
 	size_t i;
-	bool needs_update = false;
 
-	reqby = prop_dictionary_get(crd->pkgd, "requiredby");
+	reqby = prop_dictionary_get(pkgd, "requiredby");
 	if (reqby == NULL || prop_array_count(reqby) == 0)
-		return false;
+		return;
 
-	crd->pkgd_reqby = prop_dictionary_get(crd->pkgd, "requiredby");
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
 	for (i = 0; i < prop_array_count(reqby); i++) {
 		prop_array_get_cstring_nocopy(reqby, i, &str);
 		if ((pkgd = xbps_pkgdb_get_pkgd_by_pkgver(xhp, str)) != NULL)
 			continue;
-		printf("%s: found stale entry in requiredby `%s' (fixed)\n",
-		    crd->pkgver, str);
-		if (xbps_remove_string_from_array(xhp, crd->pkgd_reqby, str))
-			needs_update = true;
+
+		if (!xbps_remove_string_from_array(xhp, reqby, str))
+			fprintf(stderr, "%s: failed to remove %s from "
+			    "requiredby!\n", pkgver, str);
+		else
+			printf("%s: removed stale entry in requiredby `%s'\n",
+			    pkgver, str);
 	}
-	if (needs_update) {
-		prop_dictionary_set(crd->pkgd, "requiredby", crd->pkgd_reqby);
-		return true;
-	}
-	return false;
 }
 
 /*
@@ -177,36 +165,20 @@ remove_stale_entries_in_reqby(struct xbps_handle *xhp,
  * Returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_requiredby(struct xbps_handle *xhp,
-		     const char *pkgname,
-		     void *arg,
-		     bool *pkgdb_update)
+check_pkg_requiredby(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	prop_dictionary_t pkgd = arg;
-	struct check_reqby_data crd;
 	int rv;
 
-	crd.pkgd = pkgd;
-	crd.pkgd_reqby = NULL;
-	crd.pkgd_reqby_alloc = false;
-	crd.pkgname = pkgname;
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &crd.pkgver);
+	(void)pkgname;
 
 	/* missing reqby entries in pkgs */
-	rv = xbps_pkgdb_foreach_cb(xhp, check_reqby_pkg_cb, &crd);
-	if (rv < 0) {
+	rv = xbps_pkgdb_foreach_cb(xhp, check_reqby_pkg_cb, pkgd);
+	if (rv != 0)
 		return rv;
-	} else if (rv == 1) {
-		*pkgdb_update = true;
-		prop_dictionary_set(pkgd, "requiredby", crd.pkgd_reqby);
-		if (crd.pkgd_reqby_alloc)
-			prop_object_release(crd.pkgd_reqby);
 
-		printf("%s: requiredby fix done!\n\n", crd.pkgver);
-	}
 	/* remove stale entries in pkg's reqby */
-	if (remove_stale_entries_in_reqby(xhp, &crd))
-		*pkgdb_update = true;
+	remove_stale_entries_in_reqby(xhp, pkgd);
 
 	return 0;
 }

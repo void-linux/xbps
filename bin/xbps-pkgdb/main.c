@@ -115,8 +115,7 @@ main(int argc, char **argv)
 		rv = check_pkg_integrity_all(&xh);
 	} else {
 		for (i = optind; i < argc; i++) {
-			rv = check_pkg_integrity(&xh, NULL, argv[i],
-			    true, NULL);
+			rv = check_pkg_integrity(&xh, NULL, argv[i]);
 			if (rv != 0)
 				fprintf(stderr, "Failed to check "
 				    "`%s': %s\n", argv[i], strerror(rv));

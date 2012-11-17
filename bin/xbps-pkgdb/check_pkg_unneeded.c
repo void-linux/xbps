@@ -43,23 +43,18 @@
  * 	  and remove them if that was true.
  */
 int
-check_pkg_unneeded(struct xbps_handle *xhp,
-		   const char *pkgname,
-		   void *arg,
-		   bool *pkgdb_update)
+check_pkg_unneeded(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	prop_dictionary_t pkgd = arg;
 
-	(void)pkgname;
 	(void)xhp;
+	(void)pkgname;
 
-	if (prop_dictionary_get(pkgd, "remove-and-update")) {
-		*pkgdb_update = true;
+	if (prop_dictionary_get(pkgd, "remove-and-update"))
 		prop_dictionary_remove(pkgd, "remove-and-update");
-	}
-	if (prop_dictionary_get(pkgd, "transaction")) {
-		*pkgdb_update = true;
+
+	if (prop_dictionary_get(pkgd, "transaction"))
 		prop_dictionary_remove(pkgd, "transaction");
-	}
+
 	return 0;
 }

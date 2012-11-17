@@ -38,7 +38,6 @@ struct checkpkg {
 	size_t totalpkgs;
 	size_t npkgs;
 	size_t nbrokenpkgs;
-	bool flush;
 };
 
 static int
@@ -49,19 +48,18 @@ cb_pkg_integrity(struct xbps_handle *xhp,
 {
 	struct checkpkg *cpkg = arg;
 	const char *pkgname, *version;
-	bool flush = false;
 
 	(void)done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+
 	printf("[%zu/%zu] checking %s-%s ...\n",
 	    cpkg->npkgs, cpkg->totalpkgs, pkgname, version);
-	if (check_pkg_integrity(xhp, obj, pkgname, false, &flush) != 0)
+
+	if (check_pkg_integrity(xhp, obj, pkgname) != 0)
 		cpkg->nbrokenpkgs++;
 
-	if (flush && !cpkg->flush)
-		cpkg->flush = flush;
 	cpkg->npkgs++;
 	return 0;
 }
@@ -78,12 +76,10 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 	cpkg.totalpkgs = prop_array_count(xhp->pkgdb);
 
 	(void)xbps_pkgdb_foreach_cb(xhp, cb_pkg_integrity, &cpkg);
-	if (cpkg.flush) {
-		if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
-			xbps_error_printf("failed to write pkgdb: %s\n",
-			    strerror(rv));
-			return rv;
-		}
+	if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
+		xbps_error_printf("failed to write pkgdb: %s\n",
+		    strerror(rv));
+		return rv;
 	}
 	printf("%zu package%s processed: %zu broken.\n", cpkg.npkgs,
 	    cpkg.npkgs == 1 ? "" : "s", cpkg.nbrokenpkgs);
@@ -93,15 +89,12 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 int
 check_pkg_integrity(struct xbps_handle *xhp,
 		    prop_dictionary_t pkgd,
-		    const char *pkgname,
-		    bool flush,
-		    bool *setflush)
+		    const char *pkgname)
 {
 	prop_dictionary_t opkgd, propsd;
 	const char *sha256;
 	char *buf;
 	int rv = 0;
-	bool pkgdb_update = false, broken = false;
 
 	propsd = opkgd = NULL;
 
@@ -127,14 +120,13 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		printf("%s: unexistent metafile, converting to 0.18 "
 		    "format...\n", pkgname);
 		if ((rv = convert_pkgd_metadir(xhp, opkgd)) != 0)
-			goto out;
+			return rv;
 
-		pkgdb_update = true;
-		goto out1;
+		return 0;
+
 	} else if (prop_dictionary_count(propsd) == 0) {
 		xbps_error_printf("%s: incomplete metadata file.\n", pkgname);
-		broken = true;
-		goto out;
+		return 1;
 	}
 
 	prop_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256);
@@ -144,47 +136,32 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		rv = xbps_file_hash_check(buf, sha256);
 		free(buf);
 		if (rv == ERANGE) {
-			broken = true;
 			fprintf(stderr, "%s: metadata file has been "
 			    "modified!\n", pkgname);
-			goto out;
+			return 1;
 		}
 	}
 
-#define RUN_PKG_CHECK(x, name, arg, arg2)			\
+#define RUN_PKG_CHECK(x, name, arg)				\
 do {								\
-	rv = check_pkg_##name(x, pkgname, arg, arg2);		\
+	rv = check_pkg_##name(x, pkgname, arg);			\
 	if (rv)							\
-		broken = true;					\
+		return rv;					\
 	else if (rv == -1) {					\
 		xbps_error_printf("%s: the %s test "		\
 		    "returned error!\n", pkgname, #name);	\
-		goto out;					\
+		return rv;					\
 	}							\
 } while (0)
 
 	/* Execute pkg checks */
-	RUN_PKG_CHECK(xhp, files, propsd, &pkgdb_update);
-	RUN_PKG_CHECK(xhp, symlinks, propsd, &pkgdb_update);
-	RUN_PKG_CHECK(xhp, rundeps, propsd, &pkgdb_update);
-	RUN_PKG_CHECK(xhp, requiredby, opkgd, &pkgdb_update);
-	RUN_PKG_CHECK(xhp, unneeded, opkgd, &pkgdb_update);
-
-out1:
-	if (flush && pkgdb_update) {
-		if (!xbps_pkgdb_replace_pkgd(xhp, opkgd, pkgname, false, true)) {
-			rv = EINVAL;
-			goto out;
-		}
-	}
-	if (setflush && pkgdb_update)
-		*setflush = true;
+	RUN_PKG_CHECK(xhp, files, propsd);
+	RUN_PKG_CHECK(xhp, symlinks, propsd);
+	RUN_PKG_CHECK(xhp, rundeps, propsd);
+	RUN_PKG_CHECK(xhp, requiredby, opkgd);
+	RUN_PKG_CHECK(xhp, unneeded, opkgd);
 
 #undef RUN_PKG_CHECK
 
-out:
-	if (broken)
-		return 1;
-
-	return rv;
+	return 0;
 }

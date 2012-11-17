@@ -45,18 +45,13 @@
  */
 
 int
-check_pkg_rundeps(struct xbps_handle *xhp,
-		  const char *pkgname,
-		  void *arg,
-		  bool *pkgdb_update)
+check_pkg_rundeps(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	prop_dictionary_t pkg_propsd = arg;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *reqpkg;
 	bool test_broken = false;
-
-	(void)pkgdb_update;
 
 	if (!xbps_pkg_has_rundeps(pkg_propsd))
 		return 0;

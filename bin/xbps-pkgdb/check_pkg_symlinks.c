@@ -46,10 +46,7 @@
  * returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_symlinks(struct xbps_handle *xhp,
-		   const char *pkgname,
-		   void *arg,
-		   bool *pkgdb_update)
+check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	prop_array_t array;
 	prop_object_t obj;
@@ -58,8 +55,6 @@ check_pkg_symlinks(struct xbps_handle *xhp,
 	const char *file, *tgt = NULL;
 	char *path, *buf, *buf2, *buf3, *dname, *path_target;
 	bool broken = false, test_broken = false;
-
-	(void)pkgdb_update;
 
 	array = prop_dictionary_get(pkg_filesd, "links");
 	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&

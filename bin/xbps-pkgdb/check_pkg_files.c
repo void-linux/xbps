@@ -46,10 +46,7 @@
  * Return 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 int
-check_pkg_files(struct xbps_handle *xhp,
-		const char *pkgname,
-		void *arg,
-		bool *pkgdb_update)
+check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	prop_array_t array;
 	prop_object_t obj;
@@ -59,8 +56,6 @@ check_pkg_files(struct xbps_handle *xhp,
 	char *path;
 	int rv = 0;
 	bool mutable, broken = false, test_broken = false;
-
-	(void)pkgdb_update;
 
 	array = prop_dictionary_get(pkg_filesd, "files");
 	if (array != NULL && prop_array_count(array) > 0) {

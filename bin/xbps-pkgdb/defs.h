@@ -30,15 +30,11 @@
 #include <xbps_api.h>
 
 /* from check.c */
-int	check_pkg_integrity(struct xbps_handle *,
-			    prop_dictionary_t,
-			    const char *,
-			    bool,
-			    bool *);
+int	check_pkg_integrity(struct xbps_handle *, prop_dictionary_t, const char *);
 int	check_pkg_integrity_all(struct xbps_handle *);
 
 #define CHECK_PKG_DECL(type)			\
-int check_pkg_##type (struct xbps_handle *, const char *, void *, bool *)
+int check_pkg_##type (struct xbps_handle *, const char *, void *)
 
 CHECK_PKG_DECL(unneeded);
 CHECK_PKG_DECL(files);
