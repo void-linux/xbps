@@ -484,7 +484,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 * 	- Package upgrade.
 	 * 	- Package with "softreplace" keyword.
 	 */
-	old_filesd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
+	old_filesd = xbps_metadir_get_pkgd(xhp, pkgname);
 	if (prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY) {
 		obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
 		for (i = 0; i < prop_array_count(obsoletes); i++) {
