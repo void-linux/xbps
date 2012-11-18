@@ -264,7 +264,6 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	 */
 	if (update) {
 		free(pkgver);
-		prop_object_release(pkgd);
 		return xbps_requiredby_pkg_remove(xhp, pkgname);
 	} else if (soft_replace) {
 		/*
