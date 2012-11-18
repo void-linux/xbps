@@ -123,23 +123,23 @@ main(int argc, char **argv)
 			usage(false);
 			/* NOTREACHED */
 		case 'L':
-			list_repos = opmode = true;
+			list_repos = true;
 			break;
 		case 'l':
-			list_pkgs = opmode = true;
+			list_pkgs = true;
 			break;
 		case 'm':
-			list_manual = opmode = true;
+			list_manual = true;
 			break;
 		case 'M':
-			orphans = opmode = true;
+			orphans = true;
 			break;
 		case 'o':
 			own = opmode = true;
 			break;
 		case 'p':
 			props = optarg;
-			show_prop = opmode = true;
+			show_prop = true;
 			break;
 		case 'R':
 			repo_mode = true;
@@ -169,7 +169,7 @@ main(int argc, char **argv)
 	}
 	if (!opmode && argc > optind)
 		show = true;
-	else if (!opmode && argc == optind)
+	else if (opmode && (argc == optind))
 		usage(true);
 	else if ((search || own) && (argc == optind))
 		usage(true);
