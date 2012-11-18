@@ -80,11 +80,11 @@ unpack_archive(struct xbps_handle *xhp,
 	       prop_dictionary_t pkg_repod,
 	       struct archive *ar)
 {
-	prop_dictionary_t filesd, old_filesd;
+	prop_dictionary_t filesd = NULL, old_filesd = NULL;
 	prop_array_t array, obsoletes;
 	prop_object_t obj;
 	prop_data_t data;
-	void *instbuf, *rembuf;
+	void *instbuf = NULL, *rembuf = NULL;
 	const struct stat *entry_statp;
 	struct stat st;
 	struct xbps_unpack_cb_data xucd;
@@ -103,8 +103,6 @@ unpack_archive(struct xbps_handle *xhp,
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
 
-	instbuf = rembuf = NULL;
-	filesd = old_filesd = NULL;
 	preserve = update = conf_file = file_exists = false;
 	skip_obsoletes = softreplace = false;
 
@@ -485,25 +483,25 @@ unpack_archive(struct xbps_handle *xhp,
 	 * 	- Package with "softreplace" keyword.
 	 */
 	old_filesd = xbps_metadir_get_pkgd(xhp, pkgname);
-	if (prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY) {
-		obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
-		for (i = 0; i < prop_array_count(obsoletes); i++) {
-			obj = prop_array_get(obsoletes, i);
-			file = prop_string_cstring_nocopy(obj);
-			if (remove(file) == -1) {
-				xbps_set_cb_state(xhp,
-				    XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
-				    errno, pkgname, version,
-				    "%s: failed to remove obsolete entry `%s': %s",
-				    pkgver, file, strerror(errno));
-				continue;
-			}
+	assert(prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY);
+
+	obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
+	for (i = 0; i < prop_array_count(obsoletes); i++) {
+		obj = prop_array_get(obsoletes, i);
+		file = prop_string_cstring_nocopy(obj);
+		if (remove(file) == -1) {
 			xbps_set_cb_state(xhp,
-			    XBPS_STATE_REMOVE_FILE_OBSOLETE,
-			    0, pkgname, version,
-			    "%s: removed obsolete entry: %s", pkgver, file);
-			prop_object_release(obj);
+			    XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
+			    errno, pkgname, version,
+			    "%s: failed to remove obsolete entry `%s': %s",
+			    pkgver, file, strerror(errno));
+			continue;
 		}
+		xbps_set_cb_state(xhp,
+		    XBPS_STATE_REMOVE_FILE_OBSOLETE,
+		    0, pkgname, version,
+		    "%s: removed obsolete entry: %s", pkgver, file);
+		prop_object_release(obj);
 	}
 
 out1:

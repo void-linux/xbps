@@ -34,7 +34,7 @@
 
 
 struct pkgmeta {
-	const char *name;
+	char name[64];
 	prop_dictionary_t d;
 	UT_hash_handle hh;
 };
@@ -59,8 +59,7 @@ metadir_get(const char *name)
 	struct pkgmeta *pm;
 
 	HASH_FIND_STR(pkgmetas, __UNCONST(name), pm);
-	if (pm != NULL &&
-	    (prop_object_type(pm->d) == PROP_TYPE_DICTIONARY))
+	if (pm && pm->d)
 		return pm->d;
 
 	return NULL;
@@ -70,7 +69,7 @@ prop_dictionary_t
 xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 {
 	struct pkgmeta *pm;
-	prop_dictionary_t pkgd;
+	prop_dictionary_t pkgd, d;
 	const char *savedpkgname;
 	char *plistf;
 
@@ -97,19 +96,19 @@ xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 		}
 	}
 
-	/* Add pkg plist to hash map */
-	pm = malloc(sizeof(*pm));
-	assert(pm);
-	pm->name = name;
-	pm->d = prop_dictionary_internalize_from_zfile(plistf);
+	d = prop_dictionary_internalize_from_zfile(plistf);
 	free(plistf);
-
-	if (pm->d == NULL) {
-		free(pm);
+	if (d == NULL) {
 		xbps_dbg_printf(xhp, "cannot read %s metadata: %s\n",
 		    savedpkgname, strerror(errno));
 		return NULL;
 	}
+
+	/* Add pkg plist to hash map */
+	pm = calloc(1, sizeof(*pm));
+	assert(pm);
+	strlcpy(pm->name, name, sizeof(pm->name));
+	pm->d = d;
 
 	HASH_ADD_KEYPTR(hh,
 			pkgmetas,
@@ -117,5 +116,5 @@ xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 			strlen(__UNCONST(name)),
 			pm);
 
-	return pm->d;
+	return d;
 }
