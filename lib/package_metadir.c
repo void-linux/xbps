@@ -59,8 +59,8 @@ metadir_get(const char *name)
 	struct pkgmeta *pm;
 
 	HASH_FIND_STR(pkgmetas, __UNCONST(name), pm);
-	if (pm)
-		return pm->d;
+	if (pm != NULL && pm->d != NULL)
+		return prop_dictionary_copy(pm->d);
 
 	return NULL;
 }
@@ -69,6 +69,8 @@ static void
 metadir_add(const char *name, prop_dictionary_t d)
 {
 	struct pkgmeta *pm;
+
+	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
 
 	/* Add pkg plist to hash map */
 	pm = malloc(sizeof(*pm));
