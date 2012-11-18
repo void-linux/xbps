@@ -109,12 +109,7 @@ xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 	assert(pm);
 	strlcpy(pm->name, name, sizeof(pm->name));
 	pm->d = d;
-
-	HASH_ADD_KEYPTR(hh,
-			pkgmetas,
-			__UNCONST(name),
-			strlen(__UNCONST(name)),
-			pm);
+	HASH_ADD_STR(pkgmetas, name, pm);
 
 	return d;
 }
