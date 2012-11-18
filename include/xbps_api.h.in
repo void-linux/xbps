@@ -456,12 +456,6 @@ struct xbps_handle {
 	 */
 	prop_array_t repo_pool;
 	/**
-	 * @private
-	 *
-	 * Array of pkg dictionaries from metadir.
-	 */
-	prop_array_t metadir_pool;
-	/**
 	 * @private pkgdb.
 	 *
 	 * Internalized proplib array with the master package database

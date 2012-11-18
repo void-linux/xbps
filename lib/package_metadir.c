@@ -30,33 +30,57 @@
 #include <errno.h>
 
 #include "xbps_api_impl.h"
+#include "uthash.h"
+
+
+struct pkgmeta {
+	const char *name;
+	prop_dictionary_t d;
+	UT_hash_handle hh;
+};
+
+struct pkgmeta *pkgmetas = NULL;
 
 void HIDDEN
-xbps_metadir_init(struct xbps_handle *xhp)
+xbps_metadir_release(void)
 {
-	assert(xhp != NULL);
+	struct pkgmeta *pm = NULL, *pmp = NULL;
 
-	if (xhp->metadir_pool != NULL)
-		return;
-
-	xhp->metadir_pool = prop_array_create();
-	assert(xhp->metadir_pool);
+	HASH_ITER(hh, pm, pkgmetas, pmp) {
+		HASH_DEL(pkgmetas, pm);
+		prop_object_release(pm->d);
+		free(pm);
+	}
 }
 
-void HIDDEN
-xbps_metadir_release(struct xbps_handle *xhp)
+static prop_dictionary_t
+metadir_get(const char *name)
 {
-	prop_object_t obj;
-	unsigned int i;
+	struct pkgmeta *pm;
 
-	if (xhp->metadir_pool == NULL)
-		return;
+	HASH_FIND_STR(pkgmetas, __UNCONST(name), pm);
+	if (pm)
+		return pm->d;
 
-	for (i = 0; i < prop_array_count(xhp->metadir_pool); i++) {
-		obj = prop_array_get(xhp->metadir_pool, i);
-		prop_object_release(obj);
-	}
-	xhp->metadir_pool = NULL;
+	return NULL;
+}
+
+static void
+metadir_add(const char *name, prop_dictionary_t d)
+{
+	struct pkgmeta *pm;
+
+	/* Add pkg plist to hash map */
+	pm = malloc(sizeof(*pm));
+	assert(pm);
+	pm->name = name;
+	pm->d = d;
+	HASH_ADD_KEYPTR(hh,
+			pkgmetas,
+			__UNCONST(name),
+			strlen(__UNCONST(name)),
+			pm);
+
 }
 
 prop_dictionary_t
@@ -69,10 +93,7 @@ xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 	assert(xhp);
 	assert(name);
 
-	xbps_metadir_init(xhp);
-	pkgd = xbps_find_pkg_in_array_by_name(xhp, xhp->metadir_pool,
-			name, NULL);
-	if (pkgd != NULL)
+	if ((pkgd = metadir_get(name)) != NULL)
 		return pkgd;
 
 	savedpkgname = name;
@@ -100,6 +121,7 @@ xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 		return NULL;
 	}
 
-	prop_array_add(xhp->metadir_pool, opkgd);
+	metadir_add(name, opkgd);
+
 	return opkgd;
 }
