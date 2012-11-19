@@ -239,7 +239,8 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		goto out;
 	}
 	pkgd = xbps_metadir_get_pkgd(xhp, pkgname);
-	assert(pkgd);
+	if (pkgd == NULL)
+		goto out1;
 
 	/* If package was "half-removed", remove it fully. */
 	if (state == XBPS_PKG_STATE_HALF_REMOVED)
@@ -337,6 +338,7 @@ purge:
 		    "purge ACTION: %s", pkgver, strerror(rv));
 		goto out;
 	}
+out1:
 	/*
 	 * Remove package metadata plist.
 	 */
