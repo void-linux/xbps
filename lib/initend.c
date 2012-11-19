@@ -167,7 +167,23 @@ xbps_init(struct xbps_handle *xhp)
 			xhp->rootdir = "/";
 		else
 			xhp->rootdir = cfg_getstr(xhp->cfg, "rootdir");
+	} else {
+		if (xhp->rootdir[0] != '/') {
+			/* relative path */
+			char *buf, path[PATH_MAX-1];
+			size_t len;
+
+			if (getcwd(path, sizeof(path)) == NULL)
+				return ENOTSUP;
+
+			len = strlen(xhp->rootdir) + strlen(path) + 2;
+			buf = malloc(len);
+			assert(buf);
+			snprintf(buf, len, "%s/%s", path, xhp->rootdir);
+			xhp->rootdir = buf;
+		}
 	}
+
 	if (xhp->cachedir == NULL) {
 		if (xhp->cfg == NULL)
 			xhp->cachedir = XBPS_CACHE_PATH;
