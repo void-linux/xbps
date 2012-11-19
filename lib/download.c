@@ -178,10 +178,6 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 		/*
 		 * Remove current file (if exists).
 		 */
-		if (restart && remove(tempfile) == -1) {
-			rv = -1;
-			goto out;
-		}
 		restart = false;
 		url->offset = 0;
 		/*
