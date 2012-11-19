@@ -61,14 +61,17 @@
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
 #endif
-
+#ifndef XBPS_GIT
+ #define XBPS_GIT		"UNSET"
+#endif
 /**
  * @def XBPS_RELVER
  * Current library release date.
  */
 #define XBPS_RELVER		"XBPS: " XBPS_VERSION \
 				" API: " XBPS_API_VERSION \
-				" INDEX: " XBPS_PKGINDEX_VERSION
+				" INDEX: " XBPS_PKGINDEX_VERSION \
+				" GIT: " XBPS_GIT
 
 /** 
  * @def XBPS_META_PATH
