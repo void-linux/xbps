@@ -1,5 +1,12 @@
 xbps-0.18 (???):
 
+ * The virtual package configuration files are now read dynamically
+   by libxbps at initialization time from default configuration directory:
+   <rootdir>/etc/xbps/virtualpkg.d. Only files that end in ".conf" will
+   be processed by libxbps.
+
+ * The rootdir (with -r, --rootdir) can now be specified as relative path.
+
  * Structured pkg metadata stored on disk, and added new functionality:
 
 	- A single plist containing pkg properties, files and
