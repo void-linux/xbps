@@ -118,6 +118,7 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'f':
+			flags |= XBPS_FLAG_FORCE_INSTALL;
 			reinstall = true;
 			break;
 		case 'h':

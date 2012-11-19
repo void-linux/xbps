@@ -97,13 +97,13 @@ unpack_archive(struct xbps_handle *xhp,
 	char *dname, *buf, *buf2, *p, *p2;
 	int ar_rv, rv, rv_stat, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
-	bool softreplace, skip_extract;
+	bool softreplace, skip_extract, force;
 	uid_t euid;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
 
-	preserve = update = conf_file = file_exists = false;
+	force = preserve = update = conf_file = file_exists = false;
 	skip_obsoletes = softreplace = false;
 
 	prop_dictionary_get_bool(pkg_repod, "preserve", &preserve);
@@ -117,6 +117,9 @@ unpack_archive(struct xbps_handle *xhp,
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &fname);
 
 	euid = geteuid();
+
+	if (xhp->flags & XBPS_FLAG_FORCE_INSTALL)
+		force = true;
 
 	if (xhp->unpack_cb != NULL) {
 		/* initialize data for unpack cb */
@@ -282,7 +285,7 @@ unpack_archive(struct xbps_handle *xhp,
 		if (rv_stat == 0)
 			file_exists = true;
 
-		if (S_ISREG(entry_statp->st_mode)) {
+		if (!force && S_ISREG(entry_statp->st_mode)) {
 			buf = strchr(entry_pname, '.') + 1;
 			assert(buf != NULL);
 			if (file_exists) {
@@ -335,7 +338,7 @@ unpack_archive(struct xbps_handle *xhp,
 					}
 				}
 			}
-		} else if (S_ISLNK(entry_statp->st_mode)) {
+		} else if (!force && S_ISLNK(entry_statp->st_mode)) {
 			/*
 			 * Check if current link from binpkg hasn't been
 			 * modified, otherwise extract new link.
@@ -376,7 +379,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Check if current file mode differs from file mode
 		 * in binpkg and apply perms if true.
 		 */
-		if (file_exists && skip_extract &&
+		if (!force && file_exists && skip_extract &&
 		    (entry_statp->st_mode != st.st_mode)) {
 			if (chmod(entry_pname,
 			    entry_statp->st_mode) != 0) {
@@ -398,7 +401,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Check if current uid/gid differs from file in binpkg,
 		 * and change permissions if true.
 		 */
-		if ((file_exists && skip_extract && (euid == 0)) &&
+		if ((!force && file_exists && skip_extract && (euid == 0)) &&
 		    (((entry_statp->st_uid != st.st_uid)) ||
 		    ((entry_statp->st_gid != st.st_gid)))) {
 			if (chown(entry_pname,
@@ -433,7 +436,7 @@ unpack_archive(struct xbps_handle *xhp,
 			    "`%s' to `%s.old'.", entry_pname, entry_pname);
 		}
 
-		if (skip_extract) {
+		if (!force && skip_extract) {
 			archive_read_data_skip(ar);
 			continue;
 		}

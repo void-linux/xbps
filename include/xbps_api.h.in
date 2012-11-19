@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20121119-1"
+#define XBPS_API_VERSION	"20121119-2"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -176,6 +176,14 @@
  * Enable debug mode to output debugging printfs to stdout/stderr.
  */
 #define XBPS_FLAG_DEBUG 		0x00000040
+
+/**
+ * @def XBPS_FLAG_FORCE_INSTALL
+ * Force flag used in xbps_unpack_binary_pkg(). If set its package
+ * files will be unpacked overwritting the current ones.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_FORCE_INSTALL		0x00000080
 
 /**
  * @def XBPS_FETCH_CACHECONN
