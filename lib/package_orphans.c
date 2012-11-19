@@ -79,8 +79,6 @@ find_orphan_pkg(struct xbps_handle *xhp,
 	unsigned int ndep = 0, cnt = 0;
 	bool automatic = false;
 	size_t i;
-	int rv = 0;
-	pkg_state_t state;
 
 	(void)xhp;
 	(void)loop_done;
@@ -89,15 +87,6 @@ find_orphan_pkg(struct xbps_handle *xhp,
 	 */
 	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
 	if (!automatic)
-		return 0;
-
-	if ((rv = xbps_pkg_state_dictionary(obj, &state)) != 0)
-		return rv;
-	/*
-	 * Skip packages that aren't fully installed or half removed.
-	 */
-	if (state != XBPS_PKG_STATE_INSTALLED &&
-	    state != XBPS_PKG_STATE_HALF_REMOVED)
 		return 0;
 
 	reqby = prop_dictionary_get(obj, "requiredby");
