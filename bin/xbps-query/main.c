@@ -169,7 +169,7 @@ main(int argc, char **argv)
 	}
 	if (!opmode && argc > optind)
 		show = true;
-	else if (opmode && (argc == optind))
+	else if (argc == 1 || (opmode && (argc == optind)))
 		usage(true);
 	else if ((search || own) && (argc == optind))
 		usage(true);
