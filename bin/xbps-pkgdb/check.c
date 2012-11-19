@@ -145,9 +145,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 #define RUN_PKG_CHECK(x, name, arg)				\
 do {								\
 	rv = check_pkg_##name(x, pkgname, arg);			\
-	if (rv)							\
-		return rv;					\
-	else if (rv == -1) {					\
+	if (rv == -1) {						\
 		xbps_error_printf("%s: the %s test "		\
 		    "returned error!\n", pkgname, #name);	\
 		return rv;					\
@@ -163,7 +161,7 @@ do {								\
 
 #undef RUN_PKG_CHECK
 
-	if (pkgd == NULL)
+	if ((rv == 0) && (pkgd == NULL))
 		(void)xbps_pkgdb_update(xhp, true);
 
 	return 0;

@@ -45,70 +45,111 @@
  *
  * returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
+static char *
+symlink_target(const char *pkgname, const char *path)
+{
+	struct stat sb;
+	char *lnk;
+	ssize_t r;
+
+	if (lstat(path, &sb) == -1) {
+		xbps_error_printf("%s: lstat failed for %s\n", pkgname, path);
+		return NULL;
+	}
+
+	lnk = malloc(sb.st_size + 1);
+	assert(lnk);
+
+	r = readlink(path, lnk, sb.st_size + 1);
+	if (r < 0 || r > sb.st_size) {
+		xbps_error_printf("%s: readlink failed for %s\n", pkgname, path);
+		return NULL;
+	}
+	lnk[sb.st_size] = '\0';
+
+	return lnk;
+}
+
 int
 check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	prop_array_t array;
 	prop_object_t obj;
-	prop_object_iterator_t iter;
-	prop_dictionary_t pkg_filesd = arg;
+	prop_dictionary_t filesd = arg;
+	size_t i;
 	const char *file, *tgt = NULL;
-	char *path, *buf, *buf2, *buf3, *dname, *path_target;
-	bool broken = false, test_broken = false;
+	char *path, *p, *buf, *buf2, *lnk, *dname, *tgt_path;
+	int rv;
+	bool broken = false;
 
-	array = prop_dictionary_get(pkg_filesd, "links");
-	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
-	     prop_array_count(array) > 0) {
-		iter = xbps_array_iter_from_dict(pkg_filesd, "links");
-		if (iter == NULL)
-			return -1;
+	array = prop_dictionary_get(filesd, "links");
+	if (array == NULL)
+		return false;
 
-		while ((obj = prop_object_iterator_next(iter))) {
-			if (!prop_dictionary_get_cstring_nocopy(obj, "target", &tgt))
-				continue;
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
-			if (strcmp(tgt, "") == 0) {
-				xbps_warn_printf("%s: `%s' symlink with "
-				    "empty target object!\n", pkgname, file);
-				continue;
-			}
-			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-			if ((buf = realpath(path, NULL)) == NULL) {
-				xbps_error_printf("%s: broken symlink `%s': "
-				    "%s\n", pkgname, file, strerror(errno));
-				test_broken = true;
-				continue;
-			}
-			if (strncmp(tgt, "../", 3) == 0) {
-				/* relative symlink target */
-				dname = dirname(path);
-				buf2 = xbps_xasprintf("%s/%s", dname, tgt);
-				buf3 = realpath(buf2, NULL);
-				assert(buf3);
-				free(buf2);
-				path_target = buf3;
-			} else {
-				path_target = buf;
-			}
-			if (strcmp(buf, path_target)) {
-				xbps_error_printf("%s: modified symlink `%s' "
-				    "points to: `%s' (shall be: `%s')\n",
-				    pkgname, file, buf, path_target);
-				test_broken = true;
-			}
-			free(buf);
-			free(path);
-			if (buf3)
-				free(buf3);
-
-			path = buf = buf2 = buf3 = NULL;
-
+	for (i = 0; i < prop_array_count(array); i++) {
+		obj = prop_array_get(array, i);
+		if (!prop_dictionary_get_cstring_nocopy(obj, "target", &tgt)) {
+			xbps_warn_printf("%s: `%s' symlink with "
+			    "empty target object!\n", pkgname, file);
+			continue;
 		}
-		prop_object_iterator_release(iter);
-	}
-        if (test_broken) {
-		xbps_error_printf("%s: symlinks check FAILED.\n", pkgname);
-		broken = true;
+		prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+		if (strcmp(tgt, "") == 0) {
+			xbps_warn_printf("%s: `%s' symlink with "
+			    "empty target object!\n", pkgname, file);
+			continue;
+		}
+
+		if (strcmp(xhp->rootdir, "/")) {
+			tgt_path = xbps_xasprintf("%s%s", xhp->rootdir, tgt);
+			path = xbps_xasprintf("%s%s", xhp->rootdir, file);
+		} else  {
+			path = strdup(file);
+			tgt_path = strdup(tgt);
+		}
+
+		lnk = symlink_target(pkgname, path);
+		if (lnk == NULL) {
+			free(path);
+			continue;
+		}
+		p = strdup(path);
+		assert(p);
+		dname = dirname(p);
+		buf = xbps_xasprintf("%s/%s", dname, lnk);
+
+		buf2 = realpath(path, NULL);
+		if (buf2 == NULL) {
+			xbps_warn_printf("%s: broken symlink %s (target: %s)\n",
+			     pkgname, file, tgt);
+			free(buf);
+			free(lnk);
+			continue;
+		}
+
+		rv = 1;
+		if (lnk[0] != '/') {
+			/* relative symlink */
+			if ((strcmp(lnk, tgt) == 0) ||
+			    (strcmp(buf, tgt_path) == 0) ||
+			    (strcmp(buf2, tgt_path) == 0))
+				rv = 0;
+		} else {
+			/* absolute symlink */
+			if (strcmp(lnk, tgt) == 0)
+				rv = 0;
+		}
+
+		if (rv) {
+			xbps_error_printf("%s: modified symlink %s "
+			    "points to %s (shall be %s)\n",
+			    pkgname, file, lnk, tgt);
+			broken = true;
+		}
+		free(p);
+		free(buf);
+		free(path);
+		free(tgt_path);
 	}
 	return broken;
 }
