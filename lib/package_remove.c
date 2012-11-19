@@ -352,18 +352,20 @@ purge:
 	 */
 	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	if (remove(buf) == -1) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-		    rv, pkgname, version,
-		    "%s: failed to remove metadata file: %s",
-		    pkgver, strerror(errno));
-		if (errno != ENOENT)
-			goto out;
+		if (errno != ENOENT) {
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
+			    rv, pkgname, version,
+			    "%s: failed to remove metadata file: %s",
+			    pkgver, strerror(errno));
+		}
 	}
 	/*
 	 * Unregister package from pkgdb.
 	 */
-	if ((rv = xbps_unregister_pkg(xhp, pkgname, version, false)) != 0)
+	if ((rv = xbps_unregister_pkg(xhp, pkgname, version, true)) != 0)
 		goto out;
+
+	xbps_dbg_printf(xhp, "[remove] unregister %s returned %d\n", pkgver);
 
 	tmpname = xbps_pkg_name(pkgver);
 	assert(tmpname);
