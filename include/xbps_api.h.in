@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20121119-2"
+#define XBPS_API_VERSION	"20121119-3"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -748,6 +748,21 @@ int xbps_pkgdb_foreach_reverse_cb(
 prop_dictionary_t xbps_pkgdb_get_pkgd(struct xbps_handle *xhp,
 				      const char *pkg,
 				      bool bypattern);
+
+/**
+ * Returns a package dictionary from master package database (pkgdb) plist,
+ * matching virtual pkgname or pkgver object in \a pkg.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] pkg Package name or name-version to match.
+ * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
+ * package pattern, i.e `foo>=0' or `foo<1'.
+ *
+ * @return The matching proplib package dictionary, NULL otherwise.
+ */
+prop_dictionary_t xbps_pkgdb_get_virtualpkgd(struct xbps_handle *xhp,
+					     const char *pkg,
+				             bool bypattern);
 
 /**
  * Returns a package dictionary from master package database (pkgdb) plist,

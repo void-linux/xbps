@@ -182,6 +182,40 @@ xbps_pkgdb_get_pkgd(struct xbps_handle *xhp, const char *pkg, bool bypattern)
 }
 
 prop_dictionary_t
+xbps_pkgdb_get_virtualpkgd(struct xbps_handle *xhp,
+			   const char *vpkg,
+			   bool bypattern)
+{
+	prop_dictionary_t pkgd = NULL;
+
+	if (xbps_pkgdb_init(xhp) != 0)
+		return NULL;
+
+	if (bypattern) {
+		/* first return vpkg from matching a conf file */
+		pkgd = xbps_find_virtualpkg_conf_in_array_by_pattern(xhp,
+				xhp->pkgdb, vpkg);
+		if (pkgd != NULL)
+			return pkgd;
+
+		/* ... otherwise the first one in array */
+		pkgd = xbps_find_virtualpkg_in_array_by_pattern(xhp,
+				xhp->pkgdb, vpkg);
+	} else {
+		/* first return vpkg from matching a conf file */
+		pkgd = xbps_find_virtualpkg_conf_in_array_by_name(xhp,
+				xhp->pkgdb, vpkg);
+		if (pkgd != NULL)
+			return pkgd;
+
+		pkgd = xbps_find_virtualpkg_in_array_by_name(xhp,
+				xhp->pkgdb, vpkg);
+	}
+
+	return pkgd;
+}
+
+prop_dictionary_t
 xbps_pkgdb_get_pkgd_by_pkgver(struct xbps_handle *xhp, const char *pkgver)
 {
 	if (xbps_pkgdb_init(xhp) != 0)

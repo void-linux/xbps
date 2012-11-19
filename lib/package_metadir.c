@@ -83,9 +83,9 @@ xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 	plistf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, name);
 
 	if (access(plistf, R_OK) == -1) {
-		pkgd = xbps_find_virtualpkg_dict_installed(xhp, name, false);
+		pkgd = xbps_pkgdb_get_virtualpkgd(xhp, name, false);
 		if (pkgd == NULL)
-			pkgd = xbps_find_pkg_dict_installed(xhp, name, false);
+			pkgd = xbps_pkgdb_get_pkgd(xhp, name, false);
 
 		if (pkgd != NULL) {
 			free(plistf);
