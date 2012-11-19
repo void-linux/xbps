@@ -225,6 +225,9 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0)
 		goto out;
 
+	xbps_dbg_printf(xhp, "attempting to remove %s state %d\n",
+	    pkgname, state);
+
 	if (!update)
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE, 0, pkgname, version, NULL);
 
@@ -240,7 +243,8 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	}
 	pkgd = xbps_metadir_get_pkgd(xhp, pkgname);
 	if (pkgd == NULL)
-		goto out1;
+		xbps_dbg_printf(xhp, "WARNING: metaplist for %s "
+		    "doesn't exist!\n", pkgname);
 
 	/* If package was "half-removed", remove it fully. */
 	if (state == XBPS_PKG_STATE_HALF_REMOVED)
@@ -248,15 +252,17 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	/*
 	 * Run the pre remove action.
 	 */
-	rv = xbps_pkg_exec_script(xhp, pkgd, "remove", "pre", update);
-	if (rv != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-		    errno, pkgname, version,
-		    "%s: [remove] REMOVE script failed to "
-		    "execute pre ACTION: %s",
-		    pkgver, strerror(errno));
-		rv = errno;
-		goto out;
+	if (pkgd) {
+		rv = xbps_pkg_exec_script(xhp, pkgd, "remove", "pre", update);
+		if (rv != 0) {
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
+			    errno, pkgname, version,
+			    "%s: [remove] REMOVE script failed to "
+			    "execute pre ACTION: %s",
+			    pkgver, strerror(errno));
+			rv = errno;
+			goto out;
+		}
 	}
 	/*
 	 * If updating a package, we just need to execute the current
@@ -288,18 +294,18 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		/* Remove dirs */
 		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "dirs", pkgver)) != 0)
 			goto out;
-	}
-	/*
-	 * Execute the post REMOVE action if file exists and we aren't
-	 * updating the package.
-	 */
-	rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "post", false);
-	if (rv != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-		    rv, pkgname, version,
-		    "%s: [remove] REMOVE script failed to execute "
-		    "post ACTION: %s", pkgver, strerror(rv));
-		goto out;
+		/*
+		 * Execute the post REMOVE action if file exists and we aren't
+		 * updating the package.
+		 */
+		rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "post", false);
+		if (rv != 0) {
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
+			    rv, pkgname, version,
+			    "%s: [remove] REMOVE script failed to execute "
+			    "post ACTION: %s", pkgver, strerror(rv));
+			goto out;
+		}
 	}
 	/*
 	 * Update the requiredby array of all required dependencies.
@@ -330,15 +336,17 @@ purge:
 	/*
 	 * Execute the purge REMOVE action if file exists.
 	 */
-	rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "purge", false);
-	if (rv != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-		    rv, pkgname, version,
-		    "%s: REMOVE script failed to execute "
-		    "purge ACTION: %s", pkgver, strerror(rv));
-		goto out;
+	if (pkgd) {
+		rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "purge", false);
+		if (rv != 0) {
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
+			    rv, pkgname, version,
+			    "%s: REMOVE script failed to execute "
+			    "purge ACTION: %s", pkgver, strerror(rv));
+			goto out;
+		}
 	}
-out1:
+
 	/*
 	 * Remove package metadata plist.
 	 */
