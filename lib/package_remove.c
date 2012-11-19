@@ -365,7 +365,7 @@ purge:
 	if ((rv = xbps_unregister_pkg(xhp, pkgname, version, true)) != 0)
 		goto out;
 
-	xbps_dbg_printf(xhp, "[remove] unregister %s returned %d\n", pkgver);
+	xbps_dbg_printf(xhp, "[remove] unregister %s returned %d\n", pkgver, rv);
 
 	tmpname = xbps_pkg_name(pkgver);
 	assert(tmpname);
