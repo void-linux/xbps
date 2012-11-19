@@ -60,6 +60,12 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		fpath = strdup(".xbps-script-XXXXXX");
 	}
 
+	/* change cwd to rootdir to exec the script */
+	if (chdir(xhp->rootdir) == -1) {
+		rv = errno;
+		goto out;
+	}
+
 	/* Create temp file to run script */
 	if ((fd = mkstemp(fpath)) == -1) {
 		xbps_dbg_printf(xhp, "%s: mkstemp %s\n",
@@ -79,12 +85,6 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	fchmod(fd, 0750);
 	fdatasync(fd);
 	close(fd);
-
-	/* change cwd to rootdir to exec the script */
-	if (chdir(xhp->rootdir) == -1) {
-		rv = errno;
-		goto out;
-	}
 
 	/* exec script */
 	rv = xbps_file_exec(xhp, fpath, action, pkgname, version,
