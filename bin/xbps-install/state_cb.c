@@ -85,7 +85,7 @@ state_cb(struct xbps_handle *xhp,
 		printf("%s-%s: unpacking ...\n", xscd->arg0, xscd->arg1);
 		break;
 	case XBPS_STATE_INSTALL:
-		printf("%s-%s: installing ...\n", xscd->arg0, xscd->arg1);
+		/* empty */
 		break;
 	case XBPS_STATE_UPDATE:
 		pkgd = xbps_find_pkg_dict_installed(xhp, xscd->arg0, false);
