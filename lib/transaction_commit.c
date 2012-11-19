@@ -253,8 +253,11 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			    &update);
 			prop_dictionary_get_bool(obj, "softreplace", &sr);
 			rv = xbps_remove_pkg(xhp, pkgname, version, update, sr);
-			if (rv != 0)
+			if (rv != 0) {
+				xbps_dbg_printf(xhp, "[trans] failed to "
+				    "remove %s-%s\n", pkgname, version);
 				goto out;
+			}
 		} else if (strcmp(tract, "configure") == 0) {
 			/*
 			 * Reconfigure pending package.
