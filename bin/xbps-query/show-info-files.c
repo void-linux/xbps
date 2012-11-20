@@ -182,6 +182,9 @@ show_pkg_files(prop_dictionary_t filesd)
 	const char *keyname, *file;
 	size_t i, x;
 
+	if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY)
+		return EINVAL;
+
 	allkeys = prop_dictionary_all_keys(filesd);
 	for (i = 0; i < prop_array_count(allkeys); i++) {
 		ksym = prop_array_get(allkeys, i);
