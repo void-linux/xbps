@@ -1,4 +1,4 @@
-.Dd November 6, 2012
+.Dd November 20, 2012
 .Os Void Linux
 .Dt xbps-create 8
 .Sh NAME
@@ -34,6 +34,9 @@ blank. Example:
 .It Fl F, Fl -config-files Ar list
 A list of configuration files this package provides, separated by a single
 blank.
+.It Fl G, Fl --source-revisions Ar string
+This justs sets a string with the git revisions of the sourcepkg that
+was used to build this binary package. It is set automatically by xbps-src.
 .It Fl H, Fl -homepage Ar string
 The package homepage string.
 .It Fl h, Fl -help

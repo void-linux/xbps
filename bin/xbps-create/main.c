@@ -522,10 +522,11 @@ set_build_date(void)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "A:B:C:D:F:H:hl:M:m:n:P:pqR:S:s:V";
+	const char *shortopts = "A:B:C:D:F:G:H:hl:M:m:n:P:pqR:S:s:V";
 	const struct option longopts[] = {
 		{ "architecture", required_argument, NULL, 'A' },
 		{ "built-with", required_argument, NULL, 'B' },
+		{ "source-revisions", required_argument, NULL, 'G' },
 		{ "conflicts", required_argument, NULL, 'C' },
 		{ "dependencies", required_argument, NULL, 'D' },
 		{ "config-files", required_argument, NULL, 'F' },
@@ -549,6 +550,7 @@ main(int argc, char **argv)
 	const char *conflicts, *deps, *homepage, *license, *maint, *bwith;
 	const char *provides, *pkgver, *replaces, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
+	const char *srcrevs = NULL;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
 	int c, pkg_fd;
@@ -577,6 +579,9 @@ main(int argc, char **argv)
 			break;
 		case 'F':
 			config_files = optarg;
+			break;
+		case 'G':
+			srcrevs = optarg;
 			break;
 		case 'h':
 			usage();
@@ -677,6 +682,9 @@ main(int argc, char **argv)
 	if (bwith)
 		prop_dictionary_set_cstring_nocopy(pkg_propsd,
 				"packaged-with", bwith);
+	if (srcrevs)
+		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+				"source-revisions", srcrevs);
 	if (preserve)
 		prop_dictionary_set_bool(pkg_propsd, "preserve", true);
 
