@@ -295,7 +295,7 @@ xbps_end(struct xbps_handle *xhp)
 
 	xbps_pkgdb_release(xhp);
 	xbps_rpool_release(xhp);
-	xbps_metadir_release();
+	xbps_metadir_release(xhp);
 	xbps_fetch_unset_cache_connection();
 
 	cfg_free(xhp->cfg);

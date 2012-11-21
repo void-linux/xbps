@@ -30,45 +30,17 @@
 #include <errno.h>
 
 #include "xbps_api_impl.h"
-#include "uthash.h"
-
-
-struct pkgmeta {
-	char name[64];
-	prop_dictionary_t d;
-	UT_hash_handle hh;
-};
-
-struct pkgmeta *pkgmetas = NULL;
 
 void HIDDEN
-xbps_metadir_release(void)
+xbps_metadir_release(struct xbps_handle *xhp)
 {
-	struct pkgmeta *pm = NULL, *pmp = NULL;
-
-	HASH_ITER(hh, pm, pkgmetas, pmp) {
-		HASH_DEL(pkgmetas, pm);
-		prop_object_release(pm->d);
-		free(pm);
-	}
-}
-
-static prop_dictionary_t
-metadir_get(const char *name)
-{
-	struct pkgmeta *pm;
-
-	HASH_FIND_STR(pkgmetas, __UNCONST(name), pm);
-	if (pm && pm->d)
-		return pm->d;
-
-	return NULL;
+	if (prop_object_type(xhp->pkg_metad) == PROP_TYPE_DICTIONARY)
+	       prop_object_release(xhp->pkg_metad);
 }
 
 prop_dictionary_t
 xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 {
-	struct pkgmeta *pm;
 	prop_dictionary_t pkgd, d;
 	const char *savedpkgname;
 	char *plistf;
@@ -76,7 +48,7 @@ xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 	assert(xhp);
 	assert(name);
 
-	if ((pkgd = metadir_get(name)) != NULL)
+	if ((pkgd = prop_dictionary_get(xhp->pkg_metad, name)) != NULL)
 		return pkgd;
 
 	savedpkgname = name;
@@ -104,12 +76,11 @@ xbps_metadir_get_pkgd(struct xbps_handle *xhp, const char *name)
 		return NULL;
 	}
 
-	/* Add pkg plist to hash map */
-	pm = calloc(1, sizeof(*pm));
-	assert(pm);
-	strlcpy(pm->name, name, sizeof(pm->name));
-	pm->d = d;
-	HASH_ADD_STR(pkgmetas, name, pm);
+	if (xhp->pkg_metad == NULL)
+		xhp->pkg_metad = prop_dictionary_create();
+
+	prop_dictionary_set(xhp->pkg_metad, name, d);
+	prop_object_release(d);
 
 	return d;
 }

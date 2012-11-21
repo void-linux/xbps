@@ -56,7 +56,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.5"
 
-#define XBPS_API_VERSION	"20121119-3"
+#define XBPS_API_VERSION	"20121121"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -473,6 +473,12 @@ struct xbps_handle {
 	 * stored in XBPS_META_PATH/XBPS_PKGDB.
 	 */
 	prop_array_t pkgdb;
+	/**
+	 * @private
+	 *
+	 * Proplib dictionary with pkg metafiles.
+	 */
+	prop_dictionary_t pkg_metad;
 	/**
 	 * @var transd;
 	 *

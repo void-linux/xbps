@@ -1,8 +1,6 @@
 XBPS includes the following software from third parties for
 internal use in the code:
 
-- uthash-1.9.7 from http://uthash.sourceforge.net/
-
 - queue.h from NetBSD: include/queue.h.
 
 - relational dewey version matching code from NetBSD:
