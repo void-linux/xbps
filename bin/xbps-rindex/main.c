@@ -73,7 +73,7 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
-		case 'R':
+		case 'r':
 			rm_mode = true;
 			break;
 		case 'V':
