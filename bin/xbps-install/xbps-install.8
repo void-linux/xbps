@@ -1,4 +1,4 @@
-.Dd November 6, 2012
+.Dd November 21, 2012
 .Os Void Linux
 .Dt xbps-install 8
 .Sh NAME
@@ -59,15 +59,13 @@ Assume yes to all questions and avoid interactive questions.
 .It Fl V, Fl -version
 Shows the XBPS version.
 .Sh FILES
-.Bl -tag -width /var/db/xbps/metadata/<pkgname>/files.plist
+.Bl -tag -width /var/db/xbps/.<pkgname>.plist
 .It Ar /etc/xbps/xbps.conf
 Default XBPS configuration file.
-.It Ar /var/db/xbps/metadata/<pkgname>/files.plist
-Installed package metadata list of files.
-.It Ar /var/db/xbps/metadata/<pkgname>/props.plist
-Installed package metadata properties.
+.It Ar /var/db/xbps/.<pkgname>.plist
+Package metadata properties.
 .It Ar /var/db/xbps/pkgdb.plist
-XBPS master package database plist file.
+XBPS package database.
 .It Ar /var/cache/xbps
 Default XBPS cache directory.
 .Sh SEE ALSO
