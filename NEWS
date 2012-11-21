@@ -1,5 +1,9 @@
 xbps-0.18 (???):
 
+ * xbps-query(8): implemented support to know reverse dependencies
+   in repository mode; that means you can now exactly what packages
+   require the target package from all registered repositories.
+
  * The virtual package configuration files are now read dynamically
    by libxbps at initialization time from default configuration directory:
    <rootdir>/etc/xbps/virtualpkg.d. Only files that end in ".conf" will

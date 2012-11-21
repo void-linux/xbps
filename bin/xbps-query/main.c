@@ -251,8 +251,13 @@ main(int argc, char **argv)
 
 	} else if (show_rdeps) {
 		/* show-rdeps mode */
-		rv = show_pkg_revdeps(&xh, argv[optind]);
-
+		if (repo_mode)
+			rv = repo_show_pkg_revdeps(&xh, argv[optind]);
+		else {
+			rv = show_pkg_revdeps(&xh, argv[optind]);
+			if (rv == ENOENT)
+				rv = repo_show_pkg_revdeps(&xh, argv[optind]);
+		}
 	}
 
 	xbps_end(&xh);

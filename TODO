@@ -9,8 +9,6 @@ xbps-create:
 
 All:
  - Add support to sign with PGP or RSA the repository index files.
- - Add requiredby support to pkg's dictionaries in repository's index,
-   to know reverse deps from remote repos.
 
 Issues listed at http://code.google.com/p/xbps/issues/list
 

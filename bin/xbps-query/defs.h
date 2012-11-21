@@ -28,10 +28,15 @@
 
 #include <xbps_api.h>
 
+#ifndef __UNCONST
+#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+#endif
+
 /* from show-deps.c */
 int	show_pkg_deps(struct xbps_handle *, const char *);
 int	show_pkg_revdeps(struct xbps_handle *, const char *);
 int	repo_show_pkg_deps(struct xbps_handle *, const char *);
+int	repo_show_pkg_revdeps(struct xbps_handle *, const char *);
 
 /* from show-info-files.c */
 void	show_pkg_info(prop_dictionary_t);

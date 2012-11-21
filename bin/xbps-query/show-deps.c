@@ -90,3 +90,49 @@ repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern)
 
 	return 0;
 }
+
+static int
+repo_revdeps_cb(struct xbps_handle *xhp,
+		struct xbps_rpool_index *rpi,
+		void *arg,
+		bool *done)
+{
+	prop_dictionary_t pkgd;
+	prop_array_t pkgdeps;
+	const char *pkgver, *arch, *pattern = arg;
+	size_t i;
+
+	(void)done;
+
+	for (i = 0; i < prop_array_count(rpi->repo); i++) {
+		pkgd = prop_array_get(rpi->repo, i);
+		pkgdeps = prop_dictionary_get(pkgd, "run_depends");
+		if (pkgdeps == NULL || prop_array_count(pkgdeps) == 0)
+			continue;
+
+		if (xbps_match_pkgdep_in_array(pkgdeps, pattern)) {
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "architecture", &arch);
+			if (xbps_pkg_arch_match(xhp, arch, NULL)) {
+				prop_dictionary_get_cstring_nocopy(pkgd,
+				    "pkgver", &pkgver);
+				printf("%s\n", pkgver);
+			}
+		}
+	}
+
+	return 0;
+}
+
+int
+repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
+{
+	char *pattern;
+
+	if (xbps_pkg_version(pkg))
+		pattern = strdup(pkg);
+	else
+		pattern = xbps_xasprintf("%s-9999999", pkg);
+
+	return xbps_rpool_foreach(xhp, repo_revdeps_cb, pattern);
+}
