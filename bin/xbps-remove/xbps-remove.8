@@ -1,4 +1,4 @@
-.Dd November 6, 2012
+.Dd November 21, 2012
 .Os Void Linux
 .Dt xbps-remove 8
 .Sh NAME
@@ -46,7 +46,7 @@ action on its
 script.
 .Pp
 .Sy *
-Package metadata files are removed.
+Package metadata file is removed.
 .Pp
 .Sy *
 Package is unregistered from package database.
@@ -59,12 +59,12 @@ Specifies a full path to the XBPS configuration file.
 Specifies a full path to the cache directory, where binary packages are stored.
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
+.It Fl F, Fl -force-revdeps
+Forcefully remove package even if there are reverse dependencies (DANGEROUS!).
 .It Fl f, Fl -force
 Forcefully remove package files even if they have been modified.
 .It Fl h, Fl -help
 Show the help usage.
-.It Fl i, Fl -ignore-revdeps
-Ignore reverse dependencies when removing packages.
 .It Fl n, Fl -dry-run
 Dry-run mode. Show what actions would be done but don't remove anything.
 .It Fl O, Fl -clean-cache
@@ -91,9 +91,13 @@ Assume yes to all questions and avoid interactive questions.
 .It Fl V, Fl -version
 Shows the XBPS version.
 .Sh FILES
-.Bl -tag -width xxxxxxxxxxxxxxxxxxxx
+.Bl -tag -width /var/db/xbps/.<pkgname>.plist
 .It Ar /etc/xbps/xbps.conf
 Default XBPS configuration file.
+.It Ar /var/db/xbps/.<pkgname>.plist
+Package metadata properties.
+.It Ar /var/db/xbps/pkgdb.plist
+XBPS package database.
 .It Ar /var/cache/xbps
 Default XBPS cache directory.
 .Sh SEE ALSO

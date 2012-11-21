@@ -50,13 +50,12 @@ usage(bool fail)
 	    " -C --config <file>       Full path to configuration file\n"
 	    " -c --cachedir <dir>      Full path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
+	    " -F --force-revdeps       Force package removal even with revdeps\n"
 	    " -f --force               Force package files removal\n"
 	    " -h --help                Print help usage\n"
-	    " -i --ignore-revdeps      Ignore reverse deps\n"
 	    " -n --dry-run             Dry-run mode\n"
 	    " -O --clean-cache         Remove obsolete packages in cachedir\n"
 	    " -o --remove-orphans      Remove package orphans\n"
-	    " -p --print-format <fmt>  Print format for dry-run mode\n"
 	    " -R --recursive           Recursively remove dependencies\n"
 	    " -r --rootdir <dir>       Full path to rootdir\n"
 	    " -v --verbose             Verbose messages\n"
@@ -129,7 +128,8 @@ state_cb_rm(struct xbps_handle *xhp,
 		break;
 	default:
 		xbps_dbg_printf(xhp,
-		    "unknown state %d\n", xscd->state);
+		    "%s-%s: unknown state %d\n",
+		    xscd->arg0, xscd->arg1, xscd->state);
 		break;
 	}
 }
@@ -241,18 +241,17 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, size_t cols,
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:dfhinOop:Rr:vVy";
+	const char *shortopts = "C:c:dFfhnOoRr:vVy";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
+		{ "force-revdeps", no_argument, NULL, 'F' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
-		{ "ignore-revdeps", no_argument, NULL, 'i' },
 		{ "dry-run", no_argument, NULL, 'n' },
 		{ "clean-cache", no_argument, NULL, 'O' },
 		{ "remove-orphans", no_argument, NULL, 'o' },
-		{ "print-format", required_argument, NULL, 'p' },
 		{ "recursive", no_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "verbose", no_argument, NULL, 'v' },
@@ -261,13 +260,13 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 	struct sigaction sa;
-	const char *rootdir, *cachedir, *conffile, *pformat;
+	const char *rootdir, *cachedir, *conffile;
 	int i, c, flags, rv;
 	bool yes, drun, recursive, ignore_revdeps, clean_cache;
 	bool orphans, reqby_force;
 	size_t maxcols;
 
-	rootdir = cachedir = conffile = pformat = NULL;
+	rootdir = cachedir = conffile = NULL;
 	flags = rv = 0;
 	drun = recursive = ignore_revdeps = clean_cache = false;
 	reqby_force = yes = orphans = false;
@@ -283,15 +282,15 @@ main(int argc, char **argv)
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
 			break;
+		case 'F':
+			ignore_revdeps = true;
+			break;
 		case 'f':
 			flags |= XBPS_FLAG_FORCE_REMOVE_FILES;
 			break;
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
-		case 'i':
-			ignore_revdeps = true;
-			break;
 		case 'n':
 			drun = true;
 			break;
@@ -300,9 +299,6 @@ main(int argc, char **argv)
 			break;
 		case 'o':
 			orphans = true;
-			break;
-		case 'p':
-			pformat = optarg;
 			break;
 		case 'R':
 			recursive = true;
