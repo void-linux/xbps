@@ -52,7 +52,6 @@ usage(bool fail)
 	    " -f --force               Force package installation\n"
 	    " -h --help                Print help usage\n"
 	    " -n --dry-run             Dry-run mode\n"
-	    " -p --print-format <fmt>  Print format for dry-run mode\n"
 	    " -R --repository <uri>    Default repository to be used if config not set\n"
 	    " -r --rootdir <dir>       Full path to rootdir\n"
 	    " -s --skip-sync           Skip remote repository index sync\n"
@@ -73,7 +72,7 @@ cleanup_sighandler(int signum)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "AC:c:dfhnp:R:r:suVvy";
+	const char *shortopts = "AC:c:dfhnR:r:suVvy";
 	const struct option longopts[] = {
 		{ "automatic", no_argument, NULL, 'A' },
 		{ "config", required_argument, NULL, 'C' },
@@ -82,7 +81,6 @@ main(int argc, char **argv)
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "dry-run", no_argument, NULL, 'n' },
-		{ "print-format", required_argument, NULL, 'p' },
 		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "skip-sync", no_argument, NULL, 's' },
@@ -94,12 +92,12 @@ main(int argc, char **argv)
 	};
 	struct xferstat xfer;
 	struct sigaction sa;
-	const char *rootdir, *cachedir, *conffile, *defrepo, *pformat;
+	const char *rootdir, *cachedir, *conffile, *defrepo;
 	int i, c, flags, rv;
 	bool skip_sync, yes, reinstall, drun, update;
 	size_t maxcols;
 
-	rootdir = cachedir = conffile = defrepo = pformat = NULL;
+	rootdir = cachedir = conffile = defrepo = NULL;
 	flags = rv = 0;
 	skip_sync = yes = reinstall = drun = update = false;
 
@@ -126,9 +124,6 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		case 'n':
 			drun = true;
-			break;
-		case 'p':
-			pformat = optarg;
 			break;
 		case 'R':
 			defrepo = optarg;
