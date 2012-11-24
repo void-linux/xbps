@@ -42,18 +42,18 @@ remove_pkg(const char *repodir, const char *arch, const char *file)
 	char *filepath;
 	int rv;
 
-	/* Remove real binpkg */
 	filepath = xbps_xasprintf("%s/%s/%s", repodir, arch, file);
 	if (remove(filepath) == -1) {
-		rv = errno;
-		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
-		    file, strerror(rv));
-		free(filepath);
-		return rv;
+		if (errno != ENOENT) {
+			rv = errno;
+			xbps_error_printf("failed to remove old binpkg "
+			    "`%s': %s\n", file, strerror(rv));
+			free(filepath);
+			return rv;
+		}
 	}
 	free(filepath);
 
-	/* Remove symlink to binpkg */
 	filepath = xbps_xasprintf("%s/%s", repodir, file);
 	if (remove(filepath) == -1) {
 		rv = errno;
