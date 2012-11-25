@@ -710,7 +710,7 @@ main(int argc, char **argv)
 	process_destdir(mutable_files);
 
 	/* Back to original cwd after file tree walk processing */
-	if (chdir(cwd) == -1)
+	if (chdir(p) == -1)
 		die("cannot chdir() to cwd %s:", cwd);
 
 	/*
