@@ -127,12 +127,17 @@ repo_revdeps_cb(struct xbps_handle *xhp,
 int
 repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
-	char *pattern;
+	prop_dictionary_t pkgd;
+	const char *pkgver;
 
 	if (xbps_pkg_version(pkg))
-		pattern = strdup(pkg);
-	else
-		pattern = xbps_xasprintf("%s-9999999", pkg);
+		pkgver = pkg;
+	else {
+		pkgd = xbps_rpool_find_pkg(xhp, pkg, false, false);
+		if (pkgd == NULL)
+			return ENOENT;
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	}
 
-	return xbps_rpool_foreach(xhp, repo_revdeps_cb, pattern);
+	return xbps_rpool_foreach(xhp, repo_revdeps_cb, __UNCONST(pkgver));
 }
