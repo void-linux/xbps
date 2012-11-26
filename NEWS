@@ -1,4 +1,12 @@
-xbps-0.18 (???):
+xbps-0.18.1 (???):
+
+ * Fixed execution of pre/post install/remove scripts due to using old
+   package version after unpacking a package being updated.
+
+ * xbps-query(8): fixed catching reverse dependencies in some packages
+   that used version comparators such as "foo<X" or "foo>X<Y".
+
+xbps-0.18 (2012-11-23):
 
  * xbps-query(8): implemented support to know reverse dependencies
    in repository mode; that means you can now exactly what packages
