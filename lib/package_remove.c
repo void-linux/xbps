@@ -241,7 +241,11 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		    pkgver, xhp->rootdir, strerror(rv));
 		goto out;
 	}
-	pkgd = xbps_metadir_get_pkgd(xhp, pkgname);
+
+	/* internalize pkg dictionary from metadir */
+	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
+	pkgd = prop_dictionary_internalize_from_file(buf);
+	free(buf);
 	if (pkgd == NULL)
 		xbps_dbg_printf(xhp, "WARNING: metaplist for %s "
 		    "doesn't exist!\n", pkgname);

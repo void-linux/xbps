@@ -79,6 +79,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 {
 	prop_dictionary_t pkgd, pkgmetad;
 	const char *version, *pkgver;
+	char *plist;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -110,7 +111,10 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgname, version, NULL);
 
-	pkgmetad = xbps_metadir_get_pkgd(xhp, pkgname);
+	/* internalize pkg dictionary from metadir */
+	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
+	pkgmetad = prop_dictionary_internalize_from_file(plist);
+	free(plist);
 	assert(pkgmetad);
 
 	rv = xbps_pkg_exec_script(xhp, pkgmetad, "install-script", "post", update);
