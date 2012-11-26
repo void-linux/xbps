@@ -1,4 +1,4 @@
-xbps-0.18.1 (???):
+xbps-0.18.1 (2012-11-26):
 
  * Fixed execution of pre/post install/remove scripts due to using old
    package version after unpacking a package being updated.
