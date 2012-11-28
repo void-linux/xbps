@@ -78,14 +78,14 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool bypattern,
 			pkg_repod = xbps_rpool_find_pkg_exact(xhp, pkg);
 			if (pkg_repod == NULL) {
 				/* not found */
-				return errno;
+				return ENOENT;
 			}
 		} else {
 			if (((pkg_repod = xbps_rpool_find_pkg(xhp, pkg, bypattern, best)) == NULL) &&
 			    ((pkg_repod = xbps_rpool_find_virtualpkg_conf(xhp, pkg, bypattern)) == NULL) &&
 			    ((pkg_repod = xbps_rpool_find_virtualpkg(xhp, pkg, bypattern)) == NULL)) {
 				/* not found */
-				return errno;
+				return ENOENT;
 			}
 		}
 	} else {
@@ -96,7 +96,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool bypattern,
 		pkg_repod = xbps_rpool_find_pkg(xhp, pkg, false, true);
 		if (pkg_repod == NULL) {
 			/* not found */
-			return errno;
+			return ENOENT;
 		}
 	}
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
@@ -181,12 +181,12 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool bypattern,
 	 * the "unsorted" array in transaction dictionary.
 	 */
 	if (!prop_array_add(unsorted, pkg_repod))
-		return errno;
+		return EINVAL;
 
 	xbps_dbg_printf(xhp, "%s-%s: added into the transaction (%s).\n",
 	    pkgname, repover, repoloc);
 
-	return rv;
+	return 0;
 }
 
 int
