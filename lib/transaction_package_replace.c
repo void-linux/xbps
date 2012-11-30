@@ -39,44 +39,33 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 	prop_array_t replaces, instd_reqby, unsorted;
 	prop_dictionary_t instd, reppkgd, filesd;
 	prop_object_t obj, obj2;
-	prop_object_iterator_t iter, iter2;
+	prop_object_iterator_t iter;
 	const char *pattern, *pkgname, *curpkgname, *pkgver, *curpkgver;
 	char *buf;
 	bool instd_auto, sr;
+	size_t i;
 
 	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 
-	iter = prop_array_iterator(unsorted);
-	assert(iter);
-
-	while ((obj = prop_object_iterator_next(iter))) {
+	for (i = 0; i < prop_array_count(unsorted); i++) {
+		obj = prop_array_get(unsorted, i);
 		replaces = prop_dictionary_get(obj, "replaces");
 		if (replaces == NULL || prop_array_count(replaces) == 0)
 			continue;
 
-		iter2 = prop_array_iterator(replaces);
-		if (iter2 == NULL) {
-			prop_object_iterator_release(iter);
-			return ENOMEM;
-		}
+		iter = prop_array_iterator(replaces);
+		assert(iter);
 
-		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
+		while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
 			pattern = prop_string_cstring_nocopy(obj2);
-			assert(pattern != NULL);
 			/*
 			 * Find the installed package that matches the pattern
 			 * to be replaced.
 			 */
-			instd = xbps_pkgdb_get_pkg(xhp, pattern);
-			if (instd == NULL) {
-				/*
-				 * No package installed has been matched,
-				 * try looking for a virtual package.
-				 */
-				instd = xbps_pkgdb_get_virtualpkg(xhp, pattern);
-				if (instd == NULL)
-					continue;
-			}
+			if (((instd = xbps_pkgdb_get_pkg(xhp, pattern)) == NULL) &&
+			    ((instd = xbps_pkgdb_get_virtualpkg(xhp, pattern)) == NULL))
+				continue;
+
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &pkgname);
 			prop_dictionary_get_cstring_nocopy(obj,
@@ -171,7 +160,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 					free(buf);
 					prop_object_release(filesd);
 					prop_object_iterator_release(iter);
-					prop_object_iterator_release(iter2);
 					return errno;
 				}
 				prop_object_release(filesd);
@@ -185,9 +173,8 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			    "transaction", "remove");
 			prop_array_add(unsorted, instd);
 		}
-		prop_object_iterator_release(iter2);
+		prop_object_iterator_release(iter);
 	}
-	prop_object_iterator_release(iter);
 
 	return 0;
 }
