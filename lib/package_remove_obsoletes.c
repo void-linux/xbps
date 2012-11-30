@@ -66,8 +66,11 @@ again:
 	for (i = 0; i < prop_array_count(array); i++) {
 		found = false;
 		obj = prop_array_get(array, i);
+		if (prop_object_type(obj) != PROP_TYPE_DICTIONARY)
+			continue;
 		oldstr = prop_dictionary_get(obj, "file");
-		assert(oldstr);
+		if (oldstr == NULL)
+			continue;
 
 		file = xbps_xasprintf(".%s",
 		    prop_string_cstring_nocopy(oldstr));

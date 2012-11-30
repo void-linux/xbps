@@ -56,11 +56,13 @@ remove_pkg(const char *repodir, const char *arch, const char *file)
 
 	filepath = xbps_xasprintf("%s/%s", repodir, file);
 	if (remove(filepath) == -1) {
-		rv = errno;
-		xbps_error_printf("failed to remove old binpkg `%s': %s\n",
-		    file, strerror(rv));
-		free(filepath);
-		return rv;
+		if (errno != ENOENT) {
+			rv = errno;
+			xbps_error_printf("failed to remove old binpkg "
+			    "`%s': %s\n", file, strerror(rv));
+			free(filepath);
+			return rv;
+		}
 	}
 	free(filepath);
 

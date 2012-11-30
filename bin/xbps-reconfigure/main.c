@@ -51,13 +51,13 @@ usage(bool fail)
 }
 
 static void
-state_cb(struct xbps_handle *xhp, struct xbps_state_cb_data *xscd, void *cbd)
+state_cb(struct xbps_state_cb_data *xscd, void *cbd)
 {
 	bool syslog_enabled = false;
 
 	(void)cbd;
 
-	if (xhp->flags & XBPS_FLAG_SYSLOG) {
+	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
 		syslog_enabled = true;
 		openlog("xbps-reconfigure", LOG_CONS, LOG_USER);
 	}
@@ -74,7 +74,7 @@ state_cb(struct xbps_handle *xhp, struct xbps_state_cb_data *xscd, void *cbd)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	default:
-		xbps_dbg_printf(xhp,
+		xbps_dbg_printf(xscd->xhp,
 		    "unknown state %d\n", xscd->state);
 		break;
 	}

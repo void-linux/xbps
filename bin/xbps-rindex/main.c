@@ -99,15 +99,12 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (add_mode) {
-		if (index_add(&xh, argc - optind, argv + optind) == 0)
-			rv = index_files_add(&xh, argc - optind, argv + optind);
-	} else if (clean_mode) {
-		if (index_clean(&xh, argv[optind]) == 0)
-			rv = index_files_clean(&xh, argv[optind]);
-	} else if (rm_mode) {
+	if (add_mode)
+		rv = index_add(&xh, argc - optind, argv + optind);
+	else if (clean_mode)
+		rv = index_clean(&xh, argv[optind]);
+	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
-	}
 
 	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);

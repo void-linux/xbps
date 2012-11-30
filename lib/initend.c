@@ -150,8 +150,6 @@ xbps_init(struct xbps_handle *xhp)
 		    XBPS_FETCH_CACHECONN_HOST, CFGF_NONE),
 		CFG_INT(__UNCONST("FetchTimeoutConnection"),
 		    XBPS_FETCH_TIMEOUT, CFGF_NONE),
-		CFG_INT(__UNCONST("TransactionFrequencyFlush"),
-		    XBPS_TRANS_FLUSH, CFGF_NONE),
 		CFG_BOOL(__UNCONST("syslog"), true, CFGF_NONE),
 		CFG_STR_LIST(__UNCONST("repositories"), NULL, CFGF_MULTI),
 		CFG_STR_LIST(__UNCONST("PackagesOnHold"), NULL, CFGF_MULTI),
@@ -249,7 +247,6 @@ xbps_init(struct xbps_handle *xhp)
 	if (xhp->cfg == NULL) {
 		xhp->flags |= XBPS_FLAG_SYSLOG;
 		xhp->fetch_timeout = XBPS_FETCH_TIMEOUT;
-		xhp->transaction_frequency_flush = XBPS_TRANS_FLUSH;
 		cc = XBPS_FETCH_CACHECONN;
 		cch = XBPS_FETCH_CACHECONN_HOST;
 	} else {
@@ -258,8 +255,6 @@ xbps_init(struct xbps_handle *xhp)
 		xhp->fetch_timeout = cfg_getint(xhp->cfg, "FetchTimeoutConnection");
 		cc = cfg_getint(xhp->cfg, "FetchCacheConnections");
 		cch = cfg_getint(xhp->cfg, "FetchCacheConnectionsPerHost");
-		xhp->transaction_frequency_flush =
-		    cfg_getint(xhp->cfg, "TransactionFrequencyFlush");
 	}
 	if (xhp->flags & XBPS_FLAG_SYSLOG)
 		syslog_enabled = true;
@@ -276,8 +271,6 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "FetchCacheconn=%u\n", cc);
 	xbps_dbg_printf(xhp, "FetchCacheconnHost=%u\n", cch);
 	xbps_dbg_printf(xhp, "Syslog=%u\n", syslog_enabled);
-	xbps_dbg_printf(xhp, "TransactionFrequencyFlush=%u\n",
-	    xhp->transaction_frequency_flush);
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->un_machine);
 
 	xhp->initialized = true;
@@ -295,7 +288,6 @@ xbps_end(struct xbps_handle *xhp)
 
 	xbps_pkgdb_release(xhp);
 	xbps_rpool_release(xhp);
-	xbps_metadir_release(xhp);
 	xbps_fetch_unset_cache_connection();
 
 	cfg_free(xhp->cfg);

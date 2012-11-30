@@ -155,7 +155,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		dict = xbps_find_pkg_dict_installed(&xh, argv[1], false);
+		dict = xbps_pkgdb_get_pkg(&xh, argv[1]);
 		if (dict == NULL) {
 			rv = errno;
 			goto out;

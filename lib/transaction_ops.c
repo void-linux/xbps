@@ -58,8 +58,7 @@ enum {
 };
 
 static int
-trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool bypattern,
-	      bool best, bool exact, int action)
+trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 {
 	prop_dictionary_t pkg_pkgdb, pkg_repod;
 	prop_array_t unsorted;
@@ -74,27 +73,17 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool bypattern,
 	 */
 	if (action == TRANS_INSTALL) {
 		reason = "install";
-		if (exact) {
-			pkg_repod = xbps_rpool_find_pkg_exact(xhp, pkg);
-			if (pkg_repod == NULL) {
-				/* not found */
-				return ENOENT;
-			}
-		} else {
-			if (((pkg_repod = xbps_rpool_find_pkg(xhp, pkg, bypattern, best)) == NULL) &&
-			    ((pkg_repod = xbps_rpool_find_virtualpkg_conf(xhp, pkg, bypattern)) == NULL) &&
-			    ((pkg_repod = xbps_rpool_find_virtualpkg(xhp, pkg, bypattern)) == NULL)) {
-				/* not found */
-				return ENOENT;
-			}
+		if (((pkg_repod = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
+		    ((pkg_repod = xbps_rpool_get_virtualpkg(xhp, pkg)) == NULL)) {
+			/* not found */
+			return ENOENT;
 		}
 	} else {
-		if ((pkg_pkgdb = xbps_pkgdb_get_pkgd(xhp, pkg, false)) == NULL)
+		if ((pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg)) == NULL)
 			return ENODEV;
 
 		reason = "update";
-		pkg_repod = xbps_rpool_find_pkg(xhp, pkg, false, true);
-		if (pkg_repod == NULL) {
+		if ((pkg_repod = xbps_rpool_get_pkg(xhp, pkg)) == NULL) {
 			/* not found */
 			return ENOENT;
 		}
@@ -123,32 +112,25 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool bypattern,
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		return rv;
 
+	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 	/*
 	 * Find out if package has matched conflicts.
 	 */
-	xbps_pkg_find_conflicts(xhp, pkg_repod);
+	xbps_pkg_find_conflicts(xhp, unsorted, pkg_repod);
 
-	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
-	if (unsorted == NULL)
-		return EINVAL;
 	/*
 	 * Find out if package being updated matches the one already
 	 * in transaction, in that case ignore it.
 	 */
 	if (action == TRANS_UPDATE) {
-		if (xbps_find_pkg_in_array_by_pkgver(xhp,
-		    unsorted, repopkgver, NULL)) {
+		if (xbps_find_pkg_in_array(unsorted, repopkgver)) {
 			xbps_dbg_printf(xhp, "[update] `%s' already queued in "
 			    "transaction.\n", repopkgver);
 			return EEXIST;
 		}
 	}
 
-	/*
-	 * Prepare required package dependencies and add them into the
-	 * "unsorted" array in transaction dictionary.
-	 */
-	if ((rv = xbps_repository_find_pkg_deps(xhp, pkg_repod)) != 0)
+	if ((rv = xbps_repository_find_deps(xhp, unsorted, pkg_repod)) != 0)
 		return rv;
 	/*
 	 * Set package state in dictionary with same state than the
@@ -178,7 +160,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool bypattern,
 
 	/*
 	 * Add the pkg dictionary from repository's index dictionary into
-	 * the "unsorted" array in transaction dictionary.
+	 * the "unsorted" queue.
 	 */
 	if (!prop_array_add(unsorted, pkg_repod))
 		return EINVAL;
@@ -219,8 +201,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 			foundhold = false;
 			continue;
 		}
-		rv = trans_find_pkg(xhp, pkgname, false, true,
-				   false, TRANS_UPDATE);
+		rv = trans_find_pkg(xhp, pkgname, TRANS_UPDATE);
 		if (rv == 0)
 			newpkg_found = true;
 		else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
@@ -236,42 +217,20 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 }
 
 int
-xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname)
+xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 {
-	return trans_find_pkg(xhp, pkgname, false, true, false, TRANS_UPDATE);
+	return trans_find_pkg(xhp, pkg, TRANS_UPDATE);
 }
 
 int
-xbps_transaction_install_pkg(struct xbps_handle *xhp,
-			     const char *pkg,
+xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 			     bool reinstall)
 {
 	prop_dictionary_t pkgd = NULL;
 	pkg_state_t state;
-	char *pkgname;
-	bool bypattern, best, exact;
 
-	if (xbps_pkgpattern_version(pkg)) {
-		bypattern = true;
-		best = false;
-		exact = false;
-	} else if ((pkgname = xbps_pkg_name(pkg)) != NULL) {
-		exact = true;
-		bypattern = false;
-		best = false;
-	} else {
-		exact = false;
-		bypattern = false;
-		best = true;
-	}
-
-	if (exact) {
-		pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
-		free(pkgname);
-	} else
-		pkgd = xbps_pkgdb_get_pkgd(xhp, pkg, bypattern);
-
-	if (pkgd) {
+	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkg)) ||
+	    (pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkg))) {
 		if (xbps_pkg_state_dictionary(pkgd, &state) != 0)
 			return EINVAL;
 		if ((state == XBPS_PKG_STATE_INSTALLED) && !reinstall) {
@@ -280,7 +239,7 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp,
 		}
 	}
 
-	return trans_find_pkg(xhp, pkg, bypattern, best, exact, TRANS_INSTALL);
+	return trans_find_pkg(xhp, pkg, TRANS_INSTALL);
 }
 
 int
@@ -289,7 +248,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			    bool recursive)
 {
 	prop_dictionary_t pkgd;
-	prop_array_t orphans, orphans_pkg, unsorted, reqby;
+	prop_array_t unsorted, orphans, orphans_pkg, reqby;
 	prop_object_t obj;
 	const char *pkgver;
 	size_t count;
@@ -297,7 +256,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 
 	assert(pkgname != NULL);
 
-	if ((pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false)) == NULL) {
+	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
 		/* pkg not installed */
 		return ENOENT;
 	}
@@ -308,6 +267,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 		return rv;
 
 	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
+
 	if (!recursive)
 		goto rmpkg;
 	/*
@@ -334,7 +294,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	prop_object_release(orphans);
 rmpkg:
 	/*
-	 * Add pkg dictionary into the unsorted_deps array.
+	 * Add pkg dictionary into the transaction unsorted queue.
 	 */
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	prop_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
@@ -376,21 +336,22 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 	 */
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		goto out;
-	/*
-	 * Add pkg orphan dictionary into the unsorted_deps array.
-	 */
+
 	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
+	/*
+	 * Add pkg orphan dictionary into the transaction unsorted queue.
+	 */
 	while (count--) {
 		obj = prop_array_get(orphans, count);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_set_cstring_nocopy(obj,
 		    "transaction", "remove");
 		prop_array_add(unsorted, obj);
-		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n",
-		    pkgver);
+		xbps_dbg_printf(xhp, "%s: added (remove).\n", pkgver);
 	}
 out:
 	if (orphans != NULL)
 		prop_object_release(orphans);
+
 	return rv;
 }

@@ -97,7 +97,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		 */
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "update") == 0)) {
-			pkg_metad = xbps_metadir_get_pkgd(xhp, pkgname);
+			pkg_metad = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 			if (pkg_metad == NULL)
 				continue;
 			prop_dictionary_get_uint64(pkg_metad,
@@ -109,7 +109,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 			prop_dictionary_get_uint64(obj,
 			    "installed_size", &tsize);
 			instsize += tsize;
-			if (xbps_check_is_repository_uri_remote(repo)) {
+			if (xbps_repository_is_remote(repo)) {
 				prop_dictionary_get_uint64(obj,
 				    "filename-size", &tsize);
 				dlsize += tsize;
@@ -263,7 +263,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Sort package dependencies if necessary.
 	 */
-	if ((rv = xbps_transaction_sort_pkg_deps(xhp)) != 0) {
+	if ((rv = xbps_transaction_sort(xhp)) != 0) {
 		prop_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return rv;

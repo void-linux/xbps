@@ -31,9 +31,7 @@
 #include "defs.h"
 
 void
-state_cb(struct xbps_handle *xhp,
-	 struct xbps_state_cb_data *xscd,
-	 void *cbdata)
+state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 {
 	prop_dictionary_t pkgd;
 	const char *version;
@@ -41,7 +39,7 @@ state_cb(struct xbps_handle *xhp,
 
 	(void)cbdata;
 
-	if (xhp->flags & XBPS_FLAG_SYSLOG) {
+	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
 		syslog_enabled = true;
 		openlog("xbps-install", LOG_CONS, LOG_USER);
 	}
@@ -88,7 +86,7 @@ state_cb(struct xbps_handle *xhp,
 		/* empty */
 		break;
 	case XBPS_STATE_UPDATE:
-		pkgd = xbps_find_pkg_dict_installed(xhp, xscd->arg0, false);
+		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, xscd->arg0);
 		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
 		printf("%s-%s: updating to %s ...\n", xscd->arg0,
 		    version, xscd->arg1);
@@ -96,7 +94,7 @@ state_cb(struct xbps_handle *xhp,
 	/* success */
 	case XBPS_STATE_REMOVE_FILE:
 	case XBPS_STATE_REMOVE_FILE_OBSOLETE:
-		if (xhp->flags & XBPS_FLAG_VERBOSE)
+		if (xscd->xhp->flags & XBPS_FLAG_VERBOSE)
 			printf("%s\n", xscd->desc);
 		else {
 			printf("%s\n", xscd->desc);
@@ -109,7 +107,7 @@ state_cb(struct xbps_handle *xhp,
 		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Installed `%s-%s' successfully "
 			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
-			    xhp->rootdir);
+			    xscd->xhp->rootdir);
 		break;
 	case XBPS_STATE_UPDATE_DONE:
 		printf("%s-%s: updated successfully.\n",
@@ -117,7 +115,7 @@ state_cb(struct xbps_handle *xhp,
 		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Updated `%s' to `%s' successfully "
 			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
-			    xhp->rootdir);
+			    xscd->xhp->rootdir);
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("%s-%s: removed successfully.\n",
@@ -125,7 +123,7 @@ state_cb(struct xbps_handle *xhp,
 		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
 			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
-			    xhp->rootdir);
+			    xscd->xhp->rootdir);
 		break;
 	/* errors */
 	case XBPS_STATE_UNPACK_FAIL:
@@ -154,7 +152,7 @@ state_cb(struct xbps_handle *xhp,
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	default:
-		xbps_dbg_printf(xhp,
+		xbps_dbg_printf(xscd->xhp,
 		    "unknown state %d\n", xscd->state);
 		break;
 	}

@@ -59,7 +59,6 @@ xbps_get_remote_repo_string(const char *uri)
 	 * becomes:
 	 *
 	 * 	http___nocturno_local_8080_repo_x86_64
-	 * 	
 	 */
 	if (url->port != 0)
 		p = xbps_xasprintf("%s://%s:%u%s", url->scheme,
@@ -81,10 +80,8 @@ xbps_get_remote_repo_string(const char *uri)
  * Returns -1 on error, 0 if transfer was not necessary (local/remote
  * size and/or mtime match) and 1 if downloaded successfully.
  */
-int
-xbps_repository_sync_pkg_index(struct xbps_handle *xhp,
-			       const char *uri,
-			       const char *plistf)
+int HIDDEN
+xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 {
 	prop_array_t array;
 	const char *fetchstr = NULL;
@@ -95,7 +92,7 @@ xbps_repository_sync_pkg_index(struct xbps_handle *xhp,
 	rpidx = uri_fixedp = lrepodir = lrepofile = NULL;
 
 	/* ignore non remote repositories */
-	if (!xbps_check_is_repository_uri_remote(uri))
+	if (!xbps_repository_is_remote(uri))
 		return 0;
 
 	uri_fixedp = xbps_get_remote_repo_string(uri);

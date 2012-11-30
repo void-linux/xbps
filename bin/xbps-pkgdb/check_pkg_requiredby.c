@@ -59,7 +59,7 @@ check_reqby_pkg_cb(struct xbps_handle *xhp,
 	 * Internalize current pkg props dictionary from its
 	 * installed metadata directory.
 	 */
-	curpkg_propsd = xbps_metadir_get_pkgd(xhp, curpkgn);
+	curpkg_propsd = xbps_pkgdb_get_pkg_metadata(xhp, curpkgn);
 	if (curpkg_propsd == NULL) {
 		xbps_error_printf("%s: missing %s metadata file!\n",
 		    curpkgn, XBPS_PKGPROPS);
@@ -138,26 +138,24 @@ remove_stale_entries_in_reqby(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 	char *str;
 	size_t i;
 
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+
+again:
 	reqby = prop_dictionary_get(pkgd, "requiredby");
 	if (reqby == NULL || prop_array_count(reqby) == 0)
 		return;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-
 	for (i = 0; i < prop_array_count(reqby); i++) {
 		prop_array_get_cstring(reqby, i, &str);
-		if ((pkgd = xbps_pkgdb_get_pkgd_by_pkgver(xhp, str)) != NULL)
+		if ((pkgd = xbps_pkgdb_get_pkg(xhp, str)) != NULL)
 			continue;
 
-		if (!xbps_remove_string_from_array(xhp, reqby, str))
-			fprintf(stderr, "%s: failed to remove %s from "
-			    "requiredby!\n", pkgver, str);
-		else
-			printf("%s: removed stale entry in requiredby `%s'\n",
-			    pkgver, str);
-
+		prop_array_remove(reqby, i);
+		printf("%s: removed stale entry in requiredby `%s'\n",
+		    pkgver, str);
 		prop_dictionary_set(pkgd, "requiredby", reqby);
 		free(str);
+		goto again;
 	}
 }
 

@@ -119,7 +119,7 @@ open_archive(const char *url)
 	struct url *u;
 	struct archive *a;
 
-	if (!xbps_check_is_repository_uri_remote(url)) {
+	if (!xbps_repository_is_remote(url)) {
 		if ((a = archive_read_new()) == NULL)
 			return NULL;
 
@@ -146,7 +146,7 @@ open_archive(const char *url)
 }
 
 prop_dictionary_t
-xbps_dictionary_metadata_plist_by_url(const char *url, const char *plistf)
+xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
 {
 	prop_dictionary_t plistd = NULL;
 	struct archive *a;
@@ -154,10 +154,10 @@ xbps_dictionary_metadata_plist_by_url(const char *url, const char *plistf)
 	const char *curpath, *comptype;
 	int i = 0;
 
-	assert(url != NULL);
+	assert(fname != NULL);
 	assert(plistf != NULL);
 
-	if ((a = open_archive(url)) == NULL)
+	if ((a = open_archive(fname)) == NULL)
 		return NULL;
 
 	/*

@@ -72,28 +72,28 @@ cleanup_sighandler(int signum)
 }
 
 static void
-state_cb_rm(struct xbps_handle *xhp,
-	    struct xbps_state_cb_data *xscd,
-	    void *cbdata)
+state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
 {
 	bool syslog_enabled = false;
 
 	(void)cbdata;
 
-	if (xhp->flags & XBPS_FLAG_SYSLOG) {
+	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
 		syslog_enabled = true;
 		openlog("xbps-remove", LOG_CONS, LOG_USER);
 	}
 
 	switch (xscd->state) {
 	/* notifications */
+	case XBPS_STATE_UNREGISTER:
+		break;
 	case XBPS_STATE_REMOVE:
 		printf("Removing `%s-%s' ...\n", xscd->arg0, xscd->arg1);
 		break;
 	/* success */
 	case XBPS_STATE_REMOVE_FILE:
 	case XBPS_STATE_REMOVE_FILE_OBSOLETE:
-		if (xhp->flags & XBPS_FLAG_VERBOSE)
+		if (xscd->xhp->flags & XBPS_FLAG_VERBOSE)
 			printf("%s\n", xscd->desc);
 		else {
 			printf("%s\n", xscd->desc);
@@ -106,7 +106,7 @@ state_cb_rm(struct xbps_handle *xhp,
 		if (syslog_enabled)
 			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
 			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
-			    xhp->rootdir);
+			    xscd->xhp->rootdir);
 		break;
 	/* errors */
 	case XBPS_STATE_UNREGISTER_FAIL:
@@ -127,7 +127,7 @@ state_cb_rm(struct xbps_handle *xhp,
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	default:
-		xbps_dbg_printf(xhp,
+		xbps_dbg_printf(xscd->xhp,
 		    "%s-%s: unknown state %d\n",
 		    xscd->arg0, xscd->arg1, xscd->state);
 		break;
@@ -161,7 +161,7 @@ cachedir_clean(struct xbps_handle *xhp)
 		}
 		/* Internalize props.plist dictionary from binary pkg */
 		binpkg = xbps_xasprintf("%s/%s", xhp->cachedir, dp->d_name);
-		pkg_propsd = xbps_dictionary_metadata_plist_by_url(binpkg,
+		pkg_propsd = xbps_get_pkg_plist_from_binpkg(binpkg,
 		    "./props.plist");
 		if (pkg_propsd == NULL) {
 			xbps_error_printf("Failed to read from %s: %s\n",
@@ -175,7 +175,7 @@ cachedir_clean(struct xbps_handle *xhp)
 		 * Remove binary pkg if it's not registered in any repository
 		 * or if hash doesn't match.
 		 */
-		repo_pkgd = xbps_rpool_find_pkg_exact(xhp, pkgver);
+		repo_pkgd = xbps_rpool_get_pkg(xhp, pkgver);
 		if (repo_pkgd) {
 			prop_dictionary_get_cstring_nocopy(repo_pkgd,
 			    "filename-sha256", &rsha256);
@@ -213,7 +213,7 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, size_t cols,
 	rv = xbps_transaction_remove_pkg(xhp, pkgname, recursive);
 	if (rv == EEXIST) {
 		/* pkg has revdeps */
-		pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
+		pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		reqby = prop_dictionary_get(pkgd, "requiredby");
 		printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",

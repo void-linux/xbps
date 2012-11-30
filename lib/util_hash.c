@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2011 Juan Romero Pardines.
+ * Copyright (c) 2008-2012 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -136,10 +136,8 @@ xbps_file_hash_check(const char *file, const char *sha256)
 	return 0;
 }
 
-const char *
-xbps_file_hash_dictionary(prop_dictionary_t d,
-			  const char *key,
-			  const char *file)
+static const char *
+file_hash_dictionary(prop_dictionary_t d, const char *key, const char *file)
 {
 	prop_object_t obj;
 	prop_object_iterator_t iter;
@@ -171,7 +169,7 @@ xbps_file_hash_dictionary(prop_dictionary_t d,
 	return sha256;
 }
 
-int
+int HIDDEN
 xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 				prop_dictionary_t d,
 				const char *key,
@@ -185,7 +183,7 @@ xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 	assert(key != NULL);
 	assert(file != NULL);
 
-	if ((sha256d = xbps_file_hash_dictionary(d, key, file)) == NULL) {
+	if ((sha256d = file_hash_dictionary(d, key, file)) == NULL) {
 		if (errno == ENOENT)
 			return 1; /* no match, file not found */
 

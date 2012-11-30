@@ -41,10 +41,7 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname)
 
 	assert(pkgname != NULL);
 
-	/*
-	 * Check for props.plist metadata file.
-	 */
-	propsd = xbps_metadir_get_pkgd(xhp, pkgname);
+	propsd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 	if (propsd == NULL)
 		return ENOENT;
 
@@ -55,14 +52,14 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname)
 }
 
 int
-show_pkg_revdeps(struct xbps_handle *xhp, const char *pkgname)
+show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
 	prop_dictionary_t pkgd;
 	int rv = 0;
 
-	pkgd = xbps_find_virtualpkg_dict_installed(xhp, pkgname, false);
+	pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkg);
 	if (pkgd == NULL) {
-		pkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
+		pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
 		if (pkgd == NULL)
 			return ENOENT;
 	}
@@ -77,11 +74,7 @@ repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern)
 {
 	prop_dictionary_t pkgd;
 
-	if (xbps_pkgpattern_version(pattern))
-		pkgd = xbps_rpool_find_pkg(xhp, pattern, true, false);
-	else
-		pkgd = xbps_rpool_find_pkg(xhp, pattern, false, true);
-
+	pkgd = xbps_rpool_get_pkg(xhp, pattern);
 	if (pkgd == NULL)
 		return errno;
 
@@ -92,20 +85,20 @@ repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern)
 }
 
 static int
-repo_revdeps_cb(struct xbps_handle *xhp,
-		struct xbps_rpool_index *rpi,
-		void *arg,
-		bool *done)
+repo_revdeps_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 {
 	prop_dictionary_t pkgd;
-	prop_array_t pkgdeps;
+	prop_array_t allkeys, pkgdeps;
+	prop_dictionary_keysym_t ksym;
 	const char *pkgver, *arch, *pattern = arg;
 	size_t i;
 
 	(void)done;
 
-	for (i = 0; i < prop_array_count(rpi->repo); i++) {
-		pkgd = prop_array_get(rpi->repo, i);
+	allkeys = prop_dictionary_all_keys(rpi->repod);
+	for (i = 0; i < prop_array_count(allkeys); i++) {
+		ksym = prop_array_get(allkeys, i);
+		pkgd = prop_dictionary_get_keysym(rpi->repod, ksym);
 		pkgdeps = prop_dictionary_get(pkgd, "run_depends");
 		if (pkgdeps == NULL || prop_array_count(pkgdeps) == 0)
 			continue;
@@ -113,13 +106,14 @@ repo_revdeps_cb(struct xbps_handle *xhp,
 		if (xbps_match_pkgdep_in_array(pkgdeps, pattern)) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "architecture", &arch);
-			if (xbps_pkg_arch_match(xhp, arch, NULL)) {
+			if (xbps_pkg_arch_match(rpi->xhp, arch, NULL)) {
 				prop_dictionary_get_cstring_nocopy(pkgd,
 				    "pkgver", &pkgver);
 				printf("%s\n", pkgver);
 			}
 		}
 	}
+	prop_object_release(allkeys);
 
 	return 0;
 }
@@ -133,7 +127,7 @@ repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 	if (xbps_pkg_version(pkg))
 		pkgver = pkg;
 	else {
-		pkgd = xbps_rpool_find_pkg(xhp, pkg, false, false);
+		pkgd = xbps_rpool_get_pkg(xhp, pkg);
 		if (pkgd == NULL)
 			return ENOENT;
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);

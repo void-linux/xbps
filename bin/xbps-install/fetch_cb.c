@@ -150,14 +150,10 @@ stat_display(struct xbps_fetch_cb_data *xfpd, void *cbdata)
 }
 
 void
-fetch_file_progress_cb(struct xbps_handle *xhp,
-		       struct xbps_fetch_cb_data *xfpd,
-		       void *cbdata)
+fetch_file_progress_cb(struct xbps_fetch_cb_data *xfpd, void *cbdata)
 {
 	struct xferstat *xfer = cbdata;
 	char size[8];
-
-	(void)xhp;
 
 	if (xfpd->cb_start) {
 		/* start transfer stats */

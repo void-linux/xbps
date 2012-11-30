@@ -32,7 +32,9 @@
 #include "xbps_api_impl.h"
 
 void HIDDEN
-xbps_pkg_find_conflicts(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
+xbps_pkg_find_conflicts(struct xbps_handle *xhp,
+			prop_array_t unsorted,
+			prop_dictionary_t pkg_repod)
 {
 	prop_array_t pkg_cflicts, trans_cflicts;
 	prop_dictionary_t pkgd;
@@ -52,7 +54,8 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		/*
 		 * Check if current pkg conflicts with an installed package.
 		 */
-		if ((pkgd = xbps_pkgdb_get_pkgd(xhp, cfpkg, true))) {
+		if ((pkgd = xbps_pkgdb_get_pkg(xhp, cfpkg)) ||
+		    (pkgd = xbps_pkgdb_get_virtualpkg(xhp, cfpkg))) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			buf = xbps_xasprintf("%s conflicts with "
@@ -64,9 +67,8 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		/*
 		 * Check if current pkg conflicts with any pkg in transaction.
 		 */
-		pkgd = xbps_find_pkg_in_dict_by_pattern(xhp, xhp->transd,
-		    "unsorted_deps", cfpkg);
-		if (pkgd != NULL) {
+		if ((pkgd = xbps_find_pkg_in_array(unsorted, cfpkg)) ||
+		    (pkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, cfpkg))) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			buf = xbps_xasprintf("%s conflicts with "

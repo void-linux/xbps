@@ -126,7 +126,7 @@ find_orphan_pkg(struct xbps_handle *xhp,
 			prop_object_iterator_release(iter);
 			return EINVAL;
 		}
-		if (xbps_find_pkg_in_array_by_pattern(xhp, od->array, pkgdep, NULL))
+		if (xbps_find_pkg_in_array(od->array, pkgdep))
 			ndep++;
 		if (od->orphans_user == NULL)
 			continue;

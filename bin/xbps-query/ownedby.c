@@ -95,7 +95,7 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp, prop_object_t obj, void *arg, bool *do
 	(void)done;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	pkgmetad = xbps_metadir_get_pkgd(xhp, pkgname);
+	pkgmetad = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 
 	files_keys = prop_dictionary_all_keys(pkgmetad);
 	for (i = 0; i < prop_array_count(files_keys); i++) {
@@ -122,26 +122,21 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 }
 
 static void
-repo_match_files_by_pattern(struct xbps_handle *xhp,
-			    prop_dictionary_t pkg_filesd,
+repo_match_files_by_pattern(prop_dictionary_t pkgd,
 			    struct ffdata *ffd)
 {
 	prop_array_t array;
-	const char *filestr, *pkgver, *arch;
+	const char *filestr, *pkgver;
 	size_t i;
 	int x;
 
-	prop_dictionary_get_cstring_nocopy(pkg_filesd, "architecture", &arch);
-	if (!xbps_pkg_arch_match(xhp, arch, NULL))
-		return;
-
-	array = prop_dictionary_get(pkg_filesd, "files");
+	array = prop_dictionary_get(pkgd, "files");
 	for (i = 0; i < prop_array_count(array); i++) {
 		prop_array_get_cstring_nocopy(array, i, &filestr);
 		for (x = 0; x < ffd->npatterns; x++) {
 			if ((xbps_pkgpattern_match(filestr, ffd->patterns[x])) ||
 			    (strcmp(filestr, ffd->patterns[x]) == 0)) {
-				prop_dictionary_get_cstring_nocopy(pkg_filesd,
+				prop_dictionary_get_cstring_nocopy(pkgd,
 				    "pkgver", &pkgver);
 				printf("%s: %s (%s)\n",
 				    pkgver, filestr, ffd->repouri);
@@ -151,22 +146,21 @@ repo_match_files_by_pattern(struct xbps_handle *xhp,
 }
 
 static int
-repo_ownedby_cb(struct xbps_handle *xhp,
-		struct xbps_rpool_index *rpi,
-		void *arg,
-		bool *done)
+repo_ownedby_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 {
-	prop_array_t idxfiles;
+	prop_array_t allkeys;
+	prop_dictionary_t pkgd, idxfiles;
+	prop_dictionary_keysym_t ksym;
 	struct ffdata *ffd = arg;
 	char *plist;
 	unsigned int i;
 
 	(void)done;
 
-	if ((plist = xbps_pkg_index_files_plist(xhp, rpi->uri)) == NULL)
+	if ((plist = xbps_pkg_index_files_plist(rpi->xhp, rpi->uri)) == NULL)
 		return ENOMEM;
 
-	if ((idxfiles = prop_array_internalize_from_zfile(plist)) == NULL) {
+	if ((idxfiles = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
 		free(plist);
 		if (errno == ENOENT) {
 			fprintf(stderr, "%s: index-files missing! "
@@ -178,11 +172,13 @@ repo_ownedby_cb(struct xbps_handle *xhp,
 	free(plist);
 	ffd->repouri = rpi->uri;
 
-	for (i = 0; i < prop_array_count(idxfiles); i++)
-		repo_match_files_by_pattern(xhp,
-		    prop_array_get(idxfiles, i), ffd);
+	allkeys = prop_dictionary_all_keys(idxfiles);
+	for (i = 0; i < prop_array_count(allkeys); i++) {
+		ksym = prop_array_get(allkeys, i);
+		pkgd = prop_dictionary_get_keysym(idxfiles, ksym);
+		repo_match_files_by_pattern(pkgd, ffd);
+	}
 
-	prop_object_release(idxfiles);
 	return 0;
 }
 
@@ -195,8 +191,10 @@ repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
 
-	if ((rv = xbps_rpool_sync(xhp, XBPS_PKGINDEX_FILES, NULL)) != 0)
+	if ((rv = xbps_rpool_sync(xhp, XBPS_PKGINDEX_FILES, NULL)) != 0) {
+		fprintf(stderr, "xbps-query: failed to sync rindex "
+		    "files: %s\n", strerror(rv));
 		return rv;
-
+	}
 	return xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
 }

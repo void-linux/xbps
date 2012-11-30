@@ -52,20 +52,17 @@ struct repo_search_data {
 };
 
 static int
-repo_longest_pkgver(struct xbps_handle *xhp,
-		    struct xbps_rpool_index *rpi,
-		    void *arg,
-		    bool *done)
+repo_longest_pkgver(struct xbps_rindex *rpi, void *arg, bool *done)
 {
 	size_t *len = arg, olen = 0;
 
 	(void)done;
 
 	if (*len == 0) {
-		*len = find_longest_pkgver(xhp, rpi->repo);
+		*len = find_longest_pkgver(rpi->xhp, rpi->repod);
 		return 0;
 	}
-	olen = find_longest_pkgver(xhp, rpi->repo);
+	olen = find_longest_pkgver(rpi->xhp, rpi->repod);
 	if (olen > *len)
 		*len = olen;
 
@@ -83,75 +80,66 @@ repo_find_longest_pkgver(struct xbps_handle *xhp)
 }
 
 static int
-show_pkg_namedesc(struct xbps_handle *xhp,
-		  prop_object_t obj,
-		  void *arg,
-		  bool *loop_done)
+repo_search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 {
+	prop_array_t allkeys;
+	prop_dictionary_t pkgd;
+	prop_dictionary_keysym_t ksym;
 	struct repo_search_data *rsd = arg;
-	const char *pkgver, *pkgname, *desc, *arch, *inststr;
+	const char *pkgver, *pkgname, *desc, *inststr;
 	char *tmp = NULL, *out = NULL;
-	size_t x, len;
-	int i;
+	size_t i, j, len;
+	int x;
 
-	(void)xhp;
-	(void)loop_done;
-
-	prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-	if (!xbps_pkg_arch_match(xhp, arch, NULL))
-		return 0;
-
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
-
-	for (i = 0; i < rsd->npatterns; i++) {
-		if ((xbps_pkgpattern_match(pkgver, rsd->patterns[i]) == 1) ||
-		    (xbps_pkgpattern_match(desc, rsd->patterns[i]) == 1)  ||
-		    (strcasecmp(pkgname, rsd->patterns[i]) == 0) ||
-		    (strcasestr(pkgver, rsd->patterns[i])) ||
-		    (strcasestr(desc, rsd->patterns[i]))) {
-			tmp = calloc(1, rsd->pkgver_len + 1);
-			assert(tmp);
-			memcpy(tmp, pkgver, rsd->pkgver_len);
-			for (x = strlen(tmp); x < rsd->pkgver_len; x++)
-				tmp[x] = ' ';
-
-			tmp[x] = '\0';
-			if (xbps_pkgdb_get_pkgd_by_pkgver(xhp, pkgver))
-				inststr = "[*]";
-			else
-				inststr = "[-]";
-
-			len = strlen(inststr) + strlen(tmp) + strlen(desc) + 1;
-			if (len > rsd->maxcols) {
-				out = malloc(rsd->maxcols+1);
-				assert(out);
-				snprintf(out, rsd->maxcols-3, "%s %s %s",
-				    inststr, tmp, desc);
-				strncat(out, "...", rsd->maxcols);
-				out[rsd->maxcols+1] = '\0';
-				printf("%s\n", out);
-				free(out);
-			} else {
-				printf("%s %s %s\n", inststr, tmp, desc);
-			}
-			free(tmp);
-		}
-	}
-
-	return 0;
-}
-static int
-repo_search_pkgs_cb(struct xbps_handle *xhp,
-		    struct xbps_rpool_index *rpi,
-		    void *arg,
-		    bool *done)
-{
-	struct repo_search_data *rsd = arg;
 	(void)done;
 
-	(void)xbps_callback_array_iter(xhp, rpi->repo, show_pkg_namedesc, rsd);
+	allkeys = prop_dictionary_all_keys(rpi->repod);
+	for (i = 0; i < prop_array_count(allkeys); i++) {
+		ksym = prop_array_get(allkeys, i);
+		pkgd = prop_dictionary_get_keysym(rpi->repod, ksym);
+
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		prop_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc);
+
+		for (x = 0; x < rsd->npatterns; x++) {
+			if ((xbps_pkgpattern_match(pkgver, rsd->patterns[x])) ||
+			    (xbps_pkgpattern_match(desc, rsd->patterns[x]))  ||
+			    (strcasecmp(pkgname, rsd->patterns[x]) == 0) ||
+			    (strcasestr(pkgver, rsd->patterns[x])) ||
+			    (strcasestr(desc, rsd->patterns[x]))) {
+				tmp = calloc(1, rsd->pkgver_len + 1);
+				assert(tmp);
+				memcpy(tmp, pkgver, rsd->pkgver_len);
+				for (j = strlen(tmp); j < rsd->pkgver_len; j++)
+					tmp[j] = ' ';
+
+				tmp[j] = '\0';
+				if (xbps_pkgdb_get_pkg(rpi->xhp, pkgver))
+					inststr = "[*]";
+				else
+					inststr = "[-]";
+
+				len = strlen(inststr) + strlen(tmp) +
+				      strlen(desc) + 1;
+				if (len > rsd->maxcols) {
+					out = malloc(rsd->maxcols+1);
+					assert(out);
+					snprintf(out, rsd->maxcols-3, "%s %s %s",
+					    inststr, tmp, desc);
+					strncat(out, "...", rsd->maxcols);
+					out[rsd->maxcols+1] = '\0';
+					printf("%s\n", out);
+					free(out);
+				} else {
+					printf("%s %s %s\n", inststr,
+					    tmp, desc);
+				}
+				free(tmp);
+			}
+		}
+	}
+	prop_object_release(allkeys);
 
 	return 0;
 }

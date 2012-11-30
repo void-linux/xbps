@@ -54,9 +54,9 @@
  * @def XBPS_PKGINDEX_VERSION
  * Current version for the repository package index format.
  */
-#define XBPS_PKGINDEX_VERSION	"1.5"
+#define XBPS_PKGINDEX_VERSION	"1.6"
 
-#define XBPS_API_VERSION	"20121121"
+#define XBPS_API_VERSION	"20121129"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -206,13 +206,6 @@
  */
 #define XBPS_FETCH_TIMEOUT		30
 
-/**
- * @def XBPS_TRANS_FLUSH
- * Default number of packages to be processed in a transaction to
- * trigger a flush to the master package database XBPS_REGPKGDB.
- */
-#define XBPS_TRANS_FLUSH		5
-
 __BEGIN_DECLS
 
 /** @addtogroup initend */ 
@@ -313,6 +306,12 @@ typedef enum xbps_state {
  */
 struct xbps_state_cb_data {
 	/**
+	 * @var xhp
+	 *
+	 * Pointer to our struct xbps_handle passed to xbps_init().
+	 */
+	struct xbps_handle *xhp;
+	/**
 	 * @var state
 	 *
 	 * Current state.
@@ -351,6 +350,12 @@ struct xbps_state_cb_data {
  * function callback.
  */
 struct xbps_fetch_cb_data {
+	/**
+	 * @var xhp
+	 *
+	 * Pointer to our struct xbps_handle passed to xbps_init().
+	 */
+	struct xbps_handle *xhp;
 	/**
 	 * @var file_size
 	 *
@@ -404,11 +409,17 @@ struct xbps_fetch_cb_data {
  *
  * This structure is passed as argument to the unpack progress function
  * callback and its members will be updated when there's any progress.
- * All members in this struct are set internally by xbps_unpack_binary_pkg()
- * and should be used in read-only mode in the function callback.
- * The \a cookie member can be used to pass user supplied data.
+ * All members in this struct are set internally by libxbps
+ * and should be used in read-only mode in the supplied function
+ * callback.
  */
 struct xbps_unpack_cb_data {
+	/**
+	 * @var xhp
+	 *
+	 * Pointer to our struct xbps_handle passed to xbps_init().
+	 */
+	struct xbps_handle *xhp;
 	/**
 	 * @var pkgver
 	 *
@@ -490,7 +501,7 @@ struct xbps_handle {
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
 	 */
-	void (*state_cb)(struct xbps_handle *, struct xbps_state_cb_data *, void *);
+	void (*state_cb)(struct xbps_state_cb_data *, void *);
 	/**
 	 * Pointer to user supplied data to be passed as argument to
 	 * the \a xbps_state_cb function callback.
@@ -500,7 +511,7 @@ struct xbps_handle {
 	 * Pointer to the supplied function callback to be used in
 	 * xbps_unpack_binary_pkg().
 	 */
-	void (*unpack_cb)(struct xbps_handle *, struct xbps_unpack_cb_data *, void *);
+	void (*unpack_cb)(struct xbps_unpack_cb_data *, void *);
 	/**
 	 * Pointer to user supplied data to be passed as argument to
 	 * the \a xbps_unpack_cb function callback.
@@ -510,7 +521,7 @@ struct xbps_handle {
 	 * Pointer to the supplied function callback to be used in
 	 * xbps_fetch_file().
 	 */
-	void (*fetch_cb)(struct xbps_handle *, struct xbps_fetch_cb_data *, void *);
+	void (*fetch_cb)(struct xbps_fetch_cb_data *, void *);
 	/**
 	 * @var fetch_cb_data
 	 *
@@ -566,13 +577,6 @@ struct xbps_handle {
 	 * by the API from a setting in configuration file.
 	 */
 	uint16_t fetch_timeout;
-	/**
-	 * @var transaction_frequency_flush
-	 *
-	 * Number of packages to be processed in a transaction to
-	 * trigger a flush to the master databases.
-	 */
-	uint16_t transaction_frequency_flush;
 	/**
 	 * @var flags
 	 *
@@ -655,7 +659,6 @@ int xbps_configure_packages(struct xbps_handle *xhp, bool flush);
 
 /** @addtogroup download */
 /*@{*/
-
 
 /**
  * Download a file from a remote URL to current working directory.
@@ -749,14 +752,11 @@ int xbps_pkgdb_foreach_reverse_cb(
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] pkg Package name or name-version to match.
- * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
- * package pattern, i.e `foo>=0' or `foo<1'.
  *
  * @return The matching proplib package dictionary, NULL otherwise.
  */
-prop_dictionary_t xbps_pkgdb_get_pkgd(struct xbps_handle *xhp,
-				      const char *pkg,
-				      bool bypattern);
+prop_dictionary_t xbps_pkgdb_get_pkg(struct xbps_handle *xhp,
+				     const char *pkg);
 
 /**
  * Returns a package dictionary from master package database (pkgdb) plist,
@@ -764,26 +764,22 @@ prop_dictionary_t xbps_pkgdb_get_pkgd(struct xbps_handle *xhp,
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] pkg Package name or name-version to match.
- * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
- * package pattern, i.e `foo>=0' or `foo<1'.
  *
  * @return The matching proplib package dictionary, NULL otherwise.
  */
-prop_dictionary_t xbps_pkgdb_get_virtualpkgd(struct xbps_handle *xhp,
-					     const char *pkg,
-				             bool bypattern);
+prop_dictionary_t xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp,
+					    const char *pkg);
 
 /**
- * Returns a package dictionary from master package database (pkgdb) plist,
- * matching the pkgver object in \a pkg dictionary.
+ * Returns the package dictionary with all metadata info for \a pkg.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgver Package name-version to match, i.e 'foo-1.0'.
+ * @param[in] Package expression to match.
  *
- * @return The matching proplib package dictionary, NULL otherwise.
+ * @return The matching package metadata dictionary, NULL otherwise.
  */
-prop_dictionary_t xbps_pkgdb_get_pkgd_by_pkgver(struct xbps_handle *xhp,
-						const char *pkgver);
+prop_dictionary_t xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp,
+					      const char *pkg);
 
 /**
  * Removes a package dictionary from master package database (pkgdb) plist,
@@ -791,17 +787,13 @@ prop_dictionary_t xbps_pkgdb_get_pkgd_by_pkgver(struct xbps_handle *xhp,
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] pkg Package name or pattern to match in a package dictionary.
- * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
- * package pattern, i.e `foo>=0' or `foo<1'.
  * @param[in] flush If true, after successful replace the pkgdb contents
  * in memory will be flushed atomically to storage.
  *
  * @return true on success, false otherwise.
  */
-bool xbps_pkgdb_remove_pkgd(struct xbps_handle *xhp,
-			    const char *pkg,
-			    bool bypattern,
-			    bool flush);
+bool xbps_pkgdb_remove_pkg(struct xbps_handle *xhp, const char *pkg,
+			   bool flush);
 
 /**
  * Replaces a package dictionary with \a dict in the master package database
@@ -810,18 +802,15 @@ bool xbps_pkgdb_remove_pkgd(struct xbps_handle *xhp,
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] pkgd Proplib dictionary to be added into pkgdb.
  * @param[in] pkg Package name or pattern to match in a package dictionary.
- * @param[in] bypattern If false \a pkg must be a pkgname, otherwise a
- * package pattern, i.e `foo>=0' or `foo<1'.
  * @param[in] flush If true, after successful replace the pkgdb contents in
  * memory will be flushed atomically to storage.
  *
  * @return true on success, false otherwise.
  */
-bool xbps_pkgdb_replace_pkgd(struct xbps_handle *xhp,
-			     prop_dictionary_t pkgd,
-			     const char *pkg,
-			     bool bypattern,
-			     bool flush);
+bool xbps_pkgdb_replace_pkg(struct xbps_handle *xhp,
+			    prop_dictionary_t pkgd,
+			    const char *pkg,
+			    bool flush);
 
 /**
  * Updates the master package database (pkgdb) plist with new contents from
@@ -839,31 +828,6 @@ int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
 
 /** @addtogroup plist */
 /*@{*/
-
-/**
- * Adds a proplib object into a proplib dictionary with specified key.
- * The object is always released.
- *
- * @param[in] dict Proplib dictionary to insert the object to.
- * @param[in] obj Proplib object to be inserted.
- * @param[in] key Key associated with \a obj.
- *
- * @return true on success, false otherwise and errno set appropiately.
- */
-bool xbps_add_obj_to_dict(prop_dictionary_t dict,
-			  prop_object_t obj,
-			  const char *key);
-
-/**
- * Adds a proplib object into a proplib array.
- * The object is always released.
- *
- * @param[in] array Proplib array to insert the object to.
- * @param[in] obj Proplib object to be inserted.
- * 
- * @return true on success, false otherwise and xbps_errno set appropiately.
- */
-bool xbps_add_obj_to_array(prop_array_t array, prop_object_t obj);
 
 /**
  * Executes a function callback specified in \a fn with \a arg passed
@@ -948,132 +912,6 @@ int xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
 	void *arg);
 
 /**
- * Finds the proplib's dictionary associated with a package, by looking
- * it via its name in a proplib dictionary.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] dict Proplib dictionary to look for the package dictionary.
- * @param[in] key Key associated with the array that stores package's dictionary.
- * @param[in] pkgname Package name to look for.
- *
- * @return The package's proplib dictionary on success, NULL otherwise and
- * errno is set appropiately.
- */
-prop_dictionary_t xbps_find_pkg_in_dict_by_name(struct xbps_handle *xhp,
-						prop_dictionary_t dict,
-						const char *key,
-						const char *pkgname);
-
-/**
- * Finds the proplib's dictionary associated with a package, by looking
- * at it via a package pattern in a proplib dictionary.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] dict Proplib dictionary to look for the package dictionary.
- * @param[in] key Key associated with the array storing the package's dictionary.
- * @param[in] pattern Package pattern to match.
- *
- * @return The package's proplib dictionary on success, NULL otherwise
- * and errno is set appropiately.
- */
-prop_dictionary_t xbps_find_pkg_in_dict_by_pattern(struct xbps_handle *xhp,
-						   prop_dictionary_t dict,
-						   const char *key,
-						   const char *pattern);
-
-/**
- * Finds the proplib's dictionary associated with a package, by matching
- * its \a pkgver object in its dictionary.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] dict Proplib dictionary to look for the package dictionary.
- * @param[in] key Key associated with the array storing the package's
- * dictionary.
- * @param[in] pkgver Package name/version to match, i.e `foo-1.0_1'.
- *
- * @return The package's proplib dictionary on success, NULL otherwise
- * and errno is set appropiately.
- */
-prop_dictionary_t xbps_find_pkg_in_dict_by_pkgver(struct xbps_handle *xhp,
-						  prop_dictionary_t dict,
-						  const char *key,
-						  const char *pkgver);
-
-/**
- * Finds the proplib's dictionary associated with a package, by matching
- * a pkgname in \a name on any of the virtual package in
- * the "provides" array object.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] d Proplib dictionary to look for the package dictionary.
- * @param[in] key Key associated with the array storing the package's
- * dictionary.
- * @param[in] name The virtual package name to match.
- *
- * @return The package dictionary, otherwise NULL is returned and errno
- * is set appropiately.
- * Finds a virtual package dictionary in a proplib array by matching a
- * package name.
- */
-prop_dictionary_t xbps_find_virtualpkg_in_dict_by_name(struct xbps_handle *xhp,
-						       prop_dictionary_t d,
-						       const char *key,
-						       const char *name);
-
-/**
- * Finds the proplib's dictionary associated with a package, by matching
- * a pkg pattern in \a pattern on any of the virtual package in
- * the "provides" array object.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] d Proplib dictionary to look for the package dictionary.
- * @param[in] key Key associated with the array storing the package's
- * dictionary.
- * @param[in] pattern The virtual package pattern to match, i.e
- * `foo>=0' or `foo<1'.
- *
- * @return The package dictionary, otherwise NULL is returned and errno
- * is set appropiately.
- */
-prop_dictionary_t xbps_find_virtualpkg_in_dict_by_pattern(struct xbps_handle *xhp,
-							  prop_dictionary_t d,
-							  const char *key,
-							  const char *pattern);
-
-/**
- * Finds a package's dictionary searching in the registered packages
- * database by using a package name or a package pattern.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] str Package name or package pattern.
- * @param[in] bypattern Set it to true to find the package dictionary
- * by using a package pattern. If false, \a str is assumed to be a package name.
- *
- * @return The package's dictionary on success, NULL otherwise and
- * errno is set appropiately.
- */
-prop_dictionary_t xbps_find_pkg_dict_installed(struct xbps_handle *xhp,
-					       const char *str,
-					       bool bypattern);
-
-
-/**
- * Finds a virtual package's dictionary searching in the registered packages
- * database by using a package name or a package pattern.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] str Virtual package name or package pattern to match.
- * @param[in] bypattern Set it to true to find the package dictionary
- * by using a package pattern. If false, \a str is assumed to be a package name.
- *
- * @return The virtual package's dictionary on success, NULL otherwise and
- * errno is set appropiately.
- */
-prop_dictionary_t xbps_find_virtualpkg_dict_installed(struct xbps_handle *xhp,
-						      const char *str,
-						      bool bypattern);
-
-/**
  * Match a virtual package name or pattern by looking at package's
  * dictionary "provides" array object.
  *
@@ -1101,85 +939,6 @@ bool xbps_match_virtual_pkg_in_dict(prop_dictionary_t pkgd,
  */
 bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
 					  prop_array_t provides);
-
-/**
- * Finds a package dictionary in a proplib array by matching a package name.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array The proplib array to search on.
- * @param[in] name The package name to match.
- * @param[in] targetarch If set, package will be matched against this
- * architecture.
- *
- * @return The package dictionary, otherwise NULL is returned.
- */
-prop_dictionary_t xbps_find_pkg_in_array_by_name(struct xbps_handle *xhp,
-						 prop_array_t array,
-						 const char *name,
-						 const char *targetarch);
-
-/**
- * Finds a package dictionary in a proplib array by matching a package pattern.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array The proplib array to search on.
- * @param[in] pattern The package pattern to match, i.e `foo>=0' or `foo<1'.
- * @param[in] targetarch If set, package will be matched against this
- * architecture.
- *
- * @return The package dictionary, otherwise NULL is returned.
- */
-prop_dictionary_t xbps_find_pkg_in_array_by_pattern(struct xbps_handle *xhp,
-						    prop_array_t array,
-						    const char *pattern,
-						    const char *targetarch);
-
-/**
- * Finds a package dictionary in a proplib array by matching a \a pkgver
- * object.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array The proplib array to search on.
- * @param[in] pkgver The package name/version to match, i.e `foo-1.0'.
- * @param[in] targetarch If set, package will be matched against this
- * architecture.
- *
- * @return The package dictionary, otherwise NULL is returned.
- */
-prop_dictionary_t xbps_find_pkg_in_array_by_pkgver(struct xbps_handle *xhp,
-						   prop_array_t array,
-						   const char *pkgver,
-						   const char *targetarch);
-
-/**
- * Finds a virtual package dictionary in a proplib array by matching a
- * package name.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array The proplib array to search on.
- * @param[in] name The virtual package name to match.
- *
- * @return The package dictionary, otherwise NULL is returned.
- */
-prop_dictionary_t xbps_find_virtualpkg_in_array_by_name(struct xbps_handle *xhp,
-							prop_array_t array,
-							const char *name);
-
-/**
- * Finds a virtual package dictionary in a proplib array by matching a
- * package pattern.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array The proplib array to search on.
- * @param[in] pattern The virtual package pattern to match, i.e
- * `foo>=0' or `foo<1'.
- *
- * @return The package dictionary, otherwise NULL is returned.
- */
-prop_dictionary_t
-	xbps_find_virtualpkg_in_array_by_pattern(struct xbps_handle *xhp,
-						 prop_array_t array,
-						 const char *pattern);
 
 /**
  * Match a package name in the specified array of strings.
@@ -1236,19 +995,6 @@ prop_object_iterator_t xbps_array_iter_from_dict(prop_dictionary_t dict,
 						 const char *key);
 
 /**
- * Returns a proplib dictionary associated with the installed package
- * \a name, by internalizing its plist file from metadir.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] name Package name of installed package.
- *
- * @return The proplib dictionary on success, NULL otherwise and
- * errno is set appropiately.
- */
-prop_dictionary_t xbps_metadir_get_pkgd(struct xbps_handle *xhp,
-					const char *name);
-
-/**
  * Creates a temporary file and executes it in rootdir.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
@@ -1282,116 +1028,6 @@ int xbps_pkg_exec_script(struct xbps_handle *xhp,
 			 const char *action,
 			 bool update);
 
-/**
- * Removes the package's proplib dictionary matching \a pkgname
- * in a proplib array.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array Proplib array where to look for.
- * @param[in] name Package name to match in the array.
- * @param[in] targetarch If set, package will be matched against this
- * architecture.
- *
- * @return true on success, false otherwise and errno is set appropiately.
- */
-bool xbps_remove_pkg_from_array_by_name(struct xbps_handle *xhp,
-					prop_array_t array,
-					const char *name,
-					const char *targetarch);
-
-/**
- * Removes the package's proplib dictionary matching the pkgver object
- * with a package pattern from \a pattern in a proplib array.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array Proplib array where to look for.
- * @param[in] pattern Package pattern to match, i.e `foo>=0' or `foo<1'.
- * @param[in] targetarch If set, package will be matched against this
- * architecture.
- *
- * @return true on success, false otherwise and errno is set appropiately.
- */
-bool xbps_remove_pkg_from_array_by_pattern(struct xbps_handle *xhp,
-					   prop_array_t array,
-					   const char *pattern,
-					   const char *targetarch);
-
-/**
- * Removes the package's proplib dictionary matching the \a pkgver
- * object in a proplib array of dictionaries.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array Proplib array where to look for.
- * @param[in] pkgver Package name/version to match, i.e `foo-1.0'.
- * @param[in] targetarch If set, package will be matched against this
- * architecture.
- *
- * @return true on success, false otherwise and errno is set appropiately.
- */
-bool xbps_remove_pkg_from_array_by_pkgver(struct xbps_handle *xhp,
-					  prop_array_t array,
-					  const char *pkgver,
-					  const char *targetarch);
-
-/**
- * Removes a string from a proplib's array of strings.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array Proplib array where to look for.
- * @param[in] str String to match in the array.
- *
- * @return true on success, false otherwise and errno is set appropiately.
- */
-bool xbps_remove_string_from_array(struct xbps_handle *xhp,
-				   prop_array_t array,
-				   const char *str);
-
-/**
- * Removes a string from a proplib's array matched by a package name.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array Proplib array where to look for.
- * @param[in] name Package name to match.
- *
- * @return true on success, false otherwise and errno is set appropiately.
- */
-bool xbps_remove_pkgname_from_array(struct xbps_handle *xhp,
-				    prop_array_t array,
-				    const char *name);
-
-/**
- * Replaces a dictionary with another dictionary in \a dict, in the
- * array \a array by matching its "pkgname" object with \a pkgname.
- *
- * @param[in] array Proplib array where to look for.
- * @param[in] dict Proplib dictionary to be added in \a array.
- * @param[in] pkgname Package name to be matched.
- *
- * @retval 0 success.
- * @retval EINVAL Dictionary couldn't be set in array.
- * @retval ENOENT No match.
- */
-int xbps_array_replace_dict_by_name(prop_array_t array,
-				    prop_dictionary_t dict,
-				    const char *pkgname);
-
-/**
- * Replaces a dictionary with another dictionary in \a dict, in
- * the array \a array by matching its pkgver object with a package pattern,
- * i.e `foo>=0' or `foo<1'.
- *
- * @param[in] array Proplib array where to look for.
- * @param[in] dict Proplib dictionary to be added in \a array.
- * @param[in] pattern Package pattern to be matched, i.e `foo>=0'.
- *
- * @retval 0 success.
- * @retval EINVAL Dictionary couldn't be set in array.
- * @retval ENOENT No match.
- */
-int xbps_array_replace_dict_by_pattern(prop_array_t array,
-				       prop_dictionary_t dict,
-				       const char *pattern);
-
 /*@}*/
 
 /** @addtogroup pkg_register */
@@ -1424,9 +1060,7 @@ int xbps_register_pkg(struct xbps_handle *xhp,
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_unregister_pkg(struct xbps_handle *xhp,
-			const char *pkgname,
-			const char *version,
+int xbps_unregister_pkg(struct xbps_handle *xhp, const char *pkgver,
 			bool flush);
 
 /*@}*/
@@ -1438,8 +1072,7 @@ int xbps_unregister_pkg(struct xbps_handle *xhp,
  * Remove an installed package.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgname Package name to match.
- * @param[in] version Package version associated.
+ * @param[in] pkgver Package name/version to match.
  * @param[in] update If true, some steps will be skipped. See in the
  * detailed description above for more information.
  * @param[in] soft_replace If true, some steps will be skipped. See in
@@ -1448,8 +1081,7 @@ int xbps_unregister_pkg(struct xbps_handle *xhp,
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_remove_pkg(struct xbps_handle *xhp,
-		    const char *pkgname,
-		    const char *version,
+		    const char *pkgver,
 		    bool update,
 		    bool soft_replace);
 
@@ -1592,16 +1224,16 @@ int xbps_transaction_commit(struct xbps_handle *xhp);
 
 /**
  * Internalizes a plist file in a binary package file stored locally or
- * remotely as specified in the URL.
+ * remotely as specified in \a fname.
  *
- * @param[in] url URL to binary package file (full local or remote path).
+ * @param[in] fname Full URL to binary package file (local or remote path).
  * @param[in] plistf Plist file name to internalize.
  *
  * @return An internalized proplib dictionary, otherwise NULL and
  * errno is set appropiately.
  */
-prop_dictionary_t xbps_dictionary_metadata_plist_by_url(const char *url,
-							const char *plistf);
+prop_dictionary_t xbps_get_pkg_plist_from_binpkg(const char *fname,
+						 const char *plistf);
 
 /*@}*/
 
@@ -1609,27 +1241,34 @@ prop_dictionary_t xbps_dictionary_metadata_plist_by_url(const char *url,
 /*@{*/
 
 /**
- * @struct xbps_rpool_index xbps_api.h "xbps_api.h"
- * @brief Repository pool dictionary structure
+ * @struct xbps_rindex xbps_api.h "xbps_api.h"
+ * @brief Repository pool index structure
  *
  * Repository index object structure registered in a private simple queue.
  * The structure contains a dictionary and the URI associated with the
  * registered repository index.
  */
-struct xbps_rpool_index {
+struct xbps_rindex {
 	/**
-	 * @var repo
+	 * @var repod
 	 * 
-	 * Internalized proplib array of the index plist file
+	 * Internalized proplib dictionary of the index plist file
 	 * associated with repository.
 	 */
-	prop_array_t repo;
+	prop_dictionary_t repod;
 	/**
 	 * @var uri
 	 * 
 	 * URI string associated with repository.
 	 */
 	const char *uri;
+	/**
+	 * @var xhp
+	 *
+	 * Pointer to our xbps_handle struct passed to xbps_rpool_foreach.
+	 * (read-only).
+	 */
+	struct xbps_handle *xhp;
 };
 
 /**
@@ -1662,7 +1301,7 @@ int xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri);
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_rpool_foreach(struct xbps_handle *xhp,
-		       int (*fn)(struct xbps_handle *, struct xbps_rpool_index *, void *, bool *),
+		       int (*fn)(struct xbps_rindex *, void *, bool *),
 		       void *arg);
 
 /**
@@ -1671,34 +1310,13 @@ int xbps_rpool_foreach(struct xbps_handle *xhp,
  * account virtual packages, just matches real packages.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] pkg Package pattern or name.
- * @param[in] bypattern Set it to true if \a pkg is a pkgpattern (foo>=0),
- * false if it is a pkgname.
- * @param[in] best True to find the best version available in repo, false to
- * fetch the first package found matching \a pkg.
+ * @param[in] pkg Package pattern, exact pkg or pkg name.
  *
  * @return The package dictionary if found, NULL otherwise.
  * @note When returned dictionary is no longer needed, you must release it
  * with prop_object_release(3).
  */
-prop_dictionary_t xbps_rpool_find_pkg(struct xbps_handle *xhp,
-				      const char *pkg,
-				      bool bypattern,
-				      bool best);
-
-/**
- * Finds a package dictionary in repository pool by matching its \a pkgver
- * object.
- *
- * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] pkgver Package name/version to match, i.e `foo-1.0'.
- *
- * @return The package dictionary if found, NULL otherwise.
- * @note When returned dictionary is no longer needed, you must release it
- * with prop_object_release(3).
- */
-prop_dictionary_t xbps_rpool_find_pkg_exact(struct xbps_handle *xhp,
-					    const char *pkgver);
+prop_dictionary_t xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg);
 
 /**
  * Finds a package dictionary in repository pool by specifying a
@@ -1706,34 +1324,13 @@ prop_dictionary_t xbps_rpool_find_pkg_exact(struct xbps_handle *xhp,
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
  * @param[in] pkg Virtual package pattern or name to match.
- * @param[in] bypattern Set it to true if \a pkg is a pkgpattern (foo>=0),
- * false if it is a pkgname.
  *
  * @return The package dictionary if found, NULL otherwise.
  * @note When returned dictionary is no longer needed, you must release it
  * with prop_object_release(3).
  */
-prop_dictionary_t xbps_rpool_find_virtualpkg(struct xbps_handle *xhp,
-					     const char *pkg,
-					     bool bypattern);
-
-/**
- * Finds a package dictionary in repository pool by specifying a
- * package pattern or a package name. Only virtual packages set in
- * configuration file will be matched.
- *
- * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] pkg Virtual package pattern or name to match.
- * @param[in] bypattern Set it to true if \a pkg is a pkgpattern (foo>=0),
- * false if it is a pkgname.
- *
- * @return The package dictionary if found, NULL otherwise.
- * @note When returned dictionary is no longer needed, you must release it
- * with prop_object_release(3).
- */
-prop_dictionary_t xbps_rpool_find_virtualpkg_conf(struct xbps_handle *xhp,
-						  const char *pkg,
-						  bool bypattern);
+prop_dictionary_t xbps_rpool_get_virtualpkg(struct xbps_handle *xhp,
+					    const char *pkg);
 
 /**
  * Iterate over the the repository pool and search for a metadata plist
@@ -1754,30 +1351,38 @@ prop_dictionary_t xbps_rpool_find_virtualpkg_conf(struct xbps_handle *xhp,
  * binary package file has been found but the plist file could not
  * be found.
  */
-prop_dictionary_t xbps_rpool_dictionary_metadata_plist(struct xbps_handle *xhp,
-						       const char *pattern,
-						       const char *plistf);
+prop_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
+					   const char *pattern,
+					   const char *plistf);
 
 /*@}*/
 
-/** @addtogroup reposync */
+/** @addtogroup rindex */
 /*@{*/
 
 /**
- * Syncs the package index file for a remote repository as specified
- * by the \a uri argument (if necessary).
+ * Returns a pkg dictionary from a repository index \a ri matching
+ * the expression \a pkg.
  *
- * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] uri URI to a remote repository.
- * @param[in] plistf Plist file to sync.
+ * param[in] ri Pointer to an xbps_rindex structure.
+ * param[in] pkg Package expression to match in this repository index.
  *
- * @return -1 on error (errno is set appropiately), 0 if transfer was
- * not necessary (local/remote size/mtime matched) or 1 if
- * downloaded successfully.
+ * @return The pkg dictionary on success, NULL otherwise.
  */
-int xbps_repository_sync_pkg_index(struct xbps_handle *xhp,
-				   const char *uri,
-				   const char *plistf);
+prop_dictionary_t xbps_rindex_get_pkg(struct xbps_rindex *ri, const char *pkg);
+
+/**
+ * Returns a pkg dictionary from a repository index \a ri matching
+ * the expression \a pkg. On match the first package matching the virtual
+ * package expression will be returned.
+ *
+ * param[in] ri Pointer to an xbps_rindex structure.
+ * param[in] pkg Package expression to match in this repository index.
+ *
+ * @return The pkg dictionary on success, NULL otherwise.
+ */
+prop_dictionary_t xbps_rindex_get_virtualpkg(struct xbps_rindex *ri,
+					     const char *pkg);
 
 /*@}*/
 
@@ -1896,22 +1501,6 @@ char *xbps_xasprintf(const char *fmt, ...);
 char *xbps_file_hash(const char *file);
 
 /**
- * Returns a string with the sha256 hash for the file specified
- * by \a file in an array with key \a key in the proplib dictionary
- * \a d.
- *
- * @param[in] d Proplib dictionary to look in.
- * @param[in] key Array key to match in dictionary.
- * @param[in] file Pathname to a file.
- *
- * @return The sha256 hash string if found, NULL otherwise
- * and errno is set appropiately.
- */
-const char *xbps_file_hash_dictionary(prop_dictionary_t d,
-				      const char *key,
-				      const char *file);
-
-/**
  * Compares the sha256 hash of the file \a file with the sha256
  * string specified by \a sha256.
  *
@@ -1924,45 +1513,16 @@ const char *xbps_file_hash_dictionary(prop_dictionary_t d,
 int xbps_file_hash_check(const char *file, const char *sha256);
 
 /**
- * Checks if \a file matches the sha256 hash specified in the array
- * with key \a key in the proplib dictionary \a d.
+ * Checks if a package is currently installed by matching \a pkg.
  *
  * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] d Proplib dictionary to look in.
- * @param[in] key Proplib array key to match for file.
- * @param[in] file Pathname to a file.
+ * @param[in] pkg Package name, version pattern or exact pkg to match.
  *
- * @return 0 if hash is matched, -1 on error and 1 if no match.
- */
-int xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
-				    prop_dictionary_t d,
-				    const char *key,
-				    const char *file);
-
-/**
- * Checks if a package is currently installed by matching a package
- * pattern string.
- *
- * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] pkg Package pattern used to find the package.
- *
- * @return -1 on error (errno set appropiately), 0 if package pattern
+ * @return -1 on error (errno set appropiately), 0 if \a pkg
  * didn't match installed package, 1 if \a pkg pattern fully
  * matched installed package.
  */
-int xbps_check_is_installed_pkg_by_pattern(struct xbps_handle *xhp,
-					   const char *pkg);
-
-/**
- * Checks if package \a pkgname is currently installed.
- *
- * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] pkgname Package name.
- *
- * @return True if \a pkgname is installed, false otherwise.
- */
-bool xbps_check_is_installed_pkg_by_name(struct xbps_handle *xhp,
-					 const char *pkgname);
+int xbps_pkg_is_installed(struct xbps_handle *xhp, const char *pkg);
 
 /**
  * Checks if the URI specified by \a uri is remote or local.
@@ -1971,24 +1531,7 @@ bool xbps_check_is_installed_pkg_by_name(struct xbps_handle *xhp,
  * 
  * @return true if URI is remote, false if local.
  */
-bool xbps_check_is_repository_uri_remote(const char *uri);
-
-/**
- * Gets the full URI to a binary package file as returned by a
- * package dictionary from a repository in \a pkgd, by looking at the
- * repository location object "repository" in its dictionary.
- *
- * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] pkgd Package dictionary stored in a transaction dictionary.
- * @param[in] repoloc Repository URL location string.
- *
- * @return A pointer to a malloc(3)ed string, NULL otherwise and
- * errno is set appropiately. The pointer should be free(3)d when it's
- * no longer needed.
- */ 
-char *xbps_path_from_repository_uri(struct xbps_handle *xhp,
-				    prop_dictionary_t pkgd,
-				    const char *repoloc);
+bool xbps_repository_is_remote(const char *uri);
 
 /**
  * Gets the full path to a repository package index plist file, as

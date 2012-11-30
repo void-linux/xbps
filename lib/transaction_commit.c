@@ -79,7 +79,7 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		prop_dictionary_get_cstring_nocopy(obj,
 		    "filename-sha256", &sha256);
 
-		binfile = xbps_path_from_repository_uri(xhp, obj, repoloc);
+		binfile = xbps_repository_pkg_path(xhp, obj);
 		if (binfile == NULL) {
 			rv = EINVAL;
 			break;
@@ -124,7 +124,7 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "filename", &filen);
 
-		binfile = xbps_path_from_repository_uri(xhp, obj, repoloc);
+		binfile = xbps_repository_pkg_path(xhp, obj);
 		if (binfile == NULL) {
 			rv = EINVAL;
 			break;
@@ -199,7 +199,6 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 {
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	size_t i;
 	const char *pkgname, *version, *pkgver, *tract;
 	int rv = 0;
 	bool update, install, sr;
@@ -227,16 +226,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	 */
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_RUN, 0, NULL, NULL, NULL);
 
-	i = 0;
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if ((xhp->transaction_frequency_flush > 0) &&
-		    (++i >= xhp->transaction_frequency_flush)) {
-			rv = xbps_pkgdb_update(xhp, true);
-			if (rv != 0 && rv != ENOENT)
-				goto out;
-
-			i = 0;
-		}
 		update = false;
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
@@ -252,7 +242,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			prop_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
 			prop_dictionary_get_bool(obj, "softreplace", &sr);
-			rv = xbps_remove_pkg(xhp, pkgname, version, update, sr);
+			rv = xbps_remove_pkg(xhp, pkgver, update, sr);
 			if (rv != 0) {
 				xbps_dbg_printf(xhp, "[trans] failed to "
 				    "remove %s-%s\n", pkgname, version);
@@ -281,8 +271,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 				 */
 				xbps_set_cb_state(xhp, XBPS_STATE_UPDATE, 0,
 				    pkgname, version, NULL);
-				rv = xbps_remove_pkg(xhp, pkgname, version,
-						     true, false);
+				rv = xbps_remove_pkg(xhp, pkgver, true, false);
 				if (rv != 0) {
 					xbps_set_cb_state(xhp,
 					    XBPS_STATE_UPDATE_FAIL,
@@ -305,34 +294,22 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			/*
 			 * Register package.
 			 */
-			if ((rv = xbps_register_pkg(xhp, obj, false)) != 0)
+			if ((rv = xbps_register_pkg(xhp, obj, true)) != 0)
 				goto out;
 		}
 	}
 	prop_object_iterator_reset(iter);
 
-	/* force a flush now packages were removed/unpacked */
-	if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
-		goto out;
-
 	/* if there are no packages to install or update we are done */
 	if (!update && !install)
 		goto out;
+
 	/*
 	 * Configure all unpacked packages.
 	 */
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_CONFIGURE, 0, NULL, NULL, NULL);
 
-	i = 0;
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		if (xhp->transaction_frequency_flush > 0 &&
-		    ++i >= xhp->transaction_frequency_flush) {
-			if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
-				goto out;
-
-			i = 0;
-		}
-
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "configure") == 0))
@@ -344,9 +321,12 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		if (strcmp(tract, "update") == 0)
 			update = true;
 
-		rv = xbps_configure_pkg(xhp, pkgname, false, update, false);
-		if (rv != 0)
+		rv = xbps_configure_pkg(xhp, pkgname, false, update, true);
+		if (rv != 0) {
+			xbps_dbg_printf(xhp, "%s: configure failed for "
+			    "%s-%s: %s\n", pkgname, version, strerror(rv));
 			goto out;
+		}
 		/*
 		 * Notify client callback when a package has been
 		 * installed or updated.
@@ -360,8 +340,6 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		}
 	}
 
-	/* Force a flush now that packages are configured */
-	rv = xbps_pkgdb_update(xhp, true);
 out:
 	prop_object_iterator_release(iter);
 

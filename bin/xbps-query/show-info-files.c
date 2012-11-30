@@ -216,21 +216,20 @@ show_pkg_files(prop_dictionary_t filesd)
 
 int
 show_pkg_info_from_metadir(struct xbps_handle *xhp,
-			   const char *pkgname,
+			   const char *pkg,
 			   const char *option)
 {
 	prop_dictionary_t d, pkgdb_d;
-	const char *instdate, *pname;
+	const char *instdate;
 	bool autoinst;
 
-	d = xbps_metadir_get_pkgd(xhp, pkgname);
-	if (d == NULL)
+	pkgdb_d = xbps_pkgdb_get_pkg(xhp, pkg);
+	if (pkgdb_d == NULL)
 		return ENOENT;
 
-	prop_dictionary_get_cstring_nocopy(d, "pkgname", &pname);
-	pkgdb_d = xbps_pkgdb_get_pkgd(xhp, pname, false);
-	if (pkgdb_d == NULL)
-		return EINVAL;
+	d = xbps_pkgdb_get_pkg_metadata(xhp, pkg);
+	if (d == NULL)
+		return ENOENT;
 
 	if (prop_dictionary_get_cstring_nocopy(pkgdb_d,
 	    "install-date", &instdate))
@@ -249,12 +248,12 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 }
 
 int
-show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkgname)
+show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkg)
 {
 	prop_dictionary_t d;
 	int rv = 0;
 
-	d = xbps_metadir_get_pkgd(xhp, pkgname);
+	d = xbps_pkgdb_get_pkg_metadata(xhp, pkg);
 	if (d == NULL)
 		return ENOENT;
 
@@ -270,11 +269,7 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 {
 	prop_dictionary_t pkgd;
 
-	if (xbps_pkgpattern_version(pattern))
-		pkgd = xbps_rpool_find_pkg(xhp, pattern, true, false);
-	else
-		pkgd = xbps_rpool_find_pkg(xhp, pattern, false, true);
-
+	pkgd = xbps_rpool_get_pkg(xhp, pattern);
 	if (pkgd == NULL)
 		return errno;
 
@@ -291,8 +286,7 @@ repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
 	prop_dictionary_t pkgd;
 
-	pkgd = xbps_rpool_dictionary_metadata_plist(xhp, pkg,
-	    "./files.plist");
+	pkgd = xbps_rpool_get_pkg_plist(xhp, pkg, "./files.plist");
 	if (pkgd == NULL) {
                 if (errno != ENOTSUP && errno != ENOENT) {
 			fprintf(stderr, "Unexpected error: %s\n",

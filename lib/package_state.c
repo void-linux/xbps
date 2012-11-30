@@ -101,7 +101,7 @@ xbps_pkg_state_installed(struct xbps_handle *xhp,
 	assert(pkgname != NULL);
 	assert(state != NULL);
 
-	pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 	if (pkgd == NULL)
 		return ENOENT;
 
@@ -166,7 +166,7 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 	if (pkgd == NULL) {
 		pkgd = prop_dictionary_create();
 		if (pkgd == NULL)

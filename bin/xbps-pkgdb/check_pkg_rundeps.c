@@ -48,30 +48,22 @@ int
 check_pkg_rundeps(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	prop_dictionary_t pkg_propsd = arg;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	prop_array_t array;
+	size_t i;
 	const char *reqpkg;
 	bool test_broken = false;
 
 	if (!xbps_pkg_has_rundeps(pkg_propsd))
 		return 0;
 
-	iter = xbps_array_iter_from_dict(pkg_propsd, "run_depends");
-	if (iter == NULL)
-		return -1;
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		reqpkg = prop_string_cstring_nocopy(obj);
-		if (reqpkg == NULL) {
-			prop_object_iterator_release(iter);
-			return -1;
-		}
-		if (xbps_check_is_installed_pkg_by_pattern(xhp, reqpkg) <= 0) {
+	array = prop_dictionary_get(pkg_propsd, "run_depends");
+	for (i = 0; i < prop_array_count(array); i++) {
+		prop_array_get_cstring_nocopy(array, i, &reqpkg);
+		if (xbps_pkg_is_installed(xhp, reqpkg) <= 0) {
 			xbps_error_printf("%s: dependency not satisfied: %s\n",
 			    pkgname, reqpkg);
 			test_broken = true;
 		}
 	}
-	prop_object_iterator_release(iter);
 	return test_broken;
 }

@@ -101,11 +101,10 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	/* find real pkg by name */
 	opkgd = pkgd;
 	if (pkgd == NULL) {
-		opkgd = xbps_find_pkg_dict_installed(xhp, pkgname, false);
+		opkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 		if (opkgd == NULL) {
 			/* find virtual pkg by name */
-			opkgd = xbps_find_virtualpkg_dict_installed(xhp,
-			    pkgname, false);
+			opkgd = xbps_pkgdb_get_virtualpkg(xhp, pkgname);
 		}
 		if (opkgd == NULL) {
 			printf("Package %s is not installed.\n", pkgname);
@@ -115,7 +114,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_metadir_get_pkgd(xhp, pkgname);
+	propsd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 	if (propsd == NULL) {
 		printf("%s: unexistent metafile, converting to 0.18 "
 		    "format...\n", pkgname);

@@ -125,6 +125,9 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 	if (xhp->pkgdb == NULL)
 		return;
 
+	if (prop_object_type(xhp->pkg_metad) == PROP_TYPE_DICTIONARY)
+	       prop_object_release(xhp->pkg_metad);
+
 	prop_object_release(xhp->pkgdb);
 	xhp->pkgdb = NULL;
 	xbps_dbg_printf(xhp, "[pkgdb] released ok.\n");
@@ -166,81 +169,72 @@ xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
 }
 
 prop_dictionary_t
-xbps_pkgdb_get_pkgd(struct xbps_handle *xhp, const char *pkg, bool bypattern)
+xbps_pkgdb_get_pkg(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_dictionary_t pkgd = NULL;
-
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
 
-	if (bypattern)
-		pkgd = xbps_find_pkg_in_array_by_pattern(xhp, xhp->pkgdb, pkg, NULL);
-	else
-		pkgd = xbps_find_pkg_in_array_by_name(xhp, xhp->pkgdb, pkg, NULL);
-
-	return pkgd;
+	return xbps_find_pkg_in_array(xhp->pkgdb, pkg);
 }
 
 prop_dictionary_t
-xbps_pkgdb_get_virtualpkgd(struct xbps_handle *xhp,
-			   const char *vpkg,
-			   bool bypattern)
+xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp, const char *vpkg)
 {
-	prop_dictionary_t pkgd = NULL;
-
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
 
-	if (bypattern) {
-		/* first return vpkg from matching a conf file */
-		pkgd = xbps_find_virtualpkg_conf_in_array_by_pattern(xhp,
-				xhp->pkgdb, vpkg);
-		if (pkgd != NULL)
-			return pkgd;
+	return xbps_find_virtualpkg_in_array(xhp, xhp->pkgdb, vpkg);
+}
 
-		/* ... otherwise the first one in array */
-		pkgd = xbps_find_virtualpkg_in_array_by_pattern(xhp,
-				xhp->pkgdb, vpkg);
-	} else {
-		/* first return vpkg from matching a conf file */
-		pkgd = xbps_find_virtualpkg_conf_in_array_by_name(xhp,
-				xhp->pkgdb, vpkg);
-		if (pkgd != NULL)
-			return pkgd;
+prop_dictionary_t
+xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp, const char *pkg)
+{
+	prop_dictionary_t pkgd, pkg_metad;
+	const char *pkgname;
+	char *plist;
 
-		pkgd = xbps_find_virtualpkg_in_array_by_name(xhp,
-				xhp->pkgdb, vpkg);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
+	if (pkgd == NULL)
+		return NULL;
+
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+
+	if ((pkg_metad = prop_dictionary_get(xhp->pkg_metad, pkgname)) != NULL)
+		return pkg_metad;
+
+	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
+	pkg_metad = prop_dictionary_internalize_from_zfile(plist);
+	free(plist);
+
+	if (pkg_metad == NULL) {
+		xbps_dbg_printf(xhp, "[pkgdb] cannot read %s metadata: %s\n",
+		    pkgname, strerror(errno));
+		return NULL;
 	}
 
-	return pkgd;
-}
+	if (xhp->pkg_metad == NULL)
+		xhp->pkg_metad = prop_dictionary_create();
 
-prop_dictionary_t
-xbps_pkgdb_get_pkgd_by_pkgver(struct xbps_handle *xhp, const char *pkgver)
-{
-	if (xbps_pkgdb_init(xhp) != 0)
-		return NULL;
+	prop_dictionary_set(xhp->pkg_metad, pkgname, pkg_metad);
+	prop_object_release(pkg_metad);
 
-	return xbps_find_pkg_in_array_by_pkgver(xhp, xhp->pkgdb, pkgver, NULL);
+	return pkg_metad;
 }
 
 bool
-xbps_pkgdb_remove_pkgd(struct xbps_handle *xhp,
-		       const char *pkg,
-		       bool bypattern,
-		       bool flush)
+xbps_pkgdb_remove_pkg(struct xbps_handle *xhp, const char *pkg, bool flush)
 {
 	bool rv = false;
 
 	if (xbps_pkgdb_init(xhp) != 0)
 		return false;
 
-	if (bypattern)
-		rv = xbps_remove_pkg_from_array_by_pattern(xhp,
-		    xhp->pkgdb, pkg, NULL);
+	if (xbps_pkgpattern_version(pkg))
+		rv = xbps_remove_pkg_from_array_by_pattern(xhp->pkgdb, pkg);
+	else if (xbps_pkg_version(pkg))
+		rv = xbps_remove_pkg_from_array_by_pkgver(xhp->pkgdb, pkg);
 	else
-		rv = xbps_remove_pkg_from_array_by_name(xhp,
-		    xhp->pkgdb, pkg, NULL);
+		rv = xbps_remove_pkg_from_array_by_name(xhp->pkgdb, pkg);
 
 	if (!flush || !rv)
 		return rv;
@@ -252,18 +246,17 @@ xbps_pkgdb_remove_pkgd(struct xbps_handle *xhp,
 }
 
 bool
-xbps_pkgdb_replace_pkgd(struct xbps_handle *xhp,
-			prop_dictionary_t pkgd,
-			const char *pkg,
-			bool bypattern,
-			bool flush)
+xbps_pkgdb_replace_pkg(struct xbps_handle *xhp,
+		       prop_dictionary_t pkgd,
+		       const char *pkg,
+		       bool flush)
 {
 	int rv;
 
 	if (xbps_pkgdb_init(xhp) != 0)
 		return false;
 
-	if (bypattern)
+	if (xbps_pkgpattern_version(pkg))
 		rv = xbps_array_replace_dict_by_pattern(xhp->pkgdb, pkgd, pkg);
 	else
 		rv = xbps_array_replace_dict_by_name(xhp->pkgdb, pkgd, pkg);

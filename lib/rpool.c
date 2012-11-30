@@ -42,8 +42,7 @@
 int HIDDEN
 xbps_rpool_init(struct xbps_handle *xhp)
 {
-	prop_dictionary_t d = NULL;
-	prop_array_t array;
+	prop_dictionary_t repod, d = NULL;
 	size_t i, ntotal = 0, nmissing = 0;
 	const char *repouri;
 	char *plist;
@@ -75,30 +74,30 @@ xbps_rpool_init(struct xbps_handle *xhp)
 			nmissing++;
 			continue;
 		}
-		array = prop_array_internalize_from_zfile(plist);
+		repod = prop_dictionary_internalize_from_zfile(plist);
 		free(plist);
-		assert(array);
+		assert(repod);
 		/*
 		 * Register repository into the array.
 		 */
 		if ((d = prop_dictionary_create()) == NULL) {
 			rv = ENOMEM;
-			prop_object_release(array);
+			prop_object_release(repod);
 			goto out;
 		}
 		if (!prop_dictionary_set_cstring_nocopy(d, "uri", repouri)) {
 			rv = EINVAL;
-			prop_object_release(array);
+			prop_object_release(repod);
 			prop_object_release(d);
 			goto out;
 		}
-		if (!prop_dictionary_set(d, "index", array)) {
+		if (!prop_dictionary_set(d, "index", repod)) {
 			rv = EINVAL;
-			prop_object_release(array);
+			prop_object_release(repod);
 			prop_object_release(d);
 			goto out;
 		}
-		prop_object_release(array);
+		prop_object_release(repod);
 		if (!prop_array_add(xhp->repo_pool, d)) {
 			rv = EINVAL;
 			prop_object_release(d);
@@ -115,7 +114,7 @@ xbps_rpool_init(struct xbps_handle *xhp)
 	prop_array_make_immutable(xhp->repo_pool);
 	xbps_dbg_printf(xhp, "[rpool] initialized ok.\n");
 out:
-	if (rv != 0) 
+	if (rv != 0)
 		xbps_rpool_release(xhp);
 
 	return rv;
@@ -161,7 +160,7 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri)
 		if (uri && strcmp(repouri, uri))
 			continue;
 
-		if (xbps_repository_sync_pkg_index(xhp, repouri, file) == -1) {
+		if (xbps_rindex_sync(xhp, repouri, file) == -1) {
 			xbps_dbg_printf(xhp,
 			    "[rpool] `%s' failed to fetch `%s': %s\n",
 			    repouri, file,
@@ -175,11 +174,11 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri)
 
 int
 xbps_rpool_foreach(struct xbps_handle *xhp,
-		   int (*fn)(struct xbps_handle *, struct xbps_rpool_index *, void *, bool *),
+		   int (*fn)(struct xbps_rindex *, void *, bool *),
 		   void *arg)
 {
 	prop_dictionary_t d;
-	struct xbps_rpool_index rpi;
+	struct xbps_rindex rpi;
 	size_t i;
 	int rv = 0;
 	bool done = false;
@@ -201,8 +200,9 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 	for (i = 0; i < prop_array_count(xhp->repo_pool); i++) {
 		d = prop_array_get(xhp->repo_pool, i);
 		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi.uri);
-		rpi.repo = prop_dictionary_get(d, "index");
-		rv = (*fn)(xhp, &rpi, arg, &done);
+		rpi.repod = prop_dictionary_get(d, "index");
+		rpi.xhp = xhp;
+		rv = (*fn)(&rpi, arg, &done);
 		if (rv != 0 || done)
 			break;
 	}

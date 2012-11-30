@@ -39,8 +39,8 @@
 int
 remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 {
-	prop_dictionary_t pkgd;
-	prop_array_t idx;
+	prop_dictionary_t pkgd, idx;
+	struct xbps_rindex ri;
 	DIR *dirp;
 	struct dirent *dp;
 	const char *pkgver, *arch;
@@ -50,10 +50,10 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL)
 		return -1;
 
-	idx = prop_array_internalize_from_zfile(plist);
+	idx = prop_dictionary_internalize_from_zfile(plist);
 	if (idx == NULL) {
 		if (errno != ENOENT) {
-			xbps_error_printf("xbps-repo: cannot read `%s': %s\n",
+			fprintf(stderr, "xbps-rindex: cannot read `%s': %s\n",
 			    plist, strerror(errno));
 			free(plist);
 			return -1;
@@ -62,14 +62,19 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 			return 0;
 		}
 	}
+	/* initialize repository index */
+	ri.repod = idx;
+	ri.uri = repodir;
+	ri.xhp = xhp;
+
 	if (chdir(repodir) == -1) {
-		fprintf(stderr, "cannot chdir to %s: %s\n",
+		fprintf(stderr, "xbps-rindex: cannot chdir to %s: %s\n",
 		    repodir, strerror(errno));
 		prop_object_release(idx);
 		return errno;
 	}
 	if ((dirp = opendir(repodir)) == NULL) {
-		fprintf(stderr, "failed to open %s: %s\n",
+		fprintf(stderr, "xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
 		prop_object_release(idx);
 		return errno;
@@ -82,12 +87,12 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		if (strcmp(ext, ".xbps"))
 			continue;
 
-		pkgd = xbps_dictionary_metadata_plist_by_url(dp->d_name,
+		pkgd = xbps_get_pkg_plist_from_binpkg(dp->d_name,
 		    "./props.plist");
 		if (pkgd == NULL) {
 			rv = remove_pkg(repodir, arch, dp->d_name);
 			if (rv != 0) {
-				fprintf(stderr, "index: failed to remove "
+				fprintf(stderr, "xbps-rindex: failed to remove "
 				    "package `%s': %s\n", dp->d_name,
 				    strerror(rv));
 				prop_object_release(pkgd);
@@ -100,10 +105,10 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		/*
 		 * If binpkg is not registered in index, remove binpkg.
 		 */
-		if (!xbps_find_pkg_in_array_by_pkgver(xhp, idx, pkgver, arch)) {
+		if (!xbps_rindex_get_pkg(&ri, pkgver)) {
 			rv = remove_pkg(repodir, arch, dp->d_name);
 			if (rv != 0) {
-				fprintf(stderr, "index: failed to remove "
+				fprintf(stderr, "xbps-rindex: failed to remove "
 				    "package `%s': %s\n", dp->d_name,
 				    strerror(rv));
 				prop_object_release(pkgd);

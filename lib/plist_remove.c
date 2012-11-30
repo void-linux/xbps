@@ -31,27 +31,15 @@
 
 #include "xbps_api_impl.h"
 
-/**
- * @file lib/plist_remove.c
- * @brief PropertyList generic routines
- * @defgroup plist PropertyList generic functions
- *
- * These functions manipulate plist files and objects shared by almost
- * all library functions.
- */
 static bool
-remove_obj_from_array(struct xbps_handle *xhp,
-		      prop_array_t array,
-		      const char *str,
-		      int mode,
-		      const char *targetarch)
+remove_obj_from_array(prop_array_t array, const char *str, int mode)
 {
 	prop_object_iterator_t iter;
 	prop_object_t obj;
-	const char *curname, *pkgdep, *arch;
+	const char *curname, *pkgdep;
 	char *curpkgname;
 	size_t idx = 0;
-	bool found = false, chkarch;
+	bool found = false;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 
@@ -80,13 +68,6 @@ remove_obj_from_array(struct xbps_handle *xhp,
 			free(curpkgname);
 		} else if (mode == 2) {
 			/* match by pkgname, obj is a dictionary  */
-			chkarch = prop_dictionary_get_cstring_nocopy(obj,
-			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(xhp, arch,
-			    targetarch)) {
-				idx++;
-				continue;
-			}
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &curname);
 			if (strcmp(curname, str) == 0) {
@@ -94,13 +75,6 @@ remove_obj_from_array(struct xbps_handle *xhp,
 				break;
 			}
 		} else if (mode == 3) {
-			chkarch = prop_dictionary_get_cstring_nocopy(obj,
-			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(xhp, arch,
-			    targetarch)) {
-				idx++;
-				continue;
-			}
 			/* match by pkgver, obj is a dictionary */
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
@@ -109,13 +83,6 @@ remove_obj_from_array(struct xbps_handle *xhp,
 				break;
 			}
 		} else if (mode == 4) {
-			chkarch = prop_dictionary_get_cstring_nocopy(obj,
-			    "architecture", &arch);
-			if (chkarch && !xbps_pkg_arch_match(xhp, arch,
-			    targetarch)) {
-				idx++;
-				continue;
-			}
 			/* match by pattern, obj is a dictionary */
 			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
@@ -137,45 +104,32 @@ remove_obj_from_array(struct xbps_handle *xhp,
 	return true;
 }
 
-bool
-xbps_remove_string_from_array(struct xbps_handle *xhp,
-			      prop_array_t array,
-			      const char *str)
+bool HIDDEN
+xbps_remove_string_from_array(prop_array_t array, const char *str)
 {
-	return remove_obj_from_array(xhp, array, str, 0, NULL);
+	return remove_obj_from_array(array, str, 0);
 }
 
-bool
-xbps_remove_pkgname_from_array(struct xbps_handle *xhp,
-			      prop_array_t array,
-			      const char *name)
+bool HIDDEN
+xbps_remove_pkgname_from_array(prop_array_t array, const char *str)
 {
-	return remove_obj_from_array(xhp, array, name, 1, NULL);
+	return remove_obj_from_array(array, str, 1);
 }
 
-bool
-xbps_remove_pkg_from_array_by_name(struct xbps_handle *xhp,
-				   prop_array_t array,
-				   const char *name,
-				   const char *targetarch)
+bool HIDDEN
+xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *str)
 {
-	return remove_obj_from_array(xhp, array, name, 2, targetarch);
+	return remove_obj_from_array(array, str, 2);
 }
 
-bool
-xbps_remove_pkg_from_array_by_pkgver(struct xbps_handle *xhp,
-				     prop_array_t array,
-				     const char *pkgver,
-				     const char *targetarch)
+bool HIDDEN
+xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *str)
 {
-	return remove_obj_from_array(xhp, array, pkgver, 3, targetarch);
+	return remove_obj_from_array(array, str, 3);
 }
 
-bool
-xbps_remove_pkg_from_array_by_pattern(struct xbps_handle *xhp,
-				      prop_array_t array,
-				      const char *p,
-				      const char *targetarch)
+bool HIDDEN
+xbps_remove_pkg_from_array_by_pattern(prop_array_t array, const char *str)
 {
-	return remove_obj_from_array(xhp, array, p, 4, targetarch);
+	return remove_obj_from_array(array, str, 4);
 }

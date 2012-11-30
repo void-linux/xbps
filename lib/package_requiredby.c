@@ -63,7 +63,7 @@ add_pkg_into_reqby(struct xbps_handle *xhp,
 		return ENOMEM;
 
 	if (xbps_match_pkgname_in_array(reqby, pkgname)) {
-		if (!xbps_remove_pkgname_from_array(xhp, reqby, pkgname)) {
+		if (!xbps_remove_pkgname_from_array(reqby, pkgname)) {
 			xbps_dbg_printf(xhp, "%s: failed to remove %s reqby entry: "
 			    "%s\n", __func__, pkgname, strerror(errno));
 			free(pkgname);
@@ -120,10 +120,9 @@ remove_pkg_from_reqby(struct xbps_handle *xhp,
 	if (reqby == NULL || prop_array_count(reqby) == 0)
 		return 0;
 
-	if (xbps_match_pkgname_in_array(reqby, pkgname)) {
-		if (!xbps_remove_pkgname_from_array(xhp, reqby, pkgname))
+	if (xbps_match_pkgname_in_array(reqby, pkgname))
+		if (!xbps_remove_pkgname_from_array(reqby, pkgname))
 			return EINVAL;
-	}
 
 	return 0;
 }
@@ -139,7 +138,7 @@ int HIDDEN
 xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 {
 	prop_array_t pkg_rdeps;
-	prop_object_t obj, pkgd_pkgdb;
+	prop_object_t obj, pkgdbd;
 	prop_object_iterator_t iter;
 	const char *pkgver, *str;
 	int rv = 0;
@@ -161,25 +160,14 @@ xbps_requiredby_pkg_add(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 			rv = EINVAL;
 			break;
 		}
-		pkgd_pkgdb = xbps_find_virtualpkg_conf_in_array_by_pattern(
-		    xhp, xhp->pkgdb, str);
-		if (pkgd_pkgdb == NULL) {
-			pkgd_pkgdb =
-			    xbps_find_virtualpkg_in_array_by_pattern(
-			    xhp, xhp->pkgdb, str);
-			if (pkgd_pkgdb == NULL) {
-				pkgd_pkgdb = xbps_find_pkg_in_array_by_pattern(
-				    xhp, xhp->pkgdb, str, NULL);
-				if (pkgd_pkgdb == NULL) {
-					rv = ENOENT;
-					xbps_dbg_printf(xhp,
-					    "%s: couldnt find `%s' "
-					    "entry in pkgdb\n", __func__, str);
-					break;
-				}
-			}
+		if (((pkgdbd = xbps_find_pkg_in_array(xhp->pkgdb, str)) == NULL) &&
+		    ((pkgdbd = xbps_find_virtualpkg_in_array(xhp, xhp->pkgdb, str)) == NULL)) {
+			rv = ENOENT;
+			xbps_dbg_printf(xhp, "%s: couldnt find `%s' "
+			    "entry in pkgdb\n", __func__, str);
+			break;
 		}
-		rv = add_pkg_into_reqby(xhp, pkgd_pkgdb, pkgver);
+		rv = add_pkg_into_reqby(xhp, pkgdbd, pkgver);
 		if (rv != 0)
 			break;
 	}

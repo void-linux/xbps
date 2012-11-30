@@ -80,7 +80,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       prop_dictionary_t pkg_repod,
 	       struct archive *ar)
 {
-	prop_dictionary_t filesd = NULL, old_filesd = NULL;
+	prop_dictionary_t pkg_metad = NULL, filesd = NULL, old_filesd = NULL;
 	prop_array_t array, obsoletes;
 	prop_object_t obj;
 	prop_data_t data;
@@ -170,6 +170,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Prepare unpack callback ops.
 		 */
 		if (xhp->unpack_cb != NULL) {
+			xucd.xhp = xhp;
 			xucd.pkgver = pkgver;
 			xucd.entry = entry_pname;
 			xucd.entry_size = entry_size;
@@ -457,7 +458,7 @@ unpack_archive(struct xbps_handle *xhp,
 		} else {
 			if (xhp->unpack_cb != NULL) {
 				xucd.entry_extract_count++;
-				(*xhp->unpack_cb)(xhp, &xucd, xhp->unpack_cb_data);
+				(*xhp->unpack_cb)(&xucd, xhp->unpack_cb_data);
 			}
 		}
 	}
@@ -485,7 +486,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 * 	- Package upgrade.
 	 * 	- Package with "softreplace" keyword.
 	 */
-	old_filesd = xbps_metadir_get_pkgd(xhp, pkgname);
+	old_filesd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 	assert(prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY);
 
 	obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
@@ -508,39 +509,42 @@ unpack_archive(struct xbps_handle *xhp,
 	}
 
 out1:
+	prop_dictionary_make_immutable(pkg_repod);
+	pkg_metad = prop_dictionary_copy_mutable(pkg_repod);
+
 	/* Add objects from XBPS_PKGFILES */
 	array = prop_dictionary_get(filesd, "files");
 	if (array && prop_array_count(array))
-		prop_dictionary_set(pkg_repod, "files", array);
+		prop_dictionary_set(pkg_metad, "files", array);
 	array = prop_dictionary_get(filesd, "conf_files");
 	if (array && prop_array_count(array))
-		prop_dictionary_set(pkg_repod, "conf_files", array);
+		prop_dictionary_set(pkg_metad, "conf_files", array);
 	array = prop_dictionary_get(filesd, "links");
 	if (array && prop_array_count(array))
-		prop_dictionary_set(pkg_repod, "links", array);
+		prop_dictionary_set(pkg_metad, "links", array);
 	array = prop_dictionary_get(filesd, "dirs");
 	if (array && prop_array_count(array))
-		prop_dictionary_set(pkg_repod, "dirs", array);
+		prop_dictionary_set(pkg_metad, "dirs", array);
 
 	/* Add install/remove scripts data objects */
 	if (instbuf != NULL) {
 		data = prop_data_create_data(instbuf, instbufsiz);
 		assert(data);
-		prop_dictionary_set(pkg_repod, "install-script", data);
+		prop_dictionary_set(pkg_metad, "install-script", data);
 		prop_object_release(data);
 		free(instbuf);
 	}
 	if (rembuf != NULL) {
 		data = prop_data_create_data(rembuf, rembufsiz);
 		assert(data);
-		prop_dictionary_set(pkg_repod, "remove-script", data);
+		prop_dictionary_set(pkg_metad, "remove-script", data);
 		prop_object_release(data);
 		free(rembuf);
 	}
 	/* Remove unneeded objs from transaction */
-	prop_dictionary_remove(pkg_repod, "remove-and-update");
-	prop_dictionary_remove(pkg_repod, "transaction");
-	prop_dictionary_remove(pkg_repod, "state");
+	prop_dictionary_remove(pkg_metad, "remove-and-update");
+	prop_dictionary_remove(pkg_metad, "transaction");
+	prop_dictionary_remove(pkg_metad, "state");
 
 	/*
 	 * Externalize pkg dictionary to metadir.
@@ -554,7 +558,7 @@ out1:
 		}
 	}
 	buf = xbps_xasprintf("%s/.%s.plist", XBPS_META_PATH, pkgname);
-	if (!prop_dictionary_externalize_to_file(pkg_repod, buf)) {
+	if (!prop_dictionary_externalize_to_file(pkg_metad, buf)) {
 		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    errno, pkgname, version,
@@ -565,6 +569,8 @@ out1:
 	}
 	free(buf);
 out:
+	if (prop_object_type(pkg_metad) == PROP_TYPE_DICTIONARY)
+		prop_object_release(pkg_metad);
 	if (prop_object_type(filesd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(filesd);
 
@@ -575,7 +581,7 @@ int HIDDEN
 xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 {
 	struct archive *ar = NULL;
-	const char *pkgname, *version, *repoloc, *pkgver, *fname;
+	const char *pkgname, *version, *pkgver;
 	char *bpkg;
 	int rv = 0;
 
@@ -584,17 +590,15 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "version", &version);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "filename", &fname);
 
 	xbps_set_cb_state(xhp, XBPS_STATE_UNPACK, 0, pkgname, version, NULL);
 
-	bpkg = xbps_path_from_repository_uri(xhp, pkg_repod, repoloc);
+	bpkg = xbps_repository_pkg_path(xhp, pkg_repod);
 	if (bpkg == NULL) {
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    errno, pkgname, version,
 		    "%s: [unpack] cannot determine binary package "
-		    "file for `%s': %s", pkgver, fname, strerror(errno));
+		    "file for `%s': %s", pkgver, bpkg, strerror(errno));
 		return errno;
 	}
 
@@ -615,7 +619,7 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgname, version,
 		    "%s: [unpack] failed to open binary package `%s': %s",
-		    pkgver, fname, strerror(rv));
+		    pkgver, bpkg, strerror(rv));
 		free(bpkg);
 		archive_read_free(ar);
 		return rv;

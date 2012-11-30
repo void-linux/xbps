@@ -158,17 +158,13 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 }
 
 static int
-repo_list_uri_cb(struct xbps_handle *xhp,
-		 struct xbps_rpool_index *rpi,
-		 void *arg,
-		 bool *done)
+repo_list_uri_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 {
-	(void)xhp;
 	(void)arg;
 	(void)done;
 
 	printf("%s (%zu packages)\n", rpi->uri,
-	    (size_t)prop_array_count(rpi->repo));
+	    (size_t)prop_dictionary_count(rpi->repod));
 
 	return 0;
 }
@@ -187,21 +183,32 @@ repo_list(struct xbps_handle *xhp)
 	return 0;
 }
 
+struct fflongest {
+	prop_dictionary_t d;
+	size_t len;
+};
+
 static int
 _find_longest_pkgver_cb(struct xbps_handle *xhp,
 			prop_object_t obj,
 			void *arg,
 			bool *loop_done)
 {
-	size_t *len = arg;
+	struct fflongest *ffl = arg;
+	prop_dictionary_t pkgd;
 	const char *pkgver;
 
 	(void)xhp;
 	(void)loop_done;
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	if (*len == 0 || strlen(pkgver) > *len)
-		*len = strlen(pkgver);
+	if (prop_object_type(obj) == PROP_TYPE_DICT_KEYSYM)
+		pkgd = prop_dictionary_get_keysym(ffl->d, obj);
+	else
+		pkgd = obj;
+
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	if (ffl->len == 0 || strlen(pkgver) > ffl->len)
+		ffl->len = strlen(pkgver);
 
 	return 0;
 }
@@ -209,16 +216,24 @@ _find_longest_pkgver_cb(struct xbps_handle *xhp,
 size_t
 find_longest_pkgver(struct xbps_handle *xhp, prop_object_t o)
 {
-	size_t len = 0;
+	struct fflongest ffl;
 
-	if (prop_object_type(o) == PROP_TYPE_ARRAY)
-		(void)xbps_callback_array_iter(xhp, o,
-		    _find_longest_pkgver_cb, &len);
-	else
+	ffl.d = o;
+	ffl.len = 0;
+
+	if (prop_object_type(o) == PROP_TYPE_DICTIONARY) {
+		prop_array_t array;
+
+		array = prop_dictionary_all_keys(o);
+		(void)xbps_callback_array_iter(xhp, array,
+		    _find_longest_pkgver_cb, &ffl);
+		prop_object_release(array);
+	} else {
 		(void)xbps_pkgdb_foreach_cb(xhp,
-		    _find_longest_pkgver_cb, &len);
+		    _find_longest_pkgver_cb, &ffl);
+	}
 
-	return len;
+	return ffl.len;
 }
 
 int

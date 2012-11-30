@@ -55,6 +55,7 @@ xbps_set_cb_fetch(struct xbps_handle *xhp,
 	if (xhp->fetch_cb == NULL)
 		return;
 
+	xfcd.xhp = xhp;
 	xfcd.file_size = file_size;
 	xfcd.file_offset = file_offset;
 	xfcd.file_dloaded = file_dloaded;
@@ -62,7 +63,7 @@ xbps_set_cb_fetch(struct xbps_handle *xhp,
 	xfcd.cb_start = cb_start;
 	xfcd.cb_update = cb_update;
 	xfcd.cb_end = cb_end;
-	(*xhp->fetch_cb)(xhp, &xfcd, xhp->fetch_cb_data);
+	(*xhp->fetch_cb)(&xfcd, xhp->fetch_cb_data);
 }
 
 void HIDDEN
@@ -82,6 +83,7 @@ xbps_set_cb_state(struct xbps_handle *xhp,
 	if (xhp->state_cb == NULL)
 		return;
 
+	xscd.xhp = xhp;
 	xscd.state = state;
 	xscd.err = err;
 	xscd.arg0 = arg0;
@@ -95,7 +97,7 @@ xbps_set_cb_state(struct xbps_handle *xhp,
 		else
 			xscd.desc = buf;
 	}
-	(*xhp->state_cb)(xhp, &xscd, xhp->state_cb_data);
+	(*xhp->state_cb)(&xscd, xhp->state_cb_data);
 	if (buf != NULL)
 		free(buf);
 }

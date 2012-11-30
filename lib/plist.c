@@ -39,7 +39,7 @@
  * These functions manipulate plist files and objects shared by almost
  * all library functions.
  */
-bool
+bool HIDDEN
 xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 		       const char *key)
 {
@@ -57,7 +57,7 @@ xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
 	return true;
 }
 
-bool
+bool HIDDEN
 xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
 {
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
@@ -249,7 +249,7 @@ array_replace_dict(prop_array_t array,
 	return ENOENT;
 }
 
-int
+int HIDDEN
 xbps_array_replace_dict_by_name(prop_array_t array,
 				prop_dictionary_t dict,
 				const char *pkgname)
@@ -257,7 +257,7 @@ xbps_array_replace_dict_by_name(prop_array_t array,
 	return array_replace_dict(array, dict, pkgname, false);
 }
 
-int
+int HIDDEN
 xbps_array_replace_dict_by_pattern(prop_array_t array,
 				   prop_dictionary_t dict,
 				   const char *pattern)

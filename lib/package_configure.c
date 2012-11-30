@@ -85,7 +85,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	assert(pkgname != NULL);
 
-	pkgd = xbps_pkgdb_get_pkgd(xhp, pkgname, false);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 	if (pkgd == NULL)
 		return ENOENT;
 
@@ -125,8 +125,10 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		    "the post ACTION: %s", pkgver, strerror(rv));
 		return rv;
 	}
-	if (state == XBPS_PKG_STATE_INSTALLED)
+	if (state == XBPS_PKG_STATE_INSTALLED) {
+		prop_object_release(pkgmetad);
 		return rv;
+	}
 
 	rv = xbps_set_pkg_state_installed(xhp, pkgname, version,
 	    XBPS_PKG_STATE_INSTALLED);
@@ -144,5 +146,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 			    pkgver, strerror(rv));
 		}
 	}
+	prop_object_release(pkgmetad);
+
 	return rv;
 }

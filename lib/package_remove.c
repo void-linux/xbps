@@ -208,25 +208,29 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 
 int
 xbps_remove_pkg(struct xbps_handle *xhp,
-		const char *pkgname,
-		const char *version,
+		const char *pkgver,
 		bool update,
 		bool soft_replace)
 {
 	prop_dictionary_t pkgd = NULL;
-	char *tmpname, *buf = NULL, *pkgver = NULL;
-	const char *tmpver = NULL;
+	char *pkgname, *buf = NULL;
+	const char *version;
 	int rv = 0;
 	pkg_state_t state = 0;
 
-	assert(pkgname != NULL);
-	assert(version != NULL);
+	assert(xhp);
+	assert(pkgver);
+
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+	version = xbps_pkg_version(pkgver);
+	assert(version);
 
 	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0)
 		goto out;
 
 	xbps_dbg_printf(xhp, "attempting to remove %s state %d\n",
-	    pkgname, state);
+	    pkgver, state);
 
 	if (!update)
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE, 0, pkgname, version, NULL);
@@ -274,7 +278,9 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	 * continue. Its files will be overwritten later in unpack phase.
 	 */
 	if (update) {
-		free(pkgver);
+		if (pkgd)
+			prop_object_release(pkgd);
+		free(pkgname);
 		return xbps_requiredby_pkg_remove(xhp, pkgname);
 	} else if (soft_replace) {
 		/*
@@ -349,8 +355,8 @@ purge:
 			    "purge ACTION: %s", pkgver, strerror(rv));
 			goto out;
 		}
+		prop_object_release(pkgd);
 	}
-
 	/*
 	 * Remove package metadata plist.
 	 */
@@ -366,25 +372,18 @@ purge:
 	/*
 	 * Unregister package from pkgdb.
 	 */
-	if ((rv = xbps_unregister_pkg(xhp, pkgname, version, true)) != 0)
+	if ((rv = xbps_unregister_pkg(xhp, pkgver, true)) != 0)
 		goto out;
 
 	xbps_dbg_printf(xhp, "[remove] unregister %s returned %d\n", pkgver, rv);
 
-	tmpname = xbps_pkg_name(pkgver);
-	assert(tmpname);
-	tmpver = xbps_pkg_version(pkgver);
-	assert(tmpver);
-
 	xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_DONE,
-	     0, tmpname, tmpver, NULL);
-	free(tmpname);
-
+	     0, pkgname, version, NULL);
 out:
 	if (buf != NULL)
 		free(buf);
-	if (pkgver != NULL)
-		free(pkgver);
+	if (pkgname != NULL)
+		free(pkgname);
 
 	return rv;
 }

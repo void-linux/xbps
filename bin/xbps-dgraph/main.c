@@ -419,7 +419,7 @@ create_dot_graph(struct xbps_handle *xhp,
 	 * list file, aka XBPS_META_PATH/XBPS_PKGDB.
 	 */
 	if (revdeps) {
-		regpkgd = xbps_find_pkg_dict_installed(xhp, pkgn, false);
+		regpkgd = xbps_pkgdb_get_pkg(xhp, pkgn);
 		if (regpkgd == NULL)
 			die("cannot find '%s' dictionary on %s!",
 			    pkgn, XBPS_PKGDB);
@@ -510,7 +510,7 @@ main(int argc, char **argv)
 	/*
 	 * Internalize the plist file of the target installed package.
 	 */
-	plistd = xbps_metadir_get_pkgd(&xh, argv[0]);
+	plistd = xbps_pkgdb_get_pkg_metadata(&xh, argv[0]);
 	if (plistd == NULL)
 		die("cannot internalize %s metadata file", argv[0]);
 

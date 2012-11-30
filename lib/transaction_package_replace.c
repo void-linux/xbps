@@ -36,7 +36,7 @@
 int HIDDEN
 xbps_transaction_package_replace(struct xbps_handle *xhp)
 {
-	prop_array_t replaces, instd_reqby, transd_unsorted;
+	prop_array_t replaces, instd_reqby, unsorted;
 	prop_dictionary_t instd, pkg_repod, reppkgd, filesd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
@@ -45,10 +45,10 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 	bool instd_auto, sr;
 	size_t idx;
 
-	transd_unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
+	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 
-	for (idx = 0; idx < prop_array_count(transd_unsorted); idx++) {
-		pkg_repod = prop_array_get(transd_unsorted, idx);
+	for (idx = 0; idx < prop_array_count(unsorted); idx++) {
+		pkg_repod = prop_array_get(unsorted, idx);
 		replaces = prop_dictionary_get(pkg_repod, "replaces");
 		if (replaces == NULL || prop_array_count(replaces) == 0)
 			continue;
@@ -64,15 +64,13 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * Find the installed package that matches the pattern
 			 * to be replaced.
 			 */
-			instd =
-			    xbps_find_pkg_dict_installed(xhp, pattern, true);
+			instd = xbps_pkgdb_get_pkg(xhp, pattern);
 			if (instd == NULL) {
 				/*
 				 * No package installed has been matched,
 				 * try looking for a virtual package.
 				 */
-				instd = xbps_find_virtualpkg_dict_installed(
-				    xhp, pattern, true);
+				instd = xbps_pkgdb_get_virtualpkg(xhp, pattern);
 				if (instd == NULL)
 					continue;
 			}
@@ -103,9 +101,8 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * package that should be replaced is also in the
 			 * transaction and it's going to be updated.
 			 */
-			reppkgd = xbps_find_pkg_in_array_by_name(
-			    xhp, transd_unsorted, curpkgname, NULL);
-			if (reppkgd) {
+			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname)) ||
+			    (reppkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, curpkgname))) {
 				xbps_dbg_printf(xhp,
 				    "found replaced pkg "
 				    "in transaction\n");
@@ -120,7 +117,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				    "automatic-install", instd_auto);
 				prop_dictionary_set_bool(reppkgd,
 				    "skip-obsoletes", true);
-				xbps_array_replace_dict_by_name(transd_unsorted,
+				xbps_array_replace_dict_by_name(unsorted,
 				   reppkgd, curpkgname);
 			}
 			/*
@@ -182,10 +179,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 */
 			prop_dictionary_set_cstring_nocopy(instd,
 			    "transaction", "remove");
-			if (!xbps_add_obj_to_array(transd_unsorted, instd)) {
-				prop_object_iterator_release(iter);
-				return EINVAL;
-			}
+			prop_array_add(unsorted, instd);
 		}
 		prop_object_iterator_release(iter);
 	}
