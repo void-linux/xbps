@@ -88,17 +88,17 @@ static int
 repo_revdeps_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 {
 	prop_dictionary_t pkgd;
-	prop_array_t allkeys, pkgdeps;
-	prop_dictionary_keysym_t ksym;
+	prop_array_t pkgdeps;
+	prop_object_iterator_t iter;
+	prop_object_t obj;
 	const char *pkgver, *arch, *pattern = arg;
-	size_t i;
 
 	(void)done;
 
-	allkeys = prop_dictionary_all_keys(rpi->repod);
-	for (i = 0; i < prop_array_count(allkeys); i++) {
-		ksym = prop_array_get(allkeys, i);
-		pkgd = prop_dictionary_get_keysym(rpi->repod, ksym);
+	iter = prop_dictionary_iterator(rpi->repod);
+	assert(iter);
+	while ((obj = prop_object_iterator_next(iter))) {
+		pkgd = prop_dictionary_get_keysym(rpi->repod, obj);
 		pkgdeps = prop_dictionary_get(pkgd, "run_depends");
 		if (pkgdeps == NULL || prop_array_count(pkgdeps) == 0)
 			continue;
@@ -113,7 +113,7 @@ repo_revdeps_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 			}
 		}
 	}
-	prop_object_release(allkeys);
+	prop_object_iterator_release(iter);
 
 	return 0;
 }
