@@ -38,9 +38,10 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 {
 	prop_array_t pkg_cflicts, trans_cflicts;
 	prop_dictionary_t pkgd;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
 	const char *cfpkg, *repopkgver, *pkgver;
 	char *buf;
-	size_t i;
 
 	pkg_cflicts = prop_dictionary_get(pkg_repod, "conflicts");
 	if (pkg_cflicts == NULL || prop_array_count(pkg_cflicts) == 0)
@@ -49,8 +50,10 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 	trans_cflicts = prop_dictionary_get(xhp->transd, "conflicts");
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
 
-	for (i = 0; i < prop_array_count(pkg_cflicts); i++) {
-		prop_array_get_cstring_nocopy(pkg_cflicts, i, &cfpkg);
+	iter = prop_array_iterator(trans_cflicts);
+	assert(iter);
+	while ((obj = prop_object_iterator_next(iter))) {
+		cfpkg = prop_string_cstring_nocopy(obj);
 		/*
 		 * Check if current pkg conflicts with an installed package.
 		 */
@@ -78,4 +81,5 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			continue;
 		}
 	}
+	prop_object_iterator_release(iter);
 }

@@ -37,28 +37,31 @@ int HIDDEN
 xbps_transaction_package_replace(struct xbps_handle *xhp)
 {
 	prop_array_t replaces, instd_reqby, unsorted;
-	prop_dictionary_t instd, pkg_repod, reppkgd, filesd;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	prop_dictionary_t instd, reppkgd, filesd;
+	prop_object_t obj, obj2;
+	prop_object_iterator_t iter, iter2;
 	const char *pattern, *pkgname, *curpkgname, *pkgver, *curpkgver;
 	char *buf;
 	bool instd_auto, sr;
-	size_t idx;
 
 	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 
-	for (idx = 0; idx < prop_array_count(unsorted); idx++) {
-		pkg_repod = prop_array_get(unsorted, idx);
-		replaces = prop_dictionary_get(pkg_repod, "replaces");
+	iter = prop_array_iterator(unsorted);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		replaces = prop_dictionary_get(obj, "replaces");
 		if (replaces == NULL || prop_array_count(replaces) == 0)
 			continue;
 
-		iter = prop_array_iterator(replaces);
-		if (iter == NULL)
+		iter2 = prop_array_iterator(replaces);
+		if (iter2 == NULL) {
+			prop_object_iterator_release(iter);
 			return ENOMEM;
+		}
 
-		while ((obj = prop_object_iterator_next(iter)) != NULL) {
-			pattern = prop_string_cstring_nocopy(obj);
+		while ((obj2 = prop_object_iterator_next(iter2)) != NULL) {
+			pattern = prop_string_cstring_nocopy(obj2);
 			assert(pattern != NULL);
 			/*
 			 * Find the installed package that matches the pattern
@@ -74,9 +77,9 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				if (instd == NULL)
 					continue;
 			}
-			prop_dictionary_get_cstring_nocopy(pkg_repod,
+			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &pkgname);
-			prop_dictionary_get_cstring_nocopy(pkg_repod,
+			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &pkgver);
 			prop_dictionary_get_cstring_nocopy(instd,
 			    "pkgname", &curpkgname);
@@ -126,16 +129,16 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * its requiredby and automatic-install objects, so copy
 			 * them to the pkg's dictionary in transaction.
 			 */
-			if (xbps_match_virtual_pkg_in_dict(pkg_repod,
+			if (xbps_match_virtual_pkg_in_dict(obj,
 			    pattern, true) ||
 			    xbps_match_virtual_pkg_in_dict(instd,
 			    pkgname, false)) {
 				if (instd_reqby &&
 				    prop_array_count(instd_reqby)) {
-					prop_dictionary_set(pkg_repod,
+					prop_dictionary_set(obj,
 					    "requiredby", instd_reqby);
 				}
-				prop_dictionary_set_bool(pkg_repod,
+				prop_dictionary_set_bool(obj,
 				    "automatic-install", instd_auto);
 			}
 			/*
@@ -146,14 +149,14 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * obsolete files.
 			 */
 			sr = false;
-			prop_dictionary_get_bool(pkg_repod, "softreplace", &sr);
+			prop_dictionary_get_bool(obj, "softreplace", &sr);
 			if (sr) {
 				if (instd_reqby &&
 				    prop_array_count(instd_reqby)) {
-					prop_dictionary_set(pkg_repod,
+					prop_dictionary_set(obj,
 					    "requiredby", instd_reqby);
 				}
-				prop_dictionary_set_bool(pkg_repod,
+				prop_dictionary_set_bool(obj,
 				    "automatic-install", instd_auto);
 				prop_dictionary_set_bool(instd,
 				    "softreplace", true);
@@ -168,6 +171,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 					free(buf);
 					prop_object_release(filesd);
 					prop_object_iterator_release(iter);
+					prop_object_iterator_release(iter2);
 					return errno;
 				}
 				prop_object_release(filesd);
@@ -181,8 +185,9 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			    "transaction", "remove");
 			prop_array_add(unsorted, instd);
 		}
-		prop_object_iterator_release(iter);
+		prop_object_iterator_release(iter2);
 	}
+	prop_object_iterator_release(iter);
 
 	return 0;
 }

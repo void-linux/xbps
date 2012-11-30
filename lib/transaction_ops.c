@@ -175,16 +175,19 @@ int
 xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
 	prop_object_t obj;
+	prop_object_iterator_t iter;
 	const char *pkgname, *holdpkg;
 	bool foundhold = false, newpkg_found = false;
 	int rv = 0;
-	size_t i, x;
+	size_t x;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	for (i = 0; i < prop_array_count(xhp->pkgdb); i++) {
-		obj = prop_array_get(xhp->pkgdb, i);
+	iter = prop_array_iterator(xhp->pkgdb);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 
 		for (x = 0; x < cfg_size(xhp->cfg, "PackagesOnHold"); x++) {
@@ -212,6 +215,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 			rv = 0;
 		}
 	}
+	prop_object_iterator_release(iter);
 
 	return newpkg_found ? rv : EEXIST;
 }

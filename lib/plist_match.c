@@ -62,28 +62,40 @@ bool
 xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
 				     prop_array_t provides)
 {
+	prop_object_t obj, obj2;
+	prop_object_iterator_t iter, iter2;
 	const char *vpkgver, *pkgpattern;
 	char *tmp;
-	size_t i, x;
 
-	for (i = 0; i < prop_array_count(provides); i++) {
+	iter = prop_array_iterator(provides);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
 		tmp = NULL;
-		prop_array_get_cstring_nocopy(provides, i, &vpkgver);
+		vpkgver = prop_string_cstring_nocopy(obj);
 		if (strchr(vpkgver, '_') == NULL) {
 			tmp = xbps_xasprintf("%s_1", vpkgver);
 			vpkgver = tmp;
 		}
-		for (x = 0; x < prop_array_count(rundeps); x++) {
-			prop_array_get_cstring_nocopy(rundeps, x, &pkgpattern);
+		iter2 = prop_array_iterator(rundeps);
+		assert(iter2);
+		while ((obj2 = prop_object_iterator_next(iter2))) {
+			pkgpattern = prop_string_cstring_nocopy(obj2);
 			if (xbps_pkgpattern_match(vpkgver, pkgpattern)) {
 				if (tmp != NULL)
 					free(tmp);
+
+				prop_object_iterator_release(iter2);
+				prop_object_iterator_release(iter);
 				return true;
 			}
 		}
+		prop_object_iterator_release(iter2);
 		if (tmp != NULL)
 			free(tmp);
 	}
+	prop_object_iterator_release(iter);
+
 	return false;
 }
 
@@ -100,8 +112,7 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 	assert(str != NULL);
 
 	iter = prop_array_iterator(array);
-	if (iter == NULL)
-		return false;
+	assert(iter);
 
 	while ((obj = prop_object_iterator_next(iter))) {
 		tmp = NULL;

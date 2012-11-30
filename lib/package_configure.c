@@ -50,20 +50,23 @@ int
 xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 {
 	prop_object_t obj;
+	prop_object_iterator_t iter;
 	const char *pkgname;
-	size_t i;
 	int rv;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	for (i = 0; i < prop_array_count(xhp->pkgdb); i++) {
-		obj = prop_array_get(xhp->pkgdb, i);
+	iter = prop_array_iterator(xhp->pkgdb);
+	assert(iter);
+	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		rv = xbps_configure_pkg(xhp, pkgname, true, false, false);
 		if (rv != 0)
 			break;
 	}
+	prop_object_iterator_release(iter);
+
 	if (flush)
 		rv = xbps_pkgdb_update(xhp, true);
 

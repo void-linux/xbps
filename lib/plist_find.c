@@ -35,12 +35,14 @@ static prop_dictionary_t
 get_pkg_in_array(prop_array_t array, const char *str, bool virtual)
 {
 	prop_object_t obj = NULL;
+	prop_object_iterator_t iter;
 	const char *pkgver, *dpkgn;
-	size_t i;
 	bool found = false;
 
-	for (i = 0; i < prop_array_count(array); i++) {
-		obj = prop_array_get(array, i);
+	iter = prop_array_iterator(array);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
 		if (virtual) {
 			/*
 			 * Check if package pattern matches
@@ -82,6 +84,8 @@ get_pkg_in_array(prop_array_t array, const char *str, bool virtual)
 			}
 		}
 	}
+	prop_object_iterator_release(iter);
+
 	return found ? obj : NULL;
 }
 

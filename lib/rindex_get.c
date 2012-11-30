@@ -142,11 +142,10 @@ vpkg_user_conf(struct xbps_handle *xhp,
 prop_dictionary_t
 xbps_rindex_get_virtualpkg(struct xbps_rindex *rpi, const char *pkg)
 {
-	prop_array_t allkeys;
-	prop_dictionary_keysym_t ksym;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
 	prop_dictionary_t pkgd = NULL;
 	const char *vpkg;
-	size_t i;
 	bool found = false, bypattern = false;
 
 	if (xbps_pkgpattern_version(pkg))
@@ -169,16 +168,17 @@ xbps_rindex_get_virtualpkg(struct xbps_rindex *rpi, const char *pkg)
 	}
 
 	/* ... otherwise match the first one in dictionary */
-	allkeys = prop_dictionary_all_keys(rpi->repod);
-	for (i = 0; i < prop_array_count(allkeys); i++) {
-		ksym = prop_array_get(allkeys, i);
-		pkgd = prop_dictionary_get_keysym(rpi->repod, ksym);
+	iter = prop_dictionary_iterator(rpi->repod);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		pkgd = prop_dictionary_get_keysym(rpi->repod, obj);
 		if (xbps_match_virtual_pkg_in_dict(pkgd, pkg, bypattern)) {
 			found = true;
 			break;
 		}
 	}
-	prop_object_release(allkeys);
+	prop_object_iterator_release(iter);
 
 out:
 	if (found) {

@@ -153,9 +153,11 @@ find_repo_deps(struct xbps_handle *xhp,
 	       size_t *depth)			/* max recursion depth */
 {
 	prop_dictionary_t curpkgd, tmpd;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
 	prop_array_t curpkgrdeps;
 	pkg_state_t state;
-	size_t i, x;
+	size_t x;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
 	int rv = 0;
 
@@ -166,8 +168,11 @@ find_repo_deps(struct xbps_handle *xhp,
 	 * Iterate over the list of required run dependencies for
 	 * current package.
 	 */
-	for (i = 0; i < prop_array_count(pkg_rdeps_array); i++) {
-		prop_array_get_cstring_nocopy(pkg_rdeps_array, i, &reqpkg);
+	iter = prop_array_iterator(pkg_rdeps_array);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		reqpkg = prop_string_cstring_nocopy(obj);
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf(xhp, "");
 			for (x = 0; x < *depth; x++)
@@ -343,6 +348,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			break;
 		}
 	}
+	prop_object_iterator_release(iter);
 	(*depth)--;
 
 	return rv;
