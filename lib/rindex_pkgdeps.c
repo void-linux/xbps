@@ -179,11 +179,8 @@ find_repo_deps(struct xbps_handle *xhp,
 		 * Pass 1: check if required dependency is already installed
 		 * and its version is fully matched.
 		 */
-		/*
-		 * Look for a real package installed...
-		 */
-		tmpd = xbps_pkgdb_get_pkg(xhp, reqpkg);
-		if (tmpd == NULL) {
+		if (((tmpd = xbps_pkgdb_get_pkg(xhp, reqpkg)) == NULL) &&
+		    ((tmpd = xbps_pkgdb_get_virtualpkg(xhp, reqpkg)) == NULL)) {
 			if (errno && errno != ENOENT) {
 				/* error */
 				rv = errno;
@@ -192,21 +189,6 @@ find_repo_deps(struct xbps_handle *xhp,
 				    reqpkg, strerror(errno));
 				break;
 			}
-			/*
-			 * real package not installed, try looking for
-			 * a virtual package instead.
-			 */
-			tmpd = xbps_pkgdb_get_virtualpkg(xhp, reqpkg);
-			if (errno && errno != ENOENT) {
-				/* error */
-				rv = errno;
-				xbps_dbg_printf(xhp, "failed to find "
-				    "installed virtual pkg for `%s': %s\n",
-				    reqpkg, strerror(errno));
-				break;
-			}
-		}
-		if (tmpd == NULL) {
 			/* Required pkgdep not installed */
 			xbps_dbg_printf_append(xhp, "not installed ");
 			reason = "install";
