@@ -3,7 +3,7 @@ TOPDIR = ../..
 
 BIN =	xbps-pkgdb
 OBJS =	main.o check.o check_pkg_files.o
-OBJS +=	check_pkg_requiredby.o check_pkg_rundeps.o
+OBJS +=	check_pkg_rundeps.o
 OBJS +=	check_pkg_symlinks.o check_pkg_unneeded.o
 OBJS +=	convert.o
 

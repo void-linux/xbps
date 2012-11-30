@@ -74,7 +74,7 @@ find_orphan_pkg(struct xbps_handle *xhp,
 	prop_array_t reqby;
 	prop_object_t obj2;
 	prop_object_iterator_t iter;
-	const char *pkgdep, *curpkgname;
+	const char *pkgdep, *curpkgname, *curpkgver;
 	char *pkgdepname;
 	unsigned int ndep = 0, cnt = 0;
 	bool automatic = false;
@@ -89,7 +89,8 @@ find_orphan_pkg(struct xbps_handle *xhp,
 	if (!automatic)
 		return 0;
 
-	reqby = prop_dictionary_get(obj, "requiredby");
+	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &curpkgver);
+	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, curpkgver);
 	if (reqby == NULL || ((cnt = prop_array_count(reqby)) == 0)) {
 		/*
 		 * Add packages with empty or missing "requiredby" arrays.

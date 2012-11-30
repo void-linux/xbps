@@ -47,8 +47,6 @@
  *     XBPS_FLAG_FORCE_REMOVE_FILES flag is set via xbps_init::flags member.
  *  -# Its <b>post-remove</b> target specified in the REMOVE script
  *     will be executed.
- *  -# Its requiredby objects will be removed from the installed packages
- *     database.
  *  -# Its state will be changed to XBPS_PKG_STATE_HALF_REMOVED.
  *  -# Its <b>purge-remove</b> target specified in the REMOVE script
  *     will be executed.
@@ -274,14 +272,14 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	}
 	/*
 	 * If updating a package, we just need to execute the current
-	 * pre-remove action target, unregister its requiredby entries and
-	 * continue. Its files will be overwritten later in unpack phase.
+	 * pre-remove action target and we are done. Its files will be
+	 * overwritten later in unpack phase.
 	 */
 	if (update) {
 		if (pkgd)
 			prop_object_release(pkgd);
 		free(pkgname);
-		return xbps_requiredby_pkg_remove(xhp, pkgname);
+		return 0;
 	} else if (soft_replace) {
 		/*
 		 * Soft replace a package. Do not remove its files, but
@@ -316,16 +314,6 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 			    "post ACTION: %s", pkgver, strerror(rv));
 			goto out;
 		}
-	}
-	/*
-	 * Update the requiredby array of all required dependencies.
-	 */
-	if ((rv = xbps_requiredby_pkg_remove(xhp, pkgname)) != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-		    rv, pkgname, version,
-		    "%s: [remove] failed to remove requiredby entries: %s",
-		    pkgver, strerror(rv));
-		goto out;
 	}
 
 softreplace:

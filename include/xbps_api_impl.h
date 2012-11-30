@@ -145,13 +145,6 @@ int HIDDEN xbps_repository_find_deps(struct xbps_handle *,
 
 /**
  * @private
- * From lib/package_requiredby.c
- */
-int HIDDEN xbps_requiredby_pkg_add(struct xbps_handle *, prop_dictionary_t);
-int HIDDEN xbps_requiredby_pkg_remove(struct xbps_handle *, const char *);
-
-/**
- * @private
  * From lib/plist_find.c
  */
 prop_dictionary_t HIDDEN xbps_find_pkg_in_array(prop_array_t, const char *);

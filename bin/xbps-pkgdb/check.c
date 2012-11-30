@@ -91,6 +91,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    prop_dictionary_t pkgd,
 		    const char *pkgname)
 {
+	prop_array_t rundeps;
 	prop_dictionary_t opkgd, propsd;
 	const char *sha256;
 	char *buf;
@@ -100,13 +101,9 @@ check_pkg_integrity(struct xbps_handle *xhp,
 
 	/* find real pkg by name */
 	opkgd = pkgd;
-	if (pkgd == NULL) {
-		opkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
-		if (opkgd == NULL) {
-			/* find virtual pkg by name */
-			opkgd = xbps_pkgdb_get_virtualpkg(xhp, pkgname);
-		}
-		if (opkgd == NULL) {
+	if (opkgd == NULL) {
+		if (((opkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) &&
+		    ((opkgd = xbps_pkgdb_get_virtualpkg(xhp, pkgname)) == NULL)) {
 			printf("Package %s is not installed.\n", pkgname);
 			return 0;
 		}
@@ -127,7 +124,24 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		xbps_error_printf("%s: incomplete metadata file.\n", pkgname);
 		return 1;
 	}
+	/*
+	 * Check if pkgdb pkg has been converted to 0.19 format,
+	 * which adds "run_depends" array object.
+	 */
+	rundeps = prop_dictionary_get(opkgd, "run_depends");
+	if (rundeps == NULL) {
+		rundeps = prop_dictionary_get(propsd, "run_depends");
+		if (rundeps == NULL)
+			rundeps = prop_array_create();
 
+		prop_dictionary_set(opkgd, "run_depends", rundeps);
+		/* remove requiredby object, unneeded since 0.19 */
+		prop_dictionary_remove(opkgd, "requiredby");
+	}
+
+	/*
+	 * Check pkg metadata signature.
+	 */
 	prop_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256);
 	if (sha256 != NULL) {
 		buf = xbps_xasprintf("%s/.%s.plist",
@@ -155,7 +169,6 @@ do {								\
 	RUN_PKG_CHECK(xhp, files, propsd);
 	RUN_PKG_CHECK(xhp, symlinks, propsd);
 	RUN_PKG_CHECK(xhp, rundeps, propsd);
-	RUN_PKG_CHECK(xhp, requiredby, opkgd);
 	RUN_PKG_CHECK(xhp, unneeded, opkgd);
 
 #undef RUN_PKG_CHECK

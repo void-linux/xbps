@@ -204,7 +204,6 @@ static int
 remove_pkg(struct xbps_handle *xhp, const char *pkgname, size_t cols,
 	   bool recursive)
 {
-	prop_dictionary_t pkgd;
 	prop_array_t reqby;
 	const char *pkgver;
 	size_t x;
@@ -213,11 +212,9 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, size_t cols,
 	rv = xbps_transaction_remove_pkg(xhp, pkgname, recursive);
 	if (rv == EEXIST) {
 		/* pkg has revdeps */
-		pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		reqby = prop_dictionary_get(pkgd, "requiredby");
+		reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
 		printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
-		    pkgver, prop_array_count(reqby),
+		    pkgname, prop_array_count(reqby),
 		    prop_array_count(reqby) > 1 ? "S" : "");
 		for (x = 0; x < prop_array_count(reqby); x++) {
 			prop_array_get_cstring_nocopy(reqby, x, &pkgver);

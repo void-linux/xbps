@@ -40,7 +40,6 @@ CHECK_PKG_DECL(unneeded);
 CHECK_PKG_DECL(files);
 CHECK_PKG_DECL(rundeps);
 CHECK_PKG_DECL(symlinks);
-CHECK_PKG_DECL(requiredby);
 
 /* from convert.c */
 int	convert_pkgd_metadir(struct xbps_handle *, prop_dictionary_t);

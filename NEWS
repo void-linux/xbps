@@ -1,3 +1,27 @@
+xbps-0.19 (???):
+
+ * Added support for dynamic generation of reverse dependencies for
+   installed packages. pkgdb no longer keeps track of them statically.
+   A new object must be present in pkgdb for this to work in fast mode,
+   which is available if 'xbps-pkgdb(8) -a' is run; otherwise the
+   fallback mode will be used which is a bit slower.
+
+ * xbps-query(8): added support to specify any of the three supported
+   methods to match package expressions:
+
+	- by package name (foo)
+	- by exact package version (foo-2.0_1)
+	- by package version comparators (foo>2.1<2.5)
+
+ * Multiple API/ABI changes to improve performance; The libxbps SONAME
+   major has been bumped to 1. This helped to fix some regressions
+   introduced in 0.18 and really simplifies the API.
+
+ * New repository index format (1.6). The index files are now dictionaries
+   that won't allow to add duplicate entries; also the files are now
+   "architecture" dependent and only packages for target arch and
+   noarch will be registered on it.
+
 xbps-0.18.1 (2012-11-26):
 
  * Fixed execution of pre/post install/remove scripts due to using old

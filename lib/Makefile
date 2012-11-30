@@ -43,8 +43,7 @@ EXTOBJS += external/mkpath.o
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o
 OBJS += package_remove.o package_remove_obsoletes.o package_state.o
-OBJS += package_unpack.o package_requiredby.o package_register.o
-OBJS += package_script.o
+OBJS += package_unpack.o package_register.o package_script.o
 OBJS += transaction_commit.o transaction_package_replace.o
 OBJS += transaction_dictionary.o transaction_sortdeps.o transaction_ops.o
 OBJS += download.o initend.o pkgdb.o package_conflicts.o

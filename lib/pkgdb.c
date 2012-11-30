@@ -186,16 +186,12 @@ xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp, const char *vpkg)
 	return xbps_find_virtualpkg_in_array(xhp, xhp->pkgdb, vpkg);
 }
 
-prop_dictionary_t
-xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp, const char *pkg)
+static prop_dictionary_t
+get_pkg_metadata(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 {
-	prop_dictionary_t pkgd, pkg_metad;
+	prop_dictionary_t pkg_metad;
 	const char *pkgname;
 	char *plist;
-
-	pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
-	if (pkgd == NULL)
-		return NULL;
 
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 
@@ -219,6 +215,70 @@ xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp, const char *pkg)
 	prop_object_release(pkg_metad);
 
 	return pkg_metad;
+}
+
+prop_array_t
+xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
+{
+	prop_array_t rundeps, provides, result = NULL;
+	prop_dictionary_t pkgd, pkgdep_metad;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	const char *pkgver, *curpkgver;
+
+	if (xbps_pkgdb_init(xhp) != 0)
+		return NULL;
+
+	pkgd = xbps_find_pkg_in_array(xhp->pkgdb, pkg);
+	if (pkgd == NULL)
+		return NULL;
+
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	provides = prop_dictionary_get(pkgd, "provides");
+
+	iter = prop_array_iterator(xhp->pkgdb);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &curpkgver);
+		/*
+		 * If run_depends is in pkgdb use it, otherwise fallback to
+		 * the slower pkg metadata method.
+		 */
+		rundeps = prop_dictionary_get(obj, "run_depends");
+		if (rundeps == NULL) {
+			pkgdep_metad = get_pkg_metadata(xhp, obj);
+			assert(pkgdep_metad);
+			rundeps = prop_dictionary_get(pkgdep_metad,
+					"run_depends");
+		}
+		if (rundeps == NULL || !prop_array_count(rundeps))
+			continue;
+
+		if (xbps_match_pkgdep_in_array(rundeps, pkgver) ||
+		    (provides &&
+		     xbps_match_any_virtualpkg_in_rundeps(rundeps, provides))) {
+			if (result == NULL)
+				result = prop_array_create();
+
+			prop_array_add_cstring_nocopy(result, curpkgver);
+		}
+	}
+	prop_object_iterator_release(iter);
+
+	return result;
+}
+
+prop_dictionary_t
+xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp, const char *pkg)
+{
+	prop_dictionary_t pkgd;
+
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
+	if (pkgd == NULL)
+		return NULL;
+
+	return get_pkg_metadata(xhp, pkgd);
 }
 
 bool

@@ -36,7 +36,7 @@
 int HIDDEN
 xbps_transaction_package_replace(struct xbps_handle *xhp)
 {
-	prop_array_t replaces, instd_reqby, unsorted;
+	prop_array_t replaces, unsorted;
 	prop_dictionary_t instd, reppkgd, filesd;
 	prop_object_t obj, obj2;
 	prop_object_iterator_t iter;
@@ -84,7 +84,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			xbps_dbg_printf(xhp,
 			    "Package `%s' will be replaced by `%s', "
 			    "matched with `%s'\n", curpkgver, pkgver, pattern);
-			instd_reqby = prop_dictionary_get(instd, "requiredby");
 			instd_auto = false;
 			prop_dictionary_get_bool(instd,
 			    "automatic-install", &instd_auto);
@@ -100,11 +99,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				    "in transaction\n");
 				prop_dictionary_set_bool(instd,
 				    "remove-and-update", true);
-				if (instd_reqby &&
-				    prop_array_count(instd_reqby)) {
-					prop_dictionary_set(reppkgd,
-					    "requiredby", instd_reqby);
-				}
 				prop_dictionary_set_bool(reppkgd,
 				    "automatic-install", instd_auto);
 				prop_dictionary_set_bool(reppkgd,
@@ -115,36 +109,18 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			/*
 			 * If new package is providing a virtual package to the
 			 * package that we want to replace we should respect
-			 * its requiredby and automatic-install objects, so copy
-			 * them to the pkg's dictionary in transaction.
+			 * the automatic-install object.
 			 */
 			if (xbps_match_virtual_pkg_in_dict(obj,
 			    pattern, true) ||
 			    xbps_match_virtual_pkg_in_dict(instd,
 			    pkgname, false)) {
-				if (instd_reqby &&
-				    prop_array_count(instd_reqby)) {
-					prop_dictionary_set(obj,
-					    "requiredby", instd_reqby);
-				}
 				prop_dictionary_set_bool(obj,
 				    "automatic-install", instd_auto);
 			}
-			/*
-			 * Copy requiredby and automatic-install objects
-			 * from replaced package into pkg's dictionary
-			 * for "softreplace" packages. Also externalize
-			 * PKGFILES from package being replaced to remove
-			 * obsolete files.
-			 */
 			sr = false;
 			prop_dictionary_get_bool(obj, "softreplace", &sr);
 			if (sr) {
-				if (instd_reqby &&
-				    prop_array_count(instd_reqby)) {
-					prop_dictionary_set(obj,
-					    "requiredby", instd_reqby);
-				}
 				prop_dictionary_set_bool(obj,
 				    "automatic-install", instd_auto);
 				prop_dictionary_set_bool(instd,

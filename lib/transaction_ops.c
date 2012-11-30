@@ -304,7 +304,7 @@ rmpkg:
 	prop_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
 	prop_array_add(unsorted, pkgd);
 	xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
-	reqby = prop_dictionary_get(pkgd, "requiredby");
+	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
 	/*
 	 * If target pkg is required by any installed pkg, the client must be aware
 	 * of this to take appropiate action.

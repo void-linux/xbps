@@ -54,19 +54,18 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname)
 int
 show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_dictionary_t pkgd;
-	int rv = 0;
+	prop_array_t reqby;
+	const char *pkgdep;
+	size_t i;
 
-	pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkg);
-	if (pkgd == NULL) {
-		pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
-		if (pkgd == NULL)
-			return ENOENT;
+	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
+	if (reqby) {
+		for (i = 0; i < prop_array_count(reqby); i++) {
+			prop_array_get_cstring_nocopy(reqby, i, &pkgdep);
+			printf("%s\n", pkgdep);
+		}
 	}
-	rv = xbps_callback_array_iter_in_dict(xhp, pkgd, "requiredby",
-	    list_strings_sep_in_array, NULL);
-
-	return rv;
+	return 0;
 }
 
 int

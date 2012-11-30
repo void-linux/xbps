@@ -162,7 +162,6 @@ show_pkg_info(prop_dictionary_t dict)
 		obj = prop_dictionary_get_keysym(dict, keysym);
 		/* ignore objs shown by other targets */
 		if ((strcmp(keyname, "run_depends") == 0) ||
-		    (strcmp(keyname, "requiredby") == 0) ||
 		    (strcmp(keyname, "files") == 0) ||
 		    (strcmp(keyname, "dirs") == 0) ||
 		    (strcmp(keyname, "links") == 0))

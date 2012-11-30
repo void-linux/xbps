@@ -774,12 +774,25 @@ prop_dictionary_t xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp,
  * Returns the package dictionary with all metadata info for \a pkg.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] Package expression to match.
+ * @param[in] pkg Package expression to match.
  *
  * @return The matching package metadata dictionary, NULL otherwise.
  */
 prop_dictionary_t xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp,
 					      const char *pkg);
+
+/**
+ * Returns a proplib array of strings with reverse dependencies
+ * for \a pkg. The array is generated dynamically based on the list
+ * of packages currently installed.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] pkg Package expression to match.
+ *
+ * @return A proplib array of strings with reverse dependencies for \a pkg.
+ */
+prop_array_t xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp,
+					const char *pkg);
 
 /**
  * Removes a package dictionary from master package database (pkgdb) plist,

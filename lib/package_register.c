@@ -44,7 +44,7 @@ int
 xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 {
 	prop_dictionary_t pkgd;
-	prop_array_t provides, reqby;
+	prop_array_t provides, rundeps;
 	char outstr[64];
 	time_t t;
 	struct tm *tmp;
@@ -61,7 +61,7 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
 	prop_dictionary_get_bool(pkgrd, "automatic-install", &autoinst);
 	provides = prop_dictionary_get(pkgrd, "provides");
-	reqby = prop_dictionary_get(pkgrd, "requiredby");
+	rundeps = prop_dictionary_get(pkgrd, "run_depends");
 
 	xbps_set_cb_state(xhp, XBPS_STATE_REGISTER, 0, pkgname, version, NULL);
 
@@ -92,12 +92,6 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "short_desc", desc)) {
 		xbps_dbg_printf(xhp, "%s: invalid short_desc for %s\n",
-		    __func__, pkgname);
-		rv = EINVAL;
-		goto out;
-	}
-	if (reqby && !prop_dictionary_set(pkgd, "requiredby", reqby)) {
-		xbps_dbg_printf(xhp, "%s: invalid requiredby for %s\n",
 		    __func__, pkgname);
 		rv = EINVAL;
 		goto out;
@@ -137,26 +131,22 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 		goto out;
 	}
 
-	if (provides) {
-		if (!prop_dictionary_set(pkgd, "provides", provides)) {
-			xbps_dbg_printf(xhp,
-			    "%s: invalid provides for %s\n",
-			    __func__, pkgname);
-			rv = EINVAL;
-			goto out;
-		}
+	if (provides && !prop_dictionary_set(pkgd, "provides", provides)) {
+		xbps_dbg_printf(xhp, "%s: failed to set provides for %s\n",
+		    __func__, pkgname);
+		rv = EINVAL;
+		goto out;
 	}
-	/*
-	 * Add the requiredby objects for dependent packages.
-	 */
-	if (pkgrd && xbps_pkg_has_rundeps(pkgrd)) {
-		if ((rv = xbps_requiredby_pkg_add(xhp, pkgrd)) != 0) {
-			xbps_dbg_printf(xhp,
-			    "%s: requiredby add failed for %s\n",
-			    __func__, pkgname);
-			goto out;
-		}
+	if (rundeps == NULL)
+		rundeps = prop_array_create();
+
+	if (!prop_dictionary_set(pkgd, "run_depends", rundeps)) {
+		xbps_dbg_printf(xhp, "%s: failed to set rundeps for %s\n",
+		    __func__, pkgname);
+		rv = EINVAL;
+		goto out;
 	}
+
 	/*
 	 * Create a hash for the pkg's metafile.
 	 */
