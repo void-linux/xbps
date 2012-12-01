@@ -226,11 +226,7 @@ xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 	prop_object_iterator_t iter;
 	const char *pkgver, *curpkgver;
 
-	if (xbps_pkgdb_init(xhp) != 0)
-		return NULL;
-
-	pkgd = xbps_find_pkg_in_array(xhp->pkgdb, pkg);
-	if (pkgd == NULL)
+	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkg)) == NULL)
 		return NULL;
 
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
@@ -261,7 +257,8 @@ xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 			if (result == NULL)
 				result = prop_array_create();
 
-			prop_array_add_cstring_nocopy(result, curpkgver);
+			if (!xbps_match_string_in_array(result, curpkgver))
+				prop_array_add_cstring_nocopy(result, curpkgver);
 		}
 	}
 	prop_object_iterator_release(iter);
