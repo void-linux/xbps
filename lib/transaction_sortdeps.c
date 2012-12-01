@@ -324,9 +324,11 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 				goto out;
 			}
 			if (strcmp(tract, "remove") == 0) {
-				xbps_dbg_printf_append(xhp, "added into head.");
+				xbps_dbg_printf_append(xhp, "added into head.\n");
 				TAILQ_INSERT_HEAD(&pkgdep_list, pd,
 				    pkgdep_entries);
+				cnt++;
+				continue;
 			} else {
 				xbps_dbg_printf_append(xhp, "added into tail.");
 				TAILQ_INSERT_TAIL(&pkgdep_list, pd,
