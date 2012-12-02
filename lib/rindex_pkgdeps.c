@@ -159,6 +159,7 @@ find_repo_deps(struct xbps_handle *xhp,
 	pkg_state_t state;
 	size_t x;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
+	char *pkgname;
 	int rv = 0;
 
 	if (*depth >= MAX_DEPTH)
@@ -180,12 +181,20 @@ find_repo_deps(struct xbps_handle *xhp,
 			xbps_dbg_printf_append(xhp, "%s: requires dependency '%s': ",
 			    curpkg != NULL ? curpkg : " ", reqpkg);
 		}
+		if (((pkgname = xbps_pkgpattern_name(reqpkg)) == NULL) &&
+		    ((pkgname = xbps_pkg_name(reqpkg)) == NULL)) {
+			xbps_dbg_printf(xhp, "can't guess pkgname for %s\n",
+			    reqpkg);
+			rv = EINVAL;
+			break;
+		}
 		/*
 		 * Pass 1: check if required dependency is already installed
 		 * and its version is fully matched.
 		 */
-		if (((tmpd = xbps_pkgdb_get_pkg(xhp, reqpkg)) == NULL) &&
-		    ((tmpd = xbps_pkgdb_get_virtualpkg(xhp, reqpkg)) == NULL)) {
+		if (((tmpd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) &&
+		    ((tmpd = xbps_pkgdb_get_virtualpkg(xhp, pkgname)) == NULL)) {
+			free(pkgname);
 			if (errno && errno != ENOENT) {
 				/* error */
 				rv = errno;
@@ -199,6 +208,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			reason = "install";
 			state = XBPS_PKG_STATE_NOT_INSTALLED;
 		} else {
+			free(pkgname);
 			/*
 			 * Check if installed version matches the
 			 * required pkgdep version.
