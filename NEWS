@@ -1,5 +1,8 @@
 xbps-0.19 (???):
 
+ * xbps-rindex(8): in clean mode (-c), entries with unmatched hashes
+   are now removed from index.
+
  * Added support for dynamic generation of reverse dependencies for
    installed packages. pkgdb no longer keeps track of them statically.
    A new object must be present in pkgdb for this to work in fast mode,

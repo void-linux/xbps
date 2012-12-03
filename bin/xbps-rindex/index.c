@@ -43,10 +43,11 @@
 int
 index_clean(struct xbps_handle *xhp, const char *repodir)
 {
-	prop_array_t array, result = NULL;
+	prop_array_t result = NULL;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
 	prop_dictionary_t idx, idxfiles, pkgd;
-	prop_dictionary_keysym_t ksym;
-	const char *filen, *pkgver, *arch, *keyname;
+	const char *filen, *pkgver, *arch, *keyname, *sha256;
 	char *plist, *plistf;
 	size_t i;
 	int rv = 0;
@@ -88,12 +89,15 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
-	array = prop_dictionary_all_keys(idx);
-	for (i = 0; i < prop_array_count(array); i++) {
-		ksym = prop_array_get(array, i);
-		pkgd = prop_dictionary_get_keysym(idx, ksym);
+	iter = prop_dictionary_iterator(idx);
+	while ((obj = prop_object_iterator_next(iter))) {
+		pkgd = prop_dictionary_get_keysym(idx, obj);
 		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
 		if (access(filen, R_OK) == -1) {
+			/*
+			 * File cannot be read, might be permissions,
+			 * broken or simply unexistent; either way, remove it.
+			 */
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			prop_dictionary_get_cstring_nocopy(pkgd,
@@ -103,12 +107,32 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			if (result == NULL)
 				result = prop_array_create();
 
-			keyname = prop_dictionary_keysym_cstring_nocopy(ksym);
-			prop_array_add_cstring(result, keyname);
+			keyname = prop_dictionary_keysym_cstring_nocopy(obj);
+			prop_array_add_cstring_nocopy(result, keyname);
+			flush = true;
+		}
+		/*
+		 * File can be read; check its hash.
+		 */
+		prop_dictionary_get_cstring_nocopy(pkgd,
+		    "filename-sha256", &sha256);
+		rv = xbps_file_hash_check(filen, sha256);
+		if (rv != 0) {
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "pkgver", &pkgver);
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "architecture", &arch);
+			printf("index: removed entry `%s' due to "
+			    "unmatched hash (%s)\n", pkgver, arch);
+			if (result == NULL)
+				result = prop_array_create();
+
+			keyname = prop_dictionary_keysym_cstring_nocopy(obj);
+			prop_array_add_cstring_nocopy(result, keyname);
 			flush = true;
 		}
 	}
-	prop_object_release(array);
+	prop_object_iterator_release(iter);
 
 	if (flush) {
 		for (i = 0; i < prop_array_count(result); i++) {
