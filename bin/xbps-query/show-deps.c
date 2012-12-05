@@ -64,6 +64,7 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 			prop_array_get_cstring_nocopy(reqby, i, &pkgdep);
 			printf("%s\n", pkgdep);
 		}
+		prop_object_release(reqby);
 	}
 	return 0;
 }

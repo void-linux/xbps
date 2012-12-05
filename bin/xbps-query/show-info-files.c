@@ -105,13 +105,15 @@ print_value_obj(const char *keyname, prop_object_t obj,
 		} else {
 			FILE *f;
 			char buf[BUFSIZ-1];
+			void *data;
 
-			f = fmemopen(prop_data_data(obj),
-				     prop_data_size(obj), "r");
+			data = prop_data_data(obj);
+			f = fmemopen(data, prop_data_size(obj), "r");
 			assert(f);
 			while (fgets(buf, BUFSIZ-1, f))
 				printf("%s", buf);
 			fclose(f);
+			free(data);
 		}
 		break;
 	default:
@@ -284,6 +286,7 @@ int
 repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
 	prop_dictionary_t pkgd;
+	int rv;
 
 	pkgd = xbps_rpool_get_pkg_plist(xhp, pkg, "./files.plist");
 	if (pkgd == NULL) {
@@ -294,5 +297,8 @@ repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 		}
 	}
 
-	return show_pkg_files(pkgd);
+	rv = show_pkg_files(pkgd);
+	prop_object_release(pkgd);
+	return rv;
+
 }

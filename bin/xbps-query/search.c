@@ -87,11 +87,13 @@ repo_search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 	prop_dictionary_keysym_t ksym;
 	struct repo_search_data *rsd = arg;
 	const char *pkgver, *pkgname, *desc, *inststr;
-	char *tmp = NULL, *out = NULL;
-	size_t i, j, len;
+	char tmp[255], *out = NULL;
+	size_t i, j, len, maxcols;
 	int x;
 
 	(void)done;
+
+	maxcols = rsd->maxcols - 4; /* - "...\n" */
 
 	allkeys = prop_dictionary_all_keys(rpi->repod);
 	for (i = 0; i < prop_array_count(allkeys); i++) {
@@ -108,9 +110,7 @@ repo_search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 			    (strcasecmp(pkgname, rsd->patterns[x]) == 0) ||
 			    (strcasestr(pkgver, rsd->patterns[x])) ||
 			    (strcasestr(desc, rsd->patterns[x]))) {
-				tmp = calloc(1, rsd->pkgver_len + 1);
-				assert(tmp);
-				memcpy(tmp, pkgver, rsd->pkgver_len);
+				strncpy(tmp, pkgver, sizeof(tmp));
 				for (j = strlen(tmp); j < rsd->pkgver_len; j++)
 					tmp[j] = ' ';
 
@@ -121,21 +121,18 @@ repo_search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 					inststr = "[-]";
 
 				len = strlen(inststr) + strlen(tmp) +
-				      strlen(desc) + 1;
-				if (len > rsd->maxcols) {
-					out = malloc(rsd->maxcols+1);
+				      strlen(desc);
+				if (len > maxcols) {
+					out = malloc(maxcols);
 					assert(out);
-					snprintf(out, rsd->maxcols-3, "%s %s %s",
+					snprintf(out, maxcols, "%s %s %s",
 					    inststr, tmp, desc);
-					strncat(out, "...", rsd->maxcols);
-					out[rsd->maxcols+1] = '\0';
-					printf("%s\n", out);
+					printf("%s...\n", out);
 					free(out);
 				} else {
 					printf("%s %s %s\n", inststr,
 					    tmp, desc);
 				}
-				free(tmp);
 			}
 		}
 	}

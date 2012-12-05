@@ -57,8 +57,8 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 {
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver, *short_desc, *arch;
-	char *tmp = NULL, *out = NULL;
-	size_t i, len = 0;
+	char tmp[255], *out = NULL;
+	size_t i, len = 0, maxcols;
 	bool chkarch;
 
 	(void)xhp;
@@ -73,25 +73,22 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 	if (!pkgver && !short_desc)
 		return EINVAL;
 
-	tmp = calloc(1, lpc->pkgver_len + 1);
-	assert(tmp);
-	memcpy(tmp, pkgver, lpc->pkgver_len);
-	for (i = strlen(tmp); i < lpc->pkgver_len; i++)
+	strncpy(tmp, pkgver, sizeof(tmp));
+	for (i = strlen(pkgver); i < lpc->pkgver_len; i++)
 		tmp[i] = ' ';
 
 	tmp[i] = '\0';
-	len = strlen(tmp) + strlen(short_desc) + 1;
-	if (len > lpc->maxcols) {
+	maxcols = lpc->maxcols - 4;
+	len = strlen(tmp) + strlen(short_desc);
+	if (len > maxcols) {
 		out = malloc(lpc->maxcols);
 		assert(out);
-		snprintf(out, lpc->maxcols-2, "%s %s", tmp, short_desc);
-		strncat(out, "...", lpc->maxcols);
-		printf("%s\n", out);
+		snprintf(out, maxcols, "%s %s", tmp, short_desc);
+		printf("%s...\n", out);
 		free(out);
 	} else {
 		printf("%s %s\n", tmp, short_desc);
 	}
-	free(tmp);
 
 	return 0;
 }
