@@ -7,6 +7,7 @@ VERSION=0.19
 STRLCPY=
 STRLCAT=
 VASPRINTF=
+HUMANIZE_NUMBER=
 LIBFETCH=
 PROPLIB=
 OS=
@@ -415,6 +416,52 @@ echo "$STRLCAT."
 rm -f _$func.c _$func
 
 #
+# Check for humanize_number().
+func=humanize_number
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <stdio.h>
+#include <util.h>
+
+int main(void) {
+	humanize_number(NULL, 0, 0, NULL, 0, 0);
+	return 0;
+}
+EOF
+if $XCC -lutil _$func.c -o _$func 2>/dev/null; then
+	HUMANIZE_NUMBER=yes
+	echo "CPPFLAGS+= -DHAVE_HUMANIZE_NUMBER" >>$CONFIG_MK
+else
+	HUMANIZE_NUMBER=no
+	echo "COMPAT_SRCS+=	compat/humanize_number.o" >>$CONFIG_MK
+	echo "#include \"compat.h\"" >>$CONFIG_H
+fi
+echo "$HUMANIZE_NUMBER."
+rm -f _$func.c _$func
+
+#
+# Check for rbtree_ininit().
+#
+func=rb_tree_init
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <sys/rbtree.h>
+int main(void) {
+	rb_tree_init(NULL, NULL);
+	return 0;
+}
+EOF
+if $XCC _$func.c -o _$func 2>/dev/null; then
+	RBTREE=yes
+	echo "CPPFLAGS += -DHAVE_RBTREE" >>$CONFIG_MK
+else
+	RBTREE=no
+	echo "LIBPROP_OBJS += portableproplib/rb.o" >>$CONFIG_MK
+fi
+echo "$RBTREE."
+rm -f _$func.c _$func
+
+#
 # Check for libfetch's fetchIO_read().
 #
 func=fetchIO_read
@@ -564,13 +611,13 @@ fi
 #
 # libarchive >= 2.8.0 with pkg-config support is required.
 #
-printf "Checking for libarchive via pkg-config ... "
-if ! $PKGCONFIG_BIN --exists libarchive; then
+printf "Checking for libarchive >= 3.0.2 via pkg-config ... "
+if ! $PKGCONFIG_BIN --atleast-version=3.0.2 libarchive; then
 	echo "libarchive.pc file not found, exiting."
 	exit 1
 else
 	echo "found version $($PKGCONFIG_BIN --modversion libarchive)."
-	echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags libarchive)" >>$CONFIG_MK
+	echo "CFLAGS += $($PKGCONFIG_BIN --cflags libarchive)" >>$CONFIG_MK
 	echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libarchive)" >>$CONFIG_MK
 	echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libarchive)" \
 		>>$CONFIG_MK
@@ -592,18 +639,43 @@ else
 fi
 
 #
-# OpenSSL libssl with pkg-config support is required.
+# OpenSSL libssl with pkg-config support is required when building
+# the static binaries.
 #
-printf "Checking for OpenSSL via pkg-config ... "
-if ! $PKGCONFIG_BIN --exists libssl; then
-	echo "libssl.pc file not found, exiting."
-	exit 1
+if [ "$BUILD_STATIC" = "yes" ]; then
+	printf "Checking for OpenSSL via pkg-config ... "
+	if ! $PKGCONFIG_BIN --exists libssl; then
+		echo "libssl.pc file not found, exiting."
+		exit 1
+	else
+		echo "found version $($PKGCONFIG_BIN --modversion libssl)."
+		echo "CFLAGS += $($PKGCONFIG_BIN --cflags libssl)" >>$CONFIG_MK
+		echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libssl)" >>$CONFIG_MK
+		echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libssl)" \
+			>>$CONFIG_MK
+	fi
 else
-	echo "found version $($PKGCONFIG_BIN --modversion libssl)."
-	echo "CFLAGS +=	$($PKGCONFIG_BIN --cflags libssl)" >>$CONFIG_MK
-	echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libssl)" >>$CONFIG_MK
-	echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libssl)" \
-		>>$CONFIG_MK
+	func=SHA256
+	printf "Checking for OpenSSL $func() ... "
+cat <<EOF > _$func.c
+#include <openssl/sha.h>
+int main(void) {
+	SHA256(NULL, NULL, 0);
+	return 0;
+}
+EOF
+	if $XCC -lcrypto _$func.c -o _$func 2>/dev/null; then
+		CRYPTO_SHA256=yes
+		echo "LDFLAGS +=	-lcrypto" >>$CONFIG_MK
+	else
+		CRYPTO_SHA256=no
+	fi
+	echo "$ZLIB."
+	rm -f _$func.c _$func
+	if [ "$CRYPTO_SHA256" = "no" ]; then
+		echo "Failed to link with your system's OpenSSL library, can't continue..."
+		exit 1
+	fi
 fi
 
 #

@@ -37,16 +37,10 @@
 #include <string.h>
 #include <locale.h>
 
-#include <xbps_api.h>
+#include "xbps_api_impl.h"
+#include "compat.h"
 
-#define HN_DECIMAL              0x01
-#define HN_NOSPACE              0x02
-#define HN_B                    0x04
-#define HN_DIVISOR_1000         0x08
-#define HN_GETSCALE             0x10
-#define HN_AUTOSCALE            0x20
-
-static int
+int HIDDEN
 humanize_number(char *buf, size_t len, int64_t bytes,
 		const char *suffix, int scale, int flags)
 {
@@ -147,17 +141,4 @@ humanize_number(char *buf, size_t len, int64_t bytes,
 		    sep, SCALE2PREFIX(i), suffix);
 
 	return (r);
-}
-
-/*
- * Small wrapper for NetBSD's humanize_number(3) with some
- * defaults set that we care about.
- */
-int
-xbps_humanize_number(char *buf, int64_t bytes)
-{
-	assert(buf != NULL);
-
-	return humanize_number(buf, 7, bytes, "B",
-	    HN_AUTOSCALE, HN_DECIMAL|HN_NOSPACE);
 }

@@ -40,7 +40,6 @@
 #define HIDDEN
 #endif
 
-#include "compat.h"
 #include "queue.h"
 #include "fetch.h"
 

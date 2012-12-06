@@ -312,3 +312,16 @@ xbps_pkgpattern_match(const char *pkg, const char *pattern)
 	/* no match */
 	return 0;
 }
+
+/*
+ * Small wrapper for NetBSD's humanize_number(3) with some
+ * defaults set that we care about.
+ */
+int
+xbps_humanize_number(char *buf, int64_t bytes)
+{
+	assert(buf != NULL);
+
+	return humanize_number(buf, 7, bytes, "B",
+	    HN_AUTOSCALE, HN_DECIMAL|HN_NOSPACE);
+}

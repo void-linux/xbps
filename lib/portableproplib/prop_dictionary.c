@@ -37,7 +37,6 @@
 
 #if !defined(_KERNEL) && !defined(_STANDALONE)
 #include <errno.h>
-#define __unused	/* empty */
 #endif
 
 /*

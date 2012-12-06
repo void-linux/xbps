@@ -41,7 +41,6 @@
 #else
 #include <errno.h>
 #include <stdlib.h>
-#define __unused	/* empty */
 #endif
 
 struct _prop_number {

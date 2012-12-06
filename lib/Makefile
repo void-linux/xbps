@@ -7,9 +7,9 @@ LIBXBPS_SHLIB = libxbps.so.$(LIBXBPS_MAJOR).$(LIBXBPS_MINOR).$(LIBXBPS_MICRO)
 LDFLAGS += $(LIBXBPS_LDFLAGS) -shared -Wl,-soname,libxbps.so.$(LIBXBPS_MAJOR)
 
 # portableproplib
-LIBPROP_OBJS = portableproplib/prop_array.o portableproplib/prop_bool.o
+LIBPROP_OBJS += portableproplib/prop_array.o portableproplib/prop_bool.o
 LIBPROP_OBJS += portableproplib/prop_dictionary.o portableproplib/prop_ingest.o
-LIBPROP_OBJS += portableproplib/prop_object.o portableproplib/rb.o
+LIBPROP_OBJS += portableproplib/prop_object.o
 LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
 LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
 LIBPROP_OBJS += portableproplib/prop_dictionary_util.o portableproplib/prop_zlib.o
@@ -37,8 +37,7 @@ LIBFETCH_OBJS =
 endif
 
 # External code used by libxbps
-EXTOBJS = external/dewey.o external/fexec.o external/humanize_number.o
-EXTOBJS += external/mkpath.o
+EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
 
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o

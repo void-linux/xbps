@@ -39,6 +39,8 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #endif
+#include <sys/types.h>
+#include <sys/cdefs.h>
 #include <queue.h>
 
 #if __GNUC_PREREQ(2, 96)

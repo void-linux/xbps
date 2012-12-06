@@ -29,9 +29,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <prop/prop_object.h>
-#include "prop_object_impl.h"
-
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -40,6 +37,9 @@
 #include <unistd.h>
 
 #include <zlib.h>
+#include <prop/prop_object.h>
+#include "prop_object_impl.h"
+
 
 /*
  * _prop_object_init --
@@ -812,7 +812,10 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
     size_t len, bool do_compress)
 {
 	gzFile gzf = NULL;
-	char tname[PATH_MAX], *otname;
+	char tname[PATH_MAX];
+#ifndef HAVE_STRLCAT
+	char *otname;
+#endif
 	int fd;
 	int save_errno;
 	mode_t myumask;

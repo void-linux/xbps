@@ -35,6 +35,9 @@
 #include <ctype.h>
 
 #include "xbps_api_impl.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #define PKG_PATTERN_MAX 1024
 

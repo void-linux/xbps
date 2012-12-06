@@ -430,7 +430,10 @@ void *		_prop_standalone_realloc(void *, size_t);
 #include <sys/cdefs.h>
 #define	_PROP_ARG_UNUSED		__unused
 #else
-#define	_PROP_ARG_UNUSED		/* delete */
+#ifndef __unused
+#define __unused 			/* delete */
+#endif
+#define _PROP_ARG_UNUSED 		/* delete */
 #endif /* __NetBSD__ */
 
 #endif /* _PROPLIB_PROP_OBJECT_IMPL_H_ */
