@@ -39,6 +39,7 @@
 #include <limits.h>
 #include <libgen.h>
 #include <fnmatch.h>
+#include <assert.h>
 
 #include <xbps_api.h>
 #include "defs.h"
