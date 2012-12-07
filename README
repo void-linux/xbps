@@ -2,7 +2,7 @@ See http://code.google.com/p/xbps for information.
 
 To build this you'll need:
 
-  - pkg-config, zlib, openssl, libarchive[0] >= 2.8.0, confuse[1] >= 2.7.
+  - GNU make, pkg-config, zlib, openssl, libarchive[0] >= 3.0.2, confuse[1] >= 2.7.
 
 and optionally:
 
