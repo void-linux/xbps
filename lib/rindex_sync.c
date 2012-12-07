@@ -101,7 +101,7 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 	/*
 	 * Remote repository plist index full URL.
 	 */
-	rpidx = xbps_xasprintf("%s/%s", uri, plistf);
+	rpidx = xbps_xasprintf("%s/%s-%s", uri, xhp->un_machine, plistf);
 	/*
 	 * Full path to repository directory to store the plist
 	 * index file.
@@ -110,7 +110,8 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 	/*
 	 * Full path to the local repository index file.
 	 */
-	lrepofile = xbps_xasprintf("%s/%s", lrepodir, plistf);
+	lrepofile = xbps_xasprintf("%s/%s-%s", lrepodir,
+			xhp->un_machine, plistf);
 	/*
 	 * Create repodir in metadir.
 	 */

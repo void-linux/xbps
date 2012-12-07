@@ -179,7 +179,8 @@ get_pkg_index_remote_plist(struct xbps_handle *xhp,
 	if (uri_fixed == NULL)
 		return NULL;
 
-	repodir = xbps_xasprintf("%s/%s/%s", xhp->metadir, uri_fixed, plistf);
+	repodir = xbps_xasprintf("%s/%s/%s-%s", xhp->metadir,
+			uri_fixed, xhp->un_machine, plistf);
 	free(uri_fixed);
 	return repodir;
 }
