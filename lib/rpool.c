@@ -76,7 +76,12 @@ xbps_rpool_init(struct xbps_handle *xhp)
 		}
 		repod = prop_dictionary_internalize_from_zfile(plist);
 		free(plist);
-		assert(repod);
+		if (prop_object_type(repod) != PROP_TYPE_DICTIONARY) {
+			xbps_dbg_printf(xhp, "[rpool] `%s' cannot be "
+			    "internalized: %s\n", repouri, strerror(errno));
+			nmissing++;
+			continue;
+		}
 		/*
 		 * Register repository into the array.
 		 */
