@@ -83,7 +83,7 @@ xbps_get_remote_repo_string(const char *uri)
 int HIDDEN
 xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 {
-	prop_array_t array;
+	prop_dictionary_t repod;
 	const char *fetchstr = NULL;
 	char *rpidx, *lrepodir, *uri_fixedp, *lrepofile;
 	int rv = 0;
@@ -156,8 +156,8 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 	 * some HTTP servers don't return proper errors and sometimes
 	 * you get an HTML ASCII file :-)
 	 */
-	array = prop_array_internalize_from_zfile(lrepofile);
-	if (array == NULL) {
+	repod = prop_dictionary_internalize_from_zfile(lrepofile);
+	if (repod == NULL) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL, 0, NULL, NULL,
 		    "[reposync] downloaded file `%s' is not valid.", rpidx);
 		(void)unlink(lrepofile);
@@ -165,7 +165,7 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 		rv = -1;
 		goto out;
 	}
-	prop_object_release(array);
+	prop_object_release(repod);
 
 out:
 	if (rpidx)
