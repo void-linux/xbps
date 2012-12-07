@@ -110,6 +110,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			keyname = prop_dictionary_keysym_cstring_nocopy(obj);
 			prop_array_add_cstring_nocopy(result, keyname);
 			flush = true;
+			continue;
 		}
 		/*
 		 * File can be read; check its hash.
