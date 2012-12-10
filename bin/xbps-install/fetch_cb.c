@@ -144,9 +144,14 @@ stat_display(struct xbps_fetch_cb_data *xfpd, void *cbdata)
 		    (double)xfpd->file_dloaded) / (double)xfpd->file_size);
 		(void)xbps_humanize_number(totsize, (int64_t)xfpd->file_size);
 	}
-	fprintf(stderr, "%s: [%s %d%%] %s ETA: %s\033[K\r",
-	    xfpd->file_name, totsize, percentage,
-	    stat_bps(xfpd, xfer), stat_eta(xfpd, xfer));
+	if (isatty(fileno(stdout)))
+		printf("%s: [%s %d%%] %s ETA: %s\033[K\r",
+		    xfpd->file_name, totsize, percentage,
+		    stat_bps(xfpd, xfer), stat_eta(xfpd, xfer));
+	else
+		printf("%s: [%s %d%%] %s ETA: %s\n",
+		    xfpd->file_name, totsize, percentage,
+		    stat_bps(xfpd, xfer), stat_eta(xfpd, xfer));
 }
 
 void
@@ -165,7 +170,11 @@ fetch_file_progress_cb(struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	} else if (xfpd->cb_end) {
 		/* end transfer stats */
 		(void)xbps_humanize_number(size, (int64_t)xfpd->file_dloaded);
-		fprintf(stderr,"%s: %s [avg rate: %s]\033[K\n",
-		    xfpd->file_name, size, stat_bps(xfpd, xfer));
+		if (isatty(fileno(stdout)))
+			printf("%s: %s [avg rate: %s]\033[K\n",
+			    xfpd->file_name, size, stat_bps(xfpd, xfer));
+		else
+			printf("%s: %s [avg rate: %s]\n",
+			    xfpd->file_name, size, stat_bps(xfpd, xfer));
 	}
 }
