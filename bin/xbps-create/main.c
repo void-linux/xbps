@@ -255,9 +255,10 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 		if ((xe->hash = xbps_file_hash(fpath)) == NULL)
 			die("failed to process hash for %s:", fpath);
 
-		instsize += sb->st_size;
+		if (sb->st_nlink <= 1)
+			instsize += sb->st_size;
 
-	} else if (type == FTW_D) {
+	} else if (type == FTW_D || type == FTW_DP) {
 		/* directory */
 		xe->type = strdup("dirs");
 		assert(xe->type);
@@ -348,16 +349,62 @@ process_destdir(const char *mutable_files)
 }
 
 static void
-process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
+write_entry(struct archive *ar, struct archive_entry *entry)
 {
-	struct archive *ard;
-	struct archive_entry *entry;
-	struct stat st;
-	void *map = NULL;
-	char *buf, *p;
+	char buf[16384];
+	const char *name;
 	int fd = -1;
-	ssize_t r;
-	size_t len;
+	off_t len;
+	ssize_t buf_len;
+
+	if (archive_entry_pathname(entry) == NULL)
+		return;
+
+	if (archive_write_header(ar, entry)) {
+		die("cannot write %s to archive: %s",
+		    archive_entry_pathname(entry),
+		    archive_error_string(ar));
+	}
+
+	/* Only regular files can have data. */
+	if (archive_entry_filetype(entry) != AE_IFREG ||
+	    archive_entry_size(entry) == 0) {
+		archive_entry_free(entry);
+		return;
+	}
+
+	name = archive_entry_sourcepath(entry);
+	fd = open(name, O_RDONLY);
+	assert(fd != -1);
+
+	len = archive_entry_size(entry);
+	while (len > 0) {
+		buf_len = (len > (off_t)sizeof(buf)) ?
+			(ssize_t)sizeof(buf) : (ssize_t)len;
+
+		if ((buf_len = read(fd, buf, buf_len)) == 0)
+			break;
+		else if (buf_len < 0)
+			die("cannot read from %s", name);
+
+		archive_write_data(ar, buf, (size_t)buf_len);
+		len -= buf_len;
+	}
+	close(fd);
+
+	archive_entry_free(entry);
+}
+
+
+static void
+process_entry_file(struct archive *ar,
+		   struct archive_entry_linkresolver *resolver,
+		   struct xentry *xe, const char *filematch)
+{
+	struct archive_entry *entry, *sparse_entry;
+	struct stat st;
+	char buf[16384], *p;
+	ssize_t len;
 
 	assert(ar);
 	assert(xe);
@@ -365,53 +412,32 @@ process_entry_file(struct archive *ar, struct xentry *xe, const char *filematch)
 	if (filematch && strcmp(xe->file, filematch))
 		return;
 
-	ard = archive_read_disk_new();
-	assert(ard);
-	archive_read_disk_set_standard_lookup(ard);
-	archive_read_disk_set_symlink_physical(ard);
-
-	entry = archive_entry_new();
-	assert(entry);
 	p = xbps_xasprintf("%s/%s", destdir, xe->file);
-	archive_entry_set_pathname(entry, xe->file);
-	archive_entry_copy_sourcepath(entry, p);
-
 	if (lstat(p, &st) == -1)
 		die("failed to add entry (fstat) %s to archive:", xe->file);
 
-	if (st.st_size > SSIZE_MAX - 1)
-		die("failed to add entry (SSIZE_MAX) %s to archive:", xe->file);
+	entry = archive_entry_new();
+	assert(entry);
+	archive_entry_set_pathname(entry, xe->file);
+	archive_entry_copy_stat(entry, &st);
+	archive_entry_copy_sourcepath(entry, p);
 
-	if ((archive_read_disk_entry_from_file(ard, entry, -1, &st)) != 0)
-		die("failed to add entry %s to archive:", xe->file);
-
-	archive_write_header(ar, entry);
-	len = st.st_size + 1;
-	buf = malloc(len);
-	assert(buf);
 	if (S_ISLNK(st.st_mode)) {
-		r = readlink(p, buf, len);
-		if (r < 0 || r > st.st_size)
+		len = readlink(p, buf, sizeof(buf));
+		if (len < 0 || len > st.st_size)
 			die("failed to add entry %s (readlink) to archive:",
 			    xe->file);
-		buf[len-1] = '\0';
-		archive_write_data(ar, buf, len);
-	} else {
-		fd = open(p, O_RDONLY);
-		assert(fd != -1);
-		map = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
-		if (map == MAP_FAILED)
-			die("failed to add entry %s (mmap) to archive:",
-			   xe->file);
-		close(fd);
-		archive_write_data(ar, map, len);
-		munmap(map, len);
+		buf[len] = '\0';
+		archive_entry_set_symlink(entry, buf);
 	}
-	archive_entry_free(entry);
-	archive_read_close(ard);
-	archive_read_free(ard);
-	free(buf);
 	free(p);
+
+	archive_entry_linkify(resolver, &entry, &sparse_entry);
+
+	if (entry != NULL)
+		write_entry(ar, entry);
+	if (sparse_entry != NULL)
+		write_entry(ar, sparse_entry);
 }
 
 static void
@@ -457,15 +483,17 @@ destroy_xentry(struct xentry *xe)
 }
 
 static void
-process_archive(struct archive *ar, const char *pkgver, bool quiet)
+process_archive(struct archive *ar,
+		struct archive_entry_linkresolver *resolver,
+		const char *pkgver, bool quiet)
 {
 	struct xentry *xe;
 	char *xml;
 
 	/* Add INSTALL/REMOVE metadata scripts first */
 	TAILQ_FOREACH(xe, &xentry_list, entries) {
-		process_entry_file(ar, xe, "./INSTALL");
-		process_entry_file(ar, xe, "./REMOVE");
+		process_entry_file(ar, resolver, xe, "./INSTALL");
+		process_entry_file(ar, resolver, xe, "./REMOVE");
 	}
 	/*
 	 * Add the installed-size object.
@@ -496,7 +524,7 @@ process_archive(struct archive *ar, const char *pkgver, bool quiet)
 			printf("%s: adding `%s' ...\n", pkgver, xe->file);
 			fflush(stdout);
 		}
-		process_entry_file(ar, xe, NULL);
+		process_entry_file(ar, resolver, xe, NULL);
 		destroy_xentry(xe);
 	}
 }
@@ -546,6 +574,8 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
+	struct archive_entry *entry, *sparse_entry;
+	struct archive_entry_linkresolver *resolver;
 	struct stat st;
 	const char *conflicts, *deps, *homepage, *license, *maint, *bwith;
 	const char *provides, *pkgver, *replaces, *desc, *ldesc;
@@ -725,13 +755,29 @@ main(int argc, char **argv)
 	ar = archive_write_new();
 	assert(ar);
 	archive_write_add_filter_xz(ar);
-	archive_write_set_format_ustar(ar);
+	archive_write_set_format_pax_restricted(ar);
+	if ((resolver = archive_entry_linkresolver_new()) == NULL)
+		die("cannot create link resolver");
+	archive_entry_linkresolver_set_strategy(resolver,
+	    archive_format(ar));
+
 	archive_write_set_options(ar, "compression-level=9");
 	if (archive_write_open_fd(ar, pkg_fd) != 0)
 		die("Failed to open %s fd for writing:", tname);
 
-	process_archive(ar, pkgver, quiet);
+	process_archive(ar, resolver, pkgver, quiet);
+	/* Process hardlinks */
+	entry = NULL;
+	archive_entry_linkify(resolver, &entry, &sparse_entry);
+	while (entry != NULL) {
+		write_entry(ar, entry);
+		entry = NULL;
+		archive_entry_linkify(resolver, &entry, &sparse_entry);
+	}
+	archive_entry_linkresolver_free(resolver);
+	/* close and free archive */
 	archive_write_free(ar);
+
 	prop_object_release(pkg_propsd);
 	prop_object_release(pkg_filesd);
 	/*

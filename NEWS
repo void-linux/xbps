@@ -1,5 +1,7 @@
 xbps-0.19 (???):
 
+ * xbps-create(8): hardlinks can be added and archived correctly.
+
  * xbps-rindex(8): in clean mode (-c), entries with unmatched hashes
    are now removed from index.
 
