@@ -122,6 +122,9 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		if (buf2 == NULL) {
 			xbps_warn_printf("%s: broken symlink %s (target: %s)\n",
 			     pkgname, file, tgt);
+			free(path);
+			free(tgt_path);
+			free(p);
 			free(buf);
 			free(lnk);
 			continue;
@@ -150,6 +153,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		free(buf);
 		free(path);
 		free(tgt_path);
+		free(lnk);
 	}
 	return broken;
 }

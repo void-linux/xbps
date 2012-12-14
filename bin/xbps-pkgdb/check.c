@@ -139,7 +139,9 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	/*
 	 * Check for props.plist metadata file.
 	 */
-	propsd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
+	buf = xbps_xasprintf("%s/.%s.plist",  xhp->metadir, pkgname);
+	propsd = prop_dictionary_internalize_from_file(buf);
+	free(buf);
 	if (propsd == NULL) {
 		printf("%s: unexistent metafile, converting to 0.18 "
 		    "format...\n", pkgname);
@@ -150,6 +152,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 
 	} else if (prop_dictionary_count(propsd) == 0) {
 		xbps_error_printf("%s: incomplete metadata file.\n", pkgname);
+		prop_object_release(propsd);
 		return 1;
 	}
 	/*
@@ -177,6 +180,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		rv = xbps_file_hash_check(buf, sha256);
 		free(buf);
 		if (rv == ERANGE) {
+			prop_object_release(propsd);
 			fprintf(stderr, "%s: metadata file has been "
 			    "modified!\n", pkgname);
 			return 1;
@@ -198,6 +202,8 @@ do {								\
 	RUN_PKG_CHECK(xhp, symlinks, propsd);
 	RUN_PKG_CHECK(xhp, rundeps, propsd);
 	RUN_PKG_CHECK(xhp, unneeded, opkgd);
+
+	prop_object_release(propsd);
 
 #undef RUN_PKG_CHECK
 

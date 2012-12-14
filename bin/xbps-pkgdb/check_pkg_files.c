@@ -69,6 +69,7 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
                         prop_dictionary_get_cstring_nocopy(obj,
                             "sha256", &sha256);
 			rv = xbps_file_hash_check(path, sha256);
+			free(path);
 			switch (rv) {
 			case 0:
 				break;
@@ -93,7 +94,6 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 				    pkgname, file, strerror(rv));
 				break;
 			}
-			free(path);
                 }
                 prop_object_iterator_release(iter);
 	}
