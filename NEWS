@@ -1,7 +1,8 @@
 xbps-0.19 (???):
 
- * xbps-rindex(8): in clean mode (-c) is now multithreaded and
-   will spawn a thread per core to process a fraction of rindex.
+ * xbps-rindex(8): clean (-c) and remove obsoletes mode (-r) are
+   now multithreaded and will spawn a thread per core to speed up
+   the process considerably.
 
  * xbps-pkgdb(8): -a, --all mode is now multithreaded and will
    spawn a thread per core to process a fraction of pkgdb.
