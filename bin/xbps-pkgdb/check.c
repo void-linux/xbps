@@ -23,66 +23,94 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/param.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <sys/param.h>
+#include <pthread.h>
+#include <assert.h>
 
 #include <xbps_api.h>
 #include "defs.h"
 
-struct checkpkg {
-	size_t totalpkgs;
-	size_t npkgs;
-	size_t nbrokenpkgs;
+struct thread_data {
+	pthread_t thread;
+	struct xbps_handle *xhp;
+	unsigned int start;
+	unsigned int end;
+	int thread_num;
 };
 
-static int
-cb_pkg_integrity(struct xbps_handle *xhp,
-		 prop_object_t obj,
-		 void *arg,
-		 bool *done)
+static void *
+pkgdb_thread_worker(void *arg)
 {
-	struct checkpkg *cpkg = arg;
-	const char *pkgname, *version;
+	prop_dictionary_t pkgd;
+	struct thread_data *thd = arg;
+	const char *pkgname, *pkgver;
+	unsigned int i;
+	int rv;
 
-	(void)done;
+	/* process pkgs from start until end */
+	for (i = thd->start; i < thd->end; i++) {
+		pkgd = prop_array_get(thd->xhp->pkgdb, i);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		if (thd->xhp->flags & XBPS_FLAG_VERBOSE)
+			printf("Checking %s ...\n", pkgver);
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(obj, "version", &version);
+		rv = check_pkg_integrity(thd->xhp, pkgd, pkgname);
+		if (rv != 0)
+			fprintf(stderr, "pkgdb[%d] failed for %s: %s\n",
+			    thd->thread_num, pkgver, strerror(rv));
+	}
 
-	printf("[%zu/%zu] checking %s-%s ...\n",
-	    cpkg->npkgs, cpkg->totalpkgs, pkgname, version);
-
-	if (check_pkg_integrity(xhp, obj, pkgname) != 0)
-		cpkg->nbrokenpkgs++;
-
-	cpkg->npkgs++;
-	return 0;
+	return NULL;
 }
 
 int
 check_pkg_integrity_all(struct xbps_handle *xhp)
 {
-	struct checkpkg cpkg;
-	int rv;
+	struct thread_data *thd;
+	unsigned int slicecount, pkgcount;
+	int rv, maxthreads, i;
 
-	memset(&cpkg, 0, sizeof(cpkg));
 	/* force an update to get total pkg count */
 	(void)xbps_pkgdb_update(xhp, false);
-	cpkg.totalpkgs = prop_array_count(xhp->pkgdb);
 
-	(void)xbps_pkgdb_foreach_cb(xhp, cb_pkg_integrity, &cpkg);
+	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
+	thd = calloc(maxthreads, sizeof(*thd));
+	assert(thd);
+
+	slicecount = prop_array_count(xhp->pkgdb) / maxthreads;
+	pkgcount = 0;
+
+	for (i = 0; i < maxthreads; i++) {
+		thd[i].thread_num = i;
+		thd[i].xhp = xhp;
+		thd[i].start = pkgcount;
+		if (i + 1 >= maxthreads)
+			thd[i].end = prop_array_count(xhp->pkgdb);
+		else
+			thd[i].end = pkgcount + slicecount;
+		pthread_create(&thd[i].thread, NULL,
+		    pkgdb_thread_worker, &thd[i]);
+		pkgcount += slicecount;
+	}
+
+	/* wait for all threads */
+	for (i = 0; i < maxthreads; i++)
+		pthread_join(thd[i].thread, NULL);
+
+	free(thd);
+
 	if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
 		xbps_error_printf("failed to write pkgdb: %s\n",
 		    strerror(rv));
 		return rv;
 	}
-	printf("%zu package%s processed: %zu broken.\n", cpkg.npkgs,
-	    cpkg.npkgs == 1 ? "" : "s", cpkg.nbrokenpkgs);
 	return 0;
 }
 
