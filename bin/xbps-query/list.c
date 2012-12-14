@@ -138,7 +138,6 @@ list_orphans(struct xbps_handle *xhp)
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		printf("%s\n", pkgver);
 	}
-	prop_object_iterator_release(iter);
 
 	return 0;
 }

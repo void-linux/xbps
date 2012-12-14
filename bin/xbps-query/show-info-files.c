@@ -171,7 +171,6 @@ show_pkg_info(prop_dictionary_t dict)
 
 		print_value_obj(keyname, obj, NULL, false);
 	}
-	prop_object_release(all_keys);
 }
 
 int
@@ -210,7 +209,6 @@ show_pkg_files(prop_dictionary_t filesd)
 			printf("\n");
 		}
 	}
-	prop_object_release(allkeys);
 
 	return 0;
 }
@@ -286,7 +284,6 @@ int
 repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
 	prop_dictionary_t pkgd;
-	int rv;
 
 	pkgd = xbps_rpool_get_pkg_plist(xhp, pkg, "./files.plist");
 	if (pkgd == NULL) {
@@ -297,8 +294,5 @@ repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 		}
 	}
 
-	rv = show_pkg_files(pkgd);
-	prop_object_release(pkgd);
-	return rv;
-
+	return show_pkg_files(pkgd);
 }

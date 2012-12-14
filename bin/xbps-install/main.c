@@ -37,8 +37,6 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-static struct xbps_handle xh;
-
 static void __attribute__((noreturn))
 usage(bool fail)
 {
@@ -62,13 +60,6 @@ usage(bool fail)
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
-static void __attribute__((noreturn))
-cleanup_sighandler(int signum)
-{
-	xbps_end(&xh);
-	_exit(signum);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -90,8 +81,8 @@ main(int argc, char **argv)
 		{ "yes", no_argument, NULL, 'y' },
 		{ NULL, 0, NULL, 0 }
 	};
+	struct xbps_handle xh;
 	struct xferstat xfer;
-	struct sigaction sa;
 	const char *rootdir, *cachedir, *conffile, *defrepo;
 	int i, c, flags, rv;
 	bool skip_sync, yes, reinstall, drun, update;
@@ -176,15 +167,6 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/*
-	 * Register a signal handler to clean up resources used by libxbps.
-	 */
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = cleanup_sighandler;
-	sigaction(SIGHUP, &sa, NULL);
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
-
 	maxcols = get_maxcols();
 	/*
 	 * Check that we have write permission on rootdir, metadir
@@ -197,8 +179,7 @@ main(int argc, char **argv)
 			fprintf(stderr, "Not enough permissions on "
 			    "rootdir/cachedir/metadir: %s\n",
 			    strerror(errno));
-			rv = errno;
-			goto out;
+			exit(errno);
 		}
 	}
 
@@ -206,7 +187,7 @@ main(int argc, char **argv)
 	if (!skip_sync || !drun) {
 		rv = xbps_rpool_sync(&xh, XBPS_PKGINDEX, NULL);
 		if (rv != 0)
-			goto out;
+			exit(rv);
 	}
 
 	if (update && (argc == optind)) {
@@ -217,7 +198,7 @@ main(int argc, char **argv)
 		for (i = optind; i < argc; i++) {
 			rv = update_pkg(&xh, argv[i]);
 			if (rv != 0)
-				goto out;
+				exit(rv);
 		}
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	} else if (!update) {
@@ -225,12 +206,10 @@ main(int argc, char **argv)
 		for (i = optind; i < argc; i++) {
 			rv = install_new_pkg(&xh, argv[i], reinstall);
 			if (rv != 0)
-				goto out;
+				exit(rv);
 		}
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
 
-out:
-	xbps_end(&xh);
 	exit(rv);
 }

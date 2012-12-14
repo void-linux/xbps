@@ -113,29 +113,23 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		if (errno != ENOENT) {
 			fprintf(stderr, "index: cannot read `%s': %s\n",
 			    plist, strerror(errno));
-			free(plist);
 			return -1;
-		} else {
-			free(plist);
+		} else
 			return 0;
-		}
 	}
 	idxfiles = prop_dictionary_internalize_from_zfile(plistf);
 	if (idxfiles == NULL) {
 		if (errno != ENOENT) {
 			fprintf(stderr, "index: cannot read `%s': %s\n",
 			    plistf, strerror(errno));
-			rv = -1;
-			goto out;
-		} else {
-			goto out;
-		}
+			return -1;
+		} else
+			return 0;
 	}
 	if (chdir(repodir) == -1) {
 		fprintf(stderr, "index: cannot chdir to %s: %s\n",
 		    repodir, strerror(errno));
-		rv = -1;
-		goto out;
+		return -1;
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
@@ -177,7 +171,6 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		}
 		prop_object_release(thd[i].result);
 	}
-	free(thd);
 	if (!flush)
 		goto out;
 
@@ -191,15 +184,6 @@ out:
 	    prop_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n",
 	    prop_dictionary_count(idxfiles));
-
-	if (plist)
-		free(plist);
-	if (plistf)
-		free(plistf);
-	if (idx)
-		prop_object_release(idx);
-	if (idxfiles)
-		prop_object_release(idxfiles);
 
 	return rv;
 }

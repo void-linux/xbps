@@ -159,6 +159,5 @@ main(int argc, char **argv)
 		}
 	}
 
-	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

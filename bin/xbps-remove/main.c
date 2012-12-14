@@ -39,8 +39,6 @@
 #include <xbps_api.h>
 #include "../xbps-install/defs.h"
 
-static struct xbps_handle xh;
-
 static void __attribute__((noreturn))
 usage(bool fail)
 {
@@ -62,13 +60,6 @@ usage(bool fail)
 	    " -y --yes                 Assume yes to all questions\n"
 	    " -V --version             Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
-}
-
-static void __attribute__((noreturn))
-cleanup_sighandler(int signum)
-{
-	xbps_end(&xh);
-	_exit(signum);
 }
 
 static void
@@ -256,7 +247,7 @@ main(int argc, char **argv)
 		{ "yes", no_argument, NULL, 'y' },
 		{ NULL, 0, NULL, 0 }
 	};
-	struct sigaction sa;
+	struct xbps_handle xh;
 	const char *rootdir, *cachedir, *conffile;
 	int i, c, flags, rv;
 	bool yes, drun, recursive, ignore_revdeps, clean_cache;
@@ -337,15 +328,6 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/*
-	 * Register a signal handler to clean up resources used by libxbps.
-	 */
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = cleanup_sighandler;
-	sigaction(SIGHUP, &sa, NULL);
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
-
 	maxcols = get_maxcols();
 	/*
 	 * Check that we have write permission on rootdir, metadir
@@ -358,15 +340,14 @@ main(int argc, char **argv)
 			fprintf(stderr, "Not enough permissions on "
 			    "rootdir/cachedir/metadir: %s\n",
 			    strerror(errno));
-			rv = errno;
-			goto out;
+			exit(errno);
 		}
 	}
 
 	if (clean_cache) {
 		rv = cachedir_clean(&xh);
 		if (rv != 0)
-			goto out;
+			exit(rv);;
 	}
 
 	if (orphans) {
@@ -374,10 +355,9 @@ main(int argc, char **argv)
 			if (rv != ENOENT) {
 				fprintf(stderr, "Failed to queue package "
 				    "orphans: %s\n", strerror(rv));
-				goto out;
+				exit(EXIT_FAILURE);
 			}
-			rv = 0;
-			goto out;
+			exit(EXIT_SUCCESS);
 		}
 	}
 
@@ -386,19 +366,15 @@ main(int argc, char **argv)
 		if (rv == 0)
 			continue;
 		else if (rv != EEXIST)
-			goto out;
+			exit(rv);
 		else
 			reqby_force = true;
 	}
-	if (reqby_force && !ignore_revdeps) {
-		rv = EINVAL;
-		goto out;
-	}
+	if (reqby_force && !ignore_revdeps)
+		exit(EXIT_FAILURE);
 
 	if (orphans || (argc > optind))
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 
-out:
-	xbps_end(&xh);
 	exit(rv);
 }

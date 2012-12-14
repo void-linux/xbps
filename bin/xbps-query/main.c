@@ -260,6 +260,5 @@ main(int argc, char **argv)
 		}
 	}
 
-	xbps_end(&xh);
 	exit(rv);
 }

@@ -525,8 +525,5 @@ main(int argc, char **argv)
 	 */
 	create_dot_graph(&xh, f, plistd, confd, revdeps);
 
-	prop_object_release(confd);
-	xbps_end(&xh);
-
 	exit(EXIT_SUCCESS);
 }

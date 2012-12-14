@@ -59,10 +59,9 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	idx = idxfiles = newpkgd = newpkgfilesd = curpkgd = NULL;
 	tmpfilen = tmprepodir = plist = plistf = NULL;
 
-	if ((tmprepodir = strdup(argv[0])) == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
+	if ((tmprepodir = strdup(argv[0])) == NULL)
+		return ENOMEM;
+
 	repodir = dirname(tmprepodir);
 
 	/* Internalize index or create it if doesn't exist */
@@ -73,8 +72,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		if (errno != ENOENT) {
 			fprintf(stderr, "index: cannot read `%s': %s\n",
 			    plist, strerror(errno));
-			rv = -1;
-			goto out;
+			return -1;
 		} else {
 			idx = prop_dictionary_create();
 			assert(idx);
@@ -88,8 +86,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		if (errno != ENOENT) {
 			fprintf(stderr, "index: cannot read `%s': %s\n",
 			    plistf, strerror(errno));
-			rv = -1;
-			goto out;
+			return -1;
 		} else {
 			idxfiles = prop_dictionary_create();
 			assert(idx);
@@ -100,10 +97,9 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	 * Process all packages specified in argv.
 	 */
 	for (i = 0; i < argc; i++) {
-		if ((tmpfilen = strdup(argv[i])) == NULL) {
-			rv = ENOMEM;
-			goto out;
-		}
+		if ((tmpfilen = strdup(argv[i])) == NULL)
+			return ENOMEM;
+
 		filen = basename(tmpfilen);
 		/*
 		 * Read metadata props plist dictionary from binary package.
@@ -137,12 +133,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 */
 		curpkgd = prop_dictionary_get(idx, pkgname);
 		if (curpkgd == NULL) {
-			if (errno && errno != ENOENT) {
-				prop_object_release(newpkgd);
-				free(tmpfilen);
-				rv = errno;
-				goto out;
-			}
+			if (errno && errno != ENOENT)
+				return errno;
 		} else {
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "filename", &oldfilen);
@@ -170,12 +162,9 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 				    oldpkgver, oldarch);
 				rv = remove_pkg(repodir,
 				    oldarch, oldfilen);
-				if (rv != 0) {
-					prop_object_release(newpkgd);
-					free(tmpfilen);
-					free(buf);
-					goto out;
-				}
+				if (rv != 0)
+					return rv;
+
 				printf("index: removed obsolete binpkg %s.\n", buf);
 				free(buf);
 				prop_object_release(newpkgd);
@@ -190,13 +179,9 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 			buf2 = strdup(oldpkgver);
 			assert(buf2);
 			rv = remove_pkg(repodir, oldarch, oldfilen);
-			if (rv != 0) {
-				free(buf);
-				free(buf2);
-				prop_object_release(newpkgd);
-				free(tmpfilen);
-				goto out;
-			}
+			if (rv != 0)
+				return rv;
+
 			prop_dictionary_remove(idx, pkgname);
 			free(buf2);
 			printf("index: removed obsolete entry/binpkg %s.\n", buf);
@@ -206,49 +191,30 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 * We have the dictionary now, add the required
 		 * objects for the index.
 		 */
-		if (!prop_dictionary_set_cstring(newpkgd, "filename", filen)) {
-			rv = errno;
-			prop_object_release(newpkgd);
-			free(tmpfilen);
-			goto out;
-		}
-		if ((sha256 = xbps_file_hash(argv[i])) == NULL) {
-			rv = errno;
-			prop_object_release(newpkgd);
-			free(tmpfilen);
-			goto out;
-		}
+		if (!prop_dictionary_set_cstring(newpkgd, "filename", filen))
+			return errno;
+
+		if ((sha256 = xbps_file_hash(argv[i])) == NULL)
+			return errno;
+
 		if (!prop_dictionary_set_cstring(newpkgd, "filename-sha256",
-		    sha256)) {
-			free(sha256);
-			prop_object_release(newpkgd);
-			free(tmpfilen);
-			rv = errno;
-			goto out;
-		}
+		    sha256))
+			return errno;
+
 		free(sha256);
-		if (stat(argv[i], &st) == -1) {
-			prop_object_release(newpkgd);
-			free(tmpfilen);
-			rv = errno;
-			goto out;
-		}
+		if (stat(argv[i], &st) == -1)
+			return errno;
+
 		if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
 		    (uint64_t)st.st_size)) {
-			prop_object_release(newpkgd);
-			free(tmpfilen);
-			rv = errno;
-			goto out;
+			return errno;
 		}
 		/*
 		 * Add new pkg dictionary into the index.
 		 */
-		if (!prop_dictionary_set(idx, pkgname, newpkgd)) {
-			prop_object_release(newpkgd);
-			free(tmpfilen);
-			rv = EINVAL;
-			goto out;
-		}
+		if (!prop_dictionary_set(idx, pkgname, newpkgd))
+			return EINVAL;
+
 		flush = true;
 		printf("index: added `%s-%s' (%s).\n", pkgname, version, arch);
 		free(tmpfilen);
@@ -258,10 +224,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		found = false;
 		newpkgfilesd = xbps_get_pkg_plist_from_binpkg(argv[i],
 				"./files.plist");
-		if (newpkgfilesd == NULL) {
-			rv = EINVAL;
-			goto out;
-		}
+		if (newpkgfilesd == NULL)
+			return EINVAL;
 
 		/* Find out if binary pkg stored in index contain any file */
 		pkg_cffiles = prop_dictionary_get(newpkgfilesd, "conf_files");
@@ -341,32 +305,18 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	if (flush && !prop_dictionary_externalize_to_zfile(idx, plist)) {
 		fprintf(stderr, "index: failed to externalize plist: %s\n",
 		    strerror(errno));
-		rv = -1;
-		goto out;
+		return -1;
 	}
 	if (files_flush &&
 	    !prop_dictionary_externalize_to_zfile(idxfiles, plistf)) {
 		fprintf(stderr, "index-files: failed to externalize "
 		    "plist: %s\n", strerror(errno));
-		rv = -1;
-		goto out;
+		return -1;
 	}
 	printf("index: %u packages registered.\n",
 	    prop_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n",
 	    prop_dictionary_count(idxfiles));
 
-out:
-	if (tmprepodir)
-		free(tmprepodir);
-	if (plist)
-		free(plist);
-	if (plistf)
-		free(plistf);
-	if (idx)
-		prop_object_release(idx);
-	if (idxfiles)
-		prop_object_release(idxfiles);
-
-	return rv;
+	return 0;
 }

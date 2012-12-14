@@ -119,12 +119,9 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		if (errno != ENOENT) {
 			fprintf(stderr, "xbps-rindex: cannot read `%s': %s\n",
 			    plist, strerror(errno));
-			free(plist);
 			return -1;
-		} else {
-			free(plist);
+		} else
 			return 0;
-		}
 	}
 	/* initialize repository index */
 	ri.repod = idx;
@@ -134,13 +131,11 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	if (chdir(repodir) == -1) {
 		fprintf(stderr, "xbps-rindex: cannot chdir to %s: %s\n",
 		    repodir, strerror(errno));
-		prop_object_release(idx);
 		return errno;
 	}
 	if ((dirp = opendir(repodir)) == NULL) {
 		fprintf(stderr, "xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
-		prop_object_release(idx);
 		return errno;
 	}
 	while ((dp = readdir(dirp))) {
@@ -179,10 +174,6 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	/* wait for all threads */
 	for (i = 0; i < maxthreads; i++)
 		pthread_join(thd[i].thread, NULL);
-
-	free(thd);
-	prop_object_release(array);
-	prop_object_release(idx);
 
 	return rv;
 }

@@ -104,8 +104,6 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 	for (i = 0; i < maxthreads; i++)
 		pthread_join(thd[i].thread, NULL);
 
-	free(thd);
-
 	if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
 		xbps_error_printf("failed to write pkgdb: %s\n",
 		    strerror(rv));

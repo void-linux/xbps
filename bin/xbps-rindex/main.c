@@ -106,6 +106,5 @@ main(int argc, char **argv)
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
 
-	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -469,20 +469,6 @@ process_entry_memory(struct archive *ar, const void *src, const char *file)
 }
 
 static void
-destroy_xentry(struct xentry *xe)
-{
-	assert(xe);
-
-	free(xe->file);
-	free(xe->type);
-	if (xe->target)
-		free(xe->target);
-	if (xe->hash)
-		free(xe->hash);
-	free(xe);
-}
-
-static void
 process_archive(struct archive *ar,
 		struct archive_entry_linkresolver *resolver,
 		const char *pkgver, bool quiet)
@@ -516,16 +502,14 @@ process_archive(struct archive *ar,
 	while ((xe = TAILQ_FIRST(&xentry_list)) != NULL) {
 		TAILQ_REMOVE(&xentry_list, xe, entries);
 		if ((strcmp(xe->type, "metadata") == 0) ||
-		    (strcmp(xe->type, "dirs") == 0)) {
-			destroy_xentry(xe);
+		    (strcmp(xe->type, "dirs") == 0))
 			continue;
-		}
+
 		if (!quiet) {
 			printf("%s: adding `%s' ...\n", pkgver, xe->file);
 			fflush(stdout);
 		}
 		process_entry_file(ar, resolver, xe, NULL);
-		destroy_xentry(xe);
 	}
 }
 
@@ -778,8 +762,6 @@ main(int argc, char **argv)
 	/* close and free archive */
 	archive_write_free(ar);
 
-	prop_object_release(pkg_propsd);
-	prop_object_release(pkg_filesd);
 	/*
 	 * Archive was created successfully; flush data to storage,
 	 * set permissions and rename to dest file; from the caller's
@@ -794,6 +776,8 @@ main(int argc, char **argv)
 	if (fchmod(pkg_fd, 0666 & ~myumask) == -1)
 		die("cannot fchmod() %s:", tname);
 
+	close(pkg_fd);
+
 	if (rename(tname, binpkg) == -1)
 		die("cannot rename %s to %s:", tname, binpkg);
 
@@ -801,10 +785,6 @@ main(int argc, char **argv)
 	if (!quiet)
 		printf("%s: binary package created successfully (%s)\n",
 		    pkgver, binpkg);
-
-	free(binpkg);
-	free(pkgname);
-	close(pkg_fd);
 
 	exit(EXIT_SUCCESS);
 }

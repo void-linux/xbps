@@ -156,10 +156,9 @@ main(int argc, char **argv)
 			usage();
 
 		dict = xbps_pkgdb_get_pkg(&xh, argv[1]);
-		if (dict == NULL) {
-			rv = errno;
-			goto out;
-		}
+		if (dict == NULL)
+			exit(EXIT_FAILURE);
+
 		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
 		printf("%s\n", version);
 	} else if (strcasecmp(argv[0], "sanitize-plist") == 0) {
@@ -278,7 +277,6 @@ main(int argc, char **argv)
 	} else {
 		usage();
 	}
-out:
-	xbps_end(&xh);
+
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }
