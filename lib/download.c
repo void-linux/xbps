@@ -247,9 +247,9 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	 * If restarting, open the file for appending otherwise create it.
 	 */
 	if (restart)
-		fd = open(tempfile, O_WRONLY|O_APPEND);
+		fd = open(tempfile, O_WRONLY|O_APPEND|O_CLOEXEC);
 	else
-		fd = open(tempfile, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+		fd = open(tempfile, O_WRONLY|O_CREAT|O_CLOEXEC|O_TRUNC, 0644);
 
 	if (fd == -1) {
 		rv = -1;
