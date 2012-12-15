@@ -217,53 +217,80 @@ get_pkg_metadata(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 	return pkg_metad;
 }
 
-prop_array_t
-xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
+static void
+generate_full_revdeps_tree(struct xbps_handle *xhp)
 {
-	prop_array_t rundeps, provides, result = NULL;
-	prop_dictionary_t pkgd, pkgdep_metad;
+	prop_array_t rundeps, pkg;
+	prop_dictionary_t pkgmetad;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pkgver, *curpkgver;
+	const char *pkgver, *pkgdep, *vpkgname;
+	char *curpkgname;
+	unsigned int i;
+	bool alloc;
 
-	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkg)) == NULL)
-		return NULL;
+	if (xhp->pkgdb_revdeps)
+		return;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	provides = prop_dictionary_get(pkgd, "provides");
+	xhp->pkgdb_revdeps = prop_dictionary_create();
 
 	iter = prop_array_iterator(xhp->pkgdb);
 	assert(iter);
 
 	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &curpkgver);
 		/*
 		 * If run_depends is in pkgdb use it, otherwise fallback to
 		 * the slower pkg metadata method.
 		 */
 		rundeps = prop_dictionary_get(obj, "run_depends");
 		if (rundeps == NULL) {
-			pkgdep_metad = get_pkg_metadata(xhp, obj);
-			assert(pkgdep_metad);
-			rundeps = prop_dictionary_get(pkgdep_metad,
-					"run_depends");
+			pkgmetad = get_pkg_metadata(xhp, obj);
+			assert(pkgmetad);
+			rundeps = prop_dictionary_get(pkgmetad, "run_depends");
 		}
 		if (rundeps == NULL || !prop_array_count(rundeps))
 			continue;
 
-		if (xbps_match_pkgdep_in_array(rundeps, pkgver) ||
-		    (provides &&
-		     xbps_match_any_virtualpkg_in_rundeps(rundeps, provides))) {
-			if (result == NULL)
-				result = prop_array_create();
+		for (i = 0; i < prop_array_count(rundeps); i++) {
+			alloc = false;
+			prop_array_get_cstring_nocopy(rundeps, i, &pkgdep);
+			curpkgname = xbps_pkgpattern_name(pkgdep);
+			if (curpkgname == NULL)
+				curpkgname = xbps_pkg_name(pkgdep);
+			assert(curpkgname);
+			vpkgname = vpkg_user_conf(xhp, curpkgname, false);
+			if (vpkgname == NULL)
+				vpkgname = curpkgname;
 
-			if (!xbps_match_string_in_array(result, curpkgver))
-				prop_array_add_cstring_nocopy(result, curpkgver);
+			pkg = prop_dictionary_get(xhp->pkgdb_revdeps, vpkgname);
+			if (pkg == NULL) {
+				alloc = true;
+				pkg = prop_array_create();
+			}
+			prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+			prop_array_add_cstring_nocopy(pkg, pkgver);
+			prop_dictionary_set(xhp->pkgdb_revdeps, vpkgname, pkg);
+			free(curpkgname);
+			if (alloc)
+				prop_object_release(pkg);
 		}
 	}
 	prop_object_iterator_release(iter);
+}
 
-	return result;
+prop_array_t
+xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
+{
+	prop_dictionary_t pkgd;
+	const char *pkgname;
+
+	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkg)) == NULL)
+		return NULL;
+
+	generate_full_revdeps_tree(xhp);
+	prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+
+	return prop_dictionary_get(xhp->pkgdb_revdeps, pkgname);
 }
 
 prop_dictionary_t

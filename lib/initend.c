@@ -289,6 +289,8 @@ xbps_end(struct xbps_handle *xhp)
 	xbps_pkgdb_release(xhp);
 	xbps_rpool_release(xhp);
 	xbps_fetch_unset_cache_connection();
+	if (xhp->pkgdb_revdeps != NULL)
+		prop_object_release(xhp->pkgdb_revdeps);
 
 	cfg_free(xhp->cfg);
 	free(xhp->cachedir_priv);

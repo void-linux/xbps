@@ -64,7 +64,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.6"
 
-#define XBPS_API_VERSION	"20121207"
+#define XBPS_API_VERSION	"20121215"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -498,6 +498,13 @@ struct xbps_handle {
 	 * Proplib dictionary with pkg metafiles.
 	 */
 	prop_dictionary_t pkg_metad;
+	/**
+	 * @private pkgdb_revdeps.
+	 *
+	 * Proplib dictionary with full reverse dependencies from pkgdb.
+	 */
+	prop_dictionary_t pkgdb_revdeps;
+
 	/**
 	 * @var transd;
 	 *
