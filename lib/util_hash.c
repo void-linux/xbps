@@ -23,7 +23,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _BSD_SOURCE /* for madvise(2) */
 #include <sys/mman.h>
+#undef _BSD_SOURCE
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -72,7 +74,7 @@ xbps_file_hash(const char *file)
 
 	assert(file != NULL);
 
-	if ((fd = open(file, O_RDONLY)) == -1) {
+	if ((fd = open(file, O_RDONLY|O_CLOEXEC)) == -1) {
 		free(buf);
 		return NULL;
 	}
@@ -105,11 +107,14 @@ xbps_file_hash(const char *file)
 	if (buf == MAP_FAILED)
 		return NULL;
 
+	(void)madvise(buf, mapsize, MADV_SEQUENTIAL);
 	if (SHA256(buf, st.st_size, digest) == NULL) {
 		munmap(buf, mapsize);
 		return NULL;
 	}
+	(void)madvise(buf, mapsize, MADV_DONTNEED);
 	munmap(buf, mapsize);
+
 	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
 
 	return strdup(hash);
