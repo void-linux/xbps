@@ -40,18 +40,17 @@ struct ffdata {
 	const char *repouri;
 };
 
-static int
+static void
 match_files_by_pattern(prop_dictionary_t pkg_filesd,
 		       prop_dictionary_keysym_t key,
-		       int npatterns, 
-		       char **patterns,
-		       const char *pkgname)
+		       struct ffdata *ffd,
+		       const char *pkgver)
 {
-	prop_object_iterator_t iter;
 	prop_array_t array;
 	prop_object_t obj;
 	const char *keyname, *filestr, *typestr;
-	int i;
+	unsigned int i;
+	int x;
 
 	keyname = prop_dictionary_keysym_cstring_nocopy(key);
 
@@ -64,22 +63,20 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 	else if (strcmp(keyname, "conf_files") == 0)
 		typestr = "configuration file";
 	else
-		return 0;
+		return;
 
 	array = prop_dictionary_get_keysym(pkg_filesd, key);
-	iter = prop_array_iterator(array);
-
-	while ((obj = prop_object_iterator_next(iter))) {
+	for (i = 0; i < prop_array_count(array); i++) {
+		obj = prop_array_get(array, i);
 		prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
-		for (i = 0; i < npatterns; i++) {
-			if ((xbps_pkgpattern_match(filestr, patterns[i])) ||
-			    (strcmp(filestr, patterns[i]) == 0))
-				printf("%s: %s (%s)\n", pkgname, filestr, typestr);
+		for (x = 0; x < ffd->npatterns; x++) {
+			if ((strcmp(filestr, ffd->patterns[x]) == 0) ||
+			    (fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
+				printf("%s: %s (%s)\n", pkgver,
+				    filestr, typestr);
+			}
 		}
 	}
-	prop_object_iterator_release(iter);
-
-	return 0;
 }
 
 static int
@@ -89,25 +86,19 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp, prop_object_t obj, void *arg, bool *do
 	prop_array_t files_keys;
 	struct ffdata *ffd = arg;
 	unsigned int i;
-	const char *pkgname;
-	int rv = 0;
+	const char *pkgver;
 
 	(void)done;
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-	pkgmetad = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
+	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	pkgmetad = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
 
 	files_keys = prop_dictionary_all_keys(pkgmetad);
 	for (i = 0; i < prop_array_count(files_keys); i++) {
-		rv = match_files_by_pattern(pkgmetad,
-		    prop_array_get(files_keys, i),
-		    ffd->npatterns, ffd->patterns, pkgname);
-		if (rv == -1)
-			break;
+		match_files_by_pattern(pkgmetad,
+		    prop_array_get(files_keys, i), ffd, pkgver);
 	}
-	prop_object_release(files_keys);
-
-	return rv;
+	return 0;
 }
 
 int
@@ -134,8 +125,8 @@ repo_match_files_by_pattern(prop_dictionary_t pkgd,
 	for (i = 0; i < prop_array_count(array); i++) {
 		prop_array_get_cstring_nocopy(array, i, &filestr);
 		for (x = 0; x < ffd->npatterns; x++) {
-			if ((xbps_pkgpattern_match(filestr, ffd->patterns[x])) ||
-			    (strcmp(filestr, ffd->patterns[x]) == 0)) {
+			if ((strcmp(filestr, ffd->patterns[x]) == 0) ||
+			    (fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
 				prop_dictionary_get_cstring_nocopy(pkgd,
 				    "pkgver", &pkgver);
 				printf("%s: %s (%s)\n",
@@ -161,7 +152,6 @@ repo_ownedby_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 		return ENOMEM;
 
 	if ((idxfiles = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
-		free(plist);
 		if (errno == ENOENT) {
 			fprintf(stderr, "%s: index-files missing! "
 			    "ignoring...\n", rpi->uri);
@@ -169,10 +159,9 @@ repo_ownedby_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 		}
 		return errno;
 	}
-	free(plist);
 	ffd->repouri = rpi->uri;
-
 	allkeys = prop_dictionary_all_keys(idxfiles);
+
 	for (i = 0; i < prop_array_count(allkeys); i++) {
 		ksym = prop_array_get(allkeys, i);
 		pkgd = prop_dictionary_get_keysym(idxfiles, ksym);
