@@ -1,4 +1,4 @@
-xbps-0.19 (???):
+xbps-0.19 (2012-12-15):
 
  * xbps-rindex(8): add mode (-a) does not remove old binary packages
    in repository anymore, only its entry in index is replaced. To remove
