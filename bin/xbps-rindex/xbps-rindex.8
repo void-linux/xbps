@@ -1,4 +1,4 @@
-.Dd November 6, 2012
+.Dd December 15, 2012
 .Os Void Linux
 .Dt xbps-rindex 8
 .Sh NAME
@@ -24,16 +24,15 @@ Show the XBPS version.
 .Pp
 .Bl -tag -width x
 .It Sy -a, --add Ar /path/to/repo/binpkg.xbps ...
-Registers the binary package into the local repository and if an older
-binary package exists, it's removed and new entry is added to the index.
-Multiple binary packages can be specified as arguments.
+Registers the binary package into the local repository, replacing
+existing version. Multiple binary packages can be specified as arguments.
 .It Sy -c, --clean Ar repository
 Removes obsolete entries found in the local repository's index.
 .It Sy -r, --remove-obsoletes Ar repository
 Removes obsolete packages from
 .Ar repository .
 Packages that are not currently registered in repository's index will
-be removed.
+be removed (out of date, invalid archives, etc).
 .Sh SEE ALSO
 .Xr xbps-create 8 ,
 .Xr xbps-dgraph 8 ,

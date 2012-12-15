@@ -28,9 +28,6 @@
 
 #include <xbps_api.h>
 
-/* From common.c */
-int	remove_pkg(const char *, const char *, const char *);
-
 /* From index-add.c */
 int	index_add(struct xbps_handle *, int, char **);
 

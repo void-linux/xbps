@@ -50,10 +50,10 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	struct stat st;
 	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
 	const char *pkgver, *arch, *oldarch;
-	char *sha256, *filen, *repodir, *buf, *buf2;
+	char *sha256, *filen, *repodir, *buf;
 	char *tmpfilen, *tmprepodir, *plist, *plistf;
 	size_t x;
-	int i, ret = 0, rv = 0;
+	int i, ret = 0;
 	bool files_flush = false, found = false, flush = false;
 
 	idx = idxfiles = newpkgd = newpkgfilesd = curpkgd = NULL;
@@ -145,28 +145,11 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "version", &regver);
 			ret = xbps_cmpver(version, regver);
-			if (ret == 0) {
-				/* Same version */
+			if (ret <= 0) {
+				/* Same version or index version greater */
 				fprintf(stderr, "index: skipping `%s-%s' "
 				    "(%s), already registered.\n",
 				    pkgname, version, arch);
-				prop_object_release(newpkgd);
-				free(tmpfilen);
-				continue;
-			} else if (ret == -1) {
-				/*
-				 * Index version is greater, remove current
-				 * package.
-				 */
-				buf = xbps_xasprintf("`%s' (%s)",
-				    oldpkgver, oldarch);
-				rv = remove_pkg(repodir,
-				    oldarch, oldfilen);
-				if (rv != 0)
-					return rv;
-
-				printf("index: removed obsolete binpkg %s.\n", buf);
-				free(buf);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
 				continue;
@@ -176,15 +159,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 			 * index version.
 			 */
 			buf = xbps_xasprintf("`%s' (%s)", oldpkgver, oldarch);
-			buf2 = strdup(oldpkgver);
-			assert(buf2);
-			rv = remove_pkg(repodir, oldarch, oldfilen);
-			if (rv != 0)
-				return rv;
-
 			prop_dictionary_remove(idx, pkgname);
-			free(buf2);
-			printf("index: removed obsolete entry/binpkg %s.\n", buf);
+			printf("index: removed obsolete entry %s.\n", buf);
 			free(buf);
 		}
 		/*

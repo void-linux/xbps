@@ -46,6 +46,39 @@ struct thread_data {
 	int thread_num;
 };
 
+static int
+remove_pkg(const char *repodir, const char *arch, const char *file)
+{
+	char *filepath;
+	int rv;
+
+	filepath = xbps_xasprintf("%s/%s/%s", repodir, arch, file);
+	if (remove(filepath) == -1) {
+		if (errno != ENOENT) {
+			rv = errno;
+			xbps_error_printf("failed to remove old binpkg "
+			    "`%s': %s\n", file, strerror(rv));
+			free(filepath);
+			return rv;
+		}
+	}
+	free(filepath);
+
+	filepath = xbps_xasprintf("%s/%s", repodir, file);
+	if (remove(filepath) == -1) {
+		if (errno != ENOENT) {
+			rv = errno;
+			xbps_error_printf("failed to remove old binpkg "
+			    "`%s': %s\n", file, strerror(rv));
+			free(filepath);
+			return rv;
+		}
+	}
+	free(filepath);
+
+	return 0;
+}
+
 static void *
 cleaner_thread(void *arg)
 {

@@ -1,5 +1,9 @@
 xbps-0.19 (???):
 
+ * xbps-rindex(8): add mode (-a) does not remove old binary packages
+   in repository anymore, only its entry in index is replaced. To remove
+   outdated packages use -r/--remove-obsoletes.
+
  * xbps-rindex(8): clean (-c) and remove obsoletes mode (-r) are
    now multithreaded and will spawn a thread per core to speed up
    the process considerably.
