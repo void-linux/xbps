@@ -583,7 +583,7 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 	struct archive *ar = NULL;
 	const char *pkgname, *version, *pkgver;
 	char *bpkg;
-	int rv = 0;
+	int pkg_fd, rv = 0;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 
@@ -614,7 +614,8 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 	archive_read_support_compression_xz(ar);
 	archive_read_support_format_tar(ar);
 
-	if (archive_read_open_filename(ar, bpkg, ARCHIVE_READ_BLOCKSIZE) != 0) {
+	pkg_fd = open(bpkg, O_RDONLY|O_CLOEXEC);
+	if (pkg_fd == -1) {
 		rv = archive_errno(ar);
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgname, version,
@@ -624,7 +625,10 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		archive_read_free(ar);
 		return rv;
 	}
+	archive_read_open_fd(ar, pkg_fd, ARCHIVE_READ_BLOCKSIZE);
 	free(bpkg);
+	posix_fadvise(pkg_fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+
 	/*
 	 * Extract archive files.
 	 */
@@ -635,6 +639,8 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		    pkgver, strerror(rv));
 		goto out;
 	}
+	posix_fadvise(pkg_fd, 0, 0, POSIX_FADV_DONTNEED);
+
 	/*
 	 * Set package state to unpacked.
 	 */
@@ -646,9 +652,9 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		    pkgver, strerror(rv));
 	}
 out:
-	if (ar) {
-		archive_read_close(ar);
+	close(pkg_fd);
+	if (ar)
 		archive_read_free(ar);
-	}
+
 	return rv;
 }
