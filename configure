@@ -4,12 +4,6 @@
 VERSION=0.19
 
 # Ensure that we do not inherit these from env
-STRLCPY=
-STRLCAT=
-VASPRINTF=
-HUMANIZE_NUMBER=
-LIBFETCH=
-PROPLIB=
 OS=
 BUILD=
 HOST=
@@ -330,21 +324,38 @@ int main(void) {
 }
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
-	VASPRINTF=yes
+	echo yes.
 	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
 else
-	VASPRINTF=no
+	echo no.
 	echo "COMPAT_SRCS+=	compat/vasprintf.o" >>$CONFIG_MK
 	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
-echo "$VASPRINTF."
 rm -f _$func.c _$func
+
+# Check for posix_fadvise(2)
+func=posix_fadvise
+printf "Checking for $func() ... "
+cat <<EOF >_$func.c
+#include <fcntl.h>
+int main(void) {
+	posix_fadvise(0, 0, 0, POSIX_FADV_NORMAL);
+	return 0;
+}
+EOF
+if $XCC _$func.c -o _$func 2>/dev/null; then
+	echo "yes."
+	echo "CPPFLAGS +=	-DHAVE_POSIX_FADVISE" >>$CONFIG_MK
+else
+	echo "no."
+fi
+rm -f _$func _$func.c
 
 #
 # Check for strcasestr().
 #
 func=strcasestr
-printf "Checking for $func() ..."
+printf "Checking for $func() ... "
 cat <<EOF >_$func.c
 #define _GNU_SOURCE
 #include <string.h>
@@ -356,14 +367,13 @@ int main(void) {
 }
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
-	STRCASESTR=yes
+	echo yes.
 	echo "CPPFLAGS +=	-DHAVE_STRCASESTR" >>$CONFIG_MK
 else
-	STRCASESTR=no
+	echo no.
 	echo "COMPAT_SRCS +=	compat/strcasestr.o" >>$CONFIG_MK
 	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
-echo "$STRCASESTR."
 rm -f _$func _$func.c
 
 #
@@ -381,14 +391,13 @@ int main(void) {
 }
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
-	STRLCPY=yes
+	echo yes.
 	echo "CPPFLAGS +=	-DHAVE_STRLCPY" >> $CONFIG_MK
 else
-	STRLCPY=no
+	echo no.
 	echo "COMPAT_SRCS +=	compat/strlcpy.o" >>$CONFIG_MK
 	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
-echo "$STRLCPY."
 rm -f _$func.c _$func
 
 #
@@ -405,14 +414,13 @@ int main(void) {
 }
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
-	STRLCAT=yes
+	echo yes.
 	echo "CPPFLAGS +=	-DHAVE_STRLCAT" >>$CONFIG_MK
 else
-	STRLCAT=no
+	echo no.
 	echo "COMPAT_SRCS +=	compat/strlcat.o" >>$CONFIG_MK
 	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
-echo "$STRLCAT."
 rm -f _$func.c _$func
 
 #
@@ -429,14 +437,13 @@ int main(void) {
 }
 EOF
 if $XCC -lutil _$func.c -o _$func 2>/dev/null; then
-	HUMANIZE_NUMBER=yes
+	echo yes.
 	echo "CPPFLAGS+= -DHAVE_HUMANIZE_NUMBER" >>$CONFIG_MK
 else
-	HUMANIZE_NUMBER=no
+	echo no.
 	echo "COMPAT_SRCS+=	compat/humanize_number.o" >>$CONFIG_MK
 	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
-echo "$HUMANIZE_NUMBER."
 rm -f _$func.c _$func
 
 #
@@ -452,13 +459,12 @@ int main(void) {
 }
 EOF
 if $XCC _$func.c -o _$func 2>/dev/null; then
-	RBTREE=yes
+	echo yes.
 	echo "CPPFLAGS += -DHAVE_RBTREE" >>$CONFIG_MK
 else
-	RBTREE=no
+	echo no.
 	echo "LIBPROP_OBJS += portableproplib/rb.o" >>$CONFIG_MK
 fi
-echo "$RBTREE."
 rm -f _$func.c _$func
 
 #
@@ -474,16 +480,15 @@ int main(void) {
 }
 EOF
 if $XCC -lfetch _$func.c -o _$func 2>/dev/null; then
-	LIBFETCH=yes
+	echo yes.
 	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
 	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
 else
-	LIBFETCH=no
+	echo no.
 	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
 	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 fi
-echo "$LIBFETCH."
 rm -f _$func.c _$func
 
 #
@@ -500,17 +505,16 @@ int main(void) {
 }
 EOF
 if $XCC -lprop _$func.c -o _$func 2>/dev/null; then
-	PROPLIB=yes
+	echo yes.
 	echo "USE_EXTERNAL_PROPLIB =	1" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lz -lpthread -lprop" >>$CONFIG_MK
 	echo "STATIC_LIBS +=	-lprop -lz -lpthread" >>$CONFIG_MK
 else
-	PROPLIB=no
+	echo no.
 	echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
 	echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
 fi
-echo "$PROPLIB."
 rm -f _$func.c _$func
 
 #
@@ -555,13 +559,12 @@ int main(void) {
 }
 EOF
 if $XCC -lz _$func.c -o _$func 2>/dev/null; then
-	ZLIB=yes
+	echo yes.
 	echo "LDFLAGS +=	-lz" >>$CONFIG_MK
 	echo "STATIC_LIBS +=	-lz" >>$CONFIG_MK
 else
 	ZLIB=no
 fi
-echo "$ZLIB."
 rm -f _$func.c _$func
 if [ "$ZLIB" = "no" ]; then
 	echo "Failed to link with your system's zlib, can't continue..."
@@ -665,12 +668,11 @@ int main(void) {
 }
 EOF
 	if $XCC -lcrypto _$func.c -o _$func 2>/dev/null; then
-		CRYPTO_SHA256=yes
+		echo yes.
 		echo "LDFLAGS +=	-lcrypto" >>$CONFIG_MK
 	else
 		CRYPTO_SHA256=no
 	fi
-	echo "$ZLIB."
 	rm -f _$func.c _$func
 	if [ "$CRYPTO_SHA256" = "no" ]; then
 		echo "Failed to link with your system's OpenSSL library, can't continue..."

@@ -23,6 +23,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -581,6 +585,7 @@ int HIDDEN
 xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 {
 	struct archive *ar = NULL;
+	struct stat pkg_stat;
 	const char *pkgname, *version, *pkgver;
 	char *bpkg;
 	int pkg_fd, rv = 0;
@@ -627,8 +632,11 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 	}
 	archive_read_open_fd(ar, pkg_fd, ARCHIVE_READ_BLOCKSIZE);
 	free(bpkg);
-	posix_fadvise(pkg_fd, 0, 0, POSIX_FADV_SEQUENTIAL);
 
+#ifdef HAVE_POSIX_FADVISE
+	fstat(pkg_fd, &pkg_stat);
+	posix_fadvise(pkg_fd, 0, pkg_stat.st_size, POSIX_FADV_SEQUENTIAL);
+#endif
 	/*
 	 * Extract archive files.
 	 */
@@ -639,8 +647,9 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		    pkgver, strerror(rv));
 		goto out;
 	}
-	posix_fadvise(pkg_fd, 0, 0, POSIX_FADV_DONTNEED);
-
+#ifdef HAVE_POSIX_FADVISE
+	posix_fadvise(pkg_fd, 0, pkg_stat.st_size, POSIX_FADV_DONTNEED);
+#endif
 	/*
 	 * Set package state to unpacked.
 	 */
