@@ -62,8 +62,11 @@ xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 	while ((obj = prop_object_iterator_next(iter))) {
 		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		rv = xbps_configure_pkg(xhp, pkgname, true, false, false);
-		if (rv != 0)
+		if (rv != 0) {
+			xbps_dbg_printf(xhp, "%s: failed to configure %s: %s\n",
+			    __func__, pkgname, strerror(rv));
 			break;
+		}
 	}
 	prop_object_iterator_release(iter);
 
@@ -133,8 +136,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		return rv;
 	}
 
-	rv = xbps_set_pkg_state_installed(xhp, pkgname, version,
-	    XBPS_PKG_STATE_INSTALLED);
+	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_INSTALLED);
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL, rv,
 		    pkgname, version,
