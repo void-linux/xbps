@@ -332,12 +332,18 @@ struct xbps_state_cb_data {
 	 */
 	const char *desc;
 	/**
-	 * @var arg[0-1]
+	 * @var arg0
 	 *
-	 * State string arguments arg[0-1]. Strings set on these
-	 * variables may change depending on \a state.
+	 * State string argument 0. String set on this
+	 * variable may change depending on \a state.
 	 */
 	const char *arg0;
+	/**
+	 * @var arg1
+	 *
+	 * State string argument 1. String set on this
+	 * variable may change depending on \a state.
+	 */
 	const char *arg1;
 	/**
 	 * @var err
@@ -852,6 +858,44 @@ bool xbps_pkgdb_replace_pkg(struct xbps_handle *xhp,
  */
 int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
 
+/**
+ * Creates a temporary file and executes it in rootdir.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] blob The buffer pointer where the data is stored.
+ * @param[in] blobsiz The size of the buffer data.
+ * @param[in] pkgname The package name associated.
+ * @param[in] version The package version associated.
+ * @param[in] action The action to execute on the temporary file.
+ * @param[in] update Set to true if package is being updated.
+ *
+ * @return 0 on success, or an errno value otherwise.
+ */
+int xbps_pkg_exec_buffer(struct xbps_handle *xhp,
+			 const void *blob,
+			 const size_t blobsiz,
+			 const char *pkgname,
+			 const char *version,
+			 const char *action,
+			 bool update);
+
+/**
+ * Creates a temporary file and executes it in rootdir.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] d Package dictionary where the script data is stored.
+ * @param[in] script Key associated with the script in dictionary.
+ * @param[in] action The action to execute on the temporary file.
+ * @param[in] update Set to true if package is being updated.
+ *
+ * @return 0 on success, or an errno value otherwise.
+ */
+int xbps_pkg_exec_script(struct xbps_handle *xhp,
+			 prop_dictionary_t d,
+			 const char *script,
+			 const char *action,
+			 bool update);
+
 /*@}*/
 
 /** @addtogroup plist */
@@ -1022,40 +1066,6 @@ bool xbps_match_string_in_array(prop_array_t array, const char *val);
 prop_object_iterator_t xbps_array_iter_from_dict(prop_dictionary_t dict,
 						 const char *key);
 
-/**
- * Creates a temporary file and executes it in rootdir.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] blob The buffer pointer where the data is stored.
- * @param[in] blobsiz The size of the buffer data.
- * @param[in] pkgname The package name associated.
- * @param[in] version The package version associated.
- * @param[in] action The action to execute on the temporary file.
- * @param[in] update Set to true if package is being updated.
- */
-int xbps_pkg_exec_buffer(struct xbps_handle *xhp,
-			 const void *blob,
-			 const size_t blobsiz,
-			 const char *pkgname,
-			 const char *version,
-			 const char *action,
-			 bool update);
-
-/**
- * Creates a temporary file and executes it in rootdir.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] d Package dictionary where the script data is stored.
- * @param[in] script Key associated with the script in dictionary.
- * @param[in] action The action to execute on the temporary file.
- * @param[in] update Set to true if package is being updated.
- */
-int xbps_pkg_exec_script(struct xbps_handle *xhp,
-			 prop_dictionary_t d,
-			 const char *script,
-			 const char *action,
-			 bool update);
-
 /*@}*/
 
 /** @addtogroup pkg_register */
@@ -1081,8 +1091,7 @@ int xbps_register_pkg(struct xbps_handle *xhp,
  * Unregister a package from the package database.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgname Package name.
- * @param[in] version Package version.
+ * @param[in] pkgver Package name-version to match.
  * @param[in] flush Set to true to make sure that pkgdb plist
  * is written to storage on success.
  *
@@ -1392,8 +1401,8 @@ prop_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
  * Returns a pkg dictionary from a repository index \a ri matching
  * the expression \a pkg.
  *
- * param[in] ri Pointer to an xbps_rindex structure.
- * param[in] pkg Package expression to match in this repository index.
+ * @param[in] ri Pointer to an xbps_rindex structure.
+ * @param[in] pkg Package expression to match in this repository index.
  *
  * @return The pkg dictionary on success, NULL otherwise.
  */
@@ -1404,8 +1413,8 @@ prop_dictionary_t xbps_rindex_get_pkg(struct xbps_rindex *ri, const char *pkg);
  * the expression \a pkg. On match the first package matching the virtual
  * package expression will be returned.
  *
- * param[in] ri Pointer to an xbps_rindex structure.
- * param[in] pkg Package expression to match in this repository index.
+ * @param[in] ri Pointer to an xbps_rindex structure.
+ * @param[in] pkg Package expression to match in this repository index.
  *
  * @return The pkg dictionary on success, NULL otherwise.
  */

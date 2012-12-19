@@ -31,15 +31,6 @@
 #include "xbps_api_impl.h"
 #include "fetch.h"
 
-/**
- * @file lib/repository_sync_index.c
- * @brief Repository package index synchronization routines
- * @defgroup reposync Repository package index synchronization functions
- *
- * Functions to manipulate repository package index plist file
- * synchronizations.
- */
-
 char HIDDEN *
 xbps_get_remote_repo_string(const char *uri)
 {

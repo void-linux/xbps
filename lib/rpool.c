@@ -34,7 +34,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/repository_pool.c
+ * @file lib/rpool.c
  * @brief Repository pool routines
  * @defgroup repopool Repository pool functions
  */

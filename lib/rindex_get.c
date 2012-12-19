@@ -33,8 +33,8 @@
 
 /**
  * @file lib/rindex_get.c
- * @brief Repository index get routines
- * @defgroup rindex_get Repository index get routines
+ * @brief Repository index functions
+ * @defgroup rindex Repository index functions
  */
 static prop_dictionary_t
 match_pkg_by_pkgver(prop_dictionary_t repod, const char *p)
