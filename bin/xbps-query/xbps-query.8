@@ -80,6 +80,26 @@ queried in registered repositories.
 .Bl -tag -width -x
 .It Fl l, Fl -list-pkgs
 Lists registered packages in the package database (pkgdb).
+A package can be in any of the following states:
+.Bl -item -width xx -compact
+.Pp
+.It
+.Sy ii
+Package is installed.
+.It
+.Sy uu
+Package is unpacked but must be configured with
+.Xr xbps-reconfigure 8 .
+.It
+.Sy hr
+Package is
+.Sy half-removed ,
+and can be fully removed with
+.Xr xbps-remove 8 .
+.It
+.Sy ??
+Package state is unknown.
+.El
 .It Fl L, Fl -list-repos
 Lists registered and working repositories.
 .It Fl m, Fl -list-manual-pkgs
