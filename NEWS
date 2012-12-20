@@ -1,5 +1,16 @@
 xbps-0.19.1 (???):
 
+ * xbps-query(8): -l, --list-packages option now prints pkg state as follows:
+
+	STATE	PKGVER	DESCRIPTION
+
+   Where STATE can be any of the following package states:
+
+	ii = installed
+	uu = unpacked
+	hr = half-removed
+	?? = unknown
+
  * xbps-reconfigure(8): fixed regression introduced in 0.19 when processing
    all packages with '-a, --all'. Found by pancake.
 

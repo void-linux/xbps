@@ -56,10 +56,11 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 		  bool *loop_done)
 {
 	struct list_pkgver_cb *lpc = arg;
-	const char *pkgver, *short_desc, *arch;
+	const char *pkgver, *short_desc, *arch, *state_str;
 	char tmp[255], *out = NULL;
 	size_t i, len = 0, maxcols;
 	bool chkarch;
+	pkg_state_t state;
 
 	(void)xhp;
 	(void)loop_done;
@@ -73,8 +74,19 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 	if (!pkgver && !short_desc)
 		return EINVAL;
 
-	strncpy(tmp, pkgver, sizeof(tmp));
-	for (i = strlen(pkgver); i < lpc->pkgver_len; i++)
+	xbps_pkg_state_dictionary(obj, &state);
+
+	if (state == XBPS_PKG_STATE_INSTALLED)
+		state_str = "ii";
+	else if (state == XBPS_PKG_STATE_UNPACKED)
+		state_str = "uu";
+	else if (state == XBPS_PKG_STATE_HALF_REMOVED)
+		state_str = "hr";
+	else
+		state_str = "??";
+
+	snprintf(tmp, sizeof(tmp), "%s %s", state_str, pkgver);
+	for (i = strlen(pkgver) + 3; i < lpc->pkgver_len; i++)
 		tmp[i] = ' ';
 
 	tmp[i] = '\0';
