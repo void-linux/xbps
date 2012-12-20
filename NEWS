@@ -1,5 +1,10 @@
 xbps-0.19.1 (???):
 
+ * libxbps: when a package has not been configured and there's an update
+   in transaction, libxbps incorrectly tried to ignore the update and
+   configure this package. Fix this by not ignoring the update even if
+   package has any state.
+
  * xbps-query(8): -l, --list-packages option now prints pkg state as follows:
 
 	STATE	PKGVER	DESCRIPTION

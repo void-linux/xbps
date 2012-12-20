@@ -145,7 +145,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod, state)) != 0)
 		return rv;
 
-	if (state == XBPS_PKG_STATE_UNPACKED)
+	if ((action == TRANS_INSTALL) && (state == XBPS_PKG_STATE_UNPACKED))
 		reason = "configure";
 	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
 		reason = "install";
