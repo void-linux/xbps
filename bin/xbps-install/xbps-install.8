@@ -1,4 +1,4 @@
-.Dd November 21, 2012
+.Dd December 20, 2012
 .Os Void Linux
 .Dt xbps-install 8
 .Sh NAME
@@ -12,12 +12,40 @@
 The
 .Nm
 utility installs and updates packages in the target root directory.
-Three different ways are valid for
-.Ar PKG :
-by specifying just the
-package name (best available version from repositories will be installed);
-by specifying a package pattern with '>' '<' '>=' or '<=' (foo>=2.0) or
-by specifying an exact package version, i.e (foo-1.0_1).
+The argument
+.Ar PKG
+is a package expression, which is explained in the
+.Em PACKAGE EXPRESSION
+section.
+.Sh PACKAGE EXPRESSION
+A package expression is a form to match a pattern; currently xbps
+supports 3 ways to specify them:
+.Bl -dash
+.It
+by package name, i.e:
+.Dq Sy foo .
+.It
+by exact package name and version, i.e:
+.Dq Sy foo-1.0_1 .
+.It
+by specifying a package name and version separated by any of the following version comparators:
+.Bl -item -width xx -compact
+.Pp
+.It
+.Sy <
+less than
+.It
+.Sy >
+greater than
+.It
+.Sy <=
+less or equal than
+.It
+.Sy >=
+greater or equal than
+.Pp
+Example:
+.Dq Sy foo>=2.0 .
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl A, Fl -automatic
@@ -44,7 +72,7 @@ Specifies a full path for the target root directory.
 Skip synchronizing remote repository index files.
 .It Fl u, Fl -update
 Update target package(s) rather than install. If
-.Op PKGNAME
+.Op PKG
 not set, all installed packages will be updated.
 .It Fl v, Fl -verbose
 Enables verbose messages.
