@@ -221,6 +221,7 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 	prop_dictionary_t d, pkgdb_d;
 	const char *instdate;
 	bool autoinst;
+	pkg_state_t state;
 
 	pkgdb_d = xbps_pkgdb_get_pkg(xhp, pkg);
 	if (pkgdb_d == NULL)
@@ -237,6 +238,9 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 
 	if (prop_dictionary_get_bool(pkgdb_d, "automatic-install", &autoinst))
 		prop_dictionary_set_bool(d, "automatic-install", autoinst);
+
+	xbps_pkg_state_dictionary(pkgdb_d, &state);
+	xbps_set_pkg_state_dictionary(d, state);
 
 	if (option == NULL)
 		show_pkg_info(d);
