@@ -1,3 +1,8 @@
+xbps-0.19.1 (???):
+
+ * xbps-reconfigure(8): fixed regression introduced in 0.19 when processing
+   all packages with '-a, --all'. Found by pancake.
+
 xbps-0.19 (2012-12-15):
 
  * xbps-rindex(8): add mode (-a) does not remove old binary packages
