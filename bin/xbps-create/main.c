@@ -182,7 +182,9 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 	    (strcmp(fpath, "./props.plist") == 0) ||
 	    (strcmp(fpath, "./files.plist") == 0) ||
 	    (strcmp(fpath, "./flist") == 0) ||
-	    (strcmp(fpath, "./rdeps") == 0))
+	    (strcmp(fpath, "./rdeps") == 0) ||
+	    (strcmp(fpath, "./shlib-provides") == 0) ||
+	    (strcmp(fpath, "./shlib-requires") == 0))
 		return 0;
 
 	/* sanitized file path */
