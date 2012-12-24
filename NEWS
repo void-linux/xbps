@@ -1,4 +1,9 @@
-xbps-0.19.1 (???):
+xbps-0.20 (???):
+
+ * xbps-create(8): new long options: --shlib-provides and --shlib-requires,
+   to add list of required and provided shared libraries in a package.
+
+xbps-0.19.1 (2012-12-22):
 
  * libxbps: when a package has not been configured and there's an update
    in transaction, libxbps incorrectly tried to ignore the update and

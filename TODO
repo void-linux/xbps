@@ -7,8 +7,6 @@ libxbps:
 xbps-create:
  - Move all configuration files to <prefix>/share/<pkgname>/conf/<cffile>.
  - Add -i --installed option to create binpkg from an installed version.
- - Add new properties 'shlib-requires' and 'shlib-provides' to know what
-   shlibs are required by this package and what shlibs this package provides.
 
 All:
  - Add support to sign with PGP or RSA the repository index files.

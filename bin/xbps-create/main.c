@@ -85,7 +85,11 @@ usage(void)
 	"                     e.g: 'foo>=1.0 blah<2.0').\n"
 	" -S --long-desc      Long description (80 cols per line).\n"
 	" -s --desc           Short description (max 80 characters).\n"
-	" -V --version        Prints XBPS release version.\n\n"
+	" -V --version        Prints XBPS release version.\n"
+	" --shlib-provides    List of provided shared libraries (blank separated list,\n"
+	"                     e.g 'libfoo.so.1 libblah.so.2').\n"
+	" --shlib-requires    List of required shared libraries (blank separated list,\n"
+	"                     e.g 'libfoo.so.1 libblah.so.2').\n\n"
 	"NOTE:\n"
 	" At least three flags are required: architecture, pkgver and desc.\n\n"
 	"EXAMPLE:\n"
@@ -555,6 +559,8 @@ main(int argc, char **argv)
 		{ "long-desc", required_argument, NULL, 'S' },
 		{ "desc", required_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "shlib-provides", required_argument, NULL, '0' },
+		{ "shlib-requires", required_argument, NULL, '1' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
@@ -564,6 +570,7 @@ main(int argc, char **argv)
 	const char *conflicts, *deps, *homepage, *license, *maint, *bwith;
 	const char *provides, *pkgver, *replaces, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
+	const char *shlib_provides, *shlib_requires;
 	const char *srcrevs = NULL;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
@@ -572,7 +579,7 @@ main(int argc, char **argv)
 
 	arch = conflicts = deps = homepage = license = maint = NULL;
 	provides = pkgver = replaces = desc = ldesc = bwith = NULL;
-	config_files = mutable_files = NULL;
+	config_files = mutable_files = shlib_provides = shlib_requires = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
@@ -636,6 +643,12 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case '0':
+			shlib_provides = optarg;
+			break;
+		case '1':
+			shlib_requires = optarg;
+			break;
 		case '?':
 		default:
 			usage();
@@ -708,6 +721,8 @@ main(int argc, char **argv)
 	process_array("conflicts", conflicts);
 	process_array("provides", provides);
 	process_array("replaces", replaces);
+	process_array("shlib-provides", shlib_provides);
+	process_array("shlib-requires", shlib_requires);
 
 	/* save cwd */
 	memset(&cwd, 0, sizeof(cwd));
