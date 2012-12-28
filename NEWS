@@ -1,5 +1,8 @@
 xbps-0.20 (???):
 
+ * libxbps: fixed a stupid typo that made it to skip executing the
+   "pre-remove" action in installed packages.
+
  * xbps-create(8): new long options: --shlib-provides and --shlib-requires,
    to add list of required and provided shared libraries in a package.
 
