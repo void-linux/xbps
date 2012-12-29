@@ -266,7 +266,7 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 			    "execute pre ACTION: %s",
 			    pkgver, strerror(errno));
 			rv = errno;
-			goto out;
+			goto purge;
 		}
 	}
 	/*
@@ -349,6 +349,7 @@ purge:
 	 */
 	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	if (remove(buf) == -1) {
+		free(buf);
 		if (errno != ENOENT) {
 			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 			    rv, pkgname, version,
@@ -356,6 +357,7 @@ purge:
 			    pkgver, strerror(errno));
 		}
 	}
+	free(buf);
 	/*
 	 * Unregister package from pkgdb.
 	 */
@@ -367,8 +369,6 @@ purge:
 	xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_DONE,
 	     0, pkgname, version, NULL);
 out:
-	if (buf != NULL)
-		free(buf);
 	if (pkgname != NULL)
 		free(pkgname);
 
