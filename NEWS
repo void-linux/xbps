@@ -1,5 +1,12 @@
 xbps-0.20 (???):
 
+ * configure: changed some options to '--enable-foo':
+
+	--enable-static
+	--enable-api-docs
+	--enable-debug
+	--enable-tests
+
  * libxbps: when removing a package and if executing its "pre-remove"
    action fails, still continue removing this package.
 

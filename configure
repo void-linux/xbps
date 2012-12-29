@@ -25,23 +25,23 @@ By default, \`make install' will install all the files in
 an installation prefix other than \`/usr/local' using \`--prefix',
 for instance \`--prefix=\$HOME'.
 
---prefix=DIR			install architecture-independent files in PREFIX
---exec-prefix=DIR		install architecture-dependent files in EPREFIX
---sbindir=DIR			system admin executables [PREFIX/sbin]
---libdir=DIR			object code libraries [PREFIX/lib]
---includedir=DIR		C header files [EPREFIX/include]
---mandir=DIR			man documentation [EPREFIX/share/man]
---datadir=DIR			read-only architecture-independent data [EPREFIX/share]
---etcdir=DIR			configuration files [PREFIX/etc]
---pkgconfigdir=DIR		pkg-config directory [EPREFIX/lib/pkgconfig]
---testsdir=DIR			test suite directory [EPREFIX/tests]
+--prefix=DIR 		Install architecture-independent files in PREFIX
+--exec-prefix=DIR 	Install architecture-dependent files in EPREFIX
+--sbindir=DIR 		System admin executables [PREFIX/sbin]
+--libdir=DIR 		Object code libraries [PREFIX/lib]
+--includedir=DIR 	C header files [EPREFIX/include]
+--mandir=DIR 		Man documentation [EPREFIX/share/man]
+--datadir=DIR 		Read-only architecture-independent data [EPREFIX/share]
+--etcdir=DIR 		Configuration files [PREFIX/etc]
+--pkgconfigdir=DIR 	pkg-config directory [EPREFIX/lib/pkgconfig]
+--testsdir=DIR		Test suite directory [EPREFIX/tests]
 
---debug				Build with debugging code and symbols
---verbose			Disable silent build to see compilation details
---with-api-docs			Install XBPS API Library documentation (default disabled)
---with-static			Build XBPS static utils (default disabled)
---with-tests			Build and install Kyua tests (default disabled)
-				Needs atf >= 0.15 (http://code.google.com/p/kyua)
+--verbose 		Disable silent build to see compilation details
+--enable-api-docs 	Install XBPS API Library documentation (default disabled)
+--enable-debug		Build with debugging code and symbols (default disabled)
+--enable-static 	Build XBPS static utils (default disabled)
+--enable-tests		Build and install Kyua tests (default disabled)
+			Needs atf >= 0.15 (http://code.google.com/p/kyua)
 _EOF
 	exit 1
 }
@@ -50,7 +50,7 @@ for x; do
 	opt=${x%%=*}
 	var=${x#*=}
 	case "$opt" in
-	--debug) DEBUG=yes;;
+	--enable-debug) DEBUG=yes;;
 	--prefix) PREFIX=$var;;
 	--exec-prefix) EPREFIX=$var;;
 	--sbindir) SBINDIR=$var;;
@@ -63,11 +63,11 @@ for x; do
 	--etcdir) ETCDIR=$var;;
 	--libdir) LIBDIR=$var;;
 	--datadir|--infodir) ;; # ignore autotools
-	--with-api-docs) BUILD_API_DOCS=$var;;
+	--enable-api-docs) BUILD_API_DOCS=$var;;
 	--verbose) unset SILENT;;
 	--pkgconfigdir) PKGCONFIGDIR=$var;;
-	--with-tests) BUILD_TESTS=yes;;
-	--with-static) BUILD_STATIC=yes;;
+	--enable-tests) BUILD_TESTS=yes;;
+	--enable-static) BUILD_STATIC=yes;;
 	--testsdir) TESTSDIR=$var;;
 	--help) usage;;
 	*) echo "$0: WARNING: unknown option $opt" >&2;;
@@ -480,16 +480,17 @@ int main(void) {
 }
 EOF
 if $XCC -lfetch _$func.c -o _$func 2>/dev/null; then
-	echo yes.
+	LIBFETCH=yes
 	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
 	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
 else
-	echo no.
+	LIBFETCH=no
 	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
 	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
+echo "${LIBFETCH}."
 
 #
 # Check for prop_dictionary_internalize_from_zfile().
@@ -505,17 +506,18 @@ int main(void) {
 }
 EOF
 if $XCC -lprop _$func.c -o _$func 2>/dev/null; then
-	echo yes.
+	PROPLIB=yes
 	echo "USE_EXTERNAL_PROPLIB =	1" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lz -lpthread -lprop" >>$CONFIG_MK
 	echo "STATIC_LIBS +=	-lprop -lz -lpthread" >>$CONFIG_MK
 else
-	echo no.
+	PROPLIB=no
 	echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
 	echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
 	echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
+echo "${PROPLIB}."
 
 #
 # Check for clock_gettime(3).
