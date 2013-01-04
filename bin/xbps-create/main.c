@@ -42,6 +42,10 @@
 #include <xbps_api.h>
 #include "queue.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 #define _PROGNAME	"xbps-create"
 
 struct xentry {

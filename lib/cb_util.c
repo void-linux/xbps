@@ -40,6 +40,10 @@
 
 #include "xbps_api_impl.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 void HIDDEN
 xbps_set_cb_fetch(struct xbps_handle *xhp,
 		  off_t file_size,

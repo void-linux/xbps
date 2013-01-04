@@ -33,6 +33,10 @@
 
 #include "defs.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 static char *
 strtrim(char *str)
 {

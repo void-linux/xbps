@@ -34,6 +34,10 @@
 
 #include "xbps_api_impl.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 /**
  * @file lib/initend.c
  * @brief Initialization and finalization routines

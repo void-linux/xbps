@@ -34,6 +34,10 @@
 
 #include <xbps_api.h>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 #ifndef __arraycount
 # define __arraycount(a) (sizeof(a) / sizeof(*(a)))
 #endif
