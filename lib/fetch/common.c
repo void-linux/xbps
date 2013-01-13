@@ -316,6 +316,7 @@ fetch_connect(struct url *url, int af, int verbose)
 	if ((conn = fetch_reopen(sd)) == NULL) {
 		fetch_syserr();
 		close(sd);
+		return NULL;
 	}
 	conn->cache_url = fetchCopyURL(url);
 	conn->cache_af = af;
@@ -529,6 +530,10 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 				return (-1);
 			}
 			errno = 0;
+#ifdef WITH_SSL
+			if (conn->ssl && SSL_pending(conn->ssl))
+				break;
+#endif
 			r = select(conn->sd + 1, &readfds, NULL, NULL, &waittv);
 			if (r == -1) {
 				if (errno == EINTR && fetchRestartCalls)
