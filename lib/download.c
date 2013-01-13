@@ -42,6 +42,7 @@
 
 #include "xbps_api_impl.h"
 #include "fetch.h"
+#include "compat.h"
 
 /**
  * @file lib/download.c
@@ -56,7 +57,7 @@ print_time(time_t *t)
 	struct tm tm;
 	static char buf[255];
 
-	localtime_r(t, &tm);
+	gmtime_r(t, &tm);
 	strftime(buf, sizeof(buf), "%d %b %Y %H:%M", &tm);
 	return buf;
 }
@@ -95,9 +96,10 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	struct url_stat url_st;
 	struct fetchIO *fio = NULL;
 	struct timespec ts[2];
-	off_t bytes_dload = -1;
-	ssize_t bytes_read = -1, bytes_written = -1;
-	char buf[4096], *filename, *tempfile;
+	off_t bytes_dload = 0;
+	ssize_t bytes_read = 0, bytes_written = 0;
+	char buf[4096], *filename, *tempfile = NULL;
+	char fetch_flags[8];
 	int fd = -1, rv = 0;
 	bool refetch = false, restart = false;
 
@@ -107,13 +109,19 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	/* Extern vars declared in libfetch */
 	fetchLastErrCode = 0;
 	fetchTimeout = xhp->fetch_timeout;
-	fetchRestartCalls = 1;
+
+	if ((url = fetchParseURL(uri)) == NULL)
+		return -1;
+
+	strlcpy(fetch_flags, flags, 7);
 	/*
 	 * Get the filename specified in URI argument.
 	 */
 	filename = strrchr(uri, '/') + 1;
-	if (filename == NULL)
-		return -1;
+	if (filename == NULL) {
+		rv = -1;
+		goto out;
+	}
 
 	tempfile = xbps_xasprintf("%s.part", filename);
 	/*
@@ -135,64 +143,26 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	memset(&st, 0, sizeof(st));
 	if (stat(filename, &st) == 0) {
 		refetch = true;
-		restart = true;
+		url->last_modified = st.st_mtime;
+		strcat(fetch_flags, "i");
 	} else {
 		if (errno != ENOENT) {
 			rv = -1;
 			goto out;
 		}
 	}
-	/*
-	 * Prepare stuff for libfetch.
-	 */
-	if ((url = fetchParseURL(uri)) == NULL) {
-		rv = -1;
-		goto out;
-
-	}
-	/*
-	 * Check if we want to refetch from scratch a file.
-	 */
-	if (refetch) {
+	if (refetch && !restart) {
+		/* fetch the whole file, filename available */
 		stp = &st;
-		/*
-		 * Issue a HEAD request to know size and mtime.
-		 */
-		if ((rv = fetchStat(url, &url_st, NULL)) == -1)
-			goto out;
-
-		/*
-		 * If mtime and size match do nothing.
-		 */
-		if (restart && url_st.size && url_st.mtime &&
-		    url_st.size == stp->st_size &&
-		    url_st.mtime == stp->st_mtime)
-			goto out;
-
-		/*
-		 * If size match do nothing.
-		 */
-		if (restart && url_st.size && url_st.size == st.st_size)
-			goto out;
-
-		/*
-		 * Remove current file (if exists).
-		 */
-		restart = false;
-		url->offset = 0;
-		/*
-		 * Issue the GET request to refetch.
-		 */
-		fio = fetchGet(url, flags);
 	} else {
-		/*
-		 * Issue a GET and skip the HEAD request, some servers
-		 * (googlecode.com) return a 404 in HEAD requests!
-		 */
+		/* resume transfer, partial file found */
 		stp = &st_tmpfile;
 		url->offset = stp->st_size;
-		fio = fetchXGet(url, &url_st, flags);
 	}
+	/*
+	 * Issue a GET request.
+	 */
+	fio = fetchXGet(url, &url_st, fetch_flags);
 
 	/* debug stuff */
 	xbps_dbg_printf(xhp, "st.st_size: %zd\n", (ssize_t)stp->st_size);
@@ -210,16 +180,10 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	xbps_dbg_printf(xhp, "url_stat.atime: %s\n", print_time(&url_st.atime));
 	xbps_dbg_printf(xhp, "url_stat.mtime: %s\n", print_time(&url_st.mtime));
 
-	if (fio == NULL && fetchLastErrCode != FETCH_OK) {
-		if (!refetch && restart && fetchLastErrCode == FETCH_UNAVAIL) {
-			/*
-			 * In HTTP when 416 is returned and length==0
-			 * means that local and remote file size match.
-			 * Because we are requesting offset==st_size! grr,
-			 * stupid http servers...
-			 */
-			if (url->length == 0)
-				goto out;
+	if (fio == NULL) {
+		if (fetchLastErrCode == FETCH_UNCHANGED) {
+			/* Last-Modified matched */
+			goto out;
 		}
 		rv = -1;
 		goto out;
@@ -237,11 +201,6 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 		    "removing local file and refetching...\n", filename);
 		(void)remove(tempfile);
 		restart = false;
-	} else if (restart && url_st.mtime && url_st.size &&
-		   url_st.size == stp->st_size &&
-		   url_st.mtime == stp->st_mtime) {
-		/* Local and remote size/mtime match, do nothing. */
-		goto out;
 	}
 	/*
 	 * If restarting, open the file for appending otherwise create it.
@@ -288,11 +247,13 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 		errno = EIO;
 		rv = -1;
 		goto out;
-	}
-	if (fd == -1) {
+	} else if ((bytes_dload + url->offset) != url_st.size) {
+		xbps_dbg_printf(xhp, "file %s is truncated\n", filename);
+		errno = EIO;
 		rv = -1;
 		goto out;
 	}
+
 	/*
 	 * Let the fetch progress callback know that the file
 	 * has been fetched.
@@ -313,6 +274,7 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	/* sync and close fd */
 	(void)fsync(fd);
 	(void)close(fd);
+	fd = -1;
 
 	/* File downloaded successfully, rename to destfile */
 	if (rename(tempfile, filename) == -1) {
@@ -324,10 +286,10 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	rv = 1;
 
 out:
-	if (fd != -1)
-		(void)close(fd);
 	if (fio != NULL)
 		fetchIO_close(fio);
+	if (fd != -1)
+		(void)close(fd);
 	if (url != NULL)
 		fetchFreeURL(url);
 	if (tempfile != NULL)
