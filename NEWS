@@ -1,5 +1,10 @@
 xbps-0.20 (???):
 
+ * libfetch: added a patch to fix select(2) timing out when fetching
+   from some https servers.
+
+ * libfetch: merged version 2.34 from NetBSD/pkgsrc.
+
  * configure: changed some options to '--enable-foo':
 
 	--enable-static
