@@ -264,9 +264,8 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 			    errno, pkgname, version,
 			    "%s: [remove] REMOVE script failed to "
 			    "execute pre ACTION: %s",
-			    pkgver, strerror(errno));
-			rv = errno;
-			goto purge;
+			    pkgver, strerror(rv));
+			goto out;
 		}
 	}
 	/*

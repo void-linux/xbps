@@ -12,9 +12,6 @@ xbps-0.20 (???):
 	--enable-debug
 	--enable-tests
 
- * libxbps: when removing a package and if executing its "pre-remove"
-   action fails, still continue removing this package.
-
  * libxbps: fixed a stupid typo that made it to skip executing the
    "pre-remove" action in installed packages.
 
