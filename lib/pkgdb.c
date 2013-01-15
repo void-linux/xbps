@@ -109,6 +109,8 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 	if ((xhp->pkgdb = prop_array_internalize_from_zfile(plist)) == NULL) {
 		if (errno == ENOENT)
 			xhp->pkgdb = prop_array_create();
+		else
+			xbps_error_printf("cannot access to pkgdb: %s\n", strerror(errno));
 
 		cached_rv = rv = errno;
 	}
