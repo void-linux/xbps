@@ -113,7 +113,9 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	if ((url = fetchParseURL(uri)) == NULL)
 		return -1;
 
-	strlcpy(fetch_flags, flags, 7);
+	memset(&fetch_flags, 0, sizeof(fetch_flags));
+	if (flags != NULL)
+		strlcpy(fetch_flags, flags, 7);
 	/*
 	 * Get the filename specified in URI argument.
 	 */
@@ -144,7 +146,7 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	if (stat(filename, &st) == 0) {
 		refetch = true;
 		url->last_modified = st.st_mtime;
-		strcat(fetch_flags, "i");
+		strlcat(fetch_flags, "i", sizeof(fetch_flags));
 	} else {
 		if (errno != ENOENT) {
 			rv = -1;
