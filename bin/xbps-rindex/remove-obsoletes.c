@@ -56,8 +56,9 @@ remove_pkg(const char *repodir, const char *arch, const char *file)
 	if (remove(filepath) == -1) {
 		if (errno != ENOENT) {
 			rv = errno;
-			xbps_error_printf("failed to remove old binpkg "
-			    "`%s': %s\n", file, strerror(rv));
+			fprintf(stderr, "xbps-rindex: failed to remove "
+			    "package `%s': %s\n", file,
+			    strerror(rv));
 			free(filepath);
 			return rv;
 		}
@@ -68,8 +69,9 @@ remove_pkg(const char *repodir, const char *arch, const char *file)
 	if (remove(filepath) == -1) {
 		if (errno != ENOENT) {
 			rv = errno;
-			xbps_error_printf("failed to remove old binpkg "
-			    "`%s': %s\n", file, strerror(rv));
+			fprintf(stderr, "xbps-rindex: failed to remove "
+			    "package `%s': %s\n", file,
+			    strerror(rv));
 			free(filepath);
 			return rv;
 		}
@@ -95,11 +97,8 @@ cleaner_thread(void *arg)
 		if (pkgd == NULL) {
 			rv = remove_pkg(thd->ri->uri, arch, binpkg);
 			if (rv != 0) {
-				fprintf(stderr, "xbps-rindex: failed to remove "
-				    "package `%s': %s\n", binpkg,
-				    strerror(rv));
 				prop_object_release(pkgd);
-				break;
+				continue;
 			}
 			printf("Removed broken package `%s'.\n", binpkg);
 		}
@@ -118,10 +117,8 @@ cleaner_thread(void *arg)
 		if (!xbps_rindex_get_pkg(thd->ri, pkgver)) {
 			rv = remove_pkg(thd->ri->uri, arch, binpkg);
 			if (rv != 0) {
-				fprintf(stderr, "xbps-rindex: failed to remove "
-				    "package `%s': %s\n", binpkg,
-				    strerror(rv));
 				prop_object_release(pkgd);
+				continue;
 			}
 			printf("Removed obsolete package `%s'.\n", binpkg);
 		}

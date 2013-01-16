@@ -1,6 +1,9 @@
 xbps-0.20 (???):
 
- * xbps-install: don't treat EEXIST as an error when installing
+ * xbps-rindex(8): fix crash in -r (remove-obsoletes mode) if pkg cannot
+   be removed (permissions or file disappeared).
+
+ * xbps-install(8): don't treat EEXIST as an error when installing
    new packages; technically it's not an error.
 
  * libfetch: added a patch to fix select(2) timing out when fetching
