@@ -1,4 +1,4 @@
-xbps-0.20 (???):
+xbps-0.20 (2013-01-24):
 
  * xbps-rindex(8): fix crash in -r (remove-obsoletes mode) if pkg cannot
    be removed (permissions or file disappeared).
