@@ -56,18 +56,13 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 		  bool *loop_done)
 {
 	struct list_pkgver_cb *lpc = arg;
-	const char *pkgver, *short_desc, *arch, *state_str;
+	const char *pkgver, *short_desc, *state_str;
 	char tmp[255], *out = NULL;
 	size_t i, len = 0, maxcols;
-	bool chkarch;
 	pkg_state_t state;
 
 	(void)xhp;
 	(void)loop_done;
-
-	chkarch = prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-	if (chkarch && !xbps_pkg_arch_match(xhp, arch, NULL))
-		return 0;
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
