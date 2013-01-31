@@ -125,7 +125,7 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 	}
 
 	/* reposync start cb */
-	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, uri, plistf, NULL);
+	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, uri, rpidx, NULL);
 	/*
 	 * Download plist index file from repository.
 	 */
