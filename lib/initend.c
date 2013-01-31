@@ -90,8 +90,8 @@ config_inject_vpkgs(struct xbps_handle *xh)
 		vpkgdir = strdup("/etc/xbps/virtualpkg.d");
 
 	if ((dirp = opendir(vpkgdir)) == NULL) {
-		fprintf(stderr, "ERROR: cannot access to "
-		    "etc/xbps/virtualpkg.d: %s\n", strerror(errno));
+		xbps_dbg_printf(xh, "cannot access to %s: %s\n",
+		    vpkgdir, strerror(errno));
 		return;
 	}
 
