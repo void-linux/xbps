@@ -59,8 +59,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 		printf("\n[*] Configuring unpacked packages\n");
 		break;
 	case XBPS_STATE_REPOSYNC:
-		printf("[*] Updating `%s/%s' ...\n",
-		    xscd->arg0, xscd->arg1);
+		printf("[*] Updating `%s' ...\n", xscd->arg0);
 		break;
 	case XBPS_STATE_VERIFY:
 		printf("%s: checking binary pkg integrity ...\n", xscd->arg0);
