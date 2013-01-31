@@ -1,3 +1,11 @@
+xbps-0.21 (???):
+
+ * xbps-install(8): removed the -s,--skip-sync option; the new -S,--sync
+   option makes this redundant and useless.
+
+ * xbps-install(8): added -S,--sync option to synchronize remote repository index
+   files; can be combined with -u or used exclusively.
+
 xbps-0.20 (2013-01-24):
 
  * xbps-rindex(8): fix crash in -r (remove-obsoletes mode) if pkg cannot

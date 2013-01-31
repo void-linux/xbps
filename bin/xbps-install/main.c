@@ -52,7 +52,7 @@ usage(bool fail)
 	    " -n --dry-run             Dry-run mode\n"
 	    " -R --repository <uri>    Default repository to be used if config not set\n"
 	    " -r --rootdir <dir>       Full path to rootdir\n"
-	    " -s --skip-sync           Skip remote repository index sync\n"
+	    " -S --sync                Sync remote repository index\n"
 	    " -u --update              Update target package(s)\n"
 	    " -v --verbose             Verbose messages\n"
 	    " -y --yes                 Assume yes to all questions\n"
@@ -63,7 +63,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "AC:c:dfhnR:r:suVvy";
+	const char *shortopts = "AC:c:dfhnR:r:SuVvy";
 	const struct option longopts[] = {
 		{ "automatic", no_argument, NULL, 'A' },
 		{ "config", required_argument, NULL, 'C' },
@@ -74,7 +74,7 @@ main(int argc, char **argv)
 		{ "dry-run", no_argument, NULL, 'n' },
 		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
-		{ "skip-sync", no_argument, NULL, 's' },
+		{ "sync", no_argument, NULL, 'S' },
 		{ "update", no_argument, NULL, 'u' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
@@ -85,12 +85,12 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	const char *rootdir, *cachedir, *conffile, *defrepo;
 	int i, c, flags, rv;
-	bool skip_sync, yes, reinstall, drun, update;
+	bool sync, yes, reinstall, drun, update;
 	size_t maxcols;
 
 	rootdir = cachedir = conffile = defrepo = NULL;
 	flags = rv = 0;
-	skip_sync = yes = reinstall = drun = update = false;
+	sync = yes = reinstall = drun = update = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -122,8 +122,8 @@ main(int argc, char **argv)
 		case 'r':
 			rootdir = optarg;
 			break;
-		case 's':
-			skip_sync = true;
+		case 'S':
+			sync = true;
 			break;
 		case 'u':
 			update = true;
@@ -143,7 +143,7 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if (!update && (argc == optind))
+	if ((!update && !sync) && (argc == optind))
 		usage(true);
 
 	/*
@@ -184,8 +184,11 @@ main(int argc, char **argv)
 	}
 
 	/* Sync remote repository index files by default */
-	if (!skip_sync || !drun) {
+	if (sync && !drun) {
 		rv = xbps_rpool_sync(&xh, XBPS_PKGINDEX, NULL);
+		if (rv != 0)
+			exit(rv);
+		rv = xbps_rpool_sync(&xh, XBPS_PKGINDEX_FILES, NULL);
 		if (rv != 0)
 			exit(rv);
 	}
