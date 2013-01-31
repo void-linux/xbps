@@ -1,4 +1,4 @@
-.Dd November 20, 2012
+.Dd January 31, 2013
 .Os Void Linux
 .Dt xbps-create 8
 .Sh NAME
@@ -66,6 +66,12 @@ A long description for this package.
 A short description for this package, one line with less than 80 characters.
 .It Fl V, Fl -version
 Shows the XBPS version.
+.It Fl -shlib-provides Ar list
+A list of provided shared libraries, separated by a single blank. Example:
+.Ar 'libfoo.so.2 libblah.so.1' .
+.It Fl -shlib-requires Ar list
+A list of required shared libraries, separated by a single blank. Example:
+.Ar 'libz.so.1 libfoo.so.2' .
 .Sh SEE ALSO
 .Xr xbps-dgraph 8 ,
 .Xr xbps-install 8 ,
