@@ -12,6 +12,10 @@ endif
 
 .PHONY: all
 all:
+	@if test ! -e config.h; then \
+		echo "You didn't run ./configure ... exiting."; \
+		exit 1; \
+	fi
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir || exit 1;	\
 	done
