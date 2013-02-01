@@ -249,7 +249,7 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 		errno = EIO;
 		rv = -1;
 		goto out;
-	} else if ((bytes_dload + url->offset) != url_st.size) {
+	} else if (url_st.size > 0 && ((bytes_dload + url->offset) != url_st.size)) {
 		xbps_dbg_printf(xhp, "file %s is truncated\n", filename);
 		errno = EIO;
 		rv = -1;

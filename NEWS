@@ -1,5 +1,8 @@
 xbps-0.21 (???):
 
+ * Fix regression in xbps_fetch_file() when fetching files from HTTP
+   servers that don't provide us enough details (file length, mtime, etc).
+
  * Fix regression introduced in b9136c61c95698a5dafbc69ee9cd873110c68e45,
    breaking package conflicts detection.
 
