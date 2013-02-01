@@ -1,5 +1,8 @@
 xbps-0.21 (???):
 
+ * Fix regression introduced in b9136c61c95698a5dafbc69ee9cd873110c68e45,
+   breaking package conflicts detection.
+
  * xbps-install(8): removed the -s,--skip-sync option; the new -S,--sync
    option makes this redundant and useless.
 
