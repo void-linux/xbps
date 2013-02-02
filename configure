@@ -487,6 +487,7 @@ if $XCC -lfetch _$func.c -o _$func 2>/dev/null; then
 else
 	LIBFETCH=no
 	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
+	echo "LDFLAGS +=	-lssl" >>$CONFIG_MK
 	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
