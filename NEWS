@@ -1,5 +1,10 @@
 xbps-0.21 (???):
 
+ * xbps-install(8): the -f, --force flag will now preserve configuration
+   files if they were modified, and only unpack files that have been
+   modified when re-installing packages. If -f is specified twice (-ff)
+   all package files will be overwritten from new package.
+
  * Fix regression in xbps_fetch_file() when fetching files from HTTP
    servers that don't provide us enough details (file length, mtime, etc).
 

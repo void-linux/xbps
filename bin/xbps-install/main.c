@@ -47,7 +47,9 @@ usage(bool fail)
 	    " -C --config <file>       Full path to configuration file\n"
 	    " -c --cachedir <dir>      Full path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
-	    " -f --force               Force package installation\n"
+	    " -f --force               Force package re-installation\n"
+	    "                          If specified twice, all files will be\n"
+	    "                          overwritten.\n"
 	    " -h --help                Print help usage\n"
 	    " -n --dry-run             Dry-run mode\n"
 	    " -R --repository <uri>    Default repository to be used if config not set\n"
@@ -84,7 +86,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *rootdir, *cachedir, *conffile, *defrepo;
-	int i, c, flags, rv;
+	int i, c, flags, rv, fflag = 0;
 	bool sync, yes, reinstall, drun, update;
 	size_t maxcols;
 
@@ -107,7 +109,9 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'f':
-			flags |= XBPS_FLAG_FORCE_INSTALL;
+			fflag++;
+			if (fflag > 1)
+				flags |= XBPS_FLAG_FORCE_UNPACK;
 			reinstall = true;
 			break;
 		case 'h':

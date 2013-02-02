@@ -1,4 +1,4 @@
-.Dd January 31, 2013
+.Dd February 2, 2013
 .Os Void Linux
 .Dt xbps-install 8
 .Sh NAME
@@ -59,7 +59,12 @@ Specifies a full path to the cache directory, where binary packages are stored.
 Enables extra debugging shown to stderr.
 .It Fl f, Fl -force
 Forcefully install target package even if another version is already installed,
-overwritting its package files.
+overwritting regular package files and symlinks (if they have been modified) but
+.Em preserving configuration files .
+If
+.Fl f
+is specified twice,
+.Em configuration files will also be overwritten .
 .It Fl h, Fl -help
 Show the help usage.
 .It Fl n, Fl -dry-run

@@ -122,7 +122,7 @@ unpack_archive(struct xbps_handle *xhp,
 
 	euid = geteuid();
 
-	if (xhp->flags & XBPS_FLAG_FORCE_INSTALL)
+	if (xhp->flags & XBPS_FLAG_FORCE_UNPACK)
 		force = true;
 
 	if (xhp->unpack_cb != NULL) {
