@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -221,43 +221,30 @@ main(int argc, char **argv)
 		/* show mode */
 		if (repo_mode)
 			rv = repo_show_pkg_info(&xh, argv[optind], props);
-		else {
+		else
 			rv = show_pkg_info_from_metadir(&xh,
 			    argv[optind], props);
-			if (rv == ENOENT)
-				rv = repo_show_pkg_info(&xh,
-				    argv[optind], props);
-		}
 
 	} else if (show_files) {
 		/* show-files mode */
 		if (repo_mode)
 			rv =  repo_show_pkg_files(&xh, argv[optind]);
-		else {
+		else
 			rv = show_pkg_files_from_metadir(&xh, argv[optind]);
-			if (rv == ENOENT)
-				rv = repo_show_pkg_files(&xh, argv[optind]);
-		}
 
 	} else if (show_deps) {
 		/* show-deps mode */
 		if (repo_mode)
 			rv = repo_show_pkg_deps(&xh, argv[optind]);
-		else {
+		else
 			rv = show_pkg_deps(&xh, argv[optind]);
-			if (rv == ENOENT)
-				rv = repo_show_pkg_deps(&xh, argv[optind]);
-		}
 
 	} else if (show_rdeps) {
 		/* show-rdeps mode */
 		if (repo_mode)
 			rv = repo_show_pkg_revdeps(&xh, argv[optind]);
-		else {
+		else
 			rv = show_pkg_revdeps(&xh, argv[optind]);
-			if (rv == ENOENT)
-				rv = repo_show_pkg_revdeps(&xh, argv[optind]);
-		}
 	}
 
 	exit(rv);
