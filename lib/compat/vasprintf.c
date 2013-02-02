@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "compat.h"
 
 int HIDDEN
 vasprintf(char **ret, const char *fmt, va_list ap)
@@ -54,7 +55,7 @@ vasprintf(char **ret, const char *fmt, va_list ap)
 		return -1;
 	}
 
-	if (retval < len) {
+	if (retval < (int)len) {
 		new_buf = realloc(buf, retval + 1);
 		if (new_buf == NULL)
 			*ret = buf;
@@ -71,7 +72,7 @@ vasprintf(char **ret, const char *fmt, va_list ap)
 		return -1;
 	}
 	retval = vsnprintf(buf, len, fmt, ap);
-	if (retval != len - 1) {
+	if (retval != (int)len - 1) {
 		free(buf);
 		*ret = NULL;
 		return -1;
