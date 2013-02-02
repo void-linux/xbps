@@ -1,5 +1,8 @@
 xbps-0.21 (???):
 
+ * libxbps: ignore packages conflicting themselves, which can happen with
+   virtual packages.
+
  * xbps-query(8): fix issue #3 from github
    "xbps-query -o only works for installed packages".
 
