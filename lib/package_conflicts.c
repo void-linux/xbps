@@ -40,7 +40,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 	prop_dictionary_t pkgd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *cfpkg, *repopkgver, *pkgver;
+	const char *cfpkg, *repopkgver, *pkgver, *pkgname, *repopkgname;
 	char *buf;
 
 	pkg_cflicts = prop_dictionary_get(pkg_repod, "conflicts");
@@ -49,6 +49,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 
 	trans_cflicts = prop_dictionary_get(xhp->transd, "conflicts");
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
+	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &repopkgname);
 
 	iter = prop_array_iterator(pkg_cflicts);
 	assert(iter);
@@ -62,10 +63,12 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 		if ((pkgd = xbps_pkgdb_get_pkg(xhp, cfpkg)) ||
 		    (pkgd = xbps_pkgdb_get_virtualpkg(xhp, cfpkg))) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
-			    "pkgver", &pkgver);
-			if (strcmp(pkgver, repopkgver) == 0)
+			    "pkgname", &pkgname);
+			if (strcmp(pkgname, repopkgname) == 0)
 				continue;
 
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "pkgver", &pkgver);
 			xbps_dbg_printf(xhp, "found conflicting installed "
 			    "pkg %s with pkg in transaction %s\n", pkgver,
 			    repopkgver);
@@ -81,10 +84,12 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 		if ((pkgd = xbps_find_pkg_in_array(unsorted, cfpkg)) ||
 		    (pkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, cfpkg))) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
-			    "pkgver", &pkgver);
-			if (strcmp(pkgver, repopkgver) == 0)
+			    "pkgname", &pkgname);
+			if (strcmp(pkgname, repopkgname) == 0)
 				continue;
 
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "pkgver", &pkgver);
 			xbps_dbg_printf(xhp, "found conflicting pkgs in "
 			    "transaction %s <-> %s\n", pkgver, repopkgver);
 			buf = xbps_xasprintf("%s conflicts with "
