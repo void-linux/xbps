@@ -63,7 +63,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 		    (pkgd = xbps_pkgdb_get_virtualpkg(xhp, cfpkg))) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
-			if (strcmp(pkgver, repopkgver))
+			if (strcmp(pkgver, repopkgver) == 0)
 				continue;
 
 			xbps_dbg_printf(xhp, "found conflicting installed "
@@ -82,7 +82,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 		    (pkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, cfpkg))) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
-			if (strcmp(pkgver, repopkgver))
+			if (strcmp(pkgver, repopkgver) == 0)
 				continue;
 
 			xbps_dbg_printf(xhp, "found conflicting pkgs in "
