@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2012 Juan Romero Pardines.
+ * Copyright (c) 2011-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -165,6 +165,7 @@ xbps_init(struct xbps_handle *xhp)
 	struct utsname un;
 	int rv, cc, cch;
 	bool syslog_enabled = false;
+	char *tarch;
 
 	assert(xhp != NULL);
 
@@ -244,9 +245,15 @@ xbps_init(struct xbps_handle *xhp)
 		return ENOMEM;
 	xhp->metadir = xhp->metadir_priv;
 
-	uname(&un);
-	xhp->un_machine = strdup(un.machine);
-	assert(xhp->un_machine);
+	/* Override target arch if XBPS_TARGET_ARCH is set in the environment */
+	tarch = getenv("XBPS_TARGET_ARCH");
+	if (tarch != NULL) {
+		xhp->un_machine = strdup(tarch);
+	} else {
+		uname(&un);
+		xhp->un_machine = strdup(un.machine);
+		assert(xhp->un_machine);
+	}
 
 	if (xhp->cfg == NULL) {
 		xhp->flags |= XBPS_FLAG_SYSLOG;
