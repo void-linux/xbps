@@ -170,7 +170,7 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 			 * point, so we will only remove dangling symlinks.
 			 */
 			if (realpath(path, buf) == NULL) {
-				if (errno != ENOENT) {
+				if (errno != ENOENT && errno != ELOOP) {
 					free(path);
 					rv = errno;
 					break;
