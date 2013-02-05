@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -491,7 +491,8 @@ unpack_archive(struct xbps_handle *xhp,
 	 * 	- Package with "softreplace" keyword.
 	 */
 	old_filesd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
-	assert(prop_object_type(old_filesd) == PROP_TYPE_DICTIONARY);
+	if (old_filesd == NULL)
+		goto out1;
 
 	obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
 	for (i = 0; i < prop_array_count(obsoletes); i++) {

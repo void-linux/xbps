@@ -1,5 +1,8 @@
 xbps-0.21 (???):
 
+ * libxbps: workaround a bug (found by pancake) when updating a package
+   that is being replaced by a virtual package.
+
  * libxbps: fully remove packages with broken symlinks; previously if a
    broken symlink was there (readlink returning ELOOP), package wasn't
    removed.

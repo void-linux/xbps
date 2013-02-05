@@ -92,8 +92,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * package that should be replaced is also in the
 			 * transaction and it's going to be updated.
 			 */
-			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname)) ||
-			    (reppkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, curpkgname))) {
+			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname))) {
 				xbps_dbg_printf(xhp,
 				    "found replaced pkg "
 				    "in transaction\n");

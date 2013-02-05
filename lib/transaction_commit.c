@@ -264,7 +264,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			else
 				install = true;
 
-			if (update) {
+			if (update && xbps_pkgdb_get_pkg(xhp, pkgname)) {
 				/*
 				 * Update a package: execute pre-remove
 				 * action if found before unpacking.
