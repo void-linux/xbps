@@ -108,12 +108,13 @@ config_inject_vpkgs(struct xbps_handle *xh)
 			path = xbps_xasprintf("%s/%s", vpkgdir, dp->d_name);
 			fp = fopen(path, "r");
 			assert(fp);
-			free(path);
 			if (cfg_parse_fp(xh->cfg, fp) != 0) {
 				xbps_error_printf("Failed to parse "
 				    "vpkg conf file %s:\n", dp->d_name);
 			}
 			fclose(fp);
+			xbps_dbg_printf(xh, "Injected vpkgs from %s\n", path);
+			free(path);
 		}
 	}
 	closedir(dirp);
