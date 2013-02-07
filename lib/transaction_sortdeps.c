@@ -205,9 +205,14 @@ again:
 			rv = EINVAL;
 			break;
 		}
+		if ((xbps_match_virtual_pkg_in_dict(curpkgd, str, true)) ||
+		    (xbps_match_virtual_pkg_in_dict(curpkgd, str, false))) {
+			xbps_dbg_printf_append(xhp, "ignore wrong "
+			    "dependency %s (depends on itself)\n", str);
+			continue;
+		}
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "transaction", &tract);
-
 		lpd = pkgdep_alloc(curpkgd, str);
 
 		if (pdn == NULL) {

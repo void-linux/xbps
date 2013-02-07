@@ -158,7 +158,7 @@ find_repo_deps(struct xbps_handle *xhp,
 	prop_array_t curpkgrdeps;
 	pkg_state_t state;
 	size_t x;
-	const char *reqpkg, *pkgver_q, *reason = NULL;
+	const char *reqpkg, *reqpkgname, *pkgver_q, *reason = NULL;
 	char *pkgname;
 	int rv = 0;
 
@@ -317,6 +317,22 @@ find_repo_deps(struct xbps_handle *xhp,
 		}
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "pkgver", &pkgver_q);
+		prop_dictionary_get_cstring_nocopy(curpkgd,
+		    "pkgname", &reqpkgname);
+		/*
+		 * Check dependency validity.
+		 */
+		pkgname = xbps_pkg_name(curpkg);
+		assert(pkgname);
+		if (strcmp(pkgname, reqpkgname) == 0) {
+			xbps_dbg_printf_append(xhp, "[ignoring wrong dependency "
+			    "%s (depends on itself)]\n",
+			    reqpkg);
+			free(pkgname);
+			continue;
+		}
+		free(pkgname);
+
 		/*
 		 * Check if package has matched conflicts.
 		 */
