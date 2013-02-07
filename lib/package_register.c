@@ -161,6 +161,7 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 	 */
 	prop_dictionary_remove(pkgd, "remove-and-update");
 	prop_dictionary_remove(pkgd, "transaction");
+	prop_dictionary_remove(pkgd, "skip-obsoletes");
 
 	if (!xbps_pkgdb_replace_pkg(xhp, pkgd, pkgname, flush)) {
 		xbps_dbg_printf(xhp,
