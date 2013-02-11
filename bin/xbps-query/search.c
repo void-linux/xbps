@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,97 +44,86 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-struct repo_search_data {
+struct search_data {
 	int npatterns;
 	char **patterns;
-	void *arg;
-	size_t pkgver_len;
 	size_t maxcols;
+	prop_array_t results;
 };
 
-static int
-repo_longest_pkgver(struct xbps_rindex *rpi, void *arg, bool *done)
+static void
+print_results(struct xbps_handle *xhp, struct search_data *sd)
 {
-	size_t *len = arg, olen = 0;
+	const char *pkgver, *desc, *inststr;
+	char tmp[256], *out;
+	size_t i, j, tlen = 0, len = 0;
 
-	(void)done;
-
-	if (*len == 0) {
-		*len = find_longest_pkgver(rpi->xhp, rpi->repod);
-		return 0;
+	/* Iterate over results array and find out largest pkgver string */
+	for (i = 0; i < prop_array_count(sd->results); i++) {
+		prop_array_get_cstring_nocopy(sd->results, i, &pkgver);
+		len = strlen(pkgver);
+		if (tlen == 0 || len > tlen)
+			tlen = len;
+		i++;
 	}
-	olen = find_longest_pkgver(rpi->xhp, rpi->repod);
-	if (olen > *len)
-		*len = olen;
+	for (i = 0; i < prop_array_count(sd->results); i++) {
+		prop_array_get_cstring_nocopy(sd->results, i, &pkgver);
+		prop_array_get_cstring_nocopy(sd->results, i+1, &desc);
+		strncpy(tmp, pkgver, sizeof(tmp));
+		for (j = strlen(tmp); j < tlen; j++)
+			tmp[j] = ' ';
 
-	return 0;
-}
+		tmp[j] = '\0';
+		if (xbps_pkgdb_get_pkg(xhp, pkgver))
+			inststr = "[*]";
+		else
+			inststr = "[-]";
 
-static size_t
-repo_find_longest_pkgver(struct xbps_handle *xhp)
-{
-	size_t len = 0;
-
-	xbps_rpool_foreach(xhp, repo_longest_pkgver, &len);
-
-	return len;
+		len = strlen(inststr) + strlen(tmp) + strlen(desc) + 1;
+		if (len > sd->maxcols) {
+			out = malloc(sd->maxcols+1);
+			assert(out);
+			snprintf(out, sd->maxcols, "%s %s %s",
+			    inststr, tmp, desc);
+			strncat(out, "...\n", sd->maxcols - 4);
+			printf("%s", out);
+			free(out);
+		} else {
+			printf("%s %s %s\n", inststr, tmp, desc);
+		}
+		i++;
+	}
 }
 
 static int
-repo_search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
+search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 {
 	prop_array_t allkeys;
 	prop_dictionary_t pkgd;
 	prop_dictionary_keysym_t ksym;
-	struct repo_search_data *rsd = arg;
-	const char *pkgver, *pkgname, *desc, *inststr;
-	char tmp[255], *out = NULL;
-	size_t i, j, len, maxcols;
+	struct search_data *sd = arg;
+	const char *pkgver, *desc;
+	size_t i;
 	int x;
 
 	(void)done;
-
-	maxcols = rsd->maxcols - 4; /* - "...\n" */
 
 	allkeys = prop_dictionary_all_keys(rpi->repod);
 	for (i = 0; i < prop_array_count(allkeys); i++) {
 		ksym = prop_array_get(allkeys, i);
 		pkgd = prop_dictionary_get_keysym(rpi->repod, ksym);
 
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc);
 
-		for (x = 0; x < rsd->npatterns; x++) {
-			if ((xbps_pkgpattern_match(pkgver, rsd->patterns[x])) ||
-			    (xbps_pkgpattern_match(desc, rsd->patterns[x]))  ||
-			    (strcasecmp(pkgname, rsd->patterns[x]) == 0) ||
-			    (strcasestr(pkgver, rsd->patterns[x])) ||
-			    (strcasestr(desc, rsd->patterns[x]))) {
-				strncpy(tmp, pkgver, sizeof(tmp));
-				for (j = strlen(tmp); j < rsd->pkgver_len; j++)
-					tmp[j] = ' ';
+		for (x = 0; x < sd->npatterns; x++) {
+			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x]) == 0) &&
+			    (strcasestr(pkgver, sd->patterns[x]) == 0) &&
+			    (strcasestr(desc, sd->patterns[x]) == 0))
+				continue;
 
-				tmp[j] = '\0';
-				if (xbps_pkgdb_get_pkg(rpi->xhp, pkgver))
-					inststr = "[*]";
-				else
-					inststr = "[-]";
-
-				len = strlen(inststr) + strlen(tmp) +
-				      strlen(desc);
-				if (len > maxcols) {
-					out = malloc(maxcols);
-					assert(out);
-					snprintf(out, maxcols, "%s %s %s",
-					    inststr, tmp, desc);
-					printf("%s...\n", out);
-					free(out);
-				} else {
-					printf("%s %s %s\n", inststr,
-					    tmp, desc);
-				}
-			}
+			prop_array_add_cstring_nocopy(sd->results, pkgver);
+			prop_array_add_cstring_nocopy(sd->results, desc);
 		}
 	}
 	prop_object_release(allkeys);
@@ -145,18 +134,20 @@ repo_search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 int
 repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
 {
-	struct repo_search_data rsd;
+	struct search_data sd;
 	int rv;
 
-	rsd.npatterns = npatterns;
-	rsd.patterns = patterns;
-	rsd.pkgver_len = repo_find_longest_pkgver(xhp);
-	rsd.maxcols = get_maxcols();
+	sd.npatterns = npatterns;
+	sd.patterns = patterns;
+	sd.maxcols = get_maxcols();
+	sd.results = prop_array_create();
 
-	rv = xbps_rpool_foreach(xhp, repo_search_pkgs_cb, &rsd);
+	rv = xbps_rpool_foreach(xhp, search_pkgs_cb, &sd);
 	if (rv != 0 && rv != ENOTSUP)
 		fprintf(stderr, "Failed to initialize rpool: %s\n",
 		    strerror(rv));
+
+	print_results(xhp, &sd);
 
 	return rv;
 }
