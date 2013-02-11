@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver, *short_desc, *state_str;
 	char tmp[255], *out = NULL;
-	size_t i, len = 0, maxcols;
+	size_t i, len = 0;
 	pkg_state_t state;
 
 	(void)xhp;
@@ -85,13 +85,14 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 		tmp[i] = ' ';
 
 	tmp[i] = '\0';
-	maxcols = lpc->maxcols - 4;
-	len = strlen(tmp) + strlen(short_desc);
-	if (len > maxcols) {
-		out = malloc(lpc->maxcols);
+	len = strlen(tmp) + strlen(short_desc) + 2;
+	if (len > lpc->maxcols) {
+		out = malloc(lpc->maxcols+1);
 		assert(out);
-		snprintf(out, maxcols, "%s %s", tmp, short_desc);
-		printf("%s...\n", out);
+		snprintf(out, lpc->maxcols - 3,
+		    "%s %s", tmp, short_desc);
+		strncat(out, "...\n", lpc->maxcols);
+		printf("%s", out);
 		free(out);
 	} else {
 		printf("%s %s\n", tmp, short_desc);
@@ -154,7 +155,7 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 {
 	struct list_pkgver_cb lpc;
 
-	lpc.pkgver_len = find_longest_pkgver(xhp, NULL);
+	lpc.pkgver_len = find_longest_pkgver(xhp, NULL) + 3; /* for state */
 	lpc.maxcols = get_maxcols();
 
 	return xbps_pkgdb_foreach_cb(xhp, list_pkgs_in_dict, &lpc);
@@ -200,6 +201,7 @@ _find_longest_pkgver_cb(struct xbps_handle *xhp,
 	struct fflongest *ffl = arg;
 	prop_dictionary_t pkgd;
 	const char *pkgver;
+	size_t len;
 
 	(void)xhp;
 	(void)loop_done;
@@ -210,8 +212,9 @@ _find_longest_pkgver_cb(struct xbps_handle *xhp,
 		pkgd = obj;
 
 	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	if (ffl->len == 0 || strlen(pkgver) > ffl->len)
-		ffl->len = strlen(pkgver);
+	len = strlen(pkgver);
+	if (ffl->len == 0 || len > ffl->len)
+		ffl->len = len;
 
 	return 0;
 }
