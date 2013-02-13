@@ -51,7 +51,7 @@ usage(bool fail)
 	    " -l --list-pkgs           List available packages\n"
 	    " -L --list-repos          List working repositories\n"
 	    " -m --list-manual-pkgs    List packages installed explicitly\n"
-	    " -M --list-orphans        List package orphans\n"
+	    " -O --list-orphans        List package orphans\n"
 	    " -o --ownedby PATTERN(s)  Search for packages owning PATTERN(s)\n"
 	    " -s --search PATTERN(s)   Search for packages matching PATTERN(s)\n"
 	    " -f --files               Show files for PKGNAME\n"
@@ -65,7 +65,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:D:dfhLlmMop:Rr:sVvXx";
+	const char *shortopts = "C:c:D:dfhLlmOop:Rr:sVvXx";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -75,7 +75,7 @@ main(int argc, char **argv)
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
-		{ "list-orphans", no_argument, NULL, 'M' },
+		{ "list-orphans", no_argument, NULL, 'O' },
 		{ "ownedby", no_argument, NULL, 'o' },
 		{ "property", required_argument, NULL, 'p' },
 		{ "repository-mode", no_argument, NULL, 'R' },
@@ -131,7 +131,7 @@ main(int argc, char **argv)
 		case 'm':
 			list_manual = true;
 			break;
-		case 'M':
+		case 'O':
 			orphans = true;
 			break;
 		case 'o':

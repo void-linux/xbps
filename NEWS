@@ -1,5 +1,8 @@
 xbps-0.21 (???):
 
+ * xbps-query(8): changed short option -M (--list-orphans) to -O; which
+   seems more appropiate to use.
+
  * libxbps: when resolving deps in transaction, ignore incorrect ones;
    for example a package might be depending on itself thru virtual packages.
 
