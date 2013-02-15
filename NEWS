@@ -1,5 +1,13 @@
 xbps-0.21 (???):
 
+ * xbps-query(8): the search mode (-s, --search) now is able to find
+   packages by matching virtual package strings, i.e:
+
+	$ xbps-query -s cron-daemon
+	[-] cronie-1.4.9_1 [virtual] Runs specified programs at scheduled times
+	[-] dcron-4.5_18 [virtual]   Dillon's lightweight cron daemon
+	$
+
  * xbps-query(8): changed short option -M (--list-orphans) to -O; which
    seems more appropiate to use.
 

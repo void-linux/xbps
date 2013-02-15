@@ -110,20 +110,56 @@ search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 
 	allkeys = prop_dictionary_all_keys(rpi->repod);
 	for (i = 0; i < prop_array_count(allkeys); i++) {
+		prop_array_t provides = NULL;
+
 		ksym = prop_array_get(allkeys, i);
 		pkgd = prop_dictionary_get_keysym(rpi->repod, ksym);
 
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc);
+		provides = prop_dictionary_get(pkgd, "provides");
 
 		for (x = 0; x < sd->npatterns; x++) {
-			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x]) == 0) &&
-			    (strcasestr(pkgver, sd->patterns[x]) == 0) &&
-			    (strcasestr(desc, sd->patterns[x]) == 0))
-				continue;
+			size_t j;
+			bool vpkgfound = false;
 
-			prop_array_add_cstring_nocopy(sd->results, pkgver);
-			prop_array_add_cstring_nocopy(sd->results, desc);
+			for (j = 0; j < prop_array_count(provides); j++) {
+				const char *vpkgver;
+				char *tmp, *vpkgname;
+
+				prop_array_get_cstring_nocopy(provides, j, &vpkgver);
+				if (strchr(vpkgver, '_') == NULL)
+					tmp = xbps_xasprintf("%s_1", vpkgver);
+				else
+					tmp = strdup(vpkgver);
+
+				vpkgname = xbps_pkg_name(tmp);
+				if (strcasecmp(vpkgname, sd->patterns[x]) == 0) {
+					free(vpkgname);
+					free(tmp);
+					vpkgfound = true;
+					break;
+				}
+				free(vpkgname);
+				free(tmp);
+			}
+			if (vpkgfound) {
+				prop_string_t pstr;
+
+				pstr = prop_string_create();
+				prop_string_append_cstring(pstr, pkgver);
+				prop_string_append_cstring(pstr, " [virtual]");
+				prop_array_add(sd->results, pstr);
+				prop_object_release(pstr);
+				prop_array_add_cstring_nocopy(sd->results, desc);
+			}
+			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
+			    (strcasestr(pkgver, sd->patterns[x])) ||
+			    (strcasestr(desc, sd->patterns[x]))) {
+				prop_array_add_cstring_nocopy(sd->results, pkgver);
+				prop_array_add_cstring_nocopy(sd->results, desc);
+				continue;
+			}
 		}
 	}
 	prop_object_release(allkeys);
