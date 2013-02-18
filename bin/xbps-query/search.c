@@ -143,22 +143,11 @@ search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 				free(vpkgname);
 				free(tmp);
 			}
-			if (vpkgfound) {
-				prop_string_t pstr;
-
-				pstr = prop_string_create();
-				prop_string_append_cstring(pstr, pkgver);
-				prop_string_append_cstring(pstr, " [virtual]");
-				prop_array_add(sd->results, pstr);
-				prop_object_release(pstr);
-				prop_array_add_cstring_nocopy(sd->results, desc);
-			}
 			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
 			    (strcasestr(pkgver, sd->patterns[x])) ||
-			    (strcasestr(desc, sd->patterns[x]))) {
+			    (strcasestr(desc, sd->patterns[x])) || vpkgfound) {
 				prop_array_add_cstring_nocopy(sd->results, pkgver);
 				prop_array_add_cstring_nocopy(sd->results, desc);
-				continue;
 			}
 		}
 	}
