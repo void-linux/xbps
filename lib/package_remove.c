@@ -348,7 +348,6 @@ purge:
 	 */
 	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	if (remove(buf) == -1) {
-		free(buf);
 		if (errno != ENOENT) {
 			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 			    rv, pkgname, version,
