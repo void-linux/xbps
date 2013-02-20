@@ -197,6 +197,9 @@ main(int argc, char **argv)
 			exit(rv);
 	}
 
+	if (sync && !update && (argc == optind))
+		exit(EXIT_SUCCESS);
+
 	if (update && (argc == optind)) {
 		/* Update all installed packages */
 		rv = dist_upgrade(&xh, maxcols, yes, drun);
