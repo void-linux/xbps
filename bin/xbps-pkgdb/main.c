@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <errno.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -39,32 +40,53 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-pkgdb [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
-	    " -a --all            Process all packages\n"
-	    " -C --config <file>  Full path to configuration file\n"
-	    " -d --debug          Debug mode shown to stderr\n"
-	    " -h --help           Print usage help\n"
-	    " -r --rootdir <dir>  Full path to rootdir\n"
-	    " -v --verbose        Verbose messages\n"
-	    " -V --version        Show XBPS version\n");
+	    " -a --all                   Process all packages\n"
+	    " -C --config <file>         Full path to configuration file\n"
+	    " -d --debug                 Debug mode shown to stderr\n"
+	    " -h --help                  Print usage help\n"
+	    " -m --mode <auto|manual>    Change PKGNAME to automatic or manual mode\n"
+	    " -r --rootdir <dir>         Full path to rootdir\n"
+	    " -v --verbose               Verbose messages\n"
+	    " -V --version               Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+
+static int
+change_pkg_instmode(struct xbps_handle *xhp,
+		    const char *pkgname,
+		    const char *modestr)
+{
+	prop_dictionary_t pkgd;
+	bool mode = false;
+
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	if (pkgd == NULL)
+		return errno;
+
+	if (strcmp(modestr, "auto") == 0)
+		mode = true;
+
+	prop_dictionary_set_bool(pkgd, "automatic-install", mode);
+	return xbps_pkgdb_update(xhp, true);
 }
 
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "aC:dhr:Vv";
+	const char *shortopts = "aC:dhm:r:Vv";
 	const struct option longopts[] = {
 		{ "all", no_argument, NULL, 'a' },
 		{ "config", required_argument, NULL, 'C' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
+		{ "mode", required_argument, NULL, 'm' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
-	const char *conffile = NULL, *rootdir = NULL;
+	const char *conffile = NULL, *rootdir = NULL, *instmode = NULL;
 	int c, i, rv, flags = 0;
 	bool all = false;
 
@@ -82,6 +104,9 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
+		case 'm':
+			instmode = optarg;
+			break;
 		case 'r':
 			rootdir = optarg;
 			break;
@@ -111,7 +136,25 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (all) {
+	if (instmode) {
+		if ((strcmp(instmode, "auto")) && (strcmp(instmode, "manual")))
+			usage(true);
+
+		if (argc == optind) {
+			fprintf(stderr,
+			    "xbps-pkgdb: missing PKGNAME argument\n");
+			exit(EXIT_FAILURE);
+		}
+		for (i = optind; i < argc; i++) {
+			rv = change_pkg_instmode(&xh, argv[i], instmode);
+			if (rv != 0) {
+				fprintf(stderr, "xbps-pkgdb: failed to "
+				    "change to %s mode to %s: %s\n",
+				    instmode, argv[i], strerror(rv));
+				exit(EXIT_FAILURE);
+			}
+		}
+	} else if (all) {
 		rv = check_pkg_integrity_all(&xh);
 	} else {
 		for (i = optind; i < argc; i++) {

@@ -1,9 +1,9 @@
-.Dd November 6, 2012
+.Dd February 20, 2013
 .Os Void Linux
 .Dt xbps-pkgdb 8
 .Sh NAME
 .Nm xbps-pkgdb
-.Nd XBPS utility to report and fix issues in pkgdb
+.Nd XBPS utility to report/fix issues and modify the package database (pkgdb)
 .Sh SYNOPSYS
 .Nm xbps-pkgdb
 .Op OPTIONS
@@ -11,10 +11,9 @@
 .Sh DESCRIPTION
 The
 .Nm
-utility checks and fix issues in the package database (pkgdb).
-It's able to check missing dependencies, modified files and symlinks,
-fix wrong or missing reverse dependencies, and more errors that have been
-fixed in newer versions of xbps.
+utility can check/fix issues and modify the package database (pkgdb).
+It's able to check for missing dependencies, modified files and symlinks,
+and more errors that have been fixed in newer versions of xbps.
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl a, Fl -all
@@ -25,6 +24,10 @@ Specifies a full path to the XBPS configuration file.
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
 Show the help usage.
+.It Fl m, Fl -mode Ar auto|manual
+Switches
+.Ar PKGNAME
+to the specified installation mode: automatic or manual mode.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl v, Fl -verbose

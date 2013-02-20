@@ -1,5 +1,9 @@
 xbps-0.21 (???):
 
+ * xbps-pkgdb(8): new option -m --mode to change package installation
+   mode to auto (might be detected as orphan) or manual
+   (explicitly installed).
+
  * xbps-query(8): the search mode (-s, --search) now is able to find
    packages by matching virtual package strings, i.e:
 
