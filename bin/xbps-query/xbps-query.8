@@ -1,4 +1,4 @@
-.Dd February 13, 2013
+.Dd February 20, 2013
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -142,6 +142,13 @@ Show the required dependencies for
 .It Fl X, Fl -revdeps Ar PKG
 Show the reverse dependencies for
 .Ar PKG .
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_TARGET_ARCH
+Overrides
+.Xr uname 2
+machine result with this value. Useful to install packages of a different
+architecture.
 .Sh FILES
 .Bl -tag -width /var/db/xbps/.<pkgname>.plist
 .It Ar /etc/xbps/xbps.conf

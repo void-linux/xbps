@@ -1,4 +1,4 @@
-.Dd February 2, 2013
+.Dd February 20, 2013
 .Os Void Linux
 .Dt xbps-install 8
 .Sh NAME
@@ -85,6 +85,13 @@ Enables verbose messages.
 Assume yes to all questions and avoid interactive questions.
 .It Fl V, Fl -version
 Shows the XBPS version.
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_TARGET_ARCH
+Overrides
+.Xr uname 2
+machine result with this value. Useful to install packages of a different
+architecture.
 .Sh FILES
 .Bl -tag -width /var/db/xbps/.<pkgname>.plist
 .It Ar /etc/xbps/xbps.conf

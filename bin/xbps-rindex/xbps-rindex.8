@@ -1,4 +1,4 @@
-.Dd December 15, 2012
+.Dd February 20, 2013
 .Os Void Linux
 .Dt xbps-rindex 8
 .Sh NAME
@@ -33,6 +33,13 @@ Removes obsolete packages from
 .Ar repository .
 Packages that are not currently registered in repository's index will
 be removed (out of date, invalid archives, etc).
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_TARGET_ARCH
+Overrides
+.Xr uname 2
+machine result with this value. Useful to install packages of a different
+architecture.
 .Sh SEE ALSO
 .Xr xbps-create 8 ,
 .Xr xbps-dgraph 8 ,
