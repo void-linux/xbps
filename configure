@@ -344,24 +344,6 @@ else
 fi
 rm -f _$func.c _$func
 
-# Check for posix_fadvise(2)
-func=posix_fadvise
-printf "Checking for $func() ... "
-cat <<EOF >_$func.c
-#include <fcntl.h>
-int main(void) {
-	posix_fadvise(0, 0, 0, POSIX_FADV_NORMAL);
-	return 0;
-}
-EOF
-if $XCC _$func.c -o _$func 2>/dev/null; then
-	echo "yes."
-	echo "CPPFLAGS +=	-DHAVE_POSIX_FADVISE" >>$CONFIG_MK
-else
-	echo "no."
-fi
-rm -f _$func _$func.c
-
 #
 # Check for strcasestr().
 #

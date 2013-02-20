@@ -586,7 +586,6 @@ int HIDDEN
 xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 {
 	struct archive *ar = NULL;
-	struct stat pkg_stat;
 	const char *pkgname, *version, *pkgver;
 	char *bpkg;
 	int pkg_fd, rv = 0;
@@ -634,10 +633,6 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 	archive_read_open_fd(ar, pkg_fd, ARCHIVE_READ_BLOCKSIZE);
 	free(bpkg);
 
-#ifdef HAVE_POSIX_FADVISE
-	fstat(pkg_fd, &pkg_stat);
-	posix_fadvise(pkg_fd, 0, pkg_stat.st_size, POSIX_FADV_SEQUENTIAL);
-#endif
 	/*
 	 * Extract archive files.
 	 */
@@ -648,9 +643,6 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		    pkgver, strerror(rv));
 		goto out;
 	}
-#ifdef HAVE_POSIX_FADVISE
-	posix_fadvise(pkg_fd, 0, pkg_stat.st_size, POSIX_FADV_DONTNEED);
-#endif
 	/*
 	 * Set package state to unpacked.
 	 */
