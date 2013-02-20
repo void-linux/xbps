@@ -149,6 +149,23 @@ show_pkg_info_one(prop_dictionary_t d, const char *keys)
 	free(key);
 }
 
+static void
+print_srcrevs(const char *keyname, prop_string_t obj)
+{
+	const char *str = prop_string_cstring_nocopy(obj);
+	size_t i;
+
+	/* parse string appending a \t after EOL */
+	printf("%s:\n  ", keyname);
+	for (i = 0; i < strlen(str); i++) {
+		if (str[i] == '\n')
+			printf("\n  ");
+		else
+			putchar(str[i]);
+	}
+	putchar('\n');
+}
+
 void
 show_pkg_info(prop_dictionary_t dict)
 {
@@ -169,6 +186,12 @@ show_pkg_info(prop_dictionary_t dict)
 		    (strcmp(keyname, "links") == 0))
 			continue;
 
+		/* special case for source-revisions obj */
+		if (strcmp(keyname, "source-revisions") == 0) {
+			print_srcrevs(keyname, obj);
+			continue;
+		}
+		/* anything else */
 		print_value_obj(keyname, obj, NULL, false);
 	}
 }
