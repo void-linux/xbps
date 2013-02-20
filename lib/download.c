@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines
+ * Copyright (c) 2009-2013 Juan Romero Pardines
  * Copyright (c) 2000-2004 Dag-Erling Coïdan Smørgrav
  * All rights reserved.
  *
@@ -273,8 +273,6 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 		rv = -1;
 		goto out;
 	}
-	/* sync and close fd */
-	(void)fsync(fd);
 	(void)close(fd);
 	fd = -1;
 
