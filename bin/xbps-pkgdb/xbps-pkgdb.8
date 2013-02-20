@@ -14,6 +14,21 @@ The
 utility can check/fix issues and modify the package database (pkgdb).
 It's able to check for missing dependencies, modified files and symlinks,
 and more errors that have been fixed in newer versions of xbps.
+This is the list of things that
+.Nm
+currently does:
+.Bl -tag -width -x
+.It Sy METADATA CHECK
+Checks that package metadata files have not been modified by comparing original
+hash that is recorded when package is installed against current one.
+.It Sy FILES CHECK
+Checks that all files belonging to a package have not been modified and are
+not missing.
+.It Sy DEPENDENCIES CHECK
+Checks that all required dependencies for a package are resolved.
+.It Sy OBSOLETE METADATA CHECK
+Checks that the package database does not contain obsolete data from previous
+XBPS versions and removes them if found.
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl a, Fl -all
