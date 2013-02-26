@@ -62,7 +62,7 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 			}
 		}
 		(void)execv(file, __UNCONST(argv));
-		_exit(127);
+		_exit(errno);
 		/* NOTREACHED */
 	case -1:
 		return -1;
