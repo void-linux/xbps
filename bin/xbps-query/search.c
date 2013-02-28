@@ -79,13 +79,13 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 		else
 			inststr = "[-]";
 
-		len = strlen(inststr) + strlen(tmp) + strlen(desc) + 1;
+		len = strlen(inststr) + strlen(tmp) + strlen(desc) + 3;
 		if (len > sd->maxcols) {
 			out = malloc(sd->maxcols+1);
 			assert(out);
-			snprintf(out, sd->maxcols, "%s %s %s",
+			snprintf(out, sd->maxcols-3, "%s %s %s",
 			    inststr, tmp, desc);
-			strncat(out, "...\n", sd->maxcols - 4);
+			strncat(out, "...\n", sd->maxcols);
 			printf("%s", out);
 			free(out);
 		} else {
