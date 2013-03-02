@@ -1,5 +1,12 @@
 xbps-0.21 (???):
 
+ * xbps-query(8): packages can be matched by using virtual package
+   names in repository mode, i.e:
+
+	$ xbps-query -Rp pkgver ntp-daemon
+	ntp-4.2.6p5_7
+	$	
+  
  * xbps-pkgdb(8): new option -m --mode to change package installation
    mode to auto (might be detected as orphan) or manual
    (explicitly installed).

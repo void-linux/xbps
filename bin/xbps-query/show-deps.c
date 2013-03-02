@@ -73,8 +73,8 @@ repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern)
 {
 	prop_dictionary_t pkgd;
 
-	pkgd = xbps_rpool_get_pkg(xhp, pattern);
-	if (pkgd == NULL)
+	if (((pkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
+	    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
 		return errno;
 
 	(void)xbps_callback_array_iter_in_dict(xhp, pkgd,
@@ -126,9 +126,10 @@ repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 	if (xbps_pkg_version(pkg))
 		pkgver = pkg;
 	else {
-		pkgd = xbps_rpool_get_pkg(xhp, pkg);
-		if (pkgd == NULL)
+		if (((pkgd = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
+		    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pkg)) == NULL))
 			return ENOENT;
+
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	}
 

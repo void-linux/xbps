@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -295,8 +295,8 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 {
 	prop_dictionary_t pkgd;
 
-	pkgd = xbps_rpool_get_pkg(xhp, pattern);
-	if (pkgd == NULL)
+	if (((pkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
+	    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
 		return errno;
 
 	if (option)
