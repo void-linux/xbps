@@ -35,22 +35,6 @@
 #include <prop/proplib.h>
 #include <confuse.h>
 
-#ifdef  __cplusplus
-# ifndef __BEGIN_DECLS
-#  define __BEGIN_DECLS  extern "C" {
-# endif
-# ifndef __END_DECLS
-#  define __END_DECLS    }
-# endif
-#else
-# ifndef __BEGIN_DECLS
-#  define __BEGIN_DECLS
-# endif
-# ifndef __END_DECLS
-#  define __END_DECLS
-# endif
-#endif
-
 /**
  * @file include/xbps_api.h
  * @brief XBPS Library API header
@@ -214,7 +198,9 @@
  */
 #define XBPS_FETCH_TIMEOUT		30
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** @addtogroup initend */ 
 /*@{*/
@@ -1720,6 +1706,8 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
 
 /*@}*/
 
-__END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !_XBPS_API_H_ */
