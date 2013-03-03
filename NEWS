@@ -1,5 +1,7 @@
 xbps-0.21 (???):
 
+ * configure: misc tweaks to allow building with the musl C library.
+
  * xbps-query(8): packages can be matched by using virtual package
    names in repository mode, i.e:
 
@@ -24,9 +26,6 @@ xbps-0.21 (???):
 
  * libxbps: when resolving deps in transaction, ignore incorrect ones;
    for example a package might be depending on itself thru virtual packages.
-
- * configure: don't link to libs in PREFIX/lib blindly; figure out
-   sysroot dir with gcc compiler and use this for headers/libs.
 
  * libxbps: workaround a bug (found by pancake) when updating a package
    that is being replaced by a virtual package.
