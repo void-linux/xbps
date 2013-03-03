@@ -36,7 +36,9 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#define _BSD_SOURCE	/* musl has strlcpy if _{BSD,GNU}_SOURCE is defined */
 #include <string.h>
+#undef _BSD_SOURCE
 #include <errno.h>
 #include <fcntl.h>
 
