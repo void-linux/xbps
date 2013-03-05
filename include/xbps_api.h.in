@@ -48,7 +48,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.7"
 
-#define XBPS_API_VERSION	"20130304"
+#define XBPS_API_VERSION	"20130305"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -99,7 +99,7 @@
  * @def XBPS_PKGINDEX
  * Filename for the repository package index property list.
  */
-#define XBPS_PKGINDEX		"index.plist"
+#define XBPS_PKGINDEX		"index-" XBPS_PKGINDEX_VERSION ".plist"
 
 /**
  * @def XBPS_PKGINDEX_FILES
