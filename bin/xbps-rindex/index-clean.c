@@ -66,7 +66,7 @@ cleaner_thread(void *arg)
 		pkgd = prop_dictionary_get_keysym(thd->idx, obj);
 		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		filen = xbps_xasprintf("%s.%s.xbps");
+		filen = xbps_xasprintf("%s.%s.xbps", pkgver, arch);
 		xbps_dbg_printf(thd->xhp, "thread[%d] checking %s\n",
 		    thd->thread_num, pkgver);
 		if (access(filen, R_OK) == -1) {
