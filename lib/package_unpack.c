@@ -119,6 +119,9 @@ unpack_archive(struct xbps_handle *xhp,
 
 	euid = geteuid();
 
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+
 	if (xhp->flags & XBPS_FLAG_FORCE_UNPACK)
 		force = true;
 
@@ -194,7 +197,7 @@ unpack_archive(struct xbps_handle *xhp,
 			}
 
 			rv = xbps_pkg_exec_buffer(xhp, instbuf, instbufsiz,
-					pkgver, "pre", update);
+					pkgname, "pre", update);
 			if (rv != 0) {
 				xbps_set_cb_state(xhp,
 				    XBPS_STATE_UNPACK_FAIL,
@@ -307,7 +310,7 @@ unpack_archive(struct xbps_handle *xhp,
 						xucd.entry_is_conf = true;
 
 					rv = xbps_entry_install_conf_file(xhp,
-					    filesd, entry, entry_pname, pkgver);
+					    filesd, entry, entry_pname, pkgname);
 					if (rv == -1) {
 						/* error */
 						goto out;
@@ -484,7 +487,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 * 	- Package upgrade.
 	 * 	- Package with "softreplace" keyword.
 	 */
-	old_filesd = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
+	old_filesd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 	if (old_filesd == NULL)
 		goto out1;
 
@@ -558,9 +561,6 @@ out1:
 			goto out;
 		}
 	}
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
-
 	buf = xbps_xasprintf("%s/.%s.plist", XBPS_META_PATH, pkgname);
 	if (!prop_dictionary_externalize_to_file(pkg_metad, buf)) {
 		rv = errno;
@@ -569,11 +569,9 @@ out1:
 		    "%s: [unpack] failed to extract metadata file `%s': %s",
 		    pkgver, buf, strerror(errno));
 		free(buf);
-		free(pkgname);
 		goto out;
 	}
 	free(buf);
-	free(pkgname);
 out:
 	if (prop_object_type(pkg_metad) == PROP_TYPE_DICTIONARY)
 		prop_object_release(pkg_metad);
@@ -581,6 +579,8 @@ out:
 		prop_object_release(filesd);
 	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(propsd);
+	if (pkgname != NULL)
+		free(pkgname);
 
 	return rv;
 }
