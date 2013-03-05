@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -159,8 +159,8 @@ main(int argc, char **argv)
 		if (dict == NULL)
 			exit(EXIT_FAILURE);
 
-		prop_dictionary_get_cstring_nocopy(dict, "version", &version);
-		printf("%s\n", version);
+		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
+		printf("%s\n", xbps_pkg_version(version));
 	} else if (strcasecmp(argv[0], "sanitize-plist") == 0) {
 		/* Sanitize a plist file (properly indent the file) */
 		if (argc != 2)
