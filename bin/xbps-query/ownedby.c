@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2012 Juan Romero Pardines.
+ * Copyright (c) 2010-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <fnmatch.h>
 #include <dirent.h>
+#include <assert.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -69,6 +70,8 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 	for (i = 0; i < prop_array_count(array); i++) {
 		obj = prop_array_get(array, i);
 		prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
+		if (filestr == NULL)
+			continue;
 		for (x = 0; x < ffd->npatterns; x++) {
 			if ((strcmp(filestr, ffd->patterns[x]) == 0) ||
 			    (fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
@@ -92,6 +95,7 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp, prop_object_t obj, void *arg, bool *do
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	pkgmetad = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
+	assert(pkgmetad);
 
 	files_keys = prop_dictionary_all_keys(pkgmetad);
 	for (i = 0; i < prop_array_count(files_keys); i++) {
