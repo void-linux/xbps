@@ -116,10 +116,21 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	/* internalize pkg dictionary from metadir */
 	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
+	if (pkgname == NULL) /* assume pkgname */
+		pkgname = strdup(pkgver);
+
 	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	free(pkgname);
+
 	pkgmetad = prop_dictionary_internalize_from_file(plist);
+	if (pkgmetad == NULL) {
+		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
+		    errno, pkgver,
+		    "%s: [configure] cannot read metadata plist: %s",
+		    pkgver, strerror(rv));
+		return errno;
+	}
+
 	free(plist);
 	assert(pkgmetad);
 
