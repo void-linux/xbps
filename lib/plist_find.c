@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,8 @@ get_pkg_in_array(prop_array_t array, const char *str, bool virtual)
 {
 	prop_object_t obj = NULL;
 	prop_object_iterator_t iter;
-	const char *pkgver, *dpkgn;
+	const char *pkgver;
+	char *dpkgn;
 	bool found = false;
 
 	iter = prop_array_iterator(array);
@@ -76,12 +77,16 @@ get_pkg_in_array(prop_array_t array, const char *str, bool virtual)
 		} else {
 			/* match by pkgname */
 			if (!prop_dictionary_get_cstring_nocopy(obj,
-			    "pkgname", &dpkgn))
+			    "pkgver", &pkgver))
 				continue;
+			dpkgn = xbps_pkg_name(pkgver);
+			assert(dpkgn);
 			if (strcmp(dpkgn, str) == 0) {
+				free(dpkgn);
 				found = true;
 				break;
 			}
+			free(dpkgn);
 		}
 	}
 	prop_object_iterator_release(iter);
@@ -120,4 +125,172 @@ xbps_find_virtualpkg_in_array(struct xbps_handle *x,
 	}
 
 	return get_pkg_in_array(a, s, true);
+}
+
+static prop_dictionary_t
+match_pkg_by_pkgver(prop_dictionary_t repod, const char *p)
+{
+	prop_dictionary_t d = NULL;
+	const char *pkgver;
+	char *pkgname;
+
+	/* exact match by pkgver */
+	if ((pkgname = xbps_pkg_name(p)) == NULL)
+		return NULL;
+
+	d = prop_dictionary_get(repod, pkgname);
+	if (d) {
+		prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
+		if (strcmp(pkgver, p))
+			d = NULL;
+	}
+
+	free(pkgname);
+	return d;
+}
+
+static prop_dictionary_t
+match_pkg_by_pattern(prop_dictionary_t repod, const char *p)
+{
+	prop_dictionary_t d = NULL;
+	const char *pkgver;
+	char *pkgname;
+
+	/* match by pkgpattern in pkgver */
+	if ((pkgname = xbps_pkgpattern_name(p)) == NULL) {
+		if ((pkgname = xbps_pkg_name(p)))
+			return match_pkg_by_pkgver(repod, p);
+
+		return NULL;
+	}
+
+	d = prop_dictionary_get(repod, pkgname);
+	if (d) {
+		prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
+		assert(pkgver);
+		if (!xbps_pkgpattern_match(pkgver, p))
+			d = NULL;
+	}
+
+	free(pkgname);
+	return d;
+}
+
+const char HIDDEN *
+vpkg_user_conf(struct xbps_handle *xhp,
+	       const char *vpkg,
+	       bool bypattern)
+{
+	const char *vpkgver, *pkg = NULL;
+	char *vpkgname = NULL, *tmp;
+	size_t i, j, cnt;
+
+	if (xhp->cfg == NULL)
+		return NULL;
+
+	if ((cnt = cfg_size(xhp->cfg, "virtual-package")) == 0) {
+		/* no virtual packages configured */
+		return NULL;
+	}
+
+	for (i = 0; i < cnt; i++) {
+		cfg_t *sec = cfg_getnsec(xhp->cfg, "virtual-package", i);
+		for (j = 0; j < cfg_size(sec, "targets"); j++) {
+			tmp = NULL;
+			vpkgver = cfg_getnstr(sec, "targets", j);
+			if (strchr(vpkgver, '_') == NULL) {
+				tmp = xbps_xasprintf("%s_1", vpkgver);
+				vpkgname = xbps_pkg_name(tmp);
+				free(tmp);
+			} else {
+				vpkgname = xbps_pkg_name(vpkgver);
+			}
+			if (vpkgname == NULL)
+				break;
+			if (bypattern) {
+				if (!xbps_pkgpattern_match(vpkgver, vpkg)) {
+					free(vpkgname);
+					continue;
+				}
+			} else {
+				if (strcmp(vpkg, vpkgname)) {
+					free(vpkgname);
+					continue;
+				}
+			}
+			/* virtual package matched in conffile */
+			pkg = cfg_title(sec);
+			xbps_dbg_printf(xhp,
+			    "matched vpkg in conf `%s' for %s\n",
+			    pkg, vpkg);
+			free(vpkgname);
+			break;
+		}
+	}
+	return pkg;
+}
+
+prop_dictionary_t
+xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
+			     prop_dictionary_t d,
+			     const char *pkg)
+{
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	prop_dictionary_t pkgd = NULL;
+	const char *vpkg;
+	bool found = false, bypattern = false;
+
+	if (xbps_pkgpattern_version(pkg))
+		bypattern = true;
+
+	/* Try matching vpkg from configuration files */
+	vpkg = vpkg_user_conf(xhp, pkg, bypattern);
+	if (vpkg != NULL) {
+		if (xbps_pkgpattern_version(vpkg))
+			pkgd = match_pkg_by_pattern(d, vpkg);
+		else if (xbps_pkg_version(vpkg))
+			pkgd = match_pkg_by_pkgver(d, vpkg);
+		else
+			pkgd = prop_dictionary_get(d, vpkg);
+
+		if (pkgd) {
+			found = true;
+			goto out;
+		}
+	}
+
+	/* ... otherwise match the first one in dictionary */
+	iter = prop_dictionary_iterator(d);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		pkgd = prop_dictionary_get_keysym(d, obj);
+		if (xbps_match_virtual_pkg_in_dict(pkgd, pkg, bypattern)) {
+			found = true;
+			break;
+		}
+	}
+	prop_object_iterator_release(iter);
+
+out:
+	if (found)
+		return pkgd;
+
+	return NULL;
+}
+
+prop_dictionary_t
+xbps_find_pkg_in_dict(prop_dictionary_t d, const char *pkg)
+{
+	prop_dictionary_t pkgd = NULL;
+
+	if (xbps_pkgpattern_version(pkg))
+		pkgd = match_pkg_by_pattern(d, pkg);
+	else if (xbps_pkg_version(pkg))
+		pkgd = match_pkg_by_pkgver(d, pkg);
+	else
+		pkgd = prop_dictionary_get(d, pkg);
+
+	return pkgd;
 }

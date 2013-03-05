@@ -295,8 +295,7 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 {
 	prop_dictionary_t pkgd;
 
-	if (((pkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
-	    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
+	if ((pkgd = xbps_rpool_get_pkg_plist(xhp, pattern, "./props.plist")) == NULL)
 		return errno;
 
 	if (option)

@@ -1,4 +1,4 @@
-.Dd February 20, 2013
+.Dd March 4, 2013
 .Os Void Linux
 .Dt xbps-pkgdb 8
 .Sh NAME
@@ -13,7 +13,8 @@ The
 .Nm
 utility can check/fix issues and modify the package database (pkgdb).
 It's able to check for missing dependencies, modified files and symlinks,
-and more errors that have been fixed in newer versions of xbps.
+and more errors that have been fixed in newer versions of xbps. A mode to update
+the format to the latest version is also available.
 This is the list of things that
 .Nm
 currently does:
@@ -29,6 +30,8 @@ Checks that all required dependencies for a package are resolved.
 .It Sy OBSOLETE METADATA CHECK
 Checks that the package database does not contain obsolete data from previous
 XBPS versions and removes them if found.
+.It Sy FORMAT CONVERSION
+Updates the pkgdb format to the latest version.
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl a, Fl -all
@@ -45,14 +48,23 @@ Switches
 to the specified installation mode: automatic or manual mode.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
+.It Fl u, Fl -update
+Updates the pkgdb format to the latest version making the necessary conversions
+automatically. Usually this is needed only in rare circumstances.
 .It Fl v, Fl -verbose
 Enables verbose messages.
 .It Fl V, Fl -version
 Shows the XBPS version.
 .Sh FILES
-.Bl -tag -width xxxxxxxxxxxxxxxxxxxx
+.Bl -tag -width /var/db/xbps/.<pkgname>.plist
 .It Ar /etc/xbps/xbps.conf
-Default XBPS configuration file.
+Default configuration file.
+.It Ar /var/db/xbps/.<pkgname>.plist
+Package metadata properties.
+.It Ar /var/db/xbps/pkgdb-0.21.plist
+Default package database (0.21 format). Keeps track of installed packages and properties.
+.It Ar /var/cache/xbps
+Default cache directory to store downloaded binary packages.
 .Sh SEE ALSO
 .Xr xbps-create 8 ,
 .Xr xbps-dgraph 8 ,

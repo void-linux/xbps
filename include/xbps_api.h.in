@@ -46,9 +46,9 @@
  * @def XBPS_PKGINDEX_VERSION
  * Current version for the repository package index format.
  */
-#define XBPS_PKGINDEX_VERSION	"1.6"
+#define XBPS_PKGINDEX_VERSION	"1.7"
 
-#define XBPS_API_VERSION	"20130220"
+#define XBPS_API_VERSION	"20130304"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -81,7 +81,7 @@
  * @def XBPS_PKGDB
  * Filename for the package database.
  */
-#define XBPS_PKGDB		"pkgdb.plist"
+#define XBPS_PKGDB		"pkgdb-0.21.plist"
 
 /** 
  * @def XBPS_PKGPROPS
@@ -217,6 +217,7 @@ extern "C" {
  * install, update, remove and replace.
  * - XBPS_STATE_TRANS_CONFIGURE: transaction is configuring all
  * unpacked packages.
+ * - XBPS_STATE_XBPS_UPDATE: a new package update is available for XBPS.
  * - XBPS_STATE_DOWNLOAD: a binary package is being downloaded.
  * - XBPS_STATE_VERIFY: a binary package is being verified.
  * - XBPS_STATE_REMOVE: a package is being removed.
@@ -290,7 +291,8 @@ typedef enum xbps_state {
 	XBPS_STATE_UNPACK_FAIL,
 	XBPS_STATE_REGISTER_FAIL,
 	XBPS_STATE_UNREGISTER_FAIL,
-	XBPS_STATE_REPOSYNC_FAIL
+	XBPS_STATE_REPOSYNC_FAIL,
+	XBPS_STATE_XBPS_UPDATE
 } xbps_state_t;
 
 /**
@@ -318,19 +320,12 @@ struct xbps_state_cb_data {
 	 */
 	const char *desc;
 	/**
-	 * @var arg0
+	 * @var arg
 	 *
-	 * State string argument 0. String set on this
+	 * State string argument. String set on this
 	 * variable may change depending on \a state.
 	 */
-	const char *arg0;
-	/**
-	 * @var arg1
-	 *
-	 * State string argument 1. String set on this
-	 * variable may change depending on \a state.
-	 */
-	const char *arg1;
+	const char *arg;
 	/**
 	 * @var err
 	 *
@@ -480,10 +475,10 @@ struct xbps_handle {
 	/**
 	 * @private pkgdb.
 	 *
-	 * Internalized proplib array with the master package database
+	 * Internalized proplib dictionary with the master package database
 	 * stored in XBPS_META_PATH/XBPS_PKGDB.
 	 */
-	prop_array_t pkgdb;
+	prop_dictionary_t pkgdb;
 	/**
 	 * @private
 	 *
@@ -802,37 +797,6 @@ prop_array_t xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp,
 					const char *pkg);
 
 /**
- * Removes a package dictionary from master package database (pkgdb) plist,
- * matching pkgname or pkgver object in \a pkg.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkg Package name or pattern to match in a package dictionary.
- * @param[in] flush If true, after successful replace the pkgdb contents
- * in memory will be flushed atomically to storage.
- *
- * @return true on success, false otherwise.
- */
-bool xbps_pkgdb_remove_pkg(struct xbps_handle *xhp, const char *pkg,
-			   bool flush);
-
-/**
- * Replaces a package dictionary with \a dict in the master package database
- * (pkgdb) plist, matching pkgname or pkgver object.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgd Proplib dictionary to be added into pkgdb.
- * @param[in] pkg Package name or pattern to match in a package dictionary.
- * @param[in] flush If true, after successful replace the pkgdb contents in
- * memory will be flushed atomically to storage.
- *
- * @return true on success, false otherwise.
- */
-bool xbps_pkgdb_replace_pkg(struct xbps_handle *xhp,
-			    prop_dictionary_t pkgd,
-			    const char *pkg,
-			    bool flush);
-
-/**
  * Updates the master package database (pkgdb) plist with new contents from
  * disk to the cached copy in memory.
  *
@@ -850,8 +814,7 @@ int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] blob The buffer pointer where the data is stored.
  * @param[in] blobsiz The size of the buffer data.
- * @param[in] pkgname The package name associated.
- * @param[in] version The package version associated.
+ * @param[in] pkgver The package name/version associated.
  * @param[in] action The action to execute on the temporary file.
  * @param[in] update Set to true if package is being updated.
  *
@@ -860,8 +823,7 @@ int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
 int xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 			 const void *blob,
 			 const size_t blobsiz,
-			 const char *pkgname,
-			 const char *version,
+			 const char *pkgver,
 			 const char *action,
 			 bool update);
 
@@ -1051,82 +1013,6 @@ bool xbps_match_string_in_array(prop_array_t array, const char *val);
  */
 prop_object_iterator_t xbps_array_iter_from_dict(prop_dictionary_t dict,
 						 const char *key);
-
-/*@}*/
-
-/** @addtogroup pkg_register */
-/*@{*/
-
-/**
- * Register a package into the installed packages database.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkg_dict A dictionary with the following objects:
- * \a pkgname, \a version, \a pkgver, \a short_desc (string),
- * \a automatic-install (bool) and optionally \a provides (array of strings).
- * @param[in] flush Set to true to make sure that pkgdb plist
- * is written to storage on success.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_register_pkg(struct xbps_handle *xhp,
-		      prop_dictionary_t pkg_dict,
-		      bool flush);
-
-/**
- * Unregister a package from the package database.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgver Package name-version to match.
- * @param[in] flush Set to true to make sure that pkgdb plist
- * is written to storage on success.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_unregister_pkg(struct xbps_handle *xhp, const char *pkgver,
-			bool flush);
-
-/*@}*/
-
-/** @addtogroup pkg_remove */
-/*@{*/
-
-/**
- * Remove an installed package.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgver Package name/version to match.
- * @param[in] update If true, some steps will be skipped. See in the
- * detailed description above for more information.
- * @param[in] soft_replace If true, some steps will be skipped. See in
- * the detailed description above for more information.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_remove_pkg(struct xbps_handle *xhp,
-		    const char *pkgver,
-		    bool update,
-		    bool soft_replace);
-
-/**
- * Remove files defined in a proplib array as specified by \a key
- * of an installed package.
- * 
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] dict Proplib dictionary internalized from package's
- * <b>XBPS_PKGFILES</b> definition in package's metadata directory.
- * The image in Detailed description shows off its structure.
- * @param[in] key Key of the array object to match, valid values are:
- * <b>files</b>, <b>dirs</b>, <b>links</b> and <b>conf_files</b>.
- * @param[in] pkgver Package/version string matching package dictionary,
- * i.e `foo-1.0'.
- *
- * @return 0 on success, otherwise an errno value.
- */
-int xbps_remove_pkg_files(struct xbps_handle *xhp,
-			  prop_dictionary_t dict,
-			  const char *key,
-			  const char *pkgver);
 
 /*@}*/
 
@@ -1465,15 +1351,13 @@ int xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
  * Sets package state \a state in package \a pkgname.
  *
  * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] pkgname Package name.
- * @param[in] version Package version.
+ * @param[in] pkgver Package name/version to match.
  * @param[in] state Package state to be set.
  *
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_set_pkg_state_installed(struct xbps_handle *xhp,
-				 const char *pkgname,
-				 const char *version,
+				 const char *pkgver,
 				 pkg_state_t state);
 
 /**

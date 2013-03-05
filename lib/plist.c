@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -121,7 +121,7 @@ xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
 
 	array = prop_dictionary_get(dict, key);
 	if (prop_object_type(array) != PROP_TYPE_ARRAY)
-		return EINVAL;
+		return ENOENT;
 
 	for (i = 0; i < prop_array_count(array); i++) {
 		obj = prop_array_get(array, i);
@@ -213,7 +213,8 @@ array_replace_dict(prop_array_t array,
 {
 	prop_object_t obj;
 	size_t i;
-	const char *curpkgname;
+	const char *curpkgver;
+	char *curpkgname;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
 	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
@@ -226,8 +227,8 @@ array_replace_dict(prop_array_t array,
 		if (bypattern) {
 			/* pkgpattern match */
 			prop_dictionary_get_cstring_nocopy(obj,
-			    "pkgver", &curpkgname);
-			if (xbps_pkgpattern_match(curpkgname, str)) {
+			    "pkgver", &curpkgver);
+			if (xbps_pkgpattern_match(curpkgver, str)) {
 				if (!prop_array_set(array, i, dict))
 					return EINVAL;
 
@@ -236,13 +237,18 @@ array_replace_dict(prop_array_t array,
 		} else {
 			/* pkgname match */
 			prop_dictionary_get_cstring_nocopy(obj,
-			    "pkgname", &curpkgname);
+			    "pkgver", &curpkgver);
+			curpkgname = xbps_pkg_name(curpkgver);
+			assert(curpkgname);
 			if (strcmp(curpkgname, str) == 0) {
-				if (!prop_array_set(array, i, dict))
+				if (!prop_array_set(array, i, dict)) {
+					free(curpkgname);
 					return EINVAL;
-
+				}
+				free(curpkgname);
 				return 0;
 			}
+			free(curpkgname);
 		}
 	}
 	/* no match */
@@ -252,9 +258,9 @@ array_replace_dict(prop_array_t array,
 int HIDDEN
 xbps_array_replace_dict_by_name(prop_array_t array,
 				prop_dictionary_t dict,
-				const char *pkgname)
+				const char *pkgver)
 {
-	return array_replace_dict(array, dict, pkgname, false);
+	return array_replace_dict(array, dict, pkgver, false);
 }
 
 int HIDDEN

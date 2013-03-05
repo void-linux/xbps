@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,68 +31,48 @@
 
 #include "xbps_api_impl.h"
 
-/**
- * @file lib/package_register.c
- * @brief Package registration routines
- * @defgroup pkg_register Package registration functions
- *
- * Register and unregister packages into/from the installed
- * packages database.
- */
-
-int
-xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
+int HIDDEN
+xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 {
 	prop_dictionary_t pkgd;
 	prop_array_t provides, rundeps;
 	char outstr[64];
 	time_t t;
 	struct tm *tmp;
-	const char *pkgname, *version, *desc, *pkgver;
-	char *buf, *sha256;
+	const char *desc, *pkgver;
+	char *pkgname = NULL, *buf, *sha256;
 	int rv = 0;
 	bool autoinst = false;
 
 	assert(prop_object_type(pkgrd) == PROP_TYPE_DICTIONARY);
 
-	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(pkgrd, "version", &version);
-	prop_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
 	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
+	prop_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
 	prop_dictionary_get_bool(pkgrd, "automatic-install", &autoinst);
 	provides = prop_dictionary_get(pkgrd, "provides");
 	rundeps = prop_dictionary_get(pkgrd, "run_depends");
 
-	xbps_set_cb_state(xhp, XBPS_STATE_REGISTER, 0, pkgname, version, NULL);
+	xbps_set_cb_state(xhp, XBPS_STATE_REGISTER, 0, pkgver, NULL);
 
-	assert(pkgname != NULL);
-	assert(version != NULL);
-	assert(desc != NULL);
 	assert(pkgver != NULL);
+	assert(desc != NULL);
 
-	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
 	if (pkgd == NULL) {
 		rv = ENOENT;
 		goto out;
 	}
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
-	    "version", version)) {
-		xbps_dbg_printf(xhp, "%s: invalid version for %s\n",
-		    __func__, pkgname);
-		rv = EINVAL;
-		goto out;
-	}
-	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "pkgver", pkgver)) {
 		xbps_dbg_printf(xhp, "%s: invalid pkgver for %s\n",
-		    __func__, pkgname);
+		    __func__, pkgver);
 		rv = EINVAL;
 		goto out;
 	}
 	if (!prop_dictionary_set_cstring_nocopy(pkgd,
 	    "short_desc", desc)) {
 		xbps_dbg_printf(xhp, "%s: invalid short_desc for %s\n",
-		    __func__, pkgname);
+		    __func__, pkgver);
 		rv = EINVAL;
 		goto out;
 	}
@@ -105,7 +85,7 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 	if (!prop_dictionary_set_bool(pkgd,
 	    "automatic-install", autoinst)) {
 		xbps_dbg_printf(xhp, "%s: invalid autoinst for %s\n",
-		    __func__, pkgname);
+		    __func__, pkgver);
 		rv = EINVAL;
 		goto out;
 	}
@@ -115,34 +95,31 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 	t = time(NULL);
 	if ((tmp = localtime(&t)) == NULL) {
 		xbps_dbg_printf(xhp, "%s: localtime failed: %s\n",
-		    pkgname, strerror(errno));
+		    pkgver, strerror(errno));
 		rv = EINVAL;
 		goto out;
 	}
 	if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", tmp) == 0) {
 		xbps_dbg_printf(xhp, "%s: strftime failed: %s\n",
-		    pkgname, strerror(errno));
+		    pkgver, strerror(errno));
 		rv = EINVAL;
 		goto out;
 	}
 	if (!prop_dictionary_set_cstring(pkgd, "install-date", outstr)) {
-		xbps_dbg_printf(xhp, "%s: install-date set failed!\n", pkgname);
+		xbps_dbg_printf(xhp, "%s: install-date set failed!\n", pkgver);
 		rv = EINVAL;
 		goto out;
 	}
 
 	if (provides && !prop_dictionary_set(pkgd, "provides", provides)) {
 		xbps_dbg_printf(xhp, "%s: failed to set provides for %s\n",
-		    __func__, pkgname);
+		    __func__, pkgver);
 		rv = EINVAL;
 		goto out;
 	}
-	if (rundeps == NULL)
-		rundeps = prop_array_create();
-
-	if (!prop_dictionary_set(pkgd, "run_depends", rundeps)) {
+	if (rundeps && !prop_dictionary_set(pkgd, "run_depends", rundeps)) {
 		xbps_dbg_printf(xhp, "%s: failed to set rundeps for %s\n",
-		    __func__, pkgname);
+		    __func__, pkgver);
 		rv = EINVAL;
 		goto out;
 	}
@@ -150,6 +127,8 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 	/*
 	 * Create a hash for the pkg's metafile.
 	 */
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
 	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	sha256 = xbps_file_hash(buf);
 	assert(sha256);
@@ -163,37 +142,42 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd, bool flush)
 	prop_dictionary_remove(pkgd, "transaction");
 	prop_dictionary_remove(pkgd, "skip-obsoletes");
 
-	if (!xbps_pkgdb_replace_pkg(xhp, pkgd, pkgname, flush)) {
+	if (!prop_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 		xbps_dbg_printf(xhp,
-		    "%s: failed to replace pkgd dict for %s\n",
-		    __func__, pkgname);
+		    "%s: failed to set pkgd for %s\n", __func__, pkgver);
 		goto out;
 	}
+	(void)xbps_pkgdb_update(xhp, true);
+
 out:
+	if (pkgname)
+		free(pkgname);
+
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REGISTER_FAIL,
-		    rv, pkgname, version,
-		    "%s: failed to register package: %s",
+		    rv, pkgver, "%s: failed to register package: %s",
 		    pkgver, strerror(rv));
 	}
 
 	return rv;
 }
 
-int
-xbps_unregister_pkg(struct xbps_handle *xhp, const char *pkgver, bool flush)
+int HIDDEN
+xbps_unregister_pkg(struct xbps_handle *xhp, const char *pkgver)
 {
+	char *pkgname;
+
 	assert(xhp);
 	assert(pkgver);
 
 	xbps_set_cb_state(xhp, XBPS_STATE_UNREGISTER, 0, pkgver, NULL, NULL);
 
-	if (!xbps_pkgdb_remove_pkg(xhp, pkgver, flush)) {
-		xbps_set_cb_state(xhp, XBPS_STATE_UNREGISTER_FAIL,
-		    errno, pkgver, NULL,
-		    "%s: failed to unregister package: %s",
-		    pkgver, strerror(errno));
-		return errno;
-	}
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+	prop_dictionary_remove(xhp->pkgdb, pkgname);
+	free(pkgname);
+
+	(void)xbps_pkgdb_update(xhp, true);
+
 	return 0;
 }

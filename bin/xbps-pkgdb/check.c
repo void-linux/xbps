@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,24 +48,34 @@ static void *
 pkgdb_thread_worker(void *arg)
 {
 	prop_dictionary_t pkgd;
+	prop_array_t array;
+	prop_object_t obj;
 	struct thread_data *thd = arg;
-	const char *pkgname, *pkgver;
+	const char *pkgver;
+	char *pkgname;
 	unsigned int i;
 	int rv;
 
+	array = prop_dictionary_all_keys(thd->xhp->pkgdb);
+	assert(array);
+
 	/* process pkgs from start until end */
 	for (i = thd->start; i < thd->end; i++) {
-		pkgd = prop_array_get(thd->xhp->pkgdb, i);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+		obj = prop_array_get(array, i);
+		pkgd = prop_dictionary_get_keysym(thd->xhp->pkgdb, obj);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		if (thd->xhp->flags & XBPS_FLAG_VERBOSE)
 			printf("Checking %s ...\n", pkgver);
 
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
 		rv = check_pkg_integrity(thd->xhp, pkgd, pkgname);
+		free(pkgname);
 		if (rv != 0)
 			fprintf(stderr, "pkgdb[%d] failed for %s: %s\n",
 			    thd->thread_num, pkgver, strerror(rv));
 	}
+	prop_object_release(array);
 
 	return NULL;
 }
@@ -84,7 +94,7 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 	thd = calloc(maxthreads, sizeof(*thd));
 	assert(thd);
 
-	slicecount = prop_array_count(xhp->pkgdb) / maxthreads;
+	slicecount = prop_dictionary_count(xhp->pkgdb) / maxthreads;
 	pkgcount = 0;
 
 	for (i = 0; i < maxthreads; i++) {
@@ -92,7 +102,7 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 		thd[i].xhp = xhp;
 		thd[i].start = pkgcount;
 		if (i + 1 >= maxthreads)
-			thd[i].end = prop_array_count(xhp->pkgdb);
+			thd[i].end = prop_dictionary_count(xhp->pkgdb);
 		else
 			thd[i].end = pkgcount + slicecount;
 		pthread_create(&thd[i].thread, NULL,
@@ -141,13 +151,8 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	propsd = prop_dictionary_internalize_from_file(buf);
 	free(buf);
 	if (propsd == NULL) {
-		printf("%s: unexistent metafile, converting to 0.18 "
-		    "format...\n", pkgname);
-		if ((rv = convert_pkgd_metadir(xhp, opkgd)) != 0)
-			return rv;
-
-		return 0;
-
+		xbps_error_printf("%s: unexistent metafile!\n", pkgname);
+		return EINVAL;
 	} else if (prop_dictionary_count(propsd) == 0) {
 		xbps_error_printf("%s: incomplete metadata file.\n", pkgname);
 		prop_object_release(propsd);

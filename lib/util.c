@@ -217,14 +217,17 @@ xbps_pkg_index_files_plist(struct xbps_handle *xhp, const char *uri)
 char HIDDEN *
 xbps_repository_pkg_path(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 {
-	const char *filen, *repoloc;
+	const char *pkgver, *arch, *repoloc;
 	char *lbinpkg = NULL;
 
 	assert(xhp);
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 
 	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
-	    "filename", &filen))
+	    "pkgver", &pkgver))
+		return NULL;
+	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
+	    "architecture", &arch))
 		return NULL;
 	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
 	    "repository", &repoloc))
@@ -234,7 +237,8 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 		/*
 		 * First check if binpkg is available in cachedir.
 		 */
-		lbinpkg = xbps_xasprintf("%s/%s", xhp->cachedir, filen);
+		lbinpkg = xbps_xasprintf("%s/%s.%s.xbps", xhp->cachedir,
+				pkgver, arch);
 		if (access(lbinpkg, R_OK) == 0)
 			return lbinpkg;
 
@@ -243,7 +247,7 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 	/*
 	 * Local and remote repositories use the same path.
 	 */
-	return xbps_xasprintf("%s/%s", repoloc, filen);
+	return xbps_xasprintf("%s/%s.%s.xbps", repoloc, pkgver, arch);
 }
 
 bool

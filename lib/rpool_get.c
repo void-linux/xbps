@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -193,6 +193,7 @@ xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 			 const char *plistf)
 {
 	prop_dictionary_t pkgd = NULL, plistd = NULL;
+	const char *repo;
 	char *url;
 
 	assert(pkg != NULL);
@@ -206,8 +207,8 @@ xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 	 * This will work locally and remotely, thanks to libarchive and
 	 * libfetch!
 	 */
-	pkgd = xbps_rpool_get_pkg(xhp, pkg);
-	if (pkgd == NULL)
+	if (((pkgd = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
+	    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pkg)) == NULL))
 		goto out;
 
 	url = xbps_repository_pkg_path(xhp, pkgd);
@@ -216,6 +217,10 @@ xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 		goto out;
 	}
 	plistd = xbps_get_pkg_plist_from_binpkg(url, plistf);
+	if (plistd) {
+		prop_dictionary_get_cstring_nocopy(pkgd, "repository", &repo);
+		prop_dictionary_set_cstring_nocopy(plistd, "repository", repo);
+	}
 	free(url);
 
 out:

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2012 Juan Romero Pardines.
+ * Copyright (c) 2011-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <syslog.h>
+#include <assert.h>
 #include <xbps_api.h>
 #include "defs.h"
 
@@ -34,7 +35,8 @@ void
 state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 {
 	prop_dictionary_t pkgd;
-	const char *version;
+	const char *instver, *newver;
+	char *pkgname;
 	bool syslog_enabled = false;
 
 	(void)cbdata;
@@ -59,36 +61,44 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 		printf("\n[*] Configuring unpacked packages\n");
 		break;
 	case XBPS_STATE_REPOSYNC:
-		printf("[*] Updating `%s' ...\n", xscd->arg0);
+		printf("[*] Updating `%s' ...\n", xscd->arg);
 		break;
 	case XBPS_STATE_VERIFY:
-		printf("%s: checking binary pkg integrity ...\n", xscd->arg0);
+		printf("%s: checking binary pkg integrity ...\n", xscd->arg);
+		break;
+	case XBPS_STATE_XBPS_UPDATE:
+		printf("A new update for xbps has been found; this package "
+		    "must be updated independently. After this update you can "
+		    "continue updating your system.\n\n");
 		break;
 	case XBPS_STATE_CONFIG_FILE:
 		if (xscd->desc != NULL)
 			printf("%s\n", xscd->desc);
 		break;
 	case XBPS_STATE_REMOVE:
-		printf("%s-%s: removing ...\n", xscd->arg0, xscd->arg1);
+		printf("%s: removing ...\n", xscd->arg);
 		break;
 	case XBPS_STATE_CONFIGURE:
-		printf("%s-%s: configuring ...\n", xscd->arg0, xscd->arg1);
+		printf("%s: configuring ...\n", xscd->arg);
 		break;
 	case XBPS_STATE_REGISTER:
 	case XBPS_STATE_UNREGISTER:
 		/* empty */
 		break;
 	case XBPS_STATE_UNPACK:
-		printf("%s-%s: unpacking ...\n", xscd->arg0, xscd->arg1);
+		printf("%s: unpacking ...\n", xscd->arg);
 		break;
 	case XBPS_STATE_INSTALL:
 		/* empty */
 		break;
 	case XBPS_STATE_UPDATE:
-		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, xscd->arg0);
-		prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
-		printf("%s-%s: updating to %s ...\n", xscd->arg0,
-		    version, xscd->arg1);
+		pkgname = xbps_pkg_name(xscd->arg);
+		assert(pkgname);
+		newver = xbps_pkg_version(xscd->arg);
+		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
+		prop_dictionary_get_cstring_nocopy(pkgd, "version", &instver);
+		printf("%s-%s: updating to %s ...\n", pkgname, instver, newver);
+		free(pkgname);
 		break;
 	/* success */
 	case XBPS_STATE_REMOVE_FILE:
@@ -101,27 +111,24 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 		}
 		break;
 	case XBPS_STATE_INSTALL_DONE:
-		printf("%s-%s: installed successfully.\n",
-		    xscd->arg0, xscd->arg1);
+		printf("%s: installed successfully.\n", xscd->arg);
 		if (syslog_enabled)
-			syslog(LOG_NOTICE, "Installed `%s-%s' successfully "
-			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
+			syslog(LOG_NOTICE, "Installed `%s' successfully "
+			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
 		break;
 	case XBPS_STATE_UPDATE_DONE:
-		printf("%s-%s: updated successfully.\n",
-		    xscd->arg0, xscd->arg1);
+		printf("%s: updated successfully.\n", xscd->arg);
 		if (syslog_enabled)
-			syslog(LOG_NOTICE, "Updated `%s' to `%s' successfully "
-			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
+			syslog(LOG_NOTICE, "Updated `%s' successfully "
+			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
 		break;
 	case XBPS_STATE_REMOVE_DONE:
-		printf("%s-%s: removed successfully.\n",
-		    xscd->arg0, xscd->arg1);
+		printf("%s: removed successfully.\n", xscd->arg);
 		if (syslog_enabled)
-			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
-			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
+			syslog(LOG_NOTICE, "Removed `%s' successfully "
+			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
 		break;
 	/* errors */
@@ -152,7 +159,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 		break;
 	default:
 		xbps_dbg_printf(xscd->xhp,
-		    "unknown state %d\n", xscd->state);
+		    "%s: unknown state %d\n", xscd->arg, xscd->state);
 		break;
 	}
 }

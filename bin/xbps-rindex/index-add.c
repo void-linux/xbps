@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,9 +48,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	prop_dictionary_t filespkgd;
 	prop_object_t obj, fileobj;
 	struct stat st;
-	const char *pkgname, *version, *regver, *oldfilen, *oldpkgver;
-	const char *pkgver, *arch, *oldarch;
-	char *sha256, *filen, *repodir, *buf;
+	const char *oldpkgver, *arch, *oldarch;
+	char *pkgver, *pkgname, *sha256, *repodir, *buf;
 	char *tmpfilen, *tmprepodir, *plist, *plistf;
 	size_t x;
 	int i, ret = 0;
@@ -100,7 +99,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		if ((tmpfilen = strdup(argv[i])) == NULL)
 			return ENOMEM;
 
-		filen = basename(tmpfilen);
 		/*
 		 * Read metadata props plist dictionary from binary package.
 		 */
@@ -114,17 +112,15 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		}
 		prop_dictionary_get_cstring_nocopy(newpkgd, "architecture",
 		    &arch);
-		prop_dictionary_get_cstring_nocopy(newpkgd, "pkgver", &pkgver);
+		prop_dictionary_get_cstring(newpkgd, "pkgver", &pkgver);
 		if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
 			fprintf(stderr, "index: ignoring %s, unmatched "
 			    "arch (%s)\n", pkgver, arch);
 			prop_object_release(newpkgd);
 			continue;
 		}
-		prop_dictionary_get_cstring_nocopy(newpkgd, "pkgname",
-		    &pkgname);
-		prop_dictionary_get_cstring_nocopy(newpkgd, "version",
-		    &version);
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
 		/*
 		 * Check if this package exists already in the index, but first
 		 * checking the version. If current package version is greater
@@ -133,25 +129,26 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 */
 		curpkgd = prop_dictionary_get(idx, pkgname);
 		if (curpkgd == NULL) {
-			if (errno && errno != ENOENT)
+			if (errno && errno != ENOENT) {
+				free(pkgver);
+				free(pkgname);
 				return errno;
+			}
 		} else {
-			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "filename", &oldfilen);
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &oldpkgver);
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "architecture", &oldarch);
-			prop_dictionary_get_cstring_nocopy(curpkgd,
-			    "version", &regver);
-			ret = xbps_cmpver(version, regver);
+			ret = xbps_cmpver(pkgver, oldpkgver);
 			if (ret <= 0) {
 				/* Same version or index version greater */
-				fprintf(stderr, "index: skipping `%s-%s' "
+				fprintf(stderr, "index: skipping `%s' "
 				    "(%s), already registered.\n",
-				    pkgname, version, arch);
+				    pkgver, arch);
 				prop_object_release(newpkgd);
 				free(tmpfilen);
+				free(pkgver);
+				free(pkgname);
 				continue;
 			}
 			/*
@@ -167,32 +164,57 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 * We have the dictionary now, add the required
 		 * objects for the index.
 		 */
-		if (!prop_dictionary_set_cstring(newpkgd, "filename", filen))
+		if ((sha256 = xbps_file_hash(argv[i])) == NULL) {
+			free(pkgver);
+			free(pkgname);
 			return errno;
-
-		if ((sha256 = xbps_file_hash(argv[i])) == NULL)
-			return errno;
-
+		}
 		if (!prop_dictionary_set_cstring(newpkgd, "filename-sha256",
-		    sha256))
+		    sha256)) {
+			free(pkgver);
+			free(pkgname);
 			return errno;
+		}
 
 		free(sha256);
-		if (stat(argv[i], &st) == -1)
+		if (stat(argv[i], &st) == -1) {
+			free(pkgver);
+			free(pkgname);
 			return errno;
+		}
 
 		if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
 		    (uint64_t)st.st_size)) {
+			free(pkgver);
+			free(pkgname);
 			return errno;
 		}
 		/*
+		 * Remove obsolete package objects.
+		 */
+		prop_dictionary_remove(newpkgd, "archive-compression-type");
+		prop_dictionary_remove(newpkgd, "build-date");
+		prop_dictionary_remove(newpkgd, "build_date");
+		prop_dictionary_remove(newpkgd, "conf_files");
+		prop_dictionary_remove(newpkgd, "filename");
+		prop_dictionary_remove(newpkgd, "homepage");
+		prop_dictionary_remove(newpkgd, "license");
+		prop_dictionary_remove(newpkgd, "maintainer");
+		prop_dictionary_remove(newpkgd, "packaged-with");
+		prop_dictionary_remove(newpkgd, "source-revisions");
+		prop_dictionary_remove(newpkgd, "long_desc");
+		prop_dictionary_remove(newpkgd, "pkgname");
+		prop_dictionary_remove(newpkgd, "version");
+		/*
 		 * Add new pkg dictionary into the index.
 		 */
-		if (!prop_dictionary_set(idx, pkgname, newpkgd))
+		if (!prop_dictionary_set(idx, pkgname, newpkgd)) {
+			free(pkgname);
 			return EINVAL;
+		}
 
 		flush = true;
-		printf("index: added `%s-%s' (%s).\n", pkgname, version, arch);
+		printf("index: added `%s' (%s).\n", pkgver, arch);
 		free(tmpfilen);
 		/*
 		 * Add new pkg dictionary into the index-files.
@@ -200,8 +222,11 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		found = false;
 		newpkgfilesd = xbps_get_pkg_plist_from_binpkg(argv[i],
 				"./files.plist");
-		if (newpkgfilesd == NULL)
+		if (newpkgfilesd == NULL) {
+			free(pkgver);
+			free(pkgname);
 			return EINVAL;
+		}
 
 		/* Find out if binary pkg stored in index contain any file */
 		pkg_cffiles = prop_dictionary_get(newpkgfilesd, "conf_files");
@@ -226,6 +251,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		if (!found) {
 			prop_object_release(newpkgfilesd);
 			prop_object_release(newpkgd);
+			free(pkgver);
+			free(pkgname);
 			continue;
 		}
 		/* create pkg files array */
@@ -276,6 +303,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		printf("index-files: added `%s' (%s)\n", pkgver, arch);
 		files_flush = true;
 		prop_object_release(newpkgd);
+		free(pkgver);
+		free(pkgname);
 	}
 
 	if (flush && !prop_dictionary_externalize_to_zfile(idx, plist)) {

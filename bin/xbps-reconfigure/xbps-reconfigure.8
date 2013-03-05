@@ -1,4 +1,4 @@
-.Dd November 6, 2012
+.Dd March 4, 2013
 .Os Void Linux
 .Dt xbps-reconfigure 8
 .Sh NAME
@@ -48,6 +48,16 @@ Specifies a full path for the target root directory.
 Enables verbose messages.
 .It Fl V, Fl -version
 Shows the XBPS version.
+.Sh FILES
+.Bl -tag -width /var/db/xbps/.<pkgname>.plist
+.It Ar /etc/xbps/xbps.conf
+Default configuration file.
+.It Ar /var/db/xbps/.<pkgname>.plist
+Package metadata properties.
+.It Ar /var/db/xbps/pkgdb-0.21.plist
+Default package database (0.21 format). Keeps track of installed packages and properties.
+.It Ar /var/cache/xbps
+Default cache directory to store downloaded binary packages.
 .Sh SEE ALSO
 .Xr xbps-create 8 ,
 .Xr xbps-dgraph 8 ,

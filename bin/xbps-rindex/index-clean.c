@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,8 @@ cleaner_thread(void *arg)
 	prop_dictionary_t pkgd;
 	prop_array_t array;
 	struct thread_data *thd = arg;
-	const char *pkgver, *filen, *sha256;
+	char *filen;
+	const char *pkgver, *arch, *sha256;
 	unsigned int i;
 
 	/* process pkgs from start until end */
@@ -63,8 +64,9 @@ cleaner_thread(void *arg)
 	for (i = thd->start; i < thd->end; i++) {
 		obj = prop_array_get(array, i);
 		pkgd = prop_dictionary_get_keysym(thd->idx, obj);
-		prop_dictionary_get_cstring_nocopy(pkgd, "filename", &filen);
+		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		filen = xbps_xasprintf("%s.%s.xbps");
 		xbps_dbg_printf(thd->xhp, "thread[%d] checking %s\n",
 		    thd->thread_num, pkgver);
 		if (access(filen, R_OK) == -1) {
@@ -73,6 +75,7 @@ cleaner_thread(void *arg)
 			 * broken or simply unexistent; either way, remove it.
 			 */
 			prop_array_add_cstring_nocopy(thd->result, pkgver);
+			free(filen);
 			continue;
 		}
 		/*
@@ -82,6 +85,7 @@ cleaner_thread(void *arg)
 		    "filename-sha256", &sha256);
 		if (xbps_file_hash_check(filen, sha256) != 0)
 			prop_array_add_cstring_nocopy(thd->result, pkgver);
+		free(filen);
 	}
 	prop_object_release(array);
 

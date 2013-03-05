@@ -46,6 +46,7 @@ usage(bool fail)
 	    " -h --help                  Print usage help\n"
 	    " -m --mode <auto|manual>    Change PKGNAME to automatic or manual mode\n"
 	    " -r --rootdir <dir>         Full path to rootdir\n"
+	    " -u --update                Update pkgdb to the latest format\n"
 	    " -v --verbose               Verbose messages\n"
 	    " -V --version               Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -73,7 +74,7 @@ change_pkg_instmode(struct xbps_handle *xhp,
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "aC:dhm:r:Vv";
+	const char *shortopts = "aC:dhm:r:uVv";
 	const struct option longopts[] = {
 		{ "all", no_argument, NULL, 'a' },
 		{ "config", required_argument, NULL, 'C' },
@@ -81,6 +82,7 @@ main(int argc, char **argv)
 		{ "help", no_argument, NULL, 'h' },
 		{ "mode", required_argument, NULL, 'm' },
 		{ "rootdir", required_argument, NULL, 'r' },
+		{ "update", no_argument, NULL, 'u' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
@@ -88,7 +90,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	const char *conffile = NULL, *rootdir = NULL, *instmode = NULL;
 	int c, i, rv, flags = 0;
-	bool all = false;
+	bool update_format = false, all = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -110,6 +112,9 @@ main(int argc, char **argv)
 		case 'r':
 			rootdir = optarg;
 			break;
+		case 'u':
+			update_format = true;
+			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
 			break;
@@ -122,7 +127,7 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if (!all && (argc == optind))
+	if (!update_format && !all && (argc == optind))
 		usage(true);
 
 	memset(&xh, 0, sizeof(xh));
@@ -136,7 +141,9 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (instmode) {
+	if (update_format)
+		convert_pkgdb_format(&xh);
+	else if (instmode) {
 		if ((strcmp(instmode, "auto")) && (strcmp(instmode, "manual")))
 			usage(true);
 

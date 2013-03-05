@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,152 +36,13 @@
  * @brief Repository index functions
  * @defgroup rindex Repository index functions
  */
-static prop_dictionary_t
-match_pkg_by_pkgver(prop_dictionary_t repod, const char *p)
-{
-	prop_dictionary_t d = NULL;
-	const char *pkgver;
-	char *pkgname;
-
-	/* exact match by pkgver */
-	if ((pkgname = xbps_pkg_name(p)) == NULL)
-		return NULL;
-
-	d = prop_dictionary_get(repod, pkgname);
-	if (d) {
-		prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
-		if (strcmp(pkgver, p))
-			d = NULL;
-	}
-
-	free(pkgname);
-	return d;
-}
-
-static prop_dictionary_t
-match_pkg_by_pattern(prop_dictionary_t repod, const char *p)
-{
-	prop_dictionary_t d = NULL;
-	const char *pkgver;
-	char *pkgname;
-
-	/* match by pkgpattern in pkgver */
-	if ((pkgname = xbps_pkgpattern_name(p)) == NULL) {
-		if ((pkgname = xbps_pkg_name(p)))
-			return match_pkg_by_pkgver(repod, p);
-
-		return NULL;
-	}
-
-	d = prop_dictionary_get(repod, pkgname);
-	if (d) {
-		prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
-		assert(pkgver);
-		if (!xbps_pkgpattern_match(pkgver, p))
-			d = NULL;
-	}
-
-	free(pkgname);
-	return d;
-}
-
-const char HIDDEN *
-vpkg_user_conf(struct xbps_handle *xhp,
-	       const char *vpkg,
-	       bool bypattern)
-{
-	const char *vpkgver, *pkg = NULL;
-	char *vpkgname = NULL, *tmp;
-	size_t i, j, cnt;
-
-	if (xhp->cfg == NULL)
-		return NULL;
-
-	if ((cnt = cfg_size(xhp->cfg, "virtual-package")) == 0) {
-		/* no virtual packages configured */
-		return NULL;
-	}
-
-	for (i = 0; i < cnt; i++) {
-		cfg_t *sec = cfg_getnsec(xhp->cfg, "virtual-package", i);
-		for (j = 0; j < cfg_size(sec, "targets"); j++) {
-			tmp = NULL;
-			vpkgver = cfg_getnstr(sec, "targets", j);
-			if (strchr(vpkgver, '_') == NULL) {
-				tmp = xbps_xasprintf("%s_1", vpkgver);
-				vpkgname = xbps_pkg_name(tmp);
-				free(tmp);
-			} else {
-				vpkgname = xbps_pkg_name(vpkgver);
-			}
-			if (vpkgname == NULL)
-				break;
-			if (bypattern) {
-				if (!xbps_pkgpattern_match(vpkgver, vpkg)) {
-					free(vpkgname);
-					continue;
-				}
-			} else {
-				if (strcmp(vpkg, vpkgname)) {
-					free(vpkgname);
-					continue;
-				}
-			}
-			/* virtual package matched in conffile */
-			pkg = cfg_title(sec);
-			xbps_dbg_printf(xhp,
-			    "matched vpkg in conf `%s' for %s\n",
-			    pkg, vpkg);
-			free(vpkgname);
-			break;
-		}
-	}
-	return pkg;
-}
-
 prop_dictionary_t
 xbps_rindex_get_virtualpkg(struct xbps_rindex *rpi, const char *pkg)
 {
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	prop_dictionary_t pkgd = NULL;
-	const char *vpkg;
-	bool found = false, bypattern = false;
+	prop_dictionary_t pkgd;
 
-	if (xbps_pkgpattern_version(pkg))
-		bypattern = true;
-
-	/* Try matching vpkg from configuration files */
-	vpkg = vpkg_user_conf(rpi->xhp, pkg, bypattern);
-	if (vpkg != NULL) {
-		if (xbps_pkgpattern_version(vpkg))
-			pkgd = match_pkg_by_pattern(rpi->repod, vpkg);
-		else if (xbps_pkg_version(vpkg))
-			pkgd = match_pkg_by_pkgver(rpi->repod, vpkg);
-		else
-			pkgd = prop_dictionary_get(rpi->repod, vpkg);
-
-		if (pkgd) {
-			found = true;
-			goto out;
-		}
-	}
-
-	/* ... otherwise match the first one in dictionary */
-	iter = prop_dictionary_iterator(rpi->repod);
-	assert(iter);
-
-	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(rpi->repod, obj);
-		if (xbps_match_virtual_pkg_in_dict(pkgd, pkg, bypattern)) {
-			found = true;
-			break;
-		}
-	}
-	prop_object_iterator_release(iter);
-
-out:
-	if (found) {
+	pkgd = xbps_find_virtualpkg_in_dict(rpi->xhp, rpi->repod, pkg);
+	if (pkgd) {
 		prop_dictionary_set_cstring_nocopy(pkgd,
 				"repository", rpi->uri);
 		return pkgd;
@@ -192,15 +53,9 @@ out:
 prop_dictionary_t
 xbps_rindex_get_pkg(struct xbps_rindex *rpi, const char *pkg)
 {
-	prop_dictionary_t pkgd = NULL;
+	prop_dictionary_t pkgd;
 
-	if (xbps_pkgpattern_version(pkg))
-		pkgd = match_pkg_by_pattern(rpi->repod, pkg);
-	else if (xbps_pkg_version(pkg))
-		pkgd = match_pkg_by_pkgver(rpi->repod, pkg);
-	else
-		pkgd = prop_dictionary_get(rpi->repod, pkg);
-
+	pkgd = xbps_find_pkg_in_dict(rpi->repod, pkg);
 	if (pkgd) {
 		prop_dictionary_set_cstring_nocopy(pkgd,
 				"repository", rpi->uri);

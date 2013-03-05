@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,6 +42,6 @@ CHECK_PKG_DECL(rundeps);
 CHECK_PKG_DECL(symlinks);
 
 /* from convert.c */
-int	convert_pkgd_metadir(struct xbps_handle *, prop_dictionary_t);
+void	convert_pkgdb_format(struct xbps_handle *);
 
 #endif /* !_XBPS_PKGDB_DEFS_H_ */

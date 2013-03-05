@@ -56,7 +56,7 @@ usage(bool fail)
 	    " -s --search PATTERN(s)   Search for packages matching PATTERN(s)\n"
 	    " -f --files               Show files for PKGNAME\n"
 	    " -p --property PROP,...   Show properties for PKGNAME\n"
-	    " -x --deps                Show dependencies for PKGNAME\n"
+	    " -x --deps                Show dependencies for PKGNAME (set it twice for a full dependency tree)\n"
 	    " -X --revdeps             Show reverse dependencies for PKGNAME\n");
 
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -90,16 +90,16 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	const char *rootdir, *cachedir, *conffile, *props, *defrepo;
-	int c, flags, rv;
+	int c, flags, rv, show_deps = 0;
 	bool list_pkgs, list_repos, orphans, own;
-	bool list_manual, show_prop, show_files, show_deps, show_rdeps;
-	bool show, search, repo_mode, opmode;
+	bool list_manual, show_prop, show_files, show_rdeps;
+	bool show, search, repo_mode, opmode, fulldeptree;
 
 	rootdir = cachedir = conffile = defrepo = props = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = orphans = search = own = false;
 	list_manual = show_prop = show_files = false;
-	show = show_deps = show_rdeps = false;
+	show = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -157,7 +157,8 @@ main(int argc, char **argv)
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case 'x':
-			show_deps = opmode = true;
+			show_deps++;
+			opmode = true;
 			break;
 		case 'X':
 			show_rdeps = opmode = true;
@@ -234,10 +235,13 @@ main(int argc, char **argv)
 
 	} else if (show_deps) {
 		/* show-deps mode */
+		if (show_deps > 1)
+			fulldeptree = true;
+
 		if (repo_mode)
-			rv = repo_show_pkg_deps(&xh, argv[optind]);
+			rv = repo_show_pkg_deps(&xh, argv[optind], fulldeptree);
 		else
-			rv = show_pkg_deps(&xh, argv[optind]);
+			rv = show_pkg_deps(&xh, argv[optind], fulldeptree);
 
 	} else if (show_rdeps) {
 		/* show-rdeps mode */

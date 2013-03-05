@@ -241,19 +241,3 @@ find_longest_pkgver(struct xbps_handle *xhp, prop_object_t o)
 
 	return ffl.len;
 }
-
-int
-list_strings_sep_in_array(struct xbps_handle *xhp,
-			  prop_object_t obj,
-			  void *arg,
-			  bool *loop_done)
-{
-	const char *sep = arg;
-
-	(void)xhp;
-	(void)loop_done;
-
-	printf("%s%s\n", sep ? sep : "", prop_string_cstring_nocopy(obj));
-
-	return 0;
-}

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,22 +33,64 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-int
-show_pkg_deps(struct xbps_handle *xhp, const char *pkgname)
+static void
+print_rdeps(struct xbps_handle *xhp, prop_array_t rdeps,
+	    bool full, bool repo, bool origin, int *indent)
 {
-	prop_dictionary_t propsd;
-	int rv = 0;
+	prop_array_t currdeps;
+	prop_dictionary_t pkgd;
+	const char *pkgdep;
+	size_t i;
+	int j;
 
-	assert(pkgname != NULL);
+	if (!origin)
+		(*indent)++;
 
-	propsd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
-	if (propsd == NULL)
+	for (i = 0; i < prop_array_count(rdeps); i++) {
+		prop_array_get_cstring_nocopy(rdeps, i, &pkgdep);
+		if (!origin || !full)
+			for (j = 0; j < *indent; j++)
+				putchar(' ');
+
+		printf("%s\n", pkgdep);
+		if (!full)
+			continue;
+
+		if (repo) {
+			pkgd = xbps_rpool_get_pkg(xhp, pkgdep);
+			if (pkgd == NULL)
+				pkgd = xbps_rpool_get_virtualpkg(xhp, pkgdep);
+		} else {
+			pkgd = xbps_pkgdb_get_pkg(xhp, pkgdep);
+			if (pkgd == NULL)
+				pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkgdep);
+		}
+		if (pkgd != NULL) {
+			currdeps = prop_dictionary_get(pkgd, "run_depends");
+			if (currdeps != NULL)
+				print_rdeps(xhp, currdeps,
+				    full, repo, false, indent);
+		}
+	}
+	(*indent)--;
+}
+
+int
+show_pkg_deps(struct xbps_handle *xhp, const char *pkgname, bool full)
+{
+	prop_array_t rdeps;
+	prop_dictionary_t pkgd;
+	int indent = 0;
+
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	if (pkgd == NULL)
 		return ENOENT;
 
-	rv = xbps_callback_array_iter_in_dict(xhp, propsd, "run_depends",
-	     list_strings_sep_in_array, NULL);
+	rdeps = prop_dictionary_get(pkgd, "run_depends");
+	if (rdeps != NULL)
+		print_rdeps(xhp, rdeps, full, false, true, &indent);
 
-	return rv;
+	return 0;
 }
 
 int
@@ -58,8 +100,7 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 	const char *pkgdep;
 	size_t i;
 
-	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
-	if (reqby) {
+	if ((reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkg)) != NULL) {
 		for (i = 0; i < prop_array_count(reqby); i++) {
 			prop_array_get_cstring_nocopy(reqby, i, &pkgdep);
 			printf("%s\n", pkgdep);
@@ -69,16 +110,19 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 }
 
 int
-repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern)
+repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern, bool full)
 {
+	prop_array_t rdeps;
 	prop_dictionary_t pkgd;
+	int indent = 0;
 
 	if (((pkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
 	    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
 		return errno;
 
-	(void)xbps_callback_array_iter_in_dict(xhp, pkgd,
-	    "run_depends", list_strings_sep_in_array, NULL);
+	rdeps = prop_dictionary_get(pkgd, "run_depends");
+	if (rdeps != NULL)
+		print_rdeps(xhp, rdeps, full, true, true, &indent);
 
 	return 0;
 }

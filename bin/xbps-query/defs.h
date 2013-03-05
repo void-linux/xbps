@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,9 +33,9 @@
 #endif
 
 /* from show-deps.c */
-int	show_pkg_deps(struct xbps_handle *, const char *);
+int	show_pkg_deps(struct xbps_handle *, const char *, bool);
 int	show_pkg_revdeps(struct xbps_handle *, const char *);
-int	repo_show_pkg_deps(struct xbps_handle *, const char *);
+int	repo_show_pkg_deps(struct xbps_handle *, const char *, bool);
 int	repo_show_pkg_revdeps(struct xbps_handle *, const char *);
 
 /* from show-info-files.c */
@@ -56,8 +56,6 @@ int	repo_ownedby(struct xbps_handle *, int, char **);
 
 /* From list.c */
 size_t	get_maxcols(void);
-int     list_strings_sep_in_array(struct xbps_handle *,
-		prop_object_t, void *, bool *);
 size_t	find_longest_pkgver(struct xbps_handle *, prop_object_t);
 
 int	list_pkgs_in_dict(struct xbps_handle *, prop_object_t, void *, bool *);

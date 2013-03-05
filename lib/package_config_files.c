@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,8 +64,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			     prop_dictionary_t filesd,
 			     struct archive_entry *entry,
 			     const char *entry_pname,
-			     const char *pkgname,
-			     const char *version)
+			     const char *pkgver)
 {
 	prop_dictionary_t forigd;
 	prop_object_t obj, obj2;
@@ -77,8 +76,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	assert(prop_object_type(filesd) == PROP_TYPE_DICTIONARY);
 	assert(entry != NULL);
 	assert(entry_pname != NULL);
-	assert(pkgname != NULL);
-	assert(version != NULL);
+	assert(pkgver != NULL);
 
 	iter = xbps_array_iter_from_dict(filesd, "conf_files");
 	if (iter == NULL)
@@ -88,13 +86,13 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	 * Get original hash for the file from current
 	 * installed package.
 	 */
-	xbps_dbg_printf(xhp, "%s-%s: processing conf_file %s\n",
-	    pkgname, version, entry_pname);
+	xbps_dbg_printf(xhp, "%s: processing conf_file %s\n",
+	    pkgver, entry_pname);
 
-	forigd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
+	forigd = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
 	if (forigd == NULL) {
-		xbps_dbg_printf(xhp, "%s-%s: conf_file %s not currently "
-		    "installed\n", pkgname, version, entry_pname);
+		xbps_dbg_printf(xhp, "%s: conf_file %s not currently "
+		    "installed\n", pkgver, entry_pname);
 		rv = 1;
 		goto out;
 	}
@@ -120,8 +118,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	 * First case: original hash not found, install new file.
 	 */
 	if (sha256_orig == NULL) {
-		xbps_dbg_printf(xhp, "%s-%s: conf_file %s not installed\n",
-		    pkgname, version, entry_pname);
+		xbps_dbg_printf(xhp, "%s: conf_file %s not installed\n",
+		    pkgver, entry_pname);
 		rv = 1;
 		goto out;
 	}
@@ -145,9 +143,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 				/*
 				 * File not installed, install new one.
 				 */
-				xbps_dbg_printf(xhp, "%s-%s: conf_file %s not "
-				    "installed\n", pkgname, version,
-				    entry_pname);
+				xbps_dbg_printf(xhp, "%s: conf_file %s not "
+				    "installed\n", pkgver, entry_pname);
 				rv = 1;
 				break;
 			} else {
@@ -163,9 +160,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 		    (strcmp(sha256_orig, sha256_new) == 0) &&
 		    (strcmp(sha256_cur, sha256_new) == 0)) {
-			xbps_dbg_printf(xhp, "%s-%s: conf_file %s orig = X, "
-			    "cur = X, new = X\n", pkgname, version,
-			    entry_pname);
+			xbps_dbg_printf(xhp, "%s: conf_file %s orig = X, "
+			    "cur = X, new = X\n", pkgver, entry_pname);
 			rv = 0;
 			break;
 		/*
@@ -177,9 +173,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_cur, sha256_new))) {
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
-			    0, pkgname, version,
+			    0, pkgver,
 			    "Updating configuration file `%s' provided "
-			    "by version `%s'.", cffile, version);
+			    "by `%s'.", cffile, pkgver);
 			rv = 1;
 			break;
 		/*
@@ -193,7 +189,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			   (strcmp(sha256_cur, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
-			    0, pkgname, version,
+			    0, pkgver,
 			    "Keeping modified configuration file `%s'.",
 			    cffile);
 			rv = 0;
@@ -207,9 +203,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		} else if ((strcmp(sha256_cur, sha256_new) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
-			xbps_dbg_printf(xhp, "%s-%s: conf_file %s orig = X, "
-			    "cur = Y, new = Y\n", pkgname, version,
-			    entry_pname);
+			xbps_dbg_printf(xhp, "%s: conf_file %s orig = X, "
+			    "cur = Y, new = Y\n", pkgver, entry_pname);
 			rv = 0;
 			break;
 		/*
@@ -220,10 +215,14 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		} else  if ((strcmp(sha256_orig, sha256_cur)) &&
 			    (strcmp(sha256_cur, sha256_new)) &&
 			    (strcmp(sha256_orig, sha256_new))) {
+			const char *version;
+
+			version = xbps_pkg_version(pkgver);
+			assert(version);
 			buf = xbps_xasprintf(".%s.new-%s",
 			    cffile, version);
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
-			    0, pkgname, version,
+			    0, pkgver, version,
 			    "Installing new configuration file to "
 			    "`%s.new-%s'.", cffile, version);
 			archive_entry_set_pathname(entry, buf);
@@ -241,8 +240,8 @@ out:
 
 	prop_object_iterator_release(iter);
 
-	xbps_dbg_printf(xhp, "%s-%s: conf_file %s returned %d\n",
-	    pkgname, version, entry_pname, rv);
+	xbps_dbg_printf(xhp, "%s: conf_file %s returned %d\n",
+	    pkgver, entry_pname, rv);
 
 	return rv;
 }

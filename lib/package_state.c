@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -93,15 +93,15 @@ get_state(prop_dictionary_t dict)
 
 int
 xbps_pkg_state_installed(struct xbps_handle *xhp,
-			 const char *pkgname,
+			 const char *pkgver,
 			 pkg_state_t *state)
 {
 	prop_dictionary_t pkgd;
 
-	assert(pkgname != NULL);
+	assert(pkgver != NULL);
 	assert(state != NULL);
 
-	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
 	if (pkgd == NULL)
 		return ENOENT;
 
@@ -133,46 +133,32 @@ xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 }
 
 static int
-set_pkg_objs(prop_dictionary_t pkgd, const char *name, const char *version)
+set_pkg_objs(prop_dictionary_t pkgd, const char *pkgver)
 {
-	char *pkgver;
-
-	if (!prop_dictionary_set_cstring_nocopy(pkgd, "pkgname", name))
+	if (!prop_dictionary_set_cstring_nocopy(pkgd, "pkgver", pkgver))
 		return EINVAL;
-
-	if (!prop_dictionary_set_cstring_nocopy(pkgd, "version", version))
-		return EINVAL;
-
-	pkgver = xbps_xasprintf("%s-%s", name, version);
-	assert(pkgver != NULL);
-
-	if (!prop_dictionary_set_cstring_nocopy(pkgd, "pkgver", pkgver)) {
-		free(pkgver);
-		return EINVAL;
-	}
-	free(pkgver);
 
 	return 0;
 }
 
 int
 xbps_set_pkg_state_installed(struct xbps_handle *xhp,
-			     const char *pkgname,
-			     const char *version,
+			     const char *pkgver,
 			     pkg_state_t state)
 {
 	prop_dictionary_t pkgd;
+	char *pkgname;
 	int rv = 0;
 
-	assert(pkgname != NULL);
+	assert(pkgver != NULL);
 
-	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
 	if (pkgd == NULL) {
 		pkgd = prop_dictionary_create();
 		if (pkgd == NULL)
 			return ENOMEM;
 
-		if ((rv = set_pkg_objs(pkgd, pkgname, version)) != 0) {
+		if ((rv = set_pkg_objs(pkgd, pkgver)) != 0) {
 			prop_object_release(pkgd);
 			return rv;
 		}
@@ -180,17 +166,25 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			prop_object_release(pkgd);
 			return rv;
 		}
-		if (!xbps_add_obj_to_array(xhp->pkgdb, pkgd)) {
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+		if (!prop_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 			prop_object_release(pkgd);
+			free(pkgname);
 			return EINVAL;
 		}
+		free(pkgname);
 	} else {
 		if ((rv = set_new_state(pkgd, state)) != 0)
 			return rv;
 
-		if ((rv = xbps_array_replace_dict_by_name(xhp->pkgdb,
-		    pkgd, pkgname)) != 0)
-			return rv;
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+		if (!prop_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
+			free(pkgname);
+			return EINVAL;
+		}
+		free(pkgname);
 	}
 
 	return rv;

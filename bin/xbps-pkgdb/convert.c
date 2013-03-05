@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,136 +38,81 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-static prop_data_t
-create_script_blob(struct xbps_handle *xhp,
-		   const char *file,
-		   const char *pkgname)
+/*
+ * Convert pkgdb format to 0.21.
+ */
+static void
+pkgdb_format_021(struct xbps_handle *xhp, const char *plist_new)
 {
-	prop_data_t data;
-	struct stat st;
-	void *mf;
-	char *buf;
-	int fd;
+	prop_array_t array, rdeps;
+	prop_dictionary_t pkgdb, pkgd;
+	size_t i;
+	char *pkgname, *plist;
 
-	buf = xbps_xasprintf("%s/metadata/%s/%s", xhp->metadir, pkgname, file);
-	if ((fd = open(buf, O_RDONLY)) == -1) {
-		free(buf);
-		if (errno != ENOENT)
-			fprintf(stderr, "%s: can't read INSTALL script: %s\n",
-		    	    pkgname, strerror(errno));
-
-		return NULL;
+	plist = xbps_xasprintf("%s/pkgdb.plist", xhp->metadir);
+	if (access(plist, R_OK) == -1) {
+		if (errno == ENOENT) {
+			/* missing file, no conversion needed */
+			free(plist);
+			return;
+		}
+		xbps_error_printf("cannot read %s: %s\n",
+		    plist, strerror(errno));
+		exit(EXIT_FAILURE);
 	}
-	if (stat(buf, &st) == -1) {
-		free(buf);
-		fprintf(stderr, "%s: failed to stat %s script: %s\n",
-		    pkgname, file, strerror(errno));
-		return NULL;
-	}
-	free(buf);
 
-	mf = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-	if (mf == MAP_FAILED) {
-		close(fd);
-		fprintf(stderr, "%s: failed to map INSTALL script: %s\n",
-		    pkgname, strerror(errno));
-		return NULL;
+	array = prop_array_internalize_from_zfile(plist);
+	if (prop_object_type(array) != PROP_TYPE_ARRAY) {
+		xbps_error_printf("unknown object type for %s\n",
+		    plist, strerror(errno));
+		exit(EXIT_FAILURE);
 	}
-	data = prop_data_create_data(mf, st.st_size);
-	munmap(mf, st.st_size);
 
-	return data;
+	pkgdb = prop_dictionary_create();
+	assert(pkgdb);
+
+	for (i = 0; i < prop_array_count(array); i++) {
+		pkgd = prop_array_get(array, i);
+		prop_dictionary_get_cstring(pkgd, "pkgname", &pkgname);
+		rdeps = prop_dictionary_get(pkgd, "run_depends");
+		/* remove unneeded objs */
+		prop_dictionary_remove(pkgd, "pkgname");
+		prop_dictionary_remove(pkgd, "version");
+		if (prop_array_count(rdeps) == 0)
+			prop_dictionary_remove(pkgd, "run_depends");
+
+		prop_dictionary_set(pkgdb, pkgname, pkgd);
+		free(pkgname);
+	}
+
+	if (prop_array_count(array) != prop_dictionary_count(pkgdb)) {
+		xbps_error_printf("failed conversion! unmatched obj count "
+		    "(got %zu, need %zu)\n", prop_dictionary_count(pkgdb),
+		    prop_array_count(array));
+		exit(EXIT_FAILURE);
+	}
+
+	if (!prop_dictionary_externalize_to_file(pkgdb, plist_new)) {
+		xbps_error_printf("failed to write %s: %s\n",
+		    plist_new, strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	prop_object_release(array);
+	prop_object_release(pkgdb);
+	free(plist);
+
+	printf("Conversion to 0.21 pkgdb format successfully\n");
 }
 
-/*
- * Converts package metadata format to 0.18.
- */
-int
-convert_pkgd_metadir(struct xbps_handle *xhp, prop_dictionary_t pkgd)
+void
+convert_pkgdb_format(struct xbps_handle *xhp)
 {
-	prop_dictionary_t filesd, propsd;
-	prop_array_t array;
-	prop_data_t data;
-	const char *pkgname;
-	char *buf, *sha256, *propsf, *filesf;
+	char *plist;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
+	if ((access(plist, R_OK) == -1) && (errno == ENOENT))
+		pkgdb_format_021(xhp, plist);
 
-	/* Merge XBPS_PKGFILES */
-	propsf = xbps_xasprintf("%s/metadata/%s/%s", xhp->metadir,
-			pkgname, XBPS_PKGPROPS);
-	propsd = prop_dictionary_internalize_from_zfile(propsf);
-	assert(propsd);
-
-	filesf = xbps_xasprintf("%s/metadata/%s/%s", xhp->metadir,
-			pkgname, XBPS_PKGFILES);
-	filesd = prop_dictionary_internalize_from_zfile(filesf);
-	assert(filesd);
-
-	array = prop_dictionary_get(filesd, "files");
-	if (array && prop_array_count(array))
-		prop_dictionary_set(propsd, "files", array);
-
-	array = prop_dictionary_get(filesd, "conf_files");
-	if (array && prop_array_count(array))
-		prop_dictionary_set(propsd, "conf_files", array);
-
-	array = prop_dictionary_get(filesd, "dirs");
-	if (array && prop_array_count(array))
-		prop_dictionary_set(propsd, "dirs", array);
-
-	array = prop_dictionary_get(filesd, "links");
-	if (array && prop_array_count(array))
-		prop_dictionary_set(propsd, "links", array);
-
-	prop_object_release(filesd);
-
-	/* Merge INSTALL script */
-	if ((data = create_script_blob(xhp, "INSTALL", pkgname))) {
-		prop_dictionary_set(propsd, "install-script", data);
-		prop_object_release(data);
-	}
-	/* Merge REMOVE script */
-	if ((data = create_script_blob(xhp, "REMOVE", pkgname))) {
-		prop_dictionary_set(propsd, "remove-script", data);
-		prop_object_release(data);
-	}
-	/* Externalize pkg metaplist */
-	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-	if (!prop_dictionary_externalize_to_file(propsd, buf)) {
-		fprintf(stderr, "%s: can't externalize plist: %s\n",
-		    pkgname, strerror(errno));
-		return -1;
-	}
-	/* create sha256 hash for pkg plist */
-	sha256 = xbps_file_hash(buf);
-	free(buf);
-	assert(sha256);
-	prop_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
-	free(sha256);
-
-	/* Remove old files/dir */
-	if ((remove(propsf) == -1) || (remove(filesf) == -1))
-		fprintf(stderr, "%s: failed to remove %s: %s\n",
-		    pkgname, propsf, strerror(errno));
-
-	buf = xbps_xasprintf("%s/metadata/%s/INSTALL", xhp->metadir, pkgname);
-	if (access(buf, R_OK) == 0)
-		remove(buf);
-	free(buf);
-
-	buf = xbps_xasprintf("%s/metadata/%s/REMOVE", xhp->metadir, pkgname);
-	if (access(buf, R_OK) == 0)
-		remove(buf);
-	free(buf);
-
-	buf = xbps_xasprintf("%s/metadata/%s", xhp->metadir, pkgname);
-	remove(buf);
-	free(buf);
-
-	buf = xbps_xasprintf("%s/metadata", xhp->metadir);
-	remove(buf);
-	free(buf);
-
-	return 0;
+	free(plist);
 }

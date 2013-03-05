@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbd)
 	switch (xscd->state) {
 	/* notifications */
 	case XBPS_STATE_CONFIGURE:
-		printf("%s-%s: configuring ...\n", xscd->arg0, xscd->arg1);
+		printf("%s: configuring ...\n", xscd->arg);
 		break;
 	/* errors */
 	case XBPS_STATE_CONFIGURE_FAIL:
@@ -75,7 +75,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbd)
 		break;
 	default:
 		xbps_dbg_printf(xscd->xhp,
-		    "unknown state %d\n", xscd->state);
+		    "%s: unknown state %d\n", xscd->arg, xscd->state);
 		break;
 	}
 }

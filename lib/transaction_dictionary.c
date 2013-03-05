@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	uint64_t tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt;
 	int rv = 0;
-	const char *tract, *pkgname, *repo;
+	const char *tract, *pkgver, *repo;
 
 	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = 0;
 	tsize = dlsize = instsize = rmsize = 0;
@@ -75,7 +75,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		 * Count number of pkgs to be removed, configured,
 		 * installed and updated.
 		 */
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repo);
 
@@ -97,7 +97,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		 */
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "update") == 0)) {
-			pkg_metad = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
+			pkg_metad = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
 			if (pkg_metad == NULL)
 				continue;
 			prop_dictionary_get_uint64(pkg_metad,

@@ -158,8 +158,8 @@ find_repo_deps(struct xbps_handle *xhp,
 	prop_array_t curpkgrdeps;
 	pkg_state_t state;
 	size_t x;
-	const char *reqpkg, *reqpkgname, *pkgver_q, *reason = NULL;
-	char *pkgname;
+	const char *reqpkg, *pkgver_q, *reason = NULL;
+	char *pkgname, *reqpkgname;
 	int rv = 0;
 
 	if (*depth >= MAX_DEPTH)
@@ -317,8 +317,8 @@ find_repo_deps(struct xbps_handle *xhp,
 		}
 		prop_dictionary_get_cstring_nocopy(curpkgd,
 		    "pkgver", &pkgver_q);
-		prop_dictionary_get_cstring_nocopy(curpkgd,
-		    "pkgname", &reqpkgname);
+		reqpkgname = xbps_pkg_name(pkgver_q);
+		assert(reqpkgname);
 		/*
 		 * Check dependency validity.
 		 */
@@ -329,9 +329,11 @@ find_repo_deps(struct xbps_handle *xhp,
 			    "%s (depends on itself)]\n",
 			    reqpkg);
 			free(pkgname);
+			free(reqpkgname);
 			continue;
 		}
 		free(pkgname);
+		free(reqpkgname);
 
 		/*
 		 * Check if package has matched conflicts.

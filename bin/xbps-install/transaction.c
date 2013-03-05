@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,20 +75,18 @@ static void
 show_actions(prop_object_iterator_t iter)
 {
 	prop_object_t obj;
-	const char *repoloc, *trans, *pkgname, *version, *fname, *arch;
+	const char *repoloc, *trans, *pkgver, *arch;
 
-	repoloc = trans = pkgname = version = fname = arch = NULL;
+	repoloc = trans = pkgver = arch = NULL;
 
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "version", &version);
-		printf("%s %s %s", pkgname, trans, version);
-		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		prop_dictionary_get_cstring_nocopy(obj, "filename", &fname);
+		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-		if (repoloc && fname && arch)
-			printf(" %s %s %s", repoloc, fname, arch);
+		printf("%s %s %s", pkgver, arch, trans);
+		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		if (repoloc)
+			printf(" %s", repoloc);
 
 		printf("\n");
 	}

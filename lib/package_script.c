@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,8 +35,7 @@ int
 xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		     const void *blob,
 		     const size_t blobsiz,
-		     const char *pkgname,
-		     const char *version,
+		     const char *pkgver,
 		     const char *action,
 		     bool update)
 {
@@ -46,8 +45,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	int fd, rv;
 
 	assert(blob);
-	assert(pkgname);
-	assert(version);
+	assert(pkgver);
 	assert(action);
 
 	if (strcmp(xhp->rootdir, "/") == 0) {
@@ -87,7 +85,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	close(fd);
 
 	/* exec script */
-	rv = xbps_file_exec(xhp, fpath, action, pkgname, version,
+	rv = xbps_file_exec(xhp, fpath, action, pkgver,
 			    update ? "yes" : "no",
 			    xhp->conffile, NULL);
 
@@ -105,7 +103,7 @@ xbps_pkg_exec_script(struct xbps_handle *xhp,
 		     bool update)
 {
 	prop_data_t data;
-	const char *pkgname, *version;
+	const char *pkgver;
 
 	assert(xhp);
 	assert(d);
@@ -116,10 +114,8 @@ xbps_pkg_exec_script(struct xbps_handle *xhp,
 	if (data == NULL)
 		return 0;
 
-	prop_dictionary_get_cstring_nocopy(d, "pkgname", &pkgname);
-	prop_dictionary_get_cstring_nocopy(d, "version", &version);
+	prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
 
 	return xbps_pkg_exec_buffer(xhp, prop_data_data(data),
-			prop_data_size(data), pkgname, version,
-			action, update);
+			prop_data_size(data), pkgver, action, update);
 }

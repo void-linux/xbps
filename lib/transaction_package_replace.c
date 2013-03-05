@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2012 Juan Romero Pardines.
+ * Copyright (c) 2011-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,8 +40,8 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 	prop_dictionary_t instd, reppkgd, filesd;
 	prop_object_t obj, obj2;
 	prop_object_iterator_t iter;
-	const char *pattern, *pkgname, *curpkgname, *pkgver, *curpkgver;
-	char *buf;
+	const char *pattern, *pkgver, *curpkgver;
+	char *buf, *pkgname, *curpkgname;
 	bool instd_auto, sr;
 	size_t i;
 
@@ -67,19 +67,22 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				continue;
 
 			prop_dictionary_get_cstring_nocopy(obj,
-			    "pkgname", &pkgname);
-			prop_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &pkgver);
 			prop_dictionary_get_cstring_nocopy(instd,
-			    "pkgname", &curpkgname);
-			prop_dictionary_get_cstring_nocopy(instd,
 			    "pkgver", &curpkgver);
+			pkgname = xbps_pkg_name(pkgver);
+			assert(pkgname);
+			curpkgname = xbps_pkg_name(curpkgver);
+			assert(curpkgver);
 			/*
 			 * Check that we are not replacing the same package,
 			 * due to virtual packages.
 			 */
-			if (strcmp(pkgname, curpkgname) == 0)
+			if (strcmp(pkgname, curpkgname) == 0) {
+				free(pkgname);
+				free(curpkgname);
 				continue;
+			}
 
 			xbps_dbg_printf(xhp,
 			    "Package `%s' will be replaced by `%s', "
@@ -126,15 +129,17 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				    "softreplace", true);
 				buf = xbps_xasprintf("%s/.%s.plist",
 				    xhp->metadir, curpkgname);
-				filesd = prop_dictionary_internalize_from_zfile(buf);
+				filesd = prop_dictionary_internalize_from_file(buf);
 				free(buf);
 				assert(filesd != NULL);
 				buf = xbps_xasprintf("%s/.%s.plist",
 				    xhp->metadir, pkgname);
-				if (!prop_dictionary_externalize_to_zfile(filesd, buf)) {
+				if (!prop_dictionary_externalize_to_file(filesd, buf)) {
 					free(buf);
 					prop_object_release(filesd);
 					prop_object_iterator_release(iter);
+					free(pkgname);
+					free(curpkgname);
 					return errno;
 				}
 				prop_object_release(filesd);
@@ -147,6 +152,8 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			prop_dictionary_set_cstring_nocopy(instd,
 			    "transaction", "remove");
 			prop_array_add(unsorted, instd);
+			free(pkgname);
+			free(curpkgname);
 		}
 		prop_object_iterator_release(iter);
 	}

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2012 Juan Romero Pardines.
+ * Copyright (c) 2011-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,8 +74,7 @@ void HIDDEN
 xbps_set_cb_state(struct xbps_handle *xhp,
 		  xbps_state_t state,
 		  int err,
-		  const char *arg0,
-		  const char *arg1,
+		  const char *arg,
 		  const char *fmt,
 		  ...)
 {
@@ -90,8 +89,7 @@ xbps_set_cb_state(struct xbps_handle *xhp,
 	xscd.xhp = xhp;
 	xscd.state = state;
 	xscd.err = err;
-	xscd.arg0 = arg0;
-	xscd.arg1 = arg1;
+	xscd.arg = arg;
 	if (fmt != NULL) {
 		va_start(va, fmt);
 		retval = vasprintf(&buf, fmt, va);

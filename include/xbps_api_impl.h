@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2012 Juan Romero Pardines.
+ * Copyright (c) 2010-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,6 +69,9 @@
 
 #define archive_read_finish(x) \
 	archive_read_free(x)
+
+#define archive_write_finish(x) \
+	archive_write_free(x)
 
 #define archive_compression_name(x) \
 	archive_filter_name(x, 0)
@@ -144,7 +147,6 @@ int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
 					prop_dictionary_t,
 					struct archive_entry *,
 					const char *,
-					const char *,
 					const char *);
 /**
  * @private
@@ -156,7 +158,7 @@ prop_dictionary_t HIDDEN
 
 /**
  * @private
- * From lib/rpool_pkgdeps.c
+ * From lib/rindex_pkgdeps.c
  */
 int HIDDEN xbps_repository_find_deps(struct xbps_handle *,
 				     prop_array_t,
@@ -170,7 +172,10 @@ prop_dictionary_t HIDDEN xbps_find_pkg_in_array(prop_array_t, const char *);
 prop_dictionary_t HIDDEN
 	xbps_find_virtualpkg_in_array(struct xbps_handle *, prop_array_t,
 				      const char *);
-
+prop_dictionary_t HIDDEN xbps_find_pkg_in_dict(prop_dictionary_t, const char *);
+prop_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *,
+					prop_dictionary_t,
+					const char *);
 /**
  * @private
  * From lib/transaction_sortdeps.c
@@ -212,7 +217,7 @@ int HIDDEN xbps_file_exec(struct xbps_handle *, const char *, ...);
 void HIDDEN xbps_set_cb_fetch(struct xbps_handle *, off_t, off_t, off_t,
 			      const char *, bool, bool, bool);
 void HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
-			      const char *, const char *, const char *, ...);
+			      const char *, const char *, ...);
 
 /**
  * @private
@@ -224,6 +229,21 @@ int HIDDEN xbps_transaction_package_replace(struct xbps_handle *);
 
 /**
  * @private
+ * From lib/package_remove.c
+ */
+int HIDDEN xbps_remove_pkg(struct xbps_handle *, const char *, bool, bool);
+int HIDDEN xbps_remove_pkg_files(struct xbps_handle *, prop_dictionary_t,
+				 const char *, const char *);
+
+/**
+ * @private
+ * From lib/package_register.c
+ */
+int HIDDEN xbps_register_pkg(struct xbps_handle *, prop_dictionary_t);
+int HIDDEN xbps_unregister_pkg(struct xbps_handle *, const char *);
+
+/**
+ * @private
  * From lib/package_conflicts.c
  */
 void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *,
@@ -231,7 +251,7 @@ void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *,
 				    prop_dictionary_t);
 /**
  * @private
- * From lib/rindex_get.c
+ * From lib/plist_find.c
  */
 const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *, bool);
 

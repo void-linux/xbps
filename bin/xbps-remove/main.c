@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,7 +79,7 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_UNREGISTER:
 		break;
 	case XBPS_STATE_REMOVE:
-		printf("Removing `%s-%s' ...\n", xscd->arg0, xscd->arg1);
+		printf("Removing `%s' ...\n", xscd->arg);
 		break;
 	/* success */
 	case XBPS_STATE_REMOVE_FILE:
@@ -92,11 +92,10 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
 		}
 		break;
 	case XBPS_STATE_REMOVE_DONE:
-		printf("Removed `%s-%s' successfully.\n",
-		    xscd->arg0, xscd->arg1);
+		printf("Removed `%s' successfully.\n", xscd->arg);
 		if (syslog_enabled)
-			syslog(LOG_NOTICE, "Removed `%s-%s' successfully "
-			    "(rootdir: %s).", xscd->arg0, xscd->arg1,
+			syslog(LOG_NOTICE, "Removed `%s' successfully "
+			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
 		break;
 	/* errors */
@@ -119,8 +118,7 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
 		break;
 	default:
 		xbps_dbg_printf(xscd->xhp,
-		    "%s-%s: unknown state %d\n",
-		    xscd->arg0, xscd->arg1, xscd->state);
+		    "%s: unknown state %d\n", xscd->arg, xscd->state);
 		break;
 	}
 }

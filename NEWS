@@ -1,5 +1,35 @@
 xbps-0.21 (???):
 
+ * xbps-query(8): a full dependency tree can now be shown in the
+   show-deps mode, by specifying -x twice (--show-deps), e.g:
+
+	$ xbps-query -xx perl
+	glibc>=2.8_1
+	gdbm>=1.10_1_1
+	 glibc>=2.8_1
+	libdb>=4.8.24_1
+	 glibc>=2.8_1
+	$
+
+ * When running a full system upgrade (xbps-install -u) check if there's
+   any update to the xbps package, and if true, update this only in
+   the running transaction. This ensures that we update the package
+   manager without any trouble in pkgdb.
+
+ * New repository index format (1.7): unnecessary and redundant objects
+   have been removed that are already stored in package metadata files.
+   This means that xbps-query(8) in repository mode will now fetch package
+   metadata from the binary package and not from index. Only necessary objects
+   for the transaction and searching are kept.
+
+ * xbps-pkgdb(8): new option -u --update to update the pkgdb format to
+   the latest available. Do not forget to run it after updating xbps to 0.21.
+
+ * New pkgdb format: redundant objects have been removed (empty run_depends,
+   pkgname, version) and it is now a dictionary. The pkgdb file has been
+   renamed to "pkgdb-0.21.plist" to make future upgrades easier to
+   handle/update.
+
  * configure: misc tweaks to allow building with the musl C library.
 
  * xbps-query(8): packages can be matched by using virtual package

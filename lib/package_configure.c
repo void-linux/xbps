@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,28 +43,30 @@
  *
  * @note
  * If the \a XBPS_FLAG_FORCE_CONFIGURE is set through xbps_init() in the flags
- * member, the package (or packages) will be reconfigured even if its
+  member, the package (or packages) will be reconfigured even if its
  * state is XBPS_PKG_STATE_INSTALLED.
  */
 int
 xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 {
+	prop_dictionary_t pkgd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
-	const char *pkgname;
+	const char *pkgver;
 	int rv;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	iter = prop_array_iterator(xhp->pkgdb);
+	iter = prop_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		rv = xbps_configure_pkg(xhp, pkgname, true, false, false);
+		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		rv = xbps_configure_pkg(xhp, pkgver, true, false, false);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "%s: failed to configure %s: %s\n",
-			    __func__, pkgname, strerror(rv));
+			    __func__, pkgver, strerror(rv));
 			break;
 		}
 	}
@@ -78,32 +80,27 @@ xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 
 int
 xbps_configure_pkg(struct xbps_handle *xhp,
-		   const char *pkgname,
+		   const char *pkgver,
 		   bool check_state,
 		   bool update,
 		   bool flush)
 {
 	prop_dictionary_t pkgd, pkgmetad;
-	const char *version, *pkgver;
-	char *plist;
+	char *pkgname, *plist;
 	int rv = 0;
 	pkg_state_t state = 0;
 
-	assert(pkgname != NULL);
+	assert(pkgver != NULL);
 
-	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
 	if (pkgd == NULL)
 		return ENOENT;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "version", &version);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-
 	rv = xbps_pkg_state_dictionary(pkgd, &state);
-	xbps_dbg_printf(xhp, "%s: state %d rv %d\n", pkgname, state, rv);
+	xbps_dbg_printf(xhp, "%s: state %d rv %d\n", pkgver, state, rv);
 	if (rv != 0) {
 		xbps_dbg_printf(xhp, "%s: [configure] failed to get "
-		    "pkg state: %s\n", pkgname, strerror(rv));
-		prop_object_release(pkgd);
+		    "pkg state: %s\n", pkgver, strerror(rv));
 		return EINVAL;
 	}
 
@@ -115,10 +112,13 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 			return EINVAL;
 	}
 
-	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgname, version, NULL);
+	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgver, NULL);
 
 	/* internalize pkg dictionary from metadir */
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
 	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
+	free(pkgname);
 	pkgmetad = prop_dictionary_internalize_from_file(plist);
 	free(plist);
 	assert(pkgmetad);
@@ -126,7 +126,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 	rv = xbps_pkg_exec_script(xhp, pkgmetad, "install-script", "post", update);
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
-		    errno, pkgname, version,
+		    errno, pkgver,
 		    "%s: [configure] INSTALL script failed to execute "
 		    "the post ACTION: %s", pkgver, strerror(rv));
 		return rv;
@@ -139,15 +139,13 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_INSTALLED);
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL, rv,
-		    pkgname, version,
-		    "%s: [configure] failed to set state to installed: %s",
+		    pkgver, "%s: [configure] failed to set state to installed: %s",
 		    pkgver, strerror(rv));
 	}
 	if (flush) {
 		if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL, rv,
-			    pkgname, version,
-			    "%s: [configure] failed to update pkgdb: %s\n",
+			    pkgver, "%s: [configure] failed to update pkgdb: %s\n",
 			    pkgver, strerror(rv));
 		}
 	}

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * Copyright (c) 2008, 2009 Joerg Sonnenberger <joerg (at) NetBSD.org>
  * All rights reserved.
  *
@@ -190,7 +190,6 @@ xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
 
 		break;
 	}
-	archive_read_close(a);
 	archive_read_free(a);
 
 	return plistd;

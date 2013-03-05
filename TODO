@@ -1,7 +1,6 @@
 libxbps:
  - transaction: avoid fetching the whole pkg when updating and only fetch
    modified files from target pkg.
- - properties: (update-first) still unimplemented.
  - Add support to handle 'shlib-requires' and 'shlib-provides'.
 
 xbps-create:
