@@ -66,11 +66,6 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_VERIFY:
 		printf("%s: checking binary pkg integrity ...\n", xscd->arg);
 		break;
-	case XBPS_STATE_XBPS_UPDATE:
-		printf("A new update for xbps has been found; this package "
-		    "must be updated independently. After this update you can "
-		    "continue updating your system.\n\n");
-		break;
 	case XBPS_STATE_CONFIG_FILE:
 		if (xscd->desc != NULL)
 			printf("%s\n", xscd->desc);
@@ -81,6 +76,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_CONFIGURE:
 		printf("%s: configuring ...\n", xscd->arg);
 		break;
+	case XBPS_STATE_XBPS_UPDATE:
 	case XBPS_STATE_REGISTER:
 	case XBPS_STATE_UNREGISTER:
 		/* empty */
