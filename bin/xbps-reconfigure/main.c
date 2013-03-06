@@ -66,6 +66,8 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbd)
 	/* notifications */
 	case XBPS_STATE_CONFIGURE:
 		printf("%s: configuring ...\n", xscd->arg);
+		if (syslog_enabled)
+			syslog(LOG_NOTICE, "%s: configuring ...", xscd->arg);
 		break;
 	/* errors */
 	case XBPS_STATE_CONFIGURE_FAIL:
