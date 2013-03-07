@@ -319,7 +319,8 @@ purge:
 	/*
 	 * Unregister package from pkgdb.
 	 */
-	if ((rv = xbps_unregister_pkg(xhp, pkgver)) != 0)
+	prop_dictionary_remove(xhp->pkgdb, pkgname);
+	if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
 		goto out;
 
 	xbps_dbg_printf(xhp, "[remove] unregister %s returned %d\n", pkgver, rv);

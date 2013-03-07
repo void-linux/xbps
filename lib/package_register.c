@@ -52,8 +52,6 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 	provides = prop_dictionary_get(pkgrd, "provides");
 	rundeps = prop_dictionary_get(pkgrd, "run_depends");
 
-	xbps_set_cb_state(xhp, XBPS_STATE_REGISTER, 0, pkgver, NULL);
-
 	assert(pkgver != NULL);
 	assert(desc != NULL);
 
@@ -76,11 +74,8 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 		rv = EINVAL;
 		goto out;
 	}
-	prop_dictionary_get_bool(pkgd, "automatic-install", &autoinst);
 	if (xhp->flags & XBPS_FLAG_INSTALL_AUTO)
 		autoinst = true;
-	else if (xhp->flags & XBPS_FLAG_INSTALL_MANUAL)
-		autoinst = false;
 
 	if (!prop_dictionary_set_bool(pkgd,
 	    "automatic-install", autoinst)) {
@@ -147,37 +142,11 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 		    "%s: failed to set pkgd for %s\n", __func__, pkgver);
 		goto out;
 	}
-	(void)xbps_pkgdb_update(xhp, true);
+	rv = xbps_pkgdb_update(xhp, true);
 
 out:
 	if (pkgname)
 		free(pkgname);
 
-	if (rv != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REGISTER_FAIL,
-		    rv, pkgver, "%s: failed to register package: %s",
-		    pkgver, strerror(rv));
-	}
-
 	return rv;
-}
-
-int HIDDEN
-xbps_unregister_pkg(struct xbps_handle *xhp, const char *pkgver)
-{
-	char *pkgname;
-
-	assert(xhp);
-	assert(pkgver);
-
-	xbps_set_cb_state(xhp, XBPS_STATE_UNREGISTER, 0, pkgver, NULL, NULL);
-
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
-	prop_dictionary_remove(xhp->pkgdb, pkgname);
-	free(pkgname);
-
-	(void)xbps_pkgdb_update(xhp, true);
-
-	return 0;
 }

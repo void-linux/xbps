@@ -66,6 +66,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	char *pkgname;
 	int rv = 0;
 	pkg_state_t state = 0;
+	bool autoinst = false;
 
 	assert(pkg != NULL);
 
@@ -104,6 +105,11 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 			    repopkgver, instpkgver, repoloc);
 			return EEXIST;
 		}
+		/* respect current install mode from pkgdb */
+		prop_dictionary_get_bool(pkg_pkgdb, "automatic-install",
+		    &autoinst);
+		prop_dictionary_set_bool(pkg_repod, "automatic-install",
+		    autoinst);
 	}
 	/*
 	 * Prepare transaction dictionary.

@@ -48,7 +48,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.7"
 
-#define XBPS_API_VERSION	"20130307"
+#define XBPS_API_VERSION	"20130307-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -160,17 +160,10 @@
 #define XBPS_FLAG_INSTALL_AUTO		0x00000010
 
 /**
- * @def XBPS_FLAG_INSTALL_MANUAL
- * Enabled manual install mode for a package and all dependencies
- * installed direct and indirectly.
- */
-#define XBPS_FLAG_INSTALL_MANUAL	0x00000020
-
-/**
  * @def XBPS_FLAG_DEBUG
  * Enable debug mode to output debugging printfs to stdout/stderr.
  */
-#define XBPS_FLAG_DEBUG 		0x00000040
+#define XBPS_FLAG_DEBUG 		0x00000020
 
 /**
  * @def XBPS_FLAG_FORCE_UNPACK
@@ -178,7 +171,7 @@
  * files will be unpacked overwritting the current ones.
  * Must be set through the xbps_handle::flags member.
  */
-#define XBPS_FLAG_FORCE_UNPACK 		0x00000080
+#define XBPS_FLAG_FORCE_UNPACK 		0x00000040
 
 /**
  * @def XBPS_FETCH_CACHECONN
@@ -233,8 +226,6 @@ extern "C" {
  * - XBPS_STATE_CONFIGURE: a package is being configured.
  * - XBPS_STATE_CONFIGURE_DONE: a package has been configured successfully.
  * - XBPS_STATE_CONFIG_FILE: a package configuration file is being processed.
- * - XBPS_STATE_REGISTER: a package is being registered.
- * - XBPS_STATE_UNREGISTER: a package is being unregistered.
  * - XBPS_STATE_REPOSYNC: a remote repository's package index is being
  * synchronized.
  * - XBPS_STATE_VERIFY_FAIL: binary package integrity has failed.
@@ -250,8 +241,6 @@ extern "C" {
  * has failed.
  * - XBPS_STATE_UPDATE_FAIL: package update has failed.
  * - XBPS_STATE_UNPACK_FAIL: package unpack has failed.
- * - XBPS_STATE_REGISTER_FAIL: package register has failed.
- * - XBPS_STATE_UNREGISTER_FAIL: package unregister has failed.
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  */
 typedef enum xbps_state {
@@ -276,8 +265,6 @@ typedef enum xbps_state {
 	XBPS_STATE_UNPACK,
 	XBPS_STATE_CONFIGURE,
 	XBPS_STATE_CONFIG_FILE,
-	XBPS_STATE_REGISTER,
-	XBPS_STATE_UNREGISTER,
 	XBPS_STATE_REPOSYNC,
 	XBPS_STATE_VERIFY_FAIL,
 	XBPS_STATE_DOWNLOAD_FAIL,
@@ -290,8 +277,6 @@ typedef enum xbps_state {
 	XBPS_STATE_CONFIG_FILE_FAIL,
 	XBPS_STATE_UPDATE_FAIL,
 	XBPS_STATE_UNPACK_FAIL,
-	XBPS_STATE_REGISTER_FAIL,
-	XBPS_STATE_UNREGISTER_FAIL,
 	XBPS_STATE_REPOSYNC_FAIL,
 	XBPS_STATE_XBPS_UPDATE,
 	XBPS_STATE_CONFIGURE_DONE

@@ -240,7 +240,6 @@ int HIDDEN xbps_remove_pkg_files(struct xbps_handle *, prop_dictionary_t,
  * From lib/package_register.c
  */
 int HIDDEN xbps_register_pkg(struct xbps_handle *, prop_dictionary_t);
-int HIDDEN xbps_unregister_pkg(struct xbps_handle *, const char *);
 
 /**
  * @private

@@ -132,15 +132,6 @@ xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
 	return set_new_state(dict, state);
 }
 
-static int
-set_pkg_objs(prop_dictionary_t pkgd, const char *pkgver)
-{
-	if (!prop_dictionary_set_cstring_nocopy(pkgd, "pkgver", pkgver))
-		return EINVAL;
-
-	return 0;
-}
-
 int
 xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			     const char *pkgver,
@@ -158,9 +149,10 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 		if (pkgd == NULL)
 			return ENOMEM;
 
-		if ((rv = set_pkg_objs(pkgd, pkgver)) != 0) {
+		if (!prop_dictionary_set_cstring_nocopy(pkgd,
+		    "pkgver", pkgver)) {
 			prop_object_release(pkgd);
-			return rv;
+			return EINVAL;
 		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
 			prop_object_release(pkgd);

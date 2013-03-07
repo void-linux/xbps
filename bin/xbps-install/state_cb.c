@@ -77,8 +77,6 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 		printf("%s: configuring ...\n", xscd->arg);
 		break;
 	case XBPS_STATE_XBPS_UPDATE:
-	case XBPS_STATE_REGISTER:
-	case XBPS_STATE_UNREGISTER:
 	case XBPS_STATE_CONFIGURE_DONE:
 		/* empty */
 		break;
@@ -132,8 +130,6 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_UNPACK_FAIL:
 	case XBPS_STATE_UPDATE_FAIL:
 	case XBPS_STATE_CONFIGURE_FAIL:
-	case XBPS_STATE_REGISTER_FAIL:
-	case XBPS_STATE_UNREGISTER_FAIL:
 	case XBPS_STATE_REMOVE_FAIL:
 	case XBPS_STATE_VERIFY_FAIL:
 	case XBPS_STATE_DOWNLOAD_FAIL:

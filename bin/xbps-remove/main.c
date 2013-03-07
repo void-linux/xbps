@@ -76,8 +76,6 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
 
 	switch (xscd->state) {
 	/* notifications */
-	case XBPS_STATE_UNREGISTER:
-		break;
 	case XBPS_STATE_REMOVE:
 		printf("Removing `%s' ...\n", xscd->arg);
 		break;
@@ -99,7 +97,6 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
 			    xscd->xhp->rootdir);
 		break;
 	/* errors */
-	case XBPS_STATE_UNREGISTER_FAIL:
 	case XBPS_STATE_REMOVE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
 		if (syslog_enabled)
