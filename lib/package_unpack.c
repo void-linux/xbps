@@ -498,15 +498,14 @@ unpack_archive(struct xbps_handle *xhp,
 		if (remove(file) == -1) {
 			xbps_set_cb_state(xhp,
 			    XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
-			    errno, pkgver, NULL,
+			    errno, pkgver,
 			    "%s: failed to remove obsolete entry `%s': %s",
 			    pkgver, file, strerror(errno));
 			continue;
 		}
 		xbps_set_cb_state(xhp,
 		    XBPS_STATE_REMOVE_FILE_OBSOLETE,
-		    0, pkgver, NULL,
-		    "%s: removed obsolete entry: %s", pkgver, file);
+		    0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
 		prop_object_release(obj);
 	}
 
