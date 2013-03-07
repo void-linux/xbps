@@ -197,7 +197,7 @@ unpack_archive(struct xbps_handle *xhp,
 			}
 
 			rv = xbps_pkg_exec_buffer(xhp, instbuf, instbufsiz,
-					pkgname, "pre", update);
+					pkgver, "pre", update);
 			if (rv != 0) {
 				xbps_set_cb_state(xhp,
 				    XBPS_STATE_UNPACK_FAIL,
