@@ -62,7 +62,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 {
 	prop_dictionary_t pkg_pkgdb = NULL, pkg_repod;
 	prop_array_t unsorted;
-	const char *repoloc, *repover, *repopkgver, *instpkgver, *reason;
+	const char *repoloc, *repopkgver, *instpkgver, *reason;
 	char *pkgname;
 	int rv = 0;
 	pkg_state_t state = 0;
@@ -92,11 +92,6 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
-	pkgname = xbps_pkg_name(repopkgver);
-	assert(pkgname);
-	repover = xbps_pkg_version(repopkgver);
-	assert(repover);
-
 	if (action == TRANS_UPDATE) {
 		/*
 		 * Compare installed version vs best pkg available in repos.
@@ -107,17 +102,14 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 			xbps_dbg_printf(xhp, "[rpool] Skipping `%s' "
 			    "(installed: %s) from repository `%s'\n",
 			    repopkgver, instpkgver, repoloc);
-			free(pkgname);
 			return EEXIST;
 		}
 	}
 	/*
 	 * Prepare transaction dictionary.
 	 */
-	if ((rv = xbps_transaction_init(xhp)) != 0) {
-		free(pkgname);
+	if ((rv = xbps_transaction_init(xhp)) != 0)
 		return rv;
-	}
 
 	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 	/*
@@ -133,15 +125,15 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 		if (xbps_find_pkg_in_array(unsorted, repopkgver)) {
 			xbps_dbg_printf(xhp, "[update] `%s' already queued in "
 			    "transaction.\n", repopkgver);
-			free(pkgname);
 			return EEXIST;
 		}
 	}
 
-	if ((rv = xbps_repository_find_deps(xhp, unsorted, pkg_repod)) != 0) {
-		free(pkgname);
+	if ((rv = xbps_repository_find_deps(xhp, unsorted, pkg_repod)) != 0)
 		return rv;
-	}
+
+	pkgname = xbps_pkg_name(repopkgver);
+	assert(pkgname);
 	/*
 	 * Set package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
@@ -156,10 +148,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	}
 	free(pkgname);
 
-	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod, state)) != 0) {
-		free(pkgname);
+	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod, state)) != 0)
 		return rv;
-	}
 
 	if ((action == TRANS_INSTALL) && (state == XBPS_PKG_STATE_UNPACKED))
 		reason = "configure";
