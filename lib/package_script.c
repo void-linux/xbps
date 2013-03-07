@@ -40,8 +40,8 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		     bool update)
 {
 	ssize_t ret;
-	const char *tmpdir;
-	char *fpath;
+	const char *tmpdir, *version;
+	char *pkgname, *fpath;
 	int fd, rv;
 
 	assert(blob);
@@ -85,9 +85,15 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	close(fd);
 
 	/* exec script */
-	rv = xbps_file_exec(xhp, fpath, action, pkgver,
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+	version = xbps_pkg_version(pkgver);
+	assert(version);
+
+	rv = xbps_file_exec(xhp, fpath, action, pkgname, version,
 			    update ? "yes" : "no",
 			    xhp->conffile, NULL);
+	free(pkgname);
 
 out:
 	remove(fpath);
