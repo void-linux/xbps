@@ -84,10 +84,6 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_REMOVE_FILE_OBSOLETE:
 		if (xscd->xhp->flags & XBPS_FLAG_VERBOSE)
 			printf("%s\n", xscd->desc);
-		else {
-			printf("%s\n", xscd->desc);
-			printf("\033[1A\033[K");
-		}
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("Removed `%s' successfully.\n", xscd->arg);
