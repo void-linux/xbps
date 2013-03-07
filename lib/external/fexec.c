@@ -42,7 +42,6 @@ static int
 pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 {
 	pid_t child;
-	const char *tarch;
 	int status;
 
 	child = vfork();
@@ -52,12 +51,17 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 		 * If rootdir != / and uid==0 and bin/sh exists,
 		 * change root directory and exec command.
 		 */
-		tarch = getenv("XBPS_TARGET_ARCH");
 		if (strcmp(xhp->rootdir, "/")) {
-			if (!tarch && geteuid() == 0 && access("bin/sh", X_OK) == 0) {
-				if (chroot(xhp->rootdir) == 0) {
-					if (chdir("/") == -1)
-						_exit(129);
+			if (geteuid() == 0 && access("bin/sh", X_OK) == 0) {
+				if (chroot(xhp->rootdir) == -1) {
+					xbps_dbg_printf(xhp, "%s: chroot() "
+					    "failed: %s\n", *argv, strerror(errno));
+					_exit(errno);
+				}
+				if (chdir("/") == -1) {
+					xbps_dbg_printf(xhp, "%s: chdir() "
+					    "failed: %s\n", *argv, strerror(errno));
+					_exit(errno);
 				}
 			}
 		}
