@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,7 @@ int HIDDEN
 xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 {
 	prop_dictionary_t repod;
-	const char *fetchstr = NULL;
+	const char *arch, *fetchstr = NULL;
 	char *rpidx, *lrepodir, *uri_fixedp, *lrepofile;
 	int rv = 0;
 
@@ -89,10 +89,16 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 	uri_fixedp = xbps_get_remote_repo_string(uri);
 	if (uri_fixedp == NULL)
 		return -1;
+
+	if (xhp->target_arch)
+		arch = xhp->target_arch;
+	else
+		arch = xhp->native_arch;
+
 	/*
 	 * Remote repository plist index full URL.
 	 */
-	rpidx = xbps_xasprintf("%s/%s-%s", uri, xhp->un_machine, plistf);
+	rpidx = xbps_xasprintf("%s/%s-%s", uri, arch, plistf);
 	/*
 	 * Full path to repository directory to store the plist
 	 * index file.
@@ -101,8 +107,7 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 	/*
 	 * Full path to the local repository index file.
 	 */
-	lrepofile = xbps_xasprintf("%s/%s-%s", lrepodir,
-			xhp->un_machine, plistf);
+	lrepofile = xbps_xasprintf("%s/%s-%s", lrepodir, arch, plistf);
 	/*
 	 * Create repodir in metadir.
 	 */

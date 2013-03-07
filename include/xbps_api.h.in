@@ -48,7 +48,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.7"
 
-#define XBPS_API_VERSION	"20130307-1"
+#define XBPS_API_VERSION	"20130307-2"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -544,7 +544,8 @@ struct xbps_handle {
 	 */
 	char *cachedir_priv;
 	char *metadir_priv;
-	char *un_machine;
+	char *native_arch;
+	const char *target_arch;
 	/*
 	 * @var repository
 	 *

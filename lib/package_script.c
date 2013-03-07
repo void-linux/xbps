@@ -48,6 +48,12 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	assert(pkgver);
 	assert(action);
 
+	if (xhp->target_arch) {
+		xbps_dbg_printf(xhp, "%s: not executing %s "
+		    "install/remove action.\n", pkgver, action);
+		return 0;
+	}
+
 	if (strcmp(xhp->rootdir, "/") == 0) {
 		tmpdir = getenv("TMPDIR");
 		if (tmpdir == NULL)

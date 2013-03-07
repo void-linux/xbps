@@ -175,6 +175,7 @@ get_pkg_index_remote_plist(struct xbps_handle *xhp,
 			   const char *uri,
 			   const char *plistf)
 {
+	const char *arch;
 	char *uri_fixed, *repodir;
 
 	assert(uri != NULL);
@@ -183,8 +184,13 @@ get_pkg_index_remote_plist(struct xbps_handle *xhp,
 	if (uri_fixed == NULL)
 		return NULL;
 
+	if (xhp->target_arch)
+		arch = xhp->target_arch;
+	else
+		arch = xhp->native_arch;
+
 	repodir = xbps_xasprintf("%s/%s/%s-%s", xhp->metadir,
-			uri_fixed, xhp->un_machine, plistf);
+			uri_fixed, arch, plistf);
 	free(uri_fixed);
 	return repodir;
 }
@@ -192,26 +198,39 @@ get_pkg_index_remote_plist(struct xbps_handle *xhp,
 char *
 xbps_pkg_index_plist(struct xbps_handle *xhp, const char *uri)
 {
+	const char *arch;
+
 	assert(xhp);
 	assert(uri != NULL);
 
 	if (xbps_repository_is_remote(uri))
 		return get_pkg_index_remote_plist(xhp, uri, XBPS_PKGINDEX);
 
-	return xbps_xasprintf("%s/%s-%s", uri, xhp->un_machine, XBPS_PKGINDEX);
+	if (xhp->target_arch)
+		arch = xhp->target_arch;
+	else
+		arch = xhp->native_arch;
+
+	return xbps_xasprintf("%s/%s-%s", uri, arch, XBPS_PKGINDEX);
 }
 
 char *
 xbps_pkg_index_files_plist(struct xbps_handle *xhp, const char *uri)
 {
+	const char *arch;
+
 	assert(xhp);
 	assert(uri != NULL);
 
 	if (xbps_repository_is_remote(uri))
 		return get_pkg_index_remote_plist(xhp, uri, XBPS_PKGINDEX_FILES);
 
-	return xbps_xasprintf("%s/%s-%s", uri,
-			xhp->un_machine, XBPS_PKGINDEX_FILES);
+	if (xhp->target_arch)
+		arch = xhp->target_arch;
+	else
+		arch = xhp->native_arch;
+
+	return xbps_xasprintf("%s/%s-%s", uri, arch, XBPS_PKGINDEX_FILES);
 }
 
 char HIDDEN *
@@ -270,9 +289,16 @@ xbps_pkg_arch_match(struct xbps_handle *xhp,
 		    const char *orig,
 		    const char *target)
 {
+	const char *arch;
+
+	if (xhp->target_arch)
+		arch = xhp->target_arch;
+	else
+		arch = xhp->native_arch;
+
 	if (target == NULL) {
 		if ((strcmp(orig, "noarch") == 0) ||
-		    (strcmp(orig, xhp->un_machine) == 0))
+		    (strcmp(orig, arch) == 0))
 			return true;
 	} else {
 		if ((strcmp(orig, "noarch") == 0) ||

@@ -296,11 +296,15 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 				goto out;
 		}
 	}
-	prop_object_iterator_reset(iter);
-
 	/* if there are no packages to install or update we are done */
 	if (!update && !install)
 		goto out;
+
+	/* if installing packages for target_arch, don't configure anything */
+	if (xhp->target_arch && strcmp(xhp->native_arch, xhp->target_arch))
+		goto out;
+
+	prop_object_iterator_reset(iter);
 
 	/*
 	 * Configure all unpacked packages.

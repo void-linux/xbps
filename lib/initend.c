@@ -166,7 +166,6 @@ xbps_init(struct xbps_handle *xhp)
 	struct utsname un;
 	int rv, cc, cch;
 	bool syslog_enabled = false;
-	char *tarch;
 
 	assert(xhp != NULL);
 
@@ -246,15 +245,10 @@ xbps_init(struct xbps_handle *xhp)
 		return ENOMEM;
 	xhp->metadir = xhp->metadir_priv;
 
-	/* Override target arch if XBPS_TARGET_ARCH is set in the environment */
-	tarch = getenv("XBPS_TARGET_ARCH");
-	if (tarch != NULL) {
-		xhp->un_machine = strdup(tarch);
-	} else {
-		uname(&un);
-		xhp->un_machine = strdup(un.machine);
-		assert(xhp->un_machine);
-	}
+	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
+	uname(&un);
+	xhp->native_arch = strdup(un.machine);
+	assert(xhp->native_arch);
 
 	if (xhp->cfg == NULL) {
 		xhp->flags |= XBPS_FLAG_SYSLOG;
@@ -283,7 +277,8 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "FetchCacheconn=%u\n", cc);
 	xbps_dbg_printf(xhp, "FetchCacheconnHost=%u\n", cch);
 	xbps_dbg_printf(xhp, "Syslog=%u\n", syslog_enabled);
-	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->un_machine);
+	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
+	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch);
 
 	xhp->initialized = true;
 
@@ -307,7 +302,7 @@ xbps_end(struct xbps_handle *xhp)
 	cfg_free(xhp->cfg);
 	free(xhp->cachedir_priv);
 	free(xhp->metadir_priv);
-	free(xhp->un_machine);
+	free(xhp->native_arch);
 
 	xhp->initialized = false;
 	xhp = NULL;
