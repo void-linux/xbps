@@ -48,7 +48,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.7"
 
-#define XBPS_API_VERSION	"20130305"
+#define XBPS_API_VERSION	"20130307"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -231,6 +231,7 @@ extern "C" {
  * - XBPS_STATE_UPDATE_DONE: a package has been updated successfully.
  * - XBPS_STATE_UNPACK: a package is being unpacked.
  * - XBPS_STATE_CONFIGURE: a package is being configured.
+ * - XBPS_STATE_CONFIGURE_DONE: a package has been configured successfully.
  * - XBPS_STATE_CONFIG_FILE: a package configuration file is being processed.
  * - XBPS_STATE_REGISTER: a package is being registered.
  * - XBPS_STATE_UNREGISTER: a package is being unregistered.
@@ -292,7 +293,8 @@ typedef enum xbps_state {
 	XBPS_STATE_REGISTER_FAIL,
 	XBPS_STATE_UNREGISTER_FAIL,
 	XBPS_STATE_REPOSYNC_FAIL,
-	XBPS_STATE_XBPS_UPDATE
+	XBPS_STATE_XBPS_UPDATE,
+	XBPS_STATE_CONFIGURE_DONE
 } xbps_state_t;
 
 /**

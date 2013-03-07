@@ -79,6 +79,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_XBPS_UPDATE:
 	case XBPS_STATE_REGISTER:
 	case XBPS_STATE_UNREGISTER:
+	case XBPS_STATE_CONFIGURE_DONE:
 		/* empty */
 		break;
 	case XBPS_STATE_UNPACK:

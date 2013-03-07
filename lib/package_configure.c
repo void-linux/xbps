@@ -72,7 +72,7 @@ xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 	}
 	prop_object_iterator_release(iter);
 
-	if (flush)
+	if ((rv == 0) && flush)
 		rv = xbps_pkgdb_update(xhp, true);
 
 	return rv;
@@ -152,6 +152,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL, rv,
 		    pkgver, "%s: [configure] failed to set state to installed: %s",
 		    pkgver, strerror(rv));
+		return rv;
 	}
 	if (flush) {
 		if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
@@ -161,6 +162,9 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		}
 	}
 	prop_object_release(pkgmetad);
+
+	if (rv == 0)
+		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_DONE, 0, pkgver, NULL);
 
 	return rv;
 }
