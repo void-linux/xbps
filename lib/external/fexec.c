@@ -52,7 +52,7 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 		 * change root directory and exec command.
 		 */
 		if (strcmp(xhp->rootdir, "/")) {
-			if (geteuid() == 0 && access("bin/sh", X_OK) == 0) {
+			if ((geteuid() == 0) && (access("bin/sh", X_OK) == 0)) {
 				if (chroot(xhp->rootdir) == -1) {
 					xbps_dbg_printf(xhp, "%s: chroot() "
 					    "failed: %s\n", *argv, strerror(errno));
