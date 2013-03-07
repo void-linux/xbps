@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,10 +49,6 @@ void	fetch_file_progress_cb(struct xbps_fetch_cb_data *, void *);
 
 /* from state_cb.c */
 void	state_cb(struct xbps_state_cb_data *, void *);
-
-/* from unpack_cb.c */
-void	unpack_progress_cb_verbose(struct xbps_unpack_cb_data *, void *);
-void	unpack_progress_cb(struct xbps_unpack_cb_data *, void *);
 
 /* From util.c */
 void	print_package_line(const char *, size_t, bool);

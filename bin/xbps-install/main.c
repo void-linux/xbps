@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,20 @@ usage(bool fail)
 	    " -y --yes                 Assume yes to all questions\n"
 	    " -V --version             Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+
+static void
+unpack_progress_cb(struct xbps_unpack_cb_data *xpd, void *cbdata)
+{
+	(void)cbdata;
+
+	if (xpd->entry == NULL || xpd->entry_total_count <= 0)
+		return;
+
+	printf("%s: unpacked %sfile `%s' (%" PRIi64 " bytes)\n",
+	    xpd->pkgver,
+	    xpd->entry_is_conf ? "configuration " : "", xpd->entry,
+	    xpd->entry_size);
 }
 
 int
@@ -163,7 +177,7 @@ main(int argc, char **argv)
 	xh.flags = flags;
 	xh.repository = defrepo;
 	if (flags & XBPS_FLAG_VERBOSE)
-		xh.unpack_cb = unpack_progress_cb_verbose;
+		xh.unpack_cb = unpack_progress_cb;
 
 	if ((rv = xbps_init(&xh)) != 0) {
 		xbps_error_printf("Failed to initialize libxbps: %s\n",
