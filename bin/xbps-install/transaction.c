@@ -149,9 +149,14 @@ show_transaction_sizes(struct transaction *trans, size_t cols)
 	/*
 	 * Show total download/installed/removed size for all required packages.
 	 */
-	printf("\n");
 	prop_dictionary_get_uint64(trans->d, "total-download-size", &dlsize);
-	if (dlsize > 0) {
+	prop_dictionary_get_uint64(trans->d, "total-installed-size",
+	    &instsize);
+	prop_dictionary_get_uint64(trans->d, "total-removed-size", &rmsize);
+	if (dlsize || instsize || rmsize)
+		printf("\n");
+
+	if (dlsize) {
 		if (xbps_humanize_number(size, (int64_t)dlsize) == -1) {
 			xbps_error_printf("humanize_number returns "
 			    "%s\n", strerror(errno));
@@ -159,9 +164,7 @@ show_transaction_sizes(struct transaction *trans, size_t cols)
 		}
 		printf("Total download size:\t%6s\n", size);
 	}
-	prop_dictionary_get_uint64(trans->d, "total-installed-size",
-	    &instsize);
-	if (instsize > 0) {
+	if (instsize) {
 		if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
 			xbps_error_printf("humanize_number2 returns "
 			    "%s\n", strerror(errno));
@@ -169,8 +172,7 @@ show_transaction_sizes(struct transaction *trans, size_t cols)
 		}
 		printf("Total installed size:\t%6s\n", size);
 	}
-	prop_dictionary_get_uint64(trans->d, "total-removed-size", &rmsize);
-	if (rmsize > 0) {
+	if (rmsize) {
 		if (xbps_humanize_number(size, (int64_t)rmsize) == -1) {
 			xbps_error_printf("humanize_number3 returns "
 			    "%s\n", strerror(errno));
