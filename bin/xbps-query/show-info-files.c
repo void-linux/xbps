@@ -293,15 +293,24 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 		   const char *pattern,
 		   const char *option)
 {
-	prop_dictionary_t pkgd;
+	prop_dictionary_t ipkgd, bpkgd;
 
-	if ((pkgd = xbps_rpool_get_pkg_plist(xhp, pattern, "./props.plist")) == NULL)
+	if (((ipkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
+	    ((ipkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
 		return errno;
 
+	if ((bpkgd = xbps_rpool_get_pkg_plist(xhp, pattern, "./props.plist")) == NULL)
+		return errno;
+
+	prop_dictionary_set(bpkgd, "filename-sha256",
+	    prop_dictionary_get(ipkgd, "filename-sha256"));
+	prop_dictionary_set(bpkgd, "filename-size",
+	    prop_dictionary_get(ipkgd, "filename-size"));
+
 	if (option)
-		show_pkg_info_one(pkgd, option);
+		show_pkg_info_one(bpkgd, option);
 	else
-		show_pkg_info(pkgd);
+		show_pkg_info(bpkgd);
 
 	return 0;
 }
