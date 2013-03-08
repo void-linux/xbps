@@ -48,7 +48,7 @@
  */
 #define XBPS_PKGINDEX_VERSION	"1.7"
 
-#define XBPS_API_VERSION	"20130307-2"
+#define XBPS_API_VERSION	"20130308"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -210,7 +210,6 @@ extern "C" {
  * install, update, remove and replace.
  * - XBPS_STATE_TRANS_CONFIGURE: transaction is configuring all
  * unpacked packages.
- * - XBPS_STATE_XBPS_UPDATE: a new package update is available for XBPS.
  * - XBPS_STATE_DOWNLOAD: a binary package is being downloaded.
  * - XBPS_STATE_VERIFY: a binary package is being verified.
  * - XBPS_STATE_REMOVE: a package is being removed.
@@ -278,7 +277,6 @@ typedef enum xbps_state {
 	XBPS_STATE_UPDATE_FAIL,
 	XBPS_STATE_UNPACK_FAIL,
 	XBPS_STATE_REPOSYNC_FAIL,
-	XBPS_STATE_XBPS_UPDATE,
 	XBPS_STATE_CONFIGURE_DONE
 } xbps_state_t;
 
@@ -577,7 +575,6 @@ struct xbps_handle {
 	 *  - XBPS_FLAG_DEBUG
 	 *  - XBPS_FLAG_SYSLOG
 	 *  - XBPS_FLAG_INSTALL_AUTO
-	 *  - XBPS_FLAG_INSTALL_MANUAL
 	 */
 	int flags;
 	/**

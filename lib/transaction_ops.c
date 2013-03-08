@@ -201,23 +201,6 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	iter = prop_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 
-	/*
-	 * Check if there's a new update for XBPS before starting
-	 * a full system upgrade.
-	 */
-	if (xbps_pkgdb_get_pkg(xhp, "xbps")) {
-		if (trans_find_pkg(xhp, "xbps", TRANS_UPDATE) == 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_XBPS_UPDATE, 0, NULL, NULL);
-			return 0;
-		}
-	}
-	if (xbps_pkgdb_get_pkg(xhp, "xbps-git")) {
-		if (trans_find_pkg(xhp, "xbps-git", TRANS_UPDATE) == 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_XBPS_UPDATE, 0, NULL, NULL);
-			return 0;
-		}
-	}
-
 	while ((obj = prop_object_iterator_next(iter))) {
 		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);

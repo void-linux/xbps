@@ -76,7 +76,6 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 	case XBPS_STATE_CONFIGURE:
 		printf("%s: configuring ...\n", xscd->arg);
 		break;
-	case XBPS_STATE_XBPS_UPDATE:
 	case XBPS_STATE_CONFIGURE_DONE:
 		/* empty */
 		break;

@@ -11,11 +11,6 @@ xbps-0.21 (???):
 	 glibc>=2.8_1
 	$
 
- * When running a full system upgrade (xbps-install -u) check if there's
-   any update to the xbps package, and if true, update this only in
-   the running transaction. This ensures that we update the package
-   manager without any trouble in pkgdb.
-
  * New repository index format (1.7): unnecessary and redundant objects
    have been removed that are already stored in package metadata files.
    This means that xbps-query(8) in repository mode will now fetch package
