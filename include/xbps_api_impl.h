@@ -147,6 +147,7 @@ int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
 					prop_dictionary_t,
 					struct archive_entry *,
 					const char *,
+					const char *,
 					const char *);
 /**
  * @private

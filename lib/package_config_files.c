@@ -64,7 +64,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			     prop_dictionary_t filesd,
 			     struct archive_entry *entry,
 			     const char *entry_pname,
-			     const char *pkgver)
+			     const char *pkgver,
+			     const char *pkgname)
 {
 	prop_dictionary_t forigd;
 	prop_object_t obj, obj2;
@@ -89,7 +90,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	xbps_dbg_printf(xhp, "%s: processing conf_file %s\n",
 	    pkgver, entry_pname);
 
-	forigd = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
+	forigd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 	if (forigd == NULL) {
 		xbps_dbg_printf(xhp, "%s: conf_file %s not currently "
 		    "installed\n", pkgver, entry_pname);

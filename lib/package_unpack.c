@@ -310,7 +310,8 @@ unpack_archive(struct xbps_handle *xhp,
 						xucd.entry_is_conf = true;
 
 					rv = xbps_entry_install_conf_file(xhp,
-					    filesd, entry, entry_pname, pkgver);
+					    filesd, entry, entry_pname, pkgver,
+					    pkgname);
 					if (rv == -1) {
 						/* error */
 						goto out;
