@@ -139,7 +139,7 @@ main(int argc, char **argv)
 			break;
 		case 'p':
 			props = optarg;
-			show_prop = true;
+			show_prop = opmode = true;
 			break;
 		case 'R':
 			repo_mode = true;
