@@ -37,7 +37,10 @@
 
 typedef struct _prop_array *prop_array_t;
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 prop_array_t	prop_array_create(void);
 prop_array_t	prop_array_create_with_capacity(unsigned int);
 
@@ -140,6 +143,8 @@ bool		prop_array_set_cstring_nocopy(prop_array_t,
 						   const char *);
 bool		prop_array_add_and_rel(prop_array_t, prop_object_t);
 
-__END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PROPLIB_PROP_ARRAY_H_ */

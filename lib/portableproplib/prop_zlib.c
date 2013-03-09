@@ -31,7 +31,7 @@
 
 #define _READ_CHUNK	8192
 
-#define TEMPLATE(type)									\
+#define TEMPLATE(type, objtype)								\
 bool											\
 prop ## type ## _externalize_to_zfile(prop ## type ## _t obj, const char *fname)	\
 {											\
@@ -56,7 +56,7 @@ prop ## type ## _t									\
 prop ## type ## _internalize_from_zfile(const char *fname)				\
 {											\
 	struct _prop_object_internalize_mapped_file *mf;				\
-	prop ## type ## _t obj;								\
+	prop ## type ## _t obj = NULL;							\
 	z_stream strm;									\
 	unsigned char *out;								\
 	char *uncomp_xml = NULL;							\
@@ -68,19 +68,21 @@ prop ## type ## _internalize_from_zfile(const char *fname)				\
 	if (mf == NULL)									\
 		return NULL;								\
 											\
+	/* If it's an ordinary uncompressed plist we are done */			\
+	obj = prop ## type ## _internalize(mf->poimf_xml);				\
+	if (prop_object_type(obj) == PROP_TYPE_## objtype)				\
+		goto out;								\
+											\
 	/* Output buffer (uncompressed) */						\
 	uncomp_xml = _PROP_MALLOC(_READ_CHUNK, M_TEMP);					\
-	if (uncomp_xml == NULL) {							\
-		_prop_object_internalize_unmap_file(mf);				\
-		return NULL;								\
-	}										\
+	if (uncomp_xml == NULL)								\
+		goto out;								\
 											\
 	/* temporary output buffer for inflate */					\
 	out = _PROP_MALLOC(_READ_CHUNK, M_TEMP);					\
 	if (out == NULL) {								\
 		_PROP_FREE(uncomp_xml, M_TEMP);						\
-		_prop_object_internalize_unmap_file(mf);				\
-		return NULL;								\
+		goto out;								\
 	}										\
 											\
 	/* Decompress the mmap'ed buffer with zlib */					\
@@ -91,12 +93,9 @@ prop ## type ## _internalize_from_zfile(const char *fname)				\
 	strm.next_in = Z_NULL;								\
 											\
 	/* 15+16 to use gzip method */							\
-	if (inflateInit2(&strm, 15+16) != Z_OK) {					\
-		_PROP_FREE(out, M_TEMP);						\
-		_PROP_FREE(uncomp_xml, M_TEMP);						\
-		_prop_object_internalize_unmap_file(mf);				\
-		return NULL;								\
-	}										\
+	if (inflateInit2(&strm, 15+16) != Z_OK)						\
+		goto out2;								\
+											\
 	strm.avail_in = mf->poimf_mapsize;						\
 	strm.next_in = (unsigned char *)mf->poimf_xml;					\
 											\
@@ -107,22 +106,11 @@ prop ## type ## _internalize_from_zfile(const char *fname)				\
 		rv = inflate(&strm, Z_NO_FLUSH);					\
 		switch (rv) {								\
 		case Z_DATA_ERROR:							\
-			/* Wrong compressed data or uncompressed, try normal method. */	\
-			(void)inflateEnd(&strm);					\
-			_PROP_FREE(out, M_TEMP);					\
-			_PROP_FREE(uncomp_xml, M_TEMP);					\
-			obj = prop ## type ## _internalize(mf->poimf_xml);		\
-			_prop_object_internalize_unmap_file(mf);			\
-			return obj;							\
 		case Z_STREAM_ERROR:							\
 		case Z_NEED_DICT:							\
 		case Z_MEM_ERROR:							\
-			(void)inflateEnd(&strm);					\
-			_PROP_FREE(out, M_TEMP);					\
-			_PROP_FREE(uncomp_xml, M_TEMP);					\
-			_prop_object_internalize_unmap_file(mf);			\
-			errno = rv;							\
-			return NULL;							\
+			errno = EINVAL;							\
+			goto out1;							\
 		}									\
 		have = _READ_CHUNK - strm.avail_out;					\
 		totalsize += have;							\
@@ -131,16 +119,19 @@ prop ## type ## _internalize_from_zfile(const char *fname)				\
 	} while (strm.avail_out == 0);							\
 											\
 	/* we are done */								\
+out2:											\
 	(void)inflateEnd(&strm);							\
+out1:											\
 	obj = prop ## type ## _internalize(uncomp_xml);					\
 	_PROP_FREE(out, M_TEMP);							\
 	_PROP_FREE(uncomp_xml, M_TEMP);							\
+out:											\
 	_prop_object_internalize_unmap_file(mf);					\
 											\
 	return obj;									\
 }
 
-TEMPLATE(_array)
-TEMPLATE(_dictionary)
+TEMPLATE(_array, ARRAY)
+TEMPLATE(_dictionary, DICTIONARY)
 
 #undef TEMPLATE

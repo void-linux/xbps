@@ -33,15 +33,8 @@
 #include "prop_object_impl.h"
 #include "prop_rb_impl.h"
 
-#if defined(_KERNEL)
-#include <sys/systm.h>
-#elif defined(_STANDALONE)
-#include <sys/param.h>
-#include <lib/libkern/libkern.h>
-#else
 #include <errno.h>
 #include <stdlib.h>
-#endif
 
 struct _prop_number {
 	struct _prop_object	pn_obj;
@@ -119,7 +112,7 @@ _prop_number_compare_values(const struct _prop_number_value *pnv1,
 
 static int
 /*ARGSUSED*/
-_prop_number_rb_compare_nodes(void *ctx __unused,
+_prop_number_rb_compare_nodes(void *ctx,
 			      const void *n1, const void *n2)
 {
 	const struct _prop_number *pn1 = n1;
@@ -130,7 +123,7 @@ _prop_number_rb_compare_nodes(void *ctx __unused,
 
 static int
 /*ARGSUSED*/
-_prop_number_rb_compare_key(void *ctx __unused, const void *n, const void *v)
+_prop_number_rb_compare_key(void *ctx, const void *n, const void *v)
 {
 	const struct _prop_number *pn = n;
 	const struct _prop_number_value *pnv = v;
@@ -511,14 +504,11 @@ _prop_number_internalize_unsigned(struct _prop_object_internalize_context *ctx,
 	_PROP_ASSERT(/*CONSTCOND*/sizeof(unsigned long long) ==
 		     sizeof(uint64_t));
 
-#ifndef _KERNEL
 	errno = 0;
-#endif
 	pnv->pnv_unsigned = (uint64_t) strtoull(ctx->poic_cp, &cp, 0);
-#ifndef _KERNEL		/* XXX can't check for ERANGE in the kernel */
 	if (pnv->pnv_unsigned == UINT64_MAX && errno == ERANGE)
 		return (false);
-#endif
+
 	pnv->pnv_is_unsigned = true;
 	ctx->poic_cp = cp;
 
@@ -533,15 +523,12 @@ _prop_number_internalize_signed(struct _prop_object_internalize_context *ctx,
 
 	_PROP_ASSERT(/*CONSTCOND*/sizeof(long long) == sizeof(int64_t));
 
-#ifndef _KERNEL
 	errno = 0;
-#endif
 	pnv->pnv_signed = (int64_t) strtoll(ctx->poic_cp, &cp, 0);
-#ifndef _KERNEL		/* XXX can't check for ERANGE in the kernel */
 	if ((pnv->pnv_signed == INT64_MAX || pnv->pnv_signed == INT64_MIN) &&
 	    errno == ERANGE)
 	    	return (false);
-#endif
+
 	pnv->pnv_is_unsigned = false;
 	ctx->poic_cp = cp;
 

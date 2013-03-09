@@ -35,9 +35,7 @@
 #include "prop_object_impl.h"
 #include "prop_rb_impl.h"
 
-#if !defined(_KERNEL) && !defined(_STANDALONE)
 #include <errno.h>
-#endif
 
 /*
  * We implement these like arrays, but we keep them sorted by key.
@@ -97,8 +95,6 @@ struct _prop_dictionary {
 
 _PROP_POOL_INIT(_prop_dictionary_pool, sizeof(struct _prop_dictionary),
 		"propdict")
-_PROP_MALLOC_DEFINE(M_PROP_DICT, "prop dictionary",
-		    "property dictionary container object")
 
 static _prop_object_free_rv_t
 		_prop_dictionary_free(prop_stack_t, prop_object_t *);
@@ -173,7 +169,7 @@ struct _prop_dictionary_iterator {
 
 static int
 /*ARGSUSED*/
-_prop_dict_keysym_rb_compare_nodes(void *ctx __unused,
+_prop_dict_keysym_rb_compare_nodes(void *ctx,
 				   const void *n1, const void *n2)
 {
 	const struct _prop_dictionary_keysym *pdk1 = n1;
@@ -184,7 +180,7 @@ _prop_dict_keysym_rb_compare_nodes(void *ctx __unused,
 
 static int
 /*ARGSUSED*/
-_prop_dict_keysym_rb_compare_key(void *ctx __unused,
+_prop_dict_keysym_rb_compare_key(void *ctx,
 				 const void *n, const void *v)
 {
 	const struct _prop_dictionary_keysym *pdk = n;
@@ -628,7 +624,7 @@ static prop_object_t
 _prop_dictionary_iterator_next_object(void *v)
 {
 	struct _prop_dictionary_iterator *pdi = v;
-	prop_dictionary_t pd __unused = pdi->pdi_base.pi_obj;
+	prop_dictionary_t pd = pdi->pdi_base.pi_obj;
 	prop_dictionary_keysym_t pdk;
 
 	_PROP_ASSERT(prop_object_is_dictionary(pd));
@@ -655,7 +651,7 @@ static void
 _prop_dictionary_iterator_reset(void *v)
 {
 	struct _prop_dictionary_iterator *pdi = v;
-	prop_dictionary_t pd __unused = pdi->pdi_base.pi_obj;
+	prop_dictionary_t pd = pdi->pdi_base.pi_obj;
 
 	_PROP_RWLOCK_RDLOCK(pd->pd_rwlock);
 	_prop_dictionary_iterator_reset_locked(pdi);
@@ -1374,7 +1370,6 @@ prop_dictionary_internalize(const char *xml)
 	return _prop_generic_internalize(xml, "dict");
 }
 
-#if !defined(_KERNEL) && !defined(_STANDALONE)
 /*
  * prop_dictionary_externalize_to_file --
  *	Externalize a dictionary to the specified file.
@@ -1418,4 +1413,3 @@ prop_dictionary_internalize_from_file(const char *fname)
 
 	return (dict);
 }
-#endif /* !_KERNEL && !_STANDALONE */

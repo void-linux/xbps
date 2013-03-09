@@ -48,7 +48,10 @@ typedef enum {
 	PROP_TYPE_DICT_KEYSYM	=	0x646b6579	/* 'dkey' */
 } prop_type_t;
 
-__BEGIN_DECLS
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 void		prop_object_retain(prop_object_t);
 void		prop_object_release(prop_object_t);
 
@@ -62,6 +65,9 @@ typedef struct _prop_object_iterator *prop_object_iterator_t;
 prop_object_t	prop_object_iterator_next(prop_object_iterator_t);
 void		prop_object_iterator_reset(prop_object_iterator_t);
 void		prop_object_iterator_release(prop_object_iterator_t);
-__END_DECLS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PROPLIB_PROP_OBJECT_H_ */

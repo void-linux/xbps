@@ -17,5 +17,5 @@ internal use in the code:
 
 - libfetch-2.34 from NetBSD (pkgsrc/net/libfetch): lib/fetch
 
-- portableproplib-0.6.2 (lib/portableproplib) from
+- portableproplib-0.6.3 (lib/portableproplib) from
   http://code.google.com/p/portableproplib

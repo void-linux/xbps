@@ -38,7 +38,10 @@
 
 typedef struct _prop_string *prop_string_t;
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 prop_string_t	prop_string_create(void);
 prop_string_t	prop_string_create_cstring(const char *);
 prop_string_t	prop_string_create_cstring_nocopy(const char *);
@@ -57,6 +60,9 @@ bool		prop_string_append_cstring(prop_string_t, const char *);
 
 bool		prop_string_equals(prop_string_t, prop_string_t);
 bool		prop_string_equals_cstring(prop_string_t, const char *);
-__END_DECLS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PROPLIB_PROP_STRING_H_ */

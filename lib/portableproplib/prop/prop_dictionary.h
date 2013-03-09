@@ -39,7 +39,10 @@
 typedef struct _prop_dictionary *prop_dictionary_t;
 typedef struct _prop_dictionary_keysym *prop_dictionary_keysym_t;
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 prop_dictionary_t prop_dictionary_create(void);
 prop_dictionary_t prop_dictionary_create_with_capacity(unsigned int);
 
@@ -148,6 +151,8 @@ bool		prop_dictionary_set_and_rel(prop_dictionary_t,
 					    const char *,
 					    prop_object_t);
 
-__END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PROPLIB_PROP_DICTIONARY_H_ */

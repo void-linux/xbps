@@ -39,9 +39,15 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #endif
-#include <sys/types.h>
-#include <sys/cdefs.h>
 #include <queue.h>
+
+/* GCC version checking borrowed from glibc. */
+#if defined(__GNUC__) && defined(__GNUC_MINOR__)
+#  define __GNUC_PREREQ(maj,min) \
+	((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+#else
+#  define __GNUC_PREREQ(maj,min) 0
+#endif
 
 #if __GNUC_PREREQ(2, 96)
 # ifndef __predict_true
@@ -59,7 +65,9 @@
 # endif
 #endif
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct rb_node {
 	struct rb_node *rb_nodes[2];
@@ -207,6 +215,8 @@ void	rb_tree_check(const rb_tree_t *, bool);
 void	rb_tree_depths(const rb_tree_t *, size_t *);
 #endif
 
-__END_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #endif	/* _SYS_RBTREE_H_*/

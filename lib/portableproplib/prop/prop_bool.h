@@ -37,13 +37,19 @@
 
 typedef struct _prop_bool *prop_bool_t;
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 prop_bool_t	prop_bool_create(bool);
 prop_bool_t	prop_bool_copy(prop_bool_t);
 
 bool		prop_bool_true(prop_bool_t);
 
 bool		prop_bool_equals(prop_bool_t, prop_bool_t);
-__END_DECLS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PROPLIB_PROP_BOOL_H_ */

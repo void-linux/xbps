@@ -72,7 +72,10 @@ typedef struct {
 #define	PROP_INGEST_END							\
 	{ .pite_key = NULL }
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 prop_ingest_context_t
 		prop_ingest_context_alloc(void *);
 void		prop_ingest_context_free(prop_ingest_context_t);
@@ -86,6 +89,8 @@ void *		prop_ingest_context_private(prop_ingest_context_t);
 bool		prop_dictionary_ingest(prop_dictionary_t,
 				       const prop_ingest_table_entry[],
 				       prop_ingest_context_t);
-__END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PROPLIB_PROP_INGEST_H_ */

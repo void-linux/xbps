@@ -1,5 +1,7 @@
 xbps-0.21 (???):
 
+ * Imported Portable proplib 0.6.3 from http://code.google.com/p/portableproplib.
+
  * xbps-query(8): a full dependency tree can now be shown in the
    show-deps mode, by specifying -x twice (--show-deps), e.g:
 

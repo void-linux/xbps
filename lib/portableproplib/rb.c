@@ -29,7 +29,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if !defined(_KERNEL) && !defined(_STANDALONE)
 #include <sys/types.h>
 #include <stddef.h>
 #include <assert.h>
@@ -39,30 +38,11 @@
 #else
 #define KASSERT(s)	do { } while (/*CONSTCOND*/ 0)
 #endif
-#else
-#include <lib/libkern/libkern.h>
-#endif
-
-#ifdef _LIBC
-__weak_alias(rb_tree_init, _rb_tree_init)
-__weak_alias(rb_tree_find_node, _rb_tree_find_node)
-__weak_alias(rb_tree_find_node_geq, _rb_tree_find_node_geq)
-__weak_alias(rb_tree_find_node_leq, _rb_tree_find_node_leq)
-__weak_alias(rb_tree_insert_node, _rb_tree_insert_node)
-__weak_alias(rb_tree_remove_node, _rb_tree_remove_node)
-__weak_alias(rb_tree_iterate, _rb_tree_iterate)
-#ifdef RBDEBUG
-__weak_alias(rb_tree_check, _rb_tree_check)
-__weak_alias(rb_tree_depths, _rb_tree_depths)
-#endif
-
-#include "namespace.h"
-#endif
 
 #ifdef RBTEST
 #include "rbtree.h"
 #else
-#include <prop/rbtree.h>
+#include <rbtree.h>
 #endif
 
 static void rb_tree_insert_rebalance(struct rb_tree *, struct rb_node *);

@@ -52,9 +52,6 @@ struct _prop_data {
 
 _PROP_POOL_INIT(_prop_data_pool, sizeof(struct _prop_data), "propdata")
 
-_PROP_MALLOC_DEFINE(M_PROP_DATA, "prop data",
-		    "property data container object")
-
 static _prop_object_free_rv_t
 		_prop_data_free(prop_stack_t, prop_object_t *);
 static bool	_prop_data_externalize(

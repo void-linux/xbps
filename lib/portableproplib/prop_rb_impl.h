@@ -32,11 +32,7 @@
 #ifndef _PROP_RB_IMPL_H_
 #define	_PROP_RB_IMPL_H_
 
-#ifdef __NetBSD__
-#include <sys/rbtree.h>
-#else
-#include <prop/rbtree.h>
-#endif
+#include <rbtree.h>
 
 /*
  * Define local names for common rb_tree functions.

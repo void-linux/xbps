@@ -37,7 +37,10 @@
 
 typedef struct _prop_number *prop_number_t;
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 prop_number_t	prop_number_create_integer(int64_t);
 prop_number_t	prop_number_create_unsigned_integer(uint64_t);
 
@@ -52,6 +55,9 @@ uint64_t	prop_number_unsigned_integer_value(prop_number_t);
 bool		prop_number_equals(prop_number_t, prop_number_t);
 bool		prop_number_equals_integer(prop_number_t, int64_t);
 bool		prop_number_equals_unsigned_integer(prop_number_t, uint64_t);
-__END_DECLS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PROPLIB_PROP_NUMBER_H_ */

@@ -38,7 +38,10 @@
 
 typedef struct _prop_data *prop_data_t;
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 prop_data_t	prop_data_create_data(const void *, size_t);
 prop_data_t	prop_data_create_data_nocopy(const void *, size_t);
 
@@ -51,6 +54,9 @@ const void *	prop_data_data_nocopy(prop_data_t);
 
 bool		prop_data_equals(prop_data_t, prop_data_t);
 bool		prop_data_equals_data(prop_data_t, const void *, size_t);
-__END_DECLS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _PROPLIB_PROP_DATA_H_ */

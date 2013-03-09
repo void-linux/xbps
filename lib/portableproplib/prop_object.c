@@ -29,6 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <prop/prop_object.h>
+#include "prop_object_impl.h"
+
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -37,9 +40,6 @@
 #include <unistd.h>
 
 #include <zlib.h>
-#include <prop/prop_object.h>
-#include "prop_object_impl.h"
-
 
 /*
  * _prop_object_init --
@@ -61,7 +61,7 @@ _prop_object_init(struct _prop_object *po, const struct _prop_object_type *pot)
  */
 /*ARGSUSED*/
 void
-_prop_object_fini(struct _prop_object *po _PROP_ARG_UNUSED)
+_prop_object_fini(struct _prop_object *po)
 {
 	/* Nothing to do, currently. */
 }
@@ -812,10 +812,7 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
     size_t len, bool do_compress)
 {
 	gzFile gzf = NULL;
-	char tname[PATH_MAX];
-#ifndef HAVE_STRLCAT
-	char *otname;
-#endif
+	char tname[PATH_MAX], *otname;
 	int fd;
 	int save_errno;
 	mode_t myumask;
