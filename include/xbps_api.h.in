@@ -690,8 +690,8 @@ prop_array_t xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans
  * a new files dictionary.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] instd Installed package files dictionary (\a XBPS_PKGFILES).
- * @param[in] newd New package files dictionary (provided by a binary package).
+ * @param[in] instd Installed package metadata dictionary.
+ * @param[in] newd New package metadata dictionary.
  *
  * @return A proplib array of strings with a sorted list of obsolete files.
  */

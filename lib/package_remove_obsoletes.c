@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,22 +32,57 @@
 
 #include "xbps_api_impl.h"
 
+static prop_array_t
+merge_filelist(prop_dictionary_t d)
+{
+	prop_array_t a, result;
+	prop_dictionary_t filed;
+	size_t i;
+
+	result = prop_array_create();
+	assert(result);
+
+	if ((a = prop_dictionary_get(d, "files"))) {
+		for (i = 0; i < prop_array_count(a); i++) {
+			filed = prop_array_get(a, i);
+			prop_array_add(result, filed);
+		}
+	}
+	if ((a = prop_dictionary_get(d, "links"))) {
+		for (i = 0; i < prop_array_count(a); i++) {
+			filed = prop_array_get(a, i);
+			prop_array_add(result, filed);
+		}
+	}
+	if ((a = prop_dictionary_get(d, "conf_files"))) {
+		for (i = 0; i < prop_array_count(a); i++) {
+			filed = prop_array_get(a, i);
+			prop_array_add(result, filed);
+		}
+	}
+	if ((a = prop_dictionary_get(d, "dirs"))) {
+		for (i = 0; i < prop_array_count(a); i++) {
+			filed = prop_array_get(a, i);
+			prop_array_add(result, filed);
+		}
+	}
+
+	return result;
+}
+
 prop_array_t
 xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 			prop_dictionary_t instd,
 			prop_dictionary_t newd)
 {
-	prop_array_t array, array2, obsoletes;
+	prop_array_t instfiles, newfiles, obsoletes;
 	prop_object_t obj, obj2;
 	prop_string_t oldstr, newstr;
 	size_t i, x;
-	const char *array_str = "files";
 	const char *oldhash;
 	char *file;
 	int rv = 0;
-	bool found, dodirs, dolinks, docffiles;
-
-	dodirs = dolinks = docffiles = false;
+	bool found;
 
 	assert(prop_object_type(instd) == PROP_TYPE_DICTIONARY);
 	assert(prop_object_type(newd) == PROP_TYPE_DICTIONARY);
@@ -55,19 +90,22 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	obsoletes = prop_array_create();
 	assert(obsoletes);
 
-again:
-	array = prop_dictionary_get(instd, array_str);
-	if (array == NULL || prop_array_count(array) == 0)
-		goto out1;
+	instfiles = merge_filelist(instd);
+	if (prop_array_count(instfiles) == 0) {
+		/* nothing to check if current pkg does not own any file */
+		prop_object_release(instfiles);
+		return obsoletes;
+	}
+	newfiles = merge_filelist(newd);
 
 	/*
 	 * Iterate over files list from installed package.
 	 */
-	for (i = 0; i < prop_array_count(array); i++) {
+	for (i = 0; i < prop_array_count(instfiles); i++) {
 		found = false;
-		obj = prop_array_get(array, i);
-		if (prop_object_type(obj) != PROP_TYPE_DICTIONARY)
-			continue;
+		obj = prop_array_get(instfiles, i);
+		assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
+
 		oldstr = prop_dictionary_get(obj, "file");
 		if (oldstr == NULL)
 			continue;
@@ -75,10 +113,10 @@ again:
 		file = xbps_xasprintf(".%s",
 		    prop_string_cstring_nocopy(oldstr));
 
-		if ((strcmp(array_str, "files") == 0) ||
-		    (strcmp(array_str, "conf_files") == 0)) {
-			prop_dictionary_get_cstring_nocopy(obj,
-			    "sha256", &oldhash);
+		oldhash = NULL;
+		prop_dictionary_get_cstring_nocopy(obj,
+		    "sha256", &oldhash);
+		if (oldhash) {
 			rv = xbps_file_hash_check(file, oldhash);
 			if (rv == ENOENT || rv == ERANGE) {
 				/*
@@ -89,19 +127,19 @@ again:
 				continue;
 			}
 		}
-		array2 = prop_dictionary_get(newd, array_str);
-		if (array2 && prop_array_count(array2)) {
-			for (x = 0; x < prop_array_count(array2); x++) {
-				obj2 = prop_array_get(array2, x);
-				newstr = prop_dictionary_get(obj2, "file");
-				assert(newstr);
-				/*
-				 * Skip files with same path.
-				 */
-				if (prop_string_equals(oldstr, newstr)) {
-					found = true;
-					break;
-				}
+		/*
+		 * Check if current file is available in new pkg filelist.
+		 */
+		for (x = 0; x < prop_array_count(newfiles); x++) {
+			obj2 = prop_array_get(newfiles, x);
+			newstr = prop_dictionary_get(obj2, "file");
+			assert(newstr);
+			/*
+			 * Skip files with same path.
+			 */
+			if (prop_string_equals(oldstr, newstr)) {
+				found = true;
+				break;
 			}
 		}
 		if (found) {
@@ -126,26 +164,12 @@ again:
 		/*
 		 * Obsolete found, add onto the array.
 		 */
-		xbps_dbg_printf(xhp, "found obsolete: %s (%s)\n",
-		    file, array_str);
-
+		xbps_dbg_printf(xhp, "found obsolete: %s\n", file);
 		prop_array_add_cstring(obsoletes, file);
 		free(file);
 	}
-out1:
-	if (!dolinks) {
-		dolinks = true;
-		array_str = "links";
-		goto again;
-	} else if (!docffiles) {
-		docffiles = true;
-		array_str = "conf_files";
-		goto again;
-	} else if (!dodirs) {
-		dodirs = true;
-		array_str = "dirs";
-		goto again;
-	}
+	prop_object_release(instfiles);
+	prop_object_release(newfiles);
 
 	return obsoletes;
 }
