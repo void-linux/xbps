@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -107,12 +107,10 @@ xbps_file_hash(const char *file)
 	if (buf == MAP_FAILED)
 		return NULL;
 
-	(void)madvise(buf, mapsize, MADV_SEQUENTIAL);
 	if (SHA256(buf, st.st_size, digest) == NULL) {
 		munmap(buf, mapsize);
 		return NULL;
 	}
-	(void)madvise(buf, mapsize, MADV_DONTNEED);
 	munmap(buf, mapsize);
 
 	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
