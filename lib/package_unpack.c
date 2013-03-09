@@ -256,8 +256,7 @@ unpack_archive(struct xbps_handle *xhp,
 			 */
 			if (entry_idx >= 3) {
 				xbps_set_cb_state(xhp,
-				    XBPS_STATE_UNPACK_FAIL,
-				    ENODEV, pkgver,
+				    XBPS_STATE_UNPACK_FAIL, ENODEV, pkgver,
 				    "%s: [unpack] invalid binary package `%s'.",
 				    pkgver, fname);
 				rv = ENODEV;
@@ -380,6 +379,7 @@ unpack_archive(struct xbps_handle *xhp,
 					skip_extract = true;
 				}
 				free(buf);
+				free(p2);
 			}
 		}
 		/*
