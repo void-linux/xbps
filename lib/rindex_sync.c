@@ -74,13 +74,11 @@ xbps_get_remote_repo_string(const char *uri)
 int HIDDEN
 xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 {
-	prop_dictionary_t repod;
 	const char *arch, *fetchstr = NULL;
-	char *rpidx, *lrepodir, *uri_fixedp, *lrepofile;
+	char *rpidx, *lrepodir, *uri_fixedp;
 	int rv = 0;
 
 	assert(uri != NULL);
-	rpidx = uri_fixedp = lrepodir = lrepofile = NULL;
 
 	/* ignore non remote repositories */
 	if (!xbps_repository_is_remote(uri))
@@ -96,38 +94,37 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 		arch = xhp->native_arch;
 
 	/*
-	 * Remote repository plist index full URL.
-	 */
-	rpidx = xbps_xasprintf("%s/%s-%s", uri, arch, plistf);
-	/*
 	 * Full path to repository directory to store the plist
 	 * index file.
 	 */
 	lrepodir = xbps_xasprintf("%s/%s", xhp->metadir, uri_fixedp);
-	/*
-	 * Full path to the local repository index file.
-	 */
-	lrepofile = xbps_xasprintf("%s/%s-%s", lrepodir, arch, plistf);
+	free(uri_fixedp);
+
 	/*
 	 * Create repodir in metadir.
 	 */
 	if (access(lrepodir, R_OK|X_OK|W_OK) == -1) {
 		if ((rv = xbps_mkpath(lrepodir, 0755)) == -1) {
 			xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
-			    errno, NULL, NULL,
+			    errno, NULL,
 			    "[reposync] failed to create repodir `%s': %s",
 			    lrepodir, strerror(errno));
-			goto out;
+			free(lrepodir);
+			return rv;
 		}
 	}
 	if (chdir(lrepodir) == -1) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
-		    errno, NULL, NULL,
+		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL, errno, NULL,
 		    "[reposync] failed to change dir to repodir `%s': %s",
 		    lrepodir, strerror(errno));
-		rv = -1;
-		goto out;
+		free(lrepodir);
+		return -1;
 	}
+	free(lrepodir);
+	/*
+	 * Remote repository plist index full URL.
+	 */
+	rpidx = xbps_xasprintf("%s/%s-%s", uri, arch, plistf);
 
 	/* reposync start cb */
 	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, rpidx, NULL, NULL);
@@ -138,41 +135,13 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 		/* reposync error cb */
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
-		    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
-		    NULL, NULL,
+		    fetchLastErrCode != 0 ? fetchLastErrCode : errno, NULL,
 		    "[reposync] failed to fetch file `%s': %s",
 		    rpidx, fetchstr ? fetchstr : strerror(errno));
-		goto out;
-	} else if (rv == 0) {
-	       goto out;
-	} else {
+	} else if (rv == 1)
 		rv = 0;
-	}
-	/*
-	 * Make sure that downloaded plist file can be internalized, i.e
-	 * some HTTP servers don't return proper errors and sometimes
-	 * you get an HTML ASCII file :-)
-	 */
-	repod = prop_dictionary_internalize_from_zfile(lrepofile);
-	if (repod == NULL) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL, 0, NULL, NULL,
-		    "[reposync] downloaded file `%s' is not valid.", rpidx);
-		(void)unlink(lrepofile);
-		(void)remove(lrepodir);
-		rv = -1;
-		goto out;
-	}
-	prop_object_release(repod);
 
-out:
-	if (rpidx)
-		free(rpidx);
-	if (lrepodir)
-		free(lrepodir);
-	if (lrepofile)
-		free(lrepofile);
-	if (uri_fixedp)
-		free(uri_fixedp);
+	free(rpidx);
 
 	return rv;
 }
