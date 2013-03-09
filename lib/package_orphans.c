@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2012 Juan Romero Pardines.
+ * Copyright (c) 2009-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,129 +59,101 @@
  * dictionary.
  */
 
-struct orphan_data {
-	prop_array_t array;
-	prop_array_t orphans_user;
-};
-
-static int
-find_orphan_pkg(struct xbps_handle *xhp,
-		prop_object_t obj,
-		void *arg,
-		bool *loop_done)
-{
-	struct orphan_data *od = arg;
-	prop_array_t reqby;
-	prop_object_t obj2;
-	prop_object_iterator_t iter;
-	const char *pkgdep, *curpkgname, *curpkgver;
-	char *pkgdepname;
-	unsigned int ndep = 0, cnt = 0;
-	bool automatic = false;
-	size_t i;
-
-	(void)xhp;
-	(void)loop_done;
-	/*
-	 * Skip packages that were not installed automatically.
-	 */
-	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
-	if (!automatic)
-		return 0;
-
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &curpkgver);
-	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, curpkgver);
-	if (reqby == NULL || ((cnt = prop_array_count(reqby)) == 0)) {
-		/*
-		 * Add packages with empty or missing "requiredby" arrays.
-		 */
-		prop_array_add(od->array, obj);
-		return 0;
-	}
-	/*
-	 * Add packages that only have 1 entry matching any pkgname
-	 * object in the user supplied array of strings.
-	 */
-	if (od->orphans_user != NULL && cnt == 1) {
-		for (i = 0; i < prop_array_count(od->orphans_user); i++) {
-			prop_array_get_cstring_nocopy(od->orphans_user,
-			    i, &curpkgname);
-			if (xbps_match_pkgname_in_array(reqby, curpkgname)) {
-				prop_array_add(od->array, obj);
-				return 0;
-			}
-		}
-	}
-	iter = prop_array_iterator(reqby);
-	if (iter == NULL)
-		return ENOMEM;
-	/*
-	 * Iterate over the requiredby array and add current pkg
-	 * when all pkg dependencies are already in requiredby
-	 * or any pkgname object in the user supplied array of
-	 * strings match.
-	 */
-	while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
-		pkgdep = prop_string_cstring_nocopy(obj2);
-		if (pkgdep == NULL) {
-			prop_object_iterator_release(iter);
-			return EINVAL;
-		}
-		if (xbps_find_pkg_in_array(od->array, pkgdep))
-			ndep++;
-		if (od->orphans_user == NULL)
-			continue;
-
-		pkgdepname = xbps_pkg_name(pkgdep);
-		if (pkgdepname == NULL) {
-			prop_object_iterator_release(iter);
-			return ENOMEM;
-		}
-		for (i = 0; i < prop_array_count(od->orphans_user); i++) {
-			prop_array_get_cstring_nocopy(od->orphans_user,
-			    i, &curpkgname);
-			if (strcmp(curpkgname, pkgdepname) == 0) {
-				ndep++;
-				break;
-			}
-		}
-		free(pkgdepname);
-	}
-	prop_object_iterator_release(iter);
-
-	if (ndep != cnt)
-		return 0;
-	if (!prop_array_add(od->array, obj))
-		return EINVAL;
-
-	return 0;
-}
-
 prop_array_t
 xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans_user)
 {
-	prop_array_t array = NULL;
-	struct orphan_data od;
-	int rv = 0;
+	prop_array_t rdeps, reqby, array = NULL;
+	prop_dictionary_t pkgd, deppkgd;
+	prop_object_t obj;
+	prop_object_iterator_t iter;
+	const char *curpkgver, *deppkgver, *reqbydep;
+	bool automatic = false;
+	size_t i, x, j, cnt, reqbycnt;
+
+	(void)orphans_user;
+
+	if (xbps_pkgdb_init(xhp) != 0)
+		return NULL;
+	if ((array = prop_array_create()) == NULL)
+		return NULL;
 
 	/*
-	 * Prepare an array with all packages previously found.
+	 * Add all packages specified by the client.
 	 */
-	if ((od.array = prop_array_create()) == NULL)
-		return NULL;
-	/*
-	 * Find out all orphans by looking at pkgdb and iterating in reverse
-	 * order in which packages were installed.
-	 */
-	od.orphans_user = orphans_user;
-	rv = xbps_pkgdb_foreach_reverse_cb(xhp, find_orphan_pkg, &od);
-	if (rv != 0) {
-		errno = rv;
-		prop_object_release(od.array);
-		return NULL;
+	for (i = 0; i < prop_array_count(orphans_user); i++) {
+		prop_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
+		pkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
+		prop_array_add(array, pkgd);
 	}
-	array = prop_array_copy(od.array);
-	prop_array_make_immutable(array);
-	prop_object_release(od.array);
+	if (prop_array_count(array))
+		goto find_orphans;
+
+	iter = prop_dictionary_iterator(xhp->pkgdb);
+	assert(iter);
+	/*
+	 * First pass: track pkgs that were installed manually and
+	 * without reverse dependencies.
+	 */
+	while ((obj = prop_object_iterator_next(iter))) {
+		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
+		/*
+		 * Skip packages that were not installed automatically.
+		 */
+		prop_dictionary_get_bool(pkgd, "automatic-install", &automatic);
+		if (!automatic)
+			continue;
+
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
+		reqby = xbps_pkgdb_get_pkg_revdeps(xhp, curpkgver);
+		cnt = prop_array_count(reqby);
+		if (reqby == NULL || (cnt == 0)) {
+			/*
+			 * Add packages with empty revdeps.
+			 */
+			prop_array_add(array, pkgd);
+			continue;
+		}
+	}
+	prop_object_iterator_release(iter);
+
+find_orphans:
+	for (i = 0; i < prop_array_count(array); i++) {
+		pkgd = prop_array_get(array, i);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
+
+		rdeps = prop_dictionary_get(pkgd, "run_depends");
+		if (rdeps == NULL)
+			continue;
+		for (x = 0; x < prop_array_count(rdeps); x++) {
+			cnt = 0;
+			prop_array_get_cstring_nocopy(rdeps, x, &deppkgver);
+			reqby = xbps_pkgdb_get_pkg_revdeps(xhp, deppkgver);
+			if (reqby == NULL)
+				continue;
+			reqbycnt = prop_array_count(reqby);
+			for (j = 0; j < reqbycnt; j++) {
+				prop_array_get_cstring_nocopy(reqby, j, &reqbydep);
+				if (xbps_find_pkg_in_array(array, reqbydep)) {
+					cnt++;
+					continue;
+				}
+			}
+			if (cnt == reqbycnt) {
+				deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
+				if (!xbps_find_pkg_in_array(array, deppkgver))
+					prop_array_add(array, deppkgd);
+			}
+		}
+	}
+	/*
+	 * Remove duplicated entries due to client packages.
+	 */
+	for (i = 0; i < prop_array_count(orphans_user); i++) {
+		prop_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
+		pkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &deppkgver);
+		xbps_remove_pkg_from_array_by_pkgver(array, deppkgver);
+	}
+
 	return array;
 }
