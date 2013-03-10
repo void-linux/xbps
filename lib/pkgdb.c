@@ -248,7 +248,7 @@ static void
 generate_full_revdeps_tree(struct xbps_handle *xhp)
 {
 	prop_array_t rundeps, pkg;
-	prop_dictionary_t pkgmetad, pkgd;
+	prop_dictionary_t pkgd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	const char *pkgver, *pkgdep, *vpkgname;
@@ -266,16 +266,7 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 
 	while ((obj = prop_object_iterator_next(iter))) {
 		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
-		/*
-		 * If run_depends is in pkgdb use it, otherwise fallback to
-		 * the slower pkg metadata method.
-		 */
 		rundeps = prop_dictionary_get(pkgd, "run_depends");
-		if (rundeps == NULL) {
-			pkgmetad = get_pkg_metadata(xhp, pkgd);
-			assert(pkgmetad);
-			rundeps = prop_dictionary_get(pkgmetad, "run_depends");
-		}
 		if (rundeps == NULL || !prop_array_count(rundeps))
 			continue;
 
@@ -296,8 +287,10 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 				pkg = prop_array_create();
 			}
 			prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-			prop_array_add_cstring_nocopy(pkg, pkgver);
-			prop_dictionary_set(xhp->pkgdb_revdeps, vpkgname, pkg);
+			if (!xbps_match_string_in_array(pkg, pkgver)) {
+				prop_array_add_cstring_nocopy(pkg, pkgver);
+				prop_dictionary_set(xhp->pkgdb_revdeps, vpkgname, pkg);
+			}
 			free(curpkgname);
 			if (alloc)
 				prop_object_release(pkg);
