@@ -52,8 +52,11 @@ xbps_match_virtual_pkg_in_dict(prop_dictionary_t d,
 	if ((provides = prop_dictionary_get(d, "provides"))) {
 		if (bypattern)
 			found = xbps_match_pkgpattern_in_array(provides, str);
-		else
-			found = xbps_match_pkgname_in_array(provides, str);
+		else {
+			if ((xbps_match_pkgname_in_array(provides, str)) ||
+			    (xbps_match_pkgdep_in_array(provides, str)))
+				return true;
+		}
 	}
 	return found;
 }
