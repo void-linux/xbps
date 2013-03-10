@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>four</key>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgver</key>
+		<string>four-0.1_1</string>
+		<key>run_depends</key>
+		<array>
+			<string>mixed-0.1_1</string>
+		</array>
+		<key>short_desc</key>
+		<string>four descriptionm</string>
+		<key>state</key>
+		<string>installed</string>
+	</dict>
+	<key>mixed</key>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgver</key>
+		<string>mixed-0.1_1</string>
+		<key>short_desc</key>
+		<string>mixed description</string>
+		<key>state</key>
+		<string>installed</string>
+	</dict>
+	<key>one</key>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgver</key>
+		<string>one-0.1_1</string>
+		<key>run_depends</key>
+		<array>
+			<string>two&gt;=0.2</string>
+		</array>
+		<key>short_desc</key>
+		<string>one descriptionm</string>
+		<key>state</key>
+		<string>installed</string>
+	</dict>
+	<key>three</key>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgver</key>
+		<string>three-0.1_1</string>
+		<key>run_depends</key>
+		<array>
+			<string>four-0.1_1</string>
+		</array>
+		<key>short_desc</key>
+		<string>three descriptionm</string>
+		<key>state</key>
+		<string>installed</string>
+	</dict>
+	<key>two</key>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgver</key>
+		<string>two-0.1_1</string>
+		<key>run_depends</key>
+		<array>
+			<string>three&gt;=0.1</string>
+			<string>mixed&gt;=0</string>
+		</array>
+		<key>short_desc</key>
+		<string>two descriptionm</string>
+		<key>state</key>
+		<string>installed</string>
+	</dict>
+	<key>virtual-mixed</key>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgver</key>
+		<string>virtual-mixed-0.1_1</string>
+		<key>provides</key>
+		<array>
+			<string>mixed-0.1_1</string>
+		</array>
+		<key>run_depends</key>
+		<array>
+			<string>four-0.1_1</string>
+			<string>three-0.1_1</string>
+		</array>
+		<key>short_desc</key>
+		<string>virtual-mixed description</string>
+		<key>state</key>
+		<string>installed</string>
+	</dict>
+</dict>
+</plist>
