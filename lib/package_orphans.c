@@ -83,6 +83,8 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans_user)
 	for (i = 0; i < prop_array_count(orphans_user); i++) {
 		prop_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
 		pkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
+		if (pkgd == NULL)
+			continue;
 		prop_array_add(array, pkgd);
 	}
 	if (prop_array_count(array))
@@ -144,15 +146,6 @@ find_orphans:
 					prop_array_add(array, deppkgd);
 			}
 		}
-	}
-	/*
-	 * Remove duplicated entries due to client packages.
-	 */
-	for (i = 0; i < prop_array_count(orphans_user); i++) {
-		prop_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
-		pkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &deppkgver);
-		xbps_remove_pkg_from_array_by_pkgver(array, deppkgver);
 	}
 
 	return array;
