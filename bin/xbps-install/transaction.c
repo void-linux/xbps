@@ -82,11 +82,11 @@ show_actions(prop_object_iterator_t iter)
 	while ((obj = prop_object_iterator_next(iter)) != NULL) {
 		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
 		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-		printf("%s %s %s", pkgver, arch, trans);
+		printf("%s %s", pkgver, trans);
 		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		if (repoloc)
-			printf(" %s", repoloc);
+		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+		if (repoloc && arch)
+			printf(" %s %s", arch, repoloc);
 
 		printf("\n");
 	}
