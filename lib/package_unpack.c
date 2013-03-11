@@ -99,7 +99,7 @@ unpack_archive(struct xbps_handle *xhp,
 	ssize_t entry_size;
 	const char *file, *entry_pname, *transact,  *tgtlnk;
 	char *pkgname, *dname, *buf, *buf2, *p, *p2;
-	int ar_rv, rv, rv_stat, flags;
+	int ar_rv, rv, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool softreplace, skip_extract, force;
 	uid_t euid;
@@ -288,8 +288,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Otherwise skip extracting it.
 		 */
 		conf_file = skip_extract = file_exists = false;
-		rv_stat = lstat(entry_pname, &st);
-		if (rv_stat == 0)
+		if (lstat(entry_pname, &st) == 0)
 			file_exists = true;
 
 		if (!force && S_ISREG(entry_statp->st_mode)) {
@@ -480,7 +479,6 @@ unpack_archive(struct xbps_handle *xhp,
 	 * 	- Package with "preserve" keyword.
 	 * 	- Package with "skip-obsoletes" keyword.
 	 */
-
 	if (skip_obsoletes || preserve || (!softreplace && !update))
 		goto out1;
 	/*
