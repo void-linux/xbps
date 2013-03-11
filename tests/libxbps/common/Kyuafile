@@ -8,4 +8,5 @@ atf_test_program{name="pkgpattern_match_test"}
 atf_test_program{name="plist_match_test"}
 atf_test_program{name="plist_match_virtual_test"}
 atf_test_program{name="find_pkg_obsoletes_test"}
+include('find_pkg_orphans/Kyuafile')
 include('pkgdb/Kyuafile')

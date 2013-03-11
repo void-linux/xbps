@@ -8,6 +8,7 @@ SUBDIRS += plist_match
 SUBDIRS += plist_match_virtual
 SUBDIRS += util
 SUBDIRS += find_pkg_obsoletes
+SUBDIRS += find_pkg_orphans
 SUBDIRS += pkgdb
 
 include ../../mk/subdir.mk
