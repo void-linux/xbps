@@ -313,7 +313,18 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 		prop_array_add(unsorted, obj);
 		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	}
+	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
+	/*
+	 * If target pkg is required by any installed pkg, the client must be aware
+	 * of this to take appropiate action.
+	 */
+	if ((prop_object_type(reqby) == PROP_TYPE_ARRAY) &&
+	    (prop_array_count(reqby) > 0))
+		rv = EEXIST;
+
 	prop_object_release(orphans);
+	return rv;
+
 rmpkg:
 	/*
 	 * Add pkg dictionary into the transaction unsorted queue.
