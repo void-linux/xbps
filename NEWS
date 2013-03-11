@@ -1,5 +1,9 @@
 xbps-0.21 (???):
 
+ * libxbps: improved code to find obsolete pkg files in upgrades. Now the code
+   compares the whole file list between current and new package. A test has been
+   added to the kyua testsuite to test its correctness.
+
  * Imported Portable proplib 0.6.3 from http://code.google.com/p/portableproplib.
 
  * xbps-query(8): a full dependency tree can now be shown in the
