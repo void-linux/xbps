@@ -223,6 +223,8 @@ show_pkg_files(prop_dictionary_t filesd)
 
 		for (x = 0; x < prop_array_count(array); x++) {
 			obj = prop_array_get(array, x);
+			if (prop_object_type(obj) != PROP_TYPE_DICTIONARY)
+				continue;
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			printf("%s", file);
 			if (prop_dictionary_get_cstring_nocopy(obj,

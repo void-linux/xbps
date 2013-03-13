@@ -1,5 +1,7 @@
 xbps-0.22 (???):
 
+ * xbps-query(8): fix segfault when showing unexistent package files.
+
  * When checking for obsolete files in upgrades, ignore unexistent files in
    current package; this was hitting an assertion due to this.
 
