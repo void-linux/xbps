@@ -1,4 +1,9 @@
-xbps-0.21 (???):
+xbps-0.22 (???):
+
+ * When checking for obsolete files in upgrades, ignore unexistent files in
+   current package; this was hitting an assertion due to this.
+
+xbps-0.21 (2013-03-11):
 
  * libxbps: improved code to find obsolete pkg files in upgrades. Now the code
    compares the whole file list between current and new package. A test has been

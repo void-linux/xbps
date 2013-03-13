@@ -104,8 +104,10 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	for (i = 0; i < prop_array_count(instfiles); i++) {
 		found = false;
 		obj = prop_array_get(instfiles, i);
-		assert(prop_object_type(obj) == PROP_TYPE_DICTIONARY);
-
+		if (prop_object_type(obj) != PROP_TYPE_DICTIONARY) {
+			/* ignore unexistent files */
+			continue;
+		}
 		oldstr = prop_dictionary_get(obj, "file");
 		if (oldstr == NULL)
 			continue;
