@@ -431,6 +431,10 @@ process_entry_file(struct archive *ar,
 	archive_entry_set_pathname(entry, xe->file);
 	archive_entry_copy_stat(entry, &st);
 	archive_entry_copy_sourcepath(entry, p);
+	if (st.st_uid == geteuid())
+		archive_entry_set_uname(entry, "root");
+	if (st.st_gid == getegid())
+		archive_entry_set_gname(entry, "root");
 
 	if (S_ISLNK(st.st_mode)) {
 		len = readlink(p, buf, sizeof(buf));

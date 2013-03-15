@@ -1,5 +1,9 @@
 xbps-0.22 (???):
 
+ * xbps-create(8): if effective user/group is the same than files being
+   packaged in a package, set user/group to root:root. This way we don't
+   have to depend in an external tool to assume proper permissions (fakeroot).
+
  * xbps-query(8): fix segfault when showing unexistent package files.
 
  * When checking for obsolete files in upgrades, ignore unexistent files in
