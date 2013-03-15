@@ -429,6 +429,11 @@ process_entry_file(struct archive *ar,
 	entry = archive_entry_new();
 	assert(entry);
 	archive_entry_set_pathname(entry, xe->file);
+	if (st.st_uid == geteuid())
+		st.st_uid = 0;
+	if (st.st_gid == getegid())
+		st.st_gid = 0;
+
 	archive_entry_copy_stat(entry, &st);
 	archive_entry_copy_sourcepath(entry, p);
 	if (st.st_uid == geteuid())
