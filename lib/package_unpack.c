@@ -408,7 +408,7 @@ unpack_archive(struct xbps_handle *xhp,
 		if ((!force && file_exists && skip_extract && (euid == 0)) &&
 		    (((archive_entry_uid(entry) != st.st_uid)) ||
 		    ((archive_entry_gid(entry) != st.st_gid)))) {
-			if (chown(entry_pname,
+			if (lchown(entry_pname,
 			    archive_entry_uid(entry),
 			    archive_entry_gid(entry)) != 0) {
 				xbps_dbg_printf(xhp,
