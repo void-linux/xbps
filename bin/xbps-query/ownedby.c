@@ -109,10 +109,17 @@ int
 ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 {
 	struct ffdata ffd;
+	char *rfile;
+	int i;
 
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
 
+	for (i = 0; i < npatterns; i++) {
+		rfile = realpath(patterns[i], NULL);
+		if (rfile)
+			patterns[i] = rfile;
+	}
 	return xbps_pkgdb_foreach_cb(xhp, ownedby_pkgdb_cb, &ffd);
 }
 
@@ -179,9 +186,16 @@ int
 repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 {
 	struct ffdata ffd;
+	char *rfile;
+	int i;
 
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
 
+	for (i = 0; i < npatterns; i++) {
+		rfile = realpath(patterns[i], NULL);
+		if (rfile)
+			patterns[i] = rfile;
+	}
 	return xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
 }

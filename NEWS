@@ -1,5 +1,8 @@
 xbps-0.22 (???):
 
+ * xbps-query(8): make -o (ownedby) follow symlinks. Fix issue #4 from github.
+   This works in local and repository mode.
+
  * xbps-create(8): if effective user/group is the same than files being
    packaged in a package, set user/group to root:root. This way we don't
    have to depend in an external tool to assume proper permissions (fakeroot).
