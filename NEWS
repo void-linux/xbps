@@ -1,5 +1,9 @@
 xbps-0.22 (???):
 
+ * xbps-create(8): a new option --build-options has been added to add a string
+   with the build options that were used in package. It's expected to be filled
+   by xbps-src automatically.
+
  * xbps-query(8): make -o (ownedby) follow symlinks. Fix issue #4 from github.
    This works in local and repository mode.
 

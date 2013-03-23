@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -90,6 +90,7 @@ usage(void)
 	" -S --long-desc      Long description (80 cols per line).\n"
 	" -s --desc           Short description (max 80 characters).\n"
 	" -V --version        Prints XBPS release version.\n"
+	" --build-options     A string with the used build options.\n"
 	" --shlib-provides    List of provided shared libraries (blank separated list,\n"
 	"                     e.g 'libfoo.so.1 libblah.so.2').\n"
 	" --shlib-requires    List of required shared libraries (blank separated list,\n"
@@ -576,6 +577,7 @@ main(int argc, char **argv)
 		{ "version", no_argument, NULL, 'V' },
 		{ "shlib-provides", required_argument, NULL, '0' },
 		{ "shlib-requires", required_argument, NULL, '1' },
+		{ "build-options", required_argument, NULL, '2' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
@@ -585,7 +587,7 @@ main(int argc, char **argv)
 	const char *conflicts, *deps, *homepage, *license, *maint, *bwith;
 	const char *provides, *pkgver, *replaces, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
-	const char *shlib_provides, *shlib_requires;
+	const char *buildopts, *shlib_provides, *shlib_requires;
 	const char *srcrevs = NULL;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
@@ -593,7 +595,7 @@ main(int argc, char **argv)
 	mode_t myumask;
 
 	arch = conflicts = deps = homepage = license = maint = NULL;
-	provides = pkgver = replaces = desc = ldesc = bwith = NULL;
+	provides = pkgver = replaces = desc = ldesc = bwith = buildopts = NULL;
 	config_files = mutable_files = shlib_provides = shlib_requires = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -664,6 +666,9 @@ main(int argc, char **argv)
 		case '1':
 			shlib_requires = optarg;
 			break;
+		case '2':
+			buildopts = optarg;
+			break;
 		case '?':
 		default:
 			usage();
@@ -729,6 +734,9 @@ main(int argc, char **argv)
 				"source-revisions", srcrevs);
 	if (preserve)
 		prop_dictionary_set_bool(pkg_propsd, "preserve", true);
+	if (buildopts)
+		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+				"build-options", buildopts);
 
 	/* Optional arrays */
 	process_array("run_depends", deps);
