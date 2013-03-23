@@ -1,4 +1,4 @@
-xbps-0.22 (???):
+xbps-0.22 (2013-03-23):
 
  * xbps-create(8): a new option --build-options has been added to add a string
    with the build options that were used in package. It's expected to be filled
