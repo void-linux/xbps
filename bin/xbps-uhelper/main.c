@@ -155,8 +155,8 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		dict = xbps_pkgdb_get_pkg(&xh, argv[1]);
-		if (dict == NULL)
+		if ((((dict = xbps_pkgdb_get_pkg(&xh, argv[1])) == NULL)) &&
+		    (((dict = xbps_pkgdb_get_virtualpkg(&xh, argv[1])) == NULL)))
 			exit(EXIT_FAILURE);
 
 		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
