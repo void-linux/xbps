@@ -88,11 +88,11 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		rv = xbps_file_hash_check(binfile, sha256);
 		if (rv != 0) {
 			free(binfile);
-			free(filen);
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL,
 			    rv, pkgver,
 			    "Failed to verify `%s' package integrity: %s",
 			    filen, strerror(rv));
+			free(filen);
 			break;
 		}
 		free(binfile);
