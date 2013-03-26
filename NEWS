@@ -1,5 +1,11 @@
 xbps-0.23 (???):
 
+ * libxbps: fix a use-after-free in state cb when a binpkg doesn't match its
+   hash with the hash stored in repo index.
+
+ * xbps-uhelper: the 'version' target now also matches virtual packages, which
+   is a requirement for xbps-src.
+
 xbps-0.22 (2013-03-23):
 
  * xbps-create(8): a new option --build-options has been added to add a string
