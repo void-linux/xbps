@@ -74,7 +74,7 @@ stat_eta(struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	elapsed = xfer->last.tv_sec - xfer->start.tv_sec;
 	received = xfpd->file_dloaded - xfpd->file_offset;
 	expected = xfpd->file_size - xfpd->file_dloaded;
-	eta = (long)(elapsed * (long)expected / (long)received);
+	eta = (long)((double)elapsed * expected / received);
 	if (eta > 3600)
 		snprintf(str, sizeof str, "%02ldh%02ldm",
 		    eta / 3600, (eta % 3600) / 60);
@@ -112,8 +112,7 @@ stat_bps(struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	if (compare_double(delta, 0.0001)) {
 		snprintf(str, sizeof str, "-- stalled --");
 	} else {
-		bps =
-		    ((double)(xfpd->file_dloaded - xfpd->file_offset) / delta);
+		bps = ((double)(xfpd->file_dloaded-xfpd->file_offset)/delta);
 		(void)xbps_humanize_number(size, (int64_t)bps);
 		snprintf(str, sizeof str, "%s/s", size);
 	}
