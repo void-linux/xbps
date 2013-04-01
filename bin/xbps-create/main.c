@@ -38,6 +38,7 @@
 #include <ftw.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <locale.h>
 
 #include <xbps_api.h>
 #include "queue.h"
@@ -678,6 +679,8 @@ main(int argc, char **argv)
 		usage();
 
 	destdir = argv[optind];
+
+	setlocale(LC_ALL, "");
 
 	if (pkgver == NULL)
 		die("pkgver not set!");

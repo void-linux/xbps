@@ -1,5 +1,8 @@
 xbps-0.23 (???):
 
+ * xbps-create(8): initialize setlocale so that utf8 files can be archived.
+   The locale must be utf8 capable for this to work. Fixes issue #5 from github.
+
  * libxbps: fix a use-after-free in state cb when a binpkg doesn't match its
    hash with the hash stored in repo index.
 
