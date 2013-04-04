@@ -64,8 +64,11 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	repodir = dirname(tmprepodir);
 
 	/* Internalize index or create it if doesn't exist */
-	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL)
+	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL) {
+		free(tmprepodir);
 		return -1;
+	}
+	free(tmprepodir);
 
 	if ((idx = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
 		if (errno != ENOENT) {
@@ -130,6 +133,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		curpkgd = prop_dictionary_get(idx, pkgname);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
+				free(tmpfilen);
 				free(pkgver);
 				free(pkgname);
 				return errno;
@@ -165,12 +169,14 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 * objects for the index.
 		 */
 		if ((sha256 = xbps_file_hash(argv[i])) == NULL) {
+			free(tmpfilen);
 			free(pkgver);
 			free(pkgname);
 			return errno;
 		}
 		if (!prop_dictionary_set_cstring(newpkgd, "filename-sha256",
 		    sha256)) {
+			free(tmpfilen);
 			free(pkgver);
 			free(pkgname);
 			return errno;
@@ -178,6 +184,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 
 		free(sha256);
 		if (stat(argv[i], &st) == -1) {
+			free(tmpfilen);
 			free(pkgver);
 			free(pkgname);
 			return errno;
@@ -185,6 +192,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 
 		if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
 		    (uint64_t)st.st_size)) {
+			free(tmpfilen);
 			free(pkgver);
 			free(pkgname);
 			return errno;
@@ -209,6 +217,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 * Add new pkg dictionary into the index.
 		 */
 		if (!prop_dictionary_set(idx, pkgname, newpkgd)) {
+			free(tmpfilen);
 			free(pkgname);
 			return EINVAL;
 		}
