@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2012 Juan Romero Pardines.
+ * Copyright (c) 2011-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,6 +63,7 @@ symlink_target(const char *pkgname, const char *path)
 	r = readlink(path, lnk, sb.st_size + 1);
 	if (r < 0 || r > sb.st_size) {
 		xbps_error_printf("%s: readlink failed for %s\n", pkgname, path);
+		free(lnk);
 		return NULL;
 	}
 	lnk[sb.st_size] = '\0';
@@ -110,6 +111,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 
 		lnk = symlink_target(pkgname, path);
 		if (lnk == NULL) {
+			free(tgt_path);
 			free(path);
 			continue;
 		}
