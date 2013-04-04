@@ -115,7 +115,7 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		while ((obj = prop_object_iterator_next(iter))) {
 			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-			if ((rv = access(path, R_OK)) == -1) {
+			if (access(path, R_OK) == -1) {
 				if (errno == ENOENT) {
 					xbps_error_printf(
 					    "%s: unexistent file %s\n",
