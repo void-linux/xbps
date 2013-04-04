@@ -129,7 +129,6 @@ pkgdep_release(struct pkgdep *pd)
 {
 	free(pd->name);
 	free(pd);
-	pd = NULL;
 }
 
 static struct pkgdep *
