@@ -143,7 +143,7 @@ xbps_callback_array_iter_reverse(struct xbps_handle *xhp,
 {
 	prop_object_t obj;
 	unsigned int cnt;
-	int rv;
+	int rv = 0;
 	bool loop_done = false;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
