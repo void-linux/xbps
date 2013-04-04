@@ -99,9 +99,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	 * Process all packages specified in argv.
 	 */
 	for (i = 0; i < argc; i++) {
-		if ((tmpfilen = strdup(argv[i])) == NULL)
-			return ENOMEM;
-
 		/*
 		 * Read metadata props plist dictionary from binary package.
 		 */
@@ -110,7 +107,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		if (newpkgd == NULL) {
 			fprintf(stderr, "failed to read %s metadata for `%s',"
 			    " skipping!\n", XBPS_PKGPROPS, argv[i]);
-			free(tmpfilen);
 			continue;
 		}
 		prop_dictionary_get_cstring_nocopy(newpkgd, "architecture",
@@ -133,7 +129,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		curpkgd = prop_dictionary_get(idx, pkgname);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
-				free(tmpfilen);
 				free(pkgver);
 				free(pkgname);
 				return errno;
@@ -150,7 +145,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 				    "(%s), already registered.\n",
 				    pkgver, arch);
 				prop_object_release(newpkgd);
-				free(tmpfilen);
 				free(pkgver);
 				free(pkgname);
 				continue;
@@ -169,14 +163,12 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 * objects for the index.
 		 */
 		if ((sha256 = xbps_file_hash(argv[i])) == NULL) {
-			free(tmpfilen);
 			free(pkgver);
 			free(pkgname);
 			return errno;
 		}
 		if (!prop_dictionary_set_cstring(newpkgd, "filename-sha256",
 		    sha256)) {
-			free(tmpfilen);
 			free(pkgver);
 			free(pkgname);
 			return errno;
@@ -184,7 +176,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 
 		free(sha256);
 		if (stat(argv[i], &st) == -1) {
-			free(tmpfilen);
 			free(pkgver);
 			free(pkgname);
 			return errno;
@@ -192,7 +183,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 
 		if (!prop_dictionary_set_uint64(newpkgd, "filename-size",
 		    (uint64_t)st.st_size)) {
-			free(tmpfilen);
 			free(pkgver);
 			free(pkgname);
 			return errno;
@@ -217,14 +207,12 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		 * Add new pkg dictionary into the index.
 		 */
 		if (!prop_dictionary_set(idx, pkgname, newpkgd)) {
-			free(tmpfilen);
 			free(pkgname);
 			return EINVAL;
 		}
 
 		flush = true;
 		printf("index: added `%s' (%s).\n", pkgver, arch);
-		free(tmpfilen);
 		/*
 		 * Add new pkg dictionary into the index-files.
 		 */
