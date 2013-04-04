@@ -313,7 +313,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 		prop_array_add(unsorted, obj);
 		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	}
-	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
+	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
 	/*
 	 * If target pkg is required by any installed pkg, the client must be aware
 	 * of this to take appropiate action.
