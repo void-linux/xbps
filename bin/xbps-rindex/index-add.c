@@ -50,13 +50,13 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	struct stat st;
 	const char *oldpkgver, *arch, *oldarch;
 	char *pkgver, *pkgname, *sha256, *repodir, *buf;
-	char *tmpfilen, *tmprepodir, *plist, *plistf;
+	char *tmprepodir, *plist, *plistf;
 	size_t x;
 	int i, ret = 0;
 	bool files_flush = false, found = false, flush = false;
 
 	idx = idxfiles = newpkgd = newpkgfilesd = curpkgd = NULL;
-	tmpfilen = tmprepodir = plist = plistf = NULL;
+	tmprepodir = plist = plistf = NULL;
 
 	if ((tmprepodir = strdup(argv[0])) == NULL)
 		return ENOMEM;
