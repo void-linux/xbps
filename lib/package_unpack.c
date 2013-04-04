@@ -258,6 +258,11 @@ unpack_archive(struct xbps_handle *xhp,
 				    XBPS_STATE_UNPACK_FAIL, ENODEV, pkgver,
 				    "%s: [unpack] invalid binary package `%s'.",
 				    pkgver, fname);
+				if (instbuf != NULL)
+					free(instbuf);
+				if (rembuf != NULL)
+					free(rembuf);
+
 				rv = ENODEV;
 				goto out;
 			}
