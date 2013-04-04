@@ -595,7 +595,7 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 
 	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
-	xbps_set_cb_state(xhp, XBPS_STATE_UNPACK, 0, pkgver, NULL, NULL);
+	xbps_set_cb_state(xhp, XBPS_STATE_UNPACK, 0, pkgver, NULL);
 
 	bpkg = xbps_repository_pkg_path(xhp, pkg_repod);
 	if (bpkg == NULL) {
