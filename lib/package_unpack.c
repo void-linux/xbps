@@ -191,7 +191,6 @@ unpack_archive(struct xbps_handle *xhp,
 			if (archive_read_data(ar, instbuf, entry_size) !=
 			    entry_size) {
 				rv = EINVAL;
-				free(instbuf);
 				goto out;
 			}
 
@@ -204,7 +203,6 @@ unpack_archive(struct xbps_handle *xhp,
 				    "%s: [unpack] INSTALL script failed "
 				    "to execute pre ACTION: %s",
 				    pkgver, strerror(rv));
-				free(instbuf);
 				goto out;
 			}
 			continue;
@@ -217,7 +215,6 @@ unpack_archive(struct xbps_handle *xhp,
 			if (archive_read_data(ar, rembuf, entry_size) !=
 			    entry_size) {
 				rv = EINVAL;
-				free(rembuf);
 				goto out;
 			}
 			continue;
@@ -258,11 +255,6 @@ unpack_archive(struct xbps_handle *xhp,
 				    XBPS_STATE_UNPACK_FAIL, ENODEV, pkgver,
 				    "%s: [unpack] invalid binary package `%s'.",
 				    pkgver, fname);
-				if (instbuf != NULL)
-					free(instbuf);
-				if (rembuf != NULL)
-					free(rembuf);
-
 				rv = ENODEV;
 				goto out;
 			}
@@ -539,14 +531,12 @@ out1:
 		assert(data);
 		prop_dictionary_set(pkg_metad, "install-script", data);
 		prop_object_release(data);
-		free(instbuf);
 	}
 	if (rembuf != NULL) {
 		data = prop_data_create_data(rembuf, rembufsiz);
 		assert(data);
 		prop_dictionary_set(pkg_metad, "remove-script", data);
 		prop_object_release(data);
-		free(rembuf);
 	}
 	/* Remove unneeded objs from transaction */
 	prop_dictionary_remove(pkg_metad, "remove-and-update");
@@ -586,6 +576,10 @@ out:
 		prop_object_release(propsd);
 	if (pkgname != NULL)
 		free(pkgname);
+	if (instbuf != NULL)
+		free(instbuf);
+	if (rembuf != NULL)
+		free(rembuf);
 
 	return rv;
 }
