@@ -305,7 +305,6 @@ xbps_end(struct xbps_handle *xhp)
 	free(xhp->native_arch);
 
 	xhp->initialized = false;
-	xhp = NULL;
 }
 
 static void
