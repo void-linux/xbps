@@ -1,5 +1,9 @@
 xbps-0.23 (???):
 
+ * Fixed a bug in the transaction dictionary that reported wrong sizes
+   in total-removed-size and total-installed-size objects or even empty values
+   in some cases.
+
  * xbps-create(8): initialize setlocale so that utf8 files can be archived.
    The locale must be utf8 capable for this to work. Fixes issue #5 from github.
 
