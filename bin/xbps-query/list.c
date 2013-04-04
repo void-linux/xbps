@@ -66,7 +66,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 
 	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
-	if (!pkgver && !short_desc)
+	if (!pkgver || !short_desc)
 		return EINVAL;
 
 	xbps_pkg_state_dictionary(obj, &state);
