@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2012 Juan Romero Pardines.
+ * Copyright (c) 2011-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,8 +54,8 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	prop_dictionary_t pkg_filesd = arg;
 	const char *file, *sha256;
 	char *path;
-	int rv = 0;
 	bool mutable, broken = false, test_broken = false;
+	int rv;
 
 	array = prop_dictionary_get(pkg_filesd, "files");
 	if (array != NULL && prop_array_count(array) > 0) {
