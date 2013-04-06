@@ -1,5 +1,8 @@
 xbps-0.23 (???):
 
+ * xbps-rindex(8): in clean mode (-c) also remove obsolete entries from index-files,
+   which were not matched due to different tests.
+
  * Fixed a bug in the transaction dictionary that reported wrong sizes
    in total-removed-size and total-installed-size objects or even empty values
    in some cases.

@@ -40,7 +40,9 @@
 struct thread_data {
 	pthread_t thread;
 	prop_dictionary_t idx;
+	prop_dictionary_t idxfiles;
 	prop_array_t result;
+	prop_array_t result_files;
 	struct xbps_handle *xhp;
 	unsigned int start;
 	unsigned int end;
@@ -86,6 +88,30 @@ cleaner_thread(void *arg)
 		if (xbps_file_hash_check(filen, sha256) != 0)
 			prop_array_add_cstring_nocopy(thd->result, pkgver);
 		free(filen);
+	}
+	prop_object_release(array);
+
+	return NULL;
+}
+
+static void *
+cleaner_files_thread(void *arg)
+{
+	prop_object_t obj;
+	prop_array_t array;
+	struct thread_data *thd = arg;
+	const char *pkgname;
+	unsigned int i;
+
+	/* process pkgs from start until end */
+	array = prop_dictionary_all_keys(thd->idxfiles);
+
+	for (i = thd->start; i < thd->end; i++) {
+		obj = prop_array_get(array, i);
+		pkgname = prop_dictionary_keysym_cstring_nocopy(obj);
+		/* If pkg is not registered in index, remove it */
+		if (!prop_dictionary_get(thd->idx, pkgname))
+			prop_array_add_cstring_nocopy(thd->result_files, pkgname);
 	}
 	prop_object_release(array);
 
@@ -143,6 +169,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	slicecount = prop_dictionary_count(idx) / maxthreads;
 	pkgcount = 0;
 
+	/* Setup threads to cleanup index and index-files */
 	for (i = 0; i < maxthreads; i++) {
 		thd[i].thread_num = i;
 		thd[i].idx = idx;
@@ -160,9 +187,29 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	for (i = 0; i < maxthreads; i++)
 		pthread_join(thd[i].thread, NULL);
 
+	/* Setup threads to cleanup index-files */
+	slicecount = prop_dictionary_count(idxfiles) / maxthreads;
+	pkgcount = 0;
+
 	for (i = 0; i < maxthreads; i++) {
-		if (!prop_array_count(thd[i].result))
-			continue;
+		thd[i].thread_num = i;
+		thd[i].idx = idx;
+		thd[i].idxfiles = idxfiles;
+		thd[i].result_files = prop_array_create();
+		thd[i].xhp = xhp;
+		thd[i].start = pkgcount;
+		if (i + 1 >= maxthreads)
+			thd[i].end = prop_dictionary_count(idxfiles);
+		else
+			thd[i].end = pkgcount + slicecount;
+		pthread_create(&thd[i].thread, NULL, cleaner_files_thread, &thd[i]);
+		pkgcount += slicecount;
+	}
+	/* wait for all threads */
+	for (i = 0; i < maxthreads; i++)
+		pthread_join(thd[i].thread, NULL);
+
+	for (i = 0; i < maxthreads; i++) {
 		for (x = 0; x < prop_array_count(thd[i].result); x++) {
 			prop_array_get_cstring_nocopy(thd[i].result,
 			    x, &keyname);
@@ -173,15 +220,25 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			free(pkgname);
 			flush = true;
 		}
-		prop_object_release(thd[i].result);
+		for (x = 0; x < prop_array_count(thd[i].result_files); x++) {
+			prop_array_get_cstring_nocopy(thd[i].result_files,
+			    x, &keyname);
+			printf("index-files: removed entry %s\n", keyname);
+			prop_dictionary_remove(idxfiles, keyname);
+			flush = true;
+		}
 	}
+
 	if (!flush)
 		goto out;
 
-	if (!prop_dictionary_externalize_to_zfile(idx, plist) &&
-	    !prop_dictionary_externalize_to_zfile(idxfiles, plistf))
+	if (!prop_dictionary_externalize_to_zfile(idx, plist))
 		fprintf(stderr, "index: failed to externalize %s: %s\n",
 		    plist, strerror(errno));
+
+	if (!prop_dictionary_externalize_to_zfile(idxfiles, plistf))
+		fprintf(stderr, "index-files: failed to externalize %s: %s\n",
+		    plistf, strerror(errno));
 
 out:
 	printf("index: %u packages registered.\n",
