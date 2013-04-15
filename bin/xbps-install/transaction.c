@@ -218,7 +218,6 @@ install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 	if ((rv = xbps_transaction_install_pkg(xhp, pkg, reinstall)) != 0) {
 		if (rv == EEXIST) {
 			printf("Package `%s' already installed.\n", pkg);
-			rv = 0;
 		} else if (rv == ENOENT) {
 			fprintf(stderr, "Unable to locate '%s' in "
 			    "repository pool.\n", pkg);
