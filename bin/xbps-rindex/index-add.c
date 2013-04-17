@@ -68,7 +68,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 		free(tmprepodir);
 		return -1;
 	}
-	free(tmprepodir);
 
 	if ((idx = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
 		if (errno != ENOENT) {
@@ -83,6 +82,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 	/* Internalize index-files or create it if doesn't exist */
 	if ((plistf = xbps_pkg_index_files_plist(xhp, repodir)) == NULL)
 		return -1;
+
+	free(tmprepodir);
 
 	if ((idxfiles = prop_dictionary_internalize_from_zfile(plistf)) == NULL) {
 		if (errno != ENOENT) {
