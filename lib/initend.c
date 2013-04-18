@@ -75,6 +75,22 @@ set_metadir(struct xbps_handle *xh)
 	}
 }
 
+static int
+config_inject_repos(struct xbps_handle *xh)
+{
+	char *buf;
+
+	if (xh->repository) {
+		int rv;
+
+		buf = xbps_xasprintf("repositories = { %s }", xh->repository);
+		if ((rv = cfg_parse_buf(xh->cfg, buf)) != 0)
+			return rv;
+		free(buf);
+	}
+	return 0;
+}
+
 static void
 config_inject_vpkgs(struct xbps_handle *xh)
 {
@@ -189,16 +205,6 @@ xbps_init(struct xbps_handle *xhp)
 			if (errno != ENOENT)
 				return rv;
 
-			xhp->conffile = NULL;
-			if (xhp->repository) {
-				char *buf;
-
-				buf = xbps_xasprintf("repositories = { %s }",
-				    xhp->repository);
-				if ((rv = cfg_parse_buf(xhp->cfg, buf)) != 0)
-					return rv;
-				free(buf);
-			}
 		} else if (rv == CFG_PARSE_ERROR) {
 			/*
 			 * Parser error from configuration file.
@@ -206,6 +212,9 @@ xbps_init(struct xbps_handle *xhp)
 			return ENOTSUP;
 		}
 	}
+	/* Inject custom repo overriding the ones from configuration file */
+	if ((rv = config_inject_repos(xhp)) != 0)
+		return rv;
 
 	xbps_dbg_printf(xhp, "Configuration file: %s\n",
 	    xhp->conffile ? xhp->conffile : "not found");

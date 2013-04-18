@@ -1,5 +1,8 @@
 xbps-0.23 (???):
 
+ * xbps-install(8): the default repository (-R) now overrides any repository
+   set in a configuration file.
+
  * xbps-rindex(8): in clean mode (-c) also remove obsolete entries from index-files,
    which were not matched due to different tests.
 
