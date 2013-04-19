@@ -146,7 +146,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		}
 
 		if (rv) {
-			xbps_error_printf("%s: modified symlink %s "
+			xbps_warn_printf("%s: modified symlink %s "
 			    "points to %s (shall be %s)\n",
 			    pkgname, file, lnk, tgt);
 			broken = true;
