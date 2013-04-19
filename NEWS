@@ -1,4 +1,4 @@
-xbps-0.23 (???):
+xbps-0.23 (2013-04-19):
 
  * xbps-install(8): the default repository (-R) now overrides any repository
    set in a configuration file.
