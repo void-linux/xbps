@@ -41,7 +41,7 @@
  * and entry when it's necessary.
  */
 int
-index_add(struct xbps_handle *xhp, int argc, char **argv)
+index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 {
 	prop_array_t filespkgar, pkg_files, pkg_links, pkg_cffiles;
 	prop_dictionary_t idx, idxfiles, newpkgd, newpkgfilesd, curpkgd;
@@ -134,7 +134,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv)
 				free(pkgname);
 				return errno;
 			}
-		} else {
+		} else if (!force) {
+			/* Only check version if !force */
 			prop_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &oldpkgver);
 			prop_dictionary_get_cstring_nocopy(curpkgd,

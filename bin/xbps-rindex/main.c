@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,6 +37,7 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-rindex [OPTIONS] MODE ARGUMENTS\n\n"
 	    "OPTIONS\n"
+	    " -f --force                        Force mode to overwrite entry in add mode\n"
 	    " -h --help                         Show help usage\n"
 	    " -V --version                      Show XBPS version\n\n"
 	    "MODE\n"
@@ -49,10 +50,11 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "achrV";
+	const char *shortopts = "acfhrV";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
+		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
 		{ "version", no_argument, NULL, 'V' },
@@ -60,7 +62,7 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	int rv, c;
-	bool clean_mode = false, add_mode = false, rm_mode = false;
+	bool clean_mode = false, add_mode = false, rm_mode = false, force = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -69,6 +71,9 @@ main(int argc, char **argv)
 			break;
 		case 'c':
 			clean_mode = true;
+			break;
+		case 'f':
+			force = true;
 			break;
 		case 'h':
 			usage(false);
@@ -100,7 +105,7 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, argc - optind, argv + optind);
+		rv = index_add(&xh, argc - optind, argv + optind, force);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind]);
 	else if (rm_mode)

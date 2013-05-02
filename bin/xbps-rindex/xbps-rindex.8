@@ -1,4 +1,4 @@
-.Dd February 20, 2013
+.Dd May 2, 2013
 .Os Void Linux
 .Dt xbps-rindex 8
 .Sh NAME
@@ -16,6 +16,11 @@ utility creates, updates and removes obsolete binary packages stored
 in local repositories.
 .Sh OPTIONS
 .Bl -tag -width -x
+.It Fl f -force
+Forcefully register binary package into the local repository, overwriting existing entry.
+This flag is only useful with the
+.Em add
+mode.
 .It Fl h -help
 Show the help usage.
 .It Fl V -version

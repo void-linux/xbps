@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 #include <xbps_api.h>
 
 /* From index-add.c */
-int	index_add(struct xbps_handle *, int, char **);
+int	index_add(struct xbps_handle *, int, char **, bool);
 
 /* From index-clean.c */
 int	index_clean(struct xbps_handle *, const char *);
