@@ -1,4 +1,4 @@
-xbps-0.24 (???):
+xbps-0.24 (2013-05-02):
 
  * xbps-rindex(8): added -f, --force flag to forcefully register a package even
    if an entry of the same package already exists on the index.
