@@ -73,8 +73,7 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 		if (filestr == NULL)
 			continue;
 		for (x = 0; x < ffd->npatterns; x++) {
-			if ((strcmp(filestr, ffd->patterns[x]) == 0) ||
-			    (fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
+			if ((fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
 				printf("%s: %s (%s)\n", pkgver,
 				    filestr, typestr);
 			}
@@ -136,8 +135,7 @@ repo_match_files_by_pattern(prop_dictionary_t pkgd,
 	for (i = 0; i < prop_array_count(array); i++) {
 		prop_array_get_cstring_nocopy(array, i, &filestr);
 		for (x = 0; x < ffd->npatterns; x++) {
-			if ((strcmp(filestr, ffd->patterns[x]) == 0) ||
-			    (fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
+			if ((fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
 				prop_dictionary_get_cstring_nocopy(pkgd,
 				    "pkgver", &pkgver);
 				printf("%s: %s (%s)\n",
