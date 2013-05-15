@@ -452,7 +452,7 @@ unpack_archive(struct xbps_handle *xhp,
 		if (archive_read_extract(ar, entry, flags) != 0) {
 			rv = archive_errno(ar);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-			    rv, pkgver, NULL,
+			    rv, pkgver,
 			    "%s: [unpack] failed to extract file `%s': %s",
 			    pkgver, entry_pname, strerror(rv));
 		} else {
