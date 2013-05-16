@@ -127,7 +127,6 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    prop_dictionary_t pkgd,
 		    const char *pkgname)
 {
-	prop_array_t rundeps;
 	prop_dictionary_t opkgd, propsd;
 	const char *sha256;
 	char *buf;
@@ -158,21 +157,6 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		prop_object_release(propsd);
 		return 1;
 	}
-	/*
-	 * Check if pkgdb pkg has been converted to 0.19 format,
-	 * which adds "run_depends" array object.
-	 */
-	rundeps = prop_dictionary_get(opkgd, "run_depends");
-	if (rundeps == NULL) {
-		rundeps = prop_dictionary_get(propsd, "run_depends");
-		if (rundeps == NULL)
-			rundeps = prop_array_create();
-
-		prop_dictionary_set(opkgd, "run_depends", rundeps);
-		/* remove requiredby object, unneeded since 0.19 */
-		prop_dictionary_remove(opkgd, "requiredby");
-	}
-
 	/*
 	 * Check pkg metadata signature.
 	 */
