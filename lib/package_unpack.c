@@ -171,7 +171,7 @@ unpack_archive(struct xbps_handle *xhp,
 	char *pkgname, *dname, *buf, *buf2, *p, *p2;
 	int ar_rv, rv, entry_type, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
-	bool softreplace, skip_extract, force;
+	bool softreplace, skip_extract, force, metafile;
 	uid_t euid;
 
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
@@ -179,7 +179,7 @@ unpack_archive(struct xbps_handle *xhp,
 
 	propsd = filesd = old_filesd = NULL;
 	force = preserve = update = conf_file = file_exists = false;
-	skip_obsoletes = softreplace = false;
+	skip_obsoletes = softreplace = metafile = false;
 
 	prop_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	prop_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
@@ -293,9 +293,13 @@ unpack_archive(struct xbps_handle *xhp,
 				rv = errno;
 				goto out;
 			}
-			/*
-			 * Create the metaplist file before unpacking any real file.
-			 */
+			continue;
+		}
+		/*
+		 * XXX: duplicate code.
+		 * Create the metaplist file before unpacking any real file.
+		 */
+		if (propsd && filesd && !metafile) {
 			rv = create_pkg_metaplist(xhp, pkgname, pkgver,
 			    propsd, filesd, instbuf, instbufsiz,
 			    rembuf, rembufsiz);
@@ -306,7 +310,7 @@ unpack_archive(struct xbps_handle *xhp,
 				    pkgver, strerror(rv));
 				goto out;
 			}
-			continue;
+			metafile = true;
 		}
 		/*
 		 * If XBPS_PKGFILES or XBPS_PKGPROPS weren't found
@@ -540,6 +544,23 @@ unpack_archive(struct xbps_handle *xhp,
 				(*xhp->unpack_cb)(&xucd, xhp->unpack_cb_data);
 			}
 		}
+	}
+	/*
+	 * XXX: duplicate code.
+	 * Create the metaplist file if it wasn't created before.
+	 */
+	if (propsd && filesd && !metafile) {
+		rv = create_pkg_metaplist(xhp, pkgname, pkgver,
+		    propsd, filesd, instbuf, instbufsiz,
+		    rembuf, rembufsiz);
+		if (rv != 0) {
+			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+			    rv, pkgver,
+			    "%s: [unpack] failed to create metaplist file: %s",
+			    pkgver, strerror(rv));
+			goto out;
+		}
+		metafile = true;
 	}
 	/*
 	 * If there was any error extracting files from archive, error out.
