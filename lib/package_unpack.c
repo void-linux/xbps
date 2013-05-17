@@ -80,21 +80,92 @@ find_pkg_symlink_target(prop_dictionary_t d, const char *file)
 }
 
 static int
+create_pkg_metaplist(struct xbps_handle *xhp, const char *pkgname, const char *pkgver,
+		     prop_dictionary_t propsd, prop_dictionary_t filesd,
+		     const void *instbuf, const size_t instbufsiz,
+		     const void *rembuf, const size_t rembufsiz)
+{
+	prop_array_t array;
+	prop_dictionary_t pkg_metad;
+	prop_data_t data;
+	char *buf;
+	int rv = 0;
+
+	prop_dictionary_make_immutable(propsd);
+	pkg_metad = prop_dictionary_copy_mutable(propsd);
+
+	/* Add objects from XBPS_PKGFILES */
+	array = prop_dictionary_get(filesd, "files");
+	if (array && prop_array_count(array))
+		prop_dictionary_set(pkg_metad, "files", array);
+	array = prop_dictionary_get(filesd, "conf_files");
+	if (array && prop_array_count(array))
+		prop_dictionary_set(pkg_metad, "conf_files", array);
+	array = prop_dictionary_get(filesd, "links");
+	if (array && prop_array_count(array))
+		prop_dictionary_set(pkg_metad, "links", array);
+	array = prop_dictionary_get(filesd, "dirs");
+	if (array && prop_array_count(array))
+		prop_dictionary_set(pkg_metad, "dirs", array);
+
+	/* Add install/remove scripts data objects */
+	if (instbuf != NULL) {
+		data = prop_data_create_data(instbuf, instbufsiz);
+		assert(data);
+		prop_dictionary_set(pkg_metad, "install-script", data);
+		prop_object_release(data);
+	}
+	if (rembuf != NULL) {
+		data = prop_data_create_data(rembuf, rembufsiz);
+		assert(data);
+		prop_dictionary_set(pkg_metad, "remove-script", data);
+		prop_object_release(data);
+	}
+	/* Remove unneeded objs from transaction */
+	prop_dictionary_remove(pkg_metad, "remove-and-update");
+	prop_dictionary_remove(pkg_metad, "transaction");
+	prop_dictionary_remove(pkg_metad, "state");
+	prop_dictionary_remove(pkg_metad, "pkgname");
+	prop_dictionary_remove(pkg_metad, "version");
+
+	/*
+	 * Externalize pkg dictionary to metadir.
+	 */
+	if (access(xhp->metadir, R_OK|X_OK) == -1) {
+		if (errno == ENOENT) {
+			xbps_mkpath(xhp->metadir, 0755);
+		} else {
+			return errno;
+		}
+	}
+	buf = xbps_xasprintf("%s/.%s.plist", XBPS_META_PATH, pkgname);
+	if (!prop_dictionary_externalize_to_file(pkg_metad, buf)) {
+		rv = errno;
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+		    errno, pkgver,
+		    "%s: [unpack] failed to write metadata file `%s': %s",
+		    pkgver, buf, strerror(errno));
+	}
+	free(buf);
+
+	return rv;
+}
+
+static int
 unpack_archive(struct xbps_handle *xhp,
 	       prop_dictionary_t pkg_repod,
 	       const char *pkgver,
 	       const char *fname,
 	       struct archive *ar)
 {
-	prop_dictionary_t pkg_metad, propsd, filesd, old_filesd;
+	prop_dictionary_t propsd, filesd, old_filesd;
 	prop_array_t array, obsoletes;
 	prop_object_t obj;
-	prop_data_t data;
 	void *instbuf = NULL, *rembuf = NULL;
 	struct stat st;
 	struct xbps_unpack_cb_data xucd;
 	struct archive_entry *entry;
-	size_t i, entry_idx = 0, instbufsiz, rembufsiz;
+	size_t i, entry_idx = 0, instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
 	const char *file, *entry_pname, *transact,  *tgtlnk;
 	char *pkgname, *dname, *buf, *buf2, *p, *p2;
@@ -106,7 +177,7 @@ unpack_archive(struct xbps_handle *xhp,
 	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
 	assert(ar != NULL);
 
-	pkg_metad = propsd = filesd = old_filesd = NULL;
+	propsd = filesd = old_filesd = NULL;
 	force = preserve = update = conf_file = file_exists = false;
 	skip_obsoletes = softreplace = false;
 
@@ -169,16 +240,6 @@ unpack_archive(struct xbps_handle *xhp,
 			archive_read_data_skip(ar);
 			continue;
 		}
-		/*
-		 * Prepare unpack callback ops.
-		 */
-		if (xhp->unpack_cb != NULL) {
-			xucd.xhp = xhp;
-			xucd.pkgver = pkgver;
-			xucd.entry = entry_pname;
-			xucd.entry_size = entry_size;
-			xucd.entry_is_conf = false;
-		}
 		if (strcmp("./INSTALL", entry_pname) == 0) {
 			/*
 			 * Store file in a buffer and execute
@@ -220,11 +281,6 @@ unpack_archive(struct xbps_handle *xhp,
 			continue;
 
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
-			/*
-			 * Internalize this entry into a prop_dictionary
-			 * to check for obsolete files if updating a package.
-			 * It will be extracted to disk at the end.
-			 */
 			filesd = xbps_dictionary_from_archive_entry(ar, entry);
 			if (filesd == NULL) {
 				rv = errno;
@@ -235,6 +291,19 @@ unpack_archive(struct xbps_handle *xhp,
 			propsd = xbps_dictionary_from_archive_entry(ar, entry);
 			if (propsd == NULL) {
 				rv = errno;
+				goto out;
+			}
+			/*
+			 * Create the metaplist file before unpacking any real file.
+			 */
+			rv = create_pkg_metaplist(xhp, pkgname, pkgver,
+			    propsd, filesd, instbuf, instbufsiz,
+			    rembuf, rembufsiz);
+			if (rv != 0) {
+				xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+				    rv, pkgver,
+				    "%s: [unpack] failed to create metaplist file: %s",
+				    pkgver, strerror(rv));
 				goto out;
 			}
 			continue;
@@ -261,6 +330,16 @@ unpack_archive(struct xbps_handle *xhp,
 
 			entry_idx++;
 			continue;
+		}
+		/*
+		 * Prepare unpack callback ops.
+		 */
+		if (xhp->unpack_cb != NULL) {
+			xucd.xhp = xhp;
+			xucd.pkgver = pkgver;
+			xucd.entry = entry_pname;
+			xucd.entry_size = entry_size;
+			xucd.entry_is_conf = false;
 		}
 		/*
 		 * Compute total entries in progress data, if set.
@@ -479,7 +558,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 * 	- Package with "skip-obsoletes" keyword.
 	 */
 	if (skip_obsoletes || preserve || (!softreplace && !update))
-		goto out1;
+		goto out;
 	/*
 	 * Check and remove obsolete files on:
 	 * 	- Package upgrade.
@@ -487,7 +566,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 */
 	old_filesd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 	if (old_filesd == NULL)
-		goto out1;
+		goto out;
 
 	obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
 	for (i = 0; i < prop_array_count(obsoletes); i++) {
@@ -507,69 +586,7 @@ unpack_archive(struct xbps_handle *xhp,
 		prop_object_release(obj);
 	}
 
-out1:
-	prop_dictionary_make_immutable(propsd);
-	pkg_metad = prop_dictionary_copy_mutable(propsd);
-
-	/* Add objects from XBPS_PKGFILES */
-	array = prop_dictionary_get(filesd, "files");
-	if (array && prop_array_count(array))
-		prop_dictionary_set(pkg_metad, "files", array);
-	array = prop_dictionary_get(filesd, "conf_files");
-	if (array && prop_array_count(array))
-		prop_dictionary_set(pkg_metad, "conf_files", array);
-	array = prop_dictionary_get(filesd, "links");
-	if (array && prop_array_count(array))
-		prop_dictionary_set(pkg_metad, "links", array);
-	array = prop_dictionary_get(filesd, "dirs");
-	if (array && prop_array_count(array))
-		prop_dictionary_set(pkg_metad, "dirs", array);
-
-	/* Add install/remove scripts data objects */
-	if (instbuf != NULL) {
-		data = prop_data_create_data(instbuf, instbufsiz);
-		assert(data);
-		prop_dictionary_set(pkg_metad, "install-script", data);
-		prop_object_release(data);
-	}
-	if (rembuf != NULL) {
-		data = prop_data_create_data(rembuf, rembufsiz);
-		assert(data);
-		prop_dictionary_set(pkg_metad, "remove-script", data);
-		prop_object_release(data);
-	}
-	/* Remove unneeded objs from transaction */
-	prop_dictionary_remove(pkg_metad, "remove-and-update");
-	prop_dictionary_remove(pkg_metad, "transaction");
-	prop_dictionary_remove(pkg_metad, "state");
-	prop_dictionary_remove(pkg_metad, "pkgname");
-	prop_dictionary_remove(pkg_metad, "version");
-
-	/*
-	 * Externalize pkg dictionary to metadir.
-	 */
-	if (access(xhp->metadir, R_OK|X_OK) == -1) {
-		if (errno == ENOENT) {
-			xbps_mkpath(xhp->metadir, 0755);
-		} else {
-			rv = errno;
-			goto out;
-		}
-	}
-	buf = xbps_xasprintf("%s/.%s.plist", XBPS_META_PATH, pkgname);
-	if (!prop_dictionary_externalize_to_file(pkg_metad, buf)) {
-		rv = errno;
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-		    errno, pkgver,
-		    "%s: [unpack] failed to extract metadata file `%s': %s",
-		    pkgver, buf, strerror(errno));
-		free(buf);
-		goto out;
-	}
-	free(buf);
 out:
-	if (prop_object_type(pkg_metad) == PROP_TYPE_DICTIONARY)
-		prop_object_release(pkg_metad);
 	if (prop_object_type(filesd) == PROP_TYPE_DICTIONARY)
 		prop_object_release(filesd);
 	if (prop_object_type(propsd) == PROP_TYPE_DICTIONARY)
