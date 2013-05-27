@@ -178,7 +178,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 {
 	struct xentry *xe = NULL;
 	const char *filep = NULL;
-	char *buf, *p, *dname;
+	char *buf, *p, *p2, *dname;
 	ssize_t r;
 
 	(void)ftwbuf;
@@ -237,7 +237,14 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 				 */
 				xe->target = strdup(buf);
 			} else {
-				xe->target = strdup(p + strlen(destdir) - 1);
+				/*
+				 * Sanitize destdir just in case.
+				 */
+				if ((p2 = realpath(destdir, NULL)) == NULL)
+					die("failed to sanitize destdir %s: %s", destdir, strerror(errno));
+
+				xe->target = strdup(p+strlen(p2));
+				free(p2);
 				free(p);
 			}
 		} else if (strchr(buf, '/') == NULL) {
