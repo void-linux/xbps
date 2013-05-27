@@ -1,5 +1,7 @@
 xbps-0.25 (???):
 
+ * xbps-create(8): correctly calculate target file for relative symlinks.
+
  * xbps-pkgdb(8): removed old code that isn't needed anymore in the 'check' mode.
    This fixes issue #9 (https://github.com/xtraeme/xbps/issues/9).
 

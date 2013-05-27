@@ -237,7 +237,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf)
 				 */
 				xe->target = strdup(buf);
 			} else {
-				xe->target = strdup(p + strlen(destdir));
+				xe->target = strdup(p + strlen(destdir) - 1);
 				free(p);
 			}
 		} else if (strchr(buf, '/') == NULL) {
