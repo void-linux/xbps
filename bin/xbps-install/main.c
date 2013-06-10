@@ -201,13 +201,9 @@ main(int argc, char **argv)
 		}
 	}
 
-	/* Sync remote repository index files by default */
+	/* Sync remote repository data by default */
 	if (sync && !drun) {
-		rv = xbps_rpool_sync(&xh, XBPS_PKGINDEX, NULL);
-		if (rv != 0)
-			exit(rv);
-		rv = xbps_rpool_sync(&xh, XBPS_PKGINDEX_FILES, NULL);
-		if (rv != 0)
+		if ((rv = xbps_rpool_sync(&xh, NULL)) != 0)
 			exit(rv);
 	}
 

@@ -96,7 +96,7 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 }
 
 static int
-search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
+search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
 	prop_array_t allkeys;
 	prop_dictionary_t pkgd;
@@ -108,12 +108,12 @@ search_pkgs_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 
 	(void)done;
 
-	allkeys = prop_dictionary_all_keys(rpi->repod);
+	allkeys = prop_dictionary_all_keys(repo->idx);
 	for (i = 0; i < prop_array_count(allkeys); i++) {
 		prop_array_t provides = NULL;
 
 		ksym = prop_array_get(allkeys, i);
-		pkgd = prop_dictionary_get_keysym(rpi->repod, ksym);
+		pkgd = prop_dictionary_get_keysym(repo->idx, ksym);
 
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc);

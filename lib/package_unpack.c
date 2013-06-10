@@ -281,14 +281,14 @@ unpack_archive(struct xbps_handle *xhp,
 			continue;
 
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
-			filesd = xbps_dictionary_from_archive_entry(ar, entry);
+			filesd = xbps_archive_get_dictionary(ar, entry);
 			if (filesd == NULL) {
 				rv = errno;
 				goto out;
 			}
 			continue;
 		} else if (strcmp("./props.plist", entry_pname) == 0) {
-			propsd = xbps_dictionary_from_archive_entry(ar, entry);
+			propsd = xbps_archive_get_dictionary(ar, entry);
 			if (propsd == NULL) {
 				rv = errno;
 				goto out;

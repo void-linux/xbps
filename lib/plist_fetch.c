@@ -180,7 +180,7 @@ xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
 			i++;
 			continue;
 		}
-		plistd = xbps_dictionary_from_archive_entry(a, entry);
+		plistd = xbps_archive_get_dictionary(a, entry);
 		if (plistd == NULL) {
 			errno = EINVAL;
 			break;

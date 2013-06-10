@@ -27,6 +27,10 @@
 #ifndef _XBPS_API_IMPL_H_
 #define _XBPS_API_IMPL_H_
 
+#ifndef DEBUG
+#define NDEBUG
+#endif
+
 #include <assert.h>
 #include <xbps_api.h>
 /*
@@ -151,15 +155,7 @@ int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
 					const char *);
 /**
  * @private
- * From lib/plist_archive_entry.c
- */
-prop_dictionary_t HIDDEN
-	xbps_dictionary_from_archive_entry(struct archive *,
-					   struct archive_entry *);
-
-/**
- * @private
- * From lib/rindex_pkgdeps.c
+ * From lib/repo_pkgdeps.c
  */
 int HIDDEN xbps_repository_find_deps(struct xbps_handle *,
 				     prop_array_t,
@@ -191,10 +187,10 @@ int HIDDEN xbps_transaction_init(struct xbps_handle *);
 
 /**
  * @private
- * From lib/rindex_sync.c
+ * From lib/repo_sync.c
  */
 char HIDDEN *xbps_get_remote_repo_string(const char *);
-int HIDDEN xbps_rindex_sync(struct xbps_handle *, const char *, const char *);
+int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
 
 /**
  * @private

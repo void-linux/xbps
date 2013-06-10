@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 #define _READ_CHUNK	8192
 
 static char *
-_xbps_uncompress_plist_data(char *xml, size_t len)
+uncompress_plist_data(char *xml, size_t len)
 {
 	z_stream strm;
 	unsigned char *out;
@@ -83,16 +83,16 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 		strm.next_out = out;
 		rv = inflate(&strm, Z_NO_FLUSH);
 		switch (rv) {
-		case Z_DATA_ERROR:
-		case Z_STREAM_ERROR:
-		case Z_NEED_DICT:
-		case Z_MEM_ERROR:
-		case Z_BUF_ERROR:
-		case Z_VERSION_ERROR:
-			(void)inflateEnd(&strm);
-			free(uncomp_xml);
-			free(out);
-			return NULL;
+			case Z_DATA_ERROR:
+			case Z_STREAM_ERROR:
+			case Z_NEED_DICT:
+			case Z_MEM_ERROR:
+			case Z_BUF_ERROR:
+			case Z_VERSION_ERROR:
+				(void)inflateEnd(&strm);
+				free(uncomp_xml);
+				free(out);
+				return NULL;
 		}
 		have = _READ_CHUNK - strm.avail_out;
 		totalsize += have;
@@ -109,8 +109,7 @@ _xbps_uncompress_plist_data(char *xml, size_t len)
 #undef _READ_CHUNK
 
 prop_dictionary_t HIDDEN
-xbps_dictionary_from_archive_entry(struct archive *ar,
-				   struct archive_entry *entry)
+xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 {
 	prop_dictionary_t d = NULL;
 	size_t buflen;
@@ -137,7 +136,7 @@ xbps_dictionary_from_archive_entry(struct archive *ar,
 		goto out;
 
 	/* Try to uncompress blob */
-	uncomp_buf = _xbps_uncompress_plist_data(buf, buflen);
+	uncomp_buf = uncompress_plist_data(buf, buflen);
 	if (uncomp_buf == NULL) {
 		/* Error while decompressing */
 		free(buf);
@@ -151,4 +150,43 @@ xbps_dictionary_from_archive_entry(struct archive *ar,
 out:
 	free(buf);
 	return d;
+}
+
+int
+xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen,
+	const char *fname, const mode_t mode, const char *uname, const char *gname)
+{
+	struct archive_entry *entry;
+	time_t tm;
+
+	assert(ar);
+	assert(buf);
+	assert(fname);
+	assert(uname);
+	assert(gname);
+
+	tm = time(NULL);
+	entry = archive_entry_new();
+	assert(entry);
+
+	archive_entry_set_filetype(entry, AE_IFREG);
+	archive_entry_set_perm(entry, mode);
+	archive_entry_set_uname(entry, uname);
+	archive_entry_set_gname(entry, gname);
+	archive_entry_set_pathname(entry, fname);
+	archive_entry_set_size(entry, buflen);
+	archive_entry_set_atime(entry, tm, 0);
+	archive_entry_set_mtime(entry, tm, 0);
+	archive_entry_set_ctime(entry, tm, 0);
+
+	if (archive_write_header(ar, entry) != ARCHIVE_OK)
+		return archive_errno(ar);
+
+	if (archive_write_data(ar, buf, buflen) != ARCHIVE_OK)
+		return archive_errno(ar);
+
+	archive_write_finish_entry(ar);
+	archive_entry_free(entry);
+
+	return 0;
 }

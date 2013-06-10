@@ -33,6 +33,7 @@
 #include <libgen.h>
 #include <assert.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 #include <xbps_api.h>
 #include "defs.h"
@@ -99,8 +100,10 @@ cleaner_files_thread(void *arg)
 {
 	prop_object_t obj;
 	prop_array_t array;
+	prop_dictionary_t ipkgd;
 	struct thread_data *thd = arg;
-	const char *pkgname;
+	const char *pkgver, *ipkgver;
+	char *pkgname;
 	unsigned int i;
 
 	/* process pkgs from start until end */
@@ -108,10 +111,20 @@ cleaner_files_thread(void *arg)
 
 	for (i = thd->start; i < thd->end; i++) {
 		obj = prop_array_get(array, i);
-		pkgname = prop_dictionary_keysym_cstring_nocopy(obj);
+		pkgver = prop_dictionary_keysym_cstring_nocopy(obj);
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+		ipkgd = prop_dictionary_get(thd->idx, pkgname);
 		/* If pkg is not registered in index, remove it */
-		if (!prop_dictionary_get(thd->idx, pkgname))
-			prop_array_add_cstring_nocopy(thd->result_files, pkgname);
+		if (ipkgd == NULL)
+			prop_array_add_cstring_nocopy(thd->result_files, pkgver);
+		/* if another version is registered in index, remove it */
+		else {
+			prop_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
+			if (strcmp(ipkgver, pkgver))
+				prop_array_add_cstring_nocopy(thd->result_files, pkgver);
+		}
+		free(pkgname);
 	}
 	prop_object_release(array);
 
@@ -125,36 +138,28 @@ cleaner_files_thread(void *arg)
 int
 index_clean(struct xbps_handle *xhp, const char *repodir)
 {
+	struct xbps_repo *repo;
 	struct thread_data *thd;
 	prop_dictionary_t idx, idxfiles;
 	const char *keyname;
-	char *plist, *plistf, *pkgname;
+	char *pkgname;
 	size_t x, pkgcount, slicecount;
 	int i, maxthreads, rv = 0;
 	bool flush = false;
 
-	plist = xbps_pkg_index_plist(xhp, repodir);
-	assert(plist);
-	plistf = xbps_pkg_index_files_plist(xhp, repodir);
-	assert(plistf);
-
-	idx = prop_dictionary_internalize_from_zfile(plist);
-	if (idx == NULL) {
-		if (errno != ENOENT) {
-			fprintf(stderr, "index: cannot read `%s': %s\n",
-			    plist, strerror(errno));
-			return -1;
-		} else
+	repo = xbps_repo_open(xhp, repodir);
+	if (repo == NULL) {
+		if (errno == ENOENT)
 			return 0;
+		fprintf(stderr, "index: cannot read repository data: %s\n", strerror(errno));
+		return -1;
 	}
-	idxfiles = prop_dictionary_internalize_from_zfile(plistf);
-	if (idxfiles == NULL) {
-		if (errno != ENOENT) {
-			fprintf(stderr, "index: cannot read `%s': %s\n",
-			    plistf, strerror(errno));
-			return -1;
-		} else
-			return 0;
+	idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
+	idxfiles = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
+	xbps_repo_close(repo);
+	if (idx == NULL || idxfiles == NULL) {
+		fprintf(stderr, "incomplete repository data file!");
+		return -1;
 	}
 	if (chdir(repodir) == -1) {
 		fprintf(stderr, "index: cannot chdir to %s: %s\n",
@@ -216,7 +221,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			printf("index: removed entry %s\n", keyname);
 			pkgname = xbps_pkg_name(keyname);
 			prop_dictionary_remove(idx, pkgname);
-			prop_dictionary_remove(idxfiles, pkgname);
+			prop_dictionary_remove(idxfiles, keyname);
 			free(pkgname);
 			flush = true;
 		}
@@ -228,23 +233,17 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			flush = true;
 		}
 	}
-
-	if (!flush)
-		goto out;
-
-	if (!prop_dictionary_externalize_to_zfile(idx, plist))
-		fprintf(stderr, "index: failed to externalize %s: %s\n",
-		    plist, strerror(errno));
-
-	if (!prop_dictionary_externalize_to_zfile(idxfiles, plistf))
-		fprintf(stderr, "index-files: failed to externalize %s: %s\n",
-		    plistf, strerror(errno));
-
-out:
+	if (flush) {
+		rv = repodata_flush(xhp, repodir, idx, idxfiles);
+		if (rv != 0)
+			return rv;
+	}
 	printf("index: %u packages registered.\n",
 	    prop_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n",
 	    prop_dictionary_count(idxfiles));
+	prop_object_release(idx);
+	prop_object_release(idxfiles);
 
 	return rv;
 }

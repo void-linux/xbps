@@ -72,10 +72,10 @@ xbps_get_remote_repo_string(const char *uri)
  * size and/or mtime match) and 1 if downloaded successfully.
  */
 int HIDDEN
-xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
+xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 {
 	const char *arch, *fetchstr = NULL;
-	char *rpidx, *lrepodir, *uri_fixedp;
+	char *repodata, *lrepodir, *uri_fixedp;
 	int rv = 0;
 
 	assert(uri != NULL);
@@ -124,24 +124,24 @@ xbps_rindex_sync(struct xbps_handle *xhp, const char *uri, const char *plistf)
 	/*
 	 * Remote repository plist index full URL.
 	 */
-	rpidx = xbps_xasprintf("%s/%s-%s", uri, arch, plistf);
+	repodata = xbps_xasprintf("%s/%s-repodata", uri, arch);
 
 	/* reposync start cb */
-	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, rpidx, NULL);
+	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, repodata, NULL);
 	/*
 	 * Download plist index file from repository.
 	 */
-	if ((rv = xbps_fetch_file(xhp, rpidx, NULL)) == -1) {
+	if ((rv = xbps_fetch_file(xhp, repodata, NULL)) == -1) {
 		/* reposync error cb */
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
 		    fetchLastErrCode != 0 ? fetchLastErrCode : errno, NULL,
 		    "[reposync] failed to fetch file `%s': %s",
-		    rpidx, fetchstr ? fetchstr : strerror(errno));
+		    repodata, fetchstr ? fetchstr : strerror(errno));
 	} else if (rv == 1)
 		rv = 0;
 
-	free(rpidx);
+	free(repodata);
 
 	return rv;
 }

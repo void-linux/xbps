@@ -33,6 +33,14 @@
 
 #include "xbps_api_impl.h"
 
+struct rpool {
+	SIMPLEQ_ENTRY(rpool) entries;
+	struct xbps_repo *repo;
+};
+
+static SIMPLEQ_HEAD(rpool_head, rpool) rpool_queue =
+    SIMPLEQ_HEAD_INITIALIZER(rpool_queue);
+
 /**
  * @file lib/rpool.c
  * @brief Repository pool routines
@@ -42,81 +50,45 @@
 int HIDDEN
 xbps_rpool_init(struct xbps_handle *xhp)
 {
-	prop_dictionary_t repod, d = NULL;
-	size_t i, ntotal = 0, nmissing = 0;
+	struct rpool *rp;
 	const char *repouri;
-	char *plist;
+	unsigned int i;
+	bool foundrepo = false;
 	int rv = 0;
 
-	if (xhp->repo_pool != NULL)
+	assert(xhp);
+
+	if (xhp->rpool_initialized)
 		return 0;
 	else if (xhp->cfg == NULL)
 		return ENOTSUP;
 
-	xhp->repo_pool = prop_array_create();
-	if (xhp->repo_pool == NULL)
-		return ENOMEM;
-
 	for (i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
+		rp = malloc(sizeof(struct rpool));
+		assert(rp);
 		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
-		ntotal++;
-		/*
-		 * If index file is not there, skip.
-		 */
-		plist = xbps_pkg_index_plist(xhp, repouri);
-		if (plist == NULL) {
-			rv = errno;
-			goto out;
-		}
-		if (access(plist, R_OK) == -1) {
-			xbps_dbg_printf(xhp, "[rpool] `%s' cannot be "
-			    "internalized: %s\n", repouri, strerror(errno));
-			nmissing++;
+		if ((rp->repo = xbps_repo_open(xhp, repouri)) == NULL) {
+			free(rp);
 			continue;
 		}
-		repod = prop_dictionary_internalize_from_zfile(plist);
-		free(plist);
-		if (prop_object_type(repod) != PROP_TYPE_DICTIONARY) {
-			xbps_dbg_printf(xhp, "[rpool] `%s' cannot be "
-			    "internalized: %s\n", repouri, strerror(errno));
-			nmissing++;
+		rp->repo->idx = xbps_repo_get_plist(rp->repo, XBPS_PKGINDEX);
+		if (rp->repo->idx == NULL) {
+			xbps_repo_close(rp->repo);
+			free(rp);
 			continue;
 		}
-		/*
-		 * Register repository into the array.
-		 */
-		if ((d = prop_dictionary_create()) == NULL) {
-			rv = ENOMEM;
-			prop_object_release(repod);
-			goto out;
-		}
-		if (!prop_dictionary_set_cstring_nocopy(d, "uri", repouri)) {
-			rv = EINVAL;
-			prop_object_release(repod);
-			prop_object_release(d);
-			goto out;
-		}
-		if (!prop_dictionary_set(d, "index", repod)) {
-			rv = EINVAL;
-			prop_object_release(repod);
-			prop_object_release(d);
-			goto out;
-		}
-		prop_object_release(repod);
-		if (!prop_array_add(xhp->repo_pool, d)) {
-			rv = EINVAL;
-			prop_object_release(d);
-			goto out;
-		}
+		rp->repo->uri = repouri;
+		rp->repo->xhp = xhp;
+		SIMPLEQ_INSERT_TAIL(&rpool_queue, rp, entries);
+		foundrepo = true;
 		xbps_dbg_printf(xhp, "[rpool] `%s' registered.\n", repouri);
 	}
-	if (ntotal - nmissing == 0) {
+	if (!foundrepo) {
 		/* no repositories available, error out */
 		rv = ENOTSUP;
 		goto out;
 	}
-
-	prop_array_make_immutable(xhp->repo_pool);
+	xhp->rpool_initialized = true;
 	xbps_dbg_printf(xhp, "[rpool] initialized ok.\n");
 out:
 	if (rv != 0)
@@ -129,29 +101,22 @@ out:
 void HIDDEN
 xbps_rpool_release(struct xbps_handle *xhp)
 {
-	prop_dictionary_t d;
-	size_t i;
-	const char *uri;
+	struct rpool *rp;
 
-	if (xhp->repo_pool == NULL)
+	if (!xhp->rpool_initialized)
 		return;
 
-	for (i = 0; i < prop_array_count(xhp->repo_pool); i++) {
-		d = prop_array_get(xhp->repo_pool, i);
-		if (xhp->flags & XBPS_FLAG_DEBUG) {
-			prop_dictionary_get_cstring_nocopy(d, "uri", &uri);
-			xbps_dbg_printf(xhp, "[rpool] unregistered "
-			    "repository '%s'\n", uri);
-		}
-		prop_object_release(d);
+	while ((rp = SIMPLEQ_FIRST(&rpool_queue))) {
+		SIMPLEQ_REMOVE(&rpool_queue, rp, rpool, entries);
+		xbps_repo_close(rp->repo);
+		free(rp);
 	}
-	prop_object_release(xhp->repo_pool);
-	xhp->repo_pool = NULL;
+	xhp->rpool_initialized = false;
 	xbps_dbg_printf(xhp, "[rpool] released ok.\n");
 }
 
 int
-xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri)
+xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 {
 	const char *repouri;
 	size_t i;
@@ -165,11 +130,10 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri)
 		if (uri && strcmp(repouri, uri))
 			continue;
 
-		if (xbps_rindex_sync(xhp, repouri, file) == -1) {
+		if (xbps_repo_sync(xhp, repouri) == -1) {
 			xbps_dbg_printf(xhp,
-			    "[rpool] `%s' failed to fetch `%s': %s\n",
-			    repouri, file,
-			    fetchLastErrCode == 0 ? strerror(errno) :
+			    "[rpool] `%s' failed to fetch repository data: %s\n",
+			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
 			    xbps_fetch_error_string());
 			continue;
 		}
@@ -179,12 +143,10 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri)
 
 int
 xbps_rpool_foreach(struct xbps_handle *xhp,
-		   int (*fn)(struct xbps_rindex *, void *, bool *),
+		   int (*fn)(struct xbps_repo *, void *, bool *),
 		   void *arg)
 {
-	prop_dictionary_t d;
-	struct xbps_rindex rpi;
-	size_t i;
+	struct rpool *rp;
 	int rv = 0;
 	bool done = false;
 
@@ -202,12 +164,8 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 		return rv;
 	}
 	/* Iterate over repository pool */
-	for (i = 0; i < prop_array_count(xhp->repo_pool); i++) {
-		d = prop_array_get(xhp->repo_pool, i);
-		prop_dictionary_get_cstring_nocopy(d, "uri", &rpi.uri);
-		rpi.repod = prop_dictionary_get(d, "index");
-		rpi.xhp = xhp;
-		rv = (*fn)(&rpi, arg, &done);
+	SIMPLEQ_FOREACH(rp, &rpool_queue, entries) {
+		rv = (*fn)(rp->repo, arg, &done);
 		if (rv != 0 || done)
 			break;
 	}

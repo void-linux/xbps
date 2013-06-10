@@ -172,7 +172,6 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 {
 	prop_dictionary_t pkgd = NULL;
 	char *pkgname, *buf = NULL;
-	const char *version;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -181,8 +180,6 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
-	version = xbps_pkg_version(pkgver);
-	assert(version);
 
 	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0)
 		goto out;

@@ -469,34 +469,6 @@ process_entry_file(struct archive *ar,
 }
 
 static void
-process_entry_memory(struct archive *ar, const void *src, const char *file)
-{
-	struct archive_entry *entry;
-	time_t tm;
-
-	assert(ar);
-	assert(src);
-	assert(file);
-
-	tm = time(NULL);
-
-	entry = archive_entry_new();
-	assert(entry);
-	archive_entry_set_filetype(entry, AE_IFREG);
-	archive_entry_set_perm(entry, 0644);
-	archive_entry_set_uname(entry, "root");
-	archive_entry_set_gname(entry, "root");
-	archive_entry_set_pathname(entry, file);
-	archive_entry_set_size(entry, strlen(src));
-	archive_entry_set_atime(entry, tm, 0);
-	archive_entry_set_mtime(entry, tm, 0);
-	archive_entry_set_ctime(entry, tm, 0);
-	archive_write_header(ar, entry);
-	archive_write_data(ar, src, strlen(src));
-	archive_entry_free(entry);
-}
-
-static void
 process_archive(struct archive *ar,
 		struct archive_entry_linkresolver *resolver,
 		const char *pkgver, bool quiet)
@@ -517,13 +489,15 @@ process_archive(struct archive *ar,
 	/* Add props.plist metadata file */
 	xml = prop_dictionary_externalize(pkg_propsd);
 	assert(xml);
-	process_entry_memory(ar, xml, "./props.plist");
+	xbps_archive_append_buf(ar, xml, strlen(xml), "./props.plist",
+	    0644, "root", "root");
 	free(xml);
 
 	/* Add files.plist metadata file */
 	xml = prop_dictionary_externalize(pkg_filesd);
 	assert(xml);
-	process_entry_memory(ar, xml, "./files.plist");
+	xbps_archive_append_buf(ar, xml, strlen(xml), "./files.plist",
+	    0644, "root", "root");
 	free(xml);
 
 	/* Add all package data files and release resources */

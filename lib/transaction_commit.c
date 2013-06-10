@@ -29,7 +29,6 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
-#include <assert.h>
 #include <unistd.h>
 #include <limits.h>
 

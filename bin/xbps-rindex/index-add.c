@@ -32,8 +32,11 @@
 #include <dirent.h>
 #include <libgen.h>
 #include <assert.h>
+#include <fcntl.h>
 
 #include <xbps_api.h>
+#include <archive.h>
+#include <archive_entry.h>
 #include "defs.h"
 
 /*
@@ -45,56 +48,37 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 {
 	prop_array_t filespkgar, pkg_files, pkg_links, pkg_cffiles;
 	prop_dictionary_t idx, idxfiles, newpkgd, newpkgfilesd, curpkgd;
-	prop_dictionary_t filespkgd;
 	prop_object_t obj, fileobj;
+	struct xbps_repo *repo;
 	struct stat st;
 	const char *oldpkgver, *arch, *oldarch;
 	char *pkgver, *pkgname, *sha256, *repodir, *buf;
-	char *tmprepodir, *plist, *plistf;
+	char *tmprepodir;
 	size_t x;
-	int i, ret = 0;
-	bool files_flush = false, found = false, flush = false;
+	int i, rv, ret = 0;
+	bool flush = false, found = false;
 
 	idx = idxfiles = newpkgd = newpkgfilesd = curpkgd = NULL;
-	tmprepodir = plist = plistf = NULL;
 
 	if ((tmprepodir = strdup(argv[0])) == NULL)
 		return ENOMEM;
 
+	/*
+	 * Read the repository data or create index dictionaries otherwise.
+	 */
 	repodir = dirname(tmprepodir);
 
-	/* Internalize index or create it if doesn't exist */
-	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL) {
-		free(tmprepodir);
-		return -1;
+	repo = xbps_repo_open(xhp, repodir);
+	if (repo != NULL) {
+		idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
+		idxfiles = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
 	}
-
-	if ((idx = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
-		if (errno != ENOENT) {
-			fprintf(stderr, "index: cannot read `%s': %s\n",
-			    plist, strerror(errno));
-			return -1;
-		} else {
-			idx = prop_dictionary_create();
-			assert(idx);
-		}
-	}
-	/* Internalize index-files or create it if doesn't exist */
-	if ((plistf = xbps_pkg_index_files_plist(xhp, repodir)) == NULL)
-		return -1;
-
-	free(tmprepodir);
-
-	if ((idxfiles = prop_dictionary_internalize_from_zfile(plistf)) == NULL) {
-		if (errno != ENOENT) {
-			fprintf(stderr, "index: cannot read `%s': %s\n",
-			    plistf, strerror(errno));
-			return -1;
-		} else {
-			idxfiles = prop_dictionary_create();
-			assert(idx);
-		}
-	}
+	if (idx == NULL)
+		idx = prop_dictionary_create();
+	if (idxfiles == NULL)
+		idxfiles = prop_dictionary_create();
+	if (repo != NULL)
+		xbps_repo_close(repo);
 
 	/*
 	 * Process all packages specified in argv.
@@ -212,7 +196,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			free(pkgname);
 			return EINVAL;
 		}
-
 		flush = true;
 		printf("index: added `%s' (%s).\n", pkgver, arch);
 		/*
@@ -284,43 +267,29 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		}
 		prop_object_release(newpkgfilesd);
 
-		/* create pkg dictionary */
-		filespkgd = prop_dictionary_create();
-		assert(filespkgd);
-
-		/* add pkg files array into pkg dictionary */
-		prop_dictionary_set(filespkgd, "files", filespkgar);
+		/* add pkg files array into index-files */
+		prop_dictionary_set(idxfiles, pkgver, filespkgar);
 		prop_object_release(filespkgar);
 
-		/* set pkgver obj into pkg dictionary */
-		prop_dictionary_set_cstring(filespkgd, "pkgver", pkgver);
-
-		/* add pkg dictionary into index-files */
-		prop_dictionary_set(idxfiles, pkgname, filespkgd);
-		prop_object_release(filespkgd);
-
 		printf("index-files: added `%s' (%s)\n", pkgver, arch);
-		files_flush = true;
 		prop_object_release(newpkgd);
 		free(pkgver);
 		free(pkgname);
 	}
-
-	if (flush && !prop_dictionary_externalize_to_zfile(idx, plist)) {
-		fprintf(stderr, "index: failed to externalize plist: %s\n",
-		    strerror(errno));
-		return -1;
-	}
-	if (files_flush &&
-	    !prop_dictionary_externalize_to_zfile(idxfiles, plistf)) {
-		fprintf(stderr, "index-files: failed to externalize "
-		    "plist: %s\n", strerror(errno));
-		return -1;
+	/*
+	 * Generate repository data file.
+	 */
+	if (flush) {
+		rv = repodata_flush(xhp, repodir, idx, idxfiles);
+		if (rv != 0)
+			return rv;
 	}
 	printf("index: %u packages registered.\n",
 	    prop_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n",
 	    prop_dictionary_count(idxfiles));
+	prop_object_release(idx);
+	prop_object_release(idxfiles);
 
 	return 0;
 }

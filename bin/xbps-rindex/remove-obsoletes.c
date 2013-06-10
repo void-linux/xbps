@@ -40,7 +40,7 @@
 struct thread_data {
 	pthread_t thread;
 	prop_array_t array;
-	struct xbps_rindex *ri;
+	struct xbps_repo *repo;
 	unsigned int start;
 	unsigned int end;
 	int thread_num;
@@ -95,7 +95,7 @@ cleaner_thread(void *arg)
 		prop_array_get_cstring_nocopy(thd->array, i, &binpkg);
 		pkgd = xbps_get_pkg_plist_from_binpkg(binpkg, "./props.plist");
 		if (pkgd == NULL) {
-			rv = remove_pkg(thd->ri->uri, arch, binpkg);
+			rv = remove_pkg(thd->repo->uri, arch, binpkg);
 			if (rv != 0) {
 				prop_object_release(pkgd);
 				continue;
@@ -105,17 +105,17 @@ cleaner_thread(void *arg)
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
 		/* ignore pkgs from other archs */
-		if (!xbps_pkg_arch_match(thd->ri->xhp, arch, NULL)) {
+		if (!xbps_pkg_arch_match(thd->repo->xhp, arch, NULL)) {
 			prop_object_release(pkgd);
 			continue;
 		}
-		xbps_dbg_printf(thd->ri->xhp, "thread[%d] checking %s (%s)\n",
+		xbps_dbg_printf(thd->repo->xhp, "thread[%d] checking %s (%s)\n",
 		    thd->thread_num, pkgver, binpkg);
 		/*
 		 * If binpkg is not registered in index, remove binpkg.
 		 */
-		if (!xbps_rindex_get_pkg(thd->ri, pkgver)) {
-			rv = remove_pkg(thd->ri->uri, arch, binpkg);
+		if (!xbps_repo_get_pkg(thd->repo, pkgver)) {
+			rv = remove_pkg(thd->repo->uri, arch, binpkg);
 			if (rv != 0) {
 				prop_object_release(pkgd);
 				continue;
@@ -131,33 +131,28 @@ cleaner_thread(void *arg)
 int
 remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 {
-	prop_dictionary_t idx;
 	prop_array_t array = NULL;
-	struct xbps_rindex ri;
+	struct xbps_repo *repo;
 	struct thread_data *thd;
 	DIR *dirp;
 	struct dirent *dp;
-	char *plist, *ext;
+	char *ext;
 	int i, maxthreads, rv = 0;
 	size_t slicecount, pkgcount;
 
-	if ((plist = xbps_pkg_index_plist(xhp, repodir)) == NULL)
-		return -1;
-
-	idx = prop_dictionary_internalize_from_zfile(plist);
-	if (idx == NULL) {
+	repo = xbps_repo_open(xhp, repodir);
+	if (repo == NULL) {
 		if (errno != ENOENT) {
-			fprintf(stderr, "xbps-rindex: cannot read `%s': %s\n",
-			    plist, strerror(errno));
+			fprintf(stderr, "xbps-rindex: cannot read repository data: %s\n",
+			    strerror(errno));
 			return -1;
-		} else
-			return 0;
+		}
+		return 0;
 	}
-	/* initialize repository index */
-	ri.repod = idx;
-	ri.uri = repodir;
-	ri.xhp = xhp;
-
+	if ((repo->idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX)) == NULL) {
+		xbps_repo_close(repo);
+		return -1;
+	}
 	if (chdir(repodir) == -1) {
 		fprintf(stderr, "xbps-rindex: cannot chdir to %s: %s\n",
 		    repodir, strerror(errno));
@@ -191,7 +186,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	for (i = 0; i < maxthreads; i++) {
 		thd[i].thread_num = i;
 		thd[i].array = array;
-		thd[i].ri = &ri;
+		thd[i].repo = repo;
 		thd[i].start = pkgcount;
 		if (i + 1 >= maxthreads)
 			thd[i].end = prop_array_count(array);
@@ -204,6 +199,8 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	/* wait for all threads */
 	for (i = 0; i < maxthreads; i++)
 		pthread_join(thd[i].thread, NULL);
+
+	xbps_repo_close(repo);
 
 	return rv;
 }

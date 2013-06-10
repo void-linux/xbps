@@ -1,5 +1,11 @@
 xbps-0.25 (???):
 
+ * Use a single zlib compressed file to store repository data `<arch>-repodata`.
+   This will allow us to extend repositories with more metadata if needed, and
+   simplifies the API. This is just the starting point to add PGP signatures.
+   The struct xbps_rindex has been replaced by xbps_repo, thus, the major
+   libxbps SONAME has been bumped to 2.
+ 
  * xbps-create(8): correctly calculate target file for relative symlinks.
 
  * xbps-pkgdb(8): removed old code that isn't needed anymore in the 'check' mode.

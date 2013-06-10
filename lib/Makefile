@@ -1,6 +1,6 @@
 -include ../config.mk
 
-LIBXBPS_MAJOR = 1
+LIBXBPS_MAJOR = 2
 LIBXBPS_MINOR = 0
 LIBXBPS_MICRO = 0
 LIBXBPS_SHLIB = libxbps.so.$(LIBXBPS_MAJOR).$(LIBXBPS_MINOR).$(LIBXBPS_MICRO)
@@ -46,9 +46,9 @@ OBJS += package_unpack.o package_register.o package_script.o
 OBJS += transaction_commit.o transaction_package_replace.o
 OBJS += transaction_dictionary.o transaction_sortdeps.o transaction_ops.o
 OBJS += download.o initend.o pkgdb.o package_conflicts.o
-OBJS += plist.o plist_archive_entry.o plist_find.o plist_match.o
+OBJS += plist.o plist_find.o plist_match.o archive.o
 OBJS += plist_remove.o plist_fetch.o util.o util_hash.o 
-OBJS += rindex_pkgdeps.o rindex_sync.o rindex_get.o
+OBJS += repo.o repo_pkgdeps.o repo_sync.o
 OBJS += rpool.o rpool_get.o cb_util.o
 OBJS += $(EXTOBJS) $(COMPAT_SRCS)
 

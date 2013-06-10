@@ -162,13 +162,13 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 }
 
 static int
-repo_list_uri_cb(struct xbps_rindex *rpi, void *arg, bool *done)
+repo_list_uri_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
 	(void)arg;
 	(void)done;
 
-	printf("%s (%zu packages)\n", rpi->uri,
-	    (size_t)prop_dictionary_count(rpi->repod));
+	printf("%s (%zu packages)\n", repo->uri,
+	    (size_t)prop_dictionary_count(repo->idx));
 
 	return 0;
 }

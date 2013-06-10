@@ -41,4 +41,8 @@ int	index_files_clean(struct xbps_handle *, const char *);
 /* From remove-obsoletes.c */
 int	remove_obsoletes(struct xbps_handle *, const char *);
 
+/* From repoflush.c */
+int	repodata_flush(struct xbps_handle *, const char *,
+		prop_dictionary_t, prop_dictionary_t);
+
 #endif /* !_XBPS_RINDEX_DEFS_H_ */

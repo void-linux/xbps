@@ -128,7 +128,7 @@ repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern, bool full)
 }
 
 static int
-repo_revdeps_cb(struct xbps_rindex *rpi, void *arg, bool *done)
+repo_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
 	prop_dictionary_t pkgd;
 	prop_array_t pkgdeps;
@@ -138,10 +138,10 @@ repo_revdeps_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 
 	(void)done;
 
-	iter = prop_dictionary_iterator(rpi->repod);
+	iter = prop_dictionary_iterator(repo->idx);
 	assert(iter);
 	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(rpi->repod, obj);
+		pkgd = prop_dictionary_get_keysym(repo->idx, obj);
 		pkgdeps = prop_dictionary_get(pkgd, "run_depends");
 		if (pkgdeps == NULL || prop_array_count(pkgdeps) == 0)
 			continue;
@@ -149,7 +149,7 @@ repo_revdeps_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 		if (xbps_match_pkgdep_in_array(pkgdeps, pattern)) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "architecture", &arch);
-			if (xbps_pkg_arch_match(rpi->xhp, arch, NULL)) {
+			if (xbps_pkg_arch_match(repo->xhp, arch, NULL)) {
 				prop_dictionary_get_cstring_nocopy(pkgd,
 				    "pkgver", &pkgver);
 				printf("%s\n", pkgver);

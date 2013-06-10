@@ -41,14 +41,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-
-/**
- * @def XBPS_PKGINDEX_VERSION
- * Current version for the repository package index format.
- */
-#define XBPS_PKGINDEX_VERSION	"1.7"
-
-#define XBPS_API_VERSION	"20130418"
+#define XBPS_API_VERSION	"20130609"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -62,7 +55,6 @@
  */
 #define XBPS_RELVER		"XBPS: " XBPS_VERSION \
 				" API: " XBPS_API_VERSION \
-				" INDEX: " XBPS_PKGINDEX_VERSION \
 				" GIT: " XBPS_GIT
 
 /** 
@@ -99,7 +91,7 @@
  * @def XBPS_PKGINDEX
  * Filename for the repository package index property list.
  */
-#define XBPS_PKGINDEX		"index-" XBPS_PKGINDEX_VERSION ".plist"
+#define XBPS_PKGINDEX		"index.plist"
 
 /**
  * @def XBPS_PKGINDEX_FILES
@@ -452,13 +444,7 @@ struct xbps_handle {
 	 */
 	cfg_t *cfg;
 	/**
-	 * @private
-	 *
-	 * Array of dictionaries with all registered repositories.
-	 */
-	prop_array_t repo_pool;
-	/**
-	 * @private pkgdb.
+	 * @var pkgdb
 	 *
 	 * Internalized proplib dictionary with the master package database
 	 * stored in XBPS_META_PATH/XBPS_PKGDB.
@@ -466,19 +452,14 @@ struct xbps_handle {
 	prop_dictionary_t pkgdb;
 	/**
 	 * @private
-	 *
-	 * Proplib dictionary with pkg metafiles.
 	 */
 	prop_dictionary_t pkg_metad;
 	/**
-	 * @private pkgdb_revdeps.
-	 *
-	 * Proplib dictionary with full reverse dependencies from pkgdb.
+	 * @private
 	 */
 	prop_dictionary_t pkgdb_revdeps;
-
 	/**
-	 * @var transd;
+	 * @var transd
 	 *
 	 * Proplib dictionary with transaction details, required by
 	 * xbps_transaction_commit().
@@ -490,6 +471,8 @@ struct xbps_handle {
 	 */
 	void (*state_cb)(struct xbps_state_cb_data *, void *);
 	/**
+	 * @var state_cb_data
+	 *
 	 * Pointer to user supplied data to be passed as argument to
 	 * the \a xbps_state_cb function callback.
 	 */
@@ -500,6 +483,8 @@ struct xbps_handle {
 	 */
 	void (*unpack_cb)(struct xbps_unpack_cb_data *, void *);
 	/**
+	 * @var unpack_cb_data
+	 *
 	 * Pointer to user supplied data to be passed as argument to
 	 * the \a xbps_unpack_cb function callback.
 	 */
@@ -581,6 +566,7 @@ struct xbps_handle {
 	 * @private
 	 */
 	bool initialized;
+	bool rpool_initialized;
 };
 
 void xbps_dbg_printf(struct xbps_handle *, const char *, ...);
@@ -1135,21 +1121,29 @@ prop_dictionary_t xbps_get_pkg_plist_from_binpkg(const char *fname,
 /*@{*/
 
 /**
- * @struct xbps_rindex xbps_api.h "xbps_api.h"
- * @brief Repository pool index structure
+ * @struct xbps_repo xbps_api.h "xbps_api.h"
+ * @brief Repository structure
  *
- * Repository index object structure registered in a private simple queue.
- * The structure contains a dictionary and the URI associated with the
- * registered repository index.
+ * Repository object structure registered in a private simple queue.
+ * The structure contains repository data: uri and dictionaries associated.
  */
-struct xbps_rindex {
+struct xbps_repo {
 	/**
-	 * @var repod
-	 * 
-	 * Internalized proplib dictionary of the index plist file
-	 * associated with repository.
+	 * @private
 	 */
-	prop_dictionary_t repod;
+	struct archive *ar;
+	/**
+	 * @var idx
+	 *
+	 * Proplib dictionary associated with the repository index.
+	 */
+	prop_dictionary_t idx;
+	/**
+	 * @var idxfiles
+	 *
+	 * Proplib dictionary associated with the repository index files.
+	 */
+	prop_dictionary_t idxfiles;
 	/**
 	 * @var uri
 	 * 
@@ -1166,18 +1160,17 @@ struct xbps_rindex {
 };
 
 /**
- * Synchronizes \a file for all remote repositories
+ * Synchronizes repository data for all remote repositories
  * as specified in the configuration file or if \a uri argument is
- * set, just sync \a file for that repository.
+ * set, just sync for that repository.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] file File to synchronize.
  * @param[in] uri Repository URI to match for sync (optional).
  *
  * @return 0 on success, ENOTSUP if no repositories were found in
  * the configuration file.
  */
-int xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri);
+int xbps_rpool_sync(struct xbps_handle *xhp, const char *uri);
 
 /**
  * Iterates over the repository pool and executes the \a fn function
@@ -1195,7 +1188,7 @@ int xbps_rpool_sync(struct xbps_handle *xhp, const char *file, const char *uri);
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_rpool_foreach(struct xbps_handle *xhp,
-		       int (*fn)(struct xbps_rindex *, void *, bool *),
+		       int (*fn)(struct xbps_repo *, void *, bool *),
 		       void *arg);
 
 /**
@@ -1251,32 +1244,105 @@ prop_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 
 /*@}*/
 
-/** @addtogroup rindex */
+/** @addtogroup repo */
 /*@{*/
 
 /**
- * Returns a pkg dictionary from a repository index \a ri matching
+ * Opens a repository and returns an xbps_repo object.
+ *
+ * @param[in] xhp Pointer to the xbps_handle struct.
+ * @param[in] uri Repository URI to match.
+ *
+ * @return The matching repository object, NULL otherwise.
+ */
+struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url);
+
+/**
+ * Returns a proplib dictionary associated with a repository object.
+ *
+ * @param[in] repo Pointer to the xbps_repo object.
+ * @param[in] file Filename of proplib dictionary stored in the
+ * repository object.
+ *
+ * @return The matching proplib dictionary on success, NULL otherwise.
+ */
+prop_dictionary_t xbps_repo_get_plist(struct xbps_repo *repo, const char *file);
+
+/**
+ * Closes a repository object and releases resources.
+ *
+ * @param[in] repo The repository object to close.
+ */
+void xbps_repo_close(struct xbps_repo *repo);
+
+/**
+ *
+ * Returns a heap-allocated string with the repository local path.
+ *
+ * @param[in] xhp The xbps_handle object.
+ * @param[in] url The repository URL to match.
+ *
+ * @return A heap allocated string that must be free(3)d when it's unneeded.
+ */
+char *xbps_repo_path(struct xbps_handle *xhp, const char *url);
+
+/**
+ * Returns a pkg dictionary from a repository \a repo matching
  * the expression \a pkg.
  *
- * @param[in] ri Pointer to an xbps_rindex structure.
+ * @param[in] repo Pointer to an xbps_repo structure.
  * @param[in] pkg Package expression to match in this repository index.
  *
  * @return The pkg dictionary on success, NULL otherwise.
  */
-prop_dictionary_t xbps_rindex_get_pkg(struct xbps_rindex *ri, const char *pkg);
+prop_dictionary_t xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg);
 
 /**
- * Returns a pkg dictionary from a repository index \a ri matching
+ * Returns a pkg dictionary from a repository \a repo matching
  * the expression \a pkg. On match the first package matching the virtual
  * package expression will be returned.
  *
- * @param[in] ri Pointer to an xbps_rindex structure.
+ * @param[in] repo Pointer to an xbps_repo structure.
  * @param[in] pkg Package expression to match in this repository index.
  *
  * @return The pkg dictionary on success, NULL otherwise.
  */
-prop_dictionary_t xbps_rindex_get_virtualpkg(struct xbps_rindex *ri,
+prop_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo,
 					     const char *pkg);
+
+/*@}*/
+
+/** @addtogroup archive_util */
+/*@{*/
+
+/**
+ * Returns a proplib dictionary if \a entry is matched in the \a ar archive.
+ *
+ * @param[in] ar The archive object.
+ * @param[in] entry The archive_entry object (must be filled in properly).
+ *
+ * @return The internalized proplib dictionary, NULL otherwise.
+ */
+prop_dictionary_t xbps_archive_get_dictionary(struct archive *ar,
+				struct archive_entry *entry);
+
+/**
+ * Appends a file to the \a ar archive by using a memory buffer \a buf of
+ * size \a sizelen.
+ *
+ * @param[in] ar The archive object.
+ * @param[in] buf The memory buffer to be used as file data.
+ * @param[in] buflen The size of the memory buffer.
+ * @param[in] fname The filename to be used for the entry.
+ * @param[in] mode The mode to be used in the entry.
+ * @param[in] uname The user name to be used in the entry.
+ * @param[in] gname The group name to be used in the entry.
+ *
+ * @return 0 on success, or any negative or errno value otherwise.
+ */
+int xbps_archive_append_buf(struct archive *ar, const void *buf,
+		const size_t buflen, const char *fname, const mode_t mode,
+		const char *uname, const char *gname);
 
 /*@}*/
 
@@ -1424,32 +1490,6 @@ int xbps_pkg_is_installed(struct xbps_handle *xhp, const char *pkg);
  * @return true if URI is remote, false if local.
  */
 bool xbps_repository_is_remote(const char *uri);
-
-/**
- * Gets the full path to a repository package index plist file, as
- * specified by \a uri.
- *
- * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] uri Repository URI.
- *
- * @return A pointer to a malloc(3)d string, NULL otherwise and
- * errno is set appropiately. The pointer should be free(3)d when it's
- * no longer needed.
- */
-char *xbps_pkg_index_plist(struct xbps_handle *xhp, const char *uri);
-
-/**
- * Returns the full path to a repository package index files plist file,
- * as specified by \a uri.
- *
- * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] uri Repository URI.
- *
- * @return A pointer to a malloc(3)ed string, NULL otherwise and
- * errno is set appropiately. The pointer should be free(3)d when it's
- * no longer needded.
- */
-char *xbps_pkg_index_files_plist(struct xbps_handle *xhp, const char *uri);
 
 /**
  * Gets the name of a package string. Package strings are composed

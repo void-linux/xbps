@@ -44,11 +44,11 @@ struct rpool_fpkg {
 };
 
 static int
-find_virtualpkg_cb(struct xbps_rindex *rpi, void *arg, bool *done)
+find_virtualpkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
 	struct rpool_fpkg *rpf = arg;
 
-	rpf->pkgd = xbps_rindex_get_virtualpkg(rpi, rpf->pattern);
+	rpf->pkgd = xbps_repo_get_virtualpkg(repo, rpf->pattern);
 	if (rpf->pkgd) {
 		/* found */
 		*done = true;
@@ -59,11 +59,11 @@ find_virtualpkg_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 }
 
 static int
-find_pkg_cb(struct xbps_rindex *rpi, void *arg, bool *done)
+find_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
 	struct rpool_fpkg *rpf = arg;
 
-	rpf->pkgd = xbps_rindex_get_pkg(rpi, rpf->pattern);
+	rpf->pkgd = xbps_repo_get_pkg(repo, rpf->pattern);
 	if (rpf->pkgd) {
 		/* found */
 		*done = true;
@@ -74,7 +74,7 @@ find_pkg_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 }
 
 static int
-find_best_pkg_cb(struct xbps_rindex *rpi, void *arg, bool *done)
+find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
 	struct rpool_fpkg *rpf = arg;
 	prop_dictionary_t pkgd;
@@ -82,25 +82,25 @@ find_best_pkg_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 
 	(void)done;
 
-	pkgd = xbps_rindex_get_pkg(rpi, rpf->pattern);
+	pkgd = xbps_repo_get_pkg(repo, rpf->pattern);
 	if (pkgd == NULL) {
 		if (errno && errno != ENOENT)
 			return errno;
 
-		xbps_dbg_printf(rpi->xhp,
+		xbps_dbg_printf(repo->xhp,
 		    "[rpool] Package '%s' not found in repository "
-		    "'%s'.\n", rpf->pattern, rpi->uri);
+		    "'%s'.\n", rpf->pattern, repo->uri);
 		return 0;
 	}
 	prop_dictionary_get_cstring_nocopy(pkgd,
 	    "pkgver", &repopkgver);
 	if (rpf->bestpkgver == NULL) {
-		xbps_dbg_printf(rpi->xhp,
+		xbps_dbg_printf(repo->xhp,
 		    "[rpool] Found best match '%s' (%s).\n",
-		    repopkgver, rpi->uri);
+		    repopkgver, repo->uri);
 		rpf->pkgd = pkgd;
 		prop_dictionary_set_cstring_nocopy(rpf->pkgd,
-		    "repository", rpi->uri);
+		    "repository", repo->uri);
 		rpf->bestpkgver = repopkgver;
 		return 0;
 	}
@@ -109,12 +109,12 @@ find_best_pkg_cb(struct xbps_rindex *rpi, void *arg, bool *done)
 	 * version from current package in repository.
 	 */
 	if (xbps_cmpver(repopkgver, rpf->bestpkgver) == 1) {
-		xbps_dbg_printf(rpi->xhp,
+		xbps_dbg_printf(repo->xhp,
 		    "[rpool] Found best match '%s' (%s).\n",
-		    repopkgver, rpi->uri);
+		    repopkgver, repo->uri);
 		rpf->pkgd = pkgd;
 		prop_dictionary_set_cstring_nocopy(rpf->pkgd,
-		    "repository", rpi->uri);
+		    "repository", repo->uri);
 		rpf->bestpkgver = repopkgver;
 	}
 	return 0;

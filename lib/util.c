@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,10 @@
 # define _GNU_SOURCE	/* for vasprintf(3) */
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -36,9 +40,6 @@
 #include <fnmatch.h>
 #include <sys/utsname.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 #include "xbps_api_impl.h"
 
 #ifdef __clang__
@@ -168,69 +169,6 @@ xbps_pkgpattern_version(const char *pkg)
 	assert(pkg != NULL);
 
 	return strpbrk(pkg, "><*?[]");
-}
-
-static char *
-get_pkg_index_remote_plist(struct xbps_handle *xhp,
-			   const char *uri,
-			   const char *plistf)
-{
-	const char *arch;
-	char *uri_fixed, *repodir;
-
-	assert(uri != NULL);
-
-	uri_fixed = xbps_get_remote_repo_string(uri);
-	if (uri_fixed == NULL)
-		return NULL;
-
-	if (xhp->target_arch)
-		arch = xhp->target_arch;
-	else
-		arch = xhp->native_arch;
-
-	repodir = xbps_xasprintf("%s/%s/%s-%s", xhp->metadir,
-			uri_fixed, arch, plistf);
-	free(uri_fixed);
-	return repodir;
-}
-
-char *
-xbps_pkg_index_plist(struct xbps_handle *xhp, const char *uri)
-{
-	const char *arch;
-
-	assert(xhp);
-	assert(uri != NULL);
-
-	if (xbps_repository_is_remote(uri))
-		return get_pkg_index_remote_plist(xhp, uri, XBPS_PKGINDEX);
-
-	if (xhp->target_arch)
-		arch = xhp->target_arch;
-	else
-		arch = xhp->native_arch;
-
-	return xbps_xasprintf("%s/%s-%s", uri, arch, XBPS_PKGINDEX);
-}
-
-char *
-xbps_pkg_index_files_plist(struct xbps_handle *xhp, const char *uri)
-{
-	const char *arch;
-
-	assert(xhp);
-	assert(uri != NULL);
-
-	if (xbps_repository_is_remote(uri))
-		return get_pkg_index_remote_plist(xhp, uri, XBPS_PKGINDEX_FILES);
-
-	if (xhp->target_arch)
-		arch = xhp->target_arch;
-	else
-		arch = xhp->native_arch;
-
-	return xbps_xasprintf("%s/%s-%s", uri, arch, XBPS_PKGINDEX_FILES);
 }
 
 char HIDDEN *

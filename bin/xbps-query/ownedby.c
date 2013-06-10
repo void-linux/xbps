@@ -123,21 +123,18 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 }
 
 static void
-repo_match_files_by_pattern(prop_dictionary_t pkgd,
-			    struct ffdata *ffd)
+repo_match_files_by_pattern(prop_array_t files,
+			const char *pkgver,
+			struct ffdata *ffd)
 {
-	prop_array_t array;
-	const char *filestr, *pkgver;
+	const char *filestr;
 	size_t i;
 	int x;
 
-	array = prop_dictionary_get(pkgd, "files");
-	for (i = 0; i < prop_array_count(array); i++) {
-		prop_array_get_cstring_nocopy(array, i, &filestr);
+	for (i = 0; i < prop_array_count(files); i++) {
+		prop_array_get_cstring_nocopy(files, i, &filestr);
 		for (x = 0; x < ffd->npatterns; x++) {
 			if ((fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
-				prop_dictionary_get_cstring_nocopy(pkgd,
-				    "pkgver", &pkgver);
 				printf("%s: %s (%s)\n",
 				    pkgver, filestr, ffd->repouri);
 			}
@@ -146,35 +143,26 @@ repo_match_files_by_pattern(prop_dictionary_t pkgd,
 }
 
 static int
-repo_ownedby_cb(struct xbps_rindex *rpi, void *arg, bool *done)
+repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
-	prop_array_t allkeys;
-	prop_dictionary_t pkgd, idxfiles;
+	prop_array_t allkeys, pkgar;
+	prop_dictionary_t filesd;
 	prop_dictionary_keysym_t ksym;
 	struct ffdata *ffd = arg;
-	char *plist;
+	const char *pkgver;
 	unsigned int i;
 
 	(void)done;
 
-	if ((plist = xbps_pkg_index_files_plist(rpi->xhp, rpi->uri)) == NULL)
-		return ENOMEM;
-
-	if ((idxfiles = prop_dictionary_internalize_from_zfile(plist)) == NULL) {
-		if (errno == ENOENT) {
-			fprintf(stderr, "%s: index-files missing! "
-			    "ignoring...\n", rpi->uri);
-			return 0;
-		}
-		return errno;
-	}
-	ffd->repouri = rpi->uri;
-	allkeys = prop_dictionary_all_keys(idxfiles);
+	filesd = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
+	ffd->repouri = repo->uri;
+	allkeys = prop_dictionary_all_keys(filesd);
 
 	for (i = 0; i < prop_array_count(allkeys); i++) {
 		ksym = prop_array_get(allkeys, i);
-		pkgd = prop_dictionary_get_keysym(idxfiles, ksym);
-		repo_match_files_by_pattern(pkgd, ffd);
+		pkgar = prop_dictionary_get_keysym(filesd, ksym);
+		pkgver = prop_dictionary_keysym_cstring_nocopy(ksym);
+		repo_match_files_by_pattern(pkgar, pkgver, ffd);
 	}
 
 	return 0;
