@@ -77,14 +77,12 @@ print_value_obj(const char *keyname, prop_object_t obj,
 			obj2 = prop_array_get(obj, i);
 			if (prop_object_type(obj2) == PROP_TYPE_STRING) {
 				value = prop_string_cstring_nocopy(obj2);
-				printf("%s%s%s%s", indent, !raw ? "\t" : "",
-				    value, !raw ? "\n" : "");
+				printf("%s%s%s\n", indent, !raw ? "\t" : "",
+				    value);
 			} else {
 				print_value_obj(keyname, obj2, "  ", raw);
 			}
 		}
-		if (raw)
-			printf("\n");
 		break;
 	case PROP_TYPE_DICTIONARY:
 		allkeys = prop_dictionary_all_keys(obj);
