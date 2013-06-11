@@ -135,6 +135,7 @@ repo_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done)
 	prop_object_iterator_t iter;
 	prop_object_t obj;
 	const char *pkgver, *arch, *pattern = arg;
+	int rv = 0;
 
 	(void)done;
 
@@ -153,12 +154,12 @@ repo_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done)
 				prop_dictionary_get_cstring_nocopy(pkgd,
 				    "pkgver", &pkgver);
 				printf("%s\n", pkgver);
+				rv = EEXIST;
 			}
 		}
 	}
 	prop_object_iterator_release(iter);
-
-	return 0;
+	return rv;
 }
 
 int
@@ -169,6 +170,7 @@ repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 	const char *pkgver, *vpkg;
 	unsigned int i;
 	int rv = 0;
+	bool matched = false;
 
 	if (xbps_pkg_version(pkg))
 		pkgver = pkg;
@@ -201,8 +203,13 @@ repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 				free(vpkgn);
 				rv = xbps_rpool_foreach(xhp, repo_revdeps_cb,
 				    __UNCONST(vpkg));
+				if (rv == EEXIST) {
+					rv = 0;
+					matched = true;
+				}
 			}
-		} else {
+		}
+		if (!matched) {
 			prop_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			rv = xbps_rpool_foreach(xhp, repo_revdeps_cb,
