@@ -195,14 +195,15 @@ repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 
 				vpkgn = xbps_pkg_name(buf);
 				assert(vpkgn);
-				free(buf);
 				if (strcmp(vpkgn, pkg)) {
 					free(vpkgn);
+					free(buf);
 					continue;
 				}
 				free(vpkgn);
 				rv = xbps_rpool_foreach(xhp, repo_revdeps_cb,
-				    __UNCONST(vpkg));
+				    __UNCONST(buf));
+				free(buf);
 				if (rv == EEXIST) {
 					rv = 0;
 					matched = true;
