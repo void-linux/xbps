@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2012 Juan Romero Pardines.
+ * Copyright (c) 2010-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@
  */
 static const char *optional_objs[] = {
 	"conflicts", "conf_files", "replaces", "run_depends", "preserve",
-	"requiredby", "provides", "homepage", "license"
+	"files", "dirs", "links", "provides", "homepage", "license"
 };
 
 /*
@@ -131,6 +131,8 @@ convert_proptype_to_string(prop_object_t obj)
 		return "integer";
 	case PROP_TYPE_STRING:
 		return "string";
+	case PROP_TYPE_DATA:
+		return "data";
 	default:
 		return NULL;
 	}
@@ -252,12 +254,14 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 
 		/*
 		 * While parsing package's dictionary from pkgdb, we are
-		 * only interested in the "automatic-install" and "requiredby"
-		 * objects.
+		 * only interested in the "automatic-install" object.
 		 */
 		if (parse_pkgdb &&
-		    (strcmp(tmpkeyname, "automatic-install")) &&
-		    (strcmp(tmpkeyname, "requiredby")))
+		    (strcmp(tmpkeyname, "automatic-install")))
+			continue;
+
+		/* Ignore these objects */
+		if (strcmp(tmpkeyname, "source-revisions") == 0)
 			continue;
 
 		keyobj = prop_dictionary_get_keysym(plistd, dksym);
@@ -279,8 +283,7 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 		optnodetmp = optnode;
 
 		/*
-		 * We can assume that all arrays only contain strings, so
-		 * this can be simplified.
+		 * Process array objects.
 		 */
 		prop_dictionary_get_cstring_nocopy(sub_confd, "style", &cfprop);
 		if (prop_object_type(keyobj) == PROP_TYPE_ARRAY) {
@@ -289,19 +292,24 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 				    optnodetmp);
 
 			for (x = 0; x < prop_array_count(keyobj); x++) {
+				/*
+				 * Process arrays of strings.
+				 */
 				sub_keyobj = prop_array_get(keyobj, x);
-				fprintf(f, "	%s -> %s_%zu_string "
-				    "[label=\"string\"];\n",
-				    keyname, keyname, x);
-				prop_dictionary_get_cstring_nocopy(sub_confd,
-				    "style", &cfprop);
-				fprintf(f, "	%s_%zu_string [style=\"%s\",",
-				    keyname, x, cfprop);
-				prop_dictionary_get_cstring_nocopy(sub_confd,
-				    "fillcolor", &cfprop);
-				fprintf(f, "fillcolor=\"%s\","
-				    "label=\"%s\"];\n", cfprop,
-				    prop_string_cstring_nocopy(sub_keyobj));
+				if (prop_object_type(sub_keyobj) == PROP_TYPE_STRING) {
+					fprintf(f, "	%s -> %s_%zu_string "
+					    "[label=\"string\"];\n",
+					    keyname, keyname, x);
+					prop_dictionary_get_cstring_nocopy(sub_confd,
+					    "style", &cfprop);
+					fprintf(f, "	%s_%zu_string [style=\"%s\",",
+					    keyname, x, cfprop);
+					prop_dictionary_get_cstring_nocopy(sub_confd,
+					    "fillcolor", &cfprop);
+					fprintf(f, "fillcolor=\"%s\","
+					    "label=\"%s\"];\n", cfprop,
+					    prop_string_cstring_nocopy(sub_keyobj));
+				}
 			}
 			if (optnode)
 				free(optnode);
@@ -365,10 +373,9 @@ create_dot_graph(struct xbps_handle *xhp,
 {
 	prop_dictionary_t sub_confd, regpkgd = NULL;
 	prop_array_t allkeys;
-	const char *pkgver, *pkgn, *cfprop;
+	const char *pkgver, *cfprop;
 
 	prop_dictionary_get_cstring_nocopy(plistd, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(plistd, "pkgname", &pkgn);
 
 	/*
 	 * Start filling the output file...
@@ -423,10 +430,10 @@ create_dot_graph(struct xbps_handle *xhp,
 	 * list file, aka XBPS_META_PATH/XBPS_PKGDB.
 	 */
 	if (revdeps) {
-		regpkgd = xbps_pkgdb_get_pkg(xhp, pkgn);
+		regpkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
 		if (regpkgd == NULL)
 			die("cannot find '%s' dictionary on %s!",
-			    pkgn, XBPS_PKGDB);
+			    pkgver, XBPS_PKGDB);
 
 		allkeys = prop_dictionary_all_keys(regpkgd);
 		parse_array_in_pkg_dictionary(f, regpkgd, sub_confd,
