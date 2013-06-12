@@ -40,7 +40,7 @@ print_rdeps(struct xbps_handle *xhp, prop_array_t rdeps,
 	prop_array_t currdeps;
 	prop_dictionary_t pkgd;
 	const char *pkgdep;
-	size_t i;
+	unsigned int i;
 	int j;
 
 	if (!origin)
@@ -98,7 +98,7 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
 	prop_array_t reqby;
 	const char *pkgdep;
-	size_t i;
+	unsigned int i;
 
 	if ((reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkg)) != NULL) {
 		for (i = 0; i < prop_array_count(reqby); i++) {

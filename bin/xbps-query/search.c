@@ -47,7 +47,7 @@
 struct search_data {
 	int npatterns;
 	char **patterns;
-	size_t maxcols;
+	int maxcols;
 	prop_array_t results;
 };
 
@@ -56,7 +56,7 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 {
 	const char *pkgver, *desc, *inststr;
 	char tmp[256], *out;
-	size_t i, j, tlen = 0, len = 0;
+	unsigned int i, j, tlen = 0, len = 0;
 
 	/* Iterate over results array and find out largest pkgver string */
 	for (i = 0; i < prop_array_count(sd->results); i++) {
@@ -80,7 +80,7 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 			inststr = "[-]";
 
 		len = strlen(inststr) + strlen(tmp) + strlen(desc) + 3;
-		if (len > sd->maxcols) {
+		if ((int)len > sd->maxcols) {
 			out = malloc(sd->maxcols+1);
 			assert(out);
 			snprintf(out, sd->maxcols-3, "%s %s %s",
@@ -103,7 +103,7 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 	prop_dictionary_keysym_t ksym;
 	struct search_data *sd = arg;
 	const char *pkgver, *desc;
-	size_t i;
+	unsigned int i;
 	int x;
 
 	(void)done;
@@ -120,7 +120,7 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 		provides = prop_dictionary_get(pkgd, "provides");
 
 		for (x = 0; x < sd->npatterns; x++) {
-			size_t j;
+			unsigned int j;
 			bool vpkgfound = false;
 
 			for (j = 0; j < prop_array_count(provides); j++) {

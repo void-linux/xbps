@@ -110,7 +110,7 @@ xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
 {
 	prop_object_t obj;
 	prop_array_t array;
-	size_t i;
+	unsigned int i;
 	int rv = 0;
 	bool cbloop_done = false;
 
@@ -212,7 +212,7 @@ array_replace_dict(prop_array_t array,
 		   bool bypattern)
 {
 	prop_object_t obj;
-	size_t i;
+	unsigned int i;
 	const char *curpkgver;
 	char *curpkgname;
 

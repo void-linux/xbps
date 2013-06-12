@@ -57,7 +57,7 @@ find_pkg_symlink_target(prop_dictionary_t d, const char *file)
 {
 	prop_array_t links;
 	prop_object_t obj;
-	size_t i;
+	unsigned int i;
 	const char *pkgfile, *tgt = NULL;
 	char *rfile;
 
@@ -147,6 +147,7 @@ create_pkg_metaplist(struct xbps_handle *xhp, const char *pkgname, const char *p
 		    pkgver, buf, strerror(errno));
 	}
 	free(buf);
+	prop_object_release(pkg_metad);
 
 	return rv;
 }

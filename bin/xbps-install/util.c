@@ -35,7 +35,7 @@
 #include <xbps_api.h>
 #include "defs.h"
 
-size_t
+int
 get_maxcols(void)
 {
 	struct winsize ws;
@@ -47,9 +47,9 @@ get_maxcols(void)
 }
 
 void
-print_package_line(const char *str, size_t maxcols, bool reset)
+print_package_line(const char *str, int maxcols, bool reset)
 {
-	static size_t cols;
+	static int cols;
 	static bool first;
 
 	if (reset) {

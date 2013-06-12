@@ -87,11 +87,11 @@ pkgdep_find(const char *pkg)
 	return NULL;
 }
 
-static ssize_t
+static int32_t
 pkgdep_find_idx(const char *pkg)
 {
 	struct pkgdep *pd, *pd_new;
-	ssize_t idx = 0;
+	int32_t idx = 0;
 	const char *pkgver, *tract;
 
 	TAILQ_FOREACH_SAFE(pd, &pkgdep_list, pkgdep_entries, pd_new) {
@@ -167,8 +167,8 @@ sort_pkg_rundeps(struct xbps_handle *xhp,
 	prop_dictionary_t curpkgd;
 	struct pkgdep *lpd, *pdn;
 	const char *str, *tract;
-	ssize_t pkgdepidx, curpkgidx;
-	size_t i, idx = 0;
+	int32_t pkgdepidx, curpkgidx;
+	uint32_t i, idx = 0;
 	int rv = 0;
 
 	xbps_dbg_printf_append(xhp, "\n");
@@ -258,7 +258,7 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 	prop_array_t provides, sorted, unsorted, rundeps;
 	prop_object_t obj;
 	struct pkgdep *pd;
-	size_t i, j, ndeps = 0, cnt = 0;
+	unsigned int i, j, ndeps = 0, cnt = 0;
 	const char *pkgname, *pkgver, *tract, *vpkgdep;
 	int rv = 0;
 	bool vpkg_found;

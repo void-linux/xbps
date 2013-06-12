@@ -34,11 +34,11 @@
 #include "defs.h"
 
 struct list_pkgver_cb {
-	size_t pkgver_len;
-	size_t maxcols;
+	int pkgver_len;
+	int maxcols;
 };
 
-size_t
+int
 get_maxcols(void)
 {
 	struct winsize ws;
@@ -58,7 +58,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver, *short_desc, *state_str;
 	char tmp[255], *out = NULL;
-	size_t i, len = 0;
+	int i, len = 0;
 	pkg_state_t state;
 
 	(void)xhp;
@@ -167,8 +167,8 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg, bool *done)
 	(void)arg;
 	(void)done;
 
-	printf("%s (%zu packages)\n", repo->uri,
-	    (size_t)prop_dictionary_count(repo->idx));
+	printf("%s (%u packages)\n", repo->uri,
+	    prop_dictionary_count(repo->idx));
 
 	return 0;
 }
@@ -189,7 +189,7 @@ repo_list(struct xbps_handle *xhp)
 
 struct fflongest {
 	prop_dictionary_t d;
-	size_t len;
+	unsigned int len;
 };
 
 static int
@@ -201,7 +201,7 @@ _find_longest_pkgver_cb(struct xbps_handle *xhp,
 	struct fflongest *ffl = arg;
 	prop_dictionary_t pkgd;
 	const char *pkgver;
-	size_t len;
+	unsigned int len;
 
 	(void)xhp;
 	(void)loop_done;
@@ -219,7 +219,7 @@ _find_longest_pkgver_cb(struct xbps_handle *xhp,
 	return 0;
 }
 
-size_t
+unsigned int
 find_longest_pkgver(struct xbps_handle *xhp, prop_object_t o)
 {
 	struct fflongest ffl;

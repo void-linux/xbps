@@ -49,7 +49,7 @@ check_pkg_rundeps(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	prop_dictionary_t pkg_propsd = arg;
 	prop_array_t array;
-	size_t i;
+	unsigned int i;
 	const char *reqpkg;
 	bool test_broken = false;
 

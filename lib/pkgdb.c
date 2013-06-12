@@ -143,7 +143,7 @@ xbps_pkgdb_foreach_reverse_cb(struct xbps_handle *xhp,
 	prop_array_t allkeys;
 	prop_object_t obj;
 	prop_dictionary_t pkgd;
-	size_t i;
+	unsigned int i;
 	int rv;
 	bool done = false;
 

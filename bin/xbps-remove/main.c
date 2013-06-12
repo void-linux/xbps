@@ -183,12 +183,12 @@ cachedir_clean(struct xbps_handle *xhp)
 }
 
 static int
-remove_pkg(struct xbps_handle *xhp, const char *pkgname, size_t cols,
+remove_pkg(struct xbps_handle *xhp, const char *pkgname, int cols,
 	   bool recursive)
 {
 	prop_array_t reqby;
 	const char *pkgver;
-	size_t x;
+	unsigned int x;
 	int rv;
 
 	rv = xbps_transaction_remove_pkg(xhp, pkgname, recursive);
@@ -243,7 +243,7 @@ main(int argc, char **argv)
 	int i, c, flags, rv;
 	bool yes, drun, recursive, ignore_revdeps, clean_cache;
 	bool orphans, reqby_force;
-	size_t maxcols;
+	int maxcols;
 
 	rootdir = cachedir = conffile = NULL;
 	flags = rv = 0;

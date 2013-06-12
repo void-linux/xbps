@@ -143,7 +143,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	prop_dictionary_t idx, idxfiles;
 	const char *keyname;
 	char *pkgname;
-	size_t x, pkgcount, slicecount;
+	unsigned int x, pkgcount, slicecount;
 	int i, maxthreads, rv = 0;
 	bool flush = false;
 

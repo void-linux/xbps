@@ -102,7 +102,7 @@ main(int argc, char **argv)
 	const char *rootdir, *cachedir, *conffile, *defrepo;
 	int i, c, flags, rv, fflag = 0;
 	bool sync, yes, reinstall, drun, update;
-	size_t maxcols;
+	int maxcols;
 
 	rootdir = cachedir = conffile = defrepo = NULL;
 	flags = rv = 0;

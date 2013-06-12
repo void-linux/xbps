@@ -46,7 +46,7 @@ pkgdb_format_021(struct xbps_handle *xhp, const char *plist_new)
 {
 	prop_array_t array, rdeps;
 	prop_dictionary_t pkgdb, pkgd;
-	size_t i;
+	unsigned int i;
 	char *pkgname, *plist;
 
 	plist = xbps_xasprintf("%s/pkgdb.plist", xhp->metadir);

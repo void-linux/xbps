@@ -37,8 +37,8 @@ struct xferstat {
 /* from transaction.c */
 int	install_new_pkg(struct xbps_handle *, const char *, bool);
 int	update_pkg(struct xbps_handle *, const char *);
-int	dist_upgrade(struct xbps_handle *, size_t, bool, bool);
-int	exec_transaction(struct xbps_handle *, size_t, bool, bool);
+int	dist_upgrade(struct xbps_handle *, int, bool, bool);
+int	exec_transaction(struct xbps_handle *, int, bool, bool);
 
 /* from question.c */
 bool	yesno(const char *, ...);
@@ -51,7 +51,7 @@ void	fetch_file_progress_cb(struct xbps_fetch_cb_data *, void *);
 void	state_cb(struct xbps_state_cb_data *, void *);
 
 /* From util.c */
-void	print_package_line(const char *, size_t, bool);
-size_t	get_maxcols(void);
+void	print_package_line(const char *, int, bool);
+int	get_maxcols(void);
 
 #endif /* !_XBPS_INSTALL_DEFS_H_ */

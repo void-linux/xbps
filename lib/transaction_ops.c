@@ -193,7 +193,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	char *pkgname;
 	bool foundhold = false, newpkg_found = false;
 	int rv = 0;
-	size_t x;
+	unsigned int x;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
@@ -273,7 +273,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	prop_array_t unsorted, orphans, orphans_pkg, reqby;
 	prop_object_t obj;
 	const char *pkgver;
-	size_t count;
+	unsigned int count;
 	int rv = 0;
 
 	assert(pkgname != NULL);
@@ -351,7 +351,7 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 	prop_array_t orphans, unsorted;
 	prop_object_t obj;
 	const char *pkgver;
-	size_t count;
+	unsigned int count;
 	int rv = 0;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);

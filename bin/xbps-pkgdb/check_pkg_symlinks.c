@@ -77,7 +77,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	prop_array_t array;
 	prop_object_t obj;
 	prop_dictionary_t filesd = arg;
-	size_t i;
+	unsigned int i;
 	const char *file, *tgt = NULL;
 	char *path, *p, *buf, *buf2, *lnk, *dname, *tgt_path;
 	int rv;

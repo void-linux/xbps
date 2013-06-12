@@ -43,7 +43,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 	const char *pattern, *pkgver, *curpkgver;
 	char *buf, *pkgname, *curpkgname;
 	bool instd_auto, sr;
-	size_t i;
+	unsigned int i;
 
 	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
 

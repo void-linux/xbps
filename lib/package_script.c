@@ -115,7 +115,10 @@ xbps_pkg_exec_script(struct xbps_handle *xhp,
 		     bool update)
 {
 	prop_data_t data;
+	void *buf;
+	size_t buflen;
 	const char *pkgver;
+	int rv;
 
 	assert(xhp);
 	assert(d);
@@ -128,6 +131,10 @@ xbps_pkg_exec_script(struct xbps_handle *xhp,
 
 	prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
 
-	return xbps_pkg_exec_buffer(xhp, prop_data_data(data),
-			prop_data_size(data), pkgver, action, update);
+	buf = prop_data_data(data);
+	buflen = prop_data_size(data);
+	rv = xbps_pkg_exec_buffer(xhp, buf, buflen, pkgver, action, update);
+	free(buf);
+
+	return rv;
 }

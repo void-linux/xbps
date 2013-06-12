@@ -48,7 +48,7 @@ struct transaction {
 static void
 show_missing_deps(prop_array_t a)
 {
-	size_t i;
+	unsigned int i;
 	const char *str;
 
 	fprintf(stderr, "Unable to locate some required packages:\n");
@@ -61,7 +61,7 @@ show_missing_deps(prop_array_t a)
 static void
 show_conflicts(prop_array_t a)
 {
-	size_t i;
+	unsigned int i;
 	const char *str;
 
 	fprintf(stderr, "Conflicting packages were found:\n");
@@ -93,7 +93,7 @@ show_actions(prop_object_iterator_t iter)
 }
 
 static void
-show_package_list(prop_object_iterator_t iter, const char *match, size_t cols)
+show_package_list(prop_object_iterator_t iter, const char *match, int cols)
 {
 	prop_object_t obj;
 	const char *pkgver, *tract;
@@ -110,7 +110,7 @@ show_package_list(prop_object_iterator_t iter, const char *match, size_t cols)
 }
 
 static int
-show_transaction_sizes(struct transaction *trans, size_t cols)
+show_transaction_sizes(struct transaction *trans, int cols)
 {
 	uint64_t dlsize = 0, instsize = 0, rmsize = 0;
 	char size[8];
@@ -186,7 +186,7 @@ show_transaction_sizes(struct transaction *trans, size_t cols)
 }
 
 int
-dist_upgrade(struct xbps_handle *xhp, size_t cols, bool yes, bool drun)
+dist_upgrade(struct xbps_handle *xhp, int cols, bool yes, bool drun)
 {
 	int rv = 0;
 
@@ -256,7 +256,7 @@ update_pkg(struct xbps_handle *xhp, const char *pkgname)
 }
 
 int
-exec_transaction(struct xbps_handle *xhp, size_t maxcols, bool yes, bool drun)
+exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 {
 	prop_array_t mdeps, cflicts;
 	struct transaction *trans;

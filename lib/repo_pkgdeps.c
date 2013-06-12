@@ -64,7 +64,7 @@ add_missing_reqdep(struct xbps_handle *xhp, const char *reqpkg)
 	prop_string_t reqpkg_str;
 	prop_object_iterator_t iter = NULL;
 	prop_object_t obj;
-	size_t idx = 0;
+	unsigned int idx = 0;
 	bool add_pkgdep, pkgfound, update_pkgdep;
 	int rv = 0;
 
@@ -150,14 +150,14 @@ find_repo_deps(struct xbps_handle *xhp,
 	       prop_array_t unsorted,		/* array of unsorted deps */
 	       prop_array_t pkg_rdeps_array,	/* current pkg rundeps array  */
 	       const char *curpkg,		/* current pkgver */
-	       size_t *depth)			/* max recursion depth */
+	       unsigned short *depth)		/* max recursion depth */
 {
 	prop_dictionary_t curpkgd, tmpd;
 	prop_object_t obj;
 	prop_object_iterator_t iter;
 	prop_array_t curpkgrdeps;
 	pkg_state_t state;
-	size_t x;
+	unsigned int x;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
 	char *pkgname, *reqpkgname;
 	int rv = 0;
@@ -389,7 +389,7 @@ xbps_repository_find_deps(struct xbps_handle *xhp,
 {
 	prop_array_t pkg_rdeps;
 	const char *pkgver;
-	size_t depth = 0;
+	unsigned short depth = 0;
 
 	pkg_rdeps = prop_dictionary_get(repo_pkgd, "run_depends");
 	if (prop_object_type(pkg_rdeps) != PROP_TYPE_ARRAY)

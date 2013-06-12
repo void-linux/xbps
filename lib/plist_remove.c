@@ -38,7 +38,7 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 	prop_object_t obj;
 	const char *curname, *pkgdep;
 	char *curpkgname;
-	size_t idx = 0;
+	unsigned int idx = 0;
 	bool found = false;
 
 	assert(prop_object_type(array) == PROP_TYPE_ARRAY);

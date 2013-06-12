@@ -55,8 +55,8 @@ int	ownedby(struct xbps_handle *, int, char **);
 int	repo_ownedby(struct xbps_handle *, int, char **);
 
 /* From list.c */
-size_t	get_maxcols(void);
-size_t	find_longest_pkgver(struct xbps_handle *, prop_object_t);
+int		get_maxcols(void);
+unsigned int	find_longest_pkgver(struct xbps_handle *, prop_object_t);
 
 int	list_pkgs_in_dict(struct xbps_handle *, prop_object_t, void *, bool *);
 int	list_manual_pkgs(struct xbps_handle *, prop_object_t, void *, bool *);

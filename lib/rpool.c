@@ -119,7 +119,7 @@ int
 xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 {
 	const char *repouri;
-	size_t i;
+	unsigned int i;
 
 	if (xhp->cfg == NULL)
 		return ENOTSUP;

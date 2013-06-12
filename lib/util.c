@@ -121,7 +121,7 @@ xbps_pkg_name(const char *pkg)
 {
 	const char *p;
 	char *buf;
-	size_t len;
+	unsigned int len;
 
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
@@ -143,7 +143,7 @@ char *
 xbps_pkgpattern_name(const char *pkg)
 {
 	char *res, *pkgname;
-	size_t len;
+	unsigned int len;
 
 	assert(pkg != NULL);
 

@@ -54,7 +54,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	const char *oldpkgver, *arch, *oldarch;
 	char *pkgver, *pkgname, *sha256, *repodir, *buf;
 	char *tmprepodir;
-	size_t x;
+	unsigned int x;
 	int i, rv, ret = 0;
 	bool flush = false, found = false;
 

@@ -128,7 +128,7 @@ repo_match_files_by_pattern(prop_array_t files,
 			struct ffdata *ffd)
 {
 	const char *filestr;
-	size_t i;
+	unsigned int i;
 	int x;
 
 	for (i = 0; i < prop_array_count(files); i++) {

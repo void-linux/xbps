@@ -43,7 +43,7 @@ print_value_obj(const char *keyname, prop_object_t obj,
 	prop_array_t allkeys;
 	prop_object_t obj2, keysym;
 	const char *ksymname, *value;
-	size_t i;
+	unsigned int i;
 	char size[8];
 
 	if (indent == NULL)
@@ -151,7 +151,7 @@ static void
 print_srcrevs(const char *keyname, prop_string_t obj)
 {
 	const char *str = prop_string_cstring_nocopy(obj);
-	size_t i;
+	unsigned int i;
 
 	/* parse string appending a \t after EOL */
 	printf("%s:\n  ", keyname);
@@ -170,7 +170,7 @@ show_pkg_info(prop_dictionary_t dict)
 	prop_array_t all_keys;
 	prop_object_t obj, keysym;
 	const char *keyname;
-	size_t i;
+	unsigned int i;
 
 	all_keys = prop_dictionary_all_keys(dict);
 	for (i = 0; i < prop_array_count(all_keys); i++) {
@@ -201,7 +201,7 @@ show_pkg_files(prop_dictionary_t filesd)
 	prop_object_t obj;
 	prop_dictionary_keysym_t ksym;
 	const char *keyname, *file;
-	size_t i, x;
+	unsigned int i, x;
 
 	if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY)
 		return EINVAL;

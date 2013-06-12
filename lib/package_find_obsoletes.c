@@ -37,7 +37,7 @@ merge_filelist(prop_dictionary_t d)
 {
 	prop_array_t a, result;
 	prop_dictionary_t filed;
-	size_t i;
+	unsigned int i;
 
 	result = prop_array_create();
 	assert(result);
@@ -78,7 +78,7 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	prop_array_t instfiles, newfiles, obsoletes;
 	prop_object_t obj, obj2;
 	prop_string_t oldstr, newstr;
-	size_t i, x;
+	unsigned int i, x;
 	const char *oldhash;
 	char *file;
 	int rv = 0;

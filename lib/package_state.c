@@ -166,6 +166,7 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			return EINVAL;
 		}
 		free(pkgname);
+		prop_object_release(pkgd);
 	} else {
 		if ((rv = set_new_state(pkgd, state)) != 0)
 			return rv;

@@ -183,7 +183,7 @@ vpkg_user_conf(struct xbps_handle *xhp,
 {
 	const char *vpkgver, *pkg = NULL;
 	char *vpkgname = NULL, *tmp;
-	size_t i, j, cnt;
+	unsigned int i, j, cnt;
 
 	if (xhp->cfg == NULL)
 		return NULL;

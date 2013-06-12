@@ -138,7 +138,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	struct dirent *dp;
 	char *ext;
 	int i, maxthreads, rv = 0;
-	size_t slicecount, pkgcount;
+	unsigned int slicecount, pkgcount;
 
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {

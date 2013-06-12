@@ -39,7 +39,7 @@ xbps_entry_is_a_conf_file(prop_dictionary_t propsd,
 {
 	prop_array_t array;
 	const char *cffile;
-	size_t i;
+	unsigned int i;
 
 	assert(prop_object_type(propsd) == PROP_TYPE_DICTIONARY);
 	assert(entry_pname != NULL);
