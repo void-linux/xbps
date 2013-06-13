@@ -48,8 +48,9 @@
  * Object key for optional objects in package dictionary.
  */
 static const char *optional_objs[] = {
-	"conflicts", "conf_files", "replaces", "run_depends", "preserve",
-	"files", "dirs", "links", "provides", "homepage", "license"
+	"conflicts", "provides", "replaces", "run_depends", "preserve",
+	"homepage", "license", "packaged_with", "build_options",
+	"install_script", "remove_script", "long_desc", "requiredby"
 };
 
 /*
@@ -239,29 +240,23 @@ strip_dashes_from_key(const char *str)
 static void
 parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 			      prop_dictionary_t sub_confd,
-			      prop_array_t allkeys,
-			      bool parse_pkgdb)
+			      prop_array_t allkeys)
 {
 	prop_dictionary_keysym_t dksym;
 	prop_object_t keyobj, sub_keyobj;
-	size_t i, x;
+	unsigned int i, x;
 	const char *tmpkeyname, *cfprop, *optnodetmp;
 	char *optnode, *keyname;
 
 	for (i = 0; i < prop_array_count(allkeys); i++) {
 		dksym = prop_array_get(allkeys, i);
 		tmpkeyname = prop_dictionary_keysym_cstring_nocopy(dksym);
-
-		/*
-		 * While parsing package's dictionary from pkgdb, we are
-		 * only interested in the "automatic-install" object.
-		 */
-		if (parse_pkgdb &&
-		    (strcmp(tmpkeyname, "automatic-install")))
-			continue;
-
 		/* Ignore these objects */
-		if (strcmp(tmpkeyname, "source-revisions") == 0)
+		if ((strcmp(tmpkeyname, "source-revisions") == 0) ||
+		    (strcmp(tmpkeyname, "files") == 0) ||
+		    (strcmp(tmpkeyname, "conf_files") == 0) ||
+		    (strcmp(tmpkeyname, "dirs") == 0) ||
+		    (strcmp(tmpkeyname, "links") == 0))
 			continue;
 
 		keyobj = prop_dictionary_get_keysym(plistd, dksym);
@@ -292,17 +287,17 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 				    optnodetmp);
 
 			for (x = 0; x < prop_array_count(keyobj); x++) {
-				/*
-				 * Process arrays of strings.
-				 */
 				sub_keyobj = prop_array_get(keyobj, x);
 				if (prop_object_type(sub_keyobj) == PROP_TYPE_STRING) {
-					fprintf(f, "	%s -> %s_%zu_string "
+					/*
+					 * Process arrays of strings.
+					 */
+					fprintf(f, "	%s -> %s_%u_string "
 					    "[label=\"string\"];\n",
 					    keyname, keyname, x);
 					prop_dictionary_get_cstring_nocopy(sub_confd,
 					    "style", &cfprop);
-					fprintf(f, "	%s_%zu_string [style=\"%s\",",
+					fprintf(f, "	%s_%u_string [style=\"%s\",",
 					    keyname, x, cfprop);
 					prop_dictionary_get_cstring_nocopy(sub_confd,
 					    "fillcolor", &cfprop);
@@ -338,8 +333,11 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 			fprintf(f, ",label=\"%s\"",
 			    prop_bool_true(keyobj) ? "true" : "false");
 			break;
+		case PROP_TYPE_DATA:
+			fprintf(f, ",label=\"%zu bytes\"", prop_data_size(keyobj));
+			break;
 		case PROP_TYPE_NUMBER:
-			fprintf(f, ",label=\"%"PRIu64"\"",
+			fprintf(f, ",label=\"%"PRIu64"\" bytes",
 			    prop_number_unsigned_integer_value(keyobj));
 			break;
 		case PROP_TYPE_STRING:
@@ -371,8 +369,8 @@ create_dot_graph(struct xbps_handle *xhp,
 		 prop_dictionary_t confd,
 		 bool revdeps)
 {
-	prop_dictionary_t sub_confd, regpkgd = NULL;
-	prop_array_t allkeys;
+	prop_dictionary_t sub_confd;
+	prop_array_t allkeys, rdeps;
 	const char *pkgver, *cfprop;
 
 	prop_dictionary_get_cstring_nocopy(plistd, "pkgver", &pkgver);
@@ -422,23 +420,12 @@ create_dot_graph(struct xbps_handle *xhp,
 	 * Process all objects in package's dictionary from its metadata
 	 * property list file, aka XBPS_META_PATH/metadata/<pkgname>/XBPS_PKGPROPS.
 	 */
-	allkeys = prop_dictionary_all_keys(plistd);
-	parse_array_in_pkg_dictionary(f, plistd, sub_confd, allkeys, false);
-
-	/*
-	 * Process all objects in package's dictionary from pkgdb property
-	 * list file, aka XBPS_META_PATH/XBPS_PKGDB.
-	 */
 	if (revdeps) {
-		regpkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
-		if (regpkgd == NULL)
-			die("cannot find '%s' dictionary on %s!",
-			    pkgver, XBPS_PKGDB);
-
-		allkeys = prop_dictionary_all_keys(regpkgd);
-		parse_array_in_pkg_dictionary(f, regpkgd, sub_confd,
-		    allkeys, true);
+		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
+		prop_dictionary_set(plistd, "requiredby", rdeps);
 	}
+	allkeys = prop_dictionary_all_keys(plistd);
+	parse_array_in_pkg_dictionary(f, plistd, sub_confd, allkeys);
 	/*
 	 * Terminate the stream...
 	 */
