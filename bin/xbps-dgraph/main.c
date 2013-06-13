@@ -422,7 +422,8 @@ create_dot_graph(struct xbps_handle *xhp,
 	 */
 	if (revdeps) {
 		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
-		prop_dictionary_set(plistd, "requiredby", rdeps);
+		if (prop_array_count(rdeps))
+			prop_dictionary_set(plistd, "requiredby", rdeps);
 	}
 	allkeys = prop_dictionary_all_keys(plistd);
 	parse_array_in_pkg_dictionary(f, plistd, sub_confd, allkeys);
