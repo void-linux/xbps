@@ -151,8 +151,6 @@ xbps_pkgdb_foreach_reverse_cb(struct xbps_handle *xhp,
 		return rv;
 
 	allkeys = prop_dictionary_all_keys(xhp->pkgdb);
-	assert(allkeys);
-
 	for (i = prop_array_count(allkeys); i > 0; i--) {
 		obj = prop_array_get(allkeys, i);
 		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
@@ -267,7 +265,7 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 	while ((obj = prop_object_iterator_next(iter))) {
 		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
 		rundeps = prop_dictionary_get(pkgd, "run_depends");
-		if (rundeps == NULL || !prop_array_count(rundeps))
+		if (!prop_array_count(rundeps))
 			continue;
 
 		for (i = 0; i < prop_array_count(rundeps); i++) {

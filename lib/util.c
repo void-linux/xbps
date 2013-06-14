@@ -215,8 +215,7 @@ xbps_pkg_has_rundeps(prop_dictionary_t pkgd)
 	assert(prop_object_type(pkgd) == PROP_TYPE_DICTIONARY);
 
 	array = prop_dictionary_get(pkgd, "run_depends");
-	if ((prop_object_type(array) == PROP_TYPE_ARRAY) &&
-	     prop_array_count(array) > 0)
+	if (prop_array_count(array))
 		return true;
 
 	return false;

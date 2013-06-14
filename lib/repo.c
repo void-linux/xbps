@@ -226,7 +226,7 @@ revdeps_match(struct xbps_repo *repo, prop_dictionary_t tpkgd, const char *str)
 			continue;
 
 		pkgdeps = prop_dictionary_get(pkgd, "run_depends");
-		if (pkgdeps == NULL || !prop_array_count(pkgdeps))
+		if (!prop_array_count(pkgdeps))
 			continue;
 		/*
 		 * Try to match passed in string.

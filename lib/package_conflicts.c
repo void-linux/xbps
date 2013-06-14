@@ -44,7 +44,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 	char *pkgname, *repopkgname, *buf;
 
 	pkg_cflicts = prop_dictionary_get(pkg_repod, "conflicts");
-	if (pkg_cflicts == NULL || prop_array_count(pkg_cflicts) == 0)
+	if (prop_array_count(pkg_cflicts) == 0)
 		return;
 
 	trans_cflicts = prop_dictionary_get(xhp->transd, "conflicts");

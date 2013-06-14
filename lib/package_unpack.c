@@ -64,8 +64,6 @@ find_pkg_symlink_target(prop_dictionary_t d, const char *file)
 	assert(d);
 
 	links = prop_dictionary_get(d, "links");
-	assert(links);
-
 	for (i = 0; i < prop_array_count(links); i++) {
 		rfile = strchr(file, '.') + 1;
 		obj = prop_array_get(links, i);
@@ -96,16 +94,16 @@ create_pkg_metaplist(struct xbps_handle *xhp, const char *pkgname, const char *p
 
 	/* Add objects from XBPS_PKGFILES */
 	array = prop_dictionary_get(filesd, "files");
-	if (array && prop_array_count(array))
+	if (prop_array_count(array))
 		prop_dictionary_set(pkg_metad, "files", array);
 	array = prop_dictionary_get(filesd, "conf_files");
-	if (array && prop_array_count(array))
+	if (prop_array_count(array))
 		prop_dictionary_set(pkg_metad, "conf_files", array);
 	array = prop_dictionary_get(filesd, "links");
-	if (array && prop_array_count(array))
+	if (prop_array_count(array))
 		prop_dictionary_set(pkg_metad, "links", array);
 	array = prop_dictionary_get(filesd, "dirs");
-	if (array && prop_array_count(array))
+	if (prop_array_count(array))
 		prop_dictionary_set(pkg_metad, "dirs", array);
 
 	/* Add install/remove scripts data objects */

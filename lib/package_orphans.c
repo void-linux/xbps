@@ -107,8 +107,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans_user)
 
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
 		reqby = xbps_pkgdb_get_pkg_revdeps(xhp, curpkgver);
-		cnt = prop_array_count(reqby);
-		if (reqby == NULL || (cnt == 0)) {
+		if (prop_array_count(reqby) == 0) {
 			/*
 			 * Add packages with empty revdeps.
 			 */
@@ -124,8 +123,6 @@ find_orphans:
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
 
 		rdeps = prop_dictionary_get(pkgd, "run_depends");
-		if (rdeps == NULL)
-			continue;
 		for (x = 0; x < prop_array_count(rdeps); x++) {
 			cnt = 0;
 			prop_array_get_cstring_nocopy(rdeps, x, &deppkgver);

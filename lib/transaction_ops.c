@@ -355,11 +355,7 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 	int rv = 0;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
-	if (prop_object_type(orphans) != PROP_TYPE_ARRAY)
-		return EINVAL;
-
-	count = prop_array_count(orphans);
-	if (count == 0) {
+	if ((count = prop_array_count(orphans)) == 0) {
 		/* no orphans? we are done */
 		rv = ENOENT;
 		goto out;

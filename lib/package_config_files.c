@@ -45,7 +45,7 @@ xbps_entry_is_a_conf_file(prop_dictionary_t propsd,
 	assert(entry_pname != NULL);
 
 	array = prop_dictionary_get(propsd, "conf_files");
-	if (array == NULL || prop_array_count(array) == 0)
+	if (prop_array_count(array) == 0)
 		return false;
 
 	for (i = 0; i < prop_array_count(array); i++) {

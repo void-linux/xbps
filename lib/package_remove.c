@@ -52,8 +52,7 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 	assert(key != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if ((prop_object_type(array) != PROP_TYPE_ARRAY) ||
-	    prop_array_count(array) == 0)
+	if (prop_array_count(array) == 0)
 		return 0;
 
 	iter = xbps_array_iter_from_dict(dict, key);

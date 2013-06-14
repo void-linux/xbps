@@ -344,7 +344,7 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 		 * it doesn't matter.
 		 */
 		rundeps = prop_dictionary_get(obj, "run_depends");
-		if (rundeps == NULL || prop_array_count(rundeps) == 0) {
+		if (prop_array_count(rundeps) == 0) {
 			xbps_dbg_printf_append(xhp, "\n");
 			cnt++;
 			continue;

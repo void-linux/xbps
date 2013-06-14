@@ -120,9 +120,6 @@ xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
 	assert(fn != NULL);
 
 	array = prop_dictionary_get(dict, key);
-	if (prop_object_type(array) != PROP_TYPE_ARRAY)
-		return ENOENT;
-
 	for (i = 0; i < prop_array_count(array); i++) {
 		obj = prop_array_get(array, i);
 		if (obj == NULL)
