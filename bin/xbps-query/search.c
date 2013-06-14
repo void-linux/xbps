@@ -110,39 +110,18 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 
 	allkeys = prop_dictionary_all_keys(repo->idx);
 	for (i = 0; i < prop_array_count(allkeys); i++) {
-		prop_array_t provides = NULL;
-
 		ksym = prop_array_get(allkeys, i);
 		pkgd = prop_dictionary_get_keysym(repo->idx, ksym);
 
 		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		prop_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc);
-		provides = prop_dictionary_get(pkgd, "provides");
 
 		for (x = 0; x < sd->npatterns; x++) {
-			unsigned int j;
 			bool vpkgfound = false;
 
-			for (j = 0; j < prop_array_count(provides); j++) {
-				const char *vpkgver;
-				char *tmp, *vpkgname;
+			if (xbps_match_virtual_pkg_in_dict(pkgd, sd->patterns[x], false))
+				vpkgfound = true;
 
-				prop_array_get_cstring_nocopy(provides, j, &vpkgver);
-				if (strchr(vpkgver, '_') == NULL)
-					tmp = xbps_xasprintf("%s_1", vpkgver);
-				else
-					tmp = strdup(vpkgver);
-
-				vpkgname = xbps_pkg_name(tmp);
-				if (strcasecmp(vpkgname, sd->patterns[x]) == 0) {
-					free(vpkgname);
-					free(tmp);
-					vpkgfound = true;
-					break;
-				}
-				free(vpkgname);
-				free(tmp);
-			}
 			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
 			    (strcasestr(pkgver, sd->patterns[x])) ||
 			    (strcasestr(desc, sd->patterns[x])) || vpkgfound) {
