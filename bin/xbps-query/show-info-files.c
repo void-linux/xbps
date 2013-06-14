@@ -299,7 +299,7 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 	    ((ipkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
 		return errno;
 
-	if ((bpkgd = xbps_rpool_get_pkg_plist(xhp, pattern, "./props.plist")) == NULL)
+	if ((bpkgd = xbps_repo_get_pkg_plist(xhp, ipkgd, "./props.plist")) == NULL)
 		return errno;
 
 	prop_dictionary_set(bpkgd, "filename-sha256",

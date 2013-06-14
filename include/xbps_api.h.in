@@ -41,7 +41,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20130614"
+#define XBPS_API_VERSION	"20130614-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1321,6 +1321,20 @@ prop_dictionary_t xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg);
  */
 prop_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo,
 					     const char *pkg);
+
+/**
+ * Returns a pkg dictionary of the matching \a plist file from a binary package,
+ * by looking at its package dictionary (\a pkgd) returned by a repository or rpool.
+ *
+ * @param[in] xhp Pointer to the xbps_handle struct.
+ * @param[in] pkgd Package dictionary returned by xbps_{repo,rpool}_get_xxxpkg().
+ * @param[in] plist Plist filename to internalize from matching binary package.
+ *
+ * @return The pkg dictionary on success, NULL otherwise.
+ */
+prop_dictionary_t xbps_repo_get_pkg_plist(struct xbps_handle *xhp,
+					prop_dictionary_t pkgd,
+					const char *plist);
 
 /**
  * Returns a proplib array of strings with reverse dependencies from
