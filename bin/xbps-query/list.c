@@ -39,17 +39,6 @@ struct list_pkgver_cb {
 };
 
 int
-get_maxcols(void)
-{
-	struct winsize ws;
-
-	if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) == 0)
-		return ws.ws_col;
-
-	return 80;
-}
-
-int
 list_pkgs_in_dict(struct xbps_handle *xhp,
 		  prop_object_t obj,
 		  void *arg,

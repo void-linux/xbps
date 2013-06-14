@@ -28,6 +28,8 @@
 
 #include <xbps_api.h>
 
+#include "../xbps-install/defs.h"
+
 #ifndef __UNCONST
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 #endif
@@ -55,7 +57,6 @@ int	ownedby(struct xbps_handle *, int, char **);
 int	repo_ownedby(struct xbps_handle *, int, char **);
 
 /* From list.c */
-int		get_maxcols(void);
 unsigned int	find_longest_pkgver(struct xbps_handle *, prop_object_t);
 
 int	list_pkgs_in_dict(struct xbps_handle *, prop_object_t, void *, bool *);
