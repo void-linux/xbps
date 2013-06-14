@@ -91,52 +91,6 @@ config_inject_repos(struct xbps_handle *xh)
 	return 0;
 }
 
-static void
-config_inject_vpkgs(struct xbps_handle *xh)
-{
-	DIR *dirp;
-	struct dirent *dp;
-	char *ext, *vpkgdir;
-	FILE *fp;
-
-	if (strcmp(xh->rootdir, "/"))
-		vpkgdir = xbps_xasprintf("%s/etc/xbps/virtualpkg.d",
-		    xh->rootdir);
-	else
-		vpkgdir = strdup("/etc/xbps/virtualpkg.d");
-
-	if ((dirp = opendir(vpkgdir)) == NULL) {
-		xbps_dbg_printf(xh, "cannot access to %s: %s\n",
-		    vpkgdir, strerror(errno));
-		return;
-	}
-
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, "..") == 0) ||
-		    (strcmp(dp->d_name, ".") == 0))
-			continue;
-		/* only process .conf files, ignore something else */
-		if ((ext = strrchr(dp->d_name, '.')) == NULL)
-			continue;
-		if (strcmp(ext, ".conf") == 0) {
-			char *path;
-
-			path = xbps_xasprintf("%s/%s", vpkgdir, dp->d_name);
-			fp = fopen(path, "r");
-			assert(fp);
-			if (cfg_parse_fp(xh->cfg, fp) != 0) {
-				xbps_error_printf("Failed to parse "
-				    "vpkg conf file %s:\n", dp->d_name);
-			}
-			fclose(fp);
-			xbps_dbg_printf(xh, "Injected vpkgs from %s\n", path);
-			free(path);
-		}
-	}
-	closedir(dirp);
-	free(vpkgdir);
-}
-
 static int
 cb_validate_virtual(cfg_t *cfg, cfg_opt_t *opt)
 {
@@ -273,9 +227,6 @@ xbps_init(struct xbps_handle *xhp)
 	}
 	if (xhp->flags & XBPS_FLAG_SYSLOG)
 		syslog_enabled = true;
-
-	/* Inject virtual packages from virtualpkg.d files */
-	config_inject_vpkgs(xhp);
 
 	xbps_fetch_set_cache_connection(cc, cch);
 

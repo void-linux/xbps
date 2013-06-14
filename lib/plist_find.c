@@ -28,8 +28,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <dirent.h>
 
 #include "xbps_api_impl.h"
+
+static bool cfg_vpkgs_init;
 
 static prop_dictionary_t
 get_pkg_in_array(prop_array_t array, const char *str, bool virtual)
@@ -176,6 +180,53 @@ match_pkg_by_pattern(prop_dictionary_t repod, const char *p)
 	return d;
 }
 
+static void
+config_inject_vpkgs(struct xbps_handle *xh)
+{
+	DIR *dirp;
+	struct dirent *dp;
+	char *ext, *vpkgdir;
+	FILE *fp;
+
+	if (strcmp(xh->rootdir, "/"))
+		vpkgdir = xbps_xasprintf("%s/etc/xbps/virtualpkg.d",
+		    xh->rootdir);
+	else
+		vpkgdir = strdup("/etc/xbps/virtualpkg.d");
+
+	if ((dirp = opendir(vpkgdir)) == NULL) {
+		xbps_dbg_printf(xh, "cannot access to %s: %s\n",
+		    vpkgdir, strerror(errno));
+		return;
+	}
+
+	while ((dp = readdir(dirp)) != NULL) {
+		if ((strcmp(dp->d_name, "..") == 0) ||
+		    (strcmp(dp->d_name, ".") == 0))
+			continue;
+		/* only process .conf files, ignore something else */
+		if ((ext = strrchr(dp->d_name, '.')) == NULL)
+			continue;
+		if (strcmp(ext, ".conf") == 0) {
+			char *path;
+
+			path = xbps_xasprintf("%s/%s", vpkgdir, dp->d_name);
+			fp = fopen(path, "r");
+			assert(fp);
+			if (cfg_parse_fp(xh->cfg, fp) != 0) {
+				xbps_error_printf("Failed to parse "
+				    "vpkg conf file %s:\n", dp->d_name);
+			}
+			fclose(fp);
+			xbps_dbg_printf(xh, "Injected vpkgs from %s\n", path);
+			free(path);
+		}
+	}
+	closedir(dirp);
+	free(vpkgdir);
+	cfg_vpkgs_init = true;
+}
+
 const char HIDDEN *
 vpkg_user_conf(struct xbps_handle *xhp,
 	       const char *vpkg,
@@ -187,6 +238,10 @@ vpkg_user_conf(struct xbps_handle *xhp,
 
 	if (xhp->cfg == NULL)
 		return NULL;
+
+	/* inject virtual packages from sysconfdir */
+	if (!cfg_vpkgs_init)
+		config_inject_vpkgs(xhp);
 
 	if ((cnt = cfg_size(xhp->cfg, "virtual-package")) == 0) {
 		/* no virtual packages configured */
