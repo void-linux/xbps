@@ -41,7 +41,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20130609"
+#define XBPS_API_VERSION	"20130614"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1220,6 +1220,18 @@ prop_dictionary_t xbps_rpool_get_virtualpkg(struct xbps_handle *xhp,
 					    const char *pkg);
 
 /**
+ * Returns a proplib array of strings with reverse dependencies of all
+ * registered repositories matching the expression \a pkg.
+ *
+ * @param[in] xhp Pointer to the xbps_handle structure.
+ * @param[in] pkg Package expression to match in this repository index.
+ *
+ * @return The array of strings on success, NULL otherwise and errno is
+ * set appropiately.
+ */
+prop_array_t xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg);
+
+/**
  * Iterate over the the repository pool and search for a metadata plist
  * file in a binary package matching `pattern'. If a package is matched
  * the plist file \a plistf will be internalized into a proplib dictionary.
@@ -1309,6 +1321,18 @@ prop_dictionary_t xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg);
  */
 prop_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo,
 					     const char *pkg);
+
+/**
+ * Returns a proplib array of strings with reverse dependencies from
+ * repository \a repo matching the expression \a pkg.
+ *
+ * @param[in] repo Pointer to an xbps_repo structure.
+ * @param[in] pkg Package expression to match in this repository index.
+ *
+ * @return The array of strings on success, NULL otherwise and errno is
+ * set appropiately.
+ */
+prop_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
 
 /*@}*/
 

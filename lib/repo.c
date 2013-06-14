@@ -189,3 +189,149 @@ xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg)
 
 	return NULL;
 }
+
+static prop_array_t
+revdeps_match(struct xbps_repo *repo, prop_dictionary_t tpkgd, const char *str)
+{
+	prop_dictionary_t pkgd;
+	prop_array_t revdeps = NULL, pkgdeps, provides;
+	prop_object_iterator_t iter;
+	prop_object_t obj;
+	const char *pkgver, *tpkgver, *arch, *vpkg;
+	char *buf;
+	unsigned int i;
+
+	iter = prop_dictionary_iterator(repo->idx);
+	assert(iter);
+
+	while ((obj = prop_object_iterator_next(iter))) {
+		pkgd = prop_dictionary_get_keysym(repo->idx, obj);
+		if (prop_dictionary_equals(pkgd, tpkgd))
+			continue;
+
+		pkgdeps = prop_dictionary_get(pkgd, "run_depends");
+		if (pkgdeps == NULL || !prop_array_count(pkgdeps))
+			continue;
+		/*
+		 * Try to match passed in string.
+		 */
+		if (str) {
+			if (!xbps_match_pkgdep_in_array(pkgdeps, str))
+				continue;
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "architecture", &arch);
+			if (!xbps_pkg_arch_match(repo->xhp, arch, NULL))
+				continue;
+
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "pkgver", &tpkgver);
+			/* match */
+			if (revdeps == NULL)
+				revdeps = prop_array_create();
+
+			if (!xbps_match_string_in_array(revdeps, tpkgver))
+				prop_array_add_cstring_nocopy(revdeps, tpkgver);
+
+			continue;
+		}
+		/*
+		 * Try to match any virtual package.
+		 */
+		provides = prop_dictionary_get(tpkgd, "provides");
+		for (i = 0; i < prop_array_count(provides); i++) {
+			prop_array_get_cstring_nocopy(provides, i, &vpkg);
+			if (strchr(vpkg, '_') == NULL)
+				buf = xbps_xasprintf("%s_1", vpkg);
+			else
+				buf = strdup(vpkg);
+
+			if (!xbps_match_pkgdep_in_array(pkgdeps, buf)) {
+				free(buf);
+				continue;
+			}
+			free(buf);
+			prop_dictionary_get_cstring_nocopy(pkgd,
+			    "architecture", &arch);
+			if (!xbps_pkg_arch_match(repo->xhp, arch, NULL))
+				continue;
+
+			prop_dictionary_get_cstring_nocopy(pkgd, "pkgver",
+			    &tpkgver);
+			/* match */
+			if (revdeps == NULL)
+				revdeps = prop_array_create();
+
+			if (!xbps_match_string_in_array(revdeps, tpkgver))
+				prop_array_add_cstring_nocopy(revdeps, tpkgver);
+		}
+		/*
+		 * Try to match by pkgver.
+		 */
+		prop_dictionary_get_cstring_nocopy(tpkgd, "pkgver", &pkgver);
+		if (!xbps_match_pkgdep_in_array(pkgdeps, pkgver))
+			continue;
+
+		prop_dictionary_get_cstring_nocopy(pkgd,
+		    "architecture", &arch);
+		if (!xbps_pkg_arch_match(repo->xhp, arch, NULL))
+			continue;
+
+		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &tpkgver);
+		/* match */
+		if (revdeps == NULL)
+			revdeps = prop_array_create();
+
+		if (!xbps_match_string_in_array(revdeps, tpkgver))
+			prop_array_add_cstring_nocopy(revdeps, tpkgver);
+	}
+	prop_object_iterator_release(iter);
+	return revdeps;
+}
+
+prop_array_t
+xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
+{
+	prop_array_t revdeps = NULL, vdeps = NULL;
+	prop_dictionary_t pkgd;
+	const char *vpkg;
+	char *buf = NULL;
+	unsigned int i;
+
+	if (((pkgd = xbps_rpool_get_pkg(repo->xhp, pkg)) == NULL) &&
+	    ((pkgd = xbps_rpool_get_virtualpkg(repo->xhp, pkg)) == NULL)) {
+		errno = ENOENT;
+		return NULL;
+	}
+	/*
+	 * If pkg is a virtual pkg let's match it instead of the real pkgver.
+	 */
+	if ((vdeps = prop_dictionary_get(pkgd, "provides"))) {
+		for (i = 0; i < prop_array_count(vdeps); i++) {
+			char *vpkgn;
+
+			prop_array_get_cstring_nocopy(vdeps, i, &vpkg);
+			if (strchr(vpkg, '_') == NULL)
+				buf = xbps_xasprintf("%s_1", vpkg);
+			else
+				buf = strdup(vpkg);
+
+			vpkgn = xbps_pkg_name(buf);
+			assert(vpkgn);
+			if (strcmp(vpkgn, pkg) == 0) {
+				free(vpkgn);
+				break;
+			}
+			free(vpkgn);
+			free(buf);
+			buf = NULL;
+		}
+		if (buf) {
+			revdeps = revdeps_match(repo, pkgd, buf);
+			free(buf);
+		}
+	}
+	if (!prop_array_count(revdeps))
+		revdeps = revdeps_match(repo, pkgd, NULL);
+
+	return revdeps;
+}

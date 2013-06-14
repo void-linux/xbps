@@ -37,6 +37,7 @@
  * @defgroup repopool Repository pool functions
  */
 struct rpool_fpkg {
+	prop_array_t revdeps;
 	prop_dictionary_t pkgd;
 	const char *pattern;
 	const char *bestpkgver;
@@ -70,6 +71,30 @@ find_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 		return 0;
 	}
 	/* Not found */
+	return 0;
+}
+
+static int
+find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done)
+{
+	struct rpool_fpkg *rpf = arg;
+	prop_array_t revdeps = NULL;
+	const char *pkgver;
+	unsigned int i;
+
+	(void)done;
+
+	revdeps = xbps_repo_get_pkg_revdeps(repo, rpf->pattern);
+	if (prop_array_count(revdeps)) {
+		/* found */
+		if (rpf->revdeps == NULL)
+			rpf->revdeps = prop_array_create();
+		for (i = 0; i < prop_array_count(revdeps); i++) {
+			prop_array_get_cstring_nocopy(revdeps, i, &pkgver);
+			prop_array_add_cstring_nocopy(rpf->revdeps, pkgver);
+		}
+		prop_object_release(revdeps);
+	}
 	return 0;
 }
 
@@ -123,10 +148,11 @@ find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 typedef enum {
 	BEST_PKG = 1,
 	VIRTUAL_PKG,
-	REAL_PKG
+	REAL_PKG,
+	REVDEPS_PKG
 } pkg_repo_type_t;
 
-static prop_dictionary_t
+static prop_object_t
 repo_find_pkg(struct xbps_handle *xhp,
 	      const char *pkg,
 	      pkg_repo_type_t type)
@@ -136,6 +162,7 @@ repo_find_pkg(struct xbps_handle *xhp,
 
 	rpf.pattern = pkg;
 	rpf.pkgd = NULL;
+	rpf.revdeps = NULL;
 	rpf.bestpkgver = NULL;
 
 	switch (type) {
@@ -157,11 +184,18 @@ repo_find_pkg(struct xbps_handle *xhp,
 		 */
 		rv = xbps_rpool_foreach(xhp, find_pkg_cb, &rpf);
 		break;
+	case REVDEPS_PKG:
+		/*
+		 * Find revdeps for pkg.
+		 */
+		rv = xbps_rpool_foreach(xhp, find_pkg_revdeps_cb, &rpf);
 	}
 	if (rv != 0) {
 		errno = rv;
 		return NULL;
 	}
+	if (type == REVDEPS_PKG)
+		return rpf.revdeps;
 
 	return rpf.pkgd;
 }
@@ -185,6 +219,15 @@ xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg)
 		return repo_find_pkg(xhp, pkg, BEST_PKG);
 
 	return repo_find_pkg(xhp, pkg, REAL_PKG);
+}
+
+prop_array_t
+xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
+{
+	assert(xhp);
+	assert(pkg);
+
+	return repo_find_pkg(xhp, pkg, REVDEPS_PKG);
 }
 
 prop_dictionary_t

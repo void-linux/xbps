@@ -127,95 +127,21 @@ repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern, bool full)
 	return 0;
 }
 
-static int
-repo_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done)
-{
-	prop_dictionary_t pkgd;
-	prop_array_t pkgdeps;
-	prop_object_iterator_t iter;
-	prop_object_t obj;
-	const char *pkgver, *arch, *pattern = arg;
-	int rv = 0;
-
-	(void)done;
-
-	iter = prop_dictionary_iterator(repo->idx);
-	assert(iter);
-	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(repo->idx, obj);
-		pkgdeps = prop_dictionary_get(pkgd, "run_depends");
-		if (pkgdeps == NULL || prop_array_count(pkgdeps) == 0)
-			continue;
-
-		if (xbps_match_pkgdep_in_array(pkgdeps, pattern)) {
-			prop_dictionary_get_cstring_nocopy(pkgd,
-			    "architecture", &arch);
-			if (xbps_pkg_arch_match(repo->xhp, arch, NULL)) {
-				prop_dictionary_get_cstring_nocopy(pkgd,
-				    "pkgver", &pkgver);
-				printf("%s\n", pkgver);
-				rv = EEXIST;
-			}
-		}
-	}
-	prop_object_iterator_release(iter);
-	return rv;
-}
-
 int
 repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_array_t vdeps;
-	prop_dictionary_t pkgd = NULL;
-	const char *pkgver, *vpkg;
+	prop_array_t revdeps;
+	const char *pkgver;
 	unsigned int i;
-	int rv = 0;
-	bool matched = false;
+	int rv;
 
-	if (xbps_pkg_version(pkg))
-		pkgver = pkg;
-	else {
-		if (((pkgd = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
-		    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pkg)) == NULL))
-			return ENOENT;
+	revdeps = xbps_rpool_get_pkg_revdeps(xhp, pkg);
+	rv = errno;
+
+	for (i = 0; i < prop_array_count(revdeps); i++) {
+		prop_array_get_cstring_nocopy(revdeps, i, &pkgver);
+		printf("%s\n", pkgver);
 	}
-	/*
-	 * If pkg is a virtual pkg let's match it instead of the real pkgver.
-	 */
-	if (pkgd) {
-		if ((vdeps = prop_dictionary_get(pkgd, "provides"))) {
-			for (i = 0; i < prop_array_count(vdeps); i++) {
-				char *buf, *vpkgn;
 
-				prop_array_get_cstring_nocopy(vdeps, i, &vpkg);
-				if (strchr(vpkg, '_') == NULL)
-					buf = xbps_xasprintf("%s_1", vpkg);
-				else
-					buf = strdup(vpkg);
-
-				vpkgn = xbps_pkg_name(buf);
-				assert(vpkgn);
-				if (strcmp(vpkgn, pkg)) {
-					free(vpkgn);
-					free(buf);
-					continue;
-				}
-				free(vpkgn);
-				rv = xbps_rpool_foreach(xhp, repo_revdeps_cb,
-				    __UNCONST(buf));
-				free(buf);
-				if (rv == EEXIST) {
-					rv = 0;
-					matched = true;
-				}
-			}
-		}
-		if (!matched) {
-			prop_dictionary_get_cstring_nocopy(pkgd,
-			    "pkgver", &pkgver);
-			rv = xbps_rpool_foreach(xhp, repo_revdeps_cb,
-			    __UNCONST(pkgver));
-		}
-	}
 	return rv;
 }
