@@ -30,9 +30,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <pthread.h>
 
 #include "xbps_api_impl.h"
 
+static pthread_mutex_t cfg_mtx = PTHREAD_MUTEX_INITIALIZER;
 static bool cfg_vpkgs_init;
 
 static prop_dictionary_t
@@ -240,8 +242,10 @@ vpkg_user_conf(struct xbps_handle *xhp,
 		return NULL;
 
 	/* inject virtual packages from sysconfdir */
+	pthread_mutex_lock(&cfg_mtx);
 	if (!cfg_vpkgs_init)
 		config_inject_vpkgs(xhp);
+	pthread_mutex_unlock(&cfg_mtx);
 
 	if ((cnt = cfg_size(xhp->cfg, "virtual-package")) == 0) {
 		/* no virtual packages configured */
