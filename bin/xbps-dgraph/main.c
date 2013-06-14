@@ -337,7 +337,7 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 			fprintf(f, ",label=\"%zu bytes\"", prop_data_size(keyobj));
 			break;
 		case PROP_TYPE_NUMBER:
-			fprintf(f, ",label=\"%"PRIu64"\" bytes",
+			fprintf(f, ",label=\"%"PRIu64" bytes\"",
 			    prop_number_unsigned_integer_value(keyobj));
 			break;
 		case PROP_TYPE_STRING:
@@ -418,7 +418,7 @@ create_dot_graph(struct xbps_handle *xhp,
 
 	/*
 	 * Process all objects in package's dictionary from its metadata
-	 * property list file, aka XBPS_META_PATH/metadata/<pkgname>/XBPS_PKGPROPS.
+	 * property list file, aka XBPS_META_PATH/.<pkgname>.plist
 	 */
 	if (revdeps) {
 		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
