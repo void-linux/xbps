@@ -1,5 +1,15 @@
 xbps-0.25 (???):
 
+ * libxbps: only read virtual pkg config files when looking for a virtual
+   package, not unconditionally and at xbps_init() time.
+
+ * libxbps: optimize repo/rpool code by reusing existing data returned by previous calls.
+
+ * libxbps: fixed two memleaks.
+
+ * libxbps: reduced memory usage on 64bit platforms by using 32bit types, which
+   is really enough to be used in loop indexes (deps, revdeps, etc).
+
  * xbps-dgraph: completely updated to the new pkgdb format/API.
 
  * xbps-query(8): added support to find reverse dependencies in repository mode
