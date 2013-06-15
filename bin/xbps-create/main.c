@@ -157,7 +157,7 @@ entry_is_conf_file(const char *file)
 {
 	prop_array_t a;
 	const char *curfile;
-	size_t i;
+	unsigned int i;
 
 	assert(file);
 
