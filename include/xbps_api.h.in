@@ -169,13 +169,13 @@
  * @def XBPS_FETCH_CACHECONN
  * Default (global) limit of cached connections used in libfetch.
  */
-#define XBPS_FETCH_CACHECONN            6
+#define XBPS_FETCH_CACHECONN            8
 
 /**
  * @def XBPS_FETCH_CACHECONN_HOST
  * Default (per host) limit of cached connections used in libfetch.
  */
-#define XBPS_FETCH_CACHECONN_HOST       2
+#define XBPS_FETCH_CACHECONN_HOST       16
 
 /**
  * @def XBPS_FETCH_TIMEOUT
