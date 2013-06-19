@@ -32,6 +32,8 @@
 #endif
 
 #include <assert.h>
+#include <confuse.h>
+#define LIBXBPS_PRIVATE
 #include <xbps_api.h>
 /*
  * By default all public functions have default visibility, unless

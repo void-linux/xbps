@@ -33,7 +33,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <prop/proplib.h>
-#include <confuse.h>
 
 /**
  * @file include/xbps_api.h
@@ -429,6 +428,10 @@ struct xbps_unpack_cb_data {
 	 */
 	bool entry_is_conf;
 };
+
+#ifndef LIBXBPS_PRIVATE
+typedef void *cfg_t;
+#endif
 
 /**
  * @struct xbps_handle xbps_api.h "xbps_api.h"
