@@ -35,8 +35,6 @@
 #include <fcntl.h>
 
 #include <xbps_api.h>
-#include <archive.h>
-#include <archive_entry.h>
 #include "defs.h"
 
 /*
@@ -212,19 +210,19 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 
 		/* Find out if binary pkg stored in index contain any file */
 		pkg_cffiles = prop_dictionary_get(newpkgfilesd, "conf_files");
-		if (pkg_cffiles != NULL && prop_array_count(pkg_cffiles))
+		if (prop_array_count(pkg_cffiles))
 			found = true;
 		else
 			pkg_cffiles = NULL;
 
 		pkg_files = prop_dictionary_get(newpkgfilesd, "files");
-		if (pkg_files != NULL && prop_array_count(pkg_files))
+		if (prop_array_count(pkg_files))
 			found = true;
 		else
 			pkg_files = NULL;
 
 		pkg_links = prop_dictionary_get(newpkgfilesd, "links");
-		if (pkg_links != NULL && prop_array_count(pkg_links))
+		if (prop_array_count(pkg_links))
 			found = true;
 		else
 			pkg_links = NULL;
@@ -288,6 +286,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	    prop_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n",
 	    prop_dictionary_count(idxfiles));
+
 	prop_object_release(idx);
 	prop_object_release(idxfiles);
 
