@@ -449,6 +449,26 @@ fi
 rm -f _$func.c _$func
 
 #
+# Check for fdatasync().
+#
+func=fdatasync
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <unistd.h>
+int main(void) {
+	fdatasync(0);
+	return 0;
+}
+EOF
+if $XCC _$func.c -o _$func 2>/dev/null; then
+	echo yes.
+	echo "CPPFLAGS += -DHAVE_FDATASYNC" >>$CONFIG_MK
+else
+	echo no.
+fi
+rm -f _$func.c _$func
+
+#
 # Check for libfetch's fetchIO_read().
 #
 func=fetchIO_read
