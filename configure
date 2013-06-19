@@ -283,6 +283,7 @@ check_compiler_flag "visibility=default" f SHAREDLIB_CFLAGS
 if [ $? -eq 0 ]; then
 	HAVE_VISIBILITY=yes
 	echo "CPPFLAGS +=	-DHAVE_VISIBILITY=1" >>$CONFIG_MK
+	echo "HAVE_VISIBILITY = 1" >>$CONFIG_MK
 fi
 
 #

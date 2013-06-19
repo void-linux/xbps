@@ -27,7 +27,7 @@ LIBFETCH_OBJS += fetch/ftp.o fetch/http.o
 LIBFETCH_CPPFLAGS = -D_GNU_SOURCE -DFTP_COMBINE_CWDS -DNETBSD -DINET6 -DWITH_SSL
 LIBFETCH_CFLAGS = -Wno-error -Wno-unused-macros -Wno-conversion
 ifdef HAVE_VISIBILITY
-LIBFETCH_SHLIBCFLAGS = -fvisibility=hidden
+LIBFETCH_CFLAGS+= -fvisibility=hidden
 endif
 LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
@@ -66,7 +66,7 @@ fetch/httperr.h: fetch/http.errors
 $(LIBFETCH_OBJS): %.o: %.c $(LIBFETCH_INCS) $(LIBFETCH_GEN)
 	@printf " [CC]\t\t$@\n"
 	${SILENT}$(CC) $(CPPFLAGS) $(LIBFETCH_CPPFLAGS) $(CFLAGS) \
-		$(LIBFETCH_CFLAGS) $(LIBFETCH_SHLIBCFLAGS) -c $< -o $@
+		$(LIBFETCH_CFLAGS) -c $< -o $@
 
 $(LIBPROP_OBJS): %.o: %.c
 	@printf " [CC]\t\t$@\n"
