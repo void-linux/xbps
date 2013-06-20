@@ -29,6 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <prop/prop_object.h>
 #include "prop_object_impl.h"
 
@@ -834,7 +838,7 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
 		return (false);
 	}
 #else
-	otname = strncat(tname, "/.plistXXXXXX", sizeof(tname));
+	otname = strncat(tname, "/.plistXXXXXX", sizeof(tname) - strlen(tname) - 1);
 
 	if (sizeof(*otname) >= sizeof(tname)) {
 		errno = ENAMETOOLONG;

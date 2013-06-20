@@ -49,20 +49,20 @@
 int
 xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 {
-	prop_dictionary_t pkgd;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	xbps_dictionary_t pkgd;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
 	const char *pkgver;
 	int rv;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	iter = prop_dictionary_iterator(xhp->pkgdb);
+	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
-	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		rv = xbps_configure_pkg(xhp, pkgver, true, false, false);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "%s: failed to configure %s: %s\n",
@@ -70,7 +70,7 @@ xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 			break;
 		}
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	if ((rv == 0) && flush)
 		rv = xbps_pkgdb_update(xhp, true);
@@ -85,7 +85,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		   bool update,
 		   bool flush)
 {
-	prop_dictionary_t pkgd, pkgmetad;
+	xbps_dictionary_t pkgd, pkgmetad;
 	char *pkgname, *plist;
 	int rv = 0;
 	pkg_state_t state = 0;
@@ -122,7 +122,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	free(pkgname);
 
-	pkgmetad = prop_dictionary_internalize_from_file(plist);
+	pkgmetad = xbps_dictionary_internalize_from_file(plist);
 	if (pkgmetad == NULL) {
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
 		    errno, pkgver,
@@ -143,7 +143,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		return rv;
 	}
 	if (state == XBPS_PKG_STATE_INSTALLED) {
-		prop_object_release(pkgmetad);
+		xbps_object_release(pkgmetad);
 		return rv;
 	}
 
@@ -161,7 +161,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 			    pkgver, strerror(rv));
 		}
 	}
-	prop_object_release(pkgmetad);
+	xbps_object_release(pkgmetad);
 
 	if (rv == 0)
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_DONE, 0, pkgver, NULL);

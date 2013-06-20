@@ -42,18 +42,18 @@ struct ffdata {
 };
 
 static void
-match_files_by_pattern(prop_dictionary_t pkg_filesd,
-		       prop_dictionary_keysym_t key,
+match_files_by_pattern(xbps_dictionary_t pkg_filesd,
+		       xbps_dictionary_keysym_t key,
 		       struct ffdata *ffd,
 		       const char *pkgver)
 {
-	prop_array_t array;
-	prop_object_t obj;
+	xbps_array_t array;
+	xbps_object_t obj;
 	const char *keyname, *filestr, *typestr;
 	unsigned int i;
 	int x;
 
-	keyname = prop_dictionary_keysym_cstring_nocopy(key);
+	keyname = xbps_dictionary_keysym_cstring_nocopy(key);
 
 	if (strcmp(keyname, "files") == 0)
 		typestr = "regular file";
@@ -66,10 +66,10 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 	else
 		return;
 
-	array = prop_dictionary_get_keysym(pkg_filesd, key);
-	for (i = 0; i < prop_array_count(array); i++) {
-		obj = prop_array_get(array, i);
-		prop_dictionary_get_cstring_nocopy(obj, "file", &filestr);
+	array = xbps_dictionary_get_keysym(pkg_filesd, key);
+	for (i = 0; i < xbps_array_count(array); i++) {
+		obj = xbps_array_get(array, i);
+		xbps_dictionary_get_cstring_nocopy(obj, "file", &filestr);
 		if (filestr == NULL)
 			continue;
 		for (x = 0; x < ffd->npatterns; x++) {
@@ -82,24 +82,24 @@ match_files_by_pattern(prop_dictionary_t pkg_filesd,
 }
 
 static int
-ownedby_pkgdb_cb(struct xbps_handle *xhp, prop_object_t obj, void *arg, bool *done)
+ownedby_pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, void *arg, bool *done)
 {
-	prop_dictionary_t pkgmetad;
-	prop_array_t files_keys;
+	xbps_dictionary_t pkgmetad;
+	xbps_array_t files_keys;
 	struct ffdata *ffd = arg;
 	unsigned int i;
 	const char *pkgver;
 
 	(void)done;
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	pkgmetad = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
 	assert(pkgmetad);
 
-	files_keys = prop_dictionary_all_keys(pkgmetad);
-	for (i = 0; i < prop_array_count(files_keys); i++) {
+	files_keys = xbps_dictionary_all_keys(pkgmetad);
+	for (i = 0; i < xbps_array_count(files_keys); i++) {
 		match_files_by_pattern(pkgmetad,
-		    prop_array_get(files_keys, i), ffd, pkgver);
+		    xbps_array_get(files_keys, i), ffd, pkgver);
 	}
 	return 0;
 }
@@ -123,7 +123,7 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 }
 
 static void
-repo_match_files_by_pattern(prop_array_t files,
+repo_match_files_by_pattern(xbps_array_t files,
 			const char *pkgver,
 			struct ffdata *ffd)
 {
@@ -131,8 +131,8 @@ repo_match_files_by_pattern(prop_array_t files,
 	unsigned int i;
 	int x;
 
-	for (i = 0; i < prop_array_count(files); i++) {
-		prop_array_get_cstring_nocopy(files, i, &filestr);
+	for (i = 0; i < xbps_array_count(files); i++) {
+		xbps_array_get_cstring_nocopy(files, i, &filestr);
 		for (x = 0; x < ffd->npatterns; x++) {
 			if ((fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
 				printf("%s: %s (%s)\n",
@@ -145,9 +145,9 @@ repo_match_files_by_pattern(prop_array_t files,
 static int
 repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
-	prop_array_t allkeys, pkgar;
-	prop_dictionary_t filesd;
-	prop_dictionary_keysym_t ksym;
+	xbps_array_t allkeys, pkgar;
+	xbps_dictionary_t filesd;
+	xbps_dictionary_keysym_t ksym;
 	struct ffdata *ffd = arg;
 	const char *pkgver;
 	unsigned int i;
@@ -156,12 +156,12 @@ repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done)
 
 	filesd = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
 	ffd->repouri = repo->uri;
-	allkeys = prop_dictionary_all_keys(filesd);
+	allkeys = xbps_dictionary_all_keys(filesd);
 
-	for (i = 0; i < prop_array_count(allkeys); i++) {
-		ksym = prop_array_get(allkeys, i);
-		pkgar = prop_dictionary_get_keysym(filesd, ksym);
-		pkgver = prop_dictionary_keysym_cstring_nocopy(ksym);
+	for (i = 0; i < xbps_array_count(allkeys); i++) {
+		ksym = xbps_array_get(allkeys, i);
+		pkgar = xbps_dictionary_get_keysym(filesd, ksym);
+		pkgver = xbps_dictionary_keysym_cstring_nocopy(ksym);
 		repo_match_files_by_pattern(pkgar, pkgver, ffd);
 	}
 

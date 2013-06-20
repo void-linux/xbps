@@ -57,7 +57,7 @@ change_pkg_instmode(struct xbps_handle *xhp,
 		    const char *pkgname,
 		    const char *modestr)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 	bool mode = false;
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
@@ -67,7 +67,7 @@ change_pkg_instmode(struct xbps_handle *xhp,
 	if (strcmp(modestr, "auto") == 0)
 		mode = true;
 
-	prop_dictionary_set_bool(pkgd, "automatic-install", mode);
+	xbps_dictionary_set_bool(pkgd, "automatic-install", mode);
 	return xbps_pkgdb_update(xhp, true);
 }
 

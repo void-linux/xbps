@@ -34,11 +34,11 @@
 #include "defs.h"
 
 static void
-print_rdeps(struct xbps_handle *xhp, prop_array_t rdeps,
+print_rdeps(struct xbps_handle *xhp, xbps_array_t rdeps,
 	    bool full, bool repo, bool origin, int *indent)
 {
-	prop_array_t currdeps;
-	prop_dictionary_t pkgd;
+	xbps_array_t currdeps;
+	xbps_dictionary_t pkgd;
 	const char *pkgdep;
 	unsigned int i;
 	int j;
@@ -46,8 +46,8 @@ print_rdeps(struct xbps_handle *xhp, prop_array_t rdeps,
 	if (!origin)
 		(*indent)++;
 
-	for (i = 0; i < prop_array_count(rdeps); i++) {
-		prop_array_get_cstring_nocopy(rdeps, i, &pkgdep);
+	for (i = 0; i < xbps_array_count(rdeps); i++) {
+		xbps_array_get_cstring_nocopy(rdeps, i, &pkgdep);
 		if (!origin || !full)
 			for (j = 0; j < *indent; j++)
 				putchar(' ');
@@ -66,7 +66,7 @@ print_rdeps(struct xbps_handle *xhp, prop_array_t rdeps,
 				pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkgdep);
 		}
 		if (pkgd != NULL) {
-			currdeps = prop_dictionary_get(pkgd, "run_depends");
+			currdeps = xbps_dictionary_get(pkgd, "run_depends");
 			if (currdeps != NULL)
 				print_rdeps(xhp, currdeps,
 				    full, repo, false, indent);
@@ -78,15 +78,15 @@ print_rdeps(struct xbps_handle *xhp, prop_array_t rdeps,
 int
 show_pkg_deps(struct xbps_handle *xhp, const char *pkgname, bool full)
 {
-	prop_array_t rdeps;
-	prop_dictionary_t pkgd;
+	xbps_array_t rdeps;
+	xbps_dictionary_t pkgd;
 	int indent = 0;
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 	if (pkgd == NULL)
 		return ENOENT;
 
-	rdeps = prop_dictionary_get(pkgd, "run_depends");
+	rdeps = xbps_dictionary_get(pkgd, "run_depends");
 	if (rdeps != NULL)
 		print_rdeps(xhp, rdeps, full, false, true, &indent);
 
@@ -96,13 +96,13 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname, bool full)
 int
 show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_array_t reqby;
+	xbps_array_t reqby;
 	const char *pkgdep;
 	unsigned int i;
 
 	if ((reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkg)) != NULL) {
-		for (i = 0; i < prop_array_count(reqby); i++) {
-			prop_array_get_cstring_nocopy(reqby, i, &pkgdep);
+		for (i = 0; i < xbps_array_count(reqby); i++) {
+			xbps_array_get_cstring_nocopy(reqby, i, &pkgdep);
 			printf("%s\n", pkgdep);
 		}
 	}
@@ -112,15 +112,15 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 int
 repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern, bool full)
 {
-	prop_array_t rdeps;
-	prop_dictionary_t pkgd;
+	xbps_array_t rdeps;
+	xbps_dictionary_t pkgd;
 	int indent = 0;
 
 	if (((pkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
 	    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
 		return errno;
 
-	rdeps = prop_dictionary_get(pkgd, "run_depends");
+	rdeps = xbps_dictionary_get(pkgd, "run_depends");
 	if (rdeps != NULL)
 		print_rdeps(xhp, rdeps, full, true, true, &indent);
 
@@ -130,7 +130,7 @@ repo_show_pkg_deps(struct xbps_handle *xhp, const char *pattern, bool full)
 int
 repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_array_t revdeps;
+	xbps_array_t revdeps;
 	const char *pkgver;
 	unsigned int i;
 	int rv;
@@ -138,8 +138,8 @@ repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 	revdeps = xbps_rpool_get_pkg_revdeps(xhp, pkg);
 	rv = errno;
 
-	for (i = 0; i < prop_array_count(revdeps); i++) {
-		prop_array_get_cstring_nocopy(revdeps, i, &pkgver);
+	for (i = 0; i < xbps_array_count(revdeps); i++) {
+		xbps_array_get_cstring_nocopy(revdeps, i, &pkgver);
 		printf("%s\n", pkgver);
 	}
 

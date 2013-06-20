@@ -40,88 +40,88 @@
  * all library functions.
  */
 bool HIDDEN
-xbps_add_obj_to_dict(prop_dictionary_t dict, prop_object_t obj,
+xbps_add_obj_to_dict(xbps_dictionary_t dict, xbps_object_t obj,
 		       const char *key)
 {
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(obj != NULL);
 	assert(key != NULL);
 
-	if (!prop_dictionary_set(dict, key, obj)) {
-		prop_object_release(dict);
+	if (!xbps_dictionary_set(dict, key, obj)) {
+		xbps_object_release(dict);
 		errno = EINVAL;
 		return false;
 	}
 
-	prop_object_release(obj);
+	xbps_object_release(obj);
 	return true;
 }
 
 bool HIDDEN
-xbps_add_obj_to_array(prop_array_t array, prop_object_t obj)
+xbps_add_obj_to_array(xbps_array_t array, xbps_object_t obj)
 {
-	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(obj != NULL);
 
-	if (!prop_array_add(array, obj)) {
-		prop_object_release(array);
+	if (!xbps_array_add(array, obj)) {
+		xbps_object_release(array);
 		errno = EINVAL;
 		return false;
 	}
 
-	prop_object_release(obj);
+	xbps_object_release(obj);
 	return true;
 }
 
 int
 xbps_callback_array_iter(struct xbps_handle *xhp,
-	prop_array_t array,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	xbps_array_t array,
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg)
 {
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
 	int rv = 0;
 	bool loop_done = false;
 
-	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(fn != NULL);
 
-	iter = prop_array_iterator(array);
+	iter = xbps_array_iterator(array);
 	if (iter == NULL)
 		return ENOMEM;
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		rv = (*fn)(xhp, obj, arg, &loop_done);
 		if (rv != 0 || loop_done)
 			break;
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	return rv;
 }
 
 int
 xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
-	prop_dictionary_t dict,
+	xbps_dictionary_t dict,
 	const char *key,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg)
 {
-	prop_object_t obj;
-	prop_array_t array;
+	xbps_object_t obj;
+	xbps_array_t array;
 	unsigned int i;
 	int rv = 0;
 	bool cbloop_done = false;
 
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(xhp != NULL);
 	assert(key != NULL);
 	assert(fn != NULL);
 
-	array = prop_dictionary_get(dict, key);
-	for (i = 0; i < prop_array_count(array); i++) {
-		obj = prop_array_get(array, i);
+	array = xbps_dictionary_get(dict, key);
+	for (i = 0; i < xbps_array_count(array); i++) {
+		obj = xbps_array_get(array, i);
 		if (obj == NULL)
 			continue;
 		rv = (*fn)(xhp, obj, arg, &cbloop_done);
@@ -134,24 +134,24 @@ xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
 
 int
 xbps_callback_array_iter_reverse(struct xbps_handle *xhp,
-	prop_array_t array,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	xbps_array_t array,
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg)
 {
-	prop_object_t obj;
+	xbps_object_t obj;
 	unsigned int cnt;
 	int rv = 0;
 	bool loop_done = false;
 
-	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(fn != NULL);
 	assert(xhp != NULL);
 
-	if ((cnt = prop_array_count(array)) == 0)
+	if ((cnt = xbps_array_count(array)) == 0)
 		return 0;
 
 	while (cnt--) {
-		obj = prop_array_get(array, cnt);
+		obj = xbps_array_get(array, cnt);
 		if (obj == NULL)
 			continue;
 		rv = (*fn)(xhp, obj, arg, &loop_done);
@@ -164,20 +164,20 @@ xbps_callback_array_iter_reverse(struct xbps_handle *xhp,
 
 int
 xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
-	prop_dictionary_t dict,
+	xbps_dictionary_t dict,
 	const char *key,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg)
 {
-	prop_array_t array;
+	xbps_array_t array;
 
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(fn != NULL);
 	assert(xhp != NULL);
 
-	array = prop_dictionary_get(dict, key);
-	if (prop_object_type(array) != PROP_TYPE_ARRAY) {
+	array = xbps_dictionary_get(dict, key);
+	if (xbps_object_type(array) != XBPS_TYPE_ARRAY) {
 		xbps_dbg_printf(xhp, "invalid key '%s' for dictionary", key);
 		return EINVAL;
 	}
@@ -185,60 +185,60 @@ xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
 	return xbps_callback_array_iter_reverse(xhp, array, fn, arg);
 }
 
-prop_object_iterator_t
-xbps_array_iter_from_dict(prop_dictionary_t dict, const char *key)
+xbps_object_iterator_t
+xbps_array_iter_from_dict(xbps_dictionary_t dict, const char *key)
 {
-	prop_array_t array;
+	xbps_array_t array;
 
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(key != NULL);
 
-	array = prop_dictionary_get(dict, key);
-	if (prop_object_type(array) != PROP_TYPE_ARRAY) {
+	array = xbps_dictionary_get(dict, key);
+	if (xbps_object_type(array) != XBPS_TYPE_ARRAY) {
 		errno = EINVAL;
 		return NULL;
 	}
 
-	return prop_array_iterator(array);
+	return xbps_array_iterator(array);
 }
 
 static int
-array_replace_dict(prop_array_t array,
-		   prop_dictionary_t dict,
+array_replace_dict(xbps_array_t array,
+		   xbps_dictionary_t dict,
 		   const char *str,
 		   bool bypattern)
 {
-	prop_object_t obj;
+	xbps_object_t obj;
 	unsigned int i;
 	const char *curpkgver;
 	char *curpkgname;
 
-	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(str != NULL);
 
-	for (i = 0; i < prop_array_count(array); i++) {
-		obj = prop_array_get(array, i);
+	for (i = 0; i < xbps_array_count(array); i++) {
+		obj = xbps_array_get(array, i);
 		if (obj == NULL)
 			continue;
 		if (bypattern) {
 			/* pkgpattern match */
-			prop_dictionary_get_cstring_nocopy(obj,
+			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curpkgver);
 			if (xbps_pkgpattern_match(curpkgver, str)) {
-				if (!prop_array_set(array, i, dict))
+				if (!xbps_array_set(array, i, dict))
 					return EINVAL;
 
 				return 0;
 			}
 		} else {
 			/* pkgname match */
-			prop_dictionary_get_cstring_nocopy(obj,
+			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curpkgver);
 			curpkgname = xbps_pkg_name(curpkgver);
 			assert(curpkgname);
 			if (strcmp(curpkgname, str) == 0) {
-				if (!prop_array_set(array, i, dict)) {
+				if (!xbps_array_set(array, i, dict)) {
 					free(curpkgname);
 					return EINVAL;
 				}
@@ -253,16 +253,16 @@ array_replace_dict(prop_array_t array,
 }
 
 int HIDDEN
-xbps_array_replace_dict_by_name(prop_array_t array,
-				prop_dictionary_t dict,
+xbps_array_replace_dict_by_name(xbps_array_t array,
+				xbps_dictionary_t dict,
 				const char *pkgver)
 {
 	return array_replace_dict(array, dict, pkgver, false);
 }
 
 int HIDDEN
-xbps_array_replace_dict_by_pattern(prop_array_t array,
-				   prop_dictionary_t dict,
+xbps_array_replace_dict_by_pattern(xbps_array_t array,
+				   xbps_dictionary_t dict,
 				   const char *pattern)
 {
 	return array_replace_dict(array, dict, pattern, true);

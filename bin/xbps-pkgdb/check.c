@@ -47,23 +47,23 @@ struct thread_data {
 static void *
 pkgdb_thread_worker(void *arg)
 {
-	prop_dictionary_t pkgd;
-	prop_array_t array;
-	prop_object_t obj;
+	xbps_dictionary_t pkgd;
+	xbps_array_t array;
+	xbps_object_t obj;
 	struct thread_data *thd = arg;
 	const char *pkgver;
 	char *pkgname;
 	unsigned int i;
 	int rv;
 
-	array = prop_dictionary_all_keys(thd->xhp->pkgdb);
+	array = xbps_dictionary_all_keys(thd->xhp->pkgdb);
 	assert(array);
 
 	/* process pkgs from start until end */
 	for (i = thd->start; i < thd->end; i++) {
-		obj = prop_array_get(array, i);
-		pkgd = prop_dictionary_get_keysym(thd->xhp->pkgdb, obj);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		obj = xbps_array_get(array, i);
+		pkgd = xbps_dictionary_get_keysym(thd->xhp->pkgdb, obj);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		if (thd->xhp->flags & XBPS_FLAG_VERBOSE)
 			printf("Checking %s ...\n", pkgver);
 
@@ -75,7 +75,7 @@ pkgdb_thread_worker(void *arg)
 			fprintf(stderr, "pkgdb[%d] failed for %s: %s\n",
 			    thd->thread_num, pkgver, strerror(rv));
 	}
-	prop_object_release(array);
+	xbps_object_release(array);
 
 	return NULL;
 }
@@ -94,7 +94,7 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 	thd = calloc(maxthreads, sizeof(*thd));
 	assert(thd);
 
-	slicecount = prop_dictionary_count(xhp->pkgdb) / maxthreads;
+	slicecount = xbps_dictionary_count(xhp->pkgdb) / maxthreads;
 	pkgcount = 0;
 
 	for (i = 0; i < maxthreads; i++) {
@@ -102,7 +102,7 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 		thd[i].xhp = xhp;
 		thd[i].start = pkgcount;
 		if (i + 1 >= maxthreads)
-			thd[i].end = prop_dictionary_count(xhp->pkgdb);
+			thd[i].end = xbps_dictionary_count(xhp->pkgdb);
 		else
 			thd[i].end = pkgcount + slicecount;
 		pthread_create(&thd[i].thread, NULL,
@@ -124,10 +124,10 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 
 int
 check_pkg_integrity(struct xbps_handle *xhp,
-		    prop_dictionary_t pkgd,
+		    xbps_dictionary_t pkgd,
 		    const char *pkgname)
 {
-	prop_dictionary_t opkgd, propsd;
+	xbps_dictionary_t opkgd, propsd;
 	const char *sha256;
 	char *buf;
 	int rv = 0;
@@ -147,27 +147,27 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	 * Check for props.plist metadata file.
 	 */
 	buf = xbps_xasprintf("%s/.%s.plist",  xhp->metadir, pkgname);
-	propsd = prop_dictionary_internalize_from_file(buf);
+	propsd = xbps_dictionary_internalize_from_file(buf);
 	free(buf);
 	if (propsd == NULL) {
 		xbps_error_printf("%s: unexistent metafile!\n", pkgname);
 		return EINVAL;
-	} else if (prop_dictionary_count(propsd) == 0) {
+	} else if (xbps_dictionary_count(propsd) == 0) {
 		xbps_error_printf("%s: incomplete metadata file.\n", pkgname);
-		prop_object_release(propsd);
+		xbps_object_release(propsd);
 		return 1;
 	}
 	/*
 	 * Check pkg metadata signature.
 	 */
-	prop_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256);
+	xbps_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256);
 	if (sha256 != NULL) {
 		buf = xbps_xasprintf("%s/.%s.plist",
 		    xhp->metadir, pkgname);
 		rv = xbps_file_hash_check(buf, sha256);
 		free(buf);
 		if (rv == ERANGE) {
-			prop_object_release(propsd);
+			xbps_object_release(propsd);
 			fprintf(stderr, "%s: metadata file has been "
 			    "modified!\n", pkgname);
 			return 1;
@@ -190,7 +190,7 @@ do {								\
 	RUN_PKG_CHECK(xhp, rundeps, propsd);
 	RUN_PKG_CHECK(xhp, unneeded, opkgd);
 
-	prop_object_release(propsd);
+	xbps_object_release(propsd);
 
 #undef RUN_PKG_CHECK
 

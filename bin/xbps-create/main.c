@@ -59,7 +59,7 @@ static TAILQ_HEAD(xentry_head, xentry) xentry_list =
     TAILQ_HEAD_INITIALIZER(xentry_list);
 
 static uint64_t instsize;
-static prop_dictionary_t pkg_propsd, pkg_filesd;
+static xbps_dictionary_t pkg_propsd, pkg_filesd;
 static const char *destdir;
 
 static void __attribute__((noreturn))
@@ -122,7 +122,7 @@ die(const char *fmt, ...)
 static void
 process_array(const char *key, const char *val)
 {
-	prop_array_t array;
+	xbps_array_t array;
 	char *args, *p = NULL, *saveptr;
 
 	assert(key);
@@ -130,11 +130,11 @@ process_array(const char *key, const char *val)
 	if (val == NULL)
 		return;
 
-	array = prop_array_create();
+	array = xbps_array_create();
 	assert(array);
 
 	if (strchr(val, ' ') == NULL) {
-		prop_array_add_cstring_nocopy(array, val);
+		xbps_array_add_cstring_nocopy(array, val);
 		goto out;
 	}
 
@@ -145,29 +145,29 @@ process_array(const char *key, const char *val)
 	     (p = strtok_r(NULL, " ", &saveptr))) {
 		if (p == NULL)
 			continue;
-		prop_array_add_cstring(array, p);
+		xbps_array_add_cstring(array, p);
 	}
 	free(args);
 out:
-	prop_dictionary_set(pkg_propsd, key, array);
-	prop_object_release(array);
+	xbps_dictionary_set(pkg_propsd, key, array);
+	xbps_object_release(array);
 }
 
 static bool
 entry_is_conf_file(const char *file)
 {
-	prop_array_t a;
+	xbps_array_t a;
 	const char *curfile;
 	unsigned int i;
 
 	assert(file);
 
-	a = prop_dictionary_get(pkg_propsd, "conf_files");
-	if (a == NULL || prop_array_count(a) == 0)
+	a = xbps_dictionary_get(pkg_propsd, "conf_files");
+	if (a == NULL || xbps_array_count(a) == 0)
 		return false;
 
-	for (i = 0; i < prop_array_count(a); i++) {
-		prop_array_get_cstring_nocopy(a, i, &curfile);
+	for (i = 0; i < xbps_array_count(a); i++) {
+		xbps_array_get_cstring_nocopy(a, i, &curfile);
 		if (strcmp(file, curfile) == 0)
 			return true;
 	}
@@ -292,13 +292,13 @@ out:
 static void
 process_xentry(const char *key, const char *mutable_files)
 {
-	prop_array_t a;
-	prop_dictionary_t d;
+	xbps_array_t a;
+	xbps_dictionary_t d;
 	struct xentry *xe;
 	char *p, *saveptr, *args, *tok;
 	bool found = false, mutable_found = false;
 
-	a = prop_array_create();
+	a = xbps_array_create();
 	assert(a);
 
 	TAILQ_FOREACH_REVERSE(xe, &xentry_list, xentry_head, entries) {
@@ -306,7 +306,7 @@ process_xentry(const char *key, const char *mutable_files)
 			continue;
 
 		found = true;
-		d = prop_dictionary_create();
+		d = xbps_dictionary_create();
 		assert(d);
 		/* sanitize file path */
 		p = strchr(xe->file, '.') + 1;
@@ -316,7 +316,7 @@ process_xentry(const char *key, const char *mutable_files)
 		if (mutable_files) {
 			if ((strchr(mutable_files, ' ') == NULL) &&
 			    (strcmp(mutable_files, p) == 0))
-				prop_dictionary_set_bool(d, "mutable", true);
+				xbps_dictionary_set_bool(d, "mutable", true);
 			else {
 				args = strdup(mutable_files);
 				assert(args);
@@ -329,24 +329,24 @@ process_xentry(const char *key, const char *mutable_files)
 				}
 				free(args);
 				if (mutable_found) {
-					prop_dictionary_set_bool(d, "mutable",
+					xbps_dictionary_set_bool(d, "mutable",
 					    true);
 					mutable_found = false;
 				}
 			}
 		}
-		prop_dictionary_set_cstring(d, "file", p);
+		xbps_dictionary_set_cstring(d, "file", p);
 		if (xe->target)
-			prop_dictionary_set_cstring(d, "target", xe->target);
+			xbps_dictionary_set_cstring(d, "target", xe->target);
 		else if (xe->hash)
-			prop_dictionary_set_cstring(d, "sha256", xe->hash);
-		prop_array_add(a, d);
-		prop_object_release(d);
+			xbps_dictionary_set_cstring(d, "sha256", xe->hash);
+		xbps_array_add(a, d);
+		xbps_object_release(d);
 	}
 	if (found)
-		prop_dictionary_set(pkg_filesd, key, a);
+		xbps_dictionary_set(pkg_filesd, key, a);
 
-	prop_object_release(a);
+	xbps_object_release(a);
 }
 
 static void
@@ -485,17 +485,17 @@ process_archive(struct archive *ar,
 	/*
 	 * Add the installed-size object.
 	 */
-	prop_dictionary_set_uint64(pkg_propsd, "installed_size", instsize);
+	xbps_dictionary_set_uint64(pkg_propsd, "installed_size", instsize);
 
 	/* Add props.plist metadata file */
-	xml = prop_dictionary_externalize(pkg_propsd);
+	xml = xbps_dictionary_externalize(pkg_propsd);
 	assert(xml);
 	xbps_archive_append_buf(ar, xml, strlen(xml), "./props.plist",
 	    0644, "root", "root");
 	free(xml);
 
 	/* Add files.plist metadata file */
-	xml = prop_dictionary_externalize(pkg_filesd);
+	xml = xbps_dictionary_externalize(pkg_filesd);
 	assert(xml);
 	xbps_archive_append_buf(ar, xml, strlen(xml), "./files.plist",
 	    0644, "root", "root");
@@ -530,7 +530,7 @@ set_build_date(void)
 	if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", tmp) == 0)
 		die("failed to set build-date object (strftime):");
 
-	if (!prop_dictionary_set_cstring(pkg_propsd, "build-date", outstr))
+	if (!xbps_dictionary_set_cstring(pkg_propsd, "build-date", outstr))
 		die("failed to add build-date object:");
 }
 
@@ -687,40 +687,40 @@ main(int argc, char **argv)
 	/*
 	 * Process XBPS_PKGPROPS metadata file.
 	 */
-	pkg_propsd = prop_dictionary_create();
+	pkg_propsd = xbps_dictionary_create();
 	assert(pkg_propsd);
 
 	/* Required properties */
-	prop_dictionary_set_cstring_nocopy(pkg_propsd, "architecture", arch);
-	prop_dictionary_set_cstring_nocopy(pkg_propsd, "pkgname", pkgname);
-	prop_dictionary_set_cstring_nocopy(pkg_propsd, "version", version);
-	prop_dictionary_set_cstring_nocopy(pkg_propsd, "pkgver", pkgver);
-	prop_dictionary_set_cstring_nocopy(pkg_propsd, "short_desc", desc);
+	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "architecture", arch);
+	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "pkgname", pkgname);
+	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "version", version);
+	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "pkgver", pkgver);
+	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "short_desc", desc);
 	set_build_date();
 
 	/* Optional properties */
 	if (homepage)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"homepage", homepage);
 	if (license)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"license", license);
 	if (maint)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"maintainer", maint);
 	if (ldesc)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"long_desc", ldesc);
 	if (bwith)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"packaged-with", bwith);
 	if (srcrevs)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"source-revisions", srcrevs);
 	if (preserve)
-		prop_dictionary_set_bool(pkg_propsd, "preserve", true);
+		xbps_dictionary_set_bool(pkg_propsd, "preserve", true);
 	if (buildopts)
-		prop_dictionary_set_cstring_nocopy(pkg_propsd,
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"build-options", buildopts);
 
 	/* Optional arrays */
@@ -742,7 +742,7 @@ main(int argc, char **argv)
 	/*
 	 * Process XBPS_PKGFILES metadata file.
 	 */
-	pkg_filesd = prop_dictionary_create();
+	pkg_filesd = xbps_dictionary_create();
 	assert(pkg_filesd);
 	process_destdir(mutable_files);
 

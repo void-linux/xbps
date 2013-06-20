@@ -59,13 +59,13 @@
  * dictionary.
  */
 
-prop_array_t
-xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans_user)
+xbps_array_t
+xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 {
-	prop_array_t rdeps, reqby, array = NULL;
-	prop_dictionary_t pkgd, deppkgd;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	xbps_array_t rdeps, reqby, array = NULL;
+	xbps_dictionary_t pkgd, deppkgd;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
 	const char *curpkgver, *deppkgver, *reqbydep;
 	bool automatic = false;
 	unsigned int i, x, j, cnt, reqbycnt;
@@ -74,64 +74,64 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans_user)
 
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
-	if ((array = prop_array_create()) == NULL)
+	if ((array = xbps_array_create()) == NULL)
 		return NULL;
 
 	/*
 	 * Add all packages specified by the client.
 	 */
-	for (i = 0; i < prop_array_count(orphans_user); i++) {
-		prop_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
+	for (i = 0; i < xbps_array_count(orphans_user); i++) {
+		xbps_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
 		pkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
 		if (pkgd == NULL)
 			continue;
-		prop_array_add(array, pkgd);
+		xbps_array_add(array, pkgd);
 	}
-	if (prop_array_count(array))
+	if (xbps_array_count(array))
 		goto find_orphans;
 
-	iter = prop_dictionary_iterator(xhp->pkgdb);
+	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 	/*
 	 * First pass: track pkgs that were installed manually and
 	 * without reverse dependencies.
 	 */
-	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		/*
 		 * Skip packages that were not installed automatically.
 		 */
-		prop_dictionary_get_bool(pkgd, "automatic-install", &automatic);
+		xbps_dictionary_get_bool(pkgd, "automatic-install", &automatic);
 		if (!automatic)
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
 		reqby = xbps_pkgdb_get_pkg_revdeps(xhp, curpkgver);
-		if (prop_array_count(reqby) == 0) {
+		if (xbps_array_count(reqby) == 0) {
 			/*
 			 * Add packages with empty revdeps.
 			 */
-			prop_array_add(array, pkgd);
+			xbps_array_add(array, pkgd);
 			continue;
 		}
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 find_orphans:
-	for (i = 0; i < prop_array_count(array); i++) {
-		pkgd = prop_array_get(array, i);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
+	for (i = 0; i < xbps_array_count(array); i++) {
+		pkgd = xbps_array_get(array, i);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
 
-		rdeps = prop_dictionary_get(pkgd, "run_depends");
-		for (x = 0; x < prop_array_count(rdeps); x++) {
+		rdeps = xbps_dictionary_get(pkgd, "run_depends");
+		for (x = 0; x < xbps_array_count(rdeps); x++) {
 			cnt = 0;
-			prop_array_get_cstring_nocopy(rdeps, x, &deppkgver);
+			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);
 			reqby = xbps_pkgdb_get_pkg_revdeps(xhp, deppkgver);
 			if (reqby == NULL)
 				continue;
-			reqbycnt = prop_array_count(reqby);
+			reqbycnt = xbps_array_count(reqby);
 			for (j = 0; j < reqbycnt; j++) {
-				prop_array_get_cstring_nocopy(reqby, j, &reqbydep);
+				xbps_array_get_cstring_nocopy(reqby, j, &reqbydep);
 				if (xbps_find_pkg_in_array(array, reqbydep)) {
 					cnt++;
 					continue;
@@ -140,7 +140,7 @@ find_orphans:
 			if (cnt == reqbycnt) {
 				deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
 				if (!xbps_find_pkg_in_array(array, deppkgver))
-					prop_array_add(array, deppkgd);
+					xbps_array_add(array, deppkgd);
 			}
 		}
 	}

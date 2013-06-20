@@ -44,8 +44,8 @@
 static void
 pkgdb_format_021(struct xbps_handle *xhp, const char *plist_new)
 {
-	prop_array_t array, rdeps;
-	prop_dictionary_t pkgdb, pkgd;
+	xbps_array_t array, rdeps;
+	xbps_dictionary_t pkgdb, pkgd;
 	unsigned int i;
 	char *pkgname, *plist;
 
@@ -61,45 +61,45 @@ pkgdb_format_021(struct xbps_handle *xhp, const char *plist_new)
 		exit(EXIT_FAILURE);
 	}
 
-	array = prop_array_internalize_from_zfile(plist);
-	if (prop_object_type(array) != PROP_TYPE_ARRAY) {
+	array = xbps_array_internalize_from_zfile(plist);
+	if (xbps_object_type(array) != XBPS_TYPE_ARRAY) {
 		xbps_error_printf("unknown object type for %s\n",
 		    plist, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
-	pkgdb = prop_dictionary_create();
+	pkgdb = xbps_dictionary_create();
 	assert(pkgdb);
 
-	for (i = 0; i < prop_array_count(array); i++) {
-		pkgd = prop_array_get(array, i);
-		prop_dictionary_get_cstring(pkgd, "pkgname", &pkgname);
-		rdeps = prop_dictionary_get(pkgd, "run_depends");
+	for (i = 0; i < xbps_array_count(array); i++) {
+		pkgd = xbps_array_get(array, i);
+		xbps_dictionary_get_cstring(pkgd, "pkgname", &pkgname);
+		rdeps = xbps_dictionary_get(pkgd, "run_depends");
 		/* remove unneeded objs */
-		prop_dictionary_remove(pkgd, "pkgname");
-		prop_dictionary_remove(pkgd, "version");
-		if (prop_array_count(rdeps) == 0)
-			prop_dictionary_remove(pkgd, "run_depends");
+		xbps_dictionary_remove(pkgd, "pkgname");
+		xbps_dictionary_remove(pkgd, "version");
+		if (xbps_array_count(rdeps) == 0)
+			xbps_dictionary_remove(pkgd, "run_depends");
 
-		prop_dictionary_set(pkgdb, pkgname, pkgd);
+		xbps_dictionary_set(pkgdb, pkgname, pkgd);
 		free(pkgname);
 	}
 
-	if (prop_array_count(array) != prop_dictionary_count(pkgdb)) {
+	if (xbps_array_count(array) != xbps_dictionary_count(pkgdb)) {
 		xbps_error_printf("failed conversion! unmatched obj count "
-		    "(got %zu, need %zu)\n", prop_dictionary_count(pkgdb),
-		    prop_array_count(array));
+		    "(got %zu, need %zu)\n", xbps_dictionary_count(pkgdb),
+		    xbps_array_count(array));
 		exit(EXIT_FAILURE);
 	}
 
-	if (!prop_dictionary_externalize_to_file(pkgdb, plist_new)) {
+	if (!xbps_dictionary_externalize_to_file(pkgdb, plist_new)) {
 		xbps_error_printf("failed to write %s: %s\n",
 		    plist_new, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
-	prop_object_release(array);
-	prop_object_release(pkgdb);
+	xbps_object_release(array);
+	xbps_object_release(pkgdb);
 	free(plist);
 
 	printf("Conversion to 0.21 pkgdb format successfully\n");

@@ -16,10 +16,7 @@ LIBPROP_OBJS += portableproplib/prop_dictionary_util.o portableproplib/prop_zlib
 LIBPROP_OBJS += portableproplib/prop_data.o
 LIBPROP_CPPFLAGS = -D_GNU_SOURCE
 LIBPROP_CFLAGS = -Wno-old-style-definition -Wno-cast-qual -Wno-unused-parameter
-
-ifdef USE_EXTERNAL_PROPLIB
-LIBPROP_OBJS =
-endif
+LIBPROP_CFLAGS += -fvisibility=hidden
 
 # libfetch
 LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
@@ -31,10 +28,6 @@ LIBFETCH_CFLAGS+= -fvisibility=hidden
 endif
 LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
-
-ifdef USE_EXTERNAL_LIBFETCH
-LIBFETCH_OBJS =
-endif
 
 # External code used by libxbps
 EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
@@ -49,7 +42,7 @@ OBJS += download.o initend.o pkgdb.o package_conflicts.o
 OBJS += plist.o plist_find.o plist_match.o archive.o
 OBJS += plist_remove.o plist_fetch.o util.o util_hash.o 
 OBJS += repo.o repo_pkgdeps.o repo_sync.o
-OBJS += rpool.o rpool_get.o cb_util.o
+OBJS += rpool.o rpool_get.o cb_util.o proplib_wrapper.o
 OBJS += $(EXTOBJS) $(COMPAT_SRCS)
 
 .PHONY: all
@@ -77,13 +70,13 @@ $(OBJS): %.o: %.c
 	@printf " [CC]\t\t$@\n"
 	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
 
-libxbps.so: $(OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS)
+libxbps.so: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
 	${SILENT}$(CC) $^ $(LDFLAGS) -o $(LIBXBPS_SHLIB)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBXBPS_MAJOR)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
-libxbps.a: $(OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS)
+libxbps.a: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
 	@printf " [AR]\t\t$@\n"
 	${SILENT}$(AR) rcs $@ $^
 	@printf " [RANLIB]\t$@\n"

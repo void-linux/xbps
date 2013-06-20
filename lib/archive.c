@@ -108,10 +108,10 @@ uncompress_plist_data(char *xml, size_t len)
 }
 #undef _READ_CHUNK
 
-prop_dictionary_t HIDDEN
+xbps_dictionary_t HIDDEN
 xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 {
-	prop_dictionary_t d = NULL;
+	xbps_dictionary_t d = NULL;
 	size_t buflen;
 	ssize_t nbytes = -1;
 	char *buf, *uncomp_buf;
@@ -131,8 +131,8 @@ xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 	}
 
 	/* If blob is already a dictionary we are done */
-	d = prop_dictionary_internalize(buf);
-	if (prop_object_type(d) == PROP_TYPE_DICTIONARY)
+	d = xbps_dictionary_internalize(buf);
+	if (xbps_object_type(d) == XBPS_TYPE_DICTIONARY)
 		goto out;
 
 	/* Try to uncompress blob */
@@ -143,7 +143,7 @@ xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 		return NULL;
 	} else {
 		/* We have the uncompressed data */
-		d = prop_dictionary_internalize(uncomp_buf);
+		d = xbps_dictionary_internalize(uncomp_buf);
 		free(uncomp_buf);
 	}
 

@@ -56,23 +56,23 @@
  */
 
 static int
-check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
+check_binpkgs_hash(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
-	prop_object_t obj;
+	xbps_object_t obj;
 	const char *pkgver, *arch, *repoloc, *sha256, *trans;
 	char *binfile, *filen;
 	int rv = 0;
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
 		if ((strcmp(trans, "remove") == 0) ||
 		    (strcmp(trans, "configure") == 0))
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj,
+		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj,
 		    "filename-sha256", &sha256);
 
 		binfile = xbps_repository_pkg_path(xhp, obj);
@@ -97,29 +97,29 @@ check_binpkgs_hash(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		free(binfile);
 		free(filen);
 	}
-	prop_object_iterator_reset(iter);
+	xbps_object_iterator_reset(iter);
 
 	return rv;
 }
 
 static int
-download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
+download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
-	prop_object_t obj;
+	xbps_object_t obj;
 	const char *pkgver, *arch, *fetchstr, *repoloc, *trans;
 	char *binfile, *filen;
 	int rv = 0;
 	bool state_dload = false;
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
 		if ((strcmp(trans, "remove") == 0) ||
 		    (strcmp(trans, "configure") == 0))
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
 		binfile = xbps_repository_pkg_path(xhp, obj);
 		if (binfile == NULL) {
@@ -188,7 +188,7 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 		free(binfile);
 		free(filen);
 	}
-	prop_object_iterator_reset(iter);
+	xbps_object_iterator_reset(iter);
 
 	return rv;
 }
@@ -196,13 +196,13 @@ download_binpkgs(struct xbps_handle *xhp, prop_object_iterator_t iter)
 int
 xbps_transaction_commit(struct xbps_handle *xhp)
 {
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
 	const char *pkgver, *tract;
 	int rv = 0;
 	bool update, install, sr;
 
-	assert(prop_object_type(xhp->transd) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(xhp->transd) == XBPS_TYPE_DICTIONARY);
 
 	update = install = false;
 	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
@@ -225,10 +225,10 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	 */
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_RUN, 0, NULL, NULL);
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		update = false;
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
 		if (strcmp(tract, "remove") == 0) {
 			update = false;
@@ -236,9 +236,9 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			/*
 			 * Remove package.
 			 */
-			prop_dictionary_get_bool(obj, "remove-and-update",
+			xbps_dictionary_get_bool(obj, "remove-and-update",
 			    &update);
-			prop_dictionary_get_bool(obj, "softreplace", &sr);
+			xbps_dictionary_get_bool(obj, "softreplace", &sr);
 			rv = xbps_remove_pkg(xhp, pkgver, update, sr);
 			if (rv != 0) {
 				xbps_dbg_printf(xhp, "[trans] failed to "
@@ -303,20 +303,20 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	if (xhp->target_arch && strcmp(xhp->native_arch, xhp->target_arch))
 		goto out;
 
-	prop_object_iterator_reset(iter);
+	xbps_object_iterator_reset(iter);
 
 	/*
 	 * Configure all unpacked packages.
 	 */
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_CONFIGURE, 0, NULL, NULL);
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if ((strcmp(tract, "remove") == 0) ||
 		    (strcmp(tract, "configure") == 0))
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		update = false;
 		if (strcmp(tract, "update") == 0)
 			update = true;
@@ -341,7 +341,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	}
 
 out:
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	return rv;
 }

@@ -48,7 +48,7 @@ struct search_data {
 	int npatterns;
 	char **patterns;
 	int maxcols;
-	prop_array_t results;
+	xbps_array_t results;
 };
 
 static void
@@ -59,16 +59,16 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 	unsigned int i, j, tlen = 0, len = 0;
 
 	/* Iterate over results array and find out largest pkgver string */
-	for (i = 0; i < prop_array_count(sd->results); i++) {
-		prop_array_get_cstring_nocopy(sd->results, i, &pkgver);
+	for (i = 0; i < xbps_array_count(sd->results); i++) {
+		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
 		len = strlen(pkgver);
 		if (tlen == 0 || len > tlen)
 			tlen = len;
 		i++;
 	}
-	for (i = 0; i < prop_array_count(sd->results); i++) {
-		prop_array_get_cstring_nocopy(sd->results, i, &pkgver);
-		prop_array_get_cstring_nocopy(sd->results, i+1, &desc);
+	for (i = 0; i < xbps_array_count(sd->results); i++) {
+		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
+		xbps_array_get_cstring_nocopy(sd->results, i+1, &desc);
 		strncpy(tmp, pkgver, sizeof(tmp));
 		for (j = strlen(tmp); j < tlen; j++)
 			tmp[j] = ' ';
@@ -98,9 +98,9 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 static int
 search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
-	prop_array_t allkeys;
-	prop_dictionary_t pkgd;
-	prop_dictionary_keysym_t ksym;
+	xbps_array_t allkeys;
+	xbps_dictionary_t pkgd;
+	xbps_dictionary_keysym_t ksym;
 	struct search_data *sd = arg;
 	const char *pkgver, *desc;
 	unsigned int i;
@@ -108,13 +108,13 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 
 	(void)done;
 
-	allkeys = prop_dictionary_all_keys(repo->idx);
-	for (i = 0; i < prop_array_count(allkeys); i++) {
-		ksym = prop_array_get(allkeys, i);
-		pkgd = prop_dictionary_get_keysym(repo->idx, ksym);
+	allkeys = xbps_dictionary_all_keys(repo->idx);
+	for (i = 0; i < xbps_array_count(allkeys); i++) {
+		ksym = xbps_array_get(allkeys, i);
+		pkgd = xbps_dictionary_get_keysym(repo->idx, ksym);
 
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc);
 
 		for (x = 0; x < sd->npatterns; x++) {
 			bool vpkgfound = false;
@@ -125,12 +125,12 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
 			    (strcasestr(pkgver, sd->patterns[x])) ||
 			    (strcasestr(desc, sd->patterns[x])) || vpkgfound) {
-				prop_array_add_cstring_nocopy(sd->results, pkgver);
-				prop_array_add_cstring_nocopy(sd->results, desc);
+				xbps_array_add_cstring_nocopy(sd->results, pkgver);
+				xbps_array_add_cstring_nocopy(sd->results, desc);
 			}
 		}
 	}
-	prop_object_release(allkeys);
+	xbps_object_release(allkeys);
 
 	return 0;
 }
@@ -144,7 +144,7 @@ repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
 	sd.npatterns = npatterns;
 	sd.patterns = patterns;
 	sd.maxcols = get_maxcols();
-	sd.results = prop_array_create();
+	sd.results = xbps_array_create();
 
 	rv = xbps_rpool_foreach(xhp, search_pkgs_cb, &sd);
 	if (rv != 0 && rv != ENOTSUP)

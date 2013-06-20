@@ -60,8 +60,8 @@ enum {
 static int
 trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 {
-	prop_dictionary_t pkg_pkgdb = NULL, pkg_repod;
-	prop_array_t unsorted;
+	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod;
+	xbps_array_t unsorted;
 	const char *repoloc, *repopkgver, *instpkgver, *reason;
 	char *pkgname;
 	int rv = 0;
@@ -90,14 +90,14 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 			return ENOENT;
 		}
 	}
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
 	if (action == TRANS_UPDATE) {
 		/*
 		 * Compare installed version vs best pkg available in repos.
 		 */
-		prop_dictionary_get_cstring_nocopy(pkg_pkgdb,
+		xbps_dictionary_get_cstring_nocopy(pkg_pkgdb,
 		    "pkgver", &instpkgver);
 		if (xbps_cmpver(repopkgver, instpkgver) <= 0) {
 			xbps_dbg_printf(xhp, "[rpool] Skipping `%s' "
@@ -106,9 +106,9 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 			return EEXIST;
 		}
 		/* respect current install mode from pkgdb */
-		prop_dictionary_get_bool(pkg_pkgdb, "automatic-install",
+		xbps_dictionary_get_bool(pkg_pkgdb, "automatic-install",
 		    &autoinst);
-		prop_dictionary_set_bool(pkg_repod, "automatic-install",
+		xbps_dictionary_set_bool(pkg_repod, "automatic-install",
 		    autoinst);
 	}
 	/*
@@ -117,7 +117,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		return rv;
 
-	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
+	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 	/*
 	 * Find out if package has matched conflicts.
 	 */
@@ -166,7 +166,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	 * Set transaction obj in pkg dictionary to "install", "configure"
 	 * or "update".
 	 */
-	if (!prop_dictionary_set_cstring_nocopy(pkg_repod,
+	if (!xbps_dictionary_set_cstring_nocopy(pkg_repod,
 	    "transaction", reason))
 		return EINVAL;
 
@@ -174,7 +174,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	 * Add the pkg dictionary from repository's index dictionary into
 	 * the "unsorted" queue.
 	 */
-	if (!prop_array_add(unsorted, pkg_repod))
+	if (!xbps_array_add(unsorted, pkg_repod))
 		return EINVAL;
 
 	xbps_dbg_printf(xhp, "%s: added into the transaction (%s).\n",
@@ -186,9 +186,9 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 int
 xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
-	prop_dictionary_t pkgd;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	xbps_dictionary_t pkgd;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
 	const char *pkgver, *holdpkg;
 	char *pkgname;
 	bool foundhold = false, newpkg_found = false;
@@ -198,12 +198,12 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	iter = prop_dictionary_iterator(xhp->pkgdb);
+	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 
-	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
 
@@ -233,7 +233,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 		}
 		free(pkgname);
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	return newpkg_found ? rv : EEXIST;
 }
@@ -248,7 +248,7 @@ int
 xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 			     bool reinstall)
 {
-	prop_dictionary_t pkgd = NULL;
+	xbps_dictionary_t pkgd = NULL;
 	pkg_state_t state;
 
 	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkg)) ||
@@ -269,9 +269,9 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			    const char *pkgname,
 			    bool recursive)
 {
-	prop_dictionary_t pkgd;
-	prop_array_t unsorted, orphans, orphans_pkg, reqby;
-	prop_object_t obj;
+	xbps_dictionary_t pkgd;
+	xbps_array_t unsorted, orphans, orphans_pkg, reqby;
+	xbps_object_t obj;
 	const char *pkgver;
 	unsigned int count;
 	int rv = 0;
@@ -288,7 +288,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		return rv;
 
-	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
+	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 
 	if (!recursive)
 		goto rmpkg;
@@ -296,21 +296,21 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	 * If recursive is set, find out which packages would be orphans
 	 * if the supplied package were already removed.
 	 */
-	if ((orphans_pkg = prop_array_create()) == NULL)
+	if ((orphans_pkg = xbps_array_create()) == NULL)
 		return ENOMEM;
 
-	prop_array_set_cstring_nocopy(orphans_pkg, 0, pkgname);
+	xbps_array_set_cstring_nocopy(orphans_pkg, 0, pkgname);
 	orphans = xbps_find_pkg_orphans(xhp, orphans_pkg);
-	prop_object_release(orphans_pkg);
-	if (prop_object_type(orphans) != PROP_TYPE_ARRAY)
+	xbps_object_release(orphans_pkg);
+	if (xbps_object_type(orphans) != XBPS_TYPE_ARRAY)
 		return EINVAL;
 
-	count = prop_array_count(orphans);
+	count = xbps_array_count(orphans);
 	while (count--) {
-		obj = prop_array_get(orphans, count);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_set_cstring_nocopy(obj, "transaction", "remove");
-		prop_array_add(unsorted, obj);
+		obj = xbps_array_get(orphans, count);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_set_cstring_nocopy(obj, "transaction", "remove");
+		xbps_array_add(unsorted, obj);
 		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	}
 	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
@@ -318,28 +318,28 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	 * If target pkg is required by any installed pkg, the client must be aware
 	 * of this to take appropiate action.
 	 */
-	if ((prop_object_type(reqby) == PROP_TYPE_ARRAY) &&
-	    (prop_array_count(reqby) > 0))
+	if ((xbps_object_type(reqby) == XBPS_TYPE_ARRAY) &&
+	    (xbps_array_count(reqby) > 0))
 		rv = EEXIST;
 
-	prop_object_release(orphans);
+	xbps_object_release(orphans);
 	return rv;
 
 rmpkg:
 	/*
 	 * Add pkg dictionary into the transaction unsorted queue.
 	 */
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	prop_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
-	prop_array_add(unsorted, pkgd);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	xbps_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
+	xbps_array_add(unsorted, pkgd);
 	xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
 	/*
 	 * If target pkg is required by any installed pkg, the client must be aware
 	 * of this to take appropiate action.
 	 */
-	if ((prop_object_type(reqby) == PROP_TYPE_ARRAY) &&
-	    (prop_array_count(reqby) > 0))
+	if ((xbps_object_type(reqby) == XBPS_TYPE_ARRAY) &&
+	    (xbps_array_count(reqby) > 0))
 		rv = EEXIST;
 
 	return rv;
@@ -348,14 +348,14 @@ rmpkg:
 int
 xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 {
-	prop_array_t orphans, unsorted;
-	prop_object_t obj;
+	xbps_array_t orphans, unsorted;
+	xbps_object_t obj;
 	const char *pkgver;
 	unsigned int count;
 	int rv = 0;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
-	if ((count = prop_array_count(orphans)) == 0) {
+	if ((count = xbps_array_count(orphans)) == 0) {
 		/* no orphans? we are done */
 		rv = ENOENT;
 		goto out;
@@ -366,21 +366,21 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		goto out;
 
-	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
+	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 	/*
 	 * Add pkg orphan dictionary into the transaction unsorted queue.
 	 */
 	while (count--) {
-		obj = prop_array_get(orphans, count);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_set_cstring_nocopy(obj,
+		obj = xbps_array_get(orphans, count);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_set_cstring_nocopy(obj,
 		    "transaction", "remove");
-		prop_array_add(unsorted, obj);
+		xbps_array_add(unsorted, obj);
 		xbps_dbg_printf(xhp, "%s: added (remove).\n", pkgver);
 	}
 out:
 	if (orphans != NULL)
-		prop_object_release(orphans);
+		xbps_object_release(orphans);
 
 	return rv;
 }

@@ -30,7 +30,7 @@
 #include <xbps_api.h>
 
 /* from check.c */
-int	check_pkg_integrity(struct xbps_handle *, prop_dictionary_t, const char *);
+int	check_pkg_integrity(struct xbps_handle *, xbps_dictionary_t, const char *);
 int	check_pkg_integrity_all(struct xbps_handle *);
 
 #define CHECK_PKG_DECL(type)			\

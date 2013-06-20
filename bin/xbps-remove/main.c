@@ -119,7 +119,7 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
 static int
 cachedir_clean(struct xbps_handle *xhp)
 {
-	prop_dictionary_t pkg_propsd, repo_pkgd;
+	xbps_dictionary_t pkg_propsd, repo_pkgd;
 	DIR *dirp;
 	struct dirent *dp;
 	const char *pkgver, *rsha256;
@@ -152,14 +152,14 @@ cachedir_clean(struct xbps_handle *xhp)
 			rv = errno;
 			break;
 		}
-		prop_dictionary_get_cstring_nocopy(pkg_propsd, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(pkg_propsd, "pkgver", &pkgver);
 		/*
 		 * Remove binary pkg if it's not registered in any repository
 		 * or if hash doesn't match.
 		 */
 		repo_pkgd = xbps_rpool_get_pkg(xhp, pkgver);
 		if (repo_pkgd) {
-			prop_dictionary_get_cstring_nocopy(repo_pkgd,
+			xbps_dictionary_get_cstring_nocopy(repo_pkgd,
 			    "filename-sha256", &rsha256);
 			if (xbps_file_hash_check(binpkg, rsha256) == ERANGE) {
 				printf("Removed %s from cachedir (sha256 mismatch)\n",
@@ -186,7 +186,7 @@ static int
 remove_pkg(struct xbps_handle *xhp, const char *pkgname, int cols,
 	   bool recursive)
 {
-	prop_array_t reqby;
+	xbps_array_t reqby;
 	const char *pkgver;
 	unsigned int x;
 	int rv;
@@ -196,10 +196,10 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, int cols,
 		/* pkg has revdeps */
 		reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
 		printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
-		    pkgname, prop_array_count(reqby),
-		    prop_array_count(reqby) > 1 ? "S" : "");
-		for (x = 0; x < prop_array_count(reqby); x++) {
-			prop_array_get_cstring_nocopy(reqby, x, &pkgver);
+		    pkgname, xbps_array_count(reqby),
+		    xbps_array_count(reqby) > 1 ? "S" : "");
+		for (x = 0; x < xbps_array_count(reqby); x++) {
+			xbps_array_get_cstring_nocopy(reqby, x, &pkgver);
 			print_package_line(pkgver, cols, false);
 		}
 		printf("\n\n");

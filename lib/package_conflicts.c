@@ -33,37 +33,37 @@
 
 void HIDDEN
 xbps_pkg_find_conflicts(struct xbps_handle *xhp,
-			prop_array_t unsorted,
-			prop_dictionary_t pkg_repod)
+			xbps_array_t unsorted,
+			xbps_dictionary_t pkg_repod)
 {
-	prop_array_t pkg_cflicts, trans_cflicts;
-	prop_dictionary_t pkgd;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	xbps_array_t pkg_cflicts, trans_cflicts;
+	xbps_dictionary_t pkgd;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
 	const char *cfpkg, *repopkgver, *pkgver;
 	char *pkgname, *repopkgname, *buf;
 
-	pkg_cflicts = prop_dictionary_get(pkg_repod, "conflicts");
-	if (prop_array_count(pkg_cflicts) == 0)
+	pkg_cflicts = xbps_dictionary_get(pkg_repod, "conflicts");
+	if (xbps_array_count(pkg_cflicts) == 0)
 		return;
 
-	trans_cflicts = prop_dictionary_get(xhp->transd, "conflicts");
-	prop_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
+	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
 	repopkgname = xbps_pkg_name(repopkgver);
 	assert(repopkgname);
 
-	iter = prop_array_iterator(pkg_cflicts);
+	iter = xbps_array_iterator(pkg_cflicts);
 	assert(iter);
 
-	while ((obj = prop_object_iterator_next(iter))) {
-		cfpkg = prop_string_cstring_nocopy(obj);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		cfpkg = xbps_string_cstring_nocopy(obj);
 
 		/*
 		 * Check if current pkg conflicts with an installed package.
 		 */
 		if ((pkgd = xbps_pkgdb_get_pkg(xhp, cfpkg)) ||
 		    (pkgd = xbps_pkgdb_get_virtualpkg(xhp, cfpkg))) {
-			prop_dictionary_get_cstring_nocopy(pkgd,
+			xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			pkgname = xbps_pkg_name(pkgver);
 			assert(pkgname);
@@ -77,7 +77,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			    repopkgver);
 			buf = xbps_xasprintf("%s conflicts with "
 			    "installed pkg %s", repopkgver, pkgver);
-			prop_array_add_cstring(trans_cflicts, buf);
+			xbps_array_add_cstring(trans_cflicts, buf);
 			free(buf);
 			continue;
 		}
@@ -86,7 +86,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 		 */
 		if ((pkgd = xbps_find_pkg_in_array(unsorted, cfpkg)) ||
 		    (pkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, cfpkg))) {
-			prop_dictionary_get_cstring_nocopy(pkgd,
+			xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			pkgname = xbps_pkg_name(pkgver);
 			assert(pkgname);
@@ -99,11 +99,11 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			    "transaction %s <-> %s\n", pkgver, repopkgver);
 			buf = xbps_xasprintf("%s conflicts with "
 			   "%s in transaction", repopkgver, pkgver);
-			prop_array_add_cstring(trans_cflicts, buf);
+			xbps_array_add_cstring(trans_cflicts, buf);
 			free(buf);
 			continue;
 		}
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 	free(repopkgname);
 }

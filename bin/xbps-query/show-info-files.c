@@ -37,11 +37,11 @@
 #include "defs.h"
 
 static void
-print_value_obj(const char *keyname, prop_object_t obj,
+print_value_obj(const char *keyname, xbps_object_t obj,
 		const char *indent, bool raw)
 {
-	prop_array_t allkeys;
-	prop_object_t obj2, keysym;
+	xbps_array_t allkeys;
+	xbps_object_t obj2, keysym;
 	const char *ksymname, *value;
 	unsigned int i;
 	char size[8];
@@ -49,34 +49,34 @@ print_value_obj(const char *keyname, prop_object_t obj,
 	if (indent == NULL)
 		indent = "";
 
-	switch (prop_object_type(obj)) {
-	case PROP_TYPE_STRING:
+	switch (xbps_object_type(obj)) {
+	case XBPS_TYPE_STRING:
 		if (!raw)
 			printf("%s%s: ", indent, keyname);
-		printf("%s\n", prop_string_cstring_nocopy(obj));
+		printf("%s\n", xbps_string_cstring_nocopy(obj));
 		break;
-	case PROP_TYPE_NUMBER:
+	case XBPS_TYPE_NUMBER:
 		if (!raw)
 			printf("%s%s: ", indent, keyname);
 		if (xbps_humanize_number(size,
-		    (int64_t)prop_number_unsigned_integer_value(obj)) == -1)
+		    (int64_t)xbps_number_unsigned_integer_value(obj)) == -1)
 			printf("%ju\n",
-			    prop_number_unsigned_integer_value(obj));
+			    xbps_number_unsigned_integer_value(obj));
 		else
 			printf("%s\n", size);
 		break;
-	case PROP_TYPE_BOOL:
+	case XBPS_TYPE_BOOL:
 		if (!raw)
 			printf("%s%s: ", indent, keyname);
-		printf("%s\n", prop_bool_true(obj) ? "yes" : "no");
+		printf("%s\n", xbps_bool_true(obj) ? "yes" : "no");
 		break;
-	case PROP_TYPE_ARRAY:
+	case XBPS_TYPE_ARRAY:
 		if (!raw)
 			printf("%s%s:\n", indent, keyname);
-		for (i = 0; i < prop_array_count(obj); i++) {
-			obj2 = prop_array_get(obj, i);
-			if (prop_object_type(obj2) == PROP_TYPE_STRING) {
-				value = prop_string_cstring_nocopy(obj2);
+		for (i = 0; i < xbps_array_count(obj); i++) {
+			obj2 = xbps_array_get(obj, i);
+			if (xbps_object_type(obj2) == XBPS_TYPE_STRING) {
+				value = xbps_string_cstring_nocopy(obj2);
 				printf("%s%s%s\n", indent, !raw ? "\t" : "",
 				    value);
 			} else {
@@ -84,29 +84,29 @@ print_value_obj(const char *keyname, prop_object_t obj,
 			}
 		}
 		break;
-	case PROP_TYPE_DICTIONARY:
-		allkeys = prop_dictionary_all_keys(obj);
-		for (i = 0; i < prop_array_count(allkeys); i++) {
-			keysym = prop_array_get(allkeys, i);
-			ksymname = prop_dictionary_keysym_cstring_nocopy(keysym);
-			obj2 = prop_dictionary_get_keysym(obj, keysym);
+	case XBPS_TYPE_DICTIONARY:
+		allkeys = xbps_dictionary_all_keys(obj);
+		for (i = 0; i < xbps_array_count(allkeys); i++) {
+			keysym = xbps_array_get(allkeys, i);
+			ksymname = xbps_dictionary_keysym_cstring_nocopy(keysym);
+			obj2 = xbps_dictionary_get_keysym(obj, keysym);
 			print_value_obj(ksymname, obj2, "  ", raw);
 		}
-		prop_object_release(allkeys);
+		xbps_object_release(allkeys);
 		if (raw)
 			printf("\n");
 		break;
-	case PROP_TYPE_DATA:
+	case XBPS_TYPE_DATA:
 		if (!raw) {
-			xbps_humanize_number(size, (int64_t)prop_data_size(obj));
+			xbps_humanize_number(size, (int64_t)xbps_data_size(obj));
 			printf("%s%s: %s\n", indent, keyname, size);
 		} else {
 			FILE *f;
 			char buf[BUFSIZ-1];
 			void *data;
 
-			data = prop_data_data(obj);
-			f = fmemopen(data, prop_data_size(obj), "r");
+			data = xbps_data_data(obj);
+			f = fmemopen(data, xbps_data_size(obj), "r");
 			assert(f);
 			while (fgets(buf, BUFSIZ-1, f))
 				printf("%s", buf);
@@ -122,13 +122,13 @@ print_value_obj(const char *keyname, prop_object_t obj,
 }
 
 void
-show_pkg_info_one(prop_dictionary_t d, const char *keys)
+show_pkg_info_one(xbps_dictionary_t d, const char *keys)
 {
-	prop_object_t obj;
+	xbps_object_t obj;
 	char *key, *p, *saveptr;
 
 	if (strchr(keys, ',') == NULL) {
-		obj = prop_dictionary_get(d, keys);
+		obj = xbps_dictionary_get(d, keys);
 		if (obj == NULL)
 			return;
 		print_value_obj(keys, obj, NULL, true);
@@ -139,7 +139,7 @@ show_pkg_info_one(prop_dictionary_t d, const char *keys)
 		abort();
 	for ((p = strtok_r(key, ",", &saveptr)); p;
 	    (p = strtok_r(NULL, ",", &saveptr))) {
-		obj = prop_dictionary_get(d, p);
+		obj = xbps_dictionary_get(d, p);
 		if (obj == NULL)
 			continue;
 		print_value_obj(p, obj, NULL, true);
@@ -148,9 +148,9 @@ show_pkg_info_one(prop_dictionary_t d, const char *keys)
 }
 
 static void
-print_srcrevs(const char *keyname, prop_string_t obj)
+print_srcrevs(const char *keyname, xbps_string_t obj)
 {
-	const char *str = prop_string_cstring_nocopy(obj);
+	const char *str = xbps_string_cstring_nocopy(obj);
 	unsigned int i;
 
 	/* parse string appending a \t after EOL */
@@ -165,18 +165,18 @@ print_srcrevs(const char *keyname, prop_string_t obj)
 }
 
 void
-show_pkg_info(prop_dictionary_t dict)
+show_pkg_info(xbps_dictionary_t dict)
 {
-	prop_array_t all_keys;
-	prop_object_t obj, keysym;
+	xbps_array_t all_keys;
+	xbps_object_t obj, keysym;
 	const char *keyname;
 	unsigned int i;
 
-	all_keys = prop_dictionary_all_keys(dict);
-	for (i = 0; i < prop_array_count(all_keys); i++) {
-		keysym = prop_array_get(all_keys, i);
-		keyname = prop_dictionary_keysym_cstring_nocopy(keysym);
-		obj = prop_dictionary_get_keysym(dict, keysym);
+	all_keys = xbps_dictionary_all_keys(dict);
+	for (i = 0; i < xbps_array_count(all_keys); i++) {
+		keysym = xbps_array_get(all_keys, i);
+		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
+		obj = xbps_dictionary_get_keysym(dict, keysym);
 		/* ignore objs shown by other targets */
 		if ((strcmp(keyname, "run_depends") == 0) ||
 		    (strcmp(keyname, "files") == 0) ||
@@ -195,37 +195,37 @@ show_pkg_info(prop_dictionary_t dict)
 }
 
 int
-show_pkg_files(prop_dictionary_t filesd)
+show_pkg_files(xbps_dictionary_t filesd)
 {
-	prop_array_t array, allkeys;
-	prop_object_t obj;
-	prop_dictionary_keysym_t ksym;
+	xbps_array_t array, allkeys;
+	xbps_object_t obj;
+	xbps_dictionary_keysym_t ksym;
 	const char *keyname, *file;
 	unsigned int i, x;
 
-	if (prop_object_type(filesd) != PROP_TYPE_DICTIONARY)
+	if (xbps_object_type(filesd) != XBPS_TYPE_DICTIONARY)
 		return EINVAL;
 
-	allkeys = prop_dictionary_all_keys(filesd);
-	for (i = 0; i < prop_array_count(allkeys); i++) {
-		ksym = prop_array_get(allkeys, i);
-		keyname = prop_dictionary_keysym_cstring_nocopy(ksym);
+	allkeys = xbps_dictionary_all_keys(filesd);
+	for (i = 0; i < xbps_array_count(allkeys); i++) {
+		ksym = xbps_array_get(allkeys, i);
+		keyname = xbps_dictionary_keysym_cstring_nocopy(ksym);
 		if ((strcmp(keyname, "files") &&
 		    (strcmp(keyname, "conf_files") &&
 		    (strcmp(keyname, "links")))))
 			continue;
 
-		array = prop_dictionary_get(filesd, keyname);
-		if (array == NULL || prop_array_count(array) == 0)
+		array = xbps_dictionary_get(filesd, keyname);
+		if (array == NULL || xbps_array_count(array) == 0)
 			continue;
 
-		for (x = 0; x < prop_array_count(array); x++) {
-			obj = prop_array_get(array, x);
-			if (prop_object_type(obj) != PROP_TYPE_DICTIONARY)
+		for (x = 0; x < xbps_array_count(array); x++) {
+			obj = xbps_array_get(array, x);
+			if (xbps_object_type(obj) != XBPS_TYPE_DICTIONARY)
 				continue;
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 			printf("%s", file);
-			if (prop_dictionary_get_cstring_nocopy(obj,
+			if (xbps_dictionary_get_cstring_nocopy(obj,
 			    "target", &file))
 				printf(" -> %s", file);
 
@@ -241,7 +241,7 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 			   const char *pkg,
 			   const char *option)
 {
-	prop_dictionary_t d, pkgdb_d;
+	xbps_dictionary_t d, pkgdb_d;
 	const char *instdate;
 	bool autoinst;
 	pkg_state_t state;
@@ -254,13 +254,13 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 	if (d == NULL)
 		return ENOENT;
 
-	if (prop_dictionary_get_cstring_nocopy(pkgdb_d,
+	if (xbps_dictionary_get_cstring_nocopy(pkgdb_d,
 	    "install-date", &instdate))
-		prop_dictionary_set_cstring_nocopy(d, "install-date",
+		xbps_dictionary_set_cstring_nocopy(d, "install-date",
 		    instdate);
 
-	if (prop_dictionary_get_bool(pkgdb_d, "automatic-install", &autoinst))
-		prop_dictionary_set_bool(d, "automatic-install", autoinst);
+	if (xbps_dictionary_get_bool(pkgdb_d, "automatic-install", &autoinst))
+		xbps_dictionary_set_bool(d, "automatic-install", autoinst);
 
 	xbps_pkg_state_dictionary(pkgdb_d, &state);
 	xbps_set_pkg_state_dictionary(d, state);
@@ -276,7 +276,7 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 int
 show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_dictionary_t d;
+	xbps_dictionary_t d;
 	int rv = 0;
 
 	d = xbps_pkgdb_get_pkg_metadata(xhp, pkg);
@@ -293,7 +293,7 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 		   const char *pattern,
 		   const char *option)
 {
-	prop_dictionary_t ipkgd, bpkgd;
+	xbps_dictionary_t ipkgd, bpkgd;
 
 	if (((ipkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
 	    ((ipkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
@@ -302,10 +302,10 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 	if ((bpkgd = xbps_repo_get_pkg_plist(xhp, ipkgd, "./props.plist")) == NULL)
 		return errno;
 
-	prop_dictionary_set(bpkgd, "filename-sha256",
-	    prop_dictionary_get(ipkgd, "filename-sha256"));
-	prop_dictionary_set(bpkgd, "filename-size",
-	    prop_dictionary_get(ipkgd, "filename-size"));
+	xbps_dictionary_set(bpkgd, "filename-sha256",
+	    xbps_dictionary_get(ipkgd, "filename-sha256"));
+	xbps_dictionary_set(bpkgd, "filename-size",
+	    xbps_dictionary_get(ipkgd, "filename-size"));
 
 	if (option)
 		show_pkg_info_one(bpkgd, option);
@@ -318,7 +318,7 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 int
 repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 
 	pkgd = xbps_rpool_get_pkg_plist(xhp, pkg, "./files.plist");
 	if (pkgd == NULL) {

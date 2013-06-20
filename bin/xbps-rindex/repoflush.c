@@ -39,7 +39,7 @@
 
 int
 repodata_flush(struct xbps_handle *xhp, const char *repodir,
-	prop_dictionary_t idx, prop_dictionary_t idxfiles)
+	xbps_dictionary_t idx, xbps_dictionary_t idxfiles)
 {
 	struct archive *ar;
 	mode_t myumask;
@@ -60,7 +60,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	archive_write_set_options(ar, "compression-level=9");
 	archive_write_open_fd(ar, repofd);
 
-	xml = prop_dictionary_externalize(idx);
+	xml = xbps_dictionary_externalize(idx);
 	assert(xml);
 	if (xbps_archive_append_buf(ar, xml, strlen(xml),
 	    XBPS_PKGINDEX, 0644, "root", "root") != 0) {
@@ -69,7 +69,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	}
 	free(xml);
 
-	xml = prop_dictionary_externalize(idxfiles);
+	xml = xbps_dictionary_externalize(idxfiles);
 	assert(xml);
 	if (xbps_archive_append_buf(ar, xml, strlen(xml),
 	    XBPS_PKGINDEX_FILES, 0644, "root", "root") != 0) {

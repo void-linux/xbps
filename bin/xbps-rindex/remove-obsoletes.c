@@ -39,7 +39,7 @@
 
 struct thread_data {
 	pthread_t thread;
-	prop_array_t array;
+	xbps_array_t array;
 	struct xbps_repo *repo;
 	unsigned int start;
 	unsigned int end;
@@ -84,7 +84,7 @@ remove_pkg(const char *repodir, const char *arch, const char *file)
 static void *
 cleaner_thread(void *arg)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 	struct thread_data *thd = arg;
 	const char *binpkg, *pkgver, *arch;
 	unsigned int i;
@@ -92,21 +92,21 @@ cleaner_thread(void *arg)
 
 	/* process pkgs from start until end */
 	for (i = thd->start; i < thd->end; i++) {
-		prop_array_get_cstring_nocopy(thd->array, i, &binpkg);
+		xbps_array_get_cstring_nocopy(thd->array, i, &binpkg);
 		pkgd = xbps_get_pkg_plist_from_binpkg(binpkg, "./props.plist");
 		if (pkgd == NULL) {
 			rv = remove_pkg(thd->repo->uri, arch, binpkg);
 			if (rv != 0) {
-				prop_object_release(pkgd);
+				xbps_object_release(pkgd);
 				continue;
 			}
 			printf("Removed broken package `%s'.\n", binpkg);
 		}
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
 		/* ignore pkgs from other archs */
 		if (!xbps_pkg_arch_match(thd->repo->xhp, arch, NULL)) {
-			prop_object_release(pkgd);
+			xbps_object_release(pkgd);
 			continue;
 		}
 		xbps_dbg_printf(thd->repo->xhp, "thread[%d] checking %s (%s)\n",
@@ -117,12 +117,12 @@ cleaner_thread(void *arg)
 		if (!xbps_repo_get_pkg(thd->repo, pkgver)) {
 			rv = remove_pkg(thd->repo->uri, arch, binpkg);
 			if (rv != 0) {
-				prop_object_release(pkgd);
+				xbps_object_release(pkgd);
 				continue;
 			}
 			printf("Removed obsolete package `%s'.\n", binpkg);
 		}
-		prop_object_release(pkgd);
+		xbps_object_release(pkgd);
 	}
 
 	return NULL;
@@ -131,7 +131,7 @@ cleaner_thread(void *arg)
 int
 remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 {
-	prop_array_t array = NULL;
+	xbps_array_t array = NULL;
 	struct xbps_repo *repo;
 	struct thread_data *thd;
 	DIR *dirp;
@@ -171,16 +171,16 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		if (strcmp(ext, ".xbps"))
 			continue;
 		if (array == NULL)
-			array = prop_array_create();
+			array = xbps_array_create();
 
-		prop_array_add_cstring(array, dp->d_name);
+		xbps_array_add_cstring(array, dp->d_name);
 	}
 	(void)closedir(dirp);
 
 	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
 	thd = calloc(maxthreads, sizeof(*thd));
 
-	slicecount = prop_array_count(array) / maxthreads;
+	slicecount = xbps_array_count(array) / maxthreads;
 	pkgcount = 0;
 
 	for (i = 0; i < maxthreads; i++) {
@@ -189,7 +189,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		thd[i].repo = repo;
 		thd[i].start = pkgcount;
 		if (i + 1 >= maxthreads)
-			thd[i].end = prop_array_count(array);
+			thd[i].end = xbps_array_count(array);
 		else
 			thd[i].end = pkgcount + slicecount;
 		pthread_create(&thd[i].thread, NULL, cleaner_thread, &thd[i]);

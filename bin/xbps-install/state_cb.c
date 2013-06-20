@@ -34,7 +34,7 @@
 void
 state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 	const char *instver, *newver;
 	char *pkgname;
 	bool syslog_enabled = false;
@@ -90,7 +90,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
 		assert(pkgname);
 		newver = xbps_pkg_version(xscd->arg);
 		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
-		prop_dictionary_get_cstring_nocopy(pkgd, "version", &instver);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "version", &instver);
 		printf("%s-%s: updating to %s ...\n", pkgname, instver, newver);
 		free(pkgname);
 		break;

@@ -117,22 +117,22 @@ usage(void)
 }
 
 static const char *
-convert_proptype_to_string(prop_object_t obj)
+convert_proptype_to_string(xbps_object_t obj)
 {
-	switch (prop_object_type(obj)) {
-	case PROP_TYPE_ARRAY:
+	switch (xbps_object_type(obj)) {
+	case XBPS_TYPE_ARRAY:
 		return "array";
-	case PROP_TYPE_BOOL:
+	case XBPS_TYPE_BOOL:
 		return "bool";
-	case PROP_TYPE_DICTIONARY:
+	case XBPS_TYPE_DICTIONARY:
 		return "dictionary";
-	case PROP_TYPE_DICT_KEYSYM:
+	case XBPS_TYPE_DICT_KEYSYM:
 		return "dictionary key";
-	case PROP_TYPE_NUMBER:
+	case XBPS_TYPE_NUMBER:
 		return "integer";
-	case PROP_TYPE_STRING:
+	case XBPS_TYPE_STRING:
 		return "string";
-	case PROP_TYPE_DATA:
+	case XBPS_TYPE_DATA:
 		return "data";
 	default:
 		return NULL;
@@ -142,77 +142,77 @@ convert_proptype_to_string(prop_object_t obj)
 static void
 generate_conf_file(void)
 {
-	prop_dictionary_t d, d2;
+	xbps_dictionary_t d, d2;
 	struct defprops *dfp;
 	size_t i;
 	const char *outfile = "xbps-dgraph.conf";
 
-	d = prop_dictionary_create();
+	d = xbps_dictionary_create();
 
-	d2 = prop_dictionary_create();
-	prop_dictionary_set(d, "graph", d2);
-	prop_object_release(d2);
+	d2 = xbps_dictionary_create();
+	xbps_dictionary_set(d, "graph", d2);
+	xbps_object_release(d2);
 
-	d2 = prop_dictionary_create();
-	prop_dictionary_set(d, "edge", d2);
-	prop_object_release(d2);
+	d2 = xbps_dictionary_create();
+	xbps_dictionary_set(d, "edge", d2);
+	xbps_object_release(d2);
 
-	d2 = prop_dictionary_create();
-	prop_dictionary_set(d, "node", d2);
-	prop_object_release(d2);
+	d2 = xbps_dictionary_create();
+	xbps_dictionary_set(d, "node", d2);
+	xbps_object_release(d2);
 
-	d2 = prop_dictionary_create();
-	prop_dictionary_set(d, "node-sub", d2);
-	prop_object_release(d2);
+	d2 = xbps_dictionary_create();
+	xbps_dictionary_set(d, "node-sub", d2);
+	xbps_object_release(d2);
 
 	for (i = 0; i < __arraycount(dfprops); i++) {
 		dfp = &dfprops[i];
-		d2 = prop_dictionary_get(d, dfp->sect);
-		prop_dictionary_set_cstring_nocopy(d2, dfp->prop, dfp->val);
+		d2 = xbps_dictionary_get(d, dfp->sect);
+		xbps_dictionary_set_cstring_nocopy(d2, dfp->prop, dfp->val);
 	}
 
-	if (prop_dictionary_externalize_to_file(d, outfile) == false) {
-		prop_object_release(d);
+	if (xbps_dictionary_externalize_to_file(d, outfile) == false) {
+		xbps_object_release(d);
 		die("couldn't write conf_file to %s", outfile);
 	}
-	prop_object_release(d);
+	xbps_object_release(d);
 	printf("Wrote configuration file: %s\n", _DGRAPH_CFFILE);
 }
 
 static void
 write_conf_property_on_stream(FILE *f,
 			      const char *section,
-			      prop_dictionary_t confd)
+			      xbps_dictionary_t confd)
 {
-	prop_array_t allkeys, allkeys2;
-	prop_dictionary_keysym_t dksym, dksym2;
-	prop_object_t keyobj, keyobj2;
+	xbps_array_t allkeys, allkeys2;
+	xbps_dictionary_keysym_t dksym, dksym2;
+	xbps_object_t keyobj, keyobj2;
 	size_t i, x;
 	const char *cf_val, *keyname, *keyname2;
 
 	/*
 	 * Iterate over the main dictionary.
 	 */
-	allkeys = prop_dictionary_all_keys(confd);
-	for (i = 0; i < prop_array_count(allkeys); i++) {
-		dksym = prop_array_get(allkeys, i);
-		keyname = prop_dictionary_keysym_cstring_nocopy(dksym);
-		keyobj = prop_dictionary_get_keysym(confd, dksym);
+	allkeys = xbps_dictionary_all_keys(confd);
+	for (i = 0; i < xbps_array_count(allkeys); i++) {
+		dksym = xbps_array_get(allkeys, i);
+		keyname = xbps_dictionary_keysym_cstring_nocopy(dksym);
+		keyobj = xbps_dictionary_get_keysym(confd, dksym);
 		if (strcmp(keyname, section))
 			continue;
 
 		/*
 		 * Iterate over the dictionary sections [edge/graph/node].
 		 */
-		allkeys2 = prop_dictionary_all_keys(keyobj);
-		for (x = 0; x < prop_array_count(allkeys2); x++) {
-			dksym2 = prop_array_get(allkeys2, x);
-			keyname2 = prop_dictionary_keysym_cstring_nocopy(dksym2);
-			keyobj2 = prop_dictionary_get_keysym(keyobj, dksym2);
+		allkeys2 = xbps_dictionary_all_keys(keyobj);
+		for (x = 0; x < xbps_array_count(allkeys2); x++) {
+			dksym2 = xbps_array_get(allkeys2, x);
+			keyname2 = xbps_dictionary_keysym_cstring_nocopy(dksym2);
+			keyobj2 = xbps_dictionary_get_keysym(keyobj, dksym2);
 
-			cf_val = prop_string_cstring_nocopy(keyobj2);
+			cf_val = xbps_string_cstring_nocopy(keyobj2);
 			fprintf(f, "%s=\"%s\"", keyname2, cf_val);
-			if (x + 1 >= prop_array_count(allkeys2))
+			if (x + 1 >= xbps_array_count(allkeys2))
 				continue;
 
 			fprintf(f, ",");
@@ -238,19 +238,19 @@ strip_dashes_from_key(const char *str)
 }
 
 static void
-parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
-			      prop_dictionary_t sub_confd,
-			      prop_array_t allkeys)
+parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
+			      xbps_dictionary_t sub_confd,
+			      xbps_array_t allkeys)
 {
-	prop_dictionary_keysym_t dksym;
-	prop_object_t keyobj, sub_keyobj;
+	xbps_dictionary_keysym_t dksym;
+	xbps_object_t keyobj, sub_keyobj;
 	unsigned int i, x;
 	const char *tmpkeyname, *cfprop, *optnodetmp;
 	char *optnode, *keyname;
 
-	for (i = 0; i < prop_array_count(allkeys); i++) {
-		dksym = prop_array_get(allkeys, i);
-		tmpkeyname = prop_dictionary_keysym_cstring_nocopy(dksym);
+	for (i = 0; i < xbps_array_count(allkeys); i++) {
+		dksym = xbps_array_get(allkeys, i);
+		tmpkeyname = xbps_dictionary_keysym_cstring_nocopy(dksym);
 		/* Ignore these objects */
 		if ((strcmp(tmpkeyname, "source-revisions") == 0) ||
 		    (strcmp(tmpkeyname, "files") == 0) ||
@@ -259,14 +259,14 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 		    (strcmp(tmpkeyname, "links") == 0))
 			continue;
 
-		keyobj = prop_dictionary_get_keysym(plistd, dksym);
+		keyobj = xbps_dictionary_get_keysym(plistd, dksym);
 		keyname = strip_dashes_from_key(tmpkeyname);
 		optnode = NULL;
 
 		fprintf(f, "	main -> %s [label=\"%s\"];\n",
 		    keyname, convert_proptype_to_string(keyobj));
 
-		prop_dictionary_get_cstring_nocopy(sub_confd, "opt-style", &cfprop);
+		xbps_dictionary_get_cstring_nocopy(sub_confd, "opt-style", &cfprop);
 		/* Check if object is optional and fill it in */
 		for (x = 0; x < __arraycount(optional_objs); x++) {
 			if (strcmp(keyname, optional_objs[x]) == 0) {
@@ -280,30 +280,30 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 		/*
 		 * Process array objects.
 		 */
-		prop_dictionary_get_cstring_nocopy(sub_confd, "style", &cfprop);
-		if (prop_object_type(keyobj) == PROP_TYPE_ARRAY) {
+		xbps_dictionary_get_cstring_nocopy(sub_confd, "style", &cfprop);
+		if (xbps_object_type(keyobj) == XBPS_TYPE_ARRAY) {
 			if (optnodetmp)
 				fprintf(f, "	%s %s];\n", keyname,
 				    optnodetmp);
 
-			for (x = 0; x < prop_array_count(keyobj); x++) {
-				sub_keyobj = prop_array_get(keyobj, x);
-				if (prop_object_type(sub_keyobj) == PROP_TYPE_STRING) {
+			for (x = 0; x < xbps_array_count(keyobj); x++) {
+				sub_keyobj = xbps_array_get(keyobj, x);
+				if (xbps_object_type(sub_keyobj) == XBPS_TYPE_STRING) {
 					/*
 					 * Process arrays of strings.
 					 */
 					fprintf(f, "	%s -> %s_%u_string "
 					    "[label=\"string\"];\n",
 					    keyname, keyname, x);
-					prop_dictionary_get_cstring_nocopy(sub_confd,
+					xbps_dictionary_get_cstring_nocopy(sub_confd,
 					    "style", &cfprop);
 					fprintf(f, "	%s_%u_string [style=\"%s\",",
 					    keyname, x, cfprop);
-					prop_dictionary_get_cstring_nocopy(sub_confd,
+					xbps_dictionary_get_cstring_nocopy(sub_confd,
 					    "fillcolor", &cfprop);
 					fprintf(f, "fillcolor=\"%s\","
 					    "label=\"%s\"];\n", cfprop,
-					    prop_string_cstring_nocopy(sub_keyobj));
+					    xbps_string_cstring_nocopy(sub_keyobj));
 				}
 			}
 			if (optnode)
@@ -319,28 +319,28 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 		} else
 			fprintf(f, "	%s -> %s_value;\n", keyname, keyname);
 
-		prop_dictionary_get_cstring_nocopy(sub_confd, "style", &cfprop);
+		xbps_dictionary_get_cstring_nocopy(sub_confd, "style", &cfprop);
 		fprintf(f, "	%s_value [style=\"%s\",", keyname, cfprop);
-		prop_dictionary_get_cstring_nocopy(sub_confd,
+		xbps_dictionary_get_cstring_nocopy(sub_confd,
 		    "fillcolor", &cfprop);
 		fprintf(f, "fillcolor=\"%s\"", cfprop);
 
 		/*
 		 * Process all other object types...
 		 */
-		switch (prop_object_type(keyobj)) {
-		case PROP_TYPE_BOOL:
+		switch (xbps_object_type(keyobj)) {
+		case XBPS_TYPE_BOOL:
 			fprintf(f, ",label=\"%s\"",
-			    prop_bool_true(keyobj) ? "true" : "false");
+			    xbps_bool_true(keyobj) ? "true" : "false");
 			break;
-		case PROP_TYPE_DATA:
-			fprintf(f, ",label=\"%zu bytes\"", prop_data_size(keyobj));
+		case XBPS_TYPE_DATA:
+			fprintf(f, ",label=\"%zu bytes\"", xbps_data_size(keyobj));
 			break;
-		case PROP_TYPE_NUMBER:
+		case XBPS_TYPE_NUMBER:
 			fprintf(f, ",label=\"%"PRIu64" bytes\"",
-			    prop_number_unsigned_integer_value(keyobj));
+			    xbps_number_unsigned_integer_value(keyobj));
 			break;
-		case PROP_TYPE_STRING:
+		case XBPS_TYPE_STRING:
 			if (strcmp(keyname, "long_desc") == 0) {
 				/*
 				 * Do not print this obj, too large!
@@ -348,7 +348,7 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 				fprintf(f, ",label=\"...\"");
 			} else {
 				fprintf(f, ",label=\"%s\"",
-			    	    prop_string_cstring_nocopy(keyobj));
+			    	    xbps_string_cstring_nocopy(keyobj));
 			}
 			break;
 		default:
@@ -365,15 +365,15 @@ parse_array_in_pkg_dictionary(FILE *f, prop_dictionary_t plistd,
 static void
 create_dot_graph(struct xbps_handle *xhp,
 		 FILE *f,
-		 prop_dictionary_t plistd,
-		 prop_dictionary_t confd,
+		 xbps_dictionary_t plistd,
+		 xbps_dictionary_t confd,
 		 bool revdeps)
 {
-	prop_dictionary_t sub_confd;
-	prop_array_t allkeys, rdeps;
+	xbps_dictionary_t sub_confd;
+	xbps_array_t allkeys, rdeps;
 	const char *pkgver, *cfprop;
 
-	prop_dictionary_get_cstring_nocopy(plistd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(plistd, "pkgver", &pkgver);
 
 	/*
 	 * Start filling the output file...
@@ -407,11 +407,11 @@ create_dot_graph(struct xbps_handle *xhp,
 	 * Process the node-sub section in config file.
 	 */
 	fprintf(f, "	main [");
-	sub_confd = prop_dictionary_get(confd, "node-sub");
-	prop_dictionary_get_cstring_nocopy(sub_confd, "main-style", &cfprop);
+	sub_confd = xbps_dictionary_get(confd, "node-sub");
+	xbps_dictionary_get_cstring_nocopy(sub_confd, "main-style", &cfprop);
 	if (cfprop)
 		fprintf(f, "style=%s,", cfprop);
-	prop_dictionary_get_cstring_nocopy(sub_confd, "main-fillcolor", &cfprop);
+	xbps_dictionary_get_cstring_nocopy(sub_confd, "main-fillcolor", &cfprop);
 	if (cfprop)
 		fprintf(f, "fillcolor=\"%s\",", cfprop);
 	fprintf(f, "label=\"Dictionary\"];\n");
@@ -422,10 +422,10 @@ create_dot_graph(struct xbps_handle *xhp,
 	 */
 	if (revdeps) {
 		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
-		if (prop_array_count(rdeps))
-			prop_dictionary_set(plistd, "requiredby", rdeps);
+		if (xbps_array_count(rdeps))
+			xbps_dictionary_set(plistd, "requiredby", rdeps);
 	}
-	allkeys = prop_dictionary_all_keys(plistd);
+	allkeys = xbps_dictionary_all_keys(plistd);
 	parse_array_in_pkg_dictionary(f, plistd, sub_confd, allkeys);
 	/*
 	 * Terminate the stream...
@@ -438,7 +438,7 @@ create_dot_graph(struct xbps_handle *xhp,
 int
 main(int argc, char **argv)
 {
-	prop_dictionary_t plistd, confd = NULL;
+	xbps_dictionary_t plistd, confd = NULL;
 	struct xbps_handle xh;
 	FILE *f = NULL;
 	char *outfile = NULL;
@@ -502,7 +502,7 @@ main(int argc, char **argv)
 	/*
 	 * Internalize the configuration file.
 	 */
-	confd = prop_dictionary_internalize_from_zfile(conf_file);
+	confd = xbps_dictionary_internalize_from_zfile(conf_file);
 	if (confd == NULL)
 		die("cannot read conf file `%s'", conf_file);
 

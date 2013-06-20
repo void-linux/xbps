@@ -32,31 +32,31 @@
 #include "xbps_api_impl.h"
 
 static bool
-remove_obj_from_array(prop_array_t array, const char *str, int mode)
+remove_obj_from_array(xbps_array_t array, const char *str, int mode)
 {
-	prop_object_iterator_t iter;
-	prop_object_t obj;
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
 	const char *curname, *pkgdep;
 	char *curpkgname;
 	unsigned int idx = 0;
 	bool found = false;
 
-	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 
-	iter = prop_array_iterator(array);
+	iter = xbps_array_iterator(array);
 	if (iter == NULL)
 		return false;
 
-	while ((obj = prop_object_iterator_next(iter))) {
+	while ((obj = xbps_object_iterator_next(iter))) {
 		if (mode == 0) {
 			/* exact match, obj is a string */
-			if (prop_string_equals_cstring(obj, str)) {
+			if (xbps_string_equals_cstring(obj, str)) {
 				found = true;
 				break;
 			}
 		} else if (mode == 1) {
 			/* match by pkgname, obj is a string */
-			pkgdep = prop_string_cstring_nocopy(obj);
+			pkgdep = xbps_string_cstring_nocopy(obj);
 			curpkgname = xbps_pkg_name(pkgdep);
 			if (curpkgname == NULL)
 				break;
@@ -68,7 +68,7 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 			free(curpkgname);
 		} else if (mode == 2) {
 			/* match by pkgname, obj is a dictionary  */
-			prop_dictionary_get_cstring_nocopy(obj,
+			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &curname);
 			if (strcmp(curname, str) == 0) {
 				found = true;
@@ -76,7 +76,7 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 			}
 		} else if (mode == 3) {
 			/* match by pkgver, obj is a dictionary */
-			prop_dictionary_get_cstring_nocopy(obj,
+			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
 			if (strcmp(curname, str) == 0) {
 				found = true;
@@ -84,7 +84,7 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 			}
 		} else if (mode == 4) {
 			/* match by pattern, obj is a dictionary */
-			prop_dictionary_get_cstring_nocopy(obj,
+			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
 			if (xbps_pkgpattern_match(curname, str)) {
 				found = true;
@@ -93,43 +93,43 @@ remove_obj_from_array(prop_array_t array, const char *str, int mode)
 		}
 		idx++;
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	if (!found) {
 		errno = ENOENT;
 		return false;
 	}
 
-	prop_array_remove(array, idx);
+	xbps_array_remove(array, idx);
 	return true;
 }
 
 bool HIDDEN
-xbps_remove_string_from_array(prop_array_t array, const char *str)
+xbps_remove_string_from_array(xbps_array_t array, const char *str)
 {
 	return remove_obj_from_array(array, str, 0);
 }
 
 bool HIDDEN
-xbps_remove_pkgname_from_array(prop_array_t array, const char *str)
+xbps_remove_pkgname_from_array(xbps_array_t array, const char *str)
 {
 	return remove_obj_from_array(array, str, 1);
 }
 
 bool HIDDEN
-xbps_remove_pkg_from_array_by_name(prop_array_t array, const char *str)
+xbps_remove_pkg_from_array_by_name(xbps_array_t array, const char *str)
 {
 	return remove_obj_from_array(array, str, 2);
 }
 
 bool HIDDEN
-xbps_remove_pkg_from_array_by_pkgver(prop_array_t array, const char *str)
+xbps_remove_pkg_from_array_by_pkgver(xbps_array_t array, const char *str)
 {
 	return remove_obj_from_array(array, str, 3);
 }
 
 bool HIDDEN
-xbps_remove_pkg_from_array_by_pattern(prop_array_t array, const char *str)
+xbps_remove_pkg_from_array_by_pattern(xbps_array_t array, const char *str)
 {
 	return remove_obj_from_array(array, str, 4);
 }

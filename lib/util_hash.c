@@ -140,13 +140,13 @@ xbps_file_hash_check(const char *file, const char *sha256)
 }
 
 static const char *
-file_hash_dictionary(prop_dictionary_t d, const char *key, const char *file)
+file_hash_dictionary(xbps_dictionary_t d, const char *key, const char *file)
 {
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
 	const char *curfile = NULL, *sha256 = NULL;
 
-	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(d) == XBPS_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(file != NULL);
 
@@ -155,17 +155,17 @@ file_hash_dictionary(prop_dictionary_t d, const char *key, const char *file)
 		errno = ENOENT;
 		return NULL;
 	}
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj,
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj,
 		    "file", &curfile);
 		if (strcmp(file, curfile) == 0) {
 			/* file matched */
-			prop_dictionary_get_cstring_nocopy(obj,
+			xbps_dictionary_get_cstring_nocopy(obj,
 			    "sha256", &sha256);
 			break;
 		}
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 	if (sha256 == NULL)
 		errno = ENOENT;
 
@@ -174,7 +174,7 @@ file_hash_dictionary(prop_dictionary_t d, const char *key, const char *file)
 
 int HIDDEN
 xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
-				prop_dictionary_t d,
+				xbps_dictionary_t d,
 				const char *key,
 				const char *file)
 {
@@ -182,7 +182,7 @@ xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 	char *buf;
 	int rv;
 
-	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(d) == XBPS_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(file != NULL);
 

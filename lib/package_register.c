@@ -32,10 +32,10 @@
 #include "xbps_api_impl.h"
 
 int HIDDEN
-xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
+xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 {
-	prop_dictionary_t pkgd;
-	prop_array_t provides, rundeps;
+	xbps_dictionary_t pkgd;
+	xbps_array_t provides, rundeps;
 	char outstr[64];
 	time_t t;
 	struct tm *tmp;
@@ -44,13 +44,13 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 	int rv = 0;
 	bool autoinst = false;
 
-	assert(prop_object_type(pkgrd) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(pkgrd) == XBPS_TYPE_DICTIONARY);
 
-	prop_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
-	prop_dictionary_get_bool(pkgrd, "automatic-install", &autoinst);
-	provides = prop_dictionary_get(pkgrd, "provides");
-	rundeps = prop_dictionary_get(pkgrd, "run_depends");
+	xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
+	xbps_dictionary_get_bool(pkgrd, "automatic-install", &autoinst);
+	provides = xbps_dictionary_get(pkgrd, "provides");
+	rundeps = xbps_dictionary_get(pkgrd, "run_depends");
 
 	assert(pkgver != NULL);
 	assert(desc != NULL);
@@ -60,14 +60,14 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 		rv = ENOENT;
 		goto out;
 	}
-	if (!prop_dictionary_set_cstring_nocopy(pkgd,
+	if (!xbps_dictionary_set_cstring_nocopy(pkgd,
 	    "pkgver", pkgver)) {
 		xbps_dbg_printf(xhp, "%s: invalid pkgver for %s\n",
 		    __func__, pkgver);
 		rv = EINVAL;
 		goto out;
 	}
-	if (!prop_dictionary_set_cstring_nocopy(pkgd,
+	if (!xbps_dictionary_set_cstring_nocopy(pkgd,
 	    "short_desc", desc)) {
 		xbps_dbg_printf(xhp, "%s: invalid short_desc for %s\n",
 		    __func__, pkgver);
@@ -77,7 +77,7 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 	if (xhp->flags & XBPS_FLAG_INSTALL_AUTO)
 		autoinst = true;
 
-	if (!prop_dictionary_set_bool(pkgd,
+	if (!xbps_dictionary_set_bool(pkgd,
 	    "automatic-install", autoinst)) {
 		xbps_dbg_printf(xhp, "%s: invalid autoinst for %s\n",
 		    __func__, pkgver);
@@ -100,19 +100,19 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 		rv = EINVAL;
 		goto out;
 	}
-	if (!prop_dictionary_set_cstring(pkgd, "install-date", outstr)) {
+	if (!xbps_dictionary_set_cstring(pkgd, "install-date", outstr)) {
 		xbps_dbg_printf(xhp, "%s: install-date set failed!\n", pkgver);
 		rv = EINVAL;
 		goto out;
 	}
 
-	if (provides && !prop_dictionary_set(pkgd, "provides", provides)) {
+	if (provides && !xbps_dictionary_set(pkgd, "provides", provides)) {
 		xbps_dbg_printf(xhp, "%s: failed to set provides for %s\n",
 		    __func__, pkgver);
 		rv = EINVAL;
 		goto out;
 	}
-	if (rundeps && !prop_dictionary_set(pkgd, "run_depends", rundeps)) {
+	if (rundeps && !xbps_dictionary_set(pkgd, "run_depends", rundeps)) {
 		xbps_dbg_printf(xhp, "%s: failed to set rundeps for %s\n",
 		    __func__, pkgver);
 		rv = EINVAL;
@@ -127,17 +127,17 @@ xbps_register_pkg(struct xbps_handle *xhp, prop_dictionary_t pkgrd)
 	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	sha256 = xbps_file_hash(buf);
 	assert(sha256);
-	prop_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
+	xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
 	free(sha256);
 	free(buf);
 	/*
 	 * Remove unneeded objs from pkg dictionary.
 	 */
-	prop_dictionary_remove(pkgd, "remove-and-update");
-	prop_dictionary_remove(pkgd, "transaction");
-	prop_dictionary_remove(pkgd, "skip-obsoletes");
+	xbps_dictionary_remove(pkgd, "remove-and-update");
+	xbps_dictionary_remove(pkgd, "transaction");
+	xbps_dictionary_remove(pkgd, "skip-obsoletes");
 
-	if (!prop_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
+	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 		xbps_dbg_printf(xhp,
 		    "%s: failed to set pkgd for %s\n", __func__, pkgver);
 		goto out;

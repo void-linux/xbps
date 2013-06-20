@@ -79,7 +79,7 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 int
 xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 {
-	prop_dictionary_t pkgdb_storage;
+	xbps_dictionary_t pkgdb_storage;
 	char *plist;
 	static int cached_rv;
 	int rv = 0;
@@ -89,26 +89,26 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 
 	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
 	if (xhp->pkgdb && flush) {
-		pkgdb_storage = prop_dictionary_internalize_from_file(plist);
+		pkgdb_storage = xbps_dictionary_internalize_from_file(plist);
 		if (pkgdb_storage == NULL ||
-		    !prop_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
+		    !xbps_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
 			/* flush dictionary to storage */
-			if (!prop_dictionary_externalize_to_file(xhp->pkgdb, plist)) {
+			if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, plist)) {
 				free(plist);
 				return errno;
 			}
 		}
 		if (pkgdb_storage)
-			prop_object_release(pkgdb_storage);
+			xbps_object_release(pkgdb_storage);
 
-		prop_object_release(xhp->pkgdb);
+		xbps_object_release(xhp->pkgdb);
 		xhp->pkgdb = NULL;
 		cached_rv = 0;
 	}
 	/* update copy in memory */
-	if ((xhp->pkgdb = prop_dictionary_internalize_from_file(plist)) == NULL) {
+	if ((xhp->pkgdb = xbps_dictionary_internalize_from_file(plist)) == NULL) {
 		if (errno == ENOENT)
-			xhp->pkgdb = prop_dictionary_create();
+			xhp->pkgdb = xbps_dictionary_create();
 		else
 			xbps_error_printf("cannot access to pkgdb: %s\n", strerror(errno));
 
@@ -127,22 +127,22 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 	if (xhp->pkgdb == NULL)
 		return;
 
-	if (prop_object_type(xhp->pkg_metad) == PROP_TYPE_DICTIONARY)
-	       prop_object_release(xhp->pkg_metad);
+	if (xbps_object_type(xhp->pkg_metad) == XBPS_TYPE_DICTIONARY)
+	       xbps_object_release(xhp->pkg_metad);
 
-	prop_object_release(xhp->pkgdb);
+	xbps_object_release(xhp->pkgdb);
 	xhp->pkgdb = NULL;
 	xbps_dbg_printf(xhp, "[pkgdb] released ok.\n");
 }
 
 int
 xbps_pkgdb_foreach_reverse_cb(struct xbps_handle *xhp,
-			      int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+			      int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 			      void *arg)
 {
-	prop_array_t allkeys;
-	prop_object_t obj;
-	prop_dictionary_t pkgd;
+	xbps_array_t allkeys;
+	xbps_object_t obj;
+	xbps_dictionary_t pkgd;
 	unsigned int i;
 	int rv;
 	bool done = false;
@@ -150,45 +150,45 @@ xbps_pkgdb_foreach_reverse_cb(struct xbps_handle *xhp,
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	allkeys = prop_dictionary_all_keys(xhp->pkgdb);
-	for (i = prop_array_count(allkeys); i > 0; i--) {
-		obj = prop_array_get(allkeys, i);
-		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
+	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
+	for (i = xbps_array_count(allkeys); i > 0; i--) {
+		obj = xbps_array_get(allkeys, i);
+		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		rv = (*fn)(xhp, pkgd, arg, &done);
 		if (rv != 0 || done)
 			break;
 	}
-	prop_object_release(allkeys);
+	xbps_object_release(allkeys);
 	return rv;
 }
 
 int
 xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
-		      int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+		      int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 		      void *arg)
 {
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	prop_dictionary_t pkgd;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
+	xbps_dictionary_t pkgd;
 	int rv;
 	bool done = false;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	iter = prop_dictionary_iterator(xhp->pkgdb);
+	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
-	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		rv = (*fn)(xhp, pkgd, arg, &done);
 		if (rv != 0 || done)
 			break;
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 	return rv;
 }
 
-prop_dictionary_t
+xbps_dictionary_t
 xbps_pkgdb_get_pkg(struct xbps_handle *xhp, const char *pkg)
 {
 	if (xbps_pkgdb_init(xhp) != 0)
@@ -197,7 +197,7 @@ xbps_pkgdb_get_pkg(struct xbps_handle *xhp, const char *pkg)
 	return xbps_find_pkg_in_dict(xhp->pkgdb, pkg);
 }
 
-prop_dictionary_t
+xbps_dictionary_t
 xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp, const char *vpkg)
 {
 	if (xbps_pkgdb_init(xhp) != 0)
@@ -206,23 +206,23 @@ xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp, const char *vpkg)
 	return xbps_find_virtualpkg_in_dict(xhp, xhp->pkgdb, vpkg);
 }
 
-static prop_dictionary_t
-get_pkg_metadata(struct xbps_handle *xhp, prop_dictionary_t pkgd)
+static xbps_dictionary_t
+get_pkg_metadata(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
-	prop_dictionary_t pkg_metad;
+	xbps_dictionary_t pkg_metad;
 	const char *pkgver;
 	char *pkgname, *plist;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
 
-	if ((pkg_metad = prop_dictionary_get(xhp->pkg_metad, pkgname)) != NULL) {
+	if ((pkg_metad = xbps_dictionary_get(xhp->pkg_metad, pkgname)) != NULL) {
 		free(pkgname);
 		return pkg_metad;
 	}
 	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-	pkg_metad = prop_dictionary_internalize_from_file(plist);
+	pkg_metad = xbps_dictionary_internalize_from_file(plist);
 	free(plist);
 
 	if (pkg_metad == NULL) {
@@ -233,10 +233,10 @@ get_pkg_metadata(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 	}
 
 	if (xhp->pkg_metad == NULL)
-		xhp->pkg_metad = prop_dictionary_create();
+		xhp->pkg_metad = xbps_dictionary_create();
 
-	prop_dictionary_set(xhp->pkg_metad, pkgname, pkg_metad);
-	prop_object_release(pkg_metad);
+	xbps_dictionary_set(xhp->pkg_metad, pkgname, pkg_metad);
+	xbps_object_release(pkg_metad);
 	free(pkgname);
 
 	return pkg_metad;
@@ -245,10 +245,10 @@ get_pkg_metadata(struct xbps_handle *xhp, prop_dictionary_t pkgd)
 static void
 generate_full_revdeps_tree(struct xbps_handle *xhp)
 {
-	prop_array_t rundeps, pkg;
-	prop_dictionary_t pkgd;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
+	xbps_array_t rundeps, pkg;
+	xbps_dictionary_t pkgd;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
 	const char *pkgver, *pkgdep, *vpkgname;
 	char *curpkgname;
 	unsigned int i;
@@ -257,20 +257,20 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 	if (xhp->pkgdb_revdeps)
 		return;
 
-	xhp->pkgdb_revdeps = prop_dictionary_create();
+	xhp->pkgdb_revdeps = xbps_dictionary_create();
 
-	iter = prop_dictionary_iterator(xhp->pkgdb);
+	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 
-	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(xhp->pkgdb, obj);
-		rundeps = prop_dictionary_get(pkgd, "run_depends");
-		if (!prop_array_count(rundeps))
+	while ((obj = xbps_object_iterator_next(iter))) {
+		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
+		rundeps = xbps_dictionary_get(pkgd, "run_depends");
+		if (!xbps_array_count(rundeps))
 			continue;
 
-		for (i = 0; i < prop_array_count(rundeps); i++) {
+		for (i = 0; i < xbps_array_count(rundeps); i++) {
 			alloc = false;
-			prop_array_get_cstring_nocopy(rundeps, i, &pkgdep);
+			xbps_array_get_cstring_nocopy(rundeps, i, &pkgdep);
 			curpkgname = xbps_pkgpattern_name(pkgdep);
 			if (curpkgname == NULL)
 				curpkgname = xbps_pkg_name(pkgdep);
@@ -279,29 +279,29 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 			if (vpkgname == NULL)
 				vpkgname = curpkgname;
 
-			pkg = prop_dictionary_get(xhp->pkgdb_revdeps, vpkgname);
+			pkg = xbps_dictionary_get(xhp->pkgdb_revdeps, vpkgname);
 			if (pkg == NULL) {
 				alloc = true;
-				pkg = prop_array_create();
+				pkg = xbps_array_create();
 			}
-			prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 			if (!xbps_match_string_in_array(pkg, pkgver)) {
-				prop_array_add_cstring_nocopy(pkg, pkgver);
-				prop_dictionary_set(xhp->pkgdb_revdeps, vpkgname, pkg);
+				xbps_array_add_cstring_nocopy(pkg, pkgver);
+				xbps_dictionary_set(xhp->pkgdb_revdeps, vpkgname, pkg);
 			}
 			free(curpkgname);
 			if (alloc)
-				prop_object_release(pkg);
+				xbps_object_release(pkg);
 		}
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 }
 
-prop_array_t
+xbps_array_t
 xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_array_t res;
-	prop_dictionary_t pkgd;
+	xbps_array_t res;
+	xbps_dictionary_t pkgd;
 	const char *pkgver;
 	char *pkgname;
 
@@ -309,18 +309,18 @@ xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 		return NULL;
 
 	generate_full_revdeps_tree(xhp);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	pkgname = xbps_pkg_name(pkgver);
-	res = prop_dictionary_get(xhp->pkgdb_revdeps, pkgname);
+	res = xbps_dictionary_get(xhp->pkgdb_revdeps, pkgname);
 	free(pkgname);
 
 	return res;
 }
 
-prop_dictionary_t
+xbps_dictionary_t
 xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
 	if (pkgd == NULL)

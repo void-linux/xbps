@@ -34,22 +34,22 @@
  * Returns true if entry is a configuration file, false otherwise.
  */
 int HIDDEN
-xbps_entry_is_a_conf_file(prop_dictionary_t propsd,
+xbps_entry_is_a_conf_file(xbps_dictionary_t propsd,
 			  const char *entry_pname)
 {
-	prop_array_t array;
+	xbps_array_t array;
 	const char *cffile;
 	unsigned int i;
 
-	assert(prop_object_type(propsd) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(propsd) == XBPS_TYPE_DICTIONARY);
 	assert(entry_pname != NULL);
 
-	array = prop_dictionary_get(propsd, "conf_files");
-	if (prop_array_count(array) == 0)
+	array = xbps_dictionary_get(propsd, "conf_files");
+	if (xbps_array_count(array) == 0)
 		return false;
 
-	for (i = 0; i < prop_array_count(array); i++) {
-		prop_array_get_cstring_nocopy(array, i, &cffile);
+	for (i = 0; i < xbps_array_count(array); i++) {
+		xbps_array_get_cstring_nocopy(array, i, &cffile);
 		if (strcmp(cffile, entry_pname) == 0)
 			return true;
 	}
@@ -61,20 +61,20 @@ xbps_entry_is_a_conf_file(prop_dictionary_t propsd,
  */
 int HIDDEN
 xbps_entry_install_conf_file(struct xbps_handle *xhp,
-			     prop_dictionary_t filesd,
+			     xbps_dictionary_t filesd,
 			     struct archive_entry *entry,
 			     const char *entry_pname,
 			     const char *pkgver,
 			     const char *pkgname)
 {
-	prop_dictionary_t forigd;
-	prop_object_t obj, obj2;
-	prop_object_iterator_t iter, iter2;
+	xbps_dictionary_t forigd;
+	xbps_object_t obj, obj2;
+	xbps_object_iterator_t iter, iter2;
 	const char *cffile, *sha256_new = NULL;
 	char *buf, *sha256_cur = NULL, *sha256_orig = NULL;
 	int rv = 0;
 
-	assert(prop_object_type(filesd) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(filesd) == XBPS_TYPE_DICTIONARY);
 	assert(entry != NULL);
 	assert(entry_pname != NULL);
 	assert(pkgver != NULL);
@@ -100,12 +100,12 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 
 	iter2 = xbps_array_iter_from_dict(forigd, "conf_files");
 	if (iter2 != NULL) {
-		while ((obj2 = prop_object_iterator_next(iter2))) {
-			prop_dictionary_get_cstring_nocopy(obj2,
+		while ((obj2 = xbps_object_iterator_next(iter2))) {
+			xbps_dictionary_get_cstring_nocopy(obj2,
 			    "file", &cffile);
 			buf = xbps_xasprintf(".%s", cffile);
 			if (strcmp(entry_pname, buf) == 0) {
-				prop_dictionary_get_cstring(obj2, "sha256",
+				xbps_dictionary_get_cstring(obj2, "sha256",
 				    &sha256_orig);
 				free(buf);
 				break;
@@ -113,7 +113,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			free(buf);
 			buf = NULL;
 		}
-		prop_object_iterator_release(iter2);
+		xbps_object_iterator_release(iter2);
 	}
 	/*
 	 * First case: original hash not found, install new file.
@@ -128,8 +128,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	/*
 	 * Compare original, installed and new hash for current file.
 	 */
-	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "file", &cffile);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		xbps_dictionary_get_cstring_nocopy(obj, "file", &cffile);
 		buf = xbps_xasprintf(".%s", cffile);
 		if (strcmp(entry_pname, buf)) {
 			free(buf);
@@ -138,7 +138,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		}
 		sha256_cur = xbps_file_hash(buf);
 		free(buf);
-		prop_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
+		xbps_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
 		if (sha256_cur == NULL) {
 			if (errno == ENOENT) {
 				/*
@@ -239,7 +239,7 @@ out:
 	if (sha256_cur)
 		free(sha256_cur);
 
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	xbps_dbg_printf(xhp, "%s: conf_file %s returned %d\n",
 	    pkgver, entry_pname, rv);

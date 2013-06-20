@@ -145,10 +145,10 @@ open_archive(const char *url)
 	return a;
 }
 
-prop_dictionary_t
+xbps_dictionary_t
 xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
 {
-	prop_dictionary_t plistd = NULL;
+	xbps_dictionary_t plistd = NULL;
 	struct archive *a;
 	struct archive_entry *entry;
 	const char *curpath, *comptype;
@@ -185,7 +185,7 @@ xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
 			errno = EINVAL;
 			break;
 		}
-		prop_dictionary_set_cstring_nocopy(plistd,
+		xbps_dictionary_set_cstring_nocopy(plistd,
 		    "archive-compression-type", comptype);
 
 		break;

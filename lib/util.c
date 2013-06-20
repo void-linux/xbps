@@ -67,7 +67,7 @@ xbps_repository_is_remote(const char *uri)
 int
 xbps_pkg_is_installed(struct xbps_handle *xhp, const char *pkg)
 {
-	prop_dictionary_t dict;
+	xbps_dictionary_t dict;
 	pkg_state_t state;
 
 	assert(xhp);
@@ -172,21 +172,21 @@ xbps_pkgpattern_version(const char *pkg)
 }
 
 char HIDDEN *
-xbps_repository_pkg_path(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
+xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
 	const char *pkgver, *arch, *repoloc;
 	char *lbinpkg = NULL;
 
 	assert(xhp);
-	assert(prop_object_type(pkg_repod) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(pkg_repod) == XBPS_TYPE_DICTIONARY);
 
-	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
+	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod,
 	    "pkgver", &pkgver))
 		return NULL;
-	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
+	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod,
 	    "architecture", &arch))
 		return NULL;
-	if (!prop_dictionary_get_cstring_nocopy(pkg_repod,
+	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod,
 	    "repository", &repoloc))
 		return NULL;
 
@@ -208,14 +208,14 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, prop_dictionary_t pkg_repod)
 }
 
 bool
-xbps_pkg_has_rundeps(prop_dictionary_t pkgd)
+xbps_pkg_has_rundeps(xbps_dictionary_t pkgd)
 {
-	prop_array_t array;
+	xbps_array_t array;
 
-	assert(prop_object_type(pkgd) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(pkgd) == XBPS_TYPE_DICTIONARY);
 
-	array = prop_dictionary_get(pkgd, "run_depends");
-	if (prop_array_count(array))
+	array = xbps_dictionary_get(pkgd, "run_depends");
+	if (xbps_array_count(array))
 		return true;
 
 	return false;

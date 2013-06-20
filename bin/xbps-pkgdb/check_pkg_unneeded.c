@@ -45,19 +45,19 @@
 int
 check_pkg_unneeded(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
-	prop_dictionary_t pkgd = arg;
+	xbps_dictionary_t pkgd = arg;
 
 	(void)xhp;
 	(void)pkgname;
 
-	if (prop_dictionary_get(pkgd, "remove-and-update"))
-		prop_dictionary_remove(pkgd, "remove-and-update");
+	if (xbps_dictionary_get(pkgd, "remove-and-update"))
+		xbps_dictionary_remove(pkgd, "remove-and-update");
 
-	if (prop_dictionary_get(pkgd, "transaction"))
-		prop_dictionary_remove(pkgd, "transaction");
+	if (xbps_dictionary_get(pkgd, "transaction"))
+		xbps_dictionary_remove(pkgd, "transaction");
 
-	if (prop_dictionary_get(pkgd, "skip-obsoletes"))
-		prop_dictionary_remove(pkgd, "skip-obsoletes");
+	if (xbps_dictionary_get(pkgd, "skip-obsoletes"))
+		xbps_dictionary_remove(pkgd, "skip-obsoletes");
 
 	return 0;
 }

@@ -48,7 +48,7 @@
 
 struct pkgdep {
 	TAILQ_ENTRY(pkgdep) pkgdep_entries;
-	prop_dictionary_t d;
+	xbps_dictionary_t d;
 	char *name;
 };
 
@@ -66,13 +66,13 @@ pkgdep_find(const char *pkg)
 			/* ignore entries without dictionary */
 			continue;
 		}
-		prop_dictionary_get_cstring_nocopy(pd->d,
+		xbps_dictionary_get_cstring_nocopy(pd->d,
 		    "transaction", &tract);
 		/* ignore pkgs to be removed */
 		if (strcmp(tract, "remove") == 0)
 			continue;
 		/* simple match */
-		prop_dictionary_get_cstring_nocopy(pd->d, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(pd->d, "pkgver", &pkgver);
 		if (strcmp(pkgver, pkg) == 0)
 			return pd;
 		/* pkg expression match */
@@ -100,7 +100,7 @@ pkgdep_find_idx(const char *pkg)
 			idx++;
 			continue;
 		}
-		prop_dictionary_get_cstring_nocopy(pd->d,
+		xbps_dictionary_get_cstring_nocopy(pd->d,
 		    "transaction", &tract);
 		/* ignore pkgs to be removed */
 		if (strcmp(tract, "remove") == 0) {
@@ -108,7 +108,7 @@ pkgdep_find_idx(const char *pkg)
 			continue;
 		}
 		/* simple match */
-		prop_dictionary_get_cstring_nocopy(pd->d, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(pd->d, "pkgver", &pkgver);
 		if (strcmp(pkgver, pkg) == 0)
 			return idx;
 		/* pkg expression match */
@@ -132,7 +132,7 @@ pkgdep_release(struct pkgdep *pd)
 }
 
 static struct pkgdep *
-pkgdep_alloc(prop_dictionary_t d, const char *pkg)
+pkgdep_alloc(xbps_dictionary_t d, const char *pkg)
 {
 	struct pkgdep *pd;
 
@@ -145,14 +145,14 @@ pkgdep_alloc(prop_dictionary_t d, const char *pkg)
 }
 
 static void
-pkgdep_end(prop_array_t sorted)
+pkgdep_end(xbps_array_t sorted)
 {
 	struct pkgdep *pd;
 
 	while ((pd = TAILQ_FIRST(&pkgdep_list)) != NULL) {
 		TAILQ_REMOVE(&pkgdep_list, pd, pkgdep_entries);
 		if (sorted != NULL && pd->d != NULL)
-			prop_array_add(sorted, pd->d);
+			xbps_array_add(sorted, pd->d);
 
 		pkgdep_release(pd);
 	}
@@ -161,10 +161,10 @@ pkgdep_end(prop_array_t sorted)
 static int
 sort_pkg_rundeps(struct xbps_handle *xhp,
 		 struct pkgdep *pd,
-		 prop_array_t pkg_rundeps,
-		 prop_array_t unsorted)
+		 xbps_array_t pkg_rundeps,
+		 xbps_array_t unsorted)
 {
-	prop_dictionary_t curpkgd;
+	xbps_dictionary_t curpkgd;
 	struct pkgdep *lpd, *pdn;
 	const char *str, *tract;
 	int32_t pkgdepidx, curpkgidx;
@@ -175,8 +175,8 @@ sort_pkg_rundeps(struct xbps_handle *xhp,
 	curpkgidx = pkgdep_find_idx(pd->name);
 
 again:
-	for (i = idx; i < prop_array_count(pkg_rundeps); i++) {
-		prop_array_get_cstring_nocopy(pkg_rundeps, i, &str);
+	for (i = idx; i < xbps_array_count(pkg_rundeps); i++) {
+		xbps_array_get_cstring_nocopy(pkg_rundeps, i, &str);
 		xbps_dbg_printf(xhp, "  Required dependency '%s': ", str);
 
 		pdn = pkgdep_find(str);
@@ -210,7 +210,7 @@ again:
 			    "dependency %s (depends on itself)\n", str);
 			continue;
 		}
-		prop_dictionary_get_cstring_nocopy(curpkgd,
+		xbps_dictionary_get_cstring_nocopy(curpkgd,
 		    "transaction", &tract);
 		lpd = pkgdep_alloc(curpkgd, str);
 
@@ -255,48 +255,48 @@ again:
 int HIDDEN
 xbps_transaction_sort(struct xbps_handle *xhp)
 {
-	prop_array_t provides, sorted, unsorted, rundeps;
-	prop_object_t obj;
+	xbps_array_t provides, sorted, unsorted, rundeps;
+	xbps_object_t obj;
 	struct pkgdep *pd;
 	unsigned int i, j, ndeps = 0, cnt = 0;
 	const char *pkgname, *pkgver, *tract, *vpkgdep;
 	int rv = 0;
 	bool vpkg_found;
 
-	if ((sorted = prop_array_create()) == NULL)
+	if ((sorted = xbps_array_create()) == NULL)
 		return ENOMEM;
 	/*
 	 * Add sorted packages array into transaction dictionary (empty).
 	 */
-	if (!prop_dictionary_set(xhp->transd, "packages", sorted)) {
+	if (!xbps_dictionary_set(xhp->transd, "packages", sorted)) {
 		rv = EINVAL;
 		goto out;
 	}
 	/*
 	 * All required deps are satisfied (already installed).
 	 */
-	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
-	if (prop_array_count(unsorted) == 0) {
-		prop_dictionary_set(xhp->transd, "packages", sorted);
-		prop_object_release(sorted);
+	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+	if (xbps_array_count(unsorted) == 0) {
+		xbps_dictionary_set(xhp->transd, "packages", sorted);
+		xbps_object_release(sorted);
 		return 0;
 	}
 	/*
 	 * The sorted array should have the same capacity than
 	 * all objects in the unsorted array.
 	 */
-	ndeps = prop_array_count(unsorted);
+	ndeps = xbps_array_count(unsorted);
 	/*
 	 * Iterate over the unsorted package dictionaries and sort all
 	 * its package dependencies.
 	 */
 	for (i = 0; i < ndeps; i++) {
 		vpkg_found = false;
-		obj = prop_array_get(unsorted, i);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		provides = prop_dictionary_get(obj, "provides");
+		obj = xbps_array_get(unsorted, i);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		provides = xbps_dictionary_get(obj, "provides");
 		xbps_dbg_printf(xhp, "Sorting package '%s' (%s): ", pkgver, tract);
 
 		if (provides) {
@@ -305,8 +305,8 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 			 * if any of them was previously added. If true, don't
 			 * add it into the list again, just order its deps.
 			 */
-			for (j = 0; j < prop_array_count(provides); j++) {
-				prop_array_get_cstring_nocopy(provides,
+			for (j = 0; j < xbps_array_count(provides); j++) {
+				xbps_array_get_cstring_nocopy(provides,
 				    j, &vpkgdep);
 				pd = pkgdep_find(vpkgdep);
 				if (pd != NULL) {
@@ -343,8 +343,8 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 		 * Packages that don't have deps go at head, because
 		 * it doesn't matter.
 		 */
-		rundeps = prop_dictionary_get(obj, "run_depends");
-		if (prop_array_count(rundeps) == 0) {
+		rundeps = xbps_dictionary_get(obj, "run_depends");
+		if (xbps_array_count(rundeps) == 0) {
 			xbps_dbg_printf_append(xhp, "\n");
 			cnt++;
 			continue;
@@ -368,17 +368,17 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 	 * Sanity check that the array contains the same number of
 	 * objects than the total number of required dependencies.
 	 */
-	assert(cnt == prop_array_count(unsorted));
+	assert(cnt == xbps_array_count(unsorted));
 	/*
 	 * We are done, all packages were sorted... remove the
 	 * temporary array with unsorted packages.
 	 */
-	prop_dictionary_remove(xhp->transd, "unsorted_deps");
+	xbps_dictionary_remove(xhp->transd, "unsorted_deps");
 out:
 	if (rv != 0)
-		prop_dictionary_remove(xhp->transd, "packages");
+		xbps_dictionary_remove(xhp->transd, "packages");
 
-	prop_object_release(sorted);
+	xbps_object_release(sorted);
 
 	return rv;
 }

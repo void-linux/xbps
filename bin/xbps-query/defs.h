@@ -41,15 +41,15 @@ int	repo_show_pkg_deps(struct xbps_handle *, const char *, bool);
 int	repo_show_pkg_revdeps(struct xbps_handle *, const char *);
 
 /* from show-info-files.c */
-void	show_pkg_info(prop_dictionary_t);
-void	show_pkg_info_one(prop_dictionary_t, const char *);
+void	show_pkg_info(xbps_dictionary_t);
+void	show_pkg_info_one(xbps_dictionary_t, const char *);
 int	show_pkg_info_from_metadir(struct xbps_handle *, const char *,
 		const char *);
-int	show_pkg_files(prop_dictionary_t);
+int	show_pkg_files(xbps_dictionary_t);
 int	show_pkg_files_from_metadir(struct xbps_handle *, const char *);
 int	repo_show_pkg_files(struct xbps_handle *, const char *);
 int	repo_show_pkg_info(struct xbps_handle *, const char *, const char *);
-int 	repo_show_pkg_namedesc(struct xbps_handle *, prop_object_t, void *,
+int 	repo_show_pkg_namedesc(struct xbps_handle *, xbps_object_t, void *,
 		bool *);
 
 /* from ownedby.c */
@@ -57,10 +57,10 @@ int	ownedby(struct xbps_handle *, int, char **);
 int	repo_ownedby(struct xbps_handle *, int, char **);
 
 /* From list.c */
-unsigned int	find_longest_pkgver(struct xbps_handle *, prop_object_t);
+unsigned int	find_longest_pkgver(struct xbps_handle *, xbps_object_t);
 
-int	list_pkgs_in_dict(struct xbps_handle *, prop_object_t, void *, bool *);
-int	list_manual_pkgs(struct xbps_handle *, prop_object_t, void *, bool *);
+int	list_pkgs_in_dict(struct xbps_handle *, xbps_object_t, void *, bool *);
+int	list_manual_pkgs(struct xbps_handle *, xbps_object_t, void *, bool *);
 int	list_orphans(struct xbps_handle *);
 int	list_pkgs_pkgdb(struct xbps_handle *);
 

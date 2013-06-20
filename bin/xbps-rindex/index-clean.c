@@ -40,10 +40,10 @@
 
 struct thread_data {
 	pthread_t thread;
-	prop_dictionary_t idx;
-	prop_dictionary_t idxfiles;
-	prop_array_t result;
-	prop_array_t result_files;
+	xbps_dictionary_t idx;
+	xbps_dictionary_t idxfiles;
+	xbps_array_t result;
+	xbps_array_t result_files;
 	struct xbps_handle *xhp;
 	unsigned int start;
 	unsigned int end;
@@ -53,22 +53,22 @@ struct thread_data {
 static void *
 cleaner_thread(void *arg)
 {
-	prop_object_t obj;
-	prop_dictionary_t pkgd;
-	prop_array_t array;
+	xbps_object_t obj;
+	xbps_dictionary_t pkgd;
+	xbps_array_t array;
 	struct thread_data *thd = arg;
 	char *filen;
 	const char *pkgver, *arch, *sha256;
 	unsigned int i;
 
 	/* process pkgs from start until end */
-	array = prop_dictionary_all_keys(thd->idx);
+	array = xbps_dictionary_all_keys(thd->idx);
 
 	for (i = thd->start; i < thd->end; i++) {
-		obj = prop_array_get(array, i);
-		pkgd = prop_dictionary_get_keysym(thd->idx, obj);
-		prop_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		obj = xbps_array_get(array, i);
+		pkgd = xbps_dictionary_get_keysym(thd->idx, obj);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		filen = xbps_xasprintf("%s.%s.xbps", pkgver, arch);
 		xbps_dbg_printf(thd->xhp, "thread[%d] checking %s\n",
 		    thd->thread_num, pkgver);
@@ -77,20 +77,20 @@ cleaner_thread(void *arg)
 			 * File cannot be read, might be permissions,
 			 * broken or simply unexistent; either way, remove it.
 			 */
-			prop_array_add_cstring_nocopy(thd->result, pkgver);
+			xbps_array_add_cstring_nocopy(thd->result, pkgver);
 			free(filen);
 			continue;
 		}
 		/*
 		 * File can be read; check its hash.
 		 */
-		prop_dictionary_get_cstring_nocopy(pkgd,
+		xbps_dictionary_get_cstring_nocopy(pkgd,
 		    "filename-sha256", &sha256);
 		if (xbps_file_hash_check(filen, sha256) != 0)
-			prop_array_add_cstring_nocopy(thd->result, pkgver);
+			xbps_array_add_cstring_nocopy(thd->result, pkgver);
 		free(filen);
 	}
-	prop_object_release(array);
+	xbps_object_release(array);
 
 	return NULL;
 }
@@ -98,35 +98,35 @@ cleaner_thread(void *arg)
 static void *
 cleaner_files_thread(void *arg)
 {
-	prop_object_t obj;
-	prop_array_t array;
-	prop_dictionary_t ipkgd;
+	xbps_object_t obj;
+	xbps_array_t array;
+	xbps_dictionary_t ipkgd;
 	struct thread_data *thd = arg;
 	const char *pkgver, *ipkgver;
 	char *pkgname;
 	unsigned int i;
 
 	/* process pkgs from start until end */
-	array = prop_dictionary_all_keys(thd->idxfiles);
+	array = xbps_dictionary_all_keys(thd->idxfiles);
 
 	for (i = thd->start; i < thd->end; i++) {
-		obj = prop_array_get(array, i);
-		pkgver = prop_dictionary_keysym_cstring_nocopy(obj);
+		obj = xbps_array_get(array, i);
+		pkgver = xbps_dictionary_keysym_cstring_nocopy(obj);
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
-		ipkgd = prop_dictionary_get(thd->idx, pkgname);
+		ipkgd = xbps_dictionary_get(thd->idx, pkgname);
 		/* If pkg is not registered in index, remove it */
 		if (ipkgd == NULL)
-			prop_array_add_cstring_nocopy(thd->result_files, pkgver);
+			xbps_array_add_cstring_nocopy(thd->result_files, pkgver);
 		/* if another version is registered in index, remove it */
 		else {
-			prop_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
+			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
 			if (strcmp(ipkgver, pkgver))
-				prop_array_add_cstring_nocopy(thd->result_files, pkgver);
+				xbps_array_add_cstring_nocopy(thd->result_files, pkgver);
 		}
 		free(pkgname);
 	}
-	prop_object_release(array);
+	xbps_object_release(array);
 
 	return NULL;
 }
@@ -140,7 +140,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 {
 	struct xbps_repo *repo;
 	struct thread_data *thd;
-	prop_dictionary_t idx, idxfiles;
+	xbps_dictionary_t idx, idxfiles;
 	const char *keyname;
 	char *pkgname;
 	unsigned int x, pkgcount, slicecount;
@@ -171,18 +171,18 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
 	thd = calloc(maxthreads, sizeof(*thd));
 
-	slicecount = prop_dictionary_count(idx) / maxthreads;
+	slicecount = xbps_dictionary_count(idx) / maxthreads;
 	pkgcount = 0;
 
 	/* Setup threads to cleanup index and index-files */
 	for (i = 0; i < maxthreads; i++) {
 		thd[i].thread_num = i;
 		thd[i].idx = idx;
-		thd[i].result = prop_array_create();
+		thd[i].result = xbps_array_create();
 		thd[i].xhp = xhp;
 		thd[i].start = pkgcount;
 		if (i + 1 >= maxthreads)
-			thd[i].end = prop_dictionary_count(idx);
+			thd[i].end = xbps_dictionary_count(idx);
 		else
 			thd[i].end = pkgcount + slicecount;
 		pthread_create(&thd[i].thread, NULL, cleaner_thread, &thd[i]);
@@ -193,18 +193,18 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		pthread_join(thd[i].thread, NULL);
 
 	/* Setup threads to cleanup index-files */
-	slicecount = prop_dictionary_count(idxfiles) / maxthreads;
+	slicecount = xbps_dictionary_count(idxfiles) / maxthreads;
 	pkgcount = 0;
 
 	for (i = 0; i < maxthreads; i++) {
 		thd[i].thread_num = i;
 		thd[i].idx = idx;
 		thd[i].idxfiles = idxfiles;
-		thd[i].result_files = prop_array_create();
+		thd[i].result_files = xbps_array_create();
 		thd[i].xhp = xhp;
 		thd[i].start = pkgcount;
 		if (i + 1 >= maxthreads)
-			thd[i].end = prop_dictionary_count(idxfiles);
+			thd[i].end = xbps_dictionary_count(idxfiles);
 		else
 			thd[i].end = pkgcount + slicecount;
 		pthread_create(&thd[i].thread, NULL, cleaner_files_thread, &thd[i]);
@@ -215,21 +215,21 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		pthread_join(thd[i].thread, NULL);
 
 	for (i = 0; i < maxthreads; i++) {
-		for (x = 0; x < prop_array_count(thd[i].result); x++) {
-			prop_array_get_cstring_nocopy(thd[i].result,
+		for (x = 0; x < xbps_array_count(thd[i].result); x++) {
+			xbps_array_get_cstring_nocopy(thd[i].result,
 			    x, &keyname);
 			printf("index: removed entry %s\n", keyname);
 			pkgname = xbps_pkg_name(keyname);
-			prop_dictionary_remove(idx, pkgname);
-			prop_dictionary_remove(idxfiles, keyname);
+			xbps_dictionary_remove(idx, pkgname);
+			xbps_dictionary_remove(idxfiles, keyname);
 			free(pkgname);
 			flush = true;
 		}
-		for (x = 0; x < prop_array_count(thd[i].result_files); x++) {
-			prop_array_get_cstring_nocopy(thd[i].result_files,
+		for (x = 0; x < xbps_array_count(thd[i].result_files); x++) {
+			xbps_array_get_cstring_nocopy(thd[i].result_files,
 			    x, &keyname);
 			printf("index-files: removed entry %s\n", keyname);
-			prop_dictionary_remove(idxfiles, keyname);
+			xbps_dictionary_remove(idxfiles, keyname);
 			flush = true;
 		}
 	}
@@ -239,11 +239,11 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			return rv;
 	}
 	printf("index: %u packages registered.\n",
-	    prop_dictionary_count(idx));
+	    xbps_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n",
-	    prop_dictionary_count(idxfiles));
-	prop_object_release(idx);
-	prop_object_release(idxfiles);
+	    xbps_dictionary_count(idxfiles));
+	xbps_object_release(idx);
+	xbps_object_release(idxfiles);
 
 	return rv;
 }

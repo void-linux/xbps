@@ -48,25 +48,25 @@
 int
 check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
-	prop_array_t array;
-	prop_object_t obj;
-	prop_object_iterator_t iter;
-	prop_dictionary_t pkg_filesd = arg;
+	xbps_array_t array;
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
+	xbps_dictionary_t pkg_filesd = arg;
 	const char *file, *sha256;
 	char *path;
 	bool mutable, broken = false, test_broken = false;
 	int rv;
 
-	array = prop_dictionary_get(pkg_filesd, "files");
-	if (array != NULL && prop_array_count(array) > 0) {
+	array = xbps_dictionary_get(pkg_filesd, "files");
+	if (array != NULL && xbps_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(pkg_filesd, "files");
 		if (iter == NULL)
 			return -1;
 
-		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+		while ((obj = xbps_object_iterator_next(iter))) {
+			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-                        prop_dictionary_get_cstring_nocopy(obj,
+                        xbps_dictionary_get_cstring_nocopy(obj,
                             "sha256", &sha256);
 			rv = xbps_file_hash_check(path, sha256);
 			free(path);
@@ -80,7 +80,7 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 				break;
 			case ERANGE:
 				mutable = false;
-				prop_dictionary_get_bool(obj,
+				xbps_dictionary_get_bool(obj,
 				    "mutable", &mutable);
 				if (!mutable) {
 					xbps_error_printf("%s: hash mismatch "
@@ -95,7 +95,7 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 				break;
 			}
                 }
-                prop_object_iterator_release(iter);
+                xbps_object_iterator_release(iter);
 	}
 	if (test_broken) {
 		xbps_error_printf("%s: files check FAILED.\n", pkgname);
@@ -106,14 +106,14 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	/*
 	 * Check for missing configuration files.
 	 */
-	array = prop_dictionary_get(pkg_filesd, "conf_files");
-	if (array != NULL && prop_array_count(array) > 0) {
+	array = xbps_dictionary_get(pkg_filesd, "conf_files");
+	if (array != NULL && xbps_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(pkg_filesd, "conf_files");
 		if (iter == NULL)
 			return -1;
 
-		while ((obj = prop_object_iterator_next(iter))) {
-			prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+		while ((obj = xbps_object_iterator_next(iter))) {
+			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (access(path, R_OK) == -1) {
 				if (errno == ENOENT) {
@@ -129,7 +129,7 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			}
 			free(path);
 		}
-		prop_object_iterator_release(iter);
+		xbps_object_iterator_release(iter);
 	}
 	if (test_broken) {
 		xbps_error_printf("%s: conf files check FAILED.\n", pkgname);

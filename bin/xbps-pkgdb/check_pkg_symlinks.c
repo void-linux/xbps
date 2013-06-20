@@ -74,27 +74,27 @@ symlink_target(const char *pkgname, const char *path)
 int
 check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
-	prop_array_t array;
-	prop_object_t obj;
-	prop_dictionary_t filesd = arg;
+	xbps_array_t array;
+	xbps_object_t obj;
+	xbps_dictionary_t filesd = arg;
 	unsigned int i;
 	const char *file, *tgt = NULL;
 	char *path, *p, *buf, *buf2, *lnk, *dname, *tgt_path;
 	int rv;
 	bool broken = false;
 
-	array = prop_dictionary_get(filesd, "links");
+	array = xbps_dictionary_get(filesd, "links");
 	if (array == NULL)
 		return false;
 
-	for (i = 0; i < prop_array_count(array); i++) {
-		obj = prop_array_get(array, i);
-		if (!prop_dictionary_get_cstring_nocopy(obj, "target", &tgt)) {
+	for (i = 0; i < xbps_array_count(array); i++) {
+		obj = xbps_array_get(array, i);
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "target", &tgt)) {
 			xbps_warn_printf("%s: `%s' symlink with "
 			    "empty target object!\n", pkgname, file);
 			continue;
 		}
-		prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 		if (strcmp(tgt, "") == 0) {
 			xbps_warn_printf("%s: `%s' symlink with "
 			    "empty target object!\n", pkgname, file);

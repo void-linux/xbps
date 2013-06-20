@@ -311,6 +311,17 @@ else
 	BUILD_PIE_VALUE=no
 fi
 
+# libfetch
+echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
+echo "LDFLAGS +=	-lssl" >>$CONFIG_MK
+echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
+
+# proplib
+echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
+echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib/prop" >>$CONFIG_MK
+echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
+echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
+
 #
 # Check for vasprintf().
 #
@@ -468,60 +479,6 @@ else
 	echo no.
 fi
 rm -f _$func.c _$func
-
-#
-# Check for libfetch's fetchIO_read().
-#
-func=fetchIO_read
-printf "Checking for $func() ... "
-cat <<EOF > _$func.c
-#include <fetch.h>
-int main(void) {
-	fetchIO_read(NULL, NULL, 0);
-	return 0;
-}
-EOF
-if $XCC -lfetch _$func.c -o _$func 2>/dev/null; then
-	LIBFETCH=yes
-	echo "USE_EXTERNAL_LIBFETCH =	1" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lfetch" >>$CONFIG_MK
-	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a -lfetch" >>$CONFIG_MK
-else
-	LIBFETCH=no
-	echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lssl" >>$CONFIG_MK
-	echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
-fi
-rm -f _$func.c _$func
-echo "${LIBFETCH}."
-
-#
-# Check for prop_dictionary_internalize_from_zfile().
-#
-func=prop_dictionary_internalize_from_zfile
-printf "Checking for $func() ... "
-cat <<EOF > _$func.c
-#include <stdio.h>
-#include <prop/proplib.h>
-int main(void) {
-	prop_dictionary_internalize_from_zfile(NULL);
-	return 0;
-}
-EOF
-if $XCC -lprop _$func.c -o _$func 2>/dev/null; then
-	PROPLIB=yes
-	echo "USE_EXTERNAL_PROPLIB =	1" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lz -lpthread -lprop" >>$CONFIG_MK
-	echo "STATIC_LIBS +=	-lprop -lz -lpthread" >>$CONFIG_MK
-else
-	PROPLIB=no
-	echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
-	echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib/prop" >>$CONFIG_MK
-	echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
-	echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
-fi
-rm -f _$func.c _$func
-echo "${PROPLIB}."
 
 #
 # Check for clock_gettime(3).
@@ -744,8 +701,6 @@ echo "   Build Kyua test suite =	$BUILD_TESTS_VALUE"
 echo "   Build programs as PIE =	$BUILD_PIE_VALUE"
 echo "   Build static programs =	$BUILD_STATIC_VALUE"
 echo "   Build with debug  =		$DEBUG"
-echo "   Use external proplib = 	$PROPLIB"
-echo "   Use external libfetch =	$LIBFETCH"
 if [ -n "$HAVE_VISIBILITY" ]; then
 	echo "   Symbol visibility =		$HAVE_VISIBILITY"
 fi

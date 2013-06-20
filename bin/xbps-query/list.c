@@ -40,7 +40,7 @@ struct list_pkgver_cb {
 
 int
 list_pkgs_in_dict(struct xbps_handle *xhp,
-		  prop_object_t obj,
+		  xbps_object_t obj,
 		  void *arg,
 		  bool *loop_done)
 {
@@ -53,8 +53,8 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 	(void)xhp;
 	(void)loop_done;
 
-	prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	prop_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
+	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
 	if (!pkgver || !short_desc)
 		return EINVAL;
 
@@ -92,7 +92,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 
 int
 list_manual_pkgs(struct xbps_handle *xhp,
-		 prop_object_t obj,
+		 xbps_object_t obj,
 		 void *arg,
 		 bool *loop_done)
 {
@@ -103,9 +103,9 @@ list_manual_pkgs(struct xbps_handle *xhp,
 	(void)arg;
 	(void)loop_done;
 
-	prop_dictionary_get_bool(obj, "automatic-install", &automatic);
+	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
 	if (automatic == false) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		printf("%s\n", pkgver);
 	}
 
@@ -115,24 +115,24 @@ list_manual_pkgs(struct xbps_handle *xhp,
 int
 list_orphans(struct xbps_handle *xhp)
 {
-	prop_array_t orphans;
-	prop_object_iterator_t iter;
-	prop_object_t obj;
+	xbps_array_t orphans;
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
 	const char *pkgver;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
 	if (orphans == NULL)
 		return EINVAL;
 
-	if (prop_array_count(orphans) == 0)
+	if (xbps_array_count(orphans) == 0)
 		return 0;
 
-	iter = prop_array_iterator(orphans);
+	iter = xbps_array_iterator(orphans);
 	if (iter == NULL)
 		return ENOMEM;
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		printf("%s\n", pkgver);
 	}
 
@@ -157,7 +157,7 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg, bool *done)
 	(void)done;
 
 	printf("%s (%u packages)\n", repo->uri,
-	    prop_dictionary_count(repo->idx));
+	    xbps_dictionary_count(repo->idx));
 
 	return 0;
 }
@@ -177,30 +177,30 @@ repo_list(struct xbps_handle *xhp)
 }
 
 struct fflongest {
-	prop_dictionary_t d;
+	xbps_dictionary_t d;
 	unsigned int len;
 };
 
 static int
 _find_longest_pkgver_cb(struct xbps_handle *xhp,
-			prop_object_t obj,
+			xbps_object_t obj,
 			void *arg,
 			bool *loop_done)
 {
 	struct fflongest *ffl = arg;
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 	const char *pkgver;
 	unsigned int len;
 
 	(void)xhp;
 	(void)loop_done;
 
-	if (prop_object_type(obj) == PROP_TYPE_DICT_KEYSYM)
-		pkgd = prop_dictionary_get_keysym(ffl->d, obj);
+	if (xbps_object_type(obj) == XBPS_TYPE_DICT_KEYSYM)
+		pkgd = xbps_dictionary_get_keysym(ffl->d, obj);
 	else
 		pkgd = obj;
 
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	len = strlen(pkgver);
 	if (ffl->len == 0 || len > ffl->len)
 		ffl->len = len;
@@ -209,20 +209,20 @@ _find_longest_pkgver_cb(struct xbps_handle *xhp,
 }
 
 unsigned int
-find_longest_pkgver(struct xbps_handle *xhp, prop_object_t o)
+find_longest_pkgver(struct xbps_handle *xhp, xbps_object_t o)
 {
 	struct fflongest ffl;
 
 	ffl.d = o;
 	ffl.len = 0;
 
-	if (prop_object_type(o) == PROP_TYPE_DICTIONARY) {
-		prop_array_t array;
+	if (xbps_object_type(o) == XBPS_TYPE_DICTIONARY) {
+		xbps_array_t array;
 
-		array = prop_dictionary_all_keys(o);
+		array = xbps_dictionary_all_keys(o);
 		(void)xbps_callback_array_iter(xhp, array,
 		    _find_longest_pkgver_cb, &ffl);
-		prop_object_release(array);
+		xbps_object_release(array);
 	} else {
 		(void)xbps_pkgdb_foreach_cb(xhp,
 		    _find_longest_pkgver_cb, &ffl);

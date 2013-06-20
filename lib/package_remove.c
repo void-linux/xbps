@@ -35,24 +35,24 @@
 
 int HIDDEN
 xbps_remove_pkg_files(struct xbps_handle *xhp,
-		      prop_dictionary_t dict,
+		      xbps_dictionary_t dict,
 		      const char *key,
 		      const char *pkgver)
 {
 	struct stat st;
-	prop_array_t array;
-	prop_object_iterator_t iter;
-	prop_object_t obj;
+	xbps_array_t array;
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
 	const char *file, *sha256, *curobj = NULL;
 	char *path = NULL, *pkgname = NULL;
 	char buf[PATH_MAX];
 	int rv = 0;
 
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(key != NULL);
 
-	array = prop_dictionary_get(dict, key);
-	if (prop_array_count(array) == 0)
+	array = xbps_dictionary_get(dict, key);
+	if (xbps_array_count(array) == 0)
 		return 0;
 
 	iter = xbps_array_iter_from_dict(dict, key);
@@ -71,8 +71,8 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
 
-	while ((obj = prop_object_iterator_next(iter))) {
-		prop_dictionary_get_cstring_nocopy(obj, "file", &file);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 		path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 
 		if ((strcmp(key, "files") == 0) ||
@@ -81,7 +81,7 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 			 * Check SHA256 hash in regular files and
 			 * configuration files.
 			 */
-			prop_dictionary_get_cstring_nocopy(obj,
+			xbps_dictionary_get_cstring_nocopy(obj,
 			    "sha256", &sha256);
 			rv = xbps_file_hash_check(path, sha256);
 			if (rv == ENOENT) {
@@ -157,7 +157,7 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		}
 		free(path);
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 	free(pkgname);
 
 	return rv;
@@ -169,7 +169,7 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 		bool update,
 		bool soft_replace)
 {
-	prop_dictionary_t pkgd = NULL;
+	xbps_dictionary_t pkgd = NULL;
 	char *pkgname, *buf = NULL;
 	int rv = 0;
 	pkg_state_t state = 0;
@@ -200,7 +200,7 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 
 	/* internalize pkg dictionary from metadir */
 	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-	pkgd = prop_dictionary_internalize_from_file(buf);
+	pkgd = xbps_dictionary_internalize_from_file(buf);
 	free(buf);
 	if (pkgd == NULL)
 		xbps_dbg_printf(xhp, "WARNING: metaplist for %s "
@@ -231,7 +231,7 @@ xbps_remove_pkg(struct xbps_handle *xhp,
 	 */
 	if (update) {
 		if (pkgd)
-			prop_object_release(pkgd);
+			xbps_object_release(pkgd);
 		free(pkgname);
 		return 0;
 	} else if (soft_replace) {
@@ -297,7 +297,7 @@ purge:
 			    "purge ACTION: %s", pkgver, strerror(rv));
 			goto out;
 		}
-		prop_object_release(pkgd);
+		xbps_object_release(pkgd);
 	}
 	/*
 	 * Remove package metadata plist.
@@ -315,7 +315,7 @@ purge:
 	/*
 	 * Unregister package from pkgdb.
 	 */
-	prop_dictionary_remove(xhp->pkgdb, pkgname);
+	xbps_dictionary_remove(xhp->pkgdb, pkgname);
 	if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
 		goto out;
 

@@ -37,12 +37,12 @@
 #include "../xbps-install/defs.h"
 
 static void
-write_plist_file(prop_dictionary_t dict, const char *file)
+write_plist_file(xbps_dictionary_t dict, const char *file)
 {
 	assert(dict != NULL || file != NULL);
 
-	if (!prop_dictionary_externalize_to_zfile(dict, file)) {
-		prop_object_release(dict);
+	if (!xbps_dictionary_externalize_to_zfile(dict, file)) {
+		xbps_object_release(dict);
 		xbps_error_printf("xbps-uhelper: couldn't write to %s: %s\n",
 		    file, strerror(errno));
 		exit(EXIT_FAILURE);
@@ -97,7 +97,7 @@ usage(void)
 int
 main(int argc, char **argv)
 {
-	prop_dictionary_t dict;
+	xbps_dictionary_t dict;
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *version, *rootdir = NULL, *confdir = NULL;
@@ -159,14 +159,14 @@ main(int argc, char **argv)
 		    (((dict = xbps_pkgdb_get_virtualpkg(&xh, argv[1])) == NULL)))
 			exit(EXIT_FAILURE);
 
-		prop_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
+		xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
 		printf("%s\n", xbps_pkg_version(version));
 	} else if (strcasecmp(argv[0], "sanitize-plist") == 0) {
 		/* Sanitize a plist file (properly indent the file) */
 		if (argc != 2)
 			usage();
 
-		dict = prop_dictionary_internalize_from_zfile(argv[1]);
+		dict = xbps_dictionary_internalize_from_zfile(argv[1]);
 		if (dict == NULL) {
 			fprintf(stderr,
 			    "=> ERROR: couldn't sanitize %s plist file "

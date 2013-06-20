@@ -53,11 +53,11 @@ static const struct state states[] = {
  */
 
 static int
-set_new_state(prop_dictionary_t dict, pkg_state_t state)
+set_new_state(xbps_dictionary_t dict, pkg_state_t state)
 {
 	const struct state *stp;
 
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 
 	for (stp = states; stp->string != NULL; stp++)
 		if (state == stp->number)
@@ -66,21 +66,21 @@ set_new_state(prop_dictionary_t dict, pkg_state_t state)
 	if (stp->string == NULL)
 		return EINVAL;
 
-	if (!prop_dictionary_set_cstring_nocopy(dict, "state", stp->string))
+	if (!xbps_dictionary_set_cstring_nocopy(dict, "state", stp->string))
 		return EINVAL;
 
 	return 0;
 }
 
 static pkg_state_t
-get_state(prop_dictionary_t dict)
+get_state(xbps_dictionary_t dict)
 {
 	const struct state *stp;
 	const char *state_str;
 
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 
-	if (!prop_dictionary_get_cstring_nocopy(dict,
+	if (!xbps_dictionary_get_cstring_nocopy(dict,
 	    "state", &state_str))
 		return 0;
 
@@ -96,7 +96,7 @@ xbps_pkg_state_installed(struct xbps_handle *xhp,
 			 const char *pkgver,
 			 pkg_state_t *state)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 
 	assert(pkgver != NULL);
 	assert(state != NULL);
@@ -113,9 +113,9 @@ xbps_pkg_state_installed(struct xbps_handle *xhp,
 }
 
 int
-xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
+xbps_pkg_state_dictionary(xbps_dictionary_t dict, pkg_state_t *state)
 {
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(state != NULL);
 
 	if ((*state = get_state(dict)) == 0)
@@ -125,9 +125,9 @@ xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state)
 }
 
 int
-xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state)
+xbps_set_pkg_state_dictionary(xbps_dictionary_t dict, pkg_state_t state)
 {
-	assert(prop_object_type(dict) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 
 	return set_new_state(dict, state);
 }
@@ -137,7 +137,7 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			     const char *pkgver,
 			     pkg_state_t state)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 	char *pkgname;
 	int rv = 0;
 
@@ -145,35 +145,35 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
 	if (pkgd == NULL) {
-		pkgd = prop_dictionary_create();
+		pkgd = xbps_dictionary_create();
 		if (pkgd == NULL)
 			return ENOMEM;
 
-		if (!prop_dictionary_set_cstring_nocopy(pkgd,
+		if (!xbps_dictionary_set_cstring_nocopy(pkgd,
 		    "pkgver", pkgver)) {
-			prop_object_release(pkgd);
+			xbps_object_release(pkgd);
 			return EINVAL;
 		}
 		if ((rv = set_new_state(pkgd, state)) != 0) {
-			prop_object_release(pkgd);
+			xbps_object_release(pkgd);
 			return rv;
 		}
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
-		if (!prop_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
-			prop_object_release(pkgd);
+		if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
+			xbps_object_release(pkgd);
 			free(pkgname);
 			return EINVAL;
 		}
 		free(pkgname);
-		prop_object_release(pkgd);
+		xbps_object_release(pkgd);
 	} else {
 		if ((rv = set_new_state(pkgd, state)) != 0)
 			return rv;
 
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
-		if (!prop_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
+		if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 			free(pkgname);
 			return EINVAL;
 		}

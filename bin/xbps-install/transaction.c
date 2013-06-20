@@ -37,8 +37,8 @@
 #include "defs.h"
 
 struct transaction {
-	prop_dictionary_t d;
-	prop_object_iterator_t iter;
+	xbps_dictionary_t d;
+	xbps_object_iterator_t iter;
 	uint32_t inst_pkgcnt;
 	uint32_t up_pkgcnt;
 	uint32_t cf_pkgcnt;
@@ -46,45 +46,45 @@ struct transaction {
 };
 
 static void
-show_missing_deps(prop_array_t a)
+show_missing_deps(xbps_array_t a)
 {
 	unsigned int i;
 	const char *str;
 
 	fprintf(stderr, "Unable to locate some required packages:\n");
-	for (i = 0; i < prop_array_count(a); i++) {
-		prop_array_get_cstring_nocopy(a, i, &str);
+	for (i = 0; i < xbps_array_count(a); i++) {
+		xbps_array_get_cstring_nocopy(a, i, &str);
 		fprintf(stderr, " %s\n", str);
 	}
 }
 
 static void
-show_conflicts(prop_array_t a)
+show_conflicts(xbps_array_t a)
 {
 	unsigned int i;
 	const char *str;
 
 	fprintf(stderr, "Conflicting packages were found:\n");
-	for (i = 0; i < prop_array_count(a); i++) {
-		prop_array_get_cstring_nocopy(a, i, &str);
+	for (i = 0; i < xbps_array_count(a); i++) {
+		xbps_array_get_cstring_nocopy(a, i, &str);
 		fprintf(stderr, " %s\n", str);
 	}
 }
 
 static void
-show_actions(prop_object_iterator_t iter)
+show_actions(xbps_object_iterator_t iter)
 {
-	prop_object_t obj;
+	xbps_object_t obj;
 	const char *repoloc, *trans, *pkgver, *arch;
 
 	repoloc = trans = pkgver = arch = NULL;
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		printf("%s %s", pkgver, trans);
-		prop_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		prop_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 		if (repoloc && arch)
 			printf(" %s %s", arch, repoloc);
 
@@ -93,19 +93,19 @@ show_actions(prop_object_iterator_t iter)
 }
 
 static void
-show_package_list(prop_object_iterator_t iter, const char *match, int cols)
+show_package_list(xbps_object_iterator_t iter, const char *match, int cols)
 {
-	prop_object_t obj;
+	xbps_object_t obj;
 	const char *pkgver, *tract;
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if (strcmp(match, tract))
 			continue;
 		print_package_line(pkgver, cols, false);
 	}
-	prop_object_iterator_reset(iter);
+	xbps_object_iterator_reset(iter);
 	print_package_line(NULL, cols, true);
 }
 
@@ -118,28 +118,28 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	/*
 	 * Show the list of packages that will be installed.
 	 */
-	if (prop_dictionary_get_uint32(trans->d, "total-install-pkgs",
+	if (xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
 	    &trans->inst_pkgcnt)) {
 		printf("%u package%s will be installed:\n",
 		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "install", cols);
 		printf("\n");
 	}
-	if (prop_dictionary_get_uint32(trans->d, "total-update-pkgs",
+	if (xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
 	    &trans->up_pkgcnt)) {
 		printf("%u package%s will be updated:\n",
 		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "update", cols);
 		printf("\n");
 	}
-	if (prop_dictionary_get_uint32(trans->d, "total-configure-pkgs",
+	if (xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
 	    &trans->cf_pkgcnt)) {
 		printf("%u package%s will be configured:\n",
 		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "configure", cols);
 		printf("\n");
 	}
-	if (prop_dictionary_get_uint32(trans->d, "total-remove-pkgs",
+	if (xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
 	    &trans->rm_pkgcnt)) {
 		printf("%u package%s will be removed:\n",
 		    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
@@ -149,10 +149,10 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	/*
 	 * Show total download/installed/removed size for all required packages.
 	 */
-	prop_dictionary_get_uint64(trans->d, "total-download-size", &dlsize);
-	prop_dictionary_get_uint64(trans->d, "total-installed-size",
+	xbps_dictionary_get_uint64(trans->d, "total-download-size", &dlsize);
+	xbps_dictionary_get_uint64(trans->d, "total-installed-size",
 	    &instsize);
-	prop_dictionary_get_uint64(trans->d, "total-removed-size", &rmsize);
+	xbps_dictionary_get_uint64(trans->d, "total-removed-size", &rmsize);
 	if (dlsize || instsize || rmsize)
 		printf("\n");
 
@@ -258,7 +258,7 @@ update_pkg(struct xbps_handle *xhp, const char *pkgname)
 int
 exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 {
-	prop_array_t mdeps, cflicts;
+	xbps_array_t mdeps, cflicts;
 	struct transaction *trans;
 	int rv = 0;
 
@@ -269,13 +269,13 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 	if ((rv = xbps_transaction_prepare(xhp)) != 0) {
 		if (rv == ENODEV) {
 			mdeps =
-			    prop_dictionary_get(xhp->transd, "missing_deps");
+			    xbps_dictionary_get(xhp->transd, "missing_deps");
 			/* missing packages */
 			show_missing_deps(mdeps);
 			goto out;
 		} else if (rv == EAGAIN) {
 			/* conflicts */
-			cflicts = prop_dictionary_get(xhp->transd, "conflicts");
+			cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
 			show_conflicts(cflicts);
 			goto out;
 		}
@@ -285,7 +285,7 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 	}
 	xbps_dbg_printf(xhp, "Dictionary before transaction happens:\n");
 	xbps_dbg_printf_append(xhp, "%s",
-	    prop_dictionary_externalize(xhp->transd));
+	    xbps_dictionary_externalize(xhp->transd));
 
 	trans->d = xhp->transd;
 	trans->iter = xbps_array_iter_from_dict(xhp->transd, "packages");
@@ -321,7 +321,7 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 	}
 out:
 	if (trans->iter)
-		prop_object_iterator_release(trans->iter);
+		xbps_object_iterator_release(trans->iter);
 	if (trans)
 		free(trans);
 

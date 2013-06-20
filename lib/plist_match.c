@@ -40,16 +40,16 @@
  * all library functions.
  */
 bool
-xbps_match_virtual_pkg_in_dict(prop_dictionary_t d,
+xbps_match_virtual_pkg_in_dict(xbps_dictionary_t d,
 			       const char *str,
 			       bool bypattern)
 {
-	prop_array_t provides;
+	xbps_array_t provides;
 	bool found = false;
 
-	assert(prop_object_type(d) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(d) == XBPS_TYPE_DICTIONARY);
 
-	if ((provides = prop_dictionary_get(d, "provides"))) {
+	if ((provides = xbps_dictionary_get(d, "provides"))) {
 		if (bypattern)
 			found = xbps_match_pkgpattern_in_array(provides, str);
 		else {
@@ -62,72 +62,72 @@ xbps_match_virtual_pkg_in_dict(prop_dictionary_t d,
 }
 
 bool
-xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
-				     prop_array_t provides)
+xbps_match_any_virtualpkg_in_rundeps(xbps_array_t rundeps,
+				     xbps_array_t provides)
 {
-	prop_object_t obj, obj2;
-	prop_object_iterator_t iter, iter2;
+	xbps_object_t obj, obj2;
+	xbps_object_iterator_t iter, iter2;
 	const char *vpkgver, *pkgpattern;
 	char *tmp;
 
-	iter = prop_array_iterator(provides);
+	iter = xbps_array_iterator(provides);
 	assert(iter);
 
-	while ((obj = prop_object_iterator_next(iter))) {
+	while ((obj = xbps_object_iterator_next(iter))) {
 		tmp = NULL;
-		vpkgver = prop_string_cstring_nocopy(obj);
+		vpkgver = xbps_string_cstring_nocopy(obj);
 		if (strchr(vpkgver, '_') == NULL) {
 			tmp = xbps_xasprintf("%s_1", vpkgver);
 			vpkgver = tmp;
 		}
-		iter2 = prop_array_iterator(rundeps);
+		iter2 = xbps_array_iterator(rundeps);
 		assert(iter2);
-		while ((obj2 = prop_object_iterator_next(iter2))) {
-			pkgpattern = prop_string_cstring_nocopy(obj2);
+		while ((obj2 = xbps_object_iterator_next(iter2))) {
+			pkgpattern = xbps_string_cstring_nocopy(obj2);
 			if (xbps_pkgpattern_match(vpkgver, pkgpattern)) {
 				if (tmp != NULL)
 					free(tmp);
 
-				prop_object_iterator_release(iter2);
-				prop_object_iterator_release(iter);
+				xbps_object_iterator_release(iter2);
+				xbps_object_iterator_release(iter);
 				return true;
 			}
 		}
-		prop_object_iterator_release(iter2);
+		xbps_object_iterator_release(iter2);
 		if (tmp != NULL)
 			free(tmp);
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	return false;
 }
 
 static bool
-match_string_in_array(prop_array_t array, const char *str, int mode)
+match_string_in_array(xbps_array_t array, const char *str, int mode)
 {
-	prop_object_iterator_t iter;
-	prop_object_t obj;
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
 	const char *pkgdep;
 	char *curpkgname, *tmp;
 	bool found = false;
 
-	assert(prop_object_type(array) == PROP_TYPE_ARRAY);
+	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(str != NULL);
 
-	iter = prop_array_iterator(array);
+	iter = xbps_array_iterator(array);
 	assert(iter);
 
-	while ((obj = prop_object_iterator_next(iter))) {
+	while ((obj = xbps_object_iterator_next(iter))) {
 		tmp = NULL;
 		if (mode == 0) {
 			/* match by string */
-			if (prop_string_equals_cstring(obj, str)) {
+			if (xbps_string_equals_cstring(obj, str)) {
 				found = true;
 				break;
 			}
 		} else if (mode == 1) {
 			/* match by pkgname */
-			pkgdep = prop_string_cstring_nocopy(obj);
+			pkgdep = xbps_string_cstring_nocopy(obj);
 			if (strchr(pkgdep, '_') == NULL) {
 				tmp = xbps_xasprintf("%s_1", pkgdep);
 				curpkgname = xbps_pkg_name(tmp);
@@ -145,7 +145,7 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 			free(curpkgname);
 		} else if (mode == 2) {
 			/* match pkgpattern against pkgdep */
-			pkgdep = prop_string_cstring_nocopy(obj);
+			pkgdep = xbps_string_cstring_nocopy(obj);
 			if (strchr(pkgdep, '_') == NULL) {
 				tmp = xbps_xasprintf("%s_1", pkgdep);
 				pkgdep = tmp;
@@ -161,7 +161,7 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 
 		} else if (mode == 3) {
 			/* match pkgdep against pkgpattern */
-			pkgdep = prop_string_cstring_nocopy(obj);
+			pkgdep = xbps_string_cstring_nocopy(obj);
 			if (strchr(pkgdep, '_') == NULL) {
 				tmp = xbps_xasprintf("%s_1", pkgdep);
 				pkgdep = tmp;
@@ -176,31 +176,31 @@ match_string_in_array(prop_array_t array, const char *str, int mode)
 				free(tmp);
 		}
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	return found;
 }
 
 bool
-xbps_match_string_in_array(prop_array_t array, const char *str)
+xbps_match_string_in_array(xbps_array_t array, const char *str)
 {
 	return match_string_in_array(array, str, 0);
 }
 
 bool
-xbps_match_pkgname_in_array(prop_array_t array, const char *pkgname)
+xbps_match_pkgname_in_array(xbps_array_t array, const char *pkgname)
 {
 	return match_string_in_array(array, pkgname, 1);
 }
 
 bool
-xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern)
+xbps_match_pkgpattern_in_array(xbps_array_t array, const char *pattern)
 {
 	return match_string_in_array(array, pattern, 2);
 }
 
 bool
-xbps_match_pkgdep_in_array(prop_array_t array, const char *pkgver)
+xbps_match_pkgdep_in_array(xbps_array_t array, const char *pkgver)
 {
 	return match_string_in_array(array, pkgver, 3);
 }

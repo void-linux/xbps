@@ -94,10 +94,10 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	return repo;
 }
 
-prop_dictionary_t
+xbps_dictionary_t
 xbps_repo_get_plist(struct xbps_repo *repo, const char *file)
 {
-	prop_dictionary_t d;
+	xbps_dictionary_t d;
 	struct archive_entry *entry;
 	void *buf;
 	size_t buflen;
@@ -123,7 +123,7 @@ xbps_repo_get_plist(struct xbps_repo *repo, const char *file)
 				free(buf);
 				return NULL;
 			}
-			d = prop_dictionary_internalize(buf);
+			d = xbps_dictionary_internalize(buf);
 			free(buf);
 			return d;
 		}
@@ -138,51 +138,51 @@ xbps_repo_close(struct xbps_repo *repo)
 	assert(repo);
 
 	archive_read_free(repo->ar);
-	if (prop_object_type(repo->idx) == PROP_TYPE_DICTIONARY)
-		prop_object_release(repo->idx);
-	if (prop_object_type(repo->idxfiles) == PROP_TYPE_DICTIONARY)
-		prop_object_release(repo->idxfiles);
+	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
+		xbps_object_release(repo->idx);
+	if (xbps_object_type(repo->idxfiles) == XBPS_TYPE_DICTIONARY)
+		xbps_object_release(repo->idxfiles);
 	free(repo);
 }
 
-prop_dictionary_t
+xbps_dictionary_t
 xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 
 	assert(repo);
 	assert(repo->ar);
 	assert(pkg);
 
-	if (prop_object_type(repo->idx) != PROP_TYPE_DICTIONARY) {
+	if (xbps_object_type(repo->idx) != XBPS_TYPE_DICTIONARY) {
 		repo->idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
 		assert(repo->idx);
 	}
 	pkgd = xbps_find_virtualpkg_in_dict(repo->xhp, repo->idx, pkg);
 	if (pkgd) {
-		prop_dictionary_set_cstring_nocopy(pkgd,
+		xbps_dictionary_set_cstring_nocopy(pkgd,
 				"repository", repo->uri);
 		return pkgd;
 	}
 	return NULL;
 }
 
-prop_dictionary_t
+xbps_dictionary_t
 xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 
 	assert(repo);
 	assert(repo->ar);
 	assert(pkg);
 
-	if (prop_object_type(repo->idx) != PROP_TYPE_DICTIONARY) {
+	if (xbps_object_type(repo->idx) != XBPS_TYPE_DICTIONARY) {
 		repo->idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
 		assert(repo->idx);
 	}
 	pkgd = xbps_find_pkg_in_dict(repo->idx, pkg);
 	if (pkgd) {
-		prop_dictionary_set_cstring_nocopy(pkgd,
+		xbps_dictionary_set_cstring_nocopy(pkgd,
 				"repository", repo->uri);
 		return pkgd;
 	}
@@ -190,11 +190,11 @@ xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg)
 	return NULL;
 }
 
-prop_dictionary_t
-xbps_repo_get_pkg_plist(struct xbps_handle *xhp, prop_dictionary_t pkgd,
+xbps_dictionary_t
+xbps_repo_get_pkg_plist(struct xbps_handle *xhp, xbps_dictionary_t pkgd,
 		const char *plist)
 {
-	prop_dictionary_t bpkgd;
+	xbps_dictionary_t bpkgd;
 	char *url;
 
 	url = xbps_repository_pkg_path(xhp, pkgd);
@@ -206,27 +206,27 @@ xbps_repo_get_pkg_plist(struct xbps_handle *xhp, prop_dictionary_t pkgd,
 	return bpkgd;
 }
 
-static prop_array_t
-revdeps_match(struct xbps_repo *repo, prop_dictionary_t tpkgd, const char *str)
+static xbps_array_t
+revdeps_match(struct xbps_repo *repo, xbps_dictionary_t tpkgd, const char *str)
 {
-	prop_dictionary_t pkgd;
-	prop_array_t revdeps = NULL, pkgdeps, provides;
-	prop_object_iterator_t iter;
-	prop_object_t obj;
+	xbps_dictionary_t pkgd;
+	xbps_array_t revdeps = NULL, pkgdeps, provides;
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
 	const char *pkgver, *tpkgver, *arch, *vpkg;
 	char *buf;
 	unsigned int i;
 
-	iter = prop_dictionary_iterator(repo->idx);
+	iter = xbps_dictionary_iterator(repo->idx);
 	assert(iter);
 
-	while ((obj = prop_object_iterator_next(iter))) {
-		pkgd = prop_dictionary_get_keysym(repo->idx, obj);
-		if (prop_dictionary_equals(pkgd, tpkgd))
+	while ((obj = xbps_object_iterator_next(iter))) {
+		pkgd = xbps_dictionary_get_keysym(repo->idx, obj);
+		if (xbps_dictionary_equals(pkgd, tpkgd))
 			continue;
 
-		pkgdeps = prop_dictionary_get(pkgd, "run_depends");
-		if (!prop_array_count(pkgdeps))
+		pkgdeps = xbps_dictionary_get(pkgd, "run_depends");
+		if (!xbps_array_count(pkgdeps))
 			continue;
 		/*
 		 * Try to match passed in string.
@@ -234,28 +234,28 @@ revdeps_match(struct xbps_repo *repo, prop_dictionary_t tpkgd, const char *str)
 		if (str) {
 			if (!xbps_match_pkgdep_in_array(pkgdeps, str))
 				continue;
-			prop_dictionary_get_cstring_nocopy(pkgd,
+			xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "architecture", &arch);
 			if (!xbps_pkg_arch_match(repo->xhp, arch, NULL))
 				continue;
 
-			prop_dictionary_get_cstring_nocopy(pkgd,
+			xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &tpkgver);
 			/* match */
 			if (revdeps == NULL)
-				revdeps = prop_array_create();
+				revdeps = xbps_array_create();
 
 			if (!xbps_match_string_in_array(revdeps, tpkgver))
-				prop_array_add_cstring_nocopy(revdeps, tpkgver);
+				xbps_array_add_cstring_nocopy(revdeps, tpkgver);
 
 			continue;
 		}
 		/*
 		 * Try to match any virtual package.
 		 */
-		provides = prop_dictionary_get(tpkgd, "provides");
-		for (i = 0; i < prop_array_count(provides); i++) {
-			prop_array_get_cstring_nocopy(provides, i, &vpkg);
+		provides = xbps_dictionary_get(tpkgd, "provides");
+		for (i = 0; i < xbps_array_count(provides); i++) {
+			xbps_array_get_cstring_nocopy(provides, i, &vpkg);
 			if (strchr(vpkg, '_') == NULL)
 				buf = xbps_xasprintf("%s_1", vpkg);
 			else
@@ -266,49 +266,49 @@ revdeps_match(struct xbps_repo *repo, prop_dictionary_t tpkgd, const char *str)
 				continue;
 			}
 			free(buf);
-			prop_dictionary_get_cstring_nocopy(pkgd,
+			xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "architecture", &arch);
 			if (!xbps_pkg_arch_match(repo->xhp, arch, NULL))
 				continue;
 
-			prop_dictionary_get_cstring_nocopy(pkgd, "pkgver",
+			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver",
 			    &tpkgver);
 			/* match */
 			if (revdeps == NULL)
-				revdeps = prop_array_create();
+				revdeps = xbps_array_create();
 
 			if (!xbps_match_string_in_array(revdeps, tpkgver))
-				prop_array_add_cstring_nocopy(revdeps, tpkgver);
+				xbps_array_add_cstring_nocopy(revdeps, tpkgver);
 		}
 		/*
 		 * Try to match by pkgver.
 		 */
-		prop_dictionary_get_cstring_nocopy(tpkgd, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(tpkgd, "pkgver", &pkgver);
 		if (!xbps_match_pkgdep_in_array(pkgdeps, pkgver))
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(pkgd,
+		xbps_dictionary_get_cstring_nocopy(pkgd,
 		    "architecture", &arch);
 		if (!xbps_pkg_arch_match(repo->xhp, arch, NULL))
 			continue;
 
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &tpkgver);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &tpkgver);
 		/* match */
 		if (revdeps == NULL)
-			revdeps = prop_array_create();
+			revdeps = xbps_array_create();
 
 		if (!xbps_match_string_in_array(revdeps, tpkgver))
-			prop_array_add_cstring_nocopy(revdeps, tpkgver);
+			xbps_array_add_cstring_nocopy(revdeps, tpkgver);
 	}
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 	return revdeps;
 }
 
-prop_array_t
+xbps_array_t
 xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 {
-	prop_array_t revdeps = NULL, vdeps = NULL;
-	prop_dictionary_t pkgd;
+	xbps_array_t revdeps = NULL, vdeps = NULL;
+	xbps_dictionary_t pkgd;
 	const char *vpkg;
 	char *buf = NULL;
 	unsigned int i;
@@ -321,11 +321,11 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	/*
 	 * If pkg is a virtual pkg let's match it instead of the real pkgver.
 	 */
-	if ((vdeps = prop_dictionary_get(pkgd, "provides"))) {
-		for (i = 0; i < prop_array_count(vdeps); i++) {
+	if ((vdeps = xbps_dictionary_get(pkgd, "provides"))) {
+		for (i = 0; i < xbps_array_count(vdeps); i++) {
 			char *vpkgn;
 
-			prop_array_get_cstring_nocopy(vdeps, i, &vpkg);
+			xbps_array_get_cstring_nocopy(vdeps, i, &vpkg);
 			if (strchr(vpkg, '_') == NULL)
 				buf = xbps_xasprintf("%s_1", vpkg);
 			else
@@ -346,7 +346,7 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 			free(buf);
 		}
 	}
-	if (!prop_array_count(revdeps))
+	if (!xbps_array_count(revdeps))
 		revdeps = revdeps_match(repo, pkgd, NULL);
 
 	return revdeps;

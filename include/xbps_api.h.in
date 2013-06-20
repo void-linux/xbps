@@ -30,9 +30,15 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#include <xbps/xbps_array.h>
+#include <xbps/xbps_bool.h>
+#include <xbps/xbps_data.h>
+#include <xbps/xbps_dictionary.h>
+#include <xbps/xbps_number.h>
+#include <xbps/xbps_string.h>
+
 #include <archive.h>
 #include <archive_entry.h>
-#include <prop/proplib.h>
 
 /**
  * @file include/xbps_api.h
@@ -40,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20130614-1"
+#define XBPS_API_VERSION	"20130620"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -452,22 +458,22 @@ struct xbps_handle {
 	 * Internalized proplib dictionary with the master package database
 	 * stored in XBPS_META_PATH/XBPS_PKGDB.
 	 */
-	prop_dictionary_t pkgdb;
+	xbps_dictionary_t pkgdb;
 	/**
 	 * @private
 	 */
-	prop_dictionary_t pkg_metad;
+	xbps_dictionary_t pkg_metad;
 	/**
 	 * @private
 	 */
-	prop_dictionary_t pkgdb_revdeps;
+	xbps_dictionary_t pkgdb_revdeps;
 	/**
 	 * @var transd
 	 *
 	 * Proplib dictionary with transaction details, required by
 	 * xbps_transaction_commit().
 	 */
-	prop_dictionary_t transd;
+	xbps_dictionary_t transd;
 	/**
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
@@ -670,7 +676,7 @@ const char *xbps_fetch_error_string(void);
  * @return A proplib array of dictionaries with all orphans found,
  * on error NULL is returned and errno is set appropiately.
  */
-prop_array_t xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans);
+xbps_array_t xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans);
 
 /**
  * @ingroup pkg_obsoletes
@@ -684,9 +690,9 @@ prop_array_t xbps_find_pkg_orphans(struct xbps_handle *xhp, prop_array_t orphans
  *
  * @return A proplib array of strings with a sorted list of obsolete files.
  */
-prop_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
-				     prop_dictionary_t instd,
-				     prop_dictionary_t newd);
+xbps_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
+				     xbps_dictionary_t instd,
+				     xbps_dictionary_t newd);
 
 /** @addtogroup pkgdb */
 /*@{*/
@@ -703,7 +709,7 @@ prop_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
  * the value returned by the function callback.
  */
 int xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg);
 
 /**
@@ -719,7 +725,7 @@ int xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
  */
 int xbps_pkgdb_foreach_reverse_cb(
 		struct xbps_handle *xhp,
-		int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+		int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 		void *arg);
 
 /**
@@ -731,7 +737,7 @@ int xbps_pkgdb_foreach_reverse_cb(
  *
  * @return The matching proplib package dictionary, NULL otherwise.
  */
-prop_dictionary_t xbps_pkgdb_get_pkg(struct xbps_handle *xhp,
+xbps_dictionary_t xbps_pkgdb_get_pkg(struct xbps_handle *xhp,
 				     const char *pkg);
 
 /**
@@ -743,7 +749,7 @@ prop_dictionary_t xbps_pkgdb_get_pkg(struct xbps_handle *xhp,
  *
  * @return The matching proplib package dictionary, NULL otherwise.
  */
-prop_dictionary_t xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp,
+xbps_dictionary_t xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp,
 					    const char *pkg);
 
 /**
@@ -754,7 +760,7 @@ prop_dictionary_t xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp,
  *
  * @return The matching package metadata dictionary, NULL otherwise.
  */
-prop_dictionary_t xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp,
+xbps_dictionary_t xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp,
 					      const char *pkg);
 
 /**
@@ -767,7 +773,7 @@ prop_dictionary_t xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp,
  *
  * @return A proplib array of strings with reverse dependencies for \a pkg.
  */
-prop_array_t xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp,
+xbps_array_t xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp,
 					const char *pkg);
 
 /**
@@ -813,7 +819,7 @@ int xbps_pkg_exec_buffer(struct xbps_handle *xhp,
  * @return 0 on success, or an errno value otherwise.
  */
 int xbps_pkg_exec_script(struct xbps_handle *xhp,
-			 prop_dictionary_t d,
+			 xbps_dictionary_t d,
 			 const char *script,
 			 const char *action,
 			 bool update);
@@ -838,8 +844,8 @@ int xbps_pkg_exec_script(struct xbps_handle *xhp,
  * callback.
  */
 int xbps_callback_array_iter(struct xbps_handle *xhp,
-	prop_array_t array,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	xbps_array_t array,
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg);
 
 /**
@@ -857,8 +863,8 @@ int xbps_callback_array_iter(struct xbps_handle *xhp,
  * callback.
  */
 int xbps_callback_array_iter_reverse(struct xbps_handle *xhp,
-	prop_array_t array,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	xbps_array_t array,
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg);
 
 /**
@@ -878,9 +884,9 @@ int xbps_callback_array_iter_reverse(struct xbps_handle *xhp,
  * the value returned by the function callback.
  */
 int xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
-	prop_dictionary_t dict,
+	xbps_dictionary_t dict,
 	const char *key,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg);
 
 /**
@@ -900,9 +906,9 @@ int xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
  * the value returned by the function callback.
  */
 int xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
-	prop_dictionary_t dict,
+	xbps_dictionary_t dict,
 	const char *key,
-	int (*fn)(struct xbps_handle *, prop_object_t, void *, bool *),
+	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 	void *arg);
 
 /**
@@ -917,7 +923,7 @@ int xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
  * @return True if \a str matches a virtual package in \a pkgd, false
  * otherwise.
  */
-bool xbps_match_virtual_pkg_in_dict(prop_dictionary_t pkgd,
+bool xbps_match_virtual_pkg_in_dict(xbps_dictionary_t pkgd,
 				   const char *str,
 				   bool bypattern);
 
@@ -931,8 +937,8 @@ bool xbps_match_virtual_pkg_in_dict(prop_dictionary_t pkgd,
  *
  * @return True if \a any virtualpkg has been matched, false otherwise.
  */
-bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
-					  prop_array_t provides);
+bool xbps_match_any_virtualpkg_in_rundeps(xbps_array_t rundeps,
+					  xbps_array_t provides);
 
 /**
  * Match a package name in the specified array of strings.
@@ -942,7 +948,7 @@ bool xbps_match_any_virtualpkg_in_rundeps(prop_array_t rundeps,
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_match_pkgname_in_array(prop_array_t array, const char *pkgname);
+bool xbps_match_pkgname_in_array(xbps_array_t array, const char *pkgname);
 
 /**
  * Match a package pattern in the specified array of strings.
@@ -952,7 +958,7 @@ bool xbps_match_pkgname_in_array(prop_array_t array, const char *pkgname);
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern);
+bool xbps_match_pkgpattern_in_array(xbps_array_t array, const char *pattern);
 
 /**
  * Match a package dependency against any package pattern in the specified
@@ -963,7 +969,7 @@ bool xbps_match_pkgpattern_in_array(prop_array_t array, const char *pattern);
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_match_pkgdep_in_array(prop_array_t array, const char *pkgver);
+bool xbps_match_pkgdep_in_array(xbps_array_t array, const char *pkgver);
 
 /**
  * Match a string (exact match) in the specified array of strings.
@@ -973,7 +979,7 @@ bool xbps_match_pkgdep_in_array(prop_array_t array, const char *pkgver);
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
-bool xbps_match_string_in_array(prop_array_t array, const char *val);
+bool xbps_match_string_in_array(xbps_array_t array, const char *val);
 
 /**
  * Returns a proplib object iterator associated with an array, contained
@@ -985,7 +991,7 @@ bool xbps_match_string_in_array(prop_array_t array, const char *val);
  * @return A proplib object iterator on success, NULL otherwise and
  * errno is set appropiately.
  */
-prop_object_iterator_t xbps_array_iter_from_dict(prop_dictionary_t dict,
+xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict,
 						 const char *key);
 
 /*@}*/
@@ -1115,7 +1121,7 @@ int xbps_transaction_commit(struct xbps_handle *xhp);
  * @return An internalized proplib dictionary, otherwise NULL and
  * errno is set appropiately.
  */
-prop_dictionary_t xbps_get_pkg_plist_from_binpkg(const char *fname,
+xbps_dictionary_t xbps_get_pkg_plist_from_binpkg(const char *fname,
 						 const char *plistf);
 
 /*@}*/
@@ -1140,13 +1146,13 @@ struct xbps_repo {
 	 *
 	 * Proplib dictionary associated with the repository index.
 	 */
-	prop_dictionary_t idx;
+	xbps_dictionary_t idx;
 	/**
 	 * @var idxfiles
 	 *
 	 * Proplib dictionary associated with the repository index files.
 	 */
-	prop_dictionary_t idxfiles;
+	xbps_dictionary_t idxfiles;
 	/**
 	 * @var uri
 	 * 
@@ -1204,9 +1210,9 @@ int xbps_rpool_foreach(struct xbps_handle *xhp,
  *
  * @return The package dictionary if found, NULL otherwise.
  * @note When returned dictionary is no longer needed, you must release it
- * with prop_object_release(3).
+ * with xbps_object_release(3).
  */
-prop_dictionary_t xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg);
+xbps_dictionary_t xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg);
 
 /**
  * Finds a package dictionary in repository pool by specifying a
@@ -1217,9 +1223,9 @@ prop_dictionary_t xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg);
  *
  * @return The package dictionary if found, NULL otherwise.
  * @note When returned dictionary is no longer needed, you must release it
- * with prop_object_release(3).
+ * with xbps_object_release(3).
  */
-prop_dictionary_t xbps_rpool_get_virtualpkg(struct xbps_handle *xhp,
+xbps_dictionary_t xbps_rpool_get_virtualpkg(struct xbps_handle *xhp,
 					    const char *pkg);
 
 /**
@@ -1232,7 +1238,7 @@ prop_dictionary_t xbps_rpool_get_virtualpkg(struct xbps_handle *xhp,
  * @return The array of strings on success, NULL otherwise and errno is
  * set appropiately.
  */
-prop_array_t xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg);
+xbps_array_t xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg);
 
 /**
  * Iterate over the the repository pool and search for a metadata plist
@@ -1253,7 +1259,7 @@ prop_array_t xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg
  * binary package file has been found but the plist file could not
  * be found.
  */
-prop_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
+xbps_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 					   const char *pattern,
 					   const char *plistf);
 
@@ -1281,7 +1287,7 @@ struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url);
  *
  * @return The matching proplib dictionary on success, NULL otherwise.
  */
-prop_dictionary_t xbps_repo_get_plist(struct xbps_repo *repo, const char *file);
+xbps_dictionary_t xbps_repo_get_plist(struct xbps_repo *repo, const char *file);
 
 /**
  * Closes a repository object and releases resources.
@@ -1310,7 +1316,7 @@ char *xbps_repo_path(struct xbps_handle *xhp, const char *url);
  *
  * @return The pkg dictionary on success, NULL otherwise.
  */
-prop_dictionary_t xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg);
+xbps_dictionary_t xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg);
 
 /**
  * Returns a pkg dictionary from a repository \a repo matching
@@ -1322,7 +1328,7 @@ prop_dictionary_t xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg);
  *
  * @return The pkg dictionary on success, NULL otherwise.
  */
-prop_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo,
+xbps_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo,
 					     const char *pkg);
 
 /**
@@ -1335,8 +1341,8 @@ prop_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo,
  *
  * @return The pkg dictionary on success, NULL otherwise.
  */
-prop_dictionary_t xbps_repo_get_pkg_plist(struct xbps_handle *xhp,
-					prop_dictionary_t pkgd,
+xbps_dictionary_t xbps_repo_get_pkg_plist(struct xbps_handle *xhp,
+					xbps_dictionary_t pkgd,
 					const char *plist);
 
 /**
@@ -1349,7 +1355,7 @@ prop_dictionary_t xbps_repo_get_pkg_plist(struct xbps_handle *xhp,
  * @return The array of strings on success, NULL otherwise and errno is
  * set appropiately.
  */
-prop_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
+xbps_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
 
 /*@}*/
 
@@ -1364,7 +1370,7 @@ prop_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
  *
  * @return The internalized proplib dictionary, NULL otherwise.
  */
-prop_dictionary_t xbps_archive_get_dictionary(struct archive *ar,
+xbps_dictionary_t xbps_archive_get_dictionary(struct archive *ar,
 				struct archive_entry *entry);
 
 /**
@@ -1437,7 +1443,7 @@ int xbps_pkg_state_installed(struct xbps_handle *xhp,
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t *state);
+int xbps_pkg_state_dictionary(xbps_dictionary_t dict, pkg_state_t *state);
 
 /**
  * Sets package state \a state in package \a pkgname.
@@ -1460,7 +1466,7 @@ int xbps_set_pkg_state_installed(struct xbps_handle *xhp,
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_set_pkg_state_dictionary(prop_dictionary_t dict, pkg_state_t state);
+int xbps_set_pkg_state_dictionary(xbps_dictionary_t dict, pkg_state_t state);
 
 /*@}*/
 
@@ -1612,7 +1618,7 @@ const char *xbps_pkg_revision(const char *pkg);
  *
  * @return True if package has run dependencies, false otherwise.
  */
-bool xbps_pkg_has_rundeps(prop_dictionary_t dict);
+bool xbps_pkg_has_rundeps(xbps_dictionary_t dict);
 
 /**
  * Returns true if provided string is valid for target architecture.

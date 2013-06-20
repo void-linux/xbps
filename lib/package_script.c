@@ -109,12 +109,12 @@ out:
 
 int
 xbps_pkg_exec_script(struct xbps_handle *xhp,
-		     prop_dictionary_t d,
+		     xbps_dictionary_t d,
 		     const char *script,
 		     const char *action,
 		     bool update)
 {
-	prop_data_t data;
+	xbps_data_t data;
 	void *buf;
 	size_t buflen;
 	const char *pkgver;
@@ -125,14 +125,14 @@ xbps_pkg_exec_script(struct xbps_handle *xhp,
 	assert(script);
 	assert(action);
 
-	data = prop_dictionary_get(d, script);
+	data = xbps_dictionary_get(d, script);
 	if (data == NULL)
 		return 0;
 
-	prop_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
 
-	buf = prop_data_data(data);
-	buflen = prop_data_size(data);
+	buf = xbps_data_data(data);
+	buflen = xbps_data_size(data);
 	rv = xbps_pkg_exec_buffer(xhp, buf, buflen, pkgver, action, update);
 	free(buf);
 

@@ -36,28 +36,28 @@
 int HIDDEN
 xbps_transaction_package_replace(struct xbps_handle *xhp)
 {
-	prop_array_t replaces, unsorted;
-	prop_dictionary_t instd, reppkgd, filesd;
-	prop_object_t obj, obj2;
-	prop_object_iterator_t iter;
+	xbps_array_t replaces, unsorted;
+	xbps_dictionary_t instd, reppkgd, filesd;
+	xbps_object_t obj, obj2;
+	xbps_object_iterator_t iter;
 	const char *pattern, *pkgver, *curpkgver;
 	char *buf, *pkgname, *curpkgname;
 	bool instd_auto, sr;
 	unsigned int i;
 
-	unsorted = prop_dictionary_get(xhp->transd, "unsorted_deps");
+	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 
-	for (i = 0; i < prop_array_count(unsorted); i++) {
-		obj = prop_array_get(unsorted, i);
-		replaces = prop_dictionary_get(obj, "replaces");
-		if (replaces == NULL || prop_array_count(replaces) == 0)
+	for (i = 0; i < xbps_array_count(unsorted); i++) {
+		obj = xbps_array_get(unsorted, i);
+		replaces = xbps_dictionary_get(obj, "replaces");
+		if (replaces == NULL || xbps_array_count(replaces) == 0)
 			continue;
 
-		iter = prop_array_iterator(replaces);
+		iter = xbps_array_iterator(replaces);
 		assert(iter);
 
-		while ((obj2 = prop_object_iterator_next(iter)) != NULL) {
-			pattern = prop_string_cstring_nocopy(obj2);
+		while ((obj2 = xbps_object_iterator_next(iter)) != NULL) {
+			pattern = xbps_string_cstring_nocopy(obj2);
 			/*
 			 * Find the installed package that matches the pattern
 			 * to be replaced.
@@ -66,9 +66,9 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			    ((instd = xbps_pkgdb_get_virtualpkg(xhp, pattern)) == NULL))
 				continue;
 
-			prop_dictionary_get_cstring_nocopy(obj,
+			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &pkgver);
-			prop_dictionary_get_cstring_nocopy(instd,
+			xbps_dictionary_get_cstring_nocopy(instd,
 			    "pkgver", &curpkgver);
 			pkgname = xbps_pkg_name(pkgver);
 			assert(pkgname);
@@ -88,7 +88,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			    "Package `%s' will be replaced by `%s', "
 			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 			instd_auto = false;
-			prop_dictionary_get_bool(instd,
+			xbps_dictionary_get_bool(instd,
 			    "automatic-install", &instd_auto);
 			/*
 			 * Package contains replaces="pkgpattern", but the
@@ -99,11 +99,11 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				xbps_dbg_printf(xhp,
 				    "found replaced pkg "
 				    "in transaction\n");
-				prop_dictionary_set_bool(instd,
+				xbps_dictionary_set_bool(instd,
 				    "remove-and-update", true);
-				prop_dictionary_set_bool(reppkgd,
+				xbps_dictionary_set_bool(reppkgd,
 				    "automatic-install", instd_auto);
-				prop_dictionary_set_bool(reppkgd,
+				xbps_dictionary_set_bool(reppkgd,
 				    "skip-obsoletes", true);
 				xbps_array_replace_dict_by_name(unsorted,
 				   reppkgd, curpkgname);
@@ -117,45 +117,45 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			    pattern, true) ||
 			    xbps_match_virtual_pkg_in_dict(instd,
 			    pkgname, false)) {
-				prop_dictionary_set_bool(obj,
+				xbps_dictionary_set_bool(obj,
 				    "automatic-install", instd_auto);
 			}
 			sr = false;
-			prop_dictionary_get_bool(obj, "softreplace", &sr);
+			xbps_dictionary_get_bool(obj, "softreplace", &sr);
 			if (sr) {
-				prop_dictionary_set_bool(obj,
+				xbps_dictionary_set_bool(obj,
 				    "automatic-install", instd_auto);
-				prop_dictionary_set_bool(instd,
+				xbps_dictionary_set_bool(instd,
 				    "softreplace", true);
 				buf = xbps_xasprintf("%s/.%s.plist",
 				    xhp->metadir, curpkgname);
-				filesd = prop_dictionary_internalize_from_file(buf);
+				filesd = xbps_dictionary_internalize_from_file(buf);
 				free(buf);
 				assert(filesd != NULL);
 				buf = xbps_xasprintf("%s/.%s.plist",
 				    xhp->metadir, pkgname);
-				if (!prop_dictionary_externalize_to_file(filesd, buf)) {
+				if (!xbps_dictionary_externalize_to_file(filesd, buf)) {
 					free(buf);
-					prop_object_release(filesd);
-					prop_object_iterator_release(iter);
+					xbps_object_release(filesd);
+					xbps_object_iterator_release(iter);
 					free(pkgname);
 					free(curpkgname);
 					return errno;
 				}
-				prop_object_release(filesd);
+				xbps_object_release(filesd);
 				free(buf);
 			}
 			/*
 			 * Add package dictionary into the transaction and mark
 			 * it as to be "removed".
 			 */
-			prop_dictionary_set_cstring_nocopy(instd,
+			xbps_dictionary_set_cstring_nocopy(instd,
 			    "transaction", "remove");
-			prop_array_add(unsorted, instd);
+			xbps_array_add(unsorted, instd);
 			free(pkgname);
 			free(curpkgname);
 		}
-		prop_object_iterator_release(iter);
+		xbps_object_iterator_release(iter);
 	}
 
 	return 0;

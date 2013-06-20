@@ -55,9 +55,9 @@
 static int
 compute_transaction_stats(struct xbps_handle *xhp)
 {
-	prop_dictionary_t pkg_metad;
-	prop_object_iterator_t iter;
-	prop_object_t obj;
+	xbps_dictionary_t pkg_metad;
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
 	uint64_t tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt;
 	int rv = 0;
@@ -70,14 +70,14 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	if (iter == NULL)
 		return EINVAL;
 
-	while ((obj = prop_object_iterator_next(iter)) != NULL) {
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		/*
 		 * Count number of pkgs to be removed, configured,
 		 * installed and updated.
 		 */
-		prop_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		prop_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		prop_dictionary_get_cstring_nocopy(obj, "repository", &repo);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repo);
 
 		if (strcmp(tract, "configure") == 0) {
 			cf_pkgcnt++;
@@ -105,17 +105,17 @@ compute_transaction_stats(struct xbps_handle *xhp)
 			free(pkgname);
 			if (pkg_metad == NULL)
 				continue;
-			prop_dictionary_get_uint64(pkg_metad,
+			xbps_dictionary_get_uint64(pkg_metad,
 			    "installed_size", &tsize);
 			rmsize += tsize;
 		}
 		if ((strcmp(tract, "install") == 0) ||
 		    (strcmp(tract, "update") == 0)) {
-			prop_dictionary_get_uint64(obj,
+			xbps_dictionary_get_uint64(obj,
 			    "installed_size", &tsize);
 			instsize += tsize;
 			if (xbps_repository_is_remote(repo)) {
-				prop_dictionary_get_uint64(obj,
+				xbps_dictionary_get_uint64(obj,
 				    "filename-size", &tsize);
 				dlsize += tsize;
 			}
@@ -123,25 +123,25 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	}
 
 	if (inst_pkgcnt &&
-	    !prop_dictionary_set_uint32(xhp->transd, "total-install-pkgs",
+	    !xbps_dictionary_set_uint32(xhp->transd, "total-install-pkgs",
 	    inst_pkgcnt)) {
 		rv = EINVAL;
 		goto out;
 	}
 	if (up_pkgcnt &&
-	    !prop_dictionary_set_uint32(xhp->transd, "total-update-pkgs",
+	    !xbps_dictionary_set_uint32(xhp->transd, "total-update-pkgs",
 	    up_pkgcnt)) {
 		rv = EINVAL;
 		goto out;
 	}
 	if (cf_pkgcnt &&
-	    !prop_dictionary_set_uint32(xhp->transd, "total-configure-pkgs",
+	    !xbps_dictionary_set_uint32(xhp->transd, "total-configure-pkgs",
 	    cf_pkgcnt)) {
 		rv = EINVAL;
 		goto out;
 	}
 	if (rm_pkgcnt &&
-	    !prop_dictionary_set_uint32(xhp->transd, "total-remove-pkgs",
+	    !xbps_dictionary_set_uint32(xhp->transd, "total-remove-pkgs",
 	    rm_pkgcnt)) {
 		rv = EINVAL;
 		goto out;
@@ -160,7 +160,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	 * Add object in transaction dictionary with total installed
 	 * size that it will take.
 	 */
-	if (!prop_dictionary_set_uint64(xhp->transd,
+	if (!xbps_dictionary_set_uint64(xhp->transd,
 	    "total-installed-size", instsize)) {
 		rv = EINVAL;
 		goto out;
@@ -169,7 +169,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	 * Add object in transaction dictionary with total download
 	 * size that needs to be sucked in.
 	 */
-	if (!prop_dictionary_set_uint64(xhp->transd,
+	if (!xbps_dictionary_set_uint64(xhp->transd,
 	    "total-download-size", dlsize)) {
 		rv = EINVAL;
 		goto out;
@@ -178,13 +178,13 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	 * Add object in transaction dictionary with total size to be
 	 * freed from packages to be removed.
 	 */
-	if (!prop_dictionary_set_uint64(xhp->transd,
+	if (!xbps_dictionary_set_uint64(xhp->transd,
 	    "total-removed-size", rmsize)) {
 		rv = EINVAL;
 		goto out;
 	}
 out:
-	prop_object_iterator_release(iter);
+	xbps_object_iterator_release(iter);
 
 	return rv;
 }
@@ -192,41 +192,41 @@ out:
 int HIDDEN
 xbps_transaction_init(struct xbps_handle *xhp)
 {
-	prop_array_t unsorted, mdeps, conflicts;
+	xbps_array_t unsorted, mdeps, conflicts;
 
 	if (xhp->transd != NULL)
 		return 0;
 
-	if ((xhp->transd = prop_dictionary_create()) == NULL)
+	if ((xhp->transd = xbps_dictionary_create()) == NULL)
 		return ENOMEM;
 
-        if ((unsorted = prop_array_create()) == NULL) {
-		prop_object_release(xhp->transd);
+        if ((unsorted = xbps_array_create()) == NULL) {
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
         if (!xbps_add_obj_to_dict(xhp->transd, unsorted, "unsorted_deps")) {
-		prop_object_release(xhp->transd);
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
 	}
-	if ((mdeps = prop_array_create()) == NULL) {
-		prop_object_release(xhp->transd);
+	if ((mdeps = xbps_array_create()) == NULL) {
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
 	if (!xbps_add_obj_to_dict(xhp->transd, mdeps, "missing_deps")) {
-		prop_object_release(xhp->transd);
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
 	}
-	if ((conflicts = prop_array_create()) == NULL) {
-		prop_object_release(xhp->transd);
+	if ((conflicts = xbps_array_create()) == NULL) {
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
 	if (!xbps_add_obj_to_dict(xhp->transd, conflicts, "conflicts")) {
-		prop_object_release(xhp->transd);
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
 	}
@@ -237,7 +237,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 int
 xbps_transaction_prepare(struct xbps_handle *xhp)
 {
-	prop_array_t mdeps, conflicts;
+	xbps_array_t mdeps, conflicts;
 	int rv = 0;
 
 	if (xhp->transd == NULL)
@@ -246,22 +246,22 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * If there are missing deps bail out.
 	 */
-	mdeps = prop_dictionary_get(xhp->transd, "missing_deps");
-	if (prop_array_count(mdeps) > 0)
+	mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
+	if (xbps_array_count(mdeps) > 0)
 		return ENODEV;
 
 	/*
 	 * If there are package conflicts bail out.
 	 */
-	conflicts = prop_dictionary_get(xhp->transd, "conflicts");
-	if (prop_array_count(conflicts) > 0)
+	conflicts = xbps_dictionary_get(xhp->transd, "conflicts");
+	if (xbps_array_count(conflicts) > 0)
 		return EAGAIN;
 
 	/*
 	 * Check for packages to be replaced.
 	 */
 	if ((rv = xbps_transaction_package_replace(xhp)) != 0) {
-		prop_object_release(xhp->transd);
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return rv;
 	}
@@ -269,7 +269,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * Sort package dependencies if necessary.
 	 */
 	if ((rv = xbps_transaction_sort(xhp)) != 0) {
-		prop_object_release(xhp->transd);
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return rv;
 	}
@@ -279,16 +279,16 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * and removed to the transaction dictionary.
 	 */
 	if ((rv = compute_transaction_stats(xhp)) != 0) {
-		prop_object_release(xhp->transd);
+		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return rv;
 	}
 	/*
 	 * The missing deps and conflicts arrays are not necessary anymore.
 	 */
-	prop_dictionary_remove(xhp->transd, "missing_deps");
-	prop_dictionary_remove(xhp->transd, "conflicts");
-	prop_dictionary_make_immutable(xhp->transd);
+	xbps_dictionary_remove(xhp->transd, "missing_deps");
+	xbps_dictionary_remove(xhp->transd, "conflicts");
+	xbps_dictionary_make_immutable(xhp->transd);
 
 	return 0;
 }

@@ -32,68 +32,68 @@
 
 #include "xbps_api_impl.h"
 
-static prop_array_t
-merge_filelist(prop_dictionary_t d)
+static xbps_array_t
+merge_filelist(xbps_dictionary_t d)
 {
-	prop_array_t a, result;
-	prop_dictionary_t filed;
+	xbps_array_t a, result;
+	xbps_dictionary_t filed;
 	unsigned int i;
 
-	result = prop_array_create();
+	result = xbps_array_create();
 	assert(result);
 
-	if ((a = prop_dictionary_get(d, "files"))) {
-		for (i = 0; i < prop_array_count(a); i++) {
-			filed = prop_array_get(a, i);
-			prop_array_add(result, filed);
+	if ((a = xbps_dictionary_get(d, "files"))) {
+		for (i = 0; i < xbps_array_count(a); i++) {
+			filed = xbps_array_get(a, i);
+			xbps_array_add(result, filed);
 		}
 	}
-	if ((a = prop_dictionary_get(d, "links"))) {
-		for (i = 0; i < prop_array_count(a); i++) {
-			filed = prop_array_get(a, i);
-			prop_array_add(result, filed);
+	if ((a = xbps_dictionary_get(d, "links"))) {
+		for (i = 0; i < xbps_array_count(a); i++) {
+			filed = xbps_array_get(a, i);
+			xbps_array_add(result, filed);
 		}
 	}
-	if ((a = prop_dictionary_get(d, "conf_files"))) {
-		for (i = 0; i < prop_array_count(a); i++) {
-			filed = prop_array_get(a, i);
-			prop_array_add(result, filed);
+	if ((a = xbps_dictionary_get(d, "conf_files"))) {
+		for (i = 0; i < xbps_array_count(a); i++) {
+			filed = xbps_array_get(a, i);
+			xbps_array_add(result, filed);
 		}
 	}
-	if ((a = prop_dictionary_get(d, "dirs"))) {
-		for (i = 0; i < prop_array_count(a); i++) {
-			filed = prop_array_get(a, i);
-			prop_array_add(result, filed);
+	if ((a = xbps_dictionary_get(d, "dirs"))) {
+		for (i = 0; i < xbps_array_count(a); i++) {
+			filed = xbps_array_get(a, i);
+			xbps_array_add(result, filed);
 		}
 	}
 
 	return result;
 }
 
-prop_array_t
+xbps_array_t
 xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
-			prop_dictionary_t instd,
-			prop_dictionary_t newd)
+			xbps_dictionary_t instd,
+			xbps_dictionary_t newd)
 {
-	prop_array_t instfiles, newfiles, obsoletes;
-	prop_object_t obj, obj2;
-	prop_string_t oldstr, newstr;
+	xbps_array_t instfiles, newfiles, obsoletes;
+	xbps_object_t obj, obj2;
+	xbps_string_t oldstr, newstr;
 	unsigned int i, x;
 	const char *oldhash;
 	char *file;
 	int rv = 0;
 	bool found;
 
-	assert(prop_object_type(instd) == PROP_TYPE_DICTIONARY);
-	assert(prop_object_type(newd) == PROP_TYPE_DICTIONARY);
+	assert(xbps_object_type(instd) == XBPS_TYPE_DICTIONARY);
+	assert(xbps_object_type(newd) == XBPS_TYPE_DICTIONARY);
 
-	obsoletes = prop_array_create();
+	obsoletes = xbps_array_create();
 	assert(obsoletes);
 
 	instfiles = merge_filelist(instd);
-	if (prop_array_count(instfiles) == 0) {
+	if (xbps_array_count(instfiles) == 0) {
 		/* nothing to check if current pkg does not own any file */
-		prop_object_release(instfiles);
+		xbps_object_release(instfiles);
 		return obsoletes;
 	}
 	newfiles = merge_filelist(newd);
@@ -101,22 +101,22 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	/*
 	 * Iterate over files list from installed package.
 	 */
-	for (i = 0; i < prop_array_count(instfiles); i++) {
+	for (i = 0; i < xbps_array_count(instfiles); i++) {
 		found = false;
-		obj = prop_array_get(instfiles, i);
-		if (prop_object_type(obj) != PROP_TYPE_DICTIONARY) {
+		obj = xbps_array_get(instfiles, i);
+		if (xbps_object_type(obj) != XBPS_TYPE_DICTIONARY) {
 			/* ignore unexistent files */
 			continue;
 		}
-		oldstr = prop_dictionary_get(obj, "file");
+		oldstr = xbps_dictionary_get(obj, "file");
 		if (oldstr == NULL)
 			continue;
 
 		file = xbps_xasprintf(".%s",
-		    prop_string_cstring_nocopy(oldstr));
+		    xbps_string_cstring_nocopy(oldstr));
 
 		oldhash = NULL;
-		prop_dictionary_get_cstring_nocopy(obj,
+		xbps_dictionary_get_cstring_nocopy(obj,
 		    "sha256", &oldhash);
 		if (oldhash) {
 			rv = xbps_file_hash_check(file, oldhash);
@@ -132,14 +132,14 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		/*
 		 * Check if current file is available in new pkg filelist.
 		 */
-		for (x = 0; x < prop_array_count(newfiles); x++) {
-			obj2 = prop_array_get(newfiles, x);
-			newstr = prop_dictionary_get(obj2, "file");
+		for (x = 0; x < xbps_array_count(newfiles); x++) {
+			obj2 = xbps_array_get(newfiles, x);
+			newstr = xbps_dictionary_get(obj2, "file");
 			assert(newstr);
 			/*
 			 * Skip files with same path.
 			 */
-			if (prop_string_equals(oldstr, newstr)) {
+			if (xbps_string_equals(oldstr, newstr)) {
 				found = true;
 				break;
 			}
@@ -167,11 +167,11 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		 * Obsolete found, add onto the array.
 		 */
 		xbps_dbg_printf(xhp, "found obsolete: %s\n", file);
-		prop_array_add_cstring(obsoletes, file);
+		xbps_array_add_cstring(obsoletes, file);
 		free(file);
 	}
-	prop_object_release(instfiles);
-	prop_object_release(newfiles);
+	xbps_object_release(instfiles);
+	xbps_object_release(newfiles);
 
 	return obsoletes;
 }
