@@ -1,5 +1,11 @@
 xbps-0.25 (???):
 
+ * Dropped requirement of confuse when using the libxbps API.
+
+ * Dropped support for external libfetch and proplib; the included copies
+   are always used unconditionally. libxbps now provides a wrapper for
+   proplib prefixing all symbols with xbps_ rather than prop_.
+
  * libxbps: only read virtual pkg config files when looking for a virtual
    package, not unconditionally and at xbps_init() time.
 
