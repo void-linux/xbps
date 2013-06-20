@@ -34,7 +34,7 @@ ATF_TC_HEAD(pkgdb_get_pkg_test, tc)
 
 ATF_TC_BODY(pkgdb_get_pkg_test, tc)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 	struct xbps_handle xh;
 	const char *tcsdir, *pkgver;
 
@@ -48,23 +48,23 @@ ATF_TC_BODY(pkgdb_get_pkg_test, tc)
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
 	pkgd = xbps_pkgdb_get_pkg(&xh, "mixed");
-	ATF_REQUIRE_EQ(prop_object_type(pkgd), PROP_TYPE_DICTIONARY);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "mixed-0.1_1");
 
 	pkgd = xbps_pkgdb_get_pkg(&xh, "mixed>0");
-	ATF_REQUIRE_EQ(prop_object_type(pkgd), PROP_TYPE_DICTIONARY);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "mixed-0.1_1");
 
 	pkgd = xbps_pkgdb_get_pkg(&xh, "mixed<2");
-	ATF_REQUIRE_EQ(prop_object_type(pkgd), PROP_TYPE_DICTIONARY);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "mixed-0.1_1");
 
 	pkgd = xbps_pkgdb_get_pkg(&xh, "mixed-0.1_1");
-	ATF_REQUIRE_EQ(prop_object_type(pkgd), PROP_TYPE_DICTIONARY);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "mixed-0.1_1");
 }
 
@@ -76,7 +76,7 @@ ATF_TC_HEAD(pkgdb_get_virtualpkg_test, tc)
 
 ATF_TC_BODY(pkgdb_get_virtualpkg_test, tc)
 {
-	prop_dictionary_t pkgd;
+	xbps_dictionary_t pkgd;
 	struct xbps_handle xh;
 	const char *tcsdir, *pkgver;
 
@@ -90,23 +90,23 @@ ATF_TC_BODY(pkgdb_get_virtualpkg_test, tc)
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
 	pkgd = xbps_pkgdb_get_virtualpkg(&xh, "mixed");
-	ATF_REQUIRE_EQ(prop_object_type(pkgd), PROP_TYPE_DICTIONARY);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "virtual-mixed-0.1_1");
 
 	pkgd = xbps_pkgdb_get_virtualpkg(&xh, "mixed>0");
-	ATF_REQUIRE_EQ(prop_object_type(pkgd), PROP_TYPE_DICTIONARY);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "virtual-mixed-0.1_1");
 
 	pkgd = xbps_pkgdb_get_virtualpkg(&xh, "mixed<2");
-	ATF_REQUIRE_EQ(prop_object_type(pkgd), PROP_TYPE_DICTIONARY);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "virtual-mixed-0.1_1");
 
 	pkgd = xbps_pkgdb_get_virtualpkg(&xh, "mixed-0.1_1");
-	ATF_REQUIRE_EQ(prop_object_type(pkgd), PROP_TYPE_DICTIONARY);
-	prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	ATF_REQUIRE_STREQ(pkgver, "virtual-mixed-0.1_1");
 }
 
@@ -119,8 +119,8 @@ ATF_TC_HEAD(pkgdb_get_pkg_revdeps_test, tc)
 ATF_TC_BODY(pkgdb_get_pkg_revdeps_test, tc)
 {
 	struct xbps_handle xh;
-	prop_array_t res;
-	prop_string_t pstr;
+	xbps_array_t res;
+	xbps_string_t pstr;
 	const char *tcsdir, *str;
 	const char *eout = "four-0.1_1\ntwo-0.1_1\n";
 	unsigned int i;
@@ -135,15 +135,15 @@ ATF_TC_BODY(pkgdb_get_pkg_revdeps_test, tc)
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
 	res = xbps_pkgdb_get_pkg_revdeps(&xh, "mixed");
-	ATF_REQUIRE_EQ(prop_object_type(res), PROP_TYPE_ARRAY);
+	ATF_REQUIRE_EQ(xbps_object_type(res), XBPS_TYPE_ARRAY);
 
-	pstr = prop_string_create();
-	for (i = 0; i < prop_array_count(res); i++) {
-		prop_array_get_cstring_nocopy(res, i, &str);
-		prop_string_append_cstring(pstr, str);
-		prop_string_append_cstring(pstr, "\n");
+	pstr = xbps_string_create();
+	for (i = 0; i < xbps_array_count(res); i++) {
+		xbps_array_get_cstring_nocopy(res, i, &str);
+		xbps_string_append_cstring(pstr, str);
+		xbps_string_append_cstring(pstr, "\n");
 	}
-	ATF_REQUIRE_STREQ(prop_string_cstring_nocopy(pstr), eout);
+	ATF_REQUIRE_STREQ(xbps_string_cstring_nocopy(pstr), eout);
 }
 
 ATF_TP_ADD_TCS(tp)

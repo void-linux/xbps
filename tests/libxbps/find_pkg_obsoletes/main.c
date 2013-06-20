@@ -27,36 +27,36 @@
 #include <xbps_api.h>
 
 static void
-append_file(prop_dictionary_t d, const char *key, const char *fpath)
+append_file(xbps_dictionary_t d, const char *key, const char *fpath)
 {
-	prop_array_t a;
-	prop_dictionary_t filed;
+	xbps_array_t a;
+	xbps_dictionary_t filed;
 
-	filed = prop_dictionary_create();
-	a = prop_dictionary_get(d, key);
+	filed = xbps_dictionary_create();
+	a = xbps_dictionary_get(d, key);
 	if (a == NULL)  {
-		a = prop_array_create();
-		prop_dictionary_set(d, key, a);
+		a = xbps_array_create();
+		xbps_dictionary_set(d, key, a);
 	}
 
-	prop_dictionary_set_cstring_nocopy(filed, "file", fpath);
-	prop_array_add(a, filed);
+	xbps_dictionary_set_cstring_nocopy(filed, "file", fpath);
+	xbps_array_add(a, filed);
 }
 
-static prop_dictionary_t
+static xbps_dictionary_t
 create_dict(const char *key, const char *fpath)
 {
-	prop_array_t a;
-	prop_dictionary_t d, filed;
+	xbps_array_t a;
+	xbps_dictionary_t d, filed;
 
-	d = prop_dictionary_create();
-	filed = prop_dictionary_create();
-	a = prop_array_create();
+	d = xbps_dictionary_create();
+	filed = xbps_dictionary_create();
+	a = xbps_array_create();
 
-	prop_dictionary_set_cstring_nocopy(filed, "file", fpath);
-	prop_dictionary_set_cstring_nocopy(filed, "sha256", "kjaskajsk");
-	prop_array_add(a, filed);
-	prop_dictionary_set(d, key, a);
+	xbps_dictionary_set_cstring_nocopy(filed, "file", fpath);
+	xbps_dictionary_set_cstring_nocopy(filed, "sha256", "kjaskajsk");
+	xbps_array_add(a, filed);
+	xbps_dictionary_set(d, key, a);
 
 	return d;
 }
@@ -70,8 +70,8 @@ ATF_TC_HEAD(find_pkg_obsoletes_test, tc)
 ATF_TC_BODY(find_pkg_obsoletes_test, tc)
 {
 	struct xbps_handle xh;
-	prop_array_t res;
-	prop_dictionary_t d1, d2;
+	xbps_array_t res;
+	xbps_dictionary_t d1, d2;
 
 	memset(&xh, 0, sizeof(xh));
 	xh.rootdir = "/tmp";
@@ -82,42 +82,42 @@ ATF_TC_BODY(find_pkg_obsoletes_test, tc)
 	d2 = create_dict("conf_files", "/etc/foo.conf");
 
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 0);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 0);
 
 	res = xbps_find_pkg_obsoletes(&xh, d2, d1);
-	ATF_REQUIRE_EQ(prop_array_count(res), 0);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 0);
 
 	append_file(d1, "files", "file");
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 1);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 1);
 
 	append_file(d1, "conf_files", "conf_file");
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 2);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 2);
 
 	append_file(d1, "links", "link");
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 3);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 3);
 
 	append_file(d1, "dirs", "dir");
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 4);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 4);
 
 	append_file(d2, "files", "file");
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 3);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 3);
 
 	append_file(d2, "conf_files", "conf_file");
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 2);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 2);
 
 	append_file(d2, "links", "link");
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 1);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 1);
 
 	append_file(d2, "dirs", "dir");
 	res = xbps_find_pkg_obsoletes(&xh, d1, d2);
-	ATF_REQUIRE_EQ(prop_array_count(res), 0);
+	ATF_REQUIRE_EQ(xbps_array_count(res), 0);
 }
 
 ATF_TP_ADD_TCS(tp)

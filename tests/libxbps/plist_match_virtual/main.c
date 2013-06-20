@@ -26,45 +26,45 @@
 #include <atf-c.h>
 #include <xbps_api.h>
 
-static prop_array_t
+static xbps_array_t
 rundeps_init(void)
 {
-	prop_array_t a;
+	xbps_array_t a;
 
-	a = prop_array_create();
+	a = xbps_array_create();
 	ATF_REQUIRE(a != NULL);
 
-	prop_array_add_cstring_nocopy(a, "cron-daemon>=0");
-	prop_array_add_cstring_nocopy(a, "xbps>=0.14");
+	xbps_array_add_cstring_nocopy(a, "cron-daemon>=0");
+	xbps_array_add_cstring_nocopy(a, "xbps>=0.14");
 
 	return a;
 }
 
-static prop_array_t
+static xbps_array_t
 provides_init(void)
 {
-	prop_array_t a;
+	xbps_array_t a;
 
-	a = prop_array_create();
+	a = xbps_array_create();
 	ATF_REQUIRE(a != NULL);
 
-	prop_array_add_cstring_nocopy(a, "cron-daemon-0");
-	prop_array_add_cstring_nocopy(a, "xbps-9999");
+	xbps_array_add_cstring_nocopy(a, "cron-daemon-0");
+	xbps_array_add_cstring_nocopy(a, "xbps-9999");
 
 	return a;
 }
 
-static prop_dictionary_t
+static xbps_dictionary_t
 pkgdict_init(void)
 {
-	prop_array_t a;
-	prop_dictionary_t d;
+	xbps_array_t a;
+	xbps_dictionary_t d;
 
-	d = prop_dictionary_create();
+	d = xbps_dictionary_create();
 	ATF_REQUIRE(d != NULL);
 
 	a = provides_init();
-	ATF_REQUIRE_EQ(prop_dictionary_set(d, "provides", a), true);
+	ATF_REQUIRE_EQ(xbps_dictionary_set(d, "provides", a), true);
 
 	return d;
 }
@@ -77,7 +77,7 @@ ATF_TC_HEAD(match_virtual_pkg_dict_test, tc)
 
 ATF_TC_BODY(match_virtual_pkg_dict_test, tc)
 {
-	prop_dictionary_t d;
+	xbps_dictionary_t d;
 
 	d = pkgdict_init();
 	ATF_REQUIRE_EQ(
@@ -96,7 +96,7 @@ ATF_TC_HEAD(match_any_virtualpkg_rundeps_test, tc)
 
 ATF_TC_BODY(match_any_virtualpkg_rundeps_test, tc)
 {
-	prop_array_t provides, rundeps;
+	xbps_array_t provides, rundeps;
 
 	provides = provides_init();
 	rundeps = rundeps_init();

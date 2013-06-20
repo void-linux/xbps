@@ -52,9 +52,9 @@ ATF_TC_HEAD(find_pkg_orphans_test, tc)
 ATF_TC_BODY(find_pkg_orphans_test, tc)
 {
 	struct xbps_handle xh;
-	prop_array_t a, res;
-	prop_dictionary_t pkgd;
-	prop_string_t pstr;
+	xbps_array_t a, res;
+	xbps_dictionary_t pkgd;
+	xbps_string_t pstr;
 	const char *pkgver, *tcsdir;
 	unsigned int i;
 
@@ -66,18 +66,18 @@ ATF_TC_BODY(find_pkg_orphans_test, tc)
 	xh.metadir = tcsdir;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
-	a = prop_array_create();
-	prop_array_add_cstring_nocopy(a, "xbps-git");
+	a = xbps_array_create();
+	xbps_array_add_cstring_nocopy(a, "xbps-git");
 
-	pstr = prop_string_create();
+	pstr = xbps_string_create();
 	res = xbps_find_pkg_orphans(&xh, a);
-	for (i = 0; i < prop_array_count(res); i++) {
-		pkgd = prop_array_get(res, i);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		prop_string_append_cstring(pstr, pkgver);
-		prop_string_append_cstring(pstr, "\n");
+	for (i = 0; i < xbps_array_count(res); i++) {
+		pkgd = xbps_array_get(res, i);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		xbps_string_append_cstring(pstr, pkgver);
+		xbps_string_append_cstring(pstr, "\n");
 	}
-	ATF_REQUIRE_STREQ(prop_string_cstring_nocopy(pstr), expected_output);
+	ATF_REQUIRE_STREQ(xbps_string_cstring_nocopy(pstr), expected_output);
 }
 
 ATF_TC(find_all_orphans_test);
@@ -89,9 +89,9 @@ ATF_TC_HEAD(find_all_orphans_test, tc)
 ATF_TC_BODY(find_all_orphans_test, tc)
 {
 	struct xbps_handle xh;
-	prop_array_t res;
-	prop_dictionary_t pkgd;
-	prop_string_t pstr;
+	xbps_array_t res;
+	xbps_dictionary_t pkgd;
+	xbps_string_t pstr;
 	const char *pkgver, *tcsdir;
 	unsigned int i;
 
@@ -103,17 +103,17 @@ ATF_TC_BODY(find_all_orphans_test, tc)
 	xh.metadir = tcsdir;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
-	pstr = prop_string_create();
+	pstr = xbps_string_create();
 	res = xbps_find_pkg_orphans(&xh, NULL);
-	for (i = 0; i < prop_array_count(res); i++) {
-		pkgd = prop_array_get(res, i);
-		prop_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		prop_string_append_cstring(pstr, pkgver);
-		prop_string_append_cstring(pstr, "\n");
+	for (i = 0; i < xbps_array_count(res); i++) {
+		pkgd = xbps_array_get(res, i);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		xbps_string_append_cstring(pstr, pkgver);
+		xbps_string_append_cstring(pstr, "\n");
 	}
-	printf("%s", prop_string_cstring_nocopy(pstr));
+	printf("%s", xbps_string_cstring_nocopy(pstr));
 
-	ATF_REQUIRE_STREQ(prop_string_cstring_nocopy(pstr), expected_output_all);
+	ATF_REQUIRE_STREQ(xbps_string_cstring_nocopy(pstr), expected_output_all);
 }
 
 ATF_TP_ADD_TCS(tp)

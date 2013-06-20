@@ -26,15 +26,15 @@
 #include <atf-c.h>
 #include <xbps_api.h>
 
-static prop_array_t
+static xbps_array_t
 array_init(void)
 {
-	prop_array_t a;
+	xbps_array_t a;
 
-	a = prop_array_create();
+	a = xbps_array_create();
 	ATF_REQUIRE(a != NULL);
-	prop_array_add_cstring_nocopy(a, "foo-2.0_1");
-	prop_array_add_cstring_nocopy(a, "blah-2.1_1");
+	xbps_array_add_cstring_nocopy(a, "foo-2.0_1");
+	xbps_array_add_cstring_nocopy(a, "blah-2.1_1");
 
 	return a;
 }
@@ -47,7 +47,7 @@ ATF_TC_HEAD(match_string_test, tc)
 
 ATF_TC_BODY(match_string_test, tc)
 {
-	prop_array_t a = array_init();
+	xbps_array_t a = array_init();
 	ATF_REQUIRE_EQ(xbps_match_string_in_array(a, "foo-2.0_1"), true);
 	ATF_REQUIRE_EQ(xbps_match_string_in_array(a, "foo-2.1_1"), false);
 }
@@ -60,7 +60,7 @@ ATF_TC_HEAD(match_pkgname_test, tc)
 
 ATF_TC_BODY(match_pkgname_test, tc)
 {
-	prop_array_t a = array_init();
+	xbps_array_t a = array_init();
 	ATF_REQUIRE_EQ(xbps_match_pkgname_in_array(a, "foo"), true);
 	ATF_REQUIRE_EQ(xbps_match_pkgname_in_array(a, "baz"), false);
 }
@@ -73,7 +73,7 @@ ATF_TC_HEAD(match_pkgpattern_test, tc)
 
 ATF_TC_BODY(match_pkgpattern_test, tc)
 {
-	prop_array_t a = array_init();
+	xbps_array_t a = array_init();
 	ATF_REQUIRE_EQ(xbps_match_pkgpattern_in_array(a, "foo>=1.0"), true);
 	ATF_REQUIRE_EQ(xbps_match_pkgpattern_in_array(a, "blah<1.0"), false);
 }
@@ -86,7 +86,7 @@ ATF_TC_HEAD(match_pkgdep_test, tc)
 
 ATF_TC_BODY(match_pkgdep_test, tc)
 {
-	prop_array_t a = array_init();
+	xbps_array_t a = array_init();
 	ATF_REQUIRE_EQ(xbps_match_pkgdep_in_array(a, "foo-2.0_1"), true);
 }
 
