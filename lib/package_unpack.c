@@ -559,7 +559,6 @@ unpack_archive(struct xbps_handle *xhp,
 			    pkgver, strerror(rv));
 			goto out;
 		}
-		metafile = true;
 	}
 	/*
 	 * If there was any error extracting files from archive, error out.

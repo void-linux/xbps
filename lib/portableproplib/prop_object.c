@@ -254,8 +254,10 @@ _prop_object_externalize_footer(struct _prop_object_externalize_context *ctx)
 {
 
 	if (_prop_object_externalize_end_tag(ctx, "plist") == false ||
-	    _prop_object_externalize_append_char(ctx, '\0') == false)
+	    _prop_object_externalize_append_char(ctx, '\0') == false) {
+		free(ctx->poec_buf);
 		return (false);
+	}
 
 	return (true);
 }
@@ -816,7 +818,7 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
     size_t len, bool do_compress)
 {
 	gzFile gzf = NULL;
-	char tname[PATH_MAX], *otname;
+	char tname[PATH_MAX];
 	int fd;
 	int save_errno;
 	mode_t myumask;
@@ -832,19 +834,10 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
 	 */
 	_prop_object_externalize_file_dirname(fname, tname);
 
-#ifdef HAVE_STRLCAT
 	if (strlcat(tname, "/.plistXXXXXX", sizeof(tname)) >= sizeof(tname)) {
 		errno = ENAMETOOLONG;
 		return (false);
 	}
-#else
-	otname = strncat(tname, "/.plistXXXXXX", sizeof(tname) - strlen(tname) - 1);
-
-	if (sizeof(*otname) >= sizeof(tname)) {
-		errno = ENAMETOOLONG;
-		return (false);
-	}
-#endif	
 	if ((fd = mkstemp(tname)) == -1)
 		return (false);
 
@@ -1192,7 +1185,6 @@ prop_object_equals_with_error(prop_object_t obj1, prop_object_t obj2,
 				     &stored_pointer1, &stored_pointer2))
 			return true;
 		po1 = obj1;
-		po2 = obj2;
 		goto continue_subtree;
 	}
 	_PROP_ASSERT(ret == _PROP_OBJECT_EQUALS_RECURSE);

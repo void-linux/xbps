@@ -107,6 +107,8 @@ _prop_array_free(prop_stack_t stack, prop_object_t *obj)
 
 		return (_PROP_OBJECT_FREE_DONE);
 	}
+	if (pa->pa_array == NULL)
+		return _PROP_OBJECT_FREE_DONE;
 
 	po = pa->pa_array[pa->pa_count - 1];
 	_PROP_ASSERT(po != NULL);

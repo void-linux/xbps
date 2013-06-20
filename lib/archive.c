@@ -140,6 +140,7 @@ xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 	if (uncomp_buf == NULL) {
 		/* Error while decompressing */
 		free(buf);
+		free(uncomp_buf);
 		return NULL;
 	} else {
 		/* We have the uncompressed data */

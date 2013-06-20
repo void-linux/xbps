@@ -359,6 +359,8 @@ _prop_dictionary_free(prop_stack_t stack, prop_object_t *obj)
 
 		return (_PROP_OBJECT_FREE_DONE);
 	}
+	if (pd->pd_array == NULL)
+		return _PROP_OBJECT_FREE_DONE;
 
 	po = pd->pd_array[pd->pd_count - 1].pde_objref;
 	_PROP_ASSERT(po != NULL);
