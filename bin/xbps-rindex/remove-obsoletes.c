@@ -34,7 +34,7 @@
 #include <assert.h>
 #include <pthread.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 
 struct thread_data {

@@ -36,7 +36,7 @@
 #include <dirent.h>
 #include <syslog.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "../xbps-install/defs.h"
 
 static void __attribute__((noreturn))

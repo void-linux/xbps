@@ -33,7 +33,7 @@
 #include <unistd.h>
 #include <limits.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 
 struct transaction {

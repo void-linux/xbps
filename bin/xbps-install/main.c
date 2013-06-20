@@ -34,7 +34,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 
 static void __attribute__((noreturn))

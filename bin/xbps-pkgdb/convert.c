@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 
 /*

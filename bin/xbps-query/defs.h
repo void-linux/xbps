@@ -26,7 +26,7 @@
 #ifndef _XBPS_QUERY_DEFS_H_
 #define _XBPS_QUERY_DEFS_H_
 
-#include <xbps_api.h>
+#include <xbps.h>
 
 #include "../xbps-install/defs.h"
 

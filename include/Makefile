@@ -1,6 +1,6 @@
 -include ../config.mk
 
-INCS =	xbps_api.h
+INCS =	xbps.h
 
 .PHONY: all
 all:

@@ -24,7 +24,7 @@
  *-
  */
 #include <atf-c.h>
-#include <xbps_api.h>
+#include <xbps.h>
 
 ATF_TC(pkgdb_get_pkg_test);
 ATF_TC_HEAD(pkgdb_get_pkg_test, tc)

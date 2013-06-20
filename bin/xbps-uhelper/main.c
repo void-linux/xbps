@@ -33,7 +33,7 @@
 #include <assert.h>
 #include <unistd.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "../xbps-install/defs.h"
 
 static void

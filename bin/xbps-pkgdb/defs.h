@@ -27,7 +27,7 @@
 #define _XBPS_PKGDB_DEFS_H_
 
 #include <sys/time.h>
-#include <xbps_api.h>
+#include <xbps.h>
 
 /* from check.c */
 int	check_pkg_integrity(struct xbps_handle *, xbps_dictionary_t, const char *);

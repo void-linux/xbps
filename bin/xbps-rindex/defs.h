@@ -26,7 +26,7 @@
 #ifndef _XBPS_RINDEX_DEFS_H_
 #define _XBPS_RINDEX_DEFS_H_
 
-#include <xbps_api.h>
+#include <xbps.h>
 
 /* From index-add.c */
 int	index_add(struct xbps_handle *, int, char **, bool);

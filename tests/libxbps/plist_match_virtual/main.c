@@ -24,7 +24,7 @@
  *-
  */
 #include <atf-c.h>
-#include <xbps_api.h>
+#include <xbps.h>
 
 static xbps_array_t
 rundeps_init(void)

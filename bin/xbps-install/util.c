@@ -32,7 +32,7 @@
 #include <strings.h>
 #include <sys/ioctl.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 
 int

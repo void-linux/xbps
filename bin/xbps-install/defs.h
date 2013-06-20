@@ -27,7 +27,7 @@
 #define _XBPS_INSTALL_DEFS_H_
 
 #include <sys/time.h>
-#include <xbps_api.h>
+#include <xbps.h>
 
 struct xferstat {
 	struct timeval start;

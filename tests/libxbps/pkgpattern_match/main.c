@@ -24,7 +24,7 @@
  *-
  */
 #include <atf-c.h>
-#include <xbps_api.h>
+#include <xbps.h>
 
 ATF_TC(pkgpattern_match_test);
 

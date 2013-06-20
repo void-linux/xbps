@@ -31,7 +31,7 @@
 #include <getopt.h>
 #include <errno.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 
 static void __attribute__((noreturn))

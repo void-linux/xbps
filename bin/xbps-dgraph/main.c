@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wformat-nonliteral"

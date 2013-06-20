@@ -24,7 +24,7 @@
  *-
  */
 #include <atf-c.h>
-#include <xbps_api.h>
+#include <xbps.h>
 
 static void
 append_file(xbps_dictionary_t d, const char *key, const char *fpath)

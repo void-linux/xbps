@@ -33,7 +33,7 @@
 #include <libgen.h>
 #include <sys/param.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 
 /*

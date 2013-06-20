@@ -24,7 +24,7 @@
  *-
  */
 #include <atf-c.h>
-#include <xbps_api.h>
+#include <xbps.h>
 
 static const char expected_output[] =
 	"xbps-git-20130310_2\n"

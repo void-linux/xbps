@@ -34,7 +34,7 @@
 #include <assert.h>
 #include <fcntl.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 
 /*

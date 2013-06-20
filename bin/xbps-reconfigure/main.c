@@ -31,7 +31,7 @@
 #include <getopt.h>
 #include <syslog.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 
 static void __attribute__((noreturn))
 usage(bool fail)

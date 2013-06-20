@@ -40,7 +40,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "defs.h"
 #include "config.h"
 

@@ -25,7 +25,7 @@
  */
 
 #include <atf-c.h>
-#include <xbps_api.h>
+#include <xbps.h>
 
 ATF_TC(cmpver_test);
 

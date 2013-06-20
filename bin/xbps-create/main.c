@@ -41,7 +41,7 @@
 #include <libgen.h>
 #include <locale.h>
 
-#include <xbps_api.h>
+#include <xbps.h>
 #include "queue.h"
 
 #ifdef __clang__
