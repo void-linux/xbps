@@ -2,23 +2,23 @@
 
 The X Binary Package System (in short XBPS) is a new binary package system **designed and implemented from scratch**. Its goal is to be fast, easy to use, bug-free, featureful and portable as much as possible.
 
-The XBPS code is totally compatible with POSIX/SUSv2/C99 standards, and released with a **Simplified BSD license (2 clause)**. There is a well documented API provided by the XBPS Library that is the basis for its frontends to handle binary packages and repositories. Some highlights:
+The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and released with a **Simplified BSD license (2 clause)**. There is a well documented API provided by the XBPS Library that is the basis for its frontends to handle binary packages and repositories. Some highlights:
 
- * Supports multiple local and remote repositories (FTP/HTTP/HTTPS).
- * SHA256 hashes for package metadata, files and binary packages.
- * Supports package states (ala dpkg) to mitigate broken package installs/updates.
- * Ability to resume partial package install/updates.
- * Ability to unpack only files that have been modified in package updates.
- * Ability to use virtual packages.
- * Ability to replace packages.
- * Ability to put packages on hold (to never update them. NEW in 0.16).
- * Ability to preserve/update configuration files.
- * Ability to force reinstallation of any installed package.
- * Ability to downgrade any installed package.
- * Ability to execute pre/post install/remove/update scriptlets.
- * Ability to check package integrity: missing files, hashes, missing or unresolved (reverse)dependencies, dangling or modified symlinks, etc.
- * Low memory footprint.
- * Fast dependency resolver and sorting algorithms.
+ * Supports **multiple local and remote repositories** (FTP/HTTP/HTTPS).
+ * **SHA256 hashes** for package metadata, files and binary packages.
+ * Supports **package states** (ala dpkg) to mitigate broken package installs/updates.
+ * Ability to **resume** partial package install/updates.
+ * Ability to **unpack only files that have been modified** in package updates.
+ * Ability to use **virtual packages**.
+ * Ability to **replace packages**.
+ * Ability to **put packages on hold** (to never update them. NEW in 0.16).
+ * Ability to **preserve/update configuration files**.
+ * Ability to **force reinstallation** of any installed package.
+ * Ability to **downgrade any** installed package.
+ * Ability to **execute pre/post install/remove/update scriptlets**.
+ * Ability to **check package integrity**: missing files, hashes, missing or unresolved (reverse)dependencies, dangling or modified symlinks, etc.
+ * **Low memory** footprint.
+ * **Fast** dependency resolver and sorting algorithms.
 
 The latest stable version **0.24** was released on **May 2nd, 2013**.
 
@@ -26,17 +26,17 @@ The latest stable version **0.24** was released on **May 2nd, 2013**.
 
 To build this you'll need:
 
-  - GNU make
-  - pkg-config
-  - zlib
-  - openssl
-  - libarchive[0] >= 3.0.2
-  - confuse[1] >= 2.7
+  - [GNU make](http://www.gnu.org/software/make/)
+  - [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
+  - [zlib](http://www.zlib.net)
+  - [openssl](http://www.openssl.org)
+  - [libarchive >= 3.0.2](http://www.libarchive.org)
+  - [confuse >= 2.7](http://www.nongnu.org/confuse)
 
 and optionally:
 
-  - graphviz and doxygen (--with-api-docs) to build API documentation.
-  - atf >= 0.15 (--with-tests) to build the Kyua test suite [2].
+  - [graphviz](http://www.graphviz.org) and [doxygen](http://www.doxygen.org) (--with-api-docs) to build API documentation.
+  - [atf >= 0.15](http://code.google.com/p/kyua) (--with-tests) to build the Kyua test suite [2].
 
 ### Build instructions
 
@@ -55,7 +55,3 @@ There are some more options that can be tweaked, see them with
 `./configure --help'.
 
 Good luck!
-
-[0] http://www.libarchive.org
-[1] http://www.nongnu.org/confuse
-[2] http://code.google.com/p/kyua
