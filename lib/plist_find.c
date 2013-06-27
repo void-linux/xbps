@@ -63,7 +63,7 @@ get_pkg_in_array(xbps_array_t array, const char *str, bool virtual)
 			if (found)
 				break;
 		} else if (xbps_pkgpattern_version(str)) {
-			/* ,atch by pattern against pkgver */
+			/* match by pattern against pkgver */
 			if (!xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &pkgver))
 				continue;
