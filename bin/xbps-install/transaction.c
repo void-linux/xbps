@@ -51,10 +51,9 @@ show_missing_deps(xbps_array_t a)
 	unsigned int i;
 	const char *str;
 
-	fprintf(stderr, "Unable to locate some required packages:\n");
 	for (i = 0; i < xbps_array_count(a); i++) {
 		xbps_array_get_cstring_nocopy(a, i, &str);
-		fprintf(stderr, " %s\n", str);
+		fprintf(stderr, "%s\n", str);
 	}
 }
 
@@ -64,10 +63,9 @@ show_conflicts(xbps_array_t a)
 	unsigned int i;
 	const char *str;
 
-	fprintf(stderr, "Conflicting packages were found:\n");
 	for (i = 0; i < xbps_array_count(a); i++) {
 		xbps_array_get_cstring_nocopy(a, i, &str);
-		fprintf(stderr, " %s\n", str);
+		fprintf(stderr, "%s\n", str);
 	}
 }
 
@@ -272,11 +270,13 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 			    xbps_dictionary_get(xhp->transd, "missing_deps");
 			/* missing packages */
 			show_missing_deps(mdeps);
+			fprintf(stderr, "Transaction aborted due to missing/conflicting packages.\n");
 			goto out;
 		} else if (rv == EAGAIN) {
 			/* conflicts */
 			cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
 			show_conflicts(cflicts);
+			fprintf(stderr, "Transaction aborted due to missing/conflicting packages.\n");
 			goto out;
 		}
 		xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
@@ -324,6 +324,5 @@ out:
 		xbps_object_iterator_release(trans->iter);
 	if (trans)
 		free(trans);
-
 	return rv;
 }

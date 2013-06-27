@@ -135,9 +135,12 @@ out:
 		xbps_object_iterator_release(iter);
 	if (update_pkgdep)
 		xbps_array_remove(mdeps, idx);
-	if (add_pkgdep && !xbps_add_obj_to_array(mdeps, reqpkg_str)) {
-		xbps_object_release(reqpkg_str);
-		return errno;
+	if (add_pkgdep) {
+		char *str;
+
+		str = xbps_xasprintf("MISSING: %s", reqpkg_str);
+		xbps_array_add_cstring(mdeps, str);
+		free(str);
 	}
 
 	return rv;

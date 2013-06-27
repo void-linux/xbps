@@ -75,7 +75,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			xbps_dbg_printf(xhp, "found conflicting installed "
 			    "pkg %s with pkg in transaction %s\n", pkgver,
 			    repopkgver);
-			buf = xbps_xasprintf("%s conflicts with "
+			buf = xbps_xasprintf("CONFLICT: %s with "
 			    "installed pkg %s", repopkgver, pkgver);
 			xbps_array_add_cstring(trans_cflicts, buf);
 			free(buf);
@@ -97,7 +97,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			free(pkgname);
 			xbps_dbg_printf(xhp, "found conflicting pkgs in "
 			    "transaction %s <-> %s\n", pkgver, repopkgver);
-			buf = xbps_xasprintf("%s conflicts with "
+			buf = xbps_xasprintf("CONFLICT: %s with "
 			   "%s in transaction", repopkgver, pkgver);
 			xbps_array_add_cstring(trans_cflicts, buf);
 			free(buf);

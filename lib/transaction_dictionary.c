@@ -244,17 +244,18 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		return ENXIO;
 
 	/*
-	 * If there are missing deps bail out.
+	 * If there are missing deps or revdeps bail out.
 	 */
+	xbps_transaction_revdeps(xhp);
 	mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
-	if (xbps_array_count(mdeps) > 0)
+	if (xbps_array_count(mdeps))
 		return ENODEV;
 
 	/*
 	 * If there are package conflicts bail out.
 	 */
 	conflicts = xbps_dictionary_get(xhp->transd, "conflicts");
-	if (xbps_array_count(conflicts) > 0)
+	if (xbps_array_count(conflicts))
 		return EAGAIN;
 
 	/*

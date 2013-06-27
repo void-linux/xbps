@@ -1,5 +1,10 @@
 xbps-0.25 (???):
 
+ * Added support to validate reverse dependencies when updating packages.
+   Such example would be updating pkg X to 2.0 when an installed package
+   depends on pkg X < 2.0; abort transaction when such condition is
+   detected; this also works with virtual packages.
+
  * Dropped requirement of confuse when using the libxbps API.
 
  * Dropped support for external libfetch and proplib; the included copies

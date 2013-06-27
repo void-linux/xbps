@@ -178,6 +178,12 @@ xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *,
 					const char *);
 /**
  * @private
+ * From lib/transaction_revdeps.c
+ */
+void HIDDEN xbps_transaction_revdeps(struct xbps_handle *);
+
+/**
+ * @private
  * From lib/transaction_sortdeps.c
  */
 int HIDDEN xbps_transaction_sort(struct xbps_handle *);
