@@ -25,4 +25,4 @@ doc/xbps_api_doxyfile
 ftperr.h
 httperr.h
 tests/*/*/*_test
-include/xbps_api.h
+include/xbps.h
