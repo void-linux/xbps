@@ -312,6 +312,7 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	const char *vpkg;
 	char *buf = NULL;
 	unsigned int i;
+	bool match = false;
 
 	if (((pkgd = xbps_rpool_get_pkg(repo->xhp, pkg)) == NULL) &&
 	    ((pkgd = xbps_rpool_get_virtualpkg(repo->xhp, pkg)) == NULL)) {
@@ -342,11 +343,12 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 			buf = NULL;
 		}
 		if (buf) {
+			match = true;
 			revdeps = revdeps_match(repo, pkgd, buf);
 			free(buf);
 		}
 	}
-	if (!xbps_array_count(revdeps))
+	if (!match)
 		revdeps = revdeps_match(repo, pkgd, NULL);
 
 	return revdeps;
