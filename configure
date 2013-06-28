@@ -32,7 +32,7 @@ for instance \`--prefix=\$HOME'.
 --includedir=DIR 	C header files [EPREFIX/include]
 --mandir=DIR 		Man documentation [EPREFIX/share/man]
 --datadir=DIR 		Read-only architecture-independent data [EPREFIX/share]
---etcdir=DIR 		Configuration files [PREFIX/etc]
+--sysconfdir=DIR 	Configuration files directory [PREFIX/etc]
 --pkgconfigdir=DIR 	pkg-config directory [EPREFIX/lib/pkgconfig]
 --testsdir=DIR		Test suite directory [EPREFIX/tests]
 
@@ -60,7 +60,7 @@ for x; do
 	--host) HOST=$var;;
 	--target) TARGET=$var;;
 	--includedir) INCLUDEDIR=$var;;
-	--etcdir) ETCDIR=$var;;
+	--sysconfdir) ETCDIR=$var;;
 	--libdir) LIBDIR=$var;;
 	--datadir|--infodir) ;; # ignore autotools
 	--enable-api-docs) BUILD_API_DOCS=$var;;
