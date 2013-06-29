@@ -41,7 +41,7 @@
 #include <archive_entry.h>
 
 /**
- * @file include/xbps_api.h
+ * @file include/xbps.h
  * @brief XBPS Library API header
  *
  * This header documents the full API for the XBPS Library.
@@ -278,7 +278,7 @@ typedef enum xbps_state {
 } xbps_state_t;
 
 /**
- * @struct xbps_state_cb_data xbps_api.h "xbps_api.h"
+ * @struct xbps_state_cb_data xbps.h "xbps.h"
  * @brief Structure to be passed as argument to the state function callback.
  * All members are read-only and set internally by libxbps.
  */
@@ -317,7 +317,7 @@ struct xbps_state_cb_data {
 };
 
 /**
- * @struct xbps_fetch_cb_data xbps_api.h "xbps_api.h"
+ * @struct xbps_fetch_cb_data xbps.h "xbps.h"
  * @brief Structure to be passed to the fetch function callback.
  *
  * This structure is passed as argument to the fetch progress function
@@ -381,7 +381,7 @@ struct xbps_fetch_cb_data {
 };
 
 /**
- * @struct xbps_unpack_cb_data xbps_api.h "xbps_api.h"
+ * @struct xbps_unpack_cb_data xbps.h "xbps.h"
  * @brief Structure to be passed to the unpack function callback.
  *
  * This structure is passed as argument to the unpack progress function
@@ -440,7 +440,7 @@ typedef void *cfg_t;
 #endif
 
 /**
- * @struct xbps_handle xbps_api.h "xbps_api.h"
+ * @struct xbps_handle xbps.h "xbps.h"
  * @brief Generic XBPS structure handler for initialization.
  *
  * This structure sets some global properties for libxbps, to set some
@@ -1130,7 +1130,7 @@ xbps_dictionary_t xbps_get_pkg_plist_from_binpkg(const char *fname,
 /*@{*/
 
 /**
- * @struct xbps_repo xbps_api.h "xbps_api.h"
+ * @struct xbps_repo xbps.h "xbps.h"
  * @brief Repository structure
  *
  * Repository object structure registered in a private simple queue.
