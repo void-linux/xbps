@@ -98,9 +98,9 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 	xbps_array_t mdeps, unsorted, pkgrdeps, rundeps;
 	xbps_dictionary_t revpkgd;
 	xbps_object_t obj;
-	const char *pkgver, *revpkgver, *curpkgver, *tract;
-	char *pkgname, *str;
-	unsigned int i, x;
+	const char *pkgver, *curdep, *revpkgver, *curpkgver, *tract;
+	char *pkgname, *curdepname, *curpkgname, *str;
+	unsigned int i, j, x;
 
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 
@@ -137,6 +137,8 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 		 * Time to validate revdeps for current pkg.
 		 */
 		for (x = 0; x < xbps_array_count(pkgrdeps); x++) {
+			bool found = false;
+
 			xbps_array_get_cstring_nocopy(pkgrdeps, x, &curpkgver);
 			revpkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
 			/*
@@ -148,6 +150,28 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 			 * Try to match real dependencies.
 			 */
 			rundeps = xbps_dictionary_get(revpkgd, "run_depends");
+			/*
+			 * Find out what dependency is it.
+			 */
+			curpkgname = xbps_pkg_name(pkgver);
+			assert(curpkgname);
+
+			for (j = 0; j < xbps_array_count(rundeps); j++) {
+				xbps_array_get_cstring_nocopy(rundeps, j, &curdep);
+				if (((curdepname = xbps_pkg_name(curdep)) == NULL) &&
+				    ((curdepname = xbps_pkgpattern_name(curdep)) == NULL))
+					abort();
+
+				if (strcmp(curdepname, curpkgname) == 0) {
+					free(curdepname);
+					found = true;
+					break;
+				}
+				free(curdepname);
+			}
+			if (!found)
+				continue;
+
 			if (xbps_match_pkgdep_in_array(rundeps, pkgver))
 				continue;
 			/*
@@ -167,7 +191,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 			    "pkgver", &revpkgver);
 			str = xbps_xasprintf("CONFLICT: `%s' "
 			    "update breaks `%s', needs `%s'",
-			    pkgver, revpkgver, curpkgver);
+			    pkgver, revpkgver, curdep);
 			xbps_array_add_cstring(mdeps, str);
 			free(str);
 		}
