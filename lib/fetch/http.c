@@ -102,6 +102,10 @@
 #include "common.h"
 #include "httperr.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 /* Maximum number of redirects to follow */
 #define MAX_REDIRECT 5
 

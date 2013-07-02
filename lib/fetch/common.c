@@ -69,6 +69,10 @@
 #include "fetch.h"
 #include "common.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 /*** Local data **************************************************************/
 
 /*
