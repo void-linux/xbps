@@ -60,19 +60,19 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	archive_write_set_options(ar, "compression-level=9");
 	archive_write_open_fd(ar, repofd);
 
-	xml = xbps_dictionary_externalize(idx);
+	xml = xbps_dictionary_externalize(idxfiles);
 	assert(xml);
 	if (xbps_archive_append_buf(ar, xml, strlen(xml),
-	    XBPS_PKGINDEX, 0644, "root", "root") != 0) {
+	    XBPS_PKGINDEX_FILES, 0644, "root", "root") != 0) {
 		free(xml);
 		return -1;
 	}
 	free(xml);
 
-	xml = xbps_dictionary_externalize(idxfiles);
+	xml = xbps_dictionary_externalize(idx);
 	assert(xml);
 	if (xbps_archive_append_buf(ar, xml, strlen(xml),
-	    XBPS_PKGINDEX_FILES, 0644, "root", "root") != 0) {
+	    XBPS_PKGINDEX, 0644, "root", "root") != 0) {
 		free(xml);
 		return -1;
 	}
