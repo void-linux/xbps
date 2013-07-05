@@ -20,7 +20,7 @@ The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and rele
  * **Low memory** footprint.
  * **Fast** dependency resolver and sorting algorithms.
 
-The latest stable version **0.24** was released on **May 2nd, 2013**.
+The latest stable version **0.25** was released on **July 5th, 2013**.
 
 ### Build requirements
 
