@@ -1,4 +1,6 @@
-xbps-0.25 (???):
+xbps-0.26 (???):
+
+xbps-0.25 (2013-07-05):
 
  * Added support to validate reverse dependencies when updating packages.
    Such example would be updating pkg X to 2.0 when an installed package
