@@ -1,5 +1,8 @@
 xbps-0.26 (???):
 
+ * Do not abort transaction if updates for conflicting packages are in
+   the transaction due to checks of reverse dependencies in virtual packages.
+
 xbps-0.25 (2013-07-05):
 
  * Added support to validate reverse dependencies when updating packages.

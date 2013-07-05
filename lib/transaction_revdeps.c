@@ -45,12 +45,13 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 		   xbps_dictionary_t trans_pkgd,
 		   xbps_dictionary_t rev_pkgd)
 {
-	xbps_array_t provides, rundeps, mdeps;
+	xbps_array_t unsorted, provides, rundeps, mdeps;
 	const char *pkgver, *revpkgver, *pkgpattern;
-	char *pkgname, *vpkgname, *vpkgver, *str;
+	char *pkgname, *pkgdepname, *vpkgname, *vpkgver, *str;
 	unsigned int i, x;
 	bool matched = false;
 
+	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 	provides = xbps_dictionary_get(trans_pkgd, "provides");
 	for (i = 0; i < xbps_array_count(provides); i++) {
 		char *tmp = NULL;
@@ -77,6 +78,21 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 			if (xbps_pkgpattern_match(vpkgver, pkgpattern))
 				continue;
 
+			/*
+			 * Installed package conflicts with package
+			 * in transaction being updated, check
+			 * if a new version of this conflicting package
+			 * is in the transaction.
+			 */
+			xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
+			pkgdepname = xbps_pkg_name(pkgver);
+			assert(pkgdepname);
+			if (xbps_find_pkg_in_array(unsorted, pkgdepname)) {
+				free(pkgdepname);
+				continue;
+			}
+			free(pkgdepname);
+
 			mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
 			xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
 			xbps_dictionary_get_cstring_nocopy(rev_pkgd, "pkgver", &revpkgver);
@@ -87,6 +103,7 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 			free(str);
 			matched = true;
 		}
+		free(vpkgname);
 		free(vpkgver);
 	}
 	return matched;
