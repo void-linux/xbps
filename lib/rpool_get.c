@@ -121,11 +121,9 @@ find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 	    "pkgver", &repopkgver);
 	if (rpf->bestpkgver == NULL) {
 		xbps_dbg_printf(repo->xhp,
-		    "[rpool] Found best match '%s' (%s).\n",
+		    "[rpool] Found match '%s' (%s).\n",
 		    repopkgver, repo->uri);
 		rpf->pkgd = pkgd;
-		xbps_dictionary_set_cstring_nocopy(rpf->pkgd,
-		    "repository", repo->uri);
 		rpf->bestpkgver = repopkgver;
 		return 0;
 	}
@@ -138,8 +136,6 @@ find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 		    "[rpool] Found best match '%s' (%s).\n",
 		    repopkgver, repo->uri);
 		rpf->pkgd = pkgd;
-		xbps_dictionary_set_cstring_nocopy(rpf->pkgd,
-		    "repository", repo->uri);
 		rpf->bestpkgver = repopkgver;
 	}
 	return 0;
@@ -236,7 +232,6 @@ xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 			 const char *plistf)
 {
 	xbps_dictionary_t pkgd = NULL, plistd = NULL;
-	const char *repo;
 	char *url;
 
 	assert(pkg != NULL);
@@ -260,10 +255,6 @@ xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 		goto out;
 	}
 	plistd = xbps_get_pkg_plist_from_binpkg(url, plistf);
-	if (plistd) {
-		xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repo);
-		xbps_dictionary_set_cstring_nocopy(plistd, "repository", repo);
-	}
 	free(url);
 
 out:
