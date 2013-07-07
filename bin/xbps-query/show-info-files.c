@@ -302,6 +302,8 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 	if ((bpkgd = xbps_repo_get_pkg_plist(xhp, ipkgd, "./props.plist")) == NULL)
 		return errno;
 
+	xbps_dictionary_set(bpkgd, "repository",
+	    xbps_dictionary_get(ipkgd, "repository"));
 	xbps_dictionary_set(bpkgd, "filename-sha256",
 	    xbps_dictionary_get(ipkgd, "filename-sha256"));
 	xbps_dictionary_set(bpkgd, "filename-size",
