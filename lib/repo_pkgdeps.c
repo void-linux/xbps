@@ -138,7 +138,7 @@ out:
 	if (add_pkgdep) {
 		char *str;
 
-		str = xbps_xasprintf("MISSING: %s", reqpkg_str);
+		str = xbps_xasprintf("MISSING: %s", reqpkg);
 		xbps_array_add_cstring(mdeps, str);
 		free(str);
 	}
