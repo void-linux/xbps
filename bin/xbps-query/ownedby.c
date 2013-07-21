@@ -69,6 +69,7 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 	array = xbps_dictionary_get_keysym(pkg_filesd, key);
 	for (i = 0; i < xbps_array_count(array); i++) {
 		obj = xbps_array_get(array, i);
+		filestr = NULL;
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &filestr);
 		if (filestr == NULL)
 			continue;
@@ -101,6 +102,9 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, void *arg, bool *do
 		match_files_by_pattern(pkgmetad,
 		    xbps_array_get(files_keys, i), ffd, pkgver);
 	}
+	xbps_object_release(pkgmetad);
+	xbps_object_release(files_keys);
+
 	return 0;
 }
 
@@ -164,6 +168,8 @@ repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done)
 		pkgver = xbps_dictionary_keysym_cstring_nocopy(ksym);
 		repo_match_files_by_pattern(pkgar, pkgver, ffd);
 	}
+	xbps_object_release(filesd);
+	xbps_object_release(allkeys);
 
 	return 0;
 }

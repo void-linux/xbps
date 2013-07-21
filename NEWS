@@ -1,5 +1,7 @@
 xbps-0.26 (???):
 
+ * xbps-query(8): fixed some memleaks in local and repository owned mode.
+
  * xbps-query(8): fix regression in -R, also print repository string object.
 
  * Do not abort transaction if updates for conflicting packages are in
