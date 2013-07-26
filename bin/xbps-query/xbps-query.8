@@ -1,4 +1,4 @@
-.Dd March 4, 2013
+.Dd July 26, 2013
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -101,7 +101,9 @@ and can be fully removed with
 Package state is unknown.
 .El
 .It Fl L, Fl -list-repos
-Lists registered and working repositories.
+Lists repositories and the number of packages contained on them. If a repository is not
+available the number of packages will be
+.Sy -1 .
 .It Fl m, Fl -list-manual-pkgs
 Lists registered packages in the package database (pkgdb) that were installed
 manually by the user (i.e not as dependency of any package).

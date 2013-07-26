@@ -1,5 +1,15 @@
 xbps-0.26 (???):
 
+ * xbps-query(8): make -L list all repositories in the configuration file, even
+   the non working ones and print -1 in them. Closes issue #11 from github.
+
+	$ xbps-query -L
+           -1 /mnt/foo
+           -1 /blah/foo
+         2619 /mnt/xbps_builder/host/binpkgs
+           16 /mnt/xbps_builder/host/binpkgs/nonfree
+	$
+
  * xbps-query(8): fixed some memleaks in local and repository owned mode.
 
  * xbps-query(8): fix regression in -R, also print repository string object.

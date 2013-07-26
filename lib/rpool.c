@@ -68,15 +68,10 @@ xbps_rpool_init(struct xbps_handle *xhp)
 		assert(rp);
 		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
 		if ((rp->repo = xbps_repo_open(xhp, repouri)) == NULL) {
-			free(rp);
-			continue;
+			rp->repo = calloc(1, sizeof(struct xbps_repo));
+			assert(rp->repo);
 		}
 		rp->repo->idx = xbps_repo_get_plist(rp->repo, XBPS_PKGINDEX);
-		if (rp->repo->idx == NULL) {
-			xbps_repo_close(rp->repo);
-			free(rp);
-			continue;
-		}
 		rp->repo->uri = repouri;
 		rp->repo->xhp = xhp;
 		SIMPLEQ_INSERT_TAIL(&rpool_queue, rp, entries);

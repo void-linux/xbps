@@ -84,7 +84,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	archive_read_support_format_tar(repo->ar);
 
 	if (archive_read_open_filename(repo->ar, repofile, ARCHIVE_READ_BLOCKSIZE)) {
-		xbps_dbg_printf(xhp, "cannot open repository file %s: %s\n",
+		xbps_dbg_printf(xhp, "[repo] cannot open repository file %s: %s\n",
 				repofile, strerror(archive_errno(repo->ar)));
 		archive_read_free(repo->ar);
 		free(repo);
@@ -105,8 +105,10 @@ xbps_repo_get_plist(struct xbps_repo *repo, const char *file)
 	int rv;
 
 	assert(repo);
-	assert(repo->ar);
 	assert(file);
+
+	if (repo->ar == NULL)
+		return NULL;
 
 	for (;;) {
 		rv = archive_read_next_header(repo->ar, &entry);
@@ -137,6 +139,9 @@ xbps_repo_close(struct xbps_repo *repo)
 {
 	assert(repo);
 
+	if (repo->ar == NULL)
+		return;
+
 	archive_read_free(repo->ar);
 	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
 		xbps_object_release(repo->idx);
@@ -151,12 +156,15 @@ xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg)
 	xbps_dictionary_t pkgd;
 
 	assert(repo);
-	assert(repo->ar);
 	assert(pkg);
+
+	if (repo->ar == NULL)
+		return NULL;
 
 	if (xbps_object_type(repo->idx) != XBPS_TYPE_DICTIONARY) {
 		repo->idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
-		assert(repo->idx);
+		if (repo->idx == NULL)
+			return NULL;
 	}
 	pkgd = xbps_find_virtualpkg_in_dict(repo->xhp, repo->idx, pkg);
 	if (pkgd) {
@@ -173,12 +181,15 @@ xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg)
 	xbps_dictionary_t pkgd;
 
 	assert(repo);
-	assert(repo->ar);
 	assert(pkg);
+
+	if (repo->ar == NULL)
+		return NULL;
 
 	if (xbps_object_type(repo->idx) != XBPS_TYPE_DICTIONARY) {
 		repo->idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
-		assert(repo->idx);
+		if (repo->idx == NULL)
+			return NULL;
 	}
 	pkgd = xbps_find_pkg_in_dict(repo->idx, pkg);
 	if (pkgd) {

@@ -156,8 +156,7 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg, bool *done)
 	(void)arg;
 	(void)done;
 
-	printf("%s (%u packages)\n", repo->uri,
-	    xbps_dictionary_count(repo->idx));
+	printf("%5zd %s\n", repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1, repo->uri);
 
 	return 0;
 }
