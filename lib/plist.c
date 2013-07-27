@@ -131,8 +131,10 @@ xbps_array_foreach_cb(struct xbps_handle *xhp,
 	unsigned int arraycount, slicecount, pkgcount;
 	int rv = 0, maxthreads, i;
 
-	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(fn != NULL);
+
+	if (xbps_object_type(array) != XBPS_TYPE_ARRAY)
+		return 0;
 
 	arraycount = xbps_array_count(array);
 	if (arraycount == 0)
