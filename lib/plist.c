@@ -132,59 +132,6 @@ xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
 	return rv;
 }
 
-int
-xbps_callback_array_iter_reverse(struct xbps_handle *xhp,
-	xbps_array_t array,
-	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
-	void *arg)
-{
-	xbps_object_t obj;
-	unsigned int cnt;
-	int rv = 0;
-	bool loop_done = false;
-
-	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
-	assert(fn != NULL);
-	assert(xhp != NULL);
-
-	if ((cnt = xbps_array_count(array)) == 0)
-		return 0;
-
-	while (cnt--) {
-		obj = xbps_array_get(array, cnt);
-		if (obj == NULL)
-			continue;
-		rv = (*fn)(xhp, obj, arg, &loop_done);
-		if (rv != 0 || loop_done)
-			break;
-	}
-
-	return rv;
-}
-
-int
-xbps_callback_array_iter_reverse_in_dict(struct xbps_handle *xhp,
-	xbps_dictionary_t dict,
-	const char *key,
-	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
-	void *arg)
-{
-	xbps_array_t array;
-
-	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
-	assert(key != NULL);
-	assert(fn != NULL);
-	assert(xhp != NULL);
-
-	array = xbps_dictionary_get(dict, key);
-	if (xbps_object_type(array) != XBPS_TYPE_ARRAY) {
-		xbps_dbg_printf(xhp, "invalid key '%s' for dictionary", key);
-		return EINVAL;
-	}
-
-	return xbps_callback_array_iter_reverse(xhp, array, fn, arg);
-}
-
 xbps_object_iterator_t
 xbps_array_iter_from_dict(xbps_dictionary_t dict, const char *key)
 {

@@ -1,5 +1,11 @@
 xbps-0.26 (???):
 
+ * libxbps: removed the following unused API functions:
+
+	- xbps_pkgdb_foreach_reverse_cb()
+	- xbps_callback_array_iter_reverse()
+	- xbps_callback_array_iter_reverse_in_dict()
+
  * xbps-query(8): make -L list all repositories in the configuration file, even
    the non working ones and print -1 in them. Closes issue #11 from github.
 

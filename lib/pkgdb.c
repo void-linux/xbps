@@ -136,33 +136,6 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 }
 
 int
-xbps_pkgdb_foreach_reverse_cb(struct xbps_handle *xhp,
-			      int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
-			      void *arg)
-{
-	xbps_array_t allkeys;
-	xbps_object_t obj;
-	xbps_dictionary_t pkgd;
-	unsigned int i;
-	int rv;
-	bool done = false;
-
-	if ((rv = xbps_pkgdb_init(xhp)) != 0)
-		return rv;
-
-	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
-	for (i = xbps_array_count(allkeys); i > 0; i--) {
-		obj = xbps_array_get(allkeys, i);
-		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		rv = (*fn)(xhp, pkgd, arg, &done);
-		if (rv != 0 || done)
-			break;
-	}
-	xbps_object_release(allkeys);
-	return rv;
-}
-
-int
 xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
 		      int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
 		      void *arg)
