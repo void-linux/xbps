@@ -41,6 +41,7 @@ struct list_pkgver_cb {
 int
 list_pkgs_in_dict(struct xbps_handle *xhp,
 		  xbps_object_t obj,
+		  const char *key,
 		  void *arg,
 		  bool *loop_done)
 {
@@ -51,6 +52,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 	pkg_state_t state;
 
 	(void)xhp;
+	(void)key;
 	(void)loop_done;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -93,6 +95,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 int
 list_manual_pkgs(struct xbps_handle *xhp,
 		 xbps_object_t obj,
+		 const char *key,
 		 void *arg,
 		 bool *loop_done)
 {
@@ -100,6 +103,7 @@ list_manual_pkgs(struct xbps_handle *xhp,
 	bool automatic = false;
 
 	(void)xhp;
+	(void)key;
 	(void)arg;
 	(void)loop_done;
 
@@ -176,23 +180,19 @@ struct fflongest {
 static int
 _find_longest_pkgver_cb(struct xbps_handle *xhp,
 			xbps_object_t obj,
+			const char *key,
 			void *arg,
 			bool *loop_done)
 {
 	struct fflongest *ffl = arg;
-	xbps_dictionary_t pkgd;
 	const char *pkgver;
 	unsigned int len;
 
 	(void)xhp;
+	(void)key;
 	(void)loop_done;
 
-	if (xbps_object_type(obj) == XBPS_TYPE_DICT_KEYSYM)
-		pkgd = xbps_dictionary_get_keysym(ffl->d, obj);
-	else
-		pkgd = obj;
-
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	len = strlen(pkgver);
 	if (ffl->len == 0 || len > ffl->len)
 		ffl->len = len;
@@ -212,7 +212,7 @@ find_longest_pkgver(struct xbps_handle *xhp, xbps_object_t o)
 		xbps_array_t array;
 
 		array = xbps_dictionary_all_keys(o);
-		(void)xbps_callback_array_iter(xhp, array,
+		(void)xbps_array_foreach_cb(xhp, array, o,
 		    _find_longest_pkgver_cb, &ffl);
 		xbps_object_release(array);
 	} else {

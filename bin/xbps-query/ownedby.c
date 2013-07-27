@@ -31,14 +31,18 @@
 #include <fnmatch.h>
 #include <dirent.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include <xbps.h>
 #include "defs.h"
 
 struct ffdata {
+	pthread_mutex_t mtx;
 	int npatterns;
 	char **patterns;
 	const char *repouri;
+	xbps_array_t allkeys;
+	xbps_dictionary_t filesd;
 };
 
 static void
@@ -83,7 +87,7 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 }
 
 static int
-ownedby_pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, void *arg, bool *done)
+ownedby_pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *obj_key, void *arg, bool *done)
 {
 	xbps_dictionary_t pkgmetad;
 	xbps_array_t files_keys;
@@ -91,9 +95,13 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, void *arg, bool *do
 	unsigned int i;
 	const char *pkgver;
 
+	(void)obj_key;
 	(void)done;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+
+	pthread_mutex_lock(&ffd->mtx);
+
 	pkgmetad = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
 	assert(pkgmetad);
 
@@ -104,6 +112,8 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, void *arg, bool *do
 	}
 	xbps_object_release(pkgmetad);
 	xbps_object_release(files_keys);
+
+	pthread_mutex_unlock(&ffd->mtx);
 
 	return 0;
 }
@@ -117,6 +127,7 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
+	pthread_mutex_init(&ffd.mtx, NULL);
 
 	for (i = 0; i < npatterns; i++) {
 		rfile = realpath(patterns[i], NULL);
@@ -126,52 +137,51 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 	return xbps_pkgdb_foreach_cb(xhp, ownedby_pkgdb_cb, &ffd);
 }
 
-static void
-repo_match_files_by_pattern(xbps_array_t files,
-			const char *pkgver,
-			struct ffdata *ffd)
+static int
+repo_match_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void *arg, bool *done)
 {
+	struct ffdata *ffd = arg;
 	const char *filestr;
 	unsigned int i;
 	int x;
 
-	for (i = 0; i < xbps_array_count(files); i++) {
-		xbps_array_get_cstring_nocopy(files, i, &filestr);
+	(void)xhp;
+	(void)done;
+
+	for (i = 0; i < xbps_array_count(obj); i++) {
+		xbps_array_get_cstring_nocopy(obj, i, &filestr);
 		for (x = 0; x < ffd->npatterns; x++) {
 			if ((fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
 				printf("%s: %s (%s)\n",
-				    pkgver, filestr, ffd->repouri);
+				    key, filestr, ffd->repouri);
 			}
 		}
 	}
+
+	return 0;
 }
 
 static int
 repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
-	xbps_array_t allkeys, pkgar;
+	xbps_array_t allkeys;
 	xbps_dictionary_t filesd;
-	xbps_dictionary_keysym_t ksym;
 	struct ffdata *ffd = arg;
-	const char *pkgver;
-	unsigned int i;
+	int rv;
 
 	(void)done;
 
 	filesd = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
+	if (filesd == NULL)
+		return 0;
+
 	ffd->repouri = repo->uri;
 	allkeys = xbps_dictionary_all_keys(filesd);
-
-	for (i = 0; i < xbps_array_count(allkeys); i++) {
-		ksym = xbps_array_get(allkeys, i);
-		pkgar = xbps_dictionary_get_keysym(filesd, ksym);
-		pkgver = xbps_dictionary_keysym_cstring_nocopy(ksym);
-		repo_match_files_by_pattern(pkgar, pkgver, ffd);
-	}
+	rv = xbps_array_foreach_cb(repo->xhp, allkeys, filesd, repo_match_cb, ffd);
 	xbps_object_release(filesd);
 	xbps_object_release(allkeys);
 
-	return 0;
+	return rv;
 }
 
 int
@@ -179,8 +189,9 @@ repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 {
 	struct ffdata ffd;
 	char *rfile;
-	int i;
+	int i, rv;
 
+	pthread_mutex_init(&ffd.mtx, NULL);
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
 
@@ -189,5 +200,8 @@ repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 		if (rfile)
 			patterns[i] = rfile;
 	}
-	return xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
+	rv = xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
+	pthread_mutex_destroy(&ffd.mtx);
+
+	return rv;
 }

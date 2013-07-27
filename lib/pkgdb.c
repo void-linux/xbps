@@ -137,27 +137,19 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 
 int
 xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
-		      int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
-		      void *arg)
+		int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *),
+		void *arg)
 {
-	xbps_object_t obj;
-	xbps_object_iterator_t iter;
-	xbps_dictionary_t pkgd;
+	xbps_array_t allkeys;
 	int rv;
-	bool done = false;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
-	iter = xbps_dictionary_iterator(xhp->pkgdb);
-	assert(iter);
-	while ((obj = xbps_object_iterator_next(iter))) {
-		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		rv = (*fn)(xhp, pkgd, arg, &done);
-		if (rv != 0 || done)
-			break;
-	}
-	xbps_object_iterator_release(iter);
+	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
+	assert(allkeys);
+	rv = xbps_array_foreach_cb(xhp, allkeys, xhp->pkgdb, fn, arg);
+	xbps_object_release(allkeys);
 	return rv;
 }
 

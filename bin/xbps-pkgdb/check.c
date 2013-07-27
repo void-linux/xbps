@@ -30,89 +30,46 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <assert.h>
 
 #include <xbps.h>
 #include "defs.h"
 
-struct thread_data {
-	pthread_t thread;
-	struct xbps_handle *xhp;
-	unsigned int start;
-	unsigned int end;
-	int thread_num;
-};
-
-static void *
-pkgdb_thread_worker(void *arg)
+static int
+pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void *arg, bool *done)
 {
-	xbps_dictionary_t pkgd;
-	xbps_array_t array;
-	xbps_object_t obj;
-	struct thread_data *thd = arg;
 	const char *pkgver;
 	char *pkgname;
-	unsigned int i;
 	int rv;
 
-	array = xbps_dictionary_all_keys(thd->xhp->pkgdb);
-	assert(array);
+	(void)key;
+	(void)arg;
+	(void)done;
 
-	/* process pkgs from start until end */
-	for (i = thd->start; i < thd->end; i++) {
-		obj = xbps_array_get(array, i);
-		pkgd = xbps_dictionary_get_keysym(thd->xhp->pkgdb, obj);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		if (thd->xhp->flags & XBPS_FLAG_VERBOSE)
-			printf("Checking %s ...\n", pkgver);
+	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	if (xhp->flags & XBPS_FLAG_VERBOSE)
+		printf("Checking %s ...\n", pkgver);
 
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
-		rv = check_pkg_integrity(thd->xhp, pkgd, pkgname);
-		free(pkgname);
-		if (rv != 0)
-			fprintf(stderr, "pkgdb[%d] failed for %s: %s\n",
-			    thd->thread_num, pkgver, strerror(rv));
-	}
-	xbps_object_release(array);
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+	rv = check_pkg_integrity(xhp, obj, pkgname);
+	free(pkgname);
+	if (rv != 0)
+		fprintf(stderr, "pkgdb failed for %s: %s\n",
+		    pkgver, strerror(rv));
 
-	return NULL;
+	return rv;
 }
 
 int
 check_pkg_integrity_all(struct xbps_handle *xhp)
 {
-	struct thread_data *thd;
-	unsigned int slicecount, pkgcount;
-	int rv, maxthreads, i;
+	int rv;
 
 	/* force an update to get total pkg count */
 	(void)xbps_pkgdb_update(xhp, false);
 
-	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
-	thd = calloc(maxthreads, sizeof(*thd));
-	assert(thd);
-
-	slicecount = xbps_dictionary_count(xhp->pkgdb) / maxthreads;
-	pkgcount = 0;
-
-	for (i = 0; i < maxthreads; i++) {
-		thd[i].thread_num = i;
-		thd[i].xhp = xhp;
-		thd[i].start = pkgcount;
-		if (i + 1 >= maxthreads)
-			thd[i].end = xbps_dictionary_count(xhp->pkgdb);
-		else
-			thd[i].end = pkgcount + slicecount;
-		pthread_create(&thd[i].thread, NULL,
-		    pkgdb_thread_worker, &thd[i]);
-		pkgcount += slicecount;
-	}
-
-	/* wait for all threads */
-	for (i = 0; i < maxthreads; i++)
-		pthread_join(thd[i].thread, NULL);
+	rv = xbps_pkgdb_foreach_cb(xhp, pkgdb_cb, NULL);
 
 	if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
 		xbps_error_printf("failed to write pkgdb: %s\n",

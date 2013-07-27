@@ -59,8 +59,8 @@ int	repo_ownedby(struct xbps_handle *, int, char **);
 /* From list.c */
 unsigned int	find_longest_pkgver(struct xbps_handle *, xbps_object_t);
 
-int	list_pkgs_in_dict(struct xbps_handle *, xbps_object_t, void *, bool *);
-int	list_manual_pkgs(struct xbps_handle *, xbps_object_t, void *, bool *);
+int	list_pkgs_in_dict(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
+int	list_manual_pkgs(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
 int	list_orphans(struct xbps_handle *);
 int	list_pkgs_pkgdb(struct xbps_handle *);
 

@@ -40,6 +40,7 @@
 #include <libgen.h>
 #include <fnmatch.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include <xbps.h>
 #include "defs.h"
@@ -48,6 +49,7 @@ struct search_data {
 	int npatterns;
 	char **patterns;
 	int maxcols;
+	pthread_mutex_t mtx;
 	xbps_array_t results;
 };
 
@@ -96,43 +98,51 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 }
 
 static int
+search_array_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void *arg, bool *done)
+{
+	struct search_data *sd = arg;
+	const char *pkgver, *desc;
+	int x;
+
+	(void)xhp;
+	(void)key;
+	(void)done;
+
+	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
+
+	for (x = 0; x < sd->npatterns; x++) {
+		bool vpkgfound = false;
+
+		if (xbps_match_virtual_pkg_in_dict(obj, sd->patterns[x], false))
+			vpkgfound = true;
+
+		if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
+		    (strcasestr(pkgver, sd->patterns[x])) ||
+		    (strcasestr(desc, sd->patterns[x])) || vpkgfound) {
+			pthread_mutex_lock(&sd->mtx);
+			xbps_array_add_cstring_nocopy(sd->results, pkgver);
+			xbps_array_add_cstring_nocopy(sd->results, desc);
+			pthread_mutex_unlock(&sd->mtx);
+		}
+	}
+	return 0;
+}
+
+static int
 search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t pkgd;
-	xbps_dictionary_keysym_t ksym;
 	struct search_data *sd = arg;
-	const char *pkgver, *desc;
-	unsigned int i;
-	int x;
+	int rv;
 
 	(void)done;
 
 	allkeys = xbps_dictionary_all_keys(repo->idx);
-	for (i = 0; i < xbps_array_count(allkeys); i++) {
-		ksym = xbps_array_get(allkeys, i);
-		pkgd = xbps_dictionary_get_keysym(repo->idx, ksym);
-
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "short_desc", &desc);
-
-		for (x = 0; x < sd->npatterns; x++) {
-			bool vpkgfound = false;
-
-			if (xbps_match_virtual_pkg_in_dict(pkgd, sd->patterns[x], false))
-				vpkgfound = true;
-
-			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
-			    (strcasestr(pkgver, sd->patterns[x])) ||
-			    (strcasestr(desc, sd->patterns[x])) || vpkgfound) {
-				xbps_array_add_cstring_nocopy(sd->results, pkgver);
-				xbps_array_add_cstring_nocopy(sd->results, desc);
-			}
-		}
-	}
+	rv = xbps_array_foreach_cb(repo->xhp, allkeys, repo->idx, search_array_cb, sd);
 	xbps_object_release(allkeys);
 
-	return 0;
+	return rv;
 }
 
 int
@@ -141,6 +151,7 @@ repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
 	struct search_data sd;
 	int rv;
 
+	pthread_mutex_init(&sd.mtx, NULL);
 	sd.npatterns = npatterns;
 	sd.patterns = patterns;
 	sd.maxcols = get_maxcols();
@@ -152,6 +163,8 @@ repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
 		    strerror(rv));
 
 	print_results(xhp, &sd);
+	pthread_mutex_destroy(&sd.mtx);
+	xbps_object_release(sd.results);
 
 	return rv;
 }

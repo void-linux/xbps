@@ -28,8 +28,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include "xbps_api_impl.h"
+
+struct thread_data {
+	pthread_t thread;
+	pthread_mutex_t *mtx;
+	xbps_array_t array;
+	xbps_dictionary_t dict;
+	struct xbps_handle *xhp;
+	unsigned int start;
+	unsigned int end;
+	int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
+	void *fn_arg;
+};
 
 /**
  * @file lib/plist.c
@@ -73,60 +86,101 @@ xbps_add_obj_to_array(xbps_array_t array, xbps_object_t obj)
 	return true;
 }
 
+static void *
+array_foreach_thread(void *arg)
+{
+	xbps_object_t obj, pkgd;
+	struct thread_data *thd = arg;
+	const char *key;
+	unsigned int i;
+	int rv;
+	bool loop_done = false;
+
+	/* process pkgs from start until end */
+	for (i = thd->start; i < thd->end; i++) {
+		if (thd->mtx)
+			pthread_mutex_lock(thd->mtx);
+
+		obj = xbps_array_get(thd->array, i);
+		if (xbps_object_type(thd->dict) == XBPS_TYPE_DICTIONARY) {
+			pkgd = xbps_dictionary_get_keysym(thd->dict, obj);
+			key = xbps_dictionary_keysym_cstring_nocopy(obj);
+		} else {
+			pkgd = obj;
+			key = NULL;
+		}
+		if (thd->mtx)
+			pthread_mutex_unlock(thd->mtx);
+
+		rv = (*thd->fn)(thd->xhp, pkgd, key, thd->fn_arg, &loop_done);
+		if (rv != 0 || loop_done)
+			break;
+	}
+	return NULL;
+}
+
 int
-xbps_callback_array_iter(struct xbps_handle *xhp,
+xbps_array_foreach_cb(struct xbps_handle *xhp,
 	xbps_array_t array,
-	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
+	xbps_dictionary_t dict,
+	int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *),
 	void *arg)
 {
-	xbps_object_t obj;
-	xbps_object_iterator_t iter;
-	int rv = 0;
-	bool loop_done = false;
+	struct thread_data *thd;
+	pthread_mutex_t mtx;
+	unsigned int arraycount, slicecount, pkgcount;
+	int rv = 0, maxthreads, i;
 
 	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(fn != NULL);
 
-	iter = xbps_array_iterator(array);
-	if (iter == NULL)
-		return ENOMEM;
+	arraycount = xbps_array_count(array);
+	if (arraycount == 0)
+		return 0;
 
-	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		rv = (*fn)(xhp, obj, arg, &loop_done);
-		if (rv != 0 || loop_done)
-			break;
-	}
-	xbps_object_iterator_release(iter);
+	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
+	if (maxthreads > 1) {
+		thd = calloc(maxthreads, sizeof(*thd));
+		assert(thd);
+		slicecount = arraycount / maxthreads;
+		pkgcount = 0;
+		pthread_mutex_init(&mtx, NULL);
 
-	return rv;
-}
+		for (i = 0; i < maxthreads; i++) {
+			thd[i].mtx = &mtx;
+			thd[i].array = array;
+			thd[i].dict = dict;
+			thd[i].xhp = xhp;
+			thd[i].fn = fn;
+			thd[i].fn_arg = arg;
+			thd[i].start = pkgcount;
+			if (i + 1 >= maxthreads)
+				thd[i].end = arraycount;
+			else
+				thd[i].end = pkgcount + slicecount;
+			pthread_create(&thd[i].thread, NULL,
+			    array_foreach_thread, &thd[i]);
+			pkgcount += slicecount;
+		}
+		/* wait for all threads */
+		for (i = 0; i < maxthreads; i++)
+			pthread_join(thd[i].thread, NULL);
 
-int
-xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
-	xbps_dictionary_t dict,
-	const char *key,
-	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
-	void *arg)
-{
-	xbps_object_t obj;
-	xbps_array_t array;
-	unsigned int i;
-	int rv = 0;
-	bool cbloop_done = false;
+		pthread_mutex_destroy(&mtx);
+		free(thd);
+	} else {
+		/* single threaded */
+		struct thread_data mythd;
 
-	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
-	assert(xhp != NULL);
-	assert(key != NULL);
-	assert(fn != NULL);
-
-	array = xbps_dictionary_get(dict, key);
-	for (i = 0; i < xbps_array_count(array); i++) {
-		obj = xbps_array_get(array, i);
-		if (obj == NULL)
-			continue;
-		rv = (*fn)(xhp, obj, arg, &cbloop_done);
-		if (rv != 0 || cbloop_done)
-			break;
+		mythd.mtx = NULL;
+		mythd.array = array;
+		mythd.dict = dict;
+		mythd.xhp = xhp;
+		mythd.start = 0;
+		mythd.end = arraycount;
+		mythd.fn = fn;
+		mythd.fn_arg = arg;
+		array_foreach_thread(&mythd);
 	}
 
 	return rv;

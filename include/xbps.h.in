@@ -46,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20130727"
+#define XBPS_API_VERSION	"20130727-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -709,7 +709,7 @@ xbps_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
  * the value returned by the function callback.
  */
 int xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
-	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
+	int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *),
 	void *arg);
 
 /**
@@ -813,46 +813,11 @@ int xbps_pkg_exec_script(struct xbps_handle *xhp,
 /** @addtogroup plist */
 /*@{*/
 
-/**
- * Executes a function callback specified in \a fn with \a arg passed
- * as its argument into they array \a array.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] array Proplib array to iterate.
- * @param[in] fn Function callback to run on every object in the array.
- * While running the function callback, the hird parameter (a pointer to
- * a boolean) can be set to true to stop immediately the loop.
- * @param[in] arg Argument to be passed to the function callback.
- *
- * @return 0 on success, otherwise the value returned by the function
- * callback.
- */
-int xbps_callback_array_iter(struct xbps_handle *xhp,
-	xbps_array_t array,
-	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
-	void *arg);
-
-/**
- * Executes a function callback into the array associated with key \a key,
- * contained in a proplib dictionary.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] dict Proplib dictionary where the array resides.
- * @param[in] key Key associated with array.
- * @param[in] fn Function callback to run on every
- * object in the array. While running the function callback, the third
- * parameter (a pointer to a boolean) can be set to true to stop
- * immediately the loop.
- * @param[in] arg Argument to be passed to the function callback.
- *
- * @return 0 on success (all objects were processed), otherwise
- * the value returned by the function callback.
- */
-int xbps_callback_array_iter_in_dict(struct xbps_handle *xhp,
-	xbps_dictionary_t dict,
-	const char *key,
-	int (*fn)(struct xbps_handle *, xbps_object_t, void *, bool *),
-	void *arg);
+int xbps_array_foreach_cb(struct xbps_handle *xhp,
+		xbps_array_t array,
+		xbps_dictionary_t dict,
+		int (*fn)(struct xbps_handle *, xbps_object_t obj, const char *, void *arg, bool *done),
+		void *arg);
 
 /**
  * Match a virtual package name or pattern by looking at package's
