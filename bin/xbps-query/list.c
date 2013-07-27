@@ -116,23 +116,16 @@ int
 list_orphans(struct xbps_handle *xhp)
 {
 	xbps_array_t orphans;
-	xbps_object_iterator_t iter;
-	xbps_object_t obj;
 	const char *pkgver;
+	unsigned int i;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
 	if (orphans == NULL)
 		return EINVAL;
 
-	if (xbps_array_count(orphans) == 0)
-		return 0;
-
-	iter = xbps_array_iterator(orphans);
-	if (iter == NULL)
-		return ENOMEM;
-
-	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	for (i = 0; i < xbps_array_count(orphans); i++) {
+		xbps_dictionary_get_cstring_nocopy(xbps_array_get(orphans, i),
+		    "pkgver", &pkgver);
 		printf("%s\n", pkgver);
 	}
 
