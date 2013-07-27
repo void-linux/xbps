@@ -138,6 +138,9 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
 
 	(void)done;
 
+	if (repo->idx == NULL)
+		return 0;
+
 	allkeys = xbps_dictionary_all_keys(repo->idx);
 	rv = xbps_array_foreach_cb(repo->xhp, allkeys, repo->idx, search_array_cb, sd);
 	xbps_object_release(allkeys);
@@ -162,9 +165,11 @@ repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
 		fprintf(stderr, "Failed to initialize rpool: %s\n",
 		    strerror(rv));
 
-	print_results(xhp, &sd);
+	if (xbps_array_count(sd.results)) {
+		print_results(xhp, &sd);
+		xbps_object_release(sd.results);
+	}
 	pthread_mutex_destroy(&sd.mtx);
-	xbps_object_release(sd.results);
 
 	return rv;
 }
