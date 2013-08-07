@@ -159,7 +159,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		if (array == NULL)
 			array = xbps_array_create();
 
-		xbps_array_add_cstring_nocopy(array, dp->d_name);
+		xbps_array_add_cstring(array, dp->d_name);
 	}
 	(void)closedir(dirp);
 
