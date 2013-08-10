@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@ get_maxcols(void)
 	struct winsize ws;
 
 	if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) == 0)
-		return ws.ws_col;
+		return ws.ws_col ? ws.ws_col : 80;
 
 	return 80;
 }

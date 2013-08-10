@@ -1,5 +1,8 @@
 xbps-0.26 (???):
 
+ * On terminals with 0 columns, assume 80. Xen's PV guest running Linux and its
+   hvc console does report 0 columns/rows.
+
  * libxbps: introduce xbps_array_foreach_cb() which is a multithreaded implementation,
    to process N items of an array spawning 1 thread per core. This makes XBPS use
    threads when possible on multi-core CPUs.
