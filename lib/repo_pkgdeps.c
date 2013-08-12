@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -237,12 +237,18 @@ find_repo_deps(struct xbps_handle *xhp,
 			if (rv == 0) {
 				/*
 				 * Package is installed but does not match
-				 * the dependency pattern, update pkg.
+				 * the dependency pattern, update pkg if it's not
+				 * on hold state.
 				 */
 				xbps_dbg_printf_append(xhp,
 				    "installed `%s', "
-				    "must be updated.\n", pkgver_q);
-				reason = "update";
+				    "must be updated.", pkgver_q);
+				if (xbps_dictionary_get(tmpd, "hold"))
+					xbps_dbg_printf_append(xhp, " on hold state! ignoring update.\n");
+				else {
+					xbps_dbg_printf_append(xhp, "\n");
+					reason = "update";
+				}
 			} else if (rv == 1) {
 				rv = 0;
 				if (state == XBPS_PKG_STATE_UNPACKED) {

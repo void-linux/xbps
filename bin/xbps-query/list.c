@@ -117,6 +117,24 @@ list_manual_pkgs(struct xbps_handle *xhp,
 }
 
 int
+list_hold_pkgs(struct xbps_handle *xhp, xbps_object_t obj,
+	       const char *key, void *arg, bool *loop_done)
+{
+	const char *pkgver;
+
+	(void)xhp;
+	(void)key;
+	(void)arg;
+	(void)loop_done;
+
+	if (xbps_dictionary_get(obj, "hold")) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		printf("%s\n", pkgver);
+	}
+
+	return 0;
+}
+int
 list_orphans(struct xbps_handle *xhp)
 {
 	xbps_array_t orphans;

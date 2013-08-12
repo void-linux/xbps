@@ -1,4 +1,4 @@
-.Dd March 4, 2013
+.Dd August 12, 2013
 .Os Void Linux
 .Dt xbps-pkgdb 8
 .Sh NAME
@@ -42,10 +42,19 @@ Specifies a full path to the XBPS configuration file.
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
 Show the help usage.
-.It Fl m, Fl -mode Ar auto|manual
+.It Fl m, Fl -mode Ar auto|manual|hold|unhold
 Switches
 .Ar PKGNAME
-to the specified installation mode: automatic or manual mode.
+to the specified  mode: automatic or manual installation mode, or to (un)set it on hold mode.
+A package that was installed as dependency will be in
+.Sy automatic
+mode, otherwise will be set to
+.Sy manual .
+A package in
+.Sy hold
+mode won't be updated in full system upgrades. The list of packages in this mode can be
+seen with
+.Xr xbps-query 8 .
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl u, Fl -update

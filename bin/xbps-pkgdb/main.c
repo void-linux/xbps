@@ -40,34 +40,38 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-pkgdb [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
-	    " -a --all                   Process all packages\n"
-	    " -C --config <file>         Full path to configuration file\n"
-	    " -d --debug                 Debug mode shown to stderr\n"
-	    " -h --help                  Print usage help\n"
-	    " -m --mode <auto|manual>    Change PKGNAME to automatic or manual mode\n"
-	    " -r --rootdir <dir>         Full path to rootdir\n"
-	    " -u --update                Update pkgdb to the latest format\n"
-	    " -v --verbose               Verbose messages\n"
-	    " -V --version               Show XBPS version\n");
+	    " -a --all                               Process all packages\n"
+	    " -C --config <file>                     Full path to configuration file\n"
+	    " -d --debug                             Debug mode shown to stderr\n"
+	    " -h --help                              Print usage help\n"
+	    " -m --mode <auto|manual|hold|unhold>    Change PKGNAME to this mode\n"
+	    " -r --rootdir <dir>                     Full path to rootdir\n"
+	    " -u --update                            Update pkgdb to the latest format\n"
+	    " -v --verbose                           Verbose messages\n"
+	    " -V --version                           Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 static int
-change_pkg_instmode(struct xbps_handle *xhp,
-		    const char *pkgname,
-		    const char *modestr)
+change_pkg_mode(struct xbps_handle *xhp, const char *pkgname, const char *mode)
 {
 	xbps_dictionary_t pkgd;
-	bool mode = false;
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 	if (pkgd == NULL)
 		return errno;
 
-	if (strcmp(modestr, "auto") == 0)
-		mode = true;
+	if (strcmp(mode, "auto") == 0)
+		xbps_dictionary_set_bool(pkgd, "automatic-install", true);
+	else if (strcmp(mode, "manual") == 0)
+		xbps_dictionary_set_bool(pkgd, "automatic-install", false);
+	else if (strcmp(mode, "hold") == 0)
+		xbps_dictionary_set_bool(pkgd, "hold", true);
+	else if (strcmp(mode, "unhold") == 0)
+		xbps_dictionary_remove(pkgd, "hold");
+	else
+		usage(true);
 
-	xbps_dictionary_set_bool(pkgd, "automatic-install", mode);
 	return xbps_pkgdb_update(xhp, true);
 }
 
@@ -144,16 +148,13 @@ main(int argc, char **argv)
 	if (update_format)
 		convert_pkgdb_format(&xh);
 	else if (instmode) {
-		if ((strcmp(instmode, "auto")) && (strcmp(instmode, "manual")))
-			usage(true);
-
 		if (argc == optind) {
 			fprintf(stderr,
 			    "xbps-pkgdb: missing PKGNAME argument\n");
 			exit(EXIT_FAILURE);
 		}
 		for (i = optind; i < argc; i++) {
-			rv = change_pkg_instmode(&xh, argv[i], instmode);
+			rv = change_pkg_mode(&xh, argv[i], instmode);
 			if (rv != 0) {
 				fprintf(stderr, "xbps-pkgdb: failed to "
 				    "change to %s mode to %s: %s\n",

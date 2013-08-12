@@ -189,11 +189,10 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	xbps_dictionary_t pkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *pkgver, *holdpkg;
-	char *pkgname;
-	bool foundhold = false, newpkg_found = false;
+	const char *pkgver;
+	char *pkgname = NULL;
+	bool hold, newpkg_found = false;
 	int rv = 0;
-	unsigned int x;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
@@ -204,23 +203,15 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
-
-		for (x = 0; x < cfg_size(xhp->cfg, "PackagesOnHold"); x++) {
-			holdpkg = cfg_getnstr(xhp->cfg, "PackagesOnHold", x);
-			if ((strcmp(holdpkg, pkgname) == 0) ||
-			    (fnmatch(holdpkg, pkgname, FNM_PERIOD) == 0)) {
-				xbps_dbg_printf(xhp, "[rpool] package `%s' "
-				    "on hold, ignoring updates.\n", pkgname);
-				foundhold = true;
-				break;
-			}
-		}
-		if (foundhold) {
-			foundhold = false;
+		hold = false;
+		xbps_dictionary_get_bool(pkgd, "hold", &hold);
+		if (hold) {
+			xbps_dbg_printf(xhp, "[rpool] package `%s' "
+			    "on hold, ignoring updates.\n", pkgver);
 			continue;
 		}
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
 		rv = trans_find_pkg(xhp, pkgname, TRANS_UPDATE);
 		if (rv == 0)
 			newpkg_found = true;

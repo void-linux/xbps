@@ -1,5 +1,14 @@
 xbps-0.26 (???):
 
+ * Removed "PackagesOnHold" from xbps.conf. This has been replaced by a new mode
+   in xbps-pkgdb(8):
+
+	$ xbps-pkgdb -m <hold|unhold> <pkgname>
+
+   To list packages that are currently on hold mode use xbps-query(8):
+
+	$ xbps-query -H
+
  * On terminals with 0 columns, assume 80. Xen's PV guest running Linux and its
    hvc console does report 0 columns/rows.
 

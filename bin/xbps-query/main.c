@@ -50,6 +50,7 @@ usage(bool fail)
 	    "\nMODE [only one mode may be specified]\n"
 	    " -l --list-pkgs           List available packages\n"
 	    " -L --list-repos          List working repositories\n"
+	    " -H --list-hold-pkgs      List packages on hold state\n"
 	    " -m --list-manual-pkgs    List packages installed explicitly\n"
 	    " -O --list-orphans        List package orphans\n"
 	    " -o --ownedby PATTERN(s)  Search for packages owning PATTERN(s)\n"
@@ -65,7 +66,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:D:dfhLlmOop:Rr:sVvXx";
+	const char *shortopts = "C:c:D:dfhHLlmOop:Rr:sVvXx";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -74,6 +75,7 @@ main(int argc, char **argv)
 		{ "help", no_argument, NULL, 'h' },
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
+		{ "list-hold-pkgs", no_argument, NULL, 'H' },
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
 		{ "list-orphans", no_argument, NULL, 'O' },
 		{ "ownedby", no_argument, NULL, 'o' },
@@ -92,12 +94,12 @@ main(int argc, char **argv)
 	const char *rootdir, *cachedir, *conffile, *props, *defrepo;
 	int c, flags, rv, show_deps = 0;
 	bool list_pkgs, list_repos, orphans, own;
-	bool list_manual, show_prop, show_files, show_rdeps;
+	bool list_manual, list_hold, show_prop, show_files, show_rdeps;
 	bool show, search, repo_mode, opmode, fulldeptree;
 
 	rootdir = cachedir = conffile = defrepo = props = NULL;
 	flags = rv = c = 0;
-	list_pkgs = list_repos = orphans = search = own = false;
+	list_pkgs = list_repos = list_hold = orphans = search = own = false;
 	list_manual = show_prop = show_files = false;
 	show = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
@@ -118,6 +120,9 @@ main(int argc, char **argv)
 			break;
 		case 'f':
 			show_files = opmode = true;
+			break;
+		case 'H':
+			list_hold = true;
 			break;
 		case 'h':
 			usage(false);
@@ -194,6 +199,10 @@ main(int argc, char **argv)
 	if (list_repos) {
 		/* list repositories */
 		rv = repo_list(&xh);
+
+	} else if (list_hold) {
+		/* list on hold pkgs */
+		rv = xbps_pkgdb_foreach_cb(&xh, list_hold_pkgs, NULL);
 
 	} else if (list_manual) {
 		/* list manual pkgs */
