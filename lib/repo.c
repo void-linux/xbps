@@ -80,7 +80,9 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	repo->xhp = xhp;
 	repo->uri = url;
 	repo->ar = archive_read_new();
-	archive_read_support_filter_gzip(repo->ar);
+	archive_read_support_compression_gzip(repo->ar);
+	archive_read_support_compression_bzip2(repo->ar);
+	archive_read_support_compression_xz(repo->ar);
 	archive_read_support_format_tar(repo->ar);
 
 	if (archive_read_open_filename(repo->ar, repofile, ARCHIVE_READ_BLOCKSIZE)) {

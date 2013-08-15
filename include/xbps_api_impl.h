@@ -74,6 +74,15 @@
 #define archive_read_support_compression_xz(x) \
 	archive_read_support_filter_xz(x)
 
+#define archive_write_support_compression_gzip(x) \
+	archive_write_add_filter_gzip(x)
+
+#define archive_write_support_compression_bzip2(x) \
+	archive_write_add_filter_bzip2(x)
+
+#define archive_write_support_compression_xz(x) \
+	archive_write_add_filter_xz(x)
+
 #define archive_read_finish(x) \
 	archive_read_free(x)
 

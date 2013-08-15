@@ -55,7 +55,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	/* Create and write our repository archive */
 	ar = archive_write_new();
 	assert(ar);
-	archive_write_add_filter_gzip(ar);
+	archive_write_support_compression_gzip(ar);
 	archive_write_set_format_pax_restricted(ar);
 	archive_write_set_options(ar, "compression-level=9");
 	archive_write_open_fd(ar, repofd);
