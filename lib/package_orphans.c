@@ -120,8 +120,6 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 find_orphans:
 	for (i = 0; i < xbps_array_count(array); i++) {
 		pkgd = xbps_array_get(array, i);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
-
 		rdeps = xbps_dictionary_get(pkgd, "run_depends");
 		for (x = 0; x < xbps_array_count(rdeps); x++) {
 			cnt = 0;
@@ -139,8 +137,11 @@ find_orphans:
 			}
 			if (cnt == reqbycnt) {
 				deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
-				if (!xbps_find_pkg_in_array(array, deppkgver))
-					xbps_array_add(array, deppkgd);
+				if (!xbps_find_pkg_in_array(array, deppkgver)) {
+					xbps_dictionary_get_bool(deppkgd, "automatic-install", &automatic);
+					if (automatic)
+						xbps_array_add(array, deppkgd);
+				}
 			}
 		}
 	}

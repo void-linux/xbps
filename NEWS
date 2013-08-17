@@ -1,5 +1,9 @@
 xbps-0.26 (???):
 
+ * Fixed #14 from github: "Removing recursively does not respect manual installation
+   mode for dependencies". See https://github.com/xtraeme/xbps/issues/14
+   for more information.
+
  * Removed "PackagesOnHold" from xbps.conf. This has been replaced by a new mode
    in xbps-pkgdb(8):
 
