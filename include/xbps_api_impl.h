@@ -113,10 +113,6 @@ void HIDDEN xbps_pkgdb_release(struct xbps_handle *);
  * @private
  * From lib/plist.c
  */
-bool HIDDEN xbps_add_obj_to_dict(xbps_dictionary_t,
-				 xbps_object_t, const char *);
-bool HIDDEN xbps_add_obj_to_array(xbps_array_t, xbps_object_t);
-
 int HIDDEN xbps_array_replace_dict_by_name(xbps_array_t,
 					   xbps_dictionary_t,
 					   const char *);

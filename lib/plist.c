@@ -52,40 +52,6 @@ struct thread_data {
  * These functions manipulate plist files and objects shared by almost
  * all library functions.
  */
-bool HIDDEN
-xbps_add_obj_to_dict(xbps_dictionary_t dict, xbps_object_t obj,
-		       const char *key)
-{
-	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
-	assert(obj != NULL);
-	assert(key != NULL);
-
-	if (!xbps_dictionary_set(dict, key, obj)) {
-		xbps_object_release(dict);
-		errno = EINVAL;
-		return false;
-	}
-
-	xbps_object_release(obj);
-	return true;
-}
-
-bool HIDDEN
-xbps_add_obj_to_array(xbps_array_t array, xbps_object_t obj)
-{
-	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
-	assert(obj != NULL);
-
-	if (!xbps_array_add(array, obj)) {
-		xbps_object_release(array);
-		errno = EINVAL;
-		return false;
-	}
-
-	xbps_object_release(obj);
-	return true;
-}
-
 static void *
 array_foreach_thread(void *arg)
 {

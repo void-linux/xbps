@@ -205,7 +205,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
-        if (!xbps_add_obj_to_dict(xhp->transd, unsorted, "unsorted_deps")) {
+	if (!xbps_dictionary_set(xhp->transd, "unsorted_deps", unsorted)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
@@ -215,7 +215,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
-	if (!xbps_add_obj_to_dict(xhp->transd, mdeps, "missing_deps")) {
+	if (!xbps_dictionary_set(xhp->transd, "missing_deps", mdeps)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
@@ -225,7 +225,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
-	if (!xbps_add_obj_to_dict(xhp->transd, conflicts, "conflicts")) {
+	if (!xbps_dictionary_set(xhp->transd, "conflicts", conflicts)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
