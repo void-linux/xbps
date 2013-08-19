@@ -30,7 +30,7 @@ To build this you'll need:
   - [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
   - [zlib](http://www.zlib.net)
   - [openssl](http://www.openssl.org)
-  - [libarchive >= 3.0.2](http://www.libarchive.org)
+  - [libarchive >= 2.8.0](http://www.libarchive.org)
   - [confuse >= 2.7](http://www.nongnu.org/confuse)
 
 and optionally:
