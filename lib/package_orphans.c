@@ -60,7 +60,7 @@
  */
 
 xbps_array_t
-xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
+xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused)
 {
 	xbps_array_t rdeps, reqby, array = NULL;
 	xbps_dictionary_t pkgd, deppkgd;
@@ -69,8 +69,6 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 	const char *curpkgver, *deppkgver, *reqbydep;
 	bool automatic = false;
 	unsigned int i, x, j, cnt, reqbycnt;
-
-	(void)orphans_user;
 
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;

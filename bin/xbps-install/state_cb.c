@@ -32,14 +32,12 @@
 #include "defs.h"
 
 void
-state_cb(struct xbps_state_cb_data *xscd, void *cbdata)
+state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 {
 	xbps_dictionary_t pkgd;
 	const char *instver, *newver;
 	char *pkgname;
 	bool syslog_enabled = false;
-
-	(void)cbdata;
 
 	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
 		syslog_enabled = true;

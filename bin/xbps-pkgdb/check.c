@@ -36,15 +36,15 @@
 #include "defs.h"
 
 static int
-pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void *arg, bool *done)
+pkgdb_cb(struct xbps_handle *xhp _unused,
+		xbps_object_t obj,
+		const char *key _unused,
+		void *arg _unused,
+		bool *done _unused)
 {
 	const char *pkgver;
 	char *pkgname;
 	int rv;
-
-	(void)key;
-	(void)arg;
-	(void)done;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	if (xhp->flags & XBPS_FLAG_VERBOSE)

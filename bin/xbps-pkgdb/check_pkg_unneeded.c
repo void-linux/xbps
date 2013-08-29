@@ -43,12 +43,9 @@
  * 	  and remove them if that was true.
  */
 int
-check_pkg_unneeded(struct xbps_handle *xhp, const char *pkgname, void *arg)
+check_pkg_unneeded(struct xbps_handle *xhp _unused, const char *pkgname _unused, void *arg)
 {
 	xbps_dictionary_t pkgd = arg;
-
-	(void)xhp;
-	(void)pkgname;
 
 	if (xbps_dictionary_get(pkgd, "remove-and-update"))
 		xbps_dictionary_remove(pkgd, "remove-and-update");

@@ -190,6 +190,8 @@ echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DHAVE_CONFIG_H" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
+echo "CPPFLAGS +=	-D_unused=\"__attribute__((__unused__))\"" >>$CONFIG_MK
+
 if [ -d .git ]; then
 	_gitrev=$(git rev-parse master)
 	echo "CPPFLAGS += -DXBPS_GIT=\\\"${_gitrev}\\\"" >>$CONFIG_MK

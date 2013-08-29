@@ -98,15 +98,15 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 }
 
 static int
-search_array_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void *arg, bool *done)
+search_array_cb(struct xbps_handle *xhp _unused,
+		xbps_object_t obj,
+		const char *key _unused,
+		void *arg,
+		bool *done _unused)
 {
 	struct search_data *sd = arg;
 	const char *pkgver, *desc;
 	int x;
-
-	(void)xhp;
-	(void)key;
-	(void)done;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
@@ -130,13 +130,11 @@ search_array_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, voi
 }
 
 static int
-search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done)
+search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 {
 	xbps_array_t allkeys;
 	struct search_data *sd = arg;
 	int rv;
-
-	(void)done;
 
 	if (repo->idx == NULL)
 		return 0;

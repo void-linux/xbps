@@ -63,11 +63,9 @@ usage(bool fail)
 }
 
 static void
-state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata)
+state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 {
 	bool syslog_enabled = false;
-
-	(void)cbdata;
 
 	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
 		syslog_enabled = true;

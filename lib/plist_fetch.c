@@ -46,11 +46,9 @@ struct fetch_archive {
 };
 
 static int
-fetch_archive_open(struct archive *a, void *client_data)
+fetch_archive_open(struct archive *a _unused, void *client_data)
 {
 	struct fetch_archive *f = client_data;
-
-	(void)a;
 
 	f->fetch = fetchGet(f->url, NULL);
 	if (f->fetch == NULL)
@@ -60,22 +58,19 @@ fetch_archive_open(struct archive *a, void *client_data)
 }
 
 static ssize_t
-fetch_archive_read(struct archive *a, void *client_data, const void **buf)
+fetch_archive_read(struct archive *a _unused, void *client_data, const void **buf)
 {
 	struct fetch_archive *f = client_data;
 
-	(void)a;
 	*buf = f->buffer;
 
 	return fetchIO_read(f->fetch, f->buffer, sizeof(f->buffer));
 }
 
 static int
-fetch_archive_close(struct archive *a, void *client_data)
+fetch_archive_close(struct archive *a _unused, void *client_data)
 {
 	struct fetch_archive *f = client_data;
-
-	(void)a;
 
 	if (f->fetch != NULL)
 		fetchIO_close(f->fetch);

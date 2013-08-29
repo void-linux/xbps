@@ -75,14 +75,12 @@ find_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 }
 
 static int
-find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done)
+find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 {
 	struct rpool_fpkg *rpf = arg;
 	xbps_array_t revdeps = NULL;
 	const char *pkgver;
 	unsigned int i;
-
-	(void)done;
 
 	revdeps = xbps_repo_get_pkg_revdeps(repo, rpf->pattern);
 	if (xbps_array_count(revdeps)) {
@@ -99,13 +97,11 @@ find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done)
 }
 
 static int
-find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
+find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 {
 	struct rpool_fpkg *rpf = arg;
 	xbps_dictionary_t pkgd;
 	const char *repopkgver;
-
-	(void)done;
 
 	pkgd = xbps_repo_get_pkg(repo, rpf->pattern);
 	if (pkgd == NULL) {

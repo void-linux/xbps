@@ -37,23 +37,10 @@
 #include "defs.h"
 
 static int
-remove_pkg(const char *repodir, const char *arch, const char *file)
+remove_pkg(const char *repodir, const char *file)
 {
 	char *filepath;
 	int rv;
-
-	filepath = xbps_xasprintf("%s/%s/%s", repodir, arch, file);
-	if (remove(filepath) == -1) {
-		if (errno != ENOENT) {
-			rv = errno;
-			fprintf(stderr, "xbps-rindex: failed to remove "
-			    "package `%s': %s\n", file,
-			    strerror(rv));
-			free(filepath);
-			return rv;
-		}
-	}
-	free(filepath);
 
 	filepath = xbps_xasprintf("%s/%s", repodir, file);
 	if (remove(filepath) == -1) {
@@ -72,20 +59,17 @@ remove_pkg(const char *repodir, const char *arch, const char *file)
 }
 
 static int
-cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void *arg, bool *done)
+cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key _unused, void *arg, bool *done _unused)
 {
 	xbps_dictionary_t pkgd;
 	struct xbps_repo *repo = arg;
 	const char *binpkg, *pkgver, *arch;
 	int rv;
 
-	(void)key;
-	(void)done;
-
 	binpkg = xbps_string_cstring_nocopy(obj);
 	pkgd = xbps_get_pkg_plist_from_binpkg(binpkg, "./props.plist");
 	if (pkgd == NULL) {
-		rv = remove_pkg(repo->uri, arch, binpkg);
+		rv = remove_pkg(repo->uri, binpkg);
 		if (rv != 0) {
 			xbps_object_release(pkgd);
 			return 0;
@@ -104,7 +88,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void *ar
 	 * If binpkg is not registered in index, remove binpkg.
 	 */
 	if (!xbps_repo_get_pkg(repo, pkgver)) {
-		rv = remove_pkg(repo->uri, arch, binpkg);
+		rv = remove_pkg(repo->uri, binpkg);
 		if (rv != 0) {
 			xbps_object_release(pkgd);
 			return 0;

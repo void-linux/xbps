@@ -87,7 +87,11 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 }
 
 static int
-ownedby_pkgdb_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *obj_key, void *arg, bool *done)
+ownedby_pkgdb_cb(struct xbps_handle *xhp,
+		xbps_object_t obj,
+		const char *obj_key _unused,
+		void *arg,
+		bool *done _unused)
 {
 	xbps_dictionary_t pkgmetad;
 	xbps_array_t files_keys;
@@ -138,15 +142,16 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 }
 
 static int
-repo_match_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void *arg, bool *done)
+repo_match_cb(struct xbps_handle *xhp _unused,
+		xbps_object_t obj,
+		const char *key,
+		void *arg,
+		bool *done _unused)
 {
 	struct ffdata *ffd = arg;
 	const char *filestr;
 	unsigned int i;
 	int x;
-
-	(void)xhp;
-	(void)done;
 
 	for (i = 0; i < xbps_array_count(obj); i++) {
 		xbps_array_get_cstring_nocopy(obj, i, &filestr);
@@ -162,14 +167,12 @@ repo_match_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key, void 
 }
 
 static int
-repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done)
+repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 {
 	xbps_array_t allkeys;
 	xbps_dictionary_t filesd;
 	struct ffdata *ffd = arg;
 	int rv;
-
-	(void)done;
 
 	filesd = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
 	if (filesd == NULL)

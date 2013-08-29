@@ -39,21 +39,17 @@ struct list_pkgver_cb {
 };
 
 int
-list_pkgs_in_dict(struct xbps_handle *xhp,
+list_pkgs_in_dict(struct xbps_handle *xhp _unused,
 		  xbps_object_t obj,
-		  const char *key,
+		  const char *key _unused,
 		  void *arg,
-		  bool *loop_done)
+		  bool *loop_done _unused)
 {
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver, *short_desc, *state_str;
 	char tmp[255], *out = NULL;
 	int i, len = 0;
 	pkg_state_t state;
-
-	(void)xhp;
-	(void)key;
-	(void)loop_done;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &short_desc);
@@ -93,19 +89,14 @@ list_pkgs_in_dict(struct xbps_handle *xhp,
 }
 
 int
-list_manual_pkgs(struct xbps_handle *xhp,
+list_manual_pkgs(struct xbps_handle *xhp _unused,
 		 xbps_object_t obj,
-		 const char *key,
-		 void *arg,
-		 bool *loop_done)
+		 const char *key _unused,
+		 void *arg _unused,
+		 bool *loop_done _unused)
 {
 	const char *pkgver;
 	bool automatic = false;
-
-	(void)xhp;
-	(void)key;
-	(void)arg;
-	(void)loop_done;
 
 	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
 	if (automatic == false) {
@@ -117,15 +108,13 @@ list_manual_pkgs(struct xbps_handle *xhp,
 }
 
 int
-list_hold_pkgs(struct xbps_handle *xhp, xbps_object_t obj,
-	       const char *key, void *arg, bool *loop_done)
+list_hold_pkgs(struct xbps_handle *xhp _unused,
+		xbps_object_t obj,
+		const char *key _unused,
+		void *arg _unused,
+		bool *loop_done _unused)
 {
 	const char *pkgver;
-
-	(void)xhp;
-	(void)key;
-	(void)arg;
-	(void)loop_done;
 
 	if (xbps_dictionary_get(obj, "hold")) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -166,11 +155,8 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 }
 
 static int
-repo_list_uri_cb(struct xbps_repo *repo, void *arg, bool *done)
+repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 {
-	(void)arg;
-	(void)done;
-
 	printf("%5zd %s\n", repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1, repo->uri);
 
 	return 0;
@@ -196,19 +182,15 @@ struct fflongest {
 };
 
 static int
-_find_longest_pkgver_cb(struct xbps_handle *xhp,
+_find_longest_pkgver_cb(struct xbps_handle *xhp _unused,
 			xbps_object_t obj,
-			const char *key,
+			const char *key _unused,
 			void *arg,
-			bool *loop_done)
+			bool *loop_done _unused)
 {
 	struct fflongest *ffl = arg;
 	const char *pkgver;
 	unsigned int len;
-
-	(void)xhp;
-	(void)key;
-	(void)loop_done;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	len = strlen(pkgver);

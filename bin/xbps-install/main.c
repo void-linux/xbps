@@ -63,10 +63,8 @@ usage(bool fail)
 }
 
 static void
-unpack_progress_cb(struct xbps_unpack_cb_data *xpd, void *cbdata)
+unpack_progress_cb(struct xbps_unpack_cb_data *xpd, void *cbdata _unused)
 {
-	(void)cbdata;
-
 	if (xpd->entry == NULL || xpd->entry_total_count <= 0)
 		return;
 
