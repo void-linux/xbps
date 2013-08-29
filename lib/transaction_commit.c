@@ -324,7 +324,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		rv = xbps_configure_pkg(xhp, pkgver, false, update, true);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "%s: configure failed for "
-			    "%s: %s\n", pkgver, strerror(rv));
+			    "%s: %s\n", __func__, pkgver, strerror(rv));
 			goto out;
 		}
 		/*
