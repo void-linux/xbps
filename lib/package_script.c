@@ -72,18 +72,18 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 
 	/* Create temp file to run script */
 	if ((fd = mkstemp(fpath)) == -1) {
+		rv = errno;
 		xbps_dbg_printf(xhp, "%s: mkstemp %s\n",
 		    __func__, strerror(errno));
-		free(fpath);
-		return errno;
+		goto out;
 	}
 	/* write blob to our temp fd */
 	ret = write(fd, blob, blobsiz);
 	if (ret == -1) {
+		rv = errno;
 		xbps_dbg_printf(xhp, "%s: write %s\n",
 		    __func__, strerror(errno));
 		close(fd);
-		rv = errno;
 		goto out;
 	}
 	fchmod(fd, 0750);
