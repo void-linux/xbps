@@ -604,6 +604,8 @@ unpack_archive(struct xbps_handle *xhp,
 		    0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
 		xbps_object_release(obj);
 	}
+	xbps_object_release(old_filesd);
+	xbps_object_release(obsoletes);
 
 out:
 	if (xbps_object_type(filesd) == XBPS_TYPE_DICTIONARY)
