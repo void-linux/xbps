@@ -19,9 +19,9 @@ clean:
 .PHONY: install
 install: all
 	install -d $(DESTDIR)$(SBINDIR)
-	install $(INSTALL_STRIPPED) -m 755 $(BIN) $(DESTDIR)$(SBINDIR)
+	install -m 755 $(BIN) $(DESTDIR)$(SBINDIR)
 ifdef BUILD_STATIC
-	install $(INSTALL_STRIPPED) -m 755 $(BIN).static $(DESTDIR)$(SBINDIR)
+	install -m 755 $(BIN).static $(DESTDIR)$(SBINDIR)
 endif
 ifdef MAN
 	install -d $(DESTDIR)$(MANDIR)/man8

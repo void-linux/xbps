@@ -199,11 +199,8 @@ fi
 
 if [ -n "$DEBUG" -a "$DEBUG" != no -a "$DEBUG" != false ]; then
 	echo "Building with debugging symbols."
-	echo "INSTALL_STRIPPED =" >>$CONFIG_MK
 	echo "CFLAGS +=	-g" >>$CONFIG_MK
 	echo "CPPFLAGS +=	-DDEBUG" >>$CONFIG_MK
-else
-	echo "INSTALL_STRIPPED =	-s" >>$CONFIG_MK
 fi
 
 case "$OS" in
