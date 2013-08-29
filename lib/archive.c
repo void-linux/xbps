@@ -132,23 +132,24 @@ xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 
 	/* If blob is already a dictionary we are done */
 	d = xbps_dictionary_internalize(buf);
-	if (xbps_object_type(d) == XBPS_TYPE_DICTIONARY)
-		goto out;
+	if (xbps_object_type(d) == XBPS_TYPE_DICTIONARY) {
+		free(buf);
+		return d;
+	}
 
 	/* Try to uncompress blob */
 	uncomp_buf = uncompress_plist_data(buf, buflen);
 	if (uncomp_buf == NULL) {
 		/* Error while decompressing */
-		free(buf);
 		free(uncomp_buf);
-		return NULL;
+		xbps_object_release(d);
+		d = NULL;
 	} else {
 		/* We have the uncompressed data */
 		d = xbps_dictionary_internalize(uncomp_buf);
 		free(uncomp_buf);
 	}
 
-out:
 	free(buf);
 	return d;
 }
@@ -180,12 +181,14 @@ xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen
 	archive_entry_set_mtime(entry, tm, 0);
 	archive_entry_set_ctime(entry, tm, 0);
 
-	if (archive_write_header(ar, entry) != ARCHIVE_OK)
+	if (archive_write_header(ar, entry) != ARCHIVE_OK) {
+		archive_entry_free(entry);
 		return archive_errno(ar);
-
-	if (archive_write_data(ar, buf, buflen) != ARCHIVE_OK)
+	}
+	if (archive_write_data(ar, buf, buflen) != ARCHIVE_OK) {
+		archive_entry_free(entry);
 		return archive_errno(ar);
-
+	}
 	archive_write_finish_entry(ar);
 	archive_entry_free(entry);
 
