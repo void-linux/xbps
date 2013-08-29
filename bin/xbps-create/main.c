@@ -50,6 +50,11 @@
 
 #define _PROGNAME	"xbps-create"
 
+/* libarchive 2.x compat */
+#if ARCHIVE_VERSION_NUMBER >= 3000000
+# define archive_write_finish(x) 	archive_write_free(x)
+#endif
+
 struct xentry {
 	TAILQ_ENTRY(xentry) entries;
 	char *file, *type, *target, *hash;
@@ -781,7 +786,7 @@ main(int argc, char **argv)
 	}
 	archive_entry_linkresolver_free(resolver);
 	/* close and free archive */
-	archive_write_free(ar);
+	archive_write_finish(ar);
 
 	/*
 	 * Archive was created successfully; flush data to storage,

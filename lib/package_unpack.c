@@ -626,9 +626,10 @@ int HIDDEN
 xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
 	struct archive *ar = NULL;
+	struct stat st;
 	const char *pkgver;
-	char *bpkg;
-	int pkg_fd, rv = 0;
+	char *bpkg = NULL;
+	int pkg_fd = -1, rv = 0;
 
 	assert(xbps_object_type(pkg_repod) == XBPS_TYPE_DICTIONARY);
 
@@ -658,17 +659,29 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 
 	pkg_fd = open(bpkg, O_RDONLY|O_CLOEXEC);
 	if (pkg_fd == -1) {
-		rv = archive_errno(ar);
+		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgver,
 		    "%s: [unpack] failed to open binary package `%s': %s",
 		    pkgver, bpkg, strerror(rv));
-		free(bpkg);
-		archive_read_free(ar);
-		return rv;
+		goto out;
 	}
-	archive_read_open_fd(ar, pkg_fd, ARCHIVE_READ_BLOCKSIZE);
-
+	if (fstat(pkg_fd, &st) == -1) {
+		rv = errno;
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgver,
+		    "%s: [unpack] failed to fstat binary package `%s': %s",
+		    pkgver, bpkg, strerror(rv));
+		goto out;
+	}
+	if (archive_read_open_fd(ar, pkg_fd, st.st_blksize) == ARCHIVE_FATAL) {
+		rv = archive_errno(ar);
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgver,
+		    "%s: [unpack] failed to read binary package `%s': %s",
+		    pkgver, bpkg, strerror(rv));
+		goto out;
+	}
 	/*
 	 * Extract archive files.
 	 */
@@ -690,9 +703,10 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		    pkgver, strerror(rv));
 	}
 out:
-	close(pkg_fd);
+	if (pkg_fd != -1)
+		close(pkg_fd);
 	if (ar)
-		archive_read_free(ar);
+		archive_read_finish(ar);
 	if (bpkg)
 		free(bpkg);
 

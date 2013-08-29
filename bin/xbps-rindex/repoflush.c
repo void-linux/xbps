@@ -78,7 +78,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	}
 	free(xml);
 
-	archive_write_free(ar);
+	archive_write_finish(ar);
 
 	/* Write data to tempfile and rename */
 	fdatasync(repofd);

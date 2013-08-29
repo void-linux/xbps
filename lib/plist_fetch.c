@@ -123,9 +123,8 @@ open_archive(const char *url)
 		archive_read_support_compression_xz(a);
 		archive_read_support_format_tar(a);
 
-		if (archive_read_open_filename(a, url,
-		    ARCHIVE_READ_BLOCKSIZE)) {
-			archive_read_close(a);
+		if (archive_read_open_filename(a, url, 32768)) {
+			archive_read_finish(a);
 			return NULL;
 		}
 		return a;
@@ -185,7 +184,7 @@ xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
 
 		break;
 	}
-	archive_read_free(a);
+	archive_read_finish(a);
 
 	return plistd;
 }

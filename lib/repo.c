@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include "xbps_api_impl.h"
 
@@ -50,6 +51,7 @@ struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url)
 {
 	struct xbps_repo *repo;
+	struct stat st;
 	const char *arch;
 	char *repofile;
 
@@ -85,13 +87,22 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	archive_read_support_compression_xz(repo->ar);
 	archive_read_support_format_tar(repo->ar);
 
-	if (archive_read_open_filename(repo->ar, repofile, ARCHIVE_READ_BLOCKSIZE)) {
+	if (stat(repofile, &st) == -1) {
+		xbps_dbg_printf(xhp, "[repo] cannot stat repository file %s: %s\n",
+		    repofile, strerror(errno));
+		archive_read_finish(repo->ar);
+		free(repo);
+		repo = NULL;
+		goto out;
+	}
+	if (archive_read_open_filename(repo->ar, repofile, st.st_blksize) == ARCHIVE_FATAL) {
 		xbps_dbg_printf(xhp, "[repo] cannot open repository file %s: %s\n",
 				repofile, strerror(archive_errno(repo->ar)));
-		archive_read_free(repo->ar);
+		archive_read_finish(repo->ar);
 		free(repo);
 		repo = NULL;
 	}
+out:
 	free(repofile);
 	return repo;
 }
@@ -144,7 +155,7 @@ xbps_repo_close(struct xbps_repo *repo)
 	if (repo->ar == NULL)
 		return;
 
-	archive_read_free(repo->ar);
+	archive_read_finish(repo->ar);
 	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
 		xbps_object_release(repo->idx);
 	if (xbps_object_type(repo->idxfiles) == XBPS_TYPE_DICTIONARY)
