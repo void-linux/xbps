@@ -240,6 +240,8 @@ out:
 		free(sha256_cur);
 
 	xbps_object_iterator_release(iter);
+	if (xbps_object_type(forigd) == XBPS_TYPE_DICTIONARY)
+		xbps_object_release(forigd);
 
 	xbps_dbg_printf(xhp, "%s: conf_file %s returned %d\n",
 	    pkgver, entry_pname, rv);
