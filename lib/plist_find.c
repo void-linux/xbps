@@ -164,9 +164,10 @@ match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 
 	/* match by pkgpattern in pkgver */
 	if ((pkgname = xbps_pkgpattern_name(p)) == NULL) {
-		if ((pkgname = xbps_pkg_name(p)))
+		if ((pkgname = xbps_pkg_name(p))) {
+			free(pkgname);
 			return match_pkg_by_pkgver(repod, p);
-
+		}
 		return NULL;
 	}
 
@@ -199,6 +200,7 @@ config_inject_vpkgs(struct xbps_handle *xh)
 	if ((dirp = opendir(vpkgdir)) == NULL) {
 		xbps_dbg_printf(xh, "cannot access to %s: %s\n",
 		    vpkgdir, strerror(errno));
+		free(vpkgdir);
 		return;
 	}
 
@@ -298,7 +300,7 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t pkgd = NULL;
 	const char *vpkg;
-	bool found = false, bypattern = false;
+	bool bypattern = false;
 
 	if (xbps_pkgpattern_version(pkg))
 		bypattern = true;
@@ -313,10 +315,8 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 		else
 			pkgd = xbps_dictionary_get(d, vpkg);
 
-		if (pkgd) {
-			found = true;
-			goto out;
-		}
+		if (pkgd)
+			return pkgd;
 	}
 
 	/* ... otherwise match the first one in dictionary */
@@ -326,15 +326,11 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 	while ((obj = xbps_object_iterator_next(iter))) {
 		pkgd = xbps_dictionary_get_keysym(d, obj);
 		if (xbps_match_virtual_pkg_in_dict(pkgd, pkg, bypattern)) {
-			found = true;
-			break;
+			xbps_object_iterator_release(iter);
+			return pkgd;
 		}
 	}
 	xbps_object_iterator_release(iter);
-
-out:
-	if (found)
-		return pkgd;
 
 	return NULL;
 }
