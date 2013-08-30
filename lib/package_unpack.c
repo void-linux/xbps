@@ -605,7 +605,6 @@ unpack_archive(struct xbps_handle *xhp,
 		xbps_object_release(obj);
 	}
 	xbps_object_release(old_filesd);
-	xbps_object_release(obsoletes);
 
 out:
 	if (xbps_object_type(filesd) == XBPS_TYPE_DICTIONARY)
