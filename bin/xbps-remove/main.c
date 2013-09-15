@@ -162,11 +162,13 @@ cachedir_clean(struct xbps_handle *xhp)
 			if (xbps_file_hash_check(binpkg, rsha256) == ERANGE) {
 				printf("Removed %s from cachedir (sha256 mismatch)\n",
 				    dp->d_name);
+				xbps_object_release(pkg_propsd);
 				if (unlink(binpkg) == -1)
 					fprintf(stderr, "Failed to remove "
 					    "`%s': %s\n", binpkg,
 					    strerror(errno));
 			}
+			xbps_object_release(pkg_propsd);
 			free(binpkg);
 			continue;
 		}
@@ -174,6 +176,7 @@ cachedir_clean(struct xbps_handle *xhp)
 		if (unlink(binpkg) == -1)
 			fprintf(stderr, "Failed to remove `%s': %s\n",
 			    binpkg, strerror(errno));
+		xbps_object_release(pkg_propsd);
 		free(binpkg);
 	}
 	closedir(dirp);
