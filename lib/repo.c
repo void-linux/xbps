@@ -239,7 +239,6 @@ revdeps_match(struct xbps_repo *repo, xbps_dictionary_t tpkgd, const char *str)
 	xbps_object_t obj;
 	const char *pkgver, *tpkgver, *arch, *vpkg;
 	char *buf;
-	unsigned int i;
 
 	iter = xbps_dictionary_iterator(repo->idx);
 	assert(iter);
@@ -278,7 +277,7 @@ revdeps_match(struct xbps_repo *repo, xbps_dictionary_t tpkgd, const char *str)
 		 * Try to match any virtual package.
 		 */
 		provides = xbps_dictionary_get(tpkgd, "provides");
-		for (i = 0; i < xbps_array_count(provides); i++) {
+		for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
 			xbps_array_get_cstring_nocopy(provides, i, &vpkg);
 			if (strchr(vpkg, '_') == NULL)
 				buf = xbps_xasprintf("%s_1", vpkg);
@@ -335,7 +334,6 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	xbps_dictionary_t pkgd;
 	const char *vpkg;
 	char *buf = NULL;
-	unsigned int i;
 	bool match = false;
 
 	if (((pkgd = xbps_rpool_get_pkg(repo->xhp, pkg)) == NULL) &&
@@ -347,7 +345,7 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	 * If pkg is a virtual pkg let's match it instead of the real pkgver.
 	 */
 	if ((vdeps = xbps_dictionary_get(pkgd, "provides"))) {
-		for (i = 0; i < xbps_array_count(vdeps); i++) {
+		for (unsigned int i = 0; i < xbps_array_count(vdeps); i++) {
 			char *vpkgn;
 
 			xbps_array_get_cstring_nocopy(vdeps, i, &vpkg);

@@ -58,12 +58,11 @@ array_foreach_thread(void *arg)
 	xbps_object_t obj, pkgd;
 	struct thread_data *thd = arg;
 	const char *key;
-	unsigned int i;
 	int rv;
 	bool loop_done = false;
 
 	/* process pkgs from start until end */
-	for (i = thd->start; i < thd->end; i++) {
+	for (unsigned int i = thd->start; i < thd->end; i++) {
 		if (thd->mtx)
 			pthread_mutex_lock(thd->mtx);
 
@@ -95,7 +94,7 @@ xbps_array_foreach_cb(struct xbps_handle *xhp,
 	struct thread_data *thd;
 	pthread_mutex_t mtx;
 	unsigned int arraycount, slicecount, pkgcount;
-	int rv = 0, maxthreads, i;
+	int rv = 0, maxthreads;
 
 	assert(fn != NULL);
 
@@ -114,7 +113,7 @@ xbps_array_foreach_cb(struct xbps_handle *xhp,
 		pkgcount = 0;
 		pthread_mutex_init(&mtx, NULL);
 
-		for (i = 0; i < maxthreads; i++) {
+		for (int i = 0; i < maxthreads; i++) {
 			thd[i].mtx = &mtx;
 			thd[i].array = array;
 			thd[i].dict = dict;
@@ -131,7 +130,7 @@ xbps_array_foreach_cb(struct xbps_handle *xhp,
 			pkgcount += slicecount;
 		}
 		/* wait for all threads */
-		for (i = 0; i < maxthreads; i++)
+		for (int i = 0; i < maxthreads; i++)
 			pthread_join(thd[i].thread, NULL);
 
 		pthread_mutex_destroy(&mtx);
@@ -178,7 +177,6 @@ array_replace_dict(xbps_array_t array,
 		   bool bypattern)
 {
 	xbps_object_t obj;
-	unsigned int i;
 	const char *curpkgver;
 	char *curpkgname;
 
@@ -186,7 +184,7 @@ array_replace_dict(xbps_array_t array,
 	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(str != NULL);
 
-	for (i = 0; i < xbps_array_count(array); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		obj = xbps_array_get(array, i);
 		if (obj == NULL)
 			continue;

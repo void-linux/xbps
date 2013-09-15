@@ -48,12 +48,11 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 	xbps_array_t unsorted, provides, rundeps, mdeps;
 	const char *pkgver, *revpkgver, *pkgpattern;
 	char *pkgname, *pkgdepname, *vpkgname, *vpkgver, *str;
-	unsigned int i, x;
 	bool matched = false;
 
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 	provides = xbps_dictionary_get(trans_pkgd, "provides");
-	for (i = 0; i < xbps_array_count(provides); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
 		char *tmp = NULL;
 
 		xbps_array_get_cstring(provides, i, &vpkgver);
@@ -64,7 +63,7 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 		vpkgname = xbps_pkg_name(vpkgver);
 		assert(vpkgname);
 		rundeps = xbps_dictionary_get(rev_pkgd, "run_depends");
-		for (x = 0; x < xbps_array_count(rundeps); x++) {
+		for (unsigned int x = 0; x < xbps_array_count(rundeps); x++) {
 			xbps_array_get_cstring_nocopy(rundeps, x, &pkgpattern);
 			if (((pkgname = xbps_pkgpattern_name(pkgpattern)) == NULL) &&
 			    ((pkgname = xbps_pkg_name(pkgpattern)) == NULL))
@@ -117,11 +116,10 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 	xbps_object_t obj;
 	const char *pkgver, *curdep, *revpkgver, *curpkgver, *tract;
 	char *pkgname, *curdepname, *curpkgname, *str;
-	unsigned int i, j, x;
 
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 
-	for (i = 0; i < xbps_array_count(unsorted); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
 		obj = xbps_array_get(unsorted, i);
 		/*
 		 * Only check packages in transaction being updated.
@@ -153,7 +151,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 		/*
 		 * Time to validate revdeps for current pkg.
 		 */
-		for (x = 0; x < xbps_array_count(pkgrdeps); x++) {
+		for (unsigned int x = 0; x < xbps_array_count(pkgrdeps); x++) {
 			bool found = false;
 
 			xbps_array_get_cstring_nocopy(pkgrdeps, x, &curpkgver);
@@ -173,7 +171,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 			curpkgname = xbps_pkg_name(pkgver);
 			assert(curpkgname);
 
-			for (j = 0; j < xbps_array_count(rundeps); j++) {
+			for (unsigned int j = 0; j < xbps_array_count(rundeps); j++) {
 				xbps_array_get_cstring_nocopy(rundeps, j, &curdep);
 				if (((curdepname = xbps_pkg_name(curdep)) == NULL) &&
 				    ((curdepname = xbps_pkgpattern_name(curdep)) == NULL))

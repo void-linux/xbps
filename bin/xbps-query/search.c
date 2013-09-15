@@ -58,17 +58,17 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 {
 	const char *pkgver, *desc, *inststr;
 	char tmp[256], *out;
-	unsigned int i, j, tlen = 0, len = 0;
+	unsigned int j, tlen = 0, len = 0;
 
 	/* Iterate over results array and find out largest pkgver string */
-	for (i = 0; i < xbps_array_count(sd->results); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(sd->results); i++) {
 		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
 		len = strlen(pkgver);
 		if (tlen == 0 || len > tlen)
 			tlen = len;
 		i++;
 	}
-	for (i = 0; i < xbps_array_count(sd->results); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(sd->results); i++) {
 		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
 		xbps_array_get_cstring_nocopy(sd->results, i+1, &desc);
 		strncpy(tmp, pkgver, sizeof(tmp));
@@ -106,12 +106,11 @@ search_array_cb(struct xbps_handle *xhp _unused,
 {
 	struct search_data *sd = arg;
 	const char *pkgver, *desc;
-	int x;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
 
-	for (x = 0; x < sd->npatterns; x++) {
+	for (int x = 0; x < sd->npatterns; x++) {
 		bool vpkgfound = false;
 
 		if (xbps_match_virtual_pkg_in_dict(obj, sd->patterns[x], false))

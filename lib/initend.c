@@ -94,9 +94,7 @@ config_inject_repos(struct xbps_handle *xh)
 static int
 cb_validate_virtual(cfg_t *cfg, cfg_opt_t *opt)
 {
-	unsigned int i;
-
-	for (i = 0; i < cfg_size(cfg, "virtual-package"); i++) {
+	for (unsigned int i = 0; i < cfg_size(cfg, "virtual-package"); i++) {
 		cfg_t *sec = cfg_opt_getnsec(opt, i);
 		if (cfg_getstr(sec, "targets") == 0) {
 			cfg_error(cfg, "targets must be set for "

@@ -43,7 +43,6 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 	xbps_array_t allkeys;
 	xbps_object_t obj2, keysym;
 	const char *ksymname, *value;
-	unsigned int i;
 	char size[8];
 
 	if (indent == NULL)
@@ -73,7 +72,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 	case XBPS_TYPE_ARRAY:
 		if (!raw)
 			printf("%s%s:\n", indent, keyname);
-		for (i = 0; i < xbps_array_count(obj); i++) {
+		for (unsigned int i = 0; i < xbps_array_count(obj); i++) {
 			obj2 = xbps_array_get(obj, i);
 			if (xbps_object_type(obj2) == XBPS_TYPE_STRING) {
 				value = xbps_string_cstring_nocopy(obj2);
@@ -86,7 +85,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 		break;
 	case XBPS_TYPE_DICTIONARY:
 		allkeys = xbps_dictionary_all_keys(obj);
-		for (i = 0; i < xbps_array_count(allkeys); i++) {
+		for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 			keysym = xbps_array_get(allkeys, i);
 			ksymname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 			obj2 = xbps_dictionary_get_keysym(obj, keysym);
@@ -151,11 +150,10 @@ static void
 print_srcrevs(const char *keyname, xbps_string_t obj)
 {
 	const char *str = xbps_string_cstring_nocopy(obj);
-	unsigned int i;
 
 	/* parse string appending a \t after EOL */
 	printf("%s:\n  ", keyname);
-	for (i = 0; i < strlen(str); i++) {
+	for (unsigned int i = 0; i < strlen(str); i++) {
 		if (str[i] == '\n')
 			printf("\n  ");
 		else
@@ -170,10 +168,9 @@ show_pkg_info(xbps_dictionary_t dict)
 	xbps_array_t all_keys;
 	xbps_object_t obj, keysym;
 	const char *keyname;
-	unsigned int i;
 
 	all_keys = xbps_dictionary_all_keys(dict);
-	for (i = 0; i < xbps_array_count(all_keys); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(all_keys); i++) {
 		keysym = xbps_array_get(all_keys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 		obj = xbps_dictionary_get_keysym(dict, keysym);
@@ -201,13 +198,12 @@ show_pkg_files(xbps_dictionary_t filesd)
 	xbps_object_t obj;
 	xbps_dictionary_keysym_t ksym;
 	const char *keyname, *file;
-	unsigned int i, x;
 
 	if (xbps_object_type(filesd) != XBPS_TYPE_DICTIONARY)
 		return EINVAL;
 
 	allkeys = xbps_dictionary_all_keys(filesd);
-	for (i = 0; i < xbps_array_count(allkeys); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		ksym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(ksym);
 		if ((strcmp(keyname, "files") &&
@@ -219,7 +215,7 @@ show_pkg_files(xbps_dictionary_t filesd)
 		if (array == NULL || xbps_array_count(array) == 0)
 			continue;
 
-		for (x = 0; x < xbps_array_count(array); x++) {
+		for (unsigned int x = 0; x < xbps_array_count(array); x++) {
 			obj = xbps_array_get(array, x);
 			if (xbps_object_type(obj) != XBPS_TYPE_DICTIONARY)
 				continue;

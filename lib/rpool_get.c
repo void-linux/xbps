@@ -80,14 +80,13 @@ find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 	struct rpool_fpkg *rpf = arg;
 	xbps_array_t revdeps = NULL;
 	const char *pkgver;
-	unsigned int i;
 
 	revdeps = xbps_repo_get_pkg_revdeps(repo, rpf->pattern);
 	if (xbps_array_count(revdeps)) {
 		/* found */
 		if (rpf->revdeps == NULL)
 			rpf->revdeps = xbps_array_create();
-		for (i = 0; i < xbps_array_count(revdeps); i++) {
+		for (unsigned int i = 0; i < xbps_array_count(revdeps); i++) {
 			xbps_array_get_cstring_nocopy(revdeps, i, &pkgver);
 			xbps_array_add_cstring_nocopy(rpf->revdeps, pkgver);
 		}

@@ -238,7 +238,7 @@ vpkg_user_conf(struct xbps_handle *xhp,
 {
 	const char *vpkgver, *pkg = NULL;
 	char *vpkgname = NULL, *tmp;
-	unsigned int i, j, cnt;
+	unsigned int cnt;
 
 	if (xhp->cfg == NULL)
 		return NULL;
@@ -254,9 +254,9 @@ vpkg_user_conf(struct xbps_handle *xhp,
 		return NULL;
 	}
 
-	for (i = 0; i < cnt; i++) {
+	for (unsigned int i = 0; i < cnt; i++) {
 		cfg_t *sec = cfg_getnsec(xhp->cfg, "virtual-package", i);
-		for (j = 0; j < cfg_size(sec, "targets"); j++) {
+		for (unsigned int j = 0; j < cfg_size(sec, "targets"); j++) {
 			tmp = NULL;
 			vpkgver = cfg_getnstr(sec, "targets", j);
 			if (strchr(vpkgver, '_') == NULL) {

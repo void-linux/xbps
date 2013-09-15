@@ -59,12 +59,11 @@ cleaner_thread(void *arg)
 	struct thread_data *thd = arg;
 	char *filen;
 	const char *pkgver, *arch, *sha256;
-	unsigned int i;
 
 	/* process pkgs from start until end */
 	array = xbps_dictionary_all_keys(thd->idx);
 
-	for (i = thd->start; i < thd->end; i++) {
+	for (unsigned int i = thd->start; i < thd->end; i++) {
 		obj = xbps_array_get(array, i);
 		pkgd = xbps_dictionary_get_keysym(thd->idx, obj);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
@@ -104,12 +103,11 @@ cleaner_files_thread(void *arg)
 	struct thread_data *thd = arg;
 	const char *pkgver, *ipkgver;
 	char *pkgname;
-	unsigned int i;
 
 	/* process pkgs from start until end */
 	array = xbps_dictionary_all_keys(thd->idxfiles);
 
-	for (i = thd->start; i < thd->end; i++) {
+	for (unsigned int i = thd->start; i < thd->end; i++) {
 		obj = xbps_array_get(array, i);
 		pkgver = xbps_dictionary_keysym_cstring_nocopy(obj);
 		pkgname = xbps_pkg_name(pkgver);
@@ -143,8 +141,8 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_dictionary_t idx, idxfiles;
 	const char *keyname;
 	char *pkgname;
-	unsigned int x, pkgcount, slicecount;
-	int i, maxthreads, rv = 0;
+	unsigned int pkgcount, slicecount;
+	int maxthreads, rv = 0;
 	bool flush = false;
 
 	repo = xbps_repo_open(xhp, repodir);
@@ -175,7 +173,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	pkgcount = 0;
 
 	/* Setup threads to cleanup index and index-files */
-	for (i = 0; i < maxthreads; i++) {
+	for (int i = 0; i < maxthreads; i++) {
 		thd[i].thread_num = i;
 		thd[i].idx = idx;
 		thd[i].result = xbps_array_create();
@@ -189,14 +187,14 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		pkgcount += slicecount;
 	}
 	/* wait for all threads */
-	for (i = 0; i < maxthreads; i++)
+	for (int i = 0; i < maxthreads; i++)
 		pthread_join(thd[i].thread, NULL);
 
 	/* Setup threads to cleanup index-files */
 	slicecount = xbps_dictionary_count(idxfiles) / maxthreads;
 	pkgcount = 0;
 
-	for (i = 0; i < maxthreads; i++) {
+	for (int i = 0; i < maxthreads; i++) {
 		thd[i].thread_num = i;
 		thd[i].idx = idx;
 		thd[i].idxfiles = idxfiles;
@@ -211,11 +209,11 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		pkgcount += slicecount;
 	}
 	/* wait for all threads */
-	for (i = 0; i < maxthreads; i++)
+	for (int i = 0; i < maxthreads; i++)
 		pthread_join(thd[i].thread, NULL);
 
-	for (i = 0; i < maxthreads; i++) {
-		for (x = 0; x < xbps_array_count(thd[i].result); x++) {
+	for (int i = 0; i < maxthreads; i++) {
+		for (unsigned int x = 0; x < xbps_array_count(thd[i].result); x++) {
 			xbps_array_get_cstring_nocopy(thd[i].result,
 			    x, &keyname);
 			printf("index: removed entry %s\n", keyname);
@@ -225,7 +223,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			free(pkgname);
 			flush = true;
 		}
-		for (x = 0; x < xbps_array_count(thd[i].result_files); x++) {
+		for (unsigned int x = 0; x < xbps_array_count(thd[i].result_files); x++) {
 			xbps_array_get_cstring_nocopy(thd[i].result_files,
 			    x, &keyname);
 			printf("index-files: removed entry %s\n", keyname);

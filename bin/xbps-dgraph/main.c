@@ -144,7 +144,6 @@ generate_conf_file(void)
 {
 	xbps_dictionary_t d, d2;
 	struct defprops *dfp;
-	size_t i;
 	const char *outfile = "xbps-dgraph.conf";
 
 	d = xbps_dictionary_create();
@@ -165,7 +164,7 @@ generate_conf_file(void)
 	xbps_dictionary_set(d, "node-sub", d2);
 	xbps_object_release(d2);
 
-	for (i = 0; i < __arraycount(dfprops); i++) {
+	for (unsigned int i = 0; i < __arraycount(dfprops); i++) {
 		dfp = &dfprops[i];
 		d2 = xbps_dictionary_get(d, dfp->sect);
 		xbps_dictionary_set_cstring_nocopy(d2, dfp->prop, dfp->val);
@@ -187,14 +186,13 @@ write_conf_property_on_stream(FILE *f,
 	xbps_array_t allkeys, allkeys2;
 	xbps_dictionary_keysym_t dksym, dksym2;
 	xbps_object_t keyobj, keyobj2;
-	size_t i, x;
 	const char *cf_val, *keyname, *keyname2;
 
 	/*
 	 * Iterate over the main dictionary.
 	 */
 	allkeys = xbps_dictionary_all_keys(confd);
-	for (i = 0; i < xbps_array_count(allkeys); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		dksym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(dksym);
 		keyobj = xbps_dictionary_get_keysym(confd, dksym);
@@ -205,7 +203,7 @@ write_conf_property_on_stream(FILE *f,
 		 * Iterate over the dictionary sections [edge/graph/node].
 		 */
 		allkeys2 = xbps_dictionary_all_keys(keyobj);
-		for (x = 0; x < xbps_array_count(allkeys2); x++) {
+		for (unsigned int x = 0; x < xbps_array_count(allkeys2); x++) {
 			dksym2 = xbps_array_get(allkeys2, x);
 			keyname2 = xbps_dictionary_keysym_cstring_nocopy(dksym2);
 			keyobj2 = xbps_dictionary_get_keysym(keyobj, dksym2);
@@ -244,11 +242,10 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 {
 	xbps_dictionary_keysym_t dksym;
 	xbps_object_t keyobj, sub_keyobj;
-	unsigned int i, x;
 	const char *tmpkeyname, *cfprop, *optnodetmp;
 	char *optnode, *keyname;
 
-	for (i = 0; i < xbps_array_count(allkeys); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		dksym = xbps_array_get(allkeys, i);
 		tmpkeyname = xbps_dictionary_keysym_cstring_nocopy(dksym);
 		/* Ignore these objects */
@@ -268,7 +265,7 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 
 		xbps_dictionary_get_cstring_nocopy(sub_confd, "opt-style", &cfprop);
 		/* Check if object is optional and fill it in */
-		for (x = 0; x < __arraycount(optional_objs); x++) {
+		for (unsigned int x = 0; x < __arraycount(optional_objs); x++) {
 			if (strcmp(keyname, optional_objs[x]) == 0) {
 				optnode = xbps_xasprintf("[style=\"%s\"",
 				    cfprop);
@@ -286,7 +283,7 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 				fprintf(f, "	%s %s];\n", keyname,
 				    optnodetmp);
 
-			for (x = 0; x < xbps_array_count(keyobj); x++) {
+			for (unsigned int x = 0; x < xbps_array_count(keyobj); x++) {
 				sub_keyobj = xbps_array_get(keyobj, x);
 				if (xbps_object_type(sub_keyobj) == XBPS_TYPE_STRING) {
 					/*

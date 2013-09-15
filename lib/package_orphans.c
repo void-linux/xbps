@@ -68,7 +68,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 	xbps_object_iterator_t iter;
 	const char *curpkgver, *deppkgver, *reqbydep;
 	bool automatic = false;
-	unsigned int i, x, j, cnt, reqbycnt;
+	unsigned int cnt, reqbycnt;
 
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
@@ -78,7 +78,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 	/*
 	 * Add all packages specified by the client.
 	 */
-	for (i = 0; i < xbps_array_count(orphans_user); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(orphans_user); i++) {
 		xbps_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
 		pkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
 		if (pkgd == NULL)
@@ -116,17 +116,17 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 	xbps_object_iterator_release(iter);
 
 find_orphans:
-	for (i = 0; i < xbps_array_count(array); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		pkgd = xbps_array_get(array, i);
 		rdeps = xbps_dictionary_get(pkgd, "run_depends");
-		for (x = 0; x < xbps_array_count(rdeps); x++) {
+		for (unsigned int x = 0; x < xbps_array_count(rdeps); x++) {
 			cnt = 0;
 			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);
 			reqby = xbps_pkgdb_get_pkg_revdeps(xhp, deppkgver);
 			if (reqby == NULL)
 				continue;
 			reqbycnt = xbps_array_count(reqby);
-			for (j = 0; j < reqbycnt; j++) {
+			for (unsigned int j = 0; j < reqbycnt; j++) {
 				xbps_array_get_cstring_nocopy(reqby, j, &reqbydep);
 				if (xbps_find_pkg_in_array(array, reqbydep)) {
 					cnt++;

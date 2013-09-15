@@ -43,11 +43,10 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 	const char *pattern, *pkgver, *curpkgver;
 	char *buf, *pkgname, *curpkgname;
 	bool instd_auto, sr;
-	unsigned int i;
 
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 
-	for (i = 0; i < xbps_array_count(unsorted); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
 		obj = xbps_array_get(unsorted, i);
 		replaces = xbps_dictionary_get(obj, "replaces");
 		if (replaces == NULL || xbps_array_count(replaces) == 0)

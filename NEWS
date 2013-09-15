@@ -1,5 +1,7 @@
 xbps-0.26 (???):
 
+ * A C99 compiler is now required due to the use of for loop initializers.
+
  * Fixed #14 from github: "Removing recursively does not respect manual installation
    mode for dependencies". See https://github.com/xtraeme/xbps/issues/14
    for more information.

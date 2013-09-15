@@ -77,7 +77,6 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_array_t array;
 	xbps_object_t obj;
 	xbps_dictionary_t filesd = arg;
-	unsigned int i;
 	const char *file, *tgt = NULL;
 	char *path, *p, *buf, *buf2, *lnk, *dname, *tgt_path;
 	int rv;
@@ -87,7 +86,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	if (array == NULL)
 		return false;
 
-	for (i = 0; i < xbps_array_count(array); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		obj = xbps_array_get(array, i);
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "target", &tgt)) {
 			xbps_warn_printf("%s: `%s' symlink with "

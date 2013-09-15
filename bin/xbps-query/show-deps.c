@@ -40,16 +40,14 @@ print_rdeps(struct xbps_handle *xhp, xbps_array_t rdeps,
 	xbps_array_t currdeps;
 	xbps_dictionary_t pkgd;
 	const char *pkgdep;
-	unsigned int i;
-	int j;
 
 	if (!origin)
 		(*indent)++;
 
-	for (i = 0; i < xbps_array_count(rdeps); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
 		xbps_array_get_cstring_nocopy(rdeps, i, &pkgdep);
 		if (!origin || !full)
-			for (j = 0; j < *indent; j++)
+			for (int j = 0; j < *indent; j++)
 				putchar(' ');
 
 		printf("%s\n", pkgdep);
@@ -98,10 +96,9 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
 	xbps_array_t reqby;
 	const char *pkgdep;
-	unsigned int i;
 
 	if ((reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkg)) != NULL) {
-		for (i = 0; i < xbps_array_count(reqby); i++) {
+		for (unsigned int i = 0; i < xbps_array_count(reqby); i++) {
 			xbps_array_get_cstring_nocopy(reqby, i, &pkgdep);
 			printf("%s\n", pkgdep);
 		}
@@ -132,13 +129,12 @@ repo_show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
 	xbps_array_t revdeps;
 	const char *pkgver;
-	unsigned int i;
 	int rv;
 
 	revdeps = xbps_rpool_get_pkg_revdeps(xhp, pkg);
 	rv = errno;
 
-	for (i = 0; i < xbps_array_count(revdeps); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(revdeps); i++) {
 		xbps_array_get_cstring_nocopy(revdeps, i, &pkgver);
 		printf("%s\n", pkgver);
 	}

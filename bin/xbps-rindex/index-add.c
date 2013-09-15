@@ -52,8 +52,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	const char *oldpkgver, *arch, *oldarch;
 	char *pkgver, *pkgname, *sha256, *repodir, *buf;
 	char *tmprepodir;
-	unsigned int x;
-	int i, rv, ret = 0;
+	int rv, ret = 0;
 	bool flush = false, found = false;
 
 	idx = idxfiles = newpkgd = newpkgfilesd = curpkgd = NULL;
@@ -81,7 +80,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	/*
 	 * Process all packages specified in argv.
 	 */
-	for (i = 0; i < argc; i++) {
+	for (int i = 0; i < argc; i++) {
 		/*
 		 * Read metadata props plist dictionary from binary package.
 		 */
@@ -241,7 +240,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 
 		/* add conf_files in pkg files array */
 		if (pkg_cffiles != NULL) {
-			for (x = 0; x < xbps_array_count(pkg_cffiles); x++) {
+			for (unsigned int x = 0; x < xbps_array_count(pkg_cffiles); x++) {
 				obj = xbps_array_get(pkg_cffiles, x);
 				fileobj = xbps_dictionary_get(obj, "file");
 				xbps_array_add(filespkgar, fileobj);
@@ -249,7 +248,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		}
 		/* add files array in pkg array */
 		if (pkg_files != NULL) {
-			for (x = 0; x < xbps_array_count(pkg_files); x++) {
+			for (unsigned int x = 0; x < xbps_array_count(pkg_files); x++) {
 				obj = xbps_array_get(pkg_files, x);
 				fileobj = xbps_dictionary_get(obj, "file");
 				xbps_array_add(filespkgar, fileobj);
@@ -257,7 +256,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		}
 		/* add links array in pkgd */
 		if (pkg_links != NULL) {
-			for (x = 0; x < xbps_array_count(pkg_links); x++) {
+			for (unsigned int x = 0; x < xbps_array_count(pkg_links); x++) {
 				obj = xbps_array_get(pkg_links, x);
 				fileobj = xbps_dictionary_get(obj, "file");
 				xbps_array_add(filespkgar, fileobj);

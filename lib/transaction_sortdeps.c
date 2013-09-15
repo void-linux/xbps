@@ -258,7 +258,7 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 	xbps_array_t provides, sorted, unsorted, rundeps;
 	xbps_object_t obj;
 	struct pkgdep *pd;
-	unsigned int i, j, ndeps = 0, cnt = 0;
+	unsigned int ndeps = 0, cnt = 0;
 	const char *pkgname, *pkgver, *tract, *vpkgdep;
 	int rv = 0;
 	bool vpkg_found;
@@ -290,7 +290,7 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 	 * Iterate over the unsorted package dictionaries and sort all
 	 * its package dependencies.
 	 */
-	for (i = 0; i < ndeps; i++) {
+	for (unsigned int i = 0; i < ndeps; i++) {
 		vpkg_found = false;
 		obj = xbps_array_get(unsorted, i);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
@@ -305,7 +305,7 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 			 * if any of them was previously added. If true, don't
 			 * add it into the list again, just order its deps.
 			 */
-			for (j = 0; j < xbps_array_count(provides); j++) {
+			for (unsigned int j = 0; j < xbps_array_count(provides); j++) {
 				xbps_array_get_cstring_nocopy(provides,
 				    j, &vpkgdep);
 				pd = pkgdep_find(vpkgdep);

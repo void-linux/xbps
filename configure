@@ -310,6 +310,15 @@ else
 	BUILD_PIE_VALUE=no
 fi
 
+#
+# A C99 compiler is required to build xbps.
+#
+check_compiler_flag "std=c99" "" CFLAGS
+if [ $? -ne 0 ]; then
+	echo "ERRROR: A compatible C99 compiler is required, exiting..."
+	exit 1
+fi
+
 # libfetch
 echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
 echo "LDFLAGS +=	-lssl" >>$CONFIG_MK

@@ -48,10 +48,9 @@ struct transaction {
 static void
 show_missing_deps(xbps_array_t a)
 {
-	unsigned int i;
 	const char *str;
 
-	for (i = 0; i < xbps_array_count(a); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(a); i++) {
 		xbps_array_get_cstring_nocopy(a, i, &str);
 		fprintf(stderr, "%s\n", str);
 	}
@@ -60,10 +59,9 @@ show_missing_deps(xbps_array_t a)
 static void
 show_conflicts(xbps_array_t a)
 {
-	unsigned int i;
 	const char *str;
 
-	for (i = 0; i < xbps_array_count(a); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(a); i++) {
 		xbps_array_get_cstring_nocopy(a, i, &str);
 		fprintf(stderr, "%s\n", str);
 	}

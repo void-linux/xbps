@@ -128,13 +128,12 @@ list_orphans(struct xbps_handle *xhp)
 {
 	xbps_array_t orphans;
 	const char *pkgver;
-	unsigned int i;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
 	if (orphans == NULL)
 		return EINVAL;
 
-	for (i = 0; i < xbps_array_count(orphans); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
 		xbps_dictionary_get_cstring_nocopy(xbps_array_get(orphans, i),
 		    "pkgver", &pkgver);
 		printf("%s\n", pkgver);

@@ -46,7 +46,6 @@ pkgdb_format_021(struct xbps_handle *xhp, const char *plist_new)
 {
 	xbps_array_t array, rdeps;
 	xbps_dictionary_t pkgdb, pkgd;
-	unsigned int i;
 	char *pkgname, *plist;
 
 	plist = xbps_xasprintf("%s/pkgdb.plist", xhp->metadir);
@@ -71,7 +70,7 @@ pkgdb_format_021(struct xbps_handle *xhp, const char *plist_new)
 	pkgdb = xbps_dictionary_create();
 	assert(pkgdb);
 
-	for (i = 0; i < xbps_array_count(array); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		pkgd = xbps_array_get(array, i);
 		xbps_dictionary_get_cstring(pkgd, "pkgname", &pkgname);
 		rdeps = xbps_dictionary_get(pkgd, "run_depends");

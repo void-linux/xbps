@@ -186,7 +186,6 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, int cols,
 {
 	xbps_array_t reqby;
 	const char *pkgver;
-	unsigned int x;
 	int rv;
 
 	rv = xbps_transaction_remove_pkg(xhp, pkgname, recursive);
@@ -196,7 +195,7 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, int cols,
 		printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
 		    pkgname, xbps_array_count(reqby),
 		    xbps_array_count(reqby) > 1 ? "S" : "");
-		for (x = 0; x < xbps_array_count(reqby); x++) {
+		for (unsigned int x = 0; x < xbps_array_count(reqby); x++) {
 			xbps_array_get_cstring_nocopy(reqby, x, &pkgver);
 			print_package_line(pkgver, cols, false);
 		}
@@ -238,7 +237,7 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	const char *rootdir, *cachedir, *conffile;
-	int i, c, flags, rv;
+	int c, flags, rv;
 	bool yes, drun, recursive, ignore_revdeps, clean_cache;
 	bool orphans, reqby_force;
 	int maxcols;
@@ -350,7 +349,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	for (i = optind; i < argc; i++) {
+	for (int i = optind; i < argc; i++) {
 		rv = remove_pkg(&xh, argv[i], maxcols, recursive);
 		if (rv == 0)
 			continue;

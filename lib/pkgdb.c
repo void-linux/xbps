@@ -216,7 +216,6 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 	xbps_object_iterator_t iter;
 	const char *pkgver, *pkgdep, *vpkgname;
 	char *curpkgname;
-	unsigned int i;
 	bool alloc;
 
 	if (xhp->pkgdb_revdeps)
@@ -233,7 +232,7 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 		if (!xbps_array_count(rundeps))
 			continue;
 
-		for (i = 0; i < xbps_array_count(rundeps); i++) {
+		for (unsigned int i = 0; i < xbps_array_count(rundeps); i++) {
 			alloc = false;
 			xbps_array_get_cstring_nocopy(rundeps, i, &pkgdep);
 			curpkgname = xbps_pkgpattern_name(pkgdep);

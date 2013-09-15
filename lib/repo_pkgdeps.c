@@ -160,7 +160,6 @@ find_repo_deps(struct xbps_handle *xhp,
 	xbps_object_iterator_t iter;
 	xbps_array_t curpkgrdeps;
 	pkg_state_t state;
-	unsigned int x;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
 	char *pkgname, *reqpkgname;
 	int rv = 0;
@@ -179,7 +178,7 @@ find_repo_deps(struct xbps_handle *xhp,
 		reqpkg = xbps_string_cstring_nocopy(obj);
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf(xhp, "");
-			for (x = 0; x < *depth; x++)
+			for (unsigned short x = 0; x < *depth; x++)
 				xbps_dbg_printf_append(xhp, " ");
 			xbps_dbg_printf_append(xhp, "%s: requires dependency '%s': ",
 			    curpkg != NULL ? curpkg : " ", reqpkg);
@@ -367,7 +366,7 @@ find_repo_deps(struct xbps_handle *xhp,
 
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf(xhp, "");
-			for (x = 0; x < *depth; x++)
+			for (unsigned short x = 0; x < *depth; x++)
 				xbps_dbg_printf_append(xhp, " ");
 
 			xbps_dbg_printf_append(xhp,

@@ -57,14 +57,13 @@ find_pkg_symlink_target(xbps_dictionary_t d, const char *file)
 {
 	xbps_array_t links;
 	xbps_object_t obj;
-	unsigned int i;
 	const char *pkgfile, *tgt = NULL;
 	char *rfile;
 
 	assert(d);
 
 	links = xbps_dictionary_get(d, "links");
-	for (i = 0; i < xbps_array_count(links); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(links); i++) {
 		rfile = strchr(file, '.') + 1;
 		obj = xbps_array_get(links, i);
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &pkgfile);
@@ -164,8 +163,9 @@ unpack_archive(struct xbps_handle *xhp,
 	struct stat st;
 	struct xbps_unpack_cb_data xucd;
 	struct archive_entry *entry;
-	size_t i, entry_idx = 0, instbufsiz = 0, rembufsiz = 0;
+	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
+	unsigned int entry_idx = 0;
 	const char *file, *entry_pname, *transact,  *tgtlnk;
 	char *pkgname, *dname, *buf, *buf2, *p, *p2;
 	int ar_rv, rv, entry_type, flags;
@@ -588,7 +588,7 @@ unpack_archive(struct xbps_handle *xhp,
 		goto out;
 
 	obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
-	for (i = 0; i < xbps_array_count(obsoletes); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(obsoletes); i++) {
 		obj = xbps_array_get(obsoletes, i);
 		file = xbps_string_cstring_nocopy(obj);
 		if (remove(file) == -1) {

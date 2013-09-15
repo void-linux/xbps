@@ -39,7 +39,6 @@ xbps_entry_is_a_conf_file(xbps_dictionary_t propsd,
 {
 	xbps_array_t array;
 	const char *cffile;
-	unsigned int i;
 
 	assert(xbps_object_type(propsd) == XBPS_TYPE_DICTIONARY);
 	assert(entry_pname != NULL);
@@ -48,7 +47,7 @@ xbps_entry_is_a_conf_file(xbps_dictionary_t propsd,
 	if (xbps_array_count(array) == 0)
 		return false;
 
-	for (i = 0; i < xbps_array_count(array); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		xbps_array_get_cstring_nocopy(array, i, &cffile);
 		if (strcmp(cffile, entry_pname) == 0)
 			return true;

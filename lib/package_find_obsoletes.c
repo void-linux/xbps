@@ -78,7 +78,6 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	xbps_array_t instfiles, newfiles, obsoletes;
 	xbps_object_t obj, obj2;
 	xbps_string_t oldstr, newstr;
-	unsigned int i, x;
 	const char *oldhash;
 	char *file;
 	int rv = 0;
@@ -101,7 +100,7 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	/*
 	 * Iterate over files list from installed package.
 	 */
-	for (i = 0; i < xbps_array_count(instfiles); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(instfiles); i++) {
 		found = false;
 		obj = xbps_array_get(instfiles, i);
 		if (xbps_object_type(obj) != XBPS_TYPE_DICTIONARY) {
@@ -132,7 +131,7 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		/*
 		 * Check if current file is available in new pkg filelist.
 		 */
-		for (x = 0; x < xbps_array_count(newfiles); x++) {
+		for (unsigned int x = 0; x < xbps_array_count(newfiles); x++) {
 			obj2 = xbps_array_get(newfiles, x);
 			newstr = xbps_dictionary_get(obj2, "file");
 			assert(newstr);

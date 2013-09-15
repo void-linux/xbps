@@ -102,7 +102,7 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	const char *version, *rootdir = NULL, *confdir = NULL;
 	char *pkgname, *hash;
-	int flags = 0, i, c, rv = 0;
+	int flags = 0, c, rv = 0;
 
 	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
 		switch (c) {
@@ -247,7 +247,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage();
 
-		for (i = 1; i < argc; i++) {
+		for (int i = 1; i < argc; i++) {
 			hash = xbps_file_hash(argv[i]);
 			if (hash == NULL) {
 				fprintf(stderr,
@@ -263,7 +263,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		for (i = 1; i < argc; i++) {
+		for (int i = 1; i < argc; i++) {
 			rv = xbps_fetch_file(&xh, argv[i], "v");
 			if (rv == -1) {
 				printf("%s: %s\n", argv[1],

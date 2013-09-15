@@ -54,7 +54,6 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 	xbps_array_t array;
 	xbps_object_t obj;
 	const char *keyname, *filestr, *typestr;
-	unsigned int i;
 	int x;
 
 	keyname = xbps_dictionary_keysym_cstring_nocopy(key);
@@ -71,7 +70,7 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 		return;
 
 	array = xbps_dictionary_get_keysym(pkg_filesd, key);
-	for (i = 0; i < xbps_array_count(array); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		obj = xbps_array_get(array, i);
 		filestr = NULL;
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &filestr);
@@ -96,7 +95,6 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 	xbps_dictionary_t pkgmetad;
 	xbps_array_t files_keys;
 	struct ffdata *ffd = arg;
-	unsigned int i;
 	const char *pkgver;
 
 	(void)obj_key;
@@ -110,7 +108,7 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 	assert(pkgmetad);
 
 	files_keys = xbps_dictionary_all_keys(pkgmetad);
-	for (i = 0; i < xbps_array_count(files_keys); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(files_keys); i++) {
 		match_files_by_pattern(pkgmetad,
 		    xbps_array_get(files_keys, i), ffd, pkgver);
 	}
@@ -127,13 +125,12 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 {
 	struct ffdata ffd;
 	char *rfile;
-	int i;
 
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
 	pthread_mutex_init(&ffd.mtx, NULL);
 
-	for (i = 0; i < npatterns; i++) {
+	for (int i = 0; i < npatterns; i++) {
 		rfile = realpath(patterns[i], NULL);
 		if (rfile)
 			patterns[i] = rfile;
@@ -150,12 +147,10 @@ repo_match_cb(struct xbps_handle *xhp _unused,
 {
 	struct ffdata *ffd = arg;
 	const char *filestr;
-	unsigned int i;
-	int x;
 
-	for (i = 0; i < xbps_array_count(obj); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(obj); i++) {
 		xbps_array_get_cstring_nocopy(obj, i, &filestr);
-		for (x = 0; x < ffd->npatterns; x++) {
+		for (int x = 0; x < ffd->npatterns; x++) {
 			if ((fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
 				printf("%s: %s (%s)\n",
 				    key, filestr, ffd->repouri);
@@ -192,13 +187,13 @@ repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 {
 	struct ffdata ffd;
 	char *rfile;
-	int i, rv;
+	int rv;
 
 	pthread_mutex_init(&ffd.mtx, NULL);
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
 
-	for (i = 0; i < npatterns; i++) {
+	for (int i = 0; i < npatterns; i++) {
 		rfile = realpath(patterns[i], NULL);
 		if (rfile)
 			patterns[i] = rfile;

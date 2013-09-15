@@ -163,7 +163,6 @@ entry_is_conf_file(const char *file)
 {
 	xbps_array_t a;
 	const char *curfile;
-	unsigned int i;
 
 	assert(file);
 
@@ -171,7 +170,7 @@ entry_is_conf_file(const char *file)
 	if (a == NULL || xbps_array_count(a) == 0)
 		return false;
 
-	for (i = 0; i < xbps_array_count(a); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(a); i++) {
 		xbps_array_get_cstring_nocopy(a, i, &curfile);
 		if (strcmp(file, curfile) == 0)
 			return true;
