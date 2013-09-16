@@ -138,6 +138,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			 */
 			buf = xbps_xasprintf("`%s' (%s)", oldpkgver, oldarch);
 			xbps_dictionary_remove(idx, pkgname);
+			xbps_dictionary_remove(idxfiles, pkgname);
 			printf("index: removed obsolete entry %s.\n", buf);
 			free(buf);
 		}
@@ -254,7 +255,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		xbps_object_release(newpkgfilesd);
 
 		/* add pkg files array into index-files */
-		xbps_dictionary_set(idxfiles, pkgver, filespkgar);
+		xbps_dictionary_set(idxfiles, pkgname, filespkgar);
 		xbps_object_release(filespkgar);
 
 		printf("index-files: added `%s' (%s)\n", pkgver, arch);
