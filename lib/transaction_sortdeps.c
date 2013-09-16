@@ -184,7 +184,7 @@ again:
 			/*
 			 * Package dependency is installed, just add to
 			 * the list but just mark it as "installed", to avoid
-			 * calling xbps_check_is_installed_pkg_by_name(),
+			 * calling xbps_pkg_is_installed(),
 			 * which is expensive.
 			 */
 			xbps_dbg_printf_append(xhp, "installed.\n");
