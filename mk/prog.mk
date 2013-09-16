@@ -3,6 +3,7 @@
 OBJS	?= main.o
 
 BINS = $(BIN)
+MAN ?= $(BIN).8
 
 ifdef BUILD_STATIC
 BINS += $(BIN).static

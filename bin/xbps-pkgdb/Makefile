@@ -7,6 +7,4 @@ OBJS +=	check_pkg_rundeps.o
 OBJS +=	check_pkg_symlinks.o check_pkg_unneeded.o
 OBJS +=	convert.o
 
-MAN = $(BIN).8
-
 include $(TOPDIR)/mk/prog.mk
