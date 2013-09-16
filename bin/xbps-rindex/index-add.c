@@ -173,17 +173,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		/*
 		 * Remove obsolete package objects.
 		 */
-		xbps_dictionary_remove(newpkgd, "archive-compression-type");
-		xbps_dictionary_remove(newpkgd, "build-date");
-		xbps_dictionary_remove(newpkgd, "build_date");
-		xbps_dictionary_remove(newpkgd, "conf_files");
-		xbps_dictionary_remove(newpkgd, "filename");
-		xbps_dictionary_remove(newpkgd, "homepage");
-		xbps_dictionary_remove(newpkgd, "license");
-		xbps_dictionary_remove(newpkgd, "maintainer");
-		xbps_dictionary_remove(newpkgd, "packaged-with");
-		xbps_dictionary_remove(newpkgd, "source-revisions");
-		xbps_dictionary_remove(newpkgd, "long_desc");
 		xbps_dictionary_remove(newpkgd, "pkgname");
 		xbps_dictionary_remove(newpkgd, "version");
 		/*

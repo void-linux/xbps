@@ -1,5 +1,9 @@
 xbps-0.26 (???):
 
+ * Re-added all metadata package objects to the repository index, this avoids
+   remote connections when querying packages from remote repositories. This also
+   speeds up 'xbps-src' when using remote repositories as well.
+
  * A C99 compiler is now required due to the use of for loop initializers.
 
  * Fixed #14 from github: "Removing recursively does not respect manual installation

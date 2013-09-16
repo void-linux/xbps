@@ -289,26 +289,16 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 		   const char *pattern,
 		   const char *option)
 {
-	xbps_dictionary_t ipkgd, bpkgd;
+	xbps_dictionary_t pkgd;
 
-	if (((ipkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
-	    ((ipkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
+	if (((pkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
+	    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
 		return errno;
-
-	if ((bpkgd = xbps_repo_get_pkg_plist(xhp, ipkgd, "./props.plist")) == NULL)
-		return errno;
-
-	xbps_dictionary_set(bpkgd, "repository",
-	    xbps_dictionary_get(ipkgd, "repository"));
-	xbps_dictionary_set(bpkgd, "filename-sha256",
-	    xbps_dictionary_get(ipkgd, "filename-sha256"));
-	xbps_dictionary_set(bpkgd, "filename-size",
-	    xbps_dictionary_get(ipkgd, "filename-size"));
 
 	if (option)
-		show_pkg_info_one(bpkgd, option);
+		show_pkg_info_one(pkgd, option);
 	else
-		show_pkg_info(bpkgd);
+		show_pkg_info(pkgd);
 
 	return 0;
 }
