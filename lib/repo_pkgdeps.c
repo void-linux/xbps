@@ -161,7 +161,7 @@ find_repo_deps(struct xbps_handle *xhp,
 	xbps_array_t curpkgrdeps;
 	pkg_state_t state;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
-	char *pkgname, *curpkgname;
+	char *pkgname, *reqpkgname;
 	int rv = 0;
 
 	if (*depth >= MAX_DEPTH)
@@ -190,27 +190,6 @@ find_repo_deps(struct xbps_handle *xhp,
 			rv = EINVAL;
 			break;
 		}
-		/*
-		 * Check dependency validity.
-		 */
-		if (((curpkgname = xbps_pkgpattern_name(curpkg)) == NULL) &&
-		    ((curpkgname = xbps_pkg_name(curpkg)) == NULL)) {
-			xbps_dbg_printf(xhp, "can't guess pkgname for current pkg: %s\n",
-			    curpkg);
-			rv = EINVAL;
-			free(pkgname);
-			break;
-		}
-		if (strcmp(pkgname, curpkgname) == 0) {
-			xbps_dbg_printf_append(xhp, "[ignoring wrong dependency "
-			    "%s (depends on itself) %s %s]\n",
-			    reqpkg, curpkgname, pkgname);
-			free(pkgname);
-			free(curpkgname);
-			continue;
-		}
-		free(curpkgname);
-
 		/*
 		 * Pass 1: check if required dependency is already installed
 		 * and its version is fully matched.
@@ -344,7 +323,26 @@ find_repo_deps(struct xbps_handle *xhp,
 				continue;
 			}
 		}
-		xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
+		xbps_dictionary_get_cstring_nocopy(curpkgd,
+		    "pkgver", &pkgver_q);
+		reqpkgname = xbps_pkg_name(pkgver_q);
+		assert(reqpkgname);
+		/*
+		 * Check dependency validity.
+		 */
+		pkgname = xbps_pkg_name(curpkg);
+		assert(pkgname);
+		if (strcmp(pkgname, reqpkgname) == 0) {
+			xbps_dbg_printf_append(xhp, "[ignoring wrong dependency "
+			    "%s (depends on itself)]\n",
+			    reqpkg);
+			free(pkgname);
+			free(reqpkgname);
+			continue;
+		}
+		free(pkgname);
+		free(reqpkgname);
+
 		/*
 		 * Check if package has matched conflicts.
 		 */
