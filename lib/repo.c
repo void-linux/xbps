@@ -336,9 +336,6 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	char *buf = NULL;
 	bool match = false;
 
-	if (repo->idx == NULL)
-		return NULL;
-
 	if (((pkgd = xbps_rpool_get_pkg(repo->xhp, pkg)) == NULL) &&
 	    ((pkgd = xbps_rpool_get_virtualpkg(repo->xhp, pkg)) == NULL)) {
 		errno = ENOENT;

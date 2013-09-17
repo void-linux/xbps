@@ -158,6 +158,10 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 	}
 	/* Iterate over repository pool */
 	SIMPLEQ_FOREACH(rp, &rpool_queue, entries) {
+		/* ignore invalid repos */
+		if (rp->repo->idx == NULL)
+			continue;
+
 		rv = (*fn)(rp->repo, arg, &done);
 		if (rv != 0 || done)
 			break;
