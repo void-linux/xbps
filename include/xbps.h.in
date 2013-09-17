@@ -46,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20130727-1"
+#define XBPS_API_VERSION	"20130917"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -699,7 +699,7 @@ xbps_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 
 /**
  * Executes a function callback per a package dictionary registered
- * in master package database (pkgdb) plist (downwards).
+ * in master package database (pkgdb) plist.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] fn Function callback to run for any pkg dictionary.
@@ -709,6 +709,24 @@ xbps_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
  * the value returned by the function callback.
  */
 int xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
+	int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *),
+	void *arg);
+
+/**
+ * Executes a function callback per a package dictionary registered
+ * in master package database (pkgdb) plist.
+ *
+ * This is a multithreaded implementation spawning a thread per core. Each
+ * thread processes a fraction of total objects in the pkgdb dictionary.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] fn Function callback to run for any pkg dictionary.
+ * @param[in] arg Argument to be passed to the function callback.
+ *
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the function callback.
+ */
+int xbps_pkgdb_foreach_cb_multi(struct xbps_handle *xhp,
 	int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *),
 	void *arg);
 
@@ -813,12 +831,43 @@ int xbps_pkg_exec_script(struct xbps_handle *xhp,
 /** @addtogroup plist */
 /*@{*/
 
+/**
+ * Executes a function callback (\a fn) per object in the proplib array \a array.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] array The proplib array to traverse.
+ * @param[in] dict The dictionary associated with the array.
+ * @param[in] fn Function callback to run for any pkg dictionary.
+ * @param[in] arg Argument to be passed to the function callback.
+ *
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the function callback.
+ */
 int xbps_array_foreach_cb(struct xbps_handle *xhp,
 		xbps_array_t array,
 		xbps_dictionary_t dict,
 		int (*fn)(struct xbps_handle *, xbps_object_t obj, const char *, void *arg, bool *done),
 		void *arg);
 
+/**
+ * Executes a function callback (\a fn) per object in the proplib array \a array.
+ * This is a multithreaded implementation spawning a thread per core. Each
+ * thread processes a fraction of total objects in the array.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] array The proplib array to traverse.
+ * @param[in] dict The dictionary associated with the array.
+ * @param[in] fn Function callback to run for any pkg dictionary.
+ * @param[in] arg Argument to be passed to the function callback.
+ *
+ * @return 0 on success (all objects were processed), otherwise
+ * the value returned by the function callback.
+ */
+int xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
+		xbps_array_t array,
+		xbps_dictionary_t dict,
+		int (*fn)(struct xbps_handle *, xbps_object_t obj, const char *, void *arg, bool *done),
+		void *arg);
 /**
  * Match a virtual package name or pattern by looking at package's
  * dictionary "provides" array object.

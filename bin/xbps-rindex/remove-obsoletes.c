@@ -147,7 +147,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	}
 	(void)closedir(dirp);
 
-	rv = xbps_array_foreach_cb(xhp, array, NULL, cleaner_cb, repo);
+	rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repo);
 	xbps_repo_close(repo);
 	xbps_object_release(array);
 

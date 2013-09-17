@@ -153,6 +153,24 @@ xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
 	return rv;
 }
 
+int
+xbps_pkgdb_foreach_cb_multi(struct xbps_handle *xhp,
+		int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *),
+		void *arg)
+{
+	xbps_array_t allkeys;
+	int rv;
+
+	if ((rv = xbps_pkgdb_init(xhp)) != 0)
+		return rv;
+
+	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
+	assert(allkeys);
+	rv = xbps_array_foreach_cb_multi(xhp, allkeys, xhp->pkgdb, fn, arg);
+	xbps_object_release(allkeys);
+	return rv;
+}
+
 xbps_dictionary_t
 xbps_pkgdb_get_pkg(struct xbps_handle *xhp, const char *pkg)
 {

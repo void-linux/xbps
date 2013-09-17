@@ -119,7 +119,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	cbd.array = xbps_array_create();
 
 	allkeys = xbps_dictionary_all_keys(idx);
-	rv = xbps_array_foreach_cb(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
+	rv = xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
 	xbps_object_release(allkeys);
 
 	for (unsigned int x = 0; x < xbps_array_count(cbd.array); x++) {

@@ -40,7 +40,6 @@
 #include <libgen.h>
 #include <fnmatch.h>
 #include <assert.h>
-#include <pthread.h>
 
 #include <xbps.h>
 #include "defs.h"
@@ -49,7 +48,6 @@ struct search_data {
 	int npatterns;
 	char **patterns;
 	int maxcols;
-	pthread_mutex_t mtx;
 	xbps_array_t results;
 };
 
@@ -119,10 +117,8 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
 		    (strcasestr(pkgver, sd->patterns[x])) ||
 		    (strcasestr(desc, sd->patterns[x])) || vpkgfound) {
-			pthread_mutex_lock(&sd->mtx);
 			xbps_array_add_cstring_nocopy(sd->results, pkgver);
 			xbps_array_add_cstring_nocopy(sd->results, desc);
-			pthread_mutex_unlock(&sd->mtx);
 		}
 	}
 	return 0;
@@ -134,9 +130,6 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 	xbps_array_t allkeys;
 	struct search_data *sd = arg;
 	int rv;
-
-	if (repo->idx == NULL)
-		return 0;
 
 	allkeys = xbps_dictionary_all_keys(repo->idx);
 	rv = xbps_array_foreach_cb(repo->xhp, allkeys, repo->idx, search_array_cb, sd);
@@ -151,7 +144,6 @@ repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
 	struct search_data sd;
 	int rv;
 
-	pthread_mutex_init(&sd.mtx, NULL);
 	sd.npatterns = npatterns;
 	sd.patterns = patterns;
 	sd.maxcols = get_maxcols();
@@ -166,7 +158,6 @@ repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
 		print_results(xhp, &sd);
 		xbps_object_release(sd.results);
 	}
-	pthread_mutex_destroy(&sd.mtx);
 
 	return rv;
 }

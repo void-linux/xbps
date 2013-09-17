@@ -31,13 +31,11 @@
 #include <fnmatch.h>
 #include <dirent.h>
 #include <assert.h>
-#include <pthread.h>
 
 #include <xbps.h>
 #include "defs.h"
 
 struct ffdata {
-	pthread_mutex_t mtx;
 	int npatterns;
 	char **patterns;
 	const char *repouri;
@@ -102,8 +100,6 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
-	pthread_mutex_lock(&ffd->mtx);
-
 	pkgmetad = xbps_pkgdb_get_pkg_metadata(xhp, pkgver);
 	assert(pkgmetad);
 
@@ -114,8 +110,6 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 	}
 	xbps_object_release(pkgmetad);
 	xbps_object_release(files_keys);
-
-	pthread_mutex_unlock(&ffd->mtx);
 
 	return 0;
 }
@@ -128,7 +122,6 @@ ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
-	pthread_mutex_init(&ffd.mtx, NULL);
 
 	for (int i = 0; i < npatterns; i++) {
 		rfile = realpath(patterns[i], NULL);
@@ -189,7 +182,6 @@ repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 	char *rfile;
 	int rv;
 
-	pthread_mutex_init(&ffd.mtx, NULL);
 	ffd.npatterns = npatterns;
 	ffd.patterns = patterns;
 
@@ -199,7 +191,6 @@ repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
 			patterns[i] = rfile;
 	}
 	rv = xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
-	pthread_mutex_destroy(&ffd.mtx);
 
 	return rv;
 }

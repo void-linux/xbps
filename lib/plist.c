@@ -85,7 +85,7 @@ array_foreach_thread(void *arg)
 }
 
 int
-xbps_array_foreach_cb(struct xbps_handle *xhp,
+xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	xbps_array_t array,
 	xbps_dictionary_t dict,
 	int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *),
@@ -106,50 +106,67 @@ xbps_array_foreach_cb(struct xbps_handle *xhp,
 		return 0;
 
 	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
-	if (maxthreads > 1) {
-		thd = calloc(maxthreads, sizeof(*thd));
-		assert(thd);
-		slicecount = arraycount / maxthreads;
-		pkgcount = 0;
-		pthread_mutex_init(&mtx, NULL);
+	if (maxthreads == 1) /* use single threaded routine */
+		return xbps_array_foreach_cb(xhp, array, dict, fn, arg);
 
-		for (int i = 0; i < maxthreads; i++) {
-			thd[i].mtx = &mtx;
-			thd[i].array = array;
-			thd[i].dict = dict;
-			thd[i].xhp = xhp;
-			thd[i].fn = fn;
-			thd[i].fn_arg = arg;
-			thd[i].start = pkgcount;
-			if (i + 1 >= maxthreads)
-				thd[i].end = arraycount;
-			else
-				thd[i].end = pkgcount + slicecount;
-			pthread_create(&thd[i].thread, NULL,
-			    array_foreach_thread, &thd[i]);
-			pkgcount += slicecount;
-		}
-		/* wait for all threads */
-		for (int i = 0; i < maxthreads; i++)
-			pthread_join(thd[i].thread, NULL);
+	thd = calloc(maxthreads, sizeof(*thd));
+	assert(thd);
+	slicecount = arraycount / maxthreads;
+	pkgcount = 0;
+	pthread_mutex_init(&mtx, NULL);
 
-		pthread_mutex_destroy(&mtx);
-		free(thd);
-	} else {
-		/* single threaded */
-		struct thread_data mythd;
-
-		mythd.mtx = NULL;
-		mythd.array = array;
-		mythd.dict = dict;
-		mythd.xhp = xhp;
-		mythd.start = 0;
-		mythd.end = arraycount;
-		mythd.fn = fn;
-		mythd.fn_arg = arg;
-		array_foreach_thread(&mythd);
+	for (int i = 0; i < maxthreads; i++) {
+		thd[i].mtx = &mtx;
+		thd[i].array = array;
+		thd[i].dict = dict;
+		thd[i].xhp = xhp;
+		thd[i].fn = fn;
+		thd[i].fn_arg = arg;
+		thd[i].start = pkgcount;
+		if (i + 1 >= maxthreads)
+			thd[i].end = arraycount;
+		else
+			thd[i].end = pkgcount + slicecount;
+		pthread_create(&thd[i].thread, NULL,
+		    array_foreach_thread, &thd[i]);
+		pkgcount += slicecount;
 	}
+	/* wait for all threads */
+	for (int i = 0; i < maxthreads; i++)
+		rv = pthread_join(thd[i].thread, NULL);
 
+	pthread_mutex_destroy(&mtx);
+	free(thd);
+
+	return rv;
+}
+
+int
+xbps_array_foreach_cb(struct xbps_handle *xhp,
+	xbps_array_t array,
+	xbps_dictionary_t dict,
+	int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *),
+	void *arg)
+{
+	xbps_dictionary_t pkgd;
+	xbps_object_t obj;
+	const char *key;
+	int rv = 0;
+	bool loop_done = false;
+
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
+		obj = xbps_array_get(array, i);
+		if (xbps_object_type(dict) == XBPS_TYPE_DICTIONARY) {
+			pkgd = xbps_dictionary_get_keysym(dict, obj);
+			key = xbps_dictionary_keysym_cstring_nocopy(obj);
+		} else {
+			pkgd = obj;
+			key = NULL;
+		}
+		rv = (*fn)(xhp, pkgd, key, arg, &loop_done);
+		if (rv != 0 || loop_done)
+			break;
+	}
 	return rv;
 }
 

@@ -69,7 +69,7 @@ check_pkg_integrity_all(struct xbps_handle *xhp)
 	/* force an update to get total pkg count */
 	(void)xbps_pkgdb_update(xhp, false);
 
-	rv = xbps_pkgdb_foreach_cb(xhp, pkgdb_cb, NULL);
+	rv = xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_cb, NULL);
 
 	if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
 		xbps_error_printf("failed to write pkgdb: %s\n",
