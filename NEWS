@@ -1,5 +1,11 @@
 xbps-0.26 (???):
 
+ * xbps-install(8): added support to specify multiple repositories with `-R'.
+   This overrides the list of a configuration file.
+
+ * xbps-query(8: added support to specify multiple repositories with `-D'.
+   This overrides the list of a configuration file.
+
  * Re-added all metadata package objects to the repository index, this avoids
    remote connections when querying packages from remote repositories. This also
    speeds up 'xbps-src' when using remote repositories as well.
