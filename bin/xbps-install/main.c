@@ -52,7 +52,8 @@ usage(bool fail)
 	    "                          overwritten.\n"
 	    " -h --help                Print help usage\n"
 	    " -n --dry-run             Dry-run mode\n"
-	    " -R --repository <uri>    Default repository to be used if config not set\n"
+	    " -R --repository <uri>    Repository to be used. Can be specified\n"
+	    "                          multiple times.\n"
 	    " -r --rootdir <dir>       Full path to rootdir\n"
 	    " -S --sync                Sync remote repository index\n"
 	    " -u --update              Update target package(s)\n"
@@ -97,14 +98,16 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	struct xferstat xfer;
-	const char *rootdir, *cachedir, *conffile, *defrepo;
+	const char *rootdir, *cachedir, *conffile;
 	int i, c, flags, rv, fflag = 0;
 	bool sync, yes, reinstall, drun, update;
 	int maxcols;
 
-	rootdir = cachedir = conffile = defrepo = NULL;
+	rootdir = cachedir = conffile = NULL;
 	flags = rv = 0;
 	sync = yes = reinstall = drun = update = false;
+
+	memset(&xh, 0, sizeof(xh));
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -133,7 +136,10 @@ main(int argc, char **argv)
 			drun = true;
 			break;
 		case 'R':
-			defrepo = optarg;
+			if (xh.repositories == NULL)
+				xh.repositories = xbps_array_create();
+
+			xbps_array_add_cstring_nocopy(xh.repositories, optarg);
 			break;
 		case 'r':
 			rootdir = optarg;
@@ -165,7 +171,6 @@ main(int argc, char **argv)
 	/*
 	 * Initialize libxbps.
 	 */
-	memset(&xh, 0, sizeof(xh));
 	xh.state_cb = state_cb;
 	xh.fetch_cb = fetch_file_progress_cb;
 	xh.fetch_cb_data = &xfer;
@@ -173,7 +178,6 @@ main(int argc, char **argv)
 	xh.cachedir = cachedir;
 	xh.conffile = conffile;
 	xh.flags = flags;
-	xh.repository = defrepo;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.unpack_cb = unpack_progress_cb;
 

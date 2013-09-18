@@ -40,10 +40,11 @@ usage(bool fail)
 	    "\nOPTIONS\n"
 	    " -C --config <file>       Full path to configuration file\n"
 	    " -c --cachedir <dir>      Full path to cachedir\n"
-	    " -D --defrepo <uri>       Default repository to be used if config not set\n"
+	    " -D --defrepo <uri>       Repository to be used. Can be specified\n"
+	    "                          multiple times.\n"
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -h --help                Print help usage\n"
-	    " -R --repository          Enable repository mode\n"
+	    " -R --repoisotyr          Enable repository mode\n"
 	    " -r --rootdir <dir>       Full path to rootdir\n"
 	    " -V --version             Show XBPS version\n"
 	    " -v --verbose             Verbose messages\n"
@@ -104,6 +105,8 @@ main(int argc, char **argv)
 	show = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
 
+	memset(&xh, 0, sizeof(xh));
+
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
 		case 'C':
@@ -113,7 +116,10 @@ main(int argc, char **argv)
 			cachedir = optarg;
 			break;
 		case 'D':
-			defrepo = optarg;
+			if (xh.repositories == NULL)
+				xh.repositories = xbps_array_create();
+
+			xbps_array_add_cstring_nocopy(xh.repositories, optarg);
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
@@ -183,12 +189,10 @@ main(int argc, char **argv)
 	/*
 	 * Initialize libxbps.
 	 */
-	memset(&xh, 0, sizeof(xh));
 	xh.rootdir = rootdir;
 	xh.cachedir = cachedir;
 	xh.conffile = conffile;
 	xh.flags = flags;
-	xh.repository = defrepo;
 
 	if ((rv = xbps_init(&xh)) != 0) {
 		xbps_error_printf("Failed to initialize libxbps: %s\n",

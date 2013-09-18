@@ -76,22 +76,6 @@ set_metadir(struct xbps_handle *xh)
 }
 
 static int
-config_inject_repos(struct xbps_handle *xh)
-{
-	char *buf;
-
-	if (xh->repository) {
-		int rv;
-
-		buf = xbps_xasprintf("repositories = { %s }", xh->repository);
-		if ((rv = cfg_parse_buf(xh->cfg, buf)) != 0)
-			return rv;
-		free(buf);
-	}
-	return 0;
-}
-
-static int
 cb_validate_virtual(cfg_t *cfg, cfg_opt_t *opt)
 {
 	for (unsigned int i = 0; i < cfg_size(cfg, "virtual-package"); i++) {
@@ -131,6 +115,7 @@ xbps_init(struct xbps_handle *xhp)
 		CFG_END()
 	};
 	struct utsname un;
+	const char *repodir;
 	int rv, cc, cch;
 	bool syslog_enabled = false;
 
@@ -163,10 +148,6 @@ xbps_init(struct xbps_handle *xhp)
 			return ENOTSUP;
 		}
 	}
-	/* Inject custom repo overriding the ones from configuration file */
-	if ((rv = config_inject_repos(xhp)) != 0)
-		return rv;
-
 	xbps_dbg_printf(xhp, "Configuration file: %s\n",
 	    xhp->conffile ? xhp->conffile : "not found");
 	/*
@@ -188,6 +169,19 @@ xbps_init(struct xbps_handle *xhp)
 
 			buf = xbps_xasprintf("%s/%s", path, xhp->rootdir);
 			xhp->rootdir = buf;
+		}
+	}
+	/*
+	 * If repositories array is empty use the provided list from
+	 * configuration file.
+	 */
+	if (xbps_array_count(xhp->repositories) == 0) {
+		for (unsigned int i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
+			if (xhp->repositories == NULL)
+				xhp->repositories = xbps_array_create();
+
+			repodir = cfg_getnstr(xhp->cfg, "repositories", i);
+			xbps_array_add_cstring_nocopy(xhp->repositories, repodir);
 		}
 	}
 
@@ -236,6 +230,13 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "Syslog=%u\n", syslog_enabled);
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
 	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch);
+
+	if (xhp->flags & XBPS_FLAG_DEBUG) {
+		for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+			xbps_array_get_cstring_nocopy(xhp->repositories, i, &repodir);
+			xbps_dbg_printf(xhp, "Repository[%u]=%s\n", i, repodir);
+		}
+	}
 
 	xhp->initialized = true;
 

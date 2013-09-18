@@ -1,4 +1,4 @@
-.Dd September 13, 2013
+.Dd September 18, 2013
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -55,7 +55,8 @@ Specifies a full path to the XBPS configuration file.
 .It Fl c, Fl -cachedir Ar dir
 Specifies a full path to the cache directory, where binary packages are stored.
 .It Fl D, Fl -defrepo Ar uri
-Default repository to be used if no repository is specified in configuration file.
+Default repository to be used. Multiple repositories can be specified. This repository
+list overrides the list in a configuration file.
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help

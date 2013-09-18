@@ -46,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20130917"
+#define XBPS_API_VERSION	"20130918"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -455,7 +455,7 @@ struct xbps_handle {
 	/**
 	 * @var pkgdb
 	 *
-	 * Internalized proplib dictionary with the master package database
+	 * Proplib dictionary with the master package database
 	 * stored in XBPS_META_PATH/XBPS_PKGDB.
 	 */
 	xbps_dictionary_t pkgdb;
@@ -470,10 +470,17 @@ struct xbps_handle {
 	/**
 	 * @var transd
 	 *
-	 * Proplib dictionary with transaction details, required by
+	 * Proplib dictionary with transaction objects, required by
 	 * xbps_transaction_commit().
 	 */
 	xbps_dictionary_t transd;
+	/**
+	 * @var repositories
+	 *
+	 * Proplib array of strings with repositories, overriding the list
+	 * in the configuration file.
+	 */
+	xbps_array_t repositories;
 	/**
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
@@ -532,25 +539,18 @@ struct xbps_handle {
 	 */
 	const char *metadir;
 	/**
+	 * @var conffile
+	 *
+	 * Full path to the xbps configuration file.
+	 */
+	const char *conffile;
+	/**
 	 * @private
 	 */
 	char *cachedir_priv;
 	char *metadir_priv;
 	char *native_arch;
 	const char *target_arch;
-	/*
-	 * @var repository
-	 *
-	 * Default repository to be used if a configuration file
-	 * couldn't be found.
-	 */
-	const char *repository;
-	/**
-	 * @var conffile
-	 *
-	 * Full path to the xbps configuration file.
-	 */
-	const char *conffile;
 	/**
 	 * @var fetch_timeout
 	 *

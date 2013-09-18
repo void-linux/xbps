@@ -59,13 +59,11 @@ xbps_rpool_init(struct xbps_handle *xhp)
 
 	if (xhp->rpool_initialized)
 		return 0;
-	else if (xhp->cfg == NULL)
-		return ENOTSUP;
 
-	for (unsigned int i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		rp = malloc(sizeof(struct rpool));
 		assert(rp);
-		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
+		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
 		if ((rp->repo = xbps_repo_open(xhp, repouri)) == NULL) {
 			rp->repo = calloc(1, sizeof(struct xbps_repo));
 			assert(rp->repo);
@@ -114,11 +112,8 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 {
 	const char *repouri;
 
-	if (xhp->cfg == NULL)
-		return ENOTSUP;
-
-	for (unsigned int i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
-		repouri = cfg_getnstr(xhp->cfg, "repositories", i);
+	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
 		/* If argument was set just process that repository */
 		if (uri && strcmp(repouri, uri))
 			continue;
