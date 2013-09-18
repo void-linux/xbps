@@ -184,20 +184,6 @@ main(int argc, char **argv)
 	}
 
 	maxcols = get_maxcols();
-	/*
-	 * Check that we have write permission on rootdir, metadir
-	 * and cachedir.
-	 */
-	if ((!drun && ((access(xh.rootdir, W_OK) == -1) ||
-	    (access(xh.metadir, W_OK) == -1) ||
-	    (access(xh.cachedir, W_OK) == -1)))) {
-		if (errno != ENOENT) {
-			fprintf(stderr, "Not enough permissions on "
-			    "rootdir/cachedir/metadir: %s\n",
-			    strerror(errno));
-			exit(errno);
-		}
-	}
 
 	/* Sync remote repository data by default */
 	if (sync && !drun) {
