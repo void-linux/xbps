@@ -40,11 +40,14 @@ usage(bool fail)
 	    "\nOPTIONS\n"
 	    " -C --config <file>       Full path to configuration file\n"
 	    " -c --cachedir <dir>      Full path to cachedir\n"
-	    " -D --defrepo <uri>       Repository to be used. Can be specified\n"
-	    "                          multiple times.\n"
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -h --help                Print help usage\n"
-	    " -R --repoisotyr          Enable repository mode\n"
+	    " -R --repository          Enable repository mode. This mode explicitly\n"
+	    "                          looks for packages in repositories.\n"
+	    "    --repository=<url>    Enable repository mode and explicitly add the\n"
+	    "                          repository to the list; can be specified\n"
+	    "                          multiple times. This overrides the repositories\n"
+	    "                          list of a configuration file.\n"
 	    " -r --rootdir <dir>       Full path to rootdir\n"
 	    " -V --version             Show XBPS version\n"
 	    " -v --verbose             Verbose messages\n"
@@ -71,7 +74,6 @@ main(int argc, char **argv)
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
-		{ "defrepo", required_argument, NULL, 'D' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "list-repos", no_argument, NULL, 'L' },
@@ -81,7 +83,7 @@ main(int argc, char **argv)
 		{ "list-orphans", no_argument, NULL, 'O' },
 		{ "ownedby", no_argument, NULL, 'o' },
 		{ "property", required_argument, NULL, 'p' },
-		{ "repository-mode", no_argument, NULL, 'R' },
+		{ "repository", optional_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "search", no_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
@@ -92,13 +94,13 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
-	const char *rootdir, *cachedir, *conffile, *props, *defrepo;
+	const char *rootdir, *cachedir, *conffile, *props;
 	int c, flags, rv, show_deps = 0;
 	bool list_pkgs, list_repos, orphans, own;
 	bool list_manual, list_hold, show_prop, show_files, show_rdeps;
 	bool show, search, repo_mode, opmode, fulldeptree;
 
-	rootdir = cachedir = conffile = defrepo = props = NULL;
+	rootdir = cachedir = conffile = props = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = search = own = false;
 	list_manual = show_prop = show_files = false;
@@ -116,10 +118,6 @@ main(int argc, char **argv)
 			cachedir = optarg;
 			break;
 		case 'D':
-			if (xh.repositories == NULL)
-				xh.repositories = xbps_array_create();
-
-			xbps_array_add_cstring_nocopy(xh.repositories, optarg);
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
@@ -153,6 +151,12 @@ main(int argc, char **argv)
 			show_prop = opmode = true;
 			break;
 		case 'R':
+			if (optarg != NULL) {
+				if (xh.repositories == NULL)
+					xh.repositories = xbps_array_create();
+
+				xbps_array_add_cstring_nocopy(xh.repositories, optarg);
+			}
 			repo_mode = true;
 			break;
 		case 'r':

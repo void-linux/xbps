@@ -54,16 +54,17 @@ Example:
 Specifies a full path to the XBPS configuration file.
 .It Fl c, Fl -cachedir Ar dir
 Specifies a full path to the cache directory, where binary packages are stored.
-.It Fl D, Fl -defrepo Ar uri
-Default repository to be used. Multiple repositories can be specified. This repository
-list overrides the list in a configuration file.
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
 Show the help usage.
-.It Fl R, Fl -repository
+.It Fl R, Fl -repository=url
 Enable repository mode. This mode explicitly looks in repositories, rather
-than looking in the target root directory.
+than looking in the target root directory. The
+.Ar url
+argument is optional and can be used to add the repository to the list,
+overriding the repository list of a configuration file. Multiple repositories
+can be specified.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl v, Fl -verbose
