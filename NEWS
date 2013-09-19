@@ -1,17 +1,17 @@
 xbps-0.26 (???):
 
  * xbps-query(8): the `-D --defrepo' argument has been superseded by
-   `-R --repository=<url>' argument.
+   `-R --repository=<url>' argument. (issue #17).
 
  * xbps-install(8): added support to specify multiple repositories with
    `--repository=<url>`. For consistency with `xbps-query(8)' use the same
-   syntax as it were an optional argument.
+   syntax as it were an optional argument. (issue #17).
 
    This overrides the list of a configuration file.
 
- * xbps-query(8: added support to specify multiple repositories with
+ * xbps-query(8): added support to specify multiple repositories with
    `--repository=<url>`. This also enables repository mode; the argument is
-   optional and can be used to specify desired repositories.
+   optional and can be used to specify desired repositories. (issue #17).
 
    This overrides the repository list of a configuration file.
 
@@ -37,9 +37,10 @@ xbps-0.26 (???):
  * On terminals with 0 columns, assume 80. Xen's PV guest running Linux and its
    hvc console does report 0 columns/rows.
 
- * libxbps: introduce xbps_array_foreach_cb() which is a multithreaded implementation,
-   to process N items of an array spawning 1 thread per core. This makes XBPS use
-   threads when possible on multi-core CPUs.
+ * libxbps: introduce xbps_{array,pkgdb}_foreach_cb_multi() which are
+   multithreaded implementations  to process N items of an array spawning
+   1 thread per core. This makes XBPS use threads when possible on
+   multi-core CPUs.
 
  * libxbps: removed the following unused API functions:
 
