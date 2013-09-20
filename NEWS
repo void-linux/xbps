@@ -7,13 +7,13 @@ xbps-0.26 (???):
    `--repository=<url>`. For consistency with `xbps-query(8)' use the same
    syntax as it were an optional argument. (issue #17).
 
-   This overrides the list of a configuration file.
+   This overrides the repository list in a configuration file.
 
  * xbps-query(8): added support to specify multiple repositories with
    `--repository=<url>`. This also enables repository mode; the argument is
    optional and can be used to specify desired repositories. (issue #17).
 
-   This overrides the repository list of a configuration file.
+   This overrides the repository list in a configuration file.
 
  * Re-added all metadata package objects to the repository index, this avoids
    remote connections when querying packages from remote repositories. This also
