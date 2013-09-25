@@ -45,10 +45,10 @@
  * dictionary (the array returned by xbps_find_pkg_orphans() will
  * contain a package dictionary per orphan found):
  *
- * @image html images/xbps_pkgdb_array.png
+ * @image html images/xbps_pkgdb_dictionary.png
  *
  * Legend:
- *  - <b>Salmon filled box</b>: \a XBPS_REGPKGDB_PLIST file internalized.
+ *  - <b>Salmon filled box</b>: \a pkgdb plist internalized.
  *  - <b>White filled box</b>: mandatory objects.
  *  - <b>Grey filled box</b>: optional objects.
  *  - <b>Green filled box</b>: possible value set in the object, only one

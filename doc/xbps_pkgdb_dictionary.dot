@@ -1,10 +1,10 @@
-digraph pkgdb_array {
+digraph pkgdb_dictionary {
 	graph [rankdir=LR,rank=same,ranksep=".10"];
 	edge [arrowhead="vee",arrowsize="0.2",fontname="DejaVuSansCondensed",fontsize="9"];
 	node [height=".1",shape=box,fontname="DejaVuSansCondensed",fontsize="9"];
 	pkgdb_plist -> main;
-	pkgdb_plist [style=filled,fillcolor="darksalmon",label="pkgdb.plist"];
-	main [label="Main array"];
+	pkgdb_plist [style=filled,fillcolor="darksalmon",label="pkgdb-0.21.plist"];
+	main [label="Main dictionary"];
 	main -> pkgdict [label="dictionary"];
 	main -> pkgdict2 [label="dictionary"];
 	pkgdict [style=filled,label="Package[0]"];
