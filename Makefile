@@ -46,12 +46,3 @@ clean:
 		$(MAKE) -C $$dir clean || exit 1;	\
 	done
 	-rm -f config.h config.mk _ccflag.{,c,err}
-
-dist:
-ifndef REV
-	@echo "Please specify revision/tag with REV, i.e:"
-	@echo " > make REV=0.6.1 dist"
-	@exit 1
-endif
-	@echo "Building distribution tarball for revision/tag: $(REV) ..."
-	-@git archive --format=tar --prefix=xbps-$(REV)/ $(REV) | gzip -9 > ~/xbps-$(REV).tar.gz
