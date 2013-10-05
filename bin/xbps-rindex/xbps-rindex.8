@@ -1,4 +1,4 @@
-.Dd August 18, 2013
+.Dd October 5, 2013
 .Os Void Linux
 .Dt xbps-rindex 8
 .Sh NAME
@@ -38,6 +38,17 @@ Removes obsolete packages from
 .Ar repository .
 Packages that are not currently registered in repository's index will
 be removed (out of date, invalid archives, etc).
+.It Sy -s, --sign
+Signs a repository with your specified RSA key. If
+.Fl --privkey
+argument not set, it defaults to
+.Sy ~/.ssh/id_rsa .
+.It Sy --signedby Ar string
+This is required to sign a repository, use something like
+.Ar name <email> .
+.It Sy --privkey Ar key
+Path to the private RSA key to sign the repository. If unset, defaults to
+.Sy ~/.ssh/id_rsa .
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
 .It Sy XBPS_TARGET_ARCH

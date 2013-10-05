@@ -48,7 +48,7 @@ bool	noyes(const char *, ...);
 void	fetch_file_progress_cb(struct xbps_fetch_cb_data *, void *);
 
 /* from state_cb.c */
-void	state_cb(struct xbps_state_cb_data *, void *);
+int	state_cb(struct xbps_state_cb_data *, void *);
 
 /* From util.c */
 void	print_package_line(const char *, int, bool);

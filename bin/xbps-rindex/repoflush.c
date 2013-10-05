@@ -37,58 +37,54 @@
 #include <xbps.h>
 #include "defs.h"
 
-int
-repodata_flush(struct xbps_handle *xhp, const char *repodir,
-	xbps_dictionary_t idx, xbps_dictionary_t idxfiles)
+struct repodata *
+repodata_init(struct xbps_handle *xhp, const char *repodir)
 {
-	struct archive *ar;
-	mode_t myumask;
-	char *repofile, *tname, *xml;
-	int repofd;
+	struct repodata *rd;
+
+	rd = malloc(sizeof(struct repodata));
+	assert(rd);
 
 	/* Create a tempfile for our repository archive */
-	repofile = xbps_repo_path(xhp, repodir);
-	tname = xbps_xasprintf("%s.XXXXXXXXXX", repofile);
-	if ((repofd = mkstemp(tname)) == -1)
-		return errno;
+	rd->repofile = xbps_repo_path(xhp, repodir);
+	rd->tname = xbps_xasprintf("%s.XXXXXXXXXX", rd->repofile);
+	if ((rd->repofd = mkstemp(rd->tname)) == -1) {
+		free(rd);
+		return NULL;
+	}
 
 	/* Create and write our repository archive */
-	ar = archive_write_new();
-	assert(ar);
-	archive_write_set_compression_gzip(ar);
-	archive_write_set_format_pax_restricted(ar);
-	archive_write_set_options(ar, "compression-level=9");
-	archive_write_open_fd(ar, repofd);
+	rd->ar = archive_write_new();
+	assert(rd->ar);
+	archive_write_set_compression_gzip(rd->ar);
+	archive_write_set_format_pax_restricted(rd->ar);
+	archive_write_set_options(rd->ar, "compression-level=9");
+	archive_write_open_fd(rd->ar, rd->repofd);
 
-	xml = xbps_dictionary_externalize(idx);
-	assert(xml);
-	if (xbps_archive_append_buf(ar, xml, strlen(xml),
-	    XBPS_PKGINDEX, 0644, "root", "root") != 0) {
-		free(xml);
-		return -1;
-	}
-	free(xml);
+	return rd;
+}
 
-	xml = xbps_dictionary_externalize(idxfiles);
-	assert(xml);
-	if (xbps_archive_append_buf(ar, xml, strlen(xml),
-	    XBPS_PKGINDEX_FILES, 0644, "root", "root") != 0) {
-		free(xml);
-		return -1;
-	}
-	free(xml);
+int
+repodata_add_buf(struct repodata *rd, const char *buf, const char *filename)
+{
+	return xbps_archive_append_buf(rd->ar, buf, strlen(buf),
+	    filename, 0644, "root", "root");
+}
 
-	archive_write_finish(ar);
+void
+repodata_flush(struct repodata *rd)
+{
+	mode_t myumask;
 
 	/* Write data to tempfile and rename */
-	fdatasync(repofd);
+	archive_write_finish(rd->ar);
+	fdatasync(rd->repofd);
 	myumask = umask(0);
 	(void)umask(myumask);
-	assert(fchmod(repofd, 0666 & ~myumask) != -1);
-	close(repofd);
-	rename(tname, repofile);
-	free(repofile);
-	free(tname);
-
-	return 0;
+	assert(fchmod(rd->repofd, 0666 & ~myumask) != -1);
+	close(rd->repofd);
+	rename(rd->tname, rd->repofile);
+	free(rd->repofile);
+	free(rd->tname);
+	free(rd);
 }

@@ -1,3 +1,20 @@
+xbps-0.27 (???):
+
+ * Support for RSA signed repositories. A repository can be signed with your
+   preferred RSA key (any ssh key works) as follows:
+
+	$ xbps-rindex -s --signedby "foobar <foo@bar>" --privkey /priv/key /path/to/repo
+
+   The first time xbps-install(8) access to a signed repository it will ask you
+   to import its public key to verify the signature. Please double-check the
+   hex fingerprint of the public key is the real one!
+
+   Once the public key has been imported it's not expected to change, hence if the
+   repository index has been modified or signed with another key, it will be ignored.
+
+   Starting from now on all remote repositories must be signed and verified.
+   Local repos do not need to be signed and they will work as before.
+
 xbps-0.26 (2013-09-25):
 
  * xbps-query(8): the `-D --defrepo' argument has been superseded by

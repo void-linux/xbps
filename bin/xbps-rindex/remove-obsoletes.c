@@ -119,7 +119,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		}
 		return 0;
 	}
-	if ((repo->idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX)) == NULL) {
+	if ((repo->idx = xbps_repo_get_plist(repo, XBPS_REPOIDX)) == NULL) {
 		xbps_repo_close(repo);
 		return -1;
 	}

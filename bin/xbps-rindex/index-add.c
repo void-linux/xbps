@@ -52,7 +52,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	const char *oldpkgver, *arch, *oldarch;
 	char *pkgver, *pkgname, *sha256, *repodir, *buf;
 	char *tmprepodir;
-	int rv, ret = 0;
+	int rv = 0, ret = 0;
 	bool flush = false, found = false;
 
 	idx = idxfiles = newpkgd = newpkgfilesd = curpkgd = NULL;
@@ -67,8 +67,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo != NULL) {
-		idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
-		idxfiles = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
+		idx = xbps_repo_get_plist(repo, XBPS_REPOIDX);
+		idxfiles = xbps_repo_get_plist(repo, XBPS_REPOIDX_FILES);
 	}
 	if (idx == NULL)
 		idx = xbps_dictionary_create();
@@ -267,9 +267,19 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	 * Generate repository data file.
 	 */
 	if (flush) {
-		rv = repodata_flush(xhp, repodir, idx, idxfiles);
-		if (rv != 0)
-			return rv;
+		struct repodata *rd;
+		char *xml;
+
+		rd = repodata_init(xhp, repodir);
+		xml = xbps_dictionary_externalize(idx);
+		assert(idx);
+		rv = repodata_add_buf(rd, xml, XBPS_REPOIDX);
+		free(xml);
+		xml = xbps_dictionary_externalize(idxfiles);
+		assert(idx);
+		rv = repodata_add_buf(rd, xml, XBPS_REPOIDX_FILES);
+		free(xml);
+		repodata_flush(rd);
 	}
 	printf("index: %u packages registered.\n",
 	    xbps_dictionary_count(idx));
@@ -279,5 +289,5 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	xbps_object_release(idx);
 	xbps_object_release(idxfiles);
 
-	return 0;
+	return rv;
 }

@@ -31,13 +31,14 @@
 #include <xbps.h>
 #include "defs.h"
 
-void
+int
 state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 {
 	xbps_dictionary_t pkgd;
 	const char *instver, *newver;
 	char *pkgname;
 	bool syslog_enabled = false;
+	int rv = 0;
 
 	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
 		syslog_enabled = true;
@@ -46,6 +47,19 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 
 	switch (xscd->state) {
 	/* notifications */
+	case XBPS_STATE_REPO_KEY_IMPORT:
+		printf("%s\n", xscd->desc);
+		printf("Fingerprint: ");
+		xbps_print_hexfp(xscd->arg);
+		printf("\n");
+		rv = noyes("Do you want to import this public key?");
+		break;
+	case XBPS_STATE_REPO_SIGVERIFIED:
+		printf("[*] RSA signature verified correctly\n");
+		break;
+	case XBPS_STATE_REPO_SIGUNVERIFIED:
+		printf("[*] RSA signature UNVERIFIED! ignoring...\n");
+		break;
 	case XBPS_STATE_TRANS_DOWNLOAD:
 		printf("\n[*] Downloading binary packages\n");
 		break;
@@ -141,7 +155,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	case XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL:
 		/* Ignore errors due to not empty directories */
 		if (xscd->err == ENOTEMPTY)
-			return;
+			return 0;
 
 		xbps_error_printf("%s\n", xscd->desc);
 		if (syslog_enabled)
@@ -152,4 +166,6 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		    "%s: unknown state %d\n", xscd->arg, xscd->state);
 		break;
 	}
+
+	return rv;
 }

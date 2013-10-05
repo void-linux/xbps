@@ -39,11 +39,14 @@ usage(bool fail)
 	    "OPTIONS\n"
 	    " -f --force                        Force mode to overwrite entry in add mode\n"
 	    " -h --help                         Show help usage\n"
-	    " -V --version                      Show XBPS version\n\n"
+	    " -V --version                      Show XBPS version\n"
+	    "    --privkey <key>                Path to the private key for signing\n"
+	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
 	    "MODE\n"
 	    " -a --add <repodir/pkg> ...        Add package(s) to repository index\n"
 	    " -c --clean <repodir>              Cleans obsolete entries in repository index\n"
-	    " -r --remove-obsoletes <repodir>   Removes obsolete packages from repository\n\n");
+	    " -r --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
+	    " -s --sign <repodir>               Sign repository index\n\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
@@ -58,14 +61,26 @@ main(int argc, char **argv)
 		{ "help", no_argument, NULL, 'h' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "privkey", required_argument, NULL, 0},
+		{ "signedby", required_argument, NULL, 1},
+		{ "sign", no_argument, NULL, 's'},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
+	const char *privkey = NULL, *signedby = NULL;
 	int rv, c;
-	bool clean_mode = false, add_mode = false, rm_mode = false, force = false;
+	bool clean_mode, add_mode, rm_mode, sign_mode, force;
+
+	clean_mode = add_mode = rm_mode = sign_mode = force = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
+		case 0:
+			privkey = optarg;
+			break;
+		case 1:
+			signedby = optarg;
+			break;
 		case 'a':
 			add_mode = true;
 			break;
@@ -81,18 +96,22 @@ main(int argc, char **argv)
 		case 'r':
 			rm_mode = true;
 			break;
+		case 's':
+			sign_mode = true;
+			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		}
 	}
-	if ((argc == optind) || (!add_mode && !clean_mode && !rm_mode)) {
+	if ((argc == optind) || (!add_mode && !clean_mode && !rm_mode && !sign_mode)) {
 		usage(true);
 	} else if ((add_mode && (clean_mode || rm_mode)) ||
 		   (clean_mode && (add_mode || rm_mode)) ||
-		   (rm_mode && (add_mode || clean_mode))) {
-		fprintf(stderr, "Only one mode can be specified: add, clean "
-		    "or remove-obsoletes.\n");
+		   (rm_mode && (add_mode || clean_mode)) ||
+		   (sign_mode && (add_mode || clean_mode || rm_mode))) {
+		fprintf(stderr, "Only one mode can be specified: add, clean, "
+		    "remove-obsoletes or sign.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -110,6 +129,8 @@ main(int argc, char **argv)
 		rv = index_clean(&xh, argv[optind]);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
+	else if (sign_mode)
+		rv = sign_repo(&xh, argv[optind], privkey, signedby);
 
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

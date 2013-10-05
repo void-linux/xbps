@@ -53,7 +53,7 @@ xbps_rpool_init(struct xbps_handle *xhp)
 	struct rpool *rp;
 	const char *repouri;
 	bool foundrepo = false;
-	int rv = 0;
+	int retval, rv = 0;
 
 	assert(xhp);
 
@@ -65,15 +65,59 @@ xbps_rpool_init(struct xbps_handle *xhp)
 		assert(rp);
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
 		if ((rp->repo = xbps_repo_open(xhp, repouri)) == NULL) {
-			rp->repo = calloc(1, sizeof(struct xbps_repo));
+			rp->repo = malloc(sizeof(struct xbps_repo));
 			assert(rp->repo);
+			rp->repo->ar = NULL;
+			rp->repo->is_verified = false;
+			rp->repo->is_signed = false;
 		}
-		rp->repo->idx = xbps_repo_get_plist(rp->repo, XBPS_PKGINDEX);
+		rp->repo->idx = xbps_repo_get_plist(rp->repo, XBPS_REPOIDX);
+		if (xbps_object_type(rp->repo->idx) == XBPS_TYPE_DICTIONARY)
+			xbps_dictionary_make_immutable(rp->repo->idx);
+
+		rp->repo->meta = xbps_repo_get_plist(rp->repo, XBPS_REPOMETA);
+		if (xbps_object_type(rp->repo->meta) == XBPS_TYPE_DICTIONARY)
+			xbps_dictionary_make_immutable(rp->repo->meta);
+
 		rp->repo->uri = repouri;
 		rp->repo->xhp = xhp;
+
+		if (xbps_repository_is_remote(repouri)) {
+			/*
+			 * Import the RSA public key (if it's signed).
+			 */
+			retval = xbps_repo_key_import(rp->repo);
+			if (retval != 0) {
+				/* any error */
+				xbps_dbg_printf(xhp, "[rpool] %s: key_import %s\n",
+				    rp->repo->uri, strerror(retval));
+			}
+			/*
+			 * Check the repository signature against stored public key.
+			 */
+			retval = xbps_repo_key_verify(rp->repo);
+			if (retval == 0) {
+				/* signed, verified */
+				xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGVERIFIED, 0, NULL, NULL);
+			} else if (retval == EPERM) {
+				/* signed, unverified */
+				xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGUNVERIFIED, 0, NULL, NULL);
+				xbps_repo_close(rp->repo);
+			} else {
+				/* any error */
+				xbps_dbg_printf(xhp, "[rpool] %s: key_verify %s\n",
+				    rp->repo->uri, strerror(retval));
+				xbps_repo_close(rp->repo);
+			}
+		}
+		/*
+		 * If repository has passed signature checks, add it to the pool.
+		 */
 		SIMPLEQ_INSERT_TAIL(&rpool_queue, rp, entries);
 		foundrepo = true;
-		xbps_dbg_printf(xhp, "[rpool] `%s' registered.\n", repouri);
+		xbps_dbg_printf(xhp, "[rpool] `%s' registered (%s, %s).\n",
+		    repouri, rp->repo->is_signed ? "signed" : "unsigned",
+		    rp->repo->is_verified ? "verified" : "unverified");
 	}
 	if (!foundrepo) {
 		/* no repositories available, error out */
@@ -101,6 +145,7 @@ xbps_rpool_release(struct xbps_handle *xhp)
 	while ((rp = SIMPLEQ_FIRST(&rpool_queue))) {
 		SIMPLEQ_REMOVE(&rpool_queue, rp, rpool, entries);
 		xbps_repo_close(rp->repo);
+		free(rp->repo);
 		free(rp);
 	}
 	xhp->rpool_initialized = false;
@@ -131,8 +176,8 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 
 int
 xbps_rpool_foreach(struct xbps_handle *xhp,
-		   int (*fn)(struct xbps_repo *, void *, bool *),
-		   void *arg)
+	int (*fn)(struct xbps_repo *, void *, bool *),
+	void *arg)
 {
 	struct rpool *rp;
 	int rv = 0;
@@ -142,21 +187,14 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 	/* Initialize repository pool */
 	if ((rv = xbps_rpool_init(xhp)) != 0) {
 		if (rv == ENOTSUP) {
-			xbps_dbg_printf(xhp,
-			    "[rpool] empty repository list.\n");
+			xbps_dbg_printf(xhp, "[rpool] empty repository list.\n");
 		} else if (rv != ENOENT && rv != ENOTSUP) {
-			xbps_dbg_printf(xhp,
-			    "[rpool] couldn't initialize: %s\n",
-			    strerror(rv));
+			xbps_dbg_printf(xhp, "[rpool] couldn't initialize: %s\n", strerror(rv));
 		}
 		return rv;
 	}
 	/* Iterate over repository pool */
 	SIMPLEQ_FOREACH(rp, &rpool_queue, entries) {
-		/* ignore invalid repos */
-		if (rp->repo->idx == NULL)
-			continue;
-
 		rv = (*fn)(rp->repo, arg, &done);
 		if (rv != 0 || done)
 			break;

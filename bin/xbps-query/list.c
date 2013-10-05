@@ -156,8 +156,15 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 static int
 repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 {
-	printf("%5zd %s\n", repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1, repo->uri);
-
+	printf("%5zd %s",
+	    repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1,
+	    repo->uri);
+	if (xbps_repository_is_remote(repo->uri)) {
+		printf(" (RSA %s, %s)",
+		    repo->is_signed ? "signed" : "unsigned",
+		    repo->is_verified ? "verified" : "unverified");
+	}
+	printf("\n");
 	return 0;
 }
 

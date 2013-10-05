@@ -70,7 +70,7 @@ xbps_set_cb_fetch(struct xbps_handle *xhp,
 	(*xhp->fetch_cb)(&xfcd, xhp->fetch_cb_data);
 }
 
-void HIDDEN
+int HIDDEN
 xbps_set_cb_state(struct xbps_handle *xhp,
 		  xbps_state_t state,
 		  int err,
@@ -84,7 +84,7 @@ xbps_set_cb_state(struct xbps_handle *xhp,
 	int retval;
 
 	if (xhp->state_cb == NULL)
-		return;
+		return 0;
 
 	xscd.xhp = xhp;
 	xscd.state = state;
@@ -99,7 +99,9 @@ xbps_set_cb_state(struct xbps_handle *xhp,
 		else
 			xscd.desc = buf;
 	}
-	(*xhp->state_cb)(&xscd, xhp->state_cb_data);
+	retval = (*xhp->state_cb)(&xscd, xhp->state_cb_data);
 	if (buf != NULL)
 		free(buf);
+
+	return retval;
 }

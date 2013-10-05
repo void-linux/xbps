@@ -41,7 +41,7 @@ endif
 
 %.o: %.c
 	@printf " [CC]\t\t$@\n"
-	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) $(EXTRA_CFLAGS) -c $<
 
 $(BIN).static: $(OBJS)
 	@printf " [CCLD]\t\t$@\n"

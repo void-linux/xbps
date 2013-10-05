@@ -162,7 +162,7 @@ repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 	struct ffdata *ffd = arg;
 	int rv;
 
-	filesd = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
+	filesd = xbps_repo_get_plist(repo, XBPS_REPOIDX_FILES);
 	if (filesd == NULL)
 		return 0;
 

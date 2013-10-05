@@ -62,7 +62,7 @@ usage(bool fail)
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
-static void
+static int
 state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 {
 	bool syslog_enabled = false;
@@ -101,7 +101,7 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	case XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL:
 		/* Ignore errors due to not empty directories */
 		if (xscd->err == ENOTEMPTY)
-			return;
+			return 0;
 
 		xbps_error_printf("%s\n", xscd->desc);
 		if (syslog_enabled)
@@ -112,6 +112,8 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		    "%s: unknown state %d\n", xscd->arg, xscd->state);
 		break;
 	}
+
+	return 0;
 }
 
 static int

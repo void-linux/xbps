@@ -46,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20130918"
+#define XBPS_API_VERSION	"20131005"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -81,6 +81,12 @@
 #define XBPS_PKGDB		"pkgdb-0.21.plist"
 
 /** 
+ * @def XBPS_REPOKEYS
+ * Filename for the repository keys.
+ */
+#define XBPS_REPOKEYS		"repokeys.plist"
+
+/**
  * @def XBPS_PKGPROPS
  * Filename for package metadata property list.
  */
@@ -93,16 +99,22 @@
 #define XBPS_PKGFILES		"files.plist"
 
 /** 
- * @def XBPS_PKGINDEX
- * Filename for the repository package index property list.
+ * @def XBPS_REPOIDX
+ * Filename for the repository index property list.
  */
-#define XBPS_PKGINDEX		"index.plist"
+#define XBPS_REPOIDX		"index.plist"
 
 /**
- * @def XBPS_PKGINDEX_FILES
- * Filename for the repository package index files property list.
+ * @def XBPS_REPOIDX_FILES
+ * Filename for the repository index files property list.
  */
-#define XBPS_PKGINDEX_FILES	"index-files.plist"
+#define XBPS_REPOIDX_FILES	"index-files.plist"
+
+/**
+ * @def XBPS_REPOMETA
+ * Filename for the repository metadata property list.
+ */
+#define XBPS_REPOMETA 		"meta.plist"
 
 /**
  * @def XBPS_SYSCONF_PATH
@@ -238,6 +250,9 @@ extern "C" {
  * - XBPS_STATE_UPDATE_FAIL: package update has failed.
  * - XBPS_STATE_UNPACK_FAIL: package unpack has failed.
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
+ * - XBPS_STATE_REPO_KEY_IMPORT: repository is signed and needs to import pubkey.
+ * - XBPS_STATE_REPO_SIGVERIFIED: repository is signed and verified.
+ * - XBPS_STATE_REPO_SIGUNVERIFIED: repository is signed and UNVERIFIED.
  */
 typedef enum xbps_state {
 	XBPS_STATE_UNKNOWN = 0,
@@ -274,7 +289,10 @@ typedef enum xbps_state {
 	XBPS_STATE_UPDATE_FAIL,
 	XBPS_STATE_UNPACK_FAIL,
 	XBPS_STATE_REPOSYNC_FAIL,
-	XBPS_STATE_CONFIGURE_DONE
+	XBPS_STATE_CONFIGURE_DONE,
+	XBPS_STATE_REPO_KEY_IMPORT,
+	XBPS_STATE_REPO_SIGVERIFIED,
+	XBPS_STATE_REPO_SIGUNVERIFIED
 } xbps_state_t;
 
 /**
@@ -485,7 +503,7 @@ struct xbps_handle {
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
 	 */
-	void (*state_cb)(struct xbps_state_cb_data *, void *);
+	int (*state_cb)(struct xbps_state_cb_data *, void *);
 	/**
 	 * @var state_cb_data
 	 *
@@ -1086,6 +1104,7 @@ xbps_dictionary_t xbps_get_pkg_plist_from_binpkg(const char *fname,
 /** @addtogroup repopool */
 /*@{*/
 
+
 /**
  * @struct xbps_repo xbps.h "xbps.h"
  * @brief Repository structure
@@ -1111,16 +1130,35 @@ struct xbps_repo {
 	 */
 	xbps_dictionary_t idxfiles;
 	/**
+	 * @var meta
+	 *
+	 * Proplib dictionary associated with the repository metadata.
+	 */
+	xbps_dictionary_t meta;
+	/**
 	 * @var uri
 	 * 
 	 * URI string associated with repository.
 	 */
 	const char *uri;
 	/**
+	 * var is_signed
+	 *
+	 * True if this repository has been signed, false otherwise.
+	 * (read-only).
+	 */
+	bool is_signed;
+	/**
+	 * var is_verified
+	 *
+	 * True if this repository has been signed and verified against its public key.
+	 * False if the stored public key did not match its signature.
+	 */
+	bool is_verified;
+	/**
 	 * @var xhp
 	 *
 	 * Pointer to our xbps_handle struct passed to xbps_rpool_foreach.
-	 * (read-only).
 	 */
 	struct xbps_handle *xhp;
 };
@@ -1154,8 +1192,8 @@ int xbps_rpool_sync(struct xbps_handle *xhp, const char *uri);
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_rpool_foreach(struct xbps_handle *xhp,
-		       int (*fn)(struct xbps_repo *, void *, bool *),
-		       void *arg);
+	       int (*fn)(struct xbps_repo *, void *, bool *),
+	       void *arg);
 
 /**
  * Finds a package dictionary in the repository pool by specifying a
@@ -1616,6 +1654,24 @@ int xbps_humanize_number(char *buf, int64_t bytes);
  * greater than pkg2.
  */
 int xbps_cmpver(const char *pkg1, const char *pkg2);
+
+/**
+ * Converts a RSA public key in PEM format to a hex fingerprint.
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] pubkey The public-key in PEM format as xbps_data_t.
+ *
+ * @return The hex fingerprint. The returned buffer must be free(3)d
+ * when necessary.
+ */
+unsigned char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
+
+/**
+ * Prints to stdout the hex fingerprint of a public key.
+ *
+ * @param[in] fp String returned by xbps_pubkey2fp();
+ */
+void xbps_print_hexfp(const char *fp);
 
 /*@}*/
 

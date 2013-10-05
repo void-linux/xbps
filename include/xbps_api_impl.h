@@ -159,6 +159,14 @@ int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
 					const char *,
 					const char *,
 					const char *);
+
+/**
+ * @private
+ * From lib/repo_keys.c
+ */
+int HIDDEN xbps_repo_key_import(struct xbps_repo *);
+int HIDDEN xbps_repo_key_verify(struct xbps_repo *);
+
 /**
  * @private
  * From lib/repo_pkgdeps.c
@@ -225,8 +233,8 @@ int HIDDEN xbps_file_exec(struct xbps_handle *, const char *, ...);
  */
 void HIDDEN xbps_set_cb_fetch(struct xbps_handle *, off_t, off_t, off_t,
 			      const char *, bool, bool, bool);
-void HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
-			      const char *, const char *, ...);
+int HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
+			     const char *, const char *, ...);
 
 /**
  * @private

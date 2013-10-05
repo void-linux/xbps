@@ -71,7 +71,7 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		 * File can be read; check its hash.
 		 */
 		xbps_dictionary_get_cstring_nocopy(obj,
-		    "filename-sha256", &sha256);
+				"filename-sha256", &sha256);
 		if (xbps_file_hash_check(filen, sha256) != 0)
 			xbps_array_add_cstring_nocopy(cbd->array, pkgver);
 	}
@@ -80,7 +80,7 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 }
 
 /*
- * Removes stalled pkg entries in repository's index.plist file, if any
+ * Removes stalled pkg entries in repository's XBPS_REPOIDX file, if any
  * binary package cannot be read (unavailable, not enough perms, etc).
  */
 int
@@ -102,8 +102,8 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		fprintf(stderr, "index: cannot read repository data: %s\n", strerror(errno));
 		return -1;
 	}
-	idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
-	idxfiles = xbps_repo_get_plist(repo, XBPS_PKGINDEX_FILES);
+	idx = xbps_repo_get_plist(repo, XBPS_REPOIDX);
+	idxfiles = xbps_repo_get_plist(repo, XBPS_REPOIDX_FILES);
 	xbps_repo_close(repo);
 	if (idx == NULL || idxfiles == NULL) {
 		fprintf(stderr, "incomplete repository data file!");
@@ -111,7 +111,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	}
 	if (chdir(repodir) == -1) {
 		fprintf(stderr, "index: cannot chdir to %s: %s\n",
-		    repodir, strerror(errno));
+				repodir, strerror(errno));
 		return -1;
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
@@ -134,14 +134,25 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_object_release(cbd.array);
 
 	if (flush) {
-		rv = repodata_flush(xhp, repodir, idx, idxfiles);
-		if (rv != 0)
-			return rv;
+		struct repodata *rd;
+		char *xml;
+
+		rd = repodata_init(xhp, repodir);
+		xml = xbps_dictionary_externalize(idx);
+		assert(idx);
+		rv = repodata_add_buf(rd, xml, XBPS_REPOIDX);
+		free(xml);
+		xml = xbps_dictionary_externalize(idxfiles);
+		assert(idx);
+		rv = repodata_add_buf(rd, xml, XBPS_REPOIDX_FILES);
+		free(xml);
+		repodata_flush(rd);
+
 	}
 	printf("index: %u packages registered.\n",
-	    xbps_dictionary_count(idx));
+			xbps_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n",
-	    xbps_dictionary_count(idxfiles));
+			xbps_dictionary_count(idxfiles));
 
 	xbps_object_release(idx);
 	xbps_object_release(idxfiles);

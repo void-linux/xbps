@@ -88,16 +88,17 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	archive_read_support_format_tar(repo->ar);
 
 	if (stat(repofile, &st) == -1) {
-		xbps_dbg_printf(xhp, "[repo] cannot stat repository file %s: %s\n",
-		    repofile, strerror(errno));
+		xbps_dbg_printf(xhp, "[repo] `%s' missing repodata %s: %s\n",
+		    url, repofile, strerror(errno));
 		archive_read_finish(repo->ar);
 		free(repo);
 		repo = NULL;
 		goto out;
 	}
 	if (archive_read_open_filename(repo->ar, repofile, st.st_blksize) == ARCHIVE_FATAL) {
-		xbps_dbg_printf(xhp, "[repo] cannot open repository file %s: %s\n",
-				repofile, strerror(archive_errno(repo->ar)));
+		xbps_dbg_printf(xhp,
+		    "[repo] `%s' failed to open repodata archive %s: %s\n",
+		    url, repofile, strerror(archive_errno(repo->ar)));
 		archive_read_finish(repo->ar);
 		free(repo);
 		repo = NULL;
@@ -152,15 +153,21 @@ xbps_repo_close(struct xbps_repo *repo)
 {
 	assert(repo);
 
-	if (repo->ar == NULL)
-		return;
+	if (repo->ar != NULL)
+		archive_read_finish(repo->ar);
 
-	archive_read_finish(repo->ar);
-	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
+	if (repo->meta != NULL) {
+		xbps_object_release(repo->meta);
+		repo->meta = NULL;
+	}
+	if (repo->idx != NULL) {
 		xbps_object_release(repo->idx);
-	if (xbps_object_type(repo->idxfiles) == XBPS_TYPE_DICTIONARY)
+		repo->idx = NULL;
+	}
+	if (repo->idxfiles != NULL) {
 		xbps_object_release(repo->idxfiles);
-	free(repo);
+		repo->idxfiles = NULL;
+	}
 }
 
 xbps_dictionary_t
@@ -171,14 +178,9 @@ xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg)
 	assert(repo);
 	assert(pkg);
 
-	if (repo->ar == NULL)
+	if (repo->ar == NULL || repo->idx == NULL)
 		return NULL;
 
-	if (xbps_object_type(repo->idx) != XBPS_TYPE_DICTIONARY) {
-		repo->idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
-		if (repo->idx == NULL)
-			return NULL;
-	}
 	pkgd = xbps_find_virtualpkg_in_dict(repo->xhp, repo->idx, pkg);
 	if (pkgd) {
 		xbps_dictionary_set_cstring_nocopy(pkgd,
@@ -196,14 +198,9 @@ xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg)
 	assert(repo);
 	assert(pkg);
 
-	if (repo->ar == NULL)
+	if (repo->ar == NULL || repo->idx == NULL)
 		return NULL;
 
-	if (xbps_object_type(repo->idx) != XBPS_TYPE_DICTIONARY) {
-		repo->idx = xbps_repo_get_plist(repo, XBPS_PKGINDEX);
-		if (repo->idx == NULL)
-			return NULL;
-	}
 	pkgd = xbps_find_pkg_in_dict(repo->idx, pkg);
 	if (pkgd) {
 		xbps_dictionary_set_cstring_nocopy(pkgd,
@@ -335,6 +332,9 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	const char *vpkg;
 	char *buf = NULL;
 	bool match = false;
+
+	if (repo->idx == NULL)
+		return NULL;
 
 	if (((pkgd = xbps_rpool_get_pkg(repo->xhp, pkg)) == NULL) &&
 	    ((pkgd = xbps_rpool_get_virtualpkg(repo->xhp, pkg)) == NULL)) {
