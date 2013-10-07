@@ -4,7 +4,8 @@ The X Binary Package System (in short XBPS) is a new binary package system **des
 
 The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and released with a **Simplified BSD license (2 clause)**. There is a well documented API provided by the XBPS Library that is the basis for its frontends to handle binary packages and repositories. Some highlights:
 
- * Supports **multiple local and remote repositories** (FTP/HTTP/HTTPS).
+ * Supports **multiple local and remote repositories** (HTTP/HTTPS/FTP).
+ * RSA signed remote repositories (NEW in 0.27).
  * **SHA256 hashes** for package metadata, files and binary packages.
  * Supports **package states** (ala dpkg) to mitigate broken package installs/updates.
  * Ability to **resume** partial package install/updates.
