@@ -56,8 +56,8 @@ xbps_repository_is_remote(const char *uri)
 {
 	assert(uri != NULL);
 
-	if ((strncmp(uri, "https://", 8) == 0) ||
-	    (strncmp(uri, "http://", 7) == 0) ||
+	if ((strncmp(uri, "http://", 7) == 0) ||
+	    (strncmp(uri, "https://", 8) == 0) ||
 	    (strncmp(uri, "ftp://", 6) == 0))
 		return true;
 
