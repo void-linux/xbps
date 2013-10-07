@@ -158,18 +158,16 @@ static int
 repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t filesd;
 	struct ffdata *ffd = arg;
 	int rv;
 
-	filesd = xbps_repo_get_plist(repo, XBPS_REPOIDX_FILES);
-	if (filesd == NULL)
+	xbps_repo_open_idxfiles(repo);
+	if (repo->idxfiles == NULL)
 		return 0;
 
 	ffd->repouri = repo->uri;
-	allkeys = xbps_dictionary_all_keys(filesd);
-	rv = xbps_array_foreach_cb(repo->xhp, allkeys, filesd, repo_match_cb, ffd);
-	xbps_object_release(filesd);
+	allkeys = xbps_dictionary_all_keys(repo->idxfiles);
+	rv = xbps_array_foreach_cb(repo->xhp, allkeys, repo->idxfiles, repo_match_cb, ffd);
 	xbps_object_release(allkeys);
 
 	return rv;
