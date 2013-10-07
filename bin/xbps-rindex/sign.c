@@ -146,14 +146,13 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	const char *privkey, const char *signedby)
 {
 	RSA *rsa = NULL;
-	struct repodata *rd;
 	struct xbps_repo *repo;
-	xbps_dictionary_t idx, meta;
+	xbps_dictionary_t idx, idxfiles, meta = NULL;
 	xbps_data_t data;
 	unsigned int siglen;
 	unsigned char *sig;
-	char *buf, *xml, *defprivkey = NULL;
-	int rv = 0;
+	char *buf = NULL, *xml = NULL, *defprivkey = NULL;
+	int rv = -1;
 
 	if (signedby == NULL) {
 		fprintf(stderr, "--signedby unset! cannot sign repository\n");
@@ -165,22 +164,25 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
 		fprintf(stderr, "cannot read repository data: %s\n", strerror(errno));
-		return -1;
+		goto out;
 	}
-	idx = xbps_repo_get_plist(repo, XBPS_REPOIDX);
-	xbps_repo_close(repo);
-	if (xbps_dictionary_count(idx) == 0) {
+	if (xbps_dictionary_count(repo->idx) == 0) {
 		fprintf(stderr, "invalid number of objects in repository index!\n");
+		xbps_repo_close(repo);
 		return -1;
 	}
+	xbps_repo_open_idxfiles(repo);
+	idx = xbps_dictionary_copy(repo->idx);
+	idxfiles = xbps_dictionary_copy(repo->idxfiles);
+	xbps_repo_close(repo);
+
 	/*
 	 * Externalize the index and then sign it.
 	 */
 	xml = xbps_dictionary_externalize(idx);
 	if (xml == NULL) {
 		fprintf(stderr, "failed to externalize repository index: %s\n", strerror(errno));
-		xbps_object_release(idx);
-		return -1;
+		goto out;
 	}
 	/*
 	 * If privkey not set, default to ~/.ssh/id_rsa.
@@ -193,10 +195,10 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	rsa = rsa_sign_buf(defprivkey, xml, &sig, &siglen);
 	if (rsa == NULL) {
 		free(xml);
-		return -1;
+		goto out;
 	}
 	/*
-	 * Prepare the XBPS_REPOMETA for our repository data.
+	 * Prepare the XBPS_REPOIDX_META for our repository data.
 	 */
 	meta = xbps_dictionary_create();
 	xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
@@ -213,19 +215,20 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	/*
 	 * and finally write our repodata file!
 	 */
-	rd = repodata_init(xhp, repodir);
-	assert(rd);
-	xml = xbps_dictionary_externalize(idx);
-	assert(xml);
-	rv = repodata_add_buf(rd, xml, XBPS_REPOIDX);
-	free(xml);
-	xml = xbps_dictionary_externalize(meta);
-	assert(xml);
-	rv = repodata_add_buf(rd, xml, XBPS_REPOMETA);
-	free(xml);
-	repodata_flush(rd);
-	free(buf);
-	RSA_free(rsa);
+	if (!repodata_flush(xhp, repodir, idx, idxfiles, meta)) {
+		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
+		goto out;
+	}
+
+	rv = 0;
+
+out:
+	if (xml != NULL)
+		free(xml);
+	if (buf != NULL)
+		free(buf);
+	if (rsa != NULL)
+		RSA_free(rsa);
 
 	return rv;
 }

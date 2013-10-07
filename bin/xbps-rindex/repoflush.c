@@ -37,54 +37,71 @@
 #include <xbps.h>
 #include "defs.h"
 
-struct repodata *
-repodata_init(struct xbps_handle *xhp, const char *repodir)
+bool
+repodata_flush(struct xbps_handle *xhp, const char *repodir,
+	xbps_dictionary_t idx, xbps_dictionary_t idxfiles,
+	xbps_dictionary_t meta)
 {
-	struct repodata *rd;
-
-	rd = malloc(sizeof(struct repodata));
-	assert(rd);
-
-	/* Create a tempfile for our repository archive */
-	rd->repofile = xbps_repo_path(xhp, repodir);
-	rd->tname = xbps_xasprintf("%s.XXXXXXXXXX", rd->repofile);
-	if ((rd->repofd = mkstemp(rd->tname)) == -1) {
-		free(rd);
-		return NULL;
-	}
-
-	/* Create and write our repository archive */
-	rd->ar = archive_write_new();
-	assert(rd->ar);
-	archive_write_set_compression_gzip(rd->ar);
-	archive_write_set_format_pax_restricted(rd->ar);
-	archive_write_set_options(rd->ar, "compression-level=9");
-	archive_write_open_fd(rd->ar, rd->repofd);
-
-	return rd;
-}
-
-int
-repodata_add_buf(struct repodata *rd, const char *buf, const char *filename)
-{
-	return xbps_archive_append_buf(rd->ar, buf, strlen(buf),
-	    filename, 0644, "root", "root");
-}
-
-void
-repodata_flush(struct repodata *rd)
-{
+	struct archive *ar;
+	char *repofile, *tname, *buf;
+	int rv, repofd = -1;
 	mode_t myumask;
 
+	/* Create a tempfile for our repository archive */
+	repofile = xbps_repo_path(xhp, repodir);
+	tname = xbps_xasprintf("%s.XXXXXXXXXX", repofile);
+	if ((repofd = mkstemp(tname)) == -1)
+		return false;
+
+	/* Create and write our repository archive */
+	ar = archive_write_new();
+	assert(ar);
+	archive_write_set_compression_gzip(ar);
+	archive_write_set_format_pax_restricted(ar);
+	archive_write_set_options(ar, "compression-level=9");
+	archive_write_open_fd(ar, repofd);
+
+	/* XBPS_REPOIDX */
+	buf = xbps_dictionary_externalize(idx);
+	assert(buf);
+	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+	    XBPS_REPOIDX, 0644, "root", "root");
+	free(buf);
+	if (rv != 0)
+		return false;
+
+	/* XBPS_REPOIDX_META */
+	if (meta == NULL) {
+		/* fake entry */
+		buf = strdup("DEADBEEF");
+	} else {
+		buf = xbps_dictionary_externalize(meta);
+	}
+	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+	    XBPS_REPOIDX_META, 0644, "root", "root");
+	free(buf);
+	if (rv != 0)
+		return false;
+
+	/* XBPS_REPOIDX_FILES */
+	buf = xbps_dictionary_externalize(idxfiles);
+	assert(buf);
+	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+	    XBPS_REPOIDX_FILES, 0644, "root", "root");
+	free(buf);
+	if (rv != 0)
+		return false;
+
 	/* Write data to tempfile and rename */
-	archive_write_finish(rd->ar);
-	fdatasync(rd->repofd);
+	archive_write_finish(ar);
+	fdatasync(repofd);
 	myumask = umask(0);
 	(void)umask(myumask);
-	assert(fchmod(rd->repofd, 0666 & ~myumask) != -1);
-	close(rd->repofd);
-	rename(rd->tname, rd->repofile);
-	free(rd->repofile);
-	free(rd->tname);
-	free(rd);
+	assert(fchmod(repofd, 0666 & ~myumask) != -1);
+	close(repofd);
+	rename(tname, repofile);
+	free(repofile);
+	free(tname);
+
+	return true;
 }

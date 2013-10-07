@@ -64,23 +64,8 @@
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 #endif
 
-
-struct repodata {
-	struct archive *ar;
-	char *repofile;
-	char *tname;
-	int repofd;
-};
-
 /* From index-add.c */
 int	index_add(struct xbps_handle *, int, char **, bool);
-
-/* From index-clean.c */
-int	index_clean(struct xbps_handle *, const char *);
-
-/* From index-files.c */
-int	index_files_add(struct xbps_handle *, int, char **);
-int	index_files_clean(struct xbps_handle *, const char *);
 
 /* From remove-obsoletes.c */
 int	remove_obsoletes(struct xbps_handle *, const char *);
@@ -93,8 +78,7 @@ int	sign_repo(struct xbps_handle *, const char *, const char *,
 char	*readpassphrase(const char *, char *, size_t, int);
 
 /* From repoflush.c */
-struct repodata *repodata_init(struct xbps_handle *xhp, const char *);
-int	repodata_add_buf(struct repodata *, const char *, const char *);
-void	repodata_flush(struct repodata *);
+bool	repodata_flush(struct xbps_handle *, const char *,
+		xbps_dictionary_t, xbps_dictionary_t, xbps_dictionary_t);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */

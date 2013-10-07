@@ -44,7 +44,6 @@ usage(bool fail)
 	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
 	    "MODE\n"
 	    " -a --add <repodir/pkg> ...        Add package(s) to repository index\n"
-	    " -c --clean <repodir>              Cleans obsolete entries in repository index\n"
 	    " -r --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
 	    " -s --sign <repodir>               Sign repository index\n\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -53,10 +52,9 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acfhrV";
+	const char *shortopts = "afhrV";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
-		{ "clean", no_argument, NULL, 'c' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
@@ -69,9 +67,9 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c;
-	bool clean_mode, add_mode, rm_mode, sign_mode, force;
+	bool add_mode, rm_mode, sign_mode, force;
 
-	clean_mode = add_mode = rm_mode = sign_mode = force = false;
+	add_mode = rm_mode = sign_mode = force = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -83,9 +81,6 @@ main(int argc, char **argv)
 			break;
 		case 'a':
 			add_mode = true;
-			break;
-		case 'c':
-			clean_mode = true;
 			break;
 		case 'f':
 			force = true;
@@ -104,13 +99,12 @@ main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		}
 	}
-	if ((argc == optind) || (!add_mode && !clean_mode && !rm_mode && !sign_mode)) {
+	if ((argc == optind) || (!add_mode && !rm_mode && !sign_mode)) {
 		usage(true);
-	} else if ((add_mode && (clean_mode || rm_mode)) ||
-		   (clean_mode && (add_mode || rm_mode)) ||
-		   (rm_mode && (add_mode || clean_mode)) ||
-		   (sign_mode && (add_mode || clean_mode || rm_mode))) {
-		fprintf(stderr, "Only one mode can be specified: add, clean, "
+	} else if ((add_mode && (rm_mode || sign_mode)) ||
+		   (rm_mode && (add_mode || sign_mode)) ||
+		   (sign_mode && (add_mode || rm_mode))) {
+		fprintf(stderr, "Only one mode can be specified: add, "
 		    "remove-obsoletes or sign.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -125,8 +119,6 @@ main(int argc, char **argv)
 
 	if (add_mode)
 		rv = index_add(&xh, argc - optind, argv + optind, force);
-	else if (clean_mode)
-		rv = index_clean(&xh, argv[optind]);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
 	else if (sign_mode)

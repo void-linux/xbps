@@ -66,16 +66,14 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	repodir = dirname(tmprepodir);
 
 	repo = xbps_repo_open(xhp, repodir);
-	if (repo != NULL) {
-		idx = xbps_repo_get_plist(repo, XBPS_REPOIDX);
-		idxfiles = xbps_repo_get_plist(repo, XBPS_REPOIDX_FILES);
-	}
-	if (idx == NULL)
+	if (repo == NULL) {
 		idx = xbps_dictionary_create();
-	if (idxfiles == NULL)
 		idxfiles = xbps_dictionary_create();
-	if (repo != NULL)
+	} else {
+		idx = xbps_dictionary_copy(repo->idx);
+		idxfiles = xbps_dictionary_copy(repo->idxfiles);
 		xbps_repo_close(repo);
+	}
 
 	/*
 	 * Process all packages specified in argv.
@@ -183,6 +181,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			free(pkgname);
 			return EINVAL;
 		}
+		free(pkgname);
 		flush = true;
 		printf("index: added `%s' (%s).\n", pkgver, arch);
 		/*
@@ -193,7 +192,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 				"./files.plist");
 		if (newpkgfilesd == NULL) {
 			free(pkgver);
-			free(pkgname);
 			return EINVAL;
 		}
 
@@ -221,7 +219,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			xbps_object_release(newpkgfilesd);
 			xbps_object_release(newpkgd);
 			free(pkgver);
-			free(pkgname);
 			continue;
 		}
 		/* create pkg files array */
@@ -255,39 +252,25 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		xbps_object_release(newpkgfilesd);
 
 		/* add pkg files array into index-files */
-		xbps_dictionary_set(idxfiles, pkgname, filespkgar);
+		xbps_dictionary_set(idxfiles, pkgver, filespkgar);
 		xbps_object_release(filespkgar);
-
-		printf("index-files: added `%s' (%s)\n", pkgver, arch);
 		xbps_object_release(newpkgd);
 		free(pkgver);
-		free(pkgname);
 	}
 	/*
-	 * Generate repository data file.
+	 * Generate repository data files.
 	 */
 	if (flush) {
-		struct repodata *rd;
-		char *xml;
-
-		rd = repodata_init(xhp, repodir);
-		xml = xbps_dictionary_externalize(idx);
-		assert(idx);
-		rv = repodata_add_buf(rd, xml, XBPS_REPOIDX);
-		free(xml);
-		xml = xbps_dictionary_externalize(idxfiles);
-		assert(idx);
-		rv = repodata_add_buf(rd, xml, XBPS_REPOIDX_FILES);
-		free(xml);
-		repodata_flush(rd);
+		if (!repodata_flush(xhp, repodir, idx, idxfiles, NULL)) {
+			fprintf(stderr, "failed to write repodata: %s\n",
+			    strerror(errno));
+			return -1;
+		}
 	}
 	printf("index: %u packages registered.\n",
 	    xbps_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n",
 	    xbps_dictionary_count(idxfiles));
-
-	xbps_object_release(idx);
-	xbps_object_release(idxfiles);
 
 	return rv;
 }

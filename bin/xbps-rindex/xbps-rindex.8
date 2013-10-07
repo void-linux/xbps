@@ -3,7 +3,7 @@
 .Dt xbps-rindex 8
 .Sh NAME
 .Nm xbps-rindex
-.Nd XBPS utility to handle local binary package repositories
+.Nd XBPS utility to manage local binary package repositories
 .Sh SYNOPSYS
 .Nm xbps-rindex
 .Op OPTIONS
@@ -25,29 +25,27 @@ mode.
 Show the help usage.
 .It Fl V -version
 Show the XBPS version.
+.It Sy --signedby Ar string
+This is required to sign a repository, a description of the person signing the repository, i.e name and email.
+.It Sy --privkey Ar key
+Path to the private RSA key to sign the repository. If unset, defaults to
+.Sy ~/.ssh/id_rsa .
 .Sh MODE
 .Pp
 .Bl -tag -width x
-.It Sy -a, --add Ar /path/to/repo/binpkg.xbps ...
-Registers the binary package into the local repository, replacing
-existing version. Multiple binary packages can be specified as arguments.
-.It Sy -c, --clean Ar repository
-Removes obsolete entries found in the local repository's index.
+.It Sy -a, --add Ar repository/binpkg.xbps ...
+Registers the binary package into the local repository. The specified binary
+package is only added to the index if its version is greater than the one
+currently stored. Multiple binary packages can be specified as arguments.
 .It Sy -r, --remove-obsoletes Ar repository
 Removes obsolete packages from
 .Ar repository .
 Packages that are not currently registered in repository's index will
 be removed (out of date, invalid archives, etc).
-.It Sy -s, --sign
+.It Sy -s, --sign Ar repository
 Signs a repository with your specified RSA key. If
 .Fl --privkey
 argument not set, it defaults to
-.Sy ~/.ssh/id_rsa .
-.It Sy --signedby Ar string
-This is required to sign a repository, use something like
-.Ar name <email> .
-.It Sy --privkey Ar key
-Path to the private RSA key to sign the repository. If unset, defaults to
 .Sy ~/.ssh/id_rsa .
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
