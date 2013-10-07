@@ -39,7 +39,7 @@
 int HIDDEN
 xbps_repo_key_import(struct xbps_repo *repo)
 {
-	xbps_dictionary_t repokeyd, rkeysd = NULL, newmetad = NULL;
+	xbps_dictionary_t repokeyd, newmetad = NULL;
 	xbps_data_t rpubkey;
 	const char *signedby;
 	unsigned char *fp;
@@ -52,10 +52,26 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	 */
 	if (xbps_dictionary_count(repo->meta) == 0) {
 		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' missing required metadata, ignoring.\n", repo->uri);
-		repo->is_verified = false;
-		repo->is_signed = false;
+		    "[repo] `%s' unsigned repository!\n", repo->uri);
 		return 0;
+	}
+	/*
+	 * Check if the public key has been stored for this repository.
+	 */
+	if (repo->xhp->repokeys == NULL) {
+		rkeypath = xbps_xasprintf("%s/%s", repo->xhp->metadir, XBPS_REPOKEYS);
+		repo->xhp->repokeys = xbps_dictionary_internalize_from_file(rkeypath);
+		if (xbps_object_type(repo->xhp->repokeys) != XBPS_TYPE_DICTIONARY)
+			repo->xhp->repokeys = xbps_dictionary_create();
+	}
+	repokeyd = xbps_dictionary_get(repo->xhp->repokeys, repo->uri);
+	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
+		if (xbps_dictionary_get(repokeyd, "public-key")) {
+			xbps_dbg_printf(repo->xhp,
+			    "[repo] `%s' public key already stored.\n",
+			    repo->uri);
+			goto out;
+		}
 	}
 	/*
 	 * Check the repository provides a working public-key data object.
@@ -65,28 +81,9 @@ xbps_repo_key_import(struct xbps_repo *repo)
 		rv = EINVAL;
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' invalid public-key object!\n", repo->uri);
-		repo->is_verified = false;
-		repo->is_signed = false;
 		goto out;
 	}
 	repo->is_signed = true;
-	/*
-	 * Check if the public key has been stored for this repository.
-	 */
-	rkeypath = xbps_xasprintf("%s/%s", repo->xhp->metadir, XBPS_REPOKEYS);
-	rkeysd = xbps_dictionary_internalize_from_file(rkeypath);
-	if (xbps_object_type(rkeysd) != XBPS_TYPE_DICTIONARY)
-		rkeysd = xbps_dictionary_create();
-
-	repokeyd = xbps_dictionary_get(rkeysd, repo->uri);
-	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
-		if (xbps_dictionary_get(repokeyd, "public-key")) {
-			xbps_dbg_printf(repo->xhp,
-			    "[repo] `%s' public key already stored.\n",
-			    repo->uri);
-			goto out;
-		}
-	}
 	/*
 	 * Notify the client and take appropiate action to import
 	 * the repository public key. Pass back the public key openssh fingerprint
@@ -99,14 +96,16 @@ xbps_repo_key_import(struct xbps_repo *repo)
 			"This repository is RSA signed by \"%s\"",
 			signedby);
 	free(fp);
-	if (import <= 0)
+	if (import <= 0) {
+		rv = EAGAIN;
 		goto out;
+	}
 	/*
 	 * Add the meta dictionary into XBPS_REPOKEYS and externalize it.
 	 */
 	newmetad = xbps_dictionary_copy_mutable(repo->meta);
 	xbps_dictionary_remove(newmetad, "signature");
-	xbps_dictionary_set(rkeysd, repo->uri, newmetad);
+	xbps_dictionary_set(repo->xhp->repokeys, repo->uri, newmetad);
 
 	if (access(repo->xhp->metadir, R_OK|W_OK) == -1) {
 		if (errno == ENOENT) {
@@ -119,7 +118,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 			goto out;
 		}
 	}
-	if (!xbps_dictionary_externalize_to_file(rkeysd, rkeypath)) {
+	if (!xbps_dictionary_externalize_to_file(repo->xhp->repokeys, rkeypath)) {
 		rv = errno;
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' failed to externalize %s: %s\n",
@@ -129,9 +128,8 @@ xbps_repo_key_import(struct xbps_repo *repo)
 out:
 	if (newmetad)
 		xbps_object_release(newmetad);
-	if (xbps_object_type(rkeysd) == XBPS_TYPE_DICTIONARY)
-		xbps_object_release(rkeysd);
-	free(rkeypath);
+	if (rkeypath)
+		free(rkeypath);
 	return rv;
 }
 
@@ -184,34 +182,18 @@ rsa_verify_buf(struct xbps_repo *repo, xbps_data_t sigdata,
 int HIDDEN
 xbps_repo_key_verify(struct xbps_repo *repo)
 {
-	xbps_dictionary_t rkeysd, repokeyd;
+	xbps_dictionary_t repokeyd;
 	xbps_data_t sigdata, pubkey;
-	char *rkeyspath, *idx_xml;
-	bool verified = false;
+	char *idx_xml;
 
-	/* unsigned repo */
-	if (!repo->is_signed) {
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' ignoring unsigned repository.\n", repo->uri);
-		return 0;
-	}
-	rkeyspath = xbps_xasprintf("%s/%s", repo->xhp->metadir, XBPS_REPOKEYS);
-	rkeysd = xbps_dictionary_internalize_from_file(rkeyspath);
-	if (xbps_dictionary_count(rkeysd) == 0) {
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s': failed to internalize %s: %s\n",
-		    repo->uri, rkeyspath, strerror(errno));
-		free(rkeyspath);
-		return ENODEV;
-	}
-	free(rkeyspath);
+	if (repo->xhp->repokeys == NULL)
+		return ENOENT;
 
-	repokeyd = xbps_dictionary_get(rkeysd, repo->uri);
+	repokeyd = xbps_dictionary_get(repo->xhp->repokeys, repo->uri);
 	if (xbps_dictionary_count(repokeyd) == 0) {
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s': empty %s dictionary\n",
 		    repo->uri, XBPS_REPOKEYS);
-		xbps_object_release(rkeysd);
 		return ENOENT;
 	}
 
@@ -223,11 +205,10 @@ xbps_repo_key_verify(struct xbps_repo *repo)
 	pubkey = xbps_dictionary_get(repokeyd, "public-key");
 	assert(xbps_object_type(pubkey) == XBPS_TYPE_DATA);
 	/* XXX ignore 'signature-type' for now */
-	if (rsa_verify_buf(repo, sigdata, pubkey, idx_xml) == 0) {
+	if (rsa_verify_buf(repo, sigdata, pubkey, idx_xml) == 0)
 		repo->is_verified = true;
-		verified = true;
-	}
+
 	free(idx_xml);
 
-	return verified ? 0 : EPERM;
+	return repo->is_verified ? 0 : EPERM;
 }

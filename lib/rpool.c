@@ -52,6 +52,7 @@ xbps_rpool_init(struct xbps_handle *xhp)
 {
 	struct rpool *rp;
 	const char *repouri;
+	char *p;
 	bool foundrepo = false;
 	int retval, rv = 0;
 
@@ -60,54 +61,60 @@ xbps_rpool_init(struct xbps_handle *xhp)
 	if (xhp->rpool_initialized)
 		return 0;
 
+	p = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_REPOKEYS);
+	xhp->repokeys = xbps_dictionary_internalize_from_file(p);
+	free(p);
+
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		rp = malloc(sizeof(struct rpool));
 		assert(rp);
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
 		if ((rp->repo = xbps_repo_open(xhp, repouri)) == NULL) {
-			rp->repo = malloc(sizeof(struct xbps_repo));
+			rp->repo = calloc(1, sizeof(struct xbps_repo));
 			assert(rp->repo);
-			rp->repo->ar = NULL;
-			rp->repo->is_verified = false;
-			rp->repo->is_signed = false;
+			rp->repo->xhp = xhp;
+			rp->repo->uri = repouri;
+			if (xbps_repository_is_remote(repouri))
+				rp->repo->is_remote = true;
 		}
-		rp->repo->idx = xbps_repo_get_plist(rp->repo, XBPS_REPOIDX);
-		if (xbps_object_type(rp->repo->idx) == XBPS_TYPE_DICTIONARY)
-			xbps_dictionary_make_immutable(rp->repo->idx);
-
-		rp->repo->meta = xbps_repo_get_plist(rp->repo, XBPS_REPOMETA);
-		if (xbps_object_type(rp->repo->meta) == XBPS_TYPE_DICTIONARY)
-			xbps_dictionary_make_immutable(rp->repo->meta);
-
-		rp->repo->uri = repouri;
-		rp->repo->xhp = xhp;
-
-		if (xbps_repository_is_remote(repouri)) {
+		if (rp->repo->is_remote) {
 			/*
 			 * Import the RSA public key (if it's signed).
 			 */
 			retval = xbps_repo_key_import(rp->repo);
-			if (retval != 0) {
+			if (retval == EAGAIN) {
+				/* signed but public key was not imported */
+				xbps_dbg_printf(xhp, "[rpool] `%s': public-key not yet imported.\n", repouri);
+				rp->repo->is_signed = true;
+				rp->repo->is_verified = false;
+			} else if (retval != 0 && retval != EAGAIN) {
 				/* any error */
 				xbps_dbg_printf(xhp, "[rpool] %s: key_import %s\n",
-				    rp->repo->uri, strerror(retval));
+				    repouri, strerror(retval));
 			}
-			/*
-			 * Check the repository signature against stored public key.
-			 */
-			retval = xbps_repo_key_verify(rp->repo);
-			if (retval == 0) {
-				/* signed, verified */
-				xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGVERIFIED, 0, NULL, NULL);
-			} else if (retval == EPERM) {
-				/* signed, unverified */
-				xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGUNVERIFIED, 0, NULL, NULL);
+			if (!rp->repo->is_signed) {
+				/* ignore unsigned repositories */
 				xbps_repo_close(rp->repo);
 			} else {
-				/* any error */
-				xbps_dbg_printf(xhp, "[rpool] %s: key_verify %s\n",
-				    rp->repo->uri, strerror(retval));
-				xbps_repo_close(rp->repo);
+				/*
+				 * Check the repository index signature against
+				 * stored public key.
+				 */
+				retval = xbps_repo_key_verify(rp->repo);
+				if (retval == 0) {
+					/* signed, verified */
+					xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGVERIFIED, 0, NULL, NULL);
+				} else if (retval == EPERM) {
+					/* signed, unverified */
+					xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGUNVERIFIED, 0, NULL, NULL);
+					xbps_repo_close(rp->repo);
+					rp->repo->is_verified = false;
+				} else {
+					/* any error */
+					xbps_dbg_printf(xhp, "[rpool] %s: key_verify %s\n",
+					    repouri, strerror(retval));
+					xbps_repo_close(rp->repo);
+				}
 			}
 		}
 		/*
@@ -148,6 +155,8 @@ xbps_rpool_release(struct xbps_handle *xhp)
 		free(rp->repo);
 		free(rp);
 	}
+	xbps_object_release(xhp->repokeys);
+	xhp->repokeys = NULL;
 	xhp->rpool_initialized = false;
 	xbps_dbg_printf(xhp, "[rpool] released ok.\n");
 }

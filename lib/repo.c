@@ -47,6 +47,47 @@ xbps_repo_path(struct xbps_handle *xhp, const char *url)
 	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch);
 }
 
+static xbps_dictionary_t
+repo_get_dict(struct xbps_repo *repo, const char *fname)
+{
+	xbps_dictionary_t d;
+	struct archive_entry *entry;
+	void *buf;
+	size_t buflen;
+	ssize_t nbytes = -1;
+	int rv;
+
+	assert(repo);
+	assert(fname);
+
+	if (repo->ar == NULL)
+		return NULL;
+
+	for (;;) {
+		rv = archive_read_next_header(repo->ar, &entry);
+		if (rv == ARCHIVE_EOF || rv == ARCHIVE_FATAL)
+			break;
+		else if (rv == ARCHIVE_RETRY)
+			continue;
+
+		if (strcmp(archive_entry_pathname(entry), fname) == 0) {
+			buflen = (size_t)archive_entry_size(entry);
+			buf = malloc(buflen);
+			assert(buf);
+			nbytes = archive_read_data(repo->ar, buf, buflen);
+			if ((size_t)nbytes != buflen) {
+				free(buf);
+				return NULL;
+			}
+			d = xbps_dictionary_internalize(buf);
+			free(buf);
+			return d;
+		}
+		archive_read_data_skip(repo->ar);
+	}
+	return NULL;
+}
+
 struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url)
 {
@@ -54,6 +95,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	struct stat st;
 	const char *arch;
 	char *repofile;
+	bool is_remote = false;
 
 	assert(xhp);
 	assert(url);
@@ -71,20 +113,22 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 			return NULL;
 		repofile = xbps_xasprintf("%s/%s/%s-repodata", xhp->metadir, rpath, arch);
 		free(rpath);
+		is_remote = true;
 	} else {
 		/* local repository */
 		repofile = xbps_repo_path(xhp, url);
 	}
 
-	repo = calloc(1, sizeof(struct xbps_repo));
+	repo = malloc(sizeof(struct xbps_repo));
 	assert(repo);
 
 	repo->xhp = xhp;
 	repo->uri = url;
 	repo->ar = archive_read_new();
+	repo->is_verified = false;
+	repo->is_signed = false;
+	repo->is_remote = is_remote;
 	archive_read_support_compression_gzip(repo->ar);
-	archive_read_support_compression_bzip2(repo->ar);
-	archive_read_support_compression_xz(repo->ar);
 	archive_read_support_format_tar(repo->ar);
 
 	if (stat(repofile, &st) == -1) {
@@ -102,50 +146,30 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		archive_read_finish(repo->ar);
 		free(repo);
 		repo = NULL;
+		goto out;
 	}
+	if ((repo->idx = repo_get_dict(repo, XBPS_REPOIDX)) == NULL) {
+		xbps_dbg_printf(xhp,
+		    "[repo] `%s' failed to internalize index on archive %s: %s\n",
+		    url, repofile, strerror(archive_errno(repo->ar)));
+		archive_read_finish(repo->ar);
+		free(repo);
+		repo = NULL;
+		goto out;
+	}
+	if ((repo->meta = repo_get_dict(repo, XBPS_REPOIDX_META)))
+		repo->is_signed = true;
+
+	repo->idxfiles = NULL;
 out:
 	free(repofile);
 	return repo;
 }
 
-xbps_dictionary_t
-xbps_repo_get_plist(struct xbps_repo *repo, const char *file)
+void
+xbps_repo_open_idxfiles(struct xbps_repo *repo)
 {
-	xbps_dictionary_t d;
-	struct archive_entry *entry;
-	void *buf;
-	size_t buflen;
-	ssize_t nbytes = -1;
-	int rv;
-
-	assert(repo);
-	assert(file);
-
-	if (repo->ar == NULL)
-		return NULL;
-
-	for (;;) {
-		rv = archive_read_next_header(repo->ar, &entry);
-		if (rv == ARCHIVE_EOF || rv == ARCHIVE_FATAL)
-			break;
-		else if (rv == ARCHIVE_RETRY)
-			continue;
-		if (strcmp(archive_entry_pathname(entry), file) == 0) {
-			buflen = (size_t)archive_entry_size(entry);
-			buf = malloc(buflen);
-			assert(buf);
-			nbytes = archive_read_data(repo->ar, buf, buflen);
-			if ((size_t)nbytes != buflen) {
-				free(buf);
-				return NULL;
-			}
-			d = xbps_dictionary_internalize(buf);
-			free(buf);
-			return d;
-		}
-		archive_read_data_skip(repo->ar);
-	}
-	return NULL;
+	repo->idxfiles = repo_get_dict(repo, XBPS_REPOIDX_FILES);
 }
 
 void

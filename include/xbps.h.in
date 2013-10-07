@@ -46,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20131005"
+#define XBPS_API_VERSION	"20131007"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -106,15 +106,15 @@
 
 /**
  * @def XBPS_REPOIDX_FILES
- * Filename for the repository index files property list.
+ * Filename for the repository index-files property list.
  */
 #define XBPS_REPOIDX_FILES	"index-files.plist"
 
 /**
- * @def XBPS_REPOMETA
- * Filename for the repository metadata property list.
+ * @def XBPS_REPOIDX_META
+ * Filename for the repository index metadata property list.
  */
-#define XBPS_REPOMETA 		"meta.plist"
+#define XBPS_REPOIDX_META 	"index-meta.plist"
 
 /**
  * @def XBPS_SYSCONF_PATH
@@ -470,6 +470,9 @@ struct xbps_handle {
 	 * @private
 	 */
 	cfg_t *cfg;
+	xbps_dictionary_t repokeys;
+	xbps_dictionary_t pkg_metad;
+	xbps_dictionary_t pkgdb_revdeps;
 	/**
 	 * @var pkgdb
 	 *
@@ -477,14 +480,6 @@ struct xbps_handle {
 	 * stored in XBPS_META_PATH/XBPS_PKGDB.
 	 */
 	xbps_dictionary_t pkgdb;
-	/**
-	 * @private
-	 */
-	xbps_dictionary_t pkg_metad;
-	/**
-	 * @private
-	 */
-	xbps_dictionary_t pkgdb_revdeps;
 	/**
 	 * @var transd
 	 *
@@ -1118,6 +1113,12 @@ struct xbps_repo {
 	 */
 	struct archive *ar;
 	/**
+	 * @var xhp
+	 *
+	 * Pointer to our xbps_handle struct passed to xbps_rpool_foreach.
+	 */
+	struct xbps_handle *xhp;
+	/**
 	 * @var idx
 	 *
 	 * Proplib dictionary associated with the repository index.
@@ -1126,7 +1127,7 @@ struct xbps_repo {
 	/**
 	 * @var idxfiles
 	 *
-	 * Proplib dictionary associated with the repository index files.
+	 * Proplib dictionary associated with the repository index-files.
 	 */
 	xbps_dictionary_t idxfiles;
 	/**
@@ -1142,6 +1143,12 @@ struct xbps_repo {
 	 */
 	const char *uri;
 	/**
+	 * var is_remote
+	 *
+	 * True if repository is remote, false if it's a local repository.
+	 */
+	bool is_remote;
+	/**
 	 * var is_signed
 	 *
 	 * True if this repository has been signed, false otherwise.
@@ -1155,12 +1162,6 @@ struct xbps_repo {
 	 * False if the stored public key did not match its signature.
 	 */
 	bool is_verified;
-	/**
-	 * @var xhp
-	 *
-	 * Pointer to our xbps_handle struct passed to xbps_rpool_foreach.
-	 */
-	struct xbps_handle *xhp;
 };
 
 /**
@@ -1274,22 +1275,19 @@ xbps_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url);
 
 /**
- * Returns a proplib dictionary associated with a repository object.
- *
- * @param[in] repo Pointer to the xbps_repo object.
- * @param[in] file Filename of proplib dictionary stored in the
- * repository object.
- *
- * @return The matching proplib dictionary on success, NULL otherwise.
- */
-xbps_dictionary_t xbps_repo_get_plist(struct xbps_repo *repo, const char *file);
-
-/**
  * Closes a repository object and releases resources.
  *
  * @param[in] repo The repository object to close.
  */
 void xbps_repo_close(struct xbps_repo *repo);
+
+/**
+ * Prepares the repository index-files.plist to have access to it.
+ * The repository must be opened previously with \a xbps_repo_open().
+ *
+ * @param[in] repo The repository object to use.
+ */
+void xbps_repo_open_idxfiles(struct xbps_repo *repo);
 
 /**
  *
