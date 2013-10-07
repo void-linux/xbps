@@ -1,5 +1,8 @@
 xbps-0.27 (???):
 
+ * xbps-rindex(8): -c --clean mode has been removed. Generating a local repository
+   is almost as fast as cleaning up the repository data.
+
  * Support for RSA signed repositories. A repository can be signed with your
    preferred RSA key (any ssh key works) as follows:
 
