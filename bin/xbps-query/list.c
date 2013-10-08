@@ -218,7 +218,7 @@ find_longest_pkgver(struct xbps_handle *xhp, xbps_object_t o)
 		xbps_array_t array;
 
 		array = xbps_dictionary_all_keys(o);
-		(void)xbps_array_foreach_cb(xhp, array, o,
+		(void)xbps_array_foreach_cb_multi(xhp, array, o,
 		    _find_longest_pkgver_cb, &ffl);
 		xbps_object_release(array);
 	} else {
