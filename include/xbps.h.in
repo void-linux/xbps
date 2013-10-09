@@ -46,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20131007"
+#define XBPS_API_VERSION	"20131009"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1281,6 +1281,7 @@ struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url);
  */
 void xbps_repo_close(struct xbps_repo *repo);
 
+
 /**
  * Prepares the repository index-files.plist to have access to it.
  * The repository must be opened previously with \a xbps_repo_open().
@@ -1349,6 +1350,16 @@ xbps_dictionary_t xbps_repo_get_pkg_plist(struct xbps_handle *xhp,
  * set appropiately.
  */
 xbps_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
+
+/**
+ * Imports the RSA public key of target repository. The repository must be
+ * signed properly for this to work.
+ *
+ * @param[in] repo Pointer to the target xbps_repo structure.
+ *
+ * @return 0 on success, an errno value otherwise.
+ */
+int xbps_repo_key_import(struct xbps_repo *repo);
 
 /*@}*/
 

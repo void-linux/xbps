@@ -1,0 +1,61 @@
+.Dd October 9, 2013
+.Os Void Linux
+.Dt xbps-rkeys 8
+.Sh NAME
+.Nm xbps-rkeys
+.Nd XBPS utility to manage RSA public keys in remote repositories
+.Sh SYNOPSYS
+.Nm xbps-rkeys
+.Op OPTIONS
+.Op MODE
+.Op REPOURL...
+.Sh DESCRIPTION
+The
+.Nm
+utility manages RSA public keys from remote repositories. A public key from a remote
+repository can be imported and removed, last but not least there is an option to
+show the repository information with details.
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl a, Fl -all
+Processes all repositories specified in a configuration file.
+.It Fl C, Fl -config Ar file
+Specifies a full path to the XBPS configuration file.
+.It Fl d, Fl -debug
+Enables extra debugging shown to stderr.
+.It Fl h, Fl -help
+Show the help usage.
+.It Fl r, Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl V, Fl -version
+Shows the XBPS version.
+.Sh MODE
+.Bl -tag -width -x
+.It Fl i, Fl -import
+Imports the RSA public key of target repository into the database.
+Please double-check the fingerprint is the real one.
+.It Fl R, Fl -remove
+Removes the RSA public key (and its properties) of target repository from
+the database.
+.It Fl s, Fl -show
+Shows information of the target signed repositories.
+.Sh FILES
+.Bl -tag -width /var/db/xbps/repokeys.plist
+.It Ar /var/db/xbps/repokeys.plist
+Default plist file to store repository public keys and its properties.
+.Sh SEE ALSO
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-remove 8 ,
+.Xr xbps-rindex 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in https://github.com/xtraeme/xbps/issues

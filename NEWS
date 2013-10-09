@@ -3,14 +3,17 @@ xbps-0.27 (???):
  * xbps-rindex(8): -c --clean mode has been removed. Generating a local repository
    is almost as fast as cleaning up the repository data.
 
+ * xbps-rkeys(8): new utility to manage RSA public keys from remote signed repositories.
+
  * Support for RSA signed repositories. A repository can be signed with your
    preferred RSA key (any ssh key works) as follows:
 
 	$ xbps-rindex -s --signedby "foobar <foo@bar>" --privkey /priv/key /path/to/repo
 
-   The first time xbps-install(8) access to a signed repository it will ask you
-   to import its public key to verify the signature. Please double-check the
-   hex fingerprint of the public key is the real one!
+   Public keys must be imported before using a remote signed repository thru
+   the xbps-rkeys(8) utility:
+
+	$ xbps-rkeys -i <repourl>
 
    Once the public key has been imported it's not expected to change, hence if the
    repository index has been modified or signed with another key, it will be ignored.

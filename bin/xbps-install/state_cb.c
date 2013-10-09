@@ -47,13 +47,6 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 
 	switch (xscd->state) {
 	/* notifications */
-	case XBPS_STATE_REPO_KEY_IMPORT:
-		printf("%s\n", xscd->desc);
-		printf("Fingerprint: ");
-		xbps_print_hexfp(xscd->arg);
-		printf("\n");
-		rv = noyes("Do you want to import this public key?");
-		break;
 	case XBPS_STATE_REPO_SIGVERIFIED:
 		printf("[*] RSA signature verified correctly\n");
 		break;

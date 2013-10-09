@@ -253,10 +253,13 @@ xbps_end(struct xbps_handle *xhp)
 
 	xbps_pkgdb_release(xhp);
 	xbps_rpool_release(xhp);
-	xbps_fetch_unset_cache_connection();
-	if (xhp->pkgdb_revdeps != NULL)
-		xbps_object_release(xhp->pkgdb_revdeps);
 
+	if (xbps_object_type(xhp->pkgdb_revdeps) != XBPS_TYPE_UNKNOWN)
+		xbps_object_release(xhp->pkgdb_revdeps);
+	if (xbps_object_type(xhp->repokeys) != XBPS_TYPE_UNKNOWN)
+		xbps_object_release(xhp->repokeys);
+
+	xbps_fetch_unset_cache_connection();
 	cfg_free(xhp->cfg);
 	free(xhp->cachedir_priv);
 	free(xhp->metadir_priv);

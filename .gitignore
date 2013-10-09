@@ -13,6 +13,7 @@ bin/xbps-reconfigure/xbps-reconfigure
 bin/xbps-remove/xbps-remove
 bin/xbps-rindex/xbps-rindex
 bin/xbps-uhelper/xbps-uhelper
+bin/xbps-rkeys/xbps-rkeys
 *.static
 *.so*
 *.o

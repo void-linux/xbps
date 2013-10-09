@@ -36,7 +36,7 @@
 
 #include "xbps_api_impl.h"
 
-int HIDDEN
+int
 xbps_repo_key_import(struct xbps_repo *repo)
 {
 	xbps_dictionary_t repokeyd, newmetad = NULL;
@@ -58,8 +58,8 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	/*
 	 * Check if the public key has been stored for this repository.
 	 */
+	rkeypath = xbps_xasprintf("%s/%s", repo->xhp->metadir, XBPS_REPOKEYS);
 	if (repo->xhp->repokeys == NULL) {
-		rkeypath = xbps_xasprintf("%s/%s", repo->xhp->metadir, XBPS_REPOKEYS);
 		repo->xhp->repokeys = xbps_dictionary_internalize_from_file(rkeypath);
 		if (xbps_object_type(repo->xhp->repokeys) != XBPS_TYPE_DICTIONARY)
 			repo->xhp->repokeys = xbps_dictionary_create();

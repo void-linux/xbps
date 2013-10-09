@@ -158,9 +158,14 @@ int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
 
 /**
  * @private
+ * From lib/repo.c
+ */
+void HIDDEN xbps_repo_invalidate(struct xbps_repo *);
+
+/**
+ * @private
  * From lib/repo_keys.c
  */
-int HIDDEN xbps_repo_key_import(struct xbps_repo *);
 int HIDDEN xbps_repo_key_verify(struct xbps_repo *);
 
 /**

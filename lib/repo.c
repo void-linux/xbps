@@ -172,6 +172,24 @@ xbps_repo_open_idxfiles(struct xbps_repo *repo)
 	repo->idxfiles = repo_get_dict(repo, XBPS_REPOIDX_FILES);
 }
 
+void HIDDEN
+xbps_repo_invalidate(struct xbps_repo *repo)
+{
+	if (repo->ar != NULL) {
+		archive_read_finish(repo->ar);
+		repo->ar = NULL;
+	}
+	if (repo->idx != NULL) {
+		xbps_object_release(repo->idx);
+		repo->idx = NULL;
+	}
+	if (repo->idxfiles != NULL) {
+		xbps_object_release(repo->idxfiles);
+		repo->idxfiles = NULL;
+	}
+	repo->is_verified = false;
+}
+
 void
 xbps_repo_close(struct xbps_repo *repo)
 {
