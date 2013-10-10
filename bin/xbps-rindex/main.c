@@ -39,6 +39,7 @@ usage(bool fail)
 	    "OPTIONS\n"
 	    " -f --force                        Force mode to overwrite entry in add mode\n"
 	    " -h --help                         Show help usage\n"
+	    " -v --verbose                      Verbose messages\n"
 	    " -V --version                      Show XBPS version\n"
 	    "    --privkey <key>                Path to the private key for signing\n"
 	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
@@ -52,13 +53,14 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "afhrV";
+	const char *shortopts = "afhrVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "verbose", no_argument, NULL, 'v' },
 		{ "privkey", required_argument, NULL, 0},
 		{ "signedby", required_argument, NULL, 1},
 		{ "sign", no_argument, NULL, 's'},
@@ -66,7 +68,7 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	const char *privkey = NULL, *signedby = NULL;
-	int rv, c;
+	int rv, c, flags = 0;
 	bool add_mode, rm_mode, sign_mode, force;
 
 	add_mode = rm_mode = sign_mode = force = false;
@@ -94,6 +96,9 @@ main(int argc, char **argv)
 		case 's':
 			sign_mode = true;
 			break;
+		case 'v':
+			flags |= XBPS_FLAG_VERBOSE;
+			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
@@ -111,6 +116,7 @@ main(int argc, char **argv)
 
 	/* initialize libxbps */
 	memset(&xh, 0, sizeof(xh));
+	xh.flags = flags;
 	if ((rv = xbps_init(&xh)) != 0) {
 		fprintf(stderr, "failed to initialize libxbps: %s\n",
 		    strerror(rv));

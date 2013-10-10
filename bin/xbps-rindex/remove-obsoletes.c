@@ -83,7 +83,8 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key _unused, 
 		xbps_object_release(pkgd);
 		return 0;
 	}
-	printf("checking %s (%s)\n", pkgver, binpkg);
+	if (xhp->flags & XBPS_FLAG_VERBOSE)
+		printf("checking %s (%s)\n", pkgver, binpkg);
 	/*
 	 * If binpkg is not registered in index, remove binpkg.
 	 */

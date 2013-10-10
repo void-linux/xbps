@@ -1,5 +1,7 @@
 xbps-0.27 (???):
 
+ * xbps-rindex(8): added -v --verbose option.
+
  * xbps-rindex(8): -c --clean mode has been removed. Generating a local repository
    is almost as fast as cleaning up the repository data.
 
@@ -8,7 +10,7 @@ xbps-0.27 (???):
  * Support for RSA signed repositories. A repository can be signed with your
    preferred RSA key (any ssh key works) as follows:
 
-	$ xbps-rindex -s --signedby "foobar <foo@bar>" --privkey /priv/key /path/to/repo
+	$ xbps-rindex --sign --signedby "foobar <foo@bar>" --privkey /priv/key /path/to/repo
 
    Public keys must be imported before using a remote signed repository thru
    the xbps-rkeys(8) utility:
