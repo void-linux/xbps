@@ -74,9 +74,6 @@ int	remove_obsoletes(struct xbps_handle *, const char *);
 int	sign_repo(struct xbps_handle *, const char *, const char *,
 		const char *);
 
-/* From readpass.c */
-char	*readpassphrase(const char *, char *, size_t, int);
-
 /* From repoflush.c */
 bool	repodata_flush(struct xbps_handle *, const char *,
 		xbps_dictionary_t, xbps_dictionary_t, xbps_dictionary_t);

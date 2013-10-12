@@ -38,34 +38,13 @@
 
 #include "defs.h"
 
-static int
-password_cb(char *buf, int size)
-{
-	int len = 0;
-	char pass[BUFSIZ];
-
-	if (readpassphrase("Enter passphrase: ", pass, BUFSIZ, 0) == NULL)
-		return 0;
-
-	len = strlen(pass);
-
-	if (len <= 0)
-		return 0;
-	if (len > size)
-		len = size;
-
-	memset(buf, '\0', size);
-	memcpy(buf, pass, len);
-	memset(&pass, 0, BUFSIZ);
-
-	return len;
-}
-
 static RSA *
 load_rsa_privkey(const char *path)
 {
 	FILE *fp;
 	RSA *rsa = NULL;
+	const char *p;
+	char *passphrase = NULL;
 
 	if ((fp = fopen(path, "r")) == 0)
 		return NULL;
@@ -75,9 +54,15 @@ load_rsa_privkey(const char *path)
 		return NULL;
 	}
 
-	rsa = PEM_read_RSAPrivateKey(fp, 0,
-			(pem_password_cb *)password_cb,
-			__UNCONST(path));
+	p = getenv("XBPS_PASSPHRASE");
+	if (p) {
+		passphrase = strdup(p);
+	}
+	rsa = PEM_read_RSAPrivateKey(fp, 0, NULL, passphrase);
+	if (passphrase) {
+		free(passphrase);
+		passphrase = NULL;
+	}
 	fclose(fp);
 	return rsa;
 }

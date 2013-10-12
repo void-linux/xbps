@@ -1,4 +1,4 @@
-.Dd October 5, 2013
+.Dd October 12, 2013
 .Os Void Linux
 .Dt xbps-rindex 8
 .Sh NAME
@@ -49,6 +49,9 @@ argument not set, it defaults to
 .Sy ~/.ssh/id_rsa .
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_PASSPHRASE
+If this is set, it will use this passphrase for the RSA private key when signing
+a repository. Otherwise it will ask you to enter the passphrase on the terminal.
 .It Sy XBPS_TARGET_ARCH
 Overrides
 .Xr uname 2
