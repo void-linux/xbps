@@ -93,8 +93,8 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	xbps_dictionary_get_cstring_nocopy(repo->meta, "signature-by", &signedby);
 	import = xbps_set_cb_state(repo->xhp, XBPS_STATE_REPO_KEY_IMPORT,
 			0, (const char *)fp,
-			"This repository is RSA signed by \"%s\"",
-			signedby);
+			"`%s' repository is RSA signed by \"%s\"",
+			repo->uri, signedby);
 	free(fp);
 	if (import <= 0) {
 		rv = EAGAIN;
