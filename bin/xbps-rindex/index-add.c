@@ -70,6 +70,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		idx = xbps_dictionary_create();
 		idxfiles = xbps_dictionary_create();
 	} else {
+		xbps_repo_open_idxfiles(repo);
 		idx = xbps_dictionary_copy(repo->idx);
 		idxfiles = xbps_dictionary_copy(repo->idxfiles);
 		xbps_repo_close(repo);
