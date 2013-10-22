@@ -36,19 +36,6 @@
 #include <xbps.h>
 #include "../xbps-install/defs.h"
 
-static void
-write_plist_file(xbps_dictionary_t dict, const char *file)
-{
-	assert(dict != NULL || file != NULL);
-
-	if (!xbps_dictionary_externalize_to_zfile(dict, file)) {
-		xbps_object_release(dict);
-		xbps_error_printf("xbps-uhelper: couldn't write to %s: %s\n",
-		    file, strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-}
-
 static void __attribute__((noreturn))
 usage(void)
 {
@@ -57,7 +44,7 @@ usage(void)
 	"\n"
 	"  Available actions:\n"
 	"    cmpver, digest, fetch, getpkgdepname, getpkgname, getpkgrevision,\n"
-	"    getpkgversion, pkgmatch, sanitize-plist, version.\n"
+	"    getpkgversion, pkgmatch, version, real-version.\n"
 	"\n"
 	"  Action arguments:\n"
 	"    cmpver\t\t<instver> <reqver>\n"
@@ -69,8 +56,8 @@ usage(void)
 	"    getpkgrevision\t<string>\n"
 	"    getpkgversion\t<string>\n"
 	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
-	"    sanitize-plist\t<plist>\n"
 	"    version\t\t<pkgname>\n"
+	"    real-version\t\t<pkgname>\n"
 	"\n"
 	"  Options shared by all actions:\n"
 	"    -C\t\tPath to xbps.conf file.\n"
@@ -88,7 +75,6 @@ usage(void)
 	"    $ xbps-uhelper getpkgrevision foo-2.0_1\n"
 	"    $ xbps-uhelper getpkgversion foo-2.0_1\n"
 	"    $ xbps-uhelper pkgmatch foo-1.0_1 'foo>=1.0'\n"
-	"    $ xbps-uhelper sanitize-plist foo.plist\n"
 	"    $ xbps-uhelper version pkgname\n");
 
 	exit(EXIT_FAILURE);
@@ -133,8 +119,9 @@ main(int argc, char **argv)
 
 	memset(&xh, 0, sizeof(xh));
 
-	if ((strcasecmp(argv[0], "version") == 0) ||
-	    (strcasecmp(argv[0], "fetch") == 0)) {
+	if ((strcmp(argv[0], "version") == 0) ||
+	    (strcmp(argv[0], "real-version") == 0) ||
+	    (strcmp(argv[0], "fetch") == 0)) {
 		/*
 		* Initialize libxbps.
 		*/
@@ -150,7 +137,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	if (strcasecmp(argv[0], "version") == 0) {
+	if (strcmp(argv[0], "version") == 0) {
 		/* Prints version of an installed package */
 		if (argc != 2)
 			usage();
@@ -161,20 +148,17 @@ main(int argc, char **argv)
 
 		xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
 		printf("%s\n", xbps_pkg_version(version));
-	} else if (strcasecmp(argv[0], "sanitize-plist") == 0) {
-		/* Sanitize a plist file (properly indent the file) */
+	} else if (strcmp(argv[0], "real-version") == 0) {
+		/* Prints version of an installed real package, not virtual */
 		if (argc != 2)
 			usage();
 
-		dict = xbps_dictionary_internalize_from_zfile(argv[1]);
-		if (dict == NULL) {
-			fprintf(stderr,
-			    "=> ERROR: couldn't sanitize %s plist file "
-			    "(%s)\n", argv[1], strerror(errno));
+		if ((dict = xbps_pkgdb_get_pkg(&xh, argv[1])) == NULL)
 			exit(EXIT_FAILURE);
-		}
-		write_plist_file(dict, argv[1]);
-	} else if (strcasecmp(argv[0], "getpkgversion") == 0) {
+
+		xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
+		printf("%s\n", xbps_pkg_version(version));
+	} else if (strcmp(argv[0], "getpkgversion") == 0) {
 		/* Returns the version of a pkg string */
 		if (argc != 2)
 			usage();
@@ -186,7 +170,7 @@ main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 		printf("%s\n", version);
-	} else if (strcasecmp(argv[0], "getpkgname") == 0) {
+	} else if (strcmp(argv[0], "getpkgname") == 0) {
 		/* Returns the name of a pkg string */
 		if (argc != 2)
 			usage();
@@ -199,7 +183,7 @@ main(int argc, char **argv)
 		}
 		printf("%s\n", pkgname);
 		free(pkgname);
-	} else if (strcasecmp(argv[0], "getpkgrevision") == 0) {
+	} else if (strcmp(argv[0], "getpkgrevision") == 0) {
 		/* Returns the revision of a pkg string */
 		if (argc != 2)
 			usage();
@@ -209,7 +193,7 @@ main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 
 		printf("%s\n", version);
-	} else if (strcasecmp(argv[0], "getpkgdepname") == 0) {
+	} else if (strcmp(argv[0], "getpkgdepname") == 0) {
 		/* Returns the pkgname of a dependency */
 		if (argc != 2)
 			usage();
@@ -220,7 +204,7 @@ main(int argc, char **argv)
 
 		printf("%s\n", pkgname);
 		free(pkgname);
-	} else if (strcasecmp(argv[0], "getpkgdepversion") == 0) {
+	} else if (strcmp(argv[0], "getpkgdepversion") == 0) {
 		/* returns the version of a package pattern dependency */
 		if (argc != 2)
 			usage();
@@ -230,19 +214,19 @@ main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 
 		printf("%s\n", version);
-	} else if (strcasecmp(argv[0], "pkgmatch") == 0) {
+	} else if (strcmp(argv[0], "pkgmatch") == 0) {
 		/* Matches a pkg with a pattern */
 		if (argc != 3)
 			usage();
 
 		exit(xbps_pkgpattern_match(argv[1], argv[2]));
-	} else if (strcasecmp(argv[0], "cmpver") == 0) {
+	} else if (strcmp(argv[0], "cmpver") == 0) {
 		/* Compare two version strings, installed vs required */
 		if (argc != 3)
 			usage();
 
 		exit(xbps_cmpver(argv[1], argv[2]));
-	} else if (strcasecmp(argv[0], "digest") == 0) {
+	} else if (strcmp(argv[0], "digest") == 0) {
 		/* Prints SHA256 hashes for specified files */
 		if (argc < 2)
 			usage();
@@ -256,9 +240,8 @@ main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 			printf("%s\n", hash);
-			free(hash);
 		}
-	} else if (strcasecmp(argv[0], "fetch") == 0) {
+	} else if (strcmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */
 		if (argc != 2)
 			usage();

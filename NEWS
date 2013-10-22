@@ -1,3 +1,8 @@
+xbps-0.26.1 (???):
+
+ * xbps-uhelper: added new action "real-version" that only prints the version
+   of an installed real package in a rootdir, not virtual.
+
 xbps-0.26 (2013-09-25):
 
  * xbps-query(8): the `-D --defrepo' argument has been superseded by
