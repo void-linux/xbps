@@ -1,5 +1,8 @@
 xbps-0.27 (???):
 
+ * xbps-uhelper: added new action "real-version" that only prints the version
+   of an installed real package in a rootdir, not virtual.
+
  * xbps-rindex(8): also understands the XBPS_PASSPHRASE environmental variable to
    supply the passphrase when signing repositories.
 
