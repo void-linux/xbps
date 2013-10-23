@@ -213,6 +213,10 @@ linux)
 	;;
 esac
 
+if [ -n "$CPPFLAGS" ]; then
+	echo "CPPFLAGS += $CPPFLAGS" >>$CONFIG_MK
+fi
+
 # Add CPPFLAGS/CFLAGS/LDFLAGS to CC for testing features
 XCC="$CC $CFLAGS $CPPFLAGS $LDFLAGS"
 # Make sure to disable --as-needed for CC tests.
