@@ -1,8 +1,5 @@
 xbps-0.27 (???):
 
- * xbps-uhelper: added new action "real-version" that only prints the version
-   of an installed real package in a rootdir, not virtual.
-
  * xbps-rindex(8): also understands the XBPS_PASSPHRASE environmental variable to
    supply the passphrase when signing repositories.
 
@@ -28,6 +25,11 @@ xbps-0.27 (???):
 
    Starting from now on all remote repositories must be signed and verified.
    Local repos do not need to be signed and they will work as before.
+
+xbps-0.26.1 (2013-10-25):
+
+ * xbps-uhelper: added new action "real-version" that only prints the version
+   of an installed real package in a rootdir, not virtual.
 
 xbps-0.26 (2013-09-25):
 
