@@ -1,4 +1,4 @@
-xbps-0.26.1 (???):
+xbps-0.26.1 (2013-10-25):
 
  * xbps-uhelper: added new action "real-version" that only prints the version
    of an installed real package in a rootdir, not virtual.
