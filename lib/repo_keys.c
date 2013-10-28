@@ -48,6 +48,11 @@ xbps_repo_key_import(struct xbps_repo *repo)
 
 	assert(repo);
 	/*
+	 * Ignore local repositories.
+	 */
+	if (!xbps_repository_is_remote(repo->uri))
+		return 0;
+	/*
 	 * If repository does not have required metadata plist, ignore it.
 	 */
 	if (xbps_dictionary_count(repo->meta) == 0) {
