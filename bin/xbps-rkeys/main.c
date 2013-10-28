@@ -82,7 +82,13 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbd _unused)
 static int
 repo_import_key_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 {
-	return xbps_repo_key_import(repo);
+	int rv;
+
+	rv = xbps_repo_key_import(repo);
+	if (rv != 0)
+		fprintf(stderr, "Failed to import pubkey from %s: %s\n", repo->uri, strerror(rv));
+
+	return rv;
 }
 
 static int
