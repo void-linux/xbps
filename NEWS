@@ -26,6 +26,11 @@ xbps-0.27 (???):
    Starting from now on all remote repositories must be signed and verified.
    Local repos do not need to be signed and they will work as before.
 
+xbps-0.26.2 (2013-10-30):
+
+ * unpack: apply correctly permissions and mode to existent files if the those files
+   in the archive are modified compared to what it's currently on disk.
+
 xbps-0.26.1 (2013-10-25):
 
  * xbps-uhelper: added new action "real-version" that only prints the version

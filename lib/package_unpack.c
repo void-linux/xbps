@@ -460,27 +460,6 @@ unpack_archive(struct xbps_handle *xhp,
 			}
 		}
 		/*
-		 * Check if current file mode differs from file mode
-		 * in binpkg and apply perms if true.
-		 */
-		if (!force && file_exists && skip_extract &&
-		    (archive_entry_mode(entry) != st.st_mode)) {
-			if (chmod(entry_pname,
-			    archive_entry_mode(entry)) != 0) {
-				xbps_dbg_printf(xhp,
-				    "%s: failed "
-				    "to set perms %s to %s: %s\n",
-				    pkgver, archive_entry_strmode(entry),
-				    entry_pname,
-				    strerror(errno));
-				rv = EINVAL;
-				goto out;
-			}
-			xbps_dbg_printf(xhp, "%s: entry %s changed file "
-			    "mode to %s.\n", pkgver, entry_pname,
-			    archive_entry_strmode(entry));
-		}
-		/*
 		 * Check if current uid/gid differs from file in binpkg,
 		 * and change permissions if true.
 		 */
@@ -502,6 +481,27 @@ unpack_archive(struct xbps_handle *xhp,
 				    archive_entry_uid(entry),
 				    archive_entry_gid(entry));
 			}
+		}
+		/*
+		 * Check if current file mode differs from file mode
+		 * in binpkg and apply perms if true.
+		 */
+		if (!force && file_exists && skip_extract &&
+		    (archive_entry_mode(entry) != st.st_mode)) {
+			if (chmod(entry_pname,
+			    archive_entry_mode(entry)) != 0) {
+				xbps_dbg_printf(xhp,
+				    "%s: failed "
+				    "to set perms %s to %s: %s\n",
+				    pkgver, archive_entry_strmode(entry),
+				    entry_pname,
+				    strerror(errno));
+				rv = EINVAL;
+				goto out;
+			}
+			xbps_dbg_printf(xhp, "%s: entry %s changed file "
+			    "mode to %s.\n", pkgver, entry_pname,
+			    archive_entry_strmode(entry));
 		}
 
 		if (!update && conf_file && file_exists && !skip_extract) {
