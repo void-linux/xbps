@@ -10,5 +10,6 @@ SUBDIRS += util
 SUBDIRS += find_pkg_obsoletes
 SUBDIRS += find_pkg_orphans
 SUBDIRS += pkgdb
+SUBDIRS += issue18
 
 include ../../mk/subdir.mk
