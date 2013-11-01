@@ -237,7 +237,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 int
 xbps_transaction_prepare(struct xbps_handle *xhp)
 {
-	xbps_array_t mdeps, conflicts;
+	xbps_array_t pkgs, mdeps, conflicts;
 	int rv = 0;
 
 	if (xhp->transd == NULL)
@@ -251,6 +251,9 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	if (xbps_array_count(mdeps))
 		return ENODEV;
 
+	pkgs = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++)
+		xbps_pkg_find_conflicts(xhp, pkgs, xbps_array_get(pkgs, i));
 	/*
 	 * If there are package conflicts bail out.
 	 */

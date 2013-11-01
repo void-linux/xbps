@@ -119,11 +119,6 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 	/*
-	 * Find out if package has matched conflicts.
-	 */
-	xbps_pkg_find_conflicts(xhp, unsorted, pkg_repod);
-
-	/*
 	 * Find out if package being updated matches the one already
 	 * in transaction, in that case ignore it.
 	 */

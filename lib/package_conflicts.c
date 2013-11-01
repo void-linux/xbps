@@ -37,7 +37,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			xbps_dictionary_t pkg_repod)
 {
 	xbps_array_t pkg_cflicts, trans_cflicts;
-	xbps_dictionary_t pkgd;
+	xbps_dictionary_t pkgd, tpkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	const char *cfpkg, *repopkgver, *pkgver;
@@ -70,6 +70,24 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			if (strcmp(pkgname, repopkgname) == 0) {
 				free(pkgname);
 				continue;
+			}
+			/*
+			 * If there's an update for the conflicting pkg in
+			 * the transaction and does not match the pattern,
+			 * ignore it.
+			 */
+			if ((tpkgd = xbps_find_pkg_in_array(unsorted, pkgname))) {
+				const char *tract, *p;
+
+				xbps_dictionary_get_cstring_nocopy(tpkgd,
+				    "transaction", &tract);
+				xbps_dictionary_get_cstring_nocopy(tpkgd,
+				    "pkgver", &p);
+				if ((xbps_pkgpattern_match(p, cfpkg) == 0) &&
+				    (strcmp(tract, "update") == 0)) {
+					free(pkgname);
+					continue;
+				}
 			}
 			free(pkgname);
 			xbps_dbg_printf(xhp, "found conflicting installed "
