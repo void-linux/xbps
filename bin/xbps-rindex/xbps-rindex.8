@@ -1,4 +1,4 @@
-.Dd October 12, 2013
+.Dd November 2, 2013
 .Os Void Linux
 .Dt xbps-rindex 8
 .Sh NAME
@@ -37,6 +37,8 @@ Path to the private RSA key to sign the repository. If unset, defaults to
 Registers the binary package into the local repository. The specified binary
 package is only added to the index if its version is greater than the one
 currently stored. Multiple binary packages can be specified as arguments.
+.It Sy -c, --clean Ar repository
+Removes obsolete entries found in the local repository.
 .It Sy -r, --remove-obsoletes Ar repository
 Removes obsolete packages from
 .Ar repository .

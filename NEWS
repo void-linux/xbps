@@ -1,14 +1,13 @@
 xbps-0.27 (???):
 
+ * Fixed issue #19: https://github.com/xtraeme/xbps/issues/19
+
  * Fixed issue #18: https://github.com/xtraeme/xbps/issues/18
 
  * xbps-rindex(8): also understands the XBPS_PASSPHRASE environmental variable to
    supply the passphrase when signing repositories.
 
  * xbps-rindex(8): added -v --verbose option.
-
- * xbps-rindex(8): -c --clean mode has been removed. Generating a local repository
-   is almost as fast as cleaning up the repository data.
 
  * xbps-rkeys(8): new utility to manage RSA public keys from remote signed repositories.
 
