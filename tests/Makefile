@@ -1,5 +1,5 @@
 -include ../config.mk
 
-SUBDIRS = libxbps
+SUBDIRS = libxbps xbps-rindex
 
 include ../mk/subdir.mk

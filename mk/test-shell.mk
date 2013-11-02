@@ -5,6 +5,7 @@ all: $(TEST)
 
 .PHONY: clean
 clean:
+	-rm -f $(TEST)
 
 .PHONY: install
 install: all
