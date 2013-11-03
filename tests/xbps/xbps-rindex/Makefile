@@ -1,5 +1,5 @@
 -include ../../../config.mk
 
-SUBDIRS = common issue19
+SUBDIRS = common clean
 
 include ../../../mk/subdir.mk
