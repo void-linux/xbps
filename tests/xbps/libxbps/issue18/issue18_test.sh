@@ -8,7 +8,7 @@
 #	Generate pkg B-0.1_2.
 #	Update all packages.
 
-atf_test_case issue18
+atf_test_case issue18 cleanup
 
 issue18_head() {
 	atf_set "descr" "xbps issue #18 (https://github.com/xtraeme/xbps/issues/18)"
