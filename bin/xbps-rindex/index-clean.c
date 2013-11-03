@@ -38,6 +38,11 @@
 #include <xbps.h>
 #include "defs.h"
 
+struct cbdata {
+	xbps_array_t result;
+	const char *repourl;
+};
+
 static int
 idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_object_t obj,
@@ -45,24 +50,23 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		void *arg,
 		bool *done _unused)
 {
-
-	xbps_array_t result = arg;
-	const char *arch, *pkgver, *sha256, *repoloc;
+	struct cbdata *cbd = arg;
+	const char *arch, *pkgver, *sha256;
 	char *filen;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
+	xbps_dictionary_get_cstring_nocopy(obj, "repository", &cbd->repourl);
 
 	xbps_dbg_printf(xhp, "%s: checking %s [%s] ...", pkgver, arch);
 
-	filen = xbps_xasprintf("%s/%s.%s.xbps", repoloc, pkgver, arch);
+	filen = xbps_xasprintf("%s/%s.%s.xbps", cbd->repourl, pkgver, arch);
 	if (access(filen, R_OK) == -1) {
 		/*
 		 * File cannot be read, might be permissions,
 		 * broken or simply unexistent; either way, remove it.
 		 */
-		xbps_array_add_cstring_nocopy(result, pkgver);
+		xbps_array_add_cstring_nocopy(cbd->result, pkgver);
 	} else {
 		/*
 		 * File can be read; check its hash.
@@ -70,7 +74,7 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_dictionary_get_cstring_nocopy(obj,
 				"filename-sha256", &sha256);
 		if (xbps_file_hash_check(filen, sha256) != 0)
-			xbps_array_add_cstring_nocopy(result, pkgver);
+			xbps_array_add_cstring_nocopy(cbd->result, pkgver);
 	}
 	free(filen);
 	return 0;
@@ -84,7 +88,8 @@ int
 index_clean(struct xbps_handle *xhp, const char *repodir)
 {
 	struct xbps_repo *repo;
-	xbps_array_t result = NULL, allkeys;
+	struct cbdata cbd;
+	xbps_array_t allkeys;
 	xbps_dictionary_t idx, idxfiles;
 	const char *keyname;
 	char *pkgname;
@@ -108,12 +113,13 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
-	result = xbps_array_create();
+	cbd.repourl = repodir;
+	cbd.result = xbps_array_create();
 	allkeys = xbps_dictionary_all_keys(idx);
-	rv = xbps_array_foreach_cb(xhp, allkeys, idx, idx_cleaner_cb, result);
+	rv = xbps_array_foreach_cb(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
 
-	for (unsigned int x = 0; x < xbps_array_count(result); x++) {
-		xbps_array_get_cstring_nocopy(result, x, &keyname);
+	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
+		xbps_array_get_cstring_nocopy(cbd.result, x, &keyname);
 		printf("index: removed entry %s\n", keyname);
 		pkgname = xbps_pkg_name(keyname);
 		xbps_dictionary_remove(idx, pkgname);
@@ -121,7 +127,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		free(pkgname);
 		flush = true;
 	}
-	xbps_object_release(result);
+	xbps_object_release(cbd.result);
 	xbps_object_release(allkeys);
 
 	if (flush) {
