@@ -49,8 +49,9 @@ filesclean_body() {
 	cd ..
 	xbps-rindex -c some_repo
 	atf_check_equal $? 0
-	result=$(xbps-query --repository=some_repo -o \*|wc -l)
-	atf_check_equal ${result} 1
+	result=$(xbps-query --repository=some_repo -o \*)
+	test -z "${result}"
+	atf_check_equal $? 0
 }
 
 filesclean_cleanup() {
