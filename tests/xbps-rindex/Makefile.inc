@@ -1,1 +1,0 @@
-TESTSSUBDIR = xbps-rindex

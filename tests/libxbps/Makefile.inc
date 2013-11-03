@@ -1,1 +1,0 @@
-TESTSSUBDIR = libxbps
