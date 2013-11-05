@@ -368,6 +368,12 @@ unpack_archive(struct xbps_handle *xhp,
 		conf_file = skip_extract = file_exists = false;
 		if (lstat(entry_pname, &st) == 0)
 			file_exists = true;
+		/*
+		 * If file to be extracted does not match the file type of
+		 * file currently stored on disk, remove file on disk.
+		 */
+		if (file_exists && (entry_type != (int)st.st_mode))
+			remove(entry_pname);
 
 		if (!force && (entry_type == AE_IFREG)) {
 			buf = strchr(entry_pname, '.') + 1;
