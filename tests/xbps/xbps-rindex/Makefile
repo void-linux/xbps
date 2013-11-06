@@ -1,5 +1,8 @@
--include ../../../config.mk
+TOPDIR = ../../..
+-include $(TOPDIR)/config.mk
 
-SUBDIRS = common clean
+TESTSHELL = clean_test
+TESTSSUBDIR = xbps/xbps-rindex
+EXTRA_FILES = Kyuafile
 
-include ../../../mk/subdir.mk
+include $(TOPDIR)/mk/test.mk
