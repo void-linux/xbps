@@ -11,5 +11,6 @@ atf_test_program{name="find_pkg_obsoletes_test"}
 atf_test_program{name="issue6_test"}
 atf_test_program{name="issue18_test"}
 atf_test_program{name="issue20_test"}
+atf_test_program{name="conf_files_test"}
 include('find_pkg_orphans/Kyuafile')
 include('pkgdb/Kyuafile')

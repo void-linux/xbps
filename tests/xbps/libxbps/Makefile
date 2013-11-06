@@ -13,5 +13,6 @@ SUBDIRS += pkgdb
 SUBDIRS += issue6
 SUBDIRS += issue18
 SUBDIRS += issue20
+SUBDIRS += conf_files
 
 include ../../../mk/subdir.mk

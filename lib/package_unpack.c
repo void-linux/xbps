@@ -159,6 +159,7 @@ unpack_archive(struct xbps_handle *xhp,
 	xbps_dictionary_t propsd, filesd, old_filesd;
 	xbps_array_t array, obsoletes;
 	xbps_object_t obj;
+	const struct stat *entry_statp;
 	void *instbuf = NULL, *rembuf = NULL;
 	struct stat st;
 	struct xbps_unpack_cb_data xucd;
@@ -232,6 +233,7 @@ unpack_archive(struct xbps_handle *xhp,
 		entry_pname = archive_entry_pathname(entry);
 		entry_size = archive_entry_size(entry);
 		entry_type = archive_entry_filetype(entry);
+		entry_statp = archive_entry_stat(entry);
 		/*
 		 * Ignore directories from archive.
 		 */
@@ -369,10 +371,10 @@ unpack_archive(struct xbps_handle *xhp,
 		if (lstat(entry_pname, &st) == 0)
 			file_exists = true;
 		/*
-		 * If file to be extracted does not match the file type of
+		 * If file to be extracted does not match the mode_t of
 		 * file currently stored on disk, remove file on disk.
 		 */
-		if (file_exists && (entry_type != (int)st.st_mode))
+		if (file_exists && (entry_statp->st_mode != st.st_mode))
 			remove(entry_pname);
 
 		if (!force && (entry_type == AE_IFREG)) {
