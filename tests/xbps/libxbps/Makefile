@@ -10,9 +10,6 @@ SUBDIRS += util
 SUBDIRS += find_pkg_obsoletes
 SUBDIRS += find_pkg_orphans
 SUBDIRS += pkgdb
-SUBDIRS += issue6
-SUBDIRS += issue18
-SUBDIRS += issue20
-SUBDIRS += conf_files
+SUBDIRS += shell
 
 include ../../../mk/subdir.mk
