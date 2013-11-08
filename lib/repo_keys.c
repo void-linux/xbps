@@ -42,7 +42,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	xbps_dictionary_t repokeyd, newmetad = NULL;
 	xbps_data_t rpubkey;
 	const char *signedby;
-	unsigned char *fp;
+	unsigned char *fp = NULL;
 	char *rkeypath = NULL;
 	int import, rv = 0;
 
@@ -95,6 +95,13 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	 * to the client.
 	 */
 	fp = xbps_pubkey2fp(repo->xhp, rpubkey);
+	if (fp == NULL) {
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s': failed to compute hex fingerprint: %s\n",
+		    repo->uri, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
 	xbps_dictionary_get_cstring_nocopy(repo->meta, "signature-by", &signedby);
 	import = xbps_set_cb_state(repo->xhp, XBPS_STATE_REPO_KEY_IMPORT,
 			0, (const char *)fp,
