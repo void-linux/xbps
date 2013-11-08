@@ -52,7 +52,7 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	RSA *pRsa = NULL;
 	BIO *bio = NULL;
 	const void *pubkeydata;
-	unsigned char *fpstr = NULL, md_value[EVP_MAX_MD_SIZE];
+	unsigned char *md_value = NULL;
 	unsigned char *nBytes = NULL, *eBytes = NULL, *pEncoding = NULL;
 	unsigned int md_len = 0;
 	int index = 0, nLen = 0, eLen = 0, encodingLength = 0;
@@ -112,15 +112,15 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	 */
 	EVP_MD_CTX_init(&mdctx);
 	EVP_DigestInit_ex(&mdctx, EVP_md5(), NULL);
-	assert(EVP_DigestUpdate(&mdctx, pEncoding, encodingLength) != -1);
-	assert(EVP_DigestFinal_ex(&mdctx, md_value, &md_len) != -1);
+	EVP_DigestUpdate(&mdctx, pEncoding, encodingLength);
+	md_value = malloc(EVP_MAX_MD_SIZE);
+	if (EVP_DigestFinal_ex(&mdctx, md_value, &md_len) == 0) {
+		free(md_value);
+		md_value = NULL;
+	} else {
+		md_value[md_len] = '\0';
+	}
 	EVP_MD_CTX_cleanup(&mdctx);
-
-	fpstr = malloc(md_len+1);
-	for (unsigned int i = 0; i < md_len; i++)
-		fpstr[i] = md_value[i];
-
-	fpstr[md_len] = '\0';
 
 error:
 	if (bio)
@@ -139,5 +139,5 @@ error:
 	EVP_cleanup();
 	ERR_free_strings();
 
-	return fpstr;
+	return md_value;
 }
