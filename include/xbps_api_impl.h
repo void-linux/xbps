@@ -27,6 +27,10 @@
 #ifndef _XBPS_API_IMPL_H_
 #define _XBPS_API_IMPL_H_
 
+#ifndef DEBUG
+#define NDEBUG
+#endif
+
 #include <assert.h>
 #include <confuse.h>
 #define LIBXBPS_PRIVATE
