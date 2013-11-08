@@ -23,9 +23,8 @@ static unsigned char pSshHeader[11] = {
 	0x00, 0x00, 0x00, 0x07, 0x73, 0x73, 0x68, 0x2D, 0x72, 0x73, 0x61
 };
 
-static
-int SshEncodeBuffer(unsigned char *pEncoding, int bufferLen,
-	unsigned char *pBuffer)
+static int
+SshEncodeBuffer(unsigned char *pEncoding, int bufferLen, unsigned char *pBuffer)
 {
 	int adjustedLen = bufferLen, index;
 
