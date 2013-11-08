@@ -53,6 +53,20 @@ usage(bool fail)
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
+static void
+print_hexfp(unsigned const char *fp)
+{
+	unsigned int i, c, len;
+
+	len = strlen((const char *)fp);
+	for (i = 0; i < len; i++) {
+		fprintf(stdout, "%02x", fp[i]);
+		c = i + 1;
+		if (c < len)
+			fprintf(stdout, ":");
+	}
+}
+
 static int
 state_cb(struct xbps_state_cb_data *xscd, void *cbd _unused)
 {
@@ -63,7 +77,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbd _unused)
 	case XBPS_STATE_REPO_KEY_IMPORT:
 		printf("%s\n", xscd->desc);
 		printf("Fingerprint: ");
-		xbps_print_hexfp(xscd->arg);
+		print_hexfp((unsigned const char *)xscd->arg);
 		printf("\n");
 		rv = noyes("Do you want to import this public key?");
 		break;
@@ -117,7 +131,7 @@ repo_info_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 		printf(" %u ", rpubkeysiz);
 		fp = xbps_pubkey2fp(repo->xhp, rpubkey);
 		assert(fp);
-		xbps_print_hexfp((const char *)fp);
+		print_hexfp(fp);
 		free(fp);
 		printf("\n");
 	}

@@ -46,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20131009"
+#define XBPS_API_VERSION	"20131108"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1674,13 +1674,6 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
  * when necessary.
  */
 unsigned char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
-
-/**
- * Prints to stdout the hex fingerprint of a public key.
- *
- * @param[in] fp String returned by xbps_pubkey2fp();
- */
-void xbps_print_hexfp(const char *fp);
 
 /*@}*/
 

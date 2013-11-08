@@ -297,20 +297,3 @@ xbps_humanize_number(char *buf, int64_t bytes)
 	return humanize_number(buf, 7, bytes, "B",
 	    HN_AUTOSCALE, HN_DECIMAL|HN_NOSPACE);
 }
-
-void
-xbps_print_hexfp(const char *fp)
-{
-	unsigned char *fpstr;
-	unsigned int i, c, len;
-
-	fpstr = (unsigned char *)(void *)(unsigned long)(const void *)fp;
-	len = strlen(fp);
-
-	for (i = 0; i < len; i++) {
-		printf("%02x", fpstr[i]);
-		c = i + 1;
-		if (c < len)
-			putchar(':');
-	}
-}
