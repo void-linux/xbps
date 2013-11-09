@@ -371,10 +371,11 @@ unpack_archive(struct xbps_handle *xhp,
 		if (lstat(entry_pname, &st) == 0)
 			file_exists = true;
 		/*
-		 * If file to be extracted does not match the mode_t of
+		 * If file to be extracted does not match the file type of
 		 * file currently stored on disk, remove file on disk.
 		 */
-		if (file_exists && (entry_statp->st_mode != st.st_mode))
+		if (file_exists &&
+		    ((entry_statp->st_mode & S_IFMT) != (st.st_mode & S_IFMT)))
 			remove(entry_pname);
 
 		if (!force && (entry_type == AE_IFREG)) {
