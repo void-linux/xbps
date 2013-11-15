@@ -161,7 +161,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		printf("Total download size:\t%6s\n", size);
 	}
 	if (instsize) {
-		if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
+		if (xbps_humanize_number(size, (int64_t)(instsize+dlsize)) == -1) {
 			xbps_error_printf("humanize_number2 returns "
 			    "%s\n", strerror(errno));
 			return -1;
