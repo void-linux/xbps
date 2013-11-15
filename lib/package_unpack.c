@@ -171,7 +171,7 @@ unpack_archive(struct xbps_handle *xhp,
 	char *pkgname, *dname, *buf, *buf2, *p, *p2;
 	int ar_rv, rv, entry_type, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
-	bool softreplace, skip_extract, force, metafile;
+	bool softreplace, skip_extract, force, metafile, xucd_stats;
 	uid_t euid;
 
 	assert(xbps_object_type(pkg_repod) == XBPS_TYPE_DICTIONARY);
@@ -179,7 +179,7 @@ unpack_archive(struct xbps_handle *xhp,
 
 	propsd = filesd = old_filesd = NULL;
 	force = preserve = update = conf_file = file_exists = false;
-	skip_obsoletes = softreplace = metafile = false;
+	skip_obsoletes = softreplace = metafile = xucd_stats = false;
 
 	xbps_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	xbps_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
@@ -255,7 +255,6 @@ unpack_archive(struct xbps_handle *xhp,
 				rv = EINVAL;
 				goto out;
 			}
-
 			rv = xbps_pkg_exec_buffer(xhp, instbuf, instbufsiz,
 					pkgver, "pre", update);
 			if (rv != 0) {
@@ -297,23 +296,6 @@ unpack_archive(struct xbps_handle *xhp,
 			continue;
 		}
 		/*
-		 * XXX: duplicate code.
-		 * Create the metaplist file before unpacking any real file.
-		 */
-		if (propsd && filesd && !metafile) {
-			rv = create_pkg_metaplist(xhp, pkgname, pkgver,
-			    propsd, filesd, instbuf, instbufsiz,
-			    rembuf, rembufsiz);
-			if (rv != 0) {
-				xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-				    rv, pkgver,
-				    "%s: [unpack] failed to create metaplist file: %s",
-				    pkgver, strerror(rv));
-				goto out;
-			}
-			metafile = true;
-		}
-		/*
 		 * If XBPS_PKGFILES or XBPS_PKGPROPS weren't found
 		 * in the archive at this phase, skip all data.
 		 */
@@ -337,6 +319,23 @@ unpack_archive(struct xbps_handle *xhp,
 			continue;
 		}
 		/*
+		 * XXX: duplicate code.
+		 * Create the metaplist file before unpacking any real file.
+		 */
+		if (!metafile) {
+			rv = create_pkg_metaplist(xhp, pkgname, pkgver,
+			    propsd, filesd, instbuf, instbufsiz,
+			    rembuf, rembufsiz);
+			if (rv != 0) {
+				xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+				    rv, pkgver,
+				    "%s: [unpack] failed to create metaplist file: %s",
+				    pkgver, strerror(rv));
+				goto out;
+			}
+			metafile = true;
+		}
+		/*
 		 * Prepare unpack callback ops.
 		 */
 		if (xhp->unpack_cb != NULL) {
@@ -345,22 +344,22 @@ unpack_archive(struct xbps_handle *xhp,
 			xucd.entry = entry_pname;
 			xucd.entry_size = entry_size;
 			xucd.entry_is_conf = false;
-		}
-		/*
-		 * Compute total entries in progress data, if set.
-		 * total_entries = files + conf_files + links.
-		 */
-		if (xhp->unpack_cb != NULL) {
-			xucd.entry_total_count = 0;
-			array = xbps_dictionary_get(filesd, "files");
-			xucd.entry_total_count +=
-			    (ssize_t)xbps_array_count(array);
-			array = xbps_dictionary_get(filesd, "conf_files");
-			xucd.entry_total_count +=
-			    (ssize_t)xbps_array_count(array);
-			array = xbps_dictionary_get(filesd, "links");
-			xucd.entry_total_count +=
-			    (ssize_t)xbps_array_count(array);
+			/*
+			 * Compute total entries in progress data, if set.
+			 * total_entries = files + conf_files + links.
+			 */
+			if (filesd && !xucd_stats) {
+				array = xbps_dictionary_get(filesd, "files");
+				xucd.entry_total_count +=
+				    (ssize_t)xbps_array_count(array);
+				array = xbps_dictionary_get(filesd, "conf_files");
+				xucd.entry_total_count +=
+				    (ssize_t)xbps_array_count(array);
+				array = xbps_dictionary_get(filesd, "links");
+				xucd.entry_total_count +=
+				    (ssize_t)xbps_array_count(array);
+				xucd_stats = true;
+			}
 		}
 		/*
 		 * Always check that extracted file exists and hash
