@@ -38,6 +38,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <ctype.h>
 #include <sys/utsname.h>
 
 #include "xbps_api_impl.h"
@@ -96,7 +97,10 @@ xbps_pkg_version(const char *pkg)
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	if (strrchr(p, '_') == NULL)
+	if (!isdigit((unsigned char)p[1]))
+		return NULL;
+
+	if (strchr(p, '_') == NULL)
 		return NULL;
 
 	return p + 1; /* skip first '_' */
@@ -113,6 +117,9 @@ xbps_pkg_revision(const char *pkg)
 	if ((p = strrchr(pkg, '_')) == NULL)
 		return NULL;
 
+	if (!isdigit((unsigned char)p[1]))
+		return NULL;
+
 	return p + 1; /* skip first '_' */
 }
 
@@ -126,7 +133,10 @@ xbps_pkg_name(const char *pkg)
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	if (strrchr(p, '_') == NULL)
+	if (!isdigit((unsigned char)p[1]))
+		return NULL;
+
+	if (strchr(p, '_') == NULL)
 		return NULL;
 
 	len = strlen(pkg) - strlen(p) + 1;

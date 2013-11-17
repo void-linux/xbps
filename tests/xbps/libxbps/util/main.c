@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2013 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,14 +36,22 @@ ATF_TC_HEAD(util_test, tc)
 
 ATF_TC_BODY(util_test, tc)
 {
+	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-a"), NULL);
+	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-1"), NULL);
+	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-100dpi"), NULL);
 	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-100dpi-7.8"), NULL);
+	ATF_CHECK_EQ(xbps_pkg_name("python-e_dbus"), NULL);
 	ATF_CHECK_EQ(xbps_pkg_version("font-adobe-100dpi"), NULL);
 	ATF_CHECK_EQ(xbps_pkg_version("font-adobe-100dpi-7.8"), NULL);
+	ATF_CHECK_EQ(xbps_pkg_version("python-e_dbus"), NULL);
+	ATF_CHECK_EQ(xbps_pkg_version("python-e_dbus-1"), NULL);
 	ATF_REQUIRE_STREQ(xbps_pkg_name("font-adobe-100dpi-7.8_2"), "font-adobe-100dpi");
 	ATF_REQUIRE_STREQ(xbps_pkg_name("systemd-43_1"), "systemd");
 	ATF_REQUIRE_STREQ(xbps_pkg_name("font-adobe-100dpi-1.8_blah"), "font-adobe-100dpi");
+	ATF_REQUIRE_STREQ(xbps_pkg_name("python-e_dbus-1.0_1"), "python-e_dbus");
 	ATF_REQUIRE_STREQ(xbps_pkg_version("font-adobe-100dpi-7.8_2"), "7.8_2");
 	ATF_REQUIRE_STREQ(xbps_pkg_version("font-adobe-100dpi-1.8_blah"), "1.8_blah");
+	ATF_REQUIRE_STREQ(xbps_pkg_version("python-e_dbus-1_1"), "1_1");
 	ATF_REQUIRE_STREQ(xbps_pkg_revision("systemd-43_1_0"), "0");
 	ATF_REQUIRE_STREQ(xbps_pkg_revision("systemd_21-43_0"), "0");
 	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>=43"), "systemd");
