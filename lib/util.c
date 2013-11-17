@@ -93,14 +93,20 @@ const char *
 xbps_pkg_version(const char *pkg)
 {
 	const char *p;
+	bool valid = false;
 
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	if (!isdigit((unsigned char)p[1]))
-		return NULL;
-
-	if (strchr(p, '_') == NULL)
+	for (unsigned int i = 0; i < strlen(p); i++) {
+		if (p[i] == '_')
+			break;
+		if (isdigit((unsigned char)p[i]) && strchr(p, '_')) {
+			valid = true;
+			break;
+		}
+	}
+	if (!valid)
 		return NULL;
 
 	return p + 1; /* skip first '_' */
@@ -129,14 +135,20 @@ xbps_pkg_name(const char *pkg)
 	const char *p;
 	char *buf;
 	unsigned int len;
+	bool valid = false;
 
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	if (!isdigit((unsigned char)p[1]))
-		return NULL;
-
-	if (strchr(p, '_') == NULL)
+	for (unsigned int i = 0; i < strlen(p); i++) {
+		if (p[i] == '_')
+			break;
+		if (isdigit((unsigned char)p[i]) && strchr(p, '_')) {
+			valid = true;
+			break;
+		}
+	}
+	if (!valid)
 		return NULL;
 
 	len = strlen(pkg) - strlen(p) + 1;
