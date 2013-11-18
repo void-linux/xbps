@@ -164,8 +164,10 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 		    repo->is_signed ? "signed" : "unsigned",
 		    repo->is_verified ? "verified" : "unverified");
 		if (repo->xhp->flags & XBPS_FLAG_VERBOSE) {
-			printf("      Signed-by: %s\n", repo->signedby);
-			printf("      %u %s\n", repo->pubkey_size, repo->hexfp);
+			if (repo->signedby)
+				printf("      Signed-by: %s\n", repo->signedby);
+			if (repo->hexfp)
+				printf("      %u %s\n", repo->pubkey_size, repo->hexfp);
 		}
 	} else {
 		printf("\n");
