@@ -43,7 +43,26 @@ SshEncodeBuffer(unsigned char *pEncoding, int bufferLen, unsigned char *pBuffer)
 	return index + bufferLen;
 }
 
-unsigned char *
+static char *
+fp2str(unsigned const char *fp, unsigned int len)
+{
+	unsigned int i, c = 0;
+	char res[48], cur[4];
+
+	for (i = 0; i < len; i++) {
+		if (i > 0)
+			c = i*3;
+		sprintf(cur, "%02x", fp[i]);
+		res[c] = cur[0];
+		res[c+1] = cur[1];
+		res[c+2] = ':';
+	}
+	res[c+2] = '\0';
+
+	return strdup(res);
+}
+
+char *
 xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 {
 	EVP_MD_CTX mdctx;
@@ -51,9 +70,10 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	RSA *pRsa = NULL;
 	BIO *bio = NULL;
 	const void *pubkeydata;
-	unsigned char *md_value = NULL;
+	unsigned char md_value[EVP_MAX_MD_SIZE];
 	unsigned char *nBytes = NULL, *eBytes = NULL, *pEncoding = NULL;
 	unsigned int md_len = 0;
+	char *hexfpstr = NULL;
 	int index = 0, nLen = 0, eLen = 0, encodingLength = 0;
 
 	ERR_load_crypto_strings();
@@ -112,14 +132,13 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	EVP_MD_CTX_init(&mdctx);
 	EVP_DigestInit_ex(&mdctx, EVP_md5(), NULL);
 	EVP_DigestUpdate(&mdctx, pEncoding, encodingLength);
-	md_value = malloc(EVP_MAX_MD_SIZE);
-	if (EVP_DigestFinal_ex(&mdctx, md_value, &md_len) == 0) {
-		free(md_value);
-		md_value = NULL;
-	} else {
-		md_value[md_len] = '\0';
-	}
+	if (EVP_DigestFinal_ex(&mdctx, md_value, &md_len) == 0)
+		goto error;
 	EVP_MD_CTX_cleanup(&mdctx);
+	/*
+	 * Convert result to a compatible OpenSSH hex fingerprint.
+	 */
+	hexfpstr = fp2str(md_value, md_len);
 
 error:
 	if (bio)
@@ -138,5 +157,5 @@ error:
 	EVP_cleanup();
 	ERR_free_strings();
 
-	return md_value;
+	return hexfpstr;
 }

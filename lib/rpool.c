@@ -52,7 +52,6 @@ xbps_rpool_init(struct xbps_handle *xhp)
 {
 	struct rpool *rp;
 	const char *repouri;
-	char *p;
 	bool foundrepo = false;
 	int retval, rv = 0;
 
@@ -60,10 +59,6 @@ xbps_rpool_init(struct xbps_handle *xhp)
 
 	if (xhp->rpool_initialized)
 		return 0;
-
-	p = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_REPOKEYS);
-	xhp->repokeys = xbps_dictionary_internalize_from_file(p);
-	free(p);
 
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		rp = malloc(sizeof(struct rpool));
@@ -89,10 +84,12 @@ xbps_rpool_init(struct xbps_handle *xhp)
 				retval = xbps_repo_key_verify(rp->repo);
 				if (retval == 0) {
 					/* signed, verified */
-					xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGVERIFIED, 0, NULL, NULL);
+					xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGVERIFIED,
+					    0, repouri, NULL);
 				} else if (retval == EPERM) {
 					/* signed, unverified */
-					xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGUNVERIFIED, 0, NULL, NULL);
+					xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGUNVERIFIED,
+					    0, repouri, NULL);
 					xbps_repo_invalidate(rp->repo);
 				} else {
 					/* any error */

@@ -91,6 +91,7 @@ repo_get_dict(struct xbps_repo *repo, const char *fname)
 struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url)
 {
+	xbps_dictionary_t meta;
 	struct xbps_repo *repo;
 	struct stat st;
 	const char *arch;
@@ -119,14 +120,12 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		repofile = xbps_repo_path(xhp, url);
 	}
 
-	repo = malloc(sizeof(struct xbps_repo));
+	repo = calloc(1, sizeof(struct xbps_repo));
 	assert(repo);
 
 	repo->xhp = xhp;
 	repo->uri = url;
 	repo->ar = archive_read_new();
-	repo->is_verified = false;
-	repo->is_signed = false;
 	repo->is_remote = is_remote;
 	archive_read_support_compression_gzip(repo->ar);
 	archive_read_support_format_tar(repo->ar);
@@ -157,10 +156,18 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		repo = NULL;
 		goto out;
 	}
-	if ((repo->meta = repo_get_dict(repo, XBPS_REPOIDX_META)))
-		repo->is_signed = true;
+	if (!is_remote)
+		goto out;
 
-	repo->idxfiles = NULL;
+	if ((meta = repo_get_dict(repo, XBPS_REPOIDX_META))) {
+		repo->is_signed = true;
+		repo->signature = xbps_dictionary_get(meta, "signature");
+		xbps_dictionary_get_cstring_nocopy(meta, "signature-by", &repo->signedby);
+		repo->pubkey = xbps_dictionary_get(meta, "public-key");
+		xbps_dictionary_get_uint16(meta, "public-key-size", &repo->pubkey_size);
+		repo->hexfp = xbps_pubkey2fp(repo->xhp, repo->pubkey);
+	}
+
 out:
 	free(repofile);
 	return repo;
@@ -198,10 +205,6 @@ xbps_repo_close(struct xbps_repo *repo)
 	if (repo->ar != NULL)
 		archive_read_finish(repo->ar);
 
-	if (repo->meta != NULL) {
-		xbps_object_release(repo->meta);
-		repo->meta = NULL;
-	}
 	if (repo->idx != NULL) {
 		xbps_object_release(repo->idx);
 		repo->idx = NULL;
@@ -210,6 +213,8 @@ xbps_repo_close(struct xbps_repo *repo)
 		xbps_object_release(repo->idxfiles);
 		repo->idxfiles = NULL;
 	}
+	if (repo->hexfp != NULL)
+		free(repo->hexfp);
 }
 
 xbps_dictionary_t

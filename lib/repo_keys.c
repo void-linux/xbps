@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <libgen.h>
 
 #include <openssl/err.h>
 #include <openssl/sha.h>
@@ -39,11 +40,8 @@
 int
 xbps_repo_key_import(struct xbps_repo *repo)
 {
-	xbps_dictionary_t repokeyd, newmetad = NULL;
-	xbps_data_t rpubkey;
-	const char *signedby;
-	unsigned char *fp = NULL;
-	char *rkeypath = NULL;
+	xbps_dictionary_t repokeyd = NULL;
+	char *p, *dbkeyd, *rkeyfile = NULL;
 	int import, rv = 0;
 
 	assert(repo);
@@ -55,93 +53,80 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	/*
 	 * If repository does not have required metadata plist, ignore it.
 	 */
-	if (xbps_dictionary_count(repo->meta) == 0) {
+	if (repo->signature == NULL && repo->pubkey == NULL) {
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' unsigned repository!\n", repo->uri);
 		return 0;
 	}
 	/*
-	 * Check if the public key has been stored for this repository.
-	 */
-	rkeypath = xbps_xasprintf("%s/%s", repo->xhp->metadir, XBPS_REPOKEYS);
-	if (repo->xhp->repokeys == NULL) {
-		repo->xhp->repokeys = xbps_dictionary_internalize_from_file(rkeypath);
-		if (xbps_object_type(repo->xhp->repokeys) != XBPS_TYPE_DICTIONARY)
-			repo->xhp->repokeys = xbps_dictionary_create();
-	}
-	repokeyd = xbps_dictionary_get(repo->xhp->repokeys, repo->uri);
-	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
-		if (xbps_dictionary_get(repokeyd, "public-key")) {
-			xbps_dbg_printf(repo->xhp,
-			    "[repo] `%s' public key already stored.\n",
-			    repo->uri);
-			goto out;
-		}
-	}
-	/*
 	 * Check the repository provides a working public-key data object.
 	 */
-	rpubkey = xbps_dictionary_get(repo->meta, "public-key");
-	if (xbps_object_type(rpubkey) != XBPS_TYPE_DATA) {
-		rv = EINVAL;
+	repo->is_signed = true;
+	if (repo->hexfp == NULL) {
 		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' invalid public-key object!\n", repo->uri);
+		    "[repo] `%s': invalid hex fingerprint: %s\n",
+		    repo->uri, strerror(errno));
+		rv = EINVAL;
 		goto out;
 	}
-	repo->is_signed = true;
+	/*
+	 * Check if the public key is alredy stored.
+	 */
+	rkeyfile = xbps_xasprintf("%s/keys/%s.plist",
+	    repo->xhp->metadir, repo->hexfp);
+	repokeyd = xbps_dictionary_internalize_from_zfile(rkeyfile);
+	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s' public key already stored.\n", repo->uri);
+		goto out;
+	}
 	/*
 	 * Notify the client and take appropiate action to import
 	 * the repository public key. Pass back the public key openssh fingerprint
 	 * to the client.
 	 */
-	fp = xbps_pubkey2fp(repo->xhp, rpubkey);
-	if (fp == NULL) {
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s': failed to compute hex fingerprint: %s\n",
-		    repo->uri, strerror(errno));
-		rv = EINVAL;
-		goto out;
-	}
-	xbps_dictionary_get_cstring_nocopy(repo->meta, "signature-by", &signedby);
-	import = xbps_set_cb_state(repo->xhp, XBPS_STATE_REPO_KEY_IMPORT,
-			0, (const char *)fp,
-			"`%s' repository is RSA signed by \"%s\"",
-			repo->uri, signedby);
-	free(fp);
+	import = xbps_set_cb_state(repo->xhp, XBPS_STATE_REPO_KEY_IMPORT, 0,
+			repo->hexfp, "`%s' repository has been RSA signed by \"%s\"",
+			repo->uri, repo->signedby);
 	if (import <= 0) {
 		rv = EAGAIN;
 		goto out;
 	}
-	/*
-	 * Add the meta dictionary into XBPS_REPOKEYS and externalize it.
-	 */
-	newmetad = xbps_dictionary_copy_mutable(repo->meta);
-	xbps_dictionary_remove(newmetad, "signature");
-	xbps_dictionary_set(repo->xhp->repokeys, repo->uri, newmetad);
 
-	if (access(repo->xhp->metadir, R_OK|W_OK) == -1) {
+	p = strdup(rkeyfile);
+	dbkeyd = dirname(p);
+	assert(dbkeyd);
+	if (access(dbkeyd, R_OK|W_OK) == -1) {
 		if (errno == ENOENT) {
-			xbps_mkpath(repo->xhp->metadir, 0755);
+			xbps_mkpath(dbkeyd, 0755);
 		} else {
 			rv = errno;
 			xbps_dbg_printf(repo->xhp,
-			    "[repo] `%s' cannot create metadir: %s\n",
-			    repo->uri, strerror(errno));
+			    "[repo] `%s' cannot create %s: %s\n",
+			    repo->uri, dbkeyd, strerror(errno));
+			free(p);
 			goto out;
 		}
 	}
-	if (!xbps_dictionary_externalize_to_file(repo->xhp->repokeys, rkeypath)) {
+	free(p);
+
+	repokeyd = xbps_dictionary_create();
+	xbps_dictionary_set(repokeyd, "public-key", repo->pubkey);
+	xbps_dictionary_set_uint16(repokeyd, "public-key-size", repo->pubkey_size);
+	xbps_dictionary_set_cstring_nocopy(repokeyd, "signature-by", repo->signedby);
+
+	if (!xbps_dictionary_externalize_to_zfile(repokeyd, rkeyfile)) {
 		rv = errno;
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' failed to externalize %s: %s\n",
-		    repo->uri, XBPS_REPOKEYS, strerror(rv));
+		    repo->uri, rkeyfile, strerror(rv));
 	}
 
 out:
-	if (newmetad)
-		xbps_object_release(newmetad);
-	if (rkeypath)
-		free(rkeypath);
+	if (repokeyd)
+		xbps_object_release(repokeyd);
+	if (rkeyfile)
+		free(rkeyfile);
 	return rv;
 }
 
@@ -195,32 +180,36 @@ int HIDDEN
 xbps_repo_key_verify(struct xbps_repo *repo)
 {
 	xbps_dictionary_t repokeyd;
-	xbps_data_t sigdata, pubkey;
-	char *idx_xml;
+	xbps_data_t xbps_pubkey;
+	char *idx_xml, *rkeyfile;
 
-	if (repo->xhp->repokeys == NULL)
-		return ENOENT;
+	if (!repo->signature || !repo->hexfp)
+		return EINVAL;
 
-	repokeyd = xbps_dictionary_get(repo->xhp->repokeys, repo->uri);
-	if (xbps_dictionary_count(repokeyd) == 0) {
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s': empty %s dictionary\n",
-		    repo->uri, XBPS_REPOKEYS);
-		return ENOENT;
+	rkeyfile = xbps_xasprintf("%s/keys/%s.plist",
+	    repo->xhp->metadir, repo->hexfp);
+	repokeyd = xbps_dictionary_internalize_from_zfile(rkeyfile);
+	free(rkeyfile);
+	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY)
+		return EINVAL;
+
+	xbps_pubkey = xbps_dictionary_get(repokeyd, "public-key");
+	if (xbps_object_type(xbps_pubkey) != XBPS_TYPE_DATA) {
+		xbps_object_release(repokeyd);
+		return EINVAL;
 	}
 
 	idx_xml = xbps_dictionary_externalize(repo->idx);
-	assert(idx_xml);
+	if (idx_xml == NULL) {
+		xbps_object_release(repokeyd);
+		return EINVAL;
+	}
 
-	sigdata = xbps_dictionary_get(repo->meta, "signature");
-	assert(xbps_object_type(sigdata) == XBPS_TYPE_DATA);
-	pubkey = xbps_dictionary_get(repokeyd, "public-key");
-	assert(xbps_object_type(pubkey) == XBPS_TYPE_DATA);
-	/* XXX ignore 'signature-type' for now */
-	if (rsa_verify_buf(repo, sigdata, pubkey, idx_xml) == 0)
+	if (rsa_verify_buf(repo, repo->signature, xbps_pubkey, idx_xml) == 0)
 		repo->is_verified = true;
 
 	free(idx_xml);
+	xbps_object_release(repokeyd);
 
 	return repo->is_verified ? 0 : EPERM;
 }

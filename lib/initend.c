@@ -256,8 +256,6 @@ xbps_end(struct xbps_handle *xhp)
 
 	if (xbps_object_type(xhp->pkgdb_revdeps) != XBPS_TYPE_UNKNOWN)
 		xbps_object_release(xhp->pkgdb_revdeps);
-	if (xbps_object_type(xhp->repokeys) != XBPS_TYPE_UNKNOWN)
-		xbps_object_release(xhp->repokeys);
 
 	xbps_fetch_unset_cache_connection();
 	cfg_free(xhp->cfg);

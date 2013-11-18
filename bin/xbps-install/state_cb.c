@@ -48,10 +48,10 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	switch (xscd->state) {
 	/* notifications */
 	case XBPS_STATE_REPO_SIGVERIFIED:
-		printf("[*] RSA signature verified correctly\n");
+		printf("[*] %s: RSA signature verified\n", xscd->arg);
 		break;
 	case XBPS_STATE_REPO_SIGUNVERIFIED:
-		printf("[*] RSA signature UNVERIFIED! ignoring...\n");
+		printf("[*] %s: RSA signature invalid! ignoring...\n", xscd->arg);
 		break;
 	case XBPS_STATE_TRANS_DOWNLOAD:
 		printf("\n[*] Downloading binary packages\n");
@@ -129,6 +129,11 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			syslog(LOG_NOTICE, "Removed `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
+		break;
+	case XBPS_STATE_REPO_KEY_IMPORT:
+		printf("%s\n", xscd->desc);
+		printf("Fingerprint: %s\n", xscd->arg);
+		rv = yesno("Do you want to import this public key?");
 		break;
 	/* errors */
 	case XBPS_STATE_UNPACK_FAIL:

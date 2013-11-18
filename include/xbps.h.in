@@ -46,7 +46,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20131108"
+#define XBPS_API_VERSION	"20131118"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -470,7 +470,6 @@ struct xbps_handle {
 	 * @private
 	 */
 	cfg_t *cfg;
-	xbps_dictionary_t repokeys;
 	xbps_dictionary_t pkg_metad;
 	xbps_dictionary_t pkgdb_revdeps;
 	/**
@@ -1131,11 +1130,35 @@ struct xbps_repo {
 	 */
 	xbps_dictionary_t idxfiles;
 	/**
-	 * @var meta
+	 * @var signature
 	 *
-	 * Proplib dictionary associated with the repository metadata.
+	 * RSA signature associated with this repository in a prop_data object.
 	 */
-	xbps_dictionary_t meta;
+	xbps_data_t signature;
+	/**
+	 * @var pubkey
+	 *
+	 * RSA public key associated with this repository in a prop_data object.
+	 */
+	xbps_data_t pubkey;
+	/**
+	 * @var hexfp
+	 *
+	 * OpenSSH fingerprint in hexadecimal of the RSA public key.
+	 */
+	char *hexfp;
+	/**
+	 * @var signedby;
+	 *
+	 * The signee of the RSA signature associated with this repository (string).
+	 */
+	const char *signedby;
+	/**
+	 * @var pubkey_size;
+	 *
+	 * Size in bits of the RSA public key associacted with this repository.
+	 */
+	uint16_t pubkey_size;
 	/**
 	 * @var uri
 	 * 
@@ -1152,7 +1175,6 @@ struct xbps_repo {
 	 * var is_signed
 	 *
 	 * True if this repository has been signed, false otherwise.
-	 * (read-only).
 	 */
 	bool is_signed;
 	/**
@@ -1670,10 +1692,10 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
  * @param[in] xhp The pointer to an xbps_handle struct.
  * @param[in] pubkey The public-key in PEM format as xbps_data_t.
  *
- * @return The hex fingerprint. The returned buffer must be free(3)d
- * when necessary.
+ * @return The OpenSSH fingerprint in hexadecimal.
+ * The returned buffer must be free(3)d when necessary.
  */
-unsigned char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
+char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
 
 /*@}*/
 
