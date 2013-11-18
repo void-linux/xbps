@@ -162,7 +162,7 @@ unpack_archive(struct xbps_handle *xhp,
 	const struct stat *entry_statp;
 	void *instbuf = NULL, *rembuf = NULL;
 	struct stat st;
-	struct xbps_unpack_cb_data xucd;
+	struct xbps_unpack_cb_data xucd = {0};
 	struct archive_entry *entry;
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
@@ -195,10 +195,6 @@ unpack_archive(struct xbps_handle *xhp,
 	if (xhp->flags & XBPS_FLAG_FORCE_UNPACK)
 		force = true;
 
-	if (xhp->unpack_cb != NULL) {
-		/* initialize data for unpack cb */
-		memset(&xucd, 0, sizeof(xucd));
-	}
 	if (access(xhp->rootdir, R_OK) == -1) {
 		if (errno != ENOENT) {
 			rv = errno;
