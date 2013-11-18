@@ -142,8 +142,6 @@ rsa_verify_buf(struct xbps_repo *repo, xbps_data_t sigdata,
 
 	ERR_load_crypto_strings();
 	SSL_load_error_strings();
-	OpenSSL_add_all_algorithms();
-	OpenSSL_add_all_ciphers();
 
 	bio = BIO_new_mem_buf(__UNCONST(xbps_data_data_nocopy(pubkey)),
 			xbps_data_size(pubkey));
