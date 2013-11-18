@@ -178,14 +178,8 @@ fi
 
 echo "CC = 		$CC" >>$CONFIG_MK
 echo "CFLAGS = -O2 -pthread" >>$CONFIG_MK
-if [ -n "$CFLAGS" ]; then
-	echo "CFLAGS +=	$CFLAGS" >>$CONFIG_MK
-fi
 
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
-if [ -n "$LDFLAGS" ]; then
-	echo "LDFLAGS += $LDFLAGS" >>$CONFIG_MK
-fi
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DHAVE_CONFIG_H" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
@@ -211,10 +205,6 @@ linux)
 *)
 	;;
 esac
-
-if [ -n "$CPPFLAGS" ]; then
-	echo "CPPFLAGS += $CPPFLAGS" >>$CONFIG_MK
-fi
 
 # Add CPPFLAGS/CFLAGS/LDFLAGS to CC for testing features
 XCC="$CC $CFLAGS $CPPFLAGS $LDFLAGS"
@@ -321,6 +311,16 @@ check_compiler_flag "std=c99" "" CFLAGS
 if [ $? -ne 0 ]; then
 	echo "ERRROR: A compatible C99 compiler is required, exiting..."
 	exit 1
+fi
+
+if [ -n "$CFLAGS" ]; then
+	echo "CFLAGS +=	$CFLAGS" >>$CONFIG_MK
+fi
+if [ -n "$LDFLAGS" ]; then
+	echo "LDFLAGS += $LDFLAGS" >>$CONFIG_MK
+fi
+if [ -n "$CPPFLAGS" ]; then
+	echo "CPPFLAGS += $CPPFLAGS" >>$CONFIG_MK
 fi
 
 # libfetch
