@@ -39,6 +39,14 @@
 
 #include "xbps_api_impl.h"
 
+/*
+ * XXX WTF clearly clang should stfu and accept struct initializers
+ * 		struct foo foo = {0};
+ */
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#endif
+
 static int
 set_extract_flags(uid_t euid)
 {
