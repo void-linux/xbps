@@ -26,10 +26,10 @@ digraph pkgdb_dictionary {
 	pkgdict -> automatic [label="bool"];
 	automatic [label="automatic-install"];
 	pkgdict -> short_desc [label="string"]
-	pkgdict -> requiredby [label="array"];
-	requiredby [style=filled];
-	requiredby -> reqby1 [label="string"];
-	requiredby -> reqby2 [style=filled,label="string"];
-	reqby1 [label="blah-2.0"];
-	reqby2 [style=filled,label="..."];
+	pkgdict -> rundepends [label="array"];
+	rundepends [style=filled];
+	rundepends -> rundep1 [label="string"];
+	rundepends -> rundep2 [style=filled,label="string"];
+	rundep1 [label="blah>=2.0"];
+	rundep2 [style=filled,label="..."];
 }
