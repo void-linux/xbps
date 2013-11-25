@@ -35,6 +35,7 @@ for instance \`--prefix=\$HOME'.
 --sysconfdir=DIR 	Configuration files directory [PREFIX/etc]
 --pkgconfigdir=DIR 	pkg-config directory [EPREFIX/lib/pkgconfig]
 --testsdir=DIR		Test suite directory [EPREFIX/tests]
+--localstatedir=DIR	Local state directory to store XBPS db files [/var]
 
 --verbose 		Disable silent build to see compilation details
 --enable-api-docs 	Install XBPS API Library documentation (default disabled)
@@ -61,6 +62,7 @@ for x; do
 	--target) TARGET=$var;;
 	--includedir) INCLUDEDIR=$var;;
 	--sysconfdir) ETCDIR=$var;;
+	--localstatedir) LOCALSTATEDIR=$var;;
 	--libdir) LIBDIR=$var;;
 	--datadir|--infodir) ;; # ignore autotools
 	--enable-api-docs) BUILD_API_DOCS=$var;;
@@ -87,6 +89,8 @@ done
 : ${ETCDIR:=${PREFIX}/etc}
 : ${PKGCONFIGDIR:=${LIBDIR}/pkgconfig}
 : ${TESTSDIR:=${EPREFIX}/tests}
+: ${LOCALSTATEDIR:=/var}
+: ${DBDIR:=${LOCALSTATEDIR}/db/xbps}
 : ${TOPDIR:=..}
 
 _which()
@@ -149,6 +153,7 @@ echo "MANDIR ?=	$MANDIR" >>$CONFIG_MK
 echo "SHAREDIR ?= $SHAREDIR" >>$CONFIG_MK
 echo "PKGCONFIGDIR ?= $PKGCONFIGDIR" >>$CONFIG_MK
 echo "TESTSDIR ?= $TESTSDIR" >>$CONFIG_MK
+echo "DBDIR ?= $DBDIR" >>$CONFIG_MK
 
 ETCDIR="${ETCDIR}/xbps"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
@@ -700,6 +705,7 @@ echo "   INCLUDEDIR =		$INCLUDEDIR"
 echo "   SHAREDIR =		$SHAREDIR"
 echo "   MANDIR =		$MANDIR"
 echo "   ETCDIR =		$ETCDIR"
+echo "   DBDIR =		$DBDIR"
 
 if [ -n "$CFLAGS" ]; then
 	echo "   CFLAGS =		$CFLAGS"
