@@ -91,8 +91,10 @@ idxfiles_cleaner_cb(struct xbps_handle *xhp _unused, xbps_object_t obj _unused,
 	const char *pkgver;
 
 	/* Find out entries on index-files that aren't registered on index */
-	pkgname = xbps_pkg_name(key);
-	assert(pkgname);
+	if ((pkgname = xbps_pkg_name(key)) == NULL) {
+		xbps_dbg_printf(xhp, "%s: invalid entry found on index-files: %s\n", cbd->repourl, key);
+		return 0;
+	}
 	if ((pkg = xbps_dictionary_get(cbd->idx, pkgname))) {
 		xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
 		if (strcmp(pkgver, key))
