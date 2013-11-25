@@ -96,7 +96,7 @@ idxfiles_cleaner_cb(struct xbps_handle *xhp _unused, xbps_object_t obj _unused,
 	if ((pkg = xbps_dictionary_get(cbd->idx, pkgname))) {
 		xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
 		if (strcmp(pkgver, key))
-			xbps_array_add_cstring_nocopy(cbd->result, pkgver);
+			xbps_array_add_cstring_nocopy(cbd->result, key);
 	}
 	free(pkgname);
 
