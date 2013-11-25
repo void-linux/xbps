@@ -13,6 +13,8 @@ all:
 install:
 	install -d $(DESTDIR)$(PKGCONFIGDIR)
 	install -m644 $(PCFILE) $(DESTDIR)$(PKGCONFIGDIR)
+	install -d $(DESTDIR)/$(DBDIR)/keys
+	install -m644 *.plist $(DESTDIR)/$(DBDIR)/keys
 
 .PHONY: uninstall
 uninstall:
