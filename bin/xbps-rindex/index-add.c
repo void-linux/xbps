@@ -137,7 +137,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			 */
 			buf = xbps_xasprintf("`%s' (%s)", oldpkgver, oldarch);
 			xbps_dictionary_remove(idx, pkgname);
-			xbps_dictionary_remove(idxfiles, pkgname);
+			xbps_dictionary_remove(idxfiles, oldpkgver);
 			printf("index: removed obsolete entry %s.\n", buf);
 			free(buf);
 		}
