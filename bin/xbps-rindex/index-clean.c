@@ -82,25 +82,20 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 }
 
 static int
-idxfiles_cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
-		const char *key _unused, void *arg, bool *done _unused)
+idxfiles_cleaner_cb(struct xbps_handle *xhp _unused, xbps_object_t obj _unused,
+		const char *key, void *arg, bool *done _unused)
 {
 	xbps_dictionary_t pkg;
 	struct cbdata *cbd = arg;
 	char *pkgname;
-	const char *arch, *pkgver, *idxpkgver;
+	const char *pkgver;
 
 	/* Find out entries on index-files that aren't registered on index */
-	xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-
-	xbps_dbg_printf(xhp, "%s: checking %s [%s] ...", pkgver, arch);
-
-	pkgname = xbps_pkg_name(pkgver);
+	pkgname = xbps_pkg_name(key);
 	assert(pkgname);
 	if ((pkg = xbps_dictionary_get(cbd->idx, pkgname))) {
-		xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &idxpkgver);
-		if (strcmp(idxpkgver, pkgver))
+		xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
+		if (strcmp(pkgver, key))
 			xbps_array_add_cstring_nocopy(cbd->result, pkgver);
 	}
 	free(pkgname);
@@ -147,28 +142,32 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	cbd.result = xbps_array_create();
 	allkeys = xbps_dictionary_all_keys(idx);
 	rv = xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
-
-	/*
-	 * Second pass: find out obsolete entries on index-files.
-	 */
-	cbd.idx = idx;
-	xbps_object_release(allkeys);
-	allkeys = xbps_dictionary_all_keys(idxfiles);
-	rv = xbps_array_foreach_cb_multi(xhp, allkeys, idx, idxfiles_cleaner_cb, &cbd);
-
-	/*
-	 * Finally remove entries from both dictionaries.
-	 */
 	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
 		xbps_array_get_cstring_nocopy(cbd.result, x, &keyname);
 		printf("index-files: removed entry %s\n", keyname);
 		xbps_dictionary_remove(idxfiles, keyname);
 		pkgname = xbps_pkg_name(keyname);
 		xbps_dictionary_remove(idx, pkgname);
-		printf("index: removed entry %s\n", pkgname);
+		printf("index: removed entry %s\n", keyname);
 		free(pkgname);
 		flush = true;
 	}
+	/*
+	 * Second pass: find out obsolete entries on index-files.
+	 */
+	xbps_object_release(cbd.result);
+	xbps_object_release(allkeys);
+	cbd.idx = idx;
+	cbd.result = xbps_array_create();
+	allkeys = xbps_dictionary_all_keys(idxfiles);
+	rv = xbps_array_foreach_cb_multi(xhp, allkeys, idxfiles, idxfiles_cleaner_cb, &cbd);
+	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
+		xbps_array_get_cstring_nocopy(cbd.result, x, &keyname);
+		printf("index-files: removed entry %s\n", keyname);
+		xbps_dictionary_remove(idxfiles, keyname);
+		flush = true;
+	}
+
 	xbps_object_release(cbd.result);
 	xbps_object_release(allkeys);
 
