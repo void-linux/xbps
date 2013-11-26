@@ -78,6 +78,7 @@ xbps_file_hash(const char *file)
 		free(buf);
 		return NULL;
 	}
+	memset(&st, 0, sizeof(st));
 	if (fstat(fd, &st) == -1) {
 		(void)close(fd);
 		return NULL;
