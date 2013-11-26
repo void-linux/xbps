@@ -23,10 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define _BSD_SOURCE /* for madvise(2) */
-#include <sys/mman.h>
-#undef _BSD_SOURCE
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -65,12 +61,9 @@ char *
 xbps_file_hash(const char *file)
 {
 	struct stat st;
-	size_t pgsize = (size_t)sysconf(_SC_PAGESIZE);
-	size_t pgmask = pgsize - 1, mapsize;
 	char hash[SHA256_DIGEST_LENGTH * 2 + 1];
 	unsigned char *buf = NULL, digest[SHA256_DIGEST_LENGTH];
 	int fd;
-	bool need_guard = false;
 
 	assert(file != NULL);
 
@@ -88,31 +81,20 @@ xbps_file_hash(const char *file)
 		return NULL;
 	}
 
-	mapsize = ((size_t)st.st_size + pgmask) & ~pgmask;
-	if (mapsize < (size_t)st.st_size) {
-		(void)close(fd);
-		return NULL;
-	}
-	/*
-	 * If the file length is an integral number of pages, then we
-	 * need to map a guard page at the end in order to provide the
-	 * necessary NUL-termination of the buffer.
-	 */
-	if ((st.st_size & pgmask) == 0)
-		need_guard = true;
+	buf = malloc(st.st_size);
+	assert(buf);
 
-	buf = mmap(NULL, need_guard ? mapsize + pgsize : mapsize,
-		PROT_READ, MAP_PRIVATE, fd, 0);
+	if (read(fd, buf, st.st_size) != st.st_size) {
+	       free(buf);
+	       (void)close(fd);
+	       return NULL;
+	}
 	(void)close(fd);
-	if (buf == MAP_FAILED)
-		return NULL;
-
 	if (SHA256(buf, st.st_size, digest) == NULL) {
-		munmap(buf, mapsize);
+		free(buf);
 		return NULL;
 	}
-	munmap(buf, mapsize);
-
+	free(buf);
 	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
 
 	return strdup(hash);
