@@ -115,6 +115,7 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	if ((url = fetchParseURL(uri)) == NULL)
 		return -1;
 
+	memset(&fetch_flags, 0, sizeof(fetch_flags));
 	if (flags != NULL)
 		strlcpy(fetch_flags, flags, 7);
 	/*
@@ -130,6 +131,7 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	/*
 	 * Check if we have to resume a transfer.
 	 */
+	memset(&st_tmpfile, 0, sizeof(st_tmpfile));
 	if (stat(tempfile, &st_tmpfile) == 0) {
 		if (st_tmpfile.st_size > 0)
 			restart = true;
@@ -142,6 +144,7 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	/*
 	 * Check if we have to refetch a transfer.
 	 */
+	memset(&st, 0, sizeof(st));
 	if (stat(filename, &st) == 0) {
 		refetch = true;
 		url->last_modified = st.st_mtime;
