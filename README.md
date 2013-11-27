@@ -36,6 +36,7 @@ See `git tag -l` to list all available stable releases.
 
 To build this you'll need:
 
+  - A C99 compiler
   - [GNU make](http://www.gnu.org/software/make/)
   - [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
   - [zlib](http://www.zlib.net)
