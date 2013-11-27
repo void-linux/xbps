@@ -147,10 +147,10 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
 		xbps_array_get_cstring_nocopy(cbd.result, x, &keyname);
 		printf("index-files: removed entry %s\n", keyname);
+		printf("index: removed entry %s\n", keyname);
 		xbps_dictionary_remove(idxfiles, keyname);
 		pkgname = xbps_pkg_name(keyname);
 		xbps_dictionary_remove(idx, pkgname);
-		printf("index: removed entry %s\n", keyname);
 		free(pkgname);
 		flush = true;
 	}
