@@ -33,6 +33,21 @@
 
 #include "xbps_api_impl.h"
 
+#ifndef __arraycount
+# define __arraycount(a) (sizeof(a) / sizeof(*(a)))
+#endif
+
+/* These are symlinks in Void and must not be removed */
+static const char *basesymlinks[] = {
+	"/bin",
+	"/sbin",
+	"/lib",
+	"/lib32",
+	"/lib64",
+	"/usr/lib64",
+	"/var/run",
+};
+
 int HIDDEN
 xbps_remove_pkg_files(struct xbps_handle *xhp,
 		      xbps_dictionary_t dict,
@@ -44,9 +59,10 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	const char *file, *sha256, *curobj = NULL;
-	char *path = NULL, *pkgname = NULL;
+	char *path = NULL;
 	char buf[PATH_MAX];
 	int rv = 0;
+	bool found;
 
 	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(key != NULL);
@@ -67,9 +83,6 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		curobj = "link";
 	else if (strcmp(key, "dirs") == 0)
 		curobj = "directory";
-
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
@@ -142,6 +155,22 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 			}
 		}
 		/*
+		 * Make sure to not remove any symlink of root directory.
+		 */
+		found = false;
+		for (uint8_t i = 0; i < __arraycount(basesymlinks); i++) {
+			if (strcmp(file, basesymlinks[i]) == 0) {
+				found = true;
+				xbps_dbg_printf(xhp, "[remove] %s ignoring "
+				    "%s removal\n", pkgver, file);
+				break;
+			}
+		}
+		if (found) {
+			free(path);
+			continue;
+		}
+		/*
 		 * Remove the object if possible.
 		 */
 		if (remove(path) == -1) {
@@ -158,7 +187,6 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		free(path);
 	}
 	xbps_object_iterator_release(iter);
-	free(pkgname);
 
 	return rv;
 }
