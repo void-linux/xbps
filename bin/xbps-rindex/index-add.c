@@ -49,8 +49,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	xbps_object_t obj, fileobj;
 	struct xbps_repo *repo;
 	struct stat st;
-	const char *oldpkgver, *arch, *oldarch;
-	char *pkgver, *pkgname, *sha256, *repodir, *buf;
+	const char *arch;
+	char *pkgver, *opkgver, *oarch, *pkgname, *sha256, *repodir;
 	char *tmprepodir;
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
@@ -116,17 +116,17 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			}
 		} else if (!force) {
 			/* Only check version if !force */
-			xbps_dictionary_get_cstring_nocopy(curpkgd,
-			    "pkgver", &oldpkgver);
-			xbps_dictionary_get_cstring_nocopy(curpkgd,
-			    "architecture", &oldarch);
-			ret = xbps_cmpver(pkgver, oldpkgver);
+			xbps_dictionary_get_cstring(curpkgd, "pkgver", &opkgver);
+			xbps_dictionary_get_cstring(curpkgd, "architecture", &oarch);
+			ret = xbps_cmpver(pkgver, opkgver);
 			if (ret <= 0) {
 				/* Same version or index version greater */
 				fprintf(stderr, "index: skipping `%s' "
 				    "(%s), already registered.\n",
 				    pkgver, arch);
 				xbps_object_release(newpkgd);
+				free(opkgver);
+				free(oarch);
 				free(pkgver);
 				free(pkgname);
 				continue;
@@ -135,11 +135,11 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			 * Current package version is greater than
 			 * index version.
 			 */
-			buf = xbps_xasprintf("`%s' (%s)", oldpkgver, oldarch);
 			xbps_dictionary_remove(idx, pkgname);
-			xbps_dictionary_remove(idxfiles, oldpkgver);
-			printf("index: removed obsolete entry %s.\n", buf);
-			free(buf);
+			xbps_dictionary_remove(idxfiles, opkgver);
+			printf("index: removed obsolete entry `%s' (%s).\n", opkgver, oarch);
+			free(opkgver);
+			free(oarch);
 		}
 		/*
 		 * We have the dictionary now, add the required

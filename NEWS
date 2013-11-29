@@ -1,5 +1,7 @@
 xbps-0.28 (2014-??-??):
 
+ * Fixed issue #24: https://github.com/voidlinux/xbps/issues/24
+
 xbps-0.27 (2013-11-29):
 
  * libxbps: make sure that base symlinks in the root directory are never removed,
