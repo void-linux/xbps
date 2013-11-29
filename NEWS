@@ -1,4 +1,6 @@
-xbps-0.27 (???):
+xbps-0.28 (2014-??-??):
+
+xbps-0.27 (2013-11-29):
 
  * libxbps: make sure that base symlinks in the root directory are never removed,
    due to /usr switch in Void. This will also be harmless in other systems.
@@ -28,9 +30,6 @@ xbps-0.27 (???):
    the xbps-install(8) utility:
 
 	$ xbps-install -S
-
-   Once the public key has been imported it's not expected to change, hence if the
-   repository index has been modified or signed with another key, it will be ignored.
 
    Starting from now on all remote repositories must be signed and verified.
    Local repos do not need to be signed and they will work as before.
