@@ -156,9 +156,6 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		repo = NULL;
 		goto out;
 	}
-	if (!is_remote)
-		goto out;
-
 	if ((meta = repo_get_dict(repo, XBPS_REPOIDX_META))) {
 		repo->is_signed = true;
 		repo->signature = xbps_dictionary_get(meta, "signature");

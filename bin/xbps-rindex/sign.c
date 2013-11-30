@@ -149,7 +149,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
 		fprintf(stderr, "cannot read repository data: %s\n", strerror(errno));
-		goto out;
+		return -1;
 	}
 	if (xbps_dictionary_count(repo->idx) == 0) {
 		fprintf(stderr, "invalid number of objects in repository index!\n");
@@ -183,21 +183,21 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		goto out;
 	}
 	/*
+	 * If the signature in repo has not changed do not generate the
+	 * repodata file again.
+	 */
+	if (xbps_data_equals_data(repo->signature, sig, siglen)) {
+		fprintf(stderr, "Not signing again, matched signature found.\n");
+		rv = 0;
+		goto out;
+	}
+	/*
 	 * Prepare the XBPS_REPOIDX_META for our repository data.
 	 */
 	meta = xbps_dictionary_create();
 	xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
 	xbps_dictionary_set_cstring_nocopy(meta, "signature-type", "rsa");
-	/*
-	 * If the signature in repo has not changed do not generate the
-	 * repodata file again.
-	 */
 	data = xbps_data_create_data_nocopy(sig, siglen);
-	if (xbps_data_equals_data(data, sig, siglen)) {
-		fprintf(stderr, "Not signing again, matched signature found.\n");
-		rv = 0;
-		goto out;
-	}
 	xbps_dictionary_set(meta, "signature", data);
 
 	buf = pubkey_from_privkey(rsa);
