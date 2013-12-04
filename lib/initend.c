@@ -172,17 +172,14 @@ xbps_init(struct xbps_handle *xhp)
 		}
 	}
 	/*
-	 * If repositories array is empty use the provided list from
-	 * configuration file.
+	 * Append repository list specified in configuration file.
 	 */
-	if (xbps_array_count(xhp->repositories) == 0) {
-		for (unsigned int i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
-			if (xhp->repositories == NULL)
-				xhp->repositories = xbps_array_create();
+	for (unsigned int i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
+		if (xhp->repositories == NULL)
+			xhp->repositories = xbps_array_create();
 
-			repodir = cfg_getnstr(xhp->cfg, "repositories", i);
-			xbps_array_add_cstring_nocopy(xhp->repositories, repodir);
-		}
+		repodir = cfg_getnstr(xhp->cfg, "repositories", i);
+		xbps_array_add_cstring_nocopy(xhp->repositories, repodir);
 	}
 
 	if (xhp->cachedir == NULL) {
