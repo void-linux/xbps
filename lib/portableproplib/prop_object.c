@@ -997,14 +997,18 @@ _PROP_MUTEX_DECL_STATIC(_prop_refcnt_mutex)
 void
 prop_object_retain(prop_object_t obj)
 {
-	struct _prop_object *po = obj;
+#ifdef DEBUG
 	uint32_t ocnt;
+#endif
+	struct _prop_object *po = obj;
 
 	_PROP_REFCNT_LOCK();
-	ocnt = po->po_refcnt++;
-	_PROP_REFCNT_UNLOCK();
-
+	po->po_refcnt++;
+#ifdef DEBUG
+	ocnt = po->po_refcnt;
 	_PROP_ASSERT(ocnt != 0xffffffffU);
+#endif
+	_PROP_REFCNT_UNLOCK();
 }
 
 /*

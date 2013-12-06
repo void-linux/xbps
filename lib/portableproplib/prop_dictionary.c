@@ -278,7 +278,10 @@ _prop_dict_keysym_equals(prop_object_t v1, prop_object_t v2,
 static prop_dictionary_keysym_t
 _prop_dict_keysym_alloc(const char *key)
 {
-	prop_dictionary_keysym_t opdk, pdk, rpdk;
+#ifdef DEBUG
+	prop_dictionary_keysym_t rpdk;
+#endif
+	prop_dictionary_keysym_t opdk, pdk;
 	size_t size;
 
 	_PROP_ONCE_RUN(_prop_dict_init_once, _prop_dict_init);
@@ -331,8 +334,10 @@ _prop_dict_keysym_alloc(const char *key)
 		_prop_dict_keysym_put(pdk);
 		return (opdk);
 	}
+#ifdef DEBUG
 	rpdk = _prop_rb_tree_insert_node(&_prop_dict_keysym_tree, pdk);
 	_PROP_ASSERT(rpdk == pdk);
+#endif
 	_PROP_MUTEX_UNLOCK(_prop_dict_keysym_tree_mutex);
 	return (pdk);
 }

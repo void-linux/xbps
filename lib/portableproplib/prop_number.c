@@ -264,7 +264,10 @@ _prop_number_equals(prop_object_t v1, prop_object_t v2,
 static prop_number_t
 _prop_number_alloc(const struct _prop_number_value *pnv)
 {
-	prop_number_t opn, pn, rpn;
+#ifdef DEBUG
+	prop_number_t rpn;
+#endif
+	prop_number_t opn, pn;
 
 	_PROP_ONCE_RUN(_prop_number_init_once, _prop_number_init);
 
@@ -305,8 +308,10 @@ _prop_number_alloc(const struct _prop_number_value *pnv)
 		_PROP_POOL_PUT(_prop_number_pool, pn);
 		return (opn);
 	}
+#ifdef DEBUG
 	rpn = _prop_rb_tree_insert_node(&_prop_number_tree, pn);
 	_PROP_ASSERT(rpn == pn);
+#endif
 	_PROP_MUTEX_UNLOCK(_prop_number_tree_mutex);
 	return (pn);
 }
