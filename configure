@@ -200,6 +200,8 @@ if [ -n "$DEBUG" -a "$DEBUG" != no -a "$DEBUG" != false ]; then
 	echo "Building with debugging symbols."
 	echo "CPPFLAGS += -DDEBUG" >>$CONFIG_MK
 	echo "CFLAGS +=	-g" >>$CONFIG_MK
+else
+	echo "CPPFLAGS+= -DNDEBUG" >>$CONFIG_MK
 fi
 
 case "$OS" in
