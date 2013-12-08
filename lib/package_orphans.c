@@ -122,24 +122,22 @@ find_orphans:
 		for (unsigned int x = 0; x < xbps_array_count(rdeps); x++) {
 			cnt = 0;
 			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);
+			if (xbps_find_pkg_in_array(array, deppkgver))
+				continue;
 			reqby = xbps_pkgdb_get_pkg_revdeps(xhp, deppkgver);
 			if (reqby == NULL)
 				continue;
 			reqbycnt = xbps_array_count(reqby);
 			for (unsigned int j = 0; j < reqbycnt; j++) {
 				xbps_array_get_cstring_nocopy(reqby, j, &reqbydep);
-				if (xbps_find_pkg_in_array(array, reqbydep)) {
+				if (xbps_find_pkg_in_array(array, reqbydep))
 					cnt++;
-					continue;
-				}
 			}
 			if (cnt == reqbycnt) {
 				deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
-				if (!xbps_find_pkg_in_array(array, deppkgver)) {
-					xbps_dictionary_get_bool(deppkgd, "automatic-install", &automatic);
-					if (automatic)
-						xbps_array_add(array, deppkgd);
-				}
+				xbps_dictionary_get_bool(deppkgd, "automatic-install", &automatic);
+				if (automatic)
+					xbps_array_add(array, deppkgd);
 			}
 		}
 	}
