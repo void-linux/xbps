@@ -189,42 +189,6 @@ xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp, const char *vpkg)
 	return xbps_find_virtualpkg_in_dict(xhp, xhp->pkgdb, vpkg);
 }
 
-static xbps_dictionary_t
-get_pkg_metadata(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
-{
-	xbps_dictionary_t pkg_metad;
-	const char *pkgver;
-	char *pkgname, *plist;
-
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
-
-	if ((pkg_metad = xbps_dictionary_get(xhp->pkg_metad, pkgname)) != NULL) {
-		free(pkgname);
-		return pkg_metad;
-	}
-	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-	pkg_metad = xbps_dictionary_internalize_from_file(plist);
-	free(plist);
-
-	if (pkg_metad == NULL) {
-		xbps_dbg_printf(xhp, "[pkgdb] cannot read %s metadata: %s\n",
-		    pkgver, strerror(errno));
-		free(pkgname);
-		return NULL;
-	}
-
-	if (xhp->pkg_metad == NULL)
-		xhp->pkg_metad = xbps_dictionary_create();
-
-	xbps_dictionary_set(xhp->pkg_metad, pkgname, pkg_metad);
-	xbps_object_release(pkg_metad);
-	free(pkgname);
-
-	return pkg_metad;
-}
-
 static void
 generate_full_revdeps_tree(struct xbps_handle *xhp)
 {
@@ -302,11 +266,42 @@ xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 xbps_dictionary_t
 xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp, const char *pkg)
 {
-	xbps_dictionary_t pkgd;
+	xbps_dictionary_t pkgd, pkg_metad;
+	const char *pkgver;
+	char *pkgname, *plist;
+
+	if (pkg == NULL)
+		return NULL;
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
 	if (pkgd == NULL)
 		return NULL;
 
-	return get_pkg_metadata(xhp, pkgd);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+
+	if ((pkg_metad = xbps_dictionary_get(xhp->pkg_metad, pkgname)) != NULL) {
+		free(pkgname);
+		return pkg_metad;
+	}
+	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
+	pkg_metad = xbps_dictionary_internalize_from_file(plist);
+	free(plist);
+
+	if (pkg_metad == NULL) {
+		xbps_dbg_printf(xhp, "[pkgdb] cannot read %s metadata: %s\n",
+		    pkgver, strerror(errno));
+		free(pkgname);
+		return NULL;
+	}
+
+	if (xhp->pkg_metad == NULL)
+		xhp->pkg_metad = xbps_dictionary_create();
+
+	xbps_dictionary_set(xhp->pkg_metad, pkgname, pkg_metad);
+	xbps_object_release(pkg_metad);
+	free(pkgname);
+
+	return pkg_metad;
 }
