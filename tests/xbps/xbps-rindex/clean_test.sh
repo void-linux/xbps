@@ -18,7 +18,7 @@ noremove_body() {
 	cd ..
 	xbps-rindex -c some_repo
 	atf_check_equal $? 0
-	result=$(xbps-query --repository=some_repo -s foo|wc -l)
+	result=$(xbps-query -C empty.conf --repository=some_repo -s foo|wc -l)
 	atf_check_equal ${result} 1
 }
 
@@ -41,7 +41,7 @@ filesclean_body() {
 	cd ..
 	xbps-rindex -c some_repo
 	atf_check_equal $? 0
-	result=$(xbps-query --repository=some_repo -o \*)
+	result=$(xbps-query -C empty.conf --repository=some_repo -o \*)
 	test -z "${result}"
 	atf_check_equal $? 0
 }
@@ -68,7 +68,7 @@ filesclean2_body() {
 	cd ..
 	xbps-rindex -c some_repo
 	atf_check_equal $? 0
-	result="$(xbps-query --repository=some_repo -o \*)"
+	result="$(xbps-query -C empty.conf --repository=some_repo -o \*)"
 	expected="foo-1.1_1: /file00 (some_repo)"
 	rv=0
 	if [ "$result" != "$expected" ]; then
@@ -102,7 +102,7 @@ issue19_body() {
 	rm some_repo/*.xbps
 	xbps-rindex -c some_repo
 	atf_check_equal $? 0
-	result=$(xbps-query --repository=some_repo -s foo)
+	result=$(xbps-query -C empty.conf --repository=some_repo -s foo)
 	test -z "${result}"
 	atf_check_equal $? 0
 }
