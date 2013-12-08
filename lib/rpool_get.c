@@ -151,6 +151,9 @@ repo_find_pkg(struct xbps_handle *xhp,
 	struct rpool_fpkg rpf;
 	int rv = 0;
 
+	assert(xhp);
+	assert(pkg);
+
 	rpf.pattern = pkg;
 	rpf.pkgd = NULL;
 	rpf.revdeps = NULL;
@@ -194,18 +197,12 @@ repo_find_pkg(struct xbps_handle *xhp,
 xbps_dictionary_t
 xbps_rpool_get_virtualpkg(struct xbps_handle *xhp, const char *pkg)
 {
-	assert(xhp);
-	assert(pkg);
-
 	return repo_find_pkg(xhp, pkg, VIRTUAL_PKG);
 }
 
 xbps_dictionary_t
 xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg)
 {
-	assert(xhp);
-	assert(pkg);
-
 	if (!xbps_pkgpattern_version(pkg) && !xbps_pkg_version(pkg))
 		return repo_find_pkg(xhp, pkg, BEST_PKG);
 
@@ -215,9 +212,6 @@ xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg)
 xbps_array_t
 xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
-	assert(xhp);
-	assert(pkg);
-
 	return repo_find_pkg(xhp, pkg, REVDEPS_PKG);
 }
 
