@@ -178,10 +178,8 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		defprivkey = strdup(privkey);
 
 	rsa = rsa_sign_buf(defprivkey, xml, &sig, &siglen);
-	if (rsa == NULL) {
-		free(xml);
+	if (rsa == NULL)
 		goto out;
-	}
 	/*
 	 * If the signature in repo has not changed do not generate the
 	 * repodata file again.
