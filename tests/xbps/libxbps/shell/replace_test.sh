@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env atf-sh
 #
 # This test case reproduces the following issue:
 #
