@@ -58,8 +58,6 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 
 	if (strcmp(keyname, "files") == 0)
 		typestr = "regular file";
-	else if (strcmp(keyname, "dirs") == 0)
-		typestr = "directory";
 	else if (strcmp(keyname, "links") == 0)
 		typestr = "link";
 	else if (strcmp(keyname, "conf_files") == 0)
