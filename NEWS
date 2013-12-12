@@ -1,5 +1,10 @@
 xbps-0.28 (2014-??-??):
 
+ * Fixed issue #26: https://github.com/voidlinux/xbps/issues/26
+
+ * xbps-query(8): -o (local ownedby mode) does not print directories;
+   it's unnecessary anyway because xbps never extracts empty directories.
+
  * The `--repository` option in xbps-install(8) and xbps-query(8) now adds
    the repositories at the top of the list, rather than overriding the list
    specified in a configuration file.
