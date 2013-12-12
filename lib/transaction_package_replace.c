@@ -37,12 +37,12 @@ int HIDDEN
 xbps_transaction_package_replace(struct xbps_handle *xhp)
 {
 	xbps_array_t replaces, unsorted;
-	xbps_dictionary_t instd, reppkgd, filesd;
+	xbps_dictionary_t instd, reppkgd;
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter;
-	const char *pattern, *pkgver, *curpkgver;
-	char *buf, *pkgname, *curpkgname;
-	bool instd_auto, sr;
+	const char *tract, *pattern, *pkgver, *curpkgver;
+	char *pkgname, *curpkgname;
+	bool instd_auto;
 
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 
@@ -82,22 +82,24 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				free(curpkgname);
 				continue;
 			}
-
-			xbps_dbg_printf(xhp,
-			    "Package `%s' will be replaced by `%s', "
-			    "matched with `%s'\n", curpkgver, pkgver, pattern);
-			instd_auto = false;
-			xbps_dictionary_get_bool(instd,
-			    "automatic-install", &instd_auto);
+			/*
+			 * Make sure to not add duplicates.
+			 */
+			reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname);
+			if (reppkgd) {
+				xbps_dictionary_get_cstring_nocopy(reppkgd,
+				    "transaction", &tract);
+				if (strcmp(tract, "remove") == 0)
+					continue;
+			}
 			/*
 			 * Package contains replaces="pkgpattern", but the
 			 * package that should be replaced is also in the
 			 * transaction and it's going to be updated.
 			 */
+			instd_auto = false;
+			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
 			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname))) {
-				xbps_dbg_printf(xhp,
-				    "found replaced pkg "
-				    "in transaction\n");
 				xbps_dictionary_set_bool(instd,
 				    "remove-and-update", true);
 				xbps_dictionary_set_bool(reppkgd,
@@ -105,7 +107,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				xbps_dictionary_set_bool(reppkgd,
 				    "skip-obsoletes", true);
 				xbps_array_replace_dict_by_name(unsorted,
-				   reppkgd, curpkgname);
+				    reppkgd, curpkgname);
 			}
 			/*
 			 * If new package is providing a virtual package to the
@@ -119,31 +121,9 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 				xbps_dictionary_set_bool(obj,
 				    "automatic-install", instd_auto);
 			}
-			sr = false;
-			xbps_dictionary_get_bool(obj, "softreplace", &sr);
-			if (sr) {
-				xbps_dictionary_set_bool(obj,
-				    "automatic-install", instd_auto);
-				xbps_dictionary_set_bool(instd,
-				    "softreplace", true);
-				buf = xbps_xasprintf("%s/.%s.plist",
-				    xhp->metadir, curpkgname);
-				filesd = xbps_dictionary_internalize_from_file(buf);
-				free(buf);
-				assert(filesd != NULL);
-				buf = xbps_xasprintf("%s/.%s.plist",
-				    xhp->metadir, pkgname);
-				if (!xbps_dictionary_externalize_to_file(filesd, buf)) {
-					free(buf);
-					xbps_object_release(filesd);
-					xbps_object_iterator_release(iter);
-					free(pkgname);
-					free(curpkgname);
-					return errno;
-				}
-				xbps_object_release(filesd);
-				free(buf);
-			}
+			xbps_dbg_printf(xhp,
+			    "Package `%s' will be replaced by `%s', "
+			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 			/*
 			 * Add package dictionary into the transaction and mark
 			 * it as to be "removed".

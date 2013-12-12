@@ -12,7 +12,7 @@
 atf_test_case replace_dups
 
 replace_dups_head() {
-	atf_set "descr" "Tests for package replace: verify dup matches"
+	atf_set "descr" "Tests for package replace: replacing multiple times a pkg"
 }
 
 replace_dups_body() {
