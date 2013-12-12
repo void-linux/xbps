@@ -28,9 +28,9 @@ replace_dups_body() {
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C empty.conf -r root --repository=$mydir/some_repo -y A
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$mydir/some_repo -y B
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y B
 	atf_check_equal $? 0
 	result=$(xbps-query -C empty.conf -r root -l|wc -l)
 	atf_check_equal $result 1
