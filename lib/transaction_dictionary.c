@@ -60,7 +60,6 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	xbps_object_t obj;
 	uint64_t tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt;
-	int rv = 0;
 	const char *tract, *pkgver, *repo;
 
 	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = 0;
@@ -118,75 +117,41 @@ compute_transaction_stats(struct xbps_handle *xhp)
 				xbps_dictionary_get_uint64(obj,
 				    "filename-size", &tsize);
 				dlsize += tsize;
+				instsize += tsize;
 			}
 		}
 	}
-
-	if (inst_pkgcnt &&
-	    !xbps_dictionary_set_uint32(xhp->transd, "total-install-pkgs",
-	    inst_pkgcnt)) {
-		rv = EINVAL;
-		goto out;
-	}
-	if (up_pkgcnt &&
-	    !xbps_dictionary_set_uint32(xhp->transd, "total-update-pkgs",
-	    up_pkgcnt)) {
-		rv = EINVAL;
-		goto out;
-	}
-	if (cf_pkgcnt &&
-	    !xbps_dictionary_set_uint32(xhp->transd, "total-configure-pkgs",
-	    cf_pkgcnt)) {
-		rv = EINVAL;
-		goto out;
-	}
-	if (rm_pkgcnt &&
-	    !xbps_dictionary_set_uint32(xhp->transd, "total-remove-pkgs",
-	    rm_pkgcnt)) {
-		rv = EINVAL;
-		goto out;
-	}
-
-	if (instsize > rmsize) {
-		instsize -= rmsize;
-		rmsize = 0;
-	} else if (rmsize > instsize) {
-		rmsize -= instsize;
-		instsize = 0;
-	} else
-		instsize = rmsize = 0;
-
-	/*
-	 * Add object in transaction dictionary with total installed
-	 * size that it will take.
-	 */
-	if (!xbps_dictionary_set_uint64(xhp->transd,
-	    "total-installed-size", instsize)) {
-		rv = EINVAL;
-		goto out;
-	}
-	/*
-	 * Add object in transaction dictionary with total download
-	 * size that needs to be sucked in.
-	 */
-	if (!xbps_dictionary_set_uint64(xhp->transd,
-	    "total-download-size", dlsize)) {
-		rv = EINVAL;
-		goto out;
-	}
-	/*
-	 * Add object in transaction dictionary with total size to be
-	 * freed from packages to be removed.
-	 */
-	if (!xbps_dictionary_set_uint64(xhp->transd,
-	    "total-removed-size", rmsize)) {
-		rv = EINVAL;
-		goto out;
-	}
-out:
 	xbps_object_iterator_release(iter);
 
-	return rv;
+	if (inst_pkgcnt && !xbps_dictionary_set_uint32(xhp->transd,
+				"total-install-pkgs", inst_pkgcnt))
+		return EINVAL;
+	if (up_pkgcnt && !xbps_dictionary_set_uint32(xhp->transd,
+				"total-update-pkgs", up_pkgcnt))
+		return EINVAL;
+	if (cf_pkgcnt && !xbps_dictionary_set_uint32(xhp->transd,
+				"total-configure-pkgs", cf_pkgcnt))
+		return EINVAL;
+	if (rm_pkgcnt && !xbps_dictionary_set_uint32(xhp->transd,
+				"total-remove-pkgs", rm_pkgcnt))
+		return EINVAL;
+
+	if (instsize)
+		instsize -= rmsize;
+	if (rmsize)
+		rmsize -= instsize;
+
+	if (!xbps_dictionary_set_uint64(xhp->transd,
+				"total-installed-size", instsize))
+		return EINVAL;
+	if (!xbps_dictionary_set_uint64(xhp->transd,
+				"total-download-size", dlsize))
+		return EINVAL;
+	if (!xbps_dictionary_set_uint64(xhp->transd,
+				"total-removed-size", rmsize))
+		return EINVAL;
+
+	return 0;
 }
 
 int HIDDEN
