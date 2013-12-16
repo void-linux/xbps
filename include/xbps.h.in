@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <limits.h>
 
 #include <xbps/xbps_array.h>
 #include <xbps/xbps_bool.h>
@@ -46,7 +47,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20131216-1"
+#define XBPS_API_VERSION	"20131216-2"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -530,39 +531,44 @@ struct xbps_handle {
 	 */
 	void *fetch_cb_data;
 	/**
-	 * @var rootdir
-	 *
-	 * Root directory for all operations in XBPS. If NULL,
-	 * by default it's set to /.
-	 */
-	const char *rootdir;
-	/**
-	 * @var cachedir
-	 *
-	 * Cache directory to store downloaded binary packages.
-	 * If NULL default value in \a XBPS_CACHE_PATH is used.
-	 */
-	const char *cachedir;
-	/**
-	 * @var metadir
-	 *
-	 * Metadata directory for all operations in XBPS.
-	 * If NULL, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
-	 */
-	const char *metadir;
-	/**
 	 * @var conffile
 	 *
 	 * Full path to the xbps configuration file.
 	 */
 	const char *conffile;
 	/**
-	 * @private
+	 * @var target_arch
+	 *
+	 * Target architecture, as set by XBPS_TARGET_ARCH from environment.
 	 */
-	char *cachedir_priv;
-	char *metadir_priv;
-	char *native_arch;
 	const char *target_arch;
+	/**
+	 * @var rootdir
+	 *
+	 * Root directory for all operations in XBPS.
+	 * If unset,  defaults to '/'.
+	 */
+	char rootdir[PATH_MAX-1];
+	/**
+	 * @var cachedir
+	 *
+	 * Cache directory to store downloaded binary packages.
+	 * If unset, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
+	 */
+	char cachedir[PATH_MAX-1];
+	/**
+	 * @var metadir
+	 *
+	 * Metadata directory for all operations in XBPS.
+	 * If unset, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
+	 */
+	char metadir[PATH_MAX-1];
+	/**
+	 * @var native_arch
+	 *
+	 * Machine architecture, as returned by uname(2)::machine.
+	 */
+	char native_arch[16];
 	/**
 	 * @var fetch_timeout
 	 *

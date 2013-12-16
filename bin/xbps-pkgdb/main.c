@@ -135,7 +135,8 @@ main(int argc, char **argv)
 		usage(true);
 
 	memset(&xh, 0, sizeof(xh));
-	xh.rootdir = rootdir;
+	if (rootdir)
+		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	xh.conffile = conffile;
 	xh.flags = flags;
 

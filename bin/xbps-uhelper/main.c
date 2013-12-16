@@ -128,7 +128,8 @@ main(int argc, char **argv)
 		xh.flags = flags;
 		xh.fetch_cb = fetch_file_progress_cb;
 		xh.fetch_cb_data = &xfer;
-		xh.rootdir = rootdir;
+		if (rootdir)
+			strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 		xh.conffile = confdir;
 		if ((rv = xbps_init(&xh)) != 0) {
 			xbps_error_printf("xbps-uhelper: failed to "

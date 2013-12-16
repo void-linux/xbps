@@ -479,7 +479,7 @@ main(int argc, char **argv)
 
 	/* Initialize libxbps */
 	memset(&xh, 0, sizeof(xh));
-	xh.rootdir = rootdir;
+	strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if ((rv = xbps_init(&xh)) != 0)
 		die("failed to initialize libxbps: %s", strerror(rv));
 

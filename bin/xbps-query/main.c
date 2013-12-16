@@ -193,8 +193,10 @@ main(int argc, char **argv)
 	/*
 	 * Initialize libxbps.
 	 */
-	xh.rootdir = rootdir;
-	xh.cachedir = cachedir;
+	if (rootdir)
+		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+	if (cachedir)
+		strncpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
 	xh.conffile = conffile;
 	xh.flags = flags;
 

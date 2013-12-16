@@ -187,8 +187,10 @@ main(int argc, char **argv)
 	xh.state_cb = state_cb;
 	xh.fetch_cb = fetch_file_progress_cb;
 	xh.fetch_cb_data = &xfer;
-	xh.rootdir = rootdir;
-	xh.cachedir = cachedir;
+	if (rootdir)
+		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+	if (cachedir)
+		strncpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
 	xh.conffile = conffile;
 	xh.flags = flags;
 	if (flags & XBPS_FLAG_VERBOSE)

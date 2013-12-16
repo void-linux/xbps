@@ -310,8 +310,10 @@ main(int argc, char **argv)
 	 */
 	memset(&xh, 0, sizeof(xh));
 	xh.state_cb = state_cb_rm;
-	xh.rootdir = rootdir;
-	xh.cachedir = cachedir;
+	if (rootdir)
+		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+	if (cachedir)
+		strncpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
 	xh.conffile = conffile;
 	xh.flags = flags;
 

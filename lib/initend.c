@@ -46,35 +46,6 @@
  * Use these functions to initialize some parameters before start
  * using libxbps and finalize usage to release resources at the end.
  */
-static char *
-set_cachedir(struct xbps_handle *xh)
-{
-	if (xh->cachedir[0] == '/') {
-		/* full path */
-		return strdup(xh->cachedir);
-	} else {
-		/* relative to rootdir */
-		if (strcmp(xh->rootdir, "/") == 0)
-			return xbps_xasprintf("/%s", xh->cachedir);
-		else
-			return xbps_xasprintf("%s/%s", xh->rootdir,
-			    xh->cachedir);
-	}
-}
-
-static char *
-set_metadir(struct xbps_handle *xh)
-{
-	if (xh->metadir == NULL) {
-		if (strcmp(xh->rootdir, "/") == 0)
-			return xbps_xasprintf("/%s", XBPS_META_PATH);
-		else
-			return xbps_xasprintf("%s/%s", xh->rootdir, XBPS_META_PATH);
-	} else {
-		return strdup(xh->metadir);
-	}
-}
-
 static int
 cb_validate_virtual(cfg_t *cfg, cfg_opt_t *opt)
 {
@@ -115,6 +86,7 @@ xbps_init(struct xbps_handle *xhp)
 		CFG_END()
 	};
 	struct utsname un;
+	char *buf;
 	const char *repodir;
 	int rv, cc, cch;
 	bool syslog_enabled = false;
@@ -150,55 +122,57 @@ xbps_init(struct xbps_handle *xhp)
 	}
 	xbps_dbg_printf(xhp, "Configuration file: %s\n",
 	    xhp->conffile ? xhp->conffile : "not found");
-	/*
-	 * Respect client setting in struct xbps_handle for {root,cache}dir;
-	 * otherwise use values from configuration file or defaults if unset.
-	 */
-	if (xhp->rootdir == NULL) {
-		if (xhp->cfg == NULL)
-			xhp->rootdir = "/";
-		else
-			xhp->rootdir = cfg_getstr(xhp->cfg, "rootdir");
-	} else {
-		if (xhp->rootdir[0] != '/') {
-			/* relative path */
-			char *buf, path[PATH_MAX-1];
 
-			if (getcwd(path, sizeof(path)) == NULL)
-				return ENOTSUP;
-
-			buf = xbps_xasprintf("%s/%s", path, xhp->rootdir);
-			xhp->rootdir = buf;
+	/* Set rootdir */
+	if (xhp->rootdir[0] == '\0') {
+		if (xhp->cfg != NULL) {
+			strlcpy(xhp->rootdir,
+			    cfg_getstr(xhp->cfg, "rootdir"),
+			    sizeof(xhp->rootdir));
+		} else {
+			xhp->rootdir[0] = '/';
+			xhp->rootdir[1] = '\0';
 		}
-	}
-	/*
-	 * Append repository list specified in configuration file.
-	 */
-	for (unsigned int i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
-		if (xhp->repositories == NULL)
-			xhp->repositories = xbps_array_create();
+	} else if (xhp->rootdir[0] != '/') {
+		/* relative path */
+		char path[PATH_MAX-1];
 
-		repodir = cfg_getnstr(xhp->cfg, "repositories", i);
-		xbps_array_add_cstring_nocopy(xhp->repositories, repodir);
-	}
+		if (getcwd(path, sizeof(path)) == NULL)
+			return ENOTSUP;
 
-	if (xhp->cachedir == NULL) {
-		if (xhp->cfg == NULL)
-			xhp->cachedir = XBPS_CACHE_PATH;
-		else
-			xhp->cachedir = cfg_getstr(xhp->cfg, "cachedir");
+		buf = strdup(xhp->rootdir);
+		snprintf(xhp->rootdir, sizeof(xhp->rootdir),
+		    "%s/%s", path, buf);
+		free(buf);
 	}
-	if ((xhp->cachedir_priv = set_cachedir(xhp)) == NULL)
-		return ENOMEM;
-	xhp->cachedir = xhp->cachedir_priv;
-
-	if ((xhp->metadir_priv = set_metadir(xhp)) == NULL)
-		return ENOMEM;
-	xhp->metadir = xhp->metadir_priv;
+	/* Set cachedir */
+	if (xhp->cachedir[0] == '\0') {
+		snprintf(xhp->cachedir, sizeof(xhp->cachedir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
+		    xhp->cfg ? cfg_getstr(xhp->cfg, "cachedir") : XBPS_CACHE_PATH);
+	} else if (xhp->cachedir[0] != '/') {
+		/* relative path */
+		buf = strdup(xhp->cachedir);
+		snprintf(xhp->cachedir, sizeof(xhp->cachedir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
+		free(buf);
+	}
+	/* Set metadir */
+	if (xhp->metadir[0] == '\0') {
+		snprintf(xhp->metadir, sizeof(xhp->metadir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
+		    XBPS_META_PATH);
+	} else if (xhp->metadir[0] != '/') {
+		/* relative path */
+		buf = strdup(xhp->metadir);
+		snprintf(xhp->metadir, sizeof(xhp->metadir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
+		free(buf);
+	}
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
 	uname(&un);
-	xhp->native_arch = strdup(un.machine);
+	strlcpy(xhp->native_arch, un.machine, sizeof(xhp->native_arch));
 	assert(xhp->native_arch);
 
 	if (xhp->cfg == NULL) {
@@ -228,6 +202,17 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
 	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch);
 
+	/*
+	 * Append repository list specified in configuration file.
+	 */
+	for (unsigned int i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
+		if (xhp->repositories == NULL)
+			xhp->repositories = xbps_array_create();
+
+		xbps_array_add_cstring_nocopy(xhp->repositories,
+		    cfg_getnstr(xhp->cfg, "repositories", i));
+	}
+
 	if (xhp->flags & XBPS_FLAG_DEBUG) {
 		for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 			xbps_array_get_cstring_nocopy(xhp->repositories, i, &repodir);
@@ -256,10 +241,6 @@ xbps_end(struct xbps_handle *xhp)
 
 	xbps_fetch_unset_cache_connection();
 	cfg_free(xhp->cfg);
-	free(xhp->cachedir_priv);
-	free(xhp->metadir_priv);
-	free(xhp->native_arch);
-
 	xhp->initialized = false;
 }
 

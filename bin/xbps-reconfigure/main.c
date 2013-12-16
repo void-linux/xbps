@@ -145,7 +145,8 @@ main(int argc, char **argv)
 
 	memset(&xh, 0, sizeof(xh));
 	xh.state_cb = state_cb;
-	xh.rootdir = rootdir;
+	if (rootdir)
+		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	xh.conffile = conffile;
 	xh.flags = flags;
 
