@@ -58,10 +58,10 @@ static TAILQ_HEAD(pkgdep_head, pkgdep) pkgdep_list =
 static struct pkgdep *
 pkgdep_find(const char *pkg)
 {
-	struct pkgdep *pd = NULL, *pd_new = NULL;
+	struct pkgdep *pd = NULL;
 	const char *pkgver, *tract;
 
-	TAILQ_FOREACH_SAFE(pd, &pkgdep_list, pkgdep_entries, pd_new) {
+	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
 		if (pd->d == NULL) {
 			/* ignore entries without dictionary */
 			continue;
@@ -90,11 +90,11 @@ pkgdep_find(const char *pkg)
 static int32_t
 pkgdep_find_idx(const char *pkg)
 {
-	struct pkgdep *pd, *pd_new;
+	struct pkgdep *pd;
 	int32_t idx = 0;
 	const char *pkgver, *tract;
 
-	TAILQ_FOREACH_SAFE(pd, &pkgdep_list, pkgdep_entries, pd_new) {
+	TAILQ_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
 		if (pd->d == NULL) {
 			/* ignore entries without dictionary */
 			idx++;
