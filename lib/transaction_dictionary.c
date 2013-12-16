@@ -90,6 +90,18 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		}
 
 		tsize = 0;
+		if ((strcmp(tract, "install") == 0) ||
+		    (strcmp(tract, "update") == 0)) {
+			xbps_dictionary_get_uint64(obj,
+			    "installed_size", &tsize);
+			instsize += tsize;
+			if (xbps_repository_is_remote(repo)) {
+				xbps_dictionary_get_uint64(obj,
+				    "filename-size", &tsize);
+				dlsize += tsize;
+				instsize += tsize;
+			}
+		}
 		/*
 		 * If removing or updating a package, get installed_size
 		 * from pkg's metadata dictionary.
@@ -108,38 +120,31 @@ compute_transaction_stats(struct xbps_handle *xhp)
 			    "installed_size", &tsize);
 			rmsize += tsize;
 		}
-		if ((strcmp(tract, "install") == 0) ||
-		    (strcmp(tract, "update") == 0)) {
-			xbps_dictionary_get_uint64(obj,
-			    "installed_size", &tsize);
-			instsize += tsize;
-			if (xbps_repository_is_remote(repo)) {
-				xbps_dictionary_get_uint64(obj,
-				    "filename-size", &tsize);
-				dlsize += tsize;
-				instsize += tsize;
-			}
-		}
 	}
 	xbps_object_iterator_release(iter);
 
-	if (inst_pkgcnt && !xbps_dictionary_set_uint32(xhp->transd,
+	if (instsize > rmsize) {
+		instsize -= rmsize;
+		rmsize = 0;
+	} else if (rmsize > instsize) {
+		rmsize -= instsize;
+		instsize = 0;
+	} else {
+		instsize = rmsize = 0;
+	}
+
+	if (!xbps_dictionary_set_uint32(xhp->transd,
 				"total-install-pkgs", inst_pkgcnt))
 		return EINVAL;
-	if (up_pkgcnt && !xbps_dictionary_set_uint32(xhp->transd,
+	if (!xbps_dictionary_set_uint32(xhp->transd,
 				"total-update-pkgs", up_pkgcnt))
 		return EINVAL;
-	if (cf_pkgcnt && !xbps_dictionary_set_uint32(xhp->transd,
+	if (!xbps_dictionary_set_uint32(xhp->transd,
 				"total-configure-pkgs", cf_pkgcnt))
 		return EINVAL;
-	if (rm_pkgcnt && !xbps_dictionary_set_uint32(xhp->transd,
+	if (!xbps_dictionary_set_uint32(xhp->transd,
 				"total-remove-pkgs", rm_pkgcnt))
 		return EINVAL;
-
-	if (instsize)
-		instsize -= rmsize;
-	if (rmsize)
-		rmsize -= instsize;
 
 	if (!xbps_dictionary_set_uint64(xhp->transd,
 				"total-installed-size", instsize))

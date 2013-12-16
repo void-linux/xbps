@@ -114,29 +114,33 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	/*
 	 * Show the list of packages that will be installed.
 	 */
-	if (xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
-	    &trans->inst_pkgcnt)) {
+	xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
+	    &trans->inst_pkgcnt);
+	if (trans->inst_pkgcnt) {
 		printf("%u package%s will be installed:\n",
 		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "install", cols);
 		printf("\n");
 	}
-	if (xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
-	    &trans->up_pkgcnt)) {
+	xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
+	    &trans->up_pkgcnt);
+	if (trans->up_pkgcnt) {
 		printf("%u package%s will be updated:\n",
 		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "update", cols);
 		printf("\n");
 	}
-	if (xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
-	    &trans->cf_pkgcnt)) {
+	xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
+	    &trans->cf_pkgcnt);
+	if (trans->cf_pkgcnt) {
 		printf("%u package%s will be configured:\n",
 		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "configure", cols);
 		printf("\n");
 	}
-	if (xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
-	    &trans->rm_pkgcnt)) {
+	xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
+	    &trans->rm_pkgcnt);
+	if (trans->rm_pkgcnt) {
 		printf("%u package%s will be removed:\n",
 		    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
 		show_package_list(trans->iter, "remove", cols);
@@ -158,15 +162,15 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Total download size:\t%6s\n", size);
+		printf("Size to download:             %6s\n", size);
 	}
 	if (instsize) {
-		if (xbps_humanize_number(size, (int64_t)(instsize+dlsize)) == -1) {
+		if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
 			xbps_error_printf("humanize_number2 returns "
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Total installed size:\t%6s\n", size);
+		printf("Size required on disk:        %6s\n", size);
 	}
 	if (rmsize) {
 		if (xbps_humanize_number(size, (int64_t)rmsize) == -1) {
@@ -174,7 +178,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Total freed size:\t%6s\n", size);
+		printf("Size freed on disk:           %6s\n", size);
 	}
 	printf("\n");
 
