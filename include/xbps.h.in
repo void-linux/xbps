@@ -27,6 +27,7 @@
 #ifndef _XBPS_API_H_
 #define _XBPS_API_H_
 
+#include <sys/queue.h>
 #include <stdio.h>
 #include <inttypes.h>
 
@@ -46,7 +47,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20131118"
+#define XBPS_API_VERSION	"20131216"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1110,6 +1111,7 @@ struct xbps_repo {
 	/**
 	 * @private
 	 */
+	SIMPLEQ_ENTRY(xbps_repo) entries;
 	struct archive *ar;
 	/**
 	 * @var xhp

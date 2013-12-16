@@ -33,12 +33,7 @@
 
 #include "xbps_api_impl.h"
 
-struct rpool {
-	SIMPLEQ_ENTRY(rpool) entries;
-	struct xbps_repo *repo;
-};
-
-static SIMPLEQ_HEAD(rpool_head, rpool) rpool_queue =
+static SIMPLEQ_HEAD(rpool_head, xbps_repo) rpool_queue =
     SIMPLEQ_HEAD_INITIALIZER(rpool_queue);
 
 /**
@@ -50,7 +45,7 @@ static SIMPLEQ_HEAD(rpool_head, rpool) rpool_queue =
 int HIDDEN
 xbps_rpool_init(struct xbps_handle *xhp)
 {
-	struct rpool *rp;
+	struct xbps_repo *repo;
 	const char *repouri;
 	bool foundrepo = false;
 	int retval, rv = 0;
@@ -61,27 +56,25 @@ xbps_rpool_init(struct xbps_handle *xhp)
 		return 0;
 
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
-		rp = malloc(sizeof(struct rpool));
-		assert(rp);
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
-		if ((rp->repo = xbps_repo_open(xhp, repouri)) == NULL) {
-			rp->repo = calloc(1, sizeof(struct xbps_repo));
-			assert(rp->repo);
-			rp->repo->xhp = xhp;
-			rp->repo->uri = repouri;
+		if ((repo = xbps_repo_open(xhp, repouri)) == NULL) {
+			repo = calloc(1, sizeof(struct xbps_repo));
+			assert(repo);
+			repo->xhp = xhp;
+			repo->uri = repouri;
 			if (xbps_repository_is_remote(repouri))
-				rp->repo->is_remote = true;
+				repo->is_remote = true;
 		}
-		if (rp->repo->is_remote) {
-			if (!rp->repo->is_signed) {
+		if (repo->is_remote) {
+			if (!repo->is_signed) {
 				/* ignore unsigned repositories */
-				xbps_repo_invalidate(rp->repo);
+				xbps_repo_invalidate(repo);
 			} else {
 				/*
 				 * Check the repository index signature against
 				 * stored public key.
 				 */
-				retval = xbps_repo_key_verify(rp->repo);
+				retval = xbps_repo_key_verify(repo);
 				if (retval == 0) {
 					/* signed, verified */
 					xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGVERIFIED,
@@ -90,23 +83,23 @@ xbps_rpool_init(struct xbps_handle *xhp)
 					/* signed, unverified */
 					xbps_set_cb_state(xhp, XBPS_STATE_REPO_SIGUNVERIFIED,
 					    0, repouri, NULL);
-					xbps_repo_invalidate(rp->repo);
+					xbps_repo_invalidate(repo);
 				} else {
 					/* any error */
 					xbps_dbg_printf(xhp, "[rpool] %s: key_verify %s\n",
 					    repouri, strerror(retval));
-					xbps_repo_invalidate(rp->repo);
+					xbps_repo_invalidate(repo);
 				}
 			}
 		}
 		/*
 		 * If repository has passed signature checks, add it to the pool.
 		 */
-		SIMPLEQ_INSERT_TAIL(&rpool_queue, rp, entries);
+		SIMPLEQ_INSERT_TAIL(&rpool_queue, repo, entries);
 		foundrepo = true;
 		xbps_dbg_printf(xhp, "[rpool] `%s' registered (%s, %s).\n",
-		    repouri, rp->repo->is_signed ? "signed" : "unsigned",
-		    rp->repo->is_verified ? "verified" : "unverified");
+		    repouri, repo->is_signed ? "signed" : "unsigned",
+		    repo->is_verified ? "verified" : "unverified");
 	}
 	if (!foundrepo) {
 		/* no repositories available, error out */
@@ -126,16 +119,15 @@ out:
 void HIDDEN
 xbps_rpool_release(struct xbps_handle *xhp)
 {
-	struct rpool *rp;
+	struct xbps_repo *repo;
 
 	if (!xhp->rpool_initialized)
 		return;
 
-	while ((rp = SIMPLEQ_FIRST(&rpool_queue))) {
-		SIMPLEQ_REMOVE(&rpool_queue, rp, rpool, entries);
-		xbps_repo_close(rp->repo);
-		free(rp->repo);
-		free(rp);
+	while ((repo = SIMPLEQ_FIRST(&rpool_queue))) {
+		SIMPLEQ_REMOVE(&rpool_queue, repo, xbps_repo, entries);
+		xbps_repo_close(repo);
+		free(repo);
 	}
 	xhp->rpool_initialized = false;
 	xbps_dbg_printf(xhp, "[rpool] released ok.\n");
@@ -168,7 +160,7 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 	int (*fn)(struct xbps_repo *, void *, bool *),
 	void *arg)
 {
-	struct rpool *rp;
+	struct xbps_repo *repo;
 	int rv = 0;
 	bool done = false;
 
@@ -183,8 +175,8 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 		return rv;
 	}
 	/* Iterate over repository pool */
-	SIMPLEQ_FOREACH(rp, &rpool_queue, entries) {
-		rv = (*fn)(rp->repo, arg, &done);
+	SIMPLEQ_FOREACH(repo, &rpool_queue, entries) {
+		rv = (*fn)(repo, arg, &done);
 		if (rv != 0 || done)
 			break;
 	}
