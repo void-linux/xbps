@@ -78,7 +78,7 @@ repo_get_dict(struct xbps_repo *repo)
 		if (adata == NULL) {
 			adata = malloc(size);
 		} else {
-			adata = realloc(adata, sizeof(size) * offset);
+			adata = realloc(adata, size * offset);
 			if (adata == NULL) {
 				free(adata);
 				return NULL;
