@@ -72,9 +72,13 @@ ATF_TC_BODY(find_pkg_obsoletes_test, tc)
 	struct xbps_handle xh;
 	xbps_array_t res;
 	xbps_dictionary_t d1, d2;
+	const char *tcsdir;
+
+	/* get test source dir */
+	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
 	memset(&xh, 0, sizeof(xh));
-	xh.rootdir = "/tmp";
+	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	xh.conffile = "/tmp/unexistent.conf";
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 

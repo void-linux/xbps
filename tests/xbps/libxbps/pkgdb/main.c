@@ -42,8 +42,8 @@ ATF_TC_BODY(pkgdb_get_pkg_test, tc)
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
 	memset(&xh, 0, sizeof(xh));
-	xh.rootdir = tcsdir;
-	xh.metadir = tcsdir;
+	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
@@ -84,8 +84,8 @@ ATF_TC_BODY(pkgdb_get_virtualpkg_test, tc)
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
 	memset(&xh, 0, sizeof(xh));
-	xh.rootdir = tcsdir;
-	xh.metadir = tcsdir;
+	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
@@ -129,8 +129,8 @@ ATF_TC_BODY(pkgdb_get_pkg_revdeps_test, tc)
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
 	memset(&xh, 0, sizeof(xh));
-	xh.rootdir = tcsdir;
-	xh.metadir = tcsdir;
+	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
