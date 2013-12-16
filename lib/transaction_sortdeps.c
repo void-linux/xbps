@@ -259,7 +259,7 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 	xbps_object_t obj;
 	struct pkgdep *pd;
 	unsigned int ndeps = 0, cnt = 0;
-	const char *pkgname, *pkgver, *tract, *vpkgdep;
+	const char *pkgver, *tract, *vpkgdep;
 	int rv = 0;
 	bool vpkg_found;
 
@@ -293,7 +293,6 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 	for (unsigned int i = 0; i < ndeps; i++) {
 		vpkg_found = false;
 		obj = xbps_array_get(unsorted, i);
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		provides = xbps_dictionary_get(obj, "provides");
