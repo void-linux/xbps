@@ -1,4 +1,4 @@
-.Dd October 12, 2013
+.Dd December 17, 2013
 .Os Void Linux
 .Dt xbps-remove 8
 .Sh NAME
@@ -12,14 +12,16 @@
 The
 .Nm
 utility removes installed packages in the target root directory.
-Removing a package involves some steps:
+Removing a package involves the following steps:
 .Pp
 .Sy *
 Executes the
-.Sy pre-remove
-action on its
+.Sy pre
+ACTION on its
 .Sy REMOVE
-script.
+script (which can be shown by running
+.Sy `xbps-query --property=remove-script pkg`
+).
 .Pp
 .Sy *
 Package files are removed if those have not been modified.
@@ -29,21 +31,26 @@ option overrides this behaviour and forcefully removes the files.
 .Pp
 .Sy *
 Executes the
-.Sy post-remove
-action on its
+.Sy post
+ACTION on its
 .Sy REMOVE
-script.
+script (which can be shown by running
+.Sy `xbps-query --property=remove-script pkg`
+).
 .Pp
 .Sy *
 Changes package state to
-.Sy XBPS_PKG_STATE_HALF_REMOVED .
+.Sy XBPS_PKG_STATE_HALF_REMOVED
+in the package database.
 .Pp
 .Sy *
 Executes the
 .Sy purge
-action on its
+ACTION on its
 .Sy REMOVE
-script.
+script (which can be shown by running
+.Sy `xbps-query --property=remove-script pkg`
+).
 .Pp
 .Sy *
 Package metadata file is removed.
