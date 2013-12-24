@@ -39,23 +39,29 @@
 static int
 remove_pkg(const char *repodir, const char *file)
 {
-	char *filepath;
-	int rv;
+	char *filepath, *sigpath;
+	int rv = 0;
 
 	filepath = xbps_xasprintf("%s/%s", repodir, file);
+	sigpath = xbps_xasprintf("%s.sig", filepath);
 	if (remove(filepath) == -1) {
 		if (errno != ENOENT) {
 			rv = errno;
 			fprintf(stderr, "xbps-rindex: failed to remove "
-			    "package `%s': %s\n", file,
-			    strerror(rv));
-			free(filepath);
-			return rv;
+			    "package `%s': %s\n", file, strerror(rv));
 		}
 	}
+	if (remove(sigpath) == -1) {
+		if (errno != ENOENT) {
+			rv = errno;
+			fprintf(stderr, "xbps-rindex: failed to remove "
+			    "package signature `%s': %s\n", sigpath, strerror(rv));
+		}
+	}
+	free(sigpath);
 	free(filepath);
 
-	return 0;
+	return rv;
 }
 
 static int
