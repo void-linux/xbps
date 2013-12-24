@@ -165,8 +165,6 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 			printf("      Signed-by: %s\n", repo->signedby);
 		if (repo->hexfp)
 			printf("      %u %s\n", repo->pubkey_size, repo->hexfp);
-	} else {
-		printf("\n");
 	}
 	return 0;
 }
