@@ -229,7 +229,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 			free(binpkg_sig);
 			continue;
 		}
-		if (write(binpkg_sig_fd, sig, siglen) != siglen) {
+		if (write(binpkg_sig_fd, sig, siglen) != (ssize_t)siglen) {
 			fprintf(stderr, "failed to write %s: %s\n", binpkg_sig, strerror(errno));
 			free(sig);
 			free(binpkg_sig);
