@@ -60,6 +60,9 @@
 /* libarchive compat */
 #if ARCHIVE_VERSION_NUMBER >= 3000000
 
+#define archive_read_support_compression_all(x) \
+	archive_read_support_filter_all(x)
+
 #define archive_read_support_compression_gzip(x) \
 	archive_read_support_filter_gzip(x)
 
@@ -133,13 +136,6 @@ char HIDDEN *xbps_repository_pkg_path(struct xbps_handle *, xbps_dictionary_t);
 
 /**
  * @private
- * From lib/rpool.c
- */
-int HIDDEN xbps_rpool_init(struct xbps_handle *);
-void HIDDEN xbps_rpool_release(struct xbps_handle *);
-
-/**
- * @private
  * From lib/download.c
  */
 void HIDDEN xbps_fetch_set_cache_connection(int, int);
@@ -162,12 +158,6 @@ int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
  * From lib/repo.c
  */
 void HIDDEN xbps_repo_invalidate(struct xbps_repo *);
-
-/**
- * @private
- * From lib/repo_keys.c
- */
-int HIDDEN xbps_repo_key_verify(struct xbps_repo *);
 
 /**
  * @private

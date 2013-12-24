@@ -47,7 +47,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20131216-2"
+#define XBPS_API_VERSION	"20131224"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -80,12 +80,6 @@
  * Filename for the package database.
  */
 #define XBPS_PKGDB		"pkgdb-0.21.plist"
-
-/** 
- * @def XBPS_REPOKEYS
- * Filename for the repository keys.
- */
-#define XBPS_REPOKEYS		"repokeys.plist"
 
 /**
  * @def XBPS_PKGPROPS
@@ -220,6 +214,7 @@ extern "C" {
  * install, update, remove and replace.
  * - XBPS_STATE_TRANS_CONFIGURE: transaction is configuring all
  * unpacked packages.
+ * - XBPS_STATE_TRANS_FAIL: transaction has failed.
  * - XBPS_STATE_DOWNLOAD: a binary package is being downloaded.
  * - XBPS_STATE_VERIFY: a binary package is being verified.
  * - XBPS_STATE_REMOVE: a package is being removed.
@@ -252,8 +247,6 @@ extern "C" {
  * - XBPS_STATE_UNPACK_FAIL: package unpack has failed.
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  * - XBPS_STATE_REPO_KEY_IMPORT: repository is signed and needs to import pubkey.
- * - XBPS_STATE_REPO_SIGVERIFIED: repository is signed and verified.
- * - XBPS_STATE_REPO_SIGUNVERIFIED: repository is signed and UNVERIFIED.
  */
 typedef enum xbps_state {
 	XBPS_STATE_UNKNOWN = 0,
@@ -261,6 +254,7 @@ typedef enum xbps_state {
 	XBPS_STATE_TRANS_VERIFY,
 	XBPS_STATE_TRANS_RUN,
 	XBPS_STATE_TRANS_CONFIGURE,
+	XBPS_STATE_TRANS_FAIL,
 	XBPS_STATE_DOWNLOAD,
 	XBPS_STATE_VERIFY,
 	XBPS_STATE_REMOVE,
@@ -291,9 +285,7 @@ typedef enum xbps_state {
 	XBPS_STATE_UNPACK_FAIL,
 	XBPS_STATE_REPOSYNC_FAIL,
 	XBPS_STATE_CONFIGURE_DONE,
-	XBPS_STATE_REPO_KEY_IMPORT,
-	XBPS_STATE_REPO_SIGVERIFIED,
-	XBPS_STATE_REPO_SIGUNVERIFIED
+	XBPS_STATE_REPO_KEY_IMPORT
 } xbps_state_t;
 
 /**
@@ -589,11 +581,6 @@ struct xbps_handle {
 	 *  - XBPS_FLAG_INSTALL_AUTO
 	 */
 	int flags;
-	/**
-	 * @private
-	 */
-	bool initialized;
-	bool rpool_initialized;
 };
 
 void xbps_dbg_printf(struct xbps_handle *, const char *, ...);
@@ -1139,12 +1126,6 @@ struct xbps_repo {
 	 */
 	xbps_dictionary_t idxfiles;
 	/**
-	 * @var signature
-	 *
-	 * RSA signature associated with this repository in a prop_data object.
-	 */
-	xbps_data_t signature;
-	/**
 	 * @var pubkey
 	 *
 	 * RSA public key associated with this repository in a prop_data object.
@@ -1186,13 +1167,6 @@ struct xbps_repo {
 	 * True if this repository has been signed, false otherwise.
 	 */
 	bool is_signed;
-	/**
-	 * var is_verified
-	 *
-	 * True if this repository has been signed and verified against its public key.
-	 * False if the stored public key did not match its signature.
-	 */
-	bool is_verified;
 };
 
 /**
@@ -1226,6 +1200,14 @@ int xbps_rpool_sync(struct xbps_handle *xhp, const char *uri);
 int xbps_rpool_foreach(struct xbps_handle *xhp,
 	       int (*fn)(struct xbps_repo *, void *, bool *),
 	       void *arg);
+
+/**
+ * Returns a pointer to a struct xbps_repo matching \a url.
+ *
+ * @param[in] url Repository url to match.
+ * @return The matched xbps_repo pointer, NULL otherwise.
+ */
+struct xbps_repo *xbps_rpool_get_repo(const char *url);
 
 /**
  * Finds a package dictionary in the repository pool by specifying a
@@ -1392,6 +1374,7 @@ xbps_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
  */
 int xbps_repo_key_import(struct xbps_repo *repo);
 
+
 /*@}*/
 
 /** @addtogroup archive_util */
@@ -1551,6 +1534,18 @@ char *xbps_file_hash(const char *file);
  * if it differs, or any other errno value on error.
  */
 int xbps_file_hash_check(const char *file, const char *sha256);
+
+/**
+ * Verifies the RSA signature of \a fname with the RSA public-key associated
+ * in \a repo.
+ *
+ * @param[in] repo Repository to use with the RSA public key associated.
+ * @param[in] fname The filename to verify, the signature file must have a .sig
+ * extension, i.e `<fname>.sig`.
+ *
+ * @return True if the signature is valid, false otherwise.
+ */
+bool xbps_verify_file_signature(struct xbps_repo *repo, const char *fname);
 
 /**
  * Checks if a package is currently installed by matching \a pkg.

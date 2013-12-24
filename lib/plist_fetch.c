@@ -146,7 +146,7 @@ xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
 	xbps_dictionary_t plistd = NULL;
 	struct archive *a;
 	struct archive_entry *entry;
-	const char *curpath, *comptype;
+	const char *comptype;
 	int i = 0;
 
 	assert(fname != NULL);
@@ -161,8 +161,7 @@ xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
 	comptype = archive_compression_name(a);
 
 	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
-		curpath = archive_entry_pathname(entry);
-		if (strcmp(curpath, plistf)) {
+		if (strcmp(archive_entry_pathname(entry), plistf)) {
 			archive_read_data_skip(a);
 			if (i >= 3) {
 				/*

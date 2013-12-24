@@ -159,16 +159,12 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 	printf("%5zd %s",
 	    repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1,
 	    repo->uri);
-	if (repo->is_remote) {
-		printf(" (RSA %s, %s)\n",
-		    repo->is_signed ? "signed" : "unsigned",
-		    repo->is_verified ? "verified" : "unverified");
-		if (repo->xhp->flags & XBPS_FLAG_VERBOSE) {
-			if (repo->signedby)
-				printf("      Signed-by: %s\n", repo->signedby);
-			if (repo->hexfp)
-				printf("      %u %s\n", repo->pubkey_size, repo->hexfp);
-		}
+	printf(" (RSA %s)\n", repo->is_signed ? "signed" : "unsigned");
+	if (repo->xhp->flags & XBPS_FLAG_VERBOSE) {
+		if (repo->signedby)
+			printf("      Signed-by: %s\n", repo->signedby);
+		if (repo->hexfp)
+			printf("      %u %s\n", repo->pubkey_size, repo->hexfp);
 	} else {
 		printf("\n");
 	}

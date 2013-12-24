@@ -92,52 +92,43 @@ pubkey_from_privkey(RSA *rsa)
 	return buf;
 }
 
-static RSA *
-rsa_sign_buf(const char *privkey, const char *buf,
+static bool
+rsa_sign_buf(RSA *rsa, const char *buf, unsigned int buflen,
 	 unsigned char **sigret, unsigned int *siglen)
 {
 	SHA256_CTX context;
-	RSA *rsa;
 	unsigned char sha256[SHA256_DIGEST_LENGTH];
 
-	ERR_load_crypto_strings();
-	SSL_load_error_strings();
-	OpenSSL_add_all_algorithms();
-	OpenSSL_add_all_ciphers();
-	OpenSSL_add_all_digests();
-
-	rsa = load_rsa_privkey(privkey);
-	if (rsa == NULL) {
-		fprintf(stderr, "can't load private key from %s\n", privkey);
-		return NULL;
-	}
-
 	SHA256_Init(&context);
-	SHA256_Update(&context, buf, strlen(buf));
+	SHA256_Update(&context, buf, buflen);
 	SHA256_Final(sha256, &context);
 
 	*sigret = calloc(1, RSA_size(rsa) + 1);
-	if (RSA_sign(NID_sha1, sha256, sizeof(sha256),
-				*sigret, siglen, rsa) == 0) {
-		fprintf(stderr, "%s: %s\n", privkey,
-		    ERR_error_string(ERR_get_error(), NULL));
-		return NULL;
+	if (!RSA_sign(NID_sha1, sha256, sizeof(sha256),
+				*sigret, siglen, rsa)) {
+		free(*sigret);
+		return false;
 	}
-	return rsa;
+	return true;
 }
 
 int
 sign_repo(struct xbps_handle *xhp, const char *repodir,
 	const char *privkey, const char *signedby)
 {
-	RSA *rsa = NULL;
+	struct stat st;
 	struct xbps_repo *repo;
-	xbps_dictionary_t idx, idxfiles, meta = NULL;
+	xbps_dictionary_t pkgd, idx, idxfiles, meta = NULL;
 	xbps_data_t data;
-	unsigned int siglen;
+	xbps_object_iterator_t iter = NULL;
+	xbps_object_t obj;
+	RSA *rsa = NULL;
 	unsigned char *sig;
-	char *buf = NULL, *xml = NULL, *defprivkey = NULL;
-	int rv = -1;
+	unsigned int siglen;
+	const char *arch, *pkgver;
+	char *binpkg, *binpkg_sig, *buf, *defprivkey;
+	int binpkg_fd, binpkg_sig_fd;
+	bool flush = false;
 
 	if (signedby == NULL) {
 		fprintf(stderr, "--signedby unset! cannot sign repository\n");
@@ -160,15 +151,6 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	idx = xbps_dictionary_copy(repo->idx);
 	idxfiles = xbps_dictionary_copy(repo->idxfiles);
 	xbps_repo_close(repo);
-
-	/*
-	 * Externalize the index and then sign it.
-	 */
-	xml = xbps_dictionary_externalize(idx);
-	if (xml == NULL) {
-		fprintf(stderr, "failed to externalize repository index: %s\n", strerror(errno));
-		goto out;
-	}
 	/*
 	 * If privkey not set, default to ~/.ssh/id_rsa.
 	 */
@@ -177,50 +159,116 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	else
 		defprivkey = strdup(privkey);
 
-	rsa = rsa_sign_buf(defprivkey, xml, &sig, &siglen);
-	if (rsa == NULL)
-		goto out;
-	/*
-	 * If the signature in repo has not changed do not generate the
-	 * repodata file again.
-	 */
-	if (xbps_data_equals_data(repo->signature, sig, siglen)) {
-		fprintf(stderr, "Not signing again, matched signature found.\n");
-		rv = 0;
-		goto out;
+	ERR_load_crypto_strings();
+	OpenSSL_add_all_algorithms();
+	OpenSSL_add_all_ciphers();
+	OpenSSL_add_all_digests();
+
+	if ((rsa = load_rsa_privkey(defprivkey)) == NULL) {
+		fprintf(stderr, "failed to read the RSA privkey\n");
+		return -1;
 	}
 	/*
-	 * Prepare the XBPS_REPOIDX_META for our repository data.
+	 * Iterate over the idx dictionary and then sign all binary
+	 * packages in this repository.
 	 */
-	meta = xbps_dictionary_create();
-	xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
-	xbps_dictionary_set_cstring_nocopy(meta, "signature-type", "rsa");
-	data = xbps_data_create_data_nocopy(sig, siglen);
-	xbps_dictionary_set(meta, "signature", data);
+	iter = xbps_dictionary_iterator(idx);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		pkgd = xbps_dictionary_get_keysym(idx, obj);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
-	buf = pubkey_from_privkey(rsa);
-	assert(buf);
-	data = xbps_data_create_data_nocopy(buf, strlen(buf));
-	xbps_dictionary_set(meta, "public-key", data);
-	xbps_dictionary_set_uint16(meta, "public-key-size", RSA_size(rsa) * 8);
-
-	/*
-	 * and finally write our repodata file!
-	 */
-	if (!repodata_flush(xhp, repodir, idx, idxfiles, meta)) {
-		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
-		goto out;
-	}
-
-	rv = 0;
-
-out:
-	if (xml != NULL)
-		free(xml);
-	if (buf != NULL)
+		binpkg = xbps_xasprintf("%s/%s.%s.xbps", repodir, pkgver, arch);
+		binpkg_sig = xbps_xasprintf("%s.sig", binpkg);
+		/*
+		 * Skip pkg if file signature exists
+		 */
+		if ((binpkg_sig_fd = open(binpkg_sig, O_RDONLY)) == 0) {
+			fprintf(stdout, "skipping %s, file signature found.\n", pkgver);
+			free(binpkg);
+			free(binpkg_sig);
+			close(binpkg_sig_fd);
+			continue;
+		}
+		/*
+		 * Generate pkg file signature.
+		 */
+		if ((binpkg_fd = open(binpkg, O_RDONLY)) == -1) {
+			fprintf(stderr, "cannot read %s: %s\n", binpkg, strerror(errno));
+			free(binpkg);
+			free(binpkg_sig);
+			continue;
+		}
+		fstat(binpkg_fd, &st);
+		buf = malloc(st.st_size);
+		assert(buf);
+		if (read(binpkg_fd, buf, st.st_size) != st.st_size) {
+			fprintf(stderr, "failed to read %s: %s\n", binpkg, strerror(errno));
+			close(binpkg_fd);
+			free(buf);
+			free(binpkg);
+			free(binpkg_sig);
+			continue;
+		}
+		close(binpkg_fd);
+		if (!rsa_sign_buf(rsa, buf, st.st_size, &sig, &siglen)) {
+			fprintf(stderr, "failed to sign %s: %s\n", binpkg, strerror(errno));
+			free(buf);
+			free(binpkg);
+			free(binpkg_sig);
+			continue;
+		}
 		free(buf);
-	if (rsa != NULL)
-		RSA_free(rsa);
+		free(binpkg);
+		/*
+		 * Write pkg file signature.
+		 */
+		binpkg_sig_fd = creat(binpkg_sig, 0644);
+		if (binpkg_sig_fd == -1) {
+			fprintf(stderr, "failed to create %s: %s\n", binpkg_sig, strerror(errno));
+			free(binpkg_sig);
+			continue;
+		}
+		if (write(binpkg_sig_fd, sig, siglen) != siglen) {
+			fprintf(stderr, "failed to write %s: %s\n", binpkg_sig, strerror(errno));
+			free(sig);
+			free(binpkg_sig);
+			close(binpkg_sig_fd);
+			continue;
+		}
+		flush = true;
+		free(sig);
+		free(binpkg_sig);
+		close(binpkg_sig_fd);
+		binpkg_fd = binpkg_sig_fd = -1;
+		printf("Signed successfully %s\n", pkgver);
+	}
+	xbps_object_iterator_release(iter);
 
-	return rv;
+	if (flush) {
+		/*
+		 * Prepare the XBPS_REPOIDX_META for our repository data.
+		*/
+		meta = xbps_dictionary_create();
+		xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
+		xbps_dictionary_set_cstring_nocopy(meta, "signature-type", "rsa");
+		buf = pubkey_from_privkey(rsa);
+		assert(buf);
+		data = xbps_data_create_data(buf, strlen(buf));
+		xbps_dictionary_set(meta, "public-key", data);
+		xbps_dictionary_set_uint16(meta, "public-key-size", RSA_size(rsa) * 8);
+		free(buf);
+		xbps_object_release(data);
+		/*
+		 * and finally write our repodata file!
+		 */
+		if (!repodata_flush(xhp, repodir, idx, idxfiles, meta)) {
+			fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
+			RSA_free(rsa);
+			return -1;
+		}
+	}
+	RSA_free(rsa);
+
+	return 0;
 }

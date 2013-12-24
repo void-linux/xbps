@@ -28,7 +28,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <libgen.h>
 #include <fcntl.h>
+
+#include <openssl/err.h>
+#include <openssl/sha.h>
+#include <openssl/rsa.h>
+#include <openssl/ssl.h>
+#include <openssl/pem.h>
 
 #include "xbps_api_impl.h"
 
@@ -97,12 +104,10 @@ struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url)
 {
 	xbps_dictionary_t meta;
-	struct archive *ar = NULL;
-	struct xbps_repo *repo = NULL;
+	struct xbps_repo *repo;
 	struct stat st;
 	const char *arch;
 	char *repofile;
-	bool is_remote = false;
 
 	assert(xhp);
 	assert(url);
@@ -112,6 +117,11 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	else
 		arch = xhp->native_arch;
 
+	repo = calloc(1, sizeof(struct xbps_repo));
+	assert(repo);
+	repo->xhp = xhp;
+	repo->uri = url;
+
 	if (xbps_repository_is_remote(url)) {
 		/* remote repository */
 		char *rpath;
@@ -120,7 +130,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 			return NULL;
 		repofile = xbps_xasprintf("%s/%s/%s-repodata", xhp->metadir, rpath, arch);
 		free(rpath);
-		is_remote = true;
+		repo->is_remote = true;
 	} else {
 		/* local repository */
 		repofile = xbps_repo_path(xhp, url);
@@ -129,43 +139,31 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	if (stat(repofile, &st) == -1) {
 		xbps_dbg_printf(xhp, "[repo] `%s' stat repodata %s\n",
 		    repofile, strerror(errno));
-		free(repofile);
-		return NULL;
-	}
-
-	ar = archive_read_new();
-	archive_read_support_compression_gzip(ar);
-	archive_read_support_format_tar(ar);
-
-	if (archive_read_open_filename(ar, repofile, st.st_blksize) == ARCHIVE_FATAL) {
-		xbps_dbg_printf(xhp,
-		    "[repo] `%s' failed to open repodata archive %s\n",
-		    repofile, strerror(archive_errno(repo->ar)));
-		archive_read_free(ar);
-		free(repo);
-		repo = NULL;
 		goto out;
 	}
 
-	repo = calloc(1, sizeof(struct xbps_repo));
-	assert(repo);
-	repo->ar = ar;
-	repo->xhp = xhp;
-	repo->uri = url;
-	repo->is_remote = is_remote;
+	repo->ar = archive_read_new();
+	archive_read_support_compression_gzip(repo->ar);
+	archive_read_support_format_tar(repo->ar);
 
+	if (archive_read_open_filename(repo->ar, repofile, st.st_blksize) == ARCHIVE_FATAL) {
+		xbps_dbg_printf(xhp,
+		    "[repo] `%s' failed to open repodata archive %s\n",
+		    repofile, strerror(archive_errno(repo->ar)));
+		archive_read_free(repo->ar);
+		repo->ar = NULL;
+		goto out;
+	}
 	if ((repo->idx = repo_get_dict(repo)) == NULL) {
 		xbps_dbg_printf(xhp,
 		    "[repo] `%s' failed to internalize index on archive %s: %s\n",
 		    url, repofile, strerror(archive_errno(repo->ar)));
 		archive_read_finish(repo->ar);
-		free(repo);
-		repo = NULL;
+		repo->ar = NULL;
 		goto out;
 	}
 	if ((meta = repo_get_dict(repo))) {
 		repo->is_signed = true;
-		repo->signature = xbps_dictionary_get(meta, "signature");
 		xbps_dictionary_get_cstring_nocopy(meta, "signature-by", &repo->signedby);
 		repo->pubkey = xbps_dictionary_get(meta, "public-key");
 		xbps_dictionary_get_uint16(meta, "public-key-size", &repo->pubkey_size);
@@ -182,24 +180,6 @@ xbps_repo_open_idxfiles(struct xbps_repo *repo)
 {
 	assert(repo);
 	repo->idxfiles = repo_get_dict(repo);
-}
-
-void HIDDEN
-xbps_repo_invalidate(struct xbps_repo *repo)
-{
-	if (repo->ar != NULL) {
-		archive_read_finish(repo->ar);
-		repo->ar = NULL;
-	}
-	if (repo->idx != NULL) {
-		xbps_object_release(repo->idx);
-		repo->idx = NULL;
-	}
-	if (repo->idxfiles != NULL) {
-		xbps_object_release(repo->idxfiles);
-		repo->idxfiles = NULL;
-	}
-	repo->is_verified = false;
 }
 
 void
@@ -230,7 +210,7 @@ xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg)
 	assert(repo);
 	assert(pkg);
 
-	if (repo->ar == NULL || repo->idx == NULL)
+	if (repo->idx == NULL)
 		return NULL;
 
 	pkgd = xbps_find_virtualpkg_in_dict(repo->xhp, repo->idx, pkg);
@@ -250,7 +230,7 @@ xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg)
 	assert(repo);
 	assert(pkg);
 
-	if (repo->ar == NULL || repo->idx == NULL)
+	if (repo->idx == NULL)
 		return NULL;
 
 	pkgd = xbps_find_pkg_in_dict(repo->idx, pkg);
@@ -426,4 +406,92 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 		revdeps = revdeps_match(repo, pkgd, NULL);
 
 	return revdeps;
+}
+
+int
+xbps_repo_key_import(struct xbps_repo *repo)
+{
+	xbps_dictionary_t repokeyd = NULL;
+	char *p, *dbkeyd, *rkeyfile = NULL;
+	int import, rv = 0;
+
+	assert(repo);
+	/*
+	 * If repository does not have required metadata plist, ignore it.
+	 */
+	if (repo->pubkey == NULL) {
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s' unsigned repository!\n", repo->uri);
+		return 0;
+	}
+	/*
+	 * Check the repository provides a working public-key data object.
+	 */
+	repo->is_signed = true;
+	if (repo->hexfp == NULL) {
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s': invalid hex fingerprint: %s\n",
+		    repo->uri, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
+	/*
+	 * Check if the public key is alredy stored.
+	 */
+	rkeyfile = xbps_xasprintf("%s/keys/%s.plist",
+	    repo->xhp->metadir, repo->hexfp);
+	repokeyd = xbps_dictionary_internalize_from_zfile(rkeyfile);
+	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s' public key already stored.\n", repo->uri);
+		goto out;
+	}
+	/*
+	 * Notify the client and take appropiate action to import
+	 * the repository public key. Pass back the public key openssh fingerprint
+	 * to the client.
+	 */
+	import = xbps_set_cb_state(repo->xhp, XBPS_STATE_REPO_KEY_IMPORT, 0,
+			repo->hexfp, "`%s' repository has been RSA signed by \"%s\"",
+			repo->uri, repo->signedby);
+	if (import <= 0) {
+		rv = EAGAIN;
+		goto out;
+	}
+
+	p = strdup(rkeyfile);
+	dbkeyd = dirname(p);
+	assert(dbkeyd);
+	if (access(dbkeyd, R_OK|W_OK) == -1) {
+		if (errno == ENOENT) {
+			xbps_mkpath(dbkeyd, 0755);
+		} else {
+			rv = errno;
+			xbps_dbg_printf(repo->xhp,
+			    "[repo] `%s' cannot create %s: %s\n",
+			    repo->uri, dbkeyd, strerror(errno));
+			free(p);
+			goto out;
+		}
+	}
+	free(p);
+
+	repokeyd = xbps_dictionary_create();
+	xbps_dictionary_set(repokeyd, "public-key", repo->pubkey);
+	xbps_dictionary_set_uint16(repokeyd, "public-key-size", repo->pubkey_size);
+	xbps_dictionary_set_cstring_nocopy(repokeyd, "signature-by", repo->signedby);
+
+	if (!xbps_dictionary_externalize_to_zfile(repokeyd, rkeyfile)) {
+		rv = errno;
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s' failed to externalize %s: %s\n",
+		    repo->uri, rkeyfile, strerror(rv));
+	}
+
+out:
+	if (repokeyd)
+		xbps_object_release(repokeyd);
+	if (rkeyfile)
+		free(rkeyfile);
+	return rv;
 }

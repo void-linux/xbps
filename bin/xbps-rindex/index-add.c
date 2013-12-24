@@ -37,25 +37,19 @@
 #include <xbps.h>
 #include "defs.h"
 
-/*
- * Adds a binary package into the index and removes old binary package
- * and entry when it's necessary.
- */
 int
 index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 {
-	xbps_array_t filespkgar, pkg_files, pkg_links, pkg_cffiles;
-	xbps_dictionary_t idx, idxfiles, newpkgd, newpkgfilesd, curpkgd;
+	xbps_array_t array, pkg_files, pkg_links, pkg_cffiles;
+	xbps_dictionary_t idx, idxfiles, idxpkgd, binpkgd, pkg_filesd, curpkgd;
 	xbps_object_t obj, fileobj;
 	struct xbps_repo *repo;
 	struct stat st;
-	const char *arch;
-	char *pkgver, *opkgver, *oarch, *pkgname, *sha256, *repodir;
-	char *tmprepodir;
+	uint64_t instsize;
+	const char *arch, *desc;
+	char *sha256, *pkgver, *opkgver, *oarch, *pkgname, *tmprepodir, *repodir;
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
-
-	idx = idxfiles = newpkgd = newpkgfilesd = curpkgd = NULL;
 
 	if ((tmprepodir = strdup(argv[0])) == NULL)
 		return ENOMEM;
@@ -66,14 +60,14 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	repodir = dirname(tmprepodir);
 
 	repo = xbps_repo_open(xhp, repodir);
-	if (repo == NULL) {
-		idx = xbps_dictionary_create();
-		idxfiles = xbps_dictionary_create();
-	} else {
+	if (repo && repo->idx) {
 		xbps_repo_open_idxfiles(repo);
 		idx = xbps_dictionary_copy(repo->idx);
 		idxfiles = xbps_dictionary_copy(repo->idxfiles);
 		xbps_repo_close(repo);
+	} else {
+		idx = xbps_dictionary_create();
+		idxfiles = xbps_dictionary_create();
 	}
 
 	/*
@@ -83,20 +77,17 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		/*
 		 * Read metadata props plist dictionary from binary package.
 		 */
-		newpkgd = xbps_get_pkg_plist_from_binpkg(argv[i],
+		binpkgd = xbps_get_pkg_plist_from_binpkg(argv[i],
 		    "./props.plist");
-		if (newpkgd == NULL) {
-			fprintf(stderr, "failed to read %s metadata for `%s',"
-			    " skipping!\n", XBPS_PKGPROPS, argv[i]);
+		if (binpkgd == NULL) {
+			fprintf(stderr, "failed to read %s metadata for `%s', skipping!\n", XBPS_PKGPROPS, argv[i]);
 			continue;
 		}
-		xbps_dictionary_get_cstring_nocopy(newpkgd, "architecture",
-		    &arch);
-		xbps_dictionary_get_cstring(newpkgd, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(binpkgd, "architecture", &arch);
+		xbps_dictionary_get_cstring(binpkgd, "pkgver", &pkgver);
 		if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
-			fprintf(stderr, "index: ignoring %s, unmatched "
-			    "arch (%s)\n", pkgver, arch);
-			xbps_object_release(newpkgd);
+			fprintf(stderr, "index: ignoring %s, unmatched arch (%s)\n", pkgver, arch);
+			xbps_object_release(binpkgd);
 			continue;
 		}
 		pkgname = xbps_pkg_name(pkgver);
@@ -121,10 +112,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			ret = xbps_cmpver(pkgver, opkgver);
 			if (ret <= 0) {
 				/* Same version or index version greater */
-				fprintf(stderr, "index: skipping `%s' "
-				    "(%s), already registered.\n",
-				    pkgver, arch);
-				xbps_object_release(newpkgd);
+				fprintf(stderr, "index: skipping `%s' (%s), already registered.\n", pkgver, arch);
+				xbps_object_release(binpkgd);
 				free(opkgver);
 				free(oarch);
 				free(pkgver);
@@ -141,75 +130,125 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			free(opkgver);
 			free(oarch);
 		}
+		idxpkgd = xbps_dictionary_create();
+		assert(idxpkgd);
 		/*
-		 * We have the dictionary now, add the required
-		 * objects for the index.
+		 * Only copy relevant objects from binpkg:
+		 * 	- architecture
+		 * 	- pkgver
+		 * 	- short_desc
+		 * 	- installed_size
+		 * 	- run_depends
+		 * 	- provides
+		 * 	- replaces
+		 * 	- shlib-requires
+		 */
+		if (!xbps_dictionary_set_cstring(idxpkgd, "architecture", arch)) {
+			free(pkgver);
+			free(pkgname);
+			return errno;
+		}
+		if (!xbps_dictionary_set_cstring(idxpkgd, "pkgver", pkgver)) {
+			free(pkgver);
+			free(pkgname);
+			return errno;
+		}
+		xbps_dictionary_get_cstring_nocopy(binpkgd, "short_desc", &desc);
+		if (!xbps_dictionary_set_cstring(idxpkgd, "short_desc", desc)) {
+			free(pkgver);
+			free(pkgname);
+			return errno;
+		}
+		xbps_dictionary_get_uint64(binpkgd, "installed_size", &instsize);
+		if (!xbps_dictionary_set_uint64(idxpkgd, "installed_size", instsize)) {
+			free(pkgver);
+			free(pkgname);
+			return errno;
+		}
+		array = xbps_dictionary_get(binpkgd, "run_depends");
+		if (xbps_array_count(array) && !xbps_dictionary_set(idxpkgd, "run_depends", array)) {
+			free(pkgver);
+			free(pkgname);
+			return errno;
+		}
+		array = xbps_dictionary_get(binpkgd, "provides");
+		if (xbps_array_count(array) && !xbps_dictionary_set(idxpkgd, "provides", array)) {
+			free(pkgver);
+			free(pkgname);
+			return errno;
+		}
+		array = xbps_dictionary_get(binpkgd, "replaces");
+		if (xbps_array_count(array) && !xbps_dictionary_set(idxpkgd, "replaces", array)) {
+			free(pkgver);
+			free(pkgname);
+			return errno;
+		}
+		array = xbps_dictionary_get(binpkgd, "shlib-requires");
+		if (xbps_array_count(array) && !xbps_dictionary_set(idxpkgd, "shlib-requires", array)) {
+			free(pkgver);
+			free(pkgname);
+			return errno;
+		}
+		/*
+		 * Add additional objects for repository ops:
+		 * 	- filename-size
+		 * 	- filename-sha256
 		 */
 		if ((sha256 = xbps_file_hash(argv[i])) == NULL) {
 			free(pkgver);
 			free(pkgname);
 			return errno;
 		}
-		if (!xbps_dictionary_set_cstring(newpkgd, "filename-sha256",
-		    sha256)) {
+		if (!xbps_dictionary_set_cstring(idxpkgd, "filename-sha256", sha256)) {
 			free(pkgver);
 			free(pkgname);
 			return errno;
 		}
-
-		free(sha256);
 		if (stat(argv[i], &st) == -1) {
 			free(pkgver);
 			free(pkgname);
 			return errno;
 		}
-
-		if (!xbps_dictionary_set_uint64(newpkgd, "filename-size",
-		    (uint64_t)st.st_size)) {
+		if (!xbps_dictionary_set_uint64(idxpkgd, "filename-size", (uint64_t)st.st_size)) {
 			free(pkgver);
 			free(pkgname);
 			return errno;
 		}
 		/*
-		 * Remove obsolete package objects.
-		 */
-		xbps_dictionary_remove(newpkgd, "pkgname");
-		xbps_dictionary_remove(newpkgd, "version");
-		/*
 		 * Add new pkg dictionary into the index.
 		 */
-		if (!xbps_dictionary_set(idx, pkgname, newpkgd)) {
+		if (!xbps_dictionary_set(idx, pkgname, idxpkgd)) {
 			free(pkgname);
 			return EINVAL;
 		}
-		free(pkgname);
 		flush = true;
 		printf("index: added `%s' (%s).\n", pkgver, arch);
+		xbps_object_release(idxpkgd);
+		xbps_object_release(binpkgd);
+		free(pkgname);
 		/*
 		 * Add new pkg dictionary into the index-files.
 		 */
 		found = false;
-		newpkgfilesd = xbps_get_pkg_plist_from_binpkg(argv[i],
-				"./files.plist");
-		if (newpkgfilesd == NULL) {
+		pkg_filesd = xbps_get_pkg_plist_from_binpkg(argv[i], "./files.plist");
+		if (pkg_filesd == NULL) {
 			free(pkgver);
 			return EINVAL;
 		}
 
-		/* Find out if binary pkg stored in index contain any file */
-		pkg_cffiles = xbps_dictionary_get(newpkgfilesd, "conf_files");
+		pkg_cffiles = xbps_dictionary_get(pkg_filesd, "conf_files");
 		if (xbps_array_count(pkg_cffiles))
 			found = true;
 		else
 			pkg_cffiles = NULL;
 
-		pkg_files = xbps_dictionary_get(newpkgfilesd, "files");
+		pkg_files = xbps_dictionary_get(pkg_filesd, "files");
 		if (xbps_array_count(pkg_files))
 			found = true;
 		else
 			pkg_files = NULL;
 
-		pkg_links = xbps_dictionary_get(newpkgfilesd, "links");
+		pkg_links = xbps_dictionary_get(pkg_filesd, "links");
 		if (xbps_array_count(pkg_links))
 			found = true;
 		else
@@ -217,45 +256,42 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 
 		/* If pkg does not contain any file, ignore it */
 		if (!found) {
-			xbps_object_release(newpkgfilesd);
-			xbps_object_release(newpkgd);
+			xbps_object_release(pkg_filesd);
 			free(pkgver);
 			continue;
 		}
 		/* create pkg files array */
-		filespkgar = xbps_array_create();
-		assert(filespkgar);
+		array = xbps_array_create();
+		assert(array);
 
 		/* add conf_files in pkg files array */
 		if (pkg_cffiles != NULL) {
 			for (unsigned int x = 0; x < xbps_array_count(pkg_cffiles); x++) {
 				obj = xbps_array_get(pkg_cffiles, x);
 				fileobj = xbps_dictionary_get(obj, "file");
-				xbps_array_add(filespkgar, fileobj);
+				xbps_array_add(array, fileobj);
 			}
 		}
-		/* add files array in pkg array */
+		/* add files array in pkg files array */
 		if (pkg_files != NULL) {
 			for (unsigned int x = 0; x < xbps_array_count(pkg_files); x++) {
 				obj = xbps_array_get(pkg_files, x);
 				fileobj = xbps_dictionary_get(obj, "file");
-				xbps_array_add(filespkgar, fileobj);
+				xbps_array_add(array, fileobj);
 			}
 		}
-		/* add links array in pkgd */
+		/* add links array in pkg files array */
 		if (pkg_links != NULL) {
 			for (unsigned int x = 0; x < xbps_array_count(pkg_links); x++) {
 				obj = xbps_array_get(pkg_links, x);
 				fileobj = xbps_dictionary_get(obj, "file");
-				xbps_array_add(filespkgar, fileobj);
+				xbps_array_add(array, fileobj);
 			}
 		}
-		xbps_object_release(newpkgfilesd);
-
 		/* add pkg files array into index-files */
-		xbps_dictionary_set(idxfiles, pkgver, filespkgar);
-		xbps_object_release(filespkgar);
-		xbps_object_release(newpkgd);
+		xbps_dictionary_set(idxfiles, pkgver, array);
+		xbps_object_release(array);
+		xbps_object_release(pkg_filesd);
 		free(pkgver);
 	}
 	/*
@@ -263,15 +299,12 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	 */
 	if (flush) {
 		if (!repodata_flush(xhp, repodir, idx, idxfiles, NULL)) {
-			fprintf(stderr, "failed to write repodata: %s\n",
-			    strerror(errno));
+			fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
 			return -1;
 		}
 	}
-	printf("index: %u packages registered.\n",
-	    xbps_dictionary_count(idx));
-	printf("index-files: %u packages registered.\n",
-	    xbps_dictionary_count(idxfiles));
+	printf("index: %u packages registered.\n", xbps_dictionary_count(idx));
+	printf("index-files: %u packages registered.\n", xbps_dictionary_count(idxfiles));
 
 	return rv;
 }

@@ -47,17 +47,11 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 
 	switch (xscd->state) {
 	/* notifications */
-	case XBPS_STATE_REPO_SIGVERIFIED:
-		printf("[*] %s: RSA signature verified\n", xscd->arg);
-		break;
-	case XBPS_STATE_REPO_SIGUNVERIFIED:
-		printf("[*] %s: RSA signature invalid! ignoring...\n", xscd->arg);
-		break;
 	case XBPS_STATE_TRANS_DOWNLOAD:
 		printf("\n[*] Downloading binary packages\n");
 		break;
 	case XBPS_STATE_TRANS_VERIFY:
-		printf("\n[*] Verifying binary package integrity\n");
+		printf("\n[*] Verifying package integrity\n");
 		break;
 	case XBPS_STATE_TRANS_RUN:
 		printf("\n[*] Running transaction tasks\n");
@@ -69,7 +63,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		printf("[*] Updating `%s' ...\n", xscd->arg);
 		break;
 	case XBPS_STATE_VERIFY:
-		printf("%s: checking binary pkg integrity ...\n", xscd->arg);
+		printf("%s\n", xscd->desc);
 		break;
 	case XBPS_STATE_CONFIG_FILE:
 		if (xscd->desc != NULL)

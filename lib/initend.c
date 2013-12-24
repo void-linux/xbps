@@ -93,9 +93,6 @@ xbps_init(struct xbps_handle *xhp)
 
 	assert(xhp != NULL);
 
-	if (xhp->initialized)
-		return 0;
-
 	if (xhp->conffile == NULL)
 		xhp->conffile = XBPS_CONF_DEF;
 
@@ -219,9 +216,6 @@ xbps_init(struct xbps_handle *xhp)
 			xbps_dbg_printf(xhp, "Repository[%u]=%s\n", i, repodir);
 		}
 	}
-
-	xhp->initialized = true;
-
 	return 0;
 }
 
@@ -230,18 +224,13 @@ xbps_end(struct xbps_handle *xhp)
 {
 	assert(xhp);
 
-	if (!xhp->initialized)
-		return;
-
 	xbps_pkgdb_release(xhp);
-	xbps_rpool_release(xhp);
 
 	if (xbps_object_type(xhp->pkgdb_revdeps) != XBPS_TYPE_UNKNOWN)
 		xbps_object_release(xhp->pkgdb_revdeps);
 
 	xbps_fetch_unset_cache_connection();
 	cfg_free(xhp->cfg);
-	xhp->initialized = false;
 }
 
 static void
