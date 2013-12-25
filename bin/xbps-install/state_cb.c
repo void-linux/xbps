@@ -89,8 +89,8 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		assert(pkgname);
 		newver = xbps_pkg_version(xscd->arg);
 		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "version", &instver);
-		printf("%s-%s: updating to %s ...\n", pkgname, instver, newver);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &instver);
+		printf("%s: updating to %s ...\n", instver, newver);
 		free(pkgname);
 		break;
 	/* success */
