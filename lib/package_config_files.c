@@ -34,21 +34,20 @@
  * Returns true if entry is a configuration file, false otherwise.
  */
 int HIDDEN
-xbps_entry_is_a_conf_file(xbps_dictionary_t propsd,
+xbps_entry_is_a_conf_file(xbps_dictionary_t filesd,
 			  const char *entry_pname)
 {
 	xbps_array_t array;
+	xbps_dictionary_t d;
 	const char *cffile;
 
-	assert(xbps_object_type(propsd) == XBPS_TYPE_DICTIONARY);
-	assert(entry_pname != NULL);
-
-	array = xbps_dictionary_get(propsd, "conf_files");
+	array = xbps_dictionary_get(filesd, "conf_files");
 	if (xbps_array_count(array) == 0)
 		return false;
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
-		xbps_array_get_cstring_nocopy(array, i, &cffile);
+		d = xbps_array_get(array, i);
+		xbps_dictionary_get_cstring_nocopy(d, "file", &cffile);
 		if (strcmp(cffile, entry_pname) == 0)
 			return true;
 	}

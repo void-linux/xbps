@@ -373,7 +373,7 @@ unpack_archive(struct xbps_handle *xhp,
 				 * "conf_files" array on its XBPS_PKGPROPS
 				 * dictionary.
 				 */
-				if (xbps_entry_is_a_conf_file(propsd, buf)) {
+				if (xbps_entry_is_a_conf_file(filesd, buf)) {
 					conf_file = true;
 					if (xhp->unpack_cb != NULL)
 						xucd.entry_is_conf = true;
