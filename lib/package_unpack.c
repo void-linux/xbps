@@ -68,8 +68,6 @@ find_pkg_symlink_target(xbps_dictionary_t d, const char *file)
 	const char *pkgfile, *tgt = NULL;
 	char *rfile;
 
-	assert(d);
-
 	links = xbps_dictionary_get(d, "links");
 	for (unsigned int i = 0; i < xbps_array_count(links); i++) {
 		rfile = strchr(file, '.') + 1;
@@ -181,9 +179,6 @@ unpack_archive(struct xbps_handle *xhp,
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
 	bool skip_extract, force, metafile, xucd_stats;
 	uid_t euid;
-
-	assert(xbps_object_type(pkg_repod) == XBPS_TYPE_DICTIONARY);
-	assert(ar != NULL);
 
 	propsd = filesd = old_filesd = NULL;
 	force = preserve = update = conf_file = file_exists = false;
