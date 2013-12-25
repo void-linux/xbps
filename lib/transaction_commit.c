@@ -197,7 +197,6 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	const char *pkgver, *tract;
-	char *pkgname;
 	int rv = 0;
 	bool update;
 
@@ -251,7 +250,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			 * Remove package.
 			 */
 			xbps_dictionary_get_bool(obj, "remove-and-update", &update);
-			rv = xbps_remove_pkg(xhp, pkgver, update, false);
+			rv = xbps_remove_pkg(xhp, pkgver, update);
 			if (rv != 0) {
 				xbps_dbg_printf(xhp, "[trans] failed to "
 				    "remove %s\n", pkgver);
@@ -274,24 +273,17 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			 * Update a package: execute pre-remove action of
 			 * existing package before unpacking new version.
 			 */
-			pkgname = xbps_pkg_name(pkgver);
-			assert(pkgname);
-			if (xbps_pkgdb_get_pkg(xhp, pkgname)) {
-				xbps_set_cb_state(xhp, XBPS_STATE_UPDATE, 0,
-				    pkgver, NULL);
-				rv = xbps_remove_pkg(xhp, pkgver, true, false);
-				if (rv != 0) {
-					xbps_set_cb_state(xhp,
-					    XBPS_STATE_UPDATE_FAIL,
-					    rv, pkgver,
-					    "%s: [trans] failed to update "
-					    "package `%s'", pkgver,
-					    strerror(rv));
-					free(pkgname);
-					goto out;
-				}
+			xbps_set_cb_state(xhp, XBPS_STATE_UPDATE, 0, pkgver, NULL);
+			rv = xbps_remove_pkg(xhp, pkgver, true);
+			if (rv != 0) {
+				xbps_set_cb_state(xhp,
+				    XBPS_STATE_UPDATE_FAIL,
+				    rv, pkgver,
+				    "%s: [trans] failed to update "
+				    "package `%s'", pkgver,
+				    strerror(rv));
+				goto out;
 			}
-			free(pkgname);
 		} else {
 			/* Install a package */
 			xbps_set_cb_state(xhp, XBPS_STATE_INSTALL, 0,
