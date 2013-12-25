@@ -179,7 +179,7 @@ unpack_archive(struct xbps_handle *xhp,
 	char *pkgname, *dname, *buf, *buf2, *p, *p2;
 	int ar_rv, rv, entry_type, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
-	bool softreplace, skip_extract, force, metafile, xucd_stats;
+	bool skip_extract, force, metafile, xucd_stats;
 	uid_t euid;
 
 	assert(xbps_object_type(pkg_repod) == XBPS_TYPE_DICTIONARY);
@@ -187,11 +187,10 @@ unpack_archive(struct xbps_handle *xhp,
 
 	propsd = filesd = old_filesd = NULL;
 	force = preserve = update = conf_file = file_exists = false;
-	skip_obsoletes = softreplace = metafile = xucd_stats = false;
+	skip_obsoletes = metafile = xucd_stats = false;
 
 	xbps_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	xbps_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
-	xbps_dictionary_get_bool(pkg_repod, "softreplace", &softreplace);
 	xbps_dictionary_get_cstring_nocopy(pkg_repod,
 	    "transaction", &transact);
 
@@ -566,16 +565,15 @@ unpack_archive(struct xbps_handle *xhp,
 	}
 	/*
 	 * Skip checking for obsolete files on:
-	 * 	- New package installation without "softreplace" keyword.
+	 * 	- New package installation.
 	 * 	- Package with "preserve" keyword.
 	 * 	- Package with "skip-obsoletes" keyword.
 	 */
-	if (skip_obsoletes || preserve || (!softreplace && !update))
+	if (skip_obsoletes || preserve || !update)
 		goto out;
 	/*
 	 * Check and remove obsolete files on:
 	 * 	- Package upgrade.
-	 * 	- Package with "softreplace" keyword.
 	 */
 	old_filesd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 	if (old_filesd == NULL)
