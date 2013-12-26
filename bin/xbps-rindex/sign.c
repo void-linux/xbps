@@ -183,7 +183,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		/*
 		 * Skip pkg if file signature exists
 		 */
-		if ((binpkg_sig_fd = open(binpkg_sig, O_RDONLY)) == 0) {
+		if ((binpkg_sig_fd = access(binpkg_sig, R_OK)) == 0) {
 			fprintf(stdout, "skipping %s, file signature found.\n", pkgver);
 			free(binpkg);
 			free(binpkg_sig);
