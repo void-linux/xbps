@@ -27,7 +27,6 @@
 #ifndef _XBPS_API_H_
 #define _XBPS_API_H_
 
-#define _XOPEN_SOURCE	700	/* required by PATH_MAX et al */
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -42,6 +41,8 @@
 
 #include <archive.h>
 #include <archive_entry.h>
+
+#define XBPS_MAXPATH	256
 
 /**
  * @file include/xbps.h
@@ -542,21 +543,21 @@ struct xbps_handle {
 	 * Root directory for all operations in XBPS.
 	 * If unset,  defaults to '/'.
 	 */
-	char rootdir[PATH_MAX-1];
+	char rootdir[XBPS_MAXPATH-1];
 	/**
 	 * @var cachedir
 	 *
 	 * Cache directory to store downloaded binary packages.
 	 * If unset, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
 	 */
-	char cachedir[PATH_MAX-1];
+	char cachedir[XBPS_MAXPATH-1];
 	/**
 	 * @var metadir
 	 *
 	 * Metadata directory for all operations in XBPS.
 	 * If unset, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
 	 */
-	char metadir[PATH_MAX-1];
+	char metadir[XBPS_MAXPATH-1];
 	/**
 	 * @var native_arch
 	 *
