@@ -27,6 +27,8 @@
 #ifndef _XBPS_API_H_
 #define _XBPS_API_H_
 
+#define _XOPEN_SOURCE	600	/* required by PATH_MAX et al */
+
 #include <stdio.h>
 #include <inttypes.h>
 #include <limits.h>
