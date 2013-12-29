@@ -206,7 +206,6 @@ fi
 
 case "$OS" in
 linux)
-	echo "CPPFLAGS += 	-D_XOPEN_SOURCE=700" >>$CONFIG_MK
 	echo "CPPFLAGS += 	-D_FILE_OFFSET_BITS=64" >> $CONFIG_MK
 	;;
 *)
