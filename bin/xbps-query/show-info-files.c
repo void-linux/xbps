@@ -291,14 +291,10 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 {
 	xbps_dictionary_t pkgd;
 
-	pkgd = xbps_rpool_get_pkg_plist(xhp, pattern, "./props.plist");
-	if (pkgd == NULL) {
-                if (errno != ENOTSUP && errno != ENOENT) {
-			fprintf(stderr, "Unexpected error: %s\n",
-			    strerror(errno));
-			return errno;
-		}
-	}
+	if (((pkgd = xbps_rpool_get_pkg(xhp, pattern)) == NULL) &&
+	    ((pkgd = xbps_rpool_get_virtualpkg(xhp, pattern)) == NULL))
+		return errno;
+
 	if (option)
 		show_pkg_info_one(pkgd, option);
 	else
