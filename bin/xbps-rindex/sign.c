@@ -260,6 +260,21 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		free(buf);
 		xbps_object_release(data);
 		/*
+		 * XXX remove this code when 0.29 is released.
+		 * Sign the index for compatibility with 0.27.
+		 */
+		if ((buf = xbps_dictionary_externalize(idx)) == NULL) {
+			fprintf(stderr, "failed to externalize repository index: %s\n", strerror(errno));
+			return errno;
+		}
+		if (!rsa_sign_buf(rsa, buf, strlen(buf), &sig, &siglen)) {
+			fprintf(stderr, "failed to create repository index signature: %s\n", strerror(errno));
+			return errno;
+		}
+		data = xbps_data_create_data_nocopy(sig, siglen);
+		xbps_dictionary_set(meta, "signature", data);
+		free(buf);
+		/*
 		 * and finally write our repodata file!
 		 */
 		if (!repodata_flush(xhp, repodir, idx, idxfiles, meta)) {
