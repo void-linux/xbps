@@ -1,4 +1,4 @@
-xbps-0.28 (2014-??-??):
+xbps-0.28 (2014-01-03):
 
  * Implemented Per package RSA signatures, replacing the repository index
    signature from 0.27. There's now a `<binpkg>.sig` file with the RSA signature
