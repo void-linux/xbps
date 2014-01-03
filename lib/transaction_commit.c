@@ -249,6 +249,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			/*
 			 * Remove package.
 			 */
+			update = false;
 			xbps_dictionary_get_bool(obj, "remove-and-update", &update);
 			rv = xbps_remove_pkg(xhp, pkgver, update);
 			if (rv != 0) {
