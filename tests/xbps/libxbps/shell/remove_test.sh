@@ -20,7 +20,7 @@ keep_base_symlinks_body() {
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -r root --repository=some_repo -y foo
+	xbps-install -r root --repository=$PWD/some_repo -y foo
 	atf_check_equal $? 0
 	xbps-remove -r root -y foo
 	atf_check_equal $? 0
