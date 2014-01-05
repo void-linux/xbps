@@ -21,8 +21,6 @@ The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and rele
  * **Low memory** footprint.
  * **Fast** dependency resolver and sorting algorithms.
 
-The latest stable version **0.26.2** was released on **September 30th, 2013**.
-
 ### Getting source code
 
 Starting with **0.26** there are not source tarballs anymore. **git** must be used to clone
@@ -36,7 +34,7 @@ See `git tag -l` to list all available stable releases.
 
 To build this you'll need:
 
-  - A C99 compiler
+  - A C99 compiler (clang and gcc tested)
   - [GNU make](http://www.gnu.org/software/make/)
   - [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
   - [zlib](http://www.zlib.net)
