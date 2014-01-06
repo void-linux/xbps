@@ -163,11 +163,13 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		goto out;
 	}
 	if ((meta = repo_get_dict(repo))) {
-		repo->is_signed = true;
 		xbps_dictionary_get_cstring_nocopy(meta, "signature-by", &repo->signedby);
-		repo->pubkey = xbps_dictionary_get(meta, "public-key");
 		xbps_dictionary_get_uint16(meta, "public-key-size", &repo->pubkey_size);
-		repo->hexfp = xbps_pubkey2fp(repo->xhp, repo->pubkey);
+		repo->pubkey = xbps_dictionary_get(meta, "public-key");
+		if (repo->pubkey) {
+			repo->is_signed = true;
+			repo->hexfp = xbps_pubkey2fp(repo->xhp, repo->pubkey);
+		}
 	}
 
 out:
