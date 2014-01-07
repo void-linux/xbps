@@ -27,7 +27,9 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
+#define _BSD_SOURCE	/* required by strlcpy with musl */
 #include <string.h>
+#undef _BSD_SOURCE
 #include <errno.h>
 #include <stdarg.h>
 #include <dirent.h>
