@@ -92,8 +92,6 @@
 
 #endif
 
-__BEGIN_DECLS
-
 /**
  * @private
  * From lib/external/dewey.c
@@ -262,7 +260,5 @@ void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *,
  * From lib/plist_find.c
  */
 const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *, bool);
-
-__END_DECLS
 
 #endif /* !_XBPS_API_IMPL_H_ */
