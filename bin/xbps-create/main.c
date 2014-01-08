@@ -354,7 +354,7 @@ process_xentry(const char *key, const char *mutable_files)
 static void
 process_destdir(const char *mutable_files)
 {
-	if (nftw(".", ftw_cb, 20, FTW_PHYS|FTW_MOUNT) != 0)
+	if (nftw(".", ftw_cb, 20, FTW_PHYS) != 0)
 		die("failed to process destdir files (nftw):");
 
 	/* Process regular files */
