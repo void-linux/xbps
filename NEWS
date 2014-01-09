@@ -1,5 +1,13 @@
 xbps-0.29 (???):
 
+ * Added XBPS_ARCH environment variable to override tha native architecture
+   (uname(2) machine). This allows us to use "fake" architectures, for example
+   to use packages built for a different C library.
+
+ * Miscellaneous fixes to make XBPS work with the musl C library.
+
+ * Fixed issue #27: https://github.com/voidlinux/xbps/issues/27
+
 xbps-0.28 (2014-01-03):
 
  * Implemented Per package RSA signatures, replacing the repository index
