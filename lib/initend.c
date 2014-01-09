@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2013 Juan Romero Pardines.
+ * Copyright (c) 2011-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -89,7 +89,7 @@ xbps_init(struct xbps_handle *xhp)
 	};
 	struct utsname un;
 	char *buf;
-	const char *repodir;
+	const char *repodir, *native_arch;
 	int rv, cc, cch;
 	bool syslog_enabled = false;
 
@@ -170,8 +170,12 @@ xbps_init(struct xbps_handle *xhp)
 	}
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
-	uname(&un);
-	strlcpy(xhp->native_arch, un.machine, sizeof(xhp->native_arch));
+	if ((native_arch = getenv("XBPS_ARCH")) != NULL) {
+		strlcpy(xhp->native_arch, native_arch, sizeof(xhp->native_arch));
+	} else {
+		uname(&un);
+		strlcpy(xhp->native_arch, un.machine, sizeof(xhp->native_arch));
+	}
 	assert(xhp->native_arch);
 
 	if (xhp->cfg == NULL) {

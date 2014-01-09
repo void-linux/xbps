@@ -1,4 +1,4 @@
-.Dd November 2, 2013
+.Dd January 9, 2014
 .Os Void Linux
 .Dt xbps-rindex 8
 .Sh NAME
@@ -51,14 +51,20 @@ argument not set, it defaults to
 .Sy ~/.ssh/id_rsa .
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_ARCH
+Overrides
+.Xr uname 2
+machine result with this value. Useful to install packages with a fake
+architecture.
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value. This variable differs from
+.Sy XBPS_ARCH
+in that it allows you to install packages partially, because
+configuration phase is skipped (the target binaries might not be compatible with
+the native architecture).
 .It Sy XBPS_PASSPHRASE
 If this is set, it will use this passphrase for the RSA private key when signing
 a repository. Otherwise it will ask you to enter the passphrase on the terminal.
-.It Sy XBPS_TARGET_ARCH
-Overrides
-.Xr uname 2
-machine result with this value. Useful to install packages of a different
-architecture.
 .Sh SEE ALSO
 .Xr xbps-create 8 ,
 .Xr xbps-dgraph 8 ,

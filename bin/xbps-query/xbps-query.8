@@ -1,4 +1,4 @@
-.Dd December 4, 2013
+.Dd January 9, 2014
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -155,11 +155,17 @@ Show the reverse dependencies for
 .Ar PKG .
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
-.It Sy XBPS_TARGET_ARCH
+.It Sy XBPS_ARCH
 Overrides
 .Xr uname 2
-machine result with this value. Useful to install packages of a different
+machine result with this value. Useful to install packages with a fake
 architecture.
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value. This variable differs from
+.Sy XBPS_ARCH
+in that it allows you to install packages partially, because
+configuration phase is skipped (the target binaries might not be compatible with
+the native architecture).
 .Sh FILES
 .Bl -tag -width /var/db/xbps/.<pkgname>.plist
 .It Ar /etc/xbps/xbps.conf
