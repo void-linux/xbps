@@ -1,4 +1,4 @@
-xbps-0.29 (???):
+xbps-0.29 (2014-01-09):
 
  * Added XBPS_ARCH environment variable to override tha native architecture
    (uname(2) machine). This allows us to use "fake" architectures, for example
