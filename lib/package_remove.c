@@ -54,13 +54,11 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		      const char *key,
 		      const char *pkgver)
 {
-	struct stat st;
 	xbps_array_t array;
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	const char *file, *sha256, *curobj = NULL;
 	char *path = NULL;
-	char buf[PATH_MAX];
 	int rv = 0;
 	bool found;
 
@@ -136,22 +134,6 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 				    strerror(rv));
 				free(path);
 				break;
-			}
-		} else if (strcmp(key, "links") == 0) {
-			/*
-			 * All regular files from package were removed at this
-			 * point, so we will only remove dangling symlinks.
-			 */
-			if (realpath(path, buf) == NULL) {
-				if (errno != ENOENT && errno != ELOOP) {
-					free(path);
-					rv = errno;
-					break;
-				}
-			}
-			if (stat(buf, &st) == 0) {
-				free(path);
-				continue;
 			}
 		}
 		/*

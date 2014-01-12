@@ -1,3 +1,8 @@
+xbps-0.30 (??):
+
+ * Fixed a bug where in some cases valid symlinks in a package were not removed
+   (just dangling symlinks were removed).
+
 xbps-0.29 (2014-01-09):
 
  * Added XBPS_ARCH environment variable to override tha native architecture
