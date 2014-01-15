@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -162,7 +162,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
-	xbps_dictionary_t propsd, filesd, old_filesd;
+	xbps_dictionary_t propsd, filesd, metapropsd;
 	xbps_array_t array, obsoletes;
 	xbps_object_t obj;
 	const struct stat *entry_statp;
@@ -172,22 +172,21 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
-	unsigned int entry_idx = 0;
 	const char *file, *entry_pname, *transact,  *tgtlnk;
 	char *pkgname, *dname, *buf, *buf2, *p, *p2;
 	int ar_rv, rv, entry_type, flags;
 	bool preserve, update, conf_file, file_exists, skip_obsoletes;
-	bool skip_extract, force, metafile, xucd_stats;
+	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
-	propsd = filesd = old_filesd = NULL;
+	propsd = filesd = metapropsd = NULL;
 	force = preserve = update = conf_file = file_exists = false;
-	skip_obsoletes = metafile = xucd_stats = false;
+	skip_obsoletes = xucd_stats = false;
+	ar_rv = rv = entry_type = flags = 0;
 
 	xbps_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	xbps_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
-	xbps_dictionary_get_cstring_nocopy(pkg_repod,
-	    "transaction", &transact);
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "transaction", &transact);
 
 	euid = geteuid();
 
@@ -203,6 +202,109 @@ unpack_archive(struct xbps_handle *xhp,
 	 * Process the archive files.
 	 */
 	flags = set_extract_flags(euid);
+
+	/*
+	 * First get all metadata files on archive in this order:
+	 * 	- INSTALL
+	 * 	- REMOVE
+	 * 	- props.plist
+	 * 	- files.plist
+	 *
+	 * The XBPS package must contain props and files plists, otherwise
+	 * it's not a valid package.
+	 */
+	for (uint8_t i = 0; i < 4; i++) {
+		ar_rv = archive_read_next_header(ar, &entry);
+		if (ar_rv == ARCHIVE_EOF || ar_rv == ARCHIVE_FATAL)
+			break;
+
+		entry_pname = archive_entry_pathname(entry);
+		entry_size = archive_entry_size(entry);
+
+		if (strcmp("./INSTALL", entry_pname) == 0) {
+			/*
+			 * Store file in a buffer to execute it later.
+			 */
+			instbufsiz = entry_size;
+			instbuf = malloc(entry_size);
+			assert(instbuf);
+			if (archive_read_data(ar, instbuf, entry_size) != entry_size) {
+				rv = EINVAL;
+				goto out;
+			}
+		} else if (strcmp("./REMOVE", entry_pname) == 0) {
+			/*
+			 * Store file in a buffer to execute it later.
+			 */
+			rembufsiz = entry_size;
+			rembuf = malloc(entry_size);
+			assert(rembuf);
+			if (archive_read_data(ar, rembuf, entry_size) != entry_size) {
+				rv = EINVAL;
+				goto out;
+			}
+		} else if (strcmp("./props.plist", entry_pname) == 0) {
+			propsd = xbps_archive_get_dictionary(ar, entry);
+			if (propsd == NULL) {
+				rv = EINVAL;
+				goto out;
+			}
+		} else if (strcmp("./files.plist", entry_pname) == 0) {
+			filesd = xbps_archive_get_dictionary(ar, entry);
+			if (filesd == NULL) {
+				rv = EINVAL;
+				goto out;
+			}
+		}
+		if (propsd && filesd)
+			break;
+	}
+	/*
+	 * If there was any error extracting files from archive, error out.
+	 */
+	if (ar_rv == ARCHIVE_FATAL) {
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
+		    "%s: [unpack] 1: failed to extract files: %s",
+		    pkgver, archive_error_string(ar));
+		rv = EINVAL;
+		goto out;
+	}
+	/*
+	 * Bail out if required metadata files are not in archive.
+	 */
+	if (propsd == NULL || filesd == NULL) {
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, ENODEV, pkgver,
+		    "%s: [unpack] invalid binary package `%s'.", pkgver, fname);
+		rv = ENODEV;
+		goto out;
+	}
+	/*
+	 * Create new metaplist file before unpacking any real file.
+	 */
+	metapropsd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
+	rv = create_pkg_metaplist(xhp, pkgname, pkgver,
+	    propsd, filesd, instbuf, instbufsiz, rembuf, rembufsiz);
+	if (rv != 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
+		    "%s: [unpack] failed to create metaplist file: %s",
+		    pkgver, strerror(rv));
+		goto out;
+	}
+	/*
+	 * Execute INSTALL "pre" ACTION before unpacking files.
+	 */
+	if (instbuf != NULL) {
+		rv = xbps_pkg_exec_buffer(xhp, instbuf, instbufsiz, pkgver, "pre", update);
+		if (rv != 0) {
+			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
+			    "%s: [unpack] INSTALL script failed to execute pre ACTION: %s",
+			    pkgver, strerror(rv));
+			goto out;
+		}
+	}
+	/*
+	 * Unpack all files on archive now.
+	 */
 	for (;;) {
 		ar_rv = archive_read_next_header(ar, &entry);
 		if (ar_rv == ARCHIVE_EOF || ar_rv == ARCHIVE_FATAL)
@@ -220,100 +322,6 @@ unpack_archive(struct xbps_handle *xhp,
 		if (entry_type == AE_IFDIR) {
 			archive_read_data_skip(ar);
 			continue;
-		}
-		if (strcmp("./INSTALL", entry_pname) == 0) {
-			/*
-			 * Store file in a buffer and execute
-			 * the "pre" action from it.
-			 */
-			instbufsiz = entry_size;
-			instbuf = malloc(entry_size);
-			assert(instbuf);
-
-			if (archive_read_data(ar, instbuf, entry_size) !=
-			    entry_size) {
-				rv = EINVAL;
-				goto out;
-			}
-			rv = xbps_pkg_exec_buffer(xhp, instbuf, instbufsiz,
-					pkgver, "pre", update);
-			if (rv != 0) {
-				xbps_set_cb_state(xhp,
-				    XBPS_STATE_UNPACK_FAIL,
-				    rv, pkgver,
-				    "%s: [unpack] INSTALL script failed "
-				    "to execute pre ACTION: %s",
-				    pkgver, strerror(rv));
-				goto out;
-			}
-			continue;
-
-		} else if (strcmp("./REMOVE", entry_pname) == 0) {
-			/* store file in a buffer */
-			rembufsiz = entry_size;
-			rembuf = malloc(entry_size);
-			assert(rembuf);
-			if (archive_read_data(ar, rembuf, entry_size) !=
-			    entry_size) {
-				rv = EINVAL;
-				goto out;
-			}
-			continue;
-
-		} else if (strcmp("./files.plist", entry_pname) == 0) {
-			filesd = xbps_archive_get_dictionary(ar, entry);
-			if (filesd == NULL) {
-				rv = errno;
-				goto out;
-			}
-			continue;
-		} else if (strcmp("./props.plist", entry_pname) == 0) {
-			propsd = xbps_archive_get_dictionary(ar, entry);
-			if (propsd == NULL) {
-				rv = errno;
-				goto out;
-			}
-			continue;
-		}
-		/*
-		 * If XBPS_PKGFILES or XBPS_PKGPROPS weren't found
-		 * in the archive at this phase, skip all data.
-		 */
-		if (propsd == NULL || filesd == NULL) {
-			archive_read_data_skip(ar);
-			/*
-			 * If we have processed 4 entries and the two
-			 * required metadata files weren't found, bail out.
-			 * This is not an XBPS binary package.
-			 */
-			if (entry_idx >= 3) {
-				xbps_set_cb_state(xhp,
-				    XBPS_STATE_UNPACK_FAIL, ENODEV, pkgver,
-				    "%s: [unpack] invalid binary package `%s'.",
-				    pkgver, fname);
-				rv = ENODEV;
-				goto out;
-			}
-
-			entry_idx++;
-			continue;
-		}
-		/*
-		 * XXX: duplicate code.
-		 * Create the metaplist file before unpacking any real file.
-		 */
-		if (!metafile) {
-			rv = create_pkg_metaplist(xhp, pkgname, pkgver,
-			    propsd, filesd, instbuf, instbufsiz,
-			    rembuf, rembufsiz);
-			if (rv != 0) {
-				xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-				    rv, pkgver,
-				    "%s: [unpack] failed to create metaplist file: %s",
-				    pkgver, strerror(rv));
-				goto out;
-			}
-			metafile = true;
 		}
 		/*
 		 * Prepare unpack callback ops.
@@ -385,6 +393,7 @@ unpack_archive(struct xbps_handle *xhp,
 						 */
 						skip_extract = true;
 					}
+					rv = 0;
 				} else {
 					rv = xbps_file_hash_check_dictionary(
 					    xhp, filesd, "files", buf);
@@ -407,6 +416,7 @@ unpack_archive(struct xbps_handle *xhp,
 						    pkgver, entry_pname);
 						skip_extract = true;
 					}
+					rv = 0;
 				}
 			}
 		} else if (!force && (entry_type == AE_IFLNK)) {
@@ -491,7 +501,6 @@ unpack_archive(struct xbps_handle *xhp,
 			    "mode to %s.\n", pkgver, entry_pname,
 			    archive_entry_strmode(entry));
 		}
-
 		if (!update && conf_file && file_exists && !skip_extract) {
 			/*
 			 * If installing new package preserve old configuration
@@ -506,7 +515,6 @@ unpack_archive(struct xbps_handle *xhp,
 			    "Renamed old configuration file "
 			    "`%s' to `%s.old'.", entry_pname, entry_pname);
 		}
-
 		if (!force && skip_extract) {
 			archive_read_data_skip(ar);
 			continue;
@@ -520,11 +528,10 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Extract entry from archive.
 		 */
 		if (archive_read_extract(ar, entry, flags) != 0) {
-			rv = archive_errno(ar);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-			    rv, pkgver,
+			    archive_errno(ar), pkgver,
 			    "%s: [unpack] failed to extract file `%s': %s",
-			    pkgver, entry_pname, strerror(rv));
+			    pkgver, entry_pname, archive_error_string(ar));
 		} else {
 			if (xhp->unpack_cb != NULL) {
 				xucd.entry_extract_count++;
@@ -533,48 +540,32 @@ unpack_archive(struct xbps_handle *xhp,
 		}
 	}
 	/*
-	 * XXX: duplicate code.
-	 * Create the metaplist file if it wasn't created before.
-	 */
-	if (propsd && filesd && !metafile) {
-		rv = create_pkg_metaplist(xhp, pkgname, pkgver,
-		    propsd, filesd, instbuf, instbufsiz,
-		    rembuf, rembufsiz);
-		if (rv != 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-			    rv, pkgver,
-			    "%s: [unpack] failed to create metaplist file: %s",
-			    pkgver, strerror(rv));
-			goto out;
-		}
-	}
-	/*
 	 * If there was any error extracting files from archive, error out.
 	 */
-	if ((rv = archive_errno(ar)) != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-		    rv, pkgver, NULL,
+	if (ar_rv == ARCHIVE_FATAL) {
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
 		    "%s: [unpack] failed to extract files: %s",
-		    pkgver, fname, archive_error_string(ar));
+		    pkgver, archive_error_string(ar));
 		goto out;
 	}
 	/*
 	 * Skip checking for obsolete files on:
-	 * 	- New package installation.
 	 * 	- Package with "preserve" keyword.
 	 * 	- Package with "skip-obsoletes" keyword.
 	 */
-	if (skip_obsoletes || preserve || !update)
+	if (skip_obsoletes || preserve) {
+		xbps_dbg_printf(xhp, "%s: skipping obsoletes\n", pkgver);
 		goto out;
+	}
 	/*
 	 * Check and remove obsolete files on:
+	 * 	- Package reinstall.
 	 * 	- Package upgrade.
 	 */
-	old_filesd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
-	if (old_filesd == NULL)
+	if (metapropsd == NULL || !xbps_dictionary_count(metapropsd))
 		goto out;
 
-	obsoletes = xbps_find_pkg_obsoletes(xhp, old_filesd, filesd);
+	obsoletes = xbps_find_pkg_obsoletes(xhp, metapropsd, filesd);
 	for (unsigned int i = 0; i < xbps_array_count(obsoletes); i++) {
 		obj = xbps_array_get(obsoletes, i);
 		file = xbps_string_cstring_nocopy(obj);
@@ -591,7 +582,7 @@ unpack_archive(struct xbps_handle *xhp,
 		    0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
 		xbps_object_release(obj);
 	}
-	xbps_object_release(old_filesd);
+	xbps_object_release(metapropsd);
 
 out:
 	if (xbps_object_type(filesd) == XBPS_TYPE_DICTIONARY)
@@ -690,8 +681,7 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		goto out;
 	}
 	if ((rv = unpack_archive(xhp, pkg_repod, pkgver, bpkg, ar)) != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-		    rv, pkgver,
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
 		    "%s: [unpack] failed to unpack files from archive: %s",
 		    pkgver, strerror(rv));
 		goto out;

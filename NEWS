@@ -1,5 +1,8 @@
 xbps-0.30 (??):
 
+ * When reinstalling a package (or downgrading) also check for obsolete
+   files and remove them if it's needed.
+
  * When reinstalling a package (or downgrading) make sure to also respect
    its installation mode (automatic or manual).
 
