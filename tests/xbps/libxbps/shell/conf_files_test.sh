@@ -18,7 +18,7 @@ tc1_body() {
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -y a
+	xbps-install -C null.conf -r rootdir --repository=$PWD -y a
 	atf_check_equal $? 0
 
 	sed -e 's,fooblah,blahfoo,' -i rootdir/cf1.conf
@@ -29,7 +29,7 @@ tc1_body() {
 	xbps-rindex -a *.xbps
 	rm -rf pkg_a
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -yu
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yu
 	atf_check_equal $? 0
 	result="$(cat rootdir/cf1.conf)"
 	rval=1
@@ -58,7 +58,7 @@ tc2_body() {
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -y a
+	xbps-install -C null.conf -r rootdir --repository=$PWD -y a
 	atf_check_equal $? 0
 
 	sed -e 's,fooblah,blahfoo,' -i rootdir/cf1.conf
@@ -71,7 +71,7 @@ tc2_body() {
 	xbps-rindex -a *.xbps
 	rm -rf pkg_a
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -yu
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yu
 	atf_check_equal $? 0
 	result="$(cat rootdir/cf1.conf)"
 	rval=1
@@ -105,7 +105,7 @@ tc3_body() {
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -y a
+	xbps-install -C null.conf -r rootdir --repository=$PWD -y a
 	atf_check_equal $? 0
 
 	sed -e 's,fooblah,blahfoo,' -i rootdir/cf1.conf
@@ -118,7 +118,7 @@ tc3_body() {
 	xbps-rindex -a *.xbps
 	rm -rf pkg_a
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -yu
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yu
 	atf_check_equal $? 0
 	result="$(cat rootdir/cf1.conf)"
 	rval=1

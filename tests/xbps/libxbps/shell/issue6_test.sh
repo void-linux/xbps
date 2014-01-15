@@ -24,7 +24,7 @@ issue6_body() {
 	atf_check_equal $? 0
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -y a
+	xbps-install -C null.conf -r rootdir --repository=$PWD -y a
 	atf_check_equal $? 0
 	mkdir -p rootdir/usr/lib/firefox/dictionaries
 	mkdir -p rootdir/usr/lib/firefox/hyphenation
@@ -36,7 +36,7 @@ issue6_body() {
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -yu
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yu
 	atf_check_equal $? 0
 	tgt1=$(readlink rootdir/usr/lib/firefox/dictionaries)
 	tgt2=$(readlink rootdir/usr/lib/firefox/hyphenation)

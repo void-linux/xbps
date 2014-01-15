@@ -22,7 +22,7 @@ issue18_body() {
 	atf_check_equal $? 0
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -y A B
+	xbps-install -C null.conf -r rootdir --repository=$PWD -y A B
 	atf_check_equal $? 0
 
 	xbps-create -A noarch -n A-0.2_1 -s "pkg A" --conflicts "B<0.1_2" pkg_A
@@ -31,7 +31,7 @@ issue18_body() {
 	atf_check_equal $? 0
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -r rootdir --repository=$PWD -yu
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yu
 	atf_check_equal $? 0
 }
 
