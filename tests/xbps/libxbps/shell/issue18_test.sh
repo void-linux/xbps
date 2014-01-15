@@ -8,7 +8,7 @@
 #	Generate pkg B-0.1_2.
 #	Update all packages.
 
-atf_test_case issue18 cleanup
+atf_test_case issue18
 
 issue18_head() {
 	atf_set "descr" "xbps issue #18 (https://github.com/xtraeme/xbps/issues/18)"
@@ -33,12 +33,6 @@ issue18_body() {
 	atf_check_equal $? 0
 	xbps-install -r rootdir --repository=$PWD -yu
 	atf_check_equal $? 0
-}
-
-issue18_cleanup() {
-	rm -f *.xbps *-repodata
-	rm -rf rootdir
-	rmdir pkg_A pkg_B
 }
 
 atf_init_test_cases() {
