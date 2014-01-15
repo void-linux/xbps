@@ -31,7 +31,7 @@ issue20_body() {
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -C null.conf -r rootdir --repository=$PWD -y a
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yv a
 	atf_check_equal $? 0
 
 	mkdir pkg_a
@@ -42,7 +42,7 @@ issue20_body() {
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -C null.conf -r rootdir --repository=$PWD -yu
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yuv
 	atf_check_equal $? 0
 	tgt=$(readlink rootdir/foo)
 	rval=1
