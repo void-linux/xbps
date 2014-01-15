@@ -71,6 +71,10 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	assert(pkg != NULL);
 
 	/*
+	 * Find out if pkg is installed first.
+	 */
+	pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg);
+	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
 	if (action == TRANS_INSTALL) {
@@ -81,7 +85,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 			return ENOENT;
 		}
 	} else {
-		if ((pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg)) == NULL)
+		if (pkg_pkgdb == NULL)
 			return ENODEV;
 
 		reason = "update";
@@ -105,7 +109,12 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 			    repopkgver, instpkgver, repoloc);
 			return EEXIST;
 		}
-		/* respect current install mode from pkgdb */
+	}
+	if (pkg_pkgdb) {
+		/*
+		 * If pkg is already installed, respect its automatic-install
+		 * property.
+		 */
 		xbps_dictionary_get_bool(pkg_pkgdb, "automatic-install",
 		    &autoinst);
 		xbps_dictionary_set_bool(pkg_repod, "automatic-install",

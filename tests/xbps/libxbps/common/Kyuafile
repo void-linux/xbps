@@ -14,6 +14,7 @@ atf_test_program{name="issue20_test"}
 atf_test_program{name="conf_files_test"}
 atf_test_program{name="remove_test"}
 atf_test_program{name="replace_test"}
+atf_test_program{name="installmode_test"}
 
 include('find_pkg_orphans/Kyuafile')
 include('pkgdb/Kyuafile')
