@@ -111,7 +111,6 @@ _which()
 	return 1
 }
 
-CONFIG_H=config.h
 CONFIG_MK=config.mk
 
 if [ -z "$BUILD" ]; then
@@ -138,9 +137,8 @@ if [ -z "$OS" ]; then
 fi
 
 echo "Configuring xbps for ... $OS"
-rm -f $CONFIG_H $CONFIG_MK
+rm -f $CONFIG_MK
 echo "# Common vars used by XBPS on $OS." >$CONFIG_MK
-echo "/* $OS */" >$CONFIG_H
 
 echo "VERSION = $VERSION" >>$CONFIG_MK
 echo "TOPDIR ?=	$TOPDIR" >>$CONFIG_MK
@@ -186,7 +184,6 @@ echo "CFLAGS = -O2 -pthread" >>$CONFIG_MK
 
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
-echo "CPPFLAGS +=	-DHAVE_CONFIG_H" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-D_unused=\"__attribute__((__unused__))\"" >>$CONFIG_MK
@@ -206,7 +203,7 @@ fi
 
 case "$OS" in
 linux)
-	echo "CPPFLAGS +=       -D_XOPEN_SOURCE=700" >>$CONFIG_MK
+	echo "CPPFLAGS += 	-D_XOPEN_SOURCE=700" >>$CONFIG_MK
 	echo "CPPFLAGS += 	-D_FILE_OFFSET_BITS=64" >> $CONFIG_MK
 	;;
 *)
@@ -346,22 +343,31 @@ echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
 #
 func=vasprintf
 printf "Checking for $func() ... "
-cat <<EOF >_$func.c
+if test -n "$HAVE_VASPRINTF"; then
+	echo "yes (cached)."
+else
+	cat <<EOF >_$func.c
+#define _GNU_SOURCE
 #include <stdio.h>
 int main(void) {
 	vasprintf(NULL, NULL, NULL);
 	return 0;
 }
 EOF
-if $XCC -D_GNU_SOURCE _$func.c -o _$func 2>/dev/null; then
-	echo yes.
+
+	if $XCC _$func.c -o _$func 2>/dev/null; then
+		echo yes.
+		HAVE_VASPRINTF=1
+	else
+		echo no.
+	fi
+	rm -f _$func.c _$func
+fi
+if test -n "$HAVE_VASPRINTF"; then
 	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
 else
-	echo no.
 	echo "COMPAT_SRCS+=	compat/vasprintf.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
-rm -f _$func.c _$func
 
 #
 # Check for strcasestr().
@@ -384,7 +390,6 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 else
 	echo no.
 	echo "COMPAT_SRCS +=	compat/strcasestr.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
 rm -f _$func _$func.c
 
@@ -408,7 +413,6 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 else
 	echo no.
 	echo "COMPAT_SRCS +=	compat/strlcpy.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
 rm -f _$func.c _$func
 
@@ -431,7 +435,6 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 else
 	echo no.
 	echo "COMPAT_SRCS +=	compat/strlcat.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
 rm -f _$func.c _$func
 
@@ -454,7 +457,6 @@ if $XCC -lutil _$func.c -o _$func 2>/dev/null; then
 else
 	echo no.
 	echo "COMPAT_SRCS+=	compat/humanize_number.o" >>$CONFIG_MK
-	echo "#include \"compat.h\"" >>$CONFIG_H
 fi
 rm -f _$func.c _$func
 

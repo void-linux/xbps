@@ -27,9 +27,7 @@
 # define _GNU_SOURCE    /* for strcasestr(3) */
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "compat.h"
 
 #include <stdio.h>
 #include <stdbool.h>

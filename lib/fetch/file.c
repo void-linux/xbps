@@ -30,9 +30,8 @@
  * $FreeBSD: file.c,v 1.18 2007/12/14 10:26:58 des Exp $
  */
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "compat.h"
+
 #ifndef NETBSD
 #include <nbcompat.h>
 #endif

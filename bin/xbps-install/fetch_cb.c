@@ -42,7 +42,6 @@
 
 #include <xbps.h>
 #include "defs.h"
-#include "config.h"
 
 static void
 get_time(struct timeval *tvp)

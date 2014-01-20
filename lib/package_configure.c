@@ -29,7 +29,6 @@
 #include <errno.h>
 
 #include "xbps_api_impl.h"
-
 /**
  * @file lib/package_configure.c
  * @brief Package configuration routines

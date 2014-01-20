@@ -63,9 +63,8 @@
  * SUCH DAMAGE.
  */
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "compat.h"
+
 #ifndef NETBSD
 #include <nbcompat.h>
 #endif

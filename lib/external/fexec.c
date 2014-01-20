@@ -29,13 +29,15 @@
 
 #define _BSD_SOURCE	/* for vfork and chroot */
 #include <sys/types.h>
+#include <unistd.h>
+
 #include <sys/wait.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
+#undef _BSD_SOURCE
 #include "xbps_api_impl.h"
 
 static int

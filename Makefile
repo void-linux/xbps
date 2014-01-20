@@ -12,7 +12,7 @@ endif
 
 .PHONY: all
 all:
-	@if test ! -e config.h; then \
+	@if test ! -e config.mk; then \
 		echo "You didn't run ./configure ... exiting."; \
 		exit 1; \
 	fi
@@ -45,4 +45,4 @@ clean:
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir clean || exit 1;	\
 	done
-	-rm -f config.h config.mk _ccflag.{,c,err}
+	-rm -f config.mk _ccflag.{,c,err}

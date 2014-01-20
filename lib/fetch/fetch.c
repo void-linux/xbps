@@ -30,9 +30,8 @@
  * $FreeBSD: fetch.c,v 1.41 2007/12/19 00:26:36 des Exp $
  */
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "compat.h"
+
 #ifndef NETBSD
 #include <nbcompat.h>
 #endif

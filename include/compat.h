@@ -22,7 +22,7 @@ size_t HIDDEN strlcpy(char *, const char *, size_t);
 char HIDDEN *strcasestr(const char *, const char *);
 #endif
 
-#if !defined(HAVE_VASPRINTF) && !defined(_GNU_SOURCE)
+#ifndef HAVE_VASPRINTF
 int HIDDEN vasprintf(char **, const char *, va_list);
 #endif
 

@@ -29,9 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "compat.h"
 
 #include <prop/prop_object.h>
 #include "prop_object_impl.h"
