@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013 Juan Romero Pardines.
+ * Copyright (c) 2013-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -118,16 +118,17 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 {
 	struct stat st;
 	struct xbps_repo *repo;
-	xbps_dictionary_t pkgd, idx, idxfiles, meta = NULL;
-	xbps_data_t data;
+	xbps_dictionary_t pkgd, meta = NULL;
+	xbps_data_t data = NULL;
 	xbps_object_iterator_t iter = NULL;
 	xbps_object_t obj;
 	RSA *rsa = NULL;
 	unsigned char *sig;
 	unsigned int siglen;
+	uint16_t pubkeysize;
 	const char *arch, *pkgver;
 	char *binpkg, *binpkg_sig, *buf, *defprivkey;
-	int binpkg_fd, binpkg_sig_fd;
+	int binpkg_fd, binpkg_sig_fd, rv = 0;
 	bool flush = false;
 
 	if (signedby == NULL) {
@@ -143,14 +144,11 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		return -1;
 	}
 	if (xbps_dictionary_count(repo->idx) == 0) {
-		fprintf(stderr, "invalid number of objects in repository index!\n");
+		fprintf(stderr, "Invalid repository, existing!\n");
 		xbps_repo_close(repo);
 		return -1;
 	}
 	xbps_repo_open_idxfiles(repo);
-	idx = xbps_dictionary_copy(repo->idx);
-	idxfiles = xbps_dictionary_copy(repo->idxfiles);
-	xbps_repo_close(repo);
 	/*
 	 * If privkey not set, default to ~/.ssh/id_rsa.
 	 */
@@ -166,15 +164,16 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 
 	if ((rsa = load_rsa_privkey(defprivkey)) == NULL) {
 		fprintf(stderr, "failed to read the RSA privkey\n");
-		return -1;
+		rv = EINVAL;
+		goto out;
 	}
 	/*
 	 * Iterate over the idx dictionary and then sign all binary
 	 * packages in this repository.
 	 */
-	iter = xbps_dictionary_iterator(idx);
+	iter = xbps_dictionary_iterator(repo->idx);
 	while ((obj = xbps_object_iterator_next(iter))) {
-		pkgd = xbps_dictionary_get_keysym(idx, obj);
+		pkgd = xbps_dictionary_get_keysym(repo->idx, obj);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
@@ -184,7 +183,8 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		 * Skip pkg if file signature exists
 		 */
 		if ((binpkg_sig_fd = access(binpkg_sig, R_OK)) == 0) {
-			fprintf(stdout, "skipping %s, file signature found.\n", pkgver);
+			if (xhp->flags & XBPS_FLAG_VERBOSE)
+				fprintf(stderr, "skipping %s, file signature found.\n", pkgver);
 			free(binpkg);
 			free(binpkg_sig);
 			close(binpkg_sig_fd);
@@ -236,54 +236,62 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 			close(binpkg_sig_fd);
 			continue;
 		}
-		flush = true;
 		free(sig);
 		free(binpkg_sig);
 		close(binpkg_sig_fd);
 		binpkg_fd = binpkg_sig_fd = -1;
-		printf("Signed successfully %s\n", pkgver);
+		printf("signed successfully %s\n", pkgver);
 	}
 	xbps_object_iterator_release(iter);
-
-	if (flush) {
-		/*
-		 * Prepare the XBPS_REPOIDX_META for our repository data.
-		*/
-		meta = xbps_dictionary_create();
-		xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
-		xbps_dictionary_set_cstring_nocopy(meta, "signature-type", "rsa");
-		buf = pubkey_from_privkey(rsa);
-		assert(buf);
-		data = xbps_data_create_data(buf, strlen(buf));
-		xbps_dictionary_set(meta, "public-key", data);
-		xbps_dictionary_set_uint16(meta, "public-key-size", RSA_size(rsa) * 8);
-		free(buf);
-		xbps_object_release(data);
-		/*
-		 * XXX remove this code when 0.29 is released.
-		 * Sign the index for compatibility with 0.27.
-		 */
-		if ((buf = xbps_dictionary_externalize(idx)) == NULL) {
-			fprintf(stderr, "failed to externalize repository index: %s\n", strerror(errno));
-			return errno;
-		}
-		if (!rsa_sign_buf(rsa, buf, strlen(buf), &sig, &siglen)) {
-			fprintf(stderr, "failed to create repository index signature: %s\n", strerror(errno));
-			return errno;
-		}
-		data = xbps_data_create_data_nocopy(sig, siglen);
-		xbps_dictionary_set(meta, "signature", data);
-		free(buf);
-		/*
-		 * and finally write our repodata file!
-		 */
-		if (!repodata_flush(xhp, repodir, idx, idxfiles, meta)) {
-			fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
-			RSA_free(rsa);
-			return -1;
-		}
+	/*
+	 * Check if repository meta contains changes compared to its
+	 * current state.
+	 */
+	if ((buf = pubkey_from_privkey(rsa)) == NULL) {
+		rv = EINVAL;
+		goto out;
 	}
-	RSA_free(rsa);
+	meta = xbps_dictionary_create();
 
-	return 0;
+	data = xbps_data_create_data(buf, strlen(buf));
+	if (!xbps_data_equals(repo->pubkey, data))
+		flush = true;
+
+	pubkeysize = RSA_size(rsa) * 8;
+	if (repo->pubkey_size != pubkeysize)
+		flush = true;
+
+	if (repo->signedby == NULL || strcmp(repo->signedby, signedby))
+		flush = true;
+
+	if (!flush)
+		goto out;
+
+	xbps_dictionary_set(meta, "public-key", data);
+	xbps_dictionary_set_uint16(meta, "public-key-size", pubkeysize);
+	xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
+	xbps_dictionary_set_cstring_nocopy(meta, "signature-type", "rsa");
+
+	if (!repodata_flush(xhp, repodir, repo->idx, repo->idxfiles, meta)) {
+		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
+		RSA_free(rsa);
+		return -1;
+	}
+	printf("Signed repository (%u package%s)\n",
+	    xbps_dictionary_count(repo->idx),
+	    xbps_dictionary_count(repo->idx) == 1 ? "" : "s");
+
+out:
+	if (rsa) {
+		RSA_free(rsa);
+		rsa = NULL;
+	}
+	if (data)
+		xbps_object_release(data);
+	if (meta)
+		xbps_object_release(meta);
+	if (repo)
+		xbps_repo_close(repo);
+
+	return rv ? -1 : 0;
 }
