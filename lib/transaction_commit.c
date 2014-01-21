@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -125,7 +125,7 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
 	xbps_object_t obj;
 	const char *pkgver, *arch, *fetchstr, *repoloc, *trans;
-	char *binfile, *sigfile;
+	char *file, *sigfile;
 	int rv = 0;
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
@@ -134,57 +134,55 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		    (strcmp(trans, "configure") == 0))
 			continue;
 
-		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		if (!xbps_repository_is_remote(repoloc))
+			continue;
 
-		binfile = xbps_repository_pkg_path(xhp, obj);
-		if (binfile == NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
+
+		/*
+		 * Download binary package.
+		 */
+		if ((file = xbps_repository_pkg_path(xhp, obj)) == NULL) {
 			rv = EINVAL;
 			break;
 		}
-		/*
-		 * If binary package is in cachedir or in a local repository, continue.
-		 */
-		if (access(binfile, R_OK) == 0) {
-			free(binfile);
-			continue;
-		}
-		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
-		    "Downloading `%s' package (from `%s')...", pkgver, repoloc);
-		/*
-		 * Fetch binary package.
-		 */
-		rv = xbps_fetch_file(xhp, binfile, NULL);
-		if (rv == -1) {
-			fetchstr = xbps_fetch_error_string();
-			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
-			    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
-			    pkgver, "[trans] failed to download `%s' package from `%s': %s",
-			    pkgver, repoloc, fetchstr ? fetchstr : strerror(errno));
-			free(binfile);
-			break;
+		if (access(file, R_OK) == -1) {
+			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
+			    "Downloading `%s' package (from `%s')...", pkgver, repoloc);
+			if (xbps_fetch_file(xhp, file, NULL) == -1) {
+				fetchstr = xbps_fetch_error_string();
+				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
+				    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
+				    pkgver, "[trans] failed to download `%s' package from `%s': %s",
+				    pkgver, repoloc, fetchstr ? fetchstr : strerror(errno));
+				free(file);
+				break;
+			}
 		}
 		/*
-		 * Fetch package signature.
+		 * Download binary package signature.
 		 */
-		sigfile = xbps_xasprintf("%s.sig", binfile);
-		free(binfile);
-
-		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
-		    "Downloading `%s' signature (from `%s')...", pkgver, repoloc);
-		rv = xbps_fetch_file(xhp, sigfile, NULL);
-		if (rv == -1) {
-			fetchstr = xbps_fetch_error_string();
-			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
-			    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
-			    pkgver, "[trans] failed to download `%s' signature from `%s': %s",
-			    pkgver, repoloc, fetchstr ? fetchstr : strerror(errno));
-			free(sigfile);
-			break;
+		sigfile = xbps_xasprintf("%s.sig", file);
+		free(file);
+		if (access(sigfile, R_OK) == -1) {
+			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
+			    "Downloading `%s' signature (from `%s')...", pkgver, repoloc);
+			file = xbps_xasprintf("%s/%s.%s.xbps.sig", repoloc, pkgver, arch);
+			if (xbps_fetch_file(xhp, file, NULL) == -1) {
+				fetchstr = xbps_fetch_error_string();
+				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
+				    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
+				    pkgver, "[trans] failed to download `%s' signature from `%s': %s",
+				    pkgver, repoloc, fetchstr ? fetchstr : strerror(errno));
+				free(sigfile);
+				free(file);
+				break;
+			}
 		}
-		rv = 0;
 		free(sigfile);
+		free(file);
 	}
 	xbps_object_iterator_reset(iter);
 
