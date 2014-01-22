@@ -1,5 +1,7 @@
 xbps-0.30 (??):
 
+ * Fixed issue #30: https://github.com/voidlinux/xbps/issues/30
+
  * Fixed issue #29: https://github.com/voidlinux/xbps/issues/29
 
  * Fixed issue #28: https://github.com/voidlinux/xbps/issues/28

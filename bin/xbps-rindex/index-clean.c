@@ -131,7 +131,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	idxfiles = xbps_dictionary_copy(repo->idxfiles);
 	xbps_repo_close(repo);
 	if (idx == NULL || idxfiles == NULL) {
-		fprintf(stderr, "incomplete repository data file!");
+		fprintf(stderr, "incomplete repository data file!\n");
 		return -1;
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);

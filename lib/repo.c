@@ -65,6 +65,9 @@ repo_get_dict(struct xbps_repo *repo)
 	size_t size;
 	int rv;
 
+	if (repo->ar == NULL)
+		return NULL;
+
 	rv = archive_read_next_header(repo->ar, &entry);
 	if (rv != ARCHIVE_OK) {
 		xbps_dbg_printf(repo->xhp,
