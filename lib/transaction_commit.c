@@ -166,6 +166,7 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		 */
 		sigfile = xbps_xasprintf("%s.sig", file);
 		free(file);
+		file = NULL;
 		if (access(sigfile, R_OK) == -1) {
 			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 			    "Downloading `%s' signature (from `%s')...", pkgver, repoloc);
@@ -182,7 +183,8 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			}
 		}
 		free(sigfile);
-		free(file);
+		if (file != NULL)
+			free(file);
 	}
 	xbps_object_iterator_reset(iter);
 
