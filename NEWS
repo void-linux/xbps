@@ -1,5 +1,8 @@
 xbps-0.31 (??):
 
+ * Fixed a double free while downloading binpkgs from remote repositories
+   (reported by Hanspolo).
+
 xbps-0.30 (2014-01-28):
 
  * Fixed issue #30: https://github.com/voidlinux/xbps/issues/30
