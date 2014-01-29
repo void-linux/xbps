@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@
 struct cbdata {
 	xbps_array_t result;
 	xbps_dictionary_t idx;
+	pthread_mutex_t mtx;
 	const char *repourl;
 };
 
@@ -74,8 +75,11 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		 */
 		xbps_dictionary_get_cstring_nocopy(obj,
 				"filename-sha256", &sha256);
-		if (xbps_file_hash_check(filen, sha256) != 0)
+		if (xbps_file_hash_check(filen, sha256) != 0) {
+			pthread_mutex_lock(&cbd->mtx);
 			xbps_array_add_cstring_nocopy(cbd->result, pkgver);
+			pthread_mutex_unlock(&cbd->mtx);
+		}
 	}
 	free(filen);
 	return 0;
@@ -97,8 +101,11 @@ idxfiles_cleaner_cb(struct xbps_handle *xhp _unused, xbps_object_t obj _unused,
 	}
 	if ((pkg = xbps_dictionary_get(cbd->idx, pkgname))) {
 		xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
-		if (strcmp(pkgver, key))
+		if (strcmp(pkgver, key)) {
+			pthread_mutex_lock(&cbd->mtx);
 			xbps_array_add_cstring_nocopy(cbd->result, key);
+			pthread_mutex_unlock(&cbd->mtx);
+		}
 	}
 	free(pkgname);
 
@@ -141,6 +148,8 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	 */
 	cbd.repourl = repodir;
 	cbd.result = xbps_array_create();
+	pthread_mutex_init(&cbd.mtx, NULL);
+
 	allkeys = xbps_dictionary_all_keys(idx);
 	rv = xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
 	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
@@ -171,6 +180,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		flush = true;
 	}
 
+	pthread_mutex_destroy(&cbd.mtx);
 	xbps_object_release(cbd.result);
 	xbps_object_release(allkeys);
 
