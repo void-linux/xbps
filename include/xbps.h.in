@@ -50,7 +50,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20131224"
+#define XBPS_API_VERSION	"20140130"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1124,35 +1124,17 @@ struct xbps_repo {
 	 */
 	xbps_dictionary_t idx;
 	/**
+	 * @var idxmeta
+	 *
+	 * Proplib dictionary associated with the repository index-meta.
+	 */
+	xbps_dictionary_t idxmeta;
+	/**
 	 * @var idxfiles
 	 *
 	 * Proplib dictionary associated with the repository index-files.
 	 */
 	xbps_dictionary_t idxfiles;
-	/**
-	 * @var pubkey
-	 *
-	 * RSA public key associated with this repository in a prop_data object.
-	 */
-	xbps_data_t pubkey;
-	/**
-	 * @var hexfp
-	 *
-	 * OpenSSH fingerprint in hexadecimal of the RSA public key.
-	 */
-	char *hexfp;
-	/**
-	 * @var signedby;
-	 *
-	 * The signee of the RSA signature associated with this repository (string).
-	 */
-	const char *signedby;
-	/**
-	 * @var pubkey_size;
-	 *
-	 * Size in bits of the RSA public key associacted with this repository.
-	 */
-	uint16_t pubkey_size;
 	/**
 	 * @var uri
 	 * 

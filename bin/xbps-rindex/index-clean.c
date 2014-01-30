@@ -121,7 +121,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	struct xbps_repo *repo;
 	struct cbdata cbd;
 	xbps_array_t allkeys;
-	xbps_dictionary_t idx, idxfiles;
+	xbps_dictionary_t idx, idxmeta, idxfiles;
 	char *keyname, *pkgname;
 	int rv = 0;
 	bool flush = false;
@@ -135,6 +135,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	}
 	xbps_repo_open_idxfiles(repo);
 	idx = xbps_dictionary_copy(repo->idx);
+	idxmeta = xbps_dictionary_copy(repo->idxmeta);
 	idxfiles = xbps_dictionary_copy(repo->idxfiles);
 	xbps_repo_close(repo);
 	if (idx == NULL || idxfiles == NULL) {
@@ -185,7 +186,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_object_release(allkeys);
 
 	if (flush) {
-		if (!repodata_flush(xhp, repodir, idx, idxfiles, NULL)) {
+		if (!repodata_flush(xhp, repodir, idx, idxfiles, idxmeta)) {
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));
 			return -1;

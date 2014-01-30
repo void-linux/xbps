@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -156,15 +156,25 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 static int
 repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 {
+	const char *signedby, *hexfp;
+	uint16_t pubkeysize;
+
 	printf("%5zd %s",
 	    repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1,
 	    repo->uri);
 	printf(" (RSA %s)\n", repo->is_signed ? "signed" : "unsigned");
 	if (repo->xhp->flags & XBPS_FLAG_VERBOSE) {
-		if (repo->signedby)
-			printf("      Signed-by: %s\n", repo->signedby);
-		if (repo->hexfp)
-			printf("      %u %s\n", repo->pubkey_size, repo->hexfp);
+		xbps_data_t pubkey;
+
+		xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-by", &signedby);
+		xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkeysize);
+		pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
+		hexfp = xbps_pubkey2fp(repo->xhp, pubkey);
+
+		if (signedby)
+			printf("      Signed-by: %s\n", signedby);
+		if (pubkeysize && hexfp)
+			printf("      %u %s\n", pubkeysize, hexfp);
 	}
 	return 0;
 }

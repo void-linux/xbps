@@ -1,5 +1,19 @@
 xbps-0.31 (??):
 
+ * Removed 0.27 compat from repodata.
+
+ * If a repository has been signed previously respect its settings
+   in repodata (unless there were new changes). This allows us to
+   accomplish the following:
+
+	$ xbps-rindex repo/*.xbps
+	$ xbps-rindex --sign ... repo
+	$ xbps-rindex repo/new-pkg.xbps
+
+   ... and repository is still signed after updating repodata.
+
+   API/ABI incompatible changes, you've been warned :-)
+
  * xbps-rindex(8): -c [clean] mode now is fully multithread safe.
 
  * Fixed a double free while downloading binpkgs from remote repositories

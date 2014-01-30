@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@ int
 index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 {
 	xbps_array_t array, pkg_files, pkg_links, pkg_cffiles;
-	xbps_dictionary_t idx, idxfiles, binpkgd, pkg_filesd, curpkgd;
+	xbps_dictionary_t idx, idxmeta, idxfiles, binpkgd, pkg_filesd, curpkgd;
 	xbps_object_t obj, fileobj;
 	struct xbps_repo *repo;
 	struct stat st;
@@ -62,10 +62,12 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	if (repo && repo->idx) {
 		xbps_repo_open_idxfiles(repo);
 		idx = xbps_dictionary_copy(repo->idx);
+		idxmeta = xbps_dictionary_copy(repo->idxmeta);
 		idxfiles = xbps_dictionary_copy(repo->idxfiles);
 		xbps_repo_close(repo);
 	} else {
 		idx = xbps_dictionary_create();
+		idxmeta = NULL;
 		idxfiles = xbps_dictionary_create();
 	}
 
@@ -241,7 +243,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	 * Generate repository data files.
 	 */
 	if (flush) {
-		if (!repodata_flush(xhp, repodir, idx, idxfiles, NULL)) {
+		if (!repodata_flush(xhp, repodir, idx, idxfiles, idxmeta)) {
 			fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
 			return -1;
 		}

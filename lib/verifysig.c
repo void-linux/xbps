@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013 Juan Romero Pardines.
+ * Copyright (c) 2013-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,18 +82,25 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
 	struct stat st, sig_st;
+	const char *hexfp = NULL;
 	unsigned char *buf = NULL, *sig_buf = NULL;
 	char *rkeyfile = NULL, *sig = NULL;
 	int fd = -1, sig_fd = -1;
 	bool val = false;
 
-	if (!repo->hexfp)
+	if (!xbps_dictionary_count(repo->idxmeta)) {
+		xbps_dbg_printf(repo->xhp, "%s: unsigned repository\n", repo->uri);
 		return false;
+	}
+	xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "hexfp", &hexfp);
+	if (hexfp == NULL) {
+		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
+		return false;
+	}
 	/*
 	 * Prepare repository RSA public key to verify fname signature.
 	 */
-	rkeyfile = xbps_xasprintf("%s/keys/%s.plist",
-	    repo->xhp->metadir, repo->hexfp);
+	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
 	repokeyd = xbps_dictionary_internalize_from_zfile(rkeyfile);
 	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY) {
 		xbps_dbg_printf(repo->xhp, "cannot read rkey data at %s: %s\n",

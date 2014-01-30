@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,7 +106,6 @@ repo_get_dict(struct xbps_repo *repo)
 struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url)
 {
-	xbps_dictionary_t meta;
 	struct xbps_repo *repo;
 	struct stat st;
 	const char *arch;
@@ -165,15 +164,9 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		repo->ar = NULL;
 		goto out;
 	}
-	if ((meta = repo_get_dict(repo))) {
-		xbps_dictionary_get_cstring_nocopy(meta, "signature-by", &repo->signedby);
-		xbps_dictionary_get_uint16(meta, "public-key-size", &repo->pubkey_size);
-		repo->pubkey = xbps_dictionary_get(meta, "public-key");
-		if (repo->pubkey) {
-			repo->is_signed = true;
-			repo->hexfp = xbps_pubkey2fp(repo->xhp, repo->pubkey);
-		}
-	}
+	repo->idxmeta = repo_get_dict(repo);
+	if (repo->idxmeta != NULL)
+		repo->is_signed = true;
 
 out:
 	free(repofile);
@@ -199,12 +192,14 @@ xbps_repo_close(struct xbps_repo *repo)
 		xbps_object_release(repo->idx);
 		repo->idx = NULL;
 	}
+	if (repo->idxmeta != NULL) {
+		xbps_object_release(repo->idxmeta);
+		repo->idxmeta = NULL;
+	}
 	if (repo->idxfiles != NULL) {
 		xbps_object_release(repo->idxfiles);
 		repo->idxfiles = NULL;
 	}
-	if (repo->hexfp != NULL)
-		free(repo->hexfp);
 }
 
 xbps_dictionary_t
@@ -417,6 +412,9 @@ int
 xbps_repo_key_import(struct xbps_repo *repo)
 {
 	xbps_dictionary_t repokeyd = NULL;
+	xbps_data_t pubkey = NULL;
+	uint16_t pubkey_size = 0;
+	const char *hexfp = NULL, *signedby = NULL;
 	char *p, *dbkeyd, *rkeyfile = NULL;
 	int import, rv = 0;
 
@@ -424,27 +422,34 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	/*
 	 * If repository does not have required metadata plist, ignore it.
 	 */
-	if (repo->pubkey == NULL) {
+	if (!xbps_dictionary_count(repo->idxmeta)) {
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' unsigned repository!\n", repo->uri);
 		return 0;
 	}
 	/*
-	 * Check the repository provides a working public-key data object.
+	 * Check for required objects in index-meta:
+	 * 	- signature-by (string)
+	 * 	- public-key (data)
+	 * 	- public-key-size (number)
 	 */
-	repo->is_signed = true;
-	if (repo->hexfp == NULL) {
+	xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-by", &signedby);
+	xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkey_size);
+	pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
+
+	if (signedby == NULL || pubkey_size == 0 ||
+	    xbps_object_type(pubkey) != XBPS_TYPE_DATA) {
 		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s': invalid hex fingerprint: %s\n",
-		    repo->uri, strerror(errno));
+		    "[repo] `%s': incomplete signed repository "
+		    "(missing objs)\n", repo->uri);
 		rv = EINVAL;
 		goto out;
 	}
+	hexfp = xbps_pubkey2fp(repo->xhp, pubkey);
 	/*
 	 * Check if the public key is alredy stored.
 	 */
-	rkeyfile = xbps_xasprintf("%s/keys/%s.plist",
-	    repo->xhp->metadir, repo->hexfp);
+	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
 	repokeyd = xbps_dictionary_internalize_from_zfile(rkeyfile);
 	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
 		xbps_dbg_printf(repo->xhp,
@@ -457,8 +462,8 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	 * to the client.
 	 */
 	import = xbps_set_cb_state(repo->xhp, XBPS_STATE_REPO_KEY_IMPORT, 0,
-			repo->hexfp, "`%s' repository has been RSA signed by \"%s\"",
-			repo->uri, repo->signedby);
+			hexfp, "`%s' repository has been RSA signed by \"%s\"",
+			repo->uri, signedby);
 	if (import <= 0) {
 		rv = EAGAIN;
 		goto out;
@@ -482,9 +487,9 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	free(p);
 
 	repokeyd = xbps_dictionary_create();
-	xbps_dictionary_set(repokeyd, "public-key", repo->pubkey);
-	xbps_dictionary_set_uint16(repokeyd, "public-key-size", repo->pubkey_size);
-	xbps_dictionary_set_cstring_nocopy(repokeyd, "signature-by", repo->signedby);
+	xbps_dictionary_set(repokeyd, "public-key", pubkey);
+	xbps_dictionary_set_uint16(repokeyd, "public-key-size", pubkey_size);
+	xbps_dictionary_set_cstring_nocopy(repokeyd, "signature-by", signedby);
 
 	if (!xbps_dictionary_externalize_to_zfile(repokeyd, rkeyfile)) {
 		rv = errno;

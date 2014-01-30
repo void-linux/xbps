@@ -119,14 +119,14 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	struct stat st;
 	struct xbps_repo *repo;
 	xbps_dictionary_t pkgd, meta = NULL;
-	xbps_data_t data = NULL;
+	xbps_data_t data = NULL, rpubkey = NULL;
 	xbps_object_iterator_t iter = NULL;
 	xbps_object_t obj;
 	RSA *rsa = NULL;
 	unsigned char *sig;
 	unsigned int siglen;
-	uint16_t pubkeysize;
-	const char *arch, *pkgver;
+	uint16_t rpubkeysize, pubkeysize;
+	const char *arch, *pkgver, *rsignedby;
 	char *binpkg, *binpkg_sig, *buf, *defprivkey;
 	int binpkg_fd, binpkg_sig_fd, rv = 0;
 	bool flush = false;
@@ -244,7 +244,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	}
 	xbps_object_iterator_release(iter);
 	/*
-	 * Check if repository meta contains changes compared to its
+	 * Check if repository index-meta contains changes compared to its
 	 * current state.
 	 */
 	if ((buf = pubkey_from_privkey(rsa)) == NULL) {
@@ -254,15 +254,19 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	meta = xbps_dictionary_create();
 
 	data = xbps_data_create_data(buf, strlen(buf));
-	if (!xbps_data_equals(repo->pubkey, data))
+	rpubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
+	if (!xbps_data_equals(rpubkey, data))
 		flush = true;
 
 	free(buf);
+
 	pubkeysize = RSA_size(rsa) * 8;
-	if (repo->pubkey_size != pubkeysize)
+	xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &rpubkeysize);
+	if (rpubkeysize != pubkeysize)
 		flush = true;
 
-	if (repo->signedby == NULL || strcmp(repo->signedby, signedby))
+	xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signedby", &rsignedby);
+	if (rsignedby == NULL || strcmp(rsignedby, signedby))
 		flush = true;
 
 	if (!flush)
@@ -273,22 +277,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
 	xbps_dictionary_set_cstring_nocopy(meta, "signature-type", "rsa");
 	xbps_object_release(data);
-	/*
-	 * Compatibility with 0.27.
-	 */
-	if ((buf = xbps_dictionary_externalize(repo->idx)) == NULL) {
-		rv = errno;
-		fprintf(stderr, "failed to externalize repository index: %s\n", strerror(errno));
-		goto out;
-	}
-	if (!rsa_sign_buf(rsa, buf, strlen(buf), &sig, &siglen)) {
-		rv = errno;
-		fprintf(stderr, "failed to create repository index signature: %s\n", strerror(errno));
-		goto out;
-	}
-	data = xbps_data_create_data_nocopy(sig, siglen);
-	xbps_dictionary_set(meta, "signature", data);
-	free(buf);
+	data = NULL;
 
 	if (!repodata_flush(xhp, repodir, repo->idx, repo->idxfiles, meta)) {
 		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
@@ -304,10 +293,6 @@ out:
 		RSA_free(rsa);
 		rsa = NULL;
 	}
-	if (data)
-		xbps_object_release(data);
-	if (meta)
-		xbps_object_release(meta);
 	if (repo)
 		xbps_repo_close(repo);
 
