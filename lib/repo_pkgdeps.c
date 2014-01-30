@@ -196,15 +196,16 @@ find_repo_deps(struct xbps_handle *xhp,
 		 */
 		if (((tmpd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) &&
 		    ((tmpd = xbps_pkgdb_get_virtualpkg(xhp, pkgname)) == NULL)) {
-			free(pkgname);
 			if (errno && errno != ENOENT) {
 				/* error */
 				rv = errno;
 				xbps_dbg_printf(xhp, "failed to find "
 				    "installed pkg for `%s': %s\n",
 				    reqpkg, strerror(errno));
+				free(pkgname);
 				break;
 			}
+			free(pkgname);
 			/* Required pkgdep not installed */
 			xbps_dbg_printf_append(xhp, "not installed ");
 			reason = "install";
