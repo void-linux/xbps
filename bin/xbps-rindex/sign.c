@@ -126,7 +126,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	unsigned char *sig;
 	unsigned int siglen;
 	uint16_t rpubkeysize, pubkeysize;
-	const char *arch, *pkgver, *rsignedby;
+	const char *arch, *pkgver, *rsignedby = NULL;
 	char *binpkg, *binpkg_sig, *buf, *defprivkey;
 	int binpkg_fd, binpkg_sig_fd, rv = 0;
 	bool flush = false;
