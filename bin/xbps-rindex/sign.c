@@ -265,7 +265,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	if (rpubkeysize != pubkeysize)
 		flush = true;
 
-	xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signedby", &rsignedby);
+	xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-by", &rsignedby);
 	if (rsignedby == NULL || strcmp(rsignedby, signedby))
 		flush = true;
 
