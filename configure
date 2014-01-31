@@ -342,6 +342,7 @@ echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
 # Check for POSIX semaphores.
 #
 printf "Checking for POSIX semaphores ... "
+func=psem
 cat <<EOF > _$func.c
 #include <fcntl.h>
 #include <sys/stat.h>
