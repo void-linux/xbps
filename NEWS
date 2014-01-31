@@ -3,6 +3,9 @@ xbps-0.31 (??):
  * xbps-rindex(8): use a POSIX named semaphore in modes that can modify
    repository data archive, to avoid concurrency issues.
 
+ * libxbps: fixed an issue with errno(3) propagation that lead to
+   ENOMEM errors when resolving dependencies.
+
  * Removed 0.27 compat from repodata.
 
  * If a repository has been signed previously respect its settings
