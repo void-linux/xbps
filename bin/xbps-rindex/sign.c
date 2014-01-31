@@ -116,6 +116,7 @@ int
 sign_repo(struct xbps_handle *xhp, const char *repodir,
 	const char *privkey, const char *signedby)
 {
+	sem_t *sem;
 	struct stat st;
 	struct xbps_repo *repo;
 	xbps_dictionary_t pkgd, meta = NULL;
@@ -135,18 +136,24 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		fprintf(stderr, "--signedby unset! cannot sign repository\n");
 		return -1;
 	}
+
+	if ((sem = index_lock()) == NULL)
+		return EINVAL;
+
 	/*
 	 * Check that repository index exists and not empty, otherwise bail out.
 	 */
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
-		fprintf(stderr, "cannot read repository data: %s\n", strerror(errno));
-		return -1;
+		rv = errno;
+		fprintf(stderr, "%s: cannot read repository data: %s\n",
+		    _XBPS_RINDEX, strerror(errno));
+		goto out;
 	}
 	if (xbps_dictionary_count(repo->idx) == 0) {
-		fprintf(stderr, "Invalid repository, existing!\n");
-		xbps_repo_close(repo);
-		return -1;
+		fprintf(stderr, "%s: invalid repository, existing!\n", _XBPS_RINDEX);
+		rv = EINVAL;
+		goto out;
 	}
 	xbps_repo_open_idxfiles(repo);
 	/*
@@ -163,7 +170,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	OpenSSL_add_all_digests();
 
 	if ((rsa = load_rsa_privkey(defprivkey)) == NULL) {
-		fprintf(stderr, "failed to read the RSA privkey\n");
+		fprintf(stderr, "%s: failed to read the RSA privkey\n", _XBPS_RINDEX);
 		rv = EINVAL;
 		goto out;
 	}
@@ -289,6 +296,8 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	    xbps_dictionary_count(repo->idx) == 1 ? "" : "s");
 
 out:
+	index_unlock(sem);
+
 	if (rsa) {
 		RSA_free(rsa);
 		rsa = NULL;

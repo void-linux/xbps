@@ -339,6 +339,39 @@ echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
 echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
 
 #
+# Check for POSIX semaphores.
+#
+printf "Checking for POSIX semaphores ... "
+cat <<EOF > _$func.c
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <semaphore.h>
+
+int main(void) {
+	sem_t *sem;
+
+	sem = sem_open("/xbps0000test", 0644, O_CREAT, 1);
+	sem_wait(sem);
+	sem_post(sem);
+	sem_close(sem);
+	sem_unlink("/xbps0000test");
+
+	return 0;
+}
+EOF
+if $XCC -pthread -lrt _$func.c -o _$func 2>/dev/null; then
+	POSIXSEM=yes
+	echo yes.
+fi
+rm -f _$func.c _$func
+if [ -z "$POSIXSEM" ]; then
+	echo "no! POSIX semaphores are required, exiting..."
+	exit 1
+fi
+echo "LDFLAGS +=	-lrt" >>$CONFIG_MK
+echo "STATIC_LIBS +=	-lrt" >>$CONFIG_MK
+
+#
 # Check for vasprintf().
 #
 func=vasprintf

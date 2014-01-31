@@ -118,20 +118,27 @@ idxfiles_cleaner_cb(struct xbps_handle *xhp _unused, xbps_object_t obj _unused,
 int
 index_clean(struct xbps_handle *xhp, const char *repodir)
 {
+	xbps_array_t allkeys;
+	xbps_dictionary_t idx = NULL, idxmeta = NULL, idxfiles = NULL;
 	struct xbps_repo *repo;
 	struct cbdata cbd;
-	xbps_array_t allkeys;
-	xbps_dictionary_t idx, idxmeta, idxfiles;
+	sem_t *sem;
 	char *keyname, *pkgname;
 	int rv = 0;
 	bool flush = false;
 
+	if ((sem = index_lock()) == NULL)
+		return EINVAL;
+
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
 		if (errno == ENOENT)
-			return 0;
-		fprintf(stderr, "index: cannot read repository data: %s\n", strerror(errno));
-		return -1;
+			goto out;
+
+		fprintf(stderr, "%s: cannot read repository data: %s\n",
+		    _XBPS_RINDEX, strerror(errno));
+		rv = errno;
+		goto out;
 	}
 	xbps_repo_open_idxfiles(repo);
 	idx = xbps_dictionary_copy(repo->idx);
@@ -139,8 +146,9 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	idxfiles = xbps_dictionary_copy(repo->idxfiles);
 	xbps_repo_close(repo);
 	if (idx == NULL || idxfiles == NULL) {
-		fprintf(stderr, "incomplete repository data file!\n");
-		return -1;
+		fprintf(stderr, "%s: incomplete repository data file!\n", _XBPS_RINDEX);
+		rv = EINVAL;
+		goto out;
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
@@ -187,9 +195,10 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 
 	if (flush) {
 		if (!repodata_flush(xhp, repodir, idx, idxfiles, idxmeta)) {
+			rv = errno;
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));
-			return -1;
+			goto out;
 		}
 	}
 	printf("index: %u packages registered.\n",
@@ -197,8 +206,15 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	printf("index-files: %u packages registered.\n",
 			xbps_dictionary_count(idxfiles));
 
-	xbps_object_release(idx);
-	xbps_object_release(idxfiles);
+out:
+	index_unlock(sem);
+
+	if (idx)
+		xbps_object_release(idx);
+	if (idxmeta)
+		xbps_object_release(idxmeta);
+	if (idxfiles)
+		xbps_object_release(idxfiles);
 
 	return rv;
 }

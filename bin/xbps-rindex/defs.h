@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,7 @@
 #define _XBPS_RINDEX_DEFS_H_
 
 #include <xbps.h>
+#include <semaphore.h>
 
 /* libarchive compat */
 #if ARCHIVE_VERSION_NUMBER >= 3000000
@@ -64,6 +65,9 @@
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 #endif
 
+#define _XBPS_RINDEX		"xbps-rindex"
+#define _XBPS_RINDEX_SEMNAME   "/xbps-rindex-write"
+
 /* From index-add.c */
 int	index_add(struct xbps_handle *, int, char **, bool);
 
@@ -80,5 +84,9 @@ int	sign_repo(struct xbps_handle *, const char *, const char *,
 /* From repoflush.c */
 bool	repodata_flush(struct xbps_handle *, const char *,
 		xbps_dictionary_t, xbps_dictionary_t, xbps_dictionary_t);
+
+/* From sem.c */
+sem_t	*index_lock(void);
+void	index_unlock(sem_t *);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */

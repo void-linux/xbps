@@ -43,6 +43,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	xbps_array_t array, pkg_files, pkg_links, pkg_cffiles;
 	xbps_dictionary_t idx, idxmeta, idxfiles, binpkgd, pkg_filesd, curpkgd;
 	xbps_object_t obj, fileobj;
+	sem_t *sem;
 	struct xbps_repo *repo;
 	struct stat st;
 	const char *arch;
@@ -50,14 +51,16 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
 
-	if ((tmprepodir = strdup(argv[0])) == NULL)
-		return ENOMEM;
-
+	if ((sem = index_lock()) == NULL)
+		return EINVAL;
 	/*
 	 * Read the repository data or create index dictionaries otherwise.
 	 */
+	if ((tmprepodir = strdup(argv[0])) == NULL) {
+		rv = ENOMEM;
+		goto out;
+	}
 	repodir = dirname(tmprepodir);
-
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo && repo->idx) {
 		xbps_repo_open_idxfiles(repo);
@@ -70,7 +73,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		idxmeta = NULL;
 		idxfiles = xbps_dictionary_create();
 	}
-
 	/*
 	 * Process all packages specified in argv.
 	 */
@@ -81,7 +83,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		binpkgd = xbps_get_pkg_plist_from_binpkg(argv[i],
 		    "./props.plist");
 		if (binpkgd == NULL) {
-			fprintf(stderr, "failed to read %s metadata for `%s', skipping!\n", XBPS_PKGPROPS, argv[i]);
+			fprintf(stderr, "index: failed to read %s metadata for "
+			    "`%s', skipping!\n", XBPS_PKGPROPS, argv[i]);
 			continue;
 		}
 		xbps_dictionary_get_cstring_nocopy(binpkgd, "architecture", &arch);
@@ -102,9 +105,10 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		curpkgd = xbps_dictionary_get(idx, pkgname);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
+				rv = errno;
 				free(pkgver);
 				free(pkgname);
-				return errno;
+				goto out;
 			}
 		} else if (!force) {
 			/* Only check version if !force */
@@ -139,22 +143,26 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		if ((sha256 = xbps_file_hash(argv[i])) == NULL) {
 			free(pkgver);
 			free(pkgname);
-			return errno;
+			rv = EINVAL;
+			goto out;
 		}
 		if (!xbps_dictionary_set_cstring(binpkgd, "filename-sha256", sha256)) {
 			free(pkgver);
 			free(pkgname);
-			return errno;
+			rv = EINVAL;
+			goto out;
 		}
 		if (stat(argv[i], &st) == -1) {
 			free(pkgver);
 			free(pkgname);
-			return errno;
+			rv = EINVAL;
+			goto out;
 		}
 		if (!xbps_dictionary_set_uint64(binpkgd, "filename-size", (uint64_t)st.st_size)) {
 			free(pkgver);
 			free(pkgname);
-			return errno;
+			rv = EINVAL;
+			goto out;
 		}
 		/* Remove unneeded objects */
 		xbps_dictionary_remove(binpkgd, "pkgname");
@@ -165,7 +173,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		 */
 		if (!xbps_dictionary_set(idx, pkgname, binpkgd)) {
 			free(pkgname);
-			return EINVAL;
+			rv = EINVAL;
+			goto out;
 		}
 		flush = true;
 		printf("index: added `%s' (%s).\n", pkgver, arch);
@@ -178,7 +187,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		pkg_filesd = xbps_get_pkg_plist_from_binpkg(argv[i], "./files.plist");
 		if (pkg_filesd == NULL) {
 			free(pkgver);
-			return EINVAL;
+			rv = EINVAL;
+			goto out;
 		}
 
 		pkg_cffiles = xbps_dictionary_get(pkg_filesd, "conf_files");
@@ -244,12 +254,16 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	 */
 	if (flush) {
 		if (!repodata_flush(xhp, repodir, idx, idxfiles, idxmeta)) {
-			fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
+			fprintf(stderr, "%s: failed to write repodata: %s\n",
+			    _XBPS_RINDEX, strerror(errno));
 			return -1;
 		}
 	}
 	printf("index: %u packages registered.\n", xbps_dictionary_count(idx));
 	printf("index-files: %u packages registered.\n", xbps_dictionary_count(idxfiles));
+
+out:
+	index_unlock(sem);
 
 	return rv;
 }
