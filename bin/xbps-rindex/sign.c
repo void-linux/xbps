@@ -116,7 +116,7 @@ int
 sign_repo(struct xbps_handle *xhp, const char *repodir,
 	const char *privkey, const char *signedby)
 {
-	sem_t *sem;
+	struct idxlock *il;
 	struct stat st;
 	struct xbps_repo *repo;
 	xbps_dictionary_t pkgd, meta = NULL;
@@ -137,7 +137,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		return -1;
 	}
 
-	if ((sem = index_lock()) == NULL)
+	if ((il = index_lock(xhp)) == NULL)
 		return EINVAL;
 
 	/*
@@ -296,7 +296,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	    xbps_dictionary_count(repo->idx) == 1 ? "" : "s");
 
 out:
-	index_unlock(sem);
+	index_unlock(il);
 
 	if (rsa) {
 		RSA_free(rsa);

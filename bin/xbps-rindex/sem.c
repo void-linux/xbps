@@ -32,33 +32,44 @@
 
 #include "defs.h"
 
-sem_t *
-index_lock(void)
+struct idxlock *
+index_lock(struct xbps_handle *xhp)
 {
-	sem_t *sem;
+	struct idxlock *il;
+
+	if ((il = malloc(sizeof(struct idxlock))) == NULL)
+		return NULL;
+
+	/*
+	 * Generate semaphore name for target architecture.
+	 */
+	il->semname = xbps_xasprintf("/xbps-rindex-%s",
+			xhp->target_arch ? xhp->target_arch : xhp->native_arch);
 	/*
 	 * Create/open the POSIX named semaphore.
 	 */
-	sem = sem_open(_XBPS_RINDEX_SEMNAME, O_CREAT, 0660, 1);
-	if (sem == SEM_FAILED) {
+	il->sem = sem_open(il->semname, O_CREAT, 0660, 1);
+	if (il->sem == SEM_FAILED) {
 		fprintf(stderr, "%s: failed to create/open named "
 		    "semaphore: %s\n", _XBPS_RINDEX, strerror(errno));
 		return NULL;
 	}
-	if (sem_wait(sem) == -1) {
+	if (sem_wait(il->sem) == -1) {
 		fprintf(stderr, "%s: failed to lock named semaphore: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
 		return NULL;
 	}
 
-	return sem;
+	return il;
 }
 
 void
-index_unlock(sem_t *sem)
+index_unlock(struct idxlock *il)
 {
-	/* Unblock semaphore, close and destroy it (if possible) */
-	sem_post(sem);
-	sem_close(sem);
-	sem_unlink(_XBPS_RINDEX_SEMNAME);
+	/* Unlock semaphore, close and destroy it (if possible) */
+	sem_post(il->sem);
+	sem_close(il->sem);
+	sem_unlink(il->semname);
+	free(il->semname);
+	free(il);
 }

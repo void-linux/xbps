@@ -122,12 +122,12 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_dictionary_t idx = NULL, idxmeta = NULL, idxfiles = NULL;
 	struct xbps_repo *repo;
 	struct cbdata cbd;
-	sem_t *sem;
+	struct idxlock *il;
 	char *keyname, *pkgname;
 	int rv = 0;
 	bool flush = false;
 
-	if ((sem = index_lock()) == NULL)
+	if ((il = index_lock(xhp)) == NULL)
 		return EINVAL;
 
 	repo = xbps_repo_open(xhp, repodir);
@@ -207,7 +207,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			xbps_dictionary_count(idxfiles));
 
 out:
-	index_unlock(sem);
+	index_unlock(il);
 
 	if (idx)
 		xbps_object_release(idx);

@@ -85,8 +85,13 @@ int	sign_repo(struct xbps_handle *, const char *, const char *,
 bool	repodata_flush(struct xbps_handle *, const char *,
 		xbps_dictionary_t, xbps_dictionary_t, xbps_dictionary_t);
 
+struct idxlock {
+	sem_t *sem;
+	char  *semname;
+};
+
 /* From sem.c */
-sem_t	*index_lock(void);
-void	index_unlock(sem_t *);
+struct idxlock	*index_lock(struct xbps_handle *);
+void		index_unlock(struct idxlock *);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */

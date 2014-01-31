@@ -43,7 +43,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	xbps_array_t array, pkg_files, pkg_links, pkg_cffiles;
 	xbps_dictionary_t idx, idxmeta, idxfiles, binpkgd, pkg_filesd, curpkgd;
 	xbps_object_t obj, fileobj;
-	sem_t *sem;
+	struct idxlock *il;
 	struct xbps_repo *repo;
 	struct stat st;
 	const char *arch;
@@ -51,7 +51,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
 
-	if ((sem = index_lock()) == NULL)
+	if ((il = index_lock(xhp)) == NULL)
 		return EINVAL;
 	/*
 	 * Read the repository data or create index dictionaries otherwise.
@@ -263,7 +263,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	printf("index-files: %u packages registered.\n", xbps_dictionary_count(idxfiles));
 
 out:
-	index_unlock(sem);
+	index_unlock(il);
 
 	return rv;
 }
