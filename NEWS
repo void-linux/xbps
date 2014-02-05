@@ -1,5 +1,8 @@
 xbps-0.32 (???):
 
+ * xbps-rindex(8): set correct permissions to the POSIX semaphore
+   by clearing file permission bits before its creation.
+
 xbps-0.31 (2014-02-01):
 
  * xbps-rindex(8): use a POSIX named semaphore in modes that can modify

@@ -36,6 +36,7 @@ struct idxlock *
 index_lock(struct xbps_handle *xhp)
 {
 	struct idxlock *il;
+	mode_t myumask;
 
 	if ((il = malloc(sizeof(struct idxlock))) == NULL)
 		return NULL;
@@ -48,7 +49,10 @@ index_lock(struct xbps_handle *xhp)
 	/*
 	 * Create/open the POSIX named semaphore.
 	 */
+	myumask = umask(0);
 	il->sem = sem_open(il->semname, O_CREAT, 0660, 1);
+	umask(myumask);
+
 	if (il->sem == SEM_FAILED) {
 		fprintf(stderr, "%s: failed to create/open named "
 		    "semaphore: %s\n", _XBPS_RINDEX, strerror(errno));
