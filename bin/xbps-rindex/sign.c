@@ -128,7 +128,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	unsigned int siglen;
 	uint16_t rpubkeysize, pubkeysize;
 	const char *arch, *pkgver, *rsignedby = NULL;
-	char *binpkg, *binpkg_sig, *buf = NULL, *defprivkey;
+	char *binpkg, *binpkg_sig, *buf, *defprivkey;
 	int binpkg_fd, binpkg_sig_fd, rv = 0;
 	bool flush = false;
 
@@ -265,6 +265,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	if (!xbps_data_equals(rpubkey, data))
 		flush = true;
 
+	free(buf);
 
 	pubkeysize = RSA_size(rsa) * 8;
 	xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &rpubkeysize);
@@ -297,8 +298,6 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 out:
 	index_unlock(il);
 
-	if (buf)
-		free(buf);
 	if (data)
 		xbps_object_release(data);
 	if (rsa) {
