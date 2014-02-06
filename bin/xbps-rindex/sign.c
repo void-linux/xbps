@@ -283,14 +283,14 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	xbps_dictionary_set_uint16(meta, "public-key-size", pubkeysize);
 	xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
 	xbps_dictionary_set_cstring_nocopy(meta, "signature-type", "rsa");
+	if (!repodata_flush(xhp, repodir, repo->idx, repo->idxfiles, meta)) {
+		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
+		rv = -1;
+		goto out;
+	}
 	xbps_object_release(data);
 	data = NULL;
 
-	if (!repodata_flush(xhp, repodir, repo->idx, repo->idxfiles, meta)) {
-		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
-		RSA_free(rsa);
-		return -1;
-	}
 	printf("Signed repository (%u package%s)\n",
 	    xbps_dictionary_count(repo->idx),
 	    xbps_dictionary_count(repo->idx) == 1 ? "" : "s");
@@ -298,6 +298,8 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 out:
 	index_unlock(il);
 
+	if (data)
+		xbps_object_release(data);
 	if (rsa) {
 		RSA_free(rsa);
 		rsa = NULL;
