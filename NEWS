@@ -1,5 +1,8 @@
 xbps-0.32 (???):
 
+ * xbps-remove(8): -O now also remove obsolete pkg signatures from
+   cachedir, and ignores pkgs of other architectures.
+
  * xbps-rindex(8): set correct permissions to the POSIX semaphore
    by clearing file permission bits before its creation.
 

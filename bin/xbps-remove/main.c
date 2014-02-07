@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -122,8 +122,8 @@ cachedir_clean(struct xbps_handle *xhp)
 	xbps_dictionary_t pkg_propsd, repo_pkgd;
 	DIR *dirp;
 	struct dirent *dp;
-	const char *pkgver, *rsha256;
-	char *binpkg, *ext;
+	const char *pkgver, *arch, *rsha256;
+	char *binpkg, *binpkgsig, *ext;
 	int rv = 0;
 
 	if ((dirp = opendir(xhp->cachedir)) == NULL)
@@ -138,7 +138,7 @@ cachedir_clean(struct xbps_handle *xhp)
 		if ((ext = strrchr(dp->d_name, '.')) == NULL)
 			continue;
 		if (strcmp(ext, ".xbps")) {
-			printf("ignoring unknown file: %s\n", dp->d_name);
+			xbps_dbg_printf(xhp, "ignoring unknown file: %s\n", dp->d_name);
 			continue;
 		}
 		/* Internalize props.plist dictionary from binary pkg */
@@ -152,34 +152,53 @@ cachedir_clean(struct xbps_handle *xhp)
 			rv = errno;
 			break;
 		}
+		xbps_dictionary_get_cstring_nocopy(pkg_propsd, "architecture", &arch);
 		xbps_dictionary_get_cstring_nocopy(pkg_propsd, "pkgver", &pkgver);
+		if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
+			xbps_dbg_printf(xhp, "%s: ignoring pkg with unmatched arch (%s)\n", pkgver, arch);
+			free(binpkg);
+			xbps_object_release(pkg_propsd);
+			continue;
+		}
 		/*
 		 * Remove binary pkg if it's not registered in any repository
 		 * or if hash doesn't match.
 		 */
+		binpkgsig = xbps_xasprintf("%s.sig", binpkg);
 		repo_pkgd = xbps_rpool_get_pkg(xhp, pkgver);
 		if (repo_pkgd) {
 			xbps_dictionary_get_cstring_nocopy(repo_pkgd,
 			    "filename-sha256", &rsha256);
 			if (xbps_file_hash_check(binpkg, rsha256) == ERANGE) {
-				printf("Removed %s from cachedir (sha256 mismatch)\n",
-				    dp->d_name);
-				xbps_object_release(pkg_propsd);
-				if (unlink(binpkg) == -1)
+				if (unlink(binpkg) == -1) {
 					fprintf(stderr, "Failed to remove "
-					    "`%s': %s\n", binpkg,
-					    strerror(errno));
+					    "`%s': %s\n", binpkg, strerror(errno));
+				} else {
+					printf("Removed %s from cachedir (sha256 mismatch)\n", dp->d_name);
+				}
+				if ((access(binpkgsig, R_OK) == 0) && (unlink(binpkgsig) == -1)) {
+					fprintf(stderr, "Failed to remove "
+					    "`%s': %s\n", binpkgsig, strerror(errno));
+				}
 			}
 			xbps_object_release(pkg_propsd);
 			free(binpkg);
+			free(binpkgsig);
 			continue;
 		}
-		printf("Removed %s from cachedir (obsolete)\n", dp->d_name);
-		if (unlink(binpkg) == -1)
+		if (unlink(binpkg) == -1) {
 			fprintf(stderr, "Failed to remove `%s': %s\n",
 			    binpkg, strerror(errno));
+		} else {
+			printf("Removed %s from cachedir (obsolete)\n", dp->d_name);
+		}
+		if ((access(binpkgsig, R_OK) == 0) && (unlink(binpkgsig) == -1)) {
+			fprintf(stderr, "Failed to remove `%s': %s\n",
+			    binpkgsig, strerror(errno));
+		}
 		xbps_object_release(pkg_propsd);
 		free(binpkg);
+		free(binpkgsig);
 	}
 	closedir(dirp);
 	return rv;
