@@ -239,8 +239,6 @@ int HIDDEN xbps_transaction_package_replace(struct xbps_handle *);
  * From lib/package_remove.c
  */
 int HIDDEN xbps_remove_pkg(struct xbps_handle *, const char *, bool);
-int HIDDEN xbps_remove_pkg_files(struct xbps_handle *, xbps_dictionary_t,
-				 const char *, const char *);
 
 /**
  * @private

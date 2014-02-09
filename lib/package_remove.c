@@ -37,27 +37,71 @@
 # define __arraycount(a) (sizeof(a) / sizeof(*(a)))
 #endif
 
-/* These are symlinks in Void and must not be removed */
-static const char *basesymlinks[] = {
-	"/bin",
-	"/sbin",
-	"/lib",
-	"/lib32",
-	"/lib64",
-	"/usr/lib64",
-	"/var/run",
-};
+static bool
+check_remove_pkg_files(struct xbps_handle *xhp,
+	xbps_dictionary_t pkgd, const char *pkgver)
+{
+	xbps_array_t array;
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
+	const char *objs[] = { "files", "conf_files", "links", "dirs" };
+	const char *file;
+	char *path = NULL;
+	bool fail = false;
 
-int HIDDEN
-xbps_remove_pkg_files(struct xbps_handle *xhp,
-		      xbps_dictionary_t dict,
-		      const char *key,
-		      const char *pkgver)
+	for (uint8_t i = 0; i < __arraycount(objs); i++) {
+		array = xbps_dictionary_get(pkgd, objs[i]);
+		if (array == NULL || xbps_array_count(array) == 0)
+			continue;
+
+		iter = xbps_array_iter_from_dict(pkgd, objs[i]);
+		if (iter == NULL)
+			continue;
+
+		while ((obj = xbps_object_iterator_next(iter))) {
+			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
+			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+			if (access(path, W_OK) == -1) {
+				if (errno != ENOENT) {
+					/*
+					 * only bail out if something else than ENOENT
+					 * is returned.
+					 */
+					fail = true;
+					xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE_FAIL,
+					    errno, pkgver,
+					    "%s: cannot remove `%s': %s",
+					    pkgver, file, strerror(errno));
+				}
+			}
+			free(path);
+		}
+		xbps_object_iterator_release(iter);
+	}
+
+	return fail;
+}
+
+static int
+remove_pkg_files(struct xbps_handle *xhp,
+		 xbps_dictionary_t dict,
+		 const char *key,
+		 const char *pkgver)
 {
 	xbps_array_t array;
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	const char *file, *sha256, *curobj = NULL;
+	/* These are symlinks in Void and must not be removed */
+	const char *basesymlinks[] = {
+		"/bin",
+		"/sbin",
+		"/lib",
+		"/lib32",
+		"/lib64",
+		"/usr/lib64",
+		"/var/run",
+	};
 	char *path = NULL;
 	int rv = 0;
 	bool found;
@@ -81,31 +125,6 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		curobj = "link";
 	else if (strcmp(key, "dirs") == 0)
 		curobj = "directory";
-
-	/*
-	 * Do the removal in 2 phases:
-	 * 	1- check if user has enough perms to remove entry
-	 * 	2- perform removal
-	 */
-	while ((obj = xbps_object_iterator_next(iter))) {
-		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
-		path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-		if (access(path, W_OK)) {
-			if (errno == ENOENT) {
-				/* ignore ENOENT, file might have dissapeared */
-				continue;
-			}
-			/*
-			 * only bail out if something else than ENOENT
-			 * is returned.
-			 */
-			rv = errno;
-			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE_FAIL, rv, pkgver,
-			    "%s: cannot remove %s `%s': %s", pkgver, curobj, file, strerror(rv));
-		}
-	}
-	if (rv != 0)
-		goto out;
 
 	xbps_object_iterator_reset(iter);
 
@@ -187,13 +206,6 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 			    errno, pkgver,
 			    "%s: failed to remove %s `%s': %s", pkgver,
 			    curobj, file, strerror(errno));
-			if (errno != ENOENT) {
-				/*
-				 * only bail out if something else than ENOENT
-				 * is returned.
-				 */
-				rv = errno;
-			}
 		} else {
 			/* success */
 			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE,
@@ -201,8 +213,6 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		}
 		free(path);
 	}
-
-out:
 	xbps_object_iterator_release(iter);
 
 	return rv;
@@ -281,17 +291,26 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	}
 
 	if (pkgd) {
+		/*
+		 * Do the removal in 2 phases:
+		 * 	1- check if user has enough perms to remove all entries
+		 * 	2- perform removal
+		 */
+		if (check_remove_pkg_files(xhp, pkgd, pkgver)) {
+			rv = EPERM;
+			goto out;
+		}
 		/* Remove regular files */
-		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "files", pkgver)) != 0)
+		if ((rv = remove_pkg_files(xhp, pkgd, "files", pkgver)) != 0)
 			goto out;
 		/* Remove configuration files */
-		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "conf_files", pkgver)) != 0)
+		if ((rv = remove_pkg_files(xhp, pkgd, "conf_files", pkgver)) != 0)
 			goto out;
 		/* Remove links */
-		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "links", pkgver)) != 0)
+		if ((rv = remove_pkg_files(xhp, pkgd, "links", pkgver)) != 0)
 			goto out;
 		/* Remove dirs */
-		if ((rv = xbps_remove_pkg_files(xhp, pkgd, "dirs", pkgver)) != 0)
+		if ((rv = remove_pkg_files(xhp, pkgd, "dirs", pkgver)) != 0)
 			goto out;
 		/*
 		 * Execute the post REMOVE action if file exists and we aren't
