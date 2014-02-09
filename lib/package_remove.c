@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,6 +82,33 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 	else if (strcmp(key, "dirs") == 0)
 		curobj = "directory";
 
+	/*
+	 * Do the removal in 2 phases:
+	 * 	1- check if user has enough perms to remove entry
+	 * 	2- perform removal
+	 */
+	while ((obj = xbps_object_iterator_next(iter))) {
+		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
+		path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+		if (access(path, W_OK)) {
+			if (errno == ENOENT) {
+				/* ignore ENOENT, file might have dissapeared */
+				continue;
+			}
+			/*
+			 * only bail out if something else than ENOENT
+			 * is returned.
+			 */
+			rv = errno;
+			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE_FAIL, rv, pkgver,
+			    "%s: cannot remove %s `%s': %s", pkgver, curobj, file, strerror(rv));
+		}
+	}
+	if (rv != 0)
+		goto out;
+
+	xbps_object_iterator_reset(iter);
+
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 		path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
@@ -160,7 +187,13 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 			    errno, pkgver,
 			    "%s: failed to remove %s `%s': %s", pkgver,
 			    curobj, file, strerror(errno));
-			errno = 0;
+			if (errno != ENOENT) {
+				/*
+				 * only bail out if something else than ENOENT
+				 * is returned.
+				 */
+				rv = errno;
+			}
 		} else {
 			/* success */
 			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE,
@@ -168,6 +201,8 @@ xbps_remove_pkg_files(struct xbps_handle *xhp,
 		}
 		free(path);
 	}
+
+out:
 	xbps_object_iterator_release(iter);
 
 	return rv;
@@ -326,6 +361,10 @@ purge:
 out:
 	if (pkgname != NULL)
 		free(pkgname);
+	if (rv != 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL, rv, pkgver,
+		    "%s: failed to remove package: %s", pkgver, strerror(rv));
+	}
 
 	return rv;
 }
