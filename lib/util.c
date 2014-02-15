@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -169,6 +169,9 @@ xbps_pkgpattern_name(const char *pkg)
 		return NULL;
 
 	len = strlen(pkg) - strlen(res) + 1;
+	if (strlen(pkg) < len-2)
+		return NULL;
+
 	if (pkg[len-2] == '-')
 		len--;
 

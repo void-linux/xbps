@@ -1,5 +1,8 @@
 xbps-0.32 (???):
 
+ * Fixed a bug in xbps_pkgpattern_name() where a string with some special
+   chars would result in a crash (reported by Gottox).
+
  * Do the package removal in two phases: the first phase checks the
    user has write permission to the entries being removed, if this
    succeeds then the package removal is performed.
