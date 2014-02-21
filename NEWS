@@ -1,4 +1,4 @@
-xbps-0.32 (???):
+xbps-0.32 (2014-02-21):
 
  * Fixed a bug in xbps_pkgpattern_name() where a string with some special
    chars would result in a crash (reported by Gottox).
