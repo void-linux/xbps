@@ -1,3 +1,5 @@
+xbps-0.33 (???):
+
 xbps-0.32 (2014-02-21):
 
  * Fixed a bug in xbps_pkgpattern_name() where a string with some special
