@@ -371,10 +371,12 @@ main(int argc, char **argv)
 		rv = remove_pkg(&xh, argv[i], maxcols, recursive);
 		if (rv == 0)
 			continue;
-		else if (rv != EEXIST)
+		else if (rv != EEXIST) {
+			xbps_pkgdb_unlock(&xh);
 			exit(rv);
-		else
+		} else {
 			reqby_force = true;
+		}
 	}
 	if (reqby_force && !ignore_revdeps) {
 		xbps_pkgdb_unlock(&xh);
