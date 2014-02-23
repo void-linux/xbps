@@ -350,8 +350,14 @@ main(int argc, char **argv)
 			exit(rv);;
 	}
 
+	if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
+		fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
+		exit(rv);
+	}
+
 	if (orphans) {
 		if ((rv = xbps_transaction_autoremove_pkgs(&xh)) != 0) {
+			xbps_pkgdb_unlock(&xh);
 			if (rv != ENOENT) {
 				fprintf(stderr, "Failed to queue package "
 				    "orphans: %s\n", strerror(rv));
@@ -370,11 +376,13 @@ main(int argc, char **argv)
 		else
 			reqby_force = true;
 	}
-	if (reqby_force && !ignore_revdeps)
+	if (reqby_force && !ignore_revdeps) {
+		xbps_pkgdb_unlock(&xh);
 		exit(EXIT_FAILURE);
-
-	if (orphans || (argc > optind))
+	}
+	if (orphans || (argc > optind)) {
 		rv = exec_transaction(&xh, maxcols, yes, drun);
-
+	}
+	xbps_pkgdb_unlock(&xh);
 	exit(rv);
 }

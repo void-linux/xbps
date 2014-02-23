@@ -24,13 +24,13 @@
  *-
  */
 
-#ifndef _XBPS_API_H_
-#define _XBPS_API_H_
-
+#ifndef _XBPS_H_
+#define _XBPS_H_
 
 #include <stdio.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <semaphore.h>
 
 #include <xbps/xbps_array.h>
 #include <xbps/xbps_bool.h>
@@ -50,7 +50,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140130"
+#define XBPS_API_VERSION	"20140223"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -476,6 +476,12 @@ struct xbps_handle {
 	 */
 	xbps_dictionary_t pkgdb;
 	/**
+	 * @private
+	 *
+	 * POSIX named semaphore associated with the pkgdb for writers.
+	 */
+	sem_t *pkgdb_sem;
+	/**
 	 * @var transd
 	 *
 	 * Proplib dictionary with transaction objects, required by
@@ -705,6 +711,25 @@ xbps_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 
 /** @addtogroup pkgdb */
 /*@{*/
+
+/**
+ * Locks the pkgdb to allow a write transaction.
+ *
+ * This routine should be called before a write transaction is the target:
+ * install, remove or update.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @return 0 on success, otherwise an errno value.
+ */
+int xbps_pkgdb_lock(struct xbps_handle *);
+
+/**
+ * Unlocks the pkgdb after a write transaction: the POSIX named semaphore
+ * is unlocked and unlinked.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ */
+void xbps_pkgdb_unlock(struct xbps_handle *);
 
 /**
  * Executes a function callback per a package dictionary registered
@@ -1693,4 +1718,4 @@ char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
 }
 #endif
 
-#endif /* !_XBPS_API_H_ */
+#endif /* !_XBPS_H_ */

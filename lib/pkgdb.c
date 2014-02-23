@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <semaphore.h>
 
 #include "xbps_api_impl.h"
 
@@ -54,6 +57,48 @@
  * data type is specified on its edge, i.e array, bool, integer, string,
  * dictionary.
  */
+#define _PKGDB_SEMNAME	"/libxbps-pkgdb"
+int
+xbps_pkgdb_lock(struct xbps_handle *xhp)
+{
+	int rv = 0;
+	mode_t myumask;
+	/*
+	 * Create/open the POSIX named semaphore.
+	 */
+	myumask = umask(0);
+	xhp->pkgdb_sem = sem_open(_PKGDB_SEMNAME, O_CREAT, 0660, 1);
+	umask(myumask);
+
+	if (xhp->pkgdb_sem == SEM_FAILED) {
+		rv = errno;
+		xbps_dbg_printf(xhp, "pkgdb: failed to create/open named "
+		    "semaphore: %s\n", strerror(errno));
+		return rv;
+	}
+	if (sem_wait(xhp->pkgdb_sem) == -1) {
+		rv = errno;
+		xbps_dbg_printf(xhp, "pkgdb: failed to lock named semaphore: %s\n",
+		    strerror(errno));
+		return rv;
+	}
+	return 0;
+}
+
+void
+xbps_pkgdb_unlock(struct xbps_handle *xhp)
+{
+	/* Unlock semaphore, close and destroy it (if possible) */
+	if (xhp->pkgdb_sem == NULL)
+		return;
+
+	sem_post(xhp->pkgdb_sem);
+	sem_close(xhp->pkgdb_sem);
+	sem_unlink(_PKGDB_SEMNAME);
+	xhp->pkgdb_sem = NULL;
+}
+#undef _PKGDB_SEMNAME
+
 int HIDDEN
 xbps_pkgdb_init(struct xbps_handle *xhp)
 {

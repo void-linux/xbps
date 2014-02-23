@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -216,6 +216,11 @@ main(int argc, char **argv)
 	if (sync && !update && (argc == optind))
 		exit(EXIT_SUCCESS);
 
+	if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
+		fprintf(stderr, "Failed to lock the pkgdb: %s\n", strerror(rv));
+		exit(rv);
+	}
+
 	if (update && (argc == optind)) {
 		/* Update all installed packages */
 		rv = dist_upgrade(&xh, maxcols, yes, drun);
@@ -223,19 +228,24 @@ main(int argc, char **argv)
 		/* Update target packages */
 		for (i = optind; i < argc; i++) {
 			rv = update_pkg(&xh, argv[i]);
-			if (rv != 0)
+			if (rv != 0) {
+				xbps_pkgdb_unlock(&xh);
 				exit(rv);
+			}
 		}
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	} else if (!update) {
 		/* Install target packages */
 		for (i = optind; i < argc; i++) {
 			rv = install_new_pkg(&xh, argv[i], reinstall);
-			if (rv != 0)
+			if (rv != 0) {
+				xbps_pkgdb_unlock(&xh);
 				exit(rv);
+			}
 		}
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
 
+	xbps_pkgdb_unlock(&xh);
 	exit(rv);
 }

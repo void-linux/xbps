@@ -2,7 +2,6 @@ libxbps:
  - transaction: avoid fetching the whole pkg when updating and only fetch
    modified files from target pkg.
  - Add support to handle 'shlib-requires' and 'shlib-provides'.
- - Concurrency issues with pkgdb.
 
 xbps-create:
  - Move all configuration files to <prefix>/share/<pkgname>/conf/<cffile>.
