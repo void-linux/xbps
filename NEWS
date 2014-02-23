@@ -1,5 +1,8 @@
 xbps-0.33 (???):
 
+ * Do not continue the transaction if downloading a binpkg/signature file
+   has failed for some reason, stop and return error immediately.
+
 xbps-0.32 (2014-02-21):
 
  * Fixed a bug in xbps_pkgpattern_name() where a string with some special
