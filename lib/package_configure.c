@@ -123,6 +123,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	pkgmetad = xbps_dictionary_internalize_from_file(plist);
 	if (pkgmetad == NULL) {
+		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
 		    errno, pkgver,
 		    "%s: [configure] cannot read metadata plist: %s",
