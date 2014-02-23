@@ -151,7 +151,7 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		if (access(file, R_OK) == -1) {
 			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 			    "Downloading `%s' package (from `%s')...", pkgver, repoloc);
-			if (xbps_fetch_file(xhp, file, NULL) == -1) {
+			if ((rv = xbps_fetch_file(xhp, file, NULL)) == -1) {
 				fetchstr = xbps_fetch_error_string();
 				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
 				    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
@@ -171,7 +171,7 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 			    "Downloading `%s' signature (from `%s')...", pkgver, repoloc);
 			file = xbps_xasprintf("%s/%s.%s.xbps.sig", repoloc, pkgver, arch);
-			if (xbps_fetch_file(xhp, file, NULL) == -1) {
+			if ((rv = xbps_fetch_file(xhp, file, NULL)) == -1) {
 				fetchstr = xbps_fetch_error_string();
 				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
 				    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
