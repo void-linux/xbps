@@ -160,6 +160,7 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 				free(file);
 				break;
 			}
+			rv = 0;
 		}
 		/*
 		 * Download binary package signature.
@@ -181,6 +182,7 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 				free(file);
 				break;
 			}
+			rv = 0;
 		}
 		free(sigfile);
 		if (file != NULL)
