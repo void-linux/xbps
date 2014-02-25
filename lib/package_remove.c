@@ -33,10 +33,6 @@
 
 #include "xbps_api_impl.h"
 
-#ifndef __arraycount
-# define __arraycount(a) (sizeof(a) / sizeof(*(a)))
-#endif
-
 static bool
 check_remove_pkg_files(struct xbps_handle *xhp,
 	xbps_dictionary_t pkgd, const char *pkgver)

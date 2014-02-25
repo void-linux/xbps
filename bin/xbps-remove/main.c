@@ -65,10 +65,7 @@ usage(bool fail)
 static int
 state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 {
-	bool syslog_enabled = false;
-
-	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
-		syslog_enabled = true;
+	if (xscd->xhp->syslog) {
 		openlog("xbps-remove", LOG_CONS, LOG_USER);
 	}
 
@@ -85,16 +82,18 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("Removed `%s' successfully.\n", xscd->arg);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog) {
 			syslog(LOG_NOTICE, "Removed `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
+		}
 		break;
 	/* errors */
 	case XBPS_STATE_REMOVE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog) {
 			syslog(LOG_ERR, "%s", xscd->desc);
+		}
 		break;
 	case XBPS_STATE_REMOVE_FILE_FAIL:
 	case XBPS_STATE_REMOVE_FILE_HASH_FAIL:
@@ -104,8 +103,9 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			return 0;
 
 		xbps_error_printf("%s\n", xscd->desc);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog) {
 			syslog(LOG_ERR, "%s", xscd->desc);
+		}
 		break;
 	default:
 		xbps_dbg_printf(xscd->xhp,

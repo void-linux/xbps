@@ -29,7 +29,6 @@
 
 #include <assert.h>
 #include <confuse.h>
-#define LIBXBPS_PRIVATE
 #include "xbps.h"
 
 /*
@@ -90,6 +89,10 @@
 #define archive_compression_name(x) \
 	archive_filter_name(x, 0)
 
+#endif
+
+#ifndef __arraycount
+#define __arraycount(x) (sizeof(x) / sizeof(*x))
 #endif
 
 /**

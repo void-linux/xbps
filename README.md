@@ -41,7 +41,6 @@ To build this you'll need:
   - [zlib](http://www.zlib.net)
   - [openssl](http://www.openssl.org)
   - [libarchive >= 2.8.0](http://www.libarchive.org)
-  - [confuse >= 2.7](http://www.nongnu.org/confuse)
 
 and optionally:
 

@@ -42,7 +42,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-#define XBPS_MAXPATH	256
+#define XBPS_MAXPATH	512
 
 /**
  * @file include/xbps.h
@@ -50,7 +50,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140223"
+#define XBPS_API_VERSION	"20140225"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -66,6 +66,15 @@
 				" API: " XBPS_API_VERSION \
 				" GIT: " XBPS_GIT
 
+/**
+ * @def XBPS_SYSCONF_PATH
+ * Default configuration PATH to find XBPS_CONF_PLIST.
+ */
+#define XBPS_SYSDIR            "/xbps"
+#ifndef XBPS_SYSCONF_PATH
+#define XBPS_SYSCONF_PATH      "/etc" XBPS_SYSDIR
+#endif
+
 /** 
  * @def XBPS_META_PATH
  * Default root PATH to store metadata info.
@@ -79,6 +88,12 @@
 #define XBPS_CACHE_PATH		"var/cache/xbps"
 
 /** 
+ * @def XBPS_VPKG_PATH
+ * Default virtualpkg PATH to store virtualpkg overrides.
+ */
+#define XBPS_VPKG_PATH		XBPS_SYSCONF_PATH "/virtualpkg.d"
+
+/**
  * @def XBPS_PKGDB
  * Filename for the package database.
  */
@@ -115,15 +130,6 @@
 #define XBPS_REPOIDX_META 	"index-meta.plist"
 
 /**
- * @def XBPS_SYSCONF_PATH
- * Default configuration PATH to find XBPS_CONF_PLIST.
- */
-#define XBPS_SYSDIR            "/xbps"
-#ifndef XBPS_SYSCONF_PATH
-#define XBPS_SYSCONF_PATH      "/etc" XBPS_SYSDIR
-#endif
-
-/**
  * @def XBPS_CONF_DEF
  * Filename for the XBPS plist configuration file.
  */
@@ -151,13 +157,6 @@
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_FORCE_REMOVE_FILES	0x00000004
-
-/**
- * @def XBPS_FLAG_SYSLOG
- * Enable syslog logging flag. To make clients aware that syslog
- * will be used.
- */
-#define XBPS_FLAG_SYSLOG		0x00000008
 
 /**
  * @def XBPS_FLAG_INSTALL_AUTO
@@ -449,10 +448,6 @@ struct xbps_unpack_cb_data {
 	bool entry_is_conf;
 };
 
-#ifndef LIBXBPS_PRIVATE
-typedef void *cfg_t;
-#endif
-
 /**
  * @struct xbps_handle xbps.h "xbps.h"
  * @brief Generic XBPS structure handler for initialization.
@@ -465,9 +460,9 @@ struct xbps_handle {
 	/**
 	 * @private
 	 */
-	cfg_t *cfg;
 	xbps_dictionary_t pkg_metad;
 	xbps_dictionary_t pkgdb_revdeps;
+	xbps_dictionary_t vpkgd;
 	/**
 	 * @var pkgdb
 	 *
@@ -565,20 +560,20 @@ struct xbps_handle {
 	 */
 	char metadir[XBPS_MAXPATH-1];
 	/**
+	 * @var virtualpkgdir
+	 *
+	 * Virtual packages directory, with configuration files to override
+	 * system virtual packages.
+	 * If unset, defaults to \a XBPS_VPKG_PATH (relative to rootdir).
+	 */
+	char virtualpkgdir[XBPS_MAXPATH-1];
+	/**
 	 * @var native_arch
 	 *
 	 * Machine architecture, defaults to uname(2)::machine
 	 * if XBPS_ARCH is not set from environment.
 	 */
 	char native_arch[16];
-	/**
-	 * @var fetch_timeout
-	 *
-	 * Unsigned integer to specify libfetch's timeout limit.
-	 * If not set, it defaults to 30 (in seconds). This is set internally
-	 * by the API from a setting in configuration file.
-	 */
-	uint16_t fetch_timeout;
 	/**
 	 * @var flags
 	 *
@@ -587,10 +582,15 @@ struct xbps_handle {
 	 *  - XBPS_FLAG_FORCE_CONFIGURE
 	 *  - XBPS_FLAG_FORCE_REMOVE_FILES
 	 *  - XBPS_FLAG_DEBUG
-	 *  - XBPS_FLAG_SYSLOG
 	 *  - XBPS_FLAG_INSTALL_AUTO
 	 */
 	int flags;
+	/**
+	 * @var syslog
+	 *
+	 * Set it to true to enable syslog logging.
+	 */
+	bool syslog;
 };
 
 void xbps_dbg_printf(struct xbps_handle *, const char *, ...);

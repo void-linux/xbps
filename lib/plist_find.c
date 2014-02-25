@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,9 +33,6 @@
 #include <pthread.h>
 
 #include "xbps_api_impl.h"
-
-static pthread_mutex_t cfg_mtx = PTHREAD_MUTEX_INITIALIZER;
-static bool cfg_vpkgs_init;
 
 static xbps_dictionary_t
 get_pkg_in_array(xbps_array_t array, const char *str, bool virtual)
@@ -183,109 +180,56 @@ match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 	return d;
 }
 
-static void
-config_inject_vpkgs(struct xbps_handle *xh)
-{
-	DIR *dirp;
-	struct dirent *dp;
-	char *ext, *vpkgdir;
-	FILE *fp;
-
-	if (strcmp(xh->rootdir, "/"))
-		vpkgdir = xbps_xasprintf("%s/etc/xbps/virtualpkg.d",
-		    xh->rootdir);
-	else
-		vpkgdir = strdup("/etc/xbps/virtualpkg.d");
-
-	if ((dirp = opendir(vpkgdir)) == NULL) {
-		free(vpkgdir);
-		return;
-	}
-
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, "..") == 0) ||
-		    (strcmp(dp->d_name, ".") == 0))
-			continue;
-		/* only process .conf files, ignore something else */
-		if ((ext = strrchr(dp->d_name, '.')) == NULL)
-			continue;
-		if (strcmp(ext, ".conf") == 0) {
-			char *path;
-
-			path = xbps_xasprintf("%s/%s", vpkgdir, dp->d_name);
-			fp = fopen(path, "r");
-			assert(fp);
-			if (cfg_parse_fp(xh->cfg, fp) != 0) {
-				xbps_error_printf("Failed to parse "
-				    "vpkg conf file %s:\n", dp->d_name);
-			}
-			fclose(fp);
-			xbps_dbg_printf(xh, "Injected vpkgs from %s\n", path);
-			free(path);
-		}
-	}
-	closedir(dirp);
-	free(vpkgdir);
-	cfg_vpkgs_init = true;
-}
-
 const char HIDDEN *
 vpkg_user_conf(struct xbps_handle *xhp,
 	       const char *vpkg,
 	       bool bypattern)
 {
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
+	xbps_string_t rpkg;
 	const char *vpkgver, *pkg = NULL;
 	char *vpkgname = NULL, *tmp;
-	unsigned int cnt;
 
-	if (xhp->cfg == NULL)
+	if (xhp->vpkgd == NULL)
 		return NULL;
 
-	/* inject virtual packages from sysconfdir */
-	pthread_mutex_lock(&cfg_mtx);
-	if (!cfg_vpkgs_init)
-		config_inject_vpkgs(xhp);
-	pthread_mutex_unlock(&cfg_mtx);
+	iter = xbps_dictionary_iterator(xhp->vpkgd);
+	assert(iter);
 
-	if ((cnt = cfg_size(xhp->cfg, "virtual-package")) == 0) {
-		/* no virtual packages configured */
-		return NULL;
-	}
+	while ((obj = xbps_object_iterator_next(iter))) {
+		vpkgver = xbps_dictionary_keysym_cstring_nocopy(obj);
+		rpkg = xbps_dictionary_get_keysym(xhp->vpkgd, obj);
+		pkg = xbps_string_cstring_nocopy(rpkg);
 
-	for (unsigned int i = 0; i < cnt; i++) {
-		cfg_t *sec = cfg_getnsec(xhp->cfg, "virtual-package", i);
-		for (unsigned int j = 0; j < cfg_size(sec, "targets"); j++) {
-			tmp = NULL;
-			vpkgver = cfg_getnstr(sec, "targets", j);
-			if (strchr(vpkgver, '_') == NULL) {
-				tmp = xbps_xasprintf("%s_1", vpkgver);
-				vpkgname = xbps_pkg_name(tmp);
-				free(tmp);
-			} else {
-				vpkgname = xbps_pkg_name(vpkgver);
-			}
-			if (vpkgname == NULL)
-				break;
-			if (bypattern) {
-				if (!xbps_pkgpattern_match(vpkgver, vpkg)) {
-					free(vpkgname);
-					continue;
-				}
-			} else {
-				if (strcmp(vpkg, vpkgname)) {
-					free(vpkgname);
-					continue;
-				}
-			}
-			/* virtual package matched in conffile */
-			pkg = cfg_title(sec);
-			xbps_dbg_printf(xhp,
-			    "matched vpkg in conf `%s' for %s\n",
-			    pkg, vpkg);
-			free(vpkgname);
-			break;
+		tmp = NULL;
+		if (strchr(vpkgver, '_') == NULL) {
+			tmp = xbps_xasprintf("%s_1", vpkgver);
+			vpkgname = xbps_pkg_name(tmp);
+			free(tmp);
+		} else {
+			vpkgname = xbps_pkg_name(vpkgver);
 		}
+		if (vpkgname == NULL)
+			break;
+		if (bypattern) {
+			if (!xbps_pkgpattern_match(vpkgver, vpkg)) {
+				free(vpkgname);
+				continue;
+			}
+		} else {
+			if (strcmp(vpkg, vpkgname)) {
+				free(vpkgname);
+				continue;
+			}
+		}
+		xbps_dbg_printf(xhp, "matched vpkg `%s' with `%s (provides %s)`\n",
+		    vpkg, pkg, vpkgver);
+		free(vpkgname);
+		break;
 	}
+	xbps_object_iterator_release(iter);
+
 	return pkg;
 }
 

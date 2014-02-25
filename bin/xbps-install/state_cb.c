@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2013 Juan Romero Pardines.
+ * Copyright (c) 2011-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,11 +37,9 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	xbps_dictionary_t pkgd;
 	const char *instver, *newver;
 	char *pkgname;
-	bool syslog_enabled = false;
 	int rv = 0;
 
-	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
-		syslog_enabled = true;
+	if (xscd->xhp->syslog) {
 		openlog("xbps-install", LOG_CONS, LOG_USER);
 	}
 
@@ -105,24 +103,27 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		break;
 	case XBPS_STATE_INSTALL_DONE:
 		printf("%s: installed successfully.\n", xscd->arg);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog) {
 			syslog(LOG_NOTICE, "Installed `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
+		}
 		break;
 	case XBPS_STATE_UPDATE_DONE:
 		printf("%s: updated successfully.\n", xscd->arg);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog) {
 			syslog(LOG_NOTICE, "Updated `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
+		}
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("%s: removed successfully.\n", xscd->arg);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog) {
 			syslog(LOG_NOTICE, "Removed `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
+		}
 		break;
 	case XBPS_STATE_REPO_KEY_IMPORT:
 		printf("%s\n", xscd->desc);
@@ -139,8 +140,9 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	case XBPS_STATE_REPOSYNC_FAIL:
 	case XBPS_STATE_CONFIG_FILE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog) {
 			syslog(LOG_ERR, "%s", xscd->desc);
+		}
 		break;
 	case XBPS_STATE_REMOVE_FILE_FAIL:
 	case XBPS_STATE_REMOVE_FILE_HASH_FAIL:
@@ -150,8 +152,9 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			return 0;
 
 		xbps_error_printf("%s\n", xscd->desc);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog) {
 			syslog(LOG_ERR, "%s", xscd->desc);
+		}
 		break;
 	default:
 		xbps_dbg_printf(xscd->xhp,

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,10 +53,7 @@ usage(bool fail)
 static int
 state_cb(struct xbps_state_cb_data *xscd, void *cbd _unused)
 {
-	bool syslog_enabled = false;
-
-	if (xscd->xhp->flags & XBPS_FLAG_SYSLOG) {
-		syslog_enabled = true;
+	if (xscd->xhp->syslog) {
 		openlog("xbps-reconfigure", LOG_CONS, LOG_USER);
 	}
 
@@ -64,19 +61,19 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbd _unused)
 	/* notifications */
 	case XBPS_STATE_CONFIGURE:
 		printf("%s: configuring ...\n", xscd->arg);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog)
 			syslog(LOG_NOTICE, "%s: configuring ...", xscd->arg);
 		break;
 	case XBPS_STATE_CONFIGURE_DONE:
 		printf("%s: configured successfully.\n", xscd->arg);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog)
 			syslog(LOG_NOTICE,
 			    "%s: configured successfully.", xscd->arg);
 		break;
 	/* errors */
 	case XBPS_STATE_CONFIGURE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
-		if (syslog_enabled)
+		if (xscd->xhp->syslog)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	default:

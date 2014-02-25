@@ -30,15 +30,13 @@
 #define _BSD_SOURCE	/* required by strlcpy with musl */
 #include <string.h>
 #undef _BSD_SOURCE
+#include <strings.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <dirent.h>
+#include <ctype.h>
 
 #include "xbps_api_impl.h"
-
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
 
 /**
  * @file lib/initend.c
@@ -48,50 +46,225 @@
  * Use these functions to initialize some parameters before start
  * using libxbps and finalize usage to release resources at the end.
  */
-static int
-cb_validate_virtual(cfg_t *cfg, cfg_opt_t *opt)
+static void
+store_vpkg(struct xbps_handle *xhp, const char *path, size_t line, char *vpkg_s)
 {
-	for (unsigned int i = 0; i < cfg_size(cfg, "virtual-package"); i++) {
-		cfg_t *sec = cfg_opt_getnsec(opt, i);
-		if (cfg_getstr(sec, "targets") == 0) {
-			cfg_error(cfg, "targets must be set for "
-			     "virtual-package %s", cfg_title(sec));
-			return -1;
+	/*
+	 * Append virtual package overrides to our vpkgd dictionary:
+	 *
+	 * <key>vpkgver</key>
+	 * <string>realpkgname</string>
+	 */
+	char *vpkg, *rpkg, *tc;
+	size_t vpkglen;
+
+	if (xhp->vpkgd == NULL)
+		xhp->vpkgd = xbps_dictionary_create();
+
+	/* real pkg after ':' */
+	vpkg = vpkg_s;
+	rpkg = strchr(vpkg_s, ':');
+	if (rpkg == NULL || *rpkg == '\0') {
+		xbps_dbg_printf(xhp, "%s: ignoring invalid "
+		    "virtualpkg option at line %zu\n", path, line);
+		return;
+	}
+	/* vpkg until ':' */
+	tc = strchr(vpkg_s, ':');
+	vpkglen = strlen(vpkg_s) - strlen(tc);
+	vpkg[vpkglen] = '\0';
+
+	/* skip ':' */
+	rpkg++;
+	xbps_dictionary_set_cstring(xhp->vpkgd, vpkg, rpkg);
+	xbps_dbg_printf(xhp, "%s: added vpkg %s for %s\n", path, vpkg, rpkg);
+}
+
+static bool
+store_repo(struct xbps_handle *xhp, const char *repo)
+{
+	/*
+	 * Append repositories to our proplib array.
+	 */
+	if (xhp->repositories == NULL)
+		xhp->repositories = xbps_array_create();
+
+	/*
+	 * Do not add duplicates.
+	 */
+	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+		const char *srepo;
+
+		xbps_array_get_cstring_nocopy(xhp->repositories, i, &srepo);
+		if (strcmp(repo, srepo) == 0)
+			return false;
+	}
+	xbps_array_add_cstring(xhp->repositories, repo);
+	return true;
+}
+
+static bool
+parse_option(char *buf, char **k, char **v)
+{
+	size_t klen;
+	char *key, *value;
+	const char *keys[] = {
+		"rootdir",
+		"cachedir",
+		"syslog",
+		"repository",
+		"virtualpkgdir",
+		"virtualpkg",
+		"include"
+	};
+	bool found = false;
+
+	for (unsigned int i = 0; i < __arraycount(keys); i++) {
+		key = __UNCONST(keys[i]);
+		klen = strlen(key);
+		if (strncmp(buf, key, klen) == 0) {
+			found = true;
+			break;
 		}
 	}
-	return 0;
+	/* non matching option */
+	if (!found)
+		return false;
+
+	/* check if next char is the equal sign */
+	if (buf[klen] != '=')
+		return false;
+
+	/* skip equal sign */
+	value = buf + klen + 1;
+	/* eat blanks */
+	while (isblank((unsigned char)*value))
+		value++;
+	/* eat final newline */
+	value[strlen(value)-1] = '\0';
+	/* option processed successfully */
+	*k = key;
+	*v = value;
+
+	return true;
+}
+
+static int
+parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf)
+{
+	FILE *fp;
+	size_t len, nlines = 0;
+	ssize_t read;
+	char *line = NULL;
+	int rv = 0;
+
+	if ((fp = fopen(path, "r")) == NULL) {
+		rv = errno;
+		xbps_dbg_printf(xhp, "cannot read configuration file %s: %s\n", path, strerror(rv));
+		return rv;
+	}
+
+	if (!vpkgconf) {
+		xbps_dbg_printf(xhp, "Parsing configuration file: %s\n", path);
+	}
+
+	while ((read = getline(&line, &len, fp)) != -1) {
+		char *p, *k, *v;
+
+		nlines++;
+		p = line;
+		/* eat blanks */
+		while (isblank((unsigned char)*p))
+			p++;
+		/* ignore comments or empty lines */
+		if (*p == '#' || *p == '\n')
+			continue;
+		if (!parse_option(p, &k, &v)) {
+			xbps_dbg_printf(xhp, "%s: ignoring invalid option at "
+			    "line %zu\n", path, nlines);
+			continue;
+		}
+		if (strcmp(k, "rootdir") == 0) {
+			xbps_dbg_printf(xhp, "%s: rootdir set to %s\n",
+			    path, v);
+			snprintf(xhp->rootdir, sizeof(xhp->rootdir), "%s", v);
+		} else if (strcmp(k, "cachedir") == 0) {
+			xbps_dbg_printf(xhp, "%s: cachedir set to %s\n",
+			    path, v);
+			snprintf(xhp->cachedir, sizeof(xhp->cachedir), "%s", v);
+		} else if (strcmp(k, "virtualpkgdir") == 0) {
+			xbps_dbg_printf(xhp, "%s: virtualpkgdir set to %s\n",
+			    path, v);
+			snprintf(xhp->virtualpkgdir, sizeof(xhp->virtualpkgdir), "%s", v);
+		} else if (strcmp(k, "syslog") == 0) {
+			if (strcasecmp(v, "true") == 0) {
+				xhp->syslog = true;
+				xbps_dbg_printf(xhp, "%s: syslog enabled\n", path);
+			}
+		} else if (strcmp(k, "repository") == 0) {
+			if (store_repo(xhp, v))
+				xbps_dbg_printf(xhp, "%s: added repository %s\n", path, v);
+		} else if (strcmp(k, "virtualpkg") == 0) {
+			store_vpkg(xhp, path, nlines, v);
+		}
+		/* Avoid double-nested parsing, only allow it once */
+		if (nested)
+			continue;
+
+		if (strcmp(k, "include"))
+			continue;
+
+		if ((rv = parse_file(xhp, v, true, false)) != 0)
+			break;
+	}
+	free(line);
+	fclose(fp);
+
+	return rv;
+}
+
+static int
+parse_vpkgdir(struct xbps_handle *xhp)
+{
+	DIR *dirp;
+	struct dirent *dp;
+	char *ext;
+	int rv = 0;
+
+	if ((dirp = opendir(xhp->virtualpkgdir)) == NULL)
+		return 0;
+
+	xbps_dbg_printf(xhp, "Parsing virtualpkg directory: %s\n", xhp->virtualpkgdir);
+
+	while ((dp = readdir(dirp)) != NULL) {
+		if ((strcmp(dp->d_name, "..") == 0) ||
+		    (strcmp(dp->d_name, ".") == 0))
+			continue;
+		/* only process .vpkg files, ignore something else */
+		if ((ext = strrchr(dp->d_name, '.')) == NULL)
+			continue;
+		if (strcmp(ext, ".vpkg") == 0) {
+			char *path;
+
+			path = xbps_xasprintf("%s/%s", xhp->virtualpkgdir, dp->d_name);
+			if ((rv = parse_file(xhp, path, false, true)) != 0) {
+				free(path);
+				break;
+			}
+			free(path);
+		}
+	}
+	closedir(dirp);
+	return rv;
 }
 
 int
 xbps_init(struct xbps_handle *xhp)
 {
-	cfg_opt_t vpkg_opts[] = {
-		CFG_STR_LIST(__UNCONST("targets"), NULL, CFGF_NONE),
-		CFG_END()
-	};
-	cfg_opt_t opts[] = {
-		/* Defaults if not set in configuration file */
-		CFG_STR(__UNCONST("rootdir"), __UNCONST("/"), CFGF_NONE),
-		CFG_STR(__UNCONST("cachedir"),
-		    __UNCONST(XBPS_CACHE_PATH), CFGF_NONE),
-		CFG_INT(__UNCONST("FetchCacheConnections"),
-		    XBPS_FETCH_CACHECONN, CFGF_NONE),
-		CFG_INT(__UNCONST("FetchCacheConnectionsPerHost"),
-		    XBPS_FETCH_CACHECONN_HOST, CFGF_NONE),
-		CFG_INT(__UNCONST("FetchTimeoutConnection"),
-		    XBPS_FETCH_TIMEOUT, CFGF_NONE),
-		CFG_BOOL(__UNCONST("syslog"), true, CFGF_NONE),
-		CFG_STR_LIST(__UNCONST("repositories"), NULL, CFGF_MULTI),
-		CFG_SEC(__UNCONST("virtual-package"),
-		    vpkg_opts, CFGF_MULTI|CFGF_TITLE),
-		CFG_FUNC(__UNCONST("include"), &cfg_include),
-		CFG_END()
-	};
 	struct utsname un;
 	char *buf;
 	const char *repodir, *native_arch;
-	int rv, cc, cch;
-	bool syslog_enabled = false;
+	int rv;
 
 	assert(xhp != NULL);
 
@@ -99,39 +272,16 @@ xbps_init(struct xbps_handle *xhp)
 		xhp->conffile = XBPS_CONF_DEF;
 
 	/* parse configuration file */
-	xhp->cfg = cfg_init(opts, CFGF_NOCASE);
-	cfg_set_validate_func(xhp->cfg, "virtual-package", &cb_validate_virtual);
-
-	if ((rv = cfg_parse(xhp->cfg, xhp->conffile)) != CFG_SUCCESS) {
-		if (rv == CFG_FILE_ERROR) {
-			/*
-			 * Don't error out if config file not found.
-			 * If a default repository is set, use it; otherwise
-			 * use defaults (no repos and no virtual packages).
-			 */
-			if (errno != ENOENT)
-				return rv;
-
-		} else if (rv == CFG_PARSE_ERROR) {
-			/*
-			 * Parser error from configuration file.
-			 */
-			return ENOTSUP;
-		}
+	if ((rv = parse_file(xhp, xhp->conffile, false, false)) != 0) {
+		xbps_dbg_printf(xhp, "failed to read configuration file %s: %s\n",
+		     xhp->conffile, strerror(rv));
+		xbps_dbg_printf(xhp, "Using built-in defaults\n");
+		rv = 0;
 	}
-	xbps_dbg_printf(xhp, "Configuration file: %s\n",
-	    xhp->conffile ? xhp->conffile : "not found");
-
 	/* Set rootdir */
 	if (xhp->rootdir[0] == '\0') {
-		if (xhp->cfg != NULL) {
-			strlcpy(xhp->rootdir,
-			    cfg_getstr(xhp->cfg, "rootdir"),
-			    sizeof(xhp->rootdir));
-		} else {
-			xhp->rootdir[0] = '/';
-			xhp->rootdir[1] = '\0';
-		}
+		xhp->rootdir[0] = '/';
+		xhp->rootdir[1] = '\0';
 	} else if (xhp->rootdir[0] != '/') {
 		/* relative path */
 		char path[PATH_MAX-1];
@@ -148,7 +298,7 @@ xbps_init(struct xbps_handle *xhp)
 	if (xhp->cachedir[0] == '\0') {
 		snprintf(xhp->cachedir, sizeof(xhp->cachedir),
 		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
-		    xhp->cfg ? cfg_getstr(xhp->cfg, "cachedir") : XBPS_CACHE_PATH);
+		    XBPS_CACHE_PATH);
 	} else if (xhp->cachedir[0] != '/') {
 		/* relative path */
 		buf = strdup(xhp->cachedir);
@@ -168,6 +318,21 @@ xbps_init(struct xbps_handle *xhp)
 		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
 		free(buf);
 	}
+	/* Set virtualpkgdir */
+	if (xhp->virtualpkgdir[0] == '\0') {
+		snprintf(xhp->virtualpkgdir, sizeof(xhp->virtualpkgdir),
+		    "%s%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
+		    XBPS_VPKG_PATH);
+	} else if (xhp->virtualpkgdir[0] != '/') {
+		/* relative path */
+		buf = strdup(xhp->virtualpkgdir);
+		snprintf(xhp->virtualpkgdir, sizeof(xhp->virtualpkgdir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
+		free(buf);
+	}
+	/* parse virtualpkgdir */
+	if ((rv = parse_vpkgdir(xhp)))
+		return rv;
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
 	if ((native_arch = getenv("XBPS_ARCH")) != NULL) {
@@ -178,43 +343,15 @@ xbps_init(struct xbps_handle *xhp)
 	}
 	assert(xhp->native_arch);
 
-	if (xhp->cfg == NULL) {
-		xhp->flags |= XBPS_FLAG_SYSLOG;
-		xhp->fetch_timeout = XBPS_FETCH_TIMEOUT;
-		cc = XBPS_FETCH_CACHECONN;
-		cch = XBPS_FETCH_CACHECONN_HOST;
-	} else {
-		if (cfg_getbool(xhp->cfg, "syslog"))
-			xhp->flags |= XBPS_FLAG_SYSLOG;
-		xhp->fetch_timeout = cfg_getint(xhp->cfg, "FetchTimeoutConnection");
-		cc = cfg_getint(xhp->cfg, "FetchCacheConnections");
-		cch = cfg_getint(xhp->cfg, "FetchCacheConnectionsPerHost");
-	}
-	if (xhp->flags & XBPS_FLAG_SYSLOG)
-		syslog_enabled = true;
+	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN, XBPS_FETCH_CACHECONN_HOST);
 
-	xbps_fetch_set_cache_connection(cc, cch);
-
-	xbps_dbg_printf(xhp, "Rootdir=%s\n", xhp->rootdir);
-	xbps_dbg_printf(xhp, "Metadir=%s\n", xhp->metadir);
-	xbps_dbg_printf(xhp, "Cachedir=%s\n", xhp->cachedir);
-	xbps_dbg_printf(xhp, "FetchTimeout=%u\n", xhp->fetch_timeout);
-	xbps_dbg_printf(xhp, "FetchCacheconn=%u\n", cc);
-	xbps_dbg_printf(xhp, "FetchCacheconnHost=%u\n", cch);
-	xbps_dbg_printf(xhp, "Syslog=%u\n", syslog_enabled);
+	xbps_dbg_printf(xhp, "rootdir=%s\n", xhp->rootdir);
+	xbps_dbg_printf(xhp, "metadir=%s\n", xhp->metadir);
+	xbps_dbg_printf(xhp, "cachedir=%s\n", xhp->cachedir);
+	xbps_dbg_printf(xhp, "virtualpkgdir=%s\n", xhp->virtualpkgdir);
+	xbps_dbg_printf(xhp, "syslog=%s\n", xhp->syslog ? "true" : "false");
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
 	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch);
-
-	/*
-	 * Append repository list specified in configuration file.
-	 */
-	for (unsigned int i = 0; i < cfg_size(xhp->cfg, "repositories"); i++) {
-		if (xhp->repositories == NULL)
-			xhp->repositories = xbps_array_create();
-
-		xbps_array_add_cstring_nocopy(xhp->repositories,
-		    cfg_getnstr(xhp->cfg, "repositories", i));
-	}
 
 	if (xhp->flags & XBPS_FLAG_DEBUG) {
 		for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
@@ -236,7 +373,6 @@ xbps_end(struct xbps_handle *xhp)
 		xbps_object_release(xhp->pkgdb_revdeps);
 
 	xbps_fetch_unset_cache_connection();
-	cfg_free(xhp->cfg);
 }
 
 static void

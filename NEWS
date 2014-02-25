@@ -1,5 +1,9 @@
 xbps-0.33 (???):
 
+ * New configuration file format with a custom C parser, simpler
+   and does not need any additional external dependency. confuse is
+   not necessary anymore.
+
  * Only allow a single writer to the pkgdb to avoid concurrency issues
    when performing multiple write transactions (install, update or remove).
    The implementation relies on a POSIX named semaphore.

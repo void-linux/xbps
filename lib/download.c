@@ -110,7 +110,6 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 
 	/* Extern vars declared in libfetch */
 	fetchLastErrCode = 0;
-	fetchTimeout = xhp->fetch_timeout;
 
 	if ((url = fetchParseURL(uri)) == NULL)
 		return -1;
