@@ -364,7 +364,7 @@ unpack_archive(struct xbps_handle *xhp,
 		if (!force && (entry_type == AE_IFREG)) {
 			buf = strchr(entry_pname, '.') + 1;
 			assert(buf != NULL);
-			if (file_exists) {
+			if (file_exists && S_ISREG(st.st_mode)) {
 				/*
 				 * Handle configuration files. Check if current
 				 * entry is a configuration file and take action

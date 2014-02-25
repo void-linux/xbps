@@ -1,5 +1,7 @@
 xbps-0.33 (???):
 
+ * Fixed issue #31: https://github.com/voidlinux/xbps/issues/31
+
  * New configuration file format with a custom C parser, simpler
    and does not need any additional external dependency. confuse is
    not necessary anymore.

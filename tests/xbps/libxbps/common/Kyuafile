@@ -11,6 +11,7 @@ atf_test_program{name="find_pkg_obsoletes_test"}
 atf_test_program{name="issue6_test"}
 atf_test_program{name="issue18_test"}
 atf_test_program{name="issue20_test"}
+atf_test_program{name="issue31_test"}
 atf_test_program{name="conf_files_test"}
 atf_test_program{name="remove_test"}
 atf_test_program{name="replace_test"}
