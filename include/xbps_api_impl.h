@@ -28,7 +28,6 @@
 #define _XBPS_API_IMPL_H_
 
 #include <assert.h>
-#include <confuse.h>
 #include "xbps.h"
 
 /*
