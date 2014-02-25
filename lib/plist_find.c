@@ -190,6 +190,7 @@ vpkg_user_conf(struct xbps_handle *xhp,
 	xbps_string_t rpkg;
 	const char *vpkgver, *pkg = NULL;
 	char *vpkgname = NULL, *tmp;
+	bool found = false;
 
 	if (xhp->vpkgd == NULL)
 		return NULL;
@@ -226,11 +227,12 @@ vpkg_user_conf(struct xbps_handle *xhp,
 		xbps_dbg_printf(xhp, "matched vpkg `%s' with `%s (provides %s)`\n",
 		    vpkg, pkg, vpkgver);
 		free(vpkgname);
+		found = true;
 		break;
 	}
 	xbps_object_iterator_release(iter);
 
-	return pkg;
+	return found ? pkg : NULL;
 }
 
 xbps_dictionary_t
