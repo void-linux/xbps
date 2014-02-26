@@ -30,6 +30,8 @@
 #include <errno.h>
 #include <dirent.h>
 #include <libgen.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "xbps_api_impl.h"
 
@@ -44,6 +46,7 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 	const char *file;
 	char *path = NULL;
 	bool fail = false;
+	int fd = 0;
 
 	for (uint8_t i = 0; i < __arraycount(objs); i++) {
 		array = xbps_dictionary_get(pkgd, objs[i]);
@@ -57,7 +60,7 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 		while ((obj = xbps_object_iterator_next(iter))) {
 			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-			if (access(path, W_OK) == -1) {
+			if (faccessat(fd, path, W_OK, AT_SYMLINK_NOFOLLOW) == -1) {
 				if (errno != ENOENT) {
 					/*
 					 * only bail out if something else than ENOENT
