@@ -1,5 +1,13 @@
 xbps-0.33 (???):
 
+ * xbps-uhelper now supports downloading files with a defined destination.
+   The syntax of fetch is "URI>FILENAME". So if you call
+
+	$ xbps-uhelper fetch "http://foobar.com/foo.tar.gz>bar.tar.gz"
+
+   the output file will be named "bar.tar.gz". Contributed by
+   Enno Boland (Gottox).
+
  * While checking file permissions for package files removal, make sure
    to not dereference symbolic links, because a symlink might point to
    a file in the rootfs, which won't have the same uid/gid.
