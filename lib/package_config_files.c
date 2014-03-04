@@ -224,7 +224,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			    0, pkgver,
 			    "Installing new configuration file to "
 			    "`%s.new-%s'.", cffile, version);
-			archive_entry_set_pathname(entry, buf);
+			archive_entry_copy_pathname(entry, buf);
 			free(buf);
 			rv = 1;
 			break;
