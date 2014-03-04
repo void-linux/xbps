@@ -91,7 +91,7 @@ xbps_fetch_error_string(void)
 }
 
 int
-xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
+xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filename, const char *flags)
 {
 	struct stat st, st_tmpfile, *stp;
 	struct url *url = NULL;
@@ -100,7 +100,7 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	struct timespec ts[2];
 	off_t bytes_dload = 0;
 	ssize_t bytes_read = 0, bytes_written = 0;
-	char buf[4096], *filename, *tempfile = NULL;
+	char buf[4096], *tempfile = NULL;
 	char fetch_flags[8];
 	int fd = -1, rv = 0;
 	bool refetch = false, restart = false;
@@ -117,14 +117,6 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	memset(&fetch_flags, 0, sizeof(fetch_flags));
 	if (flags != NULL)
 		strlcpy(fetch_flags, flags, 7);
-	/*
-	 * Get the filename specified in URI argument.
-	 */
-	filename = strrchr(uri, '/') + 1;
-	if (filename == NULL) {
-		rv = -1;
-		goto out;
-	}
 
 	tempfile = xbps_xasprintf("%s.part", filename);
 	/*
@@ -297,4 +289,19 @@ out:
 		free(tempfile);
 
 	return rv;
+}
+int
+xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
+{
+	char *filename;
+
+	/*
+	 * Get the filename specified in URI argument.
+	 */
+	filename = strrchr(uri, '/') + 1;
+	if (filename == NULL) {
+		return -1;
+	}
+
+	return xbps_fetch_file_dest(xhp, uri, filename, flags);
 }
