@@ -370,11 +370,7 @@ purge:
 	 * Unregister package from pkgdb.
 	 */
 	xbps_dictionary_remove(xhp->pkgdb, pkgname);
-	if ((rv = xbps_pkgdb_update(xhp, true)) != 0)
-		goto out;
-
 	xbps_dbg_printf(xhp, "[remove] unregister %s returned %d\n", pkgver, rv);
-
 	xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_DONE, 0, pkgver, NULL);
 out:
 	if (pkgname != NULL)

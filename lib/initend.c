@@ -368,10 +368,6 @@ xbps_end(struct xbps_handle *xhp)
 	assert(xhp);
 
 	xbps_pkgdb_release(xhp);
-
-	if (xbps_object_type(xhp->pkgdb_revdeps) != XBPS_TYPE_UNKNOWN)
-		xbps_object_release(xhp->pkgdb_revdeps);
-
 	xbps_fetch_unset_cache_connection();
 }
 

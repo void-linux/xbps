@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@
  * state is XBPS_PKG_STATE_INSTALLED.
  */
 int
-xbps_configure_packages(struct xbps_handle *xhp, bool flush)
+xbps_configure_packages(struct xbps_handle *xhp)
 {
 	xbps_dictionary_t pkgd;
 	xbps_object_t obj;
@@ -62,7 +62,7 @@ xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		rv = xbps_configure_pkg(xhp, pkgver, true, false, false);
+		rv = xbps_configure_pkg(xhp, pkgver, true, false);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "%s: failed to configure %s: %s\n",
 			    __func__, pkgver, strerror(rv));
@@ -71,9 +71,6 @@ xbps_configure_packages(struct xbps_handle *xhp, bool flush)
 	}
 	xbps_object_iterator_release(iter);
 
-	if ((rv == 0) && flush)
-		rv = xbps_pkgdb_update(xhp, true);
-
 	return rv;
 }
 
@@ -81,8 +78,7 @@ int
 xbps_configure_pkg(struct xbps_handle *xhp,
 		   const char *pkgver,
 		   bool check_state,
-		   bool update,
-		   bool flush)
+		   bool update)
 {
 	xbps_dictionary_t pkgd, pkgmetad;
 	char *pkgname, *plist;
@@ -153,13 +149,6 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		    pkgver, "%s: [configure] failed to set state to installed: %s",
 		    pkgver, strerror(rv));
 		return rv;
-	}
-	if (flush) {
-		if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL, rv,
-			    pkgver, "%s: [configure] failed to update pkgdb: %s\n",
-			    pkgver, strerror(rv));
-		}
 	}
 	xbps_object_release(pkgmetad);
 

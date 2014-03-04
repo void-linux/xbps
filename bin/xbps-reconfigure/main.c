@@ -153,17 +153,22 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (all) {
-		rv = xbps_configure_packages(&xh, true);
-	} else {
-		for (i = optind; i < argc; i++) {
-			rv = xbps_configure_pkg(&xh, argv[i],
-			    true, false, true);
-			if (rv != 0)
-				fprintf(stderr, "Failed to reconfigure "
-				    "`%s': %s\n", argv[i], strerror(rv));
-		}
+	if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
+		fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
+		exit(EXIT_FAILURE);
 	}
 
+	if (all) {
+		rv = xbps_configure_packages(&xh);
+	} else {
+		for (i = optind; i < argc; i++) {
+			rv = xbps_configure_pkg(&xh, argv[i], true, false);
+			if (rv != 0) {
+				fprintf(stderr, "Failed to reconfigure "
+				    "`%s': %s\n", argv[i], strerror(rv));
+			}
+		}
+	}
+	xbps_pkgdb_unlock(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

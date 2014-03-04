@@ -72,7 +72,7 @@ change_pkg_mode(struct xbps_handle *xhp, const char *pkgname, const char *mode)
 	else
 		usage(true);
 
-	return xbps_pkgdb_update(xhp, true);
+	return 0;
 }
 
 int

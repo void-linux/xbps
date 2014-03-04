@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,19 +64,7 @@ pkgdb_cb(struct xbps_handle *xhp _unused,
 int
 check_pkg_integrity_all(struct xbps_handle *xhp)
 {
-	int rv;
-
-	/* force an update to get total pkg count */
-	(void)xbps_pkgdb_update(xhp, false);
-
-	rv = xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_cb, NULL);
-
-	if ((rv = xbps_pkgdb_update(xhp, true)) != 0) {
-		xbps_error_printf("failed to write pkgdb: %s\n",
-		    strerror(rv));
-		return rv;
-	}
-	return 0;
+	return xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_cb, NULL);
 }
 
 int
@@ -150,9 +138,6 @@ do {								\
 	xbps_object_release(propsd);
 
 #undef RUN_PKG_CHECK
-
-	if ((rv == 0) && (pkgd == NULL))
-		(void)xbps_pkgdb_update(xhp, true);
 
 	return 0;
 }

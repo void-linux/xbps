@@ -265,7 +265,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			/*
 			 * Reconfigure pending package.
 			 */
-			rv = xbps_configure_pkg(xhp, pkgver, false, false, false);
+			rv = xbps_configure_pkg(xhp, pkgver, false, false);
 			if (rv != 0)
 				goto out;
 
@@ -313,6 +313,8 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		goto out;
 
 	xbps_object_iterator_reset(iter);
+	/* Force a pkgdb write for all unpacked pkgs in transaction */
+	(void)xbps_pkgdb_update(xhp, true);
 
 	/*
 	 * Configure all unpacked packages.
@@ -330,7 +332,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		if (strcmp(tract, "update") == 0)
 			update = true;
 
-		rv = xbps_configure_pkg(xhp, pkgver, false, update, true);
+		rv = xbps_configure_pkg(xhp, pkgver, false, update);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "%s: configure failed for "
 			    "%s: %s\n", __func__, pkgver, strerror(rv));
@@ -351,6 +353,8 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 out:
 	xbps_object_iterator_release(iter);
+	/* Force a pkgdb write for all unpacked pkgs in transaction */
+	(void)xbps_pkgdb_update(xhp, true);
 
 	return rv;
 }

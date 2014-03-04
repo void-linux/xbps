@@ -29,8 +29,6 @@
 
 #include <stdio.h>
 #include <inttypes.h>
-#include <limits.h>
-#include <semaphore.h>
 
 #include <xbps/xbps_array.h>
 #include <xbps/xbps_bool.h>
@@ -50,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140225"
+#define XBPS_API_VERSION	"20140304"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -471,11 +469,11 @@ struct xbps_handle {
 	 */
 	xbps_dictionary_t pkgdb;
 	/**
-	 * @private
+	 * @var pkgdb_plist;
 	 *
-	 * POSIX named semaphore associated with the pkgdb for writers.
+	 * Absolute pathname to the pkgdb plist file.
 	 */
-	sem_t *pkgdb_sem;
+	char *pkgdb_plist;
 	/**
 	 * @var transd
 	 *
@@ -632,25 +630,20 @@ void xbps_end(struct xbps_handle *xhp);
  * @param[in] check_state Set it to true to check that package is
  * in unpacked state.
  * @param[in] update Set it to true if this package is being updated.
- * @param[in] flush Set it to true to flush state to pkgdb.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_configure_pkg(struct xbps_handle *xhp,
-		       const char *pkgname,
-		       bool check_state,
-		       bool update,
-		       bool flush);
+int xbps_configure_pkg(struct xbps_handle *xhp, const char *pkgname,
+		bool check_state, bool update);
 
 /**
  * Configure (or force reconfiguration of) all packages.
  *
  * @param[in] xhp Pointer to an xbps_handle struct.
- * @param[in] flush Set it to true to flush state to pkgdb.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_configure_packages(struct xbps_handle *xhp, bool flush);
+int xbps_configure_packages(struct xbps_handle *xhp);
 
 /*@}*/
 

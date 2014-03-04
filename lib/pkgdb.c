@@ -57,29 +57,49 @@
  * data type is specified on its edge, i.e array, bool, integer, string,
  * dictionary.
  */
-#define _PKGDB_SEMNAME	"/libxbps-pkgdb"
+static int pkgdb_fd;
+
 int
 xbps_pkgdb_lock(struct xbps_handle *xhp)
 {
-	int rv = 0;
-	mode_t myumask;
+	int rv;
 	/*
-	 * Create/open the POSIX named semaphore.
+	 * Use a mandatory file lock to only allow one writer to pkgdb,
+	 * other writers will block.
 	 */
-	myumask = umask(0);
-	xhp->pkgdb_sem = sem_open(_PKGDB_SEMNAME, O_CREAT, 0660, 1);
-	umask(myumask);
+	xhp->pkgdb_plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
+	if (xbps_pkgdb_init(xhp) == ENOENT) {
+		/* if metadir does not exist, create it */
+		if (access(xhp->metadir, R_OK|X_OK) == -1) {
+			if (errno != ENOENT)
+				return errno;
 
-	if (xhp->pkgdb_sem == SEM_FAILED) {
+			if (xbps_mkpath(xhp->metadir, 0755) == -1) {
+				rv = errno;
+				xbps_dbg_printf(xhp, "[pkgdb] failed to create metadir "
+				    "%s: %s\n", xhp->metadir, strerror(rv));
+				return rv;
+			}
+		}
+		/* if pkgdb is unexistent, create it with an empty dictionary */
+		xhp->pkgdb = xbps_dictionary_create();
+		if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist)) {
+			rv = errno;
+			xbps_dbg_printf(xhp, "[pkgdb] failed to create pkgdb "
+			    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
+			return rv;
+		}
+	}
+	if ((pkgdb_fd = open(xhp->pkgdb_plist, O_CREAT|O_RDWR, 0664)) == -1) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "pkgdb: failed to create/open named "
-		    "semaphore: %s\n", strerror(errno));
+		xbps_dbg_printf(xhp, "[pkgdb] cannot open pkgdb for locking "
+		    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
+		free(xhp->pkgdb_plist);
 		return rv;
 	}
-	if (sem_wait(xhp->pkgdb_sem) == -1) {
+	if (lockf(pkgdb_fd, F_TLOCK, 0) == -1) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "pkgdb: failed to lock named semaphore: %s\n",
-		    strerror(errno));
+		xbps_dbg_printf(xhp, "[pkgdb] cannot lock pkgdb: %s\n", strerror(rv));
 		return rv;
 	}
 	return 0;
@@ -88,16 +108,14 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 void
 xbps_pkgdb_unlock(struct xbps_handle *xhp)
 {
-	/* Unlock semaphore, close and destroy it (if possible) */
-	if (xhp->pkgdb_sem == NULL)
-		return;
+	(void)xbps_pkgdb_update(xhp, true);
 
-	sem_post(xhp->pkgdb_sem);
-	sem_close(xhp->pkgdb_sem);
-	sem_unlink(_PKGDB_SEMNAME);
-	xhp->pkgdb_sem = NULL;
+	if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
+		xbps_dbg_printf(xhp, "[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
+
+	(void)close(pkgdb_fd);
+	pkgdb_fd = -1;
 }
-#undef _PKGDB_SEMNAME
 
 int HIDDEN
 xbps_pkgdb_init(struct xbps_handle *xhp)
@@ -125,23 +143,19 @@ int
 xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 {
 	xbps_dictionary_t pkgdb_storage;
-	char *plist;
 	static int cached_rv;
 	int rv = 0;
 
 	if (cached_rv && !flush)
 		return cached_rv;
 
-	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
 	if (xhp->pkgdb && flush) {
-		pkgdb_storage = xbps_dictionary_internalize_from_file(plist);
+		pkgdb_storage = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist);
 		if (pkgdb_storage == NULL ||
 		    !xbps_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
 			/* flush dictionary to storage */
-			if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, plist)) {
-				free(plist);
+			if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist))
 				return errno;
-			}
 		}
 		if (pkgdb_storage)
 			xbps_object_release(pkgdb_storage);
@@ -151,7 +165,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		cached_rv = 0;
 	}
 	/* update copy in memory */
-	if ((xhp->pkgdb = xbps_dictionary_internalize_from_file(plist)) == NULL) {
+	if ((xhp->pkgdb = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist)) == NULL) {
 		if (errno == ENOENT)
 			xhp->pkgdb = xbps_dictionary_create();
 		else
@@ -159,7 +173,6 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 
 		cached_rv = rv = errno;
 	}
-	free(plist);
 
 	return rv;
 }
@@ -171,6 +184,9 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 
 	if (xhp->pkgdb == NULL)
 		return;
+
+	/* write pkgdb to storage in case it was modified */
+	(void)xbps_pkgdb_update(xhp, true);
 
 	if (xbps_object_type(xhp->pkg_metad) == XBPS_TYPE_DICTIONARY)
 	       xbps_object_release(xhp->pkg_metad);

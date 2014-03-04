@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -140,10 +140,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 		xbps_dbg_printf(xhp,
 		    "%s: failed to set pkgd for %s\n", __func__, pkgver);
-		goto out;
 	}
-	rv = xbps_pkgdb_update(xhp, true);
-
 out:
 	if (pkgname)
 		free(pkgname);
