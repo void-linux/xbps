@@ -671,6 +671,20 @@ int xbps_fetch_file(struct xbps_handle *xhp, const char *uri,
 		    const char *flags);
 
 /**
+ * Download a file from a remote URL to current working directory.
+ * 
+ * @param[in] xhp Pointer to an xbps_handle struct.
+ * @param[in] uri Remote URI string.
+ * @param[in] filename Local filename to safe the file
+ * @param[in] flags Flags passed to libfetch's fetchXget().
+ * 
+ * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
+ * do not match) and 1 if downloaded successfully.
+ **/
+int xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri,
+		    const char *filename, const char *flags);
+
+/**
  * Returns last error string reported by xbps_fetch_file().
  *
  * @return A string with the appropiate error message.
