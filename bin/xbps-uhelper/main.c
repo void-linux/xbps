@@ -49,7 +49,7 @@ usage(void)
 	"  Action arguments:\n"
 	"    cmpver\t\t<instver> <reqver>\n"
 	"    digest\t\t<file> <file1+N>\n"
-	"    fetch\t\t<URL> <URL1+N>\n"
+	"    fetch\t\t<URL[::filename]> <URL1+N[::filename]>\n"
 	"    getpkgdepname\t<string>\n"
 	"    getpkgdepversion\t<string>\n"
 	"    getpkgname\t\t<string>\n"
@@ -87,7 +87,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *version, *rootdir = NULL, *confdir = NULL;
-	char *pkgname, *hash;
+	char *pkgname, *hash, *sep;
 	int flags = 0, c, rv = 0;
 
 	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
@@ -248,13 +248,19 @@ main(int argc, char **argv)
 			usage();
 
 		for (int i = 1; i < argc; i++) {
-			rv = xbps_fetch_file(&xh, argv[i], "v");
+			if( (sep = strrchr(argv[i], '>')) ) {
+				*sep = '\0';
+				rv = xbps_fetch_file_dest(&xh, argv[i], sep+1, "v");
+			} else {
+				rv = xbps_fetch_file(&xh, argv[i], "v");
+			}
+
 			if (rv == -1) {
-				printf("%s: %s\n", argv[1],
+				printf("%s: %s\n", argv[i],
 				    xbps_fetch_error_string());
 			} else if (rv == 0) {
 				printf("%s: file is identical than remote.\n",
-				    argv[1]);
+				    argv[i]);
 			} else
 				rv = 0;
 		}
