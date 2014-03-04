@@ -126,6 +126,8 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 
 	if (xhp->pkgdb != NULL)
 		return 0;
+	if (xhp->pkgdb_plist == NULL)
+		xhp->pkgdb_plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
 
 	if ((rv = xbps_pkgdb_update(xhp, false)) != 0) {
 		if (rv != ENOENT)
