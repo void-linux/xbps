@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2014 Enno Boland.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +50,7 @@ usage(void)
 	"  Action arguments:\n"
 	"    cmpver\t\t<instver> <reqver>\n"
 	"    digest\t\t<file> <file1+N>\n"
-	"    fetch\t\t<URL[::filename]> <URL1+N[::filename]>\n"
+	"    fetch\t\t<URL[>filename]> <URL1+N[>filename]>\n"
 	"    getpkgdepname\t<string>\n"
 	"    getpkgdepversion\t<string>\n"
 	"    getpkgname\t\t<string>\n"
