@@ -1,5 +1,8 @@
 xbps-0.33 (???):
 
+ * xbps-dgraph: fixed a segfault if rootdir wasn't set:
+   issue #33: https://github.com/voidlinux/xbps/issues/33
+
  * xbps-uhelper now supports downloading files with a defined destination.
    The syntax of fetch is "URI>FILENAME". So if you call
 

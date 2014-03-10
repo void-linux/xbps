@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2013 Juan Romero Pardines.
+ * Copyright (c) 2010-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -479,7 +479,9 @@ main(int argc, char **argv)
 
 	/* Initialize libxbps */
 	memset(&xh, 0, sizeof(xh));
-	strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+	if (rootdir != NULL)
+		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+
 	if ((rv = xbps_init(&xh)) != 0)
 		die("failed to initialize libxbps: %s", strerror(rv));
 
