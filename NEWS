@@ -1,4 +1,4 @@
-xbps-0.33 (???):
+xbps-0.33 (2014-03-11):
 
  * xbps-dgraph: fixed a segfault if rootdir wasn't set:
    issue #33: https://github.com/voidlinux/xbps/issues/33
