@@ -98,7 +98,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 
 	rv = xbps_file_exec(xhp, fpath, action, pkgname, version,
 			    update ? "yes" : "no",
-			    xhp->conffile, NULL);
+			    xhp->conffile, xhp->native_arch, NULL);
 	free(pkgname);
 
 out:

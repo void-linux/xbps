@@ -1,5 +1,8 @@
 xbps-0.34 (???):
 
+ * Pass another argument to package scripts with the native machine architecture
+   (uname -m), which can be overrided via XBPS_ARCH environment variable too.
+
 xbps-0.33 (2014-03-11):
 
  * xbps-dgraph: fixed a segfault if rootdir wasn't set:
