@@ -256,7 +256,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			rv = xbps_remove_pkg(xhp, pkgver, update);
 			if (rv != 0) {
 				xbps_dbg_printf(xhp, "[trans] failed to "
-				    "remove %s\n", pkgver);
+				    "remove %s: %s\n", pkgver, strerror(rv));
 				goto out;
 			}
 			continue;
@@ -266,9 +266,11 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			 * Reconfigure pending package.
 			 */
 			rv = xbps_configure_pkg(xhp, pkgver, false, false);
-			if (rv != 0)
+			if (rv != 0) {
+				xbps_dbg_printf(xhp, "[trans] failed to "
+				    "configure %s: %s\n", pkgver, strerror(rv));
 				goto out;
-
+			}
 			continue;
 
 		} else if (strcmp(tract, "update") == 0) {
