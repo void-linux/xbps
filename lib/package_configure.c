@@ -87,13 +87,25 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	assert(pkgver != NULL);
 
-	pkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
-	if (pkgd == NULL)
+	if ((pkgname = xbps_pkg_name(pkgver)) == NULL) {
+		xbps_dbg_printf(xhp, "[configure] cannot guess "
+		    "pkgname for %s\n", pkgver);
+		/* assume pkgver == pkgname */
+		pkgname = strdup(pkgver);
+		assert(pkgname);
+	}
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	if (pkgd == NULL) {
+		free(pkgname);
+		xbps_dbg_printf(xhp, "[configure] cannot find %s (%s) "
+		    "in pkgdb\n", pkgname, pkgver);
 		return ENOENT;
+	}
 
 	rv = xbps_pkg_state_dictionary(pkgd, &state);
 	xbps_dbg_printf(xhp, "%s: state %d rv %d\n", pkgver, state, rv);
 	if (rv != 0) {
+		free(pkgname);
 		xbps_dbg_printf(xhp, "%s: [configure] failed to get "
 		    "pkg state: %s\n", pkgver, strerror(rv));
 		return EINVAL;
@@ -101,18 +113,17 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	if (check_state) {
 		if (state == XBPS_PKG_STATE_INSTALLED) {
-			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0)
+			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0) {
+				free(pkgname);
 				return 0;
-		} else if (state != XBPS_PKG_STATE_UNPACKED)
+			}
+		} else if (state != XBPS_PKG_STATE_UNPACKED) {
+			free(pkgname);
 			return EINVAL;
+		}
 	}
 
 	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgver, NULL);
-
-	/* internalize pkg dictionary from metadir */
-	pkgname = xbps_pkg_name(pkgver);
-	if (pkgname == NULL) /* assume pkgname */
-		pkgname = strdup(pkgver);
 
 	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
 	free(pkgname);
