@@ -229,14 +229,20 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	 * Download binary packages (if they come from a remote repository).
 	 */
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_DOWNLOAD, 0, NULL, NULL);
-	if ((rv = download_binpkgs(xhp, iter)) != 0)
+	if ((rv = download_binpkgs(xhp, iter)) != 0) {
+		xbps_dbg_printf(xhp, "[trans] failed to download binpkgs: "
+		    "%s\n", strerror(rv));
 		goto out;
+	}
 	/*
 	 * Check binary package integrity.
 	 */
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_VERIFY, 0, NULL, NULL);
-	if ((rv = check_binpkgs(xhp, iter)) != 0)
+	if ((rv = check_binpkgs(xhp, iter)) != 0) {
+		xbps_dbg_printf(xhp, "[trans] failed to check binpkgs: "
+		    "%s\n", strerror(rv));
 		goto out;
+	}
 	/*
 	 * Install, update, configure or remove packages as specified
 	 * in the transaction dictionary.
@@ -297,13 +303,19 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		/*
 		 * Unpack binary package.
 		 */
-		if ((rv = xbps_unpack_binary_pkg(xhp, obj)) != 0)
+		if ((rv = xbps_unpack_binary_pkg(xhp, obj)) != 0) {
+			xbps_dbg_printf(xhp, "[trans] failed to unpack "
+			    "%s: %s\n", pkgver, strerror(rv));
 			goto out;
+		}
 		/*
 		 * Register package.
 		 */
-		if ((rv = xbps_register_pkg(xhp, obj)) != 0)
+		if ((rv = xbps_register_pkg(xhp, obj)) != 0) {
+			xbps_dbg_printf(xhp, "[trans] failed to register "
+			    "%s: %s\n", pkgver, strerror(rv));
 			goto out;
+		}
 	}
 	/* if there are no packages to install or update we are done */
 	if (!xbps_dictionary_get(xhp->transd, "total-update-pkgs") &&
