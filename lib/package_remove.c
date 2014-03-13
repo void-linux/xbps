@@ -231,13 +231,12 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
 
-	xbps_dbg_printf(xhp, "attempting to remove %s state %d\n", pkgver, state);
-
 	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0) {
-		xbps_dbg_printf(xhp, "cannot find %s in pkgdb: %s\n",
+		xbps_dbg_printf(xhp, "[remove] cannot find %s in pkgdb: %s\n",
 		    pkgver, strerror(rv));
 		goto out;
 	}
+	xbps_dbg_printf(xhp, "attempting to remove %s state %d\n", pkgver, state);
 
 	if (!update)
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE, 0, pkgver, NULL);
