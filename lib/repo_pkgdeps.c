@@ -155,7 +155,7 @@ find_repo_deps(struct xbps_handle *xhp,
 	       const char *curpkg,		/* current pkgver */
 	       unsigned short *depth)		/* max recursion depth */
 {
-	xbps_dictionary_t curpkgd, tmpd;
+	xbps_dictionary_t curpkgd = NULL;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	xbps_array_t curpkgrdeps;
@@ -191,11 +191,22 @@ find_repo_deps(struct xbps_handle *xhp,
 			break;
 		}
 		/*
-		 * Pass 1: check if required dependency is already installed
+		 * Pass 1: check if required dependency has been already
+		 * added in the transaction dictionary.
+		 */
+		if ((curpkgd = xbps_find_pkg_in_array(unsorted, reqpkg)) ||
+		    (curpkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, reqpkg))) {
+			xbps_dictionary_get_cstring_nocopy(curpkgd,
+			    "pkgver", &pkgver_q);
+			xbps_dbg_printf_append(xhp, " (%s queued)\n", pkgver_q);
+			continue;
+		}
+		/*
+		 * Pass 2: check if required dependency is already installed
 		 * and its version is fully matched.
 		 */
-		if (((tmpd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) &&
-		    ((tmpd = xbps_pkgdb_get_virtualpkg(xhp, pkgname)) == NULL)) {
+		if (((curpkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) &&
+		    ((curpkgd = xbps_pkgdb_get_virtualpkg(xhp, pkgname)) == NULL)) {
 			if (errno && errno != ENOENT) {
 				/* error */
 				rv = errno;
@@ -216,13 +227,13 @@ find_repo_deps(struct xbps_handle *xhp,
 			 * Check if installed version matches the
 			 * required pkgdep version.
 			 */
-			xbps_dictionary_get_cstring_nocopy(tmpd,
+			xbps_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkgver_q);
 
 			/* Check its state */
-			if ((rv = xbps_pkg_state_dictionary(tmpd, &state)) != 0)
+			if ((rv = xbps_pkg_state_dictionary(curpkgd, &state)) != 0)
 				break;
-			if (xbps_match_virtual_pkg_in_dict(tmpd,reqpkg,true)) {
+			if (xbps_match_virtual_pkg_in_dict(curpkgd, reqpkg, true)) {
 				/*
 				 * Check if required dependency is a virtual
 				 * package and is satisfied by an
@@ -243,7 +254,7 @@ find_repo_deps(struct xbps_handle *xhp,
 				xbps_dbg_printf_append(xhp,
 				    "installed `%s', "
 				    "must be updated.", pkgver_q);
-				if (xbps_dictionary_get(tmpd, "hold"))
+				if (xbps_dictionary_get(curpkgd, "hold"))
 					xbps_dbg_printf_append(xhp, " on hold state! ignoring update.\n");
 				else {
 					xbps_dbg_printf_append(xhp, "\n");
@@ -279,17 +290,6 @@ find_repo_deps(struct xbps_handle *xhp,
 				    "pattern %s with %s\n", reqpkg, pkgver_q);
 				break;
 			}
-		}
-		/*
-		 * Pass 2: check if required dependency has been already
-		 * added in the transaction dictionary.
-		 */
-		if ((curpkgd = xbps_find_pkg_in_array(unsorted, reqpkg)) ||
-		    (curpkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, reqpkg))) {
-			xbps_dictionary_get_cstring_nocopy(curpkgd,
-			    "pkgver", &pkgver_q);
-			xbps_dbg_printf_append(xhp, " (%s queued)\n", pkgver_q);
-			continue;
 		}
 		/*
 		 * Pass 3: find required dependency in repository pool.
