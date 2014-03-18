@@ -1,5 +1,11 @@
 xbps-0.34 (???):
 
+ * Fix #34 (xbps-uhelper fetch fails to download files from https://alioth.debian.org).
+   The issue is that this HTTP server returns 406 (Not Acceptable) when the HTTP
+   header does not contain the "Accept" field (see
+   https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=712261 for more info).
+   Our libfetch code now always adds "Accept: */*" in the HTTP headers.
+
  * Added some debugging in error paths when performing a transaction.
 
  * Fixed an issue where in a transaction a package with wrong version was being

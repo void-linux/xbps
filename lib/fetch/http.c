@@ -939,8 +939,16 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 			http_cmd(conn, "User-Agent: %s\r\n", p);
 		else
 			http_cmd(conn, "User-Agent: %s\r\n", _LIBFETCH_VER);
+
+		/*
+		 * Some servers returns 406 (Not Acceptable) if the Accept field is not
+		 * provided by the user agent, such example is http://alioth.debian.org.
+		 */
+		http_cmd(conn, "Accept: */*\r\n");
+
 		if (url->offset > 0)
 			http_cmd(conn, "Range: bytes=%lld-\r\n", (long long)url->offset);
+
 		http_cmd(conn, "\r\n");
 
 		/*
