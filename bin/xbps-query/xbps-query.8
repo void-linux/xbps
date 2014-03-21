@@ -1,4 +1,4 @@
-.Dd January 9, 2014
+.Dd March 21, 2014
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -58,6 +58,9 @@ Specifies a full path to the cache directory, where binary packages are stored.
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
 Show the help usage.
+.It Fl p, Fl -property Ar PROP[,...]
+Only match this package property.
+Multiple properties can be specified by delimiting them with commas.
 .It Fl R, Fl -repository=url
 Enable repository mode. This mode explicitly looks in repositories, rather
 than looking in the target root directory. The
@@ -127,8 +130,8 @@ The
 argument can be a simple string or a shell wildcard pattern as explained in
 .Xr fnmatch 3 .
 Multiple patterns may be specified.
-.It Fl s, Fl -search Ar PATTERN...
-Search for packages matching
+.It Fl s, Fl -search Ar PATTERN... [ Fl -property Ar PROP ]
+Search for packages in repositories matching
 .Ar PATTERN
 on its
 .Em pkgver
@@ -139,13 +142,16 @@ properties. The same rules explained in the
 option are applied, but a
 .Sy PACKAGE EXPRESSION
 is also supported.
+If a package property is specified with
+.Fl -property,
+all packages matching
+.Ar PATTERN
+against
+.Ar PROP
+will be shown.
 .It Fl f, Fl -files Ar PKG
 Show the package files for
 .Ar PKG .
-.It Fl p, Fl -property Ar PROP[,...] Ar PKG
-Show a property for
-.Ar PKG .
-Multiple properties can be specified by delimiting them with commas.
 .It Fl x, Fl -deps Ar PKG
 Show the required dependencies for
 .Ar PKG .
