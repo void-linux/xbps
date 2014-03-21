@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -237,10 +237,10 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 			   const char *pkg,
 			   const char *option)
 {
+	xbps_array_t allkeys;
+	xbps_object_t obj, obj2;
 	xbps_dictionary_t d, pkgdb_d;
-	const char *instdate;
-	bool autoinst, hold;
-	pkg_state_t state;
+	const char *key;
 
 	pkgdb_d = xbps_pkgdb_get_pkg(xhp, pkg);
 	if (pkgdb_d == NULL)
@@ -250,19 +250,13 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 	if (d == NULL)
 		return ENOENT;
 
-	if (xbps_dictionary_get_cstring_nocopy(pkgdb_d,
-	    "install-date", &instdate))
-		xbps_dictionary_set_cstring_nocopy(d, "install-date",
-		    instdate);
-
-	if (xbps_dictionary_get_bool(pkgdb_d, "automatic-install", &autoinst))
-		xbps_dictionary_set_bool(d, "automatic-install", autoinst);
-
-	if (xbps_dictionary_get_bool(pkgdb_d, "hold", &hold))
-		xbps_dictionary_set_bool(d, "hold", hold);
-
-	xbps_pkg_state_dictionary(pkgdb_d, &state);
-	xbps_set_pkg_state_dictionary(d, state);
+	allkeys = xbps_dictionary_all_keys(pkgdb_d);
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
+		obj = xbps_array_get(allkeys, i);
+		obj2 = xbps_dictionary_get_keysym(pkgdb_d, obj);
+		key = xbps_dictionary_keysym_cstring_nocopy(obj);
+		xbps_dictionary_set(d, key, obj2);
+	}
 
 	if (option == NULL)
 		show_pkg_info(d);

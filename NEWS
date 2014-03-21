@@ -1,6 +1,7 @@
 xbps-0.34 (???):
 
- * xbps-query(8): now also prints the 'hold' object on installed packages.
+ * xbps-query(8): in local mode now prints all objects stored on its pkgdb entry
+   and its metaplist.
 
  * Fix #34 (xbps-uhelper fetch fails to download files from https://alioth.debian.org).
    The issue is that this HTTP server returns 406 (Not Acceptable) when the HTTP
