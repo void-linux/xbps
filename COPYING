@@ -59,7 +59,7 @@ This product uses some code with the following license
  *      @(#)queue.h     8.5 (Berkeley) 8/20/94
  */
 
-This product uses some code with the following license (lib/dewey.c):
+This product uses some code with the following license (lib/external/dewey.c):
 
 /*
  * Copyright © 2002 Alistair G. Crooks.  All rights reserved.
@@ -140,7 +140,7 @@ This product uses some code with the following license
  */
 
 This product uses some code with the following license
-(lib/humanize_number.c, lib/fexec.c):
+(lib/compat/humanize_number.c, lib/external/fexec.c):
 
 /*
  * Copyright (c) 2003 The NetBSD Foundation, Inc.
