@@ -239,7 +239,7 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 {
 	xbps_dictionary_t d, pkgdb_d;
 	const char *instdate;
-	bool autoinst;
+	bool autoinst, hold;
 	pkg_state_t state;
 
 	pkgdb_d = xbps_pkgdb_get_pkg(xhp, pkg);
@@ -257,6 +257,9 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 
 	if (xbps_dictionary_get_bool(pkgdb_d, "automatic-install", &autoinst))
 		xbps_dictionary_set_bool(d, "automatic-install", autoinst);
+
+	if (xbps_dictionary_get_bool(pkgdb_d, "hold", &hold))
+		xbps_dictionary_set_bool(d, "hold", hold);
 
 	xbps_pkg_state_dictionary(pkgdb_d, &state);
 	xbps_set_pkg_state_dictionary(d, state);
