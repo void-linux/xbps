@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,8 +44,9 @@
 
 struct search_data {
 	int npatterns;
-	char **patterns;
 	int maxcols;
+	char **patterns;
+	const char *prop, *repourl;
 	xbps_array_t results;
 };
 
@@ -100,23 +101,59 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		void *arg,
 		bool *done _unused)
 {
+	xbps_object_t obj2;
 	struct search_data *sd = arg;
-	const char *pkgver, *desc;
+	const char *pkgver, *desc, *str;
+	int x;
 
-	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
+	if (sd->prop == NULL) {
+		/* no prop set, match on pkgver/short_desc objects */
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
 
-	for (int x = 0; x < sd->npatterns; x++) {
-		bool vpkgfound = false;
+		for (x = 0; x < sd->npatterns; x++) {
+			bool vpkgfound = false;
 
-		if (xbps_match_virtual_pkg_in_dict(obj, sd->patterns[x], false))
-			vpkgfound = true;
+			if (xbps_match_virtual_pkg_in_dict(obj, sd->patterns[x], false))
+				vpkgfound = true;
 
-		if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
-		    (strcasestr(pkgver, sd->patterns[x])) ||
-		    (strcasestr(desc, sd->patterns[x])) || vpkgfound) {
-			xbps_array_add_cstring_nocopy(sd->results, pkgver);
-			xbps_array_add_cstring_nocopy(sd->results, desc);
+			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
+			    (strcasestr(pkgver, sd->patterns[x])) ||
+			    (strcasestr(desc, sd->patterns[x])) || vpkgfound) {
+				xbps_array_add_cstring_nocopy(sd->results, pkgver);
+				xbps_array_add_cstring_nocopy(sd->results, desc);
+			}
+		}
+		return 0;
+	}
+	/* prop set, match on prop object instead */
+	obj2 = xbps_dictionary_get(obj, sd->prop);
+	if (xbps_object_type(obj2) == XBPS_TYPE_ARRAY) {
+		/* property is an array */
+		for (unsigned int i = 0; i < xbps_array_count(obj2); i++) {
+			xbps_array_get_cstring_nocopy(obj2, i, &str);
+			for (x = 0; x < sd->npatterns; x++) {
+				if ((strcasestr(str, sd->patterns[x])) ||
+				    (fnmatch(sd->patterns[x], str, FNM_PERIOD)) == 0) {
+					xbps_dictionary_get_cstring_nocopy(obj,
+					    "pkgver", &pkgver);
+					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+				}
+			}
+		}
+	} else if (xbps_object_type(obj2) == XBPS_TYPE_BOOL) {
+		/* property is a bool */
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		printf("%s: true (%s)\n", pkgver, sd->repourl);
+	} else if (xbps_object_type(obj2) == XBPS_TYPE_STRING) {
+		/* property is a string */
+		str = xbps_string_cstring_nocopy(obj2);
+		for (x = 0; x < sd->npatterns; x++) {
+			if (strcasestr(str, sd->patterns[x])) {
+				xbps_dictionary_get_cstring_nocopy(obj,
+				    "pkgver", &pkgver);
+				printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+			}
 		}
 	}
 	return 0;
@@ -127,24 +164,22 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 {
 	xbps_array_t allkeys;
 	struct search_data *sd = arg;
-	int rv;
 
 	if (repo->idx == NULL)
 		return 0;
 
+	sd->repourl = repo->uri;
 	allkeys = xbps_dictionary_all_keys(repo->idx);
-	rv = xbps_array_foreach_cb(repo->xhp, allkeys, repo->idx, search_array_cb, sd);
-	xbps_object_release(allkeys);
-
-	return rv;
+	return xbps_array_foreach_cb(repo->xhp, allkeys, repo->idx, search_array_cb, sd);
 }
 
 int
-repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
+repo_search(struct xbps_handle *xhp, int npatterns, char **patterns, const char *prop)
 {
 	struct search_data sd;
 	int rv;
 
+	sd.prop = prop;
 	sd.npatterns = npatterns;
 	sd.patterns = patterns;
 	sd.maxcols = get_maxcols();
@@ -155,7 +190,7 @@ repo_search(struct xbps_handle *xhp, int npatterns, char **patterns)
 		fprintf(stderr, "Failed to initialize rpool: %s\n",
 		    strerror(rv));
 
-	if (xbps_array_count(sd.results)) {
+	if (!prop && xbps_array_count(sd.results)) {
 		print_results(xhp, &sd);
 		xbps_object_release(sd.results);
 	}

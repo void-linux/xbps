@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,6 +68,6 @@ int	list_pkgs_pkgdb(struct xbps_handle *);
 int	repo_list(struct xbps_handle *);
 
 /* from search.c */
-int	repo_search(struct xbps_handle *, int, char **);
+int	repo_search(struct xbps_handle *, int, char **, const char *);
 
 #endif /* !_XBPS_QUERY_DEFS_H_ */

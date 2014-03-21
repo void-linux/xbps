@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,6 +42,7 @@ usage(bool fail)
 	    " -c --cachedir <dir>      Full path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -h --help                Print help usage\n"
+	    " -p --property PROP,...   Show properties for PKGNAME\n"
 	    " -R --repository          Enable repository mode. This mode explicitly\n"
 	    "                          looks for packages in repositories.\n"
 	    "    --repository=<url>    Enable repository mode and explicitly add the\n"
@@ -60,7 +61,6 @@ usage(bool fail)
 	    " -o --ownedby PATTERN(s)  Search for packages owning PATTERN(s)\n"
 	    " -s --search PATTERN(s)   Search for packages matching PATTERN(s)\n"
 	    " -f --files               Show files for PKGNAME\n"
-	    " -p --property PROP,...   Show properties for PKGNAME\n"
 	    " -x --deps                Show dependencies for PKGNAME (set it twice for a full dependency tree)\n"
 	    " -X --revdeps             Show reverse dependencies for PKGNAME\n");
 
@@ -235,7 +235,7 @@ main(int argc, char **argv)
 
 	} else if (search) {
 		/* search mode */
-		rv = repo_search(&xh, argc - optind, argv + optind);
+		rv = repo_search(&xh, argc - optind, argv + optind, props);
 
 	} else if (show || show_prop) {
 		/* show mode */

@@ -1,5 +1,14 @@
 xbps-0.34 (???):
 
+ * xbps-query(8): search mode now accepts -p/--property argument to match patterns
+   against the stored package object in repositories. Any object stored in the repository
+   index can be used to be matched against to; the posibilities are countless:
+
+	- find out what packages are mantained by a person
+	- find out what packages are built at a specific date
+	- find out what packages are linked to a specific shared library
+	- etc etc etc
+
  * xbps-query(8): in local mode now prints all objects stored on its pkgdb entry
    and its metaplist.
 
