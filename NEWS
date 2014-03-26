@@ -1,4 +1,4 @@
-xbps-0.34 (???):
+xbps-0.34 (2014-03-26):
 
  * xbps-query(8): search mode now accepts -p/--property argument to match patterns
    against the stored package object in repositories. Any object stored in the repository
