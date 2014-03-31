@@ -71,7 +71,8 @@ static char *
 pubkey_from_privkey(RSA *rsa)
 {
 	BIO *bp;
-	char *buf;
+	char *buf = NULL;
+	int len;
 
 	bp = BIO_new(BIO_s_mem());
 	assert(bp);
@@ -85,9 +86,10 @@ pubkey_from_privkey(RSA *rsa)
 	/* XXX (xtraeme) 8192 should be always enough? */
 	buf = malloc(8192);
 	assert(buf);
-	BIO_read(bp, buf, 8192);
+	len = BIO_read(bp, buf, 8191);
 	BIO_free(bp);
 	ERR_free_strings();
+	buf[len] = '\0';
 
 	return buf;
 }
@@ -128,7 +130,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	unsigned int siglen;
 	uint16_t rpubkeysize, pubkeysize;
 	const char *arch, *pkgver, *rsignedby = NULL;
-	char *binpkg, *binpkg_sig, *buf, *defprivkey;
+	char *binpkg = NULL, *binpkg_sig = NULL, *buf = NULL, *defprivkey = NULL;
 	int binpkg_fd, binpkg_sig_fd, rv = 0;
 	bool flush = false;
 

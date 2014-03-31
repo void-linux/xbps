@@ -1,5 +1,8 @@
 xbps-0.35 (???):
 
+ * xbps-rindex(8): fixed a bug while signing repositories in that sometimes
+   the PEM RSA public key buffer contained unwanted garbage.
+
  * Make sure that required root symlinks in void are never removed or detected
    as obsoletes; added new test cases to stress the code works as expected.
 
