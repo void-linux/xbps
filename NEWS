@@ -1,3 +1,8 @@
+xbps-0.35 (???):
+
+ * Make sure that required root symlinks in void are never removed or detected
+   as obsoletes; added new test cases to stress the code works as expected.
+
 xbps-0.34 (2014-03-26):
 
  * xbps-query(8): search mode now accepts -p/--property argument to match patterns

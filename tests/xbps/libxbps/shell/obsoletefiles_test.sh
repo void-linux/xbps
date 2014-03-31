@@ -50,6 +50,58 @@ reinstall_obsoletes_body() {
 	atf_check_equal $rv 0
 }
 
+# 2- make sure that root symlinks aren't detected as obsoletes on upgrades.
+atf_test_case root_symlinks_update
+
+root_symlinks_update_head() {
+	atf_set "descr" "Test that root symlinks aren't obsoletes on update"
+}
+
+root_symlinks_update_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/bin pkg_A/usr/sbin pkg_A/usr/lib pkg_A/var pkg_A/run
+	touch -f pkg_A/usr/bin/foo
+	ln -sfr pkg_A/usr/bin pkg_A/bin
+	ln -sfr pkg_A/usr/sbin pkg_A/sbin
+	ln -sfr pkg_A/usr/lib pkg_A/usr/lib32
+	ln -sfr pkg_A/usr/lib pkg_A/usr/lib64
+	ln -sfr pkg_A/run pkg_A/var/run
+
+	cd repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
+	atf_check_equal $? 0
+	rm -rf ../pkg_A
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root -C null.conf --repository=$PWD -yd foo
+	atf_check_equal $? 0
+
+	cd ..
+	mkdir -p pkg_A/usr/bin
+	touch -f pkg_A/usr/bin/blah
+
+	cd repo
+	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
+	atf_check_equal $? 0
+	rm -rf ../pkg_A
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root -C null.conf --repository=$PWD -yuvd foo
+	atf_check_equal $? 0
+
+	rv=1
+	if [ -h root/bin -a -h root/sbin -a -h root/usr/lib32 -a -h root/usr/lib64 -a -h root/var/run ]; then
+		rv=0
+	fi
+	ls -l root
+	ls -l root/usr
+	ls -l root/var
+	atf_check_equal $rv 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
+	atf_add_test_case root_symlinks_update
 }

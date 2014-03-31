@@ -98,6 +98,7 @@ remove_pkg_files(struct xbps_handle *xhp,
 		"/lib",
 		"/lib32",
 		"/lib64",
+		"/usr/lib32",
 		"/usr/lib64",
 		"/var/run",
 	};

@@ -8,12 +8,20 @@ keep_base_symlinks_head() {
 }
 
 keep_base_symlinks_body() {
-	mkdir -p root/usr/bin
+	mkdir -p root/usr/bin root/usr/lib root/run root/var
 	ln -sfr root/usr/bin root/bin
+	ln -sfr root/usr/lib root/lib
+	ln -sfr root/usr/lib root/usr/lib32
+	ln -sfr root/usr/lib root/usr/lib64
+	ln -sfr root/run root/var/run
 
 	mkdir some_repo
-	mkdir -p pkg_A/usr/bin pkg_A/bin
+	mkdir -p pkg_A/usr/bin pkg_A/bin pkg_A/usr/lib pkg_A/var
 	touch -f pkg_A/usr/bin/foo
+	ln -sfr pkg_A/usr/lib pkg_A/usr/lib32
+	ln -sfr pkg_A/usr/lib pkg_A/usr/lib64
+	ln -sfr /run pkg_A/var/run
+
 	cd some_repo
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
@@ -24,7 +32,7 @@ keep_base_symlinks_body() {
 	atf_check_equal $? 0
 	xbps-remove -r root -y foo
 	atf_check_equal $? 0
-	if [ -h root/bin ]; then
+	if [ -h root/bin -a -h root/lib -a -h root/usr/lib32 -a -h root/usr/lib64 -a -h root/var/run ]; then
 		rv=0
 	else
 		rv=1

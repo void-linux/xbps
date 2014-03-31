@@ -78,6 +78,17 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	xbps_array_t instfiles, newfiles, obsoletes;
 	xbps_object_t obj, obj2;
 	xbps_string_t oldstr, newstr;
+	/* These are symlinks in Void and must not be removed */
+	const char *basesymlinks[] = {
+		"./bin",
+		"./sbin",
+		"./lib",
+		"./lib32",
+		"./lib64",
+		"./usr/lib32",
+		"./usr/lib64",
+		"./var/run",
+	};
 	const char *oldhash;
 	char *file;
 	int rv = 0;
@@ -148,17 +159,18 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 			continue;
 		}
 		/*
-		 * Do not add required symlinks for the
-		 * system transition to /usr.
+		 * Make sure to not remove any symlink of root directory.
 		 */
-		if ((strcmp(file, "./bin") == 0) ||
-		    (strcmp(file, "./bin/") == 0) ||
-		    (strcmp(file, "./sbin") == 0) ||
-		    (strcmp(file, "./sbin/") == 0) ||
-		    (strcmp(file, "./lib") == 0) ||
-		    (strcmp(file, "./lib/") == 0) ||
-		    (strcmp(file, "./lib64/") == 0) ||
-		    (strcmp(file, "./lib64") == 0)) {
+		found = false;
+		for (uint8_t x = 0; x < __arraycount(basesymlinks); x++) {
+			if (strcmp(file, basesymlinks[x]) == 0) {
+				found = true;
+				xbps_dbg_printf(xhp, "[obsoletes] ignoring "
+				    "%s removal\n", file);
+				break;
+			}
+		}
+		if (found) {
 			free(file);
 			continue;
 		}
