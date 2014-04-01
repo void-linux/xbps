@@ -1,4 +1,4 @@
-xbps-0.35 (???):
+xbps-0.35 (2014-04-01):
 
  * xbps-uchroot: new utility merged from xbps-packages/xbps-src that
    bind mounts and chroots to a target directory. This is a setgid binary
