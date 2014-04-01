@@ -9,5 +9,6 @@ SUBDIRS +=	xbps-reconfigure
 SUBDIRS +=	xbps-remove
 SUBDIRS +=	xbps-rindex
 SUBDIRS +=	xbps-uhelper
+SUBDIRS +=	xbps-uchroot
 
 include ../mk/subdir.mk

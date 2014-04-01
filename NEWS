@@ -1,5 +1,9 @@
 xbps-0.35 (???):
 
+ * xbps-uchroot: new utility merged from xbps-packages/xbps-src that
+   bind mounts and chroots to a target directory. This is a setgid binary
+   that must have correct owner/group to work correctly.
+
  * xbps-rindex(8): fixed a bug while signing repositories in that sometimes
    the PEM RSA public key buffer contained unwanted garbage.
 
