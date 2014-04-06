@@ -9,6 +9,8 @@ ifdef BUILD_STATIC
 BINS += $(BIN).static
 endif
 
+CFLAGS+= -Wno-unused-result
+
 .PHONY: all
 all: $(BINS)
 

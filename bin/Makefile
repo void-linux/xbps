@@ -10,5 +10,6 @@ SUBDIRS +=	xbps-remove
 SUBDIRS +=	xbps-rindex
 SUBDIRS +=	xbps-uhelper
 SUBDIRS +=	xbps-uchroot
+SUBDIRS +=	xbps-repo-checkvers
 
 include ../mk/subdir.mk

@@ -1,3 +1,9 @@
+xbps-0.36 (???):
+
+ * xbps-repo-checkvers: new utility merged from https://github.com/xdave/xbps-src-utils
+   that is able to check which packages are outdated in the XBPS repositories by
+   comparing them against a xbps-packages repository. Written by xdave.
+
 xbps-0.35 (2014-04-01):
 
  * xbps-uchroot: new utility merged from xbps-packages/xbps-src that

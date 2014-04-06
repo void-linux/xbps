@@ -2,8 +2,6 @@ syntax: glob
 
 config.h
 config.mk
-bin/xbps-bin/xbps-bin
-bin/xbps-repo/xbps-repo
 bin/xbps-create/xbps-create
 bin/xbps-dgraph/xbps-dgraph
 bin/xbps-install/xbps-install
@@ -13,7 +11,8 @@ bin/xbps-reconfigure/xbps-reconfigure
 bin/xbps-remove/xbps-remove
 bin/xbps-rindex/xbps-rindex
 bin/xbps-uhelper/xbps-uhelper
-bin/xbps-rkeys/xbps-rkeys
+bin/xbps-uchroot/xbps-uchroot
+bin/xbps-repo-checkvers/xbps-repo-checkvers
 *.static
 *.so*
 *.o
