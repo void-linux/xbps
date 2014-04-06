@@ -1,7 +1,9 @@
-Almost all code in XBPS uses the following license
-(some exceptions are shown below):
+The XBPS code uses the Simplified BSD license (2 clause) with some exceptions
+shown below, all licenses are either BSD or MIT.
 
-/* Copyright (c) 2008-2014 Juan Romero Pardines.
+/* 
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Dave Elusive <davehome@redthumb.info.tm> 
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,9 +27,9 @@ Almost all code in XBPS uses the following license
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-This product uses some code with the following license
-(lib/mkpath.c, lib/compat/strcasestr.c, include/queue.h):
+The following copyrights are used by third party code used in XBPS:
 
+[lib/mkpath.c, lib/compat/strcasestr.c, include/queue.h]
 /*
  * Copyright (c) 1991, 1993
  *      The Regents of the University of California.  All rights reserved.
@@ -59,7 +61,7 @@ This product uses some code with the following license
  *      @(#)queue.h     8.5 (Berkeley) 8/20/94
  */
 
-This product uses some code with the following license (lib/external/dewey.c):
+[lib/external/dewey.c]
 
 /*
  * Copyright © 2002 Alistair G. Crooks.  All rights reserved.
@@ -89,8 +91,7 @@ This product uses some code with the following license (lib/external/dewey.c):
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-This product uses some code with the following license
-(lib/download.c, lib/fetch):
+[lib/download.c, lib/fetch]
 
 /*-
  * Copyright (c) 2000-2004 Dag-Erling Coïdan Smørgrav
@@ -120,8 +121,7 @@ This product uses some code with the following license
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-This product uses some code with the following license
-(lib/compat/strlc{at,py}.c):
+[lib/compat/strlc{at,py}.c]
 
 /*
  * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
@@ -139,8 +139,7 @@ This product uses some code with the following license
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-This product uses some code with the following license
-(lib/compat/humanize_number.c, lib/external/fexec.c):
+[lib/compat/humanize_number.c, lib/external/fexec.c]
 
 /*
  * Copyright (c) 2003 The NetBSD Foundation, Inc.
