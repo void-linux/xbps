@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2012-2014 Dave Elusive <davehome@redthumb.info.tm>
+ * Copyright (c) 2014 Juan Romero Pardines
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -593,7 +594,7 @@ main(int argc, char **argv)
 	int i, c;
 	rcv_t rcv;
 	char *distdir = NULL;
-	const char *prog = argv[0], *sopts = "hC:d:ir:s", *tmpl;
+	const char *prog = argv[0], *sopts = "hC:d:ir:sV", *tmpl;
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "xbps-conf", required_argument, NULL, 'C' },
@@ -601,6 +602,7 @@ main(int argc, char **argv)
 		{ "installed", no_argument, NULL, 'i' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show-missing", no_argument, NULL, 's' },
+		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -628,6 +630,9 @@ main(int argc, char **argv)
 		case 's':
 			rcv.show_missing = true;
 			break;
+		case 'V':
+			printf("%s\n", XBPS_RELVER);
+			exit(EXIT_SUCCESS);
 		default:
 			return show_usage(prog);
 		}
