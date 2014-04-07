@@ -185,9 +185,9 @@ show_usage(const char *prog)
 "Usage: %s [OPTIONS] [FILES...]\n\n"
 " Options:\n"
 "  -h,--help			Show this helpful help-message for help.\n"
-"  -C,--xbps-conf FILENAME	Set (or override) the `xbps.conf' (which may\n"
+"  -C,--config FILENAME 	Set (or override) the `xbps.conf' (which may\n"
 "				have automatically been detected).\n"
-"  -d,--xbps-packages DIRECTORY	Set (or override) the path to xbps-packages\n"
+"  -d,--distdir DIRECTORY	Set (or override) the path to xbps-packages\n"
 "				(defaults to ~/xbps-packages).\n"
 "  -i,--installed 		Check for outdated packages in rootdir, rather\n"
 "				than in the XBPS repositories.\n"
@@ -597,7 +597,7 @@ main(int argc, char **argv)
 	const char *prog = argv[0], *sopts = "hC:d:ir:sV", *tmpl;
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
-		{ "xbps-conf", required_argument, NULL, 'C' },
+		{ "config", required_argument, NULL, 'C' },
 		{ "distdir", required_argument, NULL, 'd' },
 		{ "installed", no_argument, NULL, 'i' },
 		{ "rootdir", required_argument, NULL, 'r' },
