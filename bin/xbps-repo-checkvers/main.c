@@ -70,13 +70,14 @@ typedef struct _map_t {
 
 typedef struct _rcv_t {
 	const char *prog, *fname;
-	char *input, *ptr, *xbps_conf, *distdir, *pkgdir;
+	char *input, *ptr, *xbps_conf, *rootdir, *distdir, *pkgdir;
 	size_t len, have_vars;
 	map_t *env;
 	struct xbps_handle xhp;
 	xbps_dictionary_t pkgd;
 	bool show_missing;
 	bool manual;
+	bool installed;
 } rcv_t;
 
 typedef int (*rcv_check_func)(rcv_t *);
@@ -190,6 +191,9 @@ show_usage(const char *prog)
 "				have automatically been detected).\n"
 "  -d,--xbps-packages DIRECTORY	Set (or override) the path to xbps-packages\n"
 "				(defaults to ~/xbps-packages).\n"
+"  -i,--installed 		Check for outdated packages in rootdir, rather\n"
+"				than in the XBPS repositories.\n"
+"  -r,--rootdir DIRECTORY	Set root directory (defaults to /).\n"
 "  -s,--show-missing		List any binary packages which are not built.\n"
 "\n  [FILES...]			Extra packages to process with the outdated\n"
 "				ones (only processed if missing).\n\n",
@@ -206,6 +210,8 @@ rcv_init(rcv_t *rcv, const char *prog)
 	memset(&rcv->xhp, 0, sizeof(struct xbps_handle));
 	if (rcv->xbps_conf != NULL)
 		rcv->xhp.conffile = rcv->xbps_conf;
+	if (rcv->rootdir != NULL)
+		strncpy(rcv->xhp.rootdir, rcv->rootdir, sizeof(rcv->xhp.rootdir));
 	xbps_init(&rcv->xhp);
 }
 
@@ -456,7 +462,6 @@ static void
 rcv_find_conf(rcv_t *rcv)
 {
 	FILE *fp;
-	rcv_t c;
 	const char **lp, *conf;
 
 	const char *xbps_locs[] = {
@@ -477,9 +482,6 @@ rcv_find_conf(rcv_t *rcv)
 			}
 		}
 	}
-	memset(&c, 0, sizeof(rcv_t));
-	rcv_set_distdir(rcv, c.distdir);
-	rcv_end(&c);
 }
 
 static int
@@ -501,7 +503,11 @@ rcv_check_version(rcv_t *rcv)
 	revision = map_find(rcv->env, "revision");
 
 	srcver = strncpy(srcver, pkgname.v.s, pkgname.v.len);
-	rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, srcver);
+	if (rcv->installed)
+		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, srcver);
+	else
+		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, srcver);
+
 	srcver = strncat(srcver, "-", 1);
 	srcver = strncat(srcver, version.v.s, version.v.len);
 	srcver = strncat(srcver, "_", 1);
@@ -590,11 +596,13 @@ main(int argc, char **argv)
 	int i, c;
 	rcv_t rcv;
 	char *distdir = NULL;
-	const char *prog = argv[0], *sopts = "hC:d:s", *tmpl;
+	const char *prog = argv[0], *sopts = "hC:d:ir:s", *tmpl;
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "xbps-conf", required_argument, NULL, 'C' },
 		{ "distdir", required_argument, NULL, 'd' },
+		{ "installed", no_argument, NULL, 'i' },
+		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show-missing", no_argument, NULL, 's' },
 		{ NULL, 0, NULL, 0 }
 	};
@@ -613,6 +621,12 @@ main(int argc, char **argv)
 			free(rcv.distdir); rcv.distdir = NULL;
 			free(rcv.pkgdir); rcv.pkgdir = NULL;
 			rcv_set_distdir(&rcv, optarg);
+			break;
+		case 'i':
+			rcv.installed = true;
+			break;
+		case 'r':
+			rcv.rootdir = strdup(optarg);
 			break;
 		case 's':
 			rcv.show_missing = true;
