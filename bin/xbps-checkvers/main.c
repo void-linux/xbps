@@ -181,10 +181,7 @@ static int
 show_usage(const char *prog)
 {
 	fprintf(stderr,
-"Usage: %s [OPTIONS] "
-"[FILES...]\n\nCopyright (c) 2012-2013 The AUTHORS. "
-"See the AUTHORS file.\n"
-"See the COPYING file for license(s)/distribution details.\n\n"
+"Usage: %s [OPTIONS] [FILES...]\n\n"
 " Options:\n"
 "  -h,--help			Show this helpful help-message for help.\n"
 "  -C,--xbps-conf FILENAME	Set (or override) the `xbps.conf' (which may\n"
