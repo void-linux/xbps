@@ -12,7 +12,7 @@ bin/xbps-remove/xbps-remove
 bin/xbps-rindex/xbps-rindex
 bin/xbps-uhelper/xbps-uhelper
 bin/xbps-uchroot/xbps-uchroot
-bin/xbps-repo-checkvers/xbps-repo-checkvers
+bin/xbps-checkvers/xbps-checkvers
 *.static
 *.so*
 *.o
