@@ -1,0 +1,61 @@
+.Dd April 7, 2014
+.Os Void Linux
+.Dt xbps-checkvers 8
+.Sh NAME
+.Nm xbps-checkvers
+.Nd XBPS utility to check for outdated packages
+.Sh SYNOPSYS
+.Nm xbps-checkvers
+.Op OPTIONS
+.Op FILES...
+.Sh DESCRIPTION
+The
+.Nm
+utility checks for outdated packages in a target root directory or in
+all registered repositories by comparing the package versions against
+the source package versions available in a
+.Nm xbps-packages
+tree. By default and unless the
+.Fl i, Fl -installed
+option is not set, it will compare package versions in repositories against
+the
+.Nm xbps-packages
+tree. The
+.Ar FILES
+argument sets extra packages to process with the outdated ones (only processed if missing).
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl C, Fl -config Ar file
+Specifies a full path to the XBPS configuration file.
+.It Fl d, Fl -xbps-packages Ar dir
+Specifies a full path to the xbps-packages repository. By default set to
+.Nm ~/xbps-packages .
+.It Fl h, Fl -help
+Show the help usage.
+.It Fl i, Fl -installed
+Check for outdated installed packages rather than in repositories.
+.It Fl r, Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl s, Fl -show-missing
+Shows missing binary packages comparing against the
+.Nm xbps-packages
+tree.
+.It Fl V, Fl -version
+Shows the XBPS version.
+.Sh SEE ALSO
+.Xr xbps-install 8 ,
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-rindex 8
+.Sh AUTHORS
+.An Dave Elusive <davehome@redthumb.info.tm>
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in https://github.com/voidlinux/xbps/issues
