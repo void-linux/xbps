@@ -1,4 +1,4 @@
-.Dd April 7, 2014
+.Dd April 11, 2014
 .Os Void Linux
 .Dt xbps-create 8
 .Sh NAME
@@ -68,6 +68,9 @@ A short description for this package, one line with less than 80 characters.
 Shows the XBPS version.
 .It Fl -build-options Ar string
 A string containing the build options used in package.
+.It Fl -compression Ar gzip | bzip2 | xz
+Set the binary package compression format. If unset, defaults to
+.Ar xz .
 .It Fl -shlib-provides Ar list
 A list of provided shared libraries, separated by a single blank. Example:
 .Ar 'libfoo.so.2 libblah.so.1' .

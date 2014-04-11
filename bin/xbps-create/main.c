@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -98,6 +98,7 @@ usage(void)
 	" -s --desc           Short description (max 80 characters).\n"
 	" -V --version        Prints XBPS release version.\n"
 	" --build-options     A string with the used build options.\n"
+	" --compression       Compression format: gzip, bzip2, xz (default).\n"
 	" --shlib-provides    List of provided shared libraries (blank separated list,\n"
 	"                     e.g 'libfoo.so.1 libblah.so.2').\n"
 	" --shlib-requires    List of required shared libraries (blank separated list,\n"
@@ -563,6 +564,7 @@ main(int argc, char **argv)
 		{ "shlib-provides", required_argument, NULL, '0' },
 		{ "shlib-requires", required_argument, NULL, '1' },
 		{ "build-options", required_argument, NULL, '2' },
+		{ "compression", required_argument, NULL, '3' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
@@ -573,13 +575,13 @@ main(int argc, char **argv)
 	const char *provides, *pkgver, *replaces, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
 	const char *buildopts, *shlib_provides, *shlib_requires;
-	const char *srcrevs = NULL;
+	const char *compression, *srcrevs = NULL;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
 	int c, pkg_fd;
 	mode_t myumask;
 
-	arch = conflicts = deps = homepage = license = maint = NULL;
+	arch = conflicts = deps = homepage = license = maint = compression = NULL;
 	provides = pkgver = replaces = desc = ldesc = bwith = buildopts = NULL;
 	config_files = mutable_files = shlib_provides = shlib_requires = NULL;
 
@@ -653,6 +655,9 @@ main(int argc, char **argv)
 			break;
 		case '2':
 			buildopts = optarg;
+			break;
+		case '3':
+			compression = optarg;
 			break;
 		case '?':
 		default:
@@ -763,7 +768,18 @@ main(int argc, char **argv)
 	 */
 	ar = archive_write_new();
 	assert(ar);
-	archive_write_add_filter_xz(ar);
+	/*
+	 * Set compression format, xz if unset.
+	 */
+	if (compression == NULL || strcmp(compression, "xz") == 0)
+		archive_write_add_filter_xz(ar);
+	else if (strcmp(compression, "gzip") == 0)
+		archive_write_add_filter_gzip(ar);
+	else if (strcmp(compression, "bzip2") == 0)
+		archive_write_add_filter_bzip2(ar);
+	else
+		die("unknown compression format %s");
+
 	archive_write_set_format_pax_restricted(ar);
 	if ((resolver = archive_entry_linkresolver_new()) == NULL)
 		die("cannot create link resolver");
