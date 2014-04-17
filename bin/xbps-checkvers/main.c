@@ -187,10 +187,12 @@ show_usage(const char *prog)
 "  -h,--help			Show this helpful help-message for help.\n"
 "  -C,--config=FILENAME 	Set (or override) the `xbps.conf' (which may\n"
 "				have automatically been detected).\n"
-"  -d,--distdir=DIRECTORY	Set (or override) the path to xbps-packages\n"
+"  -D,--distdir=DIRECTORY	Set (or override) the path to xbps-packages\n"
 "				(defaults to ~/xbps-packages).\n"
+"  -d,--debug 			Enable debug output to stderr.\n"
 "  -i,--installed 		Check for outdated packages in rootdir, rather\n"
 "				than in the XBPS repositories.\n"
+"  -R,--repository=URL		Append repository to the head of repository list.\n"
 "  -r,--rootdir=DIRECTORY	Set root directory (defaults to /).\n"
 "  -s,--show-missing		List any binary packages which are not built.\n"
 "\n  [FILES...]			Extra packages to process with the outdated\n"
@@ -205,7 +207,6 @@ rcv_init(rcv_t *rcv, const char *prog)
 	rcv->prog = prog;
 	rcv->have_vars = 0;
 	rcv->ptr = rcv->input = NULL;
-	memset(&rcv->xhp, 0, sizeof(struct xbps_handle));
 	if (rcv->xbps_conf != NULL)
 		rcv->xhp.conffile = rcv->xbps_conf;
 	if (rcv->rootdir != NULL)
@@ -594,12 +595,14 @@ main(int argc, char **argv)
 	int i, c;
 	rcv_t rcv;
 	char *distdir = NULL;
-	const char *prog = argv[0], *sopts = "hC:d:ir:sV", *tmpl;
+	const char *prog = argv[0], *sopts = "hC:D:diR:r:sV", *tmpl;
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "config", required_argument, NULL, 'C' },
-		{ "distdir", required_argument, NULL, 'd' },
+		{ "distdir", required_argument, NULL, 'D' },
+		{ "debug", no_argument, NULL, 'd' },
 		{ "installed", no_argument, NULL, 'i' },
+		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show-missing", no_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
@@ -616,13 +619,22 @@ main(int argc, char **argv)
 			free(rcv.xbps_conf);
 			rcv.xbps_conf = strdup(optarg);
 			break;
-		case 'd':
+		case 'D':
 			free(rcv.distdir); rcv.distdir = NULL;
 			free(rcv.pkgdir); rcv.pkgdir = NULL;
 			rcv_set_distdir(&rcv, optarg);
 			break;
+		case 'd':
+			rcv.xhp.flags |= XBPS_FLAG_DEBUG;
+			break;
 		case 'i':
 			rcv.installed = true;
+			break;
+		case 'R':
+			if (rcv.xhp.repositories == NULL)
+				rcv.xhp.repositories = xbps_array_create();
+
+			xbps_array_add_cstring_nocopy(rcv.xhp.repositories, optarg);
 			break;
 		case 'r':
 			rcv.rootdir = strdup(optarg);
@@ -645,7 +657,6 @@ main(int argc, char **argv)
 		rcv_set_distdir(&rcv, distdir);
 		free(distdir);
 	}
-
 	argc -= optind;
 	argv += optind;
 
