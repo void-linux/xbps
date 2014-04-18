@@ -1,5 +1,9 @@
 xbps-0.36 (???):
 
+ * xbps-install(8): the -n,--dry-run option does not acquire the pkgdb file lock
+   anymore, so that any user can use this mode even without write permission to
+   the target pkgdb.
+
  * xbps-query(8): fix a segfault with '-vL' for local unsigned repositories.
 
  * xbps-create(8): new option --compression to specify a compression format;

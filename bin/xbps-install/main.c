@@ -215,7 +215,7 @@ main(int argc, char **argv)
 	if (sync && !update && (argc == optind))
 		exit(EXIT_SUCCESS);
 
-	if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
+	if (!drun && (rv = xbps_pkgdb_lock(&xh)) != 0) {
 		fprintf(stderr, "Failed to lock the pkgdb: %s\n", strerror(rv));
 		exit(rv);
 	}
@@ -245,6 +245,8 @@ main(int argc, char **argv)
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
 
-	xbps_pkgdb_unlock(&xh);
+	if (!drun)
+		xbps_pkgdb_unlock(&xh);
+
 	exit(rv);
 }
