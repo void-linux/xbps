@@ -5,18 +5,12 @@ digraph pkg_props_dictionary {
 	props_plist -> main;
 	props_plist [style=filled,fillcolor="darksalmon",label="props.plist"];
 	main [label="Package dictionary"];
-	main -> pkgname [label="string"];
-	pkgname -> pkgname_value;
-	pkgname_value [style=filled,fillcolor="yellowgreen",label="xbps"];
 	main -> homepage [label="string"];
 	homepage -> homepage_value;
 	homepage_value [style=filled,fillcolor="yellowgreen",label="http://code.google.com/p/xbps"];
 	main -> license [label="string"];
 	license -> license_value;
 	license_value [style=filled,fillcolor="yellowgreen",label="BSD"];
-	main -> version [label="string"];
-	version -> version_value;
-	version_value [style=filled,fillcolor="yellowgreen",label="0.5.2.2"];
 	main -> pkgver [label="string"];
 	pkgver -> pkgver_value;
 	pkgver_value [style=filled,fillcolor="yellowgreen",label="xbps-0.5.2.2"];
