@@ -96,9 +96,9 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 	}
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 	if (pkgd == NULL) {
-		free(pkgname);
 		xbps_dbg_printf(xhp, "[configure] cannot find %s (%s) "
 		    "in pkgdb\n", pkgname, pkgver);
+		free(pkgname);
 		return ENOENT;
 	}
 
