@@ -80,6 +80,9 @@ repo_get_dict(struct xbps_repo *repo)
 		if (rv == ARCHIVE_EOF)
 			break;
 		if (rv != ARCHIVE_OK) {
+			if (adata != NULL)
+				free(adata);
+
 			xbps_dbg_printf(repo->xhp,
 			    "%s: read_data_block %s\n", repo->uri,
 			    archive_error_string(repo->ar));
@@ -128,8 +131,10 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		/* remote repository */
 		char *rpath;
 
-		if ((rpath = xbps_get_remote_repo_string(url)) == NULL)
+		if ((rpath = xbps_get_remote_repo_string(url)) == NULL) {
+			free(repo);
 			return NULL;
+		}
 		repofile = xbps_xasprintf("%s/%s/%s-repodata", xhp->metadir, rpath, arch);
 		free(rpath);
 		repo->is_remote = true;
