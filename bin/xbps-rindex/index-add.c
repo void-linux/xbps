@@ -268,8 +268,5 @@ out:
 	if (tmprepodir) {
 		free(tmprepodir);
 	}
-	if (repodir) {
-		free(repodir);
-	}
 	return rv;
 }
