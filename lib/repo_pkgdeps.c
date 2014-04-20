@@ -348,6 +348,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			xbps_dbg_printf_append(xhp, "[ignoring wrong dependency "
 			    "%s (depends on itself)]\n",
 			    reqpkg);
+			xbps_remove_string_from_array(pkg_rdeps_array, reqpkg);
 			free(pkgname);
 			free(reqpkgname);
 			continue;
