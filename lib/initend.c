@@ -280,7 +280,6 @@ xbps_init(struct xbps_handle *xhp)
 		xbps_dbg_printf(xhp, "failed to read configuration file %s: %s\n",
 		     xhp->conffile, strerror(rv));
 		xbps_dbg_printf(xhp, "Using built-in defaults\n");
-		rv = 0;
 	}
 	/* Set rootdir */
 	if (xhp->rootdir[0] == '\0') {

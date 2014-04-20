@@ -160,7 +160,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	pthread_mutex_init(&cbd.mtx, NULL);
 
 	allkeys = xbps_dictionary_all_keys(idx);
-	rv = xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
+	(void)xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
 	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
 		xbps_array_get_cstring(cbd.result, x, &keyname);
 		printf("index-files: removed entry %s\n", keyname);
@@ -180,7 +180,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	cbd.idx = idx;
 	cbd.result = xbps_array_create();
 	allkeys = xbps_dictionary_all_keys(idxfiles);
-	rv = xbps_array_foreach_cb_multi(xhp, allkeys, idxfiles, idxfiles_cleaner_cb, &cbd);
+	(void)xbps_array_foreach_cb_multi(xhp, allkeys, idxfiles, idxfiles_cleaner_cb, &cbd);
 	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
 		xbps_array_get_cstring(cbd.result, x, &keyname);
 		printf("index-files: removed entry %s\n", keyname);

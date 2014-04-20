@@ -275,7 +275,7 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 static char *
 rcv_refs(rcv_t *rcv, const char *s, size_t len)
 {
-	map_item_t item = map_new_item();
+	map_item_t item;
 	size_t i = 0, j = 0, k = 0, count = len*3;
 	char *ref = calloc(count, sizeof(char));
 	char *buf = calloc(count, sizeof(char));

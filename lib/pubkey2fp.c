@@ -124,7 +124,7 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	memcpy(pEncoding, pSshHeader, 11);
 
 	index = SshEncodeBuffer(&pEncoding[11], eLen, eBytes);
-	index = SshEncodeBuffer(&pEncoding[11 + index], nLen, nBytes);
+	(void)SshEncodeBuffer(&pEncoding[11 + index], nLen, nBytes);
 
 	/*
 	 * Compute the RSA fingerprint (MD5).

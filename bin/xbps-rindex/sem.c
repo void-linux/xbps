@@ -56,11 +56,13 @@ index_lock(struct xbps_handle *xhp)
 	if (il->sem == SEM_FAILED) {
 		fprintf(stderr, "%s: failed to create/open named "
 		    "semaphore: %s\n", _XBPS_RINDEX, strerror(errno));
+		free(il);
 		return NULL;
 	}
 	if (sem_wait(il->sem) == -1) {
 		fprintf(stderr, "%s: failed to lock named semaphore: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
+		free(il);
 		return NULL;
 	}
 

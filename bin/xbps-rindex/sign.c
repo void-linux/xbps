@@ -235,6 +235,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		binpkg_sig_fd = creat(binpkg_sig, 0644);
 		if (binpkg_sig_fd == -1) {
 			fprintf(stderr, "failed to create %s: %s\n", binpkg_sig, strerror(errno));
+			free(sig);
 			free(binpkg_sig);
 			continue;
 		}
@@ -248,7 +249,6 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		free(sig);
 		free(binpkg_sig);
 		close(binpkg_sig_fd);
-		binpkg_fd = binpkg_sig_fd = -1;
 		printf("signed successfully %s\n", pkgver);
 	}
 	xbps_object_iterator_release(iter);
@@ -290,8 +290,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 
 	if (!repodata_flush(xhp, repodir, repo->idx, repo->idxfiles, meta)) {
 		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
-		RSA_free(rsa);
-		return -1;
+		goto out;
 	}
 	printf("Signed repository (%u package%s)\n",
 	    xbps_dictionary_count(repo->idx),
@@ -300,12 +299,15 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 out:
 	index_unlock(il);
 
+	if (defprivkey) {
+		free(defprivkey);
+	}
 	if (rsa) {
 		RSA_free(rsa);
 		rsa = NULL;
 	}
-	if (repo)
+	if (repo) {
 		xbps_repo_close(repo);
-
+	}
 	return rv ? -1 : 0;
 }

@@ -47,7 +47,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	struct xbps_repo *repo;
 	struct stat st;
 	const char *arch;
-	char *sha256, *pkgver, *opkgver, *oarch, *pkgname, *tmprepodir, *repodir;
+	char *sha256, *pkgver, *opkgver, *oarch, *pkgname;
+	char *tmprepodir = NULL, *repodir = NULL;
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
 
@@ -256,7 +257,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		if (!repodata_flush(xhp, repodir, idx, idxfiles, idxmeta)) {
 			fprintf(stderr, "%s: failed to write repodata: %s\n",
 			    _XBPS_RINDEX, strerror(errno));
-			return -1;
+			goto out;
 		}
 	}
 	printf("index: %u packages registered.\n", xbps_dictionary_count(idx));
@@ -264,6 +265,11 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 
 out:
 	index_unlock(il);
-
+	if (tmprepodir) {
+		free(tmprepodir);
+	}
+	if (repodir) {
+		free(repodir);
+	}
 	return rv;
 }

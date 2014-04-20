@@ -283,7 +283,7 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 		}
 		xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
 		    strerror(errno));
-		return rv;
+		goto out;
 	}
 	xbps_dbg_printf(xhp, "Dictionary before transaction happens:\n");
 	xbps_dbg_printf_append(xhp, "%s",
