@@ -1,8 +1,8 @@
 xbps-0.36 (???):
 
  * libxbps: the dependency solver is now able to detect and ignore invalid
-   dependencies of a package that are depending on itself, if those are
-   declared as virtual packages.
+   dependencies of a package that are depending on itself, either as real
+   or virtual packages.
 
  * xbps-install(8): the -n,--dry-run option does not acquire the pkgdb file lock
    anymore, so that any user can use this mode even without write permission to

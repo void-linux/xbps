@@ -18,6 +18,7 @@ atf_test_program{name="replace_test"}
 atf_test_program{name="installmode_test"}
 atf_test_program{name="obsoletefiles_test"}
 atf_test_program{name="scripts_test"}
+atf_test_program{name="incorrect_deps_test"}
 
 include('find_pkg_orphans/Kyuafile')
 include('pkgdb/Kyuafile')
