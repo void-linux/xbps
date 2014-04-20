@@ -52,11 +52,7 @@ get_pkg_in_array(xbps_array_t array, const char *str, bool virtual)
 			 * Check if package pattern matches
 			 * any virtual package version in dictionary.
 			 */
-			if (xbps_pkgpattern_version(str))
-				found = xbps_match_virtual_pkg_in_dict(obj, str, true);
-			else
-				found = xbps_match_virtual_pkg_in_dict(obj, str, false);
-
+			found = xbps_match_virtual_pkg_in_dict(obj, str);
 			if (found)
 				break;
 		} else if (xbps_pkgpattern_version(str)) {
@@ -269,7 +265,7 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		pkgd = xbps_dictionary_get_keysym(d, obj);
-		if (xbps_match_virtual_pkg_in_dict(pkgd, pkg, bypattern)) {
+		if (xbps_match_virtual_pkg_in_dict(pkgd, pkg)) {
 			xbps_object_iterator_release(iter);
 			return pkgd;
 		}

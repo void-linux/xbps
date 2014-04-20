@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2012 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,25 +40,27 @@
  * all library functions.
  */
 bool
-xbps_match_virtual_pkg_in_dict(xbps_dictionary_t d,
-			       const char *str,
-			       bool bypattern)
+xbps_match_virtual_pkg_in_array(xbps_array_t a, const char *str)
+{
+	if ((xbps_match_pkgname_in_array(a, str)) ||
+	    (xbps_match_pkgdep_in_array(a, str)) ||
+	    (xbps_match_pkgpattern_in_array(a, str)))
+		return true;
+
+	return false;
+}
+
+bool
+xbps_match_virtual_pkg_in_dict(xbps_dictionary_t d, const char *str)
 {
 	xbps_array_t provides;
-	bool found = false;
 
 	assert(xbps_object_type(d) == XBPS_TYPE_DICTIONARY);
 
-	if ((provides = xbps_dictionary_get(d, "provides"))) {
-		if (bypattern)
-			found = xbps_match_pkgpattern_in_array(provides, str);
-		else {
-			if ((xbps_match_pkgname_in_array(provides, str)) ||
-			    (xbps_match_pkgdep_in_array(provides, str)))
-				return true;
-		}
-	}
-	return found;
+	if ((provides = xbps_dictionary_get(d, "provides")))
+		return xbps_match_virtual_pkg_in_array(provides, str);
+
+	return false;
 }
 
 bool

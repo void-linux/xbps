@@ -114,10 +114,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * package that we want to replace we should respect
 			 * the automatic-install object.
 			 */
-			if (xbps_match_virtual_pkg_in_dict(obj,
-			    pattern, true) ||
-			    xbps_match_virtual_pkg_in_dict(instd,
-			    pkgname, false)) {
+			if (xbps_match_virtual_pkg_in_dict(obj, pattern)) {
 				xbps_dictionary_set_bool(obj,
 				    "automatic-install", instd_auto);
 			}

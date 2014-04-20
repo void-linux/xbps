@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,7 +79,7 @@ pkgdep_find(const char *pkg)
 		if (xbps_pkgpattern_match(pkgver, pkg))
 			return pd;
 		/* virtualpkg expression match */
-		if (xbps_match_virtual_pkg_in_dict(pd->d, pkg, true))
+		if (xbps_match_virtual_pkg_in_dict(pd->d, pkg))
 			return pd;
 	}
 
@@ -115,7 +115,7 @@ pkgdep_find_idx(const char *pkg)
 		if (xbps_pkgpattern_match(pkgver, pkg))
 			return idx;
 		/* virtualpkg expression match */
-		if (xbps_match_virtual_pkg_in_dict(pd->d, pkg, true))
+		if (xbps_match_virtual_pkg_in_dict(pd->d, pkg))
 			return idx;
 
 		idx++;
@@ -164,9 +164,10 @@ sort_pkg_rundeps(struct xbps_handle *xhp,
 		 xbps_array_t pkg_rundeps,
 		 xbps_array_t unsorted)
 {
+	xbps_array_t provides;
 	xbps_dictionary_t curpkgd;
 	struct pkgdep *lpd, *pdn;
-	const char *str, *tract;
+	const char *str;
 	int32_t pkgdepidx, curpkgidx;
 	uint32_t i, idx = 0;
 	int rv = 0;
@@ -201,19 +202,18 @@ again:
 		}
 		if (((curpkgd = xbps_find_pkg_in_array(unsorted, str)) == NULL) &&
 		    ((curpkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, str)) == NULL)) {
+			xbps_dbg_printf_append(xhp, "cannot find %s in unsorted array\n", str);
 			rv = EINVAL;
 			break;
 		}
-		if ((xbps_match_virtual_pkg_in_dict(curpkgd, str, true)) ||
-		    (xbps_match_virtual_pkg_in_dict(curpkgd, str, false))) {
-			xbps_dbg_printf_append(xhp, "ignore wrong "
-			    "dependency %s (depends on itself)\n", str);
-			continue;
+		if (pd->d) {
+			provides = xbps_dictionary_get(pd->d, "provides");
+			if (provides && xbps_match_virtual_pkg_in_array(provides, str)) {
+				xbps_dbg_printf_append(xhp, "%s is a vpkg provided by %s, ignored.\n", str, pd->name);
+				continue;
+			}
 		}
-		xbps_dictionary_get_cstring_nocopy(curpkgd,
-		    "transaction", &tract);
 		lpd = pkgdep_alloc(curpkgd, str);
-
 		if (pdn == NULL) {
 			/*
 			 * If package is not in the list, add to the tail

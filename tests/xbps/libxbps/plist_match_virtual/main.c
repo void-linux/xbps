@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -80,12 +80,9 @@ ATF_TC_BODY(match_virtual_pkg_dict_test, tc)
 	xbps_dictionary_t d;
 
 	d = pkgdict_init();
-	ATF_REQUIRE_EQ(
-		xbps_match_virtual_pkg_in_dict(d, "cron-daemon", false), true);
-	ATF_REQUIRE_EQ(
-		xbps_match_virtual_pkg_in_dict(d, "cron-daemon>=0", true), true);
-	ATF_REQUIRE_EQ(
-		xbps_match_virtual_pkg_in_dict(d, "cron-daemon>2", true), false);
+	ATF_REQUIRE_EQ(xbps_match_virtual_pkg_in_dict(d, "cron-daemon"), true);
+	ATF_REQUIRE_EQ(xbps_match_virtual_pkg_in_dict(d, "cron-daemon>=0"), true);
+	ATF_REQUIRE_EQ(xbps_match_virtual_pkg_in_dict(d, "cron-daemon>2"), false);
 }
 
 ATF_TC(match_any_virtualpkg_rundeps_test);

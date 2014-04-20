@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140304"
+#define XBPS_API_VERSION	"20140420"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -910,20 +910,27 @@ int xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 		int (*fn)(struct xbps_handle *, xbps_object_t obj, const char *, void *arg, bool *done),
 		void *arg);
 /**
+ * Match a virtual package name or pattern by looking at proplib array
+ * of strings.
+ *
+ * @param[in] array Proplib array of strings.
+ * @param[in] str Virtual package name or package pattern to match.
+ *
+ * @return True if \a str matches a virtual package in \a array, false
+ * otherwise.
+ */
+bool xbps_match_virtual_pkg_in_array(xbps_array_t array, const char *str);
+/**
  * Match a virtual package name or pattern by looking at package's
  * dictionary "provides" array object.
  *
  * @param[in] pkgd Package dictionary.
  * @param[in] str Virtual package name or package pattern to match.
- * @param[in] bypattern If true, \a str should be a package name,
- * otherwise it should be a package pattern, i.e `foo>=0' or `foo<1'.
  *
  * @return True if \a str matches a virtual package in \a pkgd, false
  * otherwise.
  */
-bool xbps_match_virtual_pkg_in_dict(xbps_dictionary_t pkgd,
-				   const char *str,
-				   bool bypattern);
+bool xbps_match_virtual_pkg_in_dict(xbps_dictionary_t pkgd, const char *str);
 
 /**
  * Match any virtual package from array \a provides in they array \a rundeps

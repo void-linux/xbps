@@ -152,13 +152,14 @@ static int
 find_repo_deps(struct xbps_handle *xhp,
 	       xbps_array_t unsorted,		/* array of unsorted deps */
 	       xbps_array_t pkg_rdeps_array,	/* current pkg rundeps array  */
+	       xbps_array_t pkg_provides,	/* current pkg provides array */
 	       const char *curpkg,		/* current pkgver */
 	       unsigned short *depth)		/* max recursion depth */
 {
 	xbps_dictionary_t curpkgd = NULL;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	xbps_array_t curpkgrdeps;
+	xbps_array_t curpkgrdeps = NULL, curpkgprovides = NULL;
 	pkg_state_t state;
 	const char *reqpkg, *pkgver_q, *reason = NULL;
 	char *pkgname, *reqpkgname;
@@ -191,7 +192,16 @@ find_repo_deps(struct xbps_handle *xhp,
 			break;
 		}
 		/*
-		 * Pass 1: check if required dependency has been already
+		 * Pass 1: check if required dependency is provided as virtual
+		 * package via "provides", if true ignore dependency.
+		 */
+		if (pkg_provides && xbps_match_virtual_pkg_in_array(pkg_provides, reqpkg)) {
+			xbps_dbg_printf_append(xhp, "%s is a vpkg provided by %s, ignored.\n", pkgname, curpkg);
+			free(pkgname);
+			continue;
+		}
+		/*
+		 * Pass 2: check if required dependency has been already
 		 * added in the transaction dictionary.
 		 */
 		if ((curpkgd = xbps_find_pkg_in_array(unsorted, reqpkg)) ||
@@ -199,10 +209,11 @@ find_repo_deps(struct xbps_handle *xhp,
 			xbps_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkgver_q);
 			xbps_dbg_printf_append(xhp, " (%s queued)\n", pkgver_q);
+			free(pkgname);
 			continue;
 		}
 		/*
-		 * Pass 2: check if required dependency is already installed
+		 * Pass 3: check if required dependency is already installed
 		 * and its version is fully matched.
 		 */
 		if (((curpkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) &&
@@ -233,7 +244,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			/* Check its state */
 			if ((rv = xbps_pkg_state_dictionary(curpkgd, &state)) != 0)
 				break;
-			if (xbps_match_virtual_pkg_in_dict(curpkgd, reqpkg, true)) {
+			if (xbps_match_virtual_pkg_in_dict(curpkgd, reqpkg)) {
 				/*
 				 * Check if required dependency is a virtual
 				 * package and is satisfied by an
@@ -292,7 +303,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			}
 		}
 		/*
-		 * Pass 3: find required dependency in repository pool.
+		 * Pass 4: find required dependency in repository pool.
 		 * If dependency does not match add pkg into the missing
 		 * deps array and pass to next one.
 		 */
@@ -365,6 +376,8 @@ find_repo_deps(struct xbps_handle *xhp,
 		if (curpkgrdeps == NULL)
 			continue;
 
+		curpkgprovides = xbps_dictionary_get(curpkgd, "provides");
+
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf(xhp, "");
 			for (unsigned short x = 0; x < *depth; x++)
@@ -378,7 +391,7 @@ find_repo_deps(struct xbps_handle *xhp,
 		 */
 		(*depth)++;
 		rv = find_repo_deps(xhp, unsorted, curpkgrdeps,
-				pkgver_q, depth);
+				curpkgprovides, pkgver_q, depth);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "Error checking %s for rundeps: %s\n",
 			    reqpkg, strerror(rv));
@@ -396,7 +409,7 @@ xbps_repository_find_deps(struct xbps_handle *xhp,
 			  xbps_array_t unsorted,
 			  xbps_dictionary_t repo_pkgd)
 {
-	xbps_array_t pkg_rdeps;
+	xbps_array_t pkg_rdeps, pkg_provides = NULL;
 	const char *pkgver;
 	unsigned short depth = 0;
 
@@ -410,5 +423,6 @@ xbps_repository_find_deps(struct xbps_handle *xhp,
 	 * This will find direct and indirect deps, if any of them is not
 	 * there it will be added into the missing_deps array.
 	 */
-	return find_repo_deps(xhp, unsorted, pkg_rdeps, pkgver, &depth);
+	pkg_provides = xbps_dictionary_get(repo_pkgd, "provides");
+	return find_repo_deps(xhp, unsorted, pkg_rdeps, pkg_provides, pkgver, &depth);
 }

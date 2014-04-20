@@ -114,7 +114,7 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		for (x = 0; x < sd->npatterns; x++) {
 			bool vpkgfound = false;
 
-			if (xbps_match_virtual_pkg_in_dict(obj, sd->patterns[x], false))
+			if (xbps_match_virtual_pkg_in_dict(obj, sd->patterns[x]))
 				vpkgfound = true;
 
 			if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
