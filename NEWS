@@ -1,4 +1,4 @@
-xbps-0.36 (???):
+xbps-0.36 (2014-04-21):
 
  * libxbps: the dependency solver is now able to detect and ignore invalid
    dependencies of a package that are depending on itself, either as real
