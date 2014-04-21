@@ -4,6 +4,8 @@ xbps-0.36 (???):
    dependencies of a package that are depending on itself, either as real
    or virtual packages.
 
+ * xbps-uchroot(8): a manual page has been created.
+
  * xbps-install(8): the -n,--dry-run option does not acquire the pkgdb file lock
    anymore, so that any user can use this mode even without write permission to
    the target pkgdb.
