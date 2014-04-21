@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * Copyright (c) 2014 Enno Boland.
  * All rights reserved.
  *
@@ -58,7 +58,7 @@ usage(void)
 	"    getpkgversion\t<string>\n"
 	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
 	"    version\t\t<pkgname>\n"
-	"    real-version\t\t<pkgname>\n"
+	"    real-version\t<pkgname>\n"
 	"\n"
 	"  Options shared by all actions:\n"
 	"    -C\t\tPath to xbps.conf file.\n"
