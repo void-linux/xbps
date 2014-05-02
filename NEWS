@@ -1,3 +1,8 @@
+xbps-0.37 (???):
+
+ * xbps-query(8): fixed a segfault with '-Rf' if pkg is in the repository data
+   and its binary package does not exist.
+
 xbps-0.36 (2014-04-21):
 
  * libxbps: the dependency solver is now able to detect and ignore invalid
