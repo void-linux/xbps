@@ -35,6 +35,7 @@
 #include <stdarg.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <glob.h>
 
 #include "xbps_api_impl.h"
 
@@ -154,6 +155,24 @@ parse_option(char *buf, char **k, char **v)
 }
 
 static int
+parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf);
+
+static int
+parse_files_glob(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf) {
+	glob_t globbuf = { 0 };
+	int i, rv = 0;
+
+	glob(path, 0, NULL, &globbuf);
+	for(i = 0; globbuf.gl_pathv[i]; i++) {
+		if((rv = parse_file(xhp, globbuf.gl_pathv[i], nested, vpkgconf)) != 0)
+			break;
+	}
+	globfree(&globbuf);
+
+	return rv;
+}
+
+static int
 parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf)
 {
 	FILE *fp;
@@ -218,8 +237,9 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 		if (strcmp(k, "include"))
 			continue;
 
-		if ((rv = parse_file(xhp, v, true, false)) != 0)
+		if ((rv = parse_files_glob(xhp, v, true, false)) != 0)
 			break;
+
 	}
 	free(line);
 	fclose(fp);
