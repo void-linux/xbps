@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2011-2014 Juan Romero Pardines.
+ * Copyright (c) 2014 Enno Boland.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
