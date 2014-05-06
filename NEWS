@@ -1,5 +1,12 @@
 xbps-0.37 (???):
 
+ * xbps.conf: the keyword "include" now supports file globbing, so that multiple
+   small configuration files can be included directly, i.e:
+
+	include=/etc/xbps/repo.d/*.conf
+
+   Contributed by Enno Boland.
+
  * xbps-query(8): fixed a segfault with '-Rf' if pkg is in the repository data
    and its binary package does not exist.
 
