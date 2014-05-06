@@ -1,5 +1,9 @@
 xbps-0.37 (???):
 
+ * xbps-remove(8): the -n,--dry-run option does not acquire the pkgdb file lock
+   anymore, so that any user can use this mode even without write permission to
+   the target pkgdb.
+
  * xbps-remove(8) -O, --clean-cache is now multithreaded. Gives a performance
    boost as the number of threads increases.
 

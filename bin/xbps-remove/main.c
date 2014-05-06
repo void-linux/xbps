@@ -262,7 +262,7 @@ main(int argc, char **argv)
 			exit(rv);;
 	}
 
-	if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
+	if (!drun && (rv = xbps_pkgdb_lock(&xh)) != 0) {
 		fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
 		exit(rv);
 	}
@@ -284,19 +284,23 @@ main(int argc, char **argv)
 		if (rv == 0)
 			continue;
 		else if (rv != EEXIST) {
-			xbps_pkgdb_unlock(&xh);
+			if (!drun) {
+				xbps_pkgdb_unlock(&xh);
+			}
 			exit(rv);
 		} else {
 			reqby_force = true;
 		}
 	}
-	if (reqby_force && !ignore_revdeps) {
+	if (reqby_force && !ignore_revdeps && !drun) {
 		xbps_pkgdb_unlock(&xh);
 		exit(EXIT_FAILURE);
 	}
 	if (orphans || (argc > optind)) {
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
-	xbps_pkgdb_unlock(&xh);
+	if (!drun) {
+		xbps_pkgdb_unlock(&xh);
+	}
 	exit(rv);
 }
