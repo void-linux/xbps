@@ -44,6 +44,8 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
+static int parse_file(struct xbps_handle *, const char *, bool, bool);
+
 /**
  * @file lib/initend.c
  * @brief Initialization and finalization routines
@@ -154,9 +156,6 @@ parse_option(char *buf, char **k, char **v)
 
 	return true;
 }
-
-static int
-parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf);
 
 static int
 parse_files_glob(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf) {
