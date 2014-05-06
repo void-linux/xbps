@@ -33,11 +33,11 @@
 #include <assert.h>
 #include <unistd.h>
 #include <getopt.h>
-#include <dirent.h>
 #include <syslog.h>
 
 #include <xbps.h>
 #include "../xbps-install/defs.h"
+#include "defs.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
@@ -114,94 +114,6 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	}
 
 	return 0;
-}
-
-static int
-cachedir_clean(struct xbps_handle *xhp)
-{
-	xbps_dictionary_t pkg_propsd, repo_pkgd;
-	DIR *dirp;
-	struct dirent *dp;
-	const char *pkgver, *arch, *rsha256;
-	char *binpkg, *binpkgsig, *ext;
-	int rv = 0;
-
-	if ((dirp = opendir(xhp->cachedir)) == NULL)
-		return 0;
-
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, ".") == 0) ||
-		    (strcmp(dp->d_name, "..") == 0))
-			continue;
-
-		/* only process xbps binary packages, ignore something else */
-		if ((ext = strrchr(dp->d_name, '.')) == NULL)
-			continue;
-		if (strcmp(ext, ".xbps")) {
-			xbps_dbg_printf(xhp, "ignoring unknown file: %s\n", dp->d_name);
-			continue;
-		}
-		/* Internalize props.plist dictionary from binary pkg */
-		binpkg = xbps_xasprintf("%s/%s", xhp->cachedir, dp->d_name);
-		pkg_propsd = xbps_get_pkg_plist_from_binpkg(binpkg,
-		    "./props.plist");
-		if (pkg_propsd == NULL) {
-			xbps_error_printf("Failed to read from %s: %s\n",
-			    dp->d_name, strerror(errno));
-			free(binpkg);
-			rv = errno;
-			break;
-		}
-		xbps_dictionary_get_cstring_nocopy(pkg_propsd, "architecture", &arch);
-		xbps_dictionary_get_cstring_nocopy(pkg_propsd, "pkgver", &pkgver);
-		if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
-			xbps_dbg_printf(xhp, "%s: ignoring pkg with unmatched arch (%s)\n", pkgver, arch);
-			free(binpkg);
-			xbps_object_release(pkg_propsd);
-			continue;
-		}
-		/*
-		 * Remove binary pkg if it's not registered in any repository
-		 * or if hash doesn't match.
-		 */
-		binpkgsig = xbps_xasprintf("%s.sig", binpkg);
-		repo_pkgd = xbps_rpool_get_pkg(xhp, pkgver);
-		if (repo_pkgd) {
-			xbps_dictionary_get_cstring_nocopy(repo_pkgd,
-			    "filename-sha256", &rsha256);
-			if (xbps_file_hash_check(binpkg, rsha256) == ERANGE) {
-				if (unlink(binpkg) == -1) {
-					fprintf(stderr, "Failed to remove "
-					    "`%s': %s\n", binpkg, strerror(errno));
-				} else {
-					printf("Removed %s from cachedir (sha256 mismatch)\n", dp->d_name);
-				}
-				if ((access(binpkgsig, R_OK) == 0) && (unlink(binpkgsig) == -1)) {
-					fprintf(stderr, "Failed to remove "
-					    "`%s': %s\n", binpkgsig, strerror(errno));
-				}
-			}
-			xbps_object_release(pkg_propsd);
-			free(binpkg);
-			free(binpkgsig);
-			continue;
-		}
-		if (unlink(binpkg) == -1) {
-			fprintf(stderr, "Failed to remove `%s': %s\n",
-			    binpkg, strerror(errno));
-		} else {
-			printf("Removed %s from cachedir (obsolete)\n", dp->d_name);
-		}
-		if ((access(binpkgsig, R_OK) == 0) && (unlink(binpkgsig) == -1)) {
-			fprintf(stderr, "Failed to remove `%s': %s\n",
-			    binpkgsig, strerror(errno));
-		}
-		xbps_object_release(pkg_propsd);
-		free(binpkg);
-		free(binpkgsig);
-	}
-	closedir(dirp);
-	return rv;
 }
 
 static int
@@ -345,7 +257,7 @@ main(int argc, char **argv)
 	maxcols = get_maxcols();
 
 	if (clean_cache) {
-		rv = cachedir_clean(&xh);
+		rv = clean_cachedir(&xh);
 		if (rv != 0)
 			exit(rv);;
 	}

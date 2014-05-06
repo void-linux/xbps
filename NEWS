@@ -1,5 +1,8 @@
 xbps-0.37 (???):
 
+ * xbps-remove(8) -O, --clean-cache is now multithreaded. Gives a performance
+   boost as the number of threads increases.
+
  * xbps.conf: the keyword "include" now supports file globbing, so that multiple
    small configuration files can be included directly, i.e:
 
