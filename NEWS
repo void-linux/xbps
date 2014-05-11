@@ -1,5 +1,12 @@
 xbps-0.37 (???):
 
+ * A new object is now recorded in the pkgdb to see the origin repository of
+   which a package was installed from, i.e:
+
+	$ xbps-query --property=repository-origin pkg
+	...
+	$
+
  * xbps-remove(8): the -n,--dry-run option does not acquire the pkgdb file lock
    anymore, so that any user can use this mode even without write permission to
    the target pkgdb.

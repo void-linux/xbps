@@ -39,7 +39,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	char outstr[64];
 	time_t t;
 	struct tm *tmp;
-	const char *desc, *pkgver;
+	const char *desc, *pkgver, *repo;
 	char *pkgname = NULL, *buf, *sha256;
 	int rv = 0;
 	bool autoinst = false;
@@ -48,6 +48,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 
 	xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(pkgrd, "short_desc", &desc);
+	xbps_dictionary_get_cstring_nocopy(pkgrd, "repository", &repo);
 	xbps_dictionary_get_bool(pkgrd, "automatic-install", &autoinst);
 	provides = xbps_dictionary_get(pkgrd, "provides");
 	rundeps = xbps_dictionary_get(pkgrd, "run_depends");
@@ -115,6 +116,12 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	if (rundeps && !xbps_dictionary_set(pkgd, "run_depends", rundeps)) {
 		xbps_dbg_printf(xhp, "%s: failed to set rundeps for %s\n",
 		    __func__, pkgver);
+		rv = EINVAL;
+		goto out;
+	}
+	/* Save the repository origin which was used to install the pkg from */
+	if (!xbps_dictionary_set_cstring(pkgd, "repository-origin", repo)) {
+		xbps_dbg_printf(xhp, "%s: repository-origin set failed!\n", pkgver);
 		rv = EINVAL;
 		goto out;
 	}
