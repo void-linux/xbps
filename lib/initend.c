@@ -180,7 +180,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 	size_t len, nlines = 0;
 	ssize_t read;
 	char *line = NULL;
-	char ocwd[XBPS_MAXPATH], tmppath[XBPS_MAXPATH];
+	char ocwd[XBPS_MAXPATH] = { 0 }, tmppath[XBPS_MAXPATH] = { 0 };
 	char *cwd;
 	int rv = 0;
 
@@ -195,7 +195,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 	}
 
 	/* cwd to the dir containing the config file */
-	strncpy(tmppath, path, sizeof(tmppath));
+	strlcpy(tmppath, path, sizeof(tmppath));
 	cwd = dirname(tmppath);
 	if (getcwd(ocwd, sizeof(ocwd)) == NULL) {
 		rv = errno;
