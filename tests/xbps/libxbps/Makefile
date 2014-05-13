@@ -10,6 +10,7 @@ SUBDIRS += util
 SUBDIRS += find_pkg_obsoletes
 SUBDIRS += find_pkg_orphans
 SUBDIRS += pkgdb
+SUBDIRS += config
 SUBDIRS += shell
 
 include ../../../mk/subdir.mk

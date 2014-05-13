@@ -37,6 +37,7 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <glob.h>
+#include <libgen.h>
 
 #include "xbps_api_impl.h"
 
@@ -179,6 +180,8 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 	size_t len, nlines = 0;
 	ssize_t read;
 	char *line = NULL;
+	char ocwd[XBPS_MAXPATH], tmppath[XBPS_MAXPATH];
+	char *cwd;
 	int rv = 0;
 
 	if ((fp = fopen(path, "r")) == NULL) {
@@ -189,6 +192,20 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 
 	if (!vpkgconf) {
 		xbps_dbg_printf(xhp, "Parsing configuration file: %s\n", path);
+	}
+
+	/* cwd to the dir containing the config file */
+	strncpy(tmppath, path, sizeof(tmppath));
+	cwd = dirname(tmppath);
+	if(getcwd(ocwd, sizeof(ocwd)) == NULL) {
+		rv = errno;
+		xbps_dbg_printf(xhp, "cannot get cwd: %s\n", strerror(rv));
+		return rv;
+	}
+	if(chdir(cwd)) {
+		rv = errno;
+		xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", cwd, strerror(rv));
+		return rv;
 	}
 
 	while ((read = getline(&line, &len, fp)) != -1) {
@@ -243,6 +260,13 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 	}
 	free(line);
 	fclose(fp);
+
+	/* Going back to old working directory */
+	if(chdir(ocwd)) {
+		rv = errno;
+		xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", ocwd, strerror(rv));
+		return rv;
+	}
 
 	return rv;
 }
