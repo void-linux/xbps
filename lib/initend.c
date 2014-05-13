@@ -165,7 +165,7 @@ parse_files_glob(struct xbps_handle *xhp, const char *path, bool nested, bool vp
 
 	glob(path, 0, NULL, &globbuf);
 	for(i = 0; globbuf.gl_pathv[i]; i++) {
-		if((rv = parse_file(xhp, globbuf.gl_pathv[i], nested, vpkgconf)) != 0)
+		if ((rv = parse_file(xhp, globbuf.gl_pathv[i], nested, vpkgconf)) != 0)
 			break;
 	}
 	globfree(&globbuf);
@@ -197,12 +197,12 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 	/* cwd to the dir containing the config file */
 	strncpy(tmppath, path, sizeof(tmppath));
 	cwd = dirname(tmppath);
-	if(getcwd(ocwd, sizeof(ocwd)) == NULL) {
+	if (getcwd(ocwd, sizeof(ocwd)) == NULL) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "cannot get cwd: %s\n", strerror(rv));
 		return rv;
 	}
-	if(chdir(cwd)) {
+	if (chdir(cwd)) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", cwd, strerror(rv));
 		return rv;
@@ -262,7 +262,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 	fclose(fp);
 
 	/* Going back to old working directory */
-	if(chdir(ocwd)) {
+	if (chdir(ocwd)) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", ocwd, strerror(rv));
 		return rv;
