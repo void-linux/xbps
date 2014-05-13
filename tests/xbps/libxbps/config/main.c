@@ -26,13 +26,13 @@
 #include <atf-c.h>
 #include <xbps.h>
 
-ATF_TC(xbps_conf_include_test);
-ATF_TC_HEAD(xbps_conf_include_test, tc)
+ATF_TC(config_include_test);
+ATF_TC_HEAD(config_include_test, tc)
 {
 	atf_tc_set_md_var(tc, "descr", "Test including files by file globbing");
 }
 
-ATF_TC_BODY(xbps_conf_include_test, tc)
+ATF_TC_BODY(config_include_test, tc)
 {
 	struct xbps_handle xh;
 	const char *tcsdir;
@@ -58,7 +58,7 @@ ATF_TC_BODY(xbps_conf_include_test, tc)
 
 ATF_TP_ADD_TCS(tp)
 {
-	ATF_TP_ADD_TC(tp, xbps_conf_include_test);
+	ATF_TP_ADD_TC(tp, config_include_test);
 
 	return atf_no_error();
 }

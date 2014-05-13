@@ -2,4 +2,4 @@ syntax("kyuafile", 1)
 
 test_suite("libxbps")
 
-atf_test_program{name="xbps_conf_test"}
+atf_test_program{name="config_test"}
