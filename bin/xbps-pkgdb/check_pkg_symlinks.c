@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2013 Juan Romero Pardines.
+ * Copyright (c) 2011-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -78,7 +78,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_object_t obj;
 	xbps_dictionary_t filesd = arg;
 	const char *file, *tgt = NULL;
-	char *path, *p, *buf, *buf2, *lnk, *dname, *tgt_path;
+	char path[PATH_MAX], tgt_path[PATH_MAX], *p, *buf, *buf2, *lnk, *dname;
 	int rv;
 	bool broken = false;
 
@@ -101,31 +101,28 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		}
 
 		if (strcmp(xhp->rootdir, "/")) {
-			tgt_path = xbps_xasprintf("%s%s", xhp->rootdir, tgt);
-			path = xbps_xasprintf("%s%s", xhp->rootdir, file);
+			snprintf(path, sizeof(path), "%s%s", xhp->rootdir, file);
+			snprintf(tgt_path, sizeof(tgt_path), "%s%s", xhp->rootdir, tgt);
+
+			strncpy(tgt_path, tgt, sizeof(tgt_path));
 		} else  {
-			path = strdup(file);
-			tgt_path = strdup(tgt);
+			strncpy(path, file, sizeof(path));
+			strncpy(tgt_path, tgt, sizeof(tgt_path));
 		}
 
-		lnk = symlink_target(pkgname, path);
-		if (lnk == NULL) {
-			free(tgt_path);
-			free(path);
+		if ((lnk = symlink_target(pkgname, path)) == NULL)
 			continue;
-		}
+
 		p = strdup(path);
 		assert(p);
 		dname = dirname(p);
 		buf = xbps_xasprintf("%s/%s", dname, lnk);
+		free(p);
 
 		buf2 = realpath(path, NULL);
 		if (buf2 == NULL) {
 			xbps_warn_printf("%s: broken symlink %s (target: %s)\n",
 			     pkgname, file, tgt);
-			free(path);
-			free(tgt_path);
-			free(p);
 			free(buf);
 			free(lnk);
 			continue;
@@ -150,10 +147,8 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			    pkgname, file, lnk, tgt);
 			broken = true;
 		}
-		free(p);
 		free(buf);
-		free(path);
-		free(tgt_path);
+		free(buf2);
 		free(lnk);
 	}
 	return broken;
