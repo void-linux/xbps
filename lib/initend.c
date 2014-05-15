@@ -159,8 +159,9 @@ parse_option(char *buf, char **k, char **v)
 }
 
 static int
-parse_files_glob(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf) {
-	glob_t globbuf = { 0 };
+parse_files_glob(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf)
+{
+	glob_t globbuf;
 	int i, rv = 0;
 
 	glob(path, 0, NULL, &globbuf);
