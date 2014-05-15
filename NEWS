@@ -1,5 +1,9 @@
 xbps-0.37 (???):
 
+ * Fixed a new issue with virtual packages, if a pkg provides a virtual package
+   that is already installed but with lesser version, do not update to it
+   unnecessarily (in some cases results in a crash).
+
  * A new object is now recorded in the pkgdb to see the origin repository of
    which a package was installed from, i.e:
 
