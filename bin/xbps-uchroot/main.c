@@ -61,7 +61,11 @@
 #define PR_SET_NO_NEW_PRIVS	38
 #endif
 
-static void
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
+static void __attribute__((noreturn))
 die(const char *fmt, ...)
 {
 	va_list ap;
@@ -75,7 +79,7 @@ die(const char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
-static void
+static void __attribute__((noreturn))
 usage(const char *p)
 {
 	printf("Usage: %s [-D dir] [-H dir] [-S dir] <chrootdir> <command>\n\n"
