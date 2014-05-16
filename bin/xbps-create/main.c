@@ -128,8 +128,8 @@ die(const char *fmt, ...)
 static void
 process_array(const char *key, const char *val)
 {
-	xbps_array_t array;
-	char *args, *p = NULL, *saveptr;
+	xbps_array_t array = NULL;
+	char *args, *p = NULL, *saveptr = NULL;
 
 	assert(key);
 
