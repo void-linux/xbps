@@ -47,7 +47,7 @@ ATF_TC_BODY(config_include_test, tc)
 	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	strncpy(conffile, tcsdir, sizeof(conffile));
-	strncat(conffile, "/xbps.conf", sizeof(conffile));
+	strncat(conffile, "/xbps.conf", sizeof(conffile)-1);
 	xh.conffile = conffile;
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
