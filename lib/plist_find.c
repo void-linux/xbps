@@ -90,7 +90,11 @@ get_pkg_in_array(xbps_array_t array, const char *str, bool virtual)
 	}
 	xbps_object_iterator_release(iter);
 
-	return found ? obj : NULL;
+	if (!found) {
+		errno = ENOENT;
+		return NULL;
+	}
+	return obj;
 }
 
 xbps_dictionary_t HIDDEN
@@ -140,8 +144,10 @@ match_pkg_by_pkgver(xbps_dictionary_t repod, const char *p)
 	d = xbps_dictionary_get(repod, pkgname);
 	if (d) {
 		xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
-		if (strcmp(pkgver, p))
+		if (strcmp(pkgver, p)) {
 			d = NULL;
+			errno = ENOENT;
+		}
 	}
 
 	free(pkgname);
@@ -168,8 +174,10 @@ match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 	if (d) {
 		xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
 		assert(pkgver);
-		if (!xbps_pkgpattern_match(pkgver, p))
+		if (!xbps_pkgpattern_match(pkgver, p)) {
 			d = NULL;
+			errno = ENOENT;
+		}
 	}
 
 	free(pkgname);

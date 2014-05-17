@@ -224,7 +224,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			if (errno && errno != ENOENT) {
 				/* error */
 				rv = errno;
-				xbps_dbg_printf(xhp, "failed to find installed pkg for `%s': %s\n", reqpkg, strerror(errno));
+				xbps_dbg_printf(xhp, "failed to find installed pkg for `%s': %s\n", reqpkg, strerror(rv));
 				free(pkgname);
 				break;
 			}
