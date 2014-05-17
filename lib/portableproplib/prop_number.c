@@ -1,4 +1,4 @@
-/*	$NetBSD: prop_number.c,v 1.23 2010/09/24 22:51:52 rmind Exp $	*/
+/*	$NetBSD: prop_number.c,v 1.26 2014/03/26 18:12:46 christos Exp $	*/
 
 /*-
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
@@ -112,7 +112,7 @@ _prop_number_compare_values(const struct _prop_number_value *pnv1,
 
 static int
 /*ARGSUSED*/
-_prop_number_rb_compare_nodes(void *ctx,
+_prop_number_rb_compare_nodes(void *ctx _PROP_ARG_UNUSED,
 			      const void *n1, const void *n2)
 {
 	const struct _prop_number *pn1 = n1;
@@ -123,7 +123,8 @@ _prop_number_rb_compare_nodes(void *ctx,
 
 static int
 /*ARGSUSED*/
-_prop_number_rb_compare_key(void *ctx, const void *n, const void *v)
+_prop_number_rb_compare_key(void *ctx _PROP_ARG_UNUSED,
+			    const void *n, const void *v)
 {
 	const struct _prop_number *pn = n;
 	const struct _prop_number_value *pnv = v;
@@ -187,15 +188,15 @@ _prop_number_externalize(struct _prop_object_externalize_context *ctx,
 	char tmpstr[32];
 
 	/*
-	 * For the record:
-	 * the original NetBSD implementation used hexadecimal for unsigned
-	 * numbers, but in the portable proplib we changed it to be human
-	 * readable (base 10).
+	 * For unsigned numbers, we output in hex.  For signed numbers,
+	 * we output in decimal.
 	 */
 	if (pn->pn_value.pnv_is_unsigned)
-		sprintf(tmpstr, "%" PRIu64, pn->pn_value.pnv_unsigned);
+		snprintf(tmpstr, sizeof(tmpstr), "%" PRIu64,
+		    pn->pn_value.pnv_unsigned);
 	else
-		sprintf(tmpstr, "%" PRIi64, pn->pn_value.pnv_signed);
+		snprintf(tmpstr, sizeof(tmpstr), "%" PRIi64,
+		    pn->pn_value.pnv_signed);
 
 	if (_prop_object_externalize_start_tag(ctx, "integer") == false ||
 	    _prop_object_externalize_append_cstring(ctx, tmpstr) == false ||
@@ -264,10 +265,7 @@ _prop_number_equals(prop_object_t v1, prop_object_t v2,
 static prop_number_t
 _prop_number_alloc(const struct _prop_number_value *pnv)
 {
-#ifdef DEBUG
-	prop_number_t rpn;
-#endif
-	prop_number_t opn, pn;
+	prop_number_t opn, pn, rpn;
 
 	_PROP_ONCE_RUN(_prop_number_init_once, _prop_number_init);
 
@@ -308,12 +306,10 @@ _prop_number_alloc(const struct _prop_number_value *pnv)
 		_PROP_POOL_PUT(_prop_number_pool, pn);
 		return (opn);
 	}
-#ifdef DEBUG
 	rpn = _prop_rb_tree_insert_node(&_prop_number_tree, pn);
 	_PROP_ASSERT(rpn == pn);
-#endif
 	_PROP_MUTEX_UNLOCK(_prop_number_tree_mutex);
-	return (pn);
+	return (rpn);
 }
 
 /*

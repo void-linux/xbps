@@ -69,7 +69,7 @@ rb_tree_init(struct rb_tree *rbt, const rb_tree_ops_t *ops)
 {
 
 	rbt->rbt_ops = ops;
-	*((const struct rb_node **)&rbt->rbt_root) = RB_SENTINEL_NODE;
+	rbt->rbt_root = RB_SENTINEL_NODE;
 	RB_TAILQ_INIT(&rbt->rbt_nodes);
 #ifndef RBSMALL
 	rbt->rbt_minmax[RB_DIR_LEFT] = rbt->rbt_root;	/* minimum node */

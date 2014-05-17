@@ -1,4 +1,4 @@
-/*	$NetBSD: prop_object_impl.h,v 1.30 2009/09/13 18:45:10 pooka Exp $	*/
+/*	$NetBSD: prop_object_impl.h,v 1.31 2012/07/27 09:10:59 pooka Exp $	*/
 
 /*-
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
@@ -224,6 +224,15 @@ struct _prop_object_iterator {
 	uint32_t	pi_version;
 };
 
+#define _PROP_NOTHREAD_ONCE_DECL(x)	static bool x = false;
+#define _PROP_NOTHREAD_ONCE_RUN(x,f)					\
+	do {								\
+		if ((x) == false) {					\
+			f();						\
+			x = true;					\
+		}							\
+	} while (/*CONSTCOND*/0)
+
 /*
  * proplib in user space...
  */
@@ -246,6 +255,8 @@ struct _prop_object_iterator {
 
 #define	_PROP_POOL_INIT(p, s, d)	static const size_t p = s;
 
+#define	_PROP_MALLOC_DEFINE(t, s, l)	/* nothing */
+
 /*
  * Use pthread mutexes everywhere else.
  */
@@ -265,5 +276,40 @@ struct _prop_object_iterator {
 #define _PROP_ONCE_DECL(x)						\
 	static pthread_once_t x = PTHREAD_ONCE_INIT;
 #define _PROP_ONCE_RUN(x,f)		pthread_once(&(x),(void(*)(void))f)
+
+#define _PROP_NEED_REFCNT_MTX
+
+#define _PROP_ATOMIC_INC32(x)						\
+do {									\
+	pthread_mutex_lock(&_prop_refcnt_mtx);				\
+	(*(x))++;							\
+	pthread_mutex_unlock(&_prop_refcnt_mtx);			\
+} while (/*CONSTCOND*/0)
+
+#define _PROP_ATOMIC_DEC32(x)						\
+do {									\
+	pthread_mutex_lock(&_prop_refcnt_mtx);				\
+	(*(x))--;							\
+	pthread_mutex_unlock(&_prop_refcnt_mtx);			\
+} while (/*CONSTCOND*/0)
+
+#define _PROP_ATOMIC_INC32_NV(x, v)					\
+do {									\
+	pthread_mutex_lock(&_prop_refcnt_mtx);				\
+	v = ++(*(x));							\
+	pthread_mutex_unlock(&_prop_refcnt_mtx);			\
+} while (/*CONSTCOND*/0)
+
+#define _PROP_ATOMIC_DEC32_NV(x, v)					\
+do {									\
+	pthread_mutex_lock(&_prop_refcnt_mtx);				\
+	v = --(*(x));							\
+	pthread_mutex_unlock(&_prop_refcnt_mtx);			\
+} while (/*CONSTCOND*/0)
+
+/*
+ * Language features.
+ */
+#define	_PROP_ARG_UNUSED		/* delete */
 
 #endif /* _PROPLIB_PROP_OBJECT_IMPL_H_ */
