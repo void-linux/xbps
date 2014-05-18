@@ -235,8 +235,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			state = XBPS_PKG_STATE_NOT_INSTALLED;
 		} else {
 			/*
-			 * Check if installed version matches the
-			 * required pkgdep version.
+			 * Check if installed version matches the required pkgdep version.
 			 */
 			xbps_dictionary_get_cstring_nocopy(curpkgd,
 			    "pkgver", &pkgver_q);
@@ -249,9 +248,8 @@ find_repo_deps(struct xbps_handle *xhp,
 
 			if (foundvpkg && xbps_match_virtual_pkg_in_dict(curpkgd, reqpkg)) {
 				/*
-				 * Check if required dependency is a virtual
-				 * package and is satisfied by an
-				 * installed package.
+				 * Check if required dependency is a virtual package and is satisfied
+				 * by an installed package.
 				 */
 				xbps_dbg_printf_append(xhp, "[virtual] satisfied by `%s'.\n", pkgver_q);
 				free(pkgname);
@@ -259,16 +257,17 @@ find_repo_deps(struct xbps_handle *xhp,
 			}
 			rv = xbps_pkgpattern_match(pkgver_q, reqpkg);
 			if (rv == 0) {
-				xbps_array_t replaces;
-				const char *pkgdep;
-				char *pkgdepname;
-				bool matching_vpkg = false;
-				/*
-				 * Package is installed but does not match
-				 * the dependency pattern, if dependency does not
-				 * replace the provided vpkg, update it.
-				 */
 				if (foundvpkg) {
+					/*
+					 * Dependency is installed and is a virtual package; check
+					 * if the virtual package should replace it and then
+					 * update it, otherwise install dependency.
+					 */
+					xbps_array_t replaces;
+					const char *pkgdep;
+					char *pkgdepname;
+					bool matching_vpkg = false;
+
 					replaces = xbps_dictionary_get(curpkgd, "replaces");
 					for (unsigned int x = 0; x < xbps_array_count(replaces); x++) {
 						xbps_array_get_cstring_nocopy(replaces, x, &pkgdep);
@@ -281,18 +280,31 @@ find_repo_deps(struct xbps_handle *xhp,
 						}
 						free(pkgdepname);
 					}
-				}
-				if (matching_vpkg) {
+					if (matching_vpkg) {
+						xbps_dbg_printf_append(xhp, "installed `%s', must be updated.", pkgver_q);
+						if (xbps_dictionary_get(curpkgd, "hold")) {
+							xbps_dbg_printf_append(xhp, " on hold state! ignoring update.\n");
+						} else {
+							xbps_dbg_printf_append(xhp, "\n");
+							reason = "update";
+						}
+					} else {
+						xbps_dbg_printf_append(xhp, "installed `%s (vpkg)', but does not replace it.\n", pkgver_q);
+						reason = "install";
+					}
+
+				} else {
 					xbps_dbg_printf_append(xhp, "installed `%s', must be updated.", pkgver_q);
-					if (xbps_dictionary_get(curpkgd, "hold"))
+					/*
+					 * Dependency is installed but its version does not
+					 * satisfy the requirements, update it to a greater version.
+					 */
+					if (xbps_dictionary_get(curpkgd, "hold")) {
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring update.\n");
-					else {
+					} else {
 						xbps_dbg_printf_append(xhp, "\n");
 						reason = "update";
 					}
-				} else {
-					xbps_dbg_printf_append(xhp, "\n");
-					reason = "install";
 				}
 				free(pkgname);
 			} else if (rv == 1) {
@@ -300,16 +312,14 @@ find_repo_deps(struct xbps_handle *xhp,
 				rv = 0;
 				if (state == XBPS_PKG_STATE_UNPACKED) {
 					/*
-					 * Package matches the dependency
-					 * pattern but was only unpacked,
+					 * Package matches the dependency pattern but was only unpacked,
 					 * configure pkg.
 					 */
 					xbps_dbg_printf_append(xhp, "installed `%s', must be configured.\n", pkgver_q);
 					reason = "configure";
 				} else if (state == XBPS_PKG_STATE_INSTALLED) {
 					/*
-					 * Package matches the dependency
-					 * pattern and is fully installed,
+					 * Package matches the dependency pattern and is fully installed,
 					 * skip to next one.
 					 */
 					xbps_dbg_printf_append(xhp, "installed `%s'.\n", pkgver_q);
