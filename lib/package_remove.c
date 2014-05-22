@@ -246,7 +246,7 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	}
 
 	/* internalize pkg dictionary from metadir */
-	snprintf(metafile, sizeof(metafile), "%s/%s.plist", xhp->metadir, pkgname);
+	snprintf(metafile, sizeof(metafile), "%s/.%s.plist", xhp->metadir, pkgname);
 	pkgd = xbps_dictionary_internalize_from_file(metafile);
 	if (pkgd == NULL)
 		xbps_dbg_printf(xhp, "WARNING: metaplist for %s "
