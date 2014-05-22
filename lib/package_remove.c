@@ -44,7 +44,7 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 	xbps_object_t obj;
 	const char *objs[] = { "files", "conf_files", "links", "dirs" };
 	const char *file;
-	char *path = NULL;
+	char path[PATH_MAX];
 	bool fail = false;
 	int fd = 0;
 
@@ -59,7 +59,7 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 
 		while ((obj = xbps_object_iterator_next(iter))) {
 			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
-			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+			snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
 			if (faccessat(fd, path, W_OK, AT_SYMLINK_NOFOLLOW) == -1) {
 				if (errno != ENOENT) {
 					/*
@@ -73,7 +73,6 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 					    pkgver, file, strerror(errno));
 				}
 			}
-			free(path);
 		}
 		xbps_object_iterator_release(iter);
 	}
@@ -102,7 +101,7 @@ remove_pkg_files(struct xbps_handle *xhp,
 		"/usr/lib64",
 		"/var/run",
 	};
-	char *path = NULL;
+	char path[PATH_MAX];
 	int rv = 0;
 	bool found;
 
@@ -130,7 +129,7 @@ remove_pkg_files(struct xbps_handle *xhp,
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
-		path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
+		snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
 
 		if ((strcmp(key, "files") == 0) ||
 		    (strcmp(key, "conf_files") == 0)) {
@@ -148,7 +147,6 @@ remove_pkg_files(struct xbps_handle *xhp,
 				    rv, pkgver,
 				    "%s: failed to check hash for %s `%s': %s",
 				    pkgver, curobj, file, strerror(rv));
-				free(path);
 				rv = 0;
 				continue;
 			} else if (rv == ERANGE) {
@@ -161,7 +159,6 @@ remove_pkg_files(struct xbps_handle *xhp,
 					    "%s: %s `%s' SHA256 mismatch, "
 					    "preserving file", pkgver,
 					    curobj, file);
-					free(path);
 					continue;
 				} else {
 					xbps_set_cb_state(xhp,
@@ -178,7 +175,6 @@ remove_pkg_files(struct xbps_handle *xhp,
 				    "%s: [remove] failed to check hash for "
 				    "%s `%s': %s", pkgver, curobj, file,
 				    strerror(rv));
-				free(path);
 				break;
 			}
 		}
@@ -195,7 +191,6 @@ remove_pkg_files(struct xbps_handle *xhp,
 			}
 		}
 		if (found) {
-			free(path);
 			continue;
 		}
 		/*
@@ -211,7 +206,6 @@ remove_pkg_files(struct xbps_handle *xhp,
 			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE,
 			    0, pkgver, "Removed %s `%s'", curobj, file);
 		}
-		free(path);
 	}
 	xbps_object_iterator_release(iter);
 
@@ -222,7 +216,7 @@ int HIDDEN
 xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 {
 	xbps_dictionary_t pkgd = NULL;
-	char *pkgname, *buf = NULL;
+	char *pkgname, metafile[PATH_MAX];
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -252,9 +246,8 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	}
 
 	/* internalize pkg dictionary from metadir */
-	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-	pkgd = xbps_dictionary_internalize_from_file(buf);
-	free(buf);
+	snprintf(metafile, sizeof(metafile), "%s/%s.plist", xhp->metadir, pkgname);
+	pkgd = xbps_dictionary_internalize_from_file(metafile);
 	if (pkgd == NULL)
 		xbps_dbg_printf(xhp, "WARNING: metaplist for %s "
 		    "doesn't exist!\n", pkgver);
@@ -356,8 +349,7 @@ purge:
 	/*
 	 * Remove package metadata plist.
 	 */
-	buf = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-	if (remove(buf) == -1) {
+	if (remove(metafile) == -1) {
 		if (errno != ENOENT) {
 			xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
 			    rv, pkgver,
@@ -365,7 +357,6 @@ purge:
 			    pkgver, strerror(errno));
 		}
 	}
-	free(buf);
 	/*
 	 * Unregister package from pkgdb.
 	 */
