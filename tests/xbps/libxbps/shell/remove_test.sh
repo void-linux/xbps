@@ -66,7 +66,7 @@ remove_symlinks_body() {
 	atf_check_equal $? 0
 	xbps-pkgdb -r root -m manual A
 	atf_check_equal $? 0
-	xbps-remove -r root -Ryv B
+	xbps-remove -r root -Ryvd B
 	atf_check_equal $? 0
 	rv=0
 	if [ -h root/usr/lib/libfoo.so ]; then
@@ -96,7 +96,7 @@ remove_symlinks_from_root_body() {
 	cd ..
 	xbps-install -r root -C null.conf --repository=$PWD/some_repo -y A
 	atf_check_equal $? 0
-	xbps-remove -r root -Ryv A
+	xbps-remove -r root -Ryvd A
 	atf_check_equal $? 0
 	rv=0
 	if [ -h root/bin/bash -o -h root/bin/sh ]; then
