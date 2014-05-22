@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -90,7 +90,7 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		"./var/run",
 	};
 	const char *oldhash;
-	char *file;
+	char file[PATH_MAX];
 	int rv = 0;
 	bool found;
 
@@ -122,12 +122,10 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		if (oldstr == NULL)
 			continue;
 
-		file = xbps_xasprintf(".%s",
-		    xbps_string_cstring_nocopy(oldstr));
+		snprintf(file, sizeof(file), ".%s", xbps_string_cstring_nocopy(oldstr));
 
 		oldhash = NULL;
-		xbps_dictionary_get_cstring_nocopy(obj,
-		    "sha256", &oldhash);
+		xbps_dictionary_get_cstring_nocopy(obj, "sha256", &oldhash);
 		if (oldhash) {
 			rv = xbps_file_hash_check(file, oldhash);
 			if (rv == ENOENT || rv == ERANGE) {
@@ -135,7 +133,6 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 				 * Skip unexistent and files that do not
 				 * match the hash.
 				 */
-				free(file);
 				continue;
 			}
 		}
@@ -155,7 +152,6 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 			}
 		}
 		if (found) {
-			free(file);
 			continue;
 		}
 		/*
@@ -171,7 +167,6 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 			}
 		}
 		if (found) {
-			free(file);
 			continue;
 		}
 		/*
@@ -179,7 +174,6 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		 */
 		xbps_dbg_printf(xhp, "found obsolete: %s\n", file);
 		xbps_array_add_cstring(obsoletes, file);
-		free(file);
 	}
 	xbps_object_release(instfiles);
 	xbps_object_release(newfiles);
