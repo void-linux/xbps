@@ -52,7 +52,7 @@ store_dependency(struct xbps_handle *xhp,
 	 * Add the dictionary into the unsorted queue.
 	 */
 	xbps_array_add(unsorted, repo_pkgd);
-	xbps_dbg_printf_append(xhp, "(added)\n");
+	xbps_dbg_printf_append(xhp, " (added)\n");
 
 	return 0;
 }
@@ -229,16 +229,16 @@ find_repo_deps(struct xbps_handle *xhp,
 				break;
 			}
 			free(pkgname);
-			/* Required pkgdep not installed */
+			/* Required dependency not installed */
 			xbps_dbg_printf_append(xhp, "not installed ");
 			reason = "install";
 			state = XBPS_PKG_STATE_NOT_INSTALLED;
 		} else {
 			/*
-			 * Check if installed version matches the required pkgdep version.
+			 * Required dependency is installed, check if its version can
+			 * satisfy the requirements.
 			 */
-			xbps_dictionary_get_cstring_nocopy(curpkgd,
-			    "pkgver", &pkgver_q);
+			xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
 
 			/* Check its state */
 			if ((rv = xbps_pkg_state_dictionary(curpkgd, &state)) != 0) {
@@ -257,57 +257,33 @@ find_repo_deps(struct xbps_handle *xhp,
 			}
 			rv = xbps_pkgpattern_match(pkgver_q, reqpkg);
 			if (rv == 0) {
-				if (foundvpkg) {
-					/*
-					 * Dependency is installed and is a virtual package; check
-					 * if the virtual package should replace it and then
-					 * update it, otherwise install dependency.
-					 */
-					xbps_array_t replaces;
-					const char *pkgdep;
-					char *pkgdepname;
-					bool matching_vpkg = false;
-
-					replaces = xbps_dictionary_get(curpkgd, "replaces");
-					for (unsigned int x = 0; x < xbps_array_count(replaces); x++) {
-						xbps_array_get_cstring_nocopy(replaces, x, &pkgdep);
-						pkgdepname = xbps_pkgpattern_name(pkgdep);
-						assert(pkgdepname);
-						if (strcmp(pkgname, pkgdepname) == 0) {
-							matching_vpkg = true;
-							free(pkgdepname);
-							break;
-						}
-						free(pkgdepname);
-					}
-					if (matching_vpkg) {
-						xbps_dbg_printf_append(xhp, "installed `%s', must be updated.", pkgver_q);
-						if (xbps_dictionary_get(curpkgd, "hold")) {
-							xbps_dbg_printf_append(xhp, " on hold state! ignoring update.\n");
-						} else {
-							xbps_dbg_printf_append(xhp, "\n");
-							reason = "update";
-						}
+				char *curpkgname;
+				/*
+				 * The version requirement is not satisfied.
+				 */
+				curpkgname = xbps_pkg_name(pkgver_q);
+				assert(curpkgname);
+				if (strcmp(pkgname, curpkgname)) {
+					xbps_dbg_printf_append(xhp, "not installed `%s (vpkg)'", pkgver_q);
+					if (xbps_dictionary_get(curpkgd, "hold")) {
+						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
 					} else {
-						xbps_dbg_printf_append(xhp, "installed `%s (vpkg)', but does not replace it.\n", pkgver_q);
 						reason = "install";
 					}
-
 				} else {
-					xbps_dbg_printf_append(xhp, "installed `%s', must be updated.", pkgver_q);
-					/*
-					 * Dependency is installed but its version does not
-					 * satisfy the requirements, update it to a greater version.
-					 */
+					xbps_dbg_printf_append(xhp, "installed `%s', must be updated", pkgver_q);
 					if (xbps_dictionary_get(curpkgd, "hold")) {
-						xbps_dbg_printf_append(xhp, " on hold state! ignoring update.\n");
+						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
 					} else {
-						xbps_dbg_printf_append(xhp, "\n");
 						reason = "update";
 					}
 				}
+				free(curpkgname);
 				free(pkgname);
 			} else if (rv == 1) {
+				/*
+				 * The version requirement is satisfied.
+				 */
 				free(pkgname);
 				rv = 0;
 				if (state == XBPS_PKG_STATE_UNPACKED) {
@@ -400,18 +376,16 @@ find_repo_deps(struct xbps_handle *xhp,
 
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf(xhp, "");
-			for (unsigned short x = 0; x < *depth; x++)
+			for (unsigned short x = 0; x < *depth; x++) {
 				xbps_dbg_printf_append(xhp, " ");
-
-			xbps_dbg_printf_append(xhp,
-			    "%s: finding dependencies:\n", pkgver_q);
+			}
+			xbps_dbg_printf_append(xhp, "%s: finding dependencies:\n", pkgver_q);
 		}
 		/*
 		 * Recursively find rundeps for current pkg dictionary.
 		 */
 		(*depth)++;
-		rv = find_repo_deps(xhp, unsorted, curpkgrdeps,
-				curpkgprovides, pkgver_q, depth);
+		rv = find_repo_deps(xhp, unsorted, curpkgrdeps, curpkgprovides, pkgver_q, depth);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "Error checking %s for rundeps: %s\n", reqpkg, strerror(rv));
 			break;
