@@ -180,6 +180,8 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return EINVAL;
 	}
+	xbps_object_release(unsorted);
+
 	if ((mdeps = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
@@ -190,6 +192,8 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return EINVAL;
 	}
+	xbps_object_release(mdeps);
+
 	if ((conflicts = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
@@ -200,6 +204,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return EINVAL;
 	}
+	xbps_object_release(conflicts);
 
 	return 0;
 }
@@ -260,6 +265,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * The missing deps and conflicts arrays are not necessary anymore.
 	 */
+	xbps_dictionary_remove(xhp->transd, "unsorted");
 	xbps_dictionary_remove(xhp->transd, "missing_deps");
 	xbps_dictionary_remove(xhp->transd, "conflicts");
 	xbps_dictionary_make_immutable(xhp->transd);
