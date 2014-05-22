@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,7 +69,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter, iter2;
 	const char *cffile, *sha256_new = NULL;
-	char *buf, *sha256_cur = NULL, *sha256_orig = NULL;
+	char buf[PATH_MAX], *sha256_cur = NULL, *sha256_orig = NULL;
 	int rv = 0;
 
 	assert(xbps_object_type(filesd) == XBPS_TYPE_DICTIONARY);
@@ -101,15 +101,11 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		while ((obj2 = xbps_object_iterator_next(iter2))) {
 			xbps_dictionary_get_cstring_nocopy(obj2,
 			    "file", &cffile);
-			buf = xbps_xasprintf(".%s", cffile);
+			snprintf(buf, sizeof(buf), ".%s", cffile);
 			if (strcmp(entry_pname, buf) == 0) {
-				xbps_dictionary_get_cstring(obj2, "sha256",
-				    &sha256_orig);
-				free(buf);
+				xbps_dictionary_get_cstring(obj2, "sha256", &sha256_orig);
 				break;
 			}
-			free(buf);
-			buf = NULL;
 		}
 		xbps_object_iterator_release(iter2);
 	}
@@ -128,14 +124,11 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	 */
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &cffile);
-		buf = xbps_xasprintf(".%s", cffile);
+		snprintf(buf, sizeof(buf), ".%s", cffile);
 		if (strcmp(entry_pname, buf)) {
-			free(buf);
-			buf = NULL;
 			continue;
 		}
 		sha256_cur = xbps_file_hash(buf);
-		free(buf);
 		xbps_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
 		if (sha256_cur == NULL) {
 			if (errno == ENOENT) {
@@ -218,14 +211,12 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 
 			version = xbps_pkg_version(pkgver);
 			assert(version);
-			buf = xbps_xasprintf(".%s.new-%s",
-			    cffile, version);
+			snprintf(buf, sizeof(buf), ".%s.new-%s", cffile, version);
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgver,
 			    "Installing new configuration file to "
 			    "`%s.new-%s'.", cffile, version);
 			archive_entry_copy_pathname(entry, buf);
-			free(buf);
 			rv = 1;
 			break;
 		}
