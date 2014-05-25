@@ -57,8 +57,9 @@ usage(bool fail)
 	    " -H --list-hold-pkgs      List packages on hold state\n"
 	    " -m --list-manual-pkgs    List packages installed explicitly\n"
 	    " -O --list-orphans        List package orphans\n"
-	    " -o --ownedby PATTERN(s)  Search for packages owning PATTERN(s)\n"
+	    " -o --ownedby FILE(s)     Search for packages owning FILE(s)\n"
 	    " -s --search PATTERN(s)   Search for packages matching PATTERN(s)\n"
+	    " -S,--search-regex RE     Search for packages matching RE\n"
 	    " -f --files               Show files for PKGNAME\n"
 	    " -x --deps                Show dependencies for PKGNAME (set it twice for a full dependency tree)\n"
 	    " -X --revdeps             Show reverse dependencies for PKGNAME\n");
@@ -69,7 +70,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:D:dfhHLlmOop:Rr:sVvXx";
+	const char *shortopts = "C:c:D:dfhHLlmOop:Rr:sSVvXx";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -85,6 +86,7 @@ main(int argc, char **argv)
 		{ "repository", optional_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "search", no_argument, NULL, 's' },
+		{ "search-regex", no_argument, NULL, 'S' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "files", no_argument, NULL, 'f' },
@@ -97,13 +99,13 @@ main(int argc, char **argv)
 	int c, flags, rv, show_deps = 0;
 	bool list_pkgs, list_repos, orphans, own;
 	bool list_manual, list_hold, show_prop, show_files, show_rdeps;
-	bool show, search, repo_mode, opmode, fulldeptree;
+	bool show, search, search_regex, repo_mode, opmode, fulldeptree;
 
 	rootdir = cachedir = conffile = props = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = search = own = false;
 	list_manual = show_prop = show_files = false;
-	show = show_rdeps = fulldeptree = false;
+	search_regex = show = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
 
 	memset(&xh, 0, sizeof(xh));
@@ -163,6 +165,9 @@ main(int argc, char **argv)
 			break;
 		case 's':
 			search = opmode = true;
+			break;
+		case 'S':
+			search_regex = opmode = true;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -232,9 +237,9 @@ main(int argc, char **argv)
 		else
 			rv = ownedby(&xh, argc - optind, argv + optind);
 
-	} else if (search) {
+	} else if (search || search_regex) {
 		/* search mode */
-		rv = repo_search(&xh, argc - optind, argv + optind, props);
+		rv = repo_search(&xh, argc - optind, argv + optind, props, search_regex);
 
 	} else if (show || show_prop) {
 		/* show mode */

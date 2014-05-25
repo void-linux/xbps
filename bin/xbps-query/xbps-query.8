@@ -1,4 +1,4 @@
-.Dd April 21, 2014
+.Dd May 25, 2014
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -133,6 +133,26 @@ The
 argument can be a simple string or a shell wildcard pattern as explained in
 .Xr fnmatch 3 .
 Multiple patterns may be specified.
+.It Fl S, Fl -search-regex Ar RE.. [ Fl -property Ar PROP ]
+Search for packages in repositories matching
+.Ar RE
+on its
+.Em pkgver
+and/or
+.Em short_desc
+properties.
+.Ar RE
+is a
+.Em POSIX Extended Regular Expression
+as explained in
+.Xr regex 7 .
+If a package property is specified with
+.Fl -property,
+all packages matching
+.Ar RE
+against
+.Ar PROP
+will be shown.
 .It Fl s, Fl -search Ar PATTERN... [ Fl -property Ar PROP ]
 Search for packages in repositories matching
 .Ar PATTERN

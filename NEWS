@@ -1,5 +1,16 @@
 xbps-0.37 (???):
 
+ * xbps-query(8): new option "-S, --search-regex" that matches packages in
+   repositories with Extended Regular Expressions as explained in regex(7).
+
+   This allows you to find packages by matching EREs in package properties,
+   for example to find out what packages were built between 2014-05-23 and
+   2014-05-25:
+
+	$ xbps-query -S 2014-05-2[35] -p build-date
+	...
+	$
+
  * Imported portable proplib 0.6.4 from https://github.com/xtraeme/portableproplib.
 
  * Fixed a new issue with virtual packages, if a pkg provides a virtual package

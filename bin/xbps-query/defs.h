@@ -68,6 +68,6 @@ int	list_pkgs_pkgdb(struct xbps_handle *);
 int	repo_list(struct xbps_handle *);
 
 /* from search.c */
-int	repo_search(struct xbps_handle *, int, char **, const char *);
+int	repo_search(struct xbps_handle *, int, char **, const char *, bool);
 
 #endif /* !_XBPS_QUERY_DEFS_H_ */
