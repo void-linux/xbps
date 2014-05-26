@@ -36,33 +36,34 @@ static void __attribute__((noreturn))
 usage(bool fail)
 {
 	fprintf(stdout,
-	    "Usage: xbps-query [OPTIONS...] [PKGNAME]\n"
+	    "Usage: xbps-query [OPTIONS] MODE [ARGUMENTS]\n"
 	    "\nOPTIONS\n"
 	    " -C --config <file>       Full path to configuration file\n"
 	    " -c --cachedir <dir>      Full path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -h --help                Print help usage\n"
-	    " -p --property PROP,...   Show properties for PKGNAME\n"
+	    " -p --property PROP[,...] Show properties for PKGNAME\n"
 	    " -R --repository          Enable repository mode. This mode explicitly\n"
 	    "                          looks for packages in repositories.\n"
 	    "    --repository=<url>    Enable repository mode and add repository\n"
 	    "                          to the top of the list. This option can be\n"
 	    "                          specified multiple times.\n"
+	    "    --regex               Use Extended Regular Expressions to match\n"
 	    " -r --rootdir <dir>       Full path to rootdir\n"
 	    " -V --version             Show XBPS version\n"
 	    " -v --verbose             Verbose messages\n"
-	    "\nMODE [only one mode may be specified]\n"
-	    " -l --list-pkgs           List available packages\n"
-	    " -L --list-repos          List working repositories\n"
+	    "\nMODE\n"
+	    " -l --list-pkgs           List installed packages\n"
+	    " -L --list-repos          List registered repositories\n"
 	    " -H --list-hold-pkgs      List packages on hold state\n"
 	    " -m --list-manual-pkgs    List packages installed explicitly\n"
 	    " -O --list-orphans        List package orphans\n"
-	    " -o --ownedby FILE(s)     Search for packages owning FILE(s)\n"
-	    " -s --search PATTERN(s)   Search for packages matching PATTERN(s)\n"
-	    " -S,--search-regex RE     Search for packages matching RE\n"
-	    " -f --files               Show files for PKGNAME\n"
-	    " -x --deps                Show dependencies for PKGNAME (set it twice for a full dependency tree)\n"
-	    " -X --revdeps             Show reverse dependencies for PKGNAME\n");
+	    " -o --ownedby FILE        Search for package files by matching STRING or REGEX\n"
+	    " -S --show PKG            Show information for PKG [default mode]\n"
+	    " -s --search PKG          Search for packages by matching PKG, STRING or REGEX\n"
+	    " -f --files PKG           Show package files for PKG\n"
+	    " -x --deps PKG            Show dependencies for PKG (set it twice for a full dependency tree)\n"
+	    " -X --revdeps PKG         Show reverse dependencies for PKG\n");
 
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
@@ -70,7 +71,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:D:dfhHLlmOop:Rr:sSVvXx";
+	const char *shortopts = "C:c:D:dfhHLlmOo:p:Rr:s:S:VvXx";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -81,31 +82,32 @@ main(int argc, char **argv)
 		{ "list-hold-pkgs", no_argument, NULL, 'H' },
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
 		{ "list-orphans", no_argument, NULL, 'O' },
-		{ "ownedby", no_argument, NULL, 'o' },
+		{ "ownedby", required_argument, NULL, 'o' },
 		{ "property", required_argument, NULL, 'p' },
 		{ "repository", optional_argument, NULL, 'R' },
+		{ "regex", no_argument, NULL, 0 },
 		{ "rootdir", required_argument, NULL, 'r' },
-		{ "search", no_argument, NULL, 's' },
-		{ "search-regex", no_argument, NULL, 'S' },
+		{ "show", required_argument, NULL, 'S' },
+		{ "search", required_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
-		{ "files", no_argument, NULL, 'f' },
-		{ "deps", no_argument, NULL, 'x' },
-		{ "revdeps", no_argument, NULL, 'X' },
+		{ "files", required_argument, NULL, 'f' },
+		{ "deps", required_argument, NULL, 'x' },
+		{ "revdeps", required_argument, NULL, 'X' },
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
-	const char *rootdir, *cachedir, *conffile, *props;
+	const char *pkg, *rootdir, *cachedir, *conffile, *props;
 	int c, flags, rv, show_deps = 0;
 	bool list_pkgs, list_repos, orphans, own;
 	bool list_manual, list_hold, show_prop, show_files, show_rdeps;
-	bool show, search, search_regex, repo_mode, opmode, fulldeptree;
+	bool show, search, regex, repo_mode, opmode, fulldeptree;
 
-	rootdir = cachedir = conffile = props = NULL;
+	rootdir = cachedir = conffile = props = pkg = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = search = own = false;
 	list_manual = show_prop = show_files = false;
-	search_regex = show = show_rdeps = fulldeptree = false;
+	regex = show = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
 
 	memset(&xh, 0, sizeof(xh));
@@ -124,6 +126,7 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'f':
+			pkg = optarg;
 			show_files = opmode = true;
 			break;
 		case 'H':
@@ -145,6 +148,7 @@ main(int argc, char **argv)
 			orphans = true;
 			break;
 		case 'o':
+			pkg = optarg;
 			own = opmode = true;
 			break;
 		case 'p':
@@ -163,11 +167,13 @@ main(int argc, char **argv)
 		case 'r':
 			rootdir = optarg;
 			break;
-		case 's':
-			search = opmode = true;
-			break;
 		case 'S':
-			search_regex = opmode = true;
+			pkg = optarg;
+			show = opmode = true;
+			break;
+		case 's':
+			pkg = optarg;
+			search = opmode = true;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -176,24 +182,32 @@ main(int argc, char **argv)
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case 'x':
+			pkg = optarg;
 			show_deps++;
 			opmode = true;
 			break;
 		case 'X':
+			pkg = optarg;
 			show_rdeps = opmode = true;
+			break;
+		case 0:
+			regex = true;
 			break;
 		case '?':
 			usage(true);
 			/* NOTREACHED */
 		}
 	}
-	if (!opmode && argc > optind)
-		show = true;
-	else if (argc == 1 || (opmode && (argc == optind)))
-		usage(true);
-	else if ((search || own) && (argc == optind))
-		usage(true);
+	argc -= optind;
+	argv += optind;
 
+	if (argc > 1)
+		usage(true);
+	else if (!opmode) {
+		/* show mode by default */
+		show = opmode = true;
+		pkg = *argv;
+	}
 	/*
 	 * Initialize libxbps.
 	 */
@@ -232,29 +246,25 @@ main(int argc, char **argv)
 
 	} else if (own) {
 		/* ownedby mode */
-		if (repo_mode)
-			rv = repo_ownedby(&xh, argc - optind, argv + optind);
-		else
-			rv = ownedby(&xh, argc - optind, argv + optind);
+		rv = ownedby(&xh, pkg, repo_mode, regex);
 
-	} else if (search || search_regex) {
+	} else if (search) {
 		/* search mode */
-		rv = repo_search(&xh, argc - optind, argv + optind, props, search_regex);
+		rv = repo_search(&xh, pkg, props, regex);
 
 	} else if (show || show_prop) {
 		/* show mode */
 		if (repo_mode)
-			rv = repo_show_pkg_info(&xh, argv[optind], props);
+			rv = repo_show_pkg_info(&xh, pkg, props);
 		else
-			rv = show_pkg_info_from_metadir(&xh,
-			    argv[optind], props);
+			rv = show_pkg_info_from_metadir(&xh, pkg, props);
 
 	} else if (show_files) {
 		/* show-files mode */
 		if (repo_mode)
-			rv =  repo_show_pkg_files(&xh, argv[optind]);
+			rv =  repo_show_pkg_files(&xh, pkg);
 		else
-			rv = show_pkg_files_from_metadir(&xh, argv[optind]);
+			rv = show_pkg_files_from_metadir(&xh, pkg);
 
 	} else if (show_deps) {
 		/* show-deps mode */
@@ -262,16 +272,16 @@ main(int argc, char **argv)
 			fulldeptree = true;
 
 		if (repo_mode)
-			rv = repo_show_pkg_deps(&xh, argv[optind], fulldeptree);
+			rv = repo_show_pkg_deps(&xh, pkg, fulldeptree);
 		else
-			rv = show_pkg_deps(&xh, argv[optind], fulldeptree);
+			rv = show_pkg_deps(&xh, pkg, fulldeptree);
 
 	} else if (show_rdeps) {
 		/* show-rdeps mode */
 		if (repo_mode)
-			rv = repo_show_pkg_revdeps(&xh, argv[optind]);
+			rv = repo_show_pkg_revdeps(&xh, pkg);
 		else
-			rv = show_pkg_revdeps(&xh, argv[optind]);
+			rv = show_pkg_revdeps(&xh, pkg);
 	}
 
 	exit(rv);

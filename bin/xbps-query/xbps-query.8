@@ -1,4 +1,4 @@
-.Dd May 25, 2014
+.Dd May 26, 2014
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -8,7 +8,7 @@
 .Nm xbps-query
 .Op OPTIONS
 .Ar MODE
-.Op PKG
+.Op ARGUMENTS
 .Sh DESCRIPTION
 The
 .Nm
@@ -70,6 +70,13 @@ than looking in the target root directory. The
 .Ar url
 argument is optional and can be used to add the repository to the top of the list.
 This option can be specified multiple times.
+.It Fl -regex
+Enables string matching by using Extended Regular Expressions in compatible modes,
+currently in the
+.Sy ownedby
+and
+.Sy search
+modes.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl v, Fl -verbose
@@ -125,36 +132,20 @@ manually by the user (i.e not as dependency of any package).
 Lists package orphans in the package database (pkgdb), i.e packages that
 were installed as dependencies and no package is currently depending on them
 directly.
-.It Fl o, Fl -ownedby Ar PATTERN...
-Search for packages owning the files specified by
+.It Fl o, Fl -ownedby Ar PATTERN
+Search for package files by matching
 .Ar PATTERN .
 The
 .Ar PATTERN
-argument can be a simple string or a shell wildcard pattern as explained in
-.Xr fnmatch 3 .
-Multiple patterns may be specified.
-.It Fl S, Fl -search-regex Ar RE.. [ Fl -property Ar PROP ]
-Search for packages in repositories matching
-.Ar RE
-on its
-.Em pkgver
-and/or
-.Em short_desc
-properties.
-.Ar RE
-is a
-.Em POSIX Extended Regular Expression
-as explained in
-.Xr regex 7 .
-If a package property is specified with
-.Fl -property,
-all packages matching
-.Ar RE
-against
-.Ar PROP
-will be shown.
-.It Fl s, Fl -search Ar PATTERN... [ Fl -property Ar PROP ]
-Search for packages in repositories matching
+argument can be a simple string, a shell wildcard pattern as explained in
+.Xr fnmatch 3
+or an Extended Regular Expression as explained in
+.Xr regex 7
+(if
+.Fl -regex
+option is set).
+.It Fl s, Fl -search Ar PATTERN [ Fl -property Ar PROP ]
+Search for packages in repositories by matching
 .Ar PATTERN
 on its
 .Em pkgver

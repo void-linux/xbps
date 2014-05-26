@@ -53,8 +53,7 @@ int 	repo_show_pkg_namedesc(struct xbps_handle *, xbps_object_t, void *,
 		bool *);
 
 /* from ownedby.c */
-int	ownedby(struct xbps_handle *, int, char **);
-int	repo_ownedby(struct xbps_handle *, int, char **);
+int	ownedby(struct xbps_handle *, const char *, bool, bool);
 
 /* From list.c */
 unsigned int	find_longest_pkgver(struct xbps_handle *, xbps_object_t);
@@ -68,6 +67,6 @@ int	list_pkgs_pkgdb(struct xbps_handle *);
 int	repo_list(struct xbps_handle *);
 
 /* from search.c */
-int	repo_search(struct xbps_handle *, int, char **, const char *, bool);
+int	repo_search(struct xbps_handle *, const char *, const char *, bool);
 
 #endif /* !_XBPS_QUERY_DEFS_H_ */

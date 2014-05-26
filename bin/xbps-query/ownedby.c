@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2013 Juan Romero Pardines.
+ * Copyright (c) 2010-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,14 +31,14 @@
 #include <fnmatch.h>
 #include <dirent.h>
 #include <assert.h>
+#include <regex.h>
 
 #include <xbps.h>
 #include "defs.h"
 
 struct ffdata {
-	int npatterns;
-	char **patterns;
-	const char *repouri;
+	bool regex;
+	const char *pat, *repouri;
 	xbps_array_t allkeys;
 	xbps_dictionary_t filesd;
 };
@@ -52,7 +52,7 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 	xbps_array_t array;
 	xbps_object_t obj;
 	const char *keyname, *filestr, *typestr;
-	int x;
+	regex_t regex;
 
 	keyname = xbps_dictionary_keysym_cstring_nocopy(key);
 
@@ -72,11 +72,15 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &filestr);
 		if (filestr == NULL)
 			continue;
-		for (x = 0; x < ffd->npatterns; x++) {
-			if ((fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
-				printf("%s: %s (%s)\n", pkgver,
-				    filestr, typestr);
+		if (ffd->regex) {
+			regcomp(&regex, ffd->pat, REG_EXTENDED|REG_NOSUB);
+			if (regexec(&regex, filestr, 0, 0, 0) == 0) {
+				printf("%s: %s (%s)\n", pkgver, filestr, typestr);
 			}
+			regfree(&regex);
+		} else {
+			if ((fnmatch(ffd->pat, filestr, FNM_PERIOD)) == 0)
+				printf("%s: %s (%s)\n", pkgver, filestr, typestr);
 		}
 	}
 }
@@ -112,22 +116,6 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 	return 0;
 }
 
-int
-ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
-{
-	struct ffdata ffd;
-	char *rfile;
-
-	ffd.npatterns = npatterns;
-	ffd.patterns = patterns;
-
-	for (int i = 0; i < npatterns; i++) {
-		rfile = realpath(patterns[i], NULL);
-		if (rfile)
-			patterns[i] = rfile;
-	}
-	return xbps_pkgdb_foreach_cb(xhp, ownedby_pkgdb_cb, &ffd);
-}
 
 static int
 repo_match_cb(struct xbps_handle *xhp _unused,
@@ -138,14 +126,19 @@ repo_match_cb(struct xbps_handle *xhp _unused,
 {
 	struct ffdata *ffd = arg;
 	const char *filestr;
+	regex_t regex;
 
 	for (unsigned int i = 0; i < xbps_array_count(obj); i++) {
 		xbps_array_get_cstring_nocopy(obj, i, &filestr);
-		for (int x = 0; x < ffd->npatterns; x++) {
-			if ((fnmatch(ffd->patterns[x], filestr, FNM_PERIOD)) == 0) {
-				printf("%s: %s (%s)\n",
-				    key, filestr, ffd->repouri);
+		if (ffd->regex) {
+			regcomp(&regex, ffd->pat, REG_EXTENDED|REG_NOSUB);
+			if (regexec(&regex, filestr, 0, 0, 0) == 0) {
+				printf("%s: %s (%s)\n", key, filestr, ffd->repouri);
 			}
+			regfree(&regex);
+		} else {
+			if ((fnmatch(ffd->pat, filestr, FNM_PERIOD)) == 0)
+				printf("%s: %s (%s)\n", key, filestr, ffd->repouri);
 		}
 	}
 
@@ -172,21 +165,22 @@ repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 }
 
 int
-repo_ownedby(struct xbps_handle *xhp, int npatterns, char **patterns)
+ownedby(struct xbps_handle *xhp, const char *pat, bool repo, bool regex)
 {
 	struct ffdata ffd;
 	char *rfile;
 	int rv;
 
-	ffd.npatterns = npatterns;
-	ffd.patterns = patterns;
+	ffd.regex = regex;
+	ffd.pat = pat;
 
-	for (int i = 0; i < npatterns; i++) {
-		rfile = realpath(patterns[i], NULL);
-		if (rfile)
-			patterns[i] = rfile;
-	}
-	rv = xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
+	if ((rfile = realpath(pat, NULL)) != NULL)
+		ffd.pat = rfile;
+
+	if (repo)
+		rv = xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
+	else
+		rv = xbps_pkgdb_foreach_cb(xhp, ownedby_pkgdb_cb, &ffd);
 
 	return rv;
 }

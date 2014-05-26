@@ -1,13 +1,18 @@
 xbps-0.37 (???):
 
- * xbps-query(8): new option "-S, --search-regex" that matches packages in
-   repositories with Extended Regular Expressions as explained in regex(7).
+ * xbps-query(8): new option (-S, --show) which shows info of a package
+   installed locally or in a repository with -R. This is the default mode
+   if no other mode is set; to preserve compatibility with previous versions.
+
+ * xbps-query(8): new long option "--regex" that can be used in the
+   "ownedby (-o, --ownedby)" and "search (-s, --search)" modes to match
+   Extended Regular Expressions against package properties.
 
    This allows you to find packages by matching EREs in package properties,
    for example to find out what packages were built between 2014-05-23 and
    2014-05-25:
 
-	$ xbps-query -S 2014-05-2[35] -p build-date
+	$ xbps-query --regex -s 2014-05-2[35] -p build-date
 	...
 	$
 
