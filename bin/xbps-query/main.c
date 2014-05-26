@@ -71,7 +71,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:D:dfhHLlmOo:p:Rr:s:S:VvXx";
+	const char *shortopts = "C:c:dfhHLlmOo:p:Rr:s:S:VvXx";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -120,8 +120,6 @@ main(int argc, char **argv)
 		case 'c':
 			cachedir = optarg;
 			break;
-		case 'D':
-			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
 			break;
@@ -130,22 +128,22 @@ main(int argc, char **argv)
 			show_files = opmode = true;
 			break;
 		case 'H':
-			list_hold = true;
+			list_hold = opmode = true;
 			break;
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
 		case 'L':
-			list_repos = true;
+			list_repos = opmode = true;
 			break;
 		case 'l':
-			list_pkgs = true;
+			list_pkgs = opmode = true;
 			break;
 		case 'm':
-			list_manual = true;
+			list_manual = opmode = true;
 			break;
 		case 'O':
-			orphans = true;
+			orphans = opmode = true;
 			break;
 		case 'o':
 			pkg = optarg;
