@@ -71,7 +71,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:dfhHLlmOo:p:Rr:s:S:VvXx";
+	const char *shortopts = "C:c:df:hHLlmOo:p:Rr:s:S:VvX:x:";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
