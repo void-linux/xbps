@@ -121,14 +121,14 @@ search_array_cb(struct xbps_handle *xhp _unused,
 
 			if (sd->regex) {
 				regex_t regex;
-				regmatch_t regmatches[1];
 
-				regcomp(&regex, sd->patterns[x], REG_EXTENDED);
-				if ((regexec(&regex, pkgver, 1, regmatches, REG_EXTENDED) == 0) ||
-				    (regexec(&regex, desc, 1, regmatches, REG_EXTENDED) == 0)) {
+				regcomp(&regex, sd->patterns[x], REG_EXTENDED|REG_NOSUB);
+				if ((regexec(&regex, pkgver, 0, 0, 0) == 0) ||
+				    (regexec(&regex, desc, 0, 0, 0) == 0)) {
 					xbps_array_add_cstring_nocopy(sd->results, pkgver);
 					xbps_array_add_cstring_nocopy(sd->results, desc);
 				}
+				regfree(&regex);
 			} else {
 				if ((xbps_pkgpattern_match(pkgver, sd->patterns[x])) ||
 				    (strcasestr(pkgver, sd->patterns[x])) ||
@@ -149,13 +149,13 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			for (x = 0; x < sd->npatterns; x++) {
 				if (sd->regex) {
 					regex_t regex;
-					regmatch_t regmatches[1];
 
-					regcomp(&regex, sd->patterns[x], REG_EXTENDED);
-					if (regexec(&regex, str, 1, regmatches, 0) == 0) {
+					regcomp(&regex, sd->patterns[x], REG_EXTENDED|REG_NOSUB);
+					if (regexec(&regex, str, 0, 0, 0) == 0) {
 						xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 					}
+					regfree(&regex);
 				} else {
 					if ((strcasestr(str, sd->patterns[x])) ||
 					    (fnmatch(sd->patterns[x], str, FNM_PERIOD)) == 0) {
@@ -175,13 +175,13 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		for (x = 0; x < sd->npatterns; x++) {
 			if (sd->regex) {
 				regex_t regex;
-				regmatch_t regmatches[1];
 
-				regcomp(&regex, sd->patterns[x], REG_EXTENDED);
-				if (regexec(&regex, str, 1, regmatches, 0) == 0) {
+				regcomp(&regex, sd->patterns[x], REG_EXTENDED|REG_NOSUB);
+				if (regexec(&regex, str, 0, 0, 0) == 0) {
 					xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 				}
+				regfree(&regex);
 			} else {
 				if (strcasestr(str, sd->patterns[x])) {
 					xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
