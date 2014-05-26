@@ -153,7 +153,7 @@ main(int argc, char **argv)
 			break;
 		case 'p':
 			props = optarg;
-			show_prop = opmode = true;
+			show_prop = true;
 			break;
 		case 'R':
 			if (optarg != NULL) {
@@ -201,9 +201,9 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (argc > 1)
+	if (argc == optind || (!argc && !opmode)) {
 		usage(true);
-	else if (!opmode) {
+	} else if (!opmode) {
 		/* show mode by default */
 		show = opmode = true;
 		pkg = *argv;
