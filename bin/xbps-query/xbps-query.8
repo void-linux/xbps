@@ -1,4 +1,4 @@
-.Dd May 26, 2014
+.Dd May 27, 2014
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -132,8 +132,8 @@ manually by the user (i.e not as dependency of any package).
 Lists package orphans in the package database (pkgdb), i.e packages that
 were installed as dependencies and no package is currently depending on them
 directly.
-.It Fl o, Fl -ownedby Ar PATTERN
-Search for package files by matching
+.It Fl o, Fl -ownedby Ar PATTERN [ Fl -repository ] [ Fl -regex ]
+Search for installed package files by matching
 .Ar PATTERN .
 The
 .Ar PATTERN
@@ -144,7 +144,20 @@ or an Extended Regular Expression as explained in
 (if
 .Fl -regex
 option is set).
-.It Fl s, Fl -search Ar PATTERN [ Fl -property Ar PROP ]
+If the
+.Fl -repository
+option is set, the matched
+.Ar PATTERN
+in repositories will be shown.
+.It Fl S, Fl -show Ar PKG [ Fl -repository ]
+Shows information of an installed package. This is the default mode
+if no other mode is set.
+If the
+.Fl -repository
+option is set, the matched
+.Ar PKG
+in repositories will be shown.
+.It Fl s, Fl -search Ar PATTERN [ Fl -property Ar PROP ] [ Fl -regex ]
 Search for packages in repositories by matching
 .Ar PATTERN
 on its
@@ -163,16 +176,31 @@ all packages matching
 against
 .Ar PROP
 will be shown.
-.It Fl f, Fl -files Ar PKG
+.It Fl f, Fl -files Ar PKG [ Fl -repository ]
 Show the package files for
 .Ar PKG .
-.It Fl x, Fl -deps Ar PKG
+If the
+.Fl -repository
+option is set, the matched
+.Ar PKG
+in repositories will be shown.
+.It Fl x, Fl -deps Ar PKG [ Fl -repository ]
 Show the required dependencies for
 .Ar PKG .
 Only direct dependencies are shown. To see a full dependency tree set it twice.
-.It Fl X, Fl -revdeps Ar PKG
+If the
+.Fl -repository
+option is set, the matched
+.Ar PKG
+in repositories will be shown.
+.It Fl X, Fl -revdeps Ar PKG [Fl -repository ]
 Show the reverse dependencies for
 .Ar PKG .
+If the
+.Fl -repository
+option is set, the matched
+.Ar PKG
+in repositories will be shown.
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
 .It Sy XBPS_ARCH
