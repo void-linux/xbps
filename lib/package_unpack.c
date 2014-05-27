@@ -658,24 +658,6 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	/*
 	 * Extract archive files.
 	 */
-	if (access(xhp->rootdir, R_OK) == -1) {
-		if (errno != ENOENT) {
-			rv = errno;
-			goto out;
-		}
-		if (xbps_mkpath(xhp->rootdir, 0750) == -1) {
-			rv = errno;
-			goto out;
-		}
-	}
-	if (chdir(xhp->rootdir) == -1) {
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-		    errno, pkgver,
-		    "%s: [unpack] failed to chdir to rootdir `%s': %s",
-		    pkgver, xhp->rootdir, strerror(errno));
-		rv = errno;
-		goto out;
-	}
 	if ((rv = unpack_archive(xhp, pkg_repod, pkgver, bpkg, ar)) != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
 		    "%s: [unpack] failed to unpack files from archive: %s",

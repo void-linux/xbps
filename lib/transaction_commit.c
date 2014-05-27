@@ -249,6 +249,32 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	 */
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_RUN, 0, NULL, NULL);
 
+	/*
+	 * Create rootdir if necessary.
+	 */
+	if (access(xhp->rootdir, R_OK) == -1) {
+		if (errno != ENOENT) {
+			rv = errno;
+			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, errno, xhp->rootdir,
+			    "[trans] failed to access rootdir `%s': %s",
+			    xhp->rootdir, strerror(rv));
+			goto out;
+		}
+		if (xbps_mkpath(xhp->rootdir, 0750) == -1) {
+			rv = errno;
+			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, errno, xhp->rootdir,
+			    "[trans] failed to create rootdir `%s': %s",
+			    xhp->rootdir, strerror(rv));
+			goto out;
+		}
+	}
+	if (chdir(xhp->rootdir) == -1) {
+		rv = errno;
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, xhp->rootdir,
+		    "[trans] failed to chdir to rootdir `%s': %s",
+		    xhp->rootdir, strerror(errno));
+		goto out;
+	}
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
