@@ -1,5 +1,15 @@
 xbps-0.37 (???):
 
+ * xbps-install(8): it's possible now to update a single package (if it's already
+   installed) without using the -u, --update option. This implements
+   GH #35 (https://github.com/voidlinux/xbps/issues/35).
+
+	$ xbps-install [-f] -y foo
+
+	- if foo is installed, update it.
+	- if foo not installed, install it.
+	- if -f is set, reinstall or downgrade it.
+
  * xbps-query(8): new option (-S, --show) which shows info of a package
    installed locally or in a repository with -R. This is the default mode
    if no other mode is set; to preserve compatibility with previous versions.

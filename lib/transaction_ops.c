@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,17 +54,18 @@
  */
 enum {
 	TRANS_INSTALL = 1,
-	TRANS_UPDATE
+	TRANS_UPDATE,
+	TRANS_REINSTALL
 };
 
 static int
-trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
+trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 {
-	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod;
+	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
 	xbps_array_t unsorted;
 	const char *repoloc, *repopkgver, *instpkgver, *reason;
 	char *pkgname;
-	int rv = 0;
+	int action = 0, rv = 0;
 	pkg_state_t state = 0;
 	bool autoinst = false;
 
@@ -77,7 +78,9 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
-	if (action == TRANS_INSTALL) {
+	if (pkg_pkgdb == NULL) {
+		/* pkg not installed, perform installation */
+		action = TRANS_INSTALL;
 		reason = "install";
 		if (((pkg_repod = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
 		    ((pkg_repod = xbps_rpool_get_virtualpkg(xhp, pkg)) == NULL)) {
@@ -85,21 +88,27 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 			return ENOENT;
 		}
 	} else {
-		if (pkg_pkgdb == NULL)
-			return ENODEV;
-
-		reason = "update";
+		/* pkg installed, update or reinstall */
+		if (!reinstall) {
+			action = TRANS_UPDATE;
+			reason = "update";
+		} else {
+			action = TRANS_REINSTALL;
+			reason = "install";
+		}
 		if ((pkg_repod = xbps_rpool_get_pkg(xhp, pkg)) == NULL) {
 			/* not found */
 			return ENOENT;
 		}
 	}
+
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
 	if (action == TRANS_UPDATE) {
 		/*
-		 * Compare installed version vs best pkg available in repos.
+		 * Compare installed version vs best pkg available in repos
+		 * for pkg updates.
 		 */
 		xbps_dictionary_get_cstring_nocopy(pkg_pkgdb,
 		    "pkgver", &instpkgver);
@@ -109,16 +118,26 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, int action)
 			    repopkgver, instpkgver, repoloc);
 			return EEXIST;
 		}
+	} else if (action == TRANS_REINSTALL) {
+		/*
+		 * For reinstallation check if installed version is less than
+		 * or equal to the pkg in repos, if true, continue with reinstallation;
+		 * otherwise perform an update.
+		 */
+		xbps_dictionary_get_cstring_nocopy(pkg_pkgdb, "pkgver", &instpkgver);
+		if (xbps_cmpver(repopkgver, instpkgver) == 1) {
+			action = TRANS_UPDATE;
+			reason = "update";
+		}
 	}
+
 	if (pkg_pkgdb) {
 		/*
 		 * If pkg is already installed, respect its automatic-install
 		 * property.
 		 */
-		xbps_dictionary_get_bool(pkg_pkgdb, "automatic-install",
-		    &autoinst);
-		xbps_dictionary_set_bool(pkg_repod, "automatic-install",
-		    autoinst);
+		xbps_dictionary_get_bool(pkg_pkgdb, "automatic-install", &autoinst);
+		xbps_dictionary_set_bool(pkg_repod, "automatic-install", autoinst);
 	}
 	/*
 	 * Prepare transaction dictionary.
@@ -216,7 +235,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 		}
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
-		rv = trans_find_pkg(xhp, pkgname, TRANS_UPDATE);
+		rv = trans_find_pkg(xhp, pkgname, false);
 		if (rv == 0)
 			newpkg_found = true;
 		else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
@@ -236,27 +255,14 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 int
 xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 {
-	return trans_find_pkg(xhp, pkg, TRANS_UPDATE);
+	return trans_find_pkg(xhp, pkg, false);
 }
 
 int
 xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 			     bool reinstall)
 {
-	xbps_dictionary_t pkgd = NULL;
-	pkg_state_t state;
-
-	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkg)) ||
-	    (pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkg))) {
-		if (xbps_pkg_state_dictionary(pkgd, &state) != 0)
-			return EINVAL;
-		if ((state == XBPS_PKG_STATE_INSTALLED) && !reinstall) {
-			/* error out if pkg installed and no reinstall */
-			return EEXIST;
-		}
-	}
-
-	return trans_find_pkg(xhp, pkg, TRANS_INSTALL);
+	return trans_find_pkg(xhp, pkg, reinstall);
 }
 
 int

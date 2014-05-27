@@ -66,7 +66,67 @@ install_with_vpkg_deps_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case update_if_installed
+
+update_if_installed_head() {
+	atf_set "descr" "Tests for pkg installations: update if installed (issue #35)"
+}
+
+update_if_installed_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	pkgver=$(xbps-query -r root -ppkgver A)
+	atf_check_equal $pkgver A-1.1_1
+}
+
+atf_test_case install_if_not_installed_on_update
+
+install_if_not_installed_on_update_head() {
+	atf_set "descr" "Tests for pkg installations: install if not installed on update (issue #35)"
+}
+
+install_if_not_installed_on_update_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yu A
+	atf_check_equal $? 0
+
+	pkgver=$(xbps-query -r root -ppkgver A)
+	atf_check_equal $pkgver A-1.0_1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_with_deps
 	atf_add_test_case install_with_vpkg_deps
+	atf_add_test_case install_if_not_installed_on_update
+	atf_add_test_case update_if_installed
 }

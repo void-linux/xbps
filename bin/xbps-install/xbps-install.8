@@ -1,9 +1,9 @@
-.Dd April 21, 2014
+.Dd May 27, 2014
 .Os Void Linux
 .Dt xbps-install 8
 .Sh NAME
 .Nm xbps-install
-.Nd XBPS utility to install and update packages
+.Nd XBPS utility to (re)install and update packages
 .Sh SYNOPSYS
 .Nm xbps-install
 .Op OPTIONS
@@ -11,12 +11,17 @@
 .Sh DESCRIPTION
 The
 .Nm
-utility installs and updates packages in the target root directory.
+utility installs, reinstalls, downgrades and updates packages in the target root directory.
 The argument
 .Ar PKG
 is a package expression, which is explained in the
 .Em PACKAGE EXPRESSION
-section.
+section. If package is installed, it will be updated to the version available in repositories
+matching the
+.Em PACKAGE EXPRESSION .
+Otherwise it will be installed, or reinstalled/downgraded if
+.Fl f , Fl -force
+option is set.
 .Sh PACKAGE EXPRESSION
 A package expression is a form to match a pattern; currently xbps
 supports 3 ways to specify them:
@@ -61,8 +66,10 @@ Specifies a full path to the cache directory, where binary packages are stored.
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl f, Fl -force
-Forcefully install target package even if another version is already installed,
-overwritting regular package files and symlinks (if they have been modified) but
+Force downgrade installation (if package version in repos is less than installed version),
+or reinstallation (if package version in repos is the same) to the target
+.Ar PKG ,
+overwriting regular package files and symlinks (if they have been modified) but
 .Em preserving configuration files .
 If
 .Fl f
@@ -79,9 +86,8 @@ Specifies a full path for the target root directory.
 .It Fl S, Fl -sync
 Synchronize remote repository index files.
 .It Fl u, Fl -update
-Update target package(s) rather than install. If
-.Op PKG
-not set, all installed packages will be updated.
+Performs a full system upgrade: all installed packages will be updated to the greatest
+versions that were found in repositories.
 .It Fl v, Fl -verbose
 Enables verbose messages.
 .It Fl y, Fl -yes
