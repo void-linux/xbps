@@ -199,7 +199,7 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (argc == optind || (!argc && !opmode)) {
+	if (!argc && !opmode) {
 		usage(true);
 	} else if (!opmode) {
 		/* show mode by default */
