@@ -165,7 +165,7 @@ parse_files_glob(struct xbps_handle *xhp, const char *path, bool nested, bool vp
 	int i, rv = 0;
 
 	glob(path, 0, NULL, &globbuf);
-	for(i = 0; globbuf.gl_pathv[i]; i++) {
+	for (i = 0; globbuf.gl_pathv; i++) {
 		if ((rv = parse_file(xhp, globbuf.gl_pathv[i], nested, vpkgconf)) != 0)
 			break;
 	}
