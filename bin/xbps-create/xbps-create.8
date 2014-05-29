@@ -1,4 +1,4 @@
-.Dd April 21, 2014
+.Dd May 29, 2014
 .Os Void Linux
 .Dt xbps-create 8
 .Sh NAME
@@ -25,15 +25,13 @@ if package doesn't contain any arch-dependent file.
 The package builder string, free form.
 .It Fl C, Fl -conflicts Ar list
 A list of package patterns that this package should conflict with, separated
-by a single blank. Example:
+by whitespaces. Example:
 .Ar 'foo>=1.0 blah<1.0' .
 .It Fl D, Fl -dependencies Ar list
-A list of package patterns this package depends on, separated by a single
-blank. Example:
+A list of package patterns this package depends on, separated by whitespaces. Example:
 .Ar 'foo>=1.0 blah-1.0_1' .
 .It Fl F, Fl -config-files Ar list
-A list of configuration files this package provides, separated by a single
-blank.
+A list of configuration files this package provides, separated whitepaces.
 .It Fl G, Fl --source-revisions Ar string
 This justs sets a string with the git revisions of the sourcepkg that
 was used to build this binary package. It is set automatically by xbps-src.
@@ -44,26 +42,29 @@ Show help message.
 .It Fl l, Fl -license Ar string
 The package license.
 .It Fl M, Fl -mutable-files Ar list
-A list of mutable files this package provides, separated by a single blank.
+A list of mutable files this package provides, separated by whitespaces.
 .It Fl m, Fl -maintainer Ar string
 The package maintainer name and/or email contact.
 .It Fl n, Fl -pkgver Ar string
 The package name/version tuple, e.g:
 .Ar 'foo-1.0_1' .
 .It Fl P, Fl -provides Ar list
-A list of virtual packages this package provides, separated by a single blank. Example:
+A list of virtual packages this package provides, separated by whitespaces. Example:
 .Ar 'virtualpkg-9999 virtualpkg2-1.0_1' .
 .It Fl p, Fl -preserve
 If set the package files will be preserved after being updated.
 .It Fl q, Fl -quiet
 Enable quiet operation.
 .It Fl R, Fl -replaces Ar list
-A list of package patterns this package replaces, separated by a single blank. Example:
+A list of package patterns this package replaces, separated by whitespaces. Example:
 .Ar 'foo>=1.0 blah>=2.0' .
 .It Fl S, Fl -long-desc Ar string
 A long description for this package.
 .It Fl s, Fl -desc Ar string
 A short description for this package, one line with less than 80 characters.
+.It Fl t, Fl -tags Ar list
+A list of tags (categories) this package should be part of, separated by whitespaces. Example:
+.Ar 'development nonfree' .
 .It Fl V, Fl -version
 Shows the XBPS version.
 .It Fl -build-options Ar string
@@ -72,10 +73,10 @@ A string containing the build options used in package.
 Set the binary package compression format. If unset, defaults to
 .Ar xz .
 .It Fl -shlib-provides Ar list
-A list of provided shared libraries, separated by a single blank. Example:
+A list of provided shared libraries, separated by whitespaces. Example:
 .Ar 'libfoo.so.2 libblah.so.1' .
 .It Fl -shlib-requires Ar list
-A list of required shared libraries, separated by a single blank. Example:
+A list of required shared libraries, separated by whitespaces. Example:
 .Ar 'libz.so.1 libfoo.so.2' .
 .Sh SEE ALSO
 .Xr xbps-checkvers 8 ,

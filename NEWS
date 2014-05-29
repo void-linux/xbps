@@ -1,5 +1,9 @@
 xbps-0.37 (???):
 
+ * xbps-create(8): new option `-t, --tags` to specify a list of tags
+   (categories) the package should be part of. This is just for metadata
+   purposes and querying packages by tags in the future.
+
  * xbps-install(8): it's possible now to update a single package (if it's already
    installed) without using the -u, --update option. This implements
    GH #35 (https://github.com/voidlinux/xbps/issues/35).

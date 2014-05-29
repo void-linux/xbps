@@ -71,7 +71,7 @@ static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stdout,
-	"Usage: %s [OPTIONS] destdir\n\n"
+	"Usage: %s [OPTIONS] -A <arch> -n <pkgver> -s \"<desc>\" destdir\n\n"
 	"OPTIONS\n"
 	" -A --architecture   Package architecture (e.g: noarch, i686, etc).\n"
 	" -B --built-with     Package builder string (e.g: xbps-src-30).\n"
@@ -96,6 +96,7 @@ usage(void)
 	"                     e.g: 'foo>=1.0 blah<2.0').\n"
 	" -S --long-desc      Long description (80 cols per line).\n"
 	" -s --desc           Short description (max 80 characters).\n"
+	" -t --tags           A list of tags/categories (blank separated list).\n"
 	" -V --version        Prints XBPS release version.\n"
 	" --build-options     A string with the used build options.\n"
 	" --compression       Compression format: gzip, bzip2, xz (default).\n"
@@ -540,7 +541,7 @@ set_build_date(void)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "A:B:C:D:F:G:H:hl:M:m:n:P:pqR:S:s:V";
+	const char *shortopts = "A:B:C:D:F:G:H:hl:M:m:n:P:pqR:S:s:t:V";
 	const struct option longopts[] = {
 		{ "architecture", required_argument, NULL, 'A' },
 		{ "built-with", required_argument, NULL, 'B' },
@@ -560,6 +561,7 @@ main(int argc, char **argv)
 		{ "replaces", required_argument, NULL, 'R' },
 		{ "long-desc", required_argument, NULL, 'S' },
 		{ "desc", required_argument, NULL, 's' },
+		{ "tags", required_argument, NULL, 't' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "shlib-provides", required_argument, NULL, '0' },
 		{ "shlib-requires", required_argument, NULL, '1' },
@@ -575,7 +577,7 @@ main(int argc, char **argv)
 	const char *provides, *pkgver, *replaces, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
 	const char *buildopts, *shlib_provides, *shlib_requires;
-	const char *compression, *srcrevs = NULL;
+	const char *compression, *tags = NULL, *srcrevs = NULL;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
 	int c, pkg_fd;
@@ -643,6 +645,9 @@ main(int argc, char **argv)
 			break;
 		case 's':
 			desc = optarg;
+			break;
+		case 't':
+			tags = optarg;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -724,6 +729,9 @@ main(int argc, char **argv)
 	if (srcrevs)
 		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"source-revisions", srcrevs);
+	if (tags)
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
+				"tags", tags);
 	if (preserve)
 		xbps_dictionary_set_bool(pkg_propsd, "preserve", true);
 	if (buildopts)
