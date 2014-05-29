@@ -56,9 +56,41 @@ ATF_TC_BODY(config_include_test, tc)
 	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 2);
 }
 
+
+ATF_TC(config_include_nomatch_test);
+ATF_TC_HEAD(config_include_nomatch_test, tc)
+{
+	atf_tc_set_md_var(tc, "descr", "Test finds no files to include");
+}
+
+ATF_TC_BODY(config_include_nomatch_test, tc)
+{
+	struct xbps_handle xh;
+	const char *tcsdir;
+	char conffile[XBPS_MAXPATH-1];
+
+	/* get test source dir */
+	tcsdir = atf_tc_get_config_var(tc, "srcdir");
+
+	/* change dir to make sure relative paths won't match */
+	ATF_REQUIRE_EQ(chdir("/"), 0);
+	memset(&xh, 0, sizeof(xh));
+	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	strncpy(conffile, tcsdir, sizeof(conffile));
+	strncat(conffile, "/xbps_nomatch.conf", sizeof(conffile)-1);
+	xh.conffile = conffile;
+	xh.flags = XBPS_FLAG_DEBUG;
+	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
+
+	/* should contain no repositories */
+	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 0);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, config_include_test);
+	ATF_TP_ADD_TC(tp, config_include_nomatch_test);
 
 	return atf_no_error();
 }
