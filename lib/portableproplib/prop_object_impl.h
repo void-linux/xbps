@@ -310,6 +310,6 @@ do {									\
 /*
  * Language features.
  */
-#define	_PROP_ARG_UNUSED		/* delete */
+#define	_PROP_ARG_UNUSED		__attribute__((unused))
 
 #endif /* _PROPLIB_PROP_OBJECT_IMPL_H_ */

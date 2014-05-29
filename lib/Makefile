@@ -15,7 +15,7 @@ LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
 LIBPROP_OBJS += portableproplib/prop_dictionary_util.o portableproplib/prop_zlib.o
 LIBPROP_OBJS += portableproplib/prop_data.o
 LIBPROP_CPPFLAGS = -D_GNU_SOURCE
-LIBPROP_CFLAGS = -Wno-old-style-definition -Wno-cast-qual -Wno-unused-parameter -Wno-unused-but-set-variable
+LIBPROP_CFLAGS = -Wno-old-style-definition -Wno-cast-qual -Wno-unused-parameter -Wno-error
 LIBPROP_CFLAGS += -fvisibility=hidden
 
 # libfetch
