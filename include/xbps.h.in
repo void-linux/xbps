@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140420"
+#define XBPS_API_VERSION	"20140530"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -70,7 +70,10 @@
  */
 #define XBPS_SYSDIR            "/xbps"
 #ifndef XBPS_SYSCONF_PATH
-#define XBPS_SYSCONF_PATH      "/etc" XBPS_SYSDIR
+# define XBPS_SYSCONF_PATH      "/etc" XBPS_SYSDIR
+#endif
+#ifndef XBPS_SYSDEFCONF_PATH
+# define XBPS_SYSDEFCONF_PATH	"@@PREFIX@@/share" XBPS_SYSDIR
 #endif
 
 /** 
@@ -90,6 +93,18 @@
  * Default virtualpkg PATH to store virtualpkg overrides.
  */
 #define XBPS_VPKG_PATH		XBPS_SYSCONF_PATH "/virtualpkg.d"
+
+/**
+ * @def XBPS_REPOD_PATH
+ * Configuration directory to store repository configuration files.
+ */
+#define XBPS_REPOD_PATH 	XBPS_SYSCONF_PATH "/repo.d"
+
+/**
+ * @def XBPS_SYS_REPOD_PATH
+ * System directory to store repository configuration files.
+ */
+#define XBPS_SYS_REPOD_PATH 	XBPS_SYSDEFCONF_PATH "/repo.d"
 
 /**
  * @def XBPS_PKGDB

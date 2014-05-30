@@ -1,5 +1,12 @@
 xbps-0.37 (???):
 
+ * Added support for system and configuration repository directories, as
+   explained in GH #39 (https://github.com/voidlinux/xbps/issues/39).
+
+   The system repository directory set to <prefix>/share/xbps/repo.d contains
+   system repository configuration files (.conf) that can be overrided by the admin
+   in <sysconfdir>/xbps/repo.d bearing the same file name.
+
  * xbps-create(8): new option `-t, --tags` to specify a list of tags
    (categories) the package should be part of. This is just for metadata
    purposes and querying packages by tags in the future.
