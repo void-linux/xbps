@@ -15,10 +15,13 @@ install:
 	install -m644 $(PCFILE) $(DESTDIR)$(PKGCONFIGDIR)
 	install -d $(DESTDIR)/$(DBDIR)/keys
 	install -m644 *.plist $(DESTDIR)/$(DBDIR)/keys
+	install -d $(DESTDIR)/$(PREFIX)/share/xbps/repo.d
+	install -m644 repod-main.conf $(DESTDIR)/$(PREFIX)/share/xbps/repo.d/main.conf
 
 .PHONY: uninstall
 uninstall:
 	-rm -f $(DESTDIR)$(PKGCONFIGDIR)/$(PCFILE)
+	-rm -f $(DESTDIR)$(PREFIX)/share/xbps/repo.d/main.conf
 
 
 .PHONY: clean
