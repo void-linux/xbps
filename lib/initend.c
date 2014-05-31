@@ -122,7 +122,6 @@ parse_option(char *buf, char **k, char **v)
 		"cachedir",
 		"syslog",
 		"repository",
-		"virtualpkgdir",
 		"virtualpkg",
 		"include"
 	};
@@ -233,10 +232,6 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 			xbps_dbg_printf(xhp, "%s: cachedir set to %s\n",
 			    path, v);
 			snprintf(xhp->cachedir, sizeof(xhp->cachedir), "%s", v);
-		} else if (strcmp(k, "virtualpkgdir") == 0) {
-			xbps_dbg_printf(xhp, "%s: virtualpkgdir set to %s\n",
-			    path, v);
-			snprintf(xhp->virtualpkgdir, sizeof(xhp->virtualpkgdir), "%s", v);
 		} else if (strcmp(k, "syslog") == 0) {
 			if (strcasecmp(v, "true") == 0) {
 				xhp->syslog = true;
@@ -277,33 +272,76 @@ parse_vpkgdir(struct xbps_handle *xhp)
 {
 	DIR *dirp;
 	struct dirent *dp;
-	char *ext;
+	char *ext, vpkgdir[PATH_MAX], conf[PATH_MAX];
 	int rv = 0;
 
-	if ((dirp = opendir(xhp->virtualpkgdir)) == NULL)
-		return 0;
-
-	xbps_dbg_printf(xhp, "Processing virtualpkg directory: %s\n", xhp->virtualpkgdir);
+	/*
+	 * Read all vpkg configuration files stored in the system
+	 * virtualpkg.d directory.
+	 */
+	snprintf(vpkgdir, sizeof(vpkgdir), "%s/%s",
+		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_SYS_VPKG_PATH);
+	xbps_dbg_printf(xhp, "Processing system virtualpkg.d directory: %s\n", vpkgdir);
+	if ((dirp = opendir(vpkgdir)) == NULL)
+		goto stage2;
 
 	while ((dp = readdir(dirp)) != NULL) {
 		if ((strcmp(dp->d_name, "..") == 0) ||
 		    (strcmp(dp->d_name, ".") == 0))
 			continue;
-		/* only process .vpkg files, ignore something else */
+		/* only process .vpkg/.conf files, ignore something else */
 		if ((ext = strrchr(dp->d_name, '.')) == NULL)
 			continue;
-		if (strcmp(ext, ".vpkg") == 0) {
-			char *path;
-
-			path = xbps_xasprintf("%s/%s", xhp->virtualpkgdir, dp->d_name);
-			if ((rv = parse_file(xhp, path, false, true)) != 0) {
-				free(path);
-				break;
-			}
-			free(path);
+		if (strcmp(ext, ".conf") && strcmp(ext, ".vpkg")) {
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", vpkgdir, dp->d_name);
+			continue;
+		}
+		/* if the same file exists in configuration directory, ignore it */
+		snprintf(conf, sizeof(conf), "%s/%s/%s", xhp->rootdir, XBPS_VPKG_PATH, dp->d_name);
+		if (access(conf, R_OK) == 0) {
+			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", vpkgdir, dp->d_name);
+			continue;
+		}
+		/* parse vpkg conf file */
+		snprintf(conf, sizeof(conf), "%s/%s", vpkgdir, dp->d_name);
+		if ((rv = parse_file(xhp, conf, false, true)) != 0) {
+			break;
 		}
 	}
 	closedir(dirp);
+	if (rv != 0)
+		return rv;
+
+stage2:
+	/*
+	 * Read all vpkg configuration files stored in the configuration
+	 * virtualpkg.d directory.
+	 */
+	snprintf(vpkgdir, sizeof(vpkgdir), "%s%s",
+		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_VPKG_PATH);
+	xbps_dbg_printf(xhp, "Processing configuration virtualpkg.d directory: %s\n", vpkgdir);
+	if ((dirp = opendir(vpkgdir)) == NULL)
+		return 0;
+
+	while ((dp = readdir(dirp)) != NULL) {
+		if ((strcmp(dp->d_name, "..") == 0) ||
+		    (strcmp(dp->d_name, ".") == 0))
+			continue;
+		/* only process .vpkg/.conf files, ignore something else */
+		if ((ext = strrchr(dp->d_name, '.')) == NULL)
+			continue;
+		if (strcmp(ext, ".conf") && strcmp(ext, ".vpkg")) {
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", vpkgdir, dp->d_name);
+			continue;
+		}
+		/* parse vpkg conf file */
+		snprintf(conf, sizeof(conf), "%s/%s", vpkgdir, dp->d_name);
+		if ((rv = parse_file(xhp, conf, false, true)) != 0) {
+			break;
+		}
+	}
+	closedir(dirp);
+
 	return rv;
 }
 
@@ -361,7 +399,7 @@ stage2:
 	snprintf(repodir, sizeof(repodir), "%s%s",
 		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_REPOD_PATH);
 	xbps_dbg_printf(xhp, "Processing configuration repo.d directory: %s\n", repodir);
-	if ((dirp = opendir(XBPS_REPOD_PATH)) == NULL)
+	if ((dirp = opendir(repodir)) == NULL)
 		return 0;
 
 	while ((dp = readdir(dirp)) != NULL) {
@@ -446,23 +484,11 @@ xbps_init(struct xbps_handle *xhp)
 		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
 		free(buf);
 	}
-	/* Set virtualpkgdir */
-	if (xhp->virtualpkgdir[0] == '\0') {
-		snprintf(xhp->virtualpkgdir, sizeof(xhp->virtualpkgdir),
-		    "%s%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
-		    XBPS_VPKG_PATH);
-	} else if (xhp->virtualpkgdir[0] != '/') {
-		/* relative path */
-		buf = strdup(xhp->virtualpkgdir);
-		snprintf(xhp->virtualpkgdir, sizeof(xhp->virtualpkgdir),
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
-		free(buf);
-	}
-	/* parse virtualpkg */
+	/* process virtualpkg.d dirs */
 	if ((rv = parse_vpkgdir(xhp)))
 		return rv;
 
-	/* parse repodirs */
+	/* process repo.d dirs */
 	if ((rv = parse_repodir(xhp)) != 0)
 		return rv;
 
@@ -480,7 +506,6 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "rootdir=%s\n", xhp->rootdir);
 	xbps_dbg_printf(xhp, "metadir=%s\n", xhp->metadir);
 	xbps_dbg_printf(xhp, "cachedir=%s\n", xhp->cachedir);
-	xbps_dbg_printf(xhp, "virtualpkgdir=%s\n", xhp->virtualpkgdir);
 	xbps_dbg_printf(xhp, "syslog=%s\n", xhp->syslog ? "true" : "false");
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
 	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch);
