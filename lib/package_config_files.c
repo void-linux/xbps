@@ -213,9 +213,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			assert(version);
 			snprintf(buf, sizeof(buf), ".%s.new-%s", cffile, version);
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
-			    0, pkgver,
-			    "Installing new configuration file to "
-			    "`%s.new-%s'.", cffile, version);
+			    0, pkgver, "Installing new configuration file to `%s'.", buf);
 			archive_entry_copy_pathname(entry, buf);
 			rv = 1;
 			break;
