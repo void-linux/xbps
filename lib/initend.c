@@ -312,17 +312,18 @@ parse_repodir(struct xbps_handle *xhp)
 {
 	DIR *dirp;
 	struct dirent *dp;
-	char *ext, conf[PATH_MAX];
+	char *ext, repodir[PATH_MAX], conf[PATH_MAX];
 	int rv = 0;
 
 	/*
 	 * Read all repository configuration files stored in the system
 	 * repo.d directory.
 	 */
-	if ((dirp = opendir(XBPS_SYS_REPOD_PATH)) == NULL)
-		return 0;
-
-	xbps_dbg_printf(xhp, "Processing system repo.d directory: %s\n", XBPS_SYS_REPOD_PATH);
+	snprintf(repodir, sizeof(repodir), "%s/%s",
+		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_SYS_REPOD_PATH);
+	xbps_dbg_printf(xhp, "Processing system repo.d directory: %s\n", repodir);
+	if ((dirp = opendir(repodir)) == NULL)
+		goto stage2;
 
 	while ((dp = readdir(dirp)) != NULL) {
 		if ((strcmp(dp->d_name, "..") == 0) ||
@@ -333,17 +334,17 @@ parse_repodir(struct xbps_handle *xhp)
 		if ((ext = strrchr(dp->d_name, '.')) == NULL)
 			continue;
 		if (strcmp(ext, ".conf")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", XBPS_SYS_REPOD_PATH, dp->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", repodir, dp->d_name);
 			continue;
 		}
 		/* if the same file exists in configuration directory, ignore it */
-		snprintf(conf, sizeof(conf), "%s/%s", XBPS_REPOD_PATH, dp->d_name);
+		snprintf(conf, sizeof(conf), "%s/%s/%s", xhp->rootdir, XBPS_REPOD_PATH, dp->d_name);
 		if (access(conf, R_OK) == 0) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", XBPS_SYS_REPOD_PATH, dp->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", repodir, dp->d_name);
 			continue;
 		}
 		/* parse repo conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", XBPS_SYS_REPOD_PATH, dp->d_name);
+		snprintf(conf, sizeof(conf), "%s/%s", repodir, dp->d_name);
 		if ((rv = parse_file(xhp, conf, false, false)) != 0) {
 			break;
 		}
@@ -352,14 +353,16 @@ parse_repodir(struct xbps_handle *xhp)
 	if (rv != 0)
 		return rv;
 
+stage2:
 	/*
 	 * Read all repository configuration files stored in the configuration
 	 * repo.d directory.
 	 */
+	snprintf(repodir, sizeof(repodir), "%s%s",
+		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_REPOD_PATH);
+	xbps_dbg_printf(xhp, "Processing configuration repo.d directory: %s\n", repodir);
 	if ((dirp = opendir(XBPS_REPOD_PATH)) == NULL)
 		return 0;
-
-	xbps_dbg_printf(xhp, "Processing configuration repo.d directory: %s\n", XBPS_REPOD_PATH);
 
 	while ((dp = readdir(dirp)) != NULL) {
 		if ((strcmp(dp->d_name, "..") == 0) ||
@@ -370,11 +373,11 @@ parse_repodir(struct xbps_handle *xhp)
 		if ((ext = strrchr(dp->d_name, '.')) == NULL)
 			continue;
 		if (strcmp(ext, ".conf")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", XBPS_REPOD_PATH, dp->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", repodir, dp->d_name);
 			continue;
 		}
 		/* parse repo conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", XBPS_REPOD_PATH, dp->d_name);
+		snprintf(conf, sizeof(conf), "%s/%s", repodir, dp->d_name);
 		if ((rv = parse_file(xhp, conf, false, false)) != 0) {
 			break;
 		}
@@ -397,10 +400,6 @@ xbps_init(struct xbps_handle *xhp)
 	if (xhp->conffile == NULL)
 		xhp->conffile = XBPS_CONF_DEF;
 
-	/* parse repository configuration files */
-	if ((rv = parse_repodir(xhp)) != 0) {
-		xbps_dbg_printf(xhp, "failed to parse repo.d files: %s\n", strerror(rv));
-	}
 	/* parse configuration file */
 	if ((rv = parse_file(xhp, xhp->conffile, false, false)) != 0) {
 		xbps_dbg_printf(xhp, "failed to read configuration file %s: %s\n",
@@ -459,8 +458,12 @@ xbps_init(struct xbps_handle *xhp)
 		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
 		free(buf);
 	}
-	/* parse virtualpkgdir */
+	/* parse virtualpkg */
 	if ((rv = parse_vpkgdir(xhp)))
+		return rv;
+
+	/* parse repodirs */
+	if ((rv = parse_repodir(xhp)) != 0)
 		return rv;
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");

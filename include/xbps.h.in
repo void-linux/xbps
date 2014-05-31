@@ -73,7 +73,7 @@
 # define XBPS_SYSCONF_PATH      "/etc" XBPS_SYSDIR
 #endif
 #ifndef XBPS_SYSDEFCONF_PATH
-# define XBPS_SYSDEFCONF_PATH	"@@PREFIX@@/share" XBPS_SYSDIR
+# define XBPS_SYSDEFCONF_PATH	"usr/share" XBPS_SYSDIR
 #endif
 
 /** 
@@ -88,11 +88,17 @@
  */
 #define XBPS_CACHE_PATH		"var/cache/xbps"
 
-/** 
+/**
  * @def XBPS_VPKG_PATH
- * Default virtualpkg PATH to store virtualpkg overrides.
+ * Configuration virtualpkg directory to store virtualpkg configuration files.
  */
 #define XBPS_VPKG_PATH		XBPS_SYSCONF_PATH "/virtualpkg.d"
+
+/**
+ * @def XBPS_SYS_VPKG_PATH
+ * System virtualpkg PATH to store virtualpkg configuration files.
+ */
+#define XBPS_SYS_VPKG_PATH	XBPS_SYSDEFCONF_PATH "/virtualpkg.d"
 
 /**
  * @def XBPS_REPOD_PATH
