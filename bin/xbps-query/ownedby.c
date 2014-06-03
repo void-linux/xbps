@@ -73,7 +73,8 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 		if (filestr == NULL)
 			continue;
 		if (ffd->regex) {
-			regcomp(&regex, ffd->pat, REG_EXTENDED|REG_NOSUB);
+			if (regcomp(&regex, ffd->pat, REG_EXTENDED|REG_NOSUB) != 0)
+				return;
 			if (regexec(&regex, filestr, 0, 0, 0) == 0) {
 				printf("%s: %s (%s)\n", pkgver, filestr, typestr);
 			}
@@ -131,7 +132,8 @@ repo_match_cb(struct xbps_handle *xhp _unused,
 	for (unsigned int i = 0; i < xbps_array_count(obj); i++) {
 		xbps_array_get_cstring_nocopy(obj, i, &filestr);
 		if (ffd->regex) {
-			regcomp(&regex, ffd->pat, REG_EXTENDED|REG_NOSUB);
+			if (regcomp(&regex, ffd->pat, REG_EXTENDED|REG_NOSUB) != 0)
+				return errno;
 			if (regexec(&regex, filestr, 0, 0, 0) == 0) {
 				printf("%s: %s (%s)\n", key, filestr, ffd->repouri);
 			}

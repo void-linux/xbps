@@ -116,7 +116,9 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			vpkgfound = true;
 
 		if (sd->regex) {
-			regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB);
+			if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
+				return errno;
+
 			if ((regexec(&regex, pkgver, 0, 0, 0) == 0) ||
 			    (regexec(&regex, desc, 0, 0, 0) == 0)) {
 				xbps_array_add_cstring_nocopy(sd->results, pkgver);
@@ -140,7 +142,8 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		for (unsigned int i = 0; i < xbps_array_count(obj2); i++) {
 			xbps_array_get_cstring_nocopy(obj2, i, &str);
 			if (sd->regex) {
-				regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB);
+				if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
+					return errno;
 				if (regexec(&regex, str, 0, 0, 0) == 0) {
 					xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
@@ -162,7 +165,8 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		/* property is a string */
 		str = xbps_string_cstring_nocopy(obj2);
 		if (sd->regex) {
-			regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB);
+			if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
+				return errno;
 			if (regexec(&regex, str, 0, 0, 0) == 0) {
 				xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 				printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
