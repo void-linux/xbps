@@ -16,7 +16,7 @@ install:
 	install -d $(DESTDIR)/$(DBDIR)/keys
 	install -m644 *.plist $(DESTDIR)/$(DBDIR)/keys
 	install -d $(DESTDIR)/$(PREFIX)/share/xbps/repo.d
-	install -m644 repod-main.conf $(DESTDIR)/$(PREFIX)/share/xbps/repo.d/main.conf
+	install -m644 repod-main.conf $(DESTDIR)/$(PREFIX)/share/xbps/repo.d/00-main.conf
 
 .PHONY: uninstall
 uninstall:
