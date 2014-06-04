@@ -1,5 +1,7 @@
 xbps-0.37 (???):
 
+ * Enabled syslog logging by default, may be still disabled via xbps.conf.
+
  * Added support for system and configuration virtualpkg directories.
 
    The system virtualpkg directory set to <rootdir>/usr/share/xbps/virtualpkg.d contains

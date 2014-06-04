@@ -234,8 +234,11 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 			snprintf(xhp->cachedir, sizeof(xhp->cachedir), "%s", v);
 		} else if (strcmp(k, "syslog") == 0) {
 			if (strcasecmp(v, "true") == 0) {
-				xhp->syslog = true;
+				xhp->flags &= ~XBPS_FLAG_DISABLE_SYSLOG;
 				xbps_dbg_printf(xhp, "%s: syslog enabled\n", path);
+			} else {
+				xhp->flags |= XBPS_FLAG_DISABLE_SYSLOG;
+				xbps_dbg_printf(xhp, "%s: syslog disabled\n", path);
 			}
 		} else if (strcmp(k, "repository") == 0) {
 			if (store_repo(xhp, v))
@@ -439,7 +442,7 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "rootdir=%s\n", xhp->rootdir);
 	xbps_dbg_printf(xhp, "metadir=%s\n", xhp->metadir);
 	xbps_dbg_printf(xhp, "cachedir=%s\n", xhp->cachedir);
-	xbps_dbg_printf(xhp, "syslog=%s\n", xhp->syslog ? "true" : "false");
+	xbps_dbg_printf(xhp, "syslog=%s\n", xhp->flags & XBPS_FLAG_DISABLE_SYSLOG ? "false" : "true");
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
 	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch);
 

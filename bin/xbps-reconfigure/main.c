@@ -53,7 +53,10 @@ usage(bool fail)
 static int
 state_cb(struct xbps_state_cb_data *xscd, void *cbd _unused)
 {
-	if (xscd->xhp->syslog) {
+	bool slog = false;
+
+	if ((xscd->xhp->flags & XBPS_FLAG_DISABLE_SYSLOG) == 0) {
+		slog = true;
 		openlog("xbps-reconfigure", LOG_CONS, LOG_USER);
 	}
 
@@ -61,19 +64,19 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbd _unused)
 	/* notifications */
 	case XBPS_STATE_CONFIGURE:
 		printf("%s: configuring ...\n", xscd->arg);
-		if (xscd->xhp->syslog)
+		if (slog)
 			syslog(LOG_NOTICE, "%s: configuring ...", xscd->arg);
 		break;
 	case XBPS_STATE_CONFIGURE_DONE:
 		printf("%s: configured successfully.\n", xscd->arg);
-		if (xscd->xhp->syslog)
+		if (slog)
 			syslog(LOG_NOTICE,
 			    "%s: configured successfully.", xscd->arg);
 		break;
 	/* errors */
 	case XBPS_STATE_CONFIGURE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
-		if (xscd->xhp->syslog)
+		if (slog)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
 	default:

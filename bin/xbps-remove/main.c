@@ -65,7 +65,10 @@ usage(bool fail)
 static int
 state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 {
-	if (xscd->xhp->syslog) {
+	bool slog = false;
+
+	if ((xscd->xhp->flags & XBPS_FLAG_DISABLE_SYSLOG) == 0) {
+		slog = true;
 		openlog("xbps-remove", LOG_CONS, LOG_USER);
 	}
 
@@ -82,7 +85,7 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("Removed `%s' successfully.\n", xscd->arg);
-		if (xscd->xhp->syslog) {
+		if (slog) {
 			syslog(LOG_NOTICE, "Removed `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
@@ -91,7 +94,7 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	/* errors */
 	case XBPS_STATE_REMOVE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
-		if (xscd->xhp->syslog) {
+		if (slog) {
 			syslog(LOG_ERR, "%s", xscd->desc);
 		}
 		break;
@@ -103,7 +106,7 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			return 0;
 
 		xbps_error_printf("%s\n", xscd->desc);
-		if (xscd->xhp->syslog) {
+		if (slog) {
 			syslog(LOG_ERR, "%s", xscd->desc);
 		}
 		break;

@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140531"
+#define XBPS_API_VERSION	"20140604"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -197,6 +197,13 @@
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_FORCE_UNPACK 		0x00000040
+
+/**
+ * @def XBPS_FLAG_DISABLE_SYSLOG
+ * Disable syslog logging, enabled by default.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_DISABLE_SYSLOG 	0x00000080
 
 /**
  * @def XBPS_FETCH_CACHECONN
@@ -594,14 +601,9 @@ struct xbps_handle {
 	 *  - XBPS_FLAG_FORCE_REMOVE_FILES
 	 *  - XBPS_FLAG_DEBUG
 	 *  - XBPS_FLAG_INSTALL_AUTO
+	 *  - XBPS_FLAG_DISABLE_SYSLOG
 	 */
 	int flags;
-	/**
-	 * @var syslog
-	 *
-	 * Set it to true to enable syslog logging.
-	 */
-	bool syslog;
 };
 
 void xbps_dbg_printf(struct xbps_handle *, const char *, ...);

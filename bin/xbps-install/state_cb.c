@@ -38,8 +38,10 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	const char *instver, *newver;
 	char *pkgname;
 	int rv = 0;
+	bool slog = false;
 
-	if (xscd->xhp->syslog) {
+	if ((xscd->xhp->flags & XBPS_FLAG_DISABLE_SYSLOG) == 0) {
+		slog = true;
 		openlog("xbps-install", LOG_CONS, LOG_USER);
 	}
 
@@ -103,7 +105,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		break;
 	case XBPS_STATE_INSTALL_DONE:
 		printf("%s: installed successfully.\n", xscd->arg);
-		if (xscd->xhp->syslog) {
+		if (slog) {
 			syslog(LOG_NOTICE, "Installed `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
@@ -111,7 +113,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		break;
 	case XBPS_STATE_UPDATE_DONE:
 		printf("%s: updated successfully.\n", xscd->arg);
-		if (xscd->xhp->syslog) {
+		if (slog) {
 			syslog(LOG_NOTICE, "Updated `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
@@ -119,7 +121,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		break;
 	case XBPS_STATE_REMOVE_DONE:
 		printf("%s: removed successfully.\n", xscd->arg);
-		if (xscd->xhp->syslog) {
+		if (slog) {
 			syslog(LOG_NOTICE, "Removed `%s' successfully "
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
@@ -140,7 +142,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	case XBPS_STATE_REPOSYNC_FAIL:
 	case XBPS_STATE_CONFIG_FILE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
-		if (xscd->xhp->syslog) {
+		if (slog) {
 			syslog(LOG_ERR, "%s", xscd->desc);
 		}
 		break;
@@ -152,7 +154,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			return 0;
 
 		xbps_error_printf("%s\n", xscd->desc);
-		if (xscd->xhp->syslog) {
+		if (slog) {
 			syslog(LOG_ERR, "%s", xscd->desc);
 		}
 		break;
