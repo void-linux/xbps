@@ -376,8 +376,6 @@ xbps_init(struct xbps_handle *xhp)
 
 	/* parse configuration file */
 	if ((rv = parse_file(xhp, xhp->conffile, false, false)) != 0) {
-		xbps_dbg_printf(xhp, "failed to read configuration file %s: %s\n",
-		     xhp->conffile, strerror(rv));
 		xbps_dbg_printf(xhp, "Using built-in defaults\n");
 	}
 	/* Set rootdir */
