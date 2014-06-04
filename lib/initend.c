@@ -268,159 +268,92 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 }
 
 static int
-parse_vpkgdir(struct xbps_handle *xhp)
+parse_dir(struct xbps_handle *xhp, const char *dir, const char *confdir, bool vpkg)
 {
-	DIR *dirp;
-	struct dirent *dp;
-	char *ext, vpkgdir[PATH_MAX], conf[PATH_MAX];
-	int rv = 0;
+	struct dirent **namelist;
+	char *ext, ldir[PATH_MAX], conf[PATH_MAX];
+	int i, n, rv = 0;
 
 	/*
-	 * Read all vpkg configuration files stored in the system
-	 * virtualpkg.d directory.
+	 * Read all configuration files stored in the system
+	 * foo.d directory.
 	 */
-	snprintf(vpkgdir, sizeof(vpkgdir), "%s/%s",
-		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_SYS_VPKG_PATH);
-	xbps_dbg_printf(xhp, "Processing system virtualpkg.d directory: %s\n", vpkgdir);
-	if ((dirp = opendir(vpkgdir)) == NULL)
+	snprintf(ldir, sizeof(ldir), "%s/%s",
+		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", dir);
+	xbps_dbg_printf(xhp, "Processing system directory: %s\n", ldir);
+
+	if ((n = scandir(ldir, &namelist, 0, alphasort)) < 0)
 		goto stage2;
 
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, "..") == 0) ||
-		    (strcmp(dp->d_name, ".") == 0))
+	for (i = 0; i < n; i++) {
+		if ((strcmp(namelist[i]->d_name, "..") == 0) ||
+		    (strcmp(namelist[i]->d_name, ".") == 0)) {
+			free(namelist[i]);
 			continue;
+		}
 		/* only process .vpkg/.conf files, ignore something else */
-		if ((ext = strrchr(dp->d_name, '.')) == NULL)
+		if ((ext = strrchr(namelist[i]->d_name, '.')) == NULL) {
+			free(namelist[i]);
 			continue;
+		}
 		if (strcmp(ext, ".conf") && strcmp(ext, ".vpkg")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", vpkgdir, dp->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", ldir, namelist[i]->d_name);
+			free(namelist[i]);
 			continue;
 		}
 		/* if the same file exists in configuration directory, ignore it */
-		snprintf(conf, sizeof(conf), "%s/%s/%s", xhp->rootdir, XBPS_VPKG_PATH, dp->d_name);
+		snprintf(conf, sizeof(conf), "%s/%s/%s", xhp->rootdir, confdir, namelist[i]->d_name);
 		if (access(conf, R_OK) == 0) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", vpkgdir, dp->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", ldir, namelist[i]->d_name);
+			free(namelist[i]);
 			continue;
 		}
-		/* parse vpkg conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", vpkgdir, dp->d_name);
-		if ((rv = parse_file(xhp, conf, false, true)) != 0) {
+		/* parse conf file */
+		snprintf(conf, sizeof(conf), "%s/%s", ldir, namelist[i]->d_name);
+		if ((rv = parse_file(xhp, conf, false, vpkg)) != 0) {
+			free(namelist[i]);
 			break;
 		}
 	}
-	closedir(dirp);
+	free(namelist);
 	if (rv != 0)
 		return rv;
 
 stage2:
 	/*
-	 * Read all vpkg configuration files stored in the configuration
-	 * virtualpkg.d directory.
+	 * Read all configuration files stored in the configuration foo.d directory.
 	 */
-	snprintf(vpkgdir, sizeof(vpkgdir), "%s%s",
-		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_VPKG_PATH);
-	xbps_dbg_printf(xhp, "Processing configuration virtualpkg.d directory: %s\n", vpkgdir);
-	if ((dirp = opendir(vpkgdir)) == NULL)
+	snprintf(ldir, sizeof(ldir), "%s%s",
+		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", confdir);
+	xbps_dbg_printf(xhp, "Processing configuration directory: %s\n", ldir);
+
+	if ((n = scandir(ldir, &namelist, 0, alphasort)) < 0)
 		return 0;
 
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, "..") == 0) ||
-		    (strcmp(dp->d_name, ".") == 0))
+	for (i = 0; i < n; i++) {
+		if ((strcmp(namelist[i]->d_name, "..") == 0) ||
+		    (strcmp(namelist[i]->d_name, ".") == 0)) {
+			free(namelist[i]);
 			continue;
+		}
 		/* only process .vpkg/.conf files, ignore something else */
-		if ((ext = strrchr(dp->d_name, '.')) == NULL)
+		if ((ext = strrchr(namelist[i]->d_name, '.')) == NULL) {
+			free(namelist[i]);
 			continue;
+		}
 		if (strcmp(ext, ".conf") && strcmp(ext, ".vpkg")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", vpkgdir, dp->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", ldir, namelist[i]->d_name);
+			free(namelist[i]);
 			continue;
 		}
-		/* parse vpkg conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", vpkgdir, dp->d_name);
-		if ((rv = parse_file(xhp, conf, false, true)) != 0) {
+		/* parse conf file */
+		snprintf(conf, sizeof(conf), "%s/%s", ldir, namelist[i]->d_name);
+		if ((rv = parse_file(xhp, conf, false, vpkg)) != 0) {
+			free(namelist[i]);
 			break;
 		}
 	}
-	closedir(dirp);
-
-	return rv;
-}
-
-static int
-parse_repodir(struct xbps_handle *xhp)
-{
-	DIR *dirp;
-	struct dirent *dp;
-	char *ext, repodir[PATH_MAX], conf[PATH_MAX];
-	int rv = 0;
-
-	/*
-	 * Read all repository configuration files stored in the system
-	 * repo.d directory.
-	 */
-	snprintf(repodir, sizeof(repodir), "%s/%s",
-		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_SYS_REPOD_PATH);
-	xbps_dbg_printf(xhp, "Processing system repo.d directory: %s\n", repodir);
-	if ((dirp = opendir(repodir)) == NULL)
-		goto stage2;
-
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, "..") == 0) ||
-		    (strcmp(dp->d_name, ".") == 0))
-			continue;
-
-		/* only process .conf files, ignore something else */
-		if ((ext = strrchr(dp->d_name, '.')) == NULL)
-			continue;
-		if (strcmp(ext, ".conf")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", repodir, dp->d_name);
-			continue;
-		}
-		/* if the same file exists in configuration directory, ignore it */
-		snprintf(conf, sizeof(conf), "%s/%s/%s", xhp->rootdir, XBPS_REPOD_PATH, dp->d_name);
-		if (access(conf, R_OK) == 0) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", repodir, dp->d_name);
-			continue;
-		}
-		/* parse repo conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", repodir, dp->d_name);
-		if ((rv = parse_file(xhp, conf, false, false)) != 0) {
-			break;
-		}
-	}
-	closedir(dirp);
-	if (rv != 0)
-		return rv;
-
-stage2:
-	/*
-	 * Read all repository configuration files stored in the configuration
-	 * repo.d directory.
-	 */
-	snprintf(repodir, sizeof(repodir), "%s%s",
-		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", XBPS_REPOD_PATH);
-	xbps_dbg_printf(xhp, "Processing configuration repo.d directory: %s\n", repodir);
-	if ((dirp = opendir(repodir)) == NULL)
-		return 0;
-
-	while ((dp = readdir(dirp)) != NULL) {
-		if ((strcmp(dp->d_name, "..") == 0) ||
-		    (strcmp(dp->d_name, ".") == 0))
-			continue;
-
-		/* only process .conf files, ignore something else */
-		if ((ext = strrchr(dp->d_name, '.')) == NULL)
-			continue;
-		if (strcmp(ext, ".conf")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", repodir, dp->d_name);
-			continue;
-		}
-		/* parse repo conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", repodir, dp->d_name);
-		if ((rv = parse_file(xhp, conf, false, false)) != 0) {
-			break;
-		}
-	}
-	closedir(dirp);
+	free(namelist);
 
 	return rv;
 }
@@ -485,11 +418,11 @@ xbps_init(struct xbps_handle *xhp)
 		free(buf);
 	}
 	/* process virtualpkg.d dirs */
-	if ((rv = parse_vpkgdir(xhp)))
+	if ((rv = parse_dir(xhp, XBPS_SYS_VPKG_PATH, XBPS_VPKG_PATH, true)) != 0)
 		return rv;
 
 	/* process repo.d dirs */
-	if ((rv = parse_repodir(xhp)) != 0)
+	if ((rv = parse_dir(xhp, XBPS_SYS_REPOD_PATH, XBPS_REPOD_PATH, false)) != 0)
 		return rv;
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
