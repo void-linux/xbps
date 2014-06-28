@@ -740,8 +740,9 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 	if ((conn = fetch_connect(URL, af, verbose)) == NULL)
 		/* fetch_connect() has already set an error code */
 		return (NULL);
+
 	if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0 &&
-	    fetch_ssl(conn, verbose) == -1) {
+	    fetch_ssl(conn, URL, verbose) != 0) {
 		fetch_close(conn);
 		/* grrr */
 #ifdef EAUTH

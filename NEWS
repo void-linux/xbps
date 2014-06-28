@@ -1,3 +1,8 @@
+xbps-0.38 (???):
+
+ * libfetch: add support for TLS SNI (Server Name Identification) from NetBSD, with
+   some minor debug changes. This fixes GH issue #41 (https://github.com/voidlinux/xbps/issues/41).
+
 xbps-0.37 (2014-06-06):
 
  * Enabled syslog logging by default, may be still disabled via xbps.conf.

@@ -434,10 +434,12 @@ fetch_cache_put(conn_t *conn, int (*closecb)(conn_t *))
  * Enable SSL on a connection.
  */
 int
-fetch_ssl(conn_t *conn, int verbose)
+fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 {
 
 #ifdef WITH_SSL
+	int ret;
+
 	/* Init the SSL library and context */
 	if (!SSL_library_init()){
 		fprintf(stderr, "SSL library init failed\n");
@@ -455,9 +457,21 @@ fetch_ssl(conn_t *conn, int verbose)
 		fprintf(stderr, "SSL context creation failed\n");
 		return (-1);
 	}
-	SSL_set_fd(conn->ssl, conn->sd);
-	if (SSL_connect(conn->ssl) == -1){
-		ERR_print_errors_fp(stderr);
+	SSL_set_connect_state(conn->ssl);
+	if (!SSL_set_fd(conn->ssl, conn->sd)) {
+		fprintf(stderr, "SSL_set_fd failed\n");
+		return (-1);
+	}
+#ifndef OPENSSL_NO_TLSEXT
+	if (!SSL_set_tlsext_host_name(conn->ssl, URL->host)) {
+		fprintf(stderr,
+		    "TLS server name indication extension failed for host %s\n",
+		    URL->host);
+		return (-1);
+	}
+#endif
+	if ((ret = SSL_connect(conn->ssl)) <= 0){
+		fprintf(stderr, "SSL_connect returned %d\n", SSL_get_error(conn->ssl, ret));
 		return (-1);
 	}
 
@@ -717,6 +731,10 @@ fetch_close(conn_t *conn)
 {
 	int ret;
 
+#ifdef WITH_SSL
+	SSL_shutdown(conn->ssl);
+	SSL_free(conn->ssl);
+#endif
 	ret = close(conn->sd);
 	if (conn->cache_url)
 		fetchFreeURL(conn->cache_url);
