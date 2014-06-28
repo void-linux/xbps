@@ -732,8 +732,10 @@ fetch_close(conn_t *conn)
 	int ret;
 
 #ifdef WITH_SSL
-	SSL_shutdown(conn->ssl);
-	SSL_free(conn->ssl);
+	if (conn->ssl) {
+		SSL_shutdown(conn->ssl);
+		SSL_free(conn->ssl);
+	}
 #endif
 	ret = close(conn->sd);
 	if (conn->cache_url)
