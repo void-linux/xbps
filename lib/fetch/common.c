@@ -1,4 +1,4 @@
-/*	$NetBSD: common.c,v 1.26 2010/03/21 16:48:43 joerg Exp $	*/
+/*	$NetBSD: common.c,v 1.29 2014/01/08 20:25:34 joerg Exp $	*/
 /*-
  * Copyright (c) 1998-2004 Dag-Erling Coïdan Smørgrav
  * Copyright (c) 2008, 2010 Joerg Sonnenberger <joerg@NetBSD.org>
@@ -60,6 +60,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <strings.h>
 
 #ifndef MSG_NOSIGNAL
 #include <signal.h>

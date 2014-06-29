@@ -21,7 +21,7 @@ LIBPROP_CFLAGS += -fvisibility=hidden
 # libfetch
 LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
 LIBFETCH_OBJS += fetch/ftp.o fetch/http.o
-LIBFETCH_CPPFLAGS = -D_GNU_SOURCE -DFTP_COMBINE_CWDS -DNETBSD -DINET6 -DWITH_SSL
+LIBFETCH_CPPFLAGS = -DFTP_COMBINE_CWDS -DNETBSD -DINET6 -DWITH_SSL
 LIBFETCH_CFLAGS = -Wno-error -Wno-unused-macros -Wno-conversion
 ifdef HAVE_VISIBILITY
 LIBFETCH_CFLAGS+= -fvisibility=hidden

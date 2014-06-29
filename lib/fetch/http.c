@@ -1,6 +1,6 @@
-/*	$NetBSD: http.c,v 1.28 2010/01/23 14:53:08 joerg Exp $	*/
+/*	$NetBSD: http.c,v 1.37 2014/06/11 13:12:12 joerg Exp $	*/
 /*-
- * Copyright (c) 2000-2004 Dag-Erling Coïdan Smørgrav
+ * Copyright (c) 2000-2004 Dag-Erling CoýÅan Smgrav
  * Copyright (c) 2003 Thomas Klausner <wiz@NetBSD.org>
  * Copyright (c) 2008, 2009 Joerg Sonnenberger <joerg@NetBSD.org>
  * All rights reserved.
@@ -63,10 +63,13 @@
  * SUCH DAMAGE.
  */
 
-#include "compat.h"
-
-#ifndef NETBSD
-#include <nbcompat.h>
+#if defined(__linux__) || defined(__MINT__) || defined(__FreeBSD_kernel__)
+/* Keep this down to Linux or MiNT, it can create surprises elsewhere. */
+/*
+   __FreeBSD_kernel__ is defined for GNU/kFreeBSD.
+   See http://glibc-bsd.alioth.debian.org/porting/PORTING .
+*/
+#define _GNU_SOURCE
 #endif
 
 #include <sys/types.h>
@@ -101,10 +104,6 @@
 #include "common.h"
 #include "httperr.h"
 
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
-
 /* Maximum number of redirects to follow */
 #define MAX_REDIRECT 5
 
@@ -128,6 +127,7 @@
 
 #define HTTP_ERROR(xyz) ((xyz) > 400 && (xyz) < 599)
 
+static int http_cmd(conn_t *, const char *, ...) LIBFETCH_PRINTFLIKE(2, 3);
 
 /*****************************************************************************
  * I/O functions for decoding chunked streams
@@ -324,7 +324,7 @@ http_closefn(void *v)
 			  fetch_cache_put(io->conn, fetch_close);
 #ifdef TCP_NOPUSH
 		val = 1;
-		setsockopt(conn->sd, IPPROTO_TCP, TCP_NOPUSH, &val,
+		setsockopt(io->conn->sd, IPPROTO_TCP, TCP_NOPUSH, &val,
 		    sizeof(val));
 #endif
 	} else {
@@ -399,6 +399,7 @@ static struct {
 /*
  * Send a formatted line; optionally echo to terminal
  */
+LIBFETCH_PRINTFLIKE(2, 3)
 static int
 http_cmd(conn_t *conn, const char *fmt, ...)
 {
@@ -740,9 +741,8 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 	if ((conn = fetch_connect(URL, af, verbose)) == NULL)
 		/* fetch_connect() has already set an error code */
 		return (NULL);
-
 	if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0 &&
-	    fetch_ssl(conn, URL, verbose) != 0) {
+	    fetch_ssl(conn, URL, verbose) == -1) {
 		fetch_close(conn);
 		/* grrr */
 #ifdef EAUTH
@@ -793,9 +793,9 @@ set_if_modified_since(conn_t *conn, time_t last_modified)
 	struct tm tm;
 	char buf[80];
 	gmtime_r(&last_modified, &tm);
-	snprintf(buf, sizeof(buf), "%.3s, %02d %.3s %4d %02d:%02d:%02d GMT",
+	snprintf(buf, sizeof(buf), "%.3s, %02d %.3s %4ld %02d:%02d:%02d GMT",
 	    weekdays + tm.tm_wday * 3, tm.tm_mday, months + tm.tm_mon * 3,
-	    tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	    (long)(tm.tm_year + 1900), tm.tm_hour, tm.tm_min, tm.tm_sec);
 	http_cmd(conn, "If-Modified-Since: %s\r\n", buf);
 }
 

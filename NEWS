@@ -1,5 +1,7 @@
 xbps-0.38 (???):
 
+ * libfetch: synchronized with NetBSD pkgsrc/libfetch.
+
  * libfetch: add support for TLS SNI (Server Name Identification) from NetBSD, with
    some minor debug changes. This fixes GH issue #41 (https://github.com/voidlinux/xbps/issues/41).
 
