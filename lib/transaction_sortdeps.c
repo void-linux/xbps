@@ -316,7 +316,8 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 				}
 			}
 		}
-		if (!vpkg_found && (pd = pkgdep_find(pkgver)) == NULL) {
+		pd = pkgdep_find(pkgver);
+		if ((!strcmp(tract, "remove") || (!pd && !vpkg_found))) {
 			/*
 			 * If package not in list, just add to the tail.
 			 */
