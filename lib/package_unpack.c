@@ -201,10 +201,10 @@ unpack_archive(struct xbps_handle *xhp,
 
 	/*
 	 * First get all metadata files on archive in this order:
-	 * 	- INSTALL
-	 * 	- REMOVE
-	 * 	- props.plist
-	 * 	- files.plist
+	 * 	- INSTALL	<optional>
+	 * 	- REMOVE 	<optional>
+	 * 	- props.plist	<required>
+	 * 	- files.plist	<required>
 	 *
 	 * The XBPS package must contain props and files plists, otherwise
 	 * it's not a valid package.
