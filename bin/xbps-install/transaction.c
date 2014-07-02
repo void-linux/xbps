@@ -224,6 +224,8 @@ install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		} else if (rv == ENOTSUP) {
 			fprintf(stderr, "No repositories  "
 			    "currently registered!\n");
+		} else if (rv == ENXIO) {
+			fprintf(stderr, "Package `%s' contains invalid dependencies, exiting.\n", pkg);
 		} else {
 			fprintf(stderr, "Unexpected error: %s\n",
 			    strerror(rv));

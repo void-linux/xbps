@@ -187,8 +187,10 @@ find_repo_deps(struct xbps_handle *xhp,
 		}
 		if (((pkgname = xbps_pkgpattern_name(reqpkg)) == NULL) &&
 		    ((pkgname = xbps_pkg_name(reqpkg)) == NULL)) {
-			xbps_dbg_printf(xhp, "can't guess pkgname for %s\n", reqpkg);
-			rv = EINVAL;
+			xbps_dbg_printf(xhp, "%s: can't guess pkgname for dependency: %s\n", curpkg, reqpkg);
+			xbps_set_cb_state(xhp, XBPS_STATE_INVALID_DEP, ENXIO, NULL,
+			    "%s: can't guess pkgname for dependency '%s'", curpkg, reqpkg);
+			rv = ENXIO;
 			break;
 		}
 		/*

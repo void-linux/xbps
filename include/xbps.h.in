@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140604"
+#define XBPS_API_VERSION	"20140702"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -275,6 +275,7 @@ extern "C" {
  * - XBPS_STATE_UNPACK_FAIL: package unpack has failed.
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  * - XBPS_STATE_REPO_KEY_IMPORT: repository is signed and needs to import pubkey.
+ * - XBPS_STATE_INVALID_DEP: package has an invalid dependency.
  */
 typedef enum xbps_state {
 	XBPS_STATE_UNKNOWN = 0,
@@ -313,7 +314,8 @@ typedef enum xbps_state {
 	XBPS_STATE_UNPACK_FAIL,
 	XBPS_STATE_REPOSYNC_FAIL,
 	XBPS_STATE_CONFIGURE_DONE,
-	XBPS_STATE_REPO_KEY_IMPORT
+	XBPS_STATE_REPO_KEY_IMPORT,
+	XBPS_STATE_INVALID_DEP
 } xbps_state_t;
 
 /**
@@ -1035,6 +1037,7 @@ xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict,
  * @retval EEXIST Package is already installed (reinstall wasn't enabled).
  * @retval ENOENT Package not matched in repository pool.
  * @retval ENOTSUP No repositories are available.
+ * @retval ENXIO Package depends on invalid dependencies.
  * @retval EINVAL Any other error ocurred in the process.
  */
 int xbps_transaction_install_pkg(struct xbps_handle *xhp,
@@ -1051,6 +1054,11 @@ int xbps_transaction_install_pkg(struct xbps_handle *xhp,
  * @param[in] pkgname The package name to update.
  *
  * @return 0 on success, otherwise an errno value.
+ * @retval EEXIST Package is already up-to-date.
+ * @retval ENOENT Package not matched in repository pool.
+ * @retval ENOTSUP No repositories are available.
+ * @retval ENXIO Package depends on invalid dependencies.
+ * @retval EINVAL Any other error ocurred in the process.
  */
 int xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname);
 
@@ -1060,7 +1068,9 @@ int xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname);
  * into the transaction dictionary.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
+ *
  * @return 0 on success, otherwise an errno value.
+ * @retval EEXIST All installed package are already up-to-date.
  */
 int xbps_transaction_update_packages(struct xbps_handle *xhp);
 

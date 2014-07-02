@@ -1,5 +1,16 @@
 xbps-0.38 (???):
 
+ * libxbps: return ENXIO and a meaningful error message if a package that is
+   going to be installed or updated has invalid dependencies, i.e:
+
+	$ xbps-install --repository=$HOME/repo -n foo
+	ERROR: foo-1.0_1: can't guess pkgname for dependency '>=invalid-spec_1'
+	Package `foo' contains invalid dependencies, exiting.
+	$
+
+   This fixes #43 (xbps-install: unhelpful message for invalid dependency)
+   submitted by Dominik Honnef.
+
  * libxbps: fixed a new issue with packages that provide/replace the
    same virtual package that is going to be replaced. The issue could be
    reproduced easily by installing any awk package (gawk, mawk, or nawk),
