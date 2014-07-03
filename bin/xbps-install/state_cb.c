@@ -82,6 +82,7 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		printf("%s: unpacking ...\n", xscd->arg);
 		break;
 	case XBPS_STATE_INSTALL:
+	case XBPS_STATE_DOWNLOAD:
 		/* empty */
 		break;
 	case XBPS_STATE_UPDATE:
