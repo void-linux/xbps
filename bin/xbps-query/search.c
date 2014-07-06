@@ -125,10 +125,15 @@ search_array_cb(struct xbps_handle *xhp _unused,
 				xbps_array_add_cstring_nocopy(sd->results, desc);
 			}
 			regfree(&regex);
+			return 0;
+		}
+		if (vpkgfound) {
+			xbps_array_add_cstring_nocopy(sd->results, pkgver);
+			xbps_array_add_cstring_nocopy(sd->results, desc);
 		} else {
 			if ((xbps_pkgpattern_match(pkgver, sd->pat)) ||
 			    (strcasestr(pkgver, sd->pat)) ||
-			    (strcasestr(desc, sd->pat)) || vpkgfound) {
+			    (strcasestr(desc, sd->pat))) {
 				xbps_array_add_cstring_nocopy(sd->results, pkgver);
 				xbps_array_add_cstring_nocopy(sd->results, desc);
 			}
