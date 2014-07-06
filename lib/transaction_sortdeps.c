@@ -236,6 +236,11 @@ again:
 		if (pkgdepidx < curpkgidx) {
 			xbps_dbg_printf_append(xhp, "already sorted.\n");
 			pkgdep_release(lpd);
+		} else if (pd == pdn) {
+			/*
+			 * Processing same pkg, just continue.
+			 */
+			xbps_dbg_printf_append(xhp, "already sorted.\n");
 		} else {
 			/*
 			 * Remove package dependency from list and move
