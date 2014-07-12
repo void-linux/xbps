@@ -36,6 +36,7 @@ store_dependency(struct xbps_handle *xhp,
 		 xbps_dictionary_t repo_pkgd,
 		 pkg_state_t repo_pkg_state)
 {
+	const char *pkgver;
 	int rv;
 	/*
 	 * Overwrite package state in dictionary with same state than the
@@ -52,7 +53,8 @@ store_dependency(struct xbps_handle *xhp,
 	 * Add the dictionary into the unsorted queue.
 	 */
 	xbps_array_add(unsorted, repo_pkgd);
-	xbps_dbg_printf_append(xhp, " (added)\n");
+	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
+	xbps_dbg_printf_append(xhp, " (added %s)\n", pkgver);
 
 	return 0;
 }
