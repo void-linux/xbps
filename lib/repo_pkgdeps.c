@@ -355,11 +355,6 @@ find_repo_deps(struct xbps_handle *xhp,
 		}
 		free(pkgname);
 		free(reqpkgname);
-
-		/*
-		 * Check if package has matched conflicts.
-		 */
-		xbps_pkg_find_conflicts(xhp, unsorted, curpkgd);
 		/*
 		 * Package is on repo, add it into the transaction dictionary.
 		 */
