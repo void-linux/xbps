@@ -79,7 +79,59 @@ vpkg01_body() {
 	atf_check_equal $out $exp
 }
 
+atf_test_case vpkg02
+
+vpkg02_head() {
+	atf_set "descr" "Tests for virtual pkgs: provider in transaction"
+}
+
+vpkg02_body() {
+	mkdir some_repo
+	mkdir -p pkg_{gawk,base-system,busybox}
+	cd some_repo
+	xbps-create -A noarch -n gawk-1.0_1 -s "gawk pkg" ../pkg_gawk
+	atf_check_equal $? 0
+	xbps-create -A noarch -n base-system-1.0_1 -s "base-system pkg" --dependencies "gawk>=0" ../pkg_base-system
+	atf_check_equal $? 0
+
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy base-system
+	atf_check_equal $? 0
+
+	cd some_repo
+
+	mkdir -p pkg_gawk/usr/share/xbps/virtualpkg.d
+	echo "virtualpkg=awk-1.0_1:gawk" > pkg_gawk/usr/share/xbps/virtualpkg.d/gawk.conf
+	xbps-create -A noarch -n gawk-1.1_1 -s "gawk pkg" --provides "awk-1.0_1" --replaces "awk>=0" ../pkg_gawk
+	atf_check_equal $? 0
+
+	mkdir -p pkg_busybox/usr/share/xbps/virtualpkg.d
+	echo "virtualpkg=awk-1.0_1:busybox" > pkg_busybox/usr/share/xbps/virtualpkg.d/busybox.conf
+	xbps-create -A noarch -n busybox-1.0_1 -s "busybox awk" --provides "awk-1.0_1" --replaces "awk>=0" ../pkg_busybox
+	atf_check_equal $? 0
+
+	xbps-create -A noarch -n base-system-1.1_1 -s "base-system pkg" --dependencies "awk>=0" ../pkg_base-system
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dyu
+	atf_check_equal $? 0
+
+	out=$(xbps-query -C empty.conf -r root -l|awk '{print $2}'|tr -d '\n')
+	exp="base-system-1.1_1gawk-1.1_1"
+	echo "out: $out"
+	echo "exp: $exp"
+	atf_check_equal $out $exp
+}
+
+
 atf_init_test_cases() {
 	atf_add_test_case vpkg00
 	atf_add_test_case vpkg01
+	atf_add_test_case vpkg02
 }
