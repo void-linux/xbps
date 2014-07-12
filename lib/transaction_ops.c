@@ -192,7 +192,10 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 	if (!xbps_dictionary_set_cstring_nocopy(pkg_repod,
 	    "transaction", reason))
 		return EINVAL;
-
+	/*
+	 * Check if package has matched conflicts.
+	 */
+	xbps_pkg_find_conflicts(xhp, unsorted, pkg_repod);
 	/*
 	 * Add the pkg dictionary from repository's index dictionary into
 	 * the "unsorted" queue.
