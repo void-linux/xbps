@@ -229,6 +229,22 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 }
 
 bool
+xbps_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
+{
+	char *binpkg;
+	bool exists = true;
+
+	if ((binpkg = xbps_repository_pkg_path(xhp, pkgd)) == NULL)
+		return false;
+
+	if (access(binpkg, R_OK) == -1)
+		exists = false;
+
+	free(binpkg);
+	return exists;
+}
+
+bool
 xbps_pkg_has_rundeps(xbps_dictionary_t pkgd)
 {
 	xbps_array_t array;

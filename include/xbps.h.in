@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140702"
+#define XBPS_API_VERSION	"20140713"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1608,6 +1608,17 @@ bool xbps_verify_file_signature(struct xbps_repo *repo, const char *fname);
  * matched installed package.
  */
 int xbps_pkg_is_installed(struct xbps_handle *xhp, const char *pkg);
+
+/**
+ * Returns true if binary package exists in cachedir or in a local repository,
+ * false otherwise.
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] pkgd Package dictionary returned by rpool.
+ *
+ * @return true if exists, false otherwise.
+ */
+bool xbps_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
 
 /**
  * Checks if the URI specified by \a uri is remote or local.

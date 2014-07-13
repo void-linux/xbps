@@ -1,5 +1,9 @@
 xbps-0.38 (???):
 
+ * When installing or updating packages, now proper statistics are generated
+   when a binary package from a repository repository exists in the cachedir,
+   and when a package has the "preserve" property.
+
  * libxbps: return ENXIO and a meaningful error message if a package that is
    going to be installed or updated has invalid dependencies, i.e:
 

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		return EINVAL;
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		bool preserve = false;
 		/*
 		 * Count number of pkgs to be removed, configured,
 		 * installed and updated.
@@ -77,6 +78,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repo);
+		xbps_dictionary_get_bool(obj, "preserve", &preserve);
 
 		if (strcmp(tract, "configure") == 0) {
 			cf_pkgcnt++;
@@ -95,7 +97,8 @@ compute_transaction_stats(struct xbps_handle *xhp)
 			xbps_dictionary_get_uint64(obj,
 			    "installed_size", &tsize);
 			instsize += tsize;
-			if (xbps_repository_is_remote(repo)) {
+			if (xbps_repository_is_remote(repo) &&
+			    !xbps_binpkg_exists(xhp, obj)) {
 				xbps_dictionary_get_uint64(obj,
 				    "filename-size", &tsize);
 				dlsize += tsize;
@@ -107,7 +110,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		 * from pkg's metadata dictionary.
 		 */
 		if ((strcmp(tract, "remove") == 0) ||
-		    (strcmp(tract, "update") == 0)) {
+		    ((strcmp(tract, "update") == 0) && !preserve)) {
 			char *pkgname;
 
 			pkgname = xbps_pkg_name(pkgver);
@@ -162,7 +165,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 int HIDDEN
 xbps_transaction_init(struct xbps_handle *xhp)
 {
-	xbps_array_t unsorted, mdeps, conflicts;
+	xbps_array_t array;
 
 	if (xhp->transd != NULL)
 		return 0;
@@ -170,41 +173,41 @@ xbps_transaction_init(struct xbps_handle *xhp)
 	if ((xhp->transd = xbps_dictionary_create()) == NULL)
 		return ENOMEM;
 
-        if ((unsorted = xbps_array_create()) == NULL) {
+        if ((array = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
-	if (!xbps_dictionary_set(xhp->transd, "unsorted_deps", unsorted)) {
+	if (!xbps_dictionary_set(xhp->transd, "unsorted_deps", array)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
 	}
-	xbps_object_release(unsorted);
+	xbps_object_release(array);
 
-	if ((mdeps = xbps_array_create()) == NULL) {
+	if ((array = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
-	if (!xbps_dictionary_set(xhp->transd, "missing_deps", mdeps)) {
+	if (!xbps_dictionary_set(xhp->transd, "missing_deps", array)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
 	}
-	xbps_object_release(mdeps);
+	xbps_object_release(array);
 
-	if ((conflicts = xbps_array_create()) == NULL) {
+	if ((array = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
-	if (!xbps_dictionary_set(xhp->transd, "conflicts", conflicts)) {
+	if (!xbps_dictionary_set(xhp->transd, "conflicts", array)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
 	}
-	xbps_object_release(conflicts);
+	xbps_object_release(array);
 
 	return 0;
 }
@@ -212,7 +215,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 int
 xbps_transaction_prepare(struct xbps_handle *xhp)
 {
-	xbps_array_t pkgs, mdeps, conflicts;
+	xbps_array_t array;
 	int rv = 0;
 
 	if (xhp->transd == NULL)
@@ -222,18 +225,18 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * If there are missing deps or revdeps bail out.
 	 */
 	xbps_transaction_revdeps(xhp);
-	mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
-	if (xbps_array_count(mdeps))
+	array = xbps_dictionary_get(xhp->transd, "missing_deps");
+	if (xbps_array_count(array))
 		return ENODEV;
 
-	pkgs = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++)
-		xbps_pkg_find_conflicts(xhp, pkgs, xbps_array_get(pkgs, i));
+	array = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+	for (unsigned int i = 0; i < xbps_array_count(array); i++)
+		xbps_pkg_find_conflicts(xhp, array, xbps_array_get(array, i));
 	/*
 	 * If there are package conflicts bail out.
 	 */
-	conflicts = xbps_dictionary_get(xhp->transd, "conflicts");
-	if (xbps_array_count(conflicts))
+	array = xbps_dictionary_get(xhp->transd, "conflicts");
+	if (xbps_array_count(array))
 		return EAGAIN;
 
 	/*
