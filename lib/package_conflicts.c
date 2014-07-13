@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -95,7 +95,9 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			    repopkgver);
 			buf = xbps_xasprintf("CONFLICT: %s with "
 			    "installed pkg %s", repopkgver, pkgver);
-			xbps_array_add_cstring(trans_cflicts, buf);
+			if (!xbps_match_string_in_array(trans_cflicts, buf))
+				xbps_array_add_cstring(trans_cflicts, buf);
+
 			free(buf);
 			continue;
 		}
@@ -117,7 +119,9 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			    "transaction %s <-> %s\n", pkgver, repopkgver);
 			buf = xbps_xasprintf("CONFLICT: %s with "
 			   "%s in transaction", repopkgver, pkgver);
-			xbps_array_add_cstring(trans_cflicts, buf);
+			if (!xbps_match_string_in_array(trans_cflicts, buf))
+				xbps_array_add_cstring(trans_cflicts, buf);
+
 			free(buf);
 			continue;
 		}
