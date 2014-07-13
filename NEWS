@@ -1,5 +1,10 @@
 xbps-0.38 (???):
 
+ * Before accepting a transaction, xbps now checks if there's enough free space
+   on the target rootdir (on disk) to proceed with the operation. In code terms,
+   xbps_transaction_prepare() now returns ENOSPC if the size of the transaction
+   exceeds the size of the free space. Close issue #7.
+
  * When installing or updating packages, now proper statistics are generated
    when a binary package from a repository repository exists in the cachedir,
    and when a package has the "preserve" property.

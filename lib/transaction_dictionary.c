@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/statvfs.h>
 
 #include "xbps_api_impl.h"
 
@@ -58,6 +59,8 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	xbps_dictionary_t pkg_metad;
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
+	struct statvfs svfs;
+	unsigned long rootdir_free_size;
 	uint64_t tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt;
 	const char *tract, *pkgver, *repo;
@@ -101,6 +104,8 @@ compute_transaction_stats(struct xbps_handle *xhp)
 			    !xbps_binpkg_exists(xhp, obj)) {
 				xbps_dictionary_get_uint64(obj,
 				    "filename-size", &tsize);
+				/* signature file: 512 bytes */
+				tsize += 512;
 				dlsize += tsize;
 				instsize += tsize;
 			}
@@ -158,6 +163,21 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	if (!xbps_dictionary_set_uint64(xhp->transd,
 				"total-removed-size", rmsize))
 		return EINVAL;
+
+	/* Get free space from target rootdir: return ENOSPC if there's not enough space */
+	if (statvfs(xhp->rootdir, &svfs) == -1) {
+		xbps_dbg_printf(xhp, "%s: statvfs failed: %s\n", __func__, strerror(errno));
+		return EINVAL;
+	}
+	/* compute free space on disk */
+	rootdir_free_size = svfs.f_bfree * svfs.f_bsize - instsize;
+
+	if (!xbps_dictionary_set_uint64(xhp->transd,
+				"disk-free-size", rootdir_free_size))
+		return EINVAL;
+
+	if (instsize > rootdir_free_size)
+		return ENOSPC;
 
 	return 0;
 }

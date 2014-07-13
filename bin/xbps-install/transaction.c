@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -97,7 +97,7 @@ show_package_list(xbps_object_iterator_t iter, const char *match, int cols)
 static int
 show_transaction_sizes(struct transaction *trans, int cols)
 {
-	uint64_t dlsize = 0, instsize = 0, rmsize = 0;
+	uint64_t dlsize = 0, instsize = 0, rmsize = 0, disk_free_size = 0;
 	char size[8];
 
 	/*
@@ -139,10 +139,10 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	 * Show total download/installed/removed size for all required packages.
 	 */
 	xbps_dictionary_get_uint64(trans->d, "total-download-size", &dlsize);
-	xbps_dictionary_get_uint64(trans->d, "total-installed-size",
-	    &instsize);
+	xbps_dictionary_get_uint64(trans->d, "total-installed-size", &instsize);
 	xbps_dictionary_get_uint64(trans->d, "total-removed-size", &rmsize);
-	if (dlsize || instsize || rmsize)
+	xbps_dictionary_get_uint64(trans->d, "disk-free-size", &disk_free_size);
+	if (dlsize || instsize || rmsize || disk_free_size)
 		printf("\n");
 
 	if (dlsize) {
@@ -168,6 +168,14 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			return -1;
 		}
 		printf("Size freed on disk:           %6s\n", size);
+	}
+	if (disk_free_size) {
+		if (xbps_humanize_number(size, (int64_t)disk_free_size) == -1) {
+			xbps_error_printf("humanize_number3 returns "
+			    "%s\n", strerror(errno));
+			return -1;
+		}
+		printf("Free space on disk:           %6s\n", size);
 	}
 	printf("\n");
 

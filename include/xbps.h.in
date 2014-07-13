@@ -1121,6 +1121,8 @@ int xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp);
  *  array of strings object in xhp->transd dictionary).
  * @retval EAGAIN if there are package conflicts in transaction ("conflicts"
  *  array of strings object in xhp->transd dictionary).
+ * @retval ENOSPC Not enough free space on target rootdir to continue with the
+ *  transaction.
  * @retval EINVAL There was an error sorting packages or computing the transaction
  * sizes.
  */
