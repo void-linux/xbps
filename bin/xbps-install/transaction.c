@@ -46,18 +46,7 @@ struct transaction {
 };
 
 static void
-show_missing_deps(xbps_array_t a)
-{
-	const char *str;
-
-	for (unsigned int i = 0; i < xbps_array_count(a); i++) {
-		xbps_array_get_cstring_nocopy(a, i, &str);
-		fprintf(stderr, "%s\n", str);
-	}
-}
-
-static void
-show_conflicts(xbps_array_t a)
+print_array(xbps_array_t a)
 {
 	const char *str;
 
@@ -260,7 +249,7 @@ update_pkg(struct xbps_handle *xhp, const char *pkgname)
 int
 exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 {
-	xbps_array_t mdeps, cflicts;
+	xbps_array_t array;
 	struct transaction *trans;
 	int rv = 0;
 
@@ -270,17 +259,16 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 
 	if ((rv = xbps_transaction_prepare(xhp)) != 0) {
 		if (rv == ENODEV) {
-			mdeps =
-			    xbps_dictionary_get(xhp->transd, "missing_deps");
+			array = xbps_dictionary_get(xhp->transd, "missing_deps");
 			/* missing packages */
-			show_missing_deps(mdeps);
-			fprintf(stderr, "Transaction aborted due to missing/conflicting packages.\n");
+			print_array(array);
+			fprintf(stderr, "Transaction aborted due to missing packages.\n");
 			goto out;
 		} else if (rv == EAGAIN) {
 			/* conflicts */
-			cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
-			show_conflicts(cflicts);
-			fprintf(stderr, "Transaction aborted due to missing/conflicting packages.\n");
+			array = xbps_dictionary_get(xhp->transd, "conflicts");
+			print_array(array);
+			fprintf(stderr, "Transaction aborted due to conflicting packages.\n");
 			goto out;
 		}
 		xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
