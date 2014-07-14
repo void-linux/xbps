@@ -43,6 +43,7 @@ struct transaction {
 	uint32_t up_pkgcnt;
 	uint32_t cf_pkgcnt;
 	uint32_t rm_pkgcnt;
+	uint32_t dl_pkgcnt;
 };
 
 static void
@@ -78,7 +79,7 @@ show_actions(xbps_object_iterator_t iter)
 }
 
 static void
-show_package_list(xbps_object_iterator_t iter, const char *match, int cols)
+show_package_list(xbps_object_iterator_t iter, const char *match, int cols, bool dload)
 {
 	xbps_object_t obj;
 	const char *pkgver, *tract;
@@ -86,9 +87,11 @@ show_package_list(xbps_object_iterator_t iter, const char *match, int cols)
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		if (strcmp(match, tract))
-			continue;
-		print_package_line(pkgver, cols, false);
+		if (dload && xbps_dictionary_get(obj, "download")) {
+			print_package_line(pkgver, cols, false);
+		} else if (strcmp(match, tract) == 0) {
+			print_package_line(pkgver, cols, false);
+		}
 	}
 	xbps_object_iterator_reset(iter);
 	print_package_line(NULL, cols, true);
@@ -101,14 +104,23 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	char size[8];
 
 	/*
-	 * Show the list of packages that will be installed.
+	 * Show the list of packages that will be downloaded, installed, updated,
+	 * removed or configured.
 	 */
+	xbps_dictionary_get_uint32(trans->d, "total-download-pkgs",
+	    &trans->dl_pkgcnt);
+	if (trans->dl_pkgcnt) {
+		printf("%u package%s will be downloaded:\n",
+		    trans->dl_pkgcnt, trans->dl_pkgcnt == 1 ? "" : "s");
+		show_package_list(trans->iter, "install", cols, true);
+		printf("\n");
+	}
 	xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
 	    &trans->inst_pkgcnt);
 	if (trans->inst_pkgcnt) {
 		printf("%u package%s will be installed:\n",
 		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans->iter, "install", cols);
+		show_package_list(trans->iter, "install", cols, false);
 		printf("\n");
 	}
 	xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
@@ -116,7 +128,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	if (trans->up_pkgcnt) {
 		printf("%u package%s will be updated:\n",
 		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans->iter, "update", cols);
+		show_package_list(trans->iter, "update", cols, false);
 		printf("\n");
 	}
 	xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
@@ -124,7 +136,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	if (trans->cf_pkgcnt) {
 		printf("%u package%s will be configured:\n",
 		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans->iter, "configure", cols);
+		show_package_list(trans->iter, "configure", cols, false);
 		printf("\n");
 	}
 	xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
@@ -132,7 +144,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	if (trans->rm_pkgcnt) {
 		printf("%u package%s will be removed:\n",
 		    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans->iter, "remove", cols);
+		show_package_list(trans->iter, "remove", cols, false);
 		printf("\n");
 	}
 	/*
@@ -314,8 +326,9 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 	 * It's time to run the transaction!
 	 */
 	if ((rv = xbps_transaction_commit(xhp)) == 0) {
-		printf("\n%u installed, %u updated, "
-		    "%u configured, %u removed.\n", trans->inst_pkgcnt,
+		printf("\n%u downloaded, %u installed, %u updated, "
+		    "%u configured, %u removed.\n",
+		    trans->dl_pkgcnt, trans->inst_pkgcnt,
 		    trans->up_pkgcnt, trans->cf_pkgcnt + trans->inst_pkgcnt,
 		    trans->rm_pkgcnt);
 	}
