@@ -1,6 +1,7 @@
 #ifndef COMPAT_H
 #define COMPAT_H
 
+#include <inttypes.h>
 #include <sys/types.h>
 #include <stdarg.h>
 
