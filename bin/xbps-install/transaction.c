@@ -91,7 +91,7 @@ show_package_list(xbps_object_iterator_t iter, const char *match, int cols)
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		xbps_dictionary_get_bool(obj, "download", &dload);
 
-		if (dload || (match && (strcmp(match, tract) == 0)))
+		if ((match && (strcmp(match, tract) == 0)) || (!match && dload))
 			print_package_line(pkgver, cols, false);
 	}
 	xbps_object_iterator_reset(iter);
