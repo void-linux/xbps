@@ -171,10 +171,10 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	/* Get free space from target rootdir: return ENOSPC if there's not enough space */
 	if (statvfs(xhp->rootdir, &svfs) == -1) {
 		xbps_dbg_printf(xhp, "%s: statvfs failed: %s\n", __func__, strerror(errno));
-		return EINVAL;
+		return 0;
 	}
 	/* compute free space on disk */
-	rootdir_free_size = svfs.f_bfree * svfs.f_bsize - instsize;
+	rootdir_free_size = svfs.f_bavail * svfs.f_bsize - instsize;
 
 	if (!xbps_dictionary_set_uint64(xhp->transd,
 				"disk-free-size", rootdir_free_size))
