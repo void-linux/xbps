@@ -60,13 +60,12 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	struct statvfs svfs;
-	unsigned long rootdir_free_size;
-	uint64_t tsize, dlsize, instsize, rmsize;
+	uint64_t rootdir_free_size, tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt, dl_pkgcnt;
 	const char *tract, *pkgver, *repo;
 
 	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = dl_pkgcnt = 0;
-	tsize = dlsize = instsize = rmsize = 0;
+	rootdir_free_size = tsize = dlsize = instsize = rmsize = 0;
 
 	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	if (iter == NULL)
