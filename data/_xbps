@@ -1,0 +1,209 @@
+#compdef xbps-checkvers xbps-create xbps-dgraph xbps-install xbps-pkgdb xbps-query xbps-reconfigure xbps-remove xbps-rindex xbps-uchroot xbps-uhelper
+
+_xbps_common=(
+	{-C,--config=-}'[Full path to configuration file]:config file:_files'
+	{-d,--debug}'[Debug mode shown to stderr]'
+	{-h,--help}'[Print help usage]'
+	{-n,--dry-run}'[Dry-run mode]'
+	{-r,--rootdir=-}'[Full path to rootdir]:root dir:_files -/'
+	{-v,--verbose}'[Verbose messages]'
+	{-V,--version}'[Show XBPS version]'
+)
+
+_xbps_all_packages() {
+	compadd "$@" -- $(xbps-query -s '' | sed 's/^... \([^ ]*\)-.* .*/\1/')
+}
+
+_xbps_installed_packages() {
+	compadd "$@" -- $(xbps-query -l | sed 's/^.. \([^ ]*\)-.* .*/\1/')
+}
+
+_xbps_checkvers() {
+	_arguments -s : \
+		$_xbps_common \
+		{-D,--distdir}'[Set the path to xbps-packages]:path:_files -/' \
+		{-i,--installed}'[Check for outdated packages in rootdir]' \
+		{-s,--show-missing}'[List any binary packages which are not built.]' \
+		'*:extra packages:_files'
+}
+
+_xbps_create() {
+	_arguments -s : \
+		{-A,--architecture}'[Package architecture]:architecture:(i686 i686-musl x86_64 x86_64-musl armv7l armv7l-musl armv6l armv6l-musl noarch)' \
+		{-B,--built-with}'[Package builder string]:package builder: ' \
+		{-C,--conflicts}'[Conflicts]:conflicts: ' \
+		{-D,--dependencies}'[Dependencies]:dependencies: ' \
+		{-F,--config-files}'[Configuration files]:configuration files: ' \
+		{-H,--homepage}'[Homepage]:homepage: ' \
+		{-h,--help}'[Show help]' \
+		{-l,--license}'[License]:license: ' \
+		{-M,--mutable-files}'[Mutable files list]:mutable files: ' \
+		{-m,--maintainer}'[Maintainer]:maintainer: ' \
+		{-n,--pkgver}'[Package name/version tuple]:package name/version: ' \
+		{-P,--provides}'[Provides]:provides: ' \
+		{-p,--preserve}'[Enable package preserve boolean]' \
+		{-q,--quiet}'[Work silently]' \
+		{-R,--replaces}'[Replaces]:replaces: ' \
+		{-S,--long-desc}'[Long description]:long description: ' \
+		{-s,--desc}'[Short description]:short description: ' \
+		{-t,--tags}'[A list of tags/categories]:tags: ' \
+		{-V,--version}'[Prints XBPS release version]' \
+		--build-options'[A string with the used build options]:used build options: ' \
+		--compression'[Compression format]:compression format:(gzip bzip2 xz)' \
+		--shlib-provides'[List of provided shared libraries]:provided shared libraries: ' \
+		--shlib-requires'[List of required shared libraries]:required shared libraries: '
+}
+
+_xbps_dgraph() {
+	_arguments : \
+		'-c[Path to configuration file]:config file:_files' \
+		'-g[Generate a default config file]' \
+		'-o[Output file]:output file:_files' \
+		'-R[Also generate reverse dependencies in the graph]' \
+		'-r[Full path to rootdir]:root dir:_files -/' \
+		':package:_xbps_all_packages'
+}
+
+
+_xbps_install() {
+	_arguments -s : \
+		$_xbps_common \
+		{-A,--automatic}'[Set automatic installation mode]' \
+		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
+		{-f,--force}'[Force package re-installation]' \
+		{-R,--repository=-}'[Add repository to the top of the list]:repository url:_files -/' \
+		{-S,--sync}'[Sync remote repository index]' \
+		{-u,--update}'[Update target packages]' \
+		{-y,--yes}'[Assume yes to all questions]' \
+		'*:available packages:_xbps_all_packages'
+}
+
+_xbps_pkgdb() {
+	_arguments -s : \
+		$_xbps_common \
+		{-a,--all}'[Process all packages]' \
+		{-m,--mode}'[Change to this mode]:mode:(auto manual hold unhold)' \
+		{-u,--update}'[Update pkgdb to the latest format]'
+		'*:installed packages:_xbps_installed_packages'
+}
+
+_xbps_query() {
+	_arguments -s : \
+		$_xbps_common \
+		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
+		{-p,--property=-}'[Show properties]: ' \
+		--regex'[Use Extended Regular Expressions to match]' \
+		{-R,--repository}'[Enable repository mode]' \
+		--repository=-'[Add repository to the top of the list]:repository url:_files -/' \
+		- '(actions)' \
+		{-l,--list-pkgs}'[List installed packages]' \
+		{-L,--list-repos}'[List registered repositories]' \
+		{-H,--list-hold-pkgs}'[List packages on hold state]' \
+		{-m,--list-manual-pkgs}'[List packages installed explicitly]' \
+		{-O,--list-orphans}'[List package orphans]' \
+		{-o,--ownedby}'[Search for package files]:package file:_files' \
+		{-S,--show}'[Show information]:package:_xbps_all_packages' \
+		{-s,--search}'[Search for packages]:search string: ' \
+		{-f,--files}'[Show package files]:package:_xbps_all_packages' \
+		{-x,--deps}'[Show dependencies]:package:_xbps_all_packages' \
+		{-X,--revdeps}'[Show reverse dependencies]:package:_xbps_all_packages' \
+		- '(default)' \
+		':package:_xbps_all_packages'
+}
+
+_xbps_reconfigure() {
+	_arguments -s : \
+		$_xbps_common \
+		{-a,--all}'[Process all packages]' \
+		{-f,--force}'[Force reconfiguration]' \
+                '*:installed packages:_xbps_installed_packages'
+}
+
+_xbps_remove() {
+	_arguments -s : \
+		$_xbps_common \
+		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
+ 		{-F,--force-revdeps}'[Force package removal even with revdeps]' \
+		{-f,--force}'[Force package files removal]' \
+		{-O,--clean-cache}'[Remove obsolete packages in cachedir]' \
+		{-o,--remove-orphans}'[Remove package orphans]' \
+		{-R,--recursive}'[Recursively remove dependencies]' \
+		{-y,--yes}'[Assume yes to all questions]' \
+		'*:installed packages:_xbps_installed_packages'
+}
+
+_xbps_rindex() {
+	_arguments -s : \
+		{-f,--force}'[Force mode to overwrite entry in add mode]' \
+		{-h,--help}'[Print help usage]' \
+		{-v,--verbose}'[Verbose messages]' \
+		{-V,--version}'[Show XBPS version]' \
+		'--privkey[Path to the private key for signing]:private key path:_files' \
+		'--signedby[Signature details]:signature details: ' \
+		{-a,--add}'[Add package to repository index]' \
+		{-c,--clean}'[Clean repository index]' \
+		{-r,--remove-obsoletes}'[Removes obsolete packages from repository]' \
+		{-s,--sign}'[Sign repository index]' \
+		':repository dir:_files -/' \
+		'*:packages:_files'
+}
+
+_xbps_uchroot() {
+	_arguments \
+		'-D[distdir]:distdir:_files -/' \
+		'-H[hostdir]:hostdir:_files -/' \
+		'-S[shmdir]:shmdir:_files -/' \
+		':command: _command_names -e' \
+		'*::arguments: _normal'
+}
+
+_xbps_uhelper() {
+	local ret=1
+	_arguments \
+		{-C,--config=-}'[Full path to configuration file]:config file:_files' \
+		{-d,--debug}'[Debug mode shown to stderr]' \
+		{-r,--rootdir=-}'[Full path to rootdir]:root dir:_files -/' \
+		{-V,--version}'[Show XBPS version]' \
+		'1:action:->actions' \
+		'*:: :->args' && ret=0
+	case $state in
+		actions)
+			_values "actions" cmpver digest fetch getpkgdepname \
+				getpkgname getpkgrevision getpkgversion \
+				pkgmatch version real-version
+			ret=0;;
+		args)
+			case $words[1] in
+				cmpver) _arguments ':installed version: ' ':required version: ' && ret=0;;
+				digest) _arguments '*:files:_files' && ret=0;;
+				fetch) _arguments '*:urls: ' && ret=0;;
+				getpkgdepname) _arguments '*:string: ' && ret=0;;
+				getpkgname) _arguments '*:string: ' && ret=0;;
+				getpkgrevision) _arguments '*:string: ' && ret=0;;
+				getpkgversion) _arguments '*:string: ' && ret=0;;
+				pkgmatch) _arguments ':version: ' ':pattern: ' && ret=0;;
+				real-version) _arguments ':package:_xbps_installed_packages' && ret=0;;
+				version) _arguments ':package:_xbps_installed_packages' && ret=0;;
+			esac
+			;;
+	esac
+	return $ret
+}
+
+_xbps() {
+	case "$service" in
+		xbps-checkvers) _xbps_checkvers "$@";;
+		xbps-create) _xbps_create "$@";;
+		xbps-dgraph) _xbps_dgraph "$@";;
+		xbps-install) _xbps_install "$@";;
+		xbps-pkgdb) _xbps_pkgdb "$@";;
+		xbps-query) _xbps_query "$@";;
+		xbps-reconfigure) _xbps_reconfigure "$@";;
+		xbps-remove) _xbps_remove "$@";;
+		xbps-rindex) _xbps_rindex "$@";;
+		xbps-uchroot) _xbps_uchroot "$@";;
+		xbps-uhelper) _xbps_uhelper "$@";;
+	esac
+}
+
+_xbps "$@"
