@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140713"
+#define XBPS_API_VERSION	"20140727"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -276,6 +276,8 @@ extern "C" {
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  * - XBPS_STATE_REPO_KEY_IMPORT: repository is signed and needs to import pubkey.
  * - XBPS_STATE_INVALID_DEP: package has an invalid dependency.
+ * - XBPS_STATE_SHOW_INSTALL_MSG: package must show a post-install message.
+ * - XBPS_STATE_SHOW_REMOVE_MSG: package must show a pre-remove message.
  */
 typedef enum xbps_state {
 	XBPS_STATE_UNKNOWN = 0,
@@ -315,7 +317,9 @@ typedef enum xbps_state {
 	XBPS_STATE_REPOSYNC_FAIL,
 	XBPS_STATE_CONFIGURE_DONE,
 	XBPS_STATE_REPO_KEY_IMPORT,
-	XBPS_STATE_INVALID_DEP
+	XBPS_STATE_INVALID_DEP,
+	XBPS_STATE_SHOW_INSTALL_MSG,
+	XBPS_STATE_SHOW_REMOVE_MSG
 } xbps_state_t;
 
 /**

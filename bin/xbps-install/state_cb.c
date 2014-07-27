@@ -133,6 +133,9 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		printf("Fingerprint: %s\n", xscd->arg);
 		rv = yesno("Do you want to import this public key?");
 		break;
+	case XBPS_STATE_SHOW_INSTALL_MSG:
+		printf("%s: post-install message:\n%s", xscd->arg, xscd->desc);
+		break;
 	/* errors */
 	case XBPS_STATE_UNPACK_FAIL:
 	case XBPS_STATE_UPDATE_FAIL:

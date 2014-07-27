@@ -91,6 +91,9 @@ state_cb_rm(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			    xscd->xhp->rootdir);
 		}
 		break;
+	case XBPS_STATE_SHOW_REMOVE_MSG:
+		printf("%s: pre-remove message:\n%s", xscd->arg, xscd->desc);
+		break;
 	/* errors */
 	case XBPS_STATE_REMOVE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);

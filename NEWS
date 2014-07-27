@@ -1,5 +1,11 @@
 xbps-0.38 (???):
 
+ * Implemented support for post-install and pre-remove messages, as explained
+   in issue #44 https://github.com/voidlinux/xbps/issues/44.
+
+   xbps-create(8): will read the {INSTALL,REMOVE}.msg files and will add its contents
+   into the `{install,remove}-msg` data objects into its metadata plist file.
+
  * xbps-install(8): added support to list packages that will be downloaded, if those
    were available in a remote repository and were not in the cache directory.
 
