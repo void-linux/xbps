@@ -143,6 +143,12 @@ void HIDDEN xbps_fetch_unset_cache_connection(void);
 
 /**
  * @private
+ * From lib/package_msg.c
+ */
+int HIDDEN xbps_cb_message(struct xbps_handle *, xbps_dictionary_t, const char *);
+
+/**
+ * @private
  * From lib/package_config_files.c
  */
 int HIDDEN xbps_entry_is_a_conf_file(xbps_dictionary_t, const char *);

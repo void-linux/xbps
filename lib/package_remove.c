@@ -259,8 +259,6 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	 * Run the pre remove action and show pre-remove message if exists.
 	 */
 	if (pkgd) {
-		xbps_data_t rmsg;
-
 		rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script",
 		    "pre", update);
 		if (rv != 0) {
@@ -272,37 +270,9 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 			goto out;
 		}
 		/* show remove-msg if exists */
-		rmsg = xbps_dictionary_get(pkgd, "remove-msg");
-		if (xbps_object_type(rmsg) == XBPS_TYPE_DATA) {
-			FILE *f;
-			const void *data;
-			char *buf;
-			size_t len;
-
-			data = xbps_data_data_nocopy(rmsg);
-			len = xbps_data_size(rmsg);
-			if ((f = fmemopen(__UNCONST(data), len, "r")) == NULL) {
-				rv = errno;
-				xbps_dbg_printf(xhp, "[remove] %s: fmemopen %s\n", pkgver, strerror(rv));
-				goto out;
-			};
-			buf = malloc(len);
-			assert(buf);
-			if (fread(buf, len, 1, f) != len) {
-				if (ferror(f)) {
-					rv = errno;
-					xbps_dbg_printf(xhp, "[remove] %s: fread %s\n", pkgver, strerror(rv));
-					free(buf);
-					fclose(f);
-					goto out;
-				}
-			}
-			/* terminate buffer and notify client to show the pre-remove message */
-			buf[len] = '\0';
-			xbps_set_cb_state(xhp, XBPS_STATE_SHOW_REMOVE_MSG, 0, pkgver, "%s", buf);
-			free(buf);
-			fclose(f);
-		}
+		rv = xbps_cb_message(xhp, pkgd, "remove-msg");
+		if (rv != 0)
+			goto out;
 	}
 	/*
 	 * If updating a package, we just need to execute the current

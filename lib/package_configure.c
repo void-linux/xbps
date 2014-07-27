@@ -81,11 +81,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		   bool update)
 {
 	xbps_dictionary_t pkgd, pkgmetad;
-	xbps_data_t imsg;
-	FILE *f = NULL;
-	const void *data = NULL;
-	size_t len;
-	char *buf = NULL, *pkgname, *plist;
+	char *pkgname, *plist;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -169,35 +165,8 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_DONE, 0, pkgver, NULL);
 
 	/* show install-msg if exists */
-	imsg = xbps_dictionary_get(pkgmetad, "install-msg");
-	if (xbps_object_type(imsg) != XBPS_TYPE_DATA)
-		goto out;
+	rv = xbps_cb_message(xhp, pkgmetad, "install-msg");
 
-	data = xbps_data_data_nocopy(imsg);
-	len = xbps_data_size(imsg);
-	if ((f = fmemopen(__UNCONST(data), len, "r")) == NULL) {
-		rv = errno;
-		xbps_dbg_printf(xhp, "[configure] %s: fmemopen %s\n", pkgver, strerror(rv));
-		goto out;
-	};
-	buf = malloc(len);
-	assert(buf);
-	if (fread(buf, len, 1, f) != len) {
-		if (ferror(f)) {
-			rv = errno;
-			xbps_dbg_printf(xhp, "[configure] %s: fread %s\n", pkgver, strerror(rv));
-			fclose(f);
-			free(buf);
-			goto out;
-		}
-	}
-	/* terminate buffer and notify client to show the post-install message */
-	buf[len] = '\0';
-	xbps_set_cb_state(xhp, XBPS_STATE_SHOW_INSTALL_MSG, 0, pkgver, "%s", buf);
-	fclose(f);
-	free(buf);
-
-out:
 	if (pkgmetad != NULL)
 		xbps_object_release(pkgmetad);
 
