@@ -1,5 +1,9 @@
 xbps-0.38 (???):
 
+ * Always preserve files that exist on disk, but are managed by a package.
+   When such condition ocurrs install the pkg configuration file as `file.new-<version>`.
+   This fixes GH issue #50 https://github.com/voidlinux/xbps/issues/50.
+
  * Implemented support for post-install and pre-remove messages, as explained
    in issue #44 https://github.com/voidlinux/xbps/issues/44.
 

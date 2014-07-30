@@ -68,7 +68,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	xbps_dictionary_t forigd;
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter, iter2;
-	const char *cffile, *sha256_new = NULL;
+	const char *version = NULL, *cffile, *sha256_new = NULL;
 	char buf[PATH_MAX], *sha256_cur = NULL, *sha256_orig = NULL;
 	int rv = 0;
 
@@ -90,8 +90,18 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 
 	forigd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
 	if (forigd == NULL) {
+		/*
+		 * File exists on disk but it's not managed by the same package.
+		 * Install it as file.new-<version>.
+		 */
+		version = xbps_pkg_version(pkgver);
+		assert(version);
 		xbps_dbg_printf(xhp, "%s: conf_file %s not currently "
-		    "installed\n", pkgver, entry_pname);
+		    "installed, renaming to %s.new-%s\n", pkgver, entry_pname, version);
+		snprintf(buf, sizeof(buf), "%s.new-%s", entry_pname, version);
+		xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
+		    0, pkgver, "File `%s' exists, installing configuration file to `%s'.", entry_pname, buf);
+		archive_entry_copy_pathname(entry, buf);
 		rv = 1;
 		goto out;
 	}
@@ -207,13 +217,11 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		} else  if ((strcmp(sha256_orig, sha256_cur)) &&
 			    (strcmp(sha256_cur, sha256_new)) &&
 			    (strcmp(sha256_orig, sha256_new))) {
-			const char *version;
-
 			version = xbps_pkg_version(pkgver);
 			assert(version);
 			snprintf(buf, sizeof(buf), ".%s.new-%s", cffile, version);
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
-			    0, pkgver, "Installing new configuration file to `%s'.", buf);
+			    0, pkgver, "File `%s' exists, installing configuration file to `%s'.", cffile, buf);
 			archive_entry_copy_pathname(entry, buf);
 			rv = 1;
 			break;

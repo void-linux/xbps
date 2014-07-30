@@ -128,8 +128,44 @@ tc3_body() {
 	atf_check_equal $rval 0
 }
 
+# 4th test: existent file on disk; new package defines configuration file.
+#	result: keep on-disk file as is, install new conf file as file.new-<version>.
+atf_test_case tc4
+
+tc4_head() {
+	atf_set "descr" "Tests for configuration file handling: existent on-disk, new install"
+}
+
+tc4_body() {
+	mkdir repo
+	cd repo
+	mkdir -p pkg_a/etc
+	echo "fooblah" > pkg_a/etc/cf1.conf
+	chmod 755 pkg_a/etc/cf1.conf
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/etc/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+
+	mkdir -p rootdir/etc
+	echo "blahblah" > rootdir/etc/cf1.conf
+
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yvd a
+	atf_check_equal $? 0
+
+	result="$(cat rootdir/etc/cf1.conf)"
+	resultpkg="$(cat rootdir/etc/cf1.conf.new-0.1_1)"
+	rval=1
+	if [ "${result}" = "blahblah" -a "${resultpkg}" = "fooblah" ]; then
+		rval=0
+	fi
+	atf_check_equal $rval 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case tc1
 	atf_add_test_case tc2
 	atf_add_test_case tc3
+	atf_add_test_case tc4
 }

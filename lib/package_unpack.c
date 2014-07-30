@@ -410,8 +410,8 @@ unpack_archive(struct xbps_handle *xhp,
 						    "matches existing SHA256, "
 						    "skipping...\n",
 						    pkgver, entry_pname);
-						skip_extract = true;
 					}
+					skip_extract = true;
 					rv = 0;
 				}
 			}
@@ -496,20 +496,6 @@ unpack_archive(struct xbps_handle *xhp,
 			xbps_dbg_printf(xhp, "%s: entry %s changed file "
 			    "mode to %s.\n", pkgver, entry_pname,
 			    archive_entry_strmode(entry));
-		}
-		if (!update && conf_file && file_exists && !skip_extract) {
-			/*
-			 * If installing new package preserve old configuration
-			 * file but renaming it to <file>.old.
-			 */
-			buf = xbps_xasprintf("%s.old", entry_pname);
-			(void)rename(entry_pname, buf);
-			free(buf);
-			buf = NULL;
-			xbps_set_cb_state(xhp,
-			    XBPS_STATE_CONFIG_FILE, 0, pkgver,
-			    "Renamed old configuration file "
-			    "`%s' to `%s.old'.", entry_pname, entry_pname);
 		}
 		if (!force && skip_extract) {
 			archive_read_data_skip(ar);
