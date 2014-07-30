@@ -410,8 +410,8 @@ unpack_archive(struct xbps_handle *xhp,
 						    "matches existing SHA256, "
 						    "skipping...\n",
 						    pkgver, entry_pname);
+						skip_extract = true;
 					}
-					skip_extract = true;
 					rv = 0;
 				}
 			}
