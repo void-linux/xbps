@@ -1,5 +1,20 @@
 xbps-0.38 (???):
 
+ * Implemented support to preserve existent on-disk files, by always ignoring
+   the pkg content if the file has been matched. Details here:
+   https://github.com/voidlinux/xbps/issues/51
+
+   The new "preserve" keyword can be used in the xbps configuration file, as well
+   as for the system and configuration directories:
+
+	- <rootdir>/usr/share/xbps/preserve.d
+	- <rootdir>/etc/xbps/preserve.d
+
+   Full path to a file or globbing can be used:
+
+	- preserve=/usr/bin/blah
+	- preserve=/etc/blah/*.conf
+
  * Always preserve files that exist on disk, but are managed by a package.
    When such condition ocurrs install the pkg configuration file as `file.new-<version>`.
    This fixes GH issue #50 https://github.com/voidlinux/xbps/issues/50.

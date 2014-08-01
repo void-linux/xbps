@@ -208,7 +208,7 @@ rcv_init(rcv_t *rcv, const char *prog)
 	rcv->have_vars = 0;
 	rcv->ptr = rcv->input = NULL;
 	if (rcv->xbps_conf != NULL)
-		rcv->xhp.conffile = rcv->xbps_conf;
+		strncpy(rcv->xhp.conffile, rcv->xbps_conf, sizeof(rcv->xhp.conffile));
 	if (rcv->rootdir != NULL)
 		strncpy(rcv->xhp.rootdir, rcv->rootdir, sizeof(rcv->xhp.rootdir));
 	xbps_init(&rcv->xhp);

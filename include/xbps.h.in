@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140727"
+#define XBPS_API_VERSION	"20140801"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -111,6 +111,18 @@
  * System directory to store repository configuration files.
  */
 #define XBPS_SYS_REPOD_PATH 	XBPS_SYSDEFCONF_PATH "/repo.d"
+
+/**
+ * @def XBPS_PRESERVED_PATH
+ * Configuration directory to store preserve configuration files.
+ */
+#define XBPS_PRESERVED_PATH 	XBPS_SYSCONF_PATH "/preserve.d"
+
+/**
+ * @def XBPS_SYS_PRESERVED_PATH
+ * System directory to store preserve configuration files.
+ */
+#define XBPS_SYS_PRESERVED_PATH XBPS_SYSDEFCONF_PATH "/preserve.d"
 
 /**
  * @def XBPS_PKGDB
@@ -278,6 +290,7 @@ extern "C" {
  * - XBPS_STATE_INVALID_DEP: package has an invalid dependency.
  * - XBPS_STATE_SHOW_INSTALL_MSG: package must show a post-install message.
  * - XBPS_STATE_SHOW_REMOVE_MSG: package must show a pre-remove message.
+ * - XBPS_STATE_UNPACK_FILE_PRESERVED: package unpack preserved a file.
  */
 typedef enum xbps_state {
 	XBPS_STATE_UNKNOWN = 0,
@@ -319,7 +332,8 @@ typedef enum xbps_state {
 	XBPS_STATE_REPO_KEY_IMPORT,
 	XBPS_STATE_INVALID_DEP,
 	XBPS_STATE_SHOW_INSTALL_MSG,
-	XBPS_STATE_SHOW_REMOVE_MSG
+	XBPS_STATE_SHOW_REMOVE_MSG,
+	XBPS_STATE_UNPACK_FILE_PRESERVED
 } xbps_state_t;
 
 /**
@@ -492,6 +506,7 @@ struct xbps_handle {
 	/**
 	 * @private
 	 */
+	xbps_array_t preserved_files;
 	xbps_dictionary_t pkg_metad;
 	xbps_dictionary_t pkgdb_revdeps;
 	xbps_dictionary_t vpkgd;
@@ -559,17 +574,17 @@ struct xbps_handle {
 	 */
 	void *fetch_cb_data;
 	/**
-	 * @var conffile
-	 *
-	 * Full path to the xbps configuration file.
-	 */
-	const char *conffile;
-	/**
 	 * @var target_arch
 	 *
 	 * Target architecture, as set by XBPS_TARGET_ARCH from environment.
 	 */
 	const char *target_arch;
+	/**
+	 * @var conffile
+	 *
+	 * Full path to the xbps configuration file.
+	 */
+	char conffile[XBPS_MAXPATH-1];
 	/**
 	 * @var rootdir
 	 *

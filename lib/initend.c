@@ -45,7 +45,7 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
-static int parse_file(struct xbps_handle *, const char *, bool, bool);
+static int parse_file(struct xbps_handle *, const char *, const char *, bool, bool);
 
 /**
  * @file lib/initend.c
@@ -89,25 +89,58 @@ store_vpkg(struct xbps_handle *xhp, const char *path, size_t line, char *vpkg_s)
 	xbps_dbg_printf(xhp, "%s: added vpkg %s for %s\n", path, vpkg, rpkg);
 }
 
+static void
+store_preserved_file(struct xbps_handle *xhp, const char *file)
+{
+	glob_t globbuf;
+	char *p = NULL, *rfile = NULL;
+	size_t len;
+	int rv = 0;
+
+	if (xhp->preserved_files == NULL) {
+		xhp->preserved_files = xbps_array_create();
+		assert(xhp->preserved_files);
+	}
+
+	rfile = xbps_xasprintf("%s%s", xhp->rootdir, file);
+
+	rv = glob(rfile, 0, NULL, &globbuf);
+	if (rv == GLOB_NOMATCH) {
+		if (xbps_match_string_in_array(xhp->preserved_files, file))
+			goto out;
+		xbps_array_add_cstring(xhp->preserved_files, file);
+		xbps_dbg_printf(xhp, "Added preserved file: %s\n", file);
+		goto out;
+	} else if (rv != 0) {
+		goto out;
+	}
+	for (size_t i = 0; i < globbuf.gl_pathc; i++) {
+		if (xbps_match_string_in_array(xhp->preserved_files, globbuf.gl_pathv[i]))
+			continue;
+
+		len = strlen(globbuf.gl_pathv[i]) - strlen(xhp->rootdir) + 1;
+		p = malloc(len);
+		assert(len);
+		strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
+		xbps_array_add_cstring(xhp->preserved_files, p);
+		xbps_dbg_printf(xhp, "Added preserved file: %s (expanded from %s)\n", p, file);
+		free(p);
+	}
+out:
+	globfree(&globbuf);
+	if (rfile)
+		free(rfile);
+}
+
 static bool
 store_repo(struct xbps_handle *xhp, const char *repo)
 {
-	/*
-	 * Append repositories to our proplib array.
-	 */
 	if (xhp->repositories == NULL)
 		xhp->repositories = xbps_array_create();
 
-	/*
-	 * Do not add duplicates.
-	 */
-	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
-		const char *srepo;
+	if (xbps_match_string_in_array(xhp->repositories, repo))
+		return false;
 
-		xbps_array_get_cstring_nocopy(xhp->repositories, i, &srepo);
-		if (strcmp(repo, srepo) == 0)
-			return false;
-	}
 	xbps_array_add_cstring(xhp->repositories, repo);
 	return true;
 }
@@ -123,7 +156,8 @@ parse_option(char *buf, char **k, char **v)
 		"syslog",
 		"repository",
 		"virtualpkg",
-		"include"
+		"include",
+		"preserve"
 	};
 	bool found = false;
 
@@ -158,14 +192,14 @@ parse_option(char *buf, char **k, char **v)
 }
 
 static int
-parse_files_glob(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf)
+parse_files_glob(struct xbps_handle *xhp, const char *cwd, const char *path, bool nested, bool vpkgconf)
 {
 	glob_t globbuf;
-	int i, rv = 0;
+	int rv = 0;
 
 	glob(path, 0, NULL, &globbuf);
-	for (i = 0; globbuf.gl_pathv; i++) {
-		if ((rv = parse_file(xhp, globbuf.gl_pathv[i], nested, vpkgconf)) != 0)
+	for (size_t i = 0; i < globbuf.gl_pathc; i++) {
+		if ((rv = parse_file(xhp, cwd, globbuf.gl_pathv[i], nested, vpkgconf)) != 0)
 			break;
 	}
 	globfree(&globbuf);
@@ -174,14 +208,13 @@ parse_files_glob(struct xbps_handle *xhp, const char *path, bool nested, bool vp
 }
 
 static int
-parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf)
+parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nested, bool vpkgconf)
 {
 	FILE *fp;
+	char tmppath[XBPS_MAXPATH] = {0};
 	size_t len, nlines = 0;
 	ssize_t read;
-	char *line = NULL;
-	char ocwd[XBPS_MAXPATH] = { 0 }, tmppath[XBPS_MAXPATH] = { 0 };
-	char *cwd;
+	char *cfcwd, *line = NULL;
 	int rv = 0;
 
 	if ((fp = fopen(path, "r")) == NULL) {
@@ -196,15 +229,10 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 
 	/* cwd to the dir containing the config file */
 	strlcpy(tmppath, path, sizeof(tmppath));
-	cwd = dirname(tmppath);
-	if (getcwd(ocwd, sizeof(ocwd)) == NULL) {
+	cfcwd = dirname(tmppath);
+	if (chdir(cfcwd) == -1) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "cannot get cwd: %s\n", strerror(rv));
-		return rv;
-	}
-	if (chdir(cwd)) {
-		rv = errno;
-		xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", cwd, strerror(rv));
+		xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", cfcwd, strerror(rv));
 		return rv;
 	}
 
@@ -245,6 +273,8 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 				xbps_dbg_printf(xhp, "%s: added repository %s\n", path, v);
 		} else if (strcmp(k, "virtualpkg") == 0) {
 			store_vpkg(xhp, path, nlines, v);
+		} else if (strcmp(k, "preserve") == 0) {
+			store_preserved_file(xhp, v);
 		}
 		/* Avoid double-nested parsing, only allow it once */
 		if (nested)
@@ -253,25 +283,18 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested, bool vpkgconf
 		if (strcmp(k, "include"))
 			continue;
 
-		if ((rv = parse_files_glob(xhp, v, true, false)) != 0)
+		if ((rv = parse_files_glob(xhp, cwd, v, true, false)) != 0)
 			break;
 
 	}
 	free(line);
 	fclose(fp);
 
-	/* Going back to old working directory */
-	if (chdir(ocwd)) {
-		rv = errno;
-		xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", ocwd, strerror(rv));
-		return rv;
-	}
-
 	return rv;
 }
 
 static int
-parse_dir(struct xbps_handle *xhp, const char *dir, const char *confdir, bool vpkg)
+parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char *confdir, bool vpkg)
 {
 	struct dirent **namelist;
 	char *ext, ldir[PATH_MAX], conf[PATH_MAX];
@@ -313,7 +336,7 @@ parse_dir(struct xbps_handle *xhp, const char *dir, const char *confdir, bool vp
 		}
 		/* parse conf file */
 		snprintf(conf, sizeof(conf), "%s/%s", ldir, namelist[i]->d_name);
-		if ((rv = parse_file(xhp, conf, false, vpkg)) != 0) {
+		if ((rv = parse_file(xhp, cwd, conf, false, vpkg)) != 0) {
 			free(namelist[i]);
 			break;
 		}
@@ -351,7 +374,7 @@ stage2:
 		}
 		/* parse conf file */
 		snprintf(conf, sizeof(conf), "%s/%s", ldir, namelist[i]->d_name);
-		if ((rv = parse_file(xhp, conf, false, vpkg)) != 0) {
+		if ((rv = parse_file(xhp, cwd, conf, false, vpkg)) != 0) {
 			free(namelist[i]);
 			break;
 		}
@@ -365,36 +388,37 @@ int
 xbps_init(struct xbps_handle *xhp)
 {
 	struct utsname un;
-	char *buf;
+	char cwd[PATH_MAX-1], *buf;
 	const char *repodir, *native_arch;
 	int rv;
 
 	assert(xhp != NULL);
 
-	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
+	/* get cwd */
+	if (getcwd(cwd, sizeof(cwd)) == NULL)
+		return ENOTSUP;
 
-	if (xhp->conffile == NULL)
-		xhp->conffile = XBPS_CONF_DEF;
-
-	/* parse configuration file */
-	if ((rv = parse_file(xhp, xhp->conffile, false, false)) != 0) {
-		xbps_dbg_printf(xhp, "Using built-in defaults\n");
+	/* set conffile */
+	if (xhp->conffile[0] == '\0') {
+		snprintf(xhp->conffile, sizeof(xhp->conffile), XBPS_CONF_DEF);
+	} else {
+		buf = strdup(xhp->conffile);
+		snprintf(xhp->conffile, sizeof(xhp->conffile), "%s/%s", cwd, buf);
+		free(buf);
 	}
 	/* Set rootdir */
 	if (xhp->rootdir[0] == '\0') {
 		xhp->rootdir[0] = '/';
 		xhp->rootdir[1] = '\0';
 	} else if (xhp->rootdir[0] != '/') {
-		/* relative path */
-		char path[PATH_MAX-1];
-
-		if (getcwd(path, sizeof(path)) == NULL)
-			return ENOTSUP;
-
 		buf = strdup(xhp->rootdir);
-		snprintf(xhp->rootdir, sizeof(xhp->rootdir),
-		    "%s/%s", path, buf);
+		snprintf(xhp->rootdir, sizeof(xhp->rootdir), "%s/%s", cwd, buf);
 		free(buf);
+	}
+	/* parse configuration file */
+	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
+	if ((rv = parse_file(xhp, cwd, xhp->conffile, false, false)) != 0) {
+		xbps_dbg_printf(xhp, "Using built-in defaults\n");
 	}
 	/* Set cachedir */
 	if (xhp->cachedir[0] == '\0') {
@@ -421,11 +445,15 @@ xbps_init(struct xbps_handle *xhp)
 		free(buf);
 	}
 	/* process virtualpkg.d dirs */
-	if ((rv = parse_dir(xhp, XBPS_SYS_VPKG_PATH, XBPS_VPKG_PATH, true)) != 0)
+	if ((rv = parse_dir(xhp, cwd, XBPS_SYS_VPKG_PATH, XBPS_VPKG_PATH, true)) != 0)
 		return rv;
 
 	/* process repo.d dirs */
-	if ((rv = parse_dir(xhp, XBPS_SYS_REPOD_PATH, XBPS_REPOD_PATH, false)) != 0)
+	if ((rv = parse_dir(xhp, cwd, XBPS_SYS_REPOD_PATH, XBPS_REPOD_PATH, false)) != 0)
+		return rv;
+
+	/* process preserve.d dirs */
+	if ((rv = parse_dir(xhp, cwd, XBPS_SYS_PRESERVED_PATH, XBPS_PRESERVED_PATH, false)) != 0)
 		return rv;
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
@@ -452,6 +480,10 @@ xbps_init(struct xbps_handle *xhp)
 			xbps_dbg_printf(xhp, "Repository[%u]=%s\n", i, repodir);
 		}
 	}
+	/* Going back to old working directory */
+	if (chdir(cwd) == -1)
+		xbps_dbg_printf(xhp, "%s: cannot chdir to %s: %s\n", __func__, cwd, strerror(errno));
+
 	return 0;
 }
 

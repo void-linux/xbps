@@ -79,7 +79,7 @@ ATF_TC_BODY(find_pkg_obsoletes_test, tc)
 
 	memset(&xh, 0, sizeof(xh));
 	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	xh.conffile = "/tmp/unexistent.conf";
+	strncpy(xh.conffile, "/tmp/unexistent.conf", sizeof(xh.conffile));
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
         d1 = create_dict("files", "/etc/foo.conf");

@@ -36,7 +36,6 @@ ATF_TC_BODY(config_include_test, tc)
 {
 	struct xbps_handle xh;
 	const char *tcsdir;
-	char conffile[XBPS_MAXPATH-1];
 
 	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
@@ -46,9 +45,7 @@ ATF_TC_BODY(config_include_test, tc)
 	memset(&xh, 0, sizeof(xh));
 	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	strncpy(conffile, tcsdir, sizeof(conffile));
-	strncat(conffile, "/xbps.conf", sizeof(conffile)-1);
-	xh.conffile = conffile;
+	snprintf(xh.conffile, sizeof(xh.conffile), "%s/xbps.conf", tcsdir);
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
@@ -67,7 +64,6 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 {
 	struct xbps_handle xh;
 	const char *tcsdir;
-	char conffile[XBPS_MAXPATH-1];
 
 	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
@@ -77,9 +73,7 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 	memset(&xh, 0, sizeof(xh));
 	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	strncpy(conffile, tcsdir, sizeof(conffile));
-	strncat(conffile, "/xbps_nomatch.conf", sizeof(conffile)-1);
-	xh.conffile = conffile;
+	strncpy(xh.conffile, "/xbps_nomatch.conf", sizeof(xh.conffile));
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 

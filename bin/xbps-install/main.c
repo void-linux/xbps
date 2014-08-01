@@ -190,7 +190,8 @@ main(int argc, char **argv)
 		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if (cachedir)
 		strncpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
-	xh.conffile = conffile;
+	if (conffile)
+		strncpy(xh.conffile, conffile, sizeof(xh.conffile));
 	xh.flags = flags;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.unpack_cb = unpack_progress_cb;

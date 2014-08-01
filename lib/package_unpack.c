@@ -151,6 +151,24 @@ create_pkg_metaplist(struct xbps_handle *xhp, const char *pkgname, const char *p
 	return rv;
 }
 
+static bool
+match_preserved_file(struct xbps_handle *xhp, const char *entry)
+{
+	char *file;
+
+	if (xhp->preserved_files == NULL)
+		return false;
+
+	if (entry[0] == '.' && entry[1] != '\0') {
+		file = strchr(entry, '.') + 1;
+		assert(file);
+	} else {
+		file = __UNCONST(entry);
+	}
+
+	return xbps_match_string_in_array(xhp->preserved_files, file);
+}
+
 static int
 unpack_archive(struct xbps_handle *xhp,
 	       xbps_dictionary_t pkg_repod,
@@ -353,6 +371,17 @@ unpack_archive(struct xbps_handle *xhp,
 		conf_file = skip_extract = file_exists = false;
 		if (lstat(entry_pname, &st) == 0)
 			file_exists = true;
+		/*
+		 * Check if the file to be extracted must be preserved, if true,
+		 * pass to the next file.
+		 */
+		if (file_exists && match_preserved_file(xhp, entry_pname)) {
+			archive_read_data_skip(ar);
+			xbps_dbg_printf(xhp, "[unpack] `%s' exists on disk and must be preserved, skipping.\n", xhp, entry_pname);
+			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FILE_PRESERVED, 0, pkgver,
+			    pkgver, "%s: file `%s' won't be extracted, it's preserved.\n", pkgver, entry_pname);
+			continue;
+		}
 		/*
 		 * If file to be extracted does not match the file type of
 		 * file currently stored on disk, remove file on disk.

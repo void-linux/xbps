@@ -147,7 +147,9 @@ main(int argc, char **argv)
 	xh.state_cb = state_cb;
 	if (rootdir)
 		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
-	xh.conffile = conffile;
+	if (conffile)
+		strncpy(xh.conffile, conffile, sizeof(xh.conffile));
+
 	xh.flags = flags;
 
 	if ((rv = xbps_init(&xh)) != 0) {

@@ -136,6 +136,9 @@ state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	case XBPS_STATE_SHOW_INSTALL_MSG:
 		printf("%s: post-install message:\n%s", xscd->arg, xscd->desc);
 		break;
+	case XBPS_STATE_UNPACK_FILE_PRESERVED:
+		printf("%s\n", xscd->desc);
+		break;
 	/* errors */
 	case XBPS_STATE_UNPACK_FAIL:
 	case XBPS_STATE_UPDATE_FAIL:
