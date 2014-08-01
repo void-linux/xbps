@@ -227,15 +227,6 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 		xbps_dbg_printf(xhp, "Parsing configuration file: %s\n", path);
 	}
 
-	/* cwd to the dir containing the config file */
-	strlcpy(tmppath, path, sizeof(tmppath));
-	cfcwd = dirname(tmppath);
-	if (chdir(cfcwd) == -1) {
-		rv = errno;
-		xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", cfcwd, strerror(rv));
-		return rv;
-	}
-
 	while ((read = getline(&line, &len, fp)) != -1) {
 		char *p, *k, *v;
 
@@ -283,6 +274,14 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 		if (strcmp(k, "include"))
 			continue;
 
+		/* cwd to the dir containing the config file */
+		strlcpy(tmppath, path, sizeof(tmppath));
+		cfcwd = dirname(tmppath);
+		if (chdir(cfcwd) == -1) {
+			rv = errno;
+			xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", cfcwd, strerror(rv));
+			return rv;
+		}
 		if ((rv = parse_files_glob(xhp, cwd, v, true, false)) != 0)
 			break;
 
