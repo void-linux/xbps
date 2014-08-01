@@ -371,6 +371,8 @@ xbps_init(struct xbps_handle *xhp)
 
 	assert(xhp != NULL);
 
+	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
+
 	if (xhp->conffile == NULL)
 		xhp->conffile = XBPS_CONF_DEF;
 
