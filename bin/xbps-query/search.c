@@ -162,6 +162,26 @@ search_array_cb(struct xbps_handle *xhp _unused,
 				}
 			}
 		}
+	} else if (xbps_object_type(obj2) == XBPS_TYPE_NUMBER) {
+		/* property is a number */
+		char size[8];
+
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		if (xbps_humanize_number(size, xbps_number_integer_value(obj2)) == -1)
+			exit(EXIT_FAILURE);
+
+		if (sd->regex) {
+			if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
+				return errno;
+			if (regexec(&regex, size, 0, 0, 0) == 0) {
+				printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
+			}
+			regfree(&regex);
+		} else {
+			if (strcasestr(size, sd->pat)) {
+				printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
+			}
+		}
 	} else if (xbps_object_type(obj2) == XBPS_TYPE_BOOL) {
 		/* property is a bool */
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);

@@ -1,5 +1,9 @@
 xbps-0.38 (???):
 
+ * xbps-query(8): --search --property now works with <number> objects, i.e:
+
+	$ xbps-query -s '' -p filename-size
+
  * xbps-remove(8): -O/--clean-cache no longer triggers an assertion when the
    cache directory is empty.
 
