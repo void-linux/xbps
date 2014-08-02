@@ -1,5 +1,8 @@
 xbps-0.38 (???):
 
+ * xbps-remove(8): -O/--clean-cache no longer triggers an assertion when the
+   cache directory is empty.
+
  * Implemented support to preserve existent on-disk files, by always ignoring
    the pkg content if the file has been matched. Details here:
    https://github.com/voidlinux/xbps/issues/51

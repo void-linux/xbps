@@ -136,7 +136,9 @@ clean_cachedir(struct xbps_handle *xhp)
 	}
 	(void)closedir(dirp);
 
-	rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, NULL);
-	xbps_object_release(array);
+	if (xbps_array_count(array)) {
+		rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, NULL);
+		xbps_object_release(array);
+	}
 	return rv;
 }
