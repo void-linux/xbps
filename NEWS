@@ -1,5 +1,8 @@
 xbps-0.38 (???):
 
+ * xbps-query(8): --show/-S mode now explicitly prints pkg metadata keys
+   with the bold ANSI escape code.
+
  * xbps-query(8): --search --property now works with <number> objects, i.e:
 
 	$ xbps-query -s '' -p filename-size

@@ -36,6 +36,9 @@
 #include <xbps.h>
 #include "defs.h"
 
+#define _BOLD	"\033[1m"
+#define _RESET	"\033[m"
+
 static void
 print_value_obj(const char *keyname, xbps_object_t obj,
 		const char *indent, bool raw)
@@ -51,12 +54,12 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 	switch (xbps_object_type(obj)) {
 	case XBPS_TYPE_STRING:
 		if (!raw)
-			printf("%s%s: ", indent, keyname);
+			printf("%s%s%s%s: ", indent, _BOLD, keyname, _RESET);
 		printf("%s\n", xbps_string_cstring_nocopy(obj));
 		break;
 	case XBPS_TYPE_NUMBER:
 		if (!raw)
-			printf("%s%s: ", indent, keyname);
+			printf("%s%s%s%s: ", indent, _BOLD, keyname, _RESET);
 		if (xbps_humanize_number(size,
 		    (int64_t)xbps_number_unsigned_integer_value(obj)) == -1)
 			printf("%ju\n",
@@ -66,12 +69,12 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 		break;
 	case XBPS_TYPE_BOOL:
 		if (!raw)
-			printf("%s%s: ", indent, keyname);
+			printf("%s%s%s%s: ", indent, _BOLD, keyname, _RESET);
 		printf("%s\n", xbps_bool_true(obj) ? "yes" : "no");
 		break;
 	case XBPS_TYPE_ARRAY:
 		if (!raw)
-			printf("%s%s:\n", indent, keyname);
+			printf("%s%s%s%s:\n", indent, _BOLD, keyname, _RESET);
 		for (unsigned int i = 0; i < xbps_array_count(obj); i++) {
 			obj2 = xbps_array_get(obj, i);
 			if (xbps_object_type(obj2) == XBPS_TYPE_STRING) {
@@ -98,7 +101,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 	case XBPS_TYPE_DATA:
 		if (!raw) {
 			xbps_humanize_number(size, (int64_t)xbps_data_size(obj));
-			printf("%s%s: %s\n", indent, keyname, size);
+			printf("%s%s%s%s: %s\n", indent, _BOLD, keyname, _RESET, size);
 		} else {
 			FILE *f;
 			char buf[BUFSIZ-1];
@@ -152,7 +155,7 @@ print_srcrevs(const char *keyname, xbps_string_t obj)
 	const char *str = xbps_string_cstring_nocopy(obj);
 
 	/* parse string appending a \t after EOL */
-	printf("%s:\n  ", keyname);
+	printf("%s%s%s:\n  ", _BOLD, keyname, _RESET);
 	for (unsigned int i = 0; i < strlen(str); i++) {
 		if (str[i] == '\n')
 			printf("\n  ");
