@@ -41,6 +41,8 @@
 #undef _BSD_SOURCE
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/wait.h>
+#include <libgen.h>
 
 #include "xbps_api_impl.h"
 #include "fetch.h"
@@ -129,7 +131,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	} else {
 		if (errno != ENOENT) {
 			rv = -1;
-			goto out;
+			goto fetch_file_out;
 		}
 	}
 	/*
@@ -143,7 +145,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	} else {
 		if (errno != ENOENT) {
 			rv = -1;
-			goto out;
+			goto fetch_file_out;
 		}
 	}
 	if (refetch && !restart) {
@@ -178,10 +180,10 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	if (fio == NULL) {
 		if (fetchLastErrCode == FETCH_UNCHANGED) {
 			/* Last-Modified matched */
-			goto out;
+			goto fetch_file_out;
 		}
 		rv = -1;
-		goto out;
+		goto fetch_file_out;
 	}
 	if (url_st.size == -1) {
 		xbps_dbg_printf(xhp, "Remote file size is unknown, resume "
@@ -207,7 +209,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 
 	if (fd == -1) {
 		rv = -1;
-		goto out;
+		goto fetch_file_out;
 	}
 	/*
 	 * Initialize data for the fetch progress function callback
@@ -225,7 +227,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 			xbps_dbg_printf(xhp,
 			    "Couldn't write to %s!\n", tempfile);
 			rv = -1;
-			goto out;
+			goto fetch_file_out;
 		}
 		bytes_dload += bytes_read;
 		/*
@@ -241,12 +243,12 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 		    filename, fetchLastErrString);
 		errno = EIO;
 		rv = -1;
-		goto out;
+		goto fetch_file_out;
 	} else if (url_st.size > 0 && ((bytes_dload + url->offset) != url_st.size)) {
 		xbps_dbg_printf(xhp, "file %s is truncated\n", filename);
 		errno = EIO;
 		rv = -1;
-		goto out;
+		goto fetch_file_out;
 	}
 
 	/*
@@ -264,7 +266,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	ts[0].tv_nsec = ts[1].tv_nsec = 0;
 	if (futimens(fd, ts) == -1) {
 		rv = -1;
-		goto out;
+		goto fetch_file_out;
 	}
 	(void)close(fd);
 	fd = -1;
@@ -274,11 +276,11 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 		xbps_dbg_printf(xhp, "failed to rename %s to %s: %s",
 		    tempfile, filename, strerror(errno));
 		rv = -1;
-		goto out;
+		goto fetch_file_out;
 	}
 	rv = 1;
 
-out:
+fetch_file_out:
 	if (fio != NULL)
 		fetchIO_close(fio);
 	if (fd != -1)
@@ -290,6 +292,7 @@ out:
 
 	return rv;
 }
+
 int
 xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 {
@@ -304,4 +307,71 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 	}
 
 	return xbps_fetch_file_dest(xhp, uri, filename, flags);
+}
+
+
+int
+xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri, const char *filename, const char *flags)
+{
+	const char xdelta[] = "/usr/bin/xdelta3";
+	char *basehash = NULL, *dname = NULL, *durl = NULL;
+	int status, exitcode;
+	pid_t pid;
+	int rv = 0;
+	struct stat xdelta_stat;
+
+	if (basefile == NULL || stat(xdelta, &xdelta_stat)) {
+		goto fetch_delta_fallback;
+	}
+
+	basehash = xbps_file_hash(basefile);
+	assert(basehash);
+
+	dname = xbps_xasprintf("%s.%s.vcdiff", basename(uri), basehash);
+	durl = xbps_xasprintf("%s.%s.vcdiff", uri, basehash);
+
+	if (xbps_fetch_file_dest(xhp, durl, dname, flags) < 0) {
+		xbps_dbg_printf(xhp, "error while download vcdiff, fallback to full "
+				"download\n", xdelta);
+		goto fetch_delta_fallback;
+	}
+
+	if ((pid = fork()) == 0) {
+		execl (xdelta, xdelta, "-d", "-f", "-s", basefile, dname, filename, NULL);
+		exit(127);
+	} else if (pid < 0) {
+		xbps_dbg_printf(xhp, "error while forking, fallback to full "
+				"download\n", xdelta);
+		goto fetch_delta_fallback;
+	}
+
+	// wait for termination of background process
+	waitpid(pid, &status, 0);
+
+	exitcode = WEXITSTATUS(status);
+	switch(exitcode) {
+	case 0:    // success
+		rv = 1;
+		goto fetch_delta_out;
+	case 127:  // cannot execute binary
+		xbps_dbg_printf(xhp, "failed to `%s`, fallback to full download\n",
+				xdelta);
+		goto fetch_delta_fallback;
+	default:   // other error
+		xbps_dbg_printf(xhp, "`%s` exited with code %d, fallback to full "
+				"download\n", xdelta, exitcode);
+		goto fetch_delta_fallback;
+	}
+
+fetch_delta_fallback:
+	rv = xbps_fetch_file_dest(xhp, uri, filename, flags);
+fetch_delta_out:
+	if(dname != NULL)
+		free(dname);
+	if(durl != NULL)
+		free(durl);
+	if(basehash != NULL)
+		free(basehash);
+
+	return rv;
 }
