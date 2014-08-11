@@ -314,7 +314,7 @@ int
 xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri, const char *filename, const char *flags)
 {
 	const char xdelta[] = "/usr/bin/xdelta3";
-	char *basehash = NULL, *dname = NULL, *durl = NULL;
+	char *basehash = NULL, *dname = NULL, *durl = NULL, *tempfile = NULL;
 	int status, exitcode;
 	pid_t pid;
 	int rv = 0;
@@ -329,6 +329,7 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 
 	dname = xbps_xasprintf("%s.%s.vcdiff", basename(uri), basehash);
 	durl = xbps_xasprintf("%s.%s.vcdiff", uri, basehash);
+	tempfile = xbps_xasprintf("%s.tmp", filename);
 
 	if (xbps_fetch_file_dest(xhp, durl, dname, flags) < 0) {
 		xbps_dbg_printf(xhp, "error while download vcdiff, fallback to full "
@@ -337,7 +338,7 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 	}
 
 	if ((pid = fork()) == 0) {
-		execl (xdelta, xdelta, "-d", "-f", "-s", basefile, dname, filename, NULL);
+		execl(xdelta, xdelta, "-d", "-f", "-s", basefile, dname, tempfile, NULL);
 		exit(127);
 	} else if (pid < 0) {
 		xbps_dbg_printf(xhp, "error while forking, fallback to full "
@@ -352,6 +353,11 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 	switch(exitcode) {
 	case 0:    // success
 		rv = 1;
+		if (rename(tempfile, filename) == -1) {
+			xbps_dbg_printf(xhp, "failed to rename %s to %s: %s",
+				tempfile, filename, strerror(errno));
+			rv = -1;
+		}
 		goto fetch_delta_out;
 	case 127:  // cannot execute binary
 		xbps_dbg_printf(xhp, "failed to `%s`, fallback to full download\n",
@@ -366,6 +372,8 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 fetch_delta_fallback:
 	rv = xbps_fetch_file_dest(xhp, uri, filename, flags);
 fetch_delta_out:
+	if(tempfile != NULL)
+		free(tempfile);
 	if(dname != NULL)
 		free(dname);
 	if(durl != NULL)
