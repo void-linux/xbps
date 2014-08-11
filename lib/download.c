@@ -318,9 +318,11 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 	int status, exitcode;
 	pid_t pid;
 	int rv = 0;
-	struct stat xdelta_stat;
+	struct stat dummystat;
 
-	if (basefile == NULL || stat(xdelta, &xdelta_stat)) {
+	if (basefile == NULL ||
+	    stat(basefile, &dummystat) ||
+	    stat(xdelta, &dummystat)) {
 		goto fetch_delta_fallback;
 	}
 	xbps_dbg_printf(xhp, "%s: found. Trying binary diff.\n", xdelta);
@@ -333,17 +335,18 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 	tempfile = xbps_xasprintf("%s.tmp", filename);
 
 	if (xbps_fetch_file_dest(xhp, durl, dname, flags) < 0) {
-		xbps_dbg_printf(xhp, "error while download vcdiff, fallback to full "
-				"download\n", xdelta);
+		xbps_dbg_printf(xhp, "error while downloading %s, fallback to full "
+				"download\n", durl);
 		goto fetch_delta_fallback;
 	}
 
 	if ((pid = fork()) == 0) {
-		execl(xdelta, xdelta, "-d", "-f", "-s", basefile, dname, tempfile, NULL);
+		execl(xdelta, xdelta, "-d", "-f", "-s", basefile, dname, tempfile,
+				NULL);
 		exit(127);
 	} else if (pid < 0) {
 		xbps_dbg_printf(xhp, "error while forking, fallback to full "
-				"download\n", xdelta);
+				"download\n");
 		goto fetch_delta_fallback;
 	}
 
@@ -351,6 +354,7 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 	waitpid(pid, &status, 0);
 
 	exitcode = WEXITSTATUS(status);
+	unlink(dname);
 	switch(exitcode) {
 	case 0:    // success
 		rv = 1;
