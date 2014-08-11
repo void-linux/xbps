@@ -137,6 +137,7 @@ main(int argc, char **argv)
 
 	if ((strcmp(argv[0], "version") == 0) ||
 	    (strcmp(argv[0], "real-version") == 0) ||
+	    (strcmp(argv[0], "xfetch") == 0) ||
 	    (strcmp(argv[0], "fetch") == 0)) {
 		/*
 		* Initialize libxbps.
