@@ -323,6 +323,7 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 	if (basefile == NULL || stat(xdelta, &xdelta_stat)) {
 		goto fetch_delta_fallback;
 	}
+	xbps_dbg_printf(xhp, "%s: found. Trying binary diff.\n", xdelta);
 
 	basehash = xbps_file_hash(basefile);
 	assert(basehash);
