@@ -261,7 +261,7 @@ main(int argc, char **argv)
 				printf("%s: %s\n", argv[i],
 				    xbps_fetch_error_string());
 			} else if (rv == 0) {
-				printf("%s: file is identical than remote.\n",
+				printf("%s: file is identical with remote.\n",
 				    argv[i]);
 			} else
 				rv = 0;
