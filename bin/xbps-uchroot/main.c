@@ -206,11 +206,8 @@ main(int argc, char **argv)
 		}
 		if (!openvz_container()) {
 			/* Make / a private mount */
-			if (mount(NULL, "/", "none", MS_PRIVATE|MS_REC, NULL) == -1)
-				die("mount(/, MS_PRIVATE|MS_REC)");
-			/* Remount / with nosuid just in case */
-			if (mount (NULL, "/", "none", MS_PRIVATE|MS_REMOUNT|MS_NOSUID, NULL) == -1)
-				die("mount(/, MS_PRIVATE|MS_REMOUNT|MS_NOSUID");
+			if (mount(NULL, "/", "none", MS_PRIVATE|MS_REC|MS_NOSUID, NULL) == -1)
+				die("mount(/, MS_PRIVATE|MS_REC|MS_NOSUID)");
 		}
 
 		/* mount /proc */
