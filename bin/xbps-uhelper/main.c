@@ -246,7 +246,7 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */
-		if (argc != 2)
+		if (argc < 2)
 			usage();
 
 		for (int i = 1; i < argc; i++) {
