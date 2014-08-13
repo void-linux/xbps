@@ -59,6 +59,7 @@ usage(void)
 	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
 	"    version\t\t<pkgname>\n"
 	"    real-version\t<pkgname>\n"
+	"    xfetch\t\t<oldfile> <URL[>filename]>\n"
 	"\n"
 	"  Options shared by all actions:\n"
 	"    -C\t\tPath to xbps.conf file.\n"
@@ -81,6 +82,20 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
+static char*
+fname(char *url) {
+	char *filename;
+
+	if( (filename = strrchr(url, '>')) ) {
+		*filename = '\0';
+	} else {
+		filename = strrchr(url, '/');
+	}
+	if(filename == NULL)
+		return NULL;
+	return filename + 1;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -88,7 +103,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *version, *rootdir = NULL, *conffile = NULL;
-	char *pkgname, *hash, *sep;
+	char *pkgname, *hash, *filename;
 	int flags = 0, c, rv = 0;
 
 	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
@@ -122,6 +137,7 @@ main(int argc, char **argv)
 
 	if ((strcmp(argv[0], "version") == 0) ||
 	    (strcmp(argv[0], "real-version") == 0) ||
+	    (strcmp(argv[0], "xfetch") == 0) ||
 	    (strcmp(argv[0], "fetch") == 0)) {
 		/*
 		* Initialize libxbps.
@@ -244,18 +260,30 @@ main(int argc, char **argv)
 			}
 			printf("%s\n", hash);
 		}
+	} else if (strcmp(argv[0], "xfetch") == 0) {
+		/* apply a delta from specified URL */
+		if (argc != 3)
+			usage();
+
+		filename = fname(argv[2]);
+		rv = xbps_fetch_delta(&xh, argv[1], argv[2], filename, "v");
+
+		if (rv == -1) {
+			printf("%s: %s\n", argv[2],
+				xbps_fetch_error_string());
+		} else if (rv == 0) {
+			printf("%s: file is identical than remote.\n",
+				argv[3]);
+		} else
+			rv = 0;
 	} else if (strcmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */
 		if (argc < 2)
 			usage();
 
 		for (int i = 1; i < argc; i++) {
-			if( (sep = strrchr(argv[i], '>')) ) {
-				*sep = '\0';
-				rv = xbps_fetch_file_dest(&xh, argv[i], sep+1, "v");
-			} else {
-				rv = xbps_fetch_file(&xh, argv[i], "v");
-			}
+			filename = fname(argv[i]);
+			rv = xbps_fetch_file_dest(&xh, argv[i], filename, "v");
 
 			if (rv == -1) {
 				printf("%s: %s\n", argv[i],
