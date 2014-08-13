@@ -330,7 +330,7 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 	basehash = xbps_file_hash(basefile);
 	assert(basehash);
 
-	dname = xbps_xasprintf("%s.%s.vcdiff", basename(uri), basehash);
+	dname = xbps_xasprintf("%s.%s.vcdiff", basename(__UNCONST(uri)), basehash);
 	durl = xbps_xasprintf("%s.%s.vcdiff", uri, basehash);
 	tempfile = xbps_xasprintf("%s.tmp", filename);
 
