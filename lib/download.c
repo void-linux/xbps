@@ -341,8 +341,7 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 	}
 
 	if ((pid = fork()) == 0) {
-		execl(xdelta, xdelta, "-d", "-f", "-s", basefile, dname, tempfile,
-				NULL);
+		execl(xdelta, xdelta, "-d", "-f", "-s", basefile, dname, tempfile, NULL);
 		exit(127);
 	} else if (pid < 0) {
 		xbps_dbg_printf(xhp, "error while forking, fallback to full "
@@ -355,7 +354,7 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 
 	exitcode = WEXITSTATUS(status);
 	unlink(dname);
-	switch(exitcode) {
+	switch (exitcode) {
 	case 0:    // success
 		rv = 1;
 		if (rename(tempfile, filename) == -1) {
@@ -377,13 +376,13 @@ xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri,
 fetch_delta_fallback:
 	rv = xbps_fetch_file_dest(xhp, uri, filename, flags);
 fetch_delta_out:
-	if(tempfile != NULL)
+	if (tempfile != NULL)
 		free(tempfile);
-	if(dname != NULL)
+	if (dname != NULL)
 		free(dname);
-	if(durl != NULL)
+	if (durl != NULL)
 		free(durl);
-	if(basehash != NULL)
+	if (basehash != NULL)
 		free(basehash);
 
 	return rv;
