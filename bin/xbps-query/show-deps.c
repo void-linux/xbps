@@ -198,9 +198,9 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg, bool repomode)
 	const char *pkgdep;
 
 	if (repomode)
-		revdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
-	else
 		revdeps = xbps_rpool_get_pkg_revdeps(xhp, pkg);
+	else
+		revdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
 
 	if (revdeps == NULL)
 		return ENOENT;
