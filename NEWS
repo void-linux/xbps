@@ -1,5 +1,8 @@
 xbps-0.38 (???):
 
+ * xbps-query(8): fix a segfault with -Rf when there's no network connectivity.
+   Reported by Gottox.
+
  * xbps-uchroot(8): do not remount / unnecessarily; just mount it as private
    and nosuid once; this is enough for our use cases.
 

@@ -101,7 +101,6 @@ open_archive_by_url(struct url *url)
 
 	if (archive_read_open(a, f, fetch_archive_open, fetch_archive_read,
 	    fetch_archive_close)) {
-		free(f);
 		archive_read_finish(a);
 		return NULL;
 	}
