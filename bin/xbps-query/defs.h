@@ -35,10 +35,8 @@
 #endif
 
 /* from show-deps.c */
-int	show_pkg_deps(struct xbps_handle *, const char *, bool);
-int	show_pkg_revdeps(struct xbps_handle *, const char *);
-int	repo_show_pkg_deps(struct xbps_handle *, const char *, bool);
-int	repo_show_pkg_revdeps(struct xbps_handle *, const char *);
+int	show_pkg_deps(struct xbps_handle *, const char *, bool, bool);
+int	show_pkg_revdeps(struct xbps_handle *, const char *, bool);
 
 /* from show-info-files.c */
 void	show_pkg_info(xbps_dictionary_t);

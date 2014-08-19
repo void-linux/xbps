@@ -49,6 +49,7 @@ usage(bool fail)
 	    "                          to the top of the list. This option can be\n"
 	    "                          specified multiple times.\n"
 	    "    --regex               Use Extended Regular Expressions to match\n"
+	    "    --fulldeptree         Full dependency tree for -x/--deps\n"
 	    " -r --rootdir <dir>       Full path to rootdir\n"
 	    " -V --version             Show XBPS version\n"
 	    " -v --verbose             Verbose messages\n"
@@ -62,7 +63,7 @@ usage(bool fail)
 	    " -S --show PKG            Show information for PKG [default mode]\n"
 	    " -s --search PKG          Search for packages by matching PKG, STRING or REGEX\n"
 	    " -f --files PKG           Show package files for PKG\n"
-	    " -x --deps PKG            Show dependencies for PKG (set it twice for a full dependency tree)\n"
+	    " -x --deps PKG            Show dependencies for PKG\n"
 	    " -X --revdeps PKG         Show reverse dependencies for PKG\n");
 
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -94,20 +95,21 @@ main(int argc, char **argv)
 		{ "files", required_argument, NULL, 'f' },
 		{ "deps", required_argument, NULL, 'x' },
 		{ "revdeps", required_argument, NULL, 'X' },
+		{ "fulldeptree", no_argument, NULL, 1 },
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
 	const char *pkg, *rootdir, *cachedir, *conffile, *props;
-	int c, flags, rv, show_deps = 0;
+	int c, flags, rv;
 	bool list_pkgs, list_repos, orphans, own;
-	bool list_manual, list_hold, show_prop, show_files, show_rdeps;
+	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
 	bool show, search, regex, repo_mode, opmode, fulldeptree;
 
 	rootdir = cachedir = conffile = props = pkg = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = search = own = false;
 	list_manual = show_prop = show_files = false;
-	regex = show = show_rdeps = fulldeptree = false;
+	regex = show = show_deps = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
 
 	memset(&xh, 0, sizeof(xh));
@@ -181,8 +183,7 @@ main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		case 'x':
 			pkg = optarg;
-			show_deps++;
-			opmode = true;
+			show_deps = opmode = true;
 			break;
 		case 'X':
 			pkg = optarg;
@@ -190,6 +191,9 @@ main(int argc, char **argv)
 			break;
 		case 0:
 			regex = true;
+			break;
+		case 1:
+			fulldeptree = true;
 			break;
 		case '?':
 			usage(true);
@@ -268,20 +272,11 @@ main(int argc, char **argv)
 
 	} else if (show_deps) {
 		/* show-deps mode */
-		if (show_deps > 1)
-			fulldeptree = true;
-
-		if (repo_mode)
-			rv = repo_show_pkg_deps(&xh, pkg, fulldeptree);
-		else
-			rv = show_pkg_deps(&xh, pkg, fulldeptree);
+		rv = show_pkg_deps(&xh, pkg, repo_mode, fulldeptree);
 
 	} else if (show_rdeps) {
 		/* show-rdeps mode */
-		if (repo_mode)
-			rv = repo_show_pkg_revdeps(&xh, pkg);
-		else
-			rv = show_pkg_revdeps(&xh, pkg);
+		rv = show_pkg_revdeps(&xh, pkg, repo_mode);
 	}
 
 	exit(rv);

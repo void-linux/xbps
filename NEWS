@@ -1,5 +1,8 @@
 xbps-0.38 (???):
 
+ * xbps-query(8): added --fulldeptree long option to print a full dependency
+   tree for a package; this supersedes -xx which was broken since 0.37.
+
  * xbps-query(8): fix a segfault with -Rf when there's no network connectivity.
    Reported by Gottox.
 

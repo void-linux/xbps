@@ -1,4 +1,4 @@
-.Dd May 27, 2014
+.Dd August 19, 2014
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -77,6 +77,10 @@ currently in the
 and
 .Sy search
 modes.
+.It Fl -fulldeptree
+Prints a full dependency tree in the
+.Sy show dependencies
+mode.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl v, Fl -verbose
@@ -187,7 +191,8 @@ in repositories will be shown.
 .It Fl x, Fl -deps Ar PKG [ Fl -repository ]
 Show the required dependencies for
 .Ar PKG .
-Only direct dependencies are shown. To see a full dependency tree set it twice.
+Only direct dependencies are shown. To see a full dependency tree, also set
+.Fl -fulldeptree .
 If the
 .Fl -repository
 option is set, the matched
