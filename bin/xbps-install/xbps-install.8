@@ -1,4 +1,4 @@
-.Dd May 27, 2014
+.Dd August 21, 2014
 .Os Void Linux
 .Dt xbps-install 8
 .Sh NAME
@@ -73,8 +73,8 @@ overwriting regular package files and symlinks (if they have been modified) but
 .Em preserving configuration files .
 If
 .Fl f
-is specified twice,
-.Em configuration files will also be overwritten .
+is specified twice all files will be unpacked, even
+.Em configuration files .
 .It Fl h, Fl -help
 Show the help usage.
 .It Fl n, Fl -dry-run
