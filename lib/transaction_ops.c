@@ -62,9 +62,9 @@ static int
 trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 {
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
-	xbps_array_t unsorted;
+	xbps_array_t unsorted, replaces;
 	const char *repoloc, *repopkgver, *instpkgver, *reason;
-	char *pkgname;
+	char *self_replaced, *pkgname;
 	int action = 0, rv = 0;
 	pkg_state_t state = 0;
 	bool autoinst = false;
@@ -175,10 +175,10 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		/* Package not installed, don't error out */
 		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
-	free(pkgname);
-
-	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod, state)) != 0)
+	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod, state)) != 0) {
+		free(pkgname);
 		return rv;
+	}
 
 	if ((action == TRANS_INSTALL) && (state == XBPS_PKG_STATE_UNPACKED))
 		reason = "configure";
@@ -194,15 +194,31 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		return EINVAL;
 
 	/*
+	 * Set a replaces to itself, so that virtual packages are always replaced.
+	 */
+	if ((replaces = xbps_dictionary_get(pkg_repod, "replaces")) == NULL)
+		replaces = xbps_array_create();
+
+	self_replaced = xbps_xasprintf("%s>=0", pkgname);
+	xbps_array_add_cstring(replaces, self_replaced);
+	free(self_replaced);
+
+	if (!xbps_dictionary_set(pkg_repod, "replaces", replaces)) {
+		free(pkgname);
+		return EINVAL;
+	}
+	/*
 	 * Add the pkg dictionary from repository's index dictionary into
 	 * the "unsorted" queue.
 	 */
-	if (!xbps_array_add(unsorted, pkg_repod))
+	if (!xbps_array_add(unsorted, pkg_repod)) {
+		free(pkgname);
 		return EINVAL;
-
+	}
 	xbps_dbg_printf(xhp, "%s: added into the transaction (%s).\n",
 	    repopkgver, repoloc);
 
+	free(pkgname);
 	return 0;
 }
 

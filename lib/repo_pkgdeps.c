@@ -36,7 +36,9 @@ store_dependency(struct xbps_handle *xhp,
 		 xbps_dictionary_t repo_pkgd,
 		 pkg_state_t repo_pkg_state)
 {
+	xbps_array_t replaces;
 	const char *pkgver;
+	char *pkgname, *self_replaced;
 	int rv;
 	/*
 	 * Overwrite package state in dictionary with same state than the
@@ -49,11 +51,29 @@ store_dependency(struct xbps_handle *xhp,
 	 */
 	if (!xbps_dictionary_set_bool(repo_pkgd, "automatic-install", true))
 		return EINVAL;
+
+	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
+	/*
+	 * Set a replaces to itself, so that virtual packages are always replaced.
+	*/
+	if ((replaces = xbps_dictionary_get(repo_pkgd, "replaces")) == NULL)
+		replaces = xbps_array_create();
+
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+	self_replaced = xbps_xasprintf("%s>=0", pkgname);
+	free(pkgname);
+	xbps_array_add_cstring(replaces, self_replaced);
+	free(self_replaced);
+
+	if (!xbps_dictionary_set(repo_pkgd, "replaces", replaces)) {
+		free(pkgname);
+		return EINVAL;
+	}
 	/*
 	 * Add the dictionary into the unsorted queue.
 	 */
 	xbps_array_add(unsorted, repo_pkgd);
-	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	xbps_dbg_printf_append(xhp, " (added %s)\n", pkgver);
 
 	return 0;

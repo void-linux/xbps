@@ -36,6 +36,37 @@ replace_dups_body() {
 	atf_check_equal $result 1
 }
 
+atf_test_case self_replace
+
+self_replace_head() {
+	atf_set "descr" "Tests for package replace: self replacing virtual packages"
+}
+
+self_replace_body() {
+	mkdir some_repo root
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+	echo "A-1.0_1" > pkg_A/usr/bin/foo
+	echo "B-1.0_1" > pkg_B/usr/bin/foo
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0" --provides="A-1.0_1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y B
+	atf_check_equal $? 0
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	out=$(xbps-query -C empty.conf -r root -l|awk '{print $2}')
+	exp="A-1.0_1"
+	atf_check_equal $out $exp
+}
+
 atf_init_test_cases() {
 	atf_add_test_case replace_dups
+	atf_add_test_case self_replace
 }
