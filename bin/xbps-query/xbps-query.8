@@ -1,4 +1,4 @@
-.Dd August 19, 2014
+.Dd August 23, 2014
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -51,6 +51,7 @@ greater or equal than
 Example:
 .Dq Sy foo>=2.0 .
 The first package matching expression in a repository will be choosen.
+.El
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl C, Fl -config Ar file
@@ -206,6 +207,7 @@ If the
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
+.El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
 .It Sy XBPS_ARCH
@@ -219,6 +221,7 @@ Sets the target architecture to this value. This variable differs from
 in that it allows you to install packages partially, because
 configuration phase is skipped (the target binaries might not be compatible with
 the native architecture).
+.El
 .Sh FILES
 .Bl -tag -width /var/db/xbps/.<pkgname>.plist
 .It Ar /etc/xbps/xbps.conf
@@ -229,6 +232,7 @@ Package metadata properties.
 Default package database (0.21 format). Keeps track of installed packages and properties.
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
+.El
 .Sh SEE ALSO
 .Xr xbps-checkvers 8 ,
 .Xr xbps-create 8 ,

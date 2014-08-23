@@ -1,4 +1,4 @@
-.Dd April 21, 2014
+.Dd August 23, 2014
 .Os Void Linux
 .Dt xbps-rindex 8
 .Sh NAME
@@ -49,6 +49,7 @@ Signs a repository with your specified RSA key. If
 .Fl --privkey
 argument not set, it defaults to
 .Sy ~/.ssh/id_rsa .
+.El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
 .It Sy XBPS_ARCH
@@ -65,6 +66,7 @@ the native architecture).
 .It Sy XBPS_PASSPHRASE
 If this is set, it will use this passphrase for the RSA private key when signing
 a repository. Otherwise it will ask you to enter the passphrase on the terminal.
+.El
 .Sh SEE ALSO
 .Xr xbps-checkvers 8 ,
 .Xr xbps-create 8 ,
