@@ -236,9 +236,10 @@ main(int argc, char **argv)
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	} else if (!update) {
 		/* Install target packages */
+		int npkgs = argc - optind;
 		for (i = optind; i < argc; i++) {
 			rv = install_new_pkg(&xh, argv[i], reinstall);
-			if (optind >= 2 && rv == EEXIST) {
+			if (npkgs >= 2 && rv == EEXIST) {
 				rv = 0;
 			} else if (rv != 0) {
 				xbps_pkgdb_unlock(&xh);

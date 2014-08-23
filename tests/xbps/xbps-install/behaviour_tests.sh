@@ -22,9 +22,13 @@ install_existent_body() {
 	cd ..
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
 	atf_check_equal $? 0
-	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yn A B
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A B
 	atf_check_equal $? 0
-	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yn B A
+
+	rm -r root
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y B A
 	atf_check_equal $? 0
 }
 
