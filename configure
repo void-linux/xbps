@@ -140,6 +140,7 @@ echo "Configuring xbps for ... $OS"
 rm -f $CONFIG_MK
 echo "# Common vars used by XBPS on $OS." >$CONFIG_MK
 
+echo "XBPS_OS = $OS" >>$CONFIG_MK
 echo "VERSION = $VERSION" >>$CONFIG_MK
 echo "TOPDIR ?=	$TOPDIR" >>$CONFIG_MK
 echo "PREFIX ?=	$PREFIX" >>$CONFIG_MK

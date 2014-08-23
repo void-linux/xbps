@@ -1,5 +1,8 @@
 xbps-0.38 (???):
 
+ * xbps-uchroot(8) is now only built on linux, because it's not portable to other
+   Operating Systems.
+
  * Added support to replace virtual packages when the package to be installed
    matches a virtual pkgname, for example:
 
