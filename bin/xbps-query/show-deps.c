@@ -62,8 +62,10 @@ print_rdeps(struct xbps_handle *xhp, xbps_array_t rdeps, bool full, bool repo)
 			continue;
 		}
 		if (repo) {
-			if ((pkgd = xbps_rpool_get_pkg(xhp, curdep)) == NULL)
+			if ((pkgd = xbps_rpool_get_pkg(xhp, curdep)) == NULL) {
 				pkgd = xbps_rpool_get_virtualpkg(xhp, curdep);
+				virtual = true;
+			}
 		} else {
 			if ((pkgd = xbps_pkgdb_get_pkg(xhp, curdep)) == NULL) {
 				pkgd = xbps_pkgdb_get_virtualpkg(xhp, curdep);
@@ -81,7 +83,7 @@ print_rdeps(struct xbps_handle *xhp, xbps_array_t rdeps, bool full, bool repo)
 				p = xbps_pkg_name(curdep);
 
 			assert(p);
-			vpkg = xbps_xasprintf("%s-0.1_1", p);
+			vpkg = xbps_xasprintf("%s-%s", p, xbps_pkg_version(pkgver));
 			assert(vpkg);
 			free(p);
 		}
@@ -105,6 +107,7 @@ print_rdeps(struct xbps_handle *xhp, xbps_array_t rdeps, bool full, bool repo)
 
 			pd->rdeps = xbps_array_copy(currdeps);
 			SLIST_INSERT_HEAD(&pkgdep_list, pd, pkgdep_entries);
+			//printf("Added %s into the slist\n", pd->pkg);
 		}
 		if (xbps_array_count(currdeps))
 			print_rdeps(xhp, currdeps, full, repo);
@@ -153,7 +156,10 @@ sort_rdeps(void)
 				found = true;
 				break;
 			}
-			//printf("%s ndeps: %u result: %u rdeps: %u mdeps: %u\n", pd->pkg, ndeps, xbps_array_count(result), rdeps, mdeps);
+			/*
+			printf("%s ndeps: %u result: %u rdeps: %u mdeps: %u\n",
+				pd->pkg, ndeps, xbps_array_count(result), rdeps, mdeps);
+			*/
 		}
 		if (found && !xbps_match_string_in_array(result, pd->pkg)) {
 			xbps_array_add_cstring_nocopy(result, pd->pkg);
