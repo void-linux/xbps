@@ -79,10 +79,10 @@ xbps_pkg_is_installed(struct xbps_handle *xhp, const char *pkg)
 	 */
 	if (xbps_pkg_state_dictionary(dict, &state) != 0)
 		return -1; /* error */
-	if (state != XBPS_PKG_STATE_INSTALLED)
-		return 0; /* not fully installed */
+	if (state == XBPS_PKG_STATE_INSTALLED || state == XBPS_PKG_STATE_UNPACKED)
+		return 1;
 
-	return 1;
+	return 0; /* not fully installed */
 }
 
 const char *

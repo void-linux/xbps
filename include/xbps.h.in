@@ -1635,7 +1635,8 @@ int xbps_file_hash_check(const char *file, const char *sha256);
 bool xbps_verify_file_signature(struct xbps_repo *repo, const char *fname);
 
 /**
- * Checks if a package is currently installed by matching \a pkg.
+ * Checks if a package is currently installed in pkgdb by matching \a pkg.
+ * To be installed, the pkg must be in "installed" or "unpacked" state.
  *
  * @param[in] xhp The pointer to an xbps_handle struct.
  * @param[in] pkg Package name, version pattern or exact pkg to match.
