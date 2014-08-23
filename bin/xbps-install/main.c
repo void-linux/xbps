@@ -238,7 +238,9 @@ main(int argc, char **argv)
 		/* Install target packages */
 		for (i = optind; i < argc; i++) {
 			rv = install_new_pkg(&xh, argv[i], reinstall);
-			if (rv != 0) {
+			if (optind >= 2 && rv == EEXIST) {
+				rv = 0;
+			} else if (rv != 0) {
 				xbps_pkgdb_unlock(&xh);
 				exit(rv);
 			}
