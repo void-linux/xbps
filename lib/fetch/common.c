@@ -201,12 +201,14 @@ fetch_default_port(const char *scheme)
 {
 	struct servent *se;
 
-	if ((se = getservbyname(scheme, "tcp")) != NULL)
-		return (ntohs(se->s_port));
 	if (strcasecmp(scheme, SCHEME_FTP) == 0)
 		return (FTP_DEFAULT_PORT);
 	if (strcasecmp(scheme, SCHEME_HTTP) == 0)
 		return (HTTP_DEFAULT_PORT);
+	if (strcasecmp(scheme, SCHEME_HTTPS) == 0)
+		return (HTTPS_DEFAULT_PORT);
+	if ((se = getservbyname(scheme, "tcp")) != NULL)
+		return (ntohs(se->s_port));
 	return (0);
 }
 
