@@ -349,12 +349,6 @@ struct xbps_state_cb_data {
 	 */
 	struct xbps_handle *xhp;
 	/**
-	 * @var state
-	 *
-	 * Current state.
-	 */
-	xbps_state_t state;
-	/**
 	 * @var desc
 	 *
 	 * Current state string description.
@@ -373,6 +367,12 @@ struct xbps_state_cb_data {
 	 * Current state error value (set internally, read-only).
 	 */
 	int err;
+	/**
+	 * @var state
+	 *
+	 * Current state.
+	 */
+	xbps_state_t state;
 };
 
 /**
@@ -507,6 +507,16 @@ struct xbps_handle {
 	 * @private
 	 */
 	xbps_array_t preserved_files;
+	/**
+	 * @var repositories
+	 *
+	 * Proplib array of strings with repositories, overriding the list
+	 * in the configuration file.
+	 */
+	xbps_array_t repositories;
+	/**
+	 * @private
+	 */
 	xbps_dictionary_t pkg_metad;
 	xbps_dictionary_t pkgdb_revdeps;
 	xbps_dictionary_t vpkgd;
@@ -518,25 +528,12 @@ struct xbps_handle {
 	 */
 	xbps_dictionary_t pkgdb;
 	/**
-	 * @var pkgdb_plist;
-	 *
-	 * Absolute pathname to the pkgdb plist file.
-	 */
-	char *pkgdb_plist;
-	/**
 	 * @var transd
 	 *
 	 * Proplib dictionary with transaction objects, required by
 	 * xbps_transaction_commit().
 	 */
 	xbps_dictionary_t transd;
-	/**
-	 * @var repositories
-	 *
-	 * Proplib array of strings with repositories, overriding the list
-	 * in the configuration file.
-	 */
-	xbps_array_t repositories;
 	/**
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
@@ -573,6 +570,12 @@ struct xbps_handle {
 	 * the \a xbps_fetch_cb function callback.
 	 */
 	void *fetch_cb_data;
+	/**
+	 * @var pkgdb_plist;
+	 *
+	 * Absolute pathname to the pkgdb plist file.
+	 */
+	char *pkgdb_plist;
 	/**
 	 * @var target_arch
 	 *
