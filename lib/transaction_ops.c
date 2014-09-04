@@ -158,9 +158,6 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		}
 	}
 
-	if ((rv = xbps_repository_find_deps(xhp, unsorted, pkg_repod)) != 0)
-		return rv;
-
 	pkgname = xbps_pkg_name(repopkgver);
 	assert(pkgname);
 	/*

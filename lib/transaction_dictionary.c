@@ -239,11 +239,20 @@ int
 xbps_transaction_prepare(struct xbps_handle *xhp)
 {
 	xbps_array_t array;
+	unsigned int i;
 	int rv = 0;
 
 	if (xhp->transd == NULL)
 		return ENXIO;
 
+	/*
+	 * Collect dependencies for pkgs in transaction.
+	 */
+	array = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+	for (i = 0; i < xbps_array_count(array); i++) {
+		if ((rv = xbps_repository_find_deps(xhp, array, xbps_array_get(array, i))) != 0)
+			return rv;
+	}
 	/*
 	 * If there are missing deps or revdeps bail out.
 	 */
@@ -253,7 +262,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		return ENODEV;
 
 	array = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-	for (unsigned int i = 0; i < xbps_array_count(array); i++)
+	for (i = 0; i < xbps_array_count(array); i++)
 		xbps_pkg_find_conflicts(xhp, array, xbps_array_get(array, i));
 	/*
 	 * If there are package conflicts bail out.
