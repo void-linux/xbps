@@ -73,9 +73,10 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	int rv = 0;
 
 	assert(xbps_object_type(filesd) == XBPS_TYPE_DICTIONARY);
-	assert(entry != NULL);
-	assert(entry_pname != NULL);
-	assert(pkgver != NULL);
+	assert(entry);
+	assert(entry_pname);
+	assert(pkgver);
+	assert(pkgname);
 
 	iter = xbps_array_iter_from_dict(filesd, "conf_files");
 	if (iter == NULL)
