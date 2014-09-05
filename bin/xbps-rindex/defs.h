@@ -66,7 +66,6 @@
 #endif
 
 #define _XBPS_RINDEX		"xbps-rindex"
-#define _XBPS_RINDEX_SEMNAME   "/xbps-rindex-write"
 
 /* From index-add.c */
 int	index_add(struct xbps_handle *, int, char **, bool);
@@ -84,14 +83,5 @@ int	sign_repo(struct xbps_handle *, const char *, const char *,
 /* From repoflush.c */
 bool	repodata_flush(struct xbps_handle *, const char *,
 		xbps_dictionary_t, xbps_dictionary_t, xbps_dictionary_t);
-
-struct idxlock {
-	sem_t *sem;
-	char  *semname;
-};
-
-/* From sem.c */
-struct idxlock	*index_lock(struct xbps_handle *);
-void		index_unlock(struct idxlock *);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */

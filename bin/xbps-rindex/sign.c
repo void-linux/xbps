@@ -118,7 +118,6 @@ int
 sign_repo(struct xbps_handle *xhp, const char *repodir,
 	const char *privkey, const char *signedby)
 {
-	struct idxlock *il;
 	struct stat st;
 	struct xbps_repo *repo;
 	xbps_dictionary_t pkgd, meta = NULL;
@@ -139,13 +138,10 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		return -1;
 	}
 
-	if ((il = index_lock(xhp)) == NULL)
-		return EINVAL;
-
 	/*
 	 * Check that repository index exists and not empty, otherwise bail out.
 	 */
-	repo = xbps_repo_open(xhp, repodir);
+	repo = xbps_repo_open(xhp, repodir, true);
 	if (repo == NULL) {
 		rv = errno;
 		fprintf(stderr, "%s: cannot read repository data: %s\n",
@@ -297,8 +293,6 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	    xbps_dictionary_count(repo->idx) == 1 ? "" : "s");
 
 out:
-	index_unlock(il);
-
 	if (defprivkey) {
 		free(defprivkey);
 	}
@@ -307,7 +301,7 @@ out:
 		rsa = NULL;
 	}
 	if (repo) {
-		xbps_repo_close(repo);
+		xbps_repo_close(repo, true);
 	}
 	return rv ? -1 : 0;
 }

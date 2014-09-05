@@ -117,7 +117,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	char *ext;
 	int rv = 0;
 
-	repo = xbps_repo_open(xhp, repodir);
+	repo = xbps_repo_open(xhp, repodir, false);
 	if (repo == NULL) {
 		if (errno != ENOENT) {
 			fprintf(stderr, "xbps-rindex: cannot read repository data: %s\n",
@@ -151,7 +151,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	(void)closedir(dirp);
 
 	rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repo);
-	xbps_repo_close(repo);
+	xbps_repo_close(repo, false);
 	xbps_object_release(array);
 
 	return rv;

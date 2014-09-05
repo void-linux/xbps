@@ -107,7 +107,7 @@ repo_get_dict(struct xbps_repo *repo)
 }
 
 struct xbps_repo *
-xbps_repo_open(struct xbps_handle *xhp, const char *url)
+xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 {
 	struct xbps_repo *repo;
 	struct stat st;
@@ -148,34 +148,55 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		    repofile, strerror(errno));
 		goto out;
 	}
+	/*
+	 * Open or create the repository archive.
+	 */
+	repo->fd = open(repofile, O_CREAT|O_RDWR, 0664);
+	if (repo->fd == -1) {
+		xbps_dbg_printf(xhp, "[repo] `%s' open repodata %s\n",
+		    repofile, strerror(errno));
+		goto out;
+	}
+	/*
+	 * Acquire a POSIX file lock on the archive; wait if the lock is
+	 * already taken.
+	 */
+        if (lock && lockf(repo->fd, F_LOCK, 0) == -1) {
+		xbps_dbg_printf(xhp, "[repo] failed to lock %s: %s\n", repo->uri, strerror(errno));
+		goto out;
+	}
 
 	repo->ar = archive_read_new();
 	archive_read_support_compression_gzip(repo->ar);
 	archive_read_support_format_tar(repo->ar);
 
-	if (archive_read_open_filename(repo->ar, repofile, st.st_blksize) == ARCHIVE_FATAL) {
+	if (archive_read_open_fd(repo->ar, repo->fd, st.st_blksize) == ARCHIVE_FATAL) {
 		xbps_dbg_printf(xhp,
 		    "[repo] `%s' failed to open repodata archive %s\n",
 		    repofile, strerror(archive_errno(repo->ar)));
-		archive_read_free(repo->ar);
-		repo->ar = NULL;
 		goto out;
 	}
 	if ((repo->idx = repo_get_dict(repo)) == NULL) {
 		xbps_dbg_printf(xhp,
 		    "[repo] `%s' failed to internalize index on archive %s: %s\n",
 		    url, repofile, strerror(archive_errno(repo->ar)));
-		archive_read_finish(repo->ar);
-		repo->ar = NULL;
 		goto out;
 	}
 	repo->idxmeta = repo_get_dict(repo);
 	if (repo->idxmeta != NULL)
 		repo->is_signed = true;
 
-out:
 	free(repofile);
 	return repo;
+
+out:
+	if (repo->ar)
+		archive_read_free(repo->ar);
+	if (repo->fd)
+		close(repo->fd);
+	free(repofile);
+	free(repo);
+	return NULL;
 }
 
 void
@@ -186,7 +207,7 @@ xbps_repo_open_idxfiles(struct xbps_repo *repo)
 }
 
 void
-xbps_repo_close(struct xbps_repo *repo)
+xbps_repo_close(struct xbps_repo *repo, bool lock)
 {
 	assert(repo);
 
@@ -205,6 +226,11 @@ xbps_repo_close(struct xbps_repo *repo)
 		xbps_object_release(repo->idxfiles);
 		repo->idxfiles = NULL;
 	}
+        if (lock && lockf(repo->fd, F_ULOCK, 0) == -1)
+		xbps_dbg_printf(repo->xhp, "[repo] failed to unlock %s: %s\n", repo->uri, strerror(errno));
+
+	close(repo->fd);
+	free(repo);
 }
 
 xbps_dictionary_t

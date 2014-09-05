@@ -43,8 +43,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	xbps_array_t array, pkg_files, pkg_links, pkg_cffiles;
 	xbps_dictionary_t idx, idxmeta, idxfiles, binpkgd, pkg_filesd, curpkgd;
 	xbps_object_t obj, fileobj;
-	struct idxlock *il;
-	struct xbps_repo *repo;
+	struct xbps_repo *repo = NULL;
 	struct stat st;
 	const char *arch;
 	char *sha256, *pkgver, *opkgver, *oarch, *pkgname;
@@ -52,23 +51,19 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
 
-	if ((il = index_lock(xhp)) == NULL)
-		return EINVAL;
 	/*
 	 * Read the repository data or create index dictionaries otherwise.
 	 */
-	if ((tmprepodir = strdup(argv[0])) == NULL) {
-		rv = ENOMEM;
-		goto out;
-	}
+	if ((tmprepodir = strdup(argv[0])) == NULL)
+		return ENOMEM;
+
 	repodir = dirname(tmprepodir);
-	repo = xbps_repo_open(xhp, repodir);
+	repo = xbps_repo_open(xhp, repodir, true);
 	if (repo && repo->idx) {
 		xbps_repo_open_idxfiles(repo);
 		idx = xbps_dictionary_copy(repo->idx);
 		idxmeta = xbps_dictionary_copy(repo->idxmeta);
 		idxfiles = xbps_dictionary_copy(repo->idxfiles);
-		xbps_repo_close(repo);
 	} else {
 		idx = xbps_dictionary_create();
 		idxmeta = NULL;
@@ -264,9 +259,10 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	printf("index-files: %u packages registered.\n", xbps_dictionary_count(idxfiles));
 
 out:
-	index_unlock(il);
-	if (tmprepodir) {
+	if (repo)
+		xbps_repo_close(repo, true);
+	if (tmprepodir)
 		free(tmprepodir);
-	}
+
 	return rv;
 }

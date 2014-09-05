@@ -122,29 +122,24 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_dictionary_t idx = NULL, idxmeta = NULL, idxfiles = NULL;
 	struct xbps_repo *repo;
 	struct cbdata cbd;
-	struct idxlock *il;
 	char *keyname, *pkgname;
 	int rv = 0;
 	bool flush = false;
 
-	if ((il = index_lock(xhp)) == NULL)
-		return EINVAL;
-
-	repo = xbps_repo_open(xhp, repodir);
+	repo = xbps_repo_open(xhp, repodir, true);
 	if (repo == NULL) {
-		if (errno == ENOENT)
-			goto out;
+		rv = errno;
+		if (rv == ENOENT)
+			return 0;
 
 		fprintf(stderr, "%s: cannot read repository data: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
-		rv = errno;
-		goto out;
+		return rv;
 	}
 	xbps_repo_open_idxfiles(repo);
 	idx = xbps_dictionary_copy(repo->idx);
 	idxmeta = xbps_dictionary_copy(repo->idxmeta);
 	idxfiles = xbps_dictionary_copy(repo->idxfiles);
-	xbps_repo_close(repo);
 	if (idx == NULL || idxfiles == NULL) {
 		fprintf(stderr, "%s: incomplete repository data file!\n", _XBPS_RINDEX);
 		rv = EINVAL;
@@ -207,8 +202,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			xbps_dictionary_count(idxfiles));
 
 out:
-	index_unlock(il);
-
+	xbps_repo_close(repo, true);
 	if (idx)
 		xbps_object_release(idx);
 	if (idxmeta)
