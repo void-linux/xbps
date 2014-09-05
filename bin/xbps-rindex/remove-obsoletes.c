@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,43 +67,43 @@ remove_pkg(const char *repodir, const char *file)
 static int
 cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key _unused, void *arg, bool *done _unused)
 {
-	xbps_dictionary_t pkgd;
 	struct xbps_repo *repo = arg;
-	const char *binpkg, *pkgver, *arch;
+	const char *binpkg;
+	char *pkgver, *arch;
 	int rv;
 
 	binpkg = xbps_string_cstring_nocopy(obj);
-	pkgd = xbps_get_pkg_plist_from_binpkg(binpkg, "./props.plist");
-	if (pkgd == NULL) {
-		rv = remove_pkg(repo->uri, binpkg);
-		if (rv != 0) {
-			xbps_object_release(pkgd);
-			return 0;
+	if (access(binpkg, R_OK) == -1) {
+		if (errno == ENOENT) {
+			if ((rv = remove_pkg(repo->uri, binpkg)) != 0)
+				return 0;
+
+			printf("Removed broken package `%s'.\n", binpkg);
 		}
-		printf("Removed broken package `%s'.\n", binpkg);
 	}
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
+	arch = xbps_binpkg_arch(binpkg);
+	assert(arch);
 	/* ignore pkgs from other archs */
 	if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
-		xbps_object_release(pkgd);
+		free(arch);
 		return 0;
 	}
+
+	pkgver = xbps_binpkg_pkgver(binpkg);
+	assert(pkgver);
 	if (xhp->flags & XBPS_FLAG_VERBOSE)
 		printf("checking %s (%s)\n", pkgver, binpkg);
 	/*
 	 * If binpkg is not registered in index, remove binpkg.
 	 */
 	if (!xbps_repo_get_pkg(repo, pkgver)) {
-		rv = remove_pkg(repo->uri, binpkg);
-		if (rv != 0) {
-			xbps_object_release(pkgd);
+		if ((rv = remove_pkg(repo->uri, binpkg)) != 0) {
+			free(pkgver);
 			return 0;
 		}
 		printf("Removed obsolete package `%s'.\n", binpkg);
 	}
-	xbps_object_release(pkgd);
-
+	free(pkgver);
 	return 0;
 }
 
