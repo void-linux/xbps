@@ -105,7 +105,98 @@ xbps_pkg_version(const char *pkg)
 	if (!valid)
 		return NULL;
 
-	return p + 1; /* skip first '_' */
+	return p + 1; /* skip first '-' */
+}
+
+char *
+xbps_binpkg_pkgver(const char *pkg)
+{
+	const char *fname;
+	char *p, *res;
+	unsigned int i, idx = 0;
+	bool valid = false;
+
+	/* skip path if found, only interested in filename */
+	if ((fname = strrchr(pkg, '/')))
+		fname++;
+	else
+		fname = pkg;
+
+	/* get the version component first */
+	if ((p = strrchr(fname, '-')) == NULL)
+		return NULL;
+
+	for (i = 0; i < strlen(p); i++) {
+		if (p[i] == '_')
+			break;
+		if (isdigit((unsigned char)p[i]) && strchr(p, '_')) {
+			valid = true;
+			break;
+		}
+	}
+	if (!valid)
+		return NULL;
+
+	/*
+	 * find the index until the architecture component:
+	 * this assumes that revision contains 1 or 2 digits!
+	 */
+	for (i = 0; i < strlen(fname); i++) {
+		/* revision with 1 digit: _[digit]. */
+		if (fname[i] == '_' &&
+		    isdigit((unsigned char)fname[i+1]) &&
+		    fname[i+2] == '.') {
+			idx = i+2;
+			break;
+		}
+		/* revision with 2 digits: _[digit][digit]. */
+		if (fname[i] == '_' &&
+		    isdigit((unsigned char)fname[i+1]) &&
+		    isdigit((unsigned char)fname[i+2]) &&
+		    fname[i+3] == '.') {
+			idx = i+3;
+			break;
+		}
+	}
+	if (!idx)
+		return NULL;
+
+	res = strdup(fname);
+	assert(res);
+	res[idx] = '\0';
+
+	return res;
+}
+
+char *
+xbps_binpkg_arch(const char *pkg)
+{
+	const char *p, *fname;
+	char *pkgver, *res;
+
+	if ((pkgver = xbps_binpkg_pkgver(pkg)) == NULL)
+		return NULL;
+
+	/* skip path if found, only interested in filename */
+	if ((fname = strrchr(pkg, '/')))
+		fname++;
+	else
+		fname = pkg;
+
+	p = fname + strlen(pkgver);
+	if (!p || p == '\0') {
+		free(pkgver);
+		return NULL;
+	}
+	if (*p == '.')
+		p++;
+
+	res = strdup(p);
+	assert(res);
+	free(pkgver);
+	res[strlen(res)-5] = '\0';
+
+	return res;
 }
 
 const char *

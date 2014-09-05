@@ -1714,6 +1714,30 @@ char *xbps_pkgpattern_name(const char *pattern);
 const char *xbps_pkg_version(const char *pkg);
 
 /**
+ * Gets the pkgname/version componentn of a binary package string,
+ * i.e <b>foo-2.0_1.<arch>.xbps</b>.
+ *
+ * @param[in] pkg Package string.
+ *
+ * @return A pointer to a malloc(ed) string with the pkgver component,
+ * NULL if it couldn't find the version component. The pointer should
+ * be free(3)d when it's no longer needed.
+ */
+char *xbps_binpkg_pkgver(const char *pkg);
+
+/**
+ * Gets the architecture component of a binary package string,
+ * i.e <b><pkgver>.<arch>.xbps</b>.
+ *
+ * @param[in] pkg Package string.
+ *
+ * @return A pointer to a malloc(ed) string with the architecture component,
+ * NULL if it couldn't find the version component. The pointer should
+ * be free(3)d when it's no longer needed.
+ */
+char *xbps_binpkg_arch(const char *pkg);
+
+/**
  * Gets the package version of a package pattern string specified by
  * the \a pattern argument.
  *
