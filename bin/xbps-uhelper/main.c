@@ -44,10 +44,13 @@ usage(void)
 	"usage: xbps-uhelper [options] [action] [args]\n"
 	"\n"
 	"  Available actions:\n"
-	"    cmpver, digest, fetch, getpkgdepname, getpkgname, getpkgrevision,\n"
-	"    getpkgversion, pkgmatch, version, real-version.\n"
+	"    binpkgarch, binpkgver, cmpver, digest, fetch, getpkgdepname,\n"
+	"    getpkgname, getpkgrevision, getpkgversion, pkgmatch, version,\n"
+	"    real-version.\n"
 	"\n"
 	"  Action arguments:\n"
+	"    binpkgarch\t<binpkg>\n"
+	"    binpkgver\t<binpkg>\n"
 	"    cmpver\t\t<instver> <reqver>\n"
 	"    digest\t\t<file> <file1+N>\n"
 	"    fetch\t\t<URL[>filename]> <URL1+N[>filename]>\n"
@@ -232,6 +235,30 @@ main(int argc, char **argv)
 		if (version == NULL)
 			exit(EXIT_FAILURE);
 
+		printf("%s\n", version);
+	} else if (strcmp(argv[0], "binpkgver") == 0) {
+		/* Returns the pkgver of a binpkg string */
+		if (argc != 2)
+			usage();
+
+		version = xbps_binpkg_pkgver(argv[1]);
+		if (version == NULL) {
+			fprintf(stderr,
+			    "Invalid string, expected <pkgname>-<version>_<revision>.<arch>.xbps\n");
+			exit(EXIT_FAILURE);
+		}
+		printf("%s\n", version);
+	} else if (strcmp(argv[0], "binpkgarch") == 0) {
+		/* Returns the arch of a binpkg string */
+		if (argc != 2)
+			usage();
+
+		version = xbps_binpkg_arch(argv[1]);
+		if (version == NULL) {
+			fprintf(stderr,
+			    "Invalid string, expected <pkgname>-<version>_<revision>.<arch>.xbps\n");
+			exit(EXIT_FAILURE);
+		}
 		printf("%s\n", version);
 	} else if (strcmp(argv[0], "pkgmatch") == 0) {
 		/* Matches a pkg with a pattern */
