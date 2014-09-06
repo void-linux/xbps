@@ -1,5 +1,9 @@
 xbps-0.38 (???):
 
+ * xbps-rindex(8): -r/--remove-obsoletes is now ~5x faster.
+
+ * xbps-remove(8): -O/--clean-cache is now ~10% faster.
+
  * libxbps: xbps_repo_{open,close}() gained an additional argument to acquire/release
    a POSIX file lock (see lockf(3)) to serialize write access to the repository
    archive. This obsoletes the POSIX named semaphores that were used in xbps-rindex(8),
