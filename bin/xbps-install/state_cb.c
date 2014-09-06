@@ -32,7 +32,7 @@
 #include "defs.h"
 
 int
-state_cb(struct xbps_state_cb_data *xscd, void *cbdata _unused)
+state_cb(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 {
 	xbps_dictionary_t pkgd;
 	const char *instver, *newver;

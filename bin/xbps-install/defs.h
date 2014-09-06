@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,10 +45,10 @@ bool	yesno(const char *, ...);
 bool	noyes(const char *, ...);
 
 /* from fetch_cb.c */
-void	fetch_file_progress_cb(struct xbps_fetch_cb_data *, void *);
+void	fetch_file_progress_cb(const struct xbps_fetch_cb_data *, void *);
 
 /* from state_cb.c */
-int	state_cb(struct xbps_state_cb_data *, void *);
+int	state_cb(const struct xbps_state_cb_data *, void *);
 
 /* From util.c */
 void	print_package_line(const char *, int, bool);

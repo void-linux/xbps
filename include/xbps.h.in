@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140905"
+#define XBPS_API_VERSION	"20140906"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -538,7 +538,7 @@ struct xbps_handle {
 	 * Pointer to the supplifed function callback to be used
 	 * in the XBPS possible states.
 	 */
-	int (*state_cb)(struct xbps_state_cb_data *, void *);
+	int (*state_cb)(const struct xbps_state_cb_data *, void *);
 	/**
 	 * @var state_cb_data
 	 *
@@ -550,7 +550,7 @@ struct xbps_handle {
 	 * Pointer to the supplied function callback to be used in
 	 * xbps_unpack_binary_pkg().
 	 */
-	void (*unpack_cb)(struct xbps_unpack_cb_data *, void *);
+	void (*unpack_cb)(const struct xbps_unpack_cb_data *, void *);
 	/**
 	 * @var unpack_cb_data
 	 *
@@ -562,7 +562,7 @@ struct xbps_handle {
 	 * Pointer to the supplied function callback to be used in
 	 * xbps_fetch_file().
 	 */
-	void (*fetch_cb)(struct xbps_fetch_cb_data *, void *);
+	void (*fetch_cb)(const struct xbps_fetch_cb_data *, void *);
 	/**
 	 * @var fetch_cb_data
 	 *
