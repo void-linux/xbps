@@ -105,9 +105,10 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
-		repo = xbps_rpool_get_repo(repouri);
-		if (!repo) {
+		if ((repo = xbps_rpool_get_repo(repouri)) == NULL) {
 			repo = xbps_repo_open(xhp, repouri, false);
+			if (!repo)
+				continue;
 			SIMPLEQ_INSERT_TAIL(&rpool_queue, repo, entries);
 			xbps_dbg_printf(xhp, "[rpool] `%s' registered.\n", repouri);
 		}
