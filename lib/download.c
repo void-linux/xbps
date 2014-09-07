@@ -165,14 +165,6 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	xbps_dbg_printf(xhp, "st.st_size: %zd\n", (ssize_t)stp->st_size);
 	xbps_dbg_printf(xhp, "st.st_atime: %s\n", print_time(&stp->st_atime));
 	xbps_dbg_printf(xhp, "st.st_mtime: %s\n", print_time(&stp->st_mtime));
-	xbps_dbg_printf(xhp, "url->scheme: %s\n", url->scheme);
-	xbps_dbg_printf(xhp, "url->host: %s\n", url->host);
-	xbps_dbg_printf(xhp, "url->port: %d\n", url->port);
-	xbps_dbg_printf(xhp, "url->doc: %s\n", url->doc);
-	xbps_dbg_printf(xhp, "url->offset: %zd\n", (ssize_t)url->offset);
-	xbps_dbg_printf(xhp, "url->length: %zu\n", url->length);
-	xbps_dbg_printf(xhp, "url->last_modified: %s\n",
-	    print_time(&url->last_modified));
 	xbps_dbg_printf(xhp, "url_stat.size: %zd\n", (ssize_t)url_st.size);
 	xbps_dbg_printf(xhp, "url_stat.atime: %s\n", print_time(&url_st.atime));
 	xbps_dbg_printf(xhp, "url_stat.mtime: %s\n", print_time(&url_st.mtime));
@@ -199,6 +191,14 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 		(void)remove(tempfile);
 		restart = false;
 	}
+	xbps_dbg_printf(xhp, "url->scheme: %s\n", url->scheme);
+	xbps_dbg_printf(xhp, "url->host: %s\n", url->host);
+	xbps_dbg_printf(xhp, "url->port: %d\n", url->port);
+	xbps_dbg_printf(xhp, "url->doc: %s\n", url->doc);
+	xbps_dbg_printf(xhp, "url->offset: %zd\n", (ssize_t)url->offset);
+	xbps_dbg_printf(xhp, "url->length: %zu\n", url->length);
+	xbps_dbg_printf(xhp, "url->last_modified: %s\n",
+	    print_time(&url->last_modified));
 	/*
 	 * If restarting, open the file for appending otherwise create it.
 	 */
