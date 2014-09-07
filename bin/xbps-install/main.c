@@ -80,11 +80,11 @@ repo_import_key_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused
 {
 	int rv;
 
-	 if ((rv = xbps_repo_key_import(repo)) != 0)
+	if ((rv = xbps_repo_key_import(repo)) != 0)
 		fprintf(stderr, "Failed to import pubkey from %s: %s\n",
 		    repo->uri, strerror(rv));
 
-	 return rv;
+	return rv;
 }
 
 int
