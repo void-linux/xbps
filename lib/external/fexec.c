@@ -28,6 +28,7 @@
  */
 
 #define _BSD_SOURCE	/* for vfork and chroot */
+#define _DEFAULT_SOURCE	/* glibc>=2.20 */
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -37,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#undef _DEFAULT_SOURCE
 #undef _BSD_SOURCE
 #include "xbps_api_impl.h"
 
