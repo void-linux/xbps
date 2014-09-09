@@ -279,6 +279,9 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return rv;
 	}
+	if (xbps_transaction_shlibs(xhp))
+		return ENODEV;
+
 	/*
 	 * Sort package dependencies if necessary.
 	 */

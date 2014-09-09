@@ -192,6 +192,12 @@ xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *,
 void HIDDEN xbps_transaction_revdeps(struct xbps_handle *);
 
 /**
+ * @privuate
+ * From lib/transaction_shlibs.c
+ */
+bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *);
+
+/**
  * @private
  * From lib/transaction_sortdeps.c
  */
