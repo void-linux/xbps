@@ -103,11 +103,11 @@ main(int argc, char **argv)
 	int c, flags, rv;
 	bool list_pkgs, list_repos, orphans, own;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
-	bool show, search, regex, repo_mode, opmode, fulldeptree;
+	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
 
 	rootdir = cachedir = conffile = props = pkg = NULL;
 	flags = rv = c = 0;
-	list_pkgs = list_repos = list_hold = orphans = search = own = false;
+	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
 	list_manual = show_prop = show_files = false;
 	regex = show = show_deps = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
@@ -173,7 +173,7 @@ main(int argc, char **argv)
 			break;
 		case 's':
 			pkg = optarg;
-			search = opmode = true;
+			pkg_search = opmode = true;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -252,9 +252,9 @@ main(int argc, char **argv)
 		/* ownedby mode */
 		rv = ownedby(&xh, pkg, repo_mode, regex);
 
-	} else if (search) {
+	} else if (pkg_search) {
 		/* search mode */
-		rv = repo_search(&xh, pkg, props, regex);
+		rv = search(&xh, repo_mode, pkg, props, regex);
 
 	} else if (show || show_prop) {
 		/* show mode */

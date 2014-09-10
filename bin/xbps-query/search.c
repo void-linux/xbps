@@ -44,7 +44,7 @@
 #include "defs.h"
 
 struct search_data {
-	bool regex;
+	bool regex, repo_mode;
 	int maxcols;
 	const char *pat, *prop, *repourl;
 	xbps_array_t results;
@@ -112,7 +112,7 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
 
-		if (xbps_match_virtual_pkg_in_dict(obj, sd->pat))
+		if (sd->repo_mode && xbps_match_virtual_pkg_in_dict(obj, sd->pat))
 			vpkgfound = true;
 
 		if (sd->regex) {
@@ -151,14 +151,20 @@ search_array_cb(struct xbps_handle *xhp _unused,
 					return errno;
 				if (regexec(&regex, str, 0, 0, 0) == 0) {
 					xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+					if (sd->repo_mode)
+						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+					else
+						printf("%s: %s\n", pkgver, str);
 				}
 				regfree(&regex);
 			} else {
 				if ((strcasestr(str, sd->pat)) ||
 				    (fnmatch(sd->pat, str, FNM_PERIOD)) == 0) {
 					xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+					if (sd->repo_mode)
+						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+					else
+						printf("%s: %s\n", pkgver, str);
 				}
 			}
 		}
@@ -174,18 +180,28 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
 				return errno;
 			if (regexec(&regex, size, 0, 0, 0) == 0) {
-				printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
+				if (sd->repo_mode)
+					printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
+				else
+					printf("%s: %s\n", pkgver, size);
 			}
 			regfree(&regex);
 		} else {
 			if (strcasestr(size, sd->pat)) {
-				printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
+				if (sd->repo_mode)
+					printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
+				else
+					printf("%s: %s\n", pkgver, size);
 			}
 		}
 	} else if (xbps_object_type(obj2) == XBPS_TYPE_BOOL) {
 		/* property is a bool */
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		printf("%s: true (%s)\n", pkgver, sd->repourl);
+		if (sd->repo_mode)
+			printf("%s: true (%s)\n", pkgver, sd->repourl);
+		else
+			printf("%s: true\n", pkgver);
+
 	} else if (xbps_object_type(obj2) == XBPS_TYPE_STRING) {
 		/* property is a string */
 		str = xbps_string_cstring_nocopy(obj2);
@@ -194,13 +210,19 @@ search_array_cb(struct xbps_handle *xhp _unused,
 				return errno;
 			if (regexec(&regex, str, 0, 0, 0) == 0) {
 				xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-				printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+				if (sd->repo_mode)
+					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+				else
+					printf("%s: %s\n", pkgver, str);
 			}
 			regfree(&regex);
 		} else {
 			if (strcasestr(str, sd->pat)) {
 				xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-				printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+				if (sd->repo_mode)
+					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+				else
+					printf("%s: %s\n", pkgver, str);
 			}
 		}
 	}
@@ -208,7 +230,7 @@ search_array_cb(struct xbps_handle *xhp _unused,
 }
 
 static int
-search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
+search_repo_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 {
 	xbps_array_t allkeys;
 	struct search_data *sd = arg;
@@ -222,22 +244,33 @@ search_pkgs_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 }
 
 int
-repo_search(struct xbps_handle *xhp, const char *pat, const char *prop, bool regex)
+search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *prop, bool regex)
 {
 	struct search_data sd;
 	int rv;
 
 	sd.regex = regex;
+	sd.repo_mode = repo_mode;
 	sd.pat = pat;
 	sd.prop = prop;
 	sd.maxcols = get_maxcols();
 	sd.results = xbps_array_create();
 
-	rv = xbps_rpool_foreach(xhp, search_pkgs_cb, &sd);
-	if (rv != 0 && rv != ENOTSUP)
-		fprintf(stderr, "Failed to initialize rpool: %s\n",
-		    strerror(rv));
-
+	if (repo_mode) {
+		rv = xbps_rpool_foreach(xhp, search_repo_cb, &sd);
+		if (rv != 0 && rv != ENOTSUP) {
+			fprintf(stderr, "Failed to initialize rpool: %s\n",
+			    strerror(rv));
+			return rv;
+		}
+	} else {
+		rv = xbps_pkgdb_foreach_cb(xhp, search_array_cb, &sd);
+		if (rv != 0) {
+			fprintf(stderr, "Failed to initialize pkgdb: %s\n",
+			    strerror(rv));
+			return rv;
+		}
+	}
 	if (!prop && xbps_array_count(sd.results)) {
 		print_results(xhp, &sd);
 		xbps_object_release(sd.results);

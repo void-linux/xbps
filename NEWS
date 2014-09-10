@@ -1,5 +1,8 @@
 xbps-0.38 (???):
 
+ * xbps-query(8): added -s/--search local mode, the previous repository mode must
+   be specified with -R/--repository mode explicitly.
+
  * pkgdb-0.38 format: the pkgdb plist file now contains all pkg metadata objects
    plus the pkgdb specific ones (automatic-install, install-date, metafile-sha256)
    with the pkg files list being the exception. The pkgdb code will automatically
