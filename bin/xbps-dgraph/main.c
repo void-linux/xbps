@@ -508,7 +508,7 @@ main(int argc, char **argv)
 	/*
 	 * Internalize the plist file of the target installed package.
 	 */
-	plistd = xbps_pkgdb_get_pkg_metadata(&xh, argv[0]);
+	plistd = xbps_pkgdb_get_pkg(&xh, argv[0]);
 	if (plistd == NULL)
 		die("cannot internalize %s metadata file", argv[0]);
 

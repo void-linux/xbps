@@ -18,7 +18,7 @@ tc1_body() {
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -C null.conf -r rootdir --repository=$PWD -yv a
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yvd a
 	atf_check_equal $? 0
 
 	sed -e 's,fooblah,blahfoo,' -i rootdir/cf1.conf
@@ -29,7 +29,7 @@ tc1_body() {
 	xbps-rindex -a *.xbps
 	rm -rf pkg_a
 	atf_check_equal $? 0
-	xbps-install -C null.conf -r rootdir --repository=$PWD -yuv
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yuvd
 	atf_check_equal $? 0
 	result="$(cat rootdir/cf1.conf)"
 	rval=1
@@ -52,32 +52,34 @@ tc2_body() {
 	cd repo
 	mkdir pkg_a
 	echo "fooblah" > pkg_a/cf1.conf
-	chmod 755 pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
 	xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
 	atf_check_equal $? 0
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -C null.conf -r rootdir --repository=$PWD -yv a
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yvd a
 	atf_check_equal $? 0
 
 	sed -e 's,fooblah,blahfoo,' -i rootdir/cf1.conf
 	chmod 644 rootdir/cf1.conf
 	mkdir pkg_a
 	echo "bazbar" > pkg_a/cf1.conf
-	chmod 755 pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
 	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
 	atf_check_equal $? 0
 	xbps-rindex -a *.xbps
 	rm -rf pkg_a
 	atf_check_equal $? 0
-	xbps-install -C null.conf -r rootdir --repository=$PWD -yuv
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yuvd
 	atf_check_equal $? 0
 	result="$(cat rootdir/cf1.conf)"
 	rval=1
 	if [ "${result}" = "blahfoo" ]; then
 		rval=0
 	fi
+	echo "result: ${result}"
+	echo "expected: blahfoo"
 	atf_check_equal $rval 0
 	rval=1
 	if [ -s rootdir/cf1.conf.new-0.2_1 ]; then
@@ -99,26 +101,26 @@ tc3_body() {
 	cd repo
 	mkdir pkg_a
 	echo "fooblah" > pkg_a/cf1.conf
-	chmod 755 pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
 	xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
 	atf_check_equal $? 0
 	rm -rf pkg_a
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
-	xbps-install -C null.conf -r rootdir --repository=$PWD -yv a
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yvd a
 	atf_check_equal $? 0
 
 	sed -e 's,fooblah,blahfoo,' -i rootdir/cf1.conf
 	chmod 644 rootdir/cf1.conf
 	mkdir pkg_a
 	echo "fooblah" > pkg_a/cf1.conf
-	chmod 755 pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
 	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
 	atf_check_equal $? 0
 	xbps-rindex -a *.xbps
 	rm -rf pkg_a
 	atf_check_equal $? 0
-	xbps-install -C null.conf -r rootdir --repository=$PWD -yuv
+	xbps-install -C null.conf -r rootdir --repository=$PWD -yuvd
 	atf_check_equal $? 0
 	result="$(cat rootdir/cf1.conf)"
 	rval=1
@@ -141,7 +143,7 @@ tc4_body() {
 	cd repo
 	mkdir -p pkg_a/etc
 	echo "fooblah" > pkg_a/etc/cf1.conf
-	chmod 755 pkg_a/etc/cf1.conf
+	chmod 644 pkg_a/etc/cf1.conf
 	xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/etc/cf1.conf" pkg_a
 	atf_check_equal $? 0
 	rm -rf pkg_a

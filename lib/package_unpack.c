@@ -78,79 +78,6 @@ find_pkg_symlink_target(xbps_dictionary_t d, const char *file)
 	return tgt;
 }
 
-static int
-create_pkg_metaplist(struct xbps_handle *xhp, const char *pkgname, const char *pkgver,
-		     xbps_dictionary_t propsd, xbps_dictionary_t filesd,
-		     const void *instbuf, const size_t instbufsiz,
-		     const void *rembuf, const size_t rembufsiz)
-{
-	xbps_array_t array;
-	xbps_dictionary_t pkg_metad;
-	xbps_data_t data;
-	char *buf;
-	int rv = 0;
-
-	xbps_dictionary_make_immutable(propsd);
-	pkg_metad = xbps_dictionary_copy_mutable(propsd);
-
-	/* Add objects from XBPS_PKGFILES */
-	array = xbps_dictionary_get(filesd, "files");
-	if (xbps_array_count(array))
-		xbps_dictionary_set(pkg_metad, "files", array);
-	array = xbps_dictionary_get(filesd, "conf_files");
-	if (xbps_array_count(array))
-		xbps_dictionary_set(pkg_metad, "conf_files", array);
-	array = xbps_dictionary_get(filesd, "links");
-	if (xbps_array_count(array))
-		xbps_dictionary_set(pkg_metad, "links", array);
-	array = xbps_dictionary_get(filesd, "dirs");
-	if (xbps_array_count(array))
-		xbps_dictionary_set(pkg_metad, "dirs", array);
-
-	/* Add install/remove scripts data objects */
-	if (instbuf != NULL) {
-		data = xbps_data_create_data(instbuf, instbufsiz);
-		assert(data);
-		xbps_dictionary_set(pkg_metad, "install-script", data);
-		xbps_object_release(data);
-	}
-	if (rembuf != NULL) {
-		data = xbps_data_create_data(rembuf, rembufsiz);
-		assert(data);
-		xbps_dictionary_set(pkg_metad, "remove-script", data);
-		xbps_object_release(data);
-	}
-	/* Remove unneeded objs from transaction */
-	xbps_dictionary_remove(pkg_metad, "remove-and-update");
-	xbps_dictionary_remove(pkg_metad, "transaction");
-	xbps_dictionary_remove(pkg_metad, "state");
-	xbps_dictionary_remove(pkg_metad, "pkgname");
-	xbps_dictionary_remove(pkg_metad, "version");
-
-	/*
-	 * Externalize pkg dictionary to metadir.
-	 */
-	if (access(xhp->metadir, R_OK|X_OK) == -1) {
-		if (errno == ENOENT) {
-			xbps_mkpath(xhp->metadir, 0755);
-		} else {
-			return errno;
-		}
-	}
-	buf = xbps_xasprintf("%s/.%s.plist", XBPS_META_PATH, pkgname);
-	if (!xbps_dictionary_externalize_to_file(pkg_metad, buf)) {
-		rv = errno;
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-		    errno, pkgver,
-		    "%s: [unpack] failed to write metadata file `%s': %s",
-		    pkgver, buf, strerror(errno));
-	}
-	free(buf);
-	xbps_object_release(pkg_metad);
-
-	return rv;
-}
-
 static bool
 match_preserved_file(struct xbps_handle *xhp, const char *entry)
 {
@@ -176,9 +103,10 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
-	xbps_dictionary_t propsd, filesd, metapropsd;
+	xbps_dictionary_t binpkg_propsd, binpkg_filesd, pkg_filesd;
 	xbps_array_t array, obsoletes;
 	xbps_object_t obj;
+	xbps_data_t data;
 	const struct stat *entry_statp;
 	void *instbuf = NULL, *rembuf = NULL;
 	struct stat st;
@@ -193,7 +121,7 @@ unpack_archive(struct xbps_handle *xhp,
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
-	propsd = filesd = metapropsd = NULL;
+	binpkg_propsd = binpkg_filesd = pkg_filesd = NULL;
 	force = preserve = update = conf_file = file_exists = false;
 	skip_obsoletes = xucd_stats = false;
 	ar_rv = rv = entry_type = flags = 0;
@@ -258,19 +186,19 @@ unpack_archive(struct xbps_handle *xhp,
 				goto out;
 			}
 		} else if (strcmp("./props.plist", entry_pname) == 0) {
-			propsd = xbps_archive_get_dictionary(ar, entry);
-			if (propsd == NULL) {
+			binpkg_propsd = xbps_archive_get_dictionary(ar, entry);
+			if (binpkg_propsd == NULL) {
 				rv = EINVAL;
 				goto out;
 			}
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
-			filesd = xbps_archive_get_dictionary(ar, entry);
-			if (filesd == NULL) {
+			binpkg_filesd = xbps_archive_get_dictionary(ar, entry);
+			if (binpkg_filesd == NULL) {
 				rv = EINVAL;
 				goto out;
 			}
 		}
-		if (propsd && filesd)
+		if (binpkg_propsd && binpkg_filesd)
 			break;
 	}
 	/*
@@ -286,24 +214,40 @@ unpack_archive(struct xbps_handle *xhp,
 	/*
 	 * Bail out if required metadata files are not in archive.
 	 */
-	if (propsd == NULL || filesd == NULL) {
+	if (binpkg_propsd == NULL || binpkg_filesd == NULL) {
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, ENODEV, pkgver,
 		    "%s: [unpack] invalid binary package `%s'.", pkgver, fname);
 		rv = ENODEV;
 		goto out;
 	}
 	/*
-	 * Create new metaplist file before unpacking any real file.
+	 * Internalize current pkg metadata files plist.
 	 */
-	metapropsd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
-	rv = create_pkg_metaplist(xhp, pkgname, pkgver,
-	    propsd, filesd, instbuf, instbufsiz, rembuf, rembufsiz);
-	if (rv != 0) {
+	pkg_filesd = xbps_pkgdb_get_pkg_files(xhp, pkgname);
+
+	/* Add pkg install/remove scripts data objects into our dictionary */
+	if (instbuf != NULL) {
+		data = xbps_data_create_data(instbuf, instbufsiz);
+		assert(data);
+		xbps_dictionary_set(pkg_repod, "install-script", data);
+		xbps_object_release(data);
+	}
+	if (rembuf != NULL) {
+		data = xbps_data_create_data(rembuf, rembufsiz);
+		assert(data);
+		xbps_dictionary_set(pkg_repod, "remove-script", data);
+		xbps_object_release(data);
+	}
+	buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
+	if (!xbps_dictionary_externalize_to_file(binpkg_filesd, buf)) {
+		free(buf);
+		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
-		    "%s: [unpack] failed to create metaplist file: %s",
+		    "%s: [unpack] failed to externalize pkg metadata files: %s",
 		    pkgver, strerror(rv));
 		goto out;
 	}
+	free(buf);
 	/*
 	 * Execute INSTALL "pre" ACTION before unpacking files.
 	 */
@@ -350,14 +294,14 @@ unpack_archive(struct xbps_handle *xhp,
 			 * Compute total entries in progress data, if set.
 			 * total_entries = files + conf_files + links.
 			 */
-			if (filesd && !xucd_stats) {
-				array = xbps_dictionary_get(filesd, "files");
+			if (binpkg_filesd && !xucd_stats) {
+				array = xbps_dictionary_get(binpkg_filesd, "files");
 				xucd.entry_total_count +=
 				    (ssize_t)xbps_array_count(array);
-				array = xbps_dictionary_get(filesd, "conf_files");
+				array = xbps_dictionary_get(binpkg_filesd, "conf_files");
 				xucd.entry_total_count +=
 				    (ssize_t)xbps_array_count(array);
-				array = xbps_dictionary_get(filesd, "links");
+				array = xbps_dictionary_get(binpkg_filesd, "links");
 				xucd.entry_total_count +=
 				    (ssize_t)xbps_array_count(array);
 				xucd_stats = true;
@@ -401,14 +345,14 @@ unpack_archive(struct xbps_handle *xhp,
 				 * "conf_files" array on its XBPS_PKGPROPS
 				 * dictionary.
 				 */
-				if (xbps_entry_is_a_conf_file(filesd, buf)) {
+				if (xbps_entry_is_a_conf_file(binpkg_filesd, buf)) {
 					conf_file = true;
 					if (xhp->unpack_cb != NULL)
 						xucd.entry_is_conf = true;
 
 					rv = xbps_entry_install_conf_file(xhp,
-					    filesd, entry, entry_pname, pkgver,
-					    pkgname);
+					    binpkg_filesd, pkg_filesd, entry,
+					    entry_pname, pkgver, pkgname);
 					if (rv == -1) {
 						/* error */
 						goto out;
@@ -421,7 +365,7 @@ unpack_archive(struct xbps_handle *xhp,
 					rv = 0;
 				} else {
 					rv = xbps_file_hash_check_dictionary(
-					    xhp, filesd, "files", buf);
+					    xhp, binpkg_filesd, "files", buf);
 					if (rv == -1) {
 						/* error */
 						xbps_dbg_printf(xhp,
@@ -456,7 +400,7 @@ unpack_archive(struct xbps_handle *xhp,
 					p += strlen(xhp->rootdir);
 				} else
 					p = buf;
-				tgtlnk = find_pkg_symlink_target(filesd,
+				tgtlnk = find_pkg_symlink_target(binpkg_filesd,
 				    entry_pname);
 				assert(tgtlnk);
 				if (strncmp(tgtlnk, "./", 2) == 0) {
@@ -573,10 +517,10 @@ unpack_archive(struct xbps_handle *xhp,
 	 * 	- Package reinstall.
 	 * 	- Package upgrade.
 	 */
-	if (metapropsd == NULL || !xbps_dictionary_count(metapropsd))
+	if (pkg_filesd == NULL || !xbps_dictionary_count(pkg_filesd))
 		goto out;
 
-	obsoletes = xbps_find_pkg_obsoletes(xhp, metapropsd, filesd);
+	obsoletes = xbps_find_pkg_obsoletes(xhp, pkg_filesd, binpkg_filesd);
 	for (unsigned int i = 0; i < xbps_array_count(obsoletes); i++) {
 		obj = xbps_array_get(obsoletes, i);
 		file = xbps_string_cstring_nocopy(obj);
@@ -593,13 +537,13 @@ unpack_archive(struct xbps_handle *xhp,
 		    0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
 		xbps_object_release(obj);
 	}
-	xbps_object_release(metapropsd);
+	xbps_object_release(pkg_filesd);
 
 out:
-	if (xbps_object_type(filesd) == XBPS_TYPE_DICTIONARY)
-		xbps_object_release(filesd);
-	if (xbps_object_type(propsd) == XBPS_TYPE_DICTIONARY)
-		xbps_object_release(propsd);
+	if (xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY)
+		xbps_object_release(binpkg_filesd);
+	if (xbps_object_type(binpkg_propsd) == XBPS_TYPE_DICTIONARY)
+		xbps_object_release(binpkg_propsd);
 	if (pkgname != NULL)
 		free(pkgname);
 	if (instbuf != NULL)
@@ -671,6 +615,19 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		goto out;
 	}
 	/*
+	 * Externalize pkg files dictionary to metadir.
+	 */
+	if (access(xhp->metadir, R_OK|X_OK) == -1) {
+		rv = errno;
+		if (rv != ENOENT)
+			goto out;
+
+		if (xbps_mkpath(xhp->metadir, 0755) == -1) {
+			rv = errno;
+			goto out;
+		}
+	}
+	/*
 	 * Extract archive files.
 	 */
 	if ((rv = unpack_archive(xhp, pkg_repod, pkgver, bpkg, ar)) != 0) {
@@ -682,7 +639,7 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	/*
 	 * Set package state to unpacked.
 	 */
-	if ((rv = xbps_set_pkg_state_installed(xhp, pkgver,
+	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod,
 	    XBPS_PKG_STATE_UNPACKED)) != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgver,

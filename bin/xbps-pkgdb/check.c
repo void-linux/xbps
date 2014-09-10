@@ -72,12 +72,12 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    xbps_dictionary_t pkgd,
 		    const char *pkgname)
 {
-	xbps_dictionary_t opkgd, propsd;
+	xbps_dictionary_t opkgd, filesd;
 	const char *sha256;
 	char *buf;
 	int rv = 0;
 
-	propsd = opkgd = NULL;
+	filesd = opkgd = NULL;
 
 	/* find real pkg by name */
 	opkgd = pkgd;
@@ -89,17 +89,17 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		}
 	}
 	/*
-	 * Check for props.plist metadata file.
+	 * Check for pkg files metadata file.
 	 */
-	buf = xbps_xasprintf("%s/.%s.plist",  xhp->metadir, pkgname);
-	propsd = xbps_dictionary_internalize_from_file(buf);
+	buf = xbps_xasprintf("%s/.%s-files.plist",  xhp->metadir, pkgname);
+	filesd = xbps_dictionary_internalize_from_file(buf);
 	free(buf);
-	if (propsd == NULL) {
-		xbps_error_printf("%s: unexistent metafile!\n", pkgname);
+	if (filesd == NULL) {
+		xbps_error_printf("%s: unexistent files metafile!\n", pkgname);
 		return EINVAL;
-	} else if (xbps_dictionary_count(propsd) == 0) {
+	} else if (xbps_dictionary_count(filesd) == 0) {
 		xbps_error_printf("%s: incomplete metadata file.\n", pkgname);
-		xbps_object_release(propsd);
+		xbps_object_release(filesd);
 		return 1;
 	}
 	/*
@@ -107,12 +107,12 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	 */
 	xbps_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256);
 	if (sha256 != NULL) {
-		buf = xbps_xasprintf("%s/.%s.plist",
+		buf = xbps_xasprintf("%s/.%s-files.plist",
 		    xhp->metadir, pkgname);
 		rv = xbps_file_hash_check(buf, sha256);
 		free(buf);
 		if (rv == ERANGE) {
-			xbps_object_release(propsd);
+			xbps_object_release(filesd);
 			fprintf(stderr, "%s: metadata file has been "
 			    "modified!\n", pkgname);
 			return 1;
@@ -130,12 +130,12 @@ do {								\
 } while (0)
 
 	/* Execute pkg checks */
-	RUN_PKG_CHECK(xhp, files, propsd);
-	RUN_PKG_CHECK(xhp, symlinks, propsd);
-	RUN_PKG_CHECK(xhp, rundeps, propsd);
+	RUN_PKG_CHECK(xhp, files, filesd);
+	RUN_PKG_CHECK(xhp, symlinks, filesd);
+	RUN_PKG_CHECK(xhp, rundeps, opkgd);
 	RUN_PKG_CHECK(xhp, unneeded, opkgd);
 
-	xbps_object_release(propsd);
+	xbps_object_release(filesd);
 
 #undef RUN_PKG_CHECK
 

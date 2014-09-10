@@ -106,6 +106,7 @@ int HIDDEN dewey_match(const char *, const char *);
  */
 int HIDDEN xbps_pkgdb_init(struct xbps_handle *);
 void HIDDEN xbps_pkgdb_release(struct xbps_handle *);
+int HIDDEN xbps_pkgdb_conversion(struct xbps_handle *);
 
 /**
  * @private
@@ -153,6 +154,7 @@ int HIDDEN xbps_cb_message(struct xbps_handle *, xbps_dictionary_t, const char *
  */
 int HIDDEN xbps_entry_is_a_conf_file(xbps_dictionary_t, const char *);
 int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
+					xbps_dictionary_t,
 					xbps_dictionary_t,
 					struct archive_entry *,
 					const char *,

@@ -1,5 +1,17 @@
 xbps-0.38 (???):
 
+ * pkgdb-0.38 format: the pkgdb plist file now contains all pkg metadata objects
+   plus the pkgdb specific ones (automatic-install, install-date, metafile-sha256)
+   with the pkg files list being the exception. The pkgdb code will automatically
+   convert the pkgdb files to the new format the first time it's accesed.
+
+   This effectively implements a two phase upgrade, the first time to upgrade the
+   pkgdb format and the second one to execute the real operation.
+
+   The pkg metadata files stored in metadir (/var/db/xbps) now just contains its
+   pkg files list objects, everything else is stored in pkgdb. This allows libxbps
+   to speed up the process of checking for unmet shared libraries, among other things.
+
  * libxbps: added support to check pkg shlib-{provides,requires} objects for
    all pkgs in transaction when installing or updating packages. This will help
    to avoid broken pkgs due to unmatched shlibs.

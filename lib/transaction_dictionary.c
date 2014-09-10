@@ -121,7 +121,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 
 			pkgname = xbps_pkg_name(pkgver);
 			assert(pkgname);
-			pkg_metad = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
+			pkg_metad = xbps_pkgdb_get_pkg(xhp, pkgname);
 			free(pkgname);
 			if (pkg_metad == NULL)
 				continue;
@@ -225,6 +225,18 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
+	if (!xbps_dictionary_set(xhp->transd, "missing_shlibs", array)) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
+	xbps_object_release(array);
+
+	if ((array = xbps_array_create()) == NULL) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return ENOMEM;
+	}
 	if (!xbps_dictionary_set(xhp->transd, "conflicts", array)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
@@ -270,7 +282,6 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	array = xbps_dictionary_get(xhp->transd, "conflicts");
 	if (xbps_array_count(array))
 		return EAGAIN;
-
 	/*
 	 * Check for packages to be replaced.
 	 */
@@ -301,9 +312,10 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		return rv;
 	}
 	/*
-	 * The missing deps and conflicts arrays are not necessary anymore.
+	 * Remove now unneeded objects.
 	 */
 	xbps_dictionary_remove(xhp->transd, "unsorted");
+	xbps_dictionary_remove(xhp->transd, "missing_shlibs");
 	xbps_dictionary_remove(xhp->transd, "missing_deps");
 	xbps_dictionary_remove(xhp->transd, "conflicts");
 	xbps_dictionary_make_immutable(xhp->transd);

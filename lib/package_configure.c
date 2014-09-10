@@ -80,8 +80,8 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		   bool check_state,
 		   bool update)
 {
-	xbps_dictionary_t pkgd, pkgmetad;
-	char *pkgname, *plist;
+	xbps_dictionary_t pkgd;
+	char *pkgname;
 	int rv = 0;
 	pkg_state_t state = 0;
 
@@ -125,23 +125,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgver, NULL);
 
-	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-	free(pkgname);
-
-	pkgmetad = xbps_dictionary_internalize_from_file(plist);
-	if (pkgmetad == NULL) {
-		rv = errno;
-		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
-		    errno, pkgver,
-		    "%s: [configure] cannot read metadata plist: %s",
-		    pkgver, strerror(rv));
-		return errno;
-	}
-
-	free(plist);
-	assert(pkgmetad);
-
-	rv = xbps_pkg_exec_script(xhp, pkgmetad, "install-script", "post", update);
+	rv = xbps_pkg_exec_script(xhp, pkgd, "install-script", "post", update);
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL,
 		    errno, pkgver,
@@ -149,11 +133,6 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		    "the post ACTION: %s", pkgver, strerror(rv));
 		return rv;
 	}
-	if (state == XBPS_PKG_STATE_INSTALLED) {
-		xbps_object_release(pkgmetad);
-		return rv;
-	}
-
 	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_INSTALLED);
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL, rv,
@@ -165,10 +144,5 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_DONE, 0, pkgver, NULL);
 
 	/* show install-msg if exists */
-	rv = xbps_cb_message(xhp, pkgmetad, "install-msg");
-
-	if (pkgmetad != NULL)
-		xbps_object_release(pkgmetad);
-
-	return rv;
+	return xbps_cb_message(xhp, pkgd, "install-msg");
 }

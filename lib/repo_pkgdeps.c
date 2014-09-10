@@ -49,7 +49,8 @@ store_dependency(struct xbps_handle *xhp,
 	/*
 	 * Add required objects into package dep's dictionary.
 	 */
-	if (!xbps_dictionary_set_bool(repo_pkgd, "automatic-install", true))
+	if (!xbps_dictionary_get(repo_pkgd, "automatic-install") &&
+	    !xbps_dictionary_set_bool(repo_pkgd, "automatic-install", true))
 		return EINVAL;
 
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);

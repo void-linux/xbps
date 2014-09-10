@@ -57,18 +57,16 @@ shlib_in_pkgdb(struct xbps_handle *xhp, const char *pkgver, const char *shlib)
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t shprovides;
-		xbps_dictionary_t pkgd, pkgmetad;
+		xbps_dictionary_t pkgd;
 		const char *curpkgver;
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
-		pkgmetad = xbps_pkgdb_get_pkg_metadata(xhp, curpkgver);
-		assert(pkgmetad);
-		shprovides = xbps_dictionary_get(pkgmetad, "shlib-provides");
+		shprovides = xbps_dictionary_get(pkgd, "shlib-provides");
 		if (!shprovides)
 			continue;
 		if (xbps_match_string_in_array(shprovides, shlib)) {
 			/* shlib matched */
+			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
 			xbps_dbg_printf(xhp, "[trans] %s requires `%s': "
 			    "matched by `%s' (pkgdb)\n", pkgver, shlib, curpkgver);
 			found = true;
@@ -109,9 +107,10 @@ shlib_in_transaction(struct xbps_handle *xhp, const char *pkgver, const char *sh
 bool HIDDEN
 xbps_transaction_shlibs(struct xbps_handle *xhp)
 {
-	xbps_array_t unsorted;
+	xbps_array_t unsorted, mshlibs;
 	bool unmatched = false;
 
+	mshlibs = xbps_dictionary_get(xhp->transd, "missing_shlibs");
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
 		xbps_array_t shrequires;
@@ -142,8 +141,13 @@ xbps_transaction_shlibs(struct xbps_handle *xhp)
 			xbps_array_get_cstring_nocopy(shrequires, x, &shlib);
 			if ((!shlib_in_pkgdb(xhp, pkgver, shlib)) &&
 			    (!shlib_in_transaction(xhp, pkgver, shlib))) {
-				xbps_dbg_printf(xhp, "[trans] %s: needs `%s' "
-				    "not provided by any pkg!\n", pkgver, shlib);
+				char *buf;
+
+				buf = xbps_xasprintf("%s: needs `%s' shlib, not"
+				    " provided by any pkg!", pkgver, shlib);
+				xbps_dbg_printf(xhp, "%s\n", buf);
+				xbps_array_add_cstring(mshlibs, buf);
+				free(buf);
 				unmatched = true;
 			}
 		}

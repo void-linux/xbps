@@ -136,8 +136,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		 * If pkg is already installed, respect its automatic-install
 		 * property.
 		 */
-		xbps_dictionary_get_bool(pkg_pkgdb, "automatic-install", &autoinst);
-		xbps_dictionary_set_bool(pkg_repod, "automatic-install", autoinst);
+		if (xbps_dictionary_get_bool(pkg_pkgdb, "automatic-install", &autoinst))
+			xbps_dictionary_set_bool(pkg_repod, "automatic-install", autoinst);
 	}
 	/*
 	 * Prepare transaction dictionary.

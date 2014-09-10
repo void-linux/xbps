@@ -59,6 +59,9 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 	case XBPS_STATE_TRANS_CONFIGURE:
 		printf("\n[*] Configuring unpacked packages\n");
 		break;
+	case XBPS_STATE_PKGDB:
+		printf("[*] pkgdb upgrade in progress, please wait...\n");
+		break;
 	case XBPS_STATE_REPOSYNC:
 		printf("[*] Updating `%s' ...\n", xscd->arg);
 		break;
@@ -127,6 +130,10 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			    "(rootdir: %s).", xscd->arg,
 			    xscd->xhp->rootdir);
 		}
+		break;
+	case XBPS_STATE_PKGDB_DONE:
+		printf("The pkgdb file has been upgraded successfully, please reexec "
+		    "the command again.\n");
 		break;
 	case XBPS_STATE_REPO_KEY_IMPORT:
 		printf("%s\n", xscd->desc);

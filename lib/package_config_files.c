@@ -59,26 +59,26 @@ xbps_entry_is_a_conf_file(xbps_dictionary_t filesd,
  */
 int HIDDEN
 xbps_entry_install_conf_file(struct xbps_handle *xhp,
-			     xbps_dictionary_t filesd,
+			     xbps_dictionary_t binpkg_filesd,
+			     xbps_dictionary_t pkg_filesd,
 			     struct archive_entry *entry,
 			     const char *entry_pname,
 			     const char *pkgver,
 			     const char *pkgname)
 {
-	xbps_dictionary_t forigd;
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter, iter2;
 	const char *version = NULL, *cffile, *sha256_new = NULL;
 	char buf[PATH_MAX], *sha256_cur = NULL, *sha256_orig = NULL;
 	int rv = 0;
 
-	assert(xbps_object_type(filesd) == XBPS_TYPE_DICTIONARY);
+	assert(xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY);
 	assert(entry);
 	assert(entry_pname);
 	assert(pkgver);
 	assert(pkgname);
 
-	iter = xbps_array_iter_from_dict(filesd, "conf_files");
+	iter = xbps_array_iter_from_dict(binpkg_filesd, "conf_files");
 	if (iter == NULL)
 		return -1;
 
@@ -89,8 +89,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	xbps_dbg_printf(xhp, "%s: processing conf_file %s\n",
 	    pkgver, entry_pname);
 
-	forigd = xbps_pkgdb_get_pkg_metadata(xhp, pkgname);
-	if (forigd == NULL) {
+	if (pkg_filesd == NULL) {
 		/*
 		 * File exists on disk but it's not managed by the same package.
 		 * Install it as file.new-<version>.
@@ -107,7 +106,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		goto out;
 	}
 
-	iter2 = xbps_array_iter_from_dict(forigd, "conf_files");
+	iter2 = xbps_array_iter_from_dict(pkg_filesd, "conf_files");
 	if (iter2 != NULL) {
 		while ((obj2 = xbps_object_iterator_next(iter2))) {
 			xbps_dictionary_get_cstring_nocopy(obj2,

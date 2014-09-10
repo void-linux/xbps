@@ -281,9 +281,17 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 	if ((rv = xbps_transaction_prepare(xhp)) != 0) {
 		if (rv == ENODEV) {
 			array = xbps_dictionary_get(xhp->transd, "missing_deps");
-			/* missing packages */
-			print_array(array);
-			fprintf(stderr, "Transaction aborted due to missing packages.\n");
+			if (xbps_array_count(array)) {
+				/* missing dependencies */
+				print_array(array);
+				fprintf(stderr, "Transaction aborted due to unresolved dependencies.\n");
+			}
+			array = xbps_dictionary_get(xhp->transd, "missing_shlibs");
+			if (xbps_array_count(array)) {
+				/* missing shlibs */
+				print_array(array);
+				fprintf(stderr, "Transaction aborted due to unresolved shlibs.\n");
+			}
 			goto out;
 		} else if (rv == EAGAIN) {
 			/* conflicts */

@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140906"
+#define XBPS_API_VERSION	"20140909"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -128,7 +128,7 @@
  * @def XBPS_PKGDB
  * Filename for the package database.
  */
-#define XBPS_PKGDB		"pkgdb-0.21.plist"
+#define XBPS_PKGDB		"pkgdb-0.38.plist"
 
 /**
  * @def XBPS_PKGPROPS
@@ -291,6 +291,8 @@ extern "C" {
  * - XBPS_STATE_SHOW_INSTALL_MSG: package must show a post-install message.
  * - XBPS_STATE_SHOW_REMOVE_MSG: package must show a pre-remove message.
  * - XBPS_STATE_UNPACK_FILE_PRESERVED: package unpack preserved a file.
+ * - XBPS_STATE_PKGDB: pkgdb upgrade in progress.
+ * - XBPS_STATE_PKGDB_DONE: pkgdb has been upgraded successfully.
  */
 typedef enum xbps_state {
 	XBPS_STATE_UNKNOWN = 0,
@@ -333,7 +335,9 @@ typedef enum xbps_state {
 	XBPS_STATE_INVALID_DEP,
 	XBPS_STATE_SHOW_INSTALL_MSG,
 	XBPS_STATE_SHOW_REMOVE_MSG,
-	XBPS_STATE_UNPACK_FILE_PRESERVED
+	XBPS_STATE_UNPACK_FILE_PRESERVED,
+	XBPS_STATE_PKGDB,
+	XBPS_STATE_PKGDB_DONE
 } xbps_state_t;
 
 /**
@@ -517,7 +521,6 @@ struct xbps_handle {
 	/**
 	 * @private
 	 */
-	xbps_dictionary_t pkg_metad;
 	xbps_dictionary_t pkgdb_revdeps;
 	xbps_dictionary_t vpkgd;
 	/**
@@ -851,15 +854,15 @@ xbps_dictionary_t xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp,
 					    const char *pkg);
 
 /**
- * Returns the package dictionary with all metadata info for \a pkg.
+ * Returns the package dictionary with all files for \a pkg.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] pkg Package expression to match.
  *
- * @return The matching package metadata dictionary, NULL otherwise.
+ * @return The matching package dictionary, NULL otherwise.
  */
-xbps_dictionary_t xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp,
-					      const char *pkg);
+xbps_dictionary_t xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp,
+					   const char *pkg);
 
 /**
  * Returns a proplib array of strings with reverse dependencies

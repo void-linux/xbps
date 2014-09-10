@@ -151,9 +151,10 @@ main(int argc, char **argv)
 		fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
 		exit(EXIT_FAILURE);
 	}
-	if (update_format)
-		convert_pkgdb_format(&xh);
-	else if (instmode) {
+	if (update_format) {
+		/* nothing to do; xbps_pkgdb_lock() runs the conversion for us */
+		goto out;
+	} else if (instmode) {
 		if (argc == optind) {
 			fprintf(stderr,
 			    "xbps-pkgdb: missing PKGNAME argument\n");
@@ -181,6 +182,7 @@ main(int argc, char **argv)
 		}
 	}
 
+out:
 	xbps_pkgdb_unlock(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

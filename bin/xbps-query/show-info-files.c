@@ -240,26 +240,11 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 			   const char *pkg,
 			   const char *option)
 {
-	xbps_array_t allkeys;
-	xbps_object_t obj, obj2;
-	xbps_dictionary_t d, pkgdb_d;
-	const char *key;
+	xbps_dictionary_t d;
 
-	pkgdb_d = xbps_pkgdb_get_pkg(xhp, pkg);
-	if (pkgdb_d == NULL)
-		return ENOENT;
-
-	d = xbps_pkgdb_get_pkg_metadata(xhp, pkg);
+	d = xbps_pkgdb_get_pkg(xhp, pkg);
 	if (d == NULL)
 		return ENOENT;
-
-	allkeys = xbps_dictionary_all_keys(pkgdb_d);
-	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
-		obj = xbps_array_get(allkeys, i);
-		obj2 = xbps_dictionary_get_keysym(pkgdb_d, obj);
-		key = xbps_dictionary_keysym_cstring_nocopy(obj);
-		xbps_dictionary_set(d, key, obj2);
-	}
 
 	if (option == NULL)
 		show_pkg_info(d);
@@ -275,7 +260,7 @@ show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkg)
 	xbps_dictionary_t d;
 	int rv = 0;
 
-	d = xbps_pkgdb_get_pkg_metadata(xhp, pkg);
+	d = xbps_pkgdb_get_pkg_files(xhp, pkg);
 	if (d == NULL)
 		return ENOENT;
 

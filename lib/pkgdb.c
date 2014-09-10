@@ -124,10 +124,14 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 
 	assert(xhp != NULL);
 
-	if (xhp->pkgdb != NULL)
-		return 0;
 	if (xhp->pkgdb_plist == NULL)
 		xhp->pkgdb_plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
+
+	if ((rv = xbps_pkgdb_conversion(xhp)) != 0)
+		return rv;
+
+	if (xhp->pkgdb != NULL)
+		return 0;
 
 	if ((rv = xbps_pkgdb_update(xhp, false)) != 0) {
 		if (rv != ENOENT)
@@ -189,9 +193,6 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 
 	/* write pkgdb to storage in case it was modified */
 	(void)xbps_pkgdb_update(xhp, true);
-
-	if (xbps_object_type(xhp->pkg_metad) == XBPS_TYPE_DICTIONARY)
-	       xbps_object_release(xhp->pkg_metad);
 
 	xbps_object_release(xhp->pkgdb);
 	xhp->pkgdb = NULL;
@@ -327,9 +328,9 @@ xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 }
 
 xbps_dictionary_t
-xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp, const char *pkg)
+xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
-	xbps_dictionary_t pkgd, pkg_metad;
+	xbps_dictionary_t pkgd, pkgfilesd;
 	const char *pkgver;
 	char *pkgname, *plist;
 
@@ -344,27 +345,16 @@ xbps_pkgdb_get_pkg_metadata(struct xbps_handle *xhp, const char *pkg)
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
 
-	if ((pkg_metad = xbps_dictionary_get(xhp->pkg_metad, pkgname)) != NULL) {
-		free(pkgname);
-		return pkg_metad;
-	}
-	plist = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-	pkg_metad = xbps_dictionary_internalize_from_file(plist);
+	plist = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
+	free(pkgname);
+	pkgfilesd = xbps_dictionary_internalize_from_file(plist);
 	free(plist);
 
-	if (pkg_metad == NULL) {
+	if (pkgfilesd == NULL) {
 		xbps_dbg_printf(xhp, "[pkgdb] cannot read %s metadata: %s\n",
 		    pkgver, strerror(errno));
-		free(pkgname);
 		return NULL;
 	}
 
-	if (xhp->pkg_metad == NULL)
-		xhp->pkg_metad = xbps_dictionary_create();
-
-	xbps_dictionary_set(xhp->pkg_metad, pkgname, pkg_metad);
-	xbps_object_release(pkg_metad);
-	free(pkgname);
-
-	return pkg_metad;
+	return pkgfilesd;
 }
