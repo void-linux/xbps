@@ -352,7 +352,7 @@ unpack_archive(struct xbps_handle *xhp,
 
 					rv = xbps_entry_install_conf_file(xhp,
 					    binpkg_filesd, pkg_filesd, entry,
-					    entry_pname, pkgver, pkgname);
+					    entry_pname, pkgver);
 					if (rv == -1) {
 						/* error */
 						goto out;

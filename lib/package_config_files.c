@@ -63,8 +63,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			     xbps_dictionary_t pkg_filesd,
 			     struct archive_entry *entry,
 			     const char *entry_pname,
-			     const char *pkgver,
-			     const char *pkgname)
+			     const char *pkgver)
 {
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter, iter2;
@@ -76,7 +75,6 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	assert(entry);
 	assert(entry_pname);
 	assert(pkgver);
-	assert(pkgname);
 
 	iter = xbps_array_iter_from_dict(binpkg_filesd, "conf_files");
 	if (iter == NULL)
