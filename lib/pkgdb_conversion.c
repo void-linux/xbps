@@ -153,6 +153,9 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 			xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
 			free(sha256);
 			free(pkgfiles);
+		} else {
+			/* unnecessary obj if pkg contains no files */
+			xbps_dictionary_remove(pkgd, "metafile-sha256");
 		}
 		xbps_object_release(pkgfilesd);
 		xbps_object_release(pkgmetad);
