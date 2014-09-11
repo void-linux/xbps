@@ -23,7 +23,7 @@ install:
 	install -m644 xbps.bash $(DESTDIR)/$(PREFIX)/share/bash-completion/completions/xbps
 	for file in xbps-checkvers xbps-create xbps-dgraph xbps-install \
 		xbps-pkgdb xbps-query xbps-reconfigure xbps-remove xbps-rindex; do \
-		ln -s xbps $(DESTDIR)/$(PREFIX)/share/bash-completion/completions/$$file; \
+		ln -sf xbps $(DESTDIR)/$(PREFIX)/share/bash-completion/completions/$$file; \
 	done
 
 .PHONY: uninstall
