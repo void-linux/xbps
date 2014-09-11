@@ -74,7 +74,12 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 	/*
 	 * Find out if pkg is installed first.
 	 */
-	pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg);
+	if ((pkgname = xbps_pkg_name(pkg))) {
+		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkgname);
+		free(pkgname);
+	} else {
+		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg);
+	}
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
