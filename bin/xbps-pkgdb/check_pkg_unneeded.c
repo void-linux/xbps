@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013 Juan Romero Pardines.
+ * Copyright (c) 2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,14 +47,10 @@ check_pkg_unneeded(struct xbps_handle *xhp _unused, const char *pkgname _unused,
 {
 	xbps_dictionary_t pkgd = arg;
 
-	if (xbps_dictionary_get(pkgd, "remove-and-update"))
-		xbps_dictionary_remove(pkgd, "remove-and-update");
-
-	if (xbps_dictionary_get(pkgd, "transaction"))
-		xbps_dictionary_remove(pkgd, "transaction");
-
-	if (xbps_dictionary_get(pkgd, "skip-obsoletes"))
-		xbps_dictionary_remove(pkgd, "skip-obsoletes");
+	xbps_dictionary_remove(pkgd, "download");
+	xbps_dictionary_remove(pkgd, "remove-and-update");
+	xbps_dictionary_remove(pkgd, "transaction");
+	xbps_dictionary_remove(pkgd, "skip-obsoletes");
 
 	return 0;
 }

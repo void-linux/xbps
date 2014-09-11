@@ -72,7 +72,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    xbps_dictionary_t pkgd,
 		    const char *pkgname)
 {
-	xbps_dictionary_t opkgd, filesd;
+	xbps_dictionary_t opkgd, filesd = NULL;
 	const char *sha256;
 	char *buf;
 	int rv = 0;
@@ -89,29 +89,18 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		}
 	}
 	/*
-	 * Check for pkg files metadata file.
+	 * Check pkg files metadata signature.
 	 */
-	buf = xbps_xasprintf("%s/.%s-files.plist",  xhp->metadir, pkgname);
-	filesd = xbps_dictionary_internalize_from_file(buf);
-	free(buf);
-	if (filesd == NULL) {
-		xbps_error_printf("%s: unexistent files metafile!\n", pkgname);
-		return EINVAL;
-	} else if (xbps_dictionary_count(filesd) == 0) {
-		xbps_error_printf("%s: incomplete metadata file.\n", pkgname);
-		xbps_object_release(filesd);
-		return 1;
-	}
-	/*
-	 * Check pkg metadata signature.
-	 */
-	xbps_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256);
-	if (sha256 != NULL) {
+	if (xbps_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256)) {
 		buf = xbps_xasprintf("%s/.%s-files.plist",
 		    xhp->metadir, pkgname);
 		rv = xbps_file_hash_check(buf, sha256);
 		free(buf);
-		if (rv == ERANGE) {
+		if (rv == ENOENT) {
+			xbps_dictionary_remove(opkgd, "metafile-sha256");
+			fprintf(stderr, "%s: unexistent metafile, "
+			    "updating pkgdb.\n", pkgname);
+		} else if (rv == ERANGE) {
 			xbps_object_release(filesd);
 			fprintf(stderr, "%s: metadata file has been "
 			    "modified!\n", pkgname);
@@ -119,14 +108,16 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		}
 	}
 
-#define RUN_PKG_CHECK(x, name, arg)				\
-do {								\
-	rv = check_pkg_##name(x, pkgname, arg);			\
-	if (rv == -1) {						\
-		xbps_error_printf("%s: the %s test "		\
-		    "returned error!\n", pkgname, #name);	\
-		return rv;					\
-	}							\
+#define RUN_PKG_CHECK(x, name, arg)					\
+do {									\
+	if (arg != NULL) {						\
+		rv = check_pkg_##name(x, pkgname, arg);			\
+		if (rv == -1) {						\
+			xbps_error_printf("%s: the %s test "		\
+			    "returned error!\n", pkgname, #name);	\
+			return rv;					\
+		}							\
+	}								\
 } while (0)
 
 	/* Execute pkg checks */
@@ -135,7 +126,8 @@ do {								\
 	RUN_PKG_CHECK(xhp, rundeps, opkgd);
 	RUN_PKG_CHECK(xhp, unneeded, opkgd);
 
-	xbps_object_release(filesd);
+	if (filesd)
+		xbps_object_release(filesd);
 
 #undef RUN_PKG_CHECK
 
