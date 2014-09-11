@@ -99,6 +99,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 		/*
 		 * Skip packages that were not installed automatically.
 		 */
+		automatic = false;
 		xbps_dictionary_get_bool(pkgd, "automatic-install", &automatic);
 		if (!automatic)
 			continue;
@@ -137,6 +138,7 @@ find_orphans:
 			}
 			if (cnt == reqbycnt) {
 				deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
+				automatic = false;
 				xbps_dictionary_get_bool(deppkgd, "automatic-install", &automatic);
 				if (automatic)
 					xbps_array_add(array, deppkgd);
