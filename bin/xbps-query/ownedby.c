@@ -102,9 +102,9 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 	(void)done;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-
 	pkgmetad = xbps_pkgdb_get_pkg_files(xhp, pkgver);
-	assert(pkgmetad);
+	if (pkgmetad == NULL)
+		return 0;
 
 	files_keys = xbps_dictionary_all_keys(pkgmetad);
 	for (unsigned int i = 0; i < xbps_array_count(files_keys); i++) {
