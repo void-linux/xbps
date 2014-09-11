@@ -1,11 +1,16 @@
 xbps-0.38 (???):
 
+ * Disabled best pkg matching code for performance reasons. When installing
+   or updating a package without any version component, the first repo containing
+   it wins. Previously the repository with the greatest version won. Use a specific
+   package expression to match packages in multiple repos, or switch the order
+   of the repos instead.
+
  * Added bash completion for xbps-*. Contributed by Eivind Uggedal.
 
  * Added zsh completion for xbps-* and xbps-src. Contributed by Christian Neukirchen.
 
- * xbps-query(8): added -s/--search local mode, the previous repository mode must
-   be specified with -R/--repository mode explicitly.
+ * xbps-query(8): added -s/--search local mode; local pkg queries are now possible.
 
  * pkgdb-0.38 format: the pkgdb plist file now contains all pkg metadata objects
    plus the pkgdb specific ones (automatic-install, install-date, metafile-sha256)

@@ -275,9 +275,6 @@ xbps_rpool_get_virtualpkg(struct xbps_handle *xhp, const char *pkg)
 xbps_dictionary_t
 xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg)
 {
-	if (!xbps_pkgpattern_version(pkg) && !xbps_pkg_version(pkg))
-		return repo_find_pkg(xhp, pkg, BEST_PKG);
-
 	return repo_find_pkg(xhp, pkg, REAL_PKG);
 }
 
