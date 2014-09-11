@@ -131,8 +131,10 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, repodata, NULL);
 	/*
 	 * Download plist index file from repository.
+	 * XXX: replace xbps_fetch_file_dest() by xbps_fetch_delta() once delta
+	 * generation works reliable.
 	 */
-	if ((rv = xbps_fetch_delta(xhp, repofile, repodata, repofile, NULL)) == -1) {
+	if ((rv = xbps_fetch_file_dest(xhp, repofile, repodata, repofile, NULL)) == -1) {
 		/* reposync error cb */
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
