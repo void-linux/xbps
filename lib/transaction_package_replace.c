@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2013 Juan Romero Pardines.
+ * Copyright (c) 2011-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,17 +36,17 @@
 int HIDDEN
 xbps_transaction_package_replace(struct xbps_handle *xhp)
 {
-	xbps_array_t replaces, unsorted;
-	xbps_dictionary_t instd, reppkgd;
-	xbps_object_t obj, obj2;
-	xbps_object_iterator_t iter;
-	const char *tract, *pattern, *pkgver, *curpkgver;
-	char *pkgname, *curpkgname;
-	bool instd_auto;
+	xbps_array_t unsorted;
 
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 
 	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
+		xbps_array_t replaces;
+		xbps_object_t obj, obj2;
+		xbps_object_iterator_t iter;
+		const char *pkgver;
+		char *pkgname;
+
 		obj = xbps_array_get(unsorted, i);
 		replaces = xbps_dictionary_get(obj, "replaces");
 		if (replaces == NULL || xbps_array_count(replaces) == 0)
@@ -55,7 +55,16 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 		iter = xbps_array_iterator(replaces);
 		assert(iter);
 
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+
 		while ((obj2 = xbps_object_iterator_next(iter)) != NULL) {
+			xbps_dictionary_t instd, reppkgd;
+			const char *tract, *pattern, *curpkgver;
+			char *curpkgname;
+			bool instd_auto = false;
+
 			pattern = xbps_string_cstring_nocopy(obj2);
 			/*
 			 * Find the installed package that matches the pattern
@@ -65,12 +74,8 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			    ((instd = xbps_pkgdb_get_virtualpkg(xhp, pattern)) == NULL))
 				continue;
 
-			xbps_dictionary_get_cstring_nocopy(obj,
-			    "pkgver", &pkgver);
 			xbps_dictionary_get_cstring_nocopy(instd,
 			    "pkgver", &curpkgver);
-			pkgname = xbps_pkg_name(pkgver);
-			assert(pkgname);
 			curpkgname = xbps_pkg_name(curpkgver);
 			assert(curpkgver);
 			/*
@@ -78,7 +83,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * due to virtual packages.
 			 */
 			if (strcmp(pkgname, curpkgname) == 0) {
-				free(pkgname);
 				free(curpkgname);
 				continue;
 			}
@@ -97,7 +101,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * package that should be replaced is also in the
 			 * transaction and it's going to be updated.
 			 */
-			instd_auto = false;
 			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
 			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname))) {
 				xbps_dictionary_set_bool(instd,
@@ -128,10 +131,10 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			xbps_dictionary_set_cstring_nocopy(instd,
 			    "transaction", "remove");
 			xbps_array_add(unsorted, instd);
-			free(pkgname);
 			free(curpkgname);
 		}
 		xbps_object_iterator_release(iter);
+		free(pkgname);
 	}
 
 	return 0;
