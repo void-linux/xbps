@@ -1,4 +1,4 @@
-.Dd August 23, 2014
+.Dd September 11, 2014
 .Os Void Linux
 .Dt xbps-install 8
 .Sh NAME
@@ -29,11 +29,11 @@ supports 3 ways to specify them:
 .It
 by package name, i.e:
 .Dq Sy foo .
-The package with the greatest version available in all repositories will be choosen.
+The first repository matching the package expression will be choosen.
 .It
 by exact package name and version, i.e:
 .Dq Sy foo-1.0_1 .
-The first package matching expression in a repository will be choosen.
+The first repository matching the package expression will be choosen.
 .It
 by specifying a package name and version separated by any of the following version comparators:
 .Bl -item -width xx -compact
@@ -53,7 +53,7 @@ greater or equal than
 .Pp
 Example:
 .Dq Sy foo>=2.0 .
-The first package matching expression in a repository will be choosen.
+The first repository matching the package expression will be choosen.
 .El
 .Sh OPTIONS
 .Bl -tag -width -x
@@ -111,13 +111,13 @@ configuration phase is skipped (the target binaries might not be compatible with
 the native architecture).
 .El
 .Sh FILES
-.Bl -tag -width /var/db/xbps/.<pkgname>.plist
+.Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
 .It Ar /etc/xbps/xbps.conf
 Default configuration file.
-.It Ar /var/db/xbps/.<pkgname>.plist
-Package metadata properties.
-.It Ar /var/db/xbps/pkgdb-0.21.plist
-Default package database (0.21 format). Keeps track of installed packages and properties.
+.It Ar /var/db/xbps/.<pkgname>-files.plist
+Package files metadata.
+.It Ar /var/db/xbps/pkgdb-0.38.plist
+Default package database (0.38 format). Keeps track of installed packages and properties.
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
 .El

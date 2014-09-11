@@ -1,4 +1,4 @@
-.Dd August 23, 2014
+.Dd September 11, 2014
 .Os Void Linux
 .Dt xbps-remove 8
 .Sh NAME
@@ -93,13 +93,13 @@ Assume yes to all questions and avoid interactive questions.
 Shows the XBPS version.
 .El
 .Sh FILES
-.Bl -tag -width /var/db/xbps/.<pkgname>.plist
+.Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
 .It Ar /etc/xbps/xbps.conf
 Default configuration file.
-.It Ar /var/db/xbps/.<pkgname>.plist
-Package metadata properties.
-.It Ar /var/db/xbps/pkgdb-0.21.plist
-Default package database (0.21 format). Keeps track of installed packages and properties.
+.It Ar /var/db/xbps/.<pkgname>-files.plist
+Package files metadata.
+.It Ar /var/db/xbps/pkgdb-0.38.plist
+Default package database (0.38 format). Keeps track of installed packages and properties.
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
 .El

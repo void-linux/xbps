@@ -1,4 +1,4 @@
-.Dd August 23, 2014
+.Dd September 11, 2014
 .Os Void Linux
 .Dt xbps-query 8
 .Sh NAME
@@ -162,8 +162,8 @@ If the
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
-.It Fl s, Fl -search Ar PATTERN [ Fl -property Ar PROP ] [ Fl -regex ]
-Search for packages in repositories by matching
+.It Fl s, Fl -search Ar PATTERN [ Fl -repository ] [ Fl -property Ar PROP ] [ Fl -regex ]
+Search for packages by matching
 .Ar PATTERN
 on its
 .Em pkgver
@@ -223,13 +223,13 @@ configuration phase is skipped (the target binaries might not be compatible with
 the native architecture).
 .El
 .Sh FILES
-.Bl -tag -width /var/db/xbps/.<pkgname>.plist
+.Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
 .It Ar /etc/xbps/xbps.conf
 Default configuration file.
-.It Ar /var/db/xbps/.<pkgname>.plist
-Package metadata properties.
-.It Ar /var/db/xbps/pkgdb-0.21.plist
-Default package database (0.21 format). Keeps track of installed packages and properties.
+.It Ar /var/db/xbps/.<pkgname>-files.plist
+Package files metadata.
+.It Ar /var/db/xbps/pkgdb-0.38.plist
+Default package database (0.38 format). Keeps track of installed packages and properties.
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
 .El
