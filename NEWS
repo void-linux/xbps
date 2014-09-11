@@ -1,5 +1,9 @@
 xbps-0.38 (???):
 
+ * Added bash completion for xbps-*. Contributed by Eivind Uggedal.
+
+ * Added zsh completion for xbps-* and xbps-src. Contributed by Christian Neukirchen.
+
  * xbps-query(8): added -s/--search local mode, the previous repository mode must
    be specified with -R/--repository mode explicitly.
 
