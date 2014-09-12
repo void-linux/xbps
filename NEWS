@@ -25,8 +25,8 @@ xbps-0.38 (???):
    to speed up the process of checking for unmet shared libraries, among other things.
 
  * libxbps: added support to check pkg shlib-{provides,requires} objects for
-   all pkgs in transaction when installing or updating packages. This will help
-   to avoid broken pkgs due to unmatched shlibs.
+   all pkgs in the transaction to be updated. This will make impossible to update a
+   package to a newer version that contains incompatible shlibs used in its revdeps.
 
  * xbps-rindex(8): -r/--remove-obsoletes is now ~5x faster.
 
