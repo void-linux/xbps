@@ -310,22 +310,22 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 				print_array(array);
 				fprintf(stderr, "Transaction aborted due to unresolved dependencies.\n");
 			}
+		} else if (rv == ENOEXEC) {
 			array = xbps_dictionary_get(xhp->transd, "missing_shlibs");
 			if (xbps_array_count(array)) {
 				/* missing shlibs */
 				print_array(array);
 				fprintf(stderr, "Transaction aborted due to unresolved shlibs.\n");
 			}
-			goto out;
 		} else if (rv == EAGAIN) {
 			/* conflicts */
 			array = xbps_dictionary_get(xhp->transd, "conflicts");
 			print_array(array);
 			fprintf(stderr, "Transaction aborted due to conflicting packages.\n");
-			goto out;
+		} else {
+			xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
+			    strerror(errno));
 		}
-		xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
-		    strerror(errno));
 		goto out;
 	}
 	xbps_dbg_printf(xhp, "Dictionary before transaction happens:\n");

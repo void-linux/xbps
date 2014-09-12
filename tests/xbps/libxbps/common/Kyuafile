@@ -22,6 +22,7 @@ atf_test_program{name="incorrect_deps_test"}
 atf_test_program{name="vpkg_test"}
 atf_test_program{name="install_test"}
 atf_test_program{name="preserve_files_test"}
+atf_test_program{name="update_shlibs"}
 
 include('config/Kyuafile')
 include('find_pkg_orphans/Kyuafile')

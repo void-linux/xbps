@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140909"
+#define XBPS_API_VERSION	"20140912"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1159,6 +1159,8 @@ int xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp);
  *  due to xbps_transaction_install_pkg() or xbps_transaction_update_pkg() not
  *  previously called.
  * @retval ENODEV if there are missing dependencies in transaction ("missing_deps"
+ *  array of strings object in xhp->transd dictionary).
+ * @retval ENOEXEC if there are unresolved shared libraries in transaction ("missing_shlibs"
  *  array of strings object in xhp->transd dictionary).
  * @retval EAGAIN if there are package conflicts in transaction ("conflicts"
  *  array of strings object in xhp->transd dictionary).

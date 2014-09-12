@@ -228,8 +228,10 @@ vpkg_user_conf(struct xbps_handle *xhp,
 				continue;
 			}
 		}
+#ifdef FULLDEBUG
 		xbps_dbg_printf(xhp, "matched vpkg `%s' with `%s (provides %s)`\n",
 		    vpkg, pkg, vpkgver);
+#endif
 		free(vpkgname);
 		found = true;
 		break;

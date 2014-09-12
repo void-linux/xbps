@@ -43,66 +43,101 @@
  * Abort transaction if such case is found.
  */
 static bool
-shlib_in_pkgdb(struct xbps_handle *xhp, const char *pkgver, const char *shlib)
+shlib_trans_matched(struct xbps_handle *xhp, const char *pkgver, const char *shlib)
 {
-	xbps_object_iterator_t iter;
-	xbps_object_t obj;
-	bool found = false;
+	xbps_array_t unsorted, shrequires;
+	xbps_dictionary_t pkgd;
+	const char *tract;
+	char *pkgname;
 
-	if (!xbps_dictionary_count(xhp->pkgdb))
-		return found;
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
 
-	iter = xbps_dictionary_iterator(xhp->pkgdb);
-	assert(iter);
-
-	while ((obj = xbps_object_iterator_next(iter))) {
-		xbps_array_t shprovides;
-		xbps_dictionary_t pkgd;
-		const char *curpkgver;
-
-		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		shprovides = xbps_dictionary_get(pkgd, "shlib-provides");
-		if (!shprovides)
-			continue;
-		if (xbps_match_string_in_array(shprovides, shlib)) {
-			/* shlib matched */
-			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
-			xbps_dbg_printf(xhp, "[trans] %s requires `%s': "
-			    "matched by `%s' (pkgdb)\n", pkgver, shlib, curpkgver);
-			found = true;
-			break;
-		}
+	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+	if ((pkgd = xbps_find_pkg_in_array(unsorted, pkgname)) == NULL) {
+		free(pkgname);
+		return false;
 	}
-	xbps_object_iterator_release(iter);
-	return found;
+	free(pkgname);
+
+	xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &tract);
+	if (strcmp(tract, "update"))
+		return false;
+
+	shrequires = xbps_dictionary_get(pkgd, "shlib-requires");
+	if (!shrequires)
+		return false;
+
+	return xbps_match_string_in_array(shrequires, shlib);
 }
 
 static bool
-shlib_in_transaction(struct xbps_handle *xhp, const char *pkgver, const char *shlib)
+shlib_matched(struct xbps_handle *xhp, xbps_array_t mshlibs,
+		const char *pkgver, const char *shlib)
 {
-	xbps_array_t unsorted;
+	xbps_array_t revdeps;
+	const char *shlibver;
+	char *pkgname, *shlibname;
+	bool found = true;
 
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
-		xbps_array_t shprovides;
-		xbps_object_t obj;
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+	revdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
+	free(pkgname);
+	if (!revdeps)
+		return true;
 
-		obj = xbps_array_get(unsorted, i);
-		shprovides = xbps_dictionary_get(obj, "shlib-provides");
-		if (!shprovides)
-			continue;
-		if (xbps_match_string_in_array(shprovides, shlib)) {
-			/* shlib matched */
-			const char *curpkgver;
+	shlibver = strchr(shlib, '.');
+	shlibname = strdup(shlib);
+	shlibname[strlen(shlib) - strlen(shlibver)] = '\0';
+	assert(shlibname);
 
-			xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &curpkgver);
-			xbps_dbg_printf(xhp, "[trans] %s requires `%s': "
-			    "matched by `%s' (trans)\n", pkgver, shlib, curpkgver);
-			return true;
+	/* Iterate over its revdeps and match the provided shlib */
+	for (unsigned int i = 0; i < xbps_array_count(revdeps); i++) {
+		xbps_array_t shrequires;
+		xbps_dictionary_t pkgd;
+		const char *rpkgver;
+
+		xbps_array_get_cstring_nocopy(revdeps, i, &rpkgver);
+		pkgd = xbps_pkgdb_get_pkg(xhp, rpkgver);
+		shrequires = xbps_dictionary_get(pkgd, "shlib-requires");
+
+		for (unsigned int x = 0; x < xbps_array_count(shrequires); x++) {
+			const char *rshlib, *rshlibver;
+			char *rshlibname;
+
+			xbps_array_get_cstring_nocopy(shrequires, x, &rshlib);
+			rshlibver = strchr(rshlib, '.');
+			rshlibname = strdup(rshlib);
+			rshlibname[strlen(rshlib) - strlen(rshlibver)] = '\0';
+
+			if ((strcmp(shlibname, rshlibname) == 0) &&
+			    (strcmp(shlibver, rshlibver))) {
+				/*
+				 * The shared library version did not match the
+				 * installed pkg; find out if there's an update
+				 * in the transaction with the matching version.
+				 */
+				if (!shlib_trans_matched(xhp, rpkgver, shlib)) {
+					char *buf;
+					/* shlib not matched */
+					buf = xbps_xasprintf("%s breaks `%s' "
+					    "(needs `%s%s', got '%s')",
+					    pkgver, rpkgver, shlibname,
+					    rshlibver, shlib);
+					xbps_array_add_cstring(mshlibs, buf);
+					free(buf);
+					found = false;
+				}
+			}
+			free(rshlibname);
 		}
 	}
-	return false;
+	free(shlibname);
+
+	return found;
 }
+
 
 bool HIDDEN
 xbps_transaction_shlibs(struct xbps_handle *xhp)
@@ -112,44 +147,48 @@ xbps_transaction_shlibs(struct xbps_handle *xhp)
 
 	mshlibs = xbps_dictionary_get(xhp->transd, "missing_shlibs");
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+
 	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
-		xbps_array_t shrequires;
-		xbps_object_t obj;
+		xbps_array_t shprovides;
+		xbps_object_t obj, pkgd;
 		const char *pkgver, *tract;
+		char *pkgname;
 
 		obj = xbps_array_get(unsorted, i);
 		/*
-		 * Only process pkgs that are being installed or updated.
+		 * If pkg does not have 'shlib-provides' obj, pass to next one.
+		 */
+		if ((shprovides = xbps_dictionary_get(obj, "shlib-provides")) == NULL)
+			continue;
+		/*
+		 * Only process pkgs that are being updated.
 		 */
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		if (strcmp(tract, "install") && strcmp(tract, "update"))
+		if (strcmp(tract, "update"))
 			continue;
+
 		/*
-		 * If pkg does not have 'shlib-requires' obj, pass to next one.
-		 */
-		if ((shrequires = xbps_dictionary_get(obj, "shlib-requires")) == NULL)
-			continue;
-		/*
-		 * Check if all required shlibs are provided by:
-		 * 	- an installed pkg
-		 * 	- a pkg in the transaction
+		 * If there's no change in shlib-provides, pass to next one.
 		 */
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		for (unsigned int x = 0; x < xbps_array_count(shrequires); x++) {
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+		pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+		assert(pkgd);
+		free(pkgname);
+		if (xbps_array_equals(shprovides, xbps_dictionary_get(pkgd, "shlib-provides")))
+			continue;
+
+		for (unsigned int x = 0; x < xbps_array_count(shprovides); x++) {
 			const char *shlib;
 
-			xbps_array_get_cstring_nocopy(shrequires, x, &shlib);
-			if ((!shlib_in_pkgdb(xhp, pkgver, shlib)) &&
-			    (!shlib_in_transaction(xhp, pkgver, shlib))) {
-				char *buf;
-
-				buf = xbps_xasprintf("%s: needs `%s' shlib, not"
-				    " provided by any pkg!", pkgver, shlib);
-				xbps_dbg_printf(xhp, "%s\n", buf);
-				xbps_array_add_cstring(mshlibs, buf);
-				free(buf);
+			xbps_array_get_cstring_nocopy(shprovides, x, &shlib);
+			/*
+			 * Check that all shlibs provided by this pkg are used by
+			 * its revdeps.
+			 */
+			if (!shlib_matched(xhp, mshlibs, pkgver, shlib))
 				unmatched = true;
-			}
 		}
 	}
 	return unmatched;
