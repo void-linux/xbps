@@ -1,4 +1,4 @@
-.Dd September 11, 2014
+.Dd September 12, 2014
 .Os Void Linux
 .Dt xbps-install 8
 .Sh NAME
@@ -29,11 +29,9 @@ supports 3 ways to specify them:
 .It
 by package name, i.e:
 .Dq Sy foo .
-The first repository matching the package expression will be choosen.
 .It
 by exact package name and version, i.e:
 .Dq Sy foo-1.0_1 .
-The first repository matching the package expression will be choosen.
 .It
 by specifying a package name and version separated by any of the following version comparators:
 .Bl -item -width xx -compact
@@ -53,8 +51,10 @@ greater or equal than
 .Pp
 Example:
 .Dq Sy foo>=2.0 .
-The first repository matching the package expression will be choosen.
 .El
+.El
+.Pp
+The first repository matching the package expression wins.
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl A, Fl -automatic
