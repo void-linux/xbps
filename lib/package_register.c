@@ -34,6 +34,7 @@
 int HIDDEN
 xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 {
+	xbps_dictionary_t pkgd;
 	char outstr[64];
 	time_t t;
 	struct tm *tmp;
@@ -44,7 +45,10 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 
 	assert(xbps_object_type(pkgrd) == XBPS_TYPE_DICTIONARY);
 
-	xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
+	xbps_dictionary_make_immutable(pkgrd);
+	pkgd = xbps_dictionary_copy_mutable(pkgrd);
+
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
 
@@ -54,7 +58,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	 * Set automatic-install to true, iff it was explicitly set; otherwise
 	 * preserve its value.
 	 */
-	if (autoinst && !xbps_dictionary_set_bool(pkgrd, "automatic-install", true)) {
+	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true)) {
 		xbps_dbg_printf(xhp, "%s: invalid autoinst for %s\n",  __func__, pkgver);
 		rv = EINVAL;
 		goto out;
@@ -75,7 +79,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 		rv = EINVAL;
 		goto out;
 	}
-	if (!xbps_dictionary_set_cstring(pkgrd, "install-date", outstr)) {
+	if (!xbps_dictionary_set_cstring(pkgd, "install-date", outstr)) {
 		xbps_dbg_printf(xhp, "%s: install-date set failed!\n", pkgver);
 		rv = EINVAL;
 		goto out;
@@ -86,24 +90,25 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
 	sha256 = xbps_file_hash(buf);
 	assert(sha256);
-	xbps_dictionary_set_cstring(pkgrd, "metafile-sha256", sha256);
+	xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
 	free(sha256);
 	free(buf);
 	/*
 	 * Remove unneeded objs from pkg dictionary.
 	 */
-	xbps_dictionary_remove(pkgrd, "download");
-	xbps_dictionary_remove(pkgrd, "remove-and-update");
-	xbps_dictionary_remove(pkgrd, "transaction");
-	xbps_dictionary_remove(pkgrd, "skip-obsoletes");
-	xbps_dictionary_remove(pkgrd, "pkgname");
-	xbps_dictionary_remove(pkgrd, "version");
+	xbps_dictionary_remove(pkgd, "download");
+	xbps_dictionary_remove(pkgd, "remove-and-update");
+	xbps_dictionary_remove(pkgd, "transaction");
+	xbps_dictionary_remove(pkgd, "skip-obsoletes");
+	xbps_dictionary_remove(pkgd, "pkgname");
+	xbps_dictionary_remove(pkgd, "version");
 
-	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgrd)) {
+	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 		xbps_dbg_printf(xhp,
 		    "%s: failed to set pkgd for %s\n", __func__, pkgver);
 	}
 out:
+	xbps_object_release(pkgd);
 	if (pkgname)
 		free(pkgname);
 
