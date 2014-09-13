@@ -34,6 +34,7 @@ replace_dups_body() {
 	atf_check_equal $? 0
 	result=$(xbps-query -C empty.conf -r root -l|wc -l)
 	atf_check_equal $result 1
+	atf_check_equal $(xbps-query -C empty.conf -r root -p state B) installed
 }
 
 atf_test_case self_replace
@@ -64,6 +65,7 @@ self_replace_body() {
 	out=$(xbps-query -C empty.conf -r root -l|awk '{print $2}')
 	exp="A-1.0_1"
 	atf_check_equal $out $exp
+	atf_check_equal $(xbps-query -C empty.conf -r root -p state A) installed
 }
 
 atf_init_test_cases() {
