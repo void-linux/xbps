@@ -46,11 +46,17 @@ int
 check_pkg_unneeded(struct xbps_handle *xhp _unused, const char *pkgname _unused, void *arg)
 {
 	xbps_dictionary_t pkgd = arg;
+	const char *repo = NULL;
 
 	xbps_dictionary_remove(pkgd, "download");
 	xbps_dictionary_remove(pkgd, "remove-and-update");
 	xbps_dictionary_remove(pkgd, "transaction");
 	xbps_dictionary_remove(pkgd, "skip-obsoletes");
+	xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo);
+	if (repo) {
+		xbps_dictionary_set_cstring(pkgd, "repository", repo);
+		xbps_dictionary_remove(pkgd, "repository-origin");
+	}
 
 	return 0;
 }

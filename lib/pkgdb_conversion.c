@@ -67,11 +67,18 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 		xbps_dictionary_t pkgd, pkgfilesd, pkgmetad;
 		xbps_object_iterator_t iter2;
 		xbps_object_t obj2;
-		const char *pkgname;
+		const char *pkgname, *repo;
 		char *pkgmeta;
 
 		pkgname = xbps_dictionary_keysym_cstring_nocopy(obj);
 		pkgd = xbps_dictionary_get_keysym(opkgdb, obj);
+		/*
+		 * Rename "repository-origin" obj to "repository" to match
+		 * the repository index obj.
+		 */
+		xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo);
+		xbps_dictionary_set_cstring(pkgd, "repository", repo);
+		xbps_dictionary_remove(pkgd, "repository-origin");
 		/*
 		 * Copy old pkgdb objects to the new pkgdb.
 		 */
