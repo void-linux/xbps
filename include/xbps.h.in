@@ -789,8 +789,7 @@ xbps_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 int xbps_pkgdb_lock(struct xbps_handle *);
 
 /**
- * Unlocks the pkgdb after a write transaction: the POSIX named semaphore
- * is unlocked and unlinked.
+ * Unlocks the pkgdb after a write transaction.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  */
@@ -798,7 +797,7 @@ void xbps_pkgdb_unlock(struct xbps_handle *);
 
 /**
  * Executes a function callback per a package dictionary registered
- * in master package database (pkgdb) plist.
+ * in the package database (pkgdb) plist.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] fn Function callback to run for any pkg dictionary.
@@ -813,7 +812,7 @@ int xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
 
 /**
  * Executes a function callback per a package dictionary registered
- * in master package database (pkgdb) plist.
+ * in the package database (pkgdb) plist.
  *
  * This is a multithreaded implementation spawning a thread per core. Each
  * thread processes a fraction of total objects in the pkgdb dictionary.
@@ -830,7 +829,7 @@ int xbps_pkgdb_foreach_cb_multi(struct xbps_handle *xhp,
 	void *arg);
 
 /**
- * Returns a package dictionary from master package database (pkgdb) plist,
+ * Returns a package dictionary from the package database (pkgdb),
  * matching pkgname or pkgver object in \a pkg.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
@@ -842,7 +841,7 @@ xbps_dictionary_t xbps_pkgdb_get_pkg(struct xbps_handle *xhp,
 				     const char *pkg);
 
 /**
- * Returns a package dictionary from master package database (pkgdb) plist,
+ * Returns a package dictionary from the package database (pkgdb),
  * matching virtual pkgname or pkgver object in \a pkg.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
@@ -878,8 +877,8 @@ xbps_array_t xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp,
 					const char *pkg);
 
 /**
- * Updates the master package database (pkgdb) plist with new contents from
- * disk to the cached copy in memory.
+ * Updates the package database (pkgdb) with new contents from the
+ * cached memory copy to disk.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] flush If true the pkgdb plist contents in memory will
@@ -967,6 +966,7 @@ int xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 		xbps_dictionary_t dict,
 		int (*fn)(struct xbps_handle *, xbps_object_t obj, const char *, void *arg, bool *done),
 		void *arg);
+
 /**
  * Match a virtual package name or pattern by looking at proplib array
  * of strings.
@@ -978,6 +978,7 @@ int xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
  * otherwise.
  */
 bool xbps_match_virtual_pkg_in_array(xbps_array_t array, const char *str);
+
 /**
  * Match a virtual package name or pattern by looking at package's
  * dictionary "provides" array object.
@@ -1028,7 +1029,7 @@ bool xbps_match_pkgpattern_in_array(xbps_array_t array, const char *pattern);
  * array of strings.
  *
  * @param[in] array The proplib array to search on.
- * @param[in] pkgver The package name-version to match, i.e `foo-1.0'.
+ * @param[in] pkgver The package name-version to match, i.e `foo-1.0_1'.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
@@ -1064,13 +1065,12 @@ xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict,
 
 /**
  * Finds a package by name or by pattern and enqueues it into
- * the transaction dictionary for future use. If pkg is a pkgname, the best
- * package version in repository pool will be queued, otherwise the first
- * repository matching the package pattern wins.
+ * the transaction dictionary for future use. The first repository
+ * matching \a pkg wins.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
  * @param[in] pkg Package name, package/version or package pattern to match, i.e
- * `foo', `foo-1.0' or `foo>=1.2'.
+ * `foo', `foo-1.0_1' or `foo>=1.2'.
  * @param[in] reinstall If true, package will be queued (if \a str matches)
  * even if package is already installed.
  *
@@ -1377,7 +1377,7 @@ xbps_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 /*@{*/
 
 /**
- * Opens a repository and returns an xbps_repo object.
+ * Opens a repository and returns a xbps_repo object.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
  * @param[in] uri Repository URI to match.
