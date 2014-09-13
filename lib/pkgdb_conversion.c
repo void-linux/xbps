@@ -76,9 +76,10 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 		 * Rename "repository-origin" obj to "repository" to match
 		 * the repository index obj.
 		 */
-		xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo);
-		xbps_dictionary_set_cstring(pkgd, "repository", repo);
-		xbps_dictionary_remove(pkgd, "repository-origin");
+		if (xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo)) {
+			xbps_dictionary_set_cstring(pkgd, "repository", repo);
+			xbps_dictionary_remove(pkgd, "repository-origin");
+		}
 		/*
 		 * Copy old pkgdb objects to the new pkgdb.
 		 */
