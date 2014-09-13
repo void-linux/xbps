@@ -362,12 +362,14 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_CONFIGURE, 0, NULL, NULL);
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if ((strcmp(tract, "remove") == 0) ||
-		    (strcmp(tract, "configure") == 0))
+		    (strcmp(tract, "configure") == 0)) {
+			xbps_dbg_printf(xhp, "%s: skipping configuration for "
+			    "%s: %s\n", __func__, pkgver, tract);
 			continue;
-
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		}
 		update = false;
 		if (strcmp(tract, "update") == 0)
 			update = true;
