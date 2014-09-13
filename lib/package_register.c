@@ -34,6 +34,7 @@
 int HIDDEN
 xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 {
+	xbps_array_t replaces;
 	xbps_dictionary_t pkgd;
 	char outstr[64];
 	time_t t;
@@ -102,7 +103,14 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	xbps_dictionary_remove(pkgd, "skip-obsoletes");
 	xbps_dictionary_remove(pkgd, "pkgname");
 	xbps_dictionary_remove(pkgd, "version");
-
+	/*
+	 * Remove self replacement when applicable.
+	 */
+	if ((replaces = xbps_dictionary_get(pkgd, "replaces"))) {
+		buf = xbps_xasprintf("%s>=0", pkgname);
+		xbps_remove_string_from_array(replaces, buf);
+		free(buf);
+	}
 	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 		xbps_dbg_printf(xhp,
 		    "%s: failed to set pkgd for %s\n", __func__, pkgver);

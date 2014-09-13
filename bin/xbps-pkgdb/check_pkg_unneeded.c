@@ -43,19 +43,28 @@
  * 	  and remove them if that was true.
  */
 int
-check_pkg_unneeded(struct xbps_handle *xhp _unused, const char *pkgname _unused, void *arg)
+check_pkg_unneeded(struct xbps_handle *xhp _unused, const char *pkgname, void *arg)
 {
+	xbps_array_t replaces;
 	xbps_dictionary_t pkgd = arg;
 	const char *repo = NULL;
+	char *buf;
 
 	xbps_dictionary_remove(pkgd, "download");
 	xbps_dictionary_remove(pkgd, "remove-and-update");
 	xbps_dictionary_remove(pkgd, "transaction");
 	xbps_dictionary_remove(pkgd, "skip-obsoletes");
-	xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo);
-	if (repo) {
+	if (xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo)) {
 		xbps_dictionary_set_cstring(pkgd, "repository", repo);
 		xbps_dictionary_remove(pkgd, "repository-origin");
+	}
+	/*
+	 * Remove self replacement when applicable.
+	 */
+	if ((replaces = xbps_dictionary_get(pkgd, "replaces"))) {
+		buf = xbps_xasprintf("%s>=0", pkgname);
+		xbps_remove_string_from_array(replaces, buf);
+		free(buf);
 	}
 
 	return 0;
