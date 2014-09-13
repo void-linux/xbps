@@ -27,7 +27,6 @@
 #define _XBPS_RINDEX_DEFS_H_
 
 #include <xbps.h>
-#include <semaphore.h>
 
 /* libarchive compat */
 #if ARCHIVE_VERSION_NUMBER >= 3000000
