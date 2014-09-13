@@ -28,9 +28,9 @@ replace_dups_body() {
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y B
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd B
 	atf_check_equal $? 0
 	result=$(xbps-query -C empty.conf -r root -l|wc -l)
 	atf_check_equal $result 1
@@ -56,11 +56,11 @@ self_replace_body() {
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y B
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd B
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
 	out=$(xbps-query -C empty.conf -r root -l|awk '{print $2}')
 	exp="A-1.0_1"
