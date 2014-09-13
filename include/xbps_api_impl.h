@@ -126,8 +126,6 @@ int HIDDEN xbps_array_replace_dict_by_pattern(xbps_array_t,
 bool HIDDEN xbps_remove_pkg_from_array_by_name(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pattern(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pkgver(xbps_array_t, const char *);
-bool HIDDEN xbps_remove_pkgname_from_array(xbps_array_t, const char *);
-bool HIDDEN xbps_remove_string_from_array(xbps_array_t, const char *);
 
 /**
  * @private

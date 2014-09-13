@@ -104,13 +104,13 @@ remove_obj_from_array(xbps_array_t array, const char *str, int mode)
 	return true;
 }
 
-bool HIDDEN
+bool
 xbps_remove_string_from_array(xbps_array_t array, const char *str)
 {
 	return remove_obj_from_array(array, str, 0);
 }
 
-bool HIDDEN
+bool
 xbps_remove_pkgname_from_array(xbps_array_t array, const char *str)
 {
 	return remove_obj_from_array(array, str, 1);
