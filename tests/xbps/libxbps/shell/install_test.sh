@@ -1,5 +1,28 @@
 #!/usr/bin/env atf-sh
 
+atf_test_case install_empty
+
+install_empty_head() {
+	atf_set "descr" "Tests for pkg installations: install pkg with no files"
+}
+
+install_empty_body() {
+	mkdir -p repo pkg_A
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -C empty.conf -r root --repository=$PWD/repo -yd A
+	atf_check_equal $? 0
+	rv=0
+	if [ -e root/var/db/xbps/.A-files.plist ]; then
+		rv=1
+	fi
+	atf_check_equal $rv 0
+}
+
 atf_test_case install_with_deps
 
 install_with_deps_head() {
@@ -66,6 +89,42 @@ install_with_vpkg_deps_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case update_to_empty_pkg
+
+update_to_empty_pkg_head() {
+	atf_set "descr" "Tests for pkg installations: update pkg with files to another version without"
+}
+
+update_to_empty_pkg_body() {
+	mkdir -p repo pkg_A/usr/bin
+	touch pkg_A/usr/bin/blah
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/repo -yd A
+	atf_check_equal $? 0
+
+	cd repo
+	rm -rf ../pkg_A/*
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/repo -yud
+	atf_check_equal $? 0
+	rv=0
+	if [ -e root/usr/bin/blah -a -e root/var/db/xbps/.A-files.plist ]; then
+		rv=1
+	fi
+	atf_check_equal $rv 0
+}
+
 atf_test_case update_if_installed
 
 update_if_installed_head() {
@@ -125,8 +184,10 @@ install_if_not_installed_on_update_body() {
 }
 
 atf_init_test_cases() {
+	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
 	atf_add_test_case install_with_vpkg_deps
 	atf_add_test_case install_if_not_installed_on_update
 	atf_add_test_case update_if_installed
+	atf_add_test_case update_to_empty_pkg
 }
