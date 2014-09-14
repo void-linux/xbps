@@ -11,7 +11,7 @@ _xbps_common=(
 )
 
 _xbps_all_packages() {
-	compadd "$@" -- $(xbps-query -s '' | sed 's/^... \([^ ]*\)-.* .*/\1/')
+	compadd "$@" -- $(xbps-query -Rs '' | sed 's/^... \([^ ]*\)-.* .*/\1/')
 }
 
 _xbps_installed_packages() {
@@ -93,6 +93,7 @@ _xbps_query() {
 		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
 		{-p,--property=-}'[Show properties]: ' \
 		--regex'[Use Extended Regular Expressions to match]' \
+		--fulldeptree'[Full dependency tree for -x/--deps]' \
 		{-R,--repository}'[Enable repository mode]' \
 		--repository=-'[Add repository to the top of the list]:repository url:_files -/' \
 		- '(actions)' \
