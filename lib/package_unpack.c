@@ -238,16 +238,6 @@ unpack_archive(struct xbps_handle *xhp,
 		xbps_dictionary_set(pkg_repod, "remove-script", data);
 		xbps_object_release(data);
 	}
-	buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
-	if (!xbps_dictionary_externalize_to_file(binpkg_filesd, buf)) {
-		free(buf);
-		rv = errno;
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
-		    "%s: [unpack] failed to externalize pkg metadata files: %s",
-		    pkgver, strerror(rv));
-		goto out;
-	}
-	free(buf);
 	/*
 	 * Execute INSTALL "pre" ACTION before unpacking files.
 	 */
@@ -504,6 +494,21 @@ unpack_archive(struct xbps_handle *xhp,
 		goto out;
 	}
 	/*
+	 * Externalize binpkg files.plist to disk, if not empty.
+	 */
+	if (xbps_dictionary_count(binpkg_filesd)) {
+		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
+		if (!xbps_dictionary_externalize_to_file(binpkg_filesd, buf)) {
+			rv = errno;
+			free(buf);
+			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+			    rv, pkgver, "%s: [unpack] failed to externalize pkg "
+			    "pkg metadata files: %s", pkgver, strerror(rv));
+			goto out;
+		}
+		free(buf);
+	}
+	/*
 	 * Skip checking for obsolete files on:
 	 * 	- Package with "preserve" keyword.
 	 * 	- Package with "skip-obsoletes" keyword.
@@ -538,7 +543,14 @@ unpack_archive(struct xbps_handle *xhp,
 		xbps_object_release(obj);
 	}
 	xbps_object_release(pkg_filesd);
-
+	/*
+	 * If unpacked pkg has no files, remove its files metadata plist.
+	 */
+	if (!xbps_dictionary_count(binpkg_filesd)) {
+		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
+		unlink(buf);
+		free(buf);
+	}
 out:
 	if (xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY)
 		xbps_object_release(binpkg_filesd);

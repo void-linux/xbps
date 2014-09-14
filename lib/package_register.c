@@ -86,13 +86,13 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 		goto out;
 	}
 	/*
-	 * Create a hash for the pkg's metafile.
+	 * Create a hash for the pkg's metafile if it exists.
 	 */
 	buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
-	sha256 = xbps_file_hash(buf);
-	assert(sha256);
-	xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
-	free(sha256);
+	if ((sha256 = xbps_file_hash(buf))) {
+		xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
+		free(sha256);
+	}
 	free(buf);
 	/*
 	 * Remove unneeded objs from pkg dictionary.
