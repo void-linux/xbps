@@ -1,4 +1,4 @@
-xbps-0.38 (???):
+xbps-0.38 (2014-09-14):
 
  * Disabled best pkg matching code for performance reasons. When installing
    or updating a package without any version component, the first repo containing
