@@ -110,6 +110,8 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 		buf = xbps_xasprintf("%s>=0", pkgname);
 		xbps_remove_string_from_array(replaces, buf);
 		free(buf);
+		if (!xbps_array_count(replaces))
+			xbps_dictionary_remove(pkgd, "replaces");
 	}
 	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 		xbps_dbg_printf(xhp,

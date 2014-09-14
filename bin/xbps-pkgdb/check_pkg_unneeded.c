@@ -65,6 +65,8 @@ check_pkg_unneeded(struct xbps_handle *xhp _unused, const char *pkgname, void *a
 		buf = xbps_xasprintf("%s>=0", pkgname);
 		xbps_remove_string_from_array(replaces, buf);
 		free(buf);
+		if (!xbps_array_count(replaces))
+			xbps_dictionary_remove(pkgd, "replaces");
 	}
 
 	return 0;
