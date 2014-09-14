@@ -68,7 +68,35 @@ self_replace_body() {
 	atf_check_equal $(xbps-query -C empty.conf -r root -p state A) installed
 }
 
+atf_test_case replace_vpkg
+
+replace_vpkg_head() {
+	atf_set "descr" "Tests for package replace: replacing pkg with a virtual pkg"
+}
+
+replace_vpkg_body() {
+	mkdir some_repo root
+	mkdir -p libGL-32bit/usr/bin catalyst-32bit/usr/bin qt-32bit/usr/bin
+	cd some_repo
+	xbps-create -A noarch -n libGL-32bit-1.0_1 -s "libGL-32bit pkg" ../libGL-32bit
+	atf_check_equal $? 0
+	xbps-create -A noarch -n catalyst-32bit-1.0_1 -s "catalyst 32bit pkg" \
+		--provides "libGL-32bit-1.0_1" --replaces "libGL-32bit>=0" \
+		--dependencies "qt-32bit>=0" ../catalyst-32bit
+	atf_check_equal $? 0
+	xbps-create -A noarch -n qt-32bit-1.0_1 -s "qt 32bit pkg" --dependencies "libGL-32bit>=0" ../qt-32bit
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd libGL-32bit
+	atf_check_equal $? 0
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd catalyst-32bit
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case replace_dups
+	atf_add_test_case replace_vpkg
 	atf_add_test_case self_replace
 }
