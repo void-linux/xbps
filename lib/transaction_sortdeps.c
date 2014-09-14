@@ -200,8 +200,8 @@ again:
 			xbps_dbg_printf_append(xhp, "installed.\n");
 			continue;
 		}
-		if (((curpkgd = xbps_find_pkg_in_array(unsorted, str)) == NULL) &&
-		    ((curpkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, str)) == NULL)) {
+		if (((curpkgd = xbps_find_pkg_in_array(unsorted, str, "remove")) == NULL) &&
+		    ((curpkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, str, "remove")) == NULL)) {
 			xbps_dbg_printf_append(xhp, "cannot find %s in unsorted array\n", str);
 			rv = EINVAL;
 			break;

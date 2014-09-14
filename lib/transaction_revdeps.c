@@ -86,7 +86,7 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 			xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
 			pkgdepname = xbps_pkg_name(pkgver);
 			assert(pkgdepname);
-			if (xbps_find_pkg_in_array(unsorted, pkgdepname)) {
+			if (xbps_find_pkg_in_array(unsorted, pkgdepname, NULL)) {
 				free(pkgdepname);
 				continue;
 			}
@@ -196,7 +196,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 			 * is in the transaction.
 			 */
 			pkgname = xbps_pkg_name(curpkgver);
-			if (xbps_find_pkg_in_array(unsorted, pkgname)) {
+			if (xbps_find_pkg_in_array(unsorted, pkgname, NULL)) {
 				free(pkgname);
 				continue;
 			}

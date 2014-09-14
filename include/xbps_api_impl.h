@@ -176,14 +176,10 @@ int HIDDEN xbps_repository_find_deps(struct xbps_handle *,
  * @private
  * From lib/plist_find.c
  */
-xbps_dictionary_t HIDDEN xbps_find_pkg_in_array(xbps_array_t, const char *);
-xbps_dictionary_t HIDDEN
-	xbps_find_virtualpkg_in_array(struct xbps_handle *, xbps_array_t,
-				      const char *);
 xbps_dictionary_t HIDDEN xbps_find_pkg_in_dict(xbps_dictionary_t, const char *);
-xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *,
-					xbps_dictionary_t,
-					const char *);
+xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *, xbps_dictionary_t, const char *);
+xbps_dictionary_t HIDDEN xbps_find_pkg_in_array(xbps_array_t, const char *, const char *);
+xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *, xbps_array_t, const char *, const char *);
 /**
  * @private
  * From lib/transaction_revdeps.c

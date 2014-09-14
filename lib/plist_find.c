@@ -35,18 +35,20 @@
 #include "xbps_api_impl.h"
 
 static xbps_dictionary_t
-get_pkg_in_array(xbps_array_t array, const char *str, bool virtual)
+get_pkg_in_array(xbps_array_t array, const char *str, const char *trans, bool virtual)
 {
 	xbps_object_t obj = NULL;
 	xbps_object_iterator_t iter;
-	const char *pkgver;
-	char *dpkgn;
+	const char *tract;
 	bool found = false;
 
 	iter = xbps_array_iterator(array);
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
+		const char *pkgver;
+		char *dpkgn;
+
 		if (virtual) {
 			/*
 			 * Check if package pattern matches
@@ -90,6 +92,11 @@ get_pkg_in_array(xbps_array_t array, const char *str, bool virtual)
 	}
 	xbps_object_iterator_release(iter);
 
+	if (found && trans &&
+	    xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract)) {
+		if (strcmp(tract, trans) == 0)
+			found = false;
+	}
 	if (!found) {
 		errno = ENOENT;
 		return NULL;
@@ -98,18 +105,19 @@ get_pkg_in_array(xbps_array_t array, const char *str, bool virtual)
 }
 
 xbps_dictionary_t HIDDEN
-xbps_find_pkg_in_array(xbps_array_t a, const char *s)
+xbps_find_pkg_in_array(xbps_array_t a, const char *s, const char *trans)
 {
 	assert(xbps_object_type(a) == XBPS_TYPE_ARRAY);
 	assert(s);
 
-	return get_pkg_in_array(a, s, false);
+	return get_pkg_in_array(a, s, trans, false);
 }
 
 xbps_dictionary_t HIDDEN
 xbps_find_virtualpkg_in_array(struct xbps_handle *x,
 			      xbps_array_t a,
-			      const char *s)
+			      const char *s,
+			      const char *trans)
 {
 	xbps_dictionary_t pkgd;
 	const char *vpkg;
@@ -123,11 +131,11 @@ xbps_find_virtualpkg_in_array(struct xbps_handle *x,
 		bypattern = true;
 
 	if ((vpkg = vpkg_user_conf(x, s, bypattern))) {
-		if ((pkgd = get_pkg_in_array(a, vpkg, true)))
+		if ((pkgd = get_pkg_in_array(a, vpkg, trans, true)))
 			return pkgd;
 	}
 
-	return get_pkg_in_array(a, s, true);
+	return get_pkg_in_array(a, s, trans, true);
 }
 
 static xbps_dictionary_t

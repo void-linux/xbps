@@ -76,7 +76,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			 * the transaction and does not match the pattern,
 			 * ignore it.
 			 */
-			if ((tpkgd = xbps_find_pkg_in_array(unsorted, pkgname))) {
+			if ((tpkgd = xbps_find_pkg_in_array(unsorted, pkgname, NULL))) {
 				const char *tract, *p;
 
 				xbps_dictionary_get_cstring_nocopy(tpkgd,
@@ -104,8 +104,8 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 		/*
 		 * Check if current pkg conflicts with any pkg in transaction.
 		 */
-		if ((pkgd = xbps_find_pkg_in_array(unsorted, cfpkg)) ||
-		    (pkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, cfpkg))) {
+		if ((pkgd = xbps_find_pkg_in_array(unsorted, cfpkg, NULL)) ||
+		    (pkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, cfpkg, NULL))) {
 			xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			pkgname = xbps_pkg_name(pkgver);

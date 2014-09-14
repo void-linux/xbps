@@ -89,7 +89,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			/*
 			 * Make sure to not add duplicates.
 			 */
-			reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname);
+			reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname, NULL);
 			if (reppkgd) {
 				xbps_dictionary_get_cstring_nocopy(reppkgd,
 				    "transaction", &tract);
@@ -102,7 +102,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * transaction and it's going to be updated.
 			 */
 			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
-			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname))) {
+			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname, NULL))) {
 				xbps_dictionary_set_bool(instd,
 				    "remove-and-update", true);
 				xbps_dictionary_set_bool(reppkgd,

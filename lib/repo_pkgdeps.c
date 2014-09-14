@@ -229,8 +229,8 @@ find_repo_deps(struct xbps_handle *xhp,
 		 * Pass 2: check if required dependency has been already
 		 * added in the transaction dictionary.
 		 */
-		if ((curpkgd = xbps_find_pkg_in_array(unsorted, reqpkg)) ||
-		    (curpkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, reqpkg))) {
+		if ((curpkgd = xbps_find_pkg_in_array(unsorted, reqpkg, NULL)) ||
+		    (curpkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, reqpkg, NULL))) {
 			xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
 			xbps_dbg_printf_append(xhp, " (%s queued)\n", pkgver_q);
 			free(pkgname);

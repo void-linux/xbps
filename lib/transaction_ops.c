@@ -156,7 +156,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 	 * in transaction, in that case ignore it.
 	 */
 	if (action == TRANS_UPDATE) {
-		if (xbps_find_pkg_in_array(unsorted, repopkgver)) {
+		if (xbps_find_pkg_in_array(unsorted, repopkgver, NULL)) {
 			xbps_dbg_printf(xhp, "[update] `%s' already queued in "
 			    "transaction.\n", repopkgver);
 			return EEXIST;

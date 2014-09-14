@@ -54,7 +54,7 @@ shlib_trans_matched(struct xbps_handle *xhp, const char *pkgver, const char *shl
 	assert(pkgname);
 
 	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-	if ((pkgd = xbps_find_pkg_in_array(unsorted, pkgname)) == NULL) {
+	if ((pkgd = xbps_find_pkg_in_array(unsorted, pkgname, NULL)) == NULL) {
 		free(pkgname);
 		return false;
 	}
