@@ -59,6 +59,12 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 
 	repodir = dirname(tmprepodir);
 	repo = xbps_repo_open(xhp, repodir, true);
+	if (repo == NULL && errno != ENOENT) {
+		fprintf(stderr, "xbps-rindex: cannot open/lock repository "
+		    "%s: %s\n", repodir, strerror(errno));
+		rv = -1;
+		goto out;
+	}
 	if (repo && repo->idx) {
 		xbps_repo_open_idxfiles(repo);
 		idx = xbps_dictionary_copy(repo->idx);

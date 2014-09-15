@@ -45,7 +45,6 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	struct archive *ar;
 	char *repofile, *tname, *buf;
 	int rv, repofd = -1;
-	mode_t myumask;
 
 	/* Create a tempfile for our repository archive */
 	repofile = xbps_repo_path(xhp, repodir);
@@ -95,9 +94,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	/* Write data to tempfile and rename */
 	archive_write_finish(ar);
 	fdatasync(repofd);
-	myumask = umask(0);
-	(void)umask(myumask);
-	assert(fchmod(repofd, 0666 & ~myumask) != -1);
+	assert(fchmod(repofd, 0664) != -1);
 	close(repofd);
 	rename(tname, repofile);
 	free(repofile);
