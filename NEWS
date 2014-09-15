@@ -1,5 +1,8 @@
 xbps-0.39 (???):
 
+ * Updated bash/zsh completions for >= 0.38 with new features (Contributed by
+   Eivind Uggedal and Christian Neukirchen respectively).
+
  * xbps-rindex: fix -a/--add mode to create repodata archives with 0664 permissions;
    and do not create a new archive if the file cannot be open/locked, error out
    instead... otherwise the file lock is ignored.
