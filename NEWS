@@ -7,6 +7,8 @@ xbps-0.39 (???):
    and do not create a new archive if the file cannot be open/locked, error out
    instead... otherwise the file lock is ignored.
 
+ * A minor build fix for the musl C library.
+
 xbps-0.38 (2014-09-14):
 
  * Disabled best pkg matching code for performance reasons. When installing
