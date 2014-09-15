@@ -1,4 +1,4 @@
-xbps-0.39 (???):
+xbps-0.39 (2014-09-15):
 
  * Updated bash/zsh completions for >= 0.38 with new features (Contributed by
    Eivind Uggedal and Christian Neukirchen respectively).
