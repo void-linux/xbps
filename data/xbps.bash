@@ -41,6 +41,32 @@ _xbps_complete() {
 	local common='-C|--config|-r|--rootdir'
 	local morecommon="$common|-c|--cachedir"
 
+	local modes='auto manual hold unhold'
+	local props='architecture
+		automatic-install
+		build-date
+		build-options
+		conflicts
+		homepage
+		install-date
+		install-script
+		installed_size
+		license
+		maintainer
+		metafile-sha256
+		packaged-with
+		pkgver
+		preserve
+		provides
+		remove-script
+		replaces
+		repository
+		shlib-provides
+		shlib-requires
+		short_desc
+		source-revisions
+		state'
+
 	case $1 in
 		xbps-dgraph)
 			if [[ $prev != @(-c|-o|-r) ]]; then
@@ -56,7 +82,7 @@ _xbps_complete() {
 			;;
 		xbps-pkgdb)
 			if [[ $prev == @(-m|--mode) ]]; then
-				COMPREPLY=( $( compgen -W 'auto manual hold unhold' -- "$cur") )
+				COMPREPLY=( $( compgen -W "$modes" -- "$cur") )
 				return
 			fi
 			if [[ $prev != @($common) ]]; then
@@ -65,6 +91,10 @@ _xbps_complete() {
 			fi
 			;;
 		xbps-query)
+			if [[ $prev == @(-p|--property) ]]; then
+				COMPREPLY=( $( compgen -W "$props" -- "$cur") )
+				return
+			fi
 			if [[ $prev != @($morecommon|-p|--property|-o|--ownedby) ]]; then
 				_xbps_all_reply $cur
 				return
