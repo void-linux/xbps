@@ -43,12 +43,17 @@ _xbps_complete() {
 
 	local modes='auto manual hold unhold'
 	local props='architecture
+		archive-compression-type
 		automatic-install
 		build-date
 		build-options
+		conf_files
 		conflicts
+		filename-sha256
+		filename-size
 		homepage
 		install-date
+		install-msg
 		install-script
 		installed_size
 		license
@@ -58,6 +63,7 @@ _xbps_complete() {
 		pkgver
 		preserve
 		provides
+		remove-msg
 		remove-script
 		replaces
 		repository
