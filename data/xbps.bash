@@ -13,7 +13,7 @@ _xbps_parse_help() {
 }
 
 _xbps_all_packages() {
-	xbps-query -s "$1*" | sed 's/^... \([^ ]*\)-.* .*/\1/'
+	xbps-query -Rs "$1*" | sed 's/^... \([^ ]*\)-.* .*/\1/'
 }
 
 _xbps_installed_packages() {
