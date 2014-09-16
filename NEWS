@@ -13,6 +13,9 @@ xbps-0.40 (???):
  * Fixed a heap overflow when printing post-install/pre-remove messages.
    Noticed by Gottox.
 
+ * Updated bash completion with more properties for xbps-query(8). Contributed
+   by Eivind Uggedal in #58.
+
 xbps-0.39 (2014-09-15):
 
  * Updated bash/zsh completions for >= 0.38 with new features (Contributed by
