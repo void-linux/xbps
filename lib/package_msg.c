@@ -59,7 +59,7 @@ xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key
 		xbps_dbg_printf(xhp, "[%s] %s: fmemopen %s\n", __func__, pkgver, strerror(rv));
 		goto out;
 	};
-	buf = malloc(len);
+	buf = malloc(len+1);
 	assert(buf);
 	if (fread(buf, len, 1, f) != len) {
 		if (ferror(f)) {
