@@ -1,5 +1,18 @@
 xbps-0.40 (???):
 
+ * xbps-{install,remove}: the post-install/pre-remove messages are now
+   printed with some guards, i.e:
+
+	"=================================================================="
+	" msg "
+	"=================================================================="
+
+   Without the need to add them manually to the {INSTALL,REMOVE}.msg files in
+   binary packages.
+
+ * Fixed a heap overflow when printing post-install/pre-remove messages.
+   Noticed by Gottox.
+
 xbps-0.39 (2014-09-15):
 
  * Updated bash/zsh completions for >= 0.38 with new features (Contributed by
