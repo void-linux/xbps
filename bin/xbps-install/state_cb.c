@@ -141,7 +141,10 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		rv = yesno("Do you want to import this public key?");
 		break;
 	case XBPS_STATE_SHOW_INSTALL_MSG:
-		printf("%s: post-install message:\n%s", xscd->arg, xscd->desc);
+		printf("%s: post-install message:\n", xscd->arg);
+		printf("========================================================================\n");
+		printf("%s", xscd->desc);
+		printf("========================================================================\n");
 		break;
 	case XBPS_STATE_UNPACK_FILE_PRESERVED:
 		printf("%s\n", xscd->desc);
