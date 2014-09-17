@@ -10,6 +10,39 @@ _xbps_common=(
 	{-V,--version}'[Show XBPS version]'
 )
 
+_xbps_properties=(
+	architecture
+	archive-compression-type
+	automatic-install
+	build-date
+	build-options
+	conf_files
+	conflicts
+	filename-sha256
+	filename-size
+	homepage
+	install-date
+	install-msg
+	install-script
+	installed_size
+	license
+	maintainer
+	metafile-sha256
+	packaged-with
+	pkgver
+	preserve
+	provides
+	remove-msg
+	remove-script
+	replaces
+	repository
+	shlib-provides
+	shlib-requires
+	short_desc
+	source-revisions
+	state
+)
+
 _xbps_all_packages() {
 	compadd "$@" -- $(xbps-query -Rs '' | sed 's/^... \([^ ]*\)-.* .*/\1/')
 }
@@ -91,7 +124,7 @@ _xbps_query() {
 	_arguments -s : \
 		$_xbps_common \
 		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
-		{-p,--property=-}'[Show properties]: ' \
+		{-p,--property=-}'[Show properties]:property:($_xbps_properties)' \
 		--regex'[Use Extended Regular Expressions to match]' \
 		--fulldeptree'[Full dependency tree for -x/--deps]' \
 		{-R,--repository}'[Enable repository mode]' \
