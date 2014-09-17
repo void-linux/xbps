@@ -61,17 +61,16 @@ char *
 xbps_file_hash(const char *file)
 {
 	struct stat st;
+	SHA256_CTX ctx;
 	char hash[SHA256_DIGEST_LENGTH * 2 + 1];
-	unsigned char *buf = NULL, digest[SHA256_DIGEST_LENGTH];
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	ssize_t ret;
+	unsigned char buf[256];
 	int fd;
 
-	assert(file != NULL);
-
-	if ((fd = open(file, O_RDONLY|O_CLOEXEC)) == -1) {
-		free(buf);
+	if ((fd = open(file, O_RDONLY)) == -1)
 		return NULL;
-	}
-	memset(&st, 0, sizeof(st));
+
 	if (fstat(fd, &st) == -1) {
 		(void)close(fd);
 		return NULL;
@@ -81,20 +80,18 @@ xbps_file_hash(const char *file)
 		return NULL;
 	}
 
-	buf = malloc(st.st_size);
-	assert(buf);
+	SHA256_Init(&ctx);
+	while ((ret = read(fd, buf, sizeof(buf))) > 0)
+		SHA256_Update(&ctx, buf, ret);
 
-	if (read(fd, buf, st.st_size) != st.st_size) {
-	       free(buf);
-	       (void)close(fd);
-	       return NULL;
-	}
-	(void)close(fd);
-	if (SHA256(buf, st.st_size, digest) == NULL) {
-		free(buf);
+	if (ret == -1) {
+		/* read error */
+		(void)close(fd);
 		return NULL;
 	}
-	free(buf);
+
+	SHA256_Final(digest, &ctx);
+	(void)close(fd);
 	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
 
 	return strdup(hash);
