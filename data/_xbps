@@ -44,11 +44,11 @@ _xbps_properties=(
 )
 
 _xbps_all_packages() {
-	compadd "$@" -- $(xbps-query -Rs '' | sed 's/^... \([^ ]*\)-.* .*/\1/')
+	compadd "$@" -- ${${${(f)"$(xbps-query -Rs '')"}#??? }%%-[^- ]# *}
 }
 
 _xbps_installed_packages() {
-	compadd "$@" -- $(xbps-query -l | sed 's/^.. \([^ ]*\)-.* .*/\1/')
+	compadd "$@" -- ${${${(f)"$(xbps-query -l)"}#?? }%%-[^- ]# *}
 }
 
 _xbps_checkvers() {
