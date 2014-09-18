@@ -43,6 +43,8 @@
 #include <xbps.h>
 #include "defs.h"
 
+static int v_tty; /* stderr is a tty */
+
 static void
 get_time(struct timeval *tvp)
 {
@@ -142,7 +144,7 @@ stat_display(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 		    (double)xfpd->file_dloaded) / (double)xfpd->file_size);
 		(void)xbps_humanize_number(totsize, (int64_t)xfpd->file_size);
 	}
-	if (isatty(fileno(stdout)))
+	if (v_tty)
 		fprintf(stderr, "%s: [%s %d%%] %s ETA: %s\033[K\r",
 		    xfpd->file_name, totsize, percentage,
 		    stat_bps(xfpd, xfer), stat_eta(xfpd, xfer));
@@ -160,6 +162,7 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 
 	if (xfpd->cb_start) {
 		/* start transfer stats */
+		v_tty = isatty(STDERR_FILENO);
 		get_time(&xfer->start);
 		xfer->last.tv_sec = xfer->last.tv_usec = 0;
 	} else if (xfpd->cb_update) {
@@ -168,11 +171,12 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	} else if (xfpd->cb_end) {
 		/* end transfer stats */
 		(void)xbps_humanize_number(size, (int64_t)xfpd->file_dloaded);
-		if (isatty(fileno(stdout)))
+		if (v_tty)
 			fprintf(stderr, "%s: %s [avg rate: %s]\033[K\n",
 			    xfpd->file_name, size, stat_bps(xfpd, xfer));
 		else
 			printf("%s: %s [avg rate: %s]\n",
 			    xfpd->file_name, size, stat_bps(xfpd, xfer));
+
 	}
 }
