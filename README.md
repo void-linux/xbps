@@ -1,6 +1,6 @@
 ## XBPS
 
-The X Binary Package System (in short XBPS) is a new binary package system **designed and implemented from scratch**. Its goal is to be fast, easy to use, bug-free, featureful and portable as much as possible.
+The X Binary Package System (in short XBPS) is a **system** binary package system **designed and implemented from scratch**. Its goal is to be fast, easy to use, bug-free, featureful and portable as much as possible.
 
 The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and released with a **Simplified BSD license (2 clause)**. There is a well documented API provided by the XBPS Library that is the basis for its frontends to handle binary packages and repositories. Some highlights:
 
@@ -11,6 +11,7 @@ The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and rele
  * Ability to **resume** partial package install/updates.
  * Ability to **unpack only files that have been modified** in package updates.
  * Ability to use **virtual packages**.
+ * Ability to **check for incompatible shared libraries in reverse dependencies**.
  * Ability to **replace packages**.
  * Ability to **put packages on hold** (to never update them. NEW in 0.16).
  * Ability to **preserve/update configuration files**.
@@ -44,7 +45,7 @@ To build this you'll need:
 and optionally:
 
   - [graphviz](http://www.graphviz.org) and [doxygen](http://www.doxygen.org) (--with-api-docs) to build API documentation.
-  - [atf >= 0.15](http://code.google.com/p/kyua) (--with-tests) to build the Kyua test suite [2].
+  - [atf >= 0.15](http://code.google.com/p/kyua) (--with-tests) to build the Kyua test suite.
 
 ### Build instructions
 
