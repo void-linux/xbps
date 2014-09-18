@@ -1,6 +1,6 @@
 ## XBPS
 
-The X Binary Package System (in short XBPS) is a **system** binary package system **designed and implemented from scratch**. Its goal is to be fast, easy to use, bug-free, featureful and portable as much as possible.
+The X Binary Package System (in short XBPS) is a binary package system **designed and implemented from scratch**. Its goal is to be fast, easy to use, bug-free, featureful and portable as much as possible.
 
 The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and released with a **Simplified BSD license (2 clause)**. There is a well documented API provided by the XBPS Library that is the basis for its frontends to handle binary packages and repositories. Some highlights:
 
