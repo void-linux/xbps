@@ -65,7 +65,7 @@ xbps_file_hash(const char *file)
 	char hash[SHA256_DIGEST_LENGTH * 2 + 1];
 	unsigned char digest[SHA256_DIGEST_LENGTH];
 	ssize_t ret;
-	unsigned char buf[256];
+	unsigned char buf[4096];
 	int fd;
 
 	if ((fd = open(file, O_RDONLY)) == -1)
