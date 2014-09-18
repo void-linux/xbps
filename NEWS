@@ -1,5 +1,8 @@
 xbps-0.40 (???):
 
+ * xbps-query(8): -S/--show mode no longer prints ANSI escape codes if stdout
+   is not a tty; suggested by @chneukirchen.
+
  * Reduced considerably memory requirement when checking SHA256 hashes on
    files. Previous way of allocating heap memory as big as the file being
    processed wasn't a great idea.

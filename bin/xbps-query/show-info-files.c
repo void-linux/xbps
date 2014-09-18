@@ -41,7 +41,8 @@
 
 static void
 print_value_obj(const char *keyname, xbps_object_t obj,
-		const char *indent, bool raw)
+		const char *indent, const char *bold,
+		const char *reset, bool raw)
 {
 	xbps_array_t allkeys;
 	xbps_object_t obj2, keysym;
@@ -54,12 +55,12 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 	switch (xbps_object_type(obj)) {
 	case XBPS_TYPE_STRING:
 		if (!raw)
-			printf("%s%s%s%s: ", indent, _BOLD, keyname, _RESET);
+			printf("%s%s%s%s: ", indent, bold, keyname, reset);
 		printf("%s\n", xbps_string_cstring_nocopy(obj));
 		break;
 	case XBPS_TYPE_NUMBER:
 		if (!raw)
-			printf("%s%s%s%s: ", indent, _BOLD, keyname, _RESET);
+			printf("%s%s%s%s: ", indent, bold, keyname, reset);
 		if (xbps_humanize_number(size,
 		    (int64_t)xbps_number_unsigned_integer_value(obj)) == -1)
 			printf("%ju\n",
@@ -69,12 +70,12 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 		break;
 	case XBPS_TYPE_BOOL:
 		if (!raw)
-			printf("%s%s%s%s: ", indent, _BOLD, keyname, _RESET);
+			printf("%s%s%s%s: ", indent, bold, keyname, reset);
 		printf("%s\n", xbps_bool_true(obj) ? "yes" : "no");
 		break;
 	case XBPS_TYPE_ARRAY:
 		if (!raw)
-			printf("%s%s%s%s:\n", indent, _BOLD, keyname, _RESET);
+			printf("%s%s%s%s:\n", indent, bold, keyname, reset);
 		for (unsigned int i = 0; i < xbps_array_count(obj); i++) {
 			obj2 = xbps_array_get(obj, i);
 			if (xbps_object_type(obj2) == XBPS_TYPE_STRING) {
@@ -82,7 +83,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 				printf("%s%s%s\n", indent, !raw ? "\t" : "",
 				    value);
 			} else {
-				print_value_obj(keyname, obj2, "  ", raw);
+				print_value_obj(keyname, obj2, "  ", bold, reset, raw);
 			}
 		}
 		break;
@@ -92,7 +93,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 			keysym = xbps_array_get(allkeys, i);
 			ksymname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 			obj2 = xbps_dictionary_get_keysym(obj, keysym);
-			print_value_obj(ksymname, obj2, "  ", raw);
+			print_value_obj(ksymname, obj2, "  ", bold, reset, raw);
 		}
 		xbps_object_release(allkeys);
 		if (raw)
@@ -101,7 +102,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 	case XBPS_TYPE_DATA:
 		if (!raw) {
 			xbps_humanize_number(size, (int64_t)xbps_data_size(obj));
-			printf("%s%s%s%s: %s\n", indent, _BOLD, keyname, _RESET, size);
+			printf("%s%s%s%s: %s\n", indent, bold, keyname, reset, size);
 		} else {
 			FILE *f;
 			char buf[BUFSIZ-1];
@@ -110,7 +111,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 			data = xbps_data_data(obj);
 			f = fmemopen(data, xbps_data_size(obj), "r");
 			assert(f);
-			while (fgets(buf, BUFSIZ-1, f))
+			while (fgets(buf, sizeof(buf), f))
 				printf("%s", buf);
 			fclose(f);
 			free(data);
@@ -127,13 +128,23 @@ void
 show_pkg_info_one(xbps_dictionary_t d, const char *keys)
 {
 	xbps_object_t obj;
+	const char *bold, *reset;
 	char *key, *p, *saveptr;
+	int v_tty = isatty(STDOUT_FILENO);
+
+	if (v_tty) {
+		bold = _BOLD;
+		reset = _RESET;
+	} else {
+		bold = "";
+		reset = "";
+	}
 
 	if (strchr(keys, ',') == NULL) {
 		obj = xbps_dictionary_get(d, keys);
 		if (obj == NULL)
 			return;
-		print_value_obj(keys, obj, NULL, true);
+		print_value_obj(keys, obj, NULL, bold, reset, true);
 		return;
 	}
 	key = strdup(keys);
@@ -144,18 +155,17 @@ show_pkg_info_one(xbps_dictionary_t d, const char *keys)
 		obj = xbps_dictionary_get(d, p);
 		if (obj == NULL)
 			continue;
-		print_value_obj(p, obj, NULL, true);
+		print_value_obj(p, obj, NULL, bold, reset, true);
 	}
 	free(key);
 }
 
 static void
-print_srcrevs(const char *keyname, xbps_string_t obj)
+print_srcrevs(const char *keyname, xbps_string_t obj, const char *bold, const char *reset)
 {
 	const char *str = xbps_string_cstring_nocopy(obj);
 
-	/* parse string appending a \t after EOL */
-	printf("%s%s%s:\n  ", _BOLD, keyname, _RESET);
+	printf("%s%s%s:\n  ", bold, keyname, reset);
 	for (unsigned int i = 0; i < strlen(str); i++) {
 		if (str[i] == '\n')
 			printf("\n  ");
@@ -170,7 +180,16 @@ show_pkg_info(xbps_dictionary_t dict)
 {
 	xbps_array_t all_keys;
 	xbps_object_t obj, keysym;
-	const char *keyname;
+	const char *keyname, *bold, *reset;
+	int v_tty = isatty(STDOUT_FILENO);
+
+	if (v_tty) {
+		bold = _BOLD;
+		reset = _RESET;
+	} else {
+		bold = "";
+		reset = "";
+	}
 
 	all_keys = xbps_dictionary_all_keys(dict);
 	for (unsigned int i = 0; i < xbps_array_count(all_keys); i++) {
@@ -186,11 +205,11 @@ show_pkg_info(xbps_dictionary_t dict)
 
 		/* special case for source-revisions obj */
 		if (strcmp(keyname, "source-revisions") == 0) {
-			print_srcrevs(keyname, obj);
+			print_srcrevs(keyname, obj, bold, reset);
 			continue;
 		}
 		/* anything else */
-		print_value_obj(keyname, obj, NULL, false);
+		print_value_obj(keyname, obj, NULL, bold, reset, false);
 	}
 }
 
