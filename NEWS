@@ -1,4 +1,4 @@
-xbps-0.40 (???):
+xbps-0.40 (2014-09-18):
 
  * xbps-install(8): handle xbps_transaction_prepare() returning ENOSPC, to
    abort a transaction when there's insufficient disk space on rootdir.
