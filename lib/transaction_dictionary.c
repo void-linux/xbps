@@ -173,7 +173,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		return 0;
 	}
 	/* compute free space on disk */
-	rootdir_free_size = svfs.f_bavail * svfs.f_bsize - instsize;
+	rootdir_free_size = svfs.f_bfree * svfs.f_bsize;
 
 	if (!xbps_dictionary_set_uint64(xhp->transd,
 				"disk-free-size", rootdir_free_size))

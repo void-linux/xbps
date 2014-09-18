@@ -1,5 +1,8 @@
 xbps-0.40 (???):
 
+ * xbps-install(8): handle xbps_transaction_prepare() returning ENOSPC, to
+   abort a transaction when there's insufficient disk space on rootdir.
+
  * xbps-query(8): -S/--show mode no longer prints ANSI escape codes if stdout
    is not a tty; suggested by @chneukirchen.
 

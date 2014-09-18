@@ -322,6 +322,9 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 			array = xbps_dictionary_get(xhp->transd, "conflicts");
 			print_array(array);
 			fprintf(stderr, "Transaction aborted due to conflicting packages.\n");
+		} else if (rv == ENOSPC) {
+			/* not enough free space */
+			fprintf(stderr, "Transaction aborted due to insufficient disk space.\n");
 		} else {
 			xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
 			    strerror(errno));
