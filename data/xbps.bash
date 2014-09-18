@@ -38,8 +38,8 @@ _xbps_complete() {
 		return
 	fi
 
-	local common='-C|--config|-r|--rootdir'
-	local morecommon="$common|-c|--cachedir"
+	local common='C|-config|r|-rootdir'
+	local morecommon="$common|c|-cachedir"
 
 	local modes='auto manual hold unhold'
 	local props='architecture
@@ -75,45 +75,45 @@ _xbps_complete() {
 
 	case $1 in
 		xbps-dgraph)
-			if [[ $prev != @(-c|-o|-r) ]]; then
+			if [[ $prev != -@(c|o|r) ]]; then
 				_xbps_installed_reply $cur
 				return
 			fi
 			;;
 		xbps-install)
-			if [[ $prev != @($morecommon) ]]; then
+			if [[ $prev != -@($morecommon) ]]; then
 				_xbps_all_reply $cur
 				return
 			fi
 			;;
 		xbps-pkgdb)
-			if [[ $prev == @(-m|--mode) ]]; then
+			if [[ $prev == -@(m|-mode) ]]; then
 				COMPREPLY=( $( compgen -W "$modes" -- "$cur") )
 				return
 			fi
-			if [[ $prev != @($common) ]]; then
+			if [[ $prev != -@($common) ]]; then
 				_xbps_installed_reply $cur
 				return
 			fi
 			;;
 		xbps-query)
-			if [[ $prev == @(-p|--property) ]]; then
+			if [[ $prev == -@(p|-property) ]]; then
 				COMPREPLY=( $( compgen -W "$props" -- "$cur") )
 				return
 			fi
-			if [[ $prev != @($morecommon|-p|--property|-o|--ownedby) ]]; then
+			if [[ $prev != -@($morecommon|o|-ownedby) ]]; then
 				_xbps_all_reply $cur
 				return
 			fi
 			;;
 		xbps-reconfigure)
-			if [[ $prev != @($common) ]]; then
+			if [[ $prev != -@($common) ]]; then
 				_xbps_installed_reply $cur
 				return
 			fi
 			;;
 		xbps-remove)
-			if [[ $prev != @($morecommon) ]]; then
+			if [[ $prev != -@($morecommon) ]]; then
 				_xbps_installed_reply $cur
 				return
 			fi
