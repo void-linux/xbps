@@ -102,7 +102,14 @@ _xbps_complete() {
 				return
 			fi
 			if [[ $prev != -@($morecommon|o|-ownedby) ]]; then
-				_xbps_all_reply $cur
+				local w
+				for w in "${words[@]}"; do
+					if [[ "$w" == -@(R|-repository) ]]; then
+						_xbps_all_reply $cur
+						return
+					fi
+				done
+				_xbps_installed_reply $cur
 				return
 			fi
 			;;
