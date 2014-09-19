@@ -833,14 +833,17 @@ main(int argc, char **argv)
 	/*
 	 * Set compression format, xz if unset.
 	 */
-	if (compression == NULL || strcmp(compression, "xz") == 0)
+	if (compression == NULL || strcmp(compression, "xz") == 0) {
 		archive_write_add_filter_xz(ar);
-	else if (strcmp(compression, "gzip") == 0)
+	} else if (strcmp(compression, "gzip") == 0) {
 		archive_write_add_filter_gzip(ar);
-	else if (strcmp(compression, "bzip2") == 0)
+		archive_write_set_options(ar, "compression-level=9");
+	} else if (strcmp(compression, "bzip2") == 0) {
 		archive_write_add_filter_bzip2(ar);
-	else
+		archive_write_set_options(ar, "compression-level=9");
+	} else {
 		die("unknown compression format %s");
+	}
 
 	archive_write_set_format_pax_restricted(ar);
 	if ((resolver = archive_entry_linkresolver_new()) == NULL)
@@ -848,7 +851,6 @@ main(int argc, char **argv)
 	archive_entry_linkresolver_set_strategy(resolver,
 	    archive_format(ar));
 
-	archive_write_set_options(ar, "compression-level=9");
 	if (archive_write_open_fd(ar, pkg_fd) != 0)
 		die("Failed to open %s fd for writing:", tname);
 
