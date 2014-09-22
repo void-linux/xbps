@@ -94,6 +94,8 @@ usage(void)
 	" -q --quiet          Work silently.\n"
 	" -R --replaces       Replaces (blank separated list,\n"
 	"                     e.g: 'foo>=1.0 blah<2.0').\n"
+	" -r --reverts        Reverts (blank separated list,\n"
+	"                     e.g: '1.0_1 2.0_3').\n"
 	" -S --long-desc      Long description (80 cols per line).\n"
 	" -s --desc           Short description (max 80 characters).\n"
 	" -t --tags           A list of tags/categories (blank separated list).\n"
@@ -591,7 +593,7 @@ set_build_date(void)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "A:B:C:D:F:G:H:hl:M:m:n:P:pqR:S:s:t:V";
+	const char *shortopts = "A:B:C:D:F:G:H:hl:M:m:n:P:pqr:R:S:s:t:V";
 	const struct option longopts[] = {
 		{ "architecture", required_argument, NULL, 'A' },
 		{ "built-with", required_argument, NULL, 'B' },
@@ -609,6 +611,7 @@ main(int argc, char **argv)
 		{ "preserve", no_argument, NULL, 'p' },
 		{ "quiet", no_argument, NULL, 'q' },
 		{ "replaces", required_argument, NULL, 'R' },
+		{ "reverts", required_argument, NULL, 'r' },
 		{ "long-desc", required_argument, NULL, 'S' },
 		{ "desc", required_argument, NULL, 's' },
 		{ "tags", required_argument, NULL, 't' },
@@ -624,7 +627,7 @@ main(int argc, char **argv)
 	struct archive_entry_linkresolver *resolver;
 	struct stat st;
 	const char *conflicts, *deps, *homepage, *license, *maint, *bwith;
-	const char *provides, *pkgver, *replaces, *desc, *ldesc;
+	const char *provides, *pkgver, *replaces, *reverts, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
 	const char *buildopts, *shlib_provides, *shlib_requires;
 	const char *compression, *tags = NULL, *srcrevs = NULL;
@@ -634,8 +637,9 @@ main(int argc, char **argv)
 	mode_t myumask;
 
 	arch = conflicts = deps = homepage = license = maint = compression = NULL;
-	provides = pkgver = replaces = desc = ldesc = bwith = buildopts = NULL;
-	config_files = mutable_files = shlib_provides = shlib_requires = NULL;
+	provides = pkgver = replaces = reverts = desc = ldesc = bwith = NULL;
+	buildopts = config_files = mutable_files = shlib_provides = NULL;
+	shlib_requires = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
@@ -689,6 +693,9 @@ main(int argc, char **argv)
 			break;
 		case 'R':
 			replaces = optarg;
+			break;
+		case 'r':
+			reverts = optarg;
 			break;
 		case 'S':
 			ldesc = optarg;
@@ -794,6 +801,7 @@ main(int argc, char **argv)
 	process_array("conflicts", conflicts);
 	process_array("provides", provides);
 	process_array("replaces", replaces);
+	process_array("reverts", reverts);
 	process_array("shlib-provides", shlib_provides);
 	process_array("shlib-requires", shlib_requires);
 
