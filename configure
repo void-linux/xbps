@@ -652,7 +652,7 @@ EOF
 fi
 
 #
-# If --with-static enabled, build static binaries.
+# If --enable-static enabled, build static binaries.
 #
 if [ "$BUILD_STATIC" = "yes" ]; then
 	echo "BUILD_STATIC = yes" >>$CONFIG_MK
@@ -662,7 +662,7 @@ else
 fi
 
 #
-# If --with-tests enabled, check for ATF >= 0.15 via pkg-config.
+# If --enable-tests enabled, check for ATF >= 0.15 via pkg-config.
 #
 if [ "$BUILD_TESTS" = "yes" ]; then
 	printf "Checking for ATF via pkg-config ... "

@@ -44,8 +44,8 @@ To build this you'll need:
 
 and optionally:
 
-  - [graphviz](http://www.graphviz.org) and [doxygen](http://www.doxygen.org) (--with-api-docs) to build API documentation.
-  - [atf >= 0.15](http://code.google.com/p/kyua) (--with-tests) to build the Kyua test suite.
+  - [graphviz](http://www.graphviz.org) and [doxygen](http://www.doxygen.org) (--enable-api-docs) to build API documentation.
+  - [atf >= 0.15](http://code.google.com/p/kyua) (--enable-tests) to build the Kyua test suite.
 
 ### Build instructions
 
