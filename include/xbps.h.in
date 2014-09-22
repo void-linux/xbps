@@ -1836,6 +1836,19 @@ bool xbps_pkg_arch_match(struct xbps_handle *xhp,
 int xbps_humanize_number(char *buf, int64_t bytes);
 
 /**
+ * Tests if pkgver is reverted by pkg
+ *
+ * The package version is defined by:
+ * ${VERSION}_${REVISION}.
+ *
+ * @param[in] pkgver a package version string
+ * @param[in] pkg a package which is a candidate to revert pkgver.
+ *
+ * @return 1 if pkg reverts pkgver, 0 otherwise.
+ */
+int xbps_pkgver_is_reverted(const char *pkgver, xbps_dictionary_t pkg);
+
+/**
  * Compares package version strings.
  *
  * The package version is defined by:
