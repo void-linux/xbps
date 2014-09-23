@@ -1839,7 +1839,9 @@ int xbps_humanize_number(char *buf, int64_t bytes);
  * Tests if pkgver is reverted by pkg
  *
  * The package version is defined by:
- * ${VERSION}_${REVISION}.
+ * ${NAME}-{${VERSION}_${REVISION}.
+ *
+ * the name part is ignored.
  *
  * @param[in] pkg a package which is a candidate to revert pkgver.
  * @param[in] pkgver a package version string
