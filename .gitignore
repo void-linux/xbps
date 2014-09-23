@@ -27,3 +27,7 @@ httperr.h
 tests/*/*/*/*_test
 tests/*/*/*_test
 include/xbps.h
+
+# vim backup files
+.*.swp
+*~
