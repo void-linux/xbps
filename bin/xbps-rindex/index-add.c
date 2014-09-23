@@ -119,17 +119,17 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			ret = xbps_cmpver(pkgver, opkgver);
 
 			/*
-			 * If the current package reverts the package in the index, consider
-			 * the current package as the newer one.
+			 * If the considered package reverts the package in the index,
+			 * consider the current package as the newer one.
 			 */
-			if(ret < 0 && xbps_pkg_reverts(curpkgd, pkgver)) {
+			if(ret < 0 && xbps_pkg_reverts(binpkgd, opkgver)) {
 				ret = 1;
 			}
 			/*
-			 * If package in the index reverts current package, consider the
+			 * If package in the index reverts considered package, consider the
 			 * package in the index as the newer one.
 			 */
-			else if (ret < 0 && xbps_pkg_reverts(binpkgd, opkgver)) {
+			else if (ret > 0 && xbps_pkg_reverts(curpkgd, pkgver)) {
 				ret = -1;
 			}
 
