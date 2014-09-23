@@ -1841,12 +1841,12 @@ int xbps_humanize_number(char *buf, int64_t bytes);
  * The package version is defined by:
  * ${VERSION}_${REVISION}.
  *
- * @param[in] pkgver a package version string
  * @param[in] pkg a package which is a candidate to revert pkgver.
+ * @param[in] pkgver a package version string
  *
  * @return 1 if pkg reverts pkgver, 0 otherwise.
  */
-int xbps_pkgver_is_reverted(const char *pkgver, xbps_dictionary_t pkg);
+int xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver);
 
 /**
  * Compares package version strings.

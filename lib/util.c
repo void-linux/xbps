@@ -430,7 +430,7 @@ xbps_humanize_number(char *buf, int64_t bytes)
  * Check if pkg is explicitly marked to replace a specific installed version.
  */
 int
-xbps_pkgver_is_reverted(const char *pkgver, xbps_dictionary_t pkg) {
+xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver) {
 	unsigned int i;
 	xbps_array_t reverts;
 	const char *revertver;
