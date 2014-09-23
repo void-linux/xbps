@@ -429,7 +429,7 @@ xbps_humanize_number(char *buf, int64_t bytes)
 /*
  * Check if pkg is explicitly marked to replace a specific installed version.
  */
-int
+bool
 xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver) {
 	unsigned int i;
 	xbps_array_t reverts;
@@ -437,14 +437,14 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver) {
 	const char *revertver;
 
 	if ((reverts = xbps_dictionary_get(pkg, "reverts")) == NULL)
-		return 0;
+		return false;
 
 	for (i = 0; i < xbps_array_count(reverts); i++) {
 		xbps_array_get_cstring_nocopy(reverts, i, &revertver);
 		if (strcmp(version, revertver) == 0) {
-			return 1;
+			return false;
 		}
 	}
 
-	return 0;
+	return false;
 }
