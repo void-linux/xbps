@@ -1,5 +1,13 @@
 xbps-0.41 (???):
 
+ * xbps-create(8): xz compressed packages now use default compression
+   level (-6) rather than max level (-9); max compression level uses
+   too much memory and it's much slower; by Christian Neukirchen.
+
+ * Improvements for xbps bash completions, by Eivind Uggedal.
+
+ * A performance improvement for xbps_file_hash(), by Enno Boland.
+
 xbps-0.40 (2014-09-18):
 
  * xbps-install(8): handle xbps_transaction_prepare() returning ENOSPC, to
