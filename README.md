@@ -1,31 +1,40 @@
 ## XBPS
 
-The X Binary Package System (in short XBPS) is a binary package system **designed and implemented from scratch**. Its goal is to be fast, easy to use, bug-free, featureful and portable as much as possible.
+The X Binary Package System (in short XBPS) is a binary package system
+**designed and implemented from scratch**. Its goal is to be fast, easy to use,
+bug-free, featureful and portable as much as possible.
 
-The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and released with a **Simplified BSD license (2 clause)**. There is a well documented API provided by the XBPS Library that is the basis for its frontends to handle binary packages and repositories. Some highlights:
+The XBPS code is totally **compatible with POSIX/SUSv2/C99 standards**, and
+released with a **Simplified BSD license (2 clause)**. There is a well
+documented API provided by the XBPS Library that is the basis for its frontends
+to handle binary packages and repositories. Some highlights:
 
  * Supports **multiple local and remote repositories** (HTTP/HTTPS/FTP).
  * **RSA signed remote repositories** (NEW in 0.27).
  * **SHA256 hashes** for package metadata, files and binary packages.
- * Supports **package states** (ala dpkg) to mitigate broken package installs/updates.
+ * Supports **package states** (ala dpkg) to mitigate broken package
+   installs/updates.
  * Ability to **resume** partial package install/updates.
  * Ability to **unpack only files that have been modified** in package updates.
  * Ability to use **virtual packages**.
- * Ability to **check for incompatible shared libraries in reverse dependencies**.
+ * Ability to **check for incompatible shared libraries in reverse
+   dependencies**.
  * Ability to **replace packages**.
  * Ability to **put packages on hold** (to never update them. NEW in 0.16).
  * Ability to **preserve/update configuration files**.
  * Ability to **force reinstallation** of any installed package.
  * Ability to **downgrade any** installed package.
  * Ability to **execute pre/post install/remove/update scriptlets**.
- * Ability to **check package integrity**: missing files, hashes, missing or unresolved (reverse)dependencies, dangling or modified symlinks, etc.
+ * Ability to **check package integrity**: missing files, hashes, missing or
+   unresolved (reverse)dependencies, dangling or modified symlinks, etc.
  * **Low memory** footprint.
  * **Fast** dependency resolver and sorting algorithms.
 
 ### Getting source code
 
-Starting with **0.26** there are not source tarballs anymore. **git** must be used to clone
-the repository with the appropiate tag. The latest stable version can be fetched with:
+Starting with **0.26** there are not source tarballs anymore. **git** must be
+used to clone the repository with the appropiate tag. The latest stable version
+can be fetched with:
 
     $ git clone -b <version> git://github.com/xtraeme/xbps.git
 
@@ -44,8 +53,10 @@ To build this you'll need:
 
 and optionally:
 
-  - [graphviz](http://www.graphviz.org) and [doxygen](http://www.doxygen.org) (--enable-api-docs) to build API documentation.
-  - [atf >= 0.15](http://code.google.com/p/kyua) (--enable-tests) to build the Kyua test suite.
+  - [graphviz](http://www.graphviz.org) and [doxygen](http://www.doxygen.org)
+    (--enable-api-docs) to build API documentation.
+  - [atf >= 0.15](http://code.google.com/p/kyua) (--enable-tests) to build the
+    Kyua test suite.
 
 ### Build instructions
 
@@ -57,8 +68,9 @@ make -jX
 make install
 ```
 
-By default PREFIX is set `/usr/local` and may be changed by setting `--prefix` in the
-`configure` script. The `DESTDIR` variable is also supported at the install stage.
+By default PREFIX is set `/usr/local` and may be changed by setting `--prefix`
+in the `configure` script. The `DESTDIR` variable is also supported at the
+install stage.
 
 There are some more options that can be tweaked, see them with
 `./configure --help'.
