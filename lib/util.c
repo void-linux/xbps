@@ -442,7 +442,7 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver) {
 	for (i = 0; i < xbps_array_count(reverts); i++) {
 		xbps_array_get_cstring_nocopy(reverts, i, &revertver);
 		if (strcmp(version, revertver) == 0) {
-			return false;
+			return true;
 		}
 	}
 
