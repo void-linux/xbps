@@ -425,3 +425,26 @@ xbps_humanize_number(char *buf, int64_t bytes)
 	return humanize_number(buf, 7, bytes, "B",
 	    HN_AUTOSCALE, HN_DECIMAL|HN_NOSPACE);
 }
+
+/*
+ * Check if pkg is explicitly marked to replace a specific installed version.
+ */
+bool
+xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver) {
+	unsigned int i;
+	xbps_array_t reverts;
+	const char *version = xbps_pkg_version(pkgver);
+	const char *revertver;
+
+	if ((reverts = xbps_dictionary_get(pkg, "reverts")) == NULL)
+		return false;
+
+	for (i = 0; i < xbps_array_count(reverts); i++) {
+		xbps_array_get_cstring_nocopy(reverts, i, &revertver);
+		if (strcmp(version, revertver) == 0) {
+			return false;
+		}
+	}
+
+	return false;
+}

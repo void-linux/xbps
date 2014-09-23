@@ -146,11 +146,42 @@ ATF_TC_BODY(pkgdb_get_pkg_revdeps_test, tc)
 	ATF_REQUIRE_STREQ(xbps_string_cstring_nocopy(pstr), eout);
 }
 
+ATF_TC(pkgdb_pkg_reverts_test);
+ATF_TC_HEAD(pkgdb_pkg_reverts_test, tc)
+{
+	atf_tc_set_md_var(tc, "descr", "Test xbps_pkg_reverts()");
+}
+
+ATF_TC_BODY(pkgdb_pkg_reverts_test, tc)
+{
+	struct xbps_handle xh;
+	const char *tcsdir;
+	xbps_dictionary_t pkgd;
+
+	/* get test source dir */
+	tcsdir = atf_tc_get_config_var(tc, "srcdir");
+
+	memset(&xh, 0, sizeof(xh));
+	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	xh.flags = XBPS_FLAG_DEBUG;
+	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
+
+	pkgd = xbps_pkgdb_get_pkg(&xh, "reverts");
+	ATF_REQUIRE_EQ(xbps_object_type(pkgd), XBPS_TYPE_DICTIONARY);
+
+	ATF_REQUIRE_EQ(xbps_pkg_reverts(pkgd, "reverts-0.2_1"), 0);
+	ATF_REQUIRE_EQ(xbps_pkg_reverts(pkgd, "reverts-0.3_1"), 1);
+	ATF_REQUIRE_EQ(xbps_pkg_reverts(pkgd, "reverts-0.4_1"), 1);
+	ATF_REQUIRE_EQ(xbps_pkg_reverts(pkgd, "reverts-0.5_1"), 0);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, pkgdb_get_pkg_test);
 	ATF_TP_ADD_TC(tp, pkgdb_get_virtualpkg_test);
 	ATF_TP_ADD_TC(tp, pkgdb_get_pkg_revdeps_test);
+	ATF_TP_ADD_TC(tp, pkgdb_pkg_reverts_test);
 
 	return atf_no_error();
 }

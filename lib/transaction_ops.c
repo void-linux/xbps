@@ -117,7 +117,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		 */
 		xbps_dictionary_get_cstring_nocopy(pkg_pkgdb,
 		    "pkgver", &instpkgver);
-		if (xbps_cmpver(repopkgver, instpkgver) <= 0) {
+		if (xbps_cmpver(repopkgver, instpkgver) <= 0 &&
+		    !xbps_pkg_reverts(pkg_repod, repopkgver)) {
 			xbps_dbg_printf(xhp, "[rpool] Skipping `%s' "
 			    "(installed: %s) from repository `%s'\n",
 			    repopkgver, instpkgver, repoloc);

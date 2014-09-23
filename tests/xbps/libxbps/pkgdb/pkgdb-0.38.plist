@@ -94,5 +94,21 @@
 		<key>state</key>
 		<string>installed</string>
 	</dict>
+	<key>reverts</key>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgver</key>
+		<string>reverts-0.2_1</string>
+		<key>reverts</key>
+		<array>
+			<string>0.3_1</string>
+			<string>0.4_1</string>
+		</array>
+		<key>short_desc</key>
+		<string>two descriptionm</string>
+		<key>state</key>
+		<string>installed</string>
+	</dict>
 </dict>
 </plist>

@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140913"
+#define XBPS_API_VERSION	"20140923"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1834,6 +1834,21 @@ bool xbps_pkg_arch_match(struct xbps_handle *xhp,
  * @return A negative number is returned on error, 0 otherwise.
  */
 int xbps_humanize_number(char *buf, int64_t bytes);
+
+/**
+ * Tests if pkgver is reverted by pkg
+ *
+ * The package version is defined by:
+ * ${NAME}-{${VERSION}_${REVISION}.
+ *
+ * the name part is ignored.
+ *
+ * @param[in] pkg a package which is a candidate to revert pkgver.
+ * @param[in] pkgver a package version string
+ *
+ * @return true if pkg reverts pkgver, false otherwise.
+ */
+bool xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver);
 
 /**
  * Compares package version strings.

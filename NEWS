@@ -8,6 +8,13 @@ xbps-0.41 (???):
 
  * A performance improvement for xbps_file_hash(), by Enno Boland.
 
+ * Added reverts field to package definitions. If defined, a package will
+   replace all versions specified in this field even if the installed version is
+   newer. This is helpful when a broken package is released. The maintainer can
+   downgrade this package and define a reverts field to the broken version. On
+   the next update xbps-install will automatically replace the broken release by
+   the new downgraded release.
+
 xbps-0.40 (2014-09-18):
 
  * xbps-install(8): handle xbps_transaction_prepare() returning ENOSPC, to

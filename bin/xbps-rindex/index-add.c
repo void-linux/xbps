@@ -117,6 +117,22 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			xbps_dictionary_get_cstring(curpkgd, "pkgver", &opkgver);
 			xbps_dictionary_get_cstring(curpkgd, "architecture", &oarch);
 			ret = xbps_cmpver(pkgver, opkgver);
+
+			/*
+			 * If the considered package reverts the package in the index,
+			 * consider the current package as the newer one.
+			 */
+			if(ret < 0 && xbps_pkg_reverts(binpkgd, opkgver)) {
+				ret = 1;
+			}
+			/*
+			 * If package in the index reverts considered package, consider the
+			 * package in the index as the newer one.
+			 */
+			else if (ret > 0 && xbps_pkg_reverts(curpkgd, pkgver)) {
+				ret = -1;
+			}
+
 			if (ret <= 0) {
 				/* Same version or index version greater */
 				fprintf(stderr, "index: skipping `%s' (%s), already registered.\n", pkgver, arch);
