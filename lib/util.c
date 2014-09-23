@@ -433,6 +433,7 @@ int
 xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver) {
 	unsigned int i;
 	xbps_array_t reverts;
+	const char *version = xbps_pkg_version(pkgver);
 	const char *revertver;
 
 	if ((reverts = xbps_dictionary_get(pkg, "reverts")) == NULL)
@@ -440,7 +441,7 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver) {
 
 	for (i = 0; i < xbps_array_count(reverts); i++) {
 		xbps_array_get_cstring_nocopy(reverts, i, &revertver);
-		if (strcmp(pkgver, revertver) == 0) {
+		if (strcmp(version, revertver) == 0) {
 			return 1;
 		}
 	}
