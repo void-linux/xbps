@@ -80,6 +80,6 @@ kyua test -k ./tests/.../Kyuafile
 ```
 
 There are some more options that can be tweaked, see them with
-`./configure --help'.
+`./configure --help`.
 
 Good luck!
