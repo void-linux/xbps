@@ -72,6 +72,13 @@ By default PREFIX is set `/usr/local` and may be changed by setting `--prefix`
 in the `configure` script. The `DESTDIR` variable is also supported at the
 install stage.
 
+If you want to build the tests too add `--enable-tests` to configure. Also make
+sure you have kyua installed. To run a test call this:
+
+```
+kyua test -k ./tests/.../Kyuafile
+```
+
 There are some more options that can be tweaked, see them with
 `./configure --help'.
 
