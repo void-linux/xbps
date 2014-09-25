@@ -108,17 +108,17 @@ static map_item_t
 map_find_n(map_t *map, const char *k, size_t n)
 {
 	size_t i = 0;
-	map_item_t item = map_new_item();
+	map_item_t item;
 
-	if (map->len == 0)
-		return item;
-
-	while(i < map->len) {
-		item = map->items[i++];
+	for(i = 0; i < map->len; i++) {
+		item = map->items[i];
 		if (item.k.len != 0)
 			if ((strncmp(k, item.k.s, n) == 0))
 				break;
 	}
+	if (map->len == i)
+		return map_new_item();
+
 	return item;
 }
 
@@ -483,10 +483,44 @@ rcv_find_conf(rcv_t *rcv)
 	}
 }
 
+static bool
+check_reverts(const char *repover, const map_item_t reverts) {
+	bool rv = false;
+	char *sreverts, *p;
+
+	if(reverts.v.len == 0)
+		return rv;
+
+	sreverts = calloc(reverts.v.len+1, sizeof(char));
+	strncpy(sreverts, reverts.v.s, reverts.v.len);
+	sreverts[reverts.v.len] = '\0';
+
+	for (p = sreverts; (p = strstr(p, repover));) {
+		/*
+		 * Check if it's the first character or the previous character is a
+		 * whitespace.
+		 */
+		if(p > sreverts && !isspace(p[-1]))
+			continue;
+		p += strlen(repover);
+		/*
+		 * Check if it's the last character or if the next character is a
+		 * whitespace
+		 */
+		if(isspace(*p) || *p == '\0') {
+			rv = true;
+			break;
+		}
+	}
+
+	free(sreverts);
+	return rv;
+}
+
 static int
 rcv_check_version(rcv_t *rcv)
 {
-	map_item_t pkgname, version, revision;
+	map_item_t pkgname, version, revision, reverts;
 	const char *repover = NULL;
 	char _srcver[BUFSIZ] = { '\0' };
 	char *srcver = _srcver;
@@ -500,6 +534,7 @@ rcv_check_version(rcv_t *rcv)
 	pkgname = map_find(rcv->env, "pkgname");
 	version = map_find(rcv->env, "version");
 	revision = map_find(rcv->env, "revision");
+	reverts = map_find(rcv->env, "reverts");
 
 	srcver = strncpy(srcver, pkgname.v.s, pkgname.v.len);
 	if (rcv->installed)
@@ -518,7 +553,8 @@ rcv_check_version(rcv_t *rcv)
 	}
 	if (repover != NULL && rcv->show_missing == false) {
 		if (xbps_cmpver(repover+pkgname.v.len+1,
-		    srcver+pkgname.v.len+1) < 0) {
+		    srcver+pkgname.v.len+1) < 0 ||
+		    check_reverts(repover+pkgname.v.len+1, reverts)) {
 			printf("pkgname: %.*s repover: %s srcpkgver: %s\n",
 				(int)pkgname.v.len, pkgname.v.s,
 				repover+pkgname.v.len+1,
