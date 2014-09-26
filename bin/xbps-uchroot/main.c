@@ -83,7 +83,7 @@ static void __attribute__((noreturn))
 usage(const char *p)
 {
 	printf("Usage: %s [-D dir] [-H dir] [-S dir] <chrootdir> <command>\n\n"
-	    "-D <distdir> Directory to be bind mounted at <chrootdir>/xbps-packages\n"
+	    "-D <distdir> Directory to be bind mounted at <chrootdir>/void-packages\n"
 	    "-H <hostdir> Directory to be bind mounted at <chrootdir>/host\n"
 	    "-S <shmdir>  Directory to be bind mounted at <chrootdir>/<shmdir>\n", p);
 	exit(EXIT_FAILURE);
@@ -227,7 +227,7 @@ main(int argc, char **argv)
 
 		/* bind mount distdir (if set) */
 		if (distdir)
-			bindmount(ruid, chrootdir, distdir, "/xbps-packages");
+			bindmount(ruid, chrootdir, distdir, "/void-packages");
 
 		/* bind mount shmdir (if set) */
 		if (shmdir)

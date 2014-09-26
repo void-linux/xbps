@@ -15,6 +15,8 @@ xbps-0.41 (???):
    the next update xbps-install will automatically replace the broken release by
    the new downgraded release.
 
+ * replace xbps-package directory by the new void-packages, by Enno Boland.
+
 xbps-0.40 (2014-09-18):
 
  * xbps-install(8): handle xbps_transaction_prepare() returning ENOSPC, to

@@ -54,7 +54,7 @@ _xbps_installed_packages() {
 _xbps_checkvers() {
 	_arguments -s : \
 		$_xbps_common \
-		{-D,--distdir}'[Set the path to xbps-packages]:path:_files -/' \
+		{-D,--distdir}'[Set the path to void-packages]:path:_files -/' \
 		{-i,--installed}'[Check for outdated packages in rootdir]' \
 		{-s,--show-missing}'[List any binary packages which are not built.]' \
 		'*:extra packages:_files'

@@ -187,8 +187,8 @@ show_usage(const char *prog)
 "  -h,--help			Show this helpful help-message for help.\n"
 "  -C,--config=FILENAME 	Set (or override) the `xbps.conf' (which may\n"
 "				have automatically been detected).\n"
-"  -D,--distdir=DIRECTORY	Set (or override) the path to xbps-packages\n"
-"				(defaults to ~/xbps-packages).\n"
+"  -D,--distdir=DIRECTORY	Set (or override) the path to void-packages\n"
+"				(defaults to ~/void-packages).\n"
 "  -d,--debug 			Enable debug output to stderr.\n"
 "  -i,--installed 		Check for outdated packages in rootdir, rather\n"
 "				than in the XBPS repositories.\n"
@@ -650,10 +650,10 @@ main(int argc, char **argv)
 		}
 	}
 	/*
-	 * If --distdir not set default to ~/xbps-packages.
+	 * If --distdir not set default to ~/void-packages.
 	 */
 	if (rcv.distdir == NULL) {
-		distdir = xbps_xasprintf("%s/xbps-packages", getenv("HOME"));
+		distdir = xbps_xasprintf("%s/void-packages", getenv("HOME"));
 		rcv_set_distdir(&rcv, distdir);
 		free(distdir);
 	}
