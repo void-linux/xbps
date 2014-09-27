@@ -105,7 +105,6 @@ check_pkg_integrity(struct xbps_handle *xhp,
 			xbps_object_release(filesd);
 			fprintf(stderr, "%s: metadata file has been "
 			    "modified!\n", pkgname);
-			xbps_object_release(filesd);
 			return 1;
 		}
 	}
