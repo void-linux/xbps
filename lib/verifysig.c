@@ -30,6 +30,7 @@
 #include <libgen.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 
 #include <openssl/err.h>
 #include <openssl/sha.h>
@@ -81,11 +82,10 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
-	struct stat st, sig_st;
 	const char *hexfp = NULL;
 	unsigned char *buf = NULL, *sig_buf = NULL;
+	size_t buflen, filelen, sigbuflen, sigfilelen;
 	char *rkeyfile = NULL, *sig = NULL;
-	int fd = -1, sig_fd = -1;
 	bool val = false;
 
 	if (!xbps_dictionary_count(repo->idxmeta)) {
@@ -116,50 +116,30 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	/*
 	 * Prepare fname and signature data buffers.
 	 */
-	if ((fd = open(fname, O_RDONLY)) == -1) {
+	if (!xbps_mmap_file(fname, (void *)&buf, &buflen, &filelen)) {
 		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
 		goto out;
 	}
 	sig = xbps_xasprintf("%s.sig", fname);
-	if ((sig_fd = open(sig, O_RDONLY)) == -1) {
+	if (!xbps_mmap_file(sig, (void *)&sig_buf, &sigbuflen, &sigfilelen)) {
 		xbps_dbg_printf(repo->xhp, "can't open signature file %s: %s\n", sig, strerror(errno));
-		goto out;
-	}
-	fstat(fd, &st);
-	fstat(sig_fd, &sig_st);
-
-	buf = malloc(st.st_size);
-	assert(buf);
-	sig_buf = malloc(sig_st.st_size);
-	assert(sig_buf);
-
-	if (read(fd, buf, st.st_size) != st.st_size) {
-		xbps_dbg_printf(repo->xhp, "failed to read file %s: %s\n", fname, strerror(errno));
-		goto out;
-	}
-	if (read(sig_fd, sig_buf, sig_st.st_size) != sig_st.st_size) {
-		xbps_dbg_printf(repo->xhp, "failed to read signature file %s: %s\n", sig, strerror(errno));
 		goto out;
 	}
 	/*
 	 * Verify fname RSA signature.
 	 */
-	if (rsa_verify_buf(repo, pubkey, sig_buf, sig_st.st_size, buf, st.st_size))
+	if (rsa_verify_buf(repo, pubkey, sig_buf, sigfilelen, buf, filelen))
 		val = true;
 
 out:
 	if (rkeyfile)
 		free(rkeyfile);
-	if (fd != -1)
-		close(fd);
-	if (sig_fd != -1)
-		close(sig_fd);
 	if (buf)
-		free(buf);
+		(void)munmap(buf, buflen);
+	if (sig_buf)
+		(void)munmap(sig_buf, sigbuflen);
 	if (sig)
 		free(sig);
-	if (sig_buf)
-		free(sig_buf);
 	if (repokeyd)
 		xbps_object_release(repokeyd);
 

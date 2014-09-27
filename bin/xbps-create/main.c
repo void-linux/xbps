@@ -427,11 +427,8 @@ process_destdir(const char *mutable_files)
 static void
 write_entry(struct archive *ar, struct archive_entry *entry)
 {
-	char buf[16384];
-	const char *name;
-	int fd = -1;
-	off_t len;
-	ssize_t buf_len;
+	char *mmf;
+	size_t mmflen, filelen;
 
 	if (archive_entry_pathname(entry) == NULL)
 		return;
@@ -449,25 +446,11 @@ write_entry(struct archive *ar, struct archive_entry *entry)
 		return;
 	}
 
-	name = archive_entry_sourcepath(entry);
-	fd = open(name, O_RDONLY);
-	assert(fd != -1);
+	if (!xbps_mmap_file(archive_entry_sourcepath(entry), (void *)&mmf, &mmflen, &filelen))
+		die("cannot read %s file", name);
 
-	len = archive_entry_size(entry);
-	while (len > 0) {
-		buf_len = (len > (off_t)sizeof(buf)) ?
-			(ssize_t)sizeof(buf) : (ssize_t)len;
-
-		if ((buf_len = read(fd, buf, buf_len)) == 0)
-			break;
-		else if (buf_len < 0)
-			die("cannot read from %s", name);
-
-		archive_write_data(ar, buf, (size_t)buf_len);
-		len -= buf_len;
-	}
-	close(fd);
-
+	archive_write_data(ar, mmf, filelen);
+	(void)munmap(mmf, mmflen);
 	archive_entry_free(entry);
 }
 

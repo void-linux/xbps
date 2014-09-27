@@ -22,7 +22,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+#include <sys/mman.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -57,44 +57,77 @@ digest2string(const uint8_t *digest, char *string, size_t len)
 	*string = '\0';
 }
 
-char *
-xbps_file_hash(const char *file)
+bool
+xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 {
 	struct stat st;
-	SHA256_CTX ctx;
-	char hash[SHA256_DIGEST_LENGTH * 2 + 1];
-	unsigned char digest[SHA256_DIGEST_LENGTH];
-	ssize_t ret;
-	unsigned char buf[4096];
+	size_t pgsize = (size_t)sysconf(_SC_PAGESIZE);
+	size_t pgmask = pgsize - 1, mapsize;
+	unsigned char *mf;
+	bool need_guard = false;
 	int fd;
 
+	assert(file);
+
 	if ((fd = open(file, O_RDONLY)) == -1)
-		return NULL;
+		return false;
 
 	if (fstat(fd, &st) == -1) {
 		(void)close(fd);
-		return NULL;
+		return false;
 	}
 	if (st.st_size > SSIZE_MAX - 1) {
 		(void)close(fd);
-		return NULL;
+		return false;
 	}
-
-	SHA256_Init(&ctx);
-	while ((ret = read(fd, buf, sizeof(buf))) > 0)
-		SHA256_Update(&ctx, buf, ret);
-
-	if (ret == -1) {
-		/* read error */
+	mapsize = ((size_t)st.st_size + pgmask) & ~pgmask;
+	if (mapsize < (size_t)st.st_size) {
 		(void)close(fd);
-		return NULL;
+		return false;
+	}
+	/*
+	 * If the file length is an integral number of pages, then we
+	 * need to map a guard page at the end in order to provide the
+	 * necessary NUL-termination of the buffer.
+	 */
+	if ((st.st_size & pgmask) == 0)
+		need_guard = true;
+
+	mf = mmap(NULL, need_guard ? mapsize + pgsize : mapsize,
+	    PROT_READ, MAP_PRIVATE, fd, 0);
+	(void)close(fd);
+	if (mf == MAP_FAILED) {
+		(void)munmap(mf, mapsize);
+		return false;
 	}
 
-	SHA256_Final(digest, &ctx);
-	(void)close(fd);
-	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
+	*mmf = mf;
+	*mmflen = mapsize;
+	*filelen = st.st_size;
 
-	return strdup(hash);
+	return true;
+}
+
+char *
+xbps_file_hash(const char *file)
+{
+	char *res, hash[SHA256_DIGEST_LENGTH * 2 + 1];
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	unsigned char *mmf = NULL;
+	size_t mmflen, filelen;
+
+	if (!xbps_mmap_file(file, (void *)&mmf, &mmflen, &filelen))
+		return NULL;
+
+	if (SHA256(mmf, filelen, digest) == NULL) {
+		(void)munmap(mmf, mmflen);
+		return NULL;
+	}
+	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
+	res = strdup(hash);
+	(void)munmap(mmf, mmflen);
+
+	return res;
 }
 
 int

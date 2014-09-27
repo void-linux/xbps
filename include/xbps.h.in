@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140923"
+#define XBPS_API_VERSION	"20140927"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1634,6 +1634,21 @@ int xbps_mkpath(const char *path, mode_t mode);
  * no longer needed.
  */
 char *xbps_xasprintf(const char *fmt, ...);
+
+/**
+ * Creates a memory mapped object from file \a file into \a mmf
+ * with size \a mmflen, and file size to \a filelen;
+ *
+ * @param[in] file Path to a file.
+ * @param[out] mmf Memory mapped object.
+ * @param[out] mmflen Length of memory mapped object.
+ * @param[out] filelen File size length.
+ *
+ * @return True on success, false otherwise and errno
+ * is set appropiately. The mmaped object should be munmap()ed when it's
+ * not longer needed.
+ */
+bool xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen);
 
 /**
  * Returns a string with the sha256 hash for the file specified
