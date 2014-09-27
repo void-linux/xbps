@@ -1,4 +1,4 @@
 syntax("kyuafile", 1)
 
-test_suite("xbps-install")
-atf_test_program{name="checkvers.sh"}
+test_suite("xbps-checkvers")
+atf_test_program{name="checkvers"}
