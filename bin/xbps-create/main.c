@@ -427,6 +427,7 @@ process_destdir(const char *mutable_files)
 static void
 write_entry(struct archive *ar, struct archive_entry *entry)
 {
+	const char *name;
 	char *mmf;
 	size_t mmflen, filelen;
 
@@ -446,7 +447,8 @@ write_entry(struct archive *ar, struct archive_entry *entry)
 		return;
 	}
 
-	if (!xbps_mmap_file(archive_entry_sourcepath(entry), (void *)&mmf, &mmflen, &filelen))
+	name = archive_entry_sourcepath(entry);
+	if (!xbps_mmap_file(name, (void *)&mmf, &mmflen, &filelen))
 		die("cannot read %s file", name);
 
 	archive_write_data(ar, mmf, filelen);
