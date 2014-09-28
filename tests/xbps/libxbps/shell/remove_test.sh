@@ -105,8 +105,40 @@ remove_symlinks_from_root_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case remove_readonly_files
+
+remove_readonly_files_head() {
+	atf_set "descr" "Tests for package removal: read-only files"
+}
+
+remove_readonly_files_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin
+	echo kjaskjas > pkg_A/usr/bin/foo
+	echo sskjas > pkg_A/usr/bin/blah
+	chmod 444 pkg_A/usr/bin/foo
+	chmod 444 pkg_A/usr/bin/blah
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -yv A
+	atf_check_equal $? 0
+	xbps-remove -r root -yv A
+	atf_check_equal $? 0
+	rv=0
+	if [ -r root/usr/bin/foo -a -r root/usr/bin/blah ]; then
+	        rv=1
+	fi
+	atf_check_equal $rv 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case keep_base_symlinks
+	atf_add_test_case remove_readonly_files
 	atf_add_test_case remove_symlinks
 	atf_add_test_case remove_symlinks_from_root
 }
