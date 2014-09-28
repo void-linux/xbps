@@ -37,8 +37,9 @@
 
 static bool
 check_remove_pkg_files(struct xbps_handle *xhp,
-	xbps_dictionary_t pkgd, const char *pkgver)
+	xbps_dictionary_t pkgd, const char *pkgver, uid_t euid)
 {
+	struct stat st;
 	xbps_array_t array;
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
@@ -46,7 +47,6 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 	const char *file;
 	char path[PATH_MAX];
 	bool fail = false;
-	int fd = 0;
 
 	for (uint8_t i = 0; i < __arraycount(objs); i++) {
 		array = xbps_dictionary_get(pkgd, objs[i]);
@@ -60,18 +60,30 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 		while ((obj = xbps_object_iterator_next(iter))) {
 			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 			snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
-			if (faccessat(fd, path, W_OK, AT_SYMLINK_NOFOLLOW) == -1) {
-				if (errno != ENOENT) {
-					/*
-					 * only bail out if something else than ENOENT
-					 * is returned.
-					 */
-					fail = true;
-					xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE_FAIL,
-					    errno, pkgver,
-					    "%s: cannot remove `%s': %s",
-					    pkgver, file, strerror(errno));
+			/*
+			 * Check if effective user ID owns the file; this is
+			 * enough to ensure the user has write permissions
+			 * on the directory.
+			 */
+			if (!lstat(path, &st) && euid == st.st_uid) {
+				/* success */
+				continue;
+			}
+			if (errno != ENOENT) {
+				/*
+				 * only bail out if something else than ENOENT
+				 * is returned.
+				 */
+				int rv = errno;
+				if (rv == 0) {
+					/* lstat succeeds but euid != uid */
+					rv = EPERM;
 				}
+				fail = true;
+				xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE_FAIL,
+				    errno, pkgver,
+				    "%s: cannot remove `%s': %s",
+				    pkgver, file, strerror(rv));
 			}
 		}
 		xbps_object_iterator_release(iter);
@@ -219,12 +231,15 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	char *pkgname, metafile[PATH_MAX];
 	int rv = 0;
 	pkg_state_t state = 0;
+	uid_t euid;
 
 	assert(xhp);
 	assert(pkgver);
 
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
+
+	euid = geteuid();
 
 	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
 		rv = errno;
@@ -293,7 +308,7 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 		 * 	1- check if user has enough perms to remove all entries
 		 * 	2- perform removal
 		 */
-		if (check_remove_pkg_files(xhp, pkgfilesd, pkgver)) {
+		if (check_remove_pkg_files(xhp, pkgfilesd, pkgver, euid)) {
 			rv = EPERM;
 			goto out;
 		}

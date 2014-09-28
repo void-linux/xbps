@@ -1,5 +1,11 @@
 xbps-0.41 (???):
 
+ * libxbps: rather than checking if user has write permission on
+   package files for removal, check if the files are owned by the
+   same user ID. This fixes a new issue where files with only the read
+   bit set cannot be removed. Added a new test case to verify its
+   correctness.
+
  * xbps-create(8): xz compressed packages now use default compression
    level (-6) rather than max level (-9); max compression level uses
    too much memory and it's much slower; by Christian Neukirchen.
@@ -15,7 +21,8 @@ xbps-0.41 (???):
    the next update xbps-install will automatically replace the broken release by
    the new downgraded release.
 
- * replace xbps-package directory by the new void-packages, by Enno Boland.
+ * Replace xbps-packages directory by void-packages in xbps-checkvers(8),
+   xbps-uchroot(8) and others, by Enno Boland.
 
 xbps-0.40 (2014-09-18):
 
