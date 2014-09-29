@@ -1,4 +1,4 @@
-xbps-0.41 (???):
+xbps-0.41 (2014-09-29):
 
  * libxbps: another bugfix while checking required shlibs in
    reverse dependencies. Written another test case to verify its
