@@ -3,7 +3,7 @@
 atf_test_case revert_package
 
 revert_package_head() {
-	atf_set "descr" "xbps-install(8): install multiple existent pkgs (issue #53)"
+	atf_set "descr" "xbps-install(8): do a full workflow of reverting a package version"
 }
 
 revert_package_body() {
