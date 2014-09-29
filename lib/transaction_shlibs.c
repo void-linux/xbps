@@ -72,7 +72,7 @@ shlib_trans_matched(struct xbps_handle *xhp, const char *pkgver, const char *shl
 }
 
 static bool
-shlib_matched(struct xbps_handle *xhp, xbps_array_t mshlibs,
+shlib_matched(struct xbps_handle *xhp, xbps_array_t unsorted, xbps_array_t mshlibs,
 		const char *pkgver, const char *shlib)
 {
 	xbps_array_t revdeps;
@@ -96,10 +96,29 @@ shlib_matched(struct xbps_handle *xhp, xbps_array_t mshlibs,
 	for (unsigned int i = 0; i < xbps_array_count(revdeps); i++) {
 		xbps_array_t shrequires;
 		xbps_dictionary_t pkgd;
-		const char *rpkgver;
+		const char *trans, *rpkgver;
+		char *rpkgname;
 
 		xbps_array_get_cstring_nocopy(revdeps, i, &rpkgver);
-		pkgd = xbps_pkgdb_get_pkg(xhp, rpkgver);
+		rpkgname = xbps_pkg_name(rpkgver);
+		assert(rpkgname);
+		/*
+		 * First check if this revdep has been queued in transaction;
+		 * otherwise process the current installed pkg.
+		 */
+		pkgd = xbps_find_pkg_in_array(unsorted, rpkgname, NULL);
+		free(rpkgname);
+		if (pkgd) {
+			/*
+			 * Make sure pkg in transaction is an update.
+			 */
+			xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &trans);
+			if (strcmp(trans, "update"))
+				pkgd = NULL;
+		}
+		if (!pkgd)
+			pkgd = xbps_pkgdb_get_pkg(xhp, rpkgver);
+
 		shrequires = xbps_dictionary_get(pkgd, "shlib-requires");
 
 		for (unsigned int x = 0; x < xbps_array_count(shrequires); x++) {
@@ -187,7 +206,7 @@ xbps_transaction_shlibs(struct xbps_handle *xhp)
 			 * Check that all shlibs provided by this pkg are used by
 			 * its revdeps.
 			 */
-			if (!shlib_matched(xhp, mshlibs, pkgver, shlib))
+			if (!shlib_matched(xhp, unsorted, mshlibs, pkgver, shlib))
 				unmatched = true;
 		}
 	}
