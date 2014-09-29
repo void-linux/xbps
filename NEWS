@@ -1,5 +1,9 @@
 xbps-0.41 (???):
 
+ * libxbps: another bugfix while checking required shlibs in
+   reverse dependencies. Written another test case to verify its
+   correctness.
+
  * libxbps: rather than checking if user has write permission on
    package files for removal, check if the files are owned by the
    same user ID. This fixes a new issue where files with only the read
