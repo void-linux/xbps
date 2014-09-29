@@ -39,7 +39,7 @@ revert_package_body() {
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
 	cd ..
-	LD_PRELOAD=/home/tox/dev/src/xbps/lib/libxbps.so.2.0.0 xbps-install -d -r root -C empty.conf --repository=$PWD/some_repo -y -u
+	xbps-install -d -r root -C empty.conf --repository=$PWD/some_repo -y -u
 	atf_check_equal $? 0
 
 	atf_check_equal "`cat root/file00`" "second V1.0"
