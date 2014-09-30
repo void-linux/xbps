@@ -1,6 +1,5 @@
-.Dd August 23, 2014
-.Os Void Linux
-.Dt xbps-rindex 8
+.Dd September 30, 2014
+.Dt XBPS-RINDEX 8
 .Sh NAME
 .Nm xbps-rindex
 .Nd XBPS utility to manage local binary package repositories
@@ -30,8 +29,8 @@ This is required to sign a repository, a description of the person signing the r
 .It Sy --privkey Ar key
 Path to the private RSA key to sign the repository. If unset, defaults to
 .Sy ~/.ssh/id_rsa .
+.El
 .Sh MODE
-.Pp
 .Bl -tag -width x
 .It Sy -a, --add Ar repository/binpkg.xbps ...
 Registers the binary package into the local repository. The specified binary

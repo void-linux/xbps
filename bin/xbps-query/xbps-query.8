@@ -1,6 +1,5 @@
-.Dd September 28, 2014
-.Os Void Linux
-.Dt xbps-query 8
+.Dd September 30, 2014
+.Dt XBPS-QUERY 8
 .Sh NAME
 .Nm xbps-query
 .Nd XBPS utility to query for package and repository information
@@ -31,8 +30,8 @@ by exact package name and version, i.e:
 .Dq Sy foo-1.0_1 .
 .It
 by specifying a package name and version separated by any of the following version comparators:
-.Bl -item -width xx -compact
 .Pp
+.Bl -item -compact
 .It
 .Sy <
 less than
@@ -88,6 +87,7 @@ Specifies a full path for the target root directory.
 Enables verbose messages.
 .It Fl V, Fl -version
 Shows the XBPS version.
+.El
 .Sh MODE
 Only one of the following modes can be used at a time.
 By default and unless the
@@ -100,8 +100,8 @@ queried in registered repositories.
 .It Fl l, Fl -list-pkgs
 Lists registered packages in the package database (pkgdb).
 A package can be in any of the following states:
-.Bl -item -width xx -compact
 .Pp
+.Bl -item -compact
 .It
 .Sy ii
 Package is installed.

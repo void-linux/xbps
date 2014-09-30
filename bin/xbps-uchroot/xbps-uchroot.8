@@ -1,6 +1,5 @@
-.Dd August 23, 2014
-.Os Void Linux
-.Dt xbps-uchroot 8
+.Dd September 30, 2014
+.Dt XBPS-UCHROOT 8
 .Sh NAME
 .Nm xbps-uchroot
 .Nd XBPS utility to chroot and bind mount with linux namespaces
@@ -51,7 +50,7 @@ The
 utility uses Linux specific features (namespaces) and it's not meant to be portable to
 other Operating Systems. The following kernel options must be enabled:
 .Pp
-.Bl -tag -compact -offset indent
+.Bl -tag -width CONFIG_NAMESPACES -compact -offset indent
 .It Sy CONFIG_NAMESPACES
 .It Sy CONFIG_IPC_NS
 .It Sy CONFIG_PID_NS
