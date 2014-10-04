@@ -112,12 +112,12 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	const char *rootdir, *cachedir, *conffile;
 	int i, c, flags, rv, fflag = 0;
-	bool sync, yes, reinstall, drun, update;
+	bool syncf, yes, reinstall, drun, update;
 	int maxcols;
 
 	rootdir = cachedir = conffile = NULL;
 	flags = rv = 0;
-	sync = yes = reinstall = drun = update = false;
+	syncf = yes = reinstall = drun = update = false;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -157,7 +157,7 @@ main(int argc, char **argv)
 			rootdir = optarg;
 			break;
 		case 'S':
-			sync = true;
+			syncf = true;
 			break;
 		case 'u':
 			update = true;
@@ -177,7 +177,7 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if ((!update && !sync) && (argc == optind))
+	if ((!update && !syncf) && (argc == optind))
 		usage(true);
 
 	/*
@@ -205,7 +205,7 @@ main(int argc, char **argv)
 	maxcols = get_maxcols();
 
 	/* Sync remote repository data and import keys from remote repos */
-	if (sync && !drun) {
+	if (syncf && !drun) {
 		if ((rv = xbps_rpool_sync(&xh, NULL)) != 0)
 			exit(rv);
 		rv = xbps_rpool_foreach(&xh, repo_import_key_cb, NULL);
@@ -213,7 +213,7 @@ main(int argc, char **argv)
 			exit(rv);
 	}
 
-	if (sync && !update && (argc == optind))
+	if (syncf && !update && (argc == optind))
 		exit(EXIT_SUCCESS);
 
 	if (!drun && (rv = xbps_pkgdb_lock(&xh)) != 0) {
