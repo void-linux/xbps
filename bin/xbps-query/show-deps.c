@@ -53,7 +53,7 @@ print_rdeps(struct xbps_handle *xhp, xbps_array_t rdeps, bool full, bool repo)
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
 		struct pkgdep *pd;
 		const char *pkgver;
-		char *vpkg;
+		char *vpkg = NULL;
 		bool virtual = false, found = false;
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curdep);
