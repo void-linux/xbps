@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/voidlinux/xbps.svg?branch=master)](https://travis-ci.org/voidlinux/xbps)
+
 ## XBPS
 
 The X Binary Package System (in short XBPS) is a binary package system
