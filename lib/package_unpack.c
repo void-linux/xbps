@@ -35,14 +35,6 @@
 
 #include "xbps_api_impl.h"
 
-/*
- * XXX WTF clearly clang should stfu and accept struct initializers
- * 		struct foo foo = {0};
- */
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wmissing-field-initializers"
-#endif
-
 static int
 set_extract_flags(uid_t euid)
 {
@@ -110,7 +102,7 @@ unpack_archive(struct xbps_handle *xhp,
 	const struct stat *entry_statp;
 	void *instbuf = NULL, *rembuf = NULL;
 	struct stat st;
-	struct xbps_unpack_cb_data xucd = {0};
+	struct xbps_unpack_cb_data xucd;
 	struct archive_entry *entry;
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
