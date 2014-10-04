@@ -3,3 +3,6 @@ compiler:
         - gcc
         - clang
 script: ./configure --enable-debug && make -j16
+before_install:
+        - sudo apt-get update -qq
+        - sudo apt-get install -y libssl-dev libarchive-dev
