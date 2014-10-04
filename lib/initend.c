@@ -213,7 +213,7 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 	FILE *fp;
 	char tmppath[XBPS_MAXPATH] = {0};
 	size_t len, nlines = 0;
-	ssize_t read;
+	ssize_t nread;
 	char *cfcwd, *line = NULL;
 	int rv = 0;
 
@@ -227,7 +227,7 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 		xbps_dbg_printf(xhp, "Parsing configuration file: %s\n", path);
 	}
 
-	while ((read = getline(&line, &len, fp)) != -1) {
+	while ((nread = getline(&line, &len, fp)) != -1) {
 		char *p, *k, *v;
 
 		nlines++;
