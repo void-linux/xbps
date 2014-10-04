@@ -1,0 +1,5 @@
+language: c
+compiler:
+        - gcc
+        - clang
+script: ./configure --enable-debug && make -j16
