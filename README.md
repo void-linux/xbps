@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/voidlinux/xbps.svg?branch=master)](https://travis-ci.org/voidlinux/xbps)
+[![Build Status](https://scan.coverity.com/projects/3167/badge.svg)](https://scan.coverity.com/projects/3167)
 
 ## XBPS
 
