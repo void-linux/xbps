@@ -571,7 +571,7 @@ rcv_check_version(rcv_t *rcv)
 static int
 rcv_process_dir(rcv_t *rcv, const char *path, rcv_proc_func process)
 {
-	DIR *dir;
+	DIR *dir = NULL;
 	struct dirent entry, *result;
 	struct stat st;
 	char filename[BUFSIZ];
@@ -579,7 +579,7 @@ rcv_process_dir(rcv_t *rcv, const char *path, rcv_proc_func process)
 
 	dir = opendir(path);
 error:
-	if (errors > 0) {
+	if (errors > 0 || !dir) {
 		fprintf(stderr, "Error: while processing dir '%s': %s\n", path,
 			strerror(errors));
 		exit(1);
@@ -619,10 +619,12 @@ error:
 
 	if ((closedir(dir)) == -1) {
 		errors = errno;
+		dir = NULL;
 		goto error;
 	}
 	if ((chdir("..")) == -1) {
 		errors = errno;
+		dir = NULL;
 		goto error;
 	}
 
