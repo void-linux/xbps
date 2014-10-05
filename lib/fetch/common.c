@@ -264,6 +264,7 @@ fetch_bind(int sd, int af, const char *addr)
 		if (bind(sd, res->ai_addr, res->ai_addrlen) == 0)
 			return (0);
 	}
+	freeaddrinfo(res0);
 	return (-1);
 }
 
