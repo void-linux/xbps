@@ -224,6 +224,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			rv = 1;
 			break;
 		}
+		free(sha256_cur);
+		sha256_cur = NULL;
 	}
 
 out:
