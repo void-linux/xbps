@@ -46,7 +46,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	struct xbps_repo *repo = NULL;
 	struct stat st;
 	const char *arch;
-	char *sha256, *pkgver, *opkgver, *oarch, *pkgname;
+	char *sha256, *pkgver, *pkgname;
 	char *tmprepodir = NULL, *repodir = NULL;
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
@@ -114,6 +114,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 				goto out;
 			}
 		} else if (!force) {
+			char *opkgver = NULL, *oarch = NULL;
+
 			/* Only check version if !force */
 			xbps_dictionary_get_cstring(curpkgd, "pkgver", &opkgver);
 			xbps_dictionary_get_cstring(curpkgd, "architecture", &oarch);
@@ -123,14 +125,13 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			 * If the considered package reverts the package in the index,
 			 * consider the current package as the newer one.
 			 */
-			if(ret < 0 && xbps_pkg_reverts(binpkgd, opkgver)) {
+			if (ret < 0 && xbps_pkg_reverts(binpkgd, opkgver)) {
 				ret = 1;
-			}
 			/*
 			 * If package in the index reverts considered package, consider the
 			 * package in the index as the newer one.
 			 */
-			else if (ret > 0 && xbps_pkg_reverts(curpkgd, pkgver)) {
+			} else if (ret > 0 && xbps_pkg_reverts(curpkgd, pkgver)) {
 				ret = -1;
 			}
 
@@ -148,9 +149,9 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			 * Current package version is greater than
 			 * index version.
 			 */
+			printf("index: removed obsolete entry `%s' (%s).\n", opkgver, oarch);
 			xbps_dictionary_remove(idx, pkgname);
 			xbps_dictionary_remove(idxfiles, opkgver);
-			printf("index: removed obsolete entry `%s' (%s).\n", opkgver, oarch);
 			free(opkgver);
 			free(oarch);
 		}
