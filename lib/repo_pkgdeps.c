@@ -67,10 +67,9 @@ store_dependency(struct xbps_handle *xhp,
 	xbps_array_add_cstring(replaces, self_replaced);
 	free(self_replaced);
 
-	if (!xbps_dictionary_set(repo_pkgd, "replaces", replaces)) {
-		free(pkgname);
+	if (!xbps_dictionary_set(repo_pkgd, "replaces", replaces))
 		return EINVAL;
-	}
+
 	/*
 	 * Add the dictionary into the unsorted queue.
 	 */
