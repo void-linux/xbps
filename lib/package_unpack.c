@@ -122,6 +122,8 @@ unpack_archive(struct xbps_handle *xhp,
 	xbps_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "transaction", &transact);
 
+	memset(&xucd, 0, sizeof(xucd));
+
 	euid = geteuid();
 
 	pkgname = xbps_pkg_name(pkgver);
