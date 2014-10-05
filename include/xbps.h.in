@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20140927"
+#define XBPS_API_VERSION	"20141005"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -590,28 +590,28 @@ struct xbps_handle {
 	 *
 	 * Full path to the xbps configuration file.
 	 */
-	char conffile[XBPS_MAXPATH-1];
+	char conffile[XBPS_MAXPATH];
 	/**
 	 * @var rootdir
 	 *
 	 * Root directory for all operations in XBPS.
 	 * If unset,  defaults to '/'.
 	 */
-	char rootdir[XBPS_MAXPATH-1];
+	char rootdir[XBPS_MAXPATH];
 	/**
 	 * @var cachedir
 	 *
 	 * Cache directory to store downloaded binary packages.
 	 * If unset, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
 	 */
-	char cachedir[XBPS_MAXPATH-1];
+	char cachedir[XBPS_MAXPATH];
 	/**
 	 * @var metadir
 	 *
 	 * Metadata directory for all operations in XBPS.
 	 * If unset, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
 	 */
-	char metadir[XBPS_MAXPATH-1];
+	char metadir[XBPS_MAXPATH];
 	/**
 	 * @var native_arch
 	 *
