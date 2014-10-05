@@ -82,7 +82,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
-	const char *hexfp = NULL;
+	char *hexfp = NULL;
 	unsigned char *buf = NULL, *sig_buf = NULL;
 	size_t buflen, filelen, sigbuflen, sigfilelen;
 	char *rkeyfile = NULL, *sig = NULL;
@@ -132,6 +132,8 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 		val = true;
 
 out:
+	if (hexfp)
+		free(hexfp);
 	if (rkeyfile)
 		free(rkeyfile);
 	if (buf)
