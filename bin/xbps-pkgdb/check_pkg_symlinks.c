@@ -88,12 +88,14 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		obj = xbps_array_get(array, i);
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "file", &file))
+			continue;
+
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "target", &tgt)) {
 			xbps_warn_printf("%s: `%s' symlink with "
 			    "empty target object!\n", pkgname, file);
 			continue;
 		}
-		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 		if (strcmp(tgt, "") == 0) {
 			xbps_warn_printf("%s: `%s' symlink with "
 			    "empty target object!\n", pkgname, file);
