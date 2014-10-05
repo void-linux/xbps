@@ -165,11 +165,13 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			goto out;
 		}
 		if (!xbps_dictionary_set_cstring(binpkgd, "filename-sha256", sha256)) {
+			free(sha256);
 			free(pkgver);
 			free(pkgname);
 			rv = EINVAL;
 			goto out;
 		}
+		free(sha256);
 		if (stat(argv[i], &st) == -1) {
 			free(pkgver);
 			free(pkgname);
