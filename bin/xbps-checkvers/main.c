@@ -215,7 +215,8 @@ rcv_init(rcv_t *rcv, const char *prog)
 		strncpy(rcv->xhp.rootdir, rcv->rootdir, sizeof(rcv->xhp.rootdir)-1);
 		rcv->xhp.rootdir[sizeof(rcv->xhp.rootdir)-1] = '\0';
 	}
-	xbps_init(&rcv->xhp);
+	if (xbps_init(&rcv->xhp) != 0)
+		abort();
 }
 
 static void
