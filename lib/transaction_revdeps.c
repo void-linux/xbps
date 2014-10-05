@@ -58,6 +58,7 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 		xbps_array_get_cstring(provides, i, &vpkgver);
 		if (strchr(vpkgver, '_') == NULL) {
 			tmp = xbps_xasprintf("%s_1", vpkgver);
+			free(vpkgver);
 			vpkgver = strdup(tmp);
 		}
 		vpkgname = xbps_pkg_name(vpkgver);
