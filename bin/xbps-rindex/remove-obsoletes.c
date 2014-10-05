@@ -130,11 +130,13 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	if (chdir(repodir) == -1) {
 		fprintf(stderr, "xbps-rindex: cannot chdir to %s: %s\n",
 		    repodir, strerror(errno));
+		free(repo);
 		return errno;
 	}
 	if ((dirp = opendir(repodir)) == NULL) {
 		fprintf(stderr, "xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
+		free(repo);
 		return errno;
 	}
 	while ((dp = readdir(dirp))) {
