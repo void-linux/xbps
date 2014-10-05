@@ -106,10 +106,10 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			snprintf(path, sizeof(path), "%s%s", xhp->rootdir, file);
 			snprintf(tgt_path, sizeof(tgt_path), "%s%s", xhp->rootdir, tgt);
 
-			strncpy(tgt_path, tgt, sizeof(tgt_path));
+			strncpy(tgt_path, tgt, sizeof(tgt_path)-1);
 		} else  {
-			strncpy(path, file, sizeof(path));
-			strncpy(tgt_path, tgt, sizeof(tgt_path));
+			strncpy(path, file, sizeof(path)-1);
+			strncpy(tgt_path, tgt, sizeof(tgt_path)-1);
 		}
 
 		if ((lnk = symlink_target(pkgname, path)) == NULL)
