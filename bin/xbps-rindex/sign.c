@@ -177,6 +177,8 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	 * packages in this repository.
 	 */
 	iter = xbps_dictionary_iterator(repo->idx);
+	assert(iter);
+
 	while ((obj = xbps_object_iterator_next(iter))) {
 		pkgd = xbps_dictionary_get_keysym(repo->idx, obj);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
