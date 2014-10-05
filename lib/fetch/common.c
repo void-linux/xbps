@@ -253,6 +253,7 @@ int
 fetch_bind(int sd, int af, const char *addr)
 {
 	struct addrinfo hints, *res, *res0;
+	int rv = -1;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = af;
@@ -261,11 +262,13 @@ fetch_bind(int sd, int af, const char *addr)
 	if (getaddrinfo(addr, NULL, &hints, &res0))
 		return (-1);
 	for (res = res0; res; res = res->ai_next) {
-		if (bind(sd, res->ai_addr, res->ai_addrlen) == 0)
-			return (0);
+		if (bind(sd, res->ai_addr, res->ai_addrlen) == 0) {
+			rv = 0;
+			break;
+		}
 	}
 	freeaddrinfo(res0);
-	return (-1);
+	return rv;
 }
 
 
