@@ -69,7 +69,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key _unused, 
 {
 	struct xbps_repo *repo = arg;
 	const char *binpkg;
-	char *pkgver, *arch;
+	char *pkgver, *arch = NULL;
 	int rv;
 
 	binpkg = xbps_string_cstring_nocopy(obj);
@@ -88,6 +88,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key _unused, 
 		free(arch);
 		return 0;
 	}
+	free(arch);
 
 	pkgver = xbps_binpkg_pkgver(binpkg);
 	assert(pkgver);
