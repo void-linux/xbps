@@ -122,7 +122,6 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_dictionary_t idx = NULL, idxmeta = NULL, idxfiles = NULL;
 	struct xbps_repo *repo;
 	struct cbdata cbd;
-	char *keyname, *pkgname;
 	int rv = 0;
 	bool flush = false;
 
@@ -157,6 +156,8 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	allkeys = xbps_dictionary_all_keys(idx);
 	(void)xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
 	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
+		char *keyname = NULL, *pkgname = NULL;
+
 		xbps_array_get_cstring(cbd.result, x, &keyname);
 		printf("index-files: removed entry %s\n", keyname);
 		printf("index: removed entry %s\n", keyname);
@@ -177,6 +178,8 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	allkeys = xbps_dictionary_all_keys(idxfiles);
 	(void)xbps_array_foreach_cb_multi(xhp, allkeys, idxfiles, idxfiles_cleaner_cb, &cbd);
 	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
+		char *keyname = NULL;
+
 		xbps_array_get_cstring(cbd.result, x, &keyname);
 		printf("index-files: removed entry %s\n", keyname);
 		xbps_dictionary_remove(idxfiles, keyname);
