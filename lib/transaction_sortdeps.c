@@ -241,6 +241,7 @@ again:
 			 * Processing same pkg, just continue.
 			 */
 			xbps_dbg_printf_append(xhp, "already sorted.\n");
+			pkgdep_release(lpd);
 		} else {
 			/*
 			 * Remove package dependency from list and move
