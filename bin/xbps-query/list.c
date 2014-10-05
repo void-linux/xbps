@@ -156,7 +156,8 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 static int
 repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 {
-	const char *signedby = NULL, *hexfp = NULL;
+	const char *signedby = NULL;
+	char *hexfp = NULL;
 	uint16_t pubkeysize = 0;
 
 	printf("%5zd %s",
@@ -173,8 +174,10 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 			hexfp = xbps_pubkey2fp(repo->xhp, pubkey);
 		if (signedby)
 			printf("      Signed-by: %s\n", signedby);
-		if (pubkeysize && hexfp)
+		if (pubkeysize && hexfp) {
 			printf("      %u %s\n", pubkeysize, hexfp);
+			free(hexfp);
+		}
 	}
 	return 0;
 }
