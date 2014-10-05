@@ -157,7 +157,6 @@ static int
 repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 {
 	const char *signedby = NULL;
-	char *hexfp = NULL;
 	uint16_t pubkeysize = 0;
 
 	printf("%5zd %s",
@@ -166,6 +165,7 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 	printf(" (RSA %s)\n", repo->is_signed ? "signed" : "unsigned");
 	if (repo->xhp->flags & XBPS_FLAG_VERBOSE) {
 		xbps_data_t pubkey;
+		char *hexfp = NULL;
 
 		xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-by", &signedby);
 		xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkeysize);
@@ -174,10 +174,10 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
 			hexfp = xbps_pubkey2fp(repo->xhp, pubkey);
 		if (signedby)
 			printf("      Signed-by: %s\n", signedby);
-		if (pubkeysize && hexfp) {
+		if (pubkeysize && hexfp)
 			printf("      %u %s\n", pubkeysize, hexfp);
+		if (hexfp)
 			free(hexfp);
-		}
 	}
 	return 0;
 }
