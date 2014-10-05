@@ -77,7 +77,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			xbps_dictionary_get_cstring_nocopy(instd,
 			    "pkgver", &curpkgver);
 			curpkgname = xbps_pkg_name(curpkgver);
-			assert(curpkgver);
+			assert(curpkgname);
 			/*
 			 * Check that we are not replacing the same package,
 			 * due to virtual packages.
