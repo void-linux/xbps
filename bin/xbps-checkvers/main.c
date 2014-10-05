@@ -211,7 +211,7 @@ rcv_init(rcv_t *rcv, const char *prog)
 		strncpy(rcv->xhp.conffile, rcv->xbps_conf, sizeof(rcv->xhp.conffile));
 	if (rcv->rootdir != NULL) {
 		strncpy(rcv->xhp.rootdir, rcv->rootdir, XBPS_MAXPATH-1);
-		rcv->rootdir[XBPS_MAXPATH-1] = '\0';
+		rcv->xhp.rootdir[XBPS_MAXPATH-1] = '\0';
 	}
 	xbps_init(&rcv->xhp);
 }
