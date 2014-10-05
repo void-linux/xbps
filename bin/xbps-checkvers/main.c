@@ -207,11 +207,13 @@ rcv_init(rcv_t *rcv, const char *prog)
 	rcv->prog = prog;
 	rcv->have_vars = 0;
 	rcv->ptr = rcv->input = NULL;
-	if (rcv->xbps_conf != NULL)
-		strncpy(rcv->xhp.conffile, rcv->xbps_conf, sizeof(rcv->xhp.conffile));
+	if (rcv->xbps_conf != NULL) {
+		strncpy(rcv->xhp.conffile, rcv->xbps_conf, sizeof(rcv->xhp.conffile)-1);
+		rcv->xhp.conffile[sizeof(rcv->xhp.conffile)-1] = '\0';
+	}
 	if (rcv->rootdir != NULL) {
-		strncpy(rcv->xhp.rootdir, rcv->rootdir, XBPS_MAXPATH-1);
-		rcv->xhp.rootdir[XBPS_MAXPATH-1] = '\0';
+		strncpy(rcv->xhp.rootdir, rcv->rootdir, sizeof(rcv->xhp.rootdir)-1);
+		rcv->xhp.rootdir[sizeof(rcv->xhp.rootdir)-1] = '\0';
 	}
 	xbps_init(&rcv->xhp);
 }
