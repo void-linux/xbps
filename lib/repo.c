@@ -513,6 +513,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 		if (rv == ENOENT)
 			rv = xbps_mkpath(dbkeyd, 0755);
 		if (rv != 0) {
+			rv = errno;
 			xbps_dbg_printf(repo->xhp,
 			    "[repo] `%s' cannot create %s: %s\n",
 			    repo->uri, dbkeyd, strerror(errno));
