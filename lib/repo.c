@@ -449,7 +449,8 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey = NULL;
 	uint16_t pubkey_size = 0;
-	char *hexfp = NULL, *signedby = NULL;
+	const char *signedby = NULL;
+	char *hexfp = NULL;
 	char *p, *dbkeyd, *rkeyfile = NULL;
 	int import, rv = 0;
 
