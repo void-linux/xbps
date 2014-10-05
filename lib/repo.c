@@ -449,7 +449,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey = NULL;
 	uint16_t pubkey_size = 0;
-	const char *hexfp = NULL, *signedby = NULL;
+	char *hexfp = NULL, *signedby = NULL;
 	char *p, *dbkeyd, *rkeyfile = NULL;
 	int import, rv = 0;
 
@@ -534,6 +534,8 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	}
 
 out:
+	if (hexfp)
+		free(hexfp);
 	if (repokeyd)
 		xbps_object_release(repokeyd);
 	if (rkeyfile)
