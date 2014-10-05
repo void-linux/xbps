@@ -464,7 +464,7 @@ process_entry_file(struct archive *ar,
 {
 	struct archive_entry *entry, *sparse_entry;
 	struct stat st;
-	char buf[16384], *p;
+	char *buf = NULL, *p;
 	ssize_t len;
 
 	assert(ar);
@@ -493,11 +493,13 @@ process_entry_file(struct archive *ar,
 		archive_entry_set_gname(entry, "root");
 
 	if (S_ISLNK(st.st_mode)) {
-		len = readlink(p, buf, sizeof(buf));
+		buf = malloc(st.st_size+1);
+		assert(buf);
+		len = readlink(p, buf, st.st_size+1);
 		if (len < 0 || len > st.st_size)
 			die("failed to add entry %s (readlink) to archive:",
 			    xe->file);
-		buf[len-1] = '\0';
+		buf[len] = '\0';
 		archive_entry_set_symlink(entry, buf);
 	}
 	free(p);
@@ -508,6 +510,8 @@ process_entry_file(struct archive *ar,
 		write_entry(ar, entry);
 	if (sparse_entry != NULL)
 		write_entry(ar, sparse_entry);
+	if (buf)
+		free(buf);
 }
 
 static void
