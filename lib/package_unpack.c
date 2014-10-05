@@ -109,12 +109,12 @@ unpack_archive(struct xbps_handle *xhp,
 	const char *file, *entry_pname, *transact,  *tgtlnk;
 	char *pkgname, *dname, *buf, *buf2, *p, *p2;
 	int ar_rv, rv, entry_type, flags;
-	bool preserve, update, conf_file, file_exists, skip_obsoletes;
+	bool preserve, update, file_exists, skip_obsoletes;
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
 	binpkg_propsd = binpkg_filesd = pkg_filesd = NULL;
-	force = preserve = update = conf_file = file_exists = false;
+	force = preserve = update = file_exists = false;
 	skip_obsoletes = xucd_stats = false;
 	ar_rv = rv = entry_type = flags = 0;
 
@@ -296,7 +296,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * doesn't match, in that case overwrite the file.
 		 * Otherwise skip extracting it.
 		 */
-		conf_file = skip_extract = file_exists = false;
+		skip_extract = file_exists = false;
 		if (lstat(entry_pname, &st) == 0)
 			file_exists = true;
 		/*
@@ -330,7 +330,6 @@ unpack_archive(struct xbps_handle *xhp,
 				 * dictionary.
 				 */
 				if (xbps_entry_is_a_conf_file(binpkg_filesd, buf)) {
-					conf_file = true;
 					if (xhp->unpack_cb != NULL)
 						xucd.entry_is_conf = true;
 
