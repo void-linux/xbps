@@ -113,7 +113,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	/* Extern vars declared in libfetch */
 	fetchLastErrCode = 0;
 
-	if ((url = fetchParseURL(uri)) == NULL)
+	if (!filename || (url = fetchParseURL(uri)) == NULL)
 		return -1;
 
 	memset(&fetch_flags, 0, sizeof(fetch_flags));
@@ -297,15 +297,10 @@ int
 xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 {
 	char *filename;
-
 	/*
 	 * Get the filename specified in URI argument.
 	 */
 	filename = strrchr(uri, '/') + 1;
-	if (filename == NULL) {
-		return -1;
-	}
-
 	return xbps_fetch_file_dest(xhp, uri, filename, flags);
 }
 
