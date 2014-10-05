@@ -815,7 +815,7 @@ fetchIO *
 http_request(struct url *URL, const char *op, struct url_stat *us,
     struct url *purl, const char *flags)
 {
-	conn_t *conn;
+	conn_t *conn = NULL;
 	struct url *url, *new;
 	int chunked, direct, if_modified_since, need_auth, noredirect;
 	int keep_alive, verbose, cached;
@@ -869,6 +869,9 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		}
 
 		/* connect to server or proxy */
+		if (conn != NULL)
+			fetch_close(conn);
+
 		if ((conn = http_connect(url, purl, flags, &cached)) == NULL)
 			goto ouch;
 
