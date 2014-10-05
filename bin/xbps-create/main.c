@@ -152,8 +152,6 @@ process_array(const char *key, const char *val)
 
 	for ((p = strtok_r(args, " ", &saveptr)); p;
 	     (p = strtok_r(NULL, " ", &saveptr))) {
-		if (p == NULL)
-			continue;
 		xbps_array_add_cstring(array, p);
 	}
 	free(args);
