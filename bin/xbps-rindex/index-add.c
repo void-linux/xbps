@@ -94,6 +94,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
 			fprintf(stderr, "index: ignoring %s, unmatched arch (%s)\n", pkgver, arch);
 			xbps_object_release(binpkgd);
+			free(pkgver);
 			continue;
 		}
 		pkgname = xbps_pkg_name(pkgver);
