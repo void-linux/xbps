@@ -45,8 +45,6 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	xbps_object_t obj, fileobj;
 	struct xbps_repo *repo = NULL;
 	struct stat st;
-	const char *arch;
-	char *sha256, *pkgver, *pkgname;
 	char *tmprepodir = NULL, *repodir = NULL;
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
@@ -79,6 +77,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	 * Process all packages specified in argv.
 	 */
 	for (int i = 0; i < argc; i++) {
+		const char *arch = NULL;
+		char *sha256 = NULL, *pkgver = NULL, *pkgname = NULL;
 		/*
 		 * Read metadata props plist dictionary from binary package.
 		 */
@@ -195,6 +195,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		 */
 		if (!xbps_dictionary_set(idx, pkgname, binpkgd)) {
 			free(pkgname);
+			free(pkgver);
 			rv = EINVAL;
 			goto out;
 		}
