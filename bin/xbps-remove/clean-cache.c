@@ -54,6 +54,8 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 
 	if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
 		xbps_dbg_printf(xhp, "%s: ignoring pkg with unmatched arch (%s)\n", pkgver, arch);
+		free(pkgver);
+		free(arch);
 		return 0;
 	}
 	free(arch);
