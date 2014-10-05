@@ -378,7 +378,6 @@ fetchParseURL(const char *URL)
 	if (*URL == '/') {
 		pre_quoted = 0;
 		strcpy(u->scheme, SCHEME_FILE);
-		p = URL;
 		goto quote_doc;
 	}
 	if (strncmp(URL, "file:", 5) == 0) {
@@ -389,7 +388,7 @@ fetchParseURL(const char *URL)
 			url_seterr(URL_MALFORMED);
 			goto ouch;
 		}
-		p = URL + 2;
+		URL += 2;
 		goto quote_doc;
 	}
 	if (strncmp(URL, "http:", 5) == 0 ||
@@ -408,7 +407,6 @@ fetchParseURL(const char *URL)
 			goto ouch;
 		}
 		URL += 2;
-		p = URL;
 		goto find_user;
 	}
 	if (strncmp(URL, "ftp:", 4) == 0) {
@@ -420,7 +418,6 @@ fetchParseURL(const char *URL)
 			goto ouch;
 		}
 		URL += 2;
-		p = URL;
 		goto find_user;			
 	}
 
