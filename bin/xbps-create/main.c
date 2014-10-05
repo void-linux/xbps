@@ -528,7 +528,8 @@ process_archive(struct archive *ar,
 	/*
 	 * Add the installed-size object.
 	 */
-	xbps_dictionary_set_uint64(pkg_propsd, "installed_size", instsize);
+	if (!xbps_dictionary_set_uint64(pkg_propsd, "installed_size", instsize))
+		die("%s: failed to set installed_size obj!");
 
 	/* Add props.plist metadata file */
 	xml = xbps_dictionary_externalize(pkg_propsd);
