@@ -83,7 +83,6 @@ static int
 add_missing_reqdep(struct xbps_handle *xhp, const char *reqpkg)
 {
 	xbps_array_t mdeps;
-	xbps_string_t reqpkg_str;
 	xbps_object_iterator_t iter = NULL;
 	xbps_object_t obj;
 	unsigned int idx = 0;
@@ -94,10 +93,6 @@ add_missing_reqdep(struct xbps_handle *xhp, const char *reqpkg)
 
 	add_pkgdep = update_pkgdep = pkgfound = false;
 	mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
-
-	reqpkg_str = xbps_string_create_cstring_nocopy(reqpkg);
-	if (reqpkg_str == NULL)
-		return errno;
 
 	iter = xbps_array_iterator(mdeps);
 	if (iter == NULL)
