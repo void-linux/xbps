@@ -378,6 +378,7 @@ fetchParseURL(const char *URL)
 	if (*URL == '/') {
 		pre_quoted = 0;
 		strcpy(u->scheme, SCHEME_FILE);
+		p = URL;
 		goto quote_doc;
 	}
 	if (strncmp(URL, "file:", 5) == 0) {
@@ -389,6 +390,7 @@ fetchParseURL(const char *URL)
 			goto ouch;
 		}
 		URL += 2;
+		p = URL;
 		goto quote_doc;
 	}
 	if (strncmp(URL, "http:", 5) == 0 ||
