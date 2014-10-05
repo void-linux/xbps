@@ -128,8 +128,7 @@ store_preserved_file(struct xbps_handle *xhp, const char *file)
 	}
 out:
 	globfree(&globbuf);
-	if (rfile)
-		free(rfile);
+	free(rfile);
 }
 
 static bool
