@@ -497,7 +497,7 @@ process_entry_file(struct archive *ar,
 		if (len < 0 || len > st.st_size)
 			die("failed to add entry %s (readlink) to archive:",
 			    xe->file);
-		buf[len] = '\0';
+		buf[len-1] = '\0';
 		archive_entry_set_symlink(entry, buf);
 	}
 	free(p);
