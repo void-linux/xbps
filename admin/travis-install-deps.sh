@@ -54,7 +54,7 @@ install_from_github() {
         CPPFLAGS="-I/usr/local/include" \
         LDFLAGS="-L/usr/local/lib -Wl,-R/usr/local/lib" \
         PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
-    make
+    make -j16
     sudo make install
     cd -
 
