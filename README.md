@@ -68,7 +68,7 @@ To run the test suite make sure *kyua* is installed and run the following:
 ```
 $ ./configure --enable-tests --enable-debug
 $ make
-$ LD_PRELOAD=$PWD/lib/libxbps.so kyua test -k tests/xbps/Kyuafile
+$ make check
 ```
 
 ### Build instructions

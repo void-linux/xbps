@@ -10,7 +10,6 @@ ifdef BUILD_TESTS
 SUBDIRS += tests
 endif
 
-.PHONY: all
 all:
 	@if test ! -e config.mk; then \
 		echo "You didn't run ./configure ... exiting."; \
@@ -20,7 +19,6 @@ all:
 		$(MAKE) -C $$dir || exit 1;	\
 	done
 
-.PHONY: install
 install:
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir install || exit 1;	\
@@ -34,15 +32,22 @@ install:
 	@echo "WARNING: in your ld.so.conf by default."
 	@echo
 
-.PHONY: uninstall
 uninstall:
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir uninstall || exit 1;	\
 	done
 
-.PHONY: clean
+check:
+	@for f in bin/*; do \
+		export PATH=$$f:$$PATH; \
+	done
+	@export LD_PRELOAD=$$PWD/lib/libxbps.so
+	@kyua test -k tests/xbps/Kyuafile
+
 clean:
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir clean || exit 1;	\
 	done
 	-rm -f config.mk _ccflag.{,c,err}
+
+.PHONY: all install uninstall check clean
