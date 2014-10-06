@@ -4,6 +4,7 @@ compiler:
         - clang
 env:
         - PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+        - LD_LIBRARY_PATH=$PWD/lib:/usr/local/lib
 script:
         - ./configure --enable-tests --enable-debug && make -j16 && make check
 before_install:
