@@ -2,10 +2,12 @@ language: c
 compiler:
         - gcc
         - clang
-script: ./configure --enable-debug && make -j16
+env:
+        - PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+script:
+        - ./configure --enable-tests --enable-debug && make -j16 && make check
 before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -y libssl-dev libarchive-dev
+        - ./admin/travis-install-deps.sh
 env:
   global:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
