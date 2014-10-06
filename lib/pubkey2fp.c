@@ -121,6 +121,8 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 		encodingLength++;
 
 	pEncoding = malloc(encodingLength);
+	assert(pEncoding);
+
 	memcpy(pEncoding, pSshHeader, 11);
 
 	index = SshEncodeBuffer(&pEncoding[11], eLen, eBytes);
