@@ -6,7 +6,7 @@ env:
         - PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
         - LDFLAGS="-L/usr/local/lib -Wl,-R/usr/local/lib"
 script:
-        - ./configure --enable-tests --enable-debug && make -j16 && make check
+        - LDFLAGS="-L/usr/local/lib -Wl,-R/usr/local/lib" ./configure --enable-tests --enable-debug && make -j16 && make check
 before_install:
         - ./admin/travis-install-deps.sh
 env:
