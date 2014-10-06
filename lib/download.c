@@ -287,8 +287,8 @@ fetch_file_out:
 		(void)close(fd);
 	if (url != NULL)
 		fetchFreeURL(url);
-	if (tempfile != NULL)
-		free(tempfile);
+
+	free(tempfile);
 
 	return rv;
 }
