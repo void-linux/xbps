@@ -2,24 +2,12 @@ language: c
 compiler:
         - gcc
         - clang
+
 env:
         - PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-script:
-        - LDFLAGS="-L/usr/local/lib -Wl,-R/usr/local/lib" ./configure --enable-tests --enable-debug && make -j16 && make check
+
 before_install:
         - ./admin/travis-install-deps.sh
-env:
-  global:
-    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-    #   via the "travis encrypt" command using the project repo's public key
-    - secure: "Zqdxb2tet9MIPDSrddTCb8ZShTsjwOQFdbIqAVTd2bUohFGRsSfjyvs33vCr/Da5frgCEb+XXCkbhSHigbHRJm+iQH1ZXdM2LSxK3efM4Rv/oUNEUDWPzPpP+oumhDmo6+Tyjt7mrpYQ5NDvtSrBYG29Ge6Pp4dDqtaCkfhWGp4="
 
-  addons:
-    coverity_scan:
-        project:
-        name: "voidlinux/xbps"
-        description: "Build submitted via Travis CI"
-        notification_email: xtraeme@gmail.com
-        build_command_prepend: "make clean; ./configure --enable-debug"
-        build_command: "make -j4"
-        branch_pattern: coverity_scan
+script:
+        - LDFLAGS="-L/usr/local/lib -Wl,-R/usr/local/lib" ./configure --enable-tests --enable-debug && make -j16 && make check
