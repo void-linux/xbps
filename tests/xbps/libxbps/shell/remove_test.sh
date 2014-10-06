@@ -9,18 +9,18 @@ keep_base_symlinks_head() {
 
 keep_base_symlinks_body() {
 	mkdir -p root/usr/bin root/usr/lib root/run root/var
-	ln -sfr root/usr/bin root/bin
-	ln -sfr root/usr/lib root/lib
-	ln -sfr root/usr/lib root/usr/lib32
-	ln -sfr root/usr/lib root/usr/lib64
-	ln -sfr root/run root/var/run
+	ln -sf usr/bin root/bin
+	ln -sf usr/lib root/lib
+	ln -sf lib root/usr/lib32
+	ln -sf lib root/usr/lib64
+	ln -sf ../../run root/var/run
 
 	mkdir some_repo
 	mkdir -p pkg_A/usr/bin pkg_A/bin pkg_A/usr/lib pkg_A/var
 	touch -f pkg_A/usr/bin/foo
-	ln -sfr pkg_A/usr/lib pkg_A/usr/lib32
-	ln -sfr pkg_A/usr/lib pkg_A/usr/lib64
-	ln -sfr /run pkg_A/var/run
+	ln -sf lib pkg_A/usr/lib32
+	ln -sf lib pkg_A/usr/lib64
+	ln -sf ../../run pkg_A/var/run
 
 	cd some_repo
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
@@ -51,8 +51,8 @@ remove_symlinks_body() {
 	mkdir some_repo
 	mkdir -p pkg_A/usr/lib pkg_B/usr/lib
 	touch -f pkg_A/usr/lib/libfoo.so.1.2.0
-	ln -sfr pkg_A/usr/lib/libfoo.so.1.2.0 pkg_A/usr/lib/libfoo.so.1
-	ln -sfr pkg_B/usr/lib/libfoo.so.1 pkg_B/usr/lib/libfoo.so
+	ln -sf libfoo.so.1.2.0 pkg_A/usr/lib/libfoo.so.1
+	ln -sf libfoo.so.1 pkg_B/usr/lib/libfoo.so
 
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A

@@ -61,11 +61,11 @@ root_symlinks_update_body() {
 	mkdir repo
 	mkdir -p pkg_A/usr/bin pkg_A/usr/sbin pkg_A/usr/lib pkg_A/var pkg_A/run
 	touch -f pkg_A/usr/bin/foo
-	ln -sfr pkg_A/usr/bin pkg_A/bin
-	ln -sfr pkg_A/usr/sbin pkg_A/sbin
-	ln -sfr pkg_A/usr/lib pkg_A/usr/lib32
-	ln -sfr pkg_A/usr/lib pkg_A/usr/lib64
-	ln -sfr pkg_A/run pkg_A/var/run
+	ln -sf usr/bin pkg_A/bin
+	ln -sf usr/sbin pkg_A/sbin
+	ln -sf lib pkg_A/usr/lib32
+	ln -sf lib pkg_A/usr/lib64
+	ln -sf ../../run pkg_A/var/run
 
 	cd repo
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
