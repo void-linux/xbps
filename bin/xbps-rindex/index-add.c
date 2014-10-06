@@ -49,6 +49,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	int rv = 0, ret = 0;
 	bool flush = false, found = false;
 
+	assert(argv);
 	/*
 	 * Read the repository data or create index dictionaries otherwise.
 	 */
@@ -79,6 +80,8 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	for (int i = 0; i < argc; i++) {
 		const char *arch = NULL;
 		char *sha256 = NULL, *pkgver = NULL, *pkgname = NULL;
+
+		assert(argv[i]);
 		/*
 		 * Read metadata props plist dictionary from binary package.
 		 */
