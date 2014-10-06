@@ -25,7 +25,7 @@ issue20_body() {
 	cd repo
 	mkdir pkg_a
 	touch pkg_a/foo
-	ln -sr pkg_a/foo pkg_a/blah
+	ln -s foo pkg_a/blah
 	xbps-create -A noarch -n a-0.1_1 -s "pkg a" pkg_a
 	atf_check_equal $? 0
 	rm -rf pkg_a
@@ -36,7 +36,7 @@ issue20_body() {
 
 	mkdir pkg_a
 	touch pkg_a/blah
-	ln -sr pkg_a/blah pkg_a/foo
+	ln -s blah pkg_a/foo
 	xbps-create -A noarch -n a-0.2_1 -s "pkg a" pkg_a
 	atf_check_equal $? 0
 	rm -rf pkg_a
