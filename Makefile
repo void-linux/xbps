@@ -38,11 +38,7 @@ uninstall:
 	done
 
 check:
-	@for f in bin/*; do \
-		export PATH=$$f:$$PATH; \
-	done
-	@export LD_PRELOAD=$$PWD/lib/libxbps.so
-	@kyua test -k tests/xbps/Kyuafile
+	@./run-tests
 
 clean:
 	@for dir in $(SUBDIRS); do		\

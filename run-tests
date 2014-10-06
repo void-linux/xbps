@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+for f in bin/*; do
+	export PATH=$PWD/$f:$PATH
+done
+export LD_PRELOAD=$PWD/lib/libxbps.so
+kyua test -k tests/xbps/Kyuafile
