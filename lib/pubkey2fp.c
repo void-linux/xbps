@@ -88,29 +88,33 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 		xbps_dbg_printf(xhp,
 		    "unable to decode public key from the given file: %s\n",
 		    ERR_error_string(ERR_get_error(), NULL));
-		goto error;
+		goto out;
 	}
 
 	if (EVP_PKEY_type(pPubKey->type) != EVP_PKEY_RSA) {
 		xbps_dbg_printf(xhp, "only RSA public keys are currently supported\n");
-		goto error;
+		goto out;
 	}
 
 	pRsa = EVP_PKEY_get1_RSA(pPubKey);
 	if (!pRsa) {
 		xbps_dbg_printf(xhp, "failed to get RSA public key : %s\n",
 		    ERR_error_string(ERR_get_error(), NULL));
-		goto error;
+		goto out;
 	}
 
 	// reading the modulus
 	nLen = BN_num_bytes(pRsa->n);
 	nBytes = (unsigned char*) malloc(nLen);
+	if (nBytes == NULL)
+		goto out;
 	BN_bn2bin(pRsa->n, nBytes);
 
 	// reading the public exponent
 	eLen = BN_num_bytes(pRsa->e);
 	eBytes = (unsigned char*) malloc(eLen);
+	if (eBytes == NULL)
+		goto out;
 	BN_bn2bin(pRsa->e, eBytes);
 
 	encodingLength = 11 + 4 + eLen + 4 + nLen;
@@ -135,14 +139,14 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	EVP_DigestInit_ex(&mdctx, EVP_md5(), NULL);
 	EVP_DigestUpdate(&mdctx, pEncoding, encodingLength);
 	if (EVP_DigestFinal_ex(&mdctx, md_value, &md_len) == 0)
-		goto error;
+		goto out;
 	EVP_MD_CTX_cleanup(&mdctx);
 	/*
 	 * Convert result to a compatible OpenSSH hex fingerprint.
 	 */
 	hexfpstr = fp2str(md_value, md_len);
 
-error:
+out:
 	if (bio)
 		BIO_free_all(bio);
 	if (pRsa)
