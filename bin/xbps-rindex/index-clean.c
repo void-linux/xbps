@@ -162,6 +162,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		printf("index-files: removed entry %s\n", keyname);
 		printf("index: removed entry %s\n", keyname);
 		pkgname = xbps_pkg_name(keyname);
+		assert(pkgname);
 		xbps_dictionary_remove(idxfiles, keyname);
 		xbps_dictionary_remove(idx, pkgname);
 		free(pkgname);
