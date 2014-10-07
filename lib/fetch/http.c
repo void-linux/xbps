@@ -1473,6 +1473,8 @@ fetchListHTTP(struct url_list *ue, struct url *url, const char *pattern, const c
 		}
 
 		cache = malloc(sizeof(*cache));
+		if (cache == NULL)
+			return -1;
 		fetchInitURLList(&cache->ue);
 		cache->location = fetchCopyURL(url);
 	}
