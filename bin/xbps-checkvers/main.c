@@ -95,6 +95,9 @@ map_create(void)
 {
 	size_t i = 0;
 	map_t *map = malloc(sizeof(map_t));
+	if (map == NULL)
+		return NULL;
+
 	map->size = 16;
 	map->len = 0;
 	map->items = calloc(map->size, sizeof(map_item_t));
@@ -435,6 +438,10 @@ rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 	const char *ehome;
 
 	rcv->env = map_create();
+	if (rcv->env == NULL) {
+		rcv->env = NULL;
+		return EXIT_FAILURE;
+	}
 	rcv->have_vars = 0;
 
 	if (!rcv_load_file(rcv, fname)) {
