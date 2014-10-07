@@ -903,10 +903,16 @@ _prop_object_internalize_map_file(const char *fname)
 {
 	struct stat sb;
 	struct _prop_object_internalize_mapped_file *mf;
-	size_t pgsize = (size_t)sysconf(_SC_PAGESIZE);
-	size_t pgmask = pgsize - 1;
+	long scps = sysconf(_SC_PAGESIZE);
+	size_t pgsize, pgmask;
 	bool need_guard = false;
 	int fd;
+
+	if (scps == -1)
+		return NULL;
+
+	pgsize = (size_t)scps;
+	pgmask = pgsize -1;
 
 	mf = _PROP_MALLOC(sizeof(*mf), M_TEMP);
 	if (mf == NULL)
