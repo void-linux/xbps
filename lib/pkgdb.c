@@ -319,7 +319,9 @@ xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 
 	generate_full_revdeps_tree(xhp);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	pkgname = xbps_pkg_name(pkgver);
+	if ((pkgname = xbps_pkg_name(pkgver)) == NULL)
+		return NULL;
+
 	res = xbps_dictionary_get(xhp->pkgdb_revdeps, pkgname);
 	free(pkgname);
 
