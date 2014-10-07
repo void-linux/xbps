@@ -345,6 +345,8 @@ xbps_transaction_sort(struct xbps_handle *xhp)
 				    pkgdep_entries);
 			}
 		}
+		if (pd == NULL)
+			continue;
 		/*
 		 * Packages that don't have deps go at head, because
 		 * it doesn't matter.
