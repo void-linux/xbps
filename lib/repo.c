@@ -196,7 +196,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 out:
 	if (repo->ar)
 		archive_read_free(repo->ar);
-	if (repo->fd)
+	if (repo->fd != -1)
 		close(repo->fd);
 	free(repofile);
 	free(repo);
