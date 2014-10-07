@@ -245,6 +245,7 @@ static bool
 rcv_load_file(rcv_t *rcv, const char *fname)
 {
 	FILE *file;
+	long offset;
 	rcv->fname = fname;
 
 	if ((file = fopen(rcv->fname, "r")) == NULL) {
@@ -256,8 +257,14 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 	}
 
 	fseek(file, 0, SEEK_END);
-	rcv->len = (size_t)ftell(file);
+	offset = ftell(file);
 	fseek(file, 0, SEEK_SET);
+
+	if (offset == -1) {
+		fclose(file);
+		return false;
+	}
+	rcv->len = (size_t)offset;
 
 	if (rcv->input != NULL)
 		free(rcv->input);
