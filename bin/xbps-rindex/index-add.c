@@ -38,7 +38,7 @@
 #include "defs.h"
 
 int
-index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
+index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force)
 {
 	xbps_array_t array, pkg_files, pkg_links, pkg_cffiles;
 	xbps_dictionary_t idx, idxmeta, idxfiles, binpkgd, pkg_filesd, curpkgd;
@@ -77,19 +77,18 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 	/*
 	 * Process all packages specified in argv.
 	 */
-	for (int i = 0; i < argc; i++) {
-		const char *arch = NULL;
+	for (int i = args; i < argmax; i++) {
+		const char *arch = NULL, *pkg = argv[i];
 		char *sha256 = NULL, *pkgver = NULL, *pkgname = NULL;
 
-		assert(argv[i]);
+		assert(pkg);
 		/*
 		 * Read metadata props plist dictionary from binary package.
 		 */
-		binpkgd = xbps_get_pkg_plist_from_binpkg(argv[i],
-		    "./props.plist");
+		binpkgd = xbps_get_pkg_plist_from_binpkg(pkg, "./props.plist");
 		if (binpkgd == NULL) {
 			fprintf(stderr, "index: failed to read %s metadata for "
-			    "`%s', skipping!\n", XBPS_PKGPROPS, argv[i]);
+			    "`%s', skipping!\n", XBPS_PKGPROPS, pkg);
 			continue;
 		}
 		xbps_dictionary_get_cstring_nocopy(binpkgd, "architecture", &arch);
@@ -163,7 +162,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		 * 	- filename-size
 		 * 	- filename-sha256
 		 */
-		if ((sha256 = xbps_file_hash(argv[i])) == NULL) {
+		if ((sha256 = xbps_file_hash(pkg)) == NULL) {
 			free(pkgver);
 			free(pkgname);
 			rv = EINVAL;
@@ -177,7 +176,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 			goto out;
 		}
 		free(sha256);
-		if (stat(argv[i], &st) == -1) {
+		if (stat(pkg, &st) == -1) {
 			free(pkgver);
 			free(pkgname);
 			rv = EINVAL;
@@ -210,7 +209,7 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force)
 		 * Add new pkg dictionary into the index-files.
 		 */
 		found = false;
-		pkg_filesd = xbps_get_pkg_plist_from_binpkg(argv[i], "./files.plist");
+		pkg_filesd = xbps_get_pkg_plist_from_binpkg(pkg, "./files.plist");
 		if (pkg_filesd == NULL) {
 			free(pkgver);
 			rv = EINVAL;

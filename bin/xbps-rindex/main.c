@@ -130,7 +130,7 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, argc - optind, argv + optind, force);
+		rv = index_add(&xh, optind, argc, argv, force);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind]);
 	else if (rm_mode)
