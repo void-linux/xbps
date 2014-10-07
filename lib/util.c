@@ -184,10 +184,7 @@ xbps_binpkg_arch(const char *pkg)
 		fname = pkg;
 
 	p = fname + strlen(pkgver);
-	if (!p || p == '\0') {
-		free(pkgver);
-		return NULL;
-	}
+	assert(p);
 	if (*p == '.')
 		p++;
 
