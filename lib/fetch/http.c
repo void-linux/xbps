@@ -284,6 +284,8 @@ http_readfn(void *v, void *buf, size_t len)
 		if (!io->buf || io->bufpos == io->buflen)
 			if (http_fillbuf(io, len) < 1)
 				break;
+		if (!io->buf)
+			return -1;
 		l = io->buflen - io->bufpos;
 		if (len < l)
 			l = len;
