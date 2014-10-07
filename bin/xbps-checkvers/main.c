@@ -432,6 +432,7 @@ rcv_get_pkgver(rcv_t *rcv)
 static int
 rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 {
+	const char *ehome;
 
 	rcv->env = map_create();
 	rcv->have_vars = 0;
@@ -441,10 +442,13 @@ rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 		rcv->env = NULL;
 		return EXIT_FAILURE;
 	}
-
 	/*printf("Processing %s\n", fname);*/
-
-	map_add(rcv->env, "HOME", getenv("HOME"));
+	if ((ehome = getenv("HOME")) == NULL) {
+		map_destroy(rcv->env);
+		rcv->env = NULL;
+		return EXIT_FAILURE;
+	}
+	map_add(rcv->env, "HOME", ehome);
 
 	rcv_get_pkgver(rcv);
 
