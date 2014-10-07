@@ -116,7 +116,7 @@ do {									\
 		if (rv == -1) {						\
 			xbps_error_printf("%s: the %s test "		\
 			    "returned error!\n", pkgname, #name);	\
-			return rv;					\
+			return EINVAL;					\
 		}							\
 	}								\
 } while (0)
