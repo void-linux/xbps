@@ -152,11 +152,12 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 			    "Downloading `%s' package (from `%s')...", pkgver, repoloc);
 			if ((rv = xbps_fetch_file(xhp, file, NULL)) == -1) {
+				rv = errno;
 				fetchstr = xbps_fetch_error_string();
 				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
 				    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
 				    pkgver, "[trans] failed to download `%s' package from `%s': %s",
-				    pkgver, repoloc, fetchstr ? fetchstr : strerror(errno));
+				    pkgver, repoloc, fetchstr ? fetchstr : strerror(rv));
 				free(file);
 				break;
 			}
@@ -173,11 +174,12 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			    "Downloading `%s' signature (from `%s')...", pkgver, repoloc);
 			file = xbps_xasprintf("%s/%s.%s.xbps.sig", repoloc, pkgver, arch);
 			if ((rv = xbps_fetch_file(xhp, file, NULL)) == -1) {
+				rv = errno;
 				fetchstr = xbps_fetch_error_string();
 				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL,
 				    fetchLastErrCode != 0 ? fetchLastErrCode : errno,
 				    pkgver, "[trans] failed to download `%s' signature from `%s': %s",
-				    pkgver, repoloc, fetchstr ? fetchstr : strerror(errno));
+				    pkgver, repoloc, fetchstr ? fetchstr : strerror(rv));
 				free(sigfile);
 				free(file);
 				break;
