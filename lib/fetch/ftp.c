@@ -822,7 +822,6 @@ retry_mode:
 			}
 			break;
 		default:
-			e = FTP_PROTOCOL_ERROR; /* XXX: error code should be prepared */
 			break;
 		}
 
