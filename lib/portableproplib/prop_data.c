@@ -565,6 +565,8 @@ _prop_data_internalize(prop_stack_t stack, prop_object_t *obj,
 						NULL) == false)
 		return (true);
 
+	if (len + 1 >= SIZE_MAX)
+		return true;
 	/*
 	 * Always allocate one extra in case we don't land on an even byte
 	 * boundary during the decode.
