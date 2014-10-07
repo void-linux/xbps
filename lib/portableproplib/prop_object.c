@@ -56,8 +56,9 @@ static pthread_mutex_t _prop_refcnt_mtx = PTHREAD_MUTEX_INITIALIZER;
 void
 _prop_object_init(struct _prop_object *po, const struct _prop_object_type *pot)
 {
+
 	po->po_type = pot;
-	_PROP_ATOMIC_INC32(&po->po_refcnt);
+	po->po_refcnt = 1;
 }
 
 /*
