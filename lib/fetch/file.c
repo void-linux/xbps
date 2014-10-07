@@ -210,6 +210,11 @@ fetchStatFile(struct url *u, struct url_stat *us, const char *flags)
 
 	(void)flags;
 
+	if (us == NULL) {
+		fetch_syserr();
+		return -1;
+	}
+
 	if ((path = fetchUnquotePath(u)) == NULL) {
 		fetch_syserr();
 		return -1;
