@@ -76,9 +76,11 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 			} else {
 				printf("Removed %s from cachedir (sha256 mismatch)\n", binpkg);
 			}
-			if ((access(binpkgsig, R_OK) == 0) && (unlink(binpkgsig) == -1)) {
-				fprintf(stderr, "Failed to remove "
-				    "`%s': %s\n", binpkgsig, strerror(errno));
+			if (unlink(binpkgsig) == -1) {
+				if (errno != ENOENT) {
+					fprintf(stderr, "Failed to remove "
+					    "`%s': %s\n", binpkgsig, strerror(errno));
+				}
 			}
 		}
 		free(binpkgsig);
@@ -90,9 +92,11 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	} else {
 		printf("Removed %s from cachedir (obsolete)\n", binpkg);
 	}
-	if ((access(binpkgsig, R_OK) == 0) && (unlink(binpkgsig) == -1)) {
-		fprintf(stderr, "Failed to remove `%s': %s\n",
-		    binpkgsig, strerror(errno));
+	if (unlink(binpkgsig) == -1) {
+		if (errno != ENOENT) {
+			fprintf(stderr, "Failed to remove `%s': %s\n",
+			    binpkgsig, strerror(errno));
+		}
 	}
 	free(binpkgsig);
 
