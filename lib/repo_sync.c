@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -99,16 +99,15 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 	 */
 	lrepodir = xbps_xasprintf("%s/%s", xhp->metadir, uri_fixedp);
 	free(uri_fixedp);
-
 	/*
 	 * Create repodir in metadir.
 	 */
-	if (access(lrepodir, R_OK|X_OK|W_OK) == -1) {
-		if ((rv = xbps_mkpath(lrepodir, 0755)) == -1) {
+	if ((rv = xbps_mkpath(lrepodir, 0755)) == -1) {
+		if (errno != EEXIST) {
 			xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
-			    errno, NULL,
-			    "[reposync] failed to create repodir `%s': %s",
-			    lrepodir, strerror(errno));
+			    errno, NULL, "[reposync] failed "
+			    "to create repodir `%s': %s", lrepodir,
+			strerror(errno));
 			free(lrepodir);
 			return rv;
 		}
