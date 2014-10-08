@@ -206,8 +206,8 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	/*
 	 * Create cachedir if necessary.
 	 */
-	if (access(xhp->cachedir, R_OK|X_OK|W_OK) == -1) {
-		if (xbps_mkpath(xhp->cachedir, 0755) == -1) {
+	if (xbps_mkpath(xhp->cachedir, 0755) == -1) {
+		if (errno != EEXIST) {
 			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL,
 			    errno, NULL,
 			    "[trans] cannot create cachedir `%s': %s",
@@ -252,16 +252,9 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	/*
 	 * Create rootdir if necessary.
 	 */
-	if (access(xhp->rootdir, R_OK) == -1) {
-		if (errno != ENOENT) {
-			rv = errno;
-			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, errno, xhp->rootdir,
-			    "[trans] failed to access rootdir `%s': %s",
-			    xhp->rootdir, strerror(rv));
-			goto out;
-		}
-		if (xbps_mkpath(xhp->rootdir, 0750) == -1) {
-			rv = errno;
+	if (xbps_mkpath(xhp->rootdir, 0750) == -1) {
+		rv = errno;
+		if (rv != EEXIST) {
 			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, errno, xhp->rootdir,
 			    "[trans] failed to create rootdir `%s': %s",
 			    xhp->rootdir, strerror(rv));
