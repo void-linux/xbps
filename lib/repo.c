@@ -142,12 +142,6 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 		/* local repository */
 		repofile = xbps_repo_path(xhp, url);
 	}
-
-	if (stat(repofile, &st) == -1) {
-		xbps_dbg_printf(xhp, "[repo] `%s' stat repodata %s\n",
-		    repofile, strerror(errno));
-		goto out;
-	}
 	/*
 	 * Open or create the repository archive.
 	 */
@@ -167,6 +161,11 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 	 */
         if (lock && lockf(repo->fd, F_LOCK, 0) == -1) {
 		xbps_dbg_printf(xhp, "[repo] failed to lock %s: %s\n", repo->uri, strerror(errno));
+		goto out;
+	}
+	if (fstat(repo->fd, &st) == -1) {
+		xbps_dbg_printf(xhp, "[repo] `%s' fstat repodata %s\n",
+		    repofile, strerror(errno));
 		goto out;
 	}
 
