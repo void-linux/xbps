@@ -1,3 +1,9 @@
+xbps-0.42 (???):
+
+ * Use atomic builtins if supported by the compiler in our
+   portableproplib copy, to handle object reference counting.
+   This should be cheaper than using a mutex.
+
 xbps-0.41 (2014-09-29):
 
  * libxbps: another bugfix while checking required shlibs in
