@@ -82,7 +82,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 		}
 		/* if pkgdb is unexistent, create it with an empty dictionary */
 		xhp->pkgdb = xbps_dictionary_create();
-		if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist)) {
+		if (!xbps_dictionary_externalize_to_zfile(xhp->pkgdb, xhp->pkgdb_plist)) {
 			rv = errno;
 			xbps_dbg_printf(xhp, "[pkgdb] failed to create pkgdb "
 			    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
@@ -155,11 +155,11 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		return cached_rv;
 
 	if (xhp->pkgdb && flush) {
-		pkgdb_storage = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist);
+		pkgdb_storage = xbps_dictionary_internalize_from_zfile(xhp->pkgdb_plist);
 		if (pkgdb_storage == NULL ||
 		    !xbps_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
 			/* flush dictionary to storage */
-			if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist))
+			if (!xbps_dictionary_externalize_to_zfile(xhp->pkgdb, xhp->pkgdb_plist))
 				return errno;
 		}
 		if (pkgdb_storage)
@@ -170,7 +170,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		cached_rv = 0;
 	}
 	/* update copy in memory */
-	if ((xhp->pkgdb = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist)) == NULL) {
+	if ((xhp->pkgdb = xbps_dictionary_internalize_from_zfile(xhp->pkgdb_plist)) == NULL) {
 		if (errno == ENOENT)
 			xhp->pkgdb = xbps_dictionary_create();
 		else
@@ -189,9 +189,6 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 
 	if (xhp->pkgdb == NULL)
 		return;
-
-	/* write pkgdb to storage in case it was modified */
-	(void)xbps_pkgdb_update(xhp, true);
 
 	xbps_object_release(xhp->pkgdb);
 	xhp->pkgdb = NULL;
@@ -348,7 +345,7 @@ xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp, const char *pkg)
 
 	plist = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
 	free(pkgname);
-	pkgfilesd = xbps_dictionary_internalize_from_file(plist);
+	pkgfilesd = xbps_dictionary_internalize_from_zfile(plist);
 	free(plist);
 
 	if (pkgfilesd == NULL) {

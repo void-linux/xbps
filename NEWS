@@ -1,5 +1,7 @@
 xbps-0.42 (???):
 
+ * pkgdb: switch to zplists by default.
+
  * Fixed issue #62 (Dup replaced pkgs in transaction); see
    https://github.com/voidlinux/xbps/issues/62
 
