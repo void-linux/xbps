@@ -1,5 +1,8 @@
 xbps-0.42 (???):
 
+ * Fixed issue #62 (Dup replaced pkgs in transaction); see
+   https://github.com/voidlinux/xbps/issues/62
+
  * If removing a package and euid==0 do not check for file owner, being root
    means that all files can be removed properly. This fixes package removal
    when some files were not owned by root, rather by a system account.

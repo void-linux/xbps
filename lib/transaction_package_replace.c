@@ -103,14 +103,13 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 */
 			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
 			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname, NULL))) {
-				xbps_dictionary_set_bool(instd,
-				    "remove-and-update", true);
 				xbps_dictionary_set_bool(reppkgd,
 				    "automatic-install", instd_auto);
 				xbps_dictionary_set_bool(reppkgd,
 				    "skip-obsoletes", true);
 				xbps_array_replace_dict_by_name(unsorted,
 				    reppkgd, curpkgname);
+				continue;
 			}
 			/*
 			 * If new package is providing a virtual package to the

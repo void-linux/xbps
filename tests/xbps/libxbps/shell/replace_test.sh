@@ -37,6 +37,45 @@ replace_dups_body() {
 	atf_check_equal $(xbps-query -C empty.conf -r root -p state B) installed
 }
 
+atf_test_case replace_ntimes
+
+replace_ntimes_head() {
+	atf_set "descr" "Tests for package replace: replacing installed pkg by multiple pkgs"
+}
+
+replace_ntimes_body() {
+	mkdir some_repo root
+	mkdir -p pkg_{A,B,C,D}/usr/bin
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg_C
+	atf_check_equal $? 0
+	xbps-create -A noarch -n D-1.0_1 -s "D pkg" ../pkg_D
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A B C D
+	atf_check_equal $? 0
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "A<1.1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.1_1 -s "C pkg" --replaces "A<1.1" ../pkg_C
+	atf_check_equal $? 0
+	xbps-create -A noarch -n D-1.1_1 -s "D pkg" --replaces "A<1.1" ../pkg_D
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	result=$(xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yun|wc -l)
+	atf_check_equal $result 4
+}
+
 atf_test_case self_replace
 
 self_replace_head() {
@@ -97,6 +136,7 @@ replace_vpkg_body() {
 
 atf_init_test_cases() {
 	atf_add_test_case replace_dups
+	atf_add_test_case replace_ntimes
 	atf_add_test_case replace_vpkg
 	atf_add_test_case self_replace
 }
