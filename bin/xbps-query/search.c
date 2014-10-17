@@ -103,13 +103,15 @@ search_array_cb(struct xbps_handle *xhp _unused,
 {
 	xbps_object_t obj2;
 	struct search_data *sd = arg;
-	const char *pkgver, *desc, *str;
+	const char *pkgver = NULL, *desc, *str;
 	regex_t regex;
+
+	if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver))
+		return 0;
 
 	if (sd->prop == NULL) {
 		bool vpkgfound = false;
 		/* no prop set, match on pkgver/short_desc objects */
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
 
 		if (sd->repo_mode && xbps_match_virtual_pkg_in_dict(obj, sd->pat))
@@ -150,7 +152,6 @@ search_array_cb(struct xbps_handle *xhp _unused,
 				if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
 					return errno;
 				if (regexec(&regex, str, 0, 0, 0) == 0) {
-					xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 					if (sd->repo_mode)
 						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 					else
@@ -160,7 +161,6 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			} else {
 				if ((strcasestr(str, sd->pat)) ||
 				    (fnmatch(sd->pat, str, FNM_PERIOD)) == 0) {
-					xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 					if (sd->repo_mode)
 						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 					else
@@ -172,7 +172,6 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		/* property is a number */
 		char size[8];
 
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		if (xbps_humanize_number(size, xbps_number_integer_value(obj2)) == -1)
 			exit(EXIT_FAILURE);
 
@@ -196,7 +195,6 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		}
 	} else if (xbps_object_type(obj2) == XBPS_TYPE_BOOL) {
 		/* property is a bool */
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		if (sd->repo_mode)
 			printf("%s: true (%s)\n", pkgver, sd->repourl);
 		else
@@ -209,7 +207,6 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
 				return errno;
 			if (regexec(&regex, str, 0, 0, 0) == 0) {
-				xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 				if (sd->repo_mode)
 					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 				else
@@ -218,7 +215,6 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			regfree(&regex);
 		} else {
 			if (strcasestr(str, sd->pat)) {
-				xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 				if (sd->repo_mode)
 					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 				else
