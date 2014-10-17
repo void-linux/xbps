@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,85 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <zlib.h>
 
 #include "xbps_api_impl.h"
-
-/*
- * Takes a compressed data buffer, decompresses it and returns the
- * new buffer uncompressed if all was right.
- */
-#define _READ_CHUNK	8192
-
-static char *
-uncompress_plist_data(char *xml, size_t len)
-{
-	z_stream strm;
-	unsigned char *out;
-	char *uncomp_xml = NULL;
-	size_t have;
-	ssize_t totalsize = 0;
-	int rv = 0;
-
-	assert(xml != NULL);
-
-	/* Decompress the mmap'ed buffer with zlib */
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-
-	/* 15+16 to use gzip method */
-	if (inflateInit2(&strm, 15+16) != Z_OK)
-		return NULL;
-
-	strm.avail_in = len;
-	strm.next_in = (unsigned char *)xml;
-
-	/* Output buffer (uncompressed) */
-	if ((uncomp_xml = malloc(_READ_CHUNK)) == NULL) {
-		(void)inflateEnd(&strm);
-		return NULL;
-	}
-
-	/* temp output buffer for inflate */
-	if ((out = malloc(_READ_CHUNK)) == NULL) {
-		(void)inflateEnd(&strm);
-		free(uncomp_xml);
-		return NULL;
-	}
-
-	/* Inflate the input buffer and copy into 'uncomp_xml' */
-	do {
-		strm.avail_out = _READ_CHUNK;
-		strm.next_out = out;
-		rv = inflate(&strm, Z_NO_FLUSH);
-		switch (rv) {
-			case Z_DATA_ERROR:
-			case Z_STREAM_ERROR:
-			case Z_NEED_DICT:
-			case Z_MEM_ERROR:
-			case Z_BUF_ERROR:
-			case Z_VERSION_ERROR:
-				(void)inflateEnd(&strm);
-				free(uncomp_xml);
-				free(out);
-				return NULL;
-		}
-		have = _READ_CHUNK - strm.avail_out;
-		totalsize += have;
-		uncomp_xml = realloc(uncomp_xml, totalsize);
-		memcpy(uncomp_xml + totalsize - have, out, have);
-	} while (strm.avail_out == 0);
-
-	/* we are done */
-	(void)inflateEnd(&strm);
-	free(out);
-
-	return uncomp_xml;
-}
-#undef _READ_CHUNK
 
 xbps_dictionary_t HIDDEN
 xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
@@ -114,7 +37,7 @@ xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 	xbps_dictionary_t d = NULL;
 	size_t buflen;
 	ssize_t nbytes = -1;
-	char *buf, *uncomp_buf;
+	char *buf;
 
 	assert(ar != NULL);
 	assert(entry != NULL);
@@ -136,22 +59,7 @@ xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 		free(buf);
 		return d;
 	}
-
-	/* Try to uncompress blob */
-	uncomp_buf = uncompress_plist_data(buf, buflen);
-	if (uncomp_buf == NULL) {
-		/* Error while decompressing */
-		free(uncomp_buf);
-		xbps_object_release(d);
-		d = NULL;
-	} else {
-		/* We have the uncompressed data */
-		d = xbps_dictionary_internalize(uncomp_buf);
-		free(uncomp_buf);
-	}
-
-	free(buf);
-	return d;
+	return NULL;
 }
 
 int
