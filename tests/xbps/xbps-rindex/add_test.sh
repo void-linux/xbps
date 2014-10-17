@@ -21,7 +21,7 @@ update_body() {
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
 	cd ..
-	result="$(xbps-query -C empty.conf --repository=some_repo -s '')"
+	result="$(xbps-query -r root -C empty.conf --repository=some_repo -s '')"
 	expected="[-] foo-1.1_1 foo pkg"
 	rv=0
 	if [ "$result" != "$expected" ]; then
@@ -49,7 +49,7 @@ revert_body() {
 	xbps-rindex -a *.xbps
 	atf_check_equal $? 0
 	cd ..
-	result="$(xbps-query -C empty.conf --repository=some_repo -s '')"
+	result="$(xbps-query -r root -C empty.conf --repository=some_repo -s '')"
 	expected="[-] foo-1.0_1 foo pkg"
 	rv=0
 	if [ "$result" != "$expected" ]; then
