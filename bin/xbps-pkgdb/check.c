@@ -94,7 +94,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	if (xbps_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256)) {
 		buf = xbps_xasprintf("%s/.%s-files.plist",
 		    xhp->metadir, pkgname);
-		filesd = xbps_dictionary_internalize_from_file(buf);
+		filesd = xbps_dictionary_internalize_from_zfile(buf);
 		rv = xbps_file_hash_check(buf, sha256);
 		free(buf);
 		if (rv == ENOENT) {
