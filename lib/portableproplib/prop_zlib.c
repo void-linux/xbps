@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2012 Juan Romero Pardines.
+ * Copyright (c) 2010-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@ prop ## type ## _internalize_from_zfile(const char *fname)				\
 	struct _prop_object_internalize_mapped_file *mf;				\
 	prop ## type ## _t obj = NULL;							\
 	z_stream strm;									\
-	unsigned char *out;								\
+	unsigned char out[_READ_CHUNK+1];						\
 	char *uncomp_xml = NULL;							\
 	size_t have;									\
 	ssize_t totalsize = 0;								\
@@ -77,13 +77,6 @@ prop ## type ## _internalize_from_zfile(const char *fname)				\
 	uncomp_xml = _PROP_MALLOC(_READ_CHUNK, M_TEMP);					\
 	if (uncomp_xml == NULL)								\
 		goto out;								\
-											\
-	/* temporary output buffer for inflate */					\
-	out = _PROP_MALLOC(_READ_CHUNK, M_TEMP);					\
-	if (out == NULL) {								\
-		_PROP_FREE(uncomp_xml, M_TEMP);						\
-		goto out;								\
-	}										\
 											\
 	/* Decompress the mmap'ed buffer with zlib */					\
 	strm.zalloc = Z_NULL;								\
@@ -123,7 +116,6 @@ out2:											\
 	(void)inflateEnd(&strm);							\
 out1:											\
 	obj = prop ## type ## _internalize(uncomp_xml);					\
-	_PROP_FREE(out, M_TEMP);							\
 	_PROP_FREE(uncomp_xml, M_TEMP);							\
 out:											\
 	_prop_object_internalize_unmap_file(mf);					\
