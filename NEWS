@@ -13,6 +13,11 @@ xbps-0.42 (???):
  * Use atomic builtins if supported by the compiler in our portableproplib copy
    to handle object reference counting. This should be cheaper than using a mutex.
 
+ * The manpages are now fully compliant with mdoc; thanks to mandoc -Wall.
+
+ * Added support to run the testsuite in place, without the need to perform
+   installation; use `make check` to run it.
+
 xbps-0.41 (2014-09-29):
 
  * libxbps: another bugfix while checking required shlibs in
