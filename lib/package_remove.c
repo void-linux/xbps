@@ -65,7 +65,7 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 			 * enough to ensure the user has write permissions
 			 * on the directory.
 			 */
-			if (!lstat(path, &st) && euid == st.st_uid) {
+			if (euid == 0 || (!lstat(path, &st) && euid == st.st_uid)) {
 				/* success */
 				continue;
 			}
