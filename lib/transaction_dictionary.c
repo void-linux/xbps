@@ -272,9 +272,14 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	for (i = 0; i < cnt; i++) {
 		xbps_dictionary_t pkgd;
 		xbps_string_t str;
+		const char *tract = NULL;
 
 		pkgd = xbps_array_get(pkgs, i);
 		str = xbps_dictionary_get(pkgd, "pkgver");
+		xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &tract);
+		if (strcmp(tract, "remove") == 0)
+			continue;
+
 		assert(xbps_object_type(str) == XBPS_TYPE_STRING);
 
 		if (!xbps_array_add(edges, str))
