@@ -34,20 +34,16 @@
 #include "xbps_api_impl.h"
 
 int HIDDEN
-xbps_transaction_package_replace(struct xbps_handle *xhp)
+xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 {
-	xbps_array_t unsorted;
-
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-
-	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++) {
 		xbps_array_t replaces;
 		xbps_object_t obj, obj2;
 		xbps_object_iterator_t iter;
 		const char *pkgver;
 		char *pkgname;
 
-		obj = xbps_array_get(unsorted, i);
+		obj = xbps_array_get(pkgs, i);
 		replaces = xbps_dictionary_get(obj, "replaces");
 		if (replaces == NULL || xbps_array_count(replaces) == 0)
 			continue;
@@ -89,7 +85,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			/*
 			 * Make sure to not add duplicates.
 			 */
-			reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname, NULL);
+			reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, NULL);
 			if (reppkgd) {
 				xbps_dictionary_get_cstring_nocopy(reppkgd,
 				    "transaction", &tract);
@@ -102,12 +98,12 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 * transaction and it's going to be updated.
 			 */
 			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
-			if ((reppkgd = xbps_find_pkg_in_array(unsorted, curpkgname, NULL))) {
+			if ((reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, NULL))) {
 				xbps_dictionary_set_bool(reppkgd,
 				    "automatic-install", instd_auto);
 				xbps_dictionary_set_bool(reppkgd,
 				    "skip-obsoletes", true);
-				xbps_array_replace_dict_by_name(unsorted,
+				xbps_array_replace_dict_by_name(pkgs,
 				    reppkgd, curpkgname);
 				continue;
 			}
@@ -129,7 +125,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp)
 			 */
 			xbps_dictionary_set_cstring_nocopy(instd,
 			    "transaction", "remove");
-			xbps_array_add(unsorted, instd);
+			xbps_array_add(pkgs, instd);
 			free(curpkgname);
 		}
 		xbps_object_iterator_release(iter);

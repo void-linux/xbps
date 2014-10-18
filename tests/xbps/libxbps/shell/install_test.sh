@@ -80,7 +80,7 @@ install_with_vpkg_deps_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	echo -e "C-1.0_1\nA-1.0_1\nB-1.0_1\nD-1.0_1\n" > exp
+	echo -e "A-1.0_1\nB-1.0_1\nD-1.0_1\nC-1.0_1\n" > exp
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yn E|awk '{print $1}' > out
 	echo >> out
 	echo "exp: '$(cat exp)'" >&2

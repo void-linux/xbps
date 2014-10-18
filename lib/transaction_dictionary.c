@@ -201,7 +201,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return ENOMEM;
 	}
-	if (!xbps_dictionary_set(xhp->transd, "unsorted_deps", array)) {
+	if (!xbps_dictionary_set(xhp->transd, "packages", array)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return EINVAL;
@@ -250,8 +250,8 @@ xbps_transaction_init(struct xbps_handle *xhp)
 int
 xbps_transaction_prepare(struct xbps_handle *xhp)
 {
-	xbps_array_t array;
-	unsigned int i;
+	xbps_array_t array, pkgs, edges;
+	unsigned int i, cnt;
 	int rv = 0;
 
 	if (xhp->transd == NULL)
@@ -260,22 +260,50 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Collect dependencies for pkgs in transaction.
 	 */
-	array = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-	for (i = 0; i < xbps_array_count(array); i++) {
-		if ((rv = xbps_repository_find_deps(xhp, array, xbps_array_get(array, i))) != 0)
+	if ((edges = xbps_array_create()) == NULL)
+		return ENOMEM;
+	/*
+	 * The edges are also appended after its dependencies have been
+	 * collected; the edges at the original array are removed later.
+	 */
+	pkgs = xbps_dictionary_get(xhp->transd, "packages");
+	assert(xbps_object_type(pkgs) == XBPS_TYPE_ARRAY);
+	cnt = xbps_array_count(pkgs);
+	for (i = 0; i < cnt; i++) {
+		xbps_dictionary_t pkgd;
+		xbps_string_t str;
+
+		pkgd = xbps_array_get(pkgs, i);
+		str = xbps_dictionary_get(pkgd, "pkgver");
+		assert(xbps_object_type(str) == XBPS_TYPE_STRING);
+
+		if (!xbps_array_add(edges, str))
+			return ENOMEM;
+
+		if ((rv = xbps_repository_find_deps(xhp, pkgs, pkgd)) != 0)
 			return rv;
+
+		if (!xbps_array_add(pkgs, pkgd))
+			return ENOMEM;
 	}
+	/* ... remove dup edges at head */
+	for (i = 0; i < xbps_array_count(edges); i++) {
+		const char *pkgver;
+		xbps_array_get_cstring_nocopy(edges, i, &pkgver);
+		xbps_remove_pkg_from_array_by_pkgver(pkgs, pkgver);
+	}
+	xbps_object_release(edges);
+
 	/*
 	 * If there are missing deps or revdeps bail out.
 	 */
-	xbps_transaction_revdeps(xhp);
+	xbps_transaction_revdeps(xhp, pkgs);
 	array = xbps_dictionary_get(xhp->transd, "missing_deps");
 	if (xbps_array_count(array))
 		return ENODEV;
 
-	array = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-	for (i = 0; i < xbps_array_count(array); i++)
-		xbps_pkg_find_conflicts(xhp, array, xbps_array_get(array, i));
+	for (i = 0; i < xbps_array_count(pkgs); i++)
+		xbps_pkg_find_conflicts(xhp, pkgs, xbps_array_get(pkgs, i));
 	/*
 	 * If there are package conflicts bail out.
 	 */
@@ -285,7 +313,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Check for packages to be replaced.
 	 */
-	if ((rv = xbps_transaction_package_replace(xhp)) != 0) {
+	if ((rv = xbps_transaction_package_replace(xhp, pkgs)) != 0) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return rv;
@@ -293,17 +321,9 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Check for unresolved shared libraries.
 	 */
-	if (xbps_transaction_shlibs(xhp))
+	if (xbps_transaction_shlibs(xhp, pkgs, xbps_dictionary_get(xhp->transd, "missing_shlibs")))
 		return ENOEXEC;
 
-	/*
-	 * Sort package dependencies if necessary.
-	 */
-	if ((rv = xbps_transaction_sort(xhp)) != 0) {
-		xbps_object_release(xhp->transd);
-		xhp->transd = NULL;
-		return rv;
-	}
 	/*
 	 * Add transaction stats for total download/installed size,
 	 * number of packages to be installed, updated, configured
@@ -317,7 +337,6 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Remove now unneeded objects.
 	 */
-	xbps_dictionary_remove(xhp->transd, "unsorted");
 	xbps_dictionary_remove(xhp->transd, "missing_shlibs");
 	xbps_dictionary_remove(xhp->transd, "missing_deps");
 	xbps_dictionary_remove(xhp->transd, "conflicts");

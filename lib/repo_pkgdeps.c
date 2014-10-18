@@ -40,6 +40,10 @@ store_dependency(struct xbps_handle *xhp,
 	const char *pkgver;
 	char *pkgname, *self_replaced;
 	int rv;
+
+	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
+	if (xbps_find_pkg_in_array(unsorted, pkgver, NULL))
+		return 0;
 	/*
 	 * Overwrite package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
@@ -53,7 +57,6 @@ store_dependency(struct xbps_handle *xhp,
 	    !xbps_dictionary_set_bool(repo_pkgd, "automatic-install", true))
 		return EINVAL;
 
-	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	/*
 	 * Set a replaces to itself, so that virtual packages are always replaced.
 	*/
@@ -371,22 +374,21 @@ find_repo_deps(struct xbps_handle *xhp,
 		free(pkgname);
 		free(reqpkgname);
 		/*
-		 * Package is on repo, add it into the transaction dictionary.
-		 */
-		xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
-		rv = store_dependency(xhp, unsorted, curpkgd, state);
-		if (rv != 0) {
-			xbps_dbg_printf(xhp, "store_dependency failed for `%s': %s\n", reqpkg, strerror(rv));
-			break;
-		}
-		/*
 		 * If package doesn't have rundeps, pass to the next one.
 		 */
 		curpkgrdeps = xbps_dictionary_get(curpkgd, "run_depends");
-		if (curpkgrdeps == NULL)
+		if (curpkgrdeps == NULL) {
+			/*
+			 * Package is on repo, add it into the transaction dictionary.
+			 */
+			xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
+			rv = store_dependency(xhp, unsorted, curpkgd, state);
+			if (rv != 0) {
+				xbps_dbg_printf(xhp, "store_dependency failed for `%s': %s\n", reqpkg, strerror(rv));
+				break;
+			}
 			continue;
-
-		curpkgprovides = xbps_dictionary_get(curpkgd, "provides");
+		}
 
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf(xhp, "");
@@ -399,9 +401,19 @@ find_repo_deps(struct xbps_handle *xhp,
 		 * Recursively find rundeps for current pkg dictionary.
 		 */
 		(*depth)++;
+		curpkgprovides = xbps_dictionary_get(curpkgd, "provides");
 		rv = find_repo_deps(xhp, unsorted, curpkgrdeps, curpkgprovides, pkgver_q, depth);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "Error checking %s for rundeps: %s\n", reqpkg, strerror(rv));
+			break;
+		}
+		/*
+		 * Package is on repo, add it into the transaction dictionary.
+		 */
+		xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
+		rv = store_dependency(xhp, unsorted, curpkgd, state);
+		if (rv != 0) {
+			xbps_dbg_printf(xhp, "store_dependency failed for `%s': %s\n", reqpkg, strerror(rv));
 			break;
 		}
 	}

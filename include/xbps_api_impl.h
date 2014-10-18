@@ -184,19 +184,13 @@ xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *, xbp
  * @private
  * From lib/transaction_revdeps.c
  */
-void HIDDEN xbps_transaction_revdeps(struct xbps_handle *);
+void HIDDEN xbps_transaction_revdeps(struct xbps_handle *, xbps_array_t);
 
 /**
  * @privuate
  * From lib/transaction_shlibs.c
  */
-bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *);
-
-/**
- * @private
- * From lib/transaction_sortdeps.c
- */
-int HIDDEN xbps_transaction_sort(struct xbps_handle *);
+bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *, xbps_array_t, xbps_array_t);
 
 /**
  * @private
@@ -241,7 +235,7 @@ int HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
  */
 int HIDDEN xbps_unpack_binary_pkg(struct xbps_handle *, xbps_dictionary_t);
 
-int HIDDEN xbps_transaction_package_replace(struct xbps_handle *);
+int HIDDEN xbps_transaction_package_replace(struct xbps_handle *, xbps_array_t);
 
 /**
  * @private

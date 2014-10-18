@@ -42,13 +42,13 @@
  */
 static bool
 check_virtual_pkgs(struct xbps_handle *xhp,
+		   xbps_array_t pkgs,
 		   xbps_dictionary_t trans_pkgd,
 		   xbps_dictionary_t rev_pkgd)
 {
-	xbps_array_t unsorted, provides;
+	xbps_array_t provides;
 	bool matched = false;
 
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
 	provides = xbps_dictionary_get(trans_pkgd, "provides");
 	for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
 		xbps_array_t rundeps, mdeps;
@@ -90,7 +90,7 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 			xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
 			pkgdepname = xbps_pkg_name(pkgver);
 			assert(pkgdepname);
-			if (xbps_find_pkg_in_array(unsorted, pkgdepname, NULL)) {
+			if (xbps_find_pkg_in_array(pkgs, pkgdepname, NULL)) {
 				free(pkgdepname);
 				continue;
 			}
@@ -113,18 +113,16 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 }
 
 void HIDDEN
-xbps_transaction_revdeps(struct xbps_handle *xhp)
+xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 {
-	xbps_array_t mdeps, unsorted, pkgrdeps, rundeps;
+	xbps_array_t mdeps, pkgrdeps, rundeps;
 	xbps_dictionary_t revpkgd;
 	xbps_object_t obj;
 	const char *pkgver, *curdep, *revpkgver, *curpkgver, *tract;
 	char *pkgname, *curdepname, *curpkgname, *str;
 
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-
-	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
-		obj = xbps_array_get(unsorted, i);
+	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++) {
+		obj = xbps_array_get(pkgs, i);
 		/*
 		 * Only check packages in transaction being updated.
 		 */
@@ -163,7 +161,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 			/*
 			 * First try to match any supported virtual package.
 			 */
-			if (check_virtual_pkgs(xhp, obj, revpkgd))
+			if (check_virtual_pkgs(xhp, pkgs, obj, revpkgd))
 				continue;
 			/*
 			 * Try to match real dependencies.
@@ -200,7 +198,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp)
 			 * is in the transaction.
 			 */
 			pkgname = xbps_pkg_name(curpkgver);
-			if (xbps_find_pkg_in_array(unsorted, pkgname, NULL)) {
+			if (xbps_find_pkg_in_array(pkgs, pkgname, NULL)) {
 				free(pkgname);
 				continue;
 			}

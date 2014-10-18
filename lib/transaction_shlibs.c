@@ -43,9 +43,9 @@
  * Abort transaction if such case is found.
  */
 static bool
-shlib_trans_matched(struct xbps_handle *xhp, const char *pkgver, const char *shlib)
+shlib_trans_matched(xbps_array_t pkgs, const char *pkgver, const char *shlib)
 {
-	xbps_array_t unsorted, shrequires;
+	xbps_array_t shrequires;
 	xbps_dictionary_t pkgd;
 	const char *tract;
 	char *pkgname;
@@ -53,8 +53,7 @@ shlib_trans_matched(struct xbps_handle *xhp, const char *pkgver, const char *shl
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
 
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-	if ((pkgd = xbps_find_pkg_in_array(unsorted, pkgname, NULL)) == NULL) {
+	if ((pkgd = xbps_find_pkg_in_array(pkgs, pkgname, NULL)) == NULL) {
 		free(pkgname);
 		return false;
 	}
@@ -72,7 +71,7 @@ shlib_trans_matched(struct xbps_handle *xhp, const char *pkgver, const char *shl
 }
 
 static bool
-shlib_matched(struct xbps_handle *xhp, xbps_array_t unsorted, xbps_array_t mshlibs,
+shlib_matched(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t mshlibs,
 		const char *pkgver, const char *shlib)
 {
 	xbps_array_t revdeps;
@@ -106,7 +105,7 @@ shlib_matched(struct xbps_handle *xhp, xbps_array_t unsorted, xbps_array_t mshli
 		 * First check if this revdep has been queued in transaction;
 		 * otherwise process the current installed pkg.
 		 */
-		pkgd = xbps_find_pkg_in_array(unsorted, rpkgname, NULL);
+		pkgd = xbps_find_pkg_in_array(pkgs, rpkgname, NULL);
 		free(rpkgname);
 		if (pkgd) {
 			/*
@@ -137,7 +136,7 @@ shlib_matched(struct xbps_handle *xhp, xbps_array_t unsorted, xbps_array_t mshli
 				 * installed pkg; find out if there's an update
 				 * in the transaction with the matching version.
 				 */
-				if (!shlib_trans_matched(xhp, rpkgver, shlib)) {
+				if (!shlib_trans_matched(pkgs, rpkgver, shlib)) {
 					char *buf;
 					/* shlib not matched */
 					buf = xbps_xasprintf("%s breaks `%s' "
@@ -159,21 +158,17 @@ shlib_matched(struct xbps_handle *xhp, xbps_array_t unsorted, xbps_array_t mshli
 
 
 bool HIDDEN
-xbps_transaction_shlibs(struct xbps_handle *xhp)
+xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t mshlibs)
 {
-	xbps_array_t unsorted, mshlibs;
 	bool unmatched = false;
 
-	mshlibs = xbps_dictionary_get(xhp->transd, "missing_shlibs");
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
-
-	for (unsigned int i = 0; i < xbps_array_count(unsorted); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++) {
 		xbps_array_t shprovides;
 		xbps_object_t obj, pkgd;
 		const char *pkgver, *tract;
 		char *pkgname;
 
-		obj = xbps_array_get(unsorted, i);
+		obj = xbps_array_get(pkgs, i);
 		/*
 		 * If pkg does not have 'shlib-provides' obj, pass to next one.
 		 */
@@ -206,7 +201,7 @@ xbps_transaction_shlibs(struct xbps_handle *xhp)
 			 * Check that all shlibs provided by this pkg are used by
 			 * its revdeps.
 			 */
-			if (!shlib_matched(xhp, unsorted, mshlibs, pkgver, shlib))
+			if (!shlib_matched(xhp, pkgs, mshlibs, pkgver, shlib))
 				unmatched = true;
 		}
 	}

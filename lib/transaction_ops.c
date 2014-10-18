@@ -62,7 +62,7 @@ static int
 trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 {
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
-	xbps_array_t unsorted, replaces;
+	xbps_array_t pkgs, replaces;
 	const char *repoloc, *repopkgver, *instpkgver, *reason;
 	char *self_replaced, *pkgname;
 	int action = 0, rv = 0;
@@ -151,13 +151,13 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		return rv;
 
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+	pkgs = xbps_dictionary_get(xhp->transd, "packages");
 	/*
 	 * Find out if package being updated matches the one already
 	 * in transaction, in that case ignore it.
 	 */
 	if (action == TRANS_UPDATE) {
-		if (xbps_find_pkg_in_array(unsorted, repopkgver, NULL)) {
+		if (xbps_find_pkg_in_array(pkgs, repopkgver, NULL)) {
 			xbps_dbg_printf(xhp, "[update] `%s' already queued in "
 			    "transaction.\n", repopkgver);
 			return EEXIST;
@@ -212,9 +212,9 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 	}
 	/*
 	 * Add the pkg dictionary from repository's index dictionary into
-	 * the "unsorted" queue.
+	 * the packages array.
 	 */
-	if (!xbps_array_add(unsorted, pkg_repod)) {
+	if (!xbps_array_add(pkgs, pkg_repod)) {
 		free(pkgname);
 		return EINVAL;
 	}
@@ -290,7 +290,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			    bool recursive)
 {
 	xbps_dictionary_t pkgd;
-	xbps_array_t unsorted, orphans, orphans_pkg, reqby;
+	xbps_array_t pkgs, orphans, orphans_pkg, reqby;
 	xbps_object_t obj;
 	const char *pkgver;
 	unsigned int count;
@@ -308,7 +308,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		return rv;
 
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+	pkgs = xbps_dictionary_get(xhp->transd, "packages");
 
 	if (!recursive)
 		goto rmpkg;
@@ -330,7 +330,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 		obj = xbps_array_get(orphans, count);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_set_cstring_nocopy(obj, "transaction", "remove");
-		xbps_array_add(unsorted, obj);
+		xbps_array_add(pkgs, obj);
 		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	}
 	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
@@ -347,11 +347,11 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 
 rmpkg:
 	/*
-	 * Add pkg dictionary into the transaction unsorted queue.
+	 * Add pkg dictionary into the transaction pkgs queue.
 	 */
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	xbps_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
-	xbps_array_add(unsorted, pkgd);
+	xbps_array_add(pkgs, pkgd);
 	xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
 	/*
@@ -368,7 +368,7 @@ rmpkg:
 int
 xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 {
-	xbps_array_t orphans, unsorted;
+	xbps_array_t orphans, pkgs;
 	xbps_object_t obj;
 	const char *pkgver;
 	unsigned int count;
@@ -386,16 +386,16 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		goto out;
 
-	unsorted = xbps_dictionary_get(xhp->transd, "unsorted_deps");
+	pkgs = xbps_dictionary_get(xhp->transd, "packages");
 	/*
-	 * Add pkg orphan dictionary into the transaction unsorted queue.
+	 * Add pkg orphan dictionary into the transaction pkgs queue.
 	 */
 	while (count--) {
 		obj = xbps_array_get(orphans, count);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_set_cstring_nocopy(obj,
 		    "transaction", "remove");
-		xbps_array_add(unsorted, obj);
+		xbps_array_add(pkgs, obj);
 		xbps_dbg_printf(xhp, "%s: added (remove).\n", pkgver);
 	}
 out:
