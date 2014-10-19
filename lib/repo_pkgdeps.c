@@ -330,7 +330,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			 * Package is on repo, add it into the transaction dictionary.
 			 */
 			xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
-			rv = xbps_transaction_store(xhp, unsorted, curpkgd, state);
+			rv = xbps_transaction_store(xhp, unsorted, curpkgd);
 			if (rv != 0) {
 				xbps_dbg_printf(xhp, "xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 				break;
@@ -359,7 +359,7 @@ find_repo_deps(struct xbps_handle *xhp,
 		 * Package is on repo, add it into the transaction dictionary.
 		 */
 		xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
-		rv = xbps_transaction_store(xhp, unsorted, curpkgd, state);
+		rv = xbps_transaction_store(xhp, unsorted, curpkgd);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 			break;

@@ -32,22 +32,15 @@
 
 int HIDDEN
 xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
-		xbps_dictionary_t pkgd, pkg_state_t pstate)
+		xbps_dictionary_t pkgd)
 {
 	xbps_array_t replaces;
 	const char *pkgver;
 	char *pkgname, *self_replaced;
-	int rv;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	if (xbps_find_pkg_in_array(pkgs, pkgver, NULL))
 		return 0;
-	/*
-	 * Overwrite package state in dictionary with same state than the
-	 * package currently uses, otherwise not-installed.
-	 */
-	if ((rv = xbps_set_pkg_state_dictionary(pkgd, pstate)) != 0)
-		return rv;
 	/*
 	 * Add required objects into package dep's dictionary.
 	 */

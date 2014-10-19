@@ -136,9 +136,32 @@ remove_readonly_files_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case remove_dups
+
+remove_dups_head() {
+	atf_set "descr" "Tests for package removal: remove pkg multiple times"
+}
+
+remove_dups_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -yv A
+	atf_check_equal $? 0
+	out=$(xbps-remove -r root -yvn A A A|wc -l)
+	atf_check_equal $out 1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case keep_base_symlinks
 	atf_add_test_case remove_readonly_files
 	atf_add_test_case remove_symlinks
 	atf_add_test_case remove_symlinks_from_root
+	atf_add_test_case remove_dups
 }
