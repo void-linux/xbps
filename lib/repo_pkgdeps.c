@@ -31,58 +31,6 @@
 #include "xbps_api_impl.h"
 
 static int
-store_dependency(struct xbps_handle *xhp,
-		 xbps_array_t unsorted,
-		 xbps_dictionary_t repo_pkgd,
-		 pkg_state_t repo_pkg_state)
-{
-	xbps_array_t replaces;
-	const char *pkgver;
-	char *pkgname, *self_replaced;
-	int rv;
-
-	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
-	if (xbps_find_pkg_in_array(unsorted, pkgver, NULL))
-		return 0;
-	/*
-	 * Overwrite package state in dictionary with same state than the
-	 * package currently uses, otherwise not-installed.
-	 */
-	if ((rv = xbps_set_pkg_state_dictionary(repo_pkgd, repo_pkg_state)) != 0)
-		return rv;
-	/*
-	 * Add required objects into package dep's dictionary.
-	 */
-	if (!xbps_dictionary_get(repo_pkgd, "automatic-install") &&
-	    !xbps_dictionary_set_bool(repo_pkgd, "automatic-install", true))
-		return EINVAL;
-
-	/*
-	 * Set a replaces to itself, so that virtual packages are always replaced.
-	*/
-	if ((replaces = xbps_dictionary_get(repo_pkgd, "replaces")) == NULL)
-		replaces = xbps_array_create();
-
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
-	self_replaced = xbps_xasprintf("%s>=0", pkgname);
-	free(pkgname);
-	xbps_array_add_cstring(replaces, self_replaced);
-	free(self_replaced);
-
-	if (!xbps_dictionary_set(repo_pkgd, "replaces", replaces))
-		return EINVAL;
-
-	/*
-	 * Add the dictionary into the unsorted queue.
-	 */
-	xbps_array_add(unsorted, repo_pkgd);
-	xbps_dbg_printf_append(xhp, " (added %s)\n", pkgver);
-
-	return 0;
-}
-
-static int
 add_missing_reqdep(struct xbps_handle *xhp, const char *reqpkg)
 {
 	xbps_array_t mdeps;
@@ -382,9 +330,9 @@ find_repo_deps(struct xbps_handle *xhp,
 			 * Package is on repo, add it into the transaction dictionary.
 			 */
 			xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
-			rv = store_dependency(xhp, unsorted, curpkgd, state);
+			rv = xbps_transaction_store(xhp, unsorted, curpkgd, state);
 			if (rv != 0) {
-				xbps_dbg_printf(xhp, "store_dependency failed for `%s': %s\n", reqpkg, strerror(rv));
+				xbps_dbg_printf(xhp, "xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 				break;
 			}
 			continue;
@@ -411,9 +359,9 @@ find_repo_deps(struct xbps_handle *xhp,
 		 * Package is on repo, add it into the transaction dictionary.
 		 */
 		xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
-		rv = store_dependency(xhp, unsorted, curpkgd, state);
+		rv = xbps_transaction_store(xhp, unsorted, curpkgd, state);
 		if (rv != 0) {
-			xbps_dbg_printf(xhp, "store_dependency failed for `%s': %s\n", reqpkg, strerror(rv));
+			xbps_dbg_printf(xhp, "xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 			break;
 		}
 	}

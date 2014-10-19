@@ -183,11 +183,33 @@ install_if_not_installed_on_update_body() {
 	atf_check_equal $pkgver A-1.0_1
 }
 
+atf_test_case install_dups
+
+install_dups_head() {
+	atf_set "descr" "Tests for pkg installations: install multiple times a pkg"
+}
+
+install_dups_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	out=$(xbps-install -C empty.conf -r root --repository=$PWD/some_repo -ynd A A A A|wc -l)
+	atf_check_equal $out 1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
 	atf_add_test_case install_with_vpkg_deps
 	atf_add_test_case install_if_not_installed_on_update
+	atf_add_test_case install_dups
 	atf_add_test_case update_if_installed
 	atf_add_test_case update_to_empty_pkg
 }

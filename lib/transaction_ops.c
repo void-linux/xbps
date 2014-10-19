@@ -62,9 +62,9 @@ static int
 trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 {
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
-	xbps_array_t pkgs, replaces;
+	xbps_array_t pkgs;
 	const char *repoloc, *repopkgver, *instpkgver, *reason;
-	char *self_replaced, *pkgname;
+	char *pkgname;
 	int action = 0, rv = 0;
 	pkg_state_t state = 0;
 	bool autoinst = false;
@@ -193,34 +193,14 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 	 * or "update".
 	 */
 	if (!xbps_dictionary_set_cstring_nocopy(pkg_repod,
-	    "transaction", reason))
-		return EINVAL;
-
-	/*
-	 * Set a replaces to itself, so that virtual packages are always replaced.
-	 */
-	if ((replaces = xbps_dictionary_get(pkg_repod, "replaces")) == NULL)
-		replaces = xbps_array_create();
-
-	self_replaced = xbps_xasprintf("%s>=0", pkgname);
-	xbps_array_add_cstring(replaces, self_replaced);
-	free(self_replaced);
-
-	if (!xbps_dictionary_set(pkg_repod, "replaces", replaces)) {
+	    "transaction", reason)) {
 		free(pkgname);
 		return EINVAL;
 	}
-	/*
-	 * Add the pkg dictionary from repository's index dictionary into
-	 * the packages array.
-	 */
-	if (!xbps_array_add(pkgs, pkg_repod)) {
+	if ((rv = xbps_transaction_store(xhp, pkgs, pkg_repod, state)) != 0) {
 		free(pkgname);
-		return EINVAL;
+		return rv;
 	}
-	xbps_dbg_printf(xhp, "%s: added into the transaction (%s).\n",
-	    repopkgver, repoloc);
-
 	free(pkgname);
 	return 0;
 }
