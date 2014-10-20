@@ -197,7 +197,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		free(pkgname);
 		return EINVAL;
 	}
-	if ((rv = xbps_transaction_store(xhp, pkgs, pkg_repod)) != 0) {
+	if ((rv = xbps_transaction_store(xhp, pkgs, pkg_repod, false)) != 0) {
 		free(pkgname);
 		return rv;
 	}
@@ -310,7 +310,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 		obj = xbps_array_get(orphans, count);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_set_cstring_nocopy(obj, "transaction", "remove");
-		if ((rv = xbps_transaction_store(xhp, pkgs, obj)) != 0)
+		if ((rv = xbps_transaction_store(xhp, pkgs, obj, false)) != 0)
 			return EINVAL;
 		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	}
@@ -332,7 +332,7 @@ rmpkg:
 	 */
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	xbps_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
-	if ((rv = xbps_transaction_store(xhp, pkgs, pkgd)) != 0)
+	if ((rv = xbps_transaction_store(xhp, pkgs, pkgd, false)) != 0)
 		return EINVAL;
 	xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);

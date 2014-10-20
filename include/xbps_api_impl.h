@@ -198,7 +198,7 @@ bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *, xbps_array_t, xbps_arr
  */
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
 
-int HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);
+int HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t, xbps_dictionary_t, bool);
 
 /**
  * @private

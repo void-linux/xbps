@@ -32,7 +32,7 @@
 
 int HIDDEN
 xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
-		xbps_dictionary_t pkgd)
+		xbps_dictionary_t pkgd, bool autoinst)
 {
 	xbps_array_t replaces;
 	const char *pkgver;
@@ -44,8 +44,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	/*
 	 * Add required objects into package dep's dictionary.
 	 */
-	if (!xbps_dictionary_get(pkgd, "automatic-install") &&
-	    !xbps_dictionary_set_bool(pkgd, "automatic-install", true))
+	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true))
 		return EINVAL;
 
 	/*
