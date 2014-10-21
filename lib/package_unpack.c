@@ -95,7 +95,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
-	xbps_dictionary_t binpkg_propsd, binpkg_filesd, pkg_filesd;
+	xbps_dictionary_t binpkg_filesd, pkg_filesd;
 	xbps_array_t array, obsoletes;
 	xbps_object_t obj;
 	xbps_data_t data;
@@ -113,7 +113,7 @@ unpack_archive(struct xbps_handle *xhp,
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
-	binpkg_propsd = binpkg_filesd = pkg_filesd = NULL;
+	binpkg_filesd = pkg_filesd = NULL;
 	force = preserve = update = file_exists = false;
 	skip_obsoletes = xucd_stats = false;
 	ar_rv = rv = entry_type = flags = 0;
@@ -143,7 +143,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 * First get all metadata files on archive in this order:
 	 * 	- INSTALL	<optional>
 	 * 	- REMOVE 	<optional>
-	 * 	- props.plist	<required>
+	 * 	- props.plist	<required> but currently ignored
 	 * 	- files.plist	<required>
 	 *
 	 * The XBPS package must contain props and files plists, otherwise
@@ -179,20 +179,16 @@ unpack_archive(struct xbps_handle *xhp,
 				rv = EINVAL;
 				goto out;
 			}
-		} else if (strcmp("./props.plist", entry_pname) == 0) {
-			binpkg_propsd = xbps_archive_get_dictionary(ar, entry);
-			if (binpkg_propsd == NULL) {
-				rv = EINVAL;
-				goto out;
-			}
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
 			binpkg_filesd = xbps_archive_get_dictionary(ar, entry);
 			if (binpkg_filesd == NULL) {
 				rv = EINVAL;
 				goto out;
 			}
+		} else {
+			archive_read_data_skip(ar);
 		}
-		if (binpkg_propsd && binpkg_filesd)
+		if (binpkg_filesd)
 			break;
 	}
 	/*
@@ -208,7 +204,7 @@ unpack_archive(struct xbps_handle *xhp,
 	/*
 	 * Bail out if required metadata files are not in archive.
 	 */
-	if (binpkg_propsd == NULL || binpkg_filesd == NULL) {
+	if (binpkg_filesd == NULL) {
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, ENODEV, pkgver,
 		    "%s: [unpack] invalid binary package `%s'.", pkgver, fname);
 		rv = ENODEV;
@@ -547,8 +543,6 @@ unpack_archive(struct xbps_handle *xhp,
 out:
 	if (xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY)
 		xbps_object_release(binpkg_filesd);
-	if (xbps_object_type(binpkg_propsd) == XBPS_TYPE_DICTIONARY)
-		xbps_object_release(binpkg_propsd);
 	if (pkgname != NULL)
 		free(pkgname);
 	if (instbuf != NULL)
