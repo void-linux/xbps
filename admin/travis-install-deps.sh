@@ -61,6 +61,6 @@ install_from_github() {
     rm -rf "${distname}" "${distname}.tar.gz"
 }
 
-install_from_github atf atf 0.20
+install_from_github atf atf 0.21
 install_from_github lutok lutok 0.4
-install_from_github kyua kyua 0.10
+install_from_github kyua kyua 0.11
