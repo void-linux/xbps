@@ -7,8 +7,6 @@ xbps-0.42 (???):
    Packages that don't have "provides" obj but were declared as virtual packages,
    were not detected correctly and lead me to rewrite this code.
 
- * pkgdb: switch to zplists by default.
-
  * Fixed issue #62 (Dup replaced pkgs in transaction); see
    https://github.com/voidlinux/xbps/issues/62
 

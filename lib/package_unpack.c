@@ -487,7 +487,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 */
 	if (xbps_dictionary_count(binpkg_filesd)) {
 		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
-		if (!xbps_dictionary_externalize_to_zfile(binpkg_filesd, buf)) {
+		if (!xbps_dictionary_externalize_to_file(binpkg_filesd, buf)) {
 			rv = errno;
 			free(buf);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,

@@ -527,7 +527,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	xbps_dictionary_set_uint16(repokeyd, "public-key-size", pubkey_size);
 	xbps_dictionary_set_cstring_nocopy(repokeyd, "signature-by", signedby);
 
-	if (!xbps_dictionary_externalize_to_zfile(repokeyd, rkeyfile)) {
+	if (!xbps_dictionary_externalize_to_file(repokeyd, rkeyfile)) {
 		rv = errno;
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' failed to externalize %s: %s\n",

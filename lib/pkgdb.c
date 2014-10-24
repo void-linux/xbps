@@ -82,7 +82,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 		}
 		/* if pkgdb is unexistent, create it with an empty dictionary */
 		xhp->pkgdb = xbps_dictionary_create();
-		if (!xbps_dictionary_externalize_to_zfile(xhp->pkgdb, xhp->pkgdb_plist)) {
+		if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist)) {
 			rv = errno;
 			xbps_dbg_printf(xhp, "[pkgdb] failed to create pkgdb "
 			    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
@@ -159,7 +159,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		if (pkgdb_storage == NULL ||
 		    !xbps_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
 			/* flush dictionary to storage */
-			if (!xbps_dictionary_externalize_to_zfile(xhp->pkgdb, xhp->pkgdb_plist))
+			if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist))
 				return errno;
 		}
 		if (pkgdb_storage)
