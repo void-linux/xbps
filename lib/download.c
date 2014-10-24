@@ -296,89 +296,13 @@ fetch_file_out:
 int
 xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 {
-	char *filename;
+	const char *filename;
 	/*
 	 * Get the filename specified in URI argument.
 	 */
-	filename = strrchr(uri, '/') + 1;
+	if ((filename = strrchr(uri, '/')) == NULL)
+		return -1;
+
+	filename++;
 	return xbps_fetch_file_dest(xhp, uri, filename, flags);
-}
-
-
-int
-xbps_fetch_delta(struct xbps_handle *xhp, const char *basefile, const char *uri, const char *filename, const char *flags)
-{
-	const char xdelta[] = "/usr/bin/xdelta3";
-	char *basehash = NULL, *dname = NULL, *durl = NULL, *tempfile = NULL;
-	int status, exitcode;
-	pid_t pid;
-	int rv = 0;
-	struct stat dummystat;
-
-	if (basefile == NULL ||
-	    stat(basefile, &dummystat) ||
-	    stat(xdelta, &dummystat)) {
-		goto fetch_delta_fallback;
-	}
-	xbps_dbg_printf(xhp, "%s: found. Trying binary diff.\n", xdelta);
-
-	basehash = xbps_file_hash(basefile);
-	assert(basehash);
-
-	dname = xbps_xasprintf("%s.%s.vcdiff", basename(__UNCONST(uri)), basehash);
-	durl = xbps_xasprintf("%s.%s.vcdiff", uri, basehash);
-	tempfile = xbps_xasprintf("%s.tmp", filename);
-
-	if (xbps_fetch_file_dest(xhp, durl, dname, flags) < 0) {
-		xbps_dbg_printf(xhp, "error while downloading %s, fallback to full "
-				"download\n", durl);
-		goto fetch_delta_fallback;
-	}
-
-	if ((pid = fork()) == 0) {
-		execl(xdelta, xdelta, "-d", "-f", "-s", basefile, dname, tempfile, NULL);
-		exit(127);
-	} else if (pid < 0) {
-		xbps_dbg_printf(xhp, "error while forking, fallback to full "
-				"download\n");
-		goto fetch_delta_fallback;
-	}
-
-	// wait for termination of background process
-	waitpid(pid, &status, 0);
-
-	exitcode = WEXITSTATUS(status);
-	unlink(dname);
-	switch (exitcode) {
-	case 0:    // success
-		rv = 1;
-		if (rename(tempfile, filename) == -1) {
-			xbps_dbg_printf(xhp, "failed to rename %s to %s: %s",
-				tempfile, filename, strerror(errno));
-			rv = -1;
-		}
-		goto fetch_delta_out;
-	case 127:  // cannot execute binary
-		xbps_dbg_printf(xhp, "failed to `%s`, fallback to full download\n",
-				xdelta);
-		goto fetch_delta_fallback;
-	default:   // other error
-		xbps_dbg_printf(xhp, "`%s` exited with code %d, fallback to full "
-				"download\n", xdelta, exitcode);
-		goto fetch_delta_fallback;
-	}
-
-fetch_delta_fallback:
-	rv = xbps_fetch_file_dest(xhp, uri, filename, flags);
-fetch_delta_out:
-	if (tempfile != NULL)
-		free(tempfile);
-	if (dname != NULL)
-		free(dname);
-	if (durl != NULL)
-		free(durl);
-	if (basehash != NULL)
-		free(basehash);
-
-	return rv;
 }

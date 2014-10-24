@@ -75,7 +75,7 @@ int HIDDEN
 xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 {
 	const char *arch, *fetchstr = NULL;
-	char *repodata, *repofile, *lrepodir, *uri_fixedp;
+	char *repodata, *lrepodir, *uri_fixedp;
 	int rv = 0;
 
 	assert(uri != NULL);
@@ -123,17 +123,14 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 	/*
 	 * Remote repository plist index full URL.
 	 */
-	repofile = xbps_xasprintf("%s-repodata", arch);
-	repodata = xbps_xasprintf("%s/%s", uri, repofile);
+	repodata = xbps_xasprintf("%s-repodata", arch);
 
 	/* reposync start cb */
 	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, repodata, NULL);
 	/*
 	 * Download plist index file from repository.
-	 * XXX: replace xbps_fetch_file_dest() by xbps_fetch_delta() once delta
-	 * generation works reliable.
 	 */
-	if ((rv = xbps_fetch_file_dest(xhp, repodata, repofile, NULL)) == -1) {
+	if ((rv = xbps_fetch_file(xhp, repodata, NULL)) == -1) {
 		/* reposync error cb */
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
@@ -144,7 +141,6 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 		rv = 0;
 
 	free(repodata);
-	free(repofile);
 
 	return rv;
 }

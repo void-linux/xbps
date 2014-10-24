@@ -1,6 +1,5 @@
 /*-
  * Copyright (c) 2008-2014 Juan Romero Pardines.
- * Copyright (c) 2014 Enno Boland.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,7 +61,6 @@ usage(void)
 	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
 	"    version\t\t<pkgname>\n"
 	"    real-version\t<pkgname>\n"
-	"    xfetch\t\t<oldfile> <URL[>filename]>\n"
 	"\n"
 	"  Options shared by all actions:\n"
 	"    -C\t\tPath to xbps.conf file.\n"
@@ -140,7 +138,6 @@ main(int argc, char **argv)
 
 	if ((strcmp(argv[0], "version") == 0) ||
 	    (strcmp(argv[0], "real-version") == 0) ||
-	    (strcmp(argv[0], "xfetch") == 0) ||
 	    (strcmp(argv[0], "fetch") == 0)) {
 		/*
 		* Initialize libxbps.
@@ -287,22 +284,6 @@ main(int argc, char **argv)
 			}
 			printf("%s\n", hash);
 		}
-	} else if (strcmp(argv[0], "xfetch") == 0) {
-		/* apply a delta from specified URL */
-		if (argc != 3)
-			usage();
-
-		filename = fname(argv[2]);
-		rv = xbps_fetch_delta(&xh, argv[1], argv[2], filename, "v");
-
-		if (rv == -1) {
-			printf("%s: %s\n", argv[2],
-				xbps_fetch_error_string());
-		} else if (rv == 0) {
-			printf("%s: file is identical than remote.\n",
-				argv[3]);
-		} else
-			rv = 0;
 	} else if (strcmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */
 		if (argc < 2)
