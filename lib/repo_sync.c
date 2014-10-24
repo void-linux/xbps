@@ -123,7 +123,7 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 	/*
 	 * Remote repository plist index full URL.
 	 */
-	repodata = xbps_xasprintf("%s-repodata", arch);
+	repodata = xbps_xasprintf("%s/%s-repodata", uri, arch);
 
 	/* reposync start cb */
 	xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC, 0, repodata, NULL);
