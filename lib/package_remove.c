@@ -111,7 +111,7 @@ symlink_target(struct xbps_handle *xhp, const char *path)
 		return NULL;
 	}
 	lnk[sb.st_size] = '\0';
-	if ((strncmp(lnk, "../", 3) == 0) || strchr(lnk, '/') == NULL) {
+	if (lnk[0] != '/') {
 		char *p, *dname;
 
 		/* relative */
