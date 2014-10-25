@@ -105,6 +105,69 @@ remove_symlinks_from_root_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case keep_modified_symlinks
+
+keep_modified_symlinks_head() {
+	atf_set "descr" "Tests for package removal: keep modified symlinks in rootdir"
+}
+
+keep_modified_symlinks_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/bin
+	ln -sf /bin/bash pkg_A/bin/ash
+	ln -sf /bin/bash pkg_A/bin/sh
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	ln -sf /bin/foo root/bin/sh
+	ln -sf foo root/bin/ash
+
+	xbps-remove -r root -yvd A
+	atf_check_equal $? 0
+	rv=1
+	if [ -h root/bin/sh -a -h root/bin/ash ]; then
+	        rv=0
+	fi
+	atf_check_equal $rv 0
+}
+
+atf_test_case remove_symlinks_modified
+
+remove_symlinks_modified_head() {
+	atf_set "descr" "Tests for package removal: force remove modified symlinks in rootdir"
+}
+
+remove_symlinks_modified_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/bin
+	ln -sf /bin/bash pkg_A/bin/ash
+	ln -sf /bin/bash pkg_A/bin/sh
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -a *.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	ln -sf /bin/foo root/bin/sh
+
+	xbps-remove -r root -yvfd A
+	atf_check_equal $? 0
+	rv=0
+	if [ -h root/bin/sh -o -h root/bin/ash ]; then
+	        rv=1
+	fi
+	atf_check_equal $rv 0
+}
+
 atf_test_case remove_readonly_files
 
 remove_readonly_files_head() {
@@ -160,8 +223,10 @@ remove_dups_body() {
 
 atf_init_test_cases() {
 	atf_add_test_case keep_base_symlinks
+	atf_add_test_case keep_modified_symlinks
 	atf_add_test_case remove_readonly_files
 	atf_add_test_case remove_symlinks
 	atf_add_test_case remove_symlinks_from_root
+	atf_add_test_case remove_symlinks_modified
 	atf_add_test_case remove_dups
 }

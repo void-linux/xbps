@@ -92,6 +92,43 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 	return fail;
 }
 
+static char *
+symlink_target(struct xbps_handle *xhp, const char *path)
+{
+	struct stat sb;
+	char *lnk, *res;
+	ssize_t r;
+
+	if (lstat(path, &sb) == -1)
+		return NULL;
+
+	lnk = malloc(sb.st_size + 1);
+	assert(lnk);
+
+	r = readlink(path, lnk, sb.st_size + 1);
+	if (r < 0 || r > sb.st_size) {
+		free(lnk);
+		return NULL;
+	}
+	lnk[sb.st_size] = '\0';
+	if ((strncmp(lnk, "../", 3) == 0) || strchr(lnk, '/') == NULL) {
+		char *p, *dname;
+
+		/* relative */
+		p = strdup(path);
+		assert(p);
+		dname = dirname(p);
+		assert(dname);
+		dname += strlen(xhp->rootdir) + 1;
+		res = xbps_xasprintf("%s/%s", dname, lnk);
+		free(lnk);
+	} else {
+		/* absolute */
+		res = lnk;
+	}
+	return res;
+}
+
 static int
 remove_pkg_files(struct xbps_handle *xhp,
 		 xbps_dictionary_t dict,
@@ -101,7 +138,7 @@ remove_pkg_files(struct xbps_handle *xhp,
 	xbps_array_t array;
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
-	const char *file, *sha256, *curobj = NULL;
+	const char *curobj = NULL;
 	/* These are symlinks in Void and must not be removed */
 	const char *basesymlinks[] = {
 		"/bin",
@@ -113,9 +150,7 @@ remove_pkg_files(struct xbps_handle *xhp,
 		"/usr/lib64",
 		"/var/run",
 	};
-	char path[PATH_MAX];
 	int rv = 0;
-	bool found;
 
 	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
 	assert(key != NULL);
@@ -140,6 +175,10 @@ remove_pkg_files(struct xbps_handle *xhp,
 	xbps_object_iterator_reset(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
+		const char *file, *sha256;
+		char path[PATH_MAX];
+		bool found;
+
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 		snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
 
@@ -204,6 +243,29 @@ remove_pkg_files(struct xbps_handle *xhp,
 		}
 		if (found) {
 			continue;
+		}
+		if (strcmp(key, "links") == 0) {
+			const char *target = NULL;
+			char *lnk;
+
+			lnk = symlink_target(xhp, path);
+			if (lnk == NULL) {
+				xbps_dbg_printf(xhp, "[remove] %s "
+				    "symlink_target: %s\n", path, strerror(errno));
+				continue;
+			}
+			xbps_dictionary_get_cstring_nocopy(obj, "target", &target);
+			assert(target);
+			if (strcmp(lnk, target)) {
+				xbps_dbg_printf(xhp, "[remove] %s symlink "
+				    "modified (stored %s current %s)\n", path,
+				    target, lnk);
+				if ((xhp->flags & XBPS_FLAG_FORCE_REMOVE_FILES) == 0) {
+					free(lnk);
+					continue;
+				}
+			}
+			free(lnk);
 		}
 		/*
 		 * Remove the object if possible.
