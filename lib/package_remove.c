@@ -122,6 +122,7 @@ symlink_target(struct xbps_handle *xhp, const char *path)
 		dname += strlen(xhp->rootdir) + 1;
 		res = xbps_xasprintf("%s/%s", dname, lnk);
 		free(lnk);
+		free(p);
 	} else {
 		/* absolute */
 		res = lnk;
