@@ -85,20 +85,18 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			/*
 			 * Make sure to not add duplicates.
 			 */
+			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
 			reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, NULL);
 			if (reppkgd) {
 				xbps_dictionary_get_cstring_nocopy(reppkgd,
 				    "transaction", &tract);
 				if (strcmp(tract, "remove") == 0)
 					continue;
-			}
-			/*
-			 * Package contains replaces="pkgpattern", but the
-			 * package that should be replaced is also in the
-			 * transaction and it's going to be updated.
-			 */
-			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
-			if ((reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, NULL))) {
+				/*
+				 * Package contains replaces="pkgpattern", but the
+				 * package that should be replaced is also in the
+				 * transaction and it's going to be updated.
+				 */
 				xbps_dictionary_set_bool(reppkgd,
 				    "automatic-install", instd_auto);
 				xbps_dictionary_set_bool(reppkgd,
