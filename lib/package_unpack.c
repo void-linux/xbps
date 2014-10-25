@@ -48,28 +48,6 @@ set_extract_flags(uid_t euid)
 	return flags;
 }
 
-static const char *
-find_pkg_symlink_target(xbps_dictionary_t d, const char *file)
-{
-	xbps_array_t links;
-	xbps_object_t obj;
-	const char *pkgfile, *tgt = NULL;
-	char *rfile;
-
-	links = xbps_dictionary_get(d, "links");
-	for (unsigned int i = 0; i < xbps_array_count(links); i++) {
-		rfile = strchr(file, '.') + 1;
-		obj = xbps_array_get(links, i);
-		xbps_dictionary_get_cstring_nocopy(obj, "file", &pkgfile);
-		if (strcmp(rfile, pkgfile) == 0) {
-			xbps_dictionary_get_cstring_nocopy(obj, "target", &tgt);
-			break;
-		}
-	}
-
-	return tgt;
-}
-
 static bool
 match_preserved_file(struct xbps_handle *xhp, const char *entry)
 {
@@ -106,8 +84,8 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
-	const char *file, *entry_pname, *transact,  *tgtlnk;
-	char *pkgname, *dname, *buf, *buf2, *p, *p2;
+	const char *file, *entry_pname, *transact;
+	char *pkgname, *buf;
 	int ar_rv, rv, entry_type, flags;
 	bool preserve, update, file_exists, skip_obsoletes;
 	bool skip_extract, force, xucd_stats;
@@ -366,43 +344,6 @@ unpack_archive(struct xbps_handle *xhp,
 					}
 					rv = 0;
 				}
-			}
-		} else if (!force && (entry_type == AE_IFLNK)) {
-			/*
-			 * Check if current link from binpkg hasn't been
-			 * modified, otherwise extract new link.
-			 */
-			buf = realpath(entry_pname, NULL);
-			if (buf) {
-				if (strcmp(xhp->rootdir, "/")) {
-					p = buf;
-					p += strlen(xhp->rootdir);
-				} else
-					p = buf;
-				tgtlnk = find_pkg_symlink_target(binpkg_filesd,
-				    entry_pname);
-				assert(tgtlnk);
-				if (strncmp(tgtlnk, "./", 2) == 0) {
-					buf2 = strdup(entry_pname);
-					assert(buf2);
-					dname = dirname(buf2);
-					p2 = xbps_xasprintf("%s/%s", dname, tgtlnk);
-					free(buf2);
-				} else {
-					p2 = strdup(tgtlnk);
-					assert(p2);
-				}
-				xbps_dbg_printf(xhp, "%s: symlink %s cur: %s "
-				    "new: %s\n", pkgver, entry_pname, p, p2);
-
-				if (strcmp(p, p2) == 0) {
-					xbps_dbg_printf(xhp, "%s: symlink "
-					    "%s matched, skipping...\n",
-					    pkgver, entry_pname);
-					skip_extract = true;
-				}
-				free(buf);
-				free(p2);
 			}
 		}
 		/*
