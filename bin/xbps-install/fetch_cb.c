@@ -162,7 +162,7 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 
 	if (xfpd->cb_start) {
 		/* start transfer stats */
-		v_tty = isatty(STDERR_FILENO);
+		v_tty = isatty(STDOUT_FILENO);
 		get_time(&xfer->start);
 		xfer->last.tv_sec = xfer->last.tv_usec = 0;
 	} else if (xfpd->cb_update) {
