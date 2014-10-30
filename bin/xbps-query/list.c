@@ -29,7 +29,6 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/ioctl.h>
 
 #include "defs.h"
 
