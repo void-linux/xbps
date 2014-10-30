@@ -40,7 +40,7 @@ get_maxcols(void)
 {
 	struct winsize ws;
 
-	if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) == 0)
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0)
 		return ws.ws_col ? ws.ws_col : 80;
 
 	return 80;
