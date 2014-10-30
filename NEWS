@@ -1,5 +1,10 @@
 xbps-0.42 (???):
 
+ * xbps-{install,remove}: implemented a column/wide output mode
+   as requested in #63 (https://github.com/voidlinux/xbps/issues/63).
+   If the terminal has enough columns it will use this and falling back
+   to the previous mode otherwise.
+
  * libxbps: replaces the internal redundant dependency sorting step
    that was made in xbps_transaction_prepare() with a simple implementation
    that fixes 2 bugs and makes xbps 2x faster to resolve dependencies.

@@ -36,17 +36,6 @@
 #include <xbps.h>
 #include "defs.h"
 
-struct transaction {
-	struct xbps_handle *xhp;
-	xbps_dictionary_t d;
-	xbps_object_iterator_t iter;
-	uint32_t inst_pkgcnt;
-	uint32_t up_pkgcnt;
-	uint32_t cf_pkgcnt;
-	uint32_t rm_pkgcnt;
-	uint32_t dl_pkgcnt;
-};
-
 static void
 print_array(xbps_array_t a)
 {
@@ -128,49 +117,51 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	uint64_t dlsize = 0, instsize = 0, rmsize = 0, disk_free_size = 0;
 	char size[8];
 
-	/*
-	 * Show the list of packages that will be downloaded, installed, updated,
-	 * removed or configured.
-	 */
-	xbps_dictionary_get_uint32(trans->d, "total-download-pkgs",
-	    &trans->dl_pkgcnt);
-	if (trans->dl_pkgcnt) {
-		printf("%u package%s will be downloaded:\n",
-		    trans->dl_pkgcnt, trans->dl_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans, NULL, cols);
-		printf("\n");
-	}
-	xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
-	    &trans->inst_pkgcnt);
-	if (trans->inst_pkgcnt) {
-		printf("%u package%s will be installed:\n",
-		    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans, "install", cols);
-		printf("\n");
-	}
-	xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
-	    &trans->up_pkgcnt);
-	if (trans->up_pkgcnt) {
-		printf("%u package%s will be updated:\n",
-		    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans, "update", cols);
-		printf("\n");
-	}
-	xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
-	    &trans->cf_pkgcnt);
-	if (trans->cf_pkgcnt) {
-		printf("%u package%s will be configured:\n",
-		    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans, "configure", cols);
-		printf("\n");
-	}
-	xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
-	    &trans->rm_pkgcnt);
-	if (trans->rm_pkgcnt) {
-		printf("%u package%s will be removed:\n",
-		    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
-		show_package_list(trans, "remove", cols);
-		printf("\n");
+	if (!print_trans_colmode(trans, cols)) {
+		/*
+		 * Show the list of packages that will be downloaded, installed, updated,
+		 * removed or configured.
+		 */
+		xbps_dictionary_get_uint32(trans->d, "total-download-pkgs",
+		    &trans->dl_pkgcnt);
+		if (trans->dl_pkgcnt) {
+			printf("%u package%s will be downloaded:\n",
+			    trans->dl_pkgcnt, trans->dl_pkgcnt == 1 ? "" : "s");
+			show_package_list(trans, NULL, cols);
+			printf("\n");
+		}
+		xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
+		    &trans->inst_pkgcnt);
+		if (trans->inst_pkgcnt) {
+			printf("%u package%s will be installed:\n",
+			    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
+			show_package_list(trans, "install", cols);
+			printf("\n");
+		}
+		xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
+		    &trans->up_pkgcnt);
+		if (trans->up_pkgcnt) {
+			printf("%u package%s will be updated:\n",
+			    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
+			show_package_list(trans, "update", cols);
+			printf("\n");
+		}
+		xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
+		    &trans->cf_pkgcnt);
+		if (trans->cf_pkgcnt) {
+			printf("%u package%s will be configured:\n",
+			    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
+			show_package_list(trans, "configure", cols);
+			printf("\n");
+		}
+		xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
+		    &trans->rm_pkgcnt);
+		if (trans->rm_pkgcnt) {
+			printf("%u package%s will be removed:\n",
+			    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
+			show_package_list(trans, "remove", cols);
+			printf("\n");
+		}
 	}
 	/*
 	 * Show total download/installed/removed size for all required packages.

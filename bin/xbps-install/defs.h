@@ -34,6 +34,17 @@ struct xferstat {
 	struct timeval last;
 };
 
+struct transaction {
+	struct xbps_handle *xhp;
+	xbps_dictionary_t d;
+	xbps_object_iterator_t iter;
+	uint32_t inst_pkgcnt;
+	uint32_t up_pkgcnt;
+	uint32_t cf_pkgcnt;
+	uint32_t rm_pkgcnt;
+	uint32_t dl_pkgcnt;
+};
+
 /* from transaction.c */
 int	install_new_pkg(struct xbps_handle *, const char *, bool);
 int	update_pkg(struct xbps_handle *, const char *);
@@ -52,6 +63,7 @@ int	state_cb(const struct xbps_state_cb_data *, void *);
 
 /* From util.c */
 void	print_package_line(const char *, int, bool);
+bool	print_trans_colmode(struct transaction *, int);
 int	get_maxcols(void);
 
 #endif /* !_XBPS_INSTALL_DEFS_H_ */

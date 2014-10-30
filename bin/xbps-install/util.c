@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/ioctl.h>
+#include <assert.h>
 
 #include <xbps.h>
 #include "defs.h"
@@ -68,4 +69,110 @@ print_package_line(const char *str, int maxcols, bool reset)
 		cols = strlen(str) + 4;
 	}
 	printf("%s ", str);
+}
+
+static unsigned int
+find_longest_pkgname(struct transaction *trans)
+{
+	xbps_object_t obj;
+	const char *pkgver;
+	char *pkgname;
+	unsigned int len = 0, max = 0;
+
+	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+		len = strlen(pkgname);
+		free(pkgname);
+		if (max == 0 || len > max)
+			max = len;
+	}
+	xbps_object_iterator_reset(trans->iter);
+	return max+1;
+}
+
+bool
+print_trans_colmode(struct transaction *trans, int cols)
+{
+	xbps_object_t obj;
+	uint64_t dlsize = 0;
+	char size[8];
+	unsigned int x, blen, pnamelen;
+	int hdrlen;
+
+	pnamelen = find_longest_pkgname(trans);
+	/* header length */
+	hdrlen = 4 + pnamelen + 48;
+	if (cols <= hdrlen)
+		return false;
+
+	printf("Name");
+	for (x = 4; x < pnamelen; x++)
+		printf(" ");
+	printf("Action  Version        New version        Download size\n");
+
+	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
+		xbps_dictionary_t ipkgd;
+		const char *pkgver, *ipkgver, *ver, *iver, *tract;
+		char *pkgname;
+		bool dload = false;
+
+		ver = iver = NULL;
+
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		xbps_dictionary_get_uint64(obj, "filename-size", &dlsize);
+		xbps_dictionary_get_bool(obj, "download", &dload);
+
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+
+		if ((strcmp(tract, "update") == 0) || strcmp(tract, "remove") == 0) {
+			ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
+			assert(ipkgd);
+			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
+			iver = xbps_pkg_version(ipkgver);
+		}
+		ver = xbps_pkg_version(pkgver);
+
+		/* print pkgname and some blanks */
+		blen = pnamelen - strlen(pkgname);
+		printf("%s", pkgname);
+		for (x = 0; x < blen; x++)
+			printf(" ");
+
+		/* print action */
+		printf("%s ", tract);
+		for (x = strlen(tract); x < 7; x++)
+			printf(" ");
+
+		/* print installed version */
+		if (iver == NULL)
+			iver = "-";
+
+		/* print new version */
+		printf("%s ", iver);
+		for (x = strlen(iver); x < 14; x++)
+			printf(" ");
+
+		if (strcmp(tract, "remove") == 0) {
+			ver = "-";
+		}
+		if (dload)
+			(void)xbps_humanize_number(size, (int64_t)dlsize);
+		else {
+			size[0] = '-';
+			size[1] = '\0';
+		}
+		printf("%s ", ver);
+		for (x = strlen(ver); x < 18; x++)
+			printf(" ");
+		/* print download size */
+		printf("%s ", size);
+		printf("\n");
+		free(pkgname);
+	}
+	xbps_object_iterator_reset(trans->iter);
+	return true;
 }
