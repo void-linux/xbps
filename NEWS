@@ -1,5 +1,10 @@
 xbps-0.42 (???):
 
+ * Get rid of system virtualpkg.d configuration files stored at
+   <prefix>/share/xbps/virtualpkg.d) and collect all virtual packages
+   directly from pkgdb. Virtual package overrides can still be defined
+   at <sysconfdir>/xbps/virtualpkg.d.
+
  * xbps-{install,remove}: implemented a column/wide output mode
    as requested in #63 (https://github.com/voidlinux/xbps/issues/63).
    If the terminal has enough columns it will use this and falling back

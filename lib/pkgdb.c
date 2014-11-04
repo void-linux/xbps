@@ -116,6 +116,59 @@ xbps_pkgdb_unlock(struct xbps_handle *xhp)
 	pkgdb_fd = -1;
 }
 
+static int
+pkgdb_map_vpkgs(struct xbps_handle *xhp)
+{
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
+	int rv = 0;
+
+	if (!xbps_dictionary_count(xhp->pkgdb))
+		return 0;
+
+	if (xhp->vpkgd == NULL) {
+		xhp->vpkgd = xbps_dictionary_create();
+		assert(xhp->vpkgd);
+	}
+	/*
+	 * This maps all pkgs that have virtualpkgs in pkgdb.
+	 */
+	iter = xbps_dictionary_iterator(xhp->pkgdb);
+	assert(iter);
+
+	while ((obj = xbps_object_iterator_next(iter))) {
+		xbps_array_t provides;
+		xbps_dictionary_t pkgd;
+		const char *pkgver;
+		char *pkgname;
+
+		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
+		provides = xbps_dictionary_get(pkgd, "provides");
+		if (provides == NULL)
+			continue;
+
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		pkgname = xbps_pkg_name(pkgver);
+
+		for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
+			const char *vpkg;
+
+			xbps_array_get_cstring_nocopy(provides, i, &vpkg);
+			if (!xbps_dictionary_set_cstring(xhp->vpkgd, vpkg, pkgname)) {
+				xbps_dbg_printf(xhp, "%s: set_cstring vpkg "
+				    "%s pkgname %s\n", __func__, vpkg, pkgname);
+				rv = EINVAL;
+			} else {
+				xbps_dbg_printf(xhp, "[pkgdb] added vpkg %s for %s\n",
+				    vpkg, pkgname);
+			}
+		}
+		free(pkgname);
+	}
+	xbps_object_iterator_release(iter);
+	return rv;
+}
+
 int HIDDEN
 xbps_pkgdb_init(struct xbps_handle *xhp)
 {
@@ -137,6 +190,10 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 			xbps_dbg_printf(xhp, "[pkgdb] cannot internalize "
 			    "pkgdb array: %s\n", strerror(rv));
 
+		return rv;
+	}
+	if ((rv = pkgdb_map_vpkgs(xhp)) != 0) {
+		xbps_dbg_printf(xhp, "[pkgdb] pkgdb_map_vpkgs %s\n", strerror(rv));
 		return rv;
 	}
 	xbps_dbg_printf(xhp, "[pkgdb] initialized ok.\n");
@@ -252,30 +309,33 @@ xbps_pkgdb_get_virtualpkg(struct xbps_handle *xhp, const char *vpkg)
 static void
 generate_full_revdeps_tree(struct xbps_handle *xhp)
 {
-	xbps_array_t rundeps, pkg;
-	xbps_dictionary_t pkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *pkgver, *pkgdep, *vpkgname;
-	char *curpkgname;
-	bool alloc;
 
 	if (xhp->pkgdb_revdeps)
 		return;
 
 	xhp->pkgdb_revdeps = xbps_dictionary_create();
+	assert(xhp->pkgdb_revdeps);
 
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
+		xbps_array_t rundeps;
+		xbps_dictionary_t pkgd;
+
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		rundeps = xbps_dictionary_get(pkgd, "run_depends");
 		if (!xbps_array_count(rundeps))
 			continue;
 
 		for (unsigned int i = 0; i < xbps_array_count(rundeps); i++) {
-			alloc = false;
+			xbps_array_t pkg;
+			const char *pkgdep, *pkgver, *vpkgname;
+			char *curpkgname;
+			bool alloc = false;
+
 			xbps_array_get_cstring_nocopy(rundeps, i, &pkgdep);
 			curpkgname = xbps_pkgpattern_name(pkgdep);
 			if (curpkgname == NULL)

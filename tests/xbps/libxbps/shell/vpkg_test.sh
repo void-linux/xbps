@@ -51,8 +51,6 @@ vpkg01_head() {
 vpkg01_body() {
 	mkdir some_repo
 	mkdir -p pkg_{A,B,C,D}/usr/bin
-	mkdir -p pkg_C/usr/share/xbps/virtualpkg.d
-	echo "virtualpkg=A-1.0_1:C" > pkg_C/usr/share/xbps/virtualpkg.d/C.conf
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
@@ -103,13 +101,9 @@ vpkg02_body() {
 
 	cd some_repo
 
-	mkdir -p pkg_gawk/usr/share/xbps/virtualpkg.d
-	echo "virtualpkg=awk-1.0_1:gawk" > pkg_gawk/usr/share/xbps/virtualpkg.d/gawk.conf
 	xbps-create -A noarch -n gawk-1.1_1 -s "gawk pkg" --provides "awk-1.0_1" --replaces "awk>=0" ../pkg_gawk
 	atf_check_equal $? 0
 
-	mkdir -p pkg_busybox/usr/share/xbps/virtualpkg.d
-	echo "virtualpkg=awk-1.0_1:busybox" > pkg_busybox/usr/share/xbps/virtualpkg.d/busybox.conf
 	xbps-create -A noarch -n busybox-1.0_1 -s "busybox awk" --provides "awk-1.0_1" --replaces "awk>=0" ../pkg_busybox
 	atf_check_equal $? 0
 

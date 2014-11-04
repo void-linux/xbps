@@ -134,7 +134,7 @@ ATF_TC_BODY(pkgdb_get_pkg_revdeps_test, tc)
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
-	res = xbps_pkgdb_get_pkg_revdeps(&xh, "mixed");
+	res = xbps_pkgdb_get_pkg_revdeps(&xh, "virtual-mixed");
 	ATF_REQUIRE_EQ(xbps_object_type(res), XBPS_TYPE_ARRAY);
 
 	pstr = xbps_string_create();

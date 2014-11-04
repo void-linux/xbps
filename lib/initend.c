@@ -298,6 +298,8 @@ parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char 
 	char *ext, ldir[PATH_MAX], conf[PATH_MAX];
 	int i, n, rv = 0;
 
+	if (dir == NULL)
+		goto stage2;
 	/*
 	 * Read all configuration files stored in the system
 	 * foo.d directory.
@@ -344,6 +346,9 @@ parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char 
 		return rv;
 
 stage2:
+	if (confdir == NULL)
+		return rv;
+
 	/*
 	 * Read all configuration files stored in the configuration foo.d directory.
 	 */
@@ -443,7 +448,7 @@ xbps_init(struct xbps_handle *xhp)
 		free(buf);
 	}
 	/* process virtualpkg.d dirs */
-	if ((rv = parse_dir(xhp, cwd, XBPS_SYS_VPKG_PATH, XBPS_VPKG_PATH, true)) != 0)
+	if ((rv = parse_dir(xhp, cwd, NULL, XBPS_VPKG_PATH, true)) != 0)
 		return rv;
 
 	/* process repo.d dirs */
