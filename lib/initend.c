@@ -448,7 +448,7 @@ xbps_init(struct xbps_handle *xhp)
 		free(buf);
 	}
 	/* process virtualpkg.d dirs */
-	if ((rv = parse_dir(xhp, cwd, NULL, XBPS_VPKG_PATH, true)) != 0)
+	if ((rv = parse_dir(xhp, cwd, XBPS_SYS_VPKG_PATH, XBPS_VPKG_PATH, true)) != 0)
 		return rv;
 
 	/* process repo.d dirs */

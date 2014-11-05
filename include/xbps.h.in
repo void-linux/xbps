@@ -95,6 +95,12 @@
 #define XBPS_VPKG_PATH		XBPS_SYSCONF_PATH "/virtualpkg.d"
 
 /**
+ * @def XBPS_SYS_VPKG_PATH
+ * System virtualpkg PATH to store virtualpkg configuration files.
+ */
+#define XBPS_SYS_VPKG_PATH	XBPS_SYSDEFCONF_PATH "/virtualpkg.d"
+
+/**
  * @def XBPS_REPOD_PATH
  * Configuration directory to store repository configuration files.
  */
