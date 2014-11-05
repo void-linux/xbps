@@ -103,14 +103,14 @@ print_trans_colmode(struct transaction *trans, int cols)
 
 	pnamelen = find_longest_pkgname(trans);
 	/* header length */
-	hdrlen = 4 + pnamelen + 48;
+	hdrlen = 4 + pnamelen + 60;
 	if (cols <= hdrlen)
 		return false;
 
 	printf("Name");
 	for (x = 4; x < pnamelen; x++)
 		printf(" ");
-	printf("Action  Version        New version        Download size\n");
+	printf("Action    Version           New version            Download size\n");
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
 		xbps_dictionary_t ipkgd;
@@ -128,6 +128,18 @@ print_trans_colmode(struct transaction *trans, int cols)
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
 
+		if (strcmp(tract, "install") == 0) {
+			trans->inst_pkgcnt++;
+		} else if (strcmp(tract, "update") == 0) {
+			trans->up_pkgcnt++;
+		} else if (strcmp(tract, "remove") == 0) {
+			trans->rm_pkgcnt++;
+		} else if (strcmp(tract, "configure") == 0) {
+			trans->cf_pkgcnt++;
+		}
+		if (dload) {
+			trans->dl_pkgcnt++;
+		}
 		if ((strcmp(tract, "update") == 0) || strcmp(tract, "remove") == 0) {
 			ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
 			assert(ipkgd);
@@ -144,7 +156,7 @@ print_trans_colmode(struct transaction *trans, int cols)
 
 		/* print action */
 		printf("%s ", tract);
-		for (x = strlen(tract); x < 7; x++)
+		for (x = strlen(tract); x < 9; x++)
 			printf(" ");
 
 		/* print installed version */
@@ -153,7 +165,7 @@ print_trans_colmode(struct transaction *trans, int cols)
 
 		/* print new version */
 		printf("%s ", iver);
-		for (x = strlen(iver); x < 14; x++)
+		for (x = strlen(iver); x < 17; x++)
 			printf(" ");
 
 		if (strcmp(tract, "remove") == 0) {
@@ -166,7 +178,7 @@ print_trans_colmode(struct transaction *trans, int cols)
 			size[1] = '\0';
 		}
 		printf("%s ", ver);
-		for (x = strlen(ver); x < 18; x++)
+		for (x = strlen(ver); x < 22; x++)
 			printf(" ");
 		/* print download size */
 		printf("%s ", size);
