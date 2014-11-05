@@ -122,7 +122,7 @@ bindmount(uid_t ruid, const char *chrootdir, const char *dir, const char *dest)
 
 	if (fsuid_chdir(ruid, dir) == -1)
 		die("Couldn't chdir to %s", dir);
-	if (mount(".", mountdir, NULL, MS_BIND|MS_PRIVATE, NULL) == -1)
+	if (mount(".", mountdir, NULL, MS_BIND|MS_REC|MS_PRIVATE, NULL) == -1)
 		die("Failed to bind mount %s at %s", dir, mountdir);
 }
 
