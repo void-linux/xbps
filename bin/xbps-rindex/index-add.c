@@ -53,7 +53,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	/*
 	 * Read the repository data or create index dictionaries otherwise.
 	 */
-	if ((tmprepodir = strdup(argv[0])) == NULL)
+	if ((tmprepodir = strdup(argv[args])) == NULL)
 		return ENOMEM;
 
 	repodir = dirname(tmprepodir);
