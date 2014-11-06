@@ -1,5 +1,7 @@
 xbps-0.42 (???):
 
+ * xbps-rindex(8): added -d/--debug option.
+
  * utils: the -C/--config option now expects a path to a directory storing
    configuration files; if first character is not '/' it will be treated as
    relative to rootdir.

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,6 +37,7 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-rindex [OPTIONS] MODE ARGUMENTS\n\n"
 	    "OPTIONS\n"
+	    " -d --debug                        Debug mode shown to stderr\n"
 	    " -f --force                        Force mode to overwrite entry in add mode\n"
 	    " -h --help                         Show help usage\n"
 	    " -v --verbose                      Verbose messages\n"
@@ -58,6 +59,7 @@ main(int argc, char **argv)
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
+		{ "debug", no_argument, NULL, 'd' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
@@ -88,6 +90,9 @@ main(int argc, char **argv)
 			break;
 		case 'c':
 			clean_mode = true;
+			break;
+		case 'd':
+			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'f':
 			force = true;
