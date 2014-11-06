@@ -146,7 +146,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 	 * Open or create the repository archive.
 	 */
 	if (lock)
-		repo->fd = open(repofile, O_CREAT|O_RDWR, 0664);
+		repo->fd = open(repofile, O_RDWR);
 	else
 		repo->fd = open(repofile, O_RDONLY);
 
