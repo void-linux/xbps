@@ -29,7 +29,7 @@ issue20_body() {
 	xbps-create -A noarch -n a-0.1_1 -s "pkg a" pkg_a
 	atf_check_equal $? 0
 	rm -rf pkg_a
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	xbps-install -C null.conf -r rootdir --repository=$PWD -yvd a
 	atf_check_equal $? 0
@@ -40,7 +40,7 @@ issue20_body() {
 	xbps-create -A noarch -n a-0.2_1 -s "pkg a" pkg_a
 	atf_check_equal $? 0
 	rm -rf pkg_a
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	xbps-install -C null.conf -r rootdir --repository=$PWD -yuvd
 	atf_check_equal $? 0

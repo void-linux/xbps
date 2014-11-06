@@ -14,7 +14,7 @@ remote_files_body() {
 	cd some_repo
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	rm -f *.xbps
 	cd ..

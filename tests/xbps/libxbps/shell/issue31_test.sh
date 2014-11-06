@@ -20,7 +20,7 @@ issue31_body() {
 	echo random > pkg_A/usr/share/licenses/chromium/license.html/eula.html
 	xbps-create -A noarch -n A-0.1_1 -s "pkg A" pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C null.conf --repository=$PWD -y A
@@ -30,7 +30,7 @@ issue31_body() {
 	echo "morerandom" > pkg_B/usr/share/licenses/chromium/license.html
 	xbps-create -A noarch -n A-0.2_1 -s "pkg A" pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -a A-0.2_1.noarch.xbps
+	xbps-rindex -d -a A-0.2_1.noarch.xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C null.conf --repository=$PWD -yuvd A

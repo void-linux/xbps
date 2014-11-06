@@ -11,7 +11,7 @@ install_empty_body() {
 	cd repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/repo -yd A
@@ -43,7 +43,7 @@ install_with_deps_body() {
 	xbps-create -A noarch -n D-1.0_1 -s "D pkg" --dependencies "C>=0 B>=0" ../pkg_D
 	atf_check_equal $? 0
 
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -76,7 +76,7 @@ install_with_vpkg_deps_body() {
 	xbps-create -A noarch -n D-1.0_1 -s "D pkg" --dependencies "E>=0 B>=0" ../pkg_D
 	atf_check_equal $? 0
 
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -101,7 +101,7 @@ update_to_empty_pkg_body() {
 	cd repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -112,7 +112,7 @@ update_to_empty_pkg_body() {
 	rm -rf ../pkg_A/*
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -138,7 +138,7 @@ update_if_installed_body() {
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
 
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -149,7 +149,7 @@ update_if_installed_body() {
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
 
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -172,7 +172,7 @@ install_if_not_installed_on_update_body() {
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
 
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -196,7 +196,7 @@ install_dups_body() {
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
 
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 

@@ -14,7 +14,7 @@ revert_package_body() {
 	echo first V1.0 > ../pkg_A/file00
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
@@ -25,7 +25,7 @@ revert_package_body() {
 	echo V1.1 > ../pkg_A/file00
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
@@ -36,7 +36,7 @@ revert_package_body() {
 	echo second V1.0 > ../pkg_A/file00
 	xbps-create -A noarch -n A-1.0_1 -r "1.1_1" -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -d -r root -C empty.conf --repository=$PWD/some_repo -y -u

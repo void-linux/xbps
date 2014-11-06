@@ -20,7 +20,7 @@ reinstall_obsoletes_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 
 	cd ..
@@ -31,7 +31,7 @@ reinstall_obsoletes_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "foo pkg" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 
 	cd ..
@@ -71,7 +71,7 @@ root_symlinks_update_body() {
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
 	rm -rf ../pkg_A
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C null.conf --repository=$PWD -yd foo
@@ -85,7 +85,7 @@ root_symlinks_update_body() {
 	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
 	rm -rf ../pkg_A
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C null.conf --repository=$PWD -yuvd foo

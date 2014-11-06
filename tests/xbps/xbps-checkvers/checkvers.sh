@@ -20,7 +20,7 @@ EOF
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
@@ -47,7 +47,7 @@ EOF
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
@@ -73,7 +73,7 @@ EOF
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -a *.xbps
+	xbps-rindex -d -a *.xbps
 	atf_check_equal $? 0
 	cd ..
 	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
