@@ -45,8 +45,8 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-remove [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
-	    " -C --config <file>       Full path to configuration file\n"
-	    " -c --cachedir <dir>      Full path to cachedir\n"
+	    " -C --config <dir>        Path to confdir (xbps.d)\n"
+	    " -c --cachedir <dir>      Path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -F --force-revdeps       Force package removal even with revdeps\n"
 	    " -f --force               Force package files removal\n"
@@ -181,13 +181,13 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
-	const char *rootdir, *cachedir, *conffile;
+	const char *rootdir, *cachedir, *confdir;
 	int c, flags, rv;
 	bool yes, drun, recursive, ignore_revdeps, clean_cache;
 	bool orphans, reqby_force;
 	int maxcols;
 
-	rootdir = cachedir = conffile = NULL;
+	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
 	drun = recursive = ignore_revdeps = clean_cache = false;
 	reqby_force = yes = orphans = false;
@@ -195,7 +195,7 @@ main(int argc, char **argv)
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
 		case 'C':
-			conffile = optarg;
+			confdir = optarg;
 			break;
 		case 'c':
 			cachedir = optarg;
@@ -251,11 +251,11 @@ main(int argc, char **argv)
 	memset(&xh, 0, sizeof(xh));
 	xh.state_cb = state_cb_rm;
 	if (rootdir)
-		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if (cachedir)
-		strncpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
-	if (conffile)
-		strncpy(xh.conffile, conffile, sizeof(xh.conffile));
+		xbps_strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
+	if (confdir)
+		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 
 	xh.flags = flags;
 

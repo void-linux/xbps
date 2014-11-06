@@ -68,7 +68,7 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 	for (unsigned int i = 0; i < xbps_array_count(sd->results); i++) {
 		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
 		xbps_array_get_cstring_nocopy(sd->results, i+1, &desc);
-		strncpy(tmp, pkgver, sizeof(tmp));
+		xbps_strlcpy(tmp, pkgver, sizeof(tmp));
 		for (j = strlen(tmp); j < tlen; j++)
 			tmp[j] = ' ';
 
@@ -84,7 +84,7 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 			assert(out);
 			snprintf(out, sd->maxcols-3, "%s %s %s",
 			    inststr, tmp, desc);
-			strncat(out, "...\n", sd->maxcols);
+			xbps_strlcat(out, "...\n", sizeof(*out));
 			printf("%s", out);
 			free(out);
 		} else {

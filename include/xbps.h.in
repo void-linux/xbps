@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141104"
+#define XBPS_API_VERSION	"20141105"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -68,12 +68,12 @@
  * @def XBPS_SYSCONF_PATH
  * Default configuration PATH to find XBPS_CONF_PLIST.
  */
-#define XBPS_SYSDIR            "/xbps"
+#define XBPS_SYSDIR            "/xbps.d"
 #ifndef XBPS_SYSCONF_PATH
 # define XBPS_SYSCONF_PATH      "/etc" XBPS_SYSDIR
 #endif
 #ifndef XBPS_SYSDEFCONF_PATH
-# define XBPS_SYSDEFCONF_PATH	"usr/share" XBPS_SYSDIR
+# define XBPS_SYSDEFCONF_PATH	"/usr/share" XBPS_SYSDIR
 #endif
 
 /** 
@@ -87,42 +87,6 @@
  * Default cache PATH to store downloaded binpkgs.
  */
 #define XBPS_CACHE_PATH		"var/cache/xbps"
-
-/**
- * @def XBPS_VPKG_PATH
- * Configuration virtualpkg directory to store virtualpkg configuration files.
- */
-#define XBPS_VPKG_PATH		XBPS_SYSCONF_PATH "/virtualpkg.d"
-
-/**
- * @def XBPS_SYS_VPKG_PATH
- * System virtualpkg PATH to store virtualpkg configuration files.
- */
-#define XBPS_SYS_VPKG_PATH	XBPS_SYSDEFCONF_PATH "/virtualpkg.d"
-
-/**
- * @def XBPS_REPOD_PATH
- * Configuration directory to store repository configuration files.
- */
-#define XBPS_REPOD_PATH 	XBPS_SYSCONF_PATH "/repo.d"
-
-/**
- * @def XBPS_SYS_REPOD_PATH
- * System directory to store repository configuration files.
- */
-#define XBPS_SYS_REPOD_PATH 	XBPS_SYSDEFCONF_PATH "/repo.d"
-
-/**
- * @def XBPS_PRESERVED_PATH
- * Configuration directory to store preserve configuration files.
- */
-#define XBPS_PRESERVED_PATH 	XBPS_SYSCONF_PATH "/preserve.d"
-
-/**
- * @def XBPS_SYS_PRESERVED_PATH
- * System directory to store preserve configuration files.
- */
-#define XBPS_SYS_PRESERVED_PATH XBPS_SYSDEFCONF_PATH "/preserve.d"
 
 /**
  * @def XBPS_PKGDB
@@ -159,12 +123,6 @@
  * Filename for the repository index metadata property list.
  */
 #define XBPS_REPOIDX_META 	"index-meta.plist"
-
-/**
- * @def XBPS_CONF_DEF
- * Filename for the XBPS plist configuration file.
- */
-#define XBPS_CONF_DEF		XBPS_SYSCONF_PATH "/xbps.conf"
 
 /**
  * @def XBPS_FLAG_VERBOSE
@@ -586,11 +544,11 @@ struct xbps_handle {
 	 */
 	const char *target_arch;
 	/**
-	 * @var conffile
+	 * @var confdir
 	 *
-	 * Full path to the xbps configuration file.
+	 * Full path to the xbps configuration directory.
 	 */
-	char conffile[XBPS_MAXPATH];
+	char confdir[XBPS_MAXPATH];
 	/**
 	 * @var rootdir
 	 *
@@ -1834,7 +1792,8 @@ bool xbps_pkg_arch_match(struct xbps_handle *xhp,
  * @return A negative number is returned on error, 0 otherwise.
  */
 int xbps_humanize_number(char *buf, int64_t bytes);
-
+size_t xbps_strlcat(char *dest, const char *src, size_t siz);
+size_t xbps_strlcpy(char *dest, const char *src, size_t siz);
 /**
  * Tests if pkgver is reverted by pkg
  *

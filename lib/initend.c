@@ -45,7 +45,7 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
-static int parse_file(struct xbps_handle *, const char *, const char *, bool, bool);
+static int parse_file(struct xbps_handle *, const char *, const char *, bool);
 
 /**
  * @file lib/initend.c
@@ -191,14 +191,14 @@ parse_option(char *buf, char **k, char **v)
 }
 
 static int
-parse_files_glob(struct xbps_handle *xhp, const char *cwd, const char *path, bool nested, bool vpkgconf)
+parse_files_glob(struct xbps_handle *xhp, const char *cwd, const char *path, bool nested)
 {
 	glob_t globbuf;
 	int rv = 0;
 
 	glob(path, 0, NULL, &globbuf);
 	for (size_t i = 0; i < globbuf.gl_pathc; i++) {
-		if ((rv = parse_file(xhp, cwd, globbuf.gl_pathv[i], nested, vpkgconf)) != 0)
+		if ((rv = parse_file(xhp, cwd, globbuf.gl_pathv[i], nested)) != 0)
 			break;
 	}
 	globfree(&globbuf);
@@ -207,7 +207,7 @@ parse_files_glob(struct xbps_handle *xhp, const char *cwd, const char *path, boo
 }
 
 static int
-parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nested, bool vpkgconf)
+parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nested)
 {
 	FILE *fp;
 	char tmppath[XBPS_MAXPATH] = {0};
@@ -222,9 +222,7 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 		return rv;
 	}
 
-	if (!vpkgconf) {
-		xbps_dbg_printf(xhp, "Parsing configuration file: %s\n", path);
-	}
+	xbps_dbg_printf(xhp, "Parsing configuration file: %s\n", path);
 
 	while ((nread = getline(&line, &len, fp)) != -1) {
 		char *p, *k, *v;
@@ -281,7 +279,7 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 			xbps_dbg_printf(xhp, "cannot chdir to %s: %s\n", cfcwd, strerror(rv));
 			return rv;
 		}
-		if ((rv = parse_files_glob(xhp, cwd, v, true, false)) != 0)
+		if ((rv = parse_files_glob(xhp, cwd, v, true)) != 0)
 			break;
 
 	}
@@ -292,10 +290,10 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 }
 
 static int
-parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char *confdir, bool vpkg)
+parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char *confdir)
 {
 	struct dirent **namelist;
-	char *ext, ldir[PATH_MAX], conf[PATH_MAX];
+	char *ext, conf[PATH_MAX];
 	int i, n, rv = 0;
 
 	if (dir == NULL)
@@ -304,11 +302,9 @@ parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char 
 	 * Read all configuration files stored in the system
 	 * foo.d directory.
 	 */
-	snprintf(ldir, sizeof(ldir), "%s/%s",
-		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", dir);
-	xbps_dbg_printf(xhp, "Processing system directory: %s\n", ldir);
+	xbps_dbg_printf(xhp, "Processing system directory: %s\n", dir);
 
-	if ((n = scandir(ldir, &namelist, 0, alphasort)) < 0)
+	if ((n = scandir(dir, &namelist, 0, alphasort)) < 0)
 		goto stage2;
 
 	for (i = 0; i < n; i++) {
@@ -323,20 +319,20 @@ parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char 
 			continue;
 		}
 		if (strcmp(ext, ".conf") && strcmp(ext, ".vpkg")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", ldir, namelist[i]->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", dir, namelist[i]->d_name);
 			free(namelist[i]);
 			continue;
 		}
 		/* if the same file exists in configuration directory, ignore it */
-		snprintf(conf, sizeof(conf), "%s/%s/%s", xhp->rootdir, confdir, namelist[i]->d_name);
+		snprintf(conf, sizeof(conf), "%s/%s", confdir, namelist[i]->d_name);
 		if (access(conf, R_OK) == 0) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", ldir, namelist[i]->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", dir, namelist[i]->d_name);
 			free(namelist[i]);
 			continue;
 		}
 		/* parse conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", ldir, namelist[i]->d_name);
-		if ((rv = parse_file(xhp, cwd, conf, false, vpkg)) != 0) {
+		snprintf(conf, sizeof(conf), "%s/%s", dir, namelist[i]->d_name);
+		if ((rv = parse_file(xhp, cwd, conf, false)) != 0) {
 			free(namelist[i]);
 			break;
 		}
@@ -352,11 +348,9 @@ stage2:
 	/*
 	 * Read all configuration files stored in the configuration foo.d directory.
 	 */
-	snprintf(ldir, sizeof(ldir), "%s%s",
-		strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", confdir);
-	xbps_dbg_printf(xhp, "Processing configuration directory: %s\n", ldir);
+	xbps_dbg_printf(xhp, "Processing configuration directory: %s\n", confdir);
 
-	if ((n = scandir(ldir, &namelist, 0, alphasort)) < 0)
+	if ((n = scandir(confdir, &namelist, 0, alphasort)) < 0)
 		return 0;
 
 	for (i = 0; i < n; i++) {
@@ -371,13 +365,13 @@ stage2:
 			continue;
 		}
 		if (strcmp(ext, ".conf") && strcmp(ext, ".vpkg")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", ldir, namelist[i]->d_name);
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", confdir, namelist[i]->d_name);
 			free(namelist[i]);
 			continue;
 		}
 		/* parse conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", ldir, namelist[i]->d_name);
-		if ((rv = parse_file(xhp, cwd, conf, false, vpkg)) != 0) {
+		snprintf(conf, sizeof(conf), "%s/%s", confdir, namelist[i]->d_name);
+		if ((rv = parse_file(xhp, cwd, conf, false)) != 0) {
 			free(namelist[i]);
 			break;
 		}
@@ -391,7 +385,7 @@ int
 xbps_init(struct xbps_handle *xhp)
 {
 	struct utsname un;
-	char cwd[PATH_MAX-1], *buf;
+	char cwd[PATH_MAX-1], sysconfdir[XBPS_MAXPATH], *buf;
 	const char *repodir, *native_arch;
 	int rv;
 
@@ -401,14 +395,6 @@ xbps_init(struct xbps_handle *xhp)
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
 		return ENOTSUP;
 
-	/* set conffile */
-	if (xhp->conffile[0] == '\0') {
-		snprintf(xhp->conffile, sizeof(xhp->conffile), XBPS_CONF_DEF);
-	} else {
-		buf = strdup(xhp->conffile);
-		snprintf(xhp->conffile, sizeof(xhp->conffile), "%s/%s", cwd, buf);
-		free(buf);
-	}
 	/* Set rootdir */
 	if (xhp->rootdir[0] == '\0') {
 		xhp->rootdir[0] = '/';
@@ -418,11 +404,7 @@ xbps_init(struct xbps_handle *xhp)
 		snprintf(xhp->rootdir, sizeof(xhp->rootdir), "%s/%s", cwd, buf);
 		free(buf);
 	}
-	/* parse configuration file */
 	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
-	if ((rv = parse_file(xhp, cwd, xhp->conffile, false, false)) != 0) {
-		xbps_dbg_printf(xhp, "Using built-in defaults\n");
-	}
 	/* Set cachedir */
 	if (xhp->cachedir[0] == '\0') {
 		snprintf(xhp->cachedir, sizeof(xhp->cachedir),
@@ -447,17 +429,22 @@ xbps_init(struct xbps_handle *xhp)
 		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
 		free(buf);
 	}
-	/* process virtualpkg.d dirs */
-	if ((rv = parse_dir(xhp, cwd, XBPS_SYS_VPKG_PATH, XBPS_VPKG_PATH, true)) != 0)
-		return rv;
-
-	/* process repo.d dirs */
-	if ((rv = parse_dir(xhp, cwd, XBPS_SYS_REPOD_PATH, XBPS_REPOD_PATH, false)) != 0)
-		return rv;
-
-	/* process preserve.d dirs */
-	if ((rv = parse_dir(xhp, cwd, XBPS_SYS_PRESERVED_PATH, XBPS_PRESERVED_PATH, false)) != 0)
-		return rv;
+	/* set confdir */
+	if (xhp->confdir[0] == '\0') {
+		snprintf(xhp->confdir, sizeof(xhp->confdir),
+		    "%s%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
+		    XBPS_SYSCONF_PATH);
+	} else if (xhp->confdir[0] != '/') {
+		/* relative path */
+		buf = strdup(xhp->confdir);
+		snprintf(xhp->confdir, sizeof(xhp->confdir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
+		free(buf);
+	}
+	/* set sysconfdir */
+	snprintf(sysconfdir, sizeof(sysconfdir),
+	    "%s%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
+	    XBPS_SYSDEFCONF_PATH);
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
 	if ((native_arch = getenv("XBPS_ARCH")) != NULL) {
@@ -470,9 +457,15 @@ xbps_init(struct xbps_handle *xhp)
 
 	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN, XBPS_FETCH_CACHECONN_HOST);
 
+	/* process xbps.d */
+	if ((rv = parse_dir(xhp, cwd, sysconfdir, xhp->confdir)) != 0)
+		return rv;
+
 	xbps_dbg_printf(xhp, "rootdir=%s\n", xhp->rootdir);
 	xbps_dbg_printf(xhp, "metadir=%s\n", xhp->metadir);
 	xbps_dbg_printf(xhp, "cachedir=%s\n", xhp->cachedir);
+	xbps_dbg_printf(xhp, "confdir=%s\n", xhp->confdir);
+	xbps_dbg_printf(xhp, "sysconfdir=%s\n", sysconfdir);
 	xbps_dbg_printf(xhp, "syslog=%s\n", xhp->flags & XBPS_FLAG_DISABLE_SYSLOG ? "false" : "true");
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
 	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch);

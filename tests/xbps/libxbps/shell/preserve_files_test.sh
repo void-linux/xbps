@@ -19,12 +19,13 @@ tc1_body() {
 	cd ..
 
 	mkdir -p root/usr/bin
+	mkdir -p root/xbps.d
 	echo "modified blahblah" > root/usr/bin/blah
 	echo "modified foofoo" > root/usr/bin/foo
 
-	echo "preserve=/usr/bin/*" > foo.conf
+	echo "preserve=/usr/bin/*" > root/xbps.d/foo.conf
 
-	xbps-install -C foo.conf -r root --repository=$PWD/some_repo -yd A
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
 
 	rv=1
@@ -53,15 +54,16 @@ tc2_body() {
 	cd ..
 
 	mkdir -p root/usr/bin
+	mkdir -p root/xbps.d
 	echo "modified blahblah" > root/usr/bin/blah
 	echo "modified foofoo" > root/usr/bin/foo
 
-	printf "preserve=/usr/bin/blah\npreserve=/usr/bin/foo\n" > foo.conf
+	printf "preserve=/usr/bin/blah\npreserve=/usr/bin/foo\n" > root/xbps.d/foo.conf
 
 	echo "foo.conf" >&2
 	cat foo.conf >&2
 
-	xbps-install -C foo.conf -r root --repository=$PWD/some_repo -yd A
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
 
 	rv=1

@@ -77,7 +77,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp _unused,
 		assert(out);
 		snprintf(out, lpc->maxcols - 3,
 		    "%s %s", tmp, short_desc);
-		strncat(out, "...\n", lpc->maxcols);
+		xbps_strlcat(out, "...\n", sizeof(*out));
 		printf("%s", out);
 		free(out);
 	} else {

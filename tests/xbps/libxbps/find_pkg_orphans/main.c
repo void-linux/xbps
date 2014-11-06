@@ -62,8 +62,8 @@ ATF_TC_BODY(find_pkg_orphans_test, tc)
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
 	memset(&xh, 0, sizeof(xh));
-	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
 	a = xbps_array_create();
@@ -99,8 +99,8 @@ ATF_TC_BODY(find_all_orphans_test, tc)
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
 	memset(&xh, 0, sizeof(xh));
-	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
 	pstr = xbps_string_create();

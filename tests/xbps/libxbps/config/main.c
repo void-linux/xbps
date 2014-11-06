@@ -25,6 +25,8 @@
  */
 #include <atf-c.h>
 #include <xbps.h>
+#include <stdlib.h>
+#include <limits.h>
 
 ATF_TC(config_include_test);
 ATF_TC_HEAD(config_include_test, tc)
@@ -36,19 +38,40 @@ ATF_TC_BODY(config_include_test, tc)
 {
 	struct xbps_handle xh;
 	const char *tcsdir;
+	char *buf, *buf2, pwd[PATH_MAX];
 
 	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
-	/* change dir to make sure relative paths won't match */
-	ATF_REQUIRE_EQ(chdir("/"), 0);
 	memset(&xh, 0, sizeof(xh));
-	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	snprintf(xh.conffile, sizeof(xh.conffile), "%s/xbps.conf", tcsdir);
+	buf = getcwd(pwd, sizeof(pwd));
+
+	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
+	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
+	snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
+
+	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
+
+	buf = xbps_xasprintf("%s/xbps.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps.d/xbps.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
+	buf = xbps_xasprintf("%s/1.include.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps.d/1.include.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
+	buf = xbps_xasprintf("%s/2.include.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps.d/2.include.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
-
 	/* should contain both repositories defined in [12].include.conf */
 	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 2);
 }
@@ -64,16 +87,26 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 {
 	struct xbps_handle xh;
 	const char *tcsdir;
+	char *buf, *buf2, pwd[PATH_MAX];
 
 	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
 
-	/* change dir to make sure relative paths won't match */
-	ATF_REQUIRE_EQ(chdir("/"), 0);
 	memset(&xh, 0, sizeof(xh));
-	strncpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	strncpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	strncpy(xh.conffile, "/xbps_nomatch.conf", sizeof(xh.conffile));
+	buf = getcwd(pwd, sizeof(pwd));
+
+	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
+
+	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
+
+	buf = xbps_xasprintf("%s/xbps_nomatch.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps.d/nomatch.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
 	xh.flags = XBPS_FLAG_DEBUG;
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 

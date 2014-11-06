@@ -41,7 +41,7 @@ script_nargs_body() {
 	rval=0
 	xbps-reconfigure -C empty.conf -r root -f A 2>out
 	out="$(cat out)"
-	expected="post A 1.0_1 no $(pwd)/empty.conf $(uname -m)"
+	expected="post A 1.0_1 no no $(uname -m)"
 	if [ "$out" != "$expected" ]; then
 		echo "out: '$out'"
 		echo "expected: '$expected'"
@@ -75,7 +75,7 @@ script_arch_body() {
 	rval=0
 	XBPS_ARCH=foo xbps-reconfigure -C empty.conf -r root -f A 2>out
 	out="$(cat out)"
-	expected="post A 1.0_1 no $(pwd)/empty.conf foo"
+	expected="post A 1.0_1 no no foo"
 	if [ "$out" != "$expected" ]; then
 		echo "out: '$out'"
 		echo "expected: '$expected'"

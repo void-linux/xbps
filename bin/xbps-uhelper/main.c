@@ -103,14 +103,14 @@ main(int argc, char **argv)
 	xbps_dictionary_t dict;
 	struct xbps_handle xh;
 	struct xferstat xfer;
-	const char *version, *rootdir = NULL, *conffile = NULL;
+	const char *version, *rootdir = NULL, *confdir = NULL;
 	char *pkgname, *hash, *filename;
 	int flags = 0, c, rv = 0;
 
 	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
 		switch (c) {
 		case 'C':
-			conffile = optarg;
+			confdir = optarg;
 			break;
 		case 'r':
 			/* To specify the root directory */
@@ -146,9 +146,9 @@ main(int argc, char **argv)
 		xh.fetch_cb = fetch_file_progress_cb;
 		xh.fetch_cb_data = &xfer;
 		if (rootdir)
-			strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
-		if (conffile)
-			strncpy(xh.conffile, conffile, sizeof(xh.conffile));
+			xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+		if (confdir)
+			xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 		if ((rv = xbps_init(&xh)) != 0) {
 			xbps_error_printf("xbps-uhelper: failed to "
 			    "initialize libxbps: %s.\n", strerror(rv));

@@ -211,12 +211,10 @@ rcv_init(rcv_t *rcv, const char *prog)
 	rcv->have_vars = 0;
 	rcv->ptr = rcv->input = NULL;
 	if (rcv->xbps_conf != NULL) {
-		strncpy(rcv->xhp.conffile, rcv->xbps_conf, sizeof(rcv->xhp.conffile)-1);
-		rcv->xhp.conffile[sizeof(rcv->xhp.conffile)-1] = '\0';
+		xbps_strlcpy(rcv->xhp.confdir, rcv->xbps_conf, sizeof(rcv->xhp.confdir));
 	}
 	if (rcv->rootdir != NULL) {
-		strncpy(rcv->xhp.rootdir, rcv->rootdir, sizeof(rcv->xhp.rootdir)-1);
-		rcv->xhp.rootdir[sizeof(rcv->xhp.rootdir)-1] = '\0';
+		xbps_strlcpy(rcv->xhp.rootdir, rcv->rootdir, sizeof(rcv->xhp.rootdir));
 	}
 	if (xbps_init(&rcv->xhp) != 0)
 		abort();
@@ -507,11 +505,12 @@ rcv_find_conf(rcv_t *rcv)
 }
 
 static bool
-check_reverts(const char *repover, const map_item_t reverts) {
+check_reverts(const char *repover, const map_item_t reverts)
+{
 	bool rv = false;
 	char *sreverts, *p;
 
-	if(reverts.v.len == 0)
+	if (reverts.v.len == 0)
 		return rv;
 
 	sreverts = calloc(reverts.v.len+1, sizeof(char));
@@ -523,14 +522,14 @@ check_reverts(const char *repover, const map_item_t reverts) {
 		 * Check if it's the first character or the previous character is a
 		 * whitespace.
 		 */
-		if(p > sreverts && !isspace(p[-1]))
+		if (p > sreverts && !isspace(p[-1]))
 			continue;
 		p += strlen(repover);
 		/*
 		 * Check if it's the last character or if the next character is a
 		 * whitespace
 		 */
-		if(isspace(*p) || *p == '\0') {
+		if (isspace(*p) || *p == '\0') {
 			rv = true;
 			break;
 		}

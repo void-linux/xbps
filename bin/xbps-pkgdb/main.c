@@ -41,7 +41,7 @@ usage(bool fail)
 	    "Usage: xbps-pkgdb [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
 	    " -a --all                               Process all packages\n"
-	    " -C --config <file>                     Full path to configuration file\n"
+	    " -C --config <dir>                      Path to confdir (xbps.d)\n"
 	    " -d --debug                             Debug mode shown to stderr\n"
 	    " -h --help                              Print usage help\n"
 	    " -m --mode <auto|manual|hold|unhold>    Change PKGNAME to this mode\n"
@@ -92,7 +92,7 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
-	const char *conffile = NULL, *rootdir = NULL, *instmode = NULL;
+	const char *confdir = NULL, *rootdir = NULL, *instmode = NULL;
 	int c, i, rv, flags = 0;
 	bool update_format = false, all = false;
 
@@ -102,7 +102,7 @@ main(int argc, char **argv)
 			all = true;
 			break;
 		case 'C':
-			conffile = optarg;
+			confdir = optarg;
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
@@ -136,9 +136,9 @@ main(int argc, char **argv)
 
 	memset(&xh, 0, sizeof(xh));
 	if (rootdir)
-		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
-	if (conffile)
-		strncpy(xh.conffile, conffile, sizeof(xh.conffile));
+		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+	if (confdir)
+		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 	xh.flags = flags;
 
 	if ((rv = xbps_init(&xh)) != 0) {

@@ -1,6 +1,6 @@
 -include config.mk
 
-SUBDIRS	= include lib bin etc data
+SUBDIRS	= include lib bin data
 
 ifdef BUILD_API_DOCS
 SUBDIRS += doc

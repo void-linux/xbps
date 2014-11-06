@@ -1,5 +1,24 @@
 xbps-0.42 (???):
 
+ * utils: the -C/--config option now expects a path to a directory storing
+   configuration files; if first character is not '/' it will be treated as
+   relative to rootdir.
+
+ * <sysconfdir>/xbps/xbps.conf is not longer installed, in fact there are no files
+   installed anymore to sysconfdir. The xbps.conf file with everything commented out
+   is now installed to <sharedir>/xbps.d/xbps.conf just as example.
+
+ * Replaced config/system {preserve,repo,virtualpkg}.d directories with a single
+   xbps.d directory that may contain configuration files of all kinds:
+   general options, repositories, virtual packages, and preserved files.
+   By default set to <sysconfdir>/xbps.d and <sharedir>/xbps.d:
+
+	- /usr/local/etc/xbps.d 	<- configuration directory
+	- /usr/local/share/xbps.d	<- system configuration directory
+
+   Files bearing the same filename in the configuration directory override
+   those available in the system configuration directory.
+
  * Virtual packages are now collected directly from pkgdb, that means
    that installed packages do not need to have a virtualpkg configuration
    file in the system virtualpkg.d directory.

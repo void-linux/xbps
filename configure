@@ -61,7 +61,7 @@ for x; do
 	--host) HOST=$var;;
 	--target) TARGET=$var;;
 	--includedir) INCLUDEDIR=$var;;
-	--sysconfdir) ETCDIR=$var;;
+	--sysconfdir) SYSCONFDIR=$var;;
 	--localstatedir) LOCALSTATEDIR=$var;;
 	--libdir) LIBDIR=$var;;
 	--datadir|--infodir) ;; # ignore autotools
@@ -86,7 +86,6 @@ done
 : ${SHAREDIR:=${EPREFIX}/share}
 : ${MANDIR:=${EPREFIX}/share/man}
 : ${INCLUDEDIR:=${EPREFIX}/include}
-: ${ETCDIR:=${PREFIX}/etc}
 : ${PKGCONFIGDIR:=${LIBDIR}/pkgconfig}
 : ${TESTSDIR:=${EPREFIX}/tests}
 : ${LOCALSTATEDIR:=/var}
@@ -154,7 +153,7 @@ echo "PKGCONFIGDIR ?= $PKGCONFIGDIR" >>$CONFIG_MK
 echo "TESTSDIR ?= $TESTSDIR" >>$CONFIG_MK
 echo "DBDIR ?= $DBDIR" >>$CONFIG_MK
 
-ETCDIR="${ETCDIR}/xbps"
+ETCDIR="${SYSCONFDIR}/xbps.d"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 
 [ -z "$DEBUG" ] && DEBUG=no
@@ -186,6 +185,7 @@ echo "CFLAGS = -O2 -pthread" >>$CONFIG_MK
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
+echo "CPPFLAGS +=	-DXBPS_SYSDEFCONF_PATH=\\\"${SHAREDIR}/xbps.d\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-D_unused=\"__attribute__((__unused__))\"" >>$CONFIG_MK
 

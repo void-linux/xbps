@@ -273,7 +273,6 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	xbps_array_t pkgs, orphans, orphans_pkg, reqby;
 	xbps_object_t obj;
 	const char *pkgver;
-	unsigned int count;
 	int rv = 0;
 
 	assert(pkgname != NULL);
@@ -305,9 +304,8 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	if (xbps_object_type(orphans) != XBPS_TYPE_ARRAY)
 		return EINVAL;
 
-	count = xbps_array_count(orphans);
-	while (count--) {
-		obj = xbps_array_get(orphans, count);
+	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
+		obj = xbps_array_get(orphans, i);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_set_cstring_nocopy(obj, "transaction", "remove");
 		if ((rv = xbps_transaction_store(xhp, pkgs, obj, false)) != 0)
@@ -353,11 +351,10 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 	xbps_array_t orphans, pkgs;
 	xbps_object_t obj;
 	const char *pkgver;
-	unsigned int count;
 	int rv = 0;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
-	if ((count = xbps_array_count(orphans)) == 0) {
+	if (xbps_array_count(orphans) == 0) {
 		/* no orphans? we are done */
 		rv = ENOENT;
 		goto out;
@@ -372,8 +369,8 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 	/*
 	 * Add pkg orphan dictionary into the transaction pkgs queue.
 	 */
-	while (count--) {
-		obj = xbps_array_get(orphans, count);
+	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
+		obj = xbps_array_get(orphans, i);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_set_cstring_nocopy(obj,
 		    "transaction", "remove");

@@ -44,8 +44,8 @@ usage(bool fail)
 	    "Usage: xbps-install [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
 	    " -A --automatic           Set automatic installation mode\n"
-	    " -C --config <file>       Full path to configuration file\n"
-	    " -c --cachedir <dir>      Full path to cachedir\n"
+	    " -C --config <dir>        Path to confdir (xbps.d)\n"
+	    " -c --cachedir <dir>      Path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -f --force               Force package re-installation\n"
 	    "                          If specified twice, all files will be\n"
@@ -110,12 +110,12 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	struct xferstat xfer;
-	const char *rootdir, *cachedir, *conffile;
+	const char *rootdir, *cachedir, *confdir;
 	int i, c, flags, rv, fflag = 0;
 	bool syncf, yes, reinstall, drun, update;
 	int maxcols;
 
-	rootdir = cachedir = conffile = NULL;
+	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
 	syncf = yes = reinstall = drun = update = false;
 
@@ -127,7 +127,7 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_INSTALL_AUTO;
 			break;
 		case 'C':
-			conffile = optarg;
+			confdir = optarg;
 			break;
 		case 'c':
 			cachedir = optarg;
@@ -187,11 +187,11 @@ main(int argc, char **argv)
 	xh.fetch_cb = fetch_file_progress_cb;
 	xh.fetch_cb_data = &xfer;
 	if (rootdir)
-		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if (cachedir)
-		strncpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
-	if (conffile)
-		strncpy(xh.conffile, conffile, sizeof(xh.conffile));
+		xbps_strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
+	if (confdir)
+		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 	xh.flags = flags;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.unpack_cb = unpack_progress_cb;

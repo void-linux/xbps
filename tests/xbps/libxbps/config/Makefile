@@ -3,6 +3,6 @@ TOPDIR = ../../../..
 
 TESTSSUBDIR = xbps/libxbps/config
 TEST = config_test
-EXTRA_FILES = Kyuafile xbps.conf xbps_nomatch.conf 1.include.conf 2.include.conf
+EXTRA_FILES = Kyuafile xbps.cf xbps_nomatch.cf 1.include.cf 2.include.cf
 
 include $(TOPDIR)/mk/test.mk

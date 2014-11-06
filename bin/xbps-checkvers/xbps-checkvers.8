@@ -1,4 +1,4 @@
-.Dd September 30, 2014
+.Dd November 5, 2014
 .Dt XBPS-CHECKVERS 8
 .Sh NAME
 .Nm xbps-checkvers
@@ -24,8 +24,10 @@ tree. The
 argument sets extra packages to process with the outdated ones (only processed if missing).
 .Sh OPTIONS
 .Bl -tag -width -x
-.It Fl C, Fl -config Ar file
-Specifies a full path to the XBPS configuration file.
+.It Fl C, Fl -config Ar dir
+Specifies a path to the XBPS configuration directory.
+If the first character is not '\/' then it's a relative path of
+.Ar rootdir .
 .It Fl D, Fl -distdir Ar dir
 Specifies a full path to the void-packages repository. By default set to
 .Nm ~/void-packages .

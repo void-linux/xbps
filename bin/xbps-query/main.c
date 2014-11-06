@@ -38,8 +38,8 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-query [OPTIONS] MODE [ARGUMENTS]\n"
 	    "\nOPTIONS\n"
-	    " -C --config <file>       Full path to configuration file\n"
-	    " -c --cachedir <dir>      Full path to cachedir\n"
+	    " -C --config <dir>        Path to confdir (xbps.d)\n"
+	    " -c --cachedir <dir>      Path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -h --help                Print help usage\n"
 	    " -p --property PROP[,...] Show properties for PKGNAME\n"
@@ -99,13 +99,13 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
-	const char *pkg, *rootdir, *cachedir, *conffile, *props;
+	const char *pkg, *rootdir, *cachedir, *confdir, *props;
 	int c, flags, rv;
 	bool list_pkgs, list_repos, orphans, own;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
 	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
 
-	rootdir = cachedir = conffile = props = pkg = NULL;
+	rootdir = cachedir = confdir = props = pkg = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
 	list_manual = show_prop = show_files = false;
@@ -117,7 +117,7 @@ main(int argc, char **argv)
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
 		case 'C':
-			conffile = optarg;
+			confdir = optarg;
 			break;
 		case 'c':
 			cachedir = optarg;
@@ -214,11 +214,11 @@ main(int argc, char **argv)
 	 * Initialize libxbps.
 	 */
 	if (rootdir)
-		strncpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if (cachedir)
-		strncpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
-	if (conffile)
-		strncpy(xh.conffile, conffile, sizeof(xh.conffile));
+		xbps_strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
+	if (confdir)
+		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 
 	xh.flags = flags;
 

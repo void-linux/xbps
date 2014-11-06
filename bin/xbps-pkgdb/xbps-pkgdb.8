@@ -1,4 +1,4 @@
-.Dd September 30, 2014
+.Dd November 5, 2014
 .Dt XBPS-PKGDB 8
 .Sh NAME
 .Nm xbps-pkgdb
@@ -36,8 +36,10 @@ Updates the pkgdb format to the latest version.
 .Bl -tag -width -x
 .It Fl a, Fl -all
 Process all registered packages, regardless of its state.
-.It Fl C, Fl -config Ar file
-Specifies a full path to the XBPS configuration file.
+.It Fl C, Fl -config Ar dir
+Specifies a path to the XBPS configuration directory.
+If the first character is not '\/' then it's a relative path of
+.Ar rootdir .
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
@@ -67,8 +69,8 @@ Shows the XBPS version.
 .El
 .Sh FILES
 .Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
-.It Ar /etc/xbps/xbps.conf
-Default configuration file.
+.It Ar /etc/xbps.d
+Default configuration directory.
 .It Ar /var/db/xbps/.<pkgname>-files.plist
 Package files metadata.
 .It Ar /var/db/xbps/pkgdb-0.38.plist
