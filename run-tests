@@ -1,10 +1,13 @@
 #!/bin/sh
 
-set -e
-
 for f in bin/*; do
 	export PATH=$PWD/$f:$PATH
 done
 export PATH=$PATH:/usr/local/bin
 export LD_PRELOAD=$PWD/lib/libxbps.so
-kyua test -k tests/xbps/Kyuafile
+
+kyua test -r result.db -k tests/xbps/Kyuafile
+rv=$?
+kyua report --verbose -r result.db
+rm -f result.db
+exit $rv
