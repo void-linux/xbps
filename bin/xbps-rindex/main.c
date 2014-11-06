@@ -55,7 +55,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acfhrVv";
+	const char *shortopts = "acdfhrVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
