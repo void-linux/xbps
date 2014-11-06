@@ -18,7 +18,7 @@ shlib_bump_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=0" --shlib-requires "libfoo.so.1" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -28,7 +28,7 @@ shlib_bump_body() {
 	cd repo
 	xbps-create -A noarch -n A-2.0_1 -s "A pkg" --shlib-provides "libfoo.so.2" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -54,7 +54,7 @@ shlib_bump_revdep_in_trans_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=1.0" --shlib-requires "libfoo.so.1" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -66,7 +66,7 @@ shlib_bump_revdep_in_trans_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-2.0_1 -s "B pkg" --dependencies "A>=0" --shlib-requires "libfoo.so.2" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -98,7 +98,7 @@ shlib_bump_incomplete_revdep_in_trans_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=1.0" --shlib-requires "libfoo.so.1" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -110,7 +110,7 @@ shlib_bump_incomplete_revdep_in_trans_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --dependencies "A>=0" --shlib-requires "libfoo.so.1" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -133,7 +133,7 @@ shlib_bump_revdep_diff_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n C-1.0_1 -s "C pkg" --dependencies "A>=0 B>=0" --shlib-requires "liba.so.1 libb.so.1" ../pkg
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -147,7 +147,7 @@ shlib_bump_revdep_diff_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n C-2.0_1 -s "C pkg" --dependencies "A>=2.0" --shlib-requires "liba.so.2" ../pkg
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 

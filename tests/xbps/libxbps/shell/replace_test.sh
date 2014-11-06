@@ -25,7 +25,7 @@ replace_dups_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0 A>=0" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A
@@ -55,7 +55,7 @@ replace_ntimes_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n D-1.0_1 -s "D pkg" ../pkg_D
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A B C D
@@ -69,7 +69,7 @@ replace_ntimes_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n D-1.1_1 -s "D pkg" --replaces "A<1.1" ../pkg_D
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	result=$(xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yun|wc -l)
@@ -92,7 +92,7 @@ self_replace_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0" --provides="A-1.0_1" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A
@@ -125,7 +125,7 @@ replace_vpkg_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n qt-32bit-1.0_1 -s "qt 32bit pkg" --dependencies "libGL-32bit>=0" ../qt-32bit
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd libGL-32bit

@@ -13,11 +13,11 @@ install_existent_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A

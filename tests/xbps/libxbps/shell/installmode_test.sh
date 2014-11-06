@@ -16,7 +16,7 @@ instmode_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n b-1.0_1 -s "foo pkg" --dependencies "a>=0" ../pkg_b
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 
 	cd ..
@@ -49,7 +49,7 @@ instmode_auto_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n b-1.0_1 -s "foo pkg" --dependencies "a>=0" ../pkg_b
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 
 	cd ..
@@ -77,7 +77,7 @@ instmode_update_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 
 	cd ..
@@ -87,7 +87,7 @@ instmode_update_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "foo pkg" ../pkg_B
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 
 	cd ..
@@ -112,7 +112,7 @@ instmode_reinstall_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -r root -C null.conf --repository=$PWD/some_repo -Ayd A-1.0_1

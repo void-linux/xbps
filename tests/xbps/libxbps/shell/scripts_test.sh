@@ -32,7 +32,7 @@ script_nargs_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A
@@ -65,7 +65,7 @@ script_arch_body() {
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A

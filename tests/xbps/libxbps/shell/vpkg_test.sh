@@ -32,7 +32,7 @@ vpkg00_body() {
 	xbps-create -A noarch -n D-1.0_1 -s "D pkg" --provides "libEGL-2.0_1" ../pkg_D
 	atf_check_equal $? 0
 
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -61,7 +61,7 @@ vpkg01_body() {
 	xbps-create -A noarch -n D-1.0_1 -s "D pkg" --dependencies "C>=0" ../pkg_D
 	atf_check_equal $? 0
 
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -92,7 +92,7 @@ vpkg02_body() {
 	xbps-create -A noarch -n base-system-1.0_1 -s "base-system pkg" --dependencies "gawk>=0" ../pkg_base-system
 	atf_check_equal $? 0
 
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
@@ -109,7 +109,7 @@ vpkg02_body() {
 
 	xbps-create -A noarch -n base-system-1.1_1 -s "base-system pkg" --dependencies "awk>=0" ../pkg_base-system
 	atf_check_equal $? 0
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 

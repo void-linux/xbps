@@ -14,7 +14,7 @@ incorrect_dep_body() {
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "B>=0" ../pkg_B
 	atf_check_equal $? 0
 
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy B
@@ -34,7 +34,7 @@ incorrect_dep_vpkg_body() {
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=7.11_1" --provides "A-331.67_1" ../pkg_B
 	atf_check_equal $? 0
 
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy A
@@ -58,7 +58,7 @@ incorrect_dep_issue45_body() {
 	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=0" ../pkg_B
 	atf_check_equal $? 0
 
-	xbps-rindex -d -a *.xbps
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy B
