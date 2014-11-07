@@ -477,6 +477,7 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "confdir=%s\n", xhp->confdir);
 	xbps_dbg_printf(xhp, "sysconfdir=%s\n", sysconfdir);
 	xbps_dbg_printf(xhp, "syslog=%s\n", xhp->flags & XBPS_FLAG_DISABLE_SYSLOG ? "false" : "true");
+	xbps_dbg_printf(xhp, "bestmatching=%s\n", xhp->flags & XBPS_FLAG_BESTMATCH ? "true" : "false");
 	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
 	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch);
 
