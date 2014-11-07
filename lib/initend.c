@@ -156,7 +156,8 @@ parse_option(char *buf, char **k, char **v)
 		"repository",
 		"virtualpkg",
 		"include",
-		"preserve"
+		"preserve",
+		"bestmatching"
 	};
 	bool found = false;
 
@@ -263,6 +264,15 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 			store_vpkg(xhp, path, nlines, v);
 		} else if (strcmp(k, "preserve") == 0) {
 			store_preserved_file(xhp, v);
+		} else if (strcmp(k, "bestmatching") == 0) {
+			if (strcasecmp(v, "true") == 0) {
+				xhp->flags |= XBPS_FLAG_BESTMATCH;
+				xbps_dbg_printf(xhp, "%s: pkg best matching enabled\n", path);
+			} else {
+				xhp->flags &= ~XBPS_FLAG_BESTMATCH;
+				xbps_dbg_printf(xhp, "%s: pkg best matching disabled\n", path);
+			}
+			xbps_dbg_printf(xhp, "%s: enabling pkg best matching\n", path);
 		}
 		/* Avoid double-nested parsing, only allow it once */
 		if (nested)

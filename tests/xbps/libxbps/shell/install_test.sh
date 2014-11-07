@@ -204,12 +204,103 @@ install_dups_body() {
 	atf_check_equal $out 1
 }
 
+atf_test_case install_bestmatch
+
+install_bestmatch_head() {
+	atf_set "descr" "Tests for pkg installations: install with bestmatching enabled"
+}
+
+install_bestmatch_body() {
+	mkdir -p repo repo2 pkg_A/usr/bin
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ../repo2
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	mkdir -p root/xbps.d
+	echo "bestmatching=true" > root/xbps.d/bestmatch.conf
+	xbps-install -C xbps.d -r root --repository=$PWD/repo --repository=$PWD/repo2 -yvd A
+	atf_check_equal $? 0
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal $out A-1.1_1
+}
+
+atf_test_case install_bestmatch_deps
+
+install_bestmatch_deps_head() {
+	atf_set "descr" "Tests for pkg installations: install with bestmatching enabled for deps"
+}
+
+install_bestmatch_deps_body() {
+	mkdir -p repo repo2 pkg_A/usr/bin pkg_B/usr/bin
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=0" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ../repo2
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --dependencies "A>=0" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	mkdir -p root/xbps.d
+	echo "bestmatching=true" > root/xbps.d/bestmatch.conf
+	xbps-install -C xbps.d -r root --repository=$PWD/repo --repository=$PWD/repo2 -yvd B
+	atf_check_equal $? 0
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal $out A-1.1_1
+	out=$(xbps-query -r root -p pkgver B)
+	atf_check_equal $out B-1.1_1
+}
+
+atf_test_case install_bestmatch_disabled
+
+install_bestmatch_disabled_head() {
+	atf_set "descr" "Tests for pkg installations: install with bestmatching disabled"
+}
+
+install_bestmatch_disabled_body() {
+	mkdir -p repo repo2 pkg_A/usr/bin
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ../repo2
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	mkdir -p root/xbps.d
+	echo "bestmatching=false" > root/xbps.d/bestmatch.conf
+	xbps-install -C xbps.d -r root --repository=$PWD/repo --repository=$PWD/repo2 -yvd A
+	atf_check_equal $? 0
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal $out A-1.0_1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
 	atf_add_test_case install_with_vpkg_deps
 	atf_add_test_case install_if_not_installed_on_update
 	atf_add_test_case install_dups
+	atf_add_test_case install_bestmatch
+	atf_add_test_case install_bestmatch_deps
+	atf_add_test_case install_bestmatch_disabled
 	atf_add_test_case update_if_installed
 	atf_add_test_case update_to_empty_pkg
 }

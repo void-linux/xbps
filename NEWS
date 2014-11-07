@@ -1,5 +1,10 @@
 xbps-0.42 (???):
 
+ * Added a new configuration keyword "bestmatching", which expects "true" or "false"
+   and disabled by default. If enabled the pkg with the greatest version available
+   in all registered repositories will be choosen, rather than the first package
+   matching the expression. This keyword can be set in a configuration file.
+
  * xbps-rindex(8): added -d/--debug option.
 
  * utils: the -C/--config option now expects a path to a directory storing
