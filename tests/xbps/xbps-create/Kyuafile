@@ -1,0 +1,4 @@
+syntax("kyuafile", 1)
+
+test_suite("xbps-create")
+atf_test_program{name="basic_test"}

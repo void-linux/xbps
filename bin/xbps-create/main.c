@@ -58,6 +58,7 @@
 struct xentry {
 	TAILQ_ENTRY(xentry) entries;
 	char *file, *type, *target, *hash;
+	ino_t inode;
 };
 
 static TAILQ_HEAD(xentry_head, xentry) xentry_list =
@@ -315,8 +316,24 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		assert(xe->target);
 		free(buf);
 	} else if (type == FTW_F) {
+		struct xentry *xep;
+		bool hlink = false;
 		/*
-		 * Regular files.
+		 * Regular files. First find out if it's a hardlink:
+		 * 	- st_nlink > 1
+		 * and then search for a stored file matching its inode.
+		 */
+		TAILQ_FOREACH(xep, &xentry_list, entries) {
+			if (sb->st_nlink > 1 && xep->inode == sb->st_ino) {
+				/* matched */
+				hlink = true;
+				break;
+			}
+		}
+		if (!hlink)
+			instsize += sb->st_size;
+
+		/*
 		 * Find out if it's a configuration file or not
 		 * and calculate sha256 hash.
 		 */
@@ -329,8 +346,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		if ((xe->hash = xbps_file_hash(fpath)) == NULL)
 			die("failed to process hash for %s:", fpath);
 
-		if (sb->st_nlink <= 1)
-			instsize += sb->st_size;
+		xe->inode = sb->st_ino;
 
 	} else if (type == FTW_D || type == FTW_DP) {
 		/* directory */
