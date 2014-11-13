@@ -316,6 +316,12 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	if (xbps_array_count(array))
 		return EAGAIN;
 	/*
+	 * Check for unresolved shared libraries.
+	 */
+	if (xbps_transaction_shlibs(xhp, pkgs,
+	    xbps_dictionary_get(xhp->transd, "missing_shlibs")))
+		return ENOEXEC;
+	/*
 	 * Check for packages to be replaced.
 	 */
 	if ((rv = xbps_transaction_package_replace(xhp, pkgs)) != 0) {
@@ -323,12 +329,6 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		xhp->transd = NULL;
 		return rv;
 	}
-	/*
-	 * Check for unresolved shared libraries.
-	 */
-	if (xbps_transaction_shlibs(xhp, pkgs, xbps_dictionary_get(xhp->transd, "missing_shlibs")))
-		return ENOEXEC;
-
 	/*
 	 * Add transaction stats for total download/installed size,
 	 * number of packages to be installed, updated, configured
