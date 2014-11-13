@@ -646,7 +646,7 @@ _prop_array_add_first(prop_array_t pa, prop_object_t po)
 		pa->pa_array[0] = po;
 		pa->pa_version++;
 		pa->pa_count++;
-		printf("%s: po %p\n", __func__, pa->pa_array[0]);
+		//printf("%s: po %p\n", __func__, pa->pa_array[0]);
 	} else {
 		pa->pa_array[pa->pa_count++] = po;
 		pa->pa_version++;
