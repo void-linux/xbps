@@ -50,11 +50,11 @@ case $state in
 			list pkg remove remove-autodeps show show-build-deps \
 			show-deps show-files show-options show-shlib-provides \
 			show-shlib-requires show-var show-repo-updates \
-			show-sys-updates update-bulk update-sys zap
+			show-sys-updates update-bulk update-check update-sys zap
 			ret=0;;
 	args)
 		case $words[1] in
-			build|configure|extract|fetch|install|pkg|show|show-build-deps)
+			build|configure|extract|fetch|install|pkg|show|show-build-deps|update-check)
 				_arguments ':package:_xbps_src_all_packages' && ret=0;;
 			binary-bootstrap)
 				_arguments '::architecture:($archs)' && ret=0;;
