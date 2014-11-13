@@ -640,7 +640,7 @@ _prop_array_add_first(prop_array_t pa, prop_object_t po)
 			prop_object_retain(opo);
 			pa->pa_array[cnt] = opo;
 			prop_object_release(opo);
-			printf("%s: po %p\n", __func__, pa->pa_array[cnt]);
+			//printf("%s: po %p\n", __func__, pa->pa_array[cnt]);
 		}
 		/* passed in object is now the first element */
 		pa->pa_array[0] = po;
