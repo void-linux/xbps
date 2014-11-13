@@ -28,13 +28,13 @@ replace_dups_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd B
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
 	atf_check_equal $? 0
-	result=$(xbps-query -C empty.conf -r root -l|wc -l)
+	result=$(xbps-query -C xbps.d -r root -l|wc -l)
 	atf_check_equal $result 1
-	atf_check_equal $(xbps-query -C empty.conf -r root -p state B) installed
+	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) installed
 }
 
 atf_test_case replace_ntimes
@@ -58,7 +58,7 @@ replace_ntimes_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A B C D
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A B C D
 	atf_check_equal $? 0
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
@@ -72,7 +72,7 @@ replace_ntimes_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	result=$(xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yun|wc -l)
+	result=$(xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yun|wc -l)
 	atf_check_equal $result 4
 }
 
@@ -95,16 +95,16 @@ self_replace_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd B
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd A
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
 	atf_check_equal $? 0
-	out=$(xbps-query -C empty.conf -r root -l|awk '{print $2}')
+	out=$(xbps-query -C xbps.d -r root -l|awk '{print $2}')
 	exp="A-1.0_1"
 	atf_check_equal $out $exp
-	atf_check_equal $(xbps-query -C empty.conf -r root -p state A) installed
+	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
 }
 
 atf_test_case replace_vpkg
@@ -128,15 +128,52 @@ replace_vpkg_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd libGL-32bit
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd libGL-32bit
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yd catalyst-32bit
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd catalyst-32bit
 	atf_check_equal $? 0
+}
+
+atf_test_case replace_pkg_files
+
+replace_pkg_files_head() {
+	atf_set "descr" "Tests for package replace: replacing pkg files"
+}
+
+replace_pkg_files_body() {
+	mkdir -p repo root libGL/usr/lib nvidia/usr/lib
+	echo 123456789 > libGL/usr/lib/libGL.so.1.9
+	ln -s libGL.so.1.9 libGL/usr/lib/libGL.so.1
+	ln -s libGL.so.1.9 libGL/usr/lib/libGL.so
+	echo 987654321 > nvidia/usr/lib/libGL.so.340.48
+	ln -s libGL.so.340.48 nvidia/usr/lib/libGL.so.1
+	ln -s libGL.so.340.48 nvidia/usr/lib/libGL.so
+
+	cd repo
+	xbps-create -A noarch -n libGL-1.0_1 -s "libGL pkg" ../libGL
+	atf_check_equal $? 0
+	xbps-create -A noarch -n nvidia-1.0_1 -s "nvidia pkg" --provides "libGL-1.0_1" --replaces "libGL>=0" ../nvidia
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -C xbps.d -r root --repository=$PWD/repo -yvd libGL
+	atf_check_equal $? 0
+	xbps-install -C xbps.d -r root --repository=$PWD/repo -yvd nvidia
+	atf_check_equal $? 0
+	ls -l root/usr/lib
+	result=$(readlink root/usr/lib/libGL.so)
+	atf_check_equal $result libGL.so.340.48
+	result=$(readlink root/usr/lib/libGL.so.1)
+	atf_check_equal $result libGL.so.340.48
+	result=$(cat root/usr/lib/libGL.so.340.48)
+	atf_check_equal $result 987654321
 }
 
 atf_init_test_cases() {
 	atf_add_test_case replace_dups
 	atf_add_test_case replace_ntimes
 	atf_add_test_case replace_vpkg
+	atf_add_test_case replace_pkg_files
 	atf_add_test_case self_replace
 }
