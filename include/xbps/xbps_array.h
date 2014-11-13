@@ -59,6 +59,7 @@ xbps_object_iterator_t xbps_array_iterator(xbps_array_t);
 xbps_object_t	xbps_array_get(xbps_array_t, unsigned int);
 bool		xbps_array_set(xbps_array_t, unsigned int, xbps_object_t);
 bool		xbps_array_add(xbps_array_t, xbps_object_t);
+bool		xbps_array_add_first(xbps_array_t, xbps_object_t);
 void		xbps_array_remove(xbps_array_t, unsigned int);
 
 bool		xbps_array_equals(xbps_array_t, xbps_array_t);

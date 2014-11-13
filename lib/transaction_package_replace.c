@@ -123,7 +123,8 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 */
 			xbps_dictionary_set_cstring_nocopy(instd,
 			    "transaction", "remove");
-			xbps_array_add(pkgs, instd);
+			if (!xbps_array_add_first(pkgs, instd))
+				return EINVAL;
 			free(curpkgname);
 		}
 		xbps_object_iterator_release(iter);

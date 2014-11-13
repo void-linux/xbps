@@ -615,6 +615,45 @@ _prop_array_add(prop_array_t pa, prop_object_t po)
 	return (true);
 }
 
+static bool
+_prop_array_add_first(prop_array_t pa, prop_object_t po)
+{
+	unsigned int cnt;
+	/*
+	 * Array must be WRITE-LOCKED.
+	 */
+
+	_PROP_ASSERT(pa->pa_count <= pa->pa_capacity);
+
+	if (prop_array_is_immutable(pa) ||
+	    (pa->pa_count == pa->pa_capacity &&
+	    _prop_array_expand(pa, pa->pa_capacity + EXPAND_STEP) == false))
+		return false;
+
+	prop_object_retain(po);
+	if (pa->pa_count) {
+		cnt = pa->pa_count+1;
+		/* move all stored elements to the right */
+		while (--cnt) {
+			prop_object_t opo = pa->pa_array[cnt-1];
+			_PROP_ASSERT(opo != NULL);
+			prop_object_retain(opo);
+			pa->pa_array[cnt] = opo;
+			prop_object_release(opo);
+			printf("%s: po %p\n", __func__, pa->pa_array[cnt]);
+		}
+		/* passed in object is now the first element */
+		pa->pa_array[0] = po;
+		pa->pa_version++;
+		pa->pa_count++;
+		printf("%s: po %p\n", __func__, pa->pa_array[0]);
+	} else {
+		pa->pa_array[pa->pa_count++] = po;
+		pa->pa_version++;
+	}
+	return true;
+}
+
 /*
  * prop_array_set --
  *	Store a reference to an object at the specified array index.
@@ -679,6 +718,26 @@ prop_array_add(prop_array_t pa, prop_object_t po)
 	return (rv);
 }
 
+/*
+ * prop_array_add_first --
+ *	Add a reference to an object to the specified array, inserting it
+ *	as first element, moving all objects to the right and growing the
+ *	array's capacity, if necessary.
+ */
+bool
+prop_array_add_first(prop_array_t pa, prop_object_t po)
+{
+	bool rv;
+
+	if (! prop_object_is_array(pa))
+		return (false);
+
+	_PROP_RWLOCK_WRLOCK(pa->pa_rwlock);
+	rv = _prop_array_add_first(pa, po);
+	_PROP_RWLOCK_UNLOCK(pa->pa_rwlock);
+
+	return (rv);
+}
 /*
  * prop_array_remove --
  *	Remove the reference to an object from an array at the specified

@@ -112,6 +112,12 @@ xbps_array_add(xbps_array_t a, xbps_object_t obj)
 	return prop_array_add(a, obj);
 }
 
+bool
+xbps_array_add_first(xbps_array_t a, xbps_object_t obj)
+{
+	return prop_array_add_first(a, obj);
+}
+
 void
 xbps_array_remove(xbps_array_t a, unsigned int i)
 {
