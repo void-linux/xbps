@@ -1,5 +1,13 @@
 xbps-0.42 (???):
 
+ * Get rid of repodata index-files, that contained all pkg files of a repository
+   in the archive. That file was so huge that incresed the repository archive
+   size by 8x. That means that `xbps-query -Ro` will now make N parallel connections
+   to the remote server to inspect the binary packages remotely; if the binary
+   package is in cachedir, no network connection to the remote server will be
+   established. This reduces the size of the main x86_64 repository (4000 packages)
+   to 700KB, compared to 4.5MB previously.
+
  * xbps-create(8): fixed issue #64 "xbps-create(8) incorrect installed-size with hardlinks".
    https://github.com/voidlinux/xbps/issues/64
 

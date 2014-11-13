@@ -129,12 +129,6 @@ bool HIDDEN xbps_remove_pkg_from_array_by_pkgver(xbps_array_t, const char *);
 
 /**
  * @private
- * From lib/util.c
- */
-char HIDDEN *xbps_repository_pkg_path(struct xbps_handle *, xbps_dictionary_t);
-
-/**
- * @private
  * From lib/download.c
  */
 void HIDDEN xbps_fetch_set_cache_connection(int, int);

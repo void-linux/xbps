@@ -119,30 +119,37 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 
 
 static int
-repo_match_cb(struct xbps_handle *xhp _unused,
+repo_match_cb(struct xbps_handle *xhp,
 		xbps_object_t obj,
-		const char *key,
+		const char *key _unused,
 		void *arg,
 		bool *done _unused)
 {
+	xbps_dictionary_t filesd;
+	xbps_array_t files_keys;
 	struct ffdata *ffd = arg;
-	const char *filestr;
-	regex_t regex;
+	const char *pkgver;
+	char *bfile;
 
-	for (unsigned int i = 0; i < xbps_array_count(obj); i++) {
-		xbps_array_get_cstring_nocopy(obj, i, &filestr);
-		if (ffd->regex) {
-			if (regcomp(&regex, ffd->pat, REG_EXTENDED|REG_NOSUB) != 0)
-				return errno;
-			if (regexec(&regex, filestr, 0, 0, 0) == 0) {
-				printf("%s: %s (%s)\n", key, filestr, ffd->repouri);
-			}
-			regfree(&regex);
-		} else {
-			if ((fnmatch(ffd->pat, filestr, FNM_PERIOD)) == 0)
-				printf("%s: %s (%s)\n", key, filestr, ffd->repouri);
-		}
+	xbps_dictionary_set_cstring_nocopy(obj, "repository", ffd->repouri);
+	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+
+	bfile = xbps_repository_pkg_path(xhp, obj);
+	assert(bfile);
+	filesd = xbps_get_pkg_plist_from_binpkg(bfile, "./files.plist");
+	if (filesd == NULL) {
+		xbps_dbg_printf(xhp, "%s: couldn't fetch files.plist from %s: %s\n",
+		    pkgver, bfile, strerror(errno));
+		return EINVAL;
 	}
+	files_keys = xbps_dictionary_all_keys(filesd);
+	for (unsigned int i = 0; i < xbps_array_count(files_keys); i++) {
+		match_files_by_pattern(filesd,
+		    xbps_array_get(files_keys, i), ffd, pkgver);
+	}
+	xbps_object_release(files_keys);
+	xbps_object_release(filesd);
+	free(bfile);
 
 	return 0;
 }
@@ -154,13 +161,9 @@ repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 	struct ffdata *ffd = arg;
 	int rv;
 
-	xbps_repo_open_idxfiles(repo);
-	if (repo->idxfiles == NULL)
-		return 0;
-
 	ffd->repouri = repo->uri;
-	allkeys = xbps_dictionary_all_keys(repo->idxfiles);
-	rv = xbps_array_foreach_cb(repo->xhp, allkeys, repo->idxfiles, repo_match_cb, ffd);
+	allkeys = xbps_dictionary_all_keys(repo->idx);
+	rv = xbps_array_foreach_cb_multi(repo->xhp, allkeys, repo->idx, repo_match_cb, ffd);
 	xbps_object_release(allkeys);
 
 	return rv;

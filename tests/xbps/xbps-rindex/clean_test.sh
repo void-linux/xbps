@@ -22,63 +22,7 @@ noremove_body() {
 	atf_check_equal ${result} 1
 }
 
-# 2nd test: make sure that entries are also removed from index-files.
-atf_test_case filesclean
-
-filesclean_head() {
-	atf_set "descr" "xbps-rindex(8) -c: index-files clean test"
-}
-
-filesclean_body() {
-	mkdir -p some_repo pkg_A
-	touch -f pkg_A/file00
-	cd some_repo
-	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
-	rm *.xbps
-	cd ..
-	xbps-rindex -c some_repo
-	atf_check_equal $? 0
-	result=$(xbps-query -r root -C empty.conf --repository=some_repo -o \*)
-	test -z "${result}"
-	atf_check_equal $? 0
-}
-
-# 3nd test: make sure that entries are removed from index-files on updates.
-atf_test_case filesclean2
-
-filesclean2_head() {
-	atf_set "descr" "xbps-rindex(8) -c: index-files clean test on updates"
-}
-
-filesclean2_body() {
-	mkdir -p some_repo pkg_A
-	touch -f pkg_A/file00
-	cd some_repo
-	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
-	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
-	cd ..
-	xbps-rindex -c some_repo
-	atf_check_equal $? 0
-	result="$(xbps-query -r root -C empty.conf --repository=some_repo -o \*)"
-	expected="foo-1.1_1: /file00 (some_repo)"
-	rv=0
-	if [ "$result" != "$expected" ]; then
-		rv=1
-	fi
-	atf_check_equal $rv 0
-
-}
-
-# 4th test: xbps issue #19.
+# xbps issue #19.
 # How to reproduce it:
 #	Generate pkg foo-1.0_1.
 #	Add it to the index of a local repo.
@@ -109,7 +53,5 @@ issue19_body() {
 
 atf_init_test_cases() {
 	atf_add_test_case noremove
-	atf_add_test_case filesclean
-	atf_add_test_case filesclean2
 	atf_add_test_case issue19
 }

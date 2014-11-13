@@ -153,7 +153,6 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		rv = EINVAL;
 		goto out;
 	}
-	xbps_repo_open_idxfiles(repo);
 	/*
 	 * If privkey not set, default to ~/.ssh/id_rsa.
 	 */
@@ -286,7 +285,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	xbps_object_release(data);
 	data = NULL;
 
-	if (!repodata_flush(xhp, repodir, repo->idx, repo->idxfiles, meta)) {
+	if (!repodata_flush(xhp, repodir, repo->idx, meta)) {
 		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
 		goto out;
 	}

@@ -85,32 +85,6 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 	return 0;
 }
 
-static int
-idxfiles_cleaner_cb(struct xbps_handle *xhp _unused, xbps_object_t obj _unused,
-		const char *key, void *arg, bool *done _unused)
-{
-	xbps_dictionary_t pkg;
-	struct cbdata *cbd = arg;
-	char *pkgname;
-	const char *pkgver;
-
-	/* Find out entries on index-files that aren't registered on index */
-	if ((pkgname = xbps_pkg_name(key)) == NULL) {
-		xbps_dbg_printf(xhp, "%s: invalid entry found on index-files: %s\n", cbd->repourl, key);
-		return 0;
-	}
-	if ((pkg = xbps_dictionary_get(cbd->idx, pkgname))) {
-		xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
-		if (strcmp(pkgver, key)) {
-			pthread_mutex_lock(&cbd->mtx);
-			xbps_array_add_cstring_nocopy(cbd->result, key);
-			pthread_mutex_unlock(&cbd->mtx);
-		}
-	}
-	free(pkgname);
-
-	return 0;
-}
 /*
  * Removes stalled pkg entries in repository's XBPS_REPOIDX file, if any
  * binary package cannot be read (unavailable, not enough perms, etc).
@@ -119,7 +93,7 @@ int
 index_clean(struct xbps_handle *xhp, const char *repodir)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t idx = NULL, idxmeta = NULL, idxfiles = NULL;
+	xbps_dictionary_t idx = NULL, idxmeta = NULL;
 	struct xbps_repo *repo;
 	struct cbdata cbd;
 	int rv = 0;
@@ -135,11 +109,9 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		    _XBPS_RINDEX, strerror(errno));
 		return rv;
 	}
-	xbps_repo_open_idxfiles(repo);
 	idx = xbps_dictionary_copy(repo->idx);
 	idxmeta = xbps_dictionary_copy(repo->idxmeta);
-	idxfiles = xbps_dictionary_copy(repo->idxfiles);
-	if (idx == NULL || idxfiles == NULL) {
+	if (idx == NULL) {
 		fprintf(stderr, "%s: incomplete repository data file!\n", _XBPS_RINDEX);
 		rv = EINVAL;
 		goto out;
@@ -159,41 +131,20 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		char *keyname = NULL, *pkgname = NULL;
 
 		xbps_array_get_cstring(cbd.result, x, &keyname);
-		printf("index-files: removed entry %s\n", keyname);
 		printf("index: removed entry %s\n", keyname);
 		pkgname = xbps_pkg_name(keyname);
 		assert(pkgname);
-		xbps_dictionary_remove(idxfiles, keyname);
 		xbps_dictionary_remove(idx, pkgname);
 		free(pkgname);
 		free(keyname);
 		flush = true;
 	}
-	/*
-	 * Second pass: find out obsolete entries on index-files.
-	 */
-	xbps_object_release(cbd.result);
-	xbps_object_release(allkeys);
-	cbd.idx = idx;
-	cbd.result = xbps_array_create();
-	allkeys = xbps_dictionary_all_keys(idxfiles);
-	(void)xbps_array_foreach_cb_multi(xhp, allkeys, idxfiles, idxfiles_cleaner_cb, &cbd);
-	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
-		char *keyname = NULL;
-
-		xbps_array_get_cstring(cbd.result, x, &keyname);
-		printf("index-files: removed entry %s\n", keyname);
-		xbps_dictionary_remove(idxfiles, keyname);
-		free(keyname);
-		flush = true;
-	}
-
 	pthread_mutex_destroy(&cbd.mtx);
 	xbps_object_release(cbd.result);
 	xbps_object_release(allkeys);
 
 	if (flush) {
-		if (!repodata_flush(xhp, repodir, idx, idxfiles, idxmeta)) {
+		if (!repodata_flush(xhp, repodir, idx, idxmeta)) {
 			rv = errno;
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));
@@ -202,8 +153,6 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	}
 	printf("index: %u packages registered.\n",
 			xbps_dictionary_count(idx));
-	printf("index-files: %u packages registered.\n",
-			xbps_dictionary_count(idxfiles));
 
 out:
 	xbps_repo_close(repo, true);
@@ -211,8 +160,6 @@ out:
 		xbps_object_release(idx);
 	if (idxmeta)
 		xbps_object_release(idxmeta);
-	if (idxfiles)
-		xbps_object_release(idxfiles);
 
 	return rv;
 }

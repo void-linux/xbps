@@ -280,7 +280,7 @@ xbps_pkgpattern_version(const char *pkg)
 	return strpbrk(pkg, "><*?[]");
 }
 
-char HIDDEN *
+char *
 xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
 	const char *pkgver, *arch, *repoloc;

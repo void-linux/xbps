@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013 Juan Romero Pardines.
+ * Copyright (c) 2013-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,8 +39,7 @@
 
 bool
 repodata_flush(struct xbps_handle *xhp, const char *repodir,
-	xbps_dictionary_t idx, xbps_dictionary_t idxfiles,
-	xbps_dictionary_t meta)
+	xbps_dictionary_t idx, xbps_dictionary_t meta)
 {
 	struct archive *ar;
 	char *repofile, *tname, *buf;
@@ -78,15 +77,6 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	}
 	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
 	    XBPS_REPOIDX_META, 0644, "root", "root");
-	free(buf);
-	if (rv != 0)
-		return false;
-
-	/* XBPS_REPOIDX_FILES */
-	buf = xbps_dictionary_externalize(idxfiles);
-	assert(buf);
-	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
-	    XBPS_REPOIDX_FILES, 0644, "root", "root");
 	free(buf);
 	if (rv != 0)
 		return false;

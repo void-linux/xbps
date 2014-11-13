@@ -203,13 +203,6 @@ out:
 }
 
 void
-xbps_repo_open_idxfiles(struct xbps_repo *repo)
-{
-	assert(repo);
-	repo->idxfiles = repo_get_dict(repo);
-}
-
-void
 xbps_repo_close(struct xbps_repo *repo, bool lock)
 {
 	assert(repo);
@@ -224,10 +217,6 @@ xbps_repo_close(struct xbps_repo *repo, bool lock)
 	if (repo->idxmeta != NULL) {
 		xbps_object_release(repo->idxmeta);
 		repo->idxmeta = NULL;
-	}
-	if (repo->idxfiles != NULL) {
-		xbps_object_release(repo->idxfiles);
-		repo->idxfiles = NULL;
 	}
         if (lock && lockf(repo->fd, F_ULOCK, 0) == -1)
 		xbps_dbg_printf(repo->xhp, "[repo] failed to unlock %s: %s\n", repo->uri, strerror(errno));

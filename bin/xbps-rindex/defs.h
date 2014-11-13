@@ -81,6 +81,6 @@ int	sign_repo(struct xbps_handle *, const char *, const char *,
 
 /* From repoflush.c */
 bool	repodata_flush(struct xbps_handle *, const char *,
-		xbps_dictionary_t, xbps_dictionary_t, xbps_dictionary_t);
+		xbps_dictionary_t, xbps_dictionary_t);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */

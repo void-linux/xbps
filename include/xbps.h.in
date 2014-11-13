@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141113"
+#define XBPS_API_VERSION	"20141113-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -111,12 +111,6 @@
  * Filename for the repository index property list.
  */
 #define XBPS_REPOIDX		"index.plist"
-
-/**
- * @def XBPS_REPOIDX_FILES
- * Filename for the repository index-files property list.
- */
-#define XBPS_REPOIDX_FILES	"index-files.plist"
 
 /**
  * @def XBPS_REPOIDX_META
@@ -1189,12 +1183,6 @@ struct xbps_repo {
 	 */
 	xbps_dictionary_t idxmeta;
 	/**
-	 * @var idxfiles
-	 *
-	 * Proplib dictionary associated with the repository index-files.
-	 */
-	xbps_dictionary_t idxfiles;
-	/**
 	 * @var uri
 	 * 
 	 * URI string associated with repository.
@@ -1344,15 +1332,6 @@ struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url, bool 
  * @param[in] lock Set it to true to release the POSIX file lock.
  */
 void xbps_repo_close(struct xbps_repo *repo, bool lock);
-
-
-/**
- * Prepares the repository index-files.plist to have access to it.
- * The repository must be opened previously with \a xbps_repo_open().
- *
- * @param[in] repo The repository object to use.
- */
-void xbps_repo_open_idxfiles(struct xbps_repo *repo);
 
 /**
  *
@@ -1667,6 +1646,23 @@ bool xbps_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
  * @return true if URI is remote, false if local.
  */
 bool xbps_repository_is_remote(const char *uri);
+
+/*
+ * Returns an allocated string with the full path to the binary package
+ * matching \a pkgd.
+ *
+ * The \a pkgd dictionary must contain the following objects:
+ *  - architecture (string)
+ *  - pkgver (string)
+ *  - repository (string)
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] pkgd The package dictionary to match.
+ *
+ * @return A malloc(3)ed buffer with the full path, NULL otherwise.
+ * The buffer should be free(3)d when it's no longer needed.
+ */
+char *xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
 
 /**
  * Gets the name of a package string. Package strings are composed
