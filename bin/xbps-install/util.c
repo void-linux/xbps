@@ -107,7 +107,7 @@ print_trans_colmode(struct transaction *trans, int cols)
 	if (cols <= hdrlen)
 		return false;
 
-	printf("Name");
+	printf("\nName");
 	for (x = 4; x < pnamelen; x++)
 		printf(" ");
 	printf("Action    Version           New version            Download size\n");
