@@ -170,10 +170,47 @@ replace_pkg_files_body() {
 	atf_check_equal $result 987654321
 }
 
+atf_test_case replace_pkg_files_unmodified
+
+replace_pkg_files_unmodified_head() {
+	atf_set "descr" "Tests for package replace: replacing pkg files with unmodified files"
+}
+
+replace_pkg_files_unmodified_body() {
+	mkdir -p repo root libGL/usr/lib nvidia/usr/lib
+	echo 123456789 > libGL/usr/lib/libGL.so.1.9
+	ln -s libGL.so.1.9 libGL/usr/lib/libGL.so.1
+	ln -s libGL.so.1.9 libGL/usr/lib/libGL.so
+	echo 123456789 > nvidia/usr/lib/libGL.so.1.9
+	ln -s libGL.so.1.9 nvidia/usr/lib/libGL.so.1
+	ln -s libGL.so.1.9 nvidia/usr/lib/libGL.so
+
+	cd repo
+	xbps-create -A noarch -n libGL-1.0_1 -s "libGL pkg" ../libGL
+	atf_check_equal $? 0
+	xbps-create -A noarch -n nvidia-1.0_1 -s "nvidia pkg" --provides "libGL-1.0_1" --replaces "libGL>=0" ../nvidia
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -C xbps.d -r root --repository=$PWD/repo -yvd libGL
+	atf_check_equal $? 0
+	xbps-install -C xbps.d -r root --repository=$PWD/repo -yvd nvidia
+	atf_check_equal $? 0
+	ls -l root/usr/lib
+	result=$(readlink root/usr/lib/libGL.so)
+	atf_check_equal $result libGL.so.1.9
+	result=$(readlink root/usr/lib/libGL.so.1)
+	atf_check_equal $result libGL.so.1.9
+	result=$(cat root/usr/lib/libGL.so.1.9)
+	atf_check_equal $result 123456789
+}
+
 atf_init_test_cases() {
 	atf_add_test_case replace_dups
 	atf_add_test_case replace_ntimes
 	atf_add_test_case replace_vpkg
 	atf_add_test_case replace_pkg_files
+	atf_add_test_case replace_pkg_files_unmodified
 	atf_add_test_case self_replace
 }
