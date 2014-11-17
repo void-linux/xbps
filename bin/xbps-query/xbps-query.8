@@ -211,12 +211,16 @@ If the
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
-.It Fl -repository Fl -cat Ar FILE Ar PKG
+.It Fl -cat Ar FILE Ar PKG
 Prints the file
 .Ar FILE
 stored in binary package
 .Ar PKG
-to stdout. This expects an absolute path.
+to stdout. The first repository matching the
+.Ar PKG
+expression wins.
+This expects an absolute path.
+This mode only works with repositories.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
