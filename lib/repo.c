@@ -277,7 +277,7 @@ xbps_repo_get_pkg_plist(struct xbps_handle *xhp, xbps_dictionary_t pkgd,
 	if (url == NULL)
 		return NULL;
 
-	bpkgd = xbps_get_pkg_plist_from_binpkg(url, plist);
+	bpkgd = xbps_binpkg_get_plist(url, plist);
 	free(url);
 	return bpkgd;
 }

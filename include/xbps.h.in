@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141113-1"
+#define XBPS_API_VERSION	"20141117"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1131,17 +1131,27 @@ int xbps_transaction_commit(struct xbps_handle *xhp);
 /*@{*/
 
 /**
- * Internalizes a plist file in a binary package file stored locally or
- * remotely as specified in \a fname.
+ * Returns a buffer of a file stored in a binary package locally or
+ * remotely as specified in the url \a url.
  *
- * @param[in] fname Full URL to binary package file (local or remote path).
- * @param[in] plistf Plist file name to internalize.
+ * @param[in] url Full URL to binary package file (local or remote path).
+ * @param[in] fname File name to match.
+ *
+ * @return A malloc(3)ed buffer with the contents of \a fname, NULL otherwise
+ * and errno is set appropiately.
+ */
+char *xbps_binpkg_get_file(const char *url, const char *fname);
+/**
+ * Internalizes a plist file in a binary package file stored locally or
+ * remotely as specified in the url \a url.
+ *
+ * @param[in] url Full URL to binary package file (local or remote path).
+ * @param[in] p Proplist file name to internalize as a dictionary.
  *
  * @return An internalized proplib dictionary, otherwise NULL and
  * errno is set appropiately.
  */
-xbps_dictionary_t xbps_get_pkg_plist_from_binpkg(const char *fname,
-						 const char *plistf);
+xbps_dictionary_t xbps_binpkg_get_plist(const char *url, const char *p);
 
 /*@}*/
 
@@ -1409,17 +1419,6 @@ int xbps_repo_key_import(struct xbps_repo *repo);
 
 /** @addtogroup archive_util */
 /*@{*/
-
-/**
- * Returns a proplib dictionary if \a entry is matched in the \a ar archive.
- *
- * @param[in] ar The archive object.
- * @param[in] entry The archive_entry object (must be filled in properly).
- *
- * @return The internalized proplib dictionary, NULL otherwise.
- */
-xbps_dictionary_t xbps_archive_get_dictionary(struct archive *ar,
-				struct archive_entry *entry);
 
 /**
  * Appends a file to the \a ar archive by using a memory buffer \a buf of

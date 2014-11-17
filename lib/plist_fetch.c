@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * Copyright (c) 2008, 2009 Joerg Sonnenberger <joerg (at) NetBSD.org>
  * All rights reserved.
  *
@@ -139,51 +139,45 @@ open_archive(const char *url)
 	return a;
 }
 
-xbps_dictionary_t
-xbps_get_pkg_plist_from_binpkg(const char *fname, const char *plistf)
+char *
+xbps_binpkg_get_file(const char *url, const char *fname)
 {
-	xbps_dictionary_t plistd = NULL;
 	struct archive *a;
 	struct archive_entry *entry;
-	const char *comptype;
-	int i = 0;
+	char *buf = NULL;
 
-	assert(fname != NULL);
-	assert(plistf != NULL);
+	assert(url);
+	assert(fname);
 
-	if ((a = open_archive(fname)) == NULL)
+	if ((a = open_archive(url)) == NULL)
 		return NULL;
 
-	/*
-	 * Save compression type string for future use.
-	 */
-	comptype = archive_compression_name(a);
-
 	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
-		if (strcmp(archive_entry_pathname(entry), plistf)) {
-			archive_read_data_skip(a);
-			if (i >= 3) {
-				/*
-				 * Archive does not contain required
-				 * plist file, discard it completely.
-				 */
-				errno = ENOENT;
-				break;
-			}
-			i++;
-			continue;
-		}
-		plistd = xbps_archive_get_dictionary(a, entry);
-		if (plistd == NULL) {
-			errno = EINVAL;
+		const char *bfile;
+
+		bfile = archive_entry_pathname(entry);
+		bfile++; /* skip first dot */
+		if (strcmp(bfile, fname) == 0) {
+			buf = xbps_archive_get_file(a, entry);
 			break;
 		}
-		xbps_dictionary_set_cstring_nocopy(plistd,
-		    "archive-compression-type", comptype);
-
-		break;
+		archive_read_data_skip(a);
 	}
 	archive_read_finish(a);
 
-	return plistd;
+	return buf;
+}
+
+xbps_dictionary_t
+xbps_binpkg_get_plist(const char *url, const char *plistf)
+{
+	xbps_dictionary_t d;
+	char *buf;
+
+	if ((buf = xbps_binpkg_get_file(url, plistf)) == NULL)
+		return NULL;
+
+	d = xbps_dictionary_internalize(buf);
+	free(buf);
+	return d;
 }

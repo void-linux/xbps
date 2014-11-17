@@ -80,7 +80,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		/*
 		 * Read metadata props plist dictionary from binary package.
 		 */
-		binpkgd = xbps_get_pkg_plist_from_binpkg(pkg, "./props.plist");
+		binpkgd = xbps_binpkg_get_plist(pkg, "/props.plist");
 		if (binpkgd == NULL) {
 			fprintf(stderr, "index: failed to read %s metadata for "
 			    "`%s', skipping!\n", XBPS_PKGPROPS, pkg);

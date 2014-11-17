@@ -136,7 +136,7 @@ repo_match_cb(struct xbps_handle *xhp,
 
 	bfile = xbps_repository_pkg_path(xhp, obj);
 	assert(bfile);
-	filesd = xbps_get_pkg_plist_from_binpkg(bfile, "./files.plist");
+	filesd = xbps_binpkg_get_plist(bfile, "/files.plist");
 	if (filesd == NULL) {
 		xbps_dbg_printf(xhp, "%s: couldn't fetch files.plist from %s: %s\n",
 		    pkgver, bfile, strerror(errno));

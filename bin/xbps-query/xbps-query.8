@@ -1,4 +1,4 @@
-.Dd November 5, 2014
+.Dd November 17, 2014
 .Dt XBPS-QUERY 8
 .Sh NAME
 .Nm xbps-query
@@ -211,6 +211,12 @@ If the
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
+.It Fl -repository Fl -cat Ar FILE Ar PKG
+Prints the file
+.Ar FILE
+stored in binary package
+.Ar PKG
+to stdout. This expects an absolute path.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH

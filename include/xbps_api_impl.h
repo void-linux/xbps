@@ -96,166 +96,58 @@
 
 /**
  * @private
- * From lib/external/dewey.c
  */
 int HIDDEN dewey_match(const char *, const char *);
-
-/**
- * @private
- * From lib/pkgdb.c
- */
 int HIDDEN xbps_pkgdb_init(struct xbps_handle *);
 void HIDDEN xbps_pkgdb_release(struct xbps_handle *);
 int HIDDEN xbps_pkgdb_conversion(struct xbps_handle *);
-
-/**
- * @private
- * From lib/plist.c
- */
-int HIDDEN xbps_array_replace_dict_by_name(xbps_array_t,
-					   xbps_dictionary_t,
-					   const char *);
-int HIDDEN xbps_array_replace_dict_by_pattern(xbps_array_t,
-					      xbps_dictionary_t,
-					       const char *);
-
-/**
- * @private
- * From lib/plist_remove.c
- */
+int HIDDEN xbps_array_replace_dict_by_name(xbps_array_t, xbps_dictionary_t,
+		const char *);
+int HIDDEN xbps_array_replace_dict_by_pattern(xbps_array_t, xbps_dictionary_t,
+		const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_name(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pattern(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pkgver(xbps_array_t, const char *);
-
-/**
- * @private
- * From lib/download.c
- */
 void HIDDEN xbps_fetch_set_cache_connection(int, int);
 void HIDDEN xbps_fetch_unset_cache_connection(void);
-
-/**
- * @private
- * From lib/package_msg.c
- */
 int HIDDEN xbps_cb_message(struct xbps_handle *, xbps_dictionary_t, const char *);
-
-/**
- * @private
- * From lib/package_config_files.c
- */
 int HIDDEN xbps_entry_is_a_conf_file(xbps_dictionary_t, const char *);
-int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *,
-					xbps_dictionary_t,
-					xbps_dictionary_t,
-					struct archive_entry *,
-					const char *,
-					const char *);
-
-/**
- * @private
- * From lib/repo.c
- */
-void HIDDEN xbps_repo_invalidate(struct xbps_repo *);
-
-/**
- * @private
- * From lib/repo_pkgdeps.c
- */
-int HIDDEN xbps_repository_find_deps(struct xbps_handle *,
-				     xbps_array_t,
-				     xbps_dictionary_t);
-
-/**
- * @private
- * From lib/plist_find.c
- */
+int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *, xbps_dictionary_t,
+		xbps_dictionary_t, struct archive_entry *, const char *,
+		const char *);
+int HIDDEN xbps_repository_find_deps(struct xbps_handle *, xbps_array_t,
+		xbps_dictionary_t);
 xbps_dictionary_t HIDDEN xbps_find_pkg_in_dict(xbps_dictionary_t, const char *);
-xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *, xbps_dictionary_t, const char *);
-xbps_dictionary_t HIDDEN xbps_find_pkg_in_array(xbps_array_t, const char *, const char *);
-xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *, xbps_array_t, const char *, const char *);
-/**
- * @private
- * From lib/transaction_revdeps.c
- */
+xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *,
+		xbps_dictionary_t, const char *);
+xbps_dictionary_t HIDDEN xbps_find_pkg_in_array(xbps_array_t, const char *,
+		const char *);
+xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *,
+		xbps_array_t, const char *, const char *);
 void HIDDEN xbps_transaction_revdeps(struct xbps_handle *, xbps_array_t);
-
-/**
- * @privuate
- * From lib/transaction_shlibs.c
- */
-bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *, xbps_array_t, xbps_array_t);
-
-/**
- * @private
- * From lib/transaction_dictionary.c
- */
+bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *, xbps_array_t,
+		xbps_array_t);
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
-
-int HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t, xbps_dictionary_t, bool);
-
-/**
- * @private
- * From lib/repo_sync.c
- */
+int HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t,
+		xbps_dictionary_t, bool);
 char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
-
-/**
- * @private
- * From lib/util_hash.c
- */
 int HIDDEN xbps_file_hash_check_dictionary(struct xbps_handle *,
-					   xbps_dictionary_t d,
-					   const char *,
-					   const char *);
-
-/**
- * @private
- * From lib/external/fexec.c
- */
+		xbps_dictionary_t, const char *, const char *);
 int HIDDEN xbps_file_exec(struct xbps_handle *, const char *, ...);
-
-/**
- * @private
- * From lib/cb_util.c
- */
 void HIDDEN xbps_set_cb_fetch(struct xbps_handle *, off_t, off_t, off_t,
-			      const char *, bool, bool, bool);
+		const char *, bool, bool, bool);
 int HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
-			     const char *, const char *, ...);
-
-/**
- * @private
- * From lib/package_unpack.c
- */
+		const char *, const char *, ...);
 int HIDDEN xbps_unpack_binary_pkg(struct xbps_handle *, xbps_dictionary_t);
-
 int HIDDEN xbps_transaction_package_replace(struct xbps_handle *, xbps_array_t);
-
-/**
- * @private
- * From lib/package_remove.c
- */
 int HIDDEN xbps_remove_pkg(struct xbps_handle *, const char *, bool);
-
-/**
- * @private
- * From lib/package_register.c
- */
 int HIDDEN xbps_register_pkg(struct xbps_handle *, xbps_dictionary_t);
-
-/**
- * @private
- * From lib/package_conflicts.c
- */
-void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *,
-				    xbps_array_t,
-				    xbps_dictionary_t);
-/**
- * @private
- * From lib/plist_find.c
- */
+void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *, xbps_array_t,
+		xbps_dictionary_t);
+char HIDDEN *xbps_archive_get_file(struct archive *, struct archive_entry *);
+xbps_dictionary_t HIDDEN xbps_archive_get_dictionary(struct archive *,
+		struct archive_entry *);
 const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *, bool);
 
 #endif /* !_XBPS_API_IMPL_H_ */

@@ -62,6 +62,7 @@ usage(bool fail)
 	    " -o --ownedby FILE        Search for package files by matching STRING or REGEX\n"
 	    " -S --show PKG            Show information for PKG [default mode]\n"
 	    " -s --search PKG          Search for packages by matching PKG, STRING or REGEX\n"
+	    "    --cat=FILE PKG        Print FILE from PKG binpkg to stdout\n"
 	    " -f --files PKG           Show package files for PKG\n"
 	    " -x --deps PKG            Show dependencies for PKG\n"
 	    " -X --revdeps PKG         Show reverse dependencies for PKG\n");
@@ -86,7 +87,6 @@ main(int argc, char **argv)
 		{ "ownedby", required_argument, NULL, 'o' },
 		{ "property", required_argument, NULL, 'p' },
 		{ "repository", optional_argument, NULL, 'R' },
-		{ "regex", no_argument, NULL, 0 },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show", required_argument, NULL, 'S' },
 		{ "search", required_argument, NULL, 's' },
@@ -95,17 +95,19 @@ main(int argc, char **argv)
 		{ "files", required_argument, NULL, 'f' },
 		{ "deps", required_argument, NULL, 'x' },
 		{ "revdeps", required_argument, NULL, 'X' },
+		{ "regex", no_argument, NULL, 0 },
 		{ "fulldeptree", no_argument, NULL, 1 },
+		{ "cat", required_argument, NULL, 2 },
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
-	const char *pkg, *rootdir, *cachedir, *confdir, *props;
+	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
 	int c, flags, rv;
 	bool list_pkgs, list_repos, orphans, own;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
 	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
 
-	rootdir = cachedir = confdir = props = pkg = NULL;
+	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
 	list_manual = show_prop = show_files = false;
@@ -195,6 +197,9 @@ main(int argc, char **argv)
 		case 1:
 			fulldeptree = true;
 			break;
+		case 2:
+			catfile = optarg;
+			break;
 		case '?':
 			usage(true);
 			/* NOTREACHED */
@@ -255,6 +260,10 @@ main(int argc, char **argv)
 	} else if (pkg_search) {
 		/* search mode */
 		rv = search(&xh, repo_mode, pkg, props, regex);
+
+	} else if (catfile) {
+		/* repo cat file mode */
+		rv =  repo_cat_file(&xh, pkg, catfile);
 
 	} else if (show || show_prop) {
 		/* show mode */

@@ -308,6 +308,31 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 }
 
 int
+repo_cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
+{
+	xbps_dictionary_t pkgd;
+	char *url, *buf;
+
+	pkgd = xbps_rpool_get_pkg(xhp, pkg);
+	if (pkgd == NULL)
+		return errno;
+
+	url = xbps_repository_pkg_path(xhp, pkgd);
+	if (url == NULL)
+		return EINVAL;
+
+	xbps_dbg_printf(xhp, "matched pkg at %s\n", url);
+	buf = xbps_binpkg_get_file(url, file);
+	free(url);
+	if (buf == NULL)
+		return ENOENT;
+
+	printf("%s", buf);
+	free(buf);
+	return 0;
+}
+
+int
 repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
 	xbps_dictionary_t pkgd;

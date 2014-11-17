@@ -46,6 +46,7 @@ int	show_pkg_info_from_metadir(struct xbps_handle *, const char *,
 int	show_pkg_files(xbps_dictionary_t);
 int	show_pkg_files_from_metadir(struct xbps_handle *, const char *);
 int	repo_show_pkg_files(struct xbps_handle *, const char *);
+int	repo_cat_file(struct xbps_handle *, const char *, const char *);
 int	repo_show_pkg_info(struct xbps_handle *, const char *, const char *);
 int 	repo_show_pkg_namedesc(struct xbps_handle *, xbps_object_t, void *,
 		bool *);
