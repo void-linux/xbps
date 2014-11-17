@@ -168,6 +168,39 @@ xbps_binpkg_get_file(const char *url, const char *fname)
 	return buf;
 }
 
+int
+xbps_binpkg_get_file_into_fd(const char *url, const char *fname, int fd)
+{
+	struct archive *a;
+	struct archive_entry *entry;
+	int rv = 0;
+
+	assert(url);
+	assert(fname);
+	assert(fd != -1);
+
+	if ((a = open_archive(url)) == NULL)
+		return EINVAL;
+
+	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
+		const char *bfile;
+
+		bfile = archive_entry_pathname(entry);
+		bfile++; /* skip first dot */
+		if (strcmp(bfile, fname) == 0) {
+			rv = archive_read_data_into_fd(a, fd);
+			if (rv != 0)
+				rv = archive_errno(a);
+
+			break;
+		}
+		archive_read_data_skip(a);
+	}
+	archive_read_finish(a);
+
+	return rv;
+}
+
 xbps_dictionary_t
 xbps_binpkg_get_plist(const char *url, const char *plistf)
 {

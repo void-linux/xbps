@@ -311,7 +311,8 @@ int
 repo_cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 {
 	xbps_dictionary_t pkgd;
-	char *url, *buf;
+	char *url;
+	int rv;
 
 	pkgd = xbps_rpool_get_pkg(xhp, pkg);
 	if (pkgd == NULL)
@@ -322,14 +323,9 @@ repo_cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 		return EINVAL;
 
 	xbps_dbg_printf(xhp, "matched pkg at %s\n", url);
-	buf = xbps_binpkg_get_file(url, file);
+	rv = xbps_binpkg_get_file_into_fd(url, file, STDOUT_FILENO);
 	free(url);
-	if (buf == NULL)
-		return ENOENT;
-
-	printf("%s", buf);
-	free(buf);
-	return 0;
+	return rv;
 }
 
 int

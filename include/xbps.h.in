@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141117"
+#define XBPS_API_VERSION	"20141117-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1141,6 +1141,20 @@ int xbps_transaction_commit(struct xbps_handle *xhp);
  * and errno is set appropiately.
  */
 char *xbps_binpkg_get_file(const char *url, const char *fname);
+
+/**
+ * Returns a file stored in a binary package locally or
+ * remotely as specified in the url \a url and stores it into the
+ * file descriptor \a fd.
+ *
+ * @param[in] url Full URL to binary package file (local or remote path).
+ * @param[in] fname File name to match.
+ * @param[in] fd An open file descriptor to put the file into.
+ *
+ * @return 0 on success, an errno value otherwise.
+ */
+int xbps_binpkg_get_file_into_fd(const char *url, const char *fname, int fd);
+
 /**
  * Internalizes a plist file in a binary package file stored locally or
  * remotely as specified in the url \a url.
