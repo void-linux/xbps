@@ -337,7 +337,7 @@ repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
 	xbps_dictionary_t pkgd;
 
-	pkgd = xbps_rpool_get_pkg_plist(xhp, pkg, "./files.plist");
+	pkgd = xbps_rpool_get_pkg_plist(xhp, pkg, "/files.plist");
 	if (pkgd == NULL) {
                 if (errno != ENOTSUP && errno != ENOENT) {
 			fprintf(stderr, "Unexpected error: %s\n", strerror(errno));
