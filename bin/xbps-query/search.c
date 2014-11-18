@@ -84,7 +84,7 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 			assert(out);
 			snprintf(out, sd->maxcols-3, "%s %s %s",
 			    inststr, tmp, desc);
-			xbps_strlcat(out, "...\n", sizeof(*out));
+			xbps_strlcat(out, "...\n", sd->maxcols+1);
 			printf("%s", out);
 			free(out);
 		} else {
