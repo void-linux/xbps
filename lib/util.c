@@ -89,7 +89,6 @@ const char *
 xbps_pkg_version(const char *pkg)
 {
 	const char *p;
-	bool valid = false;
 
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
@@ -98,14 +97,10 @@ xbps_pkg_version(const char *pkg)
 		if (p[i] == '_')
 			break;
 		if (isdigit((unsigned char)p[i]) && strchr(p, '_')) {
-			valid = true;
-			break;
+			return p + 1; /* skip first '-' */
 		}
 	}
-	if (!valid)
-		return NULL;
-
-	return p + 1; /* skip first '-' */
+	return NULL;
 }
 
 char *
