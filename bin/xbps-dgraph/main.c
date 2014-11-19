@@ -97,7 +97,10 @@ die(const char *fmt, ...)
 	va_start(ap, fmt);
 	fprintf(stderr, "xbps-dgraph: ERROR ");
 	vfprintf(stderr, fmt, ap);
-	fprintf(stderr, " (%s)\n", strerror(save_errno));
+	if (save_errno)
+		fprintf(stderr, " (%s)\n", strerror(save_errno));
+	else
+		fprintf(stderr, "\n");
 	va_end(ap);
 	exit(EXIT_FAILURE);
 }
@@ -110,8 +113,7 @@ usage(void)
 	" Options\n"
 	"    -c\t\tPath to configuration file\n"
 	"    -g\t\tGenerate a default config file\n"
-	"    -o\t\tOutput to this file (<pkgname>.dot set by default)\n"
-	"    -R\t\tAlso generate reverse dependencies in the graph\n"
+	"    -R\t\tEnable repository mode\n"
 	"    -r\t\t<rootdir>\n\n");
 	exit(EXIT_FAILURE);
 }
@@ -139,12 +141,11 @@ convert_proptype_to_string(xbps_object_t obj)
 	}
 }
 
-static void
-generate_conf_file(void)
+static xbps_dictionary_t
+create_defconf(void)
 {
 	xbps_dictionary_t d, d2;
 	struct defprops *dfp;
-	const char *outfile = "xbps-dgraph.conf";
 
 	d = xbps_dictionary_create();
 
@@ -170,9 +171,18 @@ generate_conf_file(void)
 		xbps_dictionary_set_cstring_nocopy(d2, dfp->prop, dfp->val);
 	}
 
-	if (xbps_dictionary_externalize_to_file(d, outfile) == false) {
+	return d;
+}
+
+static void
+generate_conf_file(void)
+{
+	xbps_dictionary_t d;
+
+	d = create_defconf();
+	if (xbps_dictionary_externalize_to_file(d, _DGRAPH_CFFILE) == false) {
 		xbps_object_release(d);
-		die("couldn't write conf_file to %s", outfile);
+		die("couldn't write conf_file to %s", _DGRAPH_CFFILE);
 	}
 	xbps_object_release(d);
 	printf("Wrote configuration file: %s\n", _DGRAPH_CFFILE);
@@ -248,14 +258,6 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		dksym = xbps_array_get(allkeys, i);
 		tmpkeyname = xbps_dictionary_keysym_cstring_nocopy(dksym);
-		/* Ignore these objects */
-		if ((strcmp(tmpkeyname, "source-revisions") == 0) ||
-		    (strcmp(tmpkeyname, "files") == 0) ||
-		    (strcmp(tmpkeyname, "conf_files") == 0) ||
-		    (strcmp(tmpkeyname, "dirs") == 0) ||
-		    (strcmp(tmpkeyname, "links") == 0))
-			continue;
-
 		keyobj = xbps_dictionary_get_keysym(plistd, dksym);
 		keyname = strip_dashes_from_key(tmpkeyname);
 		optnode = NULL;
@@ -364,7 +366,7 @@ create_dot_graph(struct xbps_handle *xhp,
 		 FILE *f,
 		 xbps_dictionary_t plistd,
 		 xbps_dictionary_t confd,
-		 bool revdeps)
+		 bool repomode)
 {
 	xbps_dictionary_t sub_confd;
 	xbps_array_t allkeys, rdeps;
@@ -417,11 +419,14 @@ create_dot_graph(struct xbps_handle *xhp,
 	 * Process all objects in package's dictionary from its metadata
 	 * property list file, aka XBPS_META_PATH/.<pkgname>.plist
 	 */
-	if (revdeps) {
+	if (repomode) {
+		rdeps = xbps_rpool_get_pkg_revdeps(xhp, pkgver);
+	} else {
 		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
-		if (xbps_array_count(rdeps))
-			xbps_dictionary_set(plistd, "requiredby", rdeps);
 	}
+	if (xbps_array_count(rdeps))
+		xbps_dictionary_set(plistd, "requiredby", rdeps);
+
 	allkeys = xbps_dictionary_all_keys(plistd);
 	parse_array_in_pkg_dictionary(f, plistd, sub_confd, allkeys);
 	/*
@@ -438,12 +443,12 @@ main(int argc, char **argv)
 	xbps_dictionary_t plistd, confd = NULL;
 	struct xbps_handle xh;
 	FILE *f = NULL;
-	char *outfile = NULL;
 	const char *conf_file = NULL, *rootdir = NULL;
+	char *outfile;
 	int c, rv;
-	bool revdeps = false;
+	bool repomode = false;
 
-	while ((c = getopt(argc, argv, "c:gRr:o:")) != -1) {
+	while ((c = getopt(argc, argv, "c:gRr:")) != -1) {
 		switch (c) {
 		case 'c':
 			/* Configuration file. */
@@ -453,13 +458,9 @@ main(int argc, char **argv)
 			/* Generate auto conf file. */
 			generate_conf_file();
 			exit(EXIT_SUCCESS);
-		case 'o':
-			/* Output to this file. */
-			outfile = optarg;
-			break;
 		case 'R':
 			/* Also create graphs for reverse deps. */
-			revdeps = true;
+			repomode = true;
 			break;
 		case 'r':
 			/* Set different rootdir. */
@@ -488,29 +489,31 @@ main(int argc, char **argv)
 	/*
 	 * Output file will be <pkgname>.dot if not specified.
 	 */
-	if (outfile == NULL) {
-		outfile = xbps_xasprintf("%s.dot", argv[0]);
-	}
+	outfile = xbps_xasprintf("%s.dot", argv[0]);
 
 	/*
-	 * If -c not set, try to read it from cwd.
+	 * If -c not set and config file does not exist, use defaults.
 	 */
 	if (conf_file == NULL)
 		conf_file = _DGRAPH_CFFILE;
 
-	/*
-	 * Internalize the configuration file.
-	 */
 	confd = xbps_dictionary_internalize_from_zfile(conf_file);
-	if (confd == NULL)
-		die("cannot read conf file `%s'", conf_file);
+	if (confd == NULL) {
+		if (errno != ENOENT)
+			die("cannot read conf file `%s'", conf_file);
 
+		confd = create_defconf();
+	}
 	/*
 	 * Internalize the plist file of the target installed package.
 	 */
-	plistd = xbps_pkgdb_get_pkg(&xh, argv[0]);
+	if (repomode) {
+		plistd = xbps_rpool_get_pkg(&xh, argv[0]);
+	} else {
+		plistd = xbps_pkgdb_get_pkg(&xh, argv[0]);
+	}
 	if (plistd == NULL)
-		die("cannot internalize %s metadata file", argv[0]);
+		die("cannot find `%s' package", argv[0]);
 
 	/*
 	 * Create the output FILE.
@@ -521,7 +524,7 @@ main(int argc, char **argv)
 	/*
 	 * Create the dot(1) graph!
 	 */
-	create_dot_graph(&xh, f, plistd, confd, revdeps);
+	create_dot_graph(&xh, f, plistd, confd, repomode);
 
 	exit(EXIT_SUCCESS);
 }
