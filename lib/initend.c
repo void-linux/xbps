@@ -157,7 +157,8 @@ parse_option(char *buf, char **k, char **v)
 		"virtualpkg",
 		"include",
 		"preserve",
-		"bestmatching"
+		"bestmatching",
+		"architecture"
 	};
 	bool found = false;
 
@@ -249,6 +250,10 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 			xbps_dbg_printf(xhp, "%s: cachedir set to %s\n",
 			    path, v);
 			snprintf(xhp->cachedir, sizeof(xhp->cachedir), "%s", v);
+		} else if (strcmp(k, "architecture") == 0) {
+			xbps_dbg_printf(xhp, "%s: native architecture set to %s\n",
+			    path, v);
+			snprintf(xhp->native_arch, sizeof(xhp->native_arch), "%s", v);
 		} else if (strcmp(k, "syslog") == 0) {
 			if (strcasecmp(v, "true") == 0) {
 				xhp->flags &= ~XBPS_FLAG_DISABLE_SYSLOG;

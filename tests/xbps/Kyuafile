@@ -8,3 +8,5 @@ include('xbps-create/Kyuafile')
 include('xbps-install/Kyuafile')
 include('xbps-query/Kyuafile')
 include('xbps-rindex/Kyuafile')
+include('xbps-uhelper/Kyuafile')
+

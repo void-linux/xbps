@@ -1,5 +1,9 @@
 xbps-0.42 (???):
 
+ * Implemented issue #69 (No way to set globally a custom architecture)
+   A new configuration keyword "architecture" has been added to override
+   the native machine architecture (uname -m).
+
  * Fixed issue #68 "xbps_binpkg_arch() asserts if arch contains a dash"
    https://github.com/voidlinux/xbps/issues/68
 
