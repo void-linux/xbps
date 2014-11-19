@@ -65,6 +65,16 @@ ATF_TC_BODY(util_test, tc)
 	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>4[3-9]?"), "systemd");
 	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd<4_1?"), "systemd");
 	ATF_CHECK_EQ(xbps_pkgpattern_name("*nslookup"), NULL);
+	ATF_REQUIRE_STREQ(xbps_binpkg_arch("/path/to/foo-1.0_1.x86_64.xbps"), "x86_64");
+	ATF_REQUIRE_STREQ(xbps_binpkg_arch("/path/to/foo-1.0_1.x86_64-musl.xbps"), "x86_64-musl");
+	ATF_REQUIRE_STREQ(xbps_binpkg_arch("foo-1.0_1.x86_64-musl.xbps"), "x86_64-musl");
+	ATF_REQUIRE_STREQ(xbps_binpkg_arch("foo-1.0_1.x86_64.xbps"), "x86_64");
+	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("foo-1.0_1.x86_64.xbps"), "foo-1.0_1");
+	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("foo-1.0_1.x86_64-musl.xbps"), "foo-1.0_1");
+	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("/path/to/foo-1.0_1.x86_64.xbps"), "foo-1.0_1");
+	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("/path/to/foo-1.0_1.x86_64-musl.xbps"), "foo-1.0_1");
+	ATF_CHECK_EQ(xbps_binpkg_pkgver("foo-1.0.x86_64.xbps"), NULL);
+	ATF_CHECK_EQ(xbps_binpkg_pkgver("foo-1.0.x86_64"), NULL);
 }
 
 ATF_TP_ADD_TCS(tp)

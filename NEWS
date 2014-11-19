@@ -1,5 +1,8 @@
 xbps-0.42 (???):
 
+ * Fixed issue #68 "xbps_binpkg_arch() asserts if arch contains a dash"
+   https://github.com/voidlinux/xbps/issues/68
+
  * xbps-query(8): added --cat=FILE mode to print FILE stored in a binary package
    to stdout. This works exactly as the --files mode: if the matching binary package
    is not available in the cachedir, xbps will establish a network connection
