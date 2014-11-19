@@ -107,7 +107,7 @@ char *
 xbps_binpkg_pkgver(const char *pkg)
 {
 	const char *fname;
-	char *p, *p1;
+	char *p, *p1, *res;
 	unsigned int len;
 
 	/* skip path if found, only interested in filename */
@@ -131,14 +131,17 @@ xbps_binpkg_pkgver(const char *pkg)
 		free(p);
 		return NULL;
 	}
-	return p;
+	res = strdup(p);
+	assert(res);
+	free(p);
+	return res;
 }
 
 char *
 xbps_binpkg_arch(const char *pkg)
 {
 	const char *fname;
-	char *p;
+	char *p, *p1, *res;
 	unsigned int len;
 
 	/* skip path if found, only interested in filename */
@@ -153,8 +156,11 @@ xbps_binpkg_arch(const char *pkg)
 	assert(p);
 	(void)memcpy(p, fname, len);
 	p[len] = '\0';
-
-	return strrchr(p, '.') + 1;
+	p1 = strrchr(p, '.') + 1;
+	assert(p1);
+	res = strdup(p1);
+	free(p);
+	return res;
 }
 
 const char *
