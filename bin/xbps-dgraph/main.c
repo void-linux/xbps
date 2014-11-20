@@ -87,6 +87,7 @@ struct pkgdep {
 	const char *pkgver;
 };
 
+static xbps_dictionary_t confd;
 static SLIST_HEAD(pkgdep_head, pkgdep) pkgdep_list =
     SLIST_HEAD_INITIALIZER(pkgdep_list);
 
@@ -193,9 +194,7 @@ generate_conf_file(void)
 }
 
 static void
-write_conf_property_on_stream(FILE *f,
-			      const char *section,
-			      xbps_dictionary_t confd)
+write_conf_property_on_stream(FILE *f, const char *section)
 {
 	xbps_array_t allkeys, allkeys2;
 	xbps_dictionary_keysym_t dksym, dksym2;
@@ -268,7 +267,6 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 		fprintf(f, "	main -> %s [label=\"%s\"];\n",
 		    keyname, convert_proptype_to_string(keyobj));
 
-		xbps_dictionary_get_cstring_nocopy(sub_confd, "opt-style", &cfprop);
 		/*
 		 * Process array objects.
 		 */
@@ -415,7 +413,6 @@ static void
 create_dot_graph(struct xbps_handle *xhp,
 		 FILE *f,
 		 xbps_dictionary_t plistd,
-		 xbps_dictionary_t confd,
 		 bool repomode,
 		 bool fulldepgraph)
 {
@@ -436,27 +433,23 @@ create_dot_graph(struct xbps_handle *xhp,
 	 * Process the graph section in config file.
 	 */
 	fprintf(f, "	graph [");
-	write_conf_property_on_stream(f, "graph", confd);
+	write_conf_property_on_stream(f, "graph");
 	fprintf(f, ",label=\"[XBPS] %s metadata properties\"];\n", pkgver);
 
 	/*
 	 * Process the edge section in config file.
 	 */
 	fprintf(f, "	edge [");
-	write_conf_property_on_stream(f, "edge", confd);
+	write_conf_property_on_stream(f, "edge");
 	fprintf(f, "];\n");
 
 	/*
 	 * Process the node section in config file.
 	 */
 	fprintf(f, "	node [");
-	write_conf_property_on_stream(f, "node", confd);
+	write_conf_property_on_stream(f, "node");
 	fprintf(f, "];\n");
 
-	/*
-	 * Process all objects in package's dictionary from its metadata
-	 * property list file, aka XBPS_META_PATH/.<pkgname>.plist
-	 */
 	if (fulldepgraph) {
 		if (repomode) {
 			rdeps = xbps_rpool_get_pkg_fulldeptree(xhp, pkgver);
@@ -498,7 +491,7 @@ create_dot_graph(struct xbps_handle *xhp,
 int
 main(int argc, char **argv)
 {
-	xbps_dictionary_t plistd, confd = NULL;
+	xbps_dictionary_t plistd = NULL;
 	struct xbps_handle xh;
 	FILE *f = NULL;
 	const char *conf_file = NULL, *rootdir = NULL;
@@ -585,9 +578,9 @@ main(int argc, char **argv)
 	 * Create the dot(1) graph!
 	 */
 	if (fulldepgraph) {
-		create_dot_graph(&xh, f, plistd, confd, repomode, true);
+		create_dot_graph(&xh, f, plistd, repomode, true);
 	} else {
-		create_dot_graph(&xh, f, plistd, confd, repomode, false);
+		create_dot_graph(&xh, f, plistd, repomode, false);
 	}
 	exit(EXIT_SUCCESS);
 }
