@@ -45,15 +45,6 @@
 #define _DGRAPH_CFFILE	"xbps-dgraph.conf"
 
 /*
- * Object key for optional objects in package dictionary.
- */
-static const char *optional_objs[] = {
-	"conflicts", "provides", "replaces", "run_depends", "preserve",
-	"homepage", "license", "packaged_with", "build_options",
-	"install_script", "remove_script", "long_desc", "requiredby"
-};
-
-/*
  * Properties written to default configuration file.
  */
 struct defprops {
@@ -252,39 +243,24 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 {
 	xbps_dictionary_keysym_t dksym;
 	xbps_object_t keyobj, sub_keyobj;
-	const char *tmpkeyname, *cfprop, *optnodetmp;
-	char *optnode, *keyname;
+	const char *tmpkeyname, *cfprop;
+	char *keyname;
 
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		dksym = xbps_array_get(allkeys, i);
 		tmpkeyname = xbps_dictionary_keysym_cstring_nocopy(dksym);
 		keyobj = xbps_dictionary_get_keysym(plistd, dksym);
 		keyname = strip_dashes_from_key(tmpkeyname);
-		optnode = NULL;
 
 		fprintf(f, "	main -> %s [label=\"%s\"];\n",
 		    keyname, convert_proptype_to_string(keyobj));
 
 		xbps_dictionary_get_cstring_nocopy(sub_confd, "opt-style", &cfprop);
-		/* Check if object is optional and fill it in */
-		for (unsigned int x = 0; x < __arraycount(optional_objs); x++) {
-			if (strcmp(keyname, optional_objs[x]) == 0) {
-				optnode = xbps_xasprintf("[style=\"%s\"",
-				    cfprop);
-				break;
-			}
-		}
-		optnodetmp = optnode;
-
 		/*
 		 * Process array objects.
 		 */
 		xbps_dictionary_get_cstring_nocopy(sub_confd, "style", &cfprop);
 		if (xbps_object_type(keyobj) == XBPS_TYPE_ARRAY) {
-			if (optnodetmp)
-				fprintf(f, "	%s %s];\n", keyname,
-				    optnodetmp);
-
 			for (unsigned int x = 0; x < xbps_array_count(keyobj); x++) {
 				sub_keyobj = xbps_array_get(keyobj, x);
 				if (xbps_object_type(sub_keyobj) == XBPS_TYPE_STRING) {
@@ -305,19 +281,10 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 					    xbps_string_cstring_nocopy(sub_keyobj));
 				}
 			}
-			if (optnode)
-				free(optnode);
 			free(keyname);
 			continue;
 		}
-
-		if (optnodetmp) {
-			fprintf(f, "	%s %s];\n", keyname, optnodetmp);
-			fprintf(f, "	%s -> %s_value %s];\n", keyname, keyname,
-		    	    optnode);
-		} else
-			fprintf(f, "	%s -> %s_value;\n", keyname, keyname);
-
+		fprintf(f, "	%s -> %s_value;\n", keyname, keyname);
 		xbps_dictionary_get_cstring_nocopy(sub_confd, "style", &cfprop);
 		fprintf(f, "	%s_value [style=\"%s\",", keyname, cfprop);
 		xbps_dictionary_get_cstring_nocopy(sub_confd,
@@ -354,10 +321,7 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 			break;
 		}
 		fprintf(f, "];\n");
-
 		free(keyname);
-		if (optnode)
-			free(optnode);
 	}
 }
 
