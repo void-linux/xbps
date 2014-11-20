@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141117-1"
+#define XBPS_API_VERSION	"20141120"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -815,9 +815,23 @@ xbps_dictionary_t xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp,
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] pkg Package expression to match.
  *
- * @return A proplib array of strings with reverse dependencies for \a pkg.
+ * @return A proplib array of strings with reverse dependencies for \a pkg,
+ * NULL otherwise.
  */
 xbps_array_t xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp,
+					const char *pkg);
+
+/**
+ * Returns a proplib array of strings with a proper sorted list
+ * of packages of a full dependency graph for \a pkg.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] pkg Package expression to match.
+ *
+ * @return A proplib array of strings with the full dependency graph for \a pkg,
+ * NULL otherwise.
+ */
+xbps_array_t xbps_pkgdb_get_pkg_fulldeptree(struct xbps_handle *xhp,
 					const char *pkg);
 
 /**
@@ -1309,6 +1323,18 @@ xbps_dictionary_t xbps_rpool_get_virtualpkg(struct xbps_handle *xhp,
  * set appropiately.
  */
 xbps_array_t xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg);
+
+/**
+ * Returns a proplib array of strings with a proper sorted list
+ * of packages of a full dependency graph for \a pkg.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] pkg Package expression to match.
+ *
+ * @return A proplib array of strings with the full dependency graph for \a pkg,
+ * NULL otherwise.
+ */
+xbps_array_t xbps_rpool_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg);
 
 /**
  * Iterate over the the repository pool and search for a metadata plist

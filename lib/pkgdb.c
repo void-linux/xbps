@@ -385,6 +385,12 @@ xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 	return res;
 }
 
+xbps_array_t
+xbps_pkgdb_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg)
+{
+	return xbps_get_pkg_fulldeptree(xhp, pkg, false);
+}
+
 xbps_dictionary_t
 xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {

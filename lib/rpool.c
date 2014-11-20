@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2013 Juan Romero Pardines.
+ * Copyright (c) 2009-2014 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -285,6 +285,12 @@ xbps_array_t
 xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
 	return repo_find_pkg(xhp, pkg, REVDEPS_PKG);
+}
+
+xbps_array_t
+xbps_rpool_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg)
+{
+	return xbps_get_pkg_fulldeptree(xhp, pkg, true);
 }
 
 xbps_dictionary_t
