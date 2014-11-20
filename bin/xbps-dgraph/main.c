@@ -57,7 +57,6 @@ struct defprops {
 	{ .sect = "graph", .prop = "rankdir", .val = "LR" },
 	{ .sect = "graph", .prop = "ranksep", .val = ".1" },
 	{ .sect = "graph", .prop = "nodesep", .val = ".1" },
-	{ .sect = "graph", .prop = "pack", .val = "true" },
 	{ .sect = "graph", .prop = "splines", .val = "polyline" },
 	{ .sect = "graph", .prop = "ratio", .val = "compress" },
 
@@ -69,7 +68,7 @@ struct defprops {
 
 	{ .sect = "node", .prop = "height", .val = ".1" },
 	{ .sect = "node", .prop = "width", .val = ".1" },
-	{ .sect = "node", .prop = "shape", .val = "box" },
+	{ .sect = "node", .prop = "shape", .val = "ellipse" },
 	{ .sect = "node", .prop = "fontname", .val = "Sans" },
 	{ .sect = "node", .prop = "fontsize", .val = "8" },
 
@@ -270,7 +269,6 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 		/*
 		 * Process array objects.
 		 */
-		xbps_dictionary_get_cstring_nocopy(sub_confd, "style", &cfprop);
 		if (xbps_object_type(keyobj) == XBPS_TYPE_ARRAY) {
 			for (unsigned int x = 0; x < xbps_array_count(keyobj); x++) {
 				sub_keyobj = xbps_array_get(keyobj, x);
@@ -318,15 +316,7 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 			    xbps_number_unsigned_integer_value(keyobj));
 			break;
 		case XBPS_TYPE_STRING:
-			if (strcmp(keyname, "long_desc") == 0) {
-				/*
-				 * Do not print this obj, too large!
-				 */
-				fprintf(f, ",label=\"...\"");
-			} else {
-				fprintf(f, ",label=\"%s\"",
-			    	    xbps_string_cstring_nocopy(keyobj));
-			}
+			fprintf(f, ",label=\"%s\"", xbps_string_cstring_nocopy(keyobj));
 			break;
 		default:
 			break;
