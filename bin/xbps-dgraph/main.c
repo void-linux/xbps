@@ -434,7 +434,11 @@ create_dot_graph(struct xbps_handle *xhp,
 	 */
 	fprintf(f, "	graph [");
 	write_conf_property_on_stream(f, "graph");
-	fprintf(f, ",label=\"[XBPS] %s metadata properties\"];\n", pkgver);
+	if (fulldepgraph)
+		fprintf(f, ",label=\"[XBPS] %s full dependency graph "
+		    "[%s]\"];\n", pkgver, repomode ? "repo" : "pkgdb");
+	else
+		fprintf(f, ",label=\"[XBPS] %s metadata properties\"];\n", pkgver);
 
 	/*
 	 * Process the edge section in config file.
