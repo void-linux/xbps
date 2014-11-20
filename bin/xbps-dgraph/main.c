@@ -31,8 +31,10 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #include <xbps.h>
+#include "queue.h"
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
@@ -79,6 +81,15 @@ struct defprops {
 	{ .sect = "node-sub", .prop = "opt-fillcolor", .val = "grey" }
 };
 
+struct pkgdep {
+	SLIST_ENTRY(pkgdep) pkgdep_entries;
+	unsigned int idx;
+	const char *pkgver;
+};
+
+static SLIST_HEAD(pkgdep_head, pkgdep) pkgdep_list =
+    SLIST_HEAD_INITIALIZER(pkgdep_list);
+
 static void __attribute__((noreturn))
 die(const char *fmt, ...)
 {
@@ -103,8 +114,10 @@ usage(void)
 	"Usage: xbps-dgraph [options] <pkgname>\n\n"
 	" Options\n"
 	"    -c\t\tPath to configuration file\n"
+	"    -d\t\tDebug mode shown to stderr\n"
 	"    -g\t\tGenerate a default config file\n"
 	"    -R\t\tEnable repository mode\n"
+	"    -f\t\tGenerate a full dependency graph\n"
 	"    -r\t\t<rootdir>\n\n");
 	exit(EXIT_FAILURE);
 }
@@ -326,11 +339,85 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 }
 
 static void
+process_fulldeptree(struct xbps_handle *xhp, FILE *f,
+		xbps_dictionary_t pkgd, xbps_array_t rdeps,
+		bool repomode)
+{
+	xbps_array_t rpkgrdeps;
+	struct pkgdep *pd;
+	const char *pkgver;
+	unsigned int i, x;
+
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+
+	for (i = 0; i < xbps_array_count(rdeps); i++) {
+		xbps_dictionary_t rpkgd;
+		const char *pkgdep;
+		unsigned int pkgidx = 0;
+		bool found = false;
+
+		xbps_array_get_cstring_nocopy(rdeps, i, &pkgdep);
+		SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
+			if (strcmp(pd->pkgver, pkgdep) == 0) {
+				found = true;
+				break;
+			}
+			pkgidx++;
+		}
+		if (!found) {
+			pd = malloc(sizeof(*pd));
+			assert(pd);
+			pd->idx = pkgidx;
+			pd->pkgver = pkgdep;
+			SLIST_INSERT_HEAD(&pkgdep_list, pd, pkgdep_entries);
+		}
+		if (repomode) {
+			rpkgd = xbps_rpool_get_pkg(xhp, pkgdep);
+		} else {
+			rpkgd = xbps_pkgdb_get_pkg(xhp, pkgdep);
+		}
+		assert(rpkgd);
+		rpkgrdeps = xbps_dictionary_get(rpkgd, "run_depends");
+		for (x = 0; x < xbps_array_count(rpkgrdeps); x++) {
+			struct pkgdep *ppd;
+			const char *rpkgdep;
+
+			xbps_array_get_cstring_nocopy(rpkgrdeps, x, &rpkgdep);
+			SLIST_FOREACH(ppd, &pkgdep_list, pkgdep_entries) {
+				if (xbps_pkgpattern_match(ppd->pkgver, rpkgdep))
+					fprintf(f, "\t%u -> %u;\n", pkgidx, ppd->idx);
+			}
+		}
+		fprintf(f, "\t%u [label=\"%s\"", pkgidx, pkgdep);
+		if (repomode && xbps_pkgdb_get_pkg(xhp, pkgdep))
+			fprintf(f, ",style=\"filled\",fillcolor=\"yellowgreen\"");
+
+		fprintf(f, "]\n");
+	}
+	i = 0;
+	SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries)
+		++i;
+
+	fprintf(f, "\t%u [label=\"%s\",style=\"filled\",fillcolor=\"darksalmon\"];\n", i, pkgver);
+	rpkgrdeps = xbps_dictionary_get(pkgd, "run_depends");
+	for (x = 0; x < xbps_array_count(rpkgrdeps); x++) {
+		const char *rpkgdep;
+
+		xbps_array_get_cstring_nocopy(rpkgrdeps, x, &rpkgdep);
+		SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
+			if (xbps_pkgpattern_match(pd->pkgver, rpkgdep))
+				fprintf(f, "\t%u -> %u;\n", i, pd->idx);
+		}
+	}
+}
+
+static void
 create_dot_graph(struct xbps_handle *xhp,
 		 FILE *f,
 		 xbps_dictionary_t plistd,
 		 xbps_dictionary_t confd,
-		 bool repomode)
+		 bool repomode,
+		 bool fulldepgraph)
 {
 	xbps_dictionary_t sub_confd;
 	xbps_array_t allkeys, rdeps;
@@ -367,32 +454,39 @@ create_dot_graph(struct xbps_handle *xhp,
 	fprintf(f, "];\n");
 
 	/*
-	 * Process the node-sub section in config file.
-	 */
-	fprintf(f, "	main [");
-	sub_confd = xbps_dictionary_get(confd, "node-sub");
-	xbps_dictionary_get_cstring_nocopy(sub_confd, "main-style", &cfprop);
-	if (cfprop)
-		fprintf(f, "style=%s,", cfprop);
-	xbps_dictionary_get_cstring_nocopy(sub_confd, "main-fillcolor", &cfprop);
-	if (cfprop)
-		fprintf(f, "fillcolor=\"%s\",", cfprop);
-	fprintf(f, "label=\"Dictionary\"];\n");
-
-	/*
 	 * Process all objects in package's dictionary from its metadata
 	 * property list file, aka XBPS_META_PATH/.<pkgname>.plist
 	 */
-	if (repomode) {
-		rdeps = xbps_rpool_get_pkg_revdeps(xhp, pkgver);
+	if (fulldepgraph) {
+		if (repomode) {
+			rdeps = xbps_rpool_get_pkg_fulldeptree(xhp, pkgver);
+		} else {
+			rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, pkgver);
+		}
+		process_fulldeptree(xhp, f, plistd, rdeps, repomode);
 	} else {
-		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
-	}
-	if (xbps_array_count(rdeps))
-		xbps_dictionary_set(plistd, "requiredby", rdeps);
+		/*
+		 * Process the node-sub section in config file.
+		 */
+		fprintf(f, "	main [");
+		sub_confd = xbps_dictionary_get(confd, "node-sub");
+		if (xbps_dictionary_get_cstring_nocopy(sub_confd, "main-style", &cfprop))
+			fprintf(f, "style=%s,", cfprop);
+		if (xbps_dictionary_get_cstring_nocopy(sub_confd, "main-fillcolor", &cfprop))
+			fprintf(f, "fillcolor=\"%s\",", cfprop);
 
-	allkeys = xbps_dictionary_all_keys(plistd);
-	parse_array_in_pkg_dictionary(f, plistd, sub_confd, allkeys);
+		fprintf(f, "label=\"Dictionary\"];\n");
+		if (repomode) {
+			rdeps = xbps_rpool_get_pkg_revdeps(xhp, pkgver);
+		} else {
+			rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
+		}
+		if (xbps_array_count(rdeps))
+			xbps_dictionary_set(plistd, "requiredby", rdeps);
+
+		allkeys = xbps_dictionary_all_keys(plistd);
+		parse_array_in_pkg_dictionary(f, plistd, sub_confd, allkeys);
+	}
 	/*
 	 * Terminate the stream...
 	 */
@@ -408,22 +502,28 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	FILE *f = NULL;
 	const char *conf_file = NULL, *rootdir = NULL;
-	char *outfile;
-	int c, rv;
-	bool repomode = false;
+	int c, rv, flags = 0;
+	bool repomode = false, fulldepgraph = false;
 
-	while ((c = getopt(argc, argv, "c:gRr:")) != -1) {
+	while ((c = getopt(argc, argv, "c:dgfRr:")) != -1) {
 		switch (c) {
 		case 'c':
 			/* Configuration file. */
 			conf_file = optarg;
 			break;
+		case 'd':
+			flags |= XBPS_FLAG_DEBUG;
+			break;
 		case 'g':
 			/* Generate auto conf file. */
 			generate_conf_file();
 			exit(EXIT_SUCCESS);
+		case 'f':
+			/* generate a full dependency graph */
+			fulldepgraph = true;
+			break;
 		case 'R':
-			/* Also create graphs for reverse deps. */
+			/* enable repository mode */
 			repomode = true;
 			break;
 		case 'r':
@@ -447,13 +547,9 @@ main(int argc, char **argv)
 	if (rootdir != NULL)
 		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 
+	xh.flags = flags;
 	if ((rv = xbps_init(&xh)) != 0)
 		die("failed to initialize libxbps: %s", strerror(rv));
-
-	/*
-	 * Output file will be <pkgname>.dot if not specified.
-	 */
-	outfile = xbps_xasprintf("%s.dot", argv[0]);
 
 	/*
 	 * If -c not set and config file does not exist, use defaults.
@@ -482,13 +578,16 @@ main(int argc, char **argv)
 	/*
 	 * Create the output FILE.
 	 */
-	if ((f = fopen(outfile, "w")) == NULL)
-		die("cannot create target file '%s'", outfile);
+	if ((f = fdopen(STDOUT_FILENO, "w")) == NULL)
+		die("cannot open stdout");
 
 	/*
 	 * Create the dot(1) graph!
 	 */
-	create_dot_graph(&xh, f, plistd, confd, repomode);
-
+	if (fulldepgraph) {
+		create_dot_graph(&xh, f, plistd, confd, repomode, true);
+	} else {
+		create_dot_graph(&xh, f, plistd, confd, repomode, false);
+	}
 	exit(EXIT_SUCCESS);
 }
