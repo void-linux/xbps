@@ -84,6 +84,7 @@ struct pkgdep {
 	SLIST_ENTRY(pkgdep) pkgdep_entries;
 	unsigned int idx;
 	const char *pkgver;
+	xbps_array_t provides;
 };
 
 static xbps_dictionary_t confd;
@@ -352,19 +353,20 @@ process_fulldeptree(struct xbps_handle *xhp, FILE *f,
 			}
 			pkgidx++;
 		}
-		if (!found) {
-			pd = malloc(sizeof(*pd));
-			assert(pd);
-			pd->idx = pkgidx;
-			pd->pkgver = pkgdep;
-			SLIST_INSERT_HEAD(&pkgdep_list, pd, pkgdep_entries);
-		}
 		if (repomode) {
 			rpkgd = xbps_rpool_get_pkg(xhp, pkgdep);
 		} else {
 			rpkgd = xbps_pkgdb_get_pkg(xhp, pkgdep);
 		}
 		assert(rpkgd);
+		if (!found) {
+			pd = malloc(sizeof(*pd));
+			assert(pd);
+			pd->idx = pkgidx;
+			pd->pkgver = pkgdep;
+			pd->provides = xbps_dictionary_get(rpkgd, "provides");
+			SLIST_INSERT_HEAD(&pkgdep_list, pd, pkgdep_entries);
+		}
 		rpkgrdeps = xbps_dictionary_get(rpkgd, "run_depends");
 		for (x = 0; x < xbps_array_count(rpkgrdeps); x++) {
 			struct pkgdep *ppd;
@@ -373,6 +375,9 @@ process_fulldeptree(struct xbps_handle *xhp, FILE *f,
 			xbps_array_get_cstring_nocopy(rpkgrdeps, x, &rpkgdep);
 			SLIST_FOREACH(ppd, &pkgdep_list, pkgdep_entries) {
 				if (xbps_pkgpattern_match(ppd->pkgver, rpkgdep))
+					fprintf(f, "\t%u -> %u;\n", pkgidx, ppd->idx);
+				else if (ppd->provides &&
+					xbps_match_virtual_pkg_in_array(ppd->provides, rpkgdep))
 					fprintf(f, "\t%u -> %u;\n", pkgidx, ppd->idx);
 			}
 		}
@@ -394,6 +399,9 @@ process_fulldeptree(struct xbps_handle *xhp, FILE *f,
 		xbps_array_get_cstring_nocopy(rpkgrdeps, x, &rpkgdep);
 		SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
 			if (xbps_pkgpattern_match(pd->pkgver, rpkgdep))
+				fprintf(f, "\t%u -> %u;\n", i, pd->idx);
+			else if (pd->provides &&
+				xbps_match_virtual_pkg_in_array(pd->provides, rpkgdep))
 				fprintf(f, "\t%u -> %u;\n", i, pd->idx);
 		}
 	}
