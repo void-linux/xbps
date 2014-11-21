@@ -140,7 +140,7 @@ open_archive(const char *url)
 }
 
 char *
-xbps_binpkg_get_file(const char *url, const char *fname)
+xbps_archive_fetch_file(const char *url, const char *fname)
 {
 	struct archive *a;
 	struct archive_entry *entry;
@@ -169,7 +169,7 @@ xbps_binpkg_get_file(const char *url, const char *fname)
 }
 
 int
-xbps_binpkg_get_file_into_fd(const char *url, const char *fname, int fd)
+xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd)
 {
 	struct archive *a;
 	struct archive_entry *entry;
@@ -202,12 +202,12 @@ xbps_binpkg_get_file_into_fd(const char *url, const char *fname, int fd)
 }
 
 xbps_dictionary_t
-xbps_binpkg_get_plist(const char *url, const char *plistf)
+xbps_archive_fetch_plist(const char *url, const char *plistf)
 {
 	xbps_dictionary_t d;
 	char *buf;
 
-	if ((buf = xbps_binpkg_get_file(url, plistf)) == NULL)
+	if ((buf = xbps_archive_fetch_file(url, plistf)) == NULL)
 		return NULL;
 
 	d = xbps_dictionary_internalize(buf);

@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141120"
+#define XBPS_API_VERSION	"20141121"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1145,7 +1145,7 @@ int xbps_transaction_commit(struct xbps_handle *xhp);
 /*@{*/
 
 /**
- * Returns a buffer of a file stored in a binary package locally or
+ * Returns a buffer of a file stored in an archive locally or
  * remotely as specified in the url \a url.
  *
  * @param[in] url Full URL to binary package file (local or remote path).
@@ -1154,10 +1154,10 @@ int xbps_transaction_commit(struct xbps_handle *xhp);
  * @return A malloc(3)ed buffer with the contents of \a fname, NULL otherwise
  * and errno is set appropiately.
  */
-char *xbps_binpkg_get_file(const char *url, const char *fname);
+char *xbps_archive_fetch_file(const char *url, const char *fname);
 
 /**
- * Returns a file stored in a binary package locally or
+ * Returns a file stored in an archive locally or
  * remotely as specified in the url \a url and stores it into the
  * file descriptor \a fd.
  *
@@ -1167,10 +1167,10 @@ char *xbps_binpkg_get_file(const char *url, const char *fname);
  *
  * @return 0 on success, an errno value otherwise.
  */
-int xbps_binpkg_get_file_into_fd(const char *url, const char *fname, int fd);
+int xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd);
 
 /**
- * Internalizes a plist file in a binary package file stored locally or
+ * Internalizes a plist file in an archive stored locally or
  * remotely as specified in the url \a url.
  *
  * @param[in] url Full URL to binary package file (local or remote path).
@@ -1179,7 +1179,7 @@ int xbps_binpkg_get_file_into_fd(const char *url, const char *fname, int fd);
  * @return An internalized proplib dictionary, otherwise NULL and
  * errno is set appropiately.
  */
-xbps_dictionary_t xbps_binpkg_get_plist(const char *url, const char *p);
+xbps_dictionary_t xbps_archive_fetch_plist(const char *url, const char *p);
 
 /*@}*/
 

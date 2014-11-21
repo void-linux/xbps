@@ -323,7 +323,7 @@ repo_cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 		return EINVAL;
 
 	xbps_dbg_printf(xhp, "matched pkg at %s\n", url);
-	rv = xbps_binpkg_get_file_into_fd(url, file, STDOUT_FILENO);
+	rv = xbps_archive_fetch_file_into_fd(url, file, STDOUT_FILENO);
 	free(url);
 	return rv;
 }

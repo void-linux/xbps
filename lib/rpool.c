@@ -321,7 +321,7 @@ xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 		errno = EINVAL;
 		goto out;
 	}
-	plistd = xbps_binpkg_get_plist(url, plistf);
+	plistd = xbps_archive_fetch_plist(url, plistf);
 	free(url);
 
 out:
