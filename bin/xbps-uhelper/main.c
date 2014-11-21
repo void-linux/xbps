@@ -45,7 +45,7 @@ usage(void)
 	"  Available actions:\n"
 	"    binpkgarch, binpkgver, cmpver, digest, fetch, getpkgdepname,\n"
 	"    getpkgname, getpkgrevision, getpkgversion, pkgmatch, version,\n"
-	"    real-version, arch.\n"
+	"    real-version, arch, getsystemdir\n"
 	"\n"
 	"  Action arguments:\n"
 	"    binpkgarch\t<binpkg>\n"
@@ -139,6 +139,7 @@ main(int argc, char **argv)
 	if ((strcmp(argv[0], "version") == 0) ||
 	    (strcmp(argv[0], "real-version") == 0) ||
 	    (strcmp(argv[0], "arch") == 0) ||
+	    (strcmp(argv[0], "getsystemdir") == 0) ||
 	    (strcmp(argv[0], "fetch") == 0)) {
 		/*
 		* Initialize libxbps.
@@ -276,6 +277,12 @@ main(int argc, char **argv)
 			usage();
 
 		printf("%s\n", xh.native_arch);
+	} else if (strcmp(argv[0], "getsystemdir") == 0) {
+		/* returns the xbps system directory (<sharedir>/xbps.d) */
+		if (argc != 1)
+			usage();
+
+		printf("%s\n", XBPS_SYSDEFCONF_PATH);
 	} else if (strcmp(argv[0], "digest") == 0) {
 		/* Prints SHA256 hashes for specified files */
 		if (argc < 2)
