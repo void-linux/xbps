@@ -1,5 +1,9 @@
 xbps-0.42 (???):
 
+ * xbps-{install,query}: added new option (-i, --ignore-conf-repos) to ignore
+   repositories defined in configuration files (xbps.d). Only repos specified
+   by the command line will be used (--repository).
+
  * Implemented issue #69 (No way to set globally a custom architecture)
    A new configuration keyword "architecture" has been added to override
    the native machine architecture (uname -m).

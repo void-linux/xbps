@@ -1,7 +1,7 @@
 TOPDIR = ../../..
 -include $(TOPDIR)/config.mk
 
-TESTSHELL = remote_test
+TESTSHELL = ignore_repos_test remote_test
 TESTSSUBDIR = xbps/xbps-query
 EXTRA_FILES = Kyuafile
 

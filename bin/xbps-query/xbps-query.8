@@ -1,4 +1,4 @@
-.Dd November 17, 2014
+.Dd November 21, 2014
 .Dt XBPS-QUERY 8
 .Sh NAME
 .Nm xbps-query
@@ -65,6 +65,11 @@ If the first character is not '\/' then it's a relative path of
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
 Show the help usage.
+.It Fl i, Fl -ignore-conf-repos
+Ignore repositories defined in configuration files.
+Only repositories specified in the command line via
+.Ar --repository
+will be used.
 .It Fl p, Fl -property Ar PROP[,...]
 Only match this package property.
 Multiple properties can be specified by delimiting them with commas.

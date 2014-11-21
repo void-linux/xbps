@@ -134,6 +134,9 @@ out:
 static bool
 store_repo(struct xbps_handle *xhp, const char *repo)
 {
+	if (xhp->flags & XBPS_FLAG_IGNORE_CONF_REPOS)
+		return false;
+
 	if (xhp->repositories == NULL)
 		xhp->repositories = xbps_array_create();
 

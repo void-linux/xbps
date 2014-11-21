@@ -42,6 +42,7 @@ usage(bool fail)
 	    " -c --cachedir <dir>      Path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -h --help                Print help usage\n"
+	    " -i --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
 	    " -p --property PROP[,...] Show properties for PKGNAME\n"
 	    " -R --repository          Enable repository mode. This mode explicitly\n"
 	    "                          looks for packages in repositories.\n"
@@ -73,12 +74,13 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:df:hHLlmOo:p:Rr:s:S:VvX:x:";
+	const char *shortopts = "C:c:df:hHiLlmOo:p:Rr:s:S:VvX:x:";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
+		{ "ignore-conf-repos", no_argument, NULL, 'i' },
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
 		{ "list-hold-pkgs", no_argument, NULL, 'H' },
@@ -137,6 +139,9 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
+		case 'i':
+			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			break;
 		case 'L':
 			list_repos = opmode = true;
 			break;

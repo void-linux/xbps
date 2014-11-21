@@ -51,6 +51,7 @@ usage(bool fail)
 	    "                          If specified twice, all files will be\n"
 	    "                          overwritten.\n"
 	    " -h --help                Print help usage\n"
+	    " -i --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
 	    " -n --dry-run             Dry-run mode\n"
 	    " -R,--repository=<url>    Add repository to the top of the list.\n"
 	    "                          This option can be specified multiple times.\n"
@@ -90,7 +91,7 @@ repo_import_key_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "AC:c:dfhnR:r:SuVvy";
+	const char *shortopts = "AC:c:dfhinR:r:SuVvy";
 	const struct option longopts[] = {
 		{ "automatic", no_argument, NULL, 'A' },
 		{ "config", required_argument, NULL, 'C' },
@@ -98,6 +99,7 @@ main(int argc, char **argv)
 		{ "debug", no_argument, NULL, 'd' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
+		{ "ignore-conf-repos", no_argument, NULL, 'i' },
 		{ "dry-run", no_argument, NULL, 'n' },
 		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
@@ -144,6 +146,9 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
+		case 'i':
+			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			break;
 		case 'n':
 			drun = true;
 			break;
