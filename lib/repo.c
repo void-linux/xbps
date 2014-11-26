@@ -106,11 +106,74 @@ repo_get_dict(struct xbps_repo *repo)
 	return d;
 }
 
+static bool
+repo_open_local(struct xbps_repo *repo, bool lock)
+{
+	struct stat st;
+	int rv = 0;
+
+	/*
+	 * Acquire a POSIX file lock on the archive; wait if the lock is
+	 * already taken.
+	 */
+        if (lock && lockf(repo->fd, F_LOCK, 0) == -1) {
+		rv = errno;
+		xbps_dbg_printf(repo->xhp, "[repo] failed to lock %s: %s\n", repo->uri, strerror(rv));
+		return false;
+	}
+	if (fstat(repo->fd, &st) == -1) {
+		rv = errno;
+		xbps_dbg_printf(repo->xhp, "[repo] `%s' fstat repodata %s\n",
+		    repo->uri, strerror(rv));
+		return false;
+	}
+
+	repo->ar = archive_read_new();
+	archive_read_support_compression_gzip(repo->ar);
+	archive_read_support_format_tar(repo->ar);
+
+	if (archive_read_open_fd(repo->ar, repo->fd, st.st_blksize) == ARCHIVE_FATAL) {
+		rv = archive_errno(repo->ar);
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s' failed to open repodata archive %s\n",
+		    repo->uri, strerror(rv));
+		return false;
+	}
+	if ((repo->idx = repo_get_dict(repo)) == NULL) {
+		rv = archive_errno(repo->ar);
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s' failed to internalize index on archive: %s\n",
+		    repo->uri, strerror(rv));
+		return false;
+	}
+	repo->idxmeta = repo_get_dict(repo);
+	if (repo->idxmeta != NULL)
+		repo->is_signed = true;
+
+	return true;
+}
+
+static bool
+repo_open_remote(struct xbps_repo *repo)
+{
+	char *rpath;
+	bool rv;
+
+	rpath = xbps_repo_path(repo->xhp, repo->uri);
+	rv = xbps_repo_fetch_remote(repo, rpath);
+	free(rpath);
+	if (rv) {
+		xbps_dbg_printf(repo->xhp, "[repo] `%s' used remotely (kept in memory).\n", repo->uri);
+		if (repo->xhp->state_cb && xbps_repo_key_import(repo) != 0)
+			rv = false;
+	}
+	return rv;
+}
+
 struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 {
 	struct xbps_repo *repo;
-	struct stat st;
 	const char *arch;
 	char *repofile;
 
@@ -151,46 +214,16 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 		repo->fd = open(repofile, O_RDONLY);
 
 	if (repo->fd == -1) {
+		int rv = errno;
+		if (repo_open_remote(repo))
+			return repo;
+
 		xbps_dbg_printf(xhp, "[repo] `%s' open repodata %s\n",
-		    repofile, strerror(errno));
+		    repofile, strerror(rv));
 		goto out;
 	}
-	/*
-	 * Acquire a POSIX file lock on the archive; wait if the lock is
-	 * already taken.
-	 */
-        if (lock && lockf(repo->fd, F_LOCK, 0) == -1) {
-		xbps_dbg_printf(xhp, "[repo] failed to lock %s: %s\n", repo->uri, strerror(errno));
-		goto out;
-	}
-	if (fstat(repo->fd, &st) == -1) {
-		xbps_dbg_printf(xhp, "[repo] `%s' fstat repodata %s\n",
-		    repofile, strerror(errno));
-		goto out;
-	}
-
-	repo->ar = archive_read_new();
-	archive_read_support_compression_gzip(repo->ar);
-	archive_read_support_format_tar(repo->ar);
-
-	if (archive_read_open_fd(repo->ar, repo->fd, st.st_blksize) == ARCHIVE_FATAL) {
-		xbps_dbg_printf(xhp,
-		    "[repo] `%s' failed to open repodata archive %s\n",
-		    repofile, strerror(archive_errno(repo->ar)));
-		goto out;
-	}
-	if ((repo->idx = repo_get_dict(repo)) == NULL) {
-		xbps_dbg_printf(xhp,
-		    "[repo] `%s' failed to internalize index on archive %s: %s\n",
-		    url, repofile, strerror(archive_errno(repo->ar)));
-		goto out;
-	}
-	repo->idxmeta = repo_get_dict(repo);
-	if (repo->idxmeta != NULL)
-		repo->is_signed = true;
-
-	free(repofile);
-	return repo;
+	if (repo_open_local(repo, lock))
+		return repo;
 
 out:
 	if (repo->ar)

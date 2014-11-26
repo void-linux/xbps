@@ -156,7 +156,9 @@ xbps_archive_fetch_file(const char *url, const char *fname)
 		const char *bfile;
 
 		bfile = archive_entry_pathname(entry);
-		bfile++; /* skip first dot */
+		if (bfile[0] == '.')
+			bfile++; /* skip first dot */
+
 		if (strcmp(bfile, fname) == 0) {
 			buf = xbps_archive_get_file(a, entry);
 			break;
@@ -166,6 +168,54 @@ xbps_archive_fetch_file(const char *url, const char *fname)
 	archive_read_finish(a);
 
 	return buf;
+}
+
+bool
+xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
+{
+	struct archive *a;
+	struct archive_entry *entry;
+	uint8_t i = 0;
+
+	assert(url);
+	assert(repo);
+
+	if ((a = open_archive(url)) == NULL)
+		return false;
+
+	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
+		const char *bfile;
+		char *buf;
+
+		bfile = archive_entry_pathname(entry);
+		if (bfile[0] == '.')
+			bfile++; /* skip first dot */
+
+		if (strcmp(bfile, "index-meta.plist") == 0) {
+			buf = xbps_archive_get_file(a, entry);
+			repo->idxmeta = xbps_dictionary_internalize(buf);
+			free(buf);
+			i++;
+		} else if (strcmp(bfile, "index.plist") == 0) {
+			buf = xbps_archive_get_file(a, entry);
+			repo->idx = xbps_dictionary_internalize(buf);
+			free(buf);
+			i++;
+		} else {
+			archive_read_data_skip(a);
+		}
+		if (i == 2)
+			break;
+	}
+	archive_read_finish(a);
+
+	if (xbps_object_type(repo->idxmeta) == XBPS_TYPE_DICTIONARY)
+		repo->is_signed = true;
+
+	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
+		return true;
+
+	return false;
 }
 
 int
@@ -186,7 +236,9 @@ xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd)
 		const char *bfile;
 
 		bfile = archive_entry_pathname(entry);
-		bfile++; /* skip first dot */
+		if (bfile[0] == '.')
+			bfile++; /* skip first dot */
+
 		if (strcmp(bfile, fname) == 0) {
 			rv = archive_read_data_into_fd(a, fd);
 			if (rv != 0)

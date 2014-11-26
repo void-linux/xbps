@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141121-1"
+#define XBPS_API_VERSION	"20141126"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1400,6 +1400,16 @@ void xbps_repo_close(struct xbps_repo *repo, bool lock);
  * @return A heap allocated string that must be free(3)d when it's unneeded.
  */
 char *xbps_repo_path(struct xbps_handle *xhp, const char *url);
+
+/**
+ * Remotely fetch repository data and keep it in memory.
+ *
+ * @param[in] repo A struct xbps_repo pointer to be filled in.
+ * @param[in] url Full url to the target remote repository data archive.
+ *
+ * @return True on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url);
 
 /**
  * Returns a pkg dictionary from a repository \a repo matching
