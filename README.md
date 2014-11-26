@@ -89,3 +89,293 @@ There are some more options that can be tweaked, see them with
 `./configure --help`.
 
 Good luck!
+
+### Usage instructions
+
+The xbps package includes the following utilities:
+
+ * `xbps-create (8)`      - XBPS utility to create binary packages
+ * `xbps-dgraph (8)`      - XBPS utility to generate dot(1) graphs
+ * `xbps-install (8)`     - XBPS utility to install and update packages
+ * `xbps-pkgdb (8)`       - XBPS utility to report and fix issues in pkgdb
+ * `xbps-query (8)`       - XBPS utility to query for package and repository information
+ * `xbps-reconfigure (8)` - XBPS utility to configure installed packages
+ * `xbps-remove (8)`      - XBPS utility to remove packages
+ * `xbps-rindex (8)`      - XBPS utility to handle local binary package repositories
+
+In the following sections there will be a brief description of how these utilities currently work.
+
+### Package expressions
+
+In the following examples there will be commands accepting an argument such as `<package expression>`. A package expression is a form to match a pattern; currently XBPS >= 0.19 supports 3 ways to specify them:
+
+ * by specifying a package name, i.e `foo`.
+ * by specifying the exact package name and version, i.e `foo-1.0_1`.
+ * by specifying a package name and version separated by any of the following version comparators:
+      * `<` less than
+      * `>` greater than
+      * `<=` less or equal than
+      * `>=` greater or equal than
+
+    Such example would be `foo>=2.0` or `blah-foo<=1.0`.
+
+### Repositories
+
+Repositories can be declared in a configuration file of the `configuration` or `system configuration` directories:
+
+ * `<sysconfdir>/xbps.d` - The configuration directory (set to `/etc/xbps.d`)
+ * `<sharedir>/xbps.d` - The system directory (set to `/usr/share/xbps.d`)
+
+A configuration file bearing the same filename in `/etc/xbps.d` overrides the one from `<sharedir>/xbps.d`.
+By default the `XBPS` package provides only the main Void repository in the `/usr/share/xbps.d/00-repository-main.conf` file.
+
+Additional repositories can be added by installing any of the following XBPS packages or creating new configuration files manually:
+
+```
+$ xbps-query -Rs void-repo
+[*] void-repo-debug-3_1            Void Linux drop-in file for the debug repository
+[*] void-repo-multilib-3_1         Void Linux drop-in file for the multilib repository
+[*] void-repo-multilib-nonfree-3_1 Void Linux drop-in file for the multilib/nonfree repository
+[*] void-repo-nonfree-3_1          Void Linux drop-in file for the nonfree repository
+$
+```
+
+> **NOTE** repositories specified in xbps.conf are added to the head of the list, while repositories specified via `repo.d` directories are appended to the existing list.
+
+> **NOTE** If no repositories are found it's possible to declare them manually via the command line option `--repository`, currently accepted in `xbps-install(8)` and `xbps-query(8)`.
+
+### xbps-query - querying packages and repositories
+
+> xbps-query(8) will try to match `<package expression>` in local packages. This behaviour
+can be changed by enabling the `-R` or `--repository` option to force repository mode.
+
+To query the list of installed packages:
+
+    $ xbps-query -l
+
+To query the list of working repositories:
+
+    $ xbps-query -L
+
+To query the list of installed packages that were installed manually (not as dependencies):
+
+    $ xbps-query -m
+
+To query the list of packages on hold (won't be upgraded automatically):
+
+    $ xbps-query -H
+
+To query the list of installed package orphans (packages that were installed as dependencies but there is not any package currently that requires it):
+
+    $ xbps-query -O
+
+To query a package and show its meta information:
+
+    $ xbps-query <package expression>
+
+> Additionally the `-p or --property` option can be used to only show a specific key of a package:
+
+    $ xbps-query --property=pkgver xbps
+    xbps-0.19_1
+    $
+
+> Multiple properties can be specified by delimiting them with commas, i.e `-p key,key2`.
+
+To query a package and show its file list:
+
+    $ xbps-query -f <package expression>
+
+To query a package and show required run-time dependencies:
+
+    $ xbps-query -x <package expression>
+
+To query a package and show required reverse run-time dependencies:
+
+    $ xbps-query -X <package expression>
+
+To query for packages matching a file with specified pattern(s) (ownedby mode):
+
+    $ xbps-query -o <pattern>
+
+> Where `<pattern>` is a shell wildcard pattern as explained in fnmatch(3); e.g `"*.png"`.
+
+> Multiple `<patterns>` can be specified as arguments.
+
+To query for packages matching pkgname/version/description with specified pattern(s) (search mode):
+
+    $ xbps-query -s <pattern>
+
+> The same rules explained above in the `ownedby` mode shall be applied.
+
+### xbps-install - installing and updating packages
+
+To synchronize remote repository index files:
+
+    $ xbps-install -S
+
+> The `-S, --sync` option can be combined while installing or updating packages, i.e `xbps-install -Su`.
+
+To install a package:
+
+    $ xbps-install <package expression>
+
+To install multiple packages at once:
+
+    $ xbps-install <package expression> <package expressions>
+
+To update a single package:
+
+    $ xbps-install -u <package expression>
+
+To update all packages (also known as dist-upgrade in debian/ubuntu):
+
+    $ xbps-install -u
+
+> The `-n, --dry-run` option can be used to print what packages will be updated and/or installed and doesn't need permissions in the target rootdir, which can be useful to list updates.
+
+### xbps-remove - removing packages
+
+To remove a package:
+
+    $ xbps-remove <package name>
+
+To recursively remove unneeded dependencies that were installed by the target package:
+
+    $ xbps-remove -R <package name>
+
+To remove package orphans:
+
+    $ xbps-remove -o
+
+To clean the cache directory and remove outdated packages and/or packages with wrong hash:
+
+    $ xbps-remove -O
+
+> To remove package orphans and clean the cache repository both options can be combined, i.e `xbps-remove -Oo`.
+
+### xbps-reconfigure - configure (or force configuration of) a package
+
+The `xbps-reconfigure(8)` utility may be used to configure packages that were not previously
+(perhaps due to a power outage, process killed, etc) or simply to force package
+reconfiguration. By default and unless the `-f, --force` option is set, only packages that
+were not configured will be processed.
+
+Its usage is simple, specify a package name or `a, --all` for all packages:
+
+    $ xbps-reconfigure [-f] <package name> | -a
+
+### xbps-pkgdb - checking for errors in packages and pkgdb
+
+The `xbps-pkgdb(8)` utility may be used to check for errors in packages and in the package database.
+It is also used to update the *package database* format (if there have been changes). It works in exactly the
+same way than `xbps-reconfigure(8)` and expects a package name or -a, --all for all packages.
+
+    $ xbps-pkgdb <package name> | -a
+
+To put a package on hold mode (won't by upgraded in dist-upgrade mode):
+
+    $ xbps-pkgdb -m hold <package name>
+
+To unput a package from hold mode:
+
+    $ xbps-pkgdb -m unhold <package name>
+
+To put a package in automatic mode (as it were installed as a dependency):
+
+    $ xbps-pkgdb -m auto <package name>
+
+To put a package in manual mode (won't be detected as orphan):
+
+    $ xbps-pkgdb -m manual <package name>
+
+To update the pkgdb format to the latest one:
+
+    $ xbps-pkgdb -u
+
+> NOTE: updating the pkgdb format does not happen too frequently, therefore it's only necessary in rare circumstances.
+
+### xbps-rindex - Create, update and administer local repositories
+
+This command only has 3 operation modes:
+
+ * Add [-a, --all]: adds the specified packages into the specified repository and removes previous entry if found:
+
+        $ xbps-rindex -a /path/to/repository/*.xbps
+
+> The `-f, --force` option can be used to forcefully register a package into the repository index, even if the same version is already registered.
+
+ * Clean [-c, --clean]: cleans the index of the specified repository removing outdated or invalid entries (unexistent packages, unmatched hashes, etc):
+
+        $ xbps-rindex -c /path/to/repository
+
+ * Remove-obsoletes [-r, --remove-obsoletes]: removes obsolete packages in repository (outdated, broken and unmatched hashes):
+
+        $ xbps-rindex -r /path/to/repository
+
+### Examples
+
+Upgrade all packages in the system, without asking for an answer:
+
+    # xbps-install -Syu
+
+Clean the cache directory and remove package orphans:
+
+    # xbps-remove -Oo
+
+Show information of a package available in repositories:
+
+    $ xbps-query -R xbps
+
+Show filelist of a package available in repositories:
+
+    $ xbps-query -Rf xbps
+
+Find the packages that own the file `/bin/ls` in repositories:
+
+    $ xbps-query -Ro /bin/ls
+
+Make a package keepable (won't be detected as orphan):
+
+    # xbps-pkgdb -m manual xbps
+
+Search for packages in repositories matching the `xbps` pattern in its `pkgver` and `short_desc` objects:
+
+    $ xbps-query -Rs xbps
+
+Remove a package and all unnecessary dependencies that were installed:
+
+    # xbps-remove -R xbmc
+
+Appending repositories via command line:
+
+    $ xbps-query --repository=<url> ...
+    # xbps-install --repository=<url> ...
+
+Switch an installed package to on *hold* mode (won't be updated via `xbps-install -u`):
+
+    # xbps-pkgdb -m hold <pkgname>
+
+Switch an installed package to the *unhold* mode (will be updated if there are updates):
+
+    # xbps-pkgdb -m unhold <pkgname>
+
+Check for errors on installed packages and in pkgdb:
+
+    # xbps-pkgdb -a
+
+Listing all files not managed by xbps:
+
+```sh
+#!/bin/sh
+
+tmp=$(mktemp -dt xbps-disownedXXXXXX)
+pkg=$tmp/pkg
+fs=$tmp/fs
+
+trap "rm -rf $tmp" EXIT
+
+xbps-query -o \* | cut -d ' ' -f2 | sort > $pkg
+find /boot /etc /opt /usr /var -xdev -type f -print | sort > $fs
+
+comm -23 $fs $pkg
+```
