@@ -1,4 +1,4 @@
-.Dd November 21, 2014
+.Dd November 27, 2014
 .Dt XBPS-QUERY 8
 .Sh NAME
 .Nm xbps-query
@@ -70,6 +70,9 @@ Ignore repositories defined in configuration files.
 Only repositories specified in the command line via
 .Ar --repository
 will be used.
+.It Fl M, Fl -memory-sync
+For remote repositories, the data is fetched and stored in memory for the current
+operation. This ignores the existing on-disk repository archives in rootdir.
 .It Fl p, Fl -property Ar PROP[,...]
 Only match this package property.
 Multiple properties can be specified by delimiting them with commas.

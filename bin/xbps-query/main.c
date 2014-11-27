@@ -43,6 +43,8 @@ usage(bool fail)
 	    " -d --debug               Debug mode shown to stderr\n"
 	    " -h --help                Print help usage\n"
 	    " -i --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
+	    " -M --memory-sync         Remote repository data is fetched and stored\n"
+	    "                          in memory, ignoring on-disk repodata archives.\n"
 	    " -p --property PROP[,...] Show properties for PKGNAME\n"
 	    " -R --repository          Enable repository mode. This mode explicitly\n"
 	    "                          looks for packages in repositories.\n"
@@ -74,7 +76,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:df:hHiLlmOo:p:Rr:s:S:VvX:x:";
+	const char *shortopts = "C:c:df:hHiLlMmOo:p:Rr:s:S:VvX:x:";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -84,6 +86,7 @@ main(int argc, char **argv)
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
 		{ "list-hold-pkgs", no_argument, NULL, 'H' },
+		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
 		{ "list-orphans", no_argument, NULL, 'O' },
 		{ "ownedby", required_argument, NULL, 'o' },
@@ -147,6 +150,9 @@ main(int argc, char **argv)
 			break;
 		case 'l':
 			list_pkgs = opmode = true;
+			break;
+		case 'M':
+			flags |= XBPS_FLAG_REPOS_MEMSYNC;
 			break;
 		case 'm':
 			list_manual = opmode = true;

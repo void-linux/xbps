@@ -206,7 +206,16 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 		repofile = xbps_repo_path(xhp, url);
 	}
 	/*
-	 * Open or create the repository archive.
+	 * In memory repo sync.
+	 */
+	if (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC) {
+		if (repo_open_remote(repo))
+			return repo;
+
+		goto out;
+	}
+	/*
+	 * Open the repository archive.
 	 */
 	if (lock)
 		repo->fd = open(repofile, O_RDWR);
@@ -215,9 +224,6 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 
 	if (repo->fd == -1) {
 		int rv = errno;
-		if (repo_open_remote(repo))
-			return repo;
-
 		xbps_dbg_printf(xhp, "[repo] `%s' open repodata %s\n",
 		    repofile, strerror(rv));
 		goto out;

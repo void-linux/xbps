@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141126"
+#define XBPS_API_VERSION	"20141127"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -182,6 +182,13 @@
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_IGNORE_CONF_REPOS 	0x00000200
+
+/**
+ * @def XBPS_FLAG_REPOS_MEMSYNC
+ * Fetch and store repodata in memory, ignoring on-disk metadata.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_REPOS_MEMSYNC 	0x00000400
 
 /**
  * @def XBPS_FETCH_CACHECONN

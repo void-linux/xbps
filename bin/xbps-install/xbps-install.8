@@ -1,4 +1,4 @@
-.Dd November 5, 2014
+.Dd November 27, 2014
 .Dt XBPS-INSTALL 8
 .Sh NAME
 .Nm xbps-install
@@ -86,6 +86,9 @@ Ignore repositories defined in configuration files.
 Only repositories specified in the command line via
 .Ar --repository
 will be used.
+.It Fl M, Fl -memory-sync
+For remote repositories, the data is fetched and stored in memory for the current
+operation. This ignores the existing on-disk repository archives in rootdir.
 .It Fl n, Fl -dry-run
 Dry-run mode. Show what actions would be done but don't do anything.
 .It Fl R, Fl -repository=uri
