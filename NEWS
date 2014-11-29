@@ -1,5 +1,9 @@
 xbps-0.42 (???):
 
+ * xbps-dgraph(8): added support to generate dependency graphs, repository
+   mode, prints results to stdout, supports most of the options available
+   in other utils, etc. This is now a first class utility.
+
  * xbps-{install,query}: added new option (-M, --memory-sync) to fetch and
    store remote repository data in memory. That means that synchronizing
    the repository archives with `xbps-install -S` is now completely optional.

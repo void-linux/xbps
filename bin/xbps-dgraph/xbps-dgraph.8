@@ -1,0 +1,138 @@
+.Dd November 27, 2014
+.Dt XBPS-DGRAPH 8
+.Sh NAME
+.Nm xbps-dgraph
+.Nd XBPS utility to generate package dot(1) graphs
+.Sh SYNOPSYS
+.Nm xbps-dgraph
+.Op OPTIONS
+.Ar MODE
+.Ar PKG
+.Sh DESCRIPTION
+The
+.Nm
+utility generates a
+.Xr dot 1
+graph of a specific package stored
+in target root directory or in registered repositories and prints
+the result to stdout.
+The argument
+.Ar PKG
+is a package expression, which is explained in the
+.Em PACKAGE EXPRESSION
+section.
+.Sh PACKAGE EXPRESSION
+A package expression is a form to match a pattern; currently xbps
+supports 3 ways to specify them:
+.Bl -dash
+.It
+by package name, i.e:
+.Dq Sy foo .
+.It
+by exact package name and version, i.e:
+.Dq Sy foo-1.0_1 .
+.It
+by specifying a package name and version separated by any of the following version comparators:
+.Pp
+.Bl -item -compact
+.It
+.Sy <
+less than
+.It
+.Sy >
+greater than
+.It
+.Sy <=
+less or equal than
+.It
+.Sy >=
+greater or equal than
+.Pp
+Example:
+.Dq Sy foo>=2.0 .
+.El
+.El
+.Pp
+The first repository matching the package expression wins.
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl C, Fl -config Ar dir
+Specifies a path to the XBPS configuration directory.
+If the first character is not '\/' then it's a relative path of
+.Ar rootdir .
+.It Fl c, Fl -graph-config Ar file
+Specifies a path to the graph configuration file, to modify the settings
+of the generated graphs.
+.It Fl d, Fl -debug
+Enables extra debugging shown to stderr.
+.It Fl h, Fl -help
+Show the help usage.
+.It Fl M, Fl -memory-sync
+For remote repositories, the data is fetched and stored in memory for the current
+operation. This ignores the existing on-disk repository archives in rootdir.
+.It Fl R, Fl -repository
+Enable repository mode. This mode explicitly looks in repositories, rather
+than looking in the target root directory.
+.It Fl r, Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl V, Fl -version
+Shows the XBPS version.
+.El
+.Sh MODE
+Only one of the following modes can be used at a time.
+By default and unless the
+.Fl R
+option is specified, the target
+.Ar PKG
+will be queried in the root directory, otherwise it will be
+queried in registered repositories.
+.Bl -tag -width -x
+.It Fl g, Fl -gen-config
+Generates a graph configuration file in the current working directory.
+.It Fl f, Fl -fulldeptree
+Generates a full dependency graph of the target package.
+.It Fl m, Fl -metadata
+Generates a metadata graph of the target package.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_ARCH
+Overrides
+.Xr uname 2
+machine result with this value. Useful to install packages with a fake
+architecture.
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value. This variable differs from
+.Sy XBPS_ARCH
+in that it allows you to install packages partially, because
+configuration phase is skipped (the target binaries might not be compatible with
+the native architecture).
+.El
+.Sh FILES
+.Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
+.It Ar /etc/xbps.d
+Default configuration directory.
+.It Ar /var/db/xbps/.<pkgname>-files.plist
+Package files metadata.
+.It Ar /var/db/xbps/pkgdb-0.38.plist
+Default package database (0.38 format). Keeps track of installed packages and properties.
+.It Ar /var/cache/xbps
+Default cache directory to store downloaded binary packages.
+.El
+.Sh SEE ALSO
+.Xr xbps-checkvers 8 ,
+.Xr xbps-create 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-remove 8 ,
+.Xr xbps-rindex 8 ,
+.Xr xbps-uchroot 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in https://github.com/voidlinux/xbps/issues
