@@ -107,7 +107,7 @@ repo_get_dict(struct xbps_repo *repo)
 }
 
 static bool
-repo_open_local(struct xbps_repo *repo, bool lock)
+repo_open_local(struct xbps_repo *repo, const char *repofile, bool lock)
 {
 	struct stat st;
 	int rv = 0;
@@ -118,13 +118,14 @@ repo_open_local(struct xbps_repo *repo, bool lock)
 	 */
         if (lock && lockf(repo->fd, F_LOCK, 0) == -1) {
 		rv = errno;
-		xbps_dbg_printf(repo->xhp, "[repo] failed to lock %s: %s\n", repo->uri, strerror(rv));
+		xbps_dbg_printf(repo->xhp, "[repo] failed to lock %s: %s\n",
+		    repofile, strerror(rv));
 		return false;
 	}
 	if (fstat(repo->fd, &st) == -1) {
 		rv = errno;
 		xbps_dbg_printf(repo->xhp, "[repo] `%s' fstat repodata %s\n",
-		    repo->uri, strerror(rv));
+		    repofile, strerror(rv));
 		return false;
 	}
 
@@ -136,14 +137,15 @@ repo_open_local(struct xbps_repo *repo, bool lock)
 		rv = archive_errno(repo->ar);
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' failed to open repodata archive %s\n",
-		    repo->uri, strerror(rv));
+		    repofile, strerror(rv));
 		return false;
 	}
 	if ((repo->idx = repo_get_dict(repo)) == NULL) {
 		rv = archive_errno(repo->ar);
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' failed to internalize index on archive: %s\n",
-		    repo->uri, strerror(rv));
+		xbps_dbg_printf(repo->xhp, "[repo] `%s' failed to internalize "
+		    " index on archive, removing file.\n", repofile);
+		/* broken archive, remove it */
+		(void)unlink(repofile);
 		return false;
 	}
 	repo->idxmeta = repo_get_dict(repo);
@@ -228,8 +230,10 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 		    repofile, strerror(rv));
 		goto out;
 	}
-	if (repo_open_local(repo, lock))
+	if (repo_open_local(repo, repofile, lock)) {
+		free(repofile);
 		return repo;
+	}
 
 out:
 	if (repo->ar)
