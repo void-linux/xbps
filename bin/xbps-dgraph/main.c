@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <assert.h>
+#include <getopt.h>
 
 #include <xbps.h>
 #include "queue.h"
@@ -112,14 +113,21 @@ static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stdout,
-	"Usage: xbps-dgraph [options] <pkgname>\n\n"
-	" Options\n"
-	"    -c\t\tPath to configuration file\n"
-	"    -d\t\tDebug mode shown to stderr\n"
-	"    -g\t\tGenerate a default config file\n"
-	"    -R\t\tEnable repository mode\n"
-	"    -f\t\tGenerate a full dependency graph\n"
-	"    -r\t\t<rootdir>\n\n");
+	"Usage: xbps-dgraph [OPTIONS] [MODE] <pkgname>\n\n"
+	"OPTIONS\n"
+	" -C --config <dir>        Path to confdir (xbps.d)\n"
+	" -c --graph-config <file> Path to the graph configuration file\n"
+	" -d --debug               Debug mode shown to stderr\n"
+	" -h --help                Print help usage\n"
+	" -M --memory-sync         Remote repository data is fetched and stored\n"
+	"                          in memory, ignoring on-disk repodata archives.\n"
+	" -r --rootdir <dir>       Full path to rootdir\n"
+	" -R --repository          Enable repository mode. This mode explicitly\n"
+	"                          looks for packages in repositories.\n"
+	"MODE\n"
+	" -g --gen-config          Generate a configuration file\n"
+	" -f --fulldeptree         Generate a dependency graph\n"
+	" -m --metadata            Generate a metadata graph (default mode)\n\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -493,15 +501,36 @@ create_dot_graph(struct xbps_handle *xhp,
 int
 main(int argc, char **argv)
 {
+	const char *shortopts = "C:c:dfghMRr:V";
+	const struct option longopts[] = {
+		{ "config", required_argument, NULL, 'C' },
+		{ "graph-config", required_argument, NULL, 'c' },
+		{ "debug", no_argument, NULL, 'd' },
+		{ "fulldeptree", no_argument, NULL, 'f' },
+		{ "gen-config", no_argument, NULL, 'g' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "memory-sync", no_argument, NULL, 'M' },
+		{ "repository", no_argument, NULL, 'R' },
+		{ "rootdir", required_argument, NULL, 'r' },
+		{ "version", no_argument, NULL, 'V' },
+		{ NULL, 0, NULL, 0 },
+	};
 	xbps_dictionary_t plistd = NULL;
 	struct xbps_handle xh;
 	FILE *f = NULL;
-	const char *conf_file = NULL, *rootdir = NULL;
+	const char *pkg, *confdir, *conf_file, *rootdir;
 	int c, rv, flags = 0;
-	bool repomode = false, fulldepgraph = false;
+	bool opmode, repomode, fulldepgraph, metadata;
 
-	while ((c = getopt(argc, argv, "c:dgfRr:")) != -1) {
+	pkg = confdir = conf_file = rootdir = NULL;
+	opmode = repomode = fulldepgraph = metadata = false;
+
+	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
+		case 'C':
+			/* xbps.d confdir */
+			confdir = optarg;
+			break;
 		case 'c':
 			/* Configuration file. */
 			conf_file = optarg;
@@ -509,13 +538,19 @@ main(int argc, char **argv)
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
 			break;
-		case 'g':
-			/* Generate auto conf file. */
-			generate_conf_file();
-			exit(EXIT_SUCCESS);
 		case 'f':
 			/* generate a full dependency graph */
-			fulldepgraph = true;
+			opmode = fulldepgraph = true;
+			break;
+		case 'g':
+			/* Generate conf file. */
+			generate_conf_file();
+			exit(EXIT_SUCCESS);
+		case 'M':
+			flags |= XBPS_FLAG_REPOS_MEMSYNC;
+			break;
+		case 'm':
+			opmode = metadata = true;
 			break;
 		case 'R':
 			/* enable repository mode */
@@ -525,6 +560,9 @@ main(int argc, char **argv)
 			/* Set different rootdir. */
 			rootdir = optarg;
 			break;
+		case 'v':
+			printf("%s\n", XBPS_RELVER);
+			exit(EXIT_SUCCESS);
 		case '?':
 		default:
 			usage();
@@ -534,13 +572,20 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (argc != 1)
+	if (!argc && !opmode) {
 		usage();
+	} else if (!opmode) {
+		/* metadata mode by default */
+		metadata = opmode = true;
+	}
+	pkg = *argv;
 
 	/* Initialize libxbps */
 	memset(&xh, 0, sizeof(xh));
 	if (rootdir != NULL)
 		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+	if (confdir)
+		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 
 	xh.flags = flags;
 	if ((rv = xbps_init(&xh)) != 0)
@@ -563,12 +608,12 @@ main(int argc, char **argv)
 	 * Internalize the plist file of the target installed package.
 	 */
 	if (repomode) {
-		plistd = xbps_rpool_get_pkg(&xh, argv[0]);
+		plistd = xbps_rpool_get_pkg(&xh, pkg);
 	} else {
-		plistd = xbps_pkgdb_get_pkg(&xh, argv[0]);
+		plistd = xbps_pkgdb_get_pkg(&xh, pkg);
 	}
 	if (plistd == NULL)
-		die("cannot find `%s' package", argv[0]);
+		die("cannot find `%s' package", pkg);
 
 	/*
 	 * Create the output FILE.
@@ -579,10 +624,6 @@ main(int argc, char **argv)
 	/*
 	 * Create the dot(1) graph!
 	 */
-	if (fulldepgraph) {
-		create_dot_graph(&xh, f, plistd, repomode, true);
-	} else {
-		create_dot_graph(&xh, f, plistd, repomode, false);
-	}
+	create_dot_graph(&xh, f, plistd, repomode, fulldepgraph);
 	exit(EXIT_SUCCESS);
 }
