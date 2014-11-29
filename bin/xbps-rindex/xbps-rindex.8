@@ -1,4 +1,4 @@
-.Dd November 6, 2014
+.Dd November 29, 2014
 .Dt XBPS-RINDEX 8
 .Sh NAME
 .Nm xbps-rindex
@@ -34,22 +34,29 @@ Path to the private RSA key to sign the repository. If unset, defaults to
 .El
 .Sh MODE
 .Bl -tag -width x
-.It Sy -a, --add Ar repository/binpkg.xbps ...
+.It Sy -a, --add Ar /path/to/repository/binpkg.xbps ...
 Registers the binary package into the local repository. The specified binary
 package is only added to the index if its version is greater than the one
-currently stored. Multiple binary packages can be specified as arguments.
-.It Sy -c, --clean Ar repository
+currently stored, use
+.Ar -f
+to forcefully register existing packages.
+Multiple binary packages can be specified as arguments.
+Absolute path to the local repository is expected.
+.It Sy -c, --clean Ar /path/to/repository
 Removes obsolete entries found in the local repository.
-.It Sy -r, --remove-obsoletes Ar repository
+Absolute path to the local repository is expected.
+.It Sy -r, --remove-obsoletes Ar /path/to/repository
 Removes obsolete packages from
 .Ar repository .
 Packages that are not currently registered in repository's index will
 be removed (out of date, invalid archives, etc).
-.It Sy -s, --sign Ar repository
+Absolute path to the local repository is expected.
+.It Sy -s, --sign Ar /path/to/repository
 Signs a repository with your specified RSA key. If
 .Fl --privkey
 argument not set, it defaults to
 .Sy ~/.ssh/id_rsa .
+Absolute path to the local repository is expected.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
