@@ -107,7 +107,7 @@ check_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			xbps_dictionary_get_cstring_nocopy(obj, "filename-sha256", &sha256);
 			if ((rv = xbps_file_hash_check(binfile, sha256)) != 0) {
 				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				    "%s: SHA256 hash is not valid!", pkgver, strerror(rv));
+				    "%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
 				free(binfile);
 				break;
 			}
