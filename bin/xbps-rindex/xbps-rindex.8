@@ -1,4 +1,4 @@
-.Dd November 29, 2014
+.Dd December 6, 2014
 .Dt XBPS-RINDEX 8
 .Sh NAME
 .Nm xbps-rindex
@@ -52,11 +52,12 @@ Packages that are not currently registered in repository's index will
 be removed (out of date, invalid archives, etc).
 Absolute path to the local repository is expected.
 .It Sy -s, --sign Ar /path/to/repository
-Signs a repository with your specified RSA key. If
+Signs all binary packages stored in repository with your specified RSA key. If
 .Fl --privkey
 argument not set, it defaults to
 .Sy ~/.ssh/id_rsa .
-Absolute path to the local repository is expected.
+Absolute path to the local repository is expected. Only binary packages that
+have not been signed are processed.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
