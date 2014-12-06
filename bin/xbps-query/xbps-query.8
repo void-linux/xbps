@@ -76,13 +76,15 @@ operation. This ignores the existing on-disk repository archives in rootdir.
 .It Fl p, Fl -property Ar PROP[,...]
 Only match this package property.
 Multiple properties can be specified by delimiting them with commas.
-.It Fl R, Fl -repository=url
+.It Fl R
 Enable repository mode. This mode explicitly looks in repositories, rather
-than looking in the target root directory. The
+than looking in the target root directory.
+.It Fl -repository=url
+Appends the specified repository to the top of the list. The
 .Ar url
-argument is optional and can be used to add the repository to the top of the list.
+argument expects a URL to the repository for remote repositories or
+an absolute path for local repositories.
 This option can be specified multiple times.
-For local repositories an absolute path is expected.
 .It Fl -regex
 Enables string matching by using Extended Regular Expressions in compatible modes,
 currently in the

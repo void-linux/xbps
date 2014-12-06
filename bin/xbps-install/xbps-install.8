@@ -91,9 +91,15 @@ For remote repositories, the data is fetched and stored in memory for the curren
 operation. This ignores the existing on-disk repository archives in rootdir.
 .It Fl n, Fl -dry-run
 Dry-run mode. Show what actions would be done but don't do anything.
-.It Fl R, Fl -repository=uri
-Repository to be added to the top of the list. This option can be specified multiple times.
-For local repositories an absolute path is expected.
+.It Fl R
+Enable repository mode. This mode explicitly looks in repositories, rather
+than looking in the target root directory.
+.It Fl -repository=url
+Appends the specified repository to the top of the list. The
+.Ar url
+argument expects a URL to the repository for remote repositories or
+an absolute path for local repositories.
+This option can be specified multiple times.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl S, Fl -sync
