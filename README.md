@@ -33,16 +33,6 @@ to handle binary packages and repositories. Some highlights:
  * **Low memory** footprint.
  * **Fast** dependency resolver and sorting algorithms.
 
-### Getting source code
-
-Starting with **0.26** there are not source tarballs anymore. **git** must be
-used to clone the repository with the appropiate tag. The latest stable version
-can be fetched with:
-
-    $ git clone -b <version> git://github.com/xtraeme/xbps.git
-
-See `git tag -l` to list all available stable releases.
-
 ### Build requirements
 
 To build this you'll need:
@@ -140,7 +130,7 @@ $ xbps-query -Rs void-repo
 $
 ```
 
-> **NOTE** repositories specified in xbps.conf are added to the head of the list, while repositories specified via `repo.d` directories are appended to the existing list.
+> **NOTE** repositories specified in the `configuration` directory are added to the head of the list, while repositories specified via `system configuration` directories are appended to the existing list.
 
 > **NOTE** If no repositories are found it's possible to declare them manually via the command line option `--repository`, currently accepted in `xbps-install(8)` and `xbps-query(8)`.
 
