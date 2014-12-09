@@ -46,7 +46,7 @@
  * state is XBPS_PKG_STATE_INSTALLED.
  */
 int
-xbps_configure_packages(struct xbps_handle *xhp)
+xbps_configure_packages(struct xbps_handle *xhp, xbps_array_t ignpkgs)
 {
 	xbps_dictionary_t pkgd;
 	xbps_object_t obj;
@@ -62,6 +62,14 @@ xbps_configure_packages(struct xbps_handle *xhp)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		if (xbps_array_count(ignpkgs)) {
+			if ((xbps_match_string_in_array(ignpkgs, pkgver)) ||
+			    (xbps_match_pkgver_in_array(ignpkgs, pkgver))) {
+				xbps_dbg_printf(xhp, "%s: ignoring pkg %s\n",
+				    __func__, pkgver);
+				continue;
+			}
+		}
 		rv = xbps_configure_pkg(xhp, pkgver, true, false);
 		if (rv != 0) {
 			xbps_dbg_printf(xhp, "%s: failed to configure %s: %s\n",

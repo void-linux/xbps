@@ -45,6 +45,15 @@ Enables extra debugging shown to stderr.
 Forcefully reconfigure package even if it was configured previously.
 .It Fl h, Fl -help
 Show the help usage.
+.It Fl i, Fl -ignore Ar PKG
+Ignore
+.Ar PKG
+when configuring all packages with
+.Fl a, Fl -all .
+The
+.Ar PKG
+argument can be a package name or a package name with version.
+This option can be specified multiple times.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a path for the target root directory.
 .It Fl v, Fl -verbose

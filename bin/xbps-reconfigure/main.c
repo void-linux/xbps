@@ -91,13 +91,14 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbd _unused)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "aC:dfhr:Vv";
+	const char *shortopts = "aC:dfhi:r:Vv";
 	const struct option longopts[] = {
 		{ "all", no_argument, NULL, 'a' },
 		{ "config", required_argument, NULL, 'C' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
+		{ "ignore", required_argument, NULL, 'i' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
@@ -107,6 +108,7 @@ main(int argc, char **argv)
 	const char *confdir = NULL, *rootdir = NULL;
 	int c, i, rv, flags = 0;
 	bool all = false;
+	xbps_array_t ignpkgs = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -125,6 +127,12 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
+		case 'i':
+			if (ignpkgs == NULL)
+				ignpkgs = xbps_array_create();
+
+			xbps_array_add_cstring_nocopy(ignpkgs, optarg);
+			break;
 		case 'r':
 			rootdir = optarg;
 			break;
@@ -164,7 +172,7 @@ main(int argc, char **argv)
 	}
 
 	if (all) {
-		rv = xbps_configure_packages(&xh);
+		rv = xbps_configure_packages(&xh, ignpkgs);
 	} else {
 		for (i = optind; i < argc; i++) {
 			rv = xbps_configure_pkg(&xh, argv[i], true, false);

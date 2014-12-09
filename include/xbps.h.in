@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141127"
+#define XBPS_API_VERSION	"20141209"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -655,10 +655,11 @@ int xbps_configure_pkg(struct xbps_handle *xhp, const char *pkgname,
  * Configure (or force reconfiguration of) all packages.
  *
  * @param[in] xhp Pointer to an xbps_handle struct.
+ * @param[in] ignpkgs Proplib array of strings with pkgname or pkgvers to ignore.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_configure_packages(struct xbps_handle *xhp);
+int xbps_configure_packages(struct xbps_handle *xhp, xbps_array_t ignpkgs);
 
 /*@}*/
 
@@ -985,6 +986,16 @@ bool xbps_match_any_virtualpkg_in_rundeps(xbps_array_t rundeps,
  * @return true on success, false otherwise and errno is set appropiately.
  */
 bool xbps_match_pkgname_in_array(xbps_array_t array, const char *pkgname);
+
+/**
+ * Match a package name/version in the specified array of strings with pkgnames.
+ *
+ * @param[in] array The proplib array to search on.
+ * @param[in] pkgname The package name/version to match.
+ *
+ * @return true on success, false otherwise and errno is set appropiately.
+ */
+bool xbps_match_pkgver_in_array(xbps_array_t array, const char *pkgver);
 
 /**
  * Match a package pattern in the specified array of strings.
