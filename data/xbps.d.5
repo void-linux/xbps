@@ -1,0 +1,141 @@
+.Dd December 9, 2014
+.Dt XBPS-D 5
+.Sh NAME
+.Nm xbps.d
+.Nd XBPS configuration directory
+.Sh SYNOPSYS
+.Bl -item -compact
+.It
+/etc/xbps.d/*.conf
+.It
+/usr/share/xbps.d/*.conf
+.El
+.Sh DESCRIPTION
+The
+.Nm
+configuration directory sets properties for the XBPS package manager.
+The
+.Sy configuration
+directory, by default set to
+.Sy /etc/xbps.d
+overrides settings from files available in the
+.Sy system configuration
+directory, by default set to
+.Sy /usr/share/xbps.d .
+Only files with the
+.Em .conf
+extension will be processed in alphabetical order.
+.Pp
+The configuration files can set multiple
+.Em keywords
+that are pairs of keys and values, such as
+.Sy `key=value` .
+No whitespace between the
+.Em key
+and its
+.Em value
+is allowed, nor trailing whitespaces after its value.
+.Sh KEYWORDS
+.Bl -tag -width -x
+.It Sy architecture=string
+Overrides the native machine architecture, as reported by
+.Xr uname 2 .
+.It Sy bestmaching=true|false
+When this keyword is enabled, a package with the greatest version available in
+all registered repositories will be choosen.
+This will be applied to dependencies as well.
+.It Sy cachedir=path
+Sets the default cache directory to store downloaded binary packages from
+remote repositories, as well as its signatures.
+If path starts with '\/' it's an absolute path, otherwise it will be relative to
+.Ar rootdir .
+.It Sy include=path/file.conf
+Imports settings from the specified configuration file.
+.Em NOTE
+only one level of nesting is allowed.
+.It Sy preserve=path
+If set ignores modifications to the specified files, while unpacking packages.
+Absolute path to a file and file globbing are supported, example:
+.Pp
+.Bl -tag -compact -width preserve=/etc/foo/*.conf
+.It Sy preserve=/usr/bin/foo
+.It Sy preserve=/etc/foo/*.conf
+.El
+.It Sy repository=url
+Declares a package repository. The
+.Ar url
+argument accepts local and remote repositories.
+A complete url or absolute path to the directory that stores the
+.Em <arch>-repodata
+archive is expected, example:
+.Bl -tag -compact -width repository=http://repo.voidlinux.eu/current
+.It Sy repository=http://repo.voidlinux.eu/current
+.It Sy repository=/hostdir/binpkgs
+.El
+.It Sy rootdir=path
+Sets the default root directory.
+.It Sy syslog=true|false
+Enables or disables syslog logging. Enabled by default.
+.It Sy virtualpkg=vpkgver:pkgname
+Declares a virtual package. A virtual package declaration is composed by two
+components delimited by a colon, i.e:
+.Pp
+.Bl -tag -compact -width virtualpkg=cron-daemon-1.0_1:dcron
+.It Sy virtualpkg=cron-daemon-1.0_1:dcron
+Any request to the
+.Ar cron-daemon
+virtual package will be resolved to the
+.Ar dcron
+real package.
+.El
+.Pp
+The first component expects a
+.Em virtual package name and its version component .
+The second component expects a
+.Em package name .
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_ARCH
+Overrides
+.Xr uname 2
+machine result with this value. Useful to install packages with a fake
+architecture.
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value. This variable differs from
+.Sy XBPS_ARCH
+in that it allows you to install packages partially, because
+configuration phase is skipped (the target binaries might not be compatible with
+the native architecture).
+.El
+.Sh FILES
+.Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
+.It Ar /etc/xbps.d
+Default configuration directory.
+.It Ar /usr/share/xbps.d
+Default system configuration directory.
+.It Ar /var/db/xbps/.<pkgname>-files.plist
+Package files metadata.
+.It Ar /var/db/xbps/pkgdb-0.38.plist
+Default package database (0.38 format). Keeps track of installed packages and properties.
+.It Ar /var/cache/xbps
+Default cache directory to store downloaded binary packages.
+.El
+.Sh SEE ALSO
+.Xr xbps-checkvers 8 ,
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-remove 8 ,
+.Xr xbps-rindex 8 ,
+.Xr xbps-uchroot 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in https://github.com/voidlinux/xbps/issues

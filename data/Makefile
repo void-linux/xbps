@@ -11,6 +11,8 @@ all:
 
 .PHONY: install
 install:
+	install -d $(DESTDIR)$(SHAREDIR)/man/man5
+	install -m644 xbps.d.5 $(DESTDIR)$(SHAREDIR)/man/man5
 	install -d $(DESTDIR)$(PKGCONFIGDIR)
 	install -m644 $(PCFILE) $(DESTDIR)$(PKGCONFIGDIR)
 	install -d $(DESTDIR)/$(DBDIR)/keys

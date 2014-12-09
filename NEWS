@@ -1,5 +1,7 @@
 xbps-0.42 (???):
 
+ * xbps.d(5): new manual page detailing the configuration settings.
+
  * xbps-dgraph(8): added support to generate dependency graphs, repository
    mode, prints results to stdout, supports most of the options available
    in other utils, etc. This is now a first class utility.
