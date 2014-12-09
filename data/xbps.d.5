@@ -22,6 +22,13 @@ overrides settings from files available in the
 .Sy system configuration
 directory, by default set to
 .Sy /usr/share/xbps.d .
+.Pp
+Files in the
+.Sy configuration
+directory have preference over files in the
+.Sy system configuration
+directory.
+.Pp
 Only files with the
 .Em .conf
 extension will be processed in alphabetical order.
@@ -68,6 +75,7 @@ argument accepts local and remote repositories.
 A complete url or absolute path to the directory that stores the
 .Em <arch>-repodata
 archive is expected, example:
+.Pp
 .Bl -tag -compact -width repository=http://repo.voidlinux.eu/current
 .It Sy repository=http://repo.voidlinux.eu/current
 .It Sy repository=/hostdir/binpkgs
@@ -78,7 +86,7 @@ Sets the default root directory.
 Enables or disables syslog logging. Enabled by default.
 .It Sy virtualpkg=vpkgver:pkgname
 Declares a virtual package. A virtual package declaration is composed by two
-components delimited by a colon, i.e:
+components delimited by a colon, example:
 .Pp
 .Bl -tag -compact -width virtualpkg=cron-daemon-1.0_1:dcron
 .It Sy virtualpkg=cron-daemon-1.0_1:dcron

@@ -308,21 +308,21 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 }
 
 static int
-parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char *confdir)
+parse_dir(struct xbps_handle *xhp, const char *cwd, const char *confdir, const char *sysconfdir)
 {
 	struct dirent **namelist;
 	char *ext, conf[PATH_MAX];
 	int i, n, rv = 0;
 
-	if (dir == NULL)
+	if (confdir == NULL)
 		goto stage2;
 	/*
 	 * Read all configuration files stored in the system
 	 * foo.d directory.
 	 */
-	xbps_dbg_printf(xhp, "Processing system directory: %s\n", dir);
+	xbps_dbg_printf(xhp, "Processing configuration directory: %s\n", confdir);
 
-	if ((n = scandir(dir, &namelist, 0, alphasort)) < 0)
+	if ((n = scandir(confdir, &namelist, 0, alphasort)) < 0)
 		goto stage2;
 
 	for (i = 0; i < n; i++) {
@@ -331,25 +331,18 @@ parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char 
 			free(namelist[i]);
 			continue;
 		}
-		/* only process .vpkg/.conf files, ignore something else */
+		/* only process .conf files, ignore something else */
 		if ((ext = strrchr(namelist[i]->d_name, '.')) == NULL) {
 			free(namelist[i]);
 			continue;
 		}
-		if (strcmp(ext, ".conf") && strcmp(ext, ".vpkg")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", dir, namelist[i]->d_name);
-			free(namelist[i]);
-			continue;
-		}
-		/* if the same file exists in configuration directory, ignore it */
-		snprintf(conf, sizeof(conf), "%s/%s", confdir, namelist[i]->d_name);
-		if (access(conf, R_OK) == 0) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", dir, namelist[i]->d_name);
+		if (strcmp(ext, ".conf")) {
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", confdir, namelist[i]->d_name);
 			free(namelist[i]);
 			continue;
 		}
 		/* parse conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", dir, namelist[i]->d_name);
+		snprintf(conf, sizeof(conf), "%s/%s", confdir, namelist[i]->d_name);
 		if ((rv = parse_file(xhp, cwd, conf, false)) != 0) {
 			free(namelist[i]);
 			break;
@@ -360,15 +353,15 @@ parse_dir(struct xbps_handle *xhp, const char *cwd, const char *dir, const char 
 		return rv;
 
 stage2:
-	if (confdir == NULL)
+	if (sysconfdir == NULL)
 		return rv;
 
 	/*
 	 * Read all configuration files stored in the configuration foo.d directory.
 	 */
-	xbps_dbg_printf(xhp, "Processing configuration directory: %s\n", confdir);
+	xbps_dbg_printf(xhp, "Processing system configuration directory: %s\n", sysconfdir);
 
-	if ((n = scandir(confdir, &namelist, 0, alphasort)) < 0)
+	if ((n = scandir(sysconfdir, &namelist, 0, alphasort)) < 0)
 		return 0;
 
 	for (i = 0; i < n; i++) {
@@ -377,18 +370,25 @@ stage2:
 			free(namelist[i]);
 			continue;
 		}
-		/* only process .vpkg/.conf files, ignore something else */
+		/* only process .conf files, ignore something else */
 		if ((ext = strrchr(namelist[i]->d_name, '.')) == NULL) {
 			free(namelist[i]);
 			continue;
 		}
-		if (strcmp(ext, ".conf") && strcmp(ext, ".vpkg")) {
-			xbps_dbg_printf(xhp, "%s: ignoring %s\n", confdir, namelist[i]->d_name);
+		if (strcmp(ext, ".conf")) {
+			xbps_dbg_printf(xhp, "%s: ignoring %s\n", sysconfdir, namelist[i]->d_name);
+			free(namelist[i]);
+			continue;
+		}
+		/* if the same file exists in configuration directory, ignore it */
+		snprintf(conf, sizeof(conf), "%s/%s", confdir, namelist[i]->d_name);
+		if (access(conf, R_OK) == 0) {
+			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", confdir, namelist[i]->d_name);
 			free(namelist[i]);
 			continue;
 		}
 		/* parse conf file */
-		snprintf(conf, sizeof(conf), "%s/%s", confdir, namelist[i]->d_name);
+		snprintf(conf, sizeof(conf), "%s/%s", sysconfdir, namelist[i]->d_name);
 		if ((rv = parse_file(xhp, cwd, conf, false)) != 0) {
 			free(namelist[i]);
 			break;
@@ -476,7 +476,7 @@ xbps_init(struct xbps_handle *xhp)
 	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN, XBPS_FETCH_CACHECONN_HOST);
 
 	/* process xbps.d */
-	if ((rv = parse_dir(xhp, cwd, sysconfdir, xhp->confdir)) != 0)
+	if ((rv = parse_dir(xhp, cwd, xhp->confdir, sysconfdir)) != 0)
 		return rv;
 
 	xbps_dbg_printf(xhp, "rootdir=%s\n", xhp->rootdir);
