@@ -185,6 +185,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		/* Remove unneeded objects */
 		xbps_dictionary_remove(binpkgd, "pkgname");
 		xbps_dictionary_remove(binpkgd, "version");
+		xbps_dictionary_remove(binpkgd, "packaged-with");
 
 		/*
 		 * Add new pkg dictionary into the index.
