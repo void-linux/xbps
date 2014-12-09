@@ -1,5 +1,8 @@
 xbps-0.42 (???):
 
+ * xbps-{install,query}: fix alignment in the column output mode
+   when pkgname is shorter than 4 chars. Fix #71 (https://github.com/voidlinux/xbps/issues/71)
+
  * xbps.d(5): new manual page detailing the configuration settings.
 
  * xbps-dgraph(8): added support to generate dependency graphs, repository

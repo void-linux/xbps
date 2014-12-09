@@ -103,13 +103,17 @@ print_trans_colmode(struct transaction *trans, int cols)
 
 	pnamelen = find_longest_pkgname(trans);
 	/* header length */
-	hdrlen = 4 + pnamelen + 60;
+	hdrlen = pnamelen + 61;
 	if (cols <= hdrlen)
 		return false;
 
-	printf("\nName");
-	for (x = 4; x < pnamelen; x++)
+	printf("\nName ");
+	if (pnamelen < 5)
+		pnamelen = 5;
+
+	for (x = 5; x < pnamelen; x++)
 		printf(" ");
+
 	printf("Action    Version           New version            Download size\n");
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
