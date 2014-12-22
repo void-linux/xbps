@@ -1,4 +1,4 @@
-xbps-0.42 (???):
+xbps-0.42 (2014-12-22):
 
  * xbps-reconfigure(8): new option -i, --ignore to ignore packages
    while performing configuration of all packages with -a, --all.
