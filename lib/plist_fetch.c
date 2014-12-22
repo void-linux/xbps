@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include "xbps_api_impl.h"
 
@@ -43,6 +44,7 @@ struct fetch_archive {
 	struct url *url;
 	struct fetchIO *fetch;
 	char buffer[32768];
+	pthread_mutex_t mtx;
 };
 
 static int
@@ -50,7 +52,10 @@ fetch_archive_open(struct archive *a _unused, void *client_data)
 {
 	struct fetch_archive *f = client_data;
 
+	pthread_mutex_lock(&f->mtx);
 	f->fetch = fetchGet(f->url, NULL);
+	pthread_mutex_unlock(&f->mtx);
+
 	if (f->fetch == NULL)
 		return ENOENT;
 
@@ -61,10 +66,13 @@ static ssize_t
 fetch_archive_read(struct archive *a _unused, void *client_data, const void **buf)
 {
 	struct fetch_archive *f = client_data;
+	ssize_t res;
 
 	*buf = f->buffer;
-
-	return fetchIO_read(f->fetch, f->buffer, sizeof(f->buffer));
+	pthread_mutex_lock(&f->mtx);
+	res = fetchIO_read(f->fetch, f->buffer, sizeof(f->buffer));
+	pthread_mutex_unlock(&f->mtx);
+	return res;
 }
 
 static int
@@ -72,8 +80,11 @@ fetch_archive_close(struct archive *a _unused, void *client_data)
 {
 	struct fetch_archive *f = client_data;
 
+	pthread_mutex_lock(&f->mtx);
 	if (f->fetch != NULL)
 		fetchIO_close(f->fetch);
+	pthread_mutex_unlock(&f->mtx);
+	pthread_mutex_destroy(&f->mtx);
 	free(f);
 
 	return 0;
@@ -90,6 +101,8 @@ open_archive_by_url(struct url *url)
 		return NULL;
 
 	f->url = url;
+	pthread_mutex_init(&f->mtx, NULL);
+
 	if ((a = archive_read_new()) == NULL) {
 		free(f);
 		return NULL;
