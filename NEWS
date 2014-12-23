@@ -1,8 +1,6 @@
 xbps-0.43 (???):
 
- * libxbps: xbps_archive_fetch_xxx() are now protected with a mutex to avoid
-   data races with 8 threads or more. Reproducable by @chneukirchen on a
-   8 core machine.
+ * libfetch: fix races in the cache connection code.
 
 xbps-0.42 (2014-12-22):
 

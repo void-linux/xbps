@@ -66,6 +66,8 @@
 #include <signal.h>
 #endif
 
+#include <pthread.h>
+
 #include "fetch.h"
 #include "common.h"
 
@@ -333,6 +335,7 @@ fetch_connect(struct url *url, int af, int verbose)
 	return (conn);
 }
 
+static pthread_mutex_t cache_mtx = PTHREAD_MUTEX_INITIALIZER;
 static conn_t *connection_cache;
 static int cache_global_limit = 0;
 static int cache_per_host_limit = 0;
@@ -379,6 +382,7 @@ fetch_cache_get(const struct url *url, int af)
 {
 	conn_t *conn, *last_conn = NULL;
 
+	pthread_mutex_lock(&cache_mtx);
 	for (conn = connection_cache; conn; conn = conn->next_cached) {
 		if (conn->cache_url->port == url->port &&
 		    strcmp(conn->cache_url->scheme, url->scheme) == 0 &&
@@ -391,9 +395,12 @@ fetch_cache_get(const struct url *url, int af)
 				last_conn->next_cached = conn->next_cached;
 			else
 				connection_cache = conn->next_cached;
+
+			pthread_mutex_unlock(&cache_mtx);
 			return conn;
 		}
 	}
+	pthread_mutex_unlock(&cache_mtx);
 
 	return NULL;
 }
@@ -414,6 +421,7 @@ fetch_cache_put(conn_t *conn, int (*closecb)(conn_t *))
 		return;
 	}
 
+	pthread_mutex_lock(&cache_mtx);
 	global_count = host_count = 0;
 	last = NULL;
 	for (iter = connection_cache; iter;
@@ -435,6 +443,7 @@ fetch_cache_put(conn_t *conn, int (*closecb)(conn_t *))
 	conn->cache_close = closecb;
 	conn->next_cached = connection_cache;
 	connection_cache = conn;
+	pthread_mutex_unlock(&cache_mtx);
 }
 
 /*
