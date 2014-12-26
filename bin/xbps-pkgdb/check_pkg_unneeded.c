@@ -54,6 +54,7 @@ check_pkg_unneeded(struct xbps_handle *xhp _unused, const char *pkgname, void *a
 	xbps_dictionary_remove(pkgd, "remove-and-update");
 	xbps_dictionary_remove(pkgd, "transaction");
 	xbps_dictionary_remove(pkgd, "skip-obsoletes");
+	xbps_dictionary_remove(pkgd, "packaged-with");
 	if (xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo)) {
 		xbps_dictionary_set_cstring(pkgd, "repository", repo);
 		xbps_dictionary_remove(pkgd, "repository-origin");
