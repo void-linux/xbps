@@ -32,10 +32,6 @@
 
 #include "compat.h"
 
-#ifndef NETBSD
-#include <nbcompat.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -49,11 +45,7 @@
 #if defined(HAVE_INTTYPES_H) || defined(NETBSD)
 #include <inttypes.h>
 #endif
-#ifndef NETBSD
-#include <nbcompat/netdb.h>
-#else
 #include <netdb.h>
-#endif
 #include <pwd.h>
 #include <stdarg.h>
 #include <stdlib.h>

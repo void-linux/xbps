@@ -71,17 +71,10 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#if defined(HAVE_INTTYPES_H) || defined(NETBSD)
 #include <inttypes.h>
-#endif
 #include <stdarg.h>
-#ifndef NETBSD
-#include <nbcompat/netdb.h>
-#include <nbcompat/stdio.h>
-#else
 #include <netdb.h>
 #include <stdio.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -154,7 +147,7 @@ unmappedaddr(struct sockaddr_in6 *sin6, socklen_t *len)
 	sin4->sin_port = port;
 	sin4->sin_family = AF_INET;
 	*len = sizeof(struct sockaddr_in);
-#ifdef HAVE_SA_LEN
+#ifndef __linux__
 	sin4->sin_len = sizeof(struct sockaddr_in);
 #endif
 }

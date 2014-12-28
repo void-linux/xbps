@@ -32,10 +32,6 @@
 
 #include "compat.h"
 
-#ifndef NETBSD
-#include <nbcompat.h>
-#endif
-
 #include <sys/stat.h>
 
 #include <dirent.h>

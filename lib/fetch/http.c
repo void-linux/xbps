@@ -79,11 +79,7 @@
 #include <errno.h>
 #include <locale.h>
 #include <stdarg.h>
-#ifndef NETBSD
-#include <nbcompat/stdio.h>
-#else
 #include <stdio.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -92,11 +88,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#ifndef NETBSD
-#include <nbcompat/netdb.h>
-#else
 #include <netdb.h>
-#endif
 
 #include <arpa/inet.h>
 
