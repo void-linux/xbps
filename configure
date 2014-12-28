@@ -269,14 +269,14 @@ done
 check_compiler_flag PIC f CFLAGS
 check_compiler_flag "inline-functions" f CFLAGS
 
-check_compiler_flag stack-protector-all f CFLAGS
-if [ $? -eq 0 ]; then
-	if [ "$CC" = "gcc" ]; then
-		check_compiler_flag "param ssp-buffer-size=1" - CFLAGS
+check_compiler_flag stack-protector-strong f CFLAGS
+if [ $? -ne 0 ]; then
+	check_compiler_flag stack-protector-all f CFLAGS
+	if [ $? -eq 0 ]; then
+		if [ "$CC" = "gcc" ]; then
+			check_compiler_flag "param ssp-buffer-size=1" - CFLAGS
+		fi
 	fi
-fi
-if [ $? -eq 0 ]; then
-	echo "CPPFLAGS += -D_FORTIFY_SOURCE=2" >>$CONFIG_MK
 fi
 check_compiler_flag "visibility=default" f SHAREDLIB_CFLAGS
 if [ $? -eq 0 ]; then
