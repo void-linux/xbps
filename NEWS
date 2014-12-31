@@ -1,5 +1,7 @@
 xbps-0.43 (???):
 
+ * pcc >= 1.1.0 is now a supported compiler.
+
  * xbps.d(5): the "virtualpkg" keyword now accepts pkgnames in the first component,
    to match any virtual package version. Example:
 
