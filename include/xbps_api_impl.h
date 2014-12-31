@@ -148,7 +148,7 @@ void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *, xbps_array_t,
 char HIDDEN *xbps_archive_get_file(struct archive *, struct archive_entry *);
 xbps_dictionary_t HIDDEN xbps_archive_get_dictionary(struct archive *,
 		struct archive_entry *);
-const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *, bool);
+const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *);
 xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 		const char *, bool);
 

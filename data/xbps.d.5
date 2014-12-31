@@ -1,4 +1,4 @@
-.Dd December 23, 2014
+.Dd December 30, 2014
 .Dt XBPS-D 5
 .Sh NAME
 .Nm xbps.d
@@ -84,12 +84,12 @@ archive is expected, example:
 Sets the default root directory.
 .It Sy syslog=true|false
 Enables or disables syslog logging. Enabled by default.
-.It Sy virtualpkg=vpkgver:pkgname
+.It Sy virtualpkg=[vpkgname|vpkgver]:pkgname
 Declares a virtual package. A virtual package declaration is composed by two
 components delimited by a colon, example:
 .Pp
-.Bl -tag -compact -width virtualpkg=cron-daemon-1.0_1:dcron
-.It Sy virtualpkg=cron-daemon-1.0_1:dcron
+.Bl -tag -compact -width virtualpkg=cron-daemon:dcron
+.It Sy virtualpkg=cron-daemon:dcron
 Any request to the
 .Ar cron-daemon
 virtual package will be resolved to the
@@ -98,9 +98,10 @@ real package.
 .El
 .Pp
 The first component expects a
-.Em virtual package name and its version component .
+.Em virtual package name and optionally its version component .
 The second component expects a
-.Em package name .
+.Em package name
+to match the real package.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH

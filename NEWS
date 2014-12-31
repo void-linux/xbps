@@ -1,5 +1,15 @@
 xbps-0.43 (???):
 
+ * xbps.d(5): the "virtualpkg" keyword now accepts pkgnames in the first component,
+   to match any virtual package version. Example:
+
+	`virtualpkg=foo:bar`
+
+   would match any version of the virtual package `foo' to be resolved as `bar'.
+
+ * libxbps: when resolving virtual packages in repositories, make sure to initialize
+   pkgdb to match any virtualpkg declared there. Regression introduced in 0.42.
+
  * configure: build with -fstack-protector-strong if supported by the compiler,
    and fallback to -fstack-protector-all otherwise.
 

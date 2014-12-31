@@ -121,16 +121,12 @@ xbps_find_virtualpkg_in_array(struct xbps_handle *x,
 {
 	xbps_dictionary_t pkgd;
 	const char *vpkg;
-	bool bypattern = false;
 
 	assert(x);
 	assert(xbps_object_type(a) == XBPS_TYPE_ARRAY);
 	assert(s);
 
-	if (xbps_pkgpattern_version(s))
-		bypattern = true;
-
-	if ((vpkg = vpkg_user_conf(x, s, bypattern))) {
+	if ((vpkg = vpkg_user_conf(x, s))) {
 		if ((pkgd = get_pkg_in_array(a, vpkg, trans, true)))
 			return pkgd;
 	}
@@ -193,16 +189,15 @@ match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 }
 
 const char HIDDEN *
-vpkg_user_conf(struct xbps_handle *xhp,
-	       const char *vpkg,
-	       bool bypattern)
+vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg)
 {
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	xbps_string_t rpkg;
-	const char *vpkgver, *pkg = NULL;
-	char *vpkgname = NULL, *tmp;
+	const char *pkg = NULL;
 	bool found = false;
+
+	/* init pkgdb just in case to detect vpkgs */
+	(void)xbps_pkgdb_init(xhp);
 
 	if (xhp->vpkgd == NULL)
 		return NULL;
@@ -211,36 +206,35 @@ vpkg_user_conf(struct xbps_handle *xhp,
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
-		vpkgver = xbps_dictionary_keysym_cstring_nocopy(obj);
+		xbps_string_t rpkg;
+		const char *vpkg_conf;
+
+		vpkg_conf = xbps_dictionary_keysym_cstring_nocopy(obj);
 		rpkg = xbps_dictionary_get_keysym(xhp->vpkgd, obj);
 		pkg = xbps_string_cstring_nocopy(rpkg);
 
-		tmp = NULL;
-		if (strchr(vpkgver, '_') == NULL) {
-			tmp = xbps_xasprintf("%s_1", vpkgver);
-			vpkgname = xbps_pkg_name(tmp);
-			free(tmp);
-		} else {
-			vpkgname = xbps_pkg_name(vpkgver);
-		}
-		if (vpkgname == NULL)
-			break;
-		if (bypattern) {
-			if (!xbps_pkgpattern_match(vpkgver, vpkg)) {
-				free(vpkgname);
+		if (xbps_pkgpattern_version(vpkg_conf)) {
+			if (!xbps_pkgpattern_match(vpkg_conf, vpkg)) {
 				continue;
 			}
 		} else {
-			if (strcmp(vpkg, vpkgname)) {
+			if (xbps_pkg_version(vpkg_conf)) {
+				char *vpkgname = xbps_pkg_name(vpkg_conf);
+				assert(vpkgname);
+				if (strcmp(vpkg, vpkgname)) {
+					free(vpkgname);
+					continue;
+				}
 				free(vpkgname);
-				continue;
+			} else {
+				/* assume a correct pkgname */
+				if (strcmp(vpkg, vpkg_conf)) {
+					continue;
+				}
 			}
 		}
-#ifdef FULLDEBUG
 		xbps_dbg_printf(xhp, "matched vpkg `%s' with `%s (provides %s)`\n",
-		    vpkg, pkg, vpkgver);
-#endif
-		free(vpkgname);
+		    vpkg, pkg, vpkg_conf);
 		found = true;
 		break;
 	}
@@ -258,13 +252,9 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t pkgd = NULL;
 	const char *vpkg;
-	bool bypattern = false;
-
-	if (xbps_pkgpattern_version(pkg))
-		bypattern = true;
 
 	/* Try matching vpkg from configuration files */
-	vpkg = vpkg_user_conf(xhp, pkg, bypattern);
+	vpkg = vpkg_user_conf(xhp, pkg);
 	if (vpkg != NULL) {
 		if (xbps_pkgpattern_version(vpkg))
 			pkgd = match_pkg_by_pattern(d, vpkg);

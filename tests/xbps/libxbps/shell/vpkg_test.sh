@@ -123,9 +123,46 @@ vpkg02_body() {
 	atf_check_equal $out $exp
 }
 
+atf_test_case vpkg03
+
+vpkg03_head() {
+	atf_set "descr" "Tests for virtual pkgs: provider in configuration file"
+}
+
+vpkg03_body() {
+	mkdir some_repo
+	mkdir -p pkg_gawk
+	cd some_repo
+	xbps-create -A noarch -n gawk-1.0_1 -s "gawk pkg" ../pkg_gawk
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy gawk
+	atf_check_equal $? 0
+
+	mkdir -p root/xbps.d
+
+	echo "virtualpkg=awk:gawk" > root/xbps.d/awk.conf
+	out=$(xbps-query -C xbps.d -r root --repository=$PWD/some_repo -ppkgver awk)
+	exp="gawk-1.0_1"
+	echo "out: $out"
+	echo "exp: $exp"
+	atf_check_equal $out $exp
+
+	echo "virtualpkg=awk-0_1:gawk" > root/xbps.d/awk.conf
+	out=$(xbps-query -C xbps.d -r root --repository=$PWD/some_repo -ppkgver awk)
+	exp="gawk-1.0_1"
+	echo "out: $out"
+	echo "exp: $exp"
+	atf_check_equal $out $exp
+}
 
 atf_init_test_cases() {
 	atf_add_test_case vpkg00
 	atf_add_test_case vpkg01
 	atf_add_test_case vpkg02
+	atf_add_test_case vpkg03
 }

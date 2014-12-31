@@ -212,7 +212,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		return cached_rv;
 
 	if (xhp->pkgdb && flush) {
-		pkgdb_storage = xbps_dictionary_internalize_from_zfile(xhp->pkgdb_plist);
+		pkgdb_storage = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist);
 		if (pkgdb_storage == NULL ||
 		    !xbps_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
 			/* flush dictionary to storage */
@@ -227,7 +227,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		cached_rv = 0;
 	}
 	/* update copy in memory */
-	if ((xhp->pkgdb = xbps_dictionary_internalize_from_zfile(xhp->pkgdb_plist)) == NULL) {
+	if ((xhp->pkgdb = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist)) == NULL) {
 		if (errno == ENOENT)
 			xhp->pkgdb = xbps_dictionary_create();
 		else
@@ -341,7 +341,7 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 			if (curpkgname == NULL)
 				curpkgname = xbps_pkg_name(pkgdep);
 			assert(curpkgname);
-			vpkgname = vpkg_user_conf(xhp, curpkgname, false);
+			vpkgname = vpkg_user_conf(xhp, curpkgname);
 			if (vpkgname == NULL)
 				vpkgname = curpkgname;
 
