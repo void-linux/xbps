@@ -11,7 +11,7 @@ xbps-0.43 (???):
    pkgdb to match any virtualpkg declared there. Regression introduced in 0.42.
 
  * configure: build with -fstack-protector-strong if supported by the compiler,
-   and fallback to -fstack-protector-all otherwise.
+   and fallback to -fstack-protector otherwise.
 
  * xbps-pkgdb(8): the `packaged-with` string obj is removed from pkgdb.
    Since 0.42 that object is unnecessary and is being obsoleted.
