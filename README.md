@@ -80,6 +80,16 @@ There are some more options that can be tweaked, see them with
 
 Good luck!
 
+### Binaries
+
+Binaries for Linux compiled statically with the musl C library are available at this location:
+
+* [i686](http://repo.voidlinux.eu/static/xbps-static-latest.i686-musl.tar.xz)
+* [x86\_64](http://repo.voidlinux.eu/static/xbps-static-latest.x86_64-musl.tar.xz)
+* [armv6hf](http://repo.voidlinux.eu/static/xbps-static-latest.armv6l-musl.tar.xz)
+
+Check the *sha256* checksums with this file: http://repo.voidlinux.eu/static/sha256sums.txt
+
 ### Usage instructions
 
 The xbps package includes the following utilities:
