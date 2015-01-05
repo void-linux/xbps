@@ -1,4 +1,6 @@
-xbps-0.44 (???):
+xbps-0.43.1 (2015-01-05):
+
+ * Fixed a regression in virtual packages defined via xbps.d(5) introduced in 0.43.
 
 xbps-0.43 (2014-12-31):
 

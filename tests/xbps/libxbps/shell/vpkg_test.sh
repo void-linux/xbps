@@ -160,9 +160,42 @@ vpkg03_body() {
 	atf_check_equal $out $exp
 }
 
+atf_test_case vpkg04
+
+vpkg04_head() {
+	atf_set "descr" "Tests for virtual pkgs: dependency provider in configuration file"
+}
+
+vpkg04_body() {
+	mkdir some_repo
+	mkdir -p pkg_gawk pkg_blah
+	cd some_repo
+	xbps-create -A noarch -n blah-1.0_1 -s "blah pkg" ../pkg_blah
+	atf_check_equal $? 0
+	xbps-create -A noarch -n gawk-1.0_1 -s "gawk pkg" --dependencies "vpkg>=4.4" ../pkg_gawk
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	mkdir -p root/xbps.d
+	echo "virtualpkg=vpkg:blah" > root/xbps.d/blah.conf
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -dy gawk
+	atf_check_equal $? 0
+
+	rm -rf root
+	mkdir -p root/xbps.d
+	echo "virtualpkg=vpkg-4.4_1:blah" > root/xbps.d/blah.conf
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -dy gawk
+	atf_check_equal $? 0
+
+}
+
 atf_init_test_cases() {
 	atf_add_test_case vpkg00
 	atf_add_test_case vpkg01
 	atf_add_test_case vpkg02
 	atf_add_test_case vpkg03
+	atf_add_test_case vpkg04
 }

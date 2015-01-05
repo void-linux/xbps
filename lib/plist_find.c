@@ -207,32 +207,54 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg)
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_string_t rpkg;
+		char *dpkgname, *vpkgname;
 		const char *vpkg_conf;
 
 		vpkg_conf = xbps_dictionary_keysym_cstring_nocopy(obj);
 		rpkg = xbps_dictionary_get_keysym(xhp->vpkgd, obj);
 		pkg = xbps_string_cstring_nocopy(rpkg);
 
-		if (xbps_pkgpattern_version(vpkg_conf)) {
-			if (!xbps_pkgpattern_match(vpkg_conf, vpkg)) {
-				continue;
-			}
+		if (xbps_pkg_version(vpkg_conf)) {
+			vpkgname = xbps_pkg_name(vpkg_conf);
+			assert(vpkgname);
 		} else {
+			vpkgname = strdup(vpkg_conf);
+			assert(vpkgname);
+		}
+
+		if (xbps_pkgpattern_version(vpkg)) {
+			char *vpkgver;
+
 			if (xbps_pkg_version(vpkg_conf)) {
-				char *vpkgname = xbps_pkg_name(vpkg_conf);
-				assert(vpkgname);
-				if (strcmp(vpkg, vpkgname)) {
+				if (!xbps_pkgpattern_match(vpkg_conf, vpkg)) {
 					free(vpkgname);
 					continue;
 				}
-				free(vpkgname);
 			} else {
-				/* assume a correct pkgname */
-				if (strcmp(vpkg, vpkg_conf)) {
+				vpkgver = xbps_xasprintf("%s-999999_1", vpkg_conf);
+				if (!xbps_pkgpattern_match(vpkgver, vpkg)) {
+					free(vpkgver);
+					free(vpkgname);
 					continue;
 				}
+				free(vpkgver);
+			}
+		} else if (xbps_pkg_version(vpkg)) {
+			dpkgname = xbps_pkg_name(vpkg);
+			assert(dpkgname);
+			if (strcmp(dpkgname, vpkgname)) {
+				free(dpkgname);
+				free(vpkgname);
+				continue;
+			}
+			free(dpkgname);
+		} else {
+			if (strcmp(vpkg, vpkgname)) {
+				free(vpkgname);
+				continue;
 			}
 		}
+		free(vpkgname);
 		xbps_dbg_printf(xhp, "matched vpkg `%s' with `%s (provides %s)`\n",
 		    vpkg, pkg, vpkg_conf);
 		found = true;
