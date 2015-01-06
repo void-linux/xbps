@@ -434,8 +434,8 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	if (repo->idx == NULL)
 		return NULL;
 
-	if (((pkgd = xbps_rpool_get_pkg(repo->xhp, pkg)) == NULL) &&
-	    ((pkgd = xbps_rpool_get_virtualpkg(repo->xhp, pkg)) == NULL)) {
+	if (((pkgd = xbps_repo_get_pkg(repo, pkg)) == NULL) &&
+	    ((pkgd = xbps_repo_get_virtualpkg(repo, pkg)) == NULL)) {
 		errno = ENOENT;
 		return NULL;
 	}
