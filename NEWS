@@ -3,6 +3,10 @@ xbps-0.44 (???):
  * xbps-query(8): only compile the ERE (Extended Regular Expression) once in
    the ownedby mode. A performance improvement suggested by Christian Neukirchen.
 
+ * libxbps: performance improvement for xbps_repo_get_pkg_revdeps(): when finding
+   the matching pkg, search for it in the current repository, not in the repository
+   pool.
+
 xbps-0.43.1 (2015-01-05):
 
  * Fixed a regression in virtual packages defined via xbps.d(5) introduced in 0.43.
