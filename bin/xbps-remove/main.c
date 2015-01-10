@@ -280,7 +280,7 @@ main(int argc, char **argv)
 
 	if (orphans) {
 		if ((rv = xbps_transaction_autoremove_pkgs(&xh)) != 0) {
-			xbps_pkgdb_unlock(&xh);
+			xbps_end(&xh);
 			if (rv != ENOENT) {
 				fprintf(stderr, "Failed to queue package "
 				    "orphans: %s\n", strerror(rv));
@@ -295,23 +295,19 @@ main(int argc, char **argv)
 		if (rv == 0)
 			continue;
 		else if (rv != EEXIST) {
-			if (!drun) {
-				xbps_pkgdb_unlock(&xh);
-			}
+			xbps_end(&xh);
 			exit(rv);
 		} else {
 			reqby_force = true;
 		}
 	}
 	if (reqby_force && !ignore_revdeps && !drun) {
-		xbps_pkgdb_unlock(&xh);
+		xbps_end(&xh);
 		exit(EXIT_FAILURE);
 	}
 	if (orphans || (argc > optind)) {
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
-	if (!drun) {
-		xbps_pkgdb_unlock(&xh);
-	}
+	xbps_end(&xh);
 	exit(rv);
 }
