@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20150110"
+#define XBPS_API_VERSION	"20150110-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -856,10 +856,12 @@ xbps_array_t xbps_pkgdb_get_pkg_fulldeptree(struct xbps_handle *xhp,
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @param[in] flush If true the pkgdb plist contents in memory will
  * be flushed atomically to storage.
+ * @param[in] update If true, the pkgdb plist stored on disk will be re-read
+ * and the in memory copy will be refreshed.
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush);
+int xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update);
 
 /**
  * Creates a temporary file and executes it in rootdir.

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -348,7 +348,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 	xbps_object_iterator_reset(iter);
 	/* Force a pkgdb write for all unpacked pkgs in transaction */
-	(void)xbps_pkgdb_update(xhp, true);
+	(void)xbps_pkgdb_update(xhp, true, true);
 
 	/*
 	 * Configure all unpacked packages.
@@ -390,7 +390,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 out:
 	xbps_object_iterator_release(iter);
 	/* Force a pkgdb write for all unpacked pkgs in transaction */
-	(void)xbps_pkgdb_update(xhp, true);
+	(void)xbps_pkgdb_update(xhp, true, true);
 
 	return rv;
 }

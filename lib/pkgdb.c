@@ -107,7 +107,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 void
 xbps_pkgdb_unlock(struct xbps_handle *xhp)
 {
-	(void)xbps_pkgdb_update(xhp, true);
+	(void)xbps_pkgdb_update(xhp, true, false);
 
 	if (pkgdb_fd != -1) {
 		if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
@@ -189,7 +189,7 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 	if (xhp->pkgdb != NULL)
 		return 0;
 
-	if ((rv = xbps_pkgdb_update(xhp, false)) != 0) {
+	if ((rv = xbps_pkgdb_update(xhp, false, true)) != 0) {
 		if (rv != ENOENT)
 			xbps_dbg_printf(xhp, "[pkgdb] cannot internalize "
 			    "pkgdb array: %s\n", strerror(rv));
@@ -206,7 +206,7 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 }
 
 int
-xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
+xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update)
 {
 	xbps_dictionary_t pkgdb_storage;
 	static int cached_rv;
@@ -215,7 +215,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 	if (cached_rv && !flush)
 		return cached_rv;
 
-	if (xhp->pkgdb && flush) {
+	if (xhp->pkgdb && update) {
 		pkgdb_storage = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist);
 		if (pkgdb_storage == NULL ||
 		    !xbps_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
@@ -230,6 +230,9 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush)
 		xhp->pkgdb = NULL;
 		cached_rv = 0;
 	}
+	if (!update)
+		return rv;
+
 	/* update copy in memory */
 	if ((xhp->pkgdb = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist)) == NULL) {
 		if (errno == ENOENT)
