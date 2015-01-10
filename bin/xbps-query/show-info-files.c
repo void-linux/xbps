@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -191,6 +191,7 @@ show_pkg_info(xbps_dictionary_t dict)
 		/* anything else */
 		print_value_obj(keyname, obj, NULL, bold, reset, false);
 	}
+	xbps_object_release(all_keys);
 }
 
 int
@@ -230,6 +231,7 @@ show_pkg_files(xbps_dictionary_t filesd)
 			printf("\n");
 		}
 	}
+	xbps_object_release(allkeys);
 
 	return 0;
 }
@@ -312,6 +314,7 @@ int
 repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
 	xbps_dictionary_t pkgd;
+	int rv;
 
 	pkgd = xbps_rpool_get_pkg_plist(xhp, pkg, "/files.plist");
 	if (pkgd == NULL) {
@@ -321,5 +324,7 @@ repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 		return errno;
 	}
 
-	return show_pkg_files(pkgd);
+	rv = show_pkg_files(pkgd);
+	xbps_object_release(pkgd);
+	return rv;
 }
