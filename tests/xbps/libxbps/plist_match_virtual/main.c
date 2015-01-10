@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,8 +48,8 @@ provides_init(void)
 	a = xbps_array_create();
 	ATF_REQUIRE(a != NULL);
 
-	xbps_array_add_cstring_nocopy(a, "cron-daemon-0");
-	xbps_array_add_cstring_nocopy(a, "xbps-9999");
+	xbps_array_add_cstring_nocopy(a, "cron-daemon-0_1");
+	xbps_array_add_cstring_nocopy(a, "xbps-9999_1");
 
 	return a;
 }

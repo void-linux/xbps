@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -333,7 +333,6 @@ revdeps_match(struct xbps_repo *repo, xbps_dictionary_t tpkgd, const char *str)
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	const char *pkgver, *tpkgver, *arch, *vpkg;
-	char *buf;
 
 	iter = xbps_dictionary_iterator(repo->idx);
 	assert(iter);
@@ -374,16 +373,9 @@ revdeps_match(struct xbps_repo *repo, xbps_dictionary_t tpkgd, const char *str)
 		provides = xbps_dictionary_get(tpkgd, "provides");
 		for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
 			xbps_array_get_cstring_nocopy(provides, i, &vpkg);
-			if (strchr(vpkg, '_') == NULL)
-				buf = xbps_xasprintf("%s_1", vpkg);
-			else
-				buf = strdup(vpkg);
-
-			if (!xbps_match_pkgdep_in_array(pkgdeps, buf)) {
-				free(buf);
+			if (!xbps_match_pkgdep_in_array(pkgdeps, vpkg))
 				continue;
-			}
-			free(buf);
+
 			xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "architecture", &arch);
 			if (!xbps_pkg_arch_match(repo->xhp, arch, NULL))
@@ -428,7 +420,6 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	xbps_array_t revdeps = NULL, vdeps = NULL;
 	xbps_dictionary_t pkgd;
 	const char *vpkg;
-	char *buf = NULL;
 	bool match = false;
 
 	if (repo->idx == NULL)
@@ -447,26 +438,18 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 			char *vpkgn;
 
 			xbps_array_get_cstring_nocopy(vdeps, i, &vpkg);
-			if (strchr(vpkg, '_') == NULL)
-				buf = xbps_xasprintf("%s_1", vpkg);
-			else
-				buf = strdup(vpkg);
-
-			vpkgn = xbps_pkg_name(buf);
+			vpkgn = xbps_pkg_name(vpkg);
 			assert(vpkgn);
 			if (strcmp(vpkgn, pkg) == 0) {
 				free(vpkgn);
+				match = true;
 				break;
 			}
 			free(vpkgn);
-			free(buf);
-			buf = NULL;
+			vpkg = NULL;
 		}
-		if (buf) {
-			match = true;
-			revdeps = revdeps_match(repo, pkgd, buf);
-			free(buf);
-		}
+		if (match)
+			revdeps = revdeps_match(repo, pkgd, vpkg);
 	}
 	if (!match)
 		revdeps = revdeps_match(repo, pkgd, NULL);
