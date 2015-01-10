@@ -181,8 +181,10 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 	if (xhp->pkgdb_plist == NULL)
 		xhp->pkgdb_plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
 
+#if 0
 	if ((rv = xbps_pkgdb_conversion(xhp)) != 0)
 		return rv;
+#endif
 
 	if (xhp->pkgdb != NULL)
 		return 0;
