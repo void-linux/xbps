@@ -237,7 +237,7 @@ main(int argc, char **argv)
 		for (i = optind; i < argc; i++) {
 			rv = update_pkg(&xh, argv[i]);
 			if (rv != 0) {
-				xbps_pkgdb_unlock(&xh);
+				xbps_end(&xh);
 				exit(rv);
 			}
 		}
@@ -250,15 +250,13 @@ main(int argc, char **argv)
 			if (npkgs >= 2 && rv == EEXIST) {
 				rv = 0;
 			} else if (rv != 0) {
-				xbps_pkgdb_unlock(&xh);
+				xbps_end(&xh);
 				exit(rv);
 			}
 		}
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
 
-	if (!drun)
-		xbps_pkgdb_unlock(&xh);
-
+	xbps_end(&xh);
 	exit(rv);
 }

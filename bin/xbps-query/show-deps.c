@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -85,5 +85,6 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg, bool repomode)
 		xbps_array_get_cstring_nocopy(revdeps, i, &pkgdep);
 		printf("%s\n", pkgdep);
 	}
+	xbps_object_release(revdeps);
 	return 0;
 }

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -89,6 +89,20 @@ xbps_rpool_get_repo(const char *url)
 			return repo;
 
 	return NULL;
+}
+
+void
+xbps_rpool_release(struct xbps_handle *xhp _unused)
+{
+	struct xbps_repo *repo;
+
+	while ((repo = SIMPLEQ_FIRST(&rpool_queue))) {
+	       SIMPLEQ_REMOVE(&rpool_queue, repo, xbps_repo, entries);
+	       xbps_repo_close(repo, true);
+	       free(repo);
+	}
+	if (xhp->repositories)
+		xbps_object_release(xhp->repositories);
 }
 
 int

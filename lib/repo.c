@@ -57,12 +57,7 @@ xbps_repo_path(struct xbps_handle *xhp, const char *url)
 static xbps_dictionary_t
 repo_get_dict(struct xbps_repo *repo)
 {
-	xbps_dictionary_t d = NULL;
 	struct archive_entry *entry;
-	char *adata = NULL;
-	const void *buf;
-	off_t offset;
-	size_t size;
 	int rv;
 
 	if (repo->ar == NULL)
@@ -75,35 +70,7 @@ repo_get_dict(struct xbps_repo *repo)
 		    archive_error_string(repo->ar));
 		return NULL;
 	}
-	for (;;) {
-		rv = archive_read_data_block(repo->ar, &buf, &size, &offset);
-		if (rv == ARCHIVE_EOF)
-			break;
-		if (rv != ARCHIVE_OK) {
-			if (adata != NULL)
-				free(adata);
-
-			xbps_dbg_printf(repo->xhp,
-			    "%s: read_data_block %s\n", repo->uri,
-			    archive_error_string(repo->ar));
-			return NULL;
-		}
-		if (adata == NULL) {
-			adata = malloc(size);
-		} else {
-			adata = realloc(adata, size+offset);
-			if (adata == NULL) {
-				free(adata);
-				return NULL;
-			}
-		}
-		memcpy(adata+offset, buf, size);
-	}
-	if (adata != NULL) {
-		d = xbps_dictionary_internalize(adata);
-		free(adata);
-	}
-	return d;
+	return xbps_archive_get_dictionary(repo->ar, entry);
 }
 
 static bool
@@ -304,7 +271,6 @@ xbps_repo_close(struct xbps_repo *repo, bool lock)
 		xbps_dbg_printf(repo->xhp, "[repo] failed to unlock %s: %s\n", repo->uri, strerror(errno));
 
 	close(repo->fd);
-	free(repo);
 }
 
 xbps_dictionary_t

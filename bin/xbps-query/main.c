@@ -296,5 +296,6 @@ main(int argc, char **argv)
 		rv = show_pkg_revdeps(&xh, pkg, repo_mode);
 	}
 
+	xbps_end(&xh);
 	exit(rv);
 }

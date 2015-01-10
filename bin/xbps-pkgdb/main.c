@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013-2014 Juan Romero Pardines.
+ * Copyright (c) 2013-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -158,7 +158,7 @@ main(int argc, char **argv)
 		if (argc == optind) {
 			fprintf(stderr,
 			    "xbps-pkgdb: missing PKGNAME argument\n");
-			xbps_pkgdb_unlock(&xh);
+			xbps_end(&xh);
 			exit(EXIT_FAILURE);
 		}
 		for (i = optind; i < argc; i++) {
@@ -167,7 +167,7 @@ main(int argc, char **argv)
 				fprintf(stderr, "xbps-pkgdb: failed to "
 				    "change to %s mode to %s: %s\n",
 				    instmode, argv[i], strerror(rv));
-				xbps_pkgdb_unlock(&xh);
+				xbps_end(&xh);
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -183,6 +183,6 @@ main(int argc, char **argv)
 	}
 
 out:
-	xbps_pkgdb_unlock(&xh);
+	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }

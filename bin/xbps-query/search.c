@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -230,13 +230,16 @@ search_repo_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 {
 	xbps_array_t allkeys;
 	struct search_data *sd = arg;
+	int rv;
 
 	if (repo->idx == NULL)
 		return 0;
 
 	sd->repourl = repo->uri;
 	allkeys = xbps_dictionary_all_keys(repo->idx);
-	return xbps_array_foreach_cb(repo->xhp, allkeys, repo->idx, search_array_cb, sd);
+	rv = xbps_array_foreach_cb(repo->xhp, allkeys, repo->idx, search_array_cb, sd);
+	xbps_object_release(allkeys);
+	return rv;
 }
 
 int

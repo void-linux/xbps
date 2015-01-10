@@ -1269,6 +1269,8 @@ struct xbps_repo {
 	bool is_signed;
 };
 
+void xbps_rpool_release(struct xbps_handle *xhp);
+
 /**
  * Synchronizes repository data for all remote repositories
  * as specified in the configuration file or if \a uri argument is

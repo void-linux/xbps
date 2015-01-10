@@ -109,11 +109,13 @@ xbps_pkgdb_unlock(struct xbps_handle *xhp)
 {
 	(void)xbps_pkgdb_update(xhp, true);
 
-	if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
-		xbps_dbg_printf(xhp, "[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
+	if (pkgdb_fd != -1) {
+		if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
+			xbps_dbg_printf(xhp, "[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
 
-	(void)close(pkgdb_fd);
-	pkgdb_fd = -1;
+		(void)close(pkgdb_fd);
+		pkgdb_fd = -1;
+	}
 }
 
 static int
@@ -247,8 +249,15 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 	if (xhp->pkgdb == NULL)
 		return;
 
+	if (xhp->pkgdb_revdeps)
+		xbps_object_release(xhp->pkgdb_revdeps);
+	if (xhp->vpkgd)
+		xbps_object_release(xhp->vpkgd);
+	if (xhp->preserved_files)
+		xbps_object_release(xhp->preserved_files);
+
+	xbps_pkgdb_unlock(xhp);
 	xbps_object_release(xhp->pkgdb);
-	xhp->pkgdb = NULL;
 	xbps_dbg_printf(xhp, "[pkgdb] released ok.\n");
 }
 
