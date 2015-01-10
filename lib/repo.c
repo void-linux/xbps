@@ -180,7 +180,7 @@ xbps_repo_store(struct xbps_handle *xhp, const char *repo)
 	assert(xhp);
 	assert(repo);
 
-        if (xhp->repositories == NULL) {
+	if (xhp->repositories == NULL) {
 		xhp->repositories = xbps_array_create();
 		assert(xhp->repositories);
 	}
