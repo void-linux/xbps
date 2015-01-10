@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,14 +47,11 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 
 	/* Internalize props.plist dictionary from binary pkg */
 	binpkg = xbps_string_cstring_nocopy(obj);
-	pkgver = xbps_binpkg_pkgver(binpkg);
-	assert(pkgver);
 	arch = xbps_binpkg_arch(binpkg);
 	assert(arch);
 
 	if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
-		xbps_dbg_printf(xhp, "%s: ignoring pkg with unmatched arch (%s)\n", pkgver, arch);
-		free(pkgver);
+		xbps_dbg_printf(xhp, "%s: ignoring binpkg with unmatched arch (%s)\n", binpkg, arch);
 		free(arch);
 		return 0;
 	}
@@ -63,29 +60,19 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	 * Remove binary pkg if it's not registered in any repository
 	 * or if hash doesn't match.
 	 */
-	binpkgsig = xbps_xasprintf("%s.sig", binpkg);
+	pkgver = xbps_binpkg_pkgver(binpkg);
+	assert(pkgver);
 	repo_pkgd = xbps_rpool_get_pkg(xhp, pkgver);
 	free(pkgver);
 	if (repo_pkgd) {
 		xbps_dictionary_get_cstring_nocopy(repo_pkgd,
 		    "filename-sha256", &rsha256);
-		if (xbps_file_hash_check(binpkg, rsha256) == ERANGE) {
-			if (unlink(binpkg) == -1) {
-				fprintf(stderr, "Failed to remove "
-				    "`%s': %s\n", binpkg, strerror(errno));
-			} else {
-				printf("Removed %s from cachedir (sha256 mismatch)\n", binpkg);
-			}
-			if (unlink(binpkgsig) == -1) {
-				if (errno != ENOENT) {
-					fprintf(stderr, "Failed to remove "
-					    "`%s': %s\n", binpkgsig, strerror(errno));
-				}
-			}
+		if (xbps_file_hash_check(binpkg, rsha256) == 0) {
+			/* hash matched */
+			return 0;
 		}
-		free(binpkgsig);
-		return 0;
 	}
+	binpkgsig = xbps_xasprintf("%s.sig", binpkg);
 	if (unlink(binpkg) == -1) {
 		fprintf(stderr, "Failed to remove `%s': %s\n",
 		    binpkg, strerror(errno));
