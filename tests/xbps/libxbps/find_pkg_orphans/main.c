@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013 Juan Romero Pardines.
+ * Copyright (c) 2013-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,20 +28,27 @@
 
 static const char expected_output[] =
 	"xbps-git-20130310_2\n"
+	"unexistent-pkg-0_1\n"
+	"xbps-triggers-1.0_1\n"
 	"libxbps-git-20130310_2\n"
+	"orphan1-0_1\n"
+	"orphan0-0_1\n"
+	"confuse-2.7_2\n"
 	"proplib-0.6.3_1\n"
 	"libarchive-3.1.2_1\n"
 	"libfetch-2.34_1\n"
-	"confuse-2.7_2\n"
+	"bzip2-1.0.5_1\n"
+	"liblzma-5.0.4_3\n"
+	"expat-2.1.0_3\n"
+	"attr-2.4.46_5\n"
 	"libssl-1.0.1e_3\n"
 	"zlib-1.2.7_1\n"
-	"attr-2.4.46_5\n"
-	"expat-2.1.0_3\n"
-	"liblzma-5.0.4_3\n";
+	"glibc-2.20_1\n";
 
 static const char expected_output_all[] =
-	"orphan0-0_1\n"
-	"unexistent-pkg-0_1\n";
+	"unexistent-pkg-0_1\n"
+	"orphan1-0_1\n"
+	"orphan0-0_1\n";
 
 ATF_TC(find_pkg_orphans_test);
 ATF_TC_HEAD(find_pkg_orphans_test, tc)

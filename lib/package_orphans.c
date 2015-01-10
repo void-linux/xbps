@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 	xbps_object_iterator_t iter;
 	const char *curpkgver, *deppkgver, *reqbydep;
 	bool automatic = false;
-	unsigned int cnt, reqbycnt;
+	unsigned int i, cnt, reqbycnt;
 
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
@@ -78,16 +78,13 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 	/*
 	 * Add all packages specified by the client.
 	 */
-	for (unsigned int i = 0; i < xbps_array_count(orphans_user); i++) {
+	for (i = 0; i < xbps_array_count(orphans_user); i++) {
 		xbps_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
 		pkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
 		if (pkgd == NULL)
 			continue;
 		xbps_array_add(array, pkgd);
 	}
-	if (xbps_array_count(array))
-		goto find_orphans;
-
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 	/*
@@ -116,15 +113,19 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 	}
 	xbps_object_iterator_release(iter);
 
-find_orphans:
-	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
+	for (i = 0; i < xbps_array_count(array); i++) {
 		pkgd = xbps_array_get(array, i);
-		rdeps = xbps_dictionary_get(pkgd, "run_depends");
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
+		rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, curpkgver);
 		for (unsigned int x = 0; x < xbps_array_count(rdeps); x++) {
 			cnt = 0;
 			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);
-			if (xbps_find_pkg_in_array(array, deppkgver, NULL) ||
-			    xbps_find_virtualpkg_in_array(xhp, array, deppkgver, NULL))
+			if (xbps_find_pkg_in_array(array, deppkgver, NULL))
+				continue;
+			deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
+			automatic = false;
+			xbps_dictionary_get_bool(deppkgd, "automatic-install", &automatic);
+			if (!automatic)
 				continue;
 			reqby = xbps_pkgdb_get_pkg_revdeps(xhp, deppkgver);
 			if (reqby == NULL)
@@ -132,17 +133,11 @@ find_orphans:
 			reqbycnt = xbps_array_count(reqby);
 			for (unsigned int j = 0; j < reqbycnt; j++) {
 				xbps_array_get_cstring_nocopy(reqby, j, &reqbydep);
-				if (xbps_find_pkg_in_array(array, reqbydep, NULL) ||
-				    xbps_find_virtualpkg_in_array(xhp, array, reqbydep, NULL))
+				if (xbps_find_pkg_in_array(array, reqbydep, NULL))
 					cnt++;
 			}
-			if (cnt == reqbycnt) {
-				deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
-				automatic = false;
-				xbps_dictionary_get_bool(deppkgd, "automatic-install", &automatic);
-				if (automatic)
-					xbps_array_add(array, deppkgd);
-			}
+			if (cnt == reqbycnt)
+				xbps_array_add(array, deppkgd);
 		}
 	}
 

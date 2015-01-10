@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -324,15 +324,17 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t rundeps;
 		xbps_dictionary_t pkgd;
+		const char *pkgver;
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		rundeps = xbps_dictionary_get(pkgd, "run_depends");
 		if (!xbps_array_count(rundeps))
 			continue;
 
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		for (unsigned int i = 0; i < xbps_array_count(rundeps); i++) {
 			xbps_array_t pkg;
-			const char *pkgdep, *pkgver, *vpkgname;
+			const char *pkgdep, *vpkgname;
 			char *curpkgname;
 			bool alloc = false;
 
@@ -350,7 +352,6 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 				alloc = true;
 				pkg = xbps_array_create();
 			}
-			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 			if (!xbps_match_string_in_array(pkg, pkgver)) {
 				xbps_array_add_cstring_nocopy(pkg, pkgver);
 				xbps_dictionary_set(xhp->pkgdb_revdeps, vpkgname, pkg);

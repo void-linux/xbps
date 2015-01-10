@@ -1,5 +1,9 @@
 xbps-0.44 (???):
 
+ * libxbps: detection of orphaned pkgs is now 66% faster (and even more in some cases).
+   This improves the performance of `xbps-remove -R` (recursively remove a pkg
+   and its dependencies) and `xbps-remove -o` (remove orphaned pkgs) marginally.
+
  * xbps-query(8): only compile the ERE (Extended Regular Expression) once in
    the ownedby mode. A performance improvement suggested by Christian Neukirchen.
 
