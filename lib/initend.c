@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2014 Juan Romero Pardines.
+ * Copyright (c) 2011-2015 Juan Romero Pardines.
  * Copyright (c) 2014 Enno Boland.
  * All rights reserved.
  *
@@ -137,14 +137,7 @@ store_repo(struct xbps_handle *xhp, const char *repo)
 	if (xhp->flags & XBPS_FLAG_IGNORE_CONF_REPOS)
 		return false;
 
-	if (xhp->repositories == NULL)
-		xhp->repositories = xbps_array_create();
-
-	if (xbps_match_string_in_array(xhp->repositories, repo))
-		return false;
-
-	xbps_array_add_cstring(xhp->repositories, repo);
-	return true;
+	return xbps_repo_store(xhp, repo);
 }
 
 static bool
@@ -496,9 +489,10 @@ xbps_init(struct xbps_handle *xhp)
 		}
 	}
 	/* Going back to old working directory */
-	if (chdir(cwd) == -1)
-		xbps_dbg_printf(xhp, "%s: cannot chdir to %s: %s\n", __func__, cwd, strerror(errno));
-
+	if (chdir(cwd) == -1) {
+		xbps_dbg_printf(xhp, "%s: cannot chdir to %s: %s\n",
+		    __func__, cwd, strerror(errno));
+	}
 	return 0;
 }
 

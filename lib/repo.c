@@ -172,6 +172,45 @@ repo_open_remote(struct xbps_repo *repo)
 	return rv;
 }
 
+bool
+xbps_repo_store(struct xbps_handle *xhp, const char *repo)
+{
+	char *url = NULL;
+
+	assert(xhp);
+	assert(repo);
+
+        if (xhp->repositories == NULL) {
+		xhp->repositories = xbps_array_create();
+		assert(xhp->repositories);
+	}
+	/*
+	 * If it's a local repo and path is relative, make it absolute.
+	 */
+	if (!xbps_repository_is_remote(repo)) {
+		if (repo[0] != '/' && repo[0] != '\0') {
+			if ((url = realpath(repo, NULL)) == NULL)
+				xbps_dbg_printf(xhp, "[repo] %s: realpath %s\n", __func__, repo);
+		}
+	}
+	if (xbps_match_string_in_array(xhp->repositories, url ? url : repo)) {
+		xbps_dbg_printf(xhp, "[repo] `%s' already stored\n", url ? url : repo);
+		if (url)
+			free(url);
+		return false;
+	}
+	if (xbps_array_add_cstring(xhp->repositories, url ? url : repo)) {
+		xbps_dbg_printf(xhp, "[repo] `%s' stored successfully\n", url ? url : repo);
+		if (url)
+			free(url);
+		return true;
+	}
+	if (url)
+		free(url);
+
+	return false;
+}
+
 struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 {

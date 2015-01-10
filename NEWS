@@ -1,5 +1,9 @@
 xbps-0.44 (???):
 
+ * xbps-{install,query}: the --repository argument now works with relative
+   paths for local repositories. The relative path is always converted to
+   absolute.
+
  * libxbps: the provides obj (array of strings) now fully expects exact
    pkgver strings, such as `foo-1.0_1`. Incomplete components such as
    `pkgname` or `pkgname-9` are not accepted anymore.

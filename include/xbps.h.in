@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20141209"
+#define XBPS_API_VERSION	"20150110"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1388,6 +1388,16 @@ xbps_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 
 /** @addtogroup repo */
 /*@{*/
+
+/**
+ * Stores repository \a url into the repository pool.
+ *
+ * @param[in] xhp Pointer to the xbps_handle struct.
+ * @param[in] uri Repository URI to store.
+ *
+ * @return True on success, false otherwise.
+ */
+bool xbps_repo_store(struct xbps_handle *xhp, const char *url);
 
 /**
  * Opens a repository and returns a xbps_repo object.

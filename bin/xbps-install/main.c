@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -159,10 +159,7 @@ main(int argc, char **argv)
 			drun = true;
 			break;
 		case 'R':
-			if (xh.repositories == NULL)
-				xh.repositories = xbps_array_create();
-
-			xbps_array_add_cstring_nocopy(xh.repositories, optarg);
+			xbps_repo_store(&xh, optarg);
 			break;
 		case 'r':
 			rootdir = optarg;
