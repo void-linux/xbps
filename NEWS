@@ -1,5 +1,8 @@
 xbps-0.44 (???):
 
+ * xbps-dgraph(8): the -m/--metadata option (default mode) is now properly
+   accepted. Regression introduced in 0.42.
+
  * xbps-{install,query}: the --repository argument now works with relative
    paths for local repositories. The relative path is always converted to
    absolute.

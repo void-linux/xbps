@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2014 Juan Romero Pardines.
+ * Copyright (c) 2010-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -501,7 +501,7 @@ create_dot_graph(struct xbps_handle *xhp,
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:dfghMRr:V";
+	const char *shortopts = "C:c:dfghMmRr:V";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "graph-config", required_argument, NULL, 'c' },
@@ -510,6 +510,7 @@ main(int argc, char **argv)
 		{ "gen-config", no_argument, NULL, 'g' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "memory-sync", no_argument, NULL, 'M' },
+		{ "metadata", no_argument, NULL, 'm' },
 		{ "repository", no_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "version", no_argument, NULL, 'V' },
