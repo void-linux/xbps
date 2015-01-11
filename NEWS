@@ -1,5 +1,9 @@
 xbps-0.44 (???):
 
+ * Change the xbps utils to just check for the first character when it
+   asks for confirmation, rather than "yes" or "no". This implements issue #73.
+   https://github.com/voidlinux/xbps/issues/73
+
  * libxbps: use a sane umask(2) while unpacking package files from
    binary packages (see https://github.com/voidlinux/void-packages/issues/835)
 

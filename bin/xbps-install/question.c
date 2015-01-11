@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2010 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,51 +37,24 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
-static char *
-strtrim(char *str)
-{
-	char *pch = str;
-
-	if (str == NULL || *str == '\0')
-		return str;
-
-	while (isspace((unsigned char)*pch))
-		pch++;
-
-	if (pch != str)
-		memmove(str, pch, (strlen(pch) + 1));
-
-	if (*str == '\0')
-		return str;
-
-	pch = (str + (strlen(str) - 1));
-	while (isspace((unsigned char)*pch))
-		pch--;
-
-	*++pch = '\0';
-
-	return str;
-}
-
 static bool
 question(bool preset, const char *fmt, va_list ap)
 {
-	char response[32];
+	char response[4];
 
 	vfprintf(stderr, fmt, ap);
 	if (preset)
-		fprintf(stderr, " %s ", "[YES/no]");
+		fprintf(stderr, " %s ", "[Y/n]");
 	else
-		fprintf(stderr, " %s ", "[yes/NO]");
+		fprintf(stderr, " %s ", "[y/N]");
 
 	if (fgets(response, sizeof(response), stdin)) {
-		(void)strtrim(response);
 		if (strlen(response) == 0)
 			return preset;
 
-		if (strcasecmp(response, "yes") == 0)
+		if (response[0] == 'y' || response[0] == 'Y')
 			return true;
-		else if (strcasecmp(response, "no") == 0)
+		if (response[0] == 'n' || response[0] == 'N')
 			return false;
 	}
 	return false;
