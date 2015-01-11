@@ -1,5 +1,8 @@
 xbps-0.44 (???):
 
+ * libxbps: use a sane umask(2) while unpacking package files from
+   binary packages (see https://github.com/voidlinux/void-packages/issues/835)
+
  * xbps-dgraph(8): the -m/--metadata option (default mode) is now properly
    accepted. Regression introduced in 0.42.
 

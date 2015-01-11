@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -502,6 +502,7 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	const char *pkgver;
 	char *bpkg = NULL;
 	int pkg_fd = -1, rv = 0;
+	mode_t myumask;
 
 	assert(xbps_object_type(pkg_repod) == XBPS_TYPE_DICTIONARY);
 
@@ -528,6 +529,8 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	archive_read_support_compression_bzip2(ar);
 	archive_read_support_compression_xz(ar);
 	archive_read_support_format_tar(ar);
+
+	myumask = umask(022);
 
 	pkg_fd = open(bpkg, O_RDONLY|O_CLOEXEC);
 	if (pkg_fd == -1) {
@@ -593,6 +596,9 @@ out:
 		archive_read_finish(ar);
 	if (bpkg)
 		free(bpkg);
+
+	/* restore */
+	umask(myumask);
 
 	return rv;
 }
