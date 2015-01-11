@@ -225,10 +225,12 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 	/*
 	 * Open the repository archive.
 	 */
-	if (lock)
+	if (lock) {
 		repo->fd = open(repofile, O_RDWR);
-	else
+		repo->is_locked = true;
+	} else {
 		repo->fd = open(repofile, O_RDONLY);
+	}
 
 	if (repo->fd == -1) {
 		int rv = errno;
@@ -252,7 +254,7 @@ out:
 }
 
 void
-xbps_repo_close(struct xbps_repo *repo, bool lock)
+xbps_repo_close(struct xbps_repo *repo)
 {
 	assert(repo);
 
@@ -267,7 +269,7 @@ xbps_repo_close(struct xbps_repo *repo, bool lock)
 		xbps_object_release(repo->idxmeta);
 		repo->idxmeta = NULL;
 	}
-        if (lock && lockf(repo->fd, F_ULOCK, 0) == -1)
+        if (repo->is_locked && lockf(repo->fd, F_ULOCK, 0) == -1)
 		xbps_dbg_printf(repo->xhp, "[repo] failed to unlock %s: %s\n", repo->uri, strerror(errno));
 
 	close(repo->fd);

@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20150110-1"
+#define XBPS_API_VERSION	"20150111"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1257,6 +1257,7 @@ struct xbps_repo {
 	 * @private
 	 */
 	int fd;
+	bool is_locked;
 	/**
 	 * var is_remote
 	 *
@@ -1418,9 +1419,8 @@ struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url, bool 
  * Closes a repository object and releases resources.
  *
  * @param[in] repo The repository object to close.
- * @param[in] lock Set it to true to release the POSIX file lock.
  */
-void xbps_repo_close(struct xbps_repo *repo, bool lock);
+void xbps_repo_close(struct xbps_repo *repo);
 
 /**
  *

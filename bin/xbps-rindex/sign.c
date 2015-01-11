@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013-2014 Juan Romero Pardines.
+ * Copyright (c) 2013-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -302,7 +302,7 @@ out:
 		rsa = NULL;
 	}
 	if (repo) {
-		xbps_repo_close(repo, true);
+		xbps_repo_close(repo);
 	}
 	return rv ? -1 : 0;
 }

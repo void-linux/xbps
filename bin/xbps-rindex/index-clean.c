@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -155,7 +155,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 			xbps_dictionary_count(idx));
 
 out:
-	xbps_repo_close(repo, true);
+	xbps_repo_close(repo);
 	if (idx)
 		xbps_object_release(idx);
 	if (idxmeta)
