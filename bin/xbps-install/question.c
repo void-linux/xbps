@@ -49,9 +49,8 @@ question(bool preset, const char *fmt, va_list ap)
 		fprintf(stderr, " %s ", "[y/N]");
 
 	if (fgets(response, sizeof(response), stdin)) {
-		if (strlen(response) == 0)
+		if (response[0] == '\n')
 			return preset;
-
 		if (response[0] == 'y' || response[0] == 'Y')
 			return true;
 		if (response[0] == 'n' || response[0] == 'N')
