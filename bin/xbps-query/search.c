@@ -45,6 +45,7 @@
 
 struct search_data {
 	bool regex, repo_mode;
+	regex_t regexp;
 	int maxcols;
 	const char *pat, *prop, *repourl;
 	xbps_array_t results;
@@ -104,7 +105,6 @@ search_array_cb(struct xbps_handle *xhp _unused,
 	xbps_object_t obj2;
 	struct search_data *sd = arg;
 	const char *pkgver = NULL, *desc, *str;
-	regex_t regex;
 
 	if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver))
 		return 0;
@@ -118,15 +118,11 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			vpkgfound = true;
 
 		if (sd->regex) {
-			if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
-				return errno;
-
-			if ((regexec(&regex, pkgver, 0, 0, 0) == 0) ||
-			    (regexec(&regex, desc, 0, 0, 0) == 0)) {
+			if ((regexec(&sd->regexp, pkgver, 0, 0, 0) == 0) ||
+			    (regexec(&sd->regexp, desc, 0, 0, 0) == 0)) {
 				xbps_array_add_cstring_nocopy(sd->results, pkgver);
 				xbps_array_add_cstring_nocopy(sd->results, desc);
 			}
-			regfree(&regex);
 			return 0;
 		}
 		if (vpkgfound) {
@@ -149,15 +145,12 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		for (unsigned int i = 0; i < xbps_array_count(obj2); i++) {
 			xbps_array_get_cstring_nocopy(obj2, i, &str);
 			if (sd->regex) {
-				if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
-					return errno;
-				if (regexec(&regex, str, 0, 0, 0) == 0) {
+				if (regexec(&sd->regexp, str, 0, 0, 0) == 0) {
 					if (sd->repo_mode)
 						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 					else
 						printf("%s: %s\n", pkgver, str);
 				}
-				regfree(&regex);
 			} else {
 				if ((strcasestr(str, sd->pat)) ||
 				    (fnmatch(sd->pat, str, FNM_PERIOD)) == 0) {
@@ -176,15 +169,12 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			exit(EXIT_FAILURE);
 
 		if (sd->regex) {
-			if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
-				return errno;
-			if (regexec(&regex, size, 0, 0, 0) == 0) {
+			if (regexec(&sd->regexp, size, 0, 0, 0) == 0) {
 				if (sd->repo_mode)
 					printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
 				else
 					printf("%s: %s\n", pkgver, size);
 			}
-			regfree(&regex);
 		} else {
 			if (strcasestr(size, sd->pat)) {
 				if (sd->repo_mode)
@@ -204,15 +194,12 @@ search_array_cb(struct xbps_handle *xhp _unused,
 		/* property is a string */
 		str = xbps_string_cstring_nocopy(obj2);
 		if (sd->regex) {
-			if (regcomp(&regex, sd->pat, REG_EXTENDED|REG_NOSUB) != 0)
-				return errno;
-			if (regexec(&regex, str, 0, 0, 0) == 0) {
+			if (regexec(&sd->regexp, str, 0, 0, 0) == 0) {
 				if (sd->repo_mode)
 					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 				else
 					printf("%s: %s\n", pkgver, str);
 			}
-			regfree(&regex);
 		} else {
 			if (strcasestr(str, sd->pat)) {
 				if (sd->repo_mode)
@@ -249,6 +236,10 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 	int rv;
 
 	sd.regex = regex;
+	if (regex) {
+		if (regcomp(&sd.regexp, pat, REG_EXTENDED|REG_NOSUB) != 0)
+			return errno;
+	}
 	sd.repo_mode = repo_mode;
 	sd.pat = pat;
 	sd.prop = prop;
@@ -274,6 +265,8 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 		print_results(xhp, &sd);
 		xbps_object_release(sd.results);
 	}
+	if (regex)
+		regfree(&sd.regexp);
 
 	return rv;
 }

@@ -23,7 +23,7 @@ xbps-0.44 (???):
    and its dependencies) and `xbps-remove -o` (remove orphaned pkgs) marginally.
 
  * xbps-query(8): only compile the ERE (Extended Regular Expression) once in
-   the ownedby mode. A performance improvement suggested by Christian Neukirchen.
+   the ownedby and search modes. A performance improvement suggested by Christian Neukirchen.
 
  * libxbps: performance improvement for xbps_repo_get_pkg_revdeps(): when finding
    the matching pkg, search for it in the current repository, not in the repository
