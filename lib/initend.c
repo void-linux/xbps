@@ -502,8 +502,6 @@ xbps_end(struct xbps_handle *xhp)
 	assert(xhp);
 
 	xbps_pkgdb_release(xhp);
-	xbps_rpool_release(xhp);
-	xbps_fetch_unset_cache_connection();
 }
 
 static void
