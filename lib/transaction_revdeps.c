@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013-2014 Juan Romero Pardines.
+ * Copyright (c) 2013-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,17 +53,12 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 	for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
 		xbps_array_t rundeps, mdeps;
 		const char *pkgver, *revpkgver, *pkgpattern;
-		char *tmp, *pkgname, *pkgdepname, *vpkgname, *vpkgver, *str;
+		char *pkgname, *pkgdepname, *vpkgname, *vpkgver, *str;
 
 		pkgver = revpkgver = pkgpattern = NULL;
-		tmp = pkgname = pkgdepname = vpkgname = vpkgver = str = NULL;
+		pkgname = pkgdepname = vpkgname = vpkgver = str = NULL;
 
 		xbps_array_get_cstring(provides, i, &vpkgver);
-		if (strchr(vpkgver, '_') == NULL) {
-			tmp = xbps_xasprintf("%s_1", vpkgver);
-			free(vpkgver);
-			vpkgver = strdup(tmp);
-		}
 		vpkgname = xbps_pkg_name(vpkgver);
 		assert(vpkgname);
 		rundeps = xbps_dictionary_get(rev_pkgd, "run_depends");
