@@ -254,13 +254,6 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 	if (xhp->pkgdb == NULL)
 		return;
 
-	if (xhp->pkgdb_revdeps)
-		xbps_object_release(xhp->pkgdb_revdeps);
-	if (xhp->vpkgd)
-		xbps_object_release(xhp->vpkgd);
-	if (xhp->preserved_files)
-		xbps_object_release(xhp->preserved_files);
-
 	xbps_pkgdb_unlock(xhp);
 	xbps_object_release(xhp->pkgdb);
 	xbps_dbg_printf(xhp, "[pkgdb] released ok.\n");
