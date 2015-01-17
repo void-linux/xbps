@@ -95,7 +95,7 @@ get_pkg_in_array(xbps_array_t array, const char *str, const char *trans, bool vi
 	if (found && trans &&
 	    xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract)) {
 		if (strcmp(tract, trans) == 0)
-			found = false;
+			found = true;
 	}
 	if (!found) {
 		errno = ENOENT;
