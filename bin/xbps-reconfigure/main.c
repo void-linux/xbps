@@ -182,6 +182,9 @@ main(int argc, char **argv)
 			}
 		}
 	}
+	if (rv == 0)
+		xbps_pkgdb_update(&xh, true, true);
+
 	xbps_end(&xh);
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }
