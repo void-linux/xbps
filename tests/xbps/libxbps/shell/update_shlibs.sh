@@ -72,12 +72,8 @@ shlib_bump_revdep_in_trans_body() {
 
 	xbps-install -C empty.conf -r root --repository=$PWD/repo -yuvd
 	atf_check_equal $? 0
-
-	res=$(xbps-query -C empty.conf -r root -p pkgver A)
-	atf_check_equal $res A-2.0_1
-
-	res=$(xbps-query -C empty.conf -r root -p pkgver B)
-	atf_check_equal $res B-2.0_1
+	atf_check_equal $(xbps-query -C empty.conf -r root -ppkgver A) A-2.0_1
+	atf_check_equal $(xbps-query -C empty.conf -r root -ppkgver B) B-2.0_1
 }
 
 # 3rd case:
@@ -153,12 +149,15 @@ shlib_bump_revdep_diff_body() {
 
 	xbps-install -C empty.conf -r root --repository=$PWD/repo -yuvd
 	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -C empty.conf -r root -ppkgver A) A-2.0_1
+	atf_check_equal $(xbps-query -C empty.conf -r root -ppkgver B) B-2.0_1
+	atf_check_equal $(xbps-query -C empty.conf -r root -ppkgver C) C-2.0_1
 }
 
 atf_test_case shlib_bump_versioned
 
 shlib_bump_versioned_head() {
-	atf_set "descr" "Tests for pkg updates: revdep requires an unexistent versioned shlib"
+	atf_set "descr" "Tests for pkg updates: pkg update with a versioned soname bump"
 }
 
 shlib_bump_versioned_body() {
