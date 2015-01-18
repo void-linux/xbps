@@ -1,4 +1,4 @@
-.Dd January 10, 2014
+.Dd January 18, 2015
 .Dt XBPS-QUERY 8
 .Sh NAME
 .Nm xbps-query
@@ -169,7 +169,7 @@ If the
 option is set, the matched
 .Ar PATTERN
 in repositories will be shown.
-.It Fl S, Fl -show Ar PKG [ Fl -repository ]
+.It Fl S, Fl -show Ar PKG [ Fl -repository ] [ Fl -property Ar PROP ]
 Shows information of an installed package. This is the default mode
 if no other mode is set.
 If the
@@ -177,6 +177,9 @@ If the
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
+If a package property is specified with
+.Fl -property,
+only that property will be shown.
 .It Fl s, Fl -search Ar PATTERN [ Fl -repository ] [ Fl -property Ar PROP ] [ Fl -regex ]
 Search for packages by matching
 .Ar PATTERN
