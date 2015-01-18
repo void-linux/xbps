@@ -181,7 +181,7 @@ ownedby(struct xbps_handle *xhp, const char *pat, bool repo, bool regex)
 
 	if (regex) {
 		ffd.rematch = true;
-		if (regcomp(&ffd.regex, ffd.pat, REG_EXTENDED|REG_NOSUB) != 0)
+		if (regcomp(&ffd.regex, ffd.pat, REG_EXTENDED|REG_NOSUB|REG_ICASE) != 0)
 			return EINVAL;
 	}
 	if (repo)

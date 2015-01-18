@@ -1,5 +1,7 @@
 xbps-0.44 (???):
 
+ * xbps-query(8): --regex option now matches EREs in case insensitive mode.
+
  * libxbps: globally check for unresolved shared libraries before accepting
    a transaction to make sure there's no broken packages.
 

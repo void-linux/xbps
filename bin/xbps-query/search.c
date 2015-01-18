@@ -237,7 +237,7 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 
 	sd.regex = regex;
 	if (regex) {
-		if (regcomp(&sd.regexp, pat, REG_EXTENDED|REG_NOSUB) != 0)
+		if (regcomp(&sd.regexp, pat, REG_EXTENDED|REG_NOSUB|REG_ICASE) != 0)
 			return errno;
 	}
 	sd.repo_mode = repo_mode;
