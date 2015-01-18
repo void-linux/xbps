@@ -1,5 +1,9 @@
 xbps-0.44 (???):
 
+ * libxbps: abort package unpacking as soon as a file failed
+   to be written and return a meaningful error; close #74
+   https://github.com/voidlinux/xbps/issues/74
+
  * Change the xbps utils to just check for the first character when it
    asks for confirmation, rather than "yes" or "no". This implements issue #73.
    https://github.com/voidlinux/xbps/issues/73

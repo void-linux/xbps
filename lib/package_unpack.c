@@ -86,7 +86,7 @@ unpack_archive(struct xbps_handle *xhp,
 	ssize_t entry_size;
 	const char *file, *entry_pname, *transact;
 	char *pkgname, *buf;
-	int ar_rv, rv, entry_type, flags;
+	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists, skip_obsoletes;
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
@@ -94,7 +94,7 @@ unpack_archive(struct xbps_handle *xhp,
 	binpkg_filesd = pkg_filesd = NULL;
 	force = preserve = update = file_exists = false;
 	skip_obsoletes = xucd_stats = false;
-	ar_rv = rv = entry_type = flags = 0;
+	ar_rv = rv = error = entry_type = flags = 0;
 
 	xbps_dictionary_get_bool(pkg_repod, "preserve", &preserve);
 	xbps_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
@@ -403,10 +403,12 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Extract entry from archive.
 		 */
 		if (archive_read_extract(ar, entry, flags) != 0) {
+			error = archive_errno(ar);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
-			    archive_errno(ar), pkgver,
+			    error, pkgver,
 			    "%s: [unpack] failed to extract file `%s': %s",
-			    pkgver, entry_pname, archive_error_string(ar));
+			    pkgver, entry_pname, strerror(error));
+			break;
 		} else {
 			if (xhp->unpack_cb != NULL) {
 				xucd.entry_extract_count++;
@@ -417,10 +419,13 @@ unpack_archive(struct xbps_handle *xhp,
 	/*
 	 * If there was any error extracting files from archive, error out.
 	 */
-	if (ar_rv == ARCHIVE_FATAL) {
+	if (error || ar_rv == ARCHIVE_FATAL) {
+		rv = error;
+		if (!rv)
+			rv = ar_rv;
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
 		    "%s: [unpack] failed to extract files: %s",
-		    pkgver, archive_error_string(ar));
+		    pkgver, strerror(rv));
 		goto out;
 	}
 	/*
