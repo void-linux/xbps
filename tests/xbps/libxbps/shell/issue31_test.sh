@@ -34,7 +34,8 @@ issue31_body() {
 	atf_check_equal $? 0
 
 	xbps-install -r root -C null.conf --repository=$PWD -yuvd A
-	atf_check_equal $? 0
+	# ENOTEMPTY
+	atf_check_equal $? 39
 }
 
 atf_init_test_cases() {
