@@ -65,35 +65,58 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 {
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	xbps_dictionary_t d;
+	xbps_dictionary_t d, pd;
+	const char *pkgver;
 
 	d = xbps_dictionary_create();
 	assert(d);
-	iter = xbps_dictionary_iterator(xhp->pkgdb);
+
+	/* copy pkgdb to out temporary dictionary */
+	pd = xbps_dictionary_copy(xhp->pkgdb);
+	assert(pd);
+
+	/*
+	 * copy pkgs from transaction to our dictionary, overriding them
+	 * if they were there from pkgdb.
+	 */
+	iter = xbps_array_iterator(pkgs);
+	assert(iter);
+	while ((obj = xbps_object_iterator_next(iter))) {
+		char *pkgname;
+
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+		xbps_dictionary_set(pd, pkgname, obj);
+		free(pkgname);
+	}
+	xbps_object_iterator_release(iter);
+
+	/*
+	 * iterate over our dictionary to collect shlib-{requires,provides}.
+	 */
+	iter = xbps_dictionary_iterator(pd);
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t shobjs;
 		xbps_dictionary_t pkgd;
-		const char *pkgname, *pkgver;
+		const char *trans;
 
-		pkgname = xbps_dictionary_keysym_cstring_nocopy(obj);
-		/*
-		 * If there's an update for this pkg in transaction, use it.
-		 */
-		pkgd = xbps_find_pkg_in_array(pkgs, pkgname, "update");
-		if (pkgd == NULL)
-			pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-
+		pkgd = xbps_dictionary_get_keysym(pd, obj);
+		if (xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &trans)) {
+			if (!strcmp(trans, "remove"))
+				continue;
+		}
 		/*
 		 * If pkg does not have the required obj, pass to next one.
 		 */
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		shobjs = xbps_dictionary_get(pkgd,
 				req ? "shlib-requires" : "shlib-provides");
 		if (shobjs == NULL)
 			continue;
 
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		for (unsigned int i = 0; i < xbps_array_count(shobjs); i++) {
 			const char *shlib;
 
@@ -129,8 +152,12 @@ xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t
 		char *buf;
 
 		shlib = xbps_dictionary_keysym_cstring_nocopy(obj);
-		if (xbps_dictionary_get(shprovides, shlib))
+		xbps_dbg_printf(xhp, "%s: checking for `%s': ", __func__, shlib);
+		if (xbps_dictionary_get(shprovides, shlib)) {
+			xbps_dbg_printf_append(xhp, "found\n");
 			continue;
+		}
+		xbps_dbg_printf_append(xhp, "not found\n");
 
 		unmatched = true;
 		array = xbps_dictionary_get_keysym(shrequires, obj);
