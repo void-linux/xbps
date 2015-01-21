@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014 Juan Romero Pardines.
+ * Copyright (c) 2014-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,7 +69,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	if (!xbps_array_add(pkgs, pkgd))
 		return EINVAL;
 
-	xbps_dbg_printf_append(xhp, " (added %s)\n", pkgver);
+	xbps_dbg_printf(xhp, "Added `%s' into the dependency list\n", pkgver);
 
 	return 0;
 }

@@ -255,8 +255,6 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg)
 			}
 		}
 		free(vpkgname);
-		xbps_dbg_printf(xhp, "matched vpkg `%s' with `%s (provides %s)`\n",
-		    vpkg, pkg, vpkg_conf);
 		found = true;
 		break;
 	}

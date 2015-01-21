@@ -200,7 +200,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			}
 			free(pkgname);
 			/* Required dependency not installed */
-			xbps_dbg_printf_append(xhp, "not installed ");
+			xbps_dbg_printf_append(xhp, "not installed.\n");
 			reason = "install";
 			state = XBPS_PKG_STATE_NOT_INSTALLED;
 		} else {
