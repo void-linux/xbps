@@ -1,6 +1,6 @@
 /*
+ * Copyright (c) 2014-2015 Juan Romero Pardines
  * Copyright (c) 2012-2014 Dave Elusive <davehome@redthumb.info.tm>
- * Copyright (c) 2014 Juan Romero Pardines
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 #include <xbps.h>
 
@@ -101,6 +102,7 @@ map_create(void)
 	map->size = 16;
 	map->len = 0;
 	map->items = calloc(map->size, sizeof(map_item_t));
+	assert(map->items);
 	for (; i < map->size; i++) {
 		map->items[i] = map_new_item();
 	}
@@ -188,8 +190,7 @@ show_usage(const char *prog)
 "Usage: %s [OPTIONS] [FILES...]\n\n"
 " Options:\n"
 "  -h,--help			Show this helpful help-message for help.\n"
-"  -C,--config=FILENAME 	Set (or override) the `xbps.conf' (which may\n"
-"				have automatically been detected).\n"
+"  -C,--config=DIRECTORY 	Set path to xbps.d\n"
 "  -D,--distdir=DIRECTORY	Set (or override) the path to void-packages\n"
 "				(defaults to ~/void-packages).\n"
 "  -d,--debug 			Enable debug output to stderr.\n"
@@ -478,32 +479,6 @@ rcv_set_distdir(rcv_t *rcv, const char *distdir)
 	rcv->pkgdir = strcat(rcv->pkgdir, "/srcpkgs");
 }
 
-static void
-rcv_find_conf(rcv_t *rcv)
-{
-	FILE *fp;
-	const char **lp, *conf;
-
-	const char *xbps_locs[] = {
-		XBPS_SYSCONF_PATH "/xbps.conf",
-		"/etc/xbps/xbps.conf",
-		"/usr/local/etc/xbps/xbps.conf", NULL
-	};
-
-	if (!rcv->xbps_conf) {
-		for (lp = xbps_locs; (conf = *lp++);) {
-			if ((fp = fopen(conf, "r")) != NULL) {
-				fclose(fp);
-				rcv->xbps_conf = calloc(strlen(conf) + 1,
-					sizeof(char));
-				rcv->xbps_conf = strcpy(rcv->xbps_conf, conf);
-				rcv->xbps_conf[strlen(conf)] = '\0';
-				break;
-			}
-		}
-	}
-}
-
 static bool
 check_reverts(const char *repover, const map_item_t reverts)
 {
@@ -669,19 +644,16 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 
-	memset(&rcv, 0, sizeof(rcv));
+	memset(&rcv, 0, sizeof(rcv_t));
 
 	while ((c = getopt_long(argc, argv, sopts, lopts, NULL)) != -1) {
 		switch (c) {
 		case 'h':
 			return show_usage(prog);
 		case 'C':
-			free(rcv.xbps_conf);
 			rcv.xbps_conf = strdup(optarg);
 			break;
 		case 'D':
-			free(rcv.distdir); rcv.distdir = NULL;
-			free(rcv.pkgdir); rcv.pkgdir = NULL;
 			rcv_set_distdir(&rcv, optarg);
 			break;
 		case 'd':
@@ -720,21 +692,16 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	rcv_find_conf(&rcv);
 	rcv_init(&rcv, prog);
 	rcv.manual = false;
 	rcv_process_dir(&rcv, rcv.pkgdir, rcv_process_file);
 	rcv.manual = true;
-	if (argc > 0) {
-		for(i = 0; i < argc; i++) {
-			tmpl = argv[i] + (strlen(argv[i]) - strlen("template"));
-			if ((strcmp("template", tmpl)) == 0) {
-				rcv_process_file(&rcv, argv[i],
-					rcv_check_version);
-			}
+	for (i = 0; i < argc; i++) {
+		tmpl = argv[i] + (strlen(argv[i]) - strlen("template"));
+		if ((strcmp("template", tmpl)) == 0) {
+			rcv_process_file(&rcv, argv[i], rcv_check_version);
 		}
 	}
 	rcv_end(&rcv);
-
-	return 0;
+	exit(EXIT_SUCCESS);
 }
