@@ -478,6 +478,7 @@ unpack_archive(struct xbps_handle *xhp,
 		xbps_object_release(obj);
 	}
 	xbps_object_release(pkg_filesd);
+out:
 	/*
 	 * If unpacked pkg has no files, remove its files metadata plist.
 	 */
@@ -486,7 +487,6 @@ unpack_archive(struct xbps_handle *xhp,
 		unlink(buf);
 		free(buf);
 	}
-out:
 	if (xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY)
 		xbps_object_release(binpkg_filesd);
 	if (pkgname != NULL)

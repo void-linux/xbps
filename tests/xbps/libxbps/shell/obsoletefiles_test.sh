@@ -101,13 +101,13 @@ root_symlinks_update_body() {
 	atf_check_equal $rv 0
 }
 
-atf_test_case files_move
+atf_test_case files_move_from_dependency
 
-files_move_head() {
-	atf_set "descr" "Test that moving files between pkgs work"
+files_move_from_dependency_head() {
+	atf_set "descr" "Test that moving files between a dependency to the main pkg works"
 }
 
-files_move_body() {
+files_move_from_dependency_body() {
 	mkdir repo
 	mkdir -p pkg_A/usr/bin pkg_A/usr/sbin pkg_B/usr/sbin
 	echo "0123456789" > pkg_A/usr/bin/foo
@@ -146,8 +146,51 @@ files_move_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case files_move_to_dependency
+
+files_move_to_dependency_head() {
+	atf_set "descr" "Test that moving files to a dependency works"
+}
+
+files_move_to_dependency_body() {
+	mkdir repo
+	mkdir -p pkg_libressl/usr/lib pkg_libcrypto/usr/lib
+	echo "0123456789" > pkg_libressl/usr/lib/libcrypto.so.30
+	echo "0123456789" > pkg_libcrypto/usr/lib/libcrypto.so.30
+
+	cd repo
+	xbps-create -A noarch -n libressl-1.0_1 -s "libressl pkg" ../pkg_libressl
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libcrypto-1.0_1 -s "libcrypto pkg" --replaces "libressl<1.1_1" ../pkg_libcrypto
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root --repository=$PWD -yvd libressl
+	atf_check_equal $? 0
+
+	rm -rf ../pkg_libressl/*
+	xbps-create -A noarch -n libressl-1.1_1 -s "libressl pkg" --dependencies "libcrypto>=1.0" ../pkg_libressl
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root --repository=$PWD -yuvd
+	atf_check_equal $? 0
+
+	foofile=$(xbps-query -r root -f libressl|grep crypto)
+	atf_check_equal $foofile ""
+
+	foofile=$(xbps-query -r root -f libcrypto|grep crypto)
+	atf_check_equal $foofile /usr/lib/libcrypto.so.30
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
-	atf_add_test_case files_move
+	atf_add_test_case files_move_from_dependency
+	atf_add_test_case files_move_to_dependency
 }
