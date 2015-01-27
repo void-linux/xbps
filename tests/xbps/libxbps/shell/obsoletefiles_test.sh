@@ -101,7 +101,53 @@ root_symlinks_update_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case files_move
+
+files_move_head() {
+	atf_set "descr" "Test that moving files between pkgs work"
+}
+
+files_move_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/bin pkg_A/usr/sbin pkg_B/usr/sbin
+	echo "0123456789" > pkg_A/usr/bin/foo
+	echo "9876543210" > pkg_A/usr/sbin/blah
+	echo "7777777777" > pkg_B/usr/sbin/bob
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=0" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root -C null.conf --repository=$PWD -yvd B
+	atf_check_equal $? 0
+
+	mv ../pkg_A/usr/bin ../pkg_B/usr
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --dependencies "A>=1.1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root -C null.conf --repository=$PWD -yuvd
+	atf_check_equal $? 0
+
+	foofile=$(xbps-query -r root -f A-1.1_1|grep foo)
+	atf_check_equal $foofile ""
+
+	foofile=$(xbps-query -r root -f B-1.1_1|grep foo)
+	atf_check_equal $foofile /usr/bin/foo
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
+	atf_add_test_case files_move
 }
