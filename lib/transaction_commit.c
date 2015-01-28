@@ -67,6 +67,7 @@ check_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
 		if ((strcmp(trans, "remove") == 0) ||
+		    (strcmp(trans, "hold") == 0) ||
 		    (strcmp(trans, "configure") == 0))
 			continue;
 
@@ -132,6 +133,7 @@ download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
 		if ((strcmp(trans, "remove") == 0) ||
+		    (strcmp(trans, "hold") == 0) ||
 		    (strcmp(trans, "configure") == 0))
 			continue;
 
@@ -315,6 +317,11 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 				    strerror(rv));
 				goto out;
 			}
+		} else if (strcmp(tract, "hold") == 0) {
+			/*
+			 * Package is on hold mode, ignore it.
+			 */
+			continue;
 		} else {
 			/* Install a package */
 			xbps_set_cb_state(xhp, XBPS_STATE_INSTALL, 0,
@@ -359,6 +366,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		if ((strcmp(tract, "remove") == 0) ||
+		    (strcmp(tract, "hold") == 0) ||
 		    (strcmp(tract, "configure") == 0)) {
 			xbps_dbg_printf(xhp, "%s: skipping configuration for "
 			    "%s: %s\n", __func__, pkgver, tract);

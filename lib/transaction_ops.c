@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,7 +59,8 @@ enum {
 };
 
 static int
-trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
+trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
+		bool hold)
 {
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
 	xbps_array_t pkgs;
@@ -187,10 +188,11 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		reason = "configure";
 	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
 		reason = "install";
+	else if ((action == TRANS_UPDATE) && hold)
+		reason = "hold";
 
 	/*
-	 * Set transaction obj in pkg dictionary to "install", "configure"
-	 * or "update".
+	 * Set transaction obj reason.
 	 */
 	if (!xbps_dictionary_set_cstring_nocopy(pkg_repod,
 	    "transaction", reason)) {
@@ -208,12 +210,9 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 int
 xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
-	xbps_dictionary_t pkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *pkgver;
-	char *pkgname = NULL;
-	bool hold, newpkg_found = false;
+	bool newpkg_found = false;
 	int rv = 0;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
@@ -223,21 +222,24 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
+		xbps_dictionary_t pkgd;
+		const char *pkgver;
+		char *pkgname;
+		bool hold = false;
+
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		hold = false;
 		xbps_dictionary_get_bool(pkgd, "hold", &hold);
 		if (hold) {
 			xbps_dbg_printf(xhp, "[rpool] package `%s' "
 			    "on hold, ignoring updates.\n", pkgver);
-			continue;
 		}
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
-		rv = trans_find_pkg(xhp, pkgname, false);
-		if (rv == 0)
+		rv = trans_find_pkg(xhp, pkgname, false, hold);
+		if (rv == 0) {
 			newpkg_found = true;
-		else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
+		} else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
 			/*
 			 * missing pkg or installed version is greater than or
 			 * equal than pkg in repositories.
@@ -254,14 +256,14 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 int
 xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 {
-	return trans_find_pkg(xhp, pkg, false);
+	return trans_find_pkg(xhp, pkg, false, false);
 }
 
 int
 xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 			     bool reinstall)
 {
-	return trans_find_pkg(xhp, pkg, reinstall);
+	return trans_find_pkg(xhp, pkg, reinstall, false);
 }
 
 int

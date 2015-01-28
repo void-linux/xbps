@@ -17,3 +17,4 @@ atf_test_program{name="vpkg_test"}
 atf_test_program{name="install_test"}
 atf_test_program{name="preserve_files_test"}
 atf_test_program{name="update_shlibs"}
+atf_test_program{name="update_hold"}

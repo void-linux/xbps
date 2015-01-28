@@ -277,7 +277,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		pkgd = xbps_array_get(pkgs, i);
 		str = xbps_dictionary_get(pkgd, "pkgver");
 		xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &tract);
-		if (strcmp(tract, "remove") == 0)
+		if ((strcmp(tract, "remove") == 0) || strcmp(tract, "hold") == 0)
 			continue;
 
 		assert(xbps_object_type(str) == XBPS_TYPE_STRING);

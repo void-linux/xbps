@@ -1,5 +1,10 @@
 xbps-0.44 (???):
 
+ * libxbps: add packages on hold mode to the transaction, but just ignore them.
+   This way those are shown in the xbps-install(8) output and the user really
+   knows that there's a pending update that is not being applied.
+   Idea by @chneukirchen.
+
  * libxbps: make sure to remove the pkg metadata file if a pkg upgrade does not
    own any file and a dependency replaces it due to moving files between them.
    Added two new test cases to verify its correctness.
