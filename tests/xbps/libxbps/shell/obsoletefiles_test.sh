@@ -188,9 +188,53 @@ files_move_to_dependency_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case files_move_to_dependency2
+
+files_move_to_dependency2_head() {
+	atf_set "descr" "Test that moving files to a dependency works (without replaces)"
+}
+
+files_move_to_dependency2_body() {
+	mkdir repo
+	mkdir -p pkg_libressl/usr/lib pkg_libcrypto/usr/lib
+	echo "0123456789" > pkg_libressl/usr/lib/libcrypto.so.30
+	echo "0123456789" > pkg_libressl/usr/lib/libssl.so.30
+	echo "0123456789" > pkg_libcrypto/usr/lib/libcrypto.so.30
+
+	cd repo
+	xbps-create -A noarch -n libressl-1.0_1 -s "libressl pkg" ../pkg_libressl
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libcrypto-1.0_1 -s "libcrypto pkg" ../pkg_libcrypto
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root --repository=$PWD -yvd libressl
+	atf_check_equal $? 0
+
+	rm -f ../pkg_libressl/usr/lib/libcrypto.*
+	xbps-create -A noarch -n libressl-1.1_1 -s "libressl pkg" --dependencies "libcrypto>=1.0" ../pkg_libressl
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root --repository=$PWD -yuvd
+	atf_check_equal $? 0
+
+	foofile=$(xbps-query -r root -f libressl|grep crypto)
+	atf_check_equal $foofile ""
+
+	foofile=$(xbps-query -r root -f libcrypto|grep crypto)
+	atf_check_equal $foofile /usr/lib/libcrypto.so.30
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
 	atf_add_test_case files_move_from_dependency
 	atf_add_test_case files_move_to_dependency
+	atf_add_test_case files_move_to_dependency2
 }
