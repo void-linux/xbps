@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2014 Juan Romero Pardines.
+ * Copyright (c) 2011-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -95,6 +95,11 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &instver);
 		printf("%s: updating to %s ...\n", instver, newver);
+		if (slog) {
+			syslog(LOG_NOTICE, "%s: updating to %s ... "
+			    "(rootdir: %s)\n", instver, newver,
+			    xscd->xhp->rootdir);
+		}
 		free(pkgname);
 		break;
 	/* success */
