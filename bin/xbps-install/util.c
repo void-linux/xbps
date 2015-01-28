@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -144,7 +144,9 @@ print_trans_colmode(struct transaction *trans, int cols)
 		if (dload) {
 			trans->dl_pkgcnt++;
 		}
-		if ((strcmp(tract, "update") == 0) || strcmp(tract, "remove") == 0) {
+		if ((strcmp(tract, "update") == 0) ||
+		    (strcmp(tract, "hold") == 0) ||
+		    (strcmp(tract, "remove") == 0)) {
 			ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
 			assert(ipkgd);
 			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
