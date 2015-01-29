@@ -144,16 +144,19 @@ print_trans_colmode(struct transaction *trans, int cols)
 		if (dload) {
 			trans->dl_pkgcnt++;
 		}
-		if ((strcmp(tract, "update") == 0) ||
-		    (strcmp(tract, "hold") == 0) ||
-		    (strcmp(tract, "remove") == 0)) {
-			ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
-			assert(ipkgd);
+		ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
+		if (ipkgd) {
 			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
 			iver = xbps_pkg_version(ipkgver);
 		}
 		ver = xbps_pkg_version(pkgver);
-
+		if (iver) {
+			int rv = xbps_cmpver(iver, ver);
+			if (rv == 1)
+				tract = "downgrade";
+			else if (rv == 0)
+				tract = "reinstall";
+		}
 		/* print pkgname and some blanks */
 		blen = pnamelen - strlen(pkgname);
 		printf("%s", pkgname);
