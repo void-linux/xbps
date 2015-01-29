@@ -51,8 +51,7 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 		       const char *pkgver)
 {
 	xbps_array_t array;
-	xbps_object_t obj;
-	const char *keyname, *filestr, *typestr;
+	const char *keyname, *typestr;
 
 	keyname = xbps_dictionary_keysym_cstring_nocopy(key);
 
@@ -67,18 +66,28 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 
 	array = xbps_dictionary_get_keysym(pkg_filesd, key);
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
+		xbps_object_t obj;
+		const char *filestr = NULL, *tgt = NULL;
+
 		obj = xbps_array_get(array, i);
-		filestr = NULL;
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &filestr);
 		if (filestr == NULL)
 			continue;
+		xbps_dictionary_get_cstring_nocopy(obj, "target", &tgt);
 		if (ffd->rematch) {
 			if (regexec(&ffd->regex, filestr, 0, 0, 0) == 0) {
-				printf("%s: %s (%s)\n", pkgver, filestr, typestr);
+				printf("%s: %s ", pkgver, filestr);
+				if (tgt)
+					printf("-> %s ", tgt);
+				printf("(%s)\n", typestr);
 			}
 		} else {
-			if ((fnmatch(ffd->pat, filestr, FNM_PERIOD)) == 0)
-				printf("%s: %s (%s)\n", pkgver, filestr, typestr);
+			if ((fnmatch(ffd->pat, filestr, FNM_PERIOD)) == 0) {
+				printf("%s: %s ", pkgver, filestr);
+				if (tgt)
+					printf("-> %s ", tgt);
+				printf("(%s)\n", typestr);
+			}
 		}
 	}
 }
@@ -170,14 +179,10 @@ int
 ownedby(struct xbps_handle *xhp, const char *pat, bool repo, bool regex)
 {
 	struct ffdata ffd;
-	char *rfile;
 	int rv;
 
 	ffd.rematch = false;
 	ffd.pat = pat;
-
-	if ((rfile = realpath(pat, NULL)) != NULL)
-		ffd.pat = rfile;
 
 	if (regex) {
 		ffd.rematch = true;

@@ -1,5 +1,11 @@
 xbps-0.44 (???):
 
+ * xbps-query(8): in the ownedby mode, do not follow symbolic links and if the
+   matching file is a symlink print its target file too:
+
+	$ xbps-query -o `which whatis`
+	mdocml-1.13.2_5: /usr/bin/whatis -> /usr/bin/mandoc (link)
+
  * xbps-install(8): add additional actions to the column output: "downgrade"
    and "reinstall", as well as current installed version and new version.
    Implement https://github.com/voidlinux/xbps/issues/72
