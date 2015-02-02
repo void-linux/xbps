@@ -221,6 +221,31 @@ remove_dups_body() {
 	atf_check_equal $out 1
 }
 
+atf_test_case remove_with_revdeps
+
+remove_with_revdeps_head() {
+	atf_set "descr" "Tests for package removal: remove a pkg with revdeps"
+}
+
+remove_with_revdeps_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A-1.0_1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=some_repo -yv B
+	atf_check_equal $? 0
+	xbps-remove -r root -yv A
+	# ENODEV == unresolved dependencies
+	atf_check_equal $? 19
+}
+
 atf_init_test_cases() {
 	atf_add_test_case keep_base_symlinks
 	atf_add_test_case keep_modified_symlinks
@@ -229,4 +254,5 @@ atf_init_test_cases() {
 	atf_add_test_case remove_symlinks_from_root
 	atf_add_test_case remove_symlinks_modified
 	atf_add_test_case remove_dups
+	atf_add_test_case remove_with_revdeps
 }
