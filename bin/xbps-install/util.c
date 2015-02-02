@@ -154,7 +154,7 @@ print_trans_colmode(struct transaction *trans, int cols)
 			int rv = xbps_cmpver(iver, ver);
 			if (rv == 1)
 				tract = "downgrade";
-			else if (rv == 0)
+			else if (rv == 0 && strcmp(tract, "remove"))
 				tract = "reinstall";
 		}
 		/* print pkgname and some blanks */
