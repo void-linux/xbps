@@ -1,5 +1,10 @@
 xbps-0.44 (???):
 
+ * libxbps: globally check for unresolved reverse dependencies before accepting
+   the transaction. This catches more cases of broken packages due to incompatible
+   upgrades or unwanted removals. This also implements #46.
+   https://github.com/voidlinux/xbps/issues/46
+
  * xbps-query(8): in the ownedby mode, do not follow symbolic links and if the
    matching file is a symlink print its target file too:
 

@@ -272,7 +272,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			    bool recursive)
 {
 	xbps_dictionary_t pkgd;
-	xbps_array_t pkgs, orphans, orphans_pkg, reqby;
+	xbps_array_t pkgs, orphans, orphans_pkg;
 	xbps_object_t obj;
 	const char *pkgver;
 	int rv = 0;
@@ -314,16 +314,6 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			return EINVAL;
 		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	}
-	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
-	/*
-	 * If target pkg is required by any installed pkg, the client must be aware
-	 * of this to take appropiate action.
-	 */
-	if ((xbps_object_type(reqby) == XBPS_TYPE_ARRAY) &&
-	    (xbps_array_count(reqby) > 0))
-		rv = EEXIST;
-
-	xbps_object_release(orphans);
 	return rv;
 
 rmpkg:
@@ -335,15 +325,6 @@ rmpkg:
 	if ((rv = xbps_transaction_store(xhp, pkgs, pkgd, false)) != 0)
 		return EINVAL;
 	xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
-	reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
-	/*
-	 * If target pkg is required by any installed pkg, the client must be aware
-	 * of this to take appropiate action.
-	 */
-	if ((xbps_object_type(reqby) == XBPS_TYPE_ARRAY) &&
-	    (xbps_array_count(reqby) > 0))
-		rv = EEXIST;
-
 	return rv;
 }
 

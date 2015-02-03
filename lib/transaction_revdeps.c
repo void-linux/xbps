@@ -107,28 +107,37 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 	return matched;
 }
 
+static void
+broken_pkg(xbps_array_t mdeps, const char *dep, const char *pkg)
+{
+	char *str;
+
+	str = xbps_xasprintf("%s broken, needs `%s'", dep, pkg);
+	xbps_array_add_cstring(mdeps, str);
+	free(str);
+}
+
 void HIDDEN
 xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 {
-	xbps_array_t mdeps, pkgrdeps, rundeps;
-	xbps_dictionary_t revpkgd;
-	xbps_object_t obj;
-	const char *pkgver, *curdep, *revpkgver, *curpkgver, *tract;
-	char *pkgname, *curdepname, *curpkgname, *str;
+	xbps_array_t mdeps;
+
+	mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
 
 	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++) {
+		xbps_array_t pkgrdeps;
+		xbps_object_t obj;
+		const char *pkgver, *tract;
+		char *pkgname;
+
 		obj = xbps_array_get(pkgs, i);
-		/*
-		 * Only check packages in transaction being updated.
-		 */
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		if (strcmp(tract, "update"))
-			continue;
 		/*
 		 * if pkg in transaction is not installed,
 		 * pass to next one.
 		 */
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
 		if (xbps_pkg_is_installed(xhp, pkgname) == 0) {
@@ -149,15 +158,38 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		 * Time to validate revdeps for current pkg.
 		 */
 		for (unsigned int x = 0; x < xbps_array_count(pkgrdeps); x++) {
+			xbps_array_t rundeps;
+			xbps_dictionary_t revpkgd;
+			const char *curpkgver, *revpkgver, *curdep;
+			char *curpkgname, *curdepname;
 			bool found = false;
 
 			xbps_array_get_cstring_nocopy(pkgrdeps, x, &curpkgver);
 			revpkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
+			xbps_dictionary_get_cstring_nocopy(revpkgd, "pkgver", &revpkgver);
+			pkgname = xbps_pkg_name(curpkgver);
+			assert(pkgname);
+			/*
+			 * If target pkg is being removed, all its revdeps
+			 * will be broken unless those revdeps are also in
+			 * the transaction.
+			 */
+			if (strcmp(tract, "remove") == 0) {
+				if (xbps_find_pkg_in_array(pkgs, pkgname, "remove")) {
+					free(pkgname);
+					continue;
+				}
+				free(pkgname);
+				broken_pkg(mdeps, curpkgver, pkgver);
+				continue;
+			}
 			/*
 			 * First try to match any supported virtual package.
 			 */
-			if (check_virtual_pkgs(xhp, pkgs, obj, revpkgd))
+			if (check_virtual_pkgs(xhp, pkgs, obj, revpkgd)) {
+				free(pkgname);
 				continue;
+			}
 			/*
 			 * Try to match real dependencies.
 			 */
@@ -181,31 +213,28 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 				}
 				free(curdepname);
 			}
-			if (!found)
-				continue;
+			free(curpkgname);
 
-			if (xbps_match_pkgdep_in_array(rundeps, pkgver))
+			if (!found) {
+				free(pkgname);
 				continue;
+			}
+			if (xbps_match_pkgdep_in_array(rundeps, pkgver)) {
+				free(pkgname);
+				continue;
+			}
 			/*
 			 * Installed package conflicts with package
 			 * in transaction being updated, check
 			 * if a new version of this conflicting package
 			 * is in the transaction.
 			 */
-			pkgname = xbps_pkg_name(curpkgver);
-			if (xbps_find_pkg_in_array(pkgs, pkgname, NULL)) {
+			if (xbps_find_pkg_in_array(pkgs, pkgname, "update")) {
 				free(pkgname);
 				continue;
 			}
 			free(pkgname);
-			mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
-			xbps_dictionary_get_cstring_nocopy(revpkgd,
-			    "pkgver", &revpkgver);
-			str = xbps_xasprintf("CONFLICT: `%s' "
-			    "update breaks `%s', needs `%s'",
-			    pkgver, revpkgver, curdep);
-			xbps_array_add_cstring(mdeps, str);
-			free(str);
+			broken_pkg(mdeps, curpkgver, pkgver);
 		}
 
 	}

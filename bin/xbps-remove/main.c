@@ -48,7 +48,8 @@ usage(bool fail)
 	    " -C --config <dir>        Path to confdir (xbps.d)\n"
 	    " -c --cachedir <dir>      Path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
-	    " -F --force-revdeps       Force package removal even with revdeps\n"
+	    " -F --force-revdeps       Force package removal even with revdeps or\n"
+	    "                          unresolved shared libraries\n"
 	    " -f --force               Force package files removal\n"
 	    " -h --help                Print help usage\n"
 	    " -n --dry-run             Dry-run mode\n"
@@ -126,26 +127,12 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 }
 
 static int
-remove_pkg(struct xbps_handle *xhp, const char *pkgname, int cols,
-	   bool recursive)
+remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive)
 {
-	xbps_array_t reqby;
-	const char *pkgver;
 	int rv;
 
 	rv = xbps_transaction_remove_pkg(xhp, pkgname, recursive);
 	if (rv == EEXIST) {
-		/* pkg has revdeps */
-		reqby = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
-		printf("WARNING: %s IS REQUIRED BY %u PACKAGE%s:\n\n",
-		    pkgname, xbps_array_count(reqby),
-		    xbps_array_count(reqby) > 1 ? "S" : "");
-		for (unsigned int x = 0; x < xbps_array_count(reqby); x++) {
-			xbps_array_get_cstring_nocopy(reqby, x, &pkgver);
-			print_package_line(pkgver, cols, false);
-		}
-		printf("\n\n");
-		print_package_line(NULL, cols, true);
 		return rv;
 	} else if (rv == ENOENT) {
 		printf("Package `%s' is not currently installed.\n", pkgname);
@@ -183,14 +170,12 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	const char *rootdir, *cachedir, *confdir;
 	int c, flags, rv;
-	bool yes, drun, recursive, ignore_revdeps, clean_cache;
-	bool orphans, reqby_force;
+	bool yes, drun, recursive, clean_cache, orphans;
 	int maxcols;
 
 	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
-	drun = recursive = ignore_revdeps = clean_cache = false;
-	reqby_force = yes = orphans = false;
+	drun = recursive = clean_cache = yes = orphans = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -204,7 +189,7 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'F':
-			ignore_revdeps = true;
+			flags |= XBPS_FLAG_FORCE_REMOVE_REVDEPS;
 			break;
 		case 'f':
 			flags |= XBPS_FLAG_FORCE_REMOVE_FILES;
@@ -291,19 +276,11 @@ main(int argc, char **argv)
 	}
 
 	for (int i = optind; i < argc; i++) {
-		rv = remove_pkg(&xh, argv[i], maxcols, recursive);
-		if (rv == 0)
-			continue;
-		else if (rv != EEXIST) {
+		rv = remove_pkg(&xh, argv[i], recursive);
+		if (rv != 0) {
 			xbps_end(&xh);
 			exit(rv);
-		} else {
-			reqby_force = true;
 		}
-	}
-	if (reqby_force && !ignore_revdeps && !drun) {
-		xbps_end(&xh);
-		exit(EXIT_FAILURE);
 	}
 	if (orphans || (argc > optind)) {
 		rv = exec_transaction(&xh, maxcols, yes, drun);

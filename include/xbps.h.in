@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20150111"
+#define XBPS_API_VERSION	"20150203"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -189,6 +189,14 @@
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_REPOS_MEMSYNC 	0x00000400
+
+/**
+ * @def XBPS_FLAG_FORCE_REMOVE_REVDEPS
+ * Continue with transaction even if there are broken reverse
+ * dependencies, due to unresolved shared libraries or dependencies.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_FORCE_REMOVE_REVDEPS 	0x00000800
 
 /**
  * @def XBPS_FETCH_CACHECONN

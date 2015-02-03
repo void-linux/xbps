@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -304,9 +304,13 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 */
 	xbps_transaction_revdeps(xhp, pkgs);
 	array = xbps_dictionary_get(xhp->transd, "missing_deps");
-	if (xbps_array_count(array))
-		return ENODEV;
-
+	if (xbps_array_count(array)) {
+		if (xhp->flags & XBPS_FLAG_FORCE_REMOVE_REVDEPS) {
+			xbps_dbg_printf(xhp, "[trans] continuing with broken reverse dependencies!");
+		} else {
+			return ENODEV;
+		}
+	}
 	for (i = 0; i < xbps_array_count(pkgs); i++)
 		xbps_pkg_find_conflicts(xhp, pkgs, xbps_array_get(pkgs, i));
 	/*
@@ -319,8 +323,13 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * Check for unresolved shared libraries.
 	 */
 	if (xbps_transaction_shlibs(xhp, pkgs,
-	    xbps_dictionary_get(xhp->transd, "missing_shlibs")))
-		return ENOEXEC;
+	    xbps_dictionary_get(xhp->transd, "missing_shlibs"))) {
+		if (xhp->flags & XBPS_FLAG_FORCE_REMOVE_REVDEPS) {
+			xbps_dbg_printf(xhp, "[trans] continuing with unresolved shared libraries!");
+		} else {
+			return ENOEXEC;
+		}
+	}
 	/*
 	 * Check for packages to be replaced.
 	 */
