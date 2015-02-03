@@ -239,11 +239,85 @@ remove_with_revdeps_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -r root --repository=some_repo -yv B
+	xbps-install -r root --repository=some_repo -yvd B
 	atf_check_equal $? 0
-	xbps-remove -r root -yv A
+	xbps-remove -r root -yvd A
 	# ENODEV == unresolved dependencies
 	atf_check_equal $? 19
+}
+
+atf_test_case remove_with_revdeps_in_trans
+
+remove_with_revdeps_in_trans_head() {
+	atf_set "descr" "Tests for package removal: remove a pkg with its revdeps in transaction"
+}
+
+remove_with_revdeps_in_trans_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A-1.0_1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=some_repo -yvd B
+	atf_check_equal $? 0
+	xbps-remove -r root -yvd A B
+	atf_check_equal $? 0
+}
+
+atf_test_case remove_with_revdeps_in_trans_inverted
+
+remove_with_revdeps_in_trans_inverted_head() {
+	atf_set "descr" "Tests for package removal: remove a pkg with its revdeps in transaction (inverted)"
+}
+
+remove_with_revdeps_in_trans_inverted_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A-1.0_1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=some_repo -yvd B
+	atf_check_equal $? 0
+	xbps-remove -r root -yvd B A
+	atf_check_equal $? 0
+}
+
+atf_test_case remove_with_revdeps_in_trans_recursive
+
+remove_with_revdeps_in_trans_recursive_head() {
+	atf_set "descr" "Tests for package removal: remove a pkg with its revdeps in transaction (recursive)"
+}
+
+remove_with_revdeps_in_trans_recursive_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A-1.0_1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=some_repo -yvd B
+	atf_check_equal $? 0
+	xbps-remove -r root -Ryvd B
+	atf_check_equal $? 0
+	out=$(xbps-query -r root -l|wc -l)
+	atf_check_equal $out 0
 }
 
 atf_init_test_cases() {
@@ -255,4 +329,7 @@ atf_init_test_cases() {
 	atf_add_test_case remove_symlinks_modified
 	atf_add_test_case remove_dups
 	atf_add_test_case remove_with_revdeps
+	atf_add_test_case remove_with_revdeps_in_trans
+	atf_add_test_case remove_with_revdeps_in_trans_inverted
+	atf_add_test_case remove_with_revdeps_in_trans_recursive
 }
