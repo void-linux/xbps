@@ -41,8 +41,7 @@
  * Abort transaction if such case is found.
  */
 static bool
-check_virtual_pkgs(struct xbps_handle *xhp,
-		   xbps_array_t pkgs,
+check_virtual_pkgs(xbps_array_t mdeps,
 		   xbps_dictionary_t trans_pkgd,
 		   xbps_dictionary_t rev_pkgd)
 {
@@ -51,13 +50,15 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 
 	provides = xbps_dictionary_get(trans_pkgd, "provides");
 	for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
-		xbps_array_t rundeps, mdeps;
+		xbps_array_t rundeps;
 		const char *pkgver, *revpkgver, *pkgpattern;
 		char *pkgname, *pkgdepname, *vpkgname, *vpkgver, *str;
 
 		pkgver = revpkgver = pkgpattern = NULL;
 		pkgname = pkgdepname = vpkgname = vpkgver = str = NULL;
 
+		xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(rev_pkgd, "pkgver", &revpkgver);
 		xbps_array_get_cstring(provides, i, &vpkgver);
 		vpkgname = xbps_pkg_name(vpkgver);
 		assert(vpkgname);
@@ -73,30 +74,13 @@ check_virtual_pkgs(struct xbps_handle *xhp,
 				continue;
 			}
 			free(pkgname);
-			if (xbps_pkgpattern_match(vpkgver, pkgpattern))
-				continue;
-
-			/*
-			 * Installed package conflicts with package
-			 * in transaction being updated, check
-			 * if a new version of this conflicting package
-			 * is in the transaction.
-			 */
-			xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
-			pkgdepname = xbps_pkg_name(pkgver);
-			assert(pkgdepname);
-			if (xbps_find_pkg_in_array(pkgs, pkgdepname, NULL)) {
-				free(pkgdepname);
+			if (!strcmp(vpkgver, pkgpattern) ||
+			    xbps_pkgpattern_match(vpkgver, pkgpattern)) {
 				continue;
 			}
-			free(pkgdepname);
 
-			mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
-			xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
-			xbps_dictionary_get_cstring_nocopy(rev_pkgd, "pkgver", &revpkgver);
-			str = xbps_xasprintf("CONFLICT: `%s' update "
-			    "breaks `%s', needs `%s' virtual pkg (got `%s`)",
-			    pkgver, revpkgver, pkgpattern, vpkgver);
+			str = xbps_xasprintf("%s broken, needs '%s' virtual pkg (got `%s')",
+			    revpkgver, pkgpattern, vpkgver);
 			xbps_array_add_cstring(mdeps, str);
 			free(str);
 			matched = true;
@@ -186,7 +170,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			/*
 			 * First try to match any supported virtual package.
 			 */
-			if (check_virtual_pkgs(xhp, pkgs, obj, revpkgd)) {
+			if (check_virtual_pkgs(mdeps, obj, revpkgd)) {
 				free(pkgname);
 				continue;
 			}

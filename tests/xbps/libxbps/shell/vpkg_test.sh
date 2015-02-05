@@ -13,13 +13,13 @@
 # D should replace A only if it has "replaces" property on A. The result should be
 # that D must be installed and A being as is.
 
-atf_test_case vpkg00
+atf_test_case vpkg_dont_update
 
-vpkg00_head() {
-	atf_set "descr" "Tests for virtual pkgs: don't update vpkg"
+vpkg_dont_update_head() {
+	atf_set "descr" "Tests for virtual pkgs: don't update incompatible vpkg provider"
 }
 
-vpkg00_body() {
+vpkg_dont_update_body() {
 	mkdir some_repo
 	mkdir -p pkg_{A,B,C,D}/usr/bin
 	cd some_repo
@@ -36,19 +36,25 @@ vpkg00_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy A
+	xbps-install -r root --repository=$PWD/some_repo -dy B
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy C
+	xbps-install -r root --repository=$PWD/some_repo -dy C
 	atf_check_equal $? 0
+
+	out=$(xbps-query  -r root -l|awk '{print $2}'|tr -d '\n')
+	exp="A-1.0_1B-1.0_1C-1.0_1D-1.0_1"
+	echo "out: $out"
+	echo "exp: $exp"
+	atf_check_equal $out $exp
 }
 
-atf_test_case vpkg01
+atf_test_case vpkg_replace_provider
 
-vpkg01_head() {
-	atf_set "descr" "Tests for virtual pkgs: commit ebc0f27ae1c"
+vpkg_replace_provider_head() {
+	atf_set "descr" "Tests for virtual pkgs: replace provider in update (commit ebc0f27ae1c)"
 }
 
-vpkg01_body() {
+vpkg_replace_provider_body() {
 	mkdir some_repo
 	mkdir -p pkg_{A,B,C,D}/usr/bin
 	cd some_repo
@@ -65,25 +71,25 @@ vpkg01_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy B
+	xbps-install  -r root --repository=$PWD/some_repo -dy B
 	atf_check_equal $? 0
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy D
+	xbps-install  -r root --repository=$PWD/some_repo -dy D
 	atf_check_equal $? 0
 
-	out=$(xbps-query -C empty.conf -r root -l|awk '{print $2}'|tr -d '\n')
+	out=$(xbps-query  -r root -l|awk '{print $2}'|tr -d '\n')
 	exp="B-1.0_1C-1.0_1D-1.0_1"
 	echo "out: $out"
 	echo "exp: $exp"
 	atf_check_equal $out $exp
 }
 
-atf_test_case vpkg02
+atf_test_case vpkg_provider_in_trans
 
-vpkg02_head() {
+vpkg_provider_in_trans_head() {
 	atf_set "descr" "Tests for virtual pkgs: provider in transaction"
 }
 
-vpkg02_body() {
+vpkg_provider_in_trans_body() {
 	mkdir some_repo
 	mkdir -p pkg_{gawk,base-system,busybox}
 	cd some_repo
@@ -96,7 +102,7 @@ vpkg02_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy base-system
+	xbps-install  -r root --repository=$PWD/some_repo -dy base-system
 	atf_check_equal $? 0
 
 	cd some_repo
@@ -113,23 +119,23 @@ vpkg02_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dyu
+	xbps-install  -r root --repository=$PWD/some_repo -dyu
 	atf_check_equal $? 0
 
-	out=$(xbps-query -C empty.conf -r root -l|awk '{print $2}'|tr -d '\n')
+	out=$(xbps-query  -r root -l|awk '{print $2}'|tr -d '\n')
 	exp="base-system-1.1_1gawk-1.1_1"
 	echo "out: $out"
 	echo "exp: $exp"
 	atf_check_equal $out $exp
 }
 
-atf_test_case vpkg03
+atf_test_case vpkg_provider_in_conf
 
-vpkg03_head() {
+vpkg_provider_in_conf_head() {
 	atf_set "descr" "Tests for virtual pkgs: provider in configuration file"
 }
 
-vpkg03_body() {
+vpkg_provider_in_conf_body() {
 	mkdir some_repo
 	mkdir -p pkg_gawk
 	cd some_repo
@@ -140,7 +146,7 @@ vpkg03_body() {
 	atf_check_equal $? 0
 
 	cd ..
-	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy gawk
+	xbps-install  -r root --repository=$PWD/some_repo -dy gawk
 	atf_check_equal $? 0
 
 	mkdir -p root/xbps.d
@@ -160,13 +166,13 @@ vpkg03_body() {
 	atf_check_equal $out $exp
 }
 
-atf_test_case vpkg04
+atf_test_case vpkg_dep_provider_in_conf
 
-vpkg04_head() {
+vpkg_dep_provider_in_conf_head() {
 	atf_set "descr" "Tests for virtual pkgs: dependency provider in configuration file"
 }
 
-vpkg04_body() {
+vpkg_dep_provider_in_conf_body() {
 	mkdir some_repo
 	mkdir -p pkg_gawk pkg_blah
 	cd some_repo
@@ -192,10 +198,73 @@ vpkg04_body() {
 
 }
 
+atf_test_case vpkg_incompat_upgrade
+
+vpkg_incompat_upgrade_head() {
+	atf_set "descr" "Tests for virtual pkgs: incompat provider upgrade"
+}
+
+vpkg_incompat_upgrade_body() {
+	mkdir some_repo
+	mkdir -p pkg_A pkg_B
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "vpkg-9_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "vpkg-9_1" ../pkg_B
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dy B
+	atf_check_equal $? 0
+
+	cd some_repo
+	xbps-create -A noarch -n A-2.0_1 -s "A pkg" --provides "vpkg-10_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dyuv
+	# ENODEV == unresolved dependencies
+	atf_check_equal $? 19
+}
+
+atf_test_case vpkg_provider_remove
+
+vpkg_provider_remove_head() {
+	atf_set "descr" "Tests for virtual pkgs: removing a vpkg provider"
+}
+
+vpkg_provider_remove_body() {
+	mkdir some_repo
+	mkdir -p pkg_A pkg_B
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "vpkg-9_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "vpkg-9_1" ../pkg_B
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dy B
+	atf_check_equal $? 0
+
+	xbps-remove -r root -dyv A
+	# ENODEV == unresolved dependencies
+	atf_check_equal $? 19
+}
+
 atf_init_test_cases() {
-	atf_add_test_case vpkg00
-	atf_add_test_case vpkg01
-	atf_add_test_case vpkg02
-	atf_add_test_case vpkg03
-	atf_add_test_case vpkg04
+	atf_add_test_case vpkg_dont_update
+	atf_add_test_case vpkg_replace_provider
+	atf_add_test_case vpkg_provider_in_trans
+	atf_add_test_case vpkg_provider_in_conf
+	atf_add_test_case vpkg_dep_provider_in_conf
+	atf_add_test_case vpkg_incompat_upgrade
+	atf_add_test_case vpkg_provider_remove
 }
