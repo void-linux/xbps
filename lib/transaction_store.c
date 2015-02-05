@@ -35,9 +35,10 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 		xbps_dictionary_t pkgd, bool autoinst)
 {
 	xbps_array_t replaces;
-	const char *pkgver;
+	const char *pkgver, *repo;
 	char *pkgname, *self_replaced;
 
+	xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repo);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	if (xbps_find_pkg_in_array(pkgs, pkgver, NULL))
 		return 0;
@@ -69,7 +70,8 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	if (!xbps_array_add(pkgs, pkgd))
 		return EINVAL;
 
-	xbps_dbg_printf(xhp, "Added `%s' into the dependency list\n", pkgver);
+	xbps_dbg_printf(xhp, "Added `%s' into the dependency list (%s)\n",
+	    pkgver, repo);
 
 	return 0;
 }
