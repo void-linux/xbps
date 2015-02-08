@@ -232,6 +232,81 @@ vpkg_incompat_upgrade_body() {
 	atf_check_equal $? 19
 }
 
+atf_test_case vpkg_incompat_downgrade
+
+vpkg_incompat_downgrade_head() {
+	atf_set "descr" "Tests for virtual pkgs: incompat provider downgrade"
+}
+
+vpkg_incompat_downgrade_body() {
+	mkdir some_repo
+	mkdir -p pkg_A pkg_B
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "vpkg-9_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "vpkg-9_1" ../pkg_B
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dy B
+	atf_check_equal $? 0
+
+	cd some_repo
+	xbps-create -A noarch -n A-0.1_1 -s "A pkg" --provides "vpkg-8_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -f -a $PWD/A-0.1_1.*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dyvf A-0.1_1
+	# ENODEV == unresolved dependencies
+	atf_check_equal $? 19
+}
+
+atf_test_case vpkg_provider_and_revdeps_downgrade
+
+vpkg_provider_and_revdeps_downgrade_head() {
+	atf_set "descr" "Tests for virtual pkgs: downgrade vpkg provider and its revdeps"
+}
+
+vpkg_provider_and_revdeps_downgrade_body() {
+	mkdir some_repo
+	mkdir -p pkg_A pkg_B
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "vpkg-9_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "vpkg-9_1" ../pkg_B
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dy B
+	atf_check_equal $? 0
+
+	cd some_repo
+	xbps-create -A noarch -n A-0.1_1 -s "A pkg" --provides "vpkg-8_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-0.1_1 -s "B pkg" --dependencies "vpkg-8_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -f -a $PWD/A-0.1_1.*.xbps $PWD/B-0.1_1.*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dyvf B-0.1_1 A-0.1_1
+	atf_check_equal $? 0
+
+	out=$(xbps-query  -r root -l|awk '{print $2}'|tr -d '\n')
+	exp="A-0.1_1B-0.1_1"
+	echo "out: $out"
+	echo "exp: $exp"
+	atf_check_equal $out $exp
+}
+
 atf_test_case vpkg_provider_remove
 
 vpkg_provider_remove_head() {
@@ -266,5 +341,7 @@ atf_init_test_cases() {
 	atf_add_test_case vpkg_provider_in_conf
 	atf_add_test_case vpkg_dep_provider_in_conf
 	atf_add_test_case vpkg_incompat_upgrade
+	atf_add_test_case vpkg_incompat_downgrade
+	atf_add_test_case vpkg_provider_and_revdeps_downgrade
 	atf_add_test_case vpkg_provider_remove
 }
