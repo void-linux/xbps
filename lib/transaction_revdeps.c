@@ -144,15 +144,22 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		for (unsigned int x = 0; x < xbps_array_count(pkgrdeps); x++) {
 			xbps_array_t rundeps;
 			xbps_dictionary_t revpkgd;
-			const char *curpkgver, *revpkgver, *curdep;
+			const char *curpkgver, *revpkgver, *curdep, *curtract;
 			char *curpkgname, *curdepname;
 			bool found = false;
 
 			xbps_array_get_cstring_nocopy(pkgrdeps, x, &curpkgver);
-			revpkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
-			xbps_dictionary_get_cstring_nocopy(revpkgd, "pkgver", &revpkgver);
 			pkgname = xbps_pkg_name(curpkgver);
 			assert(pkgname);
+			if ((revpkgd = xbps_find_pkg_in_array(pkgs, pkgname, NULL))) {
+				xbps_dictionary_get_cstring_nocopy(revpkgd, "transaction", &curtract);
+				if (strcmp(curtract, "remove") == 0)
+					revpkgd = NULL;
+			}
+			if (revpkgd == NULL)
+				revpkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
+
+			xbps_dictionary_get_cstring_nocopy(revpkgd, "pkgver", &revpkgver);
 			/*
 			 * If target pkg is being removed, all its revdeps
 			 * will be broken unless those revdeps are also in
