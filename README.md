@@ -30,8 +30,6 @@ to handle binary packages and repositories. Some highlights:
  * Ability to **execute pre/post install/remove/update scriptlets**.
  * Ability to **check package integrity**: missing files, hashes, missing or
    unresolved (reverse)dependencies, dangling or modified symlinks, etc.
- * **Low memory** footprint.
- * **Fast** dependency resolver and sorting algorithms.
 
 ### Build requirements
 
