@@ -946,18 +946,18 @@ _prop_object_internalize_map_file(const char *fname)
 
 	mf->poimf_xml = mmap(NULL, need_guard ? mf->poimf_mapsize + pgsize
 			    		      : mf->poimf_mapsize,
-			    PROT_READ, MAP_FILE|MAP_SHARED, fd, (off_t)0);
+			    PROT_READ, MAP_SHARED, fd, (off_t)0);
 	(void) close(fd);
 	if (mf->poimf_xml == MAP_FAILED) {
 		_PROP_FREE(mf, M_TEMP);
 		return (NULL);
 	}
-	(void) madvise(mf->poimf_xml, mf->poimf_mapsize, MADV_SEQUENTIAL);
+	(void)posix_madvise(mf->poimf_xml, mf->poimf_mapsize, POSIX_MADV_SEQUENTIAL);
 
 	if (need_guard) {
 		if (mmap(mf->poimf_xml + mf->poimf_mapsize,
 			 pgsize, PROT_READ,
-			 MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1,
+			 MAP_PRIVATE|MAP_FIXED, -1,
 			 (off_t)0) == MAP_FAILED) {
 			(void) munmap(mf->poimf_xml, mf->poimf_mapsize);
 			_PROP_FREE(mf, M_TEMP);
@@ -978,8 +978,8 @@ _prop_object_internalize_unmap_file(
     struct _prop_object_internalize_mapped_file *mf)
 {
 
-	(void) madvise(mf->poimf_xml, mf->poimf_mapsize, MADV_DONTNEED);
-	(void) munmap(mf->poimf_xml, mf->poimf_mapsize);
+	(void)posix_madvise(mf->poimf_xml, mf->poimf_mapsize, POSIX_MADV_DONTNEED);
+	(void)munmap(mf->poimf_xml, mf->poimf_mapsize);
 	_PROP_FREE(mf, M_TEMP);
 }
 
