@@ -14,17 +14,14 @@ LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
 LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
 LIBPROP_OBJS += portableproplib/prop_dictionary_util.o portableproplib/prop_zlib.o
 LIBPROP_OBJS += portableproplib/prop_data.o
-LIBPROP_CPPFLAGS = -D_GNU_SOURCE
-LIBPROP_CFLAGS = -Wno-old-style-definition -Wno-cast-qual -Wno-unused-parameter -Wno-error
-LIBPROP_CFLAGS += -fvisibility=hidden
+LIBPROP_CFLAGS = -Wno-unused-parameter -fvisibility=hidden
 
 # libfetch
 LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
 LIBFETCH_OBJS += fetch/ftp.o fetch/http.o
 LIBFETCH_CPPFLAGS = -DFTP_COMBINE_CWDS -DINET6 -DWITH_SSL
-LIBFETCH_CFLAGS = -Wno-error -Wno-unused-macros -Wno-conversion
 ifdef HAVE_VISIBILITY
-LIBFETCH_CFLAGS+= -fvisibility=hidden
+LIBFETCH_CFLAGS= -fvisibility=hidden
 endif
 LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
