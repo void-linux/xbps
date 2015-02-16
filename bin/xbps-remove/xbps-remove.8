@@ -1,4 +1,4 @@
-.Dd December 15, 2014
+.Dd February 16, 2014
 .Dt XBPS-REMOVE 8
 .Sh NAME
 .Nm xbps-remove
@@ -69,7 +69,8 @@ If the first character is not '\/' then it's a relative path of
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl F, Fl -force-revdeps
-Forcefully remove package even if there are reverse dependencies (DANGEROUS!).
+Forcefully remove package even if there are reverse dependencies and/or broken
+shared libraries (DANGEROUS!).
 .It Fl f, Fl -force
 Forcefully remove package files even if they have been modified.
 .It Fl h, Fl -help
