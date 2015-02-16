@@ -109,7 +109,6 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	}
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
-	xbps_dictionary_get_cstring_nocopy(pkg_repod, "repository", &repoloc);
 
 	if (action == TRANS_UPDATE) {
 		/*
@@ -120,6 +119,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 		    "pkgver", &instpkgver);
 		if (xbps_cmpver(repopkgver, instpkgver) <= 0 &&
 		    !xbps_pkg_reverts(pkg_repod, instpkgver)) {
+			xbps_dictionary_get_cstring_nocopy(pkg_repod,
+			    "repository", &repoloc);
 			xbps_dbg_printf(xhp, "[rpool] Skipping `%s' "
 			    "(installed: %s) from repository `%s'\n",
 			    repopkgver, instpkgver, repoloc);
