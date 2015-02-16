@@ -43,6 +43,10 @@
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 #endif
 
+#define GOT_PKGNAME_VAR 	0x1
+#define GOT_VERSION_VAR 	0x2
+#define GOT_REVISION_VAR 	0x4
+
 #ifdef _RCV_DEBUG
 # define _dprintf(...)							\
 do {									\
@@ -73,7 +77,8 @@ typedef struct _map_t {
 typedef struct _rcv_t {
 	const char *prog, *fname;
 	char *input, *ptr, *xbps_conf, *rootdir, *distdir, *pkgdir;
-	size_t len, have_vars;
+	uint8_t have_vars;
+	size_t len;
 	map_t *env;
 	struct xbps_handle xhp;
 	xbps_dictionary_t pkgd;
@@ -369,13 +374,14 @@ error:
 	return buf;
 }
 
-static int
+static void
 rcv_get_pkgver(rcv_t *rcv)
 {
 	size_t klen, vlen;
 	map_item_t _item;
 	map_item_t *item = NULL;
 	char c, *ptr = rcv->ptr, *e, *p, *k, *v;
+	uint8_t vars = 0;
 
 	while ((c = *ptr) != '\0') {
 		if (c == '#') {
@@ -389,46 +395,50 @@ rcv_get_pkgver(rcv_t *rcv)
 		if (c == 'u' && (strncmp("unset", ptr, 5)) == 0) {
 			goto end;
 		}
-		if (isalpha(c) || c == '_') {
-			e = strchr(ptr, '=');
-			p = strchr(ptr, '\n');
-			k = ptr;
-			v = e + 1;
-			klen = strlen(k) - strlen(e);
-			vlen = strlen(v) - strlen(p);
-			if (v[0] == '"' && vlen == 1) {
-				while (*ptr++ != '"');
-				goto end;
-			}
-			if (v[0] == '"') { v++; vlen--; }
-			if (v[vlen-1] == '"') { vlen--; }
-			if (vlen == 0) { goto end; }
-			_item = map_add_n(rcv->env, k, klen, v, vlen);
-			item = &rcv->env->items[_item.i];
-			if (strchr(v, '$')) {
-				item->v.s = rcv_refs(rcv, item->v.s, item->v.len);
-				item->v.len = strlen(item->v.s);
-				item->v.vmalloc = 1;
-			} else {
-				item->v.vmalloc = 0;
-			}
-			if (strchr(item->v.s, '$') && item->v.vmalloc == 1) {
-				item->v.s = rcv_cmd(rcv, item->v.s, item->v.len);
-				item->v.len = strlen(item->v.s);
-			}
-			if ((strncmp("pkgname", k, klen) == 0) ||
-			    (strncmp("version",  k, klen) == 0) ||
-			    (strncmp("revision", k, klen) == 0)) {
-				rcv->have_vars += 1;
-			}
-			/*printf("'%.*s':'%.*s'\n", item->k.len, item->k.s, item->v.len, item->v.s);*/
-			if (rcv->have_vars > 2) break;
+		if ((e = strchr(ptr, '=')) == NULL)
+			goto end;
+
+		p = strchr(ptr, '\n');
+		k = ptr;
+		v = e + 1;
+		klen = strlen(k) - strlen(e);
+		vlen = strlen(v) - strlen(p);
+		if (v[0] == '"' && vlen == 1) {
+			while (*ptr++ != '"');
+			goto end;
 		}
-		end:
+		if (v[0] == '"') { v++; vlen--; }
+		if (v[vlen-1] == '"') { vlen--; }
+		if (vlen == 0) { goto end; }
+		_item = map_add_n(rcv->env, k, klen, v, vlen);
+		item = &rcv->env->items[_item.i];
+		if (strchr(v, '$')) {
+			item->v.s = rcv_refs(rcv, item->v.s, item->v.len);
+			item->v.len = strlen(item->v.s);
+			item->v.vmalloc = 1;
+		} else {
+			item->v.vmalloc = 0;
+		}
+		if (strchr(item->v.s, '$') && item->v.vmalloc == 1) {
+			item->v.s = rcv_cmd(rcv, item->v.s, item->v.len);
+			item->v.len = strlen(item->v.s);
+		}
+		if (strncmp("pkgname", k, klen) == 0) {
+			rcv->have_vars |= GOT_PKGNAME_VAR;
+			vars++;
+		} else if (strncmp("version",  k, klen) == 0) {
+			rcv->have_vars |= GOT_VERSION_VAR;
+			vars++;
+		} else if (strncmp("revision", k, klen) == 0) {
+			rcv->have_vars |= GOT_REVISION_VAR;
+			vars++;
+		}
+		/*printf("'%.*s':'%.*s'\n", item->k.len, item->k.s, item->v.len, item->v.s);*/
+		if (vars > 2)
+			return;
+end:
 		ptr = strchr(ptr, '\n') + 1;
 	}
-
-	return (rcv->have_vars > 2) ? 0 : 1;
 }
 
 static int
@@ -441,8 +451,6 @@ rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 		rcv->env = NULL;
 		return EXIT_FAILURE;
 	}
-	rcv->have_vars = 0;
-
 	if (!rcv_load_file(rcv, fname)) {
 		map_destroy(rcv->env);
 		rcv->env = NULL;
@@ -457,13 +465,11 @@ rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 	map_add(rcv->env, "HOME", ehome);
 
 	rcv_get_pkgver(rcv);
-
 	check(rcv);
-
 	map_destroy(rcv->env);
 	rcv->env = NULL;
 
-	return EXIT_SUCCESS;
+	return 0;
 }
 
 static void
@@ -522,9 +528,18 @@ rcv_check_version(rcv_t *rcv)
 	char _srcver[BUFSIZ] = { '\0' };
 	char *srcver = _srcver;
 
-	if (rcv->have_vars < 3) {
-		printf("Error in '%s': missing '%s', '%s', or '%s' vars!\n",
-			rcv->fname, "pkgname", "version", "revision");
+	assert(rcv);
+
+	if ((rcv->have_vars & GOT_PKGNAME_VAR) == 0) {
+		fprintf(stderr, "ERROR: '%s': missing pkgname variable!\n", rcv->fname);
+		exit(EXIT_FAILURE);
+	}
+	if ((rcv->have_vars & GOT_VERSION_VAR) == 0) {
+		fprintf(stderr, "ERROR: '%s': missing version variable!\n", rcv->fname);
+		exit(EXIT_FAILURE);
+	}
+	if ((rcv->have_vars & GOT_REVISION_VAR) == 0) {
+		fprintf(stderr, "ERROR: '%s': missing revision variable!\n", rcv->fname);
 		exit(EXIT_FAILURE);
 	}
 

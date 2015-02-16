@@ -75,9 +75,9 @@ EOF
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
-	atf_check_equal $? 0
-	atf_check_equal "$out" ""
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
+	atf_check_equal $? 1
+	atf_check_equal "$(cat out)" "ERROR: 'srcpkgs/A/template': missing pkgname variable!"
 }
 
 atf_test_case srcpkg_missing_version
@@ -101,9 +101,9 @@ EOF
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
-	atf_check_equal $? 0
-	atf_check_equal "$out" ""
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
+	atf_check_equal $? 1
+	atf_check_equal "$(cat out)" "ERROR: 'srcpkgs/A/template': missing version variable!"
 }
 
 atf_test_case srcpkg_missing_revision
@@ -127,9 +127,9 @@ EOF
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
-	atf_check_equal $? 0
-	atf_check_equal "$out" ""
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
+	atf_check_equal $? 1
+	atf_check_equal "$(cat out)" "ERROR: 'srcpkgs/A/template': missing revision variable!"
 }
 
 atf_test_case srcpkg_missing_pkgver
@@ -153,9 +153,9 @@ EOF
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
-	atf_check_equal $? 0
-	atf_check_equal "$out" ""
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
+	atf_check_equal $? 1
+	atf_check_equal "$(cat out)" "ERROR: 'srcpkgs/A/template': missing pkgname variable!"
 }
 
 atf_test_case srcpkg_missing_pkgverrev
@@ -179,9 +179,9 @@ EOF
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
-	atf_check_equal $? 0
-	atf_check_equal "$out" ""
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
+	atf_check_equal $? 1
+	atf_check_equal "$(cat out)" "ERROR: 'srcpkgs/A/template': missing pkgname variable!"
 }
 
 atf_test_case reverts

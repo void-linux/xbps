@@ -1,5 +1,9 @@
 xbps-0.44 (???):
 
+ * xbps-checkvers(8): this now does not segfault anymore when the source package
+   does not set required variables (pkgname/version/revision). Added new test
+   cases to verify its correctness.
+
  * libxbps: globally check for unresolved reverse dependencies before accepting
    the transaction. This catches more cases of broken packages due to incompatible
    upgrades or unwanted removals. This also implements #46.
