@@ -1,5 +1,8 @@
 xbps-0.44 (???):
 
+ * libxbps: make sure that symlinks with relative target are detected and removed
+   properly. Fix #78: https://github.com/voidlinux/xbps/issues/78
+
  * xbps-checkvers(8): this now does not segfault anymore when the source package
    does not set required variables (pkgname/version/revision). Added new test
    cases to verify its correctness.

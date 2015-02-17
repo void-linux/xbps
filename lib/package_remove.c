@@ -96,7 +96,7 @@ static char *
 symlink_target(struct xbps_handle *xhp, const char *path)
 {
 	struct stat sb;
-	char *lnk, *res;
+	char *lnk, *res = NULL;
 	ssize_t r;
 
 	if (lstat(path, &sb) == -1)
@@ -111,16 +111,23 @@ symlink_target(struct xbps_handle *xhp, const char *path)
 		return NULL;
 	}
 	lnk[sb.st_size] = '\0';
-	if (lnk[0] != '/') {
-		char *p, *dname;
+	if (strstr(lnk, "./") || lnk[0] != '/') {
+		char *p, *p1, *dname;
 
 		/* relative */
 		p = strdup(path);
 		assert(p);
 		dname = dirname(p);
 		assert(dname);
-		dname += strlen(xhp->rootdir) + 1;
-		res = xbps_xasprintf("%s/%s", dname, lnk);
+		p = xbps_xasprintf("%s/%s", dname, lnk);
+		assert(p);
+		if (strstr(p, "./") && ((p1 = realpath(p, NULL)))) {
+			res = strdup(p1 + strlen(xhp->rootdir));
+		}
+		if (res == NULL) {
+			res = strdup(p + strlen(xhp->rootdir)+1);
+		}
+		assert(res);
 		free(lnk);
 		free(p);
 	} else {
@@ -375,14 +382,14 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 			rv = EPERM;
 			goto out;
 		}
+		/* Remove links */
+		if ((rv = remove_pkg_files(xhp, pkgfilesd, "links", pkgver)) != 0)
+			goto out;
 		/* Remove regular files */
 		if ((rv = remove_pkg_files(xhp, pkgfilesd, "files", pkgver)) != 0)
 			goto out;
 		/* Remove configuration files */
 		if ((rv = remove_pkg_files(xhp, pkgfilesd, "conf_files", pkgver)) != 0)
-			goto out;
-		/* Remove links */
-		if ((rv = remove_pkg_files(xhp, pkgfilesd, "links", pkgver)) != 0)
 			goto out;
 		/* Remove dirs */
 		if ((rv = remove_pkg_files(xhp, pkgfilesd, "dirs", pkgver)) != 0)
