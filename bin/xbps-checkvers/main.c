@@ -93,7 +93,7 @@ typedef int (*rcv_proc_func)(rcv_t *, const char *, rcv_check_func);
 static map_item_t
 map_new_item(void)
 {
-	return (map_item_t){ .k = { NULL, 0, 0 }, .v = { NULL, 0, 0 } };
+	return (map_item_t){ .k = { NULL, 0, 0 }, .v = { NULL, 0, 0 }, .i = 0 };
 }
 
 static map_t *
@@ -120,7 +120,7 @@ map_find_n(map_t *map, const char *k, size_t n)
 	size_t i = 0;
 	map_item_t item;
 
-	for(i = 0; i < map->len; i++) {
+	for (i = 0; i < map->len; i++) {
 		item = map->items[i];
 		if (item.k.len != 0)
 			if ((strncmp(k, item.k.s, n) == 0))
@@ -138,6 +138,9 @@ map_add_n(map_t *map, const char *k, size_t kn, const char *v, size_t vn)
 	size_t i;
 	map_item_t item;
 
+	assert(k);
+	assert(v);
+
 	if (++map->len > map->size) {
 		map->size += 16;
 		map->items = realloc(map->items,
@@ -154,17 +157,11 @@ map_add_n(map_t *map, const char *k, size_t kn, const char *v, size_t vn)
 	}
 	if (item.v.vmalloc == 1)
 		free(item.v.s);
+
 	item.v = (string){ (char *)__UNCONST(v), vn, 0 };
 	map->items[item.i] = item;
 	return map->items[item.i];
 }
-
-static map_item_t
-map_add(map_t *map, const char *k, const char *v)
-{
-	return map_add_n(map, k, strlen(k), v, strlen(v));
-}
-
 
 static map_item_t
 map_find(map_t *map, const char *k)
@@ -298,15 +295,25 @@ rcv_refs(rcv_t *rcv, const char *s, size_t len)
 	size_t i = 0, j = 0, k = 0, count = len*3;
 	char *ref = calloc(count, sizeof(char));
 	char *buf = calloc(count, sizeof(char));
+
+	assert(rcv);
+	assert(s);
+	assert(ref);
+	assert(buf);
+
 	while (i < len) {
 		if (s[i] == '$' && s[i+1] != '(') {
 			j = 0;
 			i++;
-			if (s[i] == '{') { i++; }
+			if (s[i] == '{') {
+				i++;
+			}
 			while (isalpha(s[i]) || s[i] == '_') {
 				ref[j++] = s[i++];
 			}
-			if (s[i] == '}') { i++; }
+			if (s[i] == '}') {
+				i++;
+			}
 			ref[j++] = '\0';
 			item = map_find(rcv->env, ref);
 			if ((strncmp(ref, item.k.s, strlen(ref)) == 0)) {
@@ -334,14 +341,25 @@ rcv_cmd(rcv_t *rcv, const char *s, size_t len)
 	size_t i = 0, j = 0, k = 0, count = len*3;
 	char *cmd = calloc(count, sizeof(char));
 	char *buf = calloc(count, sizeof(char));
+
+	assert(cmd);
+	assert(buf);
+
 	(void)rcv;
+
 	while (i < len) {
 		if (s[i] == '$' && s[i+1] != '{') {
 			j = 0;
 			i++;
-			if (s[i] == '(') { i++; }
-			while (s[i] != ')') { cmd[j++] = s[i++]; }
-			if (s[i] == ')') { i++; }
+			if (s[i] == '(') {
+				i++;
+			}
+			while (s[i] != ')') {
+				cmd[j++] = s[i++];
+			}
+			if (s[i] == ')') {
+				i++;
+			}
 			cmd[j++] = '\0';
 			if ((stream = popen(cmd, "r")) == NULL)
 				goto error;
@@ -384,44 +402,64 @@ rcv_get_pkgver(rcv_t *rcv)
 	uint8_t vars = 0;
 
 	while ((c = *ptr) != '\0') {
-		if (c == '#') {
-			while (*ptr++ != '\n');
-			continue;
+		if (c == '#' || c == '.') {
+			goto nextline;
 		}
 		if (c == '\n') {
 			ptr++;
 			continue;
 		}
 		if (c == 'u' && (strncmp("unset", ptr, 5)) == 0) {
-			goto end;
+			goto nextline;
 		}
 		if ((e = strchr(ptr, '=')) == NULL)
-			goto end;
+			goto nextline;
 
 		p = strchr(ptr, '\n');
 		k = ptr;
 		v = e + 1;
+
+		assert(p);
+		assert(k);
+		assert(v);
+
 		klen = strlen(k) - strlen(e);
 		vlen = strlen(v) - strlen(p);
+
 		if (v[0] == '"' && vlen == 1) {
-			while (*ptr++ != '"');
-			goto end;
+			while (*ptr++ != '"')
+				;
+			goto nextline;
 		}
-		if (v[0] == '"') { v++; vlen--; }
-		if (v[vlen-1] == '"') { vlen--; }
-		if (vlen == 0) { goto end; }
+		if (v[0] == '"') {
+			v++;
+			vlen--;
+		}
+		if (v[vlen-1] == '"') {
+			vlen--;
+		}
+		if (vlen == 0) {
+			goto nextline;
+		}
 		_item = map_add_n(rcv->env, k, klen, v, vlen);
 		item = &rcv->env->items[_item.i];
+
+		if (rcv->xhp.flags & XBPS_FLAG_DEBUG) {
+			printf("%s: %.*s %.*s\n", rcv->fname,
+			    (int)item->k.len, item->k.s,
+			    (int)item->v.len, item->v.s);
+		}
+
 		if (strchr(v, '$')) {
+			assert(item);
+			assert(item->v.s);
 			item->v.s = rcv_refs(rcv, item->v.s, item->v.len);
 			item->v.len = strlen(item->v.s);
 			item->v.vmalloc = 1;
-		} else {
-			item->v.vmalloc = 0;
-		}
-		if (strchr(item->v.s, '$') && item->v.vmalloc == 1) {
 			item->v.s = rcv_cmd(rcv, item->v.s, item->v.len);
 			item->v.len = strlen(item->v.s);
+		} else {
+			item->v.vmalloc = 0;
 		}
 		if (strncmp("pkgname", k, klen) == 0) {
 			rcv->have_vars |= GOT_PKGNAME_VAR;
@@ -433,10 +471,10 @@ rcv_get_pkgver(rcv_t *rcv)
 			rcv->have_vars |= GOT_REVISION_VAR;
 			vars++;
 		}
-		/*printf("'%.*s':'%.*s'\n", item->k.len, item->k.s, item->v.len, item->v.s);*/
 		if (vars > 2)
 			return;
-end:
+
+nextline:
 		ptr = strchr(ptr, '\n') + 1;
 	}
 }
@@ -444,8 +482,6 @@ end:
 static int
 rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 {
-	const char *ehome;
-
 	rcv->env = map_create();
 	if (rcv->env == NULL) {
 		rcv->env = NULL;
@@ -456,14 +492,6 @@ rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 		rcv->env = NULL;
 		return EXIT_FAILURE;
 	}
-	/*printf("Processing %s\n", fname);*/
-	if ((ehome = getenv("HOME")) == NULL) {
-		map_destroy(rcv->env);
-		rcv->env = NULL;
-		return EXIT_FAILURE;
-	}
-	map_add(rcv->env, "HOME", ehome);
-
 	rcv_get_pkgver(rcv);
 	check(rcv);
 	map_destroy(rcv->env);
@@ -558,8 +586,10 @@ rcv_check_version(rcv_t *rcv)
 	srcver = strncat(srcver, version.v.s, version.v.len);
 	srcver = strncat(srcver, "_", 1);
 	srcver = strncat(srcver, revision.v.s, revision.v.len);
+
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
-	if (repover == NULL && (rcv->show_missing==true||rcv->manual==true)) {
+
+	if (repover == NULL && (rcv->show_missing || rcv->manual )) {
 		printf("pkgname: %.*s repover: ? srcpkgver: %s\n",
 			(int)pkgname.v.len, pkgname.v.s, srcver+pkgname.v.len+1);
 	}
@@ -597,32 +627,26 @@ error:
 		errors = errno;
 		goto error;
 	}
-	while(1) {
+	for (;;) {
 		i = readdir_r(dir, &entry, &result);
 		if (i > 0) {
 			errors = errno;
 			goto error;
 		}
-		if (result == NULL) break;
-		if (strcmp(result->d_name, ".") == 0) continue;
-		if (strcmp(result->d_name, "..") == 0) continue;
+		if (result == NULL)
+			break;
+		if ((strcmp(result->d_name, ".") == 0) ||
+		    (strcmp(result->d_name, "..") == 0))
+			continue;
 		if ((lstat(result->d_name, &st)) != 0) {
 			errors = errno;
 			goto error;
 		}
-		if (S_ISLNK(st.st_mode) != 0) continue;
-		if ((chdir("..")) == -1) {
-			errors = errno;
-			goto error;
-		}
-		strcpy(filename, "srcpkgs/");
-		strcat(filename, result->d_name);
-		strcat(filename, "/template");
+		if (S_ISLNK(st.st_mode) != 0)
+			continue;
+
+		snprintf(filename, sizeof(filename), "%s/template", result->d_name);
 		ret = process(rcv, filename, rcv_check_version);
-		if ((chdir(path)) == -1) {
-			errors = errno;
-			goto error;
-		}
 	}
 
 	if ((closedir(dir)) == -1) {
@@ -630,12 +654,6 @@ error:
 		dir = NULL;
 		goto error;
 	}
-	if ((chdir("..")) == -1) {
-		errors = errno;
-		dir = NULL;
-		goto error;
-	}
-
 	return ret;
 }
 
