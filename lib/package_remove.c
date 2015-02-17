@@ -123,6 +123,7 @@ symlink_target(struct xbps_handle *xhp, const char *path)
 		assert(p);
 		if (strstr(p, "./") && ((p1 = realpath(p, NULL)))) {
 			res = strdup(p1 + strlen(xhp->rootdir));
+			free(p1);
 		}
 		if (res == NULL) {
 			res = strdup(p + strlen(xhp->rootdir)+1);
