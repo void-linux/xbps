@@ -98,7 +98,65 @@ remove_symlinks_relative_body() {
 	xbps-remove -r root -Ryvd A
 	atf_check_equal $? 0
 	rv=0
-	if [ -h root/usr/share/lib/libfoo.so.1 -o -h root/usr/lib/libfoo.so.1.2.0 -o -d root/usr/share/lib -o -d root/usr/lib ]; then
+	if [ -h root/usr/share/lib/libfoo.so.1 -o -f root/usr/lib/libfoo.so.1.2.0 -o -d root/usr/share/lib -o -d root/usr/lib ]; then
+	        rv=1
+	fi
+	atf_check_equal $rv 0
+}
+
+atf_test_case remove_symlinks_relative2
+
+remove_symlinks_relative2_head() {
+	atf_set "descr" "Tests for package removal: 2nd relative symlink cleanup test"
+}
+
+remove_symlinks_relative2_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/lib
+	touch -f pkg_A/usr/lib/libfoo.so.1.2.0
+	ln -s libfoo.so.1.2.0 pkg_A/usr/lib/libfoo.so.1
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	xbps-remove -r root -Ryvd A
+	atf_check_equal $? 0
+	rv=0
+	if [ -h root/usr/lib/libfoo.so.1 -o -f root/usr/lib/libfoo.so.1.2.0 -o -d root/usr/lib ]; then
+	        rv=1
+	fi
+	atf_check_equal $rv 0
+}
+
+atf_test_case remove_symlinks_abs
+
+remove_symlinks_abs_head() {
+	atf_set "descr" "Tests for package removal: absolute symlink cleanup test"
+}
+
+remove_symlinks_abs_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/lib
+	touch -f pkg_A/usr/lib/libfoo.so.1.2.0
+	ln -s /usr/lib/libfoo.so.1.2.0 pkg_A/usr/lib/libfoo.so.1
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	xbps-remove -r root -Ryvd A
+	atf_check_equal $? 0
+	rv=0
+	if [ -h root/usr/lib/libfoo.so.1 -o -f root/usr/lib/libfoo.so.1.2.0 -o -d root/usr/lib ]; then
 	        rv=1
 	fi
 	atf_check_equal $rv 0
@@ -382,7 +440,9 @@ atf_init_test_cases() {
 	atf_add_test_case keep_modified_symlinks
 	atf_add_test_case remove_readonly_files
 	atf_add_test_case remove_symlinks
+	atf_add_test_case remove_symlinks_abs
 	atf_add_test_case remove_symlinks_relative
+	atf_add_test_case remove_symlinks_relative2
 	atf_add_test_case remove_symlinks_from_root
 	atf_add_test_case remove_symlinks_modified
 	atf_add_test_case remove_dups
