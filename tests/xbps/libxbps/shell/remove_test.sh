@@ -75,6 +75,34 @@ remove_symlinks_body() {
 	atf_check_equal $rv 0
 }
 
+remove_symlinks_dangling_head() {
+	atf_set "descr" "Tests for package removal: dangling symlink cleanup test"
+}
+
+remove_symlinks_dangling_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/lib
+	touch -f pkg_A/usr/lib/libfoo.so.1.2.0
+	ln -sf libfoo.so.2 pkg_A/usr/lib/libfoo.so.1
+	ln -sf libfoo.so.2 pkg_B/usr/lib/libfoo.so
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	xbps-remove -r root -Ryvd A
+	atf_check_equal $? 0
+	rv=0
+	if [ -h root/usr/lib/libfoo.so.1 -o -h root/usr/lib/libfoo.so -o -f root/usr/lib/libfoo.so.1.2.o -o -d root/usr/lib ]; then
+	        rv=1
+	fi
+	atf_check_equal $rv 0
+}
+
 atf_test_case remove_symlinks_relative
 
 remove_symlinks_relative_head() {
@@ -441,6 +469,7 @@ atf_init_test_cases() {
 	atf_add_test_case remove_readonly_files
 	atf_add_test_case remove_symlinks
 	atf_add_test_case remove_symlinks_abs
+	atf_add_test_case remove_symlinks_dangling
 	atf_add_test_case remove_symlinks_relative
 	atf_add_test_case remove_symlinks_relative2
 	atf_add_test_case remove_symlinks_from_root
