@@ -303,7 +303,8 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 				free(p2);
 				free(p);
 			}
-		} else if (strchr(buf, '/') == NULL) {
+		} else if (buf[0] != '/') {
+			/* relative path */
 			p = strdup(filep);
 			assert(p);
 			dname = dirname(p);
