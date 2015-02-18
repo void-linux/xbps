@@ -117,10 +117,6 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		}
 		break;
-	default:
-		xbps_dbg_printf(xscd->xhp,
-		    "%s: unknown state %d\n", xscd->arg, xscd->state);
-		break;
 	}
 
 	return 0;
