@@ -79,6 +79,8 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbd _unused)
 		if (slog)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		break;
+	default:
+		break;
 	}
 
 	return 0;
