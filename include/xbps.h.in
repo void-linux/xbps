@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20150203"
+#define XBPS_API_VERSION	"20150218"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1932,6 +1932,15 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
  * The returned buffer must be free(3)d when necessary.
  */
 char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
+
+/**
+ * Returns a buffer with a sanitized path from \a src.
+ * This removes multiple slashes.
+ *
+ * @return The sanitized path in a buffer.
+ * The returned buffer must be free(3)d when it's no longer necessary.
+ */
+char *xbps_sanitize_path(const char *src);
 
 /*@}*/
 

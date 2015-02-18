@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -424,4 +424,31 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver)
 	}
 
 	return false;
+}
+
+char *
+xbps_sanitize_path(const char *src)
+{
+	const char *s = src;
+	char *d, *dest;
+	size_t len;
+
+	assert(src);
+	len = strlen(src);
+	assert(len != 0);
+
+	dest = malloc(len);
+	assert(dest);
+	d = dest;
+
+	while ((*d = *s)) {
+		if (*s == '/' && *(s+1) == '/') {
+			s++;
+			continue;
+		}
+		d++, s++;
+	}
+	*d = '\0';
+
+	return dest;
 }
