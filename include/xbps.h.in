@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20150219"
+#define XBPS_API_VERSION	"20150219-1"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1937,7 +1937,7 @@ char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
  * Returns a buffer with a sanitized path from \a src.
  * This removes multiple slashes.
  *
- * @param[in] src A path.
+ * @param[in] src path component.
  *
  * @return The sanitized path in a buffer.
  * The returned buffer must be free(3)d when it's no longer necessary.
@@ -1948,12 +1948,14 @@ char *xbps_sanitize_path(const char *src);
  * Returns a sanitized target file of \a path without the rootdir component.
  *
  * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] path A path to a filename.
+ * @param[in] path path component.
+ * @param[in] target The stored target file of a symlink.
  *
  * @return The sanitized path in a buffer.
  * The returned buffer must be free(3)d when it's no longer necessary.
  */
-char *xbps_symlink_target(struct xbps_handle *xhp, const char *path);
+char *xbps_symlink_target(struct xbps_handle *xhp, const char *path,
+		const char *target);
 
 /*@}*/
 

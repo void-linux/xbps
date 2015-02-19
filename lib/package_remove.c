@@ -211,14 +211,14 @@ remove_pkg_files(struct xbps_handle *xhp,
 			const char *target = NULL;
 			char *lnk;
 
-			lnk = xbps_symlink_target(xhp, path);
+			xbps_dictionary_get_cstring_nocopy(obj, "target", &target);
+			assert(target);
+			lnk = xbps_symlink_target(xhp, path, target);
 			if (lnk == NULL) {
 				xbps_dbg_printf(xhp, "[remove] %s "
 				    "symlink_target: %s\n", path, strerror(errno));
 				continue;
 			}
-			xbps_dictionary_get_cstring_nocopy(obj, "target", &target);
-			assert(target);
 			if (strcmp(lnk, target)) {
 				xbps_dbg_printf(xhp, "[remove] %s symlink "
 				    "modified (stored %s current %s)\n", path,
