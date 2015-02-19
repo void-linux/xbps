@@ -213,7 +213,7 @@ remove_pkg_files(struct xbps_handle *xhp,
 
 			xbps_dictionary_get_cstring_nocopy(obj, "target", &target);
 			assert(target);
-			lnk = xbps_symlink_target(xhp, path, target);
+			lnk = xbps_symlink_target(path);
 			if (lnk == NULL) {
 				xbps_dbg_printf(xhp, "[remove] %s "
 				    "symlink_target: %s\n", path, strerror(errno));

@@ -454,10 +454,10 @@ xbps_sanitize_path(const char *src)
 }
 
 char *
-xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
+xbps_symlink_target(const char *path)
 {
 	struct stat sb;
-	char *p, *p1, *dname, *res = NULL, *lnk = NULL;
+	char *lnk = NULL;
 	ssize_t r;
 
 	if (lstat(path, &sb) == -1)
@@ -472,47 +472,5 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 		return NULL;
 	}
 	lnk[sb.st_size] = '\0';
-
-	if (tgt[0] != '/') {
-		/*
-		 * target file is relative and wasn't converted to absolute by
-		 * xbps-create(8), just compare it as is.
-		 */
-		return lnk;
-	}
-
-	if (strstr(lnk, "./") || lnk[0] != '/') {
-		/* relative */
-		p = strdup(path);
-		assert(p);
-		dname = dirname(p);
-		assert(dname);
-		p = xbps_xasprintf("%s/%s", dname, lnk);
-		assert(p);
-		p1 = xbps_sanitize_path(p);
-		assert(p1);
-		free(p);
-		if ((strstr(p1, "./")) && (p = realpath(p1, NULL))) {
-			if (strcmp(xhp->rootdir, "/") == 0)
-				res = strdup(p);
-			else
-				res = strdup(p + strlen(xhp->rootdir));
-
-			free(p);
-		}
-		if (res == NULL) {
-			if (strcmp(xhp->rootdir, "/") == 0)
-				res = strdup(p1);
-			else
-				res = strdup(p1 + strlen(xhp->rootdir));
-		}
-		assert(res);
-		free(lnk);
-		free(p1);
-	} else {
-		/* absolute */
-		res = lnk;
-	}
-
-	return res;
+	return lnk;
 }
