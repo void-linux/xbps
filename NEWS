@@ -3,9 +3,7 @@ xbps-0.44 (???):
  * xbps-pkgdb(8): this now uses the code from libxbps to check the target file
    of symlinks. This fixes some false positives with symlinks.
 
- * xbps-create(8): relative target file of symlinks aren't converted to absolute
-   anymore. This just stores what the symlink points to, does not matter if
-   it's relative or absolute path.
+ * xbps-create(8): properly detect target of relative symlinks in some cases.
 
  * libxbps: make sure that symlinks with relative target are detected and removed
    properly. Fix #78: https://github.com/voidlinux/xbps/issues/78

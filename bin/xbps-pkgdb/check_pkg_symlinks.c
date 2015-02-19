@@ -77,7 +77,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			continue;
 		}
 		snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
-		if ((lnk = xbps_symlink_target(path)) == NULL) {
+		if ((lnk = xbps_symlink_target(xhp, path, tgt)) == NULL) {
 			xbps_error_printf("%s: broken symlink %s (target: %s)\n", pkgname, file, tgt);
 			broken = true;
 			continue;

@@ -33,7 +33,7 @@ hardlinks_size_body() {
 atf_test_case symlink_relative_target
 
 symlink_relative_target_head() {
-	atf_set "descr" "xbps-create(8): relative symlinks in destdir"
+	atf_set "descr" "xbps-create(8): relative symlinks in destdir must be absolute"
 }
 
 symlink_relative_target_body() {
@@ -48,7 +48,7 @@ symlink_relative_target_body() {
 	xbps-rindex -d -a repo/*.xbps
 	atf_check_equal $? 0
 	result="$(xbps-query -r root --repository=repo -f foo|tr -d '\n')"
-	expected="/usr/include/gsm/gsm.h/usr/include/gsm.h -> gsm/gsm.h"
+	expected="/usr/include/gsm/gsm.h/usr/include/gsm.h -> /usr/include/gsm/gsm.h"
 	rv=0
 	if [ "$result" != "$expected" ]; then
 		echo "result: $result"
@@ -61,7 +61,7 @@ symlink_relative_target_body() {
 atf_test_case symlink_relative_target_cwd
 
 symlink_relative_target_cwd_head() {
-	atf_set "descr" "xbps-create(8): relative symlinks to cwd in destdir"
+	atf_set "descr" "xbps-create(8): relative symlinks to cwd in destdir must be absolute"
 }
 
 symlink_relative_target_cwd_body() {
@@ -76,7 +76,7 @@ symlink_relative_target_cwd_body() {
 	xbps-rindex -d -a repo/*.xbps
 	atf_check_equal $? 0
 	result="$(xbps-query -r root --repository=repo -f foo|tr -d '\n')"
-	expected="/usr/include/gsm/gsm.h/usr/include/gsm.h -> ./gsm/gsm.h"
+	expected="/usr/include/gsm/gsm.h/usr/include/gsm.h -> /usr/include/gsm/gsm.h"
 	rv=0
 	if [ "$result" != "$expected" ]; then
 		echo "result: $result"
