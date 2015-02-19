@@ -457,7 +457,7 @@ char *
 xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 {
 	struct stat sb;
-	char *p, *p1, *dname, *res = NULL, *lnk = NULL;
+	char *res = NULL, *lnk = NULL;
 	ssize_t r;
 
 	if (lstat(path, &sb) == -1)
@@ -482,33 +482,33 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 	}
 
 	if (strstr(lnk, "./") || lnk[0] != '/') {
+		char *p, *p1, *dname, labs[PATH_MAX];
 		/* relative */
 		p = strdup(path);
 		assert(p);
 		dname = dirname(p);
 		assert(dname);
-		p = xbps_xasprintf("%s/%s", dname, lnk);
-		assert(p);
-		p1 = xbps_sanitize_path(p);
-		assert(p1);
+		snprintf(labs, sizeof(labs), "%s/%s", dname, lnk);
 		free(p);
-		if ((strstr(p1, "./")) && (p = realpath(p1, NULL))) {
+		p = xbps_sanitize_path(labs);
+		assert(p);
+		if ((strstr(p, "./")) && (p1 = realpath(p, NULL))) {
 			if (strcmp(xhp->rootdir, "/") == 0)
-				res = strdup(p);
-			else
-				res = strdup(p + strlen(xhp->rootdir));
-
-			free(p);
+				res = p1;
+			else {
+				res = strdup(p1 + strlen(xhp->rootdir));
+				free(p1);
+			}
 		}
 		if (res == NULL) {
 			if (strcmp(xhp->rootdir, "/") == 0)
-				res = strdup(p1);
+				res = p;
 			else
-				res = strdup(p1 + strlen(xhp->rootdir));
+				res = strdup(p + strlen(xhp->rootdir));
 		}
 		assert(res);
 		free(lnk);
-		free(p1);
+		free(p);
 	} else {
 		/* absolute */
 		res = lnk;
