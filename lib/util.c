@@ -503,12 +503,13 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 		if (res == NULL) {
 			if (strcmp(xhp->rootdir, "/") == 0)
 				res = p;
-			else
+			else {
 				res = strdup(p + strlen(xhp->rootdir));
+				free(p);
+			}
 		}
 		assert(res);
 		free(lnk);
-		free(p);
 	} else {
 		/* absolute */
 		res = lnk;
