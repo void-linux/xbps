@@ -1,5 +1,8 @@
 xbps-0.44 (???):
 
+ * xbps-pkgdb(8): this now uses the code from libxbps to check the target file
+   of symlinks. This fixes some false positives with symlinks.
+
  * xbps-create(8): properly detect target of relative symlinks in some cases.
 
  * libxbps: make sure that symlinks with relative target are detected and removed
