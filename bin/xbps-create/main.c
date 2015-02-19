@@ -283,7 +283,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		 * Check if symlink is absolute or relative; on the former
 		 * make it absolute for the target object.
 		 */
-		if (strncmp(buf, "../", 3) == 0) {
+		if (strstr(buf, "./")) {
 			p = realpath(fpath, NULL);
 			if (p == NULL) {
 				/*
