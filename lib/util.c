@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <fnmatch.h>
 #include <ctype.h>
+#include <libgen.h>
 #include <sys/utsname.h>
 
 #include "xbps_api_impl.h"
@@ -314,9 +315,8 @@ xbps_pkg_has_rundeps(xbps_dictionary_t pkgd)
 }
 
 bool
-xbps_pkg_arch_match(struct xbps_handle *xhp,
-		    const char *orig,
-		    const char *target)
+xbps_pkg_arch_match(struct xbps_handle *xhp, const char *orig,
+		const char *target)
 {
 	const char *arch;
 
@@ -451,4 +451,59 @@ xbps_sanitize_path(const char *src)
 	*d = '\0';
 
 	return dest;
+}
+
+char *
+xbps_symlink_target(struct xbps_handle *xhp, const char *path)
+{
+	struct stat sb;
+	char *p, *p1, *dname, *res = NULL, *lnk = NULL;
+	ssize_t r;
+
+	if (lstat(path, &sb) == -1)
+		return NULL;
+
+	lnk = malloc(sb.st_size + 1);
+	assert(lnk);
+
+	r = readlink(path, lnk, sb.st_size + 1);
+	if (r < 0 || r > sb.st_size) {
+		free(lnk);
+		return NULL;
+	}
+	lnk[sb.st_size] = '\0';
+	if (strstr(lnk, "./") || lnk[0] != '/') {
+		/* relative */
+		p = strdup(path);
+		assert(p);
+		dname = dirname(p);
+		assert(dname);
+		p = xbps_xasprintf("%s/%s", dname, lnk);
+		assert(p);
+		p1 = xbps_sanitize_path(p);
+		assert(p1);
+		free(p);
+		if ((strstr(p1, "./")) && (p = realpath(p1, NULL))) {
+			if (strcmp(xhp->rootdir, "/") == 0)
+				res = strdup(p);
+			else
+				res = strdup(p + strlen(xhp->rootdir));
+
+			free(p);
+		}
+		if (res == NULL) {
+			if (strcmp(xhp->rootdir, "/") == 0)
+				res = strdup(p1);
+			else
+				res = strdup(p1 + strlen(xhp->rootdir));
+		}
+		assert(res);
+		free(lnk);
+		free(p1);
+	} else {
+		/* absolute */
+		res = lnk;
+	}
+
+	return res;
 }

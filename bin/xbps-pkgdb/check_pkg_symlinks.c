@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2014 Juan Romero Pardines.
+ * Copyright (c) 2011-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,53 +46,6 @@
  * returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 
-static char *
-symlink_target(struct xbps_handle *xhp, const char *path)
-{
-	struct stat sb;
-	char *lnk, *res;
-	ssize_t r;
-
-	if (lstat(path, &sb) == -1)
-		return NULL;
-
-	lnk = malloc(sb.st_size + 1);
-	assert(lnk);
-
-	r = readlink(path, lnk, sb.st_size + 1);
-	if (r < 0 || r > sb.st_size) {
-		free(lnk);
-		return NULL;
-	}
-	lnk[sb.st_size] = '\0';
-	if (lnk[0] != '/') {
-		char tpath[PATH_MAX], *p, *dname;
-
-		/* relative */
-		p = strdup(path);
-		assert(p);
-		dname = dirname(p);
-		assert(dname);
-		snprintf(tpath, sizeof(tpath), "%s/%s", dname, lnk);
-		free(p);
-		if ((res = realpath(tpath, NULL)) == NULL) {
-			free(lnk);
-			return NULL;
-		}
-		if (strcmp(xhp->rootdir, "/") == 0)
-			p = strdup(res);
-		else
-			p = strdup(res + strlen(xhp->rootdir));
-		free(res);
-		res = p;
-		free(lnk);
-	} else {
-		/* absolute */
-		res = lnk;
-	}
-	return res;
-}
-
 int
 check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
@@ -107,7 +60,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		const char *file = NULL, *tgt = NULL;
-		char path[PATH_MAX], *lnk = NULL, *tlnk = NULL;
+		char path[PATH_MAX], *lnk = NULL;
 
 		obj = xbps_array_get(array, i);
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "file", &file))
@@ -124,55 +77,18 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			continue;
 		}
 		snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
-		if ((lnk = symlink_target(xhp, path)) == NULL) {
+		if ((lnk = xbps_symlink_target(xhp, path)) == NULL) {
 			xbps_error_printf("%s: broken symlink %s (target: %s)\n", pkgname, file, tgt);
 			broken = true;
 			continue;
 		}
-		if (tgt[0] != '/') {
-			char *p, *p1, *dname;
-
-			p = strdup(file);
-			assert(p);
-			dname = dirname(p);
-			assert(dname);
-			snprintf(path, sizeof(path), "%s/%s", dname, tgt);
-			p1 = realpath(path, NULL);
-			free(p);
-			if (p1 == NULL) {
-				xbps_error_printf("%s: failed to realpath %s: %s\n",
-				    pkgname, file, strerror(errno));
-				free(lnk);
-				continue;
-			}
-			if (strcmp(xhp->rootdir, "/") == 0)
-				tlnk = strdup(p1);
-			else
-				tlnk = strdup(p1 + strlen(xhp->rootdir));
-			free(p1);
-		} else {
-			char *p;
-
-			snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, tgt);
-			if ((p = realpath(path, NULL))) {
-				if (strcmp(xhp->rootdir, "/") == 0)
-					tlnk = strdup(p);
-				else
-					tlnk = strdup(p + strlen(xhp->rootdir));
-				free(p);
-			} else {
-				tlnk = strdup(tgt);
-			}
-		}
-		/* absolute */
-		if (strcmp(lnk, tlnk)) {
+		if (strcmp(lnk, tgt)) {
 			xbps_warn_printf("%s: modified symlink %s "
 			    "points to %s (shall be %s)\n",
-			    pkgname, file, lnk, tlnk);
+			    pkgname, file, lnk, tgt);
 			broken = true;
 		}
 		free(lnk);
-		free(tlnk);
 	}
 	return broken;
 }
