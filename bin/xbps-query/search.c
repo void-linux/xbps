@@ -129,9 +129,9 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			xbps_array_add_cstring_nocopy(sd->results, pkgver);
 			xbps_array_add_cstring_nocopy(sd->results, desc);
 		} else {
-			if ((xbps_pkgpattern_match(pkgver, sd->pat)) ||
-			    (strcasestr(pkgver, sd->pat)) ||
+			if ((strcasestr(pkgver, sd->pat)) ||
 			    (strcasestr(desc, sd->pat))) {
+			    (xbps_pkgpattern_match(pkgver, sd->pat)) ||
 				xbps_array_add_cstring_nocopy(sd->results, pkgver);
 				xbps_array_add_cstring_nocopy(sd->results, desc);
 			}
@@ -152,8 +152,7 @@ search_array_cb(struct xbps_handle *xhp _unused,
 						printf("%s: %s\n", pkgver, str);
 				}
 			} else {
-				if ((strcasestr(str, sd->pat)) ||
-				    (fnmatch(sd->pat, str, FNM_PERIOD)) == 0) {
+				if (strcasestr(str, sd->pat)) {
 					if (sd->repo_mode)
 						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
 					else
