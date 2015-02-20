@@ -130,8 +130,8 @@ search_array_cb(struct xbps_handle *xhp _unused,
 			xbps_array_add_cstring_nocopy(sd->results, desc);
 		} else {
 			if ((strcasestr(pkgver, sd->pat)) ||
-			    (strcasestr(desc, sd->pat))) {
-			    (xbps_pkgpattern_match(pkgver, sd->pat)) ||
+			    (strcasestr(desc, sd->pat)) ||
+			    (xbps_pkgpattern_match(pkgver, sd->pat))) {
 				xbps_array_add_cstring_nocopy(sd->results, pkgver);
 				xbps_array_add_cstring_nocopy(sd->results, desc);
 			}
