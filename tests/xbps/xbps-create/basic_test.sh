@@ -86,8 +86,33 @@ symlink_relative_target_cwd_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case restore_mtime
+
+restore_mtime_head() {
+	atf_set "descr" "xbps-create(8): restore file mtime as user"
+}
+
+restore_mtime_body() {
+	mkdir -p repo pkg_A/usr/include/gsm
+	touch -f pkg_A/usr/include/gsm/gsm.h
+
+	cd repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yvd foo
+
+	expected=$(stat --printf='%Y' pkg_A/usr/include/gsm/gsm.h)
+	result=$(stat --printf='%Y' root/usr/include/gsm/gsm.h)
+
+	atf_check_equal "$expected" "$result"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case hardlinks_size
 	atf_add_test_case symlink_relative_target
 	atf_add_test_case symlink_relative_target_cwd
+	atf_add_test_case restore_mtime
 }

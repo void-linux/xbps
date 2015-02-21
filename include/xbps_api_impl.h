@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2014 Juan Romero Pardines.
+ * Copyright (c) 2010-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,10 +46,10 @@
 #include "compat.h"
 
 #define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \
-			ARCHIVE_EXTRACT_SECURE_SYMLINKS
-#define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | ARCHIVE_EXTRACT_PERM | \
-			ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_UNLINK | \
-			EXTRACT_FLAGS
+			ARCHIVE_EXTRACT_SECURE_SYMLINKS | \
+			ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | \
+			ARCHIVE_EXTRACT_UNLINK
+#define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | EXTRACT_FLAGS
 
 #ifndef __UNCONST
 #define __UNCONST(a)	((void *)(unsigned long)(const void *)(a))
