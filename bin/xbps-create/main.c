@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,7 @@
 
 struct xentry {
 	TAILQ_ENTRY(xentry) entries;
+	uint64_t mtime;
 	char *file, *type, *target, *hash;
 	ino_t inode;
 };
@@ -272,6 +273,8 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		 */
 		xe->type = strdup("links");
 		assert(xe->type);
+		/* store modification time for regular files and links */
+		xe->mtime = (uint64_t)sb->st_mtime;
 		buf = malloc(sb->st_size+1);
 		assert(buf);
 		r = readlink(fpath, buf, sb->st_size+1);
@@ -348,6 +351,8 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 			die("failed to process hash for %s:", fpath);
 
 		xe->inode = sb->st_ino;
+		/* store modification time for regular files and links */
+		xe->mtime = (uint64_t)sb->st_mtime;
 
 	} else if (type == FTW_D || type == FTW_DP) {
 		/* directory */
@@ -409,8 +414,11 @@ process_xentry(const char *key, const char *mutable_files)
 		xbps_dictionary_set_cstring(d, "file", p);
 		if (xe->target)
 			xbps_dictionary_set_cstring(d, "target", xe->target);
-		else if (xe->hash)
+		if (xe->hash)
 			xbps_dictionary_set_cstring(d, "sha256", xe->hash);
+		if (xe->mtime)
+			xbps_dictionary_set_uint64(d, "mtime", xe->mtime);
+
 		xbps_array_add(a, d);
 		xbps_object_release(d);
 	}

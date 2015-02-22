@@ -1,5 +1,8 @@
 xbps-0.44 (???):
 
+ * xbps-create(8): modification time of regular files and links is now stored
+   in the package files metadata, will be used in a future version.
+
  * libxbps: file timestamps stored in binary packages are now restored while
    unpacking as regular user.
 
