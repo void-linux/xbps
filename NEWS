@@ -1,5 +1,8 @@
 xbps-0.44 (???):
 
+ * xbps-pkgdb(8): this now checks the modification time of pkg files
+   (iff the pkg metadata has that information).
+
  * xbps-create(8): modification time of regular files and links is now stored
    in the package files metadata, will be used in a future version.
 

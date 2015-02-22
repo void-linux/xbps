@@ -1,4 +1,4 @@
-.Dd December 15, 2014
+.Dd February 22, 2014
 .Dt XBPS-PKGDB 8
 .Sh NAME
 .Nm xbps-pkgdb
@@ -24,6 +24,9 @@ hash that is recorded when package is installed against current one.
 .It Sy FILES CHECK
 Checks that all files belonging to a package have not been modified and are
 not missing.
+For regular files, its modification time and the SHA256 hash are
+compared and checked if they differ.
+For symbolic links the target file is checked that it has not been modified.
 .It Sy DEPENDENCIES CHECK
 Checks that all required dependencies for a package are resolved.
 .It Sy OBSOLETE METADATA CHECK

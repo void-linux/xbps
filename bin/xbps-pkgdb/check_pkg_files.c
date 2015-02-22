@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2013 Juan Romero Pardines.
+ * Copyright (c) 2011-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,8 +43,34 @@
  * 	o Check the hash for all installed files, except
  * 	  configuration files (which is expected if they are modified).
  *
+ * 	o Compares stored file modification time.
+ *
  * Return 0 if test ran successfully, 1 otherwise and -1 on error.
  */
+static bool
+check_file_mtime(xbps_dictionary_t d, const char *pkg, const char *path)
+{
+	struct stat sb;
+	uint64_t mtime = 0;
+	const char *file;
+
+	/* if obj is not there, skip silently */
+	if (!xbps_dictionary_get_uint64(d, "mtime", &mtime))
+		return false;
+
+	if (stat(path, &sb) == -1)
+		return true;
+
+	if ((uint64_t)sb.st_mtime != mtime) {
+		xbps_dictionary_get_cstring_nocopy(d, "file", &file);
+		xbps_error_printf("%s: %s mtime mismatch "
+		    "(current: %ju, stored %ju)\n",
+		    pkg, file, (uint64_t)sb.st_mtime, mtime);
+		return true;
+	}
+	return false;
+}
+
 int
 check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
@@ -72,6 +98,9 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			free(path);
 			switch (rv) {
 			case 0:
+				if (check_file_mtime(obj, pkgname, path)) {
+					test_broken = true;
+				}
 				break;
 			case ENOENT:
 				xbps_error_printf("%s: unexistent file %s.\n",
