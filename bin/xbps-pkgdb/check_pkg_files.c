@@ -95,16 +95,17 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
                         xbps_dictionary_get_cstring_nocopy(obj,
                             "sha256", &sha256);
 			rv = xbps_file_hash_check(path, sha256);
-			free(path);
 			switch (rv) {
 			case 0:
 				if (check_file_mtime(obj, pkgname, path)) {
 					test_broken = true;
 				}
+				free(path);
 				break;
 			case ENOENT:
 				xbps_error_printf("%s: unexistent file %s.\n",
 				    pkgname, file);
+				free(path);
 				test_broken = true;
 				break;
 			case ERANGE:
@@ -116,11 +117,13 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 					    "for %s.\n", pkgname, file);
 					test_broken = true;
 				}
+				free(path);
 				break;
 			default:
 				xbps_error_printf(
 				    "%s: can't check `%s' (%s)\n",
 				    pkgname, file, strerror(rv));
+				free(path);
 				break;
 			}
                 }
