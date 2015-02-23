@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -187,7 +187,7 @@ main(int argc, char **argv)
 		version = xbps_pkg_version(argv[1]);
 		if (version == NULL) {
 			fprintf(stderr,
-			    "Invalid string, expected <string>-<version>\n");
+			    "Invalid string, expected <string>-<version>_<revision>\n");
 			exit(EXIT_FAILURE);
 		}
 		printf("%s\n", version);
@@ -199,7 +199,7 @@ main(int argc, char **argv)
 		pkgname = xbps_pkg_name(argv[1]);
 		if (pkgname == NULL) {
 			fprintf(stderr,
-			    "Invalid string, expected <string>-<version>\n");
+			    "Invalid string, expected <string>-<version>_<revision>\n");
 			exit(EXIT_FAILURE);
 		}
 		printf("%s\n", pkgname);
