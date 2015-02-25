@@ -1,5 +1,9 @@
 xbps-0.44 (???):
 
+ * libxbps: while unpacking pkg files that were not modified (sha256 hash matched),
+   do not forget to also update the file timestamps on disk, to match
+   what the binary package has stored in the metadata.
+
  * xbps-pkgdb(8): this now checks the modification time of pkg files
    (iff the pkg metadata has that information).
 

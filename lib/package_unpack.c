@@ -392,6 +392,33 @@ unpack_archive(struct xbps_handle *xhp,
 			    "mode to %s.\n", pkgver, entry_pname,
 			    archive_entry_strmode(entry));
 		}
+		/*
+		 * Check if current file mtime differs from archive entry
+		 * in binpkg and apply mtime if true.
+		 */
+		if (!force && file_exists && skip_extract &&
+		    (archive_entry_mtime_nsec(entry) != st.st_mtime)) {
+			struct timespec ts[2];
+
+			ts[0].tv_sec = archive_entry_atime(entry);
+			ts[0].tv_nsec = archive_entry_atime_nsec(entry);
+			ts[1].tv_sec = archive_entry_mtime(entry);
+			ts[1].tv_nsec = archive_entry_mtime_nsec(entry);
+
+			if (utimensat(AT_FDCWD, entry_pname, ts,
+				      AT_SYMLINK_NOFOLLOW) == -1) {
+				xbps_dbg_printf(xhp,
+				    "%s: failed "
+				    "to set mtime %ju to %s: %s\n",
+				    pkgver, archive_entry_mtime_nsec(entry),
+				    entry_pname,
+				    strerror(errno));
+				rv = EINVAL;
+				goto out;
+			}
+			xbps_dbg_printf(xhp, "%s: updated file timestamps to %s\n",
+			    pkgver, entry_pname);
+		}
 		if (!force && skip_extract) {
 			archive_read_data_skip(ar);
 			continue;
