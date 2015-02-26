@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -76,8 +76,6 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 			xbps_dictionary_t newd)
 {
 	xbps_array_t instfiles, newfiles, obsoletes;
-	xbps_object_t obj, obj2;
-	xbps_string_t oldstr, newstr;
 	/* These are symlinks in Void and must not be removed */
 	const char *basesymlinks[] = {
 		"./bin",
@@ -89,10 +87,7 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		"./usr/lib64",
 		"./var/run",
 	};
-	const char *oldhash;
-	char file[PATH_MAX];
 	int rv = 0;
-	bool found;
 
 	assert(xbps_object_type(instd) == XBPS_TYPE_DICTIONARY);
 	assert(xbps_object_type(newd) == XBPS_TYPE_DICTIONARY);
@@ -112,7 +107,14 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	 * Iterate over files list from installed package.
 	 */
 	for (unsigned int i = 0; i < xbps_array_count(instfiles); i++) {
-		found = false;
+		xbps_object_t obj, obj2;
+		xbps_string_t oldstr, newstr;
+		struct stat st;
+		uint64_t mtime = 0;
+		const char *oldhash;
+		char file[PATH_MAX];
+		bool found = false;
+
 		obj = xbps_array_get(instfiles, i);
 		if (xbps_object_type(obj) != XBPS_TYPE_DICTIONARY) {
 			/* ignore unexistent files */
@@ -124,13 +126,11 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 
 		snprintf(file, sizeof(file), ".%s", xbps_string_cstring_nocopy(oldstr));
 
-		oldhash = NULL;
-		xbps_dictionary_get_cstring_nocopy(obj, "sha256", &oldhash);
-		if (oldhash) {
+		if (xbps_dictionary_get_cstring_nocopy(obj, "sha256", &oldhash)) {
 			rv = xbps_file_hash_check(file, oldhash);
 			if (rv == ENOENT || rv == ERANGE) {
 				/*
-				 * Skip unexistent and files that do not
+				  Skip unexistent and files that do not
 				 * match the hash.
 				 */
 				continue;
@@ -157,7 +157,6 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		/*
 		 * Make sure to not remove any symlink of root directory.
 		 */
-		found = false;
 		for (uint8_t x = 0; x < __arraycount(basesymlinks); x++) {
 			if (strcmp(file, basesymlinks[x]) == 0) {
 				found = true;
@@ -168,6 +167,22 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 		}
 		if (found) {
 			continue;
+		}
+		/*
+		 * Finally check if file mtime on disk matched what
+		 * the installed pkg has stored.
+		 */
+		if (xbps_dictionary_get_uint64(obj, "mtime", &mtime)) {
+			if (lstat(file, &st) == -1) {
+				xbps_dbg_printf(xhp, "[obsoletes] lstat failed "
+				    "for %s: %s\n", file, strerror(errno));
+				continue;
+			}
+			if (mtime != (uint64_t)st.st_mtime)
+				continue;
+
+			xbps_dbg_printf(xhp,
+			    "[obsoletes] %s: matched mtime, adding obsolete.\n", file);
 		}
 		/*
 		 * Obsolete found, add onto the array.

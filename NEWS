@@ -1,5 +1,9 @@
 xbps-0.44 (???):
 
+ * libxbps: properly detect when a file has been moved between packages:
+   if the mtime stored in the pkg metadata does not match the mtime
+   of the same file stored on disk, don't detect this as an obsolete file.
+
  * xbps-pkgdb(8): this now exits with an error if any test has failed.
 
  * libxbps: while unpacking pkg files that were not modified (sha256 hash matched),

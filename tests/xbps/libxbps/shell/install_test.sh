@@ -315,7 +315,7 @@ update_file_timestamps_body() {
 
 	atf_check_equal "$expected" "$result"
 
-	sleep 2
+	sleep 1
 	cd repo
 	touch -f pkg_A/usr/include/gsm/gsm.h
 	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
@@ -386,6 +386,7 @@ update_move_file_body() {
 	xbps-rindex -d -a repo/*.xbps
 	atf_check_equal $? 0
 	xbps-install -r root --repository=repo -yvd A B
+	sleep 1
 	cd repo
 	rm ../pkg_B/usr/bin/sg
 	rm ../pkg_A/usr/bin/newgrp
