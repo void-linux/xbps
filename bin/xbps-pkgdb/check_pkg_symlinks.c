@@ -52,11 +52,11 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_array_t array;
 	xbps_object_t obj;
 	xbps_dictionary_t filesd = arg;
-	bool broken = false;
+	int rv = 0;
 
 	array = xbps_dictionary_get(filesd, "links");
 	if (array == NULL)
-		return false;
+		return 0;
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		const char *file = NULL, *tgt = NULL;
@@ -79,16 +79,16 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
 		if ((lnk = xbps_symlink_target(xhp, path, tgt)) == NULL) {
 			xbps_error_printf("%s: broken symlink %s (target: %s)\n", pkgname, file, tgt);
-			broken = true;
+			rv = -1;
 			continue;
 		}
 		if (strcmp(lnk, tgt)) {
 			xbps_warn_printf("%s: modified symlink %s "
 			    "points to %s (shall be %s)\n",
 			    pkgname, file, lnk, tgt);
-			broken = true;
+			rv = -1;
 		}
 		free(lnk);
 	}
-	return broken;
+	return rv;
 }

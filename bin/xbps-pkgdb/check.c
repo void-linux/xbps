@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,12 +39,12 @@ static int
 pkgdb_cb(struct xbps_handle *xhp _unused,
 		xbps_object_t obj,
 		const char *key _unused,
-		void *arg _unused,
+		void *arg,
 		bool *done _unused)
 {
 	const char *pkgver;
 	char *pkgname;
-	int rv;
+	int rv, *errors = (int *)arg;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	if (xhp->flags & XBPS_FLAG_VERBOSE)
@@ -52,19 +52,19 @@ pkgdb_cb(struct xbps_handle *xhp _unused,
 
 	pkgname = xbps_pkg_name(pkgver);
 	assert(pkgname);
-	rv = check_pkg_integrity(xhp, obj, pkgname);
-	free(pkgname);
-	if (rv != 0)
-		fprintf(stderr, "pkgdb failed for %s: %s\n",
-		    pkgver, strerror(rv));
+	if ((rv = check_pkg_integrity(xhp, obj, pkgname)) != 0)
+		*errors += 1;
 
-	return rv;
+	free(pkgname);
+	return 0;
 }
 
 int
 check_pkg_integrity_all(struct xbps_handle *xhp)
 {
-	return xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_cb, NULL);
+	int errors = 0;
+	xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_cb, &errors);
+	return errors ? -1 : 0;
 }
 
 int
@@ -75,7 +75,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	xbps_dictionary_t opkgd, filesd = NULL;
 	const char *sha256;
 	char *buf;
-	int rv = 0;
+	int rv = 0, errors = 0;
 
 	filesd = opkgd = NULL;
 
@@ -109,16 +109,11 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		}
 	}
 
-#define RUN_PKG_CHECK(x, name, arg)					\
-do {									\
-	if (arg != NULL) {						\
-		rv = check_pkg_##name(x, pkgname, arg);			\
-		if (rv == -1) {						\
-			xbps_error_printf("%s: the %s test "		\
-			    "returned error!\n", pkgname, #name);	\
-			return EINVAL;					\
-		}							\
-	}								\
+#define RUN_PKG_CHECK(x, name, arg)				\
+do {								\
+	if ((rv = check_pkg_##name(x, pkgname, arg)) != 0) { 	\
+		errors++;					\
+	}							\
 } while (0)
 
 	/* Execute pkg checks */
@@ -132,5 +127,5 @@ do {									\
 
 #undef RUN_PKG_CHECK
 
-	return 0;
+	return errors ? EXIT_FAILURE : EXIT_SUCCESS;
 }

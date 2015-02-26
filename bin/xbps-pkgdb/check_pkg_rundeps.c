@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2012 Juan Romero Pardines.
+ * Copyright (c) 2011-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,7 +50,7 @@ check_pkg_rundeps(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_dictionary_t pkg_propsd = arg;
 	xbps_array_t array;
 	const char *reqpkg;
-	bool test_broken = false;
+	int rv = 0;
 
 	if (!xbps_pkg_has_rundeps(pkg_propsd))
 		return 0;
@@ -61,8 +61,8 @@ check_pkg_rundeps(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		if (xbps_pkg_is_installed(xhp, reqpkg) <= 0) {
 			xbps_error_printf("%s: dependency not satisfied: %s\n",
 			    pkgname, reqpkg);
-			test_broken = true;
+			rv = -1;
 		}
 	}
-	return test_broken;
+	return rv;
 }

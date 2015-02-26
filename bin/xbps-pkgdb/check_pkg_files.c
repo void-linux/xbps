@@ -80,8 +80,8 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_dictionary_t pkg_filesd = arg;
 	const char *file, *sha256;
 	char *path;
-	bool mutable, broken = false, test_broken = false;
-	int rv;
+	bool mutable, test_broken = false;
+	int rv = 0, errors = 0;
 
 	array = xbps_dictionary_get(pkg_filesd, "files");
 	if (array != NULL && xbps_array_count(array) > 0) {
@@ -132,7 +132,7 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	if (test_broken) {
 		xbps_error_printf("%s: files check FAILED.\n", pkgname);
 		test_broken = false;
-		broken = true;
+		errors++;
 	}
 
 	/*
@@ -165,8 +165,8 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	}
 	if (test_broken) {
 		xbps_error_printf("%s: conf files check FAILED.\n", pkgname);
-		broken = true;
+		errors++;
 	}
 
-	return broken;
+	return errors ? -1 : 0;
 }
