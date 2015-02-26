@@ -331,6 +331,79 @@ update_file_timestamps_body() {
 	atf_check_equal "$expected" "$result"
 }
 
+atf_test_case update_move_unmodified_file
+
+update_move_unmodified_file_head() {
+	atf_set "descr" "Test for pkg updates: move an unmodified file between pkgs"
+}
+
+update_move_unmodified_file_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/foo
+	echo 123456789 > pkg_B/usr/bin/sg
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=0" ../pkg_B
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yvd A
+	cd repo
+	mv ../pkg_B/usr/bin/sg ../pkg_A/usr/bin
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --dependencies "A>=1.1" ../pkg_B
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yuvd B
+	atf_check_equal $? 0
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+}
+
+atf_test_case update_move_file
+
+update_move_file_head() {
+	atf_set "descr" "Test for pkg updates: move a symlink to a file between pkgs"
+}
+
+update_move_file_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	echo 987654321 > pkg_A/usr/bin/newgrp
+	ln -s /usr/bin/newgrp pkg_B/usr/bin/sg
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yvd A B
+	cd repo
+	rm ../pkg_B/usr/bin/sg
+	rm ../pkg_A/usr/bin/newgrp
+	echo 123456789 > ../pkg_A/usr/bin/sg
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yuvd
+	atf_check_equal $? 0
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
@@ -343,4 +416,6 @@ atf_init_test_cases() {
 	atf_add_test_case update_if_installed
 	atf_add_test_case update_to_empty_pkg
 	atf_add_test_case update_file_timestamps
+	atf_add_test_case update_move_file
+	atf_add_test_case update_move_unmodified_file
 }
