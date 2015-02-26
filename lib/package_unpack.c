@@ -87,17 +87,16 @@ unpack_archive(struct xbps_handle *xhp,
 	const char *file, *entry_pname, *transact;
 	char *pkgname, *buf;
 	int ar_rv, rv, error, entry_type, flags;
-	bool preserve, update, file_exists, skip_obsoletes;
+	bool preserve, update, file_exists;
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
 	binpkg_filesd = pkg_filesd = NULL;
 	force = preserve = update = file_exists = false;
-	skip_obsoletes = xucd_stats = false;
+	xucd_stats = false;
 	ar_rv = rv = error = entry_type = flags = 0;
 
 	xbps_dictionary_get_bool(pkg_repod, "preserve", &preserve);
-	xbps_dictionary_get_bool(pkg_repod, "skip-obsoletes", &skip_obsoletes);
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "transaction", &transact);
 
 	memset(&xucd, 0, sizeof(xucd));
@@ -475,10 +474,9 @@ unpack_archive(struct xbps_handle *xhp,
 	/*
 	 * Skip checking for obsolete files on:
 	 * 	- Package with "preserve" keyword.
-	 * 	- Package with "skip-obsoletes" keyword.
 	 */
-	if (skip_obsoletes || preserve) {
-		xbps_dbg_printf(xhp, "%s: skipping obsoletes\n", pkgver);
+	if (preserve) {
+		xbps_dbg_printf(xhp, "%s: preserved package, skipping obsoletes\n", pkgver);
 		goto out;
 	}
 	/*

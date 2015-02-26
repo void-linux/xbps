@@ -169,7 +169,11 @@ files_move_to_dependency_body() {
 	xbps-install -r root --repository=$PWD -yvd libressl
 	atf_check_equal $? 0
 
+	sleep 1
 	rm -rf ../pkg_libressl/*
+	touch -f ../pkg_libcrypto/usr/lib/libcrypto.so.30
+	xbps-create -A noarch -n libcrypto-1.1_1 -s "libcrypto pkg" --replaces "libressl<1.1_1" ../pkg_libcrypto
+	atf_check_equal $? 0
 	xbps-create -A noarch -n libressl-1.1_1 -s "libressl pkg" --dependencies "libcrypto>=1.0" ../pkg_libressl
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps

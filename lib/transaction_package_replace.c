@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2014 Juan Romero Pardines.
+ * Copyright (c) 2011-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -99,8 +99,6 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 				 */
 				xbps_dictionary_set_bool(reppkgd,
 				    "automatic-install", instd_auto);
-				xbps_dictionary_set_bool(reppkgd,
-				    "skip-obsoletes", true);
 				xbps_array_replace_dict_by_name(pkgs,
 				    reppkgd, curpkgname);
 				continue;
