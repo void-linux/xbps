@@ -292,6 +292,45 @@ install_bestmatch_disabled_body() {
 	atf_check_equal $out A-1.0_1
 }
 
+atf_test_case update_file_timestamps
+
+update_file_timestamps_head() {
+	atf_set "descr" "Test for pkg updates: update file timestamps"
+}
+
+update_file_timestamps_body() {
+	mkdir -p repo pkg_A/usr/include/gsm
+	echo 123456789 > pkg_A/usr/include/gsm/gsm.h
+
+	cd repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yvd foo
+
+	expected=$(stat --printf='%Y' pkg_A/usr/include/gsm/gsm.h)
+	result=$(stat --printf='%Y' root/usr/include/gsm/gsm.h)
+
+	atf_check_equal "$expected" "$result"
+
+	sleep 2
+	cd repo
+	touch -f pkg_A/usr/include/gsm/gsm.h
+	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yuvd foo
+
+	expected=$(stat --printf='%Y' pkg_A/usr/include/gsm/gsm.h)
+	result=$(stat --printf='%Y' root/usr/include/gsm/gsm.h)
+
+	atf_check_equal "$expected" "$result"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
@@ -303,4 +342,5 @@ atf_init_test_cases() {
 	atf_add_test_case install_bestmatch_disabled
 	atf_add_test_case update_if_installed
 	atf_add_test_case update_to_empty_pkg
+	atf_add_test_case update_file_timestamps
 }
