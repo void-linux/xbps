@@ -895,7 +895,7 @@ main(int argc, char **argv)
 	 */
 	binpkg = xbps_xasprintf("%s.%s.xbps", pkgver, arch);
 
-	(void)fsync(pkg_fd);
+	(void)fdatasync(pkg_fd);
 	myumask = umask(0);
 	(void)umask(myumask);
 
