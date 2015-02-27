@@ -58,6 +58,10 @@ check_file_mtime(xbps_dictionary_t d, const char *pkg, const char *path)
 	if (!xbps_dictionary_get_uint64(d, "mtime", &mtime))
 		return false;
 
+	/* if file is mutable, we don't care if it does not match */
+	if (xbps_dictionary_get(d, "mutable"))
+		return false;
+
 	if (stat(path, &sb) == -1)
 		return true;
 
