@@ -44,7 +44,8 @@ usage(bool fail)
 	    " -C --config <dir>                      Path to confdir (xbps.d)\n"
 	    " -d --debug                             Debug mode shown to stderr\n"
 	    " -h --help                              Print usage help\n"
-	    " -m --mode <auto|manual|hold|unhold>    Change PKGNAME to this mode\n"
+	    " -m --mode <auto|manual|hold|unhold|repolock|repounlock>\n"
+	    "                                        Change PKGNAME to this mode\n"
 	    " -r --rootdir <dir>                     Full path to rootdir\n"
 	    " -u --update                            Update pkgdb to the latest format\n"
 	    " -v --verbose                           Verbose messages\n"
@@ -69,6 +70,10 @@ change_pkg_mode(struct xbps_handle *xhp, const char *pkgname, const char *mode)
 		xbps_dictionary_set_bool(pkgd, "hold", true);
 	else if (strcmp(mode, "unhold") == 0)
 		xbps_dictionary_remove(pkgd, "hold");
+	else if (strcmp(mode, "repolock") == 0)
+		xbps_dictionary_set_bool(pkgd, "repolock", true);
+	else if (strcmp(mode, "repounlock") == 0)
+		xbps_dictionary_remove(pkgd, "repolock");
 	else
 		usage(true);
 

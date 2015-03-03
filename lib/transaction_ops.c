@@ -68,7 +68,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	char *pkgname;
 	int action = 0, rv = 0;
 	pkg_state_t state = 0;
-	bool autoinst = false;
+	bool autoinst = false, repolock = false;
 
 	assert(pkg != NULL);
 
@@ -102,7 +102,20 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 			action = TRANS_REINSTALL;
 			reason = "install";
 		}
-		if ((pkg_repod = xbps_rpool_get_pkg(xhp, pkg)) == NULL) {
+		xbps_dictionary_get_bool(pkg_pkgdb, "repolock", &repolock);
+		if (repolock) {
+			struct xbps_repo *repo;
+			/* find update from repo */
+			xbps_dictionary_get_cstring_nocopy(pkg_pkgdb, "repository", &repoloc);
+			assert(repoloc);
+			if ((repo = xbps_rpool_get_repo(repoloc)) == NULL)
+				return EINVAL;
+			pkg_repod = xbps_repo_get_pkg(repo, pkg);
+		} else {
+			/* find update from rpool */
+			pkg_repod = xbps_rpool_get_pkg(xhp, pkg);
+		}
+		if (pkg_repod == NULL) {
 			/* not found */
 			return ENOENT;
 		}
@@ -141,11 +154,12 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 
 	if (pkg_pkgdb) {
 		/*
-		 * If pkg is already installed, respect its automatic-install
-		 * property.
+		 * If pkg is already installed, respect some properties.
 		 */
 		if (xbps_dictionary_get_bool(pkg_pkgdb, "automatic-install", &autoinst))
 			xbps_dictionary_set_bool(pkg_repod, "automatic-install", autoinst);
+		if (xbps_dictionary_get_bool(pkg_pkgdb, "repolock", &repolock))
+			xbps_dictionary_set_bool(pkg_repod, "repolock", repolock);
 	}
 	/*
 	 * Prepare transaction dictionary.

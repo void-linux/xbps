@@ -1,4 +1,4 @@
-.Dd February 22, 2014
+.Dd March 3, 2014
 .Dt XBPS-PKGDB 8
 .Sh NAME
 .Nm xbps-pkgdb
@@ -47,10 +47,11 @@ If the first character is not '\/' then it's a relative path of
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
 Show the help usage.
-.It Fl m, Fl -mode Ar auto|manual|hold|unhold
+.It Fl m, Fl -mode Ar auto|manual|hold|unhold|repolock|repounlock
 Switches
 .Ar PKGNAME
-to the specified  mode: automatic or manual installation mode, or to (un)set it on hold mode.
+to the specified  mode: automatic or manual installation mode, or to (un)set the on hold mode,
+and repository locked mode.
 A package that was installed as dependency will be in
 .Sy automatic
 mode, otherwise will be set to
@@ -60,6 +61,10 @@ A package in
 mode won't be updated in full system upgrades. The list of packages in this mode can be
 seen with
 .Xr xbps-query 8 .
+A package in
+.Sy repolock
+mode will only accept updates that are available in the same repository that was used
+for installing.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl u, Fl -update
