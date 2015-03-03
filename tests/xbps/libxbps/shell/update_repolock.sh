@@ -20,15 +20,15 @@ update_repolock_body() {
 	atf_check_equal $? 0
 	cd ..
 	# install A-1.0_1 from repository "repo"
-	xbps-install -r root --repository=repo --repository=repo2 -yvd A-1.0_1
+	xbps-install -r root --repository=repo2 --repository=repo -yvd A-1.0_1
 	atf_check_equal $? 0
 	# A-1.0_1 is now locked
 	xbps-pkgdb -r root -m repolock A
 	atf_check_equal $? 0
 	out=$(xbps-query -r root -p repository A)
-	atf_check_equal "$out" "$(realpath repo)"
+	atf_check_equal "$out" "$(readlink -f repo)"
 	# no update due to repository locking
-	xbps-install -r root --repository=repo --repository=repo2 -yuvd
+	xbps-install -r root --repository=repo2 --repository=repo -yuvd
 	atf_check_equal $? 0
 	out=$(xbps-query -r root -p pkgver A)
 	atf_check_equal $out A-1.0_1
@@ -43,7 +43,7 @@ update_repolock_body() {
 	out=$(xbps-query -r root -p pkgver A)
 	atf_check_equal $out A-1.1_1
 	out=$(xbps-query -r root -p repository A)
-	atf_check_equal "$out" "$(realpath repo2)"
+	atf_check_equal "$out" "$(readlink -f repo2)"
 }
 
 atf_init_test_cases() {
