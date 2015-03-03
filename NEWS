@@ -1,5 +1,7 @@
 xbps-0.44 (???):
 
+ * xbps-rindex(8): fix -s short option; was omitted in the short options list.
+
  * xbps-pkgdb(8): added a new mode to set in installed packages: "repolock".
    If that mode is set with `-m repo(un)lock`, a package will only be updated
    if there's an update in the same repository that was used for installing.
