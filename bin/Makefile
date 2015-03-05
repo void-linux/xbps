@@ -10,6 +10,7 @@ SUBDIRS +=	xbps-remove
 SUBDIRS +=	xbps-rindex
 SUBDIRS +=	xbps-uhelper
 SUBDIRS +=	xbps-checkvers
+SUBDIRS +=	xbps-uunshare
 
 ifeq (${XBPS_OS},linux)
 SUBDIRS +=	xbps-uchroot

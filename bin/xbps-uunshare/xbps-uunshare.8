@@ -1,0 +1,72 @@
+.Dd March 5, 2015
+.Dt XBPS-UUNSHARE 8
+.Sh NAME
+.Nm xbps-uunshare
+.Nd XBPS utility to chroot and bind mount with linux user namespaces
+.Sh SYNOPSYS
+.Nm xbps-uunshare
+.Op OPTIONS
+.Ar CHROOTDIR
+.Ar COMMAND
+.Op ARGS
+.Sh DESCRIPTION
+The
+.Nm
+utility allows users to chroot and bind mount required pseudo-filesystems
+(/dev, /proc and /sys) in the target
+.Ar CHROOTDIR
+to execute
+.Ar COMMAND .
+The
+.Nm
+utility uses by default Linux namespaces to isolate IPC, PIDs and mounts to
+the calling process. Thanks to
+.Xr user_namespaces 7
+the user does not need any privilege to create an isolated lightweight container.
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl D Ar dir
+Specifies a full path to a directory that will be bind mounted at
+.Ar CHROOTDIR/void-packages .
+.It Fl H Ar dir
+Specifies a full path to a directory that will be bind mounted at
+.Ar CHROOTDIR/host .
+.It Fl S Ar dir
+Specifies a full path to a directory to allow shm functionality to be used
+in the target
+.Ar CHROOTDIR/dir .
+If your system uses
+.Sy /dev/shm
+use it, otherwise use
+.Sy /run/shm .
+.El
+.Sh NOTES
+The
+.Nm
+utility uses Linux specific features (namespaces) and it's not meant to be portable to
+other Operating Systems. The following kernel options must be enabled:
+.Pp
+.Bl -tag -width CONFIG_NAMESPACES -compact -offset indent
+.It Sy CONFIG_NAMESPACES
+.It Sy CONFIG_IPC_NS
+.It Sy CONFIG_PID_NS
+.It Sy CONFIG_USER_NS
+.El
+.Sh SEE ALSO
+.Xr xbps.d 5 ,
+.Xr xbps-checkvers 8 ,
+.Xr xbps-create 8 ,
+.Xr xbps-dgraph 8 ,
+.Xr xbps-install 8 ,
+.Xr xbps-pkgdb 8 ,
+.Xr xbps-query 8 ,
+.Xr xbps-reconfigure 8 ,
+.Xr xbps-rindex 8 ,
+.Xr xbps-uchroot 8
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in https://github.com/voidlinux/xbps/issues
