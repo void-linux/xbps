@@ -72,6 +72,8 @@ bindmount(const char *chrootdir, const char *dir, const char *dest)
 	char mountdir[PATH_MAX-1];
 
 	snprintf(mountdir, sizeof(mountdir), "%s/%s", chrootdir, dest ? dest : dir);
+	if (chdir(dir) == -1)
+		die("chdir to %s", chrootdir);
 	if (mount(".", mountdir, NULL, MS_BIND|MS_REC|MS_PRIVATE, NULL) == -1)
 		die("Failed to bind mount %s at %s", dir, mountdir);
 }
