@@ -40,6 +40,10 @@
 #include <limits.h>
 #include <syscall.h>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 static int errval = 0;
 
 static void __attribute__((noreturn))
