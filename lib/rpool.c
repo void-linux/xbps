@@ -79,6 +79,34 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 	return 0;
 }
 
+struct xbps_repo HIDDEN *
+xbps_regget_repo(struct xbps_handle *xhp, const char *url)
+{
+	struct xbps_repo *repo;
+	const char *repouri;
+
+	if (SIMPLEQ_EMPTY(&rpool_queue)) {
+		/* iterate until we have a match */
+		for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+			xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
+			if (strcmp(repouri, url))
+				continue;
+
+			repo = xbps_repo_open(xhp, repouri, false);
+			if (!repo)
+				return NULL;
+
+			SIMPLEQ_INSERT_TAIL(&rpool_queue, repo, entries);
+			xbps_dbg_printf(xhp, "[rpool] `%s' registered.\n", repouri);
+		}
+	}
+	SIMPLEQ_FOREACH(repo, &rpool_queue, entries)
+		if (strcmp(url, repo->uri) == 0)
+			return repo;
+
+	return NULL;
+}
+
 struct xbps_repo *
 xbps_rpool_get_repo(const char *url)
 {

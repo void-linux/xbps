@@ -108,8 +108,10 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 			/* find update from repo */
 			xbps_dictionary_get_cstring_nocopy(pkg_pkgdb, "repository", &repoloc);
 			assert(repoloc);
-			if ((repo = xbps_rpool_get_repo(repoloc)) == NULL)
-				return EINVAL;
+			if ((repo = xbps_regget_repo(xhp, repoloc)) == NULL) {
+				/* not found */
+				return ENOENT;
+			}
 			pkg_repod = xbps_repo_get_pkg(repo, pkg);
 		} else {
 			/* find update from rpool */

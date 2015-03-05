@@ -151,5 +151,7 @@ xbps_dictionary_t HIDDEN xbps_archive_get_dictionary(struct archive *,
 const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *);
 xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 		const char *, bool);
+struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
+		const char *);
 
 #endif /* !_XBPS_API_IMPL_H_ */
