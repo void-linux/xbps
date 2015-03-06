@@ -1,4 +1,4 @@
-xbps-0.44 (???):
+xbps-0.44 (2015-03-06):
 
  * xbps-uunshare(8): new utility analogue to xbps-uchroot(8), but uses
    user namespaces (see user_namespaces(7)) to avoid the need of elevated
