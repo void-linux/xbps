@@ -589,6 +589,7 @@ rcv_check_version(rcv_t *rcv)
 
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
 
+
 	if (repover == NULL && (rcv->show_missing || rcv->manual )) {
 		printf("pkgname: %.*s repover: ? srcpkgver: %s\n",
 			(int)pkgname.v.len, pkgname.v.s, srcver+pkgname.v.len+1);
@@ -732,7 +733,13 @@ main(int argc, char **argv)
 	for (i = 0; i < argc; i++) {
 		tmpl = argv[i] + (strlen(argv[i]) - strlen("template"));
 		if ((strcmp("template", tmpl)) == 0) {
-			rcv_process_file(&rcv, argv[i], rcv_check_version);
+			/* strip "srcpkgs/" prefix if found */
+			if (strncmp(argv[i], "srcpkgs/", 8) == 0)
+				tmpl = strchr(argv[i], '/') + 1;
+			else
+				tmpl = argv[i];
+
+			rcv_process_file(&rcv, tmpl, rcv_check_version);
 		}
 	}
 	rcv_end(&rcv);
