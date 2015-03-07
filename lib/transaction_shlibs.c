@@ -121,6 +121,8 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 			const char *shlib;
 
 			xbps_array_get_cstring_nocopy(shobjs, i, &shlib);
+			xbps_dbg_printf(xhp, "%s: registering %s for %s\n",
+			    pkgver, shlib, req ? "shlib-requires" : "shlib-provides");
 			if (req)
 				shlib_register(d, shlib, pkgver);
 			else
