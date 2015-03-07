@@ -28,6 +28,7 @@ _xbps_src_build_packages() {
 _arguments -s : \
 	'-a[Cross compile packages]:architecture:($archs)' \
 	'-C[Do not remove build directory/autodeps/destdir]' \
+	'-E[Exit immediately when binary package already exists]' \
 	'-f[Force building and registering binary packages]' \
 	'-G[Enable XBPS_USE_GIT_REVS]' \
 	'-g[Enable building -dbg packages]' \
@@ -40,6 +41,7 @@ _arguments -s : \
 	'-N[Disable use of remote repositories]' \
 	'-o[Set package build options]:options: ' \
 	'-r[Use alternative local repository]:repo:_files -/' \
+	'-t[Create a temporary masterdir]' \
 	'1:target:->target' \
 	'*::args:->args' && ret=0
 
