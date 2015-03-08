@@ -1,3 +1,12 @@
+xbps-0.44.1 (???):
+
+ * xbps-reconfigure(8): added -i/--ignore to usage(), by Christian Neukirchen.
+
+ * Updated zsh completions, by Christian Neukirchen.
+
+ * xbps-checkvers(8): fixed regression introduced in 0.44 adding packages
+   manually to the list as arguments.
+
 xbps-0.44 (2015-03-06):
 
  * xbps-uunshare(8): new utility analogue to xbps-uchroot(8), but uses
