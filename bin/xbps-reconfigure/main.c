@@ -44,6 +44,7 @@ usage(bool fail)
 	    " -d --debug          Debug mode shown to stderr\n"
 	    " -f --force          Force reconfiguration\n"
 	    " -h --help           Print usage help\n"
+	    " -i --ignore PKG     Ignore PKG with -a/--all\n"
 	    " -r --rootdir <dir>  Full path to rootdir\n"
 	    " -v --verbose        Verbose messages\n"
 	    " -V --version        Show XBPS version\n");
