@@ -147,7 +147,7 @@ main(int argc, char **argv)
 		
 		close(fd);
 
-		if ((fd = open("/proc/self/setgroups", O_RDWR)) == 0) {
+		if ((fd = open("/proc/self/setgroups", O_RDWR)) != -1) {
 			if (write(fd, "deny", 4) == -1)
 				die("failed to write to /proc/self/setgroups");
 			close(fd);
