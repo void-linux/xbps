@@ -147,12 +147,11 @@ main(int argc, char **argv)
 		
 		close(fd);
 
-		if ((fd = open("/proc/self/setgroups", O_RDWR)) == -1)
-			die("failed to open /proc/self/setgroups rw");
-		if (write(fd, "deny", 4) == -1)
-			die("failed to write to /proc/self/setgroups");
-	
-		close(fd);
+		if ((fd = open("/proc/self/setgroups", O_RDWR)) == 0) {
+			if (write(fd, "deny", 4) == -1)
+				die("failed to write to /proc/self/setgroups");
+			close(fd);
+		}
 
 		if ((fd = open("/proc/self/gid_map", O_RDWR)) == -1)
 			die("failed to open /proc/self/gid_map rw");
