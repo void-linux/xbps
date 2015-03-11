@@ -40,7 +40,9 @@
 static pthread_mutex_t _prop_refcnt_mtx = PTHREAD_MUTEX_INITIALIZER;
 #endif /* _PROP_NEED_REFCNT_MTX */
 
+#define __USE_MISC	/* MAP_ANON on glibc */
 #include <sys/mman.h>
+#undef __USE_MISC
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -957,7 +959,7 @@ _prop_object_internalize_map_file(const char *fname)
 	if (need_guard) {
 		if (mmap(mf->poimf_xml + mf->poimf_mapsize,
 			 pgsize, PROT_READ,
-			 MAP_PRIVATE|MAP_FIXED, -1,
+			 MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1,
 			 (off_t)0) == MAP_FAILED) {
 			(void) munmap(mf->poimf_xml, mf->poimf_mapsize);
 			_PROP_FREE(mf, M_TEMP);
