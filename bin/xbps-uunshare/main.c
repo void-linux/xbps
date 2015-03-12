@@ -156,7 +156,7 @@ main(int argc, char **argv)
 		if ((fd = open("/proc/self/gid_map", O_RDWR)) == -1)
 			die("failed to open /proc/self/gid_map rw");
 		if (write(fd, buf, snprintf(buf, sizeof buf, "%u %u 1\n", gid, gid)) == -1)
-			die("failed to write to /proc/self/setgroups");
+			die("failed to write to /proc/self/gid_map");
 	
 		close(fd);
 
