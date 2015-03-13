@@ -13,6 +13,7 @@ bin/xbps-rindex/xbps-rindex
 bin/xbps-uhelper/xbps-uhelper
 bin/xbps-uchroot/xbps-uchroot
 bin/xbps-checkvers/xbps-checkvers
+bin/xbps-uunshare/xbps-uunshare
 *.static
 *.so*
 *.o
