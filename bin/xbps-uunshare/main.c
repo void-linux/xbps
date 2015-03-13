@@ -88,9 +88,8 @@ main(int argc, char **argv)
 	uid_t uid = getuid();
 	gid_t gid = getgid();
 	const char *chrootdir, *distdir, *hostdir, *shmdir, *cmd, *argv0;
-	char **cmdargs, mountdir[PATH_MAX-1], buf[32];
-	int fd, aidx = 0, clone_flags, child_status = 0;
-	pid_t child;
+	char **cmdargs, buf[32];
+	int fd, aidx = 0;
 
 	chrootdir = distdir = hostdir = shmdir = cmd = NULL;
 	argv0 = argv[0];
@@ -128,84 +127,73 @@ main(int argc, char **argv)
 	if (strcmp(chrootdir, "/") == 0)
 		die("/ is not allowed to be used as chrootdir");
 
-	clone_flags = (SIGCHLD|CLONE_NEWUSER|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
-
-	/* Issue the clone(2) syscall with our settings */
-	if ((child = syscall(__NR_clone, clone_flags, NULL)) == -1) {
+	/*
+	 * Unshare from the current process namespaces and set ours.
+	 */
+	if (unshare(CLONE_NEWUSER|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS) == -1) {
 		errval = 99;
-		die("clone");
+		die("unshare");
 	}
+	/*
+	 * Setup uid/gid user mappings and restrict setgroups().
+	 */
+	if ((fd = open("/proc/self/uid_map", O_RDWR)) == -1)
+		die("failed to open /proc/self/uidmap rw");
+	if (write(fd, buf, snprintf(buf, sizeof buf, "%u %u 1\n", uid, uid)) == -1)
+		die("failed to write to /proc/self/uid_map");
 
-	if (child == 0) {
-		/*
-		 * Setup uid/gid user mappings and restrict setgroups().
-		 */
-		if ((fd = open("/proc/self/uid_map", O_RDWR)) == -1)
-			die("failed to open /proc/self/uidmap rw");
-		if (write(fd, buf, snprintf(buf, sizeof buf, "%u %u 1\n", uid, uid)) == -1)
-			die("failed to write to /proc/self/uid_map");
-		
+	close(fd);
+
+	if ((fd = open("/proc/self/setgroups", O_RDWR)) != -1) {
+		if (write(fd, "deny", 4) == -1)
+			die("failed to write to /proc/self/setgroups");
 		close(fd);
-
-		if ((fd = open("/proc/self/setgroups", O_RDWR)) != -1) {
-			if (write(fd, "deny", 4) == -1)
-				die("failed to write to /proc/self/setgroups");
-			close(fd);
-		}
-
-		if ((fd = open("/proc/self/gid_map", O_RDWR)) == -1)
-			die("failed to open /proc/self/gid_map rw");
-		if (write(fd, buf, snprintf(buf, sizeof buf, "%u %u 1\n", gid, gid)) == -1)
-			die("failed to write to /proc/self/gid_map");
-	
-		close(fd);
-
-		/* mount /proc */
-		snprintf(mountdir, sizeof(mountdir), "%s/proc", chrootdir);
-		if (mount("proc", mountdir, "proc", MS_MGC_VAL|MS_PRIVATE, NULL) == -1)
-			die("Failed to mount %s", mountdir);
-
-		/* bind mount /sys */
-		bindmount(chrootdir, "/sys", NULL);
-
-		/* bind mount /dev */
-		bindmount(chrootdir, "/dev", NULL);
-
-		/* bind mount hostdir if set */
-		if (hostdir)
-			bindmount(chrootdir, hostdir, "/host");
-
-		/* bind mount distdir (if set) */
-		if (distdir)
-			bindmount(chrootdir, distdir, "/void-packages");
-
-		/* bind mount shmdir (if set) */
-		if (shmdir)
-			bindmount(chrootdir, shmdir, NULL);
-
-		/* move chrootdir to / and chroot to it */
-		if (chdir(chrootdir) == -1)
-			die("chdir to %s", chrootdir);
-
-		if (mount(".", ".", NULL, MS_BIND|MS_PRIVATE, NULL) == -1)
-			die("Failed to bind mount %s", chrootdir);
-
-		if (mount(chrootdir, "/", NULL, MS_MOVE, NULL) == -1)
-			die("Failed to move %s as rootfs", chrootdir);
-
-		if (chroot(".") == -1)
-			die("Failed to chroot to %s", chrootdir);
-
-		if (execvp(cmd, cmdargs) == -1)
-			die("Failed to execute command %s", cmd);
 	}
-	/* Wait until the child terminates */
-	while (waitpid(child, &child_status, 0) < 0) {
-		if (errno != EINTR)
-			die("waitpid");
-	}
-	if (!WIFEXITED(child_status))
-		return -1;
 
-	return WEXITSTATUS(child_status);
+	if ((fd = open("/proc/self/gid_map", O_RDWR)) == -1)
+		die("failed to open /proc/self/gid_map rw");
+	if (write(fd, buf, snprintf(buf, sizeof buf, "%u %u 1\n", gid, gid)) == -1)
+		die("failed to write to /proc/self/gid_map");
+
+	close(fd);
+
+	/* bind mount /proc */
+	bindmount(chrootdir, "/proc", NULL);
+
+	/* bind mount /sys */
+	bindmount(chrootdir, "/sys", NULL);
+
+	/* bind mount /dev */
+	bindmount(chrootdir, "/dev", NULL);
+
+	/* bind mount hostdir if set */
+	if (hostdir)
+		bindmount(chrootdir, hostdir, "/host");
+
+	/* bind mount distdir (if set) */
+	if (distdir)
+		bindmount(chrootdir, distdir, "/void-packages");
+
+	/* bind mount shmdir (if set) */
+	if (shmdir)
+		bindmount(chrootdir, shmdir, NULL);
+
+	/* move chrootdir to / and chroot to it */
+	if (chdir(chrootdir) == -1)
+		die("chdir to %s", chrootdir);
+
+	if (mount(".", ".", NULL, MS_BIND|MS_PRIVATE, NULL) == -1)
+		die("Failed to bind mount %s", chrootdir);
+
+	if (mount(chrootdir, "/", NULL, MS_MOVE, NULL) == -1)
+		die("Failed to move %s as rootfs", chrootdir);
+
+	if (chroot(".") == -1)
+		die("Failed to chroot to %s", chrootdir);
+
+	if (execvp(cmd, cmdargs) == -1)
+		die("Failed to execute command %s", cmd);
+
+	/* NOTREACHED */
+	exit(EXIT_FAILURE);
 }

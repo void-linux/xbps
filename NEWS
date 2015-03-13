@@ -1,5 +1,8 @@
 xbps-0.44.1 (???):
 
+ * xbps-uunshare(8): does not fork and run cmd in the child process anymore,
+   replaces the execution environment with cmd instead.
+
  * xbps-uunshare(8): do not fail if we cannot disable setgroups; some kernels
    might not support it. Found by @cheneukirchen on 3.16.
 
