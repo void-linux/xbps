@@ -40,20 +40,20 @@
 static bool
 question(bool preset, const char *fmt, va_list ap)
 {
-	char response[4];
+	char response;
 
 	vfprintf(stderr, fmt, ap);
-	if (preset)
-		fprintf(stderr, " %s ", "[Y/n]");
+	if(preset)
+		fputs(" [Y/n] ", stderr);
 	else
-		fprintf(stderr, " %s ", "[y/N]");
+		fputs(" [y/N] ", stderr);
 
-	if (fgets(response, sizeof(response), stdin)) {
-		if (response[0] == '\n')
+	if ((response = fgetc(stdin))) {
+		if (response == '\n')
 			return preset;
-		if (response[0] == 'y' || response[0] == 'Y')
+		if (response == 'y' || response == 'Y')
 			return true;
-		if (response[0] == 'n' || response[0] == 'N')
+		if (response == 'n' || response == 'N')
 			return false;
 	}
 	return false;
