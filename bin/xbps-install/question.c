@@ -48,7 +48,7 @@ question(bool preset, const char *fmt, va_list ap)
 	else
 		fputs(" [y/N] ", stderr);
 
-	if ((response = fgetc(stdin))) {
+	if ((response = fgetc(stdin)) != EOF) {
 		if (response == '\n')
 			return preset;
 		if (response == 'y' || response == 'Y')
