@@ -1,4 +1,4 @@
-xbps-0.44.1 (???):
+xbps-0.44.1 (2015-03-21):
 
  * libxbps: fixed xbps_get_pkg_fulldeptree() when a pkg depends on itself via
    virtual packages. Reported by Duncan Overbrook.
