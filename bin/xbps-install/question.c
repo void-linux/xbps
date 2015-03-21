@@ -40,7 +40,7 @@
 static bool
 question(bool preset, const char *fmt, va_list ap)
 {
-	char response;
+	int response;
 
 	vfprintf(stderr, fmt, ap);
 	if(preset)
