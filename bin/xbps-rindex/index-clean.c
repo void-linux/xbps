@@ -96,10 +96,17 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_dictionary_t idx = NULL, idxmeta = NULL;
 	struct xbps_repo *repo;
 	struct cbdata cbd;
-	int rv = 0;
+	char *rlockfname = NULL;
+	int rv = 0, rlockfd = -1;
 	bool flush = false;
 
-	repo = xbps_repo_open(xhp, repodir, true);
+	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
+		rv = errno;
+		fprintf(stderr, "%s: cannot lock repository: %s\n",
+		    _XBPS_RINDEX, strerror(rv));
+		return rv;
+	}
+	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
 		rv = errno;
 		if (rv == ENOENT)
@@ -156,6 +163,8 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 
 out:
 	xbps_repo_close(repo);
+	xbps_repo_unlock(rlockfd, rlockfname);
+
 	if (idx)
 		xbps_object_release(idx);
 	if (idxmeta)

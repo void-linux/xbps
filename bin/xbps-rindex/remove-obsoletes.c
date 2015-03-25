@@ -118,7 +118,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	char *ext;
 	int rv = 0;
 
-	repo = xbps_repo_open(xhp, repodir, false);
+	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
 		if (errno != ENOENT) {
 			fprintf(stderr, "xbps-rindex: cannot read repository data: %s\n",

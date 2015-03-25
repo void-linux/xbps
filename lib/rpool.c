@@ -92,7 +92,7 @@ xbps_regget_repo(struct xbps_handle *xhp, const char *url)
 			if (strcmp(repouri, url))
 				continue;
 
-			repo = xbps_repo_open(xhp, repouri, false);
+			repo = xbps_repo_open(xhp, repouri);
 			if (!repo)
 				return NULL;
 
@@ -148,7 +148,7 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
 		if ((repo = xbps_rpool_get_repo(repouri)) == NULL) {
-			repo = xbps_repo_open(xhp, repouri, false);
+			repo = xbps_repo_open(xhp, repouri);
 			if (!repo)
 				continue;
 			SIMPLEQ_INSERT_TAIL(&rpool_queue, repo, entries);

@@ -119,7 +119,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	const char *privkey, const char *signedby)
 {
 	struct stat st;
-	struct xbps_repo *repo;
+	struct xbps_repo *repo = NULL;
 	xbps_dictionary_t pkgd, meta = NULL;
 	xbps_data_t data = NULL, rpubkey = NULL;
 	xbps_object_iterator_t iter = NULL;
@@ -129,8 +129,9 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	unsigned int siglen;
 	uint16_t rpubkeysize, pubkeysize;
 	const char *arch, *pkgver, *rsignedby = NULL;
-	char *binpkg = NULL, *binpkg_sig = NULL, *buf = NULL, *defprivkey = NULL;
-	int binpkg_fd, binpkg_sig_fd, rv = 0;
+	char *binpkg = NULL, *binpkg_sig = NULL, *buf = NULL;
+	char *rlockfname = NULL, *defprivkey = NULL;
+	int binpkg_fd, binpkg_sig_fd, rlockfd = -1, rv = 0;
 	bool flush = false;
 
 	if (signedby == NULL) {
@@ -141,7 +142,13 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	/*
 	 * Check that repository index exists and not empty, otherwise bail out.
 	 */
-	repo = xbps_repo_open(xhp, repodir, true);
+	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
+		rv = errno;
+		fprintf(stderr, "%s: cannot lock repository: %s\n",
+		    _XBPS_RINDEX, strerror(errno));
+		goto out;
+	}
+	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
 		rv = errno;
 		fprintf(stderr, "%s: cannot read repository data: %s\n",
@@ -304,5 +311,7 @@ out:
 	if (repo) {
 		xbps_repo_close(repo);
 	}
+	xbps_repo_unlock(rlockfd, rlockfname);
+
 	return rv ? -1 : 0;
 }

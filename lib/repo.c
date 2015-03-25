@@ -73,22 +73,61 @@ repo_get_dict(struct xbps_repo *repo)
 	return xbps_archive_get_dictionary(repo->ar, entry);
 }
 
+bool
+xbps_repo_lock(struct xbps_handle *xhp, const char *repodir,
+		int *lockfd, char **lockfname)
+{
+	char *repofile, *lockfile;
+	int fd, rv;
+
+	assert(repodir);
+	assert(lockfd);
+	assert(lockfname);
+
+	repofile = xbps_repo_path(xhp, repodir);
+	assert(repofile);
+
+	lockfile = xbps_xasprintf("%s.lock", repofile);
+	free(repofile);
+
+	for (;;) {
+		fd = open(lockfile, O_WRONLY|O_CREAT|O_EXCL, 0660);
+		rv = errno;
+		if (fd != -1)
+			break;
+		if (rv != EEXIST) {
+			xbps_dbg_printf(xhp, "[repo] `%s' failed to "
+			    "create lock file %s\n", lockfile, strerror(rv));
+			free(lockfile);
+			return false;
+		} else {
+			xbps_dbg_printf(xhp, "[repo] `%s' lock file exists,"
+			    "waiting...\n", lockfile);
+		}
+	}
+	*lockfname = lockfile;
+	*lockfd = fd;
+	return true;
+}
+
+void
+xbps_repo_unlock(int lockfd, char *lockfname)
+{
+        if (lockfd != -1) {
+		close(lockfd);
+	}
+	if (lockfname) {
+		unlink(lockfname);
+		free(lockfname);
+	}
+}
+
 static bool
-repo_open_local(struct xbps_repo *repo, const char *repofile, bool lock)
+repo_open_local(struct xbps_repo *repo, const char *repofile)
 {
 	struct stat st;
 	int rv = 0;
 
-	/*
-	 * Acquire a POSIX file lock on the archive; wait if the lock is
-	 * already taken.
-	 */
-        if (lock && lockf(repo->fd, F_LOCK, 0) == -1) {
-		rv = errno;
-		xbps_dbg_printf(repo->xhp, "[repo] failed to lock %s: %s\n",
-		    repofile, strerror(rv));
-		return false;
-	}
 	if (fstat(repo->fd, &st) == -1) {
 		rv = errno;
 		xbps_dbg_printf(repo->xhp, "[repo] `%s' fstat repodata %s\n",
@@ -179,7 +218,7 @@ xbps_repo_store(struct xbps_handle *xhp, const char *repo)
 }
 
 struct xbps_repo *
-xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
+xbps_repo_open(struct xbps_handle *xhp, const char *url)
 {
 	struct xbps_repo *repo;
 	const char *arch;
@@ -195,6 +234,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 
 	repo = calloc(1, sizeof(struct xbps_repo));
 	assert(repo);
+	repo->fd = -1;
 	repo->xhp = xhp;
 	repo->uri = url;
 
@@ -225,31 +265,21 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url, bool lock)
 	/*
 	 * Open the repository archive.
 	 */
-	if (lock) {
-		repo->fd = open(repofile, O_RDWR);
-		repo->is_locked = true;
-	} else {
-		repo->fd = open(repofile, O_RDONLY);
-	}
-
+	repo->fd = open(repofile, O_RDONLY);
 	if (repo->fd == -1) {
 		int rv = errno;
 		xbps_dbg_printf(xhp, "[repo] `%s' open repodata %s\n",
 		    repofile, strerror(rv));
 		goto out;
 	}
-	if (repo_open_local(repo, repofile, lock)) {
+	if (repo_open_local(repo, repofile)) {
 		free(repofile);
 		return repo;
 	}
 
 out:
-	if (repo->ar)
-		archive_read_free(repo->ar);
-	if (repo->fd != -1)
-		close(repo->fd);
 	free(repofile);
-	free(repo);
+	xbps_repo_close(repo);
 	return NULL;
 }
 
@@ -269,10 +299,10 @@ xbps_repo_close(struct xbps_repo *repo)
 		xbps_object_release(repo->idxmeta);
 		repo->idxmeta = NULL;
 	}
-        if (repo->is_locked && lockf(repo->fd, F_ULOCK, 0) == -1)
-		xbps_dbg_printf(repo->xhp, "[repo] failed to unlock %s: %s\n", repo->uri, strerror(errno));
+	if (repo->fd != -1)
+		close(repo->fd);
 
-	close(repo->fd);
+	free(repo);
 }
 
 xbps_dictionary_t

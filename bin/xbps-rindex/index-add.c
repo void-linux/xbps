@@ -43,8 +43,8 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	xbps_dictionary_t idx, idxmeta, binpkgd, curpkgd;
 	struct xbps_repo *repo = NULL;
 	struct stat st;
-	char *tmprepodir = NULL, *repodir = NULL;
-	int rv = 0, ret = 0;
+	char *tmprepodir = NULL, *repodir = NULL, *rlockfname = NULL;
+	int rv = 0, ret = 0, rlockfd = -1;
 	bool flush = false;
 
 	assert(argv);
@@ -55,7 +55,13 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		return ENOMEM;
 
 	repodir = dirname(tmprepodir);
-	repo = xbps_repo_open(xhp, repodir, true);
+	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
+		fprintf(stderr, "xbps-rindex: cannot lock repository "
+		    "%s: %s\n", repodir, strerror(errno));
+		rv = -1;
+		goto out;
+	}
+	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL && errno != ENOENT) {
 		fprintf(stderr, "xbps-rindex: cannot open/lock repository "
 		    "%s: %s\n", repodir, strerror(errno));
@@ -217,6 +223,9 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 out:
 	if (repo)
 		xbps_repo_close(repo);
+
+	xbps_repo_unlock(rlockfd, rlockfname);
+
 	if (tmprepodir)
 		free(tmprepodir);
 
