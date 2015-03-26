@@ -1,4 +1,4 @@
-.Dd December 9, 2014
+.Dd March 26, 2014
 .Dt XBPS-UCHROOT 8
 .Sh NAME
 .Nm xbps-uchroot
@@ -38,6 +38,10 @@ If your system uses
 .Sy /dev/shm
 use it, otherwise use
 .Sy /run/shm .
+.It Fl O
+Setups a temporary directory mounted on tmpfs and then creates an overlay layer
+(via overlayfs) with the lowerdir set to CHROOTDIR. Useful to create a temporary
+tree that does not preserve changes in CHROOTDIR.
 .El
 .Sh SECURITY
 The
@@ -54,6 +58,8 @@ other Operating Systems. The following kernel options must be enabled:
 .It Sy CONFIG_NAMESPACES
 .It Sy CONFIG_IPC_NS
 .It Sy CONFIG_PID_NS
+.It Sy CONFIG_UTS_NS
+.It Sy CONFIG_OVERLAY_FS
 .El
 .Sh SEE ALSO
 .Xr xbps.d 5 ,

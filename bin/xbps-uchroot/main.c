@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014 Juan Romero Pardines.
+ * Copyright (c) 2014-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@
  * 	- This bind mounts exactly what we need, no support for additional mounts.
  * 	- This uses IPC/PID/mount namespaces, nothing more.
  * 	- Disables namespace features if running in OpenVZ containers.
+ * 	- Supports overlayfs on a tmpfs mounted directory.
  */
 #define _GNU_SOURCE
 #include <sys/types.h>
@@ -49,6 +50,8 @@
 #include <sched.h>
 #include <limits.h>	/* PATH_MAX */
 
+#include <xbps.h>
+
 #ifndef SECBIT_NOROOT
 #define SECBIT_NOROOT (1 << 0)
 #endif
@@ -65,6 +68,8 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
+static char *tmpdir;
+
 static void __attribute__((noreturn))
 die(const char *fmt, ...)
 {
@@ -79,10 +84,17 @@ die(const char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
+static void
+cleanup_overlayfs(void)
+{
+	if (tmpdir)
+		rmdir(tmpdir);
+}
+
 static void __attribute__((noreturn))
 usage(const char *p)
 {
-	printf("Usage: %s [-D dir] [-H dir] [-S dir] <chrootdir> <command>\n\n"
+	printf("Usage: %s [-D dir] [-H dir] [-S dir] [-O] <chrootdir> <command>\n\n"
 	    "-D <distdir> Directory to be bind mounted at <chrootdir>/void-packages\n"
 	    "-H <hostdir> Directory to be bind mounted at <chrootdir>/host\n"
 	    "-S <shmdir>  Directory to be bind mounted at <chrootdir>/<shmdir>\n", p);
@@ -126,15 +138,58 @@ bindmount(uid_t ruid, const char *chrootdir, const char *dir, const char *dest)
 		die("Failed to bind mount %s at %s", dir, mountdir);
 }
 
+static char *
+setup_overlayfs(const char *chrootdir, uid_t ruid, gid_t rgid)
+{
+	char *upperdir, *workdir, *newchrootdir, *mopts;
+	const void *opts;
+	/*
+	 * Create a temporary directory on tmpfs for overlayfs storage.
+	 */
+	if (mount("tmpfs", tmpdir, "tmpfs", MS_MGC_VAL|MS_PRIVATE, NULL) == -1)
+		die("failed to mount tmpfs on %s", tmpdir);
+	/*
+	 * Create the upper/work dirs to setup overlayfs.
+	 */
+	upperdir = xbps_xasprintf("%s/upperdir", tmpdir);
+	if (mkdir(upperdir, 0755) == -1)
+		die("failed to create upperdir (%s)", upperdir);
+
+	workdir = xbps_xasprintf("%s/workdir", tmpdir);
+	if (mkdir(workdir, 0755) == -1)
+		die("failed to create workdir (%s)", workdir);
+
+	newchrootdir = xbps_xasprintf("%s/masterdir", tmpdir);
+	if (mkdir(newchrootdir, 0755) == -1)
+		die("failed to create newchrootdir (%s)", newchrootdir);
+
+	mopts = xbps_xasprintf("upperdir=%s,lowerdir=%s,workdir=%s",
+		upperdir, chrootdir, workdir);
+
+	opts = mopts;
+	if (mount(chrootdir, newchrootdir, "overlay", 0, opts) == -1)
+		die("failed to mount overlayfs on %s", newchrootdir);
+
+	if (chown(newchrootdir, ruid, rgid) == -1)
+		die("chown newchrootdir %s", newchrootdir);
+
+	free(mopts);
+	free(upperdir);
+	free(workdir);
+
+	return newchrootdir;
+}
+
 int
 main(int argc, char **argv)
 {
 	uid_t ruid, euid, suid;
 	gid_t rgid, egid, sgid;
 	const char *chrootdir, *distdir, *hostdir, *shmdir, *cmd, *argv0;
-	char **cmdargs, mountdir[PATH_MAX-1];
+	char **cmdargs, *b, mountdir[PATH_MAX-1];
 	int aidx = 0, clone_flags, child_status = 0;
 	pid_t child;
+	bool overlayfs = false;
 
 	chrootdir = distdir = hostdir = shmdir = cmd = NULL;
 	argv0 = argv[0];
@@ -145,7 +200,11 @@ main(int argc, char **argv)
 		usage(argv0);
 
 	while (aidx < argc) {
-		if (strcmp(argv[aidx], "-D") == 0) {
+		if (strcmp(argv[aidx], "-O") == 0) {
+			/* use overlayfs */
+			overlayfs = true;
+			aidx++;
+		} else if (strcmp(argv[aidx], "-D") == 0) {
 			/* distdir */
 			distdir = argv[aidx+1];
 			aidx += 2;
@@ -181,6 +240,12 @@ main(int argc, char **argv)
 	if (rgid == 0)
 		rgid = ruid;
 
+	if (overlayfs) {
+		b = xbps_xasprintf("%s.XXXXXXXXXX", chrootdir);
+		if ((tmpdir = mkdtemp(b)) == NULL)
+			die("failed to create tmpdir directory");
+	}
+
 	clone_flags = (SIGCHLD|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
 	if (openvz_container()) {
 		/*
@@ -204,11 +269,9 @@ main(int argc, char **argv)
 			SECBIT_NOROOT|SECBIT_NOROOT_LOCKED) == -1) {
 			die("prctl SECBIT_NOROOT");
 		}
-		if (!openvz_container()) {
-			/* Make / a private mount */
-			if (mount(NULL, "/", "none", MS_PRIVATE|MS_REC|MS_NOSUID, NULL) == -1)
-				die("mount(/, MS_PRIVATE|MS_REC|MS_NOSUID)");
-		}
+		/* setup our overlayfs if set */
+		if (overlayfs)
+			chrootdir = setup_overlayfs(chrootdir, ruid, rgid);
 
 		/* mount /proc */
 		snprintf(mountdir, sizeof(mountdir), "%s/proc", chrootdir);
@@ -267,8 +330,11 @@ main(int argc, char **argv)
 			die("waitpid");
 	}
 
-	if (!WIFEXITED(child_status))
+	if (!WIFEXITED(child_status)) {
+		cleanup_overlayfs();
 		return -1;
+	}
 
+	cleanup_overlayfs();
 	return WEXITSTATUS(child_status);
 }
