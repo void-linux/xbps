@@ -227,23 +227,36 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 int
 xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
+	xbps_dictionary_t pkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	bool newpkg_found = false;
+	const char *pkgver;
+	char *pkgname;
+	bool hold, newpkg_found = false;
 	int rv = 0;
 
 	if ((rv = xbps_pkgdb_init(xhp)) != 0)
 		return rv;
 
+	/*
+	 * Check if there's a new update for XBPS before starting
+	 * a full system upgrade.
+	 */
+	if ((pkgd = xbps_pkgdb_get_pkg(xhp, "xbps")) ||
+	    (pkgd = xbps_pkgdb_get_virtualpkg(xhp, "xbps"))) {
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
+		rv = trans_find_pkg(xhp, pkgname, false, false);
+		free(pkgname);
+		return rv;
+	}
+
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
-		xbps_dictionary_t pkgd;
-		const char *pkgver;
-		char *pkgname;
-		bool hold = false;
-
+		hold = false;
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		xbps_dictionary_get_bool(pkgd, "hold", &hold);
