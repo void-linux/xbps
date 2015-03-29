@@ -1,5 +1,13 @@
 xbps-0.45 (???):
 
+ * xbps now autoupdates itself when there's a package update.
+
+ * xbps-uchroot(8): added -O option to use overlayfs to mount CHROOTDIR in
+   a temporary directory stored on tmpfs. This needs linux >= 3.18.
+
+ * xbps-rindex(8): fixed concurrency issues with -a and -c modes; use a simple
+   file lock to avoid inconsistent results in generated repodata.
+
 xbps-0.44.1 (2015-03-21):
 
  * libxbps: fixed xbps_get_pkg_fulldeptree() when a pkg depends on itself via
