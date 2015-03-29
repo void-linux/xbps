@@ -247,9 +247,11 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
-		rv = trans_find_pkg(xhp, pkgname, false, false);
+		if (trans_find_pkg(xhp, pkgname, false, false) == 0) {
+			free(pkgname);
+			return rv;
+		}
 		free(pkgname);
-		return rv;
 	}
 
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
