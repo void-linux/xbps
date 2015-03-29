@@ -405,6 +405,80 @@ update_move_file_body() {
 
 }
 
+atf_test_case update_xbps
+
+update_xbps_head() {
+	atf_set "descr" "Test for pkg updates: update xbps if there's an update"
+}
+
+update_xbps_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin
+
+	cd repo
+	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.0_1 -s "C pkg" --dependencies "B>=0" ../pkg_C
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yvd xbps C
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n xbps-1.1_1 -s "xbps pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.1_1 -s "C pkg" --dependencies "B>=1.1" ../pkg_C
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	out=$(xbps-install -r root --repository=repo -yun)
+	atf_check_equal "$out" "xbps-1.1_1 update noarch $(readlink -f repo)"
+}
+
+atf_test_case update_xbps_virtual
+
+update_xbps_virtual_head() {
+	atf_set "descr" "Test for pkg updates: update xbps if there's an update (virtual pkg)"
+}
+
+update_xbps_virtual_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin
+
+	cd repo
+	xbps-create -A noarch -n xbps-git-1.0_1 -s "xbps pkg" --provides "xbps-1.0_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.0_1 -s "C pkg" --dependencies "B>=0" ../pkg_C
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -yvd xbps C
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n xbps-git-1.1_1 -s "xbps pkg" --provides "xbps-1.1_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.1_1 -s "C pkg" --dependencies "B>=1.1" ../pkg_C
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	out=$(xbps-install -r root --repository=repo -yun)
+	atf_check_equal "$out" "xbps-git-1.1_1 update noarch $(readlink -f repo)"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
@@ -419,4 +493,6 @@ atf_init_test_cases() {
 	atf_add_test_case update_file_timestamps
 	atf_add_test_case update_move_file
 	atf_add_test_case update_move_unmodified_file
+	atf_add_test_case update_xbps
+	atf_add_test_case update_xbps_virtual
 }
