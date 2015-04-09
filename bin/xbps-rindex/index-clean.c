@@ -38,12 +38,9 @@
 #include <xbps.h>
 #include "defs.h"
 
-struct cbdata {
-	xbps_array_t result;
-	xbps_dictionary_t idx;
-	pthread_mutex_t mtx;
-	const char *repourl;
-};
+static xbps_dictionary_t dest;
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+static bool flush;
 
 static int
 idx_cleaner_cb(struct xbps_handle *xhp,
@@ -52,23 +49,28 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		void *arg,
 		bool *done _unused)
 {
-	struct cbdata *cbd = arg;
+	const char *repourl = arg;
 	const char *arch, *pkgver, *sha256;
-	char *filen;
+	char *filen, *pkgname;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	xbps_dictionary_get_cstring_nocopy(obj, "repository", &cbd->repourl);
 
-	xbps_dbg_printf(xhp, "%s: checking %s [%s] ...", pkgver, arch);
+	xbps_dbg_printf(xhp, "%s: checking %s [%s] ...\n", repourl, pkgver, arch);
 
-	filen = xbps_xasprintf("%s/%s.%s.xbps", cbd->repourl, pkgver, arch);
+	filen = xbps_xasprintf("%s/%s.%s.xbps", repourl, pkgver, arch);
 	if (access(filen, R_OK) == -1) {
 		/*
 		 * File cannot be read, might be permissions,
 		 * broken or simply unexistent; either way, remove it.
 		 */
-		xbps_array_add_cstring_nocopy(cbd->result, pkgver);
+		pthread_mutex_lock(&mtx);
+		pkgname = xbps_pkg_name(pkgver);
+		xbps_dictionary_remove(dest, pkgname);
+		free(pkgname);
+		flush = true;
+		printf("index: removed pkg %s\n", pkgver);
+		pthread_mutex_unlock(&mtx);
 	} else {
 		/*
 		 * File can be read; check its hash.
@@ -76,9 +78,13 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_dictionary_get_cstring_nocopy(obj,
 				"filename-sha256", &sha256);
 		if (xbps_file_hash_check(filen, sha256) != 0) {
-			pthread_mutex_lock(&cbd->mtx);
-			xbps_array_add_cstring_nocopy(cbd->result, pkgver);
-			pthread_mutex_unlock(&cbd->mtx);
+			pthread_mutex_lock(&mtx);
+			pkgname = xbps_pkg_name(pkgver);
+			xbps_dictionary_remove(dest, pkgname);
+			free(pkgname);
+			printf("index: removed pkg %s\n", pkgver);
+			flush = true;
+			pthread_mutex_unlock(&mtx);
 		}
 	}
 	free(filen);
@@ -95,10 +101,8 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_array_t allkeys;
 	xbps_dictionary_t idx = NULL, idxmeta = NULL;
 	struct xbps_repo *repo;
-	struct cbdata cbd;
 	char *rlockfname = NULL;
 	int rv = 0, rlockfd = -1;
-	bool flush = false;
 
 	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
 		rv = errno;
@@ -128,30 +132,13 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	/*
 	 * First pass: find out obsolete entries on index and index-files.
 	 */
-	cbd.repourl = repodir;
-	cbd.result = xbps_array_create();
-	pthread_mutex_init(&cbd.mtx, NULL);
-
+	dest = xbps_dictionary_copy(idx);
 	allkeys = xbps_dictionary_all_keys(idx);
-	(void)xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, &cbd);
-	for (unsigned int x = 0; x < xbps_array_count(cbd.result); x++) {
-		char *keyname = NULL, *pkgname = NULL;
-
-		xbps_array_get_cstring(cbd.result, x, &keyname);
-		printf("index: removed entry %s\n", keyname);
-		pkgname = xbps_pkg_name(keyname);
-		assert(pkgname);
-		xbps_dictionary_remove(idx, pkgname);
-		free(pkgname);
-		free(keyname);
-		flush = true;
-	}
-	pthread_mutex_destroy(&cbd.mtx);
-	xbps_object_release(cbd.result);
+	(void)xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, __UNCONST(repodir));
 	xbps_object_release(allkeys);
 
 	if (flush) {
-		if (!repodata_flush(xhp, repodir, idx, idxmeta)) {
+		if (!repodata_flush(xhp, repodir, dest, idxmeta)) {
 			rv = errno;
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));
@@ -159,7 +146,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		}
 	}
 	printf("index: %u packages registered.\n",
-			xbps_dictionary_count(idx));
+			xbps_dictionary_count(dest));
 
 out:
 	xbps_repo_close(repo);
