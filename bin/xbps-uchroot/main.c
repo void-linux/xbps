@@ -275,8 +275,10 @@ main(int argc, char **argv)
 
 		/* mount /proc */
 		snprintf(mountdir, sizeof(mountdir), "%s/proc", chrootdir);
-		if (mount("proc", mountdir, "proc", MS_MGC_VAL|MS_PRIVATE, NULL) == -1)
-			die("Failed to mount %s", mountdir);
+		if (mount("proc", mountdir, "proc", MS_MGC_VAL|MS_PRIVATE, NULL) == -1) {
+			/* try bind mount */
+			bindmount(ruid, chrootdir, "/proc", NULL);
+		}
 
 		/* bind mount /sys */
 		bindmount(ruid, chrootdir, "/sys", NULL);
