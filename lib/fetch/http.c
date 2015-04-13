@@ -704,8 +704,6 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 	int val;
 #endif
 
-	*cached = 1;
-
 #ifdef INET6
 	af = AF_UNSPEC;
 #else
@@ -849,6 +847,7 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		length = -1;
 		size = -1;
 		mtime = 0;
+		cached = 0;
 
 		/* check port */
 		if (!url->port)
@@ -1166,7 +1165,7 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 	URL->offset = offset;
 	URL->length = clength;
 
-	if (clength == -1 && !chunked)
+	if (clength == -1 && !chunked && conn->err != HTTP_NOT_MODIFIED)
 		keep_alive = 0;
 
 	if (conn->err == HTTP_NOT_MODIFIED) {
