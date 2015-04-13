@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20150323"
+#define XBPS_API_VERSION	"20150413"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -202,7 +202,7 @@
  * @def XBPS_FETCH_CACHECONN
  * Default (global) limit of cached connections used in libfetch.
  */
-#define XBPS_FETCH_CACHECONN            8
+#define XBPS_FETCH_CACHECONN            32
 
 /**
  * @def XBPS_FETCH_CACHECONN_HOST
