@@ -41,10 +41,16 @@ get_maxcols(void)
 {
 	struct winsize ws;
 
-	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0)
-		return ws.ws_col ? ws.ws_col : 80;
-
-	return 80;
+	if (!isatty(STDOUT_FILENO) && errno == ENOTTY) {
+		/* not a TTY, don't use any limit */
+		return 0;
+	}
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1) {
+		/* 80x24 terminal */
+		return 80;
+	}
+	/* TTY columns */
+	return ws.ws_col;
 }
 
 void

@@ -1,5 +1,9 @@
 xbps-0.45 (???):
 
+ * xbps-query(8): if piping or redirecting not a tty, don't enforce any columns limit.
+   We do not want truncation in that case; this makes it possible to pipe the output
+   to a pager without truncation.
+
  * libfetch: added support for keep-alive connections even if the HTTP server returns
    304 (Not Modified). This is a noticable performance improvement for `xbps-install -S`.
 

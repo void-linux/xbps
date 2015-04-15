@@ -80,7 +80,7 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 			inststr = "[-]";
 
 		len = strlen(inststr) + strlen(tmp) + strlen(desc) + 3;
-		if ((int)len > sd->maxcols) {
+		if (sd->maxcols && (int)len > sd->maxcols) {
 			out = malloc(sd->maxcols+1);
 			assert(out);
 			snprintf(out, sd->maxcols-3, "%s %s %s",

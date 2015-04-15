@@ -72,7 +72,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp _unused,
 
 	tmp[i] = '\0';
 	len = strlen(tmp) + strlen(short_desc) + 2;
-	if (len > lpc->maxcols) {
+	if (lpc->maxcols && len > lpc->maxcols) {
 		out = malloc(lpc->maxcols+1);
 		assert(out);
 		snprintf(out, lpc->maxcols - 3,
