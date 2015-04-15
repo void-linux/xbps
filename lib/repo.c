@@ -91,7 +91,7 @@ xbps_repo_lock(struct xbps_handle *xhp, const char *repodir,
 	free(repofile);
 
 	for (;;) {
-		fd = open(lockfile, O_WRONLY|O_CREAT|O_EXCL, 0660);
+		fd = open(lockfile, O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC, 0660);
 		rv = errno;
 		if (fd != -1)
 			break;
@@ -265,7 +265,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	/*
 	 * Open the repository archive.
 	 */
-	repo->fd = open(repofile, O_RDONLY);
+	repo->fd = open(repofile, O_RDONLY|O_CLOEXEC);
 	if (repo->fd == -1) {
 		int rv = errno;
 		xbps_dbg_printf(xhp, "[repo] `%s' open repodata %s\n",

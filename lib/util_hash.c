@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,7 +69,7 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 
 	assert(file);
 
-	if ((fd = open(file, O_RDONLY)) == -1)
+	if ((fd = open(file, O_RDONLY|O_CLOEXEC)) == -1)
 		return false;
 
 	if (fstat(fd, &st) == -1) {
