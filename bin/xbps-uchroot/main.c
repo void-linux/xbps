@@ -146,7 +146,7 @@ setup_overlayfs(const char *chrootdir, uid_t ruid, gid_t rgid)
 	/*
 	 * Create a temporary directory on tmpfs for overlayfs storage.
 	 */
-	if (mount("tmpfs", tmpdir, "tmpfs", MS_MGC_VAL|MS_PRIVATE, NULL) == -1)
+	if (mount("tmpfs", tmpdir, "tmpfs", 0, NULL) == -1)
 		die("failed to mount tmpfs on %s", tmpdir);
 	/*
 	 * Create the upper/work dirs to setup overlayfs.
