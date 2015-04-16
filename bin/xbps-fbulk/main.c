@@ -144,7 +144,7 @@ addItem(const char *pkgn)
 	return item;
 }
 
-static void
+static void __attribute__((noreturn))
 usage(const char *progname)
 {
 	fprintf(stderr, "%s [-j parallel] [-l logdir] /path/to/void-packages\n", progname);
