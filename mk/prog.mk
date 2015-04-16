@@ -3,7 +3,8 @@
 OBJS	?= main.o
 
 BINS = $(BIN)
-MAN ?= $(BIN).8
+MANSECTION ?= 8
+MAN ?= $(BIN).$(MANSECTION)
 
 ifdef BUILD_STATIC
 BINS += $(BIN).static
@@ -27,8 +28,8 @@ ifdef BUILD_STATIC
 	install -m 755 $(BIN).static $(DESTDIR)$(SBINDIR)
 endif
 ifdef MAN
-	install -d $(DESTDIR)$(MANDIR)/man8
-	install -m 644 $(MAN) $(DESTDIR)$(MANDIR)/man8
+	install -d $(DESTDIR)$(MANDIR)/man$(MANSECTION)
+	install -m 644 $(MAN) $(DESTDIR)$(MANDIR)/man$(MANSECTION)
 endif
 
 .PHONY: uninstall
@@ -38,7 +39,7 @@ ifdef BUILD_STATIC
 	-rm -f $(DESTDIR)$(SBINDIR)/$(BIN).static
 endif
 ifdef MAN
-	-rm -f $(DESTDIR)$(MANDIR)/man8/$(MAN)
+	-rm -f $(DESTDIR)$(MANDIR)/man$(MANSECTION)/$(MAN)
 endif
 
 %.o: %.c
