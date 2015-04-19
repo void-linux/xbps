@@ -93,6 +93,7 @@ int NParallel = 1;
 int VerboseOpt;
 int NRunning;
 char *LogDir;
+char *TargetArch;
 
 /*
  * Item hashing and dependency helper routines, called during the
@@ -147,7 +148,7 @@ addItem(const char *pkgn)
 static void __attribute__((noreturn))
 usage(const char *progname)
 {
-	fprintf(stderr, "%s [-j parallel] [-l logdir] /path/to/void-packages\n", progname);
+	fprintf(stderr, "%s [-a targetarch] [-j parallel] [-l logdir] /path/to/void-packages\n", progname);
 	exit(EXIT_FAILURE);
 }
 
@@ -360,7 +361,13 @@ runBuilds(const char *bpath)
 				close(fd);
 			}
 			/* build the current pkg! */
-			execl("./xbps-src", "./xbps-src", "-E", "-N", "-t", "pkg", item->pkgn, NULL);
+			if (TargetArch != NULL)
+				execl("./xbps-src", "./xbps-src", "-a", TargetArch,
+					"-E", "-N", "-t", "pkg", item->pkgn, NULL);
+			else
+				execl("./xbps-src", "./xbps-src",
+					"-E", "-N", "-t", "pkg", item->pkgn, NULL);
+
 			_exit(99);
 		} else if (item->pid < 0) {
 			/*
@@ -461,7 +468,11 @@ ordered_depends(const char *bpath, const char *pkgn)
 	if (VerboseOpt)
 		printf("%s: collecting build dependencies...\n", pkgn);
 
-	cmd = xbps_xasprintf("%s/xbps-src show-build-deps %s 2>&1", bpath, pkgn);
+	if (TargetArch != NULL)
+		cmd = xbps_xasprintf("%s/xbps-src -a %s show-build-deps %s 2>&1", bpath, TargetArch, pkgn);
+	else
+		cmd = xbps_xasprintf("%s/xbps-src show-build-deps %s 2>&1", bpath, pkgn);
+
 	fp = popen(cmd, "r");
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		char *tmp, *tmp2, *depn;
@@ -560,8 +571,11 @@ main(int argc, char **argv)
 	size_t blen;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "j:l:v")) != -1) {
+	while ((ch = getopt(argc, argv, "a:j:l:v")) != -1) {
 		switch (ch) {
+		case 'a':
+			TargetArch = optarg;
+			break;
 		case 'j':
 			NParallel = strtol(optarg, NULL, 0);
 			break;
