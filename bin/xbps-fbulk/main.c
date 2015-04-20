@@ -228,7 +228,7 @@ processCompletion(struct item *item)
 				xitem->status = XDEPFAIL;
 				logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, xitem->pkgn);
 				fp = fopen(logpath3, "a");
-				fprintf(fp, "Dependency failed: %s\n", item->pkgn);
+				fprintf(fp, "%s\n", item->pkgn);
 				fclose(fp);
 				free(logpath3);
 			}
@@ -248,7 +248,7 @@ processCompletion(struct item *item)
 			 */
 			logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, xitem->pkgn);
 			fp = fopen(logpath3, "a");
-			fprintf(fp, "Dependency failed: %s\n", item->pkgn);
+			fprintf(fp, "%s\n", item->pkgn);
 			fclose(fp);
 			free(logpath3);
 		}
@@ -429,7 +429,7 @@ addDepn(struct item *item, struct item *xitem)
 			item->status = XDEPFAIL;
 			logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, item->pkgn);
 			fp = fopen(logpath3, "a");
-			fprintf(fp, "Dependency failed: %s\n", xitem->pkgn);
+			fprintf(fp, "%s\n", xitem->pkgn);
 			fclose(fp);
 			free(logpath3);
 		}
