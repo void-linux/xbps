@@ -265,12 +265,12 @@ Its usage is simple, specify a package name or `a, --all` for all packages:
 ### xbps-pkgdb - checking for errors in packages and pkgdb
 
 The `xbps-pkgdb(8)` utility may be used to check for errors in packages and in the package database.
-It is also used to update the *package database* format (if there have been changes). It works in exactly the
-same way than `xbps-reconfigure(8)` and expects a package name or -a, --all for all packages.
+It is also used to update the *package database* format (if there have been changes). It works exactly the
+same way as `xbps-reconfigure(8)` and expects a package name or -a, --all for all packages.
 
     $ xbps-pkgdb <package name> | -a
 
-To put a package on hold mode (won't by upgraded in dist-upgrade mode):
+To put a package on hold mode (won't be upgraded in dist-upgrade mode):
 
     $ xbps-pkgdb -m hold <package name>
 
