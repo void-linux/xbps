@@ -190,7 +190,7 @@ processCompletion(struct item *item)
 	if (item->status == XRUN) {
 		logpath1 = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);
 		logpath2 = xbps_xasprintf("%s/%s/%s", LogDir,
-			 (item->xcode ? "bad" : "good"), item->pkgn);
+			item->xcode ? "bad" : "good" , item->pkgn);
 		rename(logpath1, logpath2);
 		free(logpath1);
 		free(logpath2);
@@ -198,10 +198,10 @@ processCompletion(struct item *item)
 	/*
 	 * If XBROKEN, "xbps-src show-build-deps" returned an error, perhaps
 	 * because the pkg is currently broken or cannot be packaged for the
-	 * target architecture, just set it as broken.
+	 * target architecture, just set it as skipped.
 	 */
 	if (item->status == XBROKEN) {
-		logpath1 = xbps_xasprintf("%s/bad/%s", LogDir, item->pkgn);
+		logpath1 = xbps_xasprintf("%s/skipped/%s", LogDir, item->pkgn);
 		fp = fopen(logpath1, "a");
 		fprintf(fp, "%s", item->emsg);
 		fclose(fp);
@@ -226,7 +226,7 @@ processCompletion(struct item *item)
 			if (item->xcode) {
 				xitem->xcode = item->xcode;
 				xitem->status = XDEPFAIL;
-				logpath3 = xbps_xasprintf("%s/bad/%s", LogDir, xitem->pkgn);
+				logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, xitem->pkgn);
 				fp = fopen(logpath3, "a");
 				fprintf(fp, "Dependency failed: %s\n", item->pkgn);
 				fclose(fp);
@@ -246,7 +246,7 @@ processCompletion(struct item *item)
 			 * Add this dependency failure to its log file
 			 * (which has already been renamed).
 			 */
-			logpath3 = xbps_xasprintf("%s/bad/%s", LogDir, xitem->pkgn);
+			logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, xitem->pkgn);
 			fp = fopen(logpath3, "a");
 			fprintf(fp, "Dependency failed: %s\n", item->pkgn);
 			fclose(fp);
@@ -427,7 +427,7 @@ addDepn(struct item *item, struct item *xitem)
 			       item->status == XDEPFAIL);
 			item->xcode = xitem->xcode;
 			item->status = XDEPFAIL;
-			logpath3 = xbps_xasprintf("%s/bad/%s", LogDir, item->pkgn);
+			logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, item->pkgn);
 			fp = fopen(logpath3, "a");
 			fprintf(fp, "Dependency failed: %s\n", xitem->pkgn);
 			fclose(fp);
@@ -635,19 +635,31 @@ main(int argc, char **argv)
 
 	tmp = xbps_xasprintf("%s/run", LogDir);
 	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create RunLogDir %s: %s\n", tmp, strerror(errno));
+		fprintf(stderr, "ERROR: failed to create run LogDir %s: %s\n", tmp, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	free(tmp);
 	tmp = xbps_xasprintf("%s/good", LogDir);
 	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create GoodLogDir %s: %s\n", tmp, strerror(errno));
+		fprintf(stderr, "ERROR: failed to create good LogDir %s: %s\n", tmp, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	free(tmp);
 	tmp = xbps_xasprintf("%s/bad", LogDir);
 	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create BadLogDir %s: %s\n", tmp, strerror(errno));
+		fprintf(stderr, "ERROR: failed to create bad LogDir %s: %s\n", tmp, strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	free(tmp);
+	tmp = xbps_xasprintf("%s/skipped", LogDir);
+	if (xbps_mkpath(tmp, 0755) != 0) {
+		fprintf(stderr, "ERROR: failed to create skipped LogDir %s: %s\n", tmp, strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	free(tmp);
+	tmp = xbps_xasprintf("%s/deps", LogDir);
+	if (xbps_mkpath(tmp, 0755) != 0) {
+		fprintf(stderr, "ERROR: failed to create deps LogDir %s: %s\n", tmp, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	free(tmp);
