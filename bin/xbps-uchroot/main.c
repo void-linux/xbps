@@ -28,9 +28,9 @@
  * specifically for xbps-src use:
  *
  * 	- This bind mounts exactly what we need, no support for additional mounts.
- * 	- This uses IPC/PID/mount namespaces, nothing more.
+ * 	- This uses IPC/PID/UTS namespaces, nothing more.
  * 	- Disables namespace features if running in OpenVZ containers.
- * 	- Supports overlayfs on a tmpfs mounted directory.
+ * 	- Supports overlayfs on a temporary tmpfs mounted directory.
  */
 #define _GNU_SOURCE
 #include <sys/types.h>
@@ -94,7 +94,7 @@ cleanup_overlayfs(void)
 static void __attribute__((noreturn))
 usage(const char *p)
 {
-	printf("Usage: %s [-D dir] [-H dir] [-S dir] [-O] <chrootdir> <command>\n\n"
+	printf("Usage: %s [-D dir] [-H dir] [-S dir] [-O -o <opts>] <chrootdir> <command>\n\n"
 	    "-D <distdir> Directory to be bind mounted at <chrootdir>/void-packages\n"
 	    "-H <hostdir> Directory to be bind mounted at <chrootdir>/host\n"
 	    "-S <shmdir>  Directory to be bind mounted at <chrootdir>/<shmdir>\n", p);
@@ -139,14 +139,15 @@ bindmount(uid_t ruid, const char *chrootdir, const char *dir, const char *dest)
 }
 
 static char *
-setup_overlayfs(const char *chrootdir, uid_t ruid, gid_t rgid)
+setup_overlayfs(const char *chrootdir, uid_t ruid, gid_t rgid, const char *tmpfs_opts)
 {
 	char *upperdir, *workdir, *newchrootdir, *mopts;
-	const void *opts;
+	const void *opts = NULL;
 	/*
 	 * Create a temporary directory on tmpfs for overlayfs storage.
 	 */
-	if (mount("tmpfs", tmpdir, "tmpfs", 0, NULL) == -1)
+	opts = tmpfs_opts;
+	if (mount("tmpfs", tmpdir, "tmpfs", 0, opts) == -1)
 		die("failed to mount tmpfs on %s", tmpdir);
 	/*
 	 * Create the upper/work dirs to setup overlayfs.
@@ -185,13 +186,13 @@ main(int argc, char **argv)
 {
 	uid_t ruid, euid, suid;
 	gid_t rgid, egid, sgid;
-	const char *chrootdir, *distdir, *hostdir, *shmdir, *cmd, *argv0;
+	const char *chrootdir, *distdir, *hostdir, *shmdir, *tmpfs_opts, *cmd, *argv0;
 	char **cmdargs, *b, mountdir[PATH_MAX-1];
 	int aidx = 0, clone_flags, child_status = 0;
 	pid_t child;
 	bool overlayfs = false;
 
-	chrootdir = distdir = hostdir = shmdir = cmd = NULL;
+	tmpfs_opts = chrootdir = distdir = hostdir = shmdir = cmd = NULL;
 	argv0 = argv[0];
 	argc--;
 	argv++;
@@ -204,6 +205,10 @@ main(int argc, char **argv)
 			/* use overlayfs */
 			overlayfs = true;
 			aidx++;
+		} else if (strcmp(argv[aidx], "-o") == 0) {
+			/* tmpfs args with overlayfs */
+			tmpfs_opts = argv[aidx+1];
+			aidx += 2;
 		} else if (strcmp(argv[aidx], "-D") == 0) {
 			/* distdir */
 			distdir = argv[aidx+1];
@@ -271,7 +276,7 @@ main(int argc, char **argv)
 		}
 		/* setup our overlayfs if set */
 		if (overlayfs)
-			chrootdir = setup_overlayfs(chrootdir, ruid, rgid);
+			chrootdir = setup_overlayfs(chrootdir, ruid, rgid, tmpfs_opts);
 
 		/* mount /proc */
 		snprintf(mountdir, sizeof(mountdir), "%s/proc", chrootdir);
