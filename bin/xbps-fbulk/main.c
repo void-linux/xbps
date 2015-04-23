@@ -177,6 +177,7 @@ processCompletion(struct item *item)
 {
 	struct depn *depn;
 	struct item *xitem;
+	const char *logdir;
 	char *logpath1;
 	char *logpath2;
 	char *logpath3;
@@ -189,8 +190,13 @@ processCompletion(struct item *item)
 	 */
 	if (item->status == XRUN) {
 		logpath1 = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);
-		logpath2 = xbps_xasprintf("%s/%s/%s", LogDir,
-			item->xcode ? "bad" : "good" , item->pkgn);
+		if (!item->xcode)
+			logdir = "good";
+		else if (item->xcode == 2)
+			logdir = "skipped";
+		else
+			logdir = "bad";
+		logpath2 = xbps_xasprintf("%s/%s/%s", LogDir, logdir, item->pkgn);
 		rename(logpath1, logpath2);
 		free(logpath1);
 		free(logpath2);
