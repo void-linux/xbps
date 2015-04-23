@@ -4,6 +4,9 @@ xbps-0.45 (???):
    as is. See mount(8). Useful to specify a size for the temporary tmpfs
    with overlayfs (-O).
 
+ * xbps-uchroot(8): added -t option to mount a tmpfs as temporary directory
+   for overlayfs (-O).
+
  * libxbps: file descripters are now opened with O_CLOEXEC, to avoid warnings
    of leaked file descriptors while running package install/remove scripts.
 

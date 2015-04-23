@@ -30,9 +30,10 @@
  * 	- This bind mounts exactly what we need, no support for additional mounts.
  * 	- This uses IPC/PID/UTS namespaces, nothing more.
  * 	- Disables namespace features if running in OpenVZ containers.
- * 	- Supports overlayfs on a temporary tmpfs mounted directory.
+ * 	- Supports overlayfs on a temporary directory or a tmpfs mount.
  */
 #define _GNU_SOURCE
+#define _XOPEN_SOURCE 700
 #include <sys/types.h>
 #include <sys/prctl.h>
 #include <sys/fsuid.h>
@@ -49,6 +50,7 @@
 #include <stdlib.h>
 #include <sched.h>
 #include <limits.h>	/* PATH_MAX */
+#include <ftw.h>
 
 #include <xbps.h>
 
@@ -69,6 +71,7 @@
 #endif
 
 static char *tmpdir;
+static bool overlayfs_on_tmpfs;
 
 static void __attribute__((noreturn))
 die(const char *fmt, ...)
@@ -84,17 +87,48 @@ die(const char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
+static int
+ftw_cb(const char *fpath, const struct stat *sb _unused, int type,
+		struct FTW *ftwbuf _unused)
+{
+	int sverrno = 0;
+
+	if (type == FTW_F || type == FTW_SL || type == FTW_SLN) {
+		if (unlink(fpath) == -1)
+			sverrno = errno;
+	} else if (type == FTW_D || type == FTW_DNR || type == FTW_DP) {
+		if (rmdir(fpath) == -1)
+			sverrno = errno;
+	} else {
+		return 0;
+	}
+	if (sverrno != 0) {
+		fprintf(stderr, "Failed to remove %s: %s\n", fpath, strerror(sverrno));
+	}
+	return 0;
+}
+
 static void
 cleanup_overlayfs(void)
 {
-	if (tmpdir)
-		rmdir(tmpdir);
+	if (tmpdir == NULL)
+		return;
+
+	if (!overlayfs_on_tmpfs) {
+		/* recursively remove the temporary dir */
+		if (nftw(tmpdir, ftw_cb, 20, FTW_MOUNT|FTW_PHYS|FTW_DEPTH) != 0) {
+			fprintf(stderr, "Failed to remove directory tree %s: %s\n",
+				tmpdir, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+	}
+	rmdir(tmpdir);
 }
 
 static void __attribute__((noreturn))
 usage(const char *p)
 {
-	printf("Usage: %s [-D dir] [-H dir] [-S dir] [-O -o <opts>] <chrootdir> <command>\n\n"
+	printf("Usage: %s [-D dir] [-H dir] [-S dir] [-O -t -o <opts>] <chrootdir> <command>\n\n"
 	    "-D <distdir> Directory to be bind mounted at <chrootdir>/void-packages\n"
 	    "-H <hostdir> Directory to be bind mounted at <chrootdir>/host\n"
 	    "-S <shmdir>  Directory to be bind mounted at <chrootdir>/<shmdir>\n", p);
@@ -139,16 +173,19 @@ bindmount(uid_t ruid, const char *chrootdir, const char *dir, const char *dest)
 }
 
 static char *
-setup_overlayfs(const char *chrootdir, uid_t ruid, gid_t rgid, const char *tmpfs_opts)
+setup_overlayfs(const char *chrootdir, uid_t ruid, gid_t rgid, bool tmpfs, const char *tmpfs_opts)
 {
 	char *upperdir, *workdir, *newchrootdir, *mopts;
 	const void *opts = NULL;
-	/*
-	 * Create a temporary directory on tmpfs for overlayfs storage.
-	 */
-	opts = tmpfs_opts;
-	if (mount("tmpfs", tmpdir, "tmpfs", 0, opts) == -1)
-		die("failed to mount tmpfs on %s", tmpdir);
+
+	if (tmpfs) {
+		/*
+		* Create a temporary directory on tmpfs for overlayfs storage.
+		*/
+		opts = tmpfs_opts;
+		if (mount("tmpfs", tmpdir, "tmpfs", 0, opts) == -1)
+			die("failed to mount tmpfs on %s", tmpdir);
+	}
 	/*
 	 * Create the upper/work dirs to setup overlayfs.
 	 */
@@ -171,6 +208,10 @@ setup_overlayfs(const char *chrootdir, uid_t ruid, gid_t rgid, const char *tmpfs
 	if (mount(chrootdir, newchrootdir, "overlay", 0, opts) == -1)
 		die("failed to mount overlayfs on %s", newchrootdir);
 
+	if (chown(upperdir, ruid, rgid) == -1)
+		die("chown upperdir %s", upperdir);
+	if (chown(workdir, ruid, rgid) == -1)
+		die("chown workdir %s", workdir);
 	if (chown(newchrootdir, ruid, rgid) == -1)
 		die("chown newchrootdir %s", newchrootdir);
 
@@ -204,6 +245,10 @@ main(int argc, char **argv)
 		if (strcmp(argv[aidx], "-O") == 0) {
 			/* use overlayfs */
 			overlayfs = true;
+			aidx++;
+		} else if (strcmp(argv[aidx], "-t") == 0) {
+			/* overlayfs on tmpfs */
+			overlayfs_on_tmpfs = true;
 			aidx++;
 		} else if (strcmp(argv[aidx], "-o") == 0) {
 			/* tmpfs args with overlayfs */
@@ -249,6 +294,8 @@ main(int argc, char **argv)
 		b = xbps_xasprintf("%s.XXXXXXXXXX", chrootdir);
 		if ((tmpdir = mkdtemp(b)) == NULL)
 			die("failed to create tmpdir directory");
+		if (chown(tmpdir, ruid, rgid) == -1)
+			die("chown tmpdir %s", tmpdir);
 	}
 
 	clone_flags = (SIGCHLD|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
@@ -276,7 +323,8 @@ main(int argc, char **argv)
 		}
 		/* setup our overlayfs if set */
 		if (overlayfs)
-			chrootdir = setup_overlayfs(chrootdir, ruid, rgid, tmpfs_opts);
+			chrootdir = setup_overlayfs(chrootdir, ruid, rgid,
+			    overlayfs_on_tmpfs, tmpfs_opts);
 
 		/* mount /proc */
 		snprintf(mountdir, sizeof(mountdir), "%s/proc", chrootdir);
