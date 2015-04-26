@@ -481,7 +481,6 @@ ordered_depends(const char *bpath, const char *pkgn)
 
 	fp = popen(cmd, "r");
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
-		char *tmp, *tmp2, *depn;
 		size_t len;
 
 		/* ignore pkgs returning errors */
@@ -494,46 +493,14 @@ ordered_depends(const char *bpath, const char *pkgn)
 		len = strlen(buf);
 		if (len && buf[len-1] == '\n')
 			buf[--len] = 0;
-		/*
-		 * Grab the package name component...
-		 */
-		if ((depn = xbps_pkgpattern_name(buf)) == NULL)
-			if ((depn = xbps_pkg_name(buf)) == NULL)
-				depn = strdup(buf);
 
 		if (VerboseOpt)
-			printf("%s: depends on %s\n", pkgn, depn);
+			printf("%s: depends on %s\n", pkgn, buf);
 
-		assert(depn);
-		/*
-		 * ... and then convert it to the real source package
-		 * (dependency could be a subpackage).
-		 */
-		tmp = xbps_xasprintf("%s/srcpkgs/%s", bpath, depn);
-		if ((tmp2 = realpath(tmp, NULL)) == NULL) {
-			item->emsg = xbps_xasprintf("unresolved dependency: %s\n", depn);
-			item->status = XBROKEN;
-			item->xcode = EXIT_FAILURE;
-			free(depn);
-			free(tmp);
-			break;
-		}
-		free(tmp);
-		free(depn);
-		tmp = strdup(tmp2);
-		depn = basename(tmp);
-		assert(depn);
-		free(tmp2);
-
-		if (VerboseOpt)
-			printf("%s: dependency transformed to %s\n", pkgn, depn);
-
-		xitem = lookupItem(depn);
+		xitem = lookupItem(buf);
 		if (xitem == NULL)
-			xitem = ordered_depends(bpath, depn);
+			xitem = ordered_depends(bpath, buf);
 		addDepn(item, xitem);
-		free(tmp);
-
 	}
 	pclose(fp);
 	free(cmd);
