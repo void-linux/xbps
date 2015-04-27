@@ -1,4 +1,4 @@
-.Dd April 20, 2014
+.Dd April 27, 2014
 .Dt XBPS-UCHROOT 8
 .Sh NAME
 .Nm xbps-uchroot
@@ -39,15 +39,22 @@ If your system uses
 use it, otherwise use
 .Sy /run/shm .
 .It Fl O
-Setups a temporary directory mounted on tmpfs and then creates an overlay layer
-(via overlayfs) with the lowerdir set to CHROOTDIR. Useful to create a temporary
-tree that does not preserve changes in CHROOTDIR.
+Setups a temporary directory and then creates an overlay layer (via overlayfs)
+with the lowerdir set to CHROOTDIR. Useful to create a temporary tree that does not
+preserve changes in CHROOTDIR.
 .It Fl o Ar opts
 Arguments passed to the tmpfs mount, if the
 .Fl O
-option is specified.
+and
+.Fl t
+options are specified.
 This expects the same arguments that are accepted as options in tmpfs, as explained in
 .Xr mount 8 .
+.It Fl t
+This makes the temporary directory to be mounted in tmpfs, so that everything is stored
+in RAM. Note that this is only useful if used with the
+.Fl O
+option (overlayfs).
 .El
 .Sh SECURITY
 The
