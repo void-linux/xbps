@@ -148,7 +148,8 @@ addItem(const char *pkgn)
 static void __attribute__((noreturn))
 usage(const char *progname)
 {
-	fprintf(stderr, "%s [-a targetarch] [-j parallel] [-l logdir] /path/to/void-packages\n", progname);
+	fprintf(stderr, "%s [-a targetarch] [-j parallel] [-l logdir] "
+	    "/path/to/void-packages [pkg pkgN]\n", progname);
 	exit(EXIT_FAILURE);
 }
 
@@ -566,7 +567,7 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (argc != 1) {
+	if (argc < 1) {
 		usage(progname);
 		/* NOT REACHED */
 	}
@@ -646,6 +647,7 @@ main(int argc, char **argv)
 	if ((dir = opendir(rpath)) != NULL) {
 		while ((den = readdir(dir)) != NULL) {
 			char *xpath;
+			bool found = false;
 
 			if (den->d_name[0] == '.')
 				continue;
@@ -654,6 +656,20 @@ main(int argc, char **argv)
 				continue;
 
 			if (!S_ISDIR(st.st_mode))
+				continue;
+
+			if (argc == 1) {
+				/* process all pkgs */
+				found = true;
+			}
+			/* only process pkgs specified as arguments */
+			for (int i = 1; i < argc; i++) {
+				if (strcmp(argv[i], den->d_name) == 0) {
+					found = true;
+					break;
+				}
+			}
+			if (!found)
 				continue;
 
 			xpath = xbps_xasprintf("%s/template", den->d_name);
