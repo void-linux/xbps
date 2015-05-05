@@ -1,5 +1,7 @@
 xbps-0.45 (???):
 
+ * configure: added --dbdir to customize path to pkgdb.
+
  * xbps-uchroot(8): added -o option to pass arguments to the tmpfs mount,
    as is. See mount(8). Useful to specify a size for the temporary tmpfs
    with overlayfs (-O).

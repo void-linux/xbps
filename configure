@@ -36,6 +36,7 @@ for instance \`--prefix=\$HOME'.
 --pkgconfigdir=DIR 	pkg-config directory [EPREFIX/lib/pkgconfig]
 --testsdir=DIR		Test suite directory [EPREFIX/tests]
 --localstatedir=DIR	Local state directory to store XBPS db files [/var]
+--dbdir=DIR		Path to the pkgdb directory [LOCALSTATEDIR/db/xbps]
 
 --verbose 		Disable silent build to see compilation details
 --enable-api-docs 	Install XBPS API Library documentation (default disabled)
@@ -65,6 +66,7 @@ for x; do
 	--localstatedir) LOCALSTATEDIR=$var;;
 	--libdir) LIBDIR=$var;;
 	--datadir|--infodir) ;; # ignore autotools
+	--dbdir) DBDIR=$var;;
 	--enable-api-docs) BUILD_API_DOCS=$var;;
 	--verbose) unset SILENT;;
 	--pkgconfigdir) PKGCONFIGDIR=$var;;
@@ -187,6 +189,7 @@ echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSDEFCONF_PATH=\\\"${SHAREDIR}/xbps.d\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
+echo "CPPFLAGS +=	-DXBPS_META_PATH=\\\"${DBDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-D_unused=\"__attribute__((__unused__))\"" >>$CONFIG_MK
 
 if [ -d .git ]; then

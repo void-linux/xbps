@@ -80,7 +80,9 @@
  * @def XBPS_META_PATH
  * Default root PATH to store metadata info.
  */
+#ifndef XBPS_META_PATH
 #define XBPS_META_PATH		"var/db/xbps"
+#endif
 
 /** 
  * @def XBPS_CACHE_PATH
