@@ -4,6 +4,7 @@ config.h
 config.mk
 bin/xbps-create/xbps-create
 bin/xbps-dgraph/xbps-dgraph
+bin/xbps-fbulk/xbps-fbulk
 bin/xbps-install/xbps-install
 bin/xbps-pkgdb/xbps-pkgdb
 bin/xbps-query/xbps-query
