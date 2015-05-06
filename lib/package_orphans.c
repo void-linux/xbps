@@ -85,6 +85,9 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 			continue;
 		xbps_array_add(array, pkgd);
 	}
+	if (orphans_user)
+		goto add_orphans;
+
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
 	/*
@@ -113,6 +116,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused
 	}
 	xbps_object_iterator_release(iter);
 
+add_orphans:
 	for (i = 0; i < xbps_array_count(array); i++) {
 		pkgd = xbps_array_get(array, i);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);

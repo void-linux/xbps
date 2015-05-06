@@ -28,11 +28,8 @@
 
 static const char expected_output[] =
 	"xbps-git-20130310_2\n"
-	"unexistent-pkg-0_1\n"
 	"xbps-triggers-1.0_1\n"
 	"libxbps-git-20130310_2\n"
-	"orphan1-0_1\n"
-	"orphan0-0_1\n"
 	"confuse-2.7_2\n"
 	"proplib-0.6.3_1\n"
 	"libarchive-3.1.2_1\n"
