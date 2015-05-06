@@ -21,7 +21,7 @@ xbps-0.45 (???):
  * xbps-uchroot(8): added -t option to mount a tmpfs as temporary directory
    for overlayfs (-O).
 
- * libxbps: file descripters are now opened with O_CLOEXEC, to avoid warnings
+ * libxbps: file descriptors are now opened with O_CLOEXEC, to avoid warnings
    of leaked file descriptors while running package install/remove scripts.
 
  * xbps-query(8): do not truncate output if stdout is not a tty.
