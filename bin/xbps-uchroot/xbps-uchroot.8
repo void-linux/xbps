@@ -1,4 +1,4 @@
-.Dd April 27, 2014
+.Dd May 6, 2014
 .Dt XBPS-UCHROOT 8
 .Sh NAME
 .Nm xbps-uchroot
@@ -24,20 +24,17 @@ the calling process. If running in a OpenVZ container, these namespace features
 are simply disabled.
 .Sh OPTIONS
 .Bl -tag -width -x
-.It Fl D Ar dir
-Specifies a full path to a directory that will be bind mounted at
-.Ar CHROOTDIR/void-packages .
-.It Fl H Ar dir
-Specifies a full path to a directory that will be bind mounted at
-.Ar CHROOTDIR/host .
-.It Fl S Ar dir
-Specifies a full path to a directory to allow shm functionality to be used
-in the target
-.Ar CHROOTDIR/dir .
-If your system uses
-.Sy /dev/shm
-use it, otherwise use
-.Sy /run/shm .
+.It Fl b Ar src:dest
+Bind mounts
+.Ar src
+into
+.Ar CHROOTDIR/dest .
+This option may be specified multiple times.
+Please note that both
+.Ar src
+and
+.Ar dest
+must be absolute paths and must exist.
 .It Fl O
 Setups a temporary directory and then creates an overlay layer (via overlayfs)
 with the lowerdir set to CHROOTDIR. Useful to create a temporary tree that does not

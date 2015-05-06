@@ -1,5 +1,8 @@
 xbps-0.45 (???):
 
+ * xbps-uchroot(8): replaced -D, -H and -S with -b src:dest. This bind mounts
+   src into dir/dest and allows unlimited mounts.
+
  * configure: added --dbdir to customize path to pkgdb.
 
  * xbps-uchroot(8): added -o option to pass arguments to the tmpfs mount,

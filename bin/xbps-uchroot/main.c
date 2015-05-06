@@ -27,7 +27,6 @@
  * This is based on linux-user-chroot by Colin Walters, but has been adapted
  * specifically for xbps-src use:
  *
- * 	- This bind mounts exactly what we need, no support for additional mounts.
  * 	- This uses IPC/PID/UTS namespaces, nothing more.
  * 	- Disables namespace features if running in OpenVZ containers.
  * 	- Supports overlayfs on a temporary directory or a tmpfs mount.
@@ -53,6 +52,7 @@
 #include <ftw.h>
 
 #include <xbps.h>
+#include "queue.h"
 
 #ifndef SECBIT_NOROOT
 #define SECBIT_NOROOT (1 << 0)
@@ -70,8 +70,27 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
+struct bindmnt {
+	SIMPLEQ_ENTRY(bindmnt) entries;
+	char *src;
+	const char *dest;
+};
+
 static char *tmpdir;
 static bool overlayfs_on_tmpfs;
+static SIMPLEQ_HEAD(bindmnt_head, bindmnt) bindmnt_queue =
+    SIMPLEQ_HEAD_INITIALIZER(bindmnt_queue);
+
+static void __attribute__((noreturn))
+usage(const char *p)
+{
+	printf("Usage: %s [-b src:dest] [-O -t -o <opts>] <dir> <cmd> [<cmdargs>]\n\n"
+	    "-b src:dest Bind mounts <src> into <dir>/<dest> (may be specified multiple times)\n"
+	    "-O          Creates a tempdir and mounts <dir> read-only via overlayfs\n"
+	    "-t          Creates tempdir and mounts it on tmpfs (for use with -O)\n"
+	    "-o opts     Options to be passed to the tmpfs mount (for use with -t)\n", p);
+	exit(EXIT_FAILURE);
+}
 
 static void __attribute__((noreturn))
 die(const char *fmt, ...)
@@ -80,7 +99,7 @@ die(const char *fmt, ...)
 	int save_errno = errno;
 
 	va_start(ap, fmt);
-	fprintf(stderr, "ERROR ");
+	fprintf(stderr, "ERROR: ");
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, " (%s)\n", strerror(save_errno));
 	va_end(ap);
@@ -125,14 +144,30 @@ cleanup_overlayfs(void)
 	rmdir(tmpdir);
 }
 
-static void __attribute__((noreturn))
-usage(const char *p)
+static void
+add_bindmount(char *bm)
 {
-	printf("Usage: %s [-D dir] [-H dir] [-S dir] [-O -t -o <opts>] <chrootdir> <command>\n\n"
-	    "-D <distdir> Directory to be bind mounted at <chrootdir>/void-packages\n"
-	    "-H <hostdir> Directory to be bind mounted at <chrootdir>/host\n"
-	    "-S <shmdir>  Directory to be bind mounted at <chrootdir>/<shmdir>\n", p);
-	exit(EXIT_FAILURE);
+	struct bindmnt *bmnt;
+	char *b, *src, *dest;
+	size_t len;
+
+	src = strdup(bm);
+	dest = strchr(bm, ':');
+	if (dest == NULL || *dest == '\0') {
+		errno = EINVAL;
+		die("invalid argument for bindmount: %s", bm);
+	}
+	dest++;
+	b = strchr(bm, ':');
+	len = strlen(bm) - strlen(b);
+	src[len] = '\0';
+
+	bmnt = malloc(sizeof(struct bindmnt));
+	assert(bmnt);
+
+	bmnt->src = src;
+	bmnt->dest = dest;
+	SIMPLEQ_INSERT_TAIL(&bindmnt_queue, bmnt, entries);
 }
 
 static int
@@ -227,55 +262,48 @@ main(int argc, char **argv)
 {
 	uid_t ruid, euid, suid;
 	gid_t rgid, egid, sgid;
-	const char *chrootdir, *distdir, *hostdir, *shmdir, *tmpfs_opts, *cmd, *argv0;
+	const char *chrootdir, *tmpfs_opts, *cmd, *argv0;
 	char **cmdargs, *b, mountdir[PATH_MAX-1];
-	int aidx = 0, clone_flags, child_status = 0;
+	int c, clone_flags, child_status = 0;
 	pid_t child;
 	bool overlayfs = false;
 
-	tmpfs_opts = chrootdir = distdir = hostdir = shmdir = cmd = NULL;
+	tmpfs_opts = chrootdir = cmd = NULL;
 	argv0 = argv[0];
-	argc--;
-	argv++;
+
+	while ((c = getopt(argc, argv, "Oto:b:V")) != -1) {
+		switch (c) {
+		case 'O':
+			overlayfs = true;
+			break;
+		case 't':
+			overlayfs_on_tmpfs = true;
+			break;
+		case 'o':
+			tmpfs_opts = optarg;
+			break;
+		case 'b':
+			if (optarg == NULL || *optarg == '\0')
+				break;
+			add_bindmount(optarg);
+			break;
+		case 'V':
+			printf("%s\n", XBPS_RELVER);
+			exit(EXIT_SUCCESS);
+		case '?':
+		default:
+			usage(argv0);
+		}
+	}
+	argc -= optind;
+	argv += optind;
 
 	if (argc < 2)
 		usage(argv0);
 
-	while (aidx < argc) {
-		if (strcmp(argv[aidx], "-O") == 0) {
-			/* use overlayfs */
-			overlayfs = true;
-			aidx++;
-		} else if (strcmp(argv[aidx], "-t") == 0) {
-			/* overlayfs on tmpfs */
-			overlayfs_on_tmpfs = true;
-			aidx++;
-		} else if (strcmp(argv[aidx], "-o") == 0) {
-			/* tmpfs args with overlayfs */
-			tmpfs_opts = argv[aidx+1];
-			aidx += 2;
-		} else if (strcmp(argv[aidx], "-D") == 0) {
-			/* distdir */
-			distdir = argv[aidx+1];
-			aidx += 2;
-		} else if (strcmp(argv[aidx], "-H") == 0) {
-			/* hostdir */
-			hostdir = argv[aidx+1];
-			aidx += 2;
-		} else if (strcmp(argv[aidx], "-S") == 0) {
-			/* shmdir */
-			shmdir = argv[aidx+1];
-			aidx += 2;
-		} else {
-			break;
-		}
-	}
-	if ((argc - aidx) < 2)
-		usage(argv0);
-
-	chrootdir = argv[aidx];
-	cmd = argv[aidx+1];
-	cmdargs = argv + aidx + 1;
+	chrootdir = argv[0];
+	cmd = argv[1];
+	cmdargs = argv + 1;
 
 	/* Never allow chrootdir == / */
 	if (strcmp(chrootdir, "/") == 0)
@@ -312,6 +340,7 @@ main(int argc, char **argv)
 		die("clone");
 
 	if (child == 0) {
+		struct bindmnt *bmnt;
 		/*
 		 * Restrict privileges on the child.
 		 */
@@ -339,17 +368,9 @@ main(int argc, char **argv)
 		/* bind mount /dev */
 		bindmount(ruid, chrootdir, "/dev", NULL);
 
-		/* bind mount hostdir if set */
-		if (hostdir)
-			bindmount(ruid, chrootdir, hostdir, "/host");
-
-		/* bind mount distdir (if set) */
-		if (distdir)
-			bindmount(ruid, chrootdir, distdir, "/void-packages");
-
-		/* bind mount shmdir (if set) */
-		if (shmdir)
-			bindmount(ruid, chrootdir, shmdir, NULL);
+		/* bind mount all user specified mnts */
+		SIMPLEQ_FOREACH(bmnt, &bindmnt_queue, entries)
+			bindmount(ruid, chrootdir, bmnt->src, bmnt->dest);
 
 		/* move chrootdir to / and chroot to it */
 		if (fsuid_chdir(ruid, chrootdir) == -1)
