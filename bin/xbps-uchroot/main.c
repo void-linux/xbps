@@ -152,6 +152,7 @@ add_bindmount(char *bm)
 	size_t len;
 
 	src = strdup(bm);
+	assert(src);
 	dest = strchr(bm, ':');
 	if (dest == NULL || *dest == '\0') {
 		errno = EINVAL;
