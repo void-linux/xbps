@@ -1,4 +1,4 @@
-.Dd April 13, 2015
+.Dd May 6, 2015
 .Dt XBPS-UUNSHARE 8
 .Sh NAME
 .Nm xbps-uunshare
@@ -17,6 +17,7 @@ utility allows users to chroot and bind mount required pseudo-filesystems
 .Ar CHROOTDIR
 to execute
 .Ar COMMAND .
+.Pp
 The
 .Nm
 utility uses by default Linux namespaces to isolate IPC, PIDs and mounts to
@@ -25,20 +26,17 @@ the calling process. Thanks to
 the user does not need any privilege to create an isolated lightweight container.
 .Sh OPTIONS
 .Bl -tag -width -x
-.It Fl D Ar dir
-Specifies a full path to a directory that will be bind mounted at
-.Ar CHROOTDIR/void-packages .
-.It Fl H Ar dir
-Specifies a full path to a directory that will be bind mounted at
-.Ar CHROOTDIR/host .
-.It Fl S Ar dir
-Specifies a full path to a directory to allow shm functionality to be used
-in the target
-.Ar CHROOTDIR/dir .
-If your system uses
-.Sy /dev/shm
-use it, otherwise use
-.Sy /run/shm .
+.It Fl b Ar src:dest
+Bind mounts
+.Ar src
+into
+.Ar CHROOTDIR/dest .
+This option may be specified multiple times.
+Please note that both
+.Ar src
+and
+.Ar dest
+must be absolute paths and must exist.
 .El
 .Sh NOTES
 The

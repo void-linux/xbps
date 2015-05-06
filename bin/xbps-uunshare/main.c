@@ -39,12 +39,24 @@
 #include <errno.h>
 #include <limits.h>
 #include <syscall.h>
+#include <assert.h>
+
+#include <xbps.h>
+#include "queue.h"
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
+struct bindmnt {
+	SIMPLEQ_ENTRY(bindmnt) entries;
+	char *src;
+	const char *dest;
+};
+
 static int errval = 0;
+static SIMPLEQ_HEAD(bindmnt_head, bindmnt) bindmnt_queue =
+    SIMPLEQ_HEAD_INITIALIZER(bindmnt_queue);
 
 static void __attribute__((noreturn))
 die(const char *fmt, ...)
@@ -63,11 +75,36 @@ die(const char *fmt, ...)
 static void __attribute__((noreturn))
 usage(const char *p)
 {
-	printf("Usage: %s [-D dir] [-H dir] [-S dir] <chrootdir> <command>\n\n"
-	    "-D <distdir> Directory to be bind mounted at <chrootdir>/void-packages\n"
-	    "-H <hostdir> Directory to be bind mounted at <chrootdir>/host\n"
-	    "-S <shmdir>  Directory to be bind mounted at <chrootdir>/<shmdir>\n", p);
+	printf("Usage: %s [-b src:dest] <dir> <cmd> [<cmdargs>]\n\n"
+	    "-b src:dest Bind mounts <src> into <dir>/<dest> (may be specified multiple times)\n\n", p);
 	exit(EXIT_FAILURE);
+}
+
+static void
+add_bindmount(char *bm)
+{
+	struct bindmnt *bmnt;
+	char *b, *src, *dest;
+	size_t len;
+
+	src = strdup(bm);
+	assert(src);
+	dest = strchr(bm, ':');
+	if (dest == NULL || *dest == '\0') {
+		errno = EINVAL;
+		die("invalid argument for bindmount: %s", bm);
+	}
+	dest++;
+	b = strchr(bm, ':');
+	len = strlen(bm) - strlen(b);
+	src[len] = '\0';
+
+	bmnt = malloc(sizeof(struct bindmnt));
+	assert(bmnt);
+
+	bmnt->src = src;
+	bmnt->dest = dest;
+	SIMPLEQ_INSERT_TAIL(&bindmnt_queue, bmnt, entries);
 }
 
 static void
@@ -85,43 +122,40 @@ bindmount(const char *chrootdir, const char *dir, const char *dest)
 int
 main(int argc, char **argv)
 {
+	struct bindmnt *bmnt;
 	uid_t uid = getuid();
 	gid_t gid = getgid();
-	const char *chrootdir, *distdir, *hostdir, *shmdir, *cmd, *argv0;
+	const char *chrootdir, *cmd, *argv0;
 	char **cmdargs, buf[32];
-	int fd, aidx = 0;
+	int c, fd;
 
-	chrootdir = distdir = hostdir = shmdir = cmd = NULL;
+	chrootdir = cmd = NULL;
 	argv0 = argv[0];
-	argc--;
-	argv++;
+
+	while ((c = getopt(argc, argv, "b:V")) != -1) {
+		switch (c) {
+		case 'b':
+			if (optarg == NULL || *optarg == '\0')
+				break;
+			add_bindmount(optarg);
+			break;
+		case 'V':
+			printf("%s\n", XBPS_RELVER);
+			exit(EXIT_SUCCESS);
+		case '?':
+		default:
+			usage(argv0);
+		}
+	}
+	argc -= optind;
+	argv += optind;
 
 	if (argc < 2)
 		usage(argv0);
 
-	while (aidx < argc) {
-		if (strcmp(argv[aidx], "-D") == 0) {
-			/* distdir */
-			distdir = argv[aidx+1];
-			aidx += 2;
-		} else if (strcmp(argv[aidx], "-H") == 0) {
-			/* hostdir */
-			hostdir = argv[aidx+1];
-			aidx += 2;
-		} else if (strcmp(argv[aidx], "-S") == 0) {
-			/* shmdir */
-			shmdir = argv[aidx+1];
-			aidx += 2;
-		} else {
-			break;
-		}
-	}
-	if ((argc - aidx) < 2)
-		usage(argv0);
-
-	chrootdir = argv[aidx];
-	cmd = argv[aidx+1];
-	cmdargs = argv + aidx + 1;
+	chrootdir = argv[0];
+	cmd = argv[1];
+	cmdargs = argv + 1;
 
 	/* Never allow chrootdir == / */
 	if (strcmp(chrootdir, "/") == 0)
@@ -166,17 +200,9 @@ main(int argc, char **argv)
 	/* bind mount /dev */
 	bindmount(chrootdir, "/dev", NULL);
 
-	/* bind mount hostdir if set */
-	if (hostdir)
-		bindmount(chrootdir, hostdir, "/host");
-
-	/* bind mount distdir (if set) */
-	if (distdir)
-		bindmount(chrootdir, distdir, "/void-packages");
-
-	/* bind mount shmdir (if set) */
-	if (shmdir)
-		bindmount(chrootdir, shmdir, NULL);
+	/* bind mount all user specified mnts */
+	SIMPLEQ_FOREACH(bmnt, &bindmnt_queue, entries)
+		bindmount(chrootdir, bmnt->src, bmnt->dest);
 
 	/* move chrootdir to / and chroot to it */
 	if (chdir(chrootdir) == -1)
