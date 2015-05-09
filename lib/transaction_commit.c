@@ -95,10 +95,9 @@ check_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			    "%s: verifying RSA signature...", pkgver);
 
 			if (!xbps_verify_file_signature(repo, binfile)) {
-				rv = errno;
+				rv = EPERM;
 				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				    "%s: the RSA signature is not valid: %s", pkgver,
-				    strerror(rv));
+				    "%s: the RSA signature is not valid!", pkgver);
 				free(binfile);
 				break;
 			}
