@@ -287,6 +287,8 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 {
 	xbps_array_t array;
 	struct transaction *trans;
+	uint64_t fsize = 0, isize = 0;
+	char freesize[8], instsize[8];
 	int rv = 0;
 
 	trans = calloc(1, sizeof(*trans));
@@ -315,7 +317,22 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 			fprintf(stderr, "Transaction aborted due to conflicting packages.\n");
 		} else if (rv == ENOSPC) {
 			/* not enough free space */
-			fprintf(stderr, "Transaction aborted due to insufficient disk space.\n");
+			xbps_dictionary_get_uint64(xhp->transd,
+			    "total-installed-size", &isize);
+			if (xbps_humanize_number(instsize, (int64_t)isize) == -1) {
+				xbps_error_printf("humanize_number2 returns "
+					"%s\n", strerror(errno));
+				return -1;
+			}
+			xbps_dictionary_get_uint64(xhp->transd,
+			    "disk-free-size", &fsize);
+			if (xbps_humanize_number(freesize, (int64_t)fsize) == -1) {
+				xbps_error_printf("humanize_number2 returns "
+					"%s\n", strerror(errno));
+				return -1;
+			}
+			fprintf(stderr, "Transaction aborted due to insufficient disk "
+			    "space (need %s, got %s free).\n", instsize, freesize);
 		} else {
 			xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
 			    strerror(errno));

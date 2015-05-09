@@ -1,5 +1,8 @@
 xbps-0.45 (???):
 
+ * xbps-install(8): if there's not enough sufficient free space on rootdir,
+   print the required size by the transaction and free space.
+
  * libxbps: if a pkg signature file cannot be verified, don't continue processing
    other files, stop and return error immediately.
 
