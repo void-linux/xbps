@@ -145,6 +145,7 @@ map_add_n(map_t *map, const char *k, size_t kn, const char *v, size_t vn)
 		map->size += 16;
 		map->items = realloc(map->items,
 			sizeof(map_item_t)*(map->size));
+		assert(map->items);
 		for (i = map->size - 10; i < map->size; i++) {
 			map->items[i] = map_new_item();
 		}
@@ -523,6 +524,7 @@ check_reverts(const char *repover, const map_item_t reverts)
 		return rv;
 
 	sreverts = calloc(reverts.v.len+1, sizeof(char));
+	assert(sreverts);
 	strncpy(sreverts, reverts.v.s, reverts.v.len);
 	sreverts[reverts.v.len] = '\0';
 
