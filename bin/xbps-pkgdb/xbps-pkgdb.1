@@ -1,5 +1,5 @@
-.Dd March 3, 2014
-.Dt XBPS-PKGDB 8
+.Dd May 16, 2015
+.Dt XBPS-PKGDB 1
 .Sh NAME
 .Nm xbps-pkgdb
 .Nd XBPS utility to report/fix issues and modify the package database (pkgdb)
@@ -60,7 +60,7 @@ A package in
 .Sy hold
 mode won't be updated in full system upgrades. The list of packages in this mode can be
 seen with
-.Xr xbps-query 8 .
+.Xr xbps-query 1 .
 A package in
 .Sy repolock
 mode will only accept updates that are available in the same repository that was used
@@ -89,16 +89,17 @@ Default package database (0.38 format). Keeps track of installed packages and pr
 Default cache directory to store downloaded binary packages.
 .El
 .Sh SEE ALSO
-.Xr xbps.d 5 ,
-.Xr xbps-checkvers 8 ,
-.Xr xbps-create 8 ,
-.Xr xbps-dgraph 8 ,
-.Xr xbps-install 8 ,
-.Xr xbps-query 8 ,
-.Xr xbps-reconfigure 8 ,
-.Xr xbps-remove 8 ,
-.Xr xbps-rindex 8 ,
-.Xr xbps-uchroot 8
+.Xr xbps-checkvers 1 ,
+.Xr xbps-create 1 ,
+.Xr xbps-dgraph 1,
+.Xr xbps-install 1 ,
+.Xr xbps-query 1 ,
+.Xr xbps-reconfigure 1 ,
+.Xr xbps-remove 1 ,
+.Xr xbps-rindex 1 ,
+.Xr xbps-uchroot 1 ,
+.Xr xbps-uunshare 1 ,
+.Xr xbps.d 5
 .Sh AUTHORS
 .An Juan Romero Pardines <xtraeme@gmail.com>
 .Sh BUGS

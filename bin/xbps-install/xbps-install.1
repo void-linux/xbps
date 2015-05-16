@@ -1,26 +1,26 @@
-.Dd December 15, 2014
-.Dt XBPS-DGRAPH 8
+.Dd May 16, 2015
+.Dt XBPS-INSTALL 1
 .Sh NAME
-.Nm xbps-dgraph
-.Nd XBPS utility to generate package dot(1) graphs
+.Nm xbps-install
+.Nd XBPS utility to (re)install and update packages
 .Sh SYNOPSYS
-.Nm xbps-dgraph
+.Nm xbps-install
 .Op OPTIONS
-.Ar MODE
-.Ar PKG
+.Op PKG...
 .Sh DESCRIPTION
 The
 .Nm
-utility generates a
-.Xr dot 1
-graph of a specific package stored
-in target root directory or in registered repositories and prints
-the result to stdout.
+utility installs, reinstalls, downgrades and updates packages in the target root directory.
 The argument
 .Ar PKG
 is a package expression, which is explained in the
 .Em PACKAGE EXPRESSION
-section.
+section. If package is installed, it will be updated to the version available in repositories
+matching the
+.Em PACKAGE EXPRESSION .
+Otherwise it will be installed, or reinstalled/downgraded if
+.Fl f , Fl -force
+option is set.
 .Sh PACKAGE EXPRESSION
 A package expression is a form to match a pattern; currently xbps
 supports 3 ways to specify them:
@@ -56,43 +56,63 @@ Example:
 The first repository matching the package expression wins.
 .Sh OPTIONS
 .Bl -tag -width -x
+.It Fl A, Fl -automatic
+Enables automatic installation mode, i.e. package will be treated as orphan
+if no package is depending on it directly.
 .It Fl C, Fl -config Ar dir
 Specifies a path to the XBPS configuration directory.
 If the first character is not '\/' then it's a relative path of
 .Ar rootdir .
-.It Fl c, Fl -graph-config Ar file
-Specifies a path to the graph configuration file, to modify the settings
-of the generated graphs.
+.It Fl c, Fl -cachedir Ar dir
+Specifies a path to the cache directory, where binary packages are stored.
+If the first character is not '\/' then it's a relative path of
+.Ar rootdir .
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
+.It Fl f, Fl -force
+Force downgrade installation (if package version in repos is less than installed version),
+or reinstallation (if package version in repos is the same) to the target
+.Ar PKG ,
+overwriting regular package files and symlinks (if they have been modified) but
+.Em preserving configuration files .
+If
+.Fl f
+is specified twice all files will be unpacked, even
+.Em configuration files .
 .It Fl h, Fl -help
 Show the help usage.
+.It Fl i, Fl -ignore-conf-repos
+Ignore repositories defined in configuration files.
+Only repositories specified in the command line via
+.Ar --repository
+will be used.
 .It Fl M, Fl -memory-sync
 For remote repositories, the data is fetched and stored in memory for the current
 operation. This ignores the existing on-disk repository archives in rootdir.
-.It Fl R, Fl -repository
+.It Fl n, Fl -dry-run
+Dry-run mode. Show what actions would be done but don't do anything.
+.It Fl R
 Enable repository mode. This mode explicitly looks in repositories, rather
 than looking in the target root directory.
+.It Fl -repository=url
+Appends the specified repository to the top of the list. The
+.Ar url
+argument expects a URL to the repository for remote repositories or
+a path for local repositories.
+This option can be specified multiple times.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
+.It Fl S, Fl -sync
+Synchronize remote repository index files.
+.It Fl u, Fl -update
+Performs a full system upgrade: all installed packages will be updated to the greatest
+versions that were found in repositories.
+.It Fl v, Fl -verbose
+Enables verbose messages.
+.It Fl y, Fl -yes
+Assume yes to all questions and avoid interactive questions.
 .It Fl V, Fl -version
 Shows the XBPS version.
-.El
-.Sh MODE
-Only one of the following modes can be used at a time.
-By default and unless the
-.Fl R
-option is specified, the target
-.Ar PKG
-will be queried in the root directory, otherwise it will be
-queried in registered repositories.
-.Bl -tag -width -x
-.It Fl g, Fl -gen-config
-Generates a graph configuration file in the current working directory.
-.It Fl f, Fl -fulldeptree
-Generates a full dependency graph of the target package.
-.It Fl m, Fl -metadata
-Generates a metadata graph of the target package.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
@@ -122,16 +142,17 @@ Default package database (0.38 format). Keeps track of installed packages and pr
 Default cache directory to store downloaded binary packages.
 .El
 .Sh SEE ALSO
-.Xr xbps.d 5 ,
-.Xr xbps-checkvers 8 ,
-.Xr xbps-create 8 ,
-.Xr xbps-install 8 ,
-.Xr xbps-pkgdb 8 ,
-.Xr xbps-query 8 ,
-.Xr xbps-reconfigure 8 ,
-.Xr xbps-remove 8 ,
-.Xr xbps-rindex 8 ,
-.Xr xbps-uchroot 8
+.Xr xbps-checkvers 1 ,
+.Xr xbps-create 1 ,
+.Xr xbps-dgraph 1 ,
+.Xr xbps-pkgdb 1 ,
+.Xr xbps-query 1 ,
+.Xr xbps-reconfigure 1 ,
+.Xr xbps-remove 1 ,
+.Xr xbps-rindex 1 ,
+.Xr xbps-uchroot 1 ,
+.Xr xbps-uunshare 1 ,
+.Xr xbps.d 5
 .Sh AUTHORS
 .An Juan Romero Pardines <xtraeme@gmail.com>
 .Sh BUGS

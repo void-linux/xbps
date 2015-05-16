@@ -3,7 +3,7 @@
 OBJS	?= main.o
 
 BINS = $(BIN)
-MANSECTION ?= 8
+MANSECTION ?= 1
 MAN ?= $(BIN).$(MANSECTION)
 
 ifdef BUILD_STATIC

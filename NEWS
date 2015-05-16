@@ -1,46 +1,53 @@
 xbps-0.45 (???):
 
- * xbps-install(8): if there's not enough sufficient free space on rootdir,
+ * Move manual pages of all utilities to the section 1 (user commands).
+   The xbps utilities can be used by any user so that there's no point
+   in having them in the section 8 (administraction and privileged commands).
+
+ * configure: --sbindir -> --bindir and executables are installed into
+   <prefix>/bin not <prefix>/sbin anymore.
+
+ * xbps-install(1): if there's not enough sufficient free space on rootdir,
    print the required size by the transaction and free space.
 
  * libxbps: if a pkg signature file cannot be verified, don't continue processing
    other files, stop and return error immediately.
 
- * xbps-remove(8): fixed regression while removing recursively packages, don't remove
+ * xbps-remove(1): fixed regression while removing recursively packages, don't remove
    all package orphans, this task belongs to -o not -R.
 
    This closes #95 (xbps-remove -R pkg lists/removes orphans):
    https://github.com/voidlinux/xbps/issues/95
 
- * xbps-uunshare(8): replaced -D, -H and -S with -b src:dest. This bind mounts
+ * xbps-uunshare(1): replaced -D, -H and -S with -b src:dest. This bind mounts
    src into dir/dest and allows unlimited mounts.
 
- * xbps-uchroot(8): replaced -D, -H and -S with -b src:dest. This bind mounts
+ * xbps-uchroot(1): replaced -D, -H and -S with -b src:dest. This bind mounts
    src into dir/dest and allows unlimited mounts.
 
  * configure: added --dbdir to customize path to pkgdb.
 
- * xbps-uchroot(8): added -o option to pass arguments to the tmpfs mount,
-   as is. See mount(8). Useful to specify a size for the temporary tmpfs
+ * xbps-uchroot(1): added -o option to pass arguments to the tmpfs mount,
+   as is. See mount(1). Useful to specify a size for the temporary tmpfs
    with overlayfs (-O).
 
- * xbps-uchroot(8): added -t option to mount a tmpfs as temporary directory
+ * xbps-uchroot(1): added -t option to mount a tmpfs as temporary directory
    for overlayfs (-O).
 
  * libxbps: file descriptors are now opened with O_CLOEXEC, to avoid warnings
    of leaked file descriptors while running package install/remove scripts.
 
- * xbps-query(8): do not truncate output if stdout is not a tty.
+ * xbps-query(1): do not truncate output if stdout is not a tty.
 
  * libfetch: added support for keep-alive connections even if the HTTP server returns
    304 (Not Modified). This is a noticable performance improvement for `xbps-install -S`.
 
  * xbps now autoupdates itself when there's a package update.
 
- * xbps-uchroot(8): added -O option to use overlayfs to mount CHROOTDIR in
+ * xbps-uchroot(1): added -O option to use overlayfs to mount CHROOTDIR in
    a temporary directory stored on tmpfs. This needs linux >= 3.18.
 
- * xbps-rindex(8): fixed concurrency issues with -a and -c modes; use a simple
+ * xbps-rindex(1): fixed concurrency issues with -a and -c modes; use a simple
    file lock to avoid inconsistent results in generated repodata.
 
 xbps-0.44.1 (2015-03-21):
@@ -51,28 +58,28 @@ xbps-0.44.1 (2015-03-21):
  * portableproplib: fixed a regression introduced in 0.44 resulting in EBADF
    while internalizing plists.
 
- * xbps-uunshare(8): does not fork and run cmd in the child process anymore,
+ * xbps-uunshare(1): does not fork and run cmd in the child process anymore,
    replaces the execution environment with cmd instead.
 
- * xbps-uunshare(8): do not fail if we cannot disable setgroups; some kernels
+ * xbps-uunshare(1): do not fail if we cannot disable setgroups; some kernels
    might not support it. Found by @cheneukirchen on 3.16.
 
- * xbps-reconfigure(8): added -i/--ignore to usage(), by Christian Neukirchen.
+ * xbps-reconfigure(1): added -i/--ignore to usage(), by Christian Neukirchen.
 
  * Updated zsh completions, by Christian Neukirchen.
 
- * xbps-checkvers(8): fixed regression introduced in 0.44 adding packages
+ * xbps-checkvers(1): fixed regression introduced in 0.44 adding packages
    manually to the list as arguments.
 
 xbps-0.44 (2015-03-06):
 
- * xbps-uunshare(8): new utility analogue to xbps-uchroot(8), but uses
+ * xbps-uunshare(1): new utility analogue to xbps-uchroot(1), but uses
    user namespaces (see user_namespaces(7)) to avoid the need of elevated
    privileges.
 
- * xbps-rindex(8): fix -s short option; was omitted in the short options list.
+ * xbps-rindex(1): fix -s short option; was omitted in the short options list.
 
- * xbps-pkgdb(8): added a new mode to set in installed packages: "repolock".
+ * xbps-pkgdb(1): added a new mode to set in installed packages: "repolock".
    If that mode is set with `-m repo(un)lock`, a package will only be updated
    if there's an update in the same repository that was used for installing.
    This implements #77 (https://github.com/voidlinux/xbps/issues/77)
@@ -81,30 +88,30 @@ xbps-0.44 (2015-03-06):
    if the mtime stored in the pkg metadata does not match the mtime
    of the same file stored on disk, don't detect this as an obsolete file.
 
- * xbps-pkgdb(8): this now exits with an error if any test has failed.
+ * xbps-pkgdb(1): this now exits with an error if any test has failed.
 
  * libxbps: while unpacking pkg files that were not modified (sha256 hash matched),
    do not forget to also update the file timestamps on disk, to match
    what the binary package has stored in the metadata.
 
- * xbps-pkgdb(8): this now checks the modification time of pkg files
+ * xbps-pkgdb(1): this now checks the modification time of pkg files
    (iff the pkg metadata has that information).
 
- * xbps-create(8): modification time of regular files and links is now stored
+ * xbps-create(1): modification time of regular files and links is now stored
    in the package files metadata, will be used in a future version.
 
  * libxbps: file timestamps stored in binary packages are now restored while
    unpacking as regular user.
 
- * xbps-pkgdb(8): this now uses the code from libxbps to check the target file
+ * xbps-pkgdb(1): this now uses the code from libxbps to check the target file
    of symlinks. This fixes some false positives with symlinks.
 
- * xbps-create(8): properly detect target of relative symlinks in some cases.
+ * xbps-create(1): properly detect target of relative symlinks in some cases.
 
  * libxbps: make sure that symlinks with relative target are detected and removed
    properly. Fix #78: https://github.com/voidlinux/xbps/issues/78
 
- * xbps-checkvers(8): this now does not segfault anymore when the source package
+ * xbps-checkvers(1): this now does not segfault anymore when the source package
    does not set required variables (pkgname/version/revision). Added new test
    cases to verify its correctness.
 
@@ -113,18 +120,18 @@ xbps-0.44 (2015-03-06):
    upgrades or unwanted removals. This also implements #46.
    https://github.com/voidlinux/xbps/issues/46
 
- * xbps-query(8): in the ownedby mode, do not follow symbolic links and if the
+ * xbps-query(1): in the ownedby mode, do not follow symbolic links and if the
    matching file is a symlink print its target file too:
 
 	$ xbps-query -o `which whatis`
 	mdocml-1.13.2_5: /usr/bin/whatis -> /usr/bin/mandoc (link)
 
- * xbps-install(8): add additional actions to the column output: "downgrade"
+ * xbps-install(1): add additional actions to the column output: "downgrade"
    and "reinstall", as well as current installed version and new version.
    Implement https://github.com/voidlinux/xbps/issues/72
 
  * libxbps: add packages on hold mode to the transaction, but just ignore them.
-   This way those are shown in the xbps-install(8) output and the user really
+   This way those are shown in the xbps-install(1) output and the user really
    knows that there's a pending update that is not being applied.
    Idea by @chneukirchen.
 
@@ -132,7 +139,7 @@ xbps-0.44 (2015-03-06):
    own any file and a dependency replaces it due to moving files between them.
    Added two new test cases to verify its correctness.
 
- * xbps-query(8): --regex option now matches EREs in case insensitive mode.
+ * xbps-query(1): --regex option now matches EREs in case insensitive mode.
 
  * libxbps: globally check for unresolved shared libraries before accepting
    a transaction to make sure there's no broken packages.
@@ -148,7 +155,7 @@ xbps-0.44 (2015-03-06):
  * libxbps: use a sane umask(2) while unpacking package files from
    binary packages (see https://github.com/voidlinux/void-packages/issues/835)
 
- * xbps-dgraph(8): the -m/--metadata option (default mode) is now properly
+ * xbps-dgraph(1): the -m/--metadata option (default mode) is now properly
    accepted. Regression introduced in 0.42.
 
  * xbps-{install,query}: the --repository argument now works with relative
@@ -163,7 +170,7 @@ xbps-0.44 (2015-03-06):
    This improves the performance of `xbps-remove -R` (recursively remove a pkg
    and its dependencies) and `xbps-remove -o` (remove orphaned pkgs) marginally.
 
- * xbps-query(8): only compile the ERE (Extended Regular Expression) once in
+ * xbps-query(1): only compile the ERE (Extended Regular Expression) once in
    the ownedby and search modes. A performance improvement suggested by Christian Neukirchen.
 
  * libxbps: performance improvement for xbps_repo_get_pkg_revdeps(): when finding
@@ -191,14 +198,14 @@ xbps-0.43 (2014-12-31):
  * configure: build with -fstack-protector-strong if supported by the compiler,
    and fallback to -fstack-protector otherwise.
 
- * xbps-pkgdb(8): the `packaged-with` string obj is removed from pkgdb.
+ * xbps-pkgdb(1): the `packaged-with` string obj is removed from pkgdb.
    Since 0.42 that object is unnecessary and is being obsoleted.
 
  * libfetch: fix races in the cache connection code.
 
 xbps-0.42 (2014-12-22):
 
- * xbps-reconfigure(8): new option -i, --ignore to ignore packages
+ * xbps-reconfigure(1): new option -i, --ignore to ignore packages
    while performing configuration of all packages with -a, --all.
    Fix #67 (https://github.com/voidlinux/xbps/issues/67)
 
@@ -207,14 +214,14 @@ xbps-0.42 (2014-12-22):
 
  * xbps.d(5): new manual page detailing the configuration settings.
 
- * xbps-dgraph(8): added support to generate dependency graphs, repository
+ * xbps-dgraph(1): added support to generate dependency graphs, repository
    mode, prints results to stdout, supports most of the options available
    in other utils, etc. This is now a first class utility.
 
  * xbps-{install,query}: added new option (-M, --memory-sync) to fetch and
    store remote repository data in memory. That means that synchronizing
    the repository archives with `xbps-install -S` is now completely optional.
-   This also means that `xbps-query(8)` may be used by any user without the
+   This also means that `xbps-query(1)` may be used by any user without the
    need to be the `superuser` to synchronize the repository archives.
 
  * xbps-{install,query}: added new option (-i, --ignore-conf-repos) to ignore
@@ -228,7 +235,7 @@ xbps-0.42 (2014-12-22):
  * Fixed issue #68 "xbps_binpkg_arch() asserts if arch contains a dash"
    https://github.com/voidlinux/xbps/issues/68
 
- * xbps-query(8): added --cat=FILE mode to print FILE stored in a binary package
+ * xbps-query(1): added --cat=FILE mode to print FILE stored in a binary package
    to stdout. This works exactly as the --files mode: if the matching binary package
    is not available in the cachedir, xbps will establish a network connection
    to the target repository to get the contents of FILE on the fly.
@@ -241,7 +248,7 @@ xbps-0.42 (2014-12-22):
    established. This reduces the size of the main x86_64 repository (4000 packages)
    to 700KB, compared to 4.5MB previously.
 
- * xbps-create(8): fixed issue #64 "xbps-create(8) incorrect installed-size with hardlinks".
+ * xbps-create(1): fixed issue #64 "xbps-create(1) incorrect installed-size with hardlinks".
    https://github.com/voidlinux/xbps/issues/64
 
  * Added a new configuration keyword "bestmatching", which expects "true" or "false"
@@ -249,7 +256,7 @@ xbps-0.42 (2014-12-22):
    in all registered repositories will be choosen, rather than the first package
    matching the expression. This keyword can be set in a configuration file.
 
- * xbps-rindex(8): added -d/--debug option.
+ * xbps-rindex(1): added -d/--debug option.
 
  * utils: the -C/--config option now expects a path to a directory storing
    configuration files; if first character is not '/' it will be treated as
@@ -316,7 +323,7 @@ xbps-0.41 (2014-09-29):
    bit set cannot be removed. Added a new test case to verify its
    correctness.
 
- * xbps-create(8): xz compressed packages now use default compression
+ * xbps-create(1): xz compressed packages now use default compression
    level (-6) rather than max level (-9); max compression level uses
    too much memory and it's much slower; by Christian Neukirchen.
 
@@ -331,15 +338,15 @@ xbps-0.41 (2014-09-29):
    the next update xbps-install will automatically replace the broken release by
    the new downgraded release.
 
- * Replace xbps-packages directory by void-packages in xbps-checkvers(8),
-   xbps-uchroot(8) and others, by Enno Boland.
+ * Replace xbps-packages directory by void-packages in xbps-checkvers(1),
+   xbps-uchroot(1) and others, by Enno Boland.
 
 xbps-0.40 (2014-09-18):
 
- * xbps-install(8): handle xbps_transaction_prepare() returning ENOSPC, to
+ * xbps-install(1): handle xbps_transaction_prepare() returning ENOSPC, to
    abort a transaction when there's insufficient disk space on rootdir.
 
- * xbps-query(8): -S/--show mode no longer prints ANSI escape codes if stdout
+ * xbps-query(1): -S/--show mode no longer prints ANSI escape codes if stdout
    is not a tty; suggested by @chneukirchen.
 
  * Reduced considerably memory requirement when checking SHA256 hashes on
@@ -359,10 +366,10 @@ xbps-0.40 (2014-09-18):
  * Fixed a heap overflow when printing post-install/pre-remove messages.
    Noticed by Gottox.
 
- * Updated zsh completion with more properties for xbps-query(8). Contributed
+ * Updated zsh completion with more properties for xbps-query(1). Contributed
    by Christian Neukirchen.
 
- * Updated bash completion with more properties for xbps-query(8). Contributed
+ * Updated bash completion with more properties for xbps-query(1). Contributed
    by Eivind Uggedal in #58.
 
 xbps-0.39 (2014-09-15):
@@ -388,7 +395,7 @@ xbps-0.38 (2014-09-14):
 
  * Added zsh completion for xbps-* and xbps-src. Contributed by Christian Neukirchen.
 
- * xbps-query(8): added -s/--search local mode; local pkg queries are now possible.
+ * xbps-query(1): added -s/--search local mode; local pkg queries are now possible.
 
  * pkgdb-0.38 format: the pkgdb plist file now contains all pkg metadata objects
    plus the pkgdb specific ones (automatic-install, install-date, metafile-sha256)
@@ -406,20 +413,20 @@ xbps-0.38 (2014-09-14):
    all pkgs in the transaction to be updated. This will make impossible to update a
    package to a newer version that contains incompatible shlibs used in its revdeps.
 
- * xbps-rindex(8): -r/--remove-obsoletes is now ~5x faster.
+ * xbps-rindex(1): -r/--remove-obsoletes is now ~5x faster.
 
- * xbps-remove(8): -O/--clean-cache is now ~10% faster.
+ * xbps-remove(1): -O/--clean-cache is now ~10% faster.
 
  * libxbps: xbps_repo_{open,close}() gained an additional argument to acquire/release
    a POSIX file lock (see lockf(3)) to serialize write access to the repository
-   archive. This obsoletes the POSIX named semaphores that were used in xbps-rindex(8),
+   archive. This obsoletes the POSIX named semaphores that were used in xbps-rindex(1),
    which only allowed to add/clean a repository per architecture, even if it
    wasn't the same local repository!
 
  * libxbps: the fetch code now is able to connect to HTTPS without the need of
    /etc/services being available; We don't expect those ports to change anytime!
 
- * xbps-uchroot(8) is now only built on linux, because it's not portable to other
+ * xbps-uchroot(1) is now only built on linux, because it's not portable to other
    Operating Systems.
 
  * Added support to replace virtual packages when the package to be installed
@@ -428,23 +435,23 @@ xbps-0.38 (2014-09-14):
 	- nvidia is installed and provides the `libGL` virtual pkgname.
 	- libGL matches the virtual pkgname and therefore replaces the `nvidia` pkg.
 
- * xbps-query(8): added --fulldeptree long option to print a full dependency
+ * xbps-query(1): added --fulldeptree long option to print a full dependency
    tree for a package; this supersedes -xx which was broken since 0.37.
 
- * xbps-query(8): fix a segfault with -Rf when there's no network connectivity.
+ * xbps-query(1): fix a segfault with -Rf when there's no network connectivity.
    Reported by Gottox.
 
- * xbps-uchroot(8): do not remount / unnecessarily; just mount it as private
+ * xbps-uchroot(1): do not remount / unnecessarily; just mount it as private
    and nosuid once; this is enough for our use cases.
 
- * xbps-query(8): --show/-S mode now explicitly prints pkg metadata keys
+ * xbps-query(1): --show/-S mode now explicitly prints pkg metadata keys
    with the bold ANSI escape code.
 
- * xbps-query(8): --search --property now works with <integer> objects, i.e:
+ * xbps-query(1): --search --property now works with <integer> objects, i.e:
 
 	$ xbps-query -s '' -p filename-size
 
- * xbps-remove(8): -O/--clean-cache no longer triggers an assertion when the
+ * xbps-remove(1): -O/--clean-cache no longer triggers an assertion when the
    cache directory is empty.
 
  * Implemented support to preserve existent on-disk files, by always ignoring
@@ -469,10 +476,10 @@ xbps-0.38 (2014-09-14):
  * Implemented support for post-install and pre-remove messages, as explained
    in issue #44 https://github.com/voidlinux/xbps/issues/44.
 
-   xbps-create(8) will read the {INSTALL,REMOVE}.msg files and will add its contents
+   xbps-create(1) will read the {INSTALL,REMOVE}.msg files and will add its contents
    into the `{install,remove}-msg` data objects on its metadata plist file.
 
- * xbps-install(8): added support to list packages that will be downloaded, if those
+ * xbps-install(1): added support to list packages that will be downloaded, if those
    were available in a remote repository and were not in the cache directory.
 
  * Before accepting a transaction, xbps now checks if there's enough free space
@@ -524,11 +531,11 @@ xbps-0.37 (2014-06-06):
    repository configuration files (.conf) that can be overrided by the admin
    in <rootdir>/etc/xbps/repo.d bearing the same file name.
 
- * xbps-create(8): new option `-t, --tags` to specify a list of tags
+ * xbps-create(1): new option `-t, --tags` to specify a list of tags
    (categories) the package should be part of. This is just for metadata
    purposes and querying packages by tags in the future.
 
- * xbps-install(8): it's possible now to update a single package (if it's already
+ * xbps-install(1): it's possible now to update a single package (if it's already
    installed) without using the -u, --update option. This implements
    GH #35 (https://github.com/voidlinux/xbps/issues/35).
 
@@ -538,11 +545,11 @@ xbps-0.37 (2014-06-06):
 	- if foo not installed, install it.
 	- if -f is set, reinstall or downgrade it.
 
- * xbps-query(8): new option (-S, --show) which shows info of a package
+ * xbps-query(1): new option (-S, --show) which shows info of a package
    installed locally or in a repository with -R. This is the default mode
    if no other mode is set; to preserve compatibility with previous versions.
 
- * xbps-query(8): new long option "--regex" that can be used in the
+ * xbps-query(1): new long option "--regex" that can be used in the
    "ownedby (-o, --ownedby)" and "search (-s, --search)" modes to match
    Extended Regular Expressions against package properties.
 
@@ -567,11 +574,11 @@ xbps-0.37 (2014-06-06):
 	...
 	$
 
- * xbps-remove(8): the -n,--dry-run option does not acquire the pkgdb file lock
+ * xbps-remove(1): the -n,--dry-run option does not acquire the pkgdb file lock
    anymore, so that any user can use this mode even without write permission to
    the target pkgdb.
 
- * xbps-remove(8) -O, --clean-cache is now multithreaded. Gives a performance
+ * xbps-remove(1) -O, --clean-cache is now multithreaded. Gives a performance
    boost as the number of threads increases.
 
  * xbps.conf: the keyword "include" now supports file globbing, so that multiple
@@ -581,7 +588,7 @@ xbps-0.37 (2014-06-06):
 
    Contributed by Enno Boland.
 
- * xbps-query(8): fixed a segfault with '-Rf' if pkg is in the repository data
+ * xbps-query(1): fixed a segfault with '-Rf' if pkg is in the repository data
    and its binary package does not exist.
 
 xbps-0.36 (2014-04-21):
@@ -590,18 +597,18 @@ xbps-0.36 (2014-04-21):
    dependencies of a package that are depending on itself, either as real
    or virtual packages.
 
- * xbps-uchroot(8): a manual page has been created.
+ * xbps-uchroot(1): a manual page has been created.
 
- * xbps-install(8): the -n,--dry-run option does not acquire the pkgdb file lock
+ * xbps-install(1): the -n,--dry-run option does not acquire the pkgdb file lock
    anymore, so that any user can use this mode even without write permission to
    the target pkgdb.
 
- * xbps-query(8): fix a segfault with '-vL' for local unsigned repositories.
+ * xbps-query(1): fix a segfault with '-vL' for local unsigned repositories.
 
- * xbps-create(8): new option --compression to specify a compression format;
+ * xbps-create(1): new option --compression to specify a compression format;
    defaults to xz.
 
- * xbps-checkvers(8): new utility merged from https://github.com/xdave/xbps-src-utils
+ * xbps-checkvers(1): new utility merged from https://github.com/xdave/xbps-src-utils
    that is able to check which packages are outdated in the XBPS repositories or
    a rootdir by comparing them against a xbps-packages repository.
    Written by xdave and improved by myself.
@@ -612,7 +619,7 @@ xbps-0.35 (2014-04-01):
    bind mounts and chroots to a target directory. This is a setgid binary
    that must have correct owner/group to work correctly.
 
- * xbps-rindex(8): fixed a bug while signing repositories in that sometimes
+ * xbps-rindex(1): fixed a bug while signing repositories in that sometimes
    the PEM RSA public key buffer contained unwanted garbage.
 
  * Make sure that required root symlinks in void are never removed or detected
@@ -620,7 +627,7 @@ xbps-0.35 (2014-04-01):
 
 xbps-0.34 (2014-03-26):
 
- * xbps-query(8): search mode now accepts -p/--property argument to match patterns
+ * xbps-query(1): search mode now accepts -p/--property argument to match patterns
    against the stored package object in repositories. Any object stored in the repository
    index can be used to be matched against to; the posibilities are countless:
 
@@ -629,7 +636,7 @@ xbps-0.34 (2014-03-26):
 	- find out what packages are linked to a specific shared library
 	- etc etc etc
 
- * xbps-query(8): in local mode now prints all objects stored on its pkgdb entry
+ * xbps-query(1): in local mode now prints all objects stored on its pkgdb entry
    and its metaplist.
 
  * Fix #34 (xbps-uhelper fetch fails to download files from https://alioth.debian.org).
@@ -689,15 +696,15 @@ xbps-0.32 (2014-02-21):
    user has write permission to the entries being removed, if this
    succeeds then the package removal is performed.
 
- * xbps-remove(8): -O now also remove obsolete pkg signatures from
+ * xbps-remove(1): -O now also remove obsolete pkg signatures from
    cachedir, and ignores pkgs of other architectures.
 
- * xbps-rindex(8): set correct permissions to the POSIX semaphore
+ * xbps-rindex(1): set correct permissions to the POSIX semaphore
    by clearing file permission bits before its creation.
 
 xbps-0.31 (2014-02-01):
 
- * xbps-rindex(8): use a POSIX named semaphore in modes that can modify
+ * xbps-rindex(1): use a POSIX named semaphore in modes that can modify
    repository data archive, to avoid concurrency issues.
 
  * libxbps: fixed an issue with errno(3) propagation that lead to
@@ -717,7 +724,7 @@ xbps-0.31 (2014-02-01):
 
    API/ABI incompatible changes, you've been warned :-)
 
- * xbps-rindex(8): -c [clean] mode now is fully multithread safe.
+ * xbps-rindex(1): -c [clean] mode now is fully multithread safe.
 
  * Fixed a double free while downloading binpkgs from remote repositories
    (reported by Hanspolo).
@@ -753,17 +760,17 @@ xbps-0.28 (2014-01-03):
 
  * Implemented Per package RSA signatures, replacing the repository index
    signature from 0.27. There's now a `<binpkg>.sig` file with the RSA signature
-   for any pkg in a repository; the signature files are generated by `xbps-rindex(8)`.
+   for any pkg in a repository; the signature files are generated by `xbps-rindex(1)`.
 
  * Implemented on-demand repository access: repositories are registered into
    a private queue only on first access and not unconditionally.
 
  * Fixed issue #26: https://github.com/voidlinux/xbps/issues/26
 
- * xbps-query(8): -o (local ownedby mode) does not print directories;
+ * xbps-query(1): -o (local ownedby mode) does not print directories;
    it's unnecessary anyway because xbps never extracts empty directories.
 
- * The `--repository` option in xbps-install(8) and xbps-query(8) now adds
+ * The `--repository` option in xbps-install(1) and xbps-query(1) now adds
    the repositories at the top of the list, rather than overriding the list
    specified in a configuration file.
 
@@ -787,10 +794,10 @@ xbps-0.27 (2013-11-29):
 
  * Fixed issue #6: https://github.com/xtraeme/xbps/issues/6
 
- * xbps-rindex(8): also understands the XBPS_PASSPHRASE environmental variable to
+ * xbps-rindex(1): also understands the XBPS_PASSPHRASE environmental variable to
    supply the passphrase when signing repositories.
 
- * xbps-rindex(8): added -v --verbose option.
+ * xbps-rindex(1): added -v --verbose option.
 
  * Support for RSA signed repositories. A repository can be signed with your
    preferred RSA key (any ssh key works) as follows:
@@ -798,7 +805,7 @@ xbps-0.27 (2013-11-29):
 	$ xbps-rindex --sign --signedby "foobar <foo@bar>" --privkey /priv/key /path/to/repo
 
    Public keys must be imported before using a remote signed repository thru
-   the xbps-install(8) utility:
+   the xbps-install(1) utility:
 
 	$ xbps-install -S
 
@@ -817,16 +824,16 @@ xbps-0.26.1 (2013-10-25):
 
 xbps-0.26 (2013-09-25):
 
- * xbps-query(8): the `-D --defrepo' argument has been superseded by
+ * xbps-query(1): the `-D --defrepo' argument has been superseded by
    `-R --repository=<url>' argument. (issue #17).
 
- * xbps-install(8): added support to specify multiple repositories with
-   `--repository=<url>`. For consistency with `xbps-query(8)' use the same
+ * xbps-install(1): added support to specify multiple repositories with
+   `--repository=<url>`. For consistency with `xbps-query(1)' use the same
    syntax as it were an optional argument. (issue #17).
 
    This overrides the repository list in a configuration file.
 
- * xbps-query(8): added support to specify multiple repositories with
+ * xbps-query(1): added support to specify multiple repositories with
    `--repository=<url>`. This also enables repository mode; the argument is
    optional and can be used to specify desired repositories. (issue #17).
 
@@ -843,11 +850,11 @@ xbps-0.26 (2013-09-25):
    for more information.
 
  * Removed "PackagesOnHold" from xbps.conf. This has been replaced by a new mode
-   in xbps-pkgdb(8):
+   in xbps-pkgdb(1):
 
 	$ xbps-pkgdb -m <hold|unhold> <pkgname>
 
-   To list packages that are currently on hold mode use xbps-query(8):
+   To list packages that are currently on hold mode use xbps-query(1):
 
 	$ xbps-query -H
 
@@ -867,7 +874,7 @@ xbps-0.26 (2013-09-25):
 	- xbps_callback_array_iter()
 	- xbps_callback_array_iter_in_dict()
 
- * xbps-query(8): make -L list all repositories in the configuration file, even
+ * xbps-query(1): make -L list all repositories in the configuration file, even
    the non working ones and print -1 in them. Closes issue #11 from github.
 
 	$ xbps-query -L
@@ -877,9 +884,9 @@ xbps-0.26 (2013-09-25):
            16 /mnt/xbps_builder/host/binpkgs/nonfree
 	$
 
- * xbps-query(8): fixed some memleaks in local and repository owned mode.
+ * xbps-query(1): fixed some memleaks in local and repository owned mode.
 
- * xbps-query(8): fix regression in -R, also print repository string object.
+ * xbps-query(1): fix regression in -R, also print repository string object.
 
  * Do not abort transaction if updates for conflicting packages are in
    the transaction due to checks of reverse dependencies in virtual packages.
@@ -909,7 +916,7 @@ xbps-0.25 (2013-07-05):
 
  * xbps-dgraph: completely updated to the new pkgdb format/API.
 
- * xbps-query(8): added support to find reverse dependencies in repository mode
+ * xbps-query(1): added support to find reverse dependencies in repository mode
    for virtual packages, i.e:
 
 	$ xbps-query -RX xserver-abi-input
@@ -922,29 +929,29 @@ xbps-0.25 (2013-07-05):
    The struct xbps_rindex has been replaced by xbps_repo, thus, the major
    libxbps SONAME has been bumped to 2.
  
- * xbps-create(8): correctly calculate target file for relative symlinks.
+ * xbps-create(1): correctly calculate target file for relative symlinks.
 
- * xbps-pkgdb(8): removed old code that isn't needed anymore in the 'check' mode.
+ * xbps-pkgdb(1): removed old code that isn't needed anymore in the 'check' mode.
    This fixes issue #9 (https://github.com/xtraeme/xbps/issues/9).
 
 xbps-0.24 (2013-05-02):
 
- * xbps-rindex(8): added -f, --force flag to forcefully register a package even
+ * xbps-rindex(1): added -f, --force flag to forcefully register a package even
    if an entry of the same package already exists on the index.
 
 xbps-0.23 (2013-04-19):
 
- * xbps-install(8): the default repository (-R) now overrides any repository
+ * xbps-install(1): the default repository (-R) now overrides any repository
    set in a configuration file.
 
- * xbps-rindex(8): in clean mode (-c) also remove obsolete entries from index-files,
+ * xbps-rindex(1): in clean mode (-c) also remove obsolete entries from index-files,
    which were not matched due to different tests.
 
  * Fixed a bug in the transaction dictionary that reported wrong sizes
    in total-removed-size and total-installed-size objects or even empty values
    in some cases.
 
- * xbps-create(8): initialize setlocale so that utf8 files can be archived.
+ * xbps-create(1): initialize setlocale so that utf8 files can be archived.
    The locale must be utf8 capable for this to work. Fixes issue #5 from github.
 
  * libxbps: fix a use-after-free in state cb when a binpkg doesn't match its
@@ -955,18 +962,18 @@ xbps-0.23 (2013-04-19):
 
 xbps-0.22 (2013-03-23):
 
- * xbps-create(8): a new option --build-options has been added to add a string
+ * xbps-create(1): a new option --build-options has been added to add a string
    with the build options that were used in package. It's expected to be filled
    by xbps-src automatically.
 
- * xbps-query(8): make -o (ownedby) follow symlinks. Fix issue #4 from github.
+ * xbps-query(1): make -o (ownedby) follow symlinks. Fix issue #4 from github.
    This works in local and repository mode.
 
- * xbps-create(8): if effective user/group is the same than files being
+ * xbps-create(1): if effective user/group is the same than files being
    packaged in a package, set user/group to root:root. This way we don't
    have to depend in an external tool to assume proper permissions (fakeroot).
 
- * xbps-query(8): fix segfault when showing unexistent package files.
+ * xbps-query(1): fix segfault when showing unexistent package files.
 
  * When checking for obsolete files in upgrades, ignore unexistent files in
    current package; this was hitting an assertion due to this.
@@ -979,7 +986,7 @@ xbps-0.21 (2013-03-11):
 
  * Imported Portable proplib 0.6.3 from http://code.google.com/p/portableproplib.
 
- * xbps-query(8): a full dependency tree can now be shown in the
+ * xbps-query(1): a full dependency tree can now be shown in the
    show-deps mode, by specifying -x twice (--show-deps), e.g:
 
 	$ xbps-query -xx perl
@@ -992,11 +999,11 @@ xbps-0.21 (2013-03-11):
 
  * New repository index format (1.7): unnecessary and redundant objects
    have been removed that are already stored in package metadata files.
-   This means that xbps-query(8) in repository mode will now fetch package
+   This means that xbps-query(1) in repository mode will now fetch package
    metadata from the binary package and not from index. Only necessary objects
    for the transaction and searching are kept.
 
- * xbps-pkgdb(8): new option -u --update to update the pkgdb format to
+ * xbps-pkgdb(1): new option -u --update to update the pkgdb format to
    the latest available. Do not forget to run it after updating xbps to 0.21.
 
  * New pkgdb format: redundant objects have been removed (empty run_depends,
@@ -1006,18 +1013,18 @@ xbps-0.21 (2013-03-11):
 
  * configure: misc tweaks to allow building with the musl C library.
 
- * xbps-query(8): packages can be matched by using virtual package
+ * xbps-query(1): packages can be matched by using virtual package
    names in repository mode, i.e:
 
 	$ xbps-query -Rp pkgver ntp-daemon
 	ntp-4.2.6p5_7
 	$	
   
- * xbps-pkgdb(8): new option -m --mode to change package installation
+ * xbps-pkgdb(1): new option -m --mode to change package installation
    mode to auto (might be detected as orphan) or manual
    (explicitly installed).
 
- * xbps-query(8): the search mode (-s, --search) now is able to find
+ * xbps-query(1): the search mode (-s, --search) now is able to find
    packages by matching virtual package strings, i.e:
 
 	$ xbps-query -s cron-daemon
@@ -1025,7 +1032,7 @@ xbps-0.21 (2013-03-11):
 	[-] dcron-4.5_18   Dillon's lightweight cron daemon
 	$
 
- * xbps-query(8): changed short option -M (--list-orphans) to -O; which
+ * xbps-query(1): changed short option -M (--list-orphans) to -O; which
    seems more appropiate to use.
 
  * libxbps: when resolving deps in transaction, ignore incorrect ones;
@@ -1041,14 +1048,14 @@ xbps-0.21 (2013-03-11):
  * libxbps: ignore packages conflicting themselves, which can happen with
    virtual packages.
 
- * xbps-query(8): fix issue #3 from github
+ * xbps-query(1): fix issue #3 from github
    "xbps-query -o only works for installed packages".
 
    The behaviour has been changed for all modes and to explicitly get
    info from repositories the -R flag must be used; otherwise it will
    use local packages.
 
- * xbps-install(8): the -f, --force flag will now preserve configuration
+ * xbps-install(1): the -f, --force flag will now preserve configuration
    files if they were modified, and only unpack files that have been
    modified when re-installing packages. If -f is specified twice (-ff)
    all package files will be overwritten from new package.
@@ -1059,18 +1066,18 @@ xbps-0.21 (2013-03-11):
  * Fix regression introduced in b9136c61c95698a5dafbc69ee9cd873110c68e45,
    breaking package conflicts detection.
 
- * xbps-install(8): removed the -s,--skip-sync option; the new -S,--sync
+ * xbps-install(1): removed the -s,--skip-sync option; the new -S,--sync
    option makes this redundant and useless.
 
- * xbps-install(8): added -S,--sync option to synchronize remote repository index
+ * xbps-install(1): added -S,--sync option to synchronize remote repository index
    files; can be combined with -u or used exclusively.
 
 xbps-0.20 (2013-01-24):
 
- * xbps-rindex(8): fix crash in -r (remove-obsoletes mode) if pkg cannot
+ * xbps-rindex(1): fix crash in -r (remove-obsoletes mode) if pkg cannot
    be removed (permissions or file disappeared).
 
- * xbps-install(8): don't treat EEXIST as an error when installing
+ * xbps-install(1): don't treat EEXIST as an error when installing
    new packages; technically it's not an error.
 
  * libfetch: added a patch to fix select(2) timing out when fetching
@@ -1088,7 +1095,7 @@ xbps-0.20 (2013-01-24):
  * libxbps: fixed a stupid typo that made it to skip executing the
    "pre-remove" action in installed packages.
 
- * xbps-create(8): new long options: --shlib-provides and --shlib-requires,
+ * xbps-create(1): new long options: --shlib-provides and --shlib-requires,
    to add list of required and provided shared libraries in a package.
 
 xbps-0.19.1 (2012-12-22):
@@ -1098,7 +1105,7 @@ xbps-0.19.1 (2012-12-22):
    configure this package. Fix this by not ignoring the update even if
    package has any state.
 
- * xbps-query(8): -l, --list-packages option now prints pkg state as follows:
+ * xbps-query(1): -l, --list-packages option now prints pkg state as follows:
 
 	STATE	PKGVER	DESCRIPTION
 
@@ -1109,34 +1116,34 @@ xbps-0.19.1 (2012-12-22):
 	hr = half-removed
 	?? = unknown
 
- * xbps-reconfigure(8): fixed regression introduced in 0.19 when processing
+ * xbps-reconfigure(1): fixed regression introduced in 0.19 when processing
    all packages with '-a, --all'. Found by pancake.
 
 xbps-0.19 (2012-12-15):
 
- * xbps-rindex(8): add mode (-a) does not remove old binary packages
+ * xbps-rindex(1): add mode (-a) does not remove old binary packages
    in repository anymore, only its entry in index is replaced. To remove
    outdated packages use -r/--remove-obsoletes.
 
- * xbps-rindex(8): clean (-c) and remove obsoletes mode (-r) are
+ * xbps-rindex(1): clean (-c) and remove obsoletes mode (-r) are
    now multithreaded and will spawn a thread per core to speed up
    the process considerably.
 
- * xbps-pkgdb(8): -a, --all mode is now multithreaded and will
+ * xbps-pkgdb(1): -a, --all mode is now multithreaded and will
    spawn a thread per core to process a fraction of pkgdb.
 
- * xbps-create(8): hardlinks can be added and archived correctly.
+ * xbps-create(1): hardlinks can be added and archived correctly.
 
- * xbps-rindex(8): in clean mode (-c), entries with unmatched hashes
+ * xbps-rindex(1): in clean mode (-c), entries with unmatched hashes
    are now removed from index.
 
  * Added support for dynamic generation of reverse dependencies for
    installed packages. pkgdb no longer keeps track of them statically.
    A new object must be present in pkgdb for this to work in fast mode,
-   which is available if 'xbps-pkgdb(8) -a' is run; otherwise the
+   which is available if 'xbps-pkgdb(1) -a' is run; otherwise the
    fallback mode will be used which is a bit slower.
 
- * xbps-query(8): added support to specify any of the three supported
+ * xbps-query(1): added support to specify any of the three supported
    methods to match package expressions:
 
 	- by package name (foo)
@@ -1157,12 +1164,12 @@ xbps-0.18.1 (2012-11-26):
  * Fixed execution of pre/post install/remove scripts due to using old
    package version after unpacking a package being updated.
 
- * xbps-query(8): fixed catching reverse dependencies in some packages
+ * xbps-query(1): fixed catching reverse dependencies in some packages
    that used version comparators such as "foo<X" or "foo>X<Y".
 
 xbps-0.18 (2012-11-23):
 
- * xbps-query(8): implemented support to know reverse dependencies
+ * xbps-query(1): implemented support to know reverse dependencies
    in repository mode; that means you can now exactly what packages
    require the target package from all registered repositories.
 
@@ -1181,7 +1188,7 @@ xbps-0.18 (2012-11-23):
 	- pkgdb's pkg dictionary now contains a sha256 hash to know if the
 	  plist from metadir has been modified.
 
-	- prop_data(3) objects can be seen with xbps-query(8) --property.
+	- prop_data(3) objects can be seen with xbps-query(1) --property.
 
 	- pkg plists are now kept in <metadir>/.<pkgname>.plist.
 
@@ -1194,14 +1201,14 @@ xbps-0.18 (2012-11-23):
  * Shell wildcard patterns (fnmatch(3)) can now be used in the
    PackagesOnHold configuration option.
 
- * New utilities replacing xbps-bin(8) and xbps-repo(8):
+ * New utilities replacing xbps-bin(1) and xbps-repo(1):
 
-	- xbps-install(8): to install and update packages.
-	- xbps-pkgdb(8): to report and fix errors in pkgdb.
-	- xbps-query(8): to query packages and/or repositories.
-	- xbps-reconfigure(8): to (re)configure packages.
-	- xbps-remove(8): to remove packages.
-	- xbps-rindex(8): to handle local repositories.
+	- xbps-install(1): to install and update packages.
+	- xbps-pkgdb(1): to report and fix errors in pkgdb.
+	- xbps-query(1): to query packages and/or repositories.
+	- xbps-reconfigure(1): to (re)configure packages.
+	- xbps-remove(1): to remove packages.
+	- xbps-rindex(1): to handle local repositories.
 
  * While reconfiguring packages do not flush pkgdb unless it's necessary.
 
@@ -1210,7 +1217,7 @@ xbps-0.18 (2012-11-23):
    or uid/gid differs apply new perms and mode from new pkg.
 
  * When registering a pkg to pkgdb make sure to remove unneeded meta objs
-   from its pkg dictionary. Also add a check to xbps-bin(8) to remove those
+   from its pkg dictionary. Also add a check to xbps-bin(1) to remove those
    objects if found.
 
  * Improved finding and removing obsolete files after upgrading a package
@@ -1222,10 +1229,10 @@ xbps-0.18 (2012-11-23):
  * Fixed a bug in the dependency sort code that in some cases and due to
    virtual packages added duplicate matches and broke the dependency order.
 
- * xbps-bin(8): the 'check' target now checks the target file in relative
+ * xbps-bin(1): the 'check' target now checks the target file in relative
    symlinks, or multiple levels of symlinks.
 
- * xbps-create(8): fixed an assertion that happened when resolving the
+ * xbps-create(1): fixed an assertion that happened when resolving the
    target file of a symlink, which was unexistent because the real file was
    provided by another pkg. In this case just keep the target file as is.
 
@@ -1236,24 +1243,24 @@ xbps-0.17 (2012-10-02):
 
  * Fixed "packages on hold". Regression added in 0.16.2.
 
- * xbps-repo(8): fixed crash in the 'search' target when the terminal has
+ * xbps-repo(1): fixed crash in the 'search' target when the terminal has
    been resized, reported by pancake.
 
- * xbps-bin(8), xbps-repo(8): added a new flag -B to set default repository
+ * xbps-bin(1), xbps-repo(1): added a new flag -B to set default repository
    to install packages, in case xbps.conf couldn't be found.
 
- * xbps-create(8): a new utility to create XBPS binary packages; package
+ * xbps-create(1): a new utility to create XBPS binary packages; package
    files must be installed to a directory prior to executing this utility.
 
  * configure: if compiler supports PIE and RELRO, enable them by default.
 
- * xbps-repo(8): the 'show-deps' target does not show the repository from
+ * xbps-repo(1): the 'show-deps' target does not show the repository from
    the matching target package, just the list of dependencies.
 
- * xbps-repo(8): the 'search' target now shows which packages are currently
+ * xbps-repo(1): the 'search' target now shows which packages are currently
    installed "[*]" or not installed "[-]".
 
- * xbps-repo(8): a new target has been added: 'remove-obsoletes'. This removes
+ * xbps-repo(1): a new target has been added: 'remove-obsoletes'. This removes
    obsolete packages found in a local repository; obsoletes are packages not
    registered in repository's index.
 
@@ -1263,7 +1270,7 @@ xbps-0.17 (2012-10-02):
  * configure: added "--with-static" and if enabled, the static executables
    will also be built and installed. By default it's disabled.
 
- * xbps-repo(8): the 'genindex' target has been replaced by the 'index-add' and
+ * xbps-repo(1): the 'genindex' target has been replaced by the 'index-add' and
    'index-clean' targets. The 'index-add' expects a list of binary packages to
    be added to repository's index:
 
@@ -1284,7 +1291,7 @@ xbps-0.16.5 (2012-07-14):
    "install-date" that records the package installation date with the following
    strftime(3) format: "%F %R %Z".
 
- * xbps-bin(8): the 'show' target now prints some objects from pkgdb if found:
+ * xbps-bin(1): the 'show' target now prints some objects from pkgdb if found:
    "install-date" and "automatic-install".
 
 xbps-0.16.4 (2012-07-10):
@@ -1308,7 +1315,7 @@ xbps-0.16.2 (2012-07-04):
 
 xbps-0.16.1 (2012-06-30):
 
- * xbps-repo(8): fixed a regression in the 'genindex' target. It was looking
+ * xbps-repo(1): fixed a regression in the 'genindex' target. It was looking
    at wrong repository subdirectory when removing obsolete files.
    This also fixes issue 24 from googlecode.
 
@@ -1326,27 +1333,27 @@ xbps-0.16 (2012-06-20):
    and as bonus there's no need to make some tricks to perform installation
    of exact package versions.
 
- * xbps-bin(8): the 'install' target now can (re)install an exact package
+ * xbps-bin(1): the 'install' target now can (re)install an exact package
    version as specified on its arguments, i.e:
 
 	$ xbps-bin install foo-1.0_1
 
    If that version is not available no other version will be installed.
 
- * xbps-repo(8): 'genindex' target is now able to remove binary packages
+ * xbps-repo(1): 'genindex' target is now able to remove binary packages
    when a greater version exists on the index.
 
- * xbps-repo(8): 'sync' target now is able to sync just a single repository
+ * xbps-repo(1): 'sync' target now is able to sync just a single repository
    by passing the repository URI as argument, i.e:
 
 	$ xbps-repo sync http://xbps.mirror.org/repo
 
- * xbps-repo(8): 'pkg-list' target now expects the repository URI than
+ * xbps-repo(1): 'pkg-list' target now expects the repository URI than
    the index number, i.e:
 
 	$ xbps-repo pkg-list http://xbps.mirror.org/repo
 
- * xbps-bin(8): -n flag (dry-run mode) now also prints the pkg architecture
+ * xbps-bin(1): -n flag (dry-run mode) now also prints the pkg architecture
    as last component and if the transaction reason supports it.
 
  * Repository index format 1.5. The files are now named properly:
@@ -1374,7 +1381,7 @@ xbps-0.16 (2012-06-20):
    as another different repository, such case is "nonfree" or any other with
    unmatched names.
 
- * xbps-bin(8): new flag: -S which syncs rpool indexes before executing
+ * xbps-bin(1): new flag: -S which syncs rpool indexes before executing
    the "dist-upgrade", "install" or "update" targets.
 
  * libxbps: renamed xbps_repository_pool_xxx to xbps_rpool_xxx
@@ -1410,7 +1417,7 @@ xbps-0.16 (2012-06-20):
    found, do not error out and rather just continue until the package is
    fully removed.
 
- * xbps-bin(8): renamed "autoupdate" target to "dist-upgrade" and
+ * xbps-bin(1): renamed "autoupdate" target to "dist-upgrade" and
    "autoremove" to "remove-orphans". For compatibility with previous
    versions the old targets are still kept, but will be removed in future
    releases.
@@ -1420,10 +1427,10 @@ xbps-0.16 (2012-06-20):
    The configuration string list "PackagesOnHold" in xbps.conf expects
    a list of package names.
 
- * xbps-bin(8): miscellaneous cosmetic improvements while unpacking
+ * xbps-bin(1): miscellaneous cosmetic improvements while unpacking
    package files and add a counter for the 'check all' target.
 
- * xbps-repo(8): new target: 'clean'. This removes obsolete binpkgs
+ * xbps-repo(1): new target: 'clean'. This removes obsolete binpkgs
    from cachedir, either because the binpkg is not available in repository
    pool anymore or because its sha256 hash doesn't match with the
    one matched in repository index file.
@@ -1432,7 +1439,7 @@ xbps-0.16 (2012-06-20):
 
 xbps-0.15 (2012-04-06):
 
- * xbps-bin(8): a new test for the 'check' target to find stale entries
+ * xbps-bin(1): a new test for the 'check' target to find stale entries
    in 'requiredby' package metadata object from pkgdb.
 
  * When reinstalling existing packages (xbps-bin -f install), make sure
@@ -1469,7 +1476,7 @@ xbps-0.14 (2012-02-28):
    Profiling tests showed that libarchive wasted a considerable amount of
    time checking if archive was compressed in zip format.
 
- * xbps-bin(8)/xbps-repo(8): redirect some more warnings/errors to stderr.
+ * xbps-bin(1)/xbps-repo(1): redirect some more warnings/errors to stderr.
 
 xbps-0.13.0 (2012-02-20):
 
@@ -1478,14 +1485,14 @@ xbps-0.13.0 (2012-02-20):
    new package now owns some files previously owned by the package to be
    updated, therefore the updated package must not check for obsolete files.
 
- * xbps-repo(8): the `show', `show-deps' and `show-files' targets now accept
+ * xbps-repo(1): the `show', `show-deps' and `show-files' targets now accept
    package patterns, i.e "xbps-repo show 'foo>=2.0'". If only a `pkgname`
    has been specified, the newest package available in repositories will be
    shown.
 
- * xbps-repo(8): print meaningful help usage, added -h option.
+ * xbps-repo(1): print meaningful help usage, added -h option.
 
- * xbps-bin(8): print a meaningful help usage, added -h option.
+ * xbps-bin(1): print a meaningful help usage, added -h option.
 
  * libxbps: fixed xbps_transaction_install_pkg return value if package
    is already installed: this must be EEXIST not ENODEV.
@@ -1532,7 +1539,7 @@ xbps-0.12.0 (2012-02-06):
  * Fixed registering repositories with trailing '/' chars in
    configuration file: xbps.conf.
 
- * xbps-repo(8): the 'genindex' target now creates a plist file to cache
+ * xbps-repo(1): the 'genindex' target now creates a plist file to cache
    all files provided by binary packages in a repository. This makes
    the 'find-files' target marginally faster, because this avoids having
    to fetch data from network in remote repositories. The new file
@@ -1564,15 +1571,15 @@ xbps-0.12.0 (2012-02-06):
 
  * Merged purge code into remove. It wasn't necessary to have this splitted,
    so it now has been merged into xbps_remove_pkg(). That also means that
-   '-p' flag in xbps-bin(8) and xbps-repo(8) doesn't exist anymore.
+   '-p' flag in xbps-bin(1) and xbps-repo(1) doesn't exist anymore.
 
- * xbps-repo(8): the 'find-files' target accepts multiple patterns, such as:
+ * xbps-repo(1): the 'find-files' target accepts multiple patterns, such as:
 	$ xbps-repo find-files /bin/cat '/bin/f*' ...
 
- * xbps-bin(8): the 'find-files' target accepts multiple patterns, such as:
+ * xbps-bin(1): the 'find-files' target accepts multiple patterns, such as:
 	$ xbps-bin find-files /bin/cat '/bin/f*' ...
 
- * xbps-repo(8): the 'search' target accepts multiple patterns, such as:
+ * xbps-repo(1): the 'search' target accepts multiple patterns, such as:
 	$ xbps-repo search 'foo-[0-9]*' '*blah*' ...
 
  * libxbps: more paranoid type checking and allocation results, to make
@@ -1580,7 +1587,7 @@ xbps-0.12.0 (2012-02-06):
 
 xbps-0.11.0 (2011-12-20):
 
- * xbps-bin(8): it is possible now to reinstall a package even if it's
+ * xbps-bin(1): it is possible now to reinstall a package even if it's
    installed with the '-f' option. If reinstalling the same package version,
    only unexistent files or files not matching its hash will be extracted.
 
@@ -1600,7 +1607,7 @@ xbps-0.11.0 (2011-12-20):
    remove and purge via LOG_NOTICE, and errors with LOG_ERR.
    By default it's always enabled, can be disabled thru the conf file.
 
- * xbps-repo(8): new target: pkg-list [index]. This target will list all
+ * xbps-repo(1): new target: pkg-list [index]. This target will list all
    packages from repository with index [index]. If optional argument
    [index] (decimal) not set, all repositories will be used.
 
@@ -1634,7 +1641,7 @@ xbps-0.11.0 (2011-12-20):
    due to virtual packages, preserve its configuration files if
    they already existed.
 
- * xbps-bin(8)/xbps-repo(8): new flag '-o' (option). This can be used
+ * xbps-bin(1)/xbps-repo(1): new flag '-o' (option). This can be used
    in the 'show' target to print only a set of objects stored in package's
    properties dictionary, example:
 
@@ -1649,11 +1656,11 @@ xbps-0.11.0 (2011-12-20):
    make sure that it's a plist file and can be internalized; otherwise
    remove downloaded file and return error.
 
- * xbps-bin(8): new test for the 'check' target to fix missing
+ * xbps-bin(1): new test for the 'check' target to fix missing
    entries in requiredby array, i.e reverse dependencies in
    the package database plist.
 
- * xbps-bin(8): the 'check' target now works virtual packages.
+ * xbps-bin(1): the 'check' target now works virtual packages.
 
  * libxbps: failed to properly match installed virtualpkgs that were
    dependencies in a transaction, therefore resulting in real packages
@@ -1664,7 +1671,7 @@ xbps-0.10.1 (2011-10-26):
  * libxbps: fixed multiple free(3) calls in error paths (via closedir(3))
    when some virtualpkg plist file couldn't be internalized.
 
- * xbps-bin(8): 'remove' with recursive flag (-R) now removes first
+ * xbps-bin(1): 'remove' with recursive flag (-R) now removes first
    the specified packages and puts its automatic dependencies at the
    tail of the array.
 
@@ -1680,12 +1687,12 @@ xbps-0.10.0 (2011-10-21):
  * Fixed issue 11 "xbps-bin fails to update properly some pkgs".
 	http://code.google.com/p/xbps/issues/detail?id=11
 
- * xbps-bin(8): the 'check' target now is able to detect if a package
+ * xbps-bin(1): the 'check' target now is able to detect if a package
    was installed manually and other packages are currently depending
    on it and change its mode to "automatic", i.e as dependency of those
    packages.
 
- * xbps-bin(8), xbps-repo(8): the -C flag now expects a path to a
+ * xbps-bin(1), xbps-repo(1): the -C flag now expects a path to a
    directory where the configuration files (conf.plist and
    repositories.plist) are stored.
 
@@ -1715,7 +1722,7 @@ xbps-0.10.0 (2011-10-21):
 
 	http://yourhost:8080/your/repo
 
- * xbps-bin(8): the 'check' target now detects broken symlinks and marks
+ * xbps-bin(1): the 'check' target now detects broken symlinks and marks
    them as critical errors.
 
  * libxbps: when updating packages, only files that have been modified
@@ -1730,10 +1737,10 @@ xbps-0.10.0 (2011-10-21):
 
  * The 'cachedir' option in configuration file now can be changed to
    be relative to the rootdir if the first character is not '/'. The
-   -c flag in xbps-bin(8) still expects a full path and if set, overrides
+   -c flag in xbps-bin(1) still expects a full path and if set, overrides
    the setting in configuration file.
 
- * xbps-bin(8): the 'show', 'show-deps' and 'show-revdeps' targets now
+ * xbps-bin(1): the 'show', 'show-deps' and 'show-revdeps' targets now
    work with virtual packages.
 
  * libxbps: fixed NetBSD's dewey matching code to properly identify
@@ -1755,18 +1762,18 @@ xbps-0.9.1 (2011-07-15):
    if the file is not available anymore; the repository will be
    ignored.
 
- * xbps-repo(8): the 'genindex' failed to register in pkg-index
+ * xbps-repo(1): the 'genindex' failed to register in pkg-index
    packages less than on equal than any other package providing the
    same package name. Ignore packages providing virtual packages.
 
- * xbps-repo(8): the 'genindex' target now removes entries in existent
+ * xbps-repo(1): the 'genindex' target now removes entries in existent
    package index files for unexistent packages that were previously
    registered (removed, not enough permissions, etc).
 
- * xbps-repo(8): the 'genindex' target creates required directories
+ * xbps-repo(1): the 'genindex' target creates required directories
    in local repositories if it's necessary.
 
- * xbps-repo(8): the 'search' target now matches patterns in
+ * xbps-repo(1): the 'search' target now matches patterns in
    case insensitive mode.
 
  * A bug has been fixed while updating a package and another package
@@ -1786,15 +1793,15 @@ xbps-0.9.0 (2011-07-08):
    also defaults to 30 seconds.
 
  * The configuration file now accepts new options to change rootdir
-   (same than -r in xbps-bin(8)), cachedir (same than -c in xbps-bin(8))
+   (same than -r in xbps-bin(1)), cachedir (same than -c in xbps-bin(1))
    and fetching cache connection limits. If settings are specified via
-   the flags -r and -c in xbps-bin(8)/xbps-repo(8), they are prefered
+   the flags -r and -c in xbps-bin(1)/xbps-repo(1), they are prefered
    over the ones in the configuration file.
 
  * Fixed some bugs with virtual packages, to not adding duplicate package
    dictionaries in the transaction dictionary.
 
- * xbps-bin(8)/xbps-repo(8): the 'show-files' target now prints the target
+ * xbps-bin(1)/xbps-repo(1): the 'show-files' target now prints the target
    file on symlinks, i.e: "/sbin/foo -> /sbin/blah".
 
  * Changed the package pattern match code to the one available on NetBSD.
@@ -1813,7 +1820,7 @@ xbps-0.9.0 (2011-07-08):
    The ABI/API is not compatible anymore with previous versions, you've
    been advised :-)
 
- * xbps-bin(8): the 'check' target now also checks for modified symlinks,
+ * xbps-bin(1): the 'check' target now also checks for modified symlinks,
    and warns if any of them has been modified. For this to work, the package
    metadata files.plist should contain the 'target' object in the 'links'
    array (created automatically by xbps-src since 20110531).
@@ -1824,7 +1831,7 @@ xbps-0.9.0 (2011-07-08):
 
 xbps-0.8.1 (2011-05-27):
 
- * xbps-bin(8)/xbps-repo(8): more meaningful messages when a package couldn't
+ * xbps-bin(1)/xbps-repo(1): more meaningful messages when a package couldn't
    be found in the show, show-deps and show-files targets, rather than exiting
    silently with only the error return value.
 
@@ -1835,10 +1842,10 @@ xbps-0.8.1 (2011-05-27):
 
 xbps-0.8.0 (2011-05-24):
 
- * xbps-bin(8): added -A and -M options, for setting package install reason
+ * xbps-bin(1): added -A and -M options, for setting package install reason
    to automatic or manual. Obviously both cannot be used togeter.
 
- * xbps-{bin,repo}(8): -c (cachedir) argument now is an absolute path and
+ * xbps-{bin,repo}(1): -c (cachedir) argument now is an absolute path and
    not relative to the root directory.
 
  * Fixed finally when a package should replace an installed package, but
@@ -1860,7 +1867,7 @@ xbps-0.8.0 (2011-05-24):
    one couldn't be internalized in xbps_repository_pool_init().
 
  * Added the concept of package properties in the API. At this moment
-   only one property is fully working, "virtual". When xbps-bin(8)
+   only one property is fully working, "virtual". When xbps-bin(1)
    sets this property for a package, its virtual package list will be
    set in the XBPS_REGPKGDB plist in a package dictionary and the matching
    logic will always prefer its virtual packages over the real ones.
@@ -1886,16 +1893,16 @@ xbps-0.8.0 (2011-05-24):
  * xbps-dgraph: now parses the "provides" object in the package properties
    metadata plist file for packages providing virtual packages.
 
- * xbps-bin(8): added -R option for the "remove" target, to recursively
+ * xbps-bin(1): added -R option for the "remove" target, to recursively
    remove packages that were installed automatically by the package(s)
    that we want to remove, and no other package currently depends on.
    This is much like the remove and autoremove targets together, i.e
    "xbps-bin -yp remove foo && xbps-bin -yp autoremove".
 
- * xbps-bin(8): added -D option to only show the URLs to download the binary
+ * xbps-bin(1): added -D option to only show the URLs to download the binary
    packages required by the "install", "update" and "autoupdate" targets.
 
- * xbps-bin(8): make the list target (without arguments) only show
+ * xbps-bin(1): make the list target (without arguments) only show
    packages that are fully installed. Previously packages in unpacked
    state were also shown.
 
@@ -1908,7 +1915,7 @@ xbps-0.8.0 (2011-05-24):
 
  * Merged the `progress_callback' branch that makes possible to specify a
    function callback to update progress while unpacking binary packages
-   and while fetching files. xbps-bin(8) now lists current extract files
+   and while fetching files. xbps-bin(1) now lists current extract files
    with its size in bytes if -v flag is set.
 
  * Improved package dependency resolution in repositories by using a new
@@ -1953,30 +1960,30 @@ xbps-0.7.1 (2010-12-23):
 
  * libxbps: xbps_fetch_file(): set a 30 seconds timeout for transfers.
 
- * xbps-repo(8): fixed the 'genindex' target for the API changes in 0.7.0.
+ * xbps-repo(1): fixed the 'genindex' target for the API changes in 0.7.0.
 
  * xbps-uhelper: fixed the 'unregister' target for the API changes in 0.7.0.
 
 xbps-0.7.0 (2010-12-15):
  
- * xbps-repo(8): implemented the 'find-files' target to print which packages
+ * xbps-repo(1): implemented the 'find-files' target to print which packages
    own a file, link, directory, etc. Analogue to the one implemented in
-   xbps-bin(8). Works for local and remote repository, fetching info on-the-fly.
+   xbps-bin(1). Works for local and remote repository, fetching info on-the-fly.
 
  * Fixed a typo in the configure script that broke detection of strlcat(),
    reported and patch provided by Min Sik Kim in issue 2.
 
- * xbps-bin(8): added -F flag for the remove target. Unless it's set,
+ * xbps-bin(1): added -F flag for the remove target. Unless it's set,
    packages that are dependencies of other installed packages won't be removed.
    This flag overrides this behaviour and forces the package removal.
 
- * xbps-{bin,repo}(8): indent uniformly all lines while listing packages
+ * xbps-{bin,repo}(1): indent uniformly all lines while listing packages
    in xbps-bin or while searching for packages in xbps-repo.
 
- * xbps-repo(8): while searching for packages also try to find strings
+ * xbps-repo(1): while searching for packages also try to find strings
    in the short description object.
  
- * xbps-{bin,repo}(8): added -d arg to enable debugging output to stderr.
+ * xbps-{bin,repo}(1): added -d arg to enable debugging output to stderr.
 
  * While updating packages, obsolete directories are also removed when
    necessary. This helped to remove some empty dirs for python 2.6 > 2.7
@@ -2003,11 +2010,11 @@ xbps-0.6.2 (2010-10-31):
 
  * libxbps: xbps_get_pkg_index_plist(): fixed a memleak.
 
- * xbps-bin(8): modify the 'list' target to accept an optional argument to
+ * xbps-bin(1): modify the 'list' target to accept an optional argument to
    list packages in the specified state, so that you can list packages that
    need to be purged, configured and broken (will be used in the future).
 
- * xbps-bin(8): added a new target 'find-files' to find which installed
+ * xbps-bin(1): added a new target 'find-files' to find which installed
    package(s) own a file. Exact matches "/bin/mount" or patterns
    "/usr/lib/libb[ao]b\*" can be specified.
 
@@ -2064,10 +2071,10 @@ xbps-0.5.2 (2010-05-18):
    do not remove the files that did not match previous SHA256 hash. Also,
    only remove obsolete dangling symlinks.
 
- * xbps-repo(8): fixed the 'genindex' target to not return error if any
+ * xbps-repo(1): fixed the 'genindex' target to not return error if any
    package is already registered in the index.
 
- * xbps-repo(8): improved the 'search' target to also match substrings in
+ * xbps-repo(1): improved the 'search' target to also match substrings in
    package/version tuples.
 
 xbps-0.5.1 (2010-05-12):
@@ -2077,23 +2084,23 @@ xbps-0.5.1 (2010-05-12):
  * libxbps: changed the epoch component in version strings to the ':'
    character to be differentiated from '-' in pkgname, and '_' in revision.
 
- * xbps-bin(8): added a new target 'show-orphans' that list all package
+ * xbps-bin(1): added a new target 'show-orphans' that list all package
    orphans currently installed.
 
  * Removed asciidoc build dependency, simply use the troff manpages.
 
 xbps-0.5.0 (2010-05-01):
 
- * xbps-repo(8): fixed the 'search' target to also match patterns against
+ * xbps-repo(1): fixed the 'search' target to also match patterns against
    its description, and not only from the package/version tuple.
 
  * Cleaned up the code by using the LLVM's clang static analyzer, found
    two possible NULL pointer dereferences in error branches and dead code.
 
- * xbps-bin(8): added new flag '-p' for the 'remove' and 'autoremove'
+ * xbps-bin(1): added new flag '-p' for the 'remove' and 'autoremove'
    targets, to also purge the package(s) after successful removal.
 
- * xbps-repo(8): print a warning when registering a repository that has
+ * xbps-repo(1): print a warning when registering a repository that has
    been already added previously.
 
  * Add proplib-0.4.1 source and use it in XBPS. This is to avoid
@@ -2105,31 +2112,31 @@ xbps-0.5.0 (2010-05-01):
 
 xbps-0.4.1 (2010-02-28):
 
- * xbps-bin(8): fixed the install target to work with package names containing
+ * xbps-bin(1): fixed the install target to work with package names containing
    multiple '-', thus resulting in incorrect package name.
    [ https://bugs.launchpad.net/bugs/528212 ]
 
- * xbps-bin(8): fixed printing of incorrect message for packages containing
+ * xbps-bin(1): fixed printing of incorrect message for packages containing
    the 'preserve' object in its props dictionary.
    [ https://bugs.launchpad.net/xbps/bugs/528216 ]
 
 xbps-0.4 (2010-02-01):
  
- * libxbps, xbps-bin(8), xbps-repo(8): redirect all warning and error
+ * libxbps, xbps-bin(1), xbps-repo(1): redirect all warning and error
    messages to stderr.
 
  * libxbps: changes xbps_yesno() and xbps_noyes() to only accept "yes" or "no"
    (case insensitive) answers rather than 'y' or 'n', to avoid mistaken answers.
 
- * xbps-repo(8): added support to the 'search' target to find exact matches,
+ * xbps-repo(1): added support to the 'search' target to find exact matches,
    i.e 'xbps-repo search bash'.
 
- * xbps-bin(8) added support to the 'install', 'remove' and 'update'
+ * xbps-bin(1) added support to the 'install', 'remove' and 'update'
    targets to accept any arbitrary number of package names, i.e
    "xbps-bin install foo blah baz".
    See https://blueprints.launchpad.net/xbps/+spec/arbitrary-pkgname-args
 
- * xbps-bin(8): added support to the 'install' and 'update' targets to
+ * xbps-bin(1): added support to the 'install' and 'update' targets to
    accept package patterns, i.e "xbps-bin install 'foo<=3.0'.
    See https://blueprints.launchpad.net/xbps/+spec/install-pkg-by-pkgmatch
 
@@ -2152,13 +2159,13 @@ xbps-0.4 (2010-02-01):
 
  * libxbps: synced libfetch code with NetBSD's pkgsrc, updated to 2.30.
 
- * xbps-bin(8): when downloading binary packages, it now sets default
+ * xbps-bin(1): when downloading binary packages, it now sets default
    libfetch cache connection limits, thus reusing connections to the same host.
 
  * xbps-uhelper: the 'fetch' target now accepts an arbitrary number of
    arguments, and sets default libfetch cache connection limits.
 
- * xbps-bin(8): enable -f option for the 'purge' and 'remove' targets.
+ * xbps-bin(1): enable -f option for the 'purge' and 'remove' targets.
    If set, files will be removed even if its hash doesn't match for the
    'remove' target, and configuration files for the 'purge' target.
 
