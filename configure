@@ -27,7 +27,7 @@ for instance \`--prefix=\$HOME'.
 
 --prefix=DIR 		Install architecture-independent files in PREFIX
 --exec-prefix=DIR 	Install architecture-dependent files in EPREFIX
---sbindir=DIR 		System admin executables [PREFIX/sbin]
+--bindir=DIR 		Executables [PREFIX/bin]
 --libdir=DIR 		Object code libraries [PREFIX/lib]
 --includedir=DIR 	C header files [EPREFIX/include]
 --mandir=DIR 		Man documentation [EPREFIX/share/man]
@@ -55,7 +55,7 @@ for x; do
 	--enable-debug) DEBUG=yes;;
 	--prefix) PREFIX=$var;;
 	--exec-prefix) EPREFIX=$var;;
-	--sbindir) SBINDIR=$var;;
+	--bindir) BINDIR=$var;;
 	--mandir) MANDIR=$var;;
 	--datadir) SHAREDIR=$var;;
 	--build) BUILD=$var;;
@@ -83,7 +83,7 @@ done
 : ${PREFIX:=/usr/local}
 : ${EPREFIX:=${PREFIX}}
 : ${SYSCONFDIR:=${PREFIX}/etc}
-: ${SBINDIR:=${PREFIX}/sbin}
+: ${BINDIR:=${PREFIX}/bin}
 : ${LIBDIR:=${EPREFIX}/lib}
 : ${SHAREDIR:=${EPREFIX}/share}
 : ${MANDIR:=${EPREFIX}/share/man}
@@ -146,7 +146,7 @@ echo "VERSION = $VERSION" >>$CONFIG_MK
 echo "TOPDIR ?=	$TOPDIR" >>$CONFIG_MK
 echo "PREFIX ?=	$PREFIX" >>$CONFIG_MK
 echo "EPREFIX ?= $EPREFIX" >>$CONFIG_MK
-echo "SBINDIR ?= $SBINDIR" >>$CONFIG_MK
+echo "SBINDIR ?= $BINDIR" >>$CONFIG_MK
 echo "INCLUDEDIR ?=	$INCLUDEDIR" >>$CONFIG_MK
 echo "LIBDIR ?=	$LIBDIR" >>$CONFIG_MK
 echo "MANDIR ?=	$MANDIR" >>$CONFIG_MK
@@ -718,7 +718,7 @@ echo "  XBPS has been configured with the following options:"
 echo
 echo "   PREFIX = 		$PREFIX"
 echo "   EPREFIX = 		$EPREFIX"
-echo "   SBINDIR =		$SBINDIR"
+echo "   BINDIR =		$BINDIR"
 echo "   LIBDIR =		$LIBDIR"
 echo "   INCLUDEDIR =		$INCLUDEDIR"
 echo "   SHAREDIR =		$SHAREDIR"
