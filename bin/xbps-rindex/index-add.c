@@ -69,8 +69,8 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		goto out;
 	}
 	if (repo) {
-		idx = xbps_dictionary_copy(repo->idx);
-		idxmeta = xbps_dictionary_copy(repo->idxmeta);
+		idx = xbps_dictionary_copy_mutable(repo->idx);
+		idxmeta = xbps_dictionary_copy_mutable(repo->idxmeta);
 	} else {
 		idx = xbps_dictionary_create();
 		idxmeta = NULL;

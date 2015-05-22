@@ -39,8 +39,6 @@
 #include "defs.h"
 
 static xbps_dictionary_t dest;
-static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
-static bool flush;
 
 static int
 idx_cleaner_cb(struct xbps_handle *xhp,
@@ -64,13 +62,10 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		 * File cannot be read, might be permissions,
 		 * broken or simply unexistent; either way, remove it.
 		 */
-		pthread_mutex_lock(&mtx);
 		pkgname = xbps_pkg_name(pkgver);
 		xbps_dictionary_remove(dest, pkgname);
 		free(pkgname);
-		flush = true;
 		printf("index: removed pkg %s\n", pkgver);
-		pthread_mutex_unlock(&mtx);
 	} else {
 		/*
 		 * File can be read; check its hash.
@@ -78,13 +73,10 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_dictionary_get_cstring_nocopy(obj,
 				"filename-sha256", &sha256);
 		if (xbps_file_hash_check(filen, sha256) != 0) {
-			pthread_mutex_lock(&mtx);
 			pkgname = xbps_pkg_name(pkgver);
 			xbps_dictionary_remove(dest, pkgname);
 			free(pkgname);
 			printf("index: removed pkg %s\n", pkgver);
-			flush = true;
-			pthread_mutex_unlock(&mtx);
 		}
 	}
 	free(filen);
@@ -99,7 +91,6 @@ int
 index_clean(struct xbps_handle *xhp, const char *repodir)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t idx = NULL, idxmeta = NULL;
 	struct xbps_repo *repo;
 	char *rlockfname = NULL;
 	int rv = 0, rlockfd = -1;
@@ -120,9 +111,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		    _XBPS_RINDEX, strerror(errno));
 		return rv;
 	}
-	idx = xbps_dictionary_copy(repo->idx);
-	idxmeta = xbps_dictionary_copy(repo->idxmeta);
-	if (idx == NULL) {
+	if (repo->idx == NULL) {
 		fprintf(stderr, "%s: incomplete repository data file!\n", _XBPS_RINDEX);
 		rv = EINVAL;
 		goto out;
@@ -132,30 +121,24 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	/*
 	 * First pass: find out obsolete entries on index and index-files.
 	 */
-	dest = xbps_dictionary_copy(idx);
-	allkeys = xbps_dictionary_all_keys(idx);
-	(void)xbps_array_foreach_cb_multi(xhp, allkeys, idx, idx_cleaner_cb, __UNCONST(repodir));
+	dest = xbps_dictionary_copy_mutable(repo->idx);
+	allkeys = xbps_dictionary_all_keys(dest);
+	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, __UNCONST(repodir));
 	xbps_object_release(allkeys);
 
-	if (flush) {
-		if (!repodata_flush(xhp, repodir, dest, idxmeta)) {
+	if (!xbps_dictionary_equals(dest, repo->idx)) {
+		if (!repodata_flush(xhp, repodir, dest, repo->idxmeta)) {
 			rv = errno;
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));
 			goto out;
 		}
 	}
-	printf("index: %u packages registered.\n",
-			xbps_dictionary_count(dest));
+	printf("index: %u packages registered.\n", xbps_dictionary_count(dest));
 
 out:
 	xbps_repo_close(repo);
 	xbps_repo_unlock(rlockfd, rlockfname);
-
-	if (idx)
-		xbps_object_release(idx);
-	if (idxmeta)
-		xbps_object_release(idxmeta);
 
 	return rv;
 }
