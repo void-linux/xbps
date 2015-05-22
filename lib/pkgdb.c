@@ -235,10 +235,14 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update)
 
 	/* update copy in memory */
 	if ((xhp->pkgdb = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist)) == NULL) {
-		if (errno == ENOENT)
+		rv = errno;
+		if (!rv)
+			rv = EINVAL;
+
+		if (rv == ENOENT)
 			xhp->pkgdb = xbps_dictionary_create();
 		else
-			xbps_error_printf("cannot access to pkgdb: %s\n", strerror(errno));
+			xbps_error_printf("cannot access to pkgdb: %s\n", strerror(rv));
 
 		cached_rv = rv = errno;
 	}
