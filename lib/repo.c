@@ -154,9 +154,12 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		(void)unlink(repofile);
 		return false;
 	}
+	xbps_dictionary_make_immutable(repo->idx);
 	repo->idxmeta = repo_get_dict(repo);
-	if (repo->idxmeta != NULL)
+	if (repo->idxmeta != NULL) {
 		repo->is_signed = true;
+		xbps_dictionary_make_immutable(repo->idxmeta);
+	}
 
 	return true;
 }
