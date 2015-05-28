@@ -96,7 +96,12 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    xhp->metadir, pkgname);
 		assert(buf);
 		filesd = xbps_dictionary_internalize_from_zfile(buf);
-		assert(filesd);
+		if (filesd == NULL) {
+			fprintf(stderr, "%s: cannot read %s, ignoring...\n",
+			    pkgname, buf);
+			free(buf);
+			return -1;
+		}
 		rv = xbps_file_hash_check(buf, sha256);
 		free(buf);
 		if (rv == ENOENT) {
