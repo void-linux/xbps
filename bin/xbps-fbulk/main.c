@@ -58,7 +58,9 @@
 #include <errno.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
+#define _BSD_SOURCE
+# include <sys/wait.h>
+#undef _BSD_SOURCE
 
 #include <xbps.h>
 
