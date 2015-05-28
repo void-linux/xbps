@@ -439,6 +439,7 @@ unpack_archive(struct xbps_handle *xhp,
 			break;
 		} else {
 			if (xhp->unpack_cb != NULL) {
+				xucd.entry = entry_pname;
 				xucd.entry_extract_count++;
 				(*xhp->unpack_cb)(&xucd, xhp->unpack_cb_data);
 			}
