@@ -56,6 +56,7 @@
 #include <libgen.h>
 #include <limits.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #define _BSD_SOURCE
