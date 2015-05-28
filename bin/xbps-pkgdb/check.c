@@ -95,7 +95,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		buf = xbps_xasprintf("%s/.%s-files.plist",
 		    xhp->metadir, pkgname);
 		assert(buf);
-		filesd = xbps_dictionary_internalize_from_zfile(buf);
+		filesd = xbps_plist_dictionary_from_file(xhp, buf);
 		if (filesd == NULL) {
 			fprintf(stderr, "%s: cannot read %s, ignoring...\n",
 			    pkgname, buf);

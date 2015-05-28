@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20150413"
+#define XBPS_API_VERSION	"20150528"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1977,6 +1977,28 @@ char *xbps_sanitize_path(const char *src);
  */
 char *xbps_symlink_target(struct xbps_handle *xhp, const char *path,
 		const char *target);
+
+/**
+ * Internalizes a plist file declared in \f and returns a proplib array.
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] fname The file path.
+ *
+ * @return The internalized proplib array, NULL otherwise.
+ */
+xbps_array_t
+xbps_plist_array_from_file(struct xbps_handle *xhp, const char *fname);
+
+/**
+ * Internalizes a plist file declared in \f and returns a proplib dictionary.
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] fname The file path.
+ *
+ * @return The internalized proplib array, NULL otherwise.
+ */
+xbps_dictionary_t
+xbps_plist_dictionary_from_file(struct xbps_handle *xhp, const char *fname);
 
 /*@}*/
 

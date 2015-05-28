@@ -102,7 +102,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	 * Prepare repository RSA public key to verify fname signature.
 	 */
 	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
-	repokeyd = xbps_dictionary_internalize_from_zfile(rkeyfile);
+	repokeyd = xbps_plist_dictionary_from_file(repo->xhp, rkeyfile);
 	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY) {
 		xbps_dbg_printf(repo->xhp, "cannot read rkey data at %s: %s\n",
 		    rkeyfile, strerror(errno));

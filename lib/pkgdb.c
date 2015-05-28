@@ -423,7 +423,7 @@ xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp, const char *pkg)
 
 	plist = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
 	free(pkgname);
-	pkgfilesd = xbps_dictionary_internalize_from_zfile(plist);
+	pkgfilesd = xbps_plist_dictionary_from_file(xhp, plist);
 	free(plist);
 
 	if (pkgfilesd == NULL) {

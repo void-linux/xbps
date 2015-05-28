@@ -540,7 +540,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	 * Check if the public key is alredy stored.
 	 */
 	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
-	repokeyd = xbps_dictionary_internalize_from_zfile(rkeyfile);
+	repokeyd = xbps_plist_dictionary_from_file(repo->xhp, rkeyfile);
 	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' public key already stored.\n", repo->uri);

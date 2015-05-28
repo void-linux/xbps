@@ -598,7 +598,7 @@ main(int argc, char **argv)
 	if (conf_file == NULL)
 		conf_file = _DGRAPH_CFFILE;
 
-	confd = xbps_dictionary_internalize_from_zfile(conf_file);
+	confd = xbps_plist_dictionary_from_file(&xh, conf_file);
 	if (confd == NULL) {
 		if (errno != ENOENT)
 			die("cannot read conf file `%s'", conf_file);

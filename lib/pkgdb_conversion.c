@@ -50,7 +50,7 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 	 * 	- <metadir>/pkgdb-0.38.plist
 	 * 	- <metadir>/.<pkgname>-files.plist
 	 */
-	opkgdb = xbps_dictionary_internalize_from_zfile(opkgdb_plist);
+	opkgdb = xbps_plist_dictionary_from_file(xhp, opkgdb_plist);
 	if (opkgdb == NULL)
 		return EINVAL;
 
@@ -93,7 +93,7 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 		 * Copy pkg metadata objs to the new pkgdb.
 		 */
 		pkgmeta = xbps_xasprintf("%s/.%s.plist", xhp->metadir, pkgname);
-		pkgmetad = xbps_dictionary_internalize_from_zfile(pkgmeta);
+		pkgmetad = xbps_plist_dictionary_from_file(xhp, pkgmeta);
 		if (pkgmetad == NULL) {
 			rv = EINVAL;
 			xbps_dbg_printf(xhp, "%s: cannot open %s: %s\n",
