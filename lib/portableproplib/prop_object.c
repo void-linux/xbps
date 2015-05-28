@@ -707,6 +707,8 @@ _prop_object_internalize_context_alloc(const char *xml)
 	 * know about / care about.
 	 */
 	for (;;) {
+		if (_PROP_EOF(*xml))
+			goto bad;
 		while (_PROP_ISSPACE(*xml))
 			xml++;
 		if (_PROP_EOF(*xml) || *xml != '<')
