@@ -41,6 +41,7 @@ for instance \`--prefix=\$HOME'.
 --verbose 		Disable silent build to see compilation details
 --enable-api-docs 	Install XBPS API Library documentation (default disabled)
 --enable-debug		Build with debugging code and symbols (default disabled)
+--enable-fulldebug	Enables extra debugging code (default disabled)
 --enable-static 	Build XBPS static utils (default disabled)
 --enable-tests		Build and install Kyua tests (default disabled)
 			Needs atf >= 0.15 (http://code.google.com/p/kyua)
@@ -53,6 +54,7 @@ for x; do
 	var=${x#*=}
 	case "$opt" in
 	--enable-debug) DEBUG=yes;;
+	--enable-fulldebug) FULL_DEBUG=yes;;
 	--prefix) PREFIX=$var;;
 	--exec-prefix) EPREFIX=$var;;
 	--bindir) BINDIR=$var;;
@@ -203,6 +205,10 @@ if [ -n "$DEBUG" -a "$DEBUG" != no -a "$DEBUG" != false ]; then
 	echo "CFLAGS +=	-g" >>$CONFIG_MK
 else
 	echo "CPPFLAGS+= -DNDEBUG" >>$CONFIG_MK
+fi
+if [ -n "$FULL_DEBUG" ]; then
+	echo "Enabling extra debugging code."
+	echo "CPPFLAGS+= -DFULL_DEBUG" >>$CONFIG_MK
 fi
 
 case "$OS" in

@@ -339,9 +339,11 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 		}
 		goto out;
 	}
+#ifdef FULL_DEBUG
 	xbps_dbg_printf(xhp, "Dictionary before transaction happens:\n");
 	xbps_dbg_printf_append(xhp, "%s",
 	    xbps_dictionary_externalize(xhp->transd));
+#endif
 
 	trans->xhp = xhp;
 	trans->d = xhp->transd;

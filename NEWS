@@ -1,5 +1,14 @@
 xbps-0.45 (???):
 
+ * configure: added `--enable-fulldebug` option to enable extra/expensive
+   debug output.
+
+ * libxbps: fixed a dangling pointer when unpacking configuration files that
+   are renamed (because they existed), if the unpack callback function is set.
+
+ * proplib: extra checks when internalizing plists to avoid NULL pointer
+   dereferences with broken files.
+
  * Move manual pages of all utilities to the section 1 (user commands).
    The xbps utilities can be used by any user so that there's no point
    in having them in the section 8 (administraction and privileged commands).
