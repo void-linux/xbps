@@ -692,6 +692,9 @@ _prop_object_internalize_context_alloc(const char *xml)
 {
 	struct _prop_object_internalize_context *ctx;
 
+	if (xml == NULL)
+		return NULL;
+
 	ctx = _PROP_MALLOC(sizeof(struct _prop_object_internalize_context),
 			   M_TEMP);
 	if (ctx == NULL)
