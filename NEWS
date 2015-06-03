@@ -1,5 +1,8 @@
 xbps-0.45 (???):
 
+ * xbps-install(1): added -U --unpack-only option, to only unpack packages
+   in the transaction, skips the configuration phase.
+
  * configure: added `--enable-fulldebug` option to enable extra/expensive
    debug output.
 

@@ -1,4 +1,4 @@
-.Dd May 16, 2015
+.Dd June 3, 2015
 .Dt XBPS-INSTALL 1
 .Sh NAME
 .Nm xbps-install
@@ -104,6 +104,10 @@ This option can be specified multiple times.
 Specifies a full path for the target root directory.
 .It Fl S, Fl -sync
 Synchronize remote repository index files.
+.It Fl U, Fl -unpack-only
+If set, packages to be installed or upgraded in the transaction won't be configured,
+just unpacked. That means that those packages should be reconfigured via
+.Xr xbps-reconfigure 1 .
 .It Fl u, Fl -update
 Performs a full system upgrade: all installed packages will be updated to the greatest
 versions that were found in repositories.

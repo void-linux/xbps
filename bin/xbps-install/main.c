@@ -52,6 +52,7 @@ usage(bool fail)
 	    "                          overwritten.\n"
 	    " -h --help                Print help usage\n"
 	    " -i --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
+	    " -U --unpack-only         Unpack packages in transaction, do not configure them\n"
 	    " -M --memory-sync         Remote repository data is fetched and stored\n"
 	    "                          in memory, ignoring on-disk repodata archives.\n"
 	    " -n --dry-run             Dry-run mode\n"
@@ -93,7 +94,7 @@ repo_import_key_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "AC:c:dfhiMnR:r:SuVvy";
+	const char *shortopts = "AC:c:dfhiMnR:r:SuUVvy";
 	const struct option longopts[] = {
 		{ "automatic", no_argument, NULL, 'A' },
 		{ "config", required_argument, NULL, 'C' },
@@ -107,6 +108,7 @@ main(int argc, char **argv)
 		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "sync", no_argument, NULL, 'S' },
+		{ "unpack-only", no_argument, NULL, 'U' },
 		{ "update", no_argument, NULL, 'u' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
@@ -166,6 +168,9 @@ main(int argc, char **argv)
 			break;
 		case 'S':
 			syncf = true;
+			break;
+		case 'U':
+			flags |= XBPS_FLAG_UNPACK_ONLY;
 			break;
 		case 'u':
 			update = true;

@@ -348,9 +348,13 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	    !xbps_dictionary_get(xhp->transd, "total-install-pkgs"))
 		goto out;
 
-	/* if installing packages for target_arch, don't configure anything */
-	if (xhp->target_arch && strcmp(xhp->native_arch, xhp->target_arch))
+	if (xhp->target_arch && strcmp(xhp->native_arch, xhp->target_arch)) {
+		/* if installing packages for target_arch, don't configure anything */
 		goto out;
+		/* do not configure packages if only unpacking is desired */
+	} else if (xhp->flags & XBPS_FLAG_UNPACK_ONLY) {
+		goto out;
+	}
 
 	xbps_object_iterator_reset(iter);
 	/* Force a pkgdb write for all unpacked pkgs in transaction */
