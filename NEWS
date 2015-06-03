@@ -1,4 +1,4 @@
-xbps-0.45 (???):
+xbps-0.45 (2015-06-03):
 
  * xbps-install(1): added -U --unpack-only option, to only unpack packages
    in the transaction, skips the configuration phase.
