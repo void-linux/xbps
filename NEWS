@@ -1,4 +1,9 @@
-xbps-0.45.1 (???):
+xbps-0.46 (???):
+
+ * xbps-rindex(1): use `-s, --sign` to initialize the repository archive
+   with the required metadata to allow signed packages. Added `-S, --sign-pkg`
+   to sign a specific package archive. This allows to sign a specific package,
+   rather than all packages available in that repository.
 
  * If the repository write lock is already taken, sleep for 1 second, rather
    than looping endlessly without any timing; this consumed too much CPU time

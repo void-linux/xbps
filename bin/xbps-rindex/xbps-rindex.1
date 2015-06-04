@@ -1,4 +1,4 @@
-.Dd May 16, 2015
+.Dd June 4, 2015
 .Dt XBPS-RINDEX 1
 .Sh NAME
 .Nm xbps-rindex
@@ -19,9 +19,12 @@ in local repositories.
 Enables extra debugging shown to stderr.
 .It Fl f -force
 Forcefully register binary package into the local repository, overwriting existing entry.
+Or forcefully create a package signature, even if there's an existing one already.
 This flag is only useful with the
 .Em add
-mode.
+or
+.Em sign-pkg
+modes.
 .It Fl h -help
 Show the help usage.
 .It Fl V -version
@@ -52,12 +55,20 @@ Packages that are not currently registered in repository's index will
 be removed (out of date, invalid archives, etc).
 Absolute path to the local repository is expected.
 .It Sy -s, --sign Ar /path/to/repository
-Signs all binary packages stored in repository with your specified RSA key. If
-.Fl --privkey
+Initializes a signed repository with your specified RSA key.
+Note this only adds some metadata to the repository archive to be able to sign packages.
+If the
+.Fl -privkey
 argument not set, it defaults to
 .Sy ~/.ssh/id_rsa .
-Absolute path to the local repository is expected. Only binary packages that
-have not been signed are processed.
+.It Sy -S, --sign-pkg Ar /path/to/repository/binpkg.xbps ...
+Signs a binary package archive with your specified RSA key. If
+.Fl -privkey
+argument not set, it defaults to
+.Sy ~/.ssh/id_rsa .
+If there's an existing signature, it won't be overwritten; use the
+.Fl f
+option to force the creation.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH

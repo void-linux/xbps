@@ -105,7 +105,9 @@ rsa_sign_buf(RSA *rsa, const char *buf, unsigned int buflen,
 	SHA256_Update(&context, buf, buflen);
 	SHA256_Final(sha256, &context);
 
-	*sigret = calloc(1, RSA_size(rsa) + 1);
+	if ((*sigret = calloc(1, RSA_size(rsa) + 1)) == NULL)
+		return false;
+
 	if (!RSA_sign(NID_sha1, sha256, sizeof(sha256),
 				*sigret, siglen, rsa)) {
 		free(*sigret);
@@ -114,52 +116,12 @@ rsa_sign_buf(RSA *rsa, const char *buf, unsigned int buflen,
 	return true;
 }
 
-int
-sign_repo(struct xbps_handle *xhp, const char *repodir,
-	const char *privkey, const char *signedby)
+static RSA *
+load_rsa_key(const char *privkey)
 {
-	struct stat st;
-	struct xbps_repo *repo = NULL;
-	xbps_dictionary_t pkgd, meta = NULL;
-	xbps_data_t data = NULL, rpubkey = NULL;
-	xbps_object_iterator_t iter = NULL;
-	xbps_object_t obj;
 	RSA *rsa = NULL;
-	unsigned char *sig;
-	unsigned int siglen;
-	uint16_t rpubkeysize, pubkeysize;
-	const char *arch, *pkgver, *rsignedby = NULL;
-	char *binpkg = NULL, *binpkg_sig = NULL, *buf = NULL;
-	char *rlockfname = NULL, *defprivkey = NULL;
-	int binpkg_fd, binpkg_sig_fd, rlockfd = -1, rv = 0;
-	bool flush = false;
+	char *defprivkey;
 
-	if (signedby == NULL) {
-		fprintf(stderr, "--signedby unset! cannot sign repository\n");
-		return -1;
-	}
-
-	/*
-	 * Check that repository index exists and not empty, otherwise bail out.
-	 */
-	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
-		rv = errno;
-		fprintf(stderr, "%s: cannot lock repository: %s\n",
-		    _XBPS_RINDEX, strerror(errno));
-		goto out;
-	}
-	repo = xbps_repo_open(xhp, repodir);
-	if (repo == NULL) {
-		rv = errno;
-		fprintf(stderr, "%s: cannot read repository data: %s\n",
-		    _XBPS_RINDEX, strerror(errno));
-		goto out;
-	}
-	if (xbps_dictionary_count(repo->idx) == 0) {
-		fprintf(stderr, "%s: invalid repository, existing!\n", _XBPS_RINDEX);
-		rv = EINVAL;
-		goto out;
-	}
 	/*
 	 * If privkey not set, default to ~/.ssh/id_rsa.
 	 */
@@ -175,87 +137,48 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 
 	if ((rsa = load_rsa_privkey(defprivkey)) == NULL) {
 		fprintf(stderr, "%s: failed to read the RSA privkey\n", _XBPS_RINDEX);
+		exit(EXIT_FAILURE);
+	}
+
+	return rsa;
+}
+
+int
+sign_repo(struct xbps_handle *xhp, const char *repodir,
+	const char *privkey, const char *signedby)
+{
+	struct xbps_repo *repo = NULL;
+	xbps_dictionary_t meta = NULL;
+	xbps_data_t data = NULL, rpubkey = NULL;
+	RSA *rsa = NULL;
+	uint16_t rpubkeysize, pubkeysize;
+	const char *rsignedby = NULL;
+	char *buf = NULL, *rlockfname = NULL;
+	int rlockfd = -1, rv = 0;
+	bool flush_failed = false, flush = false;
+
+	if (signedby == NULL) {
+		fprintf(stderr, "--signedby unset! cannot initialize signed repository\n");
+		return -1;
+	}
+
+	/*
+	 * Check that repository index exists and not empty, otherwise bail out.
+	 */
+	repo = xbps_repo_open(xhp, repodir);
+	if (repo == NULL) {
+		rv = errno;
+		fprintf(stderr, "%s: cannot read repository data: %s\n",
+		    _XBPS_RINDEX, strerror(errno));
+		goto out;
+	}
+	if (xbps_dictionary_count(repo->idx) == 0) {
+		fprintf(stderr, "%s: invalid repository, existing!\n", _XBPS_RINDEX);
 		rv = EINVAL;
 		goto out;
 	}
-	/*
-	 * Iterate over the idx dictionary and then sign all binary
-	 * packages in this repository.
-	 */
-	iter = xbps_dictionary_iterator(repo->idx);
-	assert(iter);
 
-	while ((obj = xbps_object_iterator_next(iter))) {
-		pkgd = xbps_dictionary_get_keysym(repo->idx, obj);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-
-		binpkg = xbps_xasprintf("%s/%s.%s.xbps", repodir, pkgver, arch);
-		binpkg_sig = xbps_xasprintf("%s.sig", binpkg);
-		/*
-		 * Skip pkg if file signature exists
-		 */
-		if ((binpkg_sig_fd = access(binpkg_sig, R_OK)) == 0) {
-			if (xhp->flags & XBPS_FLAG_VERBOSE)
-				fprintf(stderr, "skipping %s, file signature found.\n", pkgver);
-			free(binpkg);
-			free(binpkg_sig);
-			close(binpkg_sig_fd);
-			continue;
-		}
-		/*
-		 * Generate pkg file signature.
-		 */
-		if ((binpkg_fd = open(binpkg, O_RDONLY)) == -1) {
-			fprintf(stderr, "cannot read %s: %s\n", binpkg, strerror(errno));
-			free(binpkg);
-			free(binpkg_sig);
-			continue;
-		}
-		fstat(binpkg_fd, &st);
-		buf = malloc(st.st_size);
-		assert(buf);
-		if (read(binpkg_fd, buf, st.st_size) != st.st_size) {
-			fprintf(stderr, "failed to read %s: %s\n", binpkg, strerror(errno));
-			close(binpkg_fd);
-			free(buf);
-			free(binpkg);
-			free(binpkg_sig);
-			continue;
-		}
-		close(binpkg_fd);
-		if (!rsa_sign_buf(rsa, buf, st.st_size, &sig, &siglen)) {
-			fprintf(stderr, "failed to sign %s: %s\n", binpkg, strerror(errno));
-			free(buf);
-			free(binpkg);
-			free(binpkg_sig);
-			continue;
-		}
-		free(buf);
-		free(binpkg);
-		/*
-		 * Write pkg file signature.
-		 */
-		binpkg_sig_fd = creat(binpkg_sig, 0644);
-		if (binpkg_sig_fd == -1) {
-			fprintf(stderr, "failed to create %s: %s\n", binpkg_sig, strerror(errno));
-			free(sig);
-			free(binpkg_sig);
-			continue;
-		}
-		if (write(binpkg_sig_fd, sig, siglen) != (ssize_t)siglen) {
-			fprintf(stderr, "failed to write %s: %s\n", binpkg_sig, strerror(errno));
-			free(sig);
-			free(binpkg_sig);
-			close(binpkg_sig_fd);
-			continue;
-		}
-		free(sig);
-		free(binpkg_sig);
-		close(binpkg_sig_fd);
-		printf("signed successfully %s\n", pkgver);
-	}
-	xbps_object_iterator_release(iter);
+	rsa = load_rsa_key(privkey);
 	/*
 	 * Check if repository index-meta contains changes compared to its
 	 * current state.
@@ -292,26 +215,131 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	xbps_object_release(data);
 	data = NULL;
 
-	if (!repodata_flush(xhp, repodir, repo->idx, meta)) {
+	/* lock repository to write repodata file */
+	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
+		rv = errno;
+		fprintf(stderr, "%s: cannot lock repository: %s\n",
+		    _XBPS_RINDEX, strerror(errno));
+		goto out;
+	}
+	flush_failed = repodata_flush(xhp, repodir, repo->idx, meta);
+	xbps_repo_unlock(rlockfd, rlockfname);
+	if (!flush_failed) {
 		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
 		goto out;
 	}
-	printf("Signed repository (%u package%s)\n",
+	printf("Initialized signed repository (%u package%s)\n",
 	    xbps_dictionary_count(repo->idx),
 	    xbps_dictionary_count(repo->idx) == 1 ? "" : "s");
 
 out:
-	if (defprivkey) {
-		free(defprivkey);
-	}
 	if (rsa) {
 		RSA_free(rsa);
 		rsa = NULL;
 	}
-	if (repo) {
+	if (repo)
 		xbps_repo_close(repo);
-	}
-	xbps_repo_unlock(rlockfd, rlockfname);
 
 	return rv ? -1 : 0;
+}
+
+static int
+sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool force)
+{
+	RSA *rsa = NULL;
+	struct stat st;
+	unsigned char *sig = NULL;
+	unsigned int siglen = 0;
+	char *buf = NULL, *sigfile = NULL;
+	int rv = 0, sigfile_fd = -1, binpkg_fd = -1;
+
+	sigfile = xbps_xasprintf("%s.sig", binpkg);
+	/*
+	 * Skip pkg if file signature exists
+	 */
+	if (!force && ((sigfile_fd = access(sigfile, R_OK)) == 0)) {
+		if (xhp->flags & XBPS_FLAG_VERBOSE)
+			fprintf(stderr, "skipping %s, file signature found.\n", binpkg);
+
+		sigfile_fd = -1;
+		goto out;
+	}
+	/*
+	 * Generate pkg file signature.
+	 */
+	if ((binpkg_fd = open(binpkg, O_RDONLY)) == -1) {
+		fprintf(stderr, "cannot read %s: %s\n", binpkg, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
+	fstat(binpkg_fd, &st);
+	buf = malloc(st.st_size);
+	assert(buf);
+	if (read(binpkg_fd, buf, st.st_size) != st.st_size) {
+		fprintf(stderr, "failed to read %s: %s\n", binpkg, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
+	close(binpkg_fd);
+
+	rsa = load_rsa_key(privkey);
+	if (!rsa_sign_buf(rsa, buf, st.st_size, &sig, &siglen)) {
+		fprintf(stderr, "failed to sign %s: %s\n", binpkg, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
+	free(buf);
+	buf = NULL;
+	/*
+	 * Write pkg file signature.
+	 */
+	if (force)
+		sigfile_fd = open(sigfile, O_WRONLY|O_TRUNC, 0644);
+	else
+		sigfile_fd = creat(sigfile, 0644);
+
+	if (sigfile_fd == -1) {
+		fprintf(stderr, "failed to create %s: %s\n", sigfile, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
+	if (write(sigfile_fd, sig, siglen) != (ssize_t)siglen) {
+		fprintf(stderr, "failed to write %s: %s\n", sigfile, strerror(errno));
+		rv = EINVAL;
+		goto out;
+	}
+	printf("signed successfully %s\n", binpkg);
+
+out:
+	if (rsa) {
+		RSA_free(rsa);
+		rsa = NULL;
+	}
+	if (buf)
+		free(buf);
+	if (sigfile)
+		free(sigfile);
+	if (sigfile_fd != -1)
+		close(sigfile_fd);
+	if (binpkg_fd != -1)
+		close(binpkg_fd);
+
+	return rv;
+}
+
+int
+sign_pkgs(struct xbps_handle *xhp, int args, int argmax, char **argv,
+		const char *privkey, bool force)
+{
+	/*
+	 * Process all packages specified in argv.
+	 */
+	for (int i = args; i < argmax; i++) {
+		int rv;
+		const char *binpkg = argv[i];
+		rv = sign_pkg(xhp, binpkg, privkey, force);
+		if (rv != 0)
+			return rv;
+	}
+	return 0;
 }

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,7 @@ int	remove_obsoletes(struct xbps_handle *, const char *);
 /* From sign.c */
 int	sign_repo(struct xbps_handle *, const char *, const char *,
 		const char *);
+int	sign_pkgs(struct xbps_handle *, int, int, char **, const char *, bool);
 
 /* From repoflush.c */
 bool	repodata_flush(struct xbps_handle *, const char *,

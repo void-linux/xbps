@@ -48,14 +48,15 @@ usage(bool fail)
 	    " -a --add <repodir/pkg> ...        Add package(s) to repository index\n"
 	    " -c --clean <repodir>              Clean repository index\n"
 	    " -r --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
-	    " -s --sign <repodir>               Sign repository index\n\n");
+	    " -s --sign <repodir>               Initialize repository metadata signature\n"
+	    " -S --sign-pkg archive.xbps ...    Sign binary package archive\n\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsVv";
+	const char *shortopts = "acdfhrsSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
@@ -68,14 +69,15 @@ main(int argc, char **argv)
 		{ "privkey", required_argument, NULL, 0},
 		{ "signedby", required_argument, NULL, 1},
 		{ "sign", no_argument, NULL, 's'},
+		{ "sign-pkg", no_argument, NULL, 'S'},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
-	bool add_mode, clean_mode, rm_mode, sign_mode, force;
+	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force;
 
-	add_mode = clean_mode = rm_mode = sign_mode = force = false;
+	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -106,6 +108,9 @@ main(int argc, char **argv)
 		case 's':
 			sign_mode = true;
 			break;
+		case 'S':
+			sign_pkg_mode = true;
+			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
 			break;
@@ -114,14 +119,16 @@ main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		}
 	}
-	if ((argc == optind) || (!add_mode && !clean_mode && !rm_mode && !sign_mode)) {
+	if ((argc == optind) ||
+	    (!add_mode && !clean_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
 		usage(true);
-	} else if ((add_mode && (clean_mode || rm_mode || sign_mode)) ||
-		   (clean_mode && (add_mode || rm_mode || sign_mode)) ||
-		   (rm_mode && (add_mode || clean_mode || sign_mode)) ||
-		   (sign_mode && (add_mode || clean_mode || rm_mode))) {
+	} else if ((add_mode && (clean_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
+		   (clean_mode && (add_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
+		   (rm_mode && (add_mode || clean_mode || sign_mode || sign_pkg_mode)) ||
+		   (sign_mode && (add_mode || clean_mode || rm_mode || sign_pkg_mode)) ||
+		   (sign_pkg_mode && (add_mode || clean_mode || rm_mode || sign_mode))) {
 		fprintf(stderr, "Only one mode can be specified: add, clean, "
-		    "remove-obsoletes or sign.\n");
+		    "remove-obsoletes, sign or sign-pkg.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -142,6 +149,8 @@ main(int argc, char **argv)
 		rv = remove_obsoletes(&xh, argv[optind]);
 	else if (sign_mode)
 		rv = sign_repo(&xh, argv[optind], privkey, signedby);
+	else if (sign_pkg_mode)
+		rv = sign_pkgs(&xh, optind, argc, argv, privkey, force);
 
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
 }
