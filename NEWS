@@ -1,3 +1,13 @@
+xbps-0.45.1 (???):
+
+ * If the repository write lock is already taken, sleep for 1 second, rather
+   than looping endlessly without any timing; this consumed too much CPU time
+   gratuitously.
+
+ * If verifying a pkg signature fails for some reason, i.e: pkg archive is incomplete,
+   signature file is incomplete, whatever, just remove both files. Let's assume
+   next time the files are downloaded they will be valid.
+
 xbps-0.45 (2015-06-03):
 
  * xbps-install(1): added -U --unpack-only option, to only unpack packages
