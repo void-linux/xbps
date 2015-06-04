@@ -102,7 +102,8 @@ xbps_repo_lock(struct xbps_handle *xhp, const char *repodir,
 			return false;
 		} else {
 			xbps_dbg_printf(xhp, "[repo] `%s' lock file exists,"
-			    "waiting...\n", lockfile);
+			    "waiting for 1s...\n", lockfile);
+			sleep(1);
 		}
 	}
 	*lockfname = lockfile;
