@@ -94,14 +94,14 @@ Check the *sha256* checksums with this file: http://repo.voidlinux.eu/static/sha
 
 The xbps package includes the following utilities:
 
- * `xbps-create (8)`      - XBPS utility to create binary packages
- * `xbps-dgraph (8)`      - XBPS utility to generate dot(1) graphs
- * `xbps-install (8)`     - XBPS utility to install and update packages
- * `xbps-pkgdb (8)`       - XBPS utility to report and fix issues in pkgdb
- * `xbps-query (8)`       - XBPS utility to query for package and repository information
- * `xbps-reconfigure (8)` - XBPS utility to configure installed packages
- * `xbps-remove (8)`      - XBPS utility to remove packages
- * `xbps-rindex (8)`      - XBPS utility to handle local binary package repositories
+ * `xbps-create (1)`      - XBPS utility to create binary packages
+ * `xbps-dgraph (1)`      - XBPS utility to generate dot(1) graphs
+ * `xbps-install (1)`     - XBPS utility to install and update packages
+ * `xbps-pkgdb (1)`       - XBPS utility to report and fix issues in pkgdb
+ * `xbps-query (1)`       - XBPS utility to query for package and repository information
+ * `xbps-reconfigure (1)` - XBPS utility to configure installed packages
+ * `xbps-remove (1)`      - XBPS utility to remove packages
+ * `xbps-rindex (1)`      - XBPS utility to handle local binary package repositories
 
 In the following sections there will be a brief description of how these utilities currently work.
 
@@ -142,11 +142,11 @@ $
 
 > **NOTE** repositories specified in the `configuration` directory are added to the head of the list, while repositories specified via `system configuration` directories are appended to the existing list.
 
-> **NOTE** If no repositories are found it's possible to declare them manually via the command line option `--repository`, currently accepted in `xbps-install(8)` and `xbps-query(8)`.
+> **NOTE** If no repositories are found it's possible to declare them manually via the command line option `--repository`, currently accepted in `xbps-install(1)` and `xbps-query(1)`.
 
 ### xbps-query - querying packages and repositories
 
-> xbps-query(8) will try to match `<package expression>` in local packages. This behaviour
+> xbps-query(1) will try to match `<package expression>` in local packages. This behaviour
 can be changed by enabling the `-R` or `--repository` option to force repository mode.
 
 To query the list of installed packages:
@@ -255,7 +255,7 @@ To clean the cache directory and remove outdated packages and/or packages with w
 
 ### xbps-reconfigure - configure (or force configuration of) a package
 
-The `xbps-reconfigure(8)` utility may be used to configure packages that were not previously
+The `xbps-reconfigure(1)` utility may be used to configure packages that were not previously
 (perhaps due to a power outage, process killed, etc) or simply to force package
 reconfiguration. By default and unless the `-f, --force` option is set, only packages that
 were not configured will be processed.
@@ -266,9 +266,9 @@ Its usage is simple, specify a package name or `a, --all` for all packages:
 
 ### xbps-pkgdb - checking for errors in packages and pkgdb
 
-The `xbps-pkgdb(8)` utility may be used to check for errors in packages and in the package database.
+The `xbps-pkgdb(1)` utility may be used to check for errors in packages and in the package database.
 It is also used to update the *package database* format (if there have been changes). It works exactly the
-same way as `xbps-reconfigure(8)` and expects a package name or -a, --all for all packages.
+same way as `xbps-reconfigure(1)` and expects a package name or -a, --all for all packages.
 
     $ xbps-pkgdb <package name> | -a
 
