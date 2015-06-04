@@ -151,7 +151,7 @@ addItem(const char *pkgn)
 static void __attribute__((noreturn))
 usage(const char *progname)
 {
-	fprintf(stderr, "%s [-a targetarch] [-j parallel] [-l logdir] "
+	fprintf(stderr, "%s [-a targetarch] [-h] [-j parallel] [-l logdir] "
 	    "/path/to/void-packages [pkg pkgN]\n", progname);
 	exit(EXIT_FAILURE);
 }
@@ -548,7 +548,7 @@ main(int argc, char **argv)
 	size_t blen;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "a:j:l:v")) != -1) {
+	while ((ch = getopt(argc, argv, "a:hj:l:v")) != -1) {
 		switch (ch) {
 		case 'a':
 			TargetArch = optarg;
@@ -562,6 +562,7 @@ main(int argc, char **argv)
 		case 'l':
 			LogDir = optarg;
 			break;
+		case 'h':
 		default:
 			usage(progname);
 			/* NOT REACHED */
