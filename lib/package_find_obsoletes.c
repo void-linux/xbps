@@ -80,6 +80,7 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 	const char *basesymlinks[] = {
 		"./bin",
 		"./sbin",
+		"./usr/sbin",
 		"./lib",
 		"./lib32",
 		"./lib64",
