@@ -50,6 +50,7 @@
 #include <sched.h>
 #include <limits.h>	/* PATH_MAX */
 #include <ftw.h>
+#include <signal.h>
 
 #include <xbps.h>
 #include "queue.h"
@@ -142,6 +143,19 @@ cleanup_overlayfs(void)
 		}
 	}
 	rmdir(tmpdir);
+}
+
+static void
+sighandler_cleanup(int signum)
+{
+	switch (signum) {
+	case SIGINT:
+	case SIGTERM:
+	case SIGQUIT:
+		cleanup_overlayfs();
+		break;
+	}
+	_exit(signum);
 }
 
 static void
@@ -261,6 +275,7 @@ setup_overlayfs(const char *chrootdir, uid_t ruid, gid_t rgid, bool tmpfs, const
 int
 main(int argc, char **argv)
 {
+	struct sigaction sa;
 	uid_t ruid, euid, suid;
 	gid_t rgid, egid, sgid;
 	const char *chrootdir, *tmpfs_opts, *cmd, *argv0;
@@ -326,6 +341,15 @@ main(int argc, char **argv)
 		if (chown(tmpdir, ruid, rgid) == -1)
 			die("chown tmpdir %s", tmpdir);
 	}
+
+	/*
+	 * Register a signal handler to clean up temporary masterdir.
+	 */
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = sighandler_cleanup;
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
 
 	clone_flags = (SIGCHLD|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
 	if (openvz_container()) {
