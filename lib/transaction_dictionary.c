@@ -344,8 +344,6 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * and removed to the transaction dictionary.
 	 */
 	if ((rv = compute_transaction_stats(xhp)) != 0) {
-		xbps_object_release(xhp->transd);
-		xhp->transd = NULL;
 		return rv;
 	}
 	/*

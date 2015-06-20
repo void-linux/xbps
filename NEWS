@@ -1,5 +1,9 @@
 xbps-0.46 (???):
 
+ * xbps_transaction_prepare(): do not release the transaction dictionary
+   if it returns ENOSPC, we need it to have access to this data to print
+   required/free space. Fixes #101 ((https://github.com/voidlinux/xbps/issues/101)
+
  * xbps-uchroot(1): now handles SIG{INT,TERM,QUIT} signals to clean up the
    temporary masterdir if `-t` is set.
 
