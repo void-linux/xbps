@@ -51,6 +51,7 @@
 #include <limits.h>	/* PATH_MAX */
 #include <ftw.h>
 #include <signal.h>
+#include <getopt.h>
 
 #include <xbps.h>
 #include "queue.h"
@@ -283,11 +284,14 @@ main(int argc, char **argv)
 	int c, clone_flags, child_status = 0;
 	pid_t child;
 	bool overlayfs = false;
+	const struct option longopts[] = {
+		{ NULL, 0, NULL, 0 }
+	};
 
 	tmpfs_opts = chrootdir = cmd = NULL;
 	argv0 = argv[0];
 
-	while ((c = getopt(argc, argv, "Oto:b:V")) != -1) {
+	while ((c = getopt_long(argc, argv, "Oto:b:V", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'O':
 			overlayfs = true;

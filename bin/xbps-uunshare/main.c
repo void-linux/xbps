@@ -40,6 +40,7 @@
 #include <limits.h>
 #include <syscall.h>
 #include <assert.h>
+#include <getopt.h>
 
 #include <xbps.h>
 #include "queue.h"
@@ -128,11 +129,14 @@ main(int argc, char **argv)
 	const char *chrootdir, *cmd, *argv0;
 	char **cmdargs, buf[32];
 	int c, fd;
+	const struct option longopts[] = {
+		{ NULL, 0, NULL, 0 }
+	};
 
 	chrootdir = cmd = NULL;
 	argv0 = argv[0];
 
-	while ((c = getopt(argc, argv, "b:V")) != -1) {
+	while ((c = getopt_long(argc, argv, "b:V", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'b':
 			if (optarg == NULL || *optarg == '\0')

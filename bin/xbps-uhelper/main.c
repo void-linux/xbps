@@ -32,6 +32,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include <xbps.h>
 #include "../xbps-install/defs.h"
@@ -106,8 +107,11 @@ main(int argc, char **argv)
 	const char *version, *rootdir = NULL, *confdir = NULL;
 	char *pkgname, *hash, *filename;
 	int flags = 0, c, rv = 0;
+	const struct option longopts[] = {
+		{ NULL, 0, NULL, 0 }
+	};
 
-	while ((c = getopt(argc, argv, "C:dr:V")) != -1) {
+	while ((c = getopt_long(argc, argv, "C:dr:V", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'C':
 			confdir = optarg;
