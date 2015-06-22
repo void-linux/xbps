@@ -145,7 +145,7 @@ cleanup_overlayfs(void)
 	rmdir(tmpdir);
 }
 
-static void
+static void __attribute__((noreturn))
 sighandler_cleanup(int signum)
 {
 	switch (signum) {
