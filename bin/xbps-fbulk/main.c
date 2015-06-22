@@ -62,6 +62,7 @@
 #define _BSD_SOURCE
 # include <sys/wait.h>
 #undef _BSD_SOURCE
+#include <getopt.h>
 
 #include <xbps.h>
 
@@ -547,8 +548,11 @@ main(int argc, char **argv)
 	char *bpath, *rpath, *minit, *tmp, cwd[PATH_MAX-1];
 	size_t blen;
 	int ch;
+	const struct option longopts[] = {
+		{ NULL, 0, NULL, 0 }
+	};
 
-	while ((ch = getopt(argc, argv, "a:hj:l:v")) != -1) {
+	while ((ch = getopt_long(argc, argv, "a:hj:l:v", longopts, NULL)) != -1) {
 		switch (ch) {
 		case 'a':
 			TargetArch = optarg;
