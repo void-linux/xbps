@@ -312,7 +312,7 @@ main(int argc, char **argv)
 			rv = xbps_fetch_file_dest(&xh, argv[i], filename, "v");
 
 			if (rv == -1) {
-				printf("%s: %s\n", argv[i],
+				fprintf(stderr, "%s: %s\n", argv[i],
 				    xbps_fetch_error_string());
 			} else if (rv == 0) {
 				printf("%s: file is identical with remote.\n",
