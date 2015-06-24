@@ -1,5 +1,9 @@
 xbps-0.46 (???):
 
+ * xbps-*: all utilities are now using getopt_long() rather than getopt()
+   to avoid the differences with glibc and musl when handling arguments.
+   Thanks to Chris M. Branon for #103.
+
  * xbps_transaction_prepare(): do not release the transaction dictionary
    if it returns ENOSPC, we need it to have access to this data to print
    required/free space. Fixes #101 ((https://github.com/voidlinux/xbps/issues/101)
