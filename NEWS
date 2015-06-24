@@ -1,4 +1,4 @@
-xbps-0.46 (???):
+xbps-0.46 (2015-06-24):
 
  * xbps-*: all utilities are now using getopt_long() rather than getopt()
    to avoid the differences with glibc and musl when handling arguments.
