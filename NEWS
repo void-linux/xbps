@@ -1,3 +1,10 @@
+xbps-0.47 (???):
+
+ * libxbps: when resuming a file transfer (.part file exists), check if the
+   requested offset matches the remote file size, and if that's true,
+   just rename the file to finish it. The HTTP server might return a 413
+   return code to tell us that range is not satisfiable.
+
 xbps-0.46 (2015-06-24):
 
  * xbps-*: all utilities are now using getopt_long() rather than getopt()
