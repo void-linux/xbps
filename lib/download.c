@@ -173,6 +173,9 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 		if (fetchLastErrCode == FETCH_UNCHANGED) {
 			/* Last-Modified matched */
 			goto fetch_file_out;
+		} else if (fetchLastErrCode == FETCH_PROTO && url_st.size == stp->st_size) {
+			/* 413, requested offset == length */
+			goto rename_file;
 		}
 		rv = -1;
 		goto fetch_file_out;
@@ -257,6 +260,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	 */
 	xbps_set_cb_fetch(xhp, url_st.size, url->offset, bytes_dload,
 	    filename, false, false, true);
+
 	/*
 	 * Update mtime in local file to match remote file if transfer
 	 * was successful.
@@ -271,6 +275,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	(void)close(fd);
 	fd = -1;
 
+rename_file:
 	/* File downloaded successfully, rename to destfile */
 	if (rename(tempfile, filename) == -1) {
 		xbps_dbg_printf(xhp, "failed to rename %s to %s: %s",

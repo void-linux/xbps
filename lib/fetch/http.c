@@ -1133,6 +1133,12 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		goto ouch;
 	}
 
+	/* fill in stats */
+	if (us) {
+		us->size = size;
+		us->atime = us->mtime = mtime;
+	}
+
 	/* check for inconsistencies */
 	if (clength != -1 && length != -1 && clength != length) {
 		http_seterr(HTTP_PROTOCOL_ERROR);
@@ -1142,18 +1148,13 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		clength = length;
 	if (clength != -1)
 		length = offset + clength;
+
 	if (length != -1 && size != -1 && length != size) {
 		http_seterr(HTTP_PROTOCOL_ERROR);
 		goto ouch;
 	}
 	if (size == -1)
 		size = length;
-
-	/* fill in stats */
-	if (us) {
-		us->size = size;
-		us->atime = us->mtime = mtime;
-	}
 
 	/* too far? */
 	if (URL->offset > 0 && offset > URL->offset) {
