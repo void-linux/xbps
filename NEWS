@@ -1,5 +1,9 @@
 xbps-0.47 (???):
 
+ * When executing pkg configuration, override the umask with sane defaults.
+   Otherwise files might be created with undesired permissions.
+   Fixes #106 (https://github.com/voidlinux/xbps/issues/106)
+
  * libxbps: when resuming a file transfer (.part file exists), check if the
    requested offset matches the remote file size, and if that's true,
    just rename the file to finish it. The HTTP server might return a 413

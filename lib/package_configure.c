@@ -92,6 +92,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 	char *pkgname;
 	int rv = 0;
 	pkg_state_t state = 0;
+	mode_t myumask;
 
 	assert(pkgver != NULL);
 
@@ -131,6 +132,8 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		}
 	}
 
+	myumask = umask(022);
+
 	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE, 0, pkgver, NULL);
 
 	rv = xbps_pkg_exec_script(xhp, pkgd, "install-script", "post", update);
@@ -139,6 +142,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		    errno, pkgver,
 		    "%s: [configure] INSTALL script failed to execute "
 		    "the post ACTION: %s", pkgver, strerror(rv));
+		umask(myumask);
 		return rv;
 	}
 	rv = xbps_set_pkg_state_dictionary(pkgd, XBPS_PKG_STATE_INSTALLED);
@@ -146,11 +150,13 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_FAIL, rv,
 		    pkgver, "%s: [configure] failed to set state to installed: %s",
 		    pkgver, strerror(rv));
+		umask(myumask);
 		return rv;
 	}
 	if (rv == 0)
 		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_DONE, 0, pkgver, NULL);
 
+	umask(myumask);
 	/* show install-msg if exists */
 	return xbps_cb_message(xhp, pkgd, "install-msg");
 }
