@@ -1134,9 +1134,8 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 	}
 
 	/* fill in stats */
-	if (us) {
+	if (us && size) {
 		us->size = size;
-		us->atime = us->mtime = mtime;
 	}
 
 	/* check for inconsistencies */
@@ -1155,6 +1154,12 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 	}
 	if (size == -1)
 		size = length;
+
+	/* fill in stats */
+	if (us) {
+		us->size = size;
+		us->atime = us->mtime = mtime;
+	}
 
 	/* too far? */
 	if (URL->offset > 0 && offset > URL->offset) {
