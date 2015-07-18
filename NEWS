@@ -1,4 +1,4 @@
-xbps-0.47 (???):
+xbps-0.47 (2015-07-18):
 
  * When executing pkg configuration, override the umask with sane defaults.
    Otherwise files might be created with undesired permissions.
