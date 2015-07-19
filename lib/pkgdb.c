@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -61,6 +62,7 @@ static int pkgdb_fd;
 int
 xbps_pkgdb_lock(struct xbps_handle *xhp)
 {
+	mode_t prev_umask;
 	int rv;
 	/*
 	 * Use a mandatory file lock to only allow one writer to pkgdb,
@@ -89,13 +91,18 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 			return rv;
 		}
 	}
+
+	prev_umask = umask(0644);
 	if ((pkgdb_fd = open(xhp->pkgdb_plist, O_CREAT|O_RDWR|O_CLOEXEC, 0664)) == -1) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "[pkgdb] cannot open pkgdb for locking "
 		    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
 		free(xhp->pkgdb_plist);
+		umask(prev_umask);
 		return rv;
 	}
+	umask(prev_umask);
+
 	if (lockf(pkgdb_fd, F_TLOCK, 0) == -1) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "[pkgdb] cannot lock pkgdb: %s\n", strerror(rv));
