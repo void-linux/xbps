@@ -851,10 +851,10 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
 
 	myumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
 	if ((fd = mkstemp(tname)) == -1) {
-		umask(myymask);
+		umask(myumask);
 		return (false);
 	}
-	umask(myymask);
+	umask(myumask);
 
 	if (do_compress) {
 		if ((gzf = gzdopen(fd, "a")) == NULL)
