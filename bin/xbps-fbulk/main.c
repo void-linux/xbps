@@ -202,7 +202,7 @@ processCompletion(struct item *item)
 		else
 			logdir = "bad";
 		logpath2 = xbps_xasprintf("%s/%s/%s", LogDir, logdir, item->pkgn);
-		rename(logpath1, logpath2);
+		(void)rename(logpath1, logpath2);
 		free(logpath1);
 		free(logpath2);
 	}
