@@ -600,7 +600,7 @@ _prop_object_internalize_by_tag(struct _prop_object_internalize_context *ctx)
 
 match_start:
 	for (poi = _prop_object_internalizer_table;
-	     poi->poi_tag != NULL; poi++) {
+	     poi != NULL && poi->poi_tag != NULL; poi++) {
 		if (_prop_object_internalize_match(ctx->poic_tagname,
 						   ctx->poic_tagname_len,
 						   poi->poi_tag,
