@@ -109,9 +109,10 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
 		rv = errno;
-		if (rv == ENOENT)
+		if (rv == ENOENT) {
+			xbps_repo_unlock(rlockfd, rlockfname);
 			return 0;
-
+		}
 		fprintf(stderr, "%s: cannot read repository data: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
 		xbps_repo_unlock(rlockfd, rlockfname);
