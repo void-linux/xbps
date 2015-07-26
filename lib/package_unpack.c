@@ -291,7 +291,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 */
 		if (file_exists &&
 		    ((entry_statp->st_mode & S_IFMT) != (st.st_mode & S_IFMT)))
-			remove(entry_pname);
+			(void)remove(entry_pname);
 
 		if (!force && (entry_type == AE_IFREG)) {
 			buf = strchr(entry_pname, '.') + 1;
