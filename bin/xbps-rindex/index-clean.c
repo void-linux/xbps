@@ -114,6 +114,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 
 		fprintf(stderr, "%s: cannot read repository data: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
+		xbps_repo_unlock(rlockfd, rlockfname);
 		return rv;
 	}
 	if (repo->idx == NULL) {
