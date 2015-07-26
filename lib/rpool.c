@@ -127,7 +127,6 @@ xbps_rpool_release(struct xbps_handle *xhp _unused)
 	while ((repo = SIMPLEQ_FIRST(&rpool_queue))) {
 	       SIMPLEQ_REMOVE(&rpool_queue, repo, xbps_repo, entries);
 	       xbps_repo_close(repo);
-	       free(repo);
 	}
 	if (xhp->repositories)
 		xbps_object_release(xhp->repositories);
