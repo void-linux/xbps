@@ -345,7 +345,7 @@ runBuilds(const char *bpath)
 		 * attempts.
 		 */
 		logpath = xbps_xasprintf("%s/bad/%s", LogDir, item->pkgn);
-		remove(logpath);
+		(void)remove(logpath);
 		free(logpath);
 
 		logpath = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);
