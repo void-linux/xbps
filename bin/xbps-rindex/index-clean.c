@@ -63,6 +63,8 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		 * broken or simply unexistent; either way, remove it.
 		 */
 		pkgname = xbps_pkg_name(pkgver);
+		if (pkgname == NULL)
+			goto out;
 		xbps_dictionary_remove(dest, pkgname);
 		free(pkgname);
 		printf("index: removed pkg %s\n", pkgver);
@@ -74,11 +76,14 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 				"filename-sha256", &sha256);
 		if (xbps_file_hash_check(filen, sha256) != 0) {
 			pkgname = xbps_pkg_name(pkgver);
+			if (pkgname == NULL)
+				goto out;
 			xbps_dictionary_remove(dest, pkgname);
 			free(pkgname);
 			printf("index: removed pkg %s\n", pkgver);
 		}
 	}
+out:
 	free(filen);
 	return 0;
 }
