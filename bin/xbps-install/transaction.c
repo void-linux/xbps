@@ -322,14 +322,16 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 			if (xbps_humanize_number(instsize, (int64_t)isize) == -1) {
 				xbps_error_printf("humanize_number2 returns "
 					"%s\n", strerror(errno));
-				return -1;
+				rv = -1;
+				goto out;
 			}
 			xbps_dictionary_get_uint64(xhp->transd,
 			    "disk-free-size", &fsize);
 			if (xbps_humanize_number(freesize, (int64_t)fsize) == -1) {
 				xbps_error_printf("humanize_number2 returns "
 					"%s\n", strerror(errno));
-				return -1;
+				rv = -1;
+				goto out;
 			}
 			fprintf(stderr, "Transaction aborted due to insufficient disk "
 			    "space (need %s, got %s free).\n", instsize, freesize);
