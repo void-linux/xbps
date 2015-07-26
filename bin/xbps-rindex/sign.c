@@ -274,7 +274,7 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 		rv = EINVAL;
 		goto out;
 	}
-	fstat(binpkg_fd, &st);
+	(void)fstat(binpkg_fd, &st);
 	buf = malloc(st.st_size);
 	assert(buf);
 	if (read(binpkg_fd, buf, st.st_size) != st.st_size) {
