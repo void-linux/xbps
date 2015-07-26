@@ -281,6 +281,7 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 		goto out;
 	}
 	close(binpkg_fd);
+	binpkg_fd = -1;
 
 	rsa = load_rsa_key(privkey);
 	if (!rsa_sign_buf(rsa, buf, st.st_size, &sig, &siglen)) {
