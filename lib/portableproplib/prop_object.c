@@ -849,8 +849,12 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
 	strcat(tname, PLISTTMP);
 #undef PLISTTMP
 
-	if ((fd = mkstemp(tname)) == -1)
+	myumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
+	if ((fd = mkstemp(tname)) == -1) {
+		umask(myymask);
 		return (false);
+	}
+	umask(myymask);
 
 	if (do_compress) {
 		if ((gzf = gzdopen(fd, "a")) == NULL)
