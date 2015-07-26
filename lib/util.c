@@ -437,7 +437,7 @@ xbps_sanitize_path(const char *src)
 	len = strlen(src);
 	assert(len != 0);
 
-	dest = malloc(len);
+	dest = malloc(len+1);
 	assert(dest);
 	d = dest;
 
