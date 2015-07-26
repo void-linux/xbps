@@ -139,6 +139,8 @@ load_rsa_key(const char *privkey)
 		fprintf(stderr, "%s: failed to read the RSA privkey\n", _XBPS_RINDEX);
 		exit(EXIT_FAILURE);
 	}
+	free(defprivkey);
+	defprivkey = NULL;
 
 	return rsa;
 }
