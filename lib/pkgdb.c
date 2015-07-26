@@ -151,6 +151,7 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		pkgname = xbps_pkg_name(pkgver);
+		assert(pkgname);
 
 		for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
 			const char *vpkg;
