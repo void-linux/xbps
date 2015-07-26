@@ -843,9 +843,11 @@ main(int argc, char **argv)
 	/*
 	 * Create a temp file to store archive data.
 	 */
-	tname = xbps_xasprintf(".xbps-pkg-XXXXXX");
+	tname = xbps_xasprintf(".xbps-pkg-XXXXXXXXX");
+	myumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
 	pkg_fd = mkstemp(tname);
 	assert(pkg_fd != -1);
+	umask(myumask);
 	/*
 	 * Process the binary package's archive (ustar compressed with xz).
 	 */

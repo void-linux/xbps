@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2013 Juan Romero Pardines.
+ * Copyright (c) 2012-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	const char *tmpdir, *version;
 	char *pkgname, *fpath;
 	int fd, rv;
+	mode_t mask;
 
 	assert(blob);
 	assert(pkgver);
@@ -71,12 +72,15 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	}
 
 	/* Create temp file to run script */
+	mask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
 	if ((fd = mkstemp(fpath)) == -1) {
+		umask(mask);
 		rv = errno;
 		xbps_dbg_printf(xhp, "%s: mkstemp %s\n",
 		    __func__, strerror(errno));
 		goto out;
 	}
+	umask(mask);
 	/* write blob to our temp fd */
 	ret = write(fd, blob, blobsiz);
 	if (ret == -1) {
