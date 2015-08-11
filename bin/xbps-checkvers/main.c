@@ -533,7 +533,7 @@ check_reverts(const char *repover, const map_item_t reverts)
 		 * Check if it's the first character or the previous character is a
 		 * whitespace.
 		 */
-		if (p > sreverts && !isspace(p[-1]))
+		if (p > sreverts && !isalpha(p[-1]) && !isspace(p[-1]))
 			continue;
 		p += strlen(repover);
 		/*

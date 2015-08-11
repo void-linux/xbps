@@ -202,7 +202,7 @@ processCompletion(struct item *item)
 		else
 			logdir = "bad";
 		logpath2 = xbps_xasprintf("%s/%s/%s", LogDir, logdir, item->pkgn);
-		rename(logpath1, logpath2);
+		(void)rename(logpath1, logpath2);
 		free(logpath1);
 		free(logpath2);
 	}
@@ -345,7 +345,7 @@ runBuilds(const char *bpath)
 		 * attempts.
 		 */
 		logpath = xbps_xasprintf("%s/bad/%s", LogDir, item->pkgn);
-		remove(logpath);
+		(void)remove(logpath);
 		free(logpath);
 
 		logpath = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);

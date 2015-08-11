@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013-2014 Juan Romero Pardines.
+ * Copyright (c) 2013-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,13 +44,16 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	struct archive *ar;
 	char *repofile, *tname, *buf;
 	int rv, repofd = -1;
+	mode_t mask;
 
 	/* Create a tempfile for our repository archive */
 	repofile = xbps_repo_path(xhp, repodir);
 	tname = xbps_xasprintf("%s.XXXXXXXXXX", repofile);
+	mask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
 	if ((repofd = mkstemp(tname)) == -1)
 		return false;
 
+	umask(mask);
 	/* Create and write our repository archive */
 	ar = archive_write_new();
 	assert(ar);

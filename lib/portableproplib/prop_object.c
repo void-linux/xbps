@@ -600,7 +600,7 @@ _prop_object_internalize_by_tag(struct _prop_object_internalize_context *ctx)
 
 match_start:
 	for (poi = _prop_object_internalizer_table;
-	     poi->poi_tag != NULL; poi++) {
+	     poi != NULL && poi->poi_tag != NULL; poi++) {
 		if (_prop_object_internalize_match(ctx->poic_tagname,
 						   ctx->poic_tagname_len,
 						   poi->poi_tag,
@@ -849,8 +849,12 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
 	strcat(tname, PLISTTMP);
 #undef PLISTTMP
 
-	if ((fd = mkstemp(tname)) == -1)
+	myumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
+	if ((fd = mkstemp(tname)) == -1) {
+		umask(myumask);
 		return (false);
+	}
+	umask(myumask);
 
 	if (do_compress) {
 		if ((gzf = gzdopen(fd, "a")) == NULL)

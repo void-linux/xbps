@@ -139,6 +139,8 @@ load_rsa_key(const char *privkey)
 		fprintf(stderr, "%s: failed to read the RSA privkey\n", _XBPS_RINDEX);
 		exit(EXIT_FAILURE);
 	}
+	free(defprivkey);
+	defprivkey = NULL;
 
 	return rsa;
 }
@@ -272,7 +274,7 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 		rv = EINVAL;
 		goto out;
 	}
-	fstat(binpkg_fd, &st);
+	(void)fstat(binpkg_fd, &st);
 	buf = malloc(st.st_size);
 	assert(buf);
 	if (read(binpkg_fd, buf, st.st_size) != st.st_size) {
@@ -281,6 +283,7 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 		goto out;
 	}
 	close(binpkg_fd);
+	binpkg_fd = -1;
 
 	rsa = load_rsa_key(privkey);
 	if (!rsa_sign_buf(rsa, buf, st.st_size, &sig, &siglen)) {

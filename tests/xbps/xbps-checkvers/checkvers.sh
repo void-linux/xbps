@@ -301,6 +301,36 @@ EOF
 	atf_check_equal "$out" "pkgname: A repover: 1.1_1 srcpkgver: 1.0_1"
 }
 
+atf_test_case reverts_alpha
+
+reverts_alpha_head() {
+	atf_set "descr" "xbps-checkvers(8): test with reverts containing an alphanumeric character"
+}
+
+reverts_alpha_body() {
+	mkdir -p some_repo pkg_A void-packages/srcpkgs/fs-utils
+	touch pkg_A/file00
+	cat > void-packages/srcpkgs/fs-utils/template <<EOF
+pkgname=fs-utils
+reverts=v1.10_1
+version=1.10
+revision=1
+do_install() {
+	:
+}
+EOF
+	cd some_repo
+	xbps-create -A noarch -n fs-utils-1.10_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages
+	out=`xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages`
+	atf_check_equal $? 0
+	atf_check_equal "$out" "pkgname: fs-utils repover: 1.10_1 srcpkgver: 1.10_1"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case srcpkg_newer
 	atf_add_test_case srcpkg_newer_with_refs
@@ -313,4 +343,5 @@ atf_init_test_cases() {
 	atf_add_test_case srcpkg_missing_pkgver
 	atf_add_test_case srcpkg_missing_pkgverrev
 	atf_add_test_case reverts
+	atf_add_test_case reverts_alpha
 }
