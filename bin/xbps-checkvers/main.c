@@ -622,7 +622,7 @@ rcv_process_dir(rcv_t *rcv, const char *path, rcv_proc_func process)
 error:
 	if (errors > 0 || !dir) {
 		fprintf(stderr, "Error: while processing dir '%s': %s\n", path,
-			strerror(errors));
+			strerror(errno));
 		exit(1);
 	}
 
