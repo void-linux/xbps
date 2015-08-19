@@ -92,7 +92,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 		}
 	}
 
-	prev_umask = umask(0644);
+	prev_umask = umask(022);
 	if ((pkgdb_fd = open(xhp->pkgdb_plist, O_CREAT|O_RDWR|O_CLOEXEC, 0664)) == -1) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "[pkgdb] cannot open pkgdb for locking "
