@@ -14,7 +14,6 @@ _xbps_properties=(
 	architecture
 	archive-compression-type
 	automatic-install
-	build-date
 	build-options
 	conf_files
 	conflicts

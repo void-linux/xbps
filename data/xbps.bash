@@ -45,7 +45,6 @@ _xbps_complete() {
 	local props='architecture
 		archive-compression-type
 		automatic-install
-		build-date
 		build-options
 		conf_files
 		conflicts

@@ -4,6 +4,8 @@ xbps-0.48 (???):
    extra alphanumeric characters in the `reverts' object. Added a new testcase
    to verify its correctness.
 
+ * xbps-create(1): do not add a build-date property to packages.
+
 xbps-0.47 (2015-07-18):
 
  * When executing pkg configuration, override the umask with sane defaults.

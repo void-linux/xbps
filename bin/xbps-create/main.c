@@ -585,24 +585,6 @@ process_archive(struct archive *ar,
 	}
 }
 
-static void
-set_build_date(void)
-{
-	char outstr[64];
-	time_t t;
-	struct tm *tmp;
-
-	t = time(NULL);
-	tmp = localtime(&t);
-	assert(tmp);
-
-	if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", tmp) == 0)
-		die("failed to set build-date object (strftime):");
-
-	if (!xbps_dictionary_set_cstring(pkg_propsd, "build-date", outstr))
-		die("failed to add build-date object:");
-}
-
 int
 main(int argc, char **argv)
 {
@@ -778,7 +760,6 @@ main(int argc, char **argv)
 	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "version", version);
 	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "pkgver", pkgver);
 	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "short_desc", desc);
-	set_build_date();
 
 	/* Optional properties */
 	if (homepage)
