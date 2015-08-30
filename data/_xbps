@@ -193,6 +193,7 @@ _xbps_rindex() {
 		{-c,--clean}'[Clean repository index]' \
 		{-r,--remove-obsoletes}'[Removes obsolete packages from repository]' \
 		{-s,--sign}'[Sign repository index]' \
+		{-S,--sign-pkg}'[Sign binary package archive]' \
 		':repository dir:_files -/' \
 		'*:packages:_files'
 }
