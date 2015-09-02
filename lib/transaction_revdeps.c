@@ -92,11 +92,11 @@ check_virtual_pkgs(xbps_array_t mdeps,
 }
 
 static void
-broken_pkg(xbps_array_t mdeps, const char *dep, const char *pkg)
+broken_pkg(xbps_array_t mdeps, const char *dep, const char *pkg, const char *trans)
 {
 	char *str;
 
-	str = xbps_xasprintf("%s broken, needs `%s'", dep, pkg);
+	str = xbps_xasprintf("%s (%s) breaks installed pkg `%s'", pkg, trans, dep);
 	xbps_array_add_cstring(mdeps, str);
 	free(str);
 }
@@ -171,7 +171,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 					continue;
 				}
 				free(pkgname);
-				broken_pkg(mdeps, curpkgver, pkgver);
+				broken_pkg(mdeps, curpkgver, pkgver, tract);
 				continue;
 			}
 			/*
@@ -225,7 +225,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 				continue;
 			}
 			free(pkgname);
-			broken_pkg(mdeps, curpkgver, pkgver);
+			broken_pkg(mdeps, curpkgver, pkgver, tract);
 		}
 
 	}
