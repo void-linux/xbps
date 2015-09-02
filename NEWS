@@ -21,6 +21,8 @@ xbps-0.48 (???):
    Transaction aborted due to unresolved dependencies.
    $
 
+ * Multiple minor issues found by Coverity scan were fixed.
+
  * xbps-checkvers(1): fixed an endless loop while processing templates containing
    extra alphanumeric characters in the `reverts' object. Added a new testcase
    to verify its correctness.
