@@ -37,6 +37,24 @@
 #include <xbps.h>
 #include "defs.h"
 
+static int
+set_build_date(const xbps_dictionary_t pkgd, time_t timestamp)
+{
+	char outstr[64];
+	struct tm tmp;
+
+	if (!localtime_r(&timestamp, &tmp))
+		return -1;
+
+	if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", &tmp) == 0)
+		return -1;
+
+	if (!xbps_dictionary_set_cstring(pkgd, "build-date", outstr))
+		return -1;
+	return 0;
+}
+
+
 int
 index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force)
 {
@@ -183,6 +201,12 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 			goto out;
 		}
 		if (!xbps_dictionary_set_uint64(binpkgd, "filename-size", (uint64_t)st.st_size)) {
+			free(pkgver);
+			free(pkgname);
+			rv = EINVAL;
+			goto out;
+		}
+		if (set_build_date(binpkgd, st.st_mtime) < 0) {
 			free(pkgver);
 			free(pkgname);
 			rv = EINVAL;
