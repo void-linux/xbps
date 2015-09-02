@@ -32,7 +32,7 @@
 
 int HIDDEN
 xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
-		xbps_dictionary_t pkgd, bool autoinst)
+		xbps_dictionary_t pkgd, const char *tract, bool autoinst)
 {
 	xbps_array_t replaces;
 	const char *pkgver, *repo;
@@ -69,6 +69,9 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	 */
 	if (!xbps_array_add(pkgs, pkgd))
 		return EINVAL;
+
+	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_ADDPKG, 0, pkgver,
+	    "Found %s (%s) in repository %s", pkgver, tract, repo);
 
 	xbps_dbg_printf(xhp, "Added `%s' into the dependency list (%s)\n",
 	    pkgver, repo);

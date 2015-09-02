@@ -129,7 +129,7 @@ bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *, xbps_array_t,
 		xbps_array_t);
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
 int HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t,
-		xbps_dictionary_t, bool);
+		xbps_dictionary_t, const char *, bool);
 char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
 int HIDDEN xbps_file_hash_check_dictionary(struct xbps_handle *,
