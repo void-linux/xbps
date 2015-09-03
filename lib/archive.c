@@ -75,7 +75,6 @@ xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen
 	const char *fname, const mode_t mode, const char *uname, const char *gname)
 {
 	struct archive_entry *entry;
-	time_t tm;
 
 	assert(ar);
 	assert(buf);
@@ -83,7 +82,6 @@ xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen
 	assert(uname);
 	assert(gname);
 
-	tm = time(NULL);
 	entry = archive_entry_new();
 	assert(entry);
 
@@ -93,9 +91,6 @@ xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen
 	archive_entry_set_gname(entry, gname);
 	archive_entry_set_pathname(entry, fname);
 	archive_entry_set_size(entry, buflen);
-	archive_entry_set_atime(entry, tm, 0);
-	archive_entry_set_mtime(entry, tm, 0);
-	archive_entry_set_ctime(entry, tm, 0);
 
 	if (archive_write_header(ar, entry) != ARCHIVE_OK) {
 		archive_entry_free(entry);

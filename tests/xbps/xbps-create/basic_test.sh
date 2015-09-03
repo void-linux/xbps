@@ -110,9 +110,39 @@ restore_mtime_body() {
 	atf_check_equal "$expected" "$result"
 }
 
+atf_test_case reproducible_pkg
+
+reproducible_pkg_head() {
+	atf_set "descr" "xbps-create(1): generate identical packages"
+}
+
+reproducible_pkg_body() {
+	mkdir -p repo pkg_A/usr/include/gsm
+
+	# identical content
+	echo QWERTY > pkg_A/usr/include/gsm/gsm.h
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" pkg_A
+	atf_check_equal $? 0
+	mv foo-1.0_1.noarch.xbps foo-1.0_1.noarch.xbps.orig
+	atf_check_equal $? 0
+	sleep 1
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" pkg_A
+	atf_check_equal $? 0
+	cmp -s foo-1.0_1.noarch.xbps foo-1.0_1.noarch.xbps.orig
+	atf_check_equal $? 0
+
+	# modified content
+	echo QWERTZ > pkg_A/usr/include/gsm/gsm.h
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" pkg_A
+	atf_check_equal $? 0
+	cmp -s foo-1.0_1.noarch.xbps foo-1.0_1.noarch.xbps.orig
+	atf_check_equal $? 1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case hardlinks_size
 	atf_add_test_case symlink_relative_target
 	atf_add_test_case symlink_relative_target_cwd
 	atf_add_test_case restore_mtime
+	atf_add_test_case reproducible_pkg
 }
