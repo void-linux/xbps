@@ -6,6 +6,9 @@ xbps-0.48 (???):
 
  * xbps-create(1): do not add a build-date property to packages.
 
+ * xbps-rindex(1): use mtime of file instead of the build-date field in the
+   package to set build-date in the repo index.
+
 xbps-0.47 (2015-07-18):
 
  * When executing pkg configuration, override the umask with sane defaults.
