@@ -29,10 +29,6 @@ digraph pkg_props_dictionary {
 	instsize -> instsize_value;
 	instsize_value [style=filled,fillcolor="yellowgreen",label="389120"];
 	instsize [label="installed_size"];
-	main -> builddate [label="string"];
-	builddate [label="build_date"];
-	builddate -> builddate_value;
-	builddate_value [style=filled,fillcolor="yellowgreen",label="Friday 27 May, 2011, 06:58:13 UTC"];
 	main -> short_desc [label="string"]
 	short_desc -> shortdesc_val;
 	shortdesc_val [style=filled,fillcolor="yellowgreen",label="The XBPS package system utilities"];
