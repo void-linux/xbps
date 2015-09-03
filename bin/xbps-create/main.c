@@ -103,7 +103,7 @@ usage(void)
 	" -t --tags           A list of tags/categories (blank separated list).\n"
 	" -V --version        Prints XBPS release version.\n"
 	" --build-options     A string with the used build options.\n"
-	" --compression       Compression format: gzip, bzip2, xz (default).\n"
+	" --compression       Compression format: none, gzip, bzip2, xz (default).\n"
 	" --shlib-provides    List of provided shared libraries (blank separated list,\n"
 	"                     e.g 'libfoo.so.1 libblah.so.2').\n"
 	" --shlib-requires    List of required shared libraries (blank separated list,\n"
@@ -845,6 +845,8 @@ main(int argc, char **argv)
 	} else if (strcmp(compression, "bzip2") == 0) {
 		archive_write_add_filter_bzip2(ar);
 		archive_write_set_options(ar, "compression-level=9");
+	} else if (strcmp(compression, "none") == 0) {
+		/* empty */
 	} else {
 		die("unknown compression format %s");
 	}
