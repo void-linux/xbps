@@ -1,5 +1,8 @@
 xbps-0.48 (???):
 
+ * libxbps: relative cachedir set via xbps.d(5) now work correctly.
+   Fixes #117 (https://github.com/voidlinux/xbps/issues/117)
+
  * xbps-create(1): --compression now accepts "none" to not use any
    compression format.
 

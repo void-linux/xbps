@@ -55,38 +55,34 @@ static int parse_file(struct xbps_handle *, const char *, const char *, bool);
  * Use these functions to initialize some parameters before start
  * using libxbps and finalize usage to release resources at the end.
  */
+
 static void
-store_vpkg(struct xbps_handle *xhp, const char *path, size_t line, char *vpkg_s)
+store_vars(struct xbps_handle *xhp, xbps_dictionary_t *d,
+	const char *key, const char *path, size_t line, char *buf)
 {
+	char *lp, *rp, *tc;
+	size_t len;
+
+	if (*d == NULL)
+		*d = xbps_dictionary_create();
 	/*
-	 * Append virtual package overrides to our vpkgd dictionary:
-	 *
-	 * <key>vpkgver</key>
-	 * <string>realpkgname</string>
+	 * Parse strings delimited by ':' i.e
+	 * 	<left>:<right>
 	 */
-	char *vpkg, *rpkg, *tc;
-	size_t vpkglen;
-
-	if (xhp->vpkgd == NULL)
-		xhp->vpkgd = xbps_dictionary_create();
-
-	/* real pkg after ':' */
-	vpkg = vpkg_s;
-	rpkg = strchr(vpkg_s, ':');
-	if (rpkg == NULL || *rpkg == '\0') {
+	lp = buf;
+	rp = strchr(buf, ':');
+	if (rp == NULL || *rp == '\0') {
 		xbps_dbg_printf(xhp, "%s: ignoring invalid "
-		    "virtualpkg option at line %zu\n", path, line);
+		    "%s option at line %zu\n", path, key, line);
 		return;
 	}
-	/* vpkg until ':' */
-	tc = strchr(vpkg_s, ':');
-	vpkglen = strlen(vpkg_s) - strlen(tc);
-	vpkg[vpkglen] = '\0';
+	tc = strchr(buf, ':');
+	len = strlen(buf) - strlen(tc);
+	lp[len] = '\0';
 
-	/* skip ':' */
-	rpkg++;
-	xbps_dictionary_set_cstring(xhp->vpkgd, vpkg, rpkg);
-	xbps_dbg_printf(xhp, "%s: added vpkg %s for %s\n", path, vpkg, rpkg);
+	rp++;
+	xbps_dictionary_set_cstring(*d, lp, rp);
+	xbps_dbg_printf(xhp, "%s: added %s %s for %s\n", path, key, lp, rp);
 }
 
 static void
@@ -262,7 +258,7 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 			if (store_repo(xhp, v))
 				xbps_dbg_printf(xhp, "%s: added repository %s\n", path, v);
 		} else if (strcmp(k, "virtualpkg") == 0) {
-			store_vpkg(xhp, path, nlines, v);
+			store_vars(xhp, &xhp->vpkgd, k, path, nlines, v);
 		} else if (strcmp(k, "preserve") == 0) {
 			store_preserved_file(xhp, v);
 		} else if (strcmp(k, "bestmatching") == 0) {
@@ -416,30 +412,6 @@ xbps_init(struct xbps_handle *xhp)
 		free(buf);
 	}
 	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
-	/* Set cachedir */
-	if (xhp->cachedir[0] == '\0') {
-		snprintf(xhp->cachedir, sizeof(xhp->cachedir),
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
-		    XBPS_CACHE_PATH);
-	} else if (xhp->cachedir[0] != '/') {
-		/* relative path */
-		buf = strdup(xhp->cachedir);
-		snprintf(xhp->cachedir, sizeof(xhp->cachedir),
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
-		free(buf);
-	}
-	/* Set metadir */
-	if (xhp->metadir[0] == '\0') {
-		snprintf(xhp->metadir, sizeof(xhp->metadir),
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
-		    XBPS_META_PATH);
-	} else if (xhp->metadir[0] != '/') {
-		/* relative path */
-		buf = strdup(xhp->metadir);
-		snprintf(xhp->metadir, sizeof(xhp->metadir),
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
-		free(buf);
-	}
 	/* set confdir */
 	if (xhp->confdir[0] == '\0') {
 		snprintf(xhp->confdir, sizeof(xhp->confdir),
@@ -471,6 +443,31 @@ xbps_init(struct xbps_handle *xhp)
 	/* process xbps.d */
 	if ((rv = parse_dir(xhp, cwd, xhp->confdir, sysconfdir)) != 0)
 		return rv;
+
+	/* Set cachedir */
+	if (xhp->cachedir[0] == '\0') {
+		snprintf(xhp->cachedir, sizeof(xhp->cachedir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
+		    XBPS_CACHE_PATH);
+	} else if (xhp->cachedir[0] != '/') {
+		/* relative path */
+		buf = strdup(xhp->cachedir);
+		snprintf(xhp->cachedir, sizeof(xhp->cachedir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
+		free(buf);
+	}
+	/* Set metadir */
+	if (xhp->metadir[0] == '\0') {
+		snprintf(xhp->metadir, sizeof(xhp->metadir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
+		    XBPS_META_PATH);
+	} else if (xhp->metadir[0] != '/') {
+		/* relative path */
+		buf = strdup(xhp->metadir);
+		snprintf(xhp->metadir, sizeof(xhp->metadir),
+		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
+		free(buf);
+	}
 
 	xbps_dbg_printf(xhp, "rootdir=%s\n", xhp->rootdir);
 	xbps_dbg_printf(xhp, "metadir=%s\n", xhp->metadir);
