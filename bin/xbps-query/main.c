@@ -221,7 +221,12 @@ main(int argc, char **argv)
 	} else if (!opmode) {
 		/* show mode by default */
 		show = opmode = true;
-		pkg = *argv;
+		pkg = *(argv++);
+		argc--;
+	}
+	if (argc) {
+		/* trailing parameters */
+		usage(true);
 	}
 	/*
 	 * Initialize libxbps.

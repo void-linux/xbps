@@ -1,5 +1,7 @@
 xbps-0.48 (???):
 
+ * xbps-query(1): fail if unused arguments are supplied.
+
  * libxbps: relative cachedir set via xbps.d(5) now work correctly.
    Fixes #117 (https://github.com/voidlinux/xbps/issues/117)
 
