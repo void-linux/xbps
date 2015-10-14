@@ -1,5 +1,8 @@
 xbps-0.48 (???):
 
+ * libxbps: fix a bug where broken reverse dependencies would be detected
+   before detecting packages that need to be replaced in transaction.
+
  * xbps-query(1): fail if unused arguments are supplied.
 
  * libxbps: relative cachedir set via xbps.d(5) now work correctly.

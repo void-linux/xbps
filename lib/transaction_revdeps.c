@@ -166,6 +166,10 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 * the transaction.
 			 */
 			if (strcmp(tract, "remove") == 0) {
+				if (xbps_dictionary_get(obj, "replaced")) {
+					free(pkgname);
+					continue;
+				}
 				if (xbps_find_pkg_in_array(pkgs, pkgname, "remove")) {
 					free(pkgname);
 					continue;

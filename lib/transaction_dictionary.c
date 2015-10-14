@@ -300,6 +300,14 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	xbps_object_release(edges);
 
 	/*
+	 * Check for packages to be replaced.
+	 */
+	if ((rv = xbps_transaction_package_replace(xhp, pkgs)) != 0) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return rv;
+	}
+	/*
 	 * If there are missing deps or revdeps bail out.
 	 */
 	xbps_transaction_revdeps(xhp, pkgs);
@@ -329,14 +337,6 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		} else {
 			return ENOEXEC;
 		}
-	}
-	/*
-	 * Check for packages to be replaced.
-	 */
-	if ((rv = xbps_transaction_package_replace(xhp, pkgs)) != 0) {
-		xbps_object_release(xhp->transd);
-		xhp->transd = NULL;
-		return rv;
 	}
 	/*
 	 * Add transaction stats for total download/installed size,

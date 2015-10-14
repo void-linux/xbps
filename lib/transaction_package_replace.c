@@ -121,6 +121,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 */
 			xbps_dictionary_set_cstring_nocopy(instd,
 			    "transaction", "remove");
+			xbps_dictionary_set_bool(instd, "replaced", true);
 			if (!xbps_array_add_first(pkgs, instd)) {
 				xbps_object_iterator_release(iter);
 				free(pkgname);
