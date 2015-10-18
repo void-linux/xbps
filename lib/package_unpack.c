@@ -622,6 +622,14 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		    "%s: [unpack] failed to set state to unpacked: %s",
 		    pkgver, strerror(rv));
 	}
+	/* register alternatives */
+	if ((rv = xbps_alternatives_register(xhp, pkg_repod)) != 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
+		    rv, pkgver,
+		    "%s: [unpack] failed to register alternatives: %s",
+		    pkgver, strerror(rv));
+	}
+
 out:
 	if (pkg_fd != -1)
 		close(pkg_fd);

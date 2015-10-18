@@ -1,0 +1,246 @@
+The XBPS alternatives framework
+-------------------------------
+
+-------------------------------------------------
+Package metadata stored in packages (props.plist)
+-------------------------------------------------
+
+The 'nvi' pkg declares an alternative group named 'vi':
+
+...
+<key>alternatives</key>
+<dict>
+	<key>vi</key>
+	<array>
+		<string>/usr/bin/ex:/usr/bin/nvi</string>
+		<string>/usr/bin/vi:/usr/bin/nvi</string>
+		<string>/usr/share/man/man1/ex.1:/usr/share/man/man1/nvi.1</string>
+		<string>/usr/share/man/man1/vi.1:/usr/share/man/man1/nvi.1</string>
+	</array>
+	...
+</dict>
+...
+
+The strings need to follow the <symlink>:<target> convention, delimited by
+the ':' character.
+
+--------------------------------------------------------------------
+Package metadata stored in metadir (metadir/alternatives-0.48.plist)
+--------------------------------------------------------------------
+
+/var/db/xbps/alternatives-0.48.plist (dict):
+
+3 packages can provide the 'vi' alternative group: ex-vi, nvi or vim.
+The entry order determines the priority (first entry always wins).
+
+After running `xbps-install -Sy nvi ex-vi vim' the order is the following:
+
+...
+	<key>vi</key>
+	<array>
+		<string>nvi</string>
+		<string>ex-vi</string>
+		<string>vim</string>
+	</array>
+	...
+...
+
+If the 'nvi' pkg is removed, and there's no alternative set for `vi',
+the 'ex-vi' pkg now becomes the default alternative:
+
+...
+	<key>vi</key>
+	<array>
+		<string>ex-vi</string>
+		<string>vim</string>
+	</array>
+	...
+...
+
+The user now decides that 'vi' should be provided by the 'vim' pkg,
+so that the matching entry is put into the head:
+
+...
+	<key>vi</key>
+	<array>
+		<string>vim</string>
+		<string>ex-vi</string>
+	</array>
+	...
+...
+
+When no packages provide an alternative group, the alternative group and its associated symlinks
+will be completely removed.
+
+
+--------------------
+xbps-alternatives(1)
+--------------------
+
+- Listing all available alternatives and current state:
+
+	$ xbps-alternatives -l
+	libGL
+	  - libGL (current)
+	    - /usr/lib/libGL.so -> /usr/lib/libGL-mesa.so
+	    - /usr/lib/libGL.so.1 -> /usr/lib/libGL-mesa.so.1
+	    - /usr/lib/xorg/modules/extensions/libglx.so -> /usr/lib/xorg/modules/extensions/libglx-xorg.so
+	  - nvidia-libs
+	    - /usr/lib/libGL.so -> /usr/lib/libGL-nvidia.so.1
+	    - /usr/lib/libGL.so.1 -> /usr/lib/libGL-nvidia.so.1
+	    - /usr/lib/xorg/modules/extensions/libglx.so -> /usr/lib/xorg/modules/extensions/libglx-nvidia.so
+	  - catalyst-libs
+	    - /usr/lib/libGL.so -> /usr/lib/libGL-fglrx.so.1
+	    - /usr/lib/libGL.so.1 -> /usr/lib/libGL-fglrx.so.1
+	    - /usr/lib/xorg/modules/extensions/libglx.so -> /usr/lib/xorg/modules/extensions/libglx-fglrx.so
+	ntpd
+	  - openntpd (current)
+	    - /etc/sv/ntpd -> /etc/sv/openntpd
+	    - /usr/bin/ntpd -> /usr/bin/openntpd
+	    - /usr/share/man/man1/ntpd.1 -> /usr/share/man/man1/openntpd.1
+	  - ntp
+	    - /etc/sv/ntpd -> /etc/sv/isc-ntpd
+	    - /usr/bin/ntpd -> /usr/bin/isc-ntpd
+	    - /usr/share/man/man1/ntpd.1 -> /usr/share/man/man1/isc-ntpd.1
+	  - busybox
+	    - /etc/sv/ntpd -> /etc/sv/busybox-ntpd
+	    - /usr/bin/ntpd -> /usr/bin/busybox
+	sort
+	  - coreutils (current)
+	    - /usr/bin/sort -> /usr/bin/coreutils-sort
+	    - /usr/share/man/man1/sort.1 -> /usr/share/man/man1/coreutils-sort.1
+	  - busybox
+	    - /usr/bin/sort -> /usr/bin/busybox
+	vi
+	  - nvi (current)
+            - /usr/bin/ex -> /usr/bin/nvi
+            - /usr/bin/vi -> /usr/bin/nvi
+            - /usr/share/man/man1/ex.1 -> /usr/share/man/man1/nvi.1
+            - /usr/share/man/man1/vi.1 -> /usr/share/man/man1/nvi.1
+	  - vim
+            - /usr/bin/ex -> /usr/bin/vim-ex
+            - /usr/bin/vi -> /usr/bin/vim
+            - /usr/share/man/man1/ex.1 -> /usr/share/man/man1/vim-ex.1
+            - /usr/share/man/man1/vi.1 -> /usr/share/man/man1/vim.1
+
+	...
+
+- Listing available alternative groups of a package:
+
+	$ xbps-alternatives -l busybox
+	ntpd
+	  - /etc/sv/ntpd -> /etc/sv/busybox-ntpd
+	  - /usr/bin/ntpd -> /usr/bin/busybox
+	sort
+	  - /usr/bin/sort -> /usr/bin/busybox
+	...
+
+- Apply all alternative groups specified by the 'nvi' package (declares one group: vi):
+
+	$ xbps-alternatives -s nvi
+	Switched 'vi' alternatives group to 'nvi'.
+	Creating 'vi' alternatives group symlink: /usr/bin/ex -> /usr/bin/nvi
+	Creating 'vi' alternatives group symlink: /usr/bin/vi -> /usr/bin/nvi
+	Creating 'vi' alternatives group symlink: /usr/share/man/man1/ex.1 -> /usr/share/man/man1/nvi.1
+	Creating 'vi' alternatives group symlink: /usr/share/man/man1/vi.1 -> /usr/share/man/man1/nvi.1
+	$
+
+- Creating a specific alternative group of a package containing multiple groups:
+
+	$ xbps-alternatives -s busybox -g ntpd
+	Switched 'ntpd' alternatives group to 'busybox'.
+	Creating 'ntpd' alternatives group symlink: /etc/sv/ntpd -> /etc/sv/busybox-ntpd
+	Creating 'ntpd' alternatives group symlink: /usr/bin/ntpd -> /usr/bin/busybox
+	$
+
+---------------
+xbps-install(1)
+---------------
+
+Installing a package with an alternatives group for the first time:
+
+	$ xbps-install -Syv vim
+	Name Action    Version           New version            Download size
+	vim  install   -                 1.0_1                  -
+
+	Free space on disk:             49GB
+
+	[*] Downloading binary packages
+
+	[*] Verifying package integrity
+	vim-1.0_1: verifying SHA256 hash...
+
+	[*] Running transaction tasks
+	vim-1.0_1: unpacking ...
+	vim-1.0_1: unpacked file `./usr/bin/vim' (0 bytes)
+	vim-1.0_1: unpacked file `./usr/share/man/man1/vim.1' (0 bytes)
+	vim-1.0_1: registered 'vi' alternatives group
+	Creating 'vi' alternatives group symlink: /usr/bin/vi -> /usr/bin/vim
+	Creating 'vi' alternatives group symlink: /usr/bin/ex -> /usr/bin/vim
+	Creating 'vi' alternatives group symlink: /usr/bin/view -> /usr/bin/vim
+	Creating 'vi' alternatives group symlink: /usr/share/man/man1/ex.1 -> /usr/share/man/man1/vim.1
+	Creating 'vi' alternatives group symlink: /usr/share/man/man1/vi.1 -> /usr/share/man/man1/vim.1
+	Creating 'vi' alternatives group symlink: /usr/share/man/man1/view.1 -> /usr/share/man/man1/vim.1
+
+	[*] Configuring unpacked packages
+	vim-1.0_1: configuring ...
+	vim-1.0_1: installed successfully.
+
+	0 downloaded, 1 installed, 0 updated, 1 configured, 0 removed.
+	$
+
+Installing a package that provides a 'vi' alternatives group (nvi):
+
+	$ xbps-install -Syv nvi
+	Name Action    Version           New version            Download size
+	nvi  install   -                 1.0_1                  -
+
+	Free space on disk:             49GB
+
+	[*] Downloading binary packages
+
+	[*] Verifying package integrity
+	nvi-1.0_1: verifying SHA256 hash...
+
+	[*] Running transaction tasks
+	nvi-1.0_1: unpacking ...
+	nvi-1.0_1: unpacked file `./usr/bin/nvi' (0 bytes)
+	nvi-1.0_1: unpacked file `./usr/share/man/man1/nvi.1' (0 bytes)
+	nvi-1.0_1: registered 'vi' alternatives group
+
+	[*] Configuring unpacked packages
+	nvi-1.0_1: configuring ...
+	nvi-1.0_1: installed successfully.
+
+	0 downloaded, 1 installed, 0 updated, 1 configured, 0 removed.
+	$
+
+Removing a package that was the default provider of the 'vi' alternatives group (vim):
+
+	$ xbps-remove -yv vim
+	Name Action    Version           New version            Download size
+	vim  remove    1.0_1             -                      -
+
+	Free space on disk:             49GB
+
+	Removing `vim-1.0_1' ...
+	Removing 'vi' alternatives group symlink: /usr/bin/vi
+	Removing 'vi' alternatives group symlink: /usr/bin/ex
+	Removing 'vi' alternatives group symlink: /usr/bin/view
+	Removing 'vi' alternatives group symlink: /usr/share/man/man1/ex.1
+	Removing 'vi' alternatives group symlink: /usr/share/man/man1/vi.1
+	Removing 'vi' alternatives group symlink: /usr/share/man/man1/view.1
+	vim-1.0_1: unregistered 'vi' alternatives group
+	Switched 'vi' alternatives group to 'nvi'
+	Creating 'vi' alternatives group symlink: /usr/bin/vi -> /usr/bin/nvi
+	Creating 'vi' alternatives group symlink: /usr/bin/ex -> /usr/bin/nvi
+	Creating 'vi' alternatives group symlink: /usr/bin/view -> /usr/bin/nvi
+	Creating 'vi' alternatives group symlink: /usr/share/man/man1/ex.1 -> /usr/share/man/man1/nvi.1
+	Creating 'vi' alternatives group symlink: /usr/share/man/man1/vi.1 -> /usr/share/man/man1/nvi.1
+	Creating 'vi' alternatives group symlink: /usr/share/man/man1/view.1 -> /usr/share/man/man1/nvi.1
+	Removed file `/usr/share/man/man1/vim.1'
+	Removed file `/usr/bin/vim'
+	Removed `vim-1.0_1' successfully.
+
+	0 downloaded, 0 installed, 0 updated, 0 configured, 1 removed.
+	$

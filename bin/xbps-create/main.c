@@ -102,6 +102,9 @@ usage(void)
 	" -s --desc           Short description (max 80 characters).\n"
 	" -t --tags           A list of tags/categories (blank separated list).\n"
 	" -V --version        Prints XBPS release version.\n"
+	" --alternatives      List of available alternatives this pkg provides.\n"
+	"                     This expects a blank separated list of <name>:<symlink>:<target>, e.g\n"
+	"                     'vi:/usr/bin/vi:/usr/bin/vim foo:/usr/bin/foo:/usr/bin/blah'.\n"
 	" --build-options     A string with the used build options.\n"
 	" --compression       Compression format: none, gzip, bzip2, xz (default).\n"
 	" --shlib-provides    List of provided shared libraries (blank separated list,\n"
@@ -160,6 +163,72 @@ process_array(const char *key, const char *val)
 out:
 	xbps_dictionary_set(pkg_propsd, key, array);
 	xbps_object_release(array);
+}
+
+static void
+process_one_alternative(const char *altgrname, const char *val)
+{
+	xbps_dictionary_t d;
+	xbps_array_t a;
+	char *altfiles;
+	bool alloc = false;
+
+	if ((d = xbps_dictionary_get(pkg_propsd, "alternatives")) == NULL) {
+		d = xbps_dictionary_create();
+		assert(d);
+		alloc = true;
+	}
+	if ((a = xbps_dictionary_get(d, altgrname)) == NULL) {
+		a = xbps_array_create();
+		assert(a);
+	}
+	altfiles = strchr(val, ':') + 1;
+	assert(altfiles);
+
+	xbps_array_add_cstring(a, altfiles);
+	xbps_dictionary_set(d, altgrname, a);
+	xbps_dictionary_set(pkg_propsd, "alternatives", d);
+
+	if (alloc) {
+		xbps_object_release(a);
+		xbps_object_release(d);
+	}
+}
+
+
+static void
+process_dict_of_arrays(const char *key, const char *val)
+{
+	char *altgrname, *args, *p, *saveptr;
+
+	assert(key);
+
+	if (val == NULL)
+		return;
+
+	args = strdup(val);
+	assert(args);
+
+	if (strchr(args, ' ') == NULL) {
+		altgrname = strtok(args, ":");
+		assert(altgrname);
+		process_one_alternative(altgrname, val);
+		goto out;
+	}
+
+	for ((p = strtok_r(args, " ", &saveptr)); p;
+	     (p = strtok_r(NULL, " ", &saveptr))) {
+		char *b;
+
+		b = strdup(p);
+		assert(b);
+		altgrname = strtok(b, ":");
+		assert(altgrname);
+		process_one_alternative(altgrname, p);
+		free(b);
+	}
+out:
+	free(args);
 }
 
 static void
@@ -615,6 +684,7 @@ main(int argc, char **argv)
 		{ "shlib-requires", required_argument, NULL, '1' },
 		{ "build-options", required_argument, NULL, '2' },
 		{ "compression", required_argument, NULL, '3' },
+		{ "alternatives", required_argument, NULL, '4' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
@@ -624,7 +694,7 @@ main(int argc, char **argv)
 	const char *conflicts, *deps, *homepage, *license, *maint, *bwith;
 	const char *provides, *pkgver, *replaces, *reverts, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version;
-	const char *buildopts, *shlib_provides, *shlib_requires;
+	const char *buildopts, *shlib_provides, *shlib_requires, *alternatives;
 	const char *compression, *tags = NULL, *srcrevs = NULL;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
@@ -634,7 +704,7 @@ main(int argc, char **argv)
 	arch = conflicts = deps = homepage = license = maint = compression = NULL;
 	provides = pkgver = replaces = reverts = desc = ldesc = bwith = NULL;
 	buildopts = config_files = mutable_files = shlib_provides = NULL;
-	shlib_requires = NULL;
+	alternatives = shlib_requires = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
@@ -715,6 +785,9 @@ main(int argc, char **argv)
 			break;
 		case '3':
 			compression = optarg;
+			break;
+		case '4':
+			alternatives = optarg;
 			break;
 		case '?':
 		default:
@@ -798,6 +871,7 @@ main(int argc, char **argv)
 	process_array("reverts", reverts);
 	process_array("shlib-provides", shlib_provides);
 	process_array("shlib-requires", shlib_requires);
+	process_dict_of_arrays("alternatives", alternatives);
 
 	/* save cwd */
 	memset(&cwd, 0, sizeof(cwd));

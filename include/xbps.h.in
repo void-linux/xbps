@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20150603"
+#define XBPS_API_VERSION	"20151018"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -95,6 +95,12 @@
  * Filename for the package database.
  */
 #define XBPS_PKGDB		"pkgdb-0.38.plist"
+
+/**
+ * @def XBPS_ALTERNATIVES
+ * Filename for the package alternatives database.
+ */
+#define XBPS_ALTERNATIVES	"alternatives-0.48.plist"
 
 /**
  * @def XBPS_PKGPROPS
@@ -280,6 +286,11 @@ extern "C" {
  * - XBPS_STATE_INVALID_DEP: package has an invalid dependency.
  * - XBPS_STATE_SHOW_INSTALL_MSG: package must show a post-install message.
  * - XBPS_STATE_SHOW_REMOVE_MSG: package must show a pre-remove message.
+ * - XBPS_STATE_ALTGROUP_ADDED: package has registered an alternative group.
+ * - XBPS_STATE_ALTGROUP_REMOVED: package has unregistered an alternative group.
+ * - XBPS_STATE_ALTGROUP_SWITCHED: alternative group has been switched.
+ * - XBPS_STATE_ALTGROUP_LINK_ADDED: link added by an alternative group.
+ * - XBPS_STATE_ALTGROUP_LINK_REMOVED: link removed by an alternative group.
  * - XBPS_STATE_UNPACK_FILE_PRESERVED: package unpack preserved a file.
  * - XBPS_STATE_PKGDB: pkgdb upgrade in progress.
  * - XBPS_STATE_PKGDB_DONE: pkgdb has been upgraded successfully.
@@ -328,7 +339,12 @@ typedef enum xbps_state {
 	XBPS_STATE_UNPACK_FILE_PRESERVED,
 	XBPS_STATE_PKGDB,
 	XBPS_STATE_PKGDB_DONE,
-	XBPS_STATE_TRANS_ADDPKG
+	XBPS_STATE_TRANS_ADDPKG,
+	XBPS_STATE_ALTGROUP_ADDED,
+	XBPS_STATE_ALTGROUP_REMOVED,
+	XBPS_STATE_ALTGROUP_SWITCHED,
+	XBPS_STATE_ALTGROUP_LINK_ADDED,
+	XBPS_STATE_ALTGROUP_LINK_REMOVED
 } xbps_state_t;
 
 /**
@@ -514,6 +530,7 @@ struct xbps_handle {
 	 */
 	xbps_dictionary_t pkgdb_revdeps;
 	xbps_dictionary_t vpkgd;
+	xbps_dictionary_t alternatives;
 	/**
 	 * @var pkgdb
 	 *
@@ -628,6 +645,10 @@ void xbps_dbg_printf(struct xbps_handle *, const char *, ...);
 void xbps_dbg_printf_append(struct xbps_handle *, const char *, ...);
 void xbps_error_printf(const char *, ...);
 void xbps_warn_printf(const char *, ...);
+
+int xbps_alternatives_flush(struct xbps_handle *xhp);
+int xbps_alternatives_register(struct xbps_handle *, xbps_dictionary_t);
+int xbps_alternatives_unregister(struct xbps_handle *, xbps_dictionary_t);
 
 /**
  * Initialize the XBPS library with the following steps:

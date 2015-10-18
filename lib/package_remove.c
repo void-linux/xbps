@@ -318,6 +318,10 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	if ((rv = xbps_cb_message(xhp, pkgd, "remove-msg")) != 0)
 		goto out;
 
+	/* unregister alternatives */
+	if ((rv = xbps_alternatives_unregister(xhp, pkgd)) != 0)
+		goto out;
+
 	/*
 	 * If updating a package, we just need to execute the current
 	 * pre-remove action target and we are done. Its files will be

@@ -42,6 +42,7 @@ OBJS += plist.o plist_find.o plist_match.o archive.o
 OBJS += plist_remove.o plist_fetch.o util.o util_hash.o 
 OBJS += repo.o repo_pkgdeps.o repo_sync.o
 OBJS += rpool.o cb_util.o proplib_wrapper.o
+OBJS += package_alternatives.o
 OBJS += $(EXTOBJS) $(COMPAT_SRCS)
 
 .PHONY: all
