@@ -96,7 +96,8 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 				    "transaction", &tract);
 				if (strcmp(tract, "remove") == 0)
 					continue;
-				if (xbps_pkgpattern_match(rpkgver, pattern) == 0)
+				if (!xbps_match_virtual_pkg_in_dict(reppkgd, pattern) &&
+				    !xbps_pkgpattern_match(rpkgver, pattern))
 					continue;
 				/*
 				 * Package contains replaces="pkgpattern", but the
