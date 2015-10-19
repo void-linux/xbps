@@ -32,7 +32,7 @@ xbps-0.48 (???):
    a transaction when there are unresolved (reverse)dependencies.
 
  * libxbps: improved messages when reverse dependencies in a transaction
-   are not satistfied.
+   are not satistfied. Close #113 (https://github.com/voidlinux/xbps/issues/113).
 
    After
    -----
