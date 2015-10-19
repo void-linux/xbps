@@ -88,9 +88,15 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
 			reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, NULL);
 			if (reppkgd) {
+				const char *rpkgver;
+
+				xbps_dictionary_get_cstring_nocopy(reppkgd,
+				    "pkgver", &rpkgver);
 				xbps_dictionary_get_cstring_nocopy(reppkgd,
 				    "transaction", &tract);
 				if (strcmp(tract, "remove") == 0)
+					continue;
+				if (xbps_pkgpattern_match(rpkgver, pattern) == 0)
 					continue;
 				/*
 				 * Package contains replaces="pkgpattern", but the
@@ -99,8 +105,16 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 				 */
 				xbps_dictionary_set_bool(reppkgd,
 				    "automatic-install", instd_auto);
+				xbps_dictionary_set_cstring_nocopy(reppkgd,
+				    "transaction", "remove");
+				xbps_dictionary_set_bool(reppkgd,
+				    "replaced", true);
 				xbps_array_replace_dict_by_name(pkgs,
 				    reppkgd, curpkgname);
+				xbps_dbg_printf(xhp,
+				    "Package `%s' in transaction will be "
+				    "replaced by `%s', matched with `%s'\n",
+				    curpkgver, pkgver, pattern);
 				continue;
 			}
 			/*

@@ -1,5 +1,9 @@
 xbps-0.48 (???):
 
+ * libxbps: fixed another issue when replacing an existing pkg with a virtual
+   pkg, and there's an update for the original pkg in the transaction.
+   Fixes #116 (https://github.com/voidlinux/xbps/issues/116).
+
  * libxbps: the rpool functions now set errno to ENOENT when the target
    pkg cannot be found in registered repos.
 
