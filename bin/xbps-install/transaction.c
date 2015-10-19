@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,8 +52,10 @@ show_actions(xbps_object_iterator_t iter)
 {
 	xbps_object_t obj;
 	const char *repoloc, *trans, *pkgver, *arch;
+	uint64_t isize, dsize;
 
 	repoloc = trans = pkgver = arch = NULL;
+	isize = dsize = 0;
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
@@ -63,6 +65,12 @@ show_actions(xbps_object_iterator_t iter)
 		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 		if (repoloc && arch)
 			printf(" %s %s", arch, repoloc);
+		xbps_dictionary_get_uint64(obj, "installed_size", &isize);
+		xbps_dictionary_get_uint64(obj, "filename-size", &dsize);
+		if (isize)
+			printf(" %ju", isize);
+		if (dsize)
+			printf(" %ju", dsize);
 
 		printf("\n");
 	}

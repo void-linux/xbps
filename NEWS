@@ -1,5 +1,9 @@
 xbps-0.48 (???):
 
+ * xbps-install(1): -n/--dry-run mode now also prints "installed_size" and
+   "filename-size" objects as 5th and 6th argument, respectively.
+   This implements #109 (https://github.com/voidlinux/xbps/issues/109).
+
  * libxbps: fixed another issue when replacing an existing pkg with a virtual
    pkg, and there's an update for the original pkg in the transaction.
    Fixes #116 (https://github.com/voidlinux/xbps/issues/116).

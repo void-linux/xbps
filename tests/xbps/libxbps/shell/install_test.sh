@@ -439,7 +439,9 @@ update_xbps_body() {
 	xbps-rindex -d -a repo/*.xbps
 	atf_check_equal $? 0
 	out=$(xbps-install -r root --repository=repo -yun)
-	atf_check_equal "$out" "xbps-1.1_1 update noarch $(readlink -f repo)"
+	set -- $out
+	exp="$1 $2 $3 $4"
+	atf_check_equal "$exp" "xbps-1.1_1 update noarch $(readlink -f repo)"
 }
 
 atf_test_case update_xbps_virtual
@@ -476,7 +478,9 @@ update_xbps_virtual_body() {
 	xbps-rindex -d -a repo/*.xbps
 	atf_check_equal $? 0
 	out=$(xbps-install -r root --repository=repo -yun)
-	atf_check_equal "$out" "xbps-git-1.1_1 update noarch $(readlink -f repo)"
+	set -- $out
+	exp="$1 $2 $3 $4"
+	atf_check_equal "$exp" "xbps-git-1.1_1 update noarch $(readlink -f repo)"
 }
 
 atf_init_test_cases() {

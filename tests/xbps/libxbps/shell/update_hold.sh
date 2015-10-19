@@ -27,7 +27,9 @@ update_hold_body() {
 	atf_check_equal $? 0
 	cd ..
 	out=$(xbps-install -r root --repository=$PWD/repo -un)
-	atf_check_equal "$out" "A-1.1_1 hold noarch $PWD/repo"
+	set -- $out
+	exp="$1 $2 $3 $4"
+	atf_check_equal "$exp" "A-1.1_1 hold noarch $PWD/repo"
 	xbps-install -r root --repository=$PWD/repo -yuvd
 	atf_check_equal $? 0
 	out=$(xbps-query -r root -p pkgver A)
