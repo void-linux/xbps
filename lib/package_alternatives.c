@@ -136,6 +136,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		xbps_string_t str;
 		char *l, *lnk;
 		const char *tgt;
+		int rv;
 
 		str = xbps_array_get(a, i);
 		l = left(xbps_string_cstring_nocopy(str));
@@ -146,7 +147,14 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_ADDED, 0, NULL,
 		    "Creating '%s' alternatives group symlink: %s -> %s", grname, l, tgt);
 		unlink(lnk);
-		symlink(tgt, lnk);
+		if ((rv = symlink(tgt, lnk)) != 0) {
+			xbps_dbg_printf(xhp, "failed to create alt symlink '%s'"
+			    "for group '%s': %s\n", lnk, grname,
+			    strerror(errno));
+			free(lnk);
+			free(l);
+			return rv;
+		}
 		free(lnk);
 		free(l);
 	}
