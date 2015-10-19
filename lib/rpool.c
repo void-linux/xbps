@@ -296,14 +296,21 @@ repo_find_pkg(struct xbps_handle *xhp,
 		 * Find revdeps for pkg.
 		 */
 		rv = xbps_rpool_foreach(xhp, find_pkg_revdeps_cb, &rpf);
+		break;
 	}
 	if (rv != 0) {
 		errno = rv;
 		return NULL;
 	}
-	if (type == REVDEPS_PKG)
-		return rpf.revdeps;
+	if (type == REVDEPS_PKG) {
+		if (rpf.revdeps == NULL)
+			errno = ENOENT;
 
+		return rpf.revdeps;
+	} else {
+		if (rpf.pkgd == NULL)
+			errno = ENOENT;
+	}
 	return rpf.pkgd;
 }
 

@@ -1,5 +1,8 @@
 xbps-0.48 (???):
 
+ * libxbps: the rpool functions now set errno to ENOENT when the target
+   pkg cannot be found in registered repos.
+
  * libxbps: fix a bug where broken reverse dependencies would be detected
    before detecting packages that need to be replaced in transaction.
 
