@@ -1,4 +1,4 @@
-.Dd May 16, 2015
+.Dd October 20, 2015
 .Dt XBPS-REMOVE 1
 .Sh NAME
 .Nm xbps-remove
@@ -76,7 +76,8 @@ Forcefully remove package files even if they have been modified.
 .It Fl h, Fl -help
 Show the help usage.
 .It Fl n, Fl -dry-run
-Dry-run mode. Show what actions would be done but don't remove anything.
+Dry-run mode. Show what actions would be done but don't do anything. The current output
+prints 6 arguments: "<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
 .It Fl O, Fl -clean-cache
 Cleans cache directory removing obsolete binary packages.
 .It Fl o, Fl -remove-orphans
