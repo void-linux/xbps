@@ -5,8 +5,8 @@
  * XBPS is a new binary package system designed and implemented from
  * scratch, by <b>Juan Romero Pardines</b>. This document describes
  * the API used by the XBPS Library, that is the base to implement
- * a package manager frontend, such as is implemented in the xbps-bin(8)
- * and xbps-repo(8) command line interfaces.
+ * a package manager frontend, such as is implemented in the xbps
+ * command line interfaces.
  *
  * XBPS uses extensively NetBSD's proplib, a library that provides an
  * abstract interface for creating and manipulating property lists.
