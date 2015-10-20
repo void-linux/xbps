@@ -1,4 +1,4 @@
-.Dd June 3, 2015
+.Dd October 20, 2015
 .Dt XBPS-INSTALL 1
 .Sh NAME
 .Nm xbps-install
@@ -90,7 +90,8 @@ will be used.
 For remote repositories, the data is fetched and stored in memory for the current
 operation. This ignores the existing on-disk repository archives in rootdir.
 .It Fl n, Fl -dry-run
-Dry-run mode. Show what actions would be done but don't do anything.
+Dry-run mode. Show what actions would be done but don't do anything. The current output
+prints 6 arguments: "<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
 .It Fl R
 Enable repository mode. This mode explicitly looks in repositories, rather
 than looking in the target root directory.
