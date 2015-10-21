@@ -272,6 +272,60 @@ EOF
 	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing pkgname variable!"
 }
 
+atf_test_case srcpkg_with_a_ref
+
+srcpkg_with_a_ref_head() {
+	atf_set "descr" "xbps-checkvers(8): test when srcpkg does set a ref in pkgname/version/revision"
+}
+srcpkg_with_a_ref_body() {
+	mkdir -p some_repo pkg_A void-packages/srcpkgs/foo
+	cat > void-packages/srcpkgs/foo/template <<EOF
+_var=foo
+pkgname=\${_var}
+version=1.1
+revision=1
+do_install() {
+	:
+}
+EOF
+	cd some_repo
+	xbps-create -A noarch -n foo-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages >out
+	atf_check_equal $? 0
+	atf_check_equal "$(cat out)" "pkgname: foo repover: 1.0_1 srcpkgver: 1.1_1"
+}
+
+atf_test_case srcpkg_with_a_ref_and_comment
+
+srcpkg_with_a_ref_and_comment_head() {
+	atf_set "descr" "xbps-checkvers(8): test when srcpkg does set a ref in pkgname/version/revision with a comment"
+}
+srcpkg_with_a_ref_and_comment_body() {
+	atf_expect_death "Known bug: see https://github.com/voidlinux/xbps/issues/120"
+	mkdir -p some_repo pkg_A void-packages/srcpkgs/foo
+	cat > void-packages/srcpkgs/foo/template <<EOF
+pkgname=foo #kajskajskajskajskajskjaksjaksjaks
+version=1.1
+revision=1
+do_install() {
+	:
+}
+EOF
+	cd some_repo
+	xbps-create -A noarch -n foo-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages >out
+	atf_check_equal $? 0
+	atf_check_equal "$(cat out)" "pkgname: foo repover: 1.0_1 srcpkgver: 1.1_1"
+}
+
 atf_test_case reverts
 
 reverts_head() {
@@ -342,6 +396,8 @@ atf_init_test_cases() {
 	atf_add_test_case srcpkg_missing_revision
 	atf_add_test_case srcpkg_missing_pkgver
 	atf_add_test_case srcpkg_missing_pkgverrev
+	atf_add_test_case srcpkg_with_a_ref
+	atf_add_test_case srcpkg_with_a_ref_and_comment
 	atf_add_test_case reverts
 	atf_add_test_case reverts_alpha
 }
