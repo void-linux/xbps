@@ -3,8 +3,8 @@ xbps-0.48 (???):
  * libfetch: merge some features from FreeBSD:
 
 	- Supports HTTP/1.1 308 redirect.
-	- SSLv[23] HTTPS connections are forbidden by default.
-	- TLS client certificate validation thru OpenSSL.
+	- SSLv2 HTTPS connections are forbidden by default.
+	- SSL/TLS HTTPS client certificate validation.
 	- Fixes for user/password encoding, misc.
 
  * lixbps: use a sane umask if the pkgdb file needs to created for the first
