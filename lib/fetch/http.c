@@ -1,6 +1,7 @@
+/*	$FreeBSD: rev 267127 $	*/
 /*	$NetBSD: http.c,v 1.37 2014/06/11 13:12:12 joerg Exp $	*/
 /*-
- * Copyright (c) 2000-2004 Dag-Erling CoýÅan Smgrav
+ * Copyright (c) 2000-2014 Dag-Erling Smorgrav
  * Copyright (c) 2003 Thomas Klausner <wiz@NetBSD.org>
  * Copyright (c) 2008, 2009 Joerg Sonnenberger <joerg@NetBSD.org>
  * All rights reserved.
@@ -27,8 +28,6 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * $FreeBSD: http.c,v 1.83 2008/02/06 11:39:55 des Exp $
  */
 
 /*
@@ -63,12 +62,7 @@
  * SUCH DAMAGE.
  */
 
-#if defined(__linux__) || defined(__MINT__) || defined(__FreeBSD_kernel__)
-/* Keep this down to Linux or MiNT, it can create surprises elsewhere. */
-/*
-   __FreeBSD_kernel__ is defined for GNU/kFreeBSD.
-   See http://glibc-bsd.alioth.debian.org/porting/PORTING .
-*/
+#if defined(__linux__)
 #define _GNU_SOURCE
 #endif
 
@@ -106,7 +100,9 @@
 #define HTTP_MOVED_TEMP		302
 #define HTTP_SEE_OTHER		303
 #define HTTP_NOT_MODIFIED	304
+#define HTTP_USE_PROXY		305
 #define HTTP_TEMP_REDIRECT	307
+#define HTTP_PERM_REDIRECT	308
 #define HTTP_NEED_AUTH		401
 #define HTTP_NEED_PROXY_AUTH	407
 #define HTTP_BAD_RANGE		416
@@ -115,6 +111,7 @@
 #define HTTP_REDIRECT(xyz) ((xyz) == HTTP_MOVED_PERM \
 			    || (xyz) == HTTP_MOVED_TEMP \
 			    || (xyz) == HTTP_TEMP_REDIRECT \
+			    || (xyz) == HTTP_USE_PROXY \
 			    || (xyz) == HTTP_SEE_OTHER)
 
 #define HTTP_ERROR(xyz) ((xyz) > 400 && (xyz) < 599)
@@ -517,6 +514,12 @@ http_parse_mtime(const char *p, time_t *mtime)
 	locale[sizeof(locale)-1] = '\0';
 	setlocale(LC_TIME, "C");
 	r = strptime(p, "%a, %d %b %Y %H:%M:%S GMT", &tm);
+	/*
+	 * Some proxies use UTC in response, but it should still be
+	 * parsed. RFC2616 states GMT and UTC are exactly equal for HTTP.
+	 */
+	if (r == NULL)
+		r = strptime(p, "%a, %d %b %Y %H:%M:%S UTC", &tm);
 	/* XXX should add support for date-2 and date-3 */
 	setlocale(LC_TIME, locale);
 	if (r == NULL)
@@ -698,6 +701,7 @@ http_authorize(conn_t *conn, const char *hdr, const char *p)
 static conn_t *
 http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 {
+	struct url *curl;
 	conn_t *conn;
 	int af, verbose;
 #ifdef TCP_NOPUSH
@@ -718,22 +722,25 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 		af = AF_INET6;
 #endif
 
-	if (purl && strcasecmp(URL->scheme, SCHEME_HTTPS) != 0) {
-		URL = purl;
-	} else if (strcasecmp(URL->scheme, SCHEME_FTP) == 0) {
-		/* can't talk http to an ftp server */
-		/* XXX should set an error code */
-		return (NULL);
-	}
+	curl = (purl != NULL) ? purl : URL;
 
-	if ((conn = fetch_cache_get(URL, af)) != NULL) {
+	if ((conn = fetch_cache_get(curl, af)) != NULL) {
 		*cached = 1;
 		return (conn);
 	}
 
-	if ((conn = fetch_connect(URL, af, verbose)) == NULL)
+	if ((conn = fetch_connect(curl, af, verbose)) == NULL)
 		/* fetch_connect() has already set an error code */
 		return (NULL);
+	if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0 && purl) {
+		http_cmd(conn, "CONNECT %s:%d HTTP/1.1",
+		    URL->host, URL->port);
+		if (http_get_reply(conn) != HTTP_OK) {
+			fetch_close(conn);
+			return (NULL);
+		}
+		http_get_reply(conn);
+	}
 	if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0 &&
 	    fetch_ssl(conn, URL, verbose) == -1) {
 		fetch_close(conn);
@@ -888,7 +895,7 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		if (verbose)
 			fetch_info("requesting %s://%s%s",
 			    url->scheme, host, url->doc);
-		if (purl) {
+		if (purl && strcasecmp(URL->scheme, SCHEME_HTTPS) != 0) {
 			http_cmd(conn, "%s %s://%s%s HTTP/1.1\r\n",
 			    op, url->scheme, host, url->doc);
 		} else {
@@ -933,10 +940,14 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 			else
 				http_cmd(conn, "Referer: %s\r\n", p);
 		}
-		if ((p = getenv("HTTP_USER_AGENT")) != NULL && *p != '\0')
-			http_cmd(conn, "User-Agent: %s\r\n", p);
-		else
+		if ((p = getenv("HTTP_USER_AGENT")) != NULL) {
+			/* no User-Agent if defined but empty */
+			if (*p != '\0')
+				http_cmd(conn, "User-Agent: %s\r\n", p);
+		} else {
+			/* default User-Agent */
 			http_cmd(conn, "User-Agent: %s\r\n", _LIBFETCH_VER);
+		}
 
 		/*
 		 * Some servers returns 406 (Not Acceptable) if the Accept field is not
@@ -975,6 +986,7 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		case HTTP_MOVED_PERM:
 		case HTTP_MOVED_TEMP:
 		case HTTP_SEE_OTHER:
+		case HTTP_USE_PROXY:
 			/*
 			 * Not so fine, but we still have to read the
 			 * headers to get the new location.

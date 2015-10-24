@@ -1,6 +1,6 @@
 /*	$NetBSD: fetch.h,v 1.16 2010/01/22 13:21:09 joerg Exp $	*/
 /*-
- * Copyright (c) 1998-2004 Dag-Erling Coïdan Smørgrav
+ * Copyright (c) 1998-2014 Dag-Erling Smorgrav
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,8 +25,6 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * $FreeBSD: fetch.h,v 1.26 2004/09/21 18:35:20 des Exp $
  */
 
 #ifndef _FETCH_H_INCLUDED
@@ -36,7 +34,7 @@
 #include <limits.h>
 #include <stdio.h>
 
-#define _LIBFETCH_VER "libfetch/2.0"
+#define _LIBFETCH_VER "xbps/2.0"
 
 #define URL_HOSTLEN 255
 #define URL_SCHEMELEN 16

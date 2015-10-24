@@ -1,6 +1,7 @@
+/*	$FreeBSD: rev 267133 $	*/
 /*	$NetBSD: common.h,v 1.23 2014/01/08 20:25:34 joerg Exp $	*/
 /*-
- * Copyright (c) 1998-2004 Dag-Erling Coïdan Smørgrav
+ * Copyright (c) 1998-2014 Dag-Erling Smorgrav
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,8 +26,6 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * $FreeBSD: common.h,v 1.30 2007/12/18 11:03:07 des Exp $
  */
 
 #ifndef _COMMON_H_INCLUDED
@@ -106,6 +105,9 @@ conn_t		*fetch_cache_get(const struct url *, int);
 void		 fetch_cache_put(conn_t *, int (*)(conn_t *));
 conn_t		*fetch_connect(struct url *, int, int);
 conn_t		*fetch_reopen(int);
+#ifdef WITH_SSL
+int		fetch_ssl_cb_verify_crt(int, X509_STORE_CTX*);
+#endif
 int		 fetch_ssl(conn_t *, const struct url *, int);
 ssize_t		 fetch_read(conn_t *, char *, size_t);
 int		 fetch_getln(conn_t *);
@@ -143,5 +145,9 @@ fetchIO		*ftp_request(struct url *, const char *, const char *,
  * Check whether a particular flag is set
  */
 #define CHECK_FLAG(x)	(flags && strchr(flags, (x)))
+
+#ifndef __UNCONST
+#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+#endif
 
 #endif
