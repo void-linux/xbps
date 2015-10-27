@@ -1,5 +1,8 @@
 xbps-0.48 (???):
 
+ * libxbps: with -M (--memory-sync opt of xbps-{install,query}) only process
+   remote repositories, not local ones.
+
  * libfetch: merge some features from FreeBSD:
 
 	- Supports HTTP/1.1 308 redirect.
