@@ -260,8 +260,8 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	/*
 	 * In memory repo sync.
 	 */
-	if (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC) {
-		if (repo->is_remote && repo_open_remote(repo))
+	if (repo->is_remote && (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC)) {
+		if (repo_open_remote(repo))
 			return repo;
 
 		goto out;
