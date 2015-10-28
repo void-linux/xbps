@@ -831,9 +831,9 @@ fetch_ssl_setup_peer_verification(SSL_CTX *ctx, int verbose)
 	const char *ca_cert_file, *ca_cert_path, *crl_file;
 
 	if (getenv("SSL_NO_VERIFY_PEER") == NULL) {
-		ca_cert_file = getenv("SSL_CA_CERT_FILE") != NULL ?
-		    getenv("SSL_CA_CERT_FILE") : "/etc/ssl/cert.pem";
-		ca_cert_path = getenv("SSL_CA_CERT_PATH");
+		ca_cert_file = getenv("SSL_CA_CERT_FILE");
+		ca_cert_path = getenv("SSL_CA_CERT_PATH") != NULL ?
+		    getenv("SSL_CA_CERT_PATH") : X509_get_default_cert_dir();
 		if (verbose) {
 			fetch_info("Peer verification enabled");
 			if (ca_cert_file != NULL)
