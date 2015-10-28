@@ -319,11 +319,10 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 			return ENODEV;
 		}
 	}
-	for (i = 0; i < xbps_array_count(pkgs); i++)
-		xbps_pkg_find_conflicts(xhp, pkgs, xbps_array_get(pkgs, i));
 	/*
 	 * If there are package conflicts bail out.
 	 */
+	xbps_transaction_conflicts(xhp, pkgs);
 	array = xbps_dictionary_get(xhp->transd, "conflicts");
 	if (xbps_array_count(array))
 		return EAGAIN;

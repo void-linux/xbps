@@ -143,8 +143,7 @@ int HIDDEN xbps_unpack_binary_pkg(struct xbps_handle *, xbps_dictionary_t);
 int HIDDEN xbps_transaction_package_replace(struct xbps_handle *, xbps_array_t);
 int HIDDEN xbps_remove_pkg(struct xbps_handle *, const char *, bool);
 int HIDDEN xbps_register_pkg(struct xbps_handle *, xbps_dictionary_t);
-void HIDDEN xbps_pkg_find_conflicts(struct xbps_handle *, xbps_array_t,
-		xbps_dictionary_t);
+void HIDDEN xbps_transaction_conflicts(struct xbps_handle *, xbps_array_t);
 char HIDDEN *xbps_archive_get_file(struct archive *, struct archive_entry *);
 xbps_dictionary_t HIDDEN xbps_archive_get_dictionary(struct archive *,
 		struct archive_entry *);

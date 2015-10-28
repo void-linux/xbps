@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,10 +31,9 @@
 
 #include "xbps_api_impl.h"
 
-void HIDDEN
-xbps_pkg_find_conflicts(struct xbps_handle *xhp,
-			xbps_array_t unsorted,
-			xbps_dictionary_t pkg_repod)
+static void
+pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
+		xbps_dictionary_t pkg_repod)
 {
 	xbps_array_t pkg_cflicts, trans_cflicts;
 	xbps_dictionary_t pkgd, tpkgd;
@@ -76,7 +75,7 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 			 * the transaction and does not match the pattern,
 			 * ignore it.
 			 */
-			if ((tpkgd = xbps_find_pkg_in_array(unsorted, pkgname, NULL))) {
+			if ((tpkgd = xbps_find_pkg_in_array(array, pkgname, NULL))) {
 				const char *tract, *p;
 
 				xbps_dictionary_get_cstring_nocopy(tpkgd,
@@ -104,8 +103,8 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 		/*
 		 * Check if current pkg conflicts with any pkg in transaction.
 		 */
-		if ((pkgd = xbps_find_pkg_in_array(unsorted, cfpkg, NULL)) ||
-		    (pkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, cfpkg, NULL))) {
+		if ((pkgd = xbps_find_pkg_in_array(array, cfpkg, NULL)) ||
+		    (pkgd = xbps_find_virtualpkg_in_array(xhp, array, cfpkg, NULL))) {
 			xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "pkgver", &pkgver);
 			pkgname = xbps_pkg_name(pkgver);
@@ -128,4 +127,71 @@ xbps_pkg_find_conflicts(struct xbps_handle *xhp,
 	}
 	xbps_object_iterator_release(iter);
 	free(repopkgname);
+}
+
+static int
+pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
+		const char *key _unused, void *arg, bool *done _unused)
+{
+	xbps_array_t pkg_cflicts, trans_cflicts, pkgs = arg;
+	xbps_dictionary_t pkgd;
+	xbps_object_t obj2;
+	xbps_object_iterator_t iter;
+	const char *cfpkg, *repopkgver, *pkgver;
+	char *pkgname, *repopkgname, *buf;
+
+	pkg_cflicts = xbps_dictionary_get(obj, "conflicts");
+	if (xbps_array_count(pkg_cflicts) == 0)
+		return 0;
+
+	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
+	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &repopkgver);
+	repopkgname = xbps_pkg_name(repopkgver);
+	assert(repopkgname);
+
+	iter = xbps_array_iterator(pkg_cflicts);
+	assert(iter);
+
+	while ((obj2 = xbps_object_iterator_next(iter))) {
+		cfpkg = xbps_string_cstring_nocopy(obj2);
+		if ((pkgd = xbps_find_pkg_in_array(pkgs, cfpkg, NULL)) ||
+		    (pkgd = xbps_find_virtualpkg_in_array(xhp, pkgs, cfpkg, NULL))) {
+			xbps_dictionary_get_cstring_nocopy(pkgd,
+			    "pkgver", &pkgver);
+			pkgname = xbps_pkg_name(pkgver);
+			assert(pkgname);
+			if (strcmp(pkgname, repopkgname) == 0) {
+				free(pkgname);
+				continue;
+			}
+			free(pkgname);
+			xbps_dbg_printf(xhp, "found conflicting pkgs in "
+			    "transaction %s <-> %s\n", pkgver, repopkgver);
+			buf = xbps_xasprintf("CONFLICT: %s with "
+			   "%s in transaction", repopkgver, pkgver);
+			if (!xbps_match_string_in_array(trans_cflicts, buf))
+				xbps_array_add_cstring(trans_cflicts, buf);
+
+			free(buf);
+			continue;
+		}
+	}
+	xbps_object_iterator_release(iter);
+	free(repopkgname);
+	return 0;
+}
+
+void HIDDEN
+xbps_transaction_conflicts(struct xbps_handle *xhp, xbps_array_t pkgs)
+{
+	xbps_dictionary_t pkgd;
+	unsigned int i;
+
+	/* find conflicts in transaction */
+	for (i = 0; i < xbps_array_count(pkgs); i++) {
+		pkgd = xbps_array_get(pkgs, i);
+		pkg_conflicts_trans(xhp, pkgs, pkgd);
+	}
+	/* find conflicts in pkgdb */
+	(void)xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_conflicts_cb, pkgs);
 }
