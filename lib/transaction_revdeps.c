@@ -52,10 +52,10 @@ check_virtual_pkgs(xbps_array_t mdeps,
 	for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
 		xbps_array_t rundeps;
 		const char *pkgver, *revpkgver, *pkgpattern;
-		char *pkgname, *pkgdepname, *vpkgname, *vpkgver, *str;
+		char *pkgname, *vpkgname, *vpkgver, *str;
 
 		pkgver = revpkgver = pkgpattern = NULL;
-		pkgname = pkgdepname = vpkgname = vpkgver = str = NULL;
+		pkgname = vpkgname = vpkgver = str = NULL;
 
 		xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(rev_pkgd, "pkgver", &revpkgver);
