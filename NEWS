@@ -13,6 +13,14 @@ xbps-0.48 (???):
 	- SSL/TLS HTTPS client certificate validation.
 	- Fixes for user/password encoding, misc.
 
+   Client certificate validation uses the default CA path (/etc/ssl/certs)
+   and some environment variables override its behaviour:
+
+	- SSL_CA_CERT_FILE: path to the CA file.
+	- SSL_CA_CERT_PATH: path to the CA path (defaults to /etc/ssl/certs)
+	- SSL_NO_VERIFY_PEER: disable certificate verification.
+	- SSL_NO_VERIFY_HOSTNAME: disable certificate hostname verification.
+
  * lixbps: use a sane umask if the pkgdb file needs to created for the first
    time. Thanks to Wolfgang Draxinger (https://github.com/voidlinux/xbps/pull/108).
 
