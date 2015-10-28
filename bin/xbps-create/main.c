@@ -197,7 +197,7 @@ process_one_alternative(const char *altgrname, const char *val)
 
 
 static void
-process_dict_of_arrays(const char *key, const char *val)
+process_dict_of_arrays(const char *key _unused, const char *val)
 {
 	char *altgrname, *args, *p, *saveptr;
 
