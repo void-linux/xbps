@@ -1,0 +1,114 @@
+.Dd October 28, 2015
+.Dt XBPS-FBULK 1
+.Sh NAME
+.Nm xbps-fbulk
+.Nd XBPS utility to perform a fast bulk build of void-packages
+.Sh SYNOPSYS
+.Nm xbps-fbulk
+.Op OPTIONS
+.Ar /path/to/void-packages
+.Op pkgN pkgN+1 ...
+.Sh DESCRIPTION
+The
+.Nm
+utility iterates all srcpkg directories in the
+.Xr void-packages
+repository or processes the
+.Xr pkgN
+arguments, and then runs
+.Ar ./xbps-src show-build-deps',
+to build a dependency tree on the fly.
+.Pp
+As the dependency tree is being built, terminal dependencies are built
+and packaged on the fly.
+.Pp
+As these builds complete additional dependencies may be satisfied and be
+added to the build order. Ultimately the entire tree is built.
+.Pp
+Only one attempt is made to build any given package, no matter how many
+other packages depend on it.
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl a Ar arch
+Set a different target architecture, useful for cross compiling.
+.It Fl j Ar X
+Set number of parallel builds running at the same time. By default set to 1.
+.It Fl l Ar logdir
+Set the log directory. By default set to `log.<pid>`.
+.It Fl d, Fl -debug
+Enables extra debugging shown to stderr.
+.It Fl h, Fl -help
+Show the help usage.
+.It Fl v, Fl -verbose
+Enables verbose messages.
+.It Fl V, Fl -version
+Shows the XBPS version.
+.El
+.Sh FILES
+.Bl -tag -width logdir/skipped
+.It Ar logdir/run
+Packages that are being built.
+.It Ar logdir/good
+Packages that were built successfully.
+.It Ar logdir/bad
+Packages that failed to build.
+.It Ar logdir/skipped
+Packages that were not built because they had to be skipped (unsupported architecture, broken or restricted).
+.It Ar logdir/deps
+Packages that were not built due to missing dependencies.
+.El
+.Sh NOTES
+The
+.Ar masterdir
+in the
+.Ar void-packages
+repository must be fully populated for chroot operations, and some options
+need to be set in
+.Ar etc/conf
+to make
+.Nm
+work correctly:
+.Bl -tag -width XBPS_CHROOT_CMD=uchroot
+.It Ar XBPS_CHROOT_CMD=uchroot
+The
+.Xr xbps-uchroot 1
+utility is required because
+.Nm
+builds packages in temporary masterdirs that are mounted with
+.Ar overlayfs .
+.El
+.Pp
+Make sure the user running
+.Nm
+has rights to execute
+.Xr xbps-uchroot 1
+and the kernel supports the overlay filesystem, introduced in 4.0.
+.Pp
+.Sh SEE ALSO
+.Xr xbps-checkvers 1 ,
+.Xr xbps-create 1 ,
+.Xr xbps-dgraph 1 ,
+.Xr xbps-install 1 ,
+.Xr xbps-pkgdb 1 ,
+.Xr xbps-query 1 ,
+.Xr xbps-reconfigure 1 ,
+.Xr xbps-remove 1 ,
+.Xr xbps-rindex 1 ,
+.Xr xbps-uchroot 1 ,
+.Xr xbps-uunshare 1 ,
+.Xr xbps.d 5
+.Sh AUTHORS
+The
+.Nm
+utility was originally written by
+.An Matthew Dillon <dillon@backplane.com>
+for the
+.Ar DragonFlyBSD project.
+.Pp
+.An Juan Romero Pardines <xtraeme@gmail.com>
+adapted it for xbps and added some new features.
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsability and enjoy your life.
+.Pp
+Report bugs in https://github.com/voidlinux/xbps/issues

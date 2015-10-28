@@ -152,7 +152,7 @@ addItem(const char *pkgn)
 static void __attribute__((noreturn))
 usage(const char *progname)
 {
-	fprintf(stderr, "%s [-a targetarch] [-h] [-j parallel] [-l logdir] "
+	fprintf(stderr, "%s [-a targetarch] [-h] [-j parallel] [-l logdir] [-V]"
 	    "/path/to/void-packages [pkg pkgN]\n", progname);
 	exit(EXIT_FAILURE);
 }
@@ -552,7 +552,7 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 
-	while ((ch = getopt_long(argc, argv, "a:hj:l:v", longopts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "a:hj:l:vV", longopts, NULL)) != -1) {
 		switch (ch) {
 		case 'a':
 			TargetArch = optarg;
@@ -566,6 +566,9 @@ main(int argc, char **argv)
 		case 'l':
 			LogDir = optarg;
 			break;
+		case 'V':
+			printf("%s\n", XBPS_RELVER);
+			exit(EXIT_SUCCESS);
 		case 'h':
 		default:
 			usage(progname);
