@@ -70,7 +70,7 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 
 	if ((xscd->xhp->flags & XBPS_FLAG_DISABLE_SYSLOG) == 0) {
 		slog = true;
-		openlog("xbps-remove", LOG_CONS, LOG_USER);
+		openlog("xbps-remove", 0, LOG_USER);
 	}
 
 	switch (xscd->state) {

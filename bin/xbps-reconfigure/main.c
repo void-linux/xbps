@@ -58,7 +58,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbd _unused)
 
 	if ((xscd->xhp->flags & XBPS_FLAG_DISABLE_SYSLOG) == 0) {
 		slog = true;
-		openlog("xbps-reconfigure", LOG_CONS, LOG_USER);
+		openlog("xbps-reconfigure", 0, LOG_USER);
 	}
 
 	switch (xscd->state) {

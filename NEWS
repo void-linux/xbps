@@ -1,5 +1,10 @@
 xbps-0.48 (???):
 
+ * xbps-{install,reconfigure,remove}(1): do not log to console when the
+   syslog option (xbps.d(5)) is enabled. Messages are send to stderr/stdout,
+   so that logging to the console duplicates them. Close #123
+   https://github.com/voidlinux/xbps/issues/123
+
  * xbps-fbulk(1): now comes with a manual page for the section 1.
 
  * libxbps: implemented reverse conflicts. That means that just a single pkg
