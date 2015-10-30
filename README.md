@@ -227,7 +227,7 @@ To update a single package:
 
     $ xbps-install -u <package expression>
 
-To update all packages (also known as dist-upgrade in debian/ubuntu):
+To update all packages (also known as dist-upgrade in Debian/Ubuntu):
 
     $ xbps-install -u
 
@@ -276,7 +276,7 @@ To put a package on hold mode (won't be upgraded in dist-upgrade mode):
 
     $ xbps-pkgdb -m hold <package name>
 
-To unput a package from hold mode:
+To remove a package from hold mode:
 
     $ xbps-pkgdb -m unhold <package name>
 
@@ -304,7 +304,7 @@ This command only has 3 operation modes:
 
 > The `-f, --force` option can be used to forcefully register a package into the repository index, even if the same version is already registered.
 
- * Clean [-c, --clean]: cleans the index of the specified repository removing outdated or invalid entries (unexistent packages, unmatched hashes, etc):
+ * Clean [-c, --clean]: cleans the index of the specified repository by removing outdated or invalid entries (nonexistent packages, unmatched hashes, etc):
 
         $ xbps-rindex -c /path/to/repository
 
