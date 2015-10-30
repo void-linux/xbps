@@ -31,6 +31,14 @@
 
 #include "xbps_api_impl.h"
 
+/**
+ * @file lib/package_alternatives.c
+ * @brief Alternatives generic routines
+ * @defgroup alternatives Alternatives generic functions
+ *
+ * These functions implement the alternatives framework.
+ */
+
 /*
  * XXX TODO: relative symlinks.
  */

@@ -639,10 +639,6 @@ void xbps_dbg_printf_append(struct xbps_handle *, const char *, ...);
 void xbps_error_printf(const char *, ...);
 void xbps_warn_printf(const char *, ...);
 
-int xbps_alternatives_set(struct xbps_handle *, const char *, const char *);
-int xbps_alternatives_register(struct xbps_handle *, xbps_dictionary_t);
-int xbps_alternatives_unregister(struct xbps_handle *, xbps_dictionary_t);
-
 /**
  * Initialize the XBPS library with the following steps:
  *
@@ -930,6 +926,43 @@ int xbps_pkg_exec_script(struct xbps_handle *xhp,
 			 const char *script,
 			 const char *action,
 			 bool update);
+
+/*@}*/
+
+/** @addtogroup alternatives */
+/*@{*/
+
+/**
+ * Sets all alternatives provided by this \a pkg, or only those
+ * set by a \a group.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] pkg Package name to match.
+ * @param[in] group Alternatives group to match.
+ *
+ * @return 0 on success, or an errno value otherwise.
+ */
+int xbps_alternatives_set(struct xbps_handle *xhp, const char *pkg, const char *group);
+
+/**
+ * Registers all alternative groups provided by a package.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] pkgd Package dictionary as stored in the transaction dictionary.
+ *
+ * @return 0 on success, or an errno value otherwise.
+ */
+int xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
+
+/**
+ * Unregisters all alternative groups provided by a package.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] pkgd Package dictionary as stored in the transaction dictionary.
+ *
+ * @return 0 on success, or an errno value otherwise.
+ */
+int xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
 
 /*@}*/
 
