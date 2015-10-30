@@ -3,7 +3,7 @@
 .Sh NAME
 .Nm xbps-remove
 .Nd XBPS utility to remove packages
-.Sh SYNOPSYS
+.Sh SYNOPSIS
 .Nm xbps-remove
 .Op OPTIONS
 .Op PKGNAME...
@@ -74,7 +74,7 @@ shared libraries (DANGEROUS!).
 .It Fl f, Fl -force
 Forcefully remove package files even if they have been modified.
 .It Fl h, Fl -help
-Show the help usage.
+Show the help message.
 .It Fl n, Fl -dry-run
 Dry-run mode. Show what actions would be done but don't do anything. The current output
 prints 6 arguments: "<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
@@ -94,7 +94,7 @@ Enables verbose messages.
 .It Fl y, Fl -yes
 Assume yes to all questions and avoid interactive questions.
 .It Fl V, Fl -version
-Shows the XBPS version.
+Show the version information.
 .El
 .Sh FILES
 .Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
@@ -128,4 +128,4 @@ Default cache directory to store downloaded binary packages.
 Probably, but I try to make this not happen. Use it under your own
 responsibility and enjoy your life.
 .Pp
-Report bugs in https://github.com/voidlinux/xbps/issues
+Report bugs at https://github.com/voidlinux/xbps/issues

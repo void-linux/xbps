@@ -3,7 +3,7 @@
 .Sh NAME
 .Nm xbps-create
 .Nd XBPS utility to create binary packages
-.Sh SYNOPSYS
+.Sh SYNOPSIS
 .Nm xbps-create
 .Op OPTIONS
 .Ar destdir
@@ -30,14 +30,14 @@ by whitespaces. Example:
 A list of package patterns this package depends on, separated by whitespaces. Example:
 .Ar 'foo>=1.0 blah-1.0_1' .
 .It Fl F, Fl -config-files Ar list
-A list of configuration files this package provides, separated whitepaces.
+A list of configuration files this package provides, separated by whitespace.
 .It Fl G, Fl --source-revisions Ar string
-This justs sets a string with the git revisions of the sourcepkg that
+This sets a string with the git revisions of the sourcepkg that
 was used to build this binary package. It is set automatically by xbps-src.
 .It Fl H, Fl -homepage Ar string
 The package homepage string.
 .It Fl h, Fl -help
-Show help message.
+Show the help message.
 .It Fl l, Fl -license Ar string
 The package license.
 .It Fl M, Fl -mutable-files Ar list
@@ -68,7 +68,7 @@ A short description for this package, one line with less than 80 characters.
 A list of tags (categories) this package should be part of, separated by whitespaces. Example:
 .Ar 'development nonfree' .
 .It Fl V, Fl -version
-Shows the XBPS version.
+Show the version information.
 .It Fl -build-options Ar string
 A string containing the build options used in package.
 .It Fl -compression Ar gzip | bzip2 | xz
@@ -100,4 +100,4 @@ A list of required shared libraries, separated by whitespaces. Example:
 Probably, but I try to make this not happen. Use it under your own
 responsibility and enjoy your life.
 .Pp
-Report bugs in https://github.com/voidlinux/xbps/issues
+Report bugs at https://github.com/voidlinux/xbps/issues

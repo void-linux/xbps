@@ -3,7 +3,7 @@
 .Sh NAME
 .Nm xbps-pkgdb
 .Nd XBPS utility to report/fix issues and modify the package database (pkgdb)
-.Sh SYNOPSYS
+.Sh SYNOPSIS
 .Nm xbps-pkgdb
 .Op OPTIONS
 .Op PKGNAME...
@@ -46,7 +46,7 @@ If the first character is not '\/' then it's a relative path of
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
-Show the help usage.
+Show the help message.
 .It Fl m, Fl -mode Ar auto|manual|hold|unhold|repolock|repounlock
 Switches
 .Ar PKGNAME
@@ -73,7 +73,7 @@ automatically. Usually this is needed only in rare circumstances.
 .It Fl v, Fl -verbose
 Enables verbose messages.
 .It Fl V, Fl -version
-Shows the XBPS version.
+Show the version information.
 .El
 .Sh FILES
 .Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
@@ -107,4 +107,4 @@ Default cache directory to store downloaded binary packages.
 Probably, but I try to make this not happen. Use it under your own
 responsibility and enjoy your life.
 .Pp
-Report bugs in https://github.com/voidlinux/xbps/issues
+Report bugs at https://github.com/voidlinux/xbps/issues
