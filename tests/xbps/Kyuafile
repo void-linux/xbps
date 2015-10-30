@@ -3,6 +3,7 @@ syntax("kyuafile", 1)
 test_suite("xbps")
 
 include('libxbps/Kyuafile')
+include('xbps-alternatives/Kyuafile')
 include('xbps-checkvers/Kyuafile')
 include('xbps-create/Kyuafile')
 include('xbps-install/Kyuafile')

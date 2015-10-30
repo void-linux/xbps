@@ -84,7 +84,9 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		char *pkgname;
 
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver))
+			continue;
+
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
 		xbps_dictionary_set(pd, pkgname, obj);

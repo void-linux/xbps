@@ -1,5 +1,9 @@
 xbps-0.48 (???):
 
+ * xbps-alternatives(1): new utility to list or set alternatives provided by
+   packages. This effectively implements a functional alternatives framework
+   to switch easily a default provider via symbolic links.
+
  * xbps-{install,reconfigure,remove}(1): do not log to console when the
    syslog option (xbps.d(5)) is enabled. Messages are send to stderr/stdout,
    so that logging to the console duplicates them. Close #123

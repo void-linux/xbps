@@ -1,6 +1,7 @@
 -include ../config.mk
 
-SUBDIRS =	xbps-create
+SUBDIRS +=	xbps-alternatives
+SUBDIRS +=	xbps-create
 SUBDIRS +=	xbps-dgraph
 SUBDIRS +=	xbps-install
 SUBDIRS +=	xbps-pkgdb

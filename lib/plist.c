@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2013 Juan Romero Pardines.
+ * Copyright (c) 2008-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,6 +66,9 @@ array_foreach_thread(void *arg)
 		if (xbps_object_type(thd->dict) == XBPS_TYPE_DICTIONARY) {
 			pkgd = xbps_dictionary_get_keysym(thd->dict, obj);
 			key = xbps_dictionary_keysym_cstring_nocopy(obj);
+			/* ignore internal objs */
+			if (strncmp(key, "_XBPS_", 6) == 0)
+				continue;
 		} else {
 			pkgd = obj;
 			key = NULL;
@@ -148,6 +151,9 @@ xbps_array_foreach_cb(struct xbps_handle *xhp,
 		if (xbps_object_type(dict) == XBPS_TYPE_DICTIONARY) {
 			pkgd = xbps_dictionary_get_keysym(dict, obj);
 			key = xbps_dictionary_keysym_cstring_nocopy(obj);
+			/* ignore internal objs */
+			if (strncmp(key, "_XBPS_", 6) == 0)
+				continue;
 		} else {
 			pkgd = obj;
 			key = NULL;

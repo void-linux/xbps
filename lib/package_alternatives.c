@@ -32,7 +32,7 @@
 #include "xbps_api_impl.h"
 
 /*
- * Alternatives framework for xbps.
+ * XXX TODO: relative symlinks.
  */
 static char *
 left(const char *str)
@@ -51,55 +51,6 @@ static const char *
 right(const char *str)
 {
 	return strchr(str, ':') + 1;
-}
-
-#if 0
-static int
-make_symlink(const char *target, const char *link)
-{
-	char *t, *l, *tdir, *ldir;
-
-	tdir = strdup(target);
-	assert(tdir);
-	ldir = strdup(link);
-	assert(ldir);
-
-}
-#endif
-
-static void
-xbps_alternatives_init(struct xbps_handle *xhp)
-{
-	char *plist;
-
-	if (xbps_object_type(xhp->alternatives) == XBPS_TYPE_DICTIONARY)
-		return;
-
-	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_ALTERNATIVES);
-	xhp->alternatives = xbps_dictionary_internalize_from_file(plist);
-	free(plist);
-
-	if (xhp->alternatives == NULL)
-		xhp->alternatives = xbps_dictionary_create();
-}
-
-int
-xbps_alternatives_flush(struct xbps_handle *xhp)
-{
-	char *plist;
-
-	if (xbps_object_type(xhp->alternatives) != XBPS_TYPE_DICTIONARY)
-		return 0;
-
-	/* ... and then write dictionary to disk */
-	plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_ALTERNATIVES);
-	if (!xbps_dictionary_externalize_to_file(xhp->alternatives, plist)) {
-		free(plist);
-		return EINVAL;
-	}
-	free(plist);
-
-	return 0;
 }
 
 static int
@@ -163,25 +114,91 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 }
 
 int
+xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
+		const char *group)
+{
+	xbps_array_t allkeys;
+	xbps_dictionary_t alternatives, pkg_alternatives, pkgd;
+	const char *pkgver;
+	int rv = 0;
+
+	assert(xhp);
+	assert(pkgname);
+
+	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
+	if (alternatives == NULL)
+		return ENOENT;
+
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	if (pkgd == NULL)
+		return ENOENT;
+
+	pkg_alternatives = xbps_dictionary_get(pkgd, "alternatives");
+	if (!xbps_dictionary_count(pkg_alternatives))
+		return ENOENT;
+
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+
+	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
+		xbps_array_t array;
+		xbps_object_t keysym;
+		xbps_string_t kstr;
+		const char *keyname;
+
+		keysym = xbps_array_get(allkeys, i);
+		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
+
+		if (group && strcmp(keyname, group)) {
+			rv = ENOENT;
+			continue;
+		}
+
+		array = xbps_dictionary_get(alternatives, keyname);
+		if (array == NULL)
+			continue;
+
+		/* put this alternative group at the head */
+		xbps_remove_string_from_array(array, pkgname);
+		kstr = xbps_string_create_cstring(pkgname);
+		xbps_array_add_first(array, kstr);
+		xbps_object_release(kstr);
+
+		/* apply the alternatives group */
+		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_ADDED, 0, NULL,
+		    "%s: applying '%s' alternatives group", pkgver, keyname);
+		rv = create_symlinks(xhp, xbps_dictionary_get(pkg_alternatives, keyname), keyname);
+		if (rv != 0)
+			break;
+	}
+	xbps_object_release(allkeys);
+	return rv;
+}
+
+int
 xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t alternatives;
+	xbps_dictionary_t alternatives, pkg_alternatives;
 	const char *pkgver;
 	char *pkgname;
 	int rv = 0;
 
-	alternatives = xbps_dictionary_get(pkgd, "alternatives");
-	if (!xbps_dictionary_count(alternatives))
+	assert(xhp);
+
+	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
+	if (alternatives == NULL)
 		return 0;
 
-	xbps_alternatives_init(xhp);
+	pkg_alternatives = xbps_dictionary_get(pkgd, "alternatives");
+	if (!xbps_dictionary_count(pkg_alternatives))
+		return 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	if ((pkgname = xbps_pkg_name(pkgver)) == NULL)
 		return EINVAL;
 
-	allkeys = xbps_dictionary_all_keys(alternatives);
+	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array;
 		xbps_object_t keysym;
@@ -190,7 +207,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 
-		array = xbps_dictionary_get(xhp->alternatives, keyname);
+		array = xbps_dictionary_get(alternatives, keyname);
 		if (array == NULL)
 			continue;
 
@@ -198,7 +215,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		if (strcmp(pkgname, first) == 0) {
 			/* this pkg is the current alternative for this group */
 			rv = remove_symlinks(xhp,
-				xbps_dictionary_get(alternatives, keyname),
+				xbps_dictionary_get(pkg_alternatives, keyname),
 				keyname);
 			if (rv != 0)
 				break;
@@ -207,7 +224,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		    "%s: unregistered '%s' alternatives group", pkgver, keyname);
 		xbps_remove_string_from_array(array, pkgname);
 		if (xbps_array_count(array) == 0) {
-			xbps_dictionary_remove(xhp->alternatives, keyname);
+			xbps_dictionary_remove(alternatives, keyname);
 		} else {
 			xbps_dictionary_t curpkgd;
 
@@ -217,9 +234,9 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			assert(curpkgd);
 			xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_SWITCHED, 0, NULL,
 			    "Switched '%s' alternatives group to '%s'", keyname, first);
-			alternatives = xbps_dictionary_get(curpkgd, "alternatives");
+			pkg_alternatives = xbps_dictionary_get(curpkgd, "alternatives");
 			rv = create_symlinks(xhp,
-				xbps_dictionary_get(alternatives, keyname),
+				xbps_dictionary_get(pkg_alternatives, keyname),
 				keyname);
 			if (rv != 0)
 				break;
@@ -236,23 +253,35 @@ int
 xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t alternatives;
+	xbps_dictionary_t alternatives, pkg_alternatives;
 	const char *pkgver;
 	char *pkgname;
 	int rv = 0;
 
-	alternatives = xbps_dictionary_get(pkgd, "alternatives");
-	if (!xbps_dictionary_count(alternatives))
+	assert(xhp);
+
+	if (xhp->pkgdb == NULL)
+		return EINVAL;
+
+	pkg_alternatives = xbps_dictionary_get(pkgd, "alternatives");
+	if (!xbps_dictionary_count(pkg_alternatives))
 		return 0;
 
-	xbps_alternatives_init(xhp);
+	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
+	if (alternatives == NULL) {
+		alternatives = xbps_dictionary_create();
+		xbps_dictionary_set(xhp->pkgdb, "_XBPS_ALTERNATIVES_", alternatives);
+		xbps_object_release(alternatives);
+	}
+	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
+	assert(alternatives);
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	pkgname = xbps_pkg_name(pkgver);
 	if (pkgname == NULL)
 		return EINVAL;
 
-	allkeys = xbps_dictionary_all_keys(alternatives);
+	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array;
 		xbps_object_t keysym;
@@ -262,19 +291,19 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 
-		array = xbps_dictionary_get(xhp->alternatives, keyname);
+		array = xbps_dictionary_get(alternatives, keyname);
 		if (array == NULL) {
 			alloc = true;
 			array = xbps_array_create();
 		}
 		xbps_array_add_cstring(array, pkgname);
-		xbps_dictionary_set(xhp->alternatives, keyname, array);
+		xbps_dictionary_set(alternatives, keyname, array);
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_ADDED, 0, NULL,
 		    "%s: registered '%s' alternatives group", pkgver, keyname);
 		if (alloc) {
 			/* apply alternatives for this group */
 			rv = create_symlinks(xhp,
-				xbps_dictionary_get(alternatives, keyname),
+				xbps_dictionary_get(pkg_alternatives, keyname),
 				keyname);
 			xbps_object_release(array);
 			if (rv != 0)

@@ -350,10 +350,6 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			goto out;
 		}
 	}
-	/* flush changes to the alternatives framework */
-	if ((rv = xbps_alternatives_flush(xhp)) != 0)
-		goto out;
-
 	/* if there are no packages to install or update we are done */
 	if (!xbps_dictionary_get(xhp->transd, "total-update-pkgs") &&
 	    !xbps_dictionary_get(xhp->transd, "total-install-pkgs"))

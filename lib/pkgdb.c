@@ -208,6 +208,7 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 		xbps_dbg_printf(xhp, "[pkgdb] pkgdb_map_vpkgs %s\n", strerror(rv));
 		return rv;
 	}
+	assert(xhp->pkgdb);
 	xbps_dbg_printf(xhp, "[pkgdb] initialized ok.\n");
 
 	return 0;

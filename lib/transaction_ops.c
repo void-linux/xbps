@@ -260,7 +260,8 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		hold = false;
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
+			continue;
 		xbps_dictionary_get_bool(pkgd, "hold", &hold);
 		if (hold) {
 			xbps_dbg_printf(xhp, "[rpool] package `%s' "
