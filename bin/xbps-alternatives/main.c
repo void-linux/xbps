@@ -72,7 +72,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbd _unused)
 }
 
 static void
-list_pkg_alternatives(xbps_dictionary_t pkgd, bool print_key)
+list_pkg_alternatives(xbps_dictionary_t pkgd, const char *group, bool print_key)
 {
 	xbps_dictionary_t pkg_alternatives;
 	xbps_array_t allkeys;
@@ -90,6 +90,9 @@ list_pkg_alternatives(xbps_dictionary_t pkgd, bool print_key)
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 		array = xbps_dictionary_get_keysym(pkg_alternatives, keysym);
+
+		if (group && strcmp(group, keyname))
+			continue;
 
 		if (print_key)
 			printf("%s\n", keyname);
@@ -117,7 +120,7 @@ list_alternatives(struct xbps_handle *xhp, const char *pkgname)
 		if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL)
 			return ENOENT;
 
-		list_pkg_alternatives(pkgd, true);
+		list_pkg_alternatives(pkgd, NULL, true);
 		return 0;
 	}
 	assert(xhp->pkgdb);
@@ -144,7 +147,7 @@ list_alternatives(struct xbps_handle *xhp, const char *pkgname)
 			printf(" - %s%s\n", str, x == 0 ? " (current)" : "");
 			pkgd = xbps_pkgdb_get_pkg(xhp, str);
 			assert(pkgd);
-			list_pkg_alternatives(pkgd, false);
+			list_pkg_alternatives(pkgd, keyname, false);
 		}
 	}
 	xbps_object_release(allkeys);
