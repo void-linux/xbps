@@ -1,4 +1,4 @@
-xbps-0.48 (???):
+xbps-0.48 (2015-10-30):
 
  * xbps-alternatives(1): new utility to list or set alternatives provided by
    packages. This effectively implements a functional alternatives framework
