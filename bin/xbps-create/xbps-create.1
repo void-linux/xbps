@@ -1,4 +1,4 @@
-.Dd October 28, 2015
+.Dd October 30, 2015
 .Dt XBPS-CREATE 1
 .Sh NAME
 .Nm xbps-create
@@ -80,6 +80,9 @@ A list of provided shared libraries, separated by whitespaces. Example:
 .It Fl -shlib-requires Ar list
 A list of required shared libraries, separated by whitespaces. Example:
 .Ar 'libz.so.1 libfoo.so.2' .
+.It Fl -alternatives Ar list
+A list of alternatives provided by this package, separated by whitespaces. Example:
+.Ar 'group:symlink:target group2:symlink:target' .
 .El
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
