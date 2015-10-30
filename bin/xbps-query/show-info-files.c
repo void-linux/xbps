@@ -88,6 +88,8 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 		}
 		break;
 	case XBPS_TYPE_DICTIONARY:
+		if (!raw)
+			printf("%s%s%s%s:\n", indent, bold, keyname, reset);
 		allkeys = xbps_dictionary_all_keys(obj);
 		for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 			keysym = xbps_array_get(allkeys, i);
@@ -131,6 +133,7 @@ show_pkg_info_one(xbps_dictionary_t d, const char *keys)
 	const char *bold, *reset;
 	char *key, *p, *saveptr;
 	int v_tty = isatty(STDOUT_FILENO);
+	bool raw;
 
 	if (v_tty) {
 		bold = _BOLD;
@@ -144,7 +147,10 @@ show_pkg_info_one(xbps_dictionary_t d, const char *keys)
 		obj = xbps_dictionary_get(d, keys);
 		if (obj == NULL)
 			return;
-		print_value_obj(keys, obj, NULL, bold, reset, true);
+		raw = true;
+		if (xbps_object_type(obj) == XBPS_TYPE_DICTIONARY)
+			raw = false;
+		print_value_obj(keys, obj, NULL, bold, reset, raw);
 		return;
 	}
 	key = strdup(keys);
@@ -155,7 +161,10 @@ show_pkg_info_one(xbps_dictionary_t d, const char *keys)
 		obj = xbps_dictionary_get(d, p);
 		if (obj == NULL)
 			continue;
-		print_value_obj(p, obj, NULL, bold, reset, true);
+		raw = true;
+		if (xbps_object_type(obj) == XBPS_TYPE_DICTIONARY)
+			raw = false;
+		print_value_obj(p, obj, NULL, bold, reset, raw);
 	}
 	free(key);
 }
