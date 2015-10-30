@@ -114,8 +114,6 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 void
 xbps_pkgdb_unlock(struct xbps_handle *xhp)
 {
-	(void)xbps_pkgdb_update(xhp, true, false);
-
 	if (pkgdb_fd != -1) {
 		if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
 			xbps_dbg_printf(xhp, "[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
