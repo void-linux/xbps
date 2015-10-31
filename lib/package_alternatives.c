@@ -303,7 +303,12 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		if (array == NULL) {
 			alloc = true;
 			array = xbps_array_create();
+		} else {
+			/* already registered */
+			if (xbps_match_string_in_array(array, pkgname))
+				continue;
 		}
+
 		xbps_array_add_cstring(array, pkgname);
 		xbps_dictionary_set(alternatives, keyname, array);
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_ADDED, 0, NULL,

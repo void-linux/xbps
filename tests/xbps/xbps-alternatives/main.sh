@@ -28,6 +28,30 @@ register_one_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case register_dups
+
+register_dups_head() {
+	atf_set "descr" "xbps-alternatives: do not register dup alternative groups"
+}
+register_dups_body() {
+	mkdir -p repo pkg_A/usr/bin
+	touch pkg_A/usr/bin/fileA
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileA" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv A
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -ydfv A
+	atf_check_equal $? 0
+	xbps-install -r root --repository=repo -ydfv A
+	atf_check_equal $? 0
+	atf_check_equal "$(xbps-alternatives -r root -l|wc -l)" 3
+}
+
 atf_test_case register_multi
 
 register_multi_head() {
@@ -262,6 +286,7 @@ set_pkg_group_body() {
 
 atf_init_test_cases() {
 	atf_add_test_case register_one
+	atf_add_test_case register_dups
 	atf_add_test_case register_multi
 	atf_add_test_case unregister_one
 	atf_add_test_case unregister_multi
