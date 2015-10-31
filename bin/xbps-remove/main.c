@@ -118,6 +118,11 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 		}
 		break;
 	default:
+		if (xscd->desc) {
+			printf("%s\n", xscd->desc);
+			if (slog)
+				syslog(LOG_NOTICE, "%s", xscd->desc);
+		}
 		break;
 	}
 
