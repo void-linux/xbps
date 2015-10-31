@@ -35,9 +35,9 @@ register_one_relative_head() {
 }
 register_one_relative_body() {
 	mkdir -p repo pkg_A/usr/bin
-	touch pkg_A/usr/bin/fileA pkg_A/usr/bin/fileB
+	touch pkg_A/usr/bin/fileA
 	cd repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:../file:/usr/bin/fileA file2:file2:/usr/bin/fileB" ../pkg_A
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:file:/usr/bin/fileA" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
@@ -47,17 +47,8 @@ register_one_relative_body() {
 	atf_check_equal $? 0
 	rv=1
 	if [ -e root/usr/bin/fileA ]; then
-		lnk=$(readlink root/usr/file)
-		if [ "$lnk" = "/usr/bin/fileA" ]; then
-			rv=0
-		fi
-		echo "A lnk: $lnk"
-	fi
-	atf_check_equal $rv 0
-	rv=1
-	if [ -e root/usr/bin/fileB ]; then
-		lnk=$(readlink root/usr/bin/file2)
-		if [ "$lnk" = "/usr/bin/fileB" ]; then
+		lnk=$(readlink root/usr/bin/file)
+		if [ "$lnk" = "fileA" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -150,7 +141,7 @@ unregister_one_body() {
 	atf_check_equal $? 0
 	xbps-remove -r root -yvd A
 	rv=1
-	if [ ! -L root/usr/bin/file -a ! -e root/usr/bin/fileA ]; then
+	if [ ! -e root/usr/bin/file -a ! -e root/usr/bin/fileA ]; then
 		rv=0
 	fi
 	atf_check_equal $rv 0
@@ -175,7 +166,7 @@ unregister_one_relative_body() {
 	atf_check_equal $? 0
 	xbps-remove -r root -yvd A
 	rv=1
-	if [ ! -L root/usr/bin/file -a ! -e root/usr/bin/fileA ]; then
+	if [ ! -e root/usr/bin/file -a ! -e root/usr/bin/fileA ]; then
 		rv=0
 	fi
 	atf_check_equal $rv 0
@@ -211,7 +202,7 @@ unregister_multi_body() {
 	atf_check_equal $rv 0
 	xbps-remove -r root -yvd A
 	rv=1
-	if [ ! -L root/usr/bin/file -a ! -e root/usr/bin/fileA ]; then
+	if [ ! -e root/usr/bin/file -a ! -e root/usr/bin/fileA ]; then
 		rv=0
 	fi
 	atf_check_equal $rv 0
@@ -230,7 +221,7 @@ unregister_multi_body() {
 
 	xbps-remove -r root -yvd B
 	rv=1
-	if [ ! -L root/usr/bin/file -a ! -e root/usr/bin/fileB ]; then
+	if [ ! -e root/usr/bin/file -a ! -e root/usr/bin/fileB ]; then
 		rv=0
 	fi
 	atf_check_equal $rv 0

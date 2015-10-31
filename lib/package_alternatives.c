@@ -102,23 +102,28 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 	cnt = xbps_array_count(a);
 	for (i = 0; i < cnt; i++) {
 		xbps_string_t str;
-		char *l, *lnk;
-		const char *tgt;
+		char *l, *lnk, *tgt;
+		const char *tgt0;
 		int rv;
 
 		str = xbps_array_get(a, i);
 		l = left(xbps_string_cstring_nocopy(str));
 		assert(l);
-		tgt = right(xbps_string_cstring_nocopy(str));
+		tgt0 = right(xbps_string_cstring_nocopy(str));
 		assert(tgt);
 		if (l[0] != '/') {
 			char *tgt_dup, *tgt_dir;
-			tgt_dup = strdup(tgt);
+			tgt_dup = strdup(tgt0);
 			assert(tgt_dup);
 			tgt_dir = dirname(tgt_dup);
 			lnk = xbps_xasprintf("%s%s/%s", xhp->rootdir, tgt_dir, l);
 			free(tgt_dup);
+			tgt_dup = strdup(tgt0);
+			assert(tgt_dup);
+			tgt = strdup(basename(tgt_dup));
+			free(tgt_dup);
 		} else {
+			tgt = strdup(tgt0);
 			lnk = xbps_xasprintf("%s%s", xhp->rootdir, l);
 		}
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_ADDED, 0, NULL,
@@ -128,10 +133,12 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 			xbps_dbg_printf(xhp, "failed to create alt symlink '%s'"
 			    "for group '%s': %s\n", lnk, grname,
 			    strerror(errno));
+			free(tgt);
 			free(lnk);
 			free(l);
 			return rv;
 		}
+		free(tgt);
 		free(lnk);
 		free(l);
 	}
