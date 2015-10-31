@@ -305,7 +305,6 @@ srcpkg_with_a_ref_and_comment_head() {
 	atf_set "descr" "xbps-checkvers(8): test when srcpkg does set a ref in pkgname/version/revision with a comment"
 }
 srcpkg_with_a_ref_and_comment_body() {
-	atf_expect_death "Known bug: see https://github.com/voidlinux/xbps/issues/120"
 	mkdir -p some_repo pkg_A void-packages/srcpkgs/foo
 	cat > void-packages/srcpkgs/foo/template <<EOF
 pkgname=foo #kajskajskajskajskajskjaksjaksjaks

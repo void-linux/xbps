@@ -399,7 +399,7 @@ rcv_get_pkgver(rcv_t *rcv)
 	size_t klen, vlen;
 	map_item_t _item;
 	map_item_t *item = NULL;
-	char c, *ptr = rcv->ptr, *e, *p, *k, *v;
+	char c, *ptr = rcv->ptr, *e, *p, *k, *v, *comment;
 	uint8_t vars = 0;
 
 	while ((c = *ptr) != '\0') {
@@ -439,17 +439,21 @@ rcv_get_pkgver(rcv_t *rcv)
 		if (v[vlen-1] == '"') {
 			vlen--;
 		}
+		comment = strchr(v, '#');
+		if (comment && comment < p) {
+			while (v[vlen-1] != '#') {
+				vlen--;
+			}
+			vlen--;
+			while (isspace(v[vlen-1])) {
+				vlen--;
+			}
+		}
 		if (vlen == 0) {
 			goto nextline;
 		}
 		_item = map_add_n(rcv->env, k, klen, v, vlen);
 		item = &rcv->env->items[_item.i];
-
-		if (rcv->xhp.flags & XBPS_FLAG_DEBUG) {
-			printf("%s: %.*s %.*s\n", rcv->fname,
-			    (int)item->k.len, item->k.s,
-			    (int)item->v.len, item->v.s);
-		}
 
 		if (strchr(v, '$')) {
 			assert(item);
@@ -461,6 +465,11 @@ rcv_get_pkgver(rcv_t *rcv)
 			item->v.len = strlen(item->v.s);
 		} else {
 			item->v.vmalloc = 0;
+		}
+		if (rcv->xhp.flags & XBPS_FLAG_DEBUG) {
+			printf("%s: %.*s %.*s\n", rcv->fname,
+			    (int)item->k.len, item->k.s,
+			    (int)item->v.len, item->v.s);
 		}
 		if (strncmp("pkgname", k, klen) == 0) {
 			rcv->have_vars |= GOT_PKGNAME_VAR;
