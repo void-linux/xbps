@@ -117,12 +117,18 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata _unused)
 			syslog(LOG_ERR, "%s", xscd->desc);
 		}
 		break;
-	default:
+	case XBPS_STATE_ALTGROUP_ADDED:
+	case XBPS_STATE_ALTGROUP_REMOVED:
+	case XBPS_STATE_ALTGROUP_SWITCHED:
+	case XBPS_STATE_ALTGROUP_LINK_ADDED:
+	case XBPS_STATE_ALTGROUP_LINK_REMOVED:
 		if (xscd->desc) {
 			printf("%s\n", xscd->desc);
 			if (slog)
 				syslog(LOG_NOTICE, "%s", xscd->desc);
 		}
+		break;
+	default:
 		break;
 	}
 
