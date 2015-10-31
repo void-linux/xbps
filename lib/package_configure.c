@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,8 @@ xbps_configure_packages(struct xbps_handle *xhp, xbps_array_t ignpkgs)
 	assert(iter);
 	while ((obj = xbps_object_iterator_next(iter))) {
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
+			continue;
 		if (xbps_array_count(ignpkgs)) {
 			if ((xbps_match_string_in_array(ignpkgs, pkgver)) ||
 			    (xbps_match_pkgver_in_array(ignpkgs, pkgver))) {
