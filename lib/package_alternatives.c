@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <libgen.h>
 
 #include "xbps_api_impl.h"
 
@@ -39,9 +40,6 @@
  * These functions implement the alternatives framework.
  */
 
-/*
- * XXX TODO: relative symlinks.
- */
 static char *
 left(const char *str)
 {
@@ -74,7 +72,18 @@ remove_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		str = xbps_array_get(a, i);
 		l = left(xbps_string_cstring_nocopy(str));
 		assert(l);
-		lnk = xbps_xasprintf("%s%s", xhp->rootdir, l);
+		if (l[0] != '/') {
+			const char *tgt;
+			char *tgt_dup, *tgt_dir;
+			tgt = right(xbps_string_cstring_nocopy(str));
+			tgt_dup = strdup(tgt);
+			assert(tgt_dup);
+			tgt_dir = dirname(tgt_dup);
+			lnk = xbps_xasprintf("%s%s/%s", xhp->rootdir, tgt_dir, l);
+			free(tgt_dup);
+		} else {
+			lnk = xbps_xasprintf("%s%s", xhp->rootdir, l);
+		}
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_REMOVED, 0, NULL,
 		    "Removing '%s' alternatives group symlink: %s", grname, l);
 		unlink(lnk);
@@ -102,7 +111,16 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		assert(l);
 		tgt = right(xbps_string_cstring_nocopy(str));
 		assert(tgt);
-		lnk = xbps_xasprintf("%s%s", xhp->rootdir, l);
+		if (l[0] != '/') {
+			char *tgt_dup, *tgt_dir;
+			tgt_dup = strdup(tgt);
+			assert(tgt_dup);
+			tgt_dir = dirname(tgt_dup);
+			lnk = xbps_xasprintf("%s%s/%s", xhp->rootdir, tgt_dir, l);
+			free(tgt_dup);
+		} else {
+			lnk = xbps_xasprintf("%s%s", xhp->rootdir, l);
+		}
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_ADDED, 0, NULL,
 		    "Creating '%s' alternatives group symlink: %s -> %s", grname, l, tgt);
 		unlink(lnk);

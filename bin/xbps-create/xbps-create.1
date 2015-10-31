@@ -83,6 +83,10 @@ A list of required shared libraries, separated by whitespaces. Example:
 .It Fl -alternatives Ar list
 A list of alternatives provided by this package, separated by whitespaces. Example:
 .Ar 'group:symlink:target group2:symlink:target' .
+If
+.Em symlink
+is a relative path, the symlink will be created relative to
+.Em target .
 .El
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
