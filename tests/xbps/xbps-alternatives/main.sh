@@ -3,7 +3,7 @@
 atf_test_case register_one
 
 register_one_head() {
-	atf_set "descr" "xbps-alternatives: register one pkg wth an alternatives group"
+	atf_set "descr" "xbps-alternatives: register one pkg with an alternatives group"
 }
 register_one_body() {
 	mkdir -p repo pkg_A/usr/bin
@@ -31,13 +31,13 @@ register_one_body() {
 atf_test_case register_one_relative
 
 register_one_relative_head() {
-	atf_set "descr" "xbps-alternatives: register one pkg wth an alternatives group that has a relative path"
+	atf_set "descr" "xbps-alternatives: register one pkg with an alternatives group that has a relative path"
 }
 register_one_relative_body() {
 	mkdir -p repo pkg_A/usr/bin
-	touch pkg_A/usr/bin/fileA
+	touch pkg_A/usr/bin/fileA pkg_A/usr/bin/fileB
 	cd repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:../file:/usr/bin/fileA" ../pkg_A
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:../file:/usr/bin/fileA file2:file2:/usr/bin/fileB" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
@@ -49,6 +49,15 @@ register_one_relative_body() {
 	if [ -e root/usr/bin/fileA ]; then
 		lnk=$(readlink root/usr/file)
 		if [ "$lnk" = "/usr/bin/fileA" ]; then
+			rv=0
+		fi
+		echo "A lnk: $lnk"
+	fi
+	atf_check_equal $rv 0
+	rv=1
+	if [ -e root/usr/bin/fileB ]; then
+		lnk=$(readlink root/usr/bin/file2)
+		if [ "$lnk" = "/usr/bin/fileB" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
