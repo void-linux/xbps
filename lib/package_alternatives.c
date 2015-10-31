@@ -110,7 +110,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		l = left(xbps_string_cstring_nocopy(str));
 		assert(l);
 		tgt0 = right(xbps_string_cstring_nocopy(str));
-		assert(tgt);
+		assert(tgt0);
 		if (l[0] != '/') {
 			char *tgt_dup, *tgt_dir;
 			tgt_dup = strdup(tgt0);
