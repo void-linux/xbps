@@ -1,3 +1,5 @@
+xbps-0.50 (???):
+
 xbps-0.49 (2015-10-31):
 
  * alternatives: relative symlinks are now supported. Contributed
