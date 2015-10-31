@@ -1,4 +1,4 @@
-.Dd October 30, 2015
+.Dd October 31, 2015
 .Dt XBPS-ALTERNATIVES 1
 .Sh NAME
 .Nm xbps-alternatives
@@ -43,9 +43,12 @@ Show the version information.
 .Sh MODE
 Only one of the following modes can be used at a time.
 .Bl -tag -width -x
-.It Fl l, Fl -list Op PKG
-Lists all current alternatives or only from
-.Ar PKG .
+.It Fl l, Fl -list Op PKG Op -g Ar group
+Lists all current alternative groups or only from
+.Ar PKG ,
+or just a specific group, if the
+.Fl g Fl -group
+option is set.
 .It Fl s, Fl -set Ar PKG Op -g Ar group
 Set alternative groups specified by
 .Ar PKG

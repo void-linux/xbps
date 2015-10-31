@@ -1,5 +1,8 @@
 xbps-0.49 (???):
 
+ * xbps-alternatives(1): -g <grp> -l now works. To only print all alternatives
+   associated with this group.
+
  * xbps-remove(1): this now will print the messages from alternatives.
 
  * alternatives: do not register duplicate alternative groups. Happened when

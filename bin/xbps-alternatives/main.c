@@ -108,7 +108,7 @@ list_pkg_alternatives(xbps_dictionary_t pkgd, const char *group, bool print_key)
 }
 
 static int
-list_alternatives(struct xbps_handle *xhp, const char *pkgname)
+list_alternatives(struct xbps_handle *xhp, const char *pkgname, const char *grp)
 {
 	xbps_dictionary_t alternatives, pkgd;
 	xbps_array_t allkeys;
@@ -138,6 +138,9 @@ list_alternatives(struct xbps_handle *xhp, const char *pkgname)
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 		array = xbps_dictionary_get_keysym(alternatives, keysym);
+
+		if (grp && strcmp(grp, keyname))
+			continue;
 
 		printf("%s\n", keyname);
 		for (unsigned int x = 0; x < xbps_array_count(array); x++) {
@@ -247,7 +250,7 @@ main(int argc, char **argv)
 			rv = xbps_pkgdb_update(&xh, true, true);
 	} else if (list_mode) {
 		/* list alternative groups */
-		rv = list_alternatives(&xh, pkg);
+		rv = list_alternatives(&xh, pkg, group);
 	}
 
 	xbps_end(&xh);
