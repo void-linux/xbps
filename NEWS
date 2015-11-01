@@ -1,5 +1,10 @@
 xbps-0.50 (???):
 
+ * Updated zsh completions, by Steve Prybylski.
+
+ * xbps-checkvers(1): Joey Gouly fixed bug #120
+   (https://github.com/voidlinux/xbps/issues/120).
+
  * libxbps: when configuring all packages ignore internal xbps objects of pkgdb.
    Fixes an assertion with `xbps-reconfigure -a`.
 
