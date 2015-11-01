@@ -1,10 +1,9 @@
-#compdef xbps-checkvers xbps-create xbps-dgraph xbps-install xbps-pkgdb xbps-query xbps-reconfigure xbps-remove xbps-rindex xbps-uchroot xbps-uunshare xbps-uhelper
+#compdef xbps-alternatives xbps-checkvers xbps-create xbps-dgraph xbps-install xbps-pkgdb xbps-query xbps-reconfigure xbps-remove xbps-rindex xbps-uchroot xbps-uunshare xbps-uhelper
 
 _xbps_common=(
 	{-C,--config=-}'[Full path to configuration file]:config file:_files'
 	{-d,--debug}'[Debug mode shown to stderr]'
 	{-h,--help}'[Print help usage]'
-	{-n,--dry-run}'[Dry-run mode]'
 	{-r,--rootdir=-}'[Full path to rootdir]:root dir:_files -/'
 	{-v,--verbose}'[Verbose messages]'
 	{-V,--version}'[Show XBPS version]'
@@ -49,6 +48,19 @@ _xbps_all_packages() {
 
 _xbps_installed_packages() {
 	compadd "$@" -- ${${${(f)"$(xbps-query -l)"}#?? }%%-[^- ]# *}
+}
+
+_xbps_alternatives_groups() {
+	compadd "$@" -- ${${${(f)"$(xbps-alternatives -l)"}##? }%%-# *}
+}
+
+_xbps_alternatives() {
+	_arguments -s : \
+		$_xbps_common \
+		{-g,--group}'[Group of alternatives to match]:group:_xbps_alternatives_groups' \
+		{-l,--list}'[List all alternatives]' \
+		{-s,--set}'[Set alternatives]' \
+		'*:installed packages:_xbps_installed_packages'
 }
 
 _xbps_checkvers() {
@@ -111,6 +123,7 @@ _xbps_install() {
 		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
 		{-f,--force}'[Force package re-installation]' \
 		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
+		{-n,--dry-run}'[Dry-run mode]' \
 		{-M,--memory-sync}'[Keep remote repository data in memory only]' \
 		'*'{-R,--repository=-}'[Add repository to the top of the list]:repository url:_files -/' \
 		{-S,--sync}'[Sync remote repository index]' \
@@ -173,6 +186,7 @@ _xbps_remove() {
 		{-f,--force}'[Force package files removal]' \
 		{-O,--clean-cache}'[Remove obsolete packages in cachedir]' \
 		{-o,--remove-orphans}'[Remove package orphans]' \
+		{-n,--dry-run}'[Dry-run mode]' \
 		{-R,--recursive}'[Recursively remove dependencies]' \
 		{-y,--yes}'[Assume yes to all questions]' \
 		'*:installed packages:_xbps_installed_packages'
@@ -246,6 +260,7 @@ _xbps_uhelper() {
 
 _xbps() {
 	case "$service" in
+		xbps-alternatives) _xbps_alternatives "$@";;
 		xbps-checkvers) _xbps_checkvers "$@";;
 		xbps-create) _xbps_create "$@";;
 		xbps-dgraph) _xbps_dgraph "$@";;
