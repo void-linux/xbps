@@ -102,6 +102,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 	cnt = xbps_array_count(a);
 	for (i = 0; i < cnt; i++) {
 		xbps_string_t str;
+		char *tgt_dup, *tgt_dir;
 		char *l, *lnk, *tgt = NULL;
 		const char *tgt0;
 		int rv;
@@ -111,11 +112,15 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		assert(l);
 		tgt0 = right(xbps_string_cstring_nocopy(str));
 		assert(tgt0);
+		/* always create target dir, for dangling symlinks */
+		tgt_dup = strdup(tgt0);
+		assert(tgt_dup);
+		tgt_dir = dirname(tgt_dup);
+		tgt = xbps_xasprintf("%s%s", xhp->rootdir, tgt_dir);
+		xbps_mkpath(tgt, 0755);
+		free(tgt);
+
 		if (l[0] != '/') {
-			char *tgt_dup, *tgt_dir;
-			tgt_dup = strdup(tgt0);
-			assert(tgt_dup);
-			tgt_dir = dirname(tgt_dup);
 			lnk = xbps_xasprintf("%s%s/%s", xhp->rootdir, tgt_dir, l);
 			free(tgt_dup);
 			tgt_dup = strdup(tgt0);
@@ -123,6 +128,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 			tgt = strdup(basename(tgt_dup));
 			free(tgt_dup);
 		} else {
+			free(tgt_dup);
 			tgt = strdup(tgt0);
 			lnk = xbps_xasprintf("%s%s", xhp->rootdir, l);
 		}

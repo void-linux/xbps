@@ -1,5 +1,8 @@
 xbps-0.50 (???):
 
+ * xbps-alternatives(1): dangling symlinks are now supported, because the
+   target directory is always created.
+
  * Updated zsh completions, by Steve Prybylski.
 
  * xbps-checkvers(1): Joey Gouly fixed bug #120

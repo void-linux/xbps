@@ -28,6 +28,42 @@ register_one_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case register_one_dangling
+
+register_one_dangling_head() {
+	atf_set "descr" "xbps-alternatives: register one pkg with an alternative dangling symlink"
+}
+register_one_dangling_body() {
+	mkdir -p repo pkg_A/usr/bin
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileA file2:file2:/usr/include/fileB" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv A
+	atf_check_equal $? 0
+	rv=1
+	if [ -h root/usr/bin/file ]; then
+		lnk=$(readlink root/usr/bin/file)
+		if [ "$lnk" = "/usr/bin/fileA" ]; then
+			rv=0
+		fi
+		echo "A lnk: $lnk"
+	fi
+	atf_check_equal $rv 0
+	rv=1
+	if [ -h root/usr/include/file2 ]; then
+		lnk=$(readlink root/usr/include/file2)
+		if [ "$lnk" = "fileB" ]; then
+			rv=0
+		fi
+		echo "A lnk: $lnk"
+	fi
+	atf_check_equal $rv 0
+}
+
 atf_test_case register_one_relative
 
 register_one_relative_head() {
@@ -339,6 +375,7 @@ set_pkg_group_body() {
 
 atf_init_test_cases() {
 	atf_add_test_case register_one
+	atf_add_test_case register_one_dangling
 	atf_add_test_case register_one_relative
 	atf_add_test_case register_dups
 	atf_add_test_case register_multi
