@@ -59,6 +59,50 @@ right(const char *str)
 	return strchr(str, ':') + 1;
 }
 
+static const char *
+normpath(char *path) {
+	char *seg, *p;
+reinit:
+	for (p = path, seg = NULL; *p; p++) {
+		if (strncmp(p, "/../", 4) == 0 || strncmp(p, "/..", 4) == 0) {
+			memmove(seg ? seg : p, p+3, strlen(p+3) + 1);
+			goto reinit;
+		}
+		else if (strncmp(p, "/./", 3) == 0 || strncmp(p, "/.", 3) == 0) {
+			memmove(p, p+2, strlen(p+2) + 1);
+		}
+		else if (*p == '/')
+			seg = p;
+	}
+	return path;
+}
+
+
+static char *
+relpath(char *from, char *to) {
+	int up;
+	char *p = to, *rel;
+	assert(from[0] == '/');
+	assert(to[0] == '/');
+	normpath(from);
+	normpath(to);
+
+	for (; *from == *to && *to; from++, to++) {
+		if (*to == '/')
+			p = to;
+	}
+
+	for (up = -1, from--; from && *from; from = strchr(from + 1, '/'), up++);
+
+	rel = calloc(3 * up + strlen(p), sizeof(char));
+
+	while (up--)
+		strcat(rel, "../");
+	if (*p)
+		strcat(rel, p+1);
+	return rel;
+}
+
 static int
 remove_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 {
@@ -135,6 +179,8 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_ADDED, 0, NULL,
 		    "Creating '%s' alternatives group symlink: %s -> %s", grname, l, tgt);
 		unlink(lnk);
+		if (tgt[0] == '/')
+			tgt = relpath(lnk + strlen(xhp->rootdir), tgt);
 		if ((rv = symlink(tgt, lnk)) != 0) {
 			xbps_dbg_printf(xhp, "failed to create alt symlink '%s'"
 			    "for group '%s': %s\n", lnk, grname,
