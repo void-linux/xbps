@@ -62,11 +62,10 @@ right(const char *str)
 static const char *
 normpath(char *path) {
 	char *seg, *p;
-reinit:
 	for (p = path, seg = NULL; *p; p++) {
 		if (strncmp(p, "/../", 4) == 0 || strncmp(p, "/..", 4) == 0) {
 			memmove(seg ? seg : p, p+3, strlen(p+3) + 1);
-			goto reinit;
+			return normpath(path);
 		}
 		else if (strncmp(p, "/./", 3) == 0 || strncmp(p, "/.", 3) == 0) {
 			memmove(p, p+2, strlen(p+2) + 1);
