@@ -66,9 +66,10 @@ normpath(char *path) {
 		if (strncmp(p, "/../", 4) == 0 || strncmp(p, "/..", 4) == 0) {
 			memmove(seg ? seg : p, p+3, strlen(p+3) + 1);
 			return normpath(path);
-		}
-		else if (strncmp(p, "/./", 3) == 0 || strncmp(p, "/.", 3) == 0) {
+		} else if (strncmp(p, "/./", 3) == 0 || strncmp(p, "/.", 3) == 0) {
 			memmove(p, p+2, strlen(p+2) + 1);
+		} else if (strncmp(p, "//", 2) == 0 || strncmp(p, "/", 2) == 0) {
+			memmove(p, p+1, strlen(p+1) + 1);
 		}
 		if (*p == '/')
 			seg = p;
