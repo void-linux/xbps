@@ -71,7 +71,7 @@ reinit:
 		else if (strncmp(p, "/./", 3) == 0 || strncmp(p, "/.", 3) == 0) {
 			memmove(p, p+2, strlen(p+2) + 1);
 		}
-		else if (*p == '/')
+		if (*p == '/')
 			seg = p;
 	}
 	return path;
