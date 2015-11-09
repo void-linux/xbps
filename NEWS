@@ -1,5 +1,8 @@
 xbps-0.50 (???):
 
+ * xbps-alternatives(1): symlinks are now always created relative to the
+   rootdir of the target file. Implemented by Enno Boland (@Gottox).
+
  * libxbps: fixed a bug in package conflicts: ignore conflicts for packages
    that are going to be removed.
 
