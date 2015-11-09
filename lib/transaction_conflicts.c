@@ -39,12 +39,18 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 	xbps_dictionary_t pkgd, tpkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *cfpkg, *repopkgver, *pkgver;
+	const char *cfpkg, *repopkgver, *pkgver, *atract;
 	char *pkgname, *repopkgname, *buf;
 
 	pkg_cflicts = xbps_dictionary_get(pkg_repod, "conflicts");
 	if (xbps_array_count(pkg_cflicts) == 0)
 		return;
+
+	if (xbps_dictionary_get_cstring_nocopy(pkg_repod, "transaction", &atract)) {
+		/* ignore pkgs to be removed */
+		if (strcmp(atract, "remove") == 0)
+			return;
+	}
 
 	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
