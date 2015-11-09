@@ -19,8 +19,8 @@ register_one_body() {
 	atf_check_equal $? 0
 	rv=1
 	if [ -e root/usr/bin/fileA ]; then
-		lnk=$(readlink root/usr/bin/file)
-		if [ "$lnk" = "/usr/bin/fileA" ]; then
+		lnk=$(readlink -f root/usr/bin/file)
+		if [ "$lnk" = "$PWD/root/usr/bin/fileA" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -46,8 +46,8 @@ register_one_dangling_body() {
 	atf_check_equal $? 0
 	rv=1
 	if [ -h root/usr/bin/file ]; then
-		lnk=$(readlink root/usr/bin/file)
-		if [ "$lnk" = "/usr/bin/fileA" ]; then
+		lnk=$(readlink -f root/usr/bin/file)
+		if [ "$lnk" = "$PWD/root/usr/bin/fileA" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -137,8 +137,8 @@ register_multi_body() {
 	atf_check_equal $? 0
 	rv=1
 	if [ -e root/usr/bin/fileA ]; then
-		lnk=$(readlink root/usr/bin/file)
-		if [ "$lnk" = "/usr/bin/fileA" ]; then
+		lnk=$(readlink -f root/usr/bin/file)
+		if [ "$lnk" = "$PWD/root/usr/bin/fileA" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -149,8 +149,8 @@ register_multi_body() {
 	atf_check_equal $? 0
 	rv=1
 	if [ -e root/usr/bin/fileA -a -e root/usr/bin/fileB ]; then
-		lnk=$(readlink root/usr/bin/file)
-		if [ "$lnk" = "/usr/bin/fileA" ]; then
+		lnk=$(readlink -f root/usr/bin/file)
+		if [ "$lnk" = "$PWD/root/usr/bin/fileA" ]; then
 			rv=0
 		fi
 		echo "B lnk: $lnk"
@@ -229,8 +229,8 @@ unregister_multi_body() {
 	atf_check_equal $? 0
 
 	if [ -e root/usr/bin/fileA ]; then
-		lnk=$(readlink root/usr/bin/file)
-		if [ "$lnk" = "/usr/bin/fileA" ]; then
+		lnk=$(readlink -f root/usr/bin/file)
+		if [ "$lnk" = "$PWD/root/usr/bin/fileA" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -247,8 +247,8 @@ unregister_multi_body() {
 	atf_check_equal $? 0
 
 	if [ -e root/usr/bin/fileB ]; then
-		lnk=$(readlink root/usr/bin/file)
-		if [ "$lnk" = "/usr/bin/fileB" ]; then
+		lnk=$(readlink -f root/usr/bin/file)
+		if [ "$lnk" = "$PWD/root/usr/bin/fileB" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -287,8 +287,8 @@ set_pkg_body() {
 
 	rv=1
 	if [ -e root/usr/bin/B1 ]; then
-		lnk=$(readlink root/usr/bin/1)
-		if [ "$lnk" = "/usr/bin/B1" ]; then
+		lnk=$(readlink -f root/usr/bin/1)
+		if [ "$lnk" = "$PWD/root/usr/bin/B1" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -297,8 +297,8 @@ set_pkg_body() {
 
 	rv=1
 	if [ -e root/usr/bin/B2 ]; then
-		lnk=$(readlink root/usr/bin/2)
-		if [ "$lnk" = "/usr/bin/B2" ]; then
+		lnk=$(readlink -f root/usr/bin/2)
+		if [ "$lnk" = "$PWD/root/usr/bin/B2" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -310,8 +310,8 @@ set_pkg_body() {
 
 	rv=1
 	if [ -e root/usr/bin/A1 ]; then
-		lnk=$(readlink root/usr/bin/1)
-		if [ "$lnk" = "/usr/bin/A1" ]; then
+		lnk=$(readlink -f root/usr/bin/1)
+		if [ "$lnk" = "$PWD/root/usr/bin/A1" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -320,8 +320,8 @@ set_pkg_body() {
 
 	rv=1
 	if [ -e root/usr/bin/A2 ]; then
-		lnk=$(readlink root/usr/bin/2)
-		if [ "$lnk" = "/usr/bin/A2" ]; then
+		lnk=$(readlink -f root/usr/bin/2)
+		if [ "$lnk" = "$PWD/root/usr/bin/A2" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -353,8 +353,8 @@ set_pkg_group_body() {
 
 	rv=1
 	if [ -e root/usr/bin/B1 ]; then
-		lnk=$(readlink root/usr/bin/1)
-		if [ "$lnk" = "/usr/bin/A1" ]; then
+		lnk=$(readlink -f root/usr/bin/1)
+		if [ "$lnk" = "$PWD/root/usr/bin/A1" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
@@ -363,8 +363,8 @@ set_pkg_group_body() {
 
 	rv=1
 	if [ -e root/usr/bin/B2 ]; then
-		lnk=$(readlink root/usr/bin/2)
-		if [ "$lnk" = "/usr/bin/B2" ]; then
+		lnk=$(readlink -f root/usr/bin/2)
+		if [ "$lnk" = "$PWD/root/usr/bin/B2" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
