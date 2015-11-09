@@ -60,8 +60,10 @@ right(const char *str)
 }
 
 static const char *
-normpath(char *path) {
+normpath(char *path)
+{
 	char *seg, *p;
+
 	for (p = path, seg = NULL; *p; p++) {
 		if (strncmp(p, "/../", 4) == 0 || strncmp(p, "/..", 4) == 0) {
 			memmove(seg ? seg : p, p+3, strlen(p+3) + 1);
@@ -79,9 +81,11 @@ normpath(char *path) {
 
 
 static char *
-relpath(char *from, char *to) {
+relpath(char *from, char *to)
+{
 	int up;
 	char *p = to, *rel;
+
 	assert(from[0] == '/');
 	assert(to[0] == '/');
 	normpath(from);
