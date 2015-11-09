@@ -165,7 +165,16 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		assert(tgt_dup);
 		tgt_dir = dirname(tgt_dup);
 		tgt = xbps_xasprintf("%s%s", xhp->rootdir, tgt_dir);
-		xbps_mkpath(tgt, 0755);
+		if (xbps_mkpath(tgt, 0755) != 0) {
+			if (errno != EEXIST) {
+				xbps_dbg_printf(xhp, "failed to create symlink"
+				    "target dir '%s' for group '%s': %s\n",
+				    tgt, grname, strerror(errno));
+				free(tgt);
+				free(l);
+				return rv;
+			}
+		}
 		free(tgt);
 
 		if (l[0] != '/') {
