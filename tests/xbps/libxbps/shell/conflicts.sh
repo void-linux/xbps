@@ -166,6 +166,51 @@ conflicts_trans_installed_body() {
 	atf_check_equal $(xbps-query -r root -l|wc -l) 1
 }
 
+atf_test_case conflicts_trans_update
+
+conflicts_trans_update_head() {
+	atf_set "descr" "Tests for pkg conflicts: no conflicts with updated pkgs in transaction"
+}
+
+conflicts_trans_update_body() {
+	mkdir repo repo2
+	mkdir -p pkg_{A,B}/usr/bin
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "xserver-abi-video-19_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --conflicts "xserver-abi-video<19" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -dy A B
+	atf_check_equal $? 0
+
+	cd repo2
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --provides "xserver-abi-video-20_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --conflicts "xserver-abi-video<20" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo2 -dyuv
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.1_1
+	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.1_1
+
+	xbps-install -r root --repository=$PWD/repo -dyvf A B
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.0_1
+	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.0_1
+
+	xbps-install -r root --repository=$PWD/repo2 -dyvf B-1.1_1
+	atf_check_equal $? 11
+}
+
 atf_test_case conflicts_trans_installed_multi
 
 conflicts_trans_installed_multi_head() {
@@ -203,4 +248,5 @@ atf_init_test_cases() {
 	atf_add_test_case conflicts_trans_installed_multi
 	atf_add_test_case conflicts_installed
 	atf_add_test_case conflicts_installed_multi
+	atf_add_test_case conflicts_trans_update
 }
