@@ -192,8 +192,11 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_ADDED, 0, NULL,
 		    "Creating '%s' alternatives group symlink: %s -> %s", grname, l, tgt);
 		unlink(lnk);
-		if (tgt[0] == '/')
-			tgt = relpath(lnk + strlen(xhp->rootdir), tgt);
+		if (tgt[0] == '/') {
+			tgt_dup = relpath(lnk + strlen(xhp->rootdir), tgt);
+			free(tgt);
+			tgt = tgt_dup;
+		}
 		if ((rv = symlink(tgt, lnk)) != 0) {
 			xbps_dbg_printf(xhp, "failed to create alt symlink '%s'"
 			    "for group '%s': %s\n", lnk, grname,
