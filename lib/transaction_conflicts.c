@@ -169,6 +169,9 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	if (xbps_find_pkg_in_array(pkgs, repopkgname, NULL)) {
 		free(repopkgname);
 		return 0;
+	} else if (xbps_dictionary_get(obj, "hold")) {
+		free(repopkgname);
+		return 0;
 	}
 
 	iter = xbps_array_iterator(pkg_cflicts);
