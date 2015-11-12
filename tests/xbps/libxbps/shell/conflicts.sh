@@ -27,6 +27,45 @@ conflicts_trans_body() {
 	atf_check_equal $(xbps-query -r root -l|wc -l) 0
 }
 
+conflicts_trans_hold_head() {
+	atf_set "descr" "Tests for pkg conflicts: conflicting pkg with on-hold installed pkg"
+}
+
+conflicts_trans_hold_body() {
+	mkdir some_repo
+	mkdir -p pkg_{A,B}/usr/bin
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "B>=1.1_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dy A B
+	atf_check_equal $? 0
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --conflicts "B>=1.1_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/some_repo -dyuv
+	atf_check_equal $? 11
+
+	xbps-pkgdb -r root -m hold B
+	xbps-install -r root --repository=$PWD/some_repo -dyuv
+	atf_check_equal $? 0
+
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.1_1
+	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.0_1
+}
+
 atf_test_case conflicts_trans_vpkg
 
 conflicts_trans_vpkg_head() {
@@ -242,6 +281,7 @@ conflicts_trans_installed_multi_body() {
 
 atf_init_test_cases() {
 	atf_add_test_case conflicts_trans
+	atf_add_test_case conflicts_trans_hold
 	atf_add_test_case conflicts_trans_vpkg
 	atf_add_test_case conflicts_trans_multi
 	atf_add_test_case conflicts_trans_installed

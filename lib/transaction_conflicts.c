@@ -39,16 +39,16 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 	xbps_dictionary_t pkgd, tpkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *cfpkg, *repopkgver, *pkgver, *atract;
+	const char *cfpkg, *repopkgver, *pkgver, *tract;
 	char *pkgname, *repopkgname, *buf;
 
 	pkg_cflicts = xbps_dictionary_get(pkg_repod, "conflicts");
 	if (xbps_array_count(pkg_cflicts) == 0)
 		return;
 
-	if (xbps_dictionary_get_cstring_nocopy(pkg_repod, "transaction", &atract)) {
-		/* ignore pkgs to be removed */
-		if (strcmp(atract, "remove") == 0)
+	if (xbps_dictionary_get_cstring_nocopy(pkg_repod, "transaction", &tract)) {
+		/* ignore pkgs to be removed or on hold  */
+		if (!strcmp(tract, "remove") || !strcmp(tract, "hold"))
 			return;
 	}
 
@@ -77,15 +77,20 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 				continue;
 			}
 			/*
+			 * If the conflicting pkg is on hold, ignore it.
+			 */
+			if (xbps_dictionary_get(pkgd, "hold")) {
+				free(pkgname);
+				continue;
+			}
+			/*
 			 * If there's a pkg for the conflict in transaction,
 			 * ignore it.
 			 */
 			if ((tpkgd = xbps_find_pkg_in_array(array, pkgname, NULL))) {
-				const char *tract;
-
 				xbps_dictionary_get_cstring_nocopy(tpkgd,
 				    "transaction", &tract);
-				if (strcmp(tract, "remove")) {
+				if (!strcmp(tract, "install") || !strcmp(tract, "update")) {
 					free(pkgname);
 					continue;
 				}
@@ -117,12 +122,18 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 				continue;
 			}
 			free(pkgname);
+			/* ignore pkgs to be removed or on hold */
+			if (xbps_dictionary_get_cstring_nocopy(pkgd,
+			    "transaction", &tract)) {
+				if (!strcmp(tract, "remove") || !strcmp(tract, "hold"))
+					return;
+			}
 			xbps_dbg_printf(xhp, "found conflicting pkgs in "
 			    "transaction %s <-> %s (matched by %s)\n",
 			    pkgver, repopkgver, cfpkg);
 			buf = xbps_xasprintf("CONFLICT: %s with "
-			   "%s in transaction (mached by %s)",
-			   repopkgver, pkgver);
+			   "%s in transaction (matched by %s)",
+			   repopkgver, pkgver, cfpkg);
 			if (!xbps_match_string_in_array(trans_cflicts, buf))
 				xbps_array_add_cstring(trans_cflicts, buf);
 

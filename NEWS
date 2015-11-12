@@ -1,5 +1,8 @@
 xbps-0.51 (???):
 
+ * libxbps: another bugfix for conflicts: do not take into account packages
+   that are on hold mode.
+
 xbps-0.50 (2015-11-10):
 
  * libxbps: another bugfix for conflicts; do not take into account conflicts
