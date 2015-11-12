@@ -35,9 +35,9 @@ conflicts_trans_hold_body() {
 	mkdir some_repo
 	mkdir -p pkg_{A,B}/usr/bin
 	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "B>=1.1_1" ../pkg_A
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "vpkg>19_1" ../pkg_A
 	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --provides "vpkg-19_1" ../pkg_B
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
@@ -47,17 +47,19 @@ conflicts_trans_hold_body() {
 	atf_check_equal $? 0
 
 	cd some_repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --conflicts "B>=1.1_1" ../pkg_A
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --conflicts "vpkg>19_1" ../pkg_B
 	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --provides "vpkg-20_1" ../pkg_B
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -r root --repository=$PWD/some_repo -dyuv
+	echo "B updated to 1.1_1"
+	xbps-install -r root --repository=$PWD/some_repo -dyuv B
 	atf_check_equal $? 11
 
+	echo "B is now on hold"
 	xbps-pkgdb -r root -m hold B
 	xbps-install -r root --repository=$PWD/some_repo -dyuv
 	atf_check_equal $? 0
