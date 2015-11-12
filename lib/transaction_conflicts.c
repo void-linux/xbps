@@ -90,7 +90,9 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			if ((tpkgd = xbps_find_pkg_in_array(array, pkgname, NULL))) {
 				xbps_dictionary_get_cstring_nocopy(tpkgd,
 				    "transaction", &tract);
-				if (!strcmp(tract, "install") || !strcmp(tract, "update")) {
+				if (!strcmp(tract, "install") ||
+				    !strcmp(tract, "update") ||
+				    !strcmp(tract, "hold")) {
 					free(pkgname);
 					continue;
 				}
@@ -126,7 +128,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			if (xbps_dictionary_get_cstring_nocopy(pkgd,
 			    "transaction", &tract)) {
 				if (!strcmp(tract, "remove") || !strcmp(tract, "hold"))
-					return;
+					continue;
 			}
 			xbps_dbg_printf(xhp, "found conflicting pkgs in "
 			    "transaction %s <-> %s (matched by %s)\n",
