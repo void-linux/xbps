@@ -238,6 +238,7 @@ find_repo_deps(struct xbps_handle *xhp,
 					if (xbps_dictionary_get(curpkgd, "hold")) {
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
 					} else {
+						xbps_dbg_printf_append(xhp, "\n");
 						reason = "install";
 					}
 				} else {
@@ -245,6 +246,7 @@ find_repo_deps(struct xbps_handle *xhp,
 					if (xbps_dictionary_get(curpkgd, "hold")) {
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
 					} else {
+						xbps_dbg_printf_append(xhp, "\n");
 						reason = "update";
 					}
 				}
