@@ -150,7 +150,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 	cnt = xbps_array_count(a);
 	for (i = 0; i < cnt; i++) {
 		xbps_string_t str;
-		char *tgt_dup, *tgt_dir;
+		char *tgt_dup, *tgt_dir, *lnk_dup, *lnk_dir;
 		char *l, *lnk, *tgt = NULL;
 		const char *tgt0;
 		int rv;
@@ -171,12 +171,34 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 				xbps_dbg_printf(xhp, "failed to create symlink"
 				    "target dir '%s' for group '%s': %s\n",
 				    tgt, grname, strerror(errno));
+				free(tgt_dup);
 				free(tgt);
 				free(l);
 				return rv;
 			}
 		}
 		free(tgt);
+		/* always create link dir, for dangling symlinks */
+		lnk_dup = strdup(l);
+		assert(lnk_dup);
+		lnk_dir = dirname(lnk_dup);
+		lnk = xbps_xasprintf("%s%s", xhp->rootdir, lnk_dir);
+		if (xbps_mkpath(lnk, 0755) != 0) {
+			if (errno != EEXIST) {
+				rv = errno;
+				xbps_dbg_printf(xhp, "failed to create symlink"
+				    "dir '%s' for group '%s': %s\n",
+				    lnk, grname, strerror(errno));
+				free(tgt_dup);
+				free(tgt);
+				free(lnk_dup);
+				free(lnk);
+				free(l);
+				return rv;
+			}
+		}
+		free(lnk);
+		free(lnk_dup);
 
 		if (l[0] != '/') {
 			lnk = xbps_xasprintf("%s%s/%s", xhp->rootdir, tgt_dir, l);

@@ -36,7 +36,7 @@ register_one_dangling_head() {
 register_one_dangling_body() {
 	mkdir -p repo pkg_A/usr/bin
 	cd repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileA file2:file2:/usr/include/fileB" ../pkg_A
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileA file2:/usr/lib/fileB:/usr/include/fileB" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
@@ -54,9 +54,9 @@ register_one_dangling_body() {
 	fi
 	atf_check_equal $rv 0
 	rv=1
-	if [ -h root/usr/include/file2 ]; then
-		lnk=$(readlink root/usr/include/file2)
-		if [ "$lnk" = "fileB" ]; then
+	if [ -h root/usr/lib/fileB ]; then
+		lnk=$(readlink -f root/usr/lib/fileB)
+		if [ "$lnk" = "$PWD/root/usr/include/fileB" ]; then
 			rv=0
 		fi
 		echo "A lnk: $lnk"
