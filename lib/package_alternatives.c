@@ -193,7 +193,6 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 					    "dir '%s' for group '%s': %s\n",
 					    lnk, grname, strerror(errno));
 					free(tgt_dup);
-					free(tgt);
 					free(lnk_dup);
 					free(lnk);
 					free(l);
