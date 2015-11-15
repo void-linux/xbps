@@ -164,40 +164,44 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		tgt_dup = strdup(tgt0);
 		assert(tgt_dup);
 		tgt_dir = dirname(tgt_dup);
-		tgt = xbps_xasprintf("%s%s", xhp->rootdir, tgt_dir);
-		if (xbps_mkpath(tgt, 0755) != 0) {
-			if (errno != EEXIST) {
-				rv = errno;
-				xbps_dbg_printf(xhp, "failed to create symlink"
-				    "target dir '%s' for group '%s': %s\n",
-				    tgt, grname, strerror(errno));
-				free(tgt_dup);
-				free(tgt);
-				free(l);
-				return rv;
+		if (strcmp(tgt_dir, ".")) {
+			tgt = xbps_xasprintf("%s%s", xhp->rootdir, tgt_dir);
+			if (xbps_mkpath(tgt, 0755) != 0) {
+				if (errno != EEXIST) {
+					rv = errno;
+					xbps_dbg_printf(xhp, "failed to create "
+					    "target dir '%s' for group '%s': %s\n",
+					    tgt, grname, strerror(errno));
+					free(tgt_dup);
+					free(tgt);
+					free(l);
+					return rv;
+				}
 			}
+			free(tgt);
 		}
-		free(tgt);
 		/* always create link dir, for dangling symlinks */
 		lnk_dup = strdup(l);
 		assert(lnk_dup);
 		lnk_dir = dirname(lnk_dup);
-		lnk = xbps_xasprintf("%s%s", xhp->rootdir, lnk_dir);
-		if (xbps_mkpath(lnk, 0755) != 0) {
-			if (errno != EEXIST) {
-				rv = errno;
-				xbps_dbg_printf(xhp, "failed to create symlink"
-				    "dir '%s' for group '%s': %s\n",
-				    lnk, grname, strerror(errno));
-				free(tgt_dup);
-				free(tgt);
-				free(lnk_dup);
-				free(lnk);
-				free(l);
-				return rv;
+		if (strcmp(lnk_dir, ".")) {
+			lnk = xbps_xasprintf("%s%s", xhp->rootdir, lnk_dir);
+			if (xbps_mkpath(lnk, 0755) != 0) {
+				if (errno != EEXIST) {
+					rv = errno;
+					xbps_dbg_printf(xhp, "failed to create symlink"
+					    "dir '%s' for group '%s': %s\n",
+					    lnk, grname, strerror(errno));
+					free(tgt_dup);
+					free(tgt);
+					free(lnk_dup);
+					free(lnk);
+					free(l);
+					return rv;
+				}
 			}
+			free(lnk);
 		}
-		free(lnk);
 		free(lnk_dup);
 
 		if (l[0] != '/') {
