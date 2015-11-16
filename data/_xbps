@@ -68,7 +68,7 @@ _xbps_checkvers() {
 		$_xbps_common \
 		{-D,--distdir}'[Set the path to void-packages]:path:_files -/' \
 		{-i,--installed}'[Check for outdated packages in rootdir]' \
-		{-s,--show-missing}'[List any binary packages which are not built.]' \
+		{-s,--show-missing}'[List any binary packages which are not built]' \
 		'*:extra packages:_files'
 }
 
@@ -121,13 +121,14 @@ _xbps_install() {
 		$_xbps_common \
 		{-A,--automatic}'[Set automatic installation mode]' \
 		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
+		{-n,--dry-run}'[Dry-run mode]' \
 		{-f,--force}'[Force package re-installation]' \
 		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
-		{-n,--dry-run}'[Dry-run mode]' \
 		{-M,--memory-sync}'[Keep remote repository data in memory only]' \
 		'*'{-R,--repository=-}'[Add repository to the top of the list]:repository url:_files -/' \
 		{-S,--sync}'[Sync remote repository index]' \
 		{-u,--update}'[Update target packages]' \
+		{-U,--unpack-only}'[Unpack packages without configuring]' \
 		{-y,--yes}'[Assume yes to all questions]' \
 		'*:available packages:_xbps_all_packages'
 }
