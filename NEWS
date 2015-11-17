@@ -1,5 +1,7 @@
 xbps-0.51 (???):
 
+ * alternatives: preserve current order while updating packages.
+
  * alternatives: always create the directory where the symlink is stored,
    in case this does not exist yet.
 

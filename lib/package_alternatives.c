@@ -309,6 +309,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	xbps_dictionary_t alternatives, pkg_alternatives;
 	const char *pkgver;
 	char *pkgname;
+	bool update = false;
 	int rv = 0;
 
 	assert(xhp);
@@ -324,6 +325,8 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	if ((pkgname = xbps_pkg_name(pkgver)) == NULL)
 		return EINVAL;
+
+	xbps_dictionary_get_bool(pkgd, "alternatives-update", &update);
 
 	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
@@ -347,9 +350,12 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			if (rv != 0)
 				break;
 		}
+
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_REMOVED, 0, NULL,
 		    "%s: unregistered '%s' alternatives group", pkgver, keyname);
-		xbps_remove_string_from_array(array, pkgname);
+		if (!update)
+			xbps_remove_string_from_array(array, pkgname);
+
 		if (xbps_array_count(array) == 0) {
 			xbps_dictionary_remove(alternatives, keyname);
 		} else {

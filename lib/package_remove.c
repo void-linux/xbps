@@ -319,6 +319,9 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 		goto out;
 
 	/* unregister alternatives */
+	if (update)
+		xbps_dictionary_set_bool(pkgd, "alternatives-update", true);
+
 	if ((rv = xbps_alternatives_unregister(xhp, pkgd)) != 0)
 		goto out;
 

@@ -373,6 +373,62 @@ set_pkg_group_body() {
 
 }
 
+atf_test_case update_pkgs
+
+update_pkgs_head() {
+	atf_set "descr" "xbps-alternatives: preserve order in updates"
+}
+update_pkgs_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/A1 pkg_B/usr/bin/B1
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "1:1:/usr/bin/A1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --alternatives "1:1:/usr/bin/B1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv A B
+	atf_check_equal $? 0
+
+	rv=1
+	if [ -e root/usr/bin/A1 ]; then
+		lnk=$(readlink -f root/usr/bin/1)
+		if [ "$lnk" = "$PWD/root/usr/bin/A1" ]; then
+			rv=0
+		fi
+		echo "lnk: $lnk"
+	fi
+	atf_check_equal $rv 0
+
+	cd repo
+	xbps-create -A noarch -n A-1.2_1 -s "A pkg" --alternatives "1:1:/usr/bin/A1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.2_1 -s "B pkg" --alternatives "1:1:/usr/bin/B1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-alternatives -r root -s B
+	atf_check_equal $? 0
+
+	xbps-install -r root --repository=repo -yuvd
+	atf_check_equal $? 0
+
+	rv=1
+	if [ -e root/usr/bin/B1 ]; then
+		lnk=$(readlink -f root/usr/bin/1)
+		if [ "$lnk" = "$PWD/root/usr/bin/B1" ]; then
+			rv=0
+		fi
+		echo "lnk: $lnk"
+	fi
+	atf_check_equal $rv 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case register_one
 	atf_add_test_case register_one_dangling
@@ -384,4 +440,5 @@ atf_init_test_cases() {
 	atf_add_test_case unregister_multi
 	atf_add_test_case set_pkg
 	atf_add_test_case set_pkg_group
+	atf_add_test_case update_pkgs
 }
