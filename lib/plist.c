@@ -101,7 +101,7 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 		return 0;
 
 	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
-	if (maxthreads < 0 || maxthreads == 1) /* use single threaded routine */
+	if (maxthreads <= 0 || maxthreads == 1) /* use single threaded routine */
 		return xbps_array_foreach_cb(xhp, array, dict, fn, arg);
 
 	thd = calloc(maxthreads, sizeof(*thd));
