@@ -81,10 +81,11 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 				}
 				fail = true;
 				xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FILE_FAIL,
-				    errno, pkgver,
+				    rv, pkgver,
 				    "%s: cannot remove `%s': %s",
 				    pkgver, file, strerror(rv));
 			}
+			errno = 0;
 		}
 		xbps_object_iterator_release(iter);
 	}
