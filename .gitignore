@@ -2,6 +2,7 @@ syntax: glob
 
 config.h
 config.mk
+bin/xbps-alternatives/xbps-alternatives
 bin/xbps-create/xbps-create
 bin/xbps-dgraph/xbps-dgraph
 bin/xbps-fbulk/xbps-fbulk
