@@ -1,5 +1,8 @@
 xbps-0.51 (???):
 
+ * libxbps: initialize locale correctly to handle UTF-8 filenames correctly
+   in binary packages with the musl C library.
+
  * alternatives: preserve current order while updating packages.
 
  * alternatives: always create the directory where the symlink is stored,

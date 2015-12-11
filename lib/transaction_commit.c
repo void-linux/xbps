@@ -31,6 +31,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <limits.h>
+#include <locale.h>
 
 #include "xbps_api_impl.h"
 
@@ -210,6 +211,8 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	const char *pkgver, *tract;
 	int rv = 0;
 	bool update;
+
+	setlocale(LC_ALL, "");
 
 	assert(xbps_object_type(xhp->transd) == XBPS_TYPE_DICTIONARY);
 	/*
