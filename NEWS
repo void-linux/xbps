@@ -1,7 +1,9 @@
 xbps-0.51 (???):
 
- * libxbps: initialize locale correctly to handle UTF-8 filenames correctly
-   in binary packages with the musl C library.
+ * zsh completion: added -U/--unpack-only support for xbps-install(1).
+
+ * libxbps: initialize locale to be able to unpack UTF-8 encoded
+   packages files correctly with the musl C library.
 
  * alternatives: preserve current order while updating packages.
 
