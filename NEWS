@@ -1,4 +1,4 @@
-xbps-0.51 (???):
+xbps-0.51 (2015-12-12):
 
  * zsh completion: added -U/--unpack-only support for xbps-install(1).
 
