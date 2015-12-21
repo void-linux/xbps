@@ -304,13 +304,16 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 	if (sigfile_fd == -1) {
 		fprintf(stderr, "failed to create %s: %s\n", sigfile, strerror(errno));
 		rv = EINVAL;
+		free(sig);
 		goto out;
 	}
 	if (write(sigfile_fd, sig, siglen) != (ssize_t)siglen) {
 		fprintf(stderr, "failed to write %s: %s\n", sigfile, strerror(errno));
 		rv = EINVAL;
+		free(sig);
 		goto out;
 	}
+	free(sig);
 	printf("signed successfully %s\n", binpkg);
 
 out:
