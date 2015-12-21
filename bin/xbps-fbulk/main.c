@@ -697,6 +697,7 @@ main(int argc, char **argv)
 	 * Wait for all current builds to finish running, keep the pipeline
 	 * full until both the BuildList and RunList have been exhausted.
 	 */
+	free(rpath);
 	runBuilds(bpath);
 	while (waitRunning(0) != NULL)
 		runBuilds(bpath);
