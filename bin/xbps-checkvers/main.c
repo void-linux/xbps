@@ -587,6 +587,10 @@ rcv_check_version(rcv_t *rcv)
 	revision = map_find(rcv->env, "revision");
 	reverts = map_find(rcv->env, "reverts");
 
+	assert(pkgname.v.s);
+	assert(version.v.s);
+	assert(revision.v.s);
+
 	srcver = strncpy(srcver, pkgname.v.s, pkgname.v.len);
 	if (rcv->installed)
 		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, srcver);
