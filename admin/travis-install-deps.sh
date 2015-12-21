@@ -64,3 +64,5 @@ install_from_github() {
 install_from_github atf atf 0.21
 install_from_github lutok lutok 0.4
 install_from_github kyua kyua 0.11
+
+ln -sf /usr/local/bin/atf-sh /usr/bin/atf-sh
