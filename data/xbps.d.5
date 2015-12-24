@@ -74,7 +74,10 @@ Declares a package repository. The
 argument accepts local and remote repositories.
 A complete url or absolute path to the directory that stores the
 .Em <arch>-repodata
-archive is expected, example:
+archive is expected.
+Note that remote repositories must be signed using
+.Xr xbps-rindex 1 ,
+example:
 .Pp
 .Bl -tag -compact -width repository=http://repo.voidlinux.eu/current
 .It Sy repository=http://repo.voidlinux.eu/current
