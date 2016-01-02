@@ -62,8 +62,8 @@ update_pkg_on_hold_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -d -r root -C empty.conf --repository=$PWD/some_repo -yu
-	atf_check_equal $? 1
+	xbps-install -d -r root -C empty.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
 }
 
 atf_init_test_cases() {
