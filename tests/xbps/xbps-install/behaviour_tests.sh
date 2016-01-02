@@ -32,6 +32,33 @@ install_existent_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case update_pkg_on_hold
+
+update_pkg_on_hold_head() {
+	atf_set "descr" "xbps-install(8): update packages on hold (issue #143)"
+}
+
+update_pkg_on_hold_body() {
+	mkdir -p some_repo pkg
+	touch pkg/file00
+	cd some_repo
+	xbps-create -A noarch -n pkg-1.0_1 -s "pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y pkg
+	xbps-pkgdb -r root -m hold pkg
+	cd some_repo
+	xbps-create -A noarch -n pkg-1.0_2 -s "pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yu >&2
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_existent
+	atf_add_test_case update_pkg_on_hold
 }
