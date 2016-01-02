@@ -39,30 +39,64 @@ update_pkg_on_hold_head() {
 }
 
 update_pkg_on_hold_body() {
-	mkdir -p some_repo pkg-A pkg-B
-	touch pkg-A/file00
-	touch pkg-B/file00
+	mkdir -p some_repo pkginst pkgheld pkgdep-21_1 pkgdep-22_1
+	touch pkginst/pi00
+	touch pkgheld/ph00
+	touch pkgdep-21_1/pd21
+	touch pkgdep-22_1/pd22
+
 	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "pkg-A" ../pkg-A
-	xbps-create -A noarch -n B-1.0_1 -s "pkg-B" ../pkg-B
+
+	xbps-create \
+		-A noarch \
+		-n "pkgdep-21_1" \
+		-s "pkgdep" \
+		../pkgdep-21_1
+
 	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
+
+	xbps-create \
+		-A noarch \
+		-n "pkgdep-22_1" \
+		-s "pkgdep" \
+		../pkgdep-22_1
+
 	atf_check_equal $? 0
-	cd ..
-	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A B
+
+	xbps-create \
+		-A noarch \
+		-n "pkginst-1.0_1" \
+		-s "pkginst" \
+		-D "pkgdep-22_1" \
+		../pkginst
+
 	atf_check_equal $? 0
-	xbps-pkgdb -d -r root -m hold A
+
+	xbps-create \
+		-A noarch \
+		-n "pkgheld-1.17.4_2" \
+		-s "pkgheld" \
+		-P "pkgdep-21_1" \
+		../pkgheld
+
 	atf_check_equal $? 0
-	atf_check_equal "$(xbps-query -H -r root)" "A-1.0_1"
-	cd some_repo
-	rm *.xbps
-	xbps-create -A noarch -n A-1.0_2 -s "pkg-A" ../pkg-A
-	xbps-create -A noarch -n B-1.0_2 -s "pkg-B" ../pkg-B
+
+	#ls -laR ../
+
+	xbps-rindex -d -a pkgheld*.xbps
 	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
+
+	xbps-install -r root -C empty.conf --repository=$PWD -y pkgheld
 	atf_check_equal $? 0
-	cd ..
-	xbps-install -d -r root -C empty.conf --repository=$PWD/some_repo -y A
+	xbps-pkgdb -r root -m hold pkgheld
+
+	xbps-rindex -d -a pkginst*.xbps
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a pkgdep-22*.xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root -C empty.conf --repository=$PWD -d -y pkginst >&2
 	atf_check_equal $? 0
 }
 
