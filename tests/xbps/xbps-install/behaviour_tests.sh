@@ -39,23 +39,31 @@ update_pkg_on_hold_head() {
 }
 
 update_pkg_on_hold_body() {
-	mkdir -p some_repo pkg
-	touch pkg/file00
+	mkdir -p some_repo pkg-A pkg-B
+	touch pkg-A/file00
+	touch pkg-B/file00
 	cd some_repo
-	xbps-create -A noarch -n pkg-1.0_1 -s "pkg" ../pkg
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
-	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y pkg
-	xbps-pkgdb -r root -m hold pkg
-	cd some_repo
-	xbps-create -A noarch -n pkg-1.0_2 -s "pkg" ../pkg
+	xbps-create -A noarch -n A-1.0_1 -s "pkg-A" ../pkg-A
+	xbps-create -A noarch -n B-1.0_1 -s "pkg-B" ../pkg-B
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yu >&2
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A B
 	atf_check_equal $? 0
+	xbps-pkgdb -d -r root -m hold A
+	atf_check_equal $? 0
+	atf_check_equal "$(xbps-query -H -r root)" "A-1.0_1"
+	cd some_repo
+	rm *.xbps
+	xbps-create -A noarch -n A-1.0_2 -s "pkg-A" ../pkg-A
+	xbps-create -A noarch -n B-1.0_2 -s "pkg-B" ../pkg-B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -d -r root -C empty.conf --repository=$PWD/some_repo -yu
+	atf_check_equal $? 1
 }
 
 atf_init_test_cases() {
