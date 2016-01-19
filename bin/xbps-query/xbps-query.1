@@ -83,7 +83,9 @@ than looking in the target root directory.
 Appends the specified repository to the top of the list. The
 .Ar url
 argument expects a URL to the repository for remote repositories or
-a path for local repositories.
+a path for local repositories.  Note that remote repositories must be signed
+using
+.Xr xbps-rindex 1 .
 This option can be specified multiple times.
 .It Fl -regex
 Enables string matching by using Extended Regular Expressions in compatible modes,
