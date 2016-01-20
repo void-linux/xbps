@@ -76,17 +76,19 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 		xbps_dictionary_get_cstring_nocopy(obj, "target", &tgt);
 		if (ffd->rematch) {
 			if (regexec(&ffd->regex, filestr, 0, 0, 0) == 0) {
-				printf("%s: %s ", pkgver, filestr);
-				if (tgt)
-					printf("-> %s ", tgt);
-				printf("(%s)\n", typestr);
+				printf("%s: %s%s%s (%s)\n",
+					pkgver, filestr,
+					tgt ? " -> " : "",
+					tgt ? tgt : "",
+					typestr);
 			}
 		} else {
 			if ((fnmatch(ffd->pat, filestr, FNM_PERIOD)) == 0) {
-				printf("%s: %s ", pkgver, filestr);
-				if (tgt)
-					printf("-> %s ", tgt);
-				printf("(%s)\n", typestr);
+				printf("%s: %s%s%s (%s)\n",
+					pkgver, filestr,
+					tgt ? " -> " : "",
+					tgt ? tgt : "",
+					typestr);
 			}
 		}
 	}

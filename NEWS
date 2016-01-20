@@ -1,5 +1,8 @@
 xbps-0.52 (???):
 
+ * xbps-query(1): fix a bug where the output of -o became mixed up
+   when running on multiple cores.
+
 xbps-0.51 (2015-12-12):
 
  * zsh completion: added -U/--unpack-only support for xbps-install(1).
