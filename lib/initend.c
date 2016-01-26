@@ -26,6 +26,9 @@
 
 #include <sys/utsname.h>
 #include <sys/types.h>
+#ifdef __FreeBSD__
+#define _WITH_GETLINE   /* getline() */
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #define _BSD_SOURCE	/* required by strlcpy with musl */
