@@ -444,6 +444,8 @@ fetch_cache_put(conn_t *conn, int (*closecb)(conn_t *))
 
 
 #ifdef WITH_SSL
+
+#ifndef HAVE_STRNSTR
 /*
  * Find the first occurrence of find in s, where the search is limited to the
  * first slen characters of s.
@@ -468,6 +470,7 @@ strnstr(const char *s, const char *find, size_t slen)
 	}
 	return ((char *)__UNCONST(s));
 }
+#endif
 
 /*
  * Convert characters A-Z to lowercase (intentionally avoid any locale

@@ -475,6 +475,27 @@ fi
 rm -f _$func.c _$func
 
 #
+# Check for strnstr().
+func=strnstr
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <string.h>
+int main(void) {
+	const char big[] = "foo";
+	const char little[] = "f";
+	strnstr(big, little, 3);
+	return 0;
+}
+EOF
+if $XCC _$func.c -o _$func 2>/dev/null; then
+	echo yes.
+	echo "CPPFLAGS +=	-DHAVE_STRNSTR" >>$CONFIG_MK
+else
+	echo no.
+fi
+rm -f _$func.c _$func
+
+#
 # Check for humanize_number().
 func=humanize_number
 printf "Checking for $func() ... "
