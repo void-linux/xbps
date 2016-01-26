@@ -86,7 +86,11 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 
 	/* Write data to tempfile and rename */
 	archive_write_finish(ar);
+#ifdef HAVE_FDATASYNC
 	fdatasync(repofd);
+#else
+	fsync(repofd);
+#endif
 	assert(fchmod(repofd, 0664) != -1);
 	close(repofd);
 	rename(tname, repofile);
