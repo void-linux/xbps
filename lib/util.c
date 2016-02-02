@@ -482,24 +482,24 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 	}
 
 	if (strstr(lnk, "./") || lnk[0] != '/') {
-		char *p, *p1, *dname, lnkrs[PATH_MAX];
+		char *p, *p1, *dname, buf[PATH_MAX];
 		/* relative */
 		p = strdup(path);
 		assert(p);
 		dname = dirname(p);
 		assert(dname);
-		snprintf(lnkrs, sizeof(lnkrs), "%s/%s", dname, lnk);
+		snprintf(buf, sizeof(buf), "%s/%s", dname, lnk);
 		free(p);
-		p = xbps_sanitize_path(lnkrs);
+		p = xbps_sanitize_path(buf);
 		assert(p);
-		if ((strstr(p, "./")) && (p1 = realpath(p, NULL))) {
+		if ((strstr(p, "./")) && (p1 = realpath(p, buf))) {
 			if (strcmp(xhp->rootdir, "/") == 0) {
-				res = strdup(p1);
+				res = p1;
 			} else {
 				res = strdup(p1 + strlen(xhp->rootdir));
+				free(p1);
 			}
 			assert(res);
-			free(p1);
 			free(p);
 		}
 		if (res == NULL) {
