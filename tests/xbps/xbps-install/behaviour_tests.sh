@@ -39,6 +39,7 @@ update_pkg_on_hold_head() {
 }
 
 update_pkg_on_hold_body() {
+	atf_expect_death "Known bug: see https://github.com/voidlinux/xbps/issues/143"
 	mkdir -p some_repo pkginst pkgheld pkgdep-21_1 pkgdep-22_1
 	touch pkginst/pi00
 	touch pkgheld/ph00
