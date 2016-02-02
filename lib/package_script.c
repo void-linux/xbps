@@ -43,7 +43,6 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	const char *tmpdir, *version;
 	char *pkgname, *fpath;
 	int fd, rv;
-	mode_t mask;
 
 	assert(blob);
 	assert(pkgver);
@@ -72,15 +71,12 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	}
 
 	/* Create temp file to run script */
-	mask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
 	if ((fd = mkstemp(fpath)) == -1) {
-		umask(mask);
 		rv = errno;
 		xbps_dbg_printf(xhp, "%s: mkstemp %s\n",
 		    __func__, strerror(errno));
 		goto out;
 	}
-	umask(mask);
 	/* write blob to our temp fd */
 	ret = write(fd, blob, blobsiz);
 	if (ret == -1) {
@@ -100,7 +96,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	version = xbps_pkg_version(pkgver);
 	assert(version);
 
-	rv = xbps_file_exec(xhp, fpath, action, pkgname, version,
+	rv = xbps_file_exec(xhp, "/bin/sh", fpath, action, pkgname, version,
 			    update ? "yes" : "no",
 			    "no", xhp->native_arch, NULL);
 	free(pkgname);

@@ -1,5 +1,10 @@
 xbps-0.52 (???):
 
+ * libxbps: package INSTALL/REMOVE scripts do not need to be executables
+   anymore because they are executed with "/bin/sh" directly. That means
+   "/tmp" can be mounted as "noexec". Fixed #149 correctly.
+   See https://github.com/voidlinux/xbps/issues/149
+
  * xbps-query(1): fix a bug where the output of -o became mixed up
    when running on multiple cores.
 
