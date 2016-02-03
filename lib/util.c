@@ -499,8 +499,8 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 				res = strdup(p1 + strlen(xhp->rootdir));
 				free(p1);
 			}
-		}
-		if (res == NULL) {
+			free(p);
+		} else {
 			if (strcmp(xhp->rootdir, "/") == 0) {
 				res = p;
 			} else {
