@@ -37,6 +37,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <spawn.h>
 
 #undef _DEFAULT_SOURCE
 #undef _BSD_SOURCE
@@ -48,7 +49,10 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 	pid_t child;
 	int status;
 
-	child = vfork();
+	if (posix_spawn(&child, file, NULL, NULL,
+			(char* const*)__UNCONST(argv), NULL) != 0)
+		return -1;
+
 	switch (child) {
 	case 0:
 		/*

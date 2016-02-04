@@ -1,5 +1,8 @@
 xbps-0.52 (???):
 
+ * libxbps: package INSTALL/REMOVE scripts are now executed via
+   posix_spawn(3), replacing vfork(3).
+
  * libxbps: package INSTALL/REMOVE scripts do not need to be executables
    anymore because they are executed with "/bin/sh" directly. That means
    "/tmp" can be mounted as "noexec". Fixed #149 correctly.
