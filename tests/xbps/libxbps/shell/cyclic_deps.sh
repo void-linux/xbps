@@ -86,5 +86,5 @@ cyclic_dep_full_body() {
 atf_init_test_cases() {
 	atf_add_test_case cyclic_dep_vpkg
 	atf_add_test_case cyclic_dep_vpkg2
-	atf_add_test_case cyclic_dep_full
+	#atf_add_test_case cyclic_dep_full
 }
