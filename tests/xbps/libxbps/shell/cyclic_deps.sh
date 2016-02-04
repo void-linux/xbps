@@ -61,7 +61,8 @@ cyclic_dep_full_head() {
 }
 
 cyclic_dep_full_body() {
-	atf_expect_death "Known bug: see https://github.com/voidlinux/xbps/issues/92"
+	atf_set "timeout" 5
+	atf_expect_timeout "Known bug: see https://github.com/voidlinux/xbps/issues/92"
 	mkdir some_repo
 	mkdir -p pkg_{A,B}/usr/bin
 	cd some_repo
