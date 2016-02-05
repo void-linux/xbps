@@ -39,11 +39,11 @@ update_hold_body() {
 
 atf_test_case update_pkg_with_held_dep
 
-update_pkg_with_held_dep() {
+update_pkg_with_held_dep_head() {
 	atf_set "descr" "xbps-install(8): update packages with held dependency (issue #143)"
 }
 
-update_pkg_with_held_body() {
+update_pkg_with_held_dep_body() {
 	atf_expect_death "Known bug: see https://github.com/voidlinux/xbps/issues/143"
 	mkdir -p some_repo pkginst pkgheld pkgdep-21_1 pkgdep-22_1
 	touch pkginst/pi00
