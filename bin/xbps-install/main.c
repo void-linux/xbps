@@ -239,9 +239,12 @@ main(int argc, char **argv)
 		rv = dist_upgrade(&xh, maxcols, yes, drun);
 	} else if (update) {
 		/* Update target packages */
+		int npkgs = argc - optind;
 		for (i = optind; i < argc; i++) {
 			rv = update_pkg(&xh, argv[i]);
-			if (rv != 0) {
+			if (npkgs >= 2 && rv == EEXIST) {
+				rv = 0;
+			} else if (rv != 0) {
 				xbps_end(&xh);
 				exit(rv);
 			}

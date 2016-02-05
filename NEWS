@@ -1,5 +1,9 @@
 xbps-0.52 (???):
 
+ * xbps-install(1): in dry-run mode, do not stop after processing a package
+   that is already up-to-date. Fixes #145.
+   See https://github.com/voidlinux/xbps/issues/145
+
  * libxbps: package INSTALL/REMOVE scripts are now executed via
    posix_spawn(3), replacing vfork(3).
 
