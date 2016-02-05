@@ -488,12 +488,15 @@ ordered_depends(const char *bpath, const char *pkgn)
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		size_t len;
 
-		/* ignore pkgs returning errors */
 		if (strncmp(buf, "=> ERROR", 8) == 0) {
+			/* ignore pkgs returning errors */
 			item->emsg = strdup(buf);
 			item->status = XBROKEN;
 			item->xcode = EXIT_FAILURE;
 			break;
+		} else if (strncmp(buf, "=>", 2) == 0) {
+			/* ignore xbps-src msgs */
+			continue;
 		}
 		len = strlen(buf);
 		if (len && buf[len-1] == '\n')
