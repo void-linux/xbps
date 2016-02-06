@@ -1,5 +1,9 @@
 xbps-0.52 (???):
 
+ * libxbps: fixed some missing or incorrect printf format arguments
+   found by using __attribute__((format,printf). Patch provided by
+   Michael Ghering in #148. See https://github.com/voidlinux/xbps/issues/148
+
  * libxbps: ignore updates for packages that have held dependencies.
    Fixes #143. See https://github.com/voidlinux/xbps/issues/143
 
