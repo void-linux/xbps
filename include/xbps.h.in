@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20151030"
+#define XBPS_API_VERSION	"20160206"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
