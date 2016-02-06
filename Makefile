@@ -44,6 +44,6 @@ clean:
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir clean || exit 1;	\
 	done
-	-rm -f config.mk _ccflag.{,c,err}
+	-rm -f result* config.mk _ccflag.{,c,err}
 
 .PHONY: all install uninstall check clean
