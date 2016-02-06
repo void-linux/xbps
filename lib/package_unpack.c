@@ -279,7 +279,7 @@ unpack_archive(struct xbps_handle *xhp,
 		if (file_exists && match_preserved_file(xhp, entry_pname)) {
 			archive_read_data_skip(ar);
 			xbps_dbg_printf(xhp, "[unpack] `%s' exists on disk "
-			    "and must be preserved, skipping.\n", xhp, entry_pname);
+			    "and must be preserved, skipping.\n", entry_pname);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FILE_PRESERVED, 0,
 			    pkgver, "%s: file `%s' won't be extracted, "
 			    "it's preserved.\n", pkgver, entry_pname);
@@ -359,13 +359,13 @@ unpack_archive(struct xbps_handle *xhp,
 			    archive_entry_gid(entry)) != 0) {
 				xbps_dbg_printf(xhp,
 				    "%s: failed "
-				    "to set uid/gid to %u:%u (%s)\n",
+				    "to set uid/gid to %zu:%zu (%s)\n",
 				    pkgver, archive_entry_uid(entry),
 				    archive_entry_gid(entry),
 				    strerror(errno));
 			} else {
 				xbps_dbg_printf(xhp, "%s: entry %s changed "
-				    "uid/gid to %u:%u.\n", pkgver, entry_pname,
+				    "uid/gid to %zu:%zu.\n", pkgver, entry_pname,
 				    archive_entry_uid(entry),
 				    archive_entry_gid(entry));
 			}

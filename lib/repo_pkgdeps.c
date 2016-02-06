@@ -147,7 +147,7 @@ find_repo_deps(struct xbps_handle *xhp,
 		foundvpkg = false;
 		reqpkg = xbps_string_cstring_nocopy(obj);
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
-			xbps_dbg_printf(xhp, "");
+			xbps_dbg_printf(xhp, "%s", "");
 			for (unsigned short x = 0; x < *depth; x++) {
 				xbps_dbg_printf_append(xhp, " ");
 			}
@@ -299,7 +299,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			}
 			rv = add_missing_reqdep(xhp, reqpkg);
 			if (rv != 0 && rv != EEXIST) {
-				xbps_dbg_printf(xhp, "`%s': add_missing_reqdep failed %s\n", reqpkg);
+				xbps_dbg_printf(xhp, "`%s': add_missing_reqdep failed\n", reqpkg);
 				break;
 			} else if (rv == EEXIST) {
 				xbps_dbg_printf(xhp, "`%s' missing dep already added.\n", reqpkg);
@@ -345,7 +345,7 @@ find_repo_deps(struct xbps_handle *xhp,
 		}
 
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
-			xbps_dbg_printf(xhp, "");
+			xbps_dbg_printf(xhp, "%s", "");
 			for (unsigned short x = 0; x < *depth; x++) {
 				xbps_dbg_printf_append(xhp, " ");
 			}
