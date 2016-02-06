@@ -1,5 +1,8 @@
 xbps-0.52 (???):
 
+ * libxbps: ignore updates for packages that have held dependencies.
+   Fixes #143. See https://github.com/voidlinux/xbps/issues/143
+
  * xbps-install(1): in dry-run mode, do not stop after processing a package
    that is already up-to-date. Fixes #145.
    See https://github.com/voidlinux/xbps/issues/145

@@ -44,7 +44,6 @@ update_pkg_with_held_dep_head() {
 }
 
 update_pkg_with_held_dep_body() {
-	atf_expect_death "Known bug: see https://github.com/voidlinux/xbps/issues/143"
 	mkdir -p some_repo pkginst pkgheld pkgdep-21_1 pkgdep-22_1
 	touch pkginst/pi00
 	touch pkgheld/ph00
@@ -102,7 +101,7 @@ update_pkg_with_held_dep_body() {
 	xbps-rindex -d -a pkgdep-22*.xbps
 	atf_check_equal $? 0
 
-	xbps-install -r root -C empty.conf --repository=$PWD -d -y pkginst >&2
+	xbps-install -r root -C empty.conf --repository=$PWD -d -yv pkginst
 	atf_check_equal $? 0
 }
 
