@@ -1734,7 +1734,7 @@ int xbps_mkpath(const char *path, mode_t mode);
  * is set appropiately. The pointer should be free(3)d when it's
  * no longer needed.
  */
-char *xbps_xasprintf(const char *fmt, ...);
+char *xbps_xasprintf(const char *fmt, ...)__attribute__ ((format (printf, 1, 2)));
 
 /**
  * Creates a memory mapped object from file \a file into \a mmf
