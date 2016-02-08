@@ -87,7 +87,11 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		goto out;
 	}
 	fchmod(fd, 0750);
+#ifdef HAVE_FDATASYNC
 	fdatasync(fd);
+#else
+	fsync(fd);
+#endif
 	close(fd);
 
 	/* exec script */
