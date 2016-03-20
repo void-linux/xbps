@@ -59,14 +59,13 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 	unsigned int j, tlen = 0, len = 0;
 
 	/* Iterate over results array and find out largest pkgver string */
-	for (unsigned int i = 0; i < xbps_array_count(sd->results); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(sd->results); i+=2) {
 		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
 		len = strlen(pkgver);
 		if (tlen == 0 || len > tlen)
 			tlen = len;
-		i++;
 	}
-	for (unsigned int i = 0; i < xbps_array_count(sd->results); i++) {
+	for (unsigned int i = 0; i < xbps_array_count(sd->results); i+=2) {
 		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
 		xbps_array_get_cstring_nocopy(sd->results, i+1, &desc);
 		xbps_strlcpy(tmp, pkgver, sizeof(tmp));
@@ -91,7 +90,6 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 		} else {
 			printf("%s %s %s\n", inststr, tmp, desc);
 		}
-		i++;
 	}
 }
 
