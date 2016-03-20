@@ -1500,6 +1500,26 @@ void xbps_repo_unlock(int lockfd, char *lockfname);
 struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url);
 
 /**
+ * Opens a staging repository and returns a xbps_repo object.
+ *
+ * @param[in] xhp Pointer to the xbps_handle struct.
+ * @param[in] uri Repository URI to match.
+ *
+ * @return The matching repository object, NULL otherwise.
+ */
+struct xbps_repo *xbps_repo_stage_open(struct xbps_handle *xhp, const char *url);
+
+/**
+ * Opens a repository and returns a xbps_repo object.
+ *
+ * @param[in] xhp Pointer to the xbps_handle struct.
+ * @param[in] uri Repository URI to match.
+ *
+ * @return The matching repository object, NULL otherwise.
+ */
+struct xbps_repo *xbps_repo_public_open(struct xbps_handle *xhp, const char *url);
+
+/**
  * Closes a repository object and releases resources.
  *
  * @param[in] repo The repository object to close.
@@ -1516,6 +1536,18 @@ void xbps_repo_close(struct xbps_repo *repo);
  * @return A heap allocated string that must be free(3)d when it's unneeded.
  */
 char *xbps_repo_path(struct xbps_handle *xhp, const char *url);
+
+/**
+ *
+ * Returns a heap-allocated string with the repository local path.
+ *
+ * @param[in] xhp The xbps_handle object.
+ * @param[in] url The repository URL to match.
+ * @param[in] name The repository name (stage or repodata)
+ *
+ * @return A heap allocated string that must be free(3)d when it's unneeded.
+ */
+char *xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *name);
 
 /**
  * Remotely fetch repository data and keep it in memory.

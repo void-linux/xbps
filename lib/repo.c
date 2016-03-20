@@ -47,11 +47,18 @@
 char *
 xbps_repo_path(struct xbps_handle *xhp, const char *url)
 {
+	return xbps_repo_path_with_name(xhp, url, "repodata");
+}
+
+char *
+xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *name)
+{
 	assert(xhp);
 	assert(url);
+	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0);
 
-	return xbps_xasprintf("%s/%s-repodata",
-	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch);
+	return xbps_xasprintf("%s/%s-%s",
+	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch, name);
 }
 
 static xbps_dictionary_t
@@ -182,6 +189,72 @@ repo_open_remote(struct xbps_repo *repo)
 	return rv;
 }
 
+static struct xbps_repo *
+repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
+{
+	struct xbps_repo *repo;
+	const char *arch;
+	char *repofile;
+
+	assert(xhp);
+	assert(url);
+
+	if (xhp->target_arch)
+		arch = xhp->target_arch;
+	else
+		arch = xhp->native_arch;
+
+	repo = calloc(1, sizeof(struct xbps_repo));
+	assert(repo);
+	repo->fd = -1;
+	repo->xhp = xhp;
+	repo->uri = url;
+
+	if (xbps_repository_is_remote(url)) {
+		/* remote repository */
+		char *rpath;
+
+		if ((rpath = xbps_get_remote_repo_string(url)) == NULL) {
+			free(repo);
+			return NULL;
+		}
+		repofile = xbps_xasprintf("%s/%s/%s-%s", xhp->metadir, rpath, arch, name);
+		free(rpath);
+		repo->is_remote = true;
+	} else {
+		/* local repository */
+		repofile = xbps_repo_path_with_name(xhp, url, name);
+	}
+	/*
+	 * In memory repo sync.
+	 */
+	if (repo->is_remote && (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC)) {
+		if (repo_open_remote(repo))
+			return repo;
+
+		goto out;
+	}
+	/*
+	 * Open the repository archive.
+	 */
+	repo->fd = open(repofile, O_RDONLY|O_CLOEXEC);
+	if (repo->fd == -1) {
+		int rv = errno;
+		xbps_dbg_printf(xhp, "[repo] `%s' open %s %s\n",
+		    repofile, name, strerror(rv));
+		goto out;
+	}
+	if (repo_open_local(repo, repofile)) {
+		free(repofile);
+		return repo;
+	}
+
+out:
+	free(repofile);
+	xbps_repo_close(repo);
+	return NULL;
+}
+
 bool
 xbps_repo_store(struct xbps_handle *xhp, const char *repo)
 {
@@ -222,69 +295,43 @@ xbps_repo_store(struct xbps_handle *xhp, const char *repo)
 }
 
 struct xbps_repo *
+xbps_repo_stage_open(struct xbps_handle *xhp, const char *url)
+{
+	return repo_open_with_type(xhp, url, "stagedata");
+}
+
+struct xbps_repo *
+xbps_repo_public_open(struct xbps_handle *xhp, const char *url) {
+	return repo_open_with_type(xhp, url, "repodata");
+}
+
+struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url)
 {
-	struct xbps_repo *repo;
-	const char *arch;
-	char *repofile;
-
-	assert(xhp);
-	assert(url);
-
-	if (xhp->target_arch)
-		arch = xhp->target_arch;
-	else
-		arch = xhp->native_arch;
-
-	repo = calloc(1, sizeof(struct xbps_repo));
-	assert(repo);
-	repo->fd = -1;
-	repo->xhp = xhp;
-	repo->uri = url;
-
-	if (xbps_repository_is_remote(url)) {
-		/* remote repository */
-		char *rpath;
-
-		if ((rpath = xbps_get_remote_repo_string(url)) == NULL) {
-			free(repo);
-			return NULL;
-		}
-		repofile = xbps_xasprintf("%s/%s/%s-repodata", xhp->metadir, rpath, arch);
-		free(rpath);
-		repo->is_remote = true;
-	} else {
-		/* local repository */
-		repofile = xbps_repo_path(xhp, url);
-	}
+	struct xbps_repo *repo = xbps_repo_public_open(xhp, url);
+	struct xbps_repo *stage = NULL;
+	xbps_dictionary_t idx;
+	const char *pkgname;
 	/*
-	 * In memory repo sync.
+	 * Load and merge staging repository if the repository is local.
 	 */
-	if (repo->is_remote && (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC)) {
-		if (repo_open_remote(repo))
+	if(!repo->is_remote) {
+		stage = xbps_repo_stage_open(xhp, url);
+		if(stage == NULL)
 			return repo;
-
-		goto out;
-	}
-	/*
-	 * Open the repository archive.
-	 */
-	repo->fd = open(repofile, O_RDONLY|O_CLOEXEC);
-	if (repo->fd == -1) {
-		int rv = errno;
-		xbps_dbg_printf(xhp, "[repo] `%s' open repodata %s\n",
-		    repofile, strerror(rv));
-		goto out;
-	}
-	if (repo_open_local(repo, repofile)) {
-		free(repofile);
+		idx = xbps_dictionary_copy_mutable(repo->idx);
+		xbps_object_iterator_t iter = xbps_dictionary_iterator(stage->idx);
+		for(xbps_object_t o; (o = xbps_object_iterator_next(iter));) {
+			pkgname = xbps_string_cstring_nocopy(o);
+			xbps_dictionary_set(idx, pkgname,
+					xbps_dictionary_get(stage->idx, pkgname));
+		}
+		xbps_object_iterator_release(iter);
+		xbps_object_release(repo->idx);
+		repo->idx = idx;
 		return repo;
 	}
-
-out:
-	free(repofile);
-	xbps_repo_close(repo);
-	return NULL;
+	return repo;
 }
 
 void
