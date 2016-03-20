@@ -32,6 +32,8 @@ update_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case revert
+
 revert_head() {
 	atf_set "descr" "xbps-rindex(8) -a: revert version test"
 }
