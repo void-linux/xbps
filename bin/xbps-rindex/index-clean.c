@@ -134,7 +134,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	xbps_object_release(allkeys);
 
 	if (!xbps_dictionary_equals(dest, repo->idx)) {
-		if (!repodata_flush(xhp, repodir, dest, repo->idxmeta)) {
+		if (!repodata_flush(xhp, repodir, "repodata", dest, repo->idxmeta)) {
 			rv = errno;
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));

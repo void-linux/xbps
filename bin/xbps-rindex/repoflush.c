@@ -39,7 +39,7 @@
 
 bool
 repodata_flush(struct xbps_handle *xhp, const char *repodir,
-	xbps_dictionary_t idx, xbps_dictionary_t meta)
+	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta)
 {
 	struct archive *ar;
 	char *repofile, *tname, *buf;
@@ -47,7 +47,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	mode_t mask;
 
 	/* Create a tempfile for our repository archive */
-	repofile = xbps_repo_path(xhp, repodir);
+	repofile = xbps_repo_path_with_name(xhp, repodir, reponame);
 	tname = xbps_xasprintf("%s.XXXXXXXXXX", repofile);
 	mask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
 	if ((repofd = mkstemp(tname)) == -1)
