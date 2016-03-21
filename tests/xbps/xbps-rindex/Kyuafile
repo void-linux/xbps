@@ -3,3 +3,4 @@ syntax("kyuafile", 1)
 test_suite("xbps-rindex")
 atf_test_program{name="add_test"}
 atf_test_program{name="clean_test"}
+atf_test_program{name="remove_test"}
