@@ -88,6 +88,34 @@ out:
 	return 0;
 }
 
+static int
+cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *repo,
+		const char *reponame) {
+	int rv = 0;
+	xbps_array_t allkeys;
+	/*
+	 * First pass: find out obsolete entries on index and index-files.
+	 */
+	dest = xbps_dictionary_copy_mutable(repo->idx);
+	allkeys = xbps_dictionary_all_keys(dest);
+	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, __UNCONST(repodir));
+	xbps_object_release(allkeys);
+
+	if (!xbps_dictionary_equals(dest, repo->idx)) {
+		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta)) {
+			rv = errno;
+			fprintf(stderr, "failed to write repodata: %s\n",
+			    strerror(errno));
+			return rv;
+		}
+	}
+	if(strcmp("stagedata", reponame) == 0)
+		printf("stage: %u packages registered.\n", xbps_dictionary_count(dest));
+	else
+		printf("index: %u packages registered.\n", xbps_dictionary_count(dest));
+	return rv;
+}
+
 /*
  * Removes stalled pkg entries in repository's XBPS_REPOIDX file, if any
  * binary package cannot be read (unavailable, not enough perms, etc).
@@ -95,8 +123,7 @@ out:
 int
 index_clean(struct xbps_handle *xhp, const char *repodir)
 {
-	xbps_array_t allkeys;
-	struct xbps_repo *repo;
+	struct xbps_repo *repo, *stage;
 	char *rlockfname = NULL;
 	int rv = 0, rlockfd = -1;
 
@@ -106,7 +133,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		    _XBPS_RINDEX, strerror(rv));
 		return rv;
 	}
-	repo = xbps_repo_open(xhp, repodir);
+	repo = xbps_repo_public_open(xhp, repodir);
 	if (repo == NULL) {
 		rv = errno;
 		if (rv == ENOENT) {
@@ -118,33 +145,24 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 		xbps_repo_unlock(rlockfd, rlockfname);
 		return rv;
 	}
-	if (repo->idx == NULL) {
+	stage = xbps_repo_stage_open(xhp, repodir);
+	if (repo->idx == NULL || (stage && stage->idx == NULL)) {
 		fprintf(stderr, "%s: incomplete repository data file!\n", _XBPS_RINDEX);
 		rv = EINVAL;
 		goto out;
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
-	/*
-	 * First pass: find out obsolete entries on index and index-files.
-	 */
-	dest = xbps_dictionary_copy_mutable(repo->idx);
-	allkeys = xbps_dictionary_all_keys(dest);
-	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, __UNCONST(repodir));
-	xbps_object_release(allkeys);
-
-	if (!xbps_dictionary_equals(dest, repo->idx)) {
-		if (!repodata_flush(xhp, repodir, "repodata", dest, repo->idxmeta)) {
-			rv = errno;
-			fprintf(stderr, "failed to write repodata: %s\n",
-			    strerror(errno));
-			goto out;
-		}
+	if((rv = cleanup_repo(xhp, repodir, repo, "repodata")))
+		goto out;
+	if(stage) {
+		cleanup_repo(xhp, repodir, stage, "stagedata");
 	}
-	printf("index: %u packages registered.\n", xbps_dictionary_count(dest));
 
 out:
 	xbps_repo_close(repo);
+	if(stage)
+		xbps_repo_close(stage);
 	xbps_repo_unlock(rlockfd, rlockfname);
 
 	return rv;
