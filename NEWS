@@ -19,6 +19,12 @@ xbps-0.52 (???):
  * xbps-query(1): fix a bug where the output of -o became mixed up
    when running on multiple cores.
 
+ * xbps-rindex: changes introducing inconsistent shlib dependencies will be
+   moved to a stage area and moved to the main repo once all inconsistencies
+   are resolved. Implemented by Enno Boland (@Gottox).
+
+ * libxbps: if a local repository is opened also include the stage area.
+
 xbps-0.51 (2015-12-12):
 
  * zsh completion: added -U/--unpack-only support for xbps-install(1).
