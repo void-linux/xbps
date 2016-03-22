@@ -134,7 +134,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	xbps_object_iterator_release(iter);
 
 	if (xbps_dictionary_count(usedshlibs) != 0) {
-		puts("Inconsistent shlibs:");
+		printf("Inconsistent shlibs:\n");
 		iter = xbps_dictionary_iterator(usedshlibs);
 		while ((keysym = xbps_object_iterator_next(iter))) {
 			const char *shlib = xbps_dictionary_keysym_cstring_nocopy(keysym),
@@ -151,9 +151,9 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 				printf("%s%s",pre, user);
 				pre = ", ";
 			}
-			puts(")");
+			printf(")\n");
 		}
-		puts("Packages are added to stage area.");
+		printf("Packages are added to stage area.\n");
 		xbps_object_iterator_release(iter);
 		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL);
 	}
