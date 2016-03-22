@@ -101,6 +101,11 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, __UNCONST(repodir));
 	xbps_object_release(allkeys);
 
+	if(strcmp("stagedata", reponame) == 0 && xbps_dictionary_count(dest) == 0) {
+		char *stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
+		unlink(stagefile);
+		free(stagefile);
+	}
 	if (!xbps_dictionary_equals(dest, repo->idx)) {
 		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta)) {
 			rv = errno;
