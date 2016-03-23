@@ -340,6 +340,11 @@ xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg)
 	if (repo->idx == NULL)
 		return NULL;
 
+	/* Try matching vpkg from configuration files */
+	if ((pkgd = xbps_find_virtualpkg_in_conf(repo->xhp, repo->idx, pkg)))
+		return pkgd;
+
+	/* ... otherwise match a real pkg */
 	pkgd = xbps_find_pkg_in_dict(repo->idx, pkg);
 	if (pkgd) {
 		xbps_dictionary_set_cstring_nocopy(pkgd,

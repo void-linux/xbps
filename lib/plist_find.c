@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2014 Juan Romero Pardines.
+ * Copyright (c) 2008-2016 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -263,14 +263,12 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg)
 	return found ? pkg : NULL;
 }
 
-xbps_dictionary_t
-xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
-			     xbps_dictionary_t d,
-			     const char *pkg)
+xbps_dictionary_t HIDDEN
+xbps_find_virtualpkg_in_conf(struct xbps_handle *xhp,
+			xbps_dictionary_t d,
+			const char *pkg)
 {
-	xbps_object_t obj;
-	xbps_object_iterator_t iter;
-	xbps_dictionary_t pkgd = NULL;
+	xbps_dictionary_t pkgd;
 	const char *vpkg;
 
 	/* Try matching vpkg from configuration files */
@@ -286,6 +284,22 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 		if (pkgd)
 			return pkgd;
 	}
+
+	return NULL;
+}
+
+xbps_dictionary_t HIDDEN
+xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
+			     xbps_dictionary_t d,
+			     const char *pkg)
+{
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
+	xbps_dictionary_t pkgd = NULL;
+
+	/* Try matching vpkg from configuration files */
+	if ((pkgd = xbps_find_virtualpkg_in_conf(xhp, d, pkg)))
+		return pkgd;
 
 	/* ... otherwise match the first one in dictionary */
 	iter = xbps_dictionary_iterator(d);
@@ -303,7 +317,7 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 	return NULL;
 }
 
-xbps_dictionary_t
+xbps_dictionary_t HIDDEN
 xbps_find_pkg_in_dict(xbps_dictionary_t d, const char *pkg)
 {
 	xbps_dictionary_t pkgd = NULL;

@@ -117,6 +117,8 @@ int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *, xbps_dictionary_t,
 		const char *);
 int HIDDEN xbps_repository_find_deps(struct xbps_handle *, xbps_array_t,
 		xbps_dictionary_t);
+xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_conf(struct xbps_handle *,
+		xbps_dictionary_t, const char *);
 xbps_dictionary_t HIDDEN xbps_find_pkg_in_dict(xbps_dictionary_t, const char *);
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *,
 		xbps_dictionary_t, const char *);
