@@ -54,16 +54,140 @@ set_build_date(const xbps_dictionary_t pkgd, time_t timestamp)
 	return 0;
 }
 
+static bool
+repodata_commit(struct xbps_handle *xhp, const char *repodir,
+	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage) {
+	xbps_object_iterator_t iter;
+	xbps_object_t keysym;
+	int rv;
+	xbps_dictionary_t oldshlibs, usedshlibs;
+
+	if (xbps_dictionary_count(stage) == 0) {
+		// Nothing to do.
+		return true;
+	}
+
+	/*
+	 * Find old shlibs-provides
+	 */
+	oldshlibs = xbps_dictionary_create();
+	usedshlibs = xbps_dictionary_create();
+
+	iter = xbps_dictionary_iterator(stage);
+	while ((keysym = xbps_object_iterator_next(iter))) {
+		const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
+		xbps_dictionary_t pkg = xbps_dictionary_get(idx, pkgname);
+		xbps_array_t pkgshlibs;
+
+		pkgshlibs = xbps_dictionary_get(pkg, "shlib-provides");
+		for (unsigned int i = 0; i < xbps_array_count(pkgshlibs); i++) {
+			const char *shlib = NULL;
+			xbps_array_get_cstring_nocopy(pkgshlibs, i, &shlib);
+			xbps_dictionary_set_cstring(oldshlibs, shlib, pkgname);
+		}
+	}
+	xbps_object_iterator_release(iter);
+
+	/*
+	 * throw away all unused shlibs
+	 */
+	iter = xbps_dictionary_iterator(idx);
+	while ((keysym = xbps_object_iterator_next(iter))) {
+		const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
+		xbps_dictionary_t pkg = xbps_dictionary_get(stage, pkgname);
+		xbps_array_t pkgshlibs;
+		if (!pkg)
+			pkg = xbps_dictionary_get_keysym(idx, keysym);
+		pkgshlibs = xbps_dictionary_get(pkg, "shlib-requires");
+
+		for (unsigned int i = 0; i < xbps_array_count(pkgshlibs); i++) {
+			const char *shlib = NULL;
+			xbps_array_t users;
+			xbps_array_get_cstring_nocopy(pkgshlibs, i, &shlib);
+			if (!xbps_dictionary_get(oldshlibs, shlib))
+				continue;
+			users = xbps_dictionary_get(usedshlibs, shlib);
+			if (!users) {
+				users = xbps_array_create();
+				xbps_dictionary_set(usedshlibs, shlib, users);
+			}
+			xbps_array_add_cstring(users, pkgname);
+		}
+	}
+	xbps_object_iterator_release(iter);
+
+	/*
+	 * purge all packages that are fullfilled by the stage
+	 */
+	iter = xbps_dictionary_iterator(stage);
+	while ((keysym = xbps_object_iterator_next(iter))) {
+		xbps_dictionary_t pkg = xbps_dictionary_get_keysym(stage, keysym);
+		xbps_array_t pkgshlibs;
+
+		pkgshlibs = xbps_dictionary_get(pkg, "shlib-provides");
+		for (unsigned int i = 0; i < xbps_array_count(pkgshlibs); i++) {
+			const char *shlib;
+			xbps_array_get_cstring_nocopy(pkgshlibs, i, &shlib);
+			xbps_dictionary_remove(usedshlibs, shlib);
+		}
+	}
+	xbps_object_iterator_release(iter);
+
+	if (xbps_dictionary_count(usedshlibs) != 0) {
+		printf("Inconsistent shlibs:\n");
+		iter = xbps_dictionary_iterator(usedshlibs);
+		while ((keysym = xbps_object_iterator_next(iter))) {
+			const char *shlib = xbps_dictionary_keysym_cstring_nocopy(keysym),
+					*provider = NULL, *pre;
+			xbps_array_t users = xbps_dictionary_get(usedshlibs, shlib);
+			xbps_dictionary_get_cstring_nocopy(oldshlibs, shlib, &provider);
+
+			printf(" %s (provided by: %s; used by: ", shlib, provider);
+			pre = "";
+			for (unsigned int i = 0; i < xbps_array_count(users); i++) {
+				const char *user;
+				xbps_array_get_cstring_nocopy(users, i, &user);
+				xbps_dictionary_remove(usedshlibs, shlib);
+				printf("%s%s",pre, user);
+				pre = ", ";
+			}
+			printf(")\n");
+		}
+		printf("Packages are added to stage area.\n");
+		xbps_object_iterator_release(iter);
+		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL);
+	}
+	else {
+		char *stagefile;
+		iter = xbps_dictionary_iterator(stage);
+		while ((keysym = xbps_object_iterator_next(iter))) {
+			const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
+			xbps_dictionary_t pkg = xbps_dictionary_get_keysym(stage, keysym);
+			const char *pkgver, *arch;
+			xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
+			xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch);
+			printf("index: added `%s' (%s).\n", pkgver, arch);
+			xbps_dictionary_set(idx, pkgname, pkg);
+		}
+		xbps_object_iterator_release(iter);
+		stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
+		unlink(stagefile);
+		free(stagefile);
+		rv = repodata_flush(xhp, repodir, "repodata", idx, meta);
+	}
+	xbps_object_release(usedshlibs);
+	xbps_object_release(oldshlibs);
+	return rv;
+}
 
 int
 index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force)
 {
-	xbps_dictionary_t idx, idxmeta, binpkgd, curpkgd;
-	struct xbps_repo *repo = NULL;
+	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
+	struct xbps_repo *repo = NULL, *stage = NULL;
 	struct stat st;
 	char *tmprepodir = NULL, *repodir = NULL, *rlockfname = NULL;
 	int rv = 0, ret = 0, rlockfd = -1;
-	bool flush = false;
 
 	assert(argv);
 	/*
@@ -79,7 +203,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		rv = -1;
 		goto out;
 	}
-	repo = xbps_repo_open(xhp, repodir);
+	repo = xbps_repo_public_open(xhp, repodir);
 	if (repo == NULL && errno != ENOENT) {
 		fprintf(stderr, "xbps-rindex: cannot open/lock repository "
 		    "%s: %s\n", repodir, strerror(errno));
@@ -92,6 +216,19 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	} else {
 		idx = xbps_dictionary_create();
 		idxmeta = NULL;
+	}
+	stage = xbps_repo_stage_open(xhp, repodir);
+	if (stage == NULL && errno != ENOENT) {
+		fprintf(stderr, "xbps-rindex: cannot open/lock stage repository "
+		    "%s: %s\n", repodir, strerror(errno));
+		rv = -1;
+		goto out;
+	}
+	if (stage) {
+		idxstage = xbps_dictionary_copy_mutable(stage->idx);
+	}
+	else {
+		idxstage = xbps_dictionary_create();
 	}
 	/*
 	 * Process all packages specified in argv.
@@ -126,7 +263,9 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		 * than current registered package, update the index; otherwise
 		 * pass to the next one.
 		 */
-		curpkgd = xbps_dictionary_get(idx, pkgname);
+		curpkgd = xbps_dictionary_get(idxstage, pkgname);
+		if (curpkgd == NULL)
+			curpkgd = xbps_dictionary_get(idx, pkgname);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				rv = errno;
@@ -166,12 +305,6 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 				free(pkgname);
 				continue;
 			}
-			/*
-			 * Current package version is greater than
-			 * index version.
-			 */
-			printf("index: removed obsolete entry `%s' (%s).\n", opkgver, oarch);
-			xbps_dictionary_remove(idx, pkgname);
 			free(opkgver);
 			free(oarch);
 		}
@@ -218,16 +351,14 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		xbps_dictionary_remove(binpkgd, "packaged-with");
 
 		/*
-		 * Add new pkg dictionary into the index.
+		 * Add new pkg dictionary into the stage index
 		 */
-		if (!xbps_dictionary_set(idx, pkgname, binpkgd)) {
+		if (!xbps_dictionary_set(idxstage, pkgname, binpkgd)) {
 			free(pkgname);
 			free(pkgver);
 			rv = EINVAL;
 			goto out;
 		}
-		flush = true;
-		printf("index: added `%s' (%s).\n", pkgver, arch);
 		xbps_object_release(binpkgd);
 		free(pkgname);
 		free(pkgver);
@@ -235,18 +366,18 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	/*
 	 * Generate repository data files.
 	 */
-	if (flush) {
-		if (!repodata_flush(xhp, repodir, idx, idxmeta)) {
-			fprintf(stderr, "%s: failed to write repodata: %s\n",
-			    _XBPS_RINDEX, strerror(errno));
-			goto out;
-		}
+	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage)) {
+		fprintf(stderr, "%s: failed to write repodata: %s\n",
+				_XBPS_RINDEX, strerror(errno));
+		goto out;
 	}
 	printf("index: %u packages registered.\n", xbps_dictionary_count(idx));
 
 out:
 	if (repo)
 		xbps_repo_close(repo);
+	if (stage)
+		xbps_repo_close(stage);
 
 	xbps_repo_unlock(rlockfd, rlockfname);
 

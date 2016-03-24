@@ -62,7 +62,55 @@ revert_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case stage
+
+stage_head() {
+	atf_set "descr" "xbps-rindex(8) -a: commit package to stage test"
+}
+
+stage_body() {
+	mkdir -p some_repo pkg_A pkg_B
+	touch pkg_A/file00 pkg_B/file01
+	cd some_repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	[ -f *-stagedata ]
+	atf_check_equal $? 1
+
+	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" --shlib-provides "libfoo.so.2" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	[ -f *-stagedata ]
+	atf_check_equal $? 1
+
+	xbps-create -A noarch -n bar-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.2" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	[ -f *-stagedata ]
+	atf_check_equal $? 1
+
+	xbps-create -A noarch -n foo-1.2_1 -s "foo pkg" --shlib-provides "libfoo.so.3" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	[ -f *-stagedata ]
+	atf_check_equal $? 0
+
+	xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" --shlib-requires "libfoo.so.3" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	[ -f *-stagedata ]
+	atf_check_equal $? 1
+}
+
+
 atf_init_test_cases() {
 	atf_add_test_case update
 	atf_add_test_case revert
+	atf_add_test_case stage
 }

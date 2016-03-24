@@ -67,7 +67,7 @@ remove_pkg(const char *repodir, const char *file)
 static int
 cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key _unused, void *arg, bool *done _unused)
 {
-	struct xbps_repo *repo = arg;
+	struct xbps_repo *repo = ((struct xbps_repo **)arg)[0], *stage = ((struct xbps_repo **)arg)[1];
 	const char *binpkg;
 	char *pkgver, *arch = NULL;
 	int rv;
@@ -97,7 +97,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key _unused, 
 	/*
 	 * If binpkg is not registered in index, remove binpkg.
 	 */
-	if (!xbps_repo_get_pkg(repo, pkgver)) {
+	if (!xbps_repo_get_pkg(repo, pkgver) && !(stage && xbps_repo_get_pkg(stage, pkgver))) {
 		if ((rv = remove_pkg(repo->uri, binpkg)) != 0) {
 			free(pkgver);
 			return 0;
@@ -112,13 +112,13 @@ int
 remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 {
 	xbps_array_t array = NULL;
-	struct xbps_repo *repo;
+	struct xbps_repo *repos[2], *repo, *stage;
 	DIR *dirp;
 	struct dirent *dp;
 	char *ext;
 	int rv = 0;
 
-	repo = xbps_repo_open(xhp, repodir);
+	repo = xbps_repo_public_open(xhp, repodir);
 	if (repo == NULL) {
 		if (errno != ENOENT) {
 			fprintf(stderr, "xbps-rindex: cannot read repository data: %s\n",
@@ -127,10 +127,13 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		}
 		return 0;
 	}
+	stage = xbps_repo_stage_open(xhp, repodir);
 	if (chdir(repodir) == -1) {
 		fprintf(stderr, "xbps-rindex: cannot chdir to %s: %s\n",
 		    repodir, strerror(errno));
 		free(repo);
+		if(stage)
+			free(stage);
 		return errno;
 	}
 	if ((dirp = opendir(repodir)) == NULL) {
@@ -153,8 +156,12 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	}
 	(void)closedir(dirp);
 
-	rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repo);
+	repos[0] = repo;
+	repos[1] = stage;
+	rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repos);
 	xbps_repo_close(repo);
+	if(stage)
+		xbps_repo_close(stage);
 	xbps_object_release(array);
 
 	return rv;
