@@ -524,6 +524,7 @@ struct xbps_handle {
 	 */
 	xbps_dictionary_t pkgdb_revdeps;
 	xbps_dictionary_t vpkgd;
+	xbps_dictionary_t vpkgd_conf;
 	/**
 	 * @var pkgdb
 	 *

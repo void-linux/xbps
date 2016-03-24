@@ -126,7 +126,7 @@ xbps_find_virtualpkg_in_array(struct xbps_handle *x,
 	assert(xbps_object_type(a) == XBPS_TYPE_ARRAY);
 	assert(s);
 
-	if ((vpkg = vpkg_user_conf(x, s))) {
+	if ((vpkg = vpkg_user_conf(x, s, false))) {
 		if ((pkgd = get_pkg_in_array(a, vpkg, trans, true)))
 			return pkgd;
 	}
@@ -189,20 +189,26 @@ match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 }
 
 const char HIDDEN *
-vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg)
+vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg, bool only_conf)
 {
+	xbps_dictionary_t d;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	const char *pkg = NULL;
 	bool found = false;
 
-	/* init pkgdb just in case to detect vpkgs */
-	(void)xbps_pkgdb_init(xhp);
+	if (only_conf) {
+		d = xhp->vpkgd_conf;
+	} else {
+		d = xhp->vpkgd;
+		/* init pkgdb just in case to detect vpkgs */
+		(void)xbps_pkgdb_init(xhp);
+	}
 
-	if (xhp->vpkgd == NULL)
+	if (d == NULL)
 		return NULL;
 
-	iter = xbps_dictionary_iterator(xhp->vpkgd);
+	iter = xbps_dictionary_iterator(d);
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
@@ -272,7 +278,7 @@ xbps_find_virtualpkg_in_conf(struct xbps_handle *xhp,
 	const char *vpkg;
 
 	/* Try matching vpkg from configuration files */
-	vpkg = vpkg_user_conf(xhp, pkg);
+	vpkg = vpkg_user_conf(xhp, pkg, true);
 	if (vpkg != NULL) {
 		if (xbps_pkgpattern_version(vpkg))
 			pkgd = match_pkg_by_pattern(d, vpkg);
@@ -296,11 +302,21 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t pkgd = NULL;
+	const char *vpkg;
 
 	/* Try matching vpkg from configuration files */
-	if ((pkgd = xbps_find_virtualpkg_in_conf(xhp, d, pkg)))
-		return pkgd;
+	vpkg = vpkg_user_conf(xhp, pkg, false);
+	if (vpkg != NULL) {
+		if (xbps_pkgpattern_version(vpkg))
+			pkgd = match_pkg_by_pattern(d, vpkg);
+		else if (xbps_pkg_version(vpkg))
+			pkgd = match_pkg_by_pkgver(d, vpkg);
+		else
+			pkgd = xbps_dictionary_get(d, vpkg);
 
+		if (pkgd)
+			return pkgd;
+	}
 	/* ... otherwise match the first one in dictionary */
 	iter = xbps_dictionary_iterator(d);
 	assert(iter);

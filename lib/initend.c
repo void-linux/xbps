@@ -68,6 +68,9 @@ store_vars(struct xbps_handle *xhp, xbps_dictionary_t *d,
 
 	if (*d == NULL)
 		*d = xbps_dictionary_create();
+	if (xhp->vpkgd_conf)
+		xhp->vpkgd_conf = xbps_dictionary_create();
+
 	/*
 	 * Parse strings delimited by ':' i.e
 	 * 	<left>:<right>
@@ -85,6 +88,7 @@ store_vars(struct xbps_handle *xhp, xbps_dictionary_t *d,
 
 	rp++;
 	xbps_dictionary_set_cstring(*d, lp, rp);
+	xbps_dictionary_set_cstring(xhp->vpkgd_conf, lp, rp);
 	xbps_dbg_printf(xhp, "%s: added %s %s for %s\n", path, key, lp, rp);
 }
 

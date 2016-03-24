@@ -361,7 +361,7 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 			if (curpkgname == NULL)
 				curpkgname = xbps_pkg_name(pkgdep);
 			assert(curpkgname);
-			vpkgname = vpkg_user_conf(xhp, curpkgname);
+			vpkgname = vpkg_user_conf(xhp, curpkgname, false);
 			if (vpkgname == NULL)
 				vpkgname = curpkgname;
 
