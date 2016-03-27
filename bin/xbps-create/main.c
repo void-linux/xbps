@@ -66,7 +66,7 @@ static TAILQ_HEAD(xentry_head, xentry) xentry_list =
     TAILQ_HEAD_INITIALIZER(xentry_list);
 
 static uint64_t instsize;
-static xbps_dictionary_t pkg_propsd, pkg_filesd;
+static xbps_dictionary_t pkg_propsd, pkg_filesd, all_filesd;
 static const char *destdir;
 
 static void __attribute__((noreturn))
@@ -303,6 +303,7 @@ static int
 ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _unused)
 {
 	struct xentry *xe = NULL;
+	xbps_dictionary_t fileinfo = NULL;
 	const char *filep = NULL;
 	char *buf, *p, *p2, *dname;
 	ssize_t r;
@@ -321,14 +322,24 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 
 	/* sanitized file path */
 	filep = strchr(fpath, '.') + 1;
+	fileinfo = xbps_dictionary_create();
 	xe = calloc(1, sizeof(*xe));
 	assert(xe);
+	/* XXX: fileinfo contains the sanatized path, whereas xe contains the
+	 * unsanatized path!
+	 *
+	 * when handing the files over, do not use the dictionary directly. Instead
+	 * use the keysym, as this value has the unsanatized path.
+	 */
+	xbps_dictionary_set_cstring(fileinfo, "file", filep);
+	xbps_dictionary_set(all_filesd, fpath, fileinfo);
 	xe->file = strdup(fpath);
 	assert(xe->file);
 
 	if ((strcmp(fpath, "./INSTALL") == 0) ||
 	    (strcmp(fpath, "./REMOVE") == 0)) {
 		/* metadata file */
+		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "metadata");
 		xe->type = strdup("metadata");
 		assert(xe->type);
 		goto out;
@@ -340,10 +351,13 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		 *
 		 * Find out target file.
 		 */
+		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "links");
 		xe->type = strdup("links");
 		assert(xe->type);
 		/* store modification time for regular files and links */
+		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "links");
 		xe->mtime = (uint64_t)sb->st_mtime;
+		xbps_dictionary_set_uint64(fileinfo, "mtime", (uint64_t)sb->st_mtime);
 		buf = malloc(sb->st_size+1);
 		assert(buf);
 		r = readlink(fpath, buf, sb->st_size+1);
@@ -364,6 +378,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 				 * So let's use the same target.
 				 */
 				xe->target = strdup(buf);
+				xbps_dictionary_set_cstring(fileinfo, "target", buf);
 			} else {
 				/*
 				 * Sanitize destdir just in case.
@@ -372,6 +387,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 					die("failed to sanitize destdir %s: %s", destdir, strerror(errno));
 
 				xe->target = strdup(p+strlen(p2));
+				xbps_dictionary_set_cstring(fileinfo, "target", p+strlen(p2));
 				free(p2);
 				free(p);
 			}
@@ -382,11 +398,16 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 			dname = dirname(p);
 			assert(dname);
 			xe->target = xbps_xasprintf("%s/%s", dname, buf);
+			p2 = xbps_xasprintf("%s/%s", dname, buf);
+			xbps_dictionary_set_cstring(fileinfo, "target", p2);
+			free(p2);
 			free(p);
 		} else {
 			xe->target = strdup(buf);
+			xbps_dictionary_set_cstring(fileinfo, "target", buf);
 		}
 		assert(xe->target);
+		assert(xbps_dictionary_get(fileinfo, "target"));
 		free(buf);
 	} else if (type == FTW_F) {
 		struct xentry *xep;
@@ -410,26 +431,37 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		 * Find out if it's a configuration file or not
 		 * and calculate sha256 hash.
 		 */
-		if (entry_is_conf_file(filep))
+		if (entry_is_conf_file(filep)) {
+			xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "conf_files");
 			xe->type = strdup("conf_files");
-		else
+		} else {
+			xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "files");
 			xe->type = strdup("files");
+		}
 
 		assert(xe->type);
+		if ((p = xbps_file_hash(fpath)) == NULL)
+			die("failed to process hash for %s:", fpath);
+		xbps_dictionary_set_cstring(fileinfo, "sha256", p);
+		free(p);
 		if ((xe->hash = xbps_file_hash(fpath)) == NULL)
 			die("failed to process hash for %s:", fpath);
 
+		xbps_dictionary_set_uint64(fileinfo, "inode", sb->st_ino);
 		xe->inode = sb->st_ino;
 		/* store modification time for regular files and links */
+		xbps_dictionary_set_uint64(fileinfo, "mtime", sb->st_mtime);
 		xe->mtime = (uint64_t)sb->st_mtime;
 
 	} else if (type == FTW_D || type == FTW_DP) {
 		/* directory */
+		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "dirs");
 		xe->type = strdup("dirs");
 		assert(xe->type);
 	}
 
 out:
+	xbps_object_release(fileinfo);
 	TAILQ_INSERT_TAIL(&xentry_list, xe, entries);
 	return 0;
 }
@@ -889,6 +921,8 @@ main(int argc, char **argv)
 	 */
 	pkg_filesd = xbps_dictionary_create();
 	assert(pkg_filesd);
+	all_filesd = xbps_dictionary_create();
+	assert(all_filesd);
 	process_destdir(mutable_files);
 
 	/* Back to original cwd after file tree walk processing */
