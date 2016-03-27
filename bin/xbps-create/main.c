@@ -412,6 +412,10 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 	} else if (type == FTW_F) {
 		struct xentry *xep;
 		bool hlink = false;
+		xbps_object_iterator_t iter;
+		xbps_object_t obj;
+		xbps_dictionary_t linkinfo;
+		uint64_t inode = 0;
 		/*
 		 * Regular files. First find out if it's a hardlink:
 		 * 	- st_nlink > 1
@@ -420,12 +424,31 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		TAILQ_FOREACH(xep, &xentry_list, entries) {
 			if (sb->st_nlink > 1 && xep->inode == sb->st_ino) {
 				/* matched */
+				printf("%lu %lu\n", xep->inode, sb->st_ino);
 				hlink = true;
 				break;
 			}
 		}
-		if (!hlink)
+
+		iter = xbps_dictionary_iterator(all_filesd);
+		assert(iter);
+		while ((obj = xbps_object_iterator_next(iter))) {
+			if (sb->st_nlink <= 1)
+				continue;
+			linkinfo = xbps_dictionary_get_keysym(all_filesd, obj);
+			xbps_dictionary_get_uint64(linkinfo, "inode", &inode);
+			if (inode == sb->st_ino) {
+				/* matched */
+				printf("%lu %lu\n", inode, sb->st_ino);
+				break;
+			}
+		}
+		if (!hlink != (inode != sb->st_ino))
+			die("Inconsistent results from xbps_dictionary_t and linked list!\n");
+
+		if (inode != sb->st_ino)
 			instsize += sb->st_size;
+		xbps_object_iterator_release(iter);
 
 		/*
 		 * Find out if it's a configuration file or not
