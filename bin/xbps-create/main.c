@@ -42,7 +42,6 @@
 #include <locale.h>
 
 #include <xbps.h>
-#include "queue.h"
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
@@ -54,16 +53,6 @@
 #if ARCHIVE_VERSION_NUMBER >= 3000000
 # define archive_write_finish(x) 	archive_write_free(x)
 #endif
-
-struct xentry {
-	TAILQ_ENTRY(xentry) entries;
-	uint64_t mtime;
-	char *file, *type, *target, *hash;
-	ino_t inode;
-};
-
-static TAILQ_HEAD(xentry_head, xentry) xentry_list =
-    TAILQ_HEAD_INITIALIZER(xentry_list);
 
 static uint64_t instsize;
 static xbps_dictionary_t pkg_propsd, pkg_filesd, all_filesd;
@@ -302,7 +291,6 @@ entry_is_conf_file(const char *file)
 static int
 ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _unused)
 {
-	struct xentry *xe = NULL;
 	xbps_dictionary_t fileinfo = NULL;
 	const char *filep = NULL;
 	char *buf, *p, *p2, *dname;
@@ -323,8 +311,6 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 	/* sanitized file path */
 	filep = strchr(fpath, '.') + 1;
 	fileinfo = xbps_dictionary_create();
-	xe = calloc(1, sizeof(*xe));
-	assert(xe);
 	/* XXX: fileinfo contains the sanatized path, whereas xe contains the
 	 * unsanatized path!
 	 *
@@ -333,15 +319,11 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 	 */
 	xbps_dictionary_set_cstring(fileinfo, "file", filep);
 	xbps_dictionary_set(all_filesd, fpath, fileinfo);
-	xe->file = strdup(fpath);
-	assert(xe->file);
 
 	if ((strcmp(fpath, "./INSTALL") == 0) ||
 	    (strcmp(fpath, "./REMOVE") == 0)) {
 		/* metadata file */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "metadata");
-		xe->type = strdup("metadata");
-		assert(xe->type);
 		goto out;
 	}
 
@@ -352,11 +334,8 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		 * Find out target file.
 		 */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "links");
-		xe->type = strdup("links");
-		assert(xe->type);
 		/* store modification time for regular files and links */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "links");
-		xe->mtime = (uint64_t)sb->st_mtime;
 		xbps_dictionary_set_uint64(fileinfo, "mtime", (uint64_t)sb->st_mtime);
 		buf = malloc(sb->st_size+1);
 		assert(buf);
@@ -377,7 +356,6 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 				 * which might be provided in another package.
 				 * So let's use the same target.
 				 */
-				xe->target = strdup(buf);
 				xbps_dictionary_set_cstring(fileinfo, "target", buf);
 			} else {
 				/*
@@ -386,7 +364,6 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 				if ((p2 = realpath(destdir, NULL)) == NULL)
 					die("failed to sanitize destdir %s: %s", destdir, strerror(errno));
 
-				xe->target = strdup(p+strlen(p2));
 				xbps_dictionary_set_cstring(fileinfo, "target", p+strlen(p2));
 				free(p2);
 				free(p);
@@ -397,21 +374,16 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 			assert(p);
 			dname = dirname(p);
 			assert(dname);
-			xe->target = xbps_xasprintf("%s/%s", dname, buf);
 			p2 = xbps_xasprintf("%s/%s", dname, buf);
 			xbps_dictionary_set_cstring(fileinfo, "target", p2);
 			free(p2);
 			free(p);
 		} else {
-			xe->target = strdup(buf);
 			xbps_dictionary_set_cstring(fileinfo, "target", buf);
 		}
-		assert(xe->target);
 		assert(xbps_dictionary_get(fileinfo, "target"));
 		free(buf);
 	} else if (type == FTW_F) {
-		struct xentry *xep;
-		bool hlink = false;
 		xbps_object_iterator_t iter;
 		xbps_object_t obj;
 		xbps_dictionary_t linkinfo;
@@ -421,15 +393,6 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		 * 	- st_nlink > 1
 		 * and then search for a stored file matching its inode.
 		 */
-		TAILQ_FOREACH(xep, &xentry_list, entries) {
-			if (sb->st_nlink > 1 && xep->inode == sb->st_ino) {
-				/* matched */
-				printf("%lu %lu\n", xep->inode, sb->st_ino);
-				hlink = true;
-				break;
-			}
-		}
-
 		iter = xbps_dictionary_iterator(all_filesd);
 		assert(iter);
 		while ((obj = xbps_object_iterator_next(iter))) {
@@ -443,9 +406,6 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 				break;
 			}
 		}
-		if (!hlink != (inode != sb->st_ino))
-			die("Inconsistent results from xbps_dictionary_t and linked list!\n");
-
 		if (inode != sb->st_ino)
 			instsize += sb->st_size;
 		xbps_object_iterator_release(iter);
@@ -456,36 +416,25 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		 */
 		if (entry_is_conf_file(filep)) {
 			xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "conf_files");
-			xe->type = strdup("conf_files");
 		} else {
 			xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "files");
-			xe->type = strdup("files");
 		}
 
-		assert(xe->type);
 		if ((p = xbps_file_hash(fpath)) == NULL)
 			die("failed to process hash for %s:", fpath);
 		xbps_dictionary_set_cstring(fileinfo, "sha256", p);
 		free(p);
-		if ((xe->hash = xbps_file_hash(fpath)) == NULL)
-			die("failed to process hash for %s:", fpath);
 
 		xbps_dictionary_set_uint64(fileinfo, "inode", sb->st_ino);
-		xe->inode = sb->st_ino;
 		/* store modification time for regular files and links */
 		xbps_dictionary_set_uint64(fileinfo, "mtime", sb->st_mtime);
-		xe->mtime = (uint64_t)sb->st_mtime;
-
 	} else if (type == FTW_D || type == FTW_DP) {
 		/* directory */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "dirs");
-		xe->type = strdup("dirs");
-		assert(xe->type);
 	}
 
 out:
 	xbps_object_release(fileinfo);
-	TAILQ_INSERT_TAIL(&xentry_list, xe, entries);
 	return 0;
 }
 
