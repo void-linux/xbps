@@ -142,7 +142,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			xbps_array_t users = xbps_dictionary_get(usedshlibs, shlib);
 			xbps_dictionary_get_cstring_nocopy(oldshlibs, shlib, &provider);
 
-			printf(" %s (provided by: %s; used by: ", shlib, provider);
+			printf("  %s (provided by: %s; used by: ", shlib, provider);
 			pre = "";
 			for (unsigned int i = 0; i < xbps_array_count(users); i++) {
 				const char *user;
@@ -153,7 +153,15 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			}
 			printf(")\n");
 		}
-		printf("Packages are added to stage area.\n");
+		xbps_object_iterator_release(iter);
+		iter = xbps_dictionary_iterator(stage);
+		while ((keysym = xbps_object_iterator_next(iter))) {
+			xbps_dictionary_t pkg = xbps_dictionary_get_keysym(stage, keysym);
+			const char *pkgver, *arch;
+			xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
+			xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch);
+			printf("stage: added `%s' (%s)\n", pkgver, arch);
+		}
 		xbps_object_iterator_release(iter);
 		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL);
 	}
