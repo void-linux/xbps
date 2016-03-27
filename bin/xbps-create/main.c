@@ -608,7 +608,7 @@ write_entry(struct archive *ar, struct archive_entry *entry)
 static void
 process_entry_file(struct archive *ar,
 		   struct archive_entry_linkresolver *resolver,
-		   struct xentry *xe, const char *filematch)
+		   const char *filename)
 {
 	struct archive_entry *entry, *sparse_entry;
 	struct stat st;
@@ -616,18 +616,14 @@ process_entry_file(struct archive *ar,
 	ssize_t len;
 
 	assert(ar);
-	assert(xe);
 
-	if (filematch && strcmp(xe->file, filematch))
-		return;
-
-	p = xbps_xasprintf("%s/%s", destdir, xe->file);
+	p = xbps_xasprintf("%s/%s", destdir, filename);
 	if (lstat(p, &st) == -1)
-		die("failed to add entry (fstat) %s to archive:", xe->file);
+		die("failed to add entry (fstat) %s to archive:", filename);
 
 	entry = archive_entry_new();
 	assert(entry);
-	archive_entry_set_pathname(entry, xe->file);
+	archive_entry_set_pathname(entry, filename);
 	if (st.st_uid == geteuid())
 		st.st_uid = 0;
 	if (st.st_gid == getegid())
@@ -646,7 +642,7 @@ process_entry_file(struct archive *ar,
 		len = readlink(p, buf, st.st_size+1);
 		if (len < 0 || len > st.st_size)
 			die("failed to add entry %s (readlink) to archive:",
-			    xe->file);
+			    filename);
 		buf[len] = '\0';
 		archive_entry_set_symlink(entry, buf);
 	}
@@ -667,14 +663,17 @@ process_archive(struct archive *ar,
 		struct archive_entry_linkresolver *resolver,
 		const char *pkgver, bool quiet)
 {
-	struct xentry *xe;
 	char *xml;
+	const char *filepath, *p;
+	xbps_object_iterator_t iter;
+	xbps_object_t filepathk;
+	xbps_dictionary_t fileinfo;
 
 	/* Add INSTALL/REMOVE metadata scripts first */
-	TAILQ_FOREACH(xe, &xentry_list, entries) {
-		process_entry_file(ar, resolver, xe, "./INSTALL");
-		process_entry_file(ar, resolver, xe, "./REMOVE");
-	}
+	if (xbps_dictionary_get(all_filesd, "./INSTALL"))
+		process_entry_file(ar, resolver, "./INSTALL");
+	if (xbps_dictionary_get(all_filesd, "./REMOVE"))
+		process_entry_file(ar, resolver, "./REMOVE");
 	/*
 	 * Add the installed-size object.
 	 */
@@ -696,18 +695,23 @@ process_archive(struct archive *ar,
 	free(xml);
 
 	/* Add all package data files and release resources */
-	while ((xe = TAILQ_FIRST(&xentry_list)) != NULL) {
-		TAILQ_REMOVE(&xentry_list, xe, entries);
-		if ((strcmp(xe->type, "metadata") == 0) ||
-		    (strcmp(xe->type, "dirs") == 0))
+	iter = xbps_dictionary_iterator(all_filesd);
+	assert(iter);
+	while ((filepathk = xbps_object_iterator_next(iter))) {
+		filepath = xbps_dictionary_keysym_cstring_nocopy(filepathk);
+		fileinfo = xbps_dictionary_get_keysym(all_filesd, filepathk);
+		if (xbps_string_equals_cstring(xbps_dictionary_get(fileinfo, "type"), "metadata") ||
+				xbps_string_equals_cstring(xbps_dictionary_get(fileinfo, "type"), "dirs"))
 			continue;
 
 		if (!quiet) {
-			printf("%s: adding `%s' ...\n", pkgver, xe->file);
+			xbps_dictionary_get_cstring_nocopy(fileinfo, "file", &p);
+			printf("%s: adding `%s' ...\n", pkgver, p);
 			fflush(stdout);
 		}
-		process_entry_file(ar, resolver, xe, NULL);
+		process_entry_file(ar, resolver, filepath);
 	}
+	xbps_object_iterator_release(iter);
 }
 
 int
