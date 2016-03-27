@@ -492,31 +492,34 @@ out:
 static void
 process_xentry(const char *key, const char *mutable_files)
 {
+	xbps_object_iterator_t iter;
+	xbps_object_t filepathk;
 	xbps_array_t a;
-	xbps_dictionary_t d;
-	struct xentry *xe;
-	char *p, *saveptr, *args, *tok;
+	xbps_dictionary_t fileinfo;
+	char *saveptr, *args, *tok;
+	const char *p;
 	bool found = false, mutable_found = false;
 
 	a = xbps_array_create();
 	assert(a);
 
-	TAILQ_FOREACH_REVERSE(xe, &xentry_list, xentry_head, entries) {
-		if (strcmp(xe->type, key))
+	iter = xbps_dictionary_iterator(all_filesd);
+	assert(iter);
+	while ((filepathk = xbps_object_iterator_next(iter))) {
+		fileinfo = xbps_dictionary_get_keysym(all_filesd, filepathk);
+
+		if (!xbps_string_equals_cstring(xbps_dictionary_get(fileinfo, "type"), key))
 			continue;
 
 		found = true;
-		d = xbps_dictionary_create();
-		assert(d);
-		/* sanitize file path */
-		p = strchr(xe->file, '.') + 1;
+		xbps_dictionary_get_cstring_nocopy(fileinfo, "file", &p);
 		/*
 		 * Find out if this file is mutable.
 		 */
 		if (mutable_files) {
 			if ((strchr(mutable_files, ' ') == NULL) &&
 			    (strcmp(mutable_files, p) == 0))
-				xbps_dictionary_set_bool(d, "mutable", true);
+				xbps_dictionary_set_bool(fileinfo, "mutable", true);
 			else {
 				args = strdup(mutable_files);
 				assert(args);
@@ -529,23 +532,21 @@ process_xentry(const char *key, const char *mutable_files)
 				}
 				free(args);
 				if (mutable_found) {
-					xbps_dictionary_set_bool(d, "mutable",
+					xbps_dictionary_set_bool(fileinfo, "mutable",
 					    true);
 					mutable_found = false;
 				}
 			}
 		}
-		xbps_dictionary_set_cstring(d, "file", p);
-		if (xe->target)
-			xbps_dictionary_set_cstring(d, "target", xe->target);
-		if (xe->hash)
-			xbps_dictionary_set_cstring(d, "sha256", xe->hash);
-		if (xe->mtime)
-			xbps_dictionary_set_uint64(d, "mtime", xe->mtime);
+		/*
+		 * Clean up dictionary
+		 */
+		xbps_dictionary_remove(fileinfo, "inode");
 
-		xbps_array_add(a, d);
-		xbps_object_release(d);
+		xbps_array_add(a, fileinfo);
+		xbps_object_release(fileinfo);
 	}
+	xbps_object_iterator_release(iter);
 	if (found)
 		xbps_dictionary_set(pkg_filesd, key, a);
 
