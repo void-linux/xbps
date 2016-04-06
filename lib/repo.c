@@ -317,7 +317,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 	/*
 	 * Load and merge staging repository if the repository is local.
 	 */
-	if (!repo->is_remote) {
+	if (repo && !repo->is_remote) {
 		stage = xbps_repo_stage_open(xhp, url);
 		if (stage == NULL)
 			return repo;
