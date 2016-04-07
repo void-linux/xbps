@@ -1,5 +1,10 @@
 xbps-0.52 (???):
 
+ * portableproplib: merged two fixes from NetBSD CVS HEAD.
+
+ * xbps-create(1): this now creates reproducible pkgs when the file
+   contents do not change. Implemented by Enno Boland (@Gottox).
+
  * xbps.d(5): the 'virtualpkg' keyword can now be used to map any pkg
    to another, even if there's an existing real package. Example:
 
