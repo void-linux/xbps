@@ -107,8 +107,7 @@ typedef enum {
 
 #define	_PROP_EOF(c)		((c) == '\0')
 #define	_PROP_ISSPACE(c)	\
-	((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' || \
-	 _PROP_EOF(c))
+	((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r')
 
 #define	_PROP_TAG_MATCH(ctx, t)					\
 	_prop_object_internalize_match((ctx)->poic_tagname,	\
