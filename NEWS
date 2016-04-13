@@ -1,5 +1,9 @@
 xbps-0.52 (???):
 
+ * xbps-uhelper: the 'arch' target now supports the XBPS_ARCH
+   and XBPS_TARGET_ARCH environmental variables to override the
+   resulting architecture.
+
  * portableproplib: merged two fixes from NetBSD CVS HEAD.
 
  * xbps-create(1): this now creates reproducible pkgs when the file

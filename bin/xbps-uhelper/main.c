@@ -280,7 +280,11 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		printf("%s\n", xh.native_arch);
+		if (xh.native_arch && xh.target_arch && strcmp(xh.native_arch, xh.target_arch)) {
+			printf("%s\n", xh.target_arch);
+		} else {
+			printf("%s\n", xh.native_arch);
+		}
 	} else if (strcmp(argv[0], "getsystemdir") == 0) {
 		/* returns the xbps system directory (<sharedir>/xbps.d) */
 		if (argc != 1)
