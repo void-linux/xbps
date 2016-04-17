@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014-2015 Juan Romero Pardines.
+ * Copyright (c) 2014-2016 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -138,7 +138,7 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 bool HIDDEN
 xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t mshlibs)
 {
-	xbps_object_t obj;
+	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t shrequires, shprovides;
 	bool unmatched = false;
@@ -157,8 +157,9 @@ xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t
 
 		shlib = xbps_dictionary_keysym_cstring_nocopy(obj);
 		xbps_dbg_printf(xhp, "%s: checking for `%s': ", __func__, shlib);
-		if (xbps_dictionary_get(shprovides, shlib)) {
-			xbps_dbg_printf_append(xhp, "found\n");
+		if ((obj2 = xbps_dictionary_get(shprovides, shlib))) {
+			xbps_dbg_printf_append(xhp, "provided by `%s'\n",
+			    xbps_string_cstring_nocopy(obj2));
 			continue;
 		}
 		xbps_dbg_printf_append(xhp, "not found\n");
