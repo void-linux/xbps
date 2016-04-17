@@ -31,9 +31,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-#define _BSD_SOURCE	/* required by strlcpy with musl */
 #include <string.h>
-#undef _BSD_SOURCE
 #include <strings.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -124,7 +122,7 @@ store_preserved_file(struct xbps_handle *xhp, const char *file)
 		len = strlen(globbuf.gl_pathv[i]) - strlen(xhp->rootdir) + 1;
 		p = malloc(len);
 		assert(p);
-		strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
+		xbps_strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
 		xbps_array_add_cstring(xhp->preserved_files, p);
 		xbps_dbg_printf(xhp, "Added preserved file: %s (expanded from %s)\n", p, file);
 		free(p);
@@ -286,7 +284,7 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 			continue;
 
 		/* cwd to the dir containing the config file */
-		strlcpy(tmppath, path, sizeof(tmppath));
+		xbps_strlcpy(tmppath, path, sizeof(tmppath));
 		cfcwd = dirname(tmppath);
 		if (chdir(cfcwd) == -1) {
 			rv = errno;
@@ -438,10 +436,10 @@ xbps_init(struct xbps_handle *xhp)
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
 	if ((native_arch = getenv("XBPS_ARCH")) != NULL) {
-		strlcpy(xhp->native_arch, native_arch, sizeof(xhp->native_arch));
+		xbps_strlcpy(xhp->native_arch, native_arch, sizeof(xhp->native_arch));
 	} else {
 		uname(&un);
-		strlcpy(xhp->native_arch, un.machine, sizeof(xhp->native_arch));
+		xbps_strlcpy(xhp->native_arch, un.machine, sizeof(xhp->native_arch));
 	}
 	assert(xhp->native_arch);
 

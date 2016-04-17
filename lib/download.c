@@ -36,9 +36,7 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define _BSD_SOURCE	/* musl has strlcpy if _{BSD,GNU}_SOURCE is defined */
 #include <string.h>
-#undef _BSD_SOURCE
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -118,7 +116,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 
 	memset(&fetch_flags, 0, sizeof(fetch_flags));
 	if (flags != NULL)
-		strlcpy(fetch_flags, flags, 7);
+		xbps_strlcpy(fetch_flags, flags, 7);
 
 	tempfile = xbps_xasprintf("%s.part", filename);
 	/*
@@ -141,7 +139,7 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	if (stat(filename, &st) == 0) {
 		refetch = true;
 		url->last_modified = st.st_mtime;
-		strlcat(fetch_flags, "i", sizeof(fetch_flags));
+		xbps_strlcat(fetch_flags, "i", sizeof(fetch_flags));
 	} else {
 		if (errno != ENOENT) {
 			rv = -1;
