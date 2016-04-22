@@ -934,7 +934,21 @@ fetch_ssl_cb_verify_crt(int verified, X509_STORE_CTX *ctx)
 	return (verified);
 }
 
+#include <pthread.h>
+
+static pthread_once_t ssl_init_once = PTHREAD_ONCE_INIT;
+
+static void
+ssl_init(void)
+{
+	/* Init the SSL library and context */
+	if (!SSL_library_init()){
+		fprintf(stderr, "SSL library init failed\n");
+		exit(-1);
+	}
+}
 #endif
+
 
 /*
  * Enable SSL on a connection.
@@ -948,11 +962,7 @@ fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 	X509_NAME *name;
 	char *str;
 
-	/* Init the SSL library and context */
-	if (!SSL_library_init()){
-		fprintf(stderr, "SSL library init failed\n");
-		return (-1);
-	}
+	(void)pthread_once(&ssl_init_once, ssl_init);
 
 	SSL_load_error_strings();
 

@@ -1,5 +1,8 @@
 xbps-0.52 (???):
 
+ * xbps-query(1): fix segfault in -Ro with HTTPS repositories.
+   Fixes #167. See https://github.com/voidlinux/xbps/issues/167
+
  * xbps-uhelper: the 'arch' target now supports the XBPS_ARCH
    and XBPS_TARGET_ARCH environmental variables to override the
    resulting architecture.
