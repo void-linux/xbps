@@ -946,6 +946,7 @@ ssl_init(void)
 		fprintf(stderr, "SSL library init failed\n");
 		exit(-1);
 	}
+	SSL_load_error_strings();
 }
 #endif
 
@@ -963,8 +964,6 @@ fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 	char *str;
 
 	(void)pthread_once(&ssl_init_once, ssl_init);
-
-	SSL_load_error_strings();
 
 	conn->ssl_meth = SSLv23_client_method();
 	conn->ssl_ctx = SSL_CTX_new(conn->ssl_meth);
