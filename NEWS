@@ -1,5 +1,8 @@
 xbps-0.52 (???):
 
+ * xbps-create(1): accept -c/--changelog to set the changelog property of the
+   package
+
  * xbps-query(1): fix segfault in -Ro with HTTPS repositories.
    Fixes #167. See https://github.com/voidlinux/xbps/issues/167
 
