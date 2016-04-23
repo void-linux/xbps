@@ -934,8 +934,6 @@ fetch_ssl_cb_verify_crt(int verified, X509_STORE_CTX *ctx)
 	return (verified);
 }
 
-#include <pthread.h>
-
 static pthread_once_t ssl_init_once = PTHREAD_ONCE_INIT;
 
 static void
