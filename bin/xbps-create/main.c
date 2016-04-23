@@ -68,6 +68,7 @@ usage(void)
 	" -B --built-with     Package builder string (e.g: xbps-src-30).\n"
 	" -C --conflicts      Conflicts (blank separated list,\n"
 	"                     e.g: 'foo>=2.0 blah<=2.0').\n"
+	" -c --changelog      Changelog URL.\n"
 	" -D --dependencies   Dependencies (blank separated list,\n"
 	"                     e.g: 'foo>=1.0_1 blah<2.1').\n"
 	" -F --config-files   Configuration files (blank separated list,\n"
@@ -666,7 +667,7 @@ process_archive(struct archive *ar,
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "A:B:C:D:F:G:H:hl:M:m:n:P:pqr:R:S:s:t:V";
+	const char *shortopts = "A:B:C:c:D:F:G:H:hl:M:m:n:P:pqr:R:S:s:t:V";
 	const struct option longopts[] = {
 		{ "architecture", required_argument, NULL, 'A' },
 		{ "built-with", required_argument, NULL, 'B' },
@@ -694,6 +695,7 @@ main(int argc, char **argv)
 		{ "build-options", required_argument, NULL, '2' },
 		{ "compression", required_argument, NULL, '3' },
 		{ "alternatives", required_argument, NULL, '4' },
+		{ "changelog", required_argument, NULL, 'c'},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
@@ -702,7 +704,7 @@ main(int argc, char **argv)
 	struct stat st;
 	const char *conflicts, *deps, *homepage, *license, *maint, *bwith;
 	const char *provides, *pkgver, *replaces, *reverts, *desc, *ldesc;
-	const char *arch, *config_files, *mutable_files, *version;
+	const char *arch, *config_files, *mutable_files, *version, *changelog;
 	const char *buildopts, *shlib_provides, *shlib_requires, *alternatives;
 	const char *compression, *tags = NULL, *srcrevs = NULL;
 	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
@@ -713,7 +715,7 @@ main(int argc, char **argv)
 	arch = conflicts = deps = homepage = license = maint = compression = NULL;
 	provides = pkgver = replaces = reverts = desc = ldesc = bwith = NULL;
 	buildopts = config_files = mutable_files = shlib_provides = NULL;
-	alternatives = shlib_requires = NULL;
+	alternatives = shlib_requires = changelog = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
@@ -728,6 +730,9 @@ main(int argc, char **argv)
 			break;
 		case 'C':
 			conflicts = optarg;
+			break;
+		case 'c':
+			changelog = optarg;
 			break;
 		case 'D':
 			deps = optarg;
@@ -870,6 +875,9 @@ main(int argc, char **argv)
 	if (buildopts)
 		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"build-options", buildopts);
+	if (changelog)
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
+				"changelog", changelog);
 
 	/* Optional arrays */
 	process_array("run_depends", deps);
