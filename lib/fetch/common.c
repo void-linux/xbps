@@ -940,11 +940,8 @@ static void
 ssl_init(void)
 {
 	/* Init the SSL library and context */
-	if (!SSL_library_init()){
-		fprintf(stderr, "SSL library init failed\n");
-		exit(-1);
-	}
 	SSL_load_error_strings();
+	SSL_library_init();
 }
 #endif
 
