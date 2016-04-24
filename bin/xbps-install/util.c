@@ -41,7 +41,7 @@ get_maxcols(void)
 {
 	struct winsize ws;
 
-	if (!isatty(STDOUT_FILENO) && errno == ENOTTY) {
+	if (!isatty(STDOUT_FILENO)) {
 		/* not a TTY, don't use any limit */
 		return 0;
 	}
