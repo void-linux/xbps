@@ -160,8 +160,5 @@ out:
 	if (pEncoding)
 		free(pEncoding);
 
-	EVP_cleanup();
-	ERR_free_strings();
-
 	return hexfpstr;
 }
