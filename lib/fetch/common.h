@@ -73,11 +73,6 @@ struct fetchconn {
 	SSL		*ssl;		/* SSL handle */
 	SSL_CTX		*ssl_ctx;	/* SSL context */
 	X509		*ssl_cert;	/* server certificate */
-#  if OPENSSL_VERSION_NUMBER < 0x00909000L
-	SSL_METHOD *ssl_meth;		/* SSL method */
-#  else
-	const SSL_METHOD *ssl_meth;	/* SSL method */
-#  endif
 #endif
 
 	char		*ftp_home;
