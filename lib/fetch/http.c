@@ -733,7 +733,7 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 		/* fetch_connect() has already set an error code */
 		return (NULL);
 	if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0 && purl) {
-		http_cmd(conn, "CONNECT %s:%d HTTP/1.1",
+		http_cmd(conn, "CONNECT %s:%d HTTP/1.1\r\n",
 		    URL->host, URL->port);
 		if (http_get_reply(conn) != HTTP_OK) {
 			fetch_close(conn);
