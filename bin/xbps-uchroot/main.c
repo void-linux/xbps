@@ -408,8 +408,7 @@ main(int argc, char **argv)
 		if (mount(".", ".", NULL, MS_BIND|MS_PRIVATE, NULL) == -1)
 			die("Failed to bind mount %s", chrootdir);
 
-		if (mount(chrootdir, "/", NULL, MS_MOVE, NULL) == -1)
-			die("Failed to move %s as rootfs", chrootdir);
+		mount(chrootdir, "/", NULL, MS_MOVE, NULL);
 
 		if (chroot(".") == -1)
 			die("Failed to chroot to %s", chrootdir);
