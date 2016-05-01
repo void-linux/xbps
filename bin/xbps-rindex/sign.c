@@ -88,7 +88,6 @@ pubkey_from_privkey(RSA *rsa)
 	assert(buf);
 	len = BIO_read(bp, buf, 8191);
 	BIO_free(bp);
-	ERR_free_strings();
 	buf[len] = '\0';
 
 	return buf;
@@ -130,11 +129,6 @@ load_rsa_key(const char *privkey)
 	else
 		defprivkey = strdup(privkey);
 
-	ERR_load_crypto_strings();
-	OpenSSL_add_all_algorithms();
-	OpenSSL_add_all_ciphers();
-	OpenSSL_add_all_digests();
-
 	if ((rsa = load_rsa_privkey(defprivkey)) == NULL) {
 		fprintf(stderr, "%s: failed to read the RSA privkey\n", _XBPS_RINDEX);
 		exit(EXIT_FAILURE);
@@ -143,6 +137,13 @@ load_rsa_key(const char *privkey)
 	defprivkey = NULL;
 
 	return rsa;
+}
+
+static void
+ssl_init(void)
+{
+	SSL_load_error_strings();
+	SSL_library_init();
 }
 
 int
@@ -179,6 +180,8 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		rv = EINVAL;
 		goto out;
 	}
+
+	ssl_init();
 
 	rsa = load_rsa_key(privkey);
 	/*
@@ -337,6 +340,7 @@ int
 sign_pkgs(struct xbps_handle *xhp, int args, int argmax, char **argv,
 		const char *privkey, bool force)
 {
+	ssl_init();
 	/*
 	 * Process all packages specified in argv.
 	 */
