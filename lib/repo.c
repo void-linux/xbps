@@ -330,6 +330,7 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		}
 		xbps_object_iterator_release(iter);
 		xbps_object_release(repo->idx);
+		xbps_repo_close(stage);
 		repo->idx = idx;
 		return repo;
 	}
