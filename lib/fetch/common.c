@@ -754,17 +754,17 @@ fetch_ssl_verify_cn(X509_NAME *subject, const char *host,
 		    NID_commonName, lastpos)) != -1)
 		loc = lastpos;
 
-		if (loc > -1) {
-			nameentry = X509_NAME_get_entry(subject, loc);
-			namedata = X509_NAME_ENTRY_get_data(nameentry);
-			cnlen = ASN1_STRING_to_UTF8(&cn, namedata);
-			if (ip == NULL &&
-			    fetch_ssl_hname_match(host, strlen(host), (const char *)cn, cnlen))
-				ret = 1;
-			else if (ip != NULL && fetch_ssl_ipaddr_match(ip, (const char *)cn, cnlen))
-				ret = 1;
-			OPENSSL_free(cn);
-		}
+	if (loc > -1) {
+		nameentry = X509_NAME_get_entry(subject, loc);
+		namedata = X509_NAME_ENTRY_get_data(nameentry);
+		cnlen = ASN1_STRING_to_UTF8(&cn, namedata);
+		if (ip == NULL &&
+		    fetch_ssl_hname_match(host, strlen(host), (const char *)cn, cnlen))
+			ret = 1;
+		else if (ip != NULL && fetch_ssl_ipaddr_match(ip, (const char *)cn, cnlen))
+			ret = 1;
+		OPENSSL_free(cn);
+	}
 	return (ret);
 }
 
