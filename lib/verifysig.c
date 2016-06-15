@@ -41,14 +41,12 @@
 #include "xbps_api_impl.h"
 
 static bool
-rsa_verify_buf(struct xbps_repo *repo, xbps_data_t pubkey,
+rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 		unsigned char *sig, unsigned int siglen,
-		unsigned char *buf, unsigned int buflen)
+		unsigned char *sha256)
 {
-	SHA256_CTX context;
 	BIO *bio;
 	RSA *rsa;
-	unsigned char sha256[SHA256_DIGEST_LENGTH];
 	int rv;
 
 	ERR_load_crypto_strings();
@@ -65,11 +63,7 @@ rsa_verify_buf(struct xbps_repo *repo, xbps_data_t pubkey,
 		return false;
 	}
 
-	SHA256_Init(&context);
-	SHA256_Update(&context, buf, buflen);
-	SHA256_Final(sha256, &context);
-
-	rv = RSA_verify(NID_sha1, sha256, sizeof(sha256), sig, siglen, rsa);
+	rv = RSA_verify(NID_sha1, sha256, SHA256_DIGEST_LENGTH, sig, siglen, rsa);
 	RSA_free(rsa);
 	BIO_free(bio);
 	ERR_free_strings();
@@ -83,8 +77,8 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
 	char *hexfp = NULL;
-	unsigned char *buf = NULL, *sig_buf = NULL;
-	size_t buflen, filelen, sigbuflen, sigfilelen;
+	unsigned char *digest = NULL, *sig_buf = NULL;
+	size_t sigbuflen, sigfilelen;
 	char *rkeyfile = NULL, *sig = NULL;
 	bool val = false;
 
@@ -116,7 +110,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	/*
 	 * Prepare fname and signature data buffers.
 	 */
-	if (!xbps_mmap_file(fname, (void *)&buf, &buflen, &filelen)) {
+	if (!(digest = xbps_file_hash_raw(fname))) {
 		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
 		goto out;
 	}
@@ -128,7 +122,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	/*
 	 * Verify fname RSA signature.
 	 */
-	if (rsa_verify_buf(repo, pubkey, sig_buf, sigfilelen, buf, filelen))
+	if (rsa_verify_hash(repo, pubkey, sig_buf, sigfilelen, digest))
 		val = true;
 
 out:
@@ -136,8 +130,8 @@ out:
 		free(hexfp);
 	if (rkeyfile)
 		free(rkeyfile);
-	if (buf)
-		(void)munmap(buf, buflen);
+	if (digest)
+		free(digest);
 	if (sig_buf)
 		(void)munmap(sig_buf, sigbuflen);
 	if (sig)
