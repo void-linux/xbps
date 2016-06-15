@@ -108,24 +108,39 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 	return true;
 }
 
+unsigned char *
+xbps_file_hash_raw(const char *file)
+{
+	int fd;
+	ssize_t len;
+	unsigned char *digest, buf[65536];
+	SHA256_CTX sha256;
+
+	if ((fd = open(file, O_RDONLY)) < 0)
+		return NULL;
+	digest = malloc(SHA256_DIGEST_LENGTH);
+	assert(digest);
+	SHA256_Init(&sha256);
+	while ((len = read(fd, buf, sizeof(buf))) > 0)
+		SHA256_Update(&sha256, buf, len);
+	SHA256_Final(digest, &sha256);
+	close(fd);
+
+	return digest;
+}
+
 char *
 xbps_file_hash(const char *file)
 {
 	char *res, hash[SHA256_DIGEST_LENGTH * 2 + 1];
-	unsigned char digest[SHA256_DIGEST_LENGTH];
-	unsigned char *mmf = NULL;
-	size_t mmflen, filelen;
+	unsigned char *digest;
 
-	if (!xbps_mmap_file(file, (void *)&mmf, &mmflen, &filelen))
+	if (!(digest = xbps_file_hash_raw(file)))
 		return NULL;
 
-	if (SHA256(mmf, filelen, digest) == NULL) {
-		(void)munmap(mmf, mmflen);
-		return NULL;
-	}
 	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
 	res = strdup(hash);
-	(void)munmap(mmf, mmflen);
+	free(digest);
 
 	return res;
 }
