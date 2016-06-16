@@ -132,17 +132,18 @@ xbps_file_hash_raw(const char *file)
 char *
 xbps_file_hash(const char *file)
 {
-	char *res, hash[SHA256_DIGEST_LENGTH * 2 + 1];
+	char *hash;
 	unsigned char *digest;
 
 	if (!(digest = xbps_file_hash_raw(file)))
 		return NULL;
 
+	hash = malloc(SHA256_DIGEST_LENGTH * 2 + 1);
+	assert(hash);
 	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
-	res = strdup(hash);
 	free(digest);
 
-	return res;
+	return hash;
 }
 
 int
