@@ -125,6 +125,8 @@ xbps_file_hash_raw(const char *file)
 		SHA256_Update(&sha256, buf, len);
 	SHA256_Final(digest, &sha256);
 	close(fd);
+	if(len < 0)
+		return NULL;
 
 	return digest;
 }
