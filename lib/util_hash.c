@@ -123,10 +123,12 @@ xbps_file_hash_raw(const char *file)
 	SHA256_Init(&sha256);
 	while ((len = read(fd, buf, sizeof(buf))) > 0)
 		SHA256_Update(&sha256, buf, len);
+	if(len < 0) {
+		free(digest);
+		return NULL;
+	}
 	SHA256_Final(digest, &sha256);
 	(void)close(fd);
-	if(len < 0)
-		return NULL;
 
 	return digest;
 }
