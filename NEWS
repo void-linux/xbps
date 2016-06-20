@@ -1,5 +1,11 @@
 xbps-0.52 (???):
 
+ * libxbps: avoid mmap in cases where the mmaped file can fill up the address
+   space on 32bit causing out of memory errors. Patches provided by Enno
+   Boland in #183, reported by Christian Neukirchen in #182. See
+   https://github.com/voidlinux/xbps/pull/183 and
+   https://github.com/voidlinux/xbps/pull/182
+
  * xbps-create(1): accept -c/--changelog to set the changelog property of the
    package
 

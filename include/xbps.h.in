@@ -1796,6 +1796,17 @@ bool xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filele
 char *xbps_file_hash(const char *file);
 
 /**
+ * Returns a raw byte buffer with the sha256 hash for the file specified
+ * by \a file.
+ *
+ * @param[in] file Path to a file.
+ * @return A pointer to a malloc(3)ed buffer, NULL otherwise and errno
+ * is set appropiately. The pointer should be free(3)d when it's no
+ * longer needed.
+ */
+unsigned char *xbps_file_hash_raw(const char *file);
+
+/**
  * Compares the sha256 hash of the file \a file with the sha256
  * string specified by \a sha256.
  *

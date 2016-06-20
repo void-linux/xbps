@@ -526,8 +526,9 @@ static void
 write_entry(struct archive *ar, struct archive_entry *entry)
 {
 	const char *name;
-	char *mmf;
-	size_t mmflen, filelen;
+	int fd;
+	char buf[65536];
+	ssize_t len;
 
 	if (archive_entry_pathname(entry) == NULL)
 		return;
@@ -546,11 +547,16 @@ write_entry(struct archive *ar, struct archive_entry *entry)
 	}
 
 	name = archive_entry_sourcepath(entry);
-	if (!xbps_mmap_file(name, (void *)&mmf, &mmflen, &filelen))
-		die("cannot read %s file", name);
 
-	archive_write_data(ar, mmf, filelen);
-	(void)munmap(mmf, mmflen);
+	if ((fd = open(name, O_RDONLY)) < 0)
+		die("cannot open %s file", name);
+	while ((len = read(fd, buf, sizeof(buf))) > 0)
+		archive_write_data(ar, buf, len);
+	(void)close(fd);
+
+	if(len < 0)
+		die("cannot open %s file", name);
+
 	archive_entry_free(entry);
 }
 
