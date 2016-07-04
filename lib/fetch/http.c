@@ -696,6 +696,24 @@ http_authorize(conn_t *conn, const char *hdr, const char *p)
  */
 
 /*
+ * Send headers consumed by the proxy server.
+ */
+static void
+send_proxy_headers(conn_t *conn, struct url *purl)
+{
+	char *p;
+
+	/* proxy authorization */
+	if (purl) {
+		if (*purl->user || *purl->pwd)
+			http_basic_auth(conn, "Proxy-Authorization",
+					purl->user, purl->pwd);
+		else if ((p = getenv("HTTP_PROXY_AUTH")) != NULL && *p != '\0')
+			http_authorize(conn, "Proxy-Authorization", p);
+	}
+}
+
+/*
  * Connect to the correct HTTP server or proxy.
  */
 static conn_t *
@@ -733,8 +751,13 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 		/* fetch_connect() has already set an error code */
 		return (NULL);
 	if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0 && purl) {
-		http_cmd(conn, "CONNECT %s:%d HTTP/1.1\r\n\r\n",
+		http_cmd(conn, "CONNECT %s:%d HTTP/1.1\r\n",
 		    URL->host, URL->port);
+
+		send_proxy_headers(conn, purl);
+
+		http_cmd(conn, "\r\n");
+
 		if (http_get_reply(conn) != HTTP_OK) {
 			fetch_close(conn);
 			return (NULL);
@@ -909,14 +932,8 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		/* virtual host */
 		http_cmd(conn, "Host: %s\r\n", host);
 
-		/* proxy authorization */
-		if (purl) {
-			if (*purl->user || *purl->pwd)
-				http_basic_auth(conn, "Proxy-Authorization",
-				    purl->user, purl->pwd);
-			else if ((p = getenv("HTTP_PROXY_AUTH")) != NULL && *p != '\0')
-				http_authorize(conn, "Proxy-Authorization", p);
-		}
+		if (strcasecmp(URL->scheme, SCHEME_HTTPS) != 0)
+			send_proxy_headers(conn, purl);
 
 		/* server authorization */
 		if (need_auth || *url->user || *url->pwd) {
