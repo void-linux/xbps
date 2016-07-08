@@ -1,5 +1,9 @@
 xbps-0.52 (???):
 
+ * libfetch: send http proxy authorization header before a secure
+   connection to the target is initialized. fixed by Enno Boland
+   reported by pulux in #185
+
  * libxbps: avoid mmap in cases where the mmaped file can fill up the address
    space on 32bit causing out of memory errors. Patches provided by Enno
    Boland in #183, reported by Christian Neukirchen in #182. See
