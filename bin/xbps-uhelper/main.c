@@ -280,7 +280,7 @@ main(int argc, char **argv)
 		if (argc != 1)
 			usage();
 
-		if (xh.native_arch && xh.target_arch && strcmp(xh.native_arch, xh.target_arch)) {
+		if (xh.native_arch[0] && xh.target_arch && strcmp(xh.native_arch, xh.target_arch)) {
 			printf("%s\n", xh.target_arch);
 		} else {
 			printf("%s\n", xh.native_arch);
