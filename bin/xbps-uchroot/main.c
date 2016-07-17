@@ -28,7 +28,7 @@
  * specifically for xbps-src use:
  *
  * 	- This uses IPC/PID/UTS namespaces, nothing more.
- * 	- Disables namespace features if running in OpenVZ containers.
+ * 	- Disables namespace features if running inside containers.
  * 	- Supports overlayfs on a temporary directory or a tmpfs mount.
  */
 #define _GNU_SOURCE
@@ -200,16 +200,6 @@ fsuid_chdir(uid_t uid, const char *path)
 	return rv;
 }
 
-static int
-openvz_container(void)
-{
-	if ((!access("/proc/vz/vzaquota", R_OK)) &&
-	    (!access("/proc/user_beancounters", R_OK)))
-		return 1;
-
-	return 0;
-}
-
 static void
 bindmount(uid_t ruid, const char *chrootdir, const char *dir, const char *dest)
 {
@@ -281,7 +271,7 @@ main(int argc, char **argv)
 	gid_t rgid, egid, sgid;
 	const char *chrootdir, *tmpfs_opts, *cmd, *argv0;
 	char **cmdargs, *b, mountdir[PATH_MAX-1];
-	int c, clone_flags, child_status = 0;
+	int c, clone_flags, container_flags, child_status = 0;
 	pid_t child;
 	bool overlayfs = false;
 	const struct option longopts[] = {
@@ -356,16 +346,11 @@ main(int argc, char **argv)
 	sigaction(SIGQUIT, &sa, NULL);
 
 	clone_flags = (SIGCHLD|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
-	if (openvz_container()) {
-		/*
-		 * If running in a OpenVZ container simply disable all namespace
-		 * features.
-		 */
-		clone_flags &= ~(CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
-	}
+	container_flags = clone_flags & ~(CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
 
 	/* Issue the clone(2) syscall with our settings */
-	if ((child = syscall(__NR_clone, clone_flags, NULL)) == -1)
+	if ((child = syscall(__NR_clone, clone_flags, NULL)) == -1 ||
+			(child = syscall(__NR_clone, container_flags, NULL)) == -1)
 		die("clone");
 
 	if (child == 0) {
