@@ -269,6 +269,106 @@ fetch_bind(int sd, int af, const char *addr)
 	return rv;
 }
 
+int
+fetch_socks5(conn_t *conn, struct url *url, int verbose)
+{
+	char buf[16];
+	uint8_t auth;
+	size_t alen;
+
+	alen = strlen(url->host);
+	/*
+	auth = (*url->user != '\0' && *url->pwd != '\0')
+	    ? SOCKS5_USER_PASS : SOCKS5_NO_AUTH;
+	*/
+	auth = SOCKS5_NO_AUTH;
+
+	buf[0] = SOCKS5_VERSION;
+	buf[1] = 0x01; /* number of auth methods */
+	buf[2] = auth;
+	// XXX: support user/pass auth
+	if (fetch_write(conn, buf, 3) != 3)
+		return -1;
+
+	if (fetch_read(conn, buf, 2) != 2)
+		return -1;
+
+	if (buf[0] != SOCKS5_VERSION || buf[1] != auth) {
+		if (verbose)
+			fetch_info("socks version or auth method not recognized");
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (verbose)
+		fetch_info("connecting socks5 to %s:%d", url->host, url->port);
+
+	/* write request */
+	buf[0] = SOCKS5_VERSION;
+	buf[1] = SOCKS5_TCP_STREAM;
+	buf[2] = 0x00;
+	buf[3] = SOCKS5_ATYPE_DOMAIN;
+	// XXX: support other address types
+	buf[4] = alen;
+	if (fetch_write(conn, buf, 5) != 5)
+		return -1;
+
+	if (fetch_write(conn, url->host, alen) == -1)
+		return -1;
+
+	buf[0] = (url->port >> 0x08);
+	buf[1] = (url->port & 0xFF);
+	if (fetch_write(conn, buf, 2) != 2)
+		return -1;
+
+	/* read answer */
+	if (fetch_read(conn, buf, 4) != 4)
+		return -1;
+
+	if (buf[0] != SOCKS5_VERSION) {
+		if (verbose)
+			fetch_info("socks version not recognized");
+		return -1;
+	}
+
+	/* answer status */
+	if (buf[1] != SOCKS5_REPLY_SUCCESS) {
+		switch (buf[1]) {
+		case SOCKS5_REPLY_DENY: errno = EACCES; break;
+		case SOCKS5_REPLY_NO_NET: errno = ENETUNREACH; break;
+		case SOCKS5_REPLY_NO_HOST: errno = EHOSTUNREACH; break;
+		case SOCKS5_REPLY_REFUSED: errno = ECONNREFUSED; break;
+		case SOCKS5_REPLY_TIMEOUT: errno = ETIMEDOUT; break;
+		case SOCKS5_REPLY_CMD_NOTSUP: errno = ENOTSUP; break;
+		case SOCKS5_REPLY_ADR_NOTSUP: errno = ENOTSUP; break;
+		}
+		return -1;
+	}
+
+	switch (buf[3]) {
+	case SOCKS5_ATYPE_IPV4:
+		if (fetch_read(conn, buf, 4) != 4)
+			return -1;
+		break;
+	case SOCKS5_ATYPE_DOMAIN:
+		if (fetch_read(conn, buf, 1) != 1 &&
+		    fetch_read(conn, buf, buf[0]) != buf[0])
+			return -1;
+		break;
+	case SOCKS5_ATYPE_IPV6:
+		if (fetch_read(conn, buf, 16) != 16)
+			return -1;
+		break;
+	default:
+		return -1;
+	}
+
+	// port
+	if (fetch_read(conn, buf, 2) != 2)
+		return -1;
+
+	return 0;
+}
 
 /*
  * Establish a TCP connection to the specified port on the specified host.
@@ -278,27 +378,36 @@ fetch_connect(struct url *url, int af, int verbose)
 {
 	conn_t *conn;
 	char pbuf[10];
-	const char *bindaddr;
+	struct url *socks_url, *connurl;
+	const char *bindaddr, *socks_proxy;
 	struct addrinfo hints, *res, *res0;
 	int sd, error;
 
+	socks_url = NULL;
+	socks_proxy = getenv("SOCKS_PROXY");
+	if (socks_proxy != NULL && *socks_proxy != '\0' &&
+	    (socks_url = fetchParseURL(socks_proxy)) != NULL)
+		connurl = socks_url;
+	else
+		connurl = url;
+
 	if (verbose)
-		fetch_info("looking up %s", url->host);
+		fetch_info("looking up %s", connurl->host);
 
 	/* look up host name and set up socket address structure */
-	snprintf(pbuf, sizeof(pbuf), "%d", url->port);
+	snprintf(pbuf, sizeof(pbuf), "%d", connurl->port);
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = af;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = 0;
-	if ((error = getaddrinfo(url->host, pbuf, &hints, &res0)) != 0) {
+	if ((error = getaddrinfo(connurl->host, pbuf, &hints, &res0)) != 0) {
 		netdb_seterr(error);
 		return (NULL);
 	}
 	bindaddr = getenv("FETCH_BIND_ADDRESS");
 
 	if (verbose)
-		fetch_info("connecting to %s:%d", url->host, url->port);
+		fetch_info("connecting to %s:%d", connurl->host, connurl->port);
 
 	/* try to connect */
 	for (sd = -1, res = res0; res; sd = -1, res = res->ai_next) {
@@ -322,6 +431,11 @@ fetch_connect(struct url *url, int af, int verbose)
 	}
 
 	if ((conn = fetch_reopen(sd)) == NULL) {
+		fetch_syserr();
+		close(sd);
+		return NULL;
+	}
+	if (socks_url && fetch_socks5(conn, url, verbose) != 0) {
 		fetch_syserr();
 		close(sd);
 		return NULL;
