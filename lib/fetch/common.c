@@ -205,6 +205,8 @@ fetch_default_port(const char *scheme)
 		return (HTTP_DEFAULT_PORT);
 	if (strcasecmp(scheme, SCHEME_HTTPS) == 0)
 		return (HTTPS_DEFAULT_PORT);
+	if (strcasecmp(scheme, SCHEME_SOCKS5) == 0)
+		return (SOCKS5_DEFAULT_PORT);
 	if ((se = getservbyname(scheme, "tcp")) != NULL)
 		return (ntohs(se->s_port));
 	return (0);
@@ -270,34 +272,77 @@ fetch_bind(int sd, int af, const char *addr)
 }
 
 int
-fetch_socks5(conn_t *conn, struct url *url, int verbose)
+fetch_socks5(conn_t *conn, struct url *url, struct url *socks, int verbose)
 {
 	char buf[16];
 	uint8_t auth;
 	size_t alen;
 
 	alen = strlen(url->host);
-	/*
-	auth = (*url->user != '\0' && *url->pwd != '\0')
+	auth = (*socks->user != '\0' && *socks->pwd != '\0')
 	    ? SOCKS5_USER_PASS : SOCKS5_NO_AUTH;
-	*/
-	auth = SOCKS5_NO_AUTH;
 
 	buf[0] = SOCKS5_VERSION;
 	buf[1] = 0x01; /* number of auth methods */
 	buf[2] = auth;
-	// XXX: support user/pass auth
 	if (fetch_write(conn, buf, 3) != 3)
 		return -1;
 
 	if (fetch_read(conn, buf, 2) != 2)
 		return -1;
 
-	if (buf[0] != SOCKS5_VERSION || buf[1] != auth) {
+	if (buf[0] != SOCKS5_VERSION) {
 		if (verbose)
-			fetch_info("socks version or auth method not recognized");
+			fetch_info("socks5 version not recognized");
 		errno = EINVAL;
 		return -1;
+	}
+
+	if ((uint8_t)buf[1] == SOCKS5_NO_METHOD) {
+		if (verbose)
+			fetch_info("no acceptable socks5 authentication method");
+		errno = EPERM;
+		return -1;
+	}
+
+	switch (buf[1]) {
+	case SOCKS5_USER_PASS:
+		if (verbose)
+			fetch_info("authenticate socks5 user '%s'", socks->user);
+		buf[0] = SOCKS5_PASS_VERSION;
+		buf[1] = strlen(socks->user);
+		if (fetch_write(conn, buf, 2) != 2)
+			return -1;
+		if (fetch_write(conn, socks->user, buf[1]) == -1)
+			return -1;
+
+		buf[0] = strlen(socks->pwd);
+		if (fetch_write(conn, buf, 1) != 1)
+			return -1;
+		if (fetch_write(conn, socks->pwd, buf[0]) == -1)
+			return -1;
+
+		if (fetch_read(conn, buf, 2) != 2)
+			return -1;
+
+		if (buf[0] != SOCKS5_PASS_VERSION) {
+			if (verbose)
+				fetch_info("socks5 password version not recognized");
+			errno = EINVAL;
+			return -1;
+		}
+
+		if (verbose)
+			fetch_info("socks5 authentication response %d", buf[1]);
+
+		if (buf[1] != SOCKS5_AUTH_SUCCESS) {
+			if (verbose)
+				fetch_info("socks5 authentication failed");
+			errno = EPERM;
+			return -1;
+		}
+
+		break;
 	}
 
 	if (verbose)
@@ -308,7 +353,6 @@ fetch_socks5(conn_t *conn, struct url *url, int verbose)
 	buf[1] = SOCKS5_TCP_STREAM;
 	buf[2] = 0x00;
 	buf[3] = SOCKS5_ATYPE_DOMAIN;
-	// XXX: support other address types
 	buf[4] = alen;
 	if (fetch_write(conn, buf, 5) != 5)
 		return -1;
@@ -327,12 +371,15 @@ fetch_socks5(conn_t *conn, struct url *url, int verbose)
 
 	if (buf[0] != SOCKS5_VERSION) {
 		if (verbose)
-			fetch_info("socks version not recognized");
+			fetch_info("socks5 version not recognized");
+		errno = EINVAL;
 		return -1;
 	}
 
 	/* answer status */
 	if (buf[1] != SOCKS5_REPLY_SUCCESS) {
+		if (verbose)
+			fetch_info("socks5 response status %d", buf[1]);
 		switch (buf[1]) {
 		case SOCKS5_REPLY_DENY: errno = EACCES; break;
 		case SOCKS5_REPLY_NO_NET: errno = ENETUNREACH; break;
@@ -385,11 +432,20 @@ fetch_connect(struct url *url, int af, int verbose)
 
 	socks_url = NULL;
 	socks_proxy = getenv("SOCKS_PROXY");
-	if (socks_proxy != NULL && *socks_proxy != '\0' &&
-	    (socks_url = fetchParseURL(socks_proxy)) != NULL)
+	if (socks_proxy != NULL && *socks_proxy != '\0') {
+		if (!(socks_url = fetchParseURL(socks_proxy)))
+			return NULL;
+		if (strcasecmp(socks_url->scheme, SCHEME_SOCKS5) != 0) {
+			if (verbose)
+				fetch_info("SOCKS_PROXY scheme '%s' not supported", socks_url->scheme);
+			return NULL;
+		}
+		if (!socks_url->port)
+			socks_url->port = fetch_default_port(socks_url->scheme);
 		connurl = socks_url;
-	else
+	} else {
 		connurl = url;
+	}
 
 	if (verbose)
 		fetch_info("looking up %s", connurl->host);
@@ -435,10 +491,15 @@ fetch_connect(struct url *url, int af, int verbose)
 		close(sd);
 		return NULL;
 	}
-	if (socks_url && fetch_socks5(conn, url, verbose) != 0) {
-		fetch_syserr();
-		close(sd);
-		return NULL;
+	if (socks_url) {
+		if (strcasecmp(socks_url->scheme, SCHEME_SOCKS5) == 0) {
+			if (fetch_socks5(conn, url, socks_url, verbose) != 0) {
+				fetch_syserr();
+				close(sd);
+				free(conn);
+				return NULL;
+			}
+		}
 	}
 	conn->cache_url = fetchCopyURL(url);
 	conn->cache_af = af;

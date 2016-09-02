@@ -36,26 +36,29 @@
 #define HTTPS_DEFAULT_PORT	443
 #define FTP_DEFAULT_PROXY_PORT	21
 #define HTTP_DEFAULT_PROXY_PORT	3128
+#define SOCKS5_DEFAULT_PORT	1080
 
-#define SOCKS5_VERSION  0x05
+#define SOCKS5_VERSION		0x05
+#define SOCKS5_PASS_VERSION	0x01
 
-#define SOCKS5_NO_AUTH 0x00
-#define SOCKS5_USER_PASS 0x02
-#define SOCKS5_NO_ACCEPT_METHOD 0xFF
+#define SOCKS5_NO_AUTH		0x00
+#define SOCKS5_USER_PASS	0x02
+#define SOCKS5_AUTH_SUCCESS	0x00
+#define SOCKS5_NO_METHOD	0xFF
 
-#define SOCKS5_TCP_STREAM 0x01
+#define SOCKS5_TCP_STREAM	0x01
 
-#define SOCKS5_ATYPE_IPV4   0x01
-#define SOCKS5_ATYPE_DOMAIN 0x03
-#define SOCKS5_ATYPE_IPV6   0x04
+#define SOCKS5_ATYPE_IPV4	0x01
+#define SOCKS5_ATYPE_DOMAIN	0x03
+#define SOCKS5_ATYPE_IPV6	0x04
 
-#define SOCKS5_REPLY_SUCCESS    0x00
-#define SOCKS5_REPLY_FAILURE    0x01
-#define SOCKS5_REPLY_DENY       0x02
-#define SOCKS5_REPLY_NO_NET     0x03
-#define SOCKS5_REPLY_NO_HOST    0x04
-#define SOCKS5_REPLY_REFUSED    0x05
-#define SOCKS5_REPLY_TIMEOUT    0x06
+#define SOCKS5_REPLY_SUCCESS	0x00
+#define SOCKS5_REPLY_FAILURE	0x01
+#define SOCKS5_REPLY_DENY	0x02
+#define SOCKS5_REPLY_NO_NET	0x03
+#define SOCKS5_REPLY_NO_HOST	0x04
+#define SOCKS5_REPLY_REFUSED	0x05
+#define SOCKS5_REPLY_TIMEOUT	0x06
 #define SOCKS5_REPLY_CMD_NOTSUP 0x07
 #define SOCKS5_REPLY_ADR_NOTSUP 0x08
 
@@ -120,7 +123,7 @@ int		 fetch_default_proxy_port(const char *);
 int		 fetch_bind(int, int, const char *);
 conn_t		*fetch_cache_get(const struct url *, int);
 void		 fetch_cache_put(conn_t *, int (*)(conn_t *));
-int		 fetch_socks5(conn_t *, struct url *, int);
+int		 fetch_socks5(conn_t *, struct url *, struct url *, int);
 conn_t		*fetch_connect(struct url *, int, int);
 conn_t		*fetch_reopen(int);
 #ifdef WITH_SSL
