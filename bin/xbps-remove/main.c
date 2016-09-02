@@ -262,7 +262,7 @@ main(int argc, char **argv)
 	maxcols = get_maxcols();
 
 	if (clean_cache) {
-		rv = clean_cachedir(&xh);
+		rv = clean_cachedir(&xh, drun);
 		if (!orphans || rv)
 			exit(rv);;
 	}

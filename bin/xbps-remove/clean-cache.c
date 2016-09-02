@@ -38,12 +38,17 @@
 
 static int
 cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
-		const char *key _unused, void *arg _unused,
+		const char *key _unused, void *arg,
 		bool *done _unused)
 {
 	xbps_dictionary_t repo_pkgd;
 	const char *binpkg, *rsha256;
 	char *binpkgsig, *pkgver, *arch;
+	bool drun = false;
+
+	/* Extract drun (dry-run) flag from arg*/
+	if (arg != NULL)
+		drun = *(bool*)arg;
 
 	/* Internalize props.plist dictionary from binary pkg */
 	binpkg = xbps_string_cstring_nocopy(obj);
@@ -73,13 +78,13 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		}
 	}
 	binpkgsig = xbps_xasprintf("%s.sig", binpkg);
-	if (unlink(binpkg) == -1) {
+	if (!drun && unlink(binpkg) == -1) {
 		fprintf(stderr, "Failed to remove `%s': %s\n",
 		    binpkg, strerror(errno));
 	} else {
 		printf("Removed %s from cachedir (obsolete)\n", binpkg);
 	}
-	if (unlink(binpkgsig) == -1) {
+	if (!drun && unlink(binpkgsig) == -1) {
 		if (errno != ENOENT) {
 			fprintf(stderr, "Failed to remove `%s': %s\n",
 			    binpkgsig, strerror(errno));
@@ -91,7 +96,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 }
 
 int
-clean_cachedir(struct xbps_handle *xhp)
+clean_cachedir(struct xbps_handle *xhp, bool drun)
 {
 	xbps_array_t array = NULL;
 	DIR *dirp;
@@ -123,7 +128,7 @@ clean_cachedir(struct xbps_handle *xhp)
 	(void)closedir(dirp);
 
 	if (xbps_array_count(array)) {
-		rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, NULL);
+		rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, (void*)&drun);
 		xbps_object_release(array);
 	}
 	return rv;
