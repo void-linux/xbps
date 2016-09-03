@@ -72,6 +72,7 @@ struct url_list {
 #define SCHEME_HTTP	"http"
 #define SCHEME_HTTPS	"https"
 #define SCHEME_FILE	"file"
+#define SCHEME_SOCKS5	"socks5"
 
 /* Error codes */
 #define	FETCH_ABORT	 1

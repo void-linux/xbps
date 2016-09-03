@@ -459,6 +459,17 @@ fetchParseURL(const char *URL)
 		URL += 2;
 		goto find_user;			
 	}
+	if (strncmp(URL, "socks5:", 7) == 0) {
+		pre_quoted = 1;
+		strcpy(u->scheme, SCHEME_SOCKS5);
+		URL += 7;
+		if (URL[0] != '/' || URL[1] != '/') {
+			url_seterr(URL_MALFORMED);
+			goto ouch;
+		}
+		URL += 2;
+		goto find_user;
+	}
 
 	url_seterr(URL_BAD_SCHEME);
 	goto ouch;
