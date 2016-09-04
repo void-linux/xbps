@@ -249,8 +249,8 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 		const char *group)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t alternatives, pkg_alternatives, pkgd;
-	const char *pkgver;
+	xbps_dictionary_t alternatives, pkg_alternatives, pkgd, prevpkgd, prevpkg_alts;
+	const char *pkgver, *prevpkgname;
 	int rv = 0;
 
 	assert(xhp);
@@ -288,6 +288,20 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 		array = xbps_dictionary_get(alternatives, keyname);
 		if (array == NULL)
 			continue;
+
+		/* remove symlinks from previous alternative */
+		xbps_array_get_cstring_nocopy(array, 0, &prevpkgname);
+		if (prevpkgname && strcmp(pkgname, prevpkgname) != 0) {
+			if ((prevpkgd = xbps_pkgdb_get_pkg(xhp, prevpkgname)) &&
+			    (prevpkg_alts = xbps_dictionary_get(prevpkgd, "alternatives")) &&
+			    xbps_dictionary_count(prevpkg_alts)) {
+				rv = remove_symlinks(xhp,
+				    xbps_dictionary_get(prevpkg_alts, keyname),
+				    keyname);
+				if (rv != 0)
+					break;
+			}
+		}
 
 		/* put this alternative group at the head */
 		xbps_remove_string_from_array(array, pkgname);
