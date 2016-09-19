@@ -349,7 +349,7 @@ main(int argc, char **argv)
 	container_flags = clone_flags & ~(CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
 
 	/* Issue the clone(2) syscall with our settings */
-	if ((child = syscall(__NR_clone, clone_flags, NULL)) == -1 ||
+	if ((child = syscall(__NR_clone, clone_flags, NULL)) == -1 &&
 			(child = syscall(__NR_clone, container_flags, NULL)) == -1)
 		die("clone");
 
