@@ -1,4 +1,4 @@
-.Dd October 28, 2015
+.Dd September 20, 2016
 .Dt XBPS-PKGDB 1
 .Sh NAME
 .Nm xbps-pkgdb
@@ -48,23 +48,54 @@ Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
 Show the help message.
 .It Fl m, Fl -mode Ar auto|manual|hold|unhold|repolock|repounlock
-Switches
-.Ar PKGNAME
-to the specified  mode: automatic or manual installation mode, or to (un)set the on hold mode,
-and repository locked mode.
-A package that was installed as dependency will be in
+.
+.Bl -tag -width -x
+.
+.It Sy auto , manual
+.Sy auto No marks each Ar PKGNAME
+as
+.Sy automatic -
+as if it was installed implicitly as a dependency of another package.
+.Sy manual No marks each Ar PKGNAME
+as if it was installed explicitly as an operand to
+.Xr xbps-install 1 .
 .Sy automatic
-mode, otherwise will be set to
-.Sy manual .
-A package in
-.Sy hold
-mode won't be updated in full system upgrades. The list of packages in this mode can be
-seen with
+packages are considered for removal by
+.Nm xbps-remove Fl -remove-orphans ;
+see also
+.Fl -list-manual-pkgs ,
+.Fl -list-orphans
+in
 .Xr xbps-query 1 .
+.
+.It Sy hold , unhold
+Set or unset the
+.Sy hold
+mode for each
+.Ar PKGNAME .
+.Nm xbps-install Fl u
+does not update packages on
+.Sy hold ;
+see also
+.Fl -list-hold-pkgs
+in
+.Xr xbps-query 1 .
+.
+.It Sy repolock , repounlock
+Set or unset the
+.Sy repolock
+mode for each
+.Ar PKGNAME .
 A package in
 .Sy repolock
 mode will only accept updates that are available in the same repository that was used
 for installing.
+See also
+.Fl -list-repolock-pkgs
+in
+.Xr xbps-query 1 .
+.El
+.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl u, Fl -update
