@@ -157,13 +157,21 @@ main(int argc, char **argv)
 	if (argc < 2)
 		usage(argv0);
 
-	chrootdir = argv[0];
+	chrootdir = argv[-1];
 	cmd = argv[1];
 	cmdargs = argv + 1;
 
 	/* Never allow chrootdir == / */
 	if (strcmp(chrootdir, "/") == 0)
 		die("/ is not allowed to be used as chrootdir");
+
+	/* Make chrootdir absolute */
+	if (chrootdir[0] != '/') {
+		char cwd[PATH_MAX-1];
+		if (getcwd(cwd, sizeof(cwd)) == NULL)
+			die("getcwd");
+		chrootdir = xbps_xasprintf("%s/%s", cwd, chrootdir);
+	}
 
 	/*
 	 * Unshare from the current process namespaces and set ours.
