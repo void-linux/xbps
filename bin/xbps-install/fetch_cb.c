@@ -148,10 +148,12 @@ stat_display(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 		fprintf(stderr, "%s: [%s %d%%] %s ETA: %s\033[K\r",
 		    xfpd->file_name, totsize, percentage,
 		    stat_bps(xfpd, xfer), stat_eta(xfpd, xfer));
-	else
+	else {
 		printf("%s: [%s %d%%] %s ETA: %s\n",
 		    xfpd->file_name, totsize, percentage,
 		    stat_bps(xfpd, xfer), stat_eta(xfpd, xfer));
+		fflush(stdout);
+	}
 }
 
 void
@@ -174,9 +176,10 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 		if (v_tty)
 			fprintf(stderr, "%s: %s [avg rate: %s]\033[K\n",
 			    xfpd->file_name, size, stat_bps(xfpd, xfer));
-		else
+		else {
 			printf("%s: %s [avg rate: %s]\n",
 			    xfpd->file_name, size, stat_bps(xfpd, xfer));
-
+			fflush(stdout);
+		}
 	}
 }
