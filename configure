@@ -222,8 +222,6 @@ esac
 
 # Add CPPFLAGS/CFLAGS/LDFLAGS to CC for testing features
 XCC="$CC $CFLAGS $CPPFLAGS $LDFLAGS"
-# Make sure to disable --as-needed for CC tests.
-XCC="$XCC -Wl,--no-as-needed"
 
 check_compiler_flag()
 {
@@ -258,6 +256,12 @@ EOF
 	rm -f _ccflag.c _ccflag _ccflag.err
 	return $rv
 }
+
+# If supported, make sure to disable --as-needed for CC tests.
+check_compiler_flag "l,--no-as-needed" W LDFLAGS
+if [ $? -eq 0 ]; then
+	XCC="$XCC -Wl,--no-as-needed"
+fi
 
 #
 # Check for some compiler warning flags.
