@@ -37,6 +37,7 @@ _xbps_properties=(
 	repolock
 	repository
 	reverts
+	run_depends
 	shlib-provides
 	shlib-requires
 	short_desc
