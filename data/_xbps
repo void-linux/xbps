@@ -10,9 +10,11 @@ _xbps_common=(
 )
 
 _xbps_properties=(
+	alternatives
 	architecture
 	archive-compression-type
 	automatic-install
+	build-date
 	build-options
 	conf_files
 	conflicts
