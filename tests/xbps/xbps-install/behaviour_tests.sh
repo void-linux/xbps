@@ -58,8 +58,41 @@ update_existent_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case directory_to_symlink
+
+directory_to_symlink_head() {
+	atf_set "descr" "xbps-install(8): replace directory with symlink"
+}
+
+directory_to_symlink_body() {
+	mkdir -p some_repo pkg_A/foo
+	touch pkg_A/foo/bar
+	# create package and install it
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+
+	# make an update to the package
+	cd some_repo
+	rm -rf ../pkg_A/foo
+	ln -sf ../bar ../pkg_A/foo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
+	atf_check_equal $? 0
+}
 
 atf_init_test_cases() {
 	atf_add_test_case install_existent
 	atf_add_test_case update_existent
+	atf_add_test_case directory_to_symlink
 }
