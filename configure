@@ -512,7 +512,7 @@ int main(void) {
 	return 0;
 }
 EOF
-if $XCC -lutil _$func.c -o _$func 2>/dev/null; then
+if $XCC _$func.c -lutil -o _$func 2>/dev/null; then
 	echo yes.
 	echo "CPPFLAGS+= -DHAVE_HUMANIZE_NUMBER" >>$CONFIG_MK
 else
@@ -575,7 +575,7 @@ int main(void) {
 	return 0;
 }
 EOF
-if $XCC -lrt _$func.c -o _$func 2>/dev/null; then
+if $XCC _$func.c -lrt -o _$func 2>/dev/null; then
 	echo yes.
 	echo "CPPFLAGS	+= -DHAVE_CLOCK_GETTIME" >>$CONFIG_MK
 	echo "LDFLAGS += -lrt" >>$CONFIG_MK
@@ -603,7 +603,7 @@ int main(void) {
 	return 0;
 }
 EOF
-if $XCC -lz _$func.c -o _$func 2>/dev/null; then
+if $XCC _$func.c -lz -o _$func 2>/dev/null; then
 	echo yes.
 	echo "LDFLAGS +=	-lz" >>$CONFIG_MK
 	echo "STATIC_LIBS +=	-lz" >>$CONFIG_MK
@@ -697,7 +697,7 @@ int main(void) {
 	return 0;
 }
 EOF
-	if $XCC -lcrypto _$func.c -o _$func 2>/dev/null; then
+	if $XCC _$func.c -lcrypto -o _$func 2>/dev/null; then
 		echo yes.
 		echo "LDFLAGS +=	-lcrypto" >>$CONFIG_MK
 	else
