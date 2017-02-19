@@ -1,5 +1,10 @@
 xbps-0.52 (???):
 
+ * Fixed some random memleaks by @duncaen #206
+
+ * xbps-query(1): added --list-repolock-pkgs for consistency with other
+   modes #202
+
  * libfetch: send http proxy authorization header before a secure
    connection to the target is initialized. fixed by Enno Boland
    reported by pulux in #185
