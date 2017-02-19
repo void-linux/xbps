@@ -1,4 +1,4 @@
-.Dd October 28, 2015
+.Dd September 20, 2016
 .Dt XBPS-INSTALL 1
 .Sh NAME
 .Nm xbps-install
@@ -59,6 +59,7 @@ The first repository matching the package expression wins.
 .It Fl A, Fl -automatic
 Enables automatic installation mode, i.e. package will be treated as orphan
 if no package is depending on it directly.
+.No See Fl -mode Sy auto No in Xr xbps-pkgdb 1 .
 .It Fl C, Fl -config Ar dir
 Specifies a path to the XBPS configuration directory.
 If the first character is not '\/' then it's a relative path of
@@ -112,7 +113,9 @@ If set, packages to be installed or upgraded in the transaction won't be configu
 just unpacked. That means that those packages should be reconfigured via
 .Xr xbps-reconfigure 1 .
 .It Fl u, Fl -update
-Performs a full system upgrade: all installed packages will be updated to the greatest
+Performs a full system upgrade: all installed packages
+.Pq except those on Sy hold , No see Fl -mode Sy hold No in Xr xbps-pkgdb 1
+will be updated to the greatest
 versions that were found in repositories.
 .It Fl v, Fl -verbose
 Enables verbose messages.
