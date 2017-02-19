@@ -209,14 +209,14 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		fprintf(stderr, "xbps-rindex: cannot lock repository "
 		    "%s: %s\n", repodir, strerror(errno));
 		rv = -1;
-		goto out;
+		goto earlyout;
 	}
 	repo = xbps_repo_public_open(xhp, repodir);
 	if (repo == NULL && errno != ENOENT) {
 		fprintf(stderr, "xbps-rindex: cannot open/lock repository "
 		    "%s: %s\n", repodir, strerror(errno));
 		rv = -1;
-		goto out;
+		goto earlyout;
 	}
 	if (repo) {
 		idx = xbps_dictionary_copy_mutable(repo->idx);
@@ -230,7 +230,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		fprintf(stderr, "xbps-rindex: cannot open/lock stage repository "
 		    "%s: %s\n", repodir, strerror(errno));
 		rv = -1;
-		goto out;
+		goto earlyout;
 	}
 	if (stage) {
 		idxstage = xbps_dictionary_copy_mutable(stage->idx);
@@ -277,6 +277,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				rv = errno;
+				xbps_object_release(binpkgd);
 				free(pkgver);
 				free(pkgname);
 				goto out;
@@ -322,12 +323,14 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		 * 	- filename-sha256
 		 */
 		if ((sha256 = xbps_file_hash(pkg)) == NULL) {
+			xbps_object_release(binpkgd);
 			free(pkgver);
 			free(pkgname);
 			rv = EINVAL;
 			goto out;
 		}
 		if (!xbps_dictionary_set_cstring(binpkgd, "filename-sha256", sha256)) {
+			xbps_object_release(binpkgd);
 			free(sha256);
 			free(pkgver);
 			free(pkgname);
@@ -336,18 +339,21 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		}
 		free(sha256);
 		if (stat(pkg, &st) == -1) {
+			xbps_object_release(binpkgd);
 			free(pkgver);
 			free(pkgname);
 			rv = EINVAL;
 			goto out;
 		}
 		if (!xbps_dictionary_set_uint64(binpkgd, "filename-size", (uint64_t)st.st_size)) {
+			xbps_object_release(binpkgd);
 			free(pkgver);
 			free(pkgname);
 			rv = EINVAL;
 			goto out;
 		}
 		if (set_build_date(binpkgd, st.st_mtime) < 0) {
+			xbps_object_release(binpkgd);
 			free(pkgver);
 			free(pkgname);
 			rv = EINVAL;
@@ -362,6 +368,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		 * Add new pkg dictionary into the stage index
 		 */
 		if (!xbps_dictionary_set(idxstage, pkgname, binpkgd)) {
+			xbps_object_release(binpkgd);
 			free(pkgname);
 			free(pkgver);
 			rv = EINVAL;
@@ -382,6 +389,12 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	printf("index: %u packages registered.\n", xbps_dictionary_count(idx));
 
 out:
+	xbps_object_release(idx);
+	xbps_object_release(idxstage);
+	if (idxmeta)
+		xbps_object_release(idxmeta);
+
+earlyout:
 	if (repo)
 		xbps_repo_close(repo);
 	if (stage)

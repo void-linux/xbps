@@ -132,6 +132,7 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 		}
 	}
 	xbps_object_iterator_release(iter);
+	xbps_object_release(pd);
 	return d;
 }
 
@@ -176,6 +177,7 @@ xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t
 		xbps_object_release(array);
 	}
 	xbps_object_iterator_release(iter);
+	/* XXX: not possible to free shrequires without copying values */
 	xbps_object_release(shprovides);
 
 	return unmatched;

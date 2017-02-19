@@ -111,11 +111,11 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		free(pkgname);
 		return ENOENT;
 	}
+	free(pkgname);
 
 	rv = xbps_pkg_state_dictionary(pkgd, &state);
 	xbps_dbg_printf(xhp, "%s: state %d rv %d\n", pkgver, state, rv);
 	if (rv != 0) {
-		free(pkgname);
 		xbps_dbg_printf(xhp, "%s: [configure] failed to get "
 		    "pkg state: %s\n", pkgver, strerror(rv));
 		return EINVAL;
@@ -124,11 +124,9 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 	if (check_state) {
 		if (state == XBPS_PKG_STATE_INSTALLED) {
 			if ((xhp->flags & XBPS_FLAG_FORCE_CONFIGURE) == 0) {
-				free(pkgname);
 				return 0;
 			}
 		} else if (state != XBPS_PKG_STATE_UNPACKED) {
-			free(pkgname);
 			return EINVAL;
 		}
 	}

@@ -505,6 +505,7 @@ unpack_archive(struct xbps_handle *xhp,
 		    0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
 		xbps_object_release(obj);
 	}
+	/* XXX: cant free obsoletes here, need to copy values before */
 	xbps_object_release(pkg_filesd);
 out:
 	/*
