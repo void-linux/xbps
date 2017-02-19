@@ -122,6 +122,24 @@ list_hold_pkgs(struct xbps_handle *xhp _unused,
 
 	return 0;
 }
+
+int
+list_repolock_pkgs(struct xbps_handle *xhp _unused,
+		xbps_object_t obj,
+		const char *key _unused,
+		void *arg _unused,
+		bool *loop_done _unused)
+{
+	const char *pkgver;
+
+	if (xbps_dictionary_get(obj, "repolock")) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		printf("%s\n", pkgver);
+	}
+
+	return 0;
+}
+
 int
 list_orphans(struct xbps_handle *xhp)
 {

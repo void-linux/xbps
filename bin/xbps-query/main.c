@@ -60,6 +60,7 @@ usage(bool fail)
 	    " -l --list-pkgs           List installed packages\n"
 	    " -L --list-repos          List registered repositories\n"
 	    " -H --list-hold-pkgs      List packages on hold state\n"
+	    "    --list-repolock-pkgs  List repolocked packages\n"
 	    " -m --list-manual-pkgs    List packages installed explicitly\n"
 	    " -O --list-orphans        List package orphans\n"
 	    " -o --ownedby FILE        Search for package files by matching STRING or REGEX\n"
@@ -86,6 +87,7 @@ main(int argc, char **argv)
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
 		{ "list-hold-pkgs", no_argument, NULL, 'H' },
+		{ "list-repolock-pkgs", no_argument, NULL, 3 },
 		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
 		{ "list-orphans", no_argument, NULL, 'O' },
@@ -108,14 +110,14 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
 	int c, flags, rv;
-	bool list_pkgs, list_repos, orphans, own;
+	bool list_pkgs, list_repos, orphans, own, list_repolock;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
 	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
 
 	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
-	list_manual = show_prop = show_files = false;
+	list_manual = list_repolock = show_prop = show_files = false;
 	regex = show = show_deps = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
 
@@ -208,6 +210,9 @@ main(int argc, char **argv)
 		case 2:
 			catfile = optarg;
 			break;
+		case 3:
+			list_repolock = opmode = true;
+			break;
 		case '?':
 			usage(true);
 			/* NOTREACHED */
@@ -253,6 +258,10 @@ main(int argc, char **argv)
 	} else if (list_hold) {
 		/* list on hold pkgs */
 		rv = xbps_pkgdb_foreach_cb(&xh, list_hold_pkgs, NULL);
+
+	} else if (list_repolock) {
+		/* list repolocked packages */
+		rv = xbps_pkgdb_foreach_cb(&xh, list_repolock_pkgs, NULL);
 
 	} else if (list_manual) {
 		/* list manual pkgs */
