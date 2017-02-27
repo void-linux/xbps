@@ -63,23 +63,25 @@ int
 xbps_pkgdb_lock(struct xbps_handle *xhp)
 {
 	mode_t prev_umask;
-	int rv;
+	int rv = 0;
 	/*
 	 * Use a mandatory file lock to only allow one writer to pkgdb,
 	 * other writers will block.
 	 */
+	prev_umask = umask(022);
 	xhp->pkgdb_plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
 	if (xbps_pkgdb_init(xhp) == ENOENT) {
 		/* if metadir does not exist, create it */
 		if (access(xhp->metadir, R_OK|X_OK) == -1) {
-			if (errno != ENOENT)
-				return errno;
-
+			if (errno != ENOENT) {
+				rv = errno;
+				goto ret;
+			}
 			if (xbps_mkpath(xhp->metadir, 0755) == -1) {
 				rv = errno;
 				xbps_dbg_printf(xhp, "[pkgdb] failed to create metadir "
 				    "%s: %s\n", xhp->metadir, strerror(rv));
-				return rv;
+				goto ret;
 			}
 		}
 		/* if pkgdb is unexistent, create it with an empty dictionary */
@@ -88,27 +90,26 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 			rv = errno;
 			xbps_dbg_printf(xhp, "[pkgdb] failed to create pkgdb "
 			    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
-			return rv;
+			goto ret;
 		}
 	}
 
-	prev_umask = umask(022);
 	if ((pkgdb_fd = open(xhp->pkgdb_plist, O_CREAT|O_RDWR|O_CLOEXEC, 0664)) == -1) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "[pkgdb] cannot open pkgdb for locking "
 		    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
 		free(xhp->pkgdb_plist);
-		umask(prev_umask);
-		return rv;
+		goto ret;
 	}
-	umask(prev_umask);
 
 	if (lockf(pkgdb_fd, F_TLOCK, 0) == -1) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "[pkgdb] cannot lock pkgdb: %s\n", strerror(rv));
-		return rv;
 	}
-	return 0;
+
+ret:
+	umask(prev_umask);
+	return rv;
 }
 
 void
