@@ -94,24 +94,28 @@ pubkey_from_privkey(RSA *rsa)
 }
 
 static bool
-rsa_sign_buf(RSA *rsa, const char *buf, unsigned int buflen,
+rsa_sign_file(RSA *rsa, const char *file,
 	 unsigned char **sigret, unsigned int *siglen)
 {
-	SHA256_CTX context;
-	unsigned char sha256[SHA256_DIGEST_LENGTH];
+	unsigned char *sha256;
 
-	SHA256_Init(&context);
-	SHA256_Update(&context, buf, buflen);
-	SHA256_Final(sha256, &context);
-
-	if ((*sigret = calloc(1, RSA_size(rsa) + 1)) == NULL)
+	sha256 = xbps_file_hash_raw(file);
+	if(!sha256)
 		return false;
 
-	if (!RSA_sign(NID_sha1, sha256, sizeof(sha256),
+	if ((*sigret = calloc(1, RSA_size(rsa) + 1)) == NULL) {
+		free(sha256);
+		return false;
+	}
+
+	if (!RSA_sign(NID_sha1, sha256, SHA256_DIGEST_LENGTH,
 				*sigret, siglen, rsa)) {
+		free(sha256);
 		free(*sigret);
 		return false;
 	}
+
+	free(sha256);
 	return true;
 }
 
@@ -252,11 +256,10 @@ static int
 sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool force)
 {
 	RSA *rsa = NULL;
-	struct stat st;
 	unsigned char *sig = NULL;
 	unsigned int siglen = 0;
-	char *buf = NULL, *sigfile = NULL;
-	int rv = 0, sigfile_fd = -1, binpkg_fd = -1;
+	char *sigfile = NULL;
+	int rv = 0, sigfile_fd = -1;
 
 	sigfile = xbps_xasprintf("%s.sig", binpkg);
 	/*
@@ -272,30 +275,12 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 	/*
 	 * Generate pkg file signature.
 	 */
-	if ((binpkg_fd = open(binpkg, O_RDONLY)) == -1) {
-		fprintf(stderr, "cannot read %s: %s\n", binpkg, strerror(errno));
-		rv = EINVAL;
-		goto out;
-	}
-	(void)fstat(binpkg_fd, &st);
-	buf = malloc(st.st_size);
-	assert(buf);
-	if (read(binpkg_fd, buf, st.st_size) != st.st_size) {
-		fprintf(stderr, "failed to read %s: %s\n", binpkg, strerror(errno));
-		rv = EINVAL;
-		goto out;
-	}
-	close(binpkg_fd);
-	binpkg_fd = -1;
-
 	rsa = load_rsa_key(privkey);
-	if (!rsa_sign_buf(rsa, buf, st.st_size, &sig, &siglen)) {
+	if (!rsa_sign_file(rsa, binpkg, &sig, &siglen)) {
 		fprintf(stderr, "failed to sign %s: %s\n", binpkg, strerror(errno));
 		rv = EINVAL;
 		goto out;
 	}
-	free(buf);
-	buf = NULL;
 	/*
 	 * Write pkg file signature.
 	 */
@@ -324,14 +309,10 @@ out:
 		RSA_free(rsa);
 		rsa = NULL;
 	}
-	if (buf)
-		free(buf);
 	if (sigfile)
 		free(sigfile);
 	if (sigfile_fd != -1)
 		close(sigfile_fd);
-	if (binpkg_fd != -1)
-		close(binpkg_fd);
 
 	return rv;
 }
