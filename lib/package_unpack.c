@@ -73,7 +73,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
-	xbps_dictionary_t binpkg_filesd, pkg_filesd;
+	xbps_dictionary_t binpkg_propsd, binpkg_filesd, pkg_filesd;
 	xbps_array_t array, obsoletes;
 	xbps_object_t obj;
 	xbps_data_t data;
@@ -84,14 +84,14 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
-	const char *file, *entry_pname, *transact;
+	const char *file, *entry_pname, *transact, *binpkg_pkgver;
 	char *pkgname, *buf;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists;
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
-	binpkg_filesd = pkg_filesd = NULL;
+	binpkg_propsd = binpkg_filesd = pkg_filesd = NULL;
 	force = preserve = update = file_exists = false;
 	xucd_stats = false;
 	ar_rv = rv = error = entry_type = flags = 0;
@@ -156,6 +156,12 @@ unpack_archive(struct xbps_handle *xhp,
 				rv = EINVAL;
 				goto out;
 			}
+		} else if (strcmp("./props.plist", entry_pname) == 0) {
+			binpkg_propsd = xbps_archive_get_dictionary(ar, entry);
+			if (binpkg_propsd == NULL) {
+				rv = EINVAL;
+				goto out;
+			}
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
 			binpkg_filesd = xbps_archive_get_dictionary(ar, entry);
 			if (binpkg_filesd == NULL) {
@@ -181,12 +187,24 @@ unpack_archive(struct xbps_handle *xhp,
 	/*
 	 * Bail out if required metadata files are not in archive.
 	 */
-	if (binpkg_filesd == NULL) {
+	if (binpkg_propsd == NULL || binpkg_filesd == NULL) {
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, ENODEV, pkgver,
 		    "%s: [unpack] invalid binary package `%s'.", pkgver, fname);
 		rv = ENODEV;
 		goto out;
 	}
+
+	/*
+	 * Check that the pkgver in the binpkg matches the one we're looking for.
+	 */
+	xbps_dictionary_get_cstring_nocopy(binpkg_propsd, "pkgver", &binpkg_pkgver);
+	if (strcmp(pkgver, binpkg_pkgver) != 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, EINVAL, pkgver,
+		    "%s: [unpack] pkgver mismatch repodata: `%s' binpkg: `%s'.", fname, pkgver, binpkg_pkgver);
+		rv = EINVAL;
+		goto out;
+	}
+
 	/*
 	 * Internalize current pkg metadata files plist.
 	 */
@@ -516,6 +534,8 @@ out:
 		unlink(buf);
 		free(buf);
 	}
+	if (xbps_object_type(binpkg_propsd) == XBPS_TYPE_DICTIONARY)
+		xbps_object_release(binpkg_propsd);
 	if (xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY)
 		xbps_object_release(binpkg_filesd);
 	if (pkgname != NULL)
