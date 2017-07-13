@@ -40,7 +40,7 @@ To build this you'll need:
   - [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
   - [zlib](http://www.zlib.net)
   - [openssl](http://www.openssl.org)
-  - [libarchive >= 2.8.0](http://www.libarchive.org)
+  - [libarchive >= 3.2.0](http://www.libarchive.org)
 
 and optionally:
 
