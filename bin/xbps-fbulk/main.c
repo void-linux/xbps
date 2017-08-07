@@ -47,6 +47,8 @@
  * Only one attempt is made to build any given package, no matter how many
  * other packages depend on it.
  */
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -59,9 +61,7 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#define _BSD_SOURCE
-# include <sys/wait.h>
-#undef _BSD_SOURCE
+#include <sys/wait.h>
 #include <getopt.h>
 
 #include <xbps.h>
