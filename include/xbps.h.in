@@ -592,7 +592,7 @@ struct xbps_handle {
 	 *
 	 * Full path to the xbps configuration directory.
 	 */
-	char confdir[XBPS_MAXPATH];
+	char confdir[XBPS_MAXPATH+sizeof(XBPS_SYSCONF_PATH)];
 	/**
 	 * @var rootdir
 	 *
@@ -606,14 +606,14 @@ struct xbps_handle {
 	 * Cache directory to store downloaded binary packages.
 	 * If unset, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
 	 */
-	char cachedir[XBPS_MAXPATH];
+	char cachedir[XBPS_MAXPATH+sizeof(XBPS_CACHE_PATH)];
 	/**
 	 * @var metadir
 	 *
 	 * Metadata directory for all operations in XBPS.
 	 * If unset, defaults to \a XBPS_CACHE_PATH (relative to rootdir).
 	 */
-	char metadir[XBPS_MAXPATH];
+	char metadir[XBPS_MAXPATH+sizeof(XBPS_META_PATH)];
 	/**
 	 * @var native_arch
 	 *
