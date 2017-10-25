@@ -529,7 +529,7 @@ check_reverts(const char *repover, const map_item_t reverts)
 	bool rv = false;
 	char *sreverts, *p;
 
-	if (reverts.v.len == 0)
+	if (reverts.v.len == 0 || strlen(repover) < 1)
 		return rv;
 
 	sreverts = calloc(reverts.v.len+1, sizeof(char));
@@ -542,8 +542,10 @@ check_reverts(const char *repover, const map_item_t reverts)
 		 * Check if it's the first character or the previous character is a
 		 * whitespace.
 		 */
-		if (p > sreverts && !isalpha(p[-1]) && !isspace(p[-1]))
+		if (p > sreverts && !isalpha(p[-1]) && !isspace(p[-1])) {
+			p++; // always advance
 			continue;
+		}
 		p += strlen(repover);
 		/*
 		 * Check if it's the last character or if the next character is a
