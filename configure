@@ -658,10 +658,12 @@ else
 fi
 
 #
-# libarchive >= 2.8.0 with pkg-config support is required.
+# libarchive with pkg-config support is required.
 #
-printf "Checking for libarchive >= 2.8.0 via pkg-config ... "
-if ! $PKGCONFIG_BIN --atleast-version=2.8.0 libarchive; then
+LIBARCHIVE_REQVER=3.2.0
+
+printf "Checking for libarchive >= ${LIBARCHIVE_REQVER}  via pkg-config ... "
+if ! $PKGCONFIG_BIN --atleast-version=${LIBARCHIVE_REQVER} libarchive; then
 	echo "libarchive.pc file not found, exiting."
 	exit 1
 else
