@@ -390,7 +390,8 @@ else
 #define _GNU_SOURCE
 #include <stdio.h>
 int main(void) {
-	vasprintf(NULL, NULL, NULL);
+	va_list ap;
+	vasprintf(NULL, NULL, ap);
 	return 0;
 }
 EOF
