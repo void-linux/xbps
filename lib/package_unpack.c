@@ -461,15 +461,19 @@ unpack_archive(struct xbps_handle *xhp,
 	 * Externalize binpkg files.plist to disk, if not empty.
 	 */
 	if (xbps_dictionary_count(binpkg_filesd)) {
+		mode_t prev_umask;
+		prev_umask = umask(022);
 		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
 		if (!xbps_dictionary_externalize_to_file(binpkg_filesd, buf)) {
 			rv = errno;
+			umask(prev_umask);
 			free(buf);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 			    rv, pkgver, "%s: [unpack] failed to externalize pkg "
 			    "pkg metadata files: %s", pkgver, strerror(rv));
 			goto out;
 		}
+		umask(prev_umask);
 		free(buf);
 	}
 	/*

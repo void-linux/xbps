@@ -216,6 +216,7 @@ int
 xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update)
 {
 	xbps_dictionary_t pkgdb_storage;
+	mode_t prev_umask;
 	static int cached_rv;
 	int rv = 0;
 
@@ -227,8 +228,12 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update)
 		if (pkgdb_storage == NULL ||
 		    !xbps_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
 			/* flush dictionary to storage */
-			if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist))
+			prev_umask = umask(022);
+			if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist)) {
+				umask(prev_umask);
 				return errno;
+			}
+			umask(prev_umask);
 		}
 		if (pkgdb_storage)
 			xbps_object_release(pkgdb_storage);

@@ -74,6 +74,7 @@ xbps_get_remote_repo_string(const char *uri)
 int HIDDEN
 xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 {
+	mode_t prev_umask;
 	const char *arch, *fetchstr = NULL;
 	char *repodata, *lrepodir, *uri_fixedp;
 	int rv = 0;
@@ -130,6 +131,7 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 	/*
 	 * Download plist index file from repository.
 	 */
+	prev_umask = umask(022);
 	if ((rv = xbps_fetch_file(xhp, repodata, NULL)) == -1) {
 		/* reposync error cb */
 		fetchstr = xbps_fetch_error_string();
@@ -139,6 +141,7 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 		    repodata, fetchstr ? fetchstr : strerror(errno));
 	} else if (rv == 1)
 		rv = 0;
+	umask(prev_umask);
 
 	free(repodata);
 
