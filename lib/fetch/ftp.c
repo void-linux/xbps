@@ -339,7 +339,7 @@ ftp_cwd(conn_t *conn, const char *path, int subdir)
 		len = strlen(pwd);
 
 		/* Look for a common prefix between PWD and dir to fetch. */
-		for (i = 0; i <= len && i <= end - dst; ++i)
+		for (i = 0; i < len && i < end - dst; ++i)
 			if (pwd[i] != dst[i])
 				break;
 		/* Keep going up a dir until we have a matching prefix. */
@@ -440,10 +440,6 @@ ftp_mode_type(conn_t *conn, int mode, int type)
 		type = 'A';
 	case 'A':
 		break;
-	case 'd':
-		type = 'D';
-	case 'D':
-		/* can't handle yet */
 	default:
 		return (FTP_PROTOCOL_ERROR);
 	}

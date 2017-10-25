@@ -65,7 +65,7 @@ static const char *
 stat_eta(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 {
 	struct xferstat *xfer = cbdata;
-	static char str[16];
+	static char str[25];
 	long elapsed, eta;
 	off_t received, expected;
 

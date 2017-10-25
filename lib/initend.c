@@ -397,7 +397,7 @@ int
 xbps_init(struct xbps_handle *xhp)
 {
 	struct utsname un;
-	char cwd[PATH_MAX-1], sysconfdir[XBPS_MAXPATH], *buf;
+	char cwd[PATH_MAX-1], sysconfdir[XBPS_MAXPATH+sizeof(XBPS_SYSDEFCONF_PATH)], *buf;
 	const char *repodir, *native_arch;
 	int rv;
 
