@@ -281,7 +281,7 @@ main(int argc, char **argv)
 	tmpfs_opts = chrootdir = cmd = NULL;
 	argv0 = argv[0];
 
-	while ((c = getopt_long(argc, argv, "Oto:b:V", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "+Oto:b:V", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'O':
 			overlayfs = true;
@@ -318,6 +318,14 @@ main(int argc, char **argv)
 	/* Never allow chrootdir == / */
 	if (strcmp(chrootdir, "/") == 0)
 		die("/ is not allowed to be used as chrootdir");
+
+	/* Make chrootdir absolute */
+	if (chrootdir[0] != '/') {
+		char cwd[PATH_MAX-1];
+		if (getcwd(cwd, sizeof(cwd)) == NULL)
+			die("getcwd");
+		chrootdir = xbps_xasprintf("%s/%s", cwd, chrootdir);
+	}
 
 	if (getresgid(&rgid, &egid, &sgid) == -1)
 		die("getresgid");
