@@ -66,7 +66,7 @@ store_vars(struct xbps_handle *xhp, xbps_dictionary_t *d,
 
 	if (*d == NULL)
 		*d = xbps_dictionary_create();
-	if (xhp->vpkgd_conf)
+	if (xhp->vpkgd_conf == NULL)
 		xhp->vpkgd_conf = xbps_dictionary_create();
 
 	/*
