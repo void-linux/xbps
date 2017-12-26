@@ -675,43 +675,21 @@ else
 fi
 
 #
-# OpenSSL libssl with pkg-config support is required when building
-# the static binaries.
+# libssl with pkg-config support is required.
 #
-if [ "$BUILD_STATIC" = "yes" ]; then
-	printf "Checking for OpenSSL via pkg-config ... "
-	if ! $PKGCONFIG_BIN --exists libssl; then
-		echo "libssl.pc file not found, exiting."
-		exit 1
-	else
-		echo "found version $($PKGCONFIG_BIN --modversion libssl)."
-		echo "CFLAGS += $($PKGCONFIG_BIN --cflags libssl)" >>$CONFIG_MK
-		echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libssl)" >>$CONFIG_MK
-		echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libssl)" \
-			>>$CONFIG_MK
-	fi
+printf "Checking for libssl via pkg-config ... "
+if $PKGCONFIG_BIN --exists 'libssl < 1.1' && ! $PKGCONFIG_BIN --exists libtls ; then
+	echo "found OpenSSL version $($PKGCONFIG_BIN --modversion libssl)."
+elif $PKGCONFIG_BIN --exists libssl libtls; then
+	echo "found LibreSSL version $($PKGCONFIG_BIN --modversion libssl)."
 else
-	func=SHA256
-	printf "Checking for OpenSSL $func() ... "
-cat <<EOF > _$func.c
-#include <openssl/sha.h>
-int main(void) {
-	SHA256(NULL, NULL, 0);
-	return 0;
-}
-EOF
-	if $XCC _$func.c -lcrypto -o _$func 2>/dev/null; then
-		echo yes.
-		echo "LDFLAGS +=	-lcrypto" >>$CONFIG_MK
-	else
-		CRYPTO_SHA256=no
-	fi
-	rm -f _$func.c _$func
-	if [ "$CRYPTO_SHA256" = "no" ]; then
-		echo "Failed to link with your system's OpenSSL library, can't continue..."
-		exit 1
-	fi
+	echo "libssl.pc file not found or incompatible version detected, exiting."
+	exit 1
 fi
+echo "CFLAGS += $($PKGCONFIG_BIN --cflags libssl)" >>$CONFIG_MK
+echo "LDFLAGS +=        $($PKGCONFIG_BIN --libs libssl)" >>$CONFIG_MK
+echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libssl)" \
+	>>$CONFIG_MK
 
 #
 # If --enable-static enabled, build static binaries.
