@@ -39,7 +39,7 @@ To build this you'll need:
   - [GNU make](http://www.gnu.org/software/make/)
   - [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
   - [zlib](http://www.zlib.net)
-  - [openssl](http://www.openssl.org)
+  - [openssl < 1.1](http://www.openssl.org) or [libressl](https://www.libressl.org/)
   - [libarchive >= 3.2.0](http://www.libarchive.org)
 
 and optionally:
