@@ -135,7 +135,7 @@ show_pkg_info_one(xbps_dictionary_t d, const char *keys)
 	int v_tty = isatty(STDOUT_FILENO);
 	bool raw;
 
-	if (v_tty) {
+	if (v_tty && !getenv("NO_COLOR")) {
 		bold = _BOLD;
 		reset = _RESET;
 	} else {
@@ -177,7 +177,7 @@ show_pkg_info(xbps_dictionary_t dict)
 	const char *keyname, *bold, *reset;
 	int v_tty = isatty(STDOUT_FILENO);
 
-	if (v_tty) {
+	if (v_tty && !getenv("NO_COLOR")) {
 		bold = _BOLD;
 		reset = _RESET;
 	} else {
