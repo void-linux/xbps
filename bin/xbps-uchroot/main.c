@@ -281,7 +281,7 @@ main(int argc, char **argv)
 	tmpfs_opts = chrootdir = cmd = NULL;
 	argv0 = argv[0];
 
-	while ((c = getopt_long(argc, argv, "+Oto:b:V", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "Oto:b:V", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'O':
 			overlayfs = true;
