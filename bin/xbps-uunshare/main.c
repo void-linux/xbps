@@ -157,7 +157,7 @@ main(int argc, char **argv)
 	if (argc < 2)
 		usage(argv0);
 
-	chrootdir = argv[-1];
+	chrootdir = argv[0];
 	cmd = argv[1];
 	cmdargs = argv + 1;
 
