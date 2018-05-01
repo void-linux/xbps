@@ -211,7 +211,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Space available on disk:           %6s\n", size);
+		printf("Space available on disk:      %6s\n", size);
 	}
 	printf("\n");
 
