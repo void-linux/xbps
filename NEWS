@@ -1,5 +1,21 @@
 xbps-0.52 (2018-04-30):
 
+ * xbps-checkvers(1): avoid infinite loops while checking revers by @ebfe #250
+
+ * libxbps: refuse to unpack absolute paths by @ebfe #247
+
+ * libxbps: verify that package version in repodata and the package metadata
+   matches by @ebfe #246
+
+ * xbps-rindex(1): better support for large files by @ebfe #245
+
+ * xbps-uunshare(1), xbps-uchroot(1): support relative chroot paths by
+   @Duncaen #207
+
+ * libxbps: Default umask for internal plists by @Duncaen #234
+
+ * Fixes for GCC 7 by @AgustinCB #254
+
  * Fixed some random memleaks by @duncaen #206
 
  * xbps-query(1): added --list-repolock-pkgs for consistency with other
