@@ -319,6 +319,11 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 	 * use the keysym, as this value has the unsanatized path.
 	 */
 	xbps_dictionary_set_cstring(fileinfo, "file", filep);
+
+	/* Warning due to 128 char limit in file paths */
+	if (strlen(filep) >= 128)
+	  printf("! Warning not included (128char bug): %s\n", filep);
+
 	xbps_dictionary_set(all_filesd, fpath, fileinfo);
 
 	if ((strcmp(fpath, "./INSTALL") == 0) ||
