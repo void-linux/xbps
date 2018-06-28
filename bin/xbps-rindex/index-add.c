@@ -117,6 +117,30 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	xbps_object_iterator_release(iter);
 
 	/*
+	 * purge all packages that are fullfilled by the index and
+	 * not in the stage.
+	 */
+	iter = xbps_dictionary_iterator(idx);
+	while ((keysym = xbps_object_iterator_next(iter))) {
+		xbps_dictionary_t pkg = xbps_dictionary_get_keysym(idx, keysym);
+		xbps_array_t pkgshlibs;
+
+
+		if (xbps_dictionary_get(stage,
+					xbps_dictionary_keysym_cstring_nocopy(keysym))) {
+			continue;
+		}
+
+		pkgshlibs = xbps_dictionary_get(pkg, "shlib-provides");
+		for (unsigned int i = 0; i < xbps_array_count(pkgshlibs); i++) {
+			const char *shlib;
+			xbps_array_get_cstring_nocopy(pkgshlibs, i, &shlib);
+			xbps_dictionary_remove(usedshlibs, shlib);
+		}
+	}
+	xbps_object_iterator_release(iter);
+
+	/*
 	 * purge all packages that are fullfilled by the stage
 	 */
 	iter = xbps_dictionary_iterator(stage);
