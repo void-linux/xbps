@@ -29,7 +29,6 @@
 
 set -e -x
 
-
 install_from_github() {
     local project="${1}"; shift
     local name="${1}"; shift

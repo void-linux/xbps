@@ -16,8 +16,7 @@ addons:
         - libssl-dev
         - libarchive-dev
 env:
-        - PKG_CONFIG_PATH=/tmp/usr/lib/pkgconfig
-        - LD_LIBRARY_PATH=/tmp/usr/lib
+        - PKG_CONFIG_PATH=/tmp/usr/lib/pkgconfig LD_LIBRARY_PATH=/tmp/usr/lib
 
 before_install:
         - ./admin/travis-install-deps.sh
