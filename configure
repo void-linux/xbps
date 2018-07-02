@@ -662,6 +662,7 @@ fi
 #
 LIBARCHIVE_REQVER=3.2.0
 
+set -x
 printf "Checking for libarchive >= ${LIBARCHIVE_REQVER}  via pkg-config ... "
 if ! $PKGCONFIG_BIN --atleast-version=${LIBARCHIVE_REQVER} libarchive; then
 	echo "libarchive.pc file not found, exiting."
@@ -673,6 +674,7 @@ else
 	echo "STATIC_LIBS +=    $($PKGCONFIG_BIN --libs --static libarchive)" \
 		>>$CONFIG_MK
 fi
+set +x
 
 #
 # libssl with pkg-config support is required.
