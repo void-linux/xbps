@@ -29,10 +29,6 @@
 
 set -e -x
 
-sudo apt-get update -qq
-sudo apt-get install -y gdb liblua5.2-0 liblua5.2-dev \
-    libsqlite3-0 libsqlite3-dev pkg-config sqlite3 \
-    libssl-dev libarchive-dev
 
 install_from_github() {
     local project="${1}"; shift
@@ -48,6 +44,7 @@ install_from_github() {
 
     cd "${distname}"
     ./configure \
+        --prefix=/tmp/usr \
         --disable-developer \
         --without-atf \
         --without-doxygen \
@@ -55,7 +52,7 @@ install_from_github() {
         LDFLAGS="-L/usr/local/lib -Wl,-R/usr/local/lib" \
         PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
     make -j16
-    sudo make install
+    make install
     cd -
 
     rm -rf "${distname}" "${distname}.tar.gz"

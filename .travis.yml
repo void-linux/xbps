@@ -1,15 +1,26 @@
-sudo:     required
-dist:     trusty
 language: c
 compiler:
         - gcc
         - clang
 
+addons:
+  apt:
+    sources:
+        - gdb
+        - liblua5.2-0
+        - liblua5.2-dev
+        - libsqlite3-0
+        - libsqlite3-dev
+        - pkg-config
+        - sqlite3
+        - libssl-dev
+        - libarchive-dev
 env:
-        - PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+        - PKG_CONFIG_PATH=/tmp/usr/lib/pkgconfig
+        - LD_LIBRARY_PATH=/tmp/usr/lib
 
 before_install:
         - ./admin/travis-install-deps.sh
 
 script:
-        - LDFLAGS="-L/usr/local/lib -Wl,-R/usr/local/lib" ./configure --enable-tests --enable-debug && make -j16 && make check
+        - LDFLAGS="-L/tmp/usr/lib -Wl,-R/tmp/usr/lib" ./configure --enable-tests --enable-debug && make -j16 && make check
