@@ -40,6 +40,10 @@
 
 static xbps_dictionary_t dest;
 
+struct CleanerCbInfo {
+	const char *repourl;
+	bool hashcheck;
+};
 static int
 idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_object_t obj,
@@ -47,16 +51,16 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		void *arg,
 		bool *done _unused)
 {
-	const char *repourl = arg;
+	struct CleanerCbInfo *info = arg;
 	const char *arch, *pkgver, *sha256;
 	char *filen, *pkgname;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
-	xbps_dbg_printf(xhp, "%s: checking %s [%s] ...\n", repourl, pkgver, arch);
+	xbps_dbg_printf(xhp, "%s: checking %s [%s] ...\n", info->repourl, pkgver, arch);
 
-	filen = xbps_xasprintf("%s/%s.%s.xbps", repourl, pkgver, arch);
+	filen = xbps_xasprintf("%s/%s.%s.xbps", info->repourl, pkgver, arch);
 	if (access(filen, R_OK) == -1) {
 		/*
 		 * File cannot be read, might be permissions,
@@ -68,7 +72,7 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_dictionary_remove(dest, pkgname);
 		free(pkgname);
 		printf("index: removed pkg %s\n", pkgver);
-	} else {
+	} else if (info->hashcheck) {
 		/*
 		 * File can be read; check its hash.
 		 */
@@ -90,15 +94,19 @@ out:
 
 static int
 cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *repo,
-		const char *reponame) {
+		const char *reponame, bool hashcheck) {
 	int rv = 0;
 	xbps_array_t allkeys;
+	struct CleanerCbInfo info = {
+		.hashcheck = hashcheck,
+		.repourl = repodir
+	};
 	/*
 	 * First pass: find out obsolete entries on index and index-files.
 	 */
 	dest = xbps_dictionary_copy_mutable(repo->idx);
 	allkeys = xbps_dictionary_all_keys(dest);
-	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, __UNCONST(repodir));
+	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, &info);
 	xbps_object_release(allkeys);
 
 	if(strcmp("stagedata", reponame) == 0 && xbps_dictionary_count(dest) == 0) {
@@ -126,7 +134,7 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
  * binary package cannot be read (unavailable, not enough perms, etc).
  */
 int
-index_clean(struct xbps_handle *xhp, const char *repodir)
+index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck)
 {
 	struct xbps_repo *repo, *stage;
 	char *rlockfname = NULL;
@@ -158,10 +166,10 @@ index_clean(struct xbps_handle *xhp, const char *repodir)
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
-	if((rv = cleanup_repo(xhp, repodir, repo, "repodata")))
+	if((rv = cleanup_repo(xhp, repodir, repo, "repodata", hashcheck)))
 		goto out;
 	if(stage) {
-		cleanup_repo(xhp, repodir, stage, "stagedata");
+		cleanup_repo(xhp, repodir, stage, "stagedata", hashcheck);
 	}
 
 out:

@@ -42,6 +42,7 @@ usage(bool fail)
 	    " -h --help                         Show help usage\n"
 	    " -v --verbose                      Verbose messages\n"
 	    " -V --version                      Show XBPS version\n"
+	    " -C --hashcheck                    Consider file hashes for cleaning up packages\n"
 	    "    --privkey <key>                Path to the private key for signing\n"
 	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
 	    "MODE\n"
@@ -56,7 +57,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsSVv";
+	const char *shortopts = "acdfhrsCSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
@@ -70,14 +71,17 @@ main(int argc, char **argv)
 		{ "signedby", required_argument, NULL, 1},
 		{ "sign", no_argument, NULL, 's'},
 		{ "sign-pkg", no_argument, NULL, 'S'},
+		{ "hashcheck", no_argument, NULL, 'C' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
-	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force;
+	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
+			 hashcheck;
 
-	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force = false;
+	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force =
+		hashcheck = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -107,6 +111,9 @@ main(int argc, char **argv)
 			break;
 		case 's':
 			sign_mode = true;
+			break;
+		case 'C':
+			hashcheck = true;
 			break;
 		case 'S':
 			sign_pkg_mode = true;
@@ -144,7 +151,7 @@ main(int argc, char **argv)
 	if (add_mode)
 		rv = index_add(&xh, optind, argc, argv, force);
 	else if (clean_mode)
-		rv = index_clean(&xh, argv[optind]);
+		rv = index_clean(&xh, argv[optind], hashcheck);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
 	else if (sign_mode)

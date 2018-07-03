@@ -70,7 +70,7 @@
 int	index_add(struct xbps_handle *, int, int, char **, bool);
 
 /* From index-clean.c */
-int	index_clean(struct xbps_handle *, const char *);
+int	index_clean(struct xbps_handle *, const char *, bool);
 
 /* From remove-obsoletes.c */
 int	remove_obsoletes(struct xbps_handle *, const char *);
