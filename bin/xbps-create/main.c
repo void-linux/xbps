@@ -493,18 +493,20 @@ out:
 
 static int
 walk_dir(const char *path,
-		int (*fn) (const char *, const struct stat *sb, const struct dirent *dir)) {
+		int (*fn) (const char *, const struct stat *sb, const struct dirent *dir))
+{
 	int rv, i;
 	struct dirent **list;
 	char tmp_path[PATH_MAX] = { 0 };
 	struct stat sb;
 
 	rv = scandir(path, &list, NULL, alphasort);
-	for(i = rv - 1; i >= 0; i--) {
-		if(strcmp(list[i]->d_name, ".") == 0 || strcmp(list[i]->d_name, "..") == 0)
+	for (i = rv - 1; i >= 0; i--) {
+		if (strcmp(list[i]->d_name, ".") == 0 || strcmp(list[i]->d_name, "..") == 0)
 			continue;
 		if (strlen(path) + strlen(list[i]->d_name) + 1 >= PATH_MAX - 1) {
 			errno = ENAMETOOLONG;
+			rv = -1;
 			break;
 		}
 		strncpy(tmp_path, path, PATH_MAX - 1);
@@ -515,7 +517,7 @@ walk_dir(const char *path,
 		}
 
 		if (S_ISDIR(sb.st_mode)) {
-			if(walk_dir(tmp_path, fn) < 0) {
+			if (walk_dir(tmp_path, fn) < 0) {
 				rv = -1;
 				break;
 			}
