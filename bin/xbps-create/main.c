@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #include <libgen.h>
 #include <locale.h>
+#include <dirent.h>
 
 #include <xbps.h>
 #include "queue.h"
@@ -301,7 +302,7 @@ entry_is_conf_file(const char *file)
 }
 
 static int
-ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _unused)
+ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir _unused)
 {
 	struct xentry *xe = NULL;
 	xbps_dictionary_t fileinfo = NULL;
@@ -346,7 +347,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		goto out;
 	}
 
-	if (type == FTW_SL) {
+	if (S_ISLNK(sb->st_mode)) {
 		/*
 		 * Symlinks.
 		 *
@@ -410,7 +411,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		assert(xe->target);
 		assert(xbps_dictionary_get(fileinfo, "target"));
 		free(buf);
-	} else if (type == FTW_F) {
+	} else if (S_ISREG(sb->st_mode)) {
 		struct xentry *xep;
 		bool hlink = false;
 		xbps_object_iterator_t iter;
@@ -477,7 +478,7 @@ ftw_cb(const char *fpath, const struct stat *sb, int type, struct FTW *ftwbuf _u
 		xbps_dictionary_set_uint64(fileinfo, "mtime", sb->st_mtime);
 		xe->mtime = (uint64_t)sb->st_mtime;
 
-	} else if (type == FTW_D || type == FTW_DP) {
+	} else if (S_ISDIR(sb->st_mode)) {
 		/* directory */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "dirs");
 		xe->type = strdup("dirs");
@@ -488,6 +489,46 @@ out:
 	xbps_object_release(fileinfo);
 	TAILQ_INSERT_TAIL(&xentry_list, xe, entries);
 	return 0;
+}
+
+static int
+walk_dir(const char *path,
+		int (*fn) (const char *, const struct stat *sb, const struct dirent *dir)) {
+	int rv, i;
+	struct dirent **list;
+	char tmp_path[PATH_MAX] = { 0 };
+	struct stat sb;
+
+	rv = scandir(path, &list, NULL, alphasort);
+	for(i = rv - 1; i >= 0; i--) {
+		if(strcmp(list[i]->d_name, ".") == 0 || strcmp(list[i]->d_name, "..") == 0)
+			continue;
+		if (strlen(path) + strlen(list[i]->d_name) + 1 >= PATH_MAX - 1) {
+			errno = ENAMETOOLONG;
+			break;
+		}
+		strncpy(tmp_path, path, PATH_MAX - 1);
+		strncat(tmp_path, "/", PATH_MAX - 1 - strlen(tmp_path));
+		strncat(tmp_path, list[i]->d_name, PATH_MAX - 1 - strlen(tmp_path));
+		if (lstat(tmp_path, &sb) < 0) {
+			break;
+		}
+
+		if (S_ISDIR(sb.st_mode)) {
+			if(walk_dir(tmp_path, fn) < 0) {
+				rv = -1;
+				break;
+			}
+		}
+
+		rv = fn(tmp_path, &sb, list[i]);
+		if (rv != 0) {
+			break;
+		}
+
+	}
+	free(list);
+	return rv;
 }
 
 static void
@@ -556,7 +597,7 @@ process_xentry(const char *key, const char *mutable_files)
 static void
 process_destdir(const char *mutable_files)
 {
-	if (nftw(".", ftw_cb, 20, FTW_PHYS) != 0)
+	if (walk_dir(".", ftw_cb) < 0)
 		die("failed to process destdir files (nftw):");
 
 	/* Process regular files */
