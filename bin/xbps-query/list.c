@@ -38,11 +38,11 @@ struct list_pkgver_cb {
 };
 
 int
-list_pkgs_in_dict(struct xbps_handle *xhp _unused,
+list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
 		  xbps_object_t obj,
-		  const char *key _unused,
+		  const char *key UNUSED,
 		  void *arg,
-		  bool *loop_done _unused)
+		  bool *loop_done UNUSED)
 {
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver, *short_desc, *state_str;
@@ -88,11 +88,11 @@ list_pkgs_in_dict(struct xbps_handle *xhp _unused,
 }
 
 int
-list_manual_pkgs(struct xbps_handle *xhp _unused,
+list_manual_pkgs(struct xbps_handle *xhp UNUSED,
 		 xbps_object_t obj,
-		 const char *key _unused,
-		 void *arg _unused,
-		 bool *loop_done _unused)
+		 const char *key UNUSED,
+		 void *arg UNUSED,
+		 bool *loop_done UNUSED)
 {
 	const char *pkgver;
 	bool automatic = false;
@@ -107,11 +107,11 @@ list_manual_pkgs(struct xbps_handle *xhp _unused,
 }
 
 int
-list_hold_pkgs(struct xbps_handle *xhp _unused,
+list_hold_pkgs(struct xbps_handle *xhp UNUSED,
 		xbps_object_t obj,
-		const char *key _unused,
-		void *arg _unused,
-		bool *loop_done _unused)
+		const char *key UNUSED,
+		void *arg UNUSED,
+		bool *loop_done UNUSED)
 {
 	const char *pkgver;
 
@@ -124,11 +124,11 @@ list_hold_pkgs(struct xbps_handle *xhp _unused,
 }
 
 int
-list_repolock_pkgs(struct xbps_handle *xhp _unused,
+list_repolock_pkgs(struct xbps_handle *xhp UNUSED,
 		xbps_object_t obj,
-		const char *key _unused,
-		void *arg _unused,
-		bool *loop_done _unused)
+		const char *key UNUSED,
+		void *arg UNUSED,
+		bool *loop_done UNUSED)
 {
 	const char *pkgver;
 
@@ -171,7 +171,7 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 }
 
 static int
-repo_list_uri_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
+repo_list_uri_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
 {
 	const char *signedby = NULL;
 	uint16_t pubkeysize = 0;
@@ -219,11 +219,11 @@ struct fflongest {
 };
 
 static int
-_find_longest_pkgver_cb(struct xbps_handle *xhp _unused,
+_find_longest_pkgver_cb(struct xbps_handle *xhp UNUSED,
 			xbps_object_t obj,
-			const char *key _unused,
+			const char *key UNUSED,
 			void *arg,
-			bool *loop_done _unused)
+			bool *loop_done UNUSED)
 {
 	struct fflongest *ffl = arg;
 	const char *pkgver;

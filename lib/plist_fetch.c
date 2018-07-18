@@ -46,7 +46,7 @@ struct fetch_archive {
 };
 
 static int
-fetch_archive_open(struct archive *a _unused, void *client_data)
+fetch_archive_open(struct archive *a UNUSED, void *client_data)
 {
 	struct fetch_archive *f = client_data;
 
@@ -59,7 +59,7 @@ fetch_archive_open(struct archive *a _unused, void *client_data)
 }
 
 static ssize_t
-fetch_archive_read(struct archive *a _unused, void *client_data, const void **buf)
+fetch_archive_read(struct archive *a UNUSED, void *client_data, const void **buf)
 {
 	struct fetch_archive *f = client_data;
 
@@ -68,7 +68,7 @@ fetch_archive_read(struct archive *a _unused, void *client_data, const void **bu
 }
 
 static int
-fetch_archive_close(struct archive *a _unused, void *client_data)
+fetch_archive_close(struct archive *a UNUSED, void *client_data)
 {
 	struct fetch_archive *f = client_data;
 

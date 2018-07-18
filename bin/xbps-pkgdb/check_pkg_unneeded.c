@@ -43,7 +43,7 @@
  * 	  and remove them if that was true.
  */
 int
-check_pkg_unneeded(struct xbps_handle *xhp _unused, const char *pkgname, void *arg)
+check_pkg_unneeded(struct xbps_handle *xhp UNUSED, const char *pkgname, void *arg)
 {
 	xbps_array_t replaces;
 	xbps_dictionary_t pkgd = arg;
