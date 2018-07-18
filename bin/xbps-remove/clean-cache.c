@@ -38,8 +38,8 @@
 
 static int
 cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
-		const char *key _unused, void *arg,
-		bool *done _unused)
+		const char *key UNUSED, void *arg,
+		bool *done UNUSED)
 {
 	xbps_dictionary_t repo_pkgd;
 	const char *binpkg, *rsha256;

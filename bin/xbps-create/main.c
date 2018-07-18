@@ -199,7 +199,7 @@ process_one_alternative(const char *altgrname, const char *val)
 
 
 static void
-process_dict_of_arrays(const char *key _unused, const char *val)
+process_dict_of_arrays(const char *key UNUSED, const char *val)
 {
 	char *altgrname, *args, *p, *saveptr;
 
@@ -302,7 +302,7 @@ entry_is_conf_file(const char *file)
 }
 
 static int
-ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir _unused)
+ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED)
 {
 	struct xentry *xe = NULL;
 	xbps_dictionary_t fileinfo = NULL;

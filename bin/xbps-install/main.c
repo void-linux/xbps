@@ -68,7 +68,7 @@ usage(bool fail)
 }
 
 static void
-unpack_progress_cb(const struct xbps_unpack_cb_data *xpd, void *cbdata _unused)
+unpack_progress_cb(const struct xbps_unpack_cb_data *xpd, void *cbdata UNUSED)
 {
 	if (xpd->entry == NULL || xpd->entry_total_count <= 0)
 		return;
@@ -80,7 +80,7 @@ unpack_progress_cb(const struct xbps_unpack_cb_data *xpd, void *cbdata _unused)
 }
 
 static int
-repo_import_key_cb(struct xbps_repo *repo, void *arg _unused, bool *done _unused)
+repo_import_key_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
 {
 	int rv;
 

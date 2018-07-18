@@ -148,7 +148,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 
 static int
 pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
-		const char *key _unused, void *arg, bool *done _unused)
+		const char *key UNUSED, void *arg, bool *done UNUSED)
 {
 	xbps_array_t pkg_cflicts, trans_cflicts, pkgs = arg;
 	xbps_dictionary_t pkgd;

@@ -47,9 +47,9 @@ struct CleanerCbInfo {
 static int
 idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_object_t obj,
-		const char *key _unused,
+		const char *key UNUSED,
 		void *arg,
-		bool *done _unused)
+		bool *done UNUSED)
 {
 	struct CleanerCbInfo *info = arg;
 	const char *arch, *pkgver, *sha256;

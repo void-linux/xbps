@@ -120,7 +120,7 @@ xbps_rpool_get_repo(const char *url)
 }
 
 void
-xbps_rpool_release(struct xbps_handle *xhp _unused)
+xbps_rpool_release(struct xbps_handle *xhp UNUSED)
 {
 	struct xbps_repo *repo;
 
@@ -195,7 +195,7 @@ find_pkg_cb(struct xbps_repo *repo, void *arg, bool *done)
 }
 
 static int
-find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
+find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 {
 	struct rpool_fpkg *rpf = arg;
 	xbps_array_t revdeps = NULL;
@@ -216,7 +216,7 @@ find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
 }
 
 static int
-find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done _unused)
+find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 {
 	struct rpool_fpkg *rpf = arg;
 	xbps_dictionary_t pkgd;

@@ -36,11 +36,11 @@
 #include "defs.h"
 
 static int
-pkgdb_cb(struct xbps_handle *xhp _unused,
+pkgdb_cb(struct xbps_handle *xhp UNUSED,
 		xbps_object_t obj,
-		const char *key _unused,
+		const char *key UNUSED,
 		void *arg,
-		bool *done _unused)
+		bool *done UNUSED)
 {
 	const char *pkgver;
 	char *pkgname;

@@ -60,7 +60,7 @@
  */
 
 xbps_array_t
-xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user _unused)
+xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user UNUSED)
 {
 	xbps_array_t rdeps, reqby, array = NULL;
 	xbps_dictionary_t pkgd, deppkgd;

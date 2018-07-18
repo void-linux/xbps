@@ -52,7 +52,7 @@ usage(bool fail)
 }
 
 static int
-state_cb(const struct xbps_state_cb_data *xscd, void *cbd _unused)
+state_cb(const struct xbps_state_cb_data *xscd, void *cbd UNUSED)
 {
 	bool slog = false;
 
