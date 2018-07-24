@@ -208,6 +208,13 @@
 #define XBPS_FLAG_UNPACK_ONLY 		0x00001000
 
 /**
+ * @def XBPS_FLAG_DOWNLOAD_ONLY
+ * Do not configure packages in the transaction, just unpack them.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_DOWNLOAD_ONLY 	0x00003000
+
+/**
  * @def XBPS_FETCH_CACHECONN
  * Default (global) limit of cached connections used in libfetch.
  */
@@ -1279,7 +1286,6 @@ xbps_dictionary_t xbps_archive_fetch_plist(const char *url, const char *p);
 /** @addtogroup repopool */
 /*@{*/
 
-
 /**
  * @struct xbps_repo xbps.h "xbps.h"
  * @brief Repository structure
@@ -1619,7 +1625,6 @@ xbps_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
  * @return 0 on success, an errno value otherwise.
  */
 int xbps_repo_key_import(struct xbps_repo *repo);
-
 
 /*@}*/
 

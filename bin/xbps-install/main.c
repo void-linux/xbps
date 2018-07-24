@@ -47,6 +47,7 @@ usage(bool fail)
 	    " -C --config <dir>        Path to confdir (xbps.d)\n"
 	    " -c --cachedir <dir>      Path to cachedir\n"
 	    " -d --debug               Debug mode shown to stderr\n"
+	    " -D --download-only       Download packages and check integrity, nothing else.\n"
 	    " -f --force               Force package re-installation\n"
 	    "                          If specified twice, all files will be\n"
 	    "                          overwritten.\n"
@@ -100,6 +101,7 @@ main(int argc, char **argv)
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
+		{ "download-only", no_argument, NULL, 'D' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
@@ -141,6 +143,9 @@ main(int argc, char **argv)
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
+			break;
+		case 'D':
+			flags |= XBPS_FLAG_DOWNLOAD_ONLY;
 			break;
 		case 'f':
 			fflag++;

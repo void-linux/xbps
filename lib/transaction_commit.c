@@ -255,6 +255,11 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		    "%s\n", strerror(rv));
 		goto out;
 	}
+
+	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+		goto out;
+	}
+
 	/*
 	 * Install, update, configure or remove packages as specified
 	 * in the transaction dictionary.
