@@ -1,4 +1,4 @@
-xbps-0.53 (2018-07-27):
+xbps-0.53 (2018-07-30):
 
  * xbps-rindex(1): fix possible stagedata deadlock. (@Gottox)
 
