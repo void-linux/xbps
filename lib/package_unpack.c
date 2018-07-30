@@ -377,13 +377,13 @@ unpack_archive(struct xbps_handle *xhp,
 			    archive_entry_gid(entry)) != 0) {
 				xbps_dbg_printf(xhp,
 				    "%s: failed "
-				    "to set uid/gid to %zu:%zu (%s)\n",
+				    "to set uid/gid to %"PRIu64":%"PRIu64" (%s)\n",
 				    pkgver, archive_entry_uid(entry),
 				    archive_entry_gid(entry),
 				    strerror(errno));
 			} else {
 				xbps_dbg_printf(xhp, "%s: entry %s changed "
-				    "uid/gid to %zu:%zu.\n", pkgver, entry_pname,
+				    "uid/gid to %"PRIu64":%"PRIu64".\n", pkgver, entry_pname,
 				    archive_entry_uid(entry),
 				    archive_entry_gid(entry));
 			}
@@ -426,7 +426,7 @@ unpack_archive(struct xbps_handle *xhp,
 				      AT_SYMLINK_NOFOLLOW) == -1) {
 				xbps_dbg_printf(xhp,
 				    "%s: failed "
-				    "to set mtime %ju to %s: %s\n",
+				    "to set mtime %lu to %s: %s\n",
 				    pkgver, archive_entry_mtime_nsec(entry),
 				    entry_pname,
 				    strerror(errno));
