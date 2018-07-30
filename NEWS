@@ -1,15 +1,15 @@
 xbps-0.53 (2018-07-27):
 
- * xbps-rindex(1): fix possible stagedata deadlock (@Gottox)
+ * xbps-rindex(1): fix possible stagedata deadlock. (@Gottox)
 
- * xbps-create(1): Allow file paths longer than 128 characters (@Gottox).
+ * xbps-create(1): Allow file paths longer than 128 characters. (@Gottox)
 
  * libxbps: share workload more efficient between threads and avoid idling
-   threads (@Gottox)
+   threads. (@Gottox)
 
- * xbps-rindex(1): By default xbps-rindex will not check hashes while cleaning
-   to enable hash checking. To enable the old behavior the user can supply the
-   --hashcheck flag (@Gottox)
+ * xbps-rindex(1): By default xbps-rindex will not check hashes while cleaning.
+   To enable the old behavior the user can supply the --hashcheck flag.
+   (@Gottox)
 
 xbps-0.52 (2018-04-30):
 
