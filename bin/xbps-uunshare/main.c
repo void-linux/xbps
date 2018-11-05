@@ -184,7 +184,7 @@ main(int argc, char **argv)
 	 * Setup uid/gid user mappings and restrict setgroups().
 	 */
 	if ((fd = open("/proc/self/uid_map", O_RDWR)) == -1)
-		die("failed to open /proc/self/uidmap rw");
+		die("failed to open /proc/self/uid_map rw");
 	if (write(fd, buf, snprintf(buf, sizeof buf, "%u %u 1\n", uid, uid)) == -1)
 		die("failed to write to /proc/self/uid_map");
 
