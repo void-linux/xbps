@@ -100,7 +100,6 @@ remove_pkg_files(struct xbps_handle *xhp,
 		 const char *pkgver)
 {
 	xbps_array_t array;
-	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	const char *curobj = NULL;
 	/* These are symlinks in Void and must not be removed */
@@ -124,10 +123,6 @@ remove_pkg_files(struct xbps_handle *xhp,
 	if (xbps_array_count(array) == 0)
 		return 0;
 
-	iter = xbps_array_iter_from_dict(dict, key);
-	if (iter == NULL)
-		return ENOMEM;
-
 	if (strcmp(key, "files") == 0)
 		curobj = "file";
 	else if (strcmp(key, "conf_files") == 0)
@@ -137,13 +132,12 @@ remove_pkg_files(struct xbps_handle *xhp,
 	else if (strcmp(key, "dirs") == 0)
 		curobj = "directory";
 
-	xbps_object_iterator_reset(iter);
-
-	while ((obj = xbps_object_iterator_next(iter))) {
+	for (unsigned int j = xbps_array_count(array) - 1; j > 0; --j) {
 		const char *file, *sha256;
 		char path[PATH_MAX];
 		bool found;
 
+		obj = xbps_array_get(array, j);
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 		snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
 
@@ -246,7 +240,6 @@ remove_pkg_files(struct xbps_handle *xhp,
 			    0, pkgver, "Removed %s `%s'", curobj, file);
 		}
 	}
-	xbps_object_iterator_release(iter);
 
 	return rv;
 }
