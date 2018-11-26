@@ -7,7 +7,7 @@ digraph pkg_props_dictionary {
 	main [label="Package dictionary"];
 	main -> homepage [label="string"];
 	homepage -> homepage_value;
-	homepage_value [style=filled,fillcolor="yellowgreen",label="http://code.google.com/p/xbps"];
+	homepage_value [style=filled,fillcolor="yellowgreen",label="https://code.google.com/p/xbps"];
 	main -> license [label="string"];
 	license -> license_value;
 	license_value [style=filled,fillcolor="yellowgreen",label="BSD"];

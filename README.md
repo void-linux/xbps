@@ -36,17 +36,17 @@ to handle binary packages and repositories. Some highlights:
 To build this you'll need:
 
   - A C99 compiler (clang 3.x, gcc 4.x, pcc 1.1.0 tested)
-  - [GNU make](http://www.gnu.org/software/make/)
-  - [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
-  - [zlib](http://www.zlib.net)
-  - [openssl < 1.1](http://www.openssl.org) or [libressl](https://www.libressl.org/)
-  - [libarchive >= 3.2.0](http://www.libarchive.org)
+  - [GNU make](https://www.gnu.org/software/make/)
+  - [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
+  - [zlib](https://www.zlib.net)
+  - [openssl < 1.1](https://www.openssl.org) or [libressl](https://www.libressl.org/)
+  - [libarchive >= 3.2.0](https://www.libarchive.org)
 
 and optionally:
 
-  - [graphviz](http://www.graphviz.org) and [doxygen](http://www.doxygen.org)
+  - [graphviz](https://www.graphviz.org) and [doxygen](http://www.doxygen.org)
     (--enable-api-docs) to build API documentation.
-  - [atf >= 0.15](http://code.google.com/p/kyua) (--enable-tests) to build the
+  - [atf >= 0.15](https://code.google.com/p/kyua) (--enable-tests) to build the
     Kyua test suite.
 
 ### Tests
@@ -82,13 +82,13 @@ Good luck!
 
 Binaries for Linux compiled statically with the musl C library are available at this location:
 
-* [aarch64](http://repo.voidlinux.eu/static/xbps-static-latest.aarch64-musl.tar.xz)
-* [armv6hf](http://repo.voidlinux.eu/static/xbps-static-latest.armv6l-musl.tar.xz)
-* [i686](http://repo.voidlinux.eu/static/xbps-static-latest.i686-musl.tar.xz)
-* [x86\_64](http://repo.voidlinux.eu/static/xbps-static-latest.x86_64-musl.tar.xz)
-* [mips32](http://repo.voidlinux.eu/static/xbps-static-latest.mips-musl.tar.xz)
+* [aarch64](https://repo.voidlinux.eu/static/xbps-static-latest.aarch64-musl.tar.xz)
+* [armv6hf](https://repo.voidlinux.eu/static/xbps-static-latest.armv6l-musl.tar.xz)
+* [i686](https://repo.voidlinux.eu/static/xbps-static-latest.i686-musl.tar.xz)
+* [x86\_64](https://repo.voidlinux.eu/static/xbps-static-latest.x86_64-musl.tar.xz)
+* [mips32](https://repo.voidlinux.eu/static/xbps-static-latest.mips-musl.tar.xz)
 
-Check the *sha256* checksums with this file: http://repo.voidlinux.eu/static/sha256sums.txt
+Check the *sha256* checksums with this file: https://repo.voidlinux.eu/static/sha256sums.txt
 
 ### Usage instructions
 

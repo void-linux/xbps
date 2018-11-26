@@ -44,7 +44,7 @@ for instance \`--prefix=\$HOME'.
 --enable-fulldebug	Enables extra debugging code (default disabled)
 --enable-static 	Build XBPS static utils (default disabled)
 --enable-tests		Build and install Kyua tests (default disabled)
-			Needs atf >= 0.15 (http://code.google.com/p/kyua)
+			Needs atf >= 0.15 (https://code.google.com/p/kyua)
 _EOF
 	exit 1
 }
