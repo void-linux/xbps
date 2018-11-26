@@ -36,17 +36,17 @@ to handle binary packages and repositories. Some highlights:
 To build this you'll need:
 
   - A C99 compiler (clang 3.x, gcc 4.x, pcc 1.1.0 tested)
-  - [GNU make](http://www.gnu.org/software/make/)
-  - [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
-  - [zlib](http://www.zlib.net)
-  - [openssl < 1.1](http://www.openssl.org) or [libressl](https://www.libressl.org/)
-  - [libarchive >= 3.2.0](http://www.libarchive.org)
+  - [GNU make](https://www.gnu.org/software/make/)
+  - [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
+  - [zlib](https://www.zlib.net)
+  - [openssl < 1.1](https://www.openssl.org) or [libressl](https://www.libressl.org/)
+  - [libarchive >= 3.2.0](https://www.libarchive.org)
 
 and optionally:
 
-  - [graphviz](http://www.graphviz.org) and [doxygen](http://www.doxygen.org)
+  - [graphviz](https://www.graphviz.org) and [doxygen](https://www.doxygen.org)
     (--enable-api-docs) to build API documentation.
-  - [atf >= 0.15](http://code.google.com/p/kyua) (--enable-tests) to build the
+  - [atf >= 0.15](https://github.com/jmmv/kyua) (--enable-tests) to build the
     Kyua test suite.
 
 ### Tests
