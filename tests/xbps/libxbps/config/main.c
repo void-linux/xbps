@@ -39,6 +39,8 @@ ATF_TC_BODY(config_include_test, tc)
 	struct xbps_handle xh;
 	const char *tcsdir;
 	char *buf, *buf2, pwd[PATH_MAX];
+	char confdir[PATH_MAX + 1 + sizeof("xbps.d")];
+	size_t len;
 
 	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
@@ -48,7 +50,9 @@ ATF_TC_BODY(config_include_test, tc)
 
 	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
-	snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
+	len = snprintf(confdir, sizeof(confdir), "%s/xbps.d", pwd);
+	ATF_REQUIRE_EQ((len < sizeof(xh.confdir)), 1);
+	memcpy(xh.confdir, confdir, len + 1);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 
@@ -88,6 +92,8 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 	struct xbps_handle xh;
 	const char *tcsdir;
 	char *buf, *buf2, pwd[PATH_MAX];
+	char confdir[PATH_MAX + 1 + sizeof("xbps.d")];
+	size_t len;
 
 	/* get test source dir */
 	tcsdir = atf_tc_get_config_var(tc, "srcdir");
@@ -97,7 +103,9 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 
 	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
 	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
-	snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
+	len = snprintf(confdir, sizeof(confdir), "%s/xbps.d", pwd);
+	ATF_REQUIRE_EQ((len < sizeof(xh.confdir)), 1);
+	memcpy(xh.confdir, confdir, len + 1);
 
 	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
 

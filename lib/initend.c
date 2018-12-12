@@ -398,6 +398,7 @@ xbps_init(struct xbps_handle *xhp)
 {
 	struct utsname un;
 	char cwd[PATH_MAX-1], sysconfdir[XBPS_MAXPATH+sizeof(XBPS_SYSDEFCONF_PATH)], *buf;
+	char relpath[PATH_MAX+1+XBPS_MAXPATH];
 	const char *repodir, *native_arch;
 	int rv;
 
@@ -412,9 +413,13 @@ xbps_init(struct xbps_handle *xhp)
 		xhp->rootdir[0] = '/';
 		xhp->rootdir[1] = '\0';
 	} else if (xhp->rootdir[0] != '/') {
+		size_t len;
 		buf = strdup(xhp->rootdir);
-		snprintf(xhp->rootdir, sizeof(xhp->rootdir), "%s/%s", cwd, buf);
+		len = snprintf(relpath, sizeof(relpath), "%s/%s", cwd, buf);
 		free(buf);
+		if (len >= XBPS_MAXPATH)
+			return ENOTSUP;
+		memcpy(xhp->rootdir, relpath, len + 1);
 	}
 	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
 	/* set confdir */

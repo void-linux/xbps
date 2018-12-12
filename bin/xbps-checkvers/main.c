@@ -599,9 +599,9 @@ rcv_check_version(rcv_t *rcv)
 	else
 		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, srcver);
 
-	srcver = strncat(srcver, "-", 1);
+	srcver = strncat(srcver, "-", 2);
 	srcver = strncat(srcver, version.v.s, version.v.len);
-	srcver = strncat(srcver, "_", 1);
+	srcver = strncat(srcver, "_", 2);
 	srcver = strncat(srcver, revision.v.s, revision.v.len);
 
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
