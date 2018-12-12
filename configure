@@ -660,7 +660,7 @@ fi
 #
 # libarchive with pkg-config support is required.
 #
-LIBARCHIVE_REQVER=3.2.0
+LIBARCHIVE_REQVER=3.1.2
 
 printf "Checking for libarchive >= ${LIBARCHIVE_REQVER}  via pkg-config ... "
 if ! $PKGCONFIG_BIN --atleast-version=${LIBARCHIVE_REQVER} libarchive; then

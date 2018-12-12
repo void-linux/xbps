@@ -5,7 +5,7 @@ compiler:
 
 addons:
   apt:
-    sources:
+    packages:
         - gdb
         - liblua5.2-0
         - liblua5.2-dev
@@ -16,10 +16,10 @@ addons:
         - libssl-dev
         - libarchive-dev
 env:
-        - PKG_CONFIG_PATH=/tmp/usr/lib/pkgconfig LD_LIBRARY_PATH=/tmp/usr/lib
+        - PATH=$PATH:/tmp/usr/bin PKG_CONFIG_PATH=/tmp/usr/lib/pkgconfig LD_LIBRARY_PATH=/tmp/usr/lib
 
 before_install:
         - ./admin/travis-install-deps.sh
 
 script:
-        - LDFLAGS="-L/tmp/usr/lib -Wl,-R/tmp/usr/lib" ./configure --enable-tests --enable-debug && make -j16 && make check
+        - CFLAGS="-I/tmp/usr/include" LDFLAGS="-L/tmp/usr/lib -Wl,-R/tmp/usr/lib" ./configure --enable-tests --enable-debug && make -j16 && make check

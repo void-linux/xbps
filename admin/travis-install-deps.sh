@@ -47,9 +47,9 @@ install_from_github() {
         --disable-developer \
         --without-atf \
         --without-doxygen \
-        CPPFLAGS="-I/usr/local/include" \
-        LDFLAGS="-L/usr/local/lib -Wl,-R/usr/local/lib" \
-        PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
+        CPPFLAGS="-I/tmp/usr/include" \
+        LDFLAGS="-L/tmp/usr/lib -Wl,-R/tmp/usr/lib" \
+        PKG_CONFIG_PATH="/tmp/usr/lib/pkgconfig"
     make -j16
     make install
     cd -
