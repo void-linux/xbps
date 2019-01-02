@@ -4,7 +4,7 @@ setopt localoptions extended_glob
 
 local ret=0 archs top
 
-archs=(aarch64-musl aarch64 armv6hf-musl armv6hf armv7hf-musl armv7hf i686-musl i686 mips mipsel x86_64-musl)
+archs=(aarch64-musl aarch64 armv6hf-musl armv6hf armv7hf-musl armv7hf i686-musl i686 mips mipsel ppc64le-musl ppc64le ppc64-musl x86_64-musl)
 
 # path to masterdir and srcpkgs.
 top=$~_comp_command1:h
