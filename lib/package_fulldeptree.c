@@ -107,12 +107,12 @@ collect_rdeps(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 			pd->pkg = curpkgver;
 			pd->rdeps = xbps_array_copy(currdeps);
 			SLIST_INSERT_HEAD(&pkgdep_list, pd, pkgdep_entries);
-		}
-		if (xbps_array_count(currdeps)) {
-			int rv;
+			if (xbps_array_count(currdeps)) {
+				int rv;
 
-			if ((rv = collect_rdeps(xhp, curpkgd, rpool)) != 0)
-				return rv;
+				if ((rv = collect_rdeps(xhp, curpkgd, rpool)) != 0)
+					return rv;
+			}
 		}
 	}
 	return 0;
