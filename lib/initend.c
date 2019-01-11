@@ -316,32 +316,34 @@ parse_dir(struct xbps_handle *xhp, const char *cwd, const char *confdir, const c
 	 */
 	xbps_dbg_printf(xhp, "Processing configuration directory: %s\n", confdir);
 
+	namelist = NULL;
 	if ((n = scandir(confdir, &namelist, 0, alphasort)) < 0)
 		goto stage2;
 
+	assert(namelist != NULL);
+
 	for (i = 0; i < n; i++) {
+		assert(namelist[i] != NULL);
 		if ((strcmp(namelist[i]->d_name, "..") == 0) ||
 		    (strcmp(namelist[i]->d_name, ".") == 0)) {
-			free(namelist[i]);
 			continue;
 		}
 		/* only process .conf files, ignore something else */
 		if ((ext = strrchr(namelist[i]->d_name, '.')) == NULL) {
-			free(namelist[i]);
 			continue;
 		}
 		if (strcmp(ext, ".conf")) {
 			xbps_dbg_printf(xhp, "%s: ignoring %s\n", confdir, namelist[i]->d_name);
-			free(namelist[i]);
 			continue;
 		}
 		/* parse conf file */
 		snprintf(conf, sizeof(conf), "%s/%s", confdir, namelist[i]->d_name);
 		if ((rv = parse_file(xhp, cwd, conf, false)) != 0) {
-			free(namelist[i]);
 			break;
 		}
 	}
+	for (i = 0; i < n; i++)
+		free(namelist[i]);
 	free(namelist);
 	if (rv != 0)
 		return rv;
@@ -355,39 +357,40 @@ stage2:
 	 */
 	xbps_dbg_printf(xhp, "Processing system configuration directory: %s\n", sysconfdir);
 
+	namelist = NULL;
 	if ((n = scandir(sysconfdir, &namelist, 0, alphasort)) < 0)
 		return 0;
 
+	assert(namelist != NULL);
+
 	for (i = 0; i < n; i++) {
+		assert(namelist[i] != NULL);
 		if ((strcmp(namelist[i]->d_name, "..") == 0) ||
 		    (strcmp(namelist[i]->d_name, ".") == 0)) {
-			free(namelist[i]);
 			continue;
 		}
 		/* only process .conf files, ignore something else */
 		if ((ext = strrchr(namelist[i]->d_name, '.')) == NULL) {
-			free(namelist[i]);
 			continue;
 		}
 		if (strcmp(ext, ".conf")) {
 			xbps_dbg_printf(xhp, "%s: ignoring %s\n", sysconfdir, namelist[i]->d_name);
-			free(namelist[i]);
 			continue;
 		}
 		/* if the same file exists in configuration directory, ignore it */
 		snprintf(conf, sizeof(conf), "%s/%s", confdir, namelist[i]->d_name);
 		if (access(conf, R_OK) == 0) {
 			xbps_dbg_printf(xhp, "%s: ignoring %s (exists in confdir)\n", confdir, namelist[i]->d_name);
-			free(namelist[i]);
 			continue;
 		}
 		/* parse conf file */
 		snprintf(conf, sizeof(conf), "%s/%s", sysconfdir, namelist[i]->d_name);
 		if ((rv = parse_file(xhp, cwd, conf, false)) != 0) {
-			free(namelist[i]);
 			break;
 		}
 	}
+	for (i = 0; i < n; i++)
+		free(namelist[i]);
 	free(namelist);
 
 	return rv;
