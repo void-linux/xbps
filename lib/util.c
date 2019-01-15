@@ -118,13 +118,18 @@ xbps_binpkg_pkgver(const char *pkg)
 		fname = pkg;
 
 	/* 5 == .xbps */
-	len = strlen(fname) - 5;
+	if ((len = strlen(fname)) < 5)
+		return NULL;
+	len -= 5;
+
 	p = malloc(len+1);
 	assert(p);
 	(void)memcpy(p, fname, len);
 	p[len] = '\0';
-	p1 = strrchr(p, '.');
-	assert(p1);
+	if (!(p1 = strrchr(p, '.'))) {
+		free(p);
+		return NULL;
+	}
 	p[strlen(p)-strlen(p1)] = '\0';
 
 	/* sanity check it's a proper pkgver string */
@@ -134,6 +139,7 @@ xbps_binpkg_pkgver(const char *pkg)
 	}
 	res = strdup(p);
 	assert(res);
+
 	free(p);
 	return res;
 }
@@ -152,14 +158,21 @@ xbps_binpkg_arch(const char *pkg)
 		fname = pkg;
 
 	/* 5 == .xbps */
-	len = strlen(fname) - 5;
+	if ((len = strlen(fname)) < 5)
+		return NULL;
+	len -= 5;
+
 	p = malloc(len+1);
 	assert(p);
 	(void)memcpy(p, fname, len);
 	p[len] = '\0';
-	p1 = strrchr(p, '.') + 1;
-	assert(p1);
-	res = strdup(p1);
+	if (!(p1 = strrchr(p, '.'))) {
+		free(p);
+		return NULL;
+	}
+	res = strdup(p1 + 1);
+	assert(res);
+
 	free(p);
 	return res;
 }
