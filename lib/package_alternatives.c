@@ -249,6 +249,9 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 	if (!xbps_dictionary_count(pkg_alternatives))
 		return ENOENT;
 
+	if (group && !xbps_dictionary_get(pkg_alternatives, group))
+		return ENOENT;
+
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
 	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
@@ -261,10 +264,8 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 
-		if (group && strcmp(keyname, group)) {
-			rv = ENOENT;
+		if (group && strcmp(keyname, group))
 			continue;
-		}
 
 		array = xbps_dictionary_get(alternatives, keyname);
 		if (array == NULL)
@@ -294,7 +295,7 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_ADDED, 0, NULL,
 		    "%s: applying '%s' alternatives group", pkgver, keyname);
 		rv = create_symlinks(xhp, xbps_dictionary_get(pkg_alternatives, keyname), keyname);
-		if (rv != 0)
+		if (rv != 0 || group)
 			break;
 	}
 	xbps_object_release(allkeys);
