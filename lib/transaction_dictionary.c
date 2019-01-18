@@ -196,7 +196,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 	if ((xhp->transd = xbps_dictionary_create()) == NULL)
 		return ENOMEM;
 
-        if ((array = xbps_array_create()) == NULL) {
+	if ((array = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
 		return ENOMEM;
