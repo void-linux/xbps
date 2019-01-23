@@ -483,6 +483,15 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "dirs");
 		xe->type = strdup("dirs");
 		assert(xe->type);
+	} else if (S_ISFIFO(sb->st_mode)) {
+		errno = 0;
+		die("cannot package fifo %s", fpath);
+	} else if (S_ISSOCK(sb->st_mode)) {
+		errno = 0;
+		die("cannot package socket %s", fpath);
+	} else {
+		errno = 0;
+		die("cannot package %s", fpath);
 	}
 
 out:
