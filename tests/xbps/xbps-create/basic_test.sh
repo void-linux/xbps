@@ -139,10 +139,24 @@ reproducible_pkg_body() {
 	atf_check_equal $? 1
 }
 
+atf_test_case fifo_file
+
+reject_fifo_file_head() {
+	atf_set "descr" "xbps-create(1): reject fifo file"
+}
+
+reject_fifo_file_body() {
+	mkdir -p repo pkg_a
+	mkfifo pkg_a/fifo
+	xbps-create -a noarch -n foo-1.0_1 -s "foo pkg" pkg_a
+	atf_check_equal $? 1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case hardlinks_size
 	atf_add_test_case symlink_relative_target
 	atf_add_test_case symlink_relative_target_cwd
 	atf_add_test_case restore_mtime
 	atf_add_test_case reproducible_pkg
+	atf_add_test_case reject_fifo_file
 }
