@@ -65,12 +65,13 @@ fp2str(unsigned const char *fp, unsigned int len)
 char *
 xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 {
-	EVP_MD_CTX mdctx;
+	EVP_MD_CTX *mdctx = NULL;
 	EVP_PKEY *pPubKey = NULL;
 	RSA *pRsa = NULL;
 	BIO *bio = NULL;
 	const void *pubkeydata;
 	unsigned char md_value[EVP_MAX_MD_SIZE];
+	const BIGNUM *n, *e;
 	unsigned char *nBytes = NULL, *eBytes = NULL, *pEncoding = NULL;
 	unsigned int md_len = 0;
 	char *hexfpstr = NULL;
@@ -79,6 +80,8 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	ERR_load_crypto_strings();
 	OpenSSL_add_all_algorithms();
 
+	mdctx = EVP_MD_CTX_new();
+	assert(mdctx);
 	pubkeydata = xbps_data_data_nocopy(pubkey);
 	bio = BIO_new_mem_buf(__UNCONST(pubkeydata), xbps_data_size(pubkey));
 	assert(bio);
@@ -91,7 +94,7 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 		goto out;
 	}
 
-	if (EVP_PKEY_type(pPubKey->type) != EVP_PKEY_RSA) {
+	if (EVP_PKEY_base_id(pPubKey) != EVP_PKEY_RSA) {
 		xbps_dbg_printf(xhp, "only RSA public keys are currently supported\n");
 		goto out;
 	}
@@ -103,19 +106,20 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 		goto out;
 	}
 
+	RSA_get0_key(pRsa, &n, &e, NULL);
 	// reading the modulus
-	nLen = BN_num_bytes(pRsa->n);
+	nLen = BN_num_bytes(n);
 	nBytes = (unsigned char*) malloc(nLen);
 	if (nBytes == NULL)
 		goto out;
-	BN_bn2bin(pRsa->n, nBytes);
+	BN_bn2bin(n, nBytes);
 
 	// reading the public exponent
-	eLen = BN_num_bytes(pRsa->e);
+	eLen = BN_num_bytes(e);
 	eBytes = (unsigned char*) malloc(eLen);
 	if (eBytes == NULL)
 		goto out;
-	BN_bn2bin(pRsa->e, eBytes);
+	BN_bn2bin(e, eBytes);
 
 	encodingLength = 11 + 4 + eLen + 4 + nLen;
 	// correct depending on the MSB of e and N
@@ -135,18 +139,21 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	/*
 	 * Compute the RSA fingerprint (MD5).
 	 */
-	EVP_MD_CTX_init(&mdctx);
-	EVP_DigestInit_ex(&mdctx, EVP_md5(), NULL);
-	EVP_DigestUpdate(&mdctx, pEncoding, encodingLength);
-	if (EVP_DigestFinal_ex(&mdctx, md_value, &md_len) == 0)
+	EVP_MD_CTX_init(mdctx);
+	EVP_DigestInit_ex(mdctx, EVP_md5(), NULL);
+	EVP_DigestUpdate(mdctx, pEncoding, encodingLength);
+	if (EVP_DigestFinal_ex(mdctx, md_value, &md_len) == 0)
 		goto out;
-	EVP_MD_CTX_cleanup(&mdctx);
+	EVP_MD_CTX_free(mdctx);
+	mdctx = NULL;
 	/*
 	 * Convert result to a compatible OpenSSH hex fingerprint.
 	 */
 	hexfpstr = fp2str(md_value, md_len);
 
 out:
+	if (mdctx)
+		EVP_MD_CTX_free(mdctx);
 	if (bio)
 		BIO_free_all(bio);
 	if (pRsa)
