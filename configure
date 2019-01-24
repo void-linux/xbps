@@ -678,7 +678,7 @@ fi
 # libssl with pkg-config support is required.
 #
 printf "Checking for libssl via pkg-config ... "
-if $PKGCONFIG_BIN --exists 'libssl < 1.1' && ! $PKGCONFIG_BIN --exists libtls ; then
+if $PKGCONFIG_BIN --exists 'libssl < 1.2' && ! $PKGCONFIG_BIN --exists libtls ; then
 	echo "found OpenSSL version $($PKGCONFIG_BIN --modversion libssl)."
 elif $PKGCONFIG_BIN --exists libssl libtls; then
 	echo "found LibreSSL version $($PKGCONFIG_BIN --modversion libssl)."

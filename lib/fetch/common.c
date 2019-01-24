@@ -895,7 +895,7 @@ fetch_ssl_verify_altname(STACK_OF(GENERAL_NAME) *altnames,
 
 	for (i = 0; i < sk_GENERAL_NAME_num(altnames); ++i) {
 		name = sk_GENERAL_NAME_value(altnames, i);
-		ns = (const char *)ASN1_STRING_data(name->d.ia5);
+		ns = (const char *)ASN1_STRING_get0_data(name->d.ia5);
 		nslen = (size_t)ASN1_STRING_length(name->d.ia5);
 
 		if (name->type == GEN_DNS && ip == NULL &&
