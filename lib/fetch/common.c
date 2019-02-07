@@ -274,11 +274,19 @@ fetch_bind(int sd, int af, const char *addr)
 int
 fetch_socks5(conn_t *conn, struct url *url, struct url *socks, int verbose)
 {
-	char buf[16];
+	char buf[262];
 	uint8_t auth;
 	size_t alen;
+	ssize_t dlen;
 
 	alen = strlen(url->host);
+	if (alen > 255) {
+		if (verbose)
+			fetch_info("socks5 only supports addresses <= 255 bytes");
+		errno = EINVAL;
+		return -1;
+	}
+
 	auth = (*socks->user != '\0' && *socks->pwd != '\0')
 	    ? SOCKS5_USER_PASS : SOCKS5_NO_AUTH;
 
@@ -349,20 +357,20 @@ fetch_socks5(conn_t *conn, struct url *url, struct url *socks, int verbose)
 		fetch_info("connecting socks5 to %s:%d", url->host, url->port);
 
 	/* write request */
-	buf[0] = SOCKS5_VERSION;
-	buf[1] = SOCKS5_TCP_STREAM;
-	buf[2] = 0x00;
-	buf[3] = SOCKS5_ATYPE_DOMAIN;
-	buf[4] = alen;
-	if (fetch_write(conn, buf, 5) != 5)
-		return -1;
+	dlen = 0;
+	buf[dlen++] = SOCKS5_VERSION;
+	buf[dlen++] = SOCKS5_TCP_STREAM;
+	buf[dlen++] = 0x00;
+	buf[dlen++] = SOCKS5_ATYPE_DOMAIN;
+	buf[dlen++] = alen;
 
-	if (fetch_write(conn, url->host, alen) == -1)
-		return -1;
+	memcpy(&buf[dlen], url->host, alen);
+	dlen += alen;
 
-	buf[0] = (url->port >> 0x08);
-	buf[1] = (url->port & 0xFF);
-	if (fetch_write(conn, buf, 2) != 2)
+	buf[dlen++] = (url->port >> 0x08);
+	buf[dlen++] = (url->port & 0xFF);
+
+	if (fetch_write(conn, buf, dlen) != dlen)
 		return -1;
 
 	/* read answer */
