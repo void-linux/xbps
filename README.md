@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/voidlinux/xbps.svg?branch=master)](https://travis-ci.org/voidlinux/xbps)
+[![Build Status](https://travis-ci.org/void-linux/xbps.svg?branch=master)](https://travis-ci.org/void-linux/xbps)
 [![Build Status](https://scan.coverity.com/projects/3167/badge.svg)](https://scan.coverity.com/projects/3167)
 
 ## XBPS
@@ -80,15 +80,16 @@ Good luck!
 
 ### Binaries
 
-Binaries for Linux compiled statically with the musl C library are available at this location:
+Binaries for Linux compiled statically with the musl C library are available:
 
-* [aarch64](http://repo.voidlinux.eu/static/xbps-static-latest.aarch64-musl.tar.xz)
-* [armv6hf](http://repo.voidlinux.eu/static/xbps-static-latest.armv6l-musl.tar.xz)
-* [i686](http://repo.voidlinux.eu/static/xbps-static-latest.i686-musl.tar.xz)
-* [x86\_64](http://repo.voidlinux.eu/static/xbps-static-latest.x86_64-musl.tar.xz)
-* [mips32](http://repo.voidlinux.eu/static/xbps-static-latest.mips-musl.tar.xz)
+* [aarch64](https://alpha.de.repo.voidlinux.org/static/xbps-static-latest.aarch64-musl.tar.xz)
+* [armv6hf](https://alpha.de.repo.voidlinux.org/static/xbps-static-latest.armv6l-musl.tar.xz)
+* [i686](https://alpha.de.repo.voidlinux.org/static/xbps-static-latest.i686-musl.tar.xz)
+* [x86\_64](https://alpha.de.repo.voidlinux.org/static/xbps-static-latest.x86_64-musl.tar.xz)
+* [mips32](https://alpha.de.repo.voidlinux.org/static/xbps-static-latest.mips-musl.tar.xz)
 
-Check the *sha256* checksums with this file: http://repo.voidlinux.eu/static/sha256sums.txt
+These builds are available on all official void mirrors, along with their
+*sha256* [checksums](https://alpha.de.repo.voidlinux.org/static/sha256sums.txt).
 
 ### Usage instructions
 
