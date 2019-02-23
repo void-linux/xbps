@@ -1,25 +1,21 @@
-language: c
-compiler:
-        - gcc
-        - clang
+language: generic
 
-addons:
-  apt:
-    sources:
-        - gdb
-        - liblua5.2-0
-        - liblua5.2-dev
-        - libsqlite3-0
-        - libsqlite3-dev
-        - pkg-config
-        - sqlite3
-        - libssl-dev
-        - libarchive-dev
+notifications:
+  email: false
+
+services:
+ - docker
+
 env:
-        - PKG_CONFIG_PATH=/tmp/usr/lib/pkgconfig LD_LIBRARY_PATH=/tmp/usr/lib
+  global:
+   - MAKEJOBS = -j4
+  matrix:
+   - CC=gcc DEPENDENCY_PACKAGES="bash kyua zlib-devel libarchive-devel base-devel atf-devel"
+   - CC=clang DEPENDENCY_PACKAGES="clang bash kyua zlib-devel libarchive-devel base-devel atf-devel"
 
-before_install:
-        - ./admin/travis-install-deps.sh
+install:
+ - docker pull voidlinux/voidlinux
+ - docker run -v "$PWD":/tmp/build-dir voidlinux/voidlinux /bin/sh -c "xbps-install -Syu && xbps-install -y $DEPENDENCY_PACKAGES && cd /tmp/build-dir && CC=$CC ./configure --enable-tests --enable-debug && make $MAKEJOBS && make check"
 
 script:
-        - LDFLAGS="-L/tmp/usr/lib -Wl,-R/tmp/usr/lib" ./configure --enable-tests --enable-debug && make -j16 && make check
+ - echo BUILDS PASSED
