@@ -141,6 +141,17 @@ store_repo(struct xbps_handle *xhp, const char *repo)
 	return xbps_repo_store(xhp, repo);
 }
 
+static void
+store_ignored_pkg(struct xbps_handle *xhp, const char *pkgname)
+{
+	if (xhp->ignored_pkgs == NULL) {
+		xhp->ignored_pkgs = xbps_array_create();
+		assert(xhp->ignored_pkgs);
+	}
+	xbps_array_add_cstring(xhp->ignored_pkgs, pkgname);
+	xbps_dbg_printf(xhp, "Added ignored package: %s\n", pkgname);
+}
+
 static bool
 parse_option(char *buf, char **k, char **v)
 {
@@ -153,6 +164,7 @@ parse_option(char *buf, char **k, char **v)
 		"repository",
 		"virtualpkg",
 		"include",
+		"ignorepkg",
 		"preserve",
 		"bestmatching",
 		"architecture"
@@ -264,6 +276,8 @@ parse_file(struct xbps_handle *xhp, const char *cwd, const char *path, bool nest
 				xbps_dbg_printf(xhp, "%s: added repository %s\n", path, v);
 		} else if (strcmp(k, "virtualpkg") == 0) {
 			store_vars(xhp, &xhp->vpkgd, k, path, nlines, v);
+		} else if (strcmp(k, "ignorepkg") == 0) {
+			store_ignored_pkg(xhp, v);
 		} else if (strcmp(k, "preserve") == 0) {
 			store_preserved_file(xhp, v);
 		} else if (strcmp(k, "bestmatching") == 0) {
