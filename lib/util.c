@@ -86,6 +86,28 @@ xbps_pkg_is_installed(struct xbps_handle *xhp, const char *pkg)
 	return 0; /* not fully installed */
 }
 
+bool
+xbps_pkg_is_ignored(struct xbps_handle *xhp, const char *pkg)
+{
+	char *pkgname;
+	bool rv = false;
+
+	assert(xhp);
+	assert(pkg);
+
+	if (!xhp->ignored_pkgs)
+		return false;
+
+	if ((pkgname = xbps_pkgpattern_name(pkg)) != NULL ||
+	    (pkgname = xbps_pkg_name(pkg)) != NULL) {
+		rv = xbps_match_string_in_array(xhp->ignored_pkgs, pkgname);
+		free(pkgname);
+		return rv;
+	}
+
+	return xbps_match_string_in_array(xhp->ignored_pkgs, pkg);
+}
+
 const char *
 xbps_pkg_version(const char *pkg)
 {

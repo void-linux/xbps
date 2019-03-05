@@ -58,6 +58,8 @@ check_pkg_rundeps(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	array = xbps_dictionary_get(pkg_propsd, "run_depends");
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		xbps_array_get_cstring_nocopy(array, i, &reqpkg);
+		if (xbps_pkg_is_ignored(xhp, reqpkg))
+			continue;
 		if (xbps_pkg_is_installed(xhp, reqpkg) <= 0) {
 			xbps_error_printf("%s: dependency not satisfied: %s\n",
 			    pkgname, reqpkg);

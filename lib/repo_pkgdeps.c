@@ -162,6 +162,14 @@ find_repo_deps(struct xbps_handle *xhp,
 			break;
 		}
 		/*
+		 * Pass 0: check if required dependency is ignored.
+		 */
+		if (xbps_pkg_is_ignored(xhp, pkgname)) {
+			xbps_dbg_printf_append(xhp, "%s ignored.\n", pkgname);
+			free(pkgname);
+			continue;
+		}
+		/*
 		 * Pass 1: check if required dependency is provided as virtual
 		 * package via "provides", if true ignore dependency.
 		 */

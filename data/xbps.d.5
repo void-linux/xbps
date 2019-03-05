@@ -56,6 +56,10 @@ Sets the default cache directory to store downloaded binary packages from
 remote repositories, as well as its signatures.
 If path starts with '/' it's an absolute path, otherwise it will be relative to
 .Ar rootdir .
+.It Sy ignorepkg=pkgname
+Declares a ignored package.
+If a package depends on an ignored package the dependency is always satisfied,
+without installing the ignored package.
 .It Sy include=path/file.conf
 Imports settings from the specified configuration file.
 .Em NOTE

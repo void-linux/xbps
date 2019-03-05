@@ -512,6 +512,7 @@ struct xbps_handle {
 	 * @private
 	 */
 	xbps_array_t preserved_files;
+	xbps_array_t ignored_pkgs;
 	/**
 	 * @var repositories
 	 *
@@ -1842,6 +1843,17 @@ bool xbps_verify_file_signature(struct xbps_repo *repo, const char *fname);
  * matched installed package.
  */
 int xbps_pkg_is_installed(struct xbps_handle *xhp, const char *pkg);
+
+/**
+ * Checks if a package is currently ignored by matching \a pkg.
+ * To be ignored, the pkg must be ignored by the users configuration.
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] pkg Package name, version pattern or exact pkg to match.
+ *
+ * @return True if the package is ignored, false otherwise.
+ */
+bool xbps_pkg_is_ignored(struct xbps_handle *xhp, const char *pkg);
 
 /**
  * Returns true if binary package exists in cachedir or in a local repository,
