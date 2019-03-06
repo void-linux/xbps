@@ -595,6 +595,12 @@ struct xbps_handle {
 	 */
 	char confdir[XBPS_MAXPATH+sizeof(XBPS_SYSCONF_PATH)];
 	/**
+	 * @var confdir
+	 *
+	 * Full path to the xbps configuration directory.
+	 */
+	char sysconfdir[XBPS_MAXPATH+sizeof(XBPS_SYSDEFCONF_PATH)];
+	/**
 	 * @var rootdir
 	 *
 	 * Root directory for all operations in XBPS.
