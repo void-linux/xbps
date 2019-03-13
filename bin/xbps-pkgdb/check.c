@@ -72,7 +72,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    xbps_dictionary_t pkgd,
 		    const char *pkgname)
 {
-	xbps_dictionary_t opkgd, filesd = NULL;
+	xbps_dictionary_t opkgd, filesd;
 	const char *sha256;
 	char *buf;
 	int rv = 0, errors = 0;
@@ -128,6 +128,7 @@ do {								\
 	RUN_PKG_CHECK(xhp, symlinks, filesd);
 	RUN_PKG_CHECK(xhp, rundeps, opkgd);
 	RUN_PKG_CHECK(xhp, unneeded, opkgd);
+	RUN_PKG_CHECK(xhp, alternatives, opkgd);
 
 	if (filesd)
 		xbps_object_release(filesd);

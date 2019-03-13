@@ -40,6 +40,7 @@ CHECK_PKG_DECL(unneeded);
 CHECK_PKG_DECL(files);
 CHECK_PKG_DECL(rundeps);
 CHECK_PKG_DECL(symlinks);
+CHECK_PKG_DECL(alternatives);
 
 /* from convert.c */
 void	convert_pkgdb_format(struct xbps_handle *);
