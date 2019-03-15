@@ -131,7 +131,7 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 			rv = xbps_file_hash_check(file, oldhash);
 			if (rv == ENOENT || rv == ERANGE) {
 				/*
-				  Skip unexistent and files that do not
+				 * Skip unexistent and files that do not
 				 * match the hash.
 				 */
 				continue;
