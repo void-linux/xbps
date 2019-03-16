@@ -215,7 +215,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 int
 index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force)
 {
-	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
+	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd, filesd;
 	struct xbps_repo *repo = NULL, *stage = NULL;
 	struct stat st;
 	char *tmprepodir = NULL, *repodir = NULL, *rlockfname = NULL;
@@ -387,6 +387,30 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		xbps_dictionary_remove(binpkgd, "pkgname");
 		xbps_dictionary_remove(binpkgd, "version");
 		xbps_dictionary_remove(binpkgd, "packaged-with");
+
+		/*
+		 * Read files plist dictionary from binary package and store
+		 * the directories including sizes in the repodata.
+		 */
+		filesd = xbps_archive_fetch_plist(pkg, "/files.plist");
+		if (filesd != NULL) {
+			xbps_array_t arr = xbps_dictionary_get(filesd, "dirs");
+			if (xbps_array_count(arr) > 0) {
+				xbps_dictionary_t dirs = xbps_dictionary_create();
+				for (unsigned int j = 0; j < xbps_array_count(arr); j++) {
+					size_t size;
+					const char *file;
+					xbps_dictionary_t d = xbps_array_get(arr, j);
+					xbps_dictionary_get_cstring_nocopy(d, "file", &file);
+					assert(file);
+					xbps_dictionary_get_uint64(d, "size", &size);
+					xbps_dictionary_set_uint64(dirs, file, size);
+				}
+				xbps_dictionary_set(binpkgd, "directory_sizes", dirs);
+				xbps_object_release(dirs);
+				xbps_object_release(filesd);
+			}
+		}
 
 		/*
 		 * Add new pkg dictionary into the stage index
