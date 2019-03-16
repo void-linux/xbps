@@ -61,6 +61,7 @@ struct xentry {
 	uint64_t mtime;
 	char *file, *type, *target, *hash;
 	ino_t inode;
+	size_t size;
 };
 
 static TAILQ_HEAD(xentry_head, xentry) xentry_list =
@@ -302,7 +303,7 @@ entry_is_conf_file(const char *file)
 }
 
 static int
-ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED)
+ftw_cb(const char *fpath, const struct stat *sb, size_t sz)
 {
 	struct xentry *xe = NULL;
 	xbps_dictionary_t fileinfo = NULL;
@@ -337,6 +338,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 	xbps_dictionary_set(all_filesd, fpath, fileinfo);
 	xe->file = strdup(fpath);
 	assert(xe->file);
+	xe->size = sz;
 
 	if ((strcmp(fpath, "./INSTALL") == 0) ||
 	    (strcmp(fpath, "./REMOVE") == 0)) {
@@ -491,15 +493,17 @@ out:
 	return 0;
 }
 
-static int
+static ssize_t
 walk_dir(const char *path,
-		int (*fn) (const char *, const struct stat *sb, const struct dirent *dir))
+		int (*fn) (const char *, const struct stat *sb, size_t sz))
 {
 	int rv, i;
 	struct dirent **list;
 	char tmp_path[PATH_MAX] = { 0 };
 	struct stat sb;
+	ssize_t sz, res;
 
+	res = 0;
 	rv = scandir(path, &list, NULL, alphasort);
 	for (i = rv - 1; i >= 0; i--) {
 		if (strcmp(list[i]->d_name, ".") == 0 || strcmp(list[i]->d_name, "..") == 0)
@@ -517,20 +521,23 @@ walk_dir(const char *path,
 		}
 
 		if (S_ISDIR(sb.st_mode)) {
-			if (walk_dir(tmp_path, fn) < 0) {
+			if ((sz = walk_dir(tmp_path, fn)) < 0) {
 				rv = -1;
 				break;
 			}
+		} else {
+			sz = sb.st_size;
 		}
 
-		rv = fn(tmp_path, &sb, list[i]);
+		rv = fn(tmp_path, &sb, sz);
 		if (rv != 0) {
 			break;
 		}
-
+		res += sz;
 	}
+
 	free(list);
-	return rv;
+	return rv != 0 ? rv : res;
 }
 
 static void
@@ -586,6 +593,8 @@ process_xentry(const char *key, const char *mutable_files)
 			xbps_dictionary_set_cstring(d, "sha256", xe->hash);
 		if (xe->mtime)
 			xbps_dictionary_set_uint64(d, "mtime", xe->mtime);
+		if (xe->size)
+			xbps_dictionary_set_uint64(d, "size", xe->size);
 
 		xbps_array_add(a, d);
 		xbps_object_release(d);
