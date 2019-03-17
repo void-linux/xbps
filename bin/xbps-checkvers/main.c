@@ -568,6 +568,7 @@ rcv_check_version(rcv_t *rcv)
 	const char *repover = NULL;
 	char _srcver[BUFSIZ] = { '\0' };
 	char *srcver = _srcver;
+	size_t rv;
 
 	assert(rcv);
 
@@ -593,16 +594,27 @@ rcv_check_version(rcv_t *rcv)
 	assert(version.v.s);
 	assert(revision.v.s);
 
-	srcver = strncpy(srcver, pkgname.v.s, pkgname.v.len);
+	rv = xbps_strlcpy(srcver, pkgname.v.s, BUFSIZ);
+	if (rv >= BUFSIZ)
+		goto error;
+
 	if (rcv->installed)
 		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, srcver);
 	else
 		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, srcver);
 
-	srcver = strncat(srcver, "-", 1);
-	srcver = strncat(srcver, version.v.s, version.v.len);
-	srcver = strncat(srcver, "_", 1);
-	srcver = strncat(srcver, revision.v.s, revision.v.len);
+	rv = xbps_strlcat(srcver, "-", BUFSIZ);
+	if (rv >= BUFSIZ)
+		goto error;
+	rv = xbps_strlcat(srcver, version.v.s, BUFSIZ);
+	if (rv >= BUFSIZ)
+		goto error;
+	rv = xbps_strlcat(srcver, "_", BUFSIZ);
+	if (rv >= BUFSIZ)
+		goto error;
+	rv = xbps_strlcat(srcver, revision.v.s, BUFSIZ);
+	if (rv >= BUFSIZ)
+		goto error;
 
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
 
@@ -622,6 +634,9 @@ rcv_check_version(rcv_t *rcv)
 		}
 	}
 	return 0;
+error:
+	fprintf(stderr, "ERROR: Truncation detected\n");
+	exit(EXIT_FAILURE);
 }
 
 static int
