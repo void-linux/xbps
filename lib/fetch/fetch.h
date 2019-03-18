@@ -173,6 +173,12 @@ extern char		 fetchLastErrString[MAXERRSTRING];
 /* I/O timeout */
 extern int		 fetchTimeout;
 
+/* Connect timeout */
+extern int		 fetchConnTimeout;
+
+/* Connect attempt delay  */
+extern int		 fetchConnDelay;
+
 /* Restart interrupted syscalls */
 extern volatile int	 fetchRestartCalls;
 

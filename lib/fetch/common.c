@@ -4,6 +4,7 @@
  * Copyright (c) 1998-2014 Dag-Erling Smorgrav
  * Copyright (c) 2008, 2010 Joerg Sonnenberger <joerg@NetBSD.org>
  * Copyright (c) 2013 Michael Gmelin <freebsd@grem.de>
+ * Copyright (c) 2019 Duncan Overbruck <mail@duncano.de>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,6 +54,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <strings.h>
+#include <poll.h>
+#include <fcntl.h>
 
 #ifndef MSG_NOSIGNAL
 #include <signal.h>
@@ -418,6 +421,199 @@ fetch_socks5(conn_t *conn, struct url *url, struct url *socks, int verbose)
 }
 
 /*
+ * Happy Eyeballs (RFC8305):
+ *
+ * Connect to the addresses in res0, alternating between
+ * address family, starting with ipv6 and waits `fetchConnDelay`
+ * between each connection attempt.
+ *
+ * If a connection is established within the attempts,
+ * use this connection and close all others.
+ *
+ * If `connect(3)` returns `ENETUNREACH`, don't attempt more
+ * connections with the failing address family.
+ *
+ * If there are no more addresses to attempt, wait for
+ * `fetchConnTimeout` and return the first established
+ * connection.
+ *
+ * If no connection was established within the timeouts,
+ * close all sockets and return -1 and set errno to
+ * `ETIMEDOUT`.
+ */
+static int
+happy_eyeballs_connect(struct addrinfo *res0)
+{
+	struct pollfd *pfd;
+	struct addrinfo *res;
+	const char *bindaddr;
+	int optval;
+	socklen_t optlen = sizeof(optval);
+	int rv = -1;
+	int err = 0;
+	int timeout = fetchConnDelay;
+	unsigned int attempts = 0, waiting = 0;
+	unsigned int i, n4, n6, i4, i6, done = 0;
+
+	bindaddr = getenv("FETCH_BIND_ADDRESS");
+
+	for (n4 = n6 = 0, res = res0; res; res = res->ai_next)
+		switch (res->ai_family) {
+		case AF_INET6: n6++; break;
+		case AF_INET: n4++; break;
+		}
+
+	if (n4+n6 == 0 || !(pfd = calloc(n4+n6, sizeof (struct pollfd))))
+		return -1;
+
+#ifdef FULL_DEBUG
+	fetch_info("got %d A and %d AAAA records", n4, n6);
+#endif
+
+	res = NULL;
+	i4 = i6 = 0;
+	for (;;) {
+		int sd = -1;
+		int ret;
+		unsigned short family;
+
+#ifdef FULL_DEBUG
+		fetch_info("happy eyeballs state: i4=%u n4=%u i6=%u n6=%u", i4, n4, i6, n6);
+#endif
+
+		if (res == NULL) {
+			/* prefer ipv6 */
+			family = i6+1 < n6 ? AF_INET6 : AF_INET;
+		} else if (i4+1 < n4) {
+			family = res->ai_family == AF_INET && i6+1 < n6 ? AF_INET6 : AF_INET;
+		} else if (i6+1 < n6) {
+			family = res->ai_family == AF_INET6 && i4+1 < n4 ? AF_INET : AF_INET6;
+		} else {
+			/* no more connections to try */
+#ifdef FULL_DEBUG
+			fetch_info("attempted to connect to all addresses, waiting...");
+#endif
+			timeout = fetchConnTimeout;
+			done = 1;
+			goto wait;
+		}
+
+		for (i = 0, res = res0; res; res = res->ai_next) {
+			if (res->ai_family == family) {
+				if (family == AF_INET && i == i4) {
+					i4++;
+					break;
+				}
+				if (family == AF_INET6 && i == i6) {
+					i6++;
+					break;
+				}
+				i++;
+			}
+		}
+
+		if ((sd = socket(res->ai_family, res->ai_socktype | SOCK_NONBLOCK,
+			 res->ai_protocol)) == -1)
+			continue;
+
+		if (bindaddr != NULL && *bindaddr != '\0' &&
+		    fetch_bind(sd, res->ai_family, bindaddr) != 0) {
+			fetch_info("failed to bind to '%s'", bindaddr);
+			close(sd);
+			continue;
+		}
+
+#ifdef FULL_DEBUG
+		{
+			char hbuf[1025];
+			if (getnameinfo(res->ai_addr, res->ai_addrlen, hbuf, sizeof(hbuf), NULL,
+						0, NI_NUMERICHOST) == 0)
+				fetch_info("connecting to %s", hbuf);
+		}
+#endif
+
+		if (connect(sd, res->ai_addr, res->ai_addrlen) == -1) {
+			if (errno == EINPROGRESS) {
+				pfd[attempts].fd = sd;
+			} else if (errno == ENETUNREACH) {
+				close(sd);
+				if (family == AF_INET)
+					i4 = n4;
+				else
+					i6 = n6;
+				continue;
+			} else {
+				err = errno;
+				rv = -1;
+				close(sd);
+				break;
+			}
+		} else {
+			/* XXX: does this actually happen? */
+			rv = sd;
+			break;
+		}
+
+		attempts++;
+		waiting++;
+wait:
+		for (i = 0; i < attempts; i++) {
+			pfd[i].revents = pfd[i].events = 0;
+			if (pfd[i].fd != -1)
+				pfd[i].events = POLLOUT;
+		}
+		if ((ret = poll(pfd, attempts, timeout ? timeout : -1)) == -1) {
+			err = errno;
+			rv = -1;
+			break;
+		} else if (ret > 0) {
+			sd = -1;
+			for (i = 0; i < attempts; i++) {
+				if (pfd[i].revents & POLLHUP) {
+					/* connection failed, save errno */
+					if ((getsockopt(pfd[i].fd, SOL_SOCKET, SO_ERROR, &optval, &optlen)) == 0)
+						err = optval;
+					close(pfd[i].fd);
+					pfd[i].fd = -1;
+					waiting--;
+				} else if (pfd[i].revents & POLLOUT) {
+					/* connection established */
+					err = 0;
+					sd = pfd[i].fd;
+					break;
+				}
+			}
+			if (sd != -1) {
+				rv = sd;
+				break;
+			}
+		} else if (done) {
+			err = ETIMEDOUT;
+			rv = -1;
+			break;
+		}
+		if (!waiting)
+			break;
+	}
+
+	for (i = 0; i < attempts; i++)
+		if ((rv == -1 || rv != pfd[i].fd) && pfd[i].fd != -1)
+			close(pfd[i].fd);
+	free(pfd);
+
+	if (rv != -1) {
+		if (fcntl(rv, F_SETFL, fcntl(rv, F_GETFL, 0) & ~O_NONBLOCK) == -1) {
+			err = errno;
+			close(rv);
+			rv = -1;
+		}
+	}
+
+	errno = err;
+	return rv;
+}
+
+/*
  * Establish a TCP connection to the specified port on the specified host.
  */
 conn_t *
@@ -426,8 +622,8 @@ fetch_connect(struct url *url, int af, int verbose)
 	conn_t *conn;
 	char pbuf[10];
 	struct url *socks_url, *connurl;
-	const char *bindaddr, *socks_proxy;
-	struct addrinfo hints, *res, *res0;
+	const char *socks_proxy;
+	struct addrinfo hints, *res0;
 	int sd, error;
 
 	socks_url = NULL;
@@ -460,26 +656,11 @@ fetch_connect(struct url *url, int af, int verbose)
 		netdb_seterr(error);
 		return (NULL);
 	}
-	bindaddr = getenv("FETCH_BIND_ADDRESS");
 
 	if (verbose)
 		fetch_info("connecting to %s:%d", connurl->host, connurl->port);
 
-	/* try to connect */
-	for (sd = -1, res = res0; res; sd = -1, res = res->ai_next) {
-		if ((sd = socket(res->ai_family, res->ai_socktype,
-			 res->ai_protocol)) == -1)
-			continue;
-		if (bindaddr != NULL && *bindaddr != '\0' &&
-		    fetch_bind(sd, res->ai_family, bindaddr) != 0) {
-			fetch_info("failed to bind to '%s'", bindaddr);
-			close(sd);
-			continue;
-		}
-		if (connect(sd, res->ai_addr, res->ai_addrlen) == 0)
-			break;
-		close(sd);
-	}
+	sd = happy_eyeballs_connect(res0);
 	freeaddrinfo(res0);
 	if (sd == -1) {
 		fetch_syserr();

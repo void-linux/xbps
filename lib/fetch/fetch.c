@@ -45,6 +45,8 @@ auth_t	 fetchAuthMethod;
 int	 fetchLastErrCode;
 char	 fetchLastErrString[MAXERRSTRING];
 int	 fetchTimeout;
+int	 fetchConnTimeout;
+int	 fetchConnDelay = 250;
 volatile int	 fetchRestartCalls = 1;
 int	 fetchDebug;
 
