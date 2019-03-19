@@ -49,7 +49,7 @@ case $state in
 	target)
 		_values "target" binary-bootstrap bootstrap bootstrap-update \
 			build chroot clean configure extract fetch install \
-			list pkg remove remove-autodeps show show-build-deps \
+			list patch pkg remove remove-autodeps show show-build-deps \
 			show-deps show-files show-options show-shlib-provides \
 			show-shlib-requires show-var show-repo-updates \
 			show-sys-updates update-bulk update-check update-sys zap
