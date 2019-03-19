@@ -87,7 +87,7 @@ unpack_archive(struct xbps_handle *xhp,
 	const char *file, *entry_pname, *transact, *binpkg_pkgver;
 	char *pkgname, *buf;
 	int ar_rv, rv, error, entry_type, flags;
-	bool preserve, update, file_exists;
+	bool preserve, update, file_exists, keep_conf_file;
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
@@ -287,7 +287,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * doesn't match, in that case overwrite the file.
 		 * Otherwise skip extracting it.
 		 */
-		skip_extract = file_exists = false;
+		skip_extract = file_exists = keep_conf_file = false;
 		if (lstat(entry_pname, &st) == 0)
 			file_exists = true;
 		/*
@@ -303,32 +303,41 @@ unpack_archive(struct xbps_handle *xhp,
 			    "it's preserved.\n", pkgver, entry_pname);
 			continue;
 		}
+
+		/*
+		 * Check if current entry is a configuration file,
+		 * that should be kept.
+		 */
+		if (!force && (entry_type == AE_IFREG)) {
+			buf = strchr(entry_pname, '.') + 1;
+			assert(buf != NULL);
+			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_filesd, buf);
+		}
+
 		/*
 		 * If file to be extracted does not match the file type of
-		 * file currently stored on disk, remove file on disk.
+		 * file currently stored on disk and is not a conf file
+		 * that should be kept, remove file on disk.
 		 */
-		if (file_exists &&
+		if (file_exists && !keep_conf_file &&
 		    ((entry_statp->st_mode & S_IFMT) != (st.st_mode & S_IFMT)))
 			(void)remove(entry_pname);
 
 		if (!force && (entry_type == AE_IFREG)) {
-			buf = strchr(entry_pname, '.') + 1;
-			assert(buf != NULL);
-			if (file_exists && S_ISREG(st.st_mode)) {
+			if (file_exists && (S_ISREG(st.st_mode) || S_ISLNK(st.st_mode))) {
 				/*
-				 * Handle configuration files. Check if current
-				 * entry is a configuration file and take action
-				 * if required. Skip packages that don't have
-				 * "conf_files" array on its XBPS_PKGPROPS
+				 * Handle configuration files.
+				 * Skip packages that don't have "conf_files"
+				 * array on its XBPS_PKGPROPS
 				 * dictionary.
 				 */
-				if (xbps_entry_is_a_conf_file(binpkg_filesd, buf)) {
+				if (keep_conf_file) {
 					if (xhp->unpack_cb != NULL)
 						xucd.entry_is_conf = true;
 
 					rv = xbps_entry_install_conf_file(xhp,
 					    binpkg_filesd, pkg_filesd, entry,
-					    entry_pname, pkgver);
+					    entry_pname, pkgver, S_ISLNK(st.st_mode));
 					if (rv == -1) {
 						/* error */
 						goto out;
