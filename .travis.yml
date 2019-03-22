@@ -7,17 +7,15 @@ services:
  - docker
 
 env:
-  global:
-   - MAKEJOBS = -j4
   matrix:
-   - CC=gcc IMAGE=voidlinux/voidlinux DEPENDENCY_PACKAGES="bash kyua zlib-devel libarchive-devel base-devel atf-devel"
-   - CC=clang IMAGE=voidlinux/voidlinux DEPENDENCY_PACKAGES="clang bash kyua zlib-devel libarchive-devel base-devel atf-devel"
-   - CC=gcc IMAGE=voidlinux/voidlinux-musl DEPENDENCY_PACKAGES="bash kyua zlib-devel libarchive-devel base-devel atf-devel"
-   - CC=clang IMAGE=voidlinux/voidlinux-musl DEPENDENCY_PACKAGES="clang bash kyua zlib-devel libarchive-devel base-devel atf-devel"
+   - CC=gcc IMG=voidlinux/voidlinux DEPS="gcc glibc-devel"
+   - CC=clang IMG=voidlinux/voidlinux DEPS="clang glibc-devel"
+   - CC=gcc IMG=voidlinux/voidlinux-musl DEPS="gcc musl-devel"
+   - CC=clang IMG=voidlinux/voidlinux-musl DEPS="clang musl-devel"
 
 install:
- - docker pull "$IMAGE"
- - docker run -v "$PWD":/tmp/build-dir "$IMAGE" /bin/sh -c "xbps-install -Syu && xbps-install -y $DEPENDENCY_PACKAGES && cd /tmp/build-dir && CC=$CC ./configure --enable-tests --enable-debug && make $MAKEJOBS && make check"
+ - docker pull "$IMG"
+ - docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" "$IMG" /bin/sh -c "xbps-install -Syu && xbps-install -y $DEPS make pkg-config kyua zlib-devel libarchive-devel atf-devel && CC=$CC ./configure --enable-tests --enable-debug && make -j4 && ATF_SHELL=/bin/sh make check"
 
 script:
  - echo BUILDS PASSED
