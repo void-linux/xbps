@@ -21,7 +21,7 @@ vpkg_dont_update_head() {
 
 vpkg_dont_update_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C,D}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "libEGL-1.0_1" ../pkg_A
 	atf_check_equal $? 0
@@ -56,7 +56,7 @@ vpkg_replace_provider_head() {
 
 vpkg_replace_provider_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C,D}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
@@ -91,7 +91,7 @@ vpkg_provider_in_trans_head() {
 
 vpkg_provider_in_trans_body() {
 	mkdir some_repo
-	mkdir -p pkg_{gawk,base-system,busybox}
+	mkdir -p pkg_gawk pkg_base-system pkg_busybox
 	cd some_repo
 	xbps-create -A noarch -n gawk-1.0_1 -s "gawk pkg" ../pkg_gawk
 	atf_check_equal $? 0

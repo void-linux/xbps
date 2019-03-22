@@ -45,7 +45,7 @@ replace_ntimes_head() {
 
 replace_ntimes_body() {
 	mkdir some_repo root
-	mkdir -p pkg_{A,B,C,D}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0

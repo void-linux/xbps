@@ -8,7 +8,7 @@ conflicts_trans_head() {
 
 conflicts_trans_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "B>=0" ../pkg_A
 	atf_check_equal $? 0
@@ -33,7 +33,7 @@ conflicts_trans_hold_head() {
 
 conflicts_trans_hold_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "vpkg>19_1" ../pkg_A
 	atf_check_equal $? 0
@@ -76,7 +76,7 @@ conflicts_trans_vpkg_head() {
 
 conflicts_trans_vpkg_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "vpkg>=0" ../pkg_A
 	atf_check_equal $? 0
@@ -105,7 +105,7 @@ conflicts_trans_multi_head() {
 
 conflicts_trans_multi_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "B>=0" ../pkg_A
 	atf_check_equal $? 0
@@ -132,7 +132,7 @@ conflicts_installed_head() {
 
 conflicts_installed_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "B>=0" ../pkg_A
 	atf_check_equal $? 0
@@ -159,7 +159,7 @@ conflicts_installed_multi_head() {
 
 conflicts_installed_multi_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "B>=0" ../pkg_A
 	atf_check_equal $? 0
@@ -188,7 +188,7 @@ conflicts_trans_installed_head() {
 
 conflicts_trans_installed_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "B>=0" ../pkg_A
 	atf_check_equal $? 0
@@ -215,7 +215,7 @@ conflicts_trans_update_head() {
 
 conflicts_trans_update_body() {
 	mkdir repo repo2
-	mkdir -p pkg_{A,B}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
 
 	cd repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "xserver-abi-video-19_1" ../pkg_A
@@ -260,7 +260,7 @@ conflicts_trans_installed_multi_head() {
 
 conflicts_trans_installed_multi_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --conflicts "B>=0" ../pkg_A
 	atf_check_equal $? 0

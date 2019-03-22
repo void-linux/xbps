@@ -9,7 +9,7 @@ cyclic_dep_vpkg_head() {
 
 cyclic_dep_vpkg_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C,D}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "libGL-7.11_1" --dependencies "libGL>=7.11" ../pkg_A
 	atf_check_equal $? 0
@@ -37,7 +37,7 @@ cyclic_dep_vpkg2_head() {
 
 cyclic_dep_vpkg2_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C,D}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "libGL-7.11_1" --dependencies "xserver-abi-video<20" ../pkg_A
 	atf_check_equal $? 0
@@ -64,7 +64,7 @@ cyclic_dep_full_body() {
 	atf_set "timeout" 5
 	atf_expect_timeout "Known bug: see https://github.com/voidlinux/xbps/issues/92"
 	mkdir some_repo
-	mkdir -p pkg_{A,B}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies "B>=0" ../pkg_A
 	atf_check_equal $? 0

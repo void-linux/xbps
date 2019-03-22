@@ -51,7 +51,7 @@ incorrect_dep_issue45_head() {
 
 incorrect_dep_issue45_body() {
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C,D}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies "A>=0" ../pkg_A
 	atf_check_equal $? 0

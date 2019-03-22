@@ -32,7 +32,7 @@ install_with_deps_head() {
 install_with_deps_body() {
 	# Proper order: A B C D
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C,D}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
@@ -47,9 +47,8 @@ install_with_deps_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	echo -e "A-1.0_1\nB-1.0_1\nC-1.0_1\nD-1.0_1\n" > exp
+	printf "A-1.0_1\nB-1.0_1\nC-1.0_1\nD-1.0_1\n" > exp
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yn D|awk '{print $1}' > out
-	echo >> out
 	echo "exp: '$(cat exp)'" >&2
 	echo "out: '$(cat out)'" >&2
 	cmp exp out
@@ -65,7 +64,7 @@ install_with_vpkg_deps_head() {
 install_with_vpkg_deps_body() {
 	# Proper order: D C A B
 	mkdir some_repo
-	mkdir -p pkg_{A,B,C,D}/usr/bin
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
@@ -80,9 +79,8 @@ install_with_vpkg_deps_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	echo -e "A-1.0_1\nB-1.0_1\nD-1.0_1\nC-1.0_1\n" > exp
+	printf "A-1.0_1\nB-1.0_1\nD-1.0_1\nC-1.0_1\n" > exp
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yn E|awk '{print $1}' > out
-	echo >> out
 	echo "exp: '$(cat exp)'" >&2
 	echo "out: '$(cat out)'" >&2
 	cmp exp out
