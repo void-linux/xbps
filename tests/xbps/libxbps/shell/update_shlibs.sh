@@ -218,6 +218,43 @@ shlib_unknown_provider_body() {
 	atf_check_equal $? 8
 }
 
+atf_test_case shlib_provides_replaces
+
+shlib_provides_replaces_head() {
+	atf_set "descr" "Tests for pkg updates: replace pkg with shlib provided"
+}
+
+shlib_provides_replaces_body() {
+	mkdir -p repo pkg_A pkg_B
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --shlib-provides "libfoo.so.1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=1.0" --shlib-requires "libfoo.so.1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/repo -yvd B
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n B-2.0_1 -s "B pkg" --dependencies "C>=0" --shlib-requires "libfoo.so.1" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-2.0_1 -s "C pkg" --replaces "A>=1.0" --shlib-provides "libfoo.so.1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -C empty.conf -r root -ppkgver B) B-2.0_1
+	atf_check_equal $(xbps-query -C empty.conf -r root -ppkgver C) C-2.0_1
+	xbps-query -C empty.conf -r root A
+	atf_check_equal $? 2
+}
+
 atf_init_test_cases() {
 	atf_add_test_case shlib_bump
 	atf_add_test_case shlib_bump_incomplete_revdep_in_trans
@@ -225,4 +262,5 @@ atf_init_test_cases() {
 	atf_add_test_case shlib_bump_revdep_diff
 	atf_add_test_case shlib_bump_versioned
 	atf_add_test_case shlib_unknown_provider
+	atf_add_test_case shlib_provides_replaces
 }
