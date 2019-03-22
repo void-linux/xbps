@@ -566,8 +566,8 @@ rcv_check_version(rcv_t *rcv)
 {
 	map_item_t pkgname, version, revision, reverts;
 	const char *repover = NULL;
-	char _srcver[BUFSIZ] = { '\0' };
-	char *srcver = _srcver;
+	char srcver[BUFSIZ] = { '\0' };
+	int sz;
 
 	assert(rcv);
 
@@ -593,16 +593,23 @@ rcv_check_version(rcv_t *rcv)
 	assert(version.v.s);
 	assert(revision.v.s);
 
-	srcver = strncpy(srcver, pkgname.v.s, pkgname.v.len);
+	sz = snprintf(srcver, sizeof srcver, "%.*s-%.*s_%.*s",
+	    (int)pkgname.v.len, pkgname.v.s,
+	    (int)version.v.len, version.v.s,
+	    (int)revision.v.len, revision.v.s);
+	if (sz < 0 || (size_t)sz >= sizeof srcver)
+		exit(EXIT_FAILURE);
+
+	/* temporarily use pkgname only */
+	srcver[pkgname.v.len] = '\0';
+
 	if (rcv->installed)
 		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, srcver);
 	else
 		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, srcver);
 
-	srcver = strncat(srcver, "-", 1);
-	srcver = strncat(srcver, version.v.s, version.v.len);
-	srcver = strncat(srcver, "_", 1);
-	srcver = strncat(srcver, revision.v.s, revision.v.len);
+	/* back to pkgver */
+	srcver[pkgname.v.len] = '-';
 
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
 
