@@ -175,8 +175,8 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 	case XBPS_STATE_REMOVE_FILE_FAIL:
 	case XBPS_STATE_REMOVE_FILE_HASH_FAIL:
 	case XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL:
-		/* Ignore errors due to not empty directories */
-		if (xscd->err == ENOTEMPTY)
+		/* Ignore errors due to not empty directories or directories being a mount point */
+		if (xscd->err == ENOTEMPTY || xscd->err == EBUSY)
 			return 0;
 
 		xbps_error_printf("%s\n", xscd->desc);
