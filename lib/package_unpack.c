@@ -75,6 +75,7 @@ unpack_archive(struct xbps_handle *xhp,
 {
 	xbps_dictionary_t binpkg_propsd, binpkg_filesd, pkg_filesd;
 	xbps_array_t array, obsoletes;
+	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	xbps_data_t data;
 	const struct stat *entry_statp;
@@ -84,7 +85,7 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
-	const char *file, *entry_pname, *transact, *binpkg_pkgver;
+	const char *file, *entry_pname, *transact, *binpkg_pkgver, *cur_file;
 	char *pkgname, *buf;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists;
@@ -310,6 +311,29 @@ unpack_archive(struct xbps_handle *xhp,
 		if (file_exists &&
 		    ((entry_statp->st_mode & S_IFMT) != (st.st_mode & S_IFMT)))
 			(void)remove(entry_pname);
+
+		/*
+		 * If regular file stored on disk would prevent extracting the new file,
+		 * delete the current file
+		 */
+		if (!file_exists && pkg_filesd &&
+		    (iter = xbps_array_iter_from_dict(pkg_filesd, "files")) != NULL) {
+			while((obj = xbps_object_iterator_next(iter))) {
+				if (xbps_object_type(obj) != XBPS_TYPE_DICTIONARY)
+					continue;
+				xbps_dictionary_get_cstring_nocopy(obj, "file", &cur_file);
+				buf = strstr(entry_pname, cur_file);
+				if (buf &&
+				    strlen(buf) > strlen(cur_file) &&
+				    entry_pname[strlen(cur_file) + 1] == '/') {
+					buf = xbps_xasprintf("%s/%s", xhp->rootdir, cur_file);
+					(void) remove(buf);
+					free(buf);
+					break;
+				}
+			}
+			xbps_object_iterator_release(iter);
+		}
 
 		if (!force && (entry_type == AE_IFREG)) {
 			buf = strchr(entry_pname, '.') + 1;
