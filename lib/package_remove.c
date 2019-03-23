@@ -93,13 +93,23 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 	return fail;
 }
 
+struct order_length_t {
+	unsigned int pos;
+	size_t len;
+};
+
+static int cmp_order_length(const void *l1, const void *l2) {
+	return ((const struct order_length_t*)l1)->len <
+	       ((const struct order_length_t*)l2)->len;
+}
+
 static int
 remove_pkg_files(struct xbps_handle *xhp,
 		 xbps_dictionary_t dict,
 		 const char *key,
 		 const char *pkgver)
 {
-	xbps_array_t array;
+	xbps_array_t array, dirs;
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	const char *curobj = NULL;
@@ -136,6 +146,40 @@ remove_pkg_files(struct xbps_handle *xhp,
 		curobj = "link";
 	else if (strcmp(key, "dirs") == 0)
 		curobj = "directory";
+
+	xbps_object_iterator_reset(iter);
+
+	/*
+	 * directories must be ordered before removal
+	 */
+	if (strcmp(key, "dirs") == 0) {
+		unsigned int i = 0;
+		unsigned int n = xbps_array_count(array);
+		struct order_length_t *lengths =
+		  (struct order_length_t*) malloc(sizeof(struct order_length_t) * n);
+
+		if (lengths == NULL)
+			return ENOMEM;
+
+		while ((obj = xbps_object_iterator_next(iter))) {
+			const char *file;
+			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
+			lengths[i].len = strlen(file);
+			lengths[i].pos = i;
+			i++;
+		}
+
+		qsort(lengths, n, sizeof(struct order_length_t), cmp_order_length);
+		dirs = xbps_array_create_with_capacity(n);
+
+		for (i = 0; i < n; i++) {
+			xbps_array_add(dirs, xbps_array_get(array, lengths[i].pos));
+		}
+
+		xbps_object_iterator_release(iter);
+		iter = xbps_array_iterator(dirs);
+		free(lengths);
+	}
 
 	xbps_object_iterator_reset(iter);
 
