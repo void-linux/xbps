@@ -721,6 +721,8 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 {
 	struct url *curl;
 	conn_t *conn;
+	const char *p;
+	hdr_t h;
 	int af, verbose;
 #ifdef TCP_NOPUSH
 	int val;
@@ -759,10 +761,25 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 		http_cmd(conn, "\r\n");
 
 		if (http_get_reply(conn) != HTTP_OK) {
+			http_seterr(conn->err);
 			fetch_close(conn);
 			return (NULL);
 		}
-		http_get_reply(conn);
+		/* Read and discard the rest of the proxy response */
+		do {
+			switch ((h = http_next_header(conn, &p))) {
+			case hdr_syserror:
+				fetch_syserr();
+				fetch_close(conn);
+				return (NULL);
+			case hdr_error:
+				http_seterr(HTTP_PROTOCOL_ERROR);
+				fetch_close(conn);
+				return (NULL);
+			default:
+				/* ignore */ ;
+			}
+		} while (h > hdr_end);
 	}
 	if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0 &&
 	    fetch_ssl(conn, URL, verbose) == -1) {
