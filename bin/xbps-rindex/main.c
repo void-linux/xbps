@@ -79,7 +79,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	const char *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
-	int rv, c, flags = 0;
+	int rv, c, flags = 0, modes_count = 0;
 	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
 			 hashcheck;
 
@@ -99,9 +99,11 @@ main(int argc, char **argv)
 			break;
 		case 'a':
 			add_mode = true;
+			modes_count++;
 			break;
 		case 'c':
 			clean_mode = true;
+			modes_count++;
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
@@ -114,15 +116,18 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		case 'r':
 			rm_mode = true;
+			modes_count++;
 			break;
 		case 's':
 			sign_mode = true;
+			modes_count++;
 			break;
 		case 'C':
 			hashcheck = true;
 			break;
 		case 'S':
 			sign_pkg_mode = true;
+			modes_count++;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -136,15 +141,10 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if ((argc == optind) ||
-	    (!add_mode && !clean_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
+	if ((argc == optind) || (modes_count == 0)) {
 		usage(true);
 		/* NOTREACHED */
-	} else if ((add_mode && (clean_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (clean_mode && (add_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (rm_mode && (add_mode || clean_mode || sign_mode || sign_pkg_mode)) ||
-		   (sign_mode && (add_mode || clean_mode || rm_mode || sign_pkg_mode)) ||
-		   (sign_pkg_mode && (add_mode || clean_mode || rm_mode || sign_mode))) {
+	} else if (modes_count > 1) {
 		fprintf(stderr, "Only one mode can be specified: add, clean, "
 		    "remove-obsoletes, sign or sign-pkg.\n");
 		exit(EXIT_FAILURE);
