@@ -208,6 +208,7 @@ _xbps_rindex() {
 		- '(mode)' \
 		{-a,--add}'[Add package to repository index]' \
 		{-c,--clean}'[Clean repository index]' \
+		{-R,--remove}'[Remove packages from repository index]' \
 		{-r,--remove-obsoletes}'[Removes obsolete packages from repository]' \
 		{-s,--sign}'[Sign repository index]' \
 		{-S,--sign-pkg}'[Sign binary package archive]' \

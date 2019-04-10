@@ -71,6 +71,9 @@ int	index_clean(struct xbps_handle *, const char *, bool, const char *);
 /* From remove-obsoletes.c */
 int	remove_obsoletes(struct xbps_handle *, const char *);
 
+/* From index-remove.c */
+int index_remove(struct xbps_handle *, int, int, char **, const char *);
+
 /* From sign.c */
 int	sign_repo(struct xbps_handle *, const char *, const char *,
 		const char *, const char *);
