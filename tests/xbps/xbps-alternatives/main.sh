@@ -348,6 +348,8 @@ set_pkg_group_body() {
 
 	xbps-install -r root --repository=repo -ydv A B
 	atf_check_equal $? 0
+	xbps-alternatives -r root -s A -g 1
+	atf_check_equal $? 0
 	xbps-alternatives -r root -s B -g 2
 	atf_check_equal $? 0
 
