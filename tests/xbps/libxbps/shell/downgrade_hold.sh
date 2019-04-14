@@ -33,7 +33,7 @@ downgrade_hold_body() {
 	xbps-install -r root --repository=$PWD/repo -yuvd
 	atf_check_equal $? 0
 	out=$(xbps-query -r root -p pkgver A)
-	atf_check_equal $out A-1.0_0
+	atf_check_equal $out A-1.0_1
 }
 
 atf_init_test_cases() {
