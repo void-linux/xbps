@@ -247,11 +247,36 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
-		if (trans_find_pkg(xhp, pkgname, false, false) == 0) {
-			free(pkgname);
+
+		rv = trans_find_pkg(xhp, pkgname, false, false);
+		free(pkgname);
+
+		if (rv == 0) {
+			/* new version found, take into account its revdeps */
+			xbps_array_t rdeps;
+
+			rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
+			for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+				const char *curpkgver;
+				char *curpkgn;
+
+				xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
+				curpkgn = xbps_pkg_name(curpkgver);
+				assert(curpkgn);
+				rv = trans_find_pkg(xhp, curpkgn, false, false);
+				free(curpkgn);
+				if (rv != 0 && rv != EEXIST)
+					return rv;
+			}
+
+			return rv;
+		} else if (rv == EEXIST || rv == ENOENT) {
+			/* no update */
+			;
+		} else {
+			/* error */
 			return rv;
 		}
-		free(pkgname);
 	}
 
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
