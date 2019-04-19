@@ -38,6 +38,7 @@ uninstall:
 	done
 
 check:
+	-rm -f result.db*
 	@./run-tests
 
 clean:
