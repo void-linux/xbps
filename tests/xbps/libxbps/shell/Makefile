@@ -7,7 +7,7 @@ TESTSHELL+= replace_test installmode_test obsoletefiles_test
 TESTSHELL+= issue31_test scripts_test incorrect_deps_test
 TESTSHELL+= vpkg_test install_test preserve_files_test configure_test
 TESTSHELL+= update_shlibs update_hold update_repolock cyclic_deps conflicts
-TESTSHELL+= downgrade_hold
+TESTSHELL+= update_itself downgrade_hold
 EXTRA_FILES = Kyuafile
 
 include $(TOPDIR)/mk/test.mk
