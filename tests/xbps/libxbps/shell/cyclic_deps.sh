@@ -61,8 +61,6 @@ cyclic_dep_full_head() {
 }
 
 cyclic_dep_full_body() {
-	atf_set "timeout" 5
-	atf_expect_timeout "Known bug: see https://github.com/voidlinux/xbps/issues/92"
 	mkdir some_repo
 	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
 	cd some_repo
@@ -86,5 +84,5 @@ cyclic_dep_full_body() {
 atf_init_test_cases() {
 	atf_add_test_case cyclic_dep_vpkg
 	atf_add_test_case cyclic_dep_vpkg2
-	#atf_add_test_case cyclic_dep_full
+	atf_add_test_case cyclic_dep_full
 }

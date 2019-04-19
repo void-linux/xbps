@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014-2015 Juan Romero Pardines.
+ * Copyright (c) 2014-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,58 +31,132 @@
 
 #include "xbps_api_impl.h"
 
-struct pkgdep {
-	SLIST_ENTRY(pkgdep) pkgdep_entries;
-	const char *pkg;
+struct item;
+
+struct depn {
+	struct depn *dnext;
+	struct item *item;
+};
+
+struct item {
+	struct item *hnext;
+	struct item *bnext;
+	struct depn *dbase;
+	char *pkgn;
+	const char *pkgver;
 	xbps_array_t rdeps;
 };
 
-static SLIST_HEAD(pkgdep_head, pkgdep) pkgdep_list =
-    SLIST_HEAD_INITIALIZER(pkgdep_list);
+#define ITHSIZE	1024
+#define ITHMASK	(ITHSIZE - 1)
 
-static xbps_dictionary_t pkgdep_pvmap;
+static struct item *ItemHash[ITHSIZE];
+static xbps_array_t result;
 
 static int
-collect_rdeps(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
+itemhash(const char *pkgn)
 {
-	xbps_array_t rdeps, currdeps, provides = NULL;
-	struct pkgdep *pd;
-	const char *pkgver;
+	int hv = 0xA1B5F342;
+	int i;
 
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	assert(pkgver);
+	assert(pkgn);
+
+	for (i = 0; pkgn[i]; ++i)
+		hv = (hv << 5) ^ (hv >> 23) ^ pkgn[i];
+
+	return hv & ITHMASK;
+}
+
+static struct item *
+lookupItem(const char *pkgn)
+{
+	struct item *item;
+
+	assert(pkgn);
+
+	for (item = ItemHash[itemhash(pkgn)]; item; item = item->hnext) {
+		if (strcmp(pkgn, item->pkgn) == 0)
+			return item;
+	}
+	return NULL;
+}
+
+static struct item *
+addItem(xbps_array_t rdeps, const char *pkgn)
+{
+	struct item **itemp;
+	struct item *item = calloc(sizeof(*item), 1);
+
+	assert(pkgn);
+	assert(item);
+
+	itemp = &ItemHash[itemhash(pkgn)];
+	item->hnext = *itemp;
+	item->pkgn = strdup(pkgn);
+	assert(item->pkgn);
+	item->rdeps = xbps_array_copy(rdeps);
+	*itemp = item;
+
+	return item;
+}
+
+static void
+addDepn(struct item *item, struct item *xitem)
+{
+	struct depn *depn = calloc(sizeof(*depn), 1);
+
+	assert(item);
+	assert(xitem);
+
+	depn->item = item;
+	depn->dnext = xitem->dbase;
+	xitem->dbase = depn;
+}
+
+/*
+ * Recursively calculate all dependencies.
+ */
+static struct item *
+ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
+{
+	xbps_array_t rdeps, provides;
+	xbps_string_t str;
+	struct item *item, *xitem;
+	const char *pkgver;
+	char *pkgn;
+
+	assert(xhp);
+	assert(pkgd);
+
 	rdeps = xbps_dictionary_get(pkgd, "run_depends");
 	provides = xbps_dictionary_get(pkgd, "provides");
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+
+	pkgn = xbps_pkg_name(pkgver);
+	assert(pkgn);
+	item = addItem(rdeps, pkgn);
+	item->pkgver = pkgver;
+	assert(item);
+	free(pkgn);
 
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
 		xbps_dictionary_t curpkgd;
-		const char *curdep, *curpkgver;
+		const char *curdep;
 		char *curdepname;
-		bool virtual = false, found = false;
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curdep);
 		if (rpool) {
-			if ((curpkgd = xbps_rpool_get_pkg(xhp, curdep)) == NULL) {
+			if ((curpkgd = xbps_rpool_get_pkg(xhp, curdep)) == NULL)
 				curpkgd = xbps_rpool_get_virtualpkg(xhp, curdep);
-				virtual = true;
-			}
 		} else {
-			if ((curpkgd = xbps_pkgdb_get_pkg(xhp, curdep)) == NULL) {
+			if ((curpkgd = xbps_pkgdb_get_pkg(xhp, curdep)) == NULL)
 				curpkgd = xbps_pkgdb_get_virtualpkg(xhp, curdep);
-				virtual = true;
-			}
 		}
-		if (curpkgd == NULL) {
-			xbps_dbg_printf(xhp, "%s: cannot find `%s' dependency\n",
-			    __func__, curdep);
-			return ENOENT;
-		}
-		if (((curdepname = xbps_pkgpattern_name(curdep)) == NULL) &&
-		    ((curdepname = xbps_pkg_name(curdep)) == NULL))
-			return EINVAL;
+		assert(curpkgd);
+		if ((curdepname = xbps_pkgpattern_name(curdep)) == NULL)
+			curdepname = xbps_pkg_name(curdep);
 
-		xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &curpkgver);
-		currdeps = xbps_dictionary_get(curpkgd, "run_depends");
+		assert(curdepname);
 
 		if (provides && xbps_match_pkgname_in_array(provides, curdepname)) {
 			xbps_dbg_printf(xhp, "%s: ignoring dependency %s "
@@ -90,98 +164,30 @@ collect_rdeps(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 			free(curdepname);
 			continue;
 		}
-		if (virtual) {
-			xbps_dictionary_set_cstring_nocopy(pkgdep_pvmap, curdepname, pkgver);
-		}
+		xitem = lookupItem(curdepname);
+		if (xitem == NULL)
+			xitem = ordered_depends(xhp, curpkgd, rpool);
+
+		assert(xitem);
+		addDepn(item, xitem);
 		free(curdepname);
-		/* uniquify dependencies, sorting will be done later */
-		SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
-			if (strcmp(pd->pkg, curpkgver) == 0) {
-				found = true;
-				break;
-			}
-		}
-		if (!found) {
-			pd = malloc(sizeof(*pd));
-			assert(pd);
-			pd->pkg = curpkgver;
-			pd->rdeps = xbps_array_copy(currdeps);
-			SLIST_INSERT_HEAD(&pkgdep_list, pd, pkgdep_entries);
-			if (xbps_array_count(currdeps)) {
-				int rv;
-
-				if ((rv = collect_rdeps(xhp, curpkgd, rpool)) != 0)
-					return rv;
-			}
-		}
 	}
-	return 0;
-}
+	/* all deps were processed, add item to head */
+	str = xbps_string_create_cstring(item->pkgver);
+	assert(str);
+	xbps_array_add_first(result, str);
+	xbps_object_release(str);
 
-static xbps_array_t
-sortfulldeptree(void)
-{
-	struct pkgdep *pd;
-	xbps_array_t result;
-	unsigned int ndeps = 0;
-
-	result = xbps_array_create();
-	assert(result);
-
-	SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
-		if (!pd->rdeps) {
-			xbps_array_add_cstring_nocopy(result, pd->pkg);
-			SLIST_REMOVE(&pkgdep_list, pd, pkgdep, pkgdep_entries);
-		}
-		ndeps++;
-	}
-	while (xbps_array_count(result) < ndeps) {
-		bool found = false;
-
-		SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
-			unsigned int i = 0, mdeps = 0, rdeps = 0;
-
-			rdeps = xbps_array_count(pd->rdeps);
-			for (i = 0; i < rdeps; i++) {
-				const char *pkgdep;
-				char *pkgname;
-
-				xbps_array_get_cstring_nocopy(pd->rdeps, i, &pkgdep);
-				if (((pkgname = xbps_pkgpattern_name(pkgdep)) == NULL) &&
-				    ((pkgname = xbps_pkg_name(pkgdep)) == NULL))
-					return NULL;
-
-				if (xbps_match_pkgname_in_array(result, pkgname)) {
-					mdeps++;
-					free(pkgname);
-					continue;
-				}
-				if (xbps_dictionary_get(pkgdep_pvmap, pkgname)) {
-					mdeps++;
-					free(pkgname);
-					continue;
-				}
-				free(pkgname);
-			}
-			if (mdeps == rdeps) {
-				found = true;
-				break;
-			}
-		}
-		if (found && !xbps_match_string_in_array(result, pd->pkg)) {
-			xbps_array_add_cstring_nocopy(result, pd->pkg);
-			SLIST_REMOVE(&pkgdep_list, pd, pkgdep, pkgdep_entries);
-			free(pd);
-		}
-	}
-	return result;
+	return item;
 }
 
 xbps_array_t HIDDEN
 xbps_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg, bool rpool)
 {
 	xbps_dictionary_t pkgd;
-	int rv;
+
+	result = xbps_array_create();
+	assert(result);
 
 	if (rpool) {
 		if (((pkgd = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
@@ -192,11 +198,7 @@ xbps_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg, bool rpool)
 		    ((pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkg)) == NULL))
 			return NULL;
 	}
-	if (pkgdep_pvmap == NULL)
-		pkgdep_pvmap = xbps_dictionary_create();
+	(void)ordered_depends(xhp, pkgd, rpool);
 
-	if ((rv = collect_rdeps(xhp, pkgd, rpool)) != 0)
-		return NULL;
-
-	return sortfulldeptree();
+	return result;
 }
