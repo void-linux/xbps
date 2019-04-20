@@ -233,9 +233,10 @@ parse_files_glob(struct xbps_handle *xhp, xbps_dictionary_t seen,
 		return ENOMEM;
 
 	switch (glob(tmppath, 0, NULL, &globbuf)) {
-	case GLOB_ABORTED: return ENOMEM;
-	case GLOB_NOSPACE: return EIO;
+	case 0: break;
+	case GLOB_NOSPACE: return ENOMEM;
 	case GLOB_NOMATCH: return 0;
+	default: return 0;
 	}
 	for (size_t i = 0; i < globbuf.gl_pathc; i++) {
 		if (seen != NULL) {
