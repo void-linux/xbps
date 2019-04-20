@@ -120,6 +120,108 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 0);
 }
 
+ATF_TC(config_include_absolute);
+ATF_TC_HEAD(config_include_absolute, tc)
+{
+	atf_tc_set_md_var(tc, "descr", "Test including files by absolute path");
+}
+
+ATF_TC_BODY(config_include_absolute, tc)
+{
+	struct xbps_handle xh;
+	const char *tcsdir;
+	char *cfg, *buf, *buf2, pwd[PATH_MAX];
+	int ret;
+
+	/* get test source dir */
+	tcsdir = atf_tc_get_config_var(tc, "srcdir");
+
+	memset(&xh, 0, sizeof(xh));
+	buf = getcwd(pwd, sizeof(pwd));
+
+	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
+	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
+	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
+	ATF_REQUIRE_EQ((ret >= 0), 1);
+	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
+
+	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
+
+	cfg = xbps_xasprintf("%s/xbps2.d", pwd);
+	ATF_REQUIRE_EQ(xbps_mkpath(cfg, 0755), 0);
+
+	buf = xbps_xasprintf("%s/xbps_absolute.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps.d/xbps.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
+	buf = xbps_xasprintf("%s/1.include.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps2.d/1.include.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
+	xh.flags = XBPS_FLAG_DEBUG;
+	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
+	/* should contain one repository defined in 1.include.conf */
+	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 1);
+}
+
+ATF_TC(config_include_absolute_glob);
+ATF_TC_HEAD(config_include_absolute_glob, tc)
+{
+	atf_tc_set_md_var(tc, "descr", "Test including files by absolute path with globbing");
+}
+
+ATF_TC_BODY(config_include_absolute_glob, tc)
+{
+	struct xbps_handle xh;
+	const char *tcsdir;
+	char *cfg, *buf, *buf2, pwd[PATH_MAX];
+	int ret;
+
+	/* get test source dir */
+	tcsdir = atf_tc_get_config_var(tc, "srcdir");
+
+	memset(&xh, 0, sizeof(xh));
+	buf = getcwd(pwd, sizeof(pwd));
+
+	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
+	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
+	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
+	ATF_REQUIRE_EQ((ret >= 0), 1);
+	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
+
+	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
+
+	cfg = xbps_xasprintf("%s/xbps2.d", pwd);
+	ATF_REQUIRE_EQ(xbps_mkpath(cfg, 0755), 0);
+
+	buf = xbps_xasprintf("%s/xbps_absolute_glob.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps.d/xbps.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
+	buf = xbps_xasprintf("%s/1.include.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps2.d/1.include.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
+	buf = xbps_xasprintf("%s/2.include.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps2.d/2.include.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
+	xh.flags = XBPS_FLAG_DEBUG;
+	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
+	/* should contain both repositories defined in [12].include.conf */
+	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 2);
+}
+
 ATF_TC(config_masking);
 ATF_TC_HEAD(config_masking, tc)
 {
@@ -178,6 +280,8 @@ ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, config_include_test);
 	ATF_TP_ADD_TC(tp, config_include_nomatch_test);
+	ATF_TP_ADD_TC(tp, config_include_absolute);
+	ATF_TP_ADD_TC(tp, config_include_absolute_glob);
 	ATF_TP_ADD_TC(tp, config_masking);
 
 	return atf_no_error();

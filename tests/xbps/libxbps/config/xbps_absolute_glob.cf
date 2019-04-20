@@ -1,0 +1,2 @@
+# relative path
+include=/xbps2.d/*.include.conf
