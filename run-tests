@@ -8,7 +8,7 @@ export LD_PRELOAD=$PWD/lib/libxbps.so
 
 NPROCS=1
 if [ -r /proc/cpuinfo ]; then
-	NPROCS=$(cat /proc/cpuinfo|grep processor|wc -l)
+	NPROCS=$(grep ^proc /proc/cpuinfo|wc -l)
 fi
 kyua --variable parallelism=$NPROCS test -r result.db -k tests/xbps/Kyuafile
 rv=$?
