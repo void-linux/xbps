@@ -935,7 +935,7 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		if (verbose)
 			fetch_info("requesting %s://%s%s",
 			    url->scheme, host, url->doc);
-		if (purl && strcasecmp(URL->scheme, SCHEME_HTTPS) != 0) {
+		if (purl && strcasecmp(url->scheme, SCHEME_HTTPS) != 0) {
 			http_cmd(conn, "%s %s://%s%s HTTP/1.1\r\n",
 			    op, url->scheme, host, url->doc);
 		} else {
@@ -949,7 +949,7 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		/* virtual host */
 		http_cmd(conn, "Host: %s\r\n", host);
 
-		if (strcasecmp(URL->scheme, SCHEME_HTTPS) != 0)
+		if (strcasecmp(url->scheme, SCHEME_HTTPS) != 0)
 			send_proxy_headers(conn, purl);
 
 		/* server authorization */
