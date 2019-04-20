@@ -6,7 +6,11 @@ done
 export PATH=$PATH:/usr/local/bin
 export LD_PRELOAD=$PWD/lib/libxbps.so
 
-kyua test -r result.db -k tests/xbps/Kyuafile
+NPROCS=1
+if [ -r /proc/cpuinfo ]; then
+	NPROCS=$(cat /proc/cpuinfo|grep processor|wc -l)
+fi
+kyua --variable parallelism=$NPROCS test -r result.db -k tests/xbps/Kyuafile
 rv=$?
 kyua report --verbose -r result.db
 rm -f result.db
