@@ -347,13 +347,17 @@ process_fulldeptree(struct xbps_handle *xhp, FILE *f,
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
-	for (i = 0; i < xbps_array_count(rdeps); i++) {
+	i = xbps_array_count(rdeps);
+	while (i--) {
 		xbps_dictionary_t rpkgd;
 		const char *pkgdep;
 		unsigned int pkgidx = 0;
 		bool found = false;
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &pkgdep);
+		if (strcmp(pkgdep, pkgver) == 0)
+			continue;
+
 		SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries) {
 			if (strcmp(pd->pkgver, pkgdep) == 0) {
 				found = true;
