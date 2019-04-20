@@ -221,13 +221,14 @@ static int parse_file(struct xbps_handle *, const char *, bool);
 
 static int
 parse_files_glob(struct xbps_handle *xhp, xbps_dictionary_t seen,
-    const char *path, const char *pat, bool nested)
+    const char *cwd, const char *pat, bool nested)
 {
 	char tmppath[PATH_MAX];
 	glob_t globbuf;
 	int rs, rv = 0;
 
-	rs = snprintf(tmppath, PATH_MAX, "%s/%s", path, pat);
+	rs = snprintf(tmppath, PATH_MAX, "%s/%s",
+	    pat[0] == '/' ? xhp->rootdir : cwd, pat);
 	if (rs < 0 || rs >= PATH_MAX)
 		return ENOMEM;
 
