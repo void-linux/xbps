@@ -91,7 +91,6 @@ incorrect_dep_dups_body() {
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -dy B
 	atf_check_equal $? 0
 
-	xbps-query -C empty.conf -r root --fulldeptree -x B
 	out=$(xbps-query -C empty.conf -r root --fulldeptree -x B)
 	set -- $out
 	atf_check_equal $# 2
