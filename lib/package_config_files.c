@@ -64,7 +64,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			     struct archive_entry *entry,
 			     const char *entry_pname,
 			     const char *pkgver,
-			     bool symlink)
+			     bool mysymlink)
 {
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter, iter2;
@@ -88,7 +88,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	xbps_dbg_printf(xhp, "%s: processing conf_file %s\n",
 	    pkgver, entry_pname);
 
-	if (pkg_filesd == NULL || symlink) {
+	if (pkg_filesd == NULL || mysymlink) {
 		/*
 		 * 1. File exists on disk but it's not managed by the same package.
 		 * 2. File exists on disk as symlink.
