@@ -34,12 +34,16 @@ to handle binary packages and repositories. Some highlights:
 
 To build this you'll need:
 
-  - A C99 compiler (clang 3.x, gcc 4.x, pcc 1.1.0 tested)
+  - A C99 compiler (clang, gcc, pcc, tcc)
   - [GNU make](https://www.gnu.org/software/make/)
   - [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
   - [zlib](https://www.zlib.net)
   - [openssl < 1.1](https://www.openssl.org) or [libressl](https://www.libressl.org/)
   - [libarchive >= 3.2.0](https://www.libarchive.org)
+
+**NOTE** pcc and tcc can compile xbps correctly, but as of **20190422**
+only the static binaries work correctly, do not forget to set `--enable-static`
+option in the `configure` script.
 
 and optionally:
 
