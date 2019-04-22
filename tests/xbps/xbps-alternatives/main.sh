@@ -459,6 +459,58 @@ less_entries_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case useless_switch
+
+useless_switch_head() {
+	atf_set "descr" "xbps-alternatives: avoid useless switches on package removal"
+}
+useless_switch_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/fileA pkg_B/usr/bin/fileB
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileA" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileB" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv A
+	atf_check_equal $? 0
+	rv=1
+	if [ -e root/usr/bin/fileA ]; then
+		lnk=$(readlink -f root/usr/bin/file)
+		if [ "$lnk" = "$PWD/root/usr/bin/fileA" ]; then
+			rv=0
+		fi
+		echo "A lnk: $lnk"
+	fi
+	atf_check_equal $rv 0
+
+	xbps-install -r root --repository=repo -ydv B
+	atf_check_equal $? 0
+	rv=1
+	if [ -e root/usr/bin/fileA -a -e root/usr/bin/fileB ]; then
+		lnk=$(readlink -f root/usr/bin/file)
+		if [ "$lnk" = "$PWD/root/usr/bin/fileA" ]; then
+			rv=0
+		fi
+		echo "B lnk: $lnk"
+	fi
+	atf_check_equal $rv 0
+	
+	ln -sf /dev/null root/usr/bin/file
+	xbps-remove -r root -ydv B
+	atf_check_equal $? 0
+	lnk=$(readlink -f root/usr/bin/file)
+	rv=1
+	if [ "$lnk" = "/dev/null" ]; then
+		rv=0
+	fi
+	echo "X lnk: $lnk"
+	atf_check_equal $rv 0
+}
 
 atf_init_test_cases() {
 	atf_add_test_case register_one
@@ -473,4 +525,5 @@ atf_init_test_cases() {
 	atf_add_test_case set_pkg_group
 	atf_add_test_case update_pkgs
 	atf_add_test_case less_entries
+	atf_add_test_case useless_switch
 }
