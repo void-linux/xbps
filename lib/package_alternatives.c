@@ -332,6 +332,8 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array;
 		xbps_object_t keysym;
+		xbps_dictionary_t curpkgd = pkgd;
+		bool current = false;
 		const char *first = NULL, *keyname;
 
 		keysym = xbps_array_get(allkeys, i);
@@ -342,7 +344,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			continue;
 
 		xbps_array_get_cstring_nocopy(array, 0, &first);
-		if (strcmp(pkgname, first) == 0) {
+		if ((current = (strcmp(pkgname, first) == 0))) {
 			/* this pkg is the current alternative for this group */
 			rv = remove_symlinks(xhp,
 				xbps_dictionary_get(pkg_alternatives, keyname),
@@ -358,22 +360,28 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 
 		if (xbps_array_count(array) == 0) {
 			xbps_dictionary_remove(alternatives, keyname);
-		} else {
-			xbps_dictionary_t curpkgd;
+			continue;
+		}
 
+		if (!update && !current)
+			continue;
+
+		if (!current) {
+			/* get the new alternative group package */
 			first = NULL;
 			xbps_array_get_cstring_nocopy(array, 0, &first);
 			curpkgd = xbps_pkgdb_get_pkg(xhp, first);
 			assert(curpkgd);
-			xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_SWITCHED, 0, NULL,
-			    "Switched '%s' alternatives group to '%s'", keyname, first);
-			pkg_alternatives = xbps_dictionary_get(curpkgd, "alternatives");
-			rv = create_symlinks(xhp,
-				xbps_dictionary_get(pkg_alternatives, keyname),
-				keyname);
-			if (rv != 0)
-				break;
 		}
+
+		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_SWITCHED, 0, NULL,
+			"Switched '%s' alternatives group to '%s'", keyname, first);
+		pkg_alternatives = xbps_dictionary_get(curpkgd, "alternatives");
+		rv = create_symlinks(xhp,
+			xbps_dictionary_get(pkg_alternatives, keyname),
+			keyname);
+		if (rv != 0)
+			break;
 
 	}
 	xbps_object_release(allkeys);
