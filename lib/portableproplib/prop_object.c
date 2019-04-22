@@ -29,9 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "compat.h"
 
 #include "prop_object_impl.h"
 #include <prop/prop_object.h>
@@ -40,8 +38,8 @@
 static pthread_mutex_t _prop_refcnt_mtx = PTHREAD_MUTEX_INITIALIZER;
 #endif /* _PROP_NEED_REFCNT_MTX */
 
-#define __USE_MISC	/* MAP_ANON on glibc */
-#include <sys/mman.h>
+#define __USE_MISC     /* MAP_ANON on glibc */
+# include <sys/mman.h>
 #undef __USE_MISC
 #include <sys/stat.h>
 #include <errno.h>
