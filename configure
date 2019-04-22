@@ -165,7 +165,7 @@ echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 if [ -z "$CC" ]; then
 	printf "Looking for compiler ... "
 	for b in $TARGET- ""; do
-		for cc in gcc pcc icc cc clang; do
+		for cc in gcc icc clang tcc pcc cc; do
 			if type $b$cc >/dev/null 2>&1; then
 				CC=$b$cc
 				echo "$CC"
@@ -183,8 +183,8 @@ else
 	echo "Using compiler $CC"
 fi
 
-echo "CC = 		$CC" >>$CONFIG_MK
-echo "CFLAGS = -O2 -pthread" >>$CONFIG_MK
+echo "CC =	$CC" >>$CONFIG_MK
+echo "CFLAGS =	-O2" >>$CONFIG_MK
 
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
