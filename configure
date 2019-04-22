@@ -389,6 +389,7 @@ else
 	cat <<EOF >_$func.c
 #define _GNU_SOURCE
 #include <stdio.h>
+#include <stdarg.h>
 int main(void) {
 	va_list ap;
 	vasprintf(NULL, NULL, ap);
@@ -407,7 +408,7 @@ fi
 if test -n "$HAVE_VASPRINTF"; then
 	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
 else
-	echo "COMPAT_SRCS+=	compat/vasprintf.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS+=	compat/vasprintf.o" >>$CONFIG_MK
 fi
 
 #
@@ -430,7 +431,7 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 	echo "CPPFLAGS +=	-DHAVE_STRCASESTR" >>$CONFIG_MK
 else
 	echo no.
-	echo "COMPAT_SRCS +=	compat/strcasestr.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS +=	compat/strcasestr.o" >>$CONFIG_MK
 fi
 rm -f _$func _$func.c
 
@@ -453,7 +454,7 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 	echo "CPPFLAGS +=	-DHAVE_STRLCPY" >> $CONFIG_MK
 else
 	echo no.
-	echo "COMPAT_SRCS +=	compat/strlcpy.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS +=	compat/strlcpy.o" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
 
@@ -475,7 +476,7 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 	echo "CPPFLAGS +=	-DHAVE_STRLCAT" >>$CONFIG_MK
 else
 	echo no.
-	echo "COMPAT_SRCS +=	compat/strlcat.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS +=	compat/strlcat.o" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
 
@@ -518,7 +519,7 @@ if $XCC _$func.c -lutil -o _$func 2>/dev/null; then
 	echo "CPPFLAGS+= -DHAVE_HUMANIZE_NUMBER" >>$CONFIG_MK
 else
 	echo no.
-	echo "COMPAT_SRCS+=	compat/humanize_number.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS+=	compat/humanize_number.o" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
 
