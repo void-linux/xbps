@@ -27,6 +27,12 @@
 # define _GNU_SOURCE	/* for vasprintf(3) */
 #endif
 
+#if defined(HAVE_STRLCAT) || defined(HAVE_STRLCPY)
+# define _BSD_SOURCE
+#endif
+
+#include "compat.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
