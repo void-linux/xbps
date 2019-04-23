@@ -425,8 +425,6 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		 */
 		TAILQ_FOREACH(xep, &xentry_list, entries) {
 			if (sb->st_nlink > 1 && xep->inode == sb->st_ino) {
-				/* matched */
-				printf("%"PRIu64" %"PRIu64"\n", xep->inode, sb->st_ino);
 				hlink = true;
 				break;
 			}
@@ -440,8 +438,6 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 			linkinfo = xbps_dictionary_get_keysym(all_filesd, obj);
 			xbps_dictionary_get_uint64(linkinfo, "inode", &inode);
 			if (inode == sb->st_ino) {
-				/* matched */
-				printf("%"PRIu64" %"PRIu64"\n", inode, sb->st_ino);
 				break;
 			}
 		}
