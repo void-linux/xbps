@@ -45,7 +45,7 @@ usage(bool fail)
 	    " -i --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
 	    " -M --memory-sync         Remote repository data is fetched and stored\n"
 	    "                          in memory, ignoring on-disk repodata archives.\n"
-	    " -p --property PROP[,...] Show properties for PKGNAME\n"
+	    " -p --property PROP[,...] Show properties for PKGNAME or REPO\n"
 	    " -R --repository          Enable repository mode. This mode explicitly\n"
 	    "                          looks for packages in repositories.\n"
 	    "    --repository=<url>    Enable repository mode and add repository\n"
@@ -113,13 +113,14 @@ main(int argc, char **argv)
 	bool list_pkgs, list_repos, orphans, own, list_repolock;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
 	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	bool ignore_conf_repos;
 
 	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
 	list_manual = list_repolock = show_prop = show_files = false;
 	regex = show = show_deps = show_rdeps = fulldeptree = false;
-	repo_mode = opmode = false;
+	repo_mode = ignore_conf_repos = opmode = false;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -146,6 +147,7 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		case 'i':
 			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			ignore_conf_repos = true;
 			break;
 		case 'L':
 			list_repos = opmode = true;
@@ -171,8 +173,12 @@ main(int argc, char **argv)
 			show_prop = true;
 			break;
 		case 'R':
-			if (optarg != NULL) {
+			if (optarg) {
+				if (ignore_conf_repos)
+					flags &= ~XBPS_FLAG_IGNORE_CONF_REPOS;
 				xbps_repo_store(&xh, optarg);
+				if (ignore_conf_repos)
+					flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
 			}
 			repo_mode = true;
 			break;

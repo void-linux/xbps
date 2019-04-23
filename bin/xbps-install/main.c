@@ -119,12 +119,13 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	const char *rootdir, *cachedir, *confdir;
 	int i, c, flags, rv, fflag = 0;
-	bool syncf, yes, reinstall, drun, update;
+	bool syncf, yes, reinstall, drun, update, ignore_conf_repos;
 	int maxcols;
 
 	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
 	syncf = yes = reinstall = drun = update = false;
+	ignore_conf_repos = false;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -153,6 +154,7 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		case 'i':
 			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			ignore_conf_repos = true;
 			break;
 		case 'M':
 			flags |= XBPS_FLAG_REPOS_MEMSYNC;
@@ -161,7 +163,13 @@ main(int argc, char **argv)
 			drun = true;
 			break;
 		case 'R':
-			xbps_repo_store(&xh, optarg);
+			if (optarg) {
+				if (ignore_conf_repos)
+					flags &= ~XBPS_FLAG_IGNORE_CONF_REPOS;
+				xbps_repo_store(&xh, optarg);
+				if (ignore_conf_repos)
+					flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			}
 			break;
 		case 'r':
 			rootdir = optarg;
