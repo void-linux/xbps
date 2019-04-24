@@ -49,7 +49,7 @@ endif
 $(BIN).static: $(OBJS) $(STATIC_LIBS)
 	@printf " [CCLD]\t\t$@\n"
 	${SILENT}$(CC) -static $(OBJS) $(CPPFLAGS) -L$(TOPDIR)/lib \
-		$(CFLAGS) $(LDFLAGS) $(STATIC_LIBS) -o $@
+		$(CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) $(STATIC_LIBS) -o $@
 
 $(BIN): $(OBJS)
 	@printf " [CCLD]\t\t$@\n"

@@ -36,5 +36,5 @@ uninstall:
 $(TEST): $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
 	${SILENT}$(CC) $^ $(CPPFLAGS) -L$(TOPDIR)/lib $(CFLAGS) \
-		$(PROG_CFLAGS) $(LDFLAGS) -lxbps -latf-c -o $@
+		$(PROG_CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) -lxbps -latf-c -o $@
 
