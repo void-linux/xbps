@@ -77,7 +77,7 @@ _xbps_checkvers() {
 
 _xbps_create() {
 	_arguments -s : \
-		{-A,--architecture}'[Package architecture]:architecture:(i686 i686-musl x86_64 x86_64-musl armv7l armv7l-musl armv6l armv6l-musl aarch64 aarch64-musl ppc64le ppc64le-musl ppc64-musl noarch)' \
+		{-A,--architecture}'[Package architecture]:architecture:(i686 i686-musl x86_64 x86_64-musl armv7l armv7l-musl armv6l armv6l-musl aarch64 aarch64-musl ppc64le ppc64le-musl ppc64 ppc64-musl ppc ppc-musl noarch)' \
 		{-B,--built-with}'[Package builder string]:package builder: ' \
 		{-C,--conflicts}'[Conflicts]:conflicts: ' \
 		{-D,--dependencies}'[Dependencies]:dependencies: ' \
