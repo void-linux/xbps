@@ -41,22 +41,27 @@ static bool
 question(bool preset, const char *fmt, va_list ap)
 {
 	int response;
+	bool rv = false;
 
 	vfprintf(stderr, fmt, ap);
-	if(preset)
+	if (preset)
 		fputs(" [Y/n] ", stderr);
 	else
 		fputs(" [y/N] ", stderr);
 
-	if ((response = fgetc(stdin)) != EOF) {
-		if (response == '\n')
-			return preset;
-		if (response == 'y' || response == 'Y')
-			return true;
-		if (response == 'n' || response == 'N')
-			return false;
-	}
-	return false;
+	response = fgetc(stdin);
+	if (response == '\n')
+		rv = preset;
+	else if (response == 'y' || response == 'Y')
+		rv = true;
+	else if (response == 'n' || response == 'N')
+		rv = false;
+
+	/* read the rest of the line */
+	while (response != EOF && response != '\n')
+		response = fgetc(stdin);
+
+	return rv;
 }
 
 bool
