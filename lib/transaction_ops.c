@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2015 Juan Romero Pardines.
+ * Copyright (c) 2009-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -314,6 +314,22 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 int
 xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 {
+	xbps_array_t rdeps;
+
+	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
+	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+		const char *curpkgver;
+		char *curpkgn;
+		int rv;
+
+		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
+		curpkgn = xbps_pkg_name(curpkgver);
+		assert(curpkgn);
+		rv = trans_find_pkg(xhp, curpkgn, false, false);
+		free(curpkgn);
+		if (rv != 0 && rv != EEXIST)
+			return rv;
+	}
 	return trans_find_pkg(xhp, pkg, false, false);
 }
 
@@ -321,6 +337,22 @@ int
 xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 			     bool reinstall)
 {
+	xbps_array_t rdeps;
+
+	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
+	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+		const char *curpkgver;
+		char *curpkgn;
+		int rv;
+
+		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
+		curpkgn = xbps_pkg_name(curpkgver);
+		assert(curpkgn);
+		rv = trans_find_pkg(xhp, curpkgn, false, false);
+		free(curpkgn);
+		if (rv != 0 && rv != EEXIST)
+			return rv;
+	}
 	return trans_find_pkg(xhp, pkg, reinstall, false);
 }
 
