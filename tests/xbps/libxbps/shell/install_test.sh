@@ -290,6 +290,38 @@ install_bestmatch_disabled_body() {
 	atf_check_equal $out A-1.0_1
 }
 
+atf_test_case install_and_update_revdeps
+
+install_and_update_revdeps_head() {
+	atf_set "descr" "Tests for pkg install: install pkg and update its revdeps"
+}
+
+install_and_update_revdeps_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_2 -s "B pkg" --dependencies "A-1.0_2" ../pkg_B
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-install -r root --repository=repo -yvd A
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.0_1
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=repo -yvd B
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.0_2
+	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.0_2
+}
+
 atf_test_case update_file_timestamps
 
 update_file_timestamps_head() {
@@ -481,6 +513,51 @@ update_xbps_virtual_body() {
 	atf_check_equal "$exp" "xbps-git-1.1_1 update noarch $(readlink -f repo)"
 }
 
+atf_test_case update_with_revdeps
+
+update_with_revdeps_head() {
+	atf_set "descr" "Tests for pkg install: update pkg and its revdeps"
+}
+
+update_with_revdeps_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_2 -s "B pkg" --dependencies "A-1.0_2" ../pkg_B
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-install -r root --repository=repo -yvd A
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.0_1
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=repo -yvd B
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.0_2
+	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.0_2
+
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --dependencies "A-1.1_1" ../pkg_B
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-install -r root --repository=repo -yvdu A
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.1_1
+	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.1_1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
@@ -490,6 +567,7 @@ atf_init_test_cases() {
 	atf_add_test_case install_bestmatch
 	atf_add_test_case install_bestmatch_deps
 	atf_add_test_case install_bestmatch_disabled
+	atf_add_test_case install_and_update_revdeps
 	atf_add_test_case update_if_installed
 	atf_add_test_case update_to_empty_pkg
 	atf_add_test_case update_file_timestamps
@@ -497,4 +575,5 @@ atf_init_test_cases() {
 	atf_add_test_case update_move_unmodified_file
 	atf_add_test_case update_xbps
 	atf_add_test_case update_xbps_virtual
+	atf_add_test_case update_with_revdeps
 }
