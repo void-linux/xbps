@@ -99,8 +99,9 @@ struct order_length_t {
 };
 
 static int cmp_order_length(const void *l1, const void *l2) {
-	return ((const struct order_length_t*)l1)->len <
-	       ((const struct order_length_t*)l2)->len;
+	size_t a = ((const struct order_length_t*)l1)->len;
+	size_t b = ((const struct order_length_t*)l2)->len;
+	return (a < b) - (b < a);
 }
 
 static int
