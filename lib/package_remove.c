@@ -190,7 +190,10 @@ remove_pkg_files(struct xbps_handle *xhp,
 		bool found;
 
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
-		snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
+		if (strcmp(xhp->rootdir, "/") == 0)
+			snprintf(path, sizeof(path), "%s", file);
+		else
+			snprintf(path, sizeof(path), "%s%s", xhp->rootdir, file);
 
 		if ((strcmp(key, "files") == 0) ||
 		    (strcmp(key, "conf_files") == 0)) {
