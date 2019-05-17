@@ -85,6 +85,9 @@ remove_symlinks_dangling_body() {
 	touch -f pkg_A/usr/lib/libfoo.so.1.2.0
 	ln -sf libfoo.so.2 pkg_A/usr/lib/libfoo.so.1
 	ln -sf libfoo.so.2 pkg_B/usr/lib/libfoo.so
+	ln -s ./libfoo.so pkg_B/usr/lib/libfoo.so.3
+	ln -s ./libfoo.so.4 pkg_B/usr/lib/libfoo.so.3
+	ln -s ../../../libfoo.so.4 pkg_B/usr/lib/libfoo.so.3
 
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A

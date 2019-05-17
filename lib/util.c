@@ -498,7 +498,7 @@ char *
 xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 {
 	struct stat sb;
-	char *res = NULL, *lnk = NULL;
+	char *res = NULL, *lnk = NULL, *p = NULL, *dname = NULL;
 	ssize_t r;
 
 	if (lstat(path, &sb) == -1)
@@ -522,38 +522,41 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 		return lnk;
 	}
 
-	if (strstr(lnk, "./") || lnk[0] != '/') {
-		char *p, *p1, *dname, buf[PATH_MAX];
-		/* relative */
+	if (strstr(lnk, "./")) {
+		/* contains references to relative paths */
+		p = realpath(path, NULL);
+		if (p == NULL) {
+			/* dangling symlink, use target */
+			return strdup(tgt);
+		}
+		if (strcmp(xhp->rootdir, "/") == 0) {
+			res = p;
+		} else {
+			res = strdup(p + strlen(xhp->rootdir));
+			free(p);
+		}
+		free(lnk);
+	} else if (lnk[0] != '/') {
+		/* relative path */
 		p = strdup(path);
 		assert(p);
 		dname = dirname(p);
 		assert(dname);
-		snprintf(buf, sizeof(buf), "%s/%s", dname, lnk);
-		free(p);
-		p = xbps_sanitize_path(buf);
-		assert(p);
-		if ((strstr(p, "./")) && (p1 = realpath(p, NULL))) {
-			if (strcmp(xhp->rootdir, "/") == 0) {
-				res = strdup(p1);
-			} else {
-				res = strdup(p1 + strlen(xhp->rootdir));
-			}
-			free(p1);
+		if (strcmp(xhp->rootdir, "/") == 0) {
+			res = xbps_xasprintf("%s/%s", dname, lnk);
 		} else {
-			if (strcmp(xhp->rootdir, "/") == 0) {
-				res = strdup(p);
-			} else {
-				res = strdup(p + strlen(xhp->rootdir));
-			}
+			char *p1 = strdup(dname + strlen(xhp->rootdir));
+			assert(p1);
+			res = xbps_xasprintf("%s/%s", p1, lnk);
+			free(p1);
 		}
-		assert(res);
 		free(lnk);
 		free(p);
 	} else {
 		/* absolute */
 		res = lnk;
 	}
+	assert(res);
 
 	return res;
 }
