@@ -407,14 +407,39 @@ stage2:
 	return rv;
 }
 
+static int
+fallback_path(char *dest, size_t size, char *root, const char *fallback)
+{
+	int rv;
+	rv = snprintf(dest, size, "%s%s", strncmp(root, "/", 2) ? root : "",
+	              fallback);
+	if (rv < 0 || (size_t)rv >= size)
+		return ENOMEM;
+	return 0;
+}
+
+static int
+relative_path(char *dest, size_t size, char *root)
+{
+	int rv;
+	char *buf;
+	if (!(buf = strndup(dest, size - 1)))
+		return ENOMEM;
+	rv = snprintf(dest, size, "%s/%s", strncmp(root, "/", 2) ? root : "",
+	              buf);
+	free(buf);
+	if (rv < 0 || (size_t)rv >= size)
+		return ENOMEM;
+	return 0;
+}
+
 int
 xbps_init(struct xbps_handle *xhp)
 {
 	struct utsname un;
-	char cwd[PATH_MAX-1], sysconfdir[XBPS_MAXPATH+sizeof(XBPS_SYSDEFCONF_PATH)], *buf;
+	char cwd[PATH_MAX-1], sysconfdir[XBPS_MAXPATH+sizeof(XBPS_SYSDEFCONF_PATH)];
 	const char *repodir, *native_arch;
 	int rv;
-	size_t size;
 
 	assert(xhp != NULL);
 
@@ -427,43 +452,29 @@ xbps_init(struct xbps_handle *xhp)
 		xhp->rootdir[0] = '/';
 		xhp->rootdir[1] = '\0';
 	} else if (xhp->rootdir[0] != '/') {
-		buf = strdup(xhp->rootdir);
-		if (!buf)
-			return ENOMEM;
-		size = sizeof(xhp->rootdir);
-		rv = snprintf(xhp->rootdir, size, "%s/%s", cwd, buf);
-		free(buf);
-		if (rv < 0 || (size_t)rv >= size)
-			return 1;
+		rv = relative_path(xhp->rootdir, sizeof(xhp->rootdir),
+		                   cwd);
+		if (rv != 0)
+			return rv;
 	}
 	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
 	/* set confdir */
 	if (xhp->confdir[0] == '\0') {
-		size = sizeof(xhp->confdir);
-		rv = snprintf(xhp->confdir, size,
-		    "%s%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
-		    XBPS_SYSCONF_PATH);
-		if (rv < 0 || (size_t)rv >= size)
-			return 1;
+		rv = fallback_path(xhp->confdir, sizeof(xhp->confdir),
+		                   xhp->rootdir, XBPS_SYSCONF_PATH);
+		if (rv != 0)
+			return rv;
 	} else if (xhp->confdir[0] != '/') {
-		/* relative path */
-		buf = strdup(xhp->confdir);
-		if (!buf)
-			return ENOMEM;
-		size = sizeof(xhp->confdir);
-		rv = snprintf(xhp->confdir, size, "%s/%s",
-		    strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
-		free(buf);
-		if (rv < 0 || (size_t)rv >= size)
-			return 1;
+		rv = relative_path(xhp->confdir, sizeof(xhp->confdir),
+		                   xhp->rootdir);
+		if (rv != 0)
+			return rv;
 	}
 	/* set sysconfdir */
-	size = sizeof(sysconfdir);
-	rv = snprintf(sysconfdir, size,
-	    "%s%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
-	    XBPS_SYSDEFCONF_PATH);
-	if (rv < 0 || (size_t)rv >= size)
-		return 1;
+	rv = fallback_path(sysconfdir, sizeof(sysconfdir),
+	                   xhp->rootdir, XBPS_SYSDEFCONF_PATH);
+	if (rv != 0)
+		return rv;
 
 	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
 	if ((native_arch = getenv("XBPS_ARCH")) != NULL) {
@@ -482,43 +493,27 @@ xbps_init(struct xbps_handle *xhp)
 
 	/* Set cachedir */
 	if (xhp->cachedir[0] == '\0') {
-		size = sizeof(xhp->cachedir);
-		rv = snprintf(xhp->cachedir, size,
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
-		    XBPS_CACHE_PATH);
-		if (rv < 0 || (size_t)rv >= size)
-			return 1;
+		rv = fallback_path(xhp->cachedir, sizeof(xhp->cachedir),
+		                   xhp->rootdir, XBPS_CACHE_PATH);
+		if (rv != 0)
+			return rv;
 	} else if (xhp->cachedir[0] != '/') {
-		/* relative path */
-		buf = strdup(xhp->cachedir);
-		if (!buf)
-			return ENOMEM;
-		size = sizeof(xhp->cachedir);
-		rv = snprintf(xhp->cachedir, size,
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
-		free(buf);
-		if (rv < 0 || (size_t)rv >= size)
-			return 1;
+		rv = relative_path(xhp->cachedir, sizeof(xhp->cachedir),
+		                   xhp->rootdir);
+		if (rv != 0)
+			return rv;
 	}
 	/* Set metadir */
 	if (xhp->metadir[0] == '\0') {
-		size = sizeof(xhp->metadir);
-		rv = snprintf(xhp->metadir, size,
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "",
-		    XBPS_META_PATH);
-		if (rv < 0 || (size_t)rv >= size)
-			return 1;
+		rv = fallback_path(xhp->metadir, sizeof(xhp->metadir),
+		                   xhp->rootdir, XBPS_META_PATH);
+		if (rv != 0)
+			return rv;
 	} else if (xhp->metadir[0] != '/') {
-		/* relative path */
-		buf = strdup(xhp->metadir);
-		if (!buf)
-			return ENOMEM;
-		size = sizeof(xhp->metadir);
-		rv = snprintf(xhp->metadir, size,
-		    "%s/%s", strcmp(xhp->rootdir, "/") ? xhp->rootdir : "", buf);
-		free(buf);
-		if (rv < 0 || (size_t)rv >= size)
-			return 1;
+		rv = relative_path(xhp->metadir, sizeof(xhp->metadir),
+		                   xhp->rootdir);
+		if (rv != 0)
+			return rv;
 	}
 
 	xbps_dbg_printf(xhp, "rootdir=%s\n", xhp->rootdir);
