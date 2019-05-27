@@ -152,6 +152,9 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 		} else {
 			if ((curpkgd = xbps_pkgdb_get_pkg(xhp, curdep)) == NULL)
 				curpkgd = xbps_pkgdb_get_virtualpkg(xhp, curdep);
+			/* Ignore missing local runtime dependencies, because ignorepkg */
+			if (curpkgd == NULL)
+				continue;
 		}
 		assert(curpkgd);
 		if ((curdepname = xbps_pkgpattern_name(curdep)) == NULL)
