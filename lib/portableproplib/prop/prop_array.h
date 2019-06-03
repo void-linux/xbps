@@ -1,6 +1,7 @@
 /*     $NetBSD: prop_array.h,v 1.8 2008/09/11 13:15:13 haad Exp $    */
 
 /*-
+ * Copyright (c) 2014 Juan Romero Pardines.
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
