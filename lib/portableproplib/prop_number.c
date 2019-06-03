@@ -1,4 +1,4 @@
-/*	$NetBSD: prop_number.c,v 1.26 2014/03/26 18:12:46 christos Exp $	*/
+/*	$NetBSD: prop_number.c,v 1.27 2014/09/05 05:19:24 matt Exp $	*/
 
 /*-
  * Copyright (c) 2006 The NetBSD Foundation, Inc.
@@ -36,19 +36,21 @@
 #include <errno.h>
 #include <stdlib.h>
 
+struct _prop_number_value {
+	union {
+		int64_t  pnu_signed;
+		uint64_t pnu_unsigned;
+	} pnv_un;
+#define pnv_signed	pnv_un.pnu_signed
+#define pnv_unsigned	pnv_un.pnu_unsigned
+	unsigned int	pnv_is_unsigned :1,
+					:31;
+};
+
 struct _prop_number {
 	struct _prop_object	pn_obj;
 	struct rb_node		pn_link;
-	struct _prop_number_value {
-		union {
-			int64_t  pnu_signed;
-			uint64_t pnu_unsigned;
-		} pnv_un;
-#define	pnv_signed	pnv_un.pnu_signed
-#define	pnv_unsigned	pnv_un.pnu_unsigned
-		unsigned int	pnv_is_unsigned	:1,
-						:31;
-	} pn_value;
+	struct _prop_number_value pn_value;
 };
 
 _PROP_POOL_INIT(_prop_number_pool, sizeof(struct _prop_number), "propnmbr")
