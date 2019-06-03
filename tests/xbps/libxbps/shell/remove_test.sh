@@ -84,10 +84,10 @@ remove_symlinks_dangling_body() {
 	mkdir -p pkg_A/usr/lib
 	touch -f pkg_A/usr/lib/libfoo.so.1.2.0
 	ln -sf libfoo.so.2 pkg_A/usr/lib/libfoo.so.1
-	ln -sf libfoo.so.2 pkg_B/usr/lib/libfoo.so
-	ln -s ./libfoo.so pkg_B/usr/lib/libfoo.so.3
-	ln -s ./libfoo.so.4 pkg_B/usr/lib/libfoo.so.3
-	ln -s ../../../libfoo.so.4 pkg_B/usr/lib/libfoo.so.3
+	ln -sf libfoo.so.2 pkg_A/usr/lib/libfoo.so
+	ln -s ./libfoo.so pkg_A/usr/lib/libfoo.3
+	ln -s ./libfoo.so.4 pkg_A/usr/lib/libfoo.4
+	ln -s ../../../libfoo.so.4.1 pkg_A/usr/lib/libfoo.4.1
 
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
