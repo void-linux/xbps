@@ -33,7 +33,7 @@
  */
 /*
  * This is a derived version of DragonFly's BSD "fastbulk", adapted for xbps
- * by Juan RP <xtraeme@voidlinux.eu>.
+ * by Juan RP <xtraeme@gmail.com>.
  *
  * This program iterates all srcpkgs directories, runs './xbps-src show-build-deps',
  * and builds a dependency tree on the fly.
