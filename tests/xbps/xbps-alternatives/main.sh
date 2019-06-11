@@ -496,32 +496,32 @@ less_entries_update_body() {
 atf_test_case more_entries_update
 
 more_entries_update_head() {
-    atf_set "descr" "xbps-alternatives: add symlinks provided by package update"
+	atf_set "descr" "xbps-alternatives: add symlinks provided by package update"
 }
 
 more_entries_update_body() {
-    mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
-    touch pkg_A/usr/bin/A1 pkg_A/usr/bin/A2 pkg_B/usr/bin/B1
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/A1 pkg_A/usr/bin/A2 pkg_B/usr/bin/B1
 
-    cd repo
-    xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "1:1:/usr/bin/A1" ../pkg_A
-    atf_check_equal $? 0
-    xbps-rindex -d -a $PWD/*.xbps
-    atf_check_equal $? 0
-    cd ..
-    xbps-install -r root --repository=repo -ydv A
-    atf_check_equal $? 0
-    cd repo
-    xbps-create -A noarch -n A-1.2_1 -s "A pkg" --alternatives "1:1:/usr/bin/A1 1:2:/usr/bin/A2" ../pkg_A
-    atf_check_equal $? 0
-    xbps-rindex -d -a $PWD/*.xbps
-    atf_check_equal $? 0
-    cd ..
-    xbps-install -r root --repository=repo -ydvu
-    atf_check_equal $? 0
-    rv=0
-    [ -e root/usr/bin/2 ] || rv=1
-    atf_check_equal $rv 0
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "1:1:/usr/bin/A1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=repo -ydv A
+	atf_check_equal $? 0
+	cd repo
+	xbps-create -A noarch -n A-1.2_1 -s "A pkg" --alternatives "1:1:/usr/bin/A1 1:2:/usr/bin/A2" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root --repository=repo -ydvu
+	atf_check_equal $? 0
+	rv=0
+	[ -e root/usr/bin/2 ] || rv=1
+	atf_check_equal $rv 0
 }
 
 
