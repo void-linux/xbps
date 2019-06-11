@@ -411,6 +411,7 @@ remove_obsoletes(struct xbps_handle *xhp, xbps_dictionary_t pkgd, xbps_dictionar
 			remove_symlinks(xhp, array, keyname);
 		}
 	}
+	xbps_object_release(allkeys);
 }
 
 int
