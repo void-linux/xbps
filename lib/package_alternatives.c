@@ -461,14 +461,12 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		xbps_array_t array;
 		xbps_object_t keysym;
 		const char *keyname;
-		bool alloc = false;
 
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 
 		array = xbps_dictionary_get(alternatives, keyname);
 		if (array == NULL) {
-			alloc = true;
 			array = xbps_array_create();
 		} else {
 			/* already registered */
@@ -487,15 +485,13 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		xbps_dictionary_set(alternatives, keyname, array);
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_ADDED, 0, NULL,
 		    "%s: registered '%s' alternatives group", pkgver, keyname);
-		if (alloc) {
-			/* apply alternatives for this group */
-			rv = create_symlinks(xhp,
-				xbps_dictionary_get(pkg_alternatives, keyname),
-				keyname);
-			xbps_object_release(array);
-			if (rv != 0)
-				break;
-		}
+		/* apply alternatives for this group */
+		rv = create_symlinks(xhp,
+			xbps_dictionary_get(pkg_alternatives, keyname),
+			keyname);
+		xbps_object_release(array);
+		if (rv != 0)
+			break;
 	}
 	xbps_object_release(allkeys);
 	free(pkgname);
