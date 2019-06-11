@@ -492,8 +492,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 			rv = create_symlinks(xhp,
 				xbps_dictionary_get(pkg_alternatives, keyname),
 				keyname);
-			if (alloc)
-				xbps_object_release(array);
+			xbps_object_release(array);
 			if (rv != 0)
 				break;
 		}
