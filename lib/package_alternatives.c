@@ -470,14 +470,18 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		if (array == NULL) {
 			array = xbps_array_create();
 		} else {
-			/* already registered */
 			if (xbps_match_string_in_array(array, pkgname)) {
-				/* apply alternatives for this group */
+				/* already registered, update symlinks */
 				rv = create_symlinks(xhp,
 					xbps_dictionary_get(pkg_alternatives, keyname),
 					keyname);
 				if (rv != 0)
 					break;
+			} else {
+				/* not registered, add provider */
+				xbps_array_add_cstring(array, pkgname);
+				xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_ADDED, 0, NULL,
+				    "%s: registered '%s' alternatives group", pkgver, keyname);
 			}
 			continue;
 		}
