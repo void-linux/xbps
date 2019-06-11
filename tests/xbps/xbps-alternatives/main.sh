@@ -433,7 +433,7 @@ update_pkgs_body() {
 
 atf_test_case less_entries
 
-less_entries_pkgs_head() {
+less_entries_head() {
 	atf_set "descr" "xbps-alternatives: remove symlinks not provided by the new alternative"
 }
 less_entries_body() {
@@ -454,6 +454,40 @@ less_entries_body() {
 	xbps-alternatives -r root -s B
 	atf_check_equal $? 0
 
+	rv=1
+	[ -e root/usr/bin/2 ] || rv=0
+	atf_check_equal $rv 0
+}
+
+atf_test_case less_entries_update
+
+less_entries_update_head() {
+	atf_set "descr" "xbps-alternatives: remove symlinks not provided by updated packages alternative"
+}
+
+less_entries_update_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/A1 pkg_A/usr/bin/A2 pkg_B/usr/bin/B1
+
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "1:1:/usr/bin/A1 1:2:/usr/bin/A2" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-install -r root --repository=repo -ydv A
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n A-1.2_1 -s "A pkg" --alternatives "1:1:/usr/bin/A1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-install -r root --repository=repo -ydvu
+	atf_check_equal $? 0
 	rv=1
 	[ -e root/usr/bin/2 ] || rv=0
 	atf_check_equal $rv 0
@@ -544,6 +578,9 @@ remove_current_provider_body() {
 	if [ "$lnk" = "$PWD/root/usr/bin/fileB" ]; then
 		rv=1
 	fi
+	if [ "$lnk" != "$PWD/root/usr/bin/fileA" ]; then
+		rv=1
+	fi
 	echo "lnk: $lnk"
 	atf_check_equal $rv 0
 }
@@ -561,6 +598,7 @@ atf_init_test_cases() {
 	atf_add_test_case set_pkg_group
 	atf_add_test_case update_pkgs
 	atf_add_test_case less_entries
+	atf_add_test_case less_entries_update
 	atf_add_test_case useless_switch
 	atf_add_test_case remove_current_provider
 }
