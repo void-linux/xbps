@@ -390,11 +390,33 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	return rv;
 }
 
-int
-xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
+static void
+remove_obsoletes(struct xbps_handle *xhp, xbps_dictionary_t pkgd, xbps_dictionary_t repod)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t alternatives, pkg_alternatives;
+
+	allkeys = xbps_dictionary_all_keys(pkgd);
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
+		xbps_array_t array, array_repo;
+		xbps_object_t keysym;
+		const char *keyname;
+
+		keysym = xbps_array_get(allkeys, i);
+		array = xbps_dictionary_get_keysym(pkgd, keysym);
+		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
+
+		array_repo = xbps_dictionary_get(repod, keyname);
+		if (!xbps_array_equals(array, array_repo)) {
+			remove_symlinks(xhp, array, keyname);
+		}
+	}
+}
+
+int
+xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
+{
+	xbps_array_t allkeys;
+	xbps_dictionary_t alternatives, pkg_alternatives, pkgd, pkgd_alts;
 	const char *pkgver;
 	char *pkgname;
 	int rv = 0;
@@ -404,7 +426,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	if (xhp->pkgdb == NULL)
 		return EINVAL;
 
-	pkg_alternatives = xbps_dictionary_get(pkgd, "alternatives");
+	pkg_alternatives = xbps_dictionary_get(pkg_repod, "alternatives");
 	if (!xbps_dictionary_count(pkg_alternatives))
 		return 0;
 
@@ -417,10 +439,22 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
 	assert(alternatives);
 
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	pkgname = xbps_pkg_name(pkgver);
 	if (pkgname == NULL)
 		return EINVAL;
+
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	if (xbps_object_type(pkgd) == XBPS_TYPE_DICTIONARY) {
+		/*
+		 * Compare alternatives from pkgdb and repo and
+		 * then remove obsolete symlinks.
+		 */
+		pkgd_alts = xbps_dictionary_get(pkgd, "alternatives");
+		if (xbps_object_type(pkgd_alts) == XBPS_TYPE_DICTIONARY) {
+			remove_obsoletes(xhp, pkgd_alts, pkg_alternatives);
+		}
+	}
 
 	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
