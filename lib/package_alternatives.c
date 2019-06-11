@@ -366,10 +366,10 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		if (!update && !current)
 			continue;
 
+		xbps_array_get_cstring_nocopy(array, 0, &first);
+
 		if (!current) {
 			/* get the new alternative group package */
-			first = NULL;
-			xbps_array_get_cstring_nocopy(array, 0, &first);
 			curpkgd = xbps_pkgdb_get_pkg(xhp, first);
 			assert(curpkgd);
 		}
