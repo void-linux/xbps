@@ -472,8 +472,15 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 			array = xbps_array_create();
 		} else {
 			/* already registered */
-			if (xbps_match_string_in_array(array, pkgname))
-				continue;
+			if (xbps_match_string_in_array(array, pkgname)) {
+				/* apply alternatives for this group */
+				rv = create_symlinks(xhp,
+					xbps_dictionary_get(pkg_alternatives, keyname),
+					keyname);
+				if (rv != 0)
+					break;
+			}
+			continue;
 		}
 
 		xbps_array_add_cstring(array, pkgname);
@@ -485,7 +492,8 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 			rv = create_symlinks(xhp,
 				xbps_dictionary_get(pkg_alternatives, keyname),
 				keyname);
-			xbps_object_release(array);
+			if (alloc)
+				xbps_object_release(array);
 			if (rv != 0)
 				break;
 		}
