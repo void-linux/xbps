@@ -512,12 +512,12 @@ useless_switch_body() {
 	atf_check_equal $rv 0
 }
 
-atf_test_case remove_defprovider
+atf_test_case remove_current_provider
 
-remove_defprovider_head() {
-	atf_set "descr" "xbps-alternatives: removing default provider"
+remove_current_provider_head() {
+	atf_set "descr" "xbps-alternatives: removing current provider"
 }
-remove_defprovider_body() {
+remove_current_provider_body() {
 	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
 	touch pkg_A/usr/bin/fileA pkg_B/usr/bin/fileB
 	cd repo
@@ -534,7 +534,7 @@ remove_defprovider_body() {
 	xbps-install -r root --repository=repo -ydv B
 	atf_check_equal $? 0
 
-	xbps-alternatives -s B
+	xbps-alternatives -r root -s B
 	atf_check_equal $? 0
 
 	xbps-remove -r root -ydv B
@@ -562,5 +562,5 @@ atf_init_test_cases() {
 	atf_add_test_case update_pkgs
 	atf_add_test_case less_entries
 	atf_add_test_case useless_switch
-	atf_add_test_case remove_defprovider
+	atf_add_test_case remove_current_provider
 }
