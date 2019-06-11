@@ -355,8 +355,10 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_REMOVED, 0, NULL,
 		    "%s: unregistered '%s' alternatives group", pkgver, keyname);
-		if (!update)
+		if (!update) {
 			xbps_remove_string_from_array(array, pkgname);
+			xbps_array_get_cstring_nocopy(array, 0, &first);
+		}
 
 		if (xbps_array_count(array) == 0) {
 			xbps_dictionary_remove(alternatives, keyname);
@@ -366,9 +368,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		if (!update && !current)
 			continue;
 
-		xbps_array_get_cstring_nocopy(array, 0, &first);
-
-		if (!current) {
+		if (current) {
 			/* get the new alternative group package */
 			curpkgd = xbps_pkgdb_get_pkg(xhp, first);
 			assert(curpkgd);
