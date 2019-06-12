@@ -12,6 +12,7 @@ SUBDIRS +=	xbps-rindex
 SUBDIRS +=	xbps-uhelper
 SUBDIRS +=	xbps-checkvers
 SUBDIRS +=	xbps-fbulk
+SUBDIRS +=	xbps-digest
 
 ifeq (${XBPS_OS},linux)
 SUBDIRS +=	xbps-uchroot

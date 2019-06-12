@@ -16,6 +16,7 @@ bin/xbps-uhelper/xbps-uhelper
 bin/xbps-uchroot/xbps-uchroot
 bin/xbps-checkvers/xbps-checkvers
 bin/xbps-uunshare/xbps-uunshare
+bin/xbps-digest/xbps-digest
 *.static
 *.so*
 *.o
