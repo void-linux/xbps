@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 Juan Romero Pardines
+ * Copyright (c) 2014-2019 Juan Romero Pardines
  * Copyright (c) 2012-2014 Dave Elusive <davehome@redthumb.info.tm>
  * All rights reserved
  *
@@ -197,8 +197,9 @@ show_usage(const char *prog)
 "  -D,--distdir=DIRECTORY	Set (or override) the path to void-packages\n"
 "				(defaults to ~/void-packages).\n"
 "  -d,--debug 			Enable debug output to stderr.\n"
-"  -i,--installed 		Check for outdated packages in rootdir, rather\n"
+"  -I,--installed 		Check for outdated packages in rootdir, rather\n"
 "				than in the XBPS repositories.\n"
+"  -i,--ignore-conf-repos	Ignore repositories defined in xbps.d.\n"
 "  -R,--repository=URL		Append repository to the head of repository list.\n"
 "  -r,--rootdir=DIRECTORY	Set root directory (defaults to /).\n"
 "  -s,--show-missing		List any binary packages which are not built.\n"
@@ -695,6 +696,7 @@ main(int argc, char **argv)
 		{ "distdir", required_argument, NULL, 'D' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "installed", no_argument, NULL, 'i' },
+		{ "ignore-conf-repos", no_argument, NULL, 'I' },
 		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show-missing", no_argument, NULL, 's' },
@@ -718,6 +720,9 @@ main(int argc, char **argv)
 			rcv.xhp.flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'i':
+			rcv.xhp.flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			break;
+		case 'I':
 			rcv.installed = true;
 			break;
 		case 'R':
