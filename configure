@@ -15,6 +15,8 @@ BUILD_STATIC=
 SILENT=yes
 HAVE_VISIBILITY=no
 SET_RPATH=
+DEBUG=yes
+FULL_DEBUG=
 
 usage()
 {
@@ -42,7 +44,6 @@ for instance \`--prefix=\$HOME'.
 --verbose 		Disable silent build to see compilation details
 --enable-rpath		Link binaries with rpath '\$ORIGIN/../lib'
 --enable-api-docs 	Install XBPS API Library documentation (default disabled)
---enable-debug		Build with debugging code and symbols (default disabled)
 --enable-fulldebug	Enables extra debugging code (default disabled)
 --enable-static 	Build XBPS static utils (default disabled)
 --enable-tests		Build and install Kyua tests (default disabled)
@@ -56,7 +57,6 @@ for x; do
 	opt=${x%%=*}
 	var=${x#*=}
 	case "$opt" in
-	--enable-debug) DEBUG=yes;;
 	--enable-fulldebug) FULL_DEBUG=yes;;
 	--enable-rpath) SET_RPATH=yes;;
 	--prefix) PREFIX=$var;;
@@ -759,7 +759,7 @@ echo "   Build API documentation =	$BUILD_API_DOCS_VALUE"
 echo "   Build Kyua test suite =	$BUILD_TESTS_VALUE"
 echo "   Build programs as PIE =	$BUILD_PIE_VALUE"
 echo "   Build static programs =	$BUILD_STATIC_VALUE"
-echo "   Build with debug  =		$DEBUG"
+echo "   Build with full debug  =	$FULL_DEBUG"
 if [ -n "$HAVE_VISIBILITY" ]; then
 	echo "   Symbol visibility =		$HAVE_VISIBILITY"
 fi
