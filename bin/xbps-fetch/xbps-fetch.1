@@ -1,0 +1,101 @@
+.Dd June 12, 2019
+.Dt XBPS-FETCH 1
+.Sh NAME
+.Nm xbps-fetch
+.Nd XBPS utility to fetch files from URLs
+.Sh SYNOPSIS
+.Nm xbps-fetch
+.Op OPTIONS
+.Ar <URL>
+.Ar <URL+N>
+.Sh DESCRIPTION
+The
+.Nm
+utility downloads files from specified URLs.
+Multiple protocols are supported:
+.Ar ftp ,
+.Ar http ,
+.Ar https ,
+.Ar socks5 .
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl d
+Enables debug messages on stderr.
+.It Fl h
+Show the help message.
+.It Fl o Ar output
+Rename file from specified URL to
+.Ar output .
+.It Fl v
+Enables verbose messages.
+.It Fl V
+Show the version information.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width -x
+.It Sy FTP_PASSIVE_MODE
+If set to anything else than
+.Ar "no"
+passive mode will be set for the ftp connection.
+.It Sy FTP_LOGIN
+User name to be set for ftp authentication.
+.It Sy FTP_PASSWORD
+Password to be set for ftp authentication.
+.It Sy FTP_PROXY
+Proxy URL that will be used to establish a ftp connection.
+.It Sy HTTP_PROXY
+Proxy URL that will be used to establish a http connection.
+.It Sy HTTP_PROXY_AUTH
+Sets the credentials to authenticate a user agent to a proxy server, in the form
+.Ar user:pass .
+.It Sy HTTP_AUTH
+Sets the credentials to authenticate to a http server, in the form
+.Ar user:pass .
+.It Sy HTTP_REFERER
+Overrides the default Referer http header.
+.It Sy HTTP_USER_AGENT
+Override the default User-Agent http header.
+.It Sy NO_PROXY
+Specifies a set of domains for which the proxy should not be consulted.
+The contents is a comma-, or space-separated list of domain names.
+A single asterisk will override all proxy variables and no transactions
+will be proxied.
+.It Sy SOCKS_PROXY
+Proxy URL that will be used to establish a socks connection.
+.It Sy SSL_NO_VERIFY_HOSTNAME
+Disables SSL/TLS hostname verification.
+.It Sy SSL_NO_VERIFY_PEER
+Disables SSL/TLS peer verification.
+.It Sy SSL_CA_CERT_FILE
+Overrides the default CA certificates file, by default set to
+.Ar /etc/ssl/certs/ca-certificates.crt .
+.It Sy SSL_CA_CERT_PATH
+Overrides the default CA certificates path, by default set to
+.Ar /etc/ssl/certs .
+.It Sy SSL_CLIENT_CERT_FILE
+Sets the SSL/TLS client verification certificate file.
+.It Sy SSL_CLIENT_KEY_FILE
+Sets the SSL/TLS client verification key file.
+.El
+.Sh SEE ALSO
+.Xr xbps-checkvers 1 ,
+.Xr xbps-create 1 ,
+.Xr xbps-dgraph 1 ,
+.Xr xbps-digest 1 ,
+.Xr xbps-fbulk 1 ,
+.Xr xbps-install 1 ,
+.Xr xbps-pkgdb 1 ,
+.Xr xbps-query 1 ,
+.Xr xbps-reconfigure 1 ,
+.Xr xbps-remove 1 ,
+.Xr xbps-rindex  1 ,
+.Xr xbps-uchroot 1 ,
+.Xr xbps-uunshare 1 ,
+.Xr xbps.d 5
+.Sh AUTHORS
+.An Juan Romero Pardines <xtraeme@gmail.com>
+.Sh BUGS
+Probably, but I try to make this not happen.
+Use it under your own responsibility and enjoy your life.
+.Pp
+Report bugs at https://github.com/void-linux/xbps/issues

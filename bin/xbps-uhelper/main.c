@@ -35,7 +35,6 @@
 #include <getopt.h>
 
 #include <xbps.h>
-#include "../xbps-install/defs.h"
 
 static void __attribute__((noreturn))
 usage(void)
@@ -52,7 +51,6 @@ usage(void)
 	"    binpkgarch\t<binpkg>\n"
 	"    binpkgver\t<binpkg>\n"
 	"    cmpver\t\t<instver> <reqver>\n"
-	"    fetch\t\t<URL[>filename]> <URL1+N[>filename]>\n"
 	"    getpkgdepname\t<string>\n"
 	"    getpkgdepversion\t<string>\n"
 	"    getpkgname\t\t<string>\n"
@@ -70,7 +68,6 @@ usage(void)
 	"\n"
 	"  Examples:\n"
 	"    $ xbps-uhelper cmpver 'foo-1.0_1' 'foo-2.1_1'\n"
-	"    $ xbps-uhelper fetch http://www.foo.org/file.blob ...\n"
 	"    $ xbps-uhelper getpkgdepname 'foo>=0'\n"
 	"    $ xbps-uhelper getpkgdepversion 'foo>=0'\n"
 	"    $ xbps-uhelper getpkgname foo-2.0_1\n"
@@ -82,28 +79,13 @@ usage(void)
 	exit(EXIT_FAILURE);
 }
 
-static char*
-fname(char *url) {
-	char *filename;
-
-	if( (filename = strrchr(url, '>')) ) {
-		*filename = '\0';
-	} else {
-		filename = strrchr(url, '/');
-	}
-	if(filename == NULL)
-		return NULL;
-	return filename + 1;
-}
-
 int
 main(int argc, char **argv)
 {
 	xbps_dictionary_t dict;
 	struct xbps_handle xh;
-	struct xferstat xfer;
 	const char *version, *rootdir = NULL, *confdir = NULL;
-	char *pkgname, *filename;
+	char *pkgname;
 	int flags = 0, c, rv = 0;
 	const struct option longopts[] = {
 		{ NULL, 0, NULL, 0 }
@@ -141,14 +123,11 @@ main(int argc, char **argv)
 	if ((strcmp(argv[0], "version") == 0) ||
 	    (strcmp(argv[0], "real-version") == 0) ||
 	    (strcmp(argv[0], "arch") == 0) ||
-	    (strcmp(argv[0], "getsystemdir") == 0) ||
-	    (strcmp(argv[0], "fetch") == 0)) {
+	    (strcmp(argv[0], "getsystemdir") == 0)) {
 		/*
 		* Initialize libxbps.
 		*/
 		xh.flags = flags;
-		xh.fetch_cb = fetch_file_progress_cb;
-		xh.fetch_cb_data = &xfer;
 		if (rootdir)
 			xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 		if (confdir)
@@ -289,24 +268,6 @@ main(int argc, char **argv)
 			usage();
 
 		printf("%s\n", XBPS_SYSDEFCONF_PATH);
-	} else if (strcmp(argv[0], "fetch") == 0) {
-		/* Fetch a file from specified URL */
-		if (argc < 2)
-			usage();
-
-		for (int i = 1; i < argc; i++) {
-			filename = fname(argv[i]);
-			rv = xbps_fetch_file_dest(&xh, argv[i], filename, "v");
-
-			if (rv == -1) {
-				fprintf(stderr, "%s: %s\n", argv[i],
-				    xbps_fetch_error_string());
-			} else if (rv == 0) {
-				printf("%s: file is identical with remote.\n",
-				    argv[i]);
-			} else
-				rv = 0;
-		}
 	} else {
 		usage();
 	}
