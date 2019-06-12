@@ -44,7 +44,7 @@ usage(void)
 	"usage: xbps-uhelper [options] [action] [args]\n"
 	"\n"
 	"  Available actions:\n"
-	"    binpkgarch, binpkgver, cmpver, digest, fetch, getpkgdepname,\n"
+	"    binpkgarch, binpkgver, cmpver, fetch, getpkgdepname,\n"
 	"    getpkgname, getpkgrevision, getpkgversion, pkgmatch, version,\n"
 	"    real-version, arch, getsystemdir\n"
 	"\n"
@@ -52,7 +52,6 @@ usage(void)
 	"    binpkgarch\t<binpkg>\n"
 	"    binpkgver\t<binpkg>\n"
 	"    cmpver\t\t<instver> <reqver>\n"
-	"    digest\t\t<file> <file1+N>\n"
 	"    fetch\t\t<URL[>filename]> <URL1+N[>filename]>\n"
 	"    getpkgdepname\t<string>\n"
 	"    getpkgdepversion\t<string>\n"
@@ -71,7 +70,6 @@ usage(void)
 	"\n"
 	"  Examples:\n"
 	"    $ xbps-uhelper cmpver 'foo-1.0_1' 'foo-2.1_1'\n"
-	"    $ xbps-uhelper digest file ...\n"
 	"    $ xbps-uhelper fetch http://www.foo.org/file.blob ...\n"
 	"    $ xbps-uhelper getpkgdepname 'foo>=0'\n"
 	"    $ xbps-uhelper getpkgdepversion 'foo>=0'\n"
@@ -105,7 +103,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *version, *rootdir = NULL, *confdir = NULL;
-	char *pkgname, *hash, *filename;
+	char *pkgname, *filename;
 	int flags = 0, c, rv = 0;
 	const struct option longopts[] = {
 		{ NULL, 0, NULL, 0 }
@@ -291,21 +289,6 @@ main(int argc, char **argv)
 			usage();
 
 		printf("%s\n", XBPS_SYSDEFCONF_PATH);
-	} else if (strcmp(argv[0], "digest") == 0) {
-		/* Prints SHA256 hashes for specified files */
-		if (argc < 2)
-			usage();
-
-		for (int i = 1; i < argc; i++) {
-			hash = xbps_file_hash(argv[i]);
-			if (hash == NULL) {
-				fprintf(stderr,
-				    "E: couldn't get hash for %s (%s)\n",
-				    argv[i], strerror(errno));
-				exit(EXIT_FAILURE);
-			}
-			printf("%s\n", hash);
-		}
 	} else if (strcmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */
 		if (argc < 2)
