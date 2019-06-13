@@ -509,7 +509,7 @@ rcv_get_pkgver(rcv_t *rcv)
 			vlen--;
 		}
 		comment = strchr(v, '#');
-		if (comment && comment < p) {
+		if (comment && comment < p && (comment > v && comment[-1] == ' ')) {
 			while (v[vlen-1] != '#') {
 				vlen--;
 			}
