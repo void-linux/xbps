@@ -738,10 +738,7 @@ main(int argc, char **argv)
 			rcv.manual = true;
 			break;
 		case 'R':
-			if (rcv.xhp.repositories == NULL)
-				rcv.xhp.repositories = xbps_array_create();
-
-			xbps_array_add_cstring_nocopy(rcv.xhp.repositories, optarg);
+			xbps_repo_store(&rcv.xhp, optarg);
 			break;
 		case 'r':
 			rcv.rootdir = strdup(optarg);
