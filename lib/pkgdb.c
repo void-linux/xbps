@@ -102,9 +102,19 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 		goto ret;
 	}
 
+	/*
+	 * If we've acquired the file lock, then pkgdb is writable.
+	 */
 	if (lockf(pkgdb_fd, F_TLOCK, 0) == -1) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "[pkgdb] cannot lock pkgdb: %s\n", strerror(rv));
+	}
+	/*
+	 * Check if rootdir is writable.
+	 */
+	if (access(xhp->rootdir, W_OK) == -1) {
+		rv = errno;
+		xbps_dbg_printf(xhp, "[pkgdb] rootdir %s: %s\n", xhp->rootdir, strerror(rv));
 	}
 
 ret:
