@@ -468,7 +468,7 @@ rcv_get_pkgver(rcv_t *rcv)
 	size_t klen, vlen;
 	map_item_t _item;
 	map_item_t *item = NULL;
-	char c, *ptr = rcv->ptr, *e, *p, *k, *v, *comment;
+	char c, *ptr = rcv->ptr, *e, *p, *k, *v, *comment, *d;
 	uint8_t vars = 0;
 
 	while ((c = *ptr) != '\0') {
@@ -523,18 +523,18 @@ rcv_get_pkgver(rcv_t *rcv)
 		}
 		_item = map_add_n(rcv->env, k, klen, v, vlen);
 		item = &rcv->env->items[_item.i];
+		item->v.vmalloc = 0;
+		assert(item);
+		assert(item->v.s);
+		assert(item->v.len);
 
-		if (strchr(v, '$')) {
-			assert(item);
-			assert(item->v.s);
+		if ((d = strchr(v, '$')) && d < v+vlen) {
 			item->v.len = rcv_sh_substitute(rcv, item->v.s, item->v.len, &item->v.s);
 			item->v.vmalloc = 1;
-		} else {
-			item->v.vmalloc = 0;
 		}
 		if (rcv->xhp.flags & XBPS_FLAG_DEBUG) {
 			printf("%s: %.*s %.*s\n", rcv->fname,
-			    (int)item->k.len, item->k.s,
+			    (int)item->k.len-1, item->k.s,
 			    (int)item->v.len, item->v.s);
 		}
 		if (strncmp("pkgname", k, klen) == 0) {
