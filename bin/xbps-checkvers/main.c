@@ -191,21 +191,21 @@ show_usage(const char *prog)
 {
 	fprintf(stderr,
 "Usage: %s [OPTIONS] [FILES...]\n\n"
-" Options:\n"
-"  -h,--help			Show this helpful help-message for help.\n"
-"  -C,--config=DIRECTORY 	Set path to xbps.d\n"
-"  -D,--distdir=DIRECTORY	Set (or override) the path to void-packages\n"
-"				(defaults to ~/void-packages).\n"
-"  -d,--debug 			Enable debug output to stderr.\n"
-"  -I,--installed 		Check for outdated packages in rootdir, rather\n"
-"				than in the XBPS repositories.\n"
-"  -i,--ignore-conf-repos	Ignore repositories defined in xbps.d.\n"
-"  -m,--manual	Only process listed files.\n"
-"  -R,--repository=URL		Append repository to the head of repository list.\n"
-"  -r,--rootdir=DIRECTORY	Set root directory (defaults to /).\n"
-"  -s,--show-all		List all packages, in the format 'pkgname repover srcver'.\n"
-"\n  [FILES...]			Extra packages to process with the outdated\n"
-"				ones (only processed if missing).\n\n",
+"OPTIONS:\n"
+" -h --help		Show this helpful help-message for help.\n"
+" -C --config <dir> 	Set path to xbps.d\n"
+" -D --distdir <dir>	Set (or override) the path to void-packages\n"
+"  			(defaults to ~/void-packages).\n"
+" -d --debug 		Enable debug output to stderr.\n"
+" -I --installed 	Check for outdated packages in rootdir, rather\n"
+"  			than in the XBPS repositories.\n"
+" -i --ignore-conf-repos	Ignore repositories defined in xbps.d.\n"
+" -m --manual		Only process listed files.\n"
+" -R --repository=<url>	Append repository to the head of repository list.\n"
+" -r --rootdir <dir>	Set root directory (defaults to /).\n"
+" -s --show-all		List all packages, in the format 'pkgname repover srcver'.\n"
+"\n  [FILES...]		Extra packages to process with the outdated\n"
+"			ones (only processed if missing).\n\n",
 prog);
 	return EXIT_FAILURE;
 }
