@@ -615,26 +615,20 @@ rcv_check_version(rcv_t *rcv)
 
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
 
-	if (!repover && rcv->manual) {
-		printf("%.*s ? %s\n",
-			(int)pkgname.v.len, pkgname.v.s, srcver+pkgname.v.len+1);
-	} else if (repover && !rcv->show_all) {
-		if (xbps_cmpver(repover+pkgname.v.len+1,
+	if (!repover && rcv->manual)
+		;
+	else if (rcv->show_all)
+		;
+	else if (repover && (xbps_cmpver(repover+pkgname.v.len+1,
 		    srcver+pkgname.v.len+1) < 0 ||
-		    check_reverts(repover+pkgname.v.len+1, reverts)) {
-			printf("%.*s %s %s\n",
-				(int)pkgname.v.len, pkgname.v.s,
-				repover+pkgname.v.len+1,
-				srcver+pkgname.v.len+1);
-		}
-	} else if (rcv->show_all) {
-		const char *p = NULL;
-		if (repover == NULL)
-			p = "?";
+		    check_reverts(repover+pkgname.v.len+1, reverts)))
+		;
+	else
+		return 0;
 
-		printf("%.*s %s %s\n", (int)pkgname.v.len, pkgname.v.s,
-		    p ? p : repover+pkgname.v.len+1, srcver+pkgname.v.len+1);
-	}
+	repover = repover ? repover+pkgname.v.len+1 : "?";
+	printf("%.*s %s %s\n", (int)pkgname.v.len, pkgname.v.s, repover,
+		srcver+pkgname.v.len+1);
 
 	return 0;
 }
