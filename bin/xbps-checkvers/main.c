@@ -429,10 +429,11 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len, char **outp)
 					for (ref = p; *p && p < str+len && (isalnum(*p) || *p == '_'); p++)
 						;
 					reflen = p-ref;
+					p--;
 				}
 				item = map_find_n(rcv->env, ref, reflen);
 				if ((strncmp(ref, item.k.s, reflen) == 0)) {
-					sbuf_str(out, item.v.s);
+					sbuf_mem(out, item.v.s, item.v.len);
 				} else {
 					sbuf_str(out, "NULL");
 				}
