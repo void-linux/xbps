@@ -82,7 +82,7 @@ typedef struct _rcv_t {
 	map_t *env;
 	struct xbps_handle xhp;
 	xbps_dictionary_t pkgd;
-	bool show_missing;
+	bool show_all;
 	bool manual;
 	bool installed;
 } rcv_t;
@@ -202,7 +202,7 @@ show_usage(const char *prog)
 "  -i,--ignore-conf-repos	Ignore repositories defined in xbps.d.\n"
 "  -R,--repository=URL		Append repository to the head of repository list.\n"
 "  -r,--rootdir=DIRECTORY	Set root directory (defaults to /).\n"
-"  -s,--show-missing		List any binary packages which are not built.\n"
+"  -s,--show-all		List all packages, in the format 'pkgname repover srcver'.\n"
 "\n  [FILES...]			Extra packages to process with the outdated\n"
 "				ones (only processed if missing).\n\n",
 prog);
@@ -614,21 +614,27 @@ rcv_check_version(rcv_t *rcv)
 
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
 
-
-	if (repover == NULL && (rcv->show_missing || rcv->manual )) {
-		printf("pkgname: %.*s repover: ? srcpkgver: %s\n",
+	if (!repover && rcv->manual) {
+		printf("%.*s ? %s\n",
 			(int)pkgname.v.len, pkgname.v.s, srcver+pkgname.v.len+1);
-	}
-	if (repover != NULL && rcv->show_missing == false) {
+	} else if (repover && !rcv->show_all) {
 		if (xbps_cmpver(repover+pkgname.v.len+1,
 		    srcver+pkgname.v.len+1) < 0 ||
 		    check_reverts(repover+pkgname.v.len+1, reverts)) {
-			printf("pkgname: %.*s repover: %s srcpkgver: %s\n",
+			printf("%.*s %s %s\n",
 				(int)pkgname.v.len, pkgname.v.s,
 				repover+pkgname.v.len+1,
 				srcver+pkgname.v.len+1);
 		}
+	} else if (rcv->show_all) {
+		const char *p = NULL;
+		if (repover == NULL)
+			p = "?";
+
+		printf("%.*s %s %s\n", (int)pkgname.v.len, pkgname.v.s,
+		    p ? p : repover+pkgname.v.len+1, srcver+pkgname.v.len+1);
 	}
+
 	return 0;
 }
 
@@ -689,7 +695,7 @@ main(int argc, char **argv)
 	int i, c;
 	rcv_t rcv;
 	char *distdir = NULL;
-	const char *prog = argv[0], *sopts = "hC:D:diR:r:sV", *tmpl;
+	const char *prog = argv[0], *sopts = "hC:D:diIR:r:sV", *tmpl;
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "config", required_argument, NULL, 'C' },
@@ -699,7 +705,7 @@ main(int argc, char **argv)
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
 		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
-		{ "show-missing", no_argument, NULL, 's' },
+		{ "show-all", no_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
@@ -735,7 +741,7 @@ main(int argc, char **argv)
 			rcv.rootdir = strdup(optarg);
 			break;
 		case 's':
-			rcv.show_missing = true;
+			rcv.show_all = true;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
