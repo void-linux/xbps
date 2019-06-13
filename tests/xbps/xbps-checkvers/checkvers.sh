@@ -384,6 +384,29 @@ EOF
 	atf_check_equal "$out" "fs-utils 1.10_1 1.10_1"
 }
 
+atf_test_case manual_mode
+
+manual_mode_head() {
+	atf_set "descr" "xbps-checkvers(1): test manual mode"
+}
+
+manual_mode_body() {
+	mkdir -p void-packages/srcpkgs/do-not-process void-packages/srcpkgs/process
+	cat > void-packages/srcpkgs/do-not-process/template <<EOF
+pkgname=do-not-process
+#version=1
+revision=1
+EOF
+	cat > void-packages/srcpkgs/process/template <<EOF
+pkgname=process
+version=1
+revision=1
+EOF
+	out=$(xbps-checkvers -D $PWD/void-packages -ms srcpkgs/process/template)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "process ? 1_1"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case srcpkg_newer
 	atf_add_test_case srcpkg_newer_with_refs
@@ -399,4 +422,5 @@ atf_init_test_cases() {
 	atf_add_test_case srcpkg_with_a_ref_and_comment
 	atf_add_test_case reverts
 	atf_add_test_case reverts_alpha
+	atf_add_test_case manual_mode
 }
