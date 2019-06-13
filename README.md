@@ -41,16 +41,16 @@ To build this you'll need:
   - [openssl < 1.1](https://www.openssl.org) or [libressl](https://www.libressl.org/)
   - [libarchive >= 3.2.0](https://www.libarchive.org)
 
-**NOTE** pcc and tcc can compile xbps correctly, but as of **20190422**
-only the static binaries work correctly, do not forget to set `--enable-static`
-option in the `configure` script.
-
 and optionally:
 
   - [graphviz](https://www.graphviz.org) and [doxygen](https://www.doxygen.org)
     (--enable-api-docs) to build API documentation.
   - [atf >= 0.15](https://github.com/jmmv/kyua) (--enable-tests) to build the
     Kyua test suite.
+
+**NOTE** pcc and tcc can compile xbps correctly, but as of **20190422**
+only the static binaries work correctly, do not forget to set `--enable-static`
+option in the `configure` script.
 
 ### Tests
 
