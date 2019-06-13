@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2014-2019 Juan Romero Pardines
  * Copyright (c) 2012-2014 Dave Elusive <davehome@redthumb.info.tm>
+ * Copyright (c) 2019      Duncan Overbruck <mail@duncano.de>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,6 +59,17 @@ do {									\
 #define _dprintf(...)
 #endif
 
+#define SBUFSZ		128
+#define ALIGN(n, a)	(((n) + (a) - 1) & ~((a) - 1))
+#define MAX(a, b)	((a) < (b) ? (b) : (a))
+#define NEXTSZ(o, r)	ALIGN(MAX((o) * 2, (o) + (r)), SBUFSZ)
+
+struct sbuf {
+	char *mem;
+	size_t len;
+	size_t size;
+};
+
 typedef struct str_ptr_t {
 	char *s;
 	size_t len;
@@ -89,6 +101,77 @@ typedef struct _rcv_t {
 
 typedef int (*rcv_check_func)(rcv_t *);
 typedef int (*rcv_proc_func)(rcv_t *, const char *, rcv_check_func);
+
+static void
+sbuf_extend(struct sbuf *sb, int newsz)
+{
+	sb->size = newsz;
+	sb->mem = realloc(sb->mem, newsz);
+	if (sb->mem == NULL) {
+		fprintf(stderr, "realloc: %s\n", strerror(errno));
+		exit(1);
+	}
+}
+
+static struct sbuf *
+sbuf_make(void)
+{
+	struct sbuf *sb = calloc(1, sizeof(*sb));
+	if (sb == NULL) {
+		fprintf(stderr, "calloc: %s\n", strerror(errno));
+		exit(1);
+	}
+	return sb;
+}
+
+static char *
+sbuf_buf(struct sbuf *sb)
+{
+	if (!sb->mem)
+		sbuf_extend(sb, 1);
+	sb->mem[sb->len] = '\0';
+	return sb->mem;
+}
+
+static size_t
+sbuf_done(struct sbuf *sb, char **dest)
+{
+	size_t len = sb->len;
+	*dest = sbuf_buf(sb);
+	free(sb);
+	return len;
+}
+
+static void
+sbuf_chr(struct sbuf *sb, int c)
+{
+	if (sb->len + 2 >= sb->size)
+		sbuf_extend(sb, NEXTSZ(sb->size, 1));
+	sb->mem[sb->len++] = c;
+}
+
+static void
+sbuf_mem(struct sbuf *sb, const char *src, size_t len)
+{
+	if (sb->len + len + 1 >= sb->size)
+		sbuf_extend(sb, NEXTSZ(sb->size, len + 1));
+	memcpy(sb->mem + sb->len, src, len);
+	sb->len += len;
+}
+
+static void
+sbuf_str(struct sbuf *sb, const char *src)
+{
+	sbuf_mem(sb, src, strlen(src));
+}
+
+#if 0
+static void
+sbuf_strn(struct sbuf *sb, const char *src, size_t n)
+{
+	sbuf_mem(sb, src, n);
+}
+#endif
 
 static map_item_t
 map_new_item(void)
@@ -291,108 +374,92 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 	return true;
 }
 
-static char *
-rcv_refs(rcv_t *rcv, const char *s, size_t len)
+static size_t
+rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len, char **outp)
 {
-	map_item_t item;
-	size_t i = 0, j = 0, k = 0, count = len*3;
-	char *ref = calloc(count, sizeof(char));
-	char *buf = calloc(count, sizeof(char));
+	const char *p;
+	char *cmd;
+	struct sbuf *out = sbuf_make();
 
-	assert(rcv);
-	assert(s);
-	assert(ref);
-	assert(buf);
-
-	while (i < len) {
-		if (s[i] == '$' && s[i+1] != '(') {
-			j = 0;
-			i++;
-			if (s[i] == '{') {
-				i++;
-			}
-			while (isalpha(s[i]) || s[i] == '_') {
-				ref[j++] = s[i++];
-			}
-			if (s[i] == '}') {
-				i++;
-			}
-			ref[j++] = '\0';
-			item = map_find(rcv->env, ref);
-			if ((strncmp(ref, item.k.s, strlen(ref)) == 0)) {
-				buf = strcat(buf, item.v.s);
-				k += item.v.len;
-			} else {
-				buf = strcat(buf, "NULL");
-				k += 4;
-			}
-		} else {
-			if (s[i] != '\n')
-				buf[k++] = s[i++];
-		}
-	}
-	buf[k] = '\0';
-	free(ref);
-	return buf;
-}
-
-static char *
-rcv_cmd(rcv_t *rcv, const char *s, size_t len)
-{
-	int c, rv = 0;
-	FILE *stream;
-	size_t i = 0, j = 0, k = 0, count = len*3;
-	char *cmd = calloc(count, sizeof(char));
-	char *buf = calloc(count, sizeof(char));
-
-	assert(cmd);
-	assert(buf);
-
-	(void)rcv;
-
-	while (i < len) {
-		if (s[i] == '$' && s[i+1] != '{') {
-			j = 0;
-			i++;
-			if (s[i] == '(') {
-				i++;
-			}
-			while (s[i] != ')') {
-				cmd[j++] = s[i++];
-			}
-			if (s[i] == ')') {
-				i++;
-			}
-			cmd[j++] = '\0';
-			if ((stream = popen(cmd, "r")) == NULL)
-				goto error;
-			while ((c = fgetc(stream)) != EOF && c != '\n') {
-				buf[k++] = (char)c;
-			}
-			rv = pclose(stream);
-error:
-			if (rv > 0 || errno > 0) {
-				fprintf(stderr,
-					"Shell cmd failed: '%s' for "
-					"template '%s'",
-					cmd, rcv->fname);
-				if (errno > 0) {
-					fprintf(stderr, ": %s\n",
-						strerror(errno));
+	for (p = str; *p && p < str+len; p++) {
+		switch (*p) {
+		case '$':
+			if (p+1 < str+len) {
+				const char *ref;
+				size_t reflen;
+				map_item_t item;
+				p++;
+				if (*p == '(') {
+					FILE *fp;
+					char c;
+					for (ref = ++p; *p && p < str+len && *p != ')'; p++)
+						;
+					if (*p != ')')
+						goto err1;
+					cmd = strndup(ref, p-ref);
+					if ((fp = popen(cmd, "r")) == NULL)
+						goto err2;
+					while ((c = fgetc(fp)) != EOF && c != '\n')
+						sbuf_chr(out, c);
+					if (pclose(fp) != 0)
+						goto err2;
+					free(cmd);
+					cmd = NULL;
+					continue;
+				} else if (*p == '{') {
+					for (ref = ++p; *p && p < str+len && (isalnum(*p) || *p == '_'); p++)
+						;
+					reflen = p-ref;
+					switch (*p) {
+					case '/': /* fallthrough */
+					case '%': /* fallthrough */
+					case '#': /* fallthrough */
+					case ':':
+						for (; *p && p < str+len && *p != '}'; p++)
+							;
+						if (*p != '}')
+							goto err1;
+						break;
+					case '}':
+						break;
+					default:
+						goto err1;
+					}
+				} else {
+					for (ref = p; *p && p < str+len && (isalnum(*p) || *p == '_'); p++)
+						;
+					reflen = p-ref;
 				}
-				putchar('\n');
-				exit(1);
+				item = map_find_n(rcv->env, ref, reflen);
+				if ((strncmp(ref, item.k.s, reflen) == 0)) {
+					sbuf_str(out, item.v.s);
+				} else {
+					sbuf_str(out, "NULL");
+				}
+				break;
 			}
-
-		} else {
-			if (s[i] != '\n')
-				buf[k++] = s[i++];
+			/* fallthrough */
+		default:
+			sbuf_chr(out, *p);
 		}
 	}
-	buf[k] = '\0';
-	free(cmd);
-	free(__UNCONST(s));
-	return buf;
+	return sbuf_done(out, outp);
+
+err1:
+	fprintf(stderr, "syntax error: in file '%s'\n", rcv->fname);
+	exit(1);
+err2:
+	fprintf(stderr,
+		"Shell cmd failed: '%s' for "
+		"template '%s'",
+		cmd, rcv->fname);
+	if (errno > 0) {
+		fprintf(stderr, ": %s\n",
+			strerror(errno));
+	} else {
+		fputc('\n', stderr);
+	}
+	exit(1);
 }
 
 static void
@@ -460,11 +527,8 @@ rcv_get_pkgver(rcv_t *rcv)
 		if (strchr(v, '$')) {
 			assert(item);
 			assert(item->v.s);
-			item->v.s = rcv_refs(rcv, item->v.s, item->v.len);
-			item->v.len = strlen(item->v.s);
+			item->v.len = rcv_sh_substitute(rcv, item->v.s, item->v.len, &item->v.s);
 			item->v.vmalloc = 1;
-			item->v.s = rcv_cmd(rcv, item->v.s, item->v.len);
-			item->v.len = strlen(item->v.s);
 		} else {
 			item->v.vmalloc = 0;
 		}
