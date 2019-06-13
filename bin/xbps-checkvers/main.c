@@ -200,6 +200,7 @@ show_usage(const char *prog)
 "  -I,--installed 		Check for outdated packages in rootdir, rather\n"
 "				than in the XBPS repositories.\n"
 "  -i,--ignore-conf-repos	Ignore repositories defined in xbps.d.\n"
+"  -m,--manual	Only process listed files.\n"
 "  -R,--repository=URL		Append repository to the head of repository list.\n"
 "  -r,--rootdir=DIRECTORY	Set root directory (defaults to /).\n"
 "  -s,--show-all		List all packages, in the format 'pkgname repover srcver'.\n"
@@ -695,7 +696,7 @@ main(int argc, char **argv)
 	int i, c;
 	rcv_t rcv;
 	char *distdir = NULL;
-	const char *prog = argv[0], *sopts = "hC:D:diIR:r:sV", *tmpl;
+	const char *prog = argv[0], *sopts = "hC:D:diImR:r:sV", *tmpl;
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "config", required_argument, NULL, 'C' },
@@ -703,6 +704,7 @@ main(int argc, char **argv)
 		{ "debug", no_argument, NULL, 'd' },
 		{ "installed", no_argument, NULL, 'I' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
+		{ "manual", no_argument, NULL, 'm' },
 		{ "repository", required_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show-all", no_argument, NULL, 's' },
@@ -711,6 +713,7 @@ main(int argc, char **argv)
 	};
 
 	memset(&rcv, 0, sizeof(rcv_t));
+	rcv.manual = false;
 
 	while ((c = getopt_long(argc, argv, sopts, lopts, NULL)) != -1) {
 		switch (c) {
@@ -730,6 +733,9 @@ main(int argc, char **argv)
 			break;
 		case 'I':
 			rcv.installed = true;
+			break;
+		case 'm':
+			rcv.manual = true;
 			break;
 		case 'R':
 			if (rcv.xhp.repositories == NULL)
@@ -762,8 +768,14 @@ main(int argc, char **argv)
 	argv += optind;
 
 	rcv_init(&rcv, prog);
-	rcv.manual = false;
-	rcv_process_dir(&rcv, rcv.pkgdir, rcv_process_file);
+
+	if (!rcv.manual) {
+		rcv_process_dir(&rcv, rcv.pkgdir, rcv_process_file);
+	} else if ((chdir(rcv.pkgdir)) == -1) {
+		fprintf(stderr, "Error: while processing dir '%s': %s\n", rcv.pkgdir,
+			strerror(errno));
+		exit(1);
+	}
 	rcv.manual = true;
 	for (i = 0; i < argc; i++) {
 		tmpl = argv[i] + (strlen(argv[i]) - strlen("template"));
