@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2016 Juan Romero Pardines.
+ * Copyright (c) 2008-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20180730"
+#define XBPS_API_VERSION	"20190614"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
