@@ -635,8 +635,7 @@ static void
 rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
     const char *srcver)
 {
-	char tmpl[128], *p;
-	const char *f;
+	const char *f, *p;
 
 	for (f = rcv->format; *f; f++) {
 		if (*f == '\\') {
@@ -661,10 +660,8 @@ rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
 		case 'r': fputs(repover, fp); break;
 		case 's': fputs(srcver, fp); break;
 		case 't':
-			xbps_strlcpy(tmpl, rcv->fname, sizeof tmpl);
-			if ((p = strchr(tmpl, '/')))
-				*p = '\0';
-			fputs(tmpl, fp);
+			p = strchr(rcv->fname, '/');
+			fwrite(rcv->fname, p ? (size_t)(p - rcv->fname) : strlen(rcv->fname), 1, fp);
 			break;
 		}
 	}
