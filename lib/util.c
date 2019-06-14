@@ -328,17 +328,27 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 bool
 xbps_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
-	char *binpkg;
-	bool exists = true;
+	char path[PATH_MAX];
+	const char *pkgver, *arch, *repoloc;
 
-	if ((binpkg = xbps_repository_pkg_path(xhp, pkgd)) == NULL)
-		return false;
+	assert(xhp);
+	assert(xbps_object_type(pkgd) == XBPS_TYPE_DICTIONARY);
 
-	if (access(binpkg, R_OK) == -1)
-		exists = false;
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd,
+	    "pkgver", &pkgver))
+		return NULL;
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd,
+	    "architecture", &arch))
+		return NULL;
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd,
+	    "repository", &repoloc))
+		return NULL;
 
-	free(binpkg);
-	return exists;
+	snprintf(path, sizeof(path), "%s/%s.%s.xbps",
+	    xbps_repository_is_remote(repoloc) ? xhp->cachedir : repoloc,
+	    pkgver, arch);
+
+	return access(path, R_OK) == 0;
 }
 
 bool
