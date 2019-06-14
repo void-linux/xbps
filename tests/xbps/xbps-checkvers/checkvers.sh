@@ -165,7 +165,7 @@ EOF
 	cd ..
 	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
 	atf_check_equal $? 1
-	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing pkgname variable!"
+	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing required variable (pkgname, version or revision)!"
 }
 
 atf_test_case srcpkg_missing_version
@@ -191,7 +191,7 @@ EOF
 	cd ..
 	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
 	atf_check_equal $? 1
-	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing version variable!"
+	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing required variable (pkgname, version or revision)!"
 }
 
 atf_test_case srcpkg_missing_revision
@@ -217,7 +217,7 @@ EOF
 	cd ..
 	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
 	atf_check_equal $? 1
-	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing revision variable!"
+	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing required variable (pkgname, version or revision)!"
 }
 
 atf_test_case srcpkg_missing_pkgver
@@ -243,7 +243,7 @@ EOF
 	cd ..
 	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
 	atf_check_equal $? 1
-	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing pkgname variable!"
+	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing required variable (pkgname, version or revision)!"
 }
 
 atf_test_case srcpkg_missing_pkgverrev
@@ -269,7 +269,7 @@ EOF
 	cd ..
 	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages 2>out
 	atf_check_equal $? 1
-	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing pkgname variable!"
+	atf_check_equal "$(cat out)" "ERROR: 'A/template': missing required variable (pkgname, version or revision)!"
 }
 
 atf_test_case srcpkg_with_a_ref
