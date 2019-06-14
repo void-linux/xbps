@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <assert.h>
 
@@ -755,7 +756,7 @@ main(int argc, char **argv)
 	int i, c;
 	rcv_t rcv;
 	char *distdir = NULL;
-	const char *prog = argv[0], *sopts = "hC:D:diImR:r:sV", *tmpl;
+	const char *prog = argv[0], *sopts = "hC:D:diImR:r:sV";
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "config", required_argument, NULL, 'C' },
@@ -834,16 +835,18 @@ main(int argc, char **argv)
 	}
 	rcv.manual = true;
 	for (i = 0; i < argc; i++) {
-		tmpl = argv[i] + (strlen(argv[i]) - strlen("template"));
-		if ((strcmp("template", tmpl)) == 0) {
-			/* strip "srcpkgs/" prefix if found */
-			if (strncmp(argv[i], "srcpkgs/", 8) == 0)
-				tmpl = strchr(argv[i], '/') + 1;
-			else
-				tmpl = argv[i];
-
-			rcv_process_file(&rcv, tmpl, rcv_check_version);
+		char tmp[PATH_MAX], *tmpl, *p;
+		if (strncmp(argv[i], "srcpkgs/", sizeof ("srcpkgs/")-1) == 0) {
+			argv[i] += sizeof ("srcpkgs/")-1;
 		}
+		if ((p = strrchr(argv[i], '/')) && (strcmp(p, "/template")) == 0) {
+			tmpl = argv[i];
+		} else {
+			xbps_strlcat(tmp, argv[i], sizeof tmp);
+			xbps_strlcat(tmp, "/template", sizeof tmp);
+			tmpl = tmp;
+		}
+		rcv_process_file(&rcv, tmpl, rcv_check_version);
 	}
 	rcv_end(&rcv);
 	exit(EXIT_SUCCESS);
