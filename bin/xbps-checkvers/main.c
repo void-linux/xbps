@@ -635,6 +635,7 @@ static void
 rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
     const char *srcver)
 {
+	char tmpl[128], *p;
 	const char *f;
 
 	for (f = rcv->format; *f; f++) {
@@ -659,6 +660,12 @@ rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
 		case 'n': fputs(pkgname, fp); break;
 		case 'r': fputs(repover, fp); break;
 		case 's': fputs(srcver, fp); break;
+		case 't':
+			xbps_strlcpy(tmpl, rcv->fname, sizeof tmpl);
+			if ((p = strchr(tmpl, '/')))
+				*p = '\0';
+			fputs(tmpl, fp);
+			break;
 		}
 	}
 	fputc('\n', fp);
