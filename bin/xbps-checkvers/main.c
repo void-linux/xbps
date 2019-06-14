@@ -60,216 +60,24 @@ do {									\
 #define _dprintf(...)
 #endif
 
-#define SBUFSZ		128
-#define ALIGN(n, a)	(((n) + (a) - 1) & ~((a) - 1))
-#define MAX(a, b)	((a) < (b) ? (b) : (a))
-#define NEXTSZ(o, r)	ALIGN(MAX((o) * 2, (o) + (r)), SBUFSZ)
-
-struct sbuf {
-	char *mem;
-	size_t len;
-	size_t size;
-};
-
-typedef struct str_ptr_t {
-	char *s;
-	size_t len;
-	int vmalloc;
-} string;
-
-typedef struct _map_item_t {
-	string k, v;
-	size_t i;
-} map_item_t;
-
-typedef struct _map_t {
-	size_t size, len;
-	map_item_t *items;
-} map_t;
-
 typedef struct _rcv_t {
 	const char *prog, *fname;
 	char *input, *ptr, *xbps_conf, *rootdir, *distdir, *pkgdir;
 	uint8_t have_vars;
 	size_t len;
-	map_t *env;
-	struct xbps_handle xhp;
+	xbps_dictionary_t env;
 	xbps_dictionary_t pkgd;
+	xbps_dictionary_t cache;
+	struct xbps_handle xhp;
 	bool show_all;
 	bool manual;
 	bool installed;
 	const char *format;
+	char *cachefile;
 } rcv_t;
 
 typedef int (*rcv_check_func)(rcv_t *);
 typedef int (*rcv_proc_func)(rcv_t *, const char *, rcv_check_func);
-
-static void
-sbuf_extend(struct sbuf *sb, int newsz)
-{
-	sb->size = newsz;
-	sb->mem = realloc(sb->mem, newsz);
-	if (sb->mem == NULL) {
-		fprintf(stderr, "realloc: %s\n", strerror(errno));
-		exit(1);
-	}
-}
-
-static struct sbuf *
-sbuf_make(void)
-{
-	struct sbuf *sb = calloc(1, sizeof(*sb));
-	if (sb == NULL) {
-		fprintf(stderr, "calloc: %s\n", strerror(errno));
-		exit(1);
-	}
-	return sb;
-}
-
-static char *
-sbuf_buf(struct sbuf *sb)
-{
-	if (!sb->mem)
-		sbuf_extend(sb, 1);
-	sb->mem[sb->len] = '\0';
-	return sb->mem;
-}
-
-static size_t
-sbuf_done(struct sbuf *sb, char **dest)
-{
-	size_t len = sb->len;
-	*dest = sbuf_buf(sb);
-	free(sb);
-	return len;
-}
-
-static void
-sbuf_chr(struct sbuf *sb, int c)
-{
-	if (sb->len + 2 >= sb->size)
-		sbuf_extend(sb, NEXTSZ(sb->size, 1));
-	sb->mem[sb->len++] = c;
-}
-
-static void
-sbuf_mem(struct sbuf *sb, const char *src, size_t len)
-{
-	if (sb->len + len + 1 >= sb->size)
-		sbuf_extend(sb, NEXTSZ(sb->size, len + 1));
-	memcpy(sb->mem + sb->len, src, len);
-	sb->len += len;
-}
-
-static void
-sbuf_str(struct sbuf *sb, const char *src)
-{
-	sbuf_mem(sb, src, strlen(src));
-}
-
-#if 0
-static void
-sbuf_strn(struct sbuf *sb, const char *src, size_t n)
-{
-	sbuf_mem(sb, src, n);
-}
-#endif
-
-static map_item_t
-map_new_item(void)
-{
-	return (map_item_t){ .k = { NULL, 0, 0 }, .v = { NULL, 0, 0 }, .i = 0 };
-}
-
-static map_t *
-map_create(void)
-{
-	size_t i = 0;
-	map_t *map = malloc(sizeof(map_t));
-	if (map == NULL)
-		return NULL;
-
-	map->size = 16;
-	map->len = 0;
-	map->items = calloc(map->size, sizeof(map_item_t));
-	assert(map->items);
-	for (; i < map->size; i++) {
-		map->items[i] = map_new_item();
-	}
-	return map;
-}
-
-static map_item_t
-map_find_n(map_t *map, const char *k, size_t n)
-{
-	size_t i = 0;
-	map_item_t item;
-
-	for (i = 0; i < map->len; i++) {
-		item = map->items[i];
-		if (item.k.len != 0)
-			if ((strncmp(k, item.k.s, n) == 0))
-				break;
-	}
-	if (map->len == i)
-		return map_new_item();
-
-	return item;
-}
-
-static map_item_t
-map_add_n(map_t *map, const char *k, size_t kn, const char *v, size_t vn)
-{
-	size_t i;
-	map_item_t item;
-
-	assert(k);
-	assert(v);
-
-	if (++map->len > map->size) {
-		map->size += 16;
-		map->items = realloc(map->items,
-			sizeof(map_item_t)*(map->size));
-		assert(map->items);
-		for (i = map->size - 10; i < map->size; i++) {
-			map->items[i] = map_new_item();
-		}
-	}
-	item = map_find_n(map, k, kn);
-	if (item.k.len == 0) {
-		item = map_new_item();
-		item.k = (string){ (char *)__UNCONST(k), kn, 0 };
-		item.i = map->len - 1;
-	}
-	if (item.v.vmalloc == 1)
-		free(item.v.s);
-
-	item.v = (string){ (char *)__UNCONST(v), vn, 0 };
-	map->items[item.i] = item;
-	return map->items[item.i];
-}
-
-static map_item_t
-map_find(map_t *map, const char *k)
-{
-	return map_find_n(map, k, strlen(k));
-}
-
-static void
-map_destroy(map_t *map)
-{
-	size_t i = 0;
-	while (i < map->len) {
-		if (map->items[i].v.vmalloc == 1) {
-			if (map->items[i].v.s != NULL) {
-				free(map->items[i].v.s);
-			}
-		}
-		i++;
-	}
-	free(map->items);
-	free(map);
-}
 
 static int
 show_usage(const char *prog)
@@ -302,6 +110,12 @@ rcv_init(rcv_t *rcv, const char *prog)
 	rcv->prog = prog;
 	rcv->have_vars = 0;
 	rcv->ptr = rcv->input = NULL;
+
+	rcv->cache = xbps_dictionary_internalize_from_file(rcv->cachefile);
+	if (!rcv->cache)
+		rcv->cache = xbps_dictionary_create();
+	assert(rcv->cache);
+
 	if (rcv->xbps_conf != NULL) {
 		xbps_strlcpy(rcv->xhp.confdir, rcv->xbps_conf, sizeof(rcv->xhp.confdir));
 	}
@@ -315,12 +129,14 @@ rcv_init(rcv_t *rcv, const char *prog)
 static void
 rcv_end(rcv_t *rcv)
 {
+	xbps_dictionary_externalize_to_file(rcv->cache, rcv->cachefile);
+
 	if (rcv->input != NULL) {
 		free(rcv->input);
 		rcv->input = NULL;
 	}
 	if (rcv->env != NULL) {
-		map_destroy(rcv->env);
+		xbps_object_release(rcv->env);
 		rcv->env = NULL;
 	}
 
@@ -332,6 +148,7 @@ rcv_end(rcv_t *rcv)
 		free(rcv->distdir);
 	if (rcv->pkgdir != NULL)
 		free(rcv->pkgdir);
+	free(rcv->cachefile);
 }
 
 static bool
@@ -377,20 +194,22 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 	return true;
 }
 
-static size_t
-rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len, char **outp)
+static char *
+rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len)
 {
 	const char *p;
-	char *cmd;
-	struct sbuf *out = sbuf_make();
+	char *cmd, *ret;
+	xbps_string_t out = xbps_string_create();
+	char b[2] = {0};
 
 	for (p = str; *p && p < str+len; p++) {
 		switch (*p) {
 		case '$':
 			if (p+1 < str+len) {
+				char buf[1024] = {0};
 				const char *ref;
+				const char *val;
 				size_t reflen;
-				map_item_t item;
 				p++;
 				if (*p == '(') {
 					FILE *fp;
@@ -402,8 +221,10 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len, char **outp)
 					cmd = strndup(ref, p-ref);
 					if ((fp = popen(cmd, "r")) == NULL)
 						goto err2;
-					while ((c = fgetc(fp)) != EOF && c != '\n')
-						sbuf_chr(out, c);
+					while ((c = fgetc(fp)) != EOF && c != '\n') {
+						*b = c;
+						xbps_string_append_cstring(out, b);
+					}
 					if (pclose(fp) != 0)
 						goto err2;
 					free(cmd);
@@ -434,20 +255,29 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len, char **outp)
 					reflen = p-ref;
 					p--;
 				}
-				item = map_find_n(rcv->env, ref, reflen);
-				if ((strncmp(ref, item.k.s, reflen) == 0)) {
-					sbuf_mem(out, item.v.s, item.v.len);
-				} else {
-					sbuf_str(out, "NULL");
+				if (reflen) {
+					if (reflen >= sizeof buf) {
+						fprintf(stderr, "out of memory\n");
+						exit(1);
+					}
+					strncpy(buf, ref, reflen);
+					if (xbps_dictionary_get_cstring_nocopy(rcv->env, buf, &val))
+						xbps_string_append_cstring(out, val);
+					else
+						xbps_string_append_cstring(out, "NULL");
+					break;
 				}
-				break;
 			}
 			/* fallthrough */
 		default:
-			sbuf_chr(out, *p);
+			*b = *p;
+			xbps_string_append_cstring(out, b);
 		}
 	}
-	return sbuf_done(out, outp);
+	
+	ret = xbps_string_cstring(out);
+	xbps_object_release(out);
+	return ret;
 
 err1:
 	fprintf(stderr, "syntax error: in file '%s'\n", rcv->fname);
@@ -470,9 +300,7 @@ static void
 rcv_get_pkgver(rcv_t *rcv)
 {
 	size_t klen, vlen;
-	map_item_t _item;
-	map_item_t *item = NULL;
-	char c, *ptr = rcv->ptr, *e, *p, *k, *v, *comment, *d;
+	char c, *ptr = rcv->ptr, *e, *p, *k, *v, *comment, *d, *key, *val;
 	uint8_t vars = 0;
 
 	while ((c = *ptr) != '\0') {
@@ -525,22 +353,25 @@ rcv_get_pkgver(rcv_t *rcv)
 		if (vlen == 0) {
 			goto nextline;
 		}
-		_item = map_add_n(rcv->env, k, klen, v, vlen);
-		item = &rcv->env->items[_item.i];
-		item->v.vmalloc = 0;
-		assert(item);
-		assert(item->v.s);
-		assert(item->v.len);
+		key = strndup(k, klen);
 
-		if ((d = strchr(v, '$')) && d < v+vlen) {
-			item->v.len = rcv_sh_substitute(rcv, item->v.s, item->v.len, &item->v.s);
-			item->v.vmalloc = 1;
+		if ((d = strchr(v, '$')) && d < v+vlen)
+			val = rcv_sh_substitute(rcv, v, vlen);
+		else
+			val = strndup(v, vlen);
+
+		if (!xbps_dictionary_set(rcv->env, key,
+		    xbps_string_create_cstring(val))) {
+			fprintf(stderr, "error: xbps_dictionary_set");
+			exit(1);
 		}
-		if (rcv->xhp.flags & XBPS_FLAG_DEBUG) {
-			printf("%s: %.*s %.*s\n", rcv->fname,
-			    (int)item->k.len-1, item->k.s,
-			    (int)item->v.len, item->v.s);
-		}
+
+		if (rcv->xhp.flags & XBPS_FLAG_DEBUG)
+			fprintf(stderr, "%s: %s %s\n", rcv->fname, key, val);
+
+		free(key);
+		free(val);
+
 		if (strncmp("pkgname", k, klen) == 0) {
 			rcv->have_vars |= GOT_PKGNAME_VAR;
 			vars++;
@@ -562,22 +393,73 @@ nextline:
 static int
 rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 {
-	rcv->env = map_create();
-	if (rcv->env == NULL) {
-		rcv->env = NULL;
-		return EXIT_FAILURE;
-	}
-	if (!rcv_load_file(rcv, fname)) {
-		map_destroy(rcv->env);
-		rcv->env = NULL;
-		return EXIT_FAILURE;
-	}
-	rcv_get_pkgver(rcv);
-	check(rcv);
-	map_destroy(rcv->env);
-	rcv->env = NULL;
+	int rv = 0;
+	xbps_object_t keysym;
+	xbps_object_iterator_t iter;
+	xbps_dictionary_t d;
+	xbps_data_t mtime;
+	const char *pkgname, *version, *revision, *reverts;
+	struct stat st;
+	bool allocenv = false;
 
-	return 0;
+	if (stat(fname, &st) == -1) {
+		rv = EXIT_FAILURE;
+		goto ret;
+	}
+
+	if ((d = xbps_dictionary_get(rcv->cache, fname))) {
+		mtime = xbps_dictionary_get(d, "mtime");
+		if (!xbps_data_equals_data(mtime, &st.st_mtim, sizeof st.st_mtim))
+			goto update;
+		rcv->env = d;
+		rcv->have_vars = GOT_PKGNAME_VAR | GOT_VERSION_VAR | GOT_REVISION_VAR;
+	} else {
+update:
+		if (!rcv_load_file(rcv, fname)) {
+			rv = EXIT_FAILURE;
+			goto ret;
+		}
+		assert((rcv->env = xbps_dictionary_create()));
+		allocenv = true;
+		rcv_get_pkgver(rcv);
+
+		if (!xbps_dictionary_get_cstring_nocopy(rcv->env, "pkgname", &pkgname) ||
+			!xbps_dictionary_get_cstring_nocopy(rcv->env, "version", &version) ||
+			!xbps_dictionary_get_cstring_nocopy(rcv->env, "revision", &revision)) {
+			fprintf(stderr, "ERROR: '%s':"
+			    " missing required variable (pkgname, version or revision)!",
+			    fname);
+			exit(1);
+		}
+		if (!d) {
+			d = xbps_dictionary_create();
+			xbps_dictionary_set(rcv->cache, fname, d);
+		}
+		assert(xbps_dictionary_set_cstring(d, "pkgname", pkgname));
+		assert(xbps_dictionary_set_cstring(d, "version", version));
+		assert(xbps_dictionary_set_cstring(d, "revision", revision));
+
+		reverts = NULL;
+		xbps_dictionary_get_cstring_nocopy(rcv->env, "reverts", &reverts);
+		if (reverts)
+			assert(xbps_dictionary_set_cstring(d, "reverts", reverts));
+
+		mtime = xbps_data_create_data(&st.st_mtim, sizeof st.st_mtim);
+		assert(xbps_dictionary_set(d, "mtime", mtime));
+	}
+
+	check(rcv);
+
+ret:
+	if (allocenv) {
+		iter = xbps_dictionary_iterator(rcv->env);
+		while ((keysym = xbps_object_iterator_next(iter)))
+			xbps_object_release(xbps_dictionary_get_keysym(rcv->env, keysym));
+		xbps_object_iterator_release(iter);
+		xbps_object_release(rcv->env);
+	}
+	rcv->env = NULL;
+	return rv;
 }
 
 static void
@@ -594,18 +476,17 @@ rcv_set_distdir(rcv_t *rcv, const char *distdir)
 }
 
 static bool
-check_reverts(const char *repover, const map_item_t reverts)
+check_reverts(const char *repover, const char *reverts)
 {
 	bool rv = false;
 	char *sreverts, *p;
+	size_t len;
 
-	if (reverts.v.len == 0 || strlen(repover) < 1)
-		return rv;
+	assert(reverts);
+	if (!(len = strlen(reverts)))
+		return false;
 
-	sreverts = calloc(reverts.v.len+1, sizeof(char));
-	assert(sreverts);
-	strncpy(sreverts, reverts.v.s, reverts.v.len);
-	sreverts[reverts.v.len] = '\0';
+	assert((sreverts = strdup(reverts)));
 
 	for (p = sreverts; (p = strstr(p, repover));) {
 		/*
@@ -671,10 +552,9 @@ rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
 static int
 rcv_check_version(rcv_t *rcv)
 {
-	map_item_t pkgname, version, revision, reverts;
 	const char *repover = NULL;
 	char srcver[BUFSIZ] = { '\0' };
-	char pkgn[128];
+	const char *pkgname, *version, *revision, *reverts;
 	int sz;
 
 	assert(rcv);
@@ -692,47 +572,41 @@ rcv_check_version(rcv_t *rcv)
 		exit(EXIT_FAILURE);
 	}
 
-	pkgname = map_find(rcv->env, "pkgname");
-	version = map_find(rcv->env, "version");
-	revision = map_find(rcv->env, "revision");
-	reverts = map_find(rcv->env, "reverts");
+	if (!xbps_dictionary_get_cstring_nocopy(rcv->env, "pkgname", &pkgname) ||
+	    !xbps_dictionary_get_cstring_nocopy(rcv->env, "version", &version) ||
+	    !xbps_dictionary_get_cstring_nocopy(rcv->env, "revision", &revision)) {
+		fprintf(stderr, "error:\n");
+		exit(1);
+	}
 
-	assert(pkgname.v.s);
-	assert(version.v.s);
-	assert(revision.v.s);
+	reverts = NULL;
+	xbps_dictionary_get_cstring_nocopy(rcv->env, "reverts", &reverts);
 
-	sz = snprintf(pkgn, sizeof pkgn, "%.*s",
-	    (int)pkgname.v.len, pkgname.v.s);
-	if (sz < 0 || (size_t)sz >= sizeof pkgn)
-		exit(EXIT_FAILURE);
-
-	sz = snprintf(srcver, sizeof srcver, "%.*s-%.*s_%.*s",
-	    (int)pkgname.v.len, pkgname.v.s,
-	    (int)version.v.len, version.v.s,
-	    (int)revision.v.len, revision.v.s);
+	sz = snprintf(srcver, sizeof srcver, "%s_%s", version, revision);
 	if (sz < 0 || (size_t)sz >= sizeof srcver)
 		exit(EXIT_FAILURE);
 
 	if (rcv->installed)
-		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, pkgn);
+		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, pkgname);
 	else
-		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, pkgn);
+		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, pkgname);
 
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
+	if (repover)
+		repover += strlen(pkgname)+1;
 
 	if (!repover && rcv->manual)
 		;
 	else if (rcv->show_all)
 		;
-	else if (repover && (xbps_cmpver(repover+pkgname.v.len+1,
-		    srcver+pkgname.v.len+1) < 0 ||
-		    check_reverts(repover+pkgname.v.len+1, reverts)))
+	else if (repover && (xbps_cmpver(repover, srcver) < 0 ||
+		    (reverts && check_reverts(repover, reverts))))
 		;
 	else
 		return 0;
 
-	repover = repover ? repover+pkgname.v.len+1 : "?";
-	rcv_printf(rcv, stdout, pkgn, repover, srcver+pkgname.v.len+1);
+	repover = repover ? repover : "?";
+	rcv_printf(rcv, stdout, pkgname, repover, srcver);
 
 	return 0;
 }
@@ -864,6 +738,7 @@ main(int argc, char **argv)
 		rcv_set_distdir(&rcv, distdir);
 		free(distdir);
 	}
+	rcv.cachefile = xbps_xasprintf("%s/.xbps-checkvers.plist", rcv.distdir);
 	argc -= optind;
 	argv += optind;
 
@@ -878,7 +753,7 @@ main(int argc, char **argv)
 	}
 	rcv.manual = true;
 	for (i = 0; i < argc; i++) {
-		char tmp[PATH_MAX], *tmpl, *p;
+		char tmp[PATH_MAX] = {0}, *tmpl, *p;
 		if (strncmp(argv[i], "srcpkgs/", sizeof ("srcpkgs/")-1) == 0) {
 			argv[i] += sizeof ("srcpkgs/")-1;
 		}
