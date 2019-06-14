@@ -98,6 +98,7 @@ typedef struct _rcv_t {
 	bool show_all;
 	bool manual;
 	bool installed;
+	const char *format;
 } rcv_t;
 
 typedef int (*rcv_check_func)(rcv_t *);
@@ -281,6 +282,7 @@ show_usage(const char *prog)
 " -D --distdir <dir>	Set (or override) the path to void-packages\n"
 "  			(defaults to ~/void-packages).\n"
 " -d --debug 		Enable debug output to stderr.\n"
+" -f --format <fmt>	Output format.\n"
 " -I --installed 	Check for outdated packages in rootdir, rather\n"
 "  			than in the XBPS repositories.\n"
 " -i --ignore-conf-repos	Ignore repositories defined in xbps.d.\n"
@@ -629,12 +631,46 @@ check_reverts(const char *repover, const map_item_t reverts)
 	return rv;
 }
 
+static void
+rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
+    const char *srcver)
+{
+	const char *f;
+
+	for (f = rcv->format; *f; f++) {
+		if (*f == '\\') {
+			f++;
+			switch (*f) {
+			case '\n': fputc('\n', fp); break;
+			case '\t': fputc('\t', fp); break;
+			case '\0': fputc('\0', fp); break;
+			default:
+				fputc('\\', fp);
+				fputc(*f, fp);
+				break;
+			}
+		}
+		if (*f != '%') {
+			fputc(*f, fp);
+			continue;
+		}
+		switch (*++f) {
+		case '%': fputc(*f, fp); break;
+		case 'n': fputs(pkgname, fp); break;
+		case 'r': fputs(repover, fp); break;
+		case 's': fputs(srcver, fp); break;
+		}
+	}
+	fputc('\n', fp);
+}
+
 static int
 rcv_check_version(rcv_t *rcv)
 {
 	map_item_t pkgname, version, revision, reverts;
 	const char *repover = NULL;
 	char srcver[BUFSIZ] = { '\0' };
+	char pkgn[128];
 	int sz;
 
 	assert(rcv);
@@ -661,6 +697,11 @@ rcv_check_version(rcv_t *rcv)
 	assert(version.v.s);
 	assert(revision.v.s);
 
+	sz = snprintf(pkgn, sizeof pkgn, "%.*s",
+	    (int)pkgname.v.len, pkgname.v.s);
+	if (sz < 0 || (size_t)sz >= sizeof pkgn)
+		exit(EXIT_FAILURE);
+
 	sz = snprintf(srcver, sizeof srcver, "%.*s-%.*s_%.*s",
 	    (int)pkgname.v.len, pkgname.v.s,
 	    (int)version.v.len, version.v.s,
@@ -668,16 +709,10 @@ rcv_check_version(rcv_t *rcv)
 	if (sz < 0 || (size_t)sz >= sizeof srcver)
 		exit(EXIT_FAILURE);
 
-	/* temporarily use pkgname only */
-	srcver[pkgname.v.len] = '\0';
-
 	if (rcv->installed)
-		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, srcver);
+		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, pkgn);
 	else
-		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, srcver);
-
-	/* back to pkgver */
-	srcver[pkgname.v.len] = '-';
+		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, pkgn);
 
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
 
@@ -693,8 +728,7 @@ rcv_check_version(rcv_t *rcv)
 		return 0;
 
 	repover = repover ? repover+pkgname.v.len+1 : "?";
-	printf("%.*s %s %s\n", (int)pkgname.v.len, pkgname.v.s, repover,
-		srcver+pkgname.v.len+1);
+	rcv_printf(rcv, stdout, pkgn, repover, srcver+pkgname.v.len+1);
 
 	return 0;
 }
@@ -756,12 +790,13 @@ main(int argc, char **argv)
 	int i, c;
 	rcv_t rcv;
 	char *distdir = NULL;
-	const char *prog = argv[0], *sopts = "hC:D:diImR:r:sV";
+	const char *prog = argv[0], *sopts = "hC:D:df:iImR:r:sV";
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "config", required_argument, NULL, 'C' },
 		{ "distdir", required_argument, NULL, 'D' },
 		{ "debug", no_argument, NULL, 'd' },
+		{ "format", no_argument, NULL, 'f' },
 		{ "installed", no_argument, NULL, 'I' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
 		{ "manual", no_argument, NULL, 'm' },
@@ -774,6 +809,7 @@ main(int argc, char **argv)
 
 	memset(&rcv, 0, sizeof(rcv_t));
 	rcv.manual = false;
+	rcv.format = "%n %r %s";
 
 	while ((c = getopt_long(argc, argv, sopts, lopts, NULL)) != -1) {
 		switch (c) {
@@ -787,6 +823,9 @@ main(int argc, char **argv)
 			break;
 		case 'd':
 			rcv.xhp.flags |= XBPS_FLAG_DEBUG;
+			break;
+		case 'f':
+			rcv.format = optarg;
 			break;
 		case 'i':
 			rcv.xhp.flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
