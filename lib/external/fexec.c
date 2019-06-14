@@ -69,6 +69,7 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 				}
 			}
 		}
+		umask(022);
 		(void)execv(file, __UNCONST(argv));
 		_exit(errno);
 		/* NOTREACHED */
