@@ -33,6 +33,33 @@ Specifies a full path to the void-packages repository. By default set to
 .Nm ~/void-packages .
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
+.It Fl f, Fl -format Ar format
+Format according to the string
+.Ar format ,
+inspired by
+.Xr printf 3 .
+.Pp
+The following formatting codes may be used:
+.Bl -tag -width Ds
+.It Cm \en
+Newline.
+.It Cm \et
+Tab.
+.It Cm \e0
+NULL.
+.It Cm \&%%
+A plain
+.Sq Li \&% .
+.It Cm \&%n
+The package name.
+.It Cm \&%r
+The repository version.
+.It Cm \&%s
+The source package version.
+.El
+.Pp
+The default format is
+.Dq Cm "%n %r %s" .
 .It Fl h, Fl -help
 Show the help message.
 .It Fl i, Fl -ignore-conf-repos
