@@ -9,7 +9,7 @@ NPROCS=1
 if [ -r /proc/cpuinfo ]; then
 	NPROCS=$(grep ^proc /proc/cpuinfo|wc -l)
 fi
-LD_LIBRARY_PATH=$PWD/lib kyua --variable parallelism=$NPROCS test -r result.db -k tests/xbps/Kyuafile
+LD_LIBRARY_PATH=$PWD/lib ATF_SHELL=/bin/sh kyua --variable parallelism=$NPROCS test -r result.db -k tests/xbps/Kyuafile
 rv=$?
 kyua report --verbose -r result.db
 rm -f result.db
