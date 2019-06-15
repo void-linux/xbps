@@ -413,6 +413,7 @@ rcv_process_file(rcv_t *rcv, const char *fname, rcv_check_func check)
 			goto update;
 		rcv->env = d;
 		rcv->have_vars = GOT_PKGNAME_VAR | GOT_VERSION_VAR | GOT_REVISION_VAR;
+		rcv->fname = fname;
 	} else {
 update:
 		if (!rcv_load_file(rcv, fname)) {
