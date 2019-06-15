@@ -177,6 +177,12 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 		if (xitem == NULL)
 			xitem = ordered_depends(xhp, curpkgd, rpool);
 
+		if (xitem == NULL) {
+			/* package depends on missing dependencies */
+			xbps_dbg_printf(xhp, "%s: missing dependency '%s'\n", pkgver, curdep);
+			errno = ENODEV;
+			return NULL;
+		}
 		assert(xitem);
 		addDepn(item, xitem);
 		free(curdepname);
