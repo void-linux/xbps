@@ -479,38 +479,23 @@ rcv_set_distdir(rcv_t *rcv, const char *distdir)
 static bool
 check_reverts(const char *repover, const char *reverts)
 {
-	bool rv = false;
-	char *sreverts, *p;
+	const char *s, *e;
 	size_t len;
 
 	assert(reverts);
-	if (!(len = strlen(reverts)))
+
+	s = reverts;
+	if ((len = strlen(s)) == 0)
 		return false;
 
-	assert((sreverts = strdup(reverts)));
-
-	for (p = sreverts; (p = strstr(p, repover));) {
-		/*
-		 * Check if it's the first character or the previous character is a
-		 * whitespace.
-		 */
-		if (p > sreverts && !isalpha(p[-1]) && !isspace(p[-1])) {
-			p++; // always advance
-			continue;
-		}
-		p += strlen(repover);
-		/*
-		 * Check if it's the last character or if the next character is a
-		 * whitespace
-		 */
-		if (isspace(*p) || *p == '\0') {
-			rv = true;
-			break;
-		}
+	for (s = reverts; s < reverts+len; s = e+1) {
+		if (!(e = strchr(s, ' ')))
+			e = reverts+len;
+		if (strncmp(s, repover, e-s) == 0)
+			return true;
 	}
 
-	free(sreverts);
-	return rv;
+	return false;
 }
 
 static void
