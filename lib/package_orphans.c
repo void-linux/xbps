@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2015 Juan Romero Pardines.
+ * Copyright (c) 2009-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -121,6 +121,9 @@ add_orphans:
 		pkgd = xbps_array_get(array, i);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
 		rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, curpkgver);
+		if (rdeps == NULL)
+			return NULL;
+
 		for (unsigned int x = 0; x < xbps_array_count(rdeps); x++) {
 			cnt = 0;
 			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);

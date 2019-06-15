@@ -156,7 +156,12 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 			if (curpkgd == NULL)
 				continue;
 		}
-		assert(curpkgd);
+		if (curpkgd == NULL) {
+			/* package depends on missing dependencies */
+			xbps_dbg_printf(xhp, "%s: missing dependency '%s'\n", pkgver, curdep);
+			errno = ENODEV;
+			return NULL;
+		}
 		if ((curdepname = xbps_pkgpattern_name(curdep)) == NULL)
 			curdepname = xbps_pkg_name(curdep);
 
@@ -212,7 +217,8 @@ xbps_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg, bool rpool)
 		    ((pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkg)) == NULL))
 			return NULL;
 	}
-	(void)ordered_depends(xhp, pkgd, rpool);
+	if (ordered_depends(xhp, pkgd, rpool) == NULL)
+		return NULL;
 
 	return result;
 }
