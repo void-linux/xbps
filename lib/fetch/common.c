@@ -488,19 +488,28 @@ happy_eyeballs_connect(struct addrinfo *res0)
 	for (;;) {
 		int sd = -1;
 		int ret;
-		unsigned short family;
+		unsigned short family = 0;
 
 #ifdef FULL_DEBUG
-		fetch_info("happy eyeballs state: i4=%u n4=%u i6=%u n6=%u", i4, n4, i6, n6);
+		fetch_info("happy eyeballs state: i4=%u n4=%u i6=%u n6=%u"
+		    " attempts=%u waiting=%u", i4, n4, i6, n6, attempts, waiting);
 #endif
 
-		if (res == NULL) {
-			/* prefer ipv6 */
-			family = i6+1 < n6 ? AF_INET6 : AF_INET;
-		} else if (i4+1 < n4) {
-			family = res->ai_family == AF_INET && i6+1 < n6 ? AF_INET6 : AF_INET;
-		} else if (i6+1 < n6) {
-			family = res->ai_family == AF_INET6 && i4+1 < n4 ? AF_INET : AF_INET6;
+		if (i6+i4 < n6+n4) {
+			/* first round when res == NULL, prefer ipv6 */
+			if (res == NULL || res->ai_family == AF_INET) {
+				/* prefer ipv6 */
+				if (i6 < n6)
+					family = AF_INET6;
+				else if (i4 < n4)
+					family = AF_INET;
+			} else {
+				/* prefer ipv4 */
+				if (i4 < n4)
+					family = AF_INET;
+				else if (i6 < n6)
+					family = AF_INET6;
+			}
 		} else {
 			/* no more connections to try */
 #ifdef FULL_DEBUG
@@ -510,6 +519,7 @@ happy_eyeballs_connect(struct addrinfo *res0)
 			done = 1;
 			goto wait;
 		}
+
 
 		for (i = 0, res = res0; res; res = res->ai_next) {
 			if (res->ai_family == family) {
@@ -524,6 +534,8 @@ happy_eyeballs_connect(struct addrinfo *res0)
 				i++;
 			}
 		}
+		if (res == NULL)
+			goto error;
 
 		if ((sd = socket(res->ai_family, res->ai_socktype | SOCK_NONBLOCK,
 			 res->ai_protocol)) == -1)
@@ -570,6 +582,11 @@ happy_eyeballs_connect(struct addrinfo *res0)
 		attempts++;
 		waiting++;
 wait:
+		if (!attempts) {
+error:
+			netdb_seterr(EAI_FAIL);
+			return -1;
+		}
 		for (i = 0; i < attempts; i++) {
 			pfd[i].revents = pfd[i].events = 0;
 			if (pfd[i].fd != -1)
@@ -621,8 +638,8 @@ wait:
 			rv = -1;
 		}
 	}
-
-	errno = err;
+	if ((errno = err))
+		fetch_syserr();
 	return rv;
 }
 
@@ -675,10 +692,8 @@ fetch_connect(struct url *url, int af, int verbose)
 
 	sd = happy_eyeballs_connect(res0);
 	freeaddrinfo(res0);
-	if (sd == -1) {
-		fetch_syserr();
+	if (sd == -1)
 		return (NULL);
-	}
 
 	if ((conn = fetch_reopen(sd)) == NULL) {
 		fetch_syserr();
