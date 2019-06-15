@@ -97,9 +97,43 @@ incorrect_dep_dups_body() {
 	atf_check_equal "$1 $2" "B-1.0_1 A-1.0_1"
 }
 
+atf_test_case missing_deps
+
+missing_deps_head() {
+	atf_set "descr" "Test for package deps: pkg depends on a missing dependency in fulldeptree"
+}
+
+missing_deps_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=0 C>=0" ../pkg_B
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	# reverse deps
+	xbps-query -C empty.conf -r root --repository=some_repo -dX B
+	atf_check_equal $? 2 # ENOENT
+
+	# fulldeptree repo
+	xbps-query -C empty.conf --repository=some_repo -r root --fulldeptree -dx B
+	atf_check_equal $? 19 # ENODEV
+
+	# fulldeptree pkgdb
+	xbps-query -C empty.conf -r root --fulldeptree -x C
+	atf_check_equal $? 2 # ENOENT
+
+}
+
 atf_init_test_cases() {
 	atf_add_test_case incorrect_dep
 	atf_add_test_case incorrect_dep_vpkg
 	atf_add_test_case incorrect_dep_issue45
 	atf_add_test_case incorrect_dep_dups
+	atf_add_test_case missing_deps
 }

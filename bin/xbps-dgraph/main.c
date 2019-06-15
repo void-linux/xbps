@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010-2015 Juan Romero Pardines.
+ * Copyright (c) 2010-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -470,6 +470,13 @@ create_dot_graph(struct xbps_handle *xhp,
 		} else {
 			rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, pkgver);
 		}
+		if (rdeps == NULL) {
+			if (errno == ENODEV)
+				die("package depends on missing dependencies\n");
+			else
+				die("package dependencies couldn't be resolved (error %d)\n", errno);
+		}
+
 		process_fulldeptree(xhp, f, plistd, rdeps, repomode);
 	} else {
 		/*

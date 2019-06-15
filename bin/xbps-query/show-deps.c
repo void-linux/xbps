@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2015 Juan Romero Pardines.
+ * Copyright (c) 2009-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,6 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname, bool repomode, bool 
 {
 	xbps_array_t rdeps;
 	xbps_dictionary_t pkgd;
-	unsigned int cnt;
 
 	if (repomode) {
 		if (((pkgd = xbps_rpool_get_pkg(xhp, pkgname)) == NULL) &&
@@ -46,20 +45,20 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname, bool repomode, bool 
 			return errno;
 	} else {
 		if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL)
-			return ENOENT;
+			return errno;
 	}
 	if (full) {
 		if (repomode)
 			rdeps = xbps_rpool_get_pkg_fulldeptree(xhp, pkgname);
 		else
 			rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, pkgname);
+
+		if (rdeps == NULL)
+			return errno;
 	} else {
 		rdeps = xbps_dictionary_get(pkgd, "run_depends");
 	}
-	if ((cnt = xbps_array_count(rdeps)) == 0)
-		return ENOENT;
-
-	for (unsigned int i = 0; i < cnt; i++) {
+	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
 		const char *pkgdep;
 		xbps_array_get_cstring_nocopy(rdeps, i, &pkgdep);
 		printf("%s\n", pkgdep);
@@ -79,7 +78,7 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg, bool repomode)
 		revdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
 
 	if (revdeps == NULL)
-		return ENOENT;
+		return errno;
 
 	for (unsigned int i = 0; i < xbps_array_count(revdeps); i++) {
 		xbps_array_get_cstring_nocopy(revdeps, i, &pkgdep);
