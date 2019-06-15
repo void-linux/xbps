@@ -478,8 +478,13 @@ happy_eyeballs_connect(struct addrinfo *res0)
 	fetch_info("got %d A and %d AAAA records", n4, n6);
 #endif
 
-	res = NULL;
 	i4 = i6 = 0;
+	if (getenv("FORCE_IPV4"))
+		i6 = n6;
+	if (getenv("FORCE_IPV6"))
+		i4 = n4;
+
+	res = NULL;
 	for (;;) {
 		int sd = -1;
 		int ret;
