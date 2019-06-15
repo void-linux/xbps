@@ -1,11 +1,24 @@
 libxbps:
  - transaction: avoid fetching the whole pkg when updating and only fetch
    modified files from target pkg.
+ - transaction: split fetch part to xbps_transaction_fetch().
+ - transaction: check for obsoletes exactly once, via xbps_transaction_prepare().
+ - transaction: check for free space in all affected top-level dirs.
+ - transaction: check all pkg top-level dirs to see if they are writable.
+
+xbps-*:
+ - Document exit codes.
 
 xbps-create:
  - Move all configuration files to <prefix>/share/<pkgname>/conf/<cffile>.
  - Add -i --installed option to create binpkg from an installed version.
 
-Issues listed at https://github.com/xtraeme/xbps/issues
+xbps-fetch:
+ - stdout support
+ - configurable libfetch timeout
+ - configurable number of connection retries
 
-Surely more stuff...
+xbps-digest:
+ - blake2b support
+
+Issues listed at https://github.com/void-linux/xbps/issues
