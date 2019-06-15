@@ -381,7 +381,62 @@ EOF
 	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages
 	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "fs-utils 1.10_1 1.10_1"
+	atf_check_equal "$out" ""
+}
+
+atf_test_case reverts_many
+
+reverts_many_head() {
+	atf_set "descr" "xbps-checkvers(1): test with multiple reverts"
+}
+
+reverts_many_body() {
+	mkdir -p some_repo pkg_A void-packages/srcpkgs/A
+	touch pkg_A/file00
+	cat > void-packages/srcpkgs/A/template <<EOF
+pkgname=A
+reverts="1.1_1 1.2_1 1.3_1 1.3_2 1.3_3 1.3_4"
+version=1.0
+revision=1
+do_install() {
+	:
+}
+EOF
+	cd some_repo
+	xbps-create -A noarch -n A-1.2_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "A 1.2_1 1.0_1"
+
+	cd some_repo
+	rm *.xbps
+	xbps-rindex -c .
+	atf_check_equal $? 0
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "A 1.1_1 1.0_1"
+
+	cd some_repo
+	rm *.xbps
+	xbps-rindex -c .
+	atf_check_equal $? 0
+	xbps-create -A noarch -n A-1.3_4 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "A 1.3_4 1.0_1"
 }
 
 atf_test_case manual_mode
@@ -422,5 +477,6 @@ atf_init_test_cases() {
 	atf_add_test_case srcpkg_with_a_ref_and_comment
 	atf_add_test_case reverts
 	atf_add_test_case reverts_alpha
+	atf_add_test_case reverts_many
 	atf_add_test_case manual_mode
 }
