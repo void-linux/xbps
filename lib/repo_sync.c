@@ -103,12 +103,14 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 	/*
 	 * Create repodir in metadir.
 	 */
+	prev_umask = umask(022);
 	if ((rv = xbps_mkpath(lrepodir, 0755)) == -1) {
 		if (errno != EEXIST) {
 			xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL,
 			    errno, NULL, "[reposync] failed "
 			    "to create repodir `%s': %s", lrepodir,
 			strerror(errno));
+			umask(prev_umask);
 			free(lrepodir);
 			return rv;
 		}
@@ -117,6 +119,7 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 		xbps_set_cb_state(xhp, XBPS_STATE_REPOSYNC_FAIL, errno, NULL,
 		    "[reposync] failed to change dir to repodir `%s': %s",
 		    lrepodir, strerror(errno));
+		umask(prev_umask);
 		free(lrepodir);
 		return -1;
 	}
@@ -131,7 +134,6 @@ xbps_repo_sync(struct xbps_handle *xhp, const char *uri)
 	/*
 	 * Download plist index file from repository.
 	 */
-	prev_umask = umask(022);
 	if ((rv = xbps_fetch_file(xhp, repodata, NULL)) == -1) {
 		/* reposync error cb */
 		fetchstr = xbps_fetch_error_string();
