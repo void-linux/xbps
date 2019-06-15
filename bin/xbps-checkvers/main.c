@@ -41,28 +41,13 @@
 
 #include <xbps.h>
 
-#ifndef __UNCONST
-#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
-#endif
-
 #define GOT_PKGNAME_VAR 	0x1
 #define GOT_VERSION_VAR 	0x2
 #define GOT_REVISION_VAR 	0x4
 
-#ifdef _RCV_DEBUG
-# define _dprintf(...)							\
-do {									\
-	fprintf(stderr, "DEBUG => %s:%d in %s(): ",			\
-		__FILE__, __LINE__, __PRETTY_FUNCTION__);		\
-	fprintf(stderr, __VA_ARGS__);					\
-} while (0)
-#else
-#define _dprintf(...)
-#endif
-
 typedef struct _rcv_t {
 	const char *prog, *fname;
-	char *input, *ptr, *xbps_conf, *rootdir, *distdir, *pkgdir;
+	char *input, *ptr, *xbps_conf, *rootdir, *distdir;
 	uint8_t have_vars;
 	size_t len;
 	xbps_dictionary_t env;
@@ -78,6 +63,17 @@ typedef struct _rcv_t {
 
 typedef int (*rcv_check_func)(rcv_t *);
 typedef int (*rcv_proc_func)(rcv_t *, const char *, rcv_check_func);
+
+static char *
+xstrdup(const char *src)
+{
+	char *p;
+	if (!(p = strdup(src))) {
+		fprintf(stderr, "Error: %s\n", strerror(errno));
+		exit(1);
+	}
+	return p;
+}
 
 static int
 show_usage(const char *prog)
@@ -146,8 +142,7 @@ rcv_end(rcv_t *rcv)
 		free(rcv->xbps_conf);
 	if (rcv->distdir != NULL)
 		free(rcv->distdir);
-	if (rcv->pkgdir != NULL)
-		free(rcv->pkgdir);
+
 	free(rcv->cachefile);
 }
 
@@ -463,19 +458,6 @@ ret:
 	return rv;
 }
 
-static void
-rcv_set_distdir(rcv_t *rcv, const char *distdir)
-{
-	if (rcv == NULL || distdir == NULL)
-		return;
-
-	rcv->distdir = strdup(distdir);
-	rcv->pkgdir = strdup(distdir);
-	rcv->pkgdir = realloc(rcv->pkgdir,
-		sizeof(char)*(strlen(distdir)+strlen("/srcpkgs")+1));
-	rcv->pkgdir = strcat(rcv->pkgdir, "/srcpkgs");
-}
-
 static bool
 check_reverts(const char *repover, const char *reverts)
 {
@@ -598,41 +580,28 @@ rcv_check_version(rcv_t *rcv)
 }
 
 static int
-rcv_process_dir(rcv_t *rcv, const char *path, rcv_proc_func process)
+rcv_process_dir(rcv_t *rcv, rcv_proc_func process)
 {
 	DIR *dir = NULL;
 	struct dirent entry, *result;
 	struct stat st;
 	char filename[BUFSIZ];
-	int i, ret = 0, errors = 0;
+	int i, ret = 0;
 
-	dir = opendir(path);
-error:
-	if (errors > 0 || !dir) {
-		fprintf(stderr, "Error: while processing dir '%s': %s\n", path,
-			strerror(errno));
-		exit(1);
-	}
-
-	if ((chdir(path)) == -1) {
-		errors = errno;
+	if (!(dir = opendir(".")))
 		goto error;
-	}
+
 	for (;;) {
 		i = readdir_r(dir, &entry, &result);
-		if (i > 0) {
-			errors = errno;
+		if (i > 0)
 			goto error;
-		}
 		if (result == NULL)
 			break;
 		if ((strcmp(result->d_name, ".") == 0) ||
 		    (strcmp(result->d_name, "..") == 0))
 			continue;
-		if ((lstat(result->d_name, &st)) != 0) {
-			errors = errno;
+		if ((lstat(result->d_name, &st)) != 0)
 			goto error;
-		}
 		if (S_ISLNK(st.st_mode) != 0)
 			continue;
 
@@ -640,12 +609,12 @@ error:
 		ret = process(rcv, filename, rcv_check_version);
 	}
 
-	if ((closedir(dir)) == -1) {
-		errors = errno;
-		dir = NULL;
-		goto error;
-	}
-	return ret;
+	if ((closedir(dir)) != -1)
+		return ret;
+error:
+	fprintf(stderr, "Error: while processing dir '%s/srcpkgs': %s\n",
+	    rcv->distdir, strerror(errno));
+	exit(1);
 }
 
 int
@@ -653,7 +622,6 @@ main(int argc, char **argv)
 {
 	int i, c;
 	rcv_t rcv;
-	char *distdir = NULL;
 	const char *prog = argv[0], *sopts = "hC:D:df:iImR:r:sV";
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
@@ -680,10 +648,10 @@ main(int argc, char **argv)
 		case 'h':
 			return show_usage(prog);
 		case 'C':
-			rcv.xbps_conf = strdup(optarg);
+			rcv.xbps_conf = xstrdup(optarg);
 			break;
 		case 'D':
-			rcv_set_distdir(&rcv, optarg);
+			rcv.distdir = xstrdup(optarg);
 			break;
 		case 'd':
 			rcv.xhp.flags |= XBPS_FLAG_DEBUG;
@@ -704,7 +672,7 @@ main(int argc, char **argv)
 			xbps_repo_store(&rcv.xhp, optarg);
 			break;
 		case 'r':
-			rcv.rootdir = strdup(optarg);
+			rcv.rootdir = optarg;
 			break;
 		case 's':
 			rcv.show_all = true;
@@ -719,24 +687,24 @@ main(int argc, char **argv)
 	/*
 	 * If --distdir not set default to ~/void-packages.
 	 */
-	if (rcv.distdir == NULL) {
-		distdir = xbps_xasprintf("%s/void-packages", getenv("HOME"));
-		rcv_set_distdir(&rcv, distdir);
-		free(distdir);
-	}
+	if (rcv.distdir == NULL)
+		rcv.distdir = xbps_xasprintf("%s/void-packages", getenv("HOME"));
 	rcv.cachefile = xbps_xasprintf("%s/.xbps-checkvers.plist", rcv.distdir);
+
 	argc -= optind;
 	argv += optind;
 
 	rcv_init(&rcv, prog);
 
-	if (!rcv.manual) {
-		rcv_process_dir(&rcv, rcv.pkgdir, rcv_process_file);
-	} else if ((chdir(rcv.pkgdir)) == -1) {
-		fprintf(stderr, "Error: while processing dir '%s': %s\n", rcv.pkgdir,
-			strerror(errno));
+	if (chdir(rcv.distdir) == -1 || chdir("srcpkgs") == -1) {
+		fprintf(stderr, "Error: while changing directory to '%s/srcpkgs': %s\n",
+		    rcv.distdir, strerror(errno));
 		exit(1);
 	}
+
+	if (!rcv.manual)
+		rcv_process_dir(&rcv, rcv_process_file);
+
 	rcv.manual = true;
 	for (i = 0; i < argc; i++) {
 		char tmp[PATH_MAX] = {0}, *tmpl, *p;
