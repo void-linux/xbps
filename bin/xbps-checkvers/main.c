@@ -47,9 +47,12 @@
 
 typedef struct _rcv_t {
 	const char *prog, *fname;
-	char *input, *ptr, *xbps_conf, *rootdir, *distdir;
-	uint8_t have_vars;
+	char *xbps_conf, *rootdir, *distdir;
+	char *buf;
+	size_t bufsz;
 	size_t len;
+	char *ptr;
+	uint8_t have_vars;
 	xbps_dictionary_t env;
 	xbps_dictionary_t pkgd;
 	xbps_dictionary_t cache;
@@ -105,7 +108,7 @@ rcv_init(rcv_t *rcv, const char *prog)
 {
 	rcv->prog = prog;
 	rcv->have_vars = 0;
-	rcv->ptr = rcv->input = NULL;
+	rcv->ptr = rcv->buf = NULL;
 
 	rcv->cache = xbps_dictionary_internalize_from_file(rcv->cachefile);
 	if (!rcv->cache)
@@ -127,9 +130,9 @@ rcv_end(rcv_t *rcv)
 {
 	xbps_dictionary_externalize_to_file(rcv->cache, rcv->cachefile);
 
-	if (rcv->input != NULL) {
-		free(rcv->input);
-		rcv->input = NULL;
+	if (rcv->buf != NULL) {
+		free(rcv->buf);
+		rcv->buf = NULL;
 	}
 	if (rcv->env != NULL) {
 		xbps_object_release(rcv->env);
@@ -171,20 +174,28 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 	}
 	rcv->len = (size_t)offset;
 
-	if (rcv->input != NULL)
-		free(rcv->input);
-
-	if ((rcv->input = calloc(rcv->len + 1, sizeof(char))) == NULL) {
-		fprintf(stderr, "MemError: can't allocate memory: %s\n",
-			strerror(errno));
-		fclose(file);
-		return false;
+	if (rcv->buf == NULL) {
+		rcv->bufsz = rcv->len+1;
+		if (!(rcv->buf = calloc(rcv->bufsz, sizeof(char)))) {
+			fprintf(stderr, "MemError: can't allocate memory: %s\n",
+				strerror(errno));
+			fclose(file);
+			return false;
+		}
+	} else if (rcv->bufsz <= rcv->len) {
+		rcv->bufsz = rcv->len+1;
+		if (!(rcv->buf = realloc(rcv->buf, rcv->bufsz))) {
+			fprintf(stderr, "MemError: can't allocate memory: %s\n",
+				strerror(errno));
+			fclose(file);
+			return false;
+		}
 	}
 
-	(void)fread(rcv->input, sizeof(char), rcv->len, file);
-	rcv->input[rcv->len] = '\0';
+	(void)fread(rcv->buf, sizeof(char), rcv->len, file);
+	rcv->buf[rcv->len] = '\0';
 	fclose(file);
-	rcv->ptr = rcv->input;
+	rcv->ptr = rcv->buf;
 
 	return true;
 }
