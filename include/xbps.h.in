@@ -48,7 +48,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20190614"
+#define XBPS_API_VERSION	"20190615"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1475,6 +1475,16 @@ xbps_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
  * @return True on success, false otherwise.
  */
 bool xbps_repo_store(struct xbps_handle *xhp, const char *url);
+
+/**
+ * Removes repository \a url from the repository pool.
+ *
+ * @param[in] xhp Pointer to the xbps_handle struct.
+ * @param[in] uri Repository URI to remove.
+ *
+ * @return True on success, false otherwise.
+ */
+bool xbps_repo_remove(struct xbps_handle *xhp, const char *url);
 
 /**
  * Creates a lock for a local repository to obtain exclusive access (write).

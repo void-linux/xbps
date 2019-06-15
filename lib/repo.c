@@ -294,6 +294,29 @@ xbps_repo_store(struct xbps_handle *xhp, const char *repo)
 	return false;
 }
 
+bool
+xbps_repo_remove(struct xbps_handle *xhp, const char *repo)
+{
+	char *url;
+	bool rv = false;
+
+	assert(xhp);
+	assert(repo);
+
+	if (xhp->repositories == NULL)
+		return false;
+
+	url = strdup(repo);
+	if (xbps_remove_string_from_array(xhp->repositories, repo)) {
+		if (url)
+			xbps_dbg_printf(xhp, "[repo] `%s' removed\n", url);
+		rv = true;
+	}
+	free(url);
+
+	return rv;
+}
+
 struct xbps_repo *
 xbps_repo_stage_open(struct xbps_handle *xhp, const char *url)
 {
