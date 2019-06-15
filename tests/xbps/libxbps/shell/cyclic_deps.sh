@@ -75,7 +75,7 @@ cyclic_dep_full_body() {
 
 	xbps-install -r root --repository=$PWD/some_repo -dy B
 	atf_check_equal $? 0
-	xbps-query -r root --fulldeptree -d B
+	xbps-query -r root --fulldeptree -dx B
 	atf_check_equal $? 0
 	xbps-remove -r root -Ryvd B
 	atf_check_equal $? 0
