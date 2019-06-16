@@ -53,6 +53,9 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 	case XBPS_STATE_TRANS_VERIFY:
 		printf("\n[*] Verifying package integrity\n");
 		break;
+	case XBPS_STATE_TRANS_FILES:
+		printf("\n[*] Collecting package files\n");
+		break;
 	case XBPS_STATE_TRANS_RUN:
 		printf("\n[*] Running transaction tasks\n");
 		break;
@@ -70,6 +73,9 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 			printf("%s\n", xscd->desc);
 		break;
 	case XBPS_STATE_VERIFY:
+		printf("%s\n", xscd->desc);
+		break;
+	case XBPS_STATE_FILES:
 		printf("%s\n", xscd->desc);
 		break;
 	case XBPS_STATE_CONFIG_FILE:
@@ -164,6 +170,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 	case XBPS_STATE_CONFIGURE_FAIL:
 	case XBPS_STATE_REMOVE_FAIL:
 	case XBPS_STATE_VERIFY_FAIL:
+	case XBPS_STATE_FILES_FAIL:
 	case XBPS_STATE_DOWNLOAD_FAIL:
 	case XBPS_STATE_REPOSYNC_FAIL:
 	case XBPS_STATE_CONFIG_FILE_FAIL:
