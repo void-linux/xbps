@@ -14,8 +14,8 @@ reinstall_obsoletes_body() {
 	#
 	mkdir some_repo
 	mkdir -p pkg_A/usr/bin pkg_B/usr/sbin
-	touch -f pkg_A/usr/bin/foo pkg_A/usr/bin/blah
-	touch -f pkg_B/usr/sbin/baz
+	touch pkg_A/usr/bin/foo pkg_A/usr/bin/blah
+	touch pkg_B/usr/sbin/baz
 
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "foo pkg" ../pkg_A
@@ -60,7 +60,7 @@ root_symlinks_update_head() {
 root_symlinks_update_body() {
 	mkdir repo
 	mkdir -p pkg_A/usr/bin pkg_A/usr/sbin pkg_A/usr/lib pkg_A/var pkg_A/run
-	touch -f pkg_A/usr/bin/foo
+	touch pkg_A/usr/bin/foo
 	ln -sf usr/bin pkg_A/bin
 	ln -sf usr/sbin pkg_A/sbin
 	ln -sf lib pkg_A/usr/lib32
@@ -79,7 +79,7 @@ root_symlinks_update_body() {
 
 	cd ..
 	mkdir -p pkg_A/usr/bin
-	touch -f pkg_A/usr/bin/blah
+	touch pkg_A/usr/bin/blah
 
 	cd repo
 	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
@@ -157,6 +157,8 @@ files_move_to_dependency_body() {
 	mkdir -p pkg_libressl/usr/lib pkg_libcrypto/usr/lib
 	echo "0123456789" > pkg_libressl/usr/lib/libcrypto.so.30
 	echo "0123456789" > pkg_libcrypto/usr/lib/libcrypto.so.30
+	touch -mt 197001010000.00 pkg_libressl/usr/lib/libcrypto.so.30
+	touch -mt 197001010000.00 pkg_libcrypto/usr/lib/libcrypto.so.30
 
 	cd repo
 	xbps-create -A noarch -n libressl-1.0_1 -s "libressl pkg" ../pkg_libressl
@@ -169,9 +171,7 @@ files_move_to_dependency_body() {
 	xbps-install -r root --repository=$PWD -yvd libressl
 	atf_check_equal $? 0
 
-	sleep 1
 	rm -rf ../pkg_libressl/*
-	touch -f ../pkg_libcrypto/usr/lib/libcrypto.so.30
 	xbps-create -A noarch -n libcrypto-1.1_1 -s "libcrypto pkg" --replaces "libressl<1.1_1" ../pkg_libcrypto
 	atf_check_equal $? 0
 	xbps-create -A noarch -n libressl-1.1_1 -s "libressl pkg" --dependencies "libcrypto>=1.0" ../pkg_libressl
@@ -204,6 +204,9 @@ files_move_to_dependency2_body() {
 	echo "0123456789" > pkg_libressl/usr/lib/libcrypto.so.30
 	echo "0123456789" > pkg_libressl/usr/lib/libssl.so.30
 	echo "0123456789" > pkg_libcrypto/usr/lib/libcrypto.so.30
+	touch -mt 197001010000.00 pkg_libressl/usr/lib/libcrypto.so.30
+	touch -mt 197001010000.00 pkg_libressl/usr/lib/libssl.so.30
+	touch -mt 197001010000.00 pkg_libcrypto/usr/lib/libcrypto.so.30
 
 	cd repo
 	xbps-create -A noarch -n libressl-1.0_1 -s "libressl pkg" ../pkg_libressl
@@ -216,9 +219,7 @@ files_move_to_dependency2_body() {
 	xbps-install -r root --repository=$PWD -yvd libressl
 	atf_check_equal $? 0
 
-	sleep 1
 	rm -f ../pkg_libressl/usr/lib/libcrypto.*
-	touch -f ../pkg_libcrypto/usr/lib/libcrypto.so.30
 	xbps-create -A noarch -n libcrypto-1.0_2 -s "libcrypto pkg" ../pkg_libcrypto
 	atf_check_equal $? 0
 	xbps-create -A noarch -n libressl-1.1_1 -s "libressl pkg" --dependencies "libcrypto>=1.0" ../pkg_libressl
