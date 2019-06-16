@@ -45,7 +45,7 @@ update_xbps_with_revdeps_head() {
 
 update_xbps_with_revdeps_body() {
 	mkdir -p repo xbps xbps-dbg baz
-	touch xbps/foo xbps-dbg/foo baz/blah
+	touch xbps/foo xbps-dbg/bar baz/blah
 
 	cd repo
 	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" ../xbps
@@ -115,7 +115,7 @@ update_xbps_with_uptodate_revdeps_head() {
 
 update_xbps_with_uptodate_revdeps_body() {
 	mkdir -p repo xbps base-system
-	touch xbps/foo base-system/foo
+	touch xbps/foo base-system/bar
 
 	cd repo
 	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" ../xbps
