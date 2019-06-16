@@ -59,6 +59,7 @@
 struct xentry {
 	TAILQ_ENTRY(xentry) entries;
 	uint64_t mtime;
+	uint64_t size;
 	char *file, *type, *target, *hash;
 	ino_t inode;
 };
@@ -473,6 +474,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		/* store modification time for regular files and links */
 		xbps_dictionary_set_uint64(fileinfo, "mtime", sb->st_mtime);
 		xe->mtime = (uint64_t)sb->st_mtime;
+		xe->size = (uint64_t)sb->st_size;
 
 	} else if (S_ISDIR(sb->st_mode)) {
 		/* directory */
@@ -591,6 +593,8 @@ process_xentry(const char *key, const char *mutable_files)
 			xbps_dictionary_set_cstring(d, "sha256", xe->hash);
 		if (xe->mtime)
 			xbps_dictionary_set_uint64(d, "mtime", xe->mtime);
+		if (xe->size)
+			xbps_dictionary_set_uint64(d, "size", xe->size);
 
 		xbps_array_add(a, d);
 		xbps_object_release(d);
