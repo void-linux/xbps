@@ -256,6 +256,16 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		goto out;
 	}
 	/*
+	 * Collect files in the transaction and find some issues
+	 * like multiple packages installing the same file.
+	 */
+	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FILES, 0, NULL, NULL);
+	if ((rv = xbps_transaction_files(xhp, iter)) != 0) {
+		xbps_dbg_printf(xhp, "[trans] failed to verify transaction files: "
+		    "%s\n", strerror(rv));
+		goto out;
+	}
+	/*
 	 * Install, update, configure or remove packages as specified
 	 * in the transaction dictionary.
 	 */
