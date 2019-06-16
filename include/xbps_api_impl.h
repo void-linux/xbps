@@ -156,5 +156,10 @@ xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 		const char *);
 int HIDDEN xbps_conf_init(struct xbps_handle *);
+int HIDDEN xbps_transaction_files(struct xbps_handle *,
+		xbps_object_iterator_t);
+bool HIDDEN
+xbps_transaction_is_file_obsolete(struct xbps_handle *,
+		const char *);
 
 #endif /* !_XBPS_API_IMPL_H_ */
