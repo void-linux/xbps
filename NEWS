@@ -9,7 +9,7 @@ xbps-0.54 (???):
    its reverse dependencies. [xtraeme]
 
  * xbps now supports multiple compression formats for repodata
-   and binary packages, including: gzip, bzip2, lz4, xz and xstd. [xtraeme]
+   and binary packages, including: gzip, bzip2, lz4, xz and zstd. [xtraeme]
 
  * xbps-rindex(1): the default compression format for repository data has
    been switched to ztd (previously zlib). [xtraeme]
