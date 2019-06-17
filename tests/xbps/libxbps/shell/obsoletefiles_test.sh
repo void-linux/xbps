@@ -293,6 +293,69 @@ update_to_meta_depends_replaces_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case directory_to_symlink
+
+directory_to_symlink_head() {
+	atf_set "descr" "Update replaces directory with symlink"
+}
+
+directory_to_symlink_body() {
+	mkdir -p some_repo pkg_A/foo
+	touch pkg_A/foo/bar
+	# create package and install it
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+
+	# make an update to the package
+	cd some_repo
+	rm -rf ../pkg_A/foo
+	ln -sf ../bar ../pkg_A/foo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -dvyu
+	atf_check_equal $? 0
+}
+
+atf_test_case update_extract_dir
+
+update_extract_dir_head() {
+	atf_set "descr" "Update replaces file with directory"
+}
+
+update_extract_dir_body() {
+	mkdir -p some_repo pkg_A
+	touch pkg_A/file00
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	rm pkg_A/file00
+	mkdir -p pkg_A/file00
+	touch pkg_A/file00/file01
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -d -Suy A
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
@@ -300,4 +363,6 @@ atf_init_test_cases() {
 	atf_add_test_case files_move_to_dependency
 	atf_add_test_case files_move_to_dependency2
 	atf_add_test_case update_to_meta_depends_replaces
+	atf_add_test_case directory_to_symlink
+	atf_add_test_case update_extract_dir
 }
