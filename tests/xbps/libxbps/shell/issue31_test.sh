@@ -26,6 +26,8 @@ issue31_body() {
 	xbps-install -r root -C null.conf --repository=$PWD -y A
 	atf_check_equal $? 0
 
+	touch root/usr/share/licenses/chromium/license.html/fail
+
 	mkdir -p pkg_B/usr/share/licenses/chromium
 	echo "morerandom" > pkg_B/usr/share/licenses/chromium/license.html
 	xbps-create -A noarch -n A-0.2_1 -s "pkg A" pkg_B
@@ -36,6 +38,10 @@ issue31_body() {
 	xbps-install -r root -C null.conf --repository=$PWD -yuvd A
 	# ENOTEMPTY
 	atf_check_equal $? 39
+
+	rm root/usr/share/licenses/chromium/license.html/fail
+	xbps-install -r root -C null.conf --repository=$PWD -yuvd A
+	atf_check_equal $? 0
 }
 
 atf_init_test_cases() {
