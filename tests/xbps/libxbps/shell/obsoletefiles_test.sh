@@ -356,6 +356,108 @@ update_extract_dir_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case replace_package_same_files
+
+replace_package_same_files_head() {
+	atf_set "descr" "Package gets replaced by another one with same files"
+}
+
+replace_package_same_files_body() {
+	mkdir repo
+	mkdir -p pkg_openssl/usr/lib/openssl pkg_libressl/usr/lib
+	echo "0123456789" > pkg_openssl/usr/lib/libcrypto.so.30
+	echo "0123456789" > pkg_openssl/usr/lib/libssl.so.30
+	echo "0123456789" > pkg_libressl/usr/lib/libcrypto.so.30
+	echo "0123456789" > pkg_libressl/usr/lib/libssl.so.30
+	echo "0123456789" > pkg_libressl/usr/lib/openssl/foo
+	touch -mt 197001010000.00 pkg_openssl/usr/lib/libcrypto.so.30
+	touch -mt 197001010000.00 pkg_openssl/usr/lib/libssl.so.30
+	touch -mt 197001010000.00 pkg_libressl/usr/lib/libcrypto.so.30
+	touch -mt 197001010000.00 pkg_libressl/usr/lib/libssl.so.30
+
+	cd repo
+	xbps-create -A noarch -n openssl-1.0_1 -s "openssl pkg" ../pkg_openssl
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libressl-1.0_1 -s "libressl pkg" --replaces "openssl>=0" ../pkg_libressl
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd openssl
+	atf_check_equal $? 0
+
+	xbps-install -r root --repository=$PWD/repo -yvd libressl
+	atf_check_equal $? 0
+
+	xbps-query -S openssl
+	atf_check_equal $? 2
+
+	xbps-query -S libressl
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+}
+
+atf_test_case nonempty_dir_abort
+
+nonempty_dir_abort_head() {
+	atf_set "descr" "Abort transaction if a directory replaced by a file."
+}
+
+nonempty_dir_abort_body() {
+	mkdir repo root
+	mkdir -p pkg_A pkg_B/foo
+	echo "0123456789" > pkg_B/foo/bar
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A B
+	atf_check_equal $? 0
+
+	cd repo
+	rm -f *.xbps
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	rm -rf ../pkg_B/foo
+	echo "0123456789" > ../pkg_B/foo
+	xbps-create -A noarch -n B-1.0_2 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	touch root/foo/abort
+
+	xbps-install -r root --repository=$PWD/repo -yvdu
+	atf_check_equal $? 39
+	out=$(xbps-query -r root -p state A)
+	atf_check_equal "$out" "installed"
+	out=$(xbps-query -r root -p state B)
+	atf_check_equal "$out" "installed"
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	rm root/foo/abort
+
+	xbps-install -r root --repository=$PWD/repo -yvdu
+	atf_check_equal $? 0
+	out=$(xbps-query -r root -p state A)
+	atf_check_equal "$out" "installed"
+	out=$(xbps-query -r root -p state B)
+	atf_check_equal "$out" "installed"
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
@@ -365,4 +467,6 @@ atf_init_test_cases() {
 	atf_add_test_case update_to_meta_depends_replaces
 	atf_add_test_case directory_to_symlink
 	atf_add_test_case update_extract_dir
+	atf_add_test_case replace_package_same_files
+	atf_add_test_case nonempty_dir_abort
 }
