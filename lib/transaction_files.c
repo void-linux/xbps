@@ -365,7 +365,6 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			return ENOMEM;
 		item->deleted = false;
 		goto add;
-		return 0;
 	}
 
 	if (remove) {
@@ -656,7 +655,6 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	xbps_dictionary_t pkgd, filesd;
 	xbps_object_t obj;
 	const char *trans, *pkgver;
-	bool preserve;
 	int rv = 0;
 	unsigned int idx = 0;
 
@@ -710,6 +708,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
 		if (pkgd) {
 			const char *oldpkgver;
+			bool preserve = false;
 			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &oldpkgver);
 			xbps_dictionary_get_bool(obj, "preserve", &preserve);
 			/*
