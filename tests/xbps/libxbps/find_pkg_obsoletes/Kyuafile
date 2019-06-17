@@ -1,5 +1,0 @@
-syntax("kyuafile", 1)
-
-test_suite("libxbps")
-
-atf_test_program{name="find_pkg_obsoletes_test"}
