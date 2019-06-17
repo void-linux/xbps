@@ -65,7 +65,6 @@ directory_to_symlink_head() {
 }
 
 directory_to_symlink_body() {
-	atf_expect_failure "does not work at the moment"
 	mkdir -p some_repo pkg_A/foo
 	touch pkg_A/foo/bar
 	# create package and install it
@@ -88,7 +87,7 @@ directory_to_symlink_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -dvyu
 	atf_check_equal $? 0
 }
 
