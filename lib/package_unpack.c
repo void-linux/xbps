@@ -73,9 +73,8 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
-	xbps_dictionary_t binpkg_propsd, binpkg_filesd, pkg_filesd;
+	xbps_dictionary_t binpkg_propsd, binpkg_filesd, pkg_filesd, obsd;
 	xbps_array_t array, obsoletes;
-	xbps_object_t obj;
 	xbps_data_t data;
 	const struct stat *entry_statp;
 	void *instbuf = NULL, *rembuf = NULL;
@@ -84,7 +83,7 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
-	const char *file, *entry_pname, *transact, *binpkg_pkgver;
+	const char *entry_pname, *transact, *binpkg_pkgver;
 	char *pkgname, *buf;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists, keep_conf_file;
@@ -111,6 +110,30 @@ unpack_archive(struct xbps_handle *xhp,
 
 	if (strcmp(transact, "update") == 0)
 		update = true;
+
+	/*
+	 * Remove obsolete files.
+	 */
+	if (!preserve &&
+	    xbps_dictionary_get_dict(xhp->transd, "obsolete_files", &obsd) &&
+	    (obsoletes = xbps_dictionary_get(obsd, pkgname))) {
+		for (unsigned int i = 0; i < xbps_array_count(obsoletes); i++) {
+			const char *file = NULL;
+			xbps_array_get_cstring_nocopy(obsoletes, i, &file);
+			if (remove(file) == -1) {
+				xbps_set_cb_state(xhp,
+					XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
+					errno, pkgver,
+					"%s: failed to remove obsolete entry `%s': %s",
+					pkgver, file, strerror(errno));
+				continue;
+			}
+			xbps_set_cb_state(xhp,
+				XBPS_STATE_REMOVE_FILE_OBSOLETE,
+				0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
+		}
+	}
+
 	/*
 	 * Process the archive files.
 	 */
@@ -503,41 +526,6 @@ unpack_archive(struct xbps_handle *xhp,
 		umask(prev_umask);
 		free(buf);
 	}
-	/*
-	 * Skip checking for obsolete files on:
-	 * 	- Package with "preserve" keyword.
-	 */
-	if (preserve) {
-		xbps_dbg_printf(xhp, "%s: preserved package, skipping obsoletes\n", pkgver);
-		goto out;
-	}
-	/*
-	 * Check and remove obsolete files on:
-	 * 	- Package reinstall.
-	 * 	- Package upgrade.
-	 */
-	if (pkg_filesd == NULL || !xbps_dictionary_count(pkg_filesd))
-		goto out;
-
-	obsoletes = xbps_find_pkg_obsoletes(xhp, pkg_filesd, binpkg_filesd);
-	for (unsigned int i = 0; i < xbps_array_count(obsoletes); i++) {
-		obj = xbps_array_get(obsoletes, i);
-		file = xbps_string_cstring_nocopy(obj);
-		if (remove(file) == -1) {
-			xbps_set_cb_state(xhp,
-			    XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
-			    errno, pkgver,
-			    "%s: failed to remove obsolete entry `%s': %s",
-			    pkgver, file, strerror(errno));
-			continue;
-		}
-		xbps_set_cb_state(xhp,
-		    XBPS_STATE_REMOVE_FILE_OBSOLETE,
-		    0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
-		xbps_object_release(obj);
-	}
-	/* XXX: cant free obsoletes here, need to copy values before */
-	xbps_object_release(pkg_filesd);
 out:
 	/*
 	 * If unpacked pkg has no files, remove its files metadata plist.
