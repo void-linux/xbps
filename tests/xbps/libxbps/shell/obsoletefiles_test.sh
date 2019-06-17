@@ -240,10 +240,64 @@ files_move_to_dependency2_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case update_to_meta_depends_replaces
+
+update_to_meta_depends_replaces_head() {
+	# https://github.com/void-linux/xbps/issues/12
+	atf_set "descr" "Update package to meta moving files to dependency and replaces"
+}
+
+update_to_meta_depends_replaces_body() {
+	mkdir repo
+	mkdir -p pkg_openssl/usr/lib pkg_libressl
+	echo "0123456789" > pkg_openssl/usr/lib/libcrypto.so.30
+	echo "0123456789" > pkg_openssl/usr/lib/libssl.so.30
+	touch -mt 197001010000.00 pkg_openssl/usr/lib/libcrypto.so.30
+	touch -mt 197001010000.00 pkg_openssl/usr/lib/libssl.so.30
+
+	cd repo
+	xbps-create -A noarch -n openssl-1.0_1 -s "openssl pkg" ../pkg_openssl
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd openssl
+	atf_check_equal $? 0
+
+	cd repo
+	mv ../pkg_openssl/usr ../pkg_libressl/
+	touch -mt 197001010000.00 ../pkg_libressl/usr/lib/libcrypto.so.30
+	touch -mt 197001010000.00 ../pkg_libressl/usr/lib/libssl.so.30
+	xbps-create -A noarch -n openssl-1.0_2 -s "openssl pkg (meta)" --dependencies="libressl>=1.0_1" ../pkg_openssl
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libressl-1.0_1 -s "libressl pkg" --replaces "libressl>=0" ../pkg_libressl
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+
+	xbps-query -r root -S openssl
+	atf_check_equal $? 0
+
+	xbps-query -r root -S libressl
+	atf_check_equal $? 0
+
+	foofile=$(xbps-query -r root -f libressl|grep crypto)
+	atf_check_equal $foofile /usr/lib/libcrypto.so.30
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
 	atf_add_test_case files_move_from_dependency
 	atf_add_test_case files_move_to_dependency
 	atf_add_test_case files_move_to_dependency2
+	atf_add_test_case update_to_meta_depends_replaces
 }
