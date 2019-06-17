@@ -124,7 +124,6 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 	struct item *item, *xitem;
 	const char *pkgver;
 	char *pkgn;
-	bool fdup = false;
 
 	assert(xhp);
 	assert(pkgd);
@@ -188,16 +187,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 		free(curdepname);
 	}
 	/* all deps were processed, add item to head */
-	for (unsigned int i = 0; i < xbps_array_count(result); i++) {
-		const char *pkgdep;
-
-		xbps_array_get_cstring_nocopy(result, i, &pkgdep);
-		if (strcmp(item->pkgver, pkgdep) == 0) {
-			fdup = true;
-			break;
-		}
-	}
-	if (!fdup) {
+	if (!xbps_match_string_in_array(result, item->pkgver)) {
 		str = xbps_string_create_cstring(item->pkgver);
 		assert(str);
 		xbps_array_add_first(result, str);
