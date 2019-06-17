@@ -37,6 +37,20 @@ to handle binary packages and repositories. Some highlights:
  * Ability to **check package integrity**: missing files, hashes, missing or
    unresolved (reverse)dependencies, dangling or modified symlinks, etc.
 
+XBPS contains an almost complete test suite, currently with ~190 test cases,
+and its number is growing daily! If you find any issue and you can reproduce it,
+we will fix it and a new test case will be created. No more regressions!
+
+XBPS is brought to you by:
+
+- [Juan Romero Pardines (main author)](https://github.com/xtraeme)
+- [Enno Boland](https://github.com/Gottox)
+- [Duncan Overbruck](https://github.com/duncaen)
+
+and many others contributors in the free community that have helped improving it.
+
+Thanks to all who have contributed.
+
 ### Build requirements
 
 To build this you'll need:
