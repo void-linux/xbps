@@ -50,7 +50,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20190615"
+#define XBPS_API_VERSION	"20190618"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -757,22 +757,6 @@ const char *xbps_fetch_error_string(void);
  * on error NULL is returned and errno is set appropiately.
  */
 xbps_array_t xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans);
-
-/**
- * @ingroup pkg_obsoletes
- *
- * Finds obsolete files by comparing installed files dictionary with
- * a new files dictionary.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] instd Installed package metadata dictionary.
- * @param[in] newd New package metadata dictionary.
- *
- * @return A proplib array of strings with a sorted list of obsolete files.
- */
-xbps_array_t xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
-				     xbps_dictionary_t instd,
-				     xbps_dictionary_t newd);
 
 /** @addtogroup pkgdb */
 /*@{*/
