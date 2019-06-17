@@ -39,7 +39,8 @@
 
 bool
 repodata_flush(struct xbps_handle *xhp, const char *repodir,
-	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta)
+	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta,
+	const char *compression)
 {
 	struct archive *ar;
 	char *repofile, *tname, *buf;
@@ -57,9 +58,28 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	/* Create and write our repository archive */
 	ar = archive_write_new();
 	assert(ar);
-	archive_write_set_compression_gzip(ar);
+
+        if (compression == NULL || strcmp(compression, "zstd") == 0) {
+                archive_write_add_filter_zstd(ar);
+                archive_write_set_options(ar, "compression-level=19");
+        } else if (strcmp(compression, "gzip") == 0) {
+                archive_write_add_filter_gzip(ar);
+                archive_write_set_options(ar, "compression-level=9");
+        } else if (strcmp(compression, "bzip2") == 0) {
+                archive_write_add_filter_bzip2(ar);
+                archive_write_set_options(ar, "compression-level=9");
+        } else if (strcmp(compression, "lz4") == 0) {
+                archive_write_add_filter_lz4(ar);
+                archive_write_set_options(ar, "compression-level=9");
+        } else if (strcmp(compression, "xz") == 0) {
+                archive_write_add_filter_xz(ar);
+	} else if (strcmp(compression, "none") == 0) {
+                /* empty */
+        } else {
+		return false;
+	}
+
 	archive_write_set_format_pax_restricted(ar);
-	archive_write_set_options(ar, "compression-level=9");
 	archive_write_open_fd(ar, repofd);
 
 	/* XBPS_REPOIDX */

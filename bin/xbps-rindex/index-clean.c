@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2015 Juan Romero Pardines.
+ * Copyright (c) 2012-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,7 @@ struct CleanerCbInfo {
 	const char *repourl;
 	bool hashcheck;
 };
+
 static int
 idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_object_t obj,
@@ -94,7 +95,8 @@ out:
 
 static int
 cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *repo,
-		const char *reponame, bool hashcheck) {
+	const char *reponame, bool hashcheck, const char *compression)
+{
 	int rv = 0;
 	xbps_array_t allkeys;
 	struct CleanerCbInfo info = {
@@ -109,20 +111,20 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, &info);
 	xbps_object_release(allkeys);
 
-	if(strcmp("stagedata", reponame) == 0 && xbps_dictionary_count(dest) == 0) {
+	if (strcmp("stagedata", reponame) == 0 && xbps_dictionary_count(dest) == 0) {
 		char *stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
 		unlink(stagefile);
 		free(stagefile);
 	}
 	if (!xbps_dictionary_equals(dest, repo->idx)) {
-		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta)) {
+		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta, compression)) {
 			rv = errno;
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));
 			return rv;
 		}
 	}
-	if(strcmp("stagedata", reponame) == 0)
+	if (strcmp("stagedata", reponame) == 0)
 		printf("stage: %u packages registered.\n", xbps_dictionary_count(dest));
 	else
 		printf("index: %u packages registered.\n", xbps_dictionary_count(dest));
@@ -134,7 +136,7 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
  * binary package cannot be read (unavailable, not enough perms, etc).
  */
 int
-index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck)
+index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, const char *compression)
 {
 	struct xbps_repo *repo, *stage;
 	char *rlockfname = NULL;
@@ -166,10 +168,11 @@ index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck)
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
-	if((rv = cleanup_repo(xhp, repodir, repo, "repodata", hashcheck)))
+	if ((rv = cleanup_repo(xhp, repodir, repo, "repodata", hashcheck, compression))) {
 		goto out;
-	if(stage) {
-		cleanup_repo(xhp, repodir, stage, "stagedata", hashcheck);
+	}
+	if (stage) {
+		cleanup_repo(xhp, repodir, stage, "stagedata", hashcheck, compression);
 	}
 
 out:

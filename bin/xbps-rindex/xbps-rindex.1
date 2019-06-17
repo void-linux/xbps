@@ -1,4 +1,4 @@
-.Dd June 12, 2019
+.Dd June 17, 2019
 .Dt XBPS-RINDEX 1
 .Sh NAME
 .Nm xbps-rindex
@@ -17,6 +17,9 @@ in local repositories.
 .Bl -tag -width November 6-x
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
+.It Fl -compression Ar none | gzip | bzip2 | xz | lz4 | zstd
+Set the repodata compression format. If unset, defaults to
+.Ar zstd .
 .It Fl C -hashcheck
 Check not only for file existence but for the correct file hash while cleaning.
 This flag is only useful with the

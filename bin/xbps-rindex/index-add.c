@@ -56,7 +56,9 @@ set_build_date(const xbps_dictionary_t pkgd, time_t timestamp)
 
 static bool
 repodata_commit(struct xbps_handle *xhp, const char *repodir,
-	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage) {
+	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage,
+	const char *compression)
+{
 	xbps_object_iterator_t iter;
 	xbps_object_t keysym;
 	int rv;
@@ -187,7 +189,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			printf("stage: added `%s' (%s)\n", pkgver, arch);
 		}
 		xbps_object_iterator_release(iter);
-		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL);
+		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL, compression);
 	}
 	else {
 		char *stagefile;
@@ -205,7 +207,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 		stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
 		unlink(stagefile);
 		free(stagefile);
-		rv = repodata_flush(xhp, repodir, "repodata", idx, meta);
+		rv = repodata_flush(xhp, repodir, "repodata", idx, meta, compression);
 	}
 	xbps_object_release(usedshlibs);
 	xbps_object_release(oldshlibs);
@@ -213,7 +215,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 }
 
 int
-index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force)
+index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression)
 {
 	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
 	struct xbps_repo *repo = NULL, *stage = NULL;
@@ -405,7 +407,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	/*
 	 * Generate repository data files.
 	 */
-	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage)) {
+	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, compression)) {
 		fprintf(stderr, "%s: failed to write repodata: %s\n",
 				_XBPS_RINDEX, strerror(errno));
 		goto out;

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2015 Juan Romero Pardines.
+ * Copyright (c) 2012-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,7 @@ usage(bool fail)
 	    " -v --verbose                      Verbose messages\n"
 	    " -V --version                      Show XBPS version\n"
 	    " -C --hashcheck                    Consider file hashes for cleaning up packages\n"
+	    "    --compression <fmt>            Compression format: none, gzip, bzip2, lz4 (default), zstd, xz.\n"
 	    "    --privkey <key>                Path to the private key for signing\n"
 	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
 	    "MODE\n"
@@ -72,9 +73,11 @@ main(int argc, char **argv)
 		{ "sign", no_argument, NULL, 's'},
 		{ "sign-pkg", no_argument, NULL, 'S'},
 		{ "hashcheck", no_argument, NULL, 'C' },
+		{ "compression", required_argument, NULL, 2},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
+	const char *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
 	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
@@ -90,6 +93,9 @@ main(int argc, char **argv)
 			break;
 		case 1:
 			signedby = optarg;
+			break;
+		case 2:
+			compression = optarg;
 			break;
 		case 'a':
 			add_mode = true;
@@ -149,13 +155,13 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force);
+		rv = index_add(&xh, optind, argc, argv, force, compression);
 	else if (clean_mode)
-		rv = index_clean(&xh, argv[optind], hashcheck);
+		rv = index_clean(&xh, argv[optind], hashcheck, compression);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
 	else if (sign_mode)
-		rv = sign_repo(&xh, argv[optind], privkey, signedby);
+		rv = sign_repo(&xh, argv[optind], privkey, signedby, compression);
 	else if (sign_pkg_mode)
 		rv = sign_pkgs(&xh, optind, argc, argv, privkey, force);
 

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2013-2015 Juan Romero Pardines.
+ * Copyright (c) 2013-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -152,7 +152,7 @@ ssl_init(void)
 
 int
 sign_repo(struct xbps_handle *xhp, const char *repodir,
-	const char *privkey, const char *signedby)
+	const char *privkey, const char *signedby, const char *compression)
 {
 	struct xbps_repo *repo = NULL;
 	xbps_dictionary_t meta = NULL;
@@ -231,7 +231,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		    _XBPS_RINDEX, strerror(errno));
 		goto out;
 	}
-	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta);
+	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta, compression);
 	xbps_repo_unlock(rlockfd, rlockfname);
 	if (!flush_failed) {
 		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
