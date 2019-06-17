@@ -189,6 +189,7 @@ int HIDDEN
 xbps_transaction_init(struct xbps_handle *xhp)
 {
 	xbps_array_t array;
+	xbps_dictionary_t dict;
 
 	if (xhp->transd != NULL)
 		return 0;
@@ -243,6 +244,30 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		return EINVAL;
 	}
 	xbps_object_release(array);
+
+	if ((dict = xbps_dictionary_create()) == NULL) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return ENOMEM;
+	}
+	if (!xbps_dictionary_set(xhp->transd, "obsolete_files", dict)) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
+	xbps_object_release(dict);
+
+	if ((dict = xbps_dictionary_create()) == NULL) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return ENOMEM;
+	}
+	if (!xbps_dictionary_set(xhp->transd, "remove_files", dict)) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
+	xbps_object_release(dict);
 
 	return 0;
 }

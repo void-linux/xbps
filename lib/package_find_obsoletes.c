@@ -170,15 +170,6 @@ xbps_find_pkg_obsoletes(struct xbps_handle *xhp,
 			continue;
 		}
 		/*
-		 * Check if the file appears in the transaction.
-		 */
-		if (!xbps_transaction_is_file_obsolete(xhp,
-		        xbps_string_cstring_nocopy(oldstr))) {
-			xbps_dbg_printf(xhp, "[obsoletes] ignoring "
-				"%s removal (found in transaction)\n", file);
-			continue;
-		}
-		/*
 		 * Finally check if file mtime on disk matched what
 		 * the installed pkg has stored.
 		 */
