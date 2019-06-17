@@ -11,16 +11,23 @@ released with a **Simplified BSD license (2 clause)**. There is a well
 documented API provided by the XBPS Library that is the basis for its frontends
 to handle binary packages and repositories. Some highlights:
 
- * Supports **multiple local and remote repositories** (HTTP/HTTPS/FTP).
+ * Supports **multiple local/remote repositories** (HTTP/HTTPS/FTP).
  * **RSA signed remote repositories** (NEW in 0.27).
+ * Supports **multiple compression formats** for repositories:
+   zlib, bzip2, xz, lz4, [zstd](https://github.com/facebook/zstd) (default in 0.54).
+ * Supports **multiple compression formats** for binary packages:
+   zlib, bzip2, xz, lz4 (default), [zstd](https://github.com/facebook/zstd).
  * **SHA256 hashes** for package metadata, files and binary packages.
  * Supports **package states** (ala dpkg) to mitigate broken package
    installs/updates.
  * Ability to **resume** partial package install/updates.
  * Ability to **unpack only files that have been modified** in package updates.
  * Ability to use **virtual packages**.
+ * Ability to **ignore completely** any number of packages in dependency resolution.
  * Ability to **check for incompatible shared libraries in reverse
    dependencies**.
+ * Ability to **update reverse dependencies** of any number of packages or **globally**
+   in a single transaction.
  * Ability to **replace packages**.
  * Ability to **put packages on hold** (to never update them. NEW in 0.16).
  * Ability to **preserve/update configuration files**.
