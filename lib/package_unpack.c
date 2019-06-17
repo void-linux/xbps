@@ -590,11 +590,13 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		return ENOMEM;
 	}
 	/*
-	 * Enable support for tar format and gzip/bzip2/lzma compression methods.
+	 * Enable support for tar format and some compression methods.
 	 */
-	archive_read_support_compression_gzip(ar);
-	archive_read_support_compression_bzip2(ar);
-	archive_read_support_compression_xz(ar);
+	archive_read_support_filter_gzip(ar);
+	archive_read_support_filter_bzip2(ar);
+	archive_read_support_filter_xz(ar);
+	archive_read_support_filter_lz4(ar);
+	archive_read_support_filter_zstd(ar);
 	archive_read_support_format_tar(ar);
 
 	myumask = umask(022);

@@ -95,9 +95,11 @@ open_archive_by_url(struct url *url)
 		free(f);
 		return NULL;
 	}
-	archive_read_support_compression_gzip(a);
-	archive_read_support_compression_bzip2(a);
-	archive_read_support_compression_xz(a);
+	archive_read_support_filter_gzip(a);
+	archive_read_support_filter_bzip2(a);
+	archive_read_support_filter_xz(a);
+	archive_read_support_filter_lz4(a);
+	archive_read_support_filter_zstd(a);
 	archive_read_support_format_tar(a);
 
 	if (archive_read_open(a, f, fetch_archive_open, fetch_archive_read,
@@ -119,9 +121,11 @@ open_archive(const char *url)
 		if ((a = archive_read_new()) == NULL)
 			return NULL;
 
-		archive_read_support_compression_gzip(a);
-		archive_read_support_compression_bzip2(a);
-		archive_read_support_compression_xz(a);
+		archive_read_support_filter_gzip(a);
+		archive_read_support_filter_bzip2(a);
+		archive_read_support_filter_xz(a);
+		archive_read_support_filter_lz4(a);
+		archive_read_support_filter_zstd(a);
 		archive_read_support_format_tar(a);
 
 		if (archive_read_open_filename(a, url, 32768)) {

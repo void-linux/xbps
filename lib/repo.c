@@ -144,7 +144,11 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 	}
 
 	repo->ar = archive_read_new();
-	archive_read_support_compression_gzip(repo->ar);
+	archive_read_support_filter_gzip(repo->ar);
+	archive_read_support_filter_bzip2(repo->ar);
+	archive_read_support_filter_xz(repo->ar);
+	archive_read_support_filter_lz4(repo->ar);
+	archive_read_support_filter_zstd(repo->ar);
 	archive_read_support_format_tar(repo->ar);
 
 	if (archive_read_open_fd(repo->ar, repo->fd, st.st_blksize) == ARCHIVE_FATAL) {
