@@ -224,6 +224,67 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	return 0;
 }
 
+/*
+ * Returns 1 if there's an update, 0 if none or -1 on error.
+ */
+static int
+xbps_autoupdate(struct xbps_handle *xhp)
+{
+	xbps_array_t rdeps;
+	xbps_dictionary_t pkgd;
+	const char *pkgver;
+	char *pkgname;
+	int rv;
+
+	/*
+	 * Check if there's a new update for XBPS before starting
+	 * another transaction.
+	 */
+	if (((pkgd = xbps_pkgdb_get_pkg(xhp, "xbps")) == NULL) &&
+	    ((pkgd = xbps_pkgdb_get_virtualpkg(xhp, "xbps")) == NULL))
+		return 0;
+
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+
+	rv = trans_find_pkg(xhp, pkgname, false, false);
+	free(pkgname);
+
+	xbps_dbg_printf(xhp, "%s: trans_find_pkg xbps: %d\n", __func__, rv);
+
+	if (rv == 0) {
+		/* a new xbps version is available, check its revdeps */
+		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
+		for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+			const char *curpkgver;
+			char *curpkgn;
+
+			xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
+			xbps_dbg_printf(xhp, "%s: processing revdep %s\n", __func__, curpkgver);
+
+			curpkgn = xbps_pkg_name(curpkgver);
+			assert(curpkgn);
+			rv = trans_find_pkg(xhp, curpkgn, false, false);
+			free(curpkgn);
+			xbps_dbg_printf(xhp, "%s: trans_find_pkg revdep %s: %d\n", __func__, curpkgver, rv);
+			if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
+				return -1;
+
+			rv = 0;
+		}
+		return 1;
+	} else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
+		/* no update */
+		return 0;
+	} else {
+		/* error */
+		return -1;
+	}
+
+	return 0;
+}
+
 int
 xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
@@ -235,52 +296,16 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	bool hold, newpkg_found = false;
 	int rv = 0;
 
-	if ((rv = xbps_pkgdb_init(xhp)) != 0)
-		return rv;
-
-	/*
-	 * Check if there's a new update for XBPS before starting
-	 * a full system upgrade.
-	 */
-	if ((pkgd = xbps_pkgdb_get_pkg(xhp, "xbps")) ||
-	    (pkgd = xbps_pkgdb_get_virtualpkg(xhp, "xbps"))) {
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
-
-		rv = trans_find_pkg(xhp, pkgname, false, false);
-		free(pkgname);
-
-		xbps_dbg_printf(xhp, "%s: trans_find_pkg xbps: %d\n", __func__, rv);
-
-		if (rv == 0) {
-			/* new version found, take into account its revdeps */
-			xbps_array_t rdeps;
-
-			rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
-			for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
-				const char *curpkgver;
-				char *curpkgn;
-
-				xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
-				curpkgn = xbps_pkg_name(curpkgver);
-				assert(curpkgn);
-				rv = trans_find_pkg(xhp, curpkgn, false, false);
-				free(curpkgn);
-				if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
-					return rv;
-
-				rv = 0;
-			}
-
-			return rv;
-		} else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
-			/* no update */
-			;
-		} else {
-			/* error */
-			return rv;
-		}
+	rv = xbps_autoupdate(xhp);
+	switch (rv) {
+	case 1:
+		/* xbps needs to be updated, don't add any other package */
+		return 0;
+	case -1:
+		/* error */
+		return EINVAL;
+	default:
+		break;
 	}
 
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
@@ -319,12 +344,26 @@ int
 xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 {
 	xbps_array_t rdeps;
+	int rv;
+
+	rv = xbps_autoupdate(xhp);
+	xbps_dbg_printf(xhp, "%s: xbps_autoupdate %d\n", __func__, rv);
+	switch (rv) {
+	case 1:
+		/* xbps needs to be updated, don't add any other package */
+		return 0;
+	case -1:
+		/* error */
+		return EINVAL;
+	default:
+		/* no update */
+		break;
+	}
 
 	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
 		const char *curpkgver;
 		char *curpkgn;
-		int rv;
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
 		curpkgn = xbps_pkg_name(curpkgver);
@@ -342,12 +381,25 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 			     bool reinstall)
 {
 	xbps_array_t rdeps;
+	int rv;
+
+	rv = xbps_autoupdate(xhp);
+	switch (rv) {
+	case 1:
+		/* xbps needs to be updated, don't add any other package */
+		return 0;
+	case -1:
+		/* error */
+		return EINVAL;
+	default:
+		/* no update */
+		break;
+	}
 
 	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
 		const char *curpkgver;
 		char *curpkgn;
-		int rv;
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
 		curpkgn = xbps_pkg_name(curpkgver);
