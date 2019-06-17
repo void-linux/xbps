@@ -73,6 +73,26 @@ and optionally:
 only the static binaries work correctly, do not forget to set `--enable-static`
 option in the `configure` script.
 
+### Building and testing for dummies
+
+```
+$ git clone https://github.com/void-linux/xbps
+$ cd xbps
+$ ./configure --enable-rpath --prefix=/usr --sysconfdir=/etc
+$ make -j$(nproc)
+$ make DESTDIR=~/xbps-git install clean
+$ export PATH=~/xbps-git/usr/bin:$PATH
+$ xbps-query -V
+...
+```
+
+Thanks to `--enable-rpath` you can install it anywhere and it will still use
+the libxbps shared library at `$ORIGIN/../lib`, that means that if xbps
+is installed to `$HOME/xbps-git/usr`, the executables will use
+`$HOME/xbps-git/usr/lib` to locate `libxbps`.
+
+Happy testing!
+
 ### Tests
 
 To run the test suite make sure *kyua* is installed and run the following:
