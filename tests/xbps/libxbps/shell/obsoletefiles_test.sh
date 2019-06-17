@@ -35,7 +35,7 @@ reinstall_obsoletes_body() {
 	atf_check_equal $? 0
 
 	cd ..
-	xbps-install -r root -C null.conf --repository=$PWD/some_repo -yvf A-1.0_1
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -dyvf A-1.0_1
 	atf_check_equal $? 0
 
 	rv=0
@@ -44,7 +44,7 @@ reinstall_obsoletes_body() {
 	fi
 	for f in usr/bin/foo usr/bin/blah; do
 		if [ -f root/$f ]; then
-			rv=1
+			rv=2
 		fi
 	done
 	atf_check_equal $rv 0
