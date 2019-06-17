@@ -9,15 +9,39 @@ xbps-0.54 (???):
    its reverse dependencies. [xtraeme]
 
  * xbps now supports multiple compression formats for repodata
-   and binary packages, including: gzip, bzip2, lz4, xz and xstd.
-   [xtraeme]
+   and binary packages, including: gzip, bzip2, lz4, xz and xstd. [xtraeme]
 
- * The default format for repository data has been switched to ztd.
-   The default format for binary packages hasn't changed, defaults to xz.
-   [xtraeme]
+ * The default format for repository data has been switched to ztd. [xtraeme]
 
- * xbps-rindex(1): added `--compression` option, to mimic xbps-create(1).
-   [xtraeme]
+ * xbps-create(1): new `--compression` formats: lz4 and zstd, defaults to xz. [xtraeme]
+
+ * xbps-rindex(1): added `--compression` option, to mimic xbps-create(1). [xtraeme]
+
+ * xbps-query(1): `--fulldeptree [-R] -x` has been fixed and improved vastly,
+   50x faster in the worst scenario. This fixes the infamous `kde5` issue. [xtraeme]
+
+ * xbps-query(1): `[-R] -X` (revdeps mode) has been fixed to fail
+   gracefully if a dependency cannot be resolved. [xtraeme]
+
+ * xbps-query(1): `[-R] -X` (revdeps mode) is now way faster.
+   50x faster in the worst scenario. [xtraeme]
+
+ * xbps-remove(1): `-R` (recursive mode) is now way faster. [xtraeme]
+
+ * xbps-remove(1): `-O` (orphans mode) is now way faster. [xtraeme]
+
+ * xbps-fetch(1): new utility replacing "xbps-uhelper fetch". [xtraeme]
+
+ * xbps-digest(1): new utility replacing "xbps-uhelper digest". [xtraeme]
+
+ * xbps-alternatives(1): multiple improvements, all known bugs were fixed. [xtraeme]
+
+ * Sync with portableproplib-0.6.8. [xtraeme]
+
+ * Fixed building with alternative C compilers: pcc and tcc. [xtraeme]
+
+ * configure: added `enable-rpath` to set rpath in executables to `$ORIGIN/../lib`,
+   which makes xbps relocatable. [xtraeme]
 
 xbps-0.53 (2018-07-30):
 
