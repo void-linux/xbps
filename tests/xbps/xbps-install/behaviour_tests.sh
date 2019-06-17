@@ -123,6 +123,6 @@ update_extract_dir_body() {
 atf_init_test_cases() {
 	atf_add_test_case install_existent
 	atf_add_test_case update_existent
-	# atf_add_test_case directory_to_symlink
+	atf_add_test_case directory_to_symlink
 	atf_add_test_case update_extract_dir
 }
