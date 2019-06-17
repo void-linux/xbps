@@ -46,7 +46,7 @@ xbps-0.54 (???):
 
  * libxbps/fetch: Add happy eyeballs (RFC6555/RFC8305).
    xbps now to connects to ipv6 and ipv4 addresses in a short interval and use the
-   first established connection.
+   first established connection. [duncaen]
 
  * xbps now has a new configuration option `ignorepkg`, which allows to ignore
    specified packages from being installed as dependency. [duncaen]
@@ -57,9 +57,9 @@ xbps-0.54 (???):
    are marked as config files.It will always extracts the configuration file
    with the `.new-$pkgver` suffix instead. [duncaen]
 
- * xbps-checkvers(1): new `--manual` flag to only check specified templates.
+ * xbps-checkvers(1): new `--manual` flag to only check specified templates. [duncaen]
 
- * xbps-checkvers(1): new `--format` flag to change the output format.
+ * xbps-checkvers(1): new `--format` flag to change the output format. [duncaen]
 
 xbps-0.53 (2018-07-30):
 
