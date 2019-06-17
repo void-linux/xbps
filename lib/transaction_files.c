@@ -126,21 +126,21 @@ addItem(const char *file)
 }
 
 static bool
-can_delete_directory(const char *path, size_t len, size_t max)
+can_delete_directory(struct xbps_handle *xhp, const char *file, size_t len, size_t max)
 {
-	char file[PATH_MAX] = ".";
 	struct item *item;
 	size_t rmcount = 0, fcount = 0;
 	DIR *dp;
 
-	xbps_strlcpy(file+1, path, sizeof (file)-1);
-
 	dp = opendir(file);
 	if (dp == NULL) {
-		if (errno == ENOENT)
+		xbps_dbg_printf(xhp, "[files] "
+			"%s wtf: %s\n", file, strerror(errno));
+		if (errno == ENOENT) {
 			return true;
-		else
+		} else {
 			return false;
+		}
 	}
 
 	/*
@@ -150,7 +150,7 @@ can_delete_directory(const char *path, size_t len, size_t max)
 	 */
 	for (size_t i = 0; i < max; i++) {
 		item = items[i];
-		if (strncmp(item->file, path, len) == 0) {
+		if (strncmp(item->file, file, len) == 0) {
 			if (!item->deleted) {
 				closedir(dp);
 				return false;
@@ -168,6 +168,10 @@ can_delete_directory(const char *path, size_t len, size_t max)
 
 	/* ignore '.' and '..' */
 	fcount -= 2;
+
+	xbps_dbg_printf(xhp, "[files] "
+		"transaction deletes %lu out of %lu files in: %s\n",
+	   rmcount, fcount, file);
 
 	return fcount <= rmcount;
 }
@@ -233,23 +237,26 @@ collect_obsoletes(struct xbps_handle *xhp)
 			if (access(item->file, F_OK) == 0) {
 				xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 					rv, item->new.pkgver,
-					"%s: [trans] file `%s': %s",
-					pkgname, item->file, strerror(EEXIST));
+					"%s: [files] file `%s': %s",
+					item->new.pkgver, item->file, strerror(EEXIST));
 				rv = EEXIST;
 				break;
 			}
 #endif
 			continue;
-		} else if (item->old.type == TYPE_DIR && item->new.type != TYPE_DIR) {
+		} else if (item->old.type == TYPE_DIR &&
+		    item->new.type != TYPE_DIR && item->new.type != 0) {
 			/*
 			 * Directory replaced by a file or symlink.
 			 * We MUST be able to delete the directory.
 			 */
-			if (!can_delete_directory(item->file, item->len, i)) {
+			xbps_dbg_printf(xhp, "[files] "
+				"%s changed from directory to file\n", item->file);
+			if (!can_delete_directory(xhp, item->file, item->len, i)) {
 				xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 					rv, item->old.pkgver,
-					"%s: [trans] Directory `%s' can not be deleted",
-					item->old.pkgname, item->file);
+					"%s: [files] Directory `%s' can not be deleted",
+					item->old.pkgver, item->file);
 				return ENOTEMPTY;
 			}
 		} else if (item->new.type != item->old.type) {
@@ -312,6 +319,9 @@ collect_obsoletes(struct xbps_handle *xhp)
 		}
 		assert(pkgname);
 
+		xbps_dbg_printf(xhp, "[obsoletes] "
+			"%s\n", item->file);
+
 		/*
 		 * Mark file as being deleted, this is used when
 		 * checking if a directory can be deleted.
@@ -373,7 +383,7 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			 * Multiple packages removing the same file.
 			 * Shouldn't happen, but its not fatal.
 			 */
-			xbps_dbg_printf(xhp, "%s: [trans] file `%s' already removed"
+			xbps_dbg_printf(xhp, "%s: [files] file `%s' already removed"
 				"by `%s'\n", pkgname, file, item->old.pkgname);
 			return 0;
 		}
@@ -398,7 +408,7 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			 */
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 				rv, pkgver,
-				"%s: [trans] file already installed by package `%s': %s",
+				"%s: [files] file already installed by package `%s': %s",
 				pkgver, item->new.pkgname, pkgname, file);
 			return EEXIST;
 		}
@@ -429,10 +439,10 @@ add:
 		 */
 		if (strcmp(item->new.pkgname, item->old.pkgname) != 0) {
 			if (remove) {
-				xbps_dbg_printf(xhp, "%s: [trans] file `%s' moved to"
+				xbps_dbg_printf(xhp, "%s: [files] file `%s' moved to"
 				    " package `%s'\n", pkgname, file, item->new.pkgname);
 			} else {
-				xbps_dbg_printf(xhp, "%s: [trans] file `%s' moved from"
+				xbps_dbg_printf(xhp, "%s: [files] file `%s' moved from"
 				    " package `%s'\n", pkgname, file, item->new.pkgname);
 			}
 		}
@@ -544,9 +554,11 @@ add_from_archive(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 	/*
 	 * Enable support for tar format and gzip/bzip2/lzma compression methods.
 	 */
-	archive_read_support_compression_gzip(ar);
-	archive_read_support_compression_bzip2(ar);
-	archive_read_support_compression_xz(ar);
+	archive_read_support_filter_gzip(ar);
+	archive_read_support_filter_bzip2(ar);
+	archive_read_support_filter_xz(ar);
+	archive_read_support_filter_lz4(ar);
+	archive_read_support_filter_zstd(ar);
 	archive_read_support_format_tar(ar);
 
 	pkg_fd = open(bpkg, O_RDONLY|O_CLOEXEC);
@@ -554,7 +566,7 @@ add_from_archive(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 		    rv, pkgver,
-		    "%s: [trans] failed to open binary package `%s': %s",
+		    "%s: [files] failed to open binary package `%s': %s",
 		    pkgver, bpkg, strerror(rv));
 		goto out;
 	}
@@ -562,7 +574,7 @@ add_from_archive(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 		    rv, pkgver,
-		    "%s: [trans] failed to fstat binary package `%s': %s",
+		    "%s: [files] failed to fstat binary package `%s': %s",
 		    pkgver, bpkg, strerror(rv));
 		goto out;
 	}
@@ -570,7 +582,7 @@ add_from_archive(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 		rv = archive_errno(ar);
 		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 		    rv, pkgver,
-		    "%s: [trans] failed to read binary package `%s': %s",
+		    "%s: [files] failed to read binary package `%s': %s",
 		    pkgver, bpkg, strerror(rv));
 		goto out;
 	}
@@ -728,7 +740,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	if (chdir(xhp->rootdir) == -1) {
 		rv = errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL, rv, xhp->rootdir,
-		    "[trans] failed to chdir to rootdir `%s': %s",
+		    "[files] failed to chdir to rootdir `%s': %s",
 		    xhp->rootdir, strerror(errno));
 	}
 
