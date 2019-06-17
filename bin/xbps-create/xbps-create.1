@@ -1,4 +1,4 @@
-.Dd June 12, 2019
+.Dd June 17, 2019
 .Dt XBPS-CREATE 1
 .Sh NAME
 .Nm xbps-create
@@ -71,7 +71,7 @@ A list of tags (categories) this package should be part of, separated by whitesp
 Show the version information.
 .It Fl -build-options Ar string
 A string containing the build options used in package.
-.It Fl -compression Ar gzip | bzip2 | xz
+.It Fl -compression Ar none | gzip | bzip2 | xz | lz4 | zstd
 Set the binary package compression format. If unset, defaults to
 .Ar xz .
 .It Fl -shlib-provides Ar list
