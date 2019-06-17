@@ -1,3 +1,24 @@
+xbps-0.54 (???):
+
+ * xbps now auto-updates reverse dependencies of target pkgs, while
+   installing or updating any of them, without the need to perform a
+   system update (xbps-install -u). [xtraeme]
+
+ * xbps now auto-updates itself when there's a new version available
+   in repos while installing or updating any pkg, as well as
+   its reverse dependencies. [xtraeme]
+
+ * xbps now supports multiple compression formats for repodata
+   and binary packages, including: gzip, bzip2, lz4, xz and xstd.
+   [xtraeme]
+
+ * The default format for repository data has been switched to ztd.
+   The default format for binary packages hasn't changed, defaults to xz.
+   [xtraeme]
+
+ * xbps-rindex(1): added `--compression` option, to mimic xbps-create(1).
+   [xtraeme]
+
 xbps-0.53 (2018-07-30):
 
  * xbps-rindex(1): fix possible stagedata deadlock. (@Gottox)
