@@ -24,10 +24,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <string.h>
-#include <stdlib.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "xbps_api_impl.h"
 
@@ -41,17 +42,26 @@ enum type {
 struct item {
 	struct item *hnext;
 	const char *file;
+	size_t len;
 	struct {
+		const char *pkgname;
 		const char *pkgver;
+		const char *sha256;
 		uint64_t size;
 		enum type type;
+		unsigned int index;
 	} old, new;
+	bool deleted;
 };
 
 #define ITHSIZE	1024
 #define ITHMASK	(ITHSIZE - 1)
 
 static struct item *ItemHash[ITHSIZE];
+
+static struct item **items;
+static size_t itemsidx = 0;
+static size_t itemssz = 0;
 
 static int
 itemhash(const char *file)
@@ -74,8 +84,8 @@ lookupItem(const char *file)
 
 	assert(file);
 
-	for (item = ItemHash[itemhash(file)]; item; item = item->hnext) {
-		if (strcmp(file, item->file) == 0)
+	for (item = ItemHash[itemhash(file+1)]; item; item = item->hnext) {
+		if (strcmp(file, item->file+1) == 0)
 			return item;
 	}
 	return NULL;
@@ -86,22 +96,253 @@ addItem(const char *file)
 {
 	struct item **itemp;
 	struct item *item = calloc(sizeof(*item), 1);
+	if (item == NULL)
+		return NULL;
 
 	assert(file);
 	assert(item);
 
-	itemp = &ItemHash[itemhash(file)];
+	if (itemsidx+1 >= itemssz) {
+		itemssz = itemssz ? itemssz*2 : 64;
+		items = realloc(items, itemssz*sizeof (struct item *));
+		if (items == NULL) {
+			free(item);
+			return NULL;
+		}
+	}
+	items[itemsidx++] = item;
+
+	itemp = &ItemHash[itemhash(file+1)];
 	item->hnext = *itemp;
-	item->file = strdup(file);
+	if ((item->file = xbps_xasprintf(".%s", file)) == NULL) {
+		free(item);
+		return NULL;
+	}
+	item->len = strlen(file);
 	assert(item->file);
 	*itemp = item;
 
 	return item;
 }
 
+static bool
+can_delete_directory(const char *path, size_t len, size_t max)
+{
+	char file[PATH_MAX] = ".";
+	struct item *item;
+	size_t rmcount = 0, fcount = 0;
+	DIR *dp;
+
+	xbps_strlcpy(file+1, path, sizeof (file)-1);
+
+	dp = opendir(file);
+	if (dp == NULL) {
+		if (errno == ENOENT)
+			return true;
+		else
+			return false;
+	}
+
+	/*
+	 * 1. Check if there is tracked directory content,
+	 *    which can't be deleted.
+	 * 2. Count deletable directory content.
+	 */
+	for (size_t i = 0; i < max; i++) {
+		item = items[i];
+		if (strncmp(item->file, path, len) == 0) {
+			if (!item->deleted) {
+				closedir(dp);
+				return false;
+			}
+			rmcount++;
+		}
+	}
+
+	/*
+	 * Check if directory contains more files than we can
+	 * delete.
+	 */
+	while (readdir(dp) != 0)
+		fcount++;
+
+	/* ignore '.' and '..' */
+	fcount -= 2;
+
+	return fcount <= rmcount;
+}
+
+static int
+collect_obsoletes(struct xbps_handle *xhp)
+{
+	/* These are symlinks in Void and must not be removed */
+	const char *basesymlinks[] = {
+		"/bin",
+		"/sbin",
+		"/usr/sbin",
+		"/lib",
+		"/lib32",
+		"/lib64",
+		"/usr/lib32",
+		"/usr/lib64",
+		"/var/run",
+	};
+	xbps_dictionary_t obsd;
+	struct item *item;
+	int rv = 0;
+
+	if (xhp->transd == NULL)
+		return ENOTSUP;
+
+	if (!xbps_dictionary_get_dict(xhp->transd, "obsolete_files", &obsd))
+		return ENOENT;
+
+	/*
+	 * Iterate over all files, longest paths first,
+	 * to check if directory contents of removed
+	 * directories can be deleted.
+	 *
+	 * - Check if a file is obsolete
+	 * - Check if obsolete file can be deleted.
+	 * - Check if directory needs and can be deleted.
+	 */
+	for (size_t i = 0; i < itemsidx; i++) {
+		xbps_array_t a;
+		const char *pkgname;
+		bool alloc = false, found = false;
+
+		item = items[i];
+
+		if (item->new.type == 0 && item->old.type != TYPE_DIR) {
+			/*
+			 * File was removed and is not provided by any
+			 * new package.
+			 * Probably obsolete.
+			 */
+		} else if (item->new.type == TYPE_CONFFILE) {
+			/*
+			 * Ignore conf files.
+			 */
+			continue;
+		} else if (item->old.type == 0) {
+			/* XXX: add this new behaviour? */
+#if 0
+			/*
+			 * Check if new file (untracked until now) exists.
+			 */
+			if (access(item->file, F_OK) == 0) {
+				xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
+					rv, item->new.pkgver,
+					"%s: [trans] file `%s': %s",
+					pkgname, item->file, strerror(EEXIST));
+				rv = EEXIST;
+				break;
+			}
+#endif
+			continue;
+		} else if (item->old.type == TYPE_DIR && item->new.type != TYPE_DIR) {
+			/*
+			 * Directory replaced by a file or symlink.
+			 * We MUST be able to delete the directory.
+			 */
+			if (!can_delete_directory(item->file, item->len, i)) {
+				xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
+					rv, item->old.pkgver,
+					"%s: [trans] Directory `%s' can not be deleted",
+					item->old.pkgname, item->file);
+				return ENOTEMPTY;
+			}
+		} else if (item->new.type != item->old.type) {
+			/*
+			 * File type changed, we have to delete it.
+			 */
+		} else {
+			continue;
+		}
+
+		/*
+		 * Make sure to not remove any symlink of root directory.
+		 */
+		for (uint8_t x = 0; x < __arraycount(basesymlinks); x++) {
+			if (strcmp(item->file+1, basesymlinks[x]) == 0) {
+				found = true;
+				xbps_dbg_printf(xhp, "[obsoletes] ignoring "
+					"%s removal\n", item->file);
+				break;
+			}
+		}
+		if (found)
+			continue;
+
+		/*
+		 * Skip unexisting files and keep files with hash mismatch.
+		 */
+		if (item->old.sha256) {
+			rv = xbps_file_hash_check(item->file, item->old.sha256);
+			switch (rv) {
+			case 0:
+				/* hash matches, we can safely delete and/or overwrite it */
+				break;
+			case ENOENT:
+				/* mark unexisting files as deleted and ignore ENOENT */
+				rv = 0;
+				item->deleted = true;
+				continue;
+			case ERANGE:
+				/* hash mismatch don't delete it */
+				continue;
+			default:
+				break;
+			}
+		}
+
+		/*
+		 * Choose which package removes the obsolete files,
+		 * based which packages is installed/unpacked first.
+		 * This is necessary to not delete files
+		 * after it was installed by another package.
+		 */
+		if (item->old.pkgname && item->new.pkgname) {
+			pkgname = item->old.index > item->new.index ?
+				item->new.pkgname : item->old.pkgname;
+		} else if (item->old.pkgname) {
+			pkgname = item->old.pkgname;
+		} else {
+			pkgname = item->new.pkgname;
+		}
+		assert(pkgname);
+
+		/*
+		 * Mark file as being deleted, this is used when
+		 * checking if a directory can be deleted.
+		 */
+		item->deleted = true;
+
+		/*
+		 * Add file to the packages `obsolete_files` dict
+		 */
+		if ((a = xbps_dictionary_get(obsd, pkgname)) == NULL) {
+			if (!(a = xbps_array_create()) ||
+				!(xbps_dictionary_set(obsd, pkgname, a)))
+				return ENOMEM;
+			alloc = true;
+		}
+		if (!xbps_array_add_cstring(a, item->file)) {
+			if (alloc)
+				xbps_object_release(a);
+			return ENOMEM;
+		}
+		if (alloc)
+			xbps_object_release(a);
+	}
+
+	return rv;
+}
+
 static int
 collect_file(struct xbps_handle *xhp, const char *file, size_t size,
-		const char *pkgver, enum type type, bool remove)
+		const char *pkgname, const char *pkgver, unsigned int idx,
+		const char *sha256, enum type type, bool remove)
 {
 	struct item *item;
 	int rv = 0;
@@ -110,15 +351,10 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 
 	if ((item = lookupItem(file)) == NULL) {
 		item = addItem(file);
-		if (remove) {
-			item->old.pkgver = pkgver;
-			item->old.type = type;
-			item->old.size = size;
-		} else {
-			item->new.pkgver = pkgver;
-			item->new.type = type;
-			item->new.size = size;
-		}
+		if (item == NULL)
+			return ENOMEM;
+		item->deleted = false;
+		goto add;
 		return 0;
 	}
 
@@ -138,12 +374,10 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			 * Shouldn't happen, but its not fatal.
 			 */
 			xbps_dbg_printf(xhp, "%s: [trans] file `%s' already removed"
-				"by `%s'\n", pkgver, file, item->old.pkgver);
+				"by `%s'\n", pkgname, file, item->old.pkgname);
 			return 0;
 		}
-		item->old.pkgver = pkgver;
-		item->old.type = type;
-		item->old.size = size;
+		goto add;
 	} else {
 		/*
 		 * Multiple packages creating the same directory.
@@ -164,34 +398,44 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			 */
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 				rv, pkgver,
-				"%s: [trans] file installed by package `%s' and `%s': %s",
-				pkgver, item->new.pkgver, pkgver, file);
+				"%s: [trans] file already installed by package `%s': %s",
+				pkgver, item->new.pkgname, pkgname, file);
 			return EEXIST;
 		}
-		item->new.pkgver = pkgver;
-		item->new.type = type;
-		item->new.size = size;
+		goto add;
 	}
 
+	return 0;
+add:
+	if (remove) {
+		item->old.pkgname = strdup(pkgname);
+		item->old.pkgver = strdup(pkgver);
+		item->old.type = type;
+		item->old.size = size;
+		item->old.index = idx;
+		if (sha256)
+			item->old.sha256 = strdup(sha256);
+	} else {
+		item->new.pkgname = strdup(pkgname);
+		item->new.pkgver = strdup(pkgver);
+		item->new.type = type;
+		item->new.size = size;
+		item->new.index = idx;
+	}
 	if (item->old.type && item->new.type) {
 		/*
 		 * The file was removed by one package
 		 * and installed by another package.
 		 */
-		char *newpkgname, *oldpkgname;
-		newpkgname = xbps_pkg_name(item->new.pkgver);
-		oldpkgname = xbps_pkg_name(item->old.pkgver);
-		if (strcmp(newpkgname, oldpkgname) != 0) {
+		if (strcmp(item->new.pkgname, item->old.pkgname) != 0) {
 			if (remove) {
 				xbps_dbg_printf(xhp, "%s: [trans] file `%s' moved to"
-				    " package `%s'\n", pkgver, file, item->new.pkgver);
+				    " package `%s'\n", pkgname, file, item->new.pkgname);
 			} else {
 				xbps_dbg_printf(xhp, "%s: [trans] file `%s' moved from"
-				    " package `%s'\n", pkgver, file, item->new.pkgver);
+				    " package `%s'\n", pkgname, file, item->new.pkgname);
 			}
 		}
-		free(newpkgname);
-		free(oldpkgname);
 	}
 
 	return 0;
@@ -199,23 +443,26 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 
 static int
 collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
-			const char *pkgver, bool remove)
+			const char *pkgname, const char *pkgver, unsigned int idx,
+			bool remove)
 {
-	struct stat st;
 	xbps_array_t a;
 	xbps_dictionary_t filed;
 	uint64_t size;
 	unsigned int i;
 	int rv = 0;
-	const char *file;
+	const char *file, *sha256 = NULL;
 
 	if ((a = xbps_dictionary_get(d, "files"))) {
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
+			if (remove)
+				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
-			rv = collect_file(xhp, file, size, pkgver, TYPE_FILE, remove);
+			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
+			    TYPE_FILE, remove);
 			if (rv != 0)
 				goto out;
 		}
@@ -226,10 +473,15 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
+			if (remove)
+				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
+#if 0
 			/* XXX: how to handle conf_file size */
 			if (remove && stat(file, &st) != -1 && size != (uint64_t)st.st_size)
 				size = 0;
-			rv = collect_file(xhp, file, size, pkgver, TYPE_FILE, remove);
+#endif
+			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
+			    TYPE_FILE, remove);
 			if (rv != 0)
 				goto out;
 		}
@@ -238,7 +490,8 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
-			rv = collect_file(xhp, file, 0, pkgver,  TYPE_LINK, remove);
+			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
+			    TYPE_LINK, remove);
 			if (rv != 0)
 				goto out;
 		}
@@ -247,7 +500,8 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
-			rv = collect_file(xhp, file, 0, pkgver,  TYPE_DIR, remove);
+			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
+			    TYPE_DIR, remove);
 			if (rv != 0)
 				goto out;
 		}
@@ -258,27 +512,33 @@ out:
 }
 
 static int
-add_from_archive(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
+add_from_archive(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
+		unsigned int idx)
 {
 	xbps_dictionary_t filesd;
 	struct archive *ar = NULL;
 	struct archive_entry *entry;
 	struct stat st;
 	const char *pkgver;
-	char *bpkg;
+	char *bpkg, *pkgname;
 	/* size_t entry_size; */
 	int rv = 0, pkg_fd = -1;
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	assert(pkgver);
 
+	pkgname = xbps_pkg_name(pkgver);
+	assert(pkgname);
+
 	bpkg = xbps_repository_pkg_path(xhp, pkg_repod);
-	if (bpkg == NULL)
-		return errno;
+	if (bpkg == NULL) {
+		rv = errno;
+		goto out;
+	}
 
 	if ((ar = archive_read_new()) == NULL) {
-		free(bpkg);
-		return ENOMEM;
+		rv = errno;
+		goto out;
 	}
 
 	/*
@@ -330,7 +590,7 @@ add_from_archive(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 				rv = EINVAL;
 				goto out;
 			}
-			rv = collect_files(xhp, filesd, pkgver, false);
+			rv = collect_files(xhp, filesd, pkgname, pkgver, idx, false);
 			break;
 		}
 		archive_read_data_skip(ar);
@@ -341,11 +601,12 @@ out:
 		close(pkg_fd);
 	if (ar)
 		archive_read_finish(ar);
-	if (bpkg)
-		free(bpkg);
+	free(bpkg);
+	free(pkgname);
 	return rv;
 }
 
+#if 0
 bool HIDDEN
 xbps_transaction_is_file_obsolete(struct xbps_handle *xhp, const char *file)
 {
@@ -367,6 +628,15 @@ xbps_transaction_is_file_obsolete(struct xbps_handle *xhp, const char *file)
 	 */
 	return item->new.type == 0 && item->old.type != 0;
 }
+#endif
+
+static int
+pathcmp(const void *l1, const void *l2)
+{
+	const struct item *a = *(const struct item * const*)l1;
+	const struct item *b = *(const struct item * const*)l2;
+	return (a->len < b->len) - (b->len < a->len);
+}
 
 int HIDDEN
 xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
@@ -376,6 +646,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	const char *trans, *pkgver;
 	bool preserve;
 	int rv = 0;
+	unsigned int idx = 0;
 
 	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	if (iter == NULL)
@@ -383,6 +654,13 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		char *pkgname;
+
+		/*
+		 * `idx` is used as package install index, to chose which
+		 * choose the first package which owns or used to own the
+		 * file deletes it.
+		 */
+		idx++;
 
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
 		assert(trans);
@@ -402,7 +680,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 
 		if ((strcmp(trans, "install") == 0) ||
 		    (strcmp(trans, "update") == 0)) {
-			rv = add_from_archive(xhp, obj);
+			rv = add_from_archive(xhp, obj, idx);
 			if (rv != 0) {
 				free(pkgname);
 				break;
@@ -422,6 +700,9 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			const char *oldpkgver;
 			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &oldpkgver);
 			xbps_dictionary_get_bool(obj, "preserve", &preserve);
+			/*
+			 * Skip files from packages with `preserve`.
+			 */
 			if (preserve) {
 				free(pkgname);
 				continue;
@@ -432,7 +713,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 				continue;
 			}
 			assert(oldpkgver);
-			rv = collect_files(xhp, filesd, oldpkgver, true);
+			rv = collect_files(xhp, filesd, pkgname, pkgver, idx, true);
 			if (rv != 0) {
 				free(pkgname);
 				break;
@@ -442,5 +723,16 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	}
 	xbps_object_iterator_reset(iter);
 
-	return rv;
+	qsort(items, itemsidx, sizeof (struct item *), pathcmp);
+
+	if (chdir(xhp->rootdir) == -1) {
+		rv = errno;
+		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL, rv, xhp->rootdir,
+		    "[trans] failed to chdir to rootdir `%s': %s",
+		    xhp->rootdir, strerror(errno));
+	}
+
+	if (rv != 0)
+		return rv;
+	return collect_obsoletes(xhp);
 }
