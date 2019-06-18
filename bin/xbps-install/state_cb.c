@@ -48,7 +48,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 	switch (xscd->state) {
 	/* notifications */
 	case XBPS_STATE_TRANS_DOWNLOAD:
-		printf("\n[*] Downloading binary packages\n");
+		printf("\n[*] Downloading packages\n");
 		break;
 	case XBPS_STATE_TRANS_VERIFY:
 		printf("\n[*] Verifying package integrity\n");
@@ -57,7 +57,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		printf("\n[*] Collecting package files\n");
 		break;
 	case XBPS_STATE_TRANS_RUN:
-		printf("\n[*] Running transaction tasks\n");
+		printf("\n[*] Unpacking packages\n");
 		break;
 	case XBPS_STATE_TRANS_CONFIGURE:
 		printf("\n[*] Configuring unpacked packages\n");
