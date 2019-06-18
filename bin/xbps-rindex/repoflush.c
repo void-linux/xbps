@@ -115,14 +115,14 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	fsync(repofd);
 #endif
 	if (fchmod(repofd, 0664) == -1) {
-		unlink(repofile);
 		close(repofd);
+		unlink(tname);
 		result = false;
 		goto out;
 	}
 	close(repofd);
 	if (rename(tname, repofile) == -1) {
-		unlink(repofile);
+		unlink(tname);
 		result = false;
 		goto out;
 	}
