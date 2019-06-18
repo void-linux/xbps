@@ -219,7 +219,7 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len)
 				p++;
 				if (*p == '(') {
 					FILE *fp;
-					char c;
+					int c;
 					for (ref = ++p; *p && p < str+len && *p != ')'; p++)
 						;
 					if (*p != ')')
