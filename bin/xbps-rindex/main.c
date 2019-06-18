@@ -43,7 +43,7 @@ usage(bool fail)
 	    " -v --verbose                      Verbose messages\n"
 	    " -V --version                      Show XBPS version\n"
 	    " -C --hashcheck                    Consider file hashes for cleaning up packages\n"
-	    "    --compression <fmt>            Compression format: none, gzip, bzip2, lz4, zstd (default), xz.\n"
+	    "    --compression <fmt>            Compression format: none, gzip (default), bzip2, lz4, zstd, xz.\n"
 	    "    --privkey <key>                Path to the private key for signing\n"
 	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
 	    "MODE\n"
