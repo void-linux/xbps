@@ -270,8 +270,6 @@ xbps_autoupdate(struct xbps_handle *xhp)
 			xbps_dbg_printf(xhp, "%s: trans_find_pkg revdep %s: %d\n", __func__, curpkgver, rv);
 			if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
 				return -1;
-
-			rv = 0;
 		}
 		return 1;
 	} else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
