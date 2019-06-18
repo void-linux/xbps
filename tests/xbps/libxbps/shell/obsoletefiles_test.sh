@@ -458,6 +458,31 @@ nonempty_dir_abort_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case conflicting_files_in_transaction
+
+conflicting_files_in_transaction_head() {
+	atf_set "descr" "Test that obsolete files are removed on reinstall"
+}
+
+conflicting_files_in_transaction_body() {
+	mkdir some_repo root
+	mkdir -p pkg_A pkg_B
+	touch pkg_A/foo pkg_B/foo
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -ydv A B
+	# EEXIST
+	atf_check_equal $? 17
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
@@ -469,4 +494,5 @@ atf_init_test_cases() {
 	atf_add_test_case update_extract_dir
 	atf_add_test_case replace_package_same_files
 	atf_add_test_case nonempty_dir_abort
+	atf_add_test_case conflicting_files_in_transaction
 }
