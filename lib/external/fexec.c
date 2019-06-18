@@ -48,7 +48,7 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 	pid_t child;
 	int status;
 
-	child = vfork();
+	child = fork();
 	switch (child) {
 	case 0:
 		/*
