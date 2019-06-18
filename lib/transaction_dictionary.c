@@ -65,7 +65,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	const char *tract, *pkgver, *repo;
 
 	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = dl_pkgcnt = 0;
-	rootdir_free_size = tsize = dlsize = instsize = rmsize = 0;
+	tsize = dlsize = instsize = rmsize = 0;
 
 	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	if (iter == NULL)
