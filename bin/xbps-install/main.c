@@ -243,7 +243,7 @@ main(int argc, char **argv)
 		for (i = optind; i < argc; i++) {
 			rv = update_pkg(&xh, argv[i]);
 			if (npkgs >= 2 && rv == EEXIST) {
-				rv = 0;
+				;
 			} else if (rv != 0) {
 				xbps_end(&xh);
 				exit(rv);
