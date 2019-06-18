@@ -45,7 +45,7 @@ xbps_init(struct xbps_handle *xhp)
 {
 	char *buf;
 	const char *repodir, *native_arch;
-	int rv;
+	int rv = 0;
 	size_t size;
 
 	assert(xhp != NULL);
