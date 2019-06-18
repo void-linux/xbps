@@ -33,7 +33,7 @@ EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
 OBJS = package_configure.o package_config_files.o package_orphans.o
 OBJS += package_remove.o package_find_obsoletes.o package_state.o
 OBJS += package_unpack.o package_register.o package_script.o verifysig.o
-OBJS += package_msg.o pkgdb_conversion.o transaction_shlibs.o
+OBJS += package_msg.o transaction_shlibs.o
 OBJS += transaction_commit.o transaction_package_replace.o
 OBJS += transaction_dictionary.o transaction_ops.o transaction_store.o
 OBJS += transaction_revdeps.o transaction_conflicts.o
@@ -46,7 +46,8 @@ OBJS += rpool.o cb_util.o proplib_wrapper.o
 OBJS += package_alternatives.o
 OBJS += conf.o log.o
 OBJS += $(EXTOBJS) $(COMPAT_OBJS)
-
+# unnecessary unless pkgdb format changes
+# OBJS += pkgdb_conversion.o
 .PHONY: all
 all: libxbps.so libxbps.a
 
