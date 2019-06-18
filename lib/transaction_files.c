@@ -50,6 +50,8 @@ struct item {
 		uint64_t size;
 		enum type type;
 		unsigned int index;
+		bool preserve;
+		bool update;
 	} old, new;
 	bool deleted;
 };
@@ -230,12 +232,18 @@ collect_obsoletes(struct xbps_handle *xhp)
 
 		item = items[i];
 
-		if (item->new.type == 0 && item->old.type != TYPE_DIR) {
+
+		if (item->new.type == 0) {
 			/*
 			 * File was removed and is not provided by any
 			 * new package.
 			 * Probably obsolete.
 			 */
+			if (item->old.preserve && item->old.update) {
+				xbps_dbg_printf(xhp, "[files] %s: skipping `preserve` %s: %s\n",
+				    item->old.pkgver, typestr(item->old.type), item->file);
+				continue;
+			}
 		} else if (item->new.type == TYPE_CONFFILE) {
 			/*
 			 * Ignore conf files.
@@ -363,7 +371,8 @@ collect_obsoletes(struct xbps_handle *xhp)
 static int
 collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 		const char *pkgname, const char *pkgver, unsigned int idx,
-		const char *sha256, enum type type, bool remove)
+		const char *sha256, enum type type, bool update, bool preserve,
+		bool remove)
 {
 	struct item *item;
 
@@ -395,6 +404,22 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			xbps_dbg_printf(xhp, "[files] %s: file already removed"
 			    " by package `%s': %s\n", pkgver, item->old.pkgver, file);
 
+			/*
+			 * Check if `preserve` is violated.
+			 */
+			if (item->old.preserve && !preserve) {
+				xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
+				    EPERM, item->old.pkgver,
+				    "%s: preserved file `%s' removed by %s.",
+				    item->old.pkgver, file, pkgver);
+				return EPERM;
+			} else if (preserve && !item->old.preserve) {
+				xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
+				    EPERM, pkgver,
+				    "%s: preserved file `%s' removed by %s.",
+				    pkgver, file, item->old.pkgver);
+				return EPERM;
+			}
 			return 0;
 		}
 		goto add;
@@ -433,6 +458,8 @@ add:
 		item->old.type = type;
 		item->old.size = size;
 		item->old.index = idx;
+		item->old.preserve = preserve;
+		item->old.update = update;
 		if (sha256)
 			item->old.sha256 = strdup(sha256);
 	} else {
@@ -441,6 +468,8 @@ add:
 		item->new.type = type;
 		item->new.size = size;
 		item->new.index = idx;
+		item->new.preserve = preserve;
+		item->new.update = update;
 	}
 	if (item->old.type && item->new.type) {
 		/*
@@ -466,7 +495,7 @@ add:
 static int
 collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			const char *pkgname, const char *pkgver, unsigned int idx,
-			bool remove)
+			bool update, bool preserve, bool remove)
 {
 	xbps_array_t a;
 	xbps_dictionary_t filed;
@@ -484,7 +513,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
-			    TYPE_FILE, remove);
+			    TYPE_FILE, update, preserve, remove);
 			if (rv != 0)
 				goto out;
 		}
@@ -503,7 +532,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 				size = 0;
 #endif
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
-			    TYPE_FILE, remove);
+			    TYPE_FILE, update, preserve, remove);
 			if (rv != 0)
 				goto out;
 		}
@@ -513,7 +542,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
-			    TYPE_LINK, remove);
+			    TYPE_LINK, update, preserve, remove);
 			if (rv != 0)
 				goto out;
 		}
@@ -523,7 +552,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
-			    TYPE_DIR, remove);
+			    TYPE_DIR, update, preserve, remove);
 			if (rv != 0)
 				goto out;
 		}
@@ -535,7 +564,7 @@ out:
 
 static int
 collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
-		unsigned int idx)
+		unsigned int idx, bool update)
 {
 	xbps_dictionary_t filesd;
 	struct archive *ar = NULL;
@@ -614,7 +643,8 @@ collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 				rv = EINVAL;
 				goto out;
 			}
-			rv = collect_files(xhp, filesd, pkgname, pkgver, idx, false);
+			rv = collect_files(xhp, filesd, pkgname, pkgver, idx,
+			    update, false, false);
 			goto out;
 		}
 		archive_read_data_skip(ar);
@@ -653,7 +683,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		return EINVAL;
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-
+		bool update = false;
 		/*
 		 * `idx` is used as package install index, to chose which
 		 * choose the first package which owns or used to own the
@@ -674,12 +704,12 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
 
+		update = strcmp(trans, "update") == 0;
 
-		if ((strcmp(trans, "install") == 0) ||
-		    (strcmp(trans, "update") == 0)) {
+		if (update || (strcmp(trans, "install") == 0)) {
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES, 0, pkgver,
 			    "%s: collecting files...", pkgver);
-			rv = collect_binpkg_files(xhp, obj, idx);
+			rv = collect_binpkg_files(xhp, obj, idx, update);
 			if (rv != 0)
 				goto out;
 		}
@@ -711,7 +741,8 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			assert(oldpkgver);
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES, 0, oldpkgver,
 			    "%s: collecting files...", oldpkgver);
-			rv = collect_files(xhp, filesd, pkgname, pkgver, idx, preserve, true);
+			rv = collect_files(xhp, filesd, pkgname, pkgver, idx,
+			    update, preserve, true);
 			if (rv != 0)
 				goto out;
 		}
