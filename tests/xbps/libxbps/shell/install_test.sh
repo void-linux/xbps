@@ -345,6 +345,7 @@ update_file_timestamps_head() {
 update_file_timestamps_body() {
 	mkdir -p repo pkg_A/usr/include/gsm
 	echo 123456789 > pkg_A/usr/include/gsm/gsm.h
+	touch -mt 197001010000.00 pkg_A/usr/include/gsm/gsm.h
 
 	cd repo
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
@@ -359,7 +360,6 @@ update_file_timestamps_body() {
 
 	atf_check_equal "$expected" "$result"
 
-	sleep 1
 	cd repo
 	touch -f pkg_A/usr/include/gsm/gsm.h
 	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
@@ -420,6 +420,8 @@ update_move_file_body() {
 	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
 	echo 987654321 > pkg_A/usr/bin/newgrp
 	ln -s /usr/bin/newgrp pkg_B/usr/bin/sg
+	touch -mt 197001010000.00 pkg_A/usr/bin/newgrp
+	touch -mt 197001010000.00 pkg_B/usr/bin/sg
 
 	cd repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
@@ -430,11 +432,11 @@ update_move_file_body() {
 	xbps-rindex -d -a repo/*.xbps
 	atf_check_equal $? 0
 	xbps-install -r root --repository=repo -yvd A B
-	sleep 1
 	cd repo
 	rm ../pkg_B/usr/bin/sg
 	rm ../pkg_A/usr/bin/newgrp
 	echo 123456789 > ../pkg_A/usr/bin/sg
+	touch -mt 197001010000.00 ../pkg_A/usr/bin/sg
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B
