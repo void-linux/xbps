@@ -360,7 +360,7 @@ static void
 rb_tree_insert_rebalance(struct rb_tree *rbt, struct rb_node *self)
 {
 	struct rb_node * father = RB_FATHER(self);
-	struct rb_node * grandpa = RB_FATHER(father);
+	struct rb_node * grandpa;
 	struct rb_node * uncle;
 	unsigned int which;
 	unsigned int other;
