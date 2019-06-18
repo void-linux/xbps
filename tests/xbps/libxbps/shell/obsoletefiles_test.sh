@@ -403,7 +403,7 @@ replace_package_same_files_body() {
 atf_test_case nonempty_dir_abort
 
 nonempty_dir_abort_head() {
-	atf_set "descr" "Abort transaction if a directory replaced by a file."
+	atf_set "descr" "Abort transaction if a directory replaced by a file"
 }
 
 nonempty_dir_abort_body() {
@@ -483,6 +483,89 @@ conflicting_files_in_transaction_body() {
 	atf_check_equal $? 17
 }
 
+atf_test_case obsolete_dir
+
+obsolete_dir_head() {
+	atf_set "descr" "Obsolete directories get removed"
+}
+
+obsolete_dir_body() {
+	mkdir repo root
+	mkdir -p pkg_A/foo/bar/
+	ln -s usr/bin pkg_A/bin
+	touch pkg_A/foo/bar/lol
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A
+	atf_check_equal $? 0
+
+	cd repo
+	rm -f *.xbps
+	rm -rf ../pkg_A/foo
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu
+	atf_check_equal $? 0
+
+	rv=0
+	[ -d root/foo/bar ] && rv=2
+	[ -d root/foo ] && rv=3
+	atf_check_equal "$rv" 0
+}
+
+atf_test_case base_symlinks
+
+base_symlinks_head() {
+	atf_set "descr" "Base symlinks are not removed"
+}
+
+base_symlinks_body() {
+	mkdir repo root
+	mkdir -p pkg_A/usr/bin
+	touch >pkg_A/usr/bin/foo
+	ln -s usr/bin pkg_A/bin
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A
+	atf_check_equal $? 0
+
+	cd repo
+	rm -f *.xbps
+	rm -f ../pkg_A/bin
+	rm -rf ../pkg_A/usr
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu
+	atf_check_equal $? 0
+
+	rv=0
+	[ -d root/usr/bin/foo ] && rv=2
+	[ -d root/usr/bin ] && rv=3
+	[ -d root/usr ] && rv=4
+	[ -h root/bin ] || rv=5
+	atf_check_equal "$rv" 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
@@ -495,4 +578,6 @@ atf_init_test_cases() {
 	atf_add_test_case replace_package_same_files
 	atf_add_test_case nonempty_dir_abort
 	atf_add_test_case conflicting_files_in_transaction
+	atf_add_test_case obsolete_dir
+	atf_add_test_case base_symlinks
 }
