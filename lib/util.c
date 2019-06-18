@@ -545,6 +545,7 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 		if (p == NULL) {
 			/* dangling symlink, use target */
 			free(rootdir);
+			free(lnk);
 			return strdup(tgt);
 		}
 		if (strcmp(rootdir, "/") == 0) {
@@ -568,6 +569,7 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 			assert(p1);
 			res = xbps_sanitize_path(p1);
 			free(p1);
+			free(p);
 		} else {
 			p1 = strdup(dname + strlen(rootdir));
 			assert(p1);
