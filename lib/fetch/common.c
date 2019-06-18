@@ -585,6 +585,7 @@ wait:
 		if (!attempts) {
 error:
 			netdb_seterr(EAI_FAIL);
+			free(pfd);
 			return -1;
 		}
 		for (i = 0; i < attempts; i++) {
