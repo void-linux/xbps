@@ -617,6 +617,63 @@ remove_current_provider_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case respect_current_provider
+
+respect_current_provider_head() {
+	atf_set "descr" "xbps-alternatives: respecting current provider"
+}
+respect_current_provider_body() {
+	mkdir -p repo pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/fileA pkg_B/usr/bin/fileB
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileA" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileB" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	# A is the current provider now
+	xbps-install -r root --repository=repo -ydv A B
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver B)
+	atf_check_equal $out B-1.1_1
+
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal $out A-1.1_1
+
+	# B is now the current provider
+	xbps-alternatives -r root -s B
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n A-1.2_1 -s "A pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileA" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	# A is updated and is assigned to be the current provider incorrectly!
+	xbps-install -r root --repository=repo -yud
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver B)
+	atf_check_equal $out B-1.1_1
+
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal $out A-1.2_1
+
+	lnk=$(readlink -f root/usr/bin/file)
+	rv=1
+	if [ "$lnk" = "$PWD/root/usr/bin/fileB" ]; then
+		rv=0
+	fi
+	echo "lnk: $lnk"
+	atf_check_equal $rv 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case register_one
 	atf_add_test_case register_one_dangling
@@ -634,4 +691,5 @@ atf_init_test_cases() {
 	atf_add_test_case more_entries_update
 	atf_add_test_case useless_switch
 	atf_add_test_case remove_current_provider
+	atf_add_test_case respect_current_provider
 }

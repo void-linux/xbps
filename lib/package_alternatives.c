@@ -345,8 +345,9 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			continue;
 
 		xbps_array_get_cstring_nocopy(array, 0, &first);
-		if ((current = (strcmp(pkgname, first) == 0))) {
+		if (strcmp(pkgname, first) == 0) {
 			/* this pkg is the current alternative for this group */
+			current = true;
 			rv = remove_symlinks(xhp,
 				xbps_dictionary_get(pkg_alternatives, keyname),
 				keyname);
@@ -354,9 +355,9 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 				break;
 		}
 
-		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_REMOVED, 0, NULL,
-		    "%s: unregistered '%s' alternatives group", pkgver, keyname);
 		if (!update) {
+			xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_REMOVED, 0, NULL,
+			    "%s: unregistered '%s' alternatives group", pkgver, keyname);
 			xbps_remove_string_from_array(array, pkgname);
 			xbps_array_get_cstring_nocopy(array, 0, &first);
 		}
@@ -366,24 +367,20 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			continue;
 		}
 
-		if (!update && !current)
+		if (update || !current)
 			continue;
 
-		if (current) {
-			/* get the new alternative group package */
-			curpkgd = xbps_pkgdb_get_pkg(xhp, first);
-			assert(curpkgd);
-		}
-
+		/* get the new alternative group package */
+		curpkgd = xbps_pkgdb_get_pkg(xhp, first);
+		assert(curpkgd);
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_SWITCHED, 0, NULL,
-			"Switched '%s' alternatives group to '%s'", keyname, first);
+		    "Switched '%s' alternatives group to '%s'", keyname, first);
 		pkg_alternatives = xbps_dictionary_get(curpkgd, "alternatives");
 		rv = create_symlinks(xhp,
 			xbps_dictionary_get(pkg_alternatives, keyname),
 			keyname);
 		if (rv != 0)
 			break;
-
 	}
 	xbps_object_release(allkeys);
 	free(pkgname);
@@ -462,7 +459,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array;
 		xbps_object_t keysym;
-		const char *keyname;
+		const char *keyname, *first;
 
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
@@ -472,6 +469,11 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 			array = xbps_array_create();
 		} else {
 			if (xbps_match_string_in_array(array, pkgname)) {
+				xbps_array_get_cstring_nocopy(array, 0, &first);
+				if (strcmp(pkgname, first)) {
+					/* current alternative does not match */
+					continue;
+				}
 				/* already registered, update symlinks */
 				rv = create_symlinks(xhp,
 					xbps_dictionary_get(pkg_alternatives, keyname),
