@@ -160,8 +160,6 @@ check_pkg_alternatives(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_dictionary_t alternatives, pkg_alternatives;
 	int rv = 0;
 
-	pkg_alternatives = arg;
-
 	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
 	if (alternatives == NULL)
 		return 0;
