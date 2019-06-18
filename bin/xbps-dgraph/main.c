@@ -532,10 +532,10 @@ main(int argc, char **argv)
 	FILE *f = NULL;
 	const char *pkg, *confdir, *conf_file, *rootdir;
 	int c, rv, flags = 0;
-	bool opmode, repomode, fulldepgraph, metadata;
+	bool opmode, repomode, fulldepgraph;
 
 	pkg = confdir = conf_file = rootdir = NULL;
-	opmode = repomode = fulldepgraph = metadata = false;
+	opmode = repomode = fulldepgraph = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -562,11 +562,12 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_REPOS_MEMSYNC;
 			break;
 		case 'm':
-			opmode = metadata = true;
+			/* pkgdb metadata mode */
+			opmode = true;
 			break;
 		case 'R':
 			/* enable repository mode */
-			repomode = true;
+			opmode = repomode = true;
 			break;
 		case 'r':
 			/* Set different rootdir. */
@@ -586,9 +587,6 @@ main(int argc, char **argv)
 
 	if (!argc && !opmode) {
 		usage();
-	} else if (!opmode) {
-		/* metadata mode by default */
-		metadata = opmode = true;
 	}
 	pkg = *argv;
 
