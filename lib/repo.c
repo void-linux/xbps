@@ -159,7 +159,6 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		return false;
 	}
 	if ((repo->idx = repo_get_dict(repo)) == NULL) {
-		rv = archive_errno(repo->ar);
 		xbps_dbg_printf(repo->xhp, "[repo] `%s' failed to internalize "
 		    " index on archive, removing file.\n", repofile);
 		/* broken archive, remove it */
