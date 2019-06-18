@@ -426,7 +426,9 @@ update:
 			rv = EXIT_FAILURE;
 			goto ret;
 		}
-		assert((rcv->env = xbps_dictionary_create()));
+		assert(rcv);
+		rcv->env = xbps_dictionary_create();
+		assert(rcv->env);
 		allocenv = true;
 		rcv_get_pkgver(rcv);
 
@@ -442,17 +444,17 @@ update:
 			d = xbps_dictionary_create();
 			xbps_dictionary_set(rcv->cache, fname, d);
 		}
-		assert(xbps_dictionary_set_cstring(d, "pkgname", pkgname));
-		assert(xbps_dictionary_set_cstring(d, "version", version));
-		assert(xbps_dictionary_set_cstring(d, "revision", revision));
+		xbps_dictionary_set_cstring(d, "pkgname", pkgname);
+		xbps_dictionary_set_cstring(d, "version", version);
+		xbps_dictionary_set_cstring(d, "revision", revision);
 
 		reverts = NULL;
 		xbps_dictionary_get_cstring_nocopy(rcv->env, "reverts", &reverts);
 		if (reverts)
-			assert(xbps_dictionary_set_cstring(d, "reverts", reverts));
+			xbps_dictionary_set_cstring(d, "reverts", reverts);
 
 		mtime = xbps_data_create_data(&st.st_mtim, sizeof st.st_mtim);
-		assert(xbps_dictionary_set(d, "mtime", mtime));
+		xbps_dictionary_set(d, "mtime", mtime);
 	}
 
 	check(rcv);
