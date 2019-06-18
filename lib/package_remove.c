@@ -422,7 +422,7 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	/*
 	 * Set package state to "half-removed".
 	 */
-	rv = xbps_set_pkg_state_installed(xhp, pkgver,
+	rv = xbps_set_pkg_state_dictionary(pkgd,
 	     XBPS_PKG_STATE_HALF_REMOVED);
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
