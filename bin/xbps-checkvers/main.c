@@ -568,9 +568,9 @@ rcv_check_version(rcv_t *rcv)
 	if (sz < 0 || (size_t)sz >= sizeof srcver)
 		exit(EXIT_FAILURE);
 
+	repourl = NULL;
 	if (rcv->installed) {
 		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, pkgname);
-		repourl = NULL;
 	} else {
 		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, pkgname);
 		xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "repository", &repourl);
