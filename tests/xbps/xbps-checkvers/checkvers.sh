@@ -80,7 +80,7 @@ EOF
 	cd ..
 	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A 1.0_1 1.1_1"
+	atf_check_equal "$out" "A 1.0_1 1.1_1 A $PWD/some_repo"
 }
 
 atf_test_case srcpkg_newer_with_refs
@@ -109,7 +109,7 @@ EOF
 	cd ..
 	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A 1.0_1 1.1_1"
+	atf_check_equal "$out" "A 1.0_1 1.1_1 A $PWD/some_repo"
 }
 
 atf_test_case srcpkg_newer_with_refs_and_source
@@ -139,7 +139,7 @@ EOF
 	cd ..
 	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A 1.0_1 1.1_1"
+	atf_check_equal "$out" "A 1.0_1 1.1_1 A $PWD/some_repo"
 }
 
 atf_test_case srcpkg_missing_pkgname
@@ -296,7 +296,7 @@ EOF
 	cd ..
 	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages >out
 	atf_check_equal $? 0
-	atf_check_equal "$(cat out)" "foo 1.0_1 1.1_1"
+	atf_check_equal "$(cat out)" "foo 1.0_1 1.1_1 foo $PWD/some_repo"
 }
 
 atf_test_case srcpkg_with_a_ref_and_comment
@@ -322,7 +322,7 @@ EOF
 	cd ..
 	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages >out
 	atf_check_equal $? 0
-	atf_check_equal "$(cat out)" "foo 1.0_1 1.1_1"
+	atf_check_equal "$(cat out)" "foo 1.0_1 1.1_1 foo $PWD/some_repo"
 }
 
 atf_test_case reverts
@@ -351,7 +351,7 @@ EOF
 	cd ..
 	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A 1.1_1 1.0_1"
+	atf_check_equal "$out" "A 1.1_1 1.0_1 A $PWD/some_repo"
 }
 
 atf_test_case reverts_alpha
@@ -410,7 +410,7 @@ EOF
 	cd ..
 	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A 1.2_1 1.0_1"
+	atf_check_equal "$out" "A 1.2_1 1.0_1 A $PWD/some_repo"
 
 	cd some_repo
 	rm *.xbps
@@ -423,7 +423,7 @@ EOF
 	cd ..
 	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A 1.1_1 1.0_1"
+	atf_check_equal "$out" "A 1.1_1 1.0_1 A $PWD/some_repo"
 
 	cd some_repo
 	rm *.xbps
@@ -436,7 +436,7 @@ EOF
 	cd ..
 	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A 1.3_4 1.0_1"
+	atf_check_equal "$out" "A 1.3_4 1.0_1 A $PWD/some_repo"
 }
 
 atf_test_case manual_mode
@@ -459,7 +459,7 @@ revision=1
 EOF
 	out=$(xbps-checkvers -D $PWD/void-packages -ms srcpkgs/process/template)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "process ? 1_1"
+	atf_check_equal "$out" "process ? 1_1 process ?"
 }
 
 atf_init_test_cases() {
