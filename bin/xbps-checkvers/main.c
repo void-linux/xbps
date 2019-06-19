@@ -658,7 +658,7 @@ main(int argc, char **argv)
 
 	memset(&rcv, 0, sizeof(rcv_t));
 	rcv.manual = false;
-	rcv.format = "%n %r %s";
+	rcv.format = "%n %r %s %t %R";
 
 	while ((c = getopt_long(argc, argv, sopts, lopts, NULL)) != -1) {
 		switch (c) {
