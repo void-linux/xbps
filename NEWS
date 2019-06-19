@@ -28,11 +28,14 @@ xbps-0.54 (???):
  * xbps-query(1): `[-R] -X` (revdeps mode) is now way faster.
    50x faster in the worst scenario. [xtraeme]
 
- * xbps-query(1): `O` (list orphans mode) is now way faster. [yshui, xtraeme]
+ * xbps-query(1): `-O` (list orphans mode) is now way faster. [yshui, xtraeme]
 
  * xbps-remove(1): `-R` (recursive mode) is now way faster. [xtraeme]
 
- * xbps-remove(1): `-O` (orphans mode) is now way faster. [yshui, xtraeme]
+ * xbps-remove(1): `-o` (orphans mode) is now way faster. [yshui, xtraeme]
+
+ * xbps-remove(1): all directories are now sorted and removed
+   properly. [jnbr]
 
  * xbps-fetch(1): new utility replacing "xbps-uhelper fetch". [xtraeme]
 
