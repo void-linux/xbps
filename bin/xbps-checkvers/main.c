@@ -495,7 +495,7 @@ check_reverts(const char *repover, const char *reverts)
 
 static void
 rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
-    const char *srcver)
+    const char *srcver, const char *repourl)
 {
 	const char *f, *p;
 
@@ -520,6 +520,7 @@ rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
 		case '%': fputc(*f, fp); break;
 		case 'n': fputs(pkgname, fp); break;
 		case 'r': fputs(repover, fp); break;
+		case 'R': fputs(repourl, fp); break;
 		case 's': fputs(srcver, fp); break;
 		case 't':
 			p = strchr(rcv->fname, '/');
@@ -535,7 +536,7 @@ rcv_check_version(rcv_t *rcv)
 {
 	const char *repover = NULL;
 	char srcver[BUFSIZ] = { '\0' };
-	const char *pkgname, *version, *revision, *reverts;
+	const char *pkgname, *version, *revision, *reverts, *repourl;
 	int sz;
 
 	assert(rcv);
@@ -567,11 +568,13 @@ rcv_check_version(rcv_t *rcv)
 	if (sz < 0 || (size_t)sz >= sizeof srcver)
 		exit(EXIT_FAILURE);
 
-	if (rcv->installed)
+	if (rcv->installed) {
 		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, pkgname);
-	else
+		repourl = NULL;
+	} else {
 		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, pkgname);
-
+		xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "repository", &repourl);
+	}
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
 	if (repover)
 		repover += strlen(pkgname)+1;
@@ -587,7 +590,8 @@ rcv_check_version(rcv_t *rcv)
 		return 0;
 
 	repover = repover ? repover : "?";
-	rcv_printf(rcv, stdout, pkgname, repover, srcver);
+	repourl = repourl ? repourl : "?";
+	rcv_printf(rcv, stdout, pkgname, repover, srcver, repourl);
 
 	return 0;
 }
