@@ -1,5 +1,9 @@
 xbps-0.54 (???):
 
+ * xbps now collects all package files in transaction to check for
+   file conflicts; any file, link or directory is now tracked before
+   the transaction has been committed. [duncaen]
+
  * xbps now auto-updates reverse dependencies of target pkgs, while
    installing or updating any of them, without the need to perform a
    system update (xbps-install -u). [xtraeme]
@@ -24,9 +28,11 @@ xbps-0.54 (???):
  * xbps-query(1): `[-R] -X` (revdeps mode) is now way faster.
    50x faster in the worst scenario. [xtraeme]
 
+ * xbps-query(1): `O` (list orphans mode) is now way faster. [yshui, xtraeme]
+
  * xbps-remove(1): `-R` (recursive mode) is now way faster. [xtraeme]
 
- * xbps-remove(1): `-O` (orphans mode) is now way faster. [xtraeme]
+ * xbps-remove(1): `-O` (orphans mode) is now way faster. [yshui, xtraeme]
 
  * xbps-fetch(1): new utility replacing "xbps-uhelper fetch". [xtraeme]
 
@@ -57,6 +63,9 @@ xbps-0.54 (???):
  * xbps-checkvers(1): new `--manual` flag to only check specified templates. [duncaen]
 
  * xbps-checkvers(1): new `--format` flag to change the output format. [duncaen]
+
+ * xbps-checkvers(1): rewritten for performance, uses libxbps (proplib)
+   as data storage, fixes multiple issues. [duncaen]
 
 xbps-0.53 (2018-07-30):
 
