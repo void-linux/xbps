@@ -19,7 +19,8 @@ tree. By default and unless the
 option is set, it will compare package versions in repositories against
 the
 .Nm void-packages
-tree. The
+tree.
+The
 .Ar FILES
 argument sets extra packages to process with the outdated ones (only processed if missing).
 .Sh OPTIONS
@@ -63,7 +64,7 @@ The repository url (returns ? if not found).
 .El
 .Pp
 The default format is
-.Dq Cm "%n %r %s" .
+.Dq Cm "%n %r %s %t %R" .
 .It Fl h, Fl -help
 Show the help message.
 .It Fl i, Fl -ignore-conf-repos
