@@ -115,7 +115,7 @@ main(int argc, char **argv)
 	}
 
 	for (int i = 0; i < argc; i++) {
-		if ((argc == 1) && !filename)
+		if (i > 0 || !filename)
 			filename = fname(argv[i]);
 
 		rv = xbps_fetch_file_dest(&xh, argv[i], filename, verbose ? "v" : "");
