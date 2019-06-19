@@ -449,9 +449,12 @@ fetch_socks5(conn_t *conn, struct url *url, struct url *socks, int verbose)
  * close all sockets and return -1 and set errno to
  * `ETIMEDOUT`.
  */
+#define UNREACH_IPV6 0x01
+#define UNREACH_IPV4 0x10
 static int
 happy_eyeballs_connect(struct addrinfo *res0)
 {
+	static int unreach = 0;
 	struct pollfd *pfd;
 	struct addrinfo *res;
 	const char *bindaddr;
@@ -483,6 +486,14 @@ happy_eyeballs_connect(struct addrinfo *res0)
 		i6 = n6;
 	if (getenv("FORCE_IPV6"))
 		i4 = n4;
+
+	if (unreach & UNREACH_IPV6)
+		i6 = n6;
+	if (unreach & UNREACH_IPV4)
+		i4 = n4;
+
+	if (i6+i4 == n6+n4)
+		goto error;
 
 	res = NULL;
 	for (;;) {
@@ -548,24 +559,25 @@ happy_eyeballs_connect(struct addrinfo *res0)
 			continue;
 		}
 
-#ifdef FULL_DEBUG
 		{
 			char hbuf[1025];
 			if (getnameinfo(res->ai_addr, res->ai_addrlen, hbuf, sizeof(hbuf), NULL,
 						0, NI_NUMERICHOST) == 0)
 				fetch_info("connecting to %s", hbuf);
 		}
-#endif
 
 		if (connect(sd, res->ai_addr, res->ai_addrlen) == -1) {
 			if (errno == EINPROGRESS) {
 				pfd[attempts].fd = sd;
 			} else if (errno == ENETUNREACH) {
 				close(sd);
-				if (family == AF_INET)
+				if (family == AF_INET) {
 					i4 = n4;
-				else
+					unreach |= UNREACH_IPV4;
+				} else {
 					i6 = n6;
+					unreach |= UNREACH_IPV6;
+				}
 				continue;
 			} else {
 				err = errno;
