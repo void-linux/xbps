@@ -645,7 +645,7 @@ main(int argc, char **argv)
 		{ "config", required_argument, NULL, 'C' },
 		{ "distdir", required_argument, NULL, 'D' },
 		{ "debug", no_argument, NULL, 'd' },
-		{ "format", no_argument, NULL, 'f' },
+		{ "format", required_argument, NULL, 'f' },
 		{ "installed", no_argument, NULL, 'I' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
 		{ "manual", no_argument, NULL, 'm' },
