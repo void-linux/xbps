@@ -1,3 +1,6 @@
+xbps-0.55 (???):
+
+
 xbps-0.54 (2019-06-21):
 
  * xbps now collects all package files in transaction to check for
