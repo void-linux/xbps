@@ -136,11 +136,11 @@ files_move_from_dependency_body() {
 	xbps-install -r root -C null.conf --repository=$PWD -yuvd
 	atf_check_equal $? 0
 
-	foofile=$(xbps-query -r root -f A-1.1_1|grep foo)
-	atf_check_equal $foofile ""
+	foofile="$(xbps-query -r root -f A-1.1_1|grep foo)"
+	atf_check_equal "$foofile" ""
 
-	foofile=$(xbps-query -r root -f B-1.1_1|grep foo)
-	atf_check_equal $foofile /usr/bin/foo
+	foofile="$(xbps-query -r root -f B-1.1_1|grep foo)"
+	atf_check_equal "$foofile" /usr/bin/foo
 
 	xbps-pkgdb -r root -av
 	atf_check_equal $? 0
@@ -182,11 +182,11 @@ files_move_to_dependency_body() {
 	xbps-install -r root --repository=$PWD -yuvd
 	atf_check_equal $? 0
 
-	foofile=$(xbps-query -r root -f libressl|grep crypto)
-	atf_check_equal $foofile ""
+	foofile="$(xbps-query -r root -f libressl|grep crypto)"
+	atf_check_equal "$foofile" ""
 
-	foofile=$(xbps-query -r root -f libcrypto|grep crypto)
-	atf_check_equal $foofile /usr/lib/libcrypto.so.30
+	foofile="$(xbps-query -r root -f libcrypto|grep crypto)"
+	atf_check_equal "$foofile" /usr/lib/libcrypto.so.30
 
 	xbps-pkgdb -r root -av
 	atf_check_equal $? 0
@@ -230,11 +230,11 @@ files_move_to_dependency2_body() {
 	xbps-install -r root --repository=$PWD -yuvd
 	atf_check_equal $? 0
 
-	foofile=$(xbps-query -r root -f libressl|grep crypto)
-	atf_check_equal $foofile ""
+	foofile="$(xbps-query -r root -f libressl|grep crypto)"
+	atf_check_equal "$foofile" ""
 
-	foofile=$(xbps-query -r root -f libcrypto|grep crypto)
-	atf_check_equal $foofile /usr/lib/libcrypto.so.30
+	foofile="$(xbps-query -r root -f libcrypto|grep crypto)"
+	atf_check_equal "$foofile" /usr/lib/libcrypto.so.30
 
 	xbps-pkgdb -r root -av
 	atf_check_equal $? 0
@@ -324,6 +324,87 @@ directory_to_symlink_body() {
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -dvyu
 	atf_check_equal $? 0
+}
+
+atf_test_case directory_to_symlink_preserve
+
+directory_to_symlink_preserve_head() {
+	atf_set "descr" "Update replaces directory with symlink (preserved file directory)"
+}
+
+directory_to_symlink_preserve_body() {
+	mkdir -p some_repo pkg_A/foo xbps.d
+	touch pkg_A/foo/bar
+	echo "preserve=/foo/bar" >xbps.d/preserve.conf
+	# create package and install it
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+
+	echo "preserve me" > ./root/foo/bar
+
+	# make an update to the package
+	cd some_repo
+	rm -rf ../pkg_A/foo
+	ln -sf ../bar ../pkg_A/foo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C $PWD/xbps.d --repository=$PWD/some_repo -dvyu
+	# ENOTEMPTY
+	atf_check_equal $? 39 
+
+	out="$(cat ./root/foo/bar)"
+	atf_check_equal "$out" "preserve me"
+}
+
+atf_test_case symlink_to_file_preserve
+
+symlink_to_file_preserve_head() {
+	atf_set "descr" "Update replaces preserved symlink with file"
+}
+
+symlink_to_file_preserve_body() {
+	mkdir -p some_repo pkg_A/foo xbps.d
+	touch pkg_A/foo/bar
+	echo "preserve=/foo/bar" >xbps.d/preserve.conf
+	# create package and install it
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+
+	rm ./root/foo/bar
+	ln -sf foo ./root/foo/bar
+
+	# make an update to the package
+	cd some_repo
+	echo "fail" >../pkg_A/foo/bar
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C $PWD/xbps.d --repository=$PWD/some_repo -dvyu
+	atf_check_equal $? 0
+
+	rv=0
+	[ -h root/foo/bar ] || rv=1
+	atf_check_equal "$rv" 0
 }
 
 atf_test_case update_extract_dir
@@ -438,6 +519,7 @@ nonempty_dir_abort_body() {
 	touch root/foo/abort
 
 	xbps-install -r root --repository=$PWD/repo -yvdu
+	# ENOTEMPTY
 	atf_check_equal $? 39
 	out=$(xbps-query -r root -p state A)
 	atf_check_equal "$out" "installed"
@@ -574,6 +656,8 @@ atf_init_test_cases() {
 	atf_add_test_case files_move_to_dependency2
 	atf_add_test_case update_to_meta_depends_replaces
 	atf_add_test_case directory_to_symlink
+	atf_add_test_case directory_to_symlink_preserve
+	atf_add_test_case symlink_to_file_preserve
 	atf_add_test_case update_extract_dir
 	atf_add_test_case replace_package_same_files
 	atf_add_test_case nonempty_dir_abort
