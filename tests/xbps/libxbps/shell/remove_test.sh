@@ -469,7 +469,7 @@ remove_with_revdeps_in_trans_recursive_body() {
 atf_test_case remove_directory
 
 remove_directory_head() {
-	atf_set "descr" "xbps-remove(8): remove nested directories"
+	atf_set "descr" "xbps-remove(1): remove nested directories"
 }
 
 remove_directory_body() {

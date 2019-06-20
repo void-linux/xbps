@@ -3,7 +3,7 @@
 atf_test_case install_existent
 
 install_existent_head() {
-	atf_set "descr" "xbps-install(8): install multiple existent pkgs (issue #53)"
+	atf_set "descr" "xbps-install(1): install multiple existent pkgs (issue #53)"
 }
 
 install_existent_body() {
@@ -35,7 +35,7 @@ install_existent_body() {
 atf_test_case update_existent
 
 updated_existent_head() {
-	atf_set "descr" "xbps-install(8): update existent pkg"
+	atf_set "descr" "xbps-install(1): update existent pkg"
 }
 
 update_existent_body() {

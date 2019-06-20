@@ -1,10 +1,10 @@
 #! /usr/bin/env atf-sh
-# Test that xbps-query(8) -i works as expected
+# Test that xbps-query(1) -i works as expected
 
 atf_test_case ignore_system
 
 ignore_system_head() {
-	atf_set "descr" "xbps-query(8) -i: ignore repos defined in the system directory (sharedir/xbps.d)"
+	atf_set "descr" "xbps-query(1) -i: ignore repos defined in the system directory (sharedir/xbps.d)"
 }
 
 ignore_system_body() {
@@ -28,7 +28,7 @@ ignore_system_body() {
 atf_test_case ignore_conf
 
 ignore_conf_head() {
-	atf_set "descr" "xbps-query(8) -i: ignore repos defined in the configuration directory (xbps.d)"
+	atf_set "descr" "xbps-query(1) -i: ignore repos defined in the configuration directory (xbps.d)"
 }
 
 ignore_conf_body() {

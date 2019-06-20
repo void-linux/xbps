@@ -1,11 +1,11 @@
 #! /usr/bin/env atf-sh
-# Test that xbps-rindex(8) -c (clean mode) works as expected.
+# Test that xbps-rindex(1) -c (clean mode) works as expected.
 
 # 1st test: make sure that nothing is removed if there are no changes.
 atf_test_case noremove
 
 noremove_head() {
-	atf_set "descr" "xbps-rindex(8) -c: dont removing anything test"
+	atf_set "descr" "xbps-rindex(1) -c: dont removing anything test"
 }
 
 noremove_body() {
@@ -54,7 +54,7 @@ issue19_body() {
 atf_test_case remove_from_stage
 
 remove_from_stage_head() {
-	atf_set "descr" "xbps-rindex(8) -r: don't removing if there's staging test"
+	atf_set "descr" "xbps-rindex(1) -r: don't removing if there's staging test"
 }
 
 remove_from_stage_body() {

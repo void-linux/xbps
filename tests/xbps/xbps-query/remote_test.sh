@@ -1,11 +1,11 @@
 #! /usr/bin/env atf-sh
-# Test that xbps-query(8) remote modes work as expected
+# Test that xbps-query(1) remote modes work as expected
 
 # 1st test: test that -Rf does not segfault when binpkg is not available
 atf_test_case remote_files
 
 remote_files_head() {
-	atf_set "descr" "xbps-query(8) -Rf: binpkg files test"
+	atf_set "descr" "xbps-query(1) -Rf: binpkg files test"
 }
 
 remote_files_body() {

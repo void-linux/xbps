@@ -40,7 +40,7 @@ update_hold_body() {
 atf_test_case update_pkg_with_held_dep
 
 update_pkg_with_held_dep_head() {
-	atf_set "descr" "xbps-install(8): update packages with held dependency (issue #143)"
+	atf_set "descr" "xbps-install(1): update packages with held dependency (issue #143)"
 }
 
 update_pkg_with_held_dep_body() {

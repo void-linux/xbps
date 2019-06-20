@@ -1,10 +1,10 @@
 #! /usr/bin/env atf-sh
-# Test that xbps-create(8) works as expected.
+# Test that xbps-create(1) works as expected.
 
 atf_test_case hardlinks_size
 
 hardlinks_size_head() {
-	atf_set "descr" "xbps-create(8): installed-size behaviour with hardlinks"
+	atf_set "descr" "xbps-create(1): installed-size behaviour with hardlinks"
 }
 
 hardlinks_size_body() {
@@ -33,7 +33,7 @@ hardlinks_size_body() {
 atf_test_case symlink_relative_target
 
 symlink_relative_target_head() {
-	atf_set "descr" "xbps-create(8): relative symlinks in destdir must be absolute"
+	atf_set "descr" "xbps-create(1): relative symlinks in destdir must be absolute"
 }
 
 symlink_relative_target_body() {
@@ -61,7 +61,7 @@ symlink_relative_target_body() {
 atf_test_case symlink_relative_target_cwd
 
 symlink_relative_target_cwd_head() {
-	atf_set "descr" "xbps-create(8): relative symlinks to cwd in destdir must be absolute"
+	atf_set "descr" "xbps-create(1): relative symlinks to cwd in destdir must be absolute"
 }
 
 symlink_relative_target_cwd_body() {
@@ -89,7 +89,7 @@ symlink_relative_target_cwd_body() {
 atf_test_case restore_mtime
 
 restore_mtime_head() {
-	atf_set "descr" "xbps-create(8): restore file mtime as user"
+	atf_set "descr" "xbps-create(1): restore file mtime as user"
 }
 
 restore_mtime_body() {

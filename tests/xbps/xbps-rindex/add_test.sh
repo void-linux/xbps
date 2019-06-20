@@ -1,11 +1,11 @@
 #! /usr/bin/env atf-sh
-# Test that xbps-rindex(8) -a (add mode) works as expected.
+# Test that xbps-rindex(1) -a (add mode) works as expected.
 
 # 1st test: test that update mode work as expected.
 atf_test_case update
 
 update_head() {
-	atf_set "descr" "xbps-rindex(8) -a: update test"
+	atf_set "descr" "xbps-rindex(1) -a: update test"
 }
 
 update_body() {
@@ -35,7 +35,7 @@ update_body() {
 atf_test_case revert
 
 revert_head() {
-	atf_set "descr" "xbps-rindex(8) -a: revert version test"
+	atf_set "descr" "xbps-rindex(1) -a: revert version test"
 }
 
 revert_body() {
@@ -65,7 +65,7 @@ revert_body() {
 atf_test_case stage
 
 stage_head() {
-	atf_set "descr" "xbps-rindex(8) -a: commit package to stage test"
+	atf_set "descr" "xbps-rindex(1) -a: commit package to stage test"
 }
 
 stage_body() {
@@ -111,7 +111,7 @@ stage_body() {
 atf_test_case stage_resolve_bug
 
 stage_resolve_bug_head() {
-	atf_set "descr" "xbps-rindex(8) -a: commit package to stage test"
+	atf_set "descr" "xbps-rindex(1) -a: commit package to stage test"
 }
 
 stage_resolve_bug_body() {
