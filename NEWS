@@ -15,7 +15,11 @@ xbps-0.54 (???):
  * xbps now supports multiple compression formats for repodata
    and binary packages, including: gzip, bzip2, lz4, xz and zstd. [xtraeme]
 
+ * libxbps: improve error handling in xbps_binpkg_{arch,pkgver}(). [huglovefan]
+
  * xbps-create(1): new `--compression` formats: lz4 and zstd, defaults to xz. [xtraeme]
+
+ * xbps-create(1): reject unknown files (socket, fifo, etc). [duncaen]
 
  * xbps-rindex(1): added `--compression` option, to mimic xbps-create(1). [xtraeme]
 
@@ -30,6 +34,11 @@ xbps-0.54 (???):
 
  * xbps-query(1): `-O` (list orphans mode) is now way faster. [yshui, xtraeme]
 
+ * xbps-query(1): now supports `$NO_COLOR` envvar. [leahneukirchen]
+
+ * xbps-install(1): don't overwrite action with downgrade if package
+   is on hold mode. [duncaen]
+
  * xbps-remove(1): `-R` (recursive mode) is now way faster, fixes
    the infamous `kde5` issue. [yshui, xtraeme]
 
@@ -37,6 +46,8 @@ xbps-0.54 (???):
 
  * xbps-remove(1): all directories are now sorted and removed
    properly. [jnbr]
+
+ * xbps-pkgdb(1): add alternatives check. [duncaen]
 
  * xbps-fetch(1): new utility replacing "xbps-uhelper fetch". [xtraeme]
 
