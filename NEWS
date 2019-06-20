@@ -84,7 +84,13 @@ xbps-0.54 (2019-06-21):
    "struct xbps_handle" has been modified. New interfaces were
    added to the API. [duncaen, xtraeme]
 
-Contributors in this release (in order of contributions):
+24 issues were fixed on this release, more information
+at https://github.com/void-linux/xbps/milestone/1?closed=1
+
+35 new test cases were added on this release, bumping the
+total count to 198 test cases! 0 fails.
+
+20 contributors in this release (in order of contributions):
 
 Juan RP, Duncaen, Johannes Brechtmann, huglovefan, Cameron Nemo,
 q66, Foxlet, Robert Lowry, Frank Steinborn, Ingo Blechschmidt,
