@@ -30,7 +30,8 @@ xbps-0.54 (???):
 
  * xbps-query(1): `-O` (list orphans mode) is now way faster. [yshui, xtraeme]
 
- * xbps-remove(1): `-R` (recursive mode) is now way faster. [xtraeme]
+ * xbps-remove(1): `-R` (recursive mode) is now way faster, fixes
+   the infamous `kde5` issue. [yshui, xtraeme]
 
  * xbps-remove(1): `-o` (orphans mode) is now way faster. [yshui, xtraeme]
 
