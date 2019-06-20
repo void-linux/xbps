@@ -80,6 +80,13 @@ xbps-0.54 (???):
  * xbps-checkvers(1): rewritten for performance, uses libxbps (proplib)
    as data storage, fixes multiple issues. [duncaen]
 
+Contributors in this release (in order of contributions):
+
+Juan RP, Duncaen, Johannes Brechtmann, huglovefan, Cameron Nemo,
+q66, Foxlet, Robert Lowry, Frank Steinborn, Ingo Blechschmidt,
+Andres Kempe, Leah Neukirchen, Toyam Cox, Yuxuan Shui, Aleksej Lebedev,
+Enno Boland, m3tav3rse, kayvenm, parke, wuhank.
+
 xbps-0.53 (2018-07-30):
 
  * xbps-rindex(1): fix possible stagedata deadlock. (@Gottox)
