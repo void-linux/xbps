@@ -452,7 +452,7 @@ fetch_socks5(conn_t *conn, struct url *url, struct url *socks, int verbose)
 #define UNREACH_IPV6 0x01
 #define UNREACH_IPV4 0x10
 static int
-happy_eyeballs_connect(struct addrinfo *res0)
+happy_eyeballs_connect(struct addrinfo *res0, int verbose)
 {
 	static int unreach = 0;
 	struct pollfd *pfd;
@@ -474,26 +474,25 @@ happy_eyeballs_connect(struct addrinfo *res0)
 		case AF_INET: n4++; break;
 		}
 
-	if (n4+n6 == 0 || !(pfd = calloc(n4+n6, sizeof (struct pollfd))))
-		return -1;
-
 #ifdef FULL_DEBUG
 	fetch_info("got %d A and %d AAAA records", n4, n6);
 #endif
 
 	i4 = i6 = 0;
-	if (getenv("FORCE_IPV4"))
+	if (unreach & UNREACH_IPV6 || getenv("FORCE_IPV4"))
 		i6 = n6;
-	if (getenv("FORCE_IPV6"))
+	if (unreach & UNREACH_IPV4 || getenv("FORCE_IPV6"))
 		i4 = n4;
 
-	if (unreach & UNREACH_IPV6)
-		i6 = n6;
-	if (unreach & UNREACH_IPV4)
-		i4 = n4;
+	if (n6+n4 == 0 || i6+i4 == n6+n4) {
+		netdb_seterr(EAI_FAIL);
+		return -1;
+	}
 
-	if (i6+i4 == n6+n4)
-		goto error;
+	if (!(pfd = calloc(n4+n6, sizeof (struct pollfd)))) {
+		fetch_syserr();
+		return -1;
+	}
 
 	res = NULL;
 	for (;;) {
@@ -502,8 +501,9 @@ happy_eyeballs_connect(struct addrinfo *res0)
 		unsigned short family = 0;
 
 #ifdef FULL_DEBUG
-		fetch_info("happy eyeballs state: i4=%u n4=%u i6=%u n6=%u"
-		    " attempts=%u waiting=%u", i4, n4, i6, n6, attempts, waiting);
+		if (verbose)
+		    fetch_info("happy eyeballs state: i4=%u n4=%u i6=%u n6=%u"
+		        " attempts=%u waiting=%u", i4, n4, i6, n6, attempts, waiting);
 #endif
 
 		if (i6+i4 < n6+n4) {
@@ -523,9 +523,8 @@ happy_eyeballs_connect(struct addrinfo *res0)
 			}
 		} else {
 			/* no more connections to try */
-#ifdef FULL_DEBUG
-			fetch_info("attempted to connect to all addresses, waiting...");
-#endif
+			if (verbose)
+				fetch_info("attempted to connect to all addresses, waiting...");
 			timeout = fetchConnTimeout;
 			done = 1;
 			goto wait;
@@ -545,11 +544,13 @@ happy_eyeballs_connect(struct addrinfo *res0)
 				i++;
 			}
 		}
-		if (res == NULL)
-			goto error;
+		if (res == NULL) {
+			netdb_seterr(EAI_FAIL);
+			goto out;
+		}
 
 		if ((sd = socket(res->ai_family, res->ai_socktype | SOCK_NONBLOCK,
-			 res->ai_protocol)) == -1)
+		    res->ai_protocol)) == -1)
 			continue;
 
 		if (bindaddr != NULL && *bindaddr != '\0' &&
@@ -559,11 +560,14 @@ happy_eyeballs_connect(struct addrinfo *res0)
 			continue;
 		}
 
-		{
+		if (verbose) {
 			char hbuf[1025];
 			if (getnameinfo(res->ai_addr, res->ai_addrlen, hbuf, sizeof(hbuf), NULL,
-						0, NI_NUMERICHOST) == 0)
-				fetch_info("connecting to %s", hbuf);
+			    0, NI_NUMERICHOST) == 0)
+				fetch_info("connecting to %s:%d", hbuf,
+				    htons(res->ai_family == AF_INET
+					? ((struct sockaddr_in *)(res->ai_addr))->sin_port
+					: ((struct sockaddr_in6 *)(res->ai_addr))->sin6_port));
 		}
 
 		if (connect(sd, res->ai_addr, res->ai_addrlen) == -1) {
@@ -595,10 +599,9 @@ happy_eyeballs_connect(struct addrinfo *res0)
 		waiting++;
 wait:
 		if (!attempts) {
-error:
 			netdb_seterr(EAI_FAIL);
-			free(pfd);
-			return -1;
+			rv = -1;
+			goto out;
 		}
 		for (i = 0; i < attempts; i++) {
 			pfd[i].revents = pfd[i].events = 0;
@@ -637,8 +640,11 @@ error:
 		}
 		if (!waiting)
 			break;
+		else if (done)
+			goto wait;
 	}
 
+out:
 	for (i = 0; i < attempts; i++)
 		if ((rv == -1 || rv != pfd[i].fd) && pfd[i].fd != -1)
 			close(pfd[i].fd);
@@ -703,7 +709,7 @@ fetch_connect(struct url *url, int af, int verbose)
 	if (verbose)
 		fetch_info("connecting to %s:%d", connurl->host, connurl->port);
 
-	sd = happy_eyeballs_connect(res0);
+	sd = happy_eyeballs_connect(res0, verbose);
 	freeaddrinfo(res0);
 	if (sd == -1)
 		return (NULL);
