@@ -37,7 +37,7 @@ to handle binary packages and repositories. Some highlights:
  * Ability to **check package integrity**: missing files, hashes, missing or
    unresolved (reverse)dependencies, dangling or modified symlinks, etc.
 
-XBPS contains an almost complete test suite, currently with ~190 test cases,
+XBPS contains an almost complete test suite, currently with ~200 test cases,
 and its number is growing daily! If you find any issue and you can reproduce it,
 we will fix it and a new test case will be created. No more regressions!
 
@@ -47,7 +47,8 @@ XBPS is brought to you by:
 - [Enno Boland](https://github.com/Gottox)
 - [Duncan Overbruck](https://github.com/duncaen)
 
-and many others contributors in the free community that have helped improving it.
+and many other contributors in the free community that have helped improving it.
+See the `AUTHORS` file for a complete list of contributors.
 
 Thanks to all who have contributed.
 
@@ -69,7 +70,7 @@ and optionally:
   - [atf >= 0.15](https://github.com/jmmv/kyua) (--enable-tests) to build the
     Kyua test suite.
 
-**NOTE** pcc and tcc can compile xbps correctly, but as of **20190422**
+> pcc and tcc can compile xbps correctly, but as of **20190422**
 only the static binaries work correctly, do not forget to set `--enable-static`
 option in the `configure` script.
 
@@ -98,7 +99,7 @@ Happy testing!
 To run the test suite make sure *kyua* is installed and run the following:
 
 ```
-$ ./configure --enable-tests --enable-debug
+$ ./configure --enable-tests
 $ make
 $ make check
 ```
@@ -137,7 +138,7 @@ These builds are available on all official void mirrors, along with their
 
 ### Usage instructions
 
-The xbps package includes the following utilities:
+The xbps package includes the following utilities (among others, not a complete list):
 
  * `xbps-create (1)`      - XBPS utility to create binary packages
  * `xbps-dgraph (1)`      - XBPS utility to generate dot(1) graphs
@@ -185,9 +186,9 @@ $ xbps-query -Rs void-repo
 $
 ```
 
-> **NOTE** repositories specified in the `configuration` directory are added to the head of the list, while repositories specified via `system configuration` directories are appended to the existing list.
+> Repositories specified in the `configuration` directory are added to the head of the list, while repositories specified via `system configuration` directories are appended to the existing list.
 
-> **NOTE** If no repositories are found it's possible to declare them manually via the command line option `--repository`, currently accepted in `xbps-install(1)` and `xbps-query(1)`.
+> If no repositories are found it's possible to declare them manually via the command line option `--repository`, currently accepted in `xbps-install(1)` and `xbps-query(1)`.
 
 ### xbps-query - querying packages and repositories
 
