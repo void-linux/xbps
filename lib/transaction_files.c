@@ -194,7 +194,7 @@ can_delete_directory(struct xbps_handle *xhp, const char *file, size_t len, size
 	fcount -= 2;
 
 	if (fcount <= rmcount) {
-		xbps_dbg_printf(xhp, "[files] only removed %lu out of %lu files: %s\n",
+		xbps_dbg_printf(xhp, "[files] only removed %zu out of %zu files: %s\n",
 		    rmcount, fcount, file);
 	}
 
