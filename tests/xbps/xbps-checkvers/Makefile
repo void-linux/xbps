@@ -1,7 +1,7 @@
 TOPDIR = ../../..
 -include $(TOPDIR)/config.mk
 
-TESTSHELL = checkvers
+TESTSHELL = checkvers_test
 TESTSSUBDIR = xbps/xbps-checkvers
 EXTRA_FILES = Kyuafile
 

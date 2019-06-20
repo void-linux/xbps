@@ -1,4 +1,4 @@
 syntax("kyuafile", 1)
 
 test_suite("xbps-alternatives")
-atf_test_program{name="main"}
+atf_test_program{name="main_test"}
