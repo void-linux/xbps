@@ -564,10 +564,7 @@ happy_eyeballs_connect(struct addrinfo *res0, int verbose)
 			char hbuf[1025];
 			if (getnameinfo(res->ai_addr, res->ai_addrlen, hbuf, sizeof(hbuf), NULL,
 			    0, NI_NUMERICHOST) == 0)
-				fetch_info("connecting to %s:%d", hbuf,
-				    htons(res->ai_family == AF_INET
-					? ((struct sockaddr_in *)(res->ai_addr))->sin_port
-					: ((struct sockaddr_in6 *)(res->ai_addr))->sin6_port));
+				fetch_info("connecting to %s", hbuf);
 		}
 
 		if (connect(sd, res->ai_addr, res->ai_addrlen) == -1) {
