@@ -140,6 +140,16 @@ typestr(enum type typ)
 }
 
 static bool
+match_preserved_file(struct xbps_handle *xhp, const char *file)
+{
+	if (xhp->preserved_files == NULL)
+		return false;
+
+	assert(file && *file == '.');
+	return xbps_match_string_in_array(xhp->preserved_files, file+1);
+}
+
+static bool
 can_delete_directory(struct xbps_handle *xhp, const char *file, size_t len, size_t max)
 {
 	struct item *item;
@@ -232,6 +242,11 @@ collect_obsoletes(struct xbps_handle *xhp)
 
 		item = items[i];
 
+		if (match_preserved_file(xhp, item->file)) {
+			xbps_dbg_printf(xhp, "[obsoletes] %s: file exists on disk"
+			    " and must be preserved: %s\n", item->old.pkgver, item->file);
+			continue;
+		}
 
 		if (item->new.type == 0) {
 			/*
