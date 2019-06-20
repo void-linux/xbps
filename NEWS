@@ -47,8 +47,6 @@ xbps-0.54 (???):
  * xbps-remove(1): all directories are now sorted and removed
    properly. [jnbr]
 
- * xbps-pkgdb(1): add alternatives check. [duncaen]
-
  * xbps-fetch(1): new utility replacing "xbps-uhelper fetch". [xtraeme]
 
  * xbps-digest(1): new utility replacing "xbps-uhelper digest". [xtraeme]
