@@ -80,6 +80,10 @@ xbps-0.54 (???):
  * xbps-checkvers(1): rewritten for performance, uses libxbps (proplib)
    as data storage, fixes multiple issues. [duncaen]
 
+ * libxbps: bumped XBPS_API_VERSION and soname major to 4,
+   "struct xbps_handle" has been modified. New interfaces were
+   added to the API. [duncaen, xtraeme]
+
 Contributors in this release (in order of contributions):
 
 Juan RP, Duncaen, Johannes Brechtmann, huglovefan, Cameron Nemo,
