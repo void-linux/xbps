@@ -460,6 +460,9 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			    EEXIST, pkgver,
 			    "%s: file `%s' already installed by package %s.",
 			    pkgver, file, item->new.pkgver);
+			if (xhp->flags & XBPS_FLAG_IGNORE_FILE_CONFLICTS)
+				return 0;
+
 			return EEXIST;
 		}
 		goto add;

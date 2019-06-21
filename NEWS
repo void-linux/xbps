@@ -1,5 +1,8 @@
 xbps-0.55 (???):
 
+ * xbps-install(1): added `-I --ignore-file-conflicts` to not abort
+   the transaction even if file conflicts were detected. [xtraeme]
+
  * xbps-install(1): return 0 if package is already installed,
    or up-to-date if updating, not EEXIST. EEXIST now is only
    returned if there are file conflicts in transaction. [xtraeme]
