@@ -255,6 +255,10 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		    "%s\n", strerror(rv));
 		goto out;
 	}
+	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+		goto out;
+	}
+
 	/*
 	 * Collect files in the transaction and find some issues
 	 * like multiple packages installing the same file.
@@ -265,6 +269,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		    "%s\n", strerror(rv));
 		goto out;
 	}
+
 	/*
 	 * Install, update, configure or remove packages as specified
 	 * in the transaction dictionary.
