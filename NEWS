@@ -1,4 +1,4 @@
-xbps-0.55 (???):
+xbps-0.55 (2019-06-21):
 
  * xbps-install(1): Added `-D, --download-only` flag to allow
    downloading packages to the cache without attempting to
@@ -19,7 +19,7 @@ xbps-0.55 (???):
 
  * Fixed cross compilation with `--enable-static`. [xtraeme]
 
-xbps-0.54 (2019-06-21):
+xbps-0.54 (2019-06-20):
 
  * xbps now collects all package files in transaction to check for
    file conflicts; any file, link or directory is now tracked before
