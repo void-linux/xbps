@@ -279,6 +279,9 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	unsigned int i, cnt;
 	int rv = 0;
 
+	if ((rv = xbps_transaction_init(xhp)) != 0)
+		return rv;
+
 	if (xhp->transd == NULL)
 		return ENXIO;
 
