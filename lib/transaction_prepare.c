@@ -33,7 +33,7 @@
 #include "xbps_api_impl.h"
 
 /**
- * @file lib/transaction_dictionary.c
+ * @file lib/transaction_prepare.c
  * @brief Transaction handling routines
  * @defgroup transaction Transaction handling functions
  *
