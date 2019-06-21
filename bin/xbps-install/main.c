@@ -239,11 +239,11 @@ main(int argc, char **argv)
 		rv = dist_upgrade(&xh, maxcols, yes, drun);
 	} else if (update) {
 		/* Update target packages */
-		int npkgs = argc - optind;
 		for (i = optind; i < argc; i++) {
 			rv = update_pkg(&xh, argv[i]);
-			if (npkgs >= 2 && rv == EEXIST) {
-				;
+			if (rv == EEXIST) {
+				/* pkg already updated, ignore */
+				rv = 0;
 			} else if (rv != 0) {
 				xbps_end(&xh);
 				exit(rv);
@@ -252,11 +252,11 @@ main(int argc, char **argv)
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	} else if (!update) {
 		/* Install target packages */
-		int npkgs = argc - optind;
 		for (i = optind; i < argc; i++) {
 			rv = install_new_pkg(&xh, argv[i], reinstall);
-			if (npkgs >= 2 && rv == EEXIST) {
-				;
+			if (rv == EEXIST) {
+				/* pkg already installed, ignore */
+				rv = 0;
 			} else if (rv != 0) {
 				xbps_end(&xh);
 				exit(rv);

@@ -389,6 +389,8 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 		    trans->dl_pkgcnt, trans->inst_pkgcnt,
 		    trans->up_pkgcnt, trans->cf_pkgcnt + trans->inst_pkgcnt,
 		    trans->rm_pkgcnt);
+	} else {
+		fprintf(stderr, "Transaction failed! see above for errors.\n");
 	}
 out:
 	if (trans->iter)
