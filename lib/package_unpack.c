@@ -84,7 +84,7 @@ unpack_archive(struct xbps_handle *xhp,
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
 	const char *entry_pname, *transact, *binpkg_pkgver;
-	char *pkgname, *buf;
+	char *pkgname, *buf = NULL;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists, keep_conf_file;
 	bool skip_extract, force, xucd_stats;
