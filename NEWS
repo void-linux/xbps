@@ -1,5 +1,12 @@
 xbps-0.55 (???):
 
+ * xbps-checkvers: fixed a segfault with --format. [duncaen]
+
+ * Fixed a build failure on ppc64. [q66]
+
+ * Fixed a build failure on x86. [duncaen]
+
+ * Fixed cross compilation with `--enable-static`. [xtraeme]
 
 xbps-0.54 (2019-06-21):
 
