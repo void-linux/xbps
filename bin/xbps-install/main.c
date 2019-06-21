@@ -124,7 +124,7 @@ main(int argc, char **argv)
 	const char *rootdir, *cachedir, *confdir;
 	int i, c, flags, rv, fflag = 0;
 	bool syncf, yes, reinstall, drun, update;
-	int maxcols;
+	int maxcols, eexist = 0;
 
 	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
@@ -244,6 +244,8 @@ main(int argc, char **argv)
 		exit(rv);
 	}
 
+	eexist = optind;
+
 	if (update && (argc == optind)) {
 		/* Update all installed packages */
 		rv = dist_upgrade(&xh, maxcols, yes, drun);
@@ -254,11 +256,15 @@ main(int argc, char **argv)
 			if (rv == EEXIST) {
 				/* pkg already updated, ignore */
 				rv = 0;
+				eexist++;
 			} else if (rv != 0) {
 				xbps_end(&xh);
 				exit(rv);
 			}
 		}
+		if (eexist == argc)
+			return 0;
+
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	} else if (!update) {
 		/* Install target packages */
@@ -267,11 +273,15 @@ main(int argc, char **argv)
 			if (rv == EEXIST) {
 				/* pkg already installed, ignore */
 				rv = 0;
+				eexist++;
 			} else if (rv != 0) {
 				xbps_end(&xh);
 				exit(rv);
 			}
 		}
+		if (eexist == argc)
+			return 0;
+
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
 
