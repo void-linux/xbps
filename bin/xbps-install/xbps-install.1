@@ -1,4 +1,4 @@
-.Dd June 12, 2019
+.Dd June 21, 2019
 .Dt XBPS-INSTALL 1
 .Sh NAME
 .Nm xbps-install
@@ -84,6 +84,8 @@ is specified twice all files will be unpacked, even
 .Em configuration files .
 .It Fl h, Fl -help
 Show the help message.
+.It Fl I, Fl -ignore-file-conflicts
+Ignore detected file conflicts in a transaction.
 .It Fl i, Fl -ignore-conf-repos
 Ignore repositories defined in configuration files.
 Only repositories specified in the command line via
