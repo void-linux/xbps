@@ -518,6 +518,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 	unsigned int i;
 	int rv = 0;
 	const char *file, *sha256 = NULL;
+	bool error = false;
 
 	if ((a = xbps_dictionary_get(d, "files"))) {
 		for (i = 0; i < xbps_array_count(a); i++) {
@@ -529,8 +530,12 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_uint64(filed, "size", &size);
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
 			    TYPE_FILE, update, preserve, remove);
-			if (rv != 0)
+			if (rv == EEXIST) {
+				error = true;
+				continue;
+			} else if (rv != 0) {
 				goto out;
+			}
 		}
 	}
 	if ((a = xbps_dictionary_get(d, "conf_files"))) {
@@ -548,8 +553,12 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 #endif
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
 			    TYPE_FILE, update, preserve, remove);
-			if (rv != 0)
+			if (rv == EEXIST) {
+				error = true;
+				continue;
+			} else if (rv != 0) {
 				goto out;
+			}
 		}
 	}
 	if ((a = xbps_dictionary_get(d, "links"))) {
@@ -558,8 +567,12 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
 			    TYPE_LINK, update, preserve, remove);
-			if (rv != 0)
+			if (rv == EEXIST) {
+				error = true;
+				continue;
+			} else if (rv != 0) {
 				goto out;
+			}
 		}
 	}
 	if ((a = xbps_dictionary_get(d, "dirs"))) {
@@ -568,12 +581,19 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
 			    TYPE_DIR, update, preserve, remove);
-			if (rv != 0)
+			if (rv == EEXIST) {
+				error = true;
+				continue;
+			} else if (rv != 0) {
 				goto out;
+			}
 		}
 	}
 
 out:
+	if (error)
+		rv = EEXIST;
+
 	return rv;
 }
 
