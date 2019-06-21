@@ -125,16 +125,6 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	uint64_t dlsize = 0, instsize = 0, rmsize = 0, disk_free_size = 0;
 	char size[8];
 
-	if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
-		xbps_dictionary_get_uint32(trans->d, "total-download-pkgs",
-                    &trans->dl_pkgcnt);
-		trans->inst_pkgcnt = 0;
-		trans->up_pkgcnt = 0;
-		trans->cf_pkgcnt = 0;
-		trans->rm_pkgcnt = 0;
-		goto out;
-	}
-
 	if (!print_trans_colmode(trans, cols)) {
 		/*
 		 * Show the list of packages that will be downloaded, installed, updated,
@@ -148,6 +138,14 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			show_package_list(trans, NULL, cols);
 			printf("\n");
 		}
+		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+			trans->inst_pkgcnt = 0;
+			trans->up_pkgcnt = 0;
+			trans->cf_pkgcnt = 0;
+			trans->rm_pkgcnt = 0;
+			goto out;
+		}
+
 		xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
 		    &trans->inst_pkgcnt);
 		if (trans->inst_pkgcnt) {
@@ -189,6 +187,7 @@ out:
 	xbps_dictionary_get_uint64(trans->d, "total-installed-size", &instsize);
 	xbps_dictionary_get_uint64(trans->d, "total-removed-size", &rmsize);
 	xbps_dictionary_get_uint64(trans->d, "disk-free-size", &disk_free_size);
+
 	if (dlsize || instsize || rmsize || disk_free_size)
 		printf("\n");
 

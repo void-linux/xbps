@@ -147,6 +147,12 @@ print_trans_colmode(struct transaction *trans, int cols)
 		} else if (strcmp(tract, "configure") == 0) {
 			trans->cf_pkgcnt++;
 		}
+		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+			trans->inst_pkgcnt = 0;
+			trans->up_pkgcnt = 0;
+			trans->rm_pkgcnt = 0;
+			trans->cf_pkgcnt = 0;
+		}
 		if (dload) {
 			trans->dl_pkgcnt++;
 		}
