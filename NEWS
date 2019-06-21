@@ -1,3 +1,6 @@
+xbps-0.56 (???):
+
+
 xbps-0.55 (2019-06-21):
 
  * xbps-install(1): Added `-D, --download-only` flag to allow
