@@ -580,6 +580,10 @@ happy_eyeballs_connect(struct addrinfo *res0, int verbose)
 					unreach |= UNREACH_IPV6;
 				}
 				continue;
+			} else if (errno == EADDRNOTAVAIL) {
+				err = errno;
+				close(sd);
+				continue;
 			} else {
 				err = errno;
 				rv = -1;
