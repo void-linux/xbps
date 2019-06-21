@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2015 Juan Romero Pardines.
+ * Copyright (c) 2008-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,28 +43,29 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-install [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
-	    " -A --automatic           Set automatic installation mode\n"
-	    " -C --config <dir>        Path to confdir (xbps.d)\n"
-	    " -c --cachedir <dir>      Path to cachedir\n"
-	    " -d --debug               Debug mode shown to stderr\n"
-	    " -D --download-only       Download packages and check integrity, nothing else.\n"
-	    " -f --force               Force package re-installation\n"
-	    "                          If specified twice, all files will be\n"
-	    "                          overwritten.\n"
-	    " -h --help                Print help usage\n"
-	    " -i --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
-	    " -U --unpack-only         Unpack packages in transaction, do not configure them\n"
-	    " -M --memory-sync         Remote repository data is fetched and stored\n"
-	    "                          in memory, ignoring on-disk repodata archives.\n"
-	    " -n --dry-run             Dry-run mode\n"
-	    " -R,--repository=<url>    Add repository to the top of the list.\n"
-	    "                          This option can be specified multiple times.\n"
-	    " -r --rootdir <dir>       Full path to rootdir\n"
-	    " -S --sync                Sync remote repository index\n"
-	    " -u --update              Update target package(s)\n"
-	    " -v --verbose             Verbose messages\n"
-	    " -y --yes                 Assume yes to all questions\n"
-	    " -V --version             Show XBPS version\n");
+	    " -A --automatic             Set automatic installation mode\n"
+	    " -C --config <dir>          Path to confdir (xbps.d)\n"
+	    " -c --cachedir <dir>        Path to cachedir\n"
+	    " -d --debug                 Debug mode shown to stderr\n"
+      " -D --download-only       Download packages and check integrity, nothing else.\n"
+	    " -f --force                 Force package re-installation\n"
+	    "                            If specified twice, all files will be\n"
+	    "                            overwritten.\n"
+	    " -h --help                  Print help usage\n"
+	    " -i --ignore-conf-repos     Ignore repositories defined in xbps.d\n"
+	    " -I --ignore-file-conflicts Ignore detected file conflicts.\n"
+	    " -U --unpack-only           Unpack packages in transaction, do not configure them\n"
+	    " -M --memory-sync           Remote repository data is fetched and stored\n"
+	    "                            in memory, ignoring on-disk repodata archives.\n"
+	    " -n --dry-run               Dry-run mode\n"
+	    " -R,--repository=<url>      Add repository to the top of the list.\n"
+	    "                            This option can be specified multiple times.\n"
+	    " -r --rootdir <dir>         Full path to rootdir\n"
+	    " -S --sync                  Sync remote repository index\n"
+	    " -u --update                Update target package(s)\n"
+	    " -v --verbose               Verbose messages\n"
+	    " -y --yes                   Assume yes to all questions\n"
+	    " -V --version               Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
@@ -95,7 +96,7 @@ repo_import_key_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "AC:c:dfhiMnR:r:SuUVvy";
+	const char *shortopts = "AC:c:dfhIiMnR:r:SuUVvy";
 	const struct option longopts[] = {
 		{ "automatic", no_argument, NULL, 'A' },
 		{ "config", required_argument, NULL, 'C' },
@@ -105,6 +106,7 @@ main(int argc, char **argv)
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
+		{ "ignore-file-conflicts", no_argument, NULL, 'I' },
 		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "dry-run", no_argument, NULL, 'n' },
 		{ "repository", required_argument, NULL, 'R' },
@@ -156,6 +158,9 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
+		case 'I':
+			flags |= XBPS_FLAG_IGNORE_FILE_CONFLICTS;
+			break;
 		case 'i':
 			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
 			break;

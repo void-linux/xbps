@@ -50,7 +50,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20190618"
+#define XBPS_API_VERSION	"20190621"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -215,6 +215,12 @@
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_DOWNLOAD_ONLY 	0x00002000
+
+ * @def XBPS_FLAG_IGNORE_FILE_CONFLICTS
+ * Continue with transaction even if there are file conflicts.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_IGNORE_FILE_CONFLICTS	0x00004000
 
 /**
  * @def XBPS_FETCH_CACHECONN

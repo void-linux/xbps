@@ -563,6 +563,10 @@ conflicting_files_in_transaction_body() {
 	xbps-install -r root -C null.conf --repository=$PWD/some_repo -ydv A B
 	# EEXIST
 	atf_check_equal $? 17
+
+	# ignored file conflicts
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -Iydv A B
+	atf_check_equal $? 0
 }
 
 atf_test_case obsolete_dir
