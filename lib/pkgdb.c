@@ -125,6 +125,8 @@ ret:
 void
 xbps_pkgdb_unlock(struct xbps_handle *xhp)
 {
+	xbps_dbg_printf(xhp, "%s: pkgdb_fd %d\n", __func__, pkgdb_fd);
+
 	if (pkgdb_fd != -1) {
 		if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
 			xbps_dbg_printf(xhp, "[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
@@ -234,7 +236,7 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update)
 	if (cached_rv && !flush)
 		return cached_rv;
 
-	if (xhp->pkgdb && update) {
+	if (xhp->pkgdb && flush) {
 		pkgdb_storage = xbps_dictionary_internalize_from_file(xhp->pkgdb_plist);
 		if (pkgdb_storage == NULL ||
 		    !xbps_dictionary_equals(xhp->pkgdb, pkgdb_storage)) {
@@ -276,13 +278,11 @@ xbps_pkgdb_update(struct xbps_handle *xhp, bool flush, bool update)
 void HIDDEN
 xbps_pkgdb_release(struct xbps_handle *xhp)
 {
-	assert(xhp != NULL);
-
-	if (xhp->pkgdb == NULL)
-		return;
+	assert(xhp);
 
 	xbps_pkgdb_unlock(xhp);
-	xbps_object_release(xhp->pkgdb);
+	if (xhp->pkgdb)
+		xbps_object_release(xhp->pkgdb);
 	xbps_dbg_printf(xhp, "[pkgdb] released ok.\n");
 }
 
