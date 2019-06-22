@@ -111,11 +111,9 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	if (xbps_object_type(array) != XBPS_TYPE_ARRAY)
 		return 0;
 
-	if (!xbps_array_count(array))
+	arraycount = xbps_array_count(array);
+	if (arraycount == 0)
 		return 0;
-
-	/* - 1 because there's a private dict used internally */
-	arraycount = xbps_array_count(array) - 1;
 
 	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
 	if (maxthreads <= 1 || arraycount <= 1) /* use single threaded routine */
