@@ -103,7 +103,7 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	struct thread_data *thd;
 	unsigned int arraycount, slicecount;
 	int rv = 0, maxthreads;
-	unsigned int reserved = 0;
+	unsigned int reserved;
 	pthread_spinlock_t reserved_lock;
 
 	assert(fn != NULL);
@@ -137,6 +137,8 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 			slicecount = 32;
 		}
 	}
+
+	reserved = slicecount * maxthreads;
 
 	for (int i = 0; i < maxthreads; i++) {
 		thd[i].array = array;
