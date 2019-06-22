@@ -247,7 +247,7 @@ main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 		if ((rv = xbps_alternatives_set(&xh, pkg, group)) == 0)
-			rv = xbps_pkgdb_update(&xh, true, true);
+			rv = xbps_pkgdb_update(&xh, true, false);
 	} else if (list_mode) {
 		/* list alternative groups */
 		rv = list_alternatives(&xh, pkg, group);
