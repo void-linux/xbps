@@ -609,6 +609,8 @@ wait:
 			if (pfd[i].fd != -1)
 				pfd[i].events = POLLOUT;
 		}
+		if (!waiting)
+			break;
 		if ((ret = poll(pfd, attempts, timeout ? timeout : -1)) == -1) {
 			err = errno;
 			rv = -1;
@@ -639,10 +641,6 @@ wait:
 			rv = -1;
 			break;
 		}
-		if (!waiting)
-			break;
-		else if (done)
-			goto wait;
 	}
 
 out:
