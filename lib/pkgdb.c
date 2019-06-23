@@ -57,7 +57,7 @@
  * data type is specified on its edge, i.e array, bool, integer, string,
  * dictionary.
  */
-static int pkgdb_fd;
+static int pkgdb_fd = -1;
 
 int
 xbps_pkgdb_lock(struct xbps_handle *xhp)
