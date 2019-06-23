@@ -137,6 +137,13 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			free(pkgname);
 			continue;
 		}
+		/*
+		 * If pkg is ignored, pass to the next one.
+		 */
+		if (xbps_pkg_is_ignored(xhp, pkgver)) {
+			free(pkgname);
+			continue;
+		}
 		free(pkgname);
 		/*
 		 * Time to validate revdeps for current pkg.
