@@ -1,5 +1,15 @@
 xbps-0.56 (???):
 
+ * xbps now allows to remove an installed package that was
+   added to the ignored packages list with `ignorepkg` from
+   xbps.d(5). [duncaen]
+
+ * Fixed an issue with multi threaded for each loops
+   processing the first slicecount*maxthreads entries twice. [duncaen]
+
+ * Fixed an issue with happy eyeballs, where when a socket
+   fails within the connection delay it aborts with the error
+   instead of continuing with the next address. [jnbr]
 
 xbps-0.55 (2019-06-21):
 
