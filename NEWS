@@ -1,4 +1,4 @@
-xbps-0.56 (???):
+xbps-0.56 (2019-06-24):
 
  * Fixed xbps_transaction_prepare() always returning
    ENXIO because the transaction dictionary wasn't
