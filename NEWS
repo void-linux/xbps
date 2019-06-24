@@ -1,5 +1,15 @@
 xbps-0.56 (???):
 
+ * Fixed xbps_transaction_prepare() always returning
+   ENXIO because the transaction dictionary wasn't
+   initialized before first use. Regression from 0.54. [xtraeme]
+
+ * Fixed unlocking the pkgdb via xbps_end(). [xtraeme]
+
+ * Fixed flushing pkgdb to storage and re-reading it unnecessarily,
+   this affected xbps-alternatives(1), xbps-pkgdb(1) and
+   xbps-reconfigure(1). [xtraeme]
+
  * xbps now allows to remove an installed package that was
    added to the ignored packages list with `ignorepkg` from
    xbps.d(5). [duncaen]
