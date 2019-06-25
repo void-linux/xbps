@@ -159,13 +159,15 @@ update_xbps_on_any_op_head() {
 }
 
 update_xbps_on_any_op_body() {
-	mkdir -p repo xbps foo
-	touch xbps/foo foo/blah
+	mkdir -p repo xbps foo bar
+	touch xbps/foo foo/blah bar/baz
 
 	cd repo
 	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" ../xbps
 	atf_check_equal $? 0
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../foo
+	atf_check_equal $? 0
+	xbps-create -A noarch -n bar-1.0_1 -s "bar pkg" ../bar
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
@@ -189,7 +191,8 @@ update_xbps_on_any_op_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -r root --repository=$PWD/repo -yud foo
+	# install an unrelated pkg, xbps autoupdates
+	xbps-install -r root --repository=$PWD/repo -yd bar
 	atf_check_equal $? 0
 
 	out=$(xbps-query -r root -p pkgver xbps)
@@ -198,6 +201,18 @@ update_xbps_on_any_op_body() {
 	out=$(xbps-query -r root -p pkgver foo)
 	atf_check_equal $out foo-1.0_1
 
+	# ENOENT
+	xbps-query -r root -p pkgver bar
+	atf_check_equal $? 2
+
+	# xbps has been updated, 2nd time
+	xbps-install -r root --repository=$PWD/repo -yd bar
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver bar)
+	atf_check_equal $out bar-1.0_1
+
+	# perform a globl update
 	xbps-install -r root --repository=$PWD/repo -yud
 	atf_check_equal $? 0
 
