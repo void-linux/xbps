@@ -145,7 +145,7 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive)
 		return rv;
 	} else if (rv == ENOENT) {
 		printf("Package `%s' is not currently installed.\n", pkgname);
-		return 0;
+		return rv;
 	} else if (rv != 0) {
 		xbps_error_printf("Failed to queue `%s' for removing: %s\n",
 		    pkgname, strerror(rv));
@@ -180,7 +180,7 @@ main(int argc, char **argv)
 	const char *rootdir, *cachedir, *confdir;
 	int c, flags, rv;
 	bool yes, drun, recursive, clean_cache, orphans;
-	int maxcols;
+	int maxcols, missing;
 
 	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
@@ -284,16 +284,24 @@ main(int argc, char **argv)
 		}
 	}
 
+	missing = optind;
 	for (int i = optind; i < argc; i++) {
 		rv = remove_pkg(&xh, argv[i], recursive);
-		if (rv != 0) {
+		if (rv == ENOENT) {
+			missing++;
+			continue;
+		} else if (rv != 0) {
 			xbps_end(&xh);
 			exit(rv);
 		}
 	}
+	if (missing == argc) {
+		goto out;
+	}
 	if (orphans || (argc > optind)) {
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
+out:
 	xbps_end(&xh);
 	exit(rv);
 }
