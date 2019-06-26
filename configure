@@ -190,10 +190,6 @@ fi
 echo "CC =	$CC" >>$CONFIG_MK
 echo "CFLAGS =	-O2" >>$CONFIG_MK
 
-if [ "$CC" = "tcc" ]; then
-	echo "CFLAGS += -Wno-error" >>$CONFIG_MK
-fi
-
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
@@ -348,6 +344,10 @@ if [ -n "$LDFLAGS" ]; then
 fi
 if [ -n "$CPPFLAGS" ]; then
 	echo "CPPFLAGS += $CPPFLAGS" >>$CONFIG_MK
+fi
+
+if [ "$CC" = "tcc" ]; then
+	echo "CFLAGS += -Wno-error" >>$CONFIG_MK
 fi
 
 # libfetch
