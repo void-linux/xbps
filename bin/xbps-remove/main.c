@@ -295,7 +295,7 @@ main(int argc, char **argv)
 			exit(rv);
 		}
 	}
-	if (missing == argc) {
+	if (!orphans && missing == argc) {
 		goto out;
 	}
 	if (orphans || (argc > optind)) {
