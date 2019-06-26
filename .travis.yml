@@ -12,8 +12,6 @@ env:
    - CC=clang IMG=voidlinux/voidlinux DEPS="clang glibc-devel"
    - CC=gcc IMG=voidlinux/voidlinux-musl DEPS="gcc musl-devel"
    - CC=clang IMG=voidlinux/voidlinux-musl DEPS="clang musl-devel"
-   - CC=tcc IMG=voidlinux/voidlinux DEPS="tcc binutils glibc-devel"
-   - CC=tcc IMG=voidlinux/voidlinux-musl DEPS="tcc binutils musl-devel"
 
 install:
  - docker pull "$IMG"
