@@ -1470,8 +1470,7 @@ parse_index(struct index_parser *parser, const char *buf, size_t len)
 			return -1;
 		return end_attr + 1 - buf;
 	}
-	/* NOTREACHED */
-	abort();
+	return -1;
 }
 
 struct http_index_cache {
