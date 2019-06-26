@@ -331,6 +331,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 				continue;
 			case ERANGE:
 				/* hash mismatch don't delete it */
+				rv = 0;
 				continue;
 			default:
 				break;
