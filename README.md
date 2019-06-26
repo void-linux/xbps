@@ -70,8 +70,8 @@ and optionally:
   - [atf >= 0.15](https://github.com/jmmv/kyua) (--enable-tests) to build the
     Kyua test suite.
 
-> pcc and tcc can compile xbps correctly, but as of **20190422**
-only the static binaries work correctly, do not forget to set `--enable-static`
+> pcc can compile xbps correctly, but as of **20190422** only the static
+binaries work correctly, do not forget to set `--enable-static`
 option in the `configure` script.
 
 ### Building and testing for dummies
