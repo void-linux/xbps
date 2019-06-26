@@ -652,6 +652,45 @@ base_symlinks_body() {
 	atf_check_equal "$rv" 0
 }
 
+atf_test_case keep_modified_files
+
+keep_modified_files_head() {
+	atf_set "descr" "Test to keep modified files from being deleted"
+}
+
+keep_modified_files_body() {
+	mkdir some_repo root
+	mkdir -p pkg_A
+	touch pkg_A/foo
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -ydv A
+	atf_check_equal $? 0
+
+	echo "modified" >root/foo
+
+	cd some_repo
+	rm ../pka_A/foo
+	xbps-create -A noarch -n A-1.1_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -ydvu
+	atf_check_equal $? 0
+
+	rv=0
+	[ -e root/foo ] || rv=1
+	atf_check_equal $rv 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
@@ -668,4 +707,5 @@ atf_init_test_cases() {
 	atf_add_test_case conflicting_files_in_transaction
 	atf_add_test_case obsolete_dir
 	atf_add_test_case base_symlinks
+	atf_add_test_case keep_modified_files
 }
