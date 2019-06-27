@@ -286,7 +286,7 @@ static bool
 entry_is_conf_file(const char *file)
 {
 	xbps_array_t a;
-	const char *curfile;
+	const char *curfile = NULL;
 
 	assert(file);
 

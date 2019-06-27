@@ -66,7 +66,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user UNUSED)
 	xbps_dictionary_t pkgd, deppkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *curpkgver, *deppkgver, *reqbydep;
+	const char *curpkgver = NULL, *deppkgver = NULL, *reqbydep = NULL;
 	bool automatic = false;
 	unsigned int i, cnt, reqbycnt;
 

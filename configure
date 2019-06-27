@@ -335,6 +335,17 @@ if [ $? -ne 0 ]; then
 	echo "ERRROR: A compatible C99 compiler is required, exiting..."
 	exit 1
 fi
+#
+# Enable LTO if supported (clang and gcc)
+#
+check_compiler_flag lto f CFLAGS
+if [ $? -eq 0 ]; then
+	echo "LDFLAGS += -flto" >> $CONFIG_MK
+	if [ "$CC" = "gcc" ]; then
+		echo "AR = gcc-ar" >> $CONFIG_MK
+		echo "RANLIB = gcc-ranlib" >>$CONFIG_MK
+	fi
+fi
 
 if [ -n "$CFLAGS" ]; then
 	echo "CFLAGS +=	$CFLAGS" >>$CONFIG_MK

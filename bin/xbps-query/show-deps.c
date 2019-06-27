@@ -59,7 +59,7 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname, bool repomode, bool 
 		rdeps = xbps_dictionary_get(pkgd, "run_depends");
 	}
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
-		const char *pkgdep;
+		const char *pkgdep = NULL;
 		xbps_array_get_cstring_nocopy(rdeps, i, &pkgdep);
 		printf("%s\n", pkgdep);
 	}
@@ -70,7 +70,7 @@ int
 show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg, bool repomode)
 {
 	xbps_array_t revdeps;
-	const char *pkgdep;
+	const char *pkgdep = NULL;
 
 	if (repomode)
 		revdeps = xbps_rpool_get_pkg_revdeps(xhp, pkg);

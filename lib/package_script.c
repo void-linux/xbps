@@ -121,7 +121,7 @@ xbps_pkg_exec_script(struct xbps_handle *xhp,
 	xbps_data_t data;
 	void *buf;
 	size_t buflen;
-	const char *pkgver;
+	const char *pkgver = NULL;
 	int rv;
 
 	assert(xhp);

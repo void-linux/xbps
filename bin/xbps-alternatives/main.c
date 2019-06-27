@@ -98,7 +98,7 @@ list_pkg_alternatives(xbps_dictionary_t pkgd, const char *group, bool print_key)
 			printf("%s\n", keyname);
 
 		for (unsigned int x = 0; x < xbps_array_count(array); x++) {
-			const char *str;
+			const char *str = NULL;
 
 			xbps_array_get_cstring_nocopy(array, x, &str);
 			printf("  - %s\n", str);
@@ -144,7 +144,7 @@ list_alternatives(struct xbps_handle *xhp, const char *pkgname, const char *grp)
 
 		printf("%s\n", keyname);
 		for (unsigned int x = 0; x < xbps_array_count(array); x++) {
-			const char *str;
+			const char *str = NULL;
 
 			xbps_array_get_cstring_nocopy(array, x, &str);
 			printf(" - %s%s\n", str, x == 0 ? " (current)" : "");

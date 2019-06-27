@@ -60,7 +60,7 @@ static SIMPLEQ_HEAD(rpool_head, xbps_repo) rpool_queue =
 int
 xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 {
-	const char *repouri;
+	const char *repouri = NULL;
 
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
@@ -83,7 +83,7 @@ struct xbps_repo HIDDEN *
 xbps_regget_repo(struct xbps_handle *xhp, const char *url)
 {
 	struct xbps_repo *repo;
-	const char *repouri;
+	const char *repouri = NULL;
 
 	if (SIMPLEQ_EMPTY(&rpool_queue)) {
 		/* iterate until we have a match */
@@ -137,8 +137,8 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 	int (*fn)(struct xbps_repo *, void *, bool *),
 	void *arg)
 {
-	struct xbps_repo *repo;
-	const char *repouri;
+	struct xbps_repo *repo = NULL;
+	const char *repouri = NULL;
 	int rv = 0;
 	bool foundrepo = false, done = false;
 	unsigned int n = 0;
@@ -204,7 +204,7 @@ find_pkg_revdeps_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 {
 	struct rpool_fpkg *rpf = arg;
 	xbps_array_t revdeps = NULL;
-	const char *pkgver;
+	const char *pkgver = NULL;
 
 	revdeps = xbps_repo_get_pkg_revdeps(repo, rpf->pattern);
 	if (xbps_array_count(revdeps)) {
@@ -225,7 +225,7 @@ find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 {
 	struct rpool_fpkg *rpf = arg;
 	xbps_dictionary_t pkgd;
-	const char *repopkgver;
+	const char *repopkgver = NULL;
 
 	pkgd = xbps_repo_get_pkg(repo, rpf->pattern);
 	if (pkgd == NULL) {

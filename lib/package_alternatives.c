@@ -232,7 +232,7 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 {
 	xbps_array_t allkeys;
 	xbps_dictionary_t alternatives, pkg_alternatives, pkgd, prevpkgd, prevpkg_alts;
-	const char *pkgver, *prevpkgname;
+	const char *pkgver = NULL, *prevpkgname = NULL;
 	int rv = 0;
 
 	assert(xhp);

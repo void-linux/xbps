@@ -120,7 +120,7 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 			continue;
 
 		for (unsigned int i = 0; i < xbps_array_count(shobjs); i++) {
-			const char *shlib;
+			const char *shlib = NULL;
 
 			xbps_array_get_cstring_nocopy(shobjs, i, &shlib);
 			xbps_dbg_printf(xhp, "%s: registering %s for %s\n",
@@ -153,7 +153,7 @@ xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t array;
-		const char *pkgver, *shlib;
+		const char *pkgver = NULL, *shlib = NULL;
 		char *buf;
 
 		shlib = xbps_dictionary_keysym_cstring_nocopy(obj);

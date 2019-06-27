@@ -1,5 +1,7 @@
 -include ../config.mk
 
+RANLIB ?= ranlib
+
 LIBXBPS_MAJOR = 4
 LIBXBPS_MINOR = 0
 LIBXBPS_MICRO = 0
@@ -84,7 +86,7 @@ libxbps.a: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
 	@printf " [AR]\t\t$@\n"
 	${SILENT}$(AR) rcs $@ $^
 	@printf " [RANLIB]\t$@\n"
-	${SILENT}ranlib $@
+	${SILENT}$(RANLIB) $@
 
 .PHONY: install
 install: all

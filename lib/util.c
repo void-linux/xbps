@@ -411,6 +411,9 @@ xbps_xasprintf(const char *fmt, ...)
 int
 xbps_pkgpattern_match(const char *pkg, const char *pattern)
 {
+	assert(pkg);
+	assert(pattern);
+
 	/* simple match on "pkg" against "pattern" */
 	if (strcmp(pattern, pkg) == 0)
 		return 1;
@@ -462,7 +465,7 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver)
 	unsigned int i;
 	xbps_array_t reverts;
 	const char *version = xbps_pkg_version(pkgver);
-	const char *revertver;
+	const char *revertver = NULL;
 
 	if ((reverts = xbps_dictionary_get(pkg, "reverts")) == NULL)
 		return false;

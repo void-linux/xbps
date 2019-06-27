@@ -52,7 +52,7 @@ check_file_mtime(xbps_dictionary_t d, const char *pkg, const char *path)
 {
 	struct stat sb;
 	uint64_t mtime = 0;
-	const char *file;
+	const char *file = NULL;
 
 	/* if obj is not there, skip silently */
 	if (!xbps_dictionary_get_uint64(d, "mtime", &mtime))
@@ -82,7 +82,7 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t pkg_filesd = arg;
-	const char *file, *sha256;
+	const char *file = NULL, *sha256 = NULL;
 	char *path;
 	bool mutable, test_broken = false;
 	int rv = 0, errors = 0;
