@@ -42,7 +42,7 @@ remove_orphans_body() {
 	atf_check_equal $? 0
 	xbps-remove -r root -C empty.conf -yvdo
 	atf_check_equal $? 0
-	xbps-query A
+	xbps-query -r root A
 	atf_check_equal $? 2
 }
 
