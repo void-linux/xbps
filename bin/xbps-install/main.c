@@ -263,7 +263,7 @@ main(int argc, char **argv)
 			}
 		}
 		if (eexist == argc)
-			return 0;
+			goto out;
 
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	} else if (!update) {
@@ -280,11 +280,12 @@ main(int argc, char **argv)
 			}
 		}
 		if (eexist == argc)
-			return 0;
+			goto out;
 
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	}
 
+out:
 	xbps_end(&xh);
 	exit(rv);
 }
