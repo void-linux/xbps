@@ -454,7 +454,7 @@ revdeps_match(struct xbps_repo *repo, xbps_dictionary_t tpkgd, const char *str)
 	xbps_array_t revdeps = NULL, pkgdeps, provides;
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
-	const char *pkgver, *tpkgver, *arch, *vpkg;
+	const char *pkgver = NULL, *tpkgver = NULL, *arch = NULL, *vpkg = NULL;
 
 	iter = xbps_dictionary_iterator(repo->idx);
 	assert(iter);

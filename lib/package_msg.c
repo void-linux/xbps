@@ -36,7 +36,7 @@ xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key
 	xbps_data_t msg;
 	FILE *f = NULL;
 	const void *data = NULL;
-	const char *pkgver;
+	const char *pkgver = NULL;
 	size_t len;
 	char *buf = NULL;
 	int rv = 0;

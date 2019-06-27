@@ -321,7 +321,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	}
 	/* ... remove dup edges at head */
 	for (i = 0; i < xbps_array_count(edges); i++) {
-		const char *pkgver;
+		const char *pkgver = NULL;
 		xbps_array_get_cstring_nocopy(edges, i, &pkgver);
 		xbps_remove_pkg_from_array_by_pkgver(pkgs, pkgver);
 	}

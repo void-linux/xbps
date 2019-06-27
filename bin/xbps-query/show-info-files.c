@@ -209,7 +209,7 @@ show_pkg_files(xbps_dictionary_t filesd)
 	xbps_array_t array, allkeys;
 	xbps_object_t obj;
 	xbps_dictionary_keysym_t ksym;
-	const char *keyname, *file;
+	const char *keyname = NULL, *file = NULL;
 
 	if (xbps_object_type(filesd) != XBPS_TYPE_DICTIONARY)
 		return EINVAL;

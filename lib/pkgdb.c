@@ -159,8 +159,8 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t provides;
 		xbps_dictionary_t pkgd;
-		const char *pkgver;
-		char *pkgname;
+		const char *pkgver = NULL;
+		char *pkgname = NULL;
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		provides = xbps_dictionary_get(pkgd, "provides");
@@ -172,7 +172,7 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 		assert(pkgname);
 
 		for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
-			const char *vpkg;
+			const char *vpkg = NULL;
 
 			xbps_array_get_cstring_nocopy(provides, i, &vpkg);
 			if (!xbps_dictionary_set_cstring(xhp->vpkgd, vpkg, pkgname)) {
@@ -358,7 +358,7 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t rundeps;
 		xbps_dictionary_t pkgd;
-		const char *pkgver;
+		const char *pkgver = NULL;
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		rundeps = xbps_dictionary_get(pkgd, "run_depends");
@@ -368,7 +368,7 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		for (unsigned int i = 0; i < xbps_array_count(rundeps); i++) {
 			xbps_array_t pkg;
-			const char *pkgdep, *vpkgname;
+			const char *pkgdep = NULL, *vpkgname = NULL;
 			char *curpkgname;
 			bool alloc = false;
 
@@ -403,7 +403,7 @@ xbps_pkgdb_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg)
 {
 	xbps_array_t res;
 	xbps_dictionary_t pkgd;
-	const char *pkgver;
+	const char *pkgver = NULL;
 	char *pkgname;
 
 	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkg)) == NULL)
@@ -430,7 +430,7 @@ xbps_dictionary_t
 xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
 	xbps_dictionary_t pkgd, pkgfilesd;
-	const char *pkgver;
+	const char *pkgver = NULL;
 	char *pkgname, *plist;
 
 	if (pkg == NULL)

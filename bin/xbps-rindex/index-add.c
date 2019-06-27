@@ -135,7 +135,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 
 		pkgshlibs = xbps_dictionary_get(pkg, "shlib-provides");
 		for (unsigned int i = 0; i < xbps_array_count(pkgshlibs); i++) {
-			const char *shlib;
+			const char *shlib = NULL;
 			xbps_array_get_cstring_nocopy(pkgshlibs, i, &shlib);
 			xbps_dictionary_remove(usedshlibs, shlib);
 		}
@@ -152,7 +152,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 
 		pkgshlibs = xbps_dictionary_get(pkg, "shlib-provides");
 		for (unsigned int i = 0; i < xbps_array_count(pkgshlibs); i++) {
-			const char *shlib;
+			const char *shlib = NULL;
 			xbps_array_get_cstring_nocopy(pkgshlibs, i, &shlib);
 			xbps_dictionary_remove(usedshlibs, shlib);
 		}
@@ -171,7 +171,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			printf("  %s (provided by: %s; used by: ", shlib, provider);
 			pre = "";
 			for (unsigned int i = 0; i < xbps_array_count(users); i++) {
-				const char *user;
+				const char *user = NULL;
 				xbps_array_get_cstring_nocopy(users, i, &user);
 				xbps_dictionary_remove(usedshlibs, shlib);
 				printf("%s%s",pre, user);
@@ -183,7 +183,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 		iter = xbps_dictionary_iterator(stage);
 		while ((keysym = xbps_object_iterator_next(iter))) {
 			xbps_dictionary_t pkg = xbps_dictionary_get_keysym(stage, keysym);
-			const char *pkgver, *arch;
+			const char *pkgver = NULL, *arch = NULL;
 			xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
 			xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch);
 			printf("stage: added `%s' (%s)\n", pkgver, arch);
@@ -197,7 +197,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 		while ((keysym = xbps_object_iterator_next(iter))) {
 			const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 			xbps_dictionary_t pkg = xbps_dictionary_get_keysym(stage, keysym);
-			const char *pkgver, *arch;
+			const char *pkgver = NULL, *arch = NULL;
 			xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
 			xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch);
 			printf("index: added `%s' (%s).\n", pkgver, arch);

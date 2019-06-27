@@ -257,7 +257,7 @@ xbps_autoupdate(struct xbps_handle *xhp)
 		/* a new xbps version is available, check its revdeps */
 		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
 		for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
-			const char *curpkgver;
+			const char *curpkgver = NULL;
 			char *curpkgn;
 
 			xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
@@ -361,7 +361,7 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 
 	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
-		const char *curpkgver;
+		const char *curpkgver = NULL;
 		char *curpkgn;
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
@@ -400,7 +400,7 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 
 	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
-		const char *curpkgver;
+		const char *curpkgver = NULL;
 		char *curpkgn;
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);

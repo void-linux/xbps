@@ -122,7 +122,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 	xbps_array_t rdeps, provides;
 	xbps_string_t str;
 	struct item *item, *xitem;
-	const char *pkgver;
+	const char *pkgver = NULL;
 	char *pkgn;
 
 	assert(xhp);
@@ -141,7 +141,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
 		xbps_dictionary_t curpkgd;
-		const char *curdep;
+		const char *curdep = NULL;
 		char *curdepname;
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curdep);

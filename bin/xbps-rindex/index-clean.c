@@ -53,7 +53,7 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		bool *done UNUSED)
 {
 	struct CleanerCbInfo *info = arg;
-	const char *arch, *pkgver, *sha256;
+	const char *arch = NULL, *pkgver = NULL, *sha256 = NULL;
 	char *filen, *pkgname;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);

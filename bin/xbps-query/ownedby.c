@@ -51,7 +51,7 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 		       const char *pkgver)
 {
 	xbps_array_t array;
-	const char *keyname, *typestr;
+	const char *keyname = NULL, *typestr = NULL;
 
 	keyname = xbps_dictionary_keysym_cstring_nocopy(key);
 
@@ -104,7 +104,7 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 	xbps_dictionary_t pkgmetad;
 	xbps_array_t files_keys;
 	struct ffdata *ffd = arg;
-	const char *pkgver;
+	const char *pkgver = NULL;
 
 	(void)obj_key;
 	(void)done;
@@ -136,7 +136,7 @@ repo_match_cb(struct xbps_handle *xhp,
 	xbps_dictionary_t filesd;
 	xbps_array_t files_keys;
 	struct ffdata *ffd = arg;
-	const char *pkgver;
+	const char *pkgver = NULL;
 	char *bfile;
 
 	xbps_dictionary_set_cstring_nocopy(obj, "repository", ffd->repouri);

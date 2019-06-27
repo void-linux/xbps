@@ -54,7 +54,7 @@ struct search_data {
 static void
 print_results(struct xbps_handle *xhp, struct search_data *sd)
 {
-	const char *pkgver, *desc, *inststr;
+	const char *pkgver = NULL, *desc = NULL, *inststr = NULL;
 	char tmp[256], *out;
 	unsigned int j, tlen = 0, len = 0;
 
@@ -102,7 +102,7 @@ search_array_cb(struct xbps_handle *xhp UNUSED,
 {
 	xbps_object_t obj2;
 	struct search_data *sd = arg;
-	const char *pkgver = NULL, *desc, *str;
+	const char *pkgver = NULL, *desc = NULL, *str = NULL;
 
 	if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver))
 		return 0;

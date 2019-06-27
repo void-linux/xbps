@@ -388,7 +388,7 @@ static int
 collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 		const char *pkgname, const char *pkgver, unsigned int idx,
 		const char *sha256, enum type type, bool update, bool preserve,
-		bool remove)
+		bool removefile)
 {
 	struct item *item;
 
@@ -402,7 +402,7 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 		goto add;
 	}
 
-	if (remove) {
+	if (removefile) {
 		if (item->old.type == 0) {
 			/*
 			 * File wasn't removed before.
@@ -471,7 +471,7 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 
 	return 0;
 add:
-	if (remove) {
+	if (removefile) {
 		item->old.pkgname = strdup(pkgname);
 		item->old.pkgver = strdup(pkgver);
 		item->old.type = type;
@@ -496,7 +496,7 @@ add:
 		 * and installed by another package.
 		 */
 		if (strcmp(item->new.pkgname, item->old.pkgname) != 0) {
-			if (remove) {
+			if (removefile) {
 				xbps_dbg_printf(xhp, "[files] %s: %s moved to"
 				    " package `%s': %s\n", pkgver, typestr(item->old.type),
 				    item->new.pkgver, file);
@@ -514,7 +514,7 @@ add:
 static int
 collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			const char *pkgname, const char *pkgver, unsigned int idx,
-			bool update, bool preserve, bool remove)
+			bool update, bool preserve, bool removefile)
 {
 	xbps_array_t a;
 	xbps_dictionary_t filed;
@@ -528,12 +528,12 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
-			if (remove)
+			if (removefile)
 				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
-			    TYPE_FILE, update, preserve, remove);
+			    TYPE_FILE, update, preserve, removefile);
 			if (rv == EEXIST) {
 				error = true;
 				continue;
@@ -548,7 +548,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
-			if (remove)
+			if (removefile)
 				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
 #if 0
 			/* XXX: how to handle conf_file size */
@@ -556,7 +556,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 				size = 0;
 #endif
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
-			    TYPE_FILE, update, preserve, remove);
+			    TYPE_FILE, update, preserve, removefile);
 			if (rv == EEXIST) {
 				error = true;
 				continue;
@@ -570,7 +570,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
-			    TYPE_LINK, update, preserve, remove);
+			    TYPE_LINK, update, preserve, removefile);
 			if (rv == EEXIST) {
 				error = true;
 				continue;
@@ -584,7 +584,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
-			    TYPE_DIR, update, preserve, remove);
+			    TYPE_DIR, update, preserve, removefile);
 			if (rv == EEXIST) {
 				error = true;
 				continue;

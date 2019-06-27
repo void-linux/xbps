@@ -45,7 +45,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
 		  bool *loop_done UNUSED)
 {
 	struct list_pkgver_cb *lpc = arg;
-	const char *pkgver, *short_desc, *state_str;
+	const char *pkgver = NULL, *short_desc = NULL, *state_str = NULL;
 	char tmp[255], *out = NULL;
 	int i, len = 0;
 	pkg_state_t state;
@@ -94,7 +94,7 @@ list_manual_pkgs(struct xbps_handle *xhp UNUSED,
 		 void *arg UNUSED,
 		 bool *loop_done UNUSED)
 {
-	const char *pkgver;
+	const char *pkgver = NULL;
 	bool automatic = false;
 
 	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
@@ -113,7 +113,7 @@ list_hold_pkgs(struct xbps_handle *xhp UNUSED,
 		void *arg UNUSED,
 		bool *loop_done UNUSED)
 {
-	const char *pkgver;
+	const char *pkgver = NULL;
 
 	if (xbps_dictionary_get(obj, "hold")) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -130,7 +130,7 @@ list_repolock_pkgs(struct xbps_handle *xhp UNUSED,
 		void *arg UNUSED,
 		bool *loop_done UNUSED)
 {
-	const char *pkgver;
+	const char *pkgver = NULL;
 
 	if (xbps_dictionary_get(obj, "repolock")) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -144,7 +144,7 @@ int
 list_orphans(struct xbps_handle *xhp)
 {
 	xbps_array_t orphans;
-	const char *pkgver;
+	const char *pkgver = NULL;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
 	if (orphans == NULL)
@@ -226,7 +226,7 @@ _find_longest_pkgver_cb(struct xbps_handle *xhp UNUSED,
 			bool *loop_done UNUSED)
 {
 	struct fflongest *ffl = arg;
-	const char *pkgver;
+	const char *pkgver = NULL;
 	unsigned int len;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);

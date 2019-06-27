@@ -42,7 +42,7 @@ pkgdb_cb(struct xbps_handle *xhp UNUSED,
 		void *arg,
 		bool *done UNUSED)
 {
-	const char *pkgver;
+	const char *pkgver = NULL;
 	char *pkgname;
 	int rv, *errors = (int *)arg;
 

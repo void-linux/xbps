@@ -39,7 +39,7 @@
 static void
 print_array(xbps_array_t a)
 {
-	const char *str;
+	const char *str = NULL;
 
 	for (unsigned int i = 0; i < xbps_array_count(a); i++) {
 		xbps_array_get_cstring_nocopy(a, i, &str);

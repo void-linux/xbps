@@ -138,7 +138,7 @@ static xbps_dictionary_t
 match_pkg_by_pkgver(xbps_dictionary_t repod, const char *p)
 {
 	xbps_dictionary_t d = NULL;
-	const char *pkgver;
+	const char *pkgver = NULL;
 	char *pkgname;
 
 	/* exact match by pkgver */
@@ -162,8 +162,8 @@ static xbps_dictionary_t
 match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 {
 	xbps_dictionary_t d = NULL;
-	const char *pkgver;
-	char *pkgname;
+	const char *pkgver = NULL;
+	char *pkgname = NULL;
 
 	/* match by pkgpattern in pkgver */
 	if ((pkgname = xbps_pkgpattern_name(p)) == NULL) {

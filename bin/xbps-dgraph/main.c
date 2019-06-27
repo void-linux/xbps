@@ -350,7 +350,7 @@ process_fulldeptree(struct xbps_handle *xhp, FILE *f,
 	i = xbps_array_count(rdeps);
 	while (i--) {
 		xbps_dictionary_t rpkgd;
-		const char *pkgdep;
+		const char *pkgdep = NULL;
 		unsigned int pkgidx = 0;
 		bool found = false;
 
@@ -382,7 +382,7 @@ process_fulldeptree(struct xbps_handle *xhp, FILE *f,
 		rpkgrdeps = xbps_dictionary_get(rpkgd, "run_depends");
 		for (x = 0; x < xbps_array_count(rpkgrdeps); x++) {
 			struct pkgdep *ppd;
-			const char *rpkgdep;
+			const char *rpkgdep = NULL;
 
 			xbps_array_get_cstring_nocopy(rpkgrdeps, x, &rpkgdep);
 			SLIST_FOREACH(ppd, &pkgdep_list, pkgdep_entries) {
@@ -406,7 +406,7 @@ process_fulldeptree(struct xbps_handle *xhp, FILE *f,
 	fprintf(f, "\t%u [label=\"%s\",style=\"filled\",fillcolor=\"darksalmon\"];\n", i, pkgver);
 	rpkgrdeps = xbps_dictionary_get(pkgd, "run_depends");
 	for (x = 0; x < xbps_array_count(rpkgrdeps); x++) {
-		const char *rpkgdep;
+		const char *rpkgdep = NULL;
 
 		xbps_array_get_cstring_nocopy(rpkgrdeps, x, &rpkgdep);
 		SLIST_FOREACH(pd, &pkgdep_list, pkgdep_entries) {

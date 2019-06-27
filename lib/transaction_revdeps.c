@@ -151,7 +151,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		for (unsigned int x = 0; x < xbps_array_count(pkgrdeps); x++) {
 			xbps_array_t rundeps;
 			xbps_dictionary_t revpkgd;
-			const char *curpkgver, *revpkgver, *curdep, *curtract;
+			const char *curpkgver = NULL, *revpkgver, *curdep = NULL, *curtract;
 			char *curpkgname, *curdepname;
 			bool found = false;
 
