@@ -113,6 +113,24 @@ addDepn(struct item *item, struct item *xitem)
 	xitem->dbase = depn;
 }
 
+static void
+add_deps_recursive(struct item *item)
+{
+	struct depn *dep;
+	xbps_string_t str;
+
+	if (xbps_match_string_in_array(result, item->pkgver))
+		return;
+
+	for (dep = item->dbase; dep; dep = dep->dnext)
+		add_deps_recursive(dep->item);
+
+	str = xbps_string_create_cstring(item->pkgver);
+	assert(str);
+	xbps_array_add_first(result, str);
+	xbps_object_release(str);
+}
+
 /*
  * Recursively calculate all dependencies.
  */
@@ -173,9 +191,11 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 			continue;
 		}
 		xitem = lookupItem(curdepname);
-		if (xitem == NULL)
-			xitem = ordered_depends(xhp, curpkgd, rpool);
-
+		if (xitem) {
+			add_deps_recursive(xitem);
+			continue;
+		}
+		xitem = ordered_depends(xhp, curpkgd, rpool);
 		if (xitem == NULL) {
 			/* package depends on missing dependencies */
 			xbps_dbg_printf(xhp, "%s: missing dependency '%s'\n", pkgver, curdep);
