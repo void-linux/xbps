@@ -114,7 +114,7 @@ addDepn(struct item *item, struct item *xitem)
 }
 
 static void
-add_deps_recursive(struct item *item)
+add_deps_recursive(struct item *item, bool first)
 {
 	struct depn *dep;
 	xbps_string_t str;
@@ -123,7 +123,10 @@ add_deps_recursive(struct item *item)
 		return;
 
 	for (dep = item->dbase; dep; dep = dep->dnext)
-		add_deps_recursive(dep->item);
+		add_deps_recursive(dep->item, false);
+
+	if (first)
+		return;
 
 	str = xbps_string_create_cstring(item->pkgver);
 	assert(str);
@@ -153,6 +156,12 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 
 	pkgn = xbps_pkg_name(pkgver);
 	assert(pkgn);
+	item = lookupItem(pkgn);
+	if (item) {
+		add_deps_recursive(item, depth == 0);
+		return item;
+	}
+
 	item = addItem(rdeps, pkgn);
 	item->pkgver = pkgver;
 	assert(item);
@@ -193,7 +202,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 		}
 		xitem = lookupItem(curdepname);
 		if (xitem) {
-			add_deps_recursive(xitem);
+			add_deps_recursive(xitem, false);
 			continue;
 		}
 		xitem = ordered_depends(xhp, curpkgd, rpool, depth+1);
