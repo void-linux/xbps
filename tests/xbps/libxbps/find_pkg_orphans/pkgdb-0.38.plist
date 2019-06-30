@@ -198,6 +198,23 @@
 		<true/>
 		<key>pkgver</key>
 		<string>orphan1-0_1</string>
+		<key>run_depends</key>
+		<array>
+			<string>orphan0&gt;=0_1</string>
+		</array>
+		<key>state</key>
+		<string>installed</string>
+	</dict>
+	<key>orphan2</key>
+	<dict>
+		<key>automatic-install</key>
+		<true/>
+		<key>pkgver</key>
+		<string>orphan2-0_1</string>
+		<key>run_depends</key>
+		<array>
+			<string>orphan0&gt;=0_1</string>
+		</array>
 		<key>state</key>
 		<string>installed</string>
 	</dict>

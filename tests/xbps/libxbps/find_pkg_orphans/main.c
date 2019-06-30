@@ -43,6 +43,7 @@ static const char expected_output[] =
 	"xbps-triggers-1.0_1\n";
 
 static const char expected_output_all[] =
+	"orphan2-0_1\n"
 	"unexistent-pkg-0_1\n"
 	"orphan1-0_1\n"
 	"orphan0-0_1\n";
