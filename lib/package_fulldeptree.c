@@ -135,7 +135,8 @@ add_deps_recursive(struct item *item)
  * Recursively calculate all dependencies.
  */
 static struct item *
-ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
+ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
+		size_t depth)
 {
 	xbps_array_t rdeps, provides;
 	xbps_string_t str;
@@ -195,7 +196,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 			add_deps_recursive(xitem);
 			continue;
 		}
-		xitem = ordered_depends(xhp, curpkgd, rpool);
+		xitem = ordered_depends(xhp, curpkgd, rpool, depth+1);
 		if (xitem == NULL) {
 			/* package depends on missing dependencies */
 			xbps_dbg_printf(xhp, "%s: missing dependency '%s'\n", pkgver, curdep);
@@ -207,7 +208,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool)
 		free(curdepname);
 	}
 	/* all deps were processed, add item to head */
-	if (!xbps_match_string_in_array(result, item->pkgver)) {
+	if (depth > 0 && !xbps_match_string_in_array(result, item->pkgver)) {
 		str = xbps_string_create_cstring(item->pkgver);
 		assert(str);
 		xbps_array_add_first(result, str);
@@ -233,7 +234,7 @@ xbps_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg, bool rpool)
 		    ((pkgd = xbps_pkgdb_get_virtualpkg(xhp, pkg)) == NULL))
 			return NULL;
 	}
-	if (ordered_depends(xhp, pkgd, rpool) == NULL)
+	if (ordered_depends(xhp, pkgd, rpool, 0) == NULL)
 		return NULL;
 
 	return result;

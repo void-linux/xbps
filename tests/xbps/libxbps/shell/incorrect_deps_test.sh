@@ -93,8 +93,8 @@ incorrect_dep_dups_body() {
 
 	out=$(xbps-query -C empty.conf -r root --fulldeptree -x B)
 	set -- $out
-	atf_check_equal $# 2
-	atf_check_equal "$1 $2" "B-1.0_1 A-1.0_1"
+	atf_check_equal $# 1
+	atf_check_equal "$1" "A-1.0_1"
 }
 
 atf_test_case missing_deps
