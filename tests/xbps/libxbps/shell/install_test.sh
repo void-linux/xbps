@@ -305,12 +305,14 @@ install_and_update_revdeps_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n C-1.0_1 -s "C pkg" --dependencies "B-1.0_1" ../pkg
 	atf_check_equal $? 0
+	xbps-create -A noarch -n D-1.0_1 -s "D pkg" --dependencies "C>=1.0_1" ../pkg
+	atf_check_equal $? 0
 
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 
 	cd ..
-	xbps-install -r root --repository=repo -yvd C
+	xbps-install -r root --repository=repo -yvd C D
 	atf_check_equal $? 0
 	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.0_1
 	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.0_1
@@ -321,19 +323,20 @@ install_and_update_revdeps_body() {
 	atf_check_equal $? 0
 	xbps-create -A noarch -n B-1.0_2 -s "B pkg" --dependencies "A-1.0_2" ../pkg
 	atf_check_equal $? 0
-	xbps-create -A noarch -n C-1.0_2 -s "C pkg" --dependencies "B-1.0_2" ../pkg
+	xbps-create -A noarch -n C-1.0_2 -s "C pkg" --dependencies "A-1.0_2" ../pkg
 	atf_check_equal $? 0
-	xbps-create -A noarch -n D-1.0_1 -s "D pkg" --dependencies "C-1.0_2" ../pkg
+	xbps-create -A noarch -n E-1.0_1 -s "E pkg" --dependencies "C-1.0_2" ../pkg
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -r root --repository=repo -yvd D
+	xbps-install -r root --repository=repo -yvd E
 	atf_check_equal $? 0
 	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.0_2
 	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.0_2
 	atf_check_equal $(xbps-query -r root -p pkgver C) C-1.0_2
 	atf_check_equal $(xbps-query -r root -p pkgver D) D-1.0_1
+	atf_check_equal $(xbps-query -r root -p pkgver E) E-1.0_1
 }
 
 atf_test_case update_file_timestamps
