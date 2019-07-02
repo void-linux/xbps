@@ -127,7 +127,7 @@ xbps_dictionary_t HIDDEN xbps_find_pkg_in_array(xbps_array_t, const char *,
 		const char *);
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *,
 		xbps_array_t, const char *, const char *);
-void HIDDEN xbps_transaction_revdeps(struct xbps_handle *, xbps_array_t);
+int HIDDEN xbps_transaction_revdeps(struct xbps_handle *, xbps_array_t);
 bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *, xbps_array_t,
 		xbps_array_t);
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
