@@ -101,10 +101,21 @@ broken_pkg(xbps_array_t mdeps, const char *dep, const char *pkg, const char *tra
 	free(str);
 }
 
-void HIDDEN
+static int
+update_pkg(struct xbps_handle *xhp, const char *pkg)
+{
+	int rv = 0;
+	rv = xbps_transaction_update_pkg(xhp, pkg);
+	if (rv == EEXIST)
+		return 0;
+	return rv;
+}
+
+int HIDDEN
 xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 {
 	xbps_array_t mdeps;
+	int updated = 0;
 
 	mdeps = xbps_dictionary_get(xhp->transd, "missing_deps");
 
@@ -235,9 +246,17 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 				free(pkgname);
 				continue;
 			}
+			if (update_pkg(xhp, pkgname) == 0) {
+				updated++;
+				free(pkgname);
+				continue;
+			}
 			free(pkgname);
 			broken_pkg(mdeps, curpkgver, pkgver, tract);
 		}
 
 	}
+	if (updated > 0)
+		return EAGAIN;
+	return 0;
 }

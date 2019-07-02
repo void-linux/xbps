@@ -272,11 +272,13 @@ xbps_transaction_init(struct xbps_handle *xhp)
 	return 0;
 }
 
+#define MAX_REPEAT 512
+
 int
 xbps_transaction_prepare(struct xbps_handle *xhp)
 {
 	xbps_array_t array, pkgs, edges;
-	unsigned int i, cnt;
+	unsigned int i, j, cnt;
 	int rv = 0;
 
 	if ((rv = xbps_transaction_init(xhp)) != 0)
@@ -285,60 +287,79 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	if (xhp->transd == NULL)
 		return ENXIO;
 
-	/*
-	 * Collect dependencies for pkgs in transaction.
-	 */
-	if ((edges = xbps_array_create()) == NULL)
-		return ENOMEM;
-	/*
-	 * The edges are also appended after its dependencies have been
-	 * collected; the edges at the original array are removed later.
-	 */
-	pkgs = xbps_dictionary_get(xhp->transd, "packages");
-	assert(xbps_object_type(pkgs) == XBPS_TYPE_ARRAY);
-	cnt = xbps_array_count(pkgs);
-	for (i = 0; i < cnt; i++) {
-		xbps_dictionary_t pkgd;
-		xbps_string_t str;
-		const char *tract = NULL;
-
-		pkgd = xbps_array_get(pkgs, i);
-		str = xbps_dictionary_get(pkgd, "pkgver");
-		xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &tract);
-		if ((strcmp(tract, "remove") == 0) || strcmp(tract, "hold") == 0)
-			continue;
-
-		assert(xbps_object_type(str) == XBPS_TYPE_STRING);
-
-		if (!xbps_array_add(edges, str))
+	for (j = 0; j < MAX_REPEAT; j++) {
+		/*
+		 * Collect dependencies for pkgs in transaction.
+		 */
+		if ((edges = xbps_array_create()) == NULL)
 			return ENOMEM;
+		/*
+		 * The edges are also appended after its dependencies have been
+		 * collected; the edges at the original array are removed later.
+		 */
+		pkgs = xbps_dictionary_get(xhp->transd, "packages");
+		assert(xbps_object_type(pkgs) == XBPS_TYPE_ARRAY);
+		cnt = xbps_array_count(pkgs);
+		for (i = 0; i < cnt; i++) {
+			xbps_dictionary_t pkgd;
+			xbps_string_t str;
+			const char *tract = NULL;
 
-		if ((rv = xbps_repository_find_deps(xhp, pkgs, pkgd)) != 0)
+			pkgd = xbps_array_get(pkgs, i);
+			str = xbps_dictionary_get(pkgd, "pkgver");
+			xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &tract);
+			if ((strcmp(tract, "remove") == 0) || strcmp(tract, "hold") == 0)
+				continue;
+
+			assert(xbps_object_type(str) == XBPS_TYPE_STRING);
+
+			if (!xbps_array_add(edges, str))
+				return ENOMEM;
+
+			if ((rv = xbps_repository_find_deps(xhp, pkgs, pkgd)) != 0)
+				return rv;
+
+			if (!xbps_array_add(pkgs, pkgd))
+				return ENOMEM;
+		}
+		/* ... remove dup edges at head */
+		for (i = 0; i < xbps_array_count(edges); i++) {
+			const char *pkgver = NULL;
+			xbps_array_get_cstring_nocopy(edges, i, &pkgver);
+			xbps_remove_pkg_from_array_by_pkgver(pkgs, pkgver);
+		}
+		xbps_object_release(edges);
+
+		/*
+		 * Check for packages to be replaced.
+		 */
+		if ((rv = xbps_transaction_package_replace(xhp, pkgs)) != 0) {
+			xbps_object_release(xhp->transd);
+			xhp->transd = NULL;
 			return rv;
-
-		if (!xbps_array_add(pkgs, pkgd))
-			return ENOMEM;
+		}
+		/*
+		 * Check reverse dependencies.
+		 */
+		if ((rv = xbps_transaction_revdeps(xhp, pkgs)) == 0)
+			break;
+		if (rv != EAGAIN)
+			return rv;
 	}
-	/* ... remove dup edges at head */
-	for (i = 0; i < xbps_array_count(edges); i++) {
-		const char *pkgver = NULL;
-		xbps_array_get_cstring_nocopy(edges, i, &pkgver);
-		xbps_remove_pkg_from_array_by_pkgver(pkgs, pkgver);
-	}
-	xbps_object_release(edges);
-
 	/*
-	 * Check for packages to be replaced.
+	 * Repeated too many times.
 	 */
-	if ((rv = xbps_transaction_package_replace(xhp, pkgs)) != 0) {
-		xbps_object_release(xhp->transd);
-		xhp->transd = NULL;
-		return rv;
+	if (j == MAX_REPEAT) {
+		xbps_dbg_printf(xhp, "[trans] aborted due to too many repetitions"
+		    " while resolving dependencies!\n");
+		return ELOOP;
+	} else {
+		xbps_dbg_printf(xhp, "[trans] resolved dependencies in"
+		    " %d repetitions.\n", j);
 	}
 	/*
 	 * If there are missing deps or revdeps bail out.
 	 */
-	xbps_transaction_revdeps(xhp, pkgs);
 	array = xbps_dictionary_get(xhp->transd, "missing_deps");
 	if (xbps_array_count(array)) {
 		if (xhp->flags & XBPS_FLAG_FORCE_REMOVE_REVDEPS) {
