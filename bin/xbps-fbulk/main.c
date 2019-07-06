@@ -656,7 +656,10 @@ main(int argc, char **argv)
 	 * Process all directories in void-packages/srcpkgs, excluding symlinks
 	 * (subpackages).
 	 */
-	assert(chdir(rpath) == 0);
+	if (chdir(rpath) == -1) {
+		fprintf(stderr, "ERROR: failed to chdir to %s: %s\n", rpath, strerror(errno));
+		exit(EXIT_FAILURE);
+	}
 
 	if ((dir = opendir(rpath)) != NULL) {
 		while ((den = readdir(dir)) != NULL) {
