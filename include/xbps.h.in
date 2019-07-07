@@ -1867,6 +1867,19 @@ unsigned char *xbps_file_hash_raw(const char *file);
 int xbps_file_hash_check(const char *file, const char *sha256);
 
 /**
+ * Verifies the RSA signature \a sigfile against \a digest with the
+ * RSA public-key associated in \a repo.
+ *
+ * @param[in] repo Repository to use with the RSA public key associated.
+ * @param[in] sigfile The signature file name used to verify \a digest.
+ * @param[in] digest The digest to verify.
+ *
+ * @return True if the signature is valid, false otherwise.
+ */
+bool xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
+		unsigned char *digest);
+
+/**
  * Verifies the RSA signature of \a fname with the RSA public-key associated
  * in \a repo.
  *
