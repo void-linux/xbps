@@ -56,153 +56,6 @@
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 
-static int
-check_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
-{
-	xbps_object_t obj;
-	struct xbps_repo *repo;
-	const char *pkgver, *repoloc, *trans, *sha256;
-	char *binfile;
-	int rv = 0;
-
-	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
-		if ((strcmp(trans, "remove") == 0) ||
-		    (strcmp(trans, "hold") == 0) ||
-		    (strcmp(trans, "configure") == 0))
-			continue;
-
-		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-
-		binfile = xbps_repository_pkg_path(xhp, obj);
-		if (binfile == NULL) {
-			rv = ENOMEM;
-			break;
-		}
-		/*
-		 * For pkgs in local repos check the sha256 hash.
-		 * For pkgs in remote repos check the RSA signature.
-		 */
-		if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
-			rv = errno;
-			xbps_dbg_printf(xhp, "%s: failed to get repository "
-			    "%s: %s\n", pkgver, repoloc, strerror(errno));
-			break;
-		}
-		if (repo->is_remote) {
-			/* remote repo */
-			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
-			    "%s: verifying RSA signature...", pkgver);
-
-			if (!xbps_verify_file_signature(repo, binfile)) {
-				char *sigfile;
-				rv = EPERM;
-				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				    "%s: the RSA signature is not valid!", pkgver);
-				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				    "%s: removed pkg archive and its signature.", pkgver);
-				(void)remove(binfile);
-				sigfile = xbps_xasprintf("%s.sig", binfile);
-				(void)remove(sigfile);
-				free(sigfile);
-				free(binfile);
-				break;
-			}
-		} else {
-			/* local repo */
-			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
-			    "%s: verifying SHA256 hash...", pkgver);
-			xbps_dictionary_get_cstring_nocopy(obj, "filename-sha256", &sha256);
-			if ((rv = xbps_file_hash_check(binfile, sha256)) != 0) {
-				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				    "%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
-				free(binfile);
-				break;
-			}
-
-		}
-		free(binfile);
-	}
-	xbps_object_iterator_reset(iter);
-
-	return rv;
-}
-
-static int
-download_binpkgs(struct xbps_handle *xhp, xbps_object_iterator_t iter)
-{
-	xbps_object_t obj;
-	const char *pkgver, *arch, *fetchstr, *repoloc, *trans;
-	char *file, *sigfile;
-	int rv = 0;
-
-	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
-		if ((strcmp(trans, "remove") == 0) ||
-		    (strcmp(trans, "hold") == 0) ||
-		    (strcmp(trans, "configure") == 0))
-			continue;
-
-		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
-		if (!xbps_repository_is_remote(repoloc))
-			continue;
-
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-
-		/*
-		 * Download binary package.
-		 */
-		if ((file = xbps_repository_pkg_path(xhp, obj)) == NULL) {
-			rv = EINVAL;
-			break;
-		}
-		if (access(file, R_OK) == -1) {
-			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
-			    "Downloading `%s' package (from `%s')...", pkgver, repoloc);
-			if ((rv = xbps_fetch_file(xhp, file, NULL)) == -1) {
-				rv = fetchLastErrCode ? fetchLastErrCode : errno;
-				fetchstr = xbps_fetch_error_string();
-				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
-				    pkgver, "[trans] failed to download `%s' package from `%s': %s",
-				    pkgver, repoloc, fetchstr ? fetchstr : strerror(rv));
-				free(file);
-				break;
-			}
-			rv = 0;
-		}
-		/*
-		 * Download binary package signature.
-		 */
-		sigfile = xbps_xasprintf("%s.sig", file);
-		free(file);
-		file = NULL;
-		if (access(sigfile, R_OK) == -1) {
-			xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
-			    "Downloading `%s' signature (from `%s')...", pkgver, repoloc);
-			file = xbps_xasprintf("%s/%s.%s.xbps.sig", repoloc, pkgver, arch);
-			if ((rv = xbps_fetch_file(xhp, file, NULL)) == -1) {
-				rv = fetchLastErrCode ? fetchLastErrCode : errno;
-				fetchstr = xbps_fetch_error_string();
-				xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
-				    pkgver, "[trans] failed to download `%s' signature from `%s': %s",
-				    pkgver, repoloc, fetchstr ? fetchstr : strerror(rv));
-				free(sigfile);
-				free(file);
-				break;
-			}
-			rv = 0;
-		}
-		free(sigfile);
-		if (file != NULL)
-			free(file);
-	}
-	xbps_object_iterator_reset(iter);
-
-	return rv;
-}
-
 int
 xbps_transaction_commit(struct xbps_handle *xhp)
 {
@@ -237,21 +90,12 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	if (iter == NULL)
 		return EINVAL;
+
 	/*
-	 * Download binary packages (if they come from a remote repository).
+	 * Download and verify binary packages.
 	 */
-	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_DOWNLOAD, 0, NULL, NULL);
-	if ((rv = download_binpkgs(xhp, iter)) != 0) {
-		xbps_dbg_printf(xhp, "[trans] failed to download binpkgs: "
-		    "%s\n", strerror(rv));
-		goto out;
-	}
-	/*
-	 * Check binary package integrity.
-	 */
-	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_VERIFY, 0, NULL, NULL);
-	if ((rv = check_binpkgs(xhp, iter)) != 0) {
-		xbps_dbg_printf(xhp, "[trans] failed to check binpkgs: "
+	if ((rv = xbps_transaction_fetch(xhp, iter)) != 0) {
+		xbps_dbg_printf(xhp, "[trans] failed to fetch and verify binpkgs: "
 		    "%s\n", strerror(rv));
 		goto out;
 	}

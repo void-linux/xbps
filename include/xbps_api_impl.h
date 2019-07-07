@@ -158,5 +158,7 @@ struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 int HIDDEN xbps_conf_init(struct xbps_handle *);
 int HIDDEN xbps_transaction_files(struct xbps_handle *,
 		xbps_object_iterator_t);
+int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
+		xbps_object_iterator_t);
 
 #endif /* !_XBPS_API_IMPL_H_ */
