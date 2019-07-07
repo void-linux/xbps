@@ -50,7 +50,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20190621"
+#define XBPS_API_VERSION	"20190707"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -735,6 +735,20 @@ int xbps_fetch_file(struct xbps_handle *xhp, const char *uri,
 		    const char *flags);
 
 /**
+ * Download and digest a file from a remote URL to current working directory.
+ * 
+ * @param[in] xhp Pointer to an xbps_handle struct.
+ * @param[in] uri Remote URI string.
+ * @param[in] flags Flags passed to libfetch's fetchXget().
+ * @param[out] digestp Checksum of the downloaded file.
+ * 
+ * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
+ * do not match) and 1 if downloaded successfully.
+ **/
+int xbps_fetch_file_digest(struct xbps_handle *xhp, const char *uri,
+		    const char *flags, unsigned char **digestp);
+
+/**
  * Download a file from a remote URL to current working directory,
  * and writing file to \a filename.
  * 
@@ -748,6 +762,22 @@ int xbps_fetch_file(struct xbps_handle *xhp, const char *uri,
  **/
 int xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri,
 		    const char *filename, const char *flags);
+
+/**
+ * Download and digest a file from a remote URL to current working directory,
+ * and writing file to \a filename.
+ * 
+ * @param[in] xhp Pointer to an xbps_handle struct.
+ * @param[in] uri Remote URI string.
+ * @param[in] filename Local filename to safe the file
+ * @param[in] flags Flags passed to libfetch's fetchXget().
+ * @param[out] digest Checksum of the downloaded file.
+ * 
+ * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
+ * do not match) and 1 if downloaded successfully.
+ **/
+int xbps_fetch_file_dest_digest(struct xbps_handle *xhp, const char *uri,
+		    const char *filename, const char *flags, unsigned char **digestp);
 
 /**
  * Returns last error string reported by xbps_fetch_file().

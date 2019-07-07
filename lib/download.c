@@ -42,6 +42,8 @@
 #include <sys/wait.h>
 #include <libgen.h>
 
+#include <openssl/sha.h>
+
 #include "xbps_api_impl.h"
 #include "fetch.h"
 #include "compat.h"
@@ -91,7 +93,7 @@ xbps_fetch_error_string(void)
 }
 
 int
-xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filename, const char *flags)
+xbps_fetch_file_dest_digest(struct xbps_handle *xhp, const char *uri, const char *filename, const char *flags, unsigned char **digestp)
 {
 	struct stat st, st_tmpfile, *stp;
 	struct url *url = NULL;
@@ -104,9 +106,18 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	char fetch_flags[8];
 	int fd = -1, rv = 0;
 	bool refetch = false, restart = false;
+	unsigned char *digest = NULL;
+	SHA256_CTX sha256;
 
 	assert(xhp);
 	assert(uri);
+
+	if (digestp) {
+		digest = malloc(SHA256_DIGEST_LENGTH);
+		if (!digest)
+			return -1;
+		SHA256_Init(&sha256);
+	}
 
 	/* Extern vars declared in libfetch */
 	fetchLastErrCode = 0;
@@ -223,6 +234,8 @@ xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri, const char *filen
 	 * Start fetching requested file.
 	 */
 	while ((bytes_read = fetchIO_read(fio, buf, sizeof(buf))) > 0) {
+		if (digest)
+			SHA256_Update(&sha256, buf, bytes_read);
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
 			xbps_dbg_printf(xhp,
@@ -283,6 +296,11 @@ rename_file:
 	}
 	rv = 1;
 
+	if (digest) {
+		SHA256_Final(digest, &sha256);
+		*digestp = digest;
+	}
+
 fetch_file_out:
 	if (fio != NULL)
 		fetchIO_close(fio);
@@ -297,7 +315,15 @@ fetch_file_out:
 }
 
 int
-xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
+xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri,
+		const char *filename, const char *flags)
+{
+	return xbps_fetch_file_dest_digest(xhp, uri, filename, flags, NULL);
+}
+
+int
+xbps_fetch_file_digest(struct xbps_handle *xhp, const char *uri,
+		const char *flags, unsigned char **digestp)
 {
 	const char *filename;
 	/*
@@ -307,5 +333,11 @@ xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 		return -1;
 
 	filename++;
-	return xbps_fetch_file_dest(xhp, uri, filename, flags);
+	return xbps_fetch_file_dest_digest(xhp, uri, filename, flags, digestp);
+}
+
+int
+xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
+{
+	return xbps_fetch_file_digest(xhp, uri, flags, NULL);
 }
