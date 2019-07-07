@@ -72,14 +72,15 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 }
 
 bool
-xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
+xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
+		unsigned char *digest)
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
 	char *hexfp = NULL;
-	unsigned char *digest = NULL, *sig_buf = NULL;
+	unsigned char *sig_buf = NULL;
 	size_t sigbuflen, sigfilelen;
-	char *rkeyfile = NULL, *sig = NULL;
+	char *rkeyfile = NULL;
 	bool val = false;
 
 	if (!xbps_dictionary_count(repo->idxmeta)) {
@@ -92,6 +93,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
 		return false;
 	}
+
 	/*
 	 * Prepare repository RSA public key to verify fname signature.
 	 */
@@ -107,16 +109,9 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	if (xbps_object_type(pubkey) != XBPS_TYPE_DATA)
 		goto out;
 
-	/*
-	 * Prepare fname and signature data buffers.
-	 */
-	if (!(digest = xbps_file_hash_raw(fname))) {
-		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
-		goto out;
-	}
-	sig = xbps_xasprintf("%s.sig", fname);
-	if (!xbps_mmap_file(sig, (void *)&sig_buf, &sigbuflen, &sigfilelen)) {
-		xbps_dbg_printf(repo->xhp, "can't open signature file %s: %s\n", sig, strerror(errno));
+	if (!xbps_mmap_file(sigfile, (void *)&sig_buf, &sigbuflen, &sigfilelen)) {
+		xbps_dbg_printf(repo->xhp, "can't open signature file %s: %s\n",
+		    sigfile, strerror(errno));
 		goto out;
 	}
 	/*
@@ -130,14 +125,29 @@ out:
 		free(hexfp);
 	if (rkeyfile)
 		free(rkeyfile);
-	if (digest)
-		free(digest);
 	if (sig_buf)
 		(void)munmap(sig_buf, sigbuflen);
-	if (sig)
-		free(sig);
 	if (repokeyd)
 		xbps_object_release(repokeyd);
 
+	return val;
+}
+
+bool
+xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
+{
+	char sig[PATH_MAX];
+	unsigned char *digest = NULL;
+	bool val = false;
+
+	if (!(digest = xbps_file_hash_raw(fname))) {
+		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
+		return false;
+	}
+
+	snprintf(sig, sizeof sig, "%s.sig", fname);
+	val = xbps_verify_signature(repo, sig, digest);
+
+	free(digest);
 	return val;
 }
