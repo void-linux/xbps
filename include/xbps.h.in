@@ -1914,6 +1914,17 @@ bool xbps_pkg_is_ignored(struct xbps_handle *xhp, const char *pkg);
 bool xbps_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
 
 /**
+ * Returns true if binary package and signature exists in cachedir,
+ * false otherwise.
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] pkgd Package dictionary returned by rpool.
+ *
+ * @return true if exists, false otherwise.
+ */
+bool xbps_remote_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
+
+/**
  * Checks if the URI specified by \a uri is remote or local.
  *
  * @param[in] uri URI string.

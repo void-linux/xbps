@@ -379,6 +379,35 @@ xbps_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 }
 
 bool
+xbps_remote_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
+{
+	char path[PATH_MAX];
+	const char *pkgver, *arch;
+
+	assert(xhp);
+	assert(xbps_object_type(pkgd) == XBPS_TYPE_DICTIONARY);
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd,
+	    "pkgver", &pkgver))
+		return NULL;
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd,
+	    "architecture", &arch))
+		return NULL;
+
+	snprintf(path, sizeof(path), "%s/%s.%s.xbps.sig", xhp->cachedir,
+	    pkgver, arch);
+
+	/* check if the signature file exists */
+	if (access(path, R_OK) != 0)
+		return false;
+
+	/* strip the .sig suffix and check if binpkg file exists */
+	path[strlen(path)-sizeof (".sig")+1] = '\0';
+
+	return access(path, R_OK) == 0;
+}
+
+bool
 xbps_pkg_has_rundeps(xbps_dictionary_t pkgd)
 {
 	xbps_array_t array;
