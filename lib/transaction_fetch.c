@@ -176,6 +176,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 			*sigsuffix = '\0';
 			(void)remove(buf);
 		}
+		free(digest);
 	}
 
 	if (rv == EPERM) {
