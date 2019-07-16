@@ -31,6 +31,7 @@ _arguments -s : \
 	'-E[Exit immediately when binary package already exists]' \
 	'-f[Force building and registering binary packages]' \
 	'-G[Enable XBPS_USE_GIT_REVS]' \
+	'-Q[Enable running the check stage]' \
 	'-g[Enable building -dbg packages]' \
 	'-H[Absolute path to hostdir]:hostdir:_files -/' \
 	'-h[Help]' \
