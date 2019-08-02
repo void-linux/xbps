@@ -676,7 +676,7 @@ keep_modified_files_body() {
 	echo "modified" >root/foo
 
 	cd some_repo
-	rm ../pka_A/foo
+	rm ../pkg_A/foo
 	xbps-create -A noarch -n A-1.1_2 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
@@ -688,6 +688,50 @@ keep_modified_files_body() {
 
 	rv=0
 	[ -e root/foo ] || rv=1
+	atf_check_equal $rv 0
+}
+
+atf_test_case alternative_to_regular_file
+
+alternative_to_regular_file_head() {
+	atf_set "descr" "Test update changing alternative to regular file"
+}
+
+alternative_to_regular_file_body() {
+	mkdir some_repo root
+	mkdir -p pkg_A/bar
+	touch pkg_A/foo pkg_A/bar/keep
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" \
+		--alternatives "foo:/alt1:foo foo:/alt2:bar" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -ydv A
+	atf_check_equal $? 0
+
+	cd some_repo
+	rm ../pkg_A/foo
+	touch ../pkg_A/alt1
+	touch ../pkg_A/alt2
+	xbps-create -A noarch -n A-1.1_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -ydvu
+	atf_check_equal $? 0
+
+	rv=0
+	[ -f root/alt1 ] || rv=1
+	atf_check_equal $rv 0
+
+	rv=0
+	[ -f root/alt2 ] || rv=1
 	atf_check_equal $rv 0
 }
 
@@ -708,4 +752,5 @@ atf_init_test_cases() {
 	atf_add_test_case obsolete_dir
 	atf_add_test_case base_symlinks
 	atf_add_test_case keep_modified_files
+	atf_add_test_case alternative_to_regular_file
 }
