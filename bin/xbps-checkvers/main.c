@@ -706,6 +706,17 @@ main(int argc, char **argv)
 	 */
 	if (rcv.distdir == NULL)
 		rcv.distdir = xbps_xasprintf("%s/void-packages", getenv("HOME"));
+
+	{
+		char *tmp = rcv.distdir;
+		rcv.distdir = realpath(tmp, NULL);
+		if (rcv.distdir == NULL) {
+			fprintf(stderr, "Error: realpath(%s): %s\n", tmp, strerror(errno));
+			exit(1);
+		}
+		free(tmp);
+	}
+
 	rcv.cachefile = xbps_xasprintf("%s/.xbps-checkvers.plist", rcv.distdir);
 
 	argc -= optind;
