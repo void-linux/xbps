@@ -342,6 +342,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 int
 xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 {
+	xbps_array_t rdeps;
 	int rv;
 
 	rv = xbps_autoupdate(xhp);
@@ -358,6 +359,20 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 		break;
 	}
 
+	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
+	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+		const char *curpkgver = NULL;
+		char *curpkgn;
+
+		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
+		curpkgn = xbps_pkg_name(curpkgver);
+		assert(curpkgn);
+		rv = trans_find_pkg(xhp, curpkgn, false, false);
+		free(curpkgn);
+		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, curpkgver, rv);
+		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
+			return rv;
+	}
 	rv = trans_find_pkg(xhp, pkg, false, false);
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
 	return rv;
@@ -367,6 +382,7 @@ int
 xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 			     bool reinstall)
 {
+	xbps_array_t rdeps;
 	int rv;
 
 	rv = xbps_autoupdate(xhp);
@@ -382,6 +398,20 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 		break;
 	}
 
+	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
+	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+		const char *curpkgver = NULL;
+		char *curpkgn;
+
+		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
+		curpkgn = xbps_pkg_name(curpkgver);
+		assert(curpkgn);
+		rv = trans_find_pkg(xhp, curpkgn, false, false);
+		free(curpkgn);
+		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, curpkgver, rv);
+		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
+			return rv;
+	}
 	rv = trans_find_pkg(xhp, pkg, reinstall, false);
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
 	return rv;
