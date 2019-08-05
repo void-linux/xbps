@@ -43,7 +43,7 @@ check_remove_pkg_files(struct xbps_handle *xhp,
 	bool fail = false;
 
 	if (euid == 0)
-		return true;
+		return false;
 
 	for (unsigned int i = 0; i < xbps_array_count(obsoletes); i++) {
 		const char *file = NULL;
