@@ -1,6 +1,6 @@
 xbps-0.57 (???):
 
- * xbps now builds with tcc. [xtraeme]
+ * xbps now builds with tcc and pcc. [xtraeme]
 
  * xbps now uses the transactional file checks for package removals,
    this fixes issues where xbps removes wrong files, if a package
