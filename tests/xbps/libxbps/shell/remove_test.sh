@@ -489,6 +489,69 @@ remove_directory_body() {
 	atf_check_equal $? 1
 }
 
+atf_test_case keep_modified_files
+
+keep_modified_files_head() {
+	atf_set "descr" "Tests for package removal: keep modified files in rootdir"
+}
+
+keep_modified_files_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/bin
+	echo "1234" >pkg_A/bin/ash
+	echo "1234" >pkg_A/bin/sh
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	echo "keep" >root/bin/sh
+	echo "keep" >root/bin/ash
+
+	xbps-remove -r root -yvd A
+	atf_check_equal $? 0
+	rv=1
+	if [ -e root/bin/sh -a -e root/bin/ash ]; then
+	        rv=0
+	fi
+	atf_check_equal $rv 0
+}
+
+atf_test_case remove_modified_files
+
+remove_modified_files_head() {
+	atf_set "descr" "Tests for package removal: force remove modified files in rootdir"
+}
+
+remove_modified_files_body() {
+	mkdir some_repo
+	mkdir -p pkg_A/bin
+	echo "1234" >pkg_A/bin/ash
+	echo "1234" >pkg_A/bin/sh
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -y A
+	atf_check_equal $? 0
+	echo "don't keep" >root/bin/sh
+	echo "don't keep" > root/bin/ash
+
+	xbps-remove -r root -yvdf A
+	atf_check_equal $? 0
+	rv=0
+	[ -e root/bin/sh ] && rv=1
+	[ -e root/bin/ash ] && rv=1
+	atf_check_equal $rv 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case keep_base_symlinks
 	atf_add_test_case keep_modified_symlinks
@@ -507,4 +570,6 @@ atf_init_test_cases() {
 	atf_add_test_case remove_with_revdeps_in_trans_inverted
 	atf_add_test_case remove_with_revdeps_in_trans_recursive
 	atf_add_test_case remove_directory
+	atf_add_test_case keep_modified_files
+	atf_add_test_case remove_modified_files
 }
