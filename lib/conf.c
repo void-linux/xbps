@@ -225,7 +225,7 @@ parse_files_glob(struct xbps_handle *xhp, xbps_dictionary_t seen,
 {
 	char tmppath[PATH_MAX];
 	glob_t globbuf;
-	int rs, rv = 0;
+	int rs, rv = 0, rv2;
 
 	rs = snprintf(tmppath, PATH_MAX, "%s/%s",
 	    pat[0] == '/' ? xhp->rootdir : cwd, pat);
@@ -247,8 +247,8 @@ parse_files_glob(struct xbps_handle *xhp, xbps_dictionary_t seen,
 				continue;
 			xbps_dictionary_set_bool(seen, fname, true);
 		}
-		if ((rv = parse_file(xhp, globbuf.gl_pathv[i], nested)) != 0)
-			break;
+		if ((rv2 = parse_file(xhp, globbuf.gl_pathv[i], nested)) != 0)
+			rv = rv2;
 	}
 	globfree(&globbuf);
 
@@ -268,7 +268,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 
 	if ((fp = fopen(path, "r")) == NULL) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "cannot read configuration file %s: %s\n", path, strerror(rv));
+		xbps_error_printf("cannot read configuration file %s: %s\n", path, strerror(rv));
 		return rv;
 	}
 
