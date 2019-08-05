@@ -361,7 +361,7 @@ directory_to_symlink_preserve_body() {
 
 	xbps-install -r root -C $PWD/xbps.d --repository=$PWD/some_repo -dvyu
 	# ENOTEMPTY
-	atf_check_equal $? 39 
+	atf_check_equal $? 39
 
 	out="$(cat ./root/foo/bar)"
 	atf_check_equal "$out" "preserve me"
@@ -735,6 +735,72 @@ alternative_to_regular_file_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case replace_package_same_files_unordered
+
+replace_package_same_files_unordered_head() {
+	atf_set "descr" "Package gets replaced by another one with same files unordered"
+}
+
+replace_package_same_files_unordered_body() {
+	mkdir repo
+	mkdir -p pkg_polkit/usr/bin pkg_polkit-elogind/usr/bin pkg_A
+	echo "0123456789" > pkg_polkit-elogind/usr/bin/polkit
+	echo "0123456789" > pkg_polkit/usr/bin/polkit
+	touch -mt 197001010000.00 pkg_polkit/usr/bin/polkit
+	touch -mt 197001010000.00 pkg_polkit-elogind/usr/bin/polkit
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies "polkit-elogind>=0" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "A>=0" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n polkit-elogind-1.0_1 -s "polkit-elogind pkg" ../pkg_polkit-elogind
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A B
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	xbps-query -r root -S polkit-elogind
+	atf_check_equal $? 0
+
+	xbps-query -r root -S polkit
+	atf_check_equal $? 2
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" --dependencies "polkit>=1.0_2" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_2 -s "B pkg" --dependencies "A>=1.0_2 polkit>=1.0_2" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n polkit-1.0_2 -s "polkit pkg" --replaces "polkit-elogind>=0" --provides "polkit-elogind-1.0_2" ../pkg_polkit
+	atf_check_equal $? 0
+	rm -rf ../pkg_polkit-elogind/usr
+	xbps-create -A noarch -n polkit-elogind-1.0_2 -s "polkit pkg (transitional dummy package)" --dependencies "polkit>=1.0_2" ../pkg_polkit-elogind
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	# out=$(xbps-install -r root --repository=$PWD/repo -yvdun)
+	# atf_check_equal "$out" "A-1.0_2 update noarch $PWD/repo\nlibressl-1.0_2 update noarch $PWD/repo"
+
+	xbps-install -r root --repository=$PWD/repo -yvdu
+
+	xbps-query -r root -S polkit-elogind
+	atf_check_equal $? 2
+
+	xbps-query -r root -S polkit
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
@@ -753,4 +819,5 @@ atf_init_test_cases() {
 	atf_add_test_case base_symlinks
 	atf_add_test_case keep_modified_files
 	atf_add_test_case alternative_to_regular_file
+	atf_add_test_case replace_package_same_files_unordered
 }
