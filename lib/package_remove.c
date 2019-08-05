@@ -110,7 +110,7 @@ int HIDDEN
 xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 {
 	xbps_dictionary_t pkgd = NULL, obsd = NULL;
-	xbps_array_t obsoletes;
+	xbps_array_t obsoletes = NULL;
 	char *pkgname, metafile[PATH_MAX];
 	int rv = 0;
 	pkg_state_t state = 0;
