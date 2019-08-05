@@ -1,5 +1,24 @@
 xbps-0.57 (???):
 
+ * xbps now builds with tcc. [xtraeme]
+
+ * xbps now uses the transactional file checks for package removals,
+   this fixes issues where xbps removes wrong files, if a package
+   replaces another packages with the same files. [duncaen]
+
+ * xbps-remove(1): skip the transaction if no packages are found.
+   This restores the behaviour of xbps prior to 0.54. [xtraeme]
+
+ * xbps-remove(1): fix `-o, --remove-orphans` not removing
+   all orphaned packages. [duncaen]
+
+ * xbps-install(1): if specified packages with `-u, --update` are
+   up to date return EEXIST. [jnbr]
+
+ * xbps-query(1): restores old behaviour of `--fulldeptree`,
+   to not list the package itself. [duncaen]
+
+ * Updated zsh completions. [leah2]
 
 xbps-0.56 (2019-06-24):
 
