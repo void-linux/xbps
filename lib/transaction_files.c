@@ -608,7 +608,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 				size = 0;
 #endif
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
-			    TYPE_FILE, update, removepkg, preserve, removefile, NULL);
+			    TYPE_CONFFILE, update, removepkg, preserve, removefile, NULL);
 			if (rv == EEXIST) {
 				error = true;
 				continue;
