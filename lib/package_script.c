@@ -31,6 +31,13 @@
 
 #include "xbps_api_impl.h"
 
+const char *shells[] = {
+	"/bin/sh",
+	"/bin/dash",
+	"/bin/bash",
+	NULL
+};
+
 int
 xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		     const void *blob,
@@ -39,6 +46,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		     const char *action,
 		     bool update)
 {
+	int i;
 	ssize_t ret;
 	const char *tmpdir, *version;
 	char *pkgname, *fpath;
@@ -100,9 +108,27 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	version = xbps_pkg_version(pkgver);
 	assert(version);
 
-	rv = xbps_file_exec(xhp, "/bin/sh", fpath, action, pkgname, version,
-			    update ? "yes" : "no",
-			    "no", xhp->native_arch, NULL);
+	// find a shell that can be used to execute the script.
+	for (i = 0; shells[i] != NULL; i++) {
+		if (access(shells[i], X_OK) == 0) {
+			break;
+		}
+	}
+	if (shells[i] != NULL) {
+		rv = xbps_file_exec(xhp, shells[i], fpath, action, pkgname, version,
+				update ? "yes" : "no",
+				"no", xhp->native_arch, NULL);
+	} else if (access("/bin/busybox", X_OK) == 0) {
+		rv = xbps_file_exec(xhp, "/bin/busybox", "sh", fpath, action, pkgname, version,
+				update ? "yes" : "no",
+				"no", xhp->native_arch, NULL);
+	} else if (access("/bin/busybox.static", X_OK) == 0) {
+		rv = xbps_file_exec(xhp, "/bin/busybox.static", "sh", fpath, action, pkgname, version,
+				update ? "yes" : "no",
+				"no", xhp->native_arch, NULL);
+	} else {
+		rv = -1;
+	}
 	free(pkgname);
 
 out:
