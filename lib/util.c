@@ -50,6 +50,16 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
+static bool is_numeric(const char *str) {
+	if (str == NULL || str[0] == '\0'){
+		return false;
+	}
+	while (isdigit(str[0])) {
+		++str;
+	}
+	return str[0] == '\0';
+}
+
 /**
  * @file lib/util.c
  * @brief Utility routines
@@ -117,16 +127,22 @@ xbps_pkg_is_ignored(struct xbps_handle *xhp, const char *pkg)
 const char *
 xbps_pkg_version(const char *pkg)
 {
-	const char *p;
+	const char *p, *r;
+	size_t p_len;
 
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	for (unsigned int i = 0; i < strlen(p); i++) {
+	++p; /* skip first '-' */
+	p_len = strlen(p);
+	for (unsigned int i = 0; i < p_len; i++) {
 		if (p[i] == '_')
 			break;
-		if (isdigit((unsigned char)p[i]) && strchr(p, '_')) {
-			return p + 1; /* skip first '-' */
+		if (isdigit((unsigned char)p[i]) && (r = strchr(p + i + 1, '_'))) {
+			if (!is_numeric(r + 1)) {
+				break;
+			}
+			return p;
 		}
 	}
 	return NULL;
@@ -208,36 +224,47 @@ xbps_binpkg_arch(const char *pkg)
 const char *
 xbps_pkg_revision(const char *pkg)
 {
-	const char *p;
+	const char *p, *r;
+	size_t p_len;
 
-	assert(pkg != NULL);
-
-	/* Get the required revision */
-	if ((p = strrchr(pkg, '_')) == NULL)
+	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	if (!isdigit((unsigned char)p[1]))
-		return NULL;
-
-	return p + 1; /* skip first '_' */
+	++p; /* skip first '-' */
+	p_len = strlen(p);
+	for (unsigned int i = 0; i < p_len; i++) {
+		if (p[i] == '_')
+			break;
+		if (isdigit((unsigned char)p[i]) && (r = strchr(p + i + 1, '_'))) {
+			++r; /* skip first '_' */
+			if (!is_numeric(r)) {
+				break;
+			}
+			return r;
+		}
+	}
+	return NULL;
 }
 
 char *
 xbps_pkg_name(const char *pkg)
 {
-	const char *p;
+	const char *p, *r;
 	char *buf;
 	unsigned int len;
+	size_t p_len;
 	bool valid = false;
 
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
-	for (unsigned int i = 0; i < strlen(p); i++) {
+	p_len = strlen(p);
+	/* i = 1 skips first '-' */
+	for (unsigned int i = 1; i < p_len; i++) {
 		if (p[i] == '_')
 			break;
-		if (isdigit((unsigned char)p[i]) && strchr(p, '_')) {
-			valid = true;
+		if (isdigit((unsigned char)p[i]) && (r = strchr(p + i + 1, '_'))) {
+			valid = is_numeric(r + 1);
 			break;
 		}
 	}
