@@ -180,13 +180,13 @@ unpack_archive(struct xbps_handle *xhp,
 				goto out;
 			}
 		} else if (strcmp("./props.plist", entry_pname) == 0) {
-			binpkg_propsd = xbps_archive_get_dictionary(ar, entry);
+			binpkg_propsd = xbps_archive_get_dictionary(ar, entry, NULL);
 			if (binpkg_propsd == NULL) {
 				rv = EINVAL;
 				goto out;
 			}
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
-			binpkg_filesd = xbps_archive_get_dictionary(ar, entry);
+			binpkg_filesd = xbps_archive_get_dictionary(ar, entry, NULL);
 			if (binpkg_filesd == NULL) {
 				rv = EINVAL;
 				goto out;

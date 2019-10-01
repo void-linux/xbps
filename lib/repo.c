@@ -61,11 +61,48 @@ xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *n
 	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch, name);
 }
 
+static bool
+repo_verify_index(struct xbps_repo *repo, unsigned char *digest) {
+	bool verified = false;
+	unsigned char *sig_buf = NULL;
+	size_t sigfilelen = 0;
+	struct archive_entry *entry;
+
+	if (archive_read_next_header(repo->ar, &entry) != ARCHIVE_OK) {
+		xbps_dbg_printf(repo->xhp,
+		    "%s: read_next_header %s\n", repo->uri,
+		    archive_error_string(repo->ar));
+		return false;
+	}
+
+	if (strcmp(archive_entry_pathname(entry), XBPS_REPOIDX_SIG) != 0) {
+		xbps_dbg_printf(repo->xhp,
+		    "%s: no signature of %s\n", repo->uri, XBPS_REPOIDX);
+		return false;
+	}
+
+	sigfilelen = (size_t)archive_entry_size(entry);
+	sig_buf = (unsigned char *) xbps_archive_get_file(repo->ar, entry);
+	if (sig_buf == NULL) {
+		return false;
+	}
+	verified = xbps_verify_digest_signature(repo, sig_buf, sigfilelen, digest);
+
+	free(sig_buf);
+	return verified;
+}
+
 static xbps_dictionary_t
-repo_get_dict(struct xbps_repo *repo)
+repo_get_dict(struct xbps_repo *repo, bool *verified)
 {
 	struct archive_entry *entry;
 	int rv;
+	xbps_dictionary_t dict;
+	char *bytes = NULL;
+	unsigned char *digest = NULL;
+
+	if (verified != NULL)
+		*verified = false;
 
 	if (repo->ar == NULL)
 		return NULL;
@@ -77,7 +114,15 @@ repo_get_dict(struct xbps_repo *repo)
 		    archive_error_string(repo->ar));
 		return NULL;
 	}
-	return xbps_archive_get_dictionary(repo->ar, entry);
+	dict = xbps_archive_get_dictionary(repo->ar, entry, &bytes);
+	if (verified != NULL &&
+	    bytes != NULL &&
+	    (digest = xbps_buffer_hash_raw(bytes, strlen(bytes))) != NULL &&
+	    repo_verify_index(repo, digest))
+		*verified = true;
+	free(digest);
+	free(bytes);
+	return dict;
 }
 
 bool
@@ -135,6 +180,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 {
 	struct stat st;
 	int rv = 0;
+	bool verified = false;
 
 	if (fstat(repo->fd, &st) == -1) {
 		rv = errno;
@@ -158,7 +204,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		    repofile, strerror(rv));
 		return false;
 	}
-	if ((repo->idx = repo_get_dict(repo)) == NULL) {
+	if ((repo->idx = repo_get_dict(repo, &verified)) == NULL) {
 		xbps_dbg_printf(repo->xhp, "[repo] `%s' failed to internalize "
 		    " index on archive, removing file.\n", repofile);
 		/* broken archive, remove it */
@@ -166,13 +212,13 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		return false;
 	}
 	xbps_dictionary_make_immutable(repo->idx);
-	repo->idxmeta = repo_get_dict(repo);
+	repo->idxmeta = repo_get_dict(repo, NULL);
 	if (repo->idxmeta != NULL) {
 		repo->is_signed = true;
 		xbps_dictionary_make_immutable(repo->idxmeta);
 	}
 
-	return true;
+	return verified || (!repo->is_remote && !repo->is_signed);
 }
 
 static bool
