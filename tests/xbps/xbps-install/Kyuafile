@@ -3,3 +3,4 @@ syntax("kyuafile", 1)
 test_suite("xbps-install")
 atf_test_program{name="behaviour_tests"}
 atf_test_program{name="revert_tests"}
+atf_test_program{name="outmoding_tests"}

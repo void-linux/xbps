@@ -1,7 +1,7 @@
 TOPDIR = ../../..
 -include $(TOPDIR)/config.mk
 
-TESTSHELL = behaviour_tests revert_tests
+TESTSHELL = behaviour_tests revert_tests outmoding_tests
 TESTSSUBDIR = xbps/xbps-install
 EXTRA_FILES = Kyuafile
 

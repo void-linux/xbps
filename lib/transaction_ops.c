@@ -224,6 +224,141 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	return 0;
 }
 
+static int
+trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
+	struct {
+		const char *old_package;
+		const char *new_packages[7];
+	} outmoded[] = {
+		{"Platinum9-theme<=0.0.0.20170720_3", {NULL}},
+		{"apg<=2.2.3_5", {NULL}},
+		{"arm-mem-git<=20131108_2", {NULL}},
+		{"caja-gksu<=1.20.2_2", {NULL}},
+		{"california<=0.4.0_4", {NULL}},
+		{"ctpp2<=2.8.3_7", {NULL}},
+		{"ctpp2-devel<=2.8.3_7", {NULL}},
+		{"fontmatrix<=0.6.0.20171228_2", {NULL}},
+		{"gksu<=2.0.2_4", {"lxqt-sudo", NULL}},
+		{"goffice0.8<=0.8.17_6", {NULL}},
+		{"grv<=0.3.1_3", {NULL}},
+		{"keepassx<=0.4.4_2", {NULL}},
+		{"libapp<=20140527_2", {NULL}},
+		{"libdbusmenu-qt<=0.9.2_4", {NULL}},
+		{"libgksu<=2.0.12_5", {NULL}},
+		{"libump-git<=20150407_2", {NULL}},
+		{"llvm3.9<=3.9.1_5", {NULL}},
+		{"lmdb++<=0.9.14.0+20160229_2", {NULL}},
+		{"ls++-git<=20140919_3", {NULL}},
+		{"mac<=3.99u4b5s7_3", {NULL}},
+		{"mdds0<=0.12.1_3", {NULL}},
+		{"mongroup<=0.4.1_2", {NULL}},
+		{"mtxclient<=0.2.0_3", {NULL}},
+		{"nheko<=0.6.2_2", {NULL}},
+		{"oksh<=0.5.9_3", {NULL}},
+		{"profile-sync-daemon<=5.75_4", {NULL}},
+		{"profont<=1.0_2", {"dina-font", "source-sans-pro", NULL}},
+		{"python-pyenet<=1.3.13.post7_2", {NULL}},
+		{"qimageblitz<=0.0.6_4", {NULL}},
+		{"seriespl<=2.3.5_2", {NULL}},
+		{"simple-obfs<=0.0.5_2", {NULL}},
+		{"skypetab-ng<=20150201_3", {NULL}},
+		{"ttyload-git<=20141117_4", {NULL}},
+		{"tweeny<=2_2", {NULL}},
+		{"urlmatch-git<=20141116_2", {NULL}},
+		{"v8<=3.24.35.33_4", {NULL}},
+		{"varnish<=6.1.1_3", {NULL}},
+		{"yt-play<=20140117_2", {NULL}},
+		{NULL, {NULL}}
+	};
+
+	for (int i = 0; outmoded[i].old_package != NULL; ++i) {
+		xbps_dictionary_t old_pkg_in_trans = NULL;
+		xbps_dictionary_t old_pkg_in_pkgdb = NULL;
+		const char *old_pattern = NULL;
+		const char *old_pkgver = NULL;
+		int j = 0;
+		bool instd_auto = true;
+
+		old_pattern = outmoded[i].old_package;
+		if (pkgs != NULL) {
+			old_pkg_in_trans = xbps_find_pkg_in_array(pkgs, old_pattern, NULL);
+		}
+
+		if (old_pkg_in_trans != NULL)
+		{
+			const char *old_transaction = NULL;
+
+			xbps_dictionary_get_cstring_nocopy(old_pkg_in_trans,
+			    "transaction", &old_transaction);
+			if (strcmp(old_transaction, "remove") != 0)
+			{
+				xbps_dictionary_get_cstring_nocopy(old_pkg_in_trans,
+				    "pkgver", &old_pkgver);
+				if (xbps_match_virtual_pkg_in_dict(old_pkg_in_trans, old_pattern) ||
+				    xbps_pkgpattern_match(old_pkgver, old_pattern))
+				{
+					xbps_dictionary_set_cstring_nocopy(old_pkg_in_trans,
+					    "transaction", "remove");
+					xbps_dictionary_get_bool(old_pkg_in_trans,
+						"automatic-install", &instd_auto);
+				}
+				else
+				{
+					continue;
+				}
+			}
+		}
+		else if ((old_pkg_in_pkgdb = xbps_pkgdb_get_pkg(xhp, old_pattern)) != NULL) {
+			const char *old_pkgname = NULL;
+
+			xbps_dictionary_get_cstring_nocopy(old_pkg_in_pkgdb,
+				    "pkgver", &old_pkgver);
+			old_pkgname = xbps_pkg_name(old_pkgver);
+			if (xbps_transaction_remove_pkg(xhp, old_pkgname, false)) {
+				return EINVAL;
+			}
+			xbps_dictionary_get_bool(old_pkg_in_pkgdb, "automatic-install", &instd_auto);
+		}
+		else {
+			continue;
+		}
+
+		for (j = 0; outmoded[i].new_packages[j] != NULL; ++j) {
+			const char *new_pkgname = NULL;
+			xbps_dictionary_t new_pkg_in_trans = NULL;
+			int rv = 0;
+
+		    new_pkgname = outmoded[i].new_packages[j];
+			rv = xbps_transaction_install_pkg(xhp, new_pkgname, false);
+			if (rv != 0) {
+				return rv;
+			}
+
+			if (pkgs == NULL) {
+				pkgs = xbps_dictionary_get(xhp->transd, "packages");
+			}
+			new_pkg_in_trans = xbps_find_pkg_in_array(pkgs, new_pkgname, NULL);
+			assert(new_pkg_in_trans);
+
+			if (!instd_auto) {
+				xbps_dictionary_set_bool(new_pkg_in_trans,
+				    "automatic-install", false);
+			}
+
+			xbps_dbg_printf(xhp,
+			    "Package `%s' in transaction will be installed in place of "
+			    "outmoded `%s', matched with `%s'\n",
+			    new_pkgname, old_pkgver, old_pattern);
+		}
+
+		xbps_dbg_printf(xhp,
+		    "Package `%s' will be outmoded by %d package(s)\n",
+		    old_pkgver, j);
+	}
+
+	return 0;
+}
+
 /*
  * Returns 1 if there's an update, 0 if none or -1 on error.
  */
@@ -286,6 +421,7 @@ xbps_autoupdate(struct xbps_handle *xhp)
 int
 xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
+	xbps_array_t pkgs;
 	xbps_dictionary_t pkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
@@ -335,6 +471,11 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 		free(pkgname);
 	}
 	xbps_object_iterator_release(iter);
+
+	pkgs = xbps_dictionary_get(xhp->transd, "packages");
+	rv = trans_find_outmoded(xhp, pkgs);
+	newpkg_found = true;
+	xbps_dbg_printf(xhp, "%s: trans_find_outmoded %s: %d\n", __func__, pkgver, rv);
 
 	return newpkg_found ? rv : EEXIST;
 }
