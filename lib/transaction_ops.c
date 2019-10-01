@@ -260,6 +260,7 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 	xbps_object_iterator_t iter;
 	char *old_pkgname = NULL;
 	int rv = 0;
+	bool outmoded_found = false;
 
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
@@ -316,6 +317,7 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 			continue;
 		}
 
+		outmoded_found = true;
 		xbps_dictionary_get_cstring_nocopy(search.record, "pattern", &old_pattern);
 		if (pkgs != NULL) {
 			old_pkg_in_trans = xbps_find_pkg_in_array(pkgs, old_pattern, NULL);
@@ -350,6 +352,9 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 
 			xbps_array_get_cstring_nocopy(to_install, i, &new_pkgname);
 			rv = xbps_transaction_install_pkg(xhp, new_pkgname, false);
+			if (rv == EEXIST) {
+				rv = 0;
+			}
 			if (rv) {
 				goto out;
 			}
@@ -358,9 +363,8 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 				pkgs = xbps_dictionary_get(xhp->transd, "packages");
 			}
 			new_pkg_in_trans = xbps_find_pkg_in_array(pkgs, new_pkgname, NULL);
-			assert(new_pkg_in_trans);
 
-			if (!instd_auto) {
+			if (!instd_auto && new_pkg_in_trans != NULL) {
 				xbps_dictionary_set_bool(new_pkg_in_trans,
 				    "automatic-install", false);
 			}
@@ -381,6 +385,9 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 out:
 	xbps_object_iterator_release(iter);
 	free(old_pkgname);
+	if (rv == 0 && !outmoded_found) {
+		return EEXIST;
+	}
 	return rv;
 }
 
@@ -454,6 +461,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	char *pkgname;
 	bool hold, newpkg_found = false;
 	int rv = 0;
+	int rvs = 0;
 
 	rv = xbps_autoupdate(xhp);
 	switch (rv) {
@@ -498,8 +506,12 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	xbps_object_iterator_release(iter);
 
 	pkgs = xbps_dictionary_get(xhp->transd, "packages");
-	rv = trans_find_outmoded(xhp, pkgs);
-	newpkg_found = true;
+	rvs = trans_find_outmoded(xhp, pkgs);
+	if (rvs == 0) {
+		newpkg_found = true;
+	} else if (rv == 0 && rvs != EEXIST) {
+		rv = rvs;
+	}
 	xbps_dbg_printf(xhp, "%s: trans_find_outmoded %s: %d\n", __func__, pkgver, rv);
 
 	return newpkg_found ? rv : EEXIST;
