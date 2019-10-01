@@ -80,11 +80,11 @@ main(int argc, char **argv)
 	const char *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
-	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
-			 hashcheck;
+	short add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode;
+	bool force, hashcheck;
 
-	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force =
-		hashcheck = false;
+	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = 0;
+	force = hashcheck = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -98,10 +98,10 @@ main(int argc, char **argv)
 			compression = optarg;
 			break;
 		case 'a':
-			add_mode = true;
+			add_mode = 1;
 			break;
 		case 'c':
-			clean_mode = true;
+			clean_mode = 1;
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
@@ -113,16 +113,16 @@ main(int argc, char **argv)
 			usage(false);
 			/* NOTREACHED */
 		case 'r':
-			rm_mode = true;
+			rm_mode = 1;
 			break;
 		case 's':
-			sign_mode = true;
+			sign_mode = 1;
 			break;
 		case 'C':
 			hashcheck = true;
 			break;
 		case 'S':
-			sign_pkg_mode = true;
+			sign_pkg_mode = 1;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -133,13 +133,9 @@ main(int argc, char **argv)
 		}
 	}
 	if ((argc == optind) ||
-	    (!add_mode && !clean_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
+	    (add_mode + clean_mode + rm_mode + sign_mode + sign_pkg_mode == 0)) {
 		usage(true);
-	} else if ((add_mode && (clean_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (clean_mode && (add_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (rm_mode && (add_mode || clean_mode || sign_mode || sign_pkg_mode)) ||
-		   (sign_mode && (add_mode || clean_mode || rm_mode || sign_pkg_mode)) ||
-		   (sign_pkg_mode && (add_mode || clean_mode || rm_mode || sign_mode))) {
+	} else if (add_mode + clean_mode + rm_mode + sign_mode + sign_pkg_mode > 1) {
 		fprintf(stderr, "Only one mode can be specified: add, clean, "
 		    "remove-obsoletes, sign or sign-pkg.\n");
 		exit(EXIT_FAILURE);
