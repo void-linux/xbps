@@ -1,5 +1,14 @@
 #! /usr/bin/env atf-sh
 
+get_resources() {
+	cp $(atf_get_srcdir)/data/id_xbps .
+	cp $(atf_get_srcdir)/data/outmoded.plist .
+	mkdir -p root/var/db/xbps/keys
+	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist root/var/db/xbps/keys
+	mkdir -p /var/db/xbps/keys
+	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist /var/db/xbps/keys
+}
+
 atf_test_case one_outmoding
 
 one_outmoding_head(){
@@ -7,6 +16,7 @@ one_outmoding_head(){
 }
 
 one_outmoding_body() {
+	get_resources
 	mkdir -p some_repo pkg_A pkg_B
 	touch pkg_A/file00 pkg_B/file00
 	cd some_repo
@@ -17,6 +27,12 @@ one_outmoding_body() {
 	xbps-rindex -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
+
+	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
+	atf_check_equal $? 0
+	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
+	atf_check_equal $? 0
+
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y gksu
 	atf_check_equal $? 0
 
@@ -41,6 +57,7 @@ two_outmoding_head(){
 }
 
 two_outmoding_body() {
+	get_resources
 	mkdir -p some_repo pkg_A pkg_B pkg_C
 	for i in A B C; do
 		touch pkg_${i}/file${i}
@@ -65,6 +82,11 @@ two_outmoding_body() {
 	xbps-query -r root source-sans-pro
 	atf_check_equal $? 2
 
+	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
+	atf_check_equal $? 0
+	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
+	atf_check_equal $? 0
+
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
 	atf_check_equal $? 0
 
@@ -83,6 +105,7 @@ no_outmoding_head(){
 }
 
 no_outmoding_body() {
+	get_resources
 	mkdir -p some_repo pkg_A
 	touch pkg_A/file00
 	cd some_repo
@@ -95,6 +118,11 @@ no_outmoding_body() {
 	atf_check_equal $? 0
 
 	xbps-query -r root oksh
+	atf_check_equal $? 0
+
+	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
+	atf_check_equal $? 0
+	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
@@ -111,6 +139,7 @@ readded_head(){
 }
 
 readded_body() {
+	get_resources
 	mkdir -p some_repo pkg_A
 	touch pkg_A/file00
 	cd some_repo
@@ -123,6 +152,11 @@ readded_body() {
 	atf_check_equal $? 0
 
 	xbps-query -r root tweeny
+	atf_check_equal $? 0
+
+	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
+	atf_check_equal $? 0
+	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
