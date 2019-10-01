@@ -93,26 +93,9 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	buflen = strlen(buf);
 	rv = xbps_archive_append_buf(ar, buf, buflen,
 	    XBPS_REPOIDX, 0644, "root", "root");
+	free(buf);
 	if (rv != 0) {
-		free(buf);
 		return false;
-	}
-	if (meta != NULL)
-	{
-		rv = sign_buffer(buf, buflen, privkey, &sig, &siglen);
-		free(buf);
-		if (rv != 0) {
-			free(sig);
-			return false;
-		}
-		assert(sig);
-		rv = xbps_archive_append_buf(ar, sig, siglen,
-		    XBPS_REPOIDX_SIG, 0644, "root", "root");
-		if (rv != 0) {
-			free(sig);
-			return false;
-		}
-		free(sig);
 	}
 
 	/* XBPS_REPOIDX_META */
