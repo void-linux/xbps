@@ -62,7 +62,7 @@ xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *n
 }
 
 static bool
-repo_verify_index(struct xbps_repo *repo, unsigned char *digest) {
+repo_verify_index(struct xbps_repo *repo, xbps_dictionary_t idxmeta, unsigned char *digest) {
 	bool verified = false;
 	unsigned char *sig_buf = NULL;
 	size_t sigfilelen = 0;
@@ -86,7 +86,7 @@ repo_verify_index(struct xbps_repo *repo, unsigned char *digest) {
 	if (sig_buf == NULL) {
 		return false;
 	}
-	verified = xbps_verify_digest_signature(repo, sig_buf, sigfilelen, digest);
+	verified = xbps_verify_digest_signature(repo, idxmeta, sig_buf, sigfilelen, digest);
 
 	free(sig_buf);
 	return verified;
@@ -97,7 +97,7 @@ repo_get_dict(struct xbps_repo *repo, bool *verified)
 {
 	struct archive_entry *entry;
 	int rv;
-	xbps_dictionary_t dict;
+	xbps_dictionary_t dict, idxmeta;
 	char *bytes = NULL;
 	unsigned char *digest = NULL;
 
@@ -115,11 +115,11 @@ repo_get_dict(struct xbps_repo *repo, bool *verified)
 		return NULL;
 	}
 	dict = xbps_archive_get_dictionary(repo->ar, entry, &bytes);
-	if (verified != NULL &&
-	    bytes != NULL &&
-	    (digest = xbps_buffer_hash_raw(bytes, strlen(bytes))) != NULL &&
-	    repo_verify_index(repo, digest))
-		*verified = true;
+	idxmeta = (repo->idxmeta != NULL) ? repo->idxmeta : dict;
+	if (verified != NULL && bytes != NULL) {
+		digest = xbps_buffer_hash_raw(bytes, strlen(bytes));
+		*verified = repo_verify_index(repo, idxmeta, digest);
+	}
 	free(digest);
 	free(bytes);
 	return dict;
@@ -213,7 +213,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		return false;
 	}
 	xbps_dictionary_make_immutable(repo->idx);
-	repo->idxmeta = repo_get_dict(repo, NULL);
+	repo->idxmeta = repo_get_dict(repo, &verified);
 	if (repo->idxmeta != NULL) {
 		if (xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-type", &signature_type))
 			repo->is_signed = true;
