@@ -224,62 +224,77 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	return 0;
 }
 
+typedef struct {
+	const char *pkgname;
+	const char *pkgver;
+	xbps_dictionary_t record;
+} outmoded_search_t;
+
+static int
+find_outmoded_record(struct xbps_repo *repo, void *arg, bool *done)
+{
+	xbps_dictionary_t outmoded = NULL;
+	xbps_dictionary_t record = NULL;
+	outmoded_search_t *search = arg;
+	const char *pkgpattern = NULL;
+
+	if (!xbps_dictionary_get_dict(repo->idxmeta, "outmoded", &outmoded))
+		return 0;
+	if (!xbps_dictionary_get_dict(outmoded, search->pkgname, &record))
+		return 0;
+	if (!xbps_dictionary_get_cstring_nocopy(record, "pattern", &pkgpattern))
+		return 0;
+	if (xbps_pkgpattern_match(search->pkgver, pkgpattern) == 1)
+	{
+		search->record = record;
+		*done = true;
+	}
+	return 0;
+}
+
 static int
 trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
-	struct {
-		const char *old_package;
-		const char *new_packages[7];
-	} outmoded[] = {
-		{"Platinum9-theme<=0.0.0.20170720_3", {NULL}},
-		{"apg<=2.2.3_5", {NULL}},
-		{"arm-mem-git<=20131108_2", {NULL}},
-		{"caja-gksu<=1.20.2_2", {NULL}},
-		{"california<=0.4.0_4", {NULL}},
-		{"ctpp2<=2.8.3_7", {NULL}},
-		{"ctpp2-devel<=2.8.3_7", {NULL}},
-		{"fontmatrix<=0.6.0.20171228_2", {NULL}},
-		{"gksu<=2.0.2_4", {"lxqt-sudo", NULL}},
-		{"goffice0.8<=0.8.17_6", {NULL}},
-		{"grv<=0.3.1_3", {NULL}},
-		{"keepassx<=0.4.4_2", {NULL}},
-		{"libapp<=20140527_2", {NULL}},
-		{"libdbusmenu-qt<=0.9.2_4", {NULL}},
-		{"libgksu<=2.0.12_5", {NULL}},
-		{"libump-git<=20150407_2", {NULL}},
-		{"llvm3.9<=3.9.1_5", {NULL}},
-		{"lmdb++<=0.9.14.0+20160229_2", {NULL}},
-		{"ls++-git<=20140919_3", {NULL}},
-		{"mac<=3.99u4b5s7_3", {NULL}},
-		{"mdds0<=0.12.1_3", {NULL}},
-		{"mongroup<=0.4.1_2", {NULL}},
-		{"mtxclient<=0.2.0_3", {NULL}},
-		{"nheko<=0.6.2_2", {NULL}},
-		{"oksh<=0.5.9_3", {NULL}},
-		{"profile-sync-daemon<=5.75_4", {NULL}},
-		{"profont<=1.0_2", {"dina-font", "source-sans-pro", NULL}},
-		{"python-pyenet<=1.3.13.post7_2", {NULL}},
-		{"qimageblitz<=0.0.6_4", {NULL}},
-		{"seriespl<=2.3.5_2", {NULL}},
-		{"simple-obfs<=0.0.5_2", {NULL}},
-		{"skypetab-ng<=20150201_3", {NULL}},
-		{"ttyload-git<=20141117_4", {NULL}},
-		{"tweeny<=2_2", {NULL}},
-		{"urlmatch-git<=20141116_2", {NULL}},
-		{"v8<=3.24.35.33_4", {NULL}},
-		{"varnish<=6.1.1_3", {NULL}},
-		{"yt-play<=20140117_2", {NULL}},
-		{NULL, {NULL}}
-	};
+	xbps_object_t obj;
+	xbps_object_iterator_t iter;
+	char *old_pkgname = NULL;
+	int rv = 0;
 
-	for (int i = 0; outmoded[i].old_package != NULL; ++i) {
+	iter = xbps_dictionary_iterator(xhp->pkgdb);
+	assert(iter);
+
+	while ((obj = xbps_object_iterator_next(iter))) {
+		outmoded_search_t search;
 		xbps_dictionary_t old_pkg_in_trans = NULL;
 		xbps_dictionary_t old_pkg_in_pkgdb = NULL;
+		xbps_array_t to_install = NULL;
 		const char *old_pattern = NULL;
 		const char *old_pkgver = NULL;
-		int j = 0;
+		unsigned int i = 0;
 		bool instd_auto = true;
 
-		old_pattern = outmoded[i].old_package;
+		old_pkg_in_pkgdb = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
+		if (!xbps_dictionary_get_cstring_nocopy(old_pkg_in_pkgdb, "pkgver", &old_pkgver)) {
+			xbps_dbg_printf(xhp, "pkgdb item has no pkgver");
+			continue;
+		}
+		old_pkgname = xbps_pkg_name(old_pkgver);
+		assert(old_pkgname);
+		memset(&search, 0, sizeof(search));
+		search.pkgname = old_pkgname;
+		search.pkgver = old_pkgver;
+		search.record = NULL;
+		rv = xbps_rpool_foreach(xhp, find_outmoded_record, &search);
+		if (rv) {
+			xbps_dbg_printf(xhp, "%s: trans_find_outmoded %s: %d\n", __func__, old_pkgver, rv);
+			goto out;
+		}
+		if (search.record == NULL) {
+			free(old_pkgname);
+			old_pkgname = NULL;
+			continue;
+		}
+
+		xbps_dictionary_get_cstring_nocopy(search.record, "pattern", &old_pattern);
 		if (pkgs != NULL) {
 			old_pkg_in_trans = xbps_find_pkg_in_array(pkgs, old_pattern, NULL);
 		}
@@ -292,46 +307,29 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 			    "transaction", &old_transaction);
 			if (strcmp(old_transaction, "remove") != 0)
 			{
-				xbps_dictionary_get_cstring_nocopy(old_pkg_in_trans,
-				    "pkgver", &old_pkgver);
-				if (xbps_match_virtual_pkg_in_dict(old_pkg_in_trans, old_pattern) ||
-				    xbps_pkgpattern_match(old_pkgver, old_pattern))
-				{
-					xbps_dictionary_set_cstring_nocopy(old_pkg_in_trans,
-					    "transaction", "remove");
-					xbps_dictionary_get_bool(old_pkg_in_trans,
-						"automatic-install", &instd_auto);
-				}
-				else
-				{
-					continue;
-				}
+				xbps_dictionary_set_cstring_nocopy(old_pkg_in_trans,
+				    "transaction", "remove");
+				xbps_dictionary_get_bool(old_pkg_in_trans,
+				    "automatic-install", &instd_auto);
 			}
-		}
-		else if ((old_pkg_in_pkgdb = xbps_pkgdb_get_pkg(xhp, old_pattern)) != NULL) {
-			const char *old_pkgname = NULL;
-
-			xbps_dictionary_get_cstring_nocopy(old_pkg_in_pkgdb,
-				    "pkgver", &old_pkgver);
-			old_pkgname = xbps_pkg_name(old_pkgver);
-			if (xbps_transaction_remove_pkg(xhp, old_pkgname, false)) {
-				return EINVAL;
-			}
+		} else {
 			xbps_dictionary_get_bool(old_pkg_in_pkgdb, "automatic-install", &instd_auto);
-		}
-		else {
-			continue;
+			if (xbps_transaction_remove_pkg(xhp, old_pkgname, false)) {
+				rv = EINVAL;
+				goto out;
+			}
 		}
 
-		for (j = 0; outmoded[i].new_packages[j] != NULL; ++j) {
+		to_install = xbps_dictionary_get(search.record, "to_install");
+
+		for (i = 0; i < xbps_array_count(to_install); ++i) {
 			const char *new_pkgname = NULL;
 			xbps_dictionary_t new_pkg_in_trans = NULL;
-			int rv = 0;
 
-		    new_pkgname = outmoded[i].new_packages[j];
+			xbps_array_get_cstring_nocopy(to_install, i, &new_pkgname);
 			rv = xbps_transaction_install_pkg(xhp, new_pkgname, false);
-			if (rv != 0) {
-				return rv;
+			if (rv) {
+				goto out;
 			}
 
 			if (pkgs == NULL) {
@@ -353,10 +351,15 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 
 		xbps_dbg_printf(xhp,
 		    "Package `%s' will be outmoded by %d package(s)\n",
-		    old_pkgver, j);
+		    old_pkgver, i);
+		free(old_pkgname);
+		old_pkgname = NULL;
 	}
 
-	return 0;
+out:
+	xbps_object_iterator_release(iter);
+	free(old_pkgname);
+	return rv;
 }
 
 /*
