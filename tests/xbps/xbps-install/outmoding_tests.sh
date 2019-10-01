@@ -7,8 +7,8 @@ one_outmoding_head(){
 }
 
 one_outmoding_body() {
-	mkdir -p some_repo pkg_{A,B}
-	touch pkg_{A,B}/file00
+	mkdir -p some_repo pkg_A pkg_B
+	touch pkg_A/file00 pkg_B/file00
 	cd some_repo
 	xbps-create -A noarch -n gksu-1.0_2 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
@@ -41,7 +41,7 @@ two_outmoding_head(){
 }
 
 two_outmoding_body() {
-	mkdir -p some_repo pkg_{A,B,C}
+	mkdir -p some_repo pkg_A pkg_B pkg_C
 	for i in A B C; do
 		touch pkg_${i}/file${i}
 	done
@@ -114,7 +114,7 @@ readded_body() {
 	mkdir -p some_repo pkg_A
 	touch pkg_A/file00
 	cd some_repo
-	xbps-create -A noarch -n tweeny_3-1 -s "A pkg" ../pkg_A
+	xbps-create -A noarch -n tweeny-3_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -a $PWD/*.xbps
 	atf_check_equal $? 0
