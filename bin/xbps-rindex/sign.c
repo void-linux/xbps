@@ -94,6 +94,32 @@ pubkey_from_privkey(RSA *rsa)
 }
 
 static bool
+rsa_sign_buffer(RSA *rsa, const char *buffer, unsigned int buflen,
+	 unsigned char **sigret, unsigned int *siglen)
+{
+	unsigned char *sha256;
+
+	sha256 = xbps_buffer_hash_raw(buffer, buflen);
+	if(!sha256)
+		return false;
+
+	if ((*sigret = calloc(1, RSA_size(rsa) + 1)) == NULL) {
+		free(sha256);
+		return false;
+	}
+
+	if (!RSA_sign(NID_sha1, sha256, SHA256_DIGEST_LENGTH,
+				*sigret, siglen, rsa)) {
+		free(sha256);
+		free(*sigret);
+		return false;
+	}
+
+	free(sha256);
+	return true;
+}
+
+static bool
 rsa_sign_file(RSA *rsa, const char *file,
 	 unsigned char **sigret, unsigned int *siglen)
 {
@@ -148,6 +174,26 @@ ssl_init(void)
 {
 	SSL_load_error_strings();
 	SSL_library_init();
+}
+
+int
+sign_buffer(const char *buffer, unsigned int buflen, const char *privkey, unsigned char **sig, unsigned int *sig_len)
+{
+	RSA *rsa = NULL;
+	int rv = 0;
+
+	rsa = load_rsa_key(privkey);
+	if (!rsa_sign_buffer(rsa, buffer, buflen, sig, sig_len)) {
+		fprintf(stderr, "failed to sign buffer (%u bytes): %s\n", buflen, strerror(errno));
+		rv = EINVAL;
+	}
+
+	if (rsa) {
+		RSA_free(rsa);
+		rsa = NULL;
+	}
+
+	return rv;
 }
 
 int
@@ -231,7 +277,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		    _XBPS_RINDEX, strerror(errno));
 		goto out;
 	}
-	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta, compression);
+	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta, compression, privkey);
 	xbps_repo_unlock(rlockfd, rlockfname);
 	if (!flush_failed) {
 		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
