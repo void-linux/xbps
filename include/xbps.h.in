@@ -116,6 +116,12 @@
  */
 #define XBPS_REPOIDX		"index.plist"
 
+/** 
+ * @def XBPS_REPOIDX_SIG
+ * Filename for the signature of repository index property list.
+ */
+#define XBPS_REPOIDX_SIG	"index.plist.sig"
+
 /**
  * @def XBPS_REPOIDX_META
  * Filename for the repository index metadata property list.
@@ -1812,6 +1818,18 @@ bool xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filele
  * longer needed.
  */
 char *xbps_file_hash(const char *file);
+
+/**
+ * Returns a raw byte buffer with the sha256 hash for the data specified
+ * in \a buffer of length \a len.
+ *
+ * @param[in] buffer Pointer to byte buffer.
+ * @param[in] len Length of data in buffer
+ * @return A pointer to a malloc(3)ed buffer, NULL otherwise and errno
+ * is set appropiately. The pointer should be free(3)d when it's no
+ * longer needed.
+ */
+unsigned char *xbps_buffer_hash_raw(const char *buffer, ssize_t len);
 
 /**
  * Returns a raw byte buffer with the sha256 hash for the file specified
