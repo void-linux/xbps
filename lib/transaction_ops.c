@@ -247,7 +247,9 @@ find_outmoded_record(struct xbps_repo *repo, void *arg, bool *done)
 	if (xbps_pkgpattern_match(search->pkgver, pkgpattern) == 1)
 	{
 		search->record = record;
-		*done = true;
+		if (done != NULL) {
+		    *done = true;
+		}
 	}
 	return 0;
 }
@@ -271,6 +273,7 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 		const char *old_pkgver = NULL;
 		unsigned int i = 0;
 		bool hold = false;
+		bool repolock = false;
 		bool instd_auto = true;
 
 		old_pkg_in_pkgdb = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
@@ -290,7 +293,19 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 		search.pkgname = old_pkgname;
 		search.pkgver = old_pkgver;
 		search.record = NULL;
-		rv = xbps_rpool_foreach(xhp, find_outmoded_record, &search);
+		xbps_dictionary_get_bool(old_pkg_in_pkgdb, "repolock", &repolock);
+		if (repolock) {
+			struct xbps_repo *repo;
+			const char *repourl;
+			xbps_dictionary_get_cstring_nocopy(old_pkg_in_pkgdb, "repository", &repourl);
+			assert(repourl);
+			if ((repo = xbps_regget_repo(xhp, repourl)) == NULL) {
+				continue;
+			}
+			rv = find_outmoded_record(repo, &search, NULL);
+		} else {
+			rv = xbps_rpool_foreach(xhp, find_outmoded_record, &search);
+		}
 		if (rv) {
 			xbps_dbg_printf(xhp, "%s: trans_find_outmoded %s: %d\n", __func__, old_pkgver, rv);
 			goto out;

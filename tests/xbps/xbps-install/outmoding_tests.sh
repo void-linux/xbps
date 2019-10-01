@@ -209,10 +209,66 @@ hold_body() {
 	atf_check_equal $? 2
 }
 
+atf_test_case repolock
+
+repolock_head(){
+	atf_set "descr" "xbps-install(1): outmoding repolocked package for different repo"
+}
+
+repolock_body() {
+	get_resources
+	mkdir -p some_repo pkg_A pkg_B
+	touch pkg_A/file00 pkg_B/file01
+	cd some_repo
+	xbps-create -A noarch -n gksu-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n lxqt-sudo-1.1_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	mkdir -p other_repo
+	cd other_repo
+	xbps-create -A noarch -n gksu-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n lxqt-sudo-1.1_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
+	atf_check_equal $? 0
+	xbps-rindex -s $PWD/other_repo --signedby test --privkey id_xbps
+	atf_check_equal $? 0
+	xbps-rindex -o outmoded.plist $PWD/other_repo --privkey id_xbps
+	atf_check_equal $? 0
+
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y gksu
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -C empty.conf -m repolock gksu
+
+	xbps-query -r root gksu
+	atf_check_equal $? 0
+	xbps-query -r root lxqt-sudo
+	atf_check_equal $? 2
+
+	xbps-install -r root -C empty.conf --repository=$PWD/other_repo --repository=$PWD/some_repo -y -u
+	atf_check_equal $? 0
+
+	xbps-query -r root gksu
+	atf_check_equal $? 0
+	xbps-query -r root lxqt-sudo
+	atf_check_equal $? 2
+}
+
 atf_init_test_cases() {
 	atf_add_test_case one_outmoding
 	atf_add_test_case two_outmoding
 	atf_add_test_case no_outmoding
 	atf_add_test_case readded
+	atf_add_test_case repolock
 	atf_add_test_case hold
 }
