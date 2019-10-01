@@ -270,11 +270,18 @@ trans_find_outmoded(struct xbps_handle *xhp, xbps_array_t pkgs) {
 		const char *old_pattern = NULL;
 		const char *old_pkgver = NULL;
 		unsigned int i = 0;
+		bool hold = false;
 		bool instd_auto = true;
 
 		old_pkg_in_pkgdb = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		if (!xbps_dictionary_get_cstring_nocopy(old_pkg_in_pkgdb, "pkgver", &old_pkgver)) {
 			xbps_dbg_printf(xhp, "pkgdb item has no pkgver");
+			continue;
+		}
+		xbps_dictionary_get_bool(old_pkg_in_pkgdb, "hold", &hold);
+		if (hold) {
+			xbps_dbg_printf(xhp, "[rpool] package `%s' "
+			    "on hold, skipped checking if it is outmoded.\n", old_pkgver);
 			continue;
 		}
 		old_pkgname = xbps_pkg_name(old_pkgver);
