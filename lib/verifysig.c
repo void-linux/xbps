@@ -72,8 +72,8 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 }
 
 bool
-xbps_verify_digest_signature(struct xbps_repo *repo, unsigned char *sig_buf,
-		size_t sigfilelen, unsigned char *digest)
+xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
+		unsigned char *sig_buf, size_t sigfilelen, unsigned char *digest)
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
@@ -81,12 +81,12 @@ xbps_verify_digest_signature(struct xbps_repo *repo, unsigned char *sig_buf,
 	char *rkeyfile = NULL;
 	bool val = false;
 
-	if (!xbps_dictionary_count(repo->idxmeta)) {
+	if (!xbps_dictionary_count(idxmeta)) {
 		xbps_dbg_printf(repo->xhp, "%s: unsigned repository\n", repo->uri);
 		return false;
 	}
 	hexfp = xbps_pubkey2fp(repo->xhp,
-	    xbps_dictionary_get(repo->idxmeta, "public-key"));
+	    xbps_dictionary_get(idxmeta, "public-key"));
 	if (hexfp == NULL) {
 		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
 		return false;
@@ -143,7 +143,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 		goto out;
 	}
 
-	val = xbps_verify_digest_signature(repo, sigbuf, sigfilelen, digest);
+	val = xbps_verify_digest_signature(repo, repo->idxmeta, sigbuf, sigfilelen, digest);
 
 out:
 	if (sigbuf)

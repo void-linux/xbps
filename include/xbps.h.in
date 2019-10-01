@@ -1866,8 +1866,8 @@ int xbps_file_hash_check(const char *file, const char *sha256);
  *
  * @return True if the signature is valid, false otherwise.
  */
-bool xbps_verify_digest_signature(struct xbps_repo *repo, unsigned char *sig_buf,
-		size_t sigfilelen, unsigned char *digest);
+bool xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
+		unsigned char *sig_buf, size_t sigfilelen, unsigned char *digest);
 
 /**
  * Verifies the RSA signature of \a fname with the RSA public-key associated
