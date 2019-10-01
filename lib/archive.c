@@ -56,7 +56,7 @@ xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 }
 
 xbps_dictionary_t HIDDEN
-xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
+xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry, char **bytes)
 {
 	xbps_dictionary_t d = NULL;
 	char *buf;
@@ -66,7 +66,11 @@ xbps_archive_get_dictionary(struct archive *ar, struct archive_entry *entry)
 
 	/* If blob is already a dictionary we are done */
 	d = xbps_dictionary_internalize(buf);
-	free(buf);
+	if (bytes == NULL) {
+		free(buf);
+	} else {
+		*bytes = buf;
+	}
 	return d;
 }
 
