@@ -110,7 +110,7 @@
  */
 #define XBPS_PKGFILES		"files.plist"
 
-/** 
+/**
  * @def XBPS_REPOIDX
  * Filename for the repository index property list.
  */
@@ -1896,6 +1896,22 @@ int xbps_file_hash_check(const char *file, const char *sha256);
  */
 bool xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 		unsigned char *digest);
+
+/**
+ * Verifies the RSA signature \sig_buf of bytes with hash \a digest
+ * with the RSA public-key associated in \a repo.
+ *
+ * @param[in] repo Repository to use with the RSA public key associated.
+ * @param[in] idxmeta Meta dictionary related to \a repo, containing
+ * public-key field.
+ * @param[in] sig_buf The signature of file content that has hash \digest.
+ * @param[in] sigfilelen The length of signature.
+ * @param[in] digest The digest of file content to verify.
+ *
+ * @return True if the signature is valid, false otherwise.
+ */
+bool xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
+    unsigned char *sig_buf, size_t sigfilelen, unsigned char *digest);
 
 /**
  * Verifies the RSA signature of \a fname with the RSA public-key associated
