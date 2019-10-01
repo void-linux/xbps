@@ -49,6 +49,7 @@ usage(bool fail)
 	    "MODE\n"
 	    " -a --add <repodir/pkg> ...        Add package(s) to repository index\n"
 	    " -c --clean <repodir>              Clean repository index\n"
+	    " -o --register-outmoded <file>     Register packages as outmoded\n"
 	    " -r --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
 	    " -s --sign <repodir>               Initialize repository metadata signature\n"
 	    " -S --sign-pkg archive.xbps ...    Sign binary package archive\n\n");
@@ -58,13 +59,14 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsCSVv";
+	const char *shortopts = "acdfho:rsCSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
+		{ "register-outmoded", required_argument, NULL, 'o' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
@@ -77,13 +79,13 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
-	const char *compression = NULL;
+	const char *compression = NULL, *outmoded_path = NULL;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
-	short add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode;
+	short add_mode, clean_mode, outmoded_mode, rm_mode, sign_mode, sign_pkg_mode;
 	bool force, hashcheck;
 
-	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = 0;
+	add_mode = clean_mode = outmoded_mode = rm_mode = sign_mode = sign_pkg_mode = 0;
 	force = hashcheck = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -112,6 +114,10 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
+		case 'o':
+			outmoded_mode = 1;
+			outmoded_path = optarg;
+			break;
 		case 'r':
 			rm_mode = 1;
 			break;
@@ -133,11 +139,11 @@ main(int argc, char **argv)
 		}
 	}
 	if ((argc == optind) ||
-	    (add_mode + clean_mode + rm_mode + sign_mode + sign_pkg_mode == 0)) {
+	    (add_mode + clean_mode + outmoded_mode + rm_mode + sign_mode + sign_pkg_mode == 0)) {
 		usage(true);
-	} else if (add_mode + clean_mode + rm_mode + sign_mode + sign_pkg_mode > 1) {
+	} else if (add_mode + clean_mode + outmoded_mode + rm_mode + sign_mode + sign_pkg_mode > 1) {
 		fprintf(stderr, "Only one mode can be specified: add, clean, "
-		    "remove-obsoletes, sign or sign-pkg.\n");
+		    "register-outmoded, remove-obsoletes, sign or sign-pkg.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -154,6 +160,8 @@ main(int argc, char **argv)
 		rv = index_add(&xh, optind, argc, argv, force, compression, privkey);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression, privkey);
+	else if (outmoded_mode)
+		rv = register_outmoded(&xh, argv[optind], outmoded_path, compression, privkey);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
 	else if (sign_mode)
