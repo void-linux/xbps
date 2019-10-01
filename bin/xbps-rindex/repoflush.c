@@ -40,11 +40,14 @@
 bool
 repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta,
-	const char *compression)
+	const char *compression, const char *privkey)
 {
 	struct archive *ar;
 	char *repofile, *tname, *buf;
+	unsigned char *sig = NULL;
+	const char *signature_type = NULL;
 	int rv, repofd = -1;
+	unsigned int siglen, buflen;
 	mode_t mask;
 	bool result;
 
@@ -88,11 +91,13 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	/* XBPS_REPOIDX */
 	buf = xbps_dictionary_externalize(idx);
 	assert(buf);
-	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+	buflen = strlen(buf);
+	rv = xbps_archive_append_buf(ar, buf, buflen,
 	    XBPS_REPOIDX, 0644, "root", "root");
 	free(buf);
-	if (rv != 0)
+	if (rv != 0) {
 		return false;
+	}
 
 	/* XBPS_REPOIDX_META */
 	if (meta == NULL) {
@@ -101,11 +106,31 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	} else {
 		buf = xbps_dictionary_externalize(meta);
 	}
-	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+	buflen = strlen(buf);
+	rv = xbps_archive_append_buf(ar, buf, buflen,
 	    XBPS_REPOIDX_META, 0644, "root", "root");
-	free(buf);
 	if (rv != 0)
 		return false;
+
+	if (xbps_dictionary_get_cstring_nocopy(meta, "signature-type", &signature_type))
+	{
+		rv = sign_buffer(buf, buflen, privkey, &sig, &siglen);
+		free(buf);
+		if (rv != 0) {
+			free(sig);
+			return false;
+		}
+		assert(sig);
+		rv = xbps_archive_append_buf(ar, sig, siglen,
+		    XBPS_REPOIDXMETA_SIG, 0644, "root", "root");
+		if (rv != 0) {
+			free(sig);
+			return false;
+		}
+		free(sig);
+	} else {
+		free(buf);
+	}
 
 	/* Write data to tempfile and rename */
 	archive_write_finish(ar);

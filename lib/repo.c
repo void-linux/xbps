@@ -61,11 +61,48 @@ xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *n
 	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch, name);
 }
 
+static int
+repo_verify_index(struct xbps_repo *repo, xbps_dictionary_t idxmeta, unsigned char *digest) {
+	bool verified = false;
+	unsigned char *sig_buf = NULL;
+	size_t sigfilelen = 0;
+	struct archive_entry *entry;
+
+	if (archive_read_next_header(repo->ar, &entry) != ARCHIVE_OK) {
+		xbps_dbg_printf(repo->xhp,
+		    "%s: read_next_header %s\n", repo->uri,
+		    archive_error_string(repo->ar));
+		return ENOENT;
+	}
+
+	if (strcmp(archive_entry_pathname(entry), XBPS_REPOIDXMETA_SIG) != 0) {
+		xbps_dbg_printf(repo->xhp,
+		    "%s: no signature of %s\n", repo->uri, XBPS_REPOIDX_META);
+		return ENOENT;
+	}
+
+	sigfilelen = (size_t)archive_entry_size(entry);
+	sig_buf = (unsigned char *) xbps_archive_get_file(repo->ar, entry);
+	if (sig_buf == NULL) {
+		return EIO;
+	}
+	verified = xbps_verify_digest_signature(repo, idxmeta, sig_buf, sigfilelen, digest);
+
+	free(sig_buf);
+	return verified ? 0 : EINVAL;
+}
+
 static xbps_dictionary_t
-repo_get_dict(struct xbps_repo *repo)
+repo_get_dict(struct xbps_repo *repo, int *verify_error)
 {
 	struct archive_entry *entry;
 	int rv;
+	xbps_dictionary_t dict, idxmeta;
+	char *bytes = NULL;
+	unsigned char *digest = NULL;
+
+	if (verify_error != NULL)
+		*verify_error = -1;
 
 	if (repo->ar == NULL)
 		return NULL;
@@ -77,7 +114,44 @@ repo_get_dict(struct xbps_repo *repo)
 		    archive_error_string(repo->ar));
 		return NULL;
 	}
-	return xbps_archive_get_dictionary(repo->ar, entry);
+	dict = xbps_archive_get_dictionary(repo->ar, entry, &bytes);
+	idxmeta = (repo->idxmeta != NULL) ? repo->idxmeta : dict;
+	if (verify_error != NULL && bytes != NULL) {
+		digest = xbps_buffer_hash_raw(bytes, strlen(bytes));
+		*verify_error = repo_verify_index(repo, idxmeta, digest);
+	}
+	free(digest);
+	free(bytes);
+	return dict;
+}
+
+
+xbps_dictionary_t HIDDEN
+get_safe_idxmeta(xbps_dictionary_t full) {
+	static const char *keys[] = {
+		"public-key",
+		"public-key-size",
+		"signature-by",
+		"signature-type",
+	};
+	static const unsigned fields_count = (sizeof keys)/(sizeof *keys);
+	xbps_dictionary_t safe = NULL;
+
+	if (full == NULL){
+		return NULL;
+	}
+
+	safe = xbps_dictionary_create();
+
+	for (unsigned i = 0; i < fields_count; ++i) {
+		const char *key = keys[i];
+		xbps_object_t value = xbps_dictionary_get(full, key);
+		if (value != NULL) {
+			xbps_dictionary_set(safe, key, value);
+		}
+	}
+
+	return safe;
 }
 
 bool
@@ -135,6 +209,9 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 {
 	struct stat st;
 	int rv = 0;
+	int verify_error = -1;
+	const char *signature_type = NULL;
+	xbps_dictionary_t idxmeta = NULL;
 
 	if (fstat(repo->fd, &st) == -1) {
 		rv = errno;
@@ -158,7 +235,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		    repofile, strerror(rv));
 		return false;
 	}
-	if ((repo->idx = repo_get_dict(repo)) == NULL) {
+	if ((repo->idx = repo_get_dict(repo, NULL)) == NULL) {
 		xbps_dbg_printf(repo->xhp, "[repo] `%s' failed to internalize "
 		    " index on archive, removing file.\n", repofile);
 		/* broken archive, remove it */
@@ -166,13 +243,19 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		return false;
 	}
 	xbps_dictionary_make_immutable(repo->idx);
-	repo->idxmeta = repo_get_dict(repo);
-	if (repo->idxmeta != NULL) {
-		repo->is_signed = true;
-		xbps_dictionary_make_immutable(repo->idxmeta);
+	idxmeta = repo_get_dict(repo, &verify_error);
+	if (idxmeta != NULL) {
+		if (verify_error == ENOENT) {
+			idxmeta = get_safe_idxmeta(idxmeta);
+			verify_error = 0;
+		}
+		if (xbps_dictionary_get_cstring_nocopy(idxmeta, "signature-type", &signature_type))
+			repo->is_signed = true;
+		xbps_dictionary_make_immutable(idxmeta);
 	}
+	repo->idxmeta = idxmeta;
 
-	return true;
+	return !verify_error || (!repo->is_remote && !repo->is_signed);
 }
 
 static bool
@@ -589,6 +672,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	char *hexfp = NULL;
 	char *p, *dbkeyd, *rkeyfile = NULL;
 	int import, rv = 0;
+	bool has_signedby, has_pubkey_size, has_pubkey;
 
 	assert(repo);
 	/*
@@ -609,8 +693,18 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkey_size);
 	pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
 
-	if (signedby == NULL || pubkey_size == 0 ||
-	    xbps_object_type(pubkey) != XBPS_TYPE_DATA) {
+	has_signedby = (signedby != NULL);
+	has_pubkey_size = (pubkey_size > 0);
+	has_pubkey = (xbps_object_type(pubkey) == XBPS_TYPE_DATA);
+
+	if (!has_signedby && !has_pubkey_size && !has_pubkey)
+	{
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s' unsigned repository with meta!\n", repo->uri);
+		return 0;
+	}
+	else if (!has_signedby || !has_pubkey_size || !has_pubkey)
+	{
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s': incomplete signed repository "
 		    "(missing objs)\n", repo->uri);

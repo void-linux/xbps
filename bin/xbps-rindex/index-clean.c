@@ -95,7 +95,7 @@ out:
 
 static int
 cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *repo,
-	const char *reponame, bool hashcheck, const char *compression)
+	const char *reponame, bool hashcheck, const char *compression, const char *privkey)
 {
 	int rv = 0;
 	xbps_array_t allkeys;
@@ -117,7 +117,7 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 		free(stagefile);
 	}
 	if (!xbps_dictionary_equals(dest, repo->idx)) {
-		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta, compression)) {
+		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta, compression, privkey)) {
 			rv = errno;
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));
@@ -136,7 +136,7 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
  * binary package cannot be read (unavailable, not enough perms, etc).
  */
 int
-index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, const char *compression)
+index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, const char *compression, const char *privkey)
 {
 	struct xbps_repo *repo, *stage;
 	char *rlockfname = NULL;
@@ -168,11 +168,11 @@ index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, 
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
-	if ((rv = cleanup_repo(xhp, repodir, repo, "repodata", hashcheck, compression))) {
+	if ((rv = cleanup_repo(xhp, repodir, repo, "repodata", hashcheck, compression, privkey))) {
 		goto out;
 	}
 	if (stage) {
-		cleanup_repo(xhp, repodir, stage, "stagedata", hashcheck, compression);
+		cleanup_repo(xhp, repodir, stage, "stagedata", hashcheck, compression, privkey);
 	}
 
 out:

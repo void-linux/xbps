@@ -72,22 +72,21 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 }
 
 bool
-xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
+xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
+		unsigned char *sig_buf, size_t sigfilelen, unsigned char *digest)
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
 	char *hexfp = NULL;
-	unsigned char *digest = NULL, *sig_buf = NULL;
-	size_t sigbuflen, sigfilelen;
-	char *rkeyfile = NULL, *sig = NULL;
+	char *rkeyfile = NULL;
 	bool val = false;
 
-	if (!xbps_dictionary_count(repo->idxmeta)) {
+	if (!xbps_dictionary_count(idxmeta)) {
 		xbps_dbg_printf(repo->xhp, "%s: unsigned repository\n", repo->uri);
 		return false;
 	}
 	hexfp = xbps_pubkey2fp(repo->xhp,
-	    xbps_dictionary_get(repo->idxmeta, "public-key"));
+	    xbps_dictionary_get(idxmeta, "public-key"));
 	if (hexfp == NULL) {
 		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
 		return false;
@@ -106,19 +105,6 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	pubkey = xbps_dictionary_get(repokeyd, "public-key");
 	if (xbps_object_type(pubkey) != XBPS_TYPE_DATA)
 		goto out;
-
-	/*
-	 * Prepare fname and signature data buffers.
-	 */
-	if (!(digest = xbps_file_hash_raw(fname))) {
-		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
-		goto out;
-	}
-	sig = xbps_xasprintf("%s.sig", fname);
-	if (!xbps_mmap_file(sig, (void *)&sig_buf, &sigbuflen, &sigfilelen)) {
-		xbps_dbg_printf(repo->xhp, "can't open signature file %s: %s\n", sig, strerror(errno));
-		goto out;
-	}
 	/*
 	 * Verify fname RSA signature.
 	 */
@@ -130,14 +116,40 @@ out:
 		free(hexfp);
 	if (rkeyfile)
 		free(rkeyfile);
-	if (digest)
-		free(digest);
-	if (sig_buf)
-		(void)munmap(sig_buf, sigbuflen);
-	if (sig)
-		free(sig);
 	if (repokeyd)
 		xbps_object_release(repokeyd);
+
+	return val;
+}
+
+bool
+xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
+{
+	unsigned char *digest = NULL, *sigbuf = NULL;
+	size_t sigbuflen, sigfilelen;
+	char *sig = NULL;
+	bool val = false;
+
+	/*
+	 * Prepare signature and fname data buffers.
+	 */
+	if (!(digest = xbps_file_hash_raw(fname))) {
+		xbps_dbg_printf(repo->xhp, "can not open file %s: %s\n", fname, strerror(errno));
+		goto out;
+	}
+	sig = xbps_xasprintf("%s.sig", fname);
+	if (!xbps_mmap_file(sig, (void *)&sigbuf, &sigbuflen, &sigfilelen)) {
+		xbps_dbg_printf(repo->xhp, "can not open signature file %s: %s\n", sig, strerror(errno));
+		goto out;
+	}
+
+	val = xbps_verify_digest_signature(repo, repo->idxmeta, sigbuf, sigfilelen, digest);
+
+out:
+	if (sigbuf)
+		(void)munmap(sigbuf, sigbuflen);
+	free(digest);
+	free(sig);
 
 	return val;
 }

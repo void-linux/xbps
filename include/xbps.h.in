@@ -110,7 +110,7 @@
  */
 #define XBPS_PKGFILES		"files.plist"
 
-/** 
+/**
  * @def XBPS_REPOIDX
  * Filename for the repository index property list.
  */
@@ -121,6 +121,13 @@
  * Filename for the repository index metadata property list.
  */
 #define XBPS_REPOIDX_META 	"index-meta.plist"
+
+/**
+ * @def XBPS_REPOIDXMETA_SIG
+ * Filename for the signature of repository index metadata
+ * property list.
+ */
+#define XBPS_REPOIDXMETA_SIG	"index-meta.plist.sig"
 
 /**
  * @def XBPS_FLAG_VERBOSE
@@ -1324,7 +1331,7 @@ struct xbps_repo {
 	xbps_dictionary_t idxmeta;
 	/**
 	 * @var uri
-	 * 
+	 *
 	 * URI string associated with repository.
 	 */
 	const char *uri;
@@ -1814,6 +1821,18 @@ bool xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filele
 char *xbps_file_hash(const char *file);
 
 /**
+ * Returns a raw byte buffer with the sha256 hash for the data specified
+ * in \a buffer of length \a len.
+ *
+ * @param[in] buffer Pointer to byte buffer.
+ * @param[in] len Length of data in buffer
+ * @return A pointer to a malloc(3)ed buffer, NULL otherwise and errno
+ * is set appropiately. The pointer should be free(3)d when it's no
+ * longer needed.
+ */
+unsigned char *xbps_buffer_hash_raw(const char *buffer, ssize_t len);
+
+/**
  * Returns a raw byte buffer with the sha256 hash for the file specified
  * by \a file.
  *
@@ -1835,6 +1854,20 @@ unsigned char *xbps_file_hash_raw(const char *file);
  * if it differs, or any other errno value on error.
  */
 int xbps_file_hash_check(const char *file, const char *sha256);
+
+/**
+ * Verifies the RSA signature \sig_buf of bytes with hash \a digest
+ * with the RSA public-key associated in \a repo.
+ *
+ * @param[in] repo Repository to use with the RSA public key associated.
+ * @param[in] sig_buf The signature of file content that has hash \digest.
+ * @param[in] sigfilelen The length of signature.
+ * @param[in] digest The digest of file content to verify.
+ *
+ * @return True if the signature is valid, false otherwise.
+ */
+bool xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
+		unsigned char *sig_buf, size_t sigfilelen, unsigned char *digest);
 
 /**
  * Verifies the RSA signature of \a fname with the RSA public-key associated
