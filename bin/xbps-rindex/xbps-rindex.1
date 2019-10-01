@@ -56,6 +56,15 @@ Absolute path to the local repository is expected.
 .It Sy -c, --clean Ar /path/to/repository
 Removes obsolete entries found in the local repository.
 Absolute path to the local repository is expected.
+.It Sy -o, --register-outmoded Ar /path/to/outmoded_list Ar /path/to/repository
+Registers packages specified in
+.Ar outmoded_list
+as outmoded in
+.Ar repository .
+Unlike other modes, this mode do not preserve
+previously registered outmoded packages.
+Absolute path to the outmoded_list followed by
+absolute path to the local repository is expected.
 .It Sy -r, --remove-obsoletes Ar /path/to/repository
 Removes obsolete packages from
 .Ar repository .
