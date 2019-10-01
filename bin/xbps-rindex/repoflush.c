@@ -93,8 +93,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	buf = xbps_dictionary_externalize(idx);
 	if (buf == NULL)
 		return false;
-	buflen = strlen(buf);
-	rv = xbps_archive_append_buf(ar, buf, buflen,
+	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
 	    XBPS_REPOIDX, 0644, "root", "root");
 	free(buf);
 	if (rv != 0) {
@@ -110,11 +109,31 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	} else {
 		buf = xbps_dictionary_externalize(meta);
 	}
-	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+	buflen = strlen(buf);
+	rv = xbps_archive_append_buf(ar, buf, buflen,
 	    XBPS_REPOIDX_META, 0644, "root", "root");
-	free(buf);
 	if (rv != 0)
 		return false;
+
+	if (meta)
+	{
+		rv = sign_buffer(buf, buflen, privkey, &sig, &siglen);
+		free(buf);
+		if (rv != 0) {
+			free(sig);
+			return false;
+		}
+		assert(sig);
+		rv = xbps_archive_append_buf(ar, sig, siglen,
+		    XBPS_REPOIDXMETA_SIG, 0644, "root", "root");
+		if (rv != 0) {
+			free(sig);
+			return false;
+		}
+		free(sig);
+	} else {
+		free(buf);
+	}
 
 	/* Write data to tempfile and rename */
 	if (archive_write_close(ar) != ARCHIVE_OK)
