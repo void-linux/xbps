@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2012-2015 Juan Romero Pardines.
+ * Copyright (c) 2019 Duncan Overbruck <mail@duncano.de>.
  * Copyright (c) 2019 Piotr Wójcik.
  * All rights reserved.
  *
@@ -31,6 +32,57 @@
 #include <xbps.h>
 #include "defs.h"
 
+static xbps_dictionary_t parse_outmoded(const char *path, int *rv) {
+	FILE *fp;
+	size_t len = 0;
+	ssize_t nread;
+	char *line = NULL;
+	char *word;
+	char *pkgname;
+	xbps_dictionary_t outmoded = xbps_dictionary_create();
+
+	if ((fp = fopen(path, "r")) == NULL) {
+		*rv = errno;
+		xbps_error_printf("cannot read outmoded list file %s: %s\n", path, strerror(*rv));
+		return NULL;
+	}
+
+	while ((nread = getline(&line, &len, fp)) != -1) {
+		xbps_dictionary_t entry = xbps_dictionary_create();
+		xbps_array_t to_install = NULL;
+
+		word = strtok(line, " \n\t");
+
+		pkgname = xbps_pkgpattern_name(word);
+		if (pkgname == NULL) {
+			*rv = -1;
+			return NULL;
+		}
+
+		xbps_dictionary_set_cstring(entry, "pattern", word);
+
+		while ((word = strtok(NULL, " \n\t"))) {
+			if (to_install == NULL) {
+				to_install = xbps_array_create();
+			}
+			xbps_array_add_cstring(to_install, word);
+		}
+
+		if (to_install) {
+			xbps_dictionary_set(entry, "to_install", to_install);
+		}
+
+		xbps_dictionary_set(outmoded, pkgname, entry);
+	}
+
+	if (errno) {
+		*rv = errno;
+		return NULL;
+	}
+
+	return outmoded;
+}
+
 int
 register_outmoded(struct xbps_handle *xhp, const char *repodir, const char *source_path, const char *compression, const char *privkey)
 {
@@ -61,7 +113,10 @@ register_outmoded(struct xbps_handle *xhp, const char *repodir, const char *sour
 		idx = xbps_dictionary_create();
 		idxmeta = xbps_dictionary_create();
 	}
-	outmoded = xbps_dictionary_internalize_from_file(source_path);
+	outmoded = parse_outmoded(source_path, &rv);
+	if (rv) {
+		goto out;
+	}
 	xbps_dictionary_set(idxmeta, "outmoded", outmoded);
 	if (!repodata_flush(xhp, repodir, "repodata", idx, idxmeta, compression, privkey)) {
 		fprintf(stderr, "%s: failed to write repodata: %s\n",

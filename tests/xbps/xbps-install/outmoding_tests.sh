@@ -2,7 +2,7 @@
 
 get_resources() {
 	cp $(atf_get_srcdir)/data/id_xbps .
-	cp $(atf_get_srcdir)/data/outmoded.plist .
+	cp $(atf_get_srcdir)/data/outmoded .
 	mkdir -p root/var/db/xbps/keys
 	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist root/var/db/xbps/keys
 	mkdir -p /var/db/xbps/keys
@@ -30,7 +30,7 @@ one_outmoding_body() {
 
 	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
 	atf_check_equal $? 0
-	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
+	xbps-rindex -o outmoded $PWD/some_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y gksu
@@ -84,7 +84,7 @@ two_outmoding_body() {
 
 	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
 	atf_check_equal $? 0
-	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
+	xbps-rindex -o outmoded $PWD/some_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
@@ -122,7 +122,7 @@ no_outmoding_body() {
 
 	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
 	atf_check_equal $? 0
-	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
+	xbps-rindex -o outmoded $PWD/some_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
@@ -156,7 +156,7 @@ readded_body() {
 
 	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
 	atf_check_equal $? 0
-	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
+	xbps-rindex -o outmoded $PWD/some_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y -u
@@ -188,7 +188,7 @@ outmoding_installed_body() {
 
 	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
 	atf_check_equal $? 0
-	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
+	xbps-rindex -o outmoded $PWD/some_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y gksu lxqt-sudo
@@ -229,7 +229,7 @@ hold_body() {
 
 	xbps-rindex -s $PWD/some_repo --signedby test --privkey id_xbps
 	atf_check_equal $? 0
-	xbps-rindex -o outmoded.plist $PWD/some_repo --privkey id_xbps
+	xbps-rindex -o outmoded $PWD/some_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y gksu
@@ -284,7 +284,7 @@ repolock_body() {
 	atf_check_equal $? 0
 	xbps-rindex -s $PWD/other_repo --signedby test --privkey id_xbps
 	atf_check_equal $? 0
-	xbps-rindex -o outmoded.plist $PWD/other_repo --privkey id_xbps
+	xbps-rindex -o outmoded $PWD/other_repo --privkey id_xbps
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y gksu
