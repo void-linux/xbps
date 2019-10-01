@@ -75,9 +75,9 @@ repo_verify_index(struct xbps_repo *repo, unsigned char *digest) {
 		return false;
 	}
 
-	if (strcmp(archive_entry_pathname(entry), XBPS_REPOIDX_SIG) != 0) {
+	if (strcmp(archive_entry_pathname(entry), XBPS_REPOIDXMETA_SIG) != 0) {
 		xbps_dbg_printf(repo->xhp,
-		    "%s: no signature of %s\n", repo->uri, XBPS_REPOIDX);
+		    "%s: no signature of %s\n", repo->uri, XBPS_REPOIDX_META);
 		return false;
 	}
 
