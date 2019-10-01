@@ -45,6 +45,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	struct archive *ar;
 	char *repofile, *tname, *buf;
 	unsigned char *sig = NULL;
+	const char *signature_type = NULL;
 	int rv, repofd = -1;
 	unsigned int siglen, buflen;
 	mode_t mask;
@@ -115,7 +116,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	if (rv != 0)
 		return false;
 
-	if (meta)
+	if (xbps_dictionary_get_cstring_nocopy(meta, "signature-type", &signature_type))
 	{
 		rv = sign_buffer(buf, buflen, privkey, &sig, &siglen);
 		free(buf);
