@@ -49,7 +49,8 @@ usage(bool fail)
 	    "MODE\n"
 	    " -a --add <repodir/pkg> ...        Add package(s) to repository index\n"
 	    " -c --clean <repodir>              Clean repository index\n"
-	    " -o --register-outmoded <file>     Register packages as outmoded\n"
+	    " -o --register-outmoded <file> <repodir>\n"
+		"                                   Register packages as outmoded\n"
 	    " -r --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
 	    " -s --sign <repodir>               Initialize repository metadata signature\n"
 	    " -S --sign-pkg archive.xbps ...    Sign binary package archive\n\n");
