@@ -40,11 +40,13 @@
 bool
 repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta,
-	const char *compression)
+	const char *compression, const char *privkey)
 {
 	struct archive *ar;
 	char *repofile, *tname, *buf;
+	unsigned char *sig = NULL;
 	int rv, repofd = -1;
+	unsigned int siglen, buflen;
 	mode_t mask;
 	bool result;
 
@@ -91,11 +93,30 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	buf = xbps_dictionary_externalize(idx);
 	if (buf == NULL)
 		return false;
-	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+	buflen = strlen(buf);
+	rv = xbps_archive_append_buf(ar, buf, buflen,
 	    XBPS_REPOIDX, 0644, "root", "root");
-	free(buf);
-	if (rv != 0)
+	if (rv != 0) {
+		free(buf);
 		return false;
+	}
+	if (meta != NULL)
+	{
+		rv = sign_buffer(buf, buflen, privkey, &sig, &siglen);
+		free(buf);
+		if (rv != 0) {
+			free(sig);
+			return false;
+		}
+		assert(sig);
+		rv = xbps_archive_append_buf(ar, sig, siglen,
+		    XBPS_REPOIDX_SIG, 0644, "root", "root");
+		if (rv != 0) {
+			free(sig);
+			return false;
+		}
+		free(sig);
+	}
 
 	/* XBPS_REPOIDX_META */
 	if (meta == NULL) {
