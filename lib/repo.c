@@ -126,7 +126,7 @@ repo_get_dict(struct xbps_repo *repo, int *verify_error)
 }
 
 
-static xbps_dictionary_t
+xbps_dictionary_t HIDDEN
 get_safe_idxmeta(xbps_dictionary_t full) {
 	static const char *keys[] = {
 		"public-key",
@@ -134,13 +134,21 @@ get_safe_idxmeta(xbps_dictionary_t full) {
 		"signature-by",
 		"signature-type",
 	};
-	unsigned fields_count = (sizeof keys)/(sizeof *keys);
-	xbps_dictionary_t safe = xbps_dictionary_create();
+	static const unsigned fields_count = (sizeof keys)/(sizeof *keys);
+	xbps_dictionary_t safe = NULL;
+
+	if (full == NULL) {
+		return NULL;
+	}
+
+	safe = xbps_dictionary_create();
 
 	for (unsigned i = 0; i < fields_count; ++i) {
 		const char *key = keys[i];
 		xbps_object_t value = xbps_dictionary_get(full, key);
-		xbps_dictionary_set(safe, key, value);
+		if (value != NULL) {
+			xbps_dictionary_set(safe, key, value);
+		}
 	}
 
 	return safe;
