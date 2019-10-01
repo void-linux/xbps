@@ -181,6 +181,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 	struct stat st;
 	int rv = 0;
 	bool verified = false;
+	const char *signature_type = NULL;
 
 	if (fstat(repo->fd, &st) == -1) {
 		rv = errno;
@@ -214,7 +215,8 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 	xbps_dictionary_make_immutable(repo->idx);
 	repo->idxmeta = repo_get_dict(repo, NULL);
 	if (repo->idxmeta != NULL) {
-		repo->is_signed = true;
+		if (xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-type", &signature_type))
+			repo->is_signed = true;
 		xbps_dictionary_make_immutable(repo->idxmeta);
 	}
 
@@ -635,6 +637,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	char *hexfp = NULL;
 	char *p, *dbkeyd, *rkeyfile = NULL;
 	int import, rv = 0;
+	bool has_signedby, has_pubkey_size, has_pubkey;
 
 	assert(repo);
 	/*
@@ -655,8 +658,18 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkey_size);
 	pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
 
-	if (signedby == NULL || pubkey_size == 0 ||
-	    xbps_object_type(pubkey) != XBPS_TYPE_DATA) {
+	has_signedby = (signedby != NULL);
+	has_pubkey_size = (pubkey_size > 0);
+	has_pubkey = (xbps_object_type(pubkey) == XBPS_TYPE_DATA);
+
+	if (!has_signedby && !has_pubkey_size && !has_pubkey)
+	{
+		xbps_dbg_printf(repo->xhp,
+		    "[repo] `%s' unsigned repository with meta!\n", repo->uri);
+		return 0;
+	}
+	else if (!has_signedby || !has_pubkey_size || !has_pubkey)
+	{
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s': incomplete signed repository "
 		    "(missing objs)\n", repo->uri);

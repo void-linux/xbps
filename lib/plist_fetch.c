@@ -181,6 +181,7 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 	struct archive *a;
 	struct archive_entry *entry;
 	uint8_t i = 0;
+	const char *signature_type = NULL;
 
 	assert(url);
 	assert(repo);
@@ -214,7 +215,7 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 	}
 	archive_read_finish(a);
 
-	if (xbps_object_type(repo->idxmeta) == XBPS_TYPE_DICTIONARY)
+	if (xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-type", &signature_type))
 		repo->is_signed = true;
 
 	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
