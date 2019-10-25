@@ -51,11 +51,6 @@
 
 #define _PROGNAME	"xbps-create"
 
-/* libarchive 2.x compat */
-#if ARCHIVE_VERSION_NUMBER >= 3000000
-# define archive_write_finish(x) 	archive_write_free(x)
-#endif
-
 struct xentry {
 	TAILQ_ENTRY(xentry) entries;
 	uint64_t mtime;
@@ -132,6 +127,19 @@ die(const char *fmt, ...)
 	fprintf(stderr, "%s: ERROR: ", _PROGNAME);
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, " %s\n", save_errno ? strerror(save_errno) : "");
+	va_end(ap);
+	exit(EXIT_FAILURE);
+}
+
+static void __attribute__((noreturn))
+die_archive(struct archive *ar, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fprintf(stderr, "%s: ERROR: ", _PROGNAME);
+	vfprintf(stderr, fmt, ap);
+	fprintf(stderr, " %s\n", archive_error_string(ar));
 	va_end(ap);
 	exit(EXIT_FAILURE);
 }
@@ -627,19 +635,16 @@ process_destdir(const char *mutable_files)
 static void
 write_entry(struct archive *ar, struct archive_entry *entry)
 {
-	const char *name;
+	const char *name, *target;
 	int fd;
 	char buf[65536];
 	ssize_t len;
 
-	if (archive_entry_pathname(entry) == NULL)
+	if ((target = archive_entry_pathname(entry)) == NULL)
 		return;
 
-	if (archive_write_header(ar, entry)) {
-		die("cannot write %s to archive: %s",
-		    archive_entry_pathname(entry),
-		    archive_error_string(ar));
-	}
+	if (archive_write_header(ar, entry))
+		die_archive(ar, "cannot write %s to archive:", target);
 
 	/* Only regular files can have data. */
 	if (archive_entry_filetype(entry) != AE_IFREG ||
@@ -653,7 +658,8 @@ write_entry(struct archive *ar, struct archive_entry *entry)
 	if ((fd = open(name, O_RDONLY)) < 0)
 		die("cannot open %s file", name);
 	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		archive_write_data(ar, buf, len);
+		if (archive_write_data(ar, buf, len) != len)
+			die_archive(ar, "cannot write %s to archive:", target);
 	(void)close(fd);
 
 	if(len < 0)
@@ -684,7 +690,9 @@ process_entry_file(struct archive *ar,
 		die("failed to add entry (fstat) %s to archive:", xe->file);
 
 	entry = archive_entry_new();
-	assert(entry);
+	if (entry == NULL)
+		die("failed to add entry %s to archive:", xe->file);
+
 	archive_entry_set_pathname(entry, xe->file);
 	if (st.st_uid == geteuid())
 		st.st_uid = 0;
@@ -700,7 +708,8 @@ process_entry_file(struct archive *ar,
 
 	if (S_ISLNK(st.st_mode)) {
 		buf = malloc(st.st_size+1);
-		assert(buf);
+		if (buf == NULL)
+			die("failed to allocate readlink buffer", xe->file);
 		len = readlink(p, buf, st.st_size+1);
 		if (len < 0 || len > st.st_size)
 			die("failed to add entry %s (readlink) to archive:",
@@ -1030,7 +1039,8 @@ main(int argc, char **argv)
 	 * Process the binary package's archive (ustar compressed with xz).
 	 */
 	ar = archive_write_new();
-	assert(ar);
+	if (ar == NULL)
+		die("cannot create new archive");
 	/*
 	 * Set compression format, xz if unset.
 	 */
@@ -1060,7 +1070,7 @@ main(int argc, char **argv)
 	archive_entry_linkresolver_set_strategy(resolver,
 	    archive_format(ar));
 
-	if (archive_write_open_fd(ar, pkg_fd) != 0)
+	if (archive_write_open_fd(ar, pkg_fd) != ARCHIVE_OK)
 		die("Failed to open %s fd for writing:", tname);
 
 	process_archive(ar, resolver, pkgver, quiet);
@@ -1073,8 +1083,11 @@ main(int argc, char **argv)
 		archive_entry_linkify(resolver, &entry, &sparse_entry);
 	}
 	archive_entry_linkresolver_free(resolver);
-	/* close and free archive */
-	archive_write_finish(ar);
+
+	if (archive_write_close(ar) != ARCHIVE_OK)
+		die_archive(ar, "Failed to write archive %s:", tname);
+	if (archive_write_free(ar) != ARCHIVE_OK)
+		die_archive(ar, "Failed to close archive");
 
 	/*
 	 * Archive was created successfully; flush data to storage,
