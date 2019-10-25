@@ -83,7 +83,8 @@ xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen
 	assert(gname);
 
 	entry = archive_entry_new();
-	assert(entry);
+	if (entry == NULL)
+		return archive_errno(ar);
 
 	archive_entry_set_filetype(entry, AE_IFREG);
 	archive_entry_set_perm(entry, mode);
@@ -100,7 +101,10 @@ xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen
 		archive_entry_free(entry);
 		return archive_errno(ar);
 	}
-	archive_write_finish_entry(ar);
+	if (archive_write_finish_entry(ar) != ARCHIVE_OK) {
+		archive_entry_free(entry);
+		return archive_errno(ar);
+	}
 	archive_entry_free(entry);
 
 	return 0;
