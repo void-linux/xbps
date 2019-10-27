@@ -111,6 +111,7 @@ static int
 remove_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 {
 	unsigned int i, cnt;
+	struct stat st;
 
 	cnt = xbps_array_count(a);
 	for (i = 0; i < cnt; i++) {
@@ -131,6 +132,11 @@ remove_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 			free(tgt_dup);
 		} else {
 			lnk = xbps_xasprintf("%s%s", xhp->rootdir, l);
+		}
+		if (lstat(lnk, &st) == -1 || !S_ISLNK(st.st_mode)) {
+			free(lnk);
+			free(l);
+			continue;
 		}
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_REMOVED, 0, NULL,
 		    "Removing '%s' alternatives group symlink: %s", grname, l);
