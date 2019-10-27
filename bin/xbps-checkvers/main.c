@@ -192,7 +192,7 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 		}
 	}
 
-	(void)fread(rcv->buf, sizeof(char), rcv->len, file);
+	(void)!fread(rcv->buf, sizeof(char), rcv->len, file);
 	rcv->buf[rcv->len] = '\0';
 	fclose(file);
 	rcv->ptr = rcv->buf;
