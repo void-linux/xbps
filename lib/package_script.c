@@ -31,12 +31,6 @@
 
 #include "xbps_api_impl.h"
 
-const char *shells[] = {
-	"/bin/sh",
-	"/bin/dash",
-	"/bin/bash",
-	NULL
-};
 
 int
 xbps_pkg_exec_buffer(struct xbps_handle *xhp,
@@ -49,6 +43,12 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	int i;
 	ssize_t ret;
 	const char *tmpdir, *version;
+	const char *shells[] = {
+		"/bin/sh",
+		"/bin/dash",
+		"/bin/bash",
+		NULL
+	};
 	char *pkgname, *fpath;
 	int fd, rv;
 
