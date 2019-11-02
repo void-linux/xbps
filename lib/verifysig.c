@@ -77,49 +77,21 @@ xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
-	char *hexfp = NULL;
-	char *rkeyfile = NULL;
-	bool val = false;
 
 	if (!xbps_dictionary_count(idxmeta)) {
 		xbps_dbg_printf(repo->xhp, "%s: unsigned repository\n", repo->uri);
 		return false;
 	}
-	hexfp = xbps_pubkey2fp(repo->xhp,
-	    xbps_dictionary_get(idxmeta, "public-key"));
-	if (hexfp == NULL) {
-		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
-		return false;
-	}
-	/*
-	 * Prepare repository RSA public key to verify fname signature.
-	 */
-	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
-	repokeyd = xbps_plist_dictionary_from_file(repo->xhp, rkeyfile);
-	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY) {
-		xbps_dbg_printf(repo->xhp, "cannot read rkey data at %s: %s\n",
-		    rkeyfile, strerror(errno));
-		goto out;
-	}
-
-	pubkey = xbps_dictionary_get(repokeyd, "public-key");
+	pubkey = xbps_dictionary_get(idxmeta, "public-key");
 	if (xbps_object_type(pubkey) != XBPS_TYPE_DATA)
-		goto out;
+		return false;
 	/*
 	 * Verify fname RSA signature.
 	 */
 	if (rsa_verify_hash(repo, pubkey, sig_buf, sigfilelen, digest))
-		val = true;
+		return true;
 
-out:
-	if (hexfp)
-		free(hexfp);
-	if (rkeyfile)
-		free(rkeyfile);
-	if (repokeyd)
-		xbps_object_release(repokeyd);
-
-	return val;
+	return false;
 }
 
 bool

@@ -3,10 +3,8 @@
 
 get_resources() {
 	mkdir -p root/var/db/xbps/keys
-	mkdir -p /var/db/xbps/keys
 	cp $(atf_get_srcdir)/data/id_xbps .
 	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist root/var/db/xbps/keys
-	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist /var/db/xbps/keys
 }
 
 atf_test_case sign
@@ -63,7 +61,7 @@ verify_body() {
 	xbps-rindex -s $PWD --signedby test --privkey ../id_xbps
 	atf_check_equal $? 0
 	# verify signature
-	xbps-install -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature passed."
+	xbps-install -r root -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature passed."
 	atf_check_equal $? 0
 	# modify what is signed
 	tar tf $repodata
@@ -75,7 +73,7 @@ verify_body() {
 	atf_check_equal $? 0
 	cd ..
 	# verify wrong signature
-	xbps-install -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature failed. Taking safe part."
+	xbps-install -r root -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature failed. Taking safe part."
 	atf_check_equal $? 0
 }
 
