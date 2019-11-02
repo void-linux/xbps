@@ -75,7 +75,6 @@ bool
 xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
 		unsigned char *sig_buf, size_t sigfilelen, unsigned char *digest)
 {
-	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
 
 	if (!xbps_dictionary_count(idxmeta)) {
