@@ -136,7 +136,7 @@ main(int argc, char **argv)
 	chrootdir = cmd = NULL;
 	argv0 = argv[0];
 
-	while ((c = getopt_long(argc, argv, "b:V", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "+b:V", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'b':
 			if (optarg == NULL || *optarg == '\0')
