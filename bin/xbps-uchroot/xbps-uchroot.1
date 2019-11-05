@@ -52,6 +52,12 @@ This makes the temporary directory to be mounted in tmpfs, so that everything is
 in RAM. Note that this is only useful if used with the
 .Fl O
 option (overlayfs).
+.It Fl -
+Stop interpreting following arguments as options.
+This option is useful if some of
+.Ar ARGS
+are options passed to
+.Ar COMMAND .
 .El
 .Sh SECURITY
 The
