@@ -76,7 +76,7 @@ die(const char *fmt, ...)
 static void __attribute__((noreturn))
 usage(const char *p)
 {
-	printf("Usage: %s [-b src:dest] <dir> <cmd> [<cmdargs>]\n\n"
+	printf("Usage: %s [-b src:dest] [--] <dir> <cmd> [<cmdargs>]\n\n"
 	    "-b src:dest Bind mounts <src> into <dir>/<dest> (may be specified multiple times)\n\n", p);
 	exit(EXIT_FAILURE);
 }
