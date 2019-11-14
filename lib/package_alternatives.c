@@ -309,6 +309,22 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 	return rv;
 }
 
+static int
+switch_alt_group(struct xbps_handle *xhp, const char *grpn, const char *pkgn,
+		xbps_dictionary_t *pkg_alternatives)
+{
+	xbps_dictionary_t curpkgd, pkgalts;
+
+	curpkgd = xbps_pkgdb_get_pkg(xhp, pkgn);
+	assert(curpkgd);
+
+	xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_SWITCHED, 0, NULL,
+		"Switched '%s' alternatives group to '%s'", grpn, pkgn);
+	pkgalts = xbps_dictionary_get(curpkgd, "alternatives");
+	if (pkg_alternatives) *pkg_alternatives = pkgalts;
+	return create_symlinks(xhp, xbps_dictionary_get(pkgalts, grpn), grpn);
+}
+
 int
 xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
@@ -339,7 +355,6 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array;
 		xbps_object_t keysym;
-		xbps_dictionary_t curpkgd = pkgd;
 		bool current = false;
 		const char *first = NULL, *keyname;
 
@@ -377,15 +392,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			continue;
 
 		/* get the new alternative group package */
-		curpkgd = xbps_pkgdb_get_pkg(xhp, first);
-		assert(curpkgd);
-		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_SWITCHED, 0, NULL,
-		    "Switched '%s' alternatives group to '%s'", keyname, first);
-		pkg_alternatives = xbps_dictionary_get(curpkgd, "alternatives");
-		rv = create_symlinks(xhp,
-			xbps_dictionary_get(pkg_alternatives, keyname),
-			keyname);
-		if (rv != 0)
+		if (switch_alt_group(xhp, keyname, first, &pkg_alternatives) != 0)
 			break;
 	}
 	xbps_object_release(allkeys);
@@ -394,24 +401,118 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	return rv;
 }
 
+/*
+ * Prune the alternatives group from the db. This will first unregister
+ * it for the package and if there's no other package left providing the
+ * same, also ditch the whole group. When this is called, it is guranteed
+ * that what is happening is an upgrade, because it's only invoked when
+ * the repo and installed alternatives sets differ for a specific package.
+ */
 static void
-remove_obsoletes(struct xbps_handle *xhp, xbps_dictionary_t pkgd, xbps_dictionary_t repod)
+prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
+		char *pkgname, const char *pkgver, const char *keyname) {
+	const char *newpkg, *curpkg;
+	xbps_array_t array;
+	xbps_dictionary_t alternatives;
+	xbps_string_t kstr;
+	unsigned int grp_count;
+	bool current = false;
+
+	xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_REMOVED, 0, NULL,
+		"%s: unregistered '%s' alternatives group", pkgver, keyname);
+
+	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
+	assert(alternatives);
+	array = xbps_dictionary_get(alternatives, keyname);
+
+	/* if using alt group from another package, we won't switch anything */
+	xbps_array_get_cstring_nocopy(array, 0, &curpkg);
+	current = (strcmp(pkgname, curpkg) == 0);
+
+	/* actually prune the alt group for the current package */
+	xbps_remove_string_from_array(array, pkgname);
+	grp_count = xbps_array_count(array);
+	if (grp_count == 0) {
+		/* it was the last one, ditch the whole thing */
+		xbps_dictionary_remove(alternatives, keyname);
+		return;
+	}
+	if (!current) {
+		/* not the last one, and ours wasn't the one being used */
+		return;
+	}
+
+	if (xbps_array_count(xbps_dictionary_get(repod, "run_depends")) == 0 &&
+	    xbps_array_count(xbps_dictionary_get(repod, "shlib-requires")) == 0) {
+		/*
+		 * Empty dependencies indicate a removed package (pure meta),
+		 * use the first available group after ours has been pruned
+		 */
+		xbps_array_get_cstring_nocopy(array, 0, &newpkg);
+		switch_alt_group(xhp, keyname, newpkg, NULL);
+		return;
+	}
+
+	/*
+	 * Use the last group, as this indicates that a transitional metapackage
+	 * is replacing the original and therefore a new package has registered
+	 * a replacement group, which should be last in the array (most recent).
+	 */
+	xbps_array_get_cstring_nocopy(array, grp_count - 1, &newpkg);
+
+	/* put the new package as head */
+	kstr = xbps_string_create_cstring(newpkg);
+	xbps_remove_string_from_array(array, newpkg);
+	xbps_array_add_first(array, kstr);
+	xbps_array_get_cstring_nocopy(array, 0, &newpkg);
+	xbps_object_release(kstr);
+
+	switch_alt_group(xhp, keyname, newpkg, NULL);
+}
+
+
+static void
+remove_obsoletes(struct xbps_handle *xhp, char *pkgname, const char *pkgver,
+		xbps_dictionary_t repod)
 {
 	xbps_array_t allkeys;
+	xbps_dictionary_t pkgd, pkgd_alts, repod_alts;
 
-	allkeys = xbps_dictionary_all_keys(pkgd);
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+	if (xbps_object_type(pkgd) != XBPS_TYPE_DICTIONARY) {
+		return;
+	}
+
+	pkgd_alts = xbps_dictionary_get(pkgd, "alternatives");
+	repod_alts = xbps_dictionary_get(repod, "alternatives");
+
+	if (xbps_object_type(pkgd_alts) != XBPS_TYPE_DICTIONARY) {
+		return;
+	}
+
+	allkeys = xbps_dictionary_all_keys(pkgd_alts);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array, array_repo;
 		xbps_object_t keysym;
 		const char *keyname;
 
 		keysym = xbps_array_get(allkeys, i);
-		array = xbps_dictionary_get_keysym(pkgd, keysym);
+		array = xbps_dictionary_get_keysym(pkgd_alts, keysym);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 
-		array_repo = xbps_dictionary_get(repod, keyname);
+		array_repo = xbps_dictionary_get(repod_alts, keyname);
 		if (!xbps_array_equals(array, array_repo)) {
 			remove_symlinks(xhp, array, keyname);
+		}
+
+		/*
+		 * There is nothing left in the alternatives group, which means
+		 * the package is being upgraded and is removing it; if we don't
+		 * prune it, the system will keep it set after removal of its
+		 * parent package, but it will be empty and invalid...
+		 */
+		if (xbps_array_count(array_repo) == 0) {
+			prune_altgroup(xhp, repod, pkgname, pkgver, keyname);
 		}
 	}
 	xbps_object_release(allkeys);
@@ -421,7 +522,7 @@ int
 xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
 	xbps_array_t allkeys;
-	xbps_dictionary_t alternatives, pkg_alternatives, pkgd, pkgd_alts;
+	xbps_dictionary_t alternatives, pkg_alternatives;
 	const char *pkgver;
 	char *pkgname;
 	int rv = 0;
@@ -430,10 +531,6 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 
 	if (xhp->pkgdb == NULL)
 		return EINVAL;
-
-	pkg_alternatives = xbps_dictionary_get(pkg_repod, "alternatives");
-	if (!xbps_dictionary_count(pkg_alternatives))
-		return 0;
 
 	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
 	if (alternatives == NULL) {
@@ -449,17 +546,15 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	if (pkgname == NULL)
 		return EINVAL;
 
-	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
-	if (xbps_object_type(pkgd) == XBPS_TYPE_DICTIONARY) {
-		/*
-		 * Compare alternatives from pkgdb and repo and
-		 * then remove obsolete symlinks.
-		 */
-		pkgd_alts = xbps_dictionary_get(pkgd, "alternatives");
-		if (xbps_object_type(pkgd_alts) == XBPS_TYPE_DICTIONARY) {
-			remove_obsoletes(xhp, pkgd_alts, pkg_alternatives);
-		}
-	}
+	/*
+	 * Compare alternatives from pkgdb and repo and then remove obsolete
+	 * symlinks, also remove obsolete (empty) alternatives groups.
+	 */
+	remove_obsoletes(xhp, pkgname, pkgver, pkg_repod);
+
+	pkg_alternatives = xbps_dictionary_get(pkg_repod, "alternatives");
+	if (!xbps_dictionary_count(pkg_alternatives))
+		return 0;
 
 	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
