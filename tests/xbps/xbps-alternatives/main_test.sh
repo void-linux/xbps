@@ -766,6 +766,40 @@ prune_leftover_groups_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case replace_alternative_with_symlink
+
+replace_alternative_with_symlink_head() {
+	atf_set "descr" "xbps-alternatives: replace alternative group with a symlink"
+}
+replace_alternative_with_symlink_body() {
+	mkdir -p repo pkg_A/usr/bin
+	touch pkg_A/usr/bin/fileA
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" --alternatives "file:/usr/bin/file:/usr/bin/fileA" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv A
+	atf_check_equal $? 0
+
+	ln -sfr pkg_A/usr/bin/fileA pkg_A/usr/bin/file
+	touch pkg_A/usr/bin/file
+	cd repo
+	xbps-create -A noarch -n A-1.1_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv -Su
+	atf_check_equal $? 0
+
+	test -L root/usr/bin/file
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case register_one
 	atf_add_test_case register_one_dangling
@@ -785,4 +819,5 @@ atf_init_test_cases() {
 	atf_add_test_case remove_current_provider
 	atf_add_test_case respect_current_provider
 	atf_add_test_case prune_leftover_groups
+	atf_add_test_case replace_alternative_with_symlink
 }
