@@ -1,14 +1,6 @@
 #! /usr/bin/env atf-sh
 # Test that xbps-rindex(1) signing repo metadata works as expected.
 
-get_resources() {
-	mkdir -p root/var/db/xbps/keys
-	mkdir -p /var/db/xbps/keys
-	cp $(atf_get_srcdir)/data/id_xbps .
-	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist root/var/db/xbps/keys
-	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist /var/db/xbps/keys
-}
-
 atf_test_case sign
 
 sign_head() {
@@ -16,11 +8,13 @@ sign_head() {
 }
 
 sign_body() {
-	get_resources
+	cp $(atf_get_srcdir)/data/id_xbps .
 	# make pkg
 	mkdir -p some_repo pkg_A
 	touch pkg_A/file00
 	cd some_repo
+	mkdir -p keys
+	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist keys
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
 	# make repodata
@@ -29,14 +23,14 @@ sign_body() {
 	repodata=$(ls *-repodata)
 	atf_check_equal $(tar tf $repodata | wc -l) 2
 	# sign repodata
-	xbps-rindex -s $PWD --signedby test --privkey ../id_xbps
+	xbps-rindex -d -s $PWD --signedby test --privkey ../id_xbps
 	atf_check_equal $? 0
 	atf_check_equal $(tar tf $repodata | wc -l) 3
 	# update pkg
 	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
 	# update repodata
-	xbps-rindex -a $PWD/*.xbps --privkey ../id_xbps
+	xbps-rindex -d -a $PWD/*.xbps --privkey ../id_xbps
 	atf_check_equal $? 0
 	atf_check_equal $(tar tf $repodata | wc -l) 3
 }
@@ -48,11 +42,13 @@ verify_head() {
 }
 
 verify_body() {
-	get_resources
+	cp $(atf_get_srcdir)/data/id_xbps .
 	# make pkg
 	mkdir -p some_repo pkg_A
 	touch pkg_A/file00
 	cd some_repo
+	mkdir -p keys
+	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist keys
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
 	# make repodata
@@ -60,10 +56,10 @@ verify_body() {
 	atf_check_equal $? 0
 	repodata=$(ls *-repodata)
 	# sign repodata
-	xbps-rindex -s $PWD --signedby test --privkey ../id_xbps
+	xbps-rindex -d -s $PWD --signedby test --privkey ../id_xbps
 	atf_check_equal $? 0
 	# verify signature
-	xbps-install -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature passed."
+	xbps-install -r root -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature passed."
 	atf_check_equal $? 0
 	# modify what is signed
 	tar tf $repodata
@@ -75,7 +71,7 @@ verify_body() {
 	atf_check_equal $? 0
 	cd ..
 	# verify wrong signature
-	xbps-install -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature failed. Taking safe part."
+	xbps-install -r root -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature failed. Taking safe part."
 	atf_check_equal $? 0
 }
 

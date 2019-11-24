@@ -77,8 +77,7 @@ xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
-	char *hexfp = NULL;
-	char *rkeyfile = NULL;
+	char *hexfp = NULL, *rkeyfile = NULL;
 	bool val = false;
 
 	if (!xbps_dictionary_count(idxmeta)) {
@@ -94,7 +93,12 @@ xbps_verify_digest_signature(struct xbps_repo *repo, xbps_dictionary_t idxmeta,
 	/*
 	 * Prepare repository RSA public key to verify fname signature.
 	 */
-	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
+	/* XXX: xbps-rindex does not set rootdir, use cwd and fallback to defaults otherwise */
+	rkeyfile = xbps_xasprintf("keys/%s.plist", hexfp);
+	if (access(rkeyfile, R_OK) == -1) {
+		free(rkeyfile);
+		rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
+	}
 	repokeyd = xbps_plist_dictionary_from_file(repo->xhp, rkeyfile);
 	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY) {
 		xbps_dbg_printf(repo->xhp, "cannot read rkey data at %s: %s\n",
