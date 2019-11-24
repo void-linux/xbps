@@ -146,6 +146,12 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		}
 		free(pkgname);
 		/*
+		 * If pkg is on hold, pass to the next one.
+		 */
+		if (strcmp(tract, "hold") == 0)
+			continue;
+
+		/*
 		 * Time to validate revdeps for current pkg.
 		 */
 		for (unsigned int x = 0; x < xbps_array_count(pkgrdeps); x++) {
