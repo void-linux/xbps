@@ -50,6 +50,7 @@ usage(bool fail)
 	    " -a --add <repodir/pkg> ...        Add package(s) to repository index\n"
 	    " -c --clean <repodir>              Clean repository index\n"
 	    " -r --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
+	    "    --rootdir <dir>                Full path to rootdir\n"
 	    " -s --sign <repodir>               Initialize repository metadata signature\n"
 	    " -S --sign-pkg archive.xbps ...    Sign binary package archive\n\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -69,6 +70,7 @@ main(int argc, char **argv)
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "privkey", required_argument, NULL, 0},
+		{ "rootdir", required_argument, NULL, 3 },
 		{ "signedby", required_argument, NULL, 1},
 		{ "sign", no_argument, NULL, 's'},
 		{ "sign-pkg", no_argument, NULL, 'S'},
@@ -78,7 +80,7 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	const char *compression = NULL;
-	const char *privkey = NULL, *signedby = NULL;
+	const char *privkey = NULL, *signedby = NULL, *rootdir = NULL;
 	int rv, c, flags = 0;
 	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
 			 hashcheck;
@@ -96,6 +98,9 @@ main(int argc, char **argv)
 			break;
 		case 2:
 			compression = optarg;
+			break;
+		case 3:
+			rootdir = optarg;
 			break;
 		case 'a':
 			add_mode = true;
@@ -147,6 +152,8 @@ main(int argc, char **argv)
 
 	/* initialize libxbps */
 	memset(&xh, 0, sizeof(xh));
+	if (rootdir)
+		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	xh.flags = flags;
 	if ((rv = xbps_init(&xh)) != 0) {
 		fprintf(stderr, "failed to initialize libxbps: %s\n",

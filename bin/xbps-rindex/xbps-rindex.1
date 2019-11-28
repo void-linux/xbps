@@ -15,16 +15,11 @@ utility creates, updates and removes obsolete binary packages stored
 in local repositories.
 .Sh OPTIONS
 .Bl -tag -width November 6-x
-.It Fl d, Fl -debug
-Enables extra debugging shown to stderr.
 .It Fl -compression Ar none | gzip | bzip2 | xz | lz4 | zstd
 Set the repodata compression format. If unset, defaults to
 .Ar gzip .
-.It Fl C -hashcheck
-Check not only for file existence but for the correct file hash while cleaning.
-This flag is only useful with the
-.Em clean
-mode.
+.It Fl d, Fl -debug
+Enables extra debugging shown to stderr.
 .It Fl f -force
 Forcefully register binary package into the local repository, overwriting existing entry.
 Or forcefully create a package signature, even if there's an existing one already.
@@ -33,15 +28,23 @@ This flag is only useful with the
 or
 .Em sign-pkg
 modes.
+.It Fl C -hashcheck
+Check not only for file existence but for the correct file hash while cleaning.
+This flag is only useful with the
+.Em clean
+mode.
 .It Fl h -help
 Show the help message.
-.It Fl V -version
-Show the version information.
-.It Sy --signedby Ar string
-This is required to sign a repository, a description of the person signing the repository, i.e name and email.
 .It Sy --privkey Ar key
 Path to the private RSA key to sign the repository. If unset, defaults to
 .Sy ~/.ssh/id_rsa .
+.It Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Sy --signedby Ar string
+This is required to sign a repository, a description of the person signing the
+repository, i.e name and email.
+.It Fl V -version
+Show the version information.
 .El
 .Sh MODE
 .Bl -tag -width x

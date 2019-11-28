@@ -13,8 +13,8 @@ sign_body() {
 	mkdir -p some_repo pkg_A
 	touch pkg_A/file00
 	cd some_repo
-	mkdir -p keys
-	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist keys
+	mkdir -p root/var/db/xbps/keys
+	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist root/var/db/xbps/keys
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
 	# make repodata
@@ -23,14 +23,14 @@ sign_body() {
 	repodata=$(ls *-repodata)
 	atf_check_equal $(tar tf $repodata | wc -l) 2
 	# sign repodata
-	xbps-rindex -d -s $PWD --signedby test --privkey ../id_xbps
+	xbps-rindex -d -s $PWD --signedby test --privkey ../id_xbps --rootdir root
 	atf_check_equal $? 0
 	atf_check_equal $(tar tf $repodata | wc -l) 3
 	# update pkg
 	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
 	# update repodata
-	xbps-rindex -d -a $PWD/*.xbps --privkey ../id_xbps
+	xbps-rindex -d -a $PWD/*.xbps --privkey ../id_xbps --rootdir root
 	atf_check_equal $? 0
 	atf_check_equal $(tar tf $repodata | wc -l) 3
 }
@@ -47,8 +47,8 @@ verify_body() {
 	mkdir -p some_repo pkg_A
 	touch pkg_A/file00
 	cd some_repo
-	mkdir -p keys
-	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist keys
+	mkdir -p root/var/db/xbps/keys
+	cp $(atf_get_srcdir)/data/bd:75:21:4e:40:06:97:5e:72:31:40:6e:9e:08:a8:ae.plist root/var/db/xbps/keys
 	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
 	atf_check_equal $? 0
 	# make repodata
@@ -56,7 +56,7 @@ verify_body() {
 	atf_check_equal $? 0
 	repodata=$(ls *-repodata)
 	# sign repodata
-	xbps-rindex -d -s $PWD --signedby test --privkey ../id_xbps
+	xbps-rindex -d -s $PWD --signedby test --privkey ../id_xbps --rootdir root
 	atf_check_equal $? 0
 	# verify signature
 	xbps-install -r root -nid --repository=$PWD foo 2>&1 | grep -q "some_repo/$repodata' signature passed."
