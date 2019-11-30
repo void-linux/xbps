@@ -766,6 +766,62 @@ prune_leftover_groups_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case replace_file_with_alternative
+
+replace_file_with_alternative_head() {
+	atf_set "descr" "xbps-alternatives: replace file with an alternative"
+}
+replace_file_with_alternative_body() {
+	mkdir -p repo pkg_A_old/usr/bin pkg_A_new/usr/bin pkg_B_old/usr/bin \
+		pkg_B_new/usr/bin
+	printf 'A' > pkg_A_old/usr/bin/pkg-a-file
+	printf 'Ap' > pkg_A_new/usr/bin/pkg-a-file
+	printf 'B' > pkg_B_old/usr/bin/file
+	printf 'Bp' > pkg_B_new/usr/bin/pkg-B-file
+
+	cd repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A_old
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv A
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_B_old
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv B
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n A-1.1_2 -s "A pkg" --alternatives "file:file:/usr/bin/pkg-a-file" ../pkg_A_new
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	cd repo
+	xbps-create -A noarch -n B-1.1_2 -s "B pkg" --alternatives "file:file:/usr/bin/pkg-b-file" ../pkg_B_new
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv -Su
+	atf_check_equal $? 0
+
+	test -L root/usr/bin/file
+	atf_check_equal $? 0
+	test "$(readlink -f root/usr/bin/file)" = "pkg-b-file"
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case register_one
 	atf_add_test_case register_one_dangling
@@ -785,4 +841,5 @@ atf_init_test_cases() {
 	atf_add_test_case remove_current_provider
 	atf_add_test_case respect_current_provider
 	atf_add_test_case prune_leftover_groups
+	atf_add_test_case replace_file_with_alternative
 }
