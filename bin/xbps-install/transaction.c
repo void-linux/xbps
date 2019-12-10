@@ -228,6 +228,25 @@ out:
 	return 0;
 }
 
+static bool
+all_pkgs_on_hold(struct transaction *trans) {
+	xbps_object_t obj;
+	const char *action = NULL;
+	bool all_on_hold = true;
+
+	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &action);
+		if (strcmp(action, "hold")) {
+			all_on_hold = false;
+			goto out;
+		}
+	}
+
+out:
+	xbps_object_iterator_reset(trans->iter);
+	return all_on_hold;
+}
+
 int
 dist_upgrade(struct xbps_handle *xhp, int cols, bool yes, bool drun)
 {
@@ -383,6 +402,13 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 	 */
 	if ((rv = show_transaction_sizes(trans, maxcols)) != 0)
 		goto out;
+	/*
+	 * No need to do anything if all packages are on hold.
+	 */
+	if (all_pkgs_on_hold(trans)) {
+		printf("All packages on hold.\n");
+		goto out;
+	}
 	/*
 	 * Ask interactively (if -y not set).
 	 */
