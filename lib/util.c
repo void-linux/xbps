@@ -50,11 +50,12 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
-static bool is_numeric(const char *str) {
+static bool is_revision(const char *str) {
 	if (str == NULL || str[0] == '\0'){
 		return false;
 	}
-	while (isdigit(str[0])) {
+	/* allow underscore for accepting perl-Digest-1.17_01_1 etc. */
+	while (isdigit(str[0]) || str[0] == '_') {
 		++str;
 	}
 	return str[0] == '\0';
@@ -139,7 +140,7 @@ xbps_pkg_version(const char *pkg)
 		if (p[i] == '_')
 			break;
 		if (isdigit((unsigned char)p[i]) && (r = strchr(p + i + 1, '_'))) {
-			if (!is_numeric(r + 1)) {
+			if (!is_revision(r + 1)) {
 				break;
 			}
 			return p;
@@ -236,11 +237,10 @@ xbps_pkg_revision(const char *pkg)
 		if (p[i] == '_')
 			break;
 		if (isdigit((unsigned char)p[i]) && (r = strchr(p + i + 1, '_'))) {
-			++r; /* skip first '_' */
-			if (!is_numeric(r)) {
+			if (!is_revision(r + 1)) {
 				break;
 			}
-			return r;
+			return strrchr(r, '_') + 1;
 		}
 	}
 	return NULL;
@@ -264,7 +264,7 @@ xbps_pkg_name(const char *pkg)
 		if (p[i] == '_')
 			break;
 		if (isdigit((unsigned char)p[i]) && (r = strchr(p + i + 1, '_'))) {
-			valid = is_numeric(r + 1);
+			valid = is_revision(r + 1);
 			break;
 		}
 	}
