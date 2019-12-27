@@ -8,7 +8,12 @@ native_head() {
 }
 
 native_body() {
-	atf_check_equal $(xbps-uhelper arch) $(uname -m)
+	if $(ldd --version 2>&1|head -1|grep -q musl); then
+		arch=$(uname -m)-musl
+	else
+		arch=$(uname -m)
+	fi
+	atf_check_equal $(xbps-uhelper arch) $arch
 }
 
 atf_test_case env
@@ -28,8 +33,8 @@ conf_head() {
 }
 conf_body() {
 	mkdir -p xbps.d
-	echo "architecture=x86_64-musl" > xbps.d/arch.conf
-	atf_check_equal $(xbps-uhelper -C $PWD/xbps.d arch) x86_64-musl
+	echo "architecture=NULL" > xbps.d/arch.conf
+	atf_check_equal $(xbps-uhelper -C $PWD/xbps.d arch) NULL
 }
 
 atf_init_test_cases() {

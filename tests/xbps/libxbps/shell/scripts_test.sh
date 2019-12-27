@@ -41,7 +41,7 @@ script_nargs_body() {
 	rval=0
 	xbps-reconfigure -C empty.conf -r root -f A 2>out
 	out="$(cat out)"
-	expected="post A 1.0_1 no no $(uname -m)"
+	expected="post A 1.0_1 no no $(xbps-uhelper arch)"
 	if [ "$out" != "$expected" ]; then
 		echo "out: '$out'"
 		echo "expected: '$expected'"

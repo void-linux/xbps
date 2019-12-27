@@ -107,10 +107,20 @@ xbps_init(struct xbps_handle *xhp)
 	if ((native_arch = getenv("XBPS_ARCH")) != NULL) {
 		xbps_strlcpy(xhp->native_arch, native_arch, sizeof (xhp->native_arch));
 	} else {
+		char *s = NULL;
 		struct utsname un;
 		if (uname(&un) == -1)
 			return ENOTSUP;
+#if defined(__linux__) && !defined(__GLIBC__)
+		/* musl libc on linux */
+		s = xbps_xasprintf("%s-musl", un.machine);
+		assert(s);
+		xbps_strlcpy(xhp->native_arch, s, sizeof(xhp->native_arch));
+		free(s);
+#else
+		/* glibc or any other os */
 		xbps_strlcpy(xhp->native_arch, un.machine, sizeof (xhp->native_arch));
+#endif
 	}
 	assert(xhp->native_arch);
 
