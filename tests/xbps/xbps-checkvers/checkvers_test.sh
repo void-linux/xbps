@@ -476,21 +476,21 @@ version=1.0
 revision=1
 }
 EOF
-	ln -s A void-packages/srcpkgs/A-subpkg
-	ln -s A void-packages/srcpkgs/B-subpkg
+	ln -s A void-packages/srcpkgs/B
+	ln -s A void-packages/srcpkgs/C
 	cd repo
-	xbps-create -A noarch -n A-subpkg-1.1_1 -s "A-subpkg pkg" ../pkg_A
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	out=$(xbps-checkvers -i -R $PWD/repo -D $PWD/void-packages -sm A-subpkg)
+	out=$(xbps-checkvers -i -R $PWD/repo -D $PWD/void-packages -sm B)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A 1.1_1 1.0_1 A-subpkg $PWD/repo"
+	atf_check_equal "$out" "A 1.1_1 1.0_1 B $PWD/repo"
 
-	out=$(xbps-checkvers -i -R repo -D $PWD/void-packages -sm B-subpkg)
+	out=$(xbps-checkvers -i -R repo -D $PWD/void-packages -sm C)
 	atf_check_equal $? 0
-	atf_check_equal "$out" "A ? 1.0_1 B-subpkg ?"
+	atf_check_equal "$out" "A ? 1.0_1 C ?"
 
 	out=$(xbps-checkvers -i -R repo -D $PWD/void-packages -sm A)
 	atf_check_equal $? 0
