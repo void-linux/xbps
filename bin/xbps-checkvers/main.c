@@ -366,6 +366,21 @@ rcv_get_pkgver(rcv_t *rcv)
 		else
 			val = strndup(v, vlen);
 
+		/*
+		 * Do not override binary package "pkgname"
+		 * with the one from template, because the
+		 * former might be a subpkg.
+		 */
+		if (strcmp(key, "pkgname") == 0) {
+			char *s;
+			size_t len;
+
+			free(val);
+			s = strchr(rcv->fname, '/');
+			len = s ? strlen(rcv->fname) - strlen(s) : strlen(rcv->fname);
+			val = strndup(rcv->fname, len);
+			assert(val);
+		}
 		if (!xbps_dictionary_set(rcv->env, key,
 		    xbps_string_create_cstring(val))) {
 			fprintf(stderr, "error: xbps_dictionary_set");
