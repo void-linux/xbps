@@ -392,6 +392,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 				assert(xe->target);
 				xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 			} else {
+				char *p3;
 				/*
 				 * Sanitize destdir just in case.
 				 */
@@ -399,10 +400,11 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 					die("failed to sanitize destdir %s: %s", destdir, strerror(errno));
 
 
-				p2 = strdup(p+strlen(p2));
+				p3 = strdup(p+strlen(p2));
 				assert(p2);
-				xe->target = xbps_sanitize_path(p2);
+				xe->target = xbps_sanitize_path(p3);
 				assert(xe->target);
+				free(p3);
 				xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 				free(p);
 				free(p2);
