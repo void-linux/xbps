@@ -46,22 +46,15 @@
 #define GOT_REVISION_VAR 	0x4
 
 typedef struct _rcv_t {
-	const char *prog, *fname;
-	char *xbps_conf, *rootdir, *distdir;
-	char *buf;
-	size_t bufsz;
-	size_t len;
-	char *ptr;
+	const char *prog, *fname, *format;
+	char *xbps_conf, *rootdir, *distdir, *buf, *ptr, *cachefile;
+	size_t bufsz, len;
 	uint8_t have_vars;
+	bool show_all, manual, installed;
 	xbps_dictionary_t env;
 	xbps_dictionary_t pkgd;
 	xbps_dictionary_t cache;
 	struct xbps_handle xhp;
-	bool show_all;
-	bool manual;
-	bool installed;
-	const char *format;
-	char *cachefile;
 } rcv_t;
 
 typedef int (*rcv_check_func)(rcv_t *);
@@ -366,21 +359,6 @@ rcv_get_pkgver(rcv_t *rcv)
 		else
 			val = strndup(v, vlen);
 
-		/*
-		 * Do not override binary package "pkgname"
-		 * with the one from template, because the
-		 * former might be a subpkg.
-		 */
-		if (strcmp(key, "pkgname") == 0) {
-			char *s;
-			size_t len;
-
-			free(val);
-			s = strchr(rcv->fname, '/');
-			len = s ? strlen(rcv->fname) - strlen(s) : strlen(rcv->fname);
-			val = strndup(rcv->fname, len);
-			assert(val);
-		}
 		if (!xbps_dictionary_set(rcv->env, key,
 		    xbps_string_create_cstring(val))) {
 			fprintf(stderr, "error: xbps_dictionary_set");
@@ -550,9 +528,10 @@ static int
 rcv_check_version(rcv_t *rcv)
 {
 	const char *repover = NULL;
-	char srcver[BUFSIZ] = { '\0' };
+	char srcver[BUFSIZ] = { '\0' }, *binpkgname = NULL, *s = NULL;
 	const char *pkgname, *version, *revision, *reverts, *repourl;
 	int sz;
+	size_t len;
 
 	assert(rcv);
 
@@ -583,17 +562,24 @@ rcv_check_version(rcv_t *rcv)
 	if (sz < 0 || (size_t)sz >= sizeof srcver)
 		exit(EXIT_FAILURE);
 
+	/* Check against binpkg's pkgname, not pkgname from template */
+	s = strchr(rcv->fname, '/');
+	len = s ? strlen(rcv->fname) - strlen(s) : strlen(rcv->fname);
+	binpkgname = strndup(rcv->fname, len);
+	assert(binpkgname);
+
 	repourl = NULL;
 	if (rcv->installed) {
-		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, pkgname);
+		rcv->pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, binpkgname);
 	} else {
-		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, pkgname);
+		rcv->pkgd = xbps_rpool_get_pkg(&rcv->xhp, binpkgname);
 		xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "repository", &repourl);
 	}
 	xbps_dictionary_get_cstring_nocopy(rcv->pkgd, "pkgver", &repover);
 	if (repover)
-		repover += strlen(pkgname)+1;
+		repover += strlen(binpkgname)+1;
 
+	free(binpkgname);
 	if (!repover && rcv->manual)
 		;
 	else if (rcv->show_all)
