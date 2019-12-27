@@ -488,6 +488,20 @@ update_xbps_body() {
 	set -- $out
 	exp="$1 $2 $3 $4"
 	atf_check_equal "$exp" "xbps-1.1_1 update noarch $(readlink -f repo)"
+
+	xbps-install -r root --repository=repo -yu xbps
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps)
+	atf_check_equal "$out" "xbps-1.1_1"
+
+	xbps-install -r root --repository=repo -yu
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver B)
+	atf_check_equal "$out" "B-1.1_1"
+	out=$(xbps-query -r root -p pkgver C)
+	atf_check_equal "$out" "C-1.1_1"
 }
 
 atf_test_case update_xbps_virtual
@@ -527,6 +541,12 @@ update_xbps_virtual_body() {
 	set -- $out
 	exp="$1 $2 $3 $4"
 	atf_check_equal "$exp" "xbps-git-1.1_1 update noarch $(readlink -f repo)"
+
+	xbps-install -r root --repository=repo -yu xbps
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps-git)
+	atf_check_equal "$out" "xbps-git-1.1_1"
 }
 
 atf_test_case update_with_revdeps
