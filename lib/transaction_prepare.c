@@ -276,8 +276,10 @@ int
 xbps_transaction_prepare(struct xbps_handle *xhp)
 {
 	xbps_array_t array, pkgs, edges;
+	xbps_dictionary_t tpkgd;
 	unsigned int i, cnt;
 	int rv = 0;
+	bool all_on_hold = true;
 
 	if ((rv = xbps_transaction_init(xhp)) != 0)
 		return rv;
@@ -328,6 +330,24 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	xbps_object_release(edges);
 
 	/*
+	 * If all pkgs in transaction are on hold, no need to check
+	 * for anything else.
+	 */
+	all_on_hold = true;
+	for (i = 0; i < cnt; i++) {
+		const char *action;
+
+		tpkgd = xbps_array_get(pkgs, i);
+		xbps_dictionary_get_cstring_nocopy(tpkgd, "transaction", &action);
+		if (strcmp(action, "hold")) {
+			all_on_hold = false;
+			break;
+		}
+	}
+	if (all_on_hold)
+		goto out;
+
+	/*
 	 * Check for packages to be replaced.
 	 */
 	if ((rv = xbps_transaction_package_replace(xhp, pkgs)) != 0) {
@@ -365,6 +385,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 			return ENOEXEC;
 		}
 	}
+out:
 	/*
 	 * Add transaction stats for total download/installed size,
 	 * number of packages to be installed, updated, configured
