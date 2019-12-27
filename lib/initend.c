@@ -107,7 +107,10 @@ xbps_init(struct xbps_handle *xhp)
 	if ((native_arch = getenv("XBPS_ARCH")) != NULL) {
 		xbps_strlcpy(xhp->native_arch, native_arch, sizeof (xhp->native_arch));
 	} else {
+#if defined(__linux__) && !defined(__GLIBC__)
+		/* musl libc on linux */
 		char *s = NULL;
+#endif
 		struct utsname un;
 		if (uname(&un) == -1)
 			return ENOTSUP;
