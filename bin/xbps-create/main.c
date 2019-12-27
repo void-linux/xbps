@@ -388,8 +388,9 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 				 * which might be provided in another package.
 				 * So let's use the same target.
 				 */
-				xe->target = strdup(buf);
-				xbps_dictionary_set_cstring(fileinfo, "target", buf);
+				xe->target = xbps_sanitize_path(buf);
+				assert(xe->target);
+				xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 			} else {
 				/*
 				 * Sanitize destdir just in case.
@@ -397,10 +398,14 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 				if ((p2 = realpath(destdir, NULL)) == NULL)
 					die("failed to sanitize destdir %s: %s", destdir, strerror(errno));
 
-				xe->target = strdup(p+strlen(p2));
-				xbps_dictionary_set_cstring(fileinfo, "target", p+strlen(p2));
-				free(p2);
+
+				p2 = strdup(p+strlen(p2));
+				assert(p2);
+				xe->target = xbps_sanitize_path(p2);
+				assert(xe->target);
+				xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 				free(p);
+				free(p2);
 			}
 		} else if (buf[0] != '/') {
 			/* relative path */
@@ -408,14 +413,17 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 			assert(p);
 			dname = dirname(p);
 			assert(dname);
-			xe->target = xbps_xasprintf("%s/%s", dname, buf);
 			p2 = xbps_xasprintf("%s/%s", dname, buf);
-			xbps_dictionary_set_cstring(fileinfo, "target", p2);
+			assert(p2);
+			xe->target = xbps_sanitize_path(p2);
+			assert(xe->target);
+			xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 			free(p2);
 			free(p);
 		} else {
-			xe->target = strdup(buf);
-			xbps_dictionary_set_cstring(fileinfo, "target", buf);
+			xe->target = xbps_sanitize_path(buf);
+			assert(xe->target);
+			xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 		}
 		assert(xe->target);
 		assert(xbps_dictionary_get(fileinfo, "target"));

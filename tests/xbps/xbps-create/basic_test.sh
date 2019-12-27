@@ -58,6 +58,33 @@ symlink_relative_target_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case symlink_sanitize
+
+symlink_sanitize_head() {
+	atf_set "descr" "xbps-create(1): symlinks must be properly sanitized"
+}
+
+symlink_sanitize_body() {
+	mkdir -p repo pkg_A/usr/bin
+	ln -s //usr/bin pkg_A/bin
+
+	cd repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	result="$(xbps-query -r root --repository=repo -f foo|tr -d '\n')"
+	expected="/bin -> /usr/bin"
+	rv=0
+	if [ "$result" != "$expected" ]; then
+		echo "result: $result"
+		echo "expected: $expected"
+		rv=1
+	fi
+	atf_check_equal $rv 0
+}
+
 atf_test_case symlink_relative_target_cwd
 
 symlink_relative_target_cwd_head() {
@@ -156,6 +183,7 @@ atf_init_test_cases() {
 	atf_add_test_case hardlinks_size
 	atf_add_test_case symlink_relative_target
 	atf_add_test_case symlink_relative_target_cwd
+	atf_add_test_case symlink_sanitize
 	atf_add_test_case restore_mtime
 	atf_add_test_case reproducible_pkg
 	atf_add_test_case reject_fifo_file
