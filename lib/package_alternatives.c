@@ -410,8 +410,9 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
  */
 static void
 prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
-		char *pkgname, const char *pkgver, const char *keyname) {
-	const char *newpkg, *curpkg;
+		char *pkgname, const char *pkgver, const char *keyname)
+{
+	const char *newpkg = NULL, *curpkg = NULL;
 	xbps_array_t array;
 	xbps_dictionary_t alternatives;
 	xbps_string_t kstr;
@@ -560,7 +561,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array;
 		xbps_object_t keysym;
-		const char *keyname, *first;
+		const char *keyname, *first = NULL;
 
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);

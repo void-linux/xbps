@@ -263,7 +263,7 @@ parse_array_in_pkg_dictionary(FILE *f, xbps_dictionary_t plistd,
 {
 	xbps_dictionary_keysym_t dksym;
 	xbps_object_t keyobj, sub_keyobj;
-	const char *tmpkeyname, *cfprop;
+	const char *tmpkeyname, *cfprop = NULL;
 	char *keyname;
 
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
