@@ -297,8 +297,8 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	rv = xbps_autoupdate(xhp);
 	switch (rv) {
 	case 1:
-		/* xbps needs to be updated, don't add any other package */
-		return 0;
+		/* xbps needs to be updated, don't allow any other update */
+		return EBUSY;
 	case -1:
 		/* error */
 		return EINVAL;
@@ -349,7 +349,9 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 	xbps_dbg_printf(xhp, "%s: xbps_autoupdate %d\n", __func__, rv);
 	switch (rv) {
 	case 1:
-		/* xbps needs to be updated, don't add any other package */
+		/* xbps needs to be updated, only allow xbps to be updated */
+		if (strcmp(pkg, "xbps"))
+			return EBUSY;
 		return 0;
 	case -1:
 		/* error */
@@ -388,7 +390,9 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 	rv = xbps_autoupdate(xhp);
 	switch (rv) {
 	case 1:
-		/* xbps needs to be updated, don't add any other package */
+		/* xbps needs to be updated, only allow xbps to be updated */
+		if (strcmp(pkg, "xbps"))
+			return EBUSY;
 		return 0;
 	case -1:
 		/* error */

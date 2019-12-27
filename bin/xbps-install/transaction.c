@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2015 Juan Romero Pardines.
+ * Copyright (c) 2009-2019 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -229,7 +229,8 @@ out:
 }
 
 static bool
-all_pkgs_on_hold(struct transaction *trans) {
+all_pkgs_on_hold(struct transaction *trans)
+{
 	xbps_object_t obj;
 	const char *action = NULL;
 	bool all_on_hold = true;
@@ -252,21 +253,25 @@ dist_upgrade(struct xbps_handle *xhp, int cols, bool yes, bool drun)
 {
 	int rv = 0;
 
-	if ((rv = xbps_transaction_update_packages(xhp)) != 0) {
-		if (rv == ENOENT) {
-			printf("No packages currently registered.\n");
-			return 0;
-		} else if (rv == EEXIST) {
-			return 0;
-		} else if (rv == ENOTSUP) {
-			fprintf(stderr, "No repositories currently "
-			    "registered!\n");
-			return -1;
+	rv = xbps_transaction_update_packages(xhp);
+	if (rv == ENOENT) {
+		printf("No packages currently registered.\n");
+		return 0;
+	} else if (rv == EBUSY) {
+		if (drun) {
+			rv = 0;
 		} else {
-			fprintf(stderr, "Unexpected error %s\n",
-			    strerror(rv));
-			return -1;
+			printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
+			return rv;
 		}
+	} else if (rv == EEXIST) {
+		return 0;
+	} else if (rv == ENOTSUP) {
+		fprintf(stderr, "No repositories currently registered!\n");
+		return rv;
+	} else if (rv != 0) {
+		fprintf(stderr, "Unexpected error %s\n", strerror(rv));
+		return -1;
 	}
 
 	return exec_transaction(xhp, cols, yes, drun);
@@ -277,42 +282,42 @@ install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 {
 	int rv;
 
-	if ((rv = xbps_transaction_install_pkg(xhp, pkg, reinstall)) != 0) {
-		if (rv == EEXIST) {
-			printf("Package `%s' already installed.\n", pkg);
-		} else if (rv == ENOENT) {
-			fprintf(stderr, "Unable to locate '%s' in "
-			    "repository pool.\n", pkg);
-		} else if (rv == ENOTSUP) {
-			fprintf(stderr, "No repositories  "
-			    "currently registered!\n");
-		} else if (rv == ENXIO) {
-			fprintf(stderr, "Package `%s' contains invalid dependencies, exiting.\n", pkg);
-		} else {
-			fprintf(stderr, "Unexpected error: %s\n",
-			    strerror(rv));
-			rv = -1;
-		}
+	rv = xbps_transaction_install_pkg(xhp, pkg, reinstall);
+	if (rv == EEXIST)
+		printf("Package `%s' already installed.\n", pkg);
+	else if (rv == ENOENT)
+		fprintf(stderr, "Package '%s' not found in repository pool.\n", pkg);
+	else if (rv == ENOTSUP)
+		fprintf(stderr, "No repositories currently registered!\n");
+	else if (rv == ENXIO)
+		fprintf(stderr, "Package `%s' contains invalid dependencies, exiting.\n", pkg);
+	else if (rv == EBUSY)
+		fprintf(stderr, "The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
+	else if (rv != 0) {
+		fprintf(stderr, "Unexpected error: %s\n", strerror(rv));
+		rv = -1;
 	}
 	return rv;
 }
 
 int
-update_pkg(struct xbps_handle *xhp, const char *pkgname)
+update_pkg(struct xbps_handle *xhp, const char *pkg)
 {
 	int rv;
 
-	rv = xbps_transaction_update_pkg(xhp, pkgname);
-	if (rv == EEXIST) {
-		printf("Package '%s' is up to date.\n", pkgname);
-		return EEXIST;
-	} else if (rv == ENOENT)
-		fprintf(stderr, "Package '%s' not found in "
-		    "repository pool.\n", pkgname);
+	rv = xbps_transaction_update_pkg(xhp, pkg);
+	if (rv == EEXIST)
+		printf("Package '%s' is up to date.\n", pkg);
+	else if (rv == ENOENT)
+		fprintf(stderr, "Package '%s' not found in repository pool.\n", pkg);
 	else if (rv == ENODEV)
-		printf("Package '%s' not installed.\n", pkgname);
+		fprintf(stderr, "Package '%s' not installed.\n", pkg);
 	else if (rv == ENOTSUP)
 		fprintf(stderr, "No repositories currently registered!\n");
+	else if (rv == ENXIO)
+		fprintf(stderr, "Package `%s' contains invalid dependencies, exiting.\n", pkg);
+	else if (rv == EBUSY)
+		fprintf(stderr, "The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
 	else if (rv != 0) {
 		fprintf(stderr, "Unexpected error: %s\n", strerror(rv));
 		return -1;
