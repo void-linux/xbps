@@ -281,6 +281,77 @@ conflicts_trans_installed_multi_body() {
 	atf_check_equal $(xbps-query -r root -l|wc -l) 2
 }
 
+atf_test_case conflicts_trans_provrep
+
+conflicts_trans_provrep_head() {
+	atf_set "descr" "Tests for pkg conflicts: https://github.com/void-linux/xbps/issues/186"
+}
+
+conflicts_trans_provrep_body() {
+	mkdir -p repo libGL/usr/bin libglvnd/usr/bin nvidia-libs/usr/bin neverball/usr/bin
+	cd repo
+	xbps-create -A noarch -n libGL-19.1_1 -s "libGL" ../libGL
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libglvnd-1.0_1 -s "libglvnd" --provides "libGL-7.11.1_1" --replaces "libGL>=0" ../libglvnd
+	atf_check_equal $? 0
+	xbps-create -A noarch -n nvidia-libs-1.0_1 -s "nvidia-libs" --provides "libGL-7.11.1_1" --replaces "libGL>=0" --conflicts "libGL>=7.11" ../nvidia-libs
+	atf_check_equal $? 0
+	xbps-create -A noarch -n neverball-1.0_1 -s "neverball" --dependencies "libGL>=0" ../neverball
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	# Simulate a glvnd switch from start with libGL (mesa)
+	xbps-install -r root --repository=$PWD/repo -dy neverball
+	atf_check_equal $? 0
+
+	# 2 pkgs installed: libGL and neverball
+	xbps-query -r root -l|wc -l
+	atf_check_equal $(xbps-query -r root -l|wc -l) 2
+
+	out=$(xbps-query -r root -p pkgver libGL)
+	atf_check_equal "$out" "libGL-19.1_1"
+	out=$(xbps-query -r root -p pkgver neverball)
+	atf_check_equal "$out" "neverball-1.0_1"
+
+	# Now install nvidia-libs
+	xbps-install -r root --repository=$PWD/repo -dy nvidia-libs
+	atf_check_equal $? 0
+
+	# 2 pkgs installed: nvidia-libs and neverball
+	xbps-query -r root -l|wc -l
+	atf_check_equal $(xbps-query -r root -l|wc -l) 2
+	out=$(xbps-query -r root -p pkgver nvidia-libs)
+	atf_check_equal "$out" "nvidia-libs-1.0_1"
+
+	# now create the nvidia-libs pkg with glvnd support
+	cd repo
+	xbps-create -A noarch -n neverball-1.1_1 -s "neverball" --dependencies "libGL>=0" ../neverball
+	atf_check_equal $? 0
+	xbps-create -A noarch -n nvidia-libs-1.1_1 -s "nvidia-libs" --dependencies "libglvnd>=0"  ../nvidia-libs
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	# Upgrade nvidia-libs
+	xbps-install -r root --repository=$PWD/repo -dyu
+	atf_check_equal $? 0
+
+	# 3 pkgs installed: libglvnd, nvidia-libs and neverball
+	xbps-query -r root -l|wc -l
+	atf_check_equal $(xbps-query -r root -l|wc -l) 3
+
+	out=$(xbps-query -r root -p pkgver libglvnd)
+	atf_check_equal "$out" "libglvnd-1.0_1"
+	out=$(xbps-query -r root -p pkgver nvidia-libs)
+	atf_check_equal "$out" "nvidia-libs-1.1_1"
+	out=$(xbps-query -r root -p pkgver neverball)
+	atf_check_equal "$out" "neverball-1.1_1"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case conflicts_trans
 	atf_add_test_case conflicts_trans_hold
@@ -291,4 +362,5 @@ atf_init_test_cases() {
 	atf_add_test_case conflicts_installed
 	atf_add_test_case conflicts_installed_multi
 	atf_add_test_case conflicts_trans_update
+	atf_add_test_case conflicts_trans_provrep
 }

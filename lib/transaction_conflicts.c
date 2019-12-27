@@ -90,6 +90,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 				    "transaction", &tract);
 				if (!strcmp(tract, "install") ||
 				    !strcmp(tract, "update") ||
+				    !strcmp(tract, "remove") ||
 				    !strcmp(tract, "hold")) {
 					free(pkgname);
 					continue;
