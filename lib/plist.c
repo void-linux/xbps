@@ -152,7 +152,7 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 
 		if ((rv = pthread_create(&thd[i].thread, NULL, array_foreach_thread, &thd[i])) != 0) {
 			error = rv;
-			goto out;
+			break;
 		}
 
 	}
@@ -162,7 +162,6 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 			error = rv;
 	}
 
-out:
 	free(thd);
 	pthread_spin_destroy(&reserved_lock);
 
