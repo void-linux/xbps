@@ -462,6 +462,41 @@ EOF
 	atf_check_equal "$out" "process ? 1_1 process ?"
 }
 
+atf_test_case subpkg
+
+subpkg_head() {
+	atf_set "descr" "xbps-checkvers(1): test subpkgs"
+}
+subpkg_body() {
+	mkdir -p some_repo pkg_A void-packages/srcpkgs/A
+	touch pkg_A/file00
+	cat > void-packages/srcpkgs/A/template <<EOF
+pkgname=A
+version=1.0
+revision=1
+}
+EOF
+	ln -s A void-packages/srcpkgs/A-subpkg
+	ln -s A void-packages/srcpkgs/B-subpkg
+	cd some_repo
+	xbps-create -A noarch -n A-subpkg-1.1_1 -s "A-subpkg pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	out=$(xbps-checkvers -i -R $PWD/some_repo -D $PWD/void-packages -sm A-subpkg)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "A-subpkg 1.1_1 1.0_1 A-subpkg $PWD/some_repo"
+
+	out=$(xbps-checkvers -i -R $PWD/some_repo -D $PWD/void-packages -sm B-subpkg)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "B-subpkg ? 1.0_1 B-subpkg ?"
+
+	out=$(xbps-checkvers -i -R $PWD/some_repo -D $PWD/void-packages -sm A)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "A ? 1.0_1 A ?"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case srcpkg_newer
 	atf_add_test_case srcpkg_newer_with_refs
@@ -479,4 +514,5 @@ atf_init_test_cases() {
 	atf_add_test_case reverts_alpha
 	atf_add_test_case reverts_many
 	atf_add_test_case manual_mode
+	atf_add_test_case subpkg
 }
