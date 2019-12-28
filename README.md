@@ -57,8 +57,9 @@ Thanks to all who have contributed.
 To build this you'll need:
 
   - A C99 compiler (clang, gcc, pcc, tcc)
+  - A POSIX compatible shell
   - [GNU make](https://www.gnu.org/software/make/)
-  - [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
+  - [pkgconf](http://pkgconf.org/)
   - [zlib](https://www.zlib.net)
   - [openssl < 1.1](https://www.openssl.org) or [libressl](https://www.libressl.org/)
   - [libarchive >= 3.3.3](https://www.libarchive.org) with lz4 and zstd support.
