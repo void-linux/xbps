@@ -13,7 +13,7 @@ native_body() {
 	else
 		arch=$(uname -m)
 	fi
-	atf_check_equal $(xbps-uhelper arch) $arch
+	atf_check_equal $(xbps-uhelper -r $PWD arch) $arch
 }
 
 atf_test_case env
@@ -23,7 +23,7 @@ env_head() {
 }
 env_body() {
 	export XBPS_ARCH=foo
-	atf_check_equal $(xbps-uhelper arch) foo
+	atf_check_equal $(xbps-uhelper -r $PWD arch) foo
 }
 
 atf_test_case conf
@@ -34,7 +34,7 @@ conf_head() {
 conf_body() {
 	mkdir -p xbps.d
 	echo "architecture=NULL" > xbps.d/arch.conf
-	atf_check_equal $(xbps-uhelper -C $PWD/xbps.d arch) NULL
+	atf_check_equal $(xbps-uhelper -r $PWD -C $PWD/xbps.d arch) NULL
 }
 
 atf_init_test_cases() {
