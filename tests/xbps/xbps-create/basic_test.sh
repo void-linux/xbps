@@ -175,7 +175,7 @@ reject_fifo_file_head() {
 reject_fifo_file_body() {
 	mkdir -p repo pkg_a
 	mkfifo pkg_a/fifo
-	xbps-create -a noarch -n foo-1.0_1 -s "foo pkg" pkg_a
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" pkg_a
 	atf_check_equal $? 1
 }
 
