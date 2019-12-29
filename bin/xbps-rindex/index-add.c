@@ -37,23 +37,6 @@
 #include <xbps.h>
 #include "defs.h"
 
-static int
-set_build_date(const xbps_dictionary_t pkgd, time_t timestamp)
-{
-	char outstr[64];
-	struct tm tmp;
-
-	if (!localtime_r(&timestamp, &tmp))
-		return -1;
-
-	if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", &tmp) == 0)
-		return -1;
-
-	if (!xbps_dictionary_set_cstring(pkgd, "build-date", outstr))
-		return -1;
-	return 0;
-}
-
 static bool
 repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage,
@@ -190,8 +173,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 		}
 		xbps_object_iterator_release(iter);
 		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL, compression, privkey);
-	}
-	else {
+	} else {
 		char *stagefile;
 		iter = xbps_dictionary_iterator(stage);
 		while ((keysym = xbps_object_iterator_next(iter))) {
@@ -372,13 +354,6 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 			goto out;
 		}
 		if (!xbps_dictionary_set_uint64(binpkgd, "filename-size", (uint64_t)st.st_size)) {
-			xbps_object_release(binpkgd);
-			free(pkgver);
-			free(pkgname);
-			rv = EINVAL;
-			goto out;
-		}
-		if (set_build_date(binpkgd, st.st_mtime) < 0) {
 			xbps_object_release(binpkgd);
 			free(pkgver);
 			free(pkgname);
