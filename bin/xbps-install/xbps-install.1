@@ -1,4 +1,4 @@
-.Dd June 21, 2019
+.Dd December 29, 2019
 .Dt XBPS-INSTALL 1
 .Sh NAME
 .Nm xbps-install
@@ -113,6 +113,10 @@ a path for local repositories. Note that remote repositories must be signed
 using
 .Xr xbps-rindex 1 .
 This option can be specified multiple times.
+.It Fl -reproducible
+Enables reproducible mode in pkgdb. The
+.Ar install-date
+package object is not added to pkgdb.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl S, Fl -sync

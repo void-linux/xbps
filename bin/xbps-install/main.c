@@ -61,6 +61,7 @@ usage(bool fail)
 	    " -R,--repository=<url>      Add repository to the top of the list.\n"
 	    "                            This option can be specified multiple times.\n"
 	    " -r --rootdir <dir>         Full path to rootdir\n"
+	    "    --reproducible          Enable reproducible mode in pkgdb.\n"
 	    " -S --sync                  Sync remote repository index\n"
 	    " -u --update                Update target package(s)\n"
 	    " -v --verbose               Verbose messages\n"
@@ -117,6 +118,7 @@ main(int argc, char **argv)
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "yes", no_argument, NULL, 'y' },
+		{ "reproducible", no_argument, NULL, 1 },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
@@ -134,6 +136,9 @@ main(int argc, char **argv)
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
+		case 1:
+			flags |= XBPS_FLAG_INSTALL_REPRO;
+			break;
 		case 'A':
 			flags |= XBPS_FLAG_INSTALL_AUTO;
 			break;
