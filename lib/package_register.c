@@ -64,10 +64,17 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 		rv = EINVAL;
 		goto out;
 	}
-	/*
-	 * Set the "install-date" object to know the pkg installation date.
-	 */
-	if ((xhp->flags & XBPS_FLAG_INSTALL_REPRO) == 0) {
+	if (xhp->flags & XBPS_FLAG_INSTALL_REPRO) {
+		/*
+		 * Reproducible mode. Some objects must not be recorded:
+		 * 	- install-date
+		 * 	- repository
+		 */
+		xbps_dictionary_remove(pkgd, "repository");
+	} else {
+		/*
+		 * Set the "install-date" object to know the pkg installation date.
+		 */
 		t = time(NULL);
 		if ((tmp = localtime(&t)) == NULL) {
 			xbps_dbg_printf(xhp, "%s: localtime failed: %s\n",
@@ -105,6 +112,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	xbps_dictionary_remove(pkgd, "skip-obsoletes");
 	xbps_dictionary_remove(pkgd, "pkgname");
 	xbps_dictionary_remove(pkgd, "version");
+
 	/*
 	 * Remove self replacement when applicable.
 	 */

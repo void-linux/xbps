@@ -65,40 +65,40 @@ reproducible_head() {
 }
 
 reproducible_body() {
-	mkdir -p repo pkg_A
+	mkdir -p repo-1 repo-2 pkg_A
 	touch pkg_A/file
-	cd repo
+	cd repo-1
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ../repo-2
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	xbps-install -r root-1 --repo=$PWD/repo --repro -y A
+
+	xbps-install -r root-1 --repo=$PWD/repo-1 --repro -y A
 	atf_check_equal $? 0
-	xbps-install -r root-2 --repo=$PWD/repo --repro -y A
+	xbps-install -r root-2 --repo=$PWD/repo-2 --repro -y A
 	atf_check_equal $? 0
 
 	# Compare pkgdb in both rootdirs
-	cmp root-1/var/db/xbps/pkgdb-0.38.plist root-2/var/db/xbps/pkgdb-0.38.plist
-	atf_check_equal $? 0
-	# compare pkgdb meta files in both rootdirs
-	cmp root-1/var/db/xbps/.A-files.plist root-2/var/db/xbps/.A-files.plist
+	cmp -s root-1/var/db/xbps/pkgdb-0.38.plist root-2/var/db/xbps/pkgdb-0.38.plist
 	atf_check_equal $? 0
 
 	# Now check without --reproducible
 	rm -rf root-1 root-2
 
-	xbps-install -r root-1 --repo=$PWD/repo --repro -y A
+	xbps-install -r root-1 --repo=$PWD/repo-1 --repro -y A
 	atf_check_equal $? 0
-	xbps-install -r root-2 --repo=$PWD/repo -y A
+	xbps-install -r root-2 --repo=$PWD/repo-2 -y A
 	atf_check_equal $? 0
 
 	# Compare pkgdb in both rootdirs
-	cmp root-1/var/db/xbps/pkgdb-0.38.plist root-2/var/db/xbps/pkgdb-0.38.plist
+	cmp -s root-1/var/db/xbps/pkgdb-0.38.plist root-2/var/db/xbps/pkgdb-0.38.plist
 	atf_check_equal $? 1
-	# compare pkgdb meta files in both rootdirs
-	cmp root-1/var/db/xbps/.A-files.plist root-2/var/db/xbps/.A-files.plist
-	atf_check_equal $? 0
 }
 
 atf_init_test_cases() {

@@ -232,7 +232,8 @@
 
 /**
  * @def XBPS_FLAG_INSTALL_REPRO
- * Enabled reproducible mode; skips adding the "install-date" obj into pkgdb.
+ * Enabled reproducible mode; skips adding the "install-date"
+ * and "repository" objs into pkgdb.
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_INSTALL_REPRO		0x00008000
