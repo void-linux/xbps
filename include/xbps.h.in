@@ -50,7 +50,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20191227"
+#define XBPS_API_VERSION	"20191229"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -229,6 +229,13 @@
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_IGNORE_FILE_CONFLICTS	0x00004000
+
+/**
+ * @def XBPS_FLAG_INSTALL_REPRO
+ * Enabled reproducible mode; skips adding the "install-date" obj into pkgdb.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_INSTALL_REPRO		0x00008000
 
 /**
  * @def XBPS_FETCH_CACHECONN

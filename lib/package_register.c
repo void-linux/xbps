@@ -67,23 +67,25 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	/*
 	 * Set the "install-date" object to know the pkg installation date.
 	 */
-	t = time(NULL);
-	if ((tmp = localtime(&t)) == NULL) {
-		xbps_dbg_printf(xhp, "%s: localtime failed: %s\n",
-		    pkgver, strerror(errno));
-		rv = EINVAL;
-		goto out;
-	}
-	if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", tmp) == 0) {
-		xbps_dbg_printf(xhp, "%s: strftime failed: %s\n",
-		    pkgver, strerror(errno));
-		rv = EINVAL;
-		goto out;
-	}
-	if (!xbps_dictionary_set_cstring(pkgd, "install-date", outstr)) {
-		xbps_dbg_printf(xhp, "%s: install-date set failed!\n", pkgver);
-		rv = EINVAL;
-		goto out;
+	if ((xhp->flags & XBPS_FLAG_INSTALL_REPRO) == 0) {
+		t = time(NULL);
+		if ((tmp = localtime(&t)) == NULL) {
+			xbps_dbg_printf(xhp, "%s: localtime failed: %s\n",
+					pkgver, strerror(errno));
+			rv = EINVAL;
+			goto out;
+		}
+		if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", tmp) == 0) {
+			xbps_dbg_printf(xhp, "%s: strftime failed: %s\n",
+					pkgver, strerror(errno));
+			rv = EINVAL;
+			goto out;
+		}
+		if (!xbps_dictionary_set_cstring(pkgd, "install-date", outstr)) {
+			xbps_dbg_printf(xhp, "%s: install-date set failed!\n", pkgver);
+			rv = EINVAL;
+			goto out;
+		}
 	}
 	/*
 	 * Create a hash for the pkg's metafile if it exists.
@@ -115,7 +117,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	}
 	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 		xbps_dbg_printf(xhp,
-		    "%s: failed to set pkgd for %s\n", __func__, pkgver);
+				"%s: failed to set pkgd for %s\n", __func__, pkgver);
 	}
 out:
 	xbps_object_release(pkgd);
