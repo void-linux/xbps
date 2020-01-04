@@ -271,6 +271,17 @@ xbps_autoupdate(struct xbps_handle *xhp)
 			if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
 				return -1;
 		}
+		/*
+		 * Set XBPS_FLAG_FORCE_REMOVE_REVDEPS to ignore broken
+		 * reverse dependencies in xbps_transaction_prepare().
+		 *
+		 * This won't skip revdeps of the xbps pkg, rather other
+		 * packages in rootdir that could be broken indirectly.
+		 *
+		 * A sysup transaction after updating xbps should fix them
+		 * again.
+		 */
+		xhp->flags |= XBPS_FLAG_FORCE_REMOVE_REVDEPS;
 		return 1;
 	} else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
 		/* no update */

@@ -165,10 +165,61 @@ update_xbps_with_uptodate_revdeps_body() {
 	atf_check_equal $out base-system-1.0_1
 }
 
-atf_test_case update_xbps_on_any_op
+atf_test_case update_xbps_with_indirect_revdeps
+
+update_xbps_with_indirect_revdeps_head() {
+	atf_set "descr" "Tests for pkg updates: xbps updates itself with indirect revdeps"
+}
+
+update_xbps_with_indirect_revdeps_body() {
+	mkdir -p repo pkg
+
+	cd repo
+	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" --dependencies "libcrypto>=0 cacerts>=0" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libcrypto-1.0_1 -s "libcrypto pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libressl-1.0_1 -s "libressl pkg" --dependencies "libcrypto-1.0_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n cacerts-1.0_1 -s "cacerts pkg" --dependencies "libressl-1.0_1" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yd xbps-1.0_1
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n xbps-1.1_1 -s "xbps pkg" --dependencies "libcrypto>=1.1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libcrypto-1.1_1 -s "libcrypto pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n libressl-1.1_1 -s "libressl pkg" --dependencies "libcrypto-1.1_1" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yu xbps
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps)
+	atf_check_equal "$out" "xbps-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver libcrypto)
+	atf_check_equal "$out" "libcrypto-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver libressl)
+	atf_check_equal "$out" "libressl-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver cacerts)
+	atf_check_equal "$out" "cacerts-1.0_1"
+}
 
 atf_init_test_cases() {
 	atf_add_test_case update_xbps
 	atf_add_test_case update_xbps_with_revdeps
+	atf_add_test_case update_xbps_with_indirect_revdeps
 	atf_add_test_case update_xbps_with_uptodate_revdeps
 }
