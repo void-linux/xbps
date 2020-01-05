@@ -175,13 +175,13 @@ update_xbps_with_indirect_revdeps_body() {
 	mkdir -p repo pkg
 
 	cd repo
-	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" --dependencies "libcrypto>=0 cacerts>=0" ../pkg
+	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" --dependencies "libcrypto-1.0_1 cacerts>=0" ../pkg
 	atf_check_equal $? 0
 	xbps-create -A noarch -n libcrypto-1.0_1 -s "libcrypto pkg" ../pkg
 	atf_check_equal $? 0
 	xbps-create -A noarch -n libressl-1.0_1 -s "libressl pkg" --dependencies "libcrypto-1.0_1" ../pkg
 	atf_check_equal $? 0
-	xbps-create -A noarch -n cacerts-1.0_1 -s "cacerts pkg" --dependencies "libressl-1.0_1" ../pkg
+	xbps-create -A noarch -n cacerts-1.0_1 -s "cacerts pkg" --dependencies "libressl>=0" ../pkg
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
@@ -190,8 +190,20 @@ update_xbps_with_indirect_revdeps_body() {
 	xbps-install -r root --repository=$PWD/repo -yd xbps-1.0_1
 	atf_check_equal $? 0
 
+	out=$(xbps-query -r root -p pkgver xbps)
+	atf_check_equal "$out" "xbps-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver libcrypto)
+	atf_check_equal "$out" "libcrypto-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver libressl)
+	atf_check_equal "$out" "libressl-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver cacerts)
+	atf_check_equal "$out" "cacerts-1.0_1"
+
 	cd repo
-	xbps-create -A noarch -n xbps-1.1_1 -s "xbps pkg" --dependencies "libcrypto>=1.1" ../pkg
+	xbps-create -A noarch -n xbps-1.1_1 -s "xbps pkg" --dependencies "libcrypto-1.1_1 ca-certs>=0" ../pkg
 	atf_check_equal $? 0
 	xbps-create -A noarch -n libcrypto-1.1_1 -s "libcrypto pkg" ../pkg
 	atf_check_equal $? 0
@@ -212,6 +224,21 @@ update_xbps_with_indirect_revdeps_body() {
 
 	out=$(xbps-query -r root -p pkgver libressl)
 	atf_check_equal "$out" "libressl-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver cacerts)
+	atf_check_equal "$out" "cacerts-1.0_1"
+
+	xbps-install -r root --repository=$PWD/repo -yu
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps)
+	atf_check_equal "$out" "xbps-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver libcrypto)
+	atf_check_equal "$out" "libcrypto-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver libressl)
+	atf_check_equal "$out" "libressl-1.1_1"
 
 	out=$(xbps-query -r root -p pkgver cacerts)
 	atf_check_equal "$out" "cacerts-1.0_1"
