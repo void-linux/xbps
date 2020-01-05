@@ -17,7 +17,7 @@ env:
 
 install:
  - docker pull "$IMG"
- - docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" "$IMG" /bin/sh -c "xbps-install -Syu && xbps-install -yu && xbps-install -y $DEPS make pkg-config kyua zlib-devel libarchive-devel atf-devel && CC=$CC ./configure --enable-tests && make -j$(nproc) && make check"
+ - docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" "$IMG" /bin/sh -c "xbps-install -Syu xbps && xbps-install -yu && xbps-install -y $DEPS make pkgconf kyua zlib-devel libarchive-devel atf-devel && CC=$CC ./configure --enable-tests && make -j$(nproc) && make check"
 
 script:
  - echo BUILDS PASSED
