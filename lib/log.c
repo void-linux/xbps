@@ -56,6 +56,8 @@ xbps_dbg_printf_append(struct xbps_handle *xhp, const char *fmt, ...)
 {
 	va_list ap;
 
+	assert(xhp);
+
 	if ((xhp->flags & XBPS_FLAG_DEBUG) == 0)
 		return;
 
@@ -68,6 +70,8 @@ void
 xbps_dbg_printf(struct xbps_handle *xhp, const char *fmt, ...)
 {
 	va_list ap;
+
+	assert(xhp);
 
 	if ((xhp->flags & XBPS_FLAG_DEBUG) == 0)
 		return;
