@@ -76,5 +76,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	xbps_dbg_printf(xhp, "Added `%s' into the dependency list (%s)\n",
 	    pkgver, repo);
 
+	xbps_object_release(pkgd);
+
 	return 0;
 }
