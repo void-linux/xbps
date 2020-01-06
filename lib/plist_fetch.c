@@ -180,8 +180,6 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 {
 	struct archive *a;
 	struct archive_entry *entry;
-	xbps_dictionary_t idxmeta_tmp = NULL;
-	size_t meta_signature_len = 0;
 	uint8_t i = 0;
 
 	assert(url);
@@ -200,11 +198,10 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 
 		if (strcmp(bfile, "index-meta.plist") == 0) {
 			buf = xbps_archive_get_file(a, entry);
-			meta_digest = xbps_buffer_hash_raw(buf, strlen(buf));
-			idxmeta_tmp = xbps_dictionary_internalize(buf);
+			repo->idxmeta = xbps_dictionary_internalize(buf);
 			free(buf);
 			i++;
-		} else if (strcmp(bfile, "index.plist") == 0) {
+		} else if (strcmp(bfile, XBPS_REPOIDX) == 0) {
 			buf = xbps_archive_get_file(a, entry);
 			repo->idx = xbps_dictionary_internalize(buf);
 			free(buf);
@@ -212,7 +209,7 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 		} else {
 			archive_read_data_skip(a);
 		}
-		if (i == 3)
+		if (i == 2)
 			break;
 	}
 	archive_read_finish(a);
@@ -222,9 +219,6 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 
 	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
 		return true;
-
-	free(meta_digest);
-	free(meta_signature);
 
 	return false;
 }
