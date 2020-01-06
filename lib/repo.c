@@ -77,36 +77,15 @@ repo_get_dict(struct xbps_repo *repo)
 		    archive_error_string(repo->ar));
 		return NULL;
 	}
-	return xbps_archive_get_dictionary(repo->ar, entry);
-}
-
-
-xbps_dictionary_t HIDDEN
-get_safe_idxmeta(xbps_dictionary_t full) {
-	static const char *keys[] = {
-		"public-key",
-		"public-key-size",
-		"signature-by",
-		"signature-type",
-	};
-	static const unsigned fields_count = (sizeof keys)/(sizeof *keys);
-	xbps_dictionary_t safe = NULL;
-
-	if (full == NULL) {
-		return NULL;
-	}
-
-	safe = xbps_dictionary_create();
-
-	for (unsigned i = 0; i < fields_count; ++i) {
-		const char *key = keys[i];
-		xbps_object_t value = xbps_dictionary_get(full, key);
-		if (value != NULL) {
-			xbps_dictionary_set(safe, key, value);
-		}
-	}
-
-	return safe;
+	dict = xbps_archive_get_dictionary(repo->ar, entry, &bytes);
+	if (verified != NULL &&
+	    bytes != NULL &&
+	    (digest = xbps_buffer_hash_raw(bytes, strlen(bytes))) != NULL &&
+	    repo_verify_index(repo, digest))
+		*verified = true;
+	free(digest);
+	free(bytes);
+	return dict;
 }
 
 bool
