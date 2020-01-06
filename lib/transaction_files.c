@@ -732,7 +732,7 @@ collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 
 		entry_pname = archive_entry_pathname(entry);
 		if ((strcmp("./files.plist", entry_pname)) == 0) {
-			filesd = xbps_archive_get_dictionary(ar, entry, NULL);
+			filesd = xbps_archive_get_dictionary(ar, entry);
 			if (filesd == NULL) {
 				rv = EINVAL;
 				goto out;
