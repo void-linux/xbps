@@ -116,18 +116,17 @@
  */
 #define XBPS_REPOIDX		"index.plist"
 
+/** 
+ * @def XBPS_REPOIDX_SIG
+ * Filename for the signature of repository index property list.
+ */
+#define XBPS_REPOIDX_SIG	"index.plist.sig"
+
 /**
  * @def XBPS_REPOIDX_META
  * Filename for the repository index metadata property list.
  */
 #define XBPS_REPOIDX_META 	"index-meta.plist"
-
-/**
- * @def XBPS_REPOIDXMETA_SIG
- * Filename for the signature of repository index metadata
- * property list.
- */
-#define XBPS_REPOIDXMETA_SIG	"index-meta.plist.sig"
 
 /**
  * @def XBPS_FLAG_VERBOSE
@@ -1369,7 +1368,7 @@ struct xbps_repo {
 	xbps_dictionary_t idxmeta;
 	/**
 	 * @var uri
-	 *
+	 * 
 	 * URI string associated with repository.
 	 */
 	const char *uri;
