@@ -196,7 +196,7 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 		if (bfile[0] == '.')
 			bfile++; /* skip first dot */
 
-		if (strcmp(bfile, "index-meta.plist") == 0) {
+		if (strcmp(bfile, XBPS_REPOIDX_META) == 0) {
 			buf = xbps_archive_get_file(a, entry);
 			repo->idxmeta = xbps_dictionary_internalize(buf);
 			free(buf);
