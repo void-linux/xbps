@@ -45,7 +45,6 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	struct archive *ar;
 	char *repofile, *tname, *buf;
 	unsigned char *sig = NULL;
-	const char *signature_type = NULL;
 	int rv, repofd = -1;
 	mode_t mask;
 	bool result;

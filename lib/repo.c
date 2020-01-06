@@ -619,7 +619,6 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	char *hexfp = NULL;
 	char *p, *dbkeyd, *rkeyfile = NULL;
 	int import, rv = 0;
-	bool has_signedby, has_pubkey_size, has_pubkey;
 
 	assert(repo);
 	/*
@@ -640,18 +639,8 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkey_size);
 	pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
 
-	has_signedby = (signedby != NULL);
-	has_pubkey_size = (pubkey_size > 0);
-	has_pubkey = (xbps_object_type(pubkey) == XBPS_TYPE_DATA);
-
-	if (!has_signedby && !has_pubkey_size && !has_pubkey)
-	{
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' unsigned repository with meta!\n", repo->uri);
-		return 0;
-	}
-	else if (!has_signedby || !has_pubkey_size || !has_pubkey)
-	{
+	if (signedby == NULL || pubkey_size == 0 ||
+	    xbps_object_type(pubkey) != XBPS_TYPE_DATA) {
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s': incomplete signed repository "
 		    "(missing objs)\n", repo->uri);

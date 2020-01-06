@@ -183,10 +183,6 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 	xbps_dictionary_t idxmeta_tmp = NULL;
 	size_t meta_signature_len = 0;
 	uint8_t i = 0;
-	bool verified = false;
-	const char *signature_type = NULL;
-	unsigned char *meta_digest = NULL;
-	unsigned char *meta_signature = NULL;
 
 	assert(url);
 	assert(repo);
@@ -221,17 +217,7 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 	}
 	archive_read_finish(a);
 
-	verified = xbps_verify_digest_signature(repo, idxmeta_tmp, meta_signature, meta_signature_len, meta_digest);
-	if (verified) {
-		xbps_dbg_printf(repo->xhp, "Verification of repo's '%s' signature passed.\n", url);
-	} else {
-		xbps_warn_printf("Verification of repo's '%s' signature failed. Taking safe part.\n", url);
-		idxmeta_tmp = get_safe_idxmeta(idxmeta_tmp);
-	}
-
-	repo->idxmeta = idxmeta_tmp;
-
-	if (xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-type", &signature_type))
+	if (xbps_object_type(repo->idxmeta) == XBPS_TYPE_DICTIONARY)
 		repo->is_signed = true;
 
 	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
