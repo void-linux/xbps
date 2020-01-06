@@ -116,12 +116,6 @@
  */
 #define XBPS_REPOIDX		"index.plist"
 
-/** 
- * @def XBPS_REPOIDX_SIG
- * Filename for the signature of repository index property list.
- */
-#define XBPS_REPOIDX_SIG	"index.plist.sig"
-
 /**
  * @def XBPS_REPOIDX_META
  * Filename for the repository index metadata property list.
