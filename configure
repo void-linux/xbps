@@ -16,6 +16,7 @@ HAVE_VISIBILITY=no
 SET_RPATH=
 DEBUG=
 FULL_DEBUG=
+BUILD_LTO=
 
 usage()
 {
@@ -46,6 +47,7 @@ for instance \`--prefix=\$HOME'.
 --enable-debug		Enables debugging (assertions and -g, default enabled)
 --enable-fulldebug	Enables extra debugging code (default disabled)
 --enable-static 	Build XBPS static utils (default disabled)
+--enable-lto            Build with Link Time Optimization (default disabled)
 --enable-tests		Build and install Kyua tests (default disabled)
 			Needs atf >= 0.15 (https://github.com/jmmv/atf)
 			Needs kyua to run the test suite (https://github.com/jmmv/kyua)
@@ -79,6 +81,7 @@ for x; do
 	--pkgconfigdir) PKGCONFIGDIR=$var;;
 	--enable-tests) BUILD_TESTS=yes;;
 	--enable-static) BUILD_STATIC=yes;;
+	--enable-lto) BUILD_LTO=yes;;
 	--testsdir) TESTSDIR=$var;;
 	--help) usage;;
 	*) echo "$0: WARNING: unknown option $opt" >&2;;
@@ -340,12 +343,14 @@ fi
 #
 # Enable LTO if supported (clang and gcc)
 #
-check_compiler_flag lto f CFLAGS
-if [ $? -eq 0 ]; then
-	echo "LDFLAGS += -flto" >> $CONFIG_MK
-	if [ "$CC" = "gcc" ]; then
-		echo "AR = gcc-ar" >> $CONFIG_MK
-		echo "RANLIB = gcc-ranlib" >>$CONFIG_MK
+if [ "$BUILD_LTO" = "yes" ]; then
+	check_compiler_flag lto f CFLAGS
+	if [ $? -eq 0 ]; then
+		echo "LDFLAGS += -flto" >> $CONFIG_MK
+		if [ "$CC" = "gcc" ]; then
+			echo "AR = gcc-ar" >> $CONFIG_MK
+			echo "RANLIB = gcc-ranlib" >>$CONFIG_MK
+		fi
 	fi
 fi
 
@@ -771,6 +776,7 @@ echo "   Build API documentation =	$BUILD_API_DOCS_VALUE"
 echo "   Build Kyua test suite =	$BUILD_TESTS_VALUE"
 echo "   Build programs as PIE =	$BUILD_PIE_VALUE"
 echo "   Build static programs =	$BUILD_STATIC_VALUE"
+echo "   Build with LTO = 		$BUILD_LTO"
 echo "   Build with debugging = 	$DEBUG"
 echo "   Build with full debug  =	$FULL_DEBUG"
 if [ -n "$HAVE_VISIBILITY" ]; then
