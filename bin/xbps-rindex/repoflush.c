@@ -44,7 +44,6 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 {
 	struct archive *ar;
 	char *repofile, *tname, *buf;
-	unsigned char *sig = NULL;
 	int rv, repofd = -1;
 	mode_t mask;
 	bool result;
@@ -92,8 +91,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	buf = xbps_dictionary_externalize(idx);
 	if (buf == NULL)
 		return false;
-	buflen = strlen(buf);
-	rv = xbps_archive_append_buf(ar, buf, buflen,
+	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
 	    XBPS_REPOIDX, 0644, "root", "root");
 	free(buf);
 	if (rv != 0)
