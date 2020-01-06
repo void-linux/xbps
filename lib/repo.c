@@ -78,11 +78,11 @@ repo_get_dict(struct xbps_repo *repo)
 		return NULL;
 	}
 	dict = xbps_archive_get_dictionary(repo->ar, entry, &bytes);
-	if (verified != NULL &&
-	    bytes != NULL &&
-	    (digest = xbps_buffer_hash_raw(bytes, strlen(bytes))) != NULL &&
-	    repo_verify_index(repo, digest))
-		*verified = true;
+	idxmeta = (repo->idxmeta != NULL) ? repo->idxmeta : dict;
+	if (verified != NULL && bytes != NULL) {
+		digest = xbps_buffer_hash_raw(bytes, strlen(bytes));
+		*verified = repo_verify_index(repo, idxmeta, digest);
+	}
 	free(digest);
 	free(bytes);
 	return dict;
@@ -179,7 +179,6 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		repo->is_signed = true;
 		xbps_dictionary_make_immutable(repo->idxmeta);
 	}
-	repo->idxmeta = idxmeta;
 
 	return true;
 }
