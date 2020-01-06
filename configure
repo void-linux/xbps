@@ -8,14 +8,13 @@ OS=
 BUILD=
 HOST=
 TARGET=
-DEBUG=
 BUILD_TESTS=
 BUILD_API_DOCS=
 BUILD_STATIC=
 SILENT=yes
 HAVE_VISIBILITY=no
 SET_RPATH=
-DEBUG=yes
+DEBUG=
 FULL_DEBUG=
 
 usage()
@@ -44,6 +43,7 @@ for instance \`--prefix=\$HOME'.
 --verbose 		Disable silent build to see compilation details
 --enable-rpath		Link binaries with rpath '\$ORIGIN/../lib'
 --enable-api-docs 	Install XBPS API Library documentation (default disabled)
+--enable-debug		Enables debugging (assertions and -g, default enabled)
 --enable-fulldebug	Enables extra debugging code (default disabled)
 --enable-static 	Build XBPS static utils (default disabled)
 --enable-tests		Build and install Kyua tests (default disabled)
@@ -57,6 +57,7 @@ for x; do
 	opt=${x%%=*}
 	var=${x#*=}
 	case "$opt" in
+	--enable-debug) DEBUG=yes;;
 	--enable-fulldebug) FULL_DEBUG=yes;;
 	--enable-rpath) SET_RPATH=yes;;
 	--prefix) PREFIX=$var;;
@@ -164,8 +165,6 @@ echo "DBDIR ?= $DBDIR" >>$CONFIG_MK
 ETCDIR="${SYSCONFDIR}/xbps.d"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 
-[ -z "$DEBUG" ] && DEBUG=no
-
 if [ -z "$CC" ]; then
 	printf "Looking for compiler ... "
 	for b in $TARGET- ""; do
@@ -187,6 +186,8 @@ else
 	echo "Using compiler $CC"
 fi
 
+[ -z "$DEBUG" ] && DEBUG=yes
+
 echo "CC =	$CC" >>$CONFIG_MK
 echo "CFLAGS =	-O2" >>$CONFIG_MK
 
@@ -207,6 +208,7 @@ if [ -n "$DEBUG" -a "$DEBUG" != no -a "$DEBUG" != false ]; then
 	echo "Building with debugging symbols."
 	echo "CPPFLAGS += -DDEBUG" >>$CONFIG_MK
 	echo "CFLAGS +=	-g" >>$CONFIG_MK
+	echo "LIBXBPS_LDFLAGS += -g" >>$CONFIG_MK
 else
 	echo "CPPFLAGS+= -DNDEBUG" >>$CONFIG_MK
 fi
@@ -762,18 +764,14 @@ echo "   SHAREDIR =		$SHAREDIR"
 echo "   MANDIR =		$MANDIR"
 echo "   ETCDIR =		$ETCDIR"
 echo "   DBDIR =		$DBDIR"
-
-if [ -n "$CFLAGS" ]; then
-	echo "   CFLAGS =		$CFLAGS"
-fi
-if [ -n "$LDFLAGS" ]; then
-	echo "   LDFLAGS =		$LDFLAGS"
-fi
+echo "   CFLAGS =		$CFLAGS"
+echo "   LDFLAGS =		$LDFLAGS"
 echo
 echo "   Build API documentation =	$BUILD_API_DOCS_VALUE"
 echo "   Build Kyua test suite =	$BUILD_TESTS_VALUE"
 echo "   Build programs as PIE =	$BUILD_PIE_VALUE"
 echo "   Build static programs =	$BUILD_STATIC_VALUE"
+echo "   Build with debugging = 	$DEBUG"
 echo "   Build with full debug  =	$FULL_DEBUG"
 if [ -n "$HAVE_VISIBILITY" ]; then
 	echo "   Symbol visibility =		$HAVE_VISIBILITY"
