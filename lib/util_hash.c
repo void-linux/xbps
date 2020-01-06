@@ -109,22 +109,6 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 }
 
 unsigned char *
-xbps_buffer_hash_raw(const char *buffer, ssize_t len)
-{
-	unsigned char *digest;
-	SHA256_CTX sha256;
-
-	digest = malloc(SHA256_DIGEST_LENGTH);
-	assert(digest);
-
-	SHA256_Init(&sha256);
-	SHA256_Update(&sha256, buffer, len);
-	SHA256_Final(digest, &sha256);
-
-	return digest;
-}
-
-unsigned char *
 xbps_file_hash_raw(const char *file)
 {
 	int fd;

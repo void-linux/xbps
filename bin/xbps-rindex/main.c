@@ -155,9 +155,9 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force, compression, privkey);
+		rv = index_add(&xh, optind, argc, argv, force, compression);
 	else if (clean_mode)
-		rv = index_clean(&xh, argv[optind], hashcheck, compression, privkey);
+		rv = index_clean(&xh, argv[optind], hashcheck, compression);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
 	else if (sign_mode)
