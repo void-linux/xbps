@@ -196,6 +196,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		rv = EINVAL;
 		goto out;
 	}
+	meta = xbps_dictionary_create();
 
 	data = xbps_data_create_data(buf, strlen(buf));
 	rpubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
@@ -216,10 +217,6 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	if (!flush)
 		goto out;
 
-	meta = xbps_dictionary_copy_mutable(repo->idxmeta);
-	if (meta == NULL) {
-		meta = xbps_dictionary_create();
-	}
 	xbps_dictionary_set(meta, "public-key", data);
 	xbps_dictionary_set_uint16(meta, "public-key-size", pubkeysize);
 	xbps_dictionary_set_cstring_nocopy(meta, "signature-by", signedby);
