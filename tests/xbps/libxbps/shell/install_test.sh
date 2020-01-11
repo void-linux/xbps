@@ -594,6 +594,88 @@ update_with_revdeps_body() {
 	atf_check_equal $(xbps-query -r root -p pkgver B) B-1.1_1
 }
 
+atf_test_case update_and_install
+
+update_and_install_head() {
+	atf_set "descr" "Tests for pkg install: update installed version and install new from other repo"
+}
+
+update_and_install_body() {
+	mkdir -p repo1 repo1-dbg repo2 pkg/usr/bin
+
+	cd repo1
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	cd repo1-dbg
+	xbps-create -A noarch -n A-dbg-1.0_1 -D A-1.0_1 -s "A pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repo=repo1 --repo=repo1-dbg -yvd A A-dbg
+	atf_check_equal $? 0
+	atf_check_equal $(xbps-query -r root -p pkgver A) A-1.0_1
+
+	cd repo1
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	cd repo1-dbg
+	xbps-create -A noarch -n A-dbg-1.0_2 -D A-1.0_2 -s "A pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	cd repo2
+	xbps-create -A noarch -n A-2.0_1 -s "A pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	# update pkgs: A and A-dbg
+	xbps-install -r root --repo=repo1 --repo=repo1-dbg -ydu
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal "$out" "A-1.0_2"
+
+	out=$(xbps-query -r root -p pkgver A-dbg)
+	atf_check_equal "$out" "A-dbg-1.0_2"
+
+	out=$(xbps-query -r root -l|wc -l)
+	atf_check_equal "$out" "2"
+
+	# Due to first repo wins, returns 19 because can't satisfy revdeps
+	xbps-install -r root --repo=repo2 --repo=repo1 --repo=repo1-dbg -ydu A
+	atf_check_equal $? 19
+
+	# Try with proper repo ordering
+	xbps-install -r root --repo=repo1 --repo=repo1-dbg --repo=repo2 -ydu A
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal "$out" "A-1.0_2"
+
+	out=$(xbps-query -r root -p pkgver A-dbg)
+	atf_check_equal "$out" "A-dbg-1.0_2"
+
+	out=$(xbps-query -r root -l|wc -l)
+	atf_check_equal "$out" "2"
+
+	xbps-install -r root --repo=repo2 --repo=repo1 --repo=repo1-dbg -ydu A
+	atf_check_equal $? 19
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
@@ -604,6 +686,7 @@ atf_init_test_cases() {
 	atf_add_test_case install_bestmatch_deps
 	atf_add_test_case install_bestmatch_disabled
 	atf_add_test_case install_and_update_revdeps
+	atf_add_test_case update_and_install
 	atf_add_test_case update_if_installed
 	atf_add_test_case update_to_empty_pkg
 	atf_add_test_case update_file_timestamps
