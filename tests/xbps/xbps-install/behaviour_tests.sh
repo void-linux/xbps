@@ -101,8 +101,37 @@ reproducible_body() {
 	atf_check_equal $? 1
 }
 
+atf_test_case virtualpkg_multirepo
+
+virtualpkg_multirepo_head() {
+	atf_set "descr" "xbps-install(1): virtualpkg= override with multiple repositories"
+}
+
+virtualpkg_multirepo_body() {
+	mkdir empty repo-1 repo-2
+
+	cd repo-1
+	xbps-create -n A-1.0_1 -s A -A noarch -P V-0_1 ../empty
+	atf_check_equal $? 0
+
+	cd ../repo-2
+	xbps-create -n B-1.0_1 -s B -A noarch -P V-0_1 ../empty
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-rindex -a repo-1/*.xbps
+	atf_check_equal $? 0
+	xbps-rindex -a repo-2/*.xbps
+	atf_check_equal $? 0
+
+	echo "virtualpkg=V-0_1:B" > virtualpkg.conf
+	xbps-install -C $PWD -r root --repo=repo-1 --repo=repo-2 -n V | grep 'B-1.0_1 install'
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_existent
 	atf_add_test_case update_existent
 	atf_add_test_case reproducible
+	atf_add_test_case virtualpkg_multirepo
 }
