@@ -1,4 +1,9 @@
-xbps-0.57 (???):
+xbps-0.58 (???):
+
+ * xbps now supports a new noextract configuration option,
+   to skip extracting files matching a pattern. [duncaen]
+
+xbps-0.57 (2019-08-06):
 
  * xbps now builds with tcc and pcc. [xtraeme]
 
