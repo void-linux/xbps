@@ -646,19 +646,6 @@ update_and_install_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	# update pkgs: A and A-dbg
-	xbps-install -r root --repo=repo1 --repo=repo1-dbg -ydu
-	atf_check_equal $? 0
-
-	out=$(xbps-query -r root -l|wc -l)
-	atf_check_equal "$out" "2"
-
-	out=$(xbps-query -r root -p pkgver A)
-	atf_check_equal "$out" "A-1.0_2"
-
-	out=$(xbps-query -r root -p pkgver A-dbg)
-	atf_check_equal "$out" "A-dbg-1.0_2"
-
 	# Due to first repo wins, returns 19 because can't satisfy revdeps
 	xbps-install -r root --repo=repo2 --repo=repo1 --repo=repo1-dbg -ydun A
 	atf_check_equal $? 19
@@ -676,6 +663,7 @@ update_and_install_body() {
 	out=$(xbps-query -r root -p pkgver A-dbg)
 	atf_check_equal "$out" "A-dbg-1.0_2"
 
+	# check again with A-2.0_1 in first repo.
 	xbps-install -r root --repo=repo2 --repo=repo1 --repo=repo1-dbg -ydun A
 	atf_check_equal $? 19
 }
