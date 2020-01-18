@@ -215,7 +215,7 @@ xbps_fetch_file_dest_digest(struct xbps_handle *xhp, const char *uri, const char
 	 * If restarting, open the file for appending otherwise create it.
 	 */
 	if (restart)
-		fd = open(tempfile, O_WRONLY|O_APPEND|O_CLOEXEC);
+		fd = open(tempfile, O_RDWR|O_CLOEXEC);
 	else
 		fd = open(tempfile, O_WRONLY|O_CREAT|O_CLOEXEC|O_TRUNC, 0644);
 
@@ -223,6 +223,27 @@ xbps_fetch_file_dest_digest(struct xbps_handle *xhp, const char *uri, const char
 		rv = -1;
 		goto fetch_file_out;
 	}
+
+	/*
+	 * If restarting and digest was requested, read the current data
+	 * and feed into sha256 hash.
+	 */
+	if (restart) {
+		if (digest) {
+			while ((bytes_read = read(fd, buf, sizeof(buf))) > 0) {
+				SHA256_Update(&sha256, buf, bytes_read);
+			}
+			if (bytes_read == -1) {
+				xbps_dbg_printf(xhp, "IO error while reading %s: %s\n",
+					tempfile, strerror(errno));
+				errno = EIO;
+				rv = -1;
+				goto fetch_file_out;
+			}
+		}
+		lseek(fd, 0, SEEK_END);
+	}
+
 	/*
 	 * Initialize data for the fetch progress function callback
 	 * and let the user know that the transfer is going to start
