@@ -50,10 +50,11 @@ typedef struct _rcv_t {
 	char *xbps_conf, *rootdir, *distdir, *buf, *ptr, *cachefile;
 	size_t bufsz, len;
 	uint8_t have_vars;
-	bool show_all, manual, installed;
+	bool show_all, manual, installed, removed, show_removed;
 	xbps_dictionary_t env;
 	xbps_dictionary_t pkgd;
 	xbps_dictionary_t cache;
+	xbps_dictionary_t templates;
 	struct xbps_handle xhp;
 } rcv_t;
 
@@ -82,6 +83,7 @@ show_usage(const char *prog)
 " -D --distdir <dir>	Set (or override) the path to void-packages\n"
 "  			(defaults to ~/void-packages).\n"
 " -d --debug 		Enable debug output to stderr.\n"
+" -e --removed 		List packages present in repos, but not in distdir.\n"
 " -f --format <fmt>	Output format.\n"
 " -I --installed 	Check for outdated packages in rootdir, rather\n"
 "  			than in the XBPS repositories.\n"
@@ -116,6 +118,7 @@ rcv_init(rcv_t *rcv, const char *prog)
 	}
 	if (xbps_init(&rcv->xhp) != 0)
 		abort();
+	rcv->templates = xbps_dictionary_create();
 }
 
 static void
@@ -140,6 +143,8 @@ rcv_end(rcv_t *rcv)
 		free(rcv->distdir);
 
 	free(rcv->cachefile);
+	xbps_object_release(rcv->templates);
+	rcv->templates = NULL;
 }
 
 static bool
@@ -273,7 +278,7 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len)
 			xbps_string_append_cstring(out, b);
 		}
 	}
-	
+
 	ret = xbps_string_cstring(out);
 	xbps_object_release(out);
 	return ret;
@@ -558,7 +563,11 @@ rcv_check_version(rcv_t *rcv)
 	reverts = NULL;
 	xbps_dictionary_get_cstring_nocopy(rcv->env, "reverts", &reverts);
 
-	sz = snprintf(srcver, sizeof srcver, "%s_%s", version, revision);
+	if (rcv->removed)
+		sz = snprintf(srcver, sizeof srcver, "?");
+	else
+		sz = snprintf(srcver, sizeof srcver, "%s_%s", version, revision);
+
 	if (sz < 0 || (size_t)sz >= sizeof srcver)
 		exit(EXIT_FAILURE);
 
@@ -584,6 +593,10 @@ rcv_check_version(rcv_t *rcv)
 		;
 	else if (rcv->show_all)
 		;
+	else if (rcv->show_removed && rcv->removed)
+		;
+	else if (rcv->show_removed && !rcv->removed)
+		return 0;
 	else if (repover && (xbps_cmpver(repover, srcver) < 0 ||
 		    (reverts && check_reverts(repover, reverts))))
 		;
@@ -620,6 +633,10 @@ rcv_process_dir(rcv_t *rcv, rcv_proc_func process)
 			continue;
 		if ((lstat(result->d_name, &st)) != 0)
 			goto error;
+
+		if (rcv->show_removed)
+			xbps_dictionary_set_bool(rcv->templates, result->d_name, true);
+
 		if (S_ISLNK(st.st_mode) != 0)
 			continue;
 
@@ -635,16 +652,63 @@ error:
 	exit(1);
 }
 
+static int
+template_removed_cb(struct xbps_handle *xhp UNUSED,
+		xbps_object_t obj UNUSED,
+		const char *key,
+		void *arg,
+		bool *done UNUSED)
+{
+	char *pkgname;
+	char *last_dash;
+	bool dummy_bool = false;
+	rcv_t *rcv = arg;
+
+	last_dash = strrchr(key, '-');
+	if (last_dash && (strcmp(last_dash, "-32bit") == 0 || strcmp(last_dash, "-dbg") == 0)) {
+		pkgname = strndup(key, last_dash - key);
+	} else {
+		pkgname = strdup(key);
+	}
+	if (!xbps_dictionary_get_bool(rcv->templates, pkgname, &dummy_bool)) {
+		rcv->removed = true;
+		rcv->env = xbps_dictionary_create();
+		xbps_dictionary_set_cstring_nocopy(rcv->env, "pkgname", key);
+		xbps_dictionary_set_cstring_nocopy(rcv->env, "version", "-");
+		xbps_dictionary_set_cstring_nocopy(rcv->env, "revision", "-");
+		rcv->have_vars = GOT_PKGNAME_VAR | GOT_VERSION_VAR | GOT_REVISION_VAR;
+		rcv->fname = key;
+		rcv_check_version(rcv);
+		rcv->removed = false;
+		xbps_object_release(rcv->env);
+		rcv->env = NULL;
+	}
+	free(pkgname);
+	return 0;
+}
+
+static int
+repo_templates_removed_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
+{
+	xbps_array_t allkeys;
+
+	allkeys = xbps_dictionary_all_keys(repo->idx);
+	xbps_array_foreach_cb(repo->xhp, allkeys, repo->idx, template_removed_cb, arg);
+	xbps_object_release(allkeys);
+	return 0;
+}
+
 int
 main(int argc, char **argv)
 {
 	int i, c;
 	rcv_t rcv;
-	const char *prog = argv[0], *sopts = "hC:D:df:iImR:r:sV";
+	const char *prog = argv[0], *sopts = "hC:D:def:iImR:r:sV";
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "config", required_argument, NULL, 'C' },
 		{ "distdir", required_argument, NULL, 'D' },
+		{ "removed", no_argument, NULL, 'e' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "format", required_argument, NULL, 'f' },
 		{ "installed", no_argument, NULL, 'I' },
@@ -673,6 +737,9 @@ main(int argc, char **argv)
 			break;
 		case 'd':
 			rcv.xhp.flags |= XBPS_FLAG_DEBUG;
+			break;
+		case 'e':
+			rcv.show_removed = true;
 			break;
 		case 'f':
 			rcv.format = optarg;
@@ -733,6 +800,14 @@ main(int argc, char **argv)
 
 	if (!rcv.manual)
 		rcv_process_dir(&rcv, rcv_process_file);
+
+	if (rcv.show_removed) {
+		if (rcv.installed) {
+			xbps_pkgdb_foreach_cb(&rcv.xhp, template_removed_cb, &rcv);
+		} else {
+			xbps_rpool_foreach(&rcv.xhp, repo_templates_removed_cb, &rcv);
+		}
+	}
 
 	rcv.manual = true;
 	for (i = 0; i < argc; i++) {

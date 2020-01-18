@@ -497,6 +497,101 @@ EOF
 	atf_check_equal "$out" "A ? 1.0_1 A ?"
 }
 
+atf_test_case removed
+
+removed_head() {
+	atf_set "descr" "xbps-checkvers(1): test removed"
+}
+
+removed_body() {
+	mkdir -p some_repo
+	for pkg in same updated removed
+	do
+		mkdir -p void-packages/srcpkgs/$pkg
+		cat > void-packages/srcpkgs/$pkg/template <<EOF
+pkgname=$pkg
+version=1
+revision=1
+EOF
+		cd some_repo
+		xbps-create -A noarch -n ${pkg}-1_1 -s "$pkg pkg" .
+		atf_check_equal $? 0
+		cd ..
+	done
+
+	sed -e s/version=1/version=2/ -i void-packages/srcpkgs/updated/template
+	rm -r void-packages/srcpkgs/removed
+	cd some_repo
+	xbps-rindex -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages -i)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "updated 1_1 2_1 updated $PWD/some_repo"
+	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages -ei)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "removed 1_1 ? removed $PWD/some_repo"
+}
+
+atf_test_case removed_subpkgs
+
+removed_subpkgs_head() {
+	atf_set "descr" "xbps-checkvers(1): handling of removed subpkgs"
+}
+
+removed_subpkgs_body() {
+	mkdir -p some_repo
+	for pkg in same updated removed onlybase onlydevel
+	do
+		mkdir -p void-packages/srcpkgs/$pkg
+		ln -sr void-packages/srcpkgs/$pkg void-packages/srcpkgs/$pkg-devel
+		cat > void-packages/srcpkgs/$pkg/template <<EOF
+pkgname=$pkg
+version=1
+revision=1
+
+$pkg-devel_package(){
+	depends="${sourcepkg}-${version}_${revision}"
+	pkg_install() {
+		:
+	}
+}
+EOF
+		cd some_repo
+		xbps-create -A noarch -n ${pkg}-1_1 -s "$pkg pkg" .
+		xbps-create -A noarch -n ${pkg}-devel-1_1 -s "$pkg devel subpkg" .
+		atf_check_equal $? 0
+		cd ..
+	done
+
+	sed -e s/version=1/version=2/ -i void-packages/srcpkgs/updated/template
+	rm -r void-packages/srcpkgs/onlydevel-devel
+	mv void-packages/srcpkgs/onlydevel void-packages/srcpkgs/onlydevel-devel
+	rm -r void-packages/srcpkgs/onlybase-devel
+	rm -r void-packages/srcpkgs/removed
+	rm -r void-packages/srcpkgs/removed-devel
+	cd some_repo
+	xbps-rindex -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages -i)
+	atf_check_equal $? 0
+	atf_check_equal "$out" "updated 1_1 2_1 updated $PWD/some_repo"
+	cat > expected <<EOF
+onlybase-devel 1_1 ? onlybase-devel $PWD/some_repo
+onlydevel 1_1 ? onlydevel $PWD/some_repo
+removed 1_1 ? removed $PWD/some_repo
+removed-devel 1_1 ? removed-devel $PWD/some_repo
+EOF
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages -ei > out
+	atf_check_equal $? 0
+	sort < out > out.sorted
+	atf_check_equal $? 0
+	atf_check_equal "$(tr '\n' ' ' < out.sorted)" "$(tr '\n' ' ' < expected)"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case srcpkg_newer
 	atf_add_test_case srcpkg_newer_with_refs
@@ -515,4 +610,6 @@ atf_init_test_cases() {
 	atf_add_test_case reverts_many
 	atf_add_test_case manual_mode
 	atf_add_test_case subpkg
+	atf_add_test_case removed
+	atf_add_test_case removed_subpkgs
 }
