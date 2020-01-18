@@ -32,6 +32,9 @@ If the first character is not '/' then it's a relative path of
 .It Fl D, Fl -distdir Ar dir
 Specifies a full path to the void-packages repository. By default set to
 .Nm ~/void-packages .
+.It Fl e, Fl -removed
+List packages present in repos, but not in distdir.
+Srcver is a dash for them.
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl f, Fl -format Ar format
