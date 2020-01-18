@@ -95,6 +95,9 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 
 		while ((obj = xbps_object_iterator_next(iter))) {
 			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
+			/* skip noextract files */
+			if (xhp->noextract && xbps_patterns_match(xhp->noextract, file))
+				continue;
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
                         xbps_dictionary_get_cstring_nocopy(obj,
                             "sha256", &sha256);
@@ -150,6 +153,9 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 
 		while ((obj = xbps_object_iterator_next(iter))) {
 			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
+			/* skip noextract files */
+			if (xhp->noextract && xbps_patterns_match(xhp->noextract, file))
+				continue;
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
 			if (access(path, R_OK) == -1) {
 				if (errno == ENOENT) {

@@ -50,7 +50,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20191229"
+#define XBPS_API_VERSION	"20200118"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -540,6 +540,7 @@ struct xbps_handle {
 	 */
 	xbps_array_t preserved_files;
 	xbps_array_t ignored_pkgs;
+	xbps_array_t noextract;
 	/**
 	 * @var repositories
 	 *
@@ -2167,6 +2168,18 @@ char *xbps_sanitize_path(const char *src);
  */
 char *xbps_symlink_target(struct xbps_handle *xhp, const char *path,
 		const char *target);
+
+/**
+ * Returns true if any of the fnmatch patterns in \a patterns matches
+ * and is not negated by a later match.
+ *
+ * @param[in] patterns The patterns to match against.
+ * @param[in] path The path that is matched against the patterns.
+ *
+ * @return true if any pattern matches, false otherwise.
+ * The returned buffer must be free(3)d when it's no longer necessary.
+ */
+bool xbps_patterns_match(xbps_array_t patterns, const char *path);
 
 /**
  * Internalizes a plist file declared in \f and returns a proplib array.

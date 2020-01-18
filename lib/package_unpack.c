@@ -306,6 +306,15 @@ unpack_archive(struct xbps_handle *xhp,
 			}
 		}
 		/*
+		 * Skip files that match noextract patterns from configuration file.
+		 */
+		if (xhp->noextract && xbps_patterns_match(xhp->noextract, entry_pname+1)) {
+			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FILE_PRESERVED, 0,
+			    pkgver, "%s: file `%s' won't be extracted, "
+			    "it matches a noextract pattern.", pkgver, entry_pname);
+			continue;
+		}
+		/*
 		 * Always check that extracted file exists and hash
 		 * doesn't match, in that case overwrite the file.
 		 * Otherwise skip extracting it.
@@ -323,7 +332,7 @@ unpack_archive(struct xbps_handle *xhp,
 			    "and must be preserved, skipping.\n", entry_pname);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FILE_PRESERVED, 0,
 			    pkgver, "%s: file `%s' won't be extracted, "
-			    "it's preserved.\n", pkgver, entry_pname);
+			    "it's preserved.", pkgver, entry_pname);
 			continue;
 		}
 
