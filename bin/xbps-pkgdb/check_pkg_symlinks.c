@@ -66,6 +66,10 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "file", &file))
 			continue;
 
+		/* skip noextract files */
+		if (xhp->noextract && xbps_patterns_match(xhp->noextract, file))
+			continue;
+
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "target", &tgt)) {
 			xbps_warn_printf("%s: `%s' symlink with "
 			    "empty target object!\n", pkgname, file);

@@ -648,3 +648,27 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 
 	return res;
 }
+
+bool
+xbps_patterns_match(xbps_array_t patterns, const char *path)
+{
+	bool match = false;
+
+	if (patterns == NULL)
+		return false;
+
+	for (unsigned int i = 0; i < xbps_array_count(patterns); i++) {
+		const char *pattern = NULL;
+		bool negate = false;
+		if (!xbps_array_get_cstring_nocopy(patterns, i, &pattern))
+			continue;
+		if (pattern == NULL)
+			continue;
+		if ((negate = *pattern == '!') || *pattern == '\\')
+			pattern++;
+		if (fnmatch(pattern, path, 0) == 0)
+			match = !negate;
+	}
+
+	return match;
+}

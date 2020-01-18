@@ -9,6 +9,7 @@ TESTSHELL+= vpkg_test install_test preserve_files_test configure_test
 TESTSHELL+= update_shlibs_test update_hold_test update_repolock_test
 TESTSHELL+= cyclic_deps_test conflicts_test update_itself_test
 TESTSHELL+= downgrade_hold_test ignore_test preserve_test
+TESTSHELL+= noextract_files_test
 EXTRA_FILES = Kyuafile
 
 include $(TOPDIR)/mk/test.mk

@@ -145,6 +145,19 @@ store_ignored_pkg(struct xbps_handle *xhp, const char *pkgname)
 	xbps_dbg_printf(xhp, "Added ignored package: %s\n", pkgname);
 }
 
+static void
+store_noextract(struct xbps_handle *xhp, const char *value)
+{
+	if (*value == '\0')
+		return;
+	if (xhp->noextract == NULL) {
+		xhp->noextract = xbps_array_create();
+		assert(xhp->noextract);
+	}
+	xbps_array_add_cstring(xhp->noextract, value);
+	xbps_dbg_printf(xhp, "Added noextract pattern: %s\n", value);
+}
+
 enum {
 	KEY_ERROR = 0,
 	KEY_ARCHITECTURE,
@@ -152,6 +165,7 @@ enum {
 	KEY_CACHEDIR,
 	KEY_IGNOREPKG,
 	KEY_INCLUDE,
+	KEY_NOEXTRACT,
 	KEY_PRESERVE,
 	KEY_REPOSITORY,
 	KEY_ROOTDIR,
@@ -169,6 +183,7 @@ static const struct key {
 	{ "cachedir",      8, KEY_CACHEDIR },
 	{ "ignorepkg",     9, KEY_IGNOREPKG },
 	{ "include",       7, KEY_INCLUDE },
+	{ "noextract",     9, KEY_NOEXTRACT },
 	{ "preserve",      8, KEY_PRESERVE },
 	{ "repository",   10, KEY_REPOSITORY },
 	{ "rootdir",       7, KEY_ROOTDIR },
@@ -352,6 +367,9 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 			break;
 		case KEY_IGNOREPKG:
 			store_ignored_pkg(xhp, val);
+			break;
+		case KEY_NOEXTRACT:
+			store_noextract(xhp, val);
 			break;
 		case KEY_INCLUDE:
 			/* Avoid double-nested parsing, only allow it once */

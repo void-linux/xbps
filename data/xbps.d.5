@@ -1,4 +1,4 @@
-.Dd June 12, 2019
+.Dd January 18, 2020
 .Dt XBPS-D 5
 .Sh NAME
 .Nm xbps.d
@@ -60,6 +60,18 @@ If path starts with '/' it's an absolute path, otherwise it will be relative to
 Declares a ignored package.
 If a package depends on an ignored package the dependency is always satisfied,
 without installing the ignored package.
+.It Sy noextract=pattern
+Skip extraction of matching files.
+Patterns starting with a exclamation mark negate the previous match,
+a single backslash can be used to escape the exclamation mark.
+.Pp
+In the following example all files matching the first pattern will not be extracted,
+but files that also match the second pattern will still be extracted.
+.Pp
+.Bl -tag -compact -width noextract=!/usr/bin/foo
+.It Sy noextract=/usr/bin/f*
+.It Sy noextract=!/usr/bin/foo
+.El
 .It Sy include=path/file.conf
 Imports settings from the specified configuration file.
 .Em NOTE
