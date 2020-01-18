@@ -31,6 +31,8 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include <openssl/sha.h>
+
 #include <xbps.h>
 #include "../xbps-install/defs.h"
 
@@ -43,6 +45,7 @@ usage(void)
 	" -d\t\tEnable debug messages to stderr\n"
 	" -h\t\tShow usage()\n"
 	" -o <file>\tRename downloaded file to <file>\n"
+	" -s\t\tOutput sha256sums of the files\n"
 	" -v\t\tEnable verbose output\n"
 	" -V\t\tPrints the xbps release version\n");
 	exit(EXIT_FAILURE);
@@ -63,11 +66,28 @@ fname(char *url)
 	return filename + 1;
 }
 
+static void
+print_digest(const uint8_t *digest, size_t len)
+{
+	while (len--) {
+		if (*digest / 16 < 10)
+			putc('0' + *digest / 16, stdout);
+		else
+			putc('a' + *digest / 16 - 10, stdout);
+		if (*digest % 16 < 10)
+			putc('0' + *digest % 16, stdout);
+		else
+			putc('a' + *digest % 16 - 10, stdout);
+		++digest;
+	}
+}
+
 int
 main(int argc, char **argv)
 {
 	int flags = 0, c = 0, rv = 0;
 	bool verbose = false;
+	bool shasum = false;
 	struct xbps_handle xh = {};
 	struct xferstat xfer = {};
 	const char *filename = NULL, *progname = argv[0];
@@ -75,13 +95,16 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 
-	while ((c = getopt_long(argc, argv, "o:dhVv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "o:dhsVv", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'o':
 			filename = optarg;
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
+			break;
+		case 's':
+			shasum = true;
 			break;
 		case 'v':
 			verbose = true;
@@ -115,17 +138,30 @@ main(int argc, char **argv)
 	}
 
 	for (int i = 0; i < argc; i++) {
+		unsigned char *digest = NULL;
+
 		if (i > 0 || !filename)
 			filename = fname(argv[i]);
 
-		rv = xbps_fetch_file_dest(&xh, argv[i], filename, verbose ? "v" : "");
+		if (shasum) {
+			rv = xbps_fetch_file_dest_digest(&xh, argv[i], filename, verbose ? "v" : "", &digest);
+		} else {
+			rv = xbps_fetch_file_dest(&xh, argv[i], filename, verbose ? "v" : "");
+		}
 
 		if (rv == -1) {
 			fprintf(stderr, "%s: %s\n", argv[i], xbps_fetch_error_string());
 		} else if (rv == 0) {
-			printf("%s: file is identical with remote.\n", argv[i]);
+			fprintf(stderr, "%s: file is identical with remote.\n", argv[i]);
+			if (shasum)
+				digest = xbps_file_hash_raw(filename);
 		} else {
 			rv = 0;
+		}
+		if (digest != NULL) {
+			print_digest(digest, SHA256_DIGEST_LENGTH);
+			printf("  %s\n", filename);
+			free(digest);
 		}
 	}
 
