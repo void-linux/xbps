@@ -334,6 +334,35 @@ vpkg_provider_remove_body() {
 	atf_check_equal $? 19
 }
 
+
+atf_test_case vpkg_multirepo
+
+vpkg_multirepo_head() {
+       atf_set "descr" "Tests for virtual pkgs: vpkg provider in multiple repos"
+}
+
+vpkg_multirepo_body() {
+       mkdir empty repo-1 repo-2
+
+       cd repo-1
+       xbps-create -n A-1.0_1 -s A -A noarch -P V-0_1 ../empty
+       atf_check_equal $? 0
+
+       cd ../repo-2
+       xbps-create -n B-1.0_1 -s B -A noarch -P V-0_1 ../empty
+       atf_check_equal $? 0
+
+       cd ..
+       xbps-rindex -a repo-1/*.xbps
+       atf_check_equal $? 0
+       xbps-rindex -a repo-2/*.xbps
+       atf_check_equal $? 0
+
+       echo "virtualpkg=V-0_1:B" > virtualpkg.conf
+       out="$(xbps-install -C $PWD -r root --repo=repo-1 --repo=repo-2 -n V|awk '{print $1}')"
+       atf_check_equal "$out" "B-1.0_1"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case vpkg_dont_update
 	atf_add_test_case vpkg_replace_provider
@@ -344,4 +373,5 @@ atf_init_test_cases() {
 	atf_add_test_case vpkg_incompat_downgrade
 	atf_add_test_case vpkg_provider_and_revdeps_downgrade
 	atf_add_test_case vpkg_provider_remove
+	atf_add_test_case vpkg_multirepo
 }

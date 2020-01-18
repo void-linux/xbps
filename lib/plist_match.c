@@ -42,11 +42,15 @@
 bool
 xbps_match_virtual_pkg_in_array(xbps_array_t a, const char *str)
 {
-	if ((xbps_match_pkgname_in_array(a, str)) ||
-	    (xbps_match_pkgdep_in_array(a, str)) ||
-	    (xbps_match_pkgpattern_in_array(a, str)))
+	if (xbps_pkgpattern_version(str)) {
+		if (xbps_match_pkgdep_in_array(a, str) ||
+		    xbps_match_pkgpattern_in_array(a, str))
 		return true;
-
+	} else if (xbps_pkg_version(str)) {
+		return xbps_match_string_in_array(a, str);
+	} else {
+		return xbps_match_pkgname_in_array(a, str);
+	}
 	return false;
 }
 

@@ -304,7 +304,7 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 	xbps_dictionary_t pkgd = NULL;
 	const char *vpkg;
 
-	/* Try matching vpkg from configuration files */
+	/* Try matching vpkg via xhp->vpkgd */
 	vpkg = vpkg_user_conf(xhp, pkg, false);
 	if (vpkg != NULL) {
 		if (xbps_pkgpattern_version(vpkg))
