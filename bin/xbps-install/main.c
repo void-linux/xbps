@@ -243,7 +243,9 @@ main(int argc, char **argv)
 	if (syncf && !update && (argc == optind))
 		exit(EXIT_SUCCESS);
 
-	if (!drun && (rv = xbps_pkgdb_lock(&xh)) != 0) {
+	/* allow non-root user to use --download-only -- still lock pkgdb if euid==root just in case ... */
+	/* not dryrun  AND  not (downloadonly && notroot) AND lockpkgDB */
+	if (!drun && !((flags & XBPS_FLAG_DOWNLOAD_ONLY) && geteuid()) && (rv = xbps_pkgdb_lock(&xh)) != 0) {
 		fprintf(stderr, "Failed to lock the pkgdb: %s\n", strerror(rv));
 		exit(rv);
 	}
