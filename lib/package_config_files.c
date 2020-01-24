@@ -170,11 +170,13 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		/*
 		 * Orig = X, Curr = X, New = Y
 		 *
-		 * Install new file (installed file hasn't been modified).
+		 * Install new file (installed file hasn't been modified) if
+		 * configuration option keepconfig is NOT set.
 		 */
 		} else if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
-			   (strcmp(sha256_cur, sha256_new))) {
+			   (strcmp(sha256_cur, sha256_new)) &&
+			   (!(xhp->flags & XBPS_FLAG_KEEP_CONFIG))) {
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgver,
 			    "Updating configuration file `%s' provided "
@@ -212,12 +214,15 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			break;
 		/*
 		 * Orig = X, Curr = Y, New = Z
+		 * or
+		 * Orig = X, Curr = X, New = Y if keepconf is set
 		 *
 		 * Install new file as <file>.new-<version>
 		 */
-		} else  if ((strcmp(sha256_orig, sha256_cur)) &&
+		} else if (((strcmp(sha256_orig, sha256_cur)) &&
 			    (strcmp(sha256_cur, sha256_new)) &&
-			    (strcmp(sha256_orig, sha256_new))) {
+			    (strcmp(sha256_orig, sha256_new))) ||
+			    (xhp->flags & XBPS_FLAG_KEEP_CONFIG)) {
 			version = xbps_pkg_version(pkgver);
 			assert(version);
 			snprintf(buf, sizeof(buf), ".%s.new-%s", cffile, version);
