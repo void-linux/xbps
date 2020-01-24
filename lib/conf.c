@@ -171,6 +171,7 @@ enum {
 	KEY_ROOTDIR,
 	KEY_SYSLOG,
 	KEY_VIRTUALPKG,
+	KEY_KEEPCONF,
 };
 
 static const struct key {
@@ -189,6 +190,7 @@ static const struct key {
 	{ "rootdir",       7, KEY_ROOTDIR },
 	{ "syslog",        6, KEY_SYSLOG },
 	{ "virtualpkg",   10, KEY_VIRTUALPKG },
+	{ "keepconf",      8, KEY_KEEPCONF },
 };
 
 static int
@@ -355,6 +357,15 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 			break;
 		case KEY_PRESERVE:
 			store_preserved_file(xhp, val);
+			break;
+		case KEY_KEEPCONF:
+			if (strcasecmp(val, "true") == 0) {
+				xhp->flags |= XBPS_FLAG_KEEP_CONFIG;
+				xbps_dbg_printf(xhp, "%s: config preservation enabled\n", path);
+			} else {
+				xhp->flags &= ~XBPS_FLAG_KEEP_CONFIG;
+				xbps_dbg_printf(xhp, "%s: config preservation disabled\n", path);
+			}
 			break;
 		case KEY_BESTMATCHING:
 			if (strcasecmp(val, "true") == 0) {
