@@ -73,7 +73,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			xbps_dictionary_get_cstring_nocopy(instd,
 			    "pkgver", &curpkgver);
 			/* ignore pkgs on hold mode */
-			if (xbps_dictionary_get_bool(instd, "hold", &hold))
+			if (xbps_dictionary_get_bool(instd, "hold", &hold) && hold)
 				continue;
 
 			curpkgname = xbps_pkg_name(curpkgver);
