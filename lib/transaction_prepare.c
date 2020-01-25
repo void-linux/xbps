@@ -62,7 +62,6 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	struct statvfs svfs;
 	uint64_t rootdir_free_size, tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt, dl_pkgcnt;
-	const char *tract, *pkgver, *repo;
 
 	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = dl_pkgcnt = 0;
 	tsize = dlsize = instsize = rmsize = 0;
@@ -72,6 +71,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		return EINVAL;
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		const char *pkgver = NULL, *repo = NULL, *tract = NULL;
 		bool preserve = false;
 		/*
 		 * Count number of pkgs to be removed, configured,
@@ -81,6 +81,20 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repo);
 		xbps_dictionary_get_bool(obj, "preserve", &preserve);
+
+		if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+			tract = "download";
+			if (xbps_repository_is_remote(repo) &&
+			    !xbps_binpkg_exists(xhp, obj)) {
+				xbps_dictionary_get_uint64(obj,
+				    "filename-size", &tsize);
+				tsize += 512;
+				dlsize += tsize;
+				dl_pkgcnt++;
+				xbps_dictionary_set_bool(obj, "download", true);
+			}
+			continue;
+		}
 
 		if (strcmp(tract, "configure") == 0) {
 			cf_pkgcnt++;
@@ -345,6 +359,13 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		}
 	}
 	if (all_on_hold)
+		goto out;
+
+	/*
+	 * Do not perform any checks if XBPS_FLAG_DOWNLOAD_ONLY
+	 * is set. We just need to download the archives (dependencies).
+	 */
+	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY)
 		goto out;
 
 	/*

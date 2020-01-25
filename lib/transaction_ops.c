@@ -81,6 +81,11 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	} else {
 		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg);
 	}
+
+	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+		pkg_pkgdb = NULL;
+	}
+
 	/*
 	 * Find out if the pkg has been found in repository pool.
 	 */
@@ -254,6 +259,10 @@ xbps_autoupdate(struct xbps_handle *xhp)
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg xbps: %d\n", __func__, rv);
 
 	if (rv == 0) {
+		if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+			xhp->flags |= XBPS_FLAG_FORCE_REMOVE_REVDEPS;
+			return 1;
+		}
 		/* a new xbps version is available, check its revdeps */
 		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
 		for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {

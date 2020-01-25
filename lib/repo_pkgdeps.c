@@ -198,6 +198,16 @@ find_repo_deps(struct xbps_handle *xhp,
 				foundvpkg = true;
 			}
 		}
+		if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+			/*
+			 * if XBPS_FLAG_DOWNLOAD_ONLY always assume
+			 * all deps are not installed. This way one can download
+			 * the whole set of binary packages to perform an
+			 * off-line installation later on.
+			 */
+			curpkgd = NULL;
+		}
+
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				/* error */

@@ -243,9 +243,11 @@ main(int argc, char **argv)
 	if (syncf && !update && (argc == optind))
 		exit(EXIT_SUCCESS);
 
-	if (!drun && (rv = xbps_pkgdb_lock(&xh)) != 0) {
-		fprintf(stderr, "Failed to lock the pkgdb: %s\n", strerror(rv));
-		exit(rv);
+	if (!(xh.flags & XBPS_FLAG_DOWNLOAD_ONLY) && !drun) {
+		if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
+			fprintf(stderr, "Failed to lock the pkgdb: %s\n", strerror(rv));
+			exit(rv);
+		}
 	}
 
 	eexist = optind;

@@ -138,6 +138,10 @@ print_trans_colmode(struct transaction *trans, int cols)
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
 
+		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+			tract = "download";
+		}
+
 		if (strcmp(tract, "install") == 0) {
 			trans->inst_pkgcnt++;
 		} else if (strcmp(tract, "update") == 0) {
@@ -147,16 +151,14 @@ print_trans_colmode(struct transaction *trans, int cols)
 		} else if (strcmp(tract, "configure") == 0) {
 			trans->cf_pkgcnt++;
 		}
+		ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
+
 		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
-			trans->inst_pkgcnt = 0;
-			trans->up_pkgcnt = 0;
-			trans->rm_pkgcnt = 0;
-			trans->cf_pkgcnt = 0;
+			ipkgd = NULL;
 		}
 		if (dload) {
 			trans->dl_pkgcnt++;
 		}
-		ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
 		if (ipkgd) {
 			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
 			iver = xbps_pkg_version(ipkgver);
