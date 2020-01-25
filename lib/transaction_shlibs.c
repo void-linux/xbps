@@ -82,13 +82,23 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 	iter = xbps_array_iterator(pkgs);
 	assert(iter);
 	while ((obj = xbps_object_iterator_next(iter))) {
-		char *pkgname;
+		const char *trans = NULL;
+		char *pkgname = NULL;
 
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver))
 			continue;
 
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
+
+		/* ignore shlibs if pkg is on hold mode */
+		if (xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans)) {
+			if (!strcmp(trans, "hold")) {
+				free(pkgname);
+				continue;
+			}
+		}
+
 		xbps_dictionary_set(pd, pkgname, obj);
 		free(pkgname);
 	}
