@@ -122,6 +122,13 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 
+		/*
+		 * If pkg is on hold, pass to the next one.
+		 */
+		if (strcmp(tract, "hold") == 0) {
+			continue;
+		}
+
 		pkgname = xbps_pkg_name(pkgver);
 		assert(pkgname);
 		if (xbps_pkg_is_installed(xhp, pkgname) == 0) {
@@ -140,16 +147,10 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		/*
 		 * If pkg is ignored, pass to the next one.
 		 */
+		free(pkgname);
 		if (xbps_pkg_is_ignored(xhp, pkgver)) {
-			free(pkgname);
 			continue;
 		}
-		free(pkgname);
-		/*
-		 * If pkg is on hold, pass to the next one.
-		 */
-		if (strcmp(tract, "hold") == 0)
-			continue;
 
 		/*
 		 * Time to validate revdeps for current pkg.
