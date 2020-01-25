@@ -69,14 +69,30 @@ hold_shlibs_body() {
 	atf_check_equal $? 0
 	cd ..
 
+	# returns ENOEXEC because sway can't be upgraded
 	xbps-install -r root --repo=repo -yud
-	atf_check_equal $? 0
+	atf_check_equal $? 8
 
 	out=$(xbps-query -r root -p pkgver sway)
 	atf_check_equal "$out" "sway-1.2_1"
 
 	out=$(xbps-query -r root -p pkgver wlroots)
 	atf_check_equal "$out" "wlroots-0.9.0_1"
+
+	xbps-pkgdb -r root -a
+	atf_check_equal $? 0
+
+	# unhold to verify
+	xbps-pkgdb -r root -m unhold sway
+
+	xbps-install -r root --repo=repo -yud
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver sway)
+	atf_check_equal "$out" "sway-1.4_1"
+
+	out=$(xbps-query -r root -p pkgver wlroots)
+	atf_check_equal "$out" "wlroots-0.10.0_1"
 
 	xbps-pkgdb -r root -a
 	atf_check_equal $? 0
