@@ -57,9 +57,9 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 
 		while ((obj2 = xbps_object_iterator_next(iter)) != NULL) {
 			xbps_dictionary_t instd, reppkgd;
-			const char *tract, *pattern, *curpkgver;
+			const char *pattern = NULL, *curpkgver = NULL;
 			char *curpkgname;
-			bool instd_auto = false;
+			bool instd_auto = false, hold = false;
 
 			pattern = xbps_string_cstring_nocopy(obj2);
 			/*
@@ -72,6 +72,10 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 
 			xbps_dictionary_get_cstring_nocopy(instd,
 			    "pkgver", &curpkgver);
+			/* ignore pkgs on hold mode */
+			if (xbps_dictionary_get_bool(instd, "hold", &hold))
+				continue;
+
 			curpkgname = xbps_pkg_name(curpkgver);
 			assert(curpkgname);
 			/*
@@ -88,13 +92,13 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
 			reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, NULL);
 			if (reppkgd) {
-				const char *rpkgver;
+				const char *rpkgver = NULL, *tract = NULL;
 
 				xbps_dictionary_get_cstring_nocopy(reppkgd,
 				    "pkgver", &rpkgver);
 				xbps_dictionary_get_cstring_nocopy(reppkgd,
 				    "transaction", &tract);
-				if (strcmp(tract, "remove") == 0)
+				if (!strcmp(tract, "remove") || !strcmp(tract, "hold"))
 					continue;
 				if (!xbps_match_virtual_pkg_in_dict(reppkgd, pattern) &&
 				    !xbps_pkgpattern_match(rpkgver, pattern))
