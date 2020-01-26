@@ -309,9 +309,11 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Skip files that match noextract patterns from configuration file.
 		 */
 		if (xhp->noextract && xbps_patterns_match(xhp->noextract, entry_pname+1)) {
+			xbps_dbg_printf(xhp, "[unpack] %s skipped (matched by a pattern)\n", entry_pname+1);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FILE_PRESERVED, 0,
 			    pkgver, "%s: file `%s' won't be extracted, "
 			    "it matches a noextract pattern.", pkgver, entry_pname);
+			archive_read_data_skip(ar);
 			continue;
 		}
 		/*
