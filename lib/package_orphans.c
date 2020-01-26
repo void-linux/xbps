@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2019 Juan Romero Pardines.
+ * Copyright (c) 2009-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,89 +62,142 @@
 xbps_array_t
 xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 {
-	xbps_array_t rdeps, reqby, array = NULL;
-	xbps_dictionary_t pkgd, deppkgd;
+	xbps_array_t array = NULL;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *curpkgver = NULL, *deppkgver = NULL, *reqbydep = NULL;
-	bool automatic = false;
-	unsigned int i, cnt, reqbycnt;
 
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
+
 	if ((array = xbps_array_create()) == NULL)
 		return NULL;
 
+	if (!orphans_user) {
+		/* automatic mode (xbps-query -O, xbps-remove -o) */
+		iter = xbps_dictionary_iterator(xhp->pkgdb);
+		assert(iter);
+		/*
+		 * Iterate on pkgdb until no more orphans are found.
+		 */
+		for (;;) {
+			bool added = false;
+			while ((obj = xbps_object_iterator_next(iter))) {
+				xbps_array_t revdeps;
+				xbps_dictionary_t pkgd;
+				unsigned int cnt = 0, revdepscnt = 0;
+				const char *pkgver = NULL;
+				bool automatic = false;
+
+				pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
+				if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+					/* _XBPS_ALTERNATIVES_ */
+					continue;
+				}
+				xbps_dbg_printf(xhp, " %s checking %s\n", __func__, pkgver);
+				xbps_dictionary_get_bool(pkgd, "automatic-install", &automatic);
+				if (!automatic) {
+					xbps_dbg_printf(xhp, " %s skipped (!automatic)\n", pkgver);
+					continue;
+				}
+				if (xbps_find_pkg_in_array(array, pkgver, NULL)) {
+					xbps_dbg_printf(xhp, " %s orphan (queued)\n", pkgver);
+					continue;
+				}
+				revdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
+				revdepscnt = xbps_array_count(revdeps);
+
+				if (revdepscnt == 0) {
+					added = true;
+					xbps_array_add(array, pkgd);
+					xbps_dbg_printf(xhp, " %s orphan (automatic and !revdeps)\n", pkgver);
+					continue;
+				}
+				/* verify all revdeps are seen */
+				for (unsigned int i = 0; i < revdepscnt; i++) {
+					const char *revdepver;
+
+					xbps_array_get_cstring_nocopy(revdeps, i, &revdepver);
+					if (xbps_find_pkg_in_array(array, revdepver, NULL))
+						cnt++;
+				}
+				if (cnt == revdepscnt) {
+					added = true;
+					xbps_array_add(array, pkgd);
+					xbps_dbg_printf(xhp, " %s orphan (automatic and all revdeps)\n", pkgver);
+				}
+
+			}
+			xbps_dbg_printf(xhp, "orphans pkgdb iter: added %s\n", added ? "true" : "false");
+			xbps_object_iterator_reset(iter);
+			if (!added)
+				break;
+		}
+		xbps_object_iterator_release(iter);
+
+		return array;
+	}
+
 	/*
-	 * Add all packages specified by the client.
+	 * Recursive removal mode (xbps-remove -R).
 	 */
-	for (i = 0; i < xbps_array_count(orphans_user); i++) {
-		xbps_array_get_cstring_nocopy(orphans_user, i, &curpkgver);
-		pkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
+	for (unsigned int i = 0; i < xbps_array_count(orphans_user); i++) {
+		xbps_dictionary_t pkgd;
+		const char *pkgver = NULL;
+
+		xbps_array_get_cstring_nocopy(orphans_user, i, &pkgver);
+		pkgd = xbps_pkgdb_get_pkg(xhp, pkgver);
 		if (pkgd == NULL)
 			continue;
 		xbps_array_add(array, pkgd);
 	}
-	if (orphans_user)
-		goto add_orphans;
 
-	iter = xbps_dictionary_iterator(xhp->pkgdb);
-	assert(iter);
-	/*
-	 * First pass: track pkgs that were installed manually and
-	 * without reverse dependencies.
-	 */
-	while ((obj = xbps_object_iterator_next(iter))) {
-		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		/*
-		 * Skip packages that were not installed automatically.
-		 */
-		automatic = false;
-		xbps_dictionary_get_bool(pkgd, "automatic-install", &automatic);
-		if (!automatic)
-			continue;
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
+		xbps_array_t rdeps;
+		xbps_dictionary_t pkgd;
+		const char *pkgver = NULL;
+		unsigned int cnt = 0, reqbycnt = 0;
+		bool automatic = false;
 
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
-		reqby = xbps_pkgdb_get_pkg_revdeps(xhp, curpkgver);
-		if (xbps_array_count(reqby) == 0) {
-			/*
-			 * Add packages with empty revdeps.
-			 */
-			xbps_array_add(array, pkgd);
+		pkgd = xbps_array_get(array, i);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+		rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, pkgver);
+		if (xbps_array_count(rdeps) == 0) {
 			continue;
 		}
-	}
-	xbps_object_iterator_release(iter);
 
-add_orphans:
-	for (i = 0; i < xbps_array_count(array); i++) {
-		pkgd = xbps_array_get(array, i);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &curpkgver);
-		rdeps = xbps_pkgdb_get_pkg_fulldeptree(xhp, curpkgver);
-		if (rdeps == NULL)
-			return NULL;
-
+		xbps_dbg_printf(xhp, " processing rdeps for %s\n", pkgver);
 		for (unsigned int x = 0; x < xbps_array_count(rdeps); x++) {
+			xbps_array_t reqby;
+			xbps_dictionary_t deppkgd;
+			const char *deppkgver = NULL;
+
 			cnt = 0;
 			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);
-			if (xbps_find_pkg_in_array(array, deppkgver, NULL))
+			if (xbps_find_pkg_in_array(array, deppkgver, NULL)) {
+				xbps_dbg_printf(xhp, " rdep %s already queued\n", deppkgver);
 				continue;
+			}
 			deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
-			automatic = false;
 			xbps_dictionary_get_bool(deppkgd, "automatic-install", &automatic);
-			if (!automatic)
+			if (!automatic) {
+				xbps_dbg_printf(xhp, " rdep %s skipped (!automatic)\n", deppkgver);
 				continue;
+			}
+
 			reqby = xbps_pkgdb_get_pkg_revdeps(xhp, deppkgver);
-			if (reqby == NULL)
-				continue;
 			reqbycnt = xbps_array_count(reqby);
 			for (unsigned int j = 0; j < reqbycnt; j++) {
+				const char *reqbydep = NULL;
+
 				xbps_array_get_cstring_nocopy(reqby, j, &reqbydep);
+				xbps_dbg_printf(xhp, " %s processing revdep %s\n", pkgver, reqbydep);
 				if (xbps_find_pkg_in_array(array, reqbydep, NULL))
 					cnt++;
 			}
-			if (cnt == reqbycnt)
+			if (cnt == reqbycnt) {
 				xbps_array_add(array, deppkgd);
+				xbps_dbg_printf(xhp, " added %s orphan\n", deppkgver);
+			}
 		}
 	}
 
