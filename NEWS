@@ -1,7 +1,69 @@
 xbps-0.58 (2020-02-01):
 
+ * libfetch: fix CVE-2020-7450; from FreeBSD. [duncaen]
+
+ * xbps-query(1), xbps-remove(1): improved detection
+   of orphans, needing multiple iterations to collect
+   all of them in a single transaction. [xtraeme]
+
+ * xbps-checkvers(1): added `-e, --removed`.
+   To list removed templates in srcpkgs. [Chocimier]
+
+ * xbps-install(1): improved `-D, --download-only`.
+   This now can be used to download all required
+   binary packages of the target pkg without the need
+   to have write permission to the `rootdir`.
+
+   $ xbps-install -c $PWD/cachedir -Dy xbps
+
+   NOTE: `-c, --cachedir` must be specified as absolute
+   pathname, otherwise it will treat it as relative to
+   rootdir. [xtraeme]
+
+ * xbps-fetch(1): added `-s` to print sha256sums of
+   downloaded files. [duncaen]
+
+ * configure: re-add `--enable-debug` and enable it
+   by default. [xtraeme]
+
+ * xbps-install(1): ignore indirect reverse dependencies
+   while updating xbps. [xtraeme]
+
+ * xbps-install(1): added `--reproducible` long option.
+   If set, enables reproducible mode in pkgdb. [xtraeme]
+
+ * xbps-rindex(1): stop adding the "build-date" pkg obj.
+   Contained wrong info and did not provide enough value
+   to be useful; another step towards reproducibility.
+   [xtraeme]
+
+ * xbps-create(1): always sanitize gathered symlinks. [xtraeme]
+
+ * xbps-install(1): do not silently update `xbps' on
+   any install/update transaction. If there's a new update
+   for the `xbps` package, this needs to be explicitely
+   declared as a single transaction, i.e:
+
+	$ xbps-install -u xbps
+
+   Otherwise it will return EBUSY (16), making this a proper
+   error code to diagnose what failed. [xtraeme]
+
  * xbps.d(5): new 'noextract' configuration option,
    to skip extracting files matching a pattern. [duncaen]
+
+ * xbps.d(5): autodetected 'architecture' (glibc or musl)
+   at compile-time on linux systems. [xtraeme]
+
+ * configure: added `--enable-lto` and don't enable it
+   by default. [xtraeme]
+
+ * Multiple bugs with packages on hold were fixed. [xtraeme]
+
+ * xbps-uchroot(1), xbps-uunshare(1): document end of
+   options argument. [Doan Tran Cong Danh]
+
+ * xbps-alternatives(1): prune obsolete alternatives groups. [q66]
 
 xbps-0.57.1 (2019-10-27):
 
