@@ -1,4 +1,4 @@
-xbps-0.58 (2020-02-01):
+xbps-0.58 (2020-01-30):
 
  * libfetch: fix CVE-2020-7450; from FreeBSD. [duncaen]
 
