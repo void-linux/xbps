@@ -32,6 +32,9 @@ xbps-0.58 (2020-02-01):
  * xbps-install(1): added `--reproducible` long option.
    If set, enables reproducible mode in pkgdb. [xtraeme]
 
+ * xbps-install(1): don't prompt if all packages in
+   the transaction are on hold. [Mohamad Barbar]
+
  * xbps-rindex(1): stop adding the "build-date" pkg obj.
    Contained wrong info and did not provide enough value
    to be useful; another step towards reproducibility.
