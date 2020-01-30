@@ -65,6 +65,10 @@ xbps-0.58 (2020-02-01):
 
  * xbps-alternatives(1): prune obsolete alternatives groups. [q66]
 
+17 new test cases were added in this release, 6 people
+were involved: Juan RP, Piotr Wójcik, Duncan Overbruck,
+Doan Tran Cong Danh, Mohamad Barbar, q66.
+
 xbps-0.57.1 (2019-10-27):
 
  * Multiple changes and improvements to the transaction
