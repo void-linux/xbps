@@ -668,6 +668,63 @@ update_and_install_body() {
 	atf_check_equal $? 19
 }
 
+atf_test_case update_issue_218
+
+update_issue_218_head() {
+	atf_set "descr" "Tests for pkg update: issue https://github.com/void-linux/xbps/issues/218"
+}
+
+update_issue_218_body() {
+	mkdir -p repo pkg
+
+	cd repo
+	xbps-create -A noarch -n libGL-1.0_1 -s "libGL" -D "libglapi-1.0_1" ../pkg
+	atf_check_equal $? 0
+
+	xbps-create -A noarch -n libEGL-1.0_1 -s "libEGL" -D "libglapi-1.0_1 libgbm-1.0_1" ../pkg
+	atf_check_equal $? 0
+
+	xbps-create -A noarch -n libgbm-1.0_1 -s "libgbm" ../pkg
+	atf_check_equal $? 0
+
+	xbps-create -A noarch -n libglapi-1.0_1 -s "libglapi" ../pkg
+	atf_check_equal $? 0
+
+	xbps-create -A noarch -n xorg-server-1.0_1 -s "xorg-server" -D "libgbm>=1.0_1 libGL>=1.0_1" ../pkg
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repo=repo -yd xorg-server
+	atf_check_equal $? 0
+
+	cd repo
+	rm -f *.xbps
+
+	# provides="libGL-7.11_1 libEGL-7.11_1 libGLES-7.11_1"
+	# replaces="libGL>=0 libEGL>=0 libGLES>=0"
+	xbps-create -A noarch -n libglvnd-2.0_1 -s "libglvnd" \
+		-P "libGL-7.11_1 libEGL-7.11_1 libGLES-7.11_1" \
+		-R "libGL>=0 libEGL>=0 libGLES>=0" \
+		../pkg
+	atf_check_equal $? 0
+
+	xbps-create -A noarch -n libgbm-2.0_1 -s "libgbm" ../pkg
+	atf_check_equal $? 0
+
+	xbps-create -A noarch -n libglapi-2.0_1 -s "libglapi" -D "libglvnd>=0" ../pkg
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repo=repo -ydvu
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_empty
 	atf_add_test_case install_with_deps
@@ -687,4 +744,5 @@ atf_init_test_cases() {
 	atf_add_test_case update_xbps
 	atf_add_test_case update_xbps_virtual
 	atf_add_test_case update_with_revdeps
+	atf_add_test_case update_issue_218
 }
