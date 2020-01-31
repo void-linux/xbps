@@ -232,6 +232,16 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 				free(pkgname);
 				continue;
 			}
+			/*
+			 * Installed package conflicts with package
+			 * in transaction being updated, check
+			 * if a new version of this conflicting package
+			 * is in the transaction.
+			 */
+			if (xbps_find_pkg_in_array(pkgs, pkgname, "update")) {
+				free(pkgname);
+				continue;
+			}
 			free(pkgname);
 			broken_pkg(mdeps, curpkgver, pkgver, tract);
 		}

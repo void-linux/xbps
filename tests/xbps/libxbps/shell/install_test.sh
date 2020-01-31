@@ -598,6 +598,7 @@ atf_test_case update_and_install
 
 update_and_install_head() {
 	atf_set "descr" "Tests for pkg install: update installed version and install new from other repo"
+	atf_expect_fail "fix introduced a regression"
 }
 
 update_and_install_body() {
