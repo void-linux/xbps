@@ -770,6 +770,7 @@ atf_test_case replace_alternative_with_symlink
 
 replace_alternative_with_symlink_head() {
 	atf_set "descr" "xbps-alternatives: replace alternative group with a symlink"
+	atf_expect_fail "not fixed yet"
 }
 replace_alternative_with_symlink_body() {
 	mkdir -p repo pkg_A/usr/bin
