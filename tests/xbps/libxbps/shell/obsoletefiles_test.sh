@@ -801,6 +801,140 @@ replace_package_same_files_unordered_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case obsoletes_with_alternatives
+
+obsoletes_with_alternatives_head() {
+	atf_set "descr" "Package adds alternative"
+}
+
+obsoletes_with_alternatives_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/bin
+	touch pkg_A/usr/bin/tar
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	cd repo
+	mv ../pkg_A/usr/bin/tar ../pkg_A/usr/bin/gtar
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" --alternatives "tar:tar:/usr/bin/gtar" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	test -h root/usr/bin/tar
+	atf_check_equal $? 0
+}
+
+atf_test_case multiple_obsoletes_with_alternatives
+
+multiple_obsoletes_with_alternatives_head() {
+	atf_set "descr" "Multiple packages add alternative"
+}
+
+multiple_obsoletes_with_alternatives_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/tar pkg_B/usr/bin/bsdtar
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A B
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	cd repo
+	mv ../pkg_A/usr/bin/tar ../pkg_A/usr/bin/gtar
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" --alternatives "tar:tar:/usr/bin/gtar" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_2 -s "B pkg" --alternatives "tar:tar:/usr/bin/bsdtar" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	ls -lsa root/usr/bin
+	test -h root/usr/bin/tar
+	atf_check_equal $? 0
+}
+
+atf_test_case multiple_obsoletes_with_alternatives_unordered
+
+multiple_obsoletes_with_alternatives_unordered_head() {
+	atf_set "descr" "Multiple packages add alternative unordered"
+	atf_expect_fail "not fixed yet"
+}
+
+multiple_obsoletes_with_alternatives_unordered_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/tar pkg_B/usr/bin/bsdtar
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A B
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	cd repo
+	mv ../pkg_A/usr/bin/tar ../pkg_A/usr/bin/gtar
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" --alternatives "tar:tar:/usr/bin/gtar" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_2 -s "B pkg" --alternatives "tar:tar:/usr/bin/bsdtar" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu B A
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	ls -lsa root/usr/bin
+	test -h root/usr/bin/tar
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
@@ -820,4 +954,7 @@ atf_init_test_cases() {
 	atf_add_test_case keep_modified_files
 	atf_add_test_case alternative_to_regular_file
 	atf_add_test_case replace_package_same_files_unordered
+	atf_add_test_case obsoletes_with_alternatives
+	atf_add_test_case multiple_obsoletes_with_alternatives
+	atf_add_test_case multiple_obsoletes_with_alternatives_unordered
 }
