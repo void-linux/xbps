@@ -131,7 +131,6 @@ find_repo_deps(struct xbps_handle *xhp,
 	const char *reqpkg, *pkgver_q, *reason = NULL;
 	char *pkgname, *reqpkgname;
 	int rv = 0;
-	bool foundvpkg;
 
 	if (*depth >= MAX_DEPTH)
 		return ELOOP;
@@ -144,8 +143,9 @@ find_repo_deps(struct xbps_handle *xhp,
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
-		foundvpkg = false;
+		bool error = false, foundvpkg = false;
 		reqpkg = xbps_string_cstring_nocopy(obj);
+
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
 			xbps_dbg_printf(xhp, "%s", "");
 			for (unsigned short x = 0; x < *depth; x++) {
@@ -345,6 +345,38 @@ find_repo_deps(struct xbps_handle *xhp,
 		}
 		free(pkgname);
 		free(reqpkgname);
+		/*
+		 * Installed package must be updated, check if dependency is
+		 * satisfied.
+		 */
+		if (!strcmp(reason, "update")) {
+			switch (xbps_pkgpattern_match(pkgver_q, reqpkg)) {
+				case 0: /* nomatch */
+					break;
+				case 1: /* match */
+					pkgname = xbps_pkg_name(pkgver_q);
+					assert(pkgname);
+					/*
+					 * If there's an update in transaction,
+					 * it's assumed version is greater.
+					 * So dependency pattern matching didn't
+					 * succeed... return ENODEV.
+					 */
+					if (xbps_find_pkg_in_array(unsorted, pkgname, "update")) {
+						error = true;
+						rv = ENODEV;
+					}
+					free(pkgname);
+					break;
+				default:
+					error = true;
+					rv = EINVAL;
+					break;
+			}
+			if (error)
+				break;
+		}
+
 		/*
 		 * If package doesn't have rundeps, pass to the next one.
 		 */
