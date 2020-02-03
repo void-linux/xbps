@@ -19,7 +19,7 @@ all:
 		$(MAKE) -C $$dir || exit 1;	\
 	done
 
-install:
+install: all
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir install || exit 1;	\
 	done
@@ -37,7 +37,7 @@ uninstall:
 		$(MAKE) -C $$dir uninstall || exit 1;	\
 	done
 
-check:
+check: all
 	-rm -f result.db*
 	@./run-tests
 
