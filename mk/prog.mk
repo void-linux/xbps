@@ -10,6 +10,8 @@ ifdef BUILD_STATIC
 BINS += $(BIN).static
 endif
 
+CFLAGS += -Wno-unused-command-line-argument
+
 .PHONY: all
 all: $(BINS)
 
@@ -42,7 +44,7 @@ endif
 
 %.o: %.c
 	@printf " [CC]\t\t$@\n"
-	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) $(EXTRA_CFLAGS) -c $<
+	${SILENT}$(CC) $(CPPFLAGS) $(PROG_CFLAGS) $(CFLAGS) $(EXTRA_CFLAGS) -c $<
 
 $(BIN).static: $(OBJS) $(TOPDIR)/lib/libxbps.a
 	@printf " [CCLD]\t\t$@\n"
