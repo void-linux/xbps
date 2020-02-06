@@ -320,7 +320,7 @@ fi
 check_compiler_flag "l,-z,relro,-z,now" W LDFLAGS
 
 #
-# Check if -fPIE and -pie are supported if --build-pie is set.
+# Check if PIE is supported.
 #
 check_compiler_flag PIE f PROG_CFLAGS
 if [ $? -eq 0 ]; then
@@ -376,8 +376,7 @@ echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 # proplib
 echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
 echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib/prop" >>$CONFIG_MK
-echo "LDFLAGS +=	-lpthread" >>$CONFIG_MK
-echo "STATIC_LIBS +=	-lpthread" >>$CONFIG_MK
+echo "CFLAGS +=		-pthread" >>$CONFIG_MK
 
 #
 # Check for GCC atomic builtins.
