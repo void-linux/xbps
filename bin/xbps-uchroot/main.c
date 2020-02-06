@@ -409,8 +409,6 @@ main(int argc, char **argv)
 		/* mount as private, systemd mounts it as shared by default */
 		if (mount(NULL, "/", "none", MS_PRIVATE|MS_REC, NULL) == -1)
 			die("Failed to mount / private");
-		if (mount(NULL, "/", "none", MS_PRIVATE|MS_REMOUNT|MS_NOSUID, NULL) == -1)
-			die("Failed to remount /");
 
 		/* setup our overlayfs if set */
 		if (overlayfs)
