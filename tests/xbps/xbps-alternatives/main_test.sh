@@ -770,9 +770,10 @@ atf_test_case replace_alternative_with_symlink
 
 replace_alternative_with_symlink_head() {
 	atf_set "descr" "xbps-alternatives: replace alternative group with a symlink"
-	atf_expect_fail "not fixed yet"
 }
 replace_alternative_with_symlink_body() {
+	atf_expect_fail "not fixed yet"
+
 	mkdir -p repo pkg_A/usr/bin
 	touch pkg_A/usr/bin/fileA
 	cd repo
@@ -801,6 +802,49 @@ replace_alternative_with_symlink_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case keep_provider_on_update
+
+keep_provider_on_update_head() {
+	atf_set "descr" "Alternative removed on update removes current provider's symlink"
+}
+
+keep_provider_on_update_body() {
+	atf_expect_fail "https://github.com/void-linux/xbps/issues/219"
+
+	mkdir -p tar/usr/bin/ bsdtar/usr/bin
+	touch tar/usr/bin/gtar bsdtar/usr/bin/bsdtar
+	mkdir repo
+
+	cd repo
+	xbps-create -n tar-1.0_1 -s tar -A noarch --alternatives 'tar:tar:/usr/bin/gtar' ../tar
+	atf_check_equal $? 0
+	xbps-create -n bsdtar-1.0_1 -s bsdtar -A noarch --alternatives 'tar:tar:/usr/bin/bsdtar' ../bsdtar
+	atf_check_equal $? 0
+	xbps-rindex -a *xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repo=repo -y tar bsdtar
+	atf_check_equal $? 0
+	link=$(readlink -v root/usr/bin/tar)
+	atf_check_equal $? 0
+	atf_check_equal $link gtar
+
+	cd repo/
+	xbps-create -n bsdtar-1.0_2 -s bsdtar -A noarch ../bsdtar
+	atf_check_equal $? 0
+	xbps-rindex -a bsdtar-1.0_2.noarch.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repo=repo -yu
+	atf_check_equal $? 0
+
+	link=$(readlink -v root/usr/bin/tar)
+	atf_check_equal $? 0
+	atf_check_equal $link gtar
+}
+
 atf_init_test_cases() {
 	atf_add_test_case register_one
 	atf_add_test_case register_one_dangling
@@ -821,4 +865,5 @@ atf_init_test_cases() {
 	atf_add_test_case respect_current_provider
 	atf_add_test_case prune_leftover_groups
 	atf_add_test_case replace_alternative_with_symlink
+	atf_add_test_case keep_provider_on_update
 }
