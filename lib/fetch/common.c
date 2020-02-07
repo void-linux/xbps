@@ -428,6 +428,31 @@ fetch_socks5(conn_t *conn, struct url *url, struct url *socks, int verbose)
 	return 0;
 }
 
+static int
+get_conn_timeout(void)
+{
+	static int result = -2;
+	char *conn_timeout;
+
+	if (result != -2) {
+		return result;
+	}
+
+	conn_timeout = getenv("CONNECTION_TIMEOUT");
+	if (conn_timeout) {
+		char *char_read = conn_timeout;
+		long from_env = strtol(conn_timeout, &char_read, 10);
+		if (from_env < -1 || char_read == conn_timeout) {
+			from_env = fetchConnTimeout;
+		}
+		result = from_env > INT_MAX ? INT_MAX: from_env;
+	} else {
+		result = fetchConnTimeout;
+	}
+
+	return result;
+}
+
 /*
  * Happy Eyeballs (RFC8305):
  *
@@ -442,6 +467,8 @@ fetch_socks5(conn_t *conn, struct url *url, struct url *socks, int verbose)
  * connections with the failing address family.
  *
  * If there are no more addresses to attempt, wait for
+ * CONNECTION_TIMEOUT milliseconds if given, where value
+ * -1 means waiting for response indefinitely, else
  * `fetchConnTimeout` and return the first established
  * connection.
  *
@@ -455,6 +482,7 @@ static int
 happy_eyeballs_connect(struct addrinfo *res0, int verbose)
 {
 	static int unreach = 0;
+	int connTimeout = get_conn_timeout();
 	struct pollfd *pfd;
 	struct addrinfo *res;
 	const char *bindaddr;
@@ -522,10 +550,10 @@ happy_eyeballs_connect(struct addrinfo *res0, int verbose)
 					family = AF_INET6;
 			}
 		} else {
+			timeout = connTimeout;
 			/* no more connections to try */
 			if (verbose)
 				fetch_info("attempted to connect to all addresses, waiting...");
-			timeout = fetchConnTimeout;
 			done = 1;
 			goto wait;
 		}
@@ -1508,7 +1536,7 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 			rlen = read(conn->sd, buf, len);
 		if (rlen >= 0)
 			break;
-	
+
 		if (errno != EINTR || !fetchRestartCalls)
 			return (-1);
 	}
