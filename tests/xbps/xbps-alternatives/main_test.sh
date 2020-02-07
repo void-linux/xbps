@@ -809,8 +809,6 @@ keep_provider_on_update_head() {
 }
 
 keep_provider_on_update_body() {
-	atf_expect_fail "https://github.com/void-linux/xbps/issues/219"
-
 	mkdir -p tar/usr/bin/ bsdtar/usr/bin
 	touch tar/usr/bin/gtar bsdtar/usr/bin/bsdtar
 	mkdir repo
@@ -837,7 +835,7 @@ keep_provider_on_update_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -r root --repo=repo -yu
+	xbps-install -r root --repo=repo -yud
 	atf_check_equal $? 0
 
 	link=$(readlink -v root/usr/bin/tar)

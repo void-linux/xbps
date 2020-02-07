@@ -404,7 +404,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 /*
  * Prune the alternatives group from the db. This will first unregister
  * it for the package and if there's no other package left providing the
- * same, also ditch the whole group. When this is called, it is guranteed
+ * same, also ditch the whole group. When this is called, it is guaranteed
  * that what is happening is an upgrade, because it's only invoked when
  * the repo and installed alternatives sets differ for a specific package.
  */
@@ -474,7 +474,7 @@ prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
 
 static void
 remove_obsoletes(struct xbps_handle *xhp, char *pkgname, const char *pkgver,
-		xbps_dictionary_t repod)
+		xbps_dictionary_t pkgdb_alts, xbps_dictionary_t repod)
 {
 	xbps_array_t allkeys;
 	xbps_dictionary_t pkgd, pkgd_alts, repod_alts;
@@ -493,9 +493,9 @@ remove_obsoletes(struct xbps_handle *xhp, char *pkgname, const char *pkgver,
 
 	allkeys = xbps_dictionary_all_keys(pkgd_alts);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
-		xbps_array_t array, array_repo;
+		xbps_array_t array, array2, array_repo;
 		xbps_object_t keysym;
-		const char *keyname;
+		const char *keyname, *first;
 
 		keysym = xbps_array_get(allkeys, i);
 		array = xbps_dictionary_get_keysym(pkgd_alts, keysym);
@@ -503,9 +503,19 @@ remove_obsoletes(struct xbps_handle *xhp, char *pkgname, const char *pkgver,
 
 		array_repo = xbps_dictionary_get(repod_alts, keyname);
 		if (!xbps_array_equals(array, array_repo)) {
-			remove_symlinks(xhp, array, keyname);
+			/*
+			 * Check if current provider in pkgdb is this pkg.
+			 */
+			array2 = xbps_dictionary_get(pkgdb_alts, keyname);
+			if (array2 == NULL) {
+				remove_symlinks(xhp, array, keyname);
+			} else {
+				xbps_array_get_cstring_nocopy(array2, 0, &first);
+				if (strcmp(pkgname, first) == 0) {
+					remove_symlinks(xhp, array, keyname);
+				}
+			}
 		}
-
 		/*
 		 * There is nothing left in the alternatives group, which means
 		 * the package is being upgraded and is removing it; if we don't
@@ -551,7 +561,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	 * Compare alternatives from pkgdb and repo and then remove obsolete
 	 * symlinks, also remove obsolete (empty) alternatives groups.
 	 */
-	remove_obsoletes(xhp, pkgname, pkgver, pkg_repod);
+	remove_obsoletes(xhp, pkgname, pkgver, alternatives, pkg_repod);
 
 	pkg_alternatives = xbps_dictionary_get(pkg_repod, "alternatives");
 	if (!xbps_dictionary_count(pkg_alternatives))
