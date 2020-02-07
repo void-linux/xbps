@@ -772,8 +772,6 @@ replace_alternative_with_symlink_head() {
 	atf_set "descr" "xbps-alternatives: replace alternative group with a symlink"
 }
 replace_alternative_with_symlink_body() {
-	atf_expect_fail "not fixed yet"
-
 	mkdir -p repo pkg_A/usr/bin
 	touch pkg_A/usr/bin/fileA
 	cd repo

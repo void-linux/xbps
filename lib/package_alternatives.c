@@ -507,12 +507,10 @@ remove_obsoletes(struct xbps_handle *xhp, char *pkgname, const char *pkgver,
 			 * Check if current provider in pkgdb is this pkg.
 			 */
 			array2 = xbps_dictionary_get(pkgdb_alts, keyname);
-			if (array2 == NULL) {
-				remove_symlinks(xhp, array, keyname);
-			} else {
+			if (array2) {
 				xbps_array_get_cstring_nocopy(array2, 0, &first);
 				if (strcmp(pkgname, first) == 0) {
-					remove_symlinks(xhp, array, keyname);
+					remove_symlinks(xhp, array_repo, keyname);
 				}
 			}
 		}
