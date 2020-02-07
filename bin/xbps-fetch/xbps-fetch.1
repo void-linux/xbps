@@ -82,6 +82,10 @@ Overrides the default CA certificates path, by default set to
 Sets the SSL/TLS client verification certificate file.
 .It Sy SSL_CLIENT_KEY_FILE
 Sets the SSL/TLS client verification key file.
+.It Sy CONNECTION_TIMEOUT
+Sets connection timeout in milliseconds
+instead of default value of 5 minutes.
+When -1, waits indefinitely.
 .El
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
