@@ -756,7 +756,7 @@ process_archive(struct archive *ar,
 	 * Add the installed-size object.
 	 */
 	if (!xbps_dictionary_set_uint64(pkg_propsd, "installed_size", instsize))
-		die("%s: failed to set installed_size obj!");
+		die("failed to set installed_size obj!");
 
 	/* Add props.plist metadata file */
 	xml = xbps_dictionary_externalize(pkg_propsd);
@@ -1071,7 +1071,7 @@ main(int argc, char **argv)
 	} else if (strcmp(compression, "none") == 0) {
 		/* empty */
 	} else {
-		die("unknown compression format %s");
+		die("unknown compression format %s", compression);
 	}
 
 	archive_write_set_format_pax_restricted(ar);
