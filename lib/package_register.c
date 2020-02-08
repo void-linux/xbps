@@ -38,6 +38,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	xbps_dictionary_t pkgd;
 	char outstr[64];
 	time_t t;
+	struct tm tm;
 	struct tm *tmp;
 	const char *pkgver;
 	char *pkgname = NULL, *buf, *sha256;
@@ -76,8 +77,8 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 		 * Set the "install-date" object to know the pkg installation date.
 		 */
 		t = time(NULL);
-		if ((tmp = localtime(&t)) == NULL) {
-			xbps_dbg_printf(xhp, "%s: localtime failed: %s\n",
+		if ((tmp = localtime_r(&t, &tm)) == NULL) {
+			xbps_dbg_printf(xhp, "%s: localtime_r failed: %s\n",
 					pkgver, strerror(errno));
 			rv = EINVAL;
 			goto out;
