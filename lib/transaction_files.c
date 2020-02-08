@@ -740,6 +740,7 @@ collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 			}
 			rv = collect_files(xhp, filesd, pkgname, pkgver, idx,
 			    update, false, false, false);
+			xbps_object_release(filesd);
 			goto out;
 		}
 		archive_read_data_skip(ar);
