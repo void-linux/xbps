@@ -488,6 +488,7 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 			return EINVAL;
 		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
 	}
+	xbps_object_release(orphans);
 	return rv;
 
 rmpkg:
