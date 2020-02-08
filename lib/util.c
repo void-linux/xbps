@@ -130,6 +130,8 @@ xbps_pkg_version(const char *pkg)
 	const char *p, *r;
 	size_t p_len;
 
+	assert(pkg);
+
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
 
@@ -154,6 +156,8 @@ xbps_binpkg_pkgver(const char *pkg)
 	const char *fname;
 	char *p, *p1, *res;
 	unsigned int len;
+
+	assert(pkg);
 
 	/* skip path if found, only interested in filename */
 	if ((fname = strrchr(pkg, '/')))
@@ -195,6 +199,8 @@ xbps_binpkg_arch(const char *pkg)
 	char *p, *p1, *res;
 	unsigned int len;
 
+	assert(pkg);
+
 	/* skip path if found, only interested in filename */
 	if ((fname = strrchr(pkg, '/')))
 		fname++;
@@ -226,6 +232,8 @@ xbps_pkg_revision(const char *pkg)
 {
 	const char *p, *r;
 	size_t p_len;
+
+	assert(pkg);
 
 	if ((p = strrchr(pkg, '-')) == NULL)
 		return NULL;
@@ -428,6 +436,9 @@ xbps_pkg_arch_match(struct xbps_handle *xhp, const char *orig,
 {
 	const char *arch;
 
+	assert(xhp);
+	assert(orig);
+
 	if (xhp->target_arch)
 		arch = xhp->target_arch;
 	else
@@ -504,12 +515,18 @@ xbps_humanize_number(char *buf, int64_t bytes)
 size_t
 xbps_strlcat(char *dest, const char *src, size_t siz)
 {
+	assert(dest);
+	assert(src);
+
 	return strlcat(dest, src, siz);
 }
 
 size_t
 xbps_strlcpy(char *dest, const char *src, size_t siz)
 {
+	assert(dest);
+	assert(src);
+
 	return strlcpy(dest, src, siz);
 }
 
@@ -523,6 +540,9 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver)
 	xbps_array_t reverts;
 	const char *version = xbps_pkg_version(pkgver);
 	const char *revertver = NULL;
+
+	assert(pkg);
+	assert(pkgver);
 
 	if ((reverts = xbps_dictionary_get(pkg, "reverts")) == NULL)
 		return false;
@@ -571,6 +591,10 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 	char *res = NULL, *lnk = NULL, *p = NULL, *p1 = NULL, *dname = NULL;
 	char *rootdir = NULL;
 	ssize_t r;
+
+	assert(xhp);
+	assert(path);
+	assert(tgt);
 
 	if (lstat(path, &sb) == -1)
 		return NULL;
@@ -654,6 +678,8 @@ bool
 xbps_patterns_match(xbps_array_t patterns, const char *path)
 {
 	bool match = false;
+
+	assert(path);
 
 	if (patterns == NULL)
 		return false;
