@@ -1,7 +1,8 @@
+[![Packaging status](https://repology.org/badge/vertical-allrepos/xbps.svg)](https://repology.org/project/xbps/versions)
+
 [![Build Status](https://travis-ci.org/void-linux/xbps.svg?branch=master)](https://travis-ci.org/void-linux/xbps)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/void-linux/xbps.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/void-linux/xbps/alerts/)
 [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/void-linux/xbps.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/void-linux/xbps/context:cpp)
-[![Packaging status](https://repology.org/badge/vertical-allrepos/xbps.svg)](https://repology.org/project/xbps/versions)
 
 ## XBPS
 
