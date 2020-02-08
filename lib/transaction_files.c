@@ -856,6 +856,8 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	}
 
 out:
+	xbps_object_iterator_release(iter);
+
 	if (rv != 0)
 		return rv;
 	return collect_obsoletes(xhp);
