@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014-2020 Juan Romero Pardines.
+ * Copyright (c) 2014-2015 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -109,34 +109,22 @@ die(const char *fmt, ...)
 }
 
 static int
-ftw_perms_cb(const char *fpath, const struct stat *sb UNUSED,
-		int type UNUSED, struct FTW *ftwbuf UNUSED)
+ftw_cb(const char *fpath, const struct stat *sb UNUSED, int type,
+		struct FTW *ftwbuf UNUSED)
 {
-	chmod(fpath, 0755);
-	return 0;
-}
+	int sverrno = 0;
 
-static int
-ftw_cb(const char *fpath, const struct stat *sb UNUSED,
-		int type UNUSED, struct FTW *ftwbuf UNUSED)
-{
-	switch (type) {
-	case FTW_F:
-	case FTW_SL:
-	case FTW_SLN:
-		if (unlink(fpath) != 0) {
-			fprintf(stderr, "failed to remove %s: %s\n", fpath, strerror(errno));
-		}
-		break;
-	case FTW_D:
-	case FTW_DP:
-	case FTW_DNR:
-		if (rmdir(fpath) != 0) {
-			fprintf(stderr, "failed to remove %s: %s\n", fpath, strerror(errno));
-		}
-		break;
-	default:
-		break;
+	if (type == FTW_F || type == FTW_SL || type == FTW_SLN) {
+		if (unlink(fpath) == -1)
+			sverrno = errno;
+	} else if (type == FTW_D || type == FTW_DNR || type == FTW_DP) {
+		if (rmdir(fpath) == -1)
+			sverrno = errno;
+	} else {
+		return 0;
+	}
+	if (sverrno != 0) {
+		fprintf(stderr, "Failed to remove %s: %s\n", fpath, strerror(sverrno));
 	}
 	return 0;
 }
@@ -144,39 +132,17 @@ ftw_cb(const char *fpath, const struct stat *sb UNUSED,
 static void
 cleanup_overlayfs(void)
 {
-	char *workdir;
-
 	if (tmpdir == NULL)
 		return;
 
 	if (!overlayfs_on_tmpfs) {
-		/* 
-		 * nftw() runs twice because the first run
-		 * chmods all files and directories to be 755,
-		 * so that second run can remove all them.
-		 *
-		 * Go modules in xbps-src seem to have too
-		 * restrictive permissions and this cleans up
-		 * this mess.
-		 */
-		if (nftw(tmpdir, ftw_perms_cb, 256, FTW_MOUNT|FTW_PHYS|FTW_DEPTH) != 0) {
-			fprintf(stderr, "Failed to remove directory tree %s: %s\n",
-				tmpdir, strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		if (nftw(tmpdir, ftw_cb, 256, FTW_MOUNT|FTW_PHYS|FTW_DEPTH) != 0) {
+		/* recursively remove the temporary dir */
+		if (nftw(tmpdir, ftw_cb, 20, FTW_MOUNT|FTW_PHYS|FTW_DEPTH) != 0) {
 			fprintf(stderr, "Failed to remove directory tree %s: %s\n",
 				tmpdir, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}
-	workdir = xbps_xasprintf("%s/workdir/work", tmpdir);
-	chmod(workdir, 0755);
-	rmdir(workdir);
-	free(workdir);
-	workdir = xbps_xasprintf("%s/workdir", tmpdir);
-	rmdir(workdir);
-	free(workdir);
 	rmdir(tmpdir);
 }
 
@@ -376,15 +342,16 @@ main(int argc, char **argv)
 			die("failed to create tmpdir directory");
 		if (chown(tmpdir, ruid, rgid) == -1)
 			die("chown tmpdir %s", tmpdir);
-		/*
-		 * Register a signal handler to clean up temporary masterdir.
-		 */
-		memset(&sa, 0, sizeof(sa));
-		sa.sa_handler = sighandler_cleanup;
-		sigaction(SIGINT, &sa, NULL);
-		sigaction(SIGTERM, &sa, NULL);
-		sigaction(SIGQUIT, &sa, NULL);
 	}
+
+	/*
+	 * Register a signal handler to clean up temporary masterdir.
+	 */
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = sighandler_cleanup;
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
 
 	clone_flags = (SIGCHLD|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
 	container_flags = clone_flags & ~(CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
