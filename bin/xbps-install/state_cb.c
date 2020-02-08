@@ -36,7 +36,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 {
 	xbps_dictionary_t pkgd;
 	const char *instver, *newver;
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	int rv = 0;
 	bool slog = false;
 
@@ -99,8 +99,9 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		/* empty */
 		break;
 	case XBPS_STATE_UPDATE:
-		pkgname = xbps_pkg_name(xscd->arg);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), xscd->arg)) {
+			abort();
+		}
 		newver = xbps_pkg_version(xscd->arg);
 		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &instver);
@@ -110,7 +111,6 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 			    "(rootdir: %s)\n", instver, newver,
 			    xscd->xhp->rootdir);
 		}
-		free(pkgname);
 		break;
 	/* success */
 	case XBPS_STATE_REMOVE_FILE:

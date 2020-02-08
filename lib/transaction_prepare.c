@@ -131,12 +131,12 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		 */
 		if ((strcmp(tract, "remove") == 0) ||
 		    ((strcmp(tract, "update") == 0) && !preserve)) {
-			char *pkgname;
+			char pkgname[XBPS_NAME_SIZE];
 
-			pkgname = xbps_pkg_name(pkgver);
-			assert(pkgname);
+			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
+				abort();
+			}
 			pkg_metad = xbps_pkgdb_get_pkg(xhp, pkgname);
-			free(pkgname);
 			if (pkg_metad == NULL)
 				continue;
 			xbps_dictionary_get_uint64(pkg_metad,

@@ -36,7 +36,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 {
 	xbps_array_t replaces;
 	const char *pkgver, *repo;
-	char *pkgname, *self_replaced;
+	char pkgname[XBPS_NAME_SIZE], *self_replaced;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repo);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
@@ -54,10 +54,10 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	if ((replaces = xbps_dictionary_get(pkgd, "replaces")) == NULL)
 		replaces = xbps_array_create();
 
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		abort();
+	}
 	self_replaced = xbps_xasprintf("%s>=0", pkgname);
-	free(pkgname);
 	xbps_array_add_cstring(replaces, self_replaced);
 	free(self_replaced);
 

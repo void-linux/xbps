@@ -102,7 +102,7 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *version, *rootdir = NULL, *confdir = NULL;
-	char *pkgname, *filename;
+	char pkgname[XBPS_NAME_SIZE], *filename;
 	int flags = 0, c, rv = 0;
 	const struct option longopts[] = {
 		{ NULL, 0, NULL, 0 }
@@ -197,14 +197,12 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		pkgname = xbps_pkg_name(argv[1]);
-		if (pkgname == NULL) {
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), argv[1])) {
 			fprintf(stderr,
 			    "Invalid string, expected <string>-<version>_<revision>\n");
 			exit(EXIT_FAILURE);
 		}
 		printf("%s\n", pkgname);
-		free(pkgname);
 	} else if (strcmp(argv[0], "getpkgrevision") == 0) {
 		/* Returns the revision of a pkg string */
 		if (argc != 2)
@@ -220,12 +218,10 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 
-		pkgname = xbps_pkgpattern_name(argv[1]);
-		if (pkgname == NULL)
+		if (!xbps_pkgpattern_name(pkgname, sizeof(pkgname), argv[1]))
 			exit(EXIT_FAILURE);
 
 		printf("%s\n", pkgname);
-		free(pkgname);
 	} else if (strcmp(argv[0], "getpkgdepversion") == 0) {
 		/* returns the version of a package pattern dependency */
 		if (argc != 2)

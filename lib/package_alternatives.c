@@ -331,7 +331,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	xbps_array_t allkeys;
 	xbps_dictionary_t alternatives, pkg_alternatives;
 	const char *pkgver;
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	bool update = false;
 	int rv = 0;
 
@@ -346,7 +346,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		return 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	if ((pkgname = xbps_pkg_name(pkgver)) == NULL)
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
 		return EINVAL;
 
 	xbps_dictionary_get_bool(pkgd, "alternatives-update", &update);
@@ -396,7 +396,6 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			break;
 	}
 	xbps_object_release(allkeys);
-	free(pkgname);
 
 	return rv;
 }
@@ -410,7 +409,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
  */
 static void
 prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
-		char *pkgname, const char *pkgver, const char *keyname)
+		const char *pkgname, const char *pkgver, const char *keyname)
 {
 	const char *newpkg = NULL, *curpkg = NULL;
 	xbps_array_t array;
@@ -533,7 +532,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	xbps_array_t allkeys;
 	xbps_dictionary_t alternatives, pkg_alternatives;
 	const char *pkgver;
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	int rv = 0;
 
 	assert(xhp);
@@ -551,8 +550,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	assert(alternatives);
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
-	pkgname = xbps_pkg_name(pkgver);
-	if (pkgname == NULL)
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
 		return EINVAL;
 
 	/*
@@ -612,7 +610,6 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 			break;
 	}
 	xbps_object_release(allkeys);
-	free(pkgname);
 
 	return rv;
 }

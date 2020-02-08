@@ -37,7 +37,7 @@ remove_obj_from_array(xbps_array_t array, const char *str, int mode)
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
 	const char *curname, *pkgdep;
-	char *curpkgname;
+	char curpkgname[XBPS_NAME_SIZE];
 	unsigned int idx = 0;
 	bool found = false;
 
@@ -57,15 +57,13 @@ remove_obj_from_array(xbps_array_t array, const char *str, int mode)
 		} else if (mode == 1) {
 			/* match by pkgname, obj is a string */
 			pkgdep = xbps_string_cstring_nocopy(obj);
-			curpkgname = xbps_pkg_name(pkgdep);
-			if (curpkgname == NULL)
+			if (!xbps_pkg_name(curpkgname, sizeof(curpkgname), pkgdep))
 				break;
+
 			if (strcmp(curpkgname, str) == 0) {
-				free(curpkgname);
 				found = true;
 				break;
 			}
-			free(curpkgname);
 		} else if (mode == 2) {
 			/* match by pkgname, obj is a dictionary  */
 			xbps_dictionary_get_cstring_nocopy(obj,

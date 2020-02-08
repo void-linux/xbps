@@ -90,28 +90,26 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		   bool update)
 {
 	xbps_dictionary_t pkgd;
-	char *pkgname;
+	const char *p;
+	char pkgname[XBPS_NAME_SIZE];
 	int rv = 0;
 	pkg_state_t state = 0;
 	mode_t myumask;
 
 	assert(pkgver != NULL);
 
-	if ((pkgname = xbps_pkg_name(pkgver)) == NULL) {
-		xbps_dbg_printf(xhp, "[configure] cannot guess "
-		    "pkgname for %s\n", pkgver);
-		/* assume pkgver == pkgname */
-		pkgname = strdup(pkgver);
-		assert(pkgname);
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		p = pkgver;
+	} else {
+		p = pkgname;
 	}
-	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
+
+	pkgd = xbps_pkgdb_get_pkg(xhp, p);
 	if (pkgd == NULL) {
 		xbps_dbg_printf(xhp, "[configure] cannot find %s (%s) "
-		    "in pkgdb\n", pkgname, pkgver);
-		free(pkgname);
+		    "in pkgdb\n", p, pkgver);
 		return ENOENT;
 	}
-	free(pkgname);
 
 	rv = xbps_pkg_state_dictionary(pkgd, &state);
 	xbps_dbg_printf(xhp, "%s: state %d rv %d\n", pkgver, state, rv);

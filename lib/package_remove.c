@@ -111,7 +111,7 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 {
 	xbps_dictionary_t pkgd = NULL, obsd = NULL;
 	xbps_array_t obsoletes = NULL;
-	char *pkgname, metafile[PATH_MAX];
+	char pkgname[XBPS_NAME_SIZE], metafile[PATH_MAX];
 	int rv = 0;
 	pkg_state_t state = 0;
 	uid_t euid;
@@ -119,8 +119,9 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	assert(xhp);
 	assert(pkgver);
 
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		abort();
+	}
 
 	euid = geteuid();
 
@@ -181,7 +182,6 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	 * overwritten later in unpack phase.
 	 */
 	if (update) {
-		free(pkgname);
 		return 0;
 	}
 
@@ -259,8 +259,6 @@ purge:
 	xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_DONE, 0, pkgver, NULL);
 	xbps_dictionary_remove(xhp->pkgdb, pkgname);
 out:
-	if (pkgname != NULL)
-		free(pkgname);
 	if (rv != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL, rv, pkgver,
 		    "%s: failed to remove package: %s", pkgver, strerror(rv));

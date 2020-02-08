@@ -49,7 +49,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		"/bin/bash",
 		NULL
 	};
-	char *pkgname, *fpath;
+	char pkgname[XBPS_NAME_SIZE], *fpath;
 	int fd, rv;
 
 	assert(blob);
@@ -103,8 +103,9 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	close(fd);
 
 	/* exec script */
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		abort();
+	}
 	version = xbps_pkg_version(pkgver);
 	assert(version);
 
@@ -129,7 +130,6 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	} else {
 		rv = -1;
 	}
-	free(pkgname);
 
 out:
 	remove(fpath);

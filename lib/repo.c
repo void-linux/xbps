@@ -556,17 +556,16 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 	 */
 	if ((vdeps = xbps_dictionary_get(pkgd, "provides"))) {
 		for (unsigned int i = 0; i < xbps_array_count(vdeps); i++) {
-			char *vpkgn;
+			char vpkgn[XBPS_NAME_SIZE];
 
 			xbps_array_get_cstring_nocopy(vdeps, i, &vpkg);
-			vpkgn = xbps_pkg_name(vpkg);
-			assert(vpkgn);
+			if (!xbps_pkg_name(vpkgn, XBPS_NAME_SIZE, vpkg)) {
+				abort();
+			}
 			if (strcmp(vpkgn, pkg) == 0) {
-				free(vpkgn);
 				match = true;
 				break;
 			}
-			free(vpkgn);
 			vpkg = NULL;
 		}
 		if (match)

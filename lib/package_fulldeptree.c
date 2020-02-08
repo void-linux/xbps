@@ -145,7 +145,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 	xbps_string_t str;
 	struct item *item, *xitem;
 	const char *pkgver = NULL;
-	char *pkgn;
+	char pkgn[XBPS_NAME_SIZE];
 
 	assert(xhp);
 	assert(pkgd);
@@ -154,8 +154,9 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 	provides = xbps_dictionary_get(pkgd, "provides");
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
-	pkgn = xbps_pkg_name(pkgver);
-	assert(pkgn);
+	if (!xbps_pkg_name(pkgn, sizeof(pkgn), pkgver)) {
+		abort();
+	}
 	item = lookupItem(pkgn);
 	if (item) {
 		add_deps_recursive(item, depth == 0);
@@ -165,12 +166,11 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 	item = addItem(rdeps, pkgn);
 	item->pkgver = pkgver;
 	assert(item);
-	free(pkgn);
 
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
 		xbps_dictionary_t curpkgd;
 		const char *curdep = NULL;
-		char *curdepname;
+		char curdepname[XBPS_NAME_SIZE];
 
 		xbps_array_get_cstring_nocopy(rdeps, i, &curdep);
 		if (rpool) {
@@ -189,15 +189,14 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 			errno = ENODEV;
 			return NULL;
 		}
-		if ((curdepname = xbps_pkgpattern_name(curdep)) == NULL)
-			curdepname = xbps_pkg_name(curdep);
-
-		assert(curdepname);
+		if ((!xbps_pkgpattern_name(curdepname, XBPS_NAME_SIZE, curdep)) &&
+		    (!xbps_pkg_name(curdepname, XBPS_NAME_SIZE, curdep))) {
+			abort();
+		}
 
 		if (provides && xbps_match_pkgname_in_array(provides, curdepname)) {
 			xbps_dbg_printf(xhp, "%s: ignoring dependency %s "
 			    "already in provides\n", pkgver, curdep);
-			free(curdepname);
 			continue;
 		}
 		xitem = lookupItem(curdepname);
@@ -214,7 +213,6 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 		}
 		assert(xitem);
 		addDepn(item, xitem);
-		free(curdepname);
 	}
 	/* all deps were processed, add item to head */
 	if (depth > 0 && !xbps_match_string_in_array(result, item->pkgver)) {

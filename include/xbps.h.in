@@ -43,6 +43,7 @@
 #include <archive_entry.h>
 
 #define XBPS_MAXPATH	512
+#define XBPS_NAME_SIZE	64
 
 /**
  * @file include/xbps.h
@@ -50,7 +51,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20200118"
+#define XBPS_API_VERSION	"20200208"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1977,27 +1978,27 @@ char *xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
  * by a @<pkgname@>/@<version@> pair and separated by the <em>minus</em>
  * sign, i.e <b>foo-2.0</b>.
  *
- * @param[in] pkg Package string.
+ * @param[out] dst Destination buffer to store result.
+ * @param[in] len Length of \a dst.
+ * @param[in] pkg Package version string.
  *
- * @return A pointer to a malloc(3)d string, NULL otherwise and
- * errno is set appropiately. The pointer should be free(3)d when it's
- * no longer needed.
+ * @return true on success, false otherwise.
  */
-char *xbps_pkg_name(const char *pkg);
+bool xbps_pkg_name(char *dst, size_t len, const char *pkg);
 
 /**
  * Gets a the package name of a package pattern string specified by
  * the \a pattern argument.
  *
+ * @param[out] dst Destination buffer to store result.
+ * @param[in] len Length of \a dst.
  * @param[in] pattern A package pattern. Package patterns are composed
  * by looking at <b>'><='</b> to split components, i.e <b>foo>=2.0</b>,
  * <b>blah<1.0</b>, <b>blob==2.0</b>, etc.
  *
- * @return A pointer to a malloc(3)ed string with the package name,
- * NULL otherwise and errno is set appropiately. The pointer should be
- * free(3)d when it's no longer needed.
+ * @return true on success, false otherwise.
  */
-char *xbps_pkgpattern_name(const char *pattern);
+bool xbps_pkgpattern_name(char *dst, size_t len, const char *pattern);
 
 /**
  * Gets the package version in a package string, i.e <b>foo-2.0</b>.

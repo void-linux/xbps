@@ -43,19 +43,19 @@ pkgdb_cb(struct xbps_handle *xhp UNUSED,
 		bool *done UNUSED)
 {
 	const char *pkgver = NULL;
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	int rv, *errors = (int *)arg;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	if (xhp->flags & XBPS_FLAG_VERBOSE)
 		printf("Checking %s ...\n", pkgver);
 
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		abort();
+	}
 	if ((rv = check_pkg_integrity(xhp, obj, pkgname)) != 0)
 		*errors += 1;
 
-	free(pkgname);
 	return 0;
 }
 

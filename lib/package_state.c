@@ -138,7 +138,7 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			     pkg_state_t state)
 {
 	xbps_dictionary_t pkgd;
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	int rv = 0;
 
 	assert(pkgver != NULL);
@@ -158,26 +158,24 @@ xbps_set_pkg_state_installed(struct xbps_handle *xhp,
 			xbps_object_release(pkgd);
 			return rv;
 		}
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
+			abort();
+		}
 		if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 			xbps_object_release(pkgd);
-			free(pkgname);
 			return EINVAL;
 		}
-		free(pkgname);
 		xbps_object_release(pkgd);
 	} else {
 		if ((rv = set_new_state(pkgd, state)) != 0)
 			return rv;
 
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
+			abort();
+		}
 		if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
-			free(pkgname);
 			return EINVAL;
 		}
-		free(pkgname);
 	}
 
 	return rv;

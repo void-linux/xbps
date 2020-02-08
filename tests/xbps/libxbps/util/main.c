@@ -36,49 +36,61 @@ ATF_TC_HEAD(util_test, tc)
 
 ATF_TC_BODY(util_test, tc)
 {
-	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-a"), NULL);
-	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-1"), NULL);
-	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-100dpi"), NULL);
-	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-100dpi-7.8"), NULL);
-	ATF_CHECK_EQ(xbps_pkg_name("python-e_dbus"), NULL);
-	ATF_CHECK_EQ(xbps_pkg_name("fs-utils-v1"), NULL);
-	ATF_CHECK_EQ(xbps_pkg_name("fs-utils-v_1"), NULL);
-	ATF_CHECK_EQ(xbps_pkg_name("font-adobe-100dpi-1.8_blah"), NULL);
+	char name[XBPS_NAME_SIZE];
+
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "font-adobe-a"), false);
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "font-adobe-1"), false);
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "font-adobe-100dpi"), false);
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "font-adobe-100dpi-7.8"), false);
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "python-e_dbus"), false);
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "fs-utils-v1"), false);
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "fs-utils-v_1"), false);
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "font-adobe-100dpi-1.8_blah"), false);
+	ATF_CHECK_EQ(xbps_pkg_name(name, sizeof(name), "perl-PerlIO-utf8_strict"), false);
+
 	ATF_CHECK_EQ(xbps_pkg_version("perl-PerlIO-utf8_strict"), NULL);
 	ATF_CHECK_EQ(xbps_pkg_version("font-adobe-100dpi"), NULL);
 	ATF_CHECK_EQ(xbps_pkg_version("font-adobe-100dpi-7.8"), NULL);
 	ATF_CHECK_EQ(xbps_pkg_version("python-e_dbus"), NULL);
 	ATF_CHECK_EQ(xbps_pkg_version("python-e_dbus-1"), NULL);
 	ATF_CHECK_EQ(xbps_pkg_version("font-adobe-100dpi-1.8_blah"), NULL);
-	ATF_REQUIRE_STREQ(xbps_pkg_name("font-adobe-100dpi-7.8_2"), "font-adobe-100dpi");
-	ATF_REQUIRE_STREQ(xbps_pkg_name("systemd-43_1"), "systemd");
-	ATF_REQUIRE_STREQ(xbps_pkg_name("python-e_dbus-1.0_1"), "python-e_dbus");
-	ATF_REQUIRE_STREQ(xbps_pkg_name("perl-Module-CoreList-5.20170715_24_1"), "perl-Module-CoreList");
-	ATF_REQUIRE_STREQ(xbps_pkg_name("perl-PerlIO-utf8_strict-0.007_1"), "perl-PerlIO-utf8_strict");
+
 	ATF_REQUIRE_STREQ(xbps_pkg_version("font-adobe-100dpi-7.8_2"), "7.8_2");
 	ATF_REQUIRE_STREQ(xbps_pkg_version("python-e_dbus-1_1"), "1_1");
 	ATF_REQUIRE_STREQ(xbps_pkg_version("fs-utils-v1_1"), "v1_1");
 	ATF_REQUIRE_STREQ(xbps_pkg_version("perl-Digest-1.17_01_1"), "1.17_01_1");
 	ATF_REQUIRE_STREQ(xbps_pkg_version("perl-PerlIO-utf8_strict-0.007_1"), "0.007_1");
+
 	ATF_REQUIRE_STREQ(xbps_pkg_revision("systemd_21-43_0"), "0");
 	ATF_REQUIRE_STREQ(xbps_pkg_revision("systemd-43_1_0"), "0");
 	ATF_REQUIRE_STREQ(xbps_pkg_revision("perl-Module-CoreList-5.20170715_24_1"), "1");
-	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>=43"), "systemd");
-	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>43"), "systemd");
-	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd<43"), "systemd");
-	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd<=43"), "systemd");
-	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd-[0-9]*"), "systemd");
-	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd>4[3-9]?"), "systemd");
-	ATF_REQUIRE_STREQ(xbps_pkgpattern_name("systemd<4_1?"), "systemd");
-	ATF_CHECK_EQ(xbps_pkgpattern_name("*nslookup"), NULL);
+
+	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "systemd>=43"), true);
+	ATF_REQUIRE_STREQ(name, "systemd");
+	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "systemd>43"), true);
+	ATF_REQUIRE_STREQ(name, "systemd");
+	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "systemd<43"), true);
+	ATF_REQUIRE_STREQ(name, "systemd");
+	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "systemd<=43"), true);
+	ATF_REQUIRE_STREQ(name, "systemd");
+	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "systemd>4[3-9]?"), true);
+	ATF_REQUIRE_STREQ(name, "systemd");
+	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "systemd<4_1?"), true);
+	ATF_REQUIRE_STREQ(name, "systemd");
+	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "systemd-[0-9]*"), true);
+	ATF_REQUIRE_STREQ(name, "systemd");
+	ATF_CHECK_EQ(xbps_pkgpattern_name(name, sizeof(name), "*nslookup"), false);
+
 	ATF_REQUIRE_STREQ(xbps_binpkg_arch("/path/to/foo-1.0_1.x86_64.xbps"), "x86_64");
 	ATF_REQUIRE_STREQ(xbps_binpkg_arch("/path/to/foo-1.0_1.x86_64-musl.xbps"), "x86_64-musl");
 	ATF_REQUIRE_STREQ(xbps_binpkg_arch("foo-1.0_1.x86_64-musl.xbps"), "x86_64-musl");
 	ATF_REQUIRE_STREQ(xbps_binpkg_arch("foo-1.0_1.x86_64.xbps"), "x86_64");
+
 	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("foo-1.0_1.x86_64.xbps"), "foo-1.0_1");
 	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("foo-1.0_1.x86_64-musl.xbps"), "foo-1.0_1");
 	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("/path/to/foo-1.0_1.x86_64.xbps"), "foo-1.0_1");
 	ATF_REQUIRE_STREQ(xbps_binpkg_pkgver("/path/to/foo-1.0_1.x86_64-musl.xbps"), "foo-1.0_1");
+
 	ATF_CHECK_EQ(xbps_binpkg_pkgver("foo-1.0.x86_64.xbps"), NULL);
 	ATF_CHECK_EQ(xbps_binpkg_pkgver("foo-1.0.x86_64"), NULL);
 }
