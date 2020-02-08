@@ -830,7 +830,7 @@ main(int argc, char **argv)
 	const char *arch, *config_files, *mutable_files, *version, *changelog;
 	const char *buildopts, *shlib_provides, *shlib_requires, *alternatives;
 	const char *compression, *tags = NULL, *srcrevs = NULL;
-	char *pkgname, *binpkg, *tname, *p, cwd[PATH_MAX-1];
+	char pkgname[XBPS_NAME_SIZE], *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
 	int c, pkg_fd;
 	mode_t myumask;
@@ -947,8 +947,7 @@ main(int argc, char **argv)
 	/*
 	 * Sanity check for required options.
 	 */
-	pkgname = xbps_pkg_name(pkgver);
-	if (pkgname == NULL)
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
 		die("invalid pkgver! got `%s' expected `foo-1.0_1'", pkgver);
 	version = xbps_pkg_version(pkgver);
 	if (version == NULL)

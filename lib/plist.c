@@ -225,7 +225,7 @@ array_replace_dict(xbps_array_t array,
 {
 	xbps_object_t obj;
 	const char *curpkgver;
-	char *curpkgname;
+	char curpkgname[XBPS_NAME_SIZE];
 
 	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
@@ -249,17 +249,15 @@ array_replace_dict(xbps_array_t array,
 			/* pkgname match */
 			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curpkgver);
-			curpkgname = xbps_pkg_name(curpkgver);
-			assert(curpkgname);
+			if (!xbps_pkg_name(curpkgname, XBPS_NAME_SIZE, curpkgver)) {
+				abort();
+			}
 			if (strcmp(curpkgname, str) == 0) {
 				if (!xbps_array_set(array, i, dict)) {
-					free(curpkgname);
 					return EINVAL;
 				}
-				free(curpkgname);
 				return 0;
 			}
-			free(curpkgname);
 		}
 	}
 	/* no match */

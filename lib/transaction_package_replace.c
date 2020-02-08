@@ -41,7 +41,7 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 		xbps_object_t obj, obj2;
 		xbps_object_iterator_t iter;
 		const char *pkgver;
-		char *pkgname;
+		char pkgname[XBPS_NAME_SIZE];
 
 		obj = xbps_array_get(pkgs, i);
 		replaces = xbps_dictionary_get(obj, "replaces");
@@ -52,13 +52,14 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 		assert(iter);
 
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
+			abort();
+		}
 
 		while ((obj2 = xbps_object_iterator_next(iter)) != NULL) {
 			xbps_dictionary_t instd, reppkgd;
 			const char *pattern = NULL, *curpkgver = NULL;
-			char *curpkgname;
+			char curpkgname[XBPS_NAME_SIZE];
 			bool instd_auto = false, hold = false;
 
 			pattern = xbps_string_cstring_nocopy(obj2);
@@ -76,14 +77,14 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			if (xbps_dictionary_get_bool(instd, "hold", &hold) && hold)
 				continue;
 
-			curpkgname = xbps_pkg_name(curpkgver);
-			assert(curpkgname);
+			if (!xbps_pkg_name(curpkgname, XBPS_NAME_SIZE, curpkgver)) {
+				abort();
+			}
 			/*
 			 * Check that we are not replacing the same package,
 			 * due to virtual packages.
 			 */
 			if (strcmp(pkgname, curpkgname) == 0) {
-				free(curpkgname);
 				continue;
 			}
 			/*
@@ -143,14 +144,10 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			xbps_dictionary_set_bool(instd, "replaced", true);
 			if (!xbps_array_add_first(pkgs, instd)) {
 				xbps_object_iterator_release(iter);
-				free(pkgname);
-				free(curpkgname);
 				return EINVAL;
 			}
-			free(curpkgname);
 		}
 		xbps_object_iterator_release(iter);
-		free(pkgname);
 	}
 
 	return 0;

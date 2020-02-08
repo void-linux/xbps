@@ -84,7 +84,7 @@ unpack_archive(struct xbps_handle *xhp,
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
 	const char *entry_pname, *transact, *binpkg_pkgver;
-	char *pkgname, *buf = NULL;
+	char pkgname[XBPS_NAME_SIZE], *buf = NULL;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists, keep_conf_file;
 	bool skip_extract, force, xucd_stats;
@@ -102,8 +102,9 @@ unpack_archive(struct xbps_handle *xhp,
 
 	euid = geteuid();
 
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
+	if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
+		abort();
+	}
 
 	if (xhp->flags & XBPS_FLAG_FORCE_UNPACK)
 		force = true;
@@ -550,8 +551,6 @@ out:
 		xbps_object_release(binpkg_propsd);
 	if (xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY)
 		xbps_object_release(binpkg_filesd);
-	if (pkgname != NULL)
-		free(pkgname);
 	if (instbuf != NULL)
 		free(instbuf);
 	if (rembuf != NULL)

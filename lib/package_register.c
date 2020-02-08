@@ -36,12 +36,12 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 {
 	xbps_array_t replaces;
 	xbps_dictionary_t pkgd;
-	char outstr[64];
+	char outstr[64], pkgname[XBPS_NAME_SIZE];
 	time_t t;
 	struct tm tm;
 	struct tm *tmp;
 	const char *pkgver;
-	char *pkgname = NULL, *buf, *sha256;
+	char *buf, *sha256;
 	int rv = 0;
 	bool autoinst = false;
 
@@ -51,8 +51,11 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	pkgd = xbps_dictionary_copy_mutable(pkgrd);
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		xbps_dbg_printf(xhp, "%s: invalid pkgname %s\n",  __func__, pkgver);
+		rv = EINVAL;
+		goto out;
+	}
 
 	if (xhp->flags & XBPS_FLAG_INSTALL_AUTO)
 		autoinst = true;
@@ -130,8 +133,6 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	}
 out:
 	xbps_object_release(pkgd);
-	if (pkgname)
-		free(pkgname);
 
 	return rv;
 }

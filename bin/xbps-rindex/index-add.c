@@ -252,7 +252,8 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	 */
 	for (int i = args; i < argmax; i++) {
 		const char *arch = NULL, *pkg = argv[i];
-		char *sha256 = NULL, *pkgver = NULL, *pkgname = NULL;
+		char *sha256 = NULL, *pkgver = NULL;
+		char pkgname[XBPS_NAME_SIZE];
 
 		assert(pkg);
 		/*
@@ -272,8 +273,9 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 			free(pkgver);
 			continue;
 		}
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			abort();
+		}
 		/*
 		 * Check if this package exists already in the index, but first
 		 * checking the version. If current package version is greater
@@ -288,7 +290,6 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 				rv = errno;
 				xbps_object_release(binpkgd);
 				free(pkgver);
-				free(pkgname);
 				goto out;
 			}
 		} else if (!force) {
@@ -320,7 +321,6 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 				free(opkgver);
 				free(oarch);
 				free(pkgver);
-				free(pkgname);
 				continue;
 			}
 			free(opkgver);
@@ -334,7 +334,6 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		if ((sha256 = xbps_file_hash(pkg)) == NULL) {
 			xbps_object_release(binpkgd);
 			free(pkgver);
-			free(pkgname);
 			rv = EINVAL;
 			goto out;
 		}
@@ -342,7 +341,6 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 			xbps_object_release(binpkgd);
 			free(sha256);
 			free(pkgver);
-			free(pkgname);
 			rv = EINVAL;
 			goto out;
 		}
@@ -350,14 +348,12 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		if (stat(pkg, &st) == -1) {
 			xbps_object_release(binpkgd);
 			free(pkgver);
-			free(pkgname);
 			rv = EINVAL;
 			goto out;
 		}
 		if (!xbps_dictionary_set_uint64(binpkgd, "filename-size", (uint64_t)st.st_size)) {
 			xbps_object_release(binpkgd);
 			free(pkgver);
-			free(pkgname);
 			rv = EINVAL;
 			goto out;
 		}
@@ -371,13 +367,11 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		 */
 		if (!xbps_dictionary_set(idxstage, pkgname, binpkgd)) {
 			xbps_object_release(binpkgd);
-			free(pkgname);
 			free(pkgver);
 			rv = EINVAL;
 			goto out;
 		}
 		xbps_object_release(binpkgd);
-		free(pkgname);
 		free(pkgver);
 	}
 	/*

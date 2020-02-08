@@ -106,7 +106,7 @@ xbps_pkg_is_installed(struct xbps_handle *xhp, const char *pkg)
 bool
 xbps_pkg_is_ignored(struct xbps_handle *xhp, const char *pkg)
 {
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	bool rv = false;
 
 	assert(xhp);
@@ -115,10 +115,9 @@ xbps_pkg_is_ignored(struct xbps_handle *xhp, const char *pkg)
 	if (!xhp->ignored_pkgs)
 		return false;
 
-	if ((pkgname = xbps_pkgpattern_name(pkg)) != NULL ||
-	    (pkgname = xbps_pkg_name(pkg)) != NULL) {
+	if (xbps_pkgpattern_name(pkgname, XBPS_NAME_SIZE, pkg) ||
+	    xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkg)) {
 		rv = xbps_match_string_in_array(xhp->ignored_pkgs, pkgname);
-		free(pkgname);
 		return rv;
 	}
 
@@ -246,21 +245,22 @@ xbps_pkg_revision(const char *pkg)
 	return NULL;
 }
 
-char *
-xbps_pkg_name(const char *pkg)
+bool
+xbps_pkg_name(char *dst, size_t len, const char *pkg)
 {
 	const char *p, *r;
-	char *buf;
-	unsigned int len;
-	size_t p_len;
+	size_t plen;
 	bool valid = false;
 
-	if ((p = strrchr(pkg, '-')) == NULL)
-		return NULL;
+	assert(dst);
+	assert(pkg);
 
-	p_len = strlen(p);
+	if ((p = strrchr(pkg, '-')) == NULL)
+		return false;
+
+	plen = strlen(p);
 	/* i = 1 skips first '-' */
-	for (unsigned int i = 1; i < p_len; i++) {
+	for (unsigned int i = 1; i < plen; i++) {
 		if (p[i] == '_')
 			break;
 		if (isdigit((unsigned char)p[i]) && (r = strchr(p + i + 1, '_'))) {
@@ -269,43 +269,44 @@ xbps_pkg_name(const char *pkg)
 		}
 	}
 	if (!valid)
-		return NULL;
+		return false;
 
-	len = strlen(pkg) - strlen(p) + 1;
-	buf = malloc(len);
-	assert(buf != NULL);
+	plen = strlen(pkg) - strlen(p) + 1;
+	if (plen > len)
+	       return false;
 
-	memcpy(buf, pkg, len-1);
-	buf[len-1] = '\0';
+	memcpy(dst, pkg, plen-1);
+	dst[plen-1] = '\0';
 
-	return buf;
+	return true;
 }
 
-char *
-xbps_pkgpattern_name(const char *pkg)
+bool
+xbps_pkgpattern_name(char *dst, size_t len, const char *pkg)
 {
-	char *res, *pkgname;
-	unsigned int len;
+	const char *res;
+	size_t plen;
 
-	assert(pkg != NULL);
+	assert(dst);
+	assert(pkg);
 
 	if ((res = strpbrk(pkg, "><*?[]")) == NULL)
-		return NULL;
+		return false;
 
-	len = strlen(pkg) - strlen(res) + 1;
-	if (strlen(pkg) < len-2)
-		return NULL;
+	plen = strlen(pkg) - strlen(res) + 1;
+	if (strlen(pkg) < plen-2)
+		return false;
 
-	if (pkg[len-2] == '-')
-		len--;
+	if (pkg[plen-2] == '-')
+		plen--;
 
-	pkgname = malloc(len);
-	assert(pkgname != NULL);
+	if (plen > len)
+		return false;
 
-	memcpy(pkgname, pkg, len-1);
-	pkgname[len-1] = '\0';
+	memcpy(dst, pkg, plen-1);
+	dst[plen-1] = '\0';
 
-	return pkgname;
+	return true;
 }
 
 const char *

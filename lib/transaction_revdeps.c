@@ -52,28 +52,30 @@ check_virtual_pkgs(xbps_array_t mdeps,
 	for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
 		xbps_array_t rundeps;
 		const char *pkgver, *revpkgver, *pkgpattern;
-		char *pkgname, *vpkgname, *vpkgver, *str;
+		char pkgname[XBPS_NAME_SIZE], vpkgname[XBPS_NAME_SIZE];
+		char *vpkgver = NULL, *str = NULL;
 
 		pkgver = revpkgver = pkgpattern = NULL;
-		pkgname = vpkgname = vpkgver = str = NULL;
 
 		xbps_dictionary_get_cstring_nocopy(trans_pkgd, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(rev_pkgd, "pkgver", &revpkgver);
 		xbps_array_get_cstring(provides, i, &vpkgver);
-		vpkgname = xbps_pkg_name(vpkgver);
-		assert(vpkgname);
+
+		if (!xbps_pkg_name(vpkgname, sizeof(vpkgname), vpkgver)) {
+			break;
+		}
+
 		rundeps = xbps_dictionary_get(rev_pkgd, "run_depends");
 		for (unsigned int x = 0; x < xbps_array_count(rundeps); x++) {
 			xbps_array_get_cstring_nocopy(rundeps, x, &pkgpattern);
-			if (((pkgname = xbps_pkgpattern_name(pkgpattern)) == NULL) &&
-			    ((pkgname = xbps_pkg_name(pkgpattern)) == NULL))
+
+			if ((!xbps_pkgpattern_name(pkgname, sizeof(pkgname), pkgpattern)) &&
+			    (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgpattern)))
 				continue;
 
 			if (strcmp(vpkgname, pkgname)) {
-				free(pkgname);
 				continue;
 			}
-			free(pkgname);
 			if (!strcmp(vpkgver, pkgpattern) ||
 			    xbps_pkgpattern_match(vpkgver, pkgpattern)) {
 				continue;
@@ -85,7 +87,6 @@ check_virtual_pkgs(xbps_array_t mdeps,
 			free(str);
 			matched = true;
 		}
-		free(vpkgname);
 		free(vpkgver);
 	}
 	return matched;
@@ -112,7 +113,7 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		xbps_array_t pkgrdeps;
 		xbps_object_t obj;
 		const char *pkgver, *tract;
-		char *pkgname;
+		char pkgname[XBPS_NAME_SIZE];
 
 		obj = xbps_array_get(pkgs, i);
 		/*
@@ -129,10 +130,11 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			continue;
 		}
 
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			abort();
+		}
+
 		if (xbps_pkg_is_installed(xhp, pkgname) == 0) {
-			free(pkgname);
 			continue;
 		}
 		/*
@@ -141,13 +143,11 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		 */
 		pkgrdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
 		if (!xbps_array_count(pkgrdeps)) {
-			free(pkgname);
 			continue;
 		}
 		/*
 		 * If pkg is ignored, pass to the next one.
 		 */
-		free(pkgname);
 		if (xbps_pkg_is_ignored(xhp, pkgver)) {
 			continue;
 		}
@@ -159,12 +159,15 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			xbps_array_t rundeps;
 			xbps_dictionary_t revpkgd;
 			const char *curpkgver = NULL, *revpkgver, *curdep = NULL, *curtract;
-			char *curpkgname, *curdepname;
+			char curpkgname[XBPS_NAME_SIZE];
+			char curdepname[XBPS_NAME_SIZE];
 			bool found = false;
 
 			xbps_array_get_cstring_nocopy(pkgrdeps, x, &curpkgver);
-			pkgname = xbps_pkg_name(curpkgver);
-			assert(pkgname);
+
+			if (!xbps_pkg_name(pkgname, sizeof(pkgname), curpkgver)) {
+				abort();
+			}
 			if ((revpkgd = xbps_find_pkg_in_array(pkgs, pkgname, NULL))) {
 				xbps_dictionary_get_cstring_nocopy(revpkgd, "transaction", &curtract);
 				if (strcmp(curtract, "remove") == 0)
@@ -181,14 +184,11 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 */
 			if (strcmp(tract, "remove") == 0) {
 				if (xbps_dictionary_get(obj, "replaced")) {
-					free(pkgname);
 					continue;
 				}
 				if (xbps_find_pkg_in_array(pkgs, pkgname, "remove")) {
-					free(pkgname);
 					continue;
 				}
-				free(pkgname);
 				broken_pkg(mdeps, curpkgver, pkgver, tract);
 				continue;
 			}
@@ -196,7 +196,6 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 * First try to match any supported virtual package.
 			 */
 			if (check_virtual_pkgs(mdeps, obj, revpkgd)) {
-				free(pkgname);
 				continue;
 			}
 			/*
@@ -206,30 +205,26 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			/*
 			 * Find out what dependency is it.
 			 */
-			curpkgname = xbps_pkg_name(pkgver);
-			assert(curpkgname);
+			if (!xbps_pkg_name(curpkgname, sizeof(curpkgname), pkgver)) {
+				abort();
+			}
 
 			for (unsigned int j = 0; j < xbps_array_count(rundeps); j++) {
 				xbps_array_get_cstring_nocopy(rundeps, j, &curdep);
-				if (((curdepname = xbps_pkg_name(curdep)) == NULL) &&
-				    ((curdepname = xbps_pkgpattern_name(curdep)) == NULL))
+				if ((!xbps_pkgpattern_name(curdepname, sizeof(curdepname), curdep)) &&
+				    (!xbps_pkg_name(curdepname, sizeof(curdepname), curdep))) {
 					abort();
-
+				}
 				if (strcmp(curdepname, curpkgname) == 0) {
-					free(curdepname);
 					found = true;
 					break;
 				}
-				free(curdepname);
 			}
-			free(curpkgname);
 
 			if (!found) {
-				free(pkgname);
 				continue;
 			}
 			if (xbps_match_pkgdep_in_array(rundeps, pkgver)) {
-				free(pkgname);
 				continue;
 			}
 			/*
@@ -239,10 +234,8 @@ xbps_transaction_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 * is in the transaction.
 			 */
 			if (xbps_find_pkg_in_array(pkgs, pkgname, "update")) {
-				free(pkgname);
 				continue;
 			}
-			free(pkgname);
 			broken_pkg(mdeps, curpkgver, pkgver, tract);
 		}
 

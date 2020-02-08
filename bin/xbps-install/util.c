@@ -82,15 +82,15 @@ find_longest_pkgname(struct transaction *trans)
 {
 	xbps_object_t obj;
 	const char *pkgver;
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	unsigned int len = 0, max = 0;
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			abort();
+		}
 		len = strlen(pkgname);
-		free(pkgname);
 		if (max == 0 || len > max)
 			max = len;
 	}
@@ -125,7 +125,7 @@ print_trans_colmode(struct transaction *trans, int cols)
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
 		xbps_dictionary_t ipkgd;
 		const char *pkgver, *ipkgver, *ver, *iver, *tract;
-		char *pkgname;
+		char pkgname[XBPS_NAME_SIZE];
 		bool dload = false;
 
 		ver = iver = NULL;
@@ -135,8 +135,9 @@ print_trans_colmode(struct transaction *trans, int cols)
 		xbps_dictionary_get_uint64(obj, "filename-size", &dlsize);
 		xbps_dictionary_get_bool(obj, "download", &dload);
 
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			abort();
+		}
 
 		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 			tract = "download";
@@ -206,7 +207,6 @@ print_trans_colmode(struct transaction *trans, int cols)
 		/* print download size */
 		printf("%s ", size);
 		printf("\n");
-		free(pkgname);
 	}
 	xbps_object_iterator_reset(trans->iter);
 	return true;

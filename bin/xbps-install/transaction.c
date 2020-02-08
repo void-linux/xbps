@@ -93,18 +93,18 @@ show_package_list(struct transaction *trans, const char *match, int cols)
 		if (match && strcmp(tract, "update") == 0) {
 			xbps_dictionary_t ipkgd;
 			const char *ipkgver, *iversion, *version;
-			char *pkgname;
+			char pkgname[XBPS_NAME_SIZE];
 
 			/* get installed pkgver */
-			pkgname = xbps_pkg_name(pkgver);
-			assert(pkgname);
+			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+				abort();
+			}
 			ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
 			assert(ipkgd);
 			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
 			version = xbps_pkg_version(pkgver);
 			iversion = xbps_pkg_version(ipkgver);
 			buf = xbps_xasprintf("%s (%s -> %s)", pkgname, iversion, version);
-			free(pkgname);
 		}
 		if ((match && (strcmp(match, tract) == 0)) || (!match && dload)) {
 			if (buf) {

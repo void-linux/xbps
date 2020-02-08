@@ -54,7 +54,7 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 {
 	struct CleanerCbInfo *info = arg;
 	const char *arch = NULL, *pkgver = NULL, *sha256 = NULL;
-	char *filen, *pkgname;
+	char *filen, pkgname[XBPS_NAME_SIZE];
 
 	xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -67,11 +67,9 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		 * File cannot be read, might be permissions,
 		 * broken or simply unexistent; either way, remove it.
 		 */
-		pkgname = xbps_pkg_name(pkgver);
-		if (pkgname == NULL)
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
 			goto out;
 		xbps_dictionary_remove(dest, pkgname);
-		free(pkgname);
 		printf("index: removed pkg %s\n", pkgver);
 	} else if (info->hashcheck) {
 		/*
@@ -80,11 +78,9 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		xbps_dictionary_get_cstring_nocopy(obj,
 				"filename-sha256", &sha256);
 		if (xbps_file_hash_check(filen, sha256) != 0) {
-			pkgname = xbps_pkg_name(pkgver);
-			if (pkgname == NULL)
+			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
 				goto out;
 			xbps_dictionary_remove(dest, pkgname);
-			free(pkgname);
 			printf("index: removed pkg %s\n", pkgver);
 		}
 	}

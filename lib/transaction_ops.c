@@ -65,7 +65,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
 	xbps_array_t pkgs;
 	const char *repoloc, *repopkgver, *instpkgver, *reason;
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	int action = 0, rv = 0;
 	pkg_state_t state = 0;
 	bool autoinst = false, repolock = false;
@@ -75,9 +75,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	/*
 	 * Find out if pkg is installed first.
 	 */
-	if ((pkgname = xbps_pkg_name(pkg))) {
+	if (xbps_pkg_name(pkgname, sizeof(pkgname), pkg)) {
 		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkgname);
-		free(pkgname);
 	} else {
 		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg);
 	}
@@ -187,22 +186,21 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 		}
 	}
 
-	pkgname = xbps_pkg_name(repopkgver);
-	assert(pkgname);
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), repopkgver)) {
+		abort();
+	}
 	/*
 	 * Set package state in dictionary with same state than the
 	 * package currently uses, otherwise not-installed.
 	 */
 	if ((rv = xbps_pkg_state_installed(xhp, pkgname, &state)) != 0) {
 		if (rv != ENOENT) {
-			free(pkgname);
 			return rv;
 		}
 		/* Package not installed, don't error out */
 		state = XBPS_PKG_STATE_NOT_INSTALLED;
 	}
 	if ((rv = xbps_set_pkg_state_dictionary(pkg_repod, state)) != 0) {
-		free(pkgname);
 		return rv;
 	}
 
@@ -218,15 +216,10 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	 */
 	if (!xbps_dictionary_set_cstring_nocopy(pkg_repod,
 	    "transaction", reason)) {
-		free(pkgname);
 		return EINVAL;
 	}
-	if ((rv = xbps_transaction_store(xhp, pkgs, pkg_repod, reason, false)) != 0) {
-		free(pkgname);
-		return rv;
-	}
-	free(pkgname);
-	return 0;
+
+	return xbps_transaction_store(xhp, pkgs, pkg_repod, reason, false);
 }
 
 /*
@@ -238,7 +231,7 @@ xbps_autoupdate(struct xbps_handle *xhp)
 	xbps_array_t rdeps;
 	xbps_dictionary_t pkgd;
 	const char *pkgver;
-	char *pkgname;
+	char pkgname[XBPS_NAME_SIZE];
 	int rv;
 
 	/*
@@ -250,11 +243,11 @@ xbps_autoupdate(struct xbps_handle *xhp)
 		return 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	pkgname = xbps_pkg_name(pkgver);
-	assert(pkgname);
 
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		abort();
+	}
 	rv = trans_find_pkg(xhp, pkgname, false, false);
-	free(pkgname);
 
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg xbps: %d\n", __func__, rv);
 
@@ -266,15 +259,15 @@ xbps_autoupdate(struct xbps_handle *xhp)
 		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
 		for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
 			const char *curpkgver = NULL;
-			char *curpkgn;
+			char curpkgn[XBPS_NAME_SIZE];
 
 			xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
 			xbps_dbg_printf(xhp, "%s: processing revdep %s\n", __func__, curpkgver);
 
-			curpkgn = xbps_pkg_name(curpkgver);
-			assert(curpkgn);
+			if (!xbps_pkg_name(curpkgn, sizeof(curpkgn), curpkgver)) {
+				abort();
+			}
 			rv = trans_find_pkg(xhp, curpkgn, false, false);
-			free(curpkgn);
 			xbps_dbg_printf(xhp, "%s: trans_find_pkg revdep %s: %d\n", __func__, curpkgver, rv);
 			if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
 				return -1;
@@ -305,12 +298,9 @@ xbps_autoupdate(struct xbps_handle *xhp)
 int
 xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
-	xbps_dictionary_t pkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *pkgver;
-	char *pkgname;
-	bool hold, newpkg_found = false;
+	bool newpkg_found = false;
 	int rv = 0;
 
 	rv = xbps_autoupdate(xhp);
@@ -329,7 +319,11 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
-		hold = false;
+		xbps_dictionary_t pkgd;
+		const char *pkgver;
+		char pkgname[XBPS_NAME_SIZE];
+		bool hold = false;
+
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
 			continue;
@@ -338,8 +332,9 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 			xbps_dbg_printf(xhp, "[rpool] package `%s' "
 			    "on hold, ignoring updates.\n", pkgver);
 		}
-		pkgname = xbps_pkg_name(pkgver);
-		assert(pkgname);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			abort();
+		}
 		rv = trans_find_pkg(xhp, pkgname, false, hold);
 		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv == 0) {
@@ -351,7 +346,6 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 			 */
 			rv = 0;
 		}
-		free(pkgname);
 	}
 	xbps_object_iterator_release(iter);
 
@@ -385,15 +379,15 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 		rdeps = NULL;
 	}
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
-		const char *curpkgver = NULL;
-		char *curpkgn;
+		const char *pkgver = NULL;
+		char pkgname[XBPS_NAME_SIZE];
 
-		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
-		curpkgn = xbps_pkg_name(curpkgver);
-		assert(curpkgn);
-		rv = trans_find_pkg(xhp, curpkgn, false, false);
-		free(curpkgn);
-		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, curpkgver, rv);
+		xbps_array_get_cstring_nocopy(rdeps, i, &pkgver);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			abort();
+		}
+		rv = trans_find_pkg(xhp, pkgname, false, false);
+		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
 			return rv;
 	}
@@ -429,15 +423,15 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 		rdeps = NULL;
 	}
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
-		const char *curpkgver = NULL;
-		char *curpkgn;
+		const char *pkgver = NULL;
+		char pkgname[XBPS_NAME_SIZE];
 
-		xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
-		curpkgn = xbps_pkg_name(curpkgver);
-		assert(curpkgn);
-		rv = trans_find_pkg(xhp, curpkgn, false, false);
-		free(curpkgn);
-		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, curpkgver, rv);
+		xbps_array_get_cstring_nocopy(rdeps, i, &pkgver);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			abort();
+		}
+		rv = trans_find_pkg(xhp, pkgname, false, false);
+		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
 			return rv;
 	}
