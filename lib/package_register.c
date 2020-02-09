@@ -48,7 +48,9 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	assert(xbps_object_type(pkgrd) == XBPS_TYPE_DICTIONARY);
 
 	xbps_dictionary_make_immutable(pkgrd);
-	pkgd = xbps_dictionary_copy_mutable(pkgrd);
+	if ((pkgd = xbps_dictionary_copy_mutable(pkgrd)) == NULL) {
+		goto out;
+	}
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
