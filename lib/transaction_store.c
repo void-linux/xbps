@@ -32,21 +32,25 @@
 
 int HIDDEN
 xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
-		xbps_dictionary_t pkgd, const char *tract, bool autoinst)
+		xbps_dictionary_t pkgrd, const char *tract, bool autoinst)
 {
+	xbps_dictionary_t pkgd;
 	xbps_array_t replaces;
 	const char *pkgver, *repo;
 	char pkgname[XBPS_NAME_SIZE], *self_replaced;
 
-	xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repo);
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
 	if (xbps_find_pkg_in_array(pkgs, pkgver, NULL))
 		return 0;
+
+	if ((pkgd = xbps_dictionary_copy_mutable(pkgrd)) == NULL)
+		return ENOMEM;
+
 	/*
 	 * Add required objects into package dep's dictionary.
 	 */
 	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true))
-		return EINVAL;
+		goto err;
 
 	/*
 	 * Set a replaces to itself, so that virtual packages are always replaced.
@@ -62,13 +66,15 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	free(self_replaced);
 
 	if (!xbps_dictionary_set(pkgd, "replaces", replaces))
-		return EINVAL;
+		goto err;
 
 	/*
 	 * Add the dictionary into the unsorted queue.
 	 */
 	if (!xbps_array_add(pkgs, pkgd))
-		return EINVAL;
+		goto err;
+
+	xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repo);
 
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_ADDPKG, 0, pkgver,
 	    "Found %s (%s) in repository %s", pkgver, tract, repo);
@@ -79,4 +85,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	xbps_object_release(pkgd);
 
 	return 0;
+err:
+	xbps_object_release(pkgd);
+	return EINVAL;
 }
