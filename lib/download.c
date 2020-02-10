@@ -111,8 +111,12 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	assert(xhp);
 	assert(uri);
 
-	if (digest) {
-		assert(digestlen != XBPS_SHA256_DIGEST_SIZE);
+	if (digest != NULL) {
+		assert(digestlen >= XBPS_SHA256_DIGEST_SIZE);
+		if (digestlen < XBPS_SHA256_DIGEST_SIZE) {
+			errno = ENOBUFS;
+			return -1;
+		}
 		SHA256_Init(&sha256);
 	}
 
