@@ -40,7 +40,7 @@ struct thread_data {
 	unsigned int start;
 	unsigned int arraycount;
 	unsigned int *reserved;
-	pthread_spinlock_t *reserved_lock;
+	pthread_mutex_t *reserved_lock;
 	unsigned int slicecount;
 	int (*fn)(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
 	void *fn_arg;
@@ -84,11 +84,11 @@ array_foreach_thread(void *arg)
 				return NULL;
 		}
 		/* Reserve more elements to compute */
-		pthread_spin_lock(thd->reserved_lock);
+		pthread_mutex_lock(thd->reserved_lock);
 		i = *thd->reserved;
 		end = i + thd->slicecount;
 		*thd->reserved = end;
-		pthread_spin_unlock(thd->reserved_lock);
+		pthread_mutex_unlock(thd->reserved_lock);
 	}
 	return NULL;
 }
@@ -104,7 +104,7 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	unsigned int arraycount, slicecount;
 	int rv = 0, error = 0, i, maxthreads;
 	unsigned int reserved;
-	pthread_spinlock_t reserved_lock;
+	pthread_mutex_t reserved_lock;
 
 	assert(fn != NULL);
 
@@ -119,7 +119,7 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	if (maxthreads <= 1 || arraycount <= 1) /* use single threaded routine */
 		return xbps_array_foreach_cb(xhp, array, dict, fn, arg);
 
-	if (pthread_spin_init(&reserved_lock, PTHREAD_PROCESS_PRIVATE) != 0)
+	if (pthread_mutex_init(&reserved_lock, PTHREAD_PROCESS_PRIVATE) != 0)
 		return 0;
 
 	thd = calloc(maxthreads, sizeof(*thd));
@@ -163,7 +163,7 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	}
 
 	free(thd);
-	pthread_spin_destroy(&reserved_lock);
+	pthread_mutex_destroy(&reserved_lock);
 
 	return error ? error : rv;
 }
