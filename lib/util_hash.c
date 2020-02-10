@@ -116,7 +116,7 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 	char buf[65536];
 	SHA256_CTX sha256;
 
-	assert(dstlen == SHA256_DIGEST_LENGTH);
+	assert(dstlen >= SHA256_DIGEST_LENGTH);
 
 	if ((fd = open(file, O_RDONLY)) < 0)
 		return false;
@@ -141,7 +141,7 @@ xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 {
 	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
-	assert(dstlen == XBPS_SHA256_SIZE);
+	assert(dstlen >= XBPS_SHA256_SIZE);
 
 	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
 		return false;
