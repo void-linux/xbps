@@ -116,7 +116,11 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 	char buf[65536];
 	SHA256_CTX sha256;
 
-	assert(dstlen >= SHA256_DIGEST_LENGTH);
+	assert(dstlen >= XBPS_SHA256_DIGEST_SIZE);
+	if (dstlen < XBPS_SHA256_DIGEST_SIZE) {
+		errno = ENOBUFS;
+		return false;
+	}
 
 	if ((fd = open(file, O_RDONLY)) < 0)
 		return false;
@@ -142,6 +146,10 @@ xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
 	assert(dstlen >= XBPS_SHA256_SIZE);
+	if (dstlen < XBPS_SHA256_SIZE) {
+		errno = ENOBUFS;
+		return false;
+	}
 
 	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
 		return false;
@@ -155,10 +163,13 @@ static bool
 sha256_digest_compare(const char *sha256, size_t shalen,
 		const unsigned char *digest, size_t digestlen)
 {
-	assert(digestlen == XBPS_SHA256_DIGEST_SIZE);
-	assert(shalen == XBPS_SHA256_SIZE - 1);
 
+	assert(shalen == XBPS_SHA256_SIZE - 1);
 	if (shalen != XBPS_SHA256_SIZE -1)
+		return false;
+
+	assert(digestlen == XBPS_SHA256_DIGEST_SIZE);
+	if (digestlen != XBPS_SHA256_DIGEST_SIZE)
 		return false;
 
 	for (; *sha256;) {
