@@ -138,13 +138,15 @@ main(int argc, char **argv)
 	}
 
 	for (int i = 0; i < argc; i++) {
-		unsigned char *digest = NULL;
+		unsigned char sha256[SHA256_DIGEST_LENGTH];
+		unsigned char *sha256f;
+		bool got_hash = false;
 
 		if (i > 0 || !filename)
 			filename = fname(argv[i]);
 
 		if (shasum) {
-			rv = xbps_fetch_file_dest_digest(&xh, argv[i], filename, verbose ? "v" : "", &digest);
+			rv = xbps_fetch_file_dest_digest(&xh, argv[i], filename, verbose ? "v" : "", &sha256f);
 		} else {
 			rv = xbps_fetch_file_dest(&xh, argv[i], filename, verbose ? "v" : "");
 		}
@@ -153,15 +155,14 @@ main(int argc, char **argv)
 			fprintf(stderr, "%s: %s\n", argv[i], xbps_fetch_error_string());
 		} else if (rv == 0) {
 			fprintf(stderr, "%s: file is identical with remote.\n", argv[i]);
-			if (shasum)
-				digest = xbps_file_hash_raw(filename);
+			if (shasum && xbps_file_hash_raw(sha256, sizeof(sha256), filename))
+				got_hash = true;
 		} else {
 			rv = 0;
 		}
-		if (digest != NULL) {
-			print_digest(digest, SHA256_DIGEST_LENGTH);
+		if (got_hash) {
+			print_digest(sha256f ? sha256f : sha256, SHA256_DIGEST_LENGTH);
 			printf("  %s\n", filename);
-			free(digest);
 		}
 	}
 

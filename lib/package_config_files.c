@@ -68,8 +68,10 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 {
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter, iter2;
-	const char *version = NULL, *cffile, *sha256_new = NULL;
-	char buf[PATH_MAX], *sha256_cur = NULL, *sha256_orig = NULL;
+	const char *version = NULL, *cffile = NULL;
+	const char *sha256_orig = NULL, *sha256_new = NULL;
+	char buf[PATH_MAX];
+	char sha256_cur[128];
 	int rv = 0;
 
 	assert(xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY);
@@ -114,7 +116,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			    "file", &cffile);
 			snprintf(buf, sizeof(buf), ".%s", cffile);
 			if (strcmp(entry_pname, buf) == 0) {
-				xbps_dictionary_get_cstring(obj2, "sha256", &sha256_orig);
+				xbps_dictionary_get_cstring_nocopy(obj2, "sha256", &sha256_orig);
 				break;
 			}
 		}
@@ -139,9 +141,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		if (strcmp(entry_pname, buf)) {
 			continue;
 		}
-		sha256_cur = xbps_file_hash(buf);
 		xbps_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
-		if (sha256_cur == NULL) {
+		if (!xbps_file_hash(sha256_cur, sizeof(sha256_cur), buf)) {
 			if (errno == ENOENT) {
 				/*
 				 * File not installed, install new one.
@@ -232,16 +233,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			rv = 1;
 			break;
 		}
-		free(sha256_cur);
-		sha256_cur = NULL;
 	}
 
 out:
-	if (sha256_orig)
-		free(sha256_orig);
-	if (sha256_cur)
-		free(sha256_cur);
-
 	xbps_object_iterator_release(iter);
 
 	xbps_dbg_printf(xhp, "%s: conf_file %s returned %d\n",

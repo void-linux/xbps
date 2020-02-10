@@ -97,25 +97,21 @@ static bool
 rsa_sign_file(RSA *rsa, const char *file,
 	 unsigned char **sigret, unsigned int *siglen)
 {
-	unsigned char *sha256;
+	unsigned char sha256[128];
 
-	sha256 = xbps_file_hash_raw(file);
-	if(!sha256)
+	if (!xbps_file_hash_raw(sha256, sizeof(sha256), file))
 		return false;
 
 	if ((*sigret = calloc(1, RSA_size(rsa) + 1)) == NULL) {
-		free(sha256);
 		return false;
 	}
 
 	if (!RSA_sign(NID_sha1, sha256, SHA256_DIGEST_LENGTH,
 				*sigret, siglen, rsa)) {
-		free(sha256);
 		free(*sigret);
 		return false;
 	}
 
-	free(sha256);
 	return true;
 }
 

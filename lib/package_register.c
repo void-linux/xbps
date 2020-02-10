@@ -36,12 +36,12 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 {
 	xbps_array_t replaces;
 	xbps_dictionary_t pkgd;
-	char outstr[64], pkgname[XBPS_NAME_SIZE];
+	char outstr[64], pkgname[XBPS_NAME_SIZE], sha256[128];
 	time_t t;
 	struct tm tm;
 	struct tm *tmp;
 	const char *pkgver;
-	char *buf, *sha256;
+	char *buf;
 	int rv = 0;
 	bool autoinst = false;
 
@@ -102,9 +102,8 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	 * Create a hash for the pkg's metafile if it exists.
 	 */
 	buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
-	if ((sha256 = xbps_file_hash(buf))) {
+	if (xbps_file_hash(sha256, sizeof(sha256), buf)) {
 		xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
-		free(sha256);
 	}
 	free(buf);
 	/*

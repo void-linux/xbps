@@ -437,6 +437,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		xbps_object_t obj;
 		xbps_dictionary_t linkinfo;
 		uint64_t inode = 0;
+		char digest[128];
 		/*
 		 * Regular files. First find out if it's a hardlink:
 		 * 	- st_nlink > 1
@@ -480,11 +481,10 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		}
 
 		assert(xe->type);
-		if ((p = xbps_file_hash(fpath)) == NULL)
+		if (!xbps_file_hash(digest, sizeof(digest), fpath))
 			die("failed to process hash for %s:", fpath);
-		xbps_dictionary_set_cstring(fileinfo, "sha256", p);
-		free(p);
-		if ((xe->hash = xbps_file_hash(fpath)) == NULL)
+		xbps_dictionary_set_cstring(fileinfo, "sha256", digest);
+		if ((xe->hash = strdup(digest)) == NULL)
 			die("failed to process hash for %s:", fpath);
 
 		xbps_dictionary_set_uint64(fileinfo, "inode", sb->st_ino);

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2015 Juan Romero Pardines.
+ * Copyright (c) 2008-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -108,66 +108,69 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 	return true;
 }
 
-unsigned char *
-xbps_file_hash_raw(const char *file)
+bool
+xbps_file_hash_raw(unsigned char *dst, size_t len, const char *file)
 {
+	unsigned char buf[65536];
+	ssize_t rlen;
 	int fd;
-	ssize_t len;
-	unsigned char *digest, buf[65536];
 	SHA256_CTX sha256;
 
-	if ((fd = open(file, O_RDONLY)) < 0)
-		return NULL;
-	digest = malloc(SHA256_DIGEST_LENGTH);
-	assert(digest);
-	SHA256_Init(&sha256);
-	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		SHA256_Update(&sha256, buf, len);
-	if(len < 0) {
-		free(digest);
-		return NULL;
+	if (len < SHA256_DIGEST_LENGTH) {
+		fprintf(stderr, "%s: len < SHA256_DIGEST_LENGTH\n", __func__);
+		return false;
 	}
-	SHA256_Final(digest, &sha256);
+
+	if ((fd = open(file, O_RDONLY)) < 0) {
+		fprintf(stderr, "%s: open\n", __func__);
+		return false;
+	}
+
+	SHA256_Init(&sha256);
+	while ((rlen = read(fd, buf, sizeof(buf))) > 0) {
+		SHA256_Update(&sha256, buf, rlen);
+	}
+	if (rlen < 0) {
+		(void)close(fd);
+		fprintf(stderr, "%s: rlen < 0\n", __func__);
+		return false;
+	}
+	SHA256_Final(dst, &sha256);
 	(void)close(fd);
 
-	return digest;
+	return true;
 }
 
-char *
-xbps_file_hash(const char *file)
+bool
+xbps_file_hash(char *dst, size_t len, const char *file)
 {
-	char *hash;
-	unsigned char *digest;
+	size_t rlen = SHA256_DIGEST_LENGTH * 2 + 1;
+	unsigned char digest[SHA256_DIGEST_LENGTH];
 
-	if (!(digest = xbps_file_hash_raw(file)))
-		return NULL;
+	if (len < rlen)
+		return false;
 
-	hash = malloc(SHA256_DIGEST_LENGTH * 2 + 1);
-	assert(hash);
-	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
-	free(digest);
+	if (!xbps_file_hash_raw(digest, sizeof(digest), file))
+		return false;
 
-	return hash;
+	digest2string(digest, dst, sizeof(dst));
+	return true;
 }
 
 int
 xbps_file_hash_check(const char *file, const char *sha256)
 {
-	char *res;
+	char hash[128];
 
 	assert(file != NULL);
 	assert(sha256 != NULL);
 
-	res = xbps_file_hash(file);
-	if (res == NULL)
+	if (!xbps_file_hash(hash, sizeof(hash), file)) {
 		return errno;
-
-	if (strcmp(sha256, res)) {
-		free(res);
+	}
+	if (strcmp(sha256, hash)) {
 		return ERANGE;
 	}
-	free(res);
-
 	return 0;
 }
 

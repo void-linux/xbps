@@ -290,14 +290,15 @@ main(int argc, char **argv)
 			usage();
 
 		for (int i = 1; i < argc; i++) {
-			filename = xbps_file_hash(argv[i]);
-			if (filename == NULL) {
+			char digest[128];
+
+			if (!xbps_file_hash(digest, sizeof(digest), argv[i])) {
 				fprintf(stderr,
 				    "E: couldn't get hash for %s (%s)\n",
 				    argv[i], strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			printf("%s\n", filename);
+			printf("%s\n", digest);
 		}
 	} else if (strcmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */

@@ -53,7 +53,7 @@ int
 main(int argc, char **argv)
 {
 	int c;
-	char *hash = NULL;
+	char hash[128];
 	const char *mode = NULL, *progname = argv[0];
 	const struct option longopts[] = {
 		{ NULL, 0, NULL, 0 }
@@ -84,23 +84,19 @@ main(int argc, char **argv)
 	}
 
 	if (argc < 1) {
-		hash = xbps_file_hash("/dev/stdin");
-		if (hash == NULL)
+		if (!xbps_file_hash(hash, sizeof(hash), "/dev/stdin"))
 			exit(EXIT_FAILURE);
 
 		printf("%s\n", hash);
-		free(hash);
 	} else {
 		for (int i = 0; i < argc; i++) {
-			hash = xbps_file_hash(argv[i]);
-			if (hash == NULL) {
+			if (!xbps_file_hash(hash, sizeof(hash), argv[i])) {
 				fprintf(stderr,
 				    "%s: couldn't get hash for %s (%s)\n",
 				progname, argv[i], strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 			printf("%s\n", hash);
-			free(hash);
 		}
 	}
 	exit(EXIT_SUCCESS);

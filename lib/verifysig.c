@@ -137,10 +137,10 @@ bool
 xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 {
 	char sig[PATH_MAX];
-	unsigned char *digest = NULL;
+	unsigned char digest[128];
 	bool val = false;
 
-	if (!(digest = xbps_file_hash_raw(fname))) {
+	if (!xbps_file_hash_raw(digest, sizeof(digest), fname)) {
 		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
 		return false;
 	}
@@ -148,6 +148,5 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	snprintf(sig, sizeof sig, "%s.sig", fname);
 	val = xbps_verify_signature(repo, sig, digest);
 
-	free(digest);
 	return val;
 }
