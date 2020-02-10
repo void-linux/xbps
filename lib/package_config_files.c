@@ -69,7 +69,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter, iter2;
 	const char *version = NULL, *cffile, *sha256_new = NULL;
-	char buf[PATH_MAX], sha256_cur[XBPS_SHA256_SIZE], *sha256_orig = NULL;
+	char buf[PATH_MAX], sha256_cur[XBPS_SHA256_SIZE];
+	const char *sha256_orig = NULL;
 	int rv = 0;
 
 	assert(xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY);
@@ -114,7 +115,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			    "file", &cffile);
 			snprintf(buf, sizeof(buf), ".%s", cffile);
 			if (strcmp(entry_pname, buf) == 0) {
-				xbps_dictionary_get_cstring(obj2, "sha256", &sha256_orig);
+				xbps_dictionary_get_cstring_nocopy(obj2, "sha256", &sha256_orig);
 				break;
 			}
 		}
@@ -234,8 +235,6 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	}
 
 out:
-	if (sha256_orig)
-		free(sha256_orig);
 
 	xbps_object_iterator_release(iter);
 
