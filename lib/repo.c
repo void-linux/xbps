@@ -156,6 +156,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' failed to open repodata archive %s\n",
 		    repofile, strerror(rv));
+		xbps_repo_close(repo);
 		return false;
 	}
 	if ((repo->idx = repo_get_dict(repo)) == NULL) {
@@ -163,6 +164,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		    " index on archive, removing file.\n", repofile);
 		/* broken archive, remove it */
 		(void)unlink(repofile);
+		xbps_repo_close(repo);
 		return false;
 	}
 	xbps_dictionary_make_immutable(repo->idx);
