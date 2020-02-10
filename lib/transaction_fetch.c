@@ -79,7 +79,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 			"%s: verifying SHA256 hash...", pkgver);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "filename-sha256", &sha256);
-		if ((rv = xbps_file_hash_check(binfile, sha256)) != 0) {
+		if ((rv = xbps_file_sha256_check(binfile, sha256)) != 0) {
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
 			goto out;
@@ -98,7 +98,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	char buf[PATH_MAX];
 	char *sigsuffix;
 	const char *pkgver, *arch, *fetchstr, *repoloc;
-	unsigned char *digest = NULL;
+	unsigned char digest[XBPS_SHA256_DIGEST_SIZE] = {0};
 	int rv = 0;
 
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "repository", &repoloc);
@@ -129,7 +129,8 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' package (from `%s')...", pkgver, repoloc);
 
-	if ((rv = xbps_fetch_file_digest(xhp, buf, NULL, &digest)) == -1) {
+	if ((rv = xbps_fetch_file_sha256(xhp, buf, NULL, digest,
+	    sizeof digest)) == -1) {
 		rv = fetchLastErrCode ? fetchLastErrCode : errno;
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
@@ -156,7 +157,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	 * If digest is not set, binary package was not downloaded,
 	 * i.e. 304 not modified, verify by file instead.
 	 */
-	if (!digest) {
+	if (*digest) {
 		*sigsuffix = '\0';
 		if (!xbps_verify_file_signature(repo, buf)) {
 			rv = EPERM;
@@ -175,7 +176,6 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 			*sigsuffix = '\0';
 			(void)remove(buf);
 		}
-		free(digest);
 	}
 
 	if (rv == EPERM) {

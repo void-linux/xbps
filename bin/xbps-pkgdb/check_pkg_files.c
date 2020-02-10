@@ -99,9 +99,9 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			if (xhp->noextract && xbps_patterns_match(xhp->noextract, file))
 				continue;
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-                        xbps_dictionary_get_cstring_nocopy(obj,
-                            "sha256", &sha256);
-			rv = xbps_file_hash_check(path, sha256);
+			xbps_dictionary_get_cstring_nocopy(obj,
+				"sha256", &sha256);
+			rv = xbps_file_sha256_check(path, sha256);
 			switch (rv) {
 			case 0:
 				if (check_file_mtime(obj, pkgname, path)) {

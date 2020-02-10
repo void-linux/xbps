@@ -97,25 +97,26 @@ static bool
 rsa_sign_file(RSA *rsa, const char *file,
 	 unsigned char **sigret, unsigned int *siglen)
 {
-	unsigned char *sha256;
+	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
-	sha256 = xbps_file_hash_raw(file);
-	if(!sha256)
+	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
 		return false;
 
 	if ((*sigret = calloc(1, RSA_size(rsa) + 1)) == NULL) {
-		free(sha256);
 		return false;
 	}
 
-	if (!RSA_sign(NID_sha1, sha256, SHA256_DIGEST_LENGTH,
+	/*
+	 * XXX: NID_sha1 is wrong, doesn't make it any weaker
+	 * but the ASN1 is wrong, OpenSSL/LibreSSL doesn't care.
+	 * Other implementations like golang fail because of this.
+	 */
+	if (!RSA_sign(NID_sha1, digest, XBPS_SHA256_DIGEST_SIZE,
 				*sigret, siglen, rsa)) {
-		free(sha256);
 		free(*sigret);
 		return false;
 	}
 
-	free(sha256);
 	return true;
 }
 

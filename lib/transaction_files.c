@@ -75,6 +75,7 @@ itemhash(const char *file)
 
 	assert(file);
 
+	/* XXX: runtime error: left shift of negative value -1581911230 */
 	for (i = 0; file[i]; ++i)
 		hv = (hv << 5) ^ (hv >> 23) ^ file[i];
 
@@ -321,7 +322,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 		 * Skip unexisting files and keep files with hash mismatch.
 		 */
 		if (item->old.sha256) {
-			rv = xbps_file_hash_check(item->file, item->old.sha256);
+			rv = xbps_file_sha256_check(item->file, item->old.sha256);
 			switch (rv) {
 			case 0:
 				/* hash matches, we can safely delete and/or overwrite it */
