@@ -104,7 +104,7 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	unsigned int arraycount, slicecount;
 	int rv = 0, error = 0, i, maxthreads;
 	unsigned int reserved;
-	pthread_mutex_t reserved_lock;
+	pthread_mutex_t reserved_lock = PTHREAD_MUTEX_INITIALIZER;
 
 	assert(fn != NULL);
 
@@ -118,9 +118,6 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	maxthreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
 	if (maxthreads <= 1 || arraycount <= 1) /* use single threaded routine */
 		return xbps_array_foreach_cb(xhp, array, dict, fn, arg);
-
-	if (pthread_mutex_init(&reserved_lock, PTHREAD_PROCESS_PRIVATE) != 0)
-		return 0;
 
 	thd = calloc(maxthreads, sizeof(*thd));
 	assert(thd);
