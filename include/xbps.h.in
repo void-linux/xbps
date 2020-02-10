@@ -258,8 +258,17 @@
  */
 #define XBPS_FETCH_TIMEOUT		30
 
-#define XBPS_SHA256_DIGEST_SIZE 32
-#define XBPS_SHA256_SIZE 64+1
+/**
+ * @def XBPS_SHA256_DIGEST_SIZE
+ * The size for a binary SHA256 digests.
+ */
+#define XBPS_SHA256_DIGEST_SIZE		32
+
+/**
+ * @def XBPS_SHA256_SIZE
+ * The size for a hex string SHA256 hash.
+ */
+#define XBPS_SHA256_SIZE		(XBPS_SHA256_DIGEST_SIZE*2)+1
 
 #ifdef __cplusplus
 extern "C" {
@@ -761,13 +770,16 @@ int xbps_fetch_file(struct xbps_handle *xhp, const char *uri,
  * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] uri Remote URI string.
  * @param[in] flags Flags passed to libfetch's fetchXget().
- * @param[out] digestp Checksum of the downloaded file.
+ * @param[out] digest SHA256 digest buffer for the downloaded file or NULL.
+ * @param[in] digestlen Size of \digest if specified; must be at least
+ * XBPS_SHA256_DIGEST_SIZE.
  * 
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
  * do not match) and 1 if downloaded successfully.
  **/
 int xbps_fetch_file_sha256(struct xbps_handle *xhp, const char *uri,
-		    const char *flags, unsigned char *digest, size_t digestlen);
+		           const char *flags, unsigned char *digest,
+			   size_t digestlen);
 
 /**
  * Download a file from a remote URL to current working directory,
@@ -792,14 +804,16 @@ int xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri,
  * @param[in] uri Remote URI string.
  * @param[in] filename Local filename to safe the file
  * @param[in] flags Flags passed to libfetch's fetchXget().
- * @param[out] digest Checksum of the downloaded file.
+ * @param[out] digest SHA256 digest buffer of the downloaded file or NULL.
+ * @param[in] digestlen Size of \a digest if specified; must be at least
+ * XBPS_SHA256_DIGEST_SIZE.
  * 
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
  * do not match) and 1 if downloaded successfully.
  **/
 int xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri,
-		    const char *filename, const char *flags,
-			unsigned char *digest, size_t digestlen);
+				const char *filename, const char *flags,
+				unsigned char *digest, size_t digestlen);
 
 /**
  * Returns last error string reported by xbps_fetch_file().
@@ -1855,26 +1869,28 @@ char *xbps_xasprintf(const char *fmt, ...)__attribute__ ((format (printf, 1, 2))
 bool xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen);
 
 /**
- * Returns a string with the sha256 hash for the file specified
- * by \a file.
+ * Computes a sha256 hex digest into \a dst of size \a len
+ * from file \a file.
  *
- * @param[in] file Path to a file.
- * @return A pointer to a malloc(3)ed string, NULL otherwise and errno
- * is set appropiately. The pointer should be free(3)d when it's no
- * longer needed.
+ * @param[out] dst Destination buffer.
+ * @param[in] len Size of \a dst must be at least XBPS_SHA256_LENGTH.
+ * @param[in] file The file to read.
+ *
+ * @return true on success, false otherwise.
  */
-bool xbps_file_sha256(char *dst, size_t dstlen, const char *file);
+bool xbps_file_sha256(char *dst, size_t len, const char *file);
 
 /**
- * Returns a raw byte buffer with the sha256 hash for the file specified
- * by \a file.
+ * Computes a sha256 binary digest into \a dst of size \a len
+ * from file \a file.
  *
- * @param[in] file Path to a file.
- * @return A pointer to a malloc(3)ed buffer, NULL otherwise and errno
- * is set appropiately. The pointer should be free(3)d when it's no
- * longer needed.
+ * @param[out] dst Destination buffer.
+ * @param[in] len Size of \a dst must be at least XBPS_SHA256_DIGEST_SIZE_LENGTH.
+ * @param[in] file The file to read.
+ *
+ * @return true on success, false otherwise.
  */
-bool xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file);
+bool xbps_file_sha256_raw(unsigned char *dst, size_t len, const char *file);
 
 /**
  * Compares the sha256 hash of the file \a file with the sha256
