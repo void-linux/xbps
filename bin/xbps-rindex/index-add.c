@@ -252,7 +252,8 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	 */
 	for (int i = args; i < argmax; i++) {
 		const char *arch = NULL, *pkg = argv[i];
-		char *sha256 = NULL, *pkgver = NULL;
+		char *pkgver = NULL;
+		char sha256[XBPS_SHA256_SIZE];
 		char pkgname[XBPS_NAME_SIZE];
 
 		assert(pkg);
@@ -331,7 +332,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		 * 	- filename-size
 		 * 	- filename-sha256
 		 */
-		if ((sha256 = xbps_file_hash(pkg)) == NULL) {
+		if (!xbps_file_sha256(sha256, sizeof sha256, pkg)) {
 			xbps_object_release(binpkgd);
 			free(pkgver);
 			rv = EINVAL;
@@ -339,12 +340,10 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		}
 		if (!xbps_dictionary_set_cstring(binpkgd, "filename-sha256", sha256)) {
 			xbps_object_release(binpkgd);
-			free(sha256);
 			free(pkgver);
 			rv = EINVAL;
 			goto out;
 		}
-		free(sha256);
 		if (stat(pkg, &st) == -1) {
 			xbps_object_release(binpkgd);
 			free(pkgver);

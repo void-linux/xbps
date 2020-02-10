@@ -285,19 +285,20 @@ main(int argc, char **argv)
 
 		printf("%s\n", XBPS_SYSDEFCONF_PATH);
 	} else if (strcmp(argv[0], "digest") == 0) {
+		char sha256[XBPS_SHA256_SIZE];
+
 		/* Prints SHA256 hashes for specified files */
 		if (argc < 2)
 			usage();
 
 		for (int i = 1; i < argc; i++) {
-			filename = xbps_file_hash(argv[i]);
-			if (filename == NULL) {
+			if (!xbps_file_sha256(sha256, sizeof sha256, argv[i])) {
 				fprintf(stderr,
 				    "E: couldn't get hash for %s (%s)\n",
 				    argv[i], strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			printf("%s\n", filename);
+			printf("%s\n", sha256);
 		}
 	} else if (strcmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */

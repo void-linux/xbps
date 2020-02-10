@@ -102,7 +102,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 			free(buf);
 			return -1;
 		}
-		rv = xbps_file_hash_check(buf, sha256);
+		rv = xbps_file_sha256_check(buf, sha256);
 		free(buf);
 		if (rv == ENOENT) {
 			xbps_dictionary_remove(opkgd, "metafile-sha256");

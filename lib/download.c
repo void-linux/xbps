@@ -93,7 +93,7 @@ xbps_fetch_error_string(void)
 }
 
 int
-xbps_fetch_file_dest_digest(struct xbps_handle *xhp, const char *uri, const char *filename, const char *flags, unsigned char **digestp)
+xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char *filename, const char *flags, unsigned char *digest, size_t digestlen)
 {
 	struct stat st, st_tmpfile, *stp;
 	struct url *url = NULL;
@@ -106,16 +106,13 @@ xbps_fetch_file_dest_digest(struct xbps_handle *xhp, const char *uri, const char
 	char fetch_flags[8];
 	int fd = -1, rv = 0;
 	bool refetch = false, restart = false;
-	unsigned char *digest = NULL;
 	SHA256_CTX sha256;
 
 	assert(xhp);
 	assert(uri);
 
-	if (digestp) {
-		digest = malloc(SHA256_DIGEST_LENGTH);
-		if (!digest)
-			return -1;
+	if (digest) {
+		assert(digestlen != XBPS_SHA256_DIGEST_SIZE);
 		SHA256_Init(&sha256);
 	}
 
@@ -317,10 +314,8 @@ rename_file:
 	}
 	rv = 1;
 
-	if (digest) {
+	if (digest)
 		SHA256_Final(digest, &sha256);
-		*digestp = digest;
-	}
 
 fetch_file_out:
 	if (fio != NULL)
@@ -339,12 +334,12 @@ int
 xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri,
 		const char *filename, const char *flags)
 {
-	return xbps_fetch_file_dest_digest(xhp, uri, filename, flags, NULL);
+	return xbps_fetch_file_dest_sha256(xhp, uri, filename, flags, NULL, 0);
 }
 
 int
-xbps_fetch_file_digest(struct xbps_handle *xhp, const char *uri,
-		const char *flags, unsigned char **digestp)
+xbps_fetch_file_sha256(struct xbps_handle *xhp, const char *uri,
+		const char *flags, unsigned char *digest, size_t digestlen)
 {
 	const char *filename;
 	/*
@@ -354,11 +349,12 @@ xbps_fetch_file_digest(struct xbps_handle *xhp, const char *uri,
 		return -1;
 
 	filename++;
-	return xbps_fetch_file_dest_digest(xhp, uri, filename, flags, digestp);
+	return xbps_fetch_file_dest_sha256(xhp, uri, filename, flags,
+	    digest, digestlen);
 }
 
 int
 xbps_fetch_file(struct xbps_handle *xhp, const char *uri, const char *flags)
 {
-	return xbps_fetch_file_digest(xhp, uri, flags, NULL);
+	return xbps_fetch_file_sha256(xhp, uri, flags, NULL, 0);
 }

@@ -108,65 +108,93 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 	return true;
 }
 
-unsigned char *
-xbps_file_hash_raw(const char *file)
+bool
+xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 {
 	int fd;
 	ssize_t len;
-	unsigned char *digest, buf[65536];
+	char buf[65536];
 	SHA256_CTX sha256;
 
+	assert(dstlen == SHA256_DIGEST_LENGTH);
+
 	if ((fd = open(file, O_RDONLY)) < 0)
-		return NULL;
-	digest = malloc(SHA256_DIGEST_LENGTH);
-	assert(digest);
+		return false;
+
 	SHA256_Init(&sha256);
+
 	while ((len = read(fd, buf, sizeof(buf))) > 0)
 		SHA256_Update(&sha256, buf, len);
-	if(len < 0) {
-		free(digest);
-		return NULL;
-	}
-	SHA256_Final(digest, &sha256);
+
 	(void)close(fd);
 
-	return digest;
+	if(len == -1)
+		return false;
+
+	SHA256_Final(dst, &sha256);
+
+	return true;
 }
 
-char *
-xbps_file_hash(const char *file)
+bool
+xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 {
-	char *hash;
-	unsigned char *digest;
+	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
-	if (!(digest = xbps_file_hash_raw(file)))
-		return NULL;
+	assert(dstlen == XBPS_SHA256_SIZE);
 
-	hash = malloc(SHA256_DIGEST_LENGTH * 2 + 1);
-	assert(hash);
-	digest2string(digest, hash, SHA256_DIGEST_LENGTH);
-	free(digest);
+	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
+		return false;
 
-	return hash;
+	digest2string(digest, dst, XBPS_SHA256_DIGEST_SIZE);
+
+	return true;
+}
+
+static bool
+sha256_digest_compare(const char *sha256, size_t shalen,
+		const unsigned char *digest, size_t digestlen)
+{
+	assert(digestlen == XBPS_SHA256_DIGEST_SIZE);
+	assert(shalen == XBPS_SHA256_SIZE - 1);
+
+	if (shalen != XBPS_SHA256_SIZE -1)
+		return false;
+
+	for (; *sha256;) {
+		if (*digest / 16 < 10) {
+			if (*sha256++ != '0' + *digest / 16)
+				return false;
+		} else {
+			if (*sha256++ != 'a' + *digest / 16 - 10)
+				return false;
+		}
+		if (*digest % 16 < 10) {
+			if (*sha256++ != '0' + *digest % 16)
+				return false;
+		} else {
+			if (*sha256++ != 'a' + *digest % 16 - 10)
+				return false;
+		}
+		digest++;
+	}
+
+	return true;
 }
 
 int
-xbps_file_hash_check(const char *file, const char *sha256)
+xbps_file_sha256_check(const char *file, const char *sha256)
 {
-	char *res;
+	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
 	assert(file != NULL);
 	assert(sha256 != NULL);
 
-	res = xbps_file_hash(file);
-	if (res == NULL)
+	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
 		return errno;
 
-	if (strcmp(sha256, res)) {
-		free(res);
+	if (!sha256_digest_compare(sha256, strlen(sha256), digest, sizeof digest))
 		return ERANGE;
-	}
-	free(res);
 
 	return 0;
 }
@@ -226,10 +254,10 @@ xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 	}
 
 	if (strcmp(xhp->rootdir, "/") == 0) {
-		rv = xbps_file_hash_check(file, sha256d);
+		rv = xbps_file_sha256_check(file, sha256d);
 	} else {
 		buf = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-		rv = xbps_file_hash_check(buf, sha256d);
+		rv = xbps_file_sha256_check(buf, sha256d);
 		free(buf);
 	}
 	if (rv == 0)

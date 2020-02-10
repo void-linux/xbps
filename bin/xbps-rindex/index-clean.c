@@ -77,7 +77,7 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 		 */
 		xbps_dictionary_get_cstring_nocopy(obj,
 				"filename-sha256", &sha256);
-		if (xbps_file_hash_check(filen, sha256) != 0) {
+		if (xbps_file_sha256_check(filen, sha256) != 0) {
 			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
 				goto out;
 			xbps_dictionary_remove(dest, pkgname);

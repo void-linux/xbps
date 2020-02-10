@@ -72,7 +72,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	if (repo_pkgd) {
 		xbps_dictionary_get_cstring_nocopy(repo_pkgd,
 		    "filename-sha256", &rsha256);
-		if (xbps_file_hash_check(binpkg, rsha256) == 0) {
+		if (xbps_file_sha256_check(binpkg, rsha256) == 0) {
 			/* hash matched */
 			return 0;
 		}
