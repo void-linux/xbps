@@ -153,7 +153,7 @@ xbps_file_hash(char *dst, size_t len, const char *file)
 	if (!xbps_file_hash_raw(digest, sizeof(digest), file))
 		return false;
 
-	digest2string(digest, dst, sizeof(dst));
+	digest2string(digest, dst, sizeof(digest));
 	return true;
 }
 
