@@ -19,3 +19,6 @@ internal use in the code:
 
 - portableproplib-0.6.8 (lib/portableproplib) from
   https://github.com/xtraeme/portableproplib
+
+- uthash-2.1.0 (include/uthash.h) from
+  http://troydhanson.github.com/uthash/
