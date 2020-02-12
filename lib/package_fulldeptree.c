@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014-2019 Juan Romero Pardines.
+ * Copyright (c) 2014-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@
 #include <errno.h>
 
 #include "xbps_api_impl.h"
+#include "uthash.h"
 
 struct item;
 
@@ -39,63 +40,46 @@ struct depn {
 };
 
 struct item {
-	struct item *hnext;
-	struct item *bnext;
-	struct depn *dbase;
-	char *pkgn;
+	char *pkgn;		/* hash key */
 	const char *pkgver;
 	xbps_array_t rdeps;
+	struct depn *dbase;
+	UT_hash_handle hh;
 };
 
-#define ITHSIZE	1024
-#define ITHMASK	(ITHSIZE - 1)
-
-static struct item *ItemHash[ITHSIZE];
+static struct item *items = NULL;
 static xbps_array_t result;
-
-static int
-itemhash(const char *pkgn)
-{
-	int hv = 0xA1B5F342;
-	int i;
-
-	assert(pkgn);
-
-	for (i = 0; pkgn[i]; ++i)
-		hv = (hv << 5) ^ (hv >> 23) ^ pkgn[i];
-
-	return hv & ITHMASK;
-}
 
 static struct item *
 lookupItem(const char *pkgn)
 {
-	struct item *item;
+	struct item *item = NULL;
 
 	assert(pkgn);
 
-	for (item = ItemHash[itemhash(pkgn)]; item; item = item->hnext) {
-		if (strcmp(pkgn, item->pkgn) == 0)
-			return item;
-	}
-	return NULL;
+	HASH_FIND_STR(items, pkgn, item);
+	return item;
 }
 
 static struct item *
-addItem(xbps_array_t rdeps, const char *pkgn)
+addItem(xbps_array_t rdeps, const char *pkgn, const char *pkgver)
 {
-	struct item **itemp;
-	struct item *item = calloc(sizeof(*item), 1);
+	struct item *item = NULL;
 
 	assert(pkgn);
-	assert(item);
+	assert(pkgver);
 
-	itemp = &ItemHash[itemhash(pkgn)];
-	item->hnext = *itemp;
+	HASH_FIND_STR(items, pkgn, item);
+	if (item)
+		return item;
+
+	item = malloc(sizeof(*item));
+	assert(item);
 	item->pkgn = strdup(pkgn);
-	assert(item->pkgn);
-	item->rdeps = xbps_array_copy(rdeps);
-	*itemp = item;
+	item->pkgver = pkgver;
+	item->rdeps = rdeps;
+	item->dbase = NULL;
+	HASH_ADD_KEYPTR(hh, items, item->pkgn, strlen(pkgn), item);
 
 	return item;
 }
@@ -103,8 +87,9 @@ addItem(xbps_array_t rdeps, const char *pkgn)
 static void
 addDepn(struct item *item, struct item *xitem)
 {
-	struct depn *depn = calloc(sizeof(*depn), 1);
+	struct depn *depn = calloc(1, sizeof(*depn));
 
+	assert(depn);
 	assert(item);
 	assert(xitem);
 
@@ -134,6 +119,20 @@ add_deps_recursive(struct item *item, bool first)
 	xbps_object_release(str);
 }
 
+static void
+cleanup(void)
+{
+	struct item *item, *itmp;
+
+	HASH_ITER(hh, items, item, itmp) {
+		HASH_DEL(items, item);
+		if (item->dbase)
+			free(item->dbase);
+		free(item->pkgn);
+		free(item);
+	}
+}
+
 /*
  * Recursively calculate all dependencies.
  */
@@ -143,7 +142,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 {
 	xbps_array_t rdeps, provides;
 	xbps_string_t str;
-	struct item *item, *xitem;
+	struct item *item = NULL, *xitem = NULL;
 	const char *pkgver = NULL, *pkgname = NULL;
 
 	assert(xhp);
@@ -151,7 +150,6 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 
 	rdeps = xbps_dictionary_get(pkgd, "run_depends");
 	provides = xbps_dictionary_get(pkgd, "provides");
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 
 	item = lookupItem(pkgname);
@@ -160,8 +158,11 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 		return item;
 	}
 
-	item = addItem(rdeps, pkgname);
-	item->pkgver = pkgver;
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+		abort();
+	}
+
+	item = addItem(rdeps, pkgname, pkgver);
 	assert(item);
 
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
@@ -241,5 +242,6 @@ xbps_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg, bool rpool)
 	if (ordered_depends(xhp, pkgd, rpool, 0) == NULL)
 		return NULL;
 
+	cleanup();
 	return result;
 }
