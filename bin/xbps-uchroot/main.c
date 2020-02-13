@@ -145,19 +145,19 @@ walk_dir(const char *path,
 	while (i--) {
 		p = list[i]->d_name;
 		if (strcmp(p, ".") == 0 || strcmp(p, "..") == 0)
-                        continue;
-                if (strlen(path) + strlen(p) + 1 >= (PATH_MAX - 1)) {
-                        errno = ENAMETOOLONG;
-                        rv = -1;
-                        break;
-                }
-                strncpy(tmp_path, path, PATH_MAX - 1);
-                strncat(tmp_path, "/", PATH_MAX - 1 - strlen(tmp_path));
-                strncat(tmp_path, p, PATH_MAX - 1 - strlen(tmp_path));
-                if (lstat(tmp_path, &sb) < 0) {
+			continue;
+		if (strlen(path) + strlen(p) + 1 >= (PATH_MAX - 1)) {
+			errno = ENAMETOOLONG;
+			rv = -1;
 			break;
-                }
-                if (S_ISDIR(sb.st_mode)) {
+		}
+		strncpy(tmp_path, path, PATH_MAX - 1);
+		strncat(tmp_path, "/", PATH_MAX - 1 - strlen(tmp_path));
+		strncat(tmp_path, p, PATH_MAX - 1 - strlen(tmp_path));
+		if (lstat(tmp_path, &sb) < 0) {
+			break;
+		}
+		if (S_ISDIR(sb.st_mode)) {
 			if (walk_dir(tmp_path, fn) < 0) {
 				rv = -1;
 				break;
@@ -167,8 +167,7 @@ walk_dir(const char *path,
 		if (rv != 0) {
 			break;
 		}
-
-        }
+	}
 out:
 	free(list);
 	return rv;
