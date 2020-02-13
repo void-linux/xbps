@@ -52,6 +52,7 @@
 #include <ftw.h>
 #include <signal.h>
 #include <getopt.h>
+#include <dirent.h>
 
 #include <xbps.h>
 #include "queue.h"
@@ -109,24 +110,68 @@ die(const char *fmt, ...)
 }
 
 static int
-ftw_cb(const char *fpath, const struct stat *sb UNUSED, int type,
-		struct FTW *ftwbuf UNUSED)
+ftw_cb(const char *fpath, const struct stat *sb)
 {
 	int sverrno = 0;
 
-	if (type == FTW_F || type == FTW_SL || type == FTW_SLN) {
-		if (unlink(fpath) == -1)
-			sverrno = errno;
-	} else if (type == FTW_D || type == FTW_DNR || type == FTW_DP) {
+	if (S_ISDIR(sb->st_mode)) {
 		if (rmdir(fpath) == -1)
 			sverrno = errno;
 	} else {
-		return 0;
+		if (unlink(fpath) == -1)
+			sverrno = errno;
 	}
 	if (sverrno != 0) {
 		fprintf(stderr, "Failed to remove %s: %s\n", fpath, strerror(sverrno));
 	}
 	return 0;
+}
+
+static int
+walk_dir(const char *path,
+	int (*fn)(const char *fpath, const struct stat *sb))
+{
+	struct dirent **list;
+	struct stat sb;
+	const char *p;
+	char tmp_path[PATH_MAX] = {0};
+	int rv, i;
+
+	i = scandir(path, &list, NULL, alphasort);
+	if (i == -1) {
+		rv = -1;
+		goto out;
+	}
+	while (i--) {
+		p = list[i]->d_name;
+		if (strcmp(p, ".") == 0 || strcmp(p, "..") == 0)
+                        continue;
+                if (strlen(path) + strlen(p) + 1 >= (PATH_MAX - 1)) {
+                        errno = ENAMETOOLONG;
+                        rv = -1;
+                        break;
+                }
+                strncpy(tmp_path, path, PATH_MAX - 1);
+                strncat(tmp_path, "/", PATH_MAX - 1 - strlen(tmp_path));
+                strncat(tmp_path, p, PATH_MAX - 1 - strlen(tmp_path));
+                if (lstat(tmp_path, &sb) < 0) {
+			break;
+                }
+                if (S_ISDIR(sb.st_mode)) {
+			if (walk_dir(tmp_path, fn) < 0) {
+				rv = -1;
+				break;
+			}
+		}
+		rv = fn(tmp_path, &sb);
+		if (rv != 0) {
+			break;
+		}
+
+        }
+out:
+	free(list);
+	return rv;
 }
 
 static void
@@ -135,14 +180,16 @@ cleanup_overlayfs(void)
 	if (tmpdir == NULL)
 		return;
 
-	if (!overlayfs_on_tmpfs) {
-		/* recursively remove the temporary dir */
-		if (nftw(tmpdir, ftw_cb, 20, FTW_MOUNT|FTW_PHYS|FTW_DEPTH) != 0) {
-			fprintf(stderr, "Failed to remove directory tree %s: %s\n",
-				tmpdir, strerror(errno));
-			exit(EXIT_FAILURE);
-		}
+	if (overlayfs_on_tmpfs)
+		goto out;
+
+	/* recursively remove the temporary dir */
+	if (walk_dir(tmpdir, ftw_cb) != 0) {
+		fprintf(stderr, "Failed to remove directory tree %s: %s\n",
+			tmpdir, strerror(errno));
+		exit(EXIT_FAILURE);
 	}
+out:
 	rmdir(tmpdir);
 }
 
@@ -342,16 +389,15 @@ main(int argc, char **argv)
 			die("failed to create tmpdir directory");
 		if (chown(tmpdir, ruid, rgid) == -1)
 			die("chown tmpdir %s", tmpdir);
+		/*
+		 * Register a signal handler to clean up temporary masterdir.
+		 */
+		memset(&sa, 0, sizeof(sa));
+		sa.sa_handler = sighandler_cleanup;
+		sigaction(SIGINT, &sa, NULL);
+		sigaction(SIGTERM, &sa, NULL);
+		sigaction(SIGQUIT, &sa, NULL);
 	}
-
-	/*
-	 * Register a signal handler to clean up temporary masterdir.
-	 */
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = sighandler_cleanup;
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
-	sigaction(SIGQUIT, &sa, NULL);
 
 	clone_flags = (SIGCHLD|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
 	container_flags = clone_flags & ~(CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS|CLONE_NEWPID);
@@ -420,12 +466,6 @@ main(int argc, char **argv)
 		if (execvp(cmd, cmdargs) == -1)
 			die("Failed to execute command %s", cmd);
 	}
-	/* Switch back to the gid/uid of invoking process also in the parent */
-	if (setgid(rgid) == -1)
-		die("setgid child");
-	if (setuid(ruid) == -1)
-		die("setuid child");
-
 	/* Wait until the child terminates */
 	while (waitpid(child, &child_status, 0) < 0) {
 		if (errno != EINTR)
