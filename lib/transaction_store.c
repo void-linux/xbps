@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014-2015 Juan Romero Pardines.
+ * Copyright (c) 2014-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,14 +34,40 @@ int HIDDEN
 xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 		xbps_dictionary_t pkgrd, const char *tract, bool autoinst)
 {
-	xbps_dictionary_t pkgd;
+	xbps_dictionary_t d, pkgd;
 	xbps_array_t replaces;
-	const char *pkgver, *repo;
+	const char *pkgver, *curpkgver, *repo;
 	char pkgname[XBPS_NAME_SIZE], *self_replaced;
+	int rv;
 
-	xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver);
-	if (xbps_find_pkg_in_array(pkgs, pkgver, NULL))
-		return 0;
+	if (!xbps_dictionary_get_cstring_nocopy(pkgrd, "pkgver", &pkgver)) {
+		abort();
+	}
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		abort();
+	}
+	d = xbps_find_pkg_in_array(pkgs, pkgname, NULL);
+	if (xbps_object_type(d) == XBPS_TYPE_DICTIONARY) {
+		/* compare version stored in transaction vs current */
+		if (!xbps_dictionary_get_cstring_nocopy(d, "pkgver", &curpkgver)) {
+			abort();
+		}
+		rv = xbps_cmpver(pkgver, curpkgver);
+		if (rv == 0 || rv == -1) {
+			/* same version or stored version greater than current */
+			return 0;
+		} else {
+			/*
+			 * Current version is greater than stored,
+			 * replace stored with current.
+			 */
+			if (!xbps_remove_pkg_from_array_by_pkgver(pkgs, curpkgver)) {
+				abort();
+			}
+			xbps_dbg_printf(xhp, "[trans] replaced %s with %s\n",
+			    curpkgver, pkgver);
+		}
+	}
 
 	if ((pkgd = xbps_dictionary_copy_mutable(pkgrd)) == NULL)
 		return ENOMEM;
@@ -58,9 +84,6 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	if ((replaces = xbps_dictionary_get(pkgd, "replaces")) == NULL)
 		replaces = xbps_array_create();
 
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-		abort();
-	}
 	self_replaced = xbps_xasprintf("%s>=0", pkgname);
 	xbps_array_add_cstring(replaces, self_replaced);
 	free(self_replaced);
