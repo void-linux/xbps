@@ -3,6 +3,7 @@ syntax("kyuafile", 1)
 test_suite("libxbps")
 
 include('util/Kyuafile')
+include('util_path/Kyuafile')
 include('cmpver/Kyuafile')
 include('pkgpattern_match/Kyuafile')
 include('plist_match/Kyuafile')

@@ -2186,6 +2186,60 @@ char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
 char *xbps_sanitize_path(const char *src);
 
 /**
+ * Turns the path in \a path into the shortest path equivalent to \a path
+ * by purely lexical processing.
+ *
+ * @param[in,out] path The path to clean.
+ *
+ * @return The length of the path or -1 on error.
+ */
+ssize_t xbps_path_clean(char *path);
+
+/**
+ * Returns the relative path from \a from to \a to.
+ *
+ * @param[out] dst Destination buffer to store result.
+ * @param[in] len Length of \a dst.
+ * @param[in] from The base path.
+ * @param[in] to The path that becomes relative to \a from.
+ *
+ * @return The length of the path or -1 on error.
+ */
+ssize_t xbps_path_rel(char *dst, size_t len, const char *from, const char *to);
+
+/**
+ * Joins multiple path components into the \a dst buffer.
+ *
+ * The last argument has to be (char *)NULL.
+ *
+ * @param[out] dst Destination buffer to store result.
+ * @param[in] len Length of \a dst.
+ *
+ * @return The length of the path or -1 on error.
+ */
+ssize_t xbps_path_join(char *dst, size_t len, ...);
+
+/**
+ * Adds \a rootdir and \a path to the \a dst buffer.
+ *
+ * @param[out] dst Destination buffer to store result.
+ * @param[in] len Length of \a dst.
+ *
+ * @return The length of the path or -1 on error.
+ */
+ssize_t xbps_path_append(char *dst, size_t len, const char *suffix);
+
+/**
+ * Adds \a rootdir and \a path to the \a dst buffer.
+ *
+ * @param[out] dst Destination buffer to store result.
+ * @param[in] len Length of \a dst.
+ *
+ * @return The length of the path or -1 on error.
+ */
+ssize_t xbps_path_prepend(char *dst, size_t len, const char *prefix);
+
+/**
  * Returns a sanitized target file of \a path without the rootdir component.
  *
  * @param[in] xhp The pointer to an xbps_handle struct.
