@@ -121,6 +121,29 @@ stat_bps(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 }
 
 /*
+ * Compute and display overall download progress
+ */
+static const char *
+stat_progress(const struct xbps_fetch_cb_data *xfpd)
+{
+	static char str[48];
+	static uint64_t dlsize = 0;
+	uint64_t total_dlsize = 0;
+	double ratio;
+	bool exists;
+
+	exists = xbps_dictionary_get_uint64(xfpd->xhp->transd, "total-download-size", &total_dlsize);
+	if (!exists)
+		total_dlsize = xfpd->file_size;
+
+	ratio = (double)(dlsize + xfpd->file_dloaded) / total_dlsize;
+	snprintf(str, sizeof str, "[%2d%%]", (int)(ratio * 100));
+	if (xfpd->cb_end && exists)
+		dlsize += xfpd->file_size;
+	return str;
+}
+
+/*
  * Update the stats display
  */
 static void
@@ -145,9 +168,9 @@ stat_display(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 		(void)xbps_humanize_number(totsize, (int64_t)xfpd->file_size);
 	}
 	if (v_tty)
-		fprintf(stderr, "%s: [%s %d%%] %s ETA: %s\033[K\r",
-		    xfpd->file_name, totsize, percentage,
-		    stat_bps(xfpd, xfer), stat_eta(xfpd, xfer));
+		fprintf(stderr, "%s %s: [%s %d%%] %s ETA: %s\033[K\r",
+		    stat_progress(xfpd), xfpd->file_name, totsize,
+		    percentage, stat_bps(xfpd, xfer), stat_eta(xfpd, xfer));
 	else {
 		printf("%s: [%s %d%%] %s ETA: %s\n",
 		    xfpd->file_name, totsize, percentage,
@@ -173,10 +196,12 @@ fetch_file_progress_cb(const struct xbps_fetch_cb_data *xfpd, void *cbdata)
 	} else if (xfpd->cb_end) {
 		/* end transfer stats */
 		(void)xbps_humanize_number(size, (int64_t)xfpd->file_dloaded);
-		if (v_tty)
+		if (v_tty) {
+			/* dumb call to sum file_size */
+			stat_progress(xfpd);
 			fprintf(stderr, "%s: %s [avg rate: %s]\033[K\n",
 			    xfpd->file_name, size, stat_bps(xfpd, xfer));
-		else {
+		} else {
 			printf("%s: %s [avg rate: %s]\n",
 			    xfpd->file_name, size, stat_bps(xfpd, xfer));
 			fflush(stdout);
