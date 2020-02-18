@@ -328,6 +328,13 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	xbps_object_release(edges);
 
 	/*
+	 * Do not perform any checks if XBPS_FLAG_DOWNLOAD_ONLY
+	 * is set. We just need to download the archives (dependencies).
+	 */
+	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY)
+		goto out;
+
+	/*
 	 * If all pkgs in transaction are on hold, no need to check
 	 * for anything else.
 	 */
@@ -343,13 +350,6 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		}
 	}
 	if (all_on_hold)
-		goto out;
-
-	/*
-	 * Do not perform any checks if XBPS_FLAG_DOWNLOAD_ONLY
-	 * is set. We just need to download the archives (dependencies).
-	 */
-	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY)
 		goto out;
 
 	/*
