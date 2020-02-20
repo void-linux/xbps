@@ -57,7 +57,7 @@ usage(bool fail)
 	    " -M --memory-sync           Remote repository data is fetched and stored\n"
 	    "                            in memory, ignoring on-disk repodata archives\n"
 	    " -n --dry-run               Dry-run mode\n"
-	    " -R,--repository=<url>      Add repository to the top of the list\n"
+	    " -R,--repository <url>      Add repository to the top of the list\n"
 	    "                            This option can be specified multiple times\n"
 	    " -r --rootdir <dir>         Full path to rootdir\n"
 	    "    --reproducible          Enable reproducible mode in pkgdb\n"
