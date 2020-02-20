@@ -102,10 +102,7 @@ operation. This ignores the existing on-disk repository archives in rootdir.
 .It Fl n, Fl -dry-run
 Dry-run mode. Show what actions would be done but don't do anything. The current output
 prints 6 arguments: "<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
-.It Fl R
-Enable repository mode. This mode explicitly looks in repositories, rather
-than looking in the target root directory.
-.It Fl -repository=url
+.It Fl R, Fl -repository Ar url
 Appends the specified repository to the top of the list. The
 .Ar url
 argument expects a URL to the repository for remote repositories or
