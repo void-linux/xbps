@@ -1,4 +1,4 @@
-.Dd June 17, 2019
+.Dd February 21, 2020
 .Dt XBPS-CREATE 1
 .Sh NAME
 .Nm xbps-create
@@ -73,7 +73,7 @@ Show the version information.
 A string containing the build options used in package.
 .It Fl -compression Ar none | gzip | bzip2 | xz | lz4 | zstd
 Set the binary package compression format. If unset, defaults to
-.Ar xz .
+.Ar zstd .
 .It Fl -shlib-provides Ar list
 A list of provided shared libraries, separated by whitespaces. Example:
 .Ar 'libfoo.so.2 libblah.so.1' .

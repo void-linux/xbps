@@ -105,7 +105,7 @@ usage(void)
 	"                     This expects a blank separated list of <name>:<symlink>:<target>, e.g\n"
 	"                     'vi:/usr/bin/vi:/usr/bin/vim foo:/usr/bin/foo:/usr/bin/blah'.\n"
 	" --build-options     A string with the used build options.\n"
-	" --compression       Compression format: none, gzip, bzip2, lz4, zstd, xz (default).\n"
+	" --compression       Compression format: none, gzip, bzip2, lz4, xz, zstd (default).\n"
 	" --shlib-provides    List of provided shared libraries (blank separated list,\n"
 	"                     e.g 'libfoo.so.1 libblah.so.2').\n"
 	" --shlib-requires    List of required shared libraries (blank separated list,\n"
@@ -1050,10 +1050,14 @@ main(int argc, char **argv)
 	if (ar == NULL)
 		die("cannot create new archive");
 	/*
-	 * Set compression format, xz if unset.
+	 * Set compression format, zstd by default.
 	 */
-	if (compression == NULL || strcmp(compression, "xz") == 0) {
+	if (compression == NULL || strcmp(compression, "zstd") == 0) {
+		archive_write_add_filter_zstd(ar);
+		archive_write_set_options(ar, "compression-level=9");
+	} else if (strcmp(compression, "xz") == 0) {
 		archive_write_add_filter_xz(ar);
+		archive_write_set_options(ar, "compression-level=9");
 	} else if (strcmp(compression, "gzip") == 0) {
 		archive_write_add_filter_gzip(ar);
 		archive_write_set_options(ar, "compression-level=9");
@@ -1063,9 +1067,6 @@ main(int argc, char **argv)
 	} else if (strcmp(compression, "lz4") == 0) {
 		archive_write_add_filter_lz4(ar);
 		archive_write_set_options(ar, "compression-level=9");
-	} else if (strcmp(compression, "zstd") == 0) {
-		archive_write_add_filter_zstd(ar);
-		archive_write_set_options(ar, "compression-level=19");
 	} else if (strcmp(compression, "none") == 0) {
 		/* empty */
 	} else {
