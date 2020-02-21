@@ -276,7 +276,7 @@ fi
 # Check for some compiler warning flags.
 #
 for f in all extra error shadow "format=2" missing-prototypes \
-	missing-declarations nested-externs vla no-overlength-strings \
+	missing-declarations nested-externs vla overlength-strings \
 	unsafe-loop-optimizations undef sign-compare \
 	missing-include-dirs old-style-definition \
 	init-self redundant-decls float-equal missing-noreturn \
