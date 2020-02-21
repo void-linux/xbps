@@ -18,9 +18,9 @@ to handle binary packages and repositories. Some highlights:
  * Supports **multiple local/remote repositories** (HTTP/HTTPS/FTP).
  * **RSA signed remote repositories** (NEW in 0.27).
  * Supports **multiple compression formats** for repositories:
-   gzip (default), bzip2, lz4, xz, [zstd](https://github.com/facebook/zstd).
- * Supports **multiple compression formats** for binary packages:
-   zlib, bzip2, lz4, xz (default), [zstd](https://github.com/facebook/zstd).
+   gzip (zlib), bzip2, lz4, xz, [zstd](https://github.com/facebook/zstd) (default).
+ * Supports **multiple compression formats** for package archives:
+   gzip (zlib), bzip2, lz4, xz, [zstd](https://github.com/facebook/zstd) (default).
  * **SHA256 hashes** for package metadata, files and binary packages.
  * Supports **package states** (ala dpkg) to mitigate broken package
    installs/updates.
