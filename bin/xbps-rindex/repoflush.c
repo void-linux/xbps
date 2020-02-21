@@ -63,7 +63,13 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	if (ar == NULL)
 		return false;
 
-	if (compression == NULL || strcmp(compression, "gzip") == 0) {
+	/*
+	 * Set compression format, zstd by default.
+	 */
+	if (compression == NULL || strcmp(compression, "zstd") == 0) {
+		archive_write_add_filter_zstd(ar);
+		archive_write_set_options(ar, "compression-level=9");
+	} else if (strcmp(compression, "gzip") == 0) {
 		archive_write_add_filter_gzip(ar);
 		archive_write_set_options(ar, "compression-level=9");
 	} else if (strcmp(compression, "bzip2") == 0) {
@@ -74,9 +80,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 		archive_write_set_options(ar, "compression-level=9");
 	} else if (strcmp(compression, "xz") == 0) {
 		archive_write_add_filter_xz(ar);
-	} else if (strcmp(compression, "zstd") == 0) {
-		archive_write_add_filter_zstd(ar);
-		archive_write_set_options(ar, "compression-level=19");
+		archive_write_set_options(ar, "compression-level=9");
 	} else if (strcmp(compression, "none") == 0) {
 		/* empty */
 	} else {
