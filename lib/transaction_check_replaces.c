@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2011-2015 Juan Romero Pardines.
+ * Copyright (c) 2011-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,34 +33,47 @@
 
 #include "xbps_api_impl.h"
 
-int HIDDEN
-xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
+/*
+ * Processes the array of pkg dictionaries in "pkgs" to
+ * find matching package replacements via "replaces" pkg obj.
+ *
+ * This array contains the unordered list of packages in
+ * the transaction dictionary.
+ */
+bool HIDDEN
+xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 {
+	assert(xhp);
+	assert(pkgs);
+
 	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++) {
 		xbps_array_t replaces;
 		xbps_object_t obj, obj2;
 		xbps_object_iterator_t iter;
-		const char *pkgver;
-		char pkgname[XBPS_NAME_SIZE];
+		xbps_dictionary_t instd, reppkgd;
+		const char *pkgver = NULL;
+		char pkgname[XBPS_NAME_SIZE] = {0};
 
 		obj = xbps_array_get(pkgs, i);
 		replaces = xbps_dictionary_get(obj, "replaces");
 		if (replaces == NULL || xbps_array_count(replaces) == 0)
 			continue;
 
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
+			return false;
+		}
+		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
+			return false;
+		}
+
 		iter = xbps_array_iterator(replaces);
 		assert(iter);
 
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-			abort();
-		}
-
 		while ((obj2 = xbps_object_iterator_next(iter)) != NULL) {
-			xbps_dictionary_t instd, reppkgd;
-			const char *pattern = NULL, *curpkgver = NULL;
-			char curpkgname[XBPS_NAME_SIZE];
+			const char *curpkgver = NULL, *pattern = NULL;
+			char curpkgname[XBPS_NAME_SIZE] = {0};
 			bool instd_auto = false, hold = false;
+			xbps_trans_type_t ttype;
 
 			pattern = xbps_string_cstring_nocopy(obj2);
 			/*
@@ -71,14 +84,17 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			    ((instd = xbps_pkgdb_get_virtualpkg(xhp, pattern)) == NULL))
 				continue;
 
-			xbps_dictionary_get_cstring_nocopy(instd,
-			    "pkgver", &curpkgver);
+			if (!xbps_dictionary_get_cstring_nocopy(instd, "pkgver", &curpkgver)) {
+				xbps_object_iterator_release(iter);
+				return false;
+			}
 			/* ignore pkgs on hold mode */
 			if (xbps_dictionary_get_bool(instd, "hold", &hold) && hold)
 				continue;
 
 			if (!xbps_pkg_name(curpkgname, XBPS_NAME_SIZE, curpkgver)) {
-				abort();
+				xbps_object_iterator_release(iter);
+				return false;
 			}
 			/*
 			 * Check that we are not replacing the same package,
@@ -91,32 +107,40 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 * Make sure to not add duplicates.
 			 */
 			xbps_dictionary_get_bool(instd, "automatic-install", &instd_auto);
-			reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, NULL);
+			reppkgd = xbps_find_pkg_in_array(pkgs, curpkgname, 0);
 			if (reppkgd) {
-				const char *rpkgver = NULL, *tract = NULL;
-
-				xbps_dictionary_get_cstring_nocopy(reppkgd,
-				    "pkgver", &rpkgver);
-				xbps_dictionary_get_cstring_nocopy(reppkgd,
-				    "transaction", &tract);
-				if (!strcmp(tract, "remove") || !strcmp(tract, "hold"))
+				ttype = xbps_transaction_pkg_type(reppkgd);
+				if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD)
 					continue;
+				if (!xbps_dictionary_get_cstring_nocopy(reppkgd,
+				    "pkgver", &curpkgver)) {
+					xbps_object_iterator_release(iter);
+					return false;
+				}
 				if (!xbps_match_virtual_pkg_in_dict(reppkgd, pattern) &&
-				    !xbps_pkgpattern_match(rpkgver, pattern))
+				    !xbps_pkgpattern_match(curpkgver, pattern))
 					continue;
 				/*
 				 * Package contains replaces="pkgpattern", but the
 				 * package that should be replaced is also in the
 				 * transaction and it's going to be updated.
 				 */
-				xbps_dictionary_set_bool(reppkgd,
-				    "automatic-install", instd_auto);
-				xbps_dictionary_set_cstring_nocopy(reppkgd,
-				    "transaction", "remove");
-				xbps_dictionary_set_bool(reppkgd,
-				    "replaced", true);
-				xbps_array_replace_dict_by_name(pkgs,
-				    reppkgd, curpkgname);
+				if (!xbps_dictionary_set_bool(reppkgd, "automatic-install", instd_auto)) {
+					xbps_object_iterator_release(iter);
+					return false;
+				}
+				if (!xbps_dictionary_set_bool(reppkgd, "replaced", true)) {
+					xbps_object_iterator_release(iter);
+					return false;
+				}
+				if (!xbps_transaction_pkg_type_set(reppkgd, XBPS_TRANS_REMOVE)) {
+					xbps_object_iterator_release(iter);
+					return false;
+				}
+				if (xbps_array_replace_dict_by_name(pkgs, reppkgd, curpkgname) != 0) {
+					xbps_object_iterator_release(iter);
+					return false;
+				}
 				xbps_dbg_printf(xhp,
 				    "Package `%s' in transaction will be "
 				    "replaced by `%s', matched with `%s'\n",
@@ -129,26 +153,33 @@ xbps_transaction_package_replace(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 * the automatic-install object.
 			 */
 			if (xbps_match_virtual_pkg_in_dict(obj, pattern)) {
-				xbps_dictionary_set_bool(obj,
-				    "automatic-install", instd_auto);
+				if (!xbps_dictionary_set_bool(obj, "automatic-install", instd_auto)) {
+					xbps_object_iterator_release(iter);
+					return false;
+				}
 			}
-			xbps_dbg_printf(xhp,
-			    "Package `%s' will be replaced by `%s', "
-			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 			/*
 			 * Add package dictionary into the transaction and mark
 			 * it as to be "removed".
 			 */
-			xbps_dictionary_set_cstring_nocopy(instd,
-			    "transaction", "remove");
-			xbps_dictionary_set_bool(instd, "replaced", true);
+			if (!xbps_transaction_pkg_type_set(instd, XBPS_TRANS_REMOVE)) {
+				xbps_object_iterator_release(iter);
+				return false;
+			}
+			if (!xbps_dictionary_set_bool(instd, "replaced", true)) {
+				xbps_object_iterator_release(iter);
+				return false;
+			}
 			if (!xbps_array_add_first(pkgs, instd)) {
 				xbps_object_iterator_release(iter);
-				return EINVAL;
+				return false;
 			}
+			xbps_dbg_printf(xhp,
+			    "Package `%s' will be replaced by `%s', "
+			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 		}
 		xbps_object_iterator_release(iter);
 	}
 
-	return 0;
+	return true;
 }

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014-2016 Juan Romero Pardines.
+ * Copyright (c) 2014-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,7 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t d, pd;
-	const char *pkgver;
+	const char *pkgname, *pkgver;
 
 	d = xbps_dictionary_create();
 	assert(d);
@@ -82,21 +82,12 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 	iter = xbps_array_iterator(pkgs);
 	assert(iter);
 	while ((obj = xbps_object_iterator_next(iter))) {
-		const char *trans = NULL;
-		char pkgname[XBPS_NAME_SIZE];
-
-		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver))
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname))
 			continue;
 
-		if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-			abort();
-		}
-
 		/* ignore shlibs if pkg is on hold mode */
-		if (xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans)) {
-			if (!strcmp(trans, "hold")) {
-				continue;
-			}
+		if (xbps_transaction_pkg_type(obj) == XBPS_TRANS_HOLD) {
+			continue;
 		}
 
 		xbps_dictionary_set(pd, pkgname, obj);
@@ -112,12 +103,10 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t shobjs;
 		xbps_dictionary_t pkgd;
-		const char *trans;
 
 		pkgd = xbps_dictionary_get_keysym(pd, obj);
-		if (xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &trans)) {
-			if (!strcmp(trans, "remove"))
-				continue;
+		if (xbps_transaction_pkg_type(pkgd) == XBPS_TRANS_REMOVE) {
+			continue;
 		}
 		/*
 		 * If pkg does not have the required obj, pass to next one.
@@ -146,25 +135,25 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 }
 
 bool HIDDEN
-xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t mshlibs)
+xbps_transaction_check_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs)
 {
+	xbps_array_t array, mshlibs;
 	xbps_object_t obj, obj2;
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t shrequires, shprovides;
-	bool unmatched = false;
+	const char *pkgver = NULL, *shlib = NULL;
+	char *buf;
+	bool broken = false;
 
 	shrequires = collect_shlibs(xhp, pkgs, true);
 	shprovides = collect_shlibs(xhp, pkgs, false);
 
+	mshlibs = xbps_dictionary_get(xhp->transd, "missing_shlibs");
 	/* iterate over shlib-requires to find unmatched shlibs */
 	iter = xbps_dictionary_iterator(shrequires);
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
-		xbps_array_t array;
-		const char *pkgver = NULL, *shlib = NULL;
-		char *buf;
-
 		shlib = xbps_dictionary_keysym_cstring_nocopy(obj);
 		xbps_dbg_printf(xhp, "%s: checking for `%s': ", __func__, shlib);
 		if ((obj2 = xbps_dictionary_get(shprovides, shlib))) {
@@ -174,7 +163,7 @@ xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t
 		}
 		xbps_dbg_printf_append(xhp, "not found\n");
 
-		unmatched = true;
+		broken = true;
 		array = xbps_dictionary_get_keysym(shrequires, obj);
 		for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 			xbps_array_get_cstring_nocopy(array, i, &pkgver);
@@ -183,11 +172,13 @@ xbps_transaction_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, xbps_array_t
 			xbps_array_add_cstring(mshlibs, buf);
 			free(buf);
 		}
-		xbps_object_release(array);
 	}
 	xbps_object_iterator_release(iter);
-	/* XXX: not possible to free shrequires without copying values */
+	if (!broken) {
+		xbps_dictionary_remove(xhp->transd, "missing_shlibs");
+	}
 	xbps_object_release(shprovides);
+	xbps_object_release(shrequires);
 
-	return unmatched;
+	return true;
 }

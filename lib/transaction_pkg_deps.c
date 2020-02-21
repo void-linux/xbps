@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2016 Juan Romero Pardines.
+ * Copyright (c) 2008-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -109,35 +109,45 @@ out:
 #define MAX_DEPTH	512
 
 static int
-find_repo_deps(struct xbps_handle *xhp,
-	       xbps_array_t unsorted,		/* array of unsorted deps */
-	       xbps_array_t pkg_rdeps_array,	/* current pkg rundeps array  */
-	       xbps_array_t pkg_provides,	/* current pkg provides array */
-	       const char *curpkg,		/* current pkgver */
-	       unsigned short *depth)		/* max recursion depth */
+repo_deps(struct xbps_handle *xhp,
+	  xbps_array_t pkgs,		/* array of pkgs */
+	  xbps_dictionary_t pkg_repod,	/* pkg repo dictionary */
+	  unsigned short *depth)	/* max recursion depth */
 {
+	xbps_array_t pkg_rdeps = NULL, pkg_provides = NULL;
+	xbps_dictionary_t curpkgd = NULL;
+	xbps_trans_type_t ttype;
+	pkg_state_t state;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
+	const char *curpkg = NULL, *reqpkg = NULL, *pkgver_q = NULL;
+	char pkgname[XBPS_NAME_SIZE], reqpkgname[XBPS_NAME_SIZE];
 	int rv = 0;
+
+	assert(xhp);
+	assert(pkgs);
+	assert(pkg_repod);
 
 	if (*depth >= MAX_DEPTH)
 		return ELOOP;
 
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &curpkg);
+	pkg_provides = xbps_dictionary_get(pkg_repod, "provides");
 	/*
 	 * Iterate over the list of required run dependencies for
 	 * current package.
 	 */
-	iter = xbps_array_iterator(pkg_rdeps_array);
+	pkg_rdeps = xbps_dictionary_get(pkg_repod, "run_depends");
+	if (xbps_array_count(pkg_rdeps) == 0)
+		goto out;
+
+	iter = xbps_array_iterator(pkg_rdeps);
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
-		xbps_array_t curpkgrdeps = NULL, curpkgprovides = NULL;
-		xbps_dictionary_t curpkgd = NULL;
-		pkg_state_t state;
-		const char *reqpkg, *pkgver_q, *reason = NULL;
-		char pkgname[XBPS_NAME_SIZE], reqpkgname[XBPS_NAME_SIZE];
 		bool error = false, foundvpkg = false;
 
+		ttype = XBPS_TRANS_UNKNOWN;
 		reqpkg = xbps_string_cstring_nocopy(obj);
 
 		if (xhp->flags & XBPS_FLAG_DEBUG) {
@@ -174,8 +184,8 @@ find_repo_deps(struct xbps_handle *xhp,
 		 * Pass 2: check if required dependency has been already
 		 * added in the transaction dictionary.
 		 */
-		if ((curpkgd = xbps_find_pkg_in_array(unsorted, reqpkg, NULL)) ||
-		    (curpkgd = xbps_find_virtualpkg_in_array(xhp, unsorted, reqpkg, NULL))) {
+		if ((curpkgd = xbps_find_pkg_in_array(pkgs, reqpkg, 0)) ||
+		    (curpkgd = xbps_find_virtualpkg_in_array(xhp, pkgs, reqpkg, 0))) {
 			xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
 			xbps_dbg_printf_append(xhp, " (%s queued)\n", pkgver_q);
 			continue;
@@ -199,7 +209,6 @@ find_repo_deps(struct xbps_handle *xhp,
 			curpkgd = NULL;
 		}
 
-
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
 				/* error */
@@ -209,7 +218,7 @@ find_repo_deps(struct xbps_handle *xhp,
 			}
 			/* Required dependency not installed */
 			xbps_dbg_printf_append(xhp, "not installed.\n");
-			reason = "install";
+			ttype = XBPS_TRANS_INSTALL;
 			state = XBPS_PKG_STATE_NOT_INSTALLED;
 		} else {
 			/*
@@ -244,18 +253,20 @@ find_repo_deps(struct xbps_handle *xhp,
 				if (strcmp(pkgname, curpkgname)) {
 					xbps_dbg_printf_append(xhp, "not installed `%s (vpkg)'", pkgver_q);
 					if (xbps_dictionary_get(curpkgd, "hold")) {
+						ttype = XBPS_TRANS_HOLD;
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
 					} else {
 						xbps_dbg_printf_append(xhp, "\n");
-						reason = "install";
+						ttype = XBPS_TRANS_INSTALL;
 					}
 				} else {
 					xbps_dbg_printf_append(xhp, "installed `%s', must be updated", pkgver_q);
 					if (xbps_dictionary_get(curpkgd, "hold")) {
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
+						ttype = XBPS_TRANS_HOLD;
 					} else {
 						xbps_dbg_printf_append(xhp, "\n");
-						reason = "update";
+						ttype = XBPS_TRANS_UPDATE;
 					}
 				}
 			} else if (rv == 1) {
@@ -269,7 +280,7 @@ find_repo_deps(struct xbps_handle *xhp,
 					 * configure pkg.
 					 */
 					xbps_dbg_printf_append(xhp, "installed `%s', must be configured.\n", pkgver_q);
-					reason = "configure";
+					ttype = XBPS_TRANS_CONFIGURE;
 				} else if (state == XBPS_PKG_STATE_INSTALLED) {
 					/*
 					 * Package matches the dependency pattern and is fully installed,
@@ -285,6 +296,10 @@ find_repo_deps(struct xbps_handle *xhp,
 			}
 		}
 		if (xbps_dictionary_get(curpkgd, "hold")) {
+			if (!xbps_transaction_pkg_type_set(curpkgd, XBPS_TRANS_HOLD)) {
+				rv = EINVAL;
+				break;
+			}
 			xbps_dbg_printf(xhp, "%s on hold state! ignoring package.\n", curpkg);
 			continue;
 		}
@@ -330,14 +345,14 @@ find_repo_deps(struct xbps_handle *xhp,
 		}
 		if (strcmp(pkgname, reqpkgname) == 0) {
 			xbps_dbg_printf_append(xhp, "[ignoring wrong dependency %s (depends on itself)]\n", reqpkg);
-			xbps_remove_string_from_array(pkg_rdeps_array, reqpkg);
+			xbps_remove_string_from_array(pkg_rdeps, reqpkg);
 			continue;
 		}
 		/*
 		 * Installed package must be updated, check if dependency is
 		 * satisfied.
 		 */
-		if (!strcmp(reason, "update")) {
+		if (ttype == XBPS_TRANS_UPDATE) {
 			switch (xbps_pkgpattern_match(pkgver_q, reqpkg)) {
 				case 0: /* nomatch */
 					break;
@@ -351,7 +366,7 @@ find_repo_deps(struct xbps_handle *xhp,
 					 * So dependency pattern matching didn't
 					 * succeed... return ENODEV.
 					 */
-					if (xbps_find_pkg_in_array(unsorted, pkgname, "update")) {
+					if (xbps_find_pkg_in_array(pkgs, pkgname, XBPS_TRANS_UPDATE)) {
 						error = true;
 						rv = ENODEV;
 					}
@@ -364,76 +379,68 @@ find_repo_deps(struct xbps_handle *xhp,
 			if (error)
 				break;
 		}
-
-		/*
-		 * If package doesn't have rundeps, pass to the next one.
-		 */
-		curpkgrdeps = xbps_dictionary_get(curpkgd, "run_depends");
-		if (curpkgrdeps == NULL) {
+		pkg_rdeps = xbps_dictionary_get(curpkgd, "run_depends");
+		if (xbps_array_count(pkg_rdeps)) {
 			/*
-			 * Package is on repo, add it into the transaction dictionary.
+			 * Process rundeps for current pkg found in rpool.
 			 */
-			xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
-			rv = xbps_transaction_store(xhp, unsorted, curpkgd, reason, true);
+			if (xhp->flags & XBPS_FLAG_DEBUG) {
+				xbps_dbg_printf(xhp, "%s", "");
+				for (unsigned short x = 0; x < *depth; x++) {
+					xbps_dbg_printf_append(xhp, " ");
+				}
+				xbps_dbg_printf_append(xhp, "%s: finding dependencies:\n", pkgver_q);
+			}
+			(*depth)++;
+			rv = repo_deps(xhp, pkgs, curpkgd, depth);
 			if (rv != 0) {
-				xbps_dbg_printf(xhp, "xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
+				xbps_dbg_printf(xhp, "Error checking %s for rundeps: %s\n", reqpkg, strerror(rv));
 				break;
 			}
-			continue;
 		}
-
-		if (xhp->flags & XBPS_FLAG_DEBUG) {
-			xbps_dbg_printf(xhp, "%s", "");
-			for (unsigned short x = 0; x < *depth; x++) {
-				xbps_dbg_printf_append(xhp, " ");
-			}
-			xbps_dbg_printf_append(xhp, "%s: finding dependencies:\n", pkgver_q);
+		if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+			ttype = XBPS_TRANS_DOWNLOAD;
+		} else if (xbps_dictionary_get(curpkgd, "hold")) {
+			ttype = XBPS_TRANS_HOLD;
 		}
 		/*
-		 * Recursively find rundeps for current pkg dictionary.
+		 * All deps were processed, store pkg in transaction.
 		 */
-		(*depth)++;
-		curpkgprovides = xbps_dictionary_get(curpkgd, "provides");
-		rv = find_repo_deps(xhp, unsorted, curpkgrdeps, curpkgprovides, pkgver_q, depth);
-		if (rv != 0) {
-			xbps_dbg_printf(xhp, "Error checking %s for rundeps: %s\n", reqpkg, strerror(rv));
+		if (!xbps_transaction_pkg_type_set(curpkgd, ttype)) {
+			rv = EINVAL;
+			xbps_dbg_printf(xhp, "xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 			break;
 		}
-		/*
-		 * Package is on repo, add it into the transaction dictionary.
-		 */
-		xbps_dictionary_set_cstring_nocopy(curpkgd, "transaction", reason);
-		rv = xbps_transaction_store(xhp, unsorted, curpkgd, reason, true);
-		if (rv != 0) {
+		if (!xbps_transaction_store(xhp, pkgs, curpkgd, true)) {
+			rv = EINVAL;
 			xbps_dbg_printf(xhp, "xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 			break;
 		}
 	}
 	xbps_object_iterator_release(iter);
+out:
 	(*depth)--;
 
 	return rv;
 }
 
 int HIDDEN
-xbps_repository_find_deps(struct xbps_handle *xhp,
-			  xbps_array_t unsorted,
-			  xbps_dictionary_t repo_pkgd)
+xbps_transaction_pkg_deps(struct xbps_handle *xhp,
+			  xbps_array_t pkgs,
+			  xbps_dictionary_t pkg_repod)
 {
-	xbps_array_t pkg_rdeps, pkg_provides = NULL;
 	const char *pkgver;
 	unsigned short depth = 0;
 
-	pkg_rdeps = xbps_dictionary_get(repo_pkgd, "run_depends");
-	if (xbps_array_count(pkg_rdeps) == 0)
-		return 0;
+	assert(xhp);
+	assert(pkgs);
+	assert(pkg_repod);
 
-	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	xbps_dbg_printf(xhp, "Finding required dependencies for '%s':\n", pkgver);
 	/*
 	 * This will find direct and indirect deps, if any of them is not
 	 * there it will be added into the missing_deps array.
 	 */
-	pkg_provides = xbps_dictionary_get(repo_pkgd, "provides");
-	return find_repo_deps(xhp, unsorted, pkg_rdeps, pkg_provides, pkgver, &depth);
+	return repo_deps(xhp, pkgs, pkg_repod, &depth);
 }

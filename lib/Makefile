@@ -33,18 +33,18 @@ EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
 
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o
-OBJS += package_remove.o package_state.o
+OBJS += package_remove.o package_state.o package_msg.o
 OBJS += package_unpack.o package_register.o package_script.o verifysig.o
-OBJS += package_msg.o transaction_shlibs.o
-OBJS += transaction_commit.o transaction_package_replace.o
-OBJS += transaction_prepare.o transaction_ops.o transaction_store.o
-OBJS += transaction_revdeps.o transaction_conflicts.o
-OBJS += transaction_files.o transaction_fetch.o
+OBJS += transaction_commit.o transaction_prepare.o
+OBJS += transaction_ops.o transaction_store.o transaction_check_replaces.o
+OBJS += transaction_check_revdeps.o transaction_check_conflicts.o
+OBJS += transaction_check_shlibs.o
+OBJS += transaction_files.o transaction_fetch.o transaction_pkg_deps.o
 OBJS += pubkey2fp.o package_fulldeptree.o
 OBJS += download.o initend.o pkgdb.o
 OBJS += plist.o plist_find.o plist_match.o archive.o
 OBJS += plist_remove.o plist_fetch.o util.o util_path.o util_hash.o
-OBJS += repo.o repo_pkgdeps.o repo_sync.o
+OBJS += repo.o repo_sync.o
 OBJS += rpool.o cb_util.o proplib_wrapper.o
 OBJS += package_alternatives.o
 OBJS += conf.o log.o

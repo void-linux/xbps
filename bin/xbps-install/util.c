@@ -81,15 +81,12 @@ static unsigned int
 find_longest_pkgname(struct transaction *trans)
 {
 	xbps_object_t obj;
-	const char *pkgver;
-	char pkgname[XBPS_NAME_SIZE];
+	const char *pkgname;
 	unsigned int len = 0, max = 0;
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			abort();
-		}
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname))
+			continue;
 		len = strlen(pkgname);
 		if (max == 0 || len > max)
 			max = len;
@@ -101,9 +98,12 @@ find_longest_pkgname(struct transaction *trans)
 bool
 print_trans_colmode(struct transaction *trans, int cols)
 {
+	xbps_dictionary_t ipkgd;
 	xbps_object_t obj;
-	uint64_t dlsize = 0;
+	xbps_trans_type_t ttype;
+	const char *pkgver, *pkgname, *ipkgver, *ver, *iver, *tract;
 	char size[8];
+	uint64_t dlsize = 0;
 	unsigned int x, blen, pnamelen;
 	int hdrlen;
 
@@ -123,42 +123,48 @@ print_trans_colmode(struct transaction *trans, int cols)
 	printf("Action    Version           New version            Download size\n");
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
-		xbps_dictionary_t ipkgd;
-		const char *pkgver, *ipkgver, *ver, *iver, *tract;
-		char pkgname[XBPS_NAME_SIZE];
 		bool dload = false;
 
-		ver = iver = NULL;
-
+		pkgver = pkgname = ipkgver = ver = iver = NULL;
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		xbps_dictionary_get_uint64(obj, "filename-size", &dlsize);
 		xbps_dictionary_get_bool(obj, "download", &dload);
 
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			abort();
-		}
+		ttype = xbps_transaction_pkg_type(obj);
 
+		tract = "unknown";
 		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 			tract = "download";
 		}
 
-		if (strcmp(tract, "install") == 0) {
+		if (ttype == XBPS_TRANS_INSTALL) {
 			trans->inst_pkgcnt++;
-		} else if (strcmp(tract, "update") == 0) {
+			tract = "install";
+		} else if (ttype == XBPS_TRANS_REINSTALL) {
+			trans->inst_pkgcnt++;
+			tract = "reinstall";
+		} else if (ttype == XBPS_TRANS_UPDATE) {
 			trans->up_pkgcnt++;
-		} else if (strcmp(tract, "remove") == 0) {
+			tract = "update";
+		} else if (ttype == XBPS_TRANS_REMOVE) {
 			trans->rm_pkgcnt++;
-		} else if (strcmp(tract, "configure") == 0) {
+			tract = "remove";
+		} else if (ttype == XBPS_TRANS_CONFIGURE) {
 			trans->cf_pkgcnt++;
-		}
-		ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
-
-		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
-			ipkgd = NULL;
+			tract = "configure";
+		} else if (ttype == XBPS_TRANS_HOLD) {
+			tract = "hold";
+		} else if (ttype == XBPS_TRANS_DOWNLOAD) {
+			tract = "download";
 		}
 		if (dload) {
 			trans->dl_pkgcnt++;
+		}
+
+		ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
+		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
+			ipkgd = NULL;
 		}
 		if (ipkgd) {
 			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
@@ -167,10 +173,8 @@ print_trans_colmode(struct transaction *trans, int cols)
 		ver = xbps_pkg_version(pkgver);
 		if (iver) {
 			int rv = xbps_cmpver(iver, ver);
-			if (rv == 1 && strcmp(tract, "hold"))
+			if (rv == 1 && ttype != XBPS_TRANS_HOLD)
 				tract = "downgrade";
-			else if (rv == 0 && strcmp(tract, "remove"))
-				tract = "reinstall";
 		}
 		/* print pkgname and some blanks */
 		blen = pnamelen - strlen(pkgname);
@@ -192,7 +196,7 @@ print_trans_colmode(struct transaction *trans, int cols)
 		for (x = strlen(iver); x < 17; x++)
 			printf(" ");
 
-		if (strcmp(tract, "remove") == 0) {
+		if (ttype == XBPS_TRANS_REMOVE) {
 			ver = "-";
 		}
 		if (dload)

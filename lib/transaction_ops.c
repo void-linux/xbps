@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2019 Juan Romero Pardines.
+ * Copyright (c) 2009-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,22 +52,16 @@
  * Text inside of white boxes are the key associated with the object, its
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
-enum {
-	TRANS_INSTALL = 1,
-	TRANS_UPDATE,
-	TRANS_REINSTALL
-};
-
 static int
-trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
-		bool hold)
+trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 {
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
 	xbps_array_t pkgs;
-	const char *repoloc, *repopkgver, *instpkgver, *reason;
-	char pkgname[XBPS_NAME_SIZE];
-	int action = 0, rv = 0;
 	pkg_state_t state = 0;
+	xbps_trans_type_t ttype;
+	const char *repoloc, *repopkgver, *instpkgver, *pkgname;
+	char buf[XBPS_NAME_SIZE] = {0};
+	int rv = 0;
 	bool autoinst = false, repolock = false;
 
 	assert(pkg != NULL);
@@ -75,14 +69,15 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	/*
 	 * Find out if pkg is installed first.
 	 */
-	if (xbps_pkg_name(pkgname, sizeof(pkgname), pkg)) {
-		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkgname);
+	if (xbps_pkg_name(buf, sizeof(buf), pkg)) {
+		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, buf);
 	} else {
 		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg);
 	}
 
 	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 		pkg_pkgdb = NULL;
+		ttype = XBPS_TRANS_DOWNLOAD;
 	}
 
 	/*
@@ -90,21 +85,17 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	 */
 	if (pkg_pkgdb == NULL) {
 		/* pkg not installed, perform installation */
-		action = TRANS_INSTALL;
-		reason = "install";
+		ttype = XBPS_TRANS_INSTALL;
 		if (((pkg_repod = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
 		    ((pkg_repod = xbps_rpool_get_virtualpkg(xhp, pkg)) == NULL)) {
 			/* not found */
 			return ENOENT;
 		}
 	} else {
-		/* pkg installed, update or reinstall */
-		if (!reinstall) {
-			action = TRANS_UPDATE;
-			reason = "update";
+		if (reinstall) {
+			ttype = XBPS_TRANS_REINSTALL;
 		} else {
-			action = TRANS_REINSTALL;
-			reason = "install";
+			ttype = XBPS_TRANS_UPDATE;
 		}
 		xbps_dictionary_get_bool(pkg_pkgdb, "repolock", &repolock);
 		if (repolock) {
@@ -129,7 +120,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
 
-	if (action == TRANS_UPDATE) {
+	if (ttype == XBPS_TRANS_UPDATE) {
 		/*
 		 * Compare installed version vs best pkg available in repos
 		 * for pkg updates.
@@ -145,7 +136,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 			    repopkgver, instpkgver, repoloc);
 			return EEXIST;
 		}
-	} else if (action == TRANS_REINSTALL) {
+	} else if (ttype == XBPS_TRANS_REINSTALL) {
 		/*
 		 * For reinstallation check if installed version is less than
 		 * or equal to the pkg in repos, if true, continue with reinstallation;
@@ -153,8 +144,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 		 */
 		xbps_dictionary_get_cstring_nocopy(pkg_pkgdb, "pkgver", &instpkgver);
 		if (xbps_cmpver(repopkgver, instpkgver) == 1) {
-			action = TRANS_UPDATE;
-			reason = "update";
+			ttype = XBPS_TRANS_UPDATE;
 		}
 	}
 
@@ -178,16 +168,16 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 	 * Find out if package being updated matches the one already
 	 * in transaction, in that case ignore it.
 	 */
-	if (action == TRANS_UPDATE) {
-		if (xbps_find_pkg_in_array(pkgs, repopkgver, NULL)) {
+	if (ttype == XBPS_TRANS_UPDATE) {
+		if (xbps_find_pkg_in_array(pkgs, repopkgver, 0)) {
 			xbps_dbg_printf(xhp, "[update] `%s' already queued in "
 			    "transaction.\n", repopkgver);
 			return EEXIST;
 		}
 	}
 
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), repopkgver)) {
-		abort();
+	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname)) {
+		return EINVAL;
 	}
 	/*
 	 * Set package state in dictionary with same state than the
@@ -204,22 +194,24 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall,
 		return rv;
 	}
 
-	if ((action == TRANS_INSTALL) && (state == XBPS_PKG_STATE_UNPACKED))
-		reason = "configure";
-	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
-		reason = "install";
-	else if ((action == TRANS_UPDATE) && hold)
-		reason = "hold";
-
+	if (ttype != XBPS_TRANS_HOLD) {
+		if (state == XBPS_PKG_STATE_UNPACKED)
+			ttype = XBPS_TRANS_CONFIGURE;
+		else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
+			ttype = XBPS_TRANS_INSTALL;
+	}
 	/*
-	 * Set transaction obj reason.
+	 * Store pkgd from repo into the transaction.
 	 */
-	if (!xbps_dictionary_set_cstring_nocopy(pkg_repod,
-	    "transaction", reason)) {
+	if (!xbps_transaction_pkg_type_set(pkg_repod, ttype)) {
 		return EINVAL;
 	}
 
-	return xbps_transaction_store(xhp, pkgs, pkg_repod, reason, false);
+	if (!xbps_transaction_store(xhp, pkgs, pkg_repod, false)) {
+		return EINVAL;
+	}
+
+	return 0;
 }
 
 /*
@@ -230,8 +222,7 @@ xbps_autoupdate(struct xbps_handle *xhp)
 {
 	xbps_array_t rdeps;
 	xbps_dictionary_t pkgd;
-	const char *pkgver;
-	char pkgname[XBPS_NAME_SIZE];
+	const char *pkgver = NULL, *pkgname = NULL;
 	int rv;
 
 	/*
@@ -242,12 +233,14 @@ xbps_autoupdate(struct xbps_handle *xhp)
 	    ((pkgd = xbps_pkgdb_get_virtualpkg(xhp, "xbps")) == NULL))
 		return 0;
 
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-		abort();
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+		return EINVAL;
 	}
-	rv = trans_find_pkg(xhp, pkgname, false, false);
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
+		return EINVAL;
+	}
+
+	rv = trans_find_pkg(xhp, pkgname, false);
 
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg xbps: %d\n", __func__, rv);
 
@@ -259,7 +252,7 @@ xbps_autoupdate(struct xbps_handle *xhp)
 		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
 		for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
 			const char *curpkgver = NULL;
-			char curpkgn[XBPS_NAME_SIZE];
+			char curpkgn[XBPS_NAME_SIZE] = {0};
 
 			xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
 			xbps_dbg_printf(xhp, "%s: processing revdep %s\n", __func__, curpkgver);
@@ -267,7 +260,7 @@ xbps_autoupdate(struct xbps_handle *xhp)
 			if (!xbps_pkg_name(curpkgn, sizeof(curpkgn), curpkgver)) {
 				abort();
 			}
-			rv = trans_find_pkg(xhp, curpkgn, false, false);
+			rv = trans_find_pkg(xhp, curpkgn, false);
 			xbps_dbg_printf(xhp, "%s: trans_find_pkg revdep %s: %d\n", __func__, curpkgver, rv);
 			if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
 				return -1;
@@ -300,6 +293,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 {
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
+	xbps_dictionary_t pkgd;
 	bool newpkg_found = false;
 	int rv = 0;
 
@@ -319,23 +313,21 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
-		xbps_dictionary_t pkgd;
-		const char *pkgver;
-		char pkgname[XBPS_NAME_SIZE];
-		bool hold = false;
+		const char *pkgver = NULL;
+		char pkgname[XBPS_NAME_SIZE] = {0};
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver))
+		if (xbps_dictionary_get(pkgd, "hold")) {
 			continue;
-		xbps_dictionary_get_bool(pkgd, "hold", &hold);
-		if (hold) {
-			xbps_dbg_printf(xhp, "[rpool] package `%s' "
-			    "on hold, ignoring updates.\n", pkgver);
+		}
+		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+			continue;
 		}
 		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			abort();
+			rv = EINVAL;
+			break;
 		}
-		rv = trans_find_pkg(xhp, pkgname, false, hold);
+		rv = trans_find_pkg(xhp, pkgname, false);
 		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv == 0) {
 			newpkg_found = true;
@@ -374,24 +366,31 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 		break;
 	}
 
+	/* update its reverse dependencies */
 	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
 	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 		rdeps = NULL;
 	}
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
 		const char *pkgver = NULL;
-		char pkgname[XBPS_NAME_SIZE];
+		char pkgname[XBPS_NAME_SIZE] = {0};
 
-		xbps_array_get_cstring_nocopy(rdeps, i, &pkgver);
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			abort();
+		if (!xbps_array_get_cstring_nocopy(rdeps, i, &pkgver)) {
+			rv = EINVAL;
+			break;
 		}
-		rv = trans_find_pkg(xhp, pkgname, false, false);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			rv = EINVAL;
+			break;
+		}
+		rv = trans_find_pkg(xhp, pkgname, false);
 		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
-		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
+		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV) {
 			return rv;
+		}
 	}
-	rv = trans_find_pkg(xhp, pkg, false, false);
+	/* add pkg repod */
+	rv = trans_find_pkg(xhp, pkg, false);
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
 	return rv;
 }
@@ -418,24 +417,30 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 		break;
 	}
 
+	/* update its reverse dependencies */
 	rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkg);
 	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 		rdeps = NULL;
 	}
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
 		const char *pkgver = NULL;
-		char pkgname[XBPS_NAME_SIZE];
+		char pkgname[XBPS_NAME_SIZE] = {0};
 
-		xbps_array_get_cstring_nocopy(rdeps, i, &pkgver);
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			abort();
+		if (!xbps_array_get_cstring_nocopy(rdeps, i, &pkgver)) {
+			rv = EINVAL;
+			break;
 		}
-		rv = trans_find_pkg(xhp, pkgname, false, false);
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			rv = EINVAL;
+			break;
+		}
+		rv = trans_find_pkg(xhp, pkgname, false);
 		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
-		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
+		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV) {
 			return rv;
+		}
 	}
-	rv = trans_find_pkg(xhp, pkg, reinstall, false);
+	rv = trans_find_pkg(xhp, pkg, reinstall);
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
 	return rv;
 }
@@ -448,10 +453,10 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 	xbps_dictionary_t pkgd;
 	xbps_array_t pkgs, orphans, orphans_pkg;
 	xbps_object_t obj;
-	const char *pkgver;
 	int rv = 0;
 
-	assert(pkgname != NULL);
+	assert(xhp);
+	assert(pkgname);
 
 	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
 		/* pkg not installed */
@@ -482,11 +487,10 @@ xbps_transaction_remove_pkg(struct xbps_handle *xhp,
 
 	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
 		obj = xbps_array_get(orphans, i);
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		xbps_dictionary_set_cstring_nocopy(obj, "transaction", "remove");
-		if ((rv = xbps_transaction_store(xhp, pkgs, obj, "remove", false)) != 0)
+		xbps_transaction_pkg_type_set(obj, XBPS_TRANS_REMOVE);
+		if (!xbps_transaction_store(xhp, pkgs, obj, false)) {
 			return EINVAL;
-		xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
+		}
 	}
 	xbps_object_release(orphans);
 	return rv;
@@ -495,11 +499,10 @@ rmpkg:
 	/*
 	 * Add pkg dictionary into the transaction pkgs queue.
 	 */
-	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	xbps_dictionary_set_cstring_nocopy(pkgd, "transaction", "remove");
-	if ((rv = xbps_transaction_store(xhp, pkgs, pkgd, "remove", false)) != 0)
+	xbps_transaction_pkg_type_set(pkgd, XBPS_TRANS_REMOVE);
+	if (!xbps_transaction_store(xhp, pkgs, pkgd, false)) {
 		return EINVAL;
-	xbps_dbg_printf(xhp, "%s: added into transaction (remove).\n", pkgver);
+	}
 	return rv;
 }
 
@@ -508,13 +511,11 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 {
 	xbps_array_t orphans, pkgs;
 	xbps_object_t obj;
-	const char *pkgver;
 	int rv = 0;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
 	if (xbps_array_count(orphans) == 0) {
 		/* no orphans? we are done */
-		rv = ENOENT;
 		goto out;
 	}
 	/*
@@ -529,15 +530,56 @@ xbps_transaction_autoremove_pkgs(struct xbps_handle *xhp)
 	 */
 	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
 		obj = xbps_array_get(orphans, i);
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		xbps_dictionary_set_cstring_nocopy(obj,
-		    "transaction", "remove");
-		xbps_array_add(pkgs, obj);
-		xbps_dbg_printf(xhp, "%s: added (remove).\n", pkgver);
+		xbps_transaction_pkg_type_set(obj, XBPS_TRANS_REMOVE);
+		if (!xbps_transaction_store(xhp, pkgs, obj, false)) {
+			rv = EINVAL;
+			goto out;
+		}
 	}
 out:
-	if (orphans != NULL)
+	if (orphans)
 		xbps_object_release(orphans);
 
 	return rv;
+}
+
+xbps_trans_type_t
+xbps_transaction_pkg_type(xbps_dictionary_t pkg_repod)
+{
+	uint8_t r;
+
+	if (xbps_object_type(pkg_repod) != XBPS_TYPE_DICTIONARY)
+		return 0;
+
+	if (!xbps_dictionary_get_uint8(pkg_repod, "transaction", &r))
+		return 0;
+
+	return r;
+}
+
+bool
+xbps_transaction_pkg_type_set(xbps_dictionary_t pkg_repod, xbps_trans_type_t ttype)
+{
+	uint8_t r;
+
+	if (xbps_object_type(pkg_repod) != XBPS_TYPE_DICTIONARY)
+		return false;
+
+	switch (ttype) {
+	case XBPS_TRANS_INSTALL:
+	case XBPS_TRANS_UPDATE:
+	case XBPS_TRANS_CONFIGURE:
+	case XBPS_TRANS_REMOVE:
+	case XBPS_TRANS_REINSTALL:
+	case XBPS_TRANS_HOLD:
+	case XBPS_TRANS_DOWNLOAD:
+		break;
+	default:
+		return false;
+	}
+	r = ttype;
+	if (!xbps_dictionary_set_uint8(pkg_repod, "transaction", r))
+		return false;
+
+	return true;
 }

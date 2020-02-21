@@ -144,8 +144,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 	xbps_array_t rdeps, provides;
 	xbps_string_t str;
 	struct item *item, *xitem;
-	const char *pkgver = NULL;
-	char pkgn[XBPS_NAME_SIZE];
+	const char *pkgver = NULL, *pkgname = NULL;
 
 	assert(xhp);
 	assert(pkgd);
@@ -153,17 +152,15 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 	rdeps = xbps_dictionary_get(pkgd, "run_depends");
 	provides = xbps_dictionary_get(pkgd, "provides");
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 
-	if (!xbps_pkg_name(pkgn, sizeof(pkgn), pkgver)) {
-		abort();
-	}
-	item = lookupItem(pkgn);
+	item = lookupItem(pkgname);
 	if (item) {
 		add_deps_recursive(item, depth == 0);
 		return item;
 	}
 
-	item = addItem(rdeps, pkgn);
+	item = addItem(rdeps, pkgname);
 	item->pkgver = pkgver;
 	assert(item);
 

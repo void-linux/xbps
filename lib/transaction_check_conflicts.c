@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2015 Juan Romero Pardines.
+ * Copyright (c) 2012-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,32 +39,38 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 	xbps_dictionary_t pkgd, tpkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *cfpkg, *repopkgver, *pkgver, *tract;
-	char pkgname[XBPS_NAME_SIZE];
-	char repopkgname[XBPS_NAME_SIZE];
+	xbps_trans_type_t ttype;
+	const char *cfpkg, *repopkgver, *repopkgname;
 	char *buf;
 
-	pkg_cflicts = xbps_dictionary_get(pkg_repod, "conflicts");
-	if (xbps_array_count(pkg_cflicts) == 0)
-		return;
+	assert(xhp);
+	assert(array);
+	assert(pkg_repod);
 
-	if (xbps_dictionary_get_cstring_nocopy(pkg_repod, "transaction", &tract)) {
-		/* ignore pkgs to be removed or on hold  */
-		if (!strcmp(tract, "remove") || !strcmp(tract, "hold"))
-			return;
+	pkg_cflicts = xbps_dictionary_get(pkg_repod, "conflicts");
+	if (xbps_array_count(pkg_cflicts) == 0) {
+		return;
+	}
+
+	ttype = xbps_transaction_pkg_type(pkg_repod);
+	if (ttype == XBPS_TRANS_HOLD || ttype == XBPS_TRANS_REMOVE) {
+		return;
 	}
 
 	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
-	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
-
-	if (!xbps_pkg_name(repopkgname, XBPS_NAME_SIZE, repopkgver)) {
-		abort();
+	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver)) {
+		return;
+	}
+	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &repopkgname)) {
+		return;
 	}
 
 	iter = xbps_array_iterator(pkg_cflicts);
 	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter))) {
+		const char *pkgver = NULL, *pkgname = NULL;
+
 		cfpkg = xbps_string_cstring_nocopy(obj);
 
 		/*
@@ -77,25 +83,25 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 				continue;
 
 			/* Ignore itself */
-			xbps_dictionary_get_cstring_nocopy(pkgd,
-			    "pkgver", &pkgver);
-			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-				abort();
+			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
+				break;
 			}
 			if (strcmp(pkgname, repopkgname) == 0) {
 				continue;
+			}
+			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+				break;
 			}
 			/*
 			 * If there's a pkg for the conflict in transaction,
 			 * ignore it.
 			 */
-			if ((tpkgd = xbps_find_pkg_in_array(array, pkgname, NULL))) {
-				xbps_dictionary_get_cstring_nocopy(tpkgd,
-				    "transaction", &tract);
-				if (!strcmp(tract, "install") ||
-				    !strcmp(tract, "update") ||
-				    !strcmp(tract, "remove") ||
-				    !strcmp(tract, "hold")) {
+			if ((tpkgd = xbps_find_pkg_in_array(array, pkgname, 0))) {
+				ttype = xbps_transaction_pkg_type(tpkgd);
+				if (ttype == XBPS_TRANS_INSTALL ||
+				    ttype == XBPS_TRANS_UPDATE ||
+				    ttype == XBPS_TRANS_REMOVE ||
+				    ttype == XBPS_TRANS_HOLD) {
 					continue;
 				}
 			}
@@ -114,22 +120,22 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 		/*
 		 * Check if current pkg conflicts with any pkg in transaction.
 		 */
-		if ((pkgd = xbps_find_pkg_in_array(array, cfpkg, NULL)) ||
-		    (pkgd = xbps_find_virtualpkg_in_array(xhp, array, cfpkg, NULL))) {
+		if ((pkgd = xbps_find_pkg_in_array(array, cfpkg, 0)) ||
+		    (pkgd = xbps_find_virtualpkg_in_array(xhp, array, cfpkg, 0))) {
 			/* ignore pkgs to be removed or on hold */
-			if (xbps_dictionary_get_cstring_nocopy(pkgd,
-			    "transaction", &tract)) {
-				if (!strcmp(tract, "remove") || !strcmp(tract, "hold"))
-					continue;
+			ttype = xbps_transaction_pkg_type(pkgd);
+			if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD) {
+				continue;
 			}
 			/* ignore itself */
-			xbps_dictionary_get_cstring_nocopy(pkgd,
-			    "pkgver", &pkgver);
-			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-				abort();
+			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
+				break;
 			}
 			if (strcmp(pkgname, repopkgname) == 0) {
 				continue;
+			}
+			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+				break;
 			}
 			xbps_dbg_printf(xhp, "found conflicting pkgs in "
 			    "transaction %s <-> %s (matched by %s [trans])\n",
@@ -155,47 +161,53 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	xbps_dictionary_t pkgd;
 	xbps_object_t obj2;
 	xbps_object_iterator_t iter;
-	const char *cfpkg, *repopkgver, *pkgver, *tract;
-	char pkgname[XBPS_NAME_SIZE];
-	char repopkgname[XBPS_NAME_SIZE];
+	xbps_trans_type_t ttype;
+	const char *cfpkg, *repopkgver, *repopkgname;
 	char *buf;
+	int rv = 0;
 
 	pkg_cflicts = xbps_dictionary_get(obj, "conflicts");
 	if (xbps_array_count(pkg_cflicts) == 0)
 		return 0;
 
-	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
-	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &repopkgver);
-	if (!xbps_pkg_name(repopkgname, XBPS_NAME_SIZE, repopkgver)) {
-		abort();
+	if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &repopkgver)) {
+		return EINVAL;
+	}
+	if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &repopkgname)) {
+		return EINVAL;
 	}
 
 	/* if a pkg is in the transaction, ignore the one from pkgdb */
-	if (xbps_find_pkg_in_array(pkgs, repopkgname, NULL)) {
+	if (xbps_find_pkg_in_array(pkgs, repopkgname, 0)) {
 		return 0;
 	}
 
+	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
 	iter = xbps_array_iterator(pkg_cflicts);
 	assert(iter);
 
 	while ((obj2 = xbps_object_iterator_next(iter))) {
+		const char *pkgver = NULL, *pkgname = NULL;
+
 		cfpkg = xbps_string_cstring_nocopy(obj2);
-		if ((pkgd = xbps_find_pkg_in_array(pkgs, cfpkg, NULL)) ||
-		    (pkgd = xbps_find_virtualpkg_in_array(xhp, pkgs, cfpkg, NULL))) {
-			xbps_dictionary_get_cstring_nocopy(pkgd,
-			    "pkgver", &pkgver);
+		if ((pkgd = xbps_find_pkg_in_array(pkgs, cfpkg, 0)) ||
+		    (pkgd = xbps_find_virtualpkg_in_array(xhp, pkgs, cfpkg, 0))) {
 			/* ignore pkgs to be removed or on hold */
-			if (xbps_dictionary_get_cstring_nocopy(pkgd,
-			    "transaction", &tract)) {
-				if (!strcmp(tract, "remove") || !strcmp(tract, "hold"))
-					continue;
+			ttype = xbps_transaction_pkg_type(pkgd);
+			if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD) {
+				continue;
 			}
 			/* ignore itself */
-			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-				abort();
+			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
+				rv = EINVAL;
+				break;
 			}
 			if (strcmp(pkgname, repopkgname) == 0) {
 				continue;
+			}
+			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+				rv = EINVAL;
+				break;
 			}
 			xbps_dbg_printf(xhp, "found conflicting pkgs in "
 			    "transaction %s <-> %s (matched by %s [pkgdb])\n",
@@ -211,20 +223,27 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		}
 	}
 	xbps_object_iterator_release(iter);
-	return 0;
+	return rv;
 }
 
-void HIDDEN
-xbps_transaction_conflicts(struct xbps_handle *xhp, xbps_array_t pkgs)
+bool HIDDEN
+xbps_transaction_check_conflicts(struct xbps_handle *xhp, xbps_array_t pkgs)
 {
-	xbps_dictionary_t pkgd;
+	xbps_array_t array;
 	unsigned int i;
 
 	/* find conflicts in transaction */
 	for (i = 0; i < xbps_array_count(pkgs); i++) {
-		pkgd = xbps_array_get(pkgs, i);
-		pkg_conflicts_trans(xhp, pkgs, pkgd);
+		pkg_conflicts_trans(xhp, pkgs, xbps_array_get(pkgs, i));
 	}
 	/* find conflicts in pkgdb */
-	(void)xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_conflicts_cb, pkgs);
+	if (xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_conflicts_cb, pkgs) != 0) {
+		return false;
+	}
+
+	array = xbps_dictionary_get(xhp->transd, "conflicts");
+	if (xbps_array_count(array) == 0) {
+		xbps_dictionary_remove(xhp->transd, "conflicts");
+	}
+	return true;
 }

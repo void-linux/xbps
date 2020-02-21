@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2015 Juan Romero Pardines.
+ * Copyright (c) 2012-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -391,45 +391,70 @@ xbps_dictionary_t
 xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg)
 {
 	xbps_dictionary_t pkgd;
+	const char *pkgver;
+	char pkgname[XBPS_NAME_SIZE] = {0};
 
-	assert(repo);
-	assert(pkg);
-
-	if (repo->idx == NULL)
+	if (!repo || !repo->idx || !pkg) {
 		return NULL;
-
+	}
 	pkgd = xbps_find_virtualpkg_in_dict(repo->xhp, repo->idx, pkg);
-	if (pkgd) {
-		xbps_dictionary_set_cstring_nocopy(pkgd, "repository", repo->uri);
+	if (!pkgd) {
+		return NULL;
+	}
+	if (xbps_dictionary_get(pkgd, "repository") && xbps_dictionary_get(pkgd, "pkgname")) {
 		return pkgd;
 	}
-	return NULL;
+	if (!xbps_dictionary_set_cstring_nocopy(pkgd, "repository", repo->uri)) {
+		return NULL;
+	}
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+		return NULL;
+	}
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		return NULL;
+	}
+	if (!xbps_dictionary_set_cstring(pkgd, "pkgname", pkgname)) {
+		return NULL;
+	}
+	return pkgd;
 }
 
 xbps_dictionary_t
 xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg)
 {
-	xbps_dictionary_t pkgd;
+	xbps_dictionary_t pkgd = NULL;
+	const char *pkgver;
+	char pkgname[XBPS_NAME_SIZE] = {0};
 
-	assert(repo);
-	assert(pkg);
-
-	if (repo->idx == NULL)
+	if (!repo || !repo->idx || !pkg) {
 		return NULL;
-
+	}
 	/* Try matching vpkg from configuration files */
 	if ((pkgd = xbps_find_virtualpkg_in_conf(repo->xhp, repo->idx, pkg))) {
-		xbps_dictionary_set_cstring_nocopy(pkgd, "repository", repo->uri);
-		return pkgd;
+		goto add;
 	}
 	/* ... otherwise match a real pkg */
-	pkgd = xbps_find_pkg_in_dict(repo->idx, pkg);
-	if (pkgd) {
-		xbps_dictionary_set_cstring_nocopy(pkgd, "repository", repo->uri);
+	if ((pkgd = xbps_find_pkg_in_dict(repo->idx, pkg))) {
+		goto add;
+	}
+	return NULL;
+add:
+	if (xbps_dictionary_get(pkgd, "repository") && xbps_dictionary_get(pkgd, "pkgname")) {
 		return pkgd;
 	}
-
-	return NULL;
+	if (!xbps_dictionary_set_cstring_nocopy(pkgd, "repository", repo->uri)) {
+		return NULL;
+	}
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+		return NULL;
+	}
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		return NULL;
+	}
+	if (!xbps_dictionary_set_cstring(pkgd, "pkgname", pkgname)) {
+		return NULL;
+	}
+	return pkgd;
 }
 
 xbps_dictionary_t

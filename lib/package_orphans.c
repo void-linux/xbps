@@ -99,7 +99,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 					xbps_dbg_printf(xhp, " %s skipped (!automatic)\n", pkgver);
 					continue;
 				}
-				if (xbps_find_pkg_in_array(array, pkgver, NULL)) {
+				if (xbps_find_pkg_in_array(array, pkgver, 0)) {
 					xbps_dbg_printf(xhp, " %s orphan (queued)\n", pkgver);
 					continue;
 				}
@@ -117,7 +117,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 					const char *revdepver;
 
 					xbps_array_get_cstring_nocopy(revdeps, i, &revdepver);
-					if (xbps_find_pkg_in_array(array, revdepver, NULL))
+					if (xbps_find_pkg_in_array(array, revdepver, 0))
 						cnt++;
 				}
 				if (cnt == revdepscnt) {
@@ -173,7 +173,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 
 			cnt = 0;
 			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);
-			if (xbps_find_pkg_in_array(array, deppkgver, NULL)) {
+			if (xbps_find_pkg_in_array(array, deppkgver, 0)) {
 				xbps_dbg_printf(xhp, " rdep %s already queued\n", deppkgver);
 				continue;
 			}
@@ -191,7 +191,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 
 				xbps_array_get_cstring_nocopy(reqby, j, &reqbydep);
 				xbps_dbg_printf(xhp, " %s processing revdep %s\n", pkgver, reqbydep);
-				if (xbps_find_pkg_in_array(array, reqbydep, NULL))
+				if (xbps_find_pkg_in_array(array, reqbydep, 0))
 					cnt++;
 			}
 			if (cnt == reqbycnt) {

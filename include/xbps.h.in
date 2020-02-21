@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2019 Juan Romero Pardines <xtraeme@gmail.com>
+ * Copyright (c) 2008-2020 Juan Romero Pardines <xtraeme@gmail.com>
  * Copyright (c) 2014-2019 Enno Boland <gottox@voidlinux.org>
  * Copyright (c) 2016-2019 Duncan Overbruck <mail@duncano.de>
  * All rights reserved.
@@ -51,7 +51,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20200210"
+#define XBPS_API_VERSION	"20200221"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -238,7 +238,7 @@
  * installation.
  * Must be set through the xbps_handle::flags member.
  */
-#define XBPS_FLAG_KEEP_CONFIG	0x00010000
+#define XBPS_FLAG_KEEP_CONFIG 		0x00010000
 
 /**
  * @def XBPS_FETCH_CACHECONN
@@ -285,10 +285,8 @@ extern "C" {
  * - XBPS_STATE_UKKNOWN: state hasn't been prepared or unknown error.
  * - XBPS_STATE_TRANS_DOWNLOAD: transaction is downloading binary packages.
  * - XBPS_STATE_TRANS_VERIFY: transaction is verifying binary package integrity.
- * - XBPS_STATE_TRANS_RUN: transaction is performing operations:
- * install, update, remove and replace.
- * - XBPS_STATE_TRANS_CONFIGURE: transaction is configuring all
- * unpacked packages.
+ * - XBPS_STATE_TRANS_RUN: transaction is performing operations: install, update, remove, replace.
+ * - XBPS_STATE_TRANS_CONFIGURE: transaction is configuring all unpacked packages.
  * - XBPS_STATE_TRANS_FAIL: transaction has failed.
  * - XBPS_STATE_DOWNLOAD: a binary package is being downloaded.
  * - XBPS_STATE_VERIFY: a binary package is being verified.
@@ -305,19 +303,15 @@ extern "C" {
  * - XBPS_STATE_CONFIGURE: a package is being configured.
  * - XBPS_STATE_CONFIGURE_DONE: a package has been configured successfully.
  * - XBPS_STATE_CONFIG_FILE: a package configuration file is being processed.
- * - XBPS_STATE_REPOSYNC: a remote repository's package index is being
- * synchronized.
+ * - XBPS_STATE_REPOSYNC: a remote repository's package index is being synchronized.
  * - XBPS_STATE_VERIFY_FAIL: binary package integrity has failed.
  * - XBPS_STATE_DOWNLOAD_FAIL: binary package download has failed.
  * - XBPS_STATE_REMOVE_FAIL: a package removal has failed.
  * - XBPS_STATE_REMOVE_FILE_FAIL: a package file removal has failed.
- * - XBPS_STATE_REMOVE_FILE_HASH_FAIL: a package file removal due to
- * its hash has failed.
- * - XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL: an obsolete package file
- * removal has failed.
+ * - XBPS_STATE_REMOVE_FILE_HASH_FAIL: a package file removal has failed due to hash.
+ * - XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL: an obsolete package file removal has failed.
  * - XBPS_STATE_CONFIGURE_FAIL: package configure has failed.
- * - XBPS_STATE_CONFIG_FILE_FAIL: package configuration file operation
- * has failed.
+ * - XBPS_STATE_CONFIG_FILE_FAIL: package configuration file operation has failed.
  * - XBPS_STATE_UPDATE_FAIL: package update has failed.
  * - XBPS_STATE_UNPACK_FAIL: package unpack has failed.
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
@@ -680,13 +674,9 @@ struct xbps_handle {
 	/**
 	 * @var flags
 	 *
-	 * Flags to be set globally by ORing them, possible values:
-	 *  - XBPS_FLAG_VERBOSE
-	 *  - XBPS_FLAG_FORCE_CONFIGURE
-	 *  - XBPS_FLAG_FORCE_REMOVE_FILES
-	 *  - XBPS_FLAG_DEBUG
-	 *  - XBPS_FLAG_INSTALL_AUTO
-	 *  - XBPS_FLAG_DISABLE_SYSLOG
+	 * Flags to be set globally by ORing them, possible value:
+	 *
+	 * 	- XBPS_FLAG_* (see above)
 	 */
 	int flags;
 };
@@ -1118,8 +1108,7 @@ bool xbps_match_virtual_pkg_in_dict(xbps_dictionary_t pkgd, const char *str);
  *
  * @return True if \a any virtualpkg has been matched, false otherwise.
  */
-bool xbps_match_any_virtualpkg_in_rundeps(xbps_array_t rundeps,
-					  xbps_array_t provides);
+bool xbps_match_any_virtualpkg_in_rundeps(xbps_array_t rundeps, xbps_array_t provides);
 
 /**
  * Match a package name in the specified array of strings.
@@ -1182,8 +1171,7 @@ bool xbps_match_string_in_array(xbps_array_t array, const char *val);
  * @return A proplib object iterator on success, NULL otherwise and
  * errno is set appropiately.
  */
-xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict,
-						 const char *key);
+xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict, const char *key);
 
 /*@}*/
 
@@ -1207,14 +1195,16 @@ xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict,
  * @retval ENOTSUP No repositories are available.
  * @retval ENXIO Package depends on invalid dependencies.
  * @retval EINVAL Any other error ocurred in the process.
+ * @retval EBUSY The xbps package must be updated.
  */
-int xbps_transaction_install_pkg(struct xbps_handle *xhp,
-				 const char *pkg,
-				 bool reinstall);
+int xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall);
 
 /**
  * Marks a package as "going to be updated" in the transaction dictionary.
- * All repositories in the pool will be used, and newest version
+ * The first repository that contains an updated version wins.
+ *
+ * If bestmaching is enabled (see \a XBPS_FLAG_BESTMATCH),
+ * all repositories in the pool will be used, and newest version
  * available will be enqueued if it's greater than current installed
  * version.
  *
@@ -1227,6 +1217,7 @@ int xbps_transaction_install_pkg(struct xbps_handle *xhp,
  * @retval ENOTSUP No repositories are available.
  * @retval ENXIO Package depends on invalid dependencies.
  * @retval EINVAL Any other error ocurred in the process.
+ * @retval EBUSY The xbps package must be updated.
  */
 int xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname);
 
@@ -1238,7 +1229,9 @@ int xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname);
  * @param[in] xhp Pointer to the xbps_handle struct.
  *
  * @return 0 on success, otherwise an errno value.
- * @retval EEXIST All installed package are already up-to-date.
+ * @retval EBUSY The xbps package must be updated.
+ * @retval EEXIST All installed packages are already up-to-date.
+ * @retval EINVAL Any other error ocurred in the process.
  */
 int xbps_transaction_update_packages(struct xbps_handle *xhp);
 
@@ -1257,9 +1250,7 @@ int xbps_transaction_update_packages(struct xbps_handle *xhp);
  * @retval EINVAL
  * @retval ENXIO A problem ocurred in the process.
  */
-int xbps_transaction_remove_pkg(struct xbps_handle *xhp,
-				const char *pkgname,
-				bool recursive);
+int xbps_transaction_remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive);
 
 /**
  * Finds all package orphans currently installed and adds them into
@@ -1307,6 +1298,55 @@ int xbps_transaction_prepare(struct xbps_handle *xhp);
  * @return 0 on success, otherwise an errno value.
  */
 int xbps_transaction_commit(struct xbps_handle *xhp);
+
+/**
+ * @enum xbps_trans_type_t
+ *
+ * uint8_t representing the pkg transaction type in transaction dictionary.
+ *
+ *  - XBPS_TRANS_UNKNOWN: Unknown type
+ *  - XBPS_TRANS_INSTALL: pkg will be installed
+ *  - XBPS_TRANS_REINSTALL: pkg will be reinstalled
+ *  - XBPS_TRANS_UPDATE: pkg will be updated
+ *  - XBPS_TRANS_CONFIGURE: pkg will be configured
+ *  - XBPS_TRANS_REMOVE: pkg will be removed
+ *  - XBPS_TRANS_HOLD: pkg won't be updated (on hold mode)
+ *  - XBPS_TRANS_DOWNLOAD: pkg will be downloaded
+ */
+typedef enum xbps_trans_type {
+	XBPS_TRANS_UNKNOWN = 0,
+	XBPS_TRANS_INSTALL,
+	XBPS_TRANS_REINSTALL,
+	XBPS_TRANS_UPDATE,
+	XBPS_TRANS_CONFIGURE,
+	XBPS_TRANS_REMOVE,
+	XBPS_TRANS_HOLD,
+	XBPS_TRANS_DOWNLOAD
+} xbps_trans_type_t;
+
+/**
+ * Returns the transaction type associated with \a pkg_repod.
+ *
+ * See \a xbps_trans_type_t for possible values.
+ *
+ * @param[in] pkg_repod Package dictionary stored in a repository.
+ *
+ * @return The transaction type associated.
+ */
+xbps_trans_type_t xbps_transaction_pkg_type(xbps_dictionary_t pkg_repod);
+
+/**
+ * Sets the transaction type associated with \a pkg_repod.
+ *
+ * See \a xbps_trans_type_t for possible values.
+ *
+ * @param[in] pkg_repod Package dictionary stored in a repository.
+ * @param[in] type The transaction type to set.
+ *
+ * @return Returns true on success, false otherwise.
+ */
+
+bool xbps_transaction_pkg_type_set(xbps_dictionary_t pkg_repod, xbps_trans_type_t type);
 
 /*@}*/
 
@@ -1479,8 +1519,7 @@ xbps_dictionary_t xbps_rpool_get_pkg(struct xbps_handle *xhp, const char *pkg);
  * @note When returned dictionary is no longer needed, you must release it
  * with xbps_object_release(3).
  */
-xbps_dictionary_t xbps_rpool_get_virtualpkg(struct xbps_handle *xhp,
-					    const char *pkg);
+xbps_dictionary_t xbps_rpool_get_virtualpkg(struct xbps_handle *xhp, const char *pkg);
 
 /**
  * Returns a proplib array of strings with reverse dependencies of all
@@ -1666,8 +1705,7 @@ xbps_dictionary_t xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg);
  *
  * @return The pkg dictionary on success, NULL otherwise.
  */
-xbps_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo,
-					     const char *pkg);
+xbps_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg);
 
 /**
  * Returns a pkg dictionary of the matching \a plist file from a binary package,
@@ -1767,9 +1805,7 @@ typedef enum pkg_state {
  *
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_pkg_state_installed(struct xbps_handle *xhp,
-			     const char *pkgname,
-			     pkg_state_t *state);
+int xbps_pkg_state_installed(struct xbps_handle *xhp, const char *pkgname, pkg_state_t *state);
 
 /**
  * Gets package state from a package dictionary \a dict, and sets its
@@ -2117,9 +2153,7 @@ bool xbps_pkg_has_rundeps(xbps_dictionary_t dict);
  *
  * @return True on match, false otherwise.
  */
-bool xbps_pkg_arch_match(struct xbps_handle *xhp,
-			 const char *orig,
-			 const char *target);
+bool xbps_pkg_arch_match(struct xbps_handle *xhp, const char *orig, const char *target);
 
 /**
  * Converts the 64 bits signed number specified in \a bytes to
@@ -2132,6 +2166,10 @@ bool xbps_pkg_arch_match(struct xbps_handle *xhp,
  * @return A negative number is returned on error, 0 otherwise.
  */
 int xbps_humanize_number(char *buf, int64_t bytes);
+
+/**
+ * Wrappers for strlcat() and strlcpy().
+ */
 size_t xbps_strlcat(char *dest, const char *src, size_t siz);
 size_t xbps_strlcpy(char *dest, const char *src, size_t siz);
 /**
@@ -2249,8 +2287,7 @@ ssize_t xbps_path_prepend(char *dst, size_t len, const char *prefix);
  * @return The sanitized path in a buffer.
  * The returned buffer must be free(3)d when it's no longer necessary.
  */
-char *xbps_symlink_target(struct xbps_handle *xhp, const char *path,
-		const char *target);
+char *xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *target);
 
 /**
  * Returns true if any of the fnmatch patterns in \a patterns matches
