@@ -156,7 +156,6 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 		xbps_dictionary_t pkgd;
 		const char *pkgver = NULL;
 		unsigned int cnt = 0, reqbycnt = 0;
-		bool automatic = false;
 
 		pkgd = xbps_array_get(array, i);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
@@ -170,6 +169,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 			xbps_array_t reqby;
 			xbps_dictionary_t deppkgd;
 			const char *deppkgver = NULL;
+			bool automatic = false;
 
 			cnt = 0;
 			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);
