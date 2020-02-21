@@ -84,7 +84,18 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		xbps_dictionary_get_bool(obj, "preserve", &preserve);
 		ttype = xbps_transaction_pkg_type(obj);
 
-		if (xbps_repository_is_remote(repo) && !xbps_binpkg_exists(xhp, obj)) {
+		if (ttype == XBPS_TRANS_REMOVE) {
+			rm_pkgcnt++;
+		} else if (ttype == XBPS_TRANS_CONFIGURE) {
+			cf_pkgcnt++;
+		} else if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_REINSTALL) {
+			inst_pkgcnt++;
+		} else if (ttype == XBPS_TRANS_UPDATE) {
+			up_pkgcnt++;
+		}
+
+		if ((ttype != XBPS_TRANS_CONFIGURE) && (ttype != XBPS_TRANS_REMOVE) &&
+		    xbps_repository_is_remote(repo) && !xbps_binpkg_exists(xhp, obj)) {
 			xbps_dictionary_get_uint64(obj, "filename-size", &tsize);
 			tsize += 512;
 			dlsize += tsize;
@@ -94,23 +105,9 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 			continue;
 		}
-
-		if (ttype == XBPS_TRANS_CONFIGURE) {
-			cf_pkgcnt++;
-			continue;
-		} else if (ttype == XBPS_TRANS_INSTALL) {
-			inst_pkgcnt++;
-		} else if (ttype == XBPS_TRANS_UPDATE) {
-			up_pkgcnt++;
-		} else if (ttype == XBPS_TRANS_REMOVE) {
-			rm_pkgcnt++;
-		}
-
-		if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_UPDATE) {
-			/* installed_size from repo */
-			xbps_dictionary_get_uint64(obj, "installed_size", &tsize);
-			instsize += tsize;
-		}
+		/* installed_size from repo */
+		xbps_dictionary_get_uint64(obj, "installed_size", &tsize);
+		instsize += tsize;
 		/*
 		 * If removing or updating a package without preserve,
 		 * get installed_size from pkgdb instead.
