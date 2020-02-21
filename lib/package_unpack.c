@@ -76,6 +76,7 @@ unpack_archive(struct xbps_handle *xhp,
 	xbps_dictionary_t binpkg_propsd, binpkg_filesd, pkg_filesd, obsd;
 	xbps_array_t array, obsoletes;
 	xbps_data_t data;
+	xbps_trans_type_t ttype;
 	const struct stat *entry_statp;
 	void *instbuf = NULL, *rembuf = NULL;
 	struct stat st;
@@ -83,8 +84,8 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	size_t  instbufsiz = 0, rembufsiz = 0;
 	ssize_t entry_size;
-	const char *entry_pname, *transact, *binpkg_pkgver;
-	char pkgname[XBPS_NAME_SIZE], *buf = NULL;
+	const char *entry_pname, *binpkg_pkgver, *pkgname;
+	char *buf = NULL;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists, keep_conf_file;
 	bool skip_extract, force, xucd_stats;
@@ -96,21 +97,23 @@ unpack_archive(struct xbps_handle *xhp,
 	ar_rv = rv = error = entry_type = flags = 0;
 
 	xbps_dictionary_get_bool(pkg_repod, "preserve", &preserve);
-	xbps_dictionary_get_cstring_nocopy(pkg_repod, "transaction", &transact);
+	ttype = xbps_transaction_pkg_type(pkg_repod);
 
 	memset(&xucd, 0, sizeof(xucd));
 
 	euid = geteuid();
 
-	if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-		abort();
+	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname)) {
+		return EINVAL;
 	}
 
-	if (xhp->flags & XBPS_FLAG_FORCE_UNPACK)
+	if (xhp->flags & XBPS_FLAG_FORCE_UNPACK) {
 		force = true;
+	}
 
-	if (strcmp(transact, "update") == 0)
+	if (ttype == XBPS_TRANS_UPDATE) {
 		update = true;
+	}
 
 	/*
 	 * Remove obsolete files.

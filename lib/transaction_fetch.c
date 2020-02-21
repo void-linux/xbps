@@ -191,19 +191,21 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 int
 xbps_transaction_fetch(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
-	xbps_object_t obj;
-	const char *trans, *repoloc;
-	int rv = 0;
 	xbps_array_t fetch = NULL, verify = NULL;
+	xbps_object_t obj;
+	xbps_trans_type_t ttype;
+	const char *repoloc;
+	int rv = 0;
 	unsigned int i, n;
 
-	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
-		if ((strcmp(trans, "remove") == 0) ||
-		    (strcmp(trans, "hold") == 0) ||
-		    (strcmp(trans, "configure") == 0))
-			continue;
+	xbps_object_iterator_reset(iter);
 
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		ttype = xbps_transaction_pkg_type(obj);
+		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD ||
+		    ttype == XBPS_TRANS_CONFIGURE) {
+			continue;
+		}
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
 
 		/*

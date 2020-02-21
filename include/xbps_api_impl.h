@@ -116,23 +116,29 @@ int HIDDEN xbps_entry_is_a_conf_file(xbps_dictionary_t, const char *);
 int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *, xbps_dictionary_t,
 		xbps_dictionary_t, struct archive_entry *, const char *,
 		const char *, bool);
-int HIDDEN xbps_repository_find_deps(struct xbps_handle *, xbps_array_t,
-		xbps_dictionary_t);
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_conf(struct xbps_handle *,
 		xbps_dictionary_t, const char *);
 xbps_dictionary_t HIDDEN xbps_find_pkg_in_dict(xbps_dictionary_t, const char *);
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *,
 		xbps_dictionary_t, const char *);
 xbps_dictionary_t HIDDEN xbps_find_pkg_in_array(xbps_array_t, const char *,
-		const char *);
+		xbps_trans_type_t);
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *,
-		xbps_array_t, const char *, const char *);
-void HIDDEN xbps_transaction_revdeps(struct xbps_handle *, xbps_array_t);
-bool HIDDEN xbps_transaction_shlibs(struct xbps_handle *, xbps_array_t,
-		xbps_array_t);
+		xbps_array_t, const char *, xbps_trans_type_t);
+
+/* transaction */
+bool HIDDEN xbps_transaction_check_revdeps(struct xbps_handle *, xbps_array_t);
+bool HIDDEN xbps_transaction_check_shlibs(struct xbps_handle *, xbps_array_t);
+bool HIDDEN xbps_transaction_check_replaces(struct xbps_handle *, xbps_array_t);
+bool HIDDEN xbps_transaction_check_conflicts(struct xbps_handle *, xbps_array_t);
+bool HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t, xbps_dictionary_t, bool);
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
-int HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t,
-		xbps_dictionary_t, const char *, bool);
+int HIDDEN xbps_transaction_files(struct xbps_handle *,
+		xbps_object_iterator_t);
+int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
+		xbps_object_iterator_t);
+int HIDDEN xbps_transaction_pkg_deps(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);
+
 char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
 int HIDDEN xbps_file_hash_check_dictionary(struct xbps_handle *,
@@ -143,10 +149,8 @@ void HIDDEN xbps_set_cb_fetch(struct xbps_handle *, off_t, off_t, off_t,
 int HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
 		const char *, const char *, ...);
 int HIDDEN xbps_unpack_binary_pkg(struct xbps_handle *, xbps_dictionary_t);
-int HIDDEN xbps_transaction_package_replace(struct xbps_handle *, xbps_array_t);
 int HIDDEN xbps_remove_pkg(struct xbps_handle *, const char *, bool);
 int HIDDEN xbps_register_pkg(struct xbps_handle *, xbps_dictionary_t);
-void HIDDEN xbps_transaction_conflicts(struct xbps_handle *, xbps_array_t);
 char HIDDEN *xbps_archive_get_file(struct archive *, struct archive_entry *);
 xbps_dictionary_t HIDDEN xbps_archive_get_dictionary(struct archive *,
 		struct archive_entry *);
@@ -156,9 +160,5 @@ xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 		const char *);
 int HIDDEN xbps_conf_init(struct xbps_handle *);
-int HIDDEN xbps_transaction_files(struct xbps_handle *,
-		xbps_object_iterator_t);
-int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
-		xbps_object_iterator_t);
 
 #endif /* !_XBPS_API_IMPL_H_ */

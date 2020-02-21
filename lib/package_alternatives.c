@@ -330,8 +330,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
 	xbps_array_t allkeys;
 	xbps_dictionary_t alternatives, pkg_alternatives;
-	const char *pkgver;
-	char pkgname[XBPS_NAME_SIZE];
+	const char *pkgver, *pkgname;
 	bool update = false;
 	int rv = 0;
 
@@ -346,8 +345,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		return 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
-		return EINVAL;
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 
 	xbps_dictionary_get_bool(pkgd, "alternatives-update", &update);
 
@@ -472,7 +470,7 @@ prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
 
 
 static void
-remove_obsoletes(struct xbps_handle *xhp, char *pkgname, const char *pkgver,
+remove_obsoletes(struct xbps_handle *xhp, const char *pkgname, const char *pkgver,
 		xbps_dictionary_t pkgdb_alts, xbps_dictionary_t repod)
 {
 	xbps_array_t allkeys;
@@ -531,8 +529,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
 	xbps_array_t allkeys;
 	xbps_dictionary_t alternatives, pkg_alternatives;
-	const char *pkgver;
-	char pkgname[XBPS_NAME_SIZE];
+	const char *pkgver, *pkgname;
 	int rv = 0;
 
 	assert(xhp);
@@ -550,8 +547,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	assert(alternatives);
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
-		return EINVAL;
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 
 	/*
 	 * Compare alternatives from pkgdb and repo and then remove obsolete

@@ -665,17 +665,15 @@ collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 	struct archive *ar = NULL;
 	struct archive_entry *entry;
 	struct stat st;
-	const char *pkgver;
-	char *bpkg, pkgname[XBPS_NAME_SIZE];
+	const char *pkgver, *pkgname;
+	char *bpkg;
 	/* size_t entry_size; */
 	int rv = 0, pkg_fd = -1;
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	assert(pkgver);
-
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-		abort();
-	}
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
+	assert(pkgname);
 
 	bpkg = xbps_repository_pkg_path(xhp, pkg_repod);
 	if (bpkg == NULL) {
@@ -769,14 +767,13 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
 	xbps_dictionary_t pkgd, filesd;
 	xbps_object_t obj;
-	const char *trans, *pkgver;
-	char pkgname[XBPS_NAME_SIZE];
+	xbps_trans_type_t ttype;
+	const char *pkgver, *pkgname;
 	int rv = 0;
 	unsigned int idx = 0;
 
-	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
-	if (iter == NULL)
-		return EINVAL;
+	assert(xhp);
+	assert(iter);
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		bool update = false;
@@ -787,22 +784,22 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		 */
 		idx++;
 
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
-		assert(trans);
-
-		if ((strcmp(trans, "hold") == 0) ||
-		    (strcmp(trans, "configure") == 0))
+		/* ignore pkgs in hold mode or in unpacked state */
+		ttype = xbps_transaction_pkg_type(obj);
+		if (ttype == XBPS_TRANS_HOLD || ttype == XBPS_TRANS_CONFIGURE) {
 			continue;
-
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-
-		assert(pkgver);
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			abort();
 		}
-		update = strcmp(trans, "update") == 0;
 
-		if (update || (strcmp(trans, "install") == 0)) {
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
+			return EINVAL;
+		}
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname)) {
+			return EINVAL;
+		}
+
+		update = (ttype == XBPS_TRANS_UPDATE);
+
+		if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_UPDATE) {
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES, 0, pkgver,
 			    "%s: collecting files...", pkgver);
 			rv = collect_binpkg_files(xhp, obj, idx, update);
@@ -822,7 +819,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		if (pkgd) {
 			const char *oldpkgver;
 			bool preserve = false;
-			bool removepkg = strcmp(trans, "remove") == 0;
+			bool removepkg = (ttype == XBPS_TRANS_REMOVE);
 
 			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &oldpkgver);
 			if (!xbps_dictionary_get_bool(obj, "preserve", &preserve))
@@ -858,9 +855,8 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	}
 
 out:
-	xbps_object_iterator_release(iter);
-
 	if (rv != 0)
 		return rv;
+
 	return collect_obsoletes(xhp);
 }

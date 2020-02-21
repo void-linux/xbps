@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2015 Juan Romero Pardines.
+ * Copyright (c) 2012-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,6 +58,7 @@
  * dictionary.
  */
 static int pkgdb_fd = -1;
+static bool pkgdb_map_names_done = false;
 
 int
 xbps_pkgdb_lock(struct xbps_handle *xhp)
@@ -160,19 +161,21 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 		xbps_array_t provides;
 		xbps_dictionary_t pkgd;
 		const char *pkgver = NULL;
-		char pkgname[XBPS_NAME_SIZE];
+		char pkgname[XBPS_NAME_SIZE] = {0};
+		unsigned int cnt;
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
 		provides = xbps_dictionary_get(pkgd, "provides");
-		if (provides == NULL)
+		cnt = xbps_array_count(provides);
+		if (!cnt)
 			continue;
 
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
 			rv = EINVAL;
-			break;
+			goto out;
 		}
-		for (unsigned int i = 0; i < xbps_array_count(provides); i++) {
+		for (unsigned int i = 0; i < cnt; i++) {
 			const char *vpkg = NULL;
 
 			xbps_array_get_cstring_nocopy(provides, i, &vpkg);
@@ -180,16 +183,55 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 				xbps_dbg_printf(xhp, "%s: set_cstring vpkg "
 				    "%s pkgname %s\n", __func__, vpkg, pkgname);
 				rv = EINVAL;
-				break;
-			} else {
-				xbps_dbg_printf(xhp, "[pkgdb] added vpkg %s for %s\n",
-				    vpkg, pkgname);
+				goto out;
 			}
+			xbps_dbg_printf(xhp, "[pkgdb] added vpkg %s for %s\n", vpkg, pkgname);
 		}
-		if (rv)
+	}
+out:
+	xbps_object_iterator_release(iter);
+	return rv;
+}
+
+static int
+pkgdb_map_names(struct xbps_handle *xhp)
+{
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
+	int rv = 0;
+
+	if (pkgdb_map_names_done || !xbps_dictionary_count(xhp->pkgdb))
+		return 0;
+
+	/*
+	 * This maps all pkgs in pkgdb to have the "pkgname" string property.
+	 * This way we do it once and not multiple times.
+	 */
+	iter = xbps_dictionary_iterator(xhp->pkgdb);
+	assert(iter);
+
+	while ((obj = xbps_object_iterator_next(iter))) {
+		xbps_dictionary_t pkgd;
+		const char *pkgver;
+		char pkgname[XBPS_NAME_SIZE] = {0};
+
+		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
+		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+			continue;
+		}
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			rv = EINVAL;
 			break;
+		}
+		if (!xbps_dictionary_set_cstring(pkgd, "pkgname", pkgname)) {
+			rv = EINVAL;
+			break;
+		}
 	}
 	xbps_object_iterator_release(iter);
+	if (!rv) {
+		pkgdb_map_names_done = true;
+	}
 	return rv;
 }
 
@@ -198,9 +240,12 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 {
 	int rv;
 
-	assert(xhp != NULL);
+	assert(xhp);
 
-	if (xhp->pkgdb_plist == NULL)
+	if (xhp->pkgdb)
+		return 0;
+
+	if (!xhp->pkgdb_plist)
 		xhp->pkgdb_plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
 
 #if 0
@@ -208,14 +253,16 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 		return rv;
 #endif
 
-	if (xhp->pkgdb != NULL)
-		return 0;
 
 	if ((rv = xbps_pkgdb_update(xhp, false, true)) != 0) {
 		if (rv != ENOENT)
 			xbps_dbg_printf(xhp, "[pkgdb] cannot internalize "
-			    "pkgdb array: %s\n", strerror(rv));
+			    "pkgdb dictionary: %s\n", strerror(rv));
 
+		return rv;
+	}
+	if ((rv = pkgdb_map_names(xhp)) != 0) {
+		xbps_dbg_printf(xhp, "[pkgdb] pkgdb_map_names %s\n", strerror(rv));
 		return rv;
 	}
 	if ((rv = pkgdb_map_vpkgs(xhp)) != 0) {
@@ -431,9 +478,9 @@ xbps_pkgdb_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg)
 xbps_dictionary_t
 xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
-	xbps_dictionary_t pkgd, pkgfilesd;
+	xbps_dictionary_t pkgd;
 	const char *pkgver = NULL;
-	char pkgname[XBPS_NAME_SIZE], *plist;
+	char pkgname[XBPS_NAME_SIZE], plist[PATH_MAX];
 
 	if (pkg == NULL)
 		return NULL;
@@ -446,15 +493,6 @@ xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp, const char *pkg)
 	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
 		return NULL;
 
-	plist = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
-	pkgfilesd = xbps_plist_dictionary_from_file(xhp, plist);
-	free(plist);
-
-	if (pkgfilesd == NULL) {
-		xbps_dbg_printf(xhp, "[pkgdb] cannot read %s metadata: %s\n",
-		    pkgver, strerror(errno));
-		return NULL;
-	}
-
-	return pkgfilesd;
+	snprintf(plist, sizeof(plist)-1, "%s/.%s-files.plist", xhp->metadir, pkgname);
+	return xbps_plist_dictionary_from_file(xhp, plist);
 }

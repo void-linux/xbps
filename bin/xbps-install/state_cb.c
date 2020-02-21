@@ -66,7 +66,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		printf("[*] pkgdb upgrade in progress, please wait...\n");
 		break;
 	case XBPS_STATE_REPOSYNC:
-		printf("[*] Updating `%s' ...\n", xscd->arg);
+		printf("[*] Updating repository `%s' ...\n", xscd->arg);
 		break;
 	case XBPS_STATE_TRANS_ADDPKG:
 		if (xscd->xhp->flags & XBPS_FLAG_VERBOSE)

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2015 Juan Romero Pardines.
+ * Copyright (c) 2009-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,16 +71,18 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		return EINVAL;
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		const char *pkgver = NULL, *repo = NULL, *tract = NULL;
+		const char *pkgver = NULL, *repo = NULL, *pkgname = NULL;
 		bool preserve = false;
+		xbps_trans_type_t ttype;
 		/*
 		 * Count number of pkgs to be removed, configured,
 		 * installed and updated.
 		 */
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgname);
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repo);
 		xbps_dictionary_get_bool(obj, "preserve", &preserve);
+		ttype = xbps_transaction_pkg_type(obj);
 
 		if (xbps_repository_is_remote(repo) && !xbps_binpkg_exists(xhp, obj)) {
 			xbps_dictionary_get_uint64(obj, "filename-size", &tsize);
@@ -93,33 +95,28 @@ compute_transaction_stats(struct xbps_handle *xhp)
 			continue;
 		}
 
-		if (strcmp(tract, "configure") == 0) {
+		if (ttype == XBPS_TRANS_CONFIGURE) {
 			cf_pkgcnt++;
 			continue;
-		} else if (strcmp(tract, "install") == 0) {
+		} else if (ttype == XBPS_TRANS_INSTALL) {
 			inst_pkgcnt++;
-		} else if (strcmp(tract, "update") == 0) {
+		} else if (ttype == XBPS_TRANS_UPDATE) {
 			up_pkgcnt++;
-		} else if (strcmp(tract, "remove") == 0) {
+		} else if (ttype == XBPS_TRANS_REMOVE) {
 			rm_pkgcnt++;
 		}
 
-		if ((strcmp(tract, "install") == 0) || (strcmp(tract, "update") == 0)) {
+		if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_UPDATE) {
 			/* installed_size from repo */
 			xbps_dictionary_get_uint64(obj, "installed_size", &tsize);
 			instsize += tsize;
 		}
 		/*
-		 * If removing or updating a package, get installed_size
-		 * from pkgdb instead.
+		 * If removing or updating a package without preserve,
+		 * get installed_size from pkgdb instead.
 		 */
-		if ((strcmp(tract, "remove") == 0) ||
-		    ((strcmp(tract, "update") == 0) && !preserve)) {
-			char pkgname[XBPS_NAME_SIZE];
-
-			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgver)) {
-				abort();
-			}
+		if (ttype == XBPS_TRANS_REMOVE ||
+		   ((ttype == XBPS_TRANS_UPDATE) && !preserve)) {
 			pkg_metad = xbps_pkgdb_get_pkg(xhp, pkgname);
 			if (pkg_metad == NULL)
 				continue;
@@ -273,8 +270,9 @@ xbps_transaction_init(struct xbps_handle *xhp)
 int
 xbps_transaction_prepare(struct xbps_handle *xhp)
 {
-	xbps_array_t array, pkgs, edges;
+	xbps_array_t pkgs, edges;
 	xbps_dictionary_t tpkgd;
+	xbps_trans_type_t ttype;
 	unsigned int i, cnt;
 	int rv = 0;
 	bool all_on_hold = true;
@@ -290,6 +288,8 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 */
 	if ((edges = xbps_array_create()) == NULL)
 		return ENOMEM;
+
+	xbps_dbg_printf(xhp, "%s: processing deps\n", __func__);
 	/*
 	 * The edges are also appended after its dependencies have been
 	 * collected; the edges at the original array are removed later.
@@ -300,24 +300,28 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	for (i = 0; i < cnt; i++) {
 		xbps_dictionary_t pkgd;
 		xbps_string_t str;
-		const char *tract = NULL;
 
 		pkgd = xbps_array_get(pkgs, i);
 		str = xbps_dictionary_get(pkgd, "pkgver");
-		xbps_dictionary_get_cstring_nocopy(pkgd, "transaction", &tract);
-		if ((strcmp(tract, "remove") == 0) || strcmp(tract, "hold") == 0)
+		ttype = xbps_transaction_pkg_type(pkgd);
+
+		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD)
 			continue;
 
 		assert(xbps_object_type(str) == XBPS_TYPE_STRING);
 
-		if (!xbps_array_add(edges, str))
+		if (!xbps_array_add(edges, str)) {
+			xbps_object_release(edges);
 			return ENOMEM;
-
-		if ((rv = xbps_repository_find_deps(xhp, pkgs, pkgd)) != 0)
+		}
+		if ((rv = xbps_transaction_pkg_deps(xhp, pkgs, pkgd)) != 0) {
+			xbps_object_release(edges);
 			return rv;
-
-		if (!xbps_array_add(pkgs, pkgd))
+		}
+		if (!xbps_array_add(pkgs, pkgd)) {
+			xbps_object_release(edges);
 			return ENOMEM;
+		}
 	}
 	/* ... remove dup edges at head */
 	for (i = 0; i < xbps_array_count(edges); i++) {
@@ -338,13 +342,10 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * If all pkgs in transaction are on hold, no need to check
 	 * for anything else.
 	 */
-	all_on_hold = true;
+	xbps_dbg_printf(xhp, "%s: checking on hold pkgs\n", __func__);
 	for (i = 0; i < cnt; i++) {
-		const char *action;
-
 		tpkgd = xbps_array_get(pkgs, i);
-		xbps_dictionary_get_cstring_nocopy(tpkgd, "transaction", &action);
-		if (strcmp(action, "hold")) {
+		if (xbps_transaction_pkg_type(tpkgd) != XBPS_TRANS_HOLD) {
 			all_on_hold = false;
 			break;
 		}
@@ -355,17 +356,22 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Check for packages to be replaced.
 	 */
-	if ((rv = xbps_transaction_package_replace(xhp, pkgs)) != 0) {
+	xbps_dbg_printf(xhp, "%s: checking replaces\n", __func__);
+	if (!xbps_transaction_check_replaces(xhp, pkgs)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return rv;
+		return EINVAL;
 	}
 	/*
-	 * If there are missing deps or revdeps bail out.
+	 * Check if there are missing revdeps.
 	 */
-	xbps_transaction_revdeps(xhp, pkgs);
-	array = xbps_dictionary_get(xhp->transd, "missing_deps");
-	if (xbps_array_count(array)) {
+	xbps_dbg_printf(xhp, "%s: checking revdeps\n", __func__);
+	if (!xbps_transaction_check_revdeps(xhp, pkgs)) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
+	if (xbps_dictionary_get(xhp->transd, "missing_deps")) {
 		if (xhp->flags & XBPS_FLAG_FORCE_REMOVE_REVDEPS) {
 			xbps_dbg_printf(xhp, "[trans] continuing with broken reverse dependencies!");
 		} else {
@@ -373,17 +379,27 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		}
 	}
 	/*
-	 * If there are package conflicts bail out.
+	 * Check for package conflicts.
 	 */
-	xbps_transaction_conflicts(xhp, pkgs);
-	array = xbps_dictionary_get(xhp->transd, "conflicts");
-	if (xbps_array_count(array))
+	xbps_dbg_printf(xhp, "%s: checking conflicts\n", __func__);
+	if (!xbps_transaction_check_conflicts(xhp, pkgs)) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
+	if (xbps_dictionary_get(xhp->transd, "conflicts")) {
 		return EAGAIN;
+	}
 	/*
 	 * Check for unresolved shared libraries.
 	 */
-	if (xbps_transaction_shlibs(xhp, pkgs,
-	    xbps_dictionary_get(xhp->transd, "missing_shlibs"))) {
+	xbps_dbg_printf(xhp, "%s: checking shlibs\n", __func__);
+	if (!xbps_transaction_check_shlibs(xhp, pkgs)) {
+		xbps_object_release(xhp->transd);
+		xhp->transd = NULL;
+		return EINVAL;
+	}
+	if (xbps_dictionary_get(xhp->transd, "missing_shlibs")) {
 		if (xhp->flags & XBPS_FLAG_FORCE_REMOVE_REVDEPS) {
 			xbps_dbg_printf(xhp, "[trans] continuing with unresolved shared libraries!");
 		} else {
@@ -396,15 +412,13 @@ out:
 	 * number of packages to be installed, updated, configured
 	 * and removed to the transaction dictionary.
 	 */
+	xbps_dbg_printf(xhp, "%s: computing stats\n", __func__);
 	if ((rv = compute_transaction_stats(xhp)) != 0) {
 		return rv;
 	}
 	/*
-	 * Remove now unneeded objects.
+	 * Make transaction dictionary immutable.
 	 */
-	xbps_dictionary_remove(xhp->transd, "missing_shlibs");
-	xbps_dictionary_remove(xhp->transd, "missing_deps");
-	xbps_dictionary_remove(xhp->transd, "conflicts");
 	xbps_dictionary_make_immutable(xhp->transd);
 
 	return 0;

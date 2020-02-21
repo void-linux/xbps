@@ -221,8 +221,7 @@ array_replace_dict(xbps_array_t array,
 		   bool bypattern)
 {
 	xbps_object_t obj;
-	const char *curpkgver;
-	char curpkgname[XBPS_NAME_SIZE];
+	const char *pkgver, *pkgname;
 
 	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(xbps_object_type(dict) == XBPS_TYPE_DICTIONARY);
@@ -230,26 +229,24 @@ array_replace_dict(xbps_array_t array,
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		obj = xbps_array_get(array, i);
-		if (obj == NULL)
+		if (obj == NULL) {
 			continue;
+		}
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
+			continue;
+		}
 		if (bypattern) {
 			/* pkgpattern match */
-			xbps_dictionary_get_cstring_nocopy(obj,
-			    "pkgver", &curpkgver);
-			if (xbps_pkgpattern_match(curpkgver, str)) {
-				if (!xbps_array_set(array, i, dict))
+			if (xbps_pkgpattern_match(pkgver, str)) {
+				if (!xbps_array_set(array, i, dict)) {
 					return EINVAL;
-
+				}
 				return 0;
 			}
 		} else {
 			/* pkgname match */
-			xbps_dictionary_get_cstring_nocopy(obj,
-			    "pkgver", &curpkgver);
-			if (!xbps_pkg_name(curpkgname, XBPS_NAME_SIZE, curpkgver)) {
-				abort();
-			}
-			if (strcmp(curpkgname, str) == 0) {
+			xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+			if (strcmp(pkgname, str) == 0) {
 				if (!xbps_array_set(array, i, dict)) {
 					return EINVAL;
 				}

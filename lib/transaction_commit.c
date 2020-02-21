@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2015 Juan Romero Pardines.
+ * Copyright (c) 2009-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,8 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 {
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	const char *pkgver, *tract;
+	xbps_trans_type_t ttype;
+	const char *pkgver = NULL;
 	int rv = 0;
 	bool update;
 
@@ -140,10 +141,10 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		goto out;
 	}
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
-		if (strcmp(tract, "remove") == 0) {
+		ttype = xbps_transaction_pkg_type(obj);
+		if (ttype == XBPS_TRANS_REMOVE) {
 			/*
 			 * Remove package.
 			 */
@@ -157,7 +158,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			}
 			continue;
 
-		} else if (strcmp(tract, "configure") == 0) {
+		} else if (ttype == XBPS_TRANS_CONFIGURE) {
 			/*
 			 * Reconfigure pending package.
 			 */
@@ -169,7 +170,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			}
 			continue;
 
-		} else if (strcmp(tract, "update") == 0) {
+		} else if (ttype == XBPS_TRANS_UPDATE) {
 			/*
 			 * Update a package: execute pre-remove action of
 			 * existing package before unpacking new version.
@@ -185,13 +186,13 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 				    strerror(rv));
 				goto out;
 			}
-		} else if (strcmp(tract, "hold") == 0) {
+		} else if (ttype == XBPS_TRANS_HOLD) {
 			/*
 			 * Package is on hold mode, ignore it.
 			 */
 			continue;
 		} else {
-			/* Install a package */
+			/* Install or reinstall package */
 			xbps_set_cb_state(xhp, XBPS_STATE_INSTALL, 0,
 			    pkgver, NULL);
 		}
@@ -227,7 +228,8 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 	xbps_object_iterator_reset(iter);
 	/* Force a pkgdb write for all unpacked pkgs in transaction */
-	(void)xbps_pkgdb_update(xhp, true, true);
+	if ((rv = xbps_pkgdb_update(xhp, true, true)) != 0)
+		goto out;
 
 	/*
 	 * Configure all unpacked packages.
@@ -236,16 +238,15 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
-		if ((strcmp(tract, "remove") == 0) ||
-		    (strcmp(tract, "hold") == 0) ||
-		    (strcmp(tract, "configure") == 0)) {
+		ttype = xbps_transaction_pkg_type(obj);
+		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD ||
+		    ttype == XBPS_TRANS_CONFIGURE) {
 			xbps_dbg_printf(xhp, "%s: skipping configuration for "
-			    "%s: %s\n", __func__, pkgver, tract);
+			    "%s: %d\n", __func__, pkgver, ttype);
 			continue;
 		}
 		update = false;
-		if (strcmp(tract, "update") == 0)
+		if (ttype == XBPS_TRANS_UPDATE)
 			update = true;
 
 		rv = xbps_configure_pkg(xhp, pkgver, false, update);
@@ -269,8 +270,9 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 out:
 	xbps_object_iterator_release(iter);
-	/* Force a pkgdb write for all unpacked pkgs in transaction */
-	(void)xbps_pkgdb_update(xhp, true, true);
-
+	if (rv == 0) {
+		/* Force a pkgdb write for all unpacked pkgs in transaction */
+		rv = xbps_pkgdb_update(xhp, true, true);
+	}
 	return rv;
 }

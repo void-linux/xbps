@@ -26,10 +26,6 @@ downgrade_hold_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
-	out=$(xbps-install -r root --repository=$PWD/repo -un)
-	set -- $out
-	exp="$1 $2 $3 $4"
-	atf_check_equal "$exp" "A-0.1_1 hold noarch $PWD/repo"
 	xbps-install -r root --repository=$PWD/repo -yuvd
 	atf_check_equal $? 0
 	out=$(xbps-query -r root -p pkgver A)

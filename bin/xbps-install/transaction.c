@@ -47,6 +47,38 @@ print_array(xbps_array_t a)
 	}
 }
 
+static const char *
+ttype2str(xbps_dictionary_t pkg_repod)
+{
+	uint8_t r;
+
+	assert(pkg_repod);
+
+	if (!xbps_dictionary_get_uint8(pkg_repod, "transaction", &r))
+		return NULL;
+
+	switch (r) {
+	case XBPS_TRANS_INSTALL:
+		return "install";
+	case XBPS_TRANS_REINSTALL:
+		return "reinstall";
+	case XBPS_TRANS_UPDATE:
+		return "update";
+	case XBPS_TRANS_REMOVE:
+		return "remove";
+	case XBPS_TRANS_CONFIGURE:
+		return "configure";
+	case XBPS_TRANS_HOLD:
+		return "hold";
+	case XBPS_TRANS_DOWNLOAD:
+		return "download";
+	default:
+		return "unknown";
+	}
+
+	return NULL;
+}
+
 static void
 show_actions(xbps_object_iterator_t iter)
 {
@@ -54,13 +86,12 @@ show_actions(xbps_object_iterator_t iter)
 	const char *repoloc, *trans, *pkgver, *arch;
 	uint64_t isize, dsize;
 
-	repoloc = trans = pkgver = arch = NULL;
-	isize = dsize = 0;
-
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &trans);
+		repoloc = trans = pkgver = arch = NULL;
+		isize = dsize = 0;
+
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		printf("%s %s", pkgver, trans);
+		printf("%s %s", pkgver, ttype2str(obj));
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
 		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 		if (repoloc && arch)
@@ -77,28 +108,25 @@ show_actions(xbps_object_iterator_t iter)
 }
 
 static void
-show_package_list(struct transaction *trans, const char *match, int cols)
+show_package_list(struct transaction *trans, xbps_trans_type_t ttype, int cols)
 {
+	xbps_dictionary_t ipkgd;
 	xbps_object_t obj;
+	xbps_trans_type_t tt;
+	const char *pkgver, *pkgname, *ipkgver, *version, *iversion;
+	char *buf = NULL;
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
-		const char *pkgver, *tract;
-		char *buf = NULL;
 		bool dload = false;
 
+		pkgver = ipkgver = version = iversion = NULL;
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &tract);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		xbps_dictionary_get_bool(obj, "download", &dload);
+		tt = xbps_transaction_pkg_type(obj);
 
-		if (match && strcmp(tract, "update") == 0) {
-			xbps_dictionary_t ipkgd;
-			const char *ipkgver, *iversion, *version;
-			char pkgname[XBPS_NAME_SIZE];
-
+		if (tt == XBPS_TRANS_UPDATE) {
 			/* get installed pkgver */
-			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-				abort();
-			}
 			ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
 			assert(ipkgd);
 			xbps_dictionary_get_cstring_nocopy(ipkgd, "pkgver", &ipkgver);
@@ -106,7 +134,7 @@ show_package_list(struct transaction *trans, const char *match, int cols)
 			iversion = xbps_pkg_version(ipkgver);
 			buf = xbps_xasprintf("%s (%s -> %s)", pkgname, iversion, version);
 		}
-		if ((match && (strcmp(match, tract) == 0)) || (!match && dload)) {
+		if ((ttype && (ttype == tt)) || (!ttype && dload)) {
 			if (buf) {
 				print_package_line(buf, cols, false);
 				free(buf);
@@ -135,23 +163,15 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		if (trans->dl_pkgcnt) {
 			printf("%u package%s will be downloaded:\n",
 			    trans->dl_pkgcnt, trans->dl_pkgcnt == 1 ? "" : "s");
-			show_package_list(trans, NULL, cols);
+			show_package_list(trans, XBPS_TRANS_DOWNLOAD, cols);
 			printf("\n");
 		}
-		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
-			trans->inst_pkgcnt = 0;
-			trans->up_pkgcnt = 0;
-			trans->cf_pkgcnt = 0;
-			trans->rm_pkgcnt = 0;
-			goto out;
-		}
-
 		xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
 		    &trans->inst_pkgcnt);
 		if (trans->inst_pkgcnt) {
 			printf("%u package%s will be installed:\n",
 			    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
-			show_package_list(trans, "install", cols);
+			show_package_list(trans, XBPS_TRANS_INSTALL, cols);
 			printf("\n");
 		}
 		xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
@@ -159,7 +179,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		if (trans->up_pkgcnt) {
 			printf("%u package%s will be updated:\n",
 			    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
-			show_package_list(trans, "update", cols);
+			show_package_list(trans, XBPS_TRANS_UPDATE, cols);
 			printf("\n");
 		}
 		xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
@@ -167,7 +187,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		if (trans->cf_pkgcnt) {
 			printf("%u package%s will be configured:\n",
 			    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
-			show_package_list(trans, "configure", cols);
+			show_package_list(trans, XBPS_TRANS_CONFIGURE, cols);
 			printf("\n");
 		}
 		xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
@@ -175,11 +195,10 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		if (trans->rm_pkgcnt) {
 			printf("%u package%s will be removed:\n",
 			    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
-			show_package_list(trans, "remove", cols);
+			show_package_list(trans, XBPS_TRANS_REMOVE, cols);
 			printf("\n");
 		}
 	}
-out:
 	/*
 	 * Show total download/installed/removed size for all required packages.
 	 */
@@ -232,18 +251,16 @@ static bool
 all_pkgs_on_hold(struct transaction *trans)
 {
 	xbps_object_t obj;
-	const char *action = NULL;
+	xbps_trans_type_t ttype;
 	bool all_on_hold = true;
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
-		xbps_dictionary_get_cstring_nocopy(obj, "transaction", &action);
-		if (strcmp(action, "hold")) {
+		ttype = xbps_transaction_pkg_type(obj);
+		if (ttype != XBPS_TRANS_HOLD) {
 			all_on_hold = false;
-			goto out;
+			break;
 		}
 	}
-
-out:
 	xbps_object_iterator_reset(trans->iter);
 	return all_on_hold;
 }
