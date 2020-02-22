@@ -46,7 +46,7 @@
 struct search_data {
 	bool regex, repo_mode;
 	regex_t regexp;
-	int maxcols;
+	unsigned int maxcols;
 	const char *pat, *prop, *repourl;
 	xbps_array_t results;
 };
@@ -79,7 +79,7 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 			inststr = "[-]";
 
 		len = strlen(inststr) + strlen(tmp) + strlen(desc) + 3;
-		if (sd->maxcols && (int)len > sd->maxcols) {
+		if (sd->maxcols && len > sd->maxcols) {
 			out = malloc(sd->maxcols+1);
 			assert(out);
 			snprintf(out, sd->maxcols-3, "%s %s %s",
