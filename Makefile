@@ -23,14 +23,6 @@ install: all
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir install || exit 1;	\
 	done
-	@echo
-	@echo "Binaries have been installed into $(DESTDIR)$(SBINDIR)."
-	@echo "Librares have been installed into $(DESTDIR)$(LIBDIR)."
-	@echo "Configuration file has been installed into $(DESTDIR)$(ETCDIR)."
-	@echo
-	@echo "WARNING: Don't forget to rerun ldconfig(1) if $(LIBDIR) is not"
-	@echo "WARNING: in your ld.so.conf by default."
-	@echo
 
 uninstall:
 	@for dir in $(SUBDIRS); do		\
