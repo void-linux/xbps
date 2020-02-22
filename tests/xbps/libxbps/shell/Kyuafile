@@ -26,4 +26,5 @@ atf_test_program{name="conflicts_test"}
 atf_test_program{name="hold_test"}
 atf_test_program{name="ignore_test"}
 atf_test_program{name="preserve_test"}
+atf_test_program{name="orphans_test"}
 atf_test_program{name="noextract_files_test"}
