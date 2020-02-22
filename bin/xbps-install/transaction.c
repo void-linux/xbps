@@ -108,7 +108,7 @@ show_actions(xbps_object_iterator_t iter)
 }
 
 static void
-show_package_list(struct transaction *trans, xbps_trans_type_t ttype, size_t cols)
+show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned int cols)
 {
 	xbps_dictionary_t ipkgd;
 	xbps_object_t obj;
@@ -264,7 +264,7 @@ all_pkgs_on_hold(struct transaction *trans)
 }
 
 int
-dist_upgrade(struct xbps_handle *xhp, size_t cols, bool yes, bool drun)
+dist_upgrade(struct xbps_handle *xhp, unsigned int cols, bool yes, bool drun)
 {
 	int rv = 0;
 
@@ -341,7 +341,7 @@ update_pkg(struct xbps_handle *xhp, const char *pkg)
 }
 
 int
-exec_transaction(struct xbps_handle *xhp, size_t maxcols, bool yes, bool drun)
+exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool drun)
 {
 	xbps_array_t array;
 	struct transaction *trans;

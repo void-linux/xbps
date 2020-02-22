@@ -54,9 +54,9 @@ get_maxcols(void)
 }
 
 void
-print_package_line(const char *str, size_t maxcols, bool reset)
+print_package_line(const char *str, unsigned int maxcols, bool reset)
 {
-	static size_t cols;
+	static unsigned int cols;
 	static bool first;
 
 	if (reset) {
@@ -82,7 +82,7 @@ find_longest_pkgname(struct transaction *trans)
 {
 	xbps_object_t obj;
 	const char *pkgname;
-	size_t len = 0, max = 0;
+	unsigned int len = 0, max = 0;
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname))
@@ -96,7 +96,7 @@ find_longest_pkgname(struct transaction *trans)
 }
 
 bool
-print_trans_colmode(struct transaction *trans, size_t cols)
+print_trans_colmode(struct transaction *trans, unsigned int cols)
 {
 	xbps_dictionary_t ipkgd;
 	xbps_object_t obj;
@@ -104,7 +104,7 @@ print_trans_colmode(struct transaction *trans, size_t cols)
 	const char *pkgver, *pkgname, *ipkgver, *ver, *iver, *tract;
 	char size[8];
 	uint64_t dlsize = 0;
-	size_t x, blen, pnamelen, hdrlen;
+	unsigned int x, blen, pnamelen, hdrlen;
 
 	pnamelen = find_longest_pkgname(trans);
 	/* header length */
