@@ -190,13 +190,6 @@ show_pkg_info(xbps_dictionary_t dict)
 		keysym = xbps_array_get(all_keys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 		obj = xbps_dictionary_get_keysym(dict, keysym);
-		/* ignore objs shown by other targets */
-		if ((strcmp(keyname, "run_depends") == 0) ||
-		    (strcmp(keyname, "files") == 0) ||
-		    (strcmp(keyname, "dirs") == 0) ||
-		    (strcmp(keyname, "links") == 0))
-			continue;
-
 		/* anything else */
 		print_value_obj(keyname, obj, NULL, bold, reset, false);
 	}
