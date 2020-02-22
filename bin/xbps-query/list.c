@@ -33,8 +33,8 @@
 #include "defs.h"
 
 struct list_pkgver_cb {
-	int pkgver_len;
-	int maxcols;
+	size_t pkgver_len;
+	size_t maxcols;
 };
 
 int
@@ -47,7 +47,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver = NULL, *short_desc = NULL, *state_str = NULL;
 	char tmp[255], *out = NULL;
-	int i, len = 0;
+	size_t i, len = 0;
 	pkg_state_t state;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -227,7 +227,7 @@ _find_longest_pkgver_cb(struct xbps_handle *xhp UNUSED,
 {
 	struct fflongest *ffl = arg;
 	const char *pkgver = NULL;
-	unsigned int len;
+	size_t len;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	len = strlen(pkgver);

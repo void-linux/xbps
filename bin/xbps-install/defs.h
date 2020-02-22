@@ -48,8 +48,8 @@ struct transaction {
 /* from transaction.c */
 int	install_new_pkg(struct xbps_handle *, const char *, bool);
 int	update_pkg(struct xbps_handle *, const char *);
-int	dist_upgrade(struct xbps_handle *, int, bool, bool);
-int	exec_transaction(struct xbps_handle *, int, bool, bool);
+int	dist_upgrade(struct xbps_handle *, size_t, bool, bool);
+int	exec_transaction(struct xbps_handle *, size_t, bool, bool);
 
 /* from question.c */
 bool	yesno(const char *, ...);
@@ -62,8 +62,8 @@ void	fetch_file_progress_cb(const struct xbps_fetch_cb_data *, void *);
 int	state_cb(const struct xbps_state_cb_data *, void *);
 
 /* From util.c */
-void	print_package_line(const char *, int, bool);
-bool	print_trans_colmode(struct transaction *, int);
+void	print_package_line(const char *, size_t, bool);
+bool	print_trans_colmode(struct transaction *, size_t);
 int	get_maxcols(void);
 
 #endif /* !_XBPS_INSTALL_DEFS_H_ */
