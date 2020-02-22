@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "xbps_api_impl.h"
+#include "uthash.h"
 
 enum type {
 	TYPE_LINK = 1,
@@ -40,8 +41,7 @@ enum type {
 };
 
 struct item {
-	struct item *hnext;
-	const char *file;
+	char *file;
 	size_t len;
 	struct {
 		const char *pkgname;
@@ -56,51 +56,32 @@ struct item {
 		bool removepkg;
 	} old, new;
 	bool deleted;
+	UT_hash_handle hh;
 };
 
-#define ITHSIZE	1024
-#define ITHMASK	(ITHSIZE - 1)
+/* hash table to look up files by path */
+static struct item *hashtab = NULL;
 
-static struct item *ItemHash[ITHSIZE];
-
-static struct item **items;
+/* list of files to be sorted using qsort */
+static struct item **items = NULL;
 static size_t itemsidx = 0;
 static size_t itemssz = 0;
-
-static int
-itemhash(const char *file)
-{
-	int hv = 0xA1B5F342;
-	int i;
-
-	assert(file);
-
-	/* XXX: runtime error: left shift of negative value -1581911230 */
-	for (i = 0; file[i]; ++i)
-		hv = (hv << 5) ^ (hv >> 23) ^ file[i];
-
-	return hv & ITHMASK;
-}
 
 static struct item *
 lookupItem(const char *file)
 {
-	struct item *item;
+	struct item *item = NULL;
 
 	assert(file);
 
-	for (item = ItemHash[itemhash(file+1)]; item; item = item->hnext) {
-		if (strcmp(file, item->file+1) == 0)
-			return item;
-	}
-	return NULL;
+	HASH_FIND_STR(hashtab, file, item);
+	return item;
 }
 
 static struct item *
 addItem(const char *file)
 {
-	struct item **itemp;
-	struct item *item = calloc(sizeof(*item), 1);
+	struct item *item = calloc(1, sizeof (struct item));
 	if (item == NULL)
 		return NULL;
 
@@ -117,15 +98,17 @@ addItem(const char *file)
 	}
 	items[itemsidx++] = item;
 
-	itemp = &ItemHash[itemhash(file+1)];
-	item->hnext = *itemp;
 	if ((item->file = xbps_xasprintf(".%s", file)) == NULL) {
 		free(item);
 		return NULL;
 	}
-	item->len = strlen(file);
-	assert(item->file);
-	*itemp = item;
+	item->len = strlen(item->file);
+
+	/*
+	 * File paths are stored relative, but looked up absolute.
+	 * Skip the leading . (dot) and substract it from the length.
+	 */
+	HASH_ADD_KEYPTR(hh, hashtab, item->file+1, item->len-1, item);
 
 	return item;
 }
