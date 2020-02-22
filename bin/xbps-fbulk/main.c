@@ -65,6 +65,7 @@
 #include <getopt.h>
 
 #include <xbps.h>
+#include "uthash.h"
 
 struct item;
 
@@ -75,7 +76,6 @@ struct depn {
 
 struct item {
 	enum { XWAITING, XDEPFAIL, XBUILD, XRUN, XDONE, XBROKEN } status;
-	struct item *hnext;	/* ItemHash next */
 	struct item *bnext;	/* BuildList/RunList next */
 	struct depn *dbase;	/* packages depending on us */
 	char *pkgn;		/* package name */
@@ -83,12 +83,10 @@ struct item {
 	int dcount;		/* build completion for our dependencies */
 	int xcode;		/* exit code from build */
 	pid_t pid;		/* running build */
+	UT_hash_handle hh;
 };
 
-#define ITHSIZE	1024
-#define ITHMASK	(ITHSIZE - 1)
-
-static struct item *ItemHash[ITHSIZE];
+static struct item *hashtab = NULL;
 static struct item *BuildList;
 static struct item **BuildListP = &BuildList;
 static struct item *RunList;
@@ -99,52 +97,33 @@ int NRunning;
 char *LogDir;
 char *TargetArch;
 
-/*
- * Item hashing and dependency helper routines, called during the
- * directory scan.
- */
-static int
-itemhash(const char *pkgn)
-{
-	int hv = 0xA1B5F342;
-	int i;
-
-	assert(pkgn);
-
-	for (i = 0; pkgn[i]; ++i)
-		hv = (hv << 5) ^ (hv >> 23) ^ pkgn[i];
-
-	return hv & ITHMASK;
-}
-
 static struct item *
 lookupItem(const char *pkgn)
 {
-	struct item *item;
+	struct item *item = NULL;
 
 	assert(pkgn);
 
-	for (item = ItemHash[itemhash(pkgn)]; item; item = item->hnext) {
-		if (strcmp(pkgn, item->pkgn) == 0)
-			return item;
-	}
-	return NULL;
+	HASH_FIND_STR(hashtab, pkgn, item);
+	return item;
 }
 
 static struct item *
 addItem(const char *pkgn)
 {
-	struct item **itemp;
-	struct item *item = calloc(sizeof(*item), 1);
+	struct item *item = calloc(1, sizeof (struct item));
 
 	assert(pkgn);
-	assert(item);
+	if (item == NULL)
+		return NULL;
 
-	itemp = &ItemHash[itemhash(pkgn)];
 	item->status = XWAITING;
-	item->hnext = *itemp;
 	item->pkgn = strdup(pkgn);
-	*itemp = item;
+	if (item->pkgn == NULL) {
+		free(item);
+		return NULL;
+	}
+	HASH_ADD_KEYPTR(hh, hashtab, item->pkgn, strlen(item->pkgn), item);
 
 	return item;
 }
