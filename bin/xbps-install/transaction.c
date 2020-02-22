@@ -251,12 +251,10 @@ static bool
 all_pkgs_on_hold(struct transaction *trans)
 {
 	xbps_object_t obj;
-	xbps_trans_type_t ttype;
 	bool all_on_hold = true;
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
-		ttype = xbps_transaction_pkg_type(obj);
-		if (ttype != XBPS_TRANS_HOLD) {
+		if (xbps_transaction_pkg_type(obj) != XBPS_TRANS_HOLD) {
 			all_on_hold = false;
 			break;
 		}
@@ -420,17 +418,16 @@ exec_transaction(struct xbps_handle *xhp, int maxcols, bool yes, bool drun)
 		goto out;
 	}
 	/*
+	 * No need to do anything if all packages are on hold.
+	 */
+	if (all_pkgs_on_hold(trans)) {
+		goto out;
+	}
+	/*
 	 * Show download/installed size for the transaction.
 	 */
 	if ((rv = show_transaction_sizes(trans, maxcols)) != 0)
 		goto out;
-	/*
-	 * No need to do anything if all packages are on hold.
-	 */
-	if (all_pkgs_on_hold(trans)) {
-		printf("All packages on hold.\n");
-		goto out;
-	}
 	/*
 	 * Ask interactively (if -y not set).
 	 */
