@@ -46,7 +46,7 @@ struct item {
 	struct {
 		const char *pkgname;
 		const char *pkgver;
-		const char *sha256;
+		char *sha256;
 		const char *target;
 		uint64_t size;
 		enum type type;
@@ -304,7 +304,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 		/*
 		 * Skip unexisting files and keep files with hash mismatch.
 		 */
-		if (item->old.sha256) {
+		if (item->old.sha256 != NULL) {
 			rv = xbps_file_sha256_check(item->file, item->old.sha256);
 			switch (rv) {
 			case 0:
@@ -504,8 +504,8 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 	return 0;
 add:
 	if (removefile) {
-		item->old.pkgname = strdup(pkgname);
-		item->old.pkgver = strdup(pkgver);
+		item->old.pkgname = pkgname;
+		item->old.pkgver = pkgver;
 		item->old.type = type;
 		item->old.size = size;
 		item->old.index = idx;
@@ -516,8 +516,8 @@ add:
 		if (sha256)
 			item->old.sha256 = strdup(sha256);
 	} else {
-		item->new.pkgname = strdup(pkgname);
-		item->new.pkgver = strdup(pkgver);
+		item->new.pkgname = pkgname;
+		item->new.pkgver = pkgver;
 		item->new.type = type;
 		item->new.size = size;
 		item->new.index = idx;
@@ -745,6 +745,21 @@ pathcmp(const void *l1, const void *l2)
 	return (a->len < b->len) - (b->len < a->len);
 }
 
+static void
+cleanup(void)
+{
+	struct item *item, *itmp;
+
+	HASH_ITER(hh, hashtab, item, itmp) {
+		HASH_DEL(hashtab, item);
+		free(item->file);
+		free(item->old.sha256);
+		free(item->new.sha256);
+		free(item);
+	}
+	free(items);
+}
+
 int HIDDEN
 xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
@@ -841,5 +856,7 @@ out:
 	if (rv != 0)
 		return rv;
 
-	return collect_obsoletes(xhp);
+	rv = collect_obsoletes(xhp);
+	cleanup();
+	return rv;
 }
