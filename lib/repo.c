@@ -416,6 +416,8 @@ xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg)
 	if (!xbps_dictionary_set_cstring(pkgd, "pkgname", pkgname)) {
 		return NULL;
 	}
+	xbps_dbg_printf(repo->xhp, "%s: found %s\n", __func__, pkgver);
+
 	return pkgd;
 }
 
@@ -454,6 +456,7 @@ add:
 	if (!xbps_dictionary_set_cstring(pkgd, "pkgname", pkgname)) {
 		return NULL;
 	}
+	xbps_dbg_printf(repo->xhp, "%s: found %s\n", __func__, pkgver);
 	return pkgd;
 }
 
