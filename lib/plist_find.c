@@ -50,13 +50,11 @@ get_pkg_in_array(xbps_array_t array, const char *str, xbps_trans_type_t tt, bool
 		return NULL;
 
 	while ((obj = xbps_object_iterator_next(iter))) {
-		const char *pkgver = NULL, *pkgname = NULL;
+		const char *pkgver = NULL;
+		char pkgname[XBPS_NAME_SIZE] = {0};
 
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
 			continue;
-		}
-		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname)) {
-			break;
 		}
 		if (virtual) {
 			/*
@@ -79,6 +77,9 @@ get_pkg_in_array(xbps_array_t array, const char *str, xbps_trans_type_t tt, bool
 				break;
 			}
 		} else {
+			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+				abort();
+			}
 			/* match by pkgname */
 			if (strcmp(pkgname, str) == 0) {
 				found = true;
@@ -215,48 +216,54 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg, bool only_conf)
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_string_t rpkg;
 		char buf[XBPS_NAME_SIZE] = {0};
-		char *vpkgver = NULL;
-		const char *vpkgname = NULL, *vpkg_conf = NULL;
+		char *vpkgver = NULL, *vpkgname = NULL;
+		const char *vpkg_conf = NULL;
 
 		vpkg_conf = xbps_dictionary_keysym_cstring_nocopy(obj);
 		rpkg = xbps_dictionary_get_keysym(xhp->vpkgd, obj);
 		pkg = xbps_string_cstring_nocopy(rpkg);
 
 		if (xbps_pkg_version(vpkg_conf)) {
-			if (!xbps_pkg_name(buf, XBPS_NAME_SIZE, vpkg_conf)) {
+			if (!xbps_pkg_name(buf, sizeof(buf), vpkg_conf)) {
 				abort();
 			}
-			vpkgname = buf;
+			vpkgname = strdup(buf);
 		} else {
-			vpkgname = vpkg_conf;
+			vpkgname = strdup(vpkg_conf);
 		}
 		assert(vpkgname);
 
 		if (xbps_pkgpattern_version(vpkg)) {
 			if (xbps_pkg_version(vpkg_conf)) {
 				if (!xbps_pkgpattern_match(vpkg_conf, vpkg)) {
+					free(vpkgname);
 					continue;
 				}
 			} else {
 				vpkgver = xbps_xasprintf("%s-999999_1", vpkg_conf);
 				if (!xbps_pkgpattern_match(vpkgver, vpkg)) {
 					free(vpkgver);
+					free(vpkgname);
 					continue;
 				}
 				free(vpkgver);
 			}
 		} else if (xbps_pkg_version(vpkg)) {
-			if (!xbps_pkg_name(buf, XBPS_NAME_SIZE, vpkg)) {
+			if (!xbps_pkg_name(buf, sizeof(buf), vpkg)) {
 				abort();
 			}
 			if (strcmp(buf, vpkgname)) {
+				free(vpkgname);
 				continue;
 			}
 		} else {
 			if (strcmp(vpkg, vpkgname)) {
+				free(vpkgname);
 				continue;
 			}
 		}
+		xbps_dbg_printf(xhp, "%s: vpkg_conf %s pkg %s vpkgname %s\n", __func__, vpkg_conf, pkg, vpkgname);
+		free(vpkgname);
 		found = true;
 		break;
 	}
