@@ -106,8 +106,11 @@ compute_transaction_stats(struct xbps_handle *xhp)
 			continue;
 		}
 		/* installed_size from repo */
-		xbps_dictionary_get_uint64(obj, "installed_size", &tsize);
-		instsize += tsize;
+		if (ttype != XBPS_TRANS_REMOVE && ttype != XBPS_TRANS_HOLD &&
+		    ttype != XBPS_TRANS_CONFIGURE) {
+			xbps_dictionary_get_uint64(obj, "installed_size", &tsize);
+			instsize += tsize;
+		}
 		/*
 		 * If removing or updating a package without preserve,
 		 * get installed_size from pkgdb instead.
