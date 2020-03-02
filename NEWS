@@ -23,7 +23,7 @@ xbps-0.59 (???):
    cases. [duncaen]
 
  * libxbps: ensure no multiple versions of the same package
-   aren't added to the transaction. [xtraeme]
+   are stored in the transaction dictionary. [xtraeme]
 
  * xbps-uchroot(1): fixes to properly cleanup the temporary
    tree with overlayfs. [xtraeme]
