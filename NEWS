@@ -1,3 +1,66 @@
+xbps-0.59 (???):
+
+ * Switch to uthash in libxbps and xbps-fbulk(1). [duncaen, xtraeme]
+
+ * xbps-query(1): `-S, --show` mode now prints all properties. [xtraeme]
+
+ * xbps-create(1): zstd is now the default compression method. [xtraeme]
+
+ * xbps-rindex(1): zstd is now the default compression method. [xtraeme]
+
+ * xbps-install(1): show overall download progress percentage.
+
+   - https://github.com/void-linux/xbps/pull/230
+   - https://github.com/void-linux/xbps/issues/187
+
+   Contributed by [sineemore](https://github.com/sineemore)
+
+ * libxbps: multiple performance improvements to the transaction
+   code, by reducing memory usage and getting rid of unnecessary
+   operations. [xtraeme]
+
+ * libxbps: improved code that handled file paths, with new test
+   cases. [duncaen]
+
+ * libxbps: ensure no multiple versions of the same package
+   aren't added to the transaction. [xtraeme]
+
+ * xbps-uchroot(1): fixes to properly cleanup the temporary
+   tree with overlayfs. [xtraeme]
+
+ * libxbps: improved hash code to avoid lots of heap allocs/frees
+   and use stack based memory instead. [duncaen]
+
+ * libxbps: fixed 4 memory leaks in transaction/repo. [xtraeme]
+
+ * libxbps: replaced the pthread spinlock with a mutex. [xtraeme]
+
+ * libxbps: improved pkgname guessing code, avoiding lots of
+   heap allocs/frees and use stack based memory instead. [xtraeme]
+
+ * libxbps: fixed 3 regressions that were added in 0.58. [xtraeme]
+
+ * xbps-alternatives(1): fixed 3 issues, along with new test cases
+   to verify its behaviour. [xtraeme]
+
+ * xbps.d(5): added `keepconf` configuration option. If set, xbps
+   won't overwrite unmodified configuration files on upgrades, rather
+   new files will be unpacked as `<name>.new-<version>`.
+
+   - https://github.com/void-linux/xbps/pull/214
+
+   Contributed by [Andreas Kempe](https://github.com/andkem)
+
+  * xbps-install(1): fixed manual page and usage of `-R`.
+
+   Contributed by [Roman Neuhauser](https://github.com/roman-neuhauser)
+
+15 new test cases were added in this release, 6 people
+were involved: Juan RP, Duncan Overbruck, Roman Neuhauser,
+Andreas Kempe, Johannes Brechtmann, sineemore.
+
+238 test cases in total, with only 2 known issues in the alternatives code.
+
 xbps-0.58 (2020-01-30):
 
  * libfetch: fix CVE-2020-7450; from FreeBSD. [duncaen]
