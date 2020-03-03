@@ -1,5 +1,9 @@
 xbps-0.59 (???):
 
+ * xbps-fetch(1): added TIMEOUT_CONNECTION environment variable
+   to customize time waiting for response, defaults to 5 minutes.
+   [Chocimier]
+
  * libxbps: API/ABI break and bumping major soname version to 5.
    [duncaen, xtraeme]
 
@@ -58,9 +62,9 @@ xbps-0.59 (???):
 
    Contributed by [Roman Neuhauser](https://github.com/roman-neuhauser)
 
-15 new test cases were added in this release, 6 people
+15 new test cases were added in this release, 7 people
 were involved: Juan RP, Duncan Overbruck, Roman Neuhauser,
-Andreas Kempe, Johannes Brechtmann, sineemore.
+Andreas Kempe, Johannes Brechtmann, sineemore, Piotr Wójcik.
 
 238 test cases in total, with only 2 known issues in the alternatives code.
 
