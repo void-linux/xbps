@@ -1,4 +1,4 @@
-xbps-0.59 (???):
+xbps-0.59 (2020-03-03):
 
  * xbps-fetch(1): added TIMEOUT_CONNECTION environment variable
    to customize time waiting for response, defaults to 5 minutes.
