@@ -125,6 +125,7 @@ show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned i
 		xbps_dictionary_get_bool(obj, "download", &dload);
 		tt = xbps_transaction_pkg_type(obj);
 
+		buf = NULL;
 		if (tt == XBPS_TRANS_UPDATE) {
 			/* get installed pkgver */
 			ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
