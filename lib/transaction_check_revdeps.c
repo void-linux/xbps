@@ -173,11 +173,9 @@ xbps_transaction_check_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 				goto out;
 			}
 
-			ttype = 0;
 			if ((revpkgd = xbps_find_pkg_in_array(pkgs, pkgname, 0))) {
-				ttype = xbps_transaction_pkg_type(revpkgd);
-				if (ttype == XBPS_TRANS_REMOVE)
-					revpkgd = NULL;
+				if (xbps_transaction_pkg_type(revpkgd) == XBPS_TRANS_REMOVE)
+					continue;
 			}
 			if (revpkgd == NULL)
 				revpkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
