@@ -163,7 +163,7 @@ main(int argc, char **argv)
 		} else {
 			rv = 0;
 		}
-		if (*digest) {
+		if (shasum) {
 			print_digest(digest, SHA256_DIGEST_LENGTH);
 			printf("  %s\n", filename);
 		}
