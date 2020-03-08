@@ -41,6 +41,7 @@ _arguments -s : \
 	'-m[Absolute path to masterdir]:masterdir:_files -/' \
 	'-N[Disable use of remote repositories]' \
 	'-o[Set package build options]:options: ' \
+	'-q[Supress output of xbps-src]' \
 	'-r[Use alternative local repository]:repo:_files -/' \
 	'-t[Create a temporary masterdir]' \
 	'1:target:->target' \
