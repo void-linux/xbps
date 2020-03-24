@@ -893,9 +893,52 @@ replace_file_with_alternative_body() {
 	xbps-install -r root --repository=repo -ydv -Su
 	atf_check_equal $? 0
 
-	test -L root/usr/bin/file
+	test -h root/usr/bin/file
 	atf_check_equal $? 0
 	test "$(readlink -f root/usr/bin/file)" = "pkg-b-file"
+	atf_check_equal $? 0
+}
+
+atf_test_case cc_alternatives_removal
+
+cc_alternatives_removal_head() {
+	atf_set "descr" "xbps-alternatives: removal of the cc alternatives group"
+}
+cc_alternatives_removal_body() {
+	atf_expect_fail "https://github.com/void-linux/xbps/pull/253"
+
+	mkdir -p repo pkg_A/usr/bin
+	mkdir -p repo pkg_B/usr/bin
+	touch pkg_A/usr/bin/gcc
+	touch pkg_B/usr/bin/clang
+
+	cd repo
+	xbps-create -A noarch -n gcc-1.1_1 -s "gcc pkg" --alternatives "cc:cc:/usr/bin/gcc" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n clang-1.1_1 -s "clang pkg" --alternatives "cc:cc:/usr/bin/clang" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv clang gcc
+	atf_check_equal $? 0
+
+	ln -s gcc pkg_A/usr/bin/cc
+	cd repo
+	rm -f *.xbps
+	xbps-create -A noarch -n gcc-1.1_2 -s "gcc pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n clang-1.1_2 -s "clang pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -dvyu gcc clang
+	atf_check_equal $? 0
+
+	test -h root/usr/bin/cc
 	atf_check_equal $? 0
 }
 
@@ -921,4 +964,5 @@ atf_init_test_cases() {
 	atf_add_test_case replace_alternative_with_symlink
 	atf_add_test_case keep_provider_on_update
 	atf_add_test_case replace_file_with_alternative
+	atf_add_test_case cc_alternatives_removal
 }
