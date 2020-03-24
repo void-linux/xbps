@@ -892,7 +892,6 @@ atf_test_case multiple_obsoletes_with_alternatives_unordered
 
 multiple_obsoletes_with_alternatives_unordered_head() {
 	atf_set "descr" "Multiple packages add alternative unordered"
-	atf_expect_fail "not fixed yet"
 }
 
 multiple_obsoletes_with_alternatives_unordered_body() {

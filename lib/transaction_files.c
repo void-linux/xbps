@@ -1,6 +1,7 @@
 /*-
  * Copyright (c) 2019 Juan Romero Pardines.
  * Copyright (c) 2019 Duncan Overbruck <mail@duncano.de>.
+ * Copyright (c) 2020 Piotr Wójcik
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,6 +39,7 @@ enum type {
 	TYPE_DIR,
 	TYPE_FILE,
 	TYPE_CONFFILE,
+	TYPE_ALTERNATIVE,
 };
 
 struct item {
@@ -117,11 +119,12 @@ static const char *
 typestr(enum type typ)
 {
 	switch (typ) {
-	case TYPE_LINK:     return "symlink";
-	case TYPE_DIR:      return "directory";
-	case TYPE_FILE:     return "file";
-	case TYPE_CONFFILE: return "configuration file";
-	default:            return NULL;
+	case TYPE_LINK:        return "symlink";
+	case TYPE_DIR:         return "directory";
+	case TYPE_FILE:        return "file";
+	case TYPE_CONFFILE:    return "configuration file";
+	case TYPE_ALTERNATIVE: return "alternative symlink";
+	default:               return NULL;
 	}
 }
 
@@ -235,6 +238,12 @@ collect_obsoletes(struct xbps_handle *xhp)
 		}
 
 		if (item->new.type == 0) {
+			if (item->old.type == TYPE_ALTERNATIVE) {
+			    /*
+			     * Leave removing alternative to dedicated phase.
+			     */
+			    continue;
+			}
 			/*
 			 * File was removed and is not provided by any
 			 * new package.
@@ -444,6 +453,11 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			 * Multiple packages removing the same directory.
 			 */
 			return 0;
+		} else if (type == TYPE_ALTERNATIVE && item->old.type == TYPE_ALTERNATIVE) {
+			/*
+			 * Multiple packages removing the same alternative.
+			 */
+			return 0;
 		} else {
 			/*
 			 * Multiple packages removing the same file.
@@ -484,6 +498,11 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			 * Multiple packages creating the same directory.
 			 */
 			return 0;
+		} else if (type == TYPE_ALTERNATIVE && item->new.type == TYPE_ALTERNATIVE) {
+			/*
+			 * Multiple packages creating the same alternative.
+			 */
+			return 0;
 		} else {
 			/*
 			 * Multiple packages creating the same file.
@@ -491,8 +510,8 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			 */
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 			    EEXIST, pkgver,
-			    "%s: file `%s' already installed by package %s.",
-			    pkgver, file, item->new.pkgver);
+			    "%s: %s `%s' already installed by package %s as %s.",
+			    pkgver, typestr(type), file, item->new.pkgver, typestr(item->new.type));
 			if (xhp->flags & XBPS_FLAG_IGNORE_FILE_CONFLICTS)
 				return 0;
 
@@ -548,7 +567,7 @@ add:
 }
 
 static int
-collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
+collect_files(struct xbps_handle *xhp, xbps_dictionary_t d, xbps_dictionary_t alternatives,
 			const char *pkgname, const char *pkgver, unsigned int idx,
 			bool update, bool removepkg, bool preserve, bool removefile)
 {
@@ -632,6 +651,40 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			}
 		}
 	}
+	if (alternatives) {
+		xbps_object_iterator_t iter = NULL;
+		xbps_dictionary_keysym_t keysym = NULL;
+
+		iter = xbps_dictionary_iterator(alternatives);
+		assert(iter);
+
+		while ((keysym = xbps_object_iterator_next(iter))) {
+			a = xbps_dictionary_get_keysym(alternatives, keysym);
+			for (i = 0; i < xbps_array_count(a); i++) {
+				char *alternative, *link = NULL, *dir = NULL, *target = NULL;
+
+				alternative = xbps_string_cstring(xbps_array_get(a, i));
+				if (xbps_parse_alternative(alternative, NULL, &link, &dir, &target)) {
+					free(alternative);
+					continue;
+				}
+
+				rv = collect_file(xhp, link, 0, pkgname, pkgver, idx, NULL,
+				    TYPE_ALTERNATIVE, update, removepkg, preserve, removefile, NULL);
+				free(alternative);
+				free(link);
+				free(target);
+				if (rv == EEXIST) {
+					error = true;
+					continue;
+				} else if (rv != 0) {
+					xbps_object_iterator_release(iter);
+					goto out;
+				}
+			}
+		}
+		xbps_object_iterator_release(iter);
+	}
 
 out:
 	if (error)
@@ -644,14 +697,14 @@ static int
 collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 		unsigned int idx, bool update)
 {
-	xbps_dictionary_t filesd;
+	xbps_dictionary_t filesd = NULL, propsd = NULL, alternativesd = NULL;
 	struct archive *ar = NULL;
 	struct archive_entry *entry;
 	struct stat st;
 	const char *pkgver, *pkgname;
 	char *bpkg;
 	/* size_t entry_size; */
-	int rv = 0, pkg_fd = -1;
+	int rv = 0, pkg_fd = -1, found = 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	assert(pkgver);
@@ -720,15 +773,26 @@ collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 				rv = EINVAL;
 				goto out;
 			}
-			rv = collect_files(xhp, filesd, pkgname, pkgver, idx,
+			found++;
+		}
+		else if ((strcmp("./props.plist", entry_pname)) == 0) {
+			propsd = xbps_archive_get_dictionary(ar, entry);
+			alternativesd = xbps_dictionary_get(propsd, "alternatives");
+			found++;
+		}
+		if (found == 2) {
+			rv = collect_files(xhp, filesd, alternativesd, pkgname, pkgver, idx,
 			    update, false, false, false);
-			xbps_object_release(filesd);
 			goto out;
 		}
 		archive_read_data_skip(ar);
 	}
 
 out:
+	if (filesd)
+	    xbps_object_release(filesd);
+	if (propsd)
+	    xbps_object_release(propsd);
 	if (pkg_fd != -1)
 		close(pkg_fd);
 	if (ar)
@@ -763,7 +827,7 @@ cleanup(void)
 int HIDDEN
 xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
-	xbps_dictionary_t pkgd, filesd;
+	xbps_dictionary_t pkgd, filesd, alternativesd;
 	xbps_object_t obj;
 	xbps_trans_type_t ttype;
 	const char *pkgver, *pkgname;
@@ -827,11 +891,13 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			if (filesd == NULL) {
 				continue;
 			}
+			alternativesd = xbps_pkgdb_get_pkg(xhp, pkgname);
+			alternativesd = xbps_dictionary_get(alternativesd, "alternatives");
 
 			assert(oldpkgver);
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES, 0, oldpkgver,
 			    "%s: collecting files...", oldpkgver);
-			rv = collect_files(xhp, filesd, pkgname, pkgver, idx,
+			rv = collect_files(xhp, filesd, alternativesd, pkgname, pkgver, idx,
 			    update, removepkg, preserve, true);
 			if (rv != 0)
 				goto out;

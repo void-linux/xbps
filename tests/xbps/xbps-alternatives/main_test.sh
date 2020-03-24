@@ -847,8 +847,6 @@ replace_file_with_alternative_head() {
 	atf_set "descr" "xbps-alternatives: replace file with an alternative"
 }
 replace_file_with_alternative_body() {
-	atf_expect_fail "https://github.com/void-linux/xbps/pull/185"
-
 	mkdir -p repo pkg_A_old/usr/bin pkg_A_new/usr/bin pkg_B_old/usr/bin \
 	pkg_B_new/usr/bin
 	printf 'A' > pkg_A_old/usr/bin/pkg-a-file
@@ -895,8 +893,8 @@ replace_file_with_alternative_body() {
 
 	test -L root/usr/bin/file
 	atf_check_equal $? 0
-	test "$(readlink -f root/usr/bin/file)" = "pkg-b-file"
-	atf_check_equal $? 0
+	lnk=$(readlink -f root/usr/bin/file)
+	atf_check_equal $lnk "$PWD/root/usr/bin/pkg-a-file"
 }
 
 atf_init_test_cases() {
