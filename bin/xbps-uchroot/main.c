@@ -135,7 +135,7 @@ walk_dir(const char *path,
 	struct stat sb;
 	const char *p;
 	char tmp_path[PATH_MAX] = {0};
-	int rv, i;
+	int rv = 0, i;
 
 	i = scandir(path, &list, NULL, alphasort);
 	if (i == -1) {
