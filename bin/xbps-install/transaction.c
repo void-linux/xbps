@@ -443,7 +443,8 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 		printf("\n%u downloaded, %u installed, %u updated, "
 		    "%u configured, %u removed.\n",
 		    trans->dl_pkgcnt, trans->inst_pkgcnt,
-		    trans->up_pkgcnt, trans->cf_pkgcnt + trans->inst_pkgcnt,
+		    trans->up_pkgcnt,
+		    trans->cf_pkgcnt + trans->inst_pkgcnt + trans->up_pkgcnt,
 		    trans->rm_pkgcnt);
 	} else {
 		fprintf(stderr, "Transaction failed! see above for errors.\n");
