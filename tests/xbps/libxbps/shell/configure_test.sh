@@ -27,7 +27,7 @@ EOF
 	cd ..
 	xbps-install -C empty.conf -r root --repository=$PWD/repo -yd A
 	atf_check_equal $? 0
-	perms=$(stat --format=%a root/file)
+	perms=$(stat --format=%a --cached=never root/file)
 	atf_check_equal $perms 644
 }
 
