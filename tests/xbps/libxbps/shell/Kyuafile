@@ -29,3 +29,4 @@ atf_test_program{name="preserve_test"}
 atf_test_program{name="orphans_test"}
 atf_test_program{name="noextract_files_test"}
 atf_test_program{name="transaction_check_revdeps_test"}
+atf_test_program{name="repo_test"}
