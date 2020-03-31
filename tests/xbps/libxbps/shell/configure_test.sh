@@ -7,6 +7,7 @@ filemode_head() {
 }
 
 filemode_body() {
+	mkdir -p foo
 	umask 077
 	mkdir -p repo pkg_A
 	cat >>pkg_A/INSTALL<<EOF
