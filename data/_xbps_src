@@ -4,7 +4,7 @@ setopt localoptions extended_glob
 
 local ret=0 archs top
 
-archs=(aarch64-musl aarch64 armv6hf-musl armv6hf armv7hf-musl armv7hf i686-musl i686 mips mipsel ppc-musl ppc ppc64le-musl ppc64le ppc64-musl ppc64 x86_64-musl)
+archs=(aarch64-musl aarch64 armv5te-musl armv5te armv5tel-musl armv5tel armv6hf-musl armv6hf armv6l-musl armv6l armv7hf-musl armv7hf armv7l-musl armv7l i686-musl i686 mips-musl mipsel-musl mipselhf-musl mipshf-musl ppc-musl ppc ppc64-musl ppc64 ppc64le-musl ppc64le x86_64-musl)
 
 # path to masterdir and srcpkgs.
 top=$~_comp_command1:h
@@ -57,8 +57,8 @@ case $state in
 			show-deps show-hostmakedepends show-makedepends \
 			show-files show-options show-shlib-provides \
 			show-shlib-requires show-var show-repo-updates \
-			show-sys-updates update-bulk update-check update-sys \
-			update-hash-cache zap
+			show-sys-updates sort-dependencies update-bulk update-check \
+			update-sys update-hash-cache zap
 			ret=0;;
 	args)
 		case $words[1] in
