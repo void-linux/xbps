@@ -1,3 +1,18 @@
+xbps-0.59.1 (2020-04-01):
+
+ * libxbps: fixed a double free with malformed/incomplete
+   repodata archives. Added new test case. [xtraeme]
+
+ * zsh: updated completions. [Doàn Trần Công Danh, Piraty]
+
+ * libxbps: fix regression while checking reverse dependencies,
+   introduced in 0.59. Added new test case. [duncaen, Piotr Wójcik]
+
+ * xbps-fetch(1): fix output when not using sha256 mode. [duncaen]
+
+ * xbps-install(1): fix regressions in transaction statistics,
+   introduced in 0.59. [duncaen, xtraeme]
+
 xbps-0.59 (2020-03-03):
 
  * xbps-fetch(1): added TIMEOUT_CONNECTION environment variable
