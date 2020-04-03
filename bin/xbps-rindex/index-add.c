@@ -438,7 +438,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv,
 			goto out;
 		} else {
 			fprintf(stderr, "%s: failed to write repodata: %s\n",
-			    _XBPS_RINDEX, repodir, strerror(errno));
+			    _XBPS_RINDEX, strerror(errno));
 			rv = errno;
 			goto out;
 		}
