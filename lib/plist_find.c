@@ -297,7 +297,7 @@ xbps_find_virtualpkg_in_conf(struct xbps_handle *xhp,
 	return NULL;
 }
 
-xbps_dictionary_t HIDDEN
+xbps_dictionary_t
 xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 			     xbps_dictionary_t d,
 			     const char *pkg)
@@ -336,7 +336,7 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 	return NULL;
 }
 
-xbps_dictionary_t HIDDEN
+xbps_dictionary_t
 xbps_find_pkg_in_dict(xbps_dictionary_t d, const char *pkg)
 {
 	xbps_dictionary_t pkgd = NULL;

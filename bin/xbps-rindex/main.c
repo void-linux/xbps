@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2012-2019 Juan Romero Pardines.
+ * Copyright (c) 2012-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,15 +37,17 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-rindex [OPTIONS] MODE ARGUMENTS\n\n"
 	    "OPTIONS\n"
+	    " -C --config <dir>                 Path to confdir (xbps.d)\n"
 	    " -d --debug                        Debug mode shown to stderr\n"
 	    " -f --force                        Force mode to overwrite entry in add mode\n"
 	    " -h --help                         Show help usage\n"
 	    " -v --verbose                      Verbose messages\n"
 	    " -V --version                      Show XBPS version\n"
-	    " -C --hashcheck                    Consider file hashes for cleaning up packages\n"
+	    " -H --hashcheck                    Consider file hashes for cleaning up packages\n"
 	    "    --compression <fmt>            Compression format: none, gzip, bzip2, lz4, xz, zstd (default).\n"
 	    "    --privkey <key>                Path to the private key for signing\n"
-	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
+	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n"
+	    "    --validate                     Validate dependencies, use with -a/--add\n\n"
 	    "MODE\n"
 	    " -a --add <repodir/pkg> ...        Add package(s) to repository index\n"
 	    " -c --clean <repodir>              Clean repository index\n"
@@ -58,10 +60,11 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsCSVv";
+	const char *shortopts = "acdfhrsC:HSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
+		{ "config", required_argument, NULL, 'C' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
@@ -72,19 +75,20 @@ main(int argc, char **argv)
 		{ "signedby", required_argument, NULL, 1},
 		{ "sign", no_argument, NULL, 's'},
 		{ "sign-pkg", no_argument, NULL, 'S'},
-		{ "hashcheck", no_argument, NULL, 'C' },
+		{ "hashcheck", no_argument, NULL, 'H' },
 		{ "compression", required_argument, NULL, 2},
+		{ "validate", no_argument, NULL, 3},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
-	const char *compression = NULL;
+	const char *confdir = NULL, *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
-	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
-			 hashcheck;
+	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force;
+	bool validate, hashcheck;
 
-	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force =
-		hashcheck = false;
+	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = false;
+	force = validate = hashcheck = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -96,6 +100,9 @@ main(int argc, char **argv)
 			break;
 		case 2:
 			compression = optarg;
+			break;
+		case 3:
+			validate = true;
 			break;
 		case 'a':
 			add_mode = true;
@@ -119,6 +126,9 @@ main(int argc, char **argv)
 			sign_mode = true;
 			break;
 		case 'C':
+			confdir = optarg;
+			break;
+		case 'H':
 			hashcheck = true;
 			break;
 		case 'S':
@@ -148,6 +158,9 @@ main(int argc, char **argv)
 	/* initialize libxbps */
 	memset(&xh, 0, sizeof(xh));
 	xh.flags = flags;
+	if (confdir)
+		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
+
 	if ((rv = xbps_init(&xh)) != 0) {
 		fprintf(stderr, "failed to initialize libxbps: %s\n",
 		    strerror(rv));
@@ -155,7 +168,7 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force, compression);
+		rv = index_add(&xh, optind, argc, argv, force, validate, compression);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
 	else if (rm_mode)
@@ -165,5 +178,5 @@ main(int argc, char **argv)
 	else if (sign_pkg_mode)
 		rv = sign_pkgs(&xh, optind, argc, argv, privkey, force);
 
-	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
+	exit(rv ? rv : EXIT_SUCCESS);
 }

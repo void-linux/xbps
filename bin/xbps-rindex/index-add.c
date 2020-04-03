@@ -1,5 +1,7 @@
 /*-
- * Copyright (c) 2012-2015 Juan Romero Pardines.
+ * Copyright (c) 2012-2020 Juan Romero Pardines.
+ * Copyright (c) 2016 Enno Boland <gottox@voidlinux.org>
+ * Copyright (c) 2016-2020 Duncan Overbruck <mail@duncano.de>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,16 +42,16 @@
 static bool
 repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage,
-	const char *compression)
+	bool validate, const char *compression)
 {
 	xbps_object_iterator_t iter;
 	xbps_object_t keysym;
-	int rv;
+	bool rv = true;
 	xbps_dictionary_t oldshlibs, usedshlibs;
 
 	if (xbps_dictionary_count(stage) == 0) {
 		// Nothing to do.
-		return true;
+		return rv;
 	}
 
 	/*
@@ -173,9 +175,12 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 		}
 		xbps_object_iterator_release(iter);
 		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL, compression);
-	}
-	else {
+	} else {
+		xbps_array_t allkeys;
 		char *stagefile;
+		bool error = false;
+
+		/* move staged pkgs to repo idx */
 		iter = xbps_dictionary_iterator(stage);
 		while ((keysym = xbps_object_iterator_next(iter))) {
 			const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
@@ -190,15 +195,65 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 		stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
 		unlink(stagefile);
 		free(stagefile);
+
+		if (!validate)
+			goto flush;
+
+		/* validate dependencies */
+		allkeys = xbps_dictionary_all_keys(idx);
+		for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
+			xbps_object_t obj = xbps_array_get(allkeys, i);
+			xbps_dictionary_t pkg = xbps_dictionary_get_keysym(stage, obj);
+			xbps_array_t deps = xbps_dictionary_get(pkg, "run_depends");
+			unsigned int cnt = xbps_array_count(deps);
+			const char *pkgver = NULL;
+
+			xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
+			if (!pkgver)
+				continue;
+
+			for (unsigned int x = 0; x < cnt; x++) {
+				const char *dep;
+
+				xbps_array_get_cstring_nocopy(deps, x, &dep);
+				if (!xbps_rpool_get_virtualpkg(xhp, dep) &&
+				    !xbps_rpool_get_pkg(xhp, dep)) {
+					if (errno == ENOENT) {
+						fprintf(stderr, "%s: %s: unresolved "
+						    "dependency found: %s\n", repodir, pkgver, dep);
+						error = true;
+					} else if (errno == ENOTSUP) {
+						/* no repos registered, use current idx */
+						if (!xbps_find_virtualpkg_in_dict(xhp, idx, dep) &&
+						    !xbps_find_pkg_in_dict(idx, dep)) {
+							fprintf(stderr, "%s: %s: unresolved "
+							    "dependency found: %s\n", repodir, pkgver, dep);
+							error = true;
+						}
+					} else {
+						error = true;
+					}
+				}
+			}
+		}
+		xbps_object_release(allkeys);
+		if (error) {
+			errno = ENODEV;
+			rv = false;
+			goto out;
+		}
+flush:
 		rv = repodata_flush(xhp, repodir, "repodata", idx, meta, compression);
 	}
+out:
 	xbps_object_release(usedshlibs);
 	xbps_object_release(oldshlibs);
 	return rv;
 }
 
 int
-index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression)
+index_add(struct xbps_handle *xhp, int args, int argmax, char **argv,
+		bool force, bool validate, const char *compression)
 {
 	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
 	struct xbps_repo *repo = NULL, *stage = NULL;
@@ -243,8 +298,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	}
 	if (stage) {
 		idxstage = xbps_dictionary_copy_mutable(stage->idx);
-	}
-	else {
+	} else {
 		idxstage = xbps_dictionary_create();
 	}
 	/*
@@ -376,10 +430,18 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	/*
 	 * Generate repository data files.
 	 */
-	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, compression)) {
-		fprintf(stderr, "%s: failed to write repodata: %s\n",
-				_XBPS_RINDEX, strerror(errno));
-		goto out;
+	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, validate, compression)) {
+		if (errno == ENODEV) {
+			fprintf(stderr, "%s: repository %s has unresolvable "
+			    "dependencies!\n", _XBPS_RINDEX, repodir);
+			rv = ENODEV;
+			goto out;
+		} else {
+			fprintf(stderr, "%s: failed to write repodata: %s\n",
+			    _XBPS_RINDEX, repodir, strerror(errno));
+			rv = errno;
+			goto out;
+		}
 	}
 	printf("index: %u packages registered.\n", xbps_dictionary_count(idx));
 

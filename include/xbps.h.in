@@ -51,7 +51,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20200221"
+#define XBPS_API_VERSION	"20200403"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -2322,6 +2322,32 @@ xbps_plist_array_from_file(struct xbps_handle *xhp, const char *fname);
  */
 xbps_dictionary_t
 xbps_plist_dictionary_from_file(struct xbps_handle *xhp, const char *fname);
+
+/**
+ * Finds \a pkg in dictionary \d by looking at its \a pkgver string obj.
+ * The \a pkg argument is a package expression.
+ *
+ * @param[in] d Dictionary to look in.
+ * @param[in] pkg Package expression to match against \a pkgver.
+ *
+ * @return The pkg dictionary on match, NULL otherwise.
+ */
+xbps_dictionary_t
+xbps_find_pkg_in_dict(xbps_dictionary_t d, const char *pkg);
+
+/**
+ * Finds the virtual pkg \a pkg in dictionary \d by looking at
+ * its \a pkgver string obj.
+ * The \a pkg argument is a package expression. This function will match
+ * any virtual pkg found in \a d or via xbps.d(5) virtualpkg settings.
+ *
+ * @param[in] d Dictionary to look in.
+ * @param[in] pkg Package expression to match against \a pkgver.
+ *
+ * @return The pkg dictionary on match, NULL otherwise.
+ */
+xbps_dictionary_t
+xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp, xbps_dictionary_t d, const char *pkg);
 
 /*@}*/
 
