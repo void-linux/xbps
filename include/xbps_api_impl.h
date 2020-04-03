@@ -118,9 +118,6 @@ int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *, xbps_dictionary_t,
 		const char *, bool);
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_conf(struct xbps_handle *,
 		xbps_dictionary_t, const char *);
-xbps_dictionary_t HIDDEN xbps_find_pkg_in_dict(xbps_dictionary_t, const char *);
-xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_dict(struct xbps_handle *,
-		xbps_dictionary_t, const char *);
 xbps_dictionary_t HIDDEN xbps_find_pkg_in_array(xbps_array_t, const char *,
 		xbps_trans_type_t);
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *,

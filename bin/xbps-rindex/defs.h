@@ -67,7 +67,7 @@
 #define _XBPS_RINDEX		"xbps-rindex"
 
 /* From index-add.c */
-int	index_add(struct xbps_handle *, int, int, char **, bool, const char *);
+int	index_add(struct xbps_handle *, int, int, char **, bool, bool, const char *);
 
 /* From index-clean.c */
 int	index_clean(struct xbps_handle *, const char *, bool, const char *);

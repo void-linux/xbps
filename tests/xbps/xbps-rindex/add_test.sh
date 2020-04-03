@@ -167,9 +167,97 @@ stage_resolve_bug_body() {
 	atf_check_equal $? 1
 }
 
+atf_test_case add_validate_deps
+
+add_validate_deps_head() {
+	atf_set "descr" "xbps-rindex(1) -a: validate deps"
+}
+
+add_validate_deps_body() {
+	mkdir -p repo pkg_A
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies "B>=0 C>=0" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex --validate -d -a $PWD/*.xbps
+	# ENODEV
+	atf_check_equal $? 19
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.1_1 -s "C pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex --validate -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	# 3 pkgs registered now
+	atf_check_equal 3 $(xbps-query --repository=repo -s ''|wc -l)
+}
+
+atf_test_case add_validate_deps_multirepo
+
+add_validate_deps_multirepo_head() {
+	atf_set "descr" "xbps-rindex(1) -a: validate deps with multiple repos"
+}
+
+add_validate_deps_multirepo_body() {
+	mkdir -p repo repo2 pkg_A
+	confdir=$(mktemp -d)
+	echo "repository=$PWD/repo" > $confdir/foo.conf
+	echo "repository=$PWD/repo2" >> $confdir/foo.conf
+	cat $confdir/foo.conf
+	cd repo2
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.1_1 -s "C pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -C $confdir --validate -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ../repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies "B>=0 C>=0" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -C $confdir --validate -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	# 3 pkgs registered now
+	atf_check_equal 3 $(xbps-query -C $confdir -Rs ''|wc -l)
+	rm -rf $confdir
+}
+
+atf_test_case add_validate_deps_multirepo_vpkg
+
+add_validate_deps_multirepo_vpkg_head() {
+	atf_set "descr" "xbps-rindex(1) -a: validate vpkg deps with multiple repos"
+}
+
+add_validate_deps_multirepo_vpkg_body() {
+	mkdir -p repo repo2 pkg_A
+	confdir=$(mktemp -d)
+	echo "repository=$PWD/repo" > $confdir/foo.conf
+	echo "repository=$PWD/repo2" >> $confdir/foo.conf
+	cat $confdir/foo.conf
+	cd repo2
+	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --provides "Bvpkg-1.1_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.1_1 -s "C pkg" --provides "Cvpkg-1.1_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -C $confdir --validate -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ../repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies "Bvpkg>=0 Cvpkg>=0" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -C $confdir --validate -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	# 3 pkgs registered now
+	atf_check_equal 3 $(xbps-query -C $confdir -Rs ''|wc -l)
+	rm -rf $confdir
+}
+
 atf_init_test_cases() {
 	atf_add_test_case update
 	atf_add_test_case revert
 	atf_add_test_case stage
 	atf_add_test_case stage_resolve_bug
+	atf_add_test_case add_validate_deps
+	atf_add_test_case add_validate_deps_multirepo
+	atf_add_test_case add_validate_deps_multirepo_vpkg
 }
