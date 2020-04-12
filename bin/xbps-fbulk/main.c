@@ -174,7 +174,7 @@ processCompletion(struct item *item)
 	 * (If XDEPFAIL the log is at correct location).
 	 */
 	if (item->status == XRUN) {
-		logpath = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);
+		logpath = xbps_xasprintf("%s/run/%s.txt", LogDir, item->pkgn);
 		switch (item->xcode) {
 		case 0:
 			logdir = "good";
@@ -186,7 +186,7 @@ processCompletion(struct item *item)
 			logdir = "bad";
 			break;
 		}
-		logpath2 = xbps_xasprintf("%s/%s/%s", LogDir, logdir, item->pkgn);
+		logpath2 = xbps_xasprintf("%s/%s/%s.txt", LogDir, logdir, item->pkgn);
 		(void)rename(logpath, logpath2);
 		free(logpath);
 		free(logpath2);
@@ -217,7 +217,8 @@ processCompletion(struct item *item)
 			} else {
 				xitem->xcode = item->xcode;
 				xitem->status = XDEPFAIL;
-				logpath = xbps_xasprintf("%s/deps/%s", LogDir, xitem->pkgn);
+				logpath = xbps_xasprintf("%s/deps/%s.txt",
+				    LogDir, xitem->pkgn);
 				fp = fopen(logpath, "a");
 				fprintf(fp, "%s\n", item->pkgn);
 				fclose(fp);
@@ -302,16 +303,16 @@ runBuilds(const char *bpath)
 		 * When [re]running a build remove any bad log from prior
 		 * attempts.
 		 */
-		logpath = xbps_xasprintf("%s/bad/%s", LogDir, item->pkgn);
+		logpath = xbps_xasprintf("%s/bad/%s.txt", LogDir, item->pkgn);
 		(void)remove(logpath);
 		free(logpath);
-		logpath = xbps_xasprintf("%s/deps/%s", LogDir, item->pkgn);
+		logpath = xbps_xasprintf("%s/deps/%s.txt", LogDir, item->pkgn);
 		(void)remove(logpath);
 		free(logpath);
-		logpath = xbps_xasprintf("%s/skipped/%s", LogDir, item->pkgn);
+		logpath = xbps_xasprintf("%s/skipped/%s.txt", LogDir, item->pkgn);
 		(void)remove(logpath);
 		free(logpath);
-		logpath = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);
+		logpath = xbps_xasprintf("%s/run/%s.txt", LogDir, item->pkgn);
 
 		item->pid = fork();
 		if (item->pid == 0) {
