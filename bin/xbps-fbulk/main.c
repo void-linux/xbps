@@ -38,7 +38,7 @@
  * This program iterates all srcpkgs directories, runs './xbps-src show-build-deps',
  * and builds a dependency tree on the fly.
  *
- * As the dependency tree is being built, terminal dependencies are built
+ * When the dependency tree is built, terminal dependencies are built
  * and packaged on the fly.
  *
  * As these builds complete additional dependencies may be satisfied and be
@@ -67,6 +67,10 @@
 #include <xbps.h>
 #include "uthash.h"
 
+#ifndef __arraycount
+#define __arraycount(x) (sizeof(x) / sizeof(*x))
+#endif
+
 struct item;
 
 struct depn {
@@ -75,18 +79,17 @@ struct depn {
 };
 
 struct item {
-	enum { XWAITING, XDEPFAIL, XBUILD, XRUN, XDONE, XBROKEN } status;
+	enum { XWAITING, XDEPFAIL, XBUILD, XRUN, XDONE } status;
 	struct item *bnext;	/* BuildList/RunList next */
 	struct depn *dbase;	/* packages depending on us */
 	char *pkgn;		/* package name */
-	char *emsg;		/* error message */
 	int dcount;		/* build completion for our dependencies */
 	int xcode;		/* exit code from build */
 	pid_t pid;		/* running build */
 	UT_hash_handle hh;
 };
 
-static struct item *hashtab = NULL;
+static struct item *hashtab;
 static struct item *BuildList;
 static struct item **BuildListP = &BuildList;
 static struct item *RunList;
@@ -94,8 +97,12 @@ static struct item *RunList;
 int NParallel = 1;
 int VerboseOpt;
 int NRunning;
+unsigned int NBuilt = 0;
+unsigned int NFinished = 0;
+unsigned int NChecked = 0;
+unsigned int NSkipped = 0;
+unsigned int NTotal = 0;
 char *LogDir;
-char *TargetArch;
 
 static struct item *
 lookupItem(const char *pkgn)
@@ -114,15 +121,12 @@ addItem(const char *pkgn)
 	struct item *item = calloc(1, sizeof (struct item));
 
 	assert(pkgn);
-	if (item == NULL)
-		return NULL;
+	assert(item);
 
 	item->status = XWAITING;
 	item->pkgn = strdup(pkgn);
-	if (item->pkgn == NULL) {
-		free(item);
-		return NULL;
-	}
+	assert(item->pkgn);
+
 	HASH_ADD_KEYPTR(hh, hashtab, item->pkgn, strlen(item->pkgn), item);
 
 	return item;
@@ -131,8 +135,8 @@ addItem(const char *pkgn)
 static void __attribute__((noreturn))
 usage(const char *progname)
 {
-	fprintf(stderr, "%s [-a targetarch] [-h] [-j parallel] [-l logdir] [-V]"
-	    "/path/to/void-packages [pkg pkgN]\n", progname);
+	fprintf(stderr, "%s [-h] [-j procs] [-l logdir] [-V]"
+	    " /path/to/void-packages [pkg pkgN]\n", progname);
 	exit(EXIT_FAILURE);
 }
 
@@ -147,7 +151,6 @@ addBuild(struct item *item)
 {
 	assert(item);
 
-	printf("BuildOrder %s\n", item->pkgn);
 	*BuildListP = item;
 	BuildListP = &item->bnext;
 	item->status = XBUILD;
@@ -162,87 +165,72 @@ processCompletion(struct item *item)
 	struct depn *depn;
 	struct item *xitem;
 	const char *logdir;
-	char *logpath1;
-	char *logpath2;
-	char *logpath3;
+	char *logpath, *logpath2;
 	FILE *fp;
 
 	assert(item);
 	/*
 	 * If XRUN we have to move the logfile to the correct directory.
-	 * (If XDEPFAIL the logfile is already in the correct directory).
+	 * (If XDEPFAIL the log is at correct location).
 	 */
 	if (item->status == XRUN) {
-		logpath1 = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);
-		if (!item->xcode)
+		logpath = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);
+		switch (item->xcode) {
+		case 0:
 			logdir = "good";
-		else if (item->xcode == 2)
+			break;
+		case 2:
 			logdir = "skipped";
-		else
+			break;
+		default:
 			logdir = "bad";
+			break;
+		}
 		logpath2 = xbps_xasprintf("%s/%s/%s", LogDir, logdir, item->pkgn);
-		(void)rename(logpath1, logpath2);
-		free(logpath1);
+		(void)rename(logpath, logpath2);
+		free(logpath);
 		free(logpath2);
 	}
-	/*
-	 * If XBROKEN, "xbps-src show-build-deps" returned an error, perhaps
-	 * because the pkg is currently broken or cannot be packaged for the
-	 * target architecture, just set it as skipped.
-	 */
-	if (item->status == XBROKEN) {
-		logpath1 = xbps_xasprintf("%s/skipped/%s", LogDir, item->pkgn);
-		fp = fopen(logpath1, "a");
-		fprintf(fp, "%s", item->emsg);
-		fclose(fp);
-		free(logpath1);
-		free(item->emsg);
-	}
 
-	printf("Finish %-3d %s\n", item->xcode, item->pkgn);
-	assert(item->status == XRUN || item->status == XBROKEN || item->status == XDEPFAIL);
+	assert(item->status == XRUN || item->status == XDEPFAIL);
 	item->status = XDONE;
 
 	for (depn = item->dbase; depn; depn = depn->dnext) {
 		xitem = depn->item;
 		assert(xitem->dcount > 0);
 		--xitem->dcount;
-		if (xitem->status == XWAITING || xitem->status == XDEPFAIL || xitem->status == XBROKEN) {
+
+		if (xitem->status == XWAITING || xitem->status == XDEPFAIL) {
 			/*
 			 * If our build went well add items dependent
 			 * on us to the build, otherwise fail the items
 			 * dependent on us.
 			 */
-			if (item->xcode) {
+			if (item->xcode == 0) {
+				if (xitem->dcount == 0) {
+					if (xitem->status == XWAITING) {
+						addBuild(xitem);
+					} else {
+						processCompletion(xitem);
+					}
+				}
+			} else {
 				xitem->xcode = item->xcode;
 				xitem->status = XDEPFAIL;
-				logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, xitem->pkgn);
-				fp = fopen(logpath3, "a");
+				logpath = xbps_xasprintf("%s/deps/%s", LogDir, xitem->pkgn);
+				fp = fopen(logpath, "a");
 				fprintf(fp, "%s\n", item->pkgn);
 				fclose(fp);
-				free(logpath3);
+				free(logpath);
+				processCompletion(xitem);
+				++NSkipped;
 			}
-			if (xitem->dcount == 0) {
-				if (xitem->status == XWAITING)
-					addBuild(xitem);
-				else
-					processCompletion(xitem);
-			}
-		} else if (xitem->status == XDONE && xitem->xcode) {
-			/*
-			 * The package depending on us has already run
-			 * (this case should not occur).
-			 *
-			 * Add this dependency failure to its log file
-			 * (which has already been renamed).
-			 */
-			logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, xitem->pkgn);
-			fp = fopen(logpath3, "a");
-			fprintf(fp, "%s\n", item->pkgn);
-			fclose(fp);
-			free(logpath3);
 		}
 	}
+	++NFinished;
+
+	printf("[%u/%u] Finished %s (PID: %u RET: %d)\n",
+	    NFinished, NTotal, item->pkgn, item->pid, item->xcode);
 }
 
 /*
@@ -255,7 +243,7 @@ processCompletion(struct item *item)
 static struct item *
 waitRunning(int flags)
 {
-	struct item *item;
+	struct item *item = NULL;
 	struct item **itemp;
 	pid_t pid;
 	int status;
@@ -263,13 +251,9 @@ waitRunning(int flags)
 	if (RunList == NULL)
 		return NULL;
 
-	while ((pid = wait3(&status, flags, NULL)) < 0 && flags == 0)
+	while (((pid = waitpid(0, &status, flags)) < 0) && !flags)
 		;
 
-	/*
-	 * NOTE! The pid may be associated with one of our popen()'s
-	 *	 so just ignore it if we cannot find it.
-	 */
 	if (pid > 0) {
 		status = WEXITSTATUS(status);
 		itemp = &RunList;
@@ -285,8 +269,6 @@ waitRunning(int flags)
 			--NRunning;
 			processCompletion(item);
 		}
-	} else {
-		item = NULL;
 	}
 	return item;
 }
@@ -295,10 +277,8 @@ waitRunning(int flags)
  * Start new builds from the build list and handle build completions,
  * which can potentialy add new items to the build list.
  *
- * This routine will maintain up to NParallel builds.  A new build is
- * only started once its dependencies have completed successfully so
- * when the bulk build starts it typically takes a little while before
- * fastbulk can keep the parallel pipeline full.
+ * This routine will maintain up to NParallel builds. A new build is
+ * only started once its dependencies have been completed successfully.
  */
 static void
 runBuilds(const char *bpath)
@@ -317,8 +297,7 @@ runBuilds(const char *bpath)
 		if ((BuildList = item->bnext) == NULL)
 			BuildListP = &BuildList;
 
-		printf("BuildStart %s\n", item->pkgn);
-
+		item->status = XRUN;
 		/*
 		 * When [re]running a build remove any bad log from prior
 		 * attempts.
@@ -326,9 +305,13 @@ runBuilds(const char *bpath)
 		logpath = xbps_xasprintf("%s/bad/%s", LogDir, item->pkgn);
 		(void)remove(logpath);
 		free(logpath);
-
+		logpath = xbps_xasprintf("%s/deps/%s", LogDir, item->pkgn);
+		(void)remove(logpath);
+		free(logpath);
+		logpath = xbps_xasprintf("%s/skipped/%s", LogDir, item->pkgn);
+		(void)remove(logpath);
+		free(logpath);
 		logpath = xbps_xasprintf("%s/run/%s", LogDir, item->pkgn);
-		item->status = XRUN;
 
 		item->pid = fork();
 		if (item->pid == 0) {
@@ -337,6 +320,7 @@ runBuilds(const char *bpath)
 			 */
 			if (chdir(bpath) < 0)
 				_exit(99);
+
 
 			fd = open(logpath, O_RDWR|O_CREAT|O_TRUNC, 0666);
 			if (fd != 1)
@@ -351,12 +335,8 @@ runBuilds(const char *bpath)
 				close(fd);
 			}
 			/* build the current pkg! */
-			if (TargetArch != NULL)
-				execl("./xbps-src", "./xbps-src", "-a", TargetArch,
-					"-E", "-N", "-t", "pkg", item->pkgn, NULL);
-			else
-				execl("./xbps-src", "./xbps-src",
-					"-E", "-N", "-t", "pkg", item->pkgn, NULL);
+			execl("./xbps-src", "./xbps-src",
+				"-E", "-N", "-t", "pkg", item->pkgn, NULL);
 
 			_exit(99);
 		} else if (item->pid < 0) {
@@ -366,7 +346,7 @@ runBuilds(const char *bpath)
 			 */
 			item->xcode = -98;
 			fp = fopen(logpath, "a");
-			fprintf(fp, "xfbulk: Unable to fork/exec xbps-src\n");
+			fprintf(fp, "xbps-fbulk: unable to fork/exec xbps-src\n");
 			fclose(fp);
 			processCompletion(item);
 		} else {
@@ -377,10 +357,12 @@ runBuilds(const char *bpath)
 			item->bnext = RunList;
 			RunList = item;
 			++NRunning;
+			++NBuilt;
+			printf("[%u/%u] Building %s (PID: %u)\n",
+			     NBuilt+NSkipped, NTotal, item->pkgn, item->pid);
 		}
 		free(logpath);
 	}
-
 	/*
 	 * Process any completed builds (non-blocking)
 	 */
@@ -397,126 +379,90 @@ runBuilds(const char *bpath)
 static void
 addDepn(struct item *item, struct item *xitem)
 {
-	struct depn *depn = calloc(sizeof(*depn), 1);
-	char *logpath3;
-	FILE *fp;
+	struct depn *depn = calloc(1, sizeof(struct depn));
 
 	assert(item);
 	assert(xitem);
 	assert(depn);
 
-	if (VerboseOpt)
-		printf("%s: added dependency: %s\n", item->pkgn, xitem->pkgn);
-
 	depn->item = item;
 	depn->dnext = xitem->dbase;
 	xitem->dbase = depn;
-	if (xitem->status == XDONE) {
-		if (xitem->xcode) {
-			assert(item->status == XWAITING ||
-			       item->status == XDEPFAIL);
-			item->xcode = xitem->xcode;
-			item->status = XDEPFAIL;
-			logpath3 = xbps_xasprintf("%s/deps/%s", LogDir, item->pkgn);
-			fp = fopen(logpath3, "a");
-			fprintf(fp, "%s\n", xitem->pkgn);
-			fclose(fp);
-			free(logpath3);
-		}
-	} else {
-		++item->dcount;
-	}
+	++item->dcount;
 }
 
 /*
- * Recursively execute './xbps-src show-build-deps' to calculate all required
+ * Recursively execute 'xbps-src show-build-deps' to calculate all required
  * dependencies.
  */
 static struct item *
 ordered_depends(const char *bpath, const char *pkgn)
 {
 	struct item *item, *xitem;
-	char buf[1024];
+	char buf[1024], cmd[PATH_MAX];
 	FILE *fp;
-	char *cmd;
 
 	assert(bpath);
 	assert(pkgn);
 
 	item = addItem(pkgn);
 	/*
-	 * Retrieve and process dependencies recursively.  Note that
-	 * addDepn() can modify item's status.
-	 *
-	 * Guard the recursion by bumping dcount to prevent the item
-	 * from being processed for completion while we are still adding
-	 * its dependencies.  This would normally not occur but it can
-	 * if a pkg has a broken dependency loop.
+	 * Retrieve and process dependencies recursively.
 	 */
-	++item->dcount;
+	++NChecked;
+	printf("[%u] Checking %s\n", NChecked, item->pkgn);
 
-	if (VerboseOpt)
-		printf("%s: collecting build dependencies...\n", pkgn);
-
-	if (TargetArch != NULL)
-		cmd = xbps_xasprintf("%s/xbps-src -a %s show-build-deps %s 2>&1", bpath, TargetArch, pkgn);
-	else
-		cmd = xbps_xasprintf("%s/xbps-src show-build-deps %s 2>&1", bpath, pkgn);
-
+	snprintf(cmd, sizeof(cmd)-1,
+	    "%s/xbps-src show-build-deps %s 2>&1", bpath, pkgn);
 	fp = popen(cmd, "r");
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
+		char dpath[PATH_MAX];
 		size_t len;
+		struct stat st;
 
-		if (strncmp(buf, "=> ERROR", 8) == 0) {
-			/* ignore pkgs returning errors */
-			item->emsg = strdup(buf);
-			item->status = XBROKEN;
-			item->xcode = EXIT_FAILURE;
-			break;
-		} else if (strncmp(buf, "=>", 2) == 0) {
-			/* ignore xbps-src msgs */
+		/* ignore xbps-src messages */
+		if (strncmp(buf, "=>", 2) == 0) {
 			continue;
 		}
+
 		len = strlen(buf);
 		if (len && buf[len-1] == '\n')
 			buf[--len] = 0;
 
+		snprintf(dpath, sizeof(dpath)-1,
+		    "%s/srcpkgs/%s/template", bpath, buf);
+		if (stat(dpath, &st) == -1) {
+			/*
+			 * Ignore unexistent dependencies, this
+			 * might happen for virtual packages or 
+			 * autogenerated pkgs (-32bit, etc).
+			 *
+			 * We don't really care if the pkg has
+			 * invalid dependencies, at build time they
+			 * will be properly catched by xbps-src.
+			 */
+			continue;
+		}
 		if (VerboseOpt)
 			printf("%s: depends on %s\n", pkgn, buf);
 
 		xitem = lookupItem(buf);
 		if (xitem == NULL)
 			xitem = ordered_depends(bpath, buf);
+
 		addDepn(item, xitem);
 	}
 	pclose(fp);
-	free(cmd);
-	--item->dcount;
-
+	++NTotal;
 	/*
-	 * If the item has no dependencies left either add it to the
-	 * build list or do completion processing (i.e. if some of the
-	 * dependencies failed).
+	 * If the item has no dependencies left add it to the build list.
 	 */
 	if (item->dcount == 0) {
-		switch (item->status) {
-		case XWAITING:
-			addBuild(item);
-			break;
-		case XBROKEN:
-		case XDEPFAIL:
-			processCompletion(item);
-			break;
-		default:
-			assert(0);
-			/* NOT REACHED */
-			break;
-		}
+		addBuild(item);
 	} else {
 		if (VerboseOpt)
 			printf("Deferred package: %s\n", item->pkgn);
 	}
-	runBuilds(bpath);
 	return item;
 }
 
@@ -527,18 +473,16 @@ main(int argc, char **argv)
 	struct dirent *den;
 	struct stat st;
 	const char *progname = argv[0];
-	char *bpath, *rpath, *minit, *tmp, cwd[PATH_MAX-1];
+	const char *logdirs[] = { "good", "bad", "run", "deps", "skipped" };
+	char *bpath, *rpath, *tmp, cwd[PATH_MAX];
 	size_t blen;
 	int ch;
 	const struct option longopts[] = {
 		{ NULL, 0, NULL, 0 }
 	};
 
-	while ((ch = getopt_long(argc, argv, "a:hj:l:vV", longopts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "hj:l:vV", longopts, NULL)) != -1) {
 		switch (ch) {
-		case 'a':
-			TargetArch = optarg;
-			break;
 		case 'j':
 			NParallel = strtol(optarg, NULL, 0);
 			break;
@@ -565,6 +509,9 @@ main(int argc, char **argv)
 		/* NOT REACHED */
 	}
 
+	/*
+	 * Check masterdir is properly initialized.
+	 */
 	if ((bpath = realpath(argv[0], NULL)) == NULL)
 		exit(EXIT_FAILURE);
 
@@ -573,79 +520,62 @@ main(int argc, char **argv)
 	assert(rpath);
 	snprintf(rpath, blen, "%s/srcpkgs", bpath);
 
-	minit = xbps_xasprintf("%s/masterdir/.xbps_chroot_init", bpath);
-	if (access(rpath, R_OK) == -1) {
+	tmp = xbps_xasprintf("%s/masterdir/.xbps_chroot_init", bpath);
+	if (access(tmp, R_OK) == -1) {
 		fprintf(stderr, "ERROR: %s/masterdir wasn't initialized, "
 		    "run binary-bootstrap first.\n", bpath);
 		exit(EXIT_FAILURE);
 	}
-	free(minit);
-	/*
-	 * Create LogDir and its subdirs.
-	 */
-	if (getcwd(cwd, sizeof(cwd)) == NULL)
-		exit(EXIT_FAILURE);
+	free(tmp);
 
+	/*
+	 * Create Logdirs.
+	 */
 	if (LogDir == NULL) {
-		tmp = xbps_xasprintf("%s/log.%u", cwd, (unsigned)getpid());
+		if (getcwd(cwd, sizeof(cwd)-1) == NULL) {
+			exit(EXIT_FAILURE);
+		}
+		tmp = xbps_xasprintf("%s/fbulk-log.%u", cwd, (unsigned)getpid());
 	} else {
 		tmp = strdup(LogDir);
 	}
-	assert(tmp);
 	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create LogDir %s: %s\n", tmp, strerror(errno));
+		fprintf(stderr, "ERROR: failed to create %s logdir: %s\n",
+		     tmp, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	LogDir = realpath(tmp, NULL);
-	assert(tmp);
 	free(tmp);
+	assert(LogDir);
 
-	tmp = xbps_xasprintf("%s/run", LogDir);
-	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create run LogDir %s: %s\n", tmp, strerror(errno));
-		exit(EXIT_FAILURE);
+	for (unsigned int i = 0; i < __arraycount(logdirs); i++) {
+		const char *p = logdirs[i];
+		tmp = xbps_xasprintf("%s/%s", LogDir, p);
+		if (xbps_mkpath(tmp, 0755) != 0) {
+			fprintf(stderr, "ERROR: failed to create %s logdir: %s\n",
+			    tmp, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		free(tmp);
 	}
-	free(tmp);
-	tmp = xbps_xasprintf("%s/good", LogDir);
-	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create good LogDir %s: %s\n", tmp, strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-	free(tmp);
-	tmp = xbps_xasprintf("%s/bad", LogDir);
-	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create bad LogDir %s: %s\n", tmp, strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-	free(tmp);
-	tmp = xbps_xasprintf("%s/skipped", LogDir);
-	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create skipped LogDir %s: %s\n", tmp, strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-	free(tmp);
-	tmp = xbps_xasprintf("%s/deps", LogDir);
-	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create deps LogDir %s: %s\n", tmp, strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-	free(tmp);
 
 	/*
-	 * Process all directories in void-packages/srcpkgs, excluding symlinks
-	 * (subpackages).
+	 * Generate dependency tree. This is done in two steps to know how
+	 * many packages will be built.
 	 */
 	if (chdir(rpath) == -1) {
-		fprintf(stderr, "ERROR: failed to chdir to %s: %s\n", rpath, strerror(errno));
+		fprintf(stderr, "ERROR: failed to chdir to %s: %s\n",
+		    rpath, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if ((dir = opendir(rpath)) != NULL) {
 		while ((den = readdir(dir)) != NULL) {
-			char *xpath;
+			char xpath[PATH_MAX];
 			bool found = false;
 
-			if (den->d_name[0] == '.')
+			if (den->d_name[0] == '.' ||
+			    (strcmp(den->d_name, "..") == 0))
 				continue;
 
 			if (lstat(den->d_name, &st) == -1)
@@ -668,19 +598,16 @@ main(int argc, char **argv)
 			if (!found)
 				continue;
 
-			xpath = xbps_xasprintf("%s/template", den->d_name);
-
-			if (lookupItem(den->d_name) == NULL &&
-			    stat(xpath, &st) == 0)
+			snprintf(xpath, sizeof(xpath)-1, "%s/template", den->d_name);
+			if ((stat(xpath, &st) == 0) && !lookupItem(den->d_name)) {
 				ordered_depends(bpath, den->d_name);
-
-			free(xpath);
+			}
 		}
 		(void)closedir(dir);
 	}
 	/*
-	 * Wait for all current builds to finish running, keep the pipeline
-	 * full until both the BuildList and RunList have been exhausted.
+	 * Start building collected packages, keep the pipeline full
+	 * until both the BuildList and RunList have been exhausted.
 	 */
 	free(rpath);
 	runBuilds(bpath);
