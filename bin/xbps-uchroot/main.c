@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014-2015 Juan Romero Pardines.
+ * Copyright (c) 2014-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@
  * 	- This uses IPC/PID/UTS namespaces, nothing more.
  * 	- Disables namespace features if running inside containers.
  * 	- Supports overlayfs on a temporary directory or a tmpfs mount.
+ * 	- Supports read-only bind mounts.
  */
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE 700
@@ -77,6 +78,7 @@ struct bindmnt {
 	SIMPLEQ_ENTRY(bindmnt) entries;
 	char *src;
 	const char *dest;
+	bool ro;	/* readonly */
 };
 
 static char *tmpdir;
@@ -87,10 +89,11 @@ static SIMPLEQ_HEAD(bindmnt_head, bindmnt) bindmnt_queue =
 static void __attribute__((noreturn))
 usage(const char *p)
 {
-	printf("Usage: %s [-b src:dest] [-O -t -o <opts>] [--] <dir> <cmd> [<cmdargs>]\n\n"
-	    "-b src:dest Bind mounts <src> into <dir>/<dest> (may be specified multiple times)\n"
+	printf("Usage: %s [-[B|b] src:dest] [-O -t -o <opts>] [--] <dir> <cmd> [<cmdargs>]\n\n"
+	    "-B src:dest Bind mounts <src> into <dir>/<dest> (read-only)\n"
+	    "-b src:dest Bind mounts <src> into <dir>/<dest> (read-write)\n"
 	    "-O          Creates a tempdir and mounts <dir> read-only via overlayfs\n"
-	    "-t          Creates tempdir and mounts it on tmpfs (for use with -O)\n"
+	    "-t          Creates a tempdir and mounts <dir> on tmpfs (for use with -O)\n"
 	    "-o opts     Options to be passed to the tmpfs mount (for use with -t)\n", p);
 	exit(EXIT_FAILURE);
 }
@@ -135,7 +138,7 @@ walk_dir(const char *path,
 	struct stat sb;
 	const char *p;
 	char tmp_path[PATH_MAX] = {0};
-	int rv, i;
+	int rv = 0, i;
 
 	i = scandir(path, &list, NULL, alphasort);
 	if (i == -1) {
@@ -206,7 +209,7 @@ sighandler_cleanup(int signum)
 }
 
 static void
-add_bindmount(char *bm)
+add_bindmount(const char *bm, bool ro)
 {
 	struct bindmnt *bmnt;
 	char *b, *src, *dest;
@@ -229,34 +232,39 @@ add_bindmount(char *bm)
 
 	bmnt->src = src;
 	bmnt->dest = dest;
+	bmnt->ro = ro;
 	SIMPLEQ_INSERT_TAIL(&bindmnt_queue, bmnt, entries);
 }
 
-static int
-fsuid_chdir(uid_t uid, const char *path)
+static void
+bindmount(const char *chrootdir, const char *dir, const char *dest)
 {
-	int saveerrno, rv;
+	char mountdir[PATH_MAX-1];
+	int flags = MS_BIND|MS_PRIVATE;
 
-	(void)setfsuid(uid);
-	rv = chdir(path);
-	saveerrno = errno;
-	(void)setfsuid(0);
-	errno = saveerrno;
+	snprintf(mountdir, sizeof(mountdir), "%s%s", chrootdir, dest ? dest : dir);
 
-	return rv;
+	if (chdir(dir) == -1)
+		die("Couldn't chdir to %s", dir);
+	if (mount(".", mountdir, NULL, flags, NULL) == -1)
+		die("Failed to bind mount %s at %s", dir, mountdir);
 }
 
 static void
-bindmount(uid_t ruid, const char *chrootdir, const char *dir, const char *dest)
+remount_rdonly(const char *chrootdir, const char *dir, const char *dest, bool ro)
 {
 	char mountdir[PATH_MAX-1];
+	int flags = MS_REMOUNT|MS_BIND|MS_RDONLY;
 
-	snprintf(mountdir, sizeof(mountdir), "%s/%s", chrootdir, dest ? dest : dir);
+	if (!ro)
+		return;
 
-	if (fsuid_chdir(ruid, dir) == -1)
+	snprintf(mountdir, sizeof(mountdir), "%s%s", chrootdir, dest ? dest : dir);
+
+	if (chdir(dir) == -1)
 		die("Couldn't chdir to %s", dir);
-	if (mount(".", mountdir, NULL, MS_BIND|MS_REC|MS_PRIVATE, NULL) == -1)
-		die("Failed to bind mount %s at %s", dir, mountdir);
+	if (mount(".", mountdir, NULL, flags, NULL) == -1)
+		die("Failed to remount read-only %s at %s", dir, mountdir);
 }
 
 static char *
@@ -315,8 +323,8 @@ main(int argc, char **argv)
 	struct sigaction sa;
 	uid_t ruid, euid, suid;
 	gid_t rgid, egid, sgid;
-	const char *chrootdir, *tmpfs_opts, *cmd, *argv0;
-	char **cmdargs, *b, mountdir[PATH_MAX-1];
+	const char *rootdir, *tmpfs_opts, *cmd, *argv0;
+	char **cmdargs, *b, *chrootdir, mountdir[PATH_MAX-1];
 	int c, clone_flags, container_flags, child_status = 0;
 	pid_t child;
 	bool overlayfs = false;
@@ -324,10 +332,10 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 }
 	};
 
-	tmpfs_opts = chrootdir = cmd = NULL;
+	tmpfs_opts = rootdir = cmd = NULL;
 	argv0 = argv[0];
 
-	while ((c = getopt_long(argc, argv, "Oto:b:V", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "Oto:B:b:V", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'O':
 			overlayfs = true;
@@ -338,10 +346,15 @@ main(int argc, char **argv)
 		case 'o':
 			tmpfs_opts = optarg;
 			break;
+		case 'B':
+			if (optarg == NULL || *optarg == '\0')
+				break;
+			add_bindmount(optarg, true);
+			break;
 		case 'b':
 			if (optarg == NULL || *optarg == '\0')
 				break;
-			add_bindmount(optarg);
+			add_bindmount(optarg, false);
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -357,21 +370,19 @@ main(int argc, char **argv)
 	if (argc < 2)
 		usage(argv0);
 
-	chrootdir = argv[0];
+	rootdir = argv[0];
 	cmd = argv[1];
 	cmdargs = argv + 1;
+
+
+	/* Make chrootdir absolute */
+	chrootdir = realpath(rootdir, NULL);
+	if (!chrootdir)
+		die("realpath rootdir");
 
 	/* Never allow chrootdir == / */
 	if (strcmp(chrootdir, "/") == 0)
 		die("/ is not allowed to be used as chrootdir");
-
-	/* Make chrootdir absolute */
-	if (chrootdir[0] != '/') {
-		char cwd[PATH_MAX-1];
-		if (getcwd(cwd, sizeof(cwd)) == NULL)
-			die("getcwd");
-		chrootdir = xbps_xasprintf("%s/%s", cwd, chrootdir);
-	}
 
 	if (getresgid(&rgid, &egid, &sgid) == -1)
 		die("getresgid");
@@ -413,9 +424,10 @@ main(int argc, char **argv)
 		 */
 		if (prctl(PR_SET_NO_NEW_PRIVS, 1) == -1 && errno != EINVAL) {
 			die("prctl PR_SET_NO_NEW_PRIVS");
-		} else if (prctl (PR_SET_SECUREBITS,
+		}
+		if (prctl(PR_SET_SECUREBITS,
 			SECBIT_NOROOT|SECBIT_NOROOT_LOCKED) == -1) {
-			die("prctl SECBIT_NOROOT");
+			die("prctl PR_SET_SECUREBITS");
 		}
 
 		/* mount as private, systemd mounts it as shared by default */
@@ -429,23 +441,26 @@ main(int argc, char **argv)
 
 		/* mount /proc */
 		snprintf(mountdir, sizeof(mountdir), "%s/proc", chrootdir);
-		if (mount("proc", mountdir, "proc", MS_MGC_VAL|MS_PRIVATE, NULL) == -1) {
+		if (mount("proc", mountdir, "proc",
+			  MS_MGC_VAL|MS_PRIVATE|MS_RDONLY, NULL) == -1) {
 			/* try bind mount */
-			bindmount(ruid, chrootdir, "/proc", NULL);
+			add_bindmount("/proc:/proc", true);
 		}
+		/* bind mount /sys, /dev (ro) and /dev/shm (rw) */
+		add_bindmount("/sys:/sys", true);
+		add_bindmount("/dev:/dev", true);
+		add_bindmount("/dev/shm:/dev/shm", false);
 
-		/* bind mount /sys */
-		bindmount(ruid, chrootdir, "/sys", NULL);
-
-		/* bind mount /dev */
-		bindmount(ruid, chrootdir, "/dev", NULL);
-
-		/* bind mount all user specified mnts */
+		/* bind mount all specified mnts */
 		SIMPLEQ_FOREACH(bmnt, &bindmnt_queue, entries)
-			bindmount(ruid, chrootdir, bmnt->src, bmnt->dest);
+			bindmount(chrootdir, bmnt->src, bmnt->dest);
+
+		/* remount bind mounts as read-only if set */
+		SIMPLEQ_FOREACH(bmnt, &bindmnt_queue, entries)
+			remount_rdonly(chrootdir, bmnt->src, bmnt->dest, bmnt->ro);
 
 		/* move chrootdir to / and chroot to it */
-		if (fsuid_chdir(ruid, chrootdir) == -1)
+		if (chdir(chrootdir) == -1)
 			die("Failed to chdir to %s", chrootdir);
 
 		if (mount(".", ".", NULL, MS_BIND|MS_PRIVATE, NULL) == -1)
