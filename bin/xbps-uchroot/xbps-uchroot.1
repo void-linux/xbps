@@ -1,4 +1,4 @@
-.Dd June 12, 2019
+.Dd April 14, 2020
 .Dt XBPS-UCHROOT 1
 .Sh NAME
 .Nm xbps-uchroot
@@ -12,11 +12,13 @@
 .Sh DESCRIPTION
 The
 .Nm
-utility allows users to chroot and bind mount required pseudo-filesystems
-(/dev, /proc and /sys) in the target
+utility allows users to chroot and automatically bind mount required
+pseudo-filesystems (/dev, /dev/shm, /proc and /sys) as well as
+user specified directories in the target
 .Ar CHROOTDIR
 to execute
 .Ar COMMAND .
+.Pp
 The
 .Nm
 utility uses by default Linux namespaces to isolate IPC, PIDs and mounts to
@@ -24,6 +26,18 @@ the calling process. If running in a OpenVZ container, these namespace features
 are simply disabled.
 .Sh OPTIONS
 .Bl -tag -width -x
+.It Fl B Ar src:dest
+Bind mounts
+.Ar src
+into
+.Ar CHROOTDIR/dest
+in read-only mode.
+This option may be specified multiple times.
+Please note that both
+.Ar src
+and
+.Ar dest
+must be absolute paths and must exist.
 .It Fl b Ar src:dest
 Bind mounts
 .Ar src
