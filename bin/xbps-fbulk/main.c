@@ -380,7 +380,7 @@ runBuilds(const char *bpath)
 static void
 addDepn(struct item *item, struct item *xitem)
 {
-	struct depn *depn = calloc(1, sizeof(struct depn));
+	struct depn *depn = malloc(sizeof(struct depn));
 
 	assert(item);
 	assert(xitem);
