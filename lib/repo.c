@@ -171,6 +171,11 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		repo->is_signed = true;
 		xbps_dictionary_make_immutable(repo->idxmeta);
 	}
+	/*
+	 * We don't need the archive anymore, we are only
+	 * interested in the proplib dictionaries.
+	 */
+	xbps_repo_close(repo);
 
 	return true;
 }
@@ -195,9 +200,9 @@ repo_open_remote(struct xbps_repo *repo)
 static struct xbps_repo *
 repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
 {
-	struct xbps_repo *repo;
+	struct xbps_repo *repo = NULL;
 	const char *arch;
-	char *repofile;
+	char *repofile = NULL;
 
 	assert(xhp);
 	assert(url);
@@ -218,8 +223,7 @@ repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
 		char *rpath;
 
 		if ((rpath = xbps_get_remote_repo_string(url)) == NULL) {
-			free(repo);
-			return NULL;
+			goto out;
 		}
 		repofile = xbps_xasprintf("%s/%s/%s-%s", xhp->metadir, rpath, arch, name);
 		free(rpath);
@@ -232,9 +236,10 @@ repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
 	 * In memory repo sync.
 	 */
 	if (repo->is_remote && (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC)) {
-		if (repo_open_remote(repo))
+		if (repo_open_remote(repo)) {
+			free(repofile);
 			return repo;
-
+		}
 		goto out;
 	}
 	/*
@@ -254,7 +259,7 @@ repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
 
 out:
 	free(repofile);
-	xbps_repo_close(repo);
+	xbps_repo_release(repo);
 	return NULL;
 }
 
@@ -369,8 +374,23 @@ xbps_repo_close(struct xbps_repo *repo)
 	if (!repo)
 		return;
 
-	if (repo->ar != NULL)
+	if (repo->ar != NULL) {
 		archive_read_finish(repo->ar);
+		repo->ar = NULL;
+	}
+	if (repo->fd != -1) {
+		close(repo->fd);
+		repo->fd = -1;
+	}
+}
+
+void
+xbps_repo_release(struct xbps_repo *repo)
+{
+	if (!repo)
+		return;
+
+	xbps_repo_close(repo);
 
 	if (repo->idx != NULL) {
 		xbps_object_release(repo->idx);
@@ -380,9 +400,6 @@ xbps_repo_close(struct xbps_repo *repo)
 		xbps_object_release(repo->idxmeta);
 		repo->idxmeta = NULL;
 	}
-	if (repo->fd != -1)
-		close(repo->fd);
-
 	free(repo);
 }
 
