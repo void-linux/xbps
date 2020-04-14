@@ -120,16 +120,18 @@ xbps_rpool_get_repo(const char *url)
 }
 
 void
-xbps_rpool_release(struct xbps_handle *xhp UNUSED)
+xbps_rpool_release(struct xbps_handle *xhp)
 {
 	struct xbps_repo *repo;
 
 	while ((repo = SIMPLEQ_FIRST(&rpool_queue))) {
 	       SIMPLEQ_REMOVE(&rpool_queue, repo, xbps_repo, entries);
-	       xbps_repo_close(repo);
+	       xbps_repo_release(repo);
 	}
-	if (xhp->repositories)
+	if (xhp && xhp->repositories) {
 		xbps_object_release(xhp->repositories);
+		xhp->repositories = NULL;
+	}
 }
 
 int
