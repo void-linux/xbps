@@ -1,4 +1,4 @@
-.Dd June 12, 2019
+.Dd April 14, 2020
 .Dt XBPS-FBULK 1
 .Sh NAME
 .Nm xbps-fbulk
@@ -16,10 +16,10 @@ utility iterates all srcpkg directories in the
 repository or processes the
 .Xr pkgN
 arguments, and then runs
-.Ar ./xbps-src show-build-deps',
+.Ar 'xbps-src show-build-deps'
 to build a dependency tree on the fly.
 .Pp
-As the dependency tree is being built, terminal dependencies are built
+When the dependency tree is built, terminal dependencies are built
 and packaged on the fly.
 .Pp
 As these builds complete additional dependencies may be satisfied and be
@@ -29,12 +29,10 @@ Only one attempt is made to build any given package, no matter how many
 other packages depend on it.
 .Sh OPTIONS
 .Bl -tag -width -x
-.It Fl a Ar arch
-Set a different target architecture, useful for cross compiling.
 .It Fl j Ar X
 Set number of parallel builds running at the same time. By default set to 1.
 .It Fl l Ar logdir
-Set the log directory. By default set to `log.<pid>`.
+Set the log directory. By default set to `fbulk-log.<pid>`.
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl h, Fl -help
