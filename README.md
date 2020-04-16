@@ -65,7 +65,7 @@ To build this you'll need:
   - [GNU make](https://www.gnu.org/software/make/)
   - [pkgconf](http://pkgconf.org/)
   - [zlib](https://www.zlib.net)
-  - [openssl < 1.1](https://www.openssl.org) or [libressl](https://www.libressl.org/)
+  - [openssl](https://www.openssl.org) or [libressl](https://www.libressl.org/)
   - [libarchive >= 3.3.3](https://www.libarchive.org) with lz4 and zstd support.
 
 and optionally:
