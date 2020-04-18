@@ -12,9 +12,6 @@ jobs:
 
       - name: Setup container
         run: |
-          docker pull voidlinux/voidlinux
-          docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
-            /bin/sh -c "xbps-install -Syu xbps && xbps-install -yu && xbps-install -y tar gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel"
 
       - name: Checkout void-linux/xbps
         run: |
@@ -28,15 +25,14 @@ jobs:
         env:
           TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
 
-      - name: Configure
+      - name: Configure and build in voidlinux/voilinux container
         run: |
+          docker pull voidlinux/voidlinux
           docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
-            /bin/sh -c "CC=gcc ./configure --enable-tests"
-
-      - name: Build with cov-build
-        run: |
-          docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
-            /bin/sh -c "PATH=\$(pwd)/cov-analysis-linux64/bin:\$PATH cov-build --dir cov-int make -j$(nproc)"
+            /bin/sh -c "xbps-install -Syu xbps && xbps-install -yu &&
+              xbps-install -y gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel &&
+              CC=gcc ./configure &&
+              PATH=/tmp/build-dir/cov-analysis-linux64/bin:\$PATH cov-build --dir cov-int make -j\$(nproc)"
 
       - name: Submit the result to Coverity Scan
         run: |
