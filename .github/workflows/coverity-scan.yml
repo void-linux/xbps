@@ -20,10 +20,6 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/void-linux/xbps .
 
-              CC=gcc ./configure --enable-tests &&
-              make -j$(nproc) &&
-              make check"
-
       - name: Download Coverity Build Tool
         run: |
           wget -q https://scan.coverity.com/download/linux64 --post-data "token=$TOKEN&project=void-linux%2Fxbps" -O cov-analysis-linux64.tar.gz
