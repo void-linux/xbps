@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/void-linux/xbps.svg?branch=master)](https://travis-ci.org/void-linux/xbps)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/void-linux/xbps.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/void-linux/xbps/alerts/)
 [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/void-linux/xbps.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/void-linux/xbps/context:cpp)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/20884/badge.svg)](https://scan.coverity.com/projects/void-linux-xbps)
 
 ## XBPS
 
