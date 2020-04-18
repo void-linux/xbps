@@ -9,15 +9,20 @@ jobs:
   latest:
     runs-on: ubuntu-latest
     steps:
-      - name: Install libraries
+
+      - name: Setup container
         run: |
-          set -x
-          sudo apt-get update
-          sudo apt-get install make pkgconf gcc libarchive-dev zlib1g-dev libssl-dev
+          docker pull voidlinux/voidlinux
+          docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
+            /bin/sh -c "xbps-install -Syu xbps && xbps-install -yu && xbps-install -y tar gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel"
 
       - name: Checkout void-linux/xbps
         run: |
           git clone --depth=1 https://github.com/void-linux/xbps .
+
+              CC=gcc ./configure --enable-tests &&
+              make -j$(nproc) &&
+              make check"
 
       - name: Download Coverity Build Tool
         run: |
@@ -27,18 +32,15 @@ jobs:
         env:
           TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
 
-      - name: Fixed world writable dirs
-        run: |
-          chmod go-w $HOME
-          sudo chmod -R go-w /usr/share
-
       - name: Configure
-        run: ./configure
+        run: |
+          docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
+            /bin/sh -c "CC=gcc ./configure --enable-tests"
 
       - name: Build with cov-build
         run: |
-          export PATH=`pwd`/cov-analysis-linux64/bin:$PATH
-          cov-build --dir cov-int make
+          docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
+            /bin/sh -c "PATH=\$(pwd)/cov-analysis-linux64/bin:\$PATH cov-build --dir cov-int make -j$(nproc)"
 
       - name: Submit the result to Coverity Scan
         run: |
