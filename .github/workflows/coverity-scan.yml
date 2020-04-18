@@ -31,7 +31,7 @@ jobs:
           docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
             /bin/sh -c "xbps-install -Syu xbps && xbps-install -yu &&
               xbps-install -y gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel &&
-              CC=gcc ./configure &&
+              CC=gcc ./configure --enable-tests &&
               PATH=/tmp/build-dir/cov-analysis-linux64/bin:\$PATH cov-build --dir cov-int make -j\$(nproc)"
 
       - name: Submit the result to Coverity Scan
