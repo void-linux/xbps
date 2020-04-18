@@ -1,9 +1,8 @@
 # based on https://github.com/ruby/actions-coverity-scan/blob/282dd059/.github/workflows/coverity-scan.yml
 name: coverity-scan
 on:
-  push
-  #schedule:
-  #  - cron: '0 18 * * *' # Daily at 18:00 UTC
+  schedule:
+    - cron: '0 18 * * *' # Daily at 18:00 UTC
 
 jobs:
   latest:
