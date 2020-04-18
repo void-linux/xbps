@@ -102,7 +102,7 @@ list_manual_pkgs(struct xbps_handle *xhp UNUSED,
 	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
 	if (automatic == false) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		printf("%s\n", pkgver);
+		puts(pkgver);
 	}
 
 	return 0;
@@ -119,7 +119,7 @@ list_hold_pkgs(struct xbps_handle *xhp UNUSED,
 
 	if (xbps_dictionary_get(obj, "hold")) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		printf("%s\n", pkgver);
+		puts(pkgver);
 	}
 
 	return 0;
@@ -136,7 +136,7 @@ list_repolock_pkgs(struct xbps_handle *xhp UNUSED,
 
 	if (xbps_dictionary_get(obj, "repolock")) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		printf("%s\n", pkgver);
+		puts(pkgver);
 	}
 
 	return 0;
@@ -155,7 +155,7 @@ list_orphans(struct xbps_handle *xhp)
 	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
 		xbps_dictionary_get_cstring_nocopy(xbps_array_get(orphans, i),
 		    "pkgver", &pkgver);
-		printf("%s\n", pkgver);
+		puts(pkgver);
 	}
 
 	return 0;

@@ -61,7 +61,7 @@ show_pkg_deps(struct xbps_handle *xhp, const char *pkgname, bool repomode, bool 
 	for (unsigned int i = 0; i < xbps_array_count(rdeps); i++) {
 		const char *pkgdep = NULL;
 		xbps_array_get_cstring_nocopy(rdeps, i, &pkgdep);
-		printf("%s\n", pkgdep);
+		puts(pkgdep);
 	}
 	return 0;
 }
@@ -82,7 +82,7 @@ show_pkg_revdeps(struct xbps_handle *xhp, const char *pkg, bool repomode)
 
 	for (unsigned int i = 0; i < xbps_array_count(revdeps); i++) {
 		xbps_array_get_cstring_nocopy(revdeps, i, &pkgdep);
-		printf("%s\n", pkgdep);
+		puts(pkgdep);
 	}
 	xbps_object_release(revdeps);
 	return 0;
