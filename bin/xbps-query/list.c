@@ -35,6 +35,7 @@
 struct list_pkgver_cb {
 	unsigned int pkgver_len;
 	unsigned int maxcols;
+	char *linebuf;
 };
 
 int
@@ -46,8 +47,7 @@ list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
 {
 	struct list_pkgver_cb *lpc = arg;
 	const char *pkgver = NULL, *short_desc = NULL, *state_str = NULL;
-	char tmp[255], *out = NULL;
-	unsigned int i, len = 0;
+	unsigned int len;
 	pkg_state_t state;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -66,23 +66,25 @@ list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
 	else
 		state_str = "??";
 
-	snprintf(tmp, sizeof(tmp), "%s %s", state_str, pkgver);
-	for (i = strlen(pkgver) + 3; i < lpc->pkgver_len; i++)
-		tmp[i] = ' ';
-
-	tmp[i] = '\0';
-	len = strlen(tmp) + strlen(short_desc) + 2;
-	if (lpc->maxcols && len > lpc->maxcols) {
-		out = malloc(lpc->maxcols+1);
-		assert(out);
-		snprintf(out, lpc->maxcols - 3,
-		    "%s %s", tmp, short_desc);
-		xbps_strlcat(out, "...\n", lpc->maxcols+1);
-		printf("%s", out);
-		free(out);
-	} else {
-		printf("%s %s\n", tmp, short_desc);
+	if (lpc->linebuf == NULL) {
+		printf("%s %-*s %s\n",
+			state_str,
+			lpc->pkgver_len, pkgver,
+			short_desc);
+		return 0;
 	}
+
+	len = snprintf(lpc->linebuf, lpc->maxcols, "%s %-*s %s",
+	    state_str,
+		lpc->pkgver_len, pkgver,
+		short_desc);
+	/* add ellipsis if the line was truncated */
+	if (len >= lpc->maxcols && lpc->maxcols > 4) {
+		for (unsigned int j = 0; j < 3; j++)
+			lpc->linebuf[lpc->maxcols-j-1] = '.';
+		lpc->linebuf[lpc->maxcols] = '\0';
+	}
+	puts(lpc->linebuf);
 
 	return 0;
 }
@@ -164,8 +166,14 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 {
 	struct list_pkgver_cb lpc;
 
-	lpc.pkgver_len = find_longest_pkgver(xhp, NULL) + 3; /* for state */
+	lpc.pkgver_len = find_longest_pkgver(xhp, NULL);
 	lpc.maxcols = get_maxcols();
+	lpc.linebuf = NULL;
+	if (lpc.maxcols > 0) {
+		lpc.linebuf = malloc(lpc.maxcols);
+		if (lpc.linebuf == NULL)
+			exit(1);
+	}
 
 	return xbps_pkgdb_foreach_cb(xhp, list_pkgs_in_dict, &lpc);
 }
