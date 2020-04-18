@@ -49,47 +49,42 @@ struct search_data {
 	unsigned int maxcols;
 	const char *pat, *prop, *repourl;
 	xbps_array_t results;
+	char *linebuf;
 };
 
 static void
 print_results(struct xbps_handle *xhp, struct search_data *sd)
 {
-	const char *pkgver = NULL, *desc = NULL, *inststr = NULL;
-	char tmp[256], *out;
-	unsigned int j, tlen = 0, len = 0;
+	const char *pkgver = NULL, *desc = NULL;
+	unsigned int align = 0, len;
 
 	/* Iterate over results array and find out largest pkgver string */
-	for (unsigned int i = 0; i < xbps_array_count(sd->results); i+=2) {
+	for (unsigned int i = 0; i < xbps_array_count(sd->results); i += 2) {
 		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
-		len = strlen(pkgver);
-		if (tlen == 0 || len > tlen)
-			tlen = len;
+		if ((len = strlen(pkgver)) > align)
+			align = len;
 	}
-	for (unsigned int i = 0; i < xbps_array_count(sd->results); i+=2) {
+	for (unsigned int i = 0; i < xbps_array_count(sd->results); i += 2) {
 		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
 		xbps_array_get_cstring_nocopy(sd->results, i+1, &desc);
-		xbps_strlcpy(tmp, pkgver, sizeof(tmp));
-		for (j = strlen(tmp); j < tlen; j++)
-			tmp[j] = ' ';
 
-		tmp[j] = '\0';
-		if (xbps_pkgdb_get_pkg(xhp, pkgver))
-			inststr = "[*]";
-		else
-			inststr = "[-]";
-
-		len = strlen(inststr) + strlen(tmp) + strlen(desc) + 3;
-		if (sd->maxcols && len > sd->maxcols) {
-			out = malloc(sd->maxcols+1);
-			assert(out);
-			snprintf(out, sd->maxcols-3, "%s %s %s",
-			    inststr, tmp, desc);
-			xbps_strlcat(out, "...\n", sd->maxcols+1);
-			printf("%s", out);
-			free(out);
-		} else {
-			printf("%s %s %s\n", inststr, tmp, desc);
+		if (sd->linebuf == NULL) {
+			printf("[%s] %-*s %s\n",
+				xbps_pkgdb_get_pkg(xhp, pkgver) ? "*" : "-",
+				align, pkgver, desc);
+			continue;
 		}
+
+		len = snprintf(sd->linebuf, sd->maxcols, "[%s] %-*s %s",
+		    xbps_pkgdb_get_pkg(xhp, pkgver) ? "*" : "-",
+		    align, pkgver, desc);
+		/* add ellipsis if the line was truncated */
+		if (len >= sd->maxcols && sd->maxcols > 4) {
+			for (unsigned int j = 0; j < 3; j++)
+				sd->linebuf[sd->maxcols-j-1] = '.';
+			sd->linebuf[sd->maxcols] = '\0';
+		}
+		puts(sd->linebuf);
 	}
 }
 
@@ -242,6 +237,12 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 	sd.prop = prop;
 	sd.maxcols = get_maxcols();
 	sd.results = xbps_array_create();
+	sd.linebuf = NULL;
+	if (sd.maxcols > 0) {
+		sd.linebuf = malloc(sd.maxcols);
+		if (sd.linebuf == NULL)
+			exit(1);
+	}
 
 	if (repo_mode) {
 		rv = xbps_rpool_foreach(xhp, search_repo_cb, &sd);
