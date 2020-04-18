@@ -36,7 +36,7 @@ jobs:
 
       - name: Submit the result to Coverity Scan
         run: |
-          tar --ignore-failed-read czvf xbps.tgz cov-int
+          tar czvf xbps.tgz --ignore-failed-read cov-int
           curl \
             --form project=xbps \
             --form token=$TOKEN \
