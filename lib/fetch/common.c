@@ -710,6 +710,8 @@ fetch_connect(struct url *url, int af, int verbose)
 		if (strcasecmp(socks_url->scheme, SCHEME_SOCKS5) != 0) {
 			if (verbose)
 				fetch_info("SOCKS_PROXY scheme '%s' not supported", socks_url->scheme);
+
+			fetchFreeURL(socks_url);
 			return NULL;
 		}
 		if (!socks_url->port)
@@ -730,6 +732,7 @@ fetch_connect(struct url *url, int af, int verbose)
 	hints.ai_protocol = 0;
 	if ((error = getaddrinfo(connurl->host, pbuf, &hints, &res0)) != 0) {
 		netdb_seterr(error);
+		fetchFreeURL(socks_url);
 		return (NULL);
 	}
 
@@ -738,10 +741,12 @@ fetch_connect(struct url *url, int af, int verbose)
 
 	sd = happy_eyeballs_connect(res0, verbose);
 	freeaddrinfo(res0);
-	if (sd == -1)
+	if (sd == -1) {
+		fetchFreeURL(socks_url);
 		return (NULL);
-
+	}
 	if ((conn = fetch_reopen(sd)) == NULL) {
+		fetchFreeURL(socks_url);
 		fetch_syserr();
 		close(sd);
 		return NULL;
@@ -749,6 +754,7 @@ fetch_connect(struct url *url, int af, int verbose)
 	if (socks_url) {
 		if (strcasecmp(socks_url->scheme, SCHEME_SOCKS5) == 0) {
 			if (fetch_socks5(conn, url, socks_url, verbose) != 0) {
+				fetchFreeURL(socks_url);
 				fetch_syserr();
 				close(sd);
 				free(conn);
@@ -758,6 +764,7 @@ fetch_connect(struct url *url, int af, int verbose)
 	}
 	conn->cache_url = fetchCopyURL(url);
 	conn->cache_af = af;
+	fetchFreeURL(socks_url);
 	return (conn);
 }
 
