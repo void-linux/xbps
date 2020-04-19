@@ -98,7 +98,9 @@ relpath(char *from, char *to)
 
 	for (up = -1, from--; from && *from; from = strchr(from + 1, '/'), up++);
 
-	rel = calloc(3 * up + strlen(p), sizeof(char));
+	rel = calloc(1, 3 * up + strlen(p));
+	if (!rel)
+		return NULL;
 
 	while (up--)
 		strcat(rel, "../");
