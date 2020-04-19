@@ -389,10 +389,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 				continue;
 			}
 			dir = strdup(path);
-			if ((rv = parse_files_glob(xhp, NULL, dirname(dir), val, true)) != 0) {
-				free(dir);
-				break;
-			}
+			rv = parse_files_glob(xhp, NULL, dirname(dir), val, true);
 			free(dir);
 			break;
 		}
