@@ -883,11 +883,12 @@ _prop_object_externalize_write_file(const char *fname, const char *xml,
 	if (fchmod(fd, 0666 & ~myumask) == -1)
 		goto bad;
 
-	if (do_compress)
+	if (do_compress) {
 		(void)gzclose(gzf);
-	else
+		gzf = NULL;
+	} else {
 		(void)close(fd);
-
+	}
 	fd = -1;
 
 	if (rename(tname, fname) == -1)
