@@ -172,9 +172,9 @@ index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, 
 	}
 
 out:
-	xbps_repo_close(repo);
+	xbps_repo_release(repo);
 	if(stage)
-		xbps_repo_close(stage);
+		xbps_repo_release(stage);
 	xbps_repo_unlock(rlockfd, rlockfname);
 
 	return rv;

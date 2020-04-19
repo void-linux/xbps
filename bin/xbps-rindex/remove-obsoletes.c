@@ -159,9 +159,9 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	repos[0] = repo;
 	repos[1] = stage;
 	rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repos);
-	xbps_repo_close(repo);
+	xbps_repo_release(repo);
 	if(stage)
-		xbps_repo_close(stage);
+		xbps_repo_release(stage);
 	xbps_object_release(array);
 
 	return rv;

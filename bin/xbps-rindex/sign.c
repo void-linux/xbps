@@ -248,7 +248,7 @@ out:
 		rsa = NULL;
 	}
 	if (repo)
-		xbps_repo_close(repo);
+		xbps_repo_release(repo);
 
 	return rv ? -1 : 0;
 }
