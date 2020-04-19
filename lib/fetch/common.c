@@ -764,7 +764,6 @@ fetch_connect(struct url *url, int af, int verbose)
 	}
 	conn->cache_url = fetchCopyURL(url);
 	conn->cache_af = af;
-	fetchFreeURL(socks_url);
 	return (conn);
 }
 
@@ -1071,7 +1070,10 @@ fetch_ssl_get_numeric_addrinfo(const char *hostname, size_t len)
 	struct addrinfo hints, *res;
 	char *host;
 
-	host = (char *)malloc(len + 1);
+	host = malloc(len + 1);
+	if (!host)
+		return NULL;
+
 	memcpy(host, hostname, len);
 	host[len] = '\0';
 	memset(&hints, 0, sizeof(hints));
