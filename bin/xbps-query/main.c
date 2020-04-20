@@ -38,38 +38,38 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-query [OPTIONS] MODE [ARGUMENTS]\n"
 	    "\nOPTIONS\n"
-	    " -C --config <dir>        Path to confdir (xbps.d)\n"
-	    " -c --cachedir <dir>      Path to cachedir\n"
-	    " -d --debug               Debug mode shown to stderr\n"
-	    " -h --help                Print help usage\n"
-	    " -i --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
-	    " -M --memory-sync         Remote repository data is fetched and stored\n"
-	    "                          in memory, ignoring on-disk repodata archives.\n"
-	    " -p --property PROP[,...] Show properties for PKGNAME\n"
-	    " -R --repository          Enable repository mode. This mode explicitly\n"
-	    "                          looks for packages in repositories.\n"
-	    "    --repository=<url>    Enable repository mode and add repository\n"
-	    "                          to the top of the list. This option can be\n"
-	    "                          specified multiple times.\n"
-	    "    --regex               Use Extended Regular Expressions to match\n"
-	    "    --fulldeptree         Full dependency tree for -x/--deps\n"
-	    " -r --rootdir <dir>       Full path to rootdir\n"
-	    " -V --version             Show XBPS version\n"
-	    " -v --verbose             Verbose messages\n"
+	    " -C, --config <dir>        Path to confdir (xbps.d)\n"
+	    " -c, --cachedir <dir>      Path to cachedir\n"
+	    " -d, --debug               Debug mode shown to stderr\n"
+	    " -h, --help                Show usage\n"
+	    " -i, --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
+	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
+	    "                           in memory, ignoring on-disk repodata archives\n"
+	    " -p, --property PROP[,...] Show properties for PKGNAME\n"
+	    " -R, --repository          Enable repository mode. This mode explicitly\n"
+	    "                           looks for packages in repositories\n"
+	    "     --repository=<url>    Enable repository mode and add repository\n"
+	    "                           to the top of the list. This option can be\n"
+	    "                           specified multiple times\n"
+	    "     --regex               Use Extended Regular Expressions to match\n"
+	    "     --fulldeptree         Full dependency tree for -x/--deps\n"
+	    " -r, --rootdir <dir>       Full path to rootdir\n"
+	    " -V, --version             Show XBPS version\n"
+	    " -v, --verbose             Verbose messages\n"
 	    "\nMODE\n"
-	    " -l --list-pkgs           List installed packages\n"
-	    " -L --list-repos          List registered repositories\n"
-	    " -H --list-hold-pkgs      List packages on hold state\n"
-	    "    --list-repolock-pkgs  List repolocked packages\n"
-	    " -m --list-manual-pkgs    List packages installed explicitly\n"
-	    " -O --list-orphans        List package orphans\n"
-	    " -o --ownedby FILE        Search for package files by matching STRING or REGEX\n"
-	    " -S --show PKG            Show information for PKG [default mode]\n"
-	    " -s --search PKG          Search for packages by matching PKG, STRING or REGEX\n"
-	    "    --cat=FILE PKG        Print FILE from PKG binpkg to stdout\n"
-	    " -f --files PKG           Show package files for PKG\n"
-	    " -x --deps PKG            Show dependencies for PKG\n"
-	    " -X --revdeps PKG         Show reverse dependencies for PKG\n");
+	    " -l, --list-pkgs           List installed packages\n"
+	    " -L, --list-repos          List registered repositories\n"
+	    " -H, --list-hold-pkgs      List packages on hold state\n"
+	    "     --list-repolock-pkgs  List repolocked packages\n"
+	    " -m, --list-manual-pkgs    List packages installed explicitly\n"
+	    " -O, --list-orphans        List package orphans\n"
+	    " -o, --ownedby FILE        Search for package files by matching STRING or REGEX\n"
+	    " -S, --show PKG            Show information for PKG [default mode]\n"
+	    " -s, --search PKG          Search for packages by matching PKG, STRING or REGEX\n"
+	    "     --cat=FILE PKG        Print FILE from PKG binpkg to stdout\n"
+	    " -f, --files PKG           Show package files for PKG\n"
+	    " -x, --deps PKG            Show dependencies for PKG\n"
+	    " -X, --revdeps PKG         Show reverse dependencies for PKG\n");
 
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
@@ -214,6 +214,7 @@ main(int argc, char **argv)
 			list_repolock = opmode = true;
 			break;
 		case '?':
+		default:
 			usage(true);
 			/* NOTREACHED */
 		}
@@ -223,6 +224,7 @@ main(int argc, char **argv)
 
 	if (!argc && !opmode) {
 		usage(true);
+		/* NOTREACHED */
 	} else if (!opmode) {
 		/* show mode by default */
 		show = opmode = true;
@@ -232,6 +234,7 @@ main(int argc, char **argv)
 	if (argc) {
 		/* trailing parameters */
 		usage(true);
+		/* NOTREACHED */
 	}
 	/*
 	 * Initialize libxbps.

@@ -132,7 +132,7 @@ addItem(const char *pkgn)
 }
 
 static void __attribute__((noreturn))
-usage(const char *progname)
+usage(const char *progname, bool fail)
 {
 	fprintf(stderr, "Usage: %s [OPTIONS] /path/to/void-packages [pkg pkg+N]\n\n"
 			"OPTIONS\n"
@@ -142,7 +142,7 @@ usage(const char *progname)
 			" -V, --verbose        Enable verbose mode\n"
 			" -v, --version        Show XBPS version\n"
 			" -h, --help           Show usage\n", progname);
-	exit(EXIT_FAILURE);
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 /*
@@ -577,6 +577,9 @@ main(int argc, char **argv)
 
 	while ((ch = getopt_long(argc, argv, "hj:l:svV", longopts, NULL)) != -1) {
 		switch (ch) {
+		case 'h':
+			usage(progname, false);
+			/* NOTREACHED */
 		case 's':
 			RebuildSystem = true;
 			break;
@@ -592,18 +595,18 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
-		case 'h':
+		case '?':
 		default:
-			usage(progname);
-			/* NOT REACHED */
+			usage(progname, true);
+			/* NOTREACHED */
 		}
 	}
 	argc -= optind;
 	argv += optind;
 
 	if (argc < 1) {
-		usage(progname);
-		/* NOT REACHED */
+		usage(progname, true);
+		/* NOTREACHED */
 	}
 
 	/*

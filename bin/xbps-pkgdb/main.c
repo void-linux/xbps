@@ -40,16 +40,16 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-pkgdb [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
-	    " -a --all                               Process all packages\n"
-	    " -C --config <dir>                      Path to confdir (xbps.d)\n"
-	    " -d --debug                             Debug mode shown to stderr\n"
-	    " -h --help                              Print usage help\n"
-	    " -m --mode <auto|manual|hold|unhold|repolock|repounlock>\n"
-	    "                                        Change PKGNAME to this mode\n"
-	    " -r --rootdir <dir>                     Full path to rootdir\n"
-	    " -u --update                            Update pkgdb to the latest format\n"
-	    " -v --verbose                           Verbose messages\n"
-	    " -V --version                           Show XBPS version\n");
+	    " -a, --all                               Process all packages\n"
+	    " -C, --config <dir>                      Path to confdir (xbps.d)\n"
+	    " -d, --debug                             Debug mode shown to stderr\n"
+	    " -h, --help                              Show usage\n"
+	    " -m, --mode <auto|manual|hold|unhold|repolock|repounlock>\n"
+	    "                                         Change PKGNAME to this mode\n"
+	    " -r, --rootdir <dir>                     Full path to rootdir\n"
+	    " -u, --update                            Update pkgdb to the latest format\n"
+	    " -v, --verbose                           Verbose messages\n"
+	    " -V, --version                           Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
@@ -136,8 +136,10 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if (!update_format && !all && (argc == optind))
+	if (!update_format && !all && (argc == optind)) {
 		usage(true);
+		/* NOTREACHED */
+	}
 
 	memset(&xh, 0, sizeof(xh));
 	if (rootdir)

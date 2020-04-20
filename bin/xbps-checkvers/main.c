@@ -73,29 +73,28 @@ xstrdup(const char *src)
 }
 
 static int
-show_usage(const char *prog)
+show_usage(const char *prog, bool fail)
 {
 	fprintf(stderr,
 "Usage: %s [OPTIONS] [FILES...]\n\n"
 "OPTIONS:\n"
-" -h --help              Show this helpful help-message for help.\n"
-" -C --config <dir>      Set path to xbps.d\n"
-" -D --distdir <dir>     Set (or override) the path to void-packages\n"
-"                        (defaults to ~/void-packages).\n"
-" -d --debug             Enable debug output to stderr.\n"
-" -e --removed           List packages present in repos, but not in distdir.\n"
-" -f --format <fmt>      Output format.\n"
-" -I --installed         Check for outdated packages in rootdir, rather\n"
-"                        than in the XBPS repositories.\n"
-" -i --ignore-conf-repos Ignore repositories defined in xbps.d.\n"
-" -m --manual            Only process listed files.\n"
-" -R --repository=<url>  Append repository to the head of repository list.\n"
-" -r --rootdir <dir>     Set root directory (defaults to /).\n"
-" -s --show-all          List all packages, in the format 'pkgname repover srcver'.\n"
-"\n  [FILES...]          Extra packages to process with the outdated\n"
-"                        ones (only processed if missing).\n\n",
-prog);
-	return EXIT_FAILURE;
+" -h, --help              Show usage\n"
+" -C, --config <dir>      Set path to xbps.d\n"
+" -D, --distdir <dir>     Set (or override) the path to void-packages\n"
+"                         (defaults to ~/void-packages)\n"
+" -d, --debug             Enable debug output to stderr\n"
+" -e, --removed           List packages present in repos, but not in distdir\n"
+" -f, --format <fmt>      Output format\n"
+" -I, --installed         Check for outdated packages in rootdir, rather\n"
+"                         than in the XBPS repositories\n"
+" -i, --ignore-conf-repos Ignore repositories defined in xbps.d\n"
+" -m, --manual            Only process listed files\n"
+" -R, --repository=<url>  Append repository to the head of repository list\n"
+" -r, --rootdir <dir>     Set root directory (defaults to /)\n"
+" -s, --show-all          List all packages, in the format 'pkgname repover srcver'\n"
+"\n  [FILES...]           Extra packages to process with the outdated\n"
+"                         ones (only processed if missing).\n", prog);
+	return fail ? EXIT_FAILURE: EXIT_SUCCESS;
 }
 
 static void
@@ -728,7 +727,7 @@ main(int argc, char **argv)
 	while ((c = getopt_long(argc, argv, sopts, lopts, NULL)) != -1) {
 		switch (c) {
 		case 'h':
-			return show_usage(prog);
+			return show_usage(prog, false);
 		case 'C':
 			rcv.xbps_conf = xstrdup(optarg);
 			break;
@@ -765,8 +764,9 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case '?':
 		default:
-			return show_usage(prog);
+			return show_usage(prog, true);
 		}
 	}
 	/*

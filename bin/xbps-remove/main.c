@@ -45,21 +45,21 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-remove [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
-	    " -C --config <dir>        Path to confdir (xbps.d)\n"
-	    " -c --cachedir <dir>      Path to cachedir\n"
-	    " -d --debug               Debug mode shown to stderr\n"
-	    " -F --force-revdeps       Force package removal even with revdeps or\n"
-	    "                          unresolved shared libraries\n"
-	    " -f --force               Force package files removal\n"
-	    " -h --help                Print help usage\n"
-	    " -n --dry-run             Dry-run mode\n"
-	    " -O --clean-cache         Remove obsolete packages in cachedir\n"
-	    " -o --remove-orphans      Remove package orphans\n"
-	    " -R --recursive           Recursively remove dependencies\n"
-	    " -r --rootdir <dir>       Full path to rootdir\n"
-	    " -v --verbose             Verbose messages\n"
-	    " -y --yes                 Assume yes to all questions\n"
-	    " -V --version             Show XBPS version\n");
+	    " -C, --config <dir>        Path to confdir (xbps.d)\n"
+	    " -c, --cachedir <dir>      Path to cachedir\n"
+	    " -d, --debug               Debug mode shown to stderr\n"
+	    " -F, --force-revdeps       Force package removal even with revdeps or\n"
+	    "                           unresolved shared libraries\n"
+	    " -f, --force               Force package files removal\n"
+	    " -h, --help                Show usage\n"
+	    " -n, --dry-run             Dry-run mode\n"
+	    " -O, --clean-cache         Remove obsolete packages in cachedir\n"
+	    " -o, --remove-orphans      Remove package orphans\n"
+	    " -R, --recursive           Recursively remove dependencies\n"
+	    " -r, --rootdir <dir>       Full path to rootdir\n"
+	    " -v, --verbose             Verbose messages\n"
+	    " -y, --yes                 Assume yes to all questions\n"
+	    " -V, --version             Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
@@ -236,8 +236,10 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if (!clean_cache && !orphans && (argc == optind))
+	if (!clean_cache && !orphans && (argc == optind)) {
 		usage(true);
+		/* NOTREACHED */
+	}
 
 	/*
 	 * Initialize libxbps.

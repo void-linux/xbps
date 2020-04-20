@@ -110,25 +110,25 @@ die(const char *fmt, ...)
 }
 
 static void __attribute__((noreturn))
-usage(void)
+usage(bool fail)
 {
 	fprintf(stdout,
 	"Usage: xbps-dgraph [OPTIONS] [MODE] <pkgname>\n\n"
 	"OPTIONS\n"
-	" -C --config <dir>        Path to confdir (xbps.d)\n"
-	" -c --graph-config <file> Path to the graph configuration file\n"
-	" -d --debug               Debug mode shown to stderr\n"
-	" -h --help                Print help usage\n"
-	" -M --memory-sync         Remote repository data is fetched and stored\n"
-	"                          in memory, ignoring on-disk repodata archives.\n"
-	" -r --rootdir <dir>       Full path to rootdir\n"
-	" -R --repository          Enable repository mode. This mode explicitly\n"
-	"                          looks for packages in repositories.\n"
+	" -C, --config <dir>        Path to confdir (xbps.d)\n"
+	" -c, --graph-config <file> Path to the graph configuration file\n"
+	" -d, --debug               Debug mode shown to stderr\n"
+	" -h, --help                Show usage\n"
+	" -M, --memory-sync         Remote repository data is fetched and stored\n"
+	"                           in memory, ignoring on-disk repodata archives.\n"
+	" -r, --rootdir <dir>       Full path to rootdir\n"
+	" -R, --repository          Enable repository mode. This mode explicitly\n"
+	"                           looks for packages in repositories.\n"
 	"MODE\n"
-	" -g --gen-config          Generate a configuration file\n"
-	" -f --fulldeptree         Generate a dependency graph\n"
-	" -m --metadata            Generate a metadata graph (default mode)\n\n");
-	exit(EXIT_FAILURE);
+	" -g, --gen-config          Generate a configuration file\n"
+	" -f, --fulldeptree         Generate a dependency graph\n"
+	" -m, --metadata            Generate a metadata graph (default mode)\n");
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 static const char *
@@ -558,6 +558,9 @@ main(int argc, char **argv)
 			/* Generate conf file. */
 			generate_conf_file();
 			exit(EXIT_SUCCESS);
+		case 'h':
+			usage(false);
+			/* NOTREACHED */
 		case 'M':
 			flags |= XBPS_FLAG_REPOS_MEMSYNC;
 			break;
@@ -578,7 +581,8 @@ main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		case '?':
 		default:
-			usage();
+			usage(true);
+			/* NOTREACHED */
 		}
 	}
 
@@ -586,7 +590,8 @@ main(int argc, char **argv)
 	argv += optind;
 
 	if (!argc && !opmode) {
-		usage();
+		usage(true);
+		/* NOTREACHED */
 	}
 	pkg = *argv;
 

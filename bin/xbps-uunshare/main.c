@@ -74,11 +74,14 @@ die(const char *fmt, ...)
 }
 
 static void __attribute__((noreturn))
-usage(const char *p)
+usage(const char *p, bool fail)
 {
-	printf("Usage: %s [-b src:dest] [--] <dir> <cmd> [<cmdargs>]\n\n"
-	    "-b src:dest Bind mounts <src> into <dir>/<dest> (may be specified multiple times)\n\n", p);
-	exit(EXIT_FAILURE);
+	printf("Usage: %s [OPTIONS] [--] <dir> <cmd> [<cmdargs>]\n\n"
+	    "OPTIONS\n"
+	    " -b, --bind-rw <src:dest>  Bind mounts <src> into <dir>/<dest> (read-write)\n"
+	    " -h, --help                Show usage\n"
+	    " -V, --version             Show XBPS version\n", p);
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 static void
@@ -130,13 +133,16 @@ main(int argc, char **argv)
 	char **cmdargs, buf[32];
 	int c, fd;
 	const struct option longopts[] = {
+		{ "bind-rw", required_argument, NULL, 'b' },
+		{ "version", no_argument, NULL, 'V' },
+		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
 	};
 
 	chrootdir = cmd = NULL;
 	argv0 = argv[0];
 
-	while ((c = getopt_long(argc, argv, "b:V", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "b:hV", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'b':
 			if (optarg == NULL || *optarg == '\0')
@@ -146,16 +152,22 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case 'h':
+			usage(argv0, false);
+			/* NOTREACHED */
 		case '?':
 		default:
-			usage(argv0);
+			usage(argv0, true);
+			/* NOTREACHED */
 		}
 	}
 	argc -= optind;
 	argv += optind;
 
-	if (argc < 2)
-		usage(argv0);
+	if (argc < 2) {
+		usage(argv0, true);
+		/* NOTREACHED */
+	}
 
 	chrootdir = argv[0];
 	cmd = argv[1];

@@ -39,15 +39,15 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-reconfigure [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
-	    " -a --all            Process all packages\n"
-	    " -C --config <dir>   Path to confdir (xbps.d)\n"
-	    " -d --debug          Debug mode shown to stderr\n"
-	    " -f --force          Force reconfiguration\n"
-	    " -h --help           Print usage help\n"
-	    " -i --ignore PKG     Ignore PKG with -a/--all\n"
-	    " -r --rootdir <dir>  Full path to rootdir\n"
-	    " -v --verbose        Verbose messages\n"
-	    " -V --version        Show XBPS version\n");
+	    " -a, --all            Process all packages\n"
+	    " -C, --config <dir>   Path to confdir (xbps.d)\n"
+	    " -d, --debug          Debug mode shown to stderr\n"
+	    " -f, --force          Force reconfiguration\n"
+	    " -h, --help           Show usage\n"
+	    " -i, --ignore PKG     Ignore PKG with -a/--all\n"
+	    " -r, --rootdir <dir>  Full path to rootdir\n"
+	    " -v, --verbose        Verbose messages\n"
+	    " -V, --version        Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
@@ -147,8 +147,10 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if (!all && (argc == optind))
+	if (!all && (argc == optind)) {
 		usage(true);
+		/* NOTREACHED */
+	}
 
 	memset(&xh, 0, sizeof(xh));
 	xh.state_cb = state_cb;

@@ -34,19 +34,18 @@
 #include <xbps.h>
 
 static void __attribute__((noreturn))
-usage(void)
+usage(bool fail)
 {
 	fprintf(stdout,
 	"Usage: xbps-digest [options] [file] [file+N]\n"
 	"\n"
-	"OPTIONS:\n"
-	" -h\t\tShow usage()\n"
-	" -m <sha256>\tSelects the digest mode, sha256 (default)\n"
-	" -V\t\tPrints the xbps release version\n"
-	"\n"
-	"NOTES\n"
-	" If [file] not set, reads from stdin.\n");
-	exit(EXIT_FAILURE);
+	"OPTIONS\n"
+	" -h, --help           Show usage\n"
+	" -m, --mode <sha256>  Selects the digest mode, sha256 (default)\n"
+	" -V, --version        Show XBPS version\n"
+	"\nNOTES\n"
+	" If [file] not set, reads from stdin\n");
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 int
@@ -56,11 +55,17 @@ main(int argc, char **argv)
 	char sha256[XBPS_SHA256_SIZE];
 	const char *mode = NULL, *progname = argv[0];
 	const struct option longopts[] = {
+		{ "mode", required_argument, NULL, 'm' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
 
 	while ((c = getopt_long(argc, argv, "m:hV", longopts, NULL)) != -1) {
 		switch (c) {
+		case 'h':
+			usage(false);
+			/* NOTREACHED */
 		case 'm':
 			mode = optarg;
 			break;
@@ -68,9 +73,9 @@ main(int argc, char **argv)
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case '?':
-		case 'h':
 		default:
-			usage();
+			usage(true);
+			/* NOTREACHED */
 		}
 	}
 

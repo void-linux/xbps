@@ -87,7 +87,7 @@ static SIMPLEQ_HEAD(bindmnt_head, bindmnt) bindmnt_queue =
     SIMPLEQ_HEAD_INITIALIZER(bindmnt_queue);
 
 static void __attribute__((noreturn))
-usage(const char *p)
+usage(const char *p, bool fail)
 {
 	printf("Usage: %s [OPTIONS] [--] <dir> <cmd> [<cmdargs>]\n\n"
 	    "-B, --bind-ro <src:dest> Bind mounts <src> into <dir>/<dest> (read-only)\n"
@@ -96,8 +96,8 @@ usage(const char *p)
 	    "-t, --tmpfs              Creates a tempdir and mounts <dir> on tmpfs (for use with -O)\n"
 	    "-o, --options <opts>     Options to be passed to the tmpfs mount (for use with -t)\n"
 	    "-V, --version            Show XBPS version\n"
-	    "-h, --help               Show usage\n\n", p);
-	exit(EXIT_FAILURE);
+	    "-h, --help               Show usage\n", p);
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 static void __attribute__((noreturn))
@@ -369,16 +369,21 @@ main(int argc, char **argv)
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case 'h':
+			usage(argv0, false);
+			/* NOTREACHED */
 		case '?':
 		default:
-			usage(argv0);
+			usage(argv0, true);
+			/* NOTREACHED */
 		}
 	}
 	argc -= optind;
 	argv += optind;
 
-	if (argc < 2)
-		usage(argv0);
+	if (argc < 2) {
+		usage(argv0, true);
+		/* NOTREACHED */
+	}
 
 	rootdir = argv[0];
 	cmd = argv[1];

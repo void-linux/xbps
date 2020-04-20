@@ -68,54 +68,49 @@ static xbps_dictionary_t pkg_propsd, pkg_filesd, all_filesd;
 static const char *destdir;
 
 static void __attribute__((noreturn))
-usage(void)
+usage(bool fail)
 {
 	fprintf(stdout,
 	"Usage: %s [OPTIONS] -A <arch> -n <pkgver> -s \"<desc>\" destdir\n\n"
 	"OPTIONS\n"
-	" -A --architecture   Package architecture (e.g: noarch, i686, etc).\n"
-	" -B --built-with     Package builder string (e.g: xbps-src-30).\n"
-	" -C --conflicts      Conflicts (blank separated list,\n"
-	"                     e.g: 'foo>=2.0 blah<=2.0').\n"
-	" -c --changelog      Changelog URL.\n"
-	" -D --dependencies   Dependencies (blank separated list,\n"
-	"                     e.g: 'foo>=1.0_1 blah<2.1').\n"
-	" -F --config-files   Configuration files (blank separated list,\n"
-	"                     e.g '/etc/foo.conf /etc/foo-blah.conf').\n"
-	" -H --homepage       Homepage.\n"
-	" -h --help           Show help.\n"
-	" -l --license        License.\n"
-	" -M --mutable-files  Mutable files list (blank separated list,\n"
-	"                     e.g: '/usr/lib/foo /usr/bin/blah').\n"
-	" -m --maintainer     Maintainer.\n"
-	" -n --pkgver         Package name/version tuple (e.g `foo-1.0_1').\n"
-	" -P --provides       Provides (blank separated list,\n"
-	"                     e.g: 'foo-9999 blah-1.0').\n"
-	" -p --preserve       Enable package preserve boolean.\n"
-	" -q --quiet          Work silently.\n"
-	" -R --replaces       Replaces (blank separated list,\n"
-	"                     e.g: 'foo>=1.0 blah<2.0').\n"
-	" -r --reverts        Reverts (blank separated list,\n"
-	"                     e.g: '1.0_1 2.0_3').\n"
-	" -S --long-desc      Long description (80 cols per line).\n"
-	" -s --desc           Short description (max 80 characters).\n"
-	" -t --tags           A list of tags/categories (blank separated list).\n"
-	" -V --version        Prints XBPS release version.\n"
-	" --alternatives      List of available alternatives this pkg provides.\n"
-	"                     This expects a blank separated list of <name>:<symlink>:<target>, e.g\n"
-	"                     'vi:/usr/bin/vi:/usr/bin/vim foo:/usr/bin/foo:/usr/bin/blah'.\n"
-	" --build-options     A string with the used build options.\n"
-	" --compression       Compression format: none, gzip, bzip2, lz4, xz, zstd (default).\n"
-	" --shlib-provides    List of provided shared libraries (blank separated list,\n"
-	"                     e.g 'libfoo.so.1 libblah.so.2').\n"
-	" --shlib-requires    List of required shared libraries (blank separated list,\n"
-	"                     e.g 'libfoo.so.1 libblah.so.2').\n\n"
+	" -A, --architecture   Package architecture (e.g: noarch, i686, etc)\n"
+	" -B, --built-with     Package builder string (e.g: xbps-src-30)\n"
+	" -C, --conflicts      Conflicts (blank separated list, e.g: 'foo>=2.0 blah<=2.0')\n"
+	" -c, --changelog      Changelog URL\n"
+	" -D, --dependencies   Dependencies (blank separated list, e.g: 'foo>=1.0_1 blah<2.1')\n"
+	" -F, --config-files   Configuration files (blank separated list,\n"
+	"                      e.g '/etc/foo.conf /etc/foo-blah.conf')\n"
+	" -H, --homepage       Homepage\n"
+	" -h, --help           Show usage\n"
+	" -l, --license        License\n"
+	" -M, --mutable-files  Mutable files list (blank separated list,\n"
+	"                      e.g: '/usr/lib/foo /usr/bin/blah')\n"
+	" -m, --maintainer     Maintainer\n"
+	" -n, --pkgver         Package name/version tuple (e.g `foo-1.0_1')\n"
+	" -P, --provides       Provides (blank separated list, e.g: 'foo-9999 blah-1.0')\n"
+	" -p, --preserve       Enable package preserve boolean\n"
+	" -q, --quiet          Work silently\n"
+	" -R, --replaces       Replaces (blank separated list, e.g: 'foo>=1.0 blah<2.0')\n"
+	" -r, --reverts        Reverts (blank separated list, e.g: '1.0_1 2.0_3')\n"
+	" -S, --long-desc      Long description (80 cols per line)\n"
+	" -s, --desc           Short description (max 80 characters)\n"
+	" -t, --tags           A list of tags/categories (blank separated list)\n"
+	" -V, --version        Show XBPS version\n"
+	" --alternatives       List of available alternatives this pkg provides\n"
+	"                      This expects a blank separated list of <name>:<symlink>:<target>, e.g\n"
+	"                      'vi:/usr/bin/vi:/usr/bin/vim foo:/usr/bin/foo:/usr/bin/blah'\n"
+	" --build-options      A string with the used build options\n"
+	" --compression        Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
+	" --shlib-provides     List of provided shared libraries (blank separated list,\n"
+	"                      e.g 'libfoo.so.1 libblah.so.2')\n"
+	" --shlib-requires     List of required shared libraries (blank separated list,\n"
+	"                      e.g 'libfoo.so.1 libblah.so.2')\n\n"
 	"NOTE:\n"
 	" At least three flags are required: architecture, pkgver and desc.\n\n"
 	"EXAMPLE:\n"
 	" $ %s -A noarch -n foo-1.0_1 -s \"foo pkg\" destdir\n",
 	_PROGNAME, _PROGNAME);
-	exit(EXIT_FAILURE);
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 static void __attribute__((noreturn))
@@ -866,7 +861,7 @@ main(int argc, char **argv)
 			srcrevs = optarg;
 			break;
 		case 'h':
-			usage();
+			usage(false);
 			break;
 		case 'H':
 			homepage = optarg;
@@ -927,11 +922,14 @@ main(int argc, char **argv)
 			break;
 		case '?':
 		default:
-			usage();
+			usage(true);
+			/* NOTREACHED */
 		}
 	}
-	if (argc == optind)
-		usage();
+	if (argc == optind) {
+		usage(true);
+		/* NOTREACHED */
+	}
 
 	destdir = argv[optind];
 

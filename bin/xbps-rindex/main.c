@@ -37,21 +37,21 @@ usage(bool fail)
 	fprintf(stdout,
 	    "Usage: xbps-rindex [OPTIONS] MODE ARGUMENTS\n\n"
 	    "OPTIONS\n"
-	    " -d --debug                        Debug mode shown to stderr\n"
-	    " -f --force                        Force mode to overwrite entry in add mode\n"
-	    " -h --help                         Show help usage\n"
-	    " -v --verbose                      Verbose messages\n"
-	    " -V --version                      Show XBPS version\n"
-	    " -C --hashcheck                    Consider file hashes for cleaning up packages\n"
-	    "    --compression <fmt>            Compression format: none, gzip, bzip2, lz4, xz, zstd (default).\n"
-	    "    --privkey <key>                Path to the private key for signing\n"
-	    "    --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
+	    " -d, --debug                        Debug mode shown to stderr\n"
+	    " -f, --force                        Force mode to overwrite entry in add mode\n"
+	    " -h, --help                         Show usage\n"
+	    " -v, --verbose                      Verbose messages\n"
+	    " -V, --version                      Show XBPS version\n"
+	    " -C, --hashcheck                    Consider file hashes for cleaning up packages\n"
+	    "     --compression <fmt>            Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
+	    "     --privkey <key>                Path to the private key for signing\n"
+	    "     --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
 	    "MODE\n"
-	    " -a --add <repodir/pkg> ...        Add package(s) to repository index\n"
-	    " -c --clean <repodir>              Clean repository index\n"
-	    " -r --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
-	    " -s --sign <repodir>               Initialize repository metadata signature\n"
-	    " -S --sign-pkg archive.xbps ...    Sign binary package archive\n\n");
+	    " -a, --add <repodir/file.xbps> ...  Add package(s) to repository index\n"
+	    " -c, --clean <repodir>              Clean repository index\n"
+	    " -r, --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
+	    " -s, --sign <repodir>               Initialize repository metadata signature\n"
+	    " -S, --sign-pkg <file.xbps> ...     Sign binary package archive\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
@@ -130,11 +130,16 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case '?':
+		default:
+			usage(true);
+			/* NOTREACHED */
 		}
 	}
 	if ((argc == optind) ||
 	    (!add_mode && !clean_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
 		usage(true);
+		/* NOTREACHED */
 	} else if ((add_mode && (clean_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
 		   (clean_mode && (add_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
 		   (rm_mode && (add_mode || clean_mode || sign_mode || sign_pkg_mode)) ||

@@ -44,13 +44,13 @@ usage(bool fail)
 	    " -C --config <dir>   Path to confdir (xbps.d)\n"
 	    " -d --debug          Debug mode shown to stderr\n"
 	    " -g --group <name>   Group of alternatives to match\n"
-	    " -h --help           Print usage help\n"
+	    " -h --help           Show usage\n"
 	    " -r --rootdir <dir>  Full path to rootdir\n"
 	    " -v --verbose        Verbose messages\n"
 	    " -V --version        Show XBPS version\n"
 	    "MODE\n"
 	    " -l --list [PKG]     List all alternatives or from PKG\n"
-	    " -s --set PKG        Set alternatives for PKG\n\n");
+	    " -s --set PKG        Set alternatives for PKG\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 

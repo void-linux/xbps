@@ -37,18 +37,18 @@
 #include "../xbps-install/defs.h"
 
 static void __attribute__((noreturn))
-usage(void)
+usage(bool fail)
 {
 	fprintf(stdout,
 	"Usage: xbps-fetch [options] <url> <url+N>\n\n"
-	"OPTIONS:\n"
-	" -d\t\tEnable debug messages to stderr\n"
-	" -h\t\tShow usage()\n"
-	" -o <file>\tRename downloaded file to <file>\n"
-	" -s\t\tOutput sha256sums of the files\n"
-	" -v\t\tEnable verbose output\n"
-	" -V\t\tPrints the xbps release version\n");
-	exit(EXIT_FAILURE);
+	"OPTIONS\n"
+	" -d, --debug       Enable debug messages to stderr\n"
+	" -h, --help        Show usage\n"
+	" -o, --out <file>  Rename downloaded file to <file>\n"
+	" -s, --sha256      Output sha256sums of the files\n"
+	" -v, --verbose     Enable verbose output\n"
+	" -V, --version     Show XBPS version\n");
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 static char *
@@ -92,11 +92,20 @@ main(int argc, char **argv)
 	struct xferstat xfer = {};
 	const char *filename = NULL, *progname = argv[0];
 	const struct option longopts[] = {
+		{ "out", required_argument, NULL, 'o' },
+		{ "debug", no_argument, NULL, 'd' },
+		{ "help", no_argument, NULL, 'h' },
+		{ "sha256", no_argument, NULL, 's' },
+		{ "version", no_argument, NULL, 'V' },
+		{ "verbose", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
 
 	while ((c = getopt_long(argc, argv, "o:dhsVv", longopts, NULL)) != -1) {
 		switch (c) {
+		case 'h':
+			usage(false);
+			/* NOTREACHED */
 		case 'o':
 			filename = optarg;
 			break;
@@ -113,17 +122,19 @@ main(int argc, char **argv)
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case '?':
-		case 'h':
 		default:
-			usage();
+			usage(true);
+			/* NOTREACHED */
 		}
 	}
 
 	argc -= optind;
 	argv += optind;
 
-	if (!argc)
-		usage();
+	if (!argc) {
+		usage(true);
+		/* NOTREACHED */
+	}
 
 	/*
 	* Initialize libxbps.
