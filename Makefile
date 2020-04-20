@@ -23,6 +23,9 @@ install: all
 	@for dir in $(SUBDIRS); do		\
 		$(MAKE) -C $$dir install || exit 1;	\
 	done
+	install -d $(DESTDIR)$(SHAREDIR)/licenses/xbps
+	install -m644 ./LICENSE $(DESTDIR)$(SHAREDIR)/licenses/xbps
+	install -m644 ./LICENSE.3RDPARTY $(DESTDIR)$(SHAREDIR)/licenses/xbps
 
 uninstall:
 	@for dir in $(SUBDIRS); do		\
