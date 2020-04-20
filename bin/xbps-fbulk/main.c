@@ -134,14 +134,14 @@ addItem(const char *pkgn)
 static void __attribute__((noreturn))
 usage(const char *progname)
 {
-	fprintf(stderr, "%s [OPTIONS] /path/to/void-packages [pkg pkg+N]\n"
+	fprintf(stderr, "Usage: %s [OPTIONS] /path/to/void-packages [pkg pkg+N]\n\n"
 			"OPTIONS\n"
 			" -j, --jobs <N>       Number of parallel builds\n"
 			" -l, --logdir <path>  Path to store logs\n"
 		        " -s, --system         System rebuild mode\n"
 			" -V, --verbose        Enable verbose mode\n"
 			" -v, --version        Show XBPS version\n"
-			" -h, --help           Show usage\n\n", progname);
+			" -h, --help           Show usage\n", progname);
 	exit(EXIT_FAILURE);
 }
 
