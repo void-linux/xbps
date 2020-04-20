@@ -697,7 +697,7 @@ fetch_connect(struct url *url, int af, int verbose)
 {
 	conn_t *conn;
 	char pbuf[10];
-	struct url *socks_url, *connurl;
+	struct url *socks_url = NULL, *connurl;
 	const char *socks_proxy;
 	struct addrinfo hints, *res0;
 	int sd, error;
@@ -761,6 +761,7 @@ fetch_connect(struct url *url, int af, int verbose)
 				return NULL;
 			}
 		}
+		fetchFreeURL(socks_url);
 	}
 	conn->cache_url = fetchCopyURL(url);
 	conn->cache_af = af;

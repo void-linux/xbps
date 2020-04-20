@@ -571,7 +571,12 @@ ouch:
 void
 fetchFreeURL(struct url *u)
 {
-	free(u->doc);
+	if (!u) {
+		return;
+	}
+	if (u->doc) {
+		free(u->doc);
+	}
 	free(u);
 }
 
