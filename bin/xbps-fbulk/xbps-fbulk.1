@@ -1,4 +1,4 @@
-.Dd April 14, 2020
+.Dd April 20, 2020
 .Dt XBPS-FBULK 1
 .Sh NAME
 .Nm xbps-fbulk
@@ -7,7 +7,7 @@
 .Nm xbps-fbulk
 .Op OPTIONS
 .Ar /path/to/void-packages
-.Op pkgN pkgN+1 ...
+.Op pkgN pkg+N ...
 .Sh DESCRIPTION
 The
 .Nm
@@ -19,22 +19,32 @@ arguments, and then runs
 .Ar 'xbps-src show-build-deps'
 to build a dependency tree on the fly.
 .Pp
-When the dependency tree is built, terminal dependencies are built
+As the dependency tree is built, terminal dependencies are built
 and packaged on the fly.
 .Pp
-As these builds complete additional dependencies may be satisfied and be
+As these builds complete, additional dependencies may be satisfied and be
 added to the build order. Ultimately the entire tree is built.
 .Pp
 Only one attempt is made to build any given package, no matter how many
 other packages depend on it.
+.Pp
+When using
+.Ar system mode
+only installed packages that are in manual mode (see
+.Xr xbps-pkgdb 1)
+will be processed.
+This is useful to keep up a running system up-to-date.
 .Sh OPTIONS
 .Bl -tag -width -x
-.It Fl j Ar X
+.It Fl j, Fl -jobs Ar X
 Set number of parallel builds running at the same time. By default set to 1.
-.It Fl l Ar logdir
+.It Fl l, Fl -logdir  Ar logdir
 Set the log directory. By default set to `fbulk-log.<pid>`.
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
+.It Fl s, Fl -system
+System build mode. If set, only packages that were installed manually
+in your system will be processed.
 .It Fl h, Fl -help
 Show the help message.
 .It Fl v, Fl -verbose
@@ -53,7 +63,7 @@ Packages that failed to build.
 .It Ar logdir/skipped
 Packages that were not built because they had to be skipped (unsupported architecture, broken or restricted).
 .It Ar logdir/deps
-Packages that were not built due to missing dependencies.
+Packages that were not built due to failed or missing dependencies.
 .El
 .Sh NOTES
 The

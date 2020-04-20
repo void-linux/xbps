@@ -38,7 +38,7 @@
  * This program iterates all srcpkgs directories, runs './xbps-src show-build-deps',
  * and builds a dependency tree on the fly.
  *
- * When the dependency tree is built, terminal dependencies are built
+ * As the dependency tree is being built, terminal dependencies are built
  * and packaged on the fly.
  *
  * As these builds complete additional dependencies may be satisfied and be
@@ -100,7 +100,6 @@ int NRunning;
 unsigned int NBuilt = 0;
 unsigned int NFinished = 0;
 unsigned int NChecked = 0;
-unsigned int NSkipped = 0;
 unsigned int NTotal = 0;
 char *LogDir;
 
@@ -135,8 +134,14 @@ addItem(const char *pkgn)
 static void __attribute__((noreturn))
 usage(const char *progname)
 {
-	fprintf(stderr, "%s [-h] [-j procs] [-l logdir] [-V]"
-	    " /path/to/void-packages [pkg pkgN]\n", progname);
+	fprintf(stderr, "%s [OPTIONS] /path/to/void-packages [pkg pkg+N]\n"
+			"OPTIONS\n"
+			" -j, --jobs <N>       Number of parallel builds\n"
+			" -l, --logdir <path>  Path to store logs\n"
+		        " -s, --system         System rebuild mode\n"
+			" -V, --verbose        Enable verbose mode\n"
+			" -v, --version        Show XBPS version\n"
+			" -h, --help           Show usage\n\n", progname);
 	exit(EXIT_FAILURE);
 }
 
@@ -171,7 +176,7 @@ processCompletion(struct item *item)
 	assert(item);
 	/*
 	 * If XRUN we have to move the logfile to the correct directory.
-	 * (If XDEPFAIL the log is at correct location).
+	 * (If XDEPFAIL the logfile is already in the correct directory).
 	 */
 	if (item->status == XRUN) {
 		logpath = xbps_xasprintf("%s/run/%s.txt", LogDir, item->pkgn);
@@ -192,9 +197,18 @@ processCompletion(struct item *item)
 		free(logpath2);
 	}
 
+	/*
+	 * Make sure that item has already run (XRUN) or
+	 * failed due to dependencies (XDEPFAIL).
+	 *
+	 * When XWAITING the item is waiting for its dependencies.
+	 * When XBUILD the item is in the build list.
+	 */
 	assert(item->status == XRUN || item->status == XDEPFAIL);
-	item->status = XDONE;
 
+	/*
+	 * Process reverse dependencies for the item.
+	 */
 	for (depn = item->dbase; depn; depn = depn->dnext) {
 		xitem = depn->item;
 		assert(xitem->dcount > 0);
@@ -224,10 +238,13 @@ processCompletion(struct item *item)
 				fclose(fp);
 				free(logpath);
 				processCompletion(xitem);
-				++NSkipped;
 			}
 		}
 	}
+	/*
+	 * Item has been processed successfully.
+	 */
+	item->status = XDONE;
 	++NFinished;
 
 	printf("[%u/%u] Finished %s (PID: %u RET: %d)\n",
@@ -255,6 +272,10 @@ waitRunning(int flags)
 	while (((pid = waitpid(0, &status, flags)) < 0) && !flags)
 		;
 
+	/*
+	 * NOTE! The pid may be associated with one of our popen()'s
+	 *       so just ignore it if we cannot find it.
+	 */
 	if (pid > 0) {
 		status = WEXITSTATUS(status);
 		itemp = &RunList;
@@ -270,6 +291,8 @@ waitRunning(int flags)
 			--NRunning;
 			processCompletion(item);
 		}
+	} else {
+		item = NULL;
 	}
 	return item;
 }
@@ -278,8 +301,10 @@ waitRunning(int flags)
  * Start new builds from the build list and handle build completions,
  * which can potentialy add new items to the build list.
  *
- * This routine will maintain up to NParallel builds. A new build is
- * only started once its dependencies have been completed successfully.
+ * This routine will maintain up to NParallel builds.  A new build is
+ * only started once its dependencies have completed successfully so
+ * when the bulk build starts it typically takes a little while before
+ * xbps-fbulk can keep the parallel pipeline full.
  */
 static void
 runBuilds(const char *bpath)
@@ -322,7 +347,6 @@ runBuilds(const char *bpath)
 			if (chdir(bpath) < 0)
 				_exit(99);
 
-
 			fd = open(logpath, O_RDWR|O_CREAT|O_TRUNC, 0666);
 			if (fd != 1)
 				dup2(fd, 1);
@@ -360,7 +384,7 @@ runBuilds(const char *bpath)
 			++NRunning;
 			++NBuilt;
 			printf("[%u/%u] Building %s (PID: %u)\n",
-			     NBuilt+NSkipped, NTotal, item->pkgn, item->pid);
+			     NBuilt, NTotal, item->pkgn, item->pid);
 		}
 		free(logpath);
 	}
@@ -381,6 +405,8 @@ static void
 addDepn(struct item *item, struct item *xitem)
 {
 	struct depn *depn = malloc(sizeof(struct depn));
+	FILE *fp;
+	char *logpath;
 
 	assert(item);
 	assert(xitem);
@@ -389,7 +415,27 @@ addDepn(struct item *item, struct item *xitem)
 	depn->item = item;
 	depn->dnext = xitem->dbase;
 	xitem->dbase = depn;
-	++item->dcount;
+	if (xitem->status == XDONE) {
+		if (xitem->xcode) {
+			/*
+			 * If reverse dependency has failed,
+			 * current item also failed!
+			 */
+			assert(item->status == XWAITING ||
+			       item->status == XDEPFAIL);
+			item->xcode = xitem->xcode;
+			item->status = XDEPFAIL;
+			logpath = xbps_xasprintf("%s/deps/%s.txt",
+			    LogDir, item->pkgn);
+			fp = fopen(logpath, "a");
+			fprintf(fp, "%s\n", xitem->pkgn);
+			fclose(fp);
+			free(logpath);
+			++NBuilt;
+		}
+	} else {
+		++item->dcount;
+	}
 }
 
 /*
@@ -408,7 +454,8 @@ ordered_depends(const char *bpath, const char *pkgn)
 
 	item = addItem(pkgn);
 	/*
-	 * Retrieve and process dependencies recursively.
+	 * Retrieve and process dependencies recursively.  Note that
+	 * addDepn() can modify item's status.
 	 */
 	++NChecked;
 	printf("[%u] Checking %s\n", NChecked, item->pkgn);
@@ -456,20 +503,59 @@ ordered_depends(const char *bpath, const char *pkgn)
 	pclose(fp);
 	++NTotal;
 	/*
-	 * If the item has no dependencies left add it to the build list.
+	 * If the item has no dependencies left either add it to the
+	 * build list or do completion processing (i.e. if some of the
+	 * dependencies failed).
 	 */
 	if (item->dcount == 0) {
-		addBuild(item);
+		switch (item->status) {
+		case XWAITING:
+			addBuild(item);
+			break;
+		case XDEPFAIL:
+			processCompletion(item);
+			break;
+		default:
+			/*
+			 * Might happen due to excessive NParallel jobs!
+			 * Error out because this is critical.
+			 */
+			printf("%s: item->xcode %d item->status %d\n",
+			    item->pkgn, item->xcode, item->status);
+			assert(0);
+			break;
+		}
 	} else {
 		if (VerboseOpt)
 			printf("Deferred package: %s\n", item->pkgn);
 	}
+	runBuilds(bpath);
 	return item;
+}
+
+static int
+pkgdb_get_pkgs_cb(struct xbps_handle *xhp UNUSED,
+		xbps_object_t obj, const char *key UNUSED,
+		void *arg, bool *done UNUSED)
+{
+	xbps_array_t *array = arg;
+	const char *pkgname;
+	bool automatic = false;
+
+	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
+	if (automatic)
+		return 0;
+
+	xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	xbps_array_add_cstring_nocopy(*array, pkgname);
+	return 0;
 }
 
 int
 main(int argc, char **argv)
 {
+	struct xbps_handle xh = {0};
+	xbps_array_t array;
 	DIR *dir;
 	struct dirent *den;
 	struct stat st;
@@ -477,13 +563,23 @@ main(int argc, char **argv)
 	const char *logdirs[] = { "good", "bad", "run", "deps", "skipped" };
 	char *bpath, *rpath, *tmp, cwd[PATH_MAX];
 	size_t blen;
-	int ch;
+	int ch, NCores, rv;
+	bool RebuildSystem = false;
 	const struct option longopts[] = {
+		{ "system", no_argument, NULL, 's' },
+		{ "jobs", required_argument, NULL, 'j' },
+		{ "logdir", required_argument, NULL, 'l' },
+		{ "verbose", no_argument, NULL, 'v' },
+		{ "version", no_argument, NULL, 'V' },
+		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
 	};
 
-	while ((ch = getopt_long(argc, argv, "hj:l:vV", longopts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "hj:l:svV", longopts, NULL)) != -1) {
 		switch (ch) {
+		case 's':
+			RebuildSystem = true;
+			break;
 		case 'j':
 			NParallel = strtol(optarg, NULL, 0);
 			break;
@@ -509,6 +605,16 @@ main(int argc, char **argv)
 		usage(progname);
 		/* NOT REACHED */
 	}
+
+	/*
+	 * FIXME
+	 * Limit NParallel to max cores, due to program design
+	 * this won't work when it's higher, and we'd need to
+	 * synchronize shared data!
+	 */
+	NCores = (int)sysconf(_SC_NPROCESSORS_ONLN);
+	if (NParallel > NCores)
+		NParallel = NCores;
 
 	/*
 	 * Check masterdir is properly initialized.
@@ -561,6 +667,34 @@ main(int argc, char **argv)
 	}
 
 	/*
+	 * RebuildSystem: only rebuild packages that were installed
+	 * manually.
+	 */
+	if (RebuildSystem) {
+		rv = xbps_init(&xh);
+		if (rv != 0) {
+			fprintf(stderr, "ERROR: failed to initialize libxbps: %s", strerror(rv));
+			exit(EXIT_FAILURE);
+		}
+		array = xbps_array_create();
+		rv = xbps_pkgdb_foreach_cb_multi(&xh, pkgdb_get_pkgs_cb, &array);
+		if (rv != 0) {
+			fprintf(stderr, "ERROR: xbps_pkgdb_foreach_cb_multi: %s", strerror(rv));
+			exit(EXIT_FAILURE);
+		}
+		for (unsigned int i = 0; i < xbps_array_count(array); i++) {
+			const char *pkgname = NULL;
+
+			xbps_array_get_cstring_nocopy(array, i, &pkgname);
+			if (pkgname && !lookupItem(pkgname)) {
+				ordered_depends(bpath, pkgname);
+			}
+		}
+		xbps_end(&xh);
+		goto start;
+	}
+
+	/*
 	 * Generate dependency tree. This is done in two steps to know how
 	 * many packages will be built.
 	 */
@@ -606,9 +740,10 @@ main(int argc, char **argv)
 		}
 		(void)closedir(dir);
 	}
+start:
 	/*
-	 * Start building collected packages, keep the pipeline full
-	 * until both the BuildList and RunList have been exhausted.
+	 * Wait for all current builds to finish running, keep the pipeline
+	 * full until both the BuildList and RunList have been exhausted.
 	 */
 	free(rpath);
 	runBuilds(bpath);
