@@ -131,16 +131,14 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	if (chdir(repodir) == -1) {
 		fprintf(stderr, "xbps-rindex: cannot chdir to %s: %s\n",
 		    repodir, strerror(errno));
-		free(repo);
-		if(stage)
-			free(stage);
-		return errno;
+		rv = errno;
+		goto out;
 	}
 	if ((dirp = opendir(repodir)) == NULL) {
 		fprintf(stderr, "xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
-		free(repo);
-		return errno;
+		rv = errno;
+		goto out;
 	}
 	while ((dp = readdir(dirp))) {
 		if (strcmp(dp->d_name, "..") == 0)
@@ -159,9 +157,9 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	repos[0] = repo;
 	repos[1] = stage;
 	rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repos);
+out:
 	xbps_repo_release(repo);
-	if(stage)
-		xbps_repo_release(stage);
+	xbps_repo_release(stage);
 	xbps_object_release(array);
 
 	return rv;
