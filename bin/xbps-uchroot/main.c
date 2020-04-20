@@ -89,12 +89,14 @@ static SIMPLEQ_HEAD(bindmnt_head, bindmnt) bindmnt_queue =
 static void __attribute__((noreturn))
 usage(const char *p)
 {
-	printf("Usage: %s [-[B|b] src:dest] [-O -t -o <opts>] [--] <dir> <cmd> [<cmdargs>]\n\n"
-	    "-B src:dest Bind mounts <src> into <dir>/<dest> (read-only)\n"
-	    "-b src:dest Bind mounts <src> into <dir>/<dest> (read-write)\n"
-	    "-O          Creates a tempdir and mounts <dir> read-only via overlayfs\n"
-	    "-t          Creates a tempdir and mounts <dir> on tmpfs (for use with -O)\n"
-	    "-o opts     Options to be passed to the tmpfs mount (for use with -t)\n", p);
+	printf("Usage: %s [OPTIONS] [--] <dir> <cmd> [<cmdargs>]\n\n"
+	    "-B, --bind-ro <src:dest> Bind mounts <src> into <dir>/<dest> (read-only)\n"
+	    "-b, --bind-rw <src:dest> Bind mounts <src> into <dir>/<dest> (read-write)\n"
+	    "-O, --overlayfs          Creates a tempdir and mounts <dir> read-only via overlayfs\n"
+	    "-t, --tmpfs              Creates a tempdir and mounts <dir> on tmpfs (for use with -O)\n"
+	    "-o, --options <opts>     Options to be passed to the tmpfs mount (for use with -t)\n"
+	    "-V, --version            Show XBPS version\n"
+	    "-h, --help               Show usage\n\n", p);
 	exit(EXIT_FAILURE);
 }
 
@@ -329,13 +331,20 @@ main(int argc, char **argv)
 	pid_t child;
 	bool overlayfs = false;
 	const struct option longopts[] = {
+		{ "overlayfs", no_argument, NULL, 'O' },
+		{ "tmpfs", no_argument, NULL, 't' },
+		{ "options", required_argument, NULL, 'o' },
+		{ "bind-rw", required_argument, NULL, 'B' },
+		{ "bind-ro", required_argument, NULL, 'b' },
+		{ "version", no_argument, NULL, 'V' },
+		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
 	};
 
 	tmpfs_opts = rootdir = cmd = NULL;
 	argv0 = argv[0];
 
-	while ((c = getopt_long(argc, argv, "Oto:B:b:V", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "Oto:B:b:Vh", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'O':
 			overlayfs = true;
@@ -359,6 +368,7 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case 'h':
 		case '?':
 		default:
 			usage(argv0);
