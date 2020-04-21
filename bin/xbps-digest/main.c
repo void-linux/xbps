@@ -34,9 +34,9 @@
 #include <xbps.h>
 
 enum {
-	MODE_DEFAULT,
 	MODE_SHA256,
-	MODE_BLAKE3
+	MODE_BLAKE3,
+	MODE_DEFAULT = MODE_SHA256
 };
 
 static void __attribute__((noreturn))
