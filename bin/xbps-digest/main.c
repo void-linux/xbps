@@ -33,6 +33,12 @@
 
 #include <xbps.h>
 
+enum {
+	MODE_DEFAULT,
+	MODE_SHA256,
+	MODE_BLAKE3
+};
+
 static void __attribute__((noreturn))
 usage(bool fail)
 {
@@ -40,9 +46,9 @@ usage(bool fail)
 	"Usage: xbps-digest [options] [file] [file+N]\n"
 	"\n"
 	"OPTIONS\n"
-	" -h, --help           Show usage\n"
-	" -m, --mode <sha256>  Selects the digest mode, sha256 (default)\n"
-	" -V, --version        Show XBPS version\n"
+	" -h, --help                  Show usage\n"
+	" -m, --mode <blake3|sha256>  Digest mode (sha256 default)\n"
+	" -V, --version               Show XBPS version\n"
 	"\nNOTES\n"
 	" If [file] not set, reads from stdin\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -51,8 +57,8 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	int c;
-	char sha256[XBPS_SHA256_SIZE];
+	int c, dmode = MODE_DEFAULT;
+	char digest[XBPS_DIGEST_SIZE];
 	const char *mode = NULL, *progname = argv[0];
 	const struct option longopts[] = {
 		{ "mode", required_argument, NULL, 'm' },
@@ -82,26 +88,47 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (mode && strcmp(mode, "sha256")) {
-		/* sha256 is the only supported mode currently */
-		fprintf(stderr, "%s: unsupported digest mode\n", progname);
-		exit(EXIT_FAILURE);
+	if (mode) {
+		if (strcmp(mode, "blake3") == 0) {
+			dmode = MODE_BLAKE3;
+		} else if (strcmp(mode, "sha256") == 0) {
+			dmode = MODE_SHA256;
+		} else {
+			fprintf(stderr, "%s: unsupported digest mode %s\n", progname, mode);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (argc < 1) {
-		if (!xbps_file_sha256(sha256, sizeof sha256, "/dev/stdin"))
-			exit(EXIT_FAILURE);
+		if (dmode == MODE_BLAKE3) {
+			if (!xbps_file_blake3(digest, sizeof digest, "/dev/stdin"))
+				exit(EXIT_FAILURE);
 
-		printf("%s\n", sha256);
+		} else {
+			if (!xbps_file_sha256(digest, sizeof digest, "/dev/stdin"))
+				exit(EXIT_FAILURE);
+
+		}
+		printf("%s\n", digest);
+
 	} else {
 		for (int i = 0; i < argc; i++) {
-			if (!xbps_file_sha256(sha256, sizeof sha256, argv[i])) {
-				fprintf(stderr,
-				    "%s: couldn't get hash for %s (%s)\n",
-				progname, argv[i], strerror(errno));
-				exit(EXIT_FAILURE);
+			if (dmode == MODE_BLAKE3) {
+				if (!xbps_file_blake3(digest, sizeof digest, argv[i])) {
+					fprintf(stderr,
+					    "%s: couldn't get hash for %s (%s)\n",
+					progname, argv[i], strerror(errno));
+					exit(EXIT_FAILURE);
+				}
+			} else {
+				if (!xbps_file_sha256(digest, sizeof digest, argv[i])) {
+					fprintf(stderr,
+				            "%s: couldn't get hash for %s (%s)\n",
+					progname, argv[i], strerror(errno));
+					exit(EXIT_FAILURE);
+				}
 			}
-			printf("%s\n", sha256);
+			printf("%s\n", digest);
 		}
 	}
 	exit(EXIT_SUCCESS);

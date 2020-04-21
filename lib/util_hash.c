@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <limits.h>
 
+#include "external/blake3/blake3.h"
 #include <openssl/sha.h>
 
 #include "xbps_api_impl.h"
@@ -109,6 +110,54 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 }
 
 bool
+xbps_file_blake3_raw(unsigned char *dst, size_t dstlen, const char *file)
+{
+	int fd;
+	ssize_t len;
+	char buf[65536];
+	blake3_hasher hasher;
+
+	if (dstlen < XBPS_DIGEST_SIZE) {
+		errno = ENOBUFS;
+		return false;
+	}
+
+	if ((fd = open(file, O_RDONLY)) < 0)
+		return false;
+
+	blake3_hasher_init(&hasher);
+
+	while ((len = read(fd, buf, sizeof(buf))) > 0)
+		blake3_hasher_update(&hasher, buf, len);
+
+	(void)close(fd);
+
+	if (len == -1)
+		return false;
+
+	blake3_hasher_finalize(&hasher, dst, XBPS_BINDIGEST_SIZE);
+
+	return true;
+}
+
+bool
+xbps_file_blake3(char *dst, size_t dstlen, const char *file)
+{
+	unsigned char digest[XBPS_DIGEST_SIZE];
+
+	if (dstlen < XBPS_DIGEST_SIZE) {
+		errno = ENOBUFS;
+		return false;
+	}
+	if (!xbps_file_blake3_raw(digest, sizeof digest, file))
+		return false;
+
+	digest2string(digest, dst, XBPS_BINDIGEST_SIZE);
+
+	return true;
+}
+
+bool
 xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 {
 	int fd;
@@ -116,7 +165,6 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 	char buf[65536];
 	SHA256_CTX sha256;
 
-	assert(dstlen >= XBPS_SHA256_DIGEST_SIZE);
 	if (dstlen < XBPS_SHA256_DIGEST_SIZE) {
 		errno = ENOBUFS;
 		return false;
@@ -132,7 +180,7 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 
 	(void)close(fd);
 
-	if(len == -1)
+	if (len == -1)
 		return false;
 
 	SHA256_Final(dst, &sha256);
@@ -145,7 +193,6 @@ xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 {
 	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
-	assert(dstlen >= XBPS_SHA256_SIZE);
 	if (dstlen < XBPS_SHA256_SIZE) {
 		errno = ENOBUFS;
 		return false;

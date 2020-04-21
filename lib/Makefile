@@ -31,6 +31,21 @@ LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 # External code used by libxbps
 EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
 
+# blake3
+BLAKE3_POBJS  = external/blake3/blake3.o external/blake3/blake3_dispatch.o
+BLAKE3_POBJS += external/blake3/blake3_portable.o
+
+BLAKE3_EXTRA_OBJS += external/blake3/blake3_sse41.o
+BLAKE3_EXTRA_OBJS += external/blake3/blake3_avx2.o
+BLAKE3_EXTRA_OBJS += external/blake3/blake3_avx512.o
+
+BLAKE3_OBJS = $(BLAKE3_POBJS) $(BLAKE3_EXTRA_OBJS)
+BLAKE3_CFLAGS = -O3 -Wall -Wextra -pedantic -Wno-old-style-definition
+BLAKE3_CFLAGS += -Wno-declaration-after-statement
+ifdef HAVE_VISIBILITY
+BLAKE3_CFLAGS += -fvisibility=hidden
+endif
+
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o
 OBJS += package_remove.o package_state.o package_msg.o
@@ -54,6 +69,22 @@ OBJS += $(EXTOBJS) $(COMPAT_OBJS)
 .PHONY: all
 all: libxbps.so libxbps.a
 
+external/blake3/blake3_sse41.o: external/blake3/blake3_sse41.c
+	@printf " [CC]\t\t$@\n"
+	${SILENT}$(CC) $(BLAKE3_CFLAGS) -c $^ -o $@ -msse4.1
+
+external/blake3/blake3_avx2.o: external/blake3/blake3_avx2.c
+	@printf " [CC]\t\t$@\n"
+	${SILENT}$(CC) $(BLAKE3_CFLAGS) -c $^ -o $@ -mavx2
+
+external/blake3/blake3_avx512.o: external/blake3/blake3_avx512.c
+	@printf " [CC]\t\t$@\n"
+	${SILENT}$(CC) $(BLAKE3_CFLAGS) -c $^ -o $@ -mavx512f -mavx512vl
+
+$(BLAKE3_POBJS): %.o: %.c
+	@printf " [CC]\t\t$@\n"
+	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) $(BLAKE3_CFLAGS) -c $< -o $@
+
 fetch/ftperr.h: fetch/ftp.errors
 	@printf " [GEN]\t\t$@\n"
 	${SILENT}./fetch/errlist.sh ftp_errlist FTP $< > $@
@@ -76,13 +107,13 @@ $(OBJS): %.o: %.c
 	@printf " [CC]\t\t$@\n"
 	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
 
-libxbps.so: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
+libxbps.so: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(BLAKE3_OBJS) $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
 	${SILENT}$(CC) $^ $(LDFLAGS) -o $(LIBXBPS_SHLIB)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBXBPS_MAJOR)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
-libxbps.a: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
+libxbps.a: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(BLAKE3_OBJS) $(OBJS)
 	@printf " [AR]\t\t$@\n"
 	${SILENT}$(AR) rcs $@ $^
 	@printf " [RANLIB]\t$@\n"
@@ -102,5 +133,5 @@ uninstall:
 
 .PHONY: clean
 clean:
-	-rm -f libxbps* $(OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS)
+	-rm -f libxbps* $(OBJS) $(BLAKE3_OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS)
 	-rm -f $(LIBFETCH_GEN)
