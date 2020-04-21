@@ -54,7 +54,7 @@
 enum {
 	CRYPTOHASH_BLAKE3,
 	CRYPTOHASH_SHA256,
-	CRYPTOHASH_DEFAULT = CRYPTOHASH_BLAKE3
+	CRYPTOHASH_DEFAULT = CRYPTOHASH_SHA256
 };
 
 struct xentry {
@@ -108,7 +108,7 @@ usage(bool fail)
 	"                      'vi:/usr/bin/vi:/usr/bin/vim foo:/usr/bin/foo:/usr/bin/blah'\n"
 	" --build-options      A string with the used build options\n"
 	" --compression        Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
-	" --cryptohash         Crypto hash algorithm: blake3 (default) or sha256\n"
+	" --cryptohash         Crypto hash algorithm: blake3 or sha256 (default)\n"
 	" --shlib-provides     List of provided shared libraries (blank separated list,\n"
 	"                      e.g 'libfoo.so.1 libblah.so.2')\n"
 	" --shlib-requires     List of required shared libraries (blank separated list,\n"
@@ -968,10 +968,10 @@ main(int argc, char **argv)
 	/*
 	 * Sanity check cryptohash option.
 	 */
-	if (!cryptohash || strcmp(cryptohash, "blake3") == 0) {
+	if (!cryptohash || strcmp(cryptohash, "sha256") == 0) {
 		cryptohashmode = CRYPTOHASH_DEFAULT;
-	} else if (strcmp(cryptohash, "sha256") == 0) {
-		cryptohashmode = CRYPTOHASH_SHA256;
+	} else if (strcmp(cryptohash, "blake3") == 0) {
+		cryptohashmode = CRYPTOHASH_BLAKE3;
 	} else {
 		die("unsupported cryptohash algorithm: %s", cryptohash);
 	}
