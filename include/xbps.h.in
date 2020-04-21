@@ -1940,6 +1940,18 @@ bool xbps_file_blake3(char *dst, size_t len, const char *file);
 bool xbps_file_blake3_raw(unsigned char *dst, size_t len, const char *file);
 
 /**
+ * Compares the blake3 hash of the file \a file with the blake3
+ * string specified by \a blake3.
+ *
+ * @param[in] file Path to a file.
+ * @param[in] blake3 BLAKE3 hash to compare.
+ *
+ * @return 0 if \a file and \a blake3 have the same hash, ERANGE
+ * if it differs, or any other errno value on error.
+ */
+int xbps_file_blake3_check(const char *file, const char *blake3);
+
+/**
  * Computes a sha256 hex digest into \a dst of size \a len
  * from file \a file.
  *

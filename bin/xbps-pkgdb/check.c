@@ -73,9 +73,10 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		    const char *pkgname)
 {
 	xbps_dictionary_t opkgd, filesd;
-	const char *sha256;
+	const char *sha256 = NULL;
 	char *buf;
 	int rv = 0, errors = 0;
+	bool blake3mode = false;
 
 	filesd = opkgd = NULL;
 
@@ -91,7 +92,12 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	/*
 	 * Check pkg files metadata signature.
 	 */
-	if (xbps_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256)) {
+	if (xbps_dictionary_get_cstring_nocopy(opkgd, "metafile-blake3", &sha256)) {
+		blake3mode = true;
+	} else {
+		xbps_dictionary_get_cstring_nocopy(opkgd, "metafile-sha256", &sha256);
+	}
+	if (sha256) {
 		buf = xbps_xasprintf("%s/.%s-files.plist",
 		    xhp->metadir, pkgname);
 		assert(buf);
@@ -102,10 +108,15 @@ check_pkg_integrity(struct xbps_handle *xhp,
 			free(buf);
 			return -1;
 		}
-		rv = xbps_file_sha256_check(buf, sha256);
+		if (blake3mode) {
+			rv = xbps_file_blake3_check(buf, sha256);
+		} else {
+			rv = xbps_file_sha256_check(buf, sha256);
+		}
 		free(buf);
 		if (rv == ENOENT) {
 			xbps_dictionary_remove(opkgd, "metafile-sha256");
+			xbps_dictionary_remove(opkgd, "metafile-blake3");
 			fprintf(stderr, "%s: unexistent metafile, "
 			    "updating pkgdb.\n", pkgname);
 		} else if (rv == ERANGE) {

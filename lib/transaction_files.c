@@ -47,6 +47,7 @@ struct item {
 		const char *pkgname;
 		const char *pkgver;
 		char *sha256;
+		char *blake3;
 		const char *target;
 		uint64_t size;
 		enum type type;
@@ -305,8 +306,12 @@ collect_obsoletes(struct xbps_handle *xhp)
 		/*
 		 * Skip unexisting files and keep files with hash mismatch.
 		 */
-		if (item->old.sha256 != NULL) {
-			rv = xbps_file_sha256_check(item->file, item->old.sha256);
+		if (item->old.sha256 != NULL || item->old.blake3 != NULL) {
+			if (item->old.blake3) {
+				rv = xbps_file_blake3_check(item->file, item->old.blake3);
+			} else {
+				rv = xbps_file_sha256_check(item->file, item->old.sha256);
+			}
 			switch (rv) {
 			case 0:
 				/* hash matches, we can safely delete and/or overwrite it */
@@ -326,13 +331,13 @@ collect_obsoletes(struct xbps_handle *xhp)
 				 */
 				if (item->old.removepkg && !item->new.pkgname &&
 				    (xhp->flags & XBPS_FLAG_FORCE_REMOVE_FILES) != 0) {
-					xbps_dbg_printf(xhp, "[obsoletes] %s: SHA256 mismatch,"
+					xbps_dbg_printf(xhp, "[obsoletes] %s: hash mismatch,"
 					    " force remove %s: %s\n",
 						item->old.pkgname, typestr(item->old.type),
 					    item->file+1);
 					break;
 				}
-				xbps_dbg_printf(xhp, "[obsoletes] %s: SHA256 mismatch,"
+				xbps_dbg_printf(xhp, "[obsoletes] %s: hash mismatch,"
 				    " skipping remove %s: %s\n",
 				    item->old.pkgname, typestr(item->old.type),
 				    item->file+1);
@@ -420,7 +425,8 @@ collect_obsoletes(struct xbps_handle *xhp)
 static int
 collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 		const char *pkgname, const char *pkgver, unsigned int idx,
-		const char *sha256, enum type type, bool update, bool removepkg,
+		const char *sha256, const char *blake3,
+		enum type type, bool update, bool removepkg,
 		bool preserve, bool removefile, const char *target)
 {
 	struct item *item;
@@ -514,8 +520,11 @@ add:
 		item->old.update = update;
 		item->old.removepkg = removepkg;
 		item->old.target = target;
-		if (sha256)
+		if (sha256) {
 			item->old.sha256 = strdup(sha256);
+		} else if (blake3) {
+			item->old.blake3 = strdup(blake3);
+		}
 	} else {
 		item->new.pkgname = pkgname;
 		item->new.pkgver = pkgver;
@@ -558,18 +567,20 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 	uint64_t size;
 	unsigned int i;
 	int rv = 0;
-	const char *file, *sha256 = NULL;
+	const char *file, *sha256 = NULL, *blake3 = NULL;
 	bool error = false;
 
 	if ((a = xbps_dictionary_get(d, "files"))) {
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
-			if (removefile)
+			if (removefile) {
+				xbps_dictionary_get_cstring_nocopy(filed, "blake3", &blake3);
 				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
+			}
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
-			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
+			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256, blake3,
 			    TYPE_FILE, update, removepkg, preserve, removefile, NULL);
 			if (rv == EEXIST) {
 				error = true;
@@ -585,14 +596,16 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
-			if (removefile)
+			if (removefile) {
+				xbps_dictionary_get_cstring_nocopy(filed, "blake3", &blake3);
 				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
+			}
 #if 0
 			/* XXX: how to handle conf_file size */
 			if (removefile && stat(file, &st) != -1 && size != (uint64_t)st.st_size)
 				size = 0;
 #endif
-			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
+			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256, blake3,
 			    TYPE_CONFFILE, update, removepkg, preserve, removefile, NULL);
 			if (rv == EEXIST) {
 				error = true;
@@ -609,7 +622,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			xbps_dictionary_get_cstring_nocopy(filed, "target", &target);
 			assert(target);
-			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
+			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL, NULL,
 			    TYPE_LINK, update, removepkg, preserve, removefile, target);
 			if (rv == EEXIST) {
 				error = true;
@@ -623,7 +636,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
-			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
+			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL, NULL,
 			    TYPE_DIR, update, removepkg, preserve, removefile, NULL);
 			if (rv == EEXIST) {
 				error = true;
@@ -756,6 +769,8 @@ cleanup(void)
 		free(item->file);
 		free(item->old.sha256);
 		free(item->new.sha256);
+		free(item->old.blake3);
+		free(item->new.blake3);
 		free(item);
 	}
 	free(items);

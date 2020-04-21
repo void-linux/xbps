@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008-2015 Juan Romero Pardines.
+ * Copyright (c) 2008-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -117,7 +117,7 @@ xbps_file_blake3_raw(unsigned char *dst, size_t dstlen, const char *file)
 	char buf[65536];
 	blake3_hasher hasher;
 
-	if (dstlen < XBPS_DIGEST_SIZE) {
+	if (dstlen < XBPS_BINDIGEST_SIZE) {
 		errno = ENOBUFS;
 		return false;
 	}
@@ -143,7 +143,7 @@ xbps_file_blake3_raw(unsigned char *dst, size_t dstlen, const char *file)
 bool
 xbps_file_blake3(char *dst, size_t dstlen, const char *file)
 {
-	unsigned char digest[XBPS_DIGEST_SIZE];
+	unsigned char digest[XBPS_BINDIGEST_SIZE];
 
 	if (dstlen < XBPS_DIGEST_SIZE) {
 		errno = ENOBUFS;
@@ -165,7 +165,7 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 	char buf[65536];
 	SHA256_CTX sha256;
 
-	if (dstlen < XBPS_SHA256_DIGEST_SIZE) {
+	if (dstlen < XBPS_BINDIGEST_SIZE) {
 		errno = ENOBUFS;
 		return false;
 	}
@@ -191,9 +191,9 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 bool
 xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 {
-	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
+	unsigned char digest[XBPS_BINDIGEST_SIZE];
 
-	if (dstlen < XBPS_SHA256_SIZE) {
+	if (dstlen < XBPS_DIGEST_SIZE) {
 		errno = ENOBUFS;
 		return false;
 	}
@@ -201,22 +201,20 @@ xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
 		return false;
 
-	digest2string(digest, dst, XBPS_SHA256_DIGEST_SIZE);
+	digest2string(digest, dst, XBPS_BINDIGEST_SIZE);
 
 	return true;
 }
 
 static bool
-sha256_digest_compare(const char *sha256, size_t shalen,
+digest_compare(const char *sha256, size_t shalen,
 		const unsigned char *digest, size_t digestlen)
 {
 
-	assert(shalen == XBPS_SHA256_SIZE - 1);
-	if (shalen != XBPS_SHA256_SIZE -1)
+	if (shalen != XBPS_DIGEST_SIZE -1)
 		return false;
 
-	assert(digestlen == XBPS_SHA256_DIGEST_SIZE);
-	if (digestlen != XBPS_SHA256_DIGEST_SIZE)
+	if (digestlen != XBPS_BINDIGEST_SIZE)
 		return false;
 
 	for (; *sha256;) {
@@ -241,9 +239,26 @@ sha256_digest_compare(const char *sha256, size_t shalen,
 }
 
 int
+xbps_file_blake3_check(const char *file, const char *hexstr)
+{
+	unsigned char digest[XBPS_BINDIGEST_SIZE];
+
+	assert(file != NULL);
+	assert(hexstr != NULL);
+
+	if (!xbps_file_blake3_raw(digest, sizeof digest, file))
+		return errno;
+
+	if (!digest_compare(hexstr, strlen(hexstr), digest, sizeof digest))
+		return ERANGE;
+
+	return 0;
+}
+
+int
 xbps_file_sha256_check(const char *file, const char *sha256)
 {
-	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
+	unsigned char digest[XBPS_BINDIGEST_SIZE];
 
 	assert(file != NULL);
 	assert(sha256 != NULL);
@@ -251,14 +266,15 @@ xbps_file_sha256_check(const char *file, const char *sha256)
 	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
 		return errno;
 
-	if (!sha256_digest_compare(sha256, strlen(sha256), digest, sizeof digest))
+	if (!digest_compare(sha256, strlen(sha256), digest, sizeof digest))
 		return ERANGE;
 
 	return 0;
 }
 
 static const char *
-file_hash_dictionary(xbps_dictionary_t d, const char *key, const char *file)
+file_hash_dictionary(xbps_dictionary_t d, const char *key,
+		const char *file, bool *blake3)
 {
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
@@ -277,7 +293,19 @@ file_hash_dictionary(xbps_dictionary_t d, const char *key, const char *file)
 		xbps_dictionary_get_cstring_nocopy(obj,
 		    "file", &curfile);
 		if (strcmp(file, curfile) == 0) {
-			/* file matched */
+			/*
+			 * File matched, check hash string
+			 * object.
+			 *
+			 * Prefer blake3 if available and
+			 * fallback to sha256 otherwise.
+			 */
+			xbps_dictionary_get_cstring_nocopy(obj,
+			    "blake3", &sha256);
+			if (sha256) {
+				*blake3 = true;
+				break;
+			}
 			xbps_dictionary_get_cstring_nocopy(obj,
 			    "sha256", &sha256);
 			break;
@@ -296,15 +324,17 @@ xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 				const char *key,
 				const char *file)
 {
-	const char *sha256d = NULL;
+	const char *hexstr = NULL;
 	char *buf;
 	int rv;
+	bool blake3mode = false;
 
 	assert(xbps_object_type(d) == XBPS_TYPE_DICTIONARY);
 	assert(key != NULL);
 	assert(file != NULL);
 
-	if ((sha256d = file_hash_dictionary(d, key, file)) == NULL) {
+	hexstr = file_hash_dictionary(d, key, file, &blake3mode);
+	if (!hexstr) {
 		if (errno == ENOENT)
 			return 1; /* no match, file not found */
 
@@ -312,10 +342,18 @@ xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 	}
 
 	if (strcmp(xhp->rootdir, "/") == 0) {
-		rv = xbps_file_sha256_check(file, sha256d);
+		if (!blake3mode) {
+			rv = xbps_file_sha256_check(file, hexstr);
+		} else {
+			rv = xbps_file_blake3_check(file, hexstr);
+		}
 	} else {
 		buf = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-		rv = xbps_file_sha256_check(buf, sha256d);
+		if (!blake3mode) {
+			rv = xbps_file_sha256_check(buf, hexstr);
+		} else {
+			rv = xbps_file_blake3_check(buf, hexstr);
+		}
 		free(buf);
 	}
 	if (rv == 0)
