@@ -120,7 +120,21 @@ keep_on_update_body() {
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
+	# No update because -f wasn't set
+	xbps-install -r root --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal $out A-1.0_1
+	out=$(xbps-query -r root -p hold A)
+	atf_check_equal $out yes
 	xbps-install -r root --repository=$PWD/repo -yuvd A
+	atf_check_equal $? 0
+	out=$(xbps-query -r root -p pkgver A)
+	atf_check_equal $out A-1.0_1
+	out=$(xbps-query -r root -p hold A)
+	atf_check_equal $out yes
+	# Update with -f set
+	xbps-install -r root --repository=$PWD/repo -yuvfd A
 	atf_check_equal $? 0
 	out=$(xbps-query -r root -p pkgver A)
 	atf_check_equal $out A-1.1_1

@@ -63,8 +63,12 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 	const char *repoloc, *repopkgver, *instpkgver, *pkgname;
 	char buf[XBPS_NAME_SIZE] = {0};
 	int rv = 0;
+	bool force = false;
 
 	assert(pkg != NULL);
+
+	if (xhp->flags & XBPS_FLAG_FORCE_INSTALL)
+		force = true;
 
 	/*
 	 * Find out if pkg is installed first.
@@ -195,11 +199,17 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		return rv;
 	}
 
-	if (ttype != XBPS_TRANS_HOLD) {
-		if (state == XBPS_PKG_STATE_UNPACKED)
-			ttype = XBPS_TRANS_CONFIGURE;
-		else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
-			ttype = XBPS_TRANS_INSTALL;
+	if (state == XBPS_PKG_STATE_UNPACKED)
+		ttype = XBPS_TRANS_CONFIGURE;
+	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
+		ttype = XBPS_TRANS_INSTALL;
+
+	/*
+	 * If package is on hold mode, only perform downgrade/update/reinstall
+	 * if XBPS_FLAG_FORCE_INSTALL is set.
+	 */
+	if (!force && xbps_dictionary_get(pkg_repod, "hold")) {
+		ttype = XBPS_TRANS_HOLD;
 	}
 	/*
 	 * Store pkgd from repo into the transaction.

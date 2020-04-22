@@ -155,6 +155,7 @@ main(int argc, char **argv)
 			break;
 		case 'f':
 			fflag++;
+			flags |= XBPS_FLAG_FORCE_INSTALL;
 			if (fflag > 1)
 				flags |= XBPS_FLAG_FORCE_UNPACK;
 			reinstall = true;

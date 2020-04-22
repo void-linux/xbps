@@ -51,7 +51,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20200414"
+#define XBPS_API_VERSION	"20200422"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -239,6 +239,14 @@
  * Must be set through the xbps_handle::flags member.
  */
 #define XBPS_FLAG_KEEP_CONFIG 		0x00010000
+
+/**
+ * @def XBPS_FLAG_FORCE_INSTALL
+ * Force installation (or reinstallation, update, downgrade)
+ * for pkgs on hold or repolock mode.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_FORCE_INSTALL 	0x00020000
 
 /**
  * @def XBPS_FETCH_CACHECONN
