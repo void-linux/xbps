@@ -22,3 +22,5 @@ internal use in the code:
 
 - uthash-2.1.0 (include/uthash.h) from
   http://troydhanson.github.com/uthash/
+
+- blake3 from https://github.com/BLAKE3-team/BLAKE3/tree/master/c

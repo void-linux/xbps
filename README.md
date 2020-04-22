@@ -17,12 +17,12 @@ documented API provided by the XBPS Library that is the basis for its frontends
 to handle binary packages and repositories. Some highlights:
 
  * Supports **multiple local/remote repositories** (HTTP/HTTPS/FTP).
- * **RSA signed remote repositories** (NEW in 0.27).
+ * **RSA** signed binary packages and repositories (NEW in 0.27).
  * Supports **multiple compression formats** for repositories:
    gzip (zlib), bzip2, lz4, xz, [zstd](https://github.com/facebook/zstd) (default).
  * Supports **multiple compression formats** for package archives:
    gzip (zlib), bzip2, lz4, xz, [zstd](https://github.com/facebook/zstd) (default).
- * **SHA256 hashes** for package metadata, files and binary packages.
+ * **BLAKE3** and **SHA256** hashes for package metadata, files and binary packages.
  * Supports **package states** (ala dpkg) to mitigate broken package
    installs/updates.
  * Ability to **resume** partial package install/updates.

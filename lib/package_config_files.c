@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009-2014 Juan Romero Pardines.
+ * Copyright (c) 2009-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	char buf[PATH_MAX], sha256_cur[XBPS_SHA256_SIZE];
 	const char *sha256_orig = NULL;
 	int rv = 0;
+	bool blake3mode = false;
 
 	assert(xbps_object_type(binpkg_filesd) == XBPS_TYPE_DICTIONARY);
 	assert(entry);
@@ -115,7 +116,13 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			    "file", &cffile);
 			snprintf(buf, sizeof(buf), ".%s", cffile);
 			if (strcmp(entry_pname, buf) == 0) {
-				xbps_dictionary_get_cstring_nocopy(obj2, "sha256", &sha256_orig);
+				if (xbps_dictionary_get_cstring_nocopy(obj2,
+				    "blake3", &sha256_orig)) {
+					blake3mode = true;
+				} else {
+					xbps_dictionary_get_cstring_nocopy(obj2,
+					    "sha256", &sha256_orig);
+				}
 				break;
 			}
 		}
@@ -140,7 +147,12 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		if (strcmp(entry_pname, buf)) {
 			continue;
 		}
-		if (!xbps_file_sha256(sha256_cur, sizeof sha256_cur, buf)) {
+		if (blake3mode) {
+			rv = xbps_file_blake3(sha256_cur, sizeof sha256_cur, buf);
+		} else {
+			rv = xbps_file_sha256(sha256_cur, sizeof sha256_cur, buf);
+		}
+		if (!rv) {
 			if (errno == ENOENT) {
 				/*
 				 * File not installed, install new one.
@@ -154,7 +166,11 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 				break;
 			}
 		}
-		xbps_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
+		if (blake3mode) {
+			xbps_dictionary_get_cstring_nocopy(obj, "blake3", &sha256_new);
+		} else {
+			xbps_dictionary_get_cstring_nocopy(obj, "sha256", &sha256_new);
+		}
 		/*
 		 * Orig = X, Curr = X, New = X
 		 *

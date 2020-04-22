@@ -98,8 +98,8 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	 * Create a hash for the pkg's metafile if it exists.
 	 */
 	buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
-	if (xbps_file_sha256(sha256, sizeof sha256, buf)) {
-		xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
+	if (xbps_file_blake3(sha256, sizeof sha256, buf)) {
+		xbps_dictionary_set_cstring(pkgd, "metafile-blake3", sha256);
 	}
 	free(buf);
 	/*

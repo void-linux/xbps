@@ -51,7 +51,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20200414"
+#define XBPS_API_VERSION	"20200421"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -259,16 +259,18 @@
 #define XBPS_FETCH_TIMEOUT		30
 
 /**
- * @def XBPS_SHA256_DIGEST_SIZE
- * The size for a binary SHA256 digests.
+ * @def XBPS_BINDIGEST_SIZE
+ * The size for a binary digest.
  */
-#define XBPS_SHA256_DIGEST_SIZE		32
+#define XBPS_BINDIGEST_SIZE		32
+#define XBPS_SHA256_DIGEST_SIZE 	XBPS_BINDIGEST_SIZE
 
 /**
- * @def XBPS_SHA256_SIZE
- * The size for a hex string SHA256 hash.
+ * @def XBPS_DIGEST_SIZE
+ * The size for a hex string hash.
  */
-#define XBPS_SHA256_SIZE		(XBPS_SHA256_DIGEST_SIZE*2)+1
+#define XBPS_DIGEST_SIZE		(XBPS_BINDIGEST_SIZE*2)+1
+#define XBPS_SHA256_SIZE		XBPS_DIGEST_SIZE
 
 #ifdef __cplusplus
 extern "C" {
@@ -1914,11 +1916,47 @@ char *xbps_xasprintf(const char *fmt, ...)__attribute__ ((format (printf, 1, 2))
 bool xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen);
 
 /**
+ * Computes a blake3 hex digest into \a dst of size \a len
+ * from file \a file.
+ *
+ * @param[out] dst Destination buffer.
+ * @param[in] len Size of \a dst must be at least XBPS_DIGEST_SIZE.
+ * @param[in] file The file to read.
+ *
+ * @return true on success, false otherwise.
+ */
+bool xbps_file_blake3(char *dst, size_t len, const char *file);
+
+/**
+ * Computes a blake3 binary digest into \a dst of size \a len
+ * from file \a file.
+ *
+ * @param[out] dst Destination buffer.
+ * @param[in] len Size of \a dst must be at least XBPS_BINDIGEST_SIZE.
+ * @param[in] file The file to read.
+ *
+ * @return true on success, false otherwise.
+ */
+bool xbps_file_blake3_raw(unsigned char *dst, size_t len, const char *file);
+
+/**
+ * Compares the blake3 hash of the file \a file with the blake3
+ * string specified by \a blake3.
+ *
+ * @param[in] file Path to a file.
+ * @param[in] blake3 BLAKE3 hash to compare.
+ *
+ * @return 0 if \a file and \a blake3 have the same hash, ERANGE
+ * if it differs, or any other errno value on error.
+ */
+int xbps_file_blake3_check(const char *file, const char *blake3);
+
+/**
  * Computes a sha256 hex digest into \a dst of size \a len
  * from file \a file.
  *
  * @param[out] dst Destination buffer.
- * @param[in] len Size of \a dst must be at least XBPS_SHA256_LENGTH.
+ * @param[in] len Size of \a dst must be at least XBPS_DIGEST_SIZE.
  * @param[in] file The file to read.
  *
  * @return true on success, false otherwise.
@@ -1930,7 +1968,7 @@ bool xbps_file_sha256(char *dst, size_t len, const char *file);
  * from file \a file.
  *
  * @param[out] dst Destination buffer.
- * @param[in] len Size of \a dst must be at least XBPS_SHA256_DIGEST_SIZE_LENGTH.
+ * @param[in] len Size of \a dst must be at least XBPS_BINDIGEST_SIZE.
  * @param[in] file The file to read.
  *
  * @return true on success, false otherwise.
