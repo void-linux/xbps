@@ -35,15 +35,11 @@ int HIDDEN
 xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 {
 	xbps_array_t replaces;
-	xbps_dictionary_t pkgd, pkgdbd;
-	xbps_object_t obj;
+	xbps_dictionary_t pkgd;
 	time_t t;
-	struct tm tm;
-	struct tm *tmp;
+	struct tm tm, *tmp;
 	const char *pkgver, *pkgname;
-	char sha256[XBPS_SHA256_SIZE];
-	char outstr[64];
-	char *buf;
+	char sha256[XBPS_SHA256_SIZE], outstr[64], *buf;
 	int rv = 0;
 	bool autoinst = false;
 
@@ -106,23 +102,6 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 		xbps_dictionary_set_cstring(pkgd, "metafile-sha256", sha256);
 	}
 	free(buf);
-	/*
-	 * Keep objects stored in pkgdb (if found).
-	 */
-	if ((pkgdbd = xbps_pkgdb_get_pkg(xhp, pkgname))) {
-		obj = xbps_dictionary_get(pkgdbd, "hold");
-		if (obj) {
-			xbps_dictionary_set(pkgd, "hold", obj);
-		}
-		obj = xbps_dictionary_get(pkgdbd, "repolock");
-		if (obj) {
-			xbps_dictionary_set(pkgd, "repolock", obj);
-		}
-		obj = xbps_dictionary_get(pkgdbd, "automatic-install");
-		if (obj) {
-			xbps_dictionary_set(pkgd, "automatic-install", obj);
-		}
-	}
 	/*
 	 * Remove self replacement when applicable.
 	 */

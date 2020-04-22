@@ -56,13 +56,13 @@ static int
 trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 {
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
+	xbps_object_t obj;
 	xbps_array_t pkgs;
 	pkg_state_t state = 0;
 	xbps_trans_type_t ttype;
 	const char *repoloc, *repopkgver, *instpkgver, *pkgname;
 	char buf[XBPS_NAME_SIZE] = {0};
 	int rv = 0;
-	bool autoinst = false, repolock = false;
 
 	assert(pkg != NULL);
 
@@ -97,8 +97,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		} else {
 			ttype = XBPS_TRANS_UPDATE;
 		}
-		xbps_dictionary_get_bool(pkg_pkgdb, "repolock", &repolock);
-		if (repolock) {
+		if (xbps_dictionary_get(pkg_pkgdb, "repolock")) {
 			struct xbps_repo *repo;
 			/* find update from repo */
 			xbps_dictionary_get_cstring_nocopy(pkg_pkgdb, "repository", &repoloc);
@@ -152,10 +151,12 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		/*
 		 * If pkg is already installed, respect some properties.
 		 */
-		if (xbps_dictionary_get_bool(pkg_pkgdb, "automatic-install", &autoinst))
-			xbps_dictionary_set_bool(pkg_repod, "automatic-install", autoinst);
-		if (xbps_dictionary_get_bool(pkg_pkgdb, "repolock", &repolock))
-			xbps_dictionary_set_bool(pkg_repod, "repolock", repolock);
+		if ((obj = xbps_dictionary_get(pkg_pkgdb, "automatic-install")))
+			xbps_dictionary_set(pkg_repod, "automatic-install", obj);
+		if ((obj = xbps_dictionary_get(pkg_pkgdb, "hold")))
+			xbps_dictionary_set(pkg_repod, "hold", obj);
+		if ((obj = xbps_dictionary_get(pkg_pkgdb, "repolock")))
+			xbps_dictionary_set(pkg_repod, "repolock", obj);
 	}
 	/*
 	 * Prepare transaction dictionary.
