@@ -494,7 +494,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *pkgname, const char *pkgve
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array, array2, array_repo;
 		xbps_object_t keysym;
-		const char *keyname, *first;
+		const char *keyname, *first = NULL;
 
 		keysym = xbps_array_get(allkeys, i);
 		array = xbps_dictionary_get_keysym(pkgd_alts, keysym);

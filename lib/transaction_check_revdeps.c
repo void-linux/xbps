@@ -215,7 +215,7 @@ xbps_transaction_check_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			}
 
 			for (unsigned int j = 0; j < xbps_array_count(rundeps); j++) {
-				const char *curdep;
+				const char *curdep = NULL;
 
 				xbps_array_get_cstring_nocopy(rundeps, j, &curdep);
 				if ((!xbps_pkgpattern_name(curdepname, sizeof(curdepname), curdep)) &&

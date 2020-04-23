@@ -539,14 +539,16 @@ pkgdb_get_pkgs_cb(struct xbps_handle *xhp UNUSED,
 		void *arg, bool *done UNUSED)
 {
 	xbps_array_t *array = arg;
-	const char *pkgname;
+	const char *pkgname = NULL;
 	bool automatic = false;
 
 	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
 	if (automatic)
 		return 0;
 
-	xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+	if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname))
+		return EINVAL;
+
 	xbps_array_add_cstring_nocopy(*array, pkgname);
 	return 0;
 }

@@ -428,7 +428,7 @@ create_dot_graph(struct xbps_handle *xhp,
 {
 	xbps_dictionary_t sub_confd;
 	xbps_array_t allkeys, rdeps;
-	const char *pkgver, *cfprop;
+	const char *pkgver = NULL, *cfprop;
 
 	xbps_dictionary_get_cstring_nocopy(plistd, "pkgver", &pkgver);
 

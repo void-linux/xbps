@@ -114,7 +114,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 				}
 				/* verify all revdeps are seen */
 				for (unsigned int i = 0; i < revdepscnt; i++) {
-					const char *revdepver;
+					const char *revdepver = NULL;
 
 					xbps_array_get_cstring_nocopy(revdeps, i, &revdepver);
 					if (xbps_find_pkg_in_array(array, revdepver, 0))
