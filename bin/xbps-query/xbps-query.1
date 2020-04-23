@@ -1,4 +1,4 @@
-.Dd June 12, 2019
+.Dd April 23, 2020
 .Dt XBPS-QUERY 1
 .Sh NAME
 .Nm xbps-query
@@ -51,6 +51,30 @@ Example:
 .El
 .Pp
 The first repository matching the package expression wins.
+.Sh PACKAGE MODES
+An installed package can have some specific modes of operation.
+Currently the following modes are available:
+.Bl -tag -width -x
+.It Sy hold
+The package is on hold mode.
+Packages in this mode won't be updated unless it's explicitely declared to be updated.
+The only way to update packages in this mode is by using the
+.Fl f, Fl -force
+option.
+To list packages in this mode use
+.Nm xbps-query Fl H .
+.It Sy manual
+The package is in manual mode of installation and won't be considered for
+removal when running
+.Nm xbps-remove Fl o .
+To list packages in this mode use
+.Nm xbps-query Fl m .
+.It Sy repolock
+A package in repolock mode will only accept updates that are available in the
+same repository that was used for installing.
+To list packages in this mode use
+.Nm xbps-query Fl -list-repolock-pkgs .
+.El
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl C, Fl -config Ar dir
@@ -72,19 +96,22 @@ Only repositories specified in the command line via
 will be used.
 .It Fl M, Fl -memory-sync
 For remote repositories, the data is fetched and stored in memory for the current
-operation. This ignores the existing on-disk repository archives in rootdir.
+operation.
+This ignores the existing on-disk repository archives in rootdir.
 .It Fl p, Fl -property Ar PROP[,...]
 Only match this package property.
 Multiple properties can be specified by delimiting them with commas.
 .It Fl R
-Enable repository mode. This mode explicitly looks in repositories, rather
+Enable repository mode.
+This mode explicitly looks in repositories, rather
 than looking in the target root directory.
 .It Fl -repository=url
-Appends the specified repository to the top of the list. The
+Appends the specified repository to the top of the list.
+The
 .Ar url
 argument expects a URL to the repository for remote repositories or
-a path for local repositories.  Note that remote repositories must be signed
-using
+a path for local repositories.
+Note that remote repositories must be signed using
 .Xr xbps-rindex 1 .
 This option can be specified multiple times.
 .It Fl -regex
@@ -136,17 +163,17 @@ and can be fully removed with
 .Sy ??
 Package state is unknown.
 .El
-.It Fl H, Fl -list-hold-pkgs
-List registered packages in the package database (pkgdb) that are on
-.Sy hold .
-Such packages won't be updated automatically.
 .It Fl L, Fl -list-repos
-Lists repositories and the number of packages contained on them. If a repository is not
-available the number of packages will be
+Lists repositories and the number of packages contained on them.
+If a repository is not available the number of packages will be
 .Sy -1 .
 The
 .Fl v
 option can be used to show more detailed information of remote repositories.
+.It Fl H, Fl -list-hold-pkgs
+List registered packages in the package database (pkgdb) that are on
+.Sy hold .
+Such packages won't be updated automatically.
 .It Fl m, Fl -list-manual-pkgs
 Lists registered packages in the package database (pkgdb) that were installed
 manually by the user (i.e not as dependency of any package).
@@ -154,6 +181,11 @@ manually by the user (i.e not as dependency of any package).
 Lists package orphans in the package database (pkgdb), i.e packages that
 were installed as dependencies and no package is currently depending on them
 directly.
+.It Fl -list-repolock-pkgs
+Lists packages that are in repolock mode.
+See the
+.Em PACKAGE MODES
+section for more information.
 .It Fl o, Fl -ownedby Ar PATTERN [ Fl -repository ] [ Fl -regex ]
 Search for installed package files by matching
 .Ar PATTERN .
@@ -172,8 +204,8 @@ option is set, the matched
 .Ar PATTERN
 in repositories will be shown.
 .It Fl S, Fl -show Ar PKG [ Fl -repository ] [ Fl -property Ar PROP ]
-Shows information of an installed package. This is the default mode
-if no other mode is set.
+Shows information of an installed package.
+This is the default mode if no other mode is set.
 If the
 .Fl -repository
 option is set, the matched
@@ -189,7 +221,8 @@ on its
 .Em pkgver
 and/or
 .Em short_desc
-properties. The same rules explained in the
+properties.
+The same rules explained in the
 .Fl -ownedby
 option are applied, but a
 .Sy PACKAGE EXPRESSION
@@ -212,7 +245,8 @@ in repositories will be shown.
 .It Fl x, Fl -deps Ar PKG [ Fl -repository ]
 Show the required dependencies for
 .Ar PKG .
-Only direct dependencies are shown. To see a full dependency tree, also set
+Only direct dependencies are shown.
+To see a full dependency tree, also set
 .Fl -fulldeptree .
 If the
 .Fl -repository
@@ -232,7 +266,8 @@ Prints the file
 .Ar FILE
 stored in binary package
 .Ar PKG
-to stdout. The first repository matching the
+to stdout.
+The first repository matching the
 .Ar PKG
 expression wins.
 This expects an absolute path.
@@ -243,10 +278,12 @@ This mode only works with repositories.
 .It Sy XBPS_ARCH
 Overrides
 .Xr uname 2
-machine result with this value. Useful to install packages with a fake
+machine result with this value.
+Useful to install packages with a fake
 architecture.
 .It Sy XBPS_TARGET_ARCH
-Sets the target architecture to this value. This variable differs from
+Sets the target architecture to this value.
+This variable differs from
 .Sy XBPS_ARCH
 in that it allows you to install packages partially, because
 configuration phase is skipped (the target binaries might not be compatible with
@@ -283,7 +320,7 @@ Default cache directory to store downloaded binary packages.
 .Sh AUTHORS
 .An Juan Romero Pardines <xtraeme@gmail.com>
 .Sh BUGS
-Probably, but I try to make this not happen. Use it under your own
-responsibility and enjoy your life.
+Probably, but I try to make this not happen.
+Use it under your own responsibility and enjoy your life.
 .Pp
 Report bugs at https://github.com/void-linux/xbps/issues
