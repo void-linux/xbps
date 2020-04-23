@@ -56,6 +56,31 @@ Example:
 .El
 .Pp
 The first repository matching the package expression wins.
+.Sh PACKAGE MODES
+An installed package can have some specific modes of operation.
+Currently the following modes are available:
+.Bl -tag -width -x
+.It Sy hold
+The package is on hold mode.
+Packages in this mode won't be updated unless
+it's explicitely declared to be updated.
+The only way to update packages in this mode is by using the
+.Fl f, Fl -force
+option.
+To list packages in this mode use
+.Nm xbps-query Fl H .
+.It Sy manual
+The package is in manual mode of installation and won't be considered for
+removal when running
+.Nm xbps-remove Fl o .
+To list packages in this mode use
+.Nm xbps-query Fl m .
+.It Sy repolock
+A package in repolock mode will only accept updates that are available in the
+same repository that was used for installing.
+To list packages in this mode use
+.Nm xbps-query Fl -list-repolock-pkgs .
+.El
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl A, Fl -automatic
@@ -101,20 +126,25 @@ Only repositories specified in the command line via
 will be used.
 .It Fl M, Fl -memory-sync
 For remote repositories, the data is fetched and stored in memory for the current
-operation. This ignores the existing on-disk repository archives in rootdir.
+operation.
+This ignores the existing on-disk repository archives in rootdir.
 .It Fl n, Fl -dry-run
-Dry-run mode. Show what actions would be done but don't do anything. The current output
-prints 6 arguments: "<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
+Dry-run mode.
+Show what actions would be done but don't do anything.
+The current output prints 6 arguments:
+"<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
 .It Fl R, Fl -repository Ar url
-Appends the specified repository to the top of the list. The
+Appends the specified repository to the top of the list.
+The
 .Ar url
 argument expects a URL to the repository for remote repositories or
-a path for local repositories. Note that remote repositories must be signed
-using
+a path for local repositories.
+Note that remote repositories must be signed using
 .Xr xbps-rindex 1 .
 This option can be specified multiple times.
 .It Fl -reproducible
-Enables reproducible mode in pkgdb. The
+Enables reproducible mode in pkgdb.
+The
 .Ar install-date
 and
 .Ar repository
@@ -125,7 +155,8 @@ Specifies a full path for the target root directory.
 Synchronize remote repository index files.
 .It Fl U, Fl -unpack-only
 If set, packages to be installed or upgraded in the transaction won't be configured,
-just unpacked. That means that those packages should be reconfigured via
+just unpacked.
+That means that those packages should be reconfigured via
 .Xr xbps-reconfigure 1 .
 .It Fl u, Fl -update
 Performs a full system upgrade: all installed packages
@@ -195,10 +226,11 @@ When -1, waits indefinitely.
 .It Sy XBPS_ARCH
 Overrides
 .Xr uname 2
-machine result with this value. Useful to install packages with a fake
-architecture.
+machine result with this value.
+Useful to install packages with a fake architecture
 .It Sy XBPS_TARGET_ARCH
-Sets the target architecture to this value. This variable differs from
+Sets the target architecture to this value.
+This variable differs from
 .Sy XBPS_ARCH
 in that it allows you to install packages partially, because
 configuration phase is skipped (the target binaries might not be compatible with
@@ -235,7 +267,8 @@ Default cache directory to store downloaded binary packages.
 .Sh AUTHORS
 .An Juan Romero Pardines <xtraeme@gmail.com>
 .Sh BUGS
-Probably, but I try to make this not happen. Use it under your own
+Probably, but I try to make this not happen.
+Use it under your own
 responsibility and enjoy your life.
 .Pp
 Report bugs at https://github.com/void-linux/xbps/issues
