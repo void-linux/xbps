@@ -53,7 +53,7 @@
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 static int
-trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
+trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 {
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
 	xbps_object_t obj;
@@ -92,7 +92,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 			return ENOENT;
 		}
 	} else {
-		if (reinstall) {
+		if (force) {
 			ttype = XBPS_TRANS_REINSTALL;
 		} else {
 			ttype = XBPS_TRANS_UPDATE;
@@ -195,12 +195,14 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 		return rv;
 	}
 
-	if (ttype != XBPS_TRANS_HOLD) {
-		if (state == XBPS_PKG_STATE_UNPACKED)
-			ttype = XBPS_TRANS_CONFIGURE;
-		else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
-			ttype = XBPS_TRANS_INSTALL;
-	}
+	if (state == XBPS_PKG_STATE_UNPACKED)
+		ttype = XBPS_TRANS_CONFIGURE;
+	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
+		ttype = XBPS_TRANS_INSTALL;
+
+	if (!force && xbps_dictionary_get(pkg_repod, "hold"))
+		ttype = XBPS_TRANS_HOLD;
+
 	/*
 	 * Store pkgd from repo into the transaction.
 	 */
@@ -318,9 +320,6 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 		char pkgname[XBPS_NAME_SIZE] = {0};
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
-		if (xbps_dictionary_get(pkgd, "hold")) {
-			continue;
-		}
 		if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
 			continue;
 		}
@@ -346,7 +345,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 }
 
 int
-xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
+xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 {
 	xbps_array_t rdeps;
 	int rv;
@@ -391,14 +390,13 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg)
 		}
 	}
 	/* add pkg repod */
-	rv = trans_find_pkg(xhp, pkg, false);
+	rv = trans_find_pkg(xhp, pkg, force);
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
 	return rv;
 }
 
 int
-xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
-			     bool reinstall)
+xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 {
 	xbps_array_t rdeps;
 	int rv;
@@ -441,7 +439,7 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg,
 			return rv;
 		}
 	}
-	rv = trans_find_pkg(xhp, pkg, reinstall);
+	rv = trans_find_pkg(xhp, pkg, force);
 	xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
 	return rv;
 }

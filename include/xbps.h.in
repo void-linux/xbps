@@ -51,7 +51,7 @@
  *
  * This header documents the full API for the XBPS Library.
  */
-#define XBPS_API_VERSION	"20200414"
+#define XBPS_API_VERSION	"20200423"
 
 #ifndef XBPS_VERSION
  #define XBPS_VERSION		"UNSET"
@@ -1186,8 +1186,8 @@ xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict, const c
  * @param[in] xhp Pointer to the xbps_handle struct.
  * @param[in] pkg Package name, package/version or package pattern to match, i.e
  * `foo', `foo-1.0_1' or `foo>=1.2'.
- * @param[in] reinstall If true, package will be queued (if \a str matches)
- * even if package is already installed.
+ * @param[in] Force If true, package will be queued (if \a str matches)
+ * even if package is already installed or in hold mode.
  *
  * @return 0 on success, otherwise an errno value.
  * @retval EEXIST Package is already installed (reinstall wasn't enabled).
@@ -1197,7 +1197,7 @@ xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict, const c
  * @retval EINVAL Any other error ocurred in the process.
  * @retval EBUSY The xbps package must be updated.
  */
-int xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall);
+int xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool force);
 
 /**
  * Marks a package as "going to be updated" in the transaction dictionary.
@@ -1210,6 +1210,8 @@ int xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool 
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
  * @param[in] pkgname The package name to update.
+ * @param[in] force If true, package will be queued (if \a str matches)
+ * even if package is already installed or in hold mode.
  *
  * @return 0 on success, otherwise an errno value.
  * @retval EEXIST Package is already up-to-date.
@@ -1219,7 +1221,7 @@ int xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool 
  * @retval EINVAL Any other error ocurred in the process.
  * @retval EBUSY The xbps package must be updated.
  */
-int xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname);
+int xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname, bool force);
 
 /**
  * Finds newer versions for all installed packages by looking at the

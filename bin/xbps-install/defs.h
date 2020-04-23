@@ -43,11 +43,12 @@ struct transaction {
 	uint32_t cf_pkgcnt;
 	uint32_t rm_pkgcnt;
 	uint32_t dl_pkgcnt;
+	uint32_t hold_pkgcnt;
 };
 
 /* from transaction.c */
 int	install_new_pkg(struct xbps_handle *, const char *, bool);
-int	update_pkg(struct xbps_handle *, const char *);
+int	update_pkg(struct xbps_handle *, const char *, bool);
 int	dist_upgrade(struct xbps_handle *, unsigned int, bool, bool);
 int	exec_transaction(struct xbps_handle *, unsigned int, bool, bool);
 
@@ -65,5 +66,6 @@ int	state_cb(const struct xbps_state_cb_data *, void *);
 void	print_package_line(const char *, unsigned int, bool);
 bool	print_trans_colmode(struct transaction *, unsigned int);
 int	get_maxcols(void);
+const char	*ttype2str(xbps_dictionary_t);
 
 #endif /* !_XBPS_INSTALL_DEFS_H_ */

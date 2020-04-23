@@ -124,12 +124,12 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	const char *rootdir, *cachedir, *confdir;
 	int i, c, flags, rv, fflag = 0;
-	bool syncf, yes, reinstall, drun, update;
+	bool syncf, yes, force, drun, update;
 	int maxcols, eexist = 0;
 
 	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
-	syncf = yes = reinstall = drun = update = false;
+	syncf = yes = force = drun = update = false;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -157,7 +157,7 @@ main(int argc, char **argv)
 			fflag++;
 			if (fflag > 1)
 				flags |= XBPS_FLAG_FORCE_UNPACK;
-			reinstall = true;
+			force = true;
 			break;
 		case 'h':
 			usage(false);
@@ -258,7 +258,7 @@ main(int argc, char **argv)
 	} else if (update) {
 		/* Update target packages */
 		for (i = optind; i < argc; i++) {
-			rv = update_pkg(&xh, argv[i]);
+			rv = update_pkg(&xh, argv[i], force);
 			if (rv == EEXIST) {
 				/* pkg already updated, ignore */
 				rv = 0;
@@ -275,7 +275,7 @@ main(int argc, char **argv)
 	} else if (!update) {
 		/* Install target packages */
 		for (i = optind; i < argc; i++) {
-			rv = install_new_pkg(&xh, argv[i], reinstall);
+			rv = install_new_pkg(&xh, argv[i], force);
 			if (rv == EEXIST) {
 				/* pkg already installed, ignore */
 				rv = 0;

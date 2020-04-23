@@ -62,8 +62,10 @@ compute_transaction_stats(struct xbps_handle *xhp)
 	struct statvfs svfs;
 	uint64_t rootdir_free_size, tsize, dlsize, instsize, rmsize;
 	uint32_t inst_pkgcnt, up_pkgcnt, cf_pkgcnt, rm_pkgcnt, dl_pkgcnt;
+	uint32_t hold_pkgcnt;
 
-	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = dl_pkgcnt = 0;
+	inst_pkgcnt = up_pkgcnt = cf_pkgcnt = rm_pkgcnt = 0;
+	hold_pkgcnt = dl_pkgcnt = 0;
 	tsize = dlsize = instsize = rmsize = 0;
 
 	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
@@ -92,6 +94,8 @@ compute_transaction_stats(struct xbps_handle *xhp)
 			inst_pkgcnt++;
 		} else if (ttype == XBPS_TRANS_UPDATE) {
 			up_pkgcnt++;
+		} else if (ttype == XBPS_TRANS_HOLD) {
+			hold_pkgcnt++;
 		}
 
 		if ((ttype != XBPS_TRANS_CONFIGURE) && (ttype != XBPS_TRANS_REMOVE) &&
@@ -151,6 +155,9 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		return EINVAL;
 	if (!xbps_dictionary_set_uint32(xhp->transd,
 				"total-download-pkgs", dl_pkgcnt))
+		return EINVAL;
+	if (!xbps_dictionary_set_uint32(xhp->transd,
+				"total-hold-pkgs", hold_pkgcnt))
 		return EINVAL;
 	if (!xbps_dictionary_set_uint64(xhp->transd,
 				"total-installed-size", instsize))

@@ -47,38 +47,6 @@ print_array(xbps_array_t a)
 	}
 }
 
-static const char *
-ttype2str(xbps_dictionary_t pkg_repod)
-{
-	uint8_t r;
-
-	assert(pkg_repod);
-
-	if (!xbps_dictionary_get_uint8(pkg_repod, "transaction", &r))
-		return NULL;
-
-	switch (r) {
-	case XBPS_TRANS_INSTALL:
-		return "install";
-	case XBPS_TRANS_REINSTALL:
-		return "reinstall";
-	case XBPS_TRANS_UPDATE:
-		return "update";
-	case XBPS_TRANS_REMOVE:
-		return "remove";
-	case XBPS_TRANS_CONFIGURE:
-		return "configure";
-	case XBPS_TRANS_HOLD:
-		return "hold";
-	case XBPS_TRANS_DOWNLOAD:
-		return "download";
-	default:
-		return "unknown";
-	}
-
-	return NULL;
-}
-
 static void
 show_actions(xbps_object_iterator_t iter)
 {
@@ -123,7 +91,11 @@ show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned i
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		xbps_dictionary_get_bool(obj, "download", &dload);
-		tt = xbps_transaction_pkg_type(obj);
+		if (ttype == XBPS_TRANS_DOWNLOAD && dload) {
+			tt = XBPS_TRANS_DOWNLOAD;
+		} else {
+			tt = xbps_transaction_pkg_type(obj);
+		}
 
 		buf = NULL;
 		if (tt == XBPS_TRANS_UPDATE) {
@@ -135,7 +107,7 @@ show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned i
 			iversion = xbps_pkg_version(ipkgver);
 			buf = xbps_xasprintf("%s (%s -> %s)", pkgname, iversion, version);
 		}
-		if ((ttype && (ttype == tt)) || (!ttype && dload)) {
+		if (ttype == tt) {
 			if (buf) {
 				print_package_line(buf, cols, false);
 				free(buf);
@@ -154,49 +126,60 @@ show_transaction_sizes(struct transaction *trans, int cols)
 	uint64_t dlsize = 0, instsize = 0, rmsize = 0, disk_free_size = 0;
 	char size[8];
 
+	/*
+	 * Get stats from transaction dictionary.
+	 */
+	xbps_dictionary_get_uint32(trans->d, "total-download-pkgs",
+	    &trans->dl_pkgcnt);
+	xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
+	    &trans->inst_pkgcnt);
+	xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
+	    &trans->up_pkgcnt);
+	xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
+	    &trans->cf_pkgcnt);
+	xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
+	    &trans->rm_pkgcnt);
+	xbps_dictionary_get_uint32(trans->d, "total-hold-pkgs",
+	    &trans->hold_pkgcnt);
+
 	if (!print_trans_colmode(trans, cols)) {
 		/*
-		 * Show the list of packages that will be downloaded, installed, updated,
-		 * removed or configured.
+		 * Show the list of packages and its action.
 		 */
-		xbps_dictionary_get_uint32(trans->d, "total-download-pkgs",
-		    &trans->dl_pkgcnt);
 		if (trans->dl_pkgcnt) {
 			printf("%u package%s will be downloaded:\n",
 			    trans->dl_pkgcnt, trans->dl_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_DOWNLOAD, cols);
 			printf("\n");
 		}
-		xbps_dictionary_get_uint32(trans->d, "total-install-pkgs",
-		    &trans->inst_pkgcnt);
 		if (trans->inst_pkgcnt) {
 			printf("%u package%s will be installed:\n",
 			    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_INSTALL, cols);
 			printf("\n");
 		}
-		xbps_dictionary_get_uint32(trans->d, "total-update-pkgs",
-		    &trans->up_pkgcnt);
 		if (trans->up_pkgcnt) {
 			printf("%u package%s will be updated:\n",
 			    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_UPDATE, cols);
 			printf("\n");
 		}
-		xbps_dictionary_get_uint32(trans->d, "total-configure-pkgs",
-		    &trans->cf_pkgcnt);
 		if (trans->cf_pkgcnt) {
 			printf("%u package%s will be configured:\n",
 			    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_CONFIGURE, cols);
 			printf("\n");
 		}
-		xbps_dictionary_get_uint32(trans->d, "total-remove-pkgs",
-		    &trans->rm_pkgcnt);
 		if (trans->rm_pkgcnt) {
 			printf("%u package%s will be removed:\n",
 			    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_REMOVE, cols);
+			printf("\n");
+		}
+		if (trans->hold_pkgcnt) {
+			printf("%u package%s are on hold:\n",
+			    trans->hold_pkgcnt, trans->hold_pkgcnt == 1 ? "" : "s");
+			show_package_list(trans, XBPS_TRANS_HOLD, cols);
 			printf("\n");
 		}
 	}
@@ -294,11 +277,11 @@ dist_upgrade(struct xbps_handle *xhp, unsigned int cols, bool yes, bool drun)
 }
 
 int
-install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
+install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 {
 	int rv;
 
-	rv = xbps_transaction_install_pkg(xhp, pkg, reinstall);
+	rv = xbps_transaction_install_pkg(xhp, pkg, force);
 	if (rv == EEXIST)
 		printf("Package `%s' already installed.\n", pkg);
 	else if (rv == ENOENT)
@@ -317,11 +300,11 @@ install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool reinstall)
 }
 
 int
-update_pkg(struct xbps_handle *xhp, const char *pkg)
+update_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 {
 	int rv;
 
-	rv = xbps_transaction_update_pkg(xhp, pkg);
+	rv = xbps_transaction_update_pkg(xhp, pkg, force);
 	if (rv == EEXIST)
 		printf("Package '%s' is up to date.\n", pkg);
 	else if (rv == ENOENT)
@@ -441,11 +424,12 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 	 */
 	if ((rv = xbps_transaction_commit(xhp)) == 0) {
 		printf("\n%u downloaded, %u installed, %u updated, "
-		    "%u configured, %u removed.\n",
+		    "%u configured, %u removed, %u on hold.\n",
 		    trans->dl_pkgcnt, trans->inst_pkgcnt,
 		    trans->up_pkgcnt,
 		    trans->cf_pkgcnt + trans->inst_pkgcnt + trans->up_pkgcnt,
-		    trans->rm_pkgcnt);
+		    trans->rm_pkgcnt,
+		    trans->hold_pkgcnt);
 	} else {
 		fprintf(stderr, "Transaction failed! see above for errors.\n");
 	}

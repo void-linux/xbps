@@ -95,6 +95,38 @@ find_longest_pkgname(struct transaction *trans)
 	return max+1;
 }
 
+const char *
+ttype2str(xbps_dictionary_t pkgd)
+{
+	uint8_t r;
+
+	assert(pkgd);
+
+	if (!xbps_dictionary_get_uint8(pkgd, "transaction", &r))
+		return NULL;
+
+	switch (r) {
+	case XBPS_TRANS_INSTALL:
+		return "install";
+	case XBPS_TRANS_REINSTALL:
+		return "reinstall";
+	case XBPS_TRANS_UPDATE:
+		return "update";
+	case XBPS_TRANS_REMOVE:
+		return "remove";
+	case XBPS_TRANS_CONFIGURE:
+		return "configure";
+	case XBPS_TRANS_HOLD:
+		return "hold";
+	case XBPS_TRANS_DOWNLOAD:
+		return "download";
+	default:
+		return "unknown";
+	}
+
+	return NULL;
+}
+
 bool
 print_trans_colmode(struct transaction *trans, unsigned int cols)
 {
@@ -131,34 +163,9 @@ print_trans_colmode(struct transaction *trans, unsigned int cols)
 		xbps_dictionary_get_bool(obj, "download", &dload);
 
 		ttype = xbps_transaction_pkg_type(obj);
-
-		tract = "unknown";
+		tract = ttype2str(obj);
 		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 			tract = "download";
-		}
-
-		if (ttype == XBPS_TRANS_INSTALL) {
-			trans->inst_pkgcnt++;
-			tract = "install";
-		} else if (ttype == XBPS_TRANS_REINSTALL) {
-			trans->inst_pkgcnt++;
-			tract = "reinstall";
-		} else if (ttype == XBPS_TRANS_UPDATE) {
-			trans->up_pkgcnt++;
-			tract = "update";
-		} else if (ttype == XBPS_TRANS_REMOVE) {
-			trans->rm_pkgcnt++;
-			tract = "remove";
-		} else if (ttype == XBPS_TRANS_CONFIGURE) {
-			trans->cf_pkgcnt++;
-			tract = "configure";
-		} else if (ttype == XBPS_TRANS_HOLD) {
-			tract = "hold";
-		} else if (ttype == XBPS_TRANS_DOWNLOAD) {
-			tract = "download";
-		}
-		if (dload) {
-			trans->dl_pkgcnt++;
 		}
 
 		ipkgd = xbps_pkgdb_get_pkg(trans->xhp, pkgname);

@@ -1,4 +1,4 @@
-.Dd March 3, 2020
+.Dd April 23, 2020
 .Dt XBPS-INSTALL 1
 .Sh NAME
 .Nm xbps-install
@@ -78,11 +78,14 @@ This may be useful for doing system upgrades while offline, or automatically
 downloading updates while leaving you with the option of still manually running
 the update.
 .It Fl f, Fl -force
-Force downgrade installation (if package version in repos is less than installed version),
+Force installation (downgrade if package version in repos is less than installed version),
 or reinstallation (if package version in repos is the same) to the target
 .Ar PKG ,
 overwriting regular package files and symlinks (if they have been modified) but
 .Em preserving configuration files .
+The only way to update packages on
+.Em hold
+mode is by using this flag.
 If
 .Fl f
 is specified twice all files will be unpacked, even
