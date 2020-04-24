@@ -103,9 +103,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-[lib/compat/vasprintf.c]
+[lib/compat/vasprintf.c lib/plist_fetch.c]
 /*-
- * Copyright (c) 2007 Joerg Sonnenberger <joerg@NetBSD.org>.
+ * Copyright (c) 2007, 2008, 2009 Joerg Sonnenberger <joerg@NetBSD.org>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -132,9 +132,10 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
 [lib/compat/humanize_number.c, lib/external/fexec.c]
 /*
- * Copyright (c) 2003 The NetBSD Foundation, Inc.
+ * Copyright (c) 1997, 1998, 1999, 2002, 2003 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
