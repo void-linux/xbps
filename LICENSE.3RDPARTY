@@ -1,4 +1,4 @@
-[lib/mkpath.c, lib/compat/strcasestr.c, include/queue.h]
+[lib/external/mkpath.c, lib/external/strcasestr.c, include/queue.h]
 /*
  * Copyright (c) 1983, 1990, 1991, 1993
  *      The Regents of the University of California.  All rights reserved.
@@ -57,7 +57,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-[lib/download.c, lib/fetch]
+[lib/download.c, lib/external/fetch]
 /*-
  * Copyright (c) 2000-2004 Dag-Erling Coïdan Smørgrav
  * All rights reserved.
@@ -86,7 +86,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-[lib/compat/strlc{at,py}.c]
+[lib/external/strlc{at,py}.c]
 /*
  * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
  *
@@ -103,7 +103,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-[lib/compat/vasprintf.c lib/plist_fetch.c]
+[lib/external/vasprintf.c lib/plist_fetch.c]
 /*-
  * Copyright (c) 2007, 2008, 2009 Joerg Sonnenberger <joerg@NetBSD.org>.
  * All rights reserved.
@@ -133,7 +133,7 @@
  * SUCH DAMAGE.
  */
 
-[lib/compat/humanize_number.c, lib/external/fexec.c]
+[lib/external/humanize_number.c, lib/external/fexec.c]
 /*
  * Copyright (c) 1997, 1998, 1999, 2002, 2003 The NetBSD Foundation, Inc.
  * All rights reserved.

@@ -9,24 +9,24 @@ LIBXBPS_SHLIB = libxbps.so.$(LIBXBPS_MAJOR).$(LIBXBPS_MINOR).$(LIBXBPS_MICRO)
 LDFLAGS += $(LIBXBPS_LDFLAGS) -shared -Wl,-soname,libxbps.so.$(LIBXBPS_MAJOR)
 
 # portableproplib
-LIBPROP_OBJS += portableproplib/prop_array.o portableproplib/prop_bool.o
-LIBPROP_OBJS += portableproplib/prop_dictionary.o portableproplib/prop_ingest.o
-LIBPROP_OBJS += portableproplib/prop_object.o
-LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
-LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
-LIBPROP_OBJS += portableproplib/prop_dictionary_util.o portableproplib/prop_zlib.o
-LIBPROP_OBJS += portableproplib/prop_data.o
+LIBPROP_OBJS += external/portableproplib/prop_array.o external/portableproplib/prop_bool.o
+LIBPROP_OBJS += external/portableproplib/prop_dictionary.o external/portableproplib/prop_ingest.o
+LIBPROP_OBJS += external/portableproplib/prop_object.o
+LIBPROP_OBJS += external/portableproplib/prop_stack.o external/portableproplib/prop_string.o
+LIBPROP_OBJS += external/portableproplib/prop_array_util.o external/portableproplib/prop_number.o
+LIBPROP_OBJS += external/portableproplib/prop_dictionary_util.o external/portableproplib/prop_zlib.o
+LIBPROP_OBJS += external/portableproplib/prop_data.o
 LIBPROP_CFLAGS = -Wno-unused-parameter -fvisibility=hidden
 
 # libfetch
-LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
-LIBFETCH_OBJS += fetch/ftp.o fetch/http.o
+LIBFETCH_OBJS = external/fetch/common.o external/fetch/fetch.o external/fetch/file.o
+LIBFETCH_OBJS += external/fetch/ftp.o external/fetch/http.o
 LIBFETCH_CPPFLAGS = -DFTP_COMBINE_CWDS -DINET6 -DWITH_SSL
 ifdef HAVE_VISIBILITY
 LIBFETCH_CFLAGS= -fvisibility=hidden
 endif
-LIBFETCH_INCS = fetch/common.h
-LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
+LIBFETCH_INCS = external/fetch/common.h
+LIBFETCH_GEN = external/fetch/ftperr.h external/fetch/httperr.h
 
 # External code used by libxbps
 EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
@@ -54,13 +54,13 @@ OBJS += $(EXTOBJS) $(COMPAT_OBJS)
 .PHONY: all
 all: libxbps.so libxbps.a
 
-fetch/ftperr.h: fetch/ftp.errors
+external/fetch/ftperr.h: external/fetch/ftp.errors
 	@printf " [GEN]\t\t$@\n"
-	${SILENT}./fetch/errlist.sh ftp_errlist FTP $< > $@
+	${SILENT}./external/fetch/errlist.sh ftp_errlist FTP $< > $@
 
-fetch/httperr.h: fetch/http.errors
+external/fetch/httperr.h: external/fetch/http.errors
 	@printf " [GEN]\t\t$@\n"
-	@./fetch/errlist.sh http_errlist HTTP $< > $@
+	@./external/fetch/errlist.sh http_errlist HTTP $< > $@
 
 $(LIBFETCH_OBJS): %.o: %.c $(LIBFETCH_INCS) $(LIBFETCH_GEN)
 	@printf " [CC]\t\t$@\n"
