@@ -130,7 +130,11 @@ operation.
 This ignores the existing on-disk repository archives in rootdir.
 .It Fl n, Fl -dry-run
 Dry-run mode.
-Show what actions would be done but don't do anything.
+Show what actions would be done but don't change any state of the system,
+including syncing repository indexes. Use
+.Fl M
+to do dry runs with memory sync instead.
+
 The current output prints 6 arguments:
 "<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
 .It Fl R, Fl -repository Ar url
