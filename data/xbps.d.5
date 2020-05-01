@@ -1,4 +1,4 @@
-.Dd February 05, 2020
+.Dd May 04, 2020
 .Dt XBPS-D 5
 .Sh NAME
 .Nm xbps.d
@@ -33,15 +33,24 @@ Only files with the
 .Em .conf
 extension will be processed in alphabetical order.
 .Pp
-The configuration files can set multiple
-.Em keywords
-that are pairs of keys and values, such as
+The configuration files can set various
+.Em keywords ,
+using the syntax
 .Sy `key=value` .
 No whitespace between the
 .Em key
 and its
 .Em value
 is allowed, nor trailing whitespaces after its value.
+Multiple entries are permitted for the
+.Sy ignorepkg ,
+.Sy include ,
+.Sy noextract ,
+.Sy preserve ,
+.Sy repository
+and
+.Sy virtualpkg
+keywords, but each entry must specify only one value.
 .Sh KEYWORDS
 .Bl -tag -width -x
 .It Sy architecture=string
@@ -57,7 +66,7 @@ remote repositories, as well as its signatures.
 If path starts with '/' it's an absolute path, otherwise it will be relative to
 .Ar rootdir .
 .It Sy ignorepkg=pkgname
-Declares a ignored package.
+Declares an ignored package.
 If a package depends on an ignored package the dependency is always satisfied,
 without installing the ignored package.
 .It Sy noextract=pattern
@@ -157,6 +166,8 @@ Package files metadata.
 Default package database (0.38 format). Keeps track of installed packages and properties.
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
+.It Ar /usr/share/xbps.d/xbps.conf
+Annotated sample configuration file.
 .El
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
