@@ -121,6 +121,16 @@ currently in the
 and
 .Sy search
 modes.
+.It Fl -orderby Ar [~]PROP
+Sorts the package list by a given property, in crescent order.
+If the property is specified with a tilde, sorting happens in reverse order.
+The currently compatible modes are the
+.Sy manual
+,
+.Sy hold
+and
+.Sy repolock
+modes.
 .It Fl -fulldeptree
 Prints a full dependency tree in the
 .Sy show dependencies
