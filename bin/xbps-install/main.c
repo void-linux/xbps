@@ -238,6 +238,9 @@ main(int argc, char **argv)
 		rv = xbps_rpool_foreach(&xh, repo_import_key_cb, NULL);
 		if (rv != 0)
 			exit(rv);
+	} else if (drun) {
+		printf("Can't use dry-run with 'xbps-install -S', please run `xbps-install -M`\n");
+		return -1;
 	}
 
 	if (syncf && !update && (argc == optind))
