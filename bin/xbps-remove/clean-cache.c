@@ -81,6 +81,8 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	if (!drun && unlink(binpkg) == -1) {
 		fprintf(stderr, "Failed to remove `%s': %s\n",
 		    binpkg, strerror(errno));
+	} else if (drun) {
+		printf("Would remove %s from cachedir (obsolete)\n", binpkg);
 	} else {
 		printf("Removed %s from cachedir (obsolete)\n", binpkg);
 	}
