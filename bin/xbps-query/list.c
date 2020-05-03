@@ -90,25 +90,6 @@ list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
 }
 
 int
-list_orphans(struct xbps_handle *xhp)
-{
-	xbps_array_t orphans;
-	const char *pkgver = NULL;
-
-	orphans = xbps_find_pkg_orphans(xhp, NULL);
-	if (orphans == NULL)
-		return EINVAL;
-
-	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
-		xbps_dictionary_get_cstring_nocopy(xbps_array_get(orphans, i),
-		    "pkgver", &pkgver);
-		puts(pkgver);
-	}
-
-	return 0;
-}
-
-int
 of_init(struct orderby_information *ofp)
 {
 	ofp->size = 32;
@@ -203,7 +184,7 @@ of_compare(const void *a,
 	return (reverse_order) ? -rv : rv;
 }
 
-void
+static void
 of_sort(struct orderby_information *ofp)
 {
 	qsort(ofp->items, ofp->num, sizeof(*ofp->items), of_compare);
@@ -212,6 +193,10 @@ of_sort(struct orderby_information *ofp)
 int
 of_print(struct orderby_information *ofp)
 {
+	if (ofp->orderby){
+		of_sort(ofp);
+	}
+
 	for(size_t i = 0; i < ofp->num; i++) {
 		const char *pkgver;
 		pkgver = NULL;
@@ -228,6 +213,22 @@ int
 of_free(struct orderby_information *ofp)
 {
 	free(ofp->items);
+
+	return 0;
+}
+
+int
+of_put_orphans(struct xbps_handle *xhp, struct orderby_information *ofp)
+{
+	xbps_array_t orphans;
+
+	orphans = xbps_find_pkg_orphans(xhp, NULL);
+	if (orphans == NULL)
+		return EINVAL;
+
+	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
+		of_put(ofp, xbps_array_get(orphans, i));
+	}
 
 	return 0;
 }

@@ -58,7 +58,6 @@ int	ownedby(struct xbps_handle *, const char *, bool, bool);
 unsigned int	find_longest_pkgver(struct xbps_handle *, xbps_object_t);
 
 int	list_pkgs_in_dict(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
-int	list_orphans(struct xbps_handle *);
 int	list_pkgs_pkgdb(struct xbps_handle *);
 int	list_orderby(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
 
@@ -88,7 +87,8 @@ struct orderby_information {
 int	of_init(struct orderby_information *);
 int	of_print(struct orderby_information *);
 int	of_free(struct orderby_information *);
-void	of_sort(struct orderby_information *);
+
+int	of_put_orphans(struct xbps_handle *, struct orderby_information *);
 
 int	repo_list(struct xbps_handle *);
 

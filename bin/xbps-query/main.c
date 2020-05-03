@@ -110,21 +110,22 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
-	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile, *orderby;
+	struct orderby_information of = { 0 };
+	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
 	int c, flags, rv;
-	bool list_pkgs, list_repos, orphans, own, list_repolock, reverse_order;
+	bool list_pkgs, list_repos, orphans, own, list_repolock;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
 	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
 
-	rootdir = cachedir = confdir = props = pkg = catfile = orderby = NULL;
+	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
 	list_manual = list_repolock = show_prop = show_files = false;
 	regex = show = show_deps = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
-	reverse_order = false;
 
 	memset(&xh, 0, sizeof(xh));
+	of_init(&of);
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -217,10 +218,10 @@ main(int argc, char **argv)
 			list_repolock = opmode = true;
 			break;
 		case 4:
-			orderby = optarg;
-			if (*orderby == '~') {
-				reverse_order = true;
-				orderby++;
+			of.orderby = optarg;
+			if (*of.orderby == '~') {
+				of.reverse_order = true;
+				of.orderby++;
 			}
 			break;
 		case '?':
@@ -272,11 +273,6 @@ main(int argc, char **argv)
 		//TODO: find out if the key exists before getting into this function, otherwise it will be constantly checking.
 		// Perhaps make a list of the keys that can be used for sorting?
 
-		struct orderby_information of = { 0 };
-		of_init(&of);
-		of.orderby = orderby;
-		of.reverse_order = reverse_order;
-
 		if (list_hold) {
 			/* list on hold pkgs */
 			of.filter = filter_hold_pkgs;
@@ -290,20 +286,16 @@ main(int argc, char **argv)
 
 		rv = xbps_pkgdb_foreach_cb(&xh, list_orderby, &of);
 
-		if (orderby) {
-			of_sort(&of);
-		}
-
 		of_print(&of);
-		of_free(&of);
+
+	} else if (orphans) {
+		/* list orphans pkgs */
+		rv = of_put_orphans(&xh, &of);
+		of_print(&of);
 
 	} else if (list_pkgs) {
 		/* list available pkgs */
 		rv = list_pkgs_pkgdb(&xh);
-
-	} else if (orphans) {
-		/* list pkg orphans */
-		rv = list_orphans(&xh);
 
 	} else if (own) {
 		/* ownedby mode */
@@ -340,6 +332,7 @@ main(int argc, char **argv)
 		rv = show_pkg_revdeps(&xh, pkg, repo_mode);
 	}
 
+	of_free(&of);
 	xbps_end(&xh);
 	exit(rv);
 }
