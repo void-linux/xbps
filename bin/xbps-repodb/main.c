@@ -67,7 +67,7 @@ main(int argc, char **argv)
 	enum {
 		MODE_NIL,
 		MODE_PURGE,
-	} mode;
+	} mode = MODE_NIL;
 
 	memset(&xh, 0, sizeof xh);
 
