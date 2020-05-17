@@ -935,6 +935,210 @@ multiple_obsoletes_with_alternatives_unordered_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case obsolete_directory_multiple_packages1
+
+obsolete_directory_multiple_packages1_head() {
+	atf_set "descr" "Remove multiple packages with the same obsolete directory, variant 1"
+}
+
+obsolete_directory_multiple_packages1_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/lib/gcc/9.2/include pkg_B/usr/lib/gcc/9.2/include
+	touch pkg_A/usr/lib/gcc/9.2/include/foo.h pkg_B/usr/lib/gcc/9.2/include/bar.h
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A B
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	rm -rf pkg_A pkg_B
+	mkdir -p pkg_A/usr/lib/gcc/9.3/include pkg_B/usr/lib/gcc/9.3/include
+	touch pkg_A/usr/lib/gcc/9.3/include/foo.h pkg_B/usr/lib/gcc/9.3/include/bar.h
+
+	cd repo
+	xbps-create -A noarch -n A-2.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-2.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu B A
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	ls -lsa root/usr/lib/gcc
+	test -d root/usr/lib/gcc/9.2
+	atf_check_equal $? 1
+}
+
+atf_test_case obsolete_directory_multiple_packages2
+
+obsolete_directory_multiple_packages2_head() {
+	atf_set "descr" "Remove multiple packages with the same obsolete directory, variant 2"
+}
+
+obsolete_directory_multiple_packages2_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/lib/gcc/9.2/include pkg_B/usr/lib/gcc/9.2/include
+	touch pkg_A/usr/lib/gcc/9.2/include/foo.h pkg_B/usr/lib/gcc/9.2/include/bar.h
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A B
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	rm -rf pkg_A pkg_B
+	mkdir -p pkg_A/usr/lib/gcc/9.3/include pkg_B/usr/lib/gcc/9.3/include
+	touch pkg_A/usr/lib/gcc/9.3/include/foo.h pkg_B/usr/lib/gcc/9.3/include/bar.h
+
+	cd repo
+	xbps-create -A noarch -n A-2.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-2.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu A B
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	ls -lsa root/usr/lib/gcc
+	test -d root/usr/lib/gcc/9.2
+	atf_check_equal $? 1
+}
+
+atf_test_case obsolete_directory_multiple_packages3
+
+obsolete_directory_multiple_packages3_head() {
+	atf_set "descr" "Remove multiple packages with the same obsolete directory, variant 3"
+}
+
+obsolete_directory_multiple_packages3_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/lib/gcc/9.2/include pkg_B/usr/lib/gcc/9.2/include pkg_C/usr/lib/gcc/9.2/include
+	touch pkg_A/usr/lib/gcc/9.2/include/foo.h pkg_B/usr/lib/gcc/9.2/include/bar.h pkg_C/usr/lib/gcc/9.2/include/fizz.h
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg_C
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A B C
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	rm -rf pkg_A pkg_B pkg_C
+	mkdir -p pkg_A/usr/lib/gcc/9.3/include pkg_B/usr/lib/gcc/9.3/include pkg_C/usr/lib/gcc/9.3/include
+	touch pkg_A/usr/lib/gcc/9.3/include/foo.h pkg_B/usr/lib/gcc/9.3/include/bar.h pkg_C/usr/lib/gcc/9.3/include/fizz.h
+
+	cd repo
+	xbps-create -A noarch -n A-2.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-2.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-2.0_1 -s "C pkg" ../pkg_C
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu B A C
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	ls -lsa root/usr/lib/gcc
+	test -d root/usr/lib/gcc/9.2
+	atf_check_equal $? 1
+}
+
+atf_test_case obsolete_directory_multiple_packages4
+
+obsolete_directory_multiple_packages4_head() {
+	atf_set "descr" "Remove multiple packages with the same obsolete directory, variant 4"
+}
+
+obsolete_directory_multiple_packages4_body() {
+	mkdir repo
+	mkdir -p pkg_A/usr/lib/gcc/9.2/include pkg_B/usr/lib/gcc/9.2/include pkg_C/usr/lib/gcc/9.2/include
+	touch pkg_A/usr/lib/gcc/9.2/include/foo.h pkg_B/usr/lib/gcc/9.2/include/bar.h pkg_C/usr/lib/gcc/9.2/include/fizz.h
+
+	cd repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg_C
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvd A B C
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	rm -rf pkg_A pkg_B pkg_C
+	mkdir -p pkg_A/usr/lib/gcc/9.3/include pkg_B/usr/lib/gcc/9.3/include pkg_C/usr/lib/gcc/9.3/include
+	touch pkg_A/usr/lib/gcc/9.3/include/foo.h pkg_B/usr/lib/gcc/9.3/include/bar.h pkg_C/usr/lib/gcc/9.3/include/fizz.h
+
+	cd repo
+	xbps-create -A noarch -n A-2.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-2.0_1 -s "B pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-create -A noarch -n C-2.0_1 -s "C pkg" ../pkg_C
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yvdu A B C
+
+	xbps-pkgdb -r root -av
+	atf_check_equal $? 0
+
+	ls -lsa root/usr/lib/gcc
+	test -d root/usr/lib/gcc/9.2
+	atf_check_equal $? 1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
 	atf_add_test_case root_symlinks_update
@@ -957,4 +1161,8 @@ atf_init_test_cases() {
 	atf_add_test_case obsoletes_with_alternatives
 	atf_add_test_case multiple_obsoletes_with_alternatives
 	atf_add_test_case multiple_obsoletes_with_alternatives_unordered
+	atf_add_test_case obsolete_directory_multiple_packages1
+	atf_add_test_case obsolete_directory_multiple_packages2
+	atf_add_test_case obsolete_directory_multiple_packages3
+	atf_add_test_case obsolete_directory_multiple_packages4
 }

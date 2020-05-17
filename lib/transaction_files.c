@@ -443,7 +443,16 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 		} else if (type == TYPE_DIR && item->old.type == TYPE_DIR) {
 			/*
 			 * Multiple packages removing the same directory.
+			 * Record the last package to remove this directory.
 			 */
+			if (idx < item->old.index || item->old.preserve)
+				return 0;
+			item->old.pkgname = pkgname;
+			item->old.pkgver = pkgver;
+			item->old.index = idx;
+			item->old.preserve = preserve;
+			item->old.update = update;
+			item->old.removepkg = removepkg;
 			return 0;
 		} else {
 			/*
@@ -777,9 +786,9 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		bool update = false;
 		/*
-		 * `idx` is used as package install index, to chose which
-		 * choose the first package which owns or used to own the
-		 * file deletes it.
+		 * `idx` is used as package install index, to choose which
+		 * choose the first or last package which owns or used to
+		 * own the file or directory deletes it.
 		 */
 		idx++;
 
