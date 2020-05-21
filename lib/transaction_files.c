@@ -50,6 +50,8 @@ struct item {
 		const char *target;
 		uint64_t size;
 		enum type type;
+		/* index is the index of the package update/install/removal in the transaction
+		 * and is used to decide which package should remove the given file or dir */
 		unsigned int index;
 		bool preserve;
 		bool update;
@@ -770,6 +772,26 @@ cleanup(void)
 	free(items);
 }
 
+/*
+ * xbps_transaction_files:
+ *
+ * - read files from each installed package in the transaction
+ * - read files from each binary package in the transaction
+ *
+ * - Find file conflicts between packages before starting the transaction
+ *
+ * - Schedule the removal of files
+ *   - unlink files before extracting the package if the file type changed,
+ *     a symlink becomes a directory or a directory becomes a regular file
+ *     or symlink.
+ *   - directories replaced with other file types are checked to be empty
+ *     to avoid ENOTEMPTY while unpacking packages.
+ *   - the last package removing a file out of a directory
+ *     will try to remove that directory to avoid ENOTEMPTY
+ *   - the removal of obsolete files and directory is sorted by
+ *     path length so that directory content is removed before
+ *     removing the directory.
+ */
 int HIDDEN
 xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
@@ -785,11 +807,8 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		bool update = false;
-		/*
-		 * `idx` is used as package install index, to choose which
-		 * choose the first or last package which owns or used to
-		 * own the file or directory deletes it.
-		 */
+
+		/* increment the index of the given package package in the transaction */
 		idx++;
 
 		/* ignore pkgs in hold mode or in unpacked state */
