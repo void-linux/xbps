@@ -161,18 +161,18 @@ main(int argc, char **argv)
 		}
 
 		if (rv == -1) {
-			fprintf(stderr, "%s: %s\n", argv[i], xbps_fetch_error_string());
+			xbps_error_printf("%s: failed to fetch: %s: %s\n",
+			    progname, argv[i], xbps_fetch_error_string());
+			continue;
 		} else if (rv == 0) {
 			fprintf(stderr, "%s: file is identical with remote.\n", argv[i]);
 			if (shasum) {
 				if (!xbps_file_sha256_raw(digest, sizeof digest, filename)) {
-					xbps_error_printf("%s: failed to hash libxbps: %s: %s\n",
-						progname, filename, strerror(rv));
-					*digest = '\0';
+					xbps_error_printf("%s: failed to hash: %s: %s\n",
+					    progname, filename, strerror(rv));
+					continue;
 				}
 			}
-		} else {
-			rv = 0;
 		}
 		if (shasum) {
 			print_digest(digest, SHA256_DIGEST_LENGTH);
