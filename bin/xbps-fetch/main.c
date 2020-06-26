@@ -86,6 +86,7 @@ int
 main(int argc, char **argv)
 {
 	int flags = 0, c = 0, rv = 0;
+	bool failure = false;
 	bool verbose = false;
 	bool shasum = false;
 	struct xbps_handle xh = {};
@@ -163,6 +164,7 @@ main(int argc, char **argv)
 		if (rv == -1) {
 			xbps_error_printf("%s: failed to fetch: %s: %s\n",
 			    progname, argv[i], xbps_fetch_error_string());
+			failure = true;
 			continue;
 		} else if (rv == 0) {
 			fprintf(stderr, "%s: file is identical with remote.\n", argv[i]);
@@ -170,6 +172,7 @@ main(int argc, char **argv)
 				if (!xbps_file_sha256_raw(digest, sizeof digest, filename)) {
 					xbps_error_printf("%s: failed to hash: %s: %s\n",
 					    progname, filename, strerror(rv));
+					failure = true;
 					continue;
 				}
 			}
@@ -181,5 +184,5 @@ main(int argc, char **argv)
 	}
 
 	xbps_end(&xh);
-	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
+	exit(failure ? EXIT_FAILURE : EXIT_SUCCESS);
 }
