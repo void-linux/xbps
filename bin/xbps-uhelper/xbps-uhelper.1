@@ -1,0 +1,135 @@
+.Dd July 12, 2020
+.Dt XBPS-UHELPER 1
+.Os
+.Sh NAME
+.Nm xbps-uhelper
+.Nd Utility to extract and compare package strings.
+.Sh SYNOPSIS
+.Nm
+.Op OPTIONS
+.Ar ACTION
+.Op ARGUMENTS
+.Sh DESCRIPTION
+.Nm
+provides a number of functions to extract and compare package strings.
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl C Ar dir
+Path to xbps.conf file.
+.It Fl d
+Output debugging messages to stderr.
+.It Fl r Ar rootdir
+Use
+.Ar rootdir
+as rootdir.
+.It Fl V
+Prints the XBPS release version.
+.El
+.Sh ACTIONS
+.Bl -tag -width -x
+.It arch
+Return the XBPS native architecture.
+.It binpkgarch Ar binpkg
+Return architecture of package file
+.Ar binpkg .
+.It binpkgver Ar binpkg
+Return version of package file
+.Ar binpkg .
+.It cmpver Ar instver reqver
+Returns 255, 0 or 1 depending on whether the version of
+.Ar instver
+is less than, equal to, or greater than the version of
+.Ar reqver .
+.It fetch Ar URL
+Fetch a file from
+.Ar URL .
+.It getpkgdepname Ar pkgpattern
+Return the package name of dependency
+.Ar pkgpattern .
+.It getpkgdepversion Ar pkgpattern
+Return the package version of dependency
+.Ar pkgpattern .
+.It getpkgname Ar pkgver
+Return the name of package
+.Ar pkgver .
+.It getpkgrevision Ar pkgver
+Return the revision of package
+.Ar pkgver .
+.It getpkgversion Ar pkgver
+Return the version of package
+.Ar pkgver .
+.It getsystemdir
+Return the XBPS system directory.
+.It pkgmatch Ar pkg-version pkg-pattern
+Return 1 if
+.Ar pkg-version
+matches
+.Ar pkg-pattern ,
+0 otherwise.
+.It version Ar pkgname
+Return the version of installed package
+.Ar pkgname .
+.It real-version Ar pkgname
+Return the version of the real package to which virtual package
+.Ar pkgname
+resolves.
+.El
+.Sh EXAMPLES
+Return a value indicating whether the first package version is less than,
+equal to, or greater than the second package version:
+.Pp
+.Dl $ xbps-uhelper cmpver 'foo-1.0_1' 'foo-2.1_1'
+.Pp
+Return a value indicating whether the first version number is less than,
+equal to, or greater than the second version number:
+.Pp
+.Dl $ xbps-uhelper cmpver 2.0 2.1
+.Pp
+Return the package name of a dependency:
+.Pp
+.Dl $ xbps-uhelper getpkgdepname 'foo>=0'
+.Pp
+Return the package version of of a dependency:
+.Pp
+.Dl $ xbps-uhelper getpkgdepversion 'foo>=0'
+.Pp
+Return the name of a package:
+.Pp
+.Dl $ xbps-uhelper getpkgname foo-2.0_1
+.Pp
+Return the revision of a package:
+.Pp
+.Dl $ xbps-uhelper getpkgrevision foo-2.0_1
+.Pp
+Return the version of a package:
+.Pp
+.Dl $ xbps-uhelper getpkgversion foo-2.0_1
+.Pp
+Return 1 if package version matches a dependency pattern, 0 otherwise:
+.Pp
+.Dl $ xbps-uhelper pkgmatch foo-1.0_1 'foo>=1.0'
+.Pp
+Return the version of an installed package:
+.Pp
+.Dl $ xbps-uhelper version foo
+.Pp
+.Sh SEE ALSO
+.Xr xbps-checkvers 1 ,
+.Xr xbps-create 1 ,
+.Xr xbps-dgraph 1 ,
+.Xr xbps-digest 1 ,
+.Xr xbps-fbulk 1 ,
+.Xr xbps-fetch 1 ,
+.Xr xbps-install 1 ,
+.Xr xbps-pkgdb 1 ,
+.Xr xbps-reconfigure 1 ,
+.Xr xbps-remove 1 ,
+.Xr xbps-rindex 1 ,
+.Xr xbps-uchroot 1 ,
+.Xr xbps-uunshare 1 ,
+.Xr xbps.d 5
+.Sh AUTHORS
+.An Juan Romero Pardines Aq Mt xtraeme@gmail.com
+.Sh BUGS
+Report bugs at
+.Lk https://github.com/void-linux/xbps/issues
