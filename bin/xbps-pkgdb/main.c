@@ -35,12 +35,14 @@
 #include "defs.h"
 
 static void __attribute__((noreturn))
-usage(bool fail)
+usage(int status)
 {
 	fprintf(stdout,
 	    "Usage: xbps-pkgdb [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
 	    " -a, --all                               Process all packages\n"
+	    " --checks <files,dependencies,alternatives,pkgdb>\n"
+	    "                                         Choose checks to run\n"
 	    " -C, --config <dir>                      Path to confdir (xbps.d)\n"
 	    " -d, --debug                             Debug mode shown to stderr\n"
 	    " -h, --help                              Show usage\n"
@@ -50,7 +52,7 @@ usage(bool fail)
 	    " -u, --update                            Update pkgdb to the latest format\n"
 	    " -v, --verbose                           Verbose messages\n"
 	    " -V, --version                           Show XBPS version\n");
-	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
+	exit(status);
 }
 
 static int
@@ -74,10 +76,48 @@ change_pkg_mode(struct xbps_handle *xhp, const char *pkgname, const char *mode)
 		xbps_dictionary_set_bool(pkgd, "repolock", true);
 	else if (strcmp(mode, "repounlock") == 0)
 		xbps_dictionary_remove(pkgd, "repolock");
-	else
-		usage(true);
+	else {
+		xbps_error_printf("unknown mode: '%s'\n", mode);
+		usage(EXIT_FAILURE);
+	}
 
 	return 0;
+}
+
+static unsigned int
+parse_checks(char *s)
+{
+	unsigned int checks = 0;
+	char *p, *saveptr = NULL;
+
+	for ((p = strtok_r(s, ",", &saveptr)); p;
+	    (p = strtok_r(NULL, ",", &saveptr))) {
+		// trim spaces
+		for (; *p == ' '; p++);
+		for (char *e = p + strlen(p) - 1; e > p && *e == ' '; e--)
+			*e = '\0';
+		// skip empty args
+		if (*p == '\0')
+			continue;
+		if (strcmp(p, "files") == 0) {
+			checks |= CHECK_FILES;
+		} else if (strcmp(p, "dependencies") == 0) {
+			checks |= CHECK_DEPENDENCIES;
+		} else if (strcmp(p, "alternatives") == 0) {
+			checks |= CHECK_ALTERNATIVES;
+		} else if (strcmp(p, "pkgdb") == 0) {
+			checks |= CHECK_PKGDB;
+		} else {
+			xbps_error_printf("unknown check: '%s'\n", p);
+			usage(EXIT_FAILURE);
+		}
+	}
+	if (checks == 0) {
+		xbps_error_printf("no checks to run\n");
+		usage(EXIT_FAILURE);
+	}
+
+	return checks;
 }
 
 int
@@ -94,11 +134,14 @@ main(int argc, char **argv)
 		{ "update", no_argument, NULL, 'u' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "checks", required_argument, NULL, 0 },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
 	const char *confdir = NULL, *rootdir = NULL, *instmode = NULL;
 	int c, i, rv, flags = 0;
+	/* we want all checks to run if no checks are specified */
+	unsigned int checks = ~0U;
 	bool update_format = false, all = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -113,7 +156,7 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'h':
-			usage(false);
+			usage(EXIT_SUCCESS);
 			/* NOTREACHED */
 		case 'm':
 			instmode = optarg;
@@ -130,6 +173,10 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+			/* NOTREACHED */
+		case 0:
+			checks = parse_checks(optarg);
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -179,10 +226,10 @@ main(int argc, char **argv)
 			}
 		}
 	} else if (all) {
-		rv = check_pkg_integrity_all(&xh);
+		rv = check_all(&xh, checks);
 	} else {
 		for (i = optind; i < argc; i++) {
-			rv = check_pkg_integrity(&xh, NULL, argv[i]);
+			rv = check_pkg(&xh, NULL, argv[i], checks);
 			if (rv != 0)
 				fprintf(stderr, "Failed to check "
 				    "`%s'\n", argv[i]);

@@ -24,15 +24,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <sys/param.h>
+
+#include <assert.h>
+#include <errno.h>
+#include <libgen.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <assert.h>
 #include <unistd.h>
-#include <libgen.h>
-#include <sys/param.h>
 
 #include <xbps.h>
 #include "defs.h"
@@ -153,10 +154,9 @@ check_symlinks(struct xbps_handle *xhp, const char *pkgname, xbps_array_t a,
 }
 
 int
-check_pkg_alternatives(struct xbps_handle *xhp, const char *pkgname, void *arg)
+check_pkg_alternatives(struct xbps_handle *xhp, const char *pkgname, xbps_dictionary_t pkg_propsd)
 {
 	xbps_array_t allkeys, array;
-	xbps_dictionary_t pkg_propsd = arg;
 	xbps_dictionary_t alternatives, pkg_alternatives;
 	int rv = 0;
 
