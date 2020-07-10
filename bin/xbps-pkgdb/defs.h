@@ -29,18 +29,29 @@
 #include <sys/time.h>
 #include <xbps.h>
 
+enum {
+	CHECK_FILES = 1 << 0,
+	CHECK_DEPENDENCIES = 1 << 1,
+	CHECK_ALTERNATIVES = 1 << 2,
+	CHECK_PKGDB = 1 << 3,
+};
+
 /* from check.c */
-int	check_pkg_integrity(struct xbps_handle *, xbps_dictionary_t, const char *);
-int	check_pkg_integrity_all(struct xbps_handle *);
+int check_pkg(struct xbps_handle *, xbps_dictionary_t, const char *, unsigned);
+int check_all(struct xbps_handle *, unsigned);
 
-#define CHECK_PKG_DECL(type)			\
-int check_pkg_##type (struct xbps_handle *, const char *, void *)
+int check_pkg_unneeded(
+    struct xbps_handle *xhp, const char *pkgname, xbps_dictionary_t pkgd);
+int check_pkg_files(
+    struct xbps_handle *xhp, const char *pkgname, xbps_dictionary_t filesd);
+int check_pkg_symlinks(
+    struct xbps_handle *xhp, const char *pkgname, xbps_dictionary_t filesd);
+int check_pkg_rundeps(
+    struct xbps_handle *xhp, const char *pkgname, xbps_dictionary_t pkgd);
+int check_pkg_alternatives(
+    struct xbps_handle *xhp, const char *pkgname, xbps_dictionary_t pkgd);
 
-CHECK_PKG_DECL(unneeded);
-CHECK_PKG_DECL(files);
-CHECK_PKG_DECL(rundeps);
-CHECK_PKG_DECL(symlinks);
-CHECK_PKG_DECL(alternatives);
+int get_checks_to_run(unsigned *, char *);
 
 /* from convert.c */
 void	convert_pkgdb_format(struct xbps_handle *);

@@ -23,15 +23,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <sys/param.h>
+
+#include <assert.h>
+#include <libgen.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <assert.h>
 #include <unistd.h>
-#include <libgen.h>
-#include <sys/param.h>
 
 #include <xbps.h>
 #include "defs.h"
@@ -47,11 +47,10 @@
  */
 
 int
-check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
+check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, xbps_dictionary_t filesd)
 {
 	xbps_array_t array;
 	xbps_object_t obj;
-	xbps_dictionary_t filesd = arg;
 	int rv = 0;
 
 	array = xbps_dictionary_get(filesd, "links");

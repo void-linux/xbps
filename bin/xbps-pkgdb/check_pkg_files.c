@@ -22,14 +22,14 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <sys/param.h>
 
-#include <stdio.h>
+#include <errno.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
-#include <sys/param.h>
 
 #include <xbps.h>
 #include "defs.h"
@@ -49,12 +49,11 @@
  */
 
 int
-check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
+check_pkg_files(struct xbps_handle *xhp, const char *pkgname, xbps_dictionary_t pkg_filesd)
 {
 	xbps_array_t array;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
-	xbps_dictionary_t pkg_filesd = arg;
 	const char *file = NULL, *sha256 = NULL;
 	char *path;
 	bool mutable, test_broken = false;

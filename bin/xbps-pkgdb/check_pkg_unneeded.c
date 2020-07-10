@@ -23,14 +23,14 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/param.h>
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <assert.h>
 #include <unistd.h>
-#include <sys/param.h>
 
 #include <xbps.h>
 #include "defs.h"
@@ -43,10 +43,9 @@
  * 	  and remove them if that was true.
  */
 int
-check_pkg_unneeded(struct xbps_handle *xhp UNUSED, const char *pkgname, void *arg)
+check_pkg_unneeded(struct xbps_handle *xhp UNUSED, const char *pkgname, xbps_dictionary_t pkgd)
 {
 	xbps_array_t replaces;
-	xbps_dictionary_t pkgd = arg;
 	const char *repo = NULL;
 	char *buf;
 
