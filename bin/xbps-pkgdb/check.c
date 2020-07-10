@@ -35,8 +35,13 @@
 #include <xbps.h>
 #include "defs.h"
 
+struct check_context {
+	int errors;
+	unsigned ctr;
+};
+
 static int
-pkgdb_cb(struct xbps_handle *xhp UNUSED,
+check_cb(struct xbps_handle *xhp UNUSED,
 		xbps_object_t obj,
 		const char *key UNUSED,
 		void *arg,
@@ -44,7 +49,8 @@ pkgdb_cb(struct xbps_handle *xhp UNUSED,
 {
 	const char *pkgver = NULL;
 	char pkgname[XBPS_NAME_SIZE];
-	int rv, *errors = (int *)arg;
+	struct check_context *ctx = arg;
+	int rv;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	if (xhp->flags & XBPS_FLAG_VERBOSE)
@@ -53,24 +59,28 @@ pkgdb_cb(struct xbps_handle *xhp UNUSED,
 	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
 		abort();
 	}
-	if ((rv = check_pkg_integrity(xhp, obj, pkgname)) != 0)
-		*errors += 1;
+	if ((rv = check_pkg(xhp, obj, pkgname, ctx->ctr)) != 0)
+		ctx->errors += 1;
 
 	return 0;
 }
 
 int
-check_pkg_integrity_all(struct xbps_handle *xhp)
+check_all(struct xbps_handle *xhp, unsigned int checks)
 {
-	int errors = 0;
-	xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_cb, &errors);
-	return errors ? -1 : 0;
+	struct check_context args = {
+		.errors = 0,
+		.ctr = checks,
+	};
+	xbps_pkgdb_foreach_cb_multi(xhp, check_cb, &args);
+	return args.errors ? -1 : 0;
 }
 
 int
-check_pkg_integrity(struct xbps_handle *xhp,
+check_pkg(struct xbps_handle *xhp,
 		    xbps_dictionary_t pkgd,
-		    const char *pkgname)
+		    const char *pkgname,
+		    unsigned checks)
 {
 	xbps_dictionary_t opkgd, filesd;
 	const char *sha256;
@@ -116,24 +126,27 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		}
 	}
 
-#define RUN_PKG_CHECK(x, name, arg)				\
-do {								\
-	if (check_pkg_##name(x, pkgname, arg)) { 	\
-		errors++;					\
-	}							\
-} while (0)
-
-	/* Execute pkg checks */
-	RUN_PKG_CHECK(xhp, files, filesd);
-	RUN_PKG_CHECK(xhp, symlinks, filesd);
-	RUN_PKG_CHECK(xhp, rundeps, opkgd);
-	RUN_PKG_CHECK(xhp, unneeded, opkgd);
-	RUN_PKG_CHECK(xhp, alternatives, opkgd);
+	if (checks & CHECK_FILES) {
+		if (check_pkg_files(xhp, pkgname, filesd))
+			errors++;
+		if (check_pkg_symlinks(xhp, pkgname, filesd))
+			errors++;
+	}
+	if (checks & CHECK_DEPENDENCIES) {
+		if (check_pkg_rundeps(xhp, pkgname, opkgd))
+			errors++;
+	}
+	if (checks & CHECK_ALTERNATIVES) {
+		if (check_pkg_alternatives(xhp, pkgname, opkgd))
+			errors++;
+	}
+	if (checks & CHECK_PKGDB) {
+		if (check_pkg_unneeded(xhp, pkgname, opkgd))
+			errors++;
+	}
 
 	if (filesd)
 		xbps_object_release(filesd);
-
-#undef RUN_PKG_CHECK
 
 	return !!errors;
 }
