@@ -1452,6 +1452,12 @@ struct xbps_repo {
 	 * True if this repository has been signed, false otherwise.
 	 */
 	bool is_signed;
+	/**
+	 * var pubkey
+	 *
+	 * The repositories public key.
+	 */
+	xbps_data_t pubkey;
 };
 
 void xbps_rpool_release(struct xbps_handle *xhp);

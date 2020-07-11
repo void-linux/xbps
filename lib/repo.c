@@ -130,6 +130,61 @@ xbps_repo_unlock(int lockfd, char *lockfname)
 	}
 }
 
+xbps_data_t
+xbps_repo_pubkey(struct xbps_repo *repo)
+{
+	char rkeyfile[PATH_MAX];
+	char *hexfp;
+	xbps_dictionary_t repokeyd;
+
+	if (repo->pubkey != NULL)
+		return repo->pubkey;
+
+	if (!repo->is_signed) {
+		errno = ENOENT;
+		return NULL;
+	}
+
+	if (repo->idxmeta == NULL || !xbps_dictionary_count(repo->idxmeta)) {
+		xbps_dbg_printf(repo->xhp,
+		    "%s: missing or incomplete index-meta.plist\n", repo->uri);
+		errno = ENOENT;
+		return NULL;
+	}
+
+	hexfp = xbps_pubkey2fp(repo->xhp,
+		xbps_dictionary_get(repo->idxmeta, "public-key"));
+	if (hexfp == NULL) {
+		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
+		errno = ENOENT;
+		return NULL;
+	}
+
+	snprintf(rkeyfile, sizeof rkeyfile, "%s/keys/%s.plist",
+		repo->xhp->metadir, hexfp);
+	free(hexfp);
+
+	repokeyd = xbps_plist_dictionary_from_file(repo->xhp, rkeyfile);
+	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY) {
+		xbps_dbg_printf(repo->xhp, "%s: cannot read pubkey data at %s: %s\n",
+		    repo->uri, rkeyfile, strerror(errno));
+		return NULL;
+	}
+
+	repo->pubkey = xbps_dictionary_get(repokeyd, "public-key");
+	if (xbps_object_type(repo->pubkey) != XBPS_TYPE_DATA) {
+		xbps_dbg_printf(repo->xhp, "%s: bad pubkey file at %s: %s\n",
+		    repo->uri, rkeyfile, strerror(errno));
+		repo->pubkey = NULL;
+		xbps_object_release(repokeyd);
+		errno = ENOTSUP;
+		return NULL;
+	}
+	xbps_object_retain(repo->pubkey);
+	xbps_object_release(repokeyd);
+	return repo->pubkey;
+}
+
 static bool
 repo_open_local(struct xbps_repo *repo, const char *repofile)
 {
@@ -217,6 +272,7 @@ repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
 	repo->fd = -1;
 	repo->xhp = xhp;
 	repo->uri = url;
+	repo->pubkey = NULL;
 
 	if (xbps_repository_is_remote(url)) {
 		/* remote repository */
@@ -399,6 +455,10 @@ xbps_repo_release(struct xbps_repo *repo)
 	if (repo->idxmeta != NULL) {
 		xbps_object_release(repo->idxmeta);
 		repo->idxmeta = NULL;
+	}
+	if (repo->pubkey != NULL) {
+		xbps_object_release(repo->pubkey);
+		repo->pubkey = NULL;
 	}
 	free(repo);
 }
