@@ -218,6 +218,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		    " index on archive, removing file.\n", repofile);
 		/* broken archive, remove it */
 		(void)unlink(repofile);
+		xbps_repo_close(repo);
 		return false;
 	}
 	xbps_dictionary_make_immutable(repo->idx);
@@ -226,6 +227,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		repo->is_signed = true;
 		xbps_dictionary_make_immutable(repo->idxmeta);
 	}
+
 	/*
 	 * We don't need the archive anymore, we are only
 	 * interested in the proplib dictionaries.
