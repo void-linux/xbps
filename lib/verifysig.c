@@ -82,26 +82,35 @@ bool
 xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 		unsigned char *digest)
 {
-	unsigned char *sig_buf = NULL;
-	size_t sigbuflen, sigfilelen;
-	bool val = false;
+	unsigned char buf[512];
+	struct stat st;
+	ssize_t rd = 0;
+	int fd = -1;
 
-	if (!xbps_mmap_file(sigfile, (void *)&sig_buf, &sigbuflen, &sigfilelen)) {
-		xbps_dbg_printf(repo->xhp, "can't open signature file %s: %s\n",
+	if ((fd = open(sigfile, O_RDONLY|O_CLOEXEC)) == -1 || fstat(fd, &st) == -1) {
+		xbps_error_printf("can't open signature file %s: %s\n",
 		    sigfile, strerror(errno));
-		goto out;
+		close(fd);
+		return false;
 	}
-	/*
-	 * Verify fname RSA signature.
-	 */
-	if (rsa_verify_hash(repo, sig_buf, sigfilelen, digest))
-		val = true;
 
-out:
-	if (sig_buf)
-		(void)munmap(sig_buf, sigbuflen);
+	if (st.st_size != sizeof buf) {
+		xbps_error_printf("invalid signature file %s: size mismatch\n",
+		    sigfile);
+		(void)close(fd);
+		return false;
+	}
 
-	return val;
+	rd = read(fd, buf, sizeof buf);
+	if (rd == -1) {
+		xbps_error_printf("can't read signature file %s: %s\n",
+		    sigfile, strerror(errno));
+		close(fd);
+		return false;
+	}
+	close(fd);
+
+	return rsa_verify_hash(repo, buf, sizeof buf, digest);
 }
 
 bool
