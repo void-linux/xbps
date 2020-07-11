@@ -209,17 +209,41 @@ xbps_transaction_fetch(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
 
 		/*
-		 * Download binary package and signature if either one
-		 * of them don't exist.
+		 * If this is a remote repository:
+		 * - Make sure the public key exist.
+		 * - Check if the package is not yet in the cache
+		 *   and add it to the fetch array to download later.
 		 */
-		if (xbps_repository_is_remote(repoloc) &&
-		    !xbps_remote_binpkg_exists(xhp, obj)) {
-			if (!fetch && !(fetch = xbps_array_create())) {
+		if (xbps_repository_is_remote(repoloc)) {
+			struct xbps_repo *repo;
+
+			if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 				rv = errno;
+				xbps_error_printf("%s: repository not found in rpool\n",
+				    repoloc);
 				goto out;
 			}
-			xbps_array_add(fetch, obj);
-			continue;
+			if (xbps_repo_pubkey(repo) == NULL) {
+				rv = errno;
+				xbps_error_printf("%s: failed to get public key: %s\n",
+				    repoloc, strerror(errno));
+				goto out;
+			}
+
+			/*
+			 * Download binary package and signature if either one
+			 * of them don't exist.
+			 */
+			if (!xbps_remote_binpkg_exists(xhp, obj)) {
+				if (!fetch && !(fetch = xbps_array_create())) {
+					rv = errno;
+					goto out;
+				}
+				xbps_array_add(fetch, obj);
+
+				/* don't add it to the verify list, fetch implies that. */
+				continue;
+			}
 		}
 
 		/*
