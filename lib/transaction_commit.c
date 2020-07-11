@@ -105,6 +105,12 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	}
 
 	/*
+	 * After all downloads are finished, clear the connection cache
+	 * to avoid file descriptor leaks (see #303)
+	 */
+	xbps_fetch_unset_cache_connection();
+
+	/*
 	 * Collect files in the transaction and find some issues
 	 * like multiple packages installing the same file.
 	 */
