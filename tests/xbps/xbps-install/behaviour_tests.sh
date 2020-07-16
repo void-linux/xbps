@@ -58,6 +58,36 @@ update_existent_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case update_unpacked
+
+update_unpacked_head() {
+	atf_set "descr" "xbps-install(1): update unpacked pkg"
+	atf_expect_fail "currently just configures the package"
+}
+
+update_unpacked_body() {
+	mkdir -p some_repo pkg_A
+	touch pkg_A/file00
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yU A
+	atf_check_equal $? 0
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	set -- $(xbps-install -r root -C empty.conf --repository=$PWD/some_repo -un A)
+	if [ "$2" != "update" ]; then
+		atf_fail "'$2' != 'update'"
+	fi
+}
+
 atf_test_case reproducible
 
 reproducible_head() {
@@ -104,5 +134,6 @@ reproducible_body() {
 atf_init_test_cases() {
 	atf_add_test_case install_existent
 	atf_add_test_case update_existent
+	atf_add_test_case update_unpacked
 	atf_add_test_case reproducible
 }
