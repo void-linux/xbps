@@ -398,7 +398,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 
 
 				p3 = strdup(p+strlen(p2));
-				assert(p2);
+				assert(p3);
 				xe->target = xbps_sanitize_path(p3);
 				assert(xe->target);
 				free(p3);
