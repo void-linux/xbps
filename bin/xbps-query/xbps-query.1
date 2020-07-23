@@ -1,4 +1,4 @@
-.Dd April 23, 2020
+.Dd July 27, 2020
 .Dt XBPS-QUERY 1
 .Sh NAME
 .Nm xbps-query
@@ -301,7 +301,68 @@ Package files metadata.
 Default package database (0.38 format). Keeps track of installed packages and properties.
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
-.El
+.E
+.Sh EXAMPLES
+Show all properties of installed package
+.Sq foo :
+.Pp
+.Dl $ xbps-query foo
+.Pp
+Show packages in repositories with pattern
+.Sq foo
+in either the
+.Sq pkgver
+or
+.Sq short_desc
+property, including newer versions of installed packages (which will be shown
+as uninstalled):
+.Pp
+.Dl $ xbps-query -Rs foo
+.Pp
+Show packages in repositories providing Python 3 bindings for libraries:
+.Pp
+.Dl $ xbps-query --regex -Rs '^lib.+python3'
+.Pp
+Show packages in repositories whose
+.Sq license
+property contains the pattern
+.Sq ISC :
+.Pp
+.Dl $ xbps-query -R -p license -s ISC
+.Pp
+Show all properties of uninstalled package
+.Sq foo :
+.Pp
+.Dl $ xbps-query -R foo
+.Pp
+Show direct required dependencies of installed package
+.Sq foo :
+.Pp
+.Dl $ xbps-query -x foo
+.Pp
+Show all required dependencies of installed package
+.Sq foo :
+.Pp
+.Dl $ xbps-query -x foo --fulldeptree
+.Pp
+Show packages depending on uninstalled package
+.Sq foo :
+.Pp
+.Dl $ xbps-query -RX foo
+.Pp
+Show value of
+.Sq maintainer
+and
+.Sq pkgver
+properties for installed package
+.Sq foo :
+.Pp
+.Dl $ xbps-query -p maintainer,pkgver foo
+.Pp
+Show installed self-built packages:
+.Pp
+.Dl $ xbps-query --regex -p repository -s / | grep -v -e ' https://' -e ': /hostdir' | cut -d: -f1
+.Pp
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
 .Xr xbps-create 1 ,
