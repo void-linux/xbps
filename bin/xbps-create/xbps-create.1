@@ -90,6 +90,18 @@ is a relative path, the symlink will be created relative to
 .It Fl c, Fl -changelog Ar string
 The package changelog string.
 .El
+.Sh EXAMPLES
+Create package depending on packages needed to build
+.Sq ksysguard
+on host:
+.Bd -literal -offset indent
+$ p=ksysguard
+$ . $(xdistdir)/srcpkgs/${p}/template
+$ xbps-create -n ${p}-build-deps-${version}_${revision} \\
+   -s "Build depends of ${p}" -A "$(xbps-uhelper arch)" \\
+   -D "$(echo $hostmakedepends $makedepends | sed 's/ />=0 /g')>=0" \\
+   $(mktemp -d)
+.Ed
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
 .Xr xbps-dgraph 1 ,
