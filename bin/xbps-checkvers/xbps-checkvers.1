@@ -15,7 +15,7 @@ all registered repositories by comparing the package versions against
 the source package versions available in a
 .Nm void-packages
 tree. By default and unless the
-.Fl i, Fl -installed
+.Fl I, Fl -installed
 option is set, it will compare package versions in repositories against
 the
 .Nm void-packages
@@ -94,6 +94,35 @@ is printed instead.
 .It Fl V, Fl -version
 Show the version information.
 .El
+.Sh EXAMPLES
+Show all packages in
+.Pa ~/void-packages ,
+listing the repository version and the
+.Pa srcpkgs
+version:
+.Pp
+.Dl $ xbps-checkvers -s
+.Pp
+Show packages in
+.Pa ~/void-packages
+which have a newer version than the installed version:
+.Pp
+.Dl $ xbps-checkvers -I
+.Pp
+Show packages in
+.Pa /home/user/src/void-packages
+which have a newer version than the installed version:
+.Pp
+.Dl $ xbps-checkvers -D /home/user/src/void-packages -I
+.Pp
+Check whether installed package
+.Sq foo
+has a newer version in the
+.Nm void-packages
+tree:
+.Pp
+.Dl $ xbps-checkvers -I -m foo
+.Pp
 .Sh SEE ALSO
 .Xr xbps-create 1 ,
 .Xr xbps-dgraph 1 ,
