@@ -249,6 +249,41 @@ Default package database (0.38 format). Keeps track of installed packages and pr
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
 .El
+.Sh EXAMPLES
+Install package
+.Sq foo :
+.Pp
+.Dl # xbps-install foo
+.Pp
+Synchronize remote repository index files and do a system upgrade:
+.Pp
+.Dl # xbps-install -Su
+.Pp
+Install package
+.Sq foo
+from local repository
+.Pa /var/my_local_repo/ :
+.Pp
+.Dl # xbps-install -R /var/my_local_repo/ foo
+.Pp
+Force reinstallation of the current version of a package:
+.Pp
+.Dl # xbps-install -f foo
+.Pp
+Force reinstallation of the current version of a package, including
+overwriting existing configuration files:
+.Pp
+.Dl # xbps-install -ff foo
+.Pp
+Downgrade a package to a version in the package cache:
+.Pp
+.Dl # xbps-install -R /var/cache/xbps/ -f foo-1.2_3
+.Pp
+Register a manually-downloaded package and install it:
+.Bd -literal -offset index
+# xbps-rindex -a /var/my_local_repo/foo-1.2_3.x86_64.xbps
+# xbps-install -R /var/my_local_repo/ foo-1.2_3
+.Ed
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
 .Xr xbps-create 1 ,
