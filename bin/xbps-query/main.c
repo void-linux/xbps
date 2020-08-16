@@ -77,7 +77,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:df:hHiLlMmOo:p:Rr:s:S:VvX:x:";
+	const char *shortopts = "C:c:dfhHiLlMmOop:Rr:sSVvXx";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -91,17 +91,17 @@ main(int argc, char **argv)
 		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
 		{ "list-orphans", no_argument, NULL, 'O' },
-		{ "ownedby", required_argument, NULL, 'o' },
+		{ "ownedby", no_argument, NULL, 'o' },
 		{ "property", required_argument, NULL, 'p' },
 		{ "repository", optional_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
-		{ "show", required_argument, NULL, 'S' },
-		{ "search", required_argument, NULL, 's' },
+		{ "show", no_argument, NULL, 'S' },
+		{ "search", no_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
-		{ "files", required_argument, NULL, 'f' },
-		{ "deps", required_argument, NULL, 'x' },
-		{ "revdeps", required_argument, NULL, 'X' },
+		{ "files", no_argument, NULL, 'f' },
+		{ "deps", no_argument, NULL, 'x' },
+		{ "revdeps", no_argument, NULL, 'X' },
 		{ "regex", no_argument, NULL, 0 },
 		{ "fulldeptree", no_argument, NULL, 1 },
 		{ "cat", required_argument, NULL, 2 },
@@ -135,7 +135,6 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'f':
-			pkg = optarg;
 			show_files = opmode = true;
 			break;
 		case 'H':
@@ -163,7 +162,6 @@ main(int argc, char **argv)
 			orphans = opmode = true;
 			break;
 		case 'o':
-			pkg = optarg;
 			own = opmode = true;
 			break;
 		case 'p':
@@ -180,11 +178,9 @@ main(int argc, char **argv)
 			rootdir = optarg;
 			break;
 		case 'S':
-			pkg = optarg;
 			show = opmode = true;
 			break;
 		case 's':
-			pkg = optarg;
 			pkg_search = opmode = true;
 			break;
 		case 'v':
@@ -194,11 +190,9 @@ main(int argc, char **argv)
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case 'x':
-			pkg = optarg;
 			show_deps = opmode = true;
 			break;
 		case 'X':
-			pkg = optarg;
 			show_rdeps = opmode = true;
 			break;
 		case 0:
@@ -231,11 +225,17 @@ main(int argc, char **argv)
 		pkg = *(argv++);
 		argc--;
 	}
-	if (argc) {
+
+	if (argc == 1 && (show_files || own || show || pkg_search || show_deps || show_rdeps)) {
+		/* end of option scan */
+		pkg = argv[0];
+	} else {
 		/* trailing parameters */
 		usage(true);
 		/* NOTREACHED */
 	}
+
+
 	/*
 	 * Initialize libxbps.
 	 */
