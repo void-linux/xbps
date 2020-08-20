@@ -95,6 +95,9 @@ show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned i
 			tt = XBPS_TRANS_DOWNLOAD;
 		} else {
 			tt = xbps_transaction_pkg_type(obj);
+			if (ttype == XBPS_TRANS_INSTALL && tt == XBPS_TRANS_REINSTALL) {
+				tt = XBPS_TRANS_INSTALL;
+			}
 		}
 
 		buf = NULL;
