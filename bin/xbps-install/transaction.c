@@ -380,12 +380,16 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 			}
 			fprintf(stderr, "Transaction aborted due to insufficient disk "
 			    "space (need %s, got %s free).\n", instsize, freesize);
+			if (drun) {
+				goto proceed;
+			}
 		} else {
 			xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
 			    strerror(errno));
 		}
 		goto out;
 	}
+proceed:
 #ifdef FULL_DEBUG
 	xbps_dbg_printf(xhp, "Dictionary before transaction happens:\n");
 	xbps_dbg_printf_append(xhp, "%s",
