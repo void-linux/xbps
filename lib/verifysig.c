@@ -32,11 +32,10 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#include <openssl/err.h>
-#include <openssl/sha.h>
 #include <openssl/rsa.h>
-#include <openssl/ssl.h>
 #include <openssl/pem.h>
+#include <openssl/bn.h>
+#include <bearssl.h>
 
 #include "xbps_api_impl.h"
 
@@ -45,30 +44,38 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 		unsigned char *sig, unsigned int siglen,
 		unsigned char *sha256)
 {
+	int rv;
+	br_rsa_public_key pk;
+	br_rsa_pkcs1_vrfy vrfy;
+	// ssl
+	unsigned char e[3], n[512];
 	BIO *bio;
 	RSA *rsa;
-	int rv;
+	const BIGNUM *nrsa = NULL, *ersa = NULL, *drsa = NULL;
 
-	ERR_load_crypto_strings();
-	SSL_load_error_strings();
+	(void) repo;
 
-	bio = BIO_new_mem_buf(__UNCONST(xbps_data_data_nocopy(pubkey)),
-			xbps_data_size(pubkey));
-	assert(bio);
-
+	bio = BIO_new_mem_buf(__UNCONST(xbps_data_data_nocopy(pubkey)), xbps_data_size(pubkey));
 	rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, NULL, NULL);
-	if (rsa == NULL) {
-		xbps_dbg_printf(repo->xhp, "`%s' error reading public key: %s\n",
-		    repo->uri, ERR_error_string(ERR_get_error(), NULL));
-		return false;
-	}
+	RSA_get0_key(rsa, &nrsa, &ersa, &drsa);
+	printf("- n (size %d): ", BN_num_bytes(nrsa));
+	BN_print_fp(stdout, nrsa);
+	printf("\n- e (size %d): ", BN_num_bytes(ersa));
+	BN_print_fp(stdout, ersa);
+	puts("");
+	assert(BN_num_bytes(nrsa) == 512);
+	BN_bn2bin(nrsa, n);
+	BN_bn2bin(ersa, e);
 
-	rv = RSA_verify(NID_sha1, sha256, SHA256_DIGEST_LENGTH, sig, siglen, rsa);
-	RSA_free(rsa);
-	BIO_free(bio);
-	ERR_free_strings();
+	pk.n = n;
+	pk.nlen = 512;
+	pk.e = e;
+	pk.elen = 3;
 
-	return rv ? true : false;
+	vrfy = br_rsa_pkcs1_vrfy_get_default();
+	rv = vrfy(sig, siglen, BR_HASH_OID_SHA1, 32, &pk, sha256);
+
+	return rv;
 }
 
 bool
