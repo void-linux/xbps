@@ -31,7 +31,7 @@
 #include <fcntl.h>
 #include <limits.h>
 
-#include <openssl/sha.h>
+#include <bearssl.h>
 
 #include "xbps_api_impl.h"
 
@@ -111,10 +111,10 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 bool
 xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 {
-	int fd;
-	ssize_t len;
+	FILE *stream;
+	size_t len;
 	char buf[65536];
-	SHA256_CTX sha256;
+	br_sha256_context sha256;
 
 	assert(dstlen >= XBPS_SHA256_DIGEST_SIZE);
 	if (dstlen < XBPS_SHA256_DIGEST_SIZE) {
@@ -122,20 +122,20 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 		return false;
 	}
 
-	if ((fd = open(file, O_RDONLY)) < 0)
+	if ((stream = fopen(file, "rb")) == 0)
 		return false;
 
-	SHA256_Init(&sha256);
+	br_sha256_init(&sha256);
 
-	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		SHA256_Update(&sha256, buf, len);
+	while ((len = fread(buf, 1, sizeof(buf), stream)) > 0)
+		br_sha256_update(&sha256, buf, len);
 
-	(void)close(fd);
-
-	if(len == -1)
+	if (ferror(stream))
 		return false;
 
-	SHA256_Final(dst, &sha256);
+	fclose(stream);
+
+	br_sha256_out(&sha256, dst);
 
 	return true;
 }
