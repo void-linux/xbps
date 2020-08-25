@@ -31,8 +31,6 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include <openssl/sha.h>
-
 #include <xbps.h>
 #include "../xbps-install/defs.h"
 
@@ -175,7 +173,7 @@ main(int argc, char **argv)
 			rv = 0;
 		}
 		if (shasum) {
-			print_digest(digest, SHA256_DIGEST_LENGTH);
+			print_digest(digest, XBPS_SHA256_DIGEST_SIZE);
 			printf("  %s\n", filename);
 		}
 	}
