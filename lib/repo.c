@@ -31,12 +31,6 @@
 #include <libgen.h>
 #include <fcntl.h>
 
-#include <openssl/err.h>
-#include <openssl/sha.h>
-#include <openssl/rsa.h>
-#include <openssl/ssl.h>
-#include <openssl/pem.h>
-
 #include "xbps_api_impl.h"
 
 /**
