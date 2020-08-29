@@ -49,11 +49,6 @@ load_rsa_privkey(const char *path)
 	if ((fp = fopen(path, "r")) == 0)
 		return NULL;
 
-	if ((rsa = RSA_new()) == NULL) {
-		fclose(fp);
-		return NULL;
-	}
-
 	p = getenv("XBPS_PASSPHRASE");
 	if (p) {
 		passphrase = strdup(p);
