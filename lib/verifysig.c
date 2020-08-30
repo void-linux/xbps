@@ -98,7 +98,7 @@ xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 	    xbps_dictionary_get(repo->idxmeta, "public-key"));
 	if (hexfp == NULL) {
 		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
-		return false;
+		goto out;
 	}
 
 	/*
@@ -128,10 +128,8 @@ xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 		val = true;
 
 out:
-	if (hexfp)
-		free(hexfp);
-	if (rkeyfile)
-		free(rkeyfile);
+	free(hexfp);
+	free(rkeyfile);
 	if (sig_buf)
 		(void)munmap(sig_buf, sigbuflen);
 	if (repokeyd)
