@@ -78,7 +78,7 @@ $(OBJS): %.o: %.c
 
 libxbps.so: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
-	${SILENT}$(CC) $^ $(LDFLAGS) -o $(LIBXBPS_SHLIB)
+	${SILENT}$(CC) $^ $(CFLAGS) $(LDFLAGS) -o $(LIBXBPS_SHLIB)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBXBPS_MAJOR)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
 
