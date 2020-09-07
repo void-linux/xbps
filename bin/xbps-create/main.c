@@ -784,7 +784,7 @@ process_archive(struct archive *ar,
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "A:B:C:c:D:F:G:H:hl:M:m:n:P:pqr:R:S:s:t:V";
+	const char *shortopts = "A:B:C:c:D:F:G:H:hl:M:m:n:P:pqr:R:S:s:t:a:V";
 	const struct option longopts[] = {
 		{ "architecture", required_argument, NULL, 'A' },
 		{ "built-with", required_argument, NULL, 'B' },
@@ -813,6 +813,7 @@ main(int argc, char **argv)
 		{ "compression", required_argument, NULL, '3' },
 		{ "alternatives", required_argument, NULL, '4' },
 		{ "changelog", required_argument, NULL, 'c'},
+		{ "abi", required_argument, NULL, 'a'},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
@@ -823,7 +824,7 @@ main(int argc, char **argv)
 	const char *provides, *pkgver, *replaces, *reverts, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version, *changelog;
 	const char *buildopts, *shlib_provides, *shlib_requires, *alternatives;
-	const char *compression, *tags = NULL, *srcrevs = NULL;
+	const char *compression, *tags, *srcrevs, *abi;
 	char pkgname[XBPS_NAME_SIZE], *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
 	int c, pkg_fd;
@@ -833,6 +834,7 @@ main(int argc, char **argv)
 	provides = pkgver = replaces = reverts = desc = ldesc = bwith = NULL;
 	buildopts = config_files = mutable_files = shlib_provides = NULL;
 	alternatives = shlib_requires = changelog = NULL;
+	tags = srcrevs = abi = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
@@ -920,6 +922,9 @@ main(int argc, char **argv)
 		case '4':
 			alternatives = optarg;
 			break;
+		case 'a':
+			abi = optarg;
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -997,6 +1002,9 @@ main(int argc, char **argv)
 	if (changelog)
 		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"changelog", changelog);
+	if (abi)
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
+				"abi", abi);
 
 	/* Optional arrays */
 	process_array("run_depends", deps);

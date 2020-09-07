@@ -179,6 +179,25 @@ reject_fifo_file_body() {
 	atf_check_equal $? 1
 }
 
+atf_test_case set_abi
+
+set_abi_head() {
+	atf_set "descr" "xbps-create(1): create package with abi field"
+}
+
+set_abi_body() {
+	mkdir -p repo pkg_A/usr/include/gsm
+	touch -f pkg_A/usr/include/gsm/gsm.h
+	cd repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" -a 1 ../pkg_A
+	atf_check_equal $? 0
+	cd ..
+	xbps-rindex -d -a repo/*.xbps
+	atf_check_equal $? 0
+	rv="$(xbps-query -r root --repository=repo -p abi foo)"
+	atf_check_equal $rv 1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case hardlinks_size
 	atf_add_test_case symlink_relative_target
@@ -187,4 +206,5 @@ atf_init_test_cases() {
 	atf_add_test_case restore_mtime
 	atf_add_test_case reproducible_pkg
 	atf_add_test_case reject_fifo_file
+	atf_add_test_case set_abi
 }
