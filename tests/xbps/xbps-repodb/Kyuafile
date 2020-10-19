@@ -1,0 +1,4 @@
+syntax("kyuafile", 1)
+
+test_suite("xbps-repodb")
+atf_test_program{name="index_test"}

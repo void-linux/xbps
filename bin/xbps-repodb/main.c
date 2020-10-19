@@ -35,18 +35,19 @@
 
 #include "defs.h"
 
-
 static void __attribute__((noreturn))
 usage(void)
 {
 	fprintf(stdout,
 	"Usage: xbps-repodb [OPTIONS] MODE <repository>...\n\n"
 	"OPTIONS:\n"
-	" -d, --debug    Enable debug messages to stderr\n"
-	" -n, --dry-run  Dry-run mode\n"
-	" -v, --verbose  Enable verbose output\n"
-	" -V, --version  Prints the xbps release version\n"
+	" --compression <fmt>    Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
+	" -d, --debug            Enable debug messages to stderr\n"
+	" -n, --dry-run          Dry-run mode\n"
+	" -v, --verbose          Enable verbose output\n"
+	" -V, --version          Prints the xbps release version\n"
 	"MODE:\n"
+	" -i, --index    Move packages from stage to index\n"
 	" -p, --purge    Remove obsolete binary packages from repositories\n");
 	exit(EXIT_FAILURE);
 }
@@ -59,22 +60,32 @@ main(int argc, char **argv)
 	const struct option longopts[] = {
 		{ "debug", no_argument, NULL, 'd' },
 		{ "dry-run", no_argument, NULL, 'n' },
+		{ "index", no_argument, NULL, 'i' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "compression", required_argument, NULL, 2},
 		{ NULL, 0, NULL, 0 }
 	};
 	bool dry = false;
+	const char *compression = NULL;
 	enum {
 		MODE_NIL,
 		MODE_PURGE,
+		MODE_INDEX,
 	} mode = MODE_NIL;
 
 	memset(&xh, 0, sizeof xh);
 
-	while ((c = getopt_long(argc, argv, "dhnpVv", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "dhinpVv", longopts, NULL)) != -1) {
 		switch (c) {
+		case 2:
+			compression = optarg;
+			break;
 		case 'd':
 			xh.flags |= XBPS_FLAG_DEBUG;
+			break;
+		case 'i':
+			mode = MODE_INDEX;
 			break;
 		case 'p':
 			mode = MODE_PURGE;
@@ -113,6 +124,10 @@ main(int argc, char **argv)
 	switch (mode) {
 	case MODE_PURGE:
 		rv = purge_repos(&xh, argc, argv, dry);
+		break;
+	case MODE_INDEX:
+		rv = index_repos(&xh, compression, argc, argv);
+		break;
 	case MODE_NIL:
 		break;
 	}
