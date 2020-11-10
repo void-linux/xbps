@@ -134,16 +134,15 @@ static bool
 repo_open_local(struct xbps_repo *repo, const char *repofile)
 {
 	struct stat st;
-	int rv = 0;
 
 	if (fstat(repo->fd, &st) == -1) {
-		rv = errno;
 		xbps_dbg_printf(repo->xhp, "[repo] `%s' fstat repodata %s\n",
-		    repofile, strerror(rv));
+		    repofile, strerror(errno));
 		return false;
 	}
 
 	repo->ar = archive_read_new();
+	assert(repo->ar);
 	archive_read_support_filter_gzip(repo->ar);
 	archive_read_support_filter_bzip2(repo->ar);
 	archive_read_support_filter_xz(repo->ar);
@@ -152,10 +151,9 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 	archive_read_support_format_tar(repo->ar);
 
 	if (archive_read_open_fd(repo->ar, repo->fd, st.st_blksize) == ARCHIVE_FATAL) {
-		rv = archive_errno(repo->ar);
 		xbps_dbg_printf(repo->xhp,
 		    "[repo] `%s' failed to open repodata archive %s\n",
-		    repofile, strerror(rv));
+		    repofile, archive_error_string(repo->ar));
 		return false;
 	}
 	if ((repo->idx = repo_get_dict(repo)) == NULL) {
