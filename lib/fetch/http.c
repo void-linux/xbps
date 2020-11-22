@@ -1021,6 +1021,7 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 		case HTTP_MOVED_TEMP:
 		case HTTP_SEE_OTHER:
 		case HTTP_USE_PROXY:
+		case HTTP_TEMP_REDIRECT:
 			/*
 			 * Not so fine, but we still have to read the
 			 * headers to get the new location.
