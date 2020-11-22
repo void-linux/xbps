@@ -30,6 +30,10 @@
 #include <errno.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <libintl.h>
+#include <locale.h>
+
+#define _(x) gettext(x)
 
 #include <openssl/sha.h>
 
@@ -39,7 +43,7 @@
 static void __attribute__((noreturn))
 usage(bool fail)
 {
-	fprintf(stdout,
+	fprintf(stdout,_(
 	"Usage: xbps-fetch [options] <url> <url+N>\n\n"
 	"OPTIONS\n"
 	" -d, --debug       Enable debug messages to stderr\n"
@@ -47,7 +51,7 @@ usage(bool fail)
 	" -o, --out <file>  Rename downloaded file to <file>\n"
 	" -s, --sha256      Output sha256sums of the files\n"
 	" -v, --verbose     Enable verbose output\n"
-	" -V, --version     Show XBPS version\n");
+	" -V, --version     Show XBPS version\n"));
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
@@ -100,6 +104,10 @@ main(int argc, char **argv)
 		{ "verbose", no_argument, NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
+
+	setlocale(LC_MESSAGES, "");
+	bindtextdomain("xbps", LOCALEDIR);
+	textdomain("xbps");
 
 	while ((c = getopt_long(argc, argv, "o:dhsVv", longopts, NULL)) != -1) {
 		switch (c) {
