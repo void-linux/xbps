@@ -67,6 +67,7 @@ for x; do
 	--bindir) BINDIR=$var;;
 	--mandir) MANDIR=$var;;
 	--datadir) SHAREDIR=$var;;
+	--localedir) LOCALEDIR=$var;;
 	--build) BUILD=$var;;
 	--host) HOST=$var;;
 	--target) TARGET=$var;;
@@ -96,6 +97,7 @@ done
 : ${BINDIR:=${PREFIX}/bin}
 : ${LIBDIR:=${EPREFIX}/lib}
 : ${SHAREDIR:=${EPREFIX}/share}
+: ${LOCALEDIR:=${EPREFIX}/share/locale}
 : ${MANDIR:=${EPREFIX}/share/man}
 : ${INCLUDEDIR:=${EPREFIX}/include}
 : ${PKGCONFIGDIR:=${LIBDIR}/pkgconfig}
@@ -201,6 +203,8 @@ echo "CPPFLAGS +=	-DXBPS_SYSDEFCONF_PATH=\\\"${SHAREDIR}/xbps.d\\\"" >>$CONFIG_M
 echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_META_PATH=\\\"${DBDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DUNUSED=\"__attribute__((__unused__))\"" >>$CONFIG_MK
+
+echo "CPPFLAGS +=	-DLOCALEDIR=\\\"${LOCALEDIR}\\\"" >>$CONFIG_MK
 
 if [ -d .git ]; then
 	_gitrev=$(git rev-parse --short HEAD)
