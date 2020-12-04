@@ -183,9 +183,9 @@ main(int argc, char **argv)
 	} else {
 		for (i = optind; i < argc; i++) {
 			rv = check_pkg_integrity(&xh, NULL, argv[i]);
-			if (rv < 0)
-				xbps_error_printf("Failed to check "
-				    "`%s': %s\n", argv[i], strerror(-rv));
+			if (rv != 0)
+				fprintf(stderr, "Failed to check "
+				    "`%s'\n", argv[i]);
 		}
 	}
 

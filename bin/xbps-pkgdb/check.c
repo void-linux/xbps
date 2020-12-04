@@ -118,7 +118,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 
 #define RUN_PKG_CHECK(x, name, arg)				\
 do {								\
-	if ((rv = check_pkg_##name(x, pkgname, arg)) != 0) { 	\
+	if (check_pkg_##name(x, pkgname, arg)) { 	\
 		errors++;					\
 	}							\
 } while (0)
@@ -135,5 +135,5 @@ do {								\
 
 #undef RUN_PKG_CHECK
 
-	return errors;
+	return !!errors;
 }
