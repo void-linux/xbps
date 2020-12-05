@@ -51,8 +51,13 @@ OBJS += conf.o log.o
 OBJS += $(EXTOBJS) $(COMPAT_OBJS)
 # unnecessary unless pkgdb format changes
 # OBJS += pkgdb_conversion.o
+
 .PHONY: all
+ifdef BUILD_STATIC
+all: libxbps.a
+else
 all: libxbps.so libxbps.a
+endif
 
 external/fetch/ftperr.h: external/fetch/ftp.errors
 	@printf " [GEN]\t\t$@\n"
@@ -92,9 +97,11 @@ libxbps.a: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
 install: all
 	install -d $(DESTDIR)$(LIBDIR)
 	install -m 644 libxbps.a $(DESTDIR)$(LIBDIR)
+ifndef BUILD_STATIC
 	install -m 755 $(LIBXBPS_SHLIB) $(DESTDIR)$(LIBDIR)
 	cp -a libxbps.so $(DESTDIR)$(LIBDIR)
 	cp -a libxbps.so.$(LIBXBPS_MAJOR) $(DESTDIR)$(LIBDIR)
+endif
 
 .PHONY: uninstall
 uninstall:
