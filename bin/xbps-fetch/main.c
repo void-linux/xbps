@@ -88,8 +88,8 @@ main(int argc, char **argv)
 	int flags = 0, c = 0, rv = 0;
 	bool verbose = false;
 	bool shasum = false;
-	struct xbps_handle xh = {};
-	struct xferstat xfer = {};
+	struct xbps_handle xh = { 0 };
+	struct xferstat xfer = { 0 };
 	const char *filename = NULL, *progname = argv[0];
 	const struct option longopts[] = {
 		{ "out", required_argument, NULL, 'o' },
