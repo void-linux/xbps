@@ -16,7 +16,10 @@ LIBPROP_OBJS += portableproplib/prop_stack.o portableproplib/prop_string.o
 LIBPROP_OBJS += portableproplib/prop_array_util.o portableproplib/prop_number.o
 LIBPROP_OBJS += portableproplib/prop_dictionary_util.o portableproplib/prop_zlib.o
 LIBPROP_OBJS += portableproplib/prop_data.o
-LIBPROP_CFLAGS = -Wno-unused-parameter -fvisibility=hidden
+LIBPROP_CFLAGS = -Wno-unused-parameter
+ifdef HAVE_VISIBILITY
+LIBPROP_CFLAGS += -fvisibility=hidden
+endif
 
 # libfetch
 LIBFETCH_OBJS = fetch/common.o fetch/fetch.o fetch/file.o
