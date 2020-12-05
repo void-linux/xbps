@@ -51,7 +51,7 @@ set_extract_flags(uid_t euid)
 static bool
 match_preserved_file(struct xbps_handle *xhp, const char *entry)
 {
-	char *file;
+	const char *file;
 
 	if (xhp->preserved_files == NULL)
 		return false;
@@ -60,7 +60,7 @@ match_preserved_file(struct xbps_handle *xhp, const char *entry)
 		file = strchr(entry, '.') + 1;
 		assert(file);
 	} else {
-		file = __UNCONST(entry);
+		file = entry;
 	}
 
 	return xbps_match_string_in_array(xhp->preserved_files, file);
