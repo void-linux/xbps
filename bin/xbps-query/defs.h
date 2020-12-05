@@ -30,10 +30,6 @@
 
 #include "../xbps-install/defs.h"
 
-#ifndef __UNCONST
-#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
-#endif
-
 /* from show-deps.c */
 int	show_pkg_deps(struct xbps_handle *, const char *, bool, bool);
 int	show_pkg_revdeps(struct xbps_handle *, const char *, bool);

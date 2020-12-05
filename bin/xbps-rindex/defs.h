@@ -60,10 +60,6 @@
 
 #endif
 
-#ifndef __UNCONST
-#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
-#endif
-
 #define _XBPS_RINDEX		"xbps-rindex"
 
 /* From index-add.c */

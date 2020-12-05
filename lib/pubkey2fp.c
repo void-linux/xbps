@@ -83,7 +83,7 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 	mdctx = EVP_MD_CTX_new();
 	assert(mdctx);
 	pubkeydata = xbps_data_data_nocopy(pubkey);
-	bio = BIO_new_mem_buf(__UNCONST(pubkeydata), xbps_data_size(pubkey));
+	bio = BIO_new_mem_buf(pubkeydata, xbps_data_size(pubkey));
 	assert(bio);
 
 	pPubKey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);

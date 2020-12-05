@@ -52,7 +52,7 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 	ERR_load_crypto_strings();
 	SSL_load_error_strings();
 
-	bio = BIO_new_mem_buf(__UNCONST(xbps_data_data_nocopy(pubkey)),
+	bio = BIO_new_mem_buf(xbps_data_data_nocopy(pubkey),
 			xbps_data_size(pubkey));
 	assert(bio);
 
