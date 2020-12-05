@@ -79,7 +79,7 @@ xbps_array_ensure_capacity(xbps_array_t a, unsigned int i)
 void
 xbps_array_make_immutable(xbps_array_t a)
 {
-	return prop_array_make_immutable(a);
+	prop_array_make_immutable(a);
 }
 
 bool
@@ -121,7 +121,7 @@ xbps_array_add_first(xbps_array_t a, xbps_object_t obj)
 void
 xbps_array_remove(xbps_array_t a, unsigned int i)
 {
-	return prop_array_remove(a, i);
+	prop_array_remove(a, i);
 }
 
 bool
@@ -485,7 +485,7 @@ xbps_dictionary_ensure_capacity(xbps_dictionary_t d, unsigned int i)
 void
 xbps_dictionary_make_immutable(xbps_dictionary_t d)
 {
-	return prop_dictionary_make_immutable(d);
+	prop_dictionary_make_immutable(d);
 }
 
 xbps_object_iterator_t
@@ -515,7 +515,7 @@ xbps_dictionary_set(xbps_dictionary_t d, const char *s, xbps_object_t o)
 void
 xbps_dictionary_remove(xbps_dictionary_t d, const char *s)
 {
-	return prop_dictionary_remove(d, s);
+	prop_dictionary_remove(d, s);
 }
 
 xbps_object_t
@@ -534,7 +534,7 @@ xbps_dictionary_set_keysym(xbps_dictionary_t d, xbps_dictionary_keysym_t k,
 void
 xbps_dictionary_remove_keysym(xbps_dictionary_t d, xbps_dictionary_keysym_t k)
 {
-	return prop_dictionary_remove_keysym(d, k);
+	prop_dictionary_remove_keysym(d, k);
 }
 
 bool
@@ -807,13 +807,13 @@ xbps_number_equals_unsigned_integer(xbps_number_t n, uint64_t v)
 void
 xbps_object_retain(xbps_object_t o)
 {
-	return prop_object_retain(o);
+	prop_object_retain(o);
 }
 
 void
 xbps_object_release(xbps_object_t o)
 {
-	return prop_object_release(o);
+	prop_object_release(o);
 }
 
 xbps_type_t
@@ -843,13 +843,13 @@ xbps_object_iterator_next(xbps_object_iterator_t o)
 void
 xbps_object_iterator_reset(xbps_object_iterator_t o)
 {
-	return prop_object_iterator_reset(o);
+	prop_object_iterator_reset(o);
 }
 
 void
 xbps_object_iterator_release(xbps_object_iterator_t o)
 {
-	return prop_object_iterator_release(o);
+	prop_object_iterator_release(o);
 }
 
 /* prop_string */
