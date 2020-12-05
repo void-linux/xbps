@@ -42,6 +42,16 @@ Updates the pkgdb format to the latest version.
 .Bl -tag -width -x
 .It Fl a, Fl -all
 Process all registered packages, regardless of its state.
+.It Fl -checks Ar checks
+Run only the checks specified in
+.Ar checks ,
+a comma separated list. The available checks are
+.Sy files ,
+.Sy dependencies ,
+.Sy alternatives
+and
+.Sy pkgdb ,
+for internal checks.
 .It Fl C, Fl -config Ar dir
 Specifies a path to the XBPS configuration directory.
 If the first character is not '/' then it's a relative path of
