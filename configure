@@ -43,6 +43,7 @@ for instance \`--prefix=\$HOME'.
 
 --verbose 		Disable silent build to see compilation details
 --enable-rpath		Link binaries with rpath '\$ORIGIN/../lib'
+--disable-werror	Disable -Werror flag
 --enable-api-docs 	Install XBPS API Library documentation (default disabled)
 --enable-debug		Enables debugging (assertions and -g, default enabled)
 --enable-fulldebug	Enables extra debugging code (default disabled)
@@ -55,6 +56,9 @@ _EOF
 	exit 1
 }
 
+# use -Werror by default
+WERROR=error
+
 for x; do
 	opt=${x%%=*}
 	var=${x#*=}
@@ -62,6 +66,7 @@ for x; do
 	--enable-debug) DEBUG=yes;;
 	--enable-fulldebug) FULL_DEBUG=yes;;
 	--enable-rpath) SET_RPATH=yes;;
+	--disable-werror) WERROR= ;;
 	--prefix) PREFIX=$var;;
 	--exec-prefix) EPREFIX=$var;;
 	--bindir) BINDIR=$var;;
@@ -275,7 +280,7 @@ fi
 #
 # Check for some compiler warning flags.
 #
-for f in all extra error shadow "format=2" missing-prototypes \
+for f in all extra $WERROR shadow "format=2" missing-prototypes \
 	missing-declarations nested-externs vla overlength-strings \
 	unsafe-loop-optimizations undef sign-compare \
 	missing-include-dirs old-style-definition \
