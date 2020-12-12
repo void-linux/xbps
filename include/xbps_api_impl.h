@@ -95,6 +95,26 @@
 #define __arraycount(x) (sizeof(x) / sizeof(*x))
 #endif
 
+typedef enum transaction_file_type {
+	TYPE_LINK = 1,
+	TYPE_DIR,
+	TYPE_FILE,
+	TYPE_CONFFILE,
+} transaction_file_type_t;
+
+struct transaction_file {
+	const char *pkgname;
+	const char *pkgver;
+	char *sha256;
+	const char *target;
+	uint64_t size;
+	transaction_file_type_t type;
+	unsigned int index;
+	bool preserve;
+	bool update;
+	bool removepkg;
+};
+
 /**
  * @private
  */
@@ -135,14 +155,16 @@ bool HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t, xbps_dict
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
 int HIDDEN xbps_transaction_files(struct xbps_handle *,
 		xbps_object_iterator_t);
+void xbps_transaction_files_free(void);
 int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
 		xbps_object_iterator_t);
 int HIDDEN xbps_transaction_pkg_deps(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);
 
+struct transaction_file HIDDEN *
+xbps_transaction_file_new(struct xbps_handle *xhp UNUSED, const char *path);
+
 char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
-int HIDDEN xbps_file_hash_check_dictionary(struct xbps_handle *,
-		xbps_dictionary_t, const char *, const char *);
 int HIDDEN xbps_file_exec(struct xbps_handle *, const char *, ...);
 void HIDDEN xbps_set_cb_fetch(struct xbps_handle *, off_t, off_t, off_t,
 		const char *, bool, bool, bool);

@@ -266,6 +266,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 * Unpack all files on archive now.
 	 */
 	for (;;) {
+		struct transaction_file *file;
 		ar_rv = archive_read_next_header(ar, &entry);
 		if (ar_rv == ARCHIVE_EOF || ar_rv == ARCHIVE_FATAL)
 			break;
@@ -342,15 +343,17 @@ unpack_archive(struct xbps_handle *xhp,
 			continue;
 		}
 
+		assert(*entry_pname == '.');
+		file = xbps_transaction_file_new(xhp, entry_pname+1);
+		assert(file);
+
 		/*
 		 * Check if current entry is a configuration file,
 		 * that should be kept.
 		 */
-		if (!force && (entry_type == AE_IFREG)) {
-			buf = strchr(entry_pname, '.') + 1;
-			assert(buf != NULL);
-			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_filesd, buf);
-		}
+		keep_conf_file = !force
+		    && (entry_type == AE_IFREG)
+		    && file->type == TYPE_CONFFILE;
 
 		/*
 		 * If file to be extracted does not match the file type of
@@ -387,8 +390,9 @@ unpack_archive(struct xbps_handle *xhp,
 					}
 					rv = 0;
 				} else {
-					rv = xbps_file_hash_check_dictionary(
-					    xhp, binpkg_filesd, "files", buf);
+					xbps_dbg_printf(xhp, "%s: %s\n", entry_pname, file->sha256);
+					assert(file->sha256);
+					rv = xbps_file_sha256_check(entry_pname, file->sha256);
 					if (rv == -1) {
 						/* error */
 						xbps_dbg_printf(xhp,

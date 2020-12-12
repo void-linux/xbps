@@ -33,28 +33,10 @@
 #include "xbps_api_impl.h"
 #include "uthash.h"
 
-enum type {
-	TYPE_LINK = 1,
-	TYPE_DIR,
-	TYPE_FILE,
-	TYPE_CONFFILE,
-};
-
 struct item {
 	char *file;
 	size_t len;
-	struct {
-		const char *pkgname;
-		const char *pkgver;
-		char *sha256;
-		const char *target;
-		uint64_t size;
-		enum type type;
-		unsigned int index;
-		bool preserve;
-		bool update;
-		bool removepkg;
-	} old, new;
+	struct transaction_file old, new;
 	bool deleted;
 	UT_hash_handle hh;
 };
@@ -114,7 +96,7 @@ addItem(const char *file)
 }
 
 static const char *
-typestr(enum type typ)
+typestr(transaction_file_type_t typ)
 {
 	switch (typ) {
 	case TYPE_LINK:     return "symlink";
@@ -420,8 +402,8 @@ collect_obsoletes(struct xbps_handle *xhp)
 static int
 collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 		const char *pkgname, const char *pkgver, unsigned int idx,
-		const char *sha256, enum type type, bool update, bool removepkg,
-		bool preserve, bool removefile, const char *target)
+		const char *sha256, transaction_file_type_t type, bool update,
+		bool removepkg, bool preserve, bool removefile, const char *target)
 {
 	struct item *item;
 
@@ -526,6 +508,8 @@ add:
 		item->new.update = update;
 		item->new.removepkg = removepkg;
 		item->new.target = target;
+		if (sha256)
+			item->new.sha256 = strdup(sha256);
 	}
 	if (item->old.type && item->new.type) {
 		/*
@@ -565,8 +549,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
-			if (removefile)
-				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
+			xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
@@ -585,8 +568,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
-			if (removefile)
-				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
+			xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
 #if 0
 			/* XXX: how to handle conf_file size */
 			if (removefile && stat(file, &st) != -1 && size != (uint64_t)st.st_size)
@@ -746,8 +728,8 @@ pathcmp(const void *l1, const void *l2)
 	return (a->len < b->len) - (b->len < a->len);
 }
 
-static void
-cleanup(void)
+void
+xbps_transaction_files_free(void)
 {
 	struct item *item, *itmp;
 
@@ -858,6 +840,16 @@ out:
 		return rv;
 
 	rv = collect_obsoletes(xhp);
-	cleanup();
 	return rv;
+}
+
+struct transaction_file HIDDEN *
+xbps_transaction_file_new(struct xbps_handle *xhp UNUSED, const char *path)
+{
+	struct item *item;
+
+	if ((item = lookupItem(path)) == NULL)
+		return NULL;
+
+	return &item->new;
 }
