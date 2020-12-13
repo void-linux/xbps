@@ -1,0 +1,34 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+   testsuite:
+      strategy:
+         fail-fast: false
+         matrix:
+            c_library: [glibc, musl]
+            c_compiler: [gcc, clang]
+            include:
+               - c_library: glibc
+                 void_image: voidlinux/voidlinux
+               - c_library: musl
+                 void_image: voidlinux/voidlinux-musl
+
+               - c_library: musl
+                 void_image: voidlinux/voidlinux-musl
+                 c_compiler: pcc
+                 extra_deps: gcc
+
+      runs-on: ubuntu-latest
+      container: ${{ matrix.void_image }}
+      steps:
+         - uses: actions/checkout@v1
+         - run: |
+            xbps-install -Syu || xbps-install -yu xbps
+            xbps-install -y ${{ matrix.c_compiler }} ${{ matrix.extra_deps }} make pkg-config zlib-devel libressl-devel libarchive-devel kyua atf-devel
+         - name: Build
+           env:
+              CC: ${{ matrix.c_compiler }}
+           run: |
+              ./configure --enable-tests
+              make -j
+         - run: make check
