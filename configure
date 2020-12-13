@@ -202,7 +202,7 @@ echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_META_PATH=\\\"${DBDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DUNUSED=\"__attribute__((__unused__))\"" >>$CONFIG_MK
 
-if [ -d .git ]; then
+if [ -d .git ] && command -v git >/dev/null; then
 	_gitrev=$(git rev-parse --short HEAD)
 	echo "CPPFLAGS += -DXBPS_GIT=\\\"${_gitrev}\\\"" >>$CONFIG_MK
 fi
