@@ -160,8 +160,7 @@ int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
 		xbps_object_iterator_t);
 int HIDDEN xbps_transaction_pkg_deps(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);
 
-struct transaction_file HIDDEN *
-xbps_transaction_file_new(struct xbps_handle *xhp UNUSED, const char *path);
+struct transaction_file *xbps_transaction_file_new(struct xbps_handle *, const char *);
 
 char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
