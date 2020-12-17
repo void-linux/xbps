@@ -780,7 +780,8 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 
 		update = (ttype == XBPS_TRANS_UPDATE);
 
-		if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_UPDATE) {
+		if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_UPDATE
+		    || ttype == XBPS_TRANS_REINSTALL) {
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES, 0, pkgver,
 			    "%s: collecting files...", pkgver);
 			rv = collect_binpkg_files(xhp, obj, idx, update);
