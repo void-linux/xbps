@@ -53,7 +53,7 @@
 #define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | EXTRACT_FLAGS
 
 #ifndef __UNCONST
-#define __UNCONST(a)	((void *)(unsigned long)(const void *)(a))
+#define __UNCONST(a)	((void *)(uintptr_t)(const void *)(a))
 #endif
 
 /* libarchive compat */
