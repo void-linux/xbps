@@ -168,7 +168,7 @@ fetchIO		*ftp_request(struct url *, const char *, const char *,
 #define CHECK_FLAG(x)	(flags && strchr(flags, (x)))
 
 #ifndef __UNCONST
-#define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+#define __UNCONST(a)    ((void *)(uintptr_t)(const void *)(a))
 #endif
 
 #endif
