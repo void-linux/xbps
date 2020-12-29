@@ -42,7 +42,7 @@
 #include <sys/wait.h>
 #include <libgen.h>
 
-#include <openssl/sha.h>
+#include <bearssl.h>
 
 #include "xbps_api_impl.h"
 #include "fetch.h"
@@ -106,7 +106,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	char fetch_flags[8];
 	int fd = -1, rv = 0;
 	bool refetch = false, restart = false;
-	SHA256_CTX sha256;
+	br_sha256_context sha256;
 
 	assert(xhp);
 	assert(uri);
@@ -117,7 +117,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 			errno = ENOBUFS;
 			return -1;
 		}
-		SHA256_Init(&sha256);
+		br_sha256_init(&sha256);
 	}
 
 	/* Extern vars declared in libfetch */
@@ -232,7 +232,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	if (restart) {
 		if (digest) {
 			while ((bytes_read = read(fd, buf, sizeof(buf))) > 0) {
-				SHA256_Update(&sha256, buf, bytes_read);
+				br_sha256_update(&sha256, buf, bytes_read);
 			}
 			if (bytes_read == -1) {
 				xbps_dbg_printf(xhp, "IO error while reading %s: %s\n",
@@ -257,7 +257,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	 */
 	while ((bytes_read = fetchIO_read(fio, buf, sizeof(buf))) > 0) {
 		if (digest)
-			SHA256_Update(&sha256, buf, bytes_read);
+			br_sha256_update(&sha256, buf, bytes_read);
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
 			xbps_dbg_printf(xhp,
@@ -319,7 +319,7 @@ rename_file:
 	rv = 1;
 
 	if (digest)
-		SHA256_Final(digest, &sha256);
+		br_sha256_out(&sha256, digest);
 
 fetch_file_out:
 	if (fio != NULL)

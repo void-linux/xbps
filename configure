@@ -701,6 +701,12 @@ else
 fi
 
 #
+# bearssl doesn't ship pkg-config files
+#
+echo "LDFLAGS += -lbearssl" >>$CONFIG_MK
+echo "STATIC_LIBS += -lbearssl -static" >>$CONFIG_MK
+
+#
 # libssl with pkg-config support is required.
 #
 printf "Checking for libssl via pkg-config ... "
