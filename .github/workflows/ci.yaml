@@ -6,16 +6,14 @@ jobs:
          fail-fast: false
          matrix:
             c_library: [glibc, musl]
-            c_compiler: [gcc, clang]
+            c_compiler: [gcc, clang, pcc]
             include:
                - c_library: glibc
                  void_image: voidlinux/voidlinux
                - c_library: musl
                  void_image: voidlinux/voidlinux-musl
 
-               - c_library: musl
-                 void_image: voidlinux/voidlinux-musl
-                 c_compiler: pcc
+               - c_compiler: pcc
                  extra_deps: gcc
 
       runs-on: ubuntu-latest
