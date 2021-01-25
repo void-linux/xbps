@@ -1,5 +1,5 @@
 TOPDIR = ../../../..
--include $(TOPDIR)/config.mk
+include $(TOPDIR)/config.mk
 
 TESTSSUBDIR = xbps/libxbps/shell
 TESTSHELL = conf_files_test issue6_test issue18_test issue20_test remove_test

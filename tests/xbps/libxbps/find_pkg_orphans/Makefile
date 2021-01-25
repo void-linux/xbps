@@ -1,5 +1,5 @@
 TOPDIR = ../../../..
--include $(TOPDIR)/config.mk
+include $(TOPDIR)/config.mk
 
 TESTSSUBDIR = xbps/libxbps/find_pkg_orphans
 TEST = find_pkg_orphans_test

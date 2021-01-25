@@ -1,4 +1,4 @@
--include ../config.mk
+include ../config.mk
 
 # Makefile to build the libxbps API documentation.
 #

@@ -1,4 +1,4 @@
--include $(TOPDIR)/config.mk
+include $(TOPDIR)/config.mk
 
 OBJS	?= main.o
 

@@ -1,4 +1,5 @@
--include ../../../config.mk
+TOPDIR = ../../..
+include $(TOPDIR)/config.mk
 
 SUBDIRS = common
 
@@ -13,4 +14,4 @@ SUBDIRS += pkgdb
 SUBDIRS += config
 SUBDIRS += shell
 
-include ../../../mk/subdir.mk
+include $(TOPDIR)/mk/subdir.mk

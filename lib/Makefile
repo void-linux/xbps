@@ -1,4 +1,4 @@
--include ../config.mk
+include ../config.mk
 
 RANLIB ?= ranlib
 

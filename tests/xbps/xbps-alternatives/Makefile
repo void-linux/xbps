@@ -1,5 +1,5 @@
 TOPDIR = ../../..
--include $(TOPDIR)/config.mk
+include $(TOPDIR)/config.mk
 
 TESTSHELL = main_test
 TESTSSUBDIR = xbps/xbps-alternatives
