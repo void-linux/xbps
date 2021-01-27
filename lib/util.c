@@ -55,7 +55,7 @@ static bool is_revision(const char *str) {
 		return false;
 	}
 	/* allow underscore for accepting perl-Digest-1.17_01_1 etc. */
-	while (isdigit(str[0]) || str[0] == '_') {
+	while (isdigit((unsigned char)str[0]) || str[0] == '_') {
 		++str;
 	}
 	return str[0] == '\0';

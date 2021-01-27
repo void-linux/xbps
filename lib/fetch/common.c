@@ -927,7 +927,7 @@ fetch_ssl_tolower(char in)
  * conversions.
  */
 static int
-fetch_ssl_isalpha(char in)
+fetch_ssl_isalpha(unsigned char in)
 {
 	return ((in >= 'A' && in <= 'Z') || (in >= 'a' && in <= 'z'));
 }
@@ -964,8 +964,8 @@ fetch_ssl_is_trad_domain_label(const char *l, size_t len, int wcok)
 	if (!len || l[0] == '-' || l[len-1] == '-')
 		return (0);
 	for (i = 0; i < len; ++i) {
-		if (!isdigit(l[i]) &&
-		    !fetch_ssl_isalpha(l[i]) &&
+		if (!isdigit((unsigned char)l[i]) &&
+		    !fetch_ssl_isalpha((unsigned char)l[i]) &&
 		    !(l[i] == '*' && wcok) &&
 		    !(l[i] == '-' && l[i - 1] != '-'))
 			return (0);
