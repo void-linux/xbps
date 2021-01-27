@@ -69,6 +69,8 @@ If path starts with '/' it's an absolute path, otherwise it will be relative to
 Declares an ignored package.
 If a package depends on an ignored package the dependency is always satisfied,
 without installing the ignored package.
+It does not disable checks for introduced incompatibilities
+like shared library dependencies.
 .It Sy noextract=pattern
 Skip extraction of matching files.
 Patterns starting with a exclamation mark negate the previous match,
