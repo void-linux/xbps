@@ -192,10 +192,10 @@ fi
 [ -z "$DEBUG" ] && DEBUG=yes
 
 echo "CC =	$CC" >>$CONFIG_MK
-echo "CFLAGS +=	-O2" >>$CONFIG_MK
+echo "CFLAGS =	-O2" >>$CONFIG_MK
 
-echo "LDFLAGS +=  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
-echo "CFLAGS += 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
+echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
+echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSDEFCONF_PATH=\\\"${SHAREDIR}/xbps.d\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
@@ -369,13 +369,13 @@ if [ "$CC" = "tcc" ]; then
 fi
 
 # libfetch
-echo "CFLAGS +=	-I\$(TOPDIR)/lib/external/fetch" >>$CONFIG_MK
+echo "CPPFLAGS +=	-I\$(TOPDIR)/lib/fetch" >>$CONFIG_MK
 echo "LDFLAGS +=	-lssl" >>$CONFIG_MK
 echo "STATIC_LIBS =	\$(TOPDIR)/lib/libxbps.a" >>$CONFIG_MK
 
 # proplib
-echo "CFLAGS +=       -I\$(TOPDIR)/lib/external/portableproplib" >>$CONFIG_MK
-echo "CFLAGS +=       -I\$(TOPDIR)/lib/external/portableproplib/prop" >>$CONFIG_MK
+echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib" >>$CONFIG_MK
+echo "CPPFLAGS +=       -I\$(TOPDIR)/lib/portableproplib/prop" >>$CONFIG_MK
 echo "CFLAGS +=		-pthread" >>$CONFIG_MK
 
 #
@@ -433,7 +433,7 @@ fi
 if test -n "$HAVE_VASPRINTF"; then
 	echo "CPPFLAGS +=	-DHAVE_VASPRINTF" >> $CONFIG_MK
 else
-	echo "COMPAT_OBJS+=	external/vasprintf.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS+=	compat/vasprintf.o" >>$CONFIG_MK
 fi
 
 #
@@ -456,7 +456,7 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 	echo "CPPFLAGS +=	-DHAVE_STRCASESTR" >>$CONFIG_MK
 else
 	echo no.
-	echo "COMPAT_OBJS +=	external/strcasestr.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS +=	compat/strcasestr.o" >>$CONFIG_MK
 fi
 rm -f _$func _$func.c
 
@@ -479,7 +479,7 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 	echo "CPPFLAGS +=	-DHAVE_STRLCPY" >> $CONFIG_MK
 else
 	echo no.
-	echo "COMPAT_OBJS +=	external/strlcpy.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS +=	compat/strlcpy.o" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
 
@@ -501,7 +501,7 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 	echo "CPPFLAGS +=	-DHAVE_STRLCAT" >>$CONFIG_MK
 else
 	echo no.
-	echo "COMPAT_OBJS +=	external/strlcat.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS +=	compat/strlcat.o" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
 
@@ -544,7 +544,7 @@ if $XCC _$func.c -lutil -o _$func 2>/dev/null; then
 	echo "CPPFLAGS+= -DHAVE_HUMANIZE_NUMBER" >>$CONFIG_MK
 else
 	echo no.
-	echo "COMPAT_OBJS+=	external/humanize_number.o" >>$CONFIG_MK
+	echo "COMPAT_OBJS+=	compat/humanize_number.o" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
 
@@ -565,7 +565,7 @@ if $XCC _$func.c -o _$func 2>/dev/null; then
 	echo "CPPFLAGS += -DHAVE_RBTREE" >>$CONFIG_MK
 else
 	echo no.
-	echo "LIBPROP_OBJS += external/portableproplib/rb.o" >>$CONFIG_MK
+	echo "LIBPROP_OBJS += portableproplib/rb.o" >>$CONFIG_MK
 fi
 rm -f _$func.c _$func
 
