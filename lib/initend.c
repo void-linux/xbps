@@ -105,12 +105,6 @@ xbps_init(struct xbps_handle *xhp)
 		if (xbps_strlcpy(xhp->native_arch, un.machine,
 		    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
 			return ENOBUFS;
-#if defined(__linux__) && !defined(__GLIBC__)
-		/* musl libc on linux, just append -musl */
-		if (xbps_strlcat(xhp->native_arch, "-musl",
-		    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
-			return ENOBUFS;
-#endif
 	}
 	assert(*xhp->native_arch);
 
