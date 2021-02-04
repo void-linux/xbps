@@ -43,7 +43,6 @@
 int
 xbps_init(struct xbps_handle *xhp)
 {
-	struct utsname un;
 	const char *native_arch = NULL;
 	int rv = 0;
 
@@ -89,13 +88,6 @@ xbps_init(struct xbps_handle *xhp)
 	if (xbps_path_clean(xhp->sysconfdir) == -1)
 		return ENOTSUP;
 
-	/* set default native architecture before parsing configuration file */
-	if (uname(&un) == -1)
-		return ENOTSUP;
-	if (xbps_strlcpy(xhp->native_arch, un.machine,
-	    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
-		return ENOBUFS;
-
 	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN, XBPS_FETCH_CACHECONN_HOST);
 
 	/* process xbps.d directories */
@@ -111,6 +103,15 @@ xbps_init(struct xbps_handle *xhp)
 	if ((native_arch = getenv("XBPS_ARCH")) && *native_arch != '\0') {
 		if (xbps_strlcpy(xhp->native_arch, native_arch,
 		    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
+			return ENOBUFS;
+	}
+
+	if (*xhp->native_arch == '\0') {
+		struct utsname un;
+		if (uname(&un) == -1)
+			return ENOTSUP;
+		if (xbps_strlcpy(xhp->native_arch, un.machine,
+			sizeof xhp->native_arch) >= sizeof xhp->native_arch)
 			return ENOBUFS;
 	}
 	assert(*xhp->native_arch);
