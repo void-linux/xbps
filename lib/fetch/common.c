@@ -822,7 +822,7 @@ fetch_cache_get(const struct url *url, int af)
 	conn_t *conn, *last_conn = NULL;
 
 	pthread_mutex_lock(&cache_mtx);
-	for (conn = connection_cache; conn; conn = conn->next) {
+	for (conn = connection_cache; conn; last_conn = conn, conn = conn->next) {
 		if (conn->port == url->port &&
 		    strcmp(conn->scheme, url->scheme) == 0 &&
 		    strcmp(conn->host, url->host) == 0 &&
