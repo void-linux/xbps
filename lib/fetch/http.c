@@ -143,6 +143,7 @@ struct httpio
 	int		 eof;		/* end-of-file flag */
 	int		 error;		/* error flag */
 	size_t		 chunksize;	/* remaining size of current chunk */
+	off_t		 contentlength; /* remaining size of the content */
 #ifndef NDEBUG
 	size_t		 total;
 #endif
@@ -222,6 +223,9 @@ http_fillbuf(struct httpio *io, size_t len)
 	if (io->eof)
 		return (0);
 
+	if (io->contentlength >= 0 && (off_t)len > io->contentlength)
+		len = io->contentlength;
+
 	/* not chunked: just fetch the requested amount */
 	if (io->chunked == 0) {
 		if (http_growbuf(io, len) == -1)
@@ -231,6 +235,8 @@ http_fillbuf(struct httpio *io, size_t len)
 			return (-1);
 		}
 		io->buflen = nbytes;
+		if (io->contentlength)
+			io->contentlength -= io->buflen;
 		io->bufpos = 0;
 		return (io->buflen);
 	}
@@ -259,6 +265,8 @@ http_fillbuf(struct httpio *io, size_t len)
 	io->bufpos = 0;
 	io->buflen = nbytes;
 	io->chunksize -= nbytes;
+	if (io->contentlength >= 0)
+		io->contentlength -= io->buflen;
 
 	if (io->chunksize == 0) {
 		char endl[2];
@@ -330,6 +338,16 @@ http_closefn(void *v)
 	if (io->keep_alive) {
 		int val;
 
+		for (;;) {
+			ssize_t rd;
+			if ((rd = http_fillbuf(io, 512)) == -1) {
+				r = fetch_close(io->conn);
+				goto ouch;
+			}
+			if (rd == 0)
+				break;
+		}
+
 		val = 0;
 		setsockopt(io->conn->sd, IPPROTO_TCP, TCP_NODELAY, &val,
 		    sizeof(val));
@@ -344,16 +362,26 @@ http_closefn(void *v)
 		r = fetch_close(io->conn);
 	}
 
+ouch:
 	free(io->buf);
 	free(io);
 	return (r);
+}
+
+static void
+http_funinit(struct httpio *io, conn_t *conn, int chunked, int keep_alive, off_t clength)
+{
+	io->conn = conn;
+	io->chunked = chunked;
+	io->contentlength = clength;
+	io->keep_alive = keep_alive;
 }
 
 /*
  * Wrap a file descriptor up
  */
 static fetchIO *
-http_funopen(conn_t *conn, int chunked, int keep_alive)
+http_funopen(conn_t *conn, int chunked, int keep_alive, off_t clength)
 {
 	struct httpio *io;
 	fetchIO *f;
@@ -362,9 +390,7 @@ http_funopen(conn_t *conn, int chunked, int keep_alive)
 		fetch_syserr();
 		return (NULL);
 	}
-	io->conn = conn;
-	io->chunked = chunked;
-	io->keep_alive = keep_alive;
+	http_funinit(io, conn, chunked, keep_alive, clength);
 	f = fetchIO_unopen(io, http_readfn, http_writefn, http_closefn);
 	if (f == NULL) {
 		fetch_syserr();
@@ -1537,6 +1563,21 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 	return (http_request_body(URL, op, us, purl, flags, NULL, NULL));
 }
 
+static int
+slurp_body(conn_t *conn, int chunked, int keep_alive, size_t clength)
+{
+	struct httpio io = {0};
+	http_funinit(&io, conn, chunked, keep_alive, clength);
+	for (;;) {
+		ssize_t rd;
+		if ((rd = http_fillbuf(&io, 512)) == -1)
+			return -1;
+		if (rd == 0)
+			break;
+	}
+	return 0;
+}
+
 /*
  * Send a request and process the reply
  *
@@ -1960,7 +2001,14 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 		/* all other cases: we got a redirect */
 		e = conn->err;
 		clean_http_auth_challenges(&server_challenges);
-		fetch_close(conn);
+		if (keep_alive) {
+			if (slurp_body(conn, chunked, keep_alive, clength) == -1)
+				fetch_close(conn);
+			else
+				fetch_cache_put(conn, fetch_close);
+		} else {
+			fetch_close(conn);
+		}
 		conn = NULL;
 		if (!new) {
 			DEBUGF("redirect with no new location\n");
@@ -1985,10 +2033,9 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 		http_seterr(HTTP_NOT_MODIFIED);
 		if (keep_alive) {
 			fetch_cache_put(conn, fetch_close);
-		} else {
-			fetch_close(conn);
+			conn = NULL;
 		}
-		return (NULL);
+		goto ouch;
 	}
 
 	/* check for inconsistencies */
@@ -2023,8 +2070,19 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 	URL->offset = offset;
 	URL->length = clength;
 
+	if (HTTP_ERROR(conn->err)) {
+		if (keep_alive) {
+			if (slurp_body(conn, chunked, keep_alive, clength) == -1) {
+				fetch_close(conn);
+			}
+			fetch_cache_put(conn, fetch_close);
+			conn = NULL;
+		}
+		goto ouch;
+	}
+
 	/* wrap it up in a fetchIO */
-	if ((f = http_funopen(conn, chunked, keep_alive)) == NULL) {
+	if ((f = http_funopen(conn, chunked, keep_alive, clength)) == NULL) {
 		fetch_syserr();
 		goto ouch;
 	}
@@ -2034,10 +2092,6 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 	if (purl)
 		fetchFreeURL(purl);
 
-	if (HTTP_ERROR(conn->err)) {
-		fetchIO_close(f);
-		f = NULL;
-	}
 	clean_http_headerbuf(&headerbuf);
 	clean_http_auth_challenges(&server_challenges);
 	clean_http_auth_challenges(&proxy_challenges);
