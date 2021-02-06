@@ -489,7 +489,12 @@ http_get_reply(conn_t *conn, int *keep_alive)
 		return (HTTP_PROTOCOL_ERROR);
 	p = conn->buf + 4;
 	if (*p == '/') {
-		if (p[1] != '1' || p[2] != '.' || (p[3] != '0' && p[3] != '1'))
+		if (p[1] != '1' || p[2] != '.')
+			return (HTTP_PROTOCOL_ERROR);
+		if (p[3] == '1') {
+			if (keep_alive)
+				*keep_alive = 1;
+		} else if (p[3] != '0')
 			return (HTTP_PROTOCOL_ERROR);
 		/* HTTP/1.1 defaults to the use of "persistent connections" */
 		if (keep_alive && p[3] == '1') {
@@ -1871,6 +1876,10 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 				http_seterr(HTTP_PROTOCOL_ERROR);
 				goto ouch;
 			case hdr_connection:
+				if (keep_alive) {
+					keep_alive = (strcasecmp(p, "close") != 0);
+					break;
+				}
 				/* XXX too weak? */
 				keep_alive = (strcasecmp(p, "keep-alive") == 0);
 				break;
