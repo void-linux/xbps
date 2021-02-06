@@ -474,7 +474,7 @@ http_cmd(conn_t *conn, const char *fmt, ...)
  * Get and parse status line
  */
 static int
-http_get_reply(conn_t *conn)
+http_get_reply(conn_t *conn, int *keep_alive)
 {
 	char *p;
 
@@ -493,7 +493,12 @@ http_get_reply(conn_t *conn)
 		return (HTTP_PROTOCOL_ERROR);
 	p = conn->buf + 4;
 	if (*p == '/') {
-		if (p[1] != '1' || p[2] != '.' || (p[3] != '0' && p[3] != '1'))
+		if (p[1] != '1' || p[2] != '.')
+			return (HTTP_PROTOCOL_ERROR);
+		if (p[3] == '1') {
+			if (keep_alive)
+				*keep_alive = 1;
+		} else if (p[3] != '0')
 			return (HTTP_PROTOCOL_ERROR);
 		p += 4;
 	}
@@ -1475,7 +1480,7 @@ http_connect(struct url *URL, struct url *purl, const char *flags)
 		http_cmd(conn, "Host: %s:%d",
 		    URL->host, URL->port);
 		http_cmd(conn, "%s", "");
-		if (http_get_reply(conn) != HTTP_OK) {
+		if (http_get_reply(conn, NULL) != HTTP_OK) {
 			http_seterr(conn->err);
 			goto ouch;
 		}
@@ -1799,7 +1804,7 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 			   sizeof(val));
 
 		/* get reply */
-		switch (http_get_reply(conn)) {
+		switch (http_get_reply(conn, &keep_alive)) {
 		case HTTP_OK:
 		case HTTP_PARTIAL:
 		case HTTP_NOT_MODIFIED:
@@ -1875,6 +1880,10 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 				http_seterr(HTTP_PROTOCOL_ERROR);
 				goto ouch;
 			case hdr_connection:
+				if (keep_alive) {
+					keep_alive = (strcasecmp(p, "close") != 0);
+					break;
+				}
 				/* XXX too weak? */
 				keep_alive = (strcasecmp(p, "keep-alive") == 0);
 				break;
