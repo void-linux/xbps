@@ -152,7 +152,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	memset(&st, 0, sizeof(st));
 	if (stat(filename, &st) == 0) {
 		refetch = true;
-		url->last_modified = st.st_mtime;
+		url->ims_time = st.st_mtime;
 		xbps_strlcat(fetch_flags, "i", sizeof(fetch_flags));
 	} else {
 		if (errno != ENOENT) {
@@ -212,8 +212,8 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	xbps_dbg_printf("url->doc: %s\n", url->doc);
 	xbps_dbg_printf("url->offset: %zd\n", (ssize_t)url->offset);
 	xbps_dbg_printf("url->length: %zu\n", url->length);
-	xbps_dbg_printf("url->last_modified: %s\n",
-	    print_time(&url->last_modified));
+	xbps_dbg_printf("url->ims_time: %s\n",
+	    print_time(&url->ims_time));
 	/*
 	 * If restarting, open the file for appending otherwise create it.
 	 */
