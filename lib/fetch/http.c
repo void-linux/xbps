@@ -1428,7 +1428,7 @@ http_authorize(conn_t *conn, const char *hdr, http_auth_challenges_t *cs,
  * Connect to the correct HTTP server or proxy.
  */
 static conn_t *
-http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
+http_connect(struct url *URL, struct url *purl, const char *flags)
 {
 	struct url *curl;
 	conn_t *conn;
@@ -1458,10 +1458,8 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 
 	curl = (purl != NULL) ? purl : URL;
 
-	if ((conn = fetch_cache_get(curl, af)) != NULL) {
-		*cached = 1;
+	if ((conn = fetch_cache_get(curl, af)) != NULL)
 		return (conn);
-	}
 
 	if ((conn = fetch_connect(curl, af, verbose)) == NULL)
 		/* fetch_connect() has already set an error code */
@@ -1589,7 +1587,7 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 	char hbuf[URL_HOSTLEN + 7], *host;
 	conn_t *conn;
 	struct url *url, *new;
-	int chunked, direct, ims, keep_alive, noredirect, verbose, cached;
+	int chunked, direct, ims, keep_alive, noredirect, verbose;
 	int e, i, n, val;
 	off_t offset, clength, length, size;
 	time_t mtime;
@@ -1633,7 +1631,6 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 		length = -1;
 		size = -1;
 		mtime = 0;
-		cached = 0;
 
 		/* check port */
 		if (!url->port)
@@ -1648,7 +1645,7 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 		}
 
 		/* connect to server or proxy */
-		if ((conn = http_connect(url, purl, flags, &cached)) == NULL)
+		if ((conn = http_connect(url, purl, flags)) == NULL)
 			goto ouch;
 
 		/* append port number only if necessary */
@@ -1851,11 +1848,6 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 		case HTTP_PROTOCOL_ERROR:
 			/* fall through */
 		case -1:
-#if 0
-			--i;
-			if (cached)
-				continue;
-#endif
 			fetch_syserr();
 			goto ouch;
 		default:
