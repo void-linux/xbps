@@ -48,7 +48,7 @@ int	 fetchTimeout;
 int	 fetchConnTimeout = 300 * 1000;
 int	 fetchConnDelay = 250;
 volatile int	 fetchRestartCalls = 1;
-int	 fetchDebug;
+int	 fetchDebug = 1;
 
 
 /*** Local data **************************************************************/
@@ -148,26 +148,6 @@ fetchStat(struct url *URL, struct url_stat *us, const char *flags)
 	return (-1);
 }
 
-/*
- * Select the appropriate protocol for the URL scheme, and return a
- * list of files in the directory pointed to by the URL.
- */
-int
-fetchList(struct url_list *ue, struct url *URL, const char *pattern,
-    const char *flags)
-{
-
-	if (strcasecmp(URL->scheme, SCHEME_FILE) == 0)
-		return (fetchListFile(ue, URL, pattern, flags));
-	else if (strcasecmp(URL->scheme, SCHEME_FTP) == 0)
-		return (fetchListFTP(ue, URL, pattern, flags));
-	else if (strcasecmp(URL->scheme, SCHEME_HTTP) == 0)
-		return (fetchListHTTP(ue, URL, pattern, flags));
-	else if (strcasecmp(URL->scheme, SCHEME_HTTPS) == 0)
-		return (fetchListHTTP(ue, URL, pattern, flags));
-	url_seterr(URL_BAD_SCHEME);
-	return -1;
-}
 
 /*
  * Attempt to parse the given URL; if successful, call fetchXGet().
@@ -233,25 +213,6 @@ fetchStatURL(const char *URL, struct url_stat *us, const char *flags)
 }
 
 /*
- * Attempt to parse the given URL; if successful, call fetchList().
- */
-int
-fetchListURL(struct url_list *ue, const char *URL, const char *pattern,
-    const char *flags)
-{
-	struct url *u;
-	int rv;
-
-	if ((u = fetchParseURL(URL)) == NULL)
-		return -1;
-
-	rv = fetchList(ue, u, pattern, flags);
-
-	fetchFreeURL(u);
-	return rv;
-}
-
-/*
  * Make a URL
  */
 struct url *
@@ -275,6 +236,7 @@ fetchMakeURL(const char *scheme, const char *host, int port, const char *doc,
 		fetch_syserr();
 		return (NULL);
 	}
+	u->netrcfd = -1;
 
 	if ((u->doc = strdup(doc ? doc : "/")) == NULL) {
 		fetch_syserr();
@@ -299,6 +261,7 @@ fetchMakeURL(const char *scheme, const char *host, int port, const char *doc,
 static int
 fetch_hexval(char ch)
 {
+
 	if (ch >= '0' && ch <= '9')
 		return (ch - '0');
 	else if (ch >= 'a' && ch <= 'f')
@@ -337,67 +300,6 @@ fetch_pctdecode(char *dst, const char *src, size_t dlen)
 	return (s);
 }
 
-int
-fetch_urlpath_safe(char x)
-{
-	if ((x >= '0' && x <= '9') || (x >= 'A' && x <= 'Z') ||
-	    (x >= 'a' && x <= 'z'))
-		return 1;
-
-	switch (x) {
-	case '$':
-	case '-':
-	case '_':
-	case '.':
-	case '+':
-	case '!':
-	case '*':
-	case '\'':
-	case '(':
-	case ')':
-	case ',':
-	/* The following are allowed in segment and path components: */
-	case '?':
-	case ':':
-	case '@':
-	case '&':
-	case '=':
-	case '/':
-	case ';':
-	case '~':
-	/* If something is already quoted... */
-	case '%':
-		return 1;
-	default:
-		return 0;
-	}
-}
-
-/*
- * Copy an existing URL.
- */
-struct url *
-fetchCopyURL(const struct url *src)
-{
-	struct url *dst;
-	char *doc;
-
-	/* allocate struct url */
-	if ((dst = malloc(sizeof(*dst))) == NULL) {
-		fetch_syserr();
-		return (NULL);
-	}
-	if ((doc = strdup(src->doc)) == NULL) {
-		fetch_syserr();
-		free(dst);
-		return (NULL);
-	}
-	*dst = *src;
-	dst->doc = doc;
-
-	return dst;
-}
-
 /*
  * Split an URL into components. URL syntax is:
  * [method:/][/[user[:pwd]@]host[:port]/][document]
@@ -406,86 +308,46 @@ fetchCopyURL(const struct url *src)
 struct url *
 fetchParseURL(const char *URL)
 {
+	char *doc;
 	const char *p, *q;
 	struct url *u;
-	size_t i, count;
-	int pre_quoted;
+	int i, n;
 
 	/* allocate struct url */
 	if ((u = calloc(1, sizeof(*u))) == NULL) {
 		fetch_syserr();
 		return (NULL);
 	}
+	u->netrcfd = -1;
 
-	if (*URL == '/') {
-		pre_quoted = 0;
-		strcpy(u->scheme, SCHEME_FILE);
+	/* scheme name */
+	if ((p = strstr(URL, ":/"))) {
+                if (p - URL > URL_SCHEMELEN)
+                        goto ouch;
+                for (i = 0; URL + i < p; i++)
+                        u->scheme[i] = tolower((unsigned char)URL[i]);
+		URL = ++p;
+		/*
+		 * Only one slash: no host, leave slash as part of document
+		 * Two slashes: host follows, strip slashes
+		 */
+		if (URL[1] == '/')
+			URL = (p += 2);
+	} else {
 		p = URL;
-		goto quote_doc;
 	}
-	if (strncmp(URL, "file:", 5) == 0) {
-		pre_quoted = 1;
-		strcpy(u->scheme, SCHEME_FILE);
-		URL += 5;
-		if (URL[0] != '/' || URL[1] != '/' || URL[2] != '/') {
-			url_seterr(URL_MALFORMED);
-			goto ouch;
-		}
-		URL += 2;
-		p = URL;
-		goto quote_doc;
-	}
-	if (strncmp(URL, "http:", 5) == 0 ||
-	    strncmp(URL, "https:", 6) == 0) {
-		pre_quoted = 1;
-		if (URL[4] == ':') {
-			strcpy(u->scheme, SCHEME_HTTP);
-			URL += 5;
-		} else {
-			strcpy(u->scheme, SCHEME_HTTPS);
-			URL += 6;
-		}
+	if (!*URL || *URL == '/' || *URL == '.' ||
+	    (u->scheme[0] == '\0' &&
+		strchr(URL, '/') == NULL && strchr(URL, ':') == NULL))
+		goto nohost;
 
-		if (URL[0] != '/' || URL[1] != '/') {
-			url_seterr(URL_MALFORMED);
-			goto ouch;
-		}
-		URL += 2;
-		goto find_user;
-	}
-	if (strncmp(URL, "ftp:", 4) == 0) {
-		pre_quoted = 1;
-		strcpy(u->scheme, SCHEME_FTP);
-		URL += 4;
-		if (URL[0] != '/' || URL[1] != '/') {
-			url_seterr(URL_MALFORMED);
-			goto ouch;
-		}
-		URL += 2;
-		goto find_user;			
-	}
-	if (strncmp(URL, "socks5:", 7) == 0) {
-		pre_quoted = 1;
-		strcpy(u->scheme, SCHEME_SOCKS5);
-		URL += 7;
-		if (URL[0] != '/' || URL[1] != '/') {
-			url_seterr(URL_MALFORMED);
-			goto ouch;
-		}
-		URL += 2;
-		goto find_user;
-	}
-
-	url_seterr(URL_BAD_SCHEME);
-	goto ouch;
-
-find_user:
 	p = strpbrk(URL, "/@");
-	if (p != NULL && *p == '@') {
+	if (p && *p == '@') {
 		/* username */
 		q = fetch_pctdecode(u->user, URL, URL_USERLEN);
 		if (q == NULL)
 			goto ouch;
+
 		/* password */
 		if (*q == ':') {
 			q = fetch_pctdecode(u->pwd, q + 1, URL_PWDLEN);
@@ -498,66 +360,84 @@ find_user:
 	}
 
 	/* hostname */
-#ifdef INET6
-	if (*p == '[' && (q = strchr(p + 1, ']')) != NULL &&
-	    (*++q == '\0' || *q == '/' || *q == ':')) {
-		if ((i = q - p - 2) > URL_HOSTLEN)
-			i = URL_HOSTLEN;
-		strncpy(u->host, ++p, i);
-		p = q;
-	} else
-#endif
-		for (i = 0; *p && (*p != '/') && (*p != ':'); p++)
-			if (i < URL_HOSTLEN)
-				u->host[i++] = *p;
+	if (*p == '[') {
+		q = p + 1 + strspn(p + 1, ":0123456789ABCDEFabcdef");
+		if (*q++ != ']')
+			goto ouch;
+	} else {
+		/* valid characters in a DNS name */
+		q = p + strspn(p, "-." "0123456789"
+		    "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "_"
+		    "abcdefghijklmnopqrstuvwxyz");
+	}
+	if ((*q != '\0' && *q != '/' && *q != ':') || q - p > URL_HOSTLEN)
+		goto ouch;
+	for (i = 0; p + i < q; i++)
+		u->host[i] = tolower((unsigned char)p[i]);
+	u->host[i] = '\0';
+	p = q;
 
 	/* port */
 	if (*p == ':') {
-		for (q = ++p; *q && (*q != '/'); q++)
-			if (isdigit((unsigned char)*q))
-				u->port = u->port * 10 + (*q - '0');
-			else {
+		for (n = 0, q = ++p; *q && (*q != '/'); q++) {
+			if (*q >= '0' && *q <= '9' && n < INT_MAX / 10) {
+				n = n * 10 + (*q - '0');
+			} else {
 				/* invalid port */
 				url_seterr(URL_BAD_PORT);
 				goto ouch;
 			}
+		}
+		/* pkg extension allow for ssh compat */
+		/*if (n < 1 || n > IPPORT_MAX) */
+#ifndef IPPORT_MAX
+#define IPPORT_MAX 65535
+#endif
+		if (n < 0 || n > IPPORT_MAX)
+			goto ouch;
+		u->port = n;
 		p = q;
 	}
 
+nohost:
 	/* document */
 	if (!*p)
 		p = "/";
 
-quote_doc:
-	count = 1;
-	for (i = 0; p[i] != '\0'; ++i) {
-		if ((!pre_quoted && p[i] == '%') ||
-		    !fetch_urlpath_safe(p[i]))
-			count += 3;
-		else
-			++count;
-	}
+	if (strcmp(u->scheme, SCHEME_HTTP) == 0 ||
+	    strcmp(u->scheme, SCHEME_HTTPS) == 0) {
+		const char hexnums[] = "0123456789abcdef";
 
-	if ((u->doc = malloc(count)) == NULL) {
+		/* percent-escape whitespace. */
+		if ((doc = malloc(strlen(p) * 3 + 1)) == NULL) {
+			fetch_syserr();
+			goto ouch;
+		}
+		u->doc = doc;
+		while (*p != '\0') {
+			if (!isspace((unsigned char)*p)) {
+				*doc++ = *p++;
+			} else {
+				*doc++ = '%';
+				*doc++ = hexnums[((unsigned int)*p) >> 4];
+				*doc++ = hexnums[((unsigned int)*p) & 0xf];
+				p++;
+			}
+		}
+		*doc = '\0';
+	} else if ((u->doc = strdup(p)) == NULL) {
 		fetch_syserr();
 		goto ouch;
 	}
-	for (i = 0; *p != '\0'; ++p) {
-		if ((!pre_quoted && *p == '%') ||
-		    !fetch_urlpath_safe(*p)) {
-			u->doc[i++] = '%';
-			if ((unsigned char)*p < 160)
-				u->doc[i++] = '0' + ((unsigned char)*p) / 16;
-			else
-				u->doc[i++] = 'a' - 10 + ((unsigned char)*p) / 16;
-			if ((unsigned char)*p % 16 < 10)
-				u->doc[i++] = '0' + ((unsigned char)*p) % 16;
-			else
-				u->doc[i++] = 'a' - 10 + ((unsigned char)*p) % 16;
-		} else
-			u->doc[i++] = *p;
-	}
-	u->doc[i] = '\0';
+
+	DEBUGF("scheme:   \"%s\"\n"
+	    "user:     \"%s\"\n"
+	    "password: \"%s\"\n"
+	    "host:     \"%s\"\n"
+	    "port:     \"%d\"\n"
+	    "document: \"%s\"\n",
+	    u->scheme, u->user, u->pwd,
+	    u->host, u->port, u->doc);
 
 	return (u);
 
