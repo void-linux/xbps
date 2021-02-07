@@ -238,19 +238,24 @@ fetchMakeURL(const char *scheme, const char *host, int port, const char *doc,
 	}
 	u->netrcfd = -1;
 
-	if ((u->doc = strdup(doc ? doc : "/")) == NULL) {
-		fetch_syserr();
-		free(u);
-		return (NULL);
+#define seturl(x)                                         \
+	if (strlcpy(u->x, x, sizeof(u->x)) >= sizeof(u->x)) { \
+		url_seterr(URL_MALFORMED);                        \
+		free(u);                                          \
+		return (NULL);                                    \
 	}
-
-#define seturl(x) snprintf(u->x, sizeof(u->x), "%s", x)
 	seturl(scheme);
 	seturl(host);
 	seturl(user);
 	seturl(pwd);
 #undef seturl
 	u->port = port;
+
+	if ((u->doc = strdup(doc ? doc : "/")) == NULL) {
+		fetch_syserr();
+		free(u);
+		return (NULL);
+	}
 
 	return (u);
 }
@@ -442,6 +447,7 @@ nohost:
 	return (u);
 
 ouch:
+	url_seterr(URL_MALFORMED);
 	free(u);
 	return (NULL);
 }

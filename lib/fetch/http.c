@@ -241,6 +241,7 @@ http_fillbuf(struct httpio *io, size_t len)
 	if (io->chunksize == 0) {
 		switch (http_new_chunk(io)) {
 		case -1:
+			http_seterr(HTTP_PROTOCOL_ERROR);;
 			io->error = EPROTO;
 			return (-1);
 		case 0:
@@ -492,26 +493,25 @@ http_get_reply(conn_t *conn, int *keep_alive)
 	p = conn->buf + 4;
 	if (*p == '/') {
 		if (p[1] != '1' || p[2] != '.')
-			return (HTTP_PROTOCOL_ERROR);
+			goto ouch;
 		if (p[3] == '1') {
 			if (keep_alive)
 				*keep_alive = 1;
 		} else if (p[3] != '0')
-			return (HTTP_PROTOCOL_ERROR);
-		/* HTTP/1.1 defaults to the use of "persistent connections" */
-		if (keep_alive && p[3] == '1') {
-			*keep_alive = 1;
-		}
+			goto ouch;
 		p += 4;
 	}
 	if (*p != ' ' ||
 	    !isdigit((unsigned char)p[1]) ||
 	    !isdigit((unsigned char)p[2]) ||
 	    !isdigit((unsigned char)p[3]))
-		return (HTTP_PROTOCOL_ERROR);
+		goto ouch;
 
 	conn->err = (p[1] - '0') * 100 + (p[2] - '0') * 10 + (p[3] - '0');
 	return (conn->err);
+ouch:
+	conn->err = HTTP_PROTOCOL_ERROR;
+	return (HTTP_PROTOCOL_ERROR);
 }
 
 /*
@@ -1541,7 +1541,7 @@ http_get_proxy(struct url * url, const char *flags)
 	if (((p = getenv("HTTP_PROXY")) || (p = getenv("http_proxy"))) &&
 	    *p && (purl = fetchParseURL(p))) {
 		if (!*purl->scheme)
-			strcpy(purl->scheme, SCHEME_HTTP);
+			strlcpy(purl->scheme, SCHEME_HTTP, sizeof(purl->scheme));
 		if (!purl->port)
 			purl->port = fetch_default_proxy_port(purl->scheme);
 		if (strcmp(purl->scheme, SCHEME_HTTP) == 0)
@@ -1855,7 +1855,8 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 			 */
 			break;
 		case HTTP_PROTOCOL_ERROR:
-			/* fall through */
+			http_seterr(conn->err);
+			goto ouch;
 		case -1:
 			fetch_syserr();
 			goto ouch;
@@ -1930,8 +1931,8 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 				/* Only copy credentials if the host matches */
 				if (strcmp(new->host, url->host) == 0 &&
 				    !*new->user && !*new->pwd) {
-					strcpy(new->user, url->user);
-					strcpy(new->pwd, url->pwd);
+					strlcpy(new->user, url->user, sizeof(new->user));
+					strlcpy(new->pwd, url->pwd, sizeof(new->pwd));
 				}
 				new->offset = url->offset;
 				new->length = url->length;
