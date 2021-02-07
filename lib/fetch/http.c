@@ -1581,6 +1581,7 @@ slurp_body(conn_t *conn, int chunked, int keep_alive, size_t clength)
 		if (rd == 0)
 			break;
 	}
+	free(io.buf);
 	return 0;
 }
 
