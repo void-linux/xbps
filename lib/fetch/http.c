@@ -245,7 +245,8 @@ http_fillbuf(struct httpio *io, size_t len)
 			return (-1);
 		case 0:
 			io->eof = 1;
-			return (0);
+			io->buflen = 0;
+			goto trailer;
 		}
 	}
 
@@ -264,6 +265,7 @@ http_fillbuf(struct httpio *io, size_t len)
 	if (io->contentlength >= 0)
 		io->contentlength -= io->buflen;
 
+trailer:
 	if (io->chunksize == 0) {
 		char endl[2];
 		ssize_t len2;
