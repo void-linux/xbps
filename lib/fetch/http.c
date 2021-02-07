@@ -1592,6 +1592,7 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 {
 	char timebuf[80];
 	char hbuf[URL_HOSTLEN + 7], *host;
+	struct tm timestruct;
 	conn_t *conn;
 	struct url *url, *new;
 	int chunked, direct, ims, keep_alive, noredirect, verbose;
@@ -1601,7 +1602,6 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 	const char *p;
 	fetchIO *f;
 	hdr_t h;
-	struct tm *timestruct;
 	http_headerbuf_t headerbuf;
 	http_auth_challenges_t server_challenges;
 	http_auth_challenges_t proxy_challenges;
@@ -1675,9 +1675,9 @@ http_request_body(struct url *URL, const char *op, struct url_stat *us,
 		}
 
 		if (ims && url->ims_time) {
-			timestruct = gmtime((time_t *)&url->ims_time);
+			gmtime_r(&url->ims_time, &timestruct);
 			(void)strftime(timebuf, 80, "%a, %d %b %Y %T GMT",
-			    timestruct);
+			    &timestruct);
 			if (verbose)
 				fetch_info("If-Modified-Since: %s", timebuf);
 			http_cmd(conn, "If-Modified-Since: %s", timebuf);
