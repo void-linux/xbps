@@ -50,6 +50,16 @@ xbps_init(struct xbps_handle *xhp)
 
 	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
 
+	/* Initialize pkgdb_fd and pkgdb_map_names_done */
+	xhp->pkgdb_fd = -1;
+	xhp->pkgdb_map_names_done = false;
+
+	/* Various initialization used to store items in the transaction */
+	xhp->hashtab = NULL;
+	xhp->items = NULL;
+	xhp->itemsidx = 0;
+	xhp->itemssz = 0;
+
 	/* Set rootdir */
 	if (xhp->rootdir[0] == '\0') {
 		xhp->rootdir[0] = '/';
@@ -88,37 +98,33 @@ xbps_init(struct xbps_handle *xhp)
 	if (xbps_path_clean(xhp->sysconfdir) == -1)
 		return ENOTSUP;
 
-	/* target architecture */
-	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
-	if (xhp->target_arch && *xhp->target_arch == '\0')
-		xhp->target_arch = NULL;
-
-	/* native architecture */
-	if ((native_arch = getenv("XBPS_ARCH")) && *native_arch != '\0') {
-		if (xbps_strlcpy(xhp->native_arch, native_arch,
-		    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
-			return ENOBUFS;
-	} else {
-		struct utsname un;
-		if (uname(&un) == -1)
-			return ENOTSUP;
-		if (xbps_strlcpy(xhp->native_arch, un.machine,
-		    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
-			return ENOBUFS;
-#if defined(__linux__) && !defined(__GLIBC__)
-		/* musl libc on linux, just append -musl */
-		if (xbps_strlcat(xhp->native_arch, "-musl",
-		    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
-			return ENOBUFS;
-#endif
-	}
-	assert(*xhp->native_arch);
-
 	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN, XBPS_FETCH_CACHECONN_HOST);
 
 	/* process xbps.d directories */
 	if ((rv = xbps_conf_init(xhp)) != 0)
 		return rv;
+
+	/* target arch only through env var */
+	xhp->target_arch = getenv("XBPS_TARGET_ARCH");
+	if (xhp->target_arch && *xhp->target_arch == '\0')
+		xhp->target_arch = NULL;
+
+	/* allow to overwrite uname(3) and conf file with env variable */
+	if ((native_arch = getenv("XBPS_ARCH")) && *native_arch != '\0') {
+		if (xbps_strlcpy(xhp->native_arch, native_arch,
+		    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
+			return ENOBUFS;
+	}
+
+	if (*xhp->native_arch == '\0') {
+		struct utsname un;
+		if (uname(&un) == -1)
+			return ENOTSUP;
+		if (xbps_strlcpy(xhp->native_arch, un.machine,
+			sizeof xhp->native_arch) >= sizeof xhp->native_arch)
+			return ENOBUFS;
+	}
+	assert(*xhp->native_arch);
 
 	/* Set cachedir */
 	if (xhp->cachedir[0] == '\0') {

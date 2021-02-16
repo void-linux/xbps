@@ -679,6 +679,39 @@ struct xbps_handle {
 	 * 	- XBPS_FLAG_* (see above)
 	 */
 	int flags;
+	/**
+	 * @var pkgdb_fd
+	 *
+	 * Pkgdb file descriptor
+	 */
+	int pkgdb_fd;
+	/**
+	 * @var pkgdb_map_names_done
+	 *
+	 * The boolean value representing if have been set pkgname for all packages in pkgdb
+	 *
+	 */
+	bool pkgdb_map_names_done;
+	/**
+	 * @brief hashtab
+	 *
+	 * hash table to look up files by path
+	 */
+	struct item_transaction *hashtab;
+	/**
+	 * @brief items
+	 *
+	 * Array of items representing the files contained in a package
+	 *
+	*/
+	struct item_transaction **items;
+	/**
+	* @brief itemsidx and itemssz
+	*
+	* These variable are used to sort items
+	*/
+	size_t itemsidx;
+	size_t itemssz;
 };
 
 void xbps_dbg_printf(struct xbps_handle *, const char *, ...) __attribute__ ((format (printf, 2, 3)));

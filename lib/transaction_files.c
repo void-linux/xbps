@@ -29,18 +29,28 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "xbps_api_impl.h"
 #include "uthash.h"
 
+/**
+ * @enum type
+ *
+ * Integer representing the type of item
+ *
+ */
 enum type {
 	TYPE_LINK = 1,
 	TYPE_DIR,
 	TYPE_FILE,
 	TYPE_CONFFILE,
 };
-
-struct item {
+/**
+ * @struct item
+ *
+ * This structure sets some global properties for a item
+ *
+ */
+struct item_transaction {
 	char *file;
 	size_t len;
 	struct {
@@ -59,44 +69,36 @@ struct item {
 	UT_hash_handle hh;
 };
 
-/* hash table to look up files by path */
-static struct item *hashtab = NULL;
-
-/* list of files to be sorted using qsort */
-static struct item **items = NULL;
-static size_t itemsidx = 0;
-static size_t itemssz = 0;
-
-static struct item *
-lookupItem(const char *file)
+static struct item_transaction *
+lookupItem(struct xbps_handle *xhp, const char *file)
 {
-	struct item *item = NULL;
+	struct item_transaction *item = NULL;
 
 	assert(file);
 
-	HASH_FIND_STR(hashtab, file, item);
+	HASH_FIND_STR(xhp->hashtab, file, item);
 	return item;
 }
 
-static struct item *
-addItem(const char *file)
+static struct item_transaction *
+addItem(struct xbps_handle *xhp, const char *file)
 {
-	struct item *item = calloc(1, sizeof (struct item));
+	struct item_transaction *item = calloc(1, sizeof (struct item_transaction));
 	if (item == NULL)
 		return NULL;
 
 	assert(file);
 	assert(item);
 
-	if (itemsidx+1 >= itemssz) {
-		itemssz = itemssz ? itemssz*2 : 64;
-		items = realloc(items, itemssz*sizeof (struct item *));
-		if (items == NULL) {
+	if (xhp->itemsidx+1 >= xhp->itemssz) {
+		xhp->itemssz = xhp->itemssz ? xhp->itemssz*2 : 64;
+		xhp->items = realloc(xhp->items, xhp->itemssz*sizeof (struct item *));
+		if (xhp->items == NULL) {
 			free(item);
 			return NULL;
 		}
 	}
-	items[itemsidx++] = item;
+	xhp->items[xhp->itemsidx++] = item;
 
 	if ((item->file = xbps_xasprintf(".%s", file)) == NULL) {
 		free(item);
@@ -108,7 +110,7 @@ addItem(const char *file)
 	 * File paths are stored relative, but looked up absolute.
 	 * Skip the leading . (dot) and substract it from the length.
 	 */
-	HASH_ADD_KEYPTR(hh, hashtab, item->file+1, item->len-1, item);
+	HASH_ADD_KEYPTR(hh, xhp->hashtab, item->file+1, item->len-1, item);
 
 	return item;
 }
@@ -138,7 +140,7 @@ match_preserved_file(struct xbps_handle *xhp, const char *file)
 static bool
 can_delete_directory(struct xbps_handle *xhp, const char *file, size_t len, size_t max)
 {
-	struct item *item;
+	struct item_transaction *item;
 	size_t rmcount = 0, fcount = 0;
 	DIR *dp;
 
@@ -159,7 +161,7 @@ can_delete_directory(struct xbps_handle *xhp, const char *file, size_t len, size
 	 * 2. Count deletable directory content.
 	 */
 	for (size_t i = 0; i < max; i++) {
-		item = items[i];
+		item = xhp->items[i];
 		if (strncmp(item->file, file, len) == 0) {
 			if (!item->deleted) {
 				closedir(dp);
@@ -204,7 +206,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 		"/var/run",
 	};
 	xbps_dictionary_t obsd;
-	struct item *item;
+	struct item_transaction *item;
 	int rv = 0;
 
 	if (xhp->transd == NULL)
@@ -222,16 +224,16 @@ collect_obsoletes(struct xbps_handle *xhp)
 	 * - Check if obsolete file can be deleted.
 	 * - Check if directory needs and can be deleted.
 	 */
-	for (size_t i = 0; i < itemsidx; i++) {
+	for (size_t i = 0; i < xhp->itemsidx; i++) {
 		xbps_array_t a;
 		const char *pkgname;
 		bool alloc = false, found = false;
 
-		item = items[i];
+		item = xhp->items[i];
 
 		if (match_preserved_file(xhp, item->file)) {
 			xbps_dbg_printf(xhp, "[obsoletes] %s: file exists on disk"
-			    " and must be preserved: %s\n", item->old.pkgver, item->file);
+				" and must be preserved: %s\n", item->old.pkgver, item->file);
 			continue;
 		}
 
@@ -268,7 +270,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 #endif
 			continue;
 		} else if (item->old.type == TYPE_DIR &&
-		    item->new.type != TYPE_DIR && item->new.type != 0) {
+			item->new.type != TYPE_DIR && item->new.type != 0) {
 			/*
 			 * Directory replaced by a file or symlink.
 			 * We MUST be able to delete the directory.
@@ -423,12 +425,12 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 		const char *sha256, enum type type, bool update, bool removepkg,
 		bool preserve, bool removefile, const char *target)
 {
-	struct item *item;
+	struct item_transaction *item;
 
 	assert(file);
 
-	if ((item = lookupItem(file)) == NULL) {
-		item = addItem(file);
+	if ((item = lookupItem(xhp, file)) == NULL) {
+		item = addItem(xhp, file);
 		if (item == NULL)
 			return ENOMEM;
 		item->deleted = false;
@@ -741,24 +743,24 @@ out:
 static int
 pathcmp(const void *l1, const void *l2)
 {
-	const struct item *a = *(const struct item * const*)l1;
-	const struct item *b = *(const struct item * const*)l2;
+	const struct item_transaction *a = *(const struct item_transaction * const*)l1;
+	const struct item_transaction *b = *(const struct item_transaction * const*)l2;
 	return (a->len < b->len) - (b->len < a->len);
 }
 
 static void
-cleanup(void)
+cleanup(struct xbps_handle *xhp)
 {
-	struct item *item, *itmp;
+	struct item_transaction *item, *itmp;
 
-	HASH_ITER(hh, hashtab, item, itmp) {
-		HASH_DEL(hashtab, item);
+	HASH_ITER(hh, xhp->hashtab, item, itmp) {
+		HASH_DEL(xhp->hashtab, item);
 		free(item->file);
 		free(item->old.sha256);
 		free(item->new.sha256);
 		free(item);
 	}
-	free(items);
+	free(xhp->items);
 }
 
 int HIDDEN
@@ -844,7 +846,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	 * Sort items by path length, to make it easier to find files in
 	 * directories.
 	 */
-	qsort(items, itemsidx, sizeof (struct item *), pathcmp);
+	qsort(xhp->items, xhp->itemsidx, sizeof (struct item_transaction *), pathcmp);
 
 	if (chdir(xhp->rootdir) == -1) {
 		rv = errno;
@@ -858,6 +860,6 @@ out:
 		return rv;
 
 	rv = collect_obsoletes(xhp);
-	cleanup();
+	cleanup(xhp);
 	return rv;
 }
