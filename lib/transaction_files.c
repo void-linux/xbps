@@ -32,24 +32,13 @@
 #include "xbps_api_impl.h"
 #include "uthash.h"
 
-/**
- * @enum type
- *
- * Integer representing the type of item
- *
- */
 enum type {
 	TYPE_LINK = 1,
 	TYPE_DIR,
 	TYPE_FILE,
 	TYPE_CONFFILE,
 };
-/**
- * @struct item
- *
- * This structure sets some global properties for a item
- *
- */
+
 struct item_transaction {
 	char *file;
 	size_t len;
