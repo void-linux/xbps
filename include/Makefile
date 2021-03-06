@@ -4,7 +4,6 @@ INCS =	xbps.h
 
 .PHONY: all
 all:
-	sed -e "s|@@VERSION@@|${VERSION}|g" ${INCS}.in > ${INCS}
 
 .PHONY: install
 install:
