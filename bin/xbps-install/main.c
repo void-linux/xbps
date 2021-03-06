@@ -63,6 +63,7 @@ usage(bool fail)
 	    "     --reproducible          Enable reproducible mode in pkgdb\n"
 	    " -S, --sync                  Sync remote repository index\n"
 	    " -u, --update                Update target package(s)\n"
+	    "     --verify-sigs           Verify package signatures even for local repositories\n"
 	    " -v, --verbose               Verbose messages\n"
 	    " -y, --yes                   Assume yes to all questions\n"
 	    " -V, --version               Show XBPS version\n");
@@ -118,6 +119,7 @@ main(int argc, char **argv)
 		{ "version", no_argument, NULL, 'V' },
 		{ "yes", no_argument, NULL, 'y' },
 		{ "reproducible", no_argument, NULL, 1 },
+		{ "verify-sig", no_argument, NULL, 2 },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
@@ -137,6 +139,9 @@ main(int argc, char **argv)
 		switch (c) {
 		case 1:
 			flags |= XBPS_FLAG_INSTALL_REPRO;
+			break;
+		case 2:
+			flags |= XBPS_FLAG_VERIFY_LOCAL_REPO;
 			break;
 		case 'A':
 			flags |= XBPS_FLAG_INSTALL_AUTO;

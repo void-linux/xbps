@@ -47,8 +47,9 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		return ENOMEM;
 	}
 	/*
-	 * For pkgs in local repos check the sha256 hash.
-	 * For pkgs in remote repos check the RSA signature.
+	 * For all pkgs, check the sha256 hash.
+	 * For pkgs in local repos, check the RSA sig if requested.
+	 * For pkgs in remote repos, always check the RSA signature.
 	 */
 	if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 		rv = errno;
@@ -56,35 +57,46 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			"%s: %s\n", pkgver, repoloc, strerror(errno));
 		goto out;
 	}
-	if (repo->is_remote) {
-		/* remote repo */
+
+	/* check sha256 */
+	xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
+		"%s: verifying SHA256 hash...", pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "filename-sha256", &sha256);
+	if ((rv = xbps_file_sha256_check(binfile, sha256)) != 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
+			"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
+		goto out;
+	}
+
+	if (repo->is_remote || xhp->flags & XBPS_FLAG_VERIFY_LOCAL_REPO) {
+		/* check RSA sig */
 		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 			"%s: verifying RSA signature...", pkgver);
 
 		if (!xbps_verify_file_signature(repo, binfile)) {
-			char *sigfile;
 			rv = EPERM;
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: the RSA signature is not valid!", pkgver);
-			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				"%s: removed pkg archive and its signature.", pkgver);
-			(void)remove(binfile);
-			sigfile = xbps_xasprintf("%s.sig", binfile);
-			(void)remove(sigfile);
-			free(sigfile);
+			if (repo->is_remote) {
+				/*
+				 * Don't remove files from local repositories, since we might
+				 * not be the "owner"; with the XBPS cache, we are the owners.
+				 */
+				char *sigfile;
+				const char *errmsg;
+				sigfile = xbps_xasprintf("%s.sig", binfile);
+				assert(sigfile);
+				if (remove(binfile) == 0 && remove(sigfile) == 0) {
+					errmsg = "removed pkg archive and its signature";
+				} else {
+					errmsg = "there was an error removing pkg archive and its signature";
+				}
+				free(sigfile);
+				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
+					"%s: %s.", pkgver, errmsg);
+			}
 			goto out;
 		}
-	} else {
-		/* local repo */
-		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
-			"%s: verifying SHA256 hash...", pkgver);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "filename-sha256", &sha256);
-		if ((rv = xbps_file_sha256_check(binfile, sha256)) != 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
-			goto out;
-		}
-
 	}
 out:
 	free(binfile);
