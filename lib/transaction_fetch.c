@@ -37,6 +37,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	struct xbps_repo *repo;
 	const char *pkgver, *repoloc, *sha256;
 	char *binfile;
+	struct xbps_sha256_digest digest;
 	int rv = 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
@@ -62,7 +63,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 		"%s: verifying SHA256 hash...", pkgver);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "filename-sha256", &sha256);
-	if ((rv = xbps_file_sha256_check(binfile, sha256)) != 0) {
+	if ((rv = xbps_file_sha256_check_raw(binfile, sha256, &digest)) != 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 			"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
 		goto out;
@@ -73,7 +74,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 			"%s: verifying RSA signature...", pkgver);
 
-		if (!xbps_verify_file_signature(repo, binfile)) {
+		if (!xbps_verify_signature(repo, binfile, &digest)) {
 			rv = EPERM;
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: the RSA signature is not valid!", pkgver);
@@ -110,7 +111,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	char buf[PATH_MAX];
 	char *sigsuffix;
 	const char *pkgver, *arch, *fetchstr, *repoloc;
-	unsigned char digest[XBPS_SHA256_DIGEST_SIZE] = {0};
+	struct xbps_sha256_digest digest = {0};
 	int rv = 0;
 
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "repository", &repoloc);
@@ -141,8 +142,8 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' package (from `%s')...", pkgver, repoloc);
 
-	if ((rv = xbps_fetch_file_sha256(xhp, buf, NULL, digest,
-	    sizeof digest)) == -1) {
+	if ((rv = xbps_fetch_file_sha256(xhp, buf, NULL, digest.buffer,
+	    sizeof digest.buffer)) == -1) {
 		rv = fetchLastErrCode ? fetchLastErrCode : errno;
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
@@ -169,7 +170,8 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	 * If digest is not set, binary package was not downloaded,
 	 * i.e. 304 not modified, verify by file instead.
 	 */
-	if (*digest) {
+	/* FIXME: this rejects hashes that start with 0 */
+	if (digest.buffer[0]) {
 		*sigsuffix = '\0';
 		if (!xbps_verify_file_signature(repo, buf)) {
 			rv = EPERM;
@@ -180,7 +182,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 			(void)remove(buf);
 		}
 	} else {
-		if (!xbps_verify_signature(repo, buf, digest)) {
+		if (!xbps_verify_signature(repo, buf, &digest)) {
 			rv = EPERM;
 			/* remove signature */
 			(void)remove(buf);

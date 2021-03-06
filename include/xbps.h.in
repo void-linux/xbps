@@ -688,6 +688,19 @@ struct xbps_handle {
 	int flags;
 };
 
+/**
+ * @struct xbps_sha256_digest xbps.h "xbps.h"
+ * @brief Structure to contain a binary SHA256 digest.
+ */
+struct xbps_sha256_digest {
+	/**
+	 * @var buffer
+	 *
+	 * Buffer containing a SHA256 binary digest.
+	 */
+	unsigned char buffer[XBPS_SHA256_DIGEST_SIZE];
+};
+
 void xbps_dbg_printf(struct xbps_handle *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
 void xbps_dbg_printf_append(struct xbps_handle *, const char *, ...)__attribute__ ((format (printf, 2, 3)));
 void xbps_error_printf(const char *, ...)__attribute__ ((format (printf, 1, 2)));
@@ -1959,6 +1972,20 @@ bool xbps_file_sha256_raw(unsigned char *dst, size_t len, const char *file);
 int xbps_file_sha256_check(const char *file, const char *sha256);
 
 /**
+ * Compares the sha256 hash of the file \a file with the sha256
+ * string specified by \a sha256. The computed sha256 digest is stored into
+ * \a dst.
+ *
+ * @param[in] file Path to a file.
+ * @param[in] sha256 SHA256 hash to compare.
+ * @param[out] dst Destination struct.
+ *
+ * @return 0 if \a file and \a sha256 have the same hash, ERANGE
+ * if it differs, or any other errno value on error.
+ */
+int xbps_file_sha256_check_raw(const char *file, const char *sha256, struct xbps_sha256_digest *dst);
+
+/**
  * Verifies the RSA signature \a sigfile against \a digest with the
  * RSA public-key associated in \a repo.
  *
@@ -1969,7 +1996,7 @@ int xbps_file_sha256_check(const char *file, const char *sha256);
  * @return True if the signature is valid, false otherwise.
  */
 bool xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
-		unsigned char *digest);
+		const struct xbps_sha256_digest *digest);
 
 /**
  * Verifies the RSA signature of \a fname with the RSA public-key associated
