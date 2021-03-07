@@ -28,6 +28,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "xbps_api_impl.h"
 
@@ -70,11 +71,19 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	}
 
 	if (repo->is_remote || xhp->flags & XBPS_FLAG_VERIFY_LOCAL_REPO) {
+		char sigfile[PATH_MAX];
+		if ((rv = xbps_file_sig_path(sigfile, sizeof sigfile, NULL, "%s.sig", binfile))) {
+			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv,
+				pkgver, "[trans] can't access signature for `%s': %s",
+				pkgver, strerror(rv));
+			goto out;
+		}
+
 		/* check RSA sig */
 		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 			"%s: verifying RSA signature...", pkgver);
 
-		if (!xbps_verify_signature(repo, binfile, &digest)) {
+		if (!xbps_verify_signature(repo, sigfile, &digest)) {
 			rv = EPERM;
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: the RSA signature is not valid!", pkgver);
@@ -83,16 +92,12 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 				 * Don't remove files from local repositories, since we might
 				 * not be the "owner"; with the XBPS cache, we are the owners.
 				 */
-				char *sigfile;
 				const char *errmsg;
-				sigfile = xbps_xasprintf("%s.sig", binfile);
-				assert(sigfile);
 				if (remove(binfile) == 0 && remove(sigfile) == 0) {
 					errmsg = "removed pkg archive and its signature";
 				} else {
 					errmsg = "there was an error removing pkg archive and its signature";
 				}
-				free(sigfile);
 				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 					"%s: %s.", pkgver, errmsg);
 			}
