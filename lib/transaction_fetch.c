@@ -108,6 +108,7 @@ static int
 download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 {
 	struct xbps_repo *repo;
+	/* FIXME: increase max length for remote requests? */
 	char buf[PATH_MAX];
 	char *sigsuffix;
 	const char *pkgver, *arch, *fetchstr, *repoloc;
@@ -121,8 +122,12 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "architecture", &arch);
 
-	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig", repoloc, pkgver, arch);
-	sigsuffix = buf+(strlen(buf)-sizeof (".sig")+1);
+	if ((rv = xbps_file_sig_path(buf, sizeof buf, &sigsuffix, "%s/%s.%s.xbps.sig", repoloc, pkgver, arch))) {
+		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
+			pkgver, "[trans] failed to create signature request for `%s': %s",
+			pkgver, strerror(rv));
+		return rv;
+	}
 
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' signature (from `%s')...", pkgver, repoloc);
@@ -156,8 +161,12 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 		"%s: verifying RSA signature...", pkgver);
 
-	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig", xhp->cachedir, pkgver, arch);
-	sigsuffix = buf+(strlen(buf)-sizeof (".sig")+1);
+	if ((rv = xbps_file_sig_path(buf, sizeof buf, &sigsuffix, "%s/%s.%s.xbps.sig", xhp->cachedir, pkgver, arch))) {
+		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
+			pkgver, "[trans] failed to create signature path for `%s': %s",
+			pkgver, strerror(rv));
+		return rv;
+	}
 
 	if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 		rv = errno;

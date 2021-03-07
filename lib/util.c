@@ -699,3 +699,24 @@ xbps_patterns_match(xbps_array_t patterns, const char *path)
 
 	return match;
 }
+
+int HIDDEN xbps_file_sig_path(char *str, size_t len, char **sigsuffix, const char *fmt, ...)
+{
+	va_list ap;
+	ssize_t w;
+	char *sig;
+
+	va_start(ap, fmt);
+	/* Bail out if resulting string is too long. */
+	if ((w = vsnprintf(str, len, fmt, ap)) >= (ssize_t)len) {
+		return ENAMETOOLONG;
+	}
+	sig = str + (w - sizeof(".sig")+1);
+	/* Check that we actually received a signature path. */
+	if (strcmp(sig, ".sig"))
+		return EINVAL;
+	if (sigsuffix)
+		*sigsuffix = sig;
+
+	return 0;
+}
