@@ -142,10 +142,13 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 
 	if (!xbps_file_sha256_raw(digest.buffer, sizeof digest.buffer, fname)) {
 		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
-		return false;
+		return val;
 	}
 
-	snprintf(sig, sizeof sig, "%s.sig", fname);
+	if (xbps_file_sig_path(sig, sizeof sig, NULL, "%s.sig", fname)) {
+		/* XXX: print something for error ? */
+		return val;
+	}
 	val = xbps_verify_signature(repo, sig, &digest);
 
 	return val;
