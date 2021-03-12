@@ -471,10 +471,10 @@ replace_package_same_files_body() {
 	xbps-install -r root --repository=$PWD/repo -yvd libressl
 	atf_check_equal $? 0
 
-	xbps-query -S openssl
+	xbps-query -r root -S openssl
 	atf_check_equal $? 2
 
-	xbps-query -S libressl
+	xbps-query -r root -S libressl
 	atf_check_equal $? 0
 
 	xbps-pkgdb -r root -av
