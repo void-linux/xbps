@@ -9,12 +9,13 @@ jobs:
             c_compiler: [gcc, clang]
             include:
                - c_library: glibc
-                 void_image: voidlinux/voidlinux
-               - c_library: musl
-                 void_image: voidlinux/voidlinux-musl
+                 void_image: ghcr.io/void-linux/latest-full-x86_64
 
                - c_library: musl
-                 void_image: voidlinux/voidlinux-musl
+                 void_image: ghcr.io/void-linux/latest-full-x86_64-musl
+
+               - c_library: musl
+                 void_image: ghcr.io/void-linux/latest-full-x86_64-musl
                  c_compiler: pcc
                  extra_deps: gcc
 
