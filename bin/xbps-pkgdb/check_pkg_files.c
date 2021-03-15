@@ -47,33 +47,6 @@
  *
  * Return 0 if test ran successfully, 1 otherwise and -1 on error.
  */
-static bool
-check_file_mtime(xbps_dictionary_t d, const char *pkg, const char *path)
-{
-	struct stat sb;
-	uint64_t mtime = 0;
-	const char *file = NULL;
-
-	/* if obj is not there, skip silently */
-	if (!xbps_dictionary_get_uint64(d, "mtime", &mtime))
-		return false;
-
-	/* if file is mutable, we don't care if it does not match */
-	if (xbps_dictionary_get(d, "mutable"))
-		return false;
-
-	if (stat(path, &sb) == -1)
-		return true;
-
-	if ((uint64_t)sb.st_mtime != mtime) {
-		xbps_dictionary_get_cstring_nocopy(d, "file", &file);
-		xbps_error_printf("%s: %s mtime mismatch "
-		    "(current: %ju, stored %ju)\n",
-		    pkg, file, (uint64_t)sb.st_mtime, mtime);
-		return true;
-	}
-	return false;
-}
 
 int
 check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
@@ -104,9 +77,6 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			rv = xbps_file_sha256_check(path, sha256);
 			switch (rv) {
 			case 0:
-				if (check_file_mtime(obj, pkgname, path)) {
-					test_broken = true;
-				}
 				free(path);
 				break;
 			case ENOENT:
