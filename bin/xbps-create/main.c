@@ -53,7 +53,6 @@
 
 struct xentry {
 	TAILQ_ENTRY(xentry) entries;
-	uint64_t mtime;
 	uint64_t size;
 	char *file, *type, *target;
 	char sha256[XBPS_SHA256_SIZE];
@@ -362,10 +361,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "links");
 		xe->type = strdup("links");
 		assert(xe->type);
-		/* store modification time for regular files and links */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "links");
-		xe->mtime = (uint64_t)sb->st_mtime;
-		xbps_dictionary_set_uint64(fileinfo, "mtime", (uint64_t)sb->st_mtime);
 		buf = malloc(sb->st_size+1);
 		assert(buf);
 		r = readlink(fpath, buf, sb->st_size+1);
@@ -483,9 +479,6 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 
 		xbps_dictionary_set_uint64(fileinfo, "inode", sb->st_ino);
 		xe->inode = sb->st_ino;
-		/* store modification time for regular files and links */
-		xbps_dictionary_set_uint64(fileinfo, "mtime", sb->st_mtime);
-		xe->mtime = (uint64_t)sb->st_mtime;
 		xe->size = (uint64_t)sb->st_size;
 
 	} else if (S_ISDIR(sb->st_mode)) {
@@ -603,8 +596,6 @@ process_xentry(const char *key, const char *mutable_files)
 			xbps_dictionary_set_cstring(d, "target", xe->target);
 		if (*xe->sha256)
 			xbps_dictionary_set_cstring(d, "sha256", xe->sha256);
-		if (xe->mtime)
-			xbps_dictionary_set_uint64(d, "mtime", xe->mtime);
 		if (xe->size)
 			xbps_dictionary_set_uint64(d, "size", xe->size);
 
