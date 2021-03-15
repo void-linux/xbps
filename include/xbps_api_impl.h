@@ -161,4 +161,7 @@ struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 		const char *);
 int HIDDEN xbps_conf_init(struct xbps_handle *);
 
+/* util */
+int HIDDEN xbps_file_sig_path(char *str, size_t len, char **sigsuffix, const char *fmt, ...);
+
 #endif /* !_XBPS_API_IMPL_H_ */

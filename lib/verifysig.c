@@ -43,7 +43,7 @@
 static bool
 rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 		unsigned char *sig, unsigned int siglen,
-		unsigned char *sha256)
+		const struct xbps_sha256_digest *digest)
 {
 	BIO *bio;
 	RSA *rsa;
@@ -63,7 +63,7 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 		return false;
 	}
 
-	rv = RSA_verify(NID_sha1, sha256, SHA256_DIGEST_LENGTH, sig, siglen, rsa);
+	rv = RSA_verify(NID_sha1, digest->buffer, sizeof digest->buffer, sig, siglen, rsa);
 	RSA_free(rsa);
 	BIO_free(bio);
 	ERR_free_strings();
@@ -73,7 +73,7 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 
 bool
 xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
-		unsigned char *digest)
+		const struct xbps_sha256_digest *digest)
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey;
@@ -137,16 +137,19 @@ bool
 xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 {
 	char sig[PATH_MAX];
-	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
+	struct xbps_sha256_digest digest;
 	bool val = false;
 
-	if (!xbps_file_sha256_raw(digest, sizeof digest, fname)) {
+	if (!xbps_file_sha256_raw(digest.buffer, sizeof digest.buffer, fname)) {
 		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
-		return false;
+		return val;
 	}
 
-	snprintf(sig, sizeof sig, "%s.sig", fname);
-	val = xbps_verify_signature(repo, sig, digest);
+	if (xbps_file_sig_path(sig, sizeof sig, NULL, "%s.sig", fname)) {
+		/* XXX: print something for error ? */
+		return val;
+	}
+	val = xbps_verify_signature(repo, sig, &digest);
 
 	return val;
 }

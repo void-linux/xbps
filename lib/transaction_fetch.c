@@ -28,6 +28,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "xbps_api_impl.h"
 
@@ -37,6 +38,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	struct xbps_repo *repo;
 	const char *pkgver, *repoloc, *sha256;
 	char *binfile;
+	struct xbps_sha256_digest digest;
 	int rv = 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
@@ -47,8 +49,9 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		return ENOMEM;
 	}
 	/*
-	 * For pkgs in local repos check the sha256 hash.
-	 * For pkgs in remote repos check the RSA signature.
+	 * For all pkgs, check the sha256 hash.
+	 * For pkgs in local repos, check the RSA sig if requested.
+	 * For pkgs in remote repos, always check the RSA signature.
 	 */
 	if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 		rv = errno;
@@ -56,35 +59,50 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			"%s: %s\n", pkgver, repoloc, strerror(errno));
 		goto out;
 	}
-	if (repo->is_remote) {
-		/* remote repo */
+
+	/* check sha256 */
+	xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
+		"%s: verifying SHA256 hash...", pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "filename-sha256", &sha256);
+	if ((rv = xbps_file_sha256_check_raw(binfile, sha256, &digest)) != 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
+			"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
+		goto out;
+	}
+
+	if (repo->is_remote || xhp->flags & XBPS_FLAG_VERIFY_LOCAL_REPO) {
+		char sigfile[PATH_MAX];
+		if ((rv = xbps_file_sig_path(sigfile, sizeof sigfile, NULL, "%s.sig", binfile))) {
+			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv,
+				pkgver, "[trans] can't access signature for `%s': %s",
+				pkgver, strerror(rv));
+			goto out;
+		}
+
+		/* check RSA sig */
 		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 			"%s: verifying RSA signature...", pkgver);
 
-		if (!xbps_verify_file_signature(repo, binfile)) {
-			char *sigfile;
+		if (!xbps_verify_signature(repo, sigfile, &digest)) {
 			rv = EPERM;
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: the RSA signature is not valid!", pkgver);
-			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				"%s: removed pkg archive and its signature.", pkgver);
-			(void)remove(binfile);
-			sigfile = xbps_xasprintf("%s.sig", binfile);
-			(void)remove(sigfile);
-			free(sigfile);
+			if (repo->is_remote) {
+				/*
+				 * Don't remove files from local repositories, since we might
+				 * not be the "owner"; with the XBPS cache, we are the owners.
+				 */
+				const char *errmsg;
+				if (remove(binfile) == 0 && remove(sigfile) == 0) {
+					errmsg = "removed pkg archive and its signature";
+				} else {
+					errmsg = "there was an error removing pkg archive and its signature";
+				}
+				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
+					"%s: %s.", pkgver, errmsg);
+			}
 			goto out;
 		}
-	} else {
-		/* local repo */
-		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
-			"%s: verifying SHA256 hash...", pkgver);
-		xbps_dictionary_get_cstring_nocopy(pkgd, "filename-sha256", &sha256);
-		if ((rv = xbps_file_sha256_check(binfile, sha256)) != 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
-			goto out;
-		}
-
 	}
 out:
 	free(binfile);
@@ -95,10 +113,11 @@ static int
 download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 {
 	struct xbps_repo *repo;
+	/* FIXME: increase max length for remote requests? */
 	char buf[PATH_MAX];
 	char *sigsuffix;
 	const char *pkgver, *arch, *fetchstr, *repoloc;
-	unsigned char digest[XBPS_SHA256_DIGEST_SIZE] = {0};
+	struct xbps_sha256_digest digest = {0};
 	int rv = 0;
 
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "repository", &repoloc);
@@ -108,8 +127,12 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "architecture", &arch);
 
-	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig", repoloc, pkgver, arch);
-	sigsuffix = buf+(strlen(buf)-sizeof (".sig")+1);
+	if ((rv = xbps_file_sig_path(buf, sizeof buf, &sigsuffix, "%s/%s.%s.xbps.sig", repoloc, pkgver, arch))) {
+		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
+			pkgver, "[trans] failed to create signature request for `%s': %s",
+			pkgver, strerror(rv));
+		return rv;
+	}
 
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' signature (from `%s')...", pkgver, repoloc);
@@ -129,8 +152,8 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' package (from `%s')...", pkgver, repoloc);
 
-	if ((rv = xbps_fetch_file_sha256(xhp, buf, NULL, digest,
-	    sizeof digest)) == -1) {
+	if ((rv = xbps_fetch_file_sha256(xhp, buf, NULL, digest.buffer,
+	    sizeof digest.buffer)) == -1) {
 		rv = fetchLastErrCode ? fetchLastErrCode : errno;
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
@@ -143,8 +166,12 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 		"%s: verifying RSA signature...", pkgver);
 
-	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig", xhp->cachedir, pkgver, arch);
-	sigsuffix = buf+(strlen(buf)-sizeof (".sig")+1);
+	if ((rv = xbps_file_sig_path(buf, sizeof buf, &sigsuffix, "%s/%s.%s.xbps.sig", xhp->cachedir, pkgver, arch))) {
+		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
+			pkgver, "[trans] failed to create signature path for `%s': %s",
+			pkgver, strerror(rv));
+		return rv;
+	}
 
 	if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 		rv = errno;
@@ -157,7 +184,8 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	 * If digest is not set, binary package was not downloaded,
 	 * i.e. 304 not modified, verify by file instead.
 	 */
-	if (*digest) {
+	/* FIXME: this rejects hashes that start with 0 */
+	if (digest.buffer[0]) {
 		*sigsuffix = '\0';
 		if (!xbps_verify_file_signature(repo, buf)) {
 			rv = EPERM;
@@ -168,7 +196,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 			(void)remove(buf);
 		}
 	} else {
-		if (!xbps_verify_signature(repo, buf, digest)) {
+		if (!xbps_verify_signature(repo, buf, &digest)) {
 			rv = EPERM;
 			/* remove signature */
 			(void)remove(buf);

@@ -160,16 +160,14 @@ xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 }
 
 static bool
-sha256_digest_compare(const char *sha256, size_t shalen,
-		const unsigned char *digest, size_t digestlen)
+sha256_digest_compare(const char *sha256,
+		const struct xbps_sha256_digest *digest_struct)
 {
+	const unsigned char *digest = digest_struct->buffer;
 
+	size_t shalen = strlen(sha256);
 	assert(shalen == XBPS_SHA256_SIZE - 1);
 	if (shalen != XBPS_SHA256_SIZE -1)
-		return false;
-
-	assert(digestlen == XBPS_SHA256_DIGEST_SIZE);
-	if (digestlen != XBPS_SHA256_DIGEST_SIZE)
 		return false;
 
 	for (; *sha256;) {
@@ -194,20 +192,28 @@ sha256_digest_compare(const char *sha256, size_t shalen,
 }
 
 int
-xbps_file_sha256_check(const char *file, const char *sha256)
+xbps_file_sha256_check_raw(const char *file, const char *sha256,
+		struct xbps_sha256_digest *dst)
 {
-	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
-
 	assert(file != NULL);
 	assert(sha256 != NULL);
+	assert(dst != NULL);
 
-	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
+	if (!xbps_file_sha256_raw(dst->buffer, sizeof dst->buffer, file))
 		return errno;
 
-	if (!sha256_digest_compare(sha256, strlen(sha256), digest, sizeof digest))
+	if (!sha256_digest_compare(sha256, dst))
 		return ERANGE;
 
 	return 0;
+}
+
+int
+xbps_file_sha256_check(const char *file, const char *sha256)
+{
+	struct xbps_sha256_digest digest;
+
+	return xbps_file_sha256_check_raw(file, sha256, &digest);
 }
 
 static const char *
