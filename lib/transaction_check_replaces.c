@@ -125,12 +125,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 				 * package that should be replaced is also in the
 				 * transaction and it's going to be updated.
 				 */
-				if (instd_auto) {
-					if (!xbps_dictionary_set_bool(obj, "automatic-install", instd_auto)) {
-						xbps_object_iterator_release(iter);
-						return false;
-					}
-				} else {
+				if (!instd_auto) {
 					xbps_dictionary_remove(obj, "automatic-install");
 				}
 				if (!xbps_dictionary_set_bool(reppkgd, "replaced", true)) {
@@ -157,9 +152,8 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 * the automatic-install object.
 			 */
 			if (xbps_match_virtual_pkg_in_dict(obj, pattern)) {
-				if (!xbps_dictionary_set_bool(obj, "automatic-install", instd_auto)) {
-					xbps_object_iterator_release(iter);
-					return false;
+				if (!instd_auto) {
+					xbps_dictionary_remove(obj, "automatic-install");
 				}
 			}
 			/*
