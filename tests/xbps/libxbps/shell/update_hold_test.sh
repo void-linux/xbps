@@ -101,7 +101,144 @@ update_pkg_with_held_dep_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case hold_update_revdep
+
+hold_update_revdep_head() {
+	atf_set "descr" "Tests for pkgs on hold: update package with revdep on hold package"
+}
+
+hold_update_revdep_body() {
+	mkdir -p repo empty
+	cd repo
+	xbps-create -A noarch -n pari-2.11.4_1 -s "pari pkg" ../empty
+	xbps-create -A noarch -n pari-devel-2.11.4_1 --dependencies="pari>=2.11.4_1" -s "pari-devel pkg" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yd pari pari-devel
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -m hold pari
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n pari-devel-2.13.1_1 --dependencies="pari>=2.13.1_1" -s "pari-devel pkg" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -dvyu
+	atf_check_equal $? 19
+}
+
+atf_test_case update_hold_update_revdep
+
+update_hold_update_revdep_head() {
+	atf_set "descr" "Tests for pkgs on hold: updateable held package and update package with revdep on held package"
+}
+
+update_hold_update_revdep_body() {
+	mkdir -p repo empty
+	cd repo
+	xbps-create -A noarch -n pari-2.11.4_1 -s "pari pkg" ../empty
+	xbps-create -A noarch -n pari-devel-2.11.4_1 --dependencies="pari>=2.11.4_1" -s "pari-devel pkg" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yd pari pari-devel
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -m hold pari
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n pari-2.13.1_1 -s "pari pkg" ../empty
+	xbps-create -A noarch -n pari-devel-2.13.1_1 --dependencies="pari>=2.13.1_1" -s "pari-devel pkg" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -dvyu
+	atf_check_equal $? 19
+}
+
+atf_test_case hold_install_revdep
+
+hold_install_revdep_head() {
+	atf_set "descr" "Tests for pkgs on hold: install package with revdep on held package"
+}
+
+hold_install_revdep_body() {
+	mkdir -p repo empty
+	cd repo
+	xbps-create -A noarch -n pari-2.11.4_1 -s "pari pkg" ../empty
+	xbps-create -A noarch -n pari-devel-2.11.4_1 --dependencies="pari>=2.11.4_1" -s "pari-devel pkg" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yd pari
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -m hold pari
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n pari-devel-2.13.1_1 --dependencies="pari>=2.13.1_1" -s "pari-devel pkg" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -dvy pari-devel
+	atf_check_equal $? 19
+}
+
+atf_test_case update_hold_install_revdep
+
+update_hold_install_revdep_head() {
+	atf_set "descr" "Tests for pkgs on hold: updatable held package and install package with revdep on it"
+}
+
+update_hold_install_revdep_body() {
+	mkdir -p repo empty
+	cd repo
+	xbps-create -A noarch -n pari-2.11.4_1 -s "pari pkg" ../empty
+	xbps-create -A noarch -n pari-devel-2.11.4_1 --dependencies="pari>=2.11.4_1" -s "pari-devel pkg" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yd pari
+	atf_check_equal $? 0
+
+	xbps-pkgdb -r root -m hold pari
+	atf_check_equal $? 0
+
+	cd repo
+	xbps-create -A noarch -n pari-devel-2.13.1_1 --dependencies="pari>=2.13.1_1" -s "pari-devel pkg" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -dvy pari-devel
+	atf_check_equal $? 19
+}
+
 atf_init_test_cases() {
 	atf_add_test_case update_hold
 	atf_add_test_case update_pkg_with_held_dep
+	atf_add_test_case hold_update_revdep
+	atf_add_test_case update_hold_update_revdep
+	atf_add_test_case hold_install_revdep
+	atf_add_test_case update_hold_install_revdep
 }
