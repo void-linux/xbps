@@ -186,9 +186,12 @@ repo_deps(struct xbps_handle *xhp,
 		 */
 		if ((curpkgd = xbps_find_pkg_in_array(pkgs, reqpkg, 0)) ||
 		    (curpkgd = xbps_find_virtualpkg_in_array(xhp, pkgs, reqpkg, 0))) {
+			xbps_trans_type_t ttype_q = xbps_transaction_pkg_type(curpkgd);
 			xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
-			xbps_dbg_printf_append(xhp, " (%s queued)\n", pkgver_q);
-			continue;
+			if (ttype_q != XBPS_TRANS_REMOVE && ttype_q != XBPS_TRANS_HOLD) {
+				xbps_dbg_printf_append(xhp, " (%s queued %d)\n", pkgver_q, ttype_q);
+				continue;
+			}
 		}
 		/*
 		 * Pass 3: check if required dependency is already installed
