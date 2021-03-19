@@ -255,6 +255,7 @@ repo_deps(struct xbps_handle *xhp,
 					if (xbps_dictionary_get(curpkgd, "hold")) {
 						ttype = XBPS_TRANS_HOLD;
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
+						rv = ENODEV;
 					} else {
 						xbps_dbg_printf_append(xhp, "\n");
 						ttype = XBPS_TRANS_INSTALL;
@@ -264,9 +265,27 @@ repo_deps(struct xbps_handle *xhp,
 					if (xbps_dictionary_get(curpkgd, "hold")) {
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
 						ttype = XBPS_TRANS_HOLD;
+						rv = ENODEV;
 					} else {
 						xbps_dbg_printf_append(xhp, "\n");
 						ttype = XBPS_TRANS_UPDATE;
+					}
+				}
+				/*
+				 * Not satisfied and package on hold.
+				 */
+				if (rv == ENODEV) {
+					rv = add_missing_reqdep(xhp, reqpkg);
+					if (rv != 0 && rv != EEXIST) {
+						xbps_dbg_printf(xhp, "`%s': add_missing_reqdep failed\n", reqpkg);
+						break;
+					} else if (rv == EEXIST) {
+						xbps_dbg_printf(xhp, "`%s' missing dep already added.\n", reqpkg);
+						rv = 0;
+						continue;
+					} else {
+						xbps_dbg_printf(xhp, "`%s' added into the missing deps array.\n", reqpkg);
+						continue;
 					}
 				}
 			} else if (rv == 1) {
@@ -294,14 +313,6 @@ repo_deps(struct xbps_handle *xhp,
 				xbps_dbg_printf(xhp, "failed to match pattern %s with %s\n", reqpkg, pkgver_q);
 				break;
 			}
-		}
-		if (xbps_dictionary_get(curpkgd, "hold")) {
-			if (!xbps_transaction_pkg_type_set(curpkgd, XBPS_TRANS_HOLD)) {
-				rv = EINVAL;
-				break;
-			}
-			xbps_dbg_printf(xhp, "%s on hold state! ignoring package.\n", curpkg);
-			continue;
 		}
 		/*
 		 * Pass 4: find required dependency in repository pool.
