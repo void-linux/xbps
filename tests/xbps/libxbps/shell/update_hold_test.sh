@@ -98,7 +98,7 @@ update_pkg_with_held_dep_body() {
 	atf_check_equal $? 0
 
 	xbps-install -r root -C empty.conf --repository=$PWD -d -yv pkginst
-	atf_check_equal $? 0
+	atf_check_equal $? 19
 }
 
 atf_test_case hold_update_revdep
