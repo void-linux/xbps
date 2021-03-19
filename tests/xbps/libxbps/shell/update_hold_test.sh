@@ -40,6 +40,8 @@ update_pkg_with_held_dep_head() {
 }
 
 update_pkg_with_held_dep_body() {
+	atf_expect_fail "this test case makes no sense"
+
 	mkdir -p some_repo pkginst pkgheld pkgdep-21_1 pkgdep-22_1
 	touch pkginst/pi00
 	touch pkgheld/ph00
