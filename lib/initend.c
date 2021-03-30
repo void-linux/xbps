@@ -50,6 +50,16 @@ xbps_init(struct xbps_handle *xhp)
 
 	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
 
+	/* Initialize pkgdb_fd and pkgdb_map_names_done */
+	xhp->pkgdb_fd = -1;
+	xhp->pkgdb_map_names_done = false;
+
+	/* Various initialization used to store items in the transaction */
+	xhp->hashtab = NULL;
+	xhp->items = NULL;
+	xhp->itemsidx = 0;
+	xhp->itemssz = 0;
+
 	/* Set rootdir */
 	if (xhp->rootdir[0] == '\0') {
 		xhp->rootdir[0] = '/';

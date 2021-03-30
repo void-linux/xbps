@@ -57,9 +57,6 @@
  * data type is specified on its edge, i.e array, bool, integer, string,
  * dictionary.
  */
-static int pkgdb_fd = -1;
-static bool pkgdb_map_names_done = false;
-
 int
 xbps_pkgdb_lock(struct xbps_handle *xhp)
 {
@@ -95,7 +92,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 		}
 	}
 
-	if ((pkgdb_fd = open(xhp->pkgdb_plist, O_CREAT|O_RDWR|O_CLOEXEC, 0664)) == -1) {
+	if ((xhp->pkgdb_fd = open(xhp->pkgdb_plist, O_CREAT|O_RDWR|O_CLOEXEC, 0664)) == -1) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "[pkgdb] cannot open pkgdb for locking "
 		    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
@@ -106,7 +103,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 	/*
 	 * If we've acquired the file lock, then pkgdb is writable.
 	 */
-	if (lockf(pkgdb_fd, F_TLOCK, 0) == -1) {
+	if (lockf(xhp->pkgdb_fd, F_TLOCK, 0) == -1) {
 		rv = errno;
 		xbps_dbg_printf(xhp, "[pkgdb] cannot lock pkgdb: %s\n", strerror(rv));
 	}
@@ -126,14 +123,14 @@ ret:
 void
 xbps_pkgdb_unlock(struct xbps_handle *xhp)
 {
-	xbps_dbg_printf(xhp, "%s: pkgdb_fd %d\n", __func__, pkgdb_fd);
+	xbps_dbg_printf(xhp, "%s: pkgdb_fd %d\n", __func__, xhp->pkgdb_fd);
 
-	if (pkgdb_fd != -1) {
-		if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
+	if (xhp->pkgdb_fd != -1) {
+		if (lockf(xhp->pkgdb_fd, F_ULOCK, 0) == -1)
 			xbps_dbg_printf(xhp, "[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
 
-		(void)close(pkgdb_fd);
-		pkgdb_fd = -1;
+		(void)close(xhp->pkgdb_fd);
+		xhp->pkgdb_fd = -1;
 	}
 }
 
@@ -200,7 +197,7 @@ pkgdb_map_names(struct xbps_handle *xhp)
 	xbps_object_t obj;
 	int rv = 0;
 
-	if (pkgdb_map_names_done || !xbps_dictionary_count(xhp->pkgdb))
+	if (xhp->pkgdb_map_names_done || !xbps_dictionary_count(xhp->pkgdb))
 		return 0;
 
 	/*
@@ -230,7 +227,7 @@ pkgdb_map_names(struct xbps_handle *xhp)
 	}
 	xbps_object_iterator_release(iter);
 	if (!rv) {
-		pkgdb_map_names_done = true;
+		xhp->pkgdb_map_names_done = true;
 	}
 	return rv;
 }
