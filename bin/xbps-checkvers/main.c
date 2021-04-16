@@ -523,6 +523,9 @@ rcv_printf(rcv_t *rcv, FILE *fp, const char *pkgname, const char *repover,
 			p = strchr(rcv->fname, '/');
 			fwrite(rcv->fname, p ? (size_t)(p - rcv->fname) : strlen(rcv->fname), 1, fp);
 			break;
+		default:
+			fprintf(stderr, "ERROR: invalid format string\n");
+			exit(EXIT_FAILURE);
 		}
 	}
 	fputc('\n', fp);
