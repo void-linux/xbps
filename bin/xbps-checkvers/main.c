@@ -50,7 +50,7 @@ typedef struct _rcv_t {
 	char *xbps_conf, *rootdir, *distdir, *buf, *ptr, *cachefile;
 	size_t bufsz, len;
 	uint8_t have_vars;
-	bool show_all, manual, installed, removed, show_removed;
+	bool show_all, manual, installed, removed, show_removed, check_revdeps;
 	xbps_dictionary_t env;
 	xbps_dictionary_t pkgd;
 	xbps_dictionary_t cache;
@@ -654,6 +654,81 @@ error:
 	exit(1);
 }
 
+static bool
+template_exists(rcv_t *rcv, const char *pkg)
+{
+	char pkgname[XBPS_NAME_SIZE];
+	char *p;
+	bool dummy_bool = false;
+	if (!xbps_pkg_name(pkgname, sizeof pkgname, pkg))
+		xbps_strlcpy(pkgname, pkg, sizeof pkgname);
+	/* remove -32bit or -dbg suffixes */
+	if ((p = strrchr(pkgname, '-')) && (strcmp(p, "-32bit") == 0 || strcmp(p, "-dbg") == 0))
+		*p = '\0';
+	return xbps_dictionary_get_bool(rcv->templates, pkgname, &dummy_bool);
+}
+
+static bool
+is_real_dep(rcv_t *rcv, const char *pkg, const char *dep)
+{
+	char pattern[XBPS_NAME_SIZE + 2];
+	xbps_dictionary_t pkgd;
+	xbps_array_t deps;
+
+	if (rcv->installed) {
+		if ((pkgd = xbps_pkgdb_get_pkg(&rcv->xhp, pkg)) == NULL) {
+			fprintf(stderr, "Error: failed to get package from pkgdb: %s: %s\n",
+					pkg, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		if (((pkgd = xbps_rpool_get_pkg(&rcv->xhp, pkg)) == NULL)) {
+			fprintf(stderr, "Error: failed to get package from rpool: %s: %s\n",
+					pkg, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+	}
+	deps = xbps_dictionary_get(pkgd, "run_depends");
+
+	/* check if run_deps matches our dep */
+	snprintf(pattern, sizeof pattern, "%s>=0", dep);
+	return xbps_match_pkgpattern_in_array(deps, pattern);
+}
+
+static bool
+revdeps_removed(rcv_t *rcv, const char *pkg)
+{
+	xbps_array_t revdeps = NULL;
+	bool skip = false;
+
+	if (rcv->installed)
+		revdeps = xbps_pkgdb_get_pkg_revdeps(&rcv->xhp, pkg);
+	else
+		revdeps = xbps_rpool_get_pkg_revdeps(&rcv->xhp, pkg);
+
+	if (revdeps == NULL) {
+		if (errno != ENOENT) {
+			fprintf(stderr, "Error: failed to get revdeps for package: %s: %s\n",
+					pkg, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		return true;
+	}
+	for (unsigned int i = 0; i < xbps_array_count(revdeps); i++) {
+		const char *xpkgdep = NULL;
+		xbps_array_get_cstring_nocopy(revdeps, i, &xpkgdep);
+		if (!template_exists(rcv, xpkgdep))
+			continue;
+		if (is_real_dep(rcv, xpkgdep, pkg)) {
+			skip = true;
+			if (rcv->xhp.flags & XBPS_FLAG_DEBUG)
+				fprintf(stderr, "skipping: %s: %s depends on it\n", pkg, xpkgdep);
+		}
+	}
+	xbps_object_release(revdeps);
+	return !skip;
+}
+
 static int
 template_removed_cb(struct xbps_handle *xhp UNUSED,
 		xbps_object_t obj UNUSED,
@@ -661,31 +736,24 @@ template_removed_cb(struct xbps_handle *xhp UNUSED,
 		void *arg,
 		bool *done UNUSED)
 {
-	char *pkgname;
-	char *last_dash;
-	bool dummy_bool = false;
 	rcv_t *rcv = arg;
 
-	last_dash = strrchr(key, '-');
-	if (last_dash && (strcmp(last_dash, "-32bit") == 0 || strcmp(last_dash, "-dbg") == 0)) {
-		pkgname = strndup(key, last_dash - key);
-	} else {
-		pkgname = strdup(key);
-	}
-	if (!xbps_dictionary_get_bool(rcv->templates, pkgname, &dummy_bool)) {
-		rcv->removed = true;
-		rcv->env = xbps_dictionary_create();
-		xbps_dictionary_set_cstring_nocopy(rcv->env, "pkgname", key);
-		xbps_dictionary_set_cstring_nocopy(rcv->env, "version", "-");
-		xbps_dictionary_set_cstring_nocopy(rcv->env, "revision", "-");
-		rcv->have_vars = GOT_PKGNAME_VAR | GOT_VERSION_VAR | GOT_REVISION_VAR;
-		rcv->fname = key;
-		rcv_check_version(rcv);
-		rcv->removed = false;
-		xbps_object_release(rcv->env);
-		rcv->env = NULL;
-	}
-	free(pkgname);
+	if (template_exists(rcv, key))
+		return 0;
+	if (rcv->check_revdeps && !revdeps_removed(rcv, key))
+		return 0;
+
+	rcv->removed = true;
+	rcv->env = xbps_dictionary_create();
+	xbps_dictionary_set_cstring_nocopy(rcv->env, "pkgname", key);
+	xbps_dictionary_set_cstring_nocopy(rcv->env, "version", "-");
+	xbps_dictionary_set_cstring_nocopy(rcv->env, "revision", "-");
+	rcv->have_vars = GOT_PKGNAME_VAR | GOT_VERSION_VAR | GOT_REVISION_VAR;
+	rcv->fname = key;
+	rcv_check_version(rcv);
+	rcv->removed = false;
+	xbps_object_release(rcv->env);
+	rcv->env = NULL;
 	return 0;
 }
 
@@ -705,7 +773,7 @@ main(int argc, char **argv)
 {
 	int i, c;
 	rcv_t rcv;
-	const char *prog = argv[0], *sopts = "hC:D:def:iImR:r:sV";
+	const char *prog = argv[0], *sopts = "hC:D:def:iImR:r:sVX";
 	const struct option lopts[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "config", required_argument, NULL, 'C' },
@@ -720,10 +788,12 @@ main(int argc, char **argv)
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show-all", no_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "check-revdeps", no_argument, NULL, 'X' },
 		{ NULL, 0, NULL, 0 }
 	};
 
 	memset(&rcv, 0, sizeof(rcv_t));
+	rcv.check_revdeps = false;
 	rcv.manual = false;
 	rcv.format = "%n %r %s %t %R";
 
@@ -767,6 +837,9 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case 'X':
+			rcv.check_revdeps = true;
+			break;
 		case '?':
 		default:
 			return show_usage(prog, true);
