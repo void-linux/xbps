@@ -127,7 +127,7 @@ again:
 	 * Generate repository data files.
 	 */
 	if (!xbps_dictionary_equals(idx, repo->idx)) {
-		if (!repodata_flush(xhp, repodir, "repodata", idx, repo->idxmeta, compression)) {
+		if (!xbps_repodata_flush(xhp, repodir, "repodata", idx, repo->idxmeta, compression)) {
 			rv = errno;
 			fprintf(stderr, "%s: failed to write repodata: %s\n",
 			    _XBPS_RINDEX, strerror(errno));
