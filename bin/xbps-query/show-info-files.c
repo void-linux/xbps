@@ -106,17 +106,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 			xbps_humanize_number(size, (int64_t)xbps_data_size(obj));
 			printf("%s%s%s%s: %s\n", indent, bold, keyname, reset, size);
 		} else {
-			FILE *f;
-			char buf[BUFSIZ-1];
-			void *data;
-
-			data = xbps_data_data(obj);
-			f = fmemopen(data, xbps_data_size(obj), "r");
-			assert(f);
-			while (fgets(buf, sizeof(buf), f))
-				printf("%s", buf);
-			fclose(f);
-			free(data);
+			fwrite(xbps_data_data_nocopy(obj), 1, xbps_data_size(obj), stdout);
 		}
 		break;
 	default:
