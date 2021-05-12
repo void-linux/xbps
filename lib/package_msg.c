@@ -34,8 +34,7 @@ int HIDDEN
 xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key)
 {
 	xbps_data_t msg;
-	FILE *f = NULL;
-	const void *data = NULL;
+	const void *data;
 	const char *pkgver = NULL;
 	size_t len;
 	char *buf = NULL;
@@ -52,35 +51,22 @@ xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key
 	if (xbps_object_type(msg) != XBPS_TYPE_DATA)
 		goto out;
 
+	/* turn data from msg into a string */
 	data = xbps_data_data_nocopy(msg);
 	len = xbps_data_size(msg);
-	if ((f = fmemopen(__UNCONST(data), len, "r")) == NULL) {
-		rv = errno;
-		xbps_dbg_printf(xhp, "[%s] %s: fmemopen %s\n", __func__, pkgver, strerror(rv));
-		goto out;
-	};
 	buf = malloc(len+1);
 	assert(buf);
-	if (fread(buf, len, 1, f) != len) {
-		if (ferror(f)) {
-			rv = errno;
-			xbps_dbg_printf(xhp, "[%s] %s: fread %s\n", __func__, pkgver, strerror(rv));
-			goto out;
-		}
-	}
-	/* terminate buffer and notify client to show the post-install message */
+	memcpy(buf, data, len);
+	/* terminate string */
 	buf[len] = '\0';
 
+	/* notify client to show the post-install message */
 	if (strcmp(key, "install-msg") == 0)
 		xbps_set_cb_state(xhp, XBPS_STATE_SHOW_INSTALL_MSG, 0, pkgver, "%s", buf);
 	else
 		xbps_set_cb_state(xhp, XBPS_STATE_SHOW_REMOVE_MSG, 0, pkgver, "%s", buf);
 
 out:
-	if (f != NULL)
-		fclose(f);
-	if (buf != NULL)
-		free(buf);
-
+	free(buf);
 	return rv;
 }
