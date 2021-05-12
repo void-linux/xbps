@@ -51,6 +51,7 @@ OBJS += repo.o repo_sync.o
 OBJS += rpool.o cb_util.o proplib_wrapper.o
 OBJS += package_alternatives.o
 OBJS += conf.o log.o
+OBJS += walk_dir.o
 OBJS += $(EXTOBJS) $(COMPAT_OBJS)
 # unnecessary unless pkgdb format changes
 # OBJS += pkgdb_conversion.o
