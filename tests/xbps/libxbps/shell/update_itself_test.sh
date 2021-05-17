@@ -244,9 +244,66 @@ update_xbps_with_indirect_revdeps_body() {
 	atf_check_equal "$out" "cacerts-1.0_1"
 }
 
+atf_test_case update_xbpsgit_revdeps
+
+update_xbpsgit_revdeps_head() {
+	atf_set "descr" "Self update of virtual xbps: pull revdeps"
+}
+
+update_xbpsgit_revdeps_body() {
+	mkdir -p repo pkg
+
+	cd repo
+	xbps-create -A noarch -n xbps-git-2020_1 -s "xbps pkg" --provides "xbps-1.0_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n xbps-git-dbg-2020_1 -s "xbps-git-dbg pkg" --dependencies "xbps-git-2020_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n base-system-1.0_1 -s "base-system pkg" --dependencies "xbps<10_1" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yd base-system xbps-git-dbg
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps-git)
+	atf_check_equal "$out" "xbps-git-2020_1"
+
+	out=$(xbps-query -r root -p pkgver xbps-git-dbg)
+	atf_check_equal "$out" "xbps-git-dbg-2020_1"
+
+	out=$(xbps-query -r root -p pkgver base-system)
+	atf_check_equal "$out" "base-system-1.0_1"
+
+	cd repo
+	xbps-create -A noarch -n xbps-git-2021_1 -s "xbps pkg" --provides "xbps-2.0_1" --dependencies "cacerts>=0" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n xbps-git-dbg-2021_1 -s "xbps-git-dbg pkg" --dependencies "xbps-git-2021_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n base-system-1.1_1 -s "base-system pkg" --dependencies "xbps<10_1" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yu xbps
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps-git)
+	atf_check_equal "$out" "xbps-git-2021_1"
+
+	out=$(xbps-query -r root -p pkgver xbps-git-dbg)
+	atf_check_equal "$out" "xbps-git-dbg-2021_1"
+
+	out=$(xbps-query -r root -p pkgver base-system)
+	atf_check_equal "$out" "base-system-1.1_1"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case update_xbps
 	atf_add_test_case update_xbps_with_revdeps
 	atf_add_test_case update_xbps_with_indirect_revdeps
 	atf_add_test_case update_xbps_with_uptodate_revdeps
+	atf_add_test_case update_xbpsgit_revdeps
 }

@@ -252,7 +252,7 @@ xbps_autoupdate(struct xbps_handle *xhp)
 			return 0;
 		}
 		/* a new xbps version is available, check its revdeps */
-		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
+		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
 		for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
 			const char *curpkgver = NULL;
 			char curpkgn[XBPS_NAME_SIZE] = {0};
