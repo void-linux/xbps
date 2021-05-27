@@ -636,7 +636,7 @@ rcv_process_dir(rcv_t *rcv, rcv_proc_func process)
 		if (rcv->show_removed)
 			xbps_dictionary_set_bool(rcv->templates, result->d_name, true);
 
-		if (S_ISLNK(st.st_mode) != 0)
+		if (S_ISLNK(st.st_mode) != 0 && !rcv->installed)
 			continue;
 
 		snprintf(filename, sizeof(filename), "%s/template", result->d_name);
