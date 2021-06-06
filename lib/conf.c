@@ -196,7 +196,7 @@ static const struct key {
 static int
 parse_option(char *buf, const char **keyp, char **valp)
 {
-	size_t klen;
+	size_t klen, end;
 	const char *key;
 	char *value;
 	int k = 0;
@@ -224,8 +224,14 @@ parse_option(char *buf, const char **keyp, char **valp)
 	while (isblank((unsigned char)*value))
 		value++;
 
-	/* eat final newline */
-	value[strlen(value)-1] = '\0';
+	end = strlen(value);
+	/* eat trailing spaces, end - 1 here because \0 should be set -after- the first non-space
+	 * if end points at the actual current character, we can never make it an empty string
+	 * because than end needs to be set to -1, but end is a unsigned type thus would result in underflow */
+	while (end > 0 && isspace((unsigned char)value[end - 1]))
+		end--;
+
+	value[end] = '\0';
 
 	/* option processed successfully */
 	*keyp = key;
