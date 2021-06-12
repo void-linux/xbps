@@ -195,9 +195,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		return rv;
 	}
 
-	if (state == XBPS_PKG_STATE_UNPACKED)
-		ttype = XBPS_TRANS_CONFIGURE;
-	else if (state == XBPS_PKG_STATE_NOT_INSTALLED)
+	if (state == XBPS_PKG_STATE_NOT_INSTALLED)
 		ttype = XBPS_TRANS_INSTALL;
 
 	if (!force && xbps_dictionary_get(pkg_repod, "hold"))
