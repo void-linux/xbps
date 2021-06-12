@@ -62,7 +62,6 @@ atf_test_case update_unpacked
 
 update_unpacked_head() {
 	atf_set "descr" "xbps-install(1): update unpacked pkg"
-	atf_expect_fail "currently just configures the package"
 }
 
 update_unpacked_body() {
@@ -85,6 +84,51 @@ update_unpacked_body() {
 	set -- $(xbps-install -r root -C empty.conf --repository=$PWD/some_repo -un A)
 	if [ "$2" != "update" ]; then
 		atf_fail "'$2' != 'update'"
+	fi
+}
+
+atf_test_case unpacked_dep
+
+unpacked_dep_head() {
+	atf_set "descr" "xbps-install(1): unpacked dependency"
+}
+
+unpacked_dep_body() {
+	mkdir -p some_repo pkg_A pkg_B
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" -D "A>=0" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yU A
+	atf_check_equal $? 0
+	res=$(xbps-install -r root -C empty.conf --repository=$PWD/some_repo -un B | grep -Fv -e "A-1.0_1 configure" -e "B-1.0_1 install")
+	atf_check_equal "$res" ""
+}
+
+atf_test_case reinstall_unpacked_unpack_only
+
+reinstall_unpacked_unpack_only_head() {
+	atf_set "descr" "xbps-install(1): reinstall unpacked packages with unpack-only"
+}
+
+reinstall_unpacked_unpack_only_body() {
+	mkdir -p some_repo pkg_A
+	touch pkg_A/file00
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yU A
+	atf_check_equal $? 0
+	set -- $(xbps-install -r root -C empty.conf --repository=$PWD/some_repo -fUn A)
+	if [ "$2" != "reinstall" ]; then
+		atf_fail "'$2' != 'reinstall'"
 	fi
 }
 
@@ -135,5 +179,7 @@ atf_init_test_cases() {
 	atf_add_test_case install_existent
 	atf_add_test_case update_existent
 	atf_add_test_case update_unpacked
+	atf_add_test_case unpacked_dep
+	atf_add_test_case reinstall_unpacked_unpack_only
 	atf_add_test_case reproducible
 }
