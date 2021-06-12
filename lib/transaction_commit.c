@@ -173,18 +173,6 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			}
 			continue;
 
-		} else if (ttype == XBPS_TRANS_CONFIGURE) {
-			/*
-			 * Reconfigure pending package.
-			 */
-			rv = xbps_configure_pkg(xhp, pkgver, false, false);
-			if (rv != 0) {
-				xbps_dbg_printf(xhp, "[trans] failed to "
-				    "configure %s: %s\n", pkgver, strerror(rv));
-				goto out;
-			}
-			continue;
-
 		} else if (ttype == XBPS_TRANS_UPDATE) {
 			/*
 			 * Update a package: execute pre-remove action of
@@ -254,8 +242,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		ttype = xbps_transaction_pkg_type(obj);
-		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD ||
-		    ttype == XBPS_TRANS_CONFIGURE) {
+		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD) {
 			xbps_dbg_printf(xhp, "%s: skipping configuration for "
 			    "%s: %d\n", __func__, pkgver, ttype);
 			continue;
