@@ -145,7 +145,7 @@ xbps_pkg_exec_script(struct xbps_handle *xhp,
 		     bool update)
 {
 	xbps_data_t data;
-	void *buf;
+	const void *buf;
 	size_t buflen;
 	const char *pkgver = NULL;
 	int rv;
@@ -161,10 +161,9 @@ xbps_pkg_exec_script(struct xbps_handle *xhp,
 
 	xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
 
-	buf = xbps_data_data(data);
+	buf = xbps_data_data_nocopy(data);
 	buflen = xbps_data_size(data);
 	rv = xbps_pkg_exec_buffer(xhp, buf, buflen, pkgver, action, update);
-	free(buf);
 
 	return rv;
 }
