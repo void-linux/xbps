@@ -193,18 +193,6 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	}
 
 	/*
-	 * Execute the post REMOVE action if file exists and we aren't
-	 * updating the package.
-	 */
-	rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "post", false);
-	if (rv != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-		    rv, pkgver,
-		    "%s: [remove] REMOVE script failed to execute "
-		    "post ACTION: %s", pkgver, strerror(rv));
-		goto out;
-	}
-	/*
 	 * Set package state to "half-removed".
 	 */
 	rv = xbps_set_pkg_state_dictionary(pkgd,
@@ -216,19 +204,9 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 		    pkgver, strerror(rv));
 		goto out;
 	}
+	/* XXX: setting the state and then removing the package seems useless. */
 
 purge:
-	/*
-	 * Execute the purge REMOVE action if file exists.
-	 */
-	rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "purge", false);
-	if (rv != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-		    rv, pkgver,
-		    "%s: REMOVE script failed to execute "
-		    "purge ACTION: %s", pkgver, strerror(rv));
-		goto out;
-	}
 	/*
 	 * Remove package metadata plist.
 	 */
