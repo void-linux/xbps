@@ -111,6 +111,15 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	xbps_fetch_unset_cache_connection();
 
 	/*
+	 * Internalize metadata of downloaded binary packages.
+	 */
+	if ((rv = xbps_transaction_internalize(xhp, iter)) < 0) {
+		xbps_dbg_printf(xhp, "[trans] failed to internalize transaction binpkgs: "
+		    "%s\n", strerror(-rv));
+		goto out;
+	}
+
+	/*
 	 * Collect files in the transaction and find some issues
 	 * like multiple packages installing the same file.
 	 */
