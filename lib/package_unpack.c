@@ -199,16 +199,6 @@ unpack_archive(struct xbps_handle *xhp,
 	pkg_filesd = xbps_pkgdb_get_pkg_files(xhp, pkgname);
 
 	/*
-	 * Execute INSTALL "pre" ACTION before unpacking files.
-	 */
-	rv = xbps_pkg_exec_script(xhp, pkg_repod, "install-script", "pre", update);
-	if (rv != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL, rv, pkgver,
-		    "%s: [unpack] INSTALL script failed to execute pre ACTION: %s",
-		    pkgver, strerror(rv));
-		goto out;
-	}
-	/*
 	 * Unpack all files on archive now.
 	 */
 	for (;;) {

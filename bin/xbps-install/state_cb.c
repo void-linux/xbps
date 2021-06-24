@@ -165,6 +165,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		printf("%s\n", xscd->desc);
 		break;
 	/* errors */
+	case XBPS_STATE_TRANS_FAIL:
 	case XBPS_STATE_UNPACK_FAIL:
 	case XBPS_STATE_UPDATE_FAIL:
 	case XBPS_STATE_CONFIGURE_FAIL:
