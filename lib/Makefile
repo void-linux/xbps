@@ -43,6 +43,7 @@ OBJS += transaction_ops.o transaction_store.o transaction_check_replaces.o
 OBJS += transaction_check_revdeps.o transaction_check_conflicts.o
 OBJS += transaction_check_shlibs.o
 OBJS += transaction_files.o transaction_fetch.o transaction_pkg_deps.o
+OBJS += transaction_internalize.o
 OBJS += pubkey2fp.o package_fulldeptree.o
 OBJS += download.o initend.o pkgdb.o
 OBJS += plist.o plist_find.o plist_match.o archive.o
