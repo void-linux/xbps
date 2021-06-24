@@ -59,10 +59,11 @@
 int
 xbps_transaction_commit(struct xbps_handle *xhp)
 {
+	xbps_dictionary_t pkgdb_pkgd;
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	xbps_trans_type_t ttype;
-	const char *pkgver = NULL;
+	const char *pkgver = NULL, *pkgname = NULL;
 	int rv = 0;
 	bool update;
 
@@ -155,6 +156,59 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		    xhp->rootdir, strerror(errno));
 		goto out;
 	}
+
+	/*
+	 * Run all pre-remove scripts.
+	 */
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
+
+		ttype = xbps_transaction_pkg_type(obj);
+		if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_HOLD || ttype == XBPS_TRANS_CONFIGURE) {
+			xbps_dbg_printf(xhp, "%s: skipping pre-remove script for "
+			    "%s: %d\n", __func__, pkgver, ttype);
+			continue;
+		}
+		if ((pkgdb_pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
+			rv = errno;
+			xbps_dbg_printf(xhp, "[trans] cannot find %s in pkgdb: %s\n",
+			    pkgver, strerror(rv));
+			goto out;
+		}
+		update = ttype == XBPS_TRANS_UPDATE;
+		rv = xbps_pkg_exec_script(xhp, pkgdb_pkgd, "remove-script", "pre", update);
+		if (rv != 0) {
+			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, rv, pkgver,
+			    "%s: [trans] REMOVE script failed to execute pre ACTION: %s",
+			    pkgver, strerror(rv));
+			goto out;
+		}
+	}
+	xbps_object_iterator_reset(iter);
+
+	/*
+	 * Run all pre-install scripts.
+	 */
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		ttype = xbps_transaction_pkg_type(obj);
+		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD) {
+			xbps_dbg_printf(xhp, "%s: skipping pre-install script for "
+			    "%s: %d\n", __func__, pkgver, ttype);
+			continue;
+		}
+		rv = xbps_pkg_exec_script(xhp, obj, "install-script", "pre", ttype == XBPS_TRANS_UPDATE);
+		if (rv != 0) {
+			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, rv, pkgver,
+			    "%s: [trans] INSTALL script failed to execute pre ACTION: %s",
+			    pkgver, strerror(rv));
+			goto out;
+		}
+	}
+	xbps_object_iterator_reset(iter);
+
+
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 

@@ -153,18 +153,7 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	/* If package was "half-removed", remove it fully. */
 	if (state == XBPS_PKG_STATE_HALF_REMOVED)
 		goto purge;
-	/*
-	 * Run the pre remove action and show pre-remove message if exists.
-	 */
-	rv = xbps_pkg_exec_script(xhp, pkgd, "remove-script", "pre", update);
-	if (rv != 0) {
-		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_FAIL,
-		    errno, pkgver,
-		    "%s: [remove] REMOVE script failed to "
-		    "execute pre ACTION: %s",
-		    pkgver, strerror(rv));
-		goto out;
-	}
+
 	/* show remove-msg if exists */
 	if ((rv = xbps_cb_message(xhp, pkgd, "remove-msg")) != 0)
 		goto out;
