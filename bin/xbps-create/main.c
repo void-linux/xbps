@@ -647,7 +647,7 @@ write_entry(struct archive *ar, struct archive_entry *entry)
 	if ((target = archive_entry_pathname(entry)) == NULL)
 		return;
 
-	if (archive_write_header(ar, entry))
+	if (archive_write_header(ar, entry) != ARCHIVE_OK)
 		die_archive(ar, "cannot write %s to archive:", target);
 
 	/* Only regular files can have data. */
