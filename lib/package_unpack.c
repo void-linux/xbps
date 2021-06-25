@@ -572,8 +572,8 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 out:
 	if (pkg_fd != -1)
 		close(pkg_fd);
-	if (ar)
-		archive_read_finish(ar);
+	if (ar != NULL)
+		archive_read_free(ar);
 	if (bpkg)
 		free(bpkg);
 

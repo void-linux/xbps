@@ -56,41 +56,6 @@
 #define __UNCONST(a)	((void *)(uintptr_t)(const void *)(a))
 #endif
 
-/* libarchive compat */
-#if ARCHIVE_VERSION_NUMBER >= 3000000
-
-#define archive_read_support_compression_all(x) \
-	archive_read_support_filter_all(x)
-
-#define archive_read_support_compression_gzip(x) \
-	archive_read_support_filter_gzip(x)
-
-#define archive_read_support_compression_bzip2(x) \
-	archive_read_support_filter_bzip2(x)
-
-#define archive_read_support_compression_xz(x) \
-	archive_read_support_filter_xz(x)
-
-#define archive_write_set_compression_gzip(x) \
-	archive_write_add_filter_gzip(x)
-
-#define archive_write_set_compression_bzip2(x) \
-	archive_write_add_filter_bzip2(x)
-
-#define archive_write_set_compression_xz(x) \
-	archive_write_add_filter_xz(x)
-
-#define archive_read_finish(x) \
-	archive_read_free(x)
-
-#define archive_write_finish(x) \
-	archive_write_free(x)
-
-#define archive_compression_name(x) \
-	archive_filter_name(x, 0)
-
-#endif
-
 #ifndef __arraycount
 #define __arraycount(x) (sizeof(x) / sizeof(*x))
 #endif

@@ -373,7 +373,7 @@ xbps_repo_close(struct xbps_repo *repo)
 		return;
 
 	if (repo->ar != NULL) {
-		archive_read_finish(repo->ar);
+		archive_read_free(repo->ar);
 		repo->ar = NULL;
 	}
 	if (repo->fd != -1) {
