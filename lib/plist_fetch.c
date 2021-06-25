@@ -103,8 +103,8 @@ open_archive_by_url(struct url *url)
 	archive_read_support_format_tar(a);
 
 	if (archive_read_open(a, f, fetch_archive_open, fetch_archive_read,
-	    fetch_archive_close)) {
-		archive_read_finish(a);
+	    fetch_archive_close) != ARCHIVE_OK) {
+		archive_read_free(a);
 		return NULL;
 	}
 
@@ -128,8 +128,9 @@ open_archive(const char *url)
 		archive_read_support_filter_zstd(a);
 		archive_read_support_format_tar(a);
 
-		if (archive_read_open_filename(a, url, 32768)) {
-			archive_read_finish(a);
+		/* XXX: block size? */
+		if (archive_read_open_filename(a, url, 32768) != ARCHIVE_OK) {
+			archive_read_free(a);
 			return NULL;
 		}
 		return a;
@@ -170,7 +171,7 @@ xbps_archive_fetch_file(const char *url, const char *fname)
 		}
 		archive_read_data_skip(a);
 	}
-	archive_read_finish(a);
+	archive_read_free(a);
 
 	return buf;
 }
@@ -212,7 +213,7 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 		if (i == 2)
 			break;
 	}
-	archive_read_finish(a);
+	archive_read_free(a);
 
 	if (xbps_object_type(repo->idxmeta) == XBPS_TYPE_DICTIONARY)
 		repo->is_signed = true;
@@ -253,7 +254,7 @@ xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd)
 		}
 		archive_read_data_skip(a);
 	}
-	archive_read_finish(a);
+	archive_read_free(a);
 
 	return rv;
 }
