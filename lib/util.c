@@ -50,15 +50,15 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
-static bool is_revision(const char *str) {
-	if (str == NULL || str[0] == '\0'){
+static bool
+is_revision(const char *str)
+{
+	if (str == NULL || *str == '\0')
 		return false;
-	}
 	/* allow underscore for accepting perl-Digest-1.17_01_1 etc. */
-	while (isdigit((unsigned char)str[0]) || str[0] == '_') {
+	while (isdigit((unsigned char)*str) || *str == '_')
 		++str;
-	}
-	return str[0] == '\0';
+	return *str == '\0';
 }
 
 /**
