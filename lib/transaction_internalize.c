@@ -192,7 +192,7 @@ out:
 	if (pkg_fd != -1)
 		close(pkg_fd);
 	if (ar != NULL)
-		archive_read_finish(ar);
+		archive_read_free(ar);
 	free(pkgfile);
 	return rv;
 }
