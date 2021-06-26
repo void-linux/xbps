@@ -1,5 +1,7 @@
 xbps-X.XX.X (2020-XX-XX):
 
+ * libxbps: fix issues with updating packages in unpacked state. [duncaen]
+
  * libxbps: run all scripts before and after unpackage all packages,
    to avoid running things in a half unpacked state. [duncaen]
 
