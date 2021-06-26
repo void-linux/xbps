@@ -50,37 +50,28 @@
  * Functions for parsing xbps configuration files.
  */
 
-static void
-store_vars(struct xbps_handle *xhp, xbps_dictionary_t *d,
-	const char *key, const char *path, size_t line, char *buf)
+static int
+store_virtualpkg(struct xbps_handle *xhp, const char *path, size_t line, char *val)
 {
-	char *lp, *rp, *tc;
-	size_t len;
-
-	if (*d == NULL)
-		*d = xbps_dictionary_create();
-	if (xhp->vpkgd_conf == NULL)
-		xhp->vpkgd_conf = xbps_dictionary_create();
-
+	char *p;
 	/*
 	 * Parse strings delimited by ':' i.e
 	 * 	<left>:<right>
 	 */
-	lp = buf;
-	rp = strchr(buf, ':');
-	if (rp == NULL || *rp == '\0') {
+	p = strchr(val, ':');
+	if (p == NULL || p[1] == '\0') {
 		xbps_dbg_printf(xhp, "%s: ignoring invalid "
-		    "%s option at line %zu\n", path, key, line);
-		return;
+		    "virtualpkg option at line %zu\n", path, line);
+		return 0;
 	}
-	tc = strchr(buf, ':');
-	len = strlen(buf) - strlen(tc);
-	lp[len] = '\0';
+	*p++ = '\0';
 
-	rp++;
-	xbps_dictionary_set_cstring(*d, lp, rp);
-	xbps_dictionary_set_cstring(xhp->vpkgd_conf, lp, rp);
-	xbps_dbg_printf(xhp, "%s: added %s %s for %s\n", path, key, lp, rp);
+	if (!xbps_dictionary_set_cstring(xhp->vpkgd, val, p))
+		return -errno;
+	if (!xbps_dictionary_set_cstring(xhp->vpkgd_conf, val, p))
+		return -errno;
+	xbps_dbg_printf(xhp, "%s: added virtualpkg %s for %s\n", path, val, p);
+	return 1;
 }
 
 static void
@@ -184,60 +175,61 @@ static const struct key {
 	{ "cachedir",      8, KEY_CACHEDIR },
 	{ "ignorepkg",     9, KEY_IGNOREPKG },
 	{ "include",       7, KEY_INCLUDE },
+	{ "keepconf",      8, KEY_KEEPCONF },
 	{ "noextract",     9, KEY_NOEXTRACT },
 	{ "preserve",      8, KEY_PRESERVE },
 	{ "repository",   10, KEY_REPOSITORY },
 	{ "rootdir",       7, KEY_ROOTDIR },
 	{ "syslog",        6, KEY_SYSLOG },
 	{ "virtualpkg",   10, KEY_VIRTUALPKG },
-	{ "keepconf",      8, KEY_KEEPCONF },
 };
 
 static int
-parse_option(char *buf, const char **keyp, char **valp)
+cmpkey(const void *a, const void *b)
 {
-	size_t klen, end;
-	const char *key;
-	char *value;
-	int k = 0;
+	const struct key *ka = a;
+	const struct key *kb = b;
+	return strncmp(ka->str, kb->str, ka->len);
+}
 
-	for (unsigned int i = 0; i < __arraycount(keys); i++) {
-		key = keys[i].str;
-		klen = keys[i].len;
-		if (strncmp(buf, key, klen) == 0) {
-			k = keys[i].key;
-			break;
-		}
-	}
-	/* non matching option */
-	if (k == 0)
-		return 0;
+static int
+parse_option(char *line, size_t linelen, char **valp, size_t *vallen)
+{
+	size_t len;
+	char *p;
+	struct key needle, *result;
 
-	/* check if next char is the equal sign */
-	if (buf[klen] != '=')
-		return 0;
+	p = strpbrk(line, " \t=");
+	if (p == NULL)
+		return KEY_ERROR;
+	needle.str = line;
+	needle.len = p-line;
 
-	/* skip equal sign */
-	value = buf + klen + 1;
+	while (*p && isblank((unsigned char)*p))
+		p++;
+	if (*p != '=')
+		return KEY_ERROR;
 
-	/* eat blanks */
-	while (isblank((unsigned char)*value))
-		value++;
+	result = bsearch(&needle, keys, __arraycount(keys), sizeof(struct key), cmpkey);
+	if (result == NULL)
+		return KEY_ERROR;
 
-	end = strlen(value);
-	/* eat trailing spaces, end - 1 here because \0 should be set -after- the first non-space
-	 * if end points at the actual current character, we can never make it an empty string
-	 * because than end needs to be set to -1, but end is a unsigned type thus would result in underflow */
-	while (end > 0 && isspace((unsigned char)value[end - 1]))
-		end--;
+	p++;
+	while (isblank((unsigned char)*p))
+		p++;
 
-	value[end] = '\0';
+	len = linelen-(p-line);
+	/* eat trailing spaces, len - 1 here because \0 should be set -after- the first non-space
+	 * if len points at the actual current character, we can never make it an empty string
+	 * because than end needs to be set to -1, but len is a unsigned type thus would result in underflow */
+	while (len > 0 && isblank((unsigned char)p[len-1]))
+		len--;
 
-	/* option processed successfully */
-	*keyp = key;
-	*valp = value;
+	p[len] = '\0';
+	*valp = p;
+	*vallen = len;
 
-	return k;
+	return result->key;
 }
 
 static int parse_file(struct xbps_handle *, const char *, bool);
@@ -283,7 +275,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 {
 	FILE *fp;
 	size_t len, nlines = 0;
-	ssize_t nread;
+	ssize_t rd;
 	char *line = NULL;
 	int rv = 0;
 	int size, rs;
@@ -297,22 +289,25 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 
 	xbps_dbg_printf(xhp, "Parsing configuration file: %s\n", path);
 
-	while (rv == 0 && (nread = getline(&line, &len, fp)) != -1) {
-		const char *key;
-		char *p, *val;
+	while ((rd = getline(&line, &len, fp)) != -1) {
+		char *val = NULL;
+		size_t vallen;
+
+		if (line[rd-1] == '\n') {
+			line[rd-1] = '\0';
+			rd--;
+		}
 
 		nlines++;
-		p = line;
 
 		/* eat blanks */
-		while (isblank((unsigned char)*p))
-			p++;
-
+		while (isblank((unsigned char)*line))
+			line++;
 		/* ignore comments or empty lines */
-		if (*p == '#' || *p == '\n')
+		if (line[0] == '#' || line[0] == '\n')
 			continue;
 
-		switch (parse_option(p, &key, &val)) {
+		switch (parse_option(line, rd, &val, &vallen)) {
 		case KEY_ERROR:
 			xbps_dbg_printf(xhp, "%s: ignoring invalid option at "
 			    "line %zu\n", path, nlines);
@@ -359,7 +354,12 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 				xbps_dbg_printf(xhp, "%s: added repository %s\n", path, val);
 			break;
 		case KEY_VIRTUALPKG:
-			store_vars(xhp, &xhp->vpkgd, key, path, nlines, val);
+			rv = store_virtualpkg(xhp, path, nlines, val);
+			if (rv < 0) {
+				rv = -rv;
+				break;
+			}
+			rv = 0;
 			break;
 		case KEY_PRESERVE:
 			store_preserved_file(xhp, val);
