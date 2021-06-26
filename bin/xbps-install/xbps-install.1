@@ -1,5 +1,6 @@
 .Dd April 23, 2020
 .Dt XBPS-INSTALL 1
+.Os
 .Sh NAME
 .Nm xbps-install
 .Nd XBPS utility to (re)install and update packages
@@ -65,7 +66,7 @@ The package is on hold mode.
 Packages in this mode won't be updated unless
 it's explicitely declared to be updated.
 The only way to update packages in this mode is by using the
-.Fl f, Fl -force
+.Fl f , Fl -force
 option.
 To list packages in this mode use
 .Nm xbps-query Fl H .
@@ -83,26 +84,26 @@ To list packages in this mode use
 .El
 .Sh OPTIONS
 .Bl -tag -width -x
-.It Fl A, Fl -automatic
+.It Fl A , Fl -automatic
 Enables automatic installation mode, i.e. package will be treated as orphan
 if no package is depending on it directly.
 .No See Fl -mode Sy auto No in Xr xbps-pkgdb 1 .
-.It Fl C, Fl -config Ar dir
+.It Fl C , Fl -config Ar dir
 Specifies a path to the XBPS configuration directory.
 If the first character is not '/' then it's a relative path of
 .Ar rootdir .
-.It Fl c, Fl -cachedir Ar dir
+.It Fl c , Fl -cachedir Ar dir
 Specifies a path to the cache directory, where binary packages are stored.
 If the first character is not '/' then it's a relative path of
 .Ar rootdir .
-.It Fl d, Fl -debug
+.It Fl d , Fl -debug
 Enables extra debugging shown to stderr.
-.It Fl D, Fl -download-only
+.It Fl D , Fl -download-only
 Only download packages to the cache, do not do any other installation steps.
 This may be useful for doing system upgrades while offline, or automatically
 downloading updates while leaving you with the option of still manually running
 the update.
-.It Fl f, Fl -force
+.It Fl f , Fl -force
 Force installation (downgrade if package version in repos is less than installed version),
 or reinstallation (if package version in repos is the same) to the target
 .Ar PKG ,
@@ -115,29 +116,29 @@ If
 .Fl f
 is specified twice all files will be unpacked, even
 .Em configuration files .
-.It Fl h, Fl -help
+.It Fl h , Fl -help
 Show the help message.
-.It Fl I, Fl -ignore-file-conflicts
+.It Fl I , Fl -ignore-file-conflicts
 Ignore detected file conflicts in a transaction.
-.It Fl i, Fl -ignore-conf-repos
+.It Fl i , Fl -ignore-conf-repos
 Ignore repositories defined in configuration files.
 Only repositories specified in the command line via
 .Ar --repository
 will be used.
-.It Fl M, Fl -memory-sync
+.It Fl M , Fl -memory-sync
 For remote repositories, the data is fetched and stored in memory for the current
 operation.
-This ignores the existing on-disk repository archives in rootdir.
-.It Fl n, Fl -dry-run
+Cached on-disk repository indexes of remote repositories will be ignored.
+.It Fl n , Fl -dry-run
 Dry-run mode.
-Show what actions would be done but don't change any state of the system,
-including syncing repository indexes. Use
+Show what actions would be done but don't change any state of the system.
+To use a fresh repository indexes use
 .Fl M
-to do dry runs with memory sync instead.
-
-The current output prints 6 arguments:
-"<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
-.It Fl R, Fl -repository Ar url
+for in memory sync.
+.Pp
+The output will be a line for each action in the following format:
+.D1 <pkgver> <action> <arch> <repository> <installedsize> <downloadsize>
+.It Fl R , Fl -repository Ar url
 Appends the specified repository to the top of the list.
 The
 .Ar url
@@ -153,25 +154,25 @@ The
 and
 .Ar repository
 package objects are not stored in pkgdb.
-.It Fl r, Fl -rootdir Ar dir
+.It Fl r , Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
-.It Fl S, Fl -sync
+.It Fl S , Fl -sync
 Synchronize remote repository index files.
-.It Fl U, Fl -unpack-only
+.It Fl U , Fl -unpack-only
 If set, packages to be installed or upgraded in the transaction won't be configured,
 just unpacked.
 That means that those packages should be reconfigured via
 .Xr xbps-reconfigure 1 .
-.It Fl u, Fl -update
+.It Fl u , Fl -update
 Performs a full system upgrade: all installed packages
 .Pq except those on Sy hold , No see Fl -mode Sy hold No in Xr xbps-pkgdb 1
 will be updated to the greatest
 versions that were found in repositories.
-.It Fl v, Fl -verbose
+.It Fl v , Fl -verbose
 Enables verbose messages.
-.It Fl y, Fl -yes
+.It Fl y , Fl -yes
 Assume yes to all questions and avoid interactive questions.
-.It Fl V, Fl -version
+.It Fl V , Fl -version
 Show the version information.
 .El
 .Sh ENVIRONMENT
