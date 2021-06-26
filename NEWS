@@ -1,5 +1,8 @@
 xbps-X.XX.X (2020-XX-XX):
 
+ * libxbps: run all scripts before and after unpackage all packages,
+   to avoid running things in a half unpacked state. [duncaen]
+
  * libxbps: fix configuration parsing with missing trailing newline
    and remove trailing spaces from values. [eater, duncaen]
 
