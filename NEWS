@@ -1,3 +1,33 @@
+xbps-X.XX.X (2020-XX-XX):
+
+ * libxbps: fix configuration parsing with missing trailing newline
+   and remove trailing spaces from values. [eater, duncaen]
+
+ * libxbps: fix XBPS_ARCH environment variable if architecture
+   is also defined in a configuration file. [duncaen]
+
+ * libxbps: fix memory leaks. [ArsenArsen]
+
+ * libxbps: fix file descriptor leaks. [gt7-void]
+
+ * libxbps: fix temporary redirect in libfetch. [ericonr]
+
+ * xbps-install(1): list reinstalled packages. [chocimier]
+
+ * xbps-install(1): in dry-run mode ignore out of space error. [chocimier]
+
+ * xbps-fetch(1): make sure to exit with failure if a failure was encountered.
+   [duncaen]
+
+ * xbps-fetch(1): fix printing uninitialized memory in error cases. [duncaen]
+
+ * xbps-pkgdb(1): remove mtime checks, they are unreliable on fat filesystems
+   and xbps does not rely on mtime matching the package anymore. [duncaen]
+
+ * xbps-checkvers(1): with --installed also list subpackages. [chocimier]
+
+ * xbps.d(5): describe ignorepkg more precisely. [chocimier]
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete
