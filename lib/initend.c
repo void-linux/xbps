@@ -90,6 +90,13 @@ xbps_init(struct xbps_handle *xhp)
 
 	xbps_fetch_set_cache_connection(XBPS_FETCH_CACHECONN, XBPS_FETCH_CACHECONN_HOST);
 
+	xhp->vpkgd = xbps_dictionary_create();
+	if (xhp->vpkgd == NULL)
+		return errno ? errno : ENOMEM;
+	xhp->vpkgd_conf = xbps_dictionary_create();
+	if (xhp->vpkgd_conf == NULL)
+		return errno ? errno : ENOMEM;
+
 	/* process xbps.d directories */
 	if ((rv = xbps_conf_init(xhp)) != 0)
 		return rv;
