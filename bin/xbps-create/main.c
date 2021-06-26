@@ -43,6 +43,7 @@
 #include <dirent.h>
 
 #include <xbps.h>
+#include "xbps_utils.h"
 #include "queue.h"
 
 #ifdef __clang__
@@ -503,48 +504,6 @@ out:
 	return 0;
 }
 
-static int
-walk_dir(const char *path,
-		int (*fn) (const char *, const struct stat *sb, const struct dirent *dir))
-{
-	int rv, i;
-	struct dirent **list;
-	char tmp_path[PATH_MAX] = { 0 };
-	struct stat sb;
-
-	rv = scandir(path, &list, NULL, alphasort);
-	for (i = rv - 1; i >= 0; i--) {
-		if (strcmp(list[i]->d_name, ".") == 0 || strcmp(list[i]->d_name, "..") == 0)
-			continue;
-		if (strlen(path) + strlen(list[i]->d_name) + 1 >= PATH_MAX - 1) {
-			errno = ENAMETOOLONG;
-			rv = -1;
-			break;
-		}
-		strncpy(tmp_path, path, PATH_MAX - 1);
-		strncat(tmp_path, "/", PATH_MAX - 1 - strlen(tmp_path));
-		strncat(tmp_path, list[i]->d_name, PATH_MAX - 1 - strlen(tmp_path));
-		if (lstat(tmp_path, &sb) < 0) {
-			break;
-		}
-
-		if (S_ISDIR(sb.st_mode)) {
-			if (walk_dir(tmp_path, fn) < 0) {
-				rv = -1;
-				break;
-			}
-		}
-
-		rv = fn(tmp_path, &sb, list[i]);
-		if (rv != 0) {
-			break;
-		}
-
-	}
-	free(list);
-	return rv;
-}
-
 static void
 process_xentry(const char *key, const char *mutable_files)
 {
@@ -611,7 +570,7 @@ process_xentry(const char *key, const char *mutable_files)
 static void
 process_destdir(const char *mutable_files)
 {
-	if (walk_dir(".", ftw_cb) < 0)
+	if (xbps_walk_dir(".", ftw_cb) < 0)
 		die("failed to process destdir files (nftw):");
 
 	/* Process regular files */

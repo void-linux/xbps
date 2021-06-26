@@ -50,12 +50,11 @@
 #include <stdlib.h>
 #include <sched.h>
 #include <limits.h>	/* PATH_MAX */
-#include <ftw.h>
 #include <signal.h>
 #include <getopt.h>
-#include <dirent.h>
 
 #include <xbps.h>
+#include "xbps_utils.h"
 #include "queue.h"
 
 #ifndef SECBIT_NOROOT
@@ -115,7 +114,7 @@ die(const char *fmt, ...)
 }
 
 static int
-ftw_cb(const char *fpath, const struct stat *sb)
+ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED)
 {
 	int sverrno = 0;
 
@@ -132,52 +131,6 @@ ftw_cb(const char *fpath, const struct stat *sb)
 	return 0;
 }
 
-static int
-walk_dir(const char *path,
-	int (*fn)(const char *fpath, const struct stat *sb))
-{
-	struct dirent **list;
-	struct stat sb;
-	const char *p;
-	char tmp_path[PATH_MAX] = {0};
-	int rv = 0, i;
-
-	i = scandir(path, &list, NULL, alphasort);
-	if (i == -1) {
-		rv = -1;
-		goto out;
-	}
-	while (i--) {
-		p = list[i]->d_name;
-		if (strcmp(p, ".") == 0 || strcmp(p, "..") == 0)
-			continue;
-		if (strlen(path) + strlen(p) + 1 >= (PATH_MAX - 1)) {
-			errno = ENAMETOOLONG;
-			rv = -1;
-			break;
-		}
-		strncpy(tmp_path, path, PATH_MAX - 1);
-		strncat(tmp_path, "/", PATH_MAX - 1 - strlen(tmp_path));
-		strncat(tmp_path, p, PATH_MAX - 1 - strlen(tmp_path));
-		if (lstat(tmp_path, &sb) < 0) {
-			break;
-		}
-		if (S_ISDIR(sb.st_mode)) {
-			if (walk_dir(tmp_path, fn) < 0) {
-				rv = -1;
-				break;
-			}
-		}
-		rv = fn(tmp_path, &sb);
-		if (rv != 0) {
-			break;
-		}
-	}
-out:
-	free(list);
-	return rv;
-}
-
 static void
 cleanup_overlayfs(void)
 {
@@ -188,7 +141,7 @@ cleanup_overlayfs(void)
 		goto out;
 
 	/* recursively remove the temporary dir */
-	if (walk_dir(tmpdir, ftw_cb) != 0) {
+	if (xbps_walk_dir(tmpdir, ftw_cb) != 0) {
 		fprintf(stderr, "Failed to remove directory tree %s: %s\n",
 			tmpdir, strerror(errno));
 		exit(EXIT_FAILURE);
