@@ -171,7 +171,12 @@ versions that were found in repositories.
 .It Fl v , Fl -verbose
 Enables verbose messages.
 .It Fl y , Fl -yes
-Assume yes to all questions and avoid interactive questions.
+Assume yes to most questions and avoid interactive questions.
+A prompt will still be shown if the transaction requires trusting
+a new signing key for packages.
+If you need to automate new installations,
+it is necessary to add these keys to the system before installation, see
+.Sx FILES .
 .It Fl V , Fl -version
 Show the version information.
 .El
@@ -251,6 +256,8 @@ Default system configuration directory.
 Package files metadata.
 .It Ar /var/db/xbps/pkgdb-0.38.plist
 Default package database (0.38 format). Keeps track of installed packages and properties.
+.It Ar /var/db/xbps/keys
+Default trusted keys directory.
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
 .El
