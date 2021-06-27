@@ -165,6 +165,13 @@ echo "PKGCONFIGDIR ?= $PKGCONFIGDIR" >>$CONFIG_MK
 echo "TESTSDIR ?= $TESTSDIR" >>$CONFIG_MK
 echo "DBDIR ?= $DBDIR" >>$CONFIG_MK
 
+if [ -d .git ] && command -v git >/dev/null; then
+	_gitrev=$(git rev-parse --short HEAD)
+	echo "GITVERSION = $_gitrev" >>$CONFIG_MK
+else
+	echo "GITVERSION = UNSET" >>$CONFIG_MK
+fi
+
 ETCDIR="${SYSCONFDIR}/xbps.d"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 
@@ -198,14 +205,8 @@ echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
 echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSDEFCONF_PATH=\\\"${SHAREDIR}/xbps.d\\\"" >>$CONFIG_MK
-echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_META_PATH=\\\"${DBDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DUNUSED=\"__attribute__((__unused__))\"" >>$CONFIG_MK
-
-if [ -d .git ] && command -v git >/dev/null; then
-	_gitrev=$(git rev-parse --short HEAD)
-	echo "CPPFLAGS += -DXBPS_GIT=\\\"${_gitrev}\\\"" >>$CONFIG_MK
-fi
 
 if [ -n "$DEBUG" -a "$DEBUG" != no -a "$DEBUG" != false ]; then
 	echo "Building with debugging symbols."

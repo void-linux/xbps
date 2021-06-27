@@ -53,12 +53,9 @@
  */
 #define XBPS_API_VERSION	"20200423"
 
-#ifndef XBPS_VERSION
- #define XBPS_VERSION		"UNSET"
-#endif
-#ifndef XBPS_GIT
- #define XBPS_GIT		"UNSET"
-#endif
+#define XBPS_VERSION "@@VERSION@@"
+#define XBPS_GIT "@@GITVERSION@@"
+
 /**
  * @def XBPS_RELVER
  * Current library release date.
