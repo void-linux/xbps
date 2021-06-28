@@ -32,9 +32,113 @@
 #include <assert.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <glob.h>
 
 #include <xbps.h>
 #include "defs.h"
+
+static int KEEP_CACHE;
+
+bool
+check_keep(char *optarg)
+{
+	assert(optarg);
+	while (*optarg) {
+		if (!isdigit(*optarg))
+			return false;
+		else
+			optarg++;
+	}
+
+	return true;
+}
+
+static int
+binpkgcmp(const void *binpkg_a, const void *binpkg_b)
+{
+	const char **binpkg1, **binpkg2;
+
+	assert(binpkg_a);
+	assert(binpkg_b);
+
+	binpkg1 = (const char **)binpkg_a;
+	binpkg2 = (const char **)binpkg_b;
+
+	return xbps_cmpver(*binpkg1, *binpkg2);
+}
+
+bool
+is_removable_pkg(struct xbps_handle *xhp, const char *binpkg, char *pkgver, int keep)
+{
+
+	char pkgname[XBPS_NAME_SIZE];
+	xbps_string_t pattern = NULL;
+	glob_t fake_results;
+	int lenpkg, rv, len_realres, len_fakeres;
+	const char *entry = NULL;
+	char **real_results = NULL;
+	bool match = false;
+
+	lenpkg = rv = len_fakeres = len_realres = 0;
+
+	if (xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		lenpkg = strlen(pkgname);
+		/* Building pattern */
+		pattern = xbps_string_create_cstring(pkgname);
+		assert(pattern);
+		xbps_string_append_cstring(pattern, "-*.xbps");
+
+		rv = glob(xbps_string_cstring_nocopy(pattern), 0, NULL, &fake_results);
+		if (rv != 0) {
+			xbps_dbg_printf(xhp, "[removable] error in glob() rv = %d - %s\n", rv, strerror(rv));
+		}
+		assert(rv == 0);
+		assert((len_fakeres = fake_results.gl_pathc) > 0);
+		for (int i = 0; i < len_fakeres; i++) {
+			entry = fake_results.gl_pathv[i];
+			if (isdigit(entry[lenpkg + 1])) {
+				len_realres++;
+				real_results = realloc(real_results, len_realres * sizeof(char *));
+				assert(real_results);
+				real_results[len_realres - 1] = calloc(strlen(entry) + 1, sizeof(char));
+				strcpy(real_results[len_realres - 1], entry);
+				assert(real_results[len_realres - 1]);
+			}
+		}
+		/* Release resources */
+		globfree(&fake_results);
+		xbps_object_release(pattern);
+		pattern = NULL;
+
+		/* Sorting the real results */
+		assert(len_realres > 0);
+		qsort(real_results, len_realres, sizeof(char *), binpkgcmp);
+
+		/* Cycle on the real results */
+		xbps_dbg_printf(xhp, "[removable] keep = %d, real results lenght for %s = %d\n", keep, binpkg, len_realres);
+		for (int i = 0; i < len_realres; i++) {
+			entry = real_results[i];
+			xbps_dbg_printf(xhp, "[removable] Result of %d = %s\n", i, entry);
+			if (strcmp(binpkg, entry) == 0) {
+				if (i < (len_realres - (keep + 1))) {
+					xbps_dbg_printf(xhp, "[removable] %s at the position %d must be removed!\n\n", entry, i);
+					match = true;
+				}
+				break;
+			}
+		}
+
+		/* Release resources */
+		for (int i = 0; i < len_realres; i++) {
+			free(real_results[i]);
+			real_results[i] = NULL;
+		}
+		free(real_results);
+		real_results = NULL;
+	}
+
+	return match;
+}
 
 static int
 cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
@@ -61,6 +165,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		return 0;
 	}
 	free(arch);
+
 	/*
 	 * Remove binary pkg if it's not registered in any repository
 	 * or if hash doesn't match.
@@ -68,41 +173,51 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	pkgver = xbps_binpkg_pkgver(binpkg);
 	assert(pkgver);
 	repo_pkgd = xbps_rpool_get_pkg(xhp, pkgver);
-	free(pkgver);
 	if (repo_pkgd) {
 		xbps_dictionary_get_cstring_nocopy(repo_pkgd,
-		    "filename-sha256", &rsha256);
+			"filename-sha256", &rsha256);
 		if (xbps_file_sha256_check(binpkg, rsha256) == 0) {
 			/* hash matched */
+			free(pkgver);
+			pkgver = NULL;
 			return 0;
 		}
 	}
-	binpkgsig = xbps_xasprintf("%s.sig", binpkg);
-	if (!drun && unlink(binpkg) == -1) {
-		fprintf(stderr, "Failed to remove `%s': %s\n",
-		    binpkg, strerror(errno));
-	} else {
-		printf("Removed %s from cachedir (obsolete)\n", binpkg);
-	}
-	if (!drun && unlink(binpkgsig) == -1) {
-		if (errno != ENOENT) {
+
+	/* Remove obsolete packages according the 'keep' parameter value */
+	if (is_removable_pkg(xhp, binpkg, pkgver, KEEP_CACHE)) {
+		binpkgsig = xbps_xasprintf("%s.sig", binpkg);
+		if (!drun && unlink(binpkg) == -1) {
 			fprintf(stderr, "Failed to remove `%s': %s\n",
-			    binpkgsig, strerror(errno));
+				binpkg, strerror(errno));
+		} else {
+			printf("Removed %s from cachedir (obsolete)\n", binpkg);
 		}
+		if (!drun && unlink(binpkgsig) == -1) {
+			if (errno != ENOENT) {
+				fprintf(stderr, "Failed to remove `%s': %s\n",
+					binpkgsig, strerror(errno));
+			}
+		}
+		free(binpkgsig);
+		binpkgsig = NULL;
 	}
-	free(binpkgsig);
+	free(pkgver);
+	pkgver = NULL;
 
 	return 0;
 }
 
 int
-clean_cachedir(struct xbps_handle *xhp, bool drun)
+clean_cachedir(struct xbps_handle *xhp, bool drun, int keep)
 {
 	xbps_array_t array = NULL;
 	DIR *dirp;
 	struct dirent *dp;
 	char *ext;
 	int rv = 0;
+
+	KEEP_CACHE = keep;
 
 	if (chdir(xhp->cachedir) == -1)
 		return -1;

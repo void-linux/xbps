@@ -280,7 +280,7 @@ for f in all extra error shadow "format=2" missing-prototypes \
 	unsafe-loop-optimizations undef sign-compare \
 	missing-include-dirs old-style-definition \
 	init-self redundant-decls float-equal missing-noreturn \
-	cast-align cast-qual pointer-arith comment \
+	cast-align pointer-arith comment \
 	declaration-after-statement write-strings stack-protector; do
 	check_compiler_flag ${f} W
 done

@@ -35,6 +35,9 @@
 
 #include <xbps.h>
 #include "defs.h"
+#include "../xbps-remove/defs.h"
+
+static int KEEP_REPO;
 
 static int
 remove_pkg(const char *repodir, const char *file)
@@ -94,22 +97,26 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key UNUSED, v
 	assert(pkgver);
 	if (xhp->flags & XBPS_FLAG_VERBOSE)
 		printf("checking %s (%s)\n", pkgver, binpkg);
+
 	/*
-	 * If binpkg is not registered in index, remove binpkg.
+	 * If binpkg is not registered in index, remove binpkg
+	 * according the 'keep' parameter value
 	 */
 	if (!xbps_repo_get_pkg(repo, pkgver) && !(stage && xbps_repo_get_pkg(stage, pkgver))) {
-		if ((rv = remove_pkg(repo->uri, binpkg)) != 0) {
-			free(pkgver);
-			return 0;
+		if (is_removable_pkg(xhp, binpkg, pkgver, KEEP_REPO)) {
+			if ((rv = remove_pkg(repo->uri, binpkg)) != 0) {
+				free(pkgver);
+				return 0;
+			}
+			printf("Removed obsolete package `%s'.\n", binpkg);
 		}
-		printf("Removed obsolete package `%s'.\n", binpkg);
 	}
 	free(pkgver);
 	return 0;
 }
 
 int
-remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
+remove_obsoletes(struct xbps_handle *xhp, const char *repodir, int keep)
 {
 	xbps_array_t array = NULL;
 	struct xbps_repo *repos[2], *repo, *stage;
@@ -117,6 +124,8 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	struct dirent *dp;
 	char *ext;
 	int rv = 0;
+
+	KEEP_REPO = keep;
 
 	repo = xbps_repo_public_open(xhp, repodir);
 	if (repo == NULL) {

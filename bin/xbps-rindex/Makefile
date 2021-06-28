@@ -3,6 +3,8 @@ TOPDIR = ../..
 
 BIN =	xbps-rindex
 OBJS =	main.o index-add.o index-clean.o remove-obsoletes.o repoflush.o sign.o
+OBJS += ../xbps-install/question.o
+OBJS += ../xbps-remove/clean-cache.o
 
 include $(TOPDIR)/mk/prog.mk
 
