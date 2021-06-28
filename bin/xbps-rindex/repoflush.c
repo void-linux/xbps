@@ -68,7 +68,7 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	 */
 	if (compression == NULL || strcmp(compression, "zstd") == 0) {
 		archive_write_add_filter_zstd(ar);
-		archive_write_set_options(ar, "compression-level=9");
+		archive_write_set_options(ar, "compression-level=19");
 	} else if (strcmp(compression, "gzip") == 0) {
 		archive_write_add_filter_gzip(ar);
 		archive_write_set_options(ar, "compression-level=9");
