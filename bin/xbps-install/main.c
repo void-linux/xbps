@@ -53,6 +53,7 @@ usage(bool fail)
 	    " -h, --help                  Show usage\n"
 	    " -i, --ignore-conf-repos     Ignore repositories defined in xbps.d\n"
 	    " -I, --ignore-file-conflicts Ignore detected file conflicts\n"
+	    " -T, --trust-disk-space      Don't fail from insufficient disk space for transaction\n"
 	    " -U, --unpack-only           Unpack packages in transaction, do not configure them\n"
 	    " -M, --memory-sync           Remote repository data is fetched and stored\n"
 	    "                             in memory, ignoring on-disk repodata archives\n"
@@ -107,6 +108,7 @@ main(int argc, char **argv)
 		{ "help", no_argument, NULL, 'h' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
 		{ "ignore-file-conflicts", no_argument, NULL, 'I' },
+		{ "trust-disk-space", no_argument, NULL, 'T' },
 		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "dry-run", no_argument, NULL, 'n' },
 		{ "repository", required_argument, NULL, 'R' },
@@ -182,6 +184,9 @@ main(int argc, char **argv)
 			break;
 		case 'S':
 			syncf = true;
+			break;
+		case 'T':
+			flags |= XBPS_FLAG_IGNORE_DISK_SPACE;
 			break;
 		case 'U':
 			flags |= XBPS_FLAG_UNPACK_ONLY;

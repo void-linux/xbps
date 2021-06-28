@@ -241,6 +241,13 @@
 #define XBPS_FLAG_KEEP_CONFIG 		0x00010000
 
 /**
+ * @def XBPS_FLAG_IGNORE_DISK_SPACE
+ * Skips checking disk space available and disk space needed.
+ * Must be set through the xbps_handle::flags member.
+ */
+#define XBPS_FLAG_IGNORE_DISK_SPACE	0x00020000
+
+/**
  * @def XBPS_FETCH_CACHECONN
  * Default (global) limit of cached connections used in libfetch.
  */

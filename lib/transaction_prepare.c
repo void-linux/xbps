@@ -169,21 +169,22 @@ compute_transaction_stats(struct xbps_handle *xhp)
 				"total-removed-size", rmsize))
 		return EINVAL;
 
-	/* Get free space from target rootdir: return ENOSPC if there's not enough space */
-	if (statvfs(xhp->rootdir, &svfs) == -1) {
-		xbps_dbg_printf(xhp, "%s: statvfs failed: %s\n", __func__, strerror(errno));
-		return 0;
+	if (xhp->flags & XBPS_FLAG_IGNORE_DISK_SPACE) {
+		/* Get free space from target rootdir: return ENOSPC if there's not enough space */
+		if (statvfs(xhp->rootdir, &svfs) == -1) {
+			xbps_dbg_printf(xhp, "%s: statvfs failed: %s\n", __func__, strerror(errno));
+			return 0;
+		}
+		/* compute free space on disk */
+		rootdir_free_size = svfs.f_bfree * svfs.f_bsize;
+
+		if (!xbps_dictionary_set_uint64(xhp->transd,
+					"disk-free-size", rootdir_free_size))
+			return EINVAL;
+
+		if (instsize > rootdir_free_size)
+			return ENOSPC;
 	}
-	/* compute free space on disk */
-	rootdir_free_size = svfs.f_bfree * svfs.f_bsize;
-
-	if (!xbps_dictionary_set_uint64(xhp->transd,
-				"disk-free-size", rootdir_free_size))
-		return EINVAL;
-
-	if (instsize > rootdir_free_size)
-		return ENOSPC;
-
 	return 0;
 }
 
