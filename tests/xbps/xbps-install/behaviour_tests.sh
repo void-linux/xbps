@@ -175,6 +175,62 @@ reproducible_body() {
 	atf_check_equal $? 1
 }
 
+atf_test_case detect_conflict_update
+
+detect_conflict_update_head() {
+	atf_set "descr" "xbps-install(1): test updates with conflicts"
+}
+
+detect_conflict_update_body() {
+	atf_expect_fail "conflicts aren't dealt with in updates"
+
+	mkdir -p some_repo pkg_A pkg_B
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" -C "A>=0" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yU A
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" -D "B>=0" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -d -r root -C empty.conf --repository=$PWD/some_repo -yUu A
+	atf_check_equal $? 11
+
+	res=$(xbps-query -r root -C empty.conf -p pkgname B)
+	atf_check_equal "$res" ""
+}
+
+atf_test_case detect_conflict_install
+
+detect_conflict_install_head() {
+	atf_set "descr" "xbps-install(1): test installation with conflicts"
+}
+
+detect_conflict_install_body() {
+	mkdir -p some_repo pkg_A pkg_B
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" -C "A>=0" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yU A B
+	atf_check_equal $? 11
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_existent
 	atf_add_test_case update_existent
@@ -182,4 +238,6 @@ atf_init_test_cases() {
 	atf_add_test_case unpacked_dep
 	atf_add_test_case reinstall_unpacked_unpack_only
 	atf_add_test_case reproducible
+	atf_add_test_case detect_conflict_update
+	atf_add_test_case detect_conflict_install
 }
