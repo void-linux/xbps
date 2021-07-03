@@ -41,13 +41,20 @@
 #include "xbps_api_impl.h"
 
 static bool
-rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
+rsa_verify_hash(struct xbps_repo *repo,
 		unsigned char *sig, unsigned int siglen,
 		unsigned char *sha256)
 {
 	BIO *bio;
 	RSA *rsa;
 	int rv;
+	xbps_data_t pubkey;
+
+	if ((pubkey = xbps_repo_pubkey(repo)) == NULL) {
+		xbps_error_printf("%s: failed to get public key: %s\n",
+			repo->uri, strerror(errno));
+		return false;
+	}
 
 	ERR_load_crypto_strings();
 	SSL_load_error_strings();
@@ -75,62 +82,35 @@ bool
 xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 		unsigned char *digest)
 {
-	xbps_dictionary_t repokeyd = NULL;
-	xbps_data_t pubkey;
-	char *hexfp = NULL;
-	unsigned char *sig_buf = NULL;
-	size_t sigbuflen, sigfilelen;
-	char *rkeyfile = NULL;
-	bool val = false;
+	unsigned char buf[512];
+	struct stat st;
+	ssize_t rd = 0;
+	int fd = -1;
 
-	if (!xbps_dictionary_count(repo->idxmeta)) {
-		xbps_dbg_printf(repo->xhp, "%s: unsigned repository\n", repo->uri);
-		return false;
-	}
-	hexfp = xbps_pubkey2fp(repo->xhp,
-	    xbps_dictionary_get(repo->idxmeta, "public-key"));
-	if (hexfp == NULL) {
-		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
-		return false;
-	}
-
-	/*
-	 * Prepare repository RSA public key to verify fname signature.
-	 */
-	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
-	repokeyd = xbps_plist_dictionary_from_file(repo->xhp, rkeyfile);
-	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY) {
-		xbps_dbg_printf(repo->xhp, "cannot read rkey data at %s: %s\n",
-		    rkeyfile, strerror(errno));
-		goto out;
-	}
-
-	pubkey = xbps_dictionary_get(repokeyd, "public-key");
-	if (xbps_object_type(pubkey) != XBPS_TYPE_DATA)
-		goto out;
-
-	if (!xbps_mmap_file(sigfile, (void *)&sig_buf, &sigbuflen, &sigfilelen)) {
-		xbps_dbg_printf(repo->xhp, "can't open signature file %s: %s\n",
+	if ((fd = open(sigfile, O_RDONLY|O_CLOEXEC)) == -1 || fstat(fd, &st) == -1) {
+		xbps_error_printf("can't open signature file %s: %s\n",
 		    sigfile, strerror(errno));
-		goto out;
+		close(fd);
+		return false;
 	}
-	/*
-	 * Verify fname RSA signature.
-	 */
-	if (rsa_verify_hash(repo, pubkey, sig_buf, sigfilelen, digest))
-		val = true;
 
-out:
-	if (hexfp)
-		free(hexfp);
-	if (rkeyfile)
-		free(rkeyfile);
-	if (sig_buf)
-		(void)munmap(sig_buf, sigbuflen);
-	if (repokeyd)
-		xbps_object_release(repokeyd);
+	if (st.st_size != sizeof buf) {
+		xbps_error_printf("invalid signature file %s: size mismatch\n",
+		    sigfile);
+		(void)close(fd);
+		return false;
+	}
 
-	return val;
+	rd = read(fd, buf, sizeof buf);
+	if (rd == -1) {
+		xbps_error_printf("can't read signature file %s: %s\n",
+		    sigfile, strerror(errno));
+		close(fd);
+		return false;
+	}
+	close(fd);
+
+	return rsa_verify_hash(repo, buf, sizeof buf, digest);
 }
 
 bool
