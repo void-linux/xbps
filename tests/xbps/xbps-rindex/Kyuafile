@@ -4,3 +4,4 @@ test_suite("xbps-rindex")
 atf_test_program{name="add_test"}
 atf_test_program{name="clean_test"}
 atf_test_program{name="remove_test"}
+atf_test_program{name="unindex_test"}

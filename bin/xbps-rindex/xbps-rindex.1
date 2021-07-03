@@ -1,4 +1,4 @@
-.Dd February 21, 2020
+.Dd April 14, 2020
 .Dt XBPS-RINDEX 1
 .Sh NAME
 .Nm xbps-rindex
@@ -56,6 +56,10 @@ Absolute path to the local repository is expected.
 .It Sy -c, --clean Ar /path/to/repository
 Removes obsolete entries found in the local repository.
 Absolute path to the local repository is expected.
+.It Sy -R, --remove Ar /path/to/repository/binpkg.xbps ...
+Removes specified packages from repository.
+Absolute paths to existing binpkgs are expected.
+Binpkg is not read and does not need to exist on disk.
 .It Sy -r, --remove-obsoletes Ar /path/to/repository
 Removes obsolete packages from
 .Ar repository .
