@@ -167,9 +167,81 @@ stage_resolve_bug_body() {
 	atf_check_equal $? 1
 }
 
+atf_test_case abi_mismatch
+
+abi_mismatch_head() {
+	atf_set "descr" "xbps-rindex(1) -a: don't index package with different abi"
+}
+
+abi_mismatch_body() {
+	mkdir -p some_repo pkg_A pkg_B
+	touch pkg_A/file00 pkg_B/file01
+	cd some_repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" -a 1 ../pkg_B
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	n="$(xbps-query -r root --repository=some_repo -s "" | wc -l)"
+	atf_check_equal $n 1
+}
+
+atf_test_case abi_mismatch_2
+
+abi_mismatch_2_head() {
+	atf_set "descr" "xbps-rindex(1) -a: don't index package with different abi"
+}
+
+abi_mismatch_2_body() {
+	mkdir -p some_repo pkg_A pkg_B
+	touch pkg_A/file00 pkg_B/file01
+	cd some_repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" -a 2 ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" -a 1 ../pkg_B
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	n="$(xbps-query -r root --repository=some_repo -s "" | wc -l)"
+	atf_check_equal $n 1
+}
+
+atf_test_case abi_match
+
+abi_match_head() {
+	atf_set "descr" "xbps-rindex(1) -a: index packages with matching abi"
+}
+
+abi_match_body() {
+	mkdir -p some_repo pkg_A pkg_B
+	touch pkg_A/file00 pkg_B/file01
+	cd some_repo
+	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" -a 1 ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" -a 1 ../pkg_B
+	atf_check_equal $? 0
+
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	n="$(xbps-query -r root --repository=some_repo -s "" | wc -l)"
+	atf_check_equal $n 2
+}
+
 atf_init_test_cases() {
 	atf_add_test_case update
 	atf_add_test_case revert
 	atf_add_test_case stage
 	atf_add_test_case stage_resolve_bug
+	atf_add_test_case abi_mismatch
+	atf_add_test_case abi_mismatch_2
+	atf_add_test_case abi_match
 }

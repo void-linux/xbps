@@ -203,7 +203,8 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
 	struct xbps_repo *repo = NULL, *stage = NULL;
 	struct stat st;
-	char *tmprepodir = NULL, *repodir = NULL, *rlockfname = NULL;
+	char *tmprepodir = NULL, *repodir = NULL, *rlockfname = NULL, *repo_abi = NULL;
+	bool new_repo = false;
 	int rv = 0, ret = 0, rlockfd = -1;
 
 	assert(argv);
@@ -230,9 +231,11 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	if (repo) {
 		idx = xbps_dictionary_copy_mutable(repo->idx);
 		idxmeta = xbps_dictionary_copy_mutable(repo->idxmeta);
+		xbps_dictionary_get_cstring(idx, "abi", &repo_abi);
 	} else {
 		idx = xbps_dictionary_create();
 		idxmeta = NULL;
+		new_repo = true;
 	}
 	stage = xbps_repo_stage_open(xhp, repodir);
 	if (stage == NULL && errno != ENOENT) {
@@ -251,7 +254,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	 * Process all packages specified in argv.
 	 */
 	for (int i = args; i < argmax; i++) {
-		const char *arch = NULL, *pkg = argv[i];
+		const char *arch = NULL, *abi = NULL, *pkg = argv[i];
 		char *pkgver = NULL;
 		char sha256[XBPS_SHA256_SIZE];
 		char pkgname[XBPS_NAME_SIZE];
@@ -276,6 +279,34 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		}
 		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
 			abort();
+		}
+		/*
+		 * If creating a new index and package has abi field,
+		 * set abi for repo. Otherwise, check if repo and package
+		 * have the same abi value.
+		 */
+		xbps_dictionary_get_cstring_nocopy(binpkgd, "abi", &abi);
+		if (new_repo) {
+			if (abi) {
+				xbps_dictionary_set_cstring(idx, "abi", abi);
+				repo_abi = strdup(abi);
+				assert(repo_abi);
+			}
+			new_repo = false;
+		} else {
+			if (abi && repo_abi) {
+				if (strcmp(abi, repo_abi)) {
+					fprintf(stderr, "index: ignoring %s, unmatched abi (%s)\n", pkgver, abi);
+					xbps_object_release(binpkgd);
+					free(pkgver);
+					continue;
+				}
+			} else if ((abi && !repo_abi) || (!abi && repo_abi)) {
+				fprintf(stderr, "index: ignoring %s, unmatched abi (%s)\n", pkgver, abi ? abi : "empty");
+				xbps_object_release(binpkgd);
+				free(pkgver);
+				continue;
+			}
 		}
 		/*
 		 * Check if this package exists already in the index, but first
@@ -397,8 +428,8 @@ earlyout:
 
 	xbps_repo_unlock(rlockfd, rlockfname);
 
-	if (tmprepodir)
-		free(tmprepodir);
+	free(tmprepodir);
+	free(repo_abi);
 
 	return rv;
 }
