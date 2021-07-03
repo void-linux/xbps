@@ -29,9 +29,16 @@
 #include <sys/time.h>
 #include <xbps.h>
 
+enum checks_to_run {
+	CHECK_FILES = 1,
+	CHECK_DEPENDENCIES = 1 << 1,
+	CHECK_ALTERNATIVES = 1 << 2,
+	CHECK_PKGDB = 1 << 3,
+};
+
 /* from check.c */
-int	check_pkg_integrity(struct xbps_handle *, xbps_dictionary_t, const char *);
-int	check_pkg_integrity_all(struct xbps_handle *);
+int	check_pkg_integrity(struct xbps_handle *, xbps_dictionary_t, const char *, unsigned);
+int	check_pkg_integrity_all(struct xbps_handle *, unsigned);
 
 #define CHECK_PKG_DECL(type)			\
 int check_pkg_##type (struct xbps_handle *, const char *, void *)
@@ -41,6 +48,8 @@ CHECK_PKG_DECL(files);
 CHECK_PKG_DECL(rundeps);
 CHECK_PKG_DECL(symlinks);
 CHECK_PKG_DECL(alternatives);
+
+int get_checks_to_run(unsigned *, char *);
 
 /* from convert.c */
 void	convert_pkgdb_format(struct xbps_handle *);

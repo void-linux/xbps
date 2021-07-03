@@ -41,6 +41,8 @@ usage(bool fail)
 	    "Usage: xbps-pkgdb [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
 	    " -a, --all                               Process all packages\n"
+	    " --checks <files,dependencies,alternatives,pkgdb>\n"
+	    "                                         Choose checks to run\n"
 	    " -C, --config <dir>                      Path to confdir (xbps.d)\n"
 	    " -d, --debug                             Debug mode shown to stderr\n"
 	    " -h, --help                              Show usage\n"
@@ -83,22 +85,27 @@ change_pkg_mode(struct xbps_handle *xhp, const char *pkgname, const char *mode)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "aC:dhm:r:uVv";
+	const char *shortopts = "aC:dhm:r:uVvc:";
 	const struct option longopts[] = {
 		{ "all", no_argument, NULL, 'a' },
 		{ "config", required_argument, NULL, 'C' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "mode", required_argument, NULL, 'm' },
+		{ "pkg-names", required_argument, NULL, 'n' },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "update", no_argument, NULL, 'u' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
+		/* XXX: add shortopt */
+		{ "checks", required_argument, NULL, 0 },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
 	const char *confdir = NULL, *rootdir = NULL, *instmode = NULL;
 	int c, i, rv, flags = 0;
+	/* we want all checks to run if no checks are specified */
+	unsigned checks_to_run = ~0U;
 	bool update_format = false, all = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
@@ -130,6 +137,11 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+			/* NOTREACHED */
+		case 0:
+			if (get_checks_to_run(&checks_to_run, optarg))
+				usage(true);
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -179,13 +191,13 @@ main(int argc, char **argv)
 			}
 		}
 	} else if (all) {
-		rv = check_pkg_integrity_all(&xh);
+		rv = check_pkg_integrity_all(&xh, checks_to_run);
 	} else {
 		for (i = optind; i < argc; i++) {
-			rv = check_pkg_integrity(&xh, NULL, argv[i]);
+			rv = check_pkg_integrity(&xh, NULL, argv[i], checks_to_run);
 			if (rv != 0)
 				fprintf(stderr, "Failed to check "
-				    "`%s': %s\n", argv[i], strerror(rv));
+				    "`%s'\n", argv[i]);
 		}
 	}
 
