@@ -186,9 +186,12 @@ repo_deps(struct xbps_handle *xhp,
 		 */
 		if ((curpkgd = xbps_find_pkg_in_array(pkgs, reqpkg, 0)) ||
 		    (curpkgd = xbps_find_virtualpkg_in_array(xhp, pkgs, reqpkg, 0))) {
+			xbps_trans_type_t ttype_q = xbps_transaction_pkg_type(curpkgd);
 			xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
-			xbps_dbg_printf_append(xhp, " (%s queued)\n", pkgver_q);
-			continue;
+			if (ttype_q != XBPS_TRANS_REMOVE && ttype_q != XBPS_TRANS_HOLD) {
+				xbps_dbg_printf_append(xhp, " (%s queued %d)\n", pkgver_q, ttype_q);
+				continue;
+			}
 		}
 		/*
 		 * Pass 3: check if required dependency is already installed
@@ -255,6 +258,7 @@ repo_deps(struct xbps_handle *xhp,
 					if (xbps_dictionary_get(curpkgd, "hold")) {
 						ttype = XBPS_TRANS_HOLD;
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
+						rv = ENODEV;
 					} else {
 						xbps_dbg_printf_append(xhp, "\n");
 						ttype = XBPS_TRANS_INSTALL;
@@ -264,9 +268,27 @@ repo_deps(struct xbps_handle *xhp,
 					if (xbps_dictionary_get(curpkgd, "hold")) {
 						xbps_dbg_printf_append(xhp, " on hold state! ignoring package.\n");
 						ttype = XBPS_TRANS_HOLD;
+						rv = ENODEV;
 					} else {
 						xbps_dbg_printf_append(xhp, "\n");
 						ttype = XBPS_TRANS_UPDATE;
+					}
+				}
+				/*
+				 * Not satisfied and package on hold.
+				 */
+				if (rv == ENODEV) {
+					rv = add_missing_reqdep(xhp, reqpkg);
+					if (rv != 0 && rv != EEXIST) {
+						xbps_dbg_printf(xhp, "`%s': add_missing_reqdep failed\n", reqpkg);
+						break;
+					} else if (rv == EEXIST) {
+						xbps_dbg_printf(xhp, "`%s' missing dep already added.\n", reqpkg);
+						rv = 0;
+						continue;
+					} else {
+						xbps_dbg_printf(xhp, "`%s' added into the missing deps array.\n", reqpkg);
+						continue;
 					}
 				}
 			} else if (rv == 1) {
@@ -294,14 +316,6 @@ repo_deps(struct xbps_handle *xhp,
 				xbps_dbg_printf(xhp, "failed to match pattern %s with %s\n", reqpkg, pkgver_q);
 				break;
 			}
-		}
-		if (xbps_dictionary_get(curpkgd, "hold")) {
-			if (!xbps_transaction_pkg_type_set(curpkgd, XBPS_TRANS_HOLD)) {
-				rv = EINVAL;
-				break;
-			}
-			xbps_dbg_printf(xhp, "%s on hold state! ignoring package.\n", curpkg);
-			continue;
 		}
 		/*
 		 * Pass 4: find required dependency in repository pool.
