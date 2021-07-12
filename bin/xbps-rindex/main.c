@@ -76,6 +76,7 @@ main(int argc, char **argv)
 		{ "sign-pkg", no_argument, NULL, 'S'},
 		{ "hashcheck", no_argument, NULL, 'C' },
 		{ "compression", required_argument, NULL, 2},
+		{ "stage", no_argument, NULL, 3},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
@@ -83,10 +84,10 @@ main(int argc, char **argv)
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0, modes_count = 0;
 	bool add_mode, clean_mode, obsoletes_mode, remove_mode, sign_mode, sign_pkg_mode,
-			force, hashcheck;
+			force, hashcheck, stage;
 
 	add_mode = clean_mode = obsoletes_mode = remove_mode = sign_mode = sign_pkg_mode =
-			force = hashcheck = false;
+			force = hashcheck = stage = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -98,6 +99,9 @@ main(int argc, char **argv)
 			break;
 		case 2:
 			compression = optarg;
+			break;
+		case 3:
+			stage = true;
 			break;
 		case 'a':
 			add_mode = true;
@@ -166,7 +170,7 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force, compression);
+		rv = index_add(&xh, optind, argc, argv, force, stage, compression);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
 	else if (obsoletes_mode)

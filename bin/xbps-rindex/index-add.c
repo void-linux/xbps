@@ -39,7 +39,7 @@
 
 static bool
 repodata_commit(struct xbps_handle *xhp, const char *repodir,
-	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage,
+	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage, bool into_stage,
 	const char *compression)
 {
 	xbps_object_iterator_t iter;
@@ -53,10 +53,14 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	}
 
 	/*
-	 * Find old shlibs-provides
+	 * Find old shlibs-provides if writing into repodata
 	 */
 	oldshlibs = xbps_dictionary_create();
 	usedshlibs = xbps_dictionary_create();
+
+	if (into_stage) {
+		goto flush;
+	}
 
 	iter = xbps_dictionary_iterator(stage);
 	while ((keysym = xbps_object_iterator_next(iter))) {
@@ -142,7 +146,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	}
 	xbps_object_iterator_release(iter);
 
-	if (xbps_dictionary_count(usedshlibs) != 0) {
+	if (xbps_dictionary_count(usedshlibs) != 0 || into_stage) {
 		printf("Inconsistent shlibs:\n");
 		iter = xbps_dictionary_iterator(usedshlibs);
 		while ((keysym = xbps_object_iterator_next(iter))) {
@@ -163,6 +167,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			printf(")\n");
 		}
 		xbps_object_iterator_release(iter);
+flush:
 		iter = xbps_dictionary_iterator(stage);
 		while ((keysym = xbps_object_iterator_next(iter))) {
 			xbps_dictionary_t pkg = xbps_dictionary_get_keysym(stage, keysym);
@@ -198,7 +203,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 }
 
 int
-index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression)
+index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, bool into_stage, const char *compression)
 {
 	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
 	struct xbps_repo *repo = NULL, *stage = NULL;
@@ -284,7 +289,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		 * pass to the next one.
 		 */
 		curpkgd = xbps_dictionary_get(idxstage, pkgname);
-		if (curpkgd == NULL)
+		if (curpkgd == NULL && !into_stage)
 			curpkgd = xbps_dictionary_get(idx, pkgname);
 		if (curpkgd == NULL) {
 			if (errno && errno != ENOENT) {
@@ -362,7 +367,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	/*
 	 * Generate repository data files.
 	 */
-	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, compression)) {
+	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, into_stage, compression)) {
 		fprintf(stderr, "%s: failed to write repodata: %s\n",
 				_XBPS_RINDEX, strerror(errno));
 		goto out;
