@@ -557,6 +557,25 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver)
 	return false;
 }
 
+int
+xbps_pkg_version_order(xbps_dictionary_t pkg1, xbps_dictionary_t pkg2)
+{
+	int ret;
+	const char *pkgver1 = NULL;
+	const char *pkgver2 = NULL;
+
+	xbps_dictionary_get_cstring_nocopy(pkg1, "pkgver", &pkgver1);
+	xbps_dictionary_get_cstring_nocopy(pkg2, "pkgver", &pkgver2);
+	ret = xbps_cmpver(pkgver1, pkgver2);
+
+	if (ret < 0 && xbps_pkg_reverts(pkg1, pkgver2)) {
+		ret = 1;
+	} else if (ret > 0 && xbps_pkg_reverts(pkg2, pkgver1)) {
+		ret = -1;
+	}
+	return ret;
+}
+
 char *
 xbps_sanitize_path(const char *src)
 {
