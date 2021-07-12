@@ -176,7 +176,7 @@ main(int argc, char **argv)
 	else if (obsoletes_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
 	else if (remove_mode)
-		rv = index_remove(&xh, optind, argc, argv, compression);
+		rv = index_remove(&xh, optind, argc, argv, stage, compression);
 	else if (sign_mode)
 		rv = sign_repo(&xh, argv[optind], privkey, signedby, compression);
 	else if (sign_pkg_mode)

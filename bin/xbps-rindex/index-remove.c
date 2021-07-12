@@ -41,7 +41,7 @@
 static xbps_dictionary_t idx;
 
 int
-index_remove(struct xbps_handle *xhp, int args, int argmax, char **argv, const char *compression)
+index_remove(struct xbps_handle *xhp, int args, int argmax, char **argv, bool stage, const char *compression)
 {
 	struct xbps_repo *repo = NULL;
 	char *tmprepodir = NULL;
@@ -60,7 +60,7 @@ index_remove(struct xbps_handle *xhp, int args, int argmax, char **argv, const c
 		    _XBPS_RINDEX, strerror(rv));
 		goto earlyout;
 	}
-	repo = xbps_repo_public_open(xhp, repodir);
+	repo = stage ? xbps_repo_stage_open(xhp, repodir) : xbps_repo_public_open(xhp, repodir);
 	if (repo == NULL) {
 		rv = errno;
 		fprintf(stderr, "%s: cannot read repository %s data: %s\n",
@@ -127,7 +127,7 @@ again:
 	 * Generate repository data files.
 	 */
 	if (!xbps_dictionary_equals(idx, repo->idx)) {
-		if (!xbps_repodata_flush(xhp, repodir, "repodata", idx, repo->idxmeta, compression)) {
+		if (!xbps_repodata_flush(xhp, repodir, stage ? "stagedata" : "repodata", idx, repo->idxmeta, compression)) {
 			rv = errno;
 			fprintf(stderr, "%s: failed to write repodata: %s\n",
 			    _XBPS_RINDEX, strerror(errno));
