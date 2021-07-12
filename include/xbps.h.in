@@ -1662,6 +1662,10 @@ void xbps_repo_close(struct xbps_repo *repo);
  */
 void xbps_repo_release(struct xbps_repo *repo);
 
+bool xbps_repodata_flush(struct xbps_handle *xhp, const char *repodir,
+	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta,
+	const char *compression);
+
 /**
  *
  * Returns a heap-allocated string with the repository local path.

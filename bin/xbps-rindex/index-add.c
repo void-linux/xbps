@@ -172,7 +172,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			printf("stage: added `%s' (%s)\n", pkgver, arch);
 		}
 		xbps_object_iterator_release(iter);
-		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL, compression);
+		rv = xbps_repodata_flush(xhp, repodir, "stagedata", stage, NULL, compression);
 	}
 	else {
 		char *stagefile;
@@ -190,7 +190,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 		stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
 		unlink(stagefile);
 		free(stagefile);
-		rv = repodata_flush(xhp, repodir, "repodata", idx, meta, compression);
+		rv = xbps_repodata_flush(xhp, repodir, "repodata", idx, meta, compression);
 	}
 	xbps_object_release(usedshlibs);
 	xbps_object_release(oldshlibs);

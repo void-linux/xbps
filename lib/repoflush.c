@@ -35,10 +35,10 @@
 #include <fcntl.h>
 
 #include <xbps.h>
-#include "defs.h"
+#include <xbps_api_impl.h>
 
 bool
-repodata_flush(struct xbps_handle *xhp, const char *repodir,
+xbps_repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta,
 	const char *compression)
 {
