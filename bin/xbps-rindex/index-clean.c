@@ -113,7 +113,7 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 		free(stagefile);
 	}
 	if (!xbps_dictionary_equals(dest, repo->idx)) {
-		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta, compression)) {
+		if (!xbps_repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta, compression)) {
 			rv = errno;
 			fprintf(stderr, "failed to write repodata: %s\n",
 			    strerror(errno));
