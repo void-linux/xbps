@@ -308,8 +308,23 @@ repo_deps(struct xbps_handle *xhp,
 		 * If dependency does not match add pkg into the missing
 		 * deps array and pass to next one.
 		 */
-		if (((curpkgd = xbps_rpool_get_pkg(xhp, reqpkg)) == NULL) &&
-		    ((curpkgd = xbps_rpool_get_virtualpkg(xhp, reqpkg)) == NULL)) {
+		if (xbps_dictionary_get(curpkgd, "repolock")) {
+			const char *repourl = NULL;
+			struct xbps_repo *repo = NULL;
+			xbps_dbg_printf(xhp, "`%s' is repolocked, looking at single repository.\n", reqpkg);
+			xbps_dictionary_get_cstring_nocopy(curpkgd, "repository", &repourl);
+			if (repourl && (repo = xbps_regget_repo(xhp, repourl))) {
+				curpkgd = xbps_repo_get_pkg(repo, reqpkg);
+			} else {
+				curpkg = NULL;
+			}
+		} else {
+			curpkgd = xbps_rpool_get_pkg(xhp, reqpkg);
+			if (!curpkgd) {
+				curpkgd = xbps_rpool_get_virtualpkg(xhp, reqpkg);
+			}
+		}
+		if (curpkgd == NULL) {
 			/* pkg not found, there was some error */
 			if (errno && errno != ENOENT) {
 				xbps_dbg_printf(xhp, "failed to find pkg for `%s' in rpool: %s\n", reqpkg, strerror(errno));
