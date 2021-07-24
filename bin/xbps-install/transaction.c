@@ -48,7 +48,24 @@ print_array(xbps_array_t a)
 }
 
 static void
-show_actions(xbps_object_iterator_t iter)
+show_package_msgs(struct xbps_handle *xhp, xbps_object_iterator_t iter) {
+	xbps_dictionary_t obj;
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		switch(xbps_transaction_pkg_type(obj)) {
+			case XBPS_TRANS_HOLD:
+				break;
+			case XBPS_TRANS_REMOVE:
+				xbps_cb_message(xhp, obj, "remove-msg");
+				break;
+			default:
+				xbps_cb_message(xhp, obj, "install-msg");
+				break;
+		}
+	}
+}
+
+static void
+show_actions(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
 	xbps_object_t obj;
 	const char *repoloc, *trans, *pkgver, *arch;
@@ -66,6 +83,8 @@ show_actions(xbps_object_iterator_t iter)
 
 		printf("%s %s %s %s %ju %ju\n", pkgver, ttype2str(obj), arch ? arch : "-", repoloc ? repoloc : "-", isize, dsize);
 	}
+	xbps_object_iterator_reset(iter);
+	show_package_msgs(xhp, iter);
 }
 
 static void
@@ -117,7 +136,7 @@ show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned i
 }
 
 static int
-show_transaction_sizes(struct transaction *trans, int cols)
+show_transaction_sizes(struct xbps_handle *xhp, struct transaction *trans, int cols)
 {
 	uint64_t dlsize = 0, instsize = 0, rmsize = 0, disk_free_size = 0;
 	char size[8];
@@ -223,6 +242,9 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		printf("Space available on disk:      %6s\n", size);
 	}
 	printf("\n");
+
+	show_package_msgs(xhp, trans->iter);
+	xbps_object_iterator_reset(trans->iter);
 
 	return 0;
 }
@@ -398,7 +420,7 @@ proceed:
 	 * dry-run mode, show what would be done but don't run anything.
 	 */
 	if (drun) {
-		show_actions(trans->iter);
+		show_actions(trans->xhp, trans->iter);
 		goto out;
 	}
 	/*
@@ -410,7 +432,7 @@ proceed:
 	/*
 	 * Show download/installed size for the transaction.
 	 */
-	if ((rv = show_transaction_sizes(trans, maxcols)) != 0)
+	if ((rv = show_transaction_sizes(xhp, trans, maxcols)) != 0)
 		goto out;
 
 	fflush(stdout);
