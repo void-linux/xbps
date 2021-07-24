@@ -47,6 +47,21 @@ print_array(xbps_array_t a)
 	}
 }
 
+void
+print_package_msg(const struct xbps_state_cb_data *xscd, const char *action) {
+	static const char bar[] = "========================================================================";
+	size_t chars_print;
+	chars_print = printf("=== %s: %s message ", xscd->arg, action);
+	if (chars_print < sizeof bar) {
+		fputs(bar + chars_print, stdout);
+	}
+	// newline should be always printed after bar - don't move into conditional
+	fputs("\n", stdout);
+	// relying on xscd->desc containing trailing newline
+	fputs(xscd->desc, stdout);
+	puts(bar);
+}
+
 static void
 show_package_msgs(struct xbps_handle *xhp, xbps_object_iterator_t iter) {
 	xbps_dictionary_t obj;
