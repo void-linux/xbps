@@ -94,10 +94,7 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		}
 		break;
 	case XBPS_STATE_SHOW_REMOVE_MSG:
-                printf("%s: pre-remove message:\n", xscd->arg);
-		printf("========================================================================\n");
-		printf("%s", xscd->desc);
-		printf("========================================================================\n");
+		print_package_msg(xscd, "remove");
 		break;
 	/* errors */
 	case XBPS_STATE_REMOVE_FAIL:
