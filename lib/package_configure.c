@@ -150,10 +150,8 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 		umask(myumask);
 		return rv;
 	}
-	if (rv == 0)
-		xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_DONE, 0, pkgver, NULL);
+	xbps_set_cb_state(xhp, XBPS_STATE_CONFIGURE_DONE, 0, pkgver, NULL);
 
 	umask(myumask);
-	/* show install-msg if exists */
-	return xbps_cb_message(xhp, pkgd, "install-msg", NULL);
+	return 0;
 }
