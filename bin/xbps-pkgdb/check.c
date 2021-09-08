@@ -35,6 +35,11 @@
 #include <xbps.h>
 #include "defs.h"
 
+struct check_unit {
+	int (*func)(struct xbps_handle*, const char*, void*);
+	void *arg;
+};
+
 static int
 pkgdb_cb(struct xbps_handle *xhp UNUSED,
 		xbps_object_t obj,
@@ -116,24 +121,24 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		}
 	}
 
-#define RUN_PKG_CHECK(x, name, arg)				\
-do {								\
-	if ((rv = check_pkg_##name(x, pkgname, arg)) != 0) { 	\
-		errors++;					\
-	}							\
-} while (0)
-
-	/* Execute pkg checks */
-	RUN_PKG_CHECK(xhp, files, filesd);
-	RUN_PKG_CHECK(xhp, symlinks, filesd);
-	RUN_PKG_CHECK(xhp, rundeps, opkgd);
-	RUN_PKG_CHECK(xhp, unneeded, opkgd);
-	RUN_PKG_CHECK(xhp, alternatives, opkgd);
+	{
+		struct check_unit checks[] = {
+			{check_pkg_files, filesd},
+			{check_pkg_symlinks, filesd},
+			{check_pkg_rundeps, opkgd},
+			{check_pkg_unneeded, opkgd},
+			{check_pkg_alternatives, opkgd},
+			{NULL, NULL}
+		};
+		for (struct check_unit *check = checks; check->func; ++check) {
+			if ((rv = check->func(xhp, pkgname, check->arg)) != 0) {
+				errors++;
+			}
+		}
+	}
 
 	if (filesd)
 		xbps_object_release(filesd);
-
-#undef RUN_PKG_CHECK
 
 	return errors ? EXIT_FAILURE : EXIT_SUCCESS;
 }
