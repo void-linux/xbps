@@ -73,7 +73,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
-	xbps_dictionary_t binpkg_filesd, pkg_filesd, obsd;
+	xbps_dictionary_t binpkg_propsd, binpkg_filesd, pkg_filesd, obsd;
 	xbps_array_t array, obsoletes;
 	xbps_trans_type_t ttype;
 	const struct stat *entry_statp;
@@ -88,7 +88,7 @@ unpack_archive(struct xbps_handle *xhp,
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
-	binpkg_filesd = pkg_filesd = NULL;
+	binpkg_propsd = binpkg_filesd = pkg_filesd = NULL;
 	force = preserve = update = file_exists = false;
 	xucd_stats = false;
 	ar_rv = rv = error = entry_type = flags = 0;
@@ -144,7 +144,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 * First get all metadata files on archive in this order:
 	 * 	- INSTALL	<optional>
 	 * 	- REMOVE 	<optional>
-	 * 	- props.plist	<required> but currently ignored
+	 * 	- props.plist	<required>
 	 * 	- files.plist	<required>
 	 *
 	 * The XBPS package must contain props and files plists, otherwise
@@ -159,9 +159,14 @@ unpack_archive(struct xbps_handle *xhp,
 		entry_size = archive_entry_size(entry);
 
 		if (strcmp("./INSTALL", entry_pname) == 0 ||
-		    strcmp("./REMOVE", entry_pname) == 0 ||
-		    strcmp("./props.plist", entry_pname) == 0) {
+		    strcmp("./REMOVE", entry_pname) == 0) {
 			archive_read_data_skip(ar);
+		} else if (strcmp("./props.plist", entry_pname) == 0) {
+			binpkg_propsd = xbps_archive_get_dictionary(ar, entry);
+			if (binpkg_propsd == NULL) {
+				rv = EINVAL;
+				goto out;
+			}
 		} else if (strcmp("./files.plist", entry_pname) == 0) {
 			binpkg_filesd = xbps_archive_get_dictionary(ar, entry);
 			if (binpkg_filesd == NULL) {
@@ -282,10 +287,10 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Check if current entry is a configuration file,
 		 * that should be kept.
 		 */
-		if (!force && (entry_type == AE_IFREG)) {
+		if (!force) {
 			buf = strchr(entry_pname, '.') + 1;
 			assert(buf != NULL);
-			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_filesd, buf);
+			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_propsd, buf);
 		}
 
 		/*
@@ -297,7 +302,7 @@ unpack_archive(struct xbps_handle *xhp,
 		    ((entry_statp->st_mode & S_IFMT) != (st.st_mode & S_IFMT)))
 			(void)remove(entry_pname);
 
-		if (!force && (entry_type == AE_IFREG)) {
+		if (!force) {
 			if (file_exists && (S_ISREG(st.st_mode) || S_ISLNK(st.st_mode))) {
 				/*
 				 * Handle configuration files.
@@ -311,7 +316,7 @@ unpack_archive(struct xbps_handle *xhp,
 
 					rv = xbps_entry_install_conf_file(xhp,
 					    binpkg_filesd, pkg_filesd, entry,
-					    entry_pname, pkgver, S_ISLNK(st.st_mode));
+					    entry_pname, pkgver, &st);
 					if (rv == -1) {
 						/* error */
 						goto out;
