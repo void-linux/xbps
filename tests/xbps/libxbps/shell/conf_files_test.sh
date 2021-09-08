@@ -165,6 +165,85 @@ tc4_body() {
 	atf_check_equal $rval 0
 }
 
+# 4a test: existent file on disk; updated package defines new same configuration file
+#	result: keep on-disk file as is, don't install new conf file as file.new-<version>.
+atf_test_case tc4a
+
+tc4a_head() {
+	atf_set "descr" "Tests for configuration file handling: on-disk matches new, new in package"
+}
+
+tc4a_body() {
+	mkdir repo
+	cd repo
+	mkdir pkg_a
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yvd a
+	atf_check_equal $? 0
+	echo introduced > rootdir/cf1.conf
+
+	cd repo
+	mkdir pkg_a
+	echo introduced new pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	rm -rf pkg_a
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal "$(cat rootdir/cf1.conf)" introduced
+	test '!' -e rootdir/cf1.conf.new-0.2_1
+	atf_check_equal $? 0
+}
+
+# 4b test: existent file on disk; updated package defines new different configuration file.
+#	result: keep on-disk file as is, install new conf file as file.new-<version>.
+atf_test_case tc4b
+
+tc4b_head() {
+	atf_set "descr" "Tests for configuration file handling: on-disk created, new in package"
+}
+
+tc4b_body() {
+	mkdir repo
+	cd repo
+	mkdir pkg_a
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yvd a
+	atf_check_equal $? 0
+	echo custom > rootdir/cf1.conf
+
+	cd repo
+	mkdir pkg_a
+	echo introduced > pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	rm -rf pkg_a
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal "$(cat rootdir/cf1.conf)" custom
+	atf_check_equal "$(cat rootdir/cf1.conf.new-0.2_1)" introduced
+}
+
 # 5th test: configuration file replaced with symlink on disk, modified on upgrade.
 #	result: install new file as "<conf_file>.new-<version>".
 atf_test_case tc5
@@ -586,6 +665,85 @@ tcl4_body() {
 	atf_check_equal "$(readlink rootdir/etc/cf1.conf.new-0.1_1)" original
 }
 
+# 4a test: existent link on disk; updated package defines new same configuration link.
+#	result: keep on-disk link as is, don't install new conf link as file.new-<version>.
+atf_test_case tcl4a
+
+tcl4a_head() {
+	atf_set "descr" "Tests for configuration link handling: on-disk matches new, new in package"
+}
+
+tcl4a_body() {
+	mkdir repo
+	cd repo
+	mkdir pkg_a
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yvd a
+	atf_check_equal $? 0
+	ln -s introduced rootdir/cf1.conf
+
+	cd repo
+	mkdir pkg_a
+	ln -s introduced pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	rm -rf pkg_a
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal "$(readlink rootdir/cf1.conf)" introduced
+	test '!' -e rootdir/cf1.conf.new-0.2_1
+	atf_check_equal $? 0
+}
+
+# 4b test: existent link on disk; updated package defines new different configuration link.
+#	result: keep on-disk link as is, install new conf link as file.new-<version>.
+atf_test_case tcl4b
+
+tcl4b_head() {
+	atf_set "descr" "Tests for configuration link handling: on-disk created, new in package"
+}
+
+tcl4b_body() {
+	mkdir repo
+	cd repo
+	mkdir pkg_a
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yvd a
+	atf_check_equal $? 0
+	ln -s custom rootdir/cf1.conf
+
+	cd repo
+	mkdir pkg_a
+	ln -s introduced pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	rm -rf pkg_a
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal "$(readlink rootdir/cf1.conf)" custom
+	atf_check_equal "$(readlink rootdir/cf1.conf.new-0.2_1)" introduced
+}
+
 # 5th test: configuration link replaced with regular file on disk, modified on upgrade.
 #	result: install new link as "<conf_file>.new-<version>".
 atf_test_case tcl5
@@ -790,7 +948,6 @@ tcl9_body() {
 	atf_check_equal $? 0
 }
 
-
 # 10th test: removed configuration link on disk, modified on upgrade.
 #	result: install link, don't install new conf link as file.new-<version>.
 atf_test_case tcl10
@@ -837,6 +994,8 @@ atf_init_test_cases() {
 	atf_add_test_case tc2
 	atf_add_test_case tc3
 	atf_add_test_case tc4
+	atf_add_test_case tc4a
+	atf_add_test_case tc4b
 	atf_add_test_case tc5
 	atf_add_test_case tc6
 	atf_add_test_case tc7
@@ -848,6 +1007,8 @@ atf_init_test_cases() {
 	atf_add_test_case tcl2
 	atf_add_test_case tcl3
 	atf_add_test_case tcl4
+	atf_add_test_case tcl4a
+	atf_add_test_case tcl4b
 	atf_add_test_case tcl5
 	atf_add_test_case tcl6
 	atf_add_test_case tcl7

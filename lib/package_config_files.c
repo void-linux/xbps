@@ -149,15 +149,6 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	}
 
 	read_conf_file(&orig, entry_pname, pkg_filesd);
-	/*
-	 * First case: original hash not found, install new file.
-	 */
-	if (orig.data == NULL) {
-		xbps_dbg_printf(xhp, "%s: conf_file %s not installed\n",
-		    pkgver, entry_pname);
-		rv = 1;
-		goto out;
-	}
 
 	/*
 	 * Compare original, installed and new hash for current file.
@@ -169,7 +160,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 				file = buf;
 			}
 			cur.is_link = true;
-			lnk = xbps_symlink_target(xhp, file, orig.data);
+			lnk = xbps_symlink_target(xhp, file, new.data);
 			cur.data = lnk;
 			if (!cur.data) {
 				/*
@@ -235,6 +226,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			rv = 0;
 		/*
 		 * Orig = X, Curr = Y, New = Y
+		 * or
+		 * Orig not exists, Curr = Y, New = Y
 		 *
 		 * Keep file as is because changes made are compatible
 		 * with new version.
@@ -248,6 +241,8 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		 * Orig = X, Curr = Y, New = Z
 		 * or
 		 * Orig = X, Curr = X, New = Y if keepconf is set
+		 * or
+		 * Orig not exists, Curr = Y, New = Z
 		 *
 		 * Install new file as <file>.new-<version>
 		 */
