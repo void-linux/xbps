@@ -122,9 +122,10 @@ check_pkg_integrity(struct xbps_handle *xhp,
 	}
 
 	{
+		xbps_dictionary_t both[] = {opkgd, filesd};
 		struct check_unit checks[] = {
 			{check_pkg_files, filesd},
-			{check_pkg_symlinks, filesd},
+			{check_pkg_symlinks, both},
 			{check_pkg_rundeps, opkgd},
 			{check_pkg_unneeded, opkgd},
 			{check_pkg_alternatives, opkgd},
