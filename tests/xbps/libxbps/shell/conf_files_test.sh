@@ -286,6 +286,176 @@ tc6_body() {
 	atf_check_equal $rval 0
 }
 
+# 7th test: unmodified configuration file on disk, modified on upgrade.
+#	result: update file
+atf_test_case tc7
+
+tc7_head() {
+	atf_set "descr" "Tests for configuration file handling: on-disk unmodified, upgrade modified"
+}
+
+tc7_body() {
+	mkdir repo
+	cd repo
+	mkdir pkg_a
+	echo "original" > pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yvd a
+	atf_check_equal $? 0
+
+	cd repo
+	mkdir pkg_a
+	echo "updated" > pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	rm -rf pkg_a
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal "$(cat rootdir/cf1.conf)" "updated"
+}
+
+# 8th test: modified configuration file on disk to same as updated, modified on upgrade.
+#	result: keep on-disk file as is, don't install new conf file as file.new-<version>.
+atf_test_case tc8
+
+tc8_head() {
+	atf_set "descr" "Tests for configuration file handling: on-disk modified, matches upgrade"
+}
+
+tc8_body() {
+	mkdir repo
+	cd repo
+	mkdir pkg_a
+	echo "original" > pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yvd a
+	atf_check_equal $? 0
+	sed -e 's,original,improved,' -i rootdir/cf1.conf
+
+	cd repo
+	mkdir pkg_a
+	echo "improved" > pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	rm -rf pkg_a
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal "$(cat rootdir/cf1.conf)" "improved"
+	test '!' -e rootdir/cf1.conf.new-0.2_1
+	atf_check_equal $? 0
+}
+
+# 9th test: removed configuration file on disk, unmodified on upgrade.
+#	result: install file
+atf_test_case tc9
+
+tc9_head() {
+	atf_set "descr" "Tests for configuration file handling: on-disk removed, upgrade unmodified"
+}
+
+tc9_body() {
+	mkdir repo
+	cd repo
+	mkdir pkg_a
+	echo "original" > pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yvd a
+	atf_check_equal $? 0
+	rm rootdir/cf1.conf
+
+	cd repo
+	mkdir pkg_a
+	echo "original" > pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	rm -rf pkg_a
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal "$(cat rootdir/cf1.conf)" "original"
+	test '!' -e rootdir/cf1.conf.new-0.2_1
+	atf_check_equal $? 0
+}
+
+
+# 10th test: removed configuration file on disk, modified on upgrade.
+#	result: install file
+atf_test_case tc10
+
+tc10_head() {
+	atf_set "descr" "Tests for configuration file handling: on-disk removed, upgrade modified"
+}
+
+tc10_body() {
+	mkdir repo
+	cd repo
+	mkdir pkg_a
+	echo "original" > pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	rm -rf pkg_a
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yvd a
+	atf_check_equal $? 0
+	rm rootdir/cf1.conf
+
+	cd repo
+	mkdir pkg_a
+	echo "updated" > pkg_a/cf1.conf
+	chmod 644 pkg_a/cf1.conf
+	xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" pkg_a
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	rm -rf pkg_a
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuvd
+	atf_check_equal $? 0
+	atf_check_equal "$(cat rootdir/cf1.conf)" "updated"
+	test '!' -e rootdir/cf1.conf.new-0.2_1
+	atf_check_equal $? 0
+}
+
 atf_init_test_cases() {
 	atf_add_test_case tc1
 	atf_add_test_case tc2
@@ -293,4 +463,8 @@ atf_init_test_cases() {
 	atf_add_test_case tc4
 	atf_add_test_case tc5
 	atf_add_test_case tc6
+	atf_add_test_case tc7
+	atf_add_test_case tc8
+	atf_add_test_case tc9
+	atf_add_test_case tc10
 }
