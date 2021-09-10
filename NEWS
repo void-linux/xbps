@@ -21,6 +21,9 @@ xbps-X.XX.X (2020-XX-XX):
 
  * xbps-install(1): in dry-run mode ignore out of space error. [chocimier]
 
+ * xbps-install(1): fix bug where a repo locked dependency could be updated
+   from a repository it was not locked to. [chocimier]
+
  * xbps-fetch(1): make sure to exit with failure if a failure was encountered.
    [duncaen]
 
