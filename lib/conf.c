@@ -304,7 +304,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 		while (isblank((unsigned char)*line))
 			line++;
 		/* ignore comments or empty lines */
-		if (line[0] == '#' || line[0] == '\n')
+		if (line[0] == '#' || line[0] == '\0')
 			continue;
 
 		switch (parse_option(line, rd, &val, &vallen)) {
