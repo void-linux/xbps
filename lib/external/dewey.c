@@ -67,6 +67,7 @@ enum {
 
 /* this struct defines a version number */
 typedef struct arr_t {
+	int		epoch;          /* any ":" prefix */
 	unsigned	c;              /* # of version numbers */
 	unsigned	size;           /* size of array */
 	int	       *v;              /* array of decimal numbers */
@@ -121,6 +122,7 @@ dewey_mktest(int *op, const char *test)
 
 /*
  * make a component of a version number.
+ * ':' encodes as 'xbps epoch', which is used before all other tests.
  * '.' encodes as Dot which is '0'
  * 'pl' encodes as 'patch level', or 'Dot', which is 0.
  * 'alpha' encodes as 'alpha version', or Alpha, which is -3.
@@ -151,7 +153,11 @@ mkcomponent(arr_t *ap, const char *num)
 		for (cp = num, n = 0 ; isdigit((unsigned char)*num) ; num++) {
 			n = (n * 10) + (*num - '0');
 		}
-		ap->v[ap->c++] = n;
+		if (*num == ':' && !ap->epoch) {
+			ap->epoch = n;
+		} else {
+			ap->v[ap->c++] = n;
+		}
 		return (int)(num - cp);
 	}
 	for (modp = modifiers ; modp->s ; modp++) {
@@ -185,6 +191,7 @@ mkcomponent(arr_t *ap, const char *num)
 static int
 mkversion(arr_t *ap, const char *num)
 {
+	ap->epoch = 0;
 	ap->c = 0;
 	ap->size = 0;
 	ap->v = NULL;
@@ -235,6 +242,10 @@ vtest(arr_t *lhs, int tst, arr_t *rhs)
 {
 	int cmp;
 	unsigned int c, i;
+
+	if (lhs->epoch != rhs->epoch) {
+		return result(lhs->epoch - rhs->epoch, tst);
+	}
 
 	for (i = 0, c = MAX(lhs->c, rhs->c) ; i < c ; i++) {
 		if ((cmp = DIGIT(lhs->v, lhs->c, i) - DIGIT(rhs->v, rhs->c, i)) != 0) {
