@@ -43,6 +43,7 @@ usage(bool fail)
 	    " -v, --verbose                      Verbose messages\n"
 	    " -V, --version                      Show XBPS version\n"
 	    " -C, --hashcheck                    Consider file hashes for cleaning up packages\n"
+	    " -N --no-stash                      Do not initiate staging when inconstent shlibs are detected.\n"
 	    "     --compression <fmt>            Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
 	    "     --privkey <key>                Path to the private key for signing\n"
 	    "     --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
@@ -58,7 +59,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsCSVv";
+	const char *shortopts = "acdfhrsCNSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
@@ -74,6 +75,7 @@ main(int argc, char **argv)
 		{ "sign-pkg", no_argument, NULL, 'S'},
 		{ "hashcheck", no_argument, NULL, 'C' },
 		{ "compression", required_argument, NULL, 2},
+		{ "no-stash", no_argument, NULL, 'N' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
@@ -81,10 +83,10 @@ main(int argc, char **argv)
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
 	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
-			 hashcheck;
+			 hashcheck, no_stash;
 
 	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force =
-		hashcheck = false;
+		hashcheck = no_stash = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -120,6 +122,9 @@ main(int argc, char **argv)
 			break;
 		case 'C':
 			hashcheck = true;
+			break;
+		case 'N':
+			no_stash = true;
 			break;
 		case 'S':
 			sign_pkg_mode = true;
@@ -160,7 +165,7 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force, compression);
+		rv = index_add(&xh, optind, argc, argv, force, compression, no_stash);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
 	else if (rm_mode)
