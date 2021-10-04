@@ -266,7 +266,7 @@ main(int argc, char **argv)
 		/* list repolocked packages */
 		rv = xbps_pkgdb_foreach_cb(&xh, list_repolock_pkgs, NULL);
 
-	} else if (list_manual) {
+	} else if (list_manual && !pkg_search) {
 		/* list manual pkgs */
 		rv = xbps_pkgdb_foreach_cb(&xh, list_manual_pkgs, NULL);
 
@@ -284,7 +284,7 @@ main(int argc, char **argv)
 
 	} else if (pkg_search) {
 		/* search mode */
-		rv = search(&xh, repo_mode, pkg, props, regex);
+		rv = search(&xh, repo_mode, pkg, props, regex, list_manual);
 
 	} else if (catfile) {
 		/* repo cat file mode */

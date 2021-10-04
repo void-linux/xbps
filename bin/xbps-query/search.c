@@ -44,7 +44,7 @@
 #include "defs.h"
 
 struct search_data {
-	bool regex, repo_mode;
+	bool regex, repo_mode, only_manual_pkgs;
 	regex_t regexp;
 	unsigned int maxcols;
 	const char *pat, *prop, *repourl;
@@ -98,6 +98,14 @@ search_array_cb(struct xbps_handle *xhp UNUSED,
 	xbps_object_t obj2;
 	struct search_data *sd = arg;
 	const char *pkgver = NULL, *desc = NULL, *str = NULL;
+	bool automatic = false;
+
+	if (sd->only_manual_pkgs) {
+		xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
+
+		if (automatic)
+			return 0;
+	}
 
 	if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver))
 		return 0;
@@ -222,7 +230,12 @@ search_repo_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 }
 
 int
-search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *prop, bool regex)
+search(struct xbps_handle *xhp,
+	bool repo_mode,
+	const char *pat,
+	const char *prop,
+	bool regex,
+	bool only_manual_pkgs)
 {
 	struct search_data sd;
 	int rv;
@@ -233,6 +246,8 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 			return errno;
 	}
 	sd.repo_mode = repo_mode;
+	/* ignore if repo_mode is enabled */
+	sd.only_manual_pkgs = !repo_mode && only_manual_pkgs;
 	sd.pat = pat;
 	sd.prop = prop;
 	sd.maxcols = get_maxcols();
