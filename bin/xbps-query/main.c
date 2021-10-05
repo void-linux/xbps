@@ -45,7 +45,7 @@ usage(bool fail)
 	    " -i, --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
 	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
 	    "                           in memory, ignoring on-disk repodata archives\n"
-	    " -p, --property PROP[,...] Show properties for PKGNAME\n"
+	    " -p, --property PROP[,...] Specify properties for --show or --search modes\n"
 	    " -R, --repository          Enable repository mode. This mode explicitly\n"
 	    "                           looks for packages in repositories\n"
 	    "     --repository=<url>    Enable repository mode and add repository\n"

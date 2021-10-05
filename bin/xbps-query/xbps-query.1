@@ -1,4 +1,4 @@
-.Dd April 23, 2020
+.Dd October 5, 2021
 .Dt XBPS-QUERY 1
 .Sh NAME
 .Nm xbps-query
@@ -53,11 +53,11 @@ Example:
 The first repository matching the package expression wins.
 .Sh PACKAGE MODES
 An installed package can have some specific modes of operation.
-Currently the following modes are available:
+Currently, the following modes are available:
 .Bl -tag -width -x
 .It Sy hold
 The package is on hold mode.
-Packages in this mode won't be updated unless it's explicitely declared to be updated.
+Packages in this mode won't be updated unless it's explicitly declared to be updated.
 The only way to update packages in this mode is by using the
 .Fl f, Fl -force
 option.
@@ -99,12 +99,18 @@ For remote repositories, the data is fetched and stored in memory for the curren
 operation.
 This ignores the existing on-disk repository archives in rootdir.
 .It Fl p, Fl -property Ar PROP[,...]
-Only match this package property.
-Multiple properties can be specified by delimiting them with commas.
+In
+.Fl -show
+mode, print only the selected property; multiple properties can be specified by
+delimiting them with commas.
+In
+.Fl -search
+mode, match packages based on the given property; only single property matching
+is supported.
 For a list of available properties, see the
 .Sx PROPERTIES
 section.
-.It Fl R
+.It Fl R, -repository
 Enable repository mode.
 This mode explicitly looks in repositories, rather
 than looking in the target root directory.
@@ -136,10 +142,15 @@ Enables verbose messages.
 Show the version information.
 .El
 .Sh MODE
-Only one of the following modes can be used at a time.
-By default and unless the
-.Fl R
-option is specified, the target
+Only one of the following modes can be used at a time, with the slight exception of
+.Fl -list-manual-pkgs ( m )
+and
+.Fl -search ( s )
+they can be enabled together.
+
+By default, and unless
+.Fl -repository ( R )
+mode is supported and enabled, the target
 .Ar PKG
 will be queried in the root directory, otherwise it will be
 queried in registered repositories.
@@ -189,35 +200,42 @@ Lists packages that are in repolock mode.
 See the
 .Em PACKAGE MODES
 section for more information.
-.It Fl o, Fl -ownedby Ar PATTERN [ Fl -repository ] [ Fl -regex ]
+.It Fl o, Fl -ownedby Ar PATTERN [ Fl -regex ] [ Fl -repository ]
 Search for installed package files by matching
 .Ar PATTERN .
 The
 .Ar PATTERN
-argument can be a simple string, a shell wildcard pattern as explained in
+can be a simple string, a shell wildcard pattern as explained in
 .Xr fnmatch 3
 or an Extended Regular Expression as explained in
 .Xr regex 7
-(if
+(if the
 .Fl -regex
 option is set).
-If the
+Supports
 .Fl -repository
-option is set, the matched
-.Ar PATTERN
-in repositories will be shown.
-.It Fl S, Fl -show Ar PKG [ Fl -repository ] [ Fl -property Ar PROP ]
+mode,
+but it is very slow;
+.Xr xlocate 1
+from
+.Xr xtools 1
+is preferred for such searches.
+.It Fl S, Fl -show Ar PKG [ Fl -property Ar PROP ] [ Fl -repository ]
 Shows information of an installed package.
 This is the default mode if no other mode is set.
-If the
-.Fl -repository
-option is set, the matched
-.Ar PKG
-in repositories will be shown.
 If a package property is specified with
 .Fl -property,
-only that property will be shown.
-.It Fl s, Fl -search Ar PATTERN [ Fl -repository ] [ Fl -property Ar PROP ] [ Fl -regex ]
+only that property will be shown (multiple properties supported with commas).
+Supports
+.Fl -repository
+mode,
+and if enabled the matched
+.Ar PKG
+in repositories will be shown.
+.It Fl s, Fl -search Ar PATTERN
+.Op Fl -regex
+.Op Fl -property Ar PROP
+.Op Fl -list-manual-pkgs | Fl -repository
 Search for packages by matching
 .Ar PATTERN
 on its
@@ -237,33 +255,35 @@ all packages matching
 against
 .Ar PROP
 will be shown.
+If the
+.Fl -list-manual-pkgs
+option is set, only explicitly installed packages will be shown.
+If
+.Fl -repository
+mode is enabled the matched
+.Ar PKG
+in repositories will be shown.
 .It Fl f, Fl -files Ar PKG [ Fl -repository ]
 Show the package files for
 .Ar PKG .
-If the
+Supports
 .Fl -repository
-option is set, the matched
-.Ar PKG
-in repositories will be shown.
-.It Fl x, Fl -deps Ar PKG [ Fl -repository ]
+mode.
+.It Fl x, Fl -deps Ar PKG [ Fl -fulldeptree ] [ Fl -repository ]
 Show the required dependencies for
 .Ar PKG .
 Only direct dependencies are shown.
 To see a full dependency tree, also set
 .Fl -fulldeptree .
-If the
+Supports
 .Fl -repository
-option is set, the matched
-.Ar PKG
-in repositories will be shown.
+mode.
 .It Fl X, Fl -revdeps Ar PKG [ Fl -repository ]
 Show the reverse dependencies for
 .Ar PKG .
-If the
+Supports
 .Fl -repository
-option is set, the matched
-.Ar PKG
-in repositories will be shown.
+mode.
 .It Fl -cat Ar FILE Ar PKG
 Prints the file
 .Ar FILE
