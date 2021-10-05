@@ -34,22 +34,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <limits.h>
-#include <libgen.h>
-#include <fnmatch.h>
-#include <assert.h>
 #include <regex.h>
 
 #include <xbps.h>
 #include "defs.h"
 
 struct search_data {
-	bool regex, repo_mode, only_manual_pkgs;
+	bool regex;
 	regex_t regexp;
 	unsigned int maxcols;
 	const char *pat, *prop, *repourl;
 	xbps_array_t results;
 	char *linebuf;
+	enum search_mode search_mode;
 };
 
 static void
@@ -70,8 +67,8 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 
 		if (sd->linebuf == NULL) {
 			printf("[%s] %-*s %s\n",
-				xbps_pkgdb_get_pkg(xhp, pkgver) ? "*" : "-",
-				align, pkgver, desc);
+			    xbps_pkgdb_get_pkg(xhp, pkgver) ? "*" : "-",
+			    align, pkgver, desc);
 			continue;
 		}
 
@@ -88,6 +85,27 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 	}
 }
 
+static void
+print_prop_search_result(struct search_data *sd, const char *pkgver, const char *str) {
+	if (sd->search_mode == IN_REPO)
+		printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
+	else
+		printf("%s: %s\n", pkgver, str);
+}
+
+static void
+handle_prop_matching(struct search_data *sd, const char *pkgver, const char *str) {
+	if (sd->regex) {
+		if (regexec(&sd->regexp, str, 0, 0, 0) == 0) {
+			print_prop_search_result(sd, pkgver, str);
+		}
+	} else {
+		if (strcasestr(str, sd->pat)) {
+			print_prop_search_result(sd, pkgver, str);
+		}
+	}
+}
+
 static int
 search_array_cb(struct xbps_handle *xhp UNUSED,
 		xbps_object_t obj,
@@ -95,14 +113,13 @@ search_array_cb(struct xbps_handle *xhp UNUSED,
 		void *arg,
 		bool *done UNUSED)
 {
-	xbps_object_t obj2;
+	xbps_object_t prop;
 	struct search_data *sd = arg;
 	const char *pkgver = NULL, *desc = NULL, *str = NULL;
 	bool automatic = false;
 
-	if (sd->only_manual_pkgs) {
+	if (sd->search_mode == IN_MANUAL) {
 		xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
-
 		if (automatic)
 			return 0;
 	}
@@ -115,99 +132,63 @@ search_array_cb(struct xbps_handle *xhp UNUSED,
 		/* no prop set, match on pkgver/short_desc objects */
 		xbps_dictionary_get_cstring_nocopy(obj, "short_desc", &desc);
 
-		if (sd->repo_mode && xbps_match_virtual_pkg_in_dict(obj, sd->pat))
-			vpkgfound = true;
-
 		if (sd->regex) {
 			if ((regexec(&sd->regexp, pkgver, 0, 0, 0) == 0) ||
-			    (regexec(&sd->regexp, desc, 0, 0, 0) == 0)) {
-				xbps_array_add_cstring_nocopy(sd->results, pkgver);
-				xbps_array_add_cstring_nocopy(sd->results, desc);
-			}
+			    (regexec(&sd->regexp, desc, 0, 0, 0) == 0))
+				goto add_and_out;
+
 			return 0;
 		}
-		if (vpkgfound) {
-			xbps_array_add_cstring_nocopy(sd->results, pkgver);
-			xbps_array_add_cstring_nocopy(sd->results, desc);
-		} else {
-			if ((strcasestr(pkgver, sd->pat)) ||
-			    (strcasestr(desc, sd->pat)) ||
-			    (xbps_pkgpattern_match(pkgver, sd->pat))) {
-				xbps_array_add_cstring_nocopy(sd->results, pkgver);
-				xbps_array_add_cstring_nocopy(sd->results, desc);
-			}
-		}
+
+		vpkgfound = sd->search_mode == IN_REPO && xbps_match_virtual_pkg_in_dict(obj, sd->pat);
+		if (vpkgfound)
+			goto add_and_out;
+
+		if (strcasestr(pkgver, sd->pat) ||
+		    strcasestr(desc, sd->pat)   ||
+		    xbps_pkgpattern_match(pkgver, sd->pat))
+			goto add_and_out;
+
+		return 0;
+	add_and_out:
+		xbps_array_add_cstring_nocopy(sd->results, pkgver);
+		xbps_array_add_cstring_nocopy(sd->results, desc);
 		return 0;
 	}
+
 	/* prop set, match on prop object instead */
-	obj2 = xbps_dictionary_get(obj, sd->prop);
-	if (xbps_object_type(obj2) == XBPS_TYPE_ARRAY) {
-		/* property is an array */
-		for (unsigned int i = 0; i < xbps_array_count(obj2); i++) {
-			xbps_array_get_cstring_nocopy(obj2, i, &str);
-			if (sd->regex) {
-				if (regexec(&sd->regexp, str, 0, 0, 0) == 0) {
-					if (sd->repo_mode)
-						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
-					else
-						printf("%s: %s\n", pkgver, str);
-				}
-			} else {
-				if (strcasestr(str, sd->pat)) {
-					if (sd->repo_mode)
-						printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
-					else
-						printf("%s: %s\n", pkgver, str);
-				}
-			}
+	prop = xbps_dictionary_get(obj, sd->prop);
+	if (prop == NULL)
+		return 0;
+
+	switch(xbps_object_type(prop)) {
+	case XBPS_TYPE_ARRAY: {
+		for (unsigned int i = 0; i < xbps_array_count(prop); i++) {
+			xbps_array_get_cstring_nocopy(prop, i, &str);
+			handle_prop_matching(sd, pkgver, str);
 		}
-	} else if (xbps_object_type(obj2) == XBPS_TYPE_NUMBER) {
-		/* property is a number */
+	} break;
+	case XBPS_TYPE_STRING: {
+		str = xbps_string_cstring_nocopy(prop);
+		handle_prop_matching(sd, pkgver, str);
+	} break;
+	case XBPS_TYPE_NUMBER: {
 		char size[8];
 
-		if (xbps_humanize_number(size, xbps_number_integer_value(obj2)) == -1)
+		if (xbps_humanize_number(size, xbps_number_integer_value(prop)) == -1)
 			exit(EXIT_FAILURE);
 
-		if (sd->regex) {
-			if (regexec(&sd->regexp, size, 0, 0, 0) == 0) {
-				if (sd->repo_mode)
-					printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
-				else
-					printf("%s: %s\n", pkgver, size);
-			}
-		} else {
-			if (strcasestr(size, sd->pat)) {
-				if (sd->repo_mode)
-					printf("%s: %s (%s)\n", pkgver, size, sd->repourl);
-				else
-					printf("%s: %s\n", pkgver, size);
-			}
-		}
-	} else if (xbps_object_type(obj2) == XBPS_TYPE_BOOL) {
-		/* property is a bool */
-		if (sd->repo_mode)
-			printf("%s: true (%s)\n", pkgver, sd->repourl);
-		else
-			printf("%s: true\n", pkgver);
-
-	} else if (xbps_object_type(obj2) == XBPS_TYPE_STRING) {
-		/* property is a string */
-		str = xbps_string_cstring_nocopy(obj2);
-		if (sd->regex) {
-			if (regexec(&sd->regexp, str, 0, 0, 0) == 0) {
-				if (sd->repo_mode)
-					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
-				else
-					printf("%s: %s\n", pkgver, str);
-			}
-		} else {
-			if (strcasestr(str, sd->pat)) {
-				if (sd->repo_mode)
-					printf("%s: %s (%s)\n", pkgver, str, sd->repourl);
-				else
-					printf("%s: %s\n", pkgver, str);
-			}
-		}
+		handle_prop_matching(sd, pkgver, size);
+	} break;
+	case XBPS_TYPE_BOOL: {
+		print_prop_search_result(sd, pkgver, "true");
+	} break;
+	case XBPS_TYPE_DATA:
+	case XBPS_TYPE_DICTIONARY:
+	case XBPS_TYPE_DICT_KEYSYM:
+	case XBPS_TYPE_UNKNOWN:
+		fprintf(stderr, "unsupported property type found in pkg: %s\n", pkgver);
+		exit(EXIT_FAILURE);
 	}
 	return 0;
 }
@@ -231,11 +212,10 @@ search_repo_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 
 int
 search(struct xbps_handle *xhp,
-	bool repo_mode,
+	bool regex,
 	const char *pat,
 	const char *prop,
-	bool regex,
-	bool only_manual_pkgs)
+	enum search_mode sm)
 {
 	struct search_data sd;
 	int rv;
@@ -245,41 +225,48 @@ search(struct xbps_handle *xhp,
 		if (regcomp(&sd.regexp, pat, REG_EXTENDED|REG_NOSUB|REG_ICASE) != 0)
 			return errno;
 	}
-	sd.repo_mode = repo_mode;
-	/* ignore if repo_mode is enabled */
-	sd.only_manual_pkgs = !repo_mode && only_manual_pkgs;
+
 	sd.pat = pat;
 	sd.prop = prop;
+	sd.search_mode = sm;
 	sd.maxcols = get_maxcols();
-	sd.results = xbps_array_create();
 	sd.linebuf = NULL;
+
 	if (sd.maxcols > 0) {
 		sd.linebuf = malloc(sd.maxcols);
 		if (sd.linebuf == NULL)
 			exit(1);
 	}
 
-	if (repo_mode) {
+	sd.results = xbps_array_create();
+
+	if (sd.search_mode == IN_REPO) {
 		rv = xbps_rpool_foreach(xhp, search_repo_cb, &sd);
 		if (rv != 0 && rv != ENOTSUP) {
 			fprintf(stderr, "Failed to initialize rpool: %s\n",
-			    strerror(rv));
-			return rv;
+				strerror(rv));
+			goto out;
 		}
 	} else {
 		rv = xbps_pkgdb_foreach_cb(xhp, search_array_cb, &sd);
 		if (rv != 0) {
 			fprintf(stderr, "Failed to initialize pkgdb: %s\n",
-			    strerror(rv));
-			return rv;
+				strerror(rv));
+			goto out;
 		}
 	}
-	if (!prop && xbps_array_count(sd.results)) {
+
+	if (!prop && xbps_array_count(sd.results))
 		print_results(xhp, &sd);
-		xbps_object_release(sd.results);
-	}
+
+out:
 	if (regex)
 		regfree(&sd.regexp);
+
+	if (sd.maxcols)
+		free(sd.linebuf);
+
+	xbps_object_release(sd.results);
 
 	return rv;
 }

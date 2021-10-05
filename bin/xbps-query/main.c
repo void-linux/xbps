@@ -113,6 +113,7 @@ main(int argc, char **argv)
 	bool list_pkgs, list_repos, orphans, own, list_repolock;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
 	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	enum search_mode sm;
 
 	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
 	flags = rv = c = 0;
@@ -120,6 +121,7 @@ main(int argc, char **argv)
 	list_manual = list_repolock = show_prop = show_files = false;
 	regex = show = show_deps = show_rdeps = fulldeptree = false;
 	repo_mode = opmode = false;
+	sm = IN_INSTALLED;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -284,7 +286,16 @@ main(int argc, char **argv)
 
 	} else if (pkg_search) {
 		/* search mode */
-		rv = search(&xh, repo_mode, pkg, props, regex, list_manual);
+
+		sm = IN_INSTALLED;
+
+		if (repo_mode)
+			sm = IN_REPO;
+
+		if (list_manual)
+			sm = IN_MANUAL;
+
+		rv = search(&xh, regex, pkg, props, sm);
 
 	} else if (catfile) {
 		/* repo cat file mode */

@@ -30,6 +30,8 @@
 
 #include "../xbps-install/defs.h"
 
+enum search_mode { IN_INSTALLED, IN_REPO, IN_MANUAL };
+
 /* from show-deps.c */
 int	show_pkg_deps(struct xbps_handle *, const char *, bool, bool);
 int	show_pkg_revdeps(struct xbps_handle *, const char *, bool);
@@ -64,7 +66,6 @@ int	list_pkgs_pkgdb(struct xbps_handle *);
 int	repo_list(struct xbps_handle *);
 
 /* from search.c */
-int	search(struct xbps_handle *, bool, const char *, const char *, bool, bool);
-
+int	search(struct xbps_handle *, bool, const char *, const char *, enum search_mode);
 
 #endif /* !_XBPS_QUERY_DEFS_H_ */
