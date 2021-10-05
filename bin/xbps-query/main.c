@@ -109,19 +109,20 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
-	int c, flags, rv;
-	bool list_pkgs, list_repos, orphans, own, list_repolock;
-	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
-	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
-	enum search_mode sm;
+	int c, flags, rv, ops;
+	bool list_pkgs, list_repos, orphans, own, list_repolock, list_manual;
+	bool list_hold, show_prop, show_files, show_deps, show_rdeps, show;
+	bool cat, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	bool not_compatible_with_repo_mode;
+	enum search_mode search_mode;
 
-	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
-	flags = rv = c = 0;
-	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
-	list_manual = list_repolock = show_prop = show_files = false;
-	regex = show = show_deps = show_rdeps = fulldeptree = false;
-	repo_mode = opmode = false;
-	sm = IN_INSTALLED;
+	pkg = rootdir = cachedir = confdir = props = catfile = NULL;
+	c = flags = rv = ops = 0;
+	list_pkgs = list_repos = orphans = own = list_repolock = list_manual= false;
+	list_hold = show_prop = show_files = show_deps = show_rdeps = show = false;
+	cat = pkg_search = regex = repo_mode = opmode = fulldeptree = false;
+	not_compatible_with_repo_mode = false;
+	search_mode = IN_INSTALLED;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -211,6 +212,7 @@ main(int argc, char **argv)
 			break;
 		case 2:
 			catfile = optarg;
+			cat = opmode = true;
 			break;
 		case 3:
 			list_repolock = opmode = true;
@@ -256,6 +258,56 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	not_compatible_with_repo_mode = false
+		|| list_repos
+		|| list_hold
+		|| list_repolock
+		|| list_manual
+		|| list_pkgs
+		|| orphans;
+
+	if (repo_mode && not_compatible_with_repo_mode) {
+		xbps_error_printf("Repository mode (-R, --repository) conflicts with one of:\n"
+			" -l, --list-pkgs\n"
+			" -L, --list-repos\n"
+			" -H, --list-hold-pkgs\n"
+			"     --list-repolock-pkgs\n"
+			" -m, --list-manual-pkgs\n"
+			" -O, --list-orphans\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (pkg_search) {
+		if (list_manual) {
+			list_manual = false;
+			search_mode = IN_MANUAL;
+		}
+
+		/* 'props' are always passed to search */
+		if (show_prop)
+			show_prop = false;
+	}
+
+	ops = 0
+		+ (int)list_repos
+		+ (int)list_hold
+		+ (int)list_repolock
+		+ (int)list_manual
+		+ (int)list_pkgs
+		+ (int)orphans
+		+ (int)own
+		+ (int)pkg_search
+		+ (int)cat
+		+ (int)(show || show_prop)
+		+ (int)show_files
+		+ (int)show_deps
+		+ (int)show_rdeps;
+
+	if (ops != 1) {
+		xbps_error_printf("Conflicting MODE flags, please consult the man page.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	if (list_repos) {
 		/* list repositories */
 		rv = repo_list(&xh);
@@ -268,7 +320,7 @@ main(int argc, char **argv)
 		/* list repolocked packages */
 		rv = xbps_pkgdb_foreach_cb(&xh, list_repolock_pkgs, NULL);
 
-	} else if (list_manual && !pkg_search) {
+	} else if (list_manual) {
 		/* list manual pkgs */
 		rv = xbps_pkgdb_foreach_cb(&xh, list_manual_pkgs, NULL);
 
@@ -286,16 +338,9 @@ main(int argc, char **argv)
 
 	} else if (pkg_search) {
 		/* search mode */
-
-		sm = IN_INSTALLED;
-
 		if (repo_mode)
-			sm = IN_REPO;
-
-		if (list_manual)
-			sm = IN_MANUAL;
-
-		rv = search(&xh, regex, pkg, props, sm);
+			search_mode = IN_REPO;
+		rv = search(&xh, regex, pkg, props, search_mode);
 
 	} else if (catfile) {
 		/* repo cat file mode */
