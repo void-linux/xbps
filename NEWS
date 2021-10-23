@@ -17,6 +17,10 @@ xbps-X.XX.X (2020-XX-XX):
 
  * libxbps: fix temporary redirect in libfetch. [ericonr]
 
+ * libxbps: fix how the automatic/manual mode is set when replacing a
+    package using replaces. This makes it possible to correctly replace
+	manually installed packages using a transitional packages. [duncaen]
+
  * xbps-install(1): list reinstalled packages. [chocimier]
 
  * xbps-install(1): in dry-run mode ignore out of space error. [chocimier]
