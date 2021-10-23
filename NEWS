@@ -21,6 +21,11 @@ xbps-X.XX.X (2020-XX-XX):
     package using replaces. This makes it possible to correctly replace
     manually installed packages using a transitional packages. [duncaen]
 
+ * libxbps: fix inconsistent dependency resolution when a dependency
+   is on hold. xbps will now exit with ENODEV (19) if a held dependency
+   breaks the installation or update of a package instead of just ignoring
+   it, resulting in an inconsistent pkgdb. #392 [duncaen]
+
  * xbps-install(1): list reinstalled packages. [chocimier]
 
  * xbps-install(1): in dry-run mode ignore out of space error. [chocimier]
