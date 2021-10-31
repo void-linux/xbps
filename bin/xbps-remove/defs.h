@@ -25,8 +25,12 @@
 
 #ifndef _XBPS_REMOVE_DEFS_H_
 #define _XBPS_REMOVE_DEFS_H_
+#include <ctype.h>
 
 /* From clean-cache.c */
-int	clean_cachedir(struct xbps_handle *, bool drun);
+int	clean_cachedir(struct xbps_handle *, bool drun, int keep);
+bool	is_removable_pkg(struct xbps_handle *xhp, const char *binpkg, char *pkgver, int keep);
+bool	check_keep(char *keep);
+
 
 #endif /* !_XBPS_REMOVE_DEFS_H_ */

@@ -29,6 +29,9 @@
 #include <string.h>
 #include <getopt.h>
 
+#include <xbps.h>
+#include "../xbps-install/defs.h"
+#include "../xbps-remove/defs.h"
 #include "defs.h"
 
 static void __attribute__((noreturn))
@@ -50,6 +53,8 @@ usage(bool fail)
 	    " -a, --add <repodir/file.xbps> ...  Add package(s) to repository index\n"
 	    " -c, --clean <repodir>              Clean repository index\n"
 	    " -r, --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
+	    " -k, --keep <n>                     Keep n previous versions in the repository\n"
+	    " -y, --yes                          Assume yes to all questions\n"
 	    " -s, --sign <repodir>               Initialize repository metadata signature\n"
 	    " -S, --sign-pkg <file.xbps> ...     Sign binary package archive\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -58,7 +63,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsCSVv";
+	const char *shortopts = "acdfhrk:ysCSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
@@ -66,6 +71,8 @@ main(int argc, char **argv)
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
+		{ "keep", required_argument, NULL, 'k' },
+		{ "yes", no_argument, NULL, 'y' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "privkey", required_argument, NULL, 0},
@@ -79,12 +86,12 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	const char *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
-	int rv, c, flags = 0;
+	int rv, c, flags = 0, keep = 1;
 	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
-			 hashcheck;
+			 hashcheck, yes;
 
 	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force =
-		hashcheck = false;
+		hashcheck = yes = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -114,6 +121,15 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		case 'r':
 			rm_mode = true;
+			break;
+		case 'k':
+			if (optarg && check_keep(optarg))
+				keep = (int)strtol(optarg, &optarg, 10);
+			else
+				usage(true);
+			break;
+		case 'y':
+			yes = true;
 			break;
 		case 's':
 			sign_mode = true;
@@ -163,8 +179,14 @@ main(int argc, char **argv)
 		rv = index_add(&xh, optind, argc, argv, force, compression);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
-	else if (rm_mode)
-		rv = remove_obsoletes(&xh, argv[optind]);
+	else if (rm_mode) {
+		if (keep == 0 && !yes &&
+			!yesno("Warning: will be removed all previous versions of the packages!\nDo you want to continue?")) {
+			printf("Aborting!\n");
+			exit(EXIT_SUCCESS);
+		}
+		rv = remove_obsoletes(&xh, argv[optind], keep);
+	}
 	else if (sign_mode)
 		rv = sign_repo(&xh, argv[optind], privkey, signedby, compression);
 	else if (sign_pkg_mode)

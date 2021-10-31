@@ -39,6 +39,7 @@
 #include "../xbps-install/defs.h"
 #include "defs.h"
 
+
 static void __attribute__((noreturn))
 usage(bool fail)
 {
@@ -54,6 +55,7 @@ usage(bool fail)
 	    " -h, --help                Show usage\n"
 	    " -n, --dry-run             Dry-run mode\n"
 	    " -O, --clean-cache         Remove obsolete packages in cachedir\n"
+	    " -k, --keep <n>            Keep n previous versions in cachedir\n"
 	    " -o, --remove-orphans      Remove package orphans\n"
 	    " -R, --recursive           Recursively remove dependencies\n"
 	    " -r, --rootdir <dir>       Full path to rootdir\n"
@@ -93,7 +95,7 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		}
 		break;
 	case XBPS_STATE_SHOW_REMOVE_MSG:
-                printf("%s: pre-remove message:\n", xscd->arg);
+		printf("%s: pre-remove message:\n", xscd->arg);
 		printf("========================================================================\n");
 		printf("%s", xscd->desc);
 		printf("========================================================================\n");
@@ -158,7 +160,7 @@ remove_pkg(struct xbps_handle *xhp, const char *pkgname, bool recursive)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:dFfhnOoRr:vVy";
+	const char *shortopts = "C:c:dFfhnOk:oRr:vVy";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -168,6 +170,7 @@ main(int argc, char **argv)
 		{ "help", no_argument, NULL, 'h' },
 		{ "dry-run", no_argument, NULL, 'n' },
 		{ "clean-cache", no_argument, NULL, 'O' },
+		{ "keep", required_argument, NULL, 'k' },
 		{ "remove-orphans", no_argument, NULL, 'o' },
 		{ "recursive", no_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
@@ -180,11 +183,12 @@ main(int argc, char **argv)
 	const char *rootdir, *cachedir, *confdir;
 	int c, flags, rv;
 	bool yes, drun, recursive, clean_cache, orphans;
-	int maxcols, missing;
+	int maxcols, missing, keep;
 
 	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
 	drun = recursive = clean_cache = yes = orphans = false;
+	keep = 1;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -211,6 +215,12 @@ main(int argc, char **argv)
 			break;
 		case 'O':
 			clean_cache = true;
+			break;
+		case 'k':
+			if (optarg && check_keep(optarg))
+				keep = (int)strtol(optarg, &optarg, 10);
+			else
+				usage(true);
 			break;
 		case 'o':
 			orphans = true;
@@ -264,7 +274,12 @@ main(int argc, char **argv)
 	maxcols = get_maxcols();
 
 	if (clean_cache) {
-		rv = clean_cachedir(&xh, drun);
+		if (keep == 0 && !yes &&
+			!yesno("Warning: will be removed all previous versions of the packages!\nDo you want to continue?")) {
+				printf("Aborting!\n");
+				exit(EXIT_SUCCESS);
+		}
+		rv = clean_cachedir(&xh, drun, keep);
 		if (!orphans || rv)
 			exit(rv);;
 	}
