@@ -274,18 +274,21 @@ main(int argc, char **argv)
 		rv = exec_transaction(&xh, maxcols, yes, drun);
 	} else if (!update) {
 		/* Install target packages */
+		bool target_pkgs_not_found = false;
 		for (i = optind; i < argc; i++) {
 			rv = install_new_pkg(&xh, argv[i], force);
 			if (rv == EEXIST) {
 				/* pkg already installed, ignore */
 				rv = 0;
 				eexist++;
+			} else if (rv == ENOENT) {
+				target_pkgs_not_found = true;
 			} else if (rv != 0) {
 				xbps_end(&xh);
 				exit(rv);
 			}
 		}
-		if (eexist == argc)
+		if (eexist == argc || target_pkgs_not_found)
 			goto out;
 
 		rv = exec_transaction(&xh, maxcols, yes, drun);
