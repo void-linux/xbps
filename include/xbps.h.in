@@ -1475,6 +1475,8 @@ int xbps_rpool_sync(struct xbps_handle *xhp, const char *uri);
  * argument can be used in the callbacks to stop immediately the loop if
  * set to true, otherwise it will only be stopped if it returns a
  * non-zero value.
+ * Removes repos failed to open from pool. This condition causes function
+ * to return error, but don't break the loop.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
  * @param[in] fn Function callback to execute for every repository registered in
