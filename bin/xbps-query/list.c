@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -178,8 +179,8 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 	return xbps_pkgdb_foreach_cb(xhp, list_pkgs_in_dict, &lpc);
 }
 
-static int
-repo_list_uri_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
+static void
+repo_list_uri(struct xbps_repo *repo)
 {
 	const char *signedby = NULL;
 	uint16_t pubkeysize = 0;
@@ -204,19 +205,29 @@ repo_list_uri_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
 		if (hexfp)
 			free(hexfp);
 	}
-	return 0;
+}
+
+static void
+repo_list_uri_err(const char *repouri)
+{
+	printf("%5zd %s (RSA maybe-signed)\n", (ssize_t) -1, repouri);
 }
 
 int
 repo_list(struct xbps_handle *xhp)
 {
-	int rv;
+	struct xbps_repo *repo = NULL;
+	const char *repouri = NULL;
 
-	rv = xbps_rpool_foreach(xhp, repo_list_uri_cb, NULL);
-	if (rv != 0 && rv != ENOTSUP) {
-		fprintf(stderr, "Failed to initialize rpool: %s\n",
-		    strerror(rv));
-		return rv;
+	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
+		repo = xbps_repo_open(xhp, repouri);
+		if (repo) {
+			repo_list_uri(repo);
+			xbps_repo_close(repo);
+		} else {
+			repo_list_uri_err(repouri);
+		}
 	}
 	return 0;
 }
