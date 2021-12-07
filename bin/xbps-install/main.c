@@ -257,18 +257,21 @@ main(int argc, char **argv)
 		rv = dist_upgrade(&xh, maxcols, yes, drun);
 	} else if (update) {
 		/* Update target packages */
+        bool target_pkgs_not_found = false;
 		for (i = optind; i < argc; i++) {
 			rv = update_pkg(&xh, argv[i], force);
 			if (rv == EEXIST) {
 				/* pkg already updated, ignore */
 				rv = 0;
 				eexist++;
+            } else if (rv == ENOENT) {
+                target_pkgs_not_found = true;
 			} else if (rv != 0) {
 				xbps_end(&xh);
 				exit(rv);
 			}
 		}
-		if (eexist == argc)
+		if (eexist == argc || target_pkgs_not_found)
 			goto out;
 
 		rv = exec_transaction(&xh, maxcols, yes, drun);
