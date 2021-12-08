@@ -99,6 +99,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 		}
 
 		if ((ttype != XBPS_TRANS_CONFIGURE) && (ttype != XBPS_TRANS_REMOVE) &&
+		    (ttype != XBPS_TRANS_HOLD) &&
 		    xbps_repository_is_remote(repo) && !xbps_binpkg_exists(xhp, obj)) {
 			xbps_dictionary_get_uint64(obj, "filename-size", &tsize);
 			tsize += 512;
