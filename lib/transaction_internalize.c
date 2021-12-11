@@ -210,7 +210,7 @@ xbps_transaction_internalize(struct xbps_handle *xhp, xbps_object_iterator_t ite
 		int rv;
 
 		ttype = xbps_transaction_pkg_type(obj);
-		if (ttype != XBPS_TRANS_INSTALL && ttype != XBPS_TRANS_UPDATE)
+		if (ttype != XBPS_TRANS_INSTALL && ttype != XBPS_TRANS_UPDATE && ttype != XBPS_TRANS_REINSTALL)
 			continue;
 
 		rv = internalize_binpkg(xhp, obj);
