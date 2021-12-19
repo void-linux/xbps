@@ -238,18 +238,35 @@ xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd)
 	if ((a = open_archive(url)) == NULL)
 		return EINVAL;
 
-	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
+	for (;;) {
 		const char *bfile;
-
+		rv = archive_read_next_header(a, &entry);
+		if (rv == ARCHIVE_EOF) {
+			rv = 0;
+			break;
+		}
+		if (rv == ARCHIVE_FATAL) {
+			const char *error = archive_error_string(a);
+			if (error != NULL) {
+				xbps_error_printf(
+				    "Reading archive entry from: %s: %s\n",
+				    url, error);
+			} else {
+				xbps_error_printf(
+				    "Reading archive entry from: %s: %s\n",
+				    url, strerror(archive_errno(a)));
+			}
+			rv = archive_errno(a);
+			break;
+		}
 		bfile = archive_entry_pathname(entry);
 		if (bfile[0] == '.')
 			bfile++; /* skip first dot */
 
 		if (strcmp(bfile, fname) == 0) {
 			rv = archive_read_data_into_fd(a, fd);
-			if (rv != 0)
+			if (rv != ARCHIVE_OK)
 				rv = archive_errno(a);
-
 			break;
 		}
 		archive_read_data_skip(a);
