@@ -3,3 +3,4 @@ syntax("kyuafile", 1)
 test_suite("xbps-query")
 atf_test_program{name="ignore_repos_test"}
 atf_test_program{name="remote_test"}
+atf_test_program{name="query_test"}

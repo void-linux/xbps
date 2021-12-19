@@ -282,6 +282,27 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 }
 
 int
+cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
+{
+	xbps_dictionary_t pkgd;
+	char *url;
+	int rv;
+
+	pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
+	if (pkgd == NULL)
+		return errno;
+
+	url = xbps_repository_pkg_path(xhp, pkgd);
+	if (url == NULL)
+		return EINVAL;
+
+	xbps_dbg_printf(xhp, "matched pkg at %s\n", url);
+	rv = xbps_archive_fetch_file_into_fd(url, file, STDOUT_FILENO);
+	free(url);
+	return rv;
+}
+
+int
 repo_cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 {
 	xbps_dictionary_t pkgd;

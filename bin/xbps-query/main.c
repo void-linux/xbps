@@ -288,8 +288,10 @@ main(int argc, char **argv)
 
 	} else if (catfile) {
 		/* repo cat file mode */
-		rv =  repo_cat_file(&xh, pkg, catfile);
-
+		if (repo_mode)
+			rv =  repo_cat_file(&xh, pkg, catfile);
+		else
+			rv =  cat_file(&xh, pkg, catfile);
 	} else if (show || show_prop) {
 		/* show mode */
 		if (repo_mode)
