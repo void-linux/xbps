@@ -70,23 +70,29 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	repo_pkgd = xbps_rpool_get_pkg(xhp, pkgver);
 	free(pkgver);
 	if (repo_pkgd) {
+		int r;
 		xbps_dictionary_get_cstring_nocopy(repo_pkgd,
 		    "filename-sha256", &rsha256);
-		if (xbps_file_sha256_check(binpkg, rsha256) == 0) {
+		r = xbps_file_sha256_check(binpkg, rsha256);
+		if (r == 0) {
 			/* hash matched */
+			return 0;
+		}
+		if (r != ERANGE) {
+			xbps_error_printf("Failed to checksum `%s': %s\n", binpkg, strerror(r));
 			return 0;
 		}
 	}
 	binpkgsig = xbps_xasprintf("%s.sig", binpkg);
 	if (!drun && unlink(binpkg) == -1) {
-		fprintf(stderr, "Failed to remove `%s': %s\n",
+		xbps_error_printf("Failed to remove `%s': %s\n",
 		    binpkg, strerror(errno));
 	} else {
 		printf("Removed %s from cachedir (obsolete)\n", binpkg);
 	}
 	if (!drun && unlink(binpkgsig) == -1) {
 		if (errno != ENOENT) {
-			fprintf(stderr, "Failed to remove `%s': %s\n",
+			xbps_error_printf("Failed to remove `%s': %s\n",
 			    binpkgsig, strerror(errno));
 		}
 	}
