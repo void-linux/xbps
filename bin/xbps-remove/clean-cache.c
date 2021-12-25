@@ -32,45 +32,72 @@
 #include <assert.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <limits.h>
 
 #include <xbps.h>
 #include "defs.h"
+
+static int
+binpkg_parse(char *buf, size_t bufsz, const char *path, const char **pkgver, const char **arch)
+{
+	char *p;
+	size_t n = xbps_strlcpy(buf, path, bufsz);
+	if (n >= bufsz)
+		return -ENOBUFS;
+
+	/* remove .xbps file extension */
+	p = buf+n-sizeof(".xbps")+1;
+	*p = '\0';
+
+	/* find the previous dot that separates the architecture */
+	for (p = p-1; p > buf && *p != '.'; p--);
+	if (*p != '.')
+		return -EINVAL;
+	*p = '\0';
+
+	/* make sure the pkgver part is valid */
+	if (!xbps_pkg_version(buf))
+		return -EINVAL;
+
+	*arch = p+1;
+	*pkgver = buf;
+	return 0;
+}
 
 static int
 cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		const char *key UNUSED, void *arg,
 		bool *done UNUSED)
 {
+	char buf[PATH_MAX];
 	xbps_dictionary_t repo_pkgd;
 	const char *binpkg, *rsha256;
-	char *binpkgsig, *pkgver, *arch;
+	const char *binpkgver, *binpkgarch;
 	bool drun = false;
+	int r;
 
 	/* Extract drun (dry-run) flag from arg*/
 	if (arg != NULL)
 		drun = *(bool*)arg;
 
-	/* Internalize props.plist dictionary from binary pkg */
 	binpkg = xbps_string_cstring_nocopy(obj);
-	arch = xbps_binpkg_arch(binpkg);
-	assert(arch);
-
-	if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
-		xbps_dbg_printf(xhp, "%s: ignoring binpkg with unmatched arch (%s)\n", binpkg, arch);
-		free(arch);
+	r = binpkg_parse(buf, sizeof(buf), binpkg, &binpkgver, &binpkgarch);
+	if (r < 0) {
+		xbps_error_printf("Binary package filename: %s: %s\n", binpkg, strerror(-r));
 		return 0;
 	}
-	free(arch);
+	if (strcmp(binpkgarch, xhp->target_arch ? xhp->target_arch : xhp->native_arch) != 0 &&
+	    strcmp(binpkgarch, "noarch") != 0) {
+		xbps_dbg_printf(xhp, "%s: ignoring binpkg with unmatched arch\n", binpkg);
+		return 0;
+	}
+
 	/*
 	 * Remove binary pkg if it's not registered in any repository
 	 * or if hash doesn't match.
 	 */
-	pkgver = xbps_binpkg_pkgver(binpkg);
-	assert(pkgver);
-	repo_pkgd = xbps_rpool_get_pkg(xhp, pkgver);
-	free(pkgver);
+	repo_pkgd = xbps_rpool_get_pkg(xhp, binpkgver);
 	if (repo_pkgd) {
-		int r;
 		xbps_dictionary_get_cstring_nocopy(repo_pkgd,
 		    "filename-sha256", &rsha256);
 		r = xbps_file_sha256_check(binpkg, rsha256);
@@ -83,20 +110,17 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 			return 0;
 		}
 	}
-	binpkgsig = xbps_xasprintf("%s.sig", binpkg);
+	snprintf(buf, sizeof(buf), "%s.sig", binpkg);
 	if (!drun && unlink(binpkg) == -1) {
 		xbps_error_printf("Failed to remove `%s': %s\n",
 		    binpkg, strerror(errno));
 	} else {
 		printf("Removed %s from cachedir (obsolete)\n", binpkg);
 	}
-	if (!drun && unlink(binpkgsig) == -1) {
-		if (errno != ENOENT) {
-			xbps_error_printf("Failed to remove `%s': %s\n",
-			    binpkgsig, strerror(errno));
-		}
+	if (!drun && unlink(buf) == -1 && errno != ENOENT) {
+		xbps_error_printf("Failed to remove `%s': %s\n",
+		    buf, strerror(errno));
 	}
-	free(binpkgsig);
 
 	return 0;
 }
