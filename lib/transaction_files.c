@@ -847,7 +847,11 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			bool preserve = false;
 			bool removepkg = (ttype == XBPS_TRANS_REMOVE);
 
-			xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &oldpkgver);
+			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &oldpkgver)) {
+				xbps_error_printf("pkgdb package `%s' does not contain `pkgver'\n", pkgname);
+				rv = EINVAL;
+				goto out;
+			}
 			if (!xbps_dictionary_get_bool(obj, "preserve", &preserve))
 				preserve = false;
 
@@ -856,10 +860,9 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 				continue;
 			}
 
-			assert(oldpkgver);
 			xbps_set_cb_state(xhp, XBPS_STATE_FILES, 0, oldpkgver,
 			    "%s: collecting files...", oldpkgver);
-			rv = collect_files(xhp, filesd, pkgname, pkgver, idx,
+			rv = collect_files(xhp, filesd, pkgname, oldpkgver, idx,
 			    update, removepkg, preserve, true);
 			if (rv != 0)
 				goto out;
