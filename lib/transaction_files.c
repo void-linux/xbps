@@ -210,10 +210,10 @@ collect_obsoletes(struct xbps_handle *xhp)
 	int rv = 0;
 
 	if (xhp->transd == NULL)
-		return ENOTSUP;
+		return -ENOTSUP;
 
 	if (!xbps_dictionary_get_dict(xhp->transd, "obsolete_files", &obsd))
-		return ENOENT;
+		return -ENOENT;
 
 	/*
 	 * Iterate over all files, longest paths first,
@@ -282,7 +282,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 				    ENOTEMPTY, item->old.pkgver,
 				    "%s: directory `%s' can not be deleted.",
 				    item->old.pkgver, item->file);
-				return ENOTEMPTY;
+				return -ENOTEMPTY;
 			}
 		} else if (item->new.type != item->old.type) {
 			/*
@@ -340,6 +340,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 				    item->file+1);
 				continue;
 			default:
+				rv = -rv;
 				break;
 			}
 		}
@@ -404,13 +405,13 @@ collect_obsoletes(struct xbps_handle *xhp)
 		if ((a = xbps_dictionary_get(obsd, pkgname)) == NULL) {
 			if (!(a = xbps_array_create()) ||
 				!(xbps_dictionary_set(obsd, pkgname, a)))
-				return ENOMEM;
+				return -ENOMEM;
 			alloc = true;
 		}
 		if (!xbps_array_add_cstring(a, item->file)) {
 			if (alloc)
 				xbps_object_release(a);
-			return ENOMEM;
+			return -ENOMEM;
 		}
 		if (alloc)
 			xbps_object_release(a);
@@ -651,101 +652,26 @@ out:
 	return rv;
 }
 
-static int
-collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
-		unsigned int idx, bool update)
+int
+xbps_transaction_files_add(struct xbps_handle *xhp, xbps_dictionary_t pkgd, xbps_dictionary_t filesd)
 {
-	xbps_dictionary_t filesd;
-	struct archive *ar = NULL;
-	struct archive_entry *entry;
-	struct stat st;
+	xbps_trans_type_t ttype = xbps_transaction_pkg_type(pkgd);
 	const char *pkgver, *pkgname;
-	char *bpkg;
-	/* size_t entry_size; */
-	int rv = 0, pkg_fd = -1;
+	unsigned int idx = 0;
+	int rv;
 
-	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	assert(pkgver);
-	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 	assert(pkgname);
+	xbps_dictionary_get_uint32(pkgd, "transaction-index", &idx);
 
-	bpkg = xbps_repository_pkg_path(xhp, pkg_repod);
-	if (bpkg == NULL) {
-		rv = errno;
-		goto out;
-	}
+	xbps_set_cb_state(xhp, XBPS_STATE_FILES, 0, pkgver,
+	    "%s: collecting files...", pkgver);
 
-	if ((ar = archive_read_new()) == NULL) {
-		rv = errno;
-		goto out;
-	}
-
-	/*
-	 * Enable support for tar format and gzip/bzip2/lzma compression methods.
-	 */
-	archive_read_support_filter_gzip(ar);
-	archive_read_support_filter_bzip2(ar);
-	archive_read_support_filter_xz(ar);
-	archive_read_support_filter_lz4(ar);
-	archive_read_support_filter_zstd(ar);
-	archive_read_support_format_tar(ar);
-
-	pkg_fd = open(bpkg, O_RDONLY|O_CLOEXEC);
-	if (pkg_fd == -1) {
-		rv = errno;
-		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
-		    rv, pkgver,
-		    "%s: failed to open binary package `%s': %s",
-		    pkgver, bpkg, strerror(rv));
-		goto out;
-	}
-	if (fstat(pkg_fd, &st) == -1) {
-		rv = errno;
-		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
-		    rv, pkgver,
-		    "%s: failed to fstat binary package `%s': %s",
-		    pkgver, bpkg, strerror(rv));
-		goto out;
-	}
-	if (archive_read_open_fd(ar, pkg_fd, st.st_blksize) == ARCHIVE_FATAL) {
-		rv = archive_errno(ar);
-		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
-		    rv, pkgver,
-		    "%s: failed to read binary package `%s': %s",
-		    pkgver, bpkg, strerror(rv));
-		goto out;
-	}
-
-	for (uint8_t i = 0; i < 4; i++) {
-		const char *entry_pname;
-		int ar_rv = archive_read_next_header(ar, &entry);
-		if (ar_rv == ARCHIVE_EOF || ar_rv == ARCHIVE_FATAL)
-			break;
-		else if (ar_rv == ARCHIVE_RETRY)
-			continue;
-
-		entry_pname = archive_entry_pathname(entry);
-		if ((strcmp("./files.plist", entry_pname)) == 0) {
-			filesd = xbps_archive_get_dictionary(ar, entry);
-			if (filesd == NULL) {
-				rv = EINVAL;
-				goto out;
-			}
-			rv = collect_files(xhp, filesd, pkgname, pkgver, idx,
-			    update, false, false, false);
-			xbps_object_release(filesd);
-			goto out;
-		}
-		archive_read_data_skip(ar);
-	}
-
-out:
-	if (pkg_fd != -1)
-		close(pkg_fd);
-	if (ar != NULL)
-		archive_read_free(ar);
-	free(bpkg);
-	return rv;
+	rv = collect_files(xhp, filesd, pkgname, pkgver, idx,
+	    ttype == XBPS_TRANS_UPDATE, false, false, false);
+	return -rv;
 }
 
 static int
@@ -754,21 +680,6 @@ pathcmp(const void *l1, const void *l2)
 	const struct item *a = *(const struct item * const*)l1;
 	const struct item *b = *(const struct item * const*)l2;
 	return (a->len < b->len) - (b->len < a->len);
-}
-
-static void
-cleanup(void)
-{
-	struct item *item, *itmp;
-
-	HASH_ITER(hh, hashtab, item, itmp) {
-		HASH_DEL(hashtab, item);
-		free(item->file);
-		free(item->old.sha256);
-		free(item->new.sha256);
-		free(item);
-	}
-	free(items);
 }
 
 /*
@@ -797,7 +708,7 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	xbps_dictionary_t pkgd, filesd;
 	xbps_object_t obj;
 	xbps_trans_type_t ttype;
-	const char *pkgver, *pkgname;
+	const char *pkgname;
 	int rv = 0;
 	unsigned int idx = 0;
 
@@ -816,22 +727,11 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			continue;
 		}
 
-		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
-			return EINVAL;
-		}
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname)) {
 			return EINVAL;
 		}
 
 		update = (ttype == XBPS_TRANS_UPDATE);
-
-		if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_UPDATE) {
-			xbps_set_cb_state(xhp, XBPS_STATE_FILES, 0, pkgver,
-			    "%s: collecting files...", pkgver);
-			rv = collect_binpkg_files(xhp, obj, idx, update);
-			if (rv != 0)
-				goto out;
-		}
 
 		/*
 		 * Always just try to get the package from the pkgdb:
@@ -865,10 +765,18 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 			rv = collect_files(xhp, filesd, pkgname, oldpkgver, idx,
 			    update, removepkg, preserve, true);
 			if (rv != 0)
-				goto out;
+				break;
 		}
 	}
 	xbps_object_iterator_reset(iter);
+
+	return rv;
+}
+
+int HIDDEN
+xbps_transaction_files_obsoletes(struct xbps_handle *xhp)
+{
+	int rv;
 
 	/*
 	 * Sort items by path length, to make it easier to find files in
@@ -877,17 +785,28 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	qsort(items, itemsidx, sizeof (struct item *), pathcmp);
 
 	if (chdir(xhp->rootdir) == -1) {
-		rv = errno;
+		rv = -errno;
 		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL, rv, xhp->rootdir,
 		    "failed to chdir to rootdir `%s': %s",
 		    xhp->rootdir, strerror(errno));
+		return rv;
 	}
 
-out:
-	if (rv != 0)
-		return rv;
-
 	rv = collect_obsoletes(xhp);
-	cleanup();
 	return rv;
+}
+
+void HIDDEN
+xbps_transaction_files_free(void)
+{
+	struct item *item, *itmp;
+
+	HASH_ITER(hh, hashtab, item, itmp) {
+		HASH_DEL(hashtab, item);
+		free(item->file);
+		free(item->old.sha256);
+		free(item->new.sha256);
+		free(item);
+	}
+	free(items);
 }

@@ -186,6 +186,14 @@ internalize_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		goto out;
 	}
 
+	rv = xbps_transaction_files_add(xhp, pkg_repod, filesd);
+	if (rv < 0) {
+		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL, -rv, pkgver,
+		    "%s: [files] pkgver mismatch repodata: `%s' binpkg: `%s'.",
+		    pkgfile, pkgver, binpkg_pkgver);
+		goto out;
+	}
+
 out:
 	xbps_object_release(propsd);
 	xbps_object_release(filesd);

@@ -168,7 +168,18 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	xbps_fetch_unset_cache_connection();
 
 	/*
-	 * Internalize metadata of downloaded binary packages.
+	 * Collect files in the transaction and find some issues
+	 * like multiple packages installing the same file.
+	 */
+	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FILES, 0, NULL, NULL);
+	if ((rv = xbps_transaction_files(xhp, iter)) != 0) {
+		xbps_dbg_printf(xhp, "[trans] failed to load transaction files: "
+		    "%s\n", strerror(rv));
+		goto out;
+	}
+
+	/*
+	 * Internalize metadata (scripts, new files.plists) of downloaded binary packages.
 	 */
 	if ((rv = xbps_transaction_internalize(xhp, iter)) < 0) {
 		rv = -rv;
@@ -178,12 +189,11 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	}
 
 	/*
-	 * Collect files in the transaction and find some issues
-	 * like multiple packages installing the same file.
+	 * Collect obsolete files.
 	 */
-	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FILES, 0, NULL, NULL);
-	if ((rv = xbps_transaction_files(xhp, iter)) != 0) {
-		xbps_dbg_printf(xhp, "[trans] failed to verify transaction files: "
+	if ((rv = xbps_transaction_files_obsoletes(xhp)) < 0) {
+		rv = -rv;
+		xbps_dbg_printf(xhp, "[trans] failed to collect obsolete transaction files: "
 		    "%s\n", strerror(rv));
 		goto out;
 	}
@@ -432,6 +442,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 out:
 	xbps_object_release(remove_scripts);
 	xbps_object_iterator_release(iter);
+	xbps_transaction_files_free();
 	if (rv == 0) {
 		/* Force a pkgdb write for all unpacked pkgs in transaction */
 		rv = xbps_pkgdb_update(xhp, true, true);
