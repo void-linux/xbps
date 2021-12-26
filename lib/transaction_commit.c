@@ -171,8 +171,9 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	 * Internalize metadata of downloaded binary packages.
 	 */
 	if ((rv = xbps_transaction_internalize(xhp, iter)) < 0) {
+		rv = -rv;
 		xbps_dbg_printf(xhp, "[trans] failed to internalize transaction binpkgs: "
-		    "%s\n", strerror(-rv));
+		    "%s\n", strerror(rv));
 		goto out;
 	}
 
