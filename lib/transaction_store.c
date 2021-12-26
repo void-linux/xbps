@@ -83,7 +83,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 
 	/*
 	 * Set a replaces to itself, so that virtual packages are always replaced.
-	*/
+	 */
 	if ((replaces = xbps_dictionary_get(pkgd, "replaces")) == NULL)
 		replaces = xbps_array_create();
 
@@ -92,6 +92,9 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	free(self_replaced);
 
 	if (!xbps_dictionary_set(pkgd, "replaces", replaces))
+		goto err;
+
+	if (!xbps_dictionary_set_uint32(pkgd, "transaction-index", xbps_array_count(pkgs)))
 		goto err;
 
 	/*
