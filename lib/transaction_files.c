@@ -560,20 +560,19 @@ add:
 }
 
 static int
-collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
+collect_files(struct xbps_handle *xhp, xbps_dictionary_t filesd,
 			const char *pkgname, const char *pkgver, unsigned int idx,
 			bool update, bool removepkg, bool preserve, bool removefile)
 {
 	xbps_array_t a;
 	xbps_dictionary_t filed;
 	uint64_t size;
-	unsigned int i;
 	int rv = 0;
 	const char *file, *sha256 = NULL;
 	bool error = false;
 
-	if ((a = xbps_dictionary_get(d, "files"))) {
-		for (i = 0; i < xbps_array_count(a); i++) {
+	if ((a = xbps_dictionary_get(filesd, "files"))) {
+		for (unsigned int i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			if (removefile)
@@ -590,8 +589,8 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			}
 		}
 	}
-	if ((a = xbps_dictionary_get(d, "conf_files"))) {
-		for (i = 0; i < xbps_array_count(a); i++) {
+	if ((a = xbps_dictionary_get(filesd, "conf_files"))) {
+		for (unsigned int i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			size = 0;
@@ -613,8 +612,8 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			}
 		}
 	}
-	if ((a = xbps_dictionary_get(d, "links"))) {
-		for (i = 0; i < xbps_array_count(a); i++) {
+	if ((a = xbps_dictionary_get(filesd, "links"))) {
+		for (unsigned int i = 0; i < xbps_array_count(a); i++) {
 			const char *target = NULL;
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
@@ -630,8 +629,8 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			}
 		}
 	}
-	if ((a = xbps_dictionary_get(d, "dirs"))) {
-		for (i = 0; i < xbps_array_count(a); i++) {
+	if ((a = xbps_dictionary_get(filesd, "dirs"))) {
+		for (unsigned int i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			rv = collect_file(xhp, file, 0, pkgname, pkgver, idx, NULL,
