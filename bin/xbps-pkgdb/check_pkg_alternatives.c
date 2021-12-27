@@ -46,107 +46,50 @@
  * returns 0 if test ran successfully, 1 otherwise and -1 on error.
  */
 
-static const char *
-normpath(char *path)
-{
-	char *seg, *p;
-
-	for (p = path, seg = NULL; *p; p++) {
-		if (strncmp(p, "/../", 4) == 0 || strncmp(p, "/..", 4) == 0) {
-			memmove(seg ? seg : p, p+3, strlen(p+3) + 1);
-			return normpath(path);
-		} else if (strncmp(p, "/./", 3) == 0 || strncmp(p, "/.", 3) == 0) {
-			memmove(p, p+2, strlen(p+2) + 1);
-		} else if (strncmp(p, "//", 2) == 0 || strncmp(p, "/", 2) == 0) {
-			memmove(p, p+1, strlen(p+1) + 1);
-		}
-		if (*p == '/')
-			seg = p;
-	}
-	return path;
-}
-
-static char *
-relpath(char *from, char *to)
-{
-	int up;
-	char *p = to, *rel;
-
-	assert(from[0] == '/');
-	assert(to[0] == '/');
-	normpath(from);
-	normpath(to);
-
-	for (; *from == *to && *to; from++, to++) {
-		if (*to == '/')
-			p = to;
-	}
-
-	for (up = -1, from--; from && *from; from = strchr(from + 1, '/'), up++);
-
-	rel = calloc(3 * up + strlen(p), sizeof(char));
-
-	while (up--)
-		strcat(rel, "../");
-	if (*p)
-		strcat(rel, p+1);
-	return rel;
-}
-
 static int
 check_symlinks(struct xbps_handle *xhp, const char *pkgname, xbps_array_t a,
 	const char *grname)
 {
 	int rv = 0;
-	ssize_t l;
 	unsigned int i, n;
-	char *alternative, *tok1, *tok2, *linkpath, *target, *dir, *p;
+	const char *alternative;
 	char path[PATH_MAX];
+	char target[PATH_MAX];
+	char buf[PATH_MAX];
 
 	n = xbps_array_count(a);
 
 	for (i = 0; i < n; i++) {
-		alternative = xbps_string_cstring(xbps_array_get(a, i));
+		int r;
+		ssize_t l;
+		xbps_array_get_cstring_nocopy(a, i, &alternative);
 
-		if (!(tok1 = strtok(alternative, ":")) ||
-		    !(tok2 = strtok(NULL, ":"))) {
-			free(alternative);
-			return -1;
+		r = xbps_alternative_link(alternative, path, sizeof(path), target, sizeof(target));
+		if (r < 0) {
+			xbps_error_printf("%s: has invalid alternative group %s entry %s: %s\n",
+			    pkgname, grname, alternative, strerror(-r));
+			rv = 1;
+			continue;
+		}
+		if (xbps_path_prepend(path, sizeof(path), xhp->rootdir) == -1) {
+			xbps_error_printf("%s: has invalid alternative group %s entry %s: %s\n",
+			    pkgname, grname, alternative, strerror(errno));
+			rv = 1;
+			continue;
 		}
 
-		target = strdup(tok2);
-		dir = dirname(tok2);
-
-		/* add target dir to relative links */
-		if (tok1[0] != '/')
-			linkpath = xbps_xasprintf("%s/%s/%s", xhp->rootdir, dir, tok1);
-		else
-			linkpath = xbps_xasprintf("%s/%s", xhp->rootdir, tok1);
-
-		if (target[0] == '/') {
-			p = relpath(linkpath + strlen(xhp->rootdir), target);
-			free(target);
-			target = p;
-		}
-
-		if (strncmp(linkpath, "//", 2) == 0) {
-			p = linkpath+1;
-		} else {
-			p = linkpath;
-		}
-		if ((l = readlink(linkpath, path, sizeof path)) == -1) {
+		if ((l = readlink(path, buf, sizeof(buf))) == -1) {
 			xbps_error_printf(
 			    "%s: alternatives group %s symlink %s: %s\n",
-			    pkgname, grname, p, strerror(errno));
+			    pkgname, grname, path, strerror(errno));
 			rv = 1;
-		} else if (strncmp(path, target, l) != 0) {
-			xbps_error_printf("%s: alternatives group %s symlink %s has wrong target.\n",
-			    pkgname, grname, p);
+			continue;
+		}
+		if (strncmp(buf, target, l) != 0) {
+			xbps_error_printf("%s: alternatives group %s symlink %s has wrong target: '%s' != '%s'\n",
+			    pkgname, grname, path, buf, target);
 			rv = 1;
 		}
-		free(alternative);
-		free(target);
-		free(linkpath);
 	}
 
 	return rv;
