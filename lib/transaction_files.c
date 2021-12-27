@@ -539,7 +539,8 @@ add:
 		item->new.removepkg = removepkg;
 		item->new.target = target;
 	}
-	if (item->old.type && item->new.type) {
+	if ((item->old.type && item->new.type) &&
+	    (item->old.type != TYPE_DIR)) {
 		/*
 		 * The file was removed by one package
 		 * and installed by another package.
