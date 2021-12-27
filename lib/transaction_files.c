@@ -1,6 +1,6 @@
 /*-
  * Copyright (c) 2019 Juan Romero Pardines.
- * Copyright (c) 2019 Duncan Overbruck <mail@duncano.de>.
+ * Copyright (c) 2019-2021 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -683,6 +683,323 @@ pathcmp(const void *l1, const void *l2)
 	return (a->len < b->len) - (b->len < a->len);
 }
 
+static int
+alternative_link(const char *alternative,
+		char *linkpath, size_t linkpathsz)
+{
+	const char *p, *tok1 = alternative, *tok2;
+	for (;;) {
+		p = strchr(alternative, ':');
+		if (!p || p == alternative)
+			return -EINVAL;
+		if (p[-1] != '\\')
+			break;
+	}
+	tok2 = p+1;
+	if (tok1[0] == '/') {
+		size_t len = p - tok1;
+		int n;
+		if (len > INT_MAX)
+			return -EINVAL;
+		n = snprintf(linkpath, linkpathsz, "%.*s", (int)len, tok1);
+		if (n < 0 || n >= (int)linkpathsz)
+			return -ENOBUFS;
+	} else {
+		const char *d = strrchr(tok2, '/');
+		size_t len = p - tok1;
+		size_t dirlen;
+		int n;
+		if (len > INT_MAX)
+			return -EINVAL;
+		dirlen = d ? d - p : 0;
+		if (dirlen > INT_MAX)
+			return -EINVAL;
+		n = snprintf(linkpath, linkpathsz, "%.*s%.*s",
+		    (int)dirlen, tok2,
+		    (int)len, tok1);
+		if (n < 0 || n >= (int)linkpathsz)
+			return -ENOBUFS;
+	}
+	return 0;
+}
+
+struct alternative_changer {
+	const char *pkgname;
+	const char *pkgver;
+	unsigned int idx;
+};
+
+static int
+register_alternative_links(struct xbps_handle *xhp,
+		const struct alternative_changer *changer,
+		const char *provider,
+		const char *group)
+{
+	char linkpath[PATH_MAX];
+	xbps_array_t pkgs = xbps_dictionary_get(xhp->transd, "packages");
+	xbps_dictionary_t pkgd, alternatives;
+	xbps_array_t alts;
+	bool error = false;
+
+	/*
+	 * The provider can be either a new package that is in the transaction
+	 * or alternatively a already installed package in the pkgdb.
+	 */
+	if (!(pkgd = xbps_find_pkg_in_array(pkgs, provider, 0)) &&
+	    !(pkgd = xbps_pkgdb_get_pkg(xhp, provider))) {
+		xbps_error_printf("Could not find alternative group `%s' provider: %s\n",
+		    group, provider);
+		return -EINVAL;
+	}
+	if (!(alternatives = xbps_dictionary_get(pkgd, "alternatives")) ||
+	    !(alts = xbps_dictionary_get(alternatives, group))) {
+		xbps_error_printf("Could not find alternative group `%s' in: %s\n",
+		    group, provider);
+		return -EINVAL;
+	}
+	for (unsigned int i = 0; i < xbps_array_count(alts); i++) {
+		const char *alt;
+		int r;
+		if (!xbps_array_get_cstring_nocopy(alts, i, &alt))
+			return -EINVAL;
+		r = alternative_link(alt, linkpath, sizeof(linkpath));
+		if (r < 0) {
+			return r;
+		}
+		r = collect_file(xhp, linkpath, 0, changer->pkgname, changer->pkgver, changer->idx, NULL,
+		    TYPE_LINK, false, false, false, false, NULL);
+		if (r == EEXIST) {
+			error = true;
+			continue;
+		} else if (r != 0) {
+			return -r;
+		}
+	}
+
+	if (error)
+		return -EEXIST;
+	return 0;
+}
+
+static int
+prune_alternative_links(struct xbps_handle *xhp,
+		const struct alternative_changer *changer,
+		const char *pkgname,
+		const char *group)
+{
+	char linkpath[PATH_MAX];
+	xbps_dictionary_t pkgd, alternatives;
+	xbps_array_t alts;
+	bool error = false;
+
+	/*
+	 * This can only be a installed package in the pkgdb.
+	 */
+	if (!(pkgd = xbps_pkgdb_get_pkg(xhp, pkgname))) {
+		xbps_error_printf("Could not find alternative group `%s' provider: %s\n",
+		    group, pkgname);
+		return -EINVAL;
+	}
+	if (!(alternatives = xbps_dictionary_get(pkgd, "alternatives")) ||
+	    !(alts = xbps_dictionary_get(alternatives, group))) {
+		xbps_error_printf("Could not find alternative group `%s' in: %s\n",
+		    group, pkgname);
+		return -EINVAL;
+	}
+	for (unsigned int i = 0; i < xbps_array_count(alts); i++) {
+		const char *alt;
+		int r;
+		if (!xbps_array_get_cstring_nocopy(alts, i, &alt))
+			return -EINVAL;
+		r = alternative_link(alt, linkpath, sizeof(linkpath));
+		if (r < 0) {
+			return r;
+		}
+		xbps_dbg_printf(xhp, ">>>> provider=%s group=%s linkpath=%s\n", pkgname, group, linkpath);
+		r = collect_file(xhp, linkpath, 0, changer->pkgname, changer->pkgver, changer->idx, NULL,
+		    TYPE_LINK, false, false, false, true, NULL);
+		if (r == EEXIST) {
+			error = true;
+			continue;
+		} else if (r != 0) {
+			return -r;
+		}
+	}
+	if (error)
+		return -EEXIST;
+	return 0;
+}
+
+static int
+register_alternative_groups(struct xbps_handle *xhp,
+		xbps_dictionary_t alternatives,
+		const struct alternative_changer *changer,
+		xbps_dictionary_t pkg_alternatives
+		)
+{
+	xbps_array_t allkeys = xbps_dictionary_all_keys(pkg_alternatives);
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
+		xbps_object_t keysym = xbps_array_get(allkeys, i);
+		const char *group = xbps_dictionary_keysym_cstring_nocopy(keysym);
+		const char *first;
+		xbps_array_t providers = xbps_dictionary_get(alternatives, group);
+		bool found = false;
+		int r;
+
+		if (!providers) {
+			/*
+			 * There are no previous providers for the alternative
+			 * group, this package becomes the provider.
+			 */
+			providers = xbps_array_create();
+			xbps_array_add_cstring(providers, changer->pkgname);
+			if (!xbps_dictionary_set_and_rel(alternatives, group, providers))
+				return errno ? -errno : -ENOMEM;
+			r = register_alternative_links(xhp, changer, changer->pkgname, group);
+			if (r < 0)
+				return r;
+			continue;
+		}
+
+		/*
+		 * The alternative group already registers, add this package
+		 * as provider if it is not already part of it.
+		 */
+		for (unsigned int j = 0; j < xbps_array_count(providers); j++) {
+			const char *cur = NULL;
+			if (!xbps_array_get_cstring_nocopy(providers, j, &cur)) {
+				xbps_error_printf("invalid alternative group `%s' entry at index %d\n",
+				    group, j);
+				return -EINVAL;
+			}
+			if (strcmp(cur, changer->pkgname) == 0) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			if (!xbps_array_add_cstring(providers, changer->pkgname))
+				return errno ? -errno : -ENOMEM;
+		}
+		if (!xbps_array_get_cstring_nocopy(providers, 0, &first))
+			return -EINVAL;
+		if (strcmp(first, changer->pkgname) == 0) {
+			r = prune_alternative_links(xhp, changer, changer->pkgname, group);
+			if (r < 0)
+				return r;
+			r = register_alternative_links(xhp, changer, changer->pkgname, group);
+			if (r < 0)
+				return r;
+		}
+	}
+	return 0;
+}
+
+static int
+prune_alternative_groups(struct xbps_handle *xhp,
+		xbps_dictionary_t alternatives,
+		const struct alternative_changer *changer,
+		xbps_dictionary_t new_pkg_alternatives,
+		xbps_dictionary_t old_pkg_alternatives)
+{
+	xbps_array_t allkeys = xbps_dictionary_all_keys(old_pkg_alternatives);
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
+		xbps_array_t providers;
+		xbps_object_t keysym = xbps_array_get(allkeys, i);
+		const char *group = xbps_dictionary_keysym_cstring_nocopy(keysym);
+		const char *first;
+		if (xbps_dictionary_get(new_pkg_alternatives, group)) {
+			/*
+			 * this case is handled by registering the alternative group.
+			 */
+			continue;
+		}
+		providers = xbps_dictionary_get(alternatives, group);
+		if (!xbps_array_get_cstring_nocopy(providers, 0, &first)) {
+			/* XXX: does this need to be handled? */
+			continue;
+		}
+		if (strcmp(first, changer->pkgname) == 0) {
+			int r = prune_alternative_links(xhp, changer, first, group);
+			if (r < 0)
+				return r;
+			xbps_array_remove(providers, 0);
+			if (!xbps_array_get_cstring_nocopy(providers, 0, &first))
+				continue;
+			r = register_alternative_links(xhp, changer, first, group);
+			if (r < 0)
+				return r;
+		} else {
+			xbps_remove_string_from_array(providers, changer->pkgname);
+		}
+	}
+	return 0;
+}
+
+static int
+handle_alternatives(struct xbps_handle *xhp,
+		xbps_dictionary_t alternatives,
+		xbps_dictionary_t pkgd,
+		unsigned int idx)
+{
+	struct alternative_changer changer = {0};
+	xbps_dictionary_t pkgdb_pkgd, new_pkg_alternatives, old_pkg_alternatives;
+	int r;
+
+	changer.idx = idx;
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &changer.pkgname))
+		return -EINVAL;
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &changer.pkgver))
+		return -EINVAL;
+
+	new_pkg_alternatives = xbps_dictionary_get(pkgd, "alternatives");
+
+	/*
+	 * Add package as provider for alternative groups it is
+	 * not yet registered in.
+	 */
+	r = register_alternative_groups(xhp, alternatives, &changer,
+	    new_pkg_alternatives);
+	if (r < 0)
+		return r;
+
+	pkgdb_pkgd = xbps_pkgdb_get_pkg(xhp, changer.pkgname);
+	if (!pkgdb_pkgd)
+		return 0;
+	old_pkg_alternatives = xbps_dictionary_get(pkgdb_pkgd, "alternatives");
+	if (!old_pkg_alternatives)
+		return 0;
+
+	/*
+	 * Remove package from alternative group providers that are not
+	 * in the new alternatives.
+	 */
+	r = prune_alternative_groups(xhp, alternatives, &changer,
+	    new_pkg_alternatives, old_pkg_alternatives);
+	if (r < 0)
+		return r;
+	return 0;
+}
+
+static xbps_dictionary_t
+copy_alternatives(xbps_dictionary_t src)
+{
+	xbps_dictionary_t dst = xbps_dictionary_create_with_capacity(xbps_dictionary_count(src));
+	xbps_array_t allkeys = xbps_dictionary_all_keys(src);
+	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
+		xbps_object_t keysym = xbps_array_get(allkeys, i);
+		const char *group = xbps_dictionary_keysym_cstring_nocopy(keysym);
+		xbps_array_t srcarr = xbps_dictionary_get(src, group);
+		xbps_array_t dstarr = xbps_array_copy_mutable(srcarr);
+		if (!xbps_dictionary_set(dst, group, dstarr)) {
+			xbps_object_release(dst);
+			return NULL;
+		}
+		xbps_object_release(dstarr);
+	}
+	return dst;
+}
+
 /*
  * xbps_transaction_files:
  *
@@ -712,15 +1029,27 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	const char *pkgname;
 	int rv = 0;
 	unsigned int idx = 0;
+	xbps_dictionary_t alternatives;
 
 	assert(xhp);
 	assert(iter);
+
+	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
+	alternatives = copy_alternatives(alternatives);
+	if (!alternatives)
+		return errno ? errno : ENOMEM;
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		bool update = false;
 
 		/* increment the index of the given package package in the transaction */
 		idx++;
+
+		rv = handle_alternatives(xhp, alternatives, obj, idx);
+		if (rv < 0) {
+			rv = -rv;
+			goto out;
+		}
 
 		/* ignore pkgs in hold mode or in unpacked state */
 		ttype = xbps_transaction_pkg_type(obj);
@@ -729,7 +1058,9 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 		}
 
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname)) {
-			return EINVAL;
+			xbps_error_printf("transaction package does not contain `pkgname'\n");
+			rv = EINVAL;
+			goto out;
 		}
 
 		update = (ttype == XBPS_TRANS_UPDATE);
@@ -771,6 +1102,8 @@ xbps_transaction_files(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	}
 	xbps_object_iterator_reset(iter);
 
+out:
+	xbps_object_release(alternatives);
 	return rv;
 }
 

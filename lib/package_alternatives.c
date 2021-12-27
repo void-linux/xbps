@@ -365,15 +365,21 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		if (array == NULL)
 			continue;
 
-		xbps_array_get_cstring_nocopy(array, 0, &first);
+		if (!xbps_array_get_cstring_nocopy(array, 0, &first)) {
+			/* XXX: does this need to be handled? */
+			continue;
+		}
 		if (strcmp(pkgname, first) == 0) {
 			/* this pkg is the current alternative for this group */
 			current = true;
+#if 0
+			/* this is handled by obsolete file removal */
 			rv = remove_symlinks(xhp,
 				xbps_dictionary_get(pkg_alternatives, keyname),
 				keyname);
 			if (rv != 0)
 				break;
+#endif
 		}
 
 		if (!update) {
