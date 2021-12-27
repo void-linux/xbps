@@ -1031,6 +1031,21 @@ int xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
  */
 int xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
 
+/**
+ * Parse the alternative link path into \a path and optionally the
+ * symlink target into \a target.
+ *
+ * @param[in] xhp The pointer to the xbps_handle struct.
+ * @param[in] path Alternative link path buffer.
+ * @param[in] pathsz Size of the \a path buffer.
+ * @param[in] target Alternative link target buffer.
+ * @param[in] targetsz The size of the \a target buffer.
+ *
+ * @return 0 on success, or a negative errno value otherwise.
+ */
+int xbps_alternative_link(const char *alternative, char *path, size_t pathsz,
+		char *target, size_t targetsz);
+
 /**@}*/
 
 /** @addtogroup plist */

@@ -41,6 +41,42 @@
  * These functions implement the alternatives framework.
  */
 
+int
+xbps_alternative_link(const char *alternative,
+		char *path, size_t pathsz,
+		char *target, size_t targetsz)
+{
+	const char *d = strchr(alternative, ':');
+	if (!d || d == alternative)
+		return -EINVAL;
+
+	assert(path);
+	if (alternative[0] == '/') {
+		if ((size_t)(d-alternative) >= pathsz)
+			return -ENOBUFS;
+		strncpy(path, alternative, d-alternative);
+		path[d-alternative] = '\0';
+	} else {
+		const char *p = strrchr(d+1, '/');
+		if (!p)
+			return -EINVAL;
+		if ((size_t)((p-d)+(p-alternative)-1) >= pathsz)
+			return -ENOBUFS;
+		strncpy(path, d+1, p-d);
+		strncpy(path+(p-d), alternative, d-alternative);
+		path[(p-d)+(d-alternative)] = '\0';
+	}
+	if (target != NULL) {
+		if (d[1] != '/') {
+			if (xbps_strlcpy(target, d+1, targetsz) >= targetsz)
+				return -ENOBUFS;
+		} else if (xbps_path_rel(target, targetsz, path, d+1) == -1) {
+			return -errno;
+		}
+	}
+	return 0;
+}
+
 static char *
 left(const char *str)
 {
