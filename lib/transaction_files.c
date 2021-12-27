@@ -683,46 +683,6 @@ pathcmp(const void *l1, const void *l2)
 	return (a->len < b->len) - (b->len < a->len);
 }
 
-static int
-alternative_link(const char *alternative,
-		char *linkpath, size_t linkpathsz)
-{
-	const char *p, *tok1 = alternative, *tok2;
-	for (;;) {
-		p = strchr(alternative, ':');
-		if (!p || p == alternative)
-			return -EINVAL;
-		if (p[-1] != '\\')
-			break;
-	}
-	tok2 = p+1;
-	if (tok1[0] == '/') {
-		size_t len = p - tok1;
-		int n;
-		if (len > INT_MAX)
-			return -EINVAL;
-		n = snprintf(linkpath, linkpathsz, "%.*s", (int)len, tok1);
-		if (n < 0 || n >= (int)linkpathsz)
-			return -ENOBUFS;
-	} else {
-		const char *d = strrchr(tok2, '/');
-		size_t len = p - tok1;
-		size_t dirlen;
-		int n;
-		if (len > INT_MAX)
-			return -EINVAL;
-		dirlen = d ? d - p : 0;
-		if (dirlen > INT_MAX)
-			return -EINVAL;
-		n = snprintf(linkpath, linkpathsz, "%.*s%.*s",
-		    (int)dirlen, tok2,
-		    (int)len, tok1);
-		if (n < 0 || n >= (int)linkpathsz)
-			return -ENOBUFS;
-	}
-	return 0;
-}
-
 struct alternative_changer {
 	const char *pkgname;
 	const char *pkgver;
@@ -762,7 +722,7 @@ register_alternative_links(struct xbps_handle *xhp,
 		int r;
 		if (!xbps_array_get_cstring_nocopy(alts, i, &alt))
 			return -EINVAL;
-		r = alternative_link(alt, linkpath, sizeof(linkpath));
+		r = xbps_alternative_link(alt, linkpath, sizeof(linkpath), NULL, 0);
 		if (r < 0) {
 			return r;
 		}
@@ -811,7 +771,7 @@ prune_alternative_links(struct xbps_handle *xhp,
 		int r;
 		if (!xbps_array_get_cstring_nocopy(alts, i, &alt))
 			return -EINVAL;
-		r = alternative_link(alt, linkpath, sizeof(linkpath));
+		r = xbps_alternative_link(alt, linkpath, sizeof(linkpath), NULL, 0);
 		if (r < 0) {
 			return r;
 		}
