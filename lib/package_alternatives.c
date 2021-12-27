@@ -283,13 +283,12 @@ switch_alt_group(struct xbps_handle *xhp, const char *grpn, const char *pkgn,
 	return create_symlinks(xhp, xbps_dictionary_get(pkgalts, grpn), grpn);
 }
 
-int
-xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
+int HIDDEN
+xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool update)
 {
 	xbps_array_t allkeys;
 	xbps_dictionary_t alternatives, pkg_alternatives;
 	const char *pkgver, *pkgname;
-	bool update = false;
 	int rv = 0;
 
 	assert(xhp);
@@ -304,8 +303,6 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
-
-	xbps_dictionary_get_bool(pkgd, "alternatives-update", &update);
 
 	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
@@ -490,7 +487,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *pkgname, const char *pkgve
 	xbps_object_release(allkeys);
 }
 
-int
+int HIDDEN
 xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
 	xbps_array_t allkeys;
