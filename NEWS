@@ -52,6 +52,10 @@ xbps-X.XX.X (2020-XX-XX):
 
  * xbps.d(5): describe ignorepkg more precisely. [chocimier]
 
+ * libxbps, xbps-install(1), xbps-remove(1), xbps-reconfigure(1),
+   xbps-alternatives(1): add `XBPS_SYSLOG` environment variable to overwrite
+   syslog configuration option. [duncaen]
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete

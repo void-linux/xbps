@@ -25,9 +25,10 @@
  */
 
 #include <sys/utsname.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+#include <strings.h>
 
 #include "xbps_api_impl.h"
 
@@ -43,7 +44,7 @@
 int
 xbps_init(struct xbps_handle *xhp)
 {
-	const char *native_arch = NULL;
+	const char *native_arch = NULL, *p;
 	int rv = 0;
 
 	assert(xhp != NULL);
@@ -151,16 +152,13 @@ xbps_init(struct xbps_handle *xhp)
 	if (xbps_path_clean(xhp->metadir) == -1)
 		return ENOTSUP;
 
-	xbps_dbg_printf("rootdir=%s\n", xhp->rootdir);
-	xbps_dbg_printf("metadir=%s\n", xhp->metadir);
-	xbps_dbg_printf("cachedir=%s\n", xhp->cachedir);
-	xbps_dbg_printf("confdir=%s\n", xhp->confdir);
-	xbps_dbg_printf("sysconfdir=%s\n", xhp->sysconfdir);
-	xbps_dbg_printf("syslog=%s\n", xhp->flags & XBPS_FLAG_DISABLE_SYSLOG ? "false" : "true");
-	xbps_dbg_printf("bestmatching=%s\n", xhp->flags & XBPS_FLAG_BESTMATCH ? "true" : "false");
-	xbps_dbg_printf("keepconf=%s\n", xhp->flags & XBPS_FLAG_KEEP_CONFIG ? "true" : "false");
-	xbps_dbg_printf("Architecture: %s\n", xhp->native_arch);
-	xbps_dbg_printf("Target Architecture: %s\n", xhp->target_arch ? xhp->target_arch : "(null)");
+	p = getenv("XBPS_SYSLOG");
+	if (p) {
+		if (strcasecmp(p, "true") == 0)
+			xhp->flags &= ~XBPS_FLAG_DISABLE_SYSLOG;
+		else if (strcasecmp(p, "false") == 0)
+			xhp->flags |= XBPS_FLAG_DISABLE_SYSLOG;
+	}
 
 	if (xhp->flags & XBPS_FLAG_DEBUG) {
 		const char *repodir;
