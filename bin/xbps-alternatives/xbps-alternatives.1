@@ -69,6 +69,20 @@ Default package database (0.38 format). Keeps track of installed packages and pr
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
 .El
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_ARCH
+Overrides
+.Xr uname 2
+machine result with this value.
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value.
+.It Sy XBPS_SYSLOG
+Overrides the
+.Xr xbps.d 5
+.Sy syslog=true|false
+configuration option.
+.El
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
 .Xr xbps-create 1 ,
