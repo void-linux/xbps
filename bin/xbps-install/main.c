@@ -238,7 +238,7 @@ main(int argc, char **argv)
 
 	/* Sync remote repository data and import keys from remote repos */
 	if (syncf && !drun) {
-		if ((rv = xbps_rpool_sync(&xh, NULL)) != 0)
+		if ((rv = xbps_rpool_sync(&xh)) != 0)
 			exit(rv);
 		rv = xbps_rpool_foreach(&xh, repo_import_key_cb, NULL);
 		if (rv != 0)

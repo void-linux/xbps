@@ -59,16 +59,12 @@ static SIMPLEQ_HEAD(rpool_head, xbps_repo) rpool_queue =
  */
 
 int
-xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
+xbps_rpool_sync(struct xbps_handle *xhp)
 {
 	const char *repouri = NULL;
 
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
-		/* If argument was set just process that repository */
-		if (uri && strcmp(repouri, uri))
-			continue;
-
 		if (xbps_repo_sync(xhp, repouri) == -1) {
 			xbps_dbg_printf(
 			    "[rpool] `%s' failed to fetch repository data: %s\n",
