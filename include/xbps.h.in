@@ -275,7 +275,7 @@ extern "C" {
 #endif
 
 /** @addtogroup initend */ 
-/*@{*/
+/**@{*/
 
 /**
  * @enum xbps_state_t
@@ -707,10 +707,10 @@ int xbps_init(struct xbps_handle *xhp);
  */
 void xbps_end(struct xbps_handle *xhp);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup configure */
-/*@{*/
+/**@{*/
 
 /**
  * Configure (or force reconfiguration of) a package.
@@ -736,10 +736,10 @@ int xbps_configure_pkg(struct xbps_handle *xhp, const char *pkgname,
  */
 int xbps_configure_packages(struct xbps_handle *xhp, xbps_array_t ignpkgs);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup download */
-/*@{*/
+/**@{*/
 
 /**
  * Download a file from a remote URL to current working directory.
@@ -812,7 +812,7 @@ int xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri,
  */
 const char *xbps_fetch_error_string(void);
 
-/*@}*/
+/**@}*/
 
 /**
  * @ingroup pkg_orphans
@@ -829,7 +829,7 @@ const char *xbps_fetch_error_string(void);
 xbps_array_t xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans);
 
 /** @addtogroup pkgdb */
-/*@{*/
+/**@{*/
 
 /**
  * Locks the pkgdb to allow a write transaction.
@@ -994,10 +994,10 @@ int xbps_pkg_exec_script(struct xbps_handle *xhp,
 			 const char *action,
 			 bool update);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup alternatives */
-/*@{*/
+/**@{*/
 
 /**
  * Sets all alternatives provided by this \a pkg, or only those
@@ -1031,10 +1031,10 @@ int xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
  */
 int xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup plist */
-/*@{*/
+/**@{*/
 
 /**
  * Executes a function callback (\a fn) per object in the proplib array \a array.
@@ -1173,10 +1173,10 @@ bool xbps_match_string_in_array(xbps_array_t array, const char *val);
  */
 xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict, const char *key);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup transaction */
-/*@{*/
+/**@{*/
 
 /**
  * Finds a package by name or by pattern and enqueues it into
@@ -1350,10 +1350,10 @@ xbps_trans_type_t xbps_transaction_pkg_type(xbps_dictionary_t pkg_repod);
 
 bool xbps_transaction_pkg_type_set(xbps_dictionary_t pkg_repod, xbps_trans_type_t type);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup plist_fetch */
-/*@{*/
+/**@{*/
 
 /**
  * Returns a buffer of a file stored in an archive locally or
@@ -1392,10 +1392,10 @@ int xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd);
  */
 xbps_dictionary_t xbps_archive_fetch_plist(const char *url, const char *p);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup repopool */
-/*@{*/
+/**@{*/
 
 /**
  * @struct xbps_repo xbps.h "xbps.h"
@@ -1570,10 +1570,10 @@ xbps_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
 					   const char *pattern,
 					   const char *plistf);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup repo */
-/*@{*/
+/**@{*/
 
 /**
  * Stores repository \a url into the repository pool.
@@ -1754,10 +1754,10 @@ xbps_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
  */
 int xbps_repo_key_import(struct xbps_repo *repo);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup archive_util */
-/*@{*/
+/**@{*/
 
 /**
  * Appends a file to the \a ar archive by using a memory buffer \a buf of
@@ -1777,10 +1777,10 @@ int xbps_archive_append_buf(struct archive *ar, const void *buf,
 		const size_t buflen, const char *fname, const mode_t mode,
 		const char *uname, const char *gname);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup pkgstates */
-/*@{*/
+/**@{*/
 
 /**
  * @enum pkg_state_t
@@ -1852,10 +1852,10 @@ int xbps_set_pkg_state_installed(struct xbps_handle *xhp,
  */
 int xbps_set_pkg_state_dictionary(xbps_dictionary_t dict, pkg_state_t state);
 
-/*@}*/
+/**@}*/
 
 /** @addtogroup util */
-/*@{*/
+/**@{*/
 
 /**
  * Removes a string object matching \a pkgname in
@@ -2334,7 +2334,7 @@ xbps_plist_array_from_file(struct xbps_handle *xhp, const char *fname);
 xbps_dictionary_t
 xbps_plist_dictionary_from_file(struct xbps_handle *xhp, const char *fname);
 
-/*@}*/
+/**@}*/
 
 #ifdef __cplusplus
 }
