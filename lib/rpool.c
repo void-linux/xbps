@@ -63,6 +63,9 @@ xbps_rpool_sync(struct xbps_handle *xhp)
 {
 	const char *repouri = NULL;
 
+	if (xbps_array_count(xhp->repositories) == 0)
+		return -ENOENT;
+
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
 		if (xbps_repo_sync(xhp, repouri) == -1) {

@@ -1486,8 +1486,8 @@ void xbps_rpool_release(struct xbps_handle *xhp);
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
  *
- * @return 0 on success, ENOTSUP if no repositories were found in
- * the configuration file.
+ * @return 0 on success or a negative errno otherwise.
+ * @retval -ENOENT There are no repositories to sync.
  */
 int xbps_rpool_sync(struct xbps_handle *xhp);
 
