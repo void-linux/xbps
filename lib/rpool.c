@@ -143,7 +143,7 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 	struct xbps_repo *repo = NULL;
 	const char *repouri = NULL;
 	int rv = 0;
-	bool foundrepo = false, done = false;
+	bool done = false;
 	unsigned int n = 0;
 
 	assert(fn != NULL);
@@ -161,13 +161,10 @@ again:
 			SIMPLEQ_INSERT_TAIL(&rpool_queue, repo, entries);
 			xbps_dbg_printf("[rpool] `%s' registered.\n", repouri);
 		}
-		foundrepo = true;
 		rv = (*fn)(repo, arg, &done);
 		if (rv != 0 || done)
 			break;
 	}
-	if (!foundrepo)
-		rv = ENOTSUP;
 
 	return rv;
 }

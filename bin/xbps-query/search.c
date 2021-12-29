@@ -242,7 +242,7 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 
 	if (repo_mode) {
 		rv = xbps_rpool_foreach(xhp, search_repo_cb, &sd);
-		if (rv != 0 && rv != ENOTSUP) {
+		if (rv != 0) {
 			xbps_error_printf("Failed to initialize rpool: %s\n",
 			    strerror(rv));
 			return rv;
