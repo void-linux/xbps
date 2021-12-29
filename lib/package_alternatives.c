@@ -415,7 +415,8 @@ prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
 	xbps_array_t array;
 	xbps_dictionary_t alternatives;
 	xbps_string_t kstr;
-	unsigned int grp_count;
+	unsigned int grp_count, depends_count;
+	uint64_t size = 0;
 	bool current = false;
 
 	xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_REMOVED, 0, NULL,
@@ -442,11 +443,15 @@ prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
 		return;
 	}
 
-	if (xbps_array_count(xbps_dictionary_get(repod, "run_depends")) == 0 &&
-	    xbps_array_count(xbps_dictionary_get(repod, "shlib-requires")) == 0) {
+	xbps_dictionary_get_uint64(repod, "installed_size", &size);
+	depends_count = xbps_array_count(xbps_dictionary_get(repod, "run_depends"));
+
+	if (size > 0 || depends_count == 0) {
 		/*
-		 * Empty dependencies indicate a removed package (pure meta),
-		 * use the first available group after ours has been pruned
+		 * Non-empty package is an ordinary package dropping alternatives.
+		 * Empty dependencies indicate a removed package (pure meta).
+		 *
+		 * Use the first available group after ours has been pruned
 		 */
 		xbps_array_get_cstring_nocopy(array, 0, &newpkg);
 		switch_alt_group(xhp, keyname, newpkg, NULL);
