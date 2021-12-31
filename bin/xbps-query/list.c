@@ -213,7 +213,7 @@ repo_list(struct xbps_handle *xhp)
 	int rv;
 
 	rv = xbps_rpool_foreach(xhp, repo_list_uri_cb, NULL);
-	if (rv != 0 && rv != ENOTSUP) {
+	if (rv != 0) {
 		fprintf(stderr, "Failed to initialize rpool: %s\n",
 		    strerror(rv));
 		return rv;
