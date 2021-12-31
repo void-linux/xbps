@@ -667,7 +667,7 @@ struct xbps_handle {
 	/**
 	 * @var native_arch
 	 *
-	 * Machine architecture, defaults to uname(2)::machine
+	 * Machine architecture, defaults to uname(2) machine
 	 * if XBPS_ARCH is not set from environment.
 	 */
 	char native_arch[64];
@@ -761,7 +761,7 @@ int xbps_fetch_file(struct xbps_handle *xhp, const char *uri,
  * @param[in] uri Remote URI string.
  * @param[in] flags Flags passed to libfetch's fetchXget().
  * @param[out] digest SHA256 digest buffer for the downloaded file or NULL.
- * @param[in] digestlen Size of \digest if specified; must be at least
+ * @param[in] digestlen Size of \a digest if specified; must be at least
  * XBPS_SHA256_DIGEST_SIZE.
  * 
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
@@ -1124,7 +1124,7 @@ bool xbps_match_pkgname_in_array(xbps_array_t array, const char *pkgname);
  * Match a package name/version in the specified array of strings with pkgnames.
  *
  * @param[in] array The proplib array to search on.
- * @param[in] pkgname The package name/version to match.
+ * @param[in] pkgver The package name/version to match.
  *
  * @return true on success, false otherwise and errno is set appropiately.
  */
@@ -1186,7 +1186,7 @@ xbps_object_iterator_t xbps_array_iter_from_dict(xbps_dictionary_t dict, const c
  * @param[in] xhp Pointer to the xbps_handle struct.
  * @param[in] pkg Package name, package/version or package pattern to match, i.e
  * `foo', `foo-1.0_1' or `foo>=1.2'.
- * @param[in] Force If true, package will be queued (if \a str matches)
+ * @param[in] force If true, package will be queued (if \a str matches)
  * even if package is already installed or in hold mode.
  *
  * @return 0 on success, otherwise an errno value.
@@ -1579,7 +1579,7 @@ xbps_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
  * Stores repository \a url into the repository pool.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] uri Repository URI to store.
+ * @param[in] url Repository URI to store.
  *
  * @return True on success, false otherwise.
  */
@@ -1589,7 +1589,7 @@ bool xbps_repo_store(struct xbps_handle *xhp, const char *url);
  * Removes repository \a url from the repository pool.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] uri Repository URI to remove.
+ * @param[in] url Repository URI to remove.
  *
  * @return True on success, false otherwise.
  */
@@ -1624,7 +1624,7 @@ void xbps_repo_unlock(int lockfd, char *lockfname);
  *
  * @return The matching repository object, NULL otherwise.
  */
-struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url);
+struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *uri);
 
 /**
  * Opens a staging repository and returns a xbps_repo object.
@@ -1634,7 +1634,7 @@ struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *url);
  *
  * @return The matching repository object, NULL otherwise.
  */
-struct xbps_repo *xbps_repo_stage_open(struct xbps_handle *xhp, const char *url);
+struct xbps_repo *xbps_repo_stage_open(struct xbps_handle *xhp, const char *uri);
 
 /**
  * Opens a repository and returns a xbps_repo object.
@@ -1644,7 +1644,7 @@ struct xbps_repo *xbps_repo_stage_open(struct xbps_handle *xhp, const char *url)
  *
  * @return The matching repository object, NULL otherwise.
  */
-struct xbps_repo *xbps_repo_public_open(struct xbps_handle *xhp, const char *url);
+struct xbps_repo *xbps_repo_public_open(struct xbps_handle *xhp, const char *uri);
 
 /**
  * Closes a repository object, its archive associated is
@@ -1655,7 +1655,7 @@ struct xbps_repo *xbps_repo_public_open(struct xbps_handle *xhp, const char *url
 void xbps_repo_close(struct xbps_repo *repo);
 
 /**
- * This calls \fn xbps_repo_close and releases all resources
+ * This calls xbps_repo_close() and releases all resources
  * associated with this repository object.
  *
  * @param[in] repo The repository object to release.
@@ -2050,8 +2050,8 @@ char *xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
 
 /**
  * Gets the name of a package string. Package strings are composed
- * by a @<pkgname@>/@<version@> pair and separated by the <em>minus</em>
- * sign, i.e <b>foo-2.0</b>.
+ * by a @<pkgname@>/@<version@> pair and separated by the *minus*
+ * sign, i.e `foo-2.0`.
  *
  * @param[out] dst Destination buffer to store result.
  * @param[in] len Length of \a dst.
@@ -2065,18 +2065,21 @@ bool xbps_pkg_name(char *dst, size_t len, const char *pkg);
  * Gets a the package name of a package pattern string specified by
  * the \a pattern argument.
  *
+ * Package patterns are composed of the package name and
+ * either a *equals* (`foo=2.0`) constraint or a *greater than* (`foo>2.0`) or
+ * *greater equals* (`foo>=2.0`) or *lower than* (`foo<2.0`) or *lower equals*
+ * (`foo<=2.0`) or a combination of both (`foo>=1.0<2.0`).
+ *
  * @param[out] dst Destination buffer to store result.
  * @param[in] len Length of \a dst.
- * @param[in] pattern A package pattern. Package patterns are composed
- * by looking at <b>'><='</b> to split components, i.e <b>foo>=2.0</b>,
- * <b>blah<1.0</b>, <b>blob==2.0</b>, etc.
+ * @param[in] pattern A package pattern.
  *
  * @return true on success, false otherwise.
  */
 bool xbps_pkgpattern_name(char *dst, size_t len, const char *pattern);
 
 /**
- * Gets the package version in a package string, i.e <b>foo-2.0</b>.
+ * Gets the package version in a package string, i.e `foo-2.0`.
  * 
  * @param[in] pkg Package string.
  *
@@ -2087,7 +2090,7 @@ const char *xbps_pkg_version(const char *pkg);
 
 /**
  * Gets the pkgname/version componentn of a binary package string,
- * i.e <b>foo-2.0_1.<arch>.xbps</b>.
+ * i.e `foo-2.0_1.<arch>.xbps`.
  *
  * @param[in] pkg Package string.
  *
@@ -2099,7 +2102,7 @@ char *xbps_binpkg_pkgver(const char *pkg);
 
 /**
  * Gets the architecture component of a binary package string,
- * i.e <b><pkgver>.<arch>.xbps</b>.
+ * i.e `<pkgver>.<arch>.xbps`.
  *
  * @param[in] pkg Package string.
  *
@@ -2124,12 +2127,13 @@ const char *xbps_pkgpattern_version(const char *pattern);
 /**
  * Package pattern matching.
  *
- * @param[in] pkgver Package name/version, i.e `foo-1.0'.
- * @param[in] pattern Package pattern to match against \a pkgver.
  * There are 3 strategies for version matching:
  *  - simple compare: pattern equals to pkgver.
  *  - shell wildcards: see fnmatch(3).
  *  - relational dewey matching: '>' '<' '>=' '<='.
+ *
+ * @param[in] pkgver Package name/version, i.e `foo-1.0'.
+ * @param[in] pattern Package pattern to match against \a pkgver.
  *
  * @return 1 if \a pkgver is matched against \a pattern, 0 if no match.
  */
@@ -2138,7 +2142,7 @@ int xbps_pkgpattern_match(const char *pkgver, const char *pattern);
 /**
  * Gets the package version revision in a package string.
  *
- * @param[in] pkg Package string, i.e <b>foo-2.0_1</b>.
+ * @param[in] pkg Package string, i.e `foo-2.0_1`.
  *
  * @return A string with the revision number, NULL if it couldn't
  * find the revision component.
@@ -2179,10 +2183,30 @@ bool xbps_pkg_arch_match(struct xbps_handle *xhp, const char *orig, const char *
 int xbps_humanize_number(char *buf, int64_t bytes);
 
 /**
- * Wrappers for strlcat() and strlcpy().
+ * Append the string \a src to the end of \a dst.
+ *
+ * @param[out] dst Buffer to store the resulting string.
+ * @param[in] src Source string.
+ * @param[in] dstsize Size of the \a dst buffer.
+ *
+ * @return The total length of the created string, if the return
+ * value is >= \a dstsize, the output string has been truncated.
  */
-size_t xbps_strlcat(char *dest, const char *src, size_t siz);
-size_t xbps_strlcpy(char *dest, const char *src, size_t siz);
+size_t xbps_strlcat(char *dst, const char *src, size_t dstsize);
+
+/**
+ * Copy up to \a dstsize - 1 from the string \a src to \a dest,
+ * NUL-terminating the result if \a dstsize is not 0.
+ *
+ * @param[out] dst Buffer to store the resulting string.
+ * @param[in] src Source string.
+ * @param[in] dstsize Size of the \a dst buffer.
+ *
+ * @return The total length of the created string, if the return
+ * value is >= \a dstsize, the output string has been truncated.
+ */
+size_t xbps_strlcpy(char *dst, const char *src, size_t dstsize);
+
 /**
  * Tests if pkgver is reverted by pkg
  *
@@ -2273,6 +2297,7 @@ ssize_t xbps_path_join(char *dst, size_t len, ...);
  *
  * @param[out] dst Destination buffer to store result.
  * @param[in] len Length of \a dst.
+ * @param[in] suffix Suffix to append.
  *
  * @return The length of the path or -1 on error.
  */
@@ -2283,6 +2308,7 @@ ssize_t xbps_path_append(char *dst, size_t len, const char *suffix);
  *
  * @param[out] dst Destination buffer to store result.
  * @param[in] len Length of \a dst.
+ * @param[in] prefix Prefix to prepend.
  *
  * @return The length of the path or -1 on error.
  */
@@ -2313,7 +2339,7 @@ char *xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char 
 bool xbps_patterns_match(xbps_array_t patterns, const char *path);
 
 /**
- * Internalizes a plist file declared in \f and returns a proplib array.
+ * Internalizes a plist file declared in \a fname and returns a proplib array.
  *
  * @param[in] xhp The pointer to an xbps_handle struct.
  * @param[in] fname The file path.
@@ -2324,7 +2350,7 @@ xbps_array_t
 xbps_plist_array_from_file(struct xbps_handle *xhp, const char *fname);
 
 /**
- * Internalizes a plist file declared in \f and returns a proplib dictionary.
+ * Internalizes a plist file declared in \a fname and returns a proplib dictionary.
  *
  * @param[in] xhp The pointer to an xbps_handle struct.
  * @param[in] fname The file path.
