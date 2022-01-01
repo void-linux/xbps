@@ -74,46 +74,47 @@ store_virtualpkg(struct xbps_handle *xhp, const char *path, size_t line, char *v
 	return 1;
 }
 
-static void
+static int
 store_preserved_file(struct xbps_handle *xhp, const char *file)
 {
+	char buf[PATH_MAX];
 	glob_t globbuf;
-	char *p = NULL, *rfile = NULL;
-	size_t len;
 	int rv = 0;
+	/*
+	 * XXX: the globbing could be moved to transaction_files.c
+	 * so that files are first checked against preserved patterns
+	 * and then instead of globbing we just check if the file exists
+	 * if it matches.
+	 */
 
 	if (xhp->preserved_files == NULL) {
 		xhp->preserved_files = xbps_array_create();
-		assert(xhp->preserved_files);
+		if (!xhp->preserved_files)
+			return -errno;
 	}
 
-	rfile = xbps_xasprintf("%s%s", xhp->rootdir, file);
+	if (xbps_path_join(buf, sizeof(buf), xhp->rootdir, file, (char *)NULL) == -1)
+		return -errno;
 
-	rv = glob(rfile, 0, NULL, &globbuf);
+	rv = glob(buf, 0, NULL, &globbuf);
 	if (rv == GLOB_NOMATCH) {
-		if (xbps_match_string_in_array(xhp->preserved_files, file))
-			goto out;
-		xbps_array_add_cstring(xhp->preserved_files, file);
-		xbps_dbg_printf(xhp, "Added preserved file: %s\n", file);
+		rv = 0;
 		goto out;
 	} else if (rv != 0) {
+		rv = -errno;
 		goto out;
 	}
 	for (size_t i = 0; i < globbuf.gl_pathc; i++) {
-		if (xbps_match_string_in_array(xhp->preserved_files, globbuf.gl_pathv[i]))
-			continue;
-
-		len = strlen(globbuf.gl_pathv[i]) - strlen(xhp->rootdir) + 1;
-		p = malloc(len);
-		assert(p);
-		xbps_strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
-		xbps_array_add_cstring(xhp->preserved_files, p);
+		const char *p = globbuf.gl_pathv[i];
+		if (strcmp(xhp->rootdir, "/") != 0)
+			p += strlen(xhp->rootdir);
+		if (!xbps_array_add_cstring(xhp->preserved_files, p))
+			return -errno;
 		xbps_dbg_printf(xhp, "Added preserved file: %s (expanded from %s)\n", p, file);
-		free(p);
 	}
 out:
 	globfree(&globbuf);
-	free(rfile);
+	return rv;
 }
 
 static bool
@@ -362,7 +363,11 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 			rv = 0;
 			break;
 		case KEY_PRESERVE:
-			store_preserved_file(xhp, val);
+			rv = store_preserved_file(xhp, val);
+			if (rv < 0) {
+				rv = -rv;
+				break;
+			}
 			break;
 		case KEY_KEEPCONF:
 			if (strcasecmp(val, "true") == 0) {
@@ -414,7 +419,8 @@ xbps_conf_init(struct xbps_handle *xhp)
 
 	assert(xhp);
 	seen = xbps_dictionary_create();
-	assert(seen);
+	if (!seen)
+		return errno;
 
 	if (*xhp->confdir) {
 		xbps_dbg_printf(xhp, "Processing configuration directory: %s\n", xhp->confdir);
