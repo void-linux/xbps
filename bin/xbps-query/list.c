@@ -216,18 +216,17 @@ repo_list_uri_err(const char *repouri)
 int
 repo_list(struct xbps_handle *xhp)
 {
-	struct xbps_repo *repo = NULL;
-	const char *repouri = NULL;
-
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+		const char *repouri = NULL;
+		struct xbps_repo *repo;
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
 		repo = xbps_repo_open(xhp, repouri);
-		if (repo) {
-			repo_list_uri(repo);
-			xbps_repo_close(repo);
-		} else {
+		if (!repo) {
 			repo_list_uri_err(repouri);
+			continue;
 		}
+		repo_list_uri(repo);
+		xbps_repo_release(repo);
 	}
 	return 0;
 }
