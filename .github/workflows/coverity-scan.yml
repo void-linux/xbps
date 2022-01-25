@@ -6,7 +6,10 @@ on:
 
 jobs:
   latest:
+    if: github.repository == 'void-linux/xbps'
     runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
     steps:
 
       - name: Setup container
@@ -21,8 +24,6 @@ jobs:
           wget -q https://scan.coverity.com/download/linux64 --post-data "token=$TOKEN&project=void-linux%2Fxbps" -O cov-analysis-linux64.tar.gz
           mkdir cov-analysis-linux64
           tar xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
-        env:
-          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
 
       - name: Configure and build in voidlinux/voilinux container
         run: |
@@ -44,5 +45,3 @@ jobs:
             --form version=trunk \
             --form description="github action coverity scan" \
             https://scan.coverity.com/builds?project=void-linux%2Fxbps
-        env:
-          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
