@@ -6,7 +6,6 @@ on:
 
 jobs:
   latest:
-    if: github.repository == 'void-linux/xbps'
     runs-on: ubuntu-latest
     env:
       TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
