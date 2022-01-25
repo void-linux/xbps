@@ -21,6 +21,9 @@ list_repos_body() {
 	cd ..
 	output="$(xbps-query -C empty.conf -i --repository=some_repo --repository=vanished_repo -L | tr -d '\n')"
 	atf_check_equal "$output" "    2 ${PWD}/some_repo (RSA unsigned)	-1 vanished_repo (RSA maybe-signed)"
+
+	output="$(xbps-query -C empty.conf -i --repository=https://localhost/wtf -L | tr -d '\n')"
+	atf_check_equal "$output" "    -1 https://localhost/wtf (RSA maybe-signed)"
 }
 
 atf_init_test_cases() {
