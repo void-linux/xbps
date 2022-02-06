@@ -327,6 +327,54 @@ ATF_TC_BODY(config_trim_values, tc)
 	ATF_REQUIRE_STREQ(repo, "2");
 }
 
+ATF_TC(config_no_trailing_newline);
+ATF_TC_HEAD(config_no_trailing_newline, tc)
+{
+	atf_tc_set_md_var(tc, "descr", "Test configuration files without trailing newline");
+}
+
+ATF_TC_BODY(config_no_trailing_newline, tc)
+{
+	struct xbps_handle xh;
+	const char *tcsdir, *repo;
+	char *buf, *buf2, pwd[PATH_MAX];
+	int ret;
+
+	/* get test source dir */
+	tcsdir = atf_tc_get_config_var(tc, "srcdir");
+
+	memset(&xh, 0, sizeof(xh));
+	buf = getcwd(pwd, sizeof(pwd));
+
+	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
+	ATF_REQUIRE_EQ((ret >= 0), 1);
+	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
+	ret = snprintf(xh.sysconfdir, sizeof(xh.sysconfdir), "%s/sys-xbps.d", pwd);
+	ATF_REQUIRE_EQ((ret >= 0), 1);
+	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.sysconfdir)), 1);
+
+	ATF_REQUIRE_EQ(xbps_mkpath(xh.confdir, 0755), 0);
+	ATF_REQUIRE_EQ(xbps_mkpath(xh.sysconfdir, 0755), 0);
+
+	buf = xbps_xasprintf("%s/no-trailing-nl.cf", tcsdir);
+	buf2 = xbps_xasprintf("%s/xbps.d/1.conf", pwd);
+	ATF_REQUIRE_EQ(symlink(buf, buf2), 0);
+	free(buf);
+	free(buf2);
+
+	xh.flags = XBPS_FLAG_DEBUG;
+	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
+
+	/* should contain one repository */
+	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 1);
+
+	/* should contain repository=test */
+	ATF_REQUIRE_EQ(xbps_array_get_cstring_nocopy(xh.repositories, 0, &repo), true);
+	ATF_REQUIRE_STREQ(repo, "test");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, config_include_test);
@@ -335,6 +383,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, config_include_absolute_glob);
 	ATF_TP_ADD_TC(tp, config_masking);
 	ATF_TP_ADD_TC(tp, config_trim_values);
+	ATF_TP_ADD_TC(tp, config_no_trailing_newline);
 
 	return atf_no_error();
 }
