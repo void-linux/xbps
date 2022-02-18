@@ -162,6 +162,7 @@ _xbps_query() {
 		{-H,--list-hold-pkgs}'[List packages on hold state]' \
 		{-m,--list-manual-pkgs}'[List packages installed explicitly]' \
 		{-O,--list-orphans}'[List package orphans]' \
+		--list-repolock-pkgs'[List packages in repolock mode]' \
 		{-o,--ownedby}'[Search for package files]:package file:_files' \
 		{-S,--show}'[Show information]:package:_xbps_all_packages' \
 		{-s,--search}'[Search for packages]:search string: ' \
