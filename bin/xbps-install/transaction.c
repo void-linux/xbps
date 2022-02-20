@@ -419,6 +419,8 @@ proceed:
 	 */
 	if ((rv = show_transaction_sizes(trans, maxcols)) != 0)
 		goto out;
+
+	fflush(stdout);
 	/*
 	 * Ask interactively (if -y not set).
 	 */
