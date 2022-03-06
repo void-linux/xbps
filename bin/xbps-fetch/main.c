@@ -166,7 +166,7 @@ main(int argc, char **argv)
 			    progname, argv[i], xbps_fetch_error_string());
 			failure = true;
 			continue;
-		} else if (rv == -1) {
+		} else if (rv == 0) {
 			fprintf(stderr, "%s: file is identical with remote.\n", argv[i]);
 			if (shasum) {
 				if (!xbps_file_sha256_raw(digest, sizeof digest, filename)) {
