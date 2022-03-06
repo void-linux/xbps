@@ -1,0 +1,4 @@
+syntax("kyuafile", 1)
+
+test_suite("xbps-fetch")
+atf_test_program{name="fetch_test"}
