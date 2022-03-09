@@ -183,12 +183,12 @@ search_array_cb(struct xbps_handle *xhp UNUSED,
 	case XBPS_TYPE_BOOL: {
 		print_prop_search_result(sd, pkgver, "true");
 	} break;
+	/* unsupported property types */
 	case XBPS_TYPE_DATA:
 	case XBPS_TYPE_DICTIONARY:
 	case XBPS_TYPE_DICT_KEYSYM:
 	case XBPS_TYPE_UNKNOWN:
-		fprintf(stderr, "unsupported property type found in pkg: %s\n", pkgver);
-		exit(EXIT_FAILURE);
+		break;
 	}
 	return 0;
 }
