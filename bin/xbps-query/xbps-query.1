@@ -101,6 +101,9 @@ This ignores the existing on-disk repository archives in rootdir.
 .It Fl p, Fl -property Ar PROP[,...]
 Only match this package property.
 Multiple properties can be specified by delimiting them with commas.
+For a list of available properties, see the
+.Sx PROPERTIES
+section.
 .It Fl R
 Enable repository mode.
 This mode explicitly looks in repositories, rather
@@ -273,6 +276,78 @@ expression wins.
 This expects an absolute path.
 This mode only works with repositories.
 .El
+.Sh PROPERTIES
+This is the list of a packages properties.
+Note that not all properties are available for all packages.
+.Pp
+.Bl -tag -compact -width 17m
+.It Ic alternatives
+group and file alternatives provided by the package.
+.It Ic architecture
+target architecture the package was build for.
+.It Ic archive-compression-type
+compression algorithm used for the package.
+.It Ic automatic-install
+returns "yes" if the package was installed automatically.
+.It Ic build-date
+date when the package was built.
+.It Ic build-options
+enabled options the package was built with.
+.It Ic conf_files
+configuration file(s) installed by the package.
+.It Ic conflicts
+other packages this package conflicts with.
+.It Ic filename-sha256
+hash of the package file.
+.It Ic filename-size
+size of the package file.
+.It Ic homepage
+Internet page of the package project.
+.It Ic install-date
+date when the package was installed.
+.It Ic install-msg
+post-install message provided by the package.
+.It Ic install-script
+script used for installing the package.
+.It Ic installed_size
+total size of files installed by the package.
+.It Ic license
+license(s) for distributing the package.
+.It Ic maintainer
+contact of the maintainer of the package.
+.It Ic metafile-sha256
+hash of the plist package files metadata.
+.It Ic pkgver
+version of the package.
+.It Ic preserve
+returns "yes" if the package will not be removed automatically on update.
+.It Ic provides
+abstract facility provided by the package.
+.It Ic remove-msg
+post-remove message provided by the package.
+.It Ic remove-script
+script used for removing the package.
+.It Ic replaces
+other packages that the package replaces.
+.It Ic repolock
+returns "yes" if the package only accepts updates from original repository.
+.It Ic repository
+repository where the package was instaled from.
+.It Ic reverts
+previous provided version this package replaces.
+.It Ic run_depends
+other runtime dependency packages for the package.
+.It Ic shlib-provides
+shared libraries provided by the package.
+.It Ic shlib-requires
+shared libraries required by the package.
+.It Ic short_desc
+short description of the package.
+.It Ic source-revisions
+commit hash of package last change from the void-packages repository.
+.It Ic state
+installation state of the package.
+.Be
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
 .It Sy XBPS_ARCH
