@@ -285,14 +285,12 @@ Note that not all properties are available for all packages.
 group and file alternatives provided by the package.
 .It Ic architecture
 target architecture the package was build for.
-.It Ic archive-compression-type
-compression algorithm used for the package.
 .It Ic automatic-install
 returns "yes" if the package was installed automatically.
-.It Ic build-date
-date when the package was built.
 .It Ic build-options
 enabled options the package was built with.
+.It Ic changelog
+changelog URL for the package.
 .It Ic conf_files
 configuration file(s) installed by the package.
 .It Ic conflicts
@@ -301,8 +299,10 @@ other packages this package conflicts with.
 hash of the package file.
 .It Ic filename-size
 size of the package file.
+.It Ic hold
+returns "yes" if the package is held and will not be updated.
 .It Ic homepage
-Internet page of the package project.
+home URL of the package project.
 .It Ic install-date
 date when the package was installed.
 .It Ic install-msg
@@ -317,6 +317,8 @@ license(s) for distributing the package.
 contact of the maintainer of the package.
 .It Ic metafile-sha256
 hash of the plist package files metadata.
+.It Ic pkgname
+name of the package.
 .It Ic pkgver
 version of the package.
 .It Ic preserve
@@ -332,7 +334,7 @@ other packages that the package replaces.
 .It Ic repolock
 returns "yes" if the package only accepts updates from original repository.
 .It Ic repository
-repository where the package was instaled from.
+repository where the package was installed from.
 .It Ic reverts
 previous provided version this package replaces.
 .It Ic run_depends
@@ -347,7 +349,9 @@ short description of the package.
 commit hash of package last change from the void-packages repository.
 .It Ic state
 installation state of the package.
-.Be
+.It Ic tags
+list of categories the package is associated with.
+.El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
 .It Sy XBPS_ARCH
