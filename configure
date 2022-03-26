@@ -147,7 +147,7 @@ if [ -z "$OS" ]; then
 	KERNEL=${REST%%-*}
 fi
 
-echo "Configuring xbps for ... $OS"
+echo "Configuring xbps for... $OS"
 rm -f $CONFIG_MK
 echo "# Common vars used by XBPS on $OS." >$CONFIG_MK
 
@@ -169,7 +169,7 @@ ETCDIR="${SYSCONFDIR}/xbps.d"
 echo "ETCDIR ?= $ETCDIR" >>$CONFIG_MK
 
 if [ -z "$CC" ]; then
-	printf "Looking for compiler ... "
+	printf "Looking for compiler... "
 	for b in $TARGET- ""; do
 		for cc in gcc icc clang tcc pcc cc; do
 			if type $b$cc >/dev/null 2>&1; then
@@ -241,7 +241,7 @@ check_compiler_flag()
 
 	[ -z "$var" ] && var="CFLAGS"
 
-	printf "Checking if $CC supports -${mode}${flag} ... "
+	printf "Checking if $CC supports -${mode}${flag}... "
 	cat <<EOF >_ccflag.c
 #include <stdio.h>
 int main(void) { return 0; }
@@ -382,7 +382,7 @@ echo "CFLAGS +=		-pthread" >>$CONFIG_MK
 # Check for GCC atomic builtins.
 #
 func=atomic
-printf "Checking for GCC atomic builtins ... "
+printf "Checking for GCC atomic builtins... "
 cat <<EOF >_$func.c
 int main() {
 	volatile unsigned long val = 1;
@@ -407,7 +407,7 @@ fi
 # Check for vasprintf().
 #
 func=vasprintf
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 if test -n "$HAVE_VASPRINTF"; then
 	echo "yes (cached)."
 else
@@ -440,7 +440,7 @@ fi
 # Check for strcasestr().
 #
 func=strcasestr
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF >_$func.c
 #define _GNU_SOURCE
 #include <string.h>
@@ -464,7 +464,7 @@ rm -f _$func _$func.c
 # Check for strlcpy().
 #
 func=strlcpy
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF >_$func.c
 #include <string.h>
 int main(void) {
@@ -486,7 +486,7 @@ rm -f _$func.c _$func
 #
 # Check for strlcat().
 func=strlcat
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF > _$func.c
 #include <string.h>
 int main(void) {
@@ -508,7 +508,7 @@ rm -f _$func.c _$func
 #
 # Check for strnstr().
 func=strnstr
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF > _$func.c
 #include <string.h>
 int main(void) {
@@ -529,7 +529,7 @@ rm -f _$func.c _$func
 #
 # Check for humanize_number().
 func=humanize_number
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF > _$func.c
 #include <stdio.h>
 #include <util.h>
@@ -552,7 +552,7 @@ rm -f _$func.c _$func
 # Check for rbtree_ininit().
 #
 func=rb_tree_init
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF > _$func.c
 #include <sys/rbtree.h>
 int main(void) {
@@ -573,7 +573,7 @@ rm -f _$func.c _$func
 # Check for fdatasync().
 #
 func=fdatasync
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF > _$func.c
 #include <unistd.h>
 int main(void) {
@@ -593,7 +593,7 @@ rm -f _$func.c _$func
 # Check for clock_gettime(3).
 #
 func=clock_gettime
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF > _$func.c
 #include <time.h>
 int main(void) {
@@ -616,7 +616,7 @@ rm -f _$func.c _$func
 # zlib is required.
 #
 func=InflateInit2
-printf "Checking for $func() ... "
+printf "Checking for $func()... "
 cat <<EOF > _$func.c
 #include <zlib.h>
 int main(void) {
@@ -648,7 +648,7 @@ fi
 #
 if [ -n "$BUILD_API_DOCS" ]; then
 	echo "Building API documentation via doxygen and graphviz."
-	printf "Checking for doxygen ..."
+	printf "Checking for doxygen... "
 	DOXYGEN_BIN=$(_which doxygen)
 	if [ -z "$DOXYGEN_BIN" ]; then
 		echo "not found, exiting."
@@ -656,7 +656,7 @@ if [ -n "$BUILD_API_DOCS" ]; then
 	else
 		echo yes
 	fi
-	printf "Checking for graphviz ... "
+	printf "Checking for graphviz... "
 	DOT_BIN=$(_which dot)
 	if [ -z "$DOT_BIN" ]; then
 		echo "dot(1) command not found, exiting."
@@ -674,7 +674,7 @@ fi
 #
 # pkg-config is required to know dependencies for static linking.
 #
-printf "Checking for pkg-config ... "
+printf "Checking for pkg-config... "
 PKGCONFIG_BIN=$(_which pkg-config)
 if [ -z "$PKGCONFIG_BIN" ]; then
 	echo "not found, exiting."
@@ -688,7 +688,7 @@ fi
 #
 LIBARCHIVE_REQVER=3.3.3
 
-printf "Checking for libarchive >= ${LIBARCHIVE_REQVER}  via pkg-config ... "
+printf "Checking for libarchive >= ${LIBARCHIVE_REQVER}  via pkg-config... "
 if ! pkg-config --atleast-version=${LIBARCHIVE_REQVER} libarchive; then
 	echo "libarchive.pc file not found, exiting."
 	exit 1
@@ -703,7 +703,7 @@ fi
 #
 # libssl with pkg-config support is required.
 #
-printf "Checking for libssl via pkg-config ... "
+printf "Checking for libssl via pkg-config... "
 if pkg-config --exists 'libssl' && ! pkg-config --exists libtls ; then
 	echo "found OpenSSL version $(pkg-config --modversion libssl)."
 elif pkg-config --exists libssl libtls; then
@@ -731,7 +731,7 @@ fi
 # If --enable-tests enabled, check for ATF >= 0.15 via pkg-config.
 #
 if [ "$BUILD_TESTS" = "yes" ]; then
-	printf "Checking for ATF via pkg-config ... "
+	printf "Checking for ATF via pkg-config... "
 	if ! pkg-config --atleast-version=0.15 atf-c; then
 		echo "ATF >= 0.15 not found in PKG_CONFIG_LIBDIR, exiting."
 		exit 1

@@ -66,7 +66,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		printf("[*] pkgdb upgrade in progress, please wait...\n");
 		break;
 	case XBPS_STATE_REPOSYNC:
-		printf("[*] Updating repository `%s' ...\n", xscd->arg);
+		printf("[*] Updating repository `%s'...\n", xscd->arg);
 		break;
 	case XBPS_STATE_TRANS_ADDPKG:
 		if (xscd->xhp->flags & XBPS_FLAG_VERBOSE)
@@ -83,16 +83,16 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 			printf("%s\n", xscd->desc);
 		break;
 	case XBPS_STATE_REMOVE:
-		printf("%s: removing ...\n", xscd->arg);
+		printf("%s: removing...\n", xscd->arg);
 		break;
 	case XBPS_STATE_CONFIGURE:
-		printf("%s: configuring ...\n", xscd->arg);
+		printf("%s: configuring...\n", xscd->arg);
 		break;
 	case XBPS_STATE_CONFIGURE_DONE:
 		/* empty */
 		break;
 	case XBPS_STATE_UNPACK:
-		printf("%s: unpacking ...\n", xscd->arg);
+		printf("%s: unpacking...\n", xscd->arg);
 		break;
 	case XBPS_STATE_INSTALL:
 	case XBPS_STATE_DOWNLOAD:
@@ -105,9 +105,9 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		newver = xbps_pkg_version(xscd->arg);
 		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &instver);
-		printf("%s: updating to %s ...\n", instver, newver);
+		printf("%s: updating to %s...\n", instver, newver);
 		if (slog) {
-			syslog(LOG_NOTICE, "%s: updating to %s ... "
+			syslog(LOG_NOTICE, "%s: updating to %s... "
 			    "(rootdir: %s)\n", instver, newver,
 			    xscd->xhp->rootdir);
 		}

@@ -64,9 +64,9 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbd UNUSED)
 	switch (xscd->state) {
 	/* notifications */
 	case XBPS_STATE_CONFIGURE:
-		printf("%s: configuring ...\n", xscd->arg);
+		printf("%s: configuring...\n", xscd->arg);
 		if (slog)
-			syslog(LOG_NOTICE, "%s: configuring ...", xscd->arg);
+			syslog(LOG_NOTICE, "%s: configuring...", xscd->arg);
 		break;
 	case XBPS_STATE_CONFIGURE_DONE:
 		printf("%s: configured successfully.\n", xscd->arg);

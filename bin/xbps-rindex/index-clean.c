@@ -59,7 +59,7 @@ idx_cleaner_cb(struct xbps_handle *xhp,
 	xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
-	xbps_dbg_printf(xhp, "%s: checking %s [%s] ...\n", info->repourl, pkgver, arch);
+	xbps_dbg_printf(xhp, "%s: checking %s [%s]...\n", info->repourl, pkgver, arch);
 
 	filen = xbps_xasprintf("%s/%s.%s.xbps", info->repourl, pkgver, arch);
 	if (access(filen, R_OK) == -1) {
