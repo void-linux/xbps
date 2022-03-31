@@ -236,7 +236,7 @@ err:
 
 int
 xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
-		const char *group)
+		const char *group, int *err)
 {
 	xbps_array_t allkeys;
 	xbps_dictionary_t alternatives, pkg_alternatives, pkgd, prevpkgd, prevpkg_alts;
@@ -251,15 +251,21 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 		return ENOENT;
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkgname);
-	if (pkgd == NULL)
+	if (pkgd == NULL) {
+		*err = 1;
 		return ENOENT;
+	}
 
 	pkg_alternatives = xbps_dictionary_get(pkgd, "alternatives");
-	if (!xbps_dictionary_count(pkg_alternatives))
+	if (!xbps_dictionary_count(pkg_alternatives)) {
+		*err = 2;
 		return ENOENT;
+	}
 
-	if (group && !xbps_dictionary_get(pkg_alternatives, group))
+	if (group && !xbps_dictionary_get(pkg_alternatives, group)) {
+		*err = 3;
 		return ENOENT;
+	}
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 

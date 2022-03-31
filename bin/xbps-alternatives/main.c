@@ -176,7 +176,7 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	const char *confdir, *rootdir, *group, *pkg;
-	int c, rv, flags = 0;
+	int c, rv, set_err = 0, flags = 0;
 	bool list_mode = false, set_mode = false;
 
 	confdir = rootdir = group = pkg = NULL;
@@ -246,8 +246,21 @@ main(int argc, char **argv)
 			fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
 			exit(EXIT_FAILURE);
 		}
-		if ((rv = xbps_alternatives_set(&xh, pkg, group)) == 0)
-			rv = xbps_pkgdb_update(&xh, true, false);
+		if ((rv = xbps_alternatives_set(&xh, pkg, group, &set_err)) == 0){
+			rv = xbps_pkgdb_update(&xh, true, false);}
+		else switch (set_err)
+		{
+			case 1:
+				xbps_error_printf("Couldn't find package %s\n", pkg);
+				break;
+			case 2:
+				xbps_error_printf("Package %s has no alternatives\n", pkg);
+				break;
+			case 3:
+				xbps_error_printf("Package %s not in group %s\n", pkg, group);
+				break;
+		}
+
 	} else if (list_mode) {
 		/* list alternative groups */
 		rv = list_alternatives(&xh, pkg, group);
