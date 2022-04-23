@@ -32,6 +32,7 @@
 #include <syslog.h>
 
 #include <xbps.h>
+#include "defs.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
@@ -43,9 +44,11 @@ usage(bool fail)
 	    " -C, --config <dir>   Path to confdir (xbps.d)\n"
 	    " -d, --debug          Debug mode shown to stderr\n"
 	    " -f, --force          Force reconfiguration\n"
+	    "     --fulldeptree    Full dependency tree for -x/--deps\n"
 	    " -h, --help           Show usage\n"
 	    " -i, --ignore PKG     Ignore PKG with -a/--all\n"
 	    " -r, --rootdir <dir>  Full path to rootdir\n"
+	    " -x, --deps           Also process dependencies for each package\n"
 	    " -v, --verbose        Verbose messages\n"
 	    " -V, --version        Show XBPS version\n");
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -90,7 +93,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbd UNUSED)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "aC:dfhi:r:Vv";
+	const char *shortopts = "aC:dfhi:r:xVv";
 	const struct option longopts[] = {
 		{ "all", no_argument, NULL, 'a' },
 		{ "config", required_argument, NULL, 'C' },
@@ -99,15 +102,17 @@ main(int argc, char **argv)
 		{ "help", no_argument, NULL, 'h' },
 		{ "ignore", required_argument, NULL, 'i' },
 		{ "rootdir", required_argument, NULL, 'r' },
+		{ "deps", no_argument, NULL, 'x' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "fulldeptree", no_argument, NULL, 1 },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
 	const char *confdir = NULL, *rootdir = NULL;
 	int c, i, rv, flags = 0;
-	bool all = false;
-	xbps_array_t ignpkgs = NULL;
+	bool all = false, rdeps = false, fulldeptree = false;
+	xbps_array_t ignpkgs = NULL, deps = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -135,12 +140,18 @@ main(int argc, char **argv)
 		case 'r':
 			rootdir = optarg;
 			break;
+		case 'x':
+			rdeps = true;
+			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case 1:
+			fulldeptree = true;
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -168,7 +179,7 @@ main(int argc, char **argv)
 	}
 
 	if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
-		fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
+		xbps_error_printf("failed to lock pkgdb: %s\n", strerror(rv));
 		exit(EXIT_FAILURE);
 	}
 
@@ -176,10 +187,43 @@ main(int argc, char **argv)
 		rv = xbps_configure_packages(&xh, ignpkgs);
 	} else {
 		for (i = optind; i < argc; i++) {
-			rv = xbps_configure_pkg(&xh, argv[i], true, false);
+			const char* pkg = argv[i];
+			if (rdeps) {
+				rv = find_pkg_deps(&xh, pkg, fulldeptree, &deps);
+				if (rv != 0) {
+					xbps_error_printf("failed to collect dependencies for "
+						"`%s': %s\n", pkg, strerror(rv));
+				}
+				for (unsigned int j = 0; j < xbps_array_count(deps); j++) {
+					const char *pkgdep = NULL;
+					char pkgname[XBPS_NAME_SIZE];
+					xbps_array_get_cstring_nocopy(deps, j, &pkgdep);
+
+					if (fulldeptree) {
+						if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgdep)) {
+							xbps_error_printf(
+								"unable to get package name for dependency `%s'\n", pkgdep);
+							exit(EXIT_FAILURE);
+						}
+					} else {
+						if (!xbps_pkgpattern_name(pkgname, sizeof(pkgname), pkgdep)) {
+							xbps_error_printf(
+								"unable to get package name for dependency `%s'\n", pkgdep);
+							exit(EXIT_FAILURE);
+						}
+					}
+
+					rv = xbps_configure_pkg(&xh, pkgname, true, false);
+					if (rv != 0) {
+						xbps_error_printf("failed to reconfigure "
+							"`%s': %s\n", pkgname, strerror(rv));
+					}
+				}
+			}
+			rv = xbps_configure_pkg(&xh, pkg, true, false);
 			if (rv != 0) {
-				fprintf(stderr, "Failed to reconfigure "
-				    "`%s': %s\n", argv[i], strerror(rv));
+				xbps_error_printf("failed to reconfigure "
+				    "`%s': %s\n", pkg, strerror(rv));
 			}
 		}
 	}

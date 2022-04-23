@@ -56,6 +56,16 @@ argument can be a package name or a package name with version.
 This option can be specified multiple times.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a path for the target root directory.
+.It Fl x, Fl -deps
+Configure 
+.Ar PKGNAME...
+and its direct dependencies.
+.It Fl -fulldeptree
+Configure the full dependency tree of
+.Ar PKGNAME...
+when used with
+.Fl x, Fl -deps .
+.
 .It Fl v, Fl -verbose
 Enables verbose messages.
 .It Fl V, Fl -version
