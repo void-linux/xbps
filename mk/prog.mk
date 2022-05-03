@@ -2,11 +2,12 @@
 
 OBJS	?= main.o
 
-BINS = $(BIN)
 MANSECTION ?= 1
 MAN ?= $(BIN).$(MANSECTION)
 
-ifdef BUILD_STATIC
+BINS = $(BIN)$(if $(BUILD_SHARED),,.static)
+
+ifeq ($(BUILD_SHARED)$(BUILD_STATIC),yesyes)
 BINS += $(BIN).static
 endif
 
@@ -23,8 +24,10 @@ clean:
 .PHONY: install
 install: all
 	install -d $(DESTDIR)$(SBINDIR)
+ifneq ($(filter $(BIN),$(BINS)),)
 	install -m 755 $(BIN) $(DESTDIR)$(SBINDIR)
-ifdef BUILD_STATIC
+endif
+ifneq ($(filter $(BIN).static,$(BINS)),)
 	install -m 755 $(BIN).static $(DESTDIR)$(SBINDIR)
 endif
 ifdef MAN
@@ -34,8 +37,10 @@ endif
 
 .PHONY: uninstall
 uninstall:
+ifneq ($(filter $(BIN),$(BINS)),)
 	-rm -f $(DESTDIR)$(SBINDIR)/$(BIN)
-ifdef BUILD_STATIC
+endif
+ifneq ($(filter $(BIN).static,$(BINS)),)
 	-rm -f $(DESTDIR)$(SBINDIR)/$(BIN).static
 endif
 ifdef MAN

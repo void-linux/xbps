@@ -10,6 +10,7 @@ HOST=
 TARGET=
 BUILD_TESTS=
 BUILD_API_DOCS=
+BUILD_SHARED=yes
 BUILD_STATIC=
 SILENT=yes
 HAVE_VISIBILITY=no
@@ -46,6 +47,7 @@ for instance \`--prefix=\$HOME'.
 --enable-api-docs 	Install XBPS API Library documentation (default disabled)
 --enable-debug		Enables debugging (assertions and -g, default enabled)
 --enable-fulldebug	Enables extra debugging code (default disabled)
+--disable-shared	Disable build XBPS dynamic utils (default enabled)
 --enable-static 	Build XBPS static utils (default disabled)
 --enable-lto            Build with Link Time Optimization (default disabled)
 --enable-tests		Build and install Kyua tests (default disabled)
@@ -80,6 +82,7 @@ for x; do
 	--verbose) unset SILENT;;
 	--pkgconfigdir) PKGCONFIGDIR=$var;;
 	--enable-tests) BUILD_TESTS=yes;;
+	--disable-shared) BUILD_SHARED=no;;
 	--enable-static) BUILD_STATIC=yes;;
 	--enable-lto) BUILD_LTO=yes;;
 	--testsdir) TESTSDIR=$var;;
@@ -718,7 +721,17 @@ echo "STATIC_LIBS +=    $(pkg-config --libs --static libssl)" \
 	>>$CONFIG_MK
 
 #
-# If --enable-static enabled, build static binaries.
+# If --disable-shared is not used, build dynamic binaries.
+#
+if [ "$BUILD_SHARED" = "yes" ]; then
+	echo "BUILD_SHARED = yes" >>$CONFIG_MK
+	BUILD_SHARED_VALUE=yes
+else
+	BUILD_SHARED_VALUE=no
+fi
+
+#
+# If --enable-static is used, build static binaries.
 #
 if [ "$BUILD_STATIC" = "yes" ]; then
 	echo "BUILD_STATIC = yes" >>$CONFIG_MK
@@ -728,7 +741,7 @@ else
 fi
 
 #
-# If --enable-tests enabled, check for ATF >= 0.15 via pkg-config.
+# If --enable-tests is used, check for ATF >= 0.15 via pkg-config.
 #
 if [ "$BUILD_TESTS" = "yes" ]; then
 	printf "Checking for ATF via pkg-config ... "
@@ -774,6 +787,7 @@ echo
 echo "   Build API documentation =	$BUILD_API_DOCS_VALUE"
 echo "   Build Kyua test suite =	$BUILD_TESTS_VALUE"
 echo "   Build programs as PIE =	$BUILD_PIE_VALUE"
+echo "   Build dynamic programs =	$BUILD_SHARED_VALUE"
 echo "   Build static programs =	$BUILD_STATIC_VALUE"
 echo "   Build with LTO = 		$BUILD_LTO"
 echo "   Build with debugging = 	$DEBUG"
