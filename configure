@@ -14,7 +14,7 @@ BUILD_STATIC=
 SILENT=yes
 HAVE_VISIBILITY=no
 SET_RPATH=
-DEBUG=
+DEBUG=yes
 FULL_DEBUG=
 BUILD_LTO=
 
@@ -44,7 +44,7 @@ for instance \`--prefix=\$HOME'.
 --verbose 		Disable silent build to see compilation details
 --enable-rpath		Link binaries with rpath '\$ORIGIN/../lib'
 --enable-api-docs 	Install XBPS API Library documentation (default disabled)
---enable-debug		Enables debugging (assertions and -g, default enabled)
+--disable-debug		Disables debugging (assertions and -g, default enabled)
 --enable-fulldebug	Enables extra debugging code (default disabled)
 --enable-static 	Build XBPS static utils (default disabled)
 --enable-lto            Build with Link Time Optimization (default disabled)
@@ -59,7 +59,7 @@ for x; do
 	opt=${x%%=*}
 	var=${x#*=}
 	case "$opt" in
-	--enable-debug) DEBUG=yes;;
+	--disable-debug) DEBUG=no;;
 	--enable-fulldebug) FULL_DEBUG=yes;;
 	--enable-rpath) SET_RPATH=yes;;
 	--prefix) PREFIX=$var;;
@@ -189,7 +189,7 @@ else
 	echo "Using compiler $CC"
 fi
 
-[ -z "$DEBUG" ] && DEBUG=yes
+[ -z "$DEBUG" ] && DEBUG=no
 
 echo "CC =	$CC" >>$CONFIG_MK
 echo "CFLAGS =	-O2" >>$CONFIG_MK
