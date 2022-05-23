@@ -49,6 +49,7 @@ usage(bool fail)
 	    "MODE\n"
 	    " -a, --add <repodir/file.xbps> ...  Add package(s) to repository index\n"
 	    " -c, --clean <repodir>              Clean repository index\n"
+	    " -R --remove <pkg> ...              Removes package(s) from repository\n"
 	    " -r, --remove-obsoletes <repodir>   Removes obsolete packages from repository\n"
 	    " -s, --sign <repodir>               Initialize repository metadata signature\n"
 	    " -S, --sign-pkg <file.xbps> ...     Sign binary package archive\n");
@@ -58,13 +59,14 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsCSVv";
+	const char *shortopts = "acdfhRrsCSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "force", no_argument, NULL, 'f' },
 		{ "help", no_argument, NULL, 'h' },
+		{ "remove", no_argument, NULL, 'R' },
 		{ "remove-obsoletes", no_argument, NULL, 'r' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
@@ -74,17 +76,18 @@ main(int argc, char **argv)
 		{ "sign-pkg", no_argument, NULL, 'S'},
 		{ "hashcheck", no_argument, NULL, 'C' },
 		{ "compression", required_argument, NULL, 2},
+		{ "stage", no_argument, NULL, 3},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
 	const char *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
-	int rv, c, flags = 0;
-	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
-			 hashcheck;
+	int rv, c, flags = 0, modes_count = 0;
+	bool add_mode, clean_mode, obsoletes_mode, remove_mode, sign_mode, sign_pkg_mode,
+			force, hashcheck, stage;
 
-	add_mode = clean_mode = rm_mode = sign_mode = sign_pkg_mode = force =
-		hashcheck = false;
+	add_mode = clean_mode = obsoletes_mode = remove_mode = sign_mode = sign_pkg_mode =
+			force = hashcheck = stage = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -97,11 +100,16 @@ main(int argc, char **argv)
 		case 2:
 			compression = optarg;
 			break;
+		case 3:
+			stage = true;
+			break;
 		case 'a':
 			add_mode = true;
+			modes_count++;
 			break;
 		case 'c':
 			clean_mode = true;
+			modes_count++;
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
@@ -112,17 +120,24 @@ main(int argc, char **argv)
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
+		case 'R':
+			remove_mode = true;
+			modes_count++;
+			break;
 		case 'r':
-			rm_mode = true;
+			obsoletes_mode = true;
+			modes_count++;
 			break;
 		case 's':
 			sign_mode = true;
+			modes_count++;
 			break;
 		case 'C':
 			hashcheck = true;
 			break;
 		case 'S':
 			sign_pkg_mode = true;
+			modes_count++;
 			break;
 		case 'v':
 			flags |= XBPS_FLAG_VERBOSE;
@@ -136,17 +151,12 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if ((argc == optind) ||
-	    (!add_mode && !clean_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
+	if ((argc == optind) || (modes_count == 0)) {
 		usage(true);
 		/* NOTREACHED */
-	} else if ((add_mode && (clean_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (clean_mode && (add_mode || rm_mode || sign_mode || sign_pkg_mode)) ||
-		   (rm_mode && (add_mode || clean_mode || sign_mode || sign_pkg_mode)) ||
-		   (sign_mode && (add_mode || clean_mode || rm_mode || sign_pkg_mode)) ||
-		   (sign_pkg_mode && (add_mode || clean_mode || rm_mode || sign_mode))) {
+	} else if (modes_count > 1) {
 		fprintf(stderr, "Only one mode can be specified: add, clean, "
-		    "remove-obsoletes, sign or sign-pkg.\n");
+		    "remove, remove-obsoletes, sign or sign-pkg.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -160,11 +170,13 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force, compression);
+		rv = index_add(&xh, optind, argc, argv, force, stage, compression);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
-	else if (rm_mode)
+	else if (obsoletes_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);
+	else if (remove_mode)
+		rv = index_remove(&xh, optind, argc, argv, stage, compression);
 	else if (sign_mode)
 		rv = sign_repo(&xh, argv[optind], privkey, signedby, compression);
 	else if (sign_pkg_mode)

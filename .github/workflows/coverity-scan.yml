@@ -29,7 +29,7 @@ jobs:
           docker pull voidlinux/voidlinux
           docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
             /bin/sh -c "xbps-install -Syu xbps && xbps-install -yu &&
-              xbps-install -y gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel &&
+              xbps-install -y gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel picosat-devel &&
               CC=gcc ./configure --enable-tests &&
               PATH=/tmp/build-dir/cov-analysis-linux64/bin:\$PATH cov-build --dir cov-int make -j\$(nproc)"
 

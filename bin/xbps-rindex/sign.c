@@ -36,6 +36,8 @@
 #include <openssl/ssl.h>
 #include <openssl/pem.h>
 
+#include <xbps.h>
+
 #include "defs.h"
 
 static RSA *
@@ -227,7 +229,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		    _XBPS_RINDEX, strerror(errno));
 		goto out;
 	}
-	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta, compression);
+	flush_failed = xbps_repodata_flush(xhp, repodir, "repodata", repo->idx, meta, compression);
 	xbps_repo_unlock(rlockfd, rlockfname);
 	if (!flush_failed) {
 		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));

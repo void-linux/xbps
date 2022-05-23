@@ -1664,6 +1664,10 @@ void xbps_repo_close(struct xbps_repo *repo);
  */
 void xbps_repo_release(struct xbps_repo *repo);
 
+bool xbps_repodata_flush(struct xbps_handle *xhp, const char *repodir,
+	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta,
+	const char *compression);
+
 /**
  *
  * Returns a heap-allocated string with the repository local path.
@@ -2237,6 +2241,17 @@ bool xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver);
  * greater than pkg2.
  */
 int xbps_cmpver(const char *pkg1, const char *pkg2);
+
+/**
+ * Compares package order defined by version and reverts.
+ *
+ * @param[in] pkg1 dictionary with \a pkgver field and optional \a reverts field.
+ * @param[in] pkg2 dictionary with \a pkgver field and optional \a reverts field.
+ *
+ * @return -1, 0 or 1 depending if pkg1 is less than, equal to or
+ * greater than pkg2.
+ */
+int xbps_pkg_version_order(xbps_dictionary_t pkg1, xbps_dictionary_t pkg2);
 
 /**
  * Converts a RSA public key in PEM format to a hex fingerprint.

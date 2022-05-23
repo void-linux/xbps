@@ -31,7 +31,7 @@
 #define _XBPS_RINDEX		"xbps-rindex"
 
 /* From index-add.c */
-int	index_add(struct xbps_handle *, int, int, char **, bool, const char *);
+int	index_add(struct xbps_handle *, int, int, char **, bool, bool, const char *);
 
 /* From index-clean.c */
 int	index_clean(struct xbps_handle *, const char *, bool, const char *);
@@ -39,13 +39,12 @@ int	index_clean(struct xbps_handle *, const char *, bool, const char *);
 /* From remove-obsoletes.c */
 int	remove_obsoletes(struct xbps_handle *, const char *);
 
+/* From index-remove.c */
+int index_remove(struct xbps_handle *, int, int, char **, bool, const char *);
+
 /* From sign.c */
 int	sign_repo(struct xbps_handle *, const char *, const char *,
 		const char *, const char *);
 int	sign_pkgs(struct xbps_handle *, int, int, char **, const char *, bool);
-
-/* From repoflush.c */
-bool	repodata_flush(struct xbps_handle *, const char *, const char *,
-		xbps_dictionary_t, xbps_dictionary_t, const char *);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */

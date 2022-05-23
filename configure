@@ -701,6 +701,33 @@ else
 fi
 
 #
+# PicoSAT is required.
+#
+func=picosat_init
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <picosat.h>
+int main(void) {
+	PicoSAT *picosat;
+	picosat = picosat_init();
+	picosat_reset(picosat);
+	return 0;
+}
+EOF
+if $XCC _$func.c -lpicosat -o _$func 2>/dev/null; then
+	echo yes.
+	echo "LDFLAGS +=	-lpicosat" >>$CONFIG_MK
+	echo "STATIC_LIBS +=	-lpicosat" >>$CONFIG_MK
+else
+	PICOSAT=no
+fi
+rm -f _$func.c _$func
+if [ "$PICOSAT" = "no" ]; then
+	echo "Failed to link with your system's picosat, can't continue..."
+	exit 1
+fi
+
+#
 # libssl with pkg-config support is required.
 #
 printf "Checking for libssl via pkg-config ... "
