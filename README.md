@@ -162,8 +162,8 @@ In the following examples there will be commands accepting an argument such as `
  * by specifying a package name and version separated by any of the following version comparators:
       * `<` less than
       * `>` greater than
-      * `<=` less or equal than
-      * `>=` greater or equal than
+      * `<=` less than or equal to
+      * `>=` greater than or equal to
 
     Such example would be `foo>=2.0` or `blah-foo<=1.0`.
 
