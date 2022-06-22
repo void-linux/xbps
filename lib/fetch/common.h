@@ -1,7 +1,7 @@
-/*	$FreeBSD: rev 267133 $	*/
-/*	$NetBSD: common.h,v 1.23 2014/01/08 20:25:34 joerg Exp $	*/
 /*-
- * Copyright (c) 1998-2014 Dag-Erling Smorgrav
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1998-2014 Dag-Erling Smørgrav
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,6 +26,8 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * $FreeBSD: head/lib/libfetch/common.h 334317 2018-05-29 10:28:20Z des $
  */
 
 #ifndef _COMMON_H_INCLUDED
@@ -98,14 +100,17 @@ struct fetchconn {
 	SSL		*ssl;		/* SSL handle */
 	SSL_CTX		*ssl_ctx;	/* SSL context */
 	X509		*ssl_cert;	/* server certificate */
+	const SSL_METHOD *ssl_meth;	/* SSL method */
 #endif
-
-	char		*ftp_home;
-
-	struct url	*cache_url;
-	int		cache_af;
-	int		(*cache_close)(conn_t *);
-	conn_t		*next_cached;
+	int		 ref;		/* reference count */
+	char		 scheme[URL_SCHEMELEN+1];
+	char		 user[URL_USERLEN+1];
+	char		 pwd[URL_PWDLEN+1];
+	char		 host[URL_HOSTLEN+1];
+	int		 port;
+	int		 af;
+	int		(*close)(conn_t *);
+	conn_t		*next;
 };
 
 /* Structure used for error message lists */
@@ -115,28 +120,33 @@ struct fetcherr {
 	const char	*string;
 };
 
+/* for fetch_writev */
+struct iovec;
+
 void		 fetch_seterr(struct fetcherr *, int);
 void		 fetch_syserr(void);
 void		 fetch_info(const char *, ...)  LIBFETCH_PRINTFLIKE(1, 2);
 int		 fetch_default_port(const char *);
 int		 fetch_default_proxy_port(const char *);
 int		 fetch_bind(int, int, const char *);
-conn_t		*fetch_cache_get(const struct url *, int);
-void		 fetch_cache_put(conn_t *, int (*)(conn_t *));
 int		 fetch_socks5(conn_t *, struct url *, struct url *, int);
 conn_t		*fetch_connect(struct url *, int, int);
 conn_t		*fetch_reopen(int);
+conn_t		*fetch_ref(conn_t *);
 #ifdef WITH_SSL
-int		fetch_ssl_cb_verify_crt(int, X509_STORE_CTX*);
+int		 fetch_ssl_cb_verify_crt(int, X509_STORE_CTX*);
 #endif
 int		 fetch_ssl(conn_t *, const struct url *, int);
 ssize_t		 fetch_read(conn_t *, char *, size_t);
 int		 fetch_getln(conn_t *);
-ssize_t		 fetch_write(conn_t *, const void *, size_t);
+ssize_t		 fetch_write(conn_t *, const char *, size_t);
+ssize_t		 fetch_writev(conn_t *, struct iovec *, int);
+int		 fetch_putln(conn_t *, const char *, size_t);
 int		 fetch_close(conn_t *);
-int		 fetch_add_entry(struct url_list *, struct url *, const char *, int);
 int		 fetch_netrc_auth(struct url *url);
 int		 fetch_no_proxy_match(const char *);
+conn_t		*fetch_cache_get(const struct url *, int);
+void		 fetch_cache_put(conn_t *conn, int (*closecb)(conn_t *));
 int		 fetch_urlpath_safe(char);
 
 #define ftp_seterr(n)	 fetch_seterr(ftp_errlist, n)
@@ -145,7 +155,20 @@ int		 fetch_urlpath_safe(char);
 #define url_seterr(n)	 fetch_seterr(url_errlist, n)
 
 fetchIO		*fetchIO_unopen(void *, ssize_t (*)(void *, void *, size_t),
-    ssize_t (*)(void *, const void *, size_t), void (*)(void *));
+    ssize_t (*)(void *, const void *, size_t), int (*)(void *));
+
+#ifndef NDEBUG
+#define DEBUGF(...)							\
+	do {								\
+		if (fetchDebug)						\
+			fprintf(stderr, __VA_ARGS__);			\
+	} while (0)
+#else
+#define DEBUGF(...)							\
+	do {								\
+		/* nothing */						\
+	} while (0)
+#endif
 
 /*
  * I don't really like exporting http_request() and ftp_request(),
@@ -158,17 +181,19 @@ fetchIO		*fetchIO_unopen(void *, ssize_t (*)(void *, void *, size_t),
  */
 fetchIO		*http_request(struct url *, const char *,
 		     struct url_stat *, struct url *, const char *);
-fetchIO		*ftp_request(struct url *, const char *, const char *,
+fetchIO		*http_request_body(struct url *, const char *,
+		     struct url_stat *, struct url *, const char *,
+		     const char *, const char *);
+fetchIO		*ftp_request(struct url *, const char *,
 		     struct url_stat *, struct url *, const char *);
-
 
 /*
  * Check whether a particular flag is set
  */
 #define CHECK_FLAG(x)	(flags && strchr(flags, (x)))
 
-#ifndef __UNCONST
-#define __UNCONST(a)    ((void *)(uintptr_t)(const void *)(a))
+#ifndef __DECONST
+#define __DECONST(type, var)    ((type)(uintptr_t)(const void *)(var))
 #endif
 
 #endif
