@@ -424,7 +424,7 @@ http_cmd(conn_t *conn, const char *fmt, ...)
  * Get and parse status line
  */
 static int
-http_get_reply(conn_t *conn)
+http_get_reply(conn_t *conn, int *keep_alive)
 {
 	char *p;
 
@@ -445,6 +445,10 @@ http_get_reply(conn_t *conn)
 	if (*p == '/') {
 		if (p[1] != '1' || p[2] != '.' || (p[3] != '0' && p[3] != '1'))
 			return (HTTP_PROTOCOL_ERROR);
+		/* HTTP/1.1 defaults to the use of "persistent connections" */
+		if (keep_alive && p[3] == '1') {
+			*keep_alive = 1;
+		}
 		p += 4;
 	}
 	if (*p != ' ' ||
@@ -760,7 +764,7 @@ http_connect(struct url *URL, struct url *purl, const char *flags, int *cached)
 
 		http_cmd(conn, "\r\n");
 
-		if (http_get_reply(conn) != HTTP_OK) {
+		if (http_get_reply(conn, NULL) != HTTP_OK) {
 			http_seterr(conn->err);
 			fetch_close(conn);
 			return (NULL);
@@ -1011,7 +1015,7 @@ http_request(struct url *URL, const char *op, struct url_stat *us,
 			   sizeof(val));
 
 		/* get reply */
-		switch (http_get_reply(conn)) {
+		switch (http_get_reply(conn, &keep_alive)) {
 		case HTTP_OK:
 		case HTTP_PARTIAL:
 		case HTTP_NOT_MODIFIED:
