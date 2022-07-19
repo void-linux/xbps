@@ -1490,10 +1490,10 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 	ssize_t rlen;
 	int r;
 
-	if (!buf)
-		return -1;
 	if (len == 0)
 		return 0;
+	if (!buf)
+		return -1;
 
 	if (conn->next_len != 0) {
 		if (conn->next_len < len)
