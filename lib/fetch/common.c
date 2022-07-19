@@ -608,7 +608,7 @@ happy_eyeballs_connect(struct addrinfo *res0, int verbose)
 					unreach |= UNREACH_IPV6;
 				}
 				continue;
-			} else if (errno == EADDRNOTAVAIL) {
+			} else if (errno == EADDRNOTAVAIL || errno == EINVAL) {
 				err = errno;
 				close(sd);
 				continue;
