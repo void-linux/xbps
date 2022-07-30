@@ -58,6 +58,11 @@ print_results(struct xbps_handle *xhp, struct search_data *sd)
 	const char *pkgver = NULL, *desc = NULL;
 	unsigned int align = 0, len;
 
+	if (!xbps_array_count(sd->results)) {
+		fprintf(stderr, "No packages have been found with query %s.\n", sd->pat);
+		return;
+	}
+
 	/* Iterate over results array and find out largest pkgver string */
 	for (unsigned int i = 0; i < xbps_array_count(sd->results); i += 2) {
 		xbps_array_get_cstring_nocopy(sd->results, i, &pkgver);
@@ -259,7 +264,7 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 			return rv;
 		}
 	}
-	if (!prop && xbps_array_count(sd.results)) {
+	if (!prop) {
 		print_results(xhp, &sd);
 		xbps_object_release(sd.results);
 	}
