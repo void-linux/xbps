@@ -308,7 +308,7 @@ The `xbps-reconfigure(1)` utility may be used to configure packages that were no
 reconfiguration. By default and unless the `-f, --force` option is set, only packages that
 were not configured will be processed.
 
-Its usage is simple, specify a package name or `a, --all` for all packages:
+Its usage is simple, specify a package name or `-a, --all` for all packages:
 
     $ xbps-reconfigure [-f] <package name> | -a
 
