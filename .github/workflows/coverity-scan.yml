@@ -30,7 +30,7 @@ jobs:
       - name: Configure and build
         run: |
           CC=gcc ./configure --enable-tests
-          PATH=/tmp/build-dir/cov-analysis-linux64/bin:$PATH cov-build --dir cov-int make -j$(nproc)
+          PATH=$PWD/cov-analysis-linux64/bin:$PATH cov-build --dir cov-int make -j$(nproc)
 
       - name: Submit the result to Coverity Scan
         run: |
