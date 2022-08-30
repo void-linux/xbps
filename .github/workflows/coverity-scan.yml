@@ -8,16 +8,16 @@ jobs:
   latest:
     if: github.repository == 'void-linux/xbps'
     runs-on: ubuntu-latest
+    container: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64
     env:
       TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
     steps:
+      - uses: actions/checkout@v1
 
-      - name: Setup container
+      - name: Updating and installing packages
         run: |
-
-      - name: Checkout void-linux/xbps
-        run: |
-          git clone --depth=1 https://github.com/void-linux/xbps .
+         xbps-install -Suy xbps; xbps-install -Suy
+         xbps-install -Sy gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel wget
 
       - name: Download Coverity Build Tool
         run: |
@@ -25,14 +25,11 @@ jobs:
           mkdir cov-analysis-linux64
           tar xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
 
-      - name: Configure and build in voidlinux/voilinux container
+
+      - name: Configure and build
         run: |
-          docker pull voidlinux/voidlinux
-          docker run -v "$PWD":/tmp/build-dir -w "/tmp/build-dir" voidlinux/voidlinux \
-            /bin/sh -c "xbps-install -yu xbps && xbps-install -Syu &&
-              xbps-install -y gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel &&
-              CC=gcc ./configure --enable-tests &&
-              PATH=/tmp/build-dir/cov-analysis-linux64/bin:\$PATH cov-build --dir cov-int make -j\$(nproc)"
+          CC=gcc ./configure --enable-tests &&
+          PATH=/tmp/build-dir/cov-analysis-linux64/bin:\$PATH cov-build --dir cov-int make -j\$(nproc)"
 
       - name: Submit the result to Coverity Scan
         run: |
