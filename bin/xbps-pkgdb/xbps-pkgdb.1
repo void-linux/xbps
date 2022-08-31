@@ -1,4 +1,4 @@
-.Dd June 20, 2019
+.Dd June 27, 2021
 .Dt XBPS-PKGDB 1
 .Sh NAME
 .Nm xbps-pkgdb
@@ -40,7 +40,8 @@ Updates the pkgdb format to the latest version.
 .Sh OPTIONS
 .Bl -tag -width -x
 .It Fl a, Fl -all
-Process all registered packages, regardless of its state.
+Process all packages instead of only the ones listed in
+.Ar PKGNAME .
 .It Fl C, Fl -config Ar dir
 Specifies a path to the XBPS configuration directory.
 If the first character is not '/' then it's a relative path of
@@ -121,6 +122,17 @@ Default package database (0.38 format). Keeps track of installed packages and pr
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
 .El
+.Sh EXAMPLES
+Prevent package
+.Sq foo
+from being updated during a system update:
+.Pp
+.Dl # xbps-pkgdb -m hold foo
+.Pp
+Remove hold on package
+.Sq foo :
+.Pp
+.Dl # xbps-pkgdb -m unhold foo
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
 .Xr xbps-create 1 ,
