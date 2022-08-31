@@ -91,6 +91,10 @@ xbps_dictionary_t HIDDEN xbps_find_pkg_in_array(xbps_array_t, const char *,
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_array(struct xbps_handle *,
 		xbps_array_t, const char *, xbps_trans_type_t);
 
+/* alternatives */
+int HIDDEN xbps_alternatives_register(struct xbps_handle *, xbps_dictionary_t);
+int HIDDEN xbps_alternatives_unregister(struct xbps_handle *, xbps_dictionary_t, bool);
+
 /* transaction */
 bool HIDDEN xbps_transaction_check_revdeps(struct xbps_handle *, xbps_array_t);
 bool HIDDEN xbps_transaction_check_shlibs(struct xbps_handle *, xbps_array_t);
@@ -100,6 +104,9 @@ bool HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t, xbps_dict
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
 int HIDDEN xbps_transaction_files(struct xbps_handle *,
 		xbps_object_iterator_t);
+int HIDDEN xbps_transaction_files_add(struct xbps_handle *, xbps_dictionary_t, xbps_dictionary_t);
+int HIDDEN xbps_transaction_files_obsoletes(struct xbps_handle *);
+void HIDDEN xbps_transaction_files_free(void);
 int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
 		xbps_object_iterator_t);
 int HIDDEN xbps_transaction_pkg_deps(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);

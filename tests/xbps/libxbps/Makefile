@@ -12,5 +12,6 @@ SUBDIRS += find_pkg_orphans
 SUBDIRS += pkgdb
 SUBDIRS += config
 SUBDIRS += shell
+SUBDIRS += alternatives
 
 include ../../../mk/subdir.mk

@@ -1012,24 +1012,19 @@ int xbps_pkg_exec_script(struct xbps_handle *xhp,
 int xbps_alternatives_set(struct xbps_handle *xhp, const char *pkg, const char *group);
 
 /**
- * Registers all alternative groups provided by a package.
+ * Parse the alternative link path into \a path and optionally the
+ * symlink target into \a target.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgd Package dictionary as stored in the transaction dictionary.
+ * @param[in] path Alternative link path buffer.
+ * @param[in] pathsz Size of the \a path buffer.
+ * @param[in] target Alternative link target buffer.
+ * @param[in] targetsz The size of the \a target buffer.
  *
- * @return 0 on success, or an errno value otherwise.
+ * @return 0 on success, or a negative errno value otherwise.
  */
-int xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
-
-/**
- * Unregisters all alternative groups provided by a package.
- *
- * @param[in] xhp The pointer to the xbps_handle struct.
- * @param[in] pkgd Package dictionary as stored in the transaction dictionary.
- *
- * @return 0 on success, or an errno value otherwise.
- */
-int xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
+int xbps_alternative_link(const char *alternative, char *path, size_t pathsz,
+		char *target, size_t targetsz);
 
 /**@}*/
 

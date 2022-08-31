@@ -41,110 +41,70 @@
  * These functions implement the alternatives framework.
  */
 
-static char *
-left(const char *str)
+int
+xbps_alternative_link(const char *alternative,
+		char *path, size_t pathsz,
+		char *target, size_t targetsz)
 {
-	char *p;
-	size_t len;
+	const char *d = strchr(alternative, ':');
+	if (!d || d == alternative)
+		return -EINVAL;
 
-	p = strdup(str);
-	len = strlen(p) - strlen(strchr(p, ':'));
-	p[len] = '\0';
-
-	return p;
-}
-
-static const char *
-right(const char *str)
-{
-	return strchr(str, ':') + 1;
-}
-
-static const char *
-normpath(char *path)
-{
-	char *seg, *p;
-
-	for (p = path, seg = NULL; *p; p++) {
-		if (strncmp(p, "/../", 4) == 0 || strncmp(p, "/..", 4) == 0) {
-			memmove(seg ? seg : p, p+3, strlen(p+3) + 1);
-			return normpath(path);
-		} else if (strncmp(p, "/./", 3) == 0 || strncmp(p, "/.", 3) == 0) {
-			memmove(p, p+2, strlen(p+2) + 1);
-		} else if (strncmp(p, "//", 2) == 0 || strncmp(p, "/", 2) == 0) {
-			memmove(p, p+1, strlen(p+1) + 1);
+	assert(path);
+	if (alternative[0] == '/') {
+		if ((size_t)(d-alternative) >= pathsz)
+			return -ENOBUFS;
+		strncpy(path, alternative, d-alternative);
+		path[d-alternative] = '\0';
+	} else {
+		const char *p = strrchr(d+1, '/');
+		if (!p)
+			return -EINVAL;
+		if ((size_t)((p-d)+(p-alternative)-1) >= pathsz)
+			return -ENOBUFS;
+		strncpy(path, d+1, p-d);
+		strncpy(path+(p-d), alternative, d-alternative);
+		path[(p-d)+(d-alternative)] = '\0';
+	}
+	if (target != NULL) {
+		if (d[1] != '/') {
+			if (xbps_strlcpy(target, d+1, targetsz) >= targetsz)
+				return -ENOBUFS;
+		} else if (xbps_path_rel(target, targetsz, path, d+1) == -1) {
+			return -errno;
 		}
-		if (*p == '/')
-			seg = p;
 	}
-	return path;
-}
-
-static char *
-relpath(char *from, char *to)
-{
-	int up;
-	char *p = to, *rel;
-
-	assert(from[0] == '/');
-	assert(to[0] == '/');
-	normpath(from);
-	normpath(to);
-
-	for (; *from == *to && *to; from++, to++) {
-		if (*to == '/')
-			p = to;
-	}
-
-	for (up = -1, from--; from && *from; from = strchr(from + 1, '/'), up++);
-
-	rel = calloc(3 * up + strlen(p), 1);
-	if (!rel)
-		return NULL;
-
-	while (up--)
-		strcat(rel, "../");
-	if (*p)
-		strcat(rel, p+1);
-	return rel;
+	return 0;
 }
 
 static int
 remove_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 {
-	unsigned int i, cnt;
+	char path[PATH_MAX];
 	struct stat st;
 
-	cnt = xbps_array_count(a);
-	for (i = 0; i < cnt; i++) {
-		xbps_string_t str;
-		char *l, *lnk;
+	for (unsigned int i = 0; i < xbps_array_count(a); i++) {
+		const char *alternative;
+		int r;
 
-		str = xbps_array_get(a, i);
-		l = left(xbps_string_cstring_nocopy(str));
-		assert(l);
-		if (l[0] != '/') {
-			const char *tgt;
-			char *tgt_dup, *tgt_dir;
-			tgt = right(xbps_string_cstring_nocopy(str));
-			tgt_dup = strdup(tgt);
-			assert(tgt_dup);
-			tgt_dir = dirname(tgt_dup);
-			lnk = xbps_xasprintf("%s%s/%s", xhp->rootdir, tgt_dir, l);
-			free(tgt_dup);
-		} else {
-			lnk = xbps_xasprintf("%s%s", xhp->rootdir, l);
-		}
-		if (lstat(lnk, &st) == -1 || !S_ISLNK(st.st_mode)) {
-			free(lnk);
-			free(l);
+		xbps_array_get_cstring_nocopy(a, i, &alternative);
+
+		r = xbps_alternative_link(alternative, path, sizeof(path), NULL, 0);
+		if (r < 0) {
+			/* XXX: print error, but don't abort transaction */
 			continue;
 		}
+		if (xbps_path_prepend(path, sizeof(path), xhp->rootdir) == -1) {
+			/* XXX: print error, but don't abort transaction */
+			continue;
+		}
+
+		if (lstat(path, &st) == -1 || !S_ISLNK(st.st_mode))
+			continue;
+
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_REMOVED, 0, NULL,
-		    "Removing '%s' alternatives group symlink: %s", grname, l);
-		unlink(lnk);
-		free(lnk);
-		free(l);
+		    "Removing '%s' alternatives group symlink: %s", grname, path);
+		unlink(path);
 	}
 
 	return 0;
@@ -153,84 +113,80 @@ remove_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 static int
 create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 {
-	int rv;
-	unsigned int i, n;
-	char *alternative, *tok1, *tok2, *linkpath, *target, *dir, *p;
+	char path[PATH_MAX];
+	char target[PATH_MAX];
+	char dir[PATH_MAX];
+	int rv = 0;
 
-	n = xbps_array_count(a);
+	for (unsigned int i = 0; i < xbps_array_count(a); i++) {
+		const char *alt;
+		char *p;
+		int r;
+		xbps_array_get_cstring_nocopy(a, i, &alt);
 
-	for (i = 0; i < n; i++) {
-		alternative = xbps_string_cstring(xbps_array_get(a, i));
-
-		if (!(tok1 = strtok(alternative, ":")) ||
-		    !(tok2 = strtok(NULL, ":"))) {
-			free(alternative);
-			return -1;
+		r = xbps_alternative_link(alt, path, sizeof(path), target, sizeof(target));
+		if (r < 0) {
+			/* XXX: print error, but don't abort transaction */
+			continue;
+		}
+		if (xbps_path_prepend(path, sizeof(path), xhp->rootdir) == -1) {
+			/* XXX: print error, but don't abort transaction */
+			continue;
 		}
 
-		target = strdup(tok2);
-		dir = dirname(tok2);
-
-		/* add target dir to relative links */
-		if (tok1[0] != '/')
-			linkpath = xbps_xasprintf("%s/%s/%s", xhp->rootdir, dir, tok1);
-		else
-			linkpath = xbps_xasprintf("%s/%s", xhp->rootdir, tok1);
-
+		p = strrchr(path, '/');
+		if (!p) {
+			/* XXX: print error, but don't abort transaction */
+			continue;
+		}
+		strncpy(dir, path, p-path);
+		dir[p-path] = '\0';
 		/* create target directory, necessary for dangling symlinks */
-		dir = xbps_xasprintf("%s/%s", xhp->rootdir, dir);
 		if (strcmp(dir, ".") && xbps_mkpath(dir, 0755) && errno != EEXIST) {
 			rv = errno;
 			xbps_dbg_printf(xhp,
 			    "failed to create target dir '%s' for group '%s': %s\n",
 			    dir, grname, strerror(errno));
-			free(dir);
-			goto err;
+			continue;
 		}
-		free(dir);
-
+		if (xbps_path_append(dir, sizeof(dir), target) == -1) {
+			rv = errno;
+			xbps_dbg_printf(xhp,
+			    "failed to create target symlink\n");
+			continue;
+		}
+		p= strrchr(dir, '/');
+		if (!p) {
+			rv = EINVAL;
+			continue;
+		}
+		*p = '\0';
 		/* create link directory, necessary for dangling symlinks */
-		p = strdup(linkpath);
-		dir = dirname(p);
 		if (strcmp(dir, ".") && xbps_mkpath(dir, 0755) && errno != EEXIST) {
 			rv = errno;
 			xbps_dbg_printf(xhp,
 			    "failed to create symlink dir '%s' for group '%s': %s\n",
 			    dir, grname, strerror(errno));
-			free(p);
-			goto err;
+			continue;
 		}
-		free(p);
 
+		/* skip the rootdir in the status callback */
+		p = path;
+		if (strcmp(xhp->rootdir, "/") != 0)
+			p += strlen(xhp->rootdir);
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_ADDED, 0, NULL,
 		    "Creating '%s' alternatives group symlink: %s -> %s",
-		    grname, tok1, target);
+		    grname, p, target);
 
-		if (target[0] == '/') {
-			p = relpath(linkpath + strlen(xhp->rootdir), target);
-			free(target);
-			target = p;
+		(void) unlink(path);
+		if (symlink(target, path) != 0) {
+			rv = errno;
+			xbps_error_printf(
+			    "Failed to create alternative symlink '%s' for group '%s': %s\n",
+			    path, grname, strerror(errno));
 		}
-
-		unlink(linkpath);
-		if ((rv = symlink(target, linkpath)) != 0) {
-			xbps_dbg_printf(xhp,
-			    "failed to create alt symlink '%s' for group '%s': %s\n",
-			    linkpath, grname,  strerror(errno));
-			goto err;
-		}
-
-		free(alternative);
-		free(target);
-		free(linkpath);
 	}
 
-	return 0;
-
-err:
-	free(alternative);
-	free(target);
-	free(linkpath);
 	return rv;
 }
 
@@ -327,13 +283,12 @@ switch_alt_group(struct xbps_handle *xhp, const char *grpn, const char *pkgn,
 	return create_symlinks(xhp, xbps_dictionary_get(pkgalts, grpn), grpn);
 }
 
-int
-xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
+int HIDDEN
+xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool update)
 {
 	xbps_array_t allkeys;
 	xbps_dictionary_t alternatives, pkg_alternatives;
 	const char *pkgver, *pkgname;
-	bool update = false;
 	int rv = 0;
 
 	assert(xhp);
@@ -349,8 +304,6 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 
-	xbps_dictionary_get_bool(pkgd, "alternatives-update", &update);
-
 	allkeys = xbps_dictionary_all_keys(pkg_alternatives);
 	for (unsigned int i = 0; i < xbps_array_count(allkeys); i++) {
 		xbps_array_t array;
@@ -365,15 +318,21 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		if (array == NULL)
 			continue;
 
-		xbps_array_get_cstring_nocopy(array, 0, &first);
+		if (!xbps_array_get_cstring_nocopy(array, 0, &first)) {
+			/* XXX: does this need to be handled? */
+			continue;
+		}
 		if (strcmp(pkgname, first) == 0) {
 			/* this pkg is the current alternative for this group */
 			current = true;
+#if 0
+			/* this is handled by obsolete file removal */
 			rv = remove_symlinks(xhp,
 				xbps_dictionary_get(pkg_alternatives, keyname),
 				keyname);
 			if (rv != 0)
 				break;
+#endif
 		}
 
 		if (!update) {
@@ -509,7 +468,9 @@ remove_obsoletes(struct xbps_handle *xhp, const char *pkgname, const char *pkgve
 			if (array2) {
 				xbps_array_get_cstring_nocopy(array2, 0, &first);
 				if (strcmp(pkgname, first) == 0) {
+#if 0
 					remove_symlinks(xhp, array_repo, keyname);
+#endif
 				}
 			}
 		}
@@ -526,7 +487,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *pkgname, const char *pkgve
 	xbps_object_release(allkeys);
 }
 
-int
+int HIDDEN
 xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
 	xbps_array_t allkeys;
@@ -535,9 +496,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	int rv = 0;
 
 	assert(xhp);
-
-	if (xhp->pkgdb == NULL)
-		return EINVAL;
+	assert(xhp->pkgdb);
 
 	alternatives = xbps_dictionary_get(xhp->pkgdb, "_XBPS_ALTERNATIVES_");
 	if (alternatives == NULL) {
@@ -582,8 +541,8 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 				}
 				/* already registered, update symlinks */
 				rv = create_symlinks(xhp,
-					xbps_dictionary_get(pkg_alternatives, keyname),
-					keyname);
+				    xbps_dictionary_get(pkg_alternatives, keyname),
+				    keyname);
 				if (rv != 0)
 					break;
 			} else {

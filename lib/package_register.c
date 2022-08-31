@@ -121,6 +121,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	xbps_dictionary_remove(pkgd, "skip-obsoletes");
 	xbps_dictionary_remove(pkgd, "pkgname");
 	xbps_dictionary_remove(pkgd, "version");
+	xbps_dictionary_remove(pkgd, "transaction-index");
 
 	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
 		xbps_dbg_printf(xhp,

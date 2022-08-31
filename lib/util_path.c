@@ -71,8 +71,10 @@ xbps_path_clean(char *dst)
 	char *d = dst;
 	bool rooted = *dst == '/';
 
-	if (xbps_strlcpy(buf, dst, sizeof buf) >= sizeof buf)
+	if (xbps_strlcpy(buf, dst, sizeof buf) >= sizeof buf) {
+		errno = ENOBUFS;
 		return -1;
+	}
 
 	if (rooted) {
 		*d++ = '/';
@@ -137,11 +139,14 @@ xbps_path_rel(char *dst, size_t dstlen, const char *from, const char *to)
 	*dst = '\0';
 
 	if (xbps_strlcpy(frombuf, from, sizeof frombuf) >= sizeof frombuf ||
-	    xbps_strlcpy(tobuf, to, sizeof tobuf) >= sizeof tobuf)
+	    xbps_strlcpy(tobuf, to, sizeof tobuf) >= sizeof tobuf) {
+		errno = ENOBUFS;
 		return -1;
+	}
 
-	if (xbps_path_clean(frombuf) == -1 || xbps_path_clean(tobuf) == -1)
+	if (xbps_path_clean(frombuf) == -1 || xbps_path_clean(tobuf) == -1) {
 		return -1;
+	}
 
 	for (; *fromp == *top && *to; fromp++, top++)
 		if (*top == '/')
@@ -165,6 +170,10 @@ xbps_path_rel(char *dst, size_t dstlen, const char *from, const char *to)
 		}
 	}
 
+	if (len >= dstlen) {
+		errno = ENOBUFS;
+		return -1;
+	}
 	dst[len < dstlen ? len : dstlen - 1] = '\0';
 	return len;
 }
