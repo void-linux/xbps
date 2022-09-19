@@ -281,7 +281,7 @@ for f in all extra error shadow "format=2" missing-prototypes \
 	missing-include-dirs old-style-definition \
 	init-self redundant-decls float-equal missing-noreturn \
 	cast-align cast-qual pointer-arith comment \
-	declaration-after-statement write-strings stack-protector; do
+	declaration-after-statement stack-protector; do
 	check_compiler_flag ${f} W
 done
 

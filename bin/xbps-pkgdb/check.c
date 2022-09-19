@@ -35,6 +35,11 @@
 #include <xbps.h>
 #include "defs.h"
 
+struct pkgdb_cb_args {
+	int errors;
+	unsigned ctr;
+};
+
 static int
 pkgdb_cb(struct xbps_handle *xhp UNUSED,
 		xbps_object_t obj,
@@ -44,7 +49,8 @@ pkgdb_cb(struct xbps_handle *xhp UNUSED,
 {
 	const char *pkgver = NULL;
 	char pkgname[XBPS_NAME_SIZE];
-	int rv, *errors = (int *)arg;
+	struct pkgdb_cb_args *p = arg;
+	int rv;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	if (xhp->flags & XBPS_FLAG_VERBOSE)
@@ -53,24 +59,28 @@ pkgdb_cb(struct xbps_handle *xhp UNUSED,
 	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
 		abort();
 	}
-	if ((rv = check_pkg_integrity(xhp, obj, pkgname)) != 0)
-		*errors += 1;
+	if ((rv = check_pkg_integrity(xhp, obj, pkgname, p->ctr)) != 0)
+		p->errors += 1;
 
 	return 0;
 }
 
 int
-check_pkg_integrity_all(struct xbps_handle *xhp)
+check_pkg_integrity_all(struct xbps_handle *xhp, unsigned checks_to_run)
 {
-	int errors = 0;
-	xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_cb, &errors);
-	return errors ? -1 : 0;
+	struct pkgdb_cb_args args = {
+		.errors = 0,
+		.ctr = checks_to_run,
+	};
+	xbps_pkgdb_foreach_cb_multi(xhp, pkgdb_cb, &args);
+	return args.errors ? -1 : 0;
 }
 
 int
 check_pkg_integrity(struct xbps_handle *xhp,
 		    xbps_dictionary_t pkgd,
-		    const char *pkgname)
+		    const char *pkgname,
+		    unsigned checks_to_run)
 {
 	xbps_dictionary_t opkgd, filesd;
 	const char *sha256;
@@ -118,22 +128,76 @@ check_pkg_integrity(struct xbps_handle *xhp,
 
 #define RUN_PKG_CHECK(x, name, arg)				\
 do {								\
-	if ((rv = check_pkg_##name(x, pkgname, arg)) != 0) { 	\
+	if (check_pkg_##name(x, pkgname, arg)) { 	\
 		errors++;					\
 	}							\
 } while (0)
 
 	/* Execute pkg checks */
-	RUN_PKG_CHECK(xhp, files, filesd);
-	RUN_PKG_CHECK(xhp, symlinks, filesd);
-	RUN_PKG_CHECK(xhp, rundeps, opkgd);
-	RUN_PKG_CHECK(xhp, unneeded, opkgd);
-	RUN_PKG_CHECK(xhp, alternatives, opkgd);
+	if (checks_to_run & CHECK_FILES) {
+		RUN_PKG_CHECK(xhp, files, filesd);
+		RUN_PKG_CHECK(xhp, symlinks, filesd);
+	}
+	if (checks_to_run & CHECK_DEPENDENCIES)
+		RUN_PKG_CHECK(xhp, rundeps, opkgd);
+	if (checks_to_run & CHECK_ALTERNATIVES)
+		RUN_PKG_CHECK(xhp, alternatives, opkgd);
+	/* pkgdb internal checks go here */
+	if (checks_to_run & CHECK_PKGDB) {
+		RUN_PKG_CHECK(xhp, unneeded, opkgd);
+	}
 
 	if (filesd)
 		xbps_object_release(filesd);
 
 #undef RUN_PKG_CHECK
 
-	return errors ? EXIT_FAILURE : EXIT_SUCCESS;
+	return !!errors;
+}
+
+int
+get_checks_to_run(unsigned *ctr, char *checks)
+{
+	char *const available[] = {
+		[0] = "files",
+		/* 'deps' is an alias for 'dependencies' */
+		[1] = "dependencies",
+		[2] = "deps",
+		[3] = "alternatives",
+		[4] = "pkgdb",
+		NULL
+	};
+
+	/* Reset ctr before adding options */
+	*ctr = 0;
+
+	while (*checks) {
+		char *value;
+		int opt = getsubopt(&checks, available, &value);
+
+		/* Checks don't support options like foo=bar */
+		if (value)
+			return 1;
+
+		switch(opt) {
+			case 0:
+				*ctr |= CHECK_FILES;
+				break;
+			case 1:
+			case 2:
+				*ctr |= CHECK_DEPENDENCIES;
+				break;
+			case 3:
+				*ctr |= CHECK_ALTERNATIVES;
+				break;
+			case 4:
+				*ctr |= CHECK_PKGDB;
+				break;
+			default:
+				return 1;
+		}
+	}
+
+	/* If getsubopt exited because of end of string, return success */
+	return 0;
 }
