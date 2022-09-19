@@ -1,4 +1,4 @@
-.Dd June 20, 2019
+.Dd July 23, 2020
 .Dt XBPS-PKGDB 1
 .Sh NAME
 .Nm xbps-pkgdb
@@ -121,6 +121,27 @@ Default package database (0.38 format). Keeps track of installed packages and pr
 .It Ar /var/cache/xbps
 Default cache directory to store downloaded binary packages.
 .El
+.Sh EXAMPLES
+Check for issues with package
+.Sq foo :
+.Pp
+.Dl # xbps-pkgdb foo
+.Pp
+Check all packages for issues:
+.Pp
+.Dl # xbps-pkgdb -a
+.Pp
+Prevent package
+.Sq foo
+from being updated during a system update:
+.Pp
+.Dl # xbps-pkgdb -m hold foo
+.Pp
+Remove hold on package
+.Sq foo :
+.Pp
+.Dl # xbps-pkgdb -m unhold foo
+.Pp
 .Sh SEE ALSO
 .Xr xbps-checkvers 1 ,
 .Xr xbps-create 1 ,
