@@ -1233,9 +1233,9 @@ int xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkgname, bo
  * @return 0 on success, otherwise an errno value.
  * @retval EBUSY The xbps package must be updated.
  * @retval EEXIST All installed packages are already up-to-date.
- * @retval EINVAL Any other error ocurred in the process.
  * @retval ENOENT No packages currently register.
  * @retval ENOTSUP No repositories currently installed.
+ * @retval EINVAL Any other error ocurred in the process.
  */
 int xbps_transaction_update_packages(struct xbps_handle *xhp);
 
