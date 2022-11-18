@@ -134,7 +134,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		rv = errno;
 		goto out;
 	}
-	if ((dirp = opendir(repodir)) == NULL) {
+	if ((dirp = opendir(".")) == NULL) {
 		fprintf(stderr, "xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
 		rv = errno;
