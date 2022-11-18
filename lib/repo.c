@@ -248,6 +248,7 @@ repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
 		int rv = errno;
 		xbps_dbg_printf(xhp, "[repo] `%s' open %s %s\n",
 		    repofile, name, strerror(rv));
+		xbps_error_printf("%s: %s\n", strerror(rv), repofile);
 		goto out;
 	}
 	if (repo_open_local(repo, repofile)) {
