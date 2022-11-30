@@ -1,0 +1,48 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: '0 0 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    container:
+      image: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64
+    steps:
+    - name: Prepare container
+      run: |
+        xbps-install -Syu || xbps-install -yu xbps
+        # node-based actions require libstdc++.so.6
+        xbps-install -Sy \
+          libstdc++ git \
+          gcc make pkg-config zlib-devel openssl-devel libarchive-devel
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - run: git config --global --add safe.directory $(pwd)
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: cpp
+        config-file: ./.github/codeql/codeql-config.yaml
+    - name: Build xbps
+      run: |
+          ./configure
+          make -j
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:cpp"
