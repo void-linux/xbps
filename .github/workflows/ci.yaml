@@ -1,5 +1,15 @@
 name: Tests
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - 'master'
+      - 'ci-**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
    testsuite:
       strategy:
@@ -23,7 +33,8 @@ jobs:
       container: ${{ matrix.void_image }}
       steps:
          - uses: actions/checkout@v1
-         - run: |
+         - name: Prepare container
+           run: |
             xbps-install -Syu || xbps-install -yu xbps
             xbps-install -Sy ${{ matrix.c_compiler }} ${{ matrix.extra_deps }} make pkg-config zlib-devel openssl-devel libarchive-devel kyua atf-devel
          - name: Build
@@ -32,4 +43,5 @@ jobs:
            run: |
               ./configure --enable-tests
               make -j
-         - run: make check
+         - name: Check
+           run: make check
