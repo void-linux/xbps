@@ -130,7 +130,20 @@ die(const char *fmt, ...)
 	va_start(ap, fmt);
 	fprintf(stderr, "%s: ERROR: ", _PROGNAME);
 	vfprintf(stderr, fmt, ap);
-	fprintf(stderr, " %s\n", save_errno ? strerror(save_errno) : "");
+	fprintf(stderr, ": %s\n", save_errno ? strerror(save_errno) : "");
+	va_end(ap);
+	exit(EXIT_FAILURE);
+}
+
+static void __attribute__((noreturn))
+diex(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fprintf(stderr, "%s: ERROR: ", _PROGNAME);
+	vfprintf(stderr, fmt, ap);
+	fprintf(stderr, "\n");
 	va_end(ap);
 	exit(EXIT_FAILURE);
 }
@@ -143,7 +156,7 @@ die_archive(struct archive *ar, const char *fmt, ...)
 	va_start(ap, fmt);
 	fprintf(stderr, "%s: ERROR: ", _PROGNAME);
 	vfprintf(stderr, fmt, ap);
-	fprintf(stderr, " %s\n", archive_error_string(ar));
+	fprintf(stderr, ": %s\n", archive_error_string(ar));
 	va_end(ap);
 	exit(EXIT_FAILURE);
 }
@@ -178,7 +191,8 @@ process_array(const char *key, const char *val)
 		return;
 
 	array = xbps_array_create();
-	assert(array);
+	if (array == NULL)
+		die("xbps_array_create");
 
 	if (strchr(val, ' ') == NULL) {
 		xbps_array_add_cstring_nocopy(array, val);
@@ -186,7 +200,8 @@ process_array(const char *key, const char *val)
 	}
 
         args = strdup(val);
-	assert(args);
+	if (args == NULL)
+		die("strdup");
 
 	for ((p = strtok_r(args, " ", &saveptr)); p;
 	     (p = strtok_r(NULL, " ", &saveptr))) {
@@ -208,12 +223,14 @@ process_one_alternative(const char *altgrname, const char *val)
 
 	if ((d = xbps_dictionary_get(pkg_propsd, "alternatives")) == NULL) {
 		d = xbps_dictionary_create();
-		assert(d);
+		if (d == NULL)
+			die("xbps_dictionary_create");
 		alloc = true;
 	}
 	if ((a = xbps_dictionary_get(d, altgrname)) == NULL) {
 		a = xbps_array_create();
-		assert(a);
+		if (a == NULL)
+			die("xbps_array_create");
 	}
 	altfiles = strchr(val, ':') + 1;
 	assert(altfiles);
@@ -278,7 +295,7 @@ process_file(const char *file, const char *key)
 
 	if (fstat(fileno(f), &st) == -1) {
 		fclose(f);
-		die("lstat %s", file);
+		die("lstat: %s", file);
 	}
 
 	if (S_ISREG(st.st_mode) == 0) {
@@ -290,24 +307,24 @@ process_file(const char *file, const char *key)
 
 	if ((blob = malloc(len)) == NULL) {
 	        fclose(f);
-		die("malloc %s", file);
+		die("malloc");
 	}
 
 	if (fread(blob, len, 1, f) != len) {
 		if (ferror(f)) {
 			fclose(f);
-			die("fread %s", file);
+			die("fread: %s", file);
 		}
 	}
 	fclose(f);
 
 	if ((data = xbps_data_create_data(blob, len)) == NULL)
-		die("xbps_data_create_data %s", file);
+		die("xbps_data_create_data: %s", file);
 
 	free(blob);
 
 	if (!xbps_dictionary_set(pkg_propsd, key, data))
-		die("xbps_dictionary_set %s", key);
+		die("xbps_dictionary_set: %s", key);
 
 	xbps_object_release(data);
 }
@@ -358,7 +375,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 	fileinfo = xbps_dictionary_create();
 	xe = calloc(1, sizeof(*xe));
 	if (xe == NULL)
-		die("calloc:");
+		die("calloc");
 
 	/* XXX: fileinfo contains the sanatized path, whereas xe contains the
 	 * unsanatized path!
@@ -393,7 +410,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 
 		len = readlink(fpath, buf, sizeof(buf));
 		if (len < 0 || len >= (int)sizeof(buf))
-			die("readlink: %s:", fpath);
+			die("readlink: %s", fpath);
 		buf[len] = '\0';
 
 		/*
@@ -409,7 +426,8 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 				 * So let's use the same target.
 				 */
 				xe->target = xbps_sanitize_path(buf);
-				assert(xe->target);
+				if (xe->target == NULL)
+					die("xbps_sanitize_path");
 				xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 			} else {
 				char *p3;
@@ -421,9 +439,11 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 
 
 				p3 = strdup(p+strlen(p2));
-				assert(p3);
+				if (p3 == NULL)
+					die("strdup");
 				xe->target = xbps_sanitize_path(p3);
-				assert(xe->target);
+				if (xe->target == NULL)
+					die("xbps_sanitize_path");
 				free(p3);
 				xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 				free(p);
@@ -432,22 +452,26 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		} else if (buf[0] != '/') {
 			/* relative path */
 			p = strdup(filep);
-			assert(p);
+			if (p == NULL)
+				die("strdup");
 			dname = dirname(p);
-			assert(dname);
+			if (dname == NULL)
+				die("dirname: %s", p);
 			p2 = xbps_xasprintf("%s/%s", dname, buf);
-			assert(p2);
+			if (p2 == NULL)
+				die("xbps_xasprintf");
 			xe->target = xbps_sanitize_path(p2);
-			assert(xe->target);
+			if (xe->target == NULL)
+				die("xbps_sanitize_path");
 			xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 			free(p2);
 			free(p);
 		} else {
 			xe->target = xbps_sanitize_path(buf);
-			assert(xe->target);
+			if (xe->target == NULL)
+				die("xbps_sanitize_path");
 			xbps_dictionary_set_cstring(fileinfo, "target", xe->target);
 		}
-		assert(xe->target);
 		assert(xbps_dictionary_get(fileinfo, "target"));
 	} else if (S_ISREG(sb->st_mode)) {
 		struct xentry *xep;
@@ -469,7 +493,8 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		}
 
 		iter = xbps_dictionary_iterator(all_filesd);
-		assert(iter);
+		if (iter == NULL)
+			die("xbps_dictionary_iterator");
 		while ((obj = xbps_object_iterator_next(iter))) {
 			if (sb->st_nlink <= 1)
 				continue;
@@ -498,9 +523,8 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 			xe->type = ENTRY_TYPE_FILES;
 		}
 
-		assert(xe->type);
 		if (!xbps_file_sha256(xe->sha256, sizeof sha256, fpath))
-			die("failed to process hash for %s:", fpath);
+			die("failed to process hash for: %s", fpath);
 		xbps_dictionary_set_cstring(fileinfo, "sha256", xe->sha256);
 
 		xbps_dictionary_set_uint64(fileinfo, "inode", sb->st_ino);
@@ -580,7 +604,8 @@ process_xentry(enum entry_type type, const char *mutable_files)
 	bool found = false, mutable_found = false;
 
 	a = xbps_array_create();
-	assert(a);
+	if (a == NULL)
+		die("xbps_array_create");
 
 	TAILQ_FOREACH_REVERSE(xe, &xentry_list, xentry_head, entries) {
 		if (xe->type != type)
@@ -588,7 +613,8 @@ process_xentry(enum entry_type type, const char *mutable_files)
 
 		found = true;
 		d = xbps_dictionary_create();
-		assert(d);
+		if (d == NULL)
+			die("xbps_dictionary_create");
 		/* sanitize file path */
 		p = strchr(xe->file, '.') + 1;
 		/*
@@ -600,7 +626,8 @@ process_xentry(enum entry_type type, const char *mutable_files)
 				xbps_dictionary_set_bool(d, "mutable", true);
 			else {
 				args = strdup(mutable_files);
-				assert(args);
+				if (args == NULL)
+					die("strdup");
 				for ((tok = strtok_r(args, " ", &saveptr)); tok;
 				    (tok = strtok_r(NULL, " ", &saveptr))) {
 					if (strcmp(tok, p) == 0) {
@@ -637,7 +664,7 @@ static void
 process_destdir(const char *mutable_files)
 {
 	if (walk_dir(".", ftw_cb) < 0)
-		die("failed to process destdir files (nftw):");
+		die("failed to process destdir files (nftw)");
 
 	/* Process regular files */
 	process_xentry(ENTRY_TYPE_FILES, mutable_files);
@@ -664,7 +691,7 @@ write_entry(struct archive *ar, struct archive_entry *entry)
 		return;
 
 	if (archive_write_header(ar, entry) != ARCHIVE_OK)
-		die_archive(ar, "cannot write %s to archive:", target);
+		die_archive(ar, "archive_write_header: %s", target);
 
 	/* Only regular files can have data. */
 	if (archive_entry_filetype(entry) != AE_IFREG ||
@@ -676,14 +703,14 @@ write_entry(struct archive *ar, struct archive_entry *entry)
 	name = archive_entry_sourcepath(entry);
 
 	if ((fd = open(name, O_RDONLY)) < 0)
-		die("cannot open %s file", name);
+		die("cannot open: %s", name);
 	while ((len = read(fd, buf, sizeof(buf))) > 0)
 		if (archive_write_data(ar, buf, len) != len)
-			die_archive(ar, "cannot write %s to archive:", target);
+			die_archive(ar, "archive_write_data: %s", target);
 	(void)close(fd);
 
-	if(len < 0)
-		die("cannot open %s file", name);
+	if (len < 0)
+		die("cannot open: %s", name);
 
 	archive_entry_free(entry);
 }
@@ -705,13 +732,13 @@ process_entry_file(struct archive *ar,
 		return;
 
 	if (xbps_path_join(path, sizeof(path), destdir, xe->file, (char *)NULL) == -1)
-		die("path too long %s:", xe->file);
+		die("xbps_path_join");
 	if (lstat(path, &st) == -1)
-		die("failed to add entry (fstat) %s to archive:", xe->file);
+		die("lstat: %s", xe->file);
 
 	entry = archive_entry_new();
 	if (entry == NULL)
-		die("failed to add entry %s to archive:", xe->file);
+		die("archive_entry_new");
 
 	archive_entry_set_pathname(entry, xe->file);
 	if (st.st_uid == geteuid())
@@ -732,7 +759,7 @@ process_entry_file(struct archive *ar,
 
 		len = readlink(path, buf, sizeof(buf));
 		if (len < 0 || len >= (int)sizeof(buf))
-			die("readlink: %s:", xe->file);
+			die("readlink: %s", xe->file);
 		buf[len] = '\0';
 
 		archive_entry_set_symlink(entry, buf);
@@ -763,18 +790,20 @@ process_archive(struct archive *ar,
 	 * Add the installed-size object.
 	 */
 	if (!xbps_dictionary_set_uint64(pkg_propsd, "installed_size", instsize))
-		die("failed to set installed_size obj!");
+		die("xbps_dictionary_set_uint64");
 
 	/* Add props.plist metadata file */
 	xml = xbps_dictionary_externalize(pkg_propsd);
-	assert(xml);
+	if (xml == NULL)
+		die("xbps_dictionary_externalize");
 	xbps_archive_append_buf(ar, xml, strlen(xml), "./props.plist",
 	    0644, "root", "root");
 	free(xml);
 
 	/* Add files.plist metadata file */
 	xml = xbps_dictionary_externalize(pkg_filesd);
-	assert(xml);
+	if (xml == NULL)
+		die("xbps_dictionary_externalize");
 	xbps_archive_append_buf(ar, xml, strlen(xml), "./files.plist",
 	    0644, "root", "root");
 	free(xml);
@@ -948,29 +977,30 @@ main(int argc, char **argv)
 	setlocale(LC_ALL, "");
 
 	if (pkgver == NULL)
-		die("pkgver not set!");
+		diex("pkgver not set!");
 	else if (desc == NULL)
-		die("short description not set!");
+		diex("short description not set!");
 	else if (arch == NULL)
-		die("architecture not set!");
+		diex("architecture not set!");
 	/*
 	 * Sanity check for required options.
 	 */
 	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
-		die("invalid pkgver! got `%s' expected `foo-1.0_1'", pkgver);
+		diex("invalid pkgver! got `%s' expected `foo-1.0_1'", pkgver);
 	version = xbps_pkg_version(pkgver);
 	if (version == NULL)
-		die("invalid pkgver! got `%s' expected `foo-1.0_1'", pkgver);
+		diex("invalid pkgver! got `%s' expected `foo-1.0_1'", pkgver);
 
 	if (stat(destdir, &st) == -1)
-		die("failed to stat() destdir `%s':", destdir);
+		die("stat: %s", destdir);
 	if (!S_ISDIR(st.st_mode))
-		die("destdir `%s' is not a directory!", destdir);
+		diex("destdir `%s' is not a directory!", destdir);
 	/*
 	 * Process XBPS_PKGPROPS metadata file.
 	 */
 	pkg_propsd = xbps_dictionary_create();
-	assert(pkg_propsd);
+	if (pkg_propsd == NULL)
+		die("xbps_dictionary_create");
 
 	/* Required properties */
 	xbps_dictionary_set_cstring_nocopy(pkg_propsd, "architecture", arch);
@@ -1024,10 +1054,11 @@ main(int argc, char **argv)
 	/* save cwd */
 	memset(&cwd, 0, sizeof(cwd));
 	p = getcwd(cwd, sizeof(cwd));
-	assert(p);
+	if (p == NULL)
+		die("getcwd");
 
 	if (chdir(destdir) == -1)
-		die("cannot chdir() to destdir %s:", destdir);
+		die("chdir: %s", destdir);
 
 	/* Optional INSTALL/REMOVE messages */
 	process_file("INSTALL.msg", "install-msg");
@@ -1036,14 +1067,17 @@ main(int argc, char **argv)
 	 * Process XBPS_PKGFILES metadata file.
 	 */
 	pkg_filesd = xbps_dictionary_create();
-	assert(pkg_filesd);
+	if (pkg_filesd == NULL)
+		die("xbps_dictionary_create");
 	all_filesd = xbps_dictionary_create();
-	assert(all_filesd);
+	if (all_filesd == NULL)
+		die("xbps_dictionary_create");
+
 	process_destdir(mutable_files);
 
 	/* Back to original cwd after file tree walk processing */
 	if (chdir(p) == -1)
-		die("cannot chdir() to cwd %s:", cwd);
+		die("chdir: %s", p);
 
 	/*
 	 * Create a temp file to store archive data.
@@ -1051,14 +1085,15 @@ main(int argc, char **argv)
 	tname = xbps_xasprintf(".xbps-pkg-XXXXXXXXX");
 	myumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
 	pkg_fd = mkstemp(tname);
-	assert(pkg_fd != -1);
+	if (pkg_fd == -1)
+		die("mkstemp");
 	umask(myumask);
 	/*
 	 * Process the binary package's archive (ustar compressed with xz).
 	 */
 	ar = archive_write_new();
 	if (ar == NULL)
-		die("cannot create new archive");
+		die("archive_write_new");
 	/*
 	 * Set compression format, zstd by default.
 	 */
@@ -1080,17 +1115,17 @@ main(int argc, char **argv)
 	} else if (strcmp(compression, "none") == 0) {
 		/* empty */
 	} else {
-		die("unknown compression format %s", compression);
+		diex("unknown compression format %s", compression);
 	}
 
 	archive_write_set_format_pax_restricted(ar);
 	if ((resolver = archive_entry_linkresolver_new()) == NULL)
-		die("cannot create link resolver");
+		die("archive_entry_linkresolver_new");
 	archive_entry_linkresolver_set_strategy(resolver,
 	    archive_format(ar));
 
 	if (archive_write_open_fd(ar, pkg_fd) != ARCHIVE_OK)
-		die("Failed to open %s fd for writing:", tname);
+		die("archive_write_open_fd: %s", tname);
 
 	process_archive(ar, resolver, pkgver, quiet);
 	/* Process hardlinks */
@@ -1104,9 +1139,9 @@ main(int argc, char **argv)
 	archive_entry_linkresolver_free(resolver);
 
 	if (archive_write_close(ar) != ARCHIVE_OK)
-		die_archive(ar, "Failed to write archive %s:", tname);
+		die_archive(ar, "archive_write_close: %s", tname);
 	if (archive_write_free(ar) != ARCHIVE_OK)
-		die_archive(ar, "Failed to close archive");
+		die_archive(ar, "archive_write_free");
 
 	/*
 	 * Archive was created successfully; flush data to storage,
@@ -1124,12 +1159,12 @@ main(int argc, char **argv)
 	(void)umask(myumask);
 
 	if (fchmod(pkg_fd, 0666 & ~myumask) == -1)
-		die("cannot fchmod() %s:", tname);
+		die("fchmod: %s", tname);
 
 	close(pkg_fd);
 
 	if (rename(tname, binpkg) == -1)
-		die("cannot rename %s to %s:", tname, binpkg);
+		die("rename: %s to %s", tname, binpkg);
 
 	/* Success, release resources */
 	if (!quiet)
