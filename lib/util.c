@@ -33,16 +33,18 @@
 
 #include "compat.h"
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
+#include <sys/utsname.h>
+
+#include <ctype.h>
 #include <errno.h>
 #include <fnmatch.h>
-#include <ctype.h>
 #include <libgen.h>
-#include <sys/utsname.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "xbps_api_impl.h"
 

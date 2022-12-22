@@ -42,7 +42,6 @@
 #endif
 
 #include "queue.h"
-#include "fetch.h"
 #include "compat.h"
 
 #define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \

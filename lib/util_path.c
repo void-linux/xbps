@@ -56,9 +56,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <string.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "xbps_api_impl.h"
 

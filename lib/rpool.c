@@ -32,6 +32,7 @@
 #include <errno.h>
 
 #include "xbps_api_impl.h"
+#include "fetch.h"
 
 struct rpool_fpkg {
 	xbps_array_t revdeps;

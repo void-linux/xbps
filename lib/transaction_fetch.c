@@ -24,12 +24,14 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
 
 #include "xbps_api_impl.h"
+#include "fetch.h"
 
 static int
 verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)

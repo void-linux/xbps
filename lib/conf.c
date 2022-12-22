@@ -29,16 +29,17 @@
 #ifdef __FreeBSD__
 #define _WITH_GETLINE   /* getline() */
 #endif
+#include <ctype.h>
+#include <dirent.h>
+#include <errno.h>
+#include <glob.h>
+#include <libgen.h>
+#include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <dirent.h>
-#include <ctype.h>
-#include <glob.h>
-#include <libgen.h>
 
 #include "xbps_api_impl.h"
 

@@ -32,6 +32,7 @@
 #include <errno.h>
 
 #include "xbps_api_impl.h"
+#include "fetch.h"
 
 /**
  * @file lib/plist_fetch.c
