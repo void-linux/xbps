@@ -37,6 +37,7 @@ jobs:
            run: |
             xbps-install -Syu || xbps-install -yu xbps
             xbps-install -Sy ${{ matrix.c_compiler }} ${{ matrix.extra_deps }} make pkg-config zlib-devel openssl-devel libarchive-devel kyua atf-devel
+            pkg-config --debug libarchive
          - name: Build
            env:
               CC: ${{ matrix.c_compiler }}
