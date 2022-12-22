@@ -51,12 +51,16 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 {
 	xbps_array_t array;
 	xbps_object_t obj;
-	xbps_dictionary_t filesd = arg;
+	xbps_dictionary_t *dicts = arg;
+	xbps_dictionary_t pkgd = dicts[0];
+	xbps_dictionary_t filesd = dicts[1];
+	xbps_array_t conf_files;
 	int rv = 0;
 
 	array = xbps_dictionary_get(filesd, "links");
 	if (array == NULL)
 		return 0;
+	conf_files = xbps_dictionary_get(pkgd, "conf_files");
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		const char *file = NULL, *tgt = NULL;
@@ -86,7 +90,7 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 			rv = -1;
 			continue;
 		}
-		if (strcmp(lnk, tgt)) {
+		if (strcmp(lnk, tgt) && (!conf_files || !xbps_match_string_in_array(conf_files, lnk))) {
 			xbps_warn_printf("%s: modified symlink %s "
 			    "points to %s (shall be %s)\n",
 			    pkgname, file, lnk, tgt);
