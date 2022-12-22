@@ -765,7 +765,7 @@ process_archive(struct archive *ar,
 			continue;
 
 		if (!quiet) {
-			printf("%s: adding `%s' ...\n", pkgver, xe->file);
+			printf("%s: adding `%s'...\n", pkgver, xe->file);
 			fflush(stdout);
 		}
 		process_entry_file(ar, resolver, xe, NULL);

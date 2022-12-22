@@ -76,7 +76,7 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 	switch (xscd->state) {
 	/* notifications */
 	case XBPS_STATE_REMOVE:
-		printf("Removing `%s' ...\n", xscd->arg);
+		printf("Removing `%s'...\n", xscd->arg);
 		break;
 	/* success */
 	case XBPS_STATE_REMOVE_FILE:
