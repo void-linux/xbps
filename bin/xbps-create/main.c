@@ -51,10 +51,19 @@
 
 #define _PROGNAME	"xbps-create"
 
+enum entry_type {
+	ENTRY_TYPE_METADATA = 1,
+	ENTRY_TYPE_LINKS,
+	ENTRY_TYPE_DIRS,
+	ENTRY_TYPE_FILES,
+	ENTRY_TYPE_CONF_FILES,
+};
+
 struct xentry {
 	TAILQ_ENTRY(xentry) entries;
 	uint64_t size;
-	char *file, *type, *target;
+	enum entry_type type;
+	char *file, *target;
 	char sha256[XBPS_SHA256_SIZE];
 	ino_t inode;
 };
@@ -137,6 +146,24 @@ die_archive(struct archive *ar, const char *fmt, ...)
 	fprintf(stderr, " %s\n", archive_error_string(ar));
 	va_end(ap);
 	exit(EXIT_FAILURE);
+}
+
+static const char *
+entry_type_str(enum entry_type type)
+{
+	switch (type) {
+	case ENTRY_TYPE_LINKS:
+		return "links";
+	case ENTRY_TYPE_DIRS:
+		return "dirs";
+	case ENTRY_TYPE_FILES:
+		return "files";
+	case ENTRY_TYPE_CONF_FILES:
+		return "conf_files";
+	case ENTRY_TYPE_METADATA:
+		return "metadata";
+	}
+	diex("unknown entry type");
 }
 
 static void
@@ -330,7 +357,9 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 	filep = strchr(fpath, '.') + 1;
 	fileinfo = xbps_dictionary_create();
 	xe = calloc(1, sizeof(*xe));
-	assert(xe);
+	if (xe == NULL)
+		die("calloc:");
+
 	/* XXX: fileinfo contains the sanatized path, whereas xe contains the
 	 * unsanatized path!
 	 *
@@ -346,8 +375,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 	    (strcmp(fpath, "./REMOVE") == 0)) {
 		/* metadata file */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "metadata");
-		xe->type = strdup("metadata");
-		assert(xe->type);
+		xe->type = ENTRY_TYPE_METADATA;
 		goto out;
 	}
 
@@ -361,9 +389,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		 * Find out target file.
 		 */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "links");
-		xe->type = strdup("links");
-		assert(xe->type);
-		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "links");
+		xe->type = ENTRY_TYPE_LINKS;
 
 		len = readlink(fpath, buf, sizeof(buf));
 		if (len < 0 || len >= (int)sizeof(buf))
@@ -466,10 +492,10 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		 */
 		if (entry_is_conf_file(filep)) {
 			xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "conf_files");
-			xe->type = strdup("conf_files");
+			xe->type = ENTRY_TYPE_CONF_FILES;
 		} else {
 			xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "files");
-			xe->type = strdup("files");
+			xe->type = ENTRY_TYPE_FILES;
 		}
 
 		assert(xe->type);
@@ -484,8 +510,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 	} else if (S_ISDIR(sb->st_mode)) {
 		/* directory */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "dirs");
-		xe->type = strdup("dirs");
-		assert(xe->type);
+		xe->type = ENTRY_TYPE_DIRS;
 	} else if (S_ISFIFO(sb->st_mode)) {
 		errno = 0;
 		die("cannot package fifo %s", fpath);
@@ -546,7 +571,7 @@ walk_dir(const char *path,
 }
 
 static void
-process_xentry(const char *key, const char *mutable_files)
+process_xentry(enum entry_type type, const char *mutable_files)
 {
 	xbps_array_t a;
 	xbps_dictionary_t d;
@@ -558,7 +583,7 @@ process_xentry(const char *key, const char *mutable_files)
 	assert(a);
 
 	TAILQ_FOREACH_REVERSE(xe, &xentry_list, xentry_head, entries) {
-		if (strcmp(xe->type, key))
+		if (xe->type != type)
 			continue;
 
 		found = true;
@@ -603,7 +628,7 @@ process_xentry(const char *key, const char *mutable_files)
 		xbps_object_release(d);
 	}
 	if (found)
-		xbps_dictionary_set(pkg_filesd, key, a);
+		xbps_dictionary_set(pkg_filesd, entry_type_str(type), a);
 
 	xbps_object_release(a);
 }
@@ -615,16 +640,16 @@ process_destdir(const char *mutable_files)
 		die("failed to process destdir files (nftw):");
 
 	/* Process regular files */
-	process_xentry("files", mutable_files);
+	process_xentry(ENTRY_TYPE_FILES, mutable_files);
 
 	/* Process configuration files */
-	process_xentry("conf_files", NULL);
+	process_xentry(ENTRY_TYPE_CONF_FILES, NULL);
 
 	/* Process symlinks */
-	process_xentry("links", NULL);
+	process_xentry(ENTRY_TYPE_LINKS, NULL);
 
 	/* Process directories */
-	process_xentry("dirs", NULL);
+	process_xentry(ENTRY_TYPE_DIRS, NULL);
 }
 
 static void
@@ -757,8 +782,7 @@ process_archive(struct archive *ar,
 	/* Add all package data files and release resources */
 	while ((xe = TAILQ_FIRST(&xentry_list)) != NULL) {
 		TAILQ_REMOVE(&xentry_list, xe, entries);
-		if ((strcmp(xe->type, "metadata") == 0) ||
-		    (strcmp(xe->type, "dirs") == 0))
+		if (xe->type == ENTRY_TYPE_METADATA || xe->type == ENTRY_TYPE_DIRS)
 			continue;
 
 		if (!quiet) {
