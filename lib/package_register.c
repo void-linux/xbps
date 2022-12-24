@@ -60,7 +60,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	 * preserve its value.
 	 */
 	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true)) {
-		xbps_dbg_printf(xhp, "%s: invalid autoinst for %s\n",  __func__, pkgver);
+		xbps_dbg_printf("%s: invalid autoinst for %s\n",  __func__, pkgver);
 		rv = EINVAL;
 		goto out;
 	}
@@ -77,19 +77,19 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 		 */
 		t = time(NULL);
 		if ((tmp = localtime_r(&t, &tm)) == NULL) {
-			xbps_dbg_printf(xhp, "%s: localtime_r failed: %s\n",
+			xbps_dbg_printf("%s: localtime_r failed: %s\n",
 					pkgver, strerror(errno));
 			rv = EINVAL;
 			goto out;
 		}
 		if (strftime(outstr, sizeof(outstr)-1, "%F %R %Z", tmp) == 0) {
-			xbps_dbg_printf(xhp, "%s: strftime failed: %s\n",
+			xbps_dbg_printf("%s: strftime failed: %s\n",
 					pkgver, strerror(errno));
 			rv = EINVAL;
 			goto out;
 		}
 		if (!xbps_dictionary_set_cstring(pkgd, "install-date", outstr)) {
-			xbps_dbg_printf(xhp, "%s: install-date set failed!\n", pkgver);
+			xbps_dbg_printf("%s: install-date set failed!\n", pkgver);
 			rv = EINVAL;
 			goto out;
 		}
@@ -123,8 +123,7 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	xbps_dictionary_remove(pkgd, "version");
 
 	if (!xbps_dictionary_set(xhp->pkgdb, pkgname, pkgd)) {
-		xbps_dbg_printf(xhp,
-				"%s: failed to set pkgd for %s\n", __func__, pkgver);
+		xbps_dbg_printf("%s: failed to set pkgd for %s\n", __func__, pkgver);
 	}
 out:
 	xbps_object_release(pkgd);

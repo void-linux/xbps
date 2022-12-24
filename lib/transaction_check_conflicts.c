@@ -105,7 +105,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 					continue;
 				}
 			}
-			xbps_dbg_printf(xhp, "found conflicting installed "
+			xbps_dbg_printf("found conflicting installed "
 			    "pkg %s with pkg in transaction %s "
 			    "(matched by %s [trans])\n", pkgver, repopkgver, cfpkg);
 			buf = xbps_xasprintf("CONFLICT: %s with "
@@ -137,7 +137,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
 				break;
 			}
-			xbps_dbg_printf(xhp, "found conflicting pkgs in "
+			xbps_dbg_printf("found conflicting pkgs in "
 			    "transaction %s <-> %s (matched by %s [trans])\n",
 			    pkgver, repopkgver, cfpkg);
 			buf = xbps_xasprintf("CONFLICT: %s with "
@@ -209,7 +209,7 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 				rv = EINVAL;
 				break;
 			}
-			xbps_dbg_printf(xhp, "found conflicting pkgs in "
+			xbps_dbg_printf("found conflicting pkgs in "
 			    "transaction %s <-> %s (matched by %s [pkgdb])\n",
 			    pkgver, repopkgver, cfpkg);
 			buf = xbps_xasprintf("CONFLICT: %s with "

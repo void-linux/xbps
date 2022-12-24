@@ -48,7 +48,7 @@ xbps_init(struct xbps_handle *xhp)
 
 	assert(xhp != NULL);
 
-	xbps_dbg_printf(xhp, "%s\n", XBPS_RELVER);
+	xbps_dbg_printf("%s\n", XBPS_RELVER);
 
 	/* Set rootdir */
 	if (xhp->rootdir[0] == '\0') {
@@ -151,23 +151,23 @@ xbps_init(struct xbps_handle *xhp)
 	if (xbps_path_clean(xhp->metadir) == -1)
 		return ENOTSUP;
 
-	xbps_dbg_printf(xhp, "rootdir=%s\n", xhp->rootdir);
-	xbps_dbg_printf(xhp, "metadir=%s\n", xhp->metadir);
-	xbps_dbg_printf(xhp, "cachedir=%s\n", xhp->cachedir);
-	xbps_dbg_printf(xhp, "confdir=%s\n", xhp->confdir);
-	xbps_dbg_printf(xhp, "sysconfdir=%s\n", xhp->sysconfdir);
-	xbps_dbg_printf(xhp, "syslog=%s\n", xhp->flags & XBPS_FLAG_DISABLE_SYSLOG ? "false" : "true");
-	xbps_dbg_printf(xhp, "bestmatching=%s\n", xhp->flags & XBPS_FLAG_BESTMATCH ? "true" : "false");
-	xbps_dbg_printf(xhp, "keepconf=%s\n", xhp->flags & XBPS_FLAG_KEEP_CONFIG ? "true" : "false");
-	xbps_dbg_printf(xhp, "Architecture: %s\n", xhp->native_arch);
-	xbps_dbg_printf(xhp, "Target Architecture: %s\n", xhp->target_arch ? xhp->target_arch : "(null)");
+	xbps_dbg_printf("rootdir=%s\n", xhp->rootdir);
+	xbps_dbg_printf("metadir=%s\n", xhp->metadir);
+	xbps_dbg_printf("cachedir=%s\n", xhp->cachedir);
+	xbps_dbg_printf("confdir=%s\n", xhp->confdir);
+	xbps_dbg_printf("sysconfdir=%s\n", xhp->sysconfdir);
+	xbps_dbg_printf("syslog=%s\n", xhp->flags & XBPS_FLAG_DISABLE_SYSLOG ? "false" : "true");
+	xbps_dbg_printf("bestmatching=%s\n", xhp->flags & XBPS_FLAG_BESTMATCH ? "true" : "false");
+	xbps_dbg_printf("keepconf=%s\n", xhp->flags & XBPS_FLAG_KEEP_CONFIG ? "true" : "false");
+	xbps_dbg_printf("Architecture: %s\n", xhp->native_arch);
+	xbps_dbg_printf("Target Architecture: %s\n", xhp->target_arch ? xhp->target_arch : "(null)");
 
 	if (xhp->flags & XBPS_FLAG_DEBUG) {
 		const char *repodir;
 		for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 			if (!xbps_array_get_cstring_nocopy(xhp->repositories, i, &repodir))
 			    return errno;
-			xbps_dbg_printf(xhp, "Repository[%u]=%s\n", i, repodir);
+			xbps_dbg_printf("Repository[%u]=%s\n", i, repodir);
 		}
 	}
 

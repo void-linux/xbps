@@ -68,7 +68,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 			if (!xbps_remove_pkg_from_array_by_pkgver(pkgs, curpkgver)) {
 				return false;
 			}
-			xbps_dbg_printf(xhp, "[trans] replaced %s with %s\n", curpkgver, pkgver);
+			xbps_dbg_printf("[trans] replaced %s with %s\n", curpkgver, pkgver);
 		}
 	}
 
@@ -105,7 +105,7 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_ADDPKG, 0, pkgver,
 	    "Found %s in repository %s", pkgver, repo);
 
-	xbps_dbg_printf(xhp, "[trans] `%s' stored (%s)\n", pkgver, repo);
+	xbps_dbg_printf("[trans] `%s' stored (%s)\n", pkgver, repo);
 	xbps_object_release(pkgd);
 
 	return true;

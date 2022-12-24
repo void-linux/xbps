@@ -940,7 +940,7 @@ xbps_plist_array_from_file(struct xbps_handle *xhp, const char *f)
 
 	a = xbps_array_internalize_from_zfile(f);
 	if (xbps_object_type(a) != XBPS_TYPE_ARRAY) {
-		xbps_dbg_printf(xhp,
+		xbps_dbg_printf(
 		    "xbps: failed to internalize array from %s\n", f);
 	}
 	return a;
@@ -953,7 +953,7 @@ xbps_plist_dictionary_from_file(struct xbps_handle *xhp, const char *f)
 
 	d = xbps_dictionary_internalize_from_zfile(f);
 	if (xbps_object_type(d) != XBPS_TYPE_DICTIONARY) {
-		xbps_dbg_printf(xhp,
+		xbps_dbg_printf(
 		    "xbps: failed to internalize dict from %s\n", f);
 	}
 	return d;

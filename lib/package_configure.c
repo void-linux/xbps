@@ -66,14 +66,14 @@ xbps_configure_packages(struct xbps_handle *xhp, xbps_array_t ignpkgs)
 		if (xbps_array_count(ignpkgs)) {
 			if ((xbps_match_string_in_array(ignpkgs, pkgver)) ||
 			    (xbps_match_pkgver_in_array(ignpkgs, pkgver))) {
-				xbps_dbg_printf(xhp, "%s: ignoring pkg %s\n",
+				xbps_dbg_printf("%s: ignoring pkg %s\n",
 				    __func__, pkgver);
 				continue;
 			}
 		}
 		rv = xbps_configure_pkg(xhp, pkgver, true, false);
 		if (rv != 0) {
-			xbps_dbg_printf(xhp, "%s: failed to configure %s: %s\n",
+			xbps_dbg_printf("%s: failed to configure %s: %s\n",
 			    __func__, pkgver, strerror(rv));
 			break;
 		}
@@ -106,15 +106,15 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, p);
 	if (pkgd == NULL) {
-		xbps_dbg_printf(xhp, "[configure] cannot find %s (%s) "
+		xbps_dbg_printf("[configure] cannot find %s (%s) "
 		    "in pkgdb\n", p, pkgver);
 		return ENOENT;
 	}
 
 	rv = xbps_pkg_state_dictionary(pkgd, &state);
-	xbps_dbg_printf(xhp, "%s: state %d rv %d\n", pkgver, state, rv);
+	xbps_dbg_printf("%s: state %d rv %d\n", pkgver, state, rv);
 	if (rv != 0) {
-		xbps_dbg_printf(xhp, "%s: [configure] failed to get "
+		xbps_dbg_printf("%s: [configure] failed to get "
 		    "pkg state: %s\n", pkgver, strerror(rv));
 		return EINVAL;
 	}

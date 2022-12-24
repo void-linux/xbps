@@ -681,8 +681,10 @@ struct xbps_handle {
 	int flags;
 };
 
-void xbps_dbg_printf(struct xbps_handle *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
-void xbps_dbg_printf_append(struct xbps_handle *, const char *, ...)__attribute__ ((format (printf, 2, 3)));
+extern int xbps_debug_level;
+
+void xbps_dbg_printf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void xbps_dbg_printf_append(const char *, ...)__attribute__ ((format (printf, 1, 2)));
 void xbps_error_printf(const char *, ...)__attribute__ ((format (printf, 1, 2)));
 void xbps_warn_printf(const char *, ...)__attribute__ ((format (printf, 1, 2)));
 

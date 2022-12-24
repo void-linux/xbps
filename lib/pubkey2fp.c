@@ -88,20 +88,20 @@ xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
 
 	pPubKey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);
 	if (!pPubKey) {
-		xbps_dbg_printf(xhp,
+		xbps_dbg_printf(
 		    "unable to decode public key from the given file: %s\n",
 		    ERR_error_string(ERR_get_error(), NULL));
 		goto out;
 	}
 
 	if (EVP_PKEY_base_id(pPubKey) != EVP_PKEY_RSA) {
-		xbps_dbg_printf(xhp, "only RSA public keys are currently supported\n");
+		xbps_dbg_printf("only RSA public keys are currently supported\n");
 		goto out;
 	}
 
 	pRsa = EVP_PKEY_get1_RSA(pPubKey);
 	if (!pRsa) {
-		xbps_dbg_printf(xhp, "failed to get RSA public key : %s\n",
+		xbps_dbg_printf("failed to get RSA public key : %s\n",
 		    ERR_error_string(ERR_get_error(), NULL));
 		goto out;
 	}

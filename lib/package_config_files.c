@@ -87,7 +87,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	 * Get original hash for the file from current
 	 * installed package.
 	 */
-	xbps_dbg_printf(xhp, "%s: processing conf_file %s\n",
+	xbps_dbg_printf("%s: processing conf_file %s\n",
 	    pkgver, entry_pname);
 
 	if (pkg_filesd == NULL || mysymlink) {
@@ -98,7 +98,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		 */
 		version = xbps_pkg_version(pkgver);
 		assert(version);
-		xbps_dbg_printf(xhp, "%s: conf_file %s not currently "
+		xbps_dbg_printf("%s: conf_file %s not currently "
 		    "installed, renaming to %s.new-%s\n", pkgver,
 		    entry_pname, entry_pname, version);
 		snprintf(buf, sizeof(buf), "%s.new-%s", entry_pname, version);
@@ -126,7 +126,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	 * First case: original hash not found, install new file.
 	 */
 	if (sha256_orig == NULL) {
-		xbps_dbg_printf(xhp, "%s: conf_file %s not installed\n",
+		xbps_dbg_printf("%s: conf_file %s not installed\n",
 		    pkgver, entry_pname);
 		rv = 1;
 		goto out;
@@ -146,7 +146,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 				/*
 				 * File not installed, install new one.
 				 */
-				xbps_dbg_printf(xhp, "%s: conf_file %s not "
+				xbps_dbg_printf("%s: conf_file %s not "
 				    "installed\n", pkgver, entry_pname);
 				rv = 1;
 				break;
@@ -164,7 +164,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		if ((strcmp(sha256_orig, sha256_cur) == 0) &&
 		    (strcmp(sha256_orig, sha256_new) == 0) &&
 		    (strcmp(sha256_cur, sha256_new) == 0)) {
-			xbps_dbg_printf(xhp, "%s: conf_file %s orig = X, "
+			xbps_dbg_printf("%s: conf_file %s orig = X, "
 			    "cur = X, new = X\n", pkgver, entry_pname);
 			rv = 0;
 			break;
@@ -209,7 +209,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		} else if ((strcmp(sha256_cur, sha256_new) == 0) &&
 			   (strcmp(sha256_orig, sha256_new)) &&
 			   (strcmp(sha256_orig, sha256_cur))) {
-			xbps_dbg_printf(xhp, "%s: conf_file %s orig = X, "
+			xbps_dbg_printf("%s: conf_file %s orig = X, "
 			    "cur = Y, new = Y\n", pkgver, entry_pname);
 			rv = 0;
 			break;
@@ -239,7 +239,7 @@ out:
 
 	xbps_object_iterator_release(iter);
 
-	xbps_dbg_printf(xhp, "%s: conf_file %s returned %d\n",
+	xbps_dbg_printf("%s: conf_file %s returned %d\n",
 	    pkgver, entry_pname, rv);
 
 	return rv;

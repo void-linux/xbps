@@ -58,7 +58,7 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 
 	rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, NULL, NULL);
 	if (rsa == NULL) {
-		xbps_dbg_printf(repo->xhp, "`%s' error reading public key: %s\n",
+		xbps_dbg_printf("`%s' error reading public key: %s\n",
 		    repo->uri, ERR_error_string(ERR_get_error(), NULL));
 		return false;
 	}
@@ -84,13 +84,13 @@ xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 	bool val = false;
 
 	if (!xbps_dictionary_count(repo->idxmeta)) {
-		xbps_dbg_printf(repo->xhp, "%s: unsigned repository\n", repo->uri);
+		xbps_dbg_printf("%s: unsigned repository\n", repo->uri);
 		return false;
 	}
 	hexfp = xbps_pubkey2fp(repo->xhp,
 	    xbps_dictionary_get(repo->idxmeta, "public-key"));
 	if (hexfp == NULL) {
-		xbps_dbg_printf(repo->xhp, "%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
+		xbps_dbg_printf("%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
 		return false;
 	}
 
@@ -100,7 +100,7 @@ xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
 	repokeyd = xbps_plist_dictionary_from_file(repo->xhp, rkeyfile);
 	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY) {
-		xbps_dbg_printf(repo->xhp, "cannot read rkey data at %s: %s\n",
+		xbps_dbg_printf("cannot read rkey data at %s: %s\n",
 		    rkeyfile, strerror(errno));
 		goto out;
 	}
@@ -110,7 +110,7 @@ xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 		goto out;
 
 	if (!xbps_mmap_file(sigfile, (void *)&sig_buf, &sigbuflen, &sigfilelen)) {
-		xbps_dbg_printf(repo->xhp, "can't open signature file %s: %s\n",
+		xbps_dbg_printf("can't open signature file %s: %s\n",
 		    sigfile, strerror(errno));
 		goto out;
 	}
@@ -141,7 +141,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	bool val = false;
 
 	if (!xbps_file_sha256_raw(digest, sizeof digest, fname)) {
-		xbps_dbg_printf(repo->xhp, "can't open file %s: %s\n", fname, strerror(errno));
+		xbps_dbg_printf("can't open file %s: %s\n", fname, strerror(errno));
 		return false;
 	}
 

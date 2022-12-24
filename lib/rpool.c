@@ -70,7 +70,7 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 			continue;
 
 		if (xbps_repo_sync(xhp, repouri) == -1) {
-			xbps_dbg_printf(xhp,
+			xbps_dbg_printf(
 			    "[rpool] `%s' failed to fetch repository data: %s\n",
 			    repouri, fetchLastErrCode == 0 ? strerror(errno) :
 			    xbps_fetch_error_string());
@@ -98,7 +98,7 @@ xbps_regget_repo(struct xbps_handle *xhp, const char *url)
 				return NULL;
 
 			SIMPLEQ_INSERT_TAIL(&rpool_queue, repo, entries);
-			xbps_dbg_printf(xhp, "[rpool] `%s' registered.\n", repouri);
+			xbps_dbg_printf("[rpool] `%s' registered.\n", repouri);
 		}
 	}
 	SIMPLEQ_FOREACH(repo, &rpool_queue, entries)
@@ -151,7 +151,7 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 again:
 	for (unsigned int i = n; i < xbps_array_count(xhp->repositories); i++, n++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
-		xbps_dbg_printf(xhp, "[rpool] checking `%s' at index %u\n", repouri, n);
+		xbps_dbg_printf("[rpool] checking `%s' at index %u\n", repouri, n);
 		if ((repo = xbps_rpool_get_repo(repouri)) == NULL) {
 			repo = xbps_repo_open(xhp, repouri);
 			if (!repo) {
@@ -159,7 +159,7 @@ again:
 				goto again;
 			}
 			SIMPLEQ_INSERT_TAIL(&rpool_queue, repo, entries);
-			xbps_dbg_printf(xhp, "[rpool] `%s' registered.\n", repouri);
+			xbps_dbg_printf("[rpool] `%s' registered.\n", repouri);
 		}
 		foundrepo = true;
 		rv = (*fn)(repo, arg, &done);
@@ -235,16 +235,14 @@ find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 		if (errno && errno != ENOENT)
 			return errno;
 
-		xbps_dbg_printf(repo->xhp,
-		    "[rpool] Package '%s' not found in repository "
-		    "'%s'.\n", rpf->pattern, repo->uri);
+		xbps_dbg_printf("[rpool] Package '%s' not found in repository"
+		    " '%s'.\n", rpf->pattern, repo->uri);
 		return 0;
 	}
 	xbps_dictionary_get_cstring_nocopy(pkgd,
 	    "pkgver", &repopkgver);
 	if (rpf->bestpkgver == NULL) {
-		xbps_dbg_printf(repo->xhp,
-		    "[rpool] Found match '%s' (%s).\n",
+		xbps_dbg_printf("[rpool] Found match '%s' (%s).\n",
 		    repopkgver, repo->uri);
 		rpf->pkgd = pkgd;
 		rpf->bestpkgver = repopkgver;
@@ -255,8 +253,7 @@ find_best_pkg_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
 	 * version from current package in repository.
 	 */
 	if (xbps_cmpver(repopkgver, rpf->bestpkgver) == 1) {
-		xbps_dbg_printf(repo->xhp,
-		    "[rpool] Found best match '%s' (%s).\n",
+		xbps_dbg_printf("[rpool] Found best match '%s' (%s).\n",
 		    repopkgver, repo->uri);
 		rpf->pkgd = pkgd;
 		rpf->bestpkgver = repopkgver;

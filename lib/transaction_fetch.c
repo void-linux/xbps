@@ -54,7 +54,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	 */
 	if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "%s: failed to get repository "
+		xbps_dbg_printf("%s: failed to get repository "
 			"%s: %s\n", pkgver, repoloc, strerror(errno));
 		goto out;
 	}
@@ -150,7 +150,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 
 	if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "%s: failed to get repository "
+		xbps_dbg_printf("%s: failed to get repository "
 			"%s: %s\n", pkgver, repoloc, strerror(errno));
 		return rv;
 	}
@@ -242,11 +242,11 @@ xbps_transaction_fetch(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	n = xbps_array_count(fetch);
 	if (n) {
 		xbps_set_cb_state(xhp, XBPS_STATE_TRANS_DOWNLOAD, 0, NULL, NULL);
-		xbps_dbg_printf(xhp, "[trans] downloading %d packages.\n", n);
+		xbps_dbg_printf("[trans] downloading %d packages.\n", n);
 	}
 	for (i = 0; i < n; i++) {
 		if ((rv = download_binpkg(xhp, xbps_array_get(fetch, i))) != 0) {
-			xbps_dbg_printf(xhp, "[trans] failed to download binpkgs: "
+			xbps_dbg_printf("[trans] failed to download binpkgs: "
 				"%s\n", strerror(rv));
 			goto out;
 		}
@@ -258,11 +258,11 @@ xbps_transaction_fetch(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 	n = xbps_array_count(verify);
 	if (n) {
 		xbps_set_cb_state(xhp, XBPS_STATE_TRANS_VERIFY, 0, NULL, NULL);
-		xbps_dbg_printf(xhp, "[trans] verifying %d packages.\n", n);
+		xbps_dbg_printf("[trans] verifying %d packages.\n", n);
 	}
 	for (i = 0; i < n; i++) {
 		if ((rv = verify_binpkg(xhp, xbps_array_get(verify, i))) != 0) {
-			xbps_dbg_printf(xhp, "[trans] failed to check binpkgs: "
+			xbps_dbg_printf("[trans] failed to check binpkgs: "
 				"%s\n", strerror(rv));
 			goto out;
 		}
