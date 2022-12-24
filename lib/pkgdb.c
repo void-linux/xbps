@@ -496,5 +496,5 @@ xbps_pkgdb_get_pkg_files(struct xbps_handle *xhp, const char *pkg)
 		return NULL;
 
 	snprintf(plist, sizeof(plist)-1, "%s/.%s-files.plist", xhp->metadir, pkgname);
-	return xbps_plist_dictionary_from_file(xhp, plist);
+	return xbps_plist_dictionary_from_file(plist);
 }
