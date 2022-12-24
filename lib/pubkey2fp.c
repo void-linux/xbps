@@ -63,7 +63,7 @@ fp2str(unsigned const char *fp, unsigned int len)
 }
 
 char *
-xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey)
+xbps_pubkey2fp(xbps_data_t pubkey)
 {
 	EVP_MD_CTX *mdctx = NULL;
 	EVP_PKEY *pPubKey = NULL;

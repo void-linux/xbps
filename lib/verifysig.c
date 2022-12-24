@@ -87,8 +87,7 @@ xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
 		xbps_dbg_printf("%s: unsigned repository\n", repo->uri);
 		return false;
 	}
-	hexfp = xbps_pubkey2fp(repo->xhp,
-	    xbps_dictionary_get(repo->idxmeta, "public-key"));
+	hexfp = xbps_pubkey2fp(xbps_dictionary_get(repo->idxmeta, "public-key"));
 	if (hexfp == NULL) {
 		xbps_dbg_printf("%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
 		return false;
