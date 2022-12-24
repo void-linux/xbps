@@ -2245,13 +2245,12 @@ int xbps_cmpver(const char *pkg1, const char *pkg2);
 /**
  * Converts a RSA public key in PEM format to a hex fingerprint.
  *
- * @param[in] xhp The pointer to an xbps_handle struct.
  * @param[in] pubkey The public-key in PEM format as xbps_data_t.
  *
  * @return The OpenSSH fingerprint in hexadecimal.
  * The returned buffer must be free(3)d when necessary.
  */
-char *xbps_pubkey2fp(struct xbps_handle *xhp, xbps_data_t pubkey);
+char *xbps_pubkey2fp(xbps_data_t pubkey);
 
 /**
  * Returns a buffer with a sanitized path from \a src.

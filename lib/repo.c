@@ -655,7 +655,11 @@ xbps_repo_key_import(struct xbps_repo *repo)
 		rv = EINVAL;
 		goto out;
 	}
-	hexfp = xbps_pubkey2fp(repo->xhp, pubkey);
+	hexfp = xbps_pubkey2fp(pubkey);
+	if (hexfp == NULL) {
+		rv = EINVAL;
+		goto out;
+	}
 	/*
 	 * Check if the public key is alredy stored.
 	 */
