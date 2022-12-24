@@ -2345,26 +2345,24 @@ char *xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char 
 bool xbps_patterns_match(xbps_array_t patterns, const char *path);
 
 /**
- * Internalizes a plist file declared in \a fname and returns a proplib array.
+ * Internalizes a plist file declared in \a path and returns a proplib array.
  *
- * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] fname The file path.
+ * @param[in] path The file path.
  *
  * @return The internalized proplib array, NULL otherwise.
  */
 xbps_array_t
-xbps_plist_array_from_file(struct xbps_handle *xhp, const char *fname);
+xbps_plist_array_from_file(const char *path);
 
 /**
- * Internalizes a plist file declared in \a fname and returns a proplib dictionary.
+ * Internalizes a plist file declared in \a path and returns a proplib dictionary.
  *
- * @param[in] xhp The pointer to an xbps_handle struct.
- * @param[in] fname The file path.
+ * @param[in] path The file path.
  *
  * @return The internalized proplib array, NULL otherwise.
  */
 xbps_dictionary_t
-xbps_plist_dictionary_from_file(struct xbps_handle *xhp, const char *fname);
+xbps_plist_dictionary_from_file(const char *path);
 
 /**@}*/
 
