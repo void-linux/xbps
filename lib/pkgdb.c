@@ -82,7 +82,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 			}
 			if (xbps_mkpath(xhp->metadir, 0755) == -1) {
 				rv = errno;
-				xbps_dbg_printf(xhp, "[pkgdb] failed to create metadir "
+				xbps_dbg_printf("[pkgdb] failed to create metadir "
 				    "%s: %s\n", xhp->metadir, strerror(rv));
 				goto ret;
 			}
@@ -91,7 +91,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 		xhp->pkgdb = xbps_dictionary_create();
 		if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist)) {
 			rv = errno;
-			xbps_dbg_printf(xhp, "[pkgdb] failed to create pkgdb "
+			xbps_dbg_printf("[pkgdb] failed to create pkgdb "
 			    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
 			goto ret;
 		}
@@ -99,7 +99,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 
 	if ((pkgdb_fd = open(xhp->pkgdb_plist, O_CREAT|O_RDWR|O_CLOEXEC, 0664)) == -1) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "[pkgdb] cannot open pkgdb for locking "
+		xbps_dbg_printf("[pkgdb] cannot open pkgdb for locking "
 		    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
 		free(xhp->pkgdb_plist);
 		goto ret;
@@ -110,14 +110,14 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 	 */
 	if (lockf(pkgdb_fd, F_TLOCK, 0) == -1) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "[pkgdb] cannot lock pkgdb: %s\n", strerror(rv));
+		xbps_dbg_printf("[pkgdb] cannot lock pkgdb: %s\n", strerror(rv));
 	}
 	/*
 	 * Check if rootdir is writable.
 	 */
 	if (access(xhp->rootdir, W_OK) == -1) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "[pkgdb] rootdir %s: %s\n", xhp->rootdir, strerror(rv));
+		xbps_dbg_printf("[pkgdb] rootdir %s: %s\n", xhp->rootdir, strerror(rv));
 	}
 
 ret:
@@ -126,13 +126,13 @@ ret:
 }
 
 void
-xbps_pkgdb_unlock(struct xbps_handle *xhp)
+xbps_pkgdb_unlock(struct xbps_handle *xhp UNUSED)
 {
-	xbps_dbg_printf(xhp, "%s: pkgdb_fd %d\n", __func__, pkgdb_fd);
+	xbps_dbg_printf("%s: pkgdb_fd %d\n", __func__, pkgdb_fd);
 
 	if (pkgdb_fd != -1) {
 		if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
-			xbps_dbg_printf(xhp, "[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
+			xbps_dbg_printf("[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
 
 		(void)close(pkgdb_fd);
 		pkgdb_fd = -1;
@@ -182,12 +182,12 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 
 			xbps_array_get_cstring_nocopy(provides, i, &vpkg);
 			if (!xbps_dictionary_set_cstring(xhp->vpkgd, vpkg, pkgname)) {
-				xbps_dbg_printf(xhp, "%s: set_cstring vpkg "
+				xbps_dbg_printf("%s: set_cstring vpkg "
 				    "%s pkgname %s\n", __func__, vpkg, pkgname);
 				rv = EINVAL;
 				goto out;
 			}
-			xbps_dbg_printf(xhp, "[pkgdb] added vpkg %s for %s\n", vpkg, pkgname);
+			xbps_dbg_printf("[pkgdb] added vpkg %s for %s\n", vpkg, pkgname);
 		}
 	}
 out:
@@ -258,21 +258,21 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 
 	if ((rv = xbps_pkgdb_update(xhp, false, true)) != 0) {
 		if (rv != ENOENT)
-			xbps_dbg_printf(xhp, "[pkgdb] cannot internalize "
+			xbps_dbg_printf("[pkgdb] cannot internalize "
 			    "pkgdb dictionary: %s\n", strerror(rv));
 
 		return rv;
 	}
 	if ((rv = pkgdb_map_names(xhp)) != 0) {
-		xbps_dbg_printf(xhp, "[pkgdb] pkgdb_map_names %s\n", strerror(rv));
+		xbps_dbg_printf("[pkgdb] pkgdb_map_names %s\n", strerror(rv));
 		return rv;
 	}
 	if ((rv = pkgdb_map_vpkgs(xhp)) != 0) {
-		xbps_dbg_printf(xhp, "[pkgdb] pkgdb_map_vpkgs %s\n", strerror(rv));
+		xbps_dbg_printf("[pkgdb] pkgdb_map_vpkgs %s\n", strerror(rv));
 		return rv;
 	}
 	assert(xhp->pkgdb);
-	xbps_dbg_printf(xhp, "[pkgdb] initialized ok.\n");
+	xbps_dbg_printf("[pkgdb] initialized ok.\n");
 
 	return 0;
 }
@@ -335,7 +335,7 @@ xbps_pkgdb_release(struct xbps_handle *xhp)
 	xbps_pkgdb_unlock(xhp);
 	if (xhp->pkgdb)
 		xbps_object_release(xhp->pkgdb);
-	xbps_dbg_printf(xhp, "[pkgdb] released ok.\n");
+	xbps_dbg_printf("[pkgdb] released ok.\n");
 }
 
 int

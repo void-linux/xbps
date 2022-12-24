@@ -196,8 +196,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		if (xscd->desc)
 			printf("%s\n", xscd->desc);
 		else
-			xbps_dbg_printf(xscd->xhp,
-			    "%s: unknown state %d\n", xscd->arg, xscd->state);
+			xbps_dbg_printf("%s: unknown state %d\n", xscd->arg, xscd->state);
 
 		break;
 	}

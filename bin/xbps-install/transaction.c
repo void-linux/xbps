@@ -384,15 +384,15 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 				goto proceed;
 			}
 		} else {
-			xbps_dbg_printf(xhp, "Empty transaction dictionary: %s\n",
+			xbps_dbg_printf("Empty transaction dictionary: %s\n",
 			    strerror(errno));
 		}
 		goto out;
 	}
 proceed:
 #ifdef FULL_DEBUG
-	xbps_dbg_printf(xhp, "Dictionary before transaction happens:\n");
-	xbps_dbg_printf_append(xhp, "%s",
+	xbps_dbg_printf("Dictionary before transaction happens:\n");
+	xbps_dbg_printf_append("%s",
 	    xbps_dictionary_externalize(xhp->transd));
 #endif
 

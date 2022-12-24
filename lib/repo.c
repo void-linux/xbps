@@ -72,8 +72,7 @@ repo_get_dict(struct xbps_repo *repo)
 
 	rv = archive_read_next_header(repo->ar, &entry);
 	if (rv != ARCHIVE_OK) {
-		xbps_dbg_printf(repo->xhp,
-		    "%s: read_next_header %s\n", repo->uri,
+		xbps_dbg_printf("%s: read_next_header %s\n", repo->uri,
 		    archive_error_string(repo->ar));
 		return NULL;
 	}
@@ -103,12 +102,12 @@ xbps_repo_lock(struct xbps_handle *xhp, const char *repodir,
 		if (fd != -1)
 			break;
 		if (rv != EEXIST) {
-			xbps_dbg_printf(xhp, "[repo] `%s' failed to "
+			xbps_dbg_printf("[repo] `%s' failed to "
 			    "create lock file %s\n", lockfile, strerror(rv));
 			free(lockfile);
 			return false;
 		} else {
-			xbps_dbg_printf(xhp, "[repo] `%s' lock file exists,"
+			xbps_dbg_printf("[repo] `%s' lock file exists,"
 			    "waiting for 1s...\n", lockfile);
 			sleep(1);
 		}
@@ -136,7 +135,7 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 	struct stat st;
 
 	if (fstat(repo->fd, &st) == -1) {
-		xbps_dbg_printf(repo->xhp, "[repo] `%s' fstat repodata %s\n",
+		xbps_dbg_printf("[repo] `%s' fstat repodata %s\n",
 		    repofile, strerror(errno));
 		return false;
 	}
@@ -151,13 +150,12 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 	archive_read_support_format_tar(repo->ar);
 
 	if (archive_read_open_fd(repo->ar, repo->fd, st.st_blksize) == ARCHIVE_FATAL) {
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' failed to open repodata archive %s\n",
+		xbps_dbg_printf("[repo] `%s' failed to open repodata archive %s\n",
 		    repofile, archive_error_string(repo->ar));
 		return false;
 	}
 	if ((repo->idx = repo_get_dict(repo)) == NULL) {
-		xbps_dbg_printf(repo->xhp, "[repo] `%s' failed to internalize "
+		xbps_dbg_printf("[repo] `%s' failed to internalize "
 		    " index on archive, removing file.\n", repofile);
 		/* broken archive, remove it */
 		(void)unlink(repofile);
@@ -188,7 +186,7 @@ repo_open_remote(struct xbps_repo *repo)
 	rv = xbps_repo_fetch_remote(repo, rpath);
 	free(rpath);
 	if (rv) {
-		xbps_dbg_printf(repo->xhp, "[repo] `%s' used remotely (kept in memory).\n", repo->uri);
+		xbps_dbg_printf("[repo] `%s' used remotely (kept in memory).\n", repo->uri);
 		if (repo->xhp->state_cb && xbps_repo_key_import(repo) != 0)
 			rv = false;
 	}
@@ -246,7 +244,7 @@ repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
 	repo->fd = open(repofile, O_RDONLY|O_CLOEXEC);
 	if (repo->fd == -1) {
 		int rv = errno;
-		xbps_dbg_printf(xhp, "[repo] `%s' open %s %s\n",
+		xbps_dbg_printf("[repo] `%s' open %s %s\n",
 		    repofile, name, strerror(rv));
 		goto out;
 	}
@@ -279,17 +277,17 @@ xbps_repo_store(struct xbps_handle *xhp, const char *repo)
 	if (!xbps_repository_is_remote(repo)) {
 		if (repo[0] != '/' && repo[0] != '\0') {
 			if ((url = realpath(repo, NULL)) == NULL)
-				xbps_dbg_printf(xhp, "[repo] %s: realpath %s\n", __func__, repo);
+				xbps_dbg_printf("[repo] %s: realpath %s\n", __func__, repo);
 		}
 	}
 	if (xbps_match_string_in_array(xhp->repositories, url ? url : repo)) {
-		xbps_dbg_printf(xhp, "[repo] `%s' already stored\n", url ? url : repo);
+		xbps_dbg_printf("[repo] `%s' already stored\n", url ? url : repo);
 		if (url)
 			free(url);
 		return false;
 	}
 	if (xbps_array_add_cstring(xhp->repositories, url ? url : repo)) {
-		xbps_dbg_printf(xhp, "[repo] `%s' stored successfully\n", url ? url : repo);
+		xbps_dbg_printf("[repo] `%s' stored successfully\n", url ? url : repo);
 		if (url)
 			free(url);
 		return true;
@@ -315,7 +313,7 @@ xbps_repo_remove(struct xbps_handle *xhp, const char *repo)
 	url = strdup(repo);
 	if (xbps_remove_string_from_array(xhp->repositories, repo)) {
 		if (url)
-			xbps_dbg_printf(xhp, "[repo] `%s' removed\n", url);
+			xbps_dbg_printf("[repo] `%s' removed\n", url);
 		rv = true;
 	}
 	free(url);
@@ -430,7 +428,7 @@ xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg)
 	if (!xbps_dictionary_set_cstring(pkgd, "pkgname", pkgname)) {
 		return NULL;
 	}
-	xbps_dbg_printf(repo->xhp, "%s: found %s\n", __func__, pkgver);
+	xbps_dbg_printf("%s: found %s\n", __func__, pkgver);
 
 	return pkgd;
 }
@@ -470,7 +468,7 @@ add:
 	if (!xbps_dictionary_set_cstring(pkgd, "pkgname", pkgname)) {
 		return NULL;
 	}
-	xbps_dbg_printf(repo->xhp, "%s: found %s\n", __func__, pkgver);
+	xbps_dbg_printf("%s: found %s\n", __func__, pkgver);
 	return pkgd;
 }
 
@@ -637,8 +635,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	 * If repository does not have required metadata plist, ignore it.
 	 */
 	if (!xbps_dictionary_count(repo->idxmeta)) {
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' unsigned repository!\n", repo->uri);
+		xbps_dbg_printf("[repo] `%s' unsigned repository!\n", repo->uri);
 		return 0;
 	}
 	/*
@@ -653,8 +650,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 
 	if (signedby == NULL || pubkey_size == 0 ||
 	    xbps_object_type(pubkey) != XBPS_TYPE_DATA) {
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s': incomplete signed repository "
+		xbps_dbg_printf("[repo] `%s': incomplete signed repository "
 		    "(missing objs)\n", repo->uri);
 		rv = EINVAL;
 		goto out;
@@ -666,8 +662,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
 	repokeyd = xbps_plist_dictionary_from_file(repo->xhp, rkeyfile);
 	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' public key already stored.\n", repo->uri);
+		xbps_dbg_printf("[repo] `%s' public key already stored.\n", repo->uri);
 		goto out;
 	}
 	/*
@@ -692,8 +687,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 			rv = xbps_mkpath(dbkeyd, 0755);
 		if (rv != 0) {
 			rv = errno;
-			xbps_dbg_printf(repo->xhp,
-			    "[repo] `%s' cannot create %s: %s\n",
+			xbps_dbg_printf("[repo] `%s' cannot create %s: %s\n",
 			    repo->uri, dbkeyd, strerror(errno));
 			free(p);
 			goto out;
@@ -708,8 +702,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 
 	if (!xbps_dictionary_externalize_to_file(repokeyd, rkeyfile)) {
 		rv = errno;
-		xbps_dbg_printf(repo->xhp,
-		    "[repo] `%s' failed to externalize %s: %s\n",
+		xbps_dbg_printf("[repo] `%s' failed to externalize %s: %s\n",
 		    repo->uri, rkeyfile, strerror(rv));
 	}
 

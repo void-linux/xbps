@@ -296,7 +296,7 @@ cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 	if (url == NULL)
 		return EINVAL;
 
-	xbps_dbg_printf(xhp, "matched pkg at %s\n", url);
+	xbps_dbg_printf("matched pkg at %s\n", url);
 	rv = xbps_archive_fetch_file_into_fd(url, file, STDOUT_FILENO);
 	free(url);
 	return rv;
@@ -317,7 +317,7 @@ repo_cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 	if (url == NULL)
 		return EINVAL;
 
-	xbps_dbg_printf(xhp, "matched pkg at %s\n", url);
+	xbps_dbg_printf("matched pkg at %s\n", url);
 	rv = xbps_archive_fetch_file_into_fd(url, file, STDOUT_FILENO);
 	free(url);
 	return rv;

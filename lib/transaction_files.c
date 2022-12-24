@@ -139,7 +139,7 @@ match_preserved_file(struct xbps_handle *xhp, const char *file)
 }
 
 static bool
-can_delete_directory(struct xbps_handle *xhp, const char *file, size_t len, size_t max)
+can_delete_directory(const char *file, size_t len, size_t max)
 {
 	struct item *item;
 	size_t rmcount = 0, fcount = 0;
@@ -150,7 +150,7 @@ can_delete_directory(struct xbps_handle *xhp, const char *file, size_t len, size
 		if (errno == ENOENT) {
 			return true;
 		} else {
-			xbps_dbg_printf(xhp, "[files] %s: %s: %s\n",
+			xbps_dbg_printf("[files] %s: %s: %s\n",
 			    __func__, file, strerror(errno));
 			return false;
 		}
@@ -183,7 +183,7 @@ can_delete_directory(struct xbps_handle *xhp, const char *file, size_t len, size
 	fcount -= 2;
 
 	if (fcount <= rmcount) {
-		xbps_dbg_printf(xhp, "[files] only removed %zu out of %zu files: %s\n",
+		xbps_dbg_printf("[files] only removed %zu out of %zu files: %s\n",
 		    rmcount, fcount, file);
 	}
 	closedir(dp);
@@ -233,7 +233,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 		item = items[i];
 
 		if (match_preserved_file(xhp, item->file)) {
-			xbps_dbg_printf(xhp, "[obsoletes] %s: file exists on disk"
+			xbps_dbg_printf("[obsoletes] %s: file exists on disk"
 			    " and must be preserved: %s\n", item->old.pkgver, item->file);
 			continue;
 		}
@@ -245,7 +245,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 			 * Probably obsolete.
 			 */
 			if (item->old.preserve && item->old.update) {
-				xbps_dbg_printf(xhp, "[files] %s: skipping `preserve` %s: %s\n",
+				xbps_dbg_printf("[files] %s: skipping `preserve` %s: %s\n",
 				    item->old.pkgver, typestr(item->old.type), item->file);
 				continue;
 			}
@@ -276,9 +276,9 @@ collect_obsoletes(struct xbps_handle *xhp)
 			 * Directory replaced by a file or symlink.
 			 * We MUST be able to delete the directory.
 			 */
-			xbps_dbg_printf(xhp, "[files] %s: directory changed to %s: %s\n",
+			xbps_dbg_printf("[files] %s: directory changed to %s: %s\n",
 			    item->new.pkgver, typestr(item->new.type), item->file);
-			if (!can_delete_directory(xhp, item->file, item->len, i)) {
+			if (!can_delete_directory(item->file, item->len, i)) {
 				xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 				    ENOTEMPTY, item->old.pkgver,
 				    "%s: directory `%s' can not be deleted.",
@@ -329,13 +329,13 @@ collect_obsoletes(struct xbps_handle *xhp)
 				 */
 				if (item->old.removepkg && !item->new.pkgname &&
 				    (xhp->flags & XBPS_FLAG_FORCE_REMOVE_FILES) != 0) {
-					xbps_dbg_printf(xhp, "[obsoletes] %s: SHA256 mismatch,"
+					xbps_dbg_printf("[obsoletes] %s: SHA256 mismatch,"
 					    " force remove %s: %s\n",
 						item->old.pkgname, typestr(item->old.type),
 					    item->file+1);
 					break;
 				}
-				xbps_dbg_printf(xhp, "[obsoletes] %s: SHA256 mismatch,"
+				xbps_dbg_printf("[obsoletes] %s: SHA256 mismatch,"
 				    " skipping remove %s: %s\n",
 				    item->old.pkgname, typestr(item->old.type),
 				    item->file+1);
@@ -360,12 +360,12 @@ collect_obsoletes(struct xbps_handle *xhp)
 			}
 			lnk = xbps_symlink_target(xhp, file, item->old.target);
 			if (lnk == NULL) {
-				xbps_dbg_printf(xhp, "[obsoletes] %s "
+				xbps_dbg_printf("[obsoletes] %s "
 				    "symlink_target: %s\n", item->file+1, strerror(errno));
 				continue;
 			}
 			if (strcmp(lnk, item->old.target) != 0) {
-				xbps_dbg_printf(xhp, "[obsoletes] %s: skipping modified"
+				xbps_dbg_printf("[obsoletes] %s: skipping modified"
 				    " symlink (stored `%s' current `%s'): %s\n",
 				    item->old.pkgname, item->old.target, lnk, item->file+1);
 				free(lnk);
@@ -390,7 +390,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 		}
 		assert(pkgname);
 
-		xbps_dbg_printf(xhp, "[obsoletes] %s: removes %s: %s\n",
+		xbps_dbg_printf("[obsoletes] %s: removes %s: %s\n",
 		    pkgname, typestr(item->old.type), item->file+1);
 
 		/*
@@ -462,7 +462,7 @@ collect_file(struct xbps_handle *xhp, const char *file, size_t size,
 			 * Multiple packages removing the same file.
 			 * Shouldn't happen, but its not fatal.
 			 */
-			xbps_dbg_printf(xhp, "[files] %s: file already removed"
+			xbps_dbg_printf("[files] %s: file already removed"
 			    " by package `%s': %s\n", pkgver, item->old.pkgver, file);
 
 			/*
@@ -546,11 +546,11 @@ add:
 		 */
 		if (strcmp(item->new.pkgname, item->old.pkgname) != 0) {
 			if (removefile) {
-				xbps_dbg_printf(xhp, "[files] %s: %s moved to"
+				xbps_dbg_printf("[files] %s: %s moved to"
 				    " package `%s': %s\n", pkgver, typestr(item->old.type),
 				    item->new.pkgver, file);
 			} else {
-				xbps_dbg_printf(xhp, "[files] %s: %s moved from"
+				xbps_dbg_printf("[files] %s: %s moved from"
 				    " package `%s': %s\n", pkgver, typestr(item->new.type),
 				    item->old.pkgver, file);
 			}

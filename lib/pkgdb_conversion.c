@@ -84,7 +84,7 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 		 * Copy old pkgdb objects to the new pkgdb.
 		 */
 		if (!xbps_dictionary_set(pkgdb, pkgname, pkgd)) {
-			xbps_dbg_printf(xhp, "%s: failed to copy %s pkgd "
+			xbps_dbg_printf("%s: failed to copy %s pkgd "
 			   "for pkgdb conversion\n", __func__, pkgname);
 			rv = EINVAL;
 			goto out;
@@ -96,7 +96,7 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 		pkgmetad = xbps_plist_dictionary_from_file(xhp, pkgmeta);
 		if (pkgmetad == NULL) {
 			rv = EINVAL;
-			xbps_dbg_printf(xhp, "%s: cannot open %s: %s\n",
+			xbps_dbg_printf("%s: cannot open %s: %s\n",
 			    __func__, pkgmeta, strerror(errno));
 			goto out;
 		}
@@ -129,7 +129,7 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 				continue;
 			}
 			if (!xbps_dictionary_set(pkgd, key, curobj)) {
-				xbps_dbg_printf(xhp, "%s: failed to copy %s "
+				xbps_dbg_printf("%s: failed to copy %s "
 				    "pkgd for pkgdb conversion\n", pkgname, key);
 				xbps_object_iterator_release(iter2);
 				xbps_object_release(pkgmetad);
@@ -147,12 +147,12 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 
 			pkgfiles = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
 			if (!xbps_dictionary_externalize_to_file(pkgfilesd, pkgfiles)) {
-				xbps_dbg_printf(xhp, "%s: failed to "
+				xbps_dbg_printf("%s: failed to "
 				    "externalize %s: %s\n", __func__, pkgfiles, strerror(errno));
 				rv = EINVAL;
 				goto out;
 			}
-			xbps_dbg_printf(xhp, "%s: externalized %s successfully\n", __func__, pkgfiles);
+			xbps_dbg_printf("%s: externalized %s successfully\n", __func__, pkgfiles);
 			/*
 			 * Update SHA56 hash for the pkg files plist.
 			 */
@@ -173,7 +173,7 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 	 * Externalize the new pkgdb plist.
 	 */
 	if (!xbps_dictionary_externalize_to_file(pkgdb, xhp->pkgdb_plist)) {
-		xbps_dbg_printf(xhp, "%s: failed to externalize %s: "
+		xbps_dbg_printf("%s: failed to externalize %s: "
 		    "%s!\n", __func__, xhp->pkgdb_plist, strerror(errno));
 		rv = EINVAL;
 		goto out;

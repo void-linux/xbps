@@ -146,7 +146,7 @@ repo_match_cb(struct xbps_handle *xhp,
 	assert(bfile);
 	filesd = xbps_archive_fetch_plist(bfile, "/files.plist");
 	if (filesd == NULL) {
-		xbps_dbg_printf(xhp, "%s: couldn't fetch files.plist from %s: %s\n",
+		xbps_dbg_printf("%s: couldn't fetch files.plist from %s: %s\n",
 		    pkgver, bfile, strerror(errno));
 		return EINVAL;
 	}
