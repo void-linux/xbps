@@ -93,14 +93,14 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 					/* _XBPS_ALTERNATIVES_ */
 					continue;
 				}
-				xbps_dbg_printf(xhp, " %s checking %s\n", __func__, pkgver);
+				xbps_dbg_printf(" %s checking %s\n", __func__, pkgver);
 				xbps_dictionary_get_bool(pkgd, "automatic-install", &automatic);
 				if (!automatic) {
-					xbps_dbg_printf(xhp, " %s skipped (!automatic)\n", pkgver);
+					xbps_dbg_printf(" %s skipped (!automatic)\n", pkgver);
 					continue;
 				}
 				if (xbps_find_pkg_in_array(array, pkgver, 0)) {
-					xbps_dbg_printf(xhp, " %s orphan (queued)\n", pkgver);
+					xbps_dbg_printf(" %s orphan (queued)\n", pkgver);
 					continue;
 				}
 				revdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgver);
@@ -109,7 +109,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 				if (revdepscnt == 0) {
 					added = true;
 					xbps_array_add(array, pkgd);
-					xbps_dbg_printf(xhp, " %s orphan (automatic and !revdeps)\n", pkgver);
+					xbps_dbg_printf(" %s orphan (automatic and !revdeps)\n", pkgver);
 					continue;
 				}
 				/* verify all revdeps are seen */
@@ -123,11 +123,11 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 				if (cnt == revdepscnt) {
 					added = true;
 					xbps_array_add(array, pkgd);
-					xbps_dbg_printf(xhp, " %s orphan (automatic and all revdeps)\n", pkgver);
+					xbps_dbg_printf(" %s orphan (automatic and all revdeps)\n", pkgver);
 				}
 
 			}
-			xbps_dbg_printf(xhp, "orphans pkgdb iter: added %s\n", added ? "true" : "false");
+			xbps_dbg_printf("orphans pkgdb iter: added %s\n", added ? "true" : "false");
 			xbps_object_iterator_reset(iter);
 			if (!added)
 				break;
@@ -164,7 +164,7 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 			continue;
 		}
 
-		xbps_dbg_printf(xhp, " processing rdeps for %s\n", pkgver);
+		xbps_dbg_printf(" processing rdeps for %s\n", pkgver);
 		for (unsigned int x = 0; x < xbps_array_count(rdeps); x++) {
 			xbps_array_t reqby;
 			xbps_dictionary_t deppkgd;
@@ -174,13 +174,13 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 			cnt = 0;
 			xbps_array_get_cstring_nocopy(rdeps, x, &deppkgver);
 			if (xbps_find_pkg_in_array(array, deppkgver, 0)) {
-				xbps_dbg_printf(xhp, " rdep %s already queued\n", deppkgver);
+				xbps_dbg_printf(" rdep %s already queued\n", deppkgver);
 				continue;
 			}
 			deppkgd = xbps_pkgdb_get_pkg(xhp, deppkgver);
 			xbps_dictionary_get_bool(deppkgd, "automatic-install", &automatic);
 			if (!automatic) {
-				xbps_dbg_printf(xhp, " rdep %s skipped (!automatic)\n", deppkgver);
+				xbps_dbg_printf(" rdep %s skipped (!automatic)\n", deppkgver);
 				continue;
 			}
 
@@ -190,13 +190,13 @@ xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans_user)
 				const char *reqbydep = NULL;
 
 				xbps_array_get_cstring_nocopy(reqby, j, &reqbydep);
-				xbps_dbg_printf(xhp, " %s processing revdep %s\n", pkgver, reqbydep);
+				xbps_dbg_printf(" %s processing revdep %s\n", pkgver, reqbydep);
 				if (xbps_find_pkg_in_array(array, reqbydep, 0))
 					cnt++;
 			}
 			if (cnt == reqbycnt) {
 				xbps_array_add(array, deppkgd);
-				xbps_dbg_printf(xhp, " added %s orphan\n", deppkgver);
+				xbps_dbg_printf(" added %s orphan\n", deppkgver);
 			}
 		}
 	}

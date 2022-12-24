@@ -153,7 +153,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	 * Download and verify binary packages.
 	 */
 	if ((rv = xbps_transaction_fetch(xhp, iter)) != 0) {
-		xbps_dbg_printf(xhp, "[trans] failed to fetch and verify binpkgs: "
+		xbps_dbg_printf("[trans] failed to fetch and verify binpkgs: "
 		    "%s\n", strerror(rv));
 		goto out;
 	}
@@ -171,7 +171,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	 * Internalize metadata of downloaded binary packages.
 	 */
 	if ((rv = xbps_transaction_internalize(xhp, iter)) < 0) {
-		xbps_dbg_printf(xhp, "[trans] failed to internalize transaction binpkgs: "
+		xbps_dbg_printf("[trans] failed to internalize transaction binpkgs: "
 		    "%s\n", strerror(-rv));
 		goto out;
 	}
@@ -182,7 +182,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	 */
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FILES, 0, NULL, NULL);
 	if ((rv = xbps_transaction_files(xhp, iter)) != 0) {
-		xbps_dbg_printf(xhp, "[trans] failed to verify transaction files: "
+		xbps_dbg_printf("[trans] failed to verify transaction files: "
 		    "%s\n", strerror(rv));
 		goto out;
 	}
@@ -229,14 +229,14 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 		ttype = xbps_transaction_pkg_type(obj);
 		if (ttype == XBPS_TRANS_INSTALL || ttype == XBPS_TRANS_HOLD || ttype == XBPS_TRANS_CONFIGURE) {
-			xbps_dbg_printf(xhp, "%s: skipping pre-remove script for "
+			xbps_dbg_printf("%s: skipping pre-remove script for "
 			    "%s: %d\n", __func__, pkgver, ttype);
 			continue;
 		}
 
 		if ((pkgdb_pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
 			rv = ENOENT;
-			xbps_dbg_printf(xhp, "[trans] cannot find %s in pkgdb: %s\n",
+			xbps_dbg_printf("[trans] cannot find %s in pkgdb: %s\n",
 			    pkgname, strerror(rv));
 			goto out;
 		}
@@ -289,7 +289,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		ttype = xbps_transaction_pkg_type(obj);
 		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD) {
-			xbps_dbg_printf(xhp, "%s: skipping pre-install script for "
+			xbps_dbg_printf("%s: skipping pre-install script for "
 			    "%s: %d\n", __func__, pkgver, ttype);
 			continue;
 		}
@@ -316,7 +316,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			xbps_dictionary_get_bool(obj, "remove-and-update", &update);
 			rv = xbps_remove_pkg(xhp, pkgver, update);
 			if (rv != 0) {
-				xbps_dbg_printf(xhp, "[trans] failed to "
+				xbps_dbg_printf("[trans] failed to "
 				    "remove %s: %s\n", pkgver, strerror(rv));
 				goto out;
 			}
@@ -352,7 +352,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		 * Unpack binary package.
 		 */
 		if ((rv = xbps_unpack_binary_pkg(xhp, obj)) != 0) {
-			xbps_dbg_printf(xhp, "[trans] failed to unpack "
+			xbps_dbg_printf("[trans] failed to unpack "
 			    "%s: %s\n", pkgver, strerror(rv));
 			goto out;
 		}
@@ -360,7 +360,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		 * Register package.
 		 */
 		if ((rv = xbps_register_pkg(xhp, obj)) != 0) {
-			xbps_dbg_printf(xhp, "[trans] failed to register "
+			xbps_dbg_printf("[trans] failed to register "
 			    "%s: %s\n", pkgver, strerror(rv));
 			goto out;
 		}
@@ -401,7 +401,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		ttype = xbps_transaction_pkg_type(obj);
 		if (ttype == XBPS_TRANS_REMOVE || ttype == XBPS_TRANS_HOLD) {
-			xbps_dbg_printf(xhp, "%s: skipping configuration for "
+			xbps_dbg_printf("%s: skipping configuration for "
 			    "%s: %d\n", __func__, pkgver, ttype);
 			continue;
 		}
@@ -411,7 +411,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 		rv = xbps_configure_pkg(xhp, pkgver, false, update);
 		if (rv != 0) {
-			xbps_dbg_printf(xhp, "%s: configure failed for "
+			xbps_dbg_printf("%s: configure failed for "
 			    "%s: %s\n", __func__, pkgver, strerror(rv));
 			goto out;
 		}

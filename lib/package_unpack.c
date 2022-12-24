@@ -249,7 +249,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Skip files that match noextract patterns from configuration file.
 		 */
 		if (xhp->noextract && xbps_patterns_match(xhp->noextract, entry_pname+1)) {
-			xbps_dbg_printf(xhp, "[unpack] %s skipped (matched by a pattern)\n", entry_pname+1);
+			xbps_dbg_printf("[unpack] %s skipped (matched by a pattern)\n", entry_pname+1);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FILE_PRESERVED, 0,
 			    pkgver, "%s: file `%s' won't be extracted, "
 			    "it matches a noextract pattern.", pkgver, entry_pname);
@@ -270,7 +270,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 */
 		if (file_exists && match_preserved_file(xhp, entry_pname)) {
 			archive_read_data_skip(ar);
-			xbps_dbg_printf(xhp, "[unpack] `%s' exists on disk "
+			xbps_dbg_printf("[unpack] `%s' exists on disk "
 			    "and must be preserved, skipping.\n", entry_pname);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FILE_PRESERVED, 0,
 			    pkgver, "%s: file `%s' won't be extracted, "
@@ -327,7 +327,7 @@ unpack_archive(struct xbps_handle *xhp,
 					    xhp, binpkg_filesd, "files", buf);
 					if (rv == -1) {
 						/* error */
-						xbps_dbg_printf(xhp,
+						xbps_dbg_printf(
 						    "%s: failed to check"
 						    " hash for `%s': %s\n",
 						    pkgver, entry_pname,
@@ -337,7 +337,7 @@ unpack_archive(struct xbps_handle *xhp,
 						/*
 						 * hash match, skip extraction.
 						 */
-						xbps_dbg_printf(xhp,
+						xbps_dbg_printf(
 						    "%s: file %s "
 						    "matches existing SHA256, "
 						    "skipping...\n",
@@ -358,14 +358,14 @@ unpack_archive(struct xbps_handle *xhp,
 			if (lchown(entry_pname,
 			    archive_entry_uid(entry),
 			    archive_entry_gid(entry)) != 0) {
-				xbps_dbg_printf(xhp,
+				xbps_dbg_printf(
 				    "%s: failed "
 				    "to set uid/gid to %"PRIu64":%"PRIu64" (%s)\n",
 				    pkgver, archive_entry_uid(entry),
 				    archive_entry_gid(entry),
 				    strerror(errno));
 			} else {
-				xbps_dbg_printf(xhp, "%s: entry %s changed "
+				xbps_dbg_printf("%s: entry %s changed "
 				    "uid/gid to %"PRIu64":%"PRIu64".\n", pkgver, entry_pname,
 				    archive_entry_uid(entry),
 				    archive_entry_gid(entry));
@@ -379,7 +379,7 @@ unpack_archive(struct xbps_handle *xhp,
 		    (archive_entry_mode(entry) != st.st_mode)) {
 			if (chmod(entry_pname,
 			    archive_entry_mode(entry)) != 0) {
-				xbps_dbg_printf(xhp,
+				xbps_dbg_printf(
 				    "%s: failed "
 				    "to set perms %s to %s: %s\n",
 				    pkgver, archive_entry_strmode(entry),
@@ -388,7 +388,7 @@ unpack_archive(struct xbps_handle *xhp,
 				rv = EINVAL;
 				goto out;
 			}
-			xbps_dbg_printf(xhp, "%s: entry %s changed file "
+			xbps_dbg_printf("%s: entry %s changed file "
 			    "mode to %s.\n", pkgver, entry_pname,
 			    archive_entry_strmode(entry));
 		}

@@ -34,6 +34,8 @@
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
+int xbps_debug_level = 0;
+
 /**
  * @file lib/log.c
  * @brief Logging functions
@@ -52,14 +54,11 @@ common_printf(FILE *f, const char *msg, const char *fmt, va_list ap)
 }
 
 void
-xbps_dbg_printf_append(struct xbps_handle *xhp, const char *fmt, ...)
+xbps_dbg_printf_append(const char *fmt, ...)
 {
 	va_list ap;
 
-	if (!xhp)
-		return;
-
-	if ((xhp->flags & XBPS_FLAG_DEBUG) == 0)
+	if (xbps_debug_level == 0)
 		return;
 
 	va_start(ap, fmt);
@@ -68,14 +67,11 @@ xbps_dbg_printf_append(struct xbps_handle *xhp, const char *fmt, ...)
 }
 
 void
-xbps_dbg_printf(struct xbps_handle *xhp, const char *fmt, ...)
+xbps_dbg_printf(const char *fmt, ...)
 {
 	va_list ap;
 
-	if (!xhp)
-		return;
-
-	if ((xhp->flags & XBPS_FLAG_DEBUG) == 0)
+	if (xbps_debug_level == 0)
 		return;
 
 	va_start(ap, fmt);

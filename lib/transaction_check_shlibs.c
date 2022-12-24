@@ -121,7 +121,7 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 			const char *shlib = NULL;
 
 			xbps_array_get_cstring_nocopy(shobjs, i, &shlib);
-			xbps_dbg_printf(xhp, "%s: registering %s for %s\n",
+			xbps_dbg_printf("%s: registering %s for %s\n",
 			    pkgver, shlib, req ? "shlib-requires" : "shlib-provides");
 			if (req)
 				shlib_register(d, shlib, pkgver);
@@ -155,13 +155,13 @@ xbps_transaction_check_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs)
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		shlib = xbps_dictionary_keysym_cstring_nocopy(obj);
-		xbps_dbg_printf(xhp, "%s: checking for `%s': ", __func__, shlib);
+		xbps_dbg_printf("%s: checking for `%s': ", __func__, shlib);
 		if ((obj2 = xbps_dictionary_get(shprovides, shlib))) {
-			xbps_dbg_printf_append(xhp, "provided by `%s'\n",
+			xbps_dbg_printf_append("provided by `%s'\n",
 			    xbps_string_cstring_nocopy(obj2));
 			continue;
 		}
-		xbps_dbg_printf_append(xhp, "not found\n");
+		xbps_dbg_printf_append("not found\n");
 
 		broken = true;
 		array = xbps_dictionary_get_keysym(shrequires, obj);

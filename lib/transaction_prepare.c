@@ -172,7 +172,7 @@ compute_transaction_stats(struct xbps_handle *xhp)
 
 	/* Get free space from target rootdir: return ENOSPC if there's not enough space */
 	if (statvfs(xhp->rootdir, &svfs) == -1) {
-		xbps_dbg_printf(xhp, "%s: statvfs failed: %s\n", __func__, strerror(errno));
+		xbps_dbg_printf("%s: statvfs failed: %s\n", __func__, strerror(errno));
 		return 0;
 	}
 	/* compute free space on disk */
@@ -297,7 +297,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	if ((edges = xbps_array_create()) == NULL)
 		return ENOMEM;
 
-	xbps_dbg_printf(xhp, "%s: processing deps\n", __func__);
+	xbps_dbg_printf("%s: processing deps\n", __func__);
 	/*
 	 * The edges are also appended after its dependencies have been
 	 * collected; the edges at the original array are removed later.
@@ -350,7 +350,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * If all pkgs in transaction are on hold, no need to check
 	 * for anything else.
 	 */
-	xbps_dbg_printf(xhp, "%s: checking on hold pkgs\n", __func__);
+	xbps_dbg_printf("%s: checking on hold pkgs\n", __func__);
 	for (i = 0; i < cnt; i++) {
 		tpkgd = xbps_array_get(pkgs, i);
 		if (xbps_transaction_pkg_type(tpkgd) != XBPS_TRANS_HOLD) {
@@ -364,7 +364,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Check for packages to be replaced.
 	 */
-	xbps_dbg_printf(xhp, "%s: checking replaces\n", __func__);
+	xbps_dbg_printf("%s: checking replaces\n", __func__);
 	if (!xbps_transaction_check_replaces(xhp, pkgs)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
@@ -373,7 +373,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Check if there are missing revdeps.
 	 */
-	xbps_dbg_printf(xhp, "%s: checking revdeps\n", __func__);
+	xbps_dbg_printf("%s: checking revdeps\n", __func__);
 	if (!xbps_transaction_check_revdeps(xhp, pkgs)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
@@ -381,7 +381,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	}
 	if (xbps_dictionary_get(xhp->transd, "missing_deps")) {
 		if (xhp->flags & XBPS_FLAG_FORCE_REMOVE_REVDEPS) {
-			xbps_dbg_printf(xhp, "[trans] continuing with broken reverse dependencies!");
+			xbps_dbg_printf("[trans] continuing with broken reverse dependencies!");
 		} else {
 			return ENODEV;
 		}
@@ -389,7 +389,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Check for package conflicts.
 	 */
-	xbps_dbg_printf(xhp, "%s: checking conflicts\n", __func__);
+	xbps_dbg_printf("%s: checking conflicts\n", __func__);
 	if (!xbps_transaction_check_conflicts(xhp, pkgs)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
@@ -401,7 +401,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	/*
 	 * Check for unresolved shared libraries.
 	 */
-	xbps_dbg_printf(xhp, "%s: checking shlibs\n", __func__);
+	xbps_dbg_printf("%s: checking shlibs\n", __func__);
 	if (!xbps_transaction_check_shlibs(xhp, pkgs)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
@@ -409,7 +409,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	}
 	if (xbps_dictionary_get(xhp->transd, "missing_shlibs")) {
 		if (xhp->flags & XBPS_FLAG_FORCE_REMOVE_REVDEPS) {
-			xbps_dbg_printf(xhp, "[trans] continuing with unresolved shared libraries!");
+			xbps_dbg_printf("[trans] continuing with unresolved shared libraries!");
 		} else {
 			return ENOEXEC;
 		}
@@ -420,7 +420,7 @@ out:
 	 * number of packages to be installed, updated, configured
 	 * and removed to the transaction dictionary.
 	 */
-	xbps_dbg_printf(xhp, "%s: computing stats\n", __func__);
+	xbps_dbg_printf("%s: computing stats\n", __func__);
 	if ((rv = compute_transaction_stats(xhp)) != 0) {
 		return rv;
 	}

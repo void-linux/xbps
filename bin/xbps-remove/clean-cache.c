@@ -88,7 +88,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	}
 	if (strcmp(binpkgarch, xhp->target_arch ? xhp->target_arch : xhp->native_arch) != 0 &&
 	    strcmp(binpkgarch, "noarch") != 0) {
-		xbps_dbg_printf(xhp, "%s: ignoring binpkg with unmatched arch\n", binpkg);
+		xbps_dbg_printf("%s: ignoring binpkg with unmatched arch\n", binpkg);
 		return 0;
 	}
 
@@ -150,7 +150,7 @@ clean_cachedir(struct xbps_handle *xhp, bool drun)
 		if ((ext = strrchr(dp->d_name, '.')) == NULL)
 			continue;
 		if (strcmp(ext, ".xbps")) {
-			xbps_dbg_printf(xhp, "ignoring unknown file: %s\n", dp->d_name);
+			xbps_dbg_printf("ignoring unknown file: %s\n", dp->d_name);
 			continue;
 		}
 		xbps_array_add_cstring(array, dp->d_name);

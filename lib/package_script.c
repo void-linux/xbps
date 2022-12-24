@@ -57,7 +57,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	assert(action);
 
 	if (xhp->target_arch) {
-		xbps_dbg_printf(xhp, "%s: not executing %s "
+		xbps_dbg_printf("%s: not executing %s "
 		    "install/remove action.\n", pkgver, action);
 		return 0;
 	}
@@ -81,7 +81,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	/* Create temp file to run script */
 	if ((fd = mkstemp(fpath)) == -1) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "%s: mkstemp %s\n",
+		xbps_dbg_printf("%s: mkstemp %s\n",
 		    __func__, strerror(errno));
 		goto out;
 	}
@@ -89,7 +89,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 	ret = write(fd, blob, blobsiz);
 	if (ret == -1) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "%s: write %s\n",
+		xbps_dbg_printf("%s: write %s\n",
 		    __func__, strerror(errno));
 		close(fd);
 		goto out;

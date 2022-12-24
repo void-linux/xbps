@@ -172,12 +172,12 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	fio = fetchXGet(url, &url_st, fetch_flags);
 
 	/* debug stuff */
-	xbps_dbg_printf(xhp, "st.st_size: %zd\n", (ssize_t)stp->st_size);
-	xbps_dbg_printf(xhp, "st.st_atime: %s\n", print_time(&stp->st_atime));
-	xbps_dbg_printf(xhp, "st.st_mtime: %s\n", print_time(&stp->st_mtime));
-	xbps_dbg_printf(xhp, "url_stat.size: %zd\n", (ssize_t)url_st.size);
-	xbps_dbg_printf(xhp, "url_stat.atime: %s\n", print_time(&url_st.atime));
-	xbps_dbg_printf(xhp, "url_stat.mtime: %s\n", print_time(&url_st.mtime));
+	xbps_dbg_printf("st.st_size: %zd\n", (ssize_t)stp->st_size);
+	xbps_dbg_printf("st.st_atime: %s\n", print_time(&stp->st_atime));
+	xbps_dbg_printf("st.st_mtime: %s\n", print_time(&stp->st_mtime));
+	xbps_dbg_printf("url_stat.size: %zd\n", (ssize_t)url_st.size);
+	xbps_dbg_printf("url_stat.atime: %s\n", print_time(&url_st.atime));
+	xbps_dbg_printf("url_stat.mtime: %s\n", print_time(&url_st.mtime));
 
 	if (fio == NULL) {
 		if (fetchLastErrCode == FETCH_UNCHANGED) {
@@ -191,7 +191,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 		goto fetch_file_out;
 	}
 	if (url_st.size == -1) {
-		xbps_dbg_printf(xhp, "Remote file size is unknown, resume "
+		xbps_dbg_printf("Remote file size is unknown, resume "
 		     "not possible...\n");
 		restart = false;
 	} else if (stp->st_size > url_st.size) {
@@ -199,18 +199,18 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 		 * Remove local file if bigger than remote, and refetch the
 		 * whole shit again.
 		 */
-		xbps_dbg_printf(xhp, "Local file %s is greater than remote, "
+		xbps_dbg_printf("Local file %s is greater than remote, "
 		    "removing local file and refetching...\n", filename);
 		(void)remove(tempfile);
 		restart = false;
 	}
-	xbps_dbg_printf(xhp, "url->scheme: %s\n", url->scheme);
-	xbps_dbg_printf(xhp, "url->host: %s\n", url->host);
-	xbps_dbg_printf(xhp, "url->port: %d\n", url->port);
-	xbps_dbg_printf(xhp, "url->doc: %s\n", url->doc);
-	xbps_dbg_printf(xhp, "url->offset: %zd\n", (ssize_t)url->offset);
-	xbps_dbg_printf(xhp, "url->length: %zu\n", url->length);
-	xbps_dbg_printf(xhp, "url->last_modified: %s\n",
+	xbps_dbg_printf("url->scheme: %s\n", url->scheme);
+	xbps_dbg_printf("url->host: %s\n", url->host);
+	xbps_dbg_printf("url->port: %d\n", url->port);
+	xbps_dbg_printf("url->doc: %s\n", url->doc);
+	xbps_dbg_printf("url->offset: %zd\n", (ssize_t)url->offset);
+	xbps_dbg_printf("url->length: %zu\n", url->length);
+	xbps_dbg_printf("url->last_modified: %s\n",
 	    print_time(&url->last_modified));
 	/*
 	 * If restarting, open the file for appending otherwise create it.
@@ -235,7 +235,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 				SHA256_Update(&sha256, buf, bytes_read);
 			}
 			if (bytes_read == -1) {
-				xbps_dbg_printf(xhp, "IO error while reading %s: %s\n",
+				xbps_dbg_printf("IO error while reading %s: %s\n",
 					tempfile, strerror(errno));
 				errno = EIO;
 				rv = -1;
@@ -260,8 +260,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 			SHA256_Update(&sha256, buf, bytes_read);
 		bytes_written = write(fd, buf, (size_t)bytes_read);
 		if (bytes_written != bytes_read) {
-			xbps_dbg_printf(xhp,
-			    "Couldn't write to %s!\n", tempfile);
+			xbps_dbg_printf("Couldn't write to %s!\n", tempfile);
 			rv = -1;
 			goto fetch_file_out;
 		}
@@ -275,13 +274,13 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 		    filename, false, true, false);
 	}
 	if (bytes_read == -1) {
-		xbps_dbg_printf(xhp, "IO error while fetching %s: %s\n",
+		xbps_dbg_printf("IO error while fetching %s: %s\n",
 		    filename, fetchLastErrString);
 		errno = EIO;
 		rv = -1;
 		goto fetch_file_out;
 	} else if (url_st.size > 0 && ((bytes_dload + url->offset) != url_st.size)) {
-		xbps_dbg_printf(xhp, "file %s is truncated\n", filename);
+		xbps_dbg_printf("file %s is truncated\n", filename);
 		errno = EIO;
 		rv = -1;
 		goto fetch_file_out;
@@ -311,7 +310,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 rename_file:
 	/* File downloaded successfully, rename to destfile */
 	if (rename(tempfile, filename) == -1) {
-		xbps_dbg_printf(xhp, "failed to rename %s to %s: %s",
+		xbps_dbg_printf("failed to rename %s to %s: %s",
 		    tempfile, filename, strerror(errno));
 		rv = -1;
 		goto fetch_file_out;

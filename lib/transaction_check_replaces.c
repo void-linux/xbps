@@ -140,7 +140,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 					xbps_object_iterator_release(iter);
 					return false;
 				}
-				xbps_dbg_printf(xhp,
+				xbps_dbg_printf(
 				    "Package `%s' in transaction will be "
 				    "replaced by `%s', matched with `%s'\n",
 				    curpkgver, pkgver, pattern);
@@ -172,7 +172,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 				xbps_object_iterator_release(iter);
 				return false;
 			}
-			xbps_dbg_printf(xhp,
+			xbps_dbg_printf(
 			    "Package `%s' will be replaced by `%s', "
 			    "matched with `%s'\n", curpkgver, pkgver, pattern);
 		}

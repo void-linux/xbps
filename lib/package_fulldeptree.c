@@ -183,7 +183,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 		}
 		if (curpkgd == NULL) {
 			/* package depends on missing dependencies */
-			xbps_dbg_printf(xhp, "%s: missing dependency '%s'\n", pkgver, curdep);
+			xbps_dbg_printf("%s: missing dependency '%s'\n", pkgver, curdep);
 			errno = ENODEV;
 			return NULL;
 		}
@@ -193,7 +193,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 		}
 
 		if (provides && xbps_match_pkgname_in_array(provides, curdepname)) {
-			xbps_dbg_printf(xhp, "%s: ignoring dependency %s "
+			xbps_dbg_printf("%s: ignoring dependency %s "
 			    "already in provides\n", pkgver, curdep);
 			continue;
 		}
@@ -205,7 +205,7 @@ ordered_depends(struct xbps_handle *xhp, xbps_dictionary_t pkgd, bool rpool,
 		xitem = ordered_depends(xhp, curpkgd, rpool, depth+1);
 		if (xitem == NULL) {
 			/* package depends on missing dependencies */
-			xbps_dbg_printf(xhp, "%s: missing dependency '%s'\n", pkgver, curdep);
+			xbps_dbg_printf("%s: missing dependency '%s'\n", pkgver, curdep);
 			errno = ENODEV;
 			return NULL;
 		}

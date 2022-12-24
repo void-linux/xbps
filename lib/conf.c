@@ -61,7 +61,7 @@ store_virtualpkg(struct xbps_handle *xhp, const char *path, size_t line, char *v
 	 */
 	p = strchr(val, ':');
 	if (p == NULL || p[1] == '\0') {
-		xbps_dbg_printf(xhp, "%s: ignoring invalid "
+		xbps_dbg_printf("%s: ignoring invalid "
 		    "virtualpkg option at line %zu\n", path, line);
 		return 0;
 	}
@@ -71,7 +71,7 @@ store_virtualpkg(struct xbps_handle *xhp, const char *path, size_t line, char *v
 		return -errno;
 	if (!xbps_dictionary_set_cstring(xhp->vpkgd_conf, val, p))
 		return -errno;
-	xbps_dbg_printf(xhp, "%s: added virtualpkg %s for %s\n", path, val, p);
+	xbps_dbg_printf("%s: added virtualpkg %s for %s\n", path, val, p);
 	return 1;
 }
 
@@ -95,7 +95,7 @@ store_preserved_file(struct xbps_handle *xhp, const char *file)
 		if (xbps_match_string_in_array(xhp->preserved_files, file))
 			goto out;
 		xbps_array_add_cstring(xhp->preserved_files, file);
-		xbps_dbg_printf(xhp, "Added preserved file: %s\n", file);
+		xbps_dbg_printf("Added preserved file: %s\n", file);
 		goto out;
 	} else if (rv != 0) {
 		goto out;
@@ -109,7 +109,7 @@ store_preserved_file(struct xbps_handle *xhp, const char *file)
 		assert(p);
 		xbps_strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
 		xbps_array_add_cstring(xhp->preserved_files, p);
-		xbps_dbg_printf(xhp, "Added preserved file: %s (expanded from %s)\n", p, file);
+		xbps_dbg_printf("Added preserved file: %s (expanded from %s)\n", p, file);
 		free(p);
 	}
 out:
@@ -134,7 +134,7 @@ store_ignored_pkg(struct xbps_handle *xhp, const char *pkgname)
 		assert(xhp->ignored_pkgs);
 	}
 	xbps_array_add_cstring(xhp->ignored_pkgs, pkgname);
-	xbps_dbg_printf(xhp, "Added ignored package: %s\n", pkgname);
+	xbps_dbg_printf("Added ignored package: %s\n", pkgname);
 }
 
 static void
@@ -147,7 +147,7 @@ store_noextract(struct xbps_handle *xhp, const char *value)
 		assert(xhp->noextract);
 	}
 	xbps_array_add_cstring(xhp->noextract, value);
-	xbps_dbg_printf(xhp, "Added noextract pattern: %s\n", value);
+	xbps_dbg_printf("Added noextract pattern: %s\n", value);
 }
 
 enum {
@@ -288,7 +288,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 		return rv;
 	}
 
-	xbps_dbg_printf(xhp, "Parsing configuration file: %s\n", path);
+	xbps_dbg_printf("Parsing configuration file: %s\n", path);
 
 	while ((rd = getline(&line, &len, fp)) != -1) {
 		char *val = NULL;
@@ -310,7 +310,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 
 		switch (parse_option(line, rd, &val, &vallen)) {
 		case KEY_ERROR:
-			xbps_dbg_printf(xhp, "%s: ignoring invalid option at "
+			xbps_dbg_printf("%s: ignoring invalid option at "
 			    "line %zu\n", path, nlines);
 			continue;
 		case KEY_ROOTDIR:
@@ -320,7 +320,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 				rv = ENOMEM;
 				break;
 			}
-			xbps_dbg_printf(xhp, "%s: rootdir set to %s\n", path, val);
+			xbps_dbg_printf("%s: rootdir set to %s\n", path, val);
 			break;
 		case KEY_CACHEDIR:
 			size = sizeof xhp->cachedir;
@@ -329,7 +329,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 				rv = ENOMEM;
 				break;
 			}
-			xbps_dbg_printf(xhp, "%s: cachedir set to %s\n", path, val);
+			xbps_dbg_printf("%s: cachedir set to %s\n", path, val);
 			break;
 		case KEY_ARCHITECTURE:
 			size = sizeof xhp->native_arch;
@@ -338,21 +338,21 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 				rv = ENOMEM;
 				break;
 			}
-			xbps_dbg_printf(xhp, "%s: native architecture set to %s\n", path,
+			xbps_dbg_printf("%s: native architecture set to %s\n", path,
 			    val);
 			break;
 		case KEY_SYSLOG:
 			if (strcasecmp(val, "true") == 0) {
 				xhp->flags &= ~XBPS_FLAG_DISABLE_SYSLOG;
-				xbps_dbg_printf(xhp, "%s: syslog enabled\n", path);
+				xbps_dbg_printf("%s: syslog enabled\n", path);
 			} else {
 				xhp->flags |= XBPS_FLAG_DISABLE_SYSLOG;
-				xbps_dbg_printf(xhp, "%s: syslog disabled\n", path);
+				xbps_dbg_printf("%s: syslog disabled\n", path);
 			}
 			break;
 		case KEY_REPOSITORY:
 			if (store_repo(xhp, val))
-				xbps_dbg_printf(xhp, "%s: added repository %s\n", path, val);
+				xbps_dbg_printf("%s: added repository %s\n", path, val);
 			break;
 		case KEY_VIRTUALPKG:
 			rv = store_virtualpkg(xhp, path, nlines, val);
@@ -368,19 +368,19 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 		case KEY_KEEPCONF:
 			if (strcasecmp(val, "true") == 0) {
 				xhp->flags |= XBPS_FLAG_KEEP_CONFIG;
-				xbps_dbg_printf(xhp, "%s: config preservation enabled\n", path);
+				xbps_dbg_printf("%s: config preservation enabled\n", path);
 			} else {
 				xhp->flags &= ~XBPS_FLAG_KEEP_CONFIG;
-				xbps_dbg_printf(xhp, "%s: config preservation disabled\n", path);
+				xbps_dbg_printf("%s: config preservation disabled\n", path);
 			}
 			break;
 		case KEY_BESTMATCHING:
 			if (strcasecmp(val, "true") == 0) {
 				xhp->flags |= XBPS_FLAG_BESTMATCH;
-				xbps_dbg_printf(xhp, "%s: pkg best matching enabled\n", path);
+				xbps_dbg_printf("%s: pkg best matching enabled\n", path);
 			} else {
 				xhp->flags &= ~XBPS_FLAG_BESTMATCH;
-				xbps_dbg_printf(xhp, "%s: pkg best matching disabled\n", path);
+				xbps_dbg_printf("%s: pkg best matching disabled\n", path);
 			}
 			break;
 		case KEY_IGNOREPKG:
@@ -392,7 +392,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 		case KEY_INCLUDE:
 			/* Avoid double-nested parsing, only allow it once */
 			if (nested) {
-				xbps_dbg_printf(xhp, "%s: ignoring nested include\n", path);
+				xbps_dbg_printf("%s: ignoring nested include\n", path);
 				continue;
 			}
 			dir = strdup(path);
@@ -418,12 +418,12 @@ xbps_conf_init(struct xbps_handle *xhp)
 	assert(seen);
 
 	if (*xhp->confdir) {
-		xbps_dbg_printf(xhp, "Processing configuration directory: %s\n", xhp->confdir);
+		xbps_dbg_printf("Processing configuration directory: %s\n", xhp->confdir);
 		if ((rv = parse_files_glob(xhp, seen, xhp->confdir, "*.conf", false)))
 			goto out;
 	}
 	if (*xhp->sysconfdir) {
-		xbps_dbg_printf(xhp, "Processing system configuration directory: %s\n", xhp->sysconfdir);
+		xbps_dbg_printf("Processing system configuration directory: %s\n", xhp->sysconfdir);
 		if ((rv = parse_files_glob(xhp, seen, xhp->sysconfdir, "*.conf", false)))
 			goto out;
 	}

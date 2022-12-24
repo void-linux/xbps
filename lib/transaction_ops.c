@@ -130,7 +130,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		    !xbps_pkg_reverts(pkg_repod, instpkgver)) {
 			xbps_dictionary_get_cstring_nocopy(pkg_repod,
 			    "repository", &repoloc);
-			xbps_dbg_printf(xhp, "[rpool] Skipping `%s' "
+			xbps_dbg_printf("[rpool] Skipping `%s' "
 			    "(installed: %s) from repository `%s'\n",
 			    repopkgver, instpkgver, repoloc);
 			return EEXIST;
@@ -171,7 +171,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	 */
 	if (ttype == XBPS_TRANS_UPDATE) {
 		if (xbps_find_pkg_in_array(pkgs, repopkgver, 0)) {
-			xbps_dbg_printf(xhp, "[update] `%s' already queued in "
+			xbps_dbg_printf("[update] `%s' already queued in "
 			    "transaction.\n", repopkgver);
 			return EEXIST;
 		}
@@ -243,7 +243,7 @@ xbps_autoupdate(struct xbps_handle *xhp)
 
 	rv = trans_find_pkg(xhp, pkgname, false);
 
-	xbps_dbg_printf(xhp, "%s: trans_find_pkg xbps: %d\n", __func__, rv);
+	xbps_dbg_printf("%s: trans_find_pkg xbps: %d\n", __func__, rv);
 
 	if (rv == 0) {
 		if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
@@ -256,13 +256,13 @@ xbps_autoupdate(struct xbps_handle *xhp)
 			char curpkgn[XBPS_NAME_SIZE] = {0};
 
 			xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
-			xbps_dbg_printf(xhp, "%s: processing revdep %s\n", __func__, curpkgver);
+			xbps_dbg_printf("%s: processing revdep %s\n", __func__, curpkgver);
 
 			if (!xbps_pkg_name(curpkgn, sizeof(curpkgn), curpkgver)) {
 				abort();
 			}
 			rv = trans_find_pkg(xhp, curpkgn, false);
-			xbps_dbg_printf(xhp, "%s: trans_find_pkg revdep %s: %d\n", __func__, curpkgver, rv);
+			xbps_dbg_printf("%s: trans_find_pkg revdep %s: %d\n", __func__, curpkgver, rv);
 			if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
 				return -1;
 		}
@@ -326,7 +326,7 @@ xbps_transaction_update_packages(struct xbps_handle *xhp)
 			break;
 		}
 		rv = trans_find_pkg(xhp, pkgname, false);
-		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
+		xbps_dbg_printf("%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv == 0) {
 			newpkg_found = true;
 		} else if (rv == ENOENT || rv == EEXIST || rv == ENODEV) {
@@ -349,7 +349,7 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg, bool force
 	int rv;
 
 	rv = xbps_autoupdate(xhp);
-	xbps_dbg_printf(xhp, "%s: xbps_autoupdate %d\n", __func__, rv);
+	xbps_dbg_printf("%s: xbps_autoupdate %d\n", __func__, rv);
 	switch (rv) {
 	case 1:
 		/* xbps needs to be updated, only allow xbps to be updated */
@@ -382,14 +382,14 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg, bool force
 			break;
 		}
 		rv = trans_find_pkg(xhp, pkgname, false);
-		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
+		xbps_dbg_printf("%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV) {
 			return rv;
 		}
 	}
 	/* add pkg repod */
 	rv = trans_find_pkg(xhp, pkg, force);
-	xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
+	xbps_dbg_printf("%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
 	return rv;
 }
 
@@ -432,13 +432,13 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool forc
 			break;
 		}
 		rv = trans_find_pkg(xhp, pkgname, false);
-		xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
+		xbps_dbg_printf("%s: trans_find_pkg %s: %d\n", __func__, pkgver, rv);
 		if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV) {
 			return rv;
 		}
 	}
 	rv = trans_find_pkg(xhp, pkg, force);
-	xbps_dbg_printf(xhp, "%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
+	xbps_dbg_printf("%s: trans_find_pkg %s: %d\n", __func__, pkg, rv);
 	return rv;
 }
 

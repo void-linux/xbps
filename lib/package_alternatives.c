@@ -181,7 +181,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		dir = xbps_xasprintf("%s/%s", xhp->rootdir, dir);
 		if (strcmp(dir, ".") && xbps_mkpath(dir, 0755) && errno != EEXIST) {
 			rv = errno;
-			xbps_dbg_printf(xhp,
+			xbps_dbg_printf(
 			    "failed to create target dir '%s' for group '%s': %s\n",
 			    dir, grname, strerror(errno));
 			free(dir);
@@ -194,7 +194,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		dir = dirname(p);
 		if (strcmp(dir, ".") && xbps_mkpath(dir, 0755) && errno != EEXIST) {
 			rv = errno;
-			xbps_dbg_printf(xhp,
+			xbps_dbg_printf(
 			    "failed to create symlink dir '%s' for group '%s': %s\n",
 			    dir, grname, strerror(errno));
 			free(p);
@@ -214,7 +214,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 
 		unlink(linkpath);
 		if ((rv = symlink(target, linkpath)) != 0) {
-			xbps_dbg_printf(xhp,
+			xbps_dbg_printf(
 			    "failed to create alt symlink '%s' for group '%s': %s\n",
 			    linkpath, grname,  strerror(errno));
 			goto err;

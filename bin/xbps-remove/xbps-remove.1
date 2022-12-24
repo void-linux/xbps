@@ -97,6 +97,26 @@ Assume yes to all questions and avoid interactive questions.
 .It Fl V, Fl -version
 Show the version information.
 .El
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_ARCH
+Overrides
+.Xr uname 2
+machine result with this value.
+Useful to remove packages with a fake architecture
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value.
+This variable differs from
+.Sy XBPS_ARCH
+in that it allows you to remove packages partially, because
+configuration phase is skipped (the target binaries might not be compatible with
+the native architecture).
+.It Sy XBPS_SYSLOG
+Overrides the
+.Xr xbps.d 5
+.Sy syslog=true|false
+configuration option.
+.El
 .Sh FILES
 .Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
 .It Ar /etc/xbps.d

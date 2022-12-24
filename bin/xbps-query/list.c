@@ -197,7 +197,7 @@ repo_list_uri(struct xbps_repo *repo)
 		xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkeysize);
 		pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
 		if (pubkey)
-			hexfp = xbps_pubkey2fp(repo->xhp, pubkey);
+			hexfp = xbps_pubkey2fp(pubkey);
 		if (signedby)
 			printf("      Signed-by: %s\n", signedby);
 		if (pubkeysize && hexfp)

@@ -58,12 +58,12 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 		if (strcmp(xhp->rootdir, "/")) {
 			if ((geteuid() == 0) && (access("bin/sh", X_OK) == 0)) {
 				if (chroot(xhp->rootdir) == -1) {
-					xbps_dbg_printf(xhp, "%s: chroot() "
+					xbps_dbg_printf("%s: chroot() "
 					    "failed: %s\n", *argv, strerror(errno));
 					_exit(errno);
 				}
 				if (chdir("/") == -1) {
-					xbps_dbg_printf(xhp, "%s: chdir() "
+					xbps_dbg_printf("%s: chdir() "
 					    "failed: %s\n", *argv, strerror(errno));
 					_exit(errno);
 				}

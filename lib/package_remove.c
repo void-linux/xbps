@@ -128,16 +128,16 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 
 	if ((pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
 		rv = errno;
-		xbps_dbg_printf(xhp, "[remove] cannot find %s in pkgdb: %s\n",
+		xbps_dbg_printf("[remove] cannot find %s in pkgdb: %s\n",
 		    pkgver, strerror(rv));
 		goto out;
 	}
 	if ((rv = xbps_pkg_state_dictionary(pkgd, &state)) != 0) {
-		xbps_dbg_printf(xhp, "[remove] cannot find %s in pkgdb: %s\n",
+		xbps_dbg_printf("[remove] cannot find %s in pkgdb: %s\n",
 		    pkgver, strerror(rv));
 		goto out;
 	}
-	xbps_dbg_printf(xhp, "attempting to remove %s state %d\n", pkgver, state);
+	xbps_dbg_printf("attempting to remove %s state %d\n", pkgver, state);
 
 	if (!update)
 		xbps_set_cb_state(xhp, XBPS_STATE_REMOVE, 0, pkgver, NULL);
@@ -223,7 +223,7 @@ purge:
 	/*
 	 * Unregister package from pkgdb.
 	 */
-	xbps_dbg_printf(xhp, "[remove] unregister %s returned %d\n", pkgver, rv);
+	xbps_dbg_printf("[remove] unregister %s returned %d\n", pkgver, rv);
 	xbps_set_cb_state(xhp, XBPS_STATE_REMOVE_DONE, 0, pkgver, NULL);
 	xbps_dictionary_remove(xhp->pkgdb, pkgname);
 out:

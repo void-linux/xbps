@@ -262,7 +262,7 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg, bool only_conf)
 				continue;
 			}
 		}
-		xbps_dbg_printf(xhp, "%s: vpkg_conf %s pkg %s vpkgname %s\n", __func__, vpkg_conf, pkg, vpkgname);
+		xbps_dbg_printf("%s: vpkg_conf %s pkg %s vpkgname %s\n", __func__, vpkg_conf, pkg, vpkgname);
 		free(vpkgname);
 		found = true;
 		break;
