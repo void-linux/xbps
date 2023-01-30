@@ -79,7 +79,9 @@ Show the help message.
 Dry-run mode. Show what actions would be done but don't do anything. The current output
 prints 6 arguments: "<pkgver> <action> <arch> <repository> <installedsize> <downloadsize>".
 .It Fl O, Fl -clean-cache
-Cleans cache directory removing obsolete binary packages.
+Cleans cache directory removing outdated binary packages.
+If specified twice,
+also remove packages that are not installed from the cache.
 .It Fl o, Fl -remove-orphans
 Removes installed package orphans that were installed automatically
 (as dependencies) and are not currently dependencies of any installed package.

@@ -64,21 +64,22 @@ binpkg_parse(char *buf, size_t bufsz, const char *path, const char **pkgver, con
 	return 0;
 }
 
+struct cleaner_data {
+	bool dry;
+	bool uninstalled;
+};
+
 static int
 cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		const char *key UNUSED, void *arg,
 		bool *done UNUSED)
 {
 	char buf[PATH_MAX];
-	xbps_dictionary_t repo_pkgd;
+	xbps_dictionary_t pkgd;
 	const char *binpkg, *rsha256;
 	const char *binpkgver, *binpkgarch;
-	bool drun = false;
+	struct cleaner_data *data = arg;
 	int r;
-
-	/* Extract drun (dry-run) flag from arg*/
-	if (arg != NULL)
-		drun = *(bool*)arg;
 
 	binpkg = xbps_string_cstring_nocopy(obj);
 	r = binpkg_parse(buf, sizeof(buf), binpkg, &binpkgver, &binpkgarch);
@@ -96,9 +97,13 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	 * Remove binary pkg if it's not registered in any repository
 	 * or if hash doesn't match.
 	 */
-	repo_pkgd = xbps_rpool_get_pkg(xhp, binpkgver);
-	if (repo_pkgd) {
-		xbps_dictionary_get_cstring_nocopy(repo_pkgd,
+	if (data->uninstalled) {
+		pkgd = xbps_pkgdb_get_pkg(xhp, binpkgver);
+	} else {
+		pkgd = xbps_rpool_get_pkg(xhp, binpkgver);
+	}
+	if (pkgd) {
+		xbps_dictionary_get_cstring_nocopy(pkgd,
 		    "filename-sha256", &rsha256);
 		r = xbps_file_sha256_check(binpkg, rsha256);
 		if (r == 0) {
@@ -111,13 +116,13 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		}
 	}
 	snprintf(buf, sizeof(buf), "%s.sig", binpkg);
-	if (!drun && unlink(binpkg) == -1) {
+	if (!data->dry && unlink(binpkg) == -1) {
 		xbps_error_printf("Failed to remove `%s': %s\n",
 		    binpkg, strerror(errno));
 	} else {
 		printf("Removed %s from cachedir (obsolete)\n", binpkg);
 	}
-	if (!drun && unlink(buf) == -1 && errno != ENOENT) {
+	if (!data->dry && unlink(buf) == -1 && errno != ENOENT) {
 		xbps_error_printf("Failed to remove `%s': %s\n",
 		    buf, strerror(errno));
 	}
@@ -126,7 +131,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 }
 
 int
-clean_cachedir(struct xbps_handle *xhp, bool drun)
+clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 {
 	xbps_array_t array = NULL;
 	DIR *dirp;
@@ -158,7 +163,11 @@ clean_cachedir(struct xbps_handle *xhp, bool drun)
 	(void)closedir(dirp);
 
 	if (xbps_array_count(array)) {
-		rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, (void*)&drun);
+		struct cleaner_data data = {
+			.dry = drun,
+			.uninstalled = uninstalled,
+		};
+		rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, (void*)&data);
 		xbps_object_release(array);
 	}
 	return rv;

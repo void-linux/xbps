@@ -53,7 +53,8 @@ usage(bool fail)
 	    " -f, --force               Force package files removal\n"
 	    " -h, --help                Show usage\n"
 	    " -n, --dry-run             Dry-run mode\n"
-	    " -O, --clean-cache         Remove obsolete packages in cachedir\n"
+	    " -O, --clean-cache         Remove outdated packages from the cache\n"
+	    "                           If specified twice, also remove uninstalled packages\n"
 	    " -o, --remove-orphans      Remove package orphans\n"
 	    " -R, --recursive           Recursively remove dependencies\n"
 	    " -r, --rootdir <dir>       Full path to rootdir\n"
@@ -179,12 +180,13 @@ main(int argc, char **argv)
 	struct xbps_handle xh;
 	const char *rootdir, *cachedir, *confdir;
 	int c, flags, rv;
-	bool yes, drun, recursive, clean_cache, orphans;
+	bool yes, drun, recursive, orphans;
 	int maxcols, missing;
+	int clean_cache = 0;
 
 	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
-	drun = recursive = clean_cache = yes = orphans = false;
+	drun = recursive = yes = orphans = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -210,7 +212,7 @@ main(int argc, char **argv)
 			drun = true;
 			break;
 		case 'O':
-			clean_cache = true;
+			clean_cache++;
 			break;
 		case 'o':
 			orphans = true;
@@ -236,7 +238,7 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
-	if (!clean_cache && !orphans && (argc == optind)) {
+	if (clean_cache == 0 && !orphans && (argc == optind)) {
 		usage(true);
 		/* NOTREACHED */
 	}
@@ -263,8 +265,8 @@ main(int argc, char **argv)
 
 	maxcols = get_maxcols();
 
-	if (clean_cache) {
-		rv = clean_cachedir(&xh, drun);
+	if (clean_cache > 0) {
+		rv = clean_cachedir(&xh, clean_cache > 1, drun);
 		if (!orphans || rv)
 			exit(rv);;
 	}
