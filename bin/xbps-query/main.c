@@ -45,7 +45,7 @@ usage(bool fail)
 	    " -i, --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
 	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
 	    "                           in memory, ignoring on-disk repodata archives\n"
-	    " -p, --property PROP[,...] Show properties for PKGNAME\n"
+	    " -p, --property PROP[,...] Specify properties for --show or --search modes\n"
 	    " -R, --repository          Enable repository mode. This mode explicitly\n"
 	    "                           looks for packages in repositories\n"
 	    "     --repository=<url>    Enable repository mode and add repository\n"
@@ -109,17 +109,20 @@ main(int argc, char **argv)
 	};
 	struct xbps_handle xh;
 	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
-	int c, flags, rv;
-	bool list_pkgs, list_repos, orphans, own, list_repolock;
-	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
-	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	int c, flags, rv, ops;
+	bool list_pkgs, list_repos, orphans, own, list_repolock, list_manual;
+	bool list_hold, show_prop, show_files, show_deps, show_rdeps, show;
+	bool cat, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	bool not_compatible_with_repo_mode;
+	enum search_mode search_mode;
 
-	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
-	flags = rv = c = 0;
-	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
-	list_manual = list_repolock = show_prop = show_files = false;
-	regex = show = show_deps = show_rdeps = fulldeptree = false;
-	repo_mode = opmode = false;
+	pkg = rootdir = cachedir = confdir = props = catfile = NULL;
+	c = flags = rv = ops = 0;
+	list_pkgs = list_repos = orphans = own = list_repolock = list_manual= false;
+	list_hold = show_prop = show_files = show_deps = show_rdeps = show = false;
+	cat = pkg_search = regex = repo_mode = opmode = fulldeptree = false;
+	not_compatible_with_repo_mode = false;
+	search_mode = IN_INSTALLED;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -209,6 +212,7 @@ main(int argc, char **argv)
 			break;
 		case 2:
 			catfile = optarg;
+			cat = opmode = true;
 			break;
 		case 3:
 			list_repolock = opmode = true;
@@ -254,6 +258,56 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	not_compatible_with_repo_mode = false
+		|| list_repos
+		|| list_hold
+		|| list_repolock
+		|| list_manual
+		|| list_pkgs
+		|| orphans;
+
+	if (repo_mode && not_compatible_with_repo_mode) {
+		xbps_error_printf("Repository mode (-R, --repository) conflicts with one of:\n"
+			" -l, --list-pkgs\n"
+			" -L, --list-repos\n"
+			" -H, --list-hold-pkgs\n"
+			"     --list-repolock-pkgs\n"
+			" -m, --list-manual-pkgs\n"
+			" -O, --list-orphans\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (pkg_search) {
+		if (list_manual) {
+			list_manual = false;
+			search_mode = IN_MANUAL;
+		}
+
+		/* 'props' are always passed to search */
+		if (show_prop)
+			show_prop = false;
+	}
+
+	ops = 0
+		+ (int)list_repos
+		+ (int)list_hold
+		+ (int)list_repolock
+		+ (int)list_manual
+		+ (int)list_pkgs
+		+ (int)orphans
+		+ (int)own
+		+ (int)pkg_search
+		+ (int)cat
+		+ (int)(show || show_prop)
+		+ (int)show_files
+		+ (int)show_deps
+		+ (int)show_rdeps;
+
+	if (ops != 1) {
+		xbps_error_printf("Conflicting MODE flags, please consult the man page.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	if (list_repos) {
 		/* list repositories */
 		rv = repo_list(&xh);
@@ -284,7 +338,9 @@ main(int argc, char **argv)
 
 	} else if (pkg_search) {
 		/* search mode */
-		rv = search(&xh, repo_mode, pkg, props, regex);
+		if (repo_mode)
+			search_mode = IN_REPO;
+		rv = search(&xh, regex, pkg, props, search_mode);
 
 	} else if (catfile) {
 		/* repo cat file mode */
