@@ -47,14 +47,14 @@ remove_pkg(const char *repodir, const char *file)
 	if (remove(filepath) == -1) {
 		if (errno != ENOENT) {
 			rv = errno;
-			fprintf(stderr, "xbps-rindex: failed to remove "
+			xbps_error_printf("xbps-rindex: failed to remove "
 			    "package `%s': %s\n", file, strerror(rv));
 		}
 	}
 	if (remove(sigpath) == -1) {
 		if (errno != ENOENT) {
 			rv = errno;
-			fprintf(stderr, "xbps-rindex: failed to remove "
+			xbps_error_printf("xbps-rindex: failed to remove "
 			    "package signature `%s': %s\n", sigpath, strerror(rv));
 		}
 	}
@@ -121,7 +121,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	repo = xbps_repo_public_open(xhp, repodir);
 	if (repo == NULL) {
 		if (errno != ENOENT) {
-			fprintf(stderr, "xbps-rindex: cannot read repository data: %s\n",
+			xbps_error_printf("xbps-rindex: cannot read repository data: %s\n",
 			    strerror(errno));
 			return -1;
 		}
@@ -129,13 +129,13 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	}
 	stage = xbps_repo_stage_open(xhp, repodir);
 	if (chdir(repodir) == -1) {
-		fprintf(stderr, "xbps-rindex: cannot chdir to %s: %s\n",
+		xbps_error_printf("xbps-rindex: cannot chdir to %s: %s\n",
 		    repodir, strerror(errno));
 		rv = errno;
 		goto out;
 	}
 	if ((dirp = opendir(".")) == NULL) {
-		fprintf(stderr, "xbps-rindex: failed to open %s: %s\n",
+		xbps_error_printf("xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
 		rv = errno;
 		goto out;

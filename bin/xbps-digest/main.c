@@ -84,7 +84,7 @@ main(int argc, char **argv)
 
 	if (mode && strcmp(mode, "sha256")) {
 		/* sha256 is the only supported mode currently */
-		fprintf(stderr, "%s: unsupported digest mode\n", progname);
+		xbps_error_printf("%s: unsupported digest mode\n", progname);
 		exit(EXIT_FAILURE);
 	}
 
@@ -96,7 +96,7 @@ main(int argc, char **argv)
 	} else {
 		for (int i = 0; i < argc; i++) {
 			if (!xbps_file_sha256(sha256, sizeof sha256, argv[i])) {
-				fprintf(stderr,
+				xbps_error_printf(
 				    "%s: couldn't get hash for %s (%s)\n",
 				progname, argv[i], strerror(errno));
 				exit(EXIT_FAILURE);

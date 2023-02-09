@@ -361,8 +361,8 @@ main(int argc, char **argv)
 
 		for (i = 1; i < argc; i++) {
 			if (!xbps_file_sha256(sha256, sizeof sha256, argv[i])) {
-				fprintf(stderr,
-				    "E: couldn't get hash for %s (%s)\n",
+				xbps_error_printf(
+				    "couldn't get hash for %s (%s)\n",
 				    argv[i], strerror(errno));
 				exit(EXIT_FAILURE);
 			}
@@ -378,7 +378,7 @@ main(int argc, char **argv)
 			rv = xbps_fetch_file_dest(&xh, argv[i], filename, "v");
 
 			if (rv == -1) {
-				fprintf(stderr, "%s: %s\n", argv[i],
+				xbps_error_printf("%s: %s\n", argv[i],
 				    xbps_fetch_error_string());
 			} else if (rv == 0) {
 				printf("%s: file is identical with remote.\n", argv[i]);

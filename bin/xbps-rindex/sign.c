@@ -73,7 +73,7 @@ pubkey_from_privkey(RSA *rsa)
 	assert(bp);
 
 	if (!PEM_write_bio_RSA_PUBKEY(bp, rsa)) {
-		fprintf(stderr, "error writing public key: %s\n",
+		xbps_error_printf("error writing public key: %s\n",
 		    ERR_error_string(ERR_get_error(), NULL));
 		BIO_free(bp);
 		return NULL;
@@ -130,7 +130,7 @@ load_rsa_key(const char *privkey)
 		defprivkey = strdup(privkey);
 
 	if ((rsa = load_rsa_privkey(defprivkey)) == NULL) {
-		fprintf(stderr, "%s: failed to read the RSA privkey\n", _XBPS_RINDEX);
+		xbps_error_printf("%s: failed to read the RSA privkey\n", _XBPS_RINDEX);
 		exit(EXIT_FAILURE);
 	}
 	free(defprivkey);
@@ -161,7 +161,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	bool flush_failed = false, flush = false;
 
 	if (signedby == NULL) {
-		fprintf(stderr, "--signedby unset! cannot initialize signed repository\n");
+		xbps_error_printf("--signedby unset! cannot initialize signed repository\n");
 		return -1;
 	}
 
@@ -171,12 +171,12 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
 		rv = errno;
-		fprintf(stderr, "%s: cannot read repository data: %s\n",
+		xbps_error_printf("%s: cannot read repository data: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
 		goto out;
 	}
 	if (xbps_dictionary_count(repo->idx) == 0) {
-		fprintf(stderr, "%s: invalid repository, existing!\n", _XBPS_RINDEX);
+		xbps_error_printf("%s: invalid repository, exiting!\n", _XBPS_RINDEX);
 		rv = EINVAL;
 		goto out;
 	}
@@ -223,14 +223,14 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	/* lock repository to write repodata file */
 	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
 		rv = errno;
-		fprintf(stderr, "%s: cannot lock repository: %s\n",
+		xbps_error_printf("%s: cannot lock repository: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
 		goto out;
 	}
 	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta, compression);
 	xbps_repo_unlock(rlockfd, rlockfname);
 	if (!flush_failed) {
-		fprintf(stderr, "failed to write repodata: %s\n", strerror(errno));
+		xbps_error_printf("failed to write repodata: %s\n", strerror(errno));
 		goto out;
 	}
 	printf("Initialized signed repository (%u package%s)\n",
@@ -273,7 +273,7 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 	 */
 	rsa = load_rsa_key(privkey);
 	if (!rsa_sign_file(rsa, binpkg, &sig, &siglen)) {
-		fprintf(stderr, "failed to sign %s: %s\n", binpkg, strerror(errno));
+		xbps_error_printf("failed to sign %s: %s\n", binpkg, strerror(errno));
 		rv = EINVAL;
 		goto out;
 	}
@@ -286,13 +286,13 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 		sigfile_fd = creat(sigfile, 0644);
 
 	if (sigfile_fd == -1) {
-		fprintf(stderr, "failed to create %s: %s\n", sigfile, strerror(errno));
+		xbps_error_printf("failed to create %s: %s\n", sigfile, strerror(errno));
 		rv = EINVAL;
 		free(sig);
 		goto out;
 	}
 	if (write(sigfile_fd, sig, siglen) != (ssize_t)siglen) {
-		fprintf(stderr, "failed to write %s: %s\n", sigfile, strerror(errno));
+		xbps_error_printf("failed to write %s: %s\n", sigfile, strerror(errno));
 		rv = EINVAL;
 		free(sig);
 		goto out;

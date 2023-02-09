@@ -115,7 +115,7 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 	if (!xbps_dictionary_equals(dest, repo->idx)) {
 		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta, compression)) {
 			rv = errno;
-			fprintf(stderr, "failed to write repodata: %s\n",
+			xbps_error_printf("failed to write repodata: %s\n",
 			    strerror(errno));
 			return rv;
 		}
@@ -140,7 +140,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, 
 
 	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
 		rv = errno;
-		fprintf(stderr, "%s: cannot lock repository: %s\n",
+		xbps_error_printf("%s: cannot lock repository: %s\n",
 		    _XBPS_RINDEX, strerror(rv));
 		return rv;
 	}
@@ -151,14 +151,14 @@ index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, 
 			xbps_repo_unlock(rlockfd, rlockfname);
 			return 0;
 		}
-		fprintf(stderr, "%s: cannot read repository data: %s\n",
+		xbps_error_printf("%s: cannot read repository data: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
 		xbps_repo_unlock(rlockfd, rlockfname);
 		return rv;
 	}
 	stage = xbps_repo_stage_open(xhp, repodir);
 	if (repo->idx == NULL || (stage && stage->idx == NULL)) {
-		fprintf(stderr, "%s: incomplete repository data file!\n", _XBPS_RINDEX);
+		xbps_error_printf("%s: incomplete repository data file!\n", _XBPS_RINDEX);
 		rv = EINVAL;
 		goto out;
 	}

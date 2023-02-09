@@ -257,22 +257,22 @@ dist_upgrade(struct xbps_handle *xhp, unsigned int cols, bool yes, bool drun)
 
 	rv = xbps_transaction_update_packages(xhp);
 	if (rv == ENOENT) {
-		printf("No packages currently registered.\n");
+		xbps_error_printf("No packages currently registered.\n");
 		return 0;
 	} else if (rv == EBUSY) {
 		if (drun) {
 			rv = 0;
 		} else {
-			printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
+			xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
 			return rv;
 		}
 	} else if (rv == EEXIST) {
 		return 0;
 	} else if (rv == ENOTSUP) {
-		fprintf(stderr, "No repositories currently registered!\n");
+		xbps_error_printf("No repositories currently registered!\n");
 		return rv;
 	} else if (rv != 0) {
-		fprintf(stderr, "Unexpected error %s\n", strerror(rv));
+		xbps_error_printf("Unexpected error: %s\n", strerror(rv));
 		return -1;
 	}
 
@@ -286,17 +286,17 @@ install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 
 	rv = xbps_transaction_install_pkg(xhp, pkg, force);
 	if (rv == EEXIST)
-		printf("Package `%s' already installed.\n", pkg);
+		xbps_error_printf("Package `%s' already installed.\n", pkg);
 	else if (rv == ENOENT)
-		fprintf(stderr, "Package '%s' not found in repository pool.\n", pkg);
+		xbps_error_printf("Package '%s' not found in repository pool.\n", pkg);
 	else if (rv == ENOTSUP)
-		fprintf(stderr, "No repositories currently registered!\n");
+		xbps_error_printf("No repositories currently registered!\n");
 	else if (rv == ENXIO)
-		fprintf(stderr, "Package `%s' contains invalid dependencies, exiting.\n", pkg);
+		xbps_error_printf("Package `%s' contains invalid dependencies, exiting.\n", pkg);
 	else if (rv == EBUSY)
-		fprintf(stderr, "The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
+		xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
 	else if (rv != 0) {
-		fprintf(stderr, "Unexpected error: %s\n", strerror(rv));
+		xbps_error_printf("Unexpected error: %s\n", strerror(rv));
 		rv = -1;
 	}
 	return rv;
@@ -311,17 +311,17 @@ update_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	if (rv == EEXIST)
 		printf("Package '%s' is up to date.\n", pkg);
 	else if (rv == ENOENT)
-		fprintf(stderr, "Package '%s' not found in repository pool.\n", pkg);
+		xbps_error_printf("Package '%s' not found in repository pool.\n", pkg);
 	else if (rv == ENODEV)
-		fprintf(stderr, "Package '%s' not installed.\n", pkg);
+		xbps_error_printf("Package '%s' not installed.\n", pkg);
 	else if (rv == ENOTSUP)
-		fprintf(stderr, "No repositories currently registered!\n");
+		xbps_error_printf("No repositories currently registered!\n");
 	else if (rv == ENXIO)
-		fprintf(stderr, "Package `%s' contains invalid dependencies, exiting.\n", pkg);
+		xbps_error_printf("Package `%s' contains invalid dependencies, exiting.\n", pkg);
 	else if (rv == EBUSY)
-		fprintf(stderr, "The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
+		xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
 	else if (rv != 0) {
-		fprintf(stderr, "Unexpected error: %s\n", strerror(rv));
+		xbps_error_printf("Unexpected error: %s\n", strerror(rv));
 		return -1;
 	}
 	return rv;
@@ -346,20 +346,20 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 			if (xbps_array_count(array)) {
 				/* missing dependencies */
 				print_array(array);
-				fprintf(stderr, "Transaction aborted due to unresolved dependencies.\n");
+				xbps_error_printf("Transaction aborted due to unresolved dependencies.\n");
 			}
 		} else if (rv == ENOEXEC) {
 			array = xbps_dictionary_get(xhp->transd, "missing_shlibs");
 			if (xbps_array_count(array)) {
 				/* missing shlibs */
 				print_array(array);
-				fprintf(stderr, "Transaction aborted due to unresolved shlibs.\n");
+				xbps_error_printf("Transaction aborted due to unresolved shlibs.\n");
 			}
 		} else if (rv == EAGAIN) {
 			/* conflicts */
 			array = xbps_dictionary_get(xhp->transd, "conflicts");
 			print_array(array);
-			fprintf(stderr, "Transaction aborted due to conflicting packages.\n");
+			xbps_error_printf("Transaction aborted due to conflicting packages.\n");
 		} else if (rv == ENOSPC) {
 			/* not enough free space */
 			xbps_dictionary_get_uint64(xhp->transd,
@@ -378,7 +378,7 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 				rv = -1;
 				goto out;
 			}
-			fprintf(stderr, "Transaction aborted due to insufficient disk "
+			xbps_error_printf("Transaction aborted due to insufficient disk "
 			    "space (need %s, got %s free).\n", instsize, freesize);
 			if (drun) {
 				goto proceed;
@@ -440,7 +440,7 @@ proceed:
 		    trans->rm_pkgcnt,
 		    trans->hold_pkgcnt);
 	} else {
-		fprintf(stderr, "Transaction failed! see above for errors.\n");
+		xbps_error_printf("Transaction failed! see above for errors.\n");
 	}
 out:
 	if (trans->iter)

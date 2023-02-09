@@ -127,7 +127,7 @@ ftw_cb(const char *fpath, const struct stat *sb)
 			sverrno = errno;
 	}
 	if (sverrno != 0) {
-		fprintf(stderr, "Failed to remove %s: %s\n", fpath, strerror(sverrno));
+		xbps_error_printf("Failed to remove %s: %s\n", fpath, strerror(sverrno));
 	}
 	return 0;
 }
@@ -189,7 +189,7 @@ cleanup_overlayfs(void)
 
 	/* recursively remove the temporary dir */
 	if (walk_dir(tmpdir, ftw_cb) != 0) {
-		fprintf(stderr, "Failed to remove directory tree %s: %s\n",
+		xbps_error_printf("Failed to remove directory tree %s: %s\n",
 			tmpdir, strerror(errno));
 		exit(EXIT_FAILURE);
 	}

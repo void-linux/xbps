@@ -97,7 +97,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		assert(buf);
 		filesd = xbps_plist_dictionary_from_file(buf);
 		if (filesd == NULL) {
-			fprintf(stderr, "%s: cannot read %s, ignoring...\n",
+			xbps_error_printf("%s: cannot read %s, ignoring...\n",
 			    pkgname, buf);
 			free(buf);
 			return -1;
@@ -106,11 +106,11 @@ check_pkg_integrity(struct xbps_handle *xhp,
 		free(buf);
 		if (rv == ENOENT) {
 			xbps_dictionary_remove(opkgd, "metafile-sha256");
-			fprintf(stderr, "%s: unexistent metafile, "
+			xbps_error_printf("%s: unexistent metafile, "
 			    "updating pkgdb.\n", pkgname);
 		} else if (rv == ERANGE) {
 			xbps_object_release(filesd);
-			fprintf(stderr, "%s: metadata file has been "
+			xbps_error_printf("%s: metadata file has been "
 			    "modified!\n", pkgname);
 			return 1;
 		}

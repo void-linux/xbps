@@ -145,7 +145,7 @@ main(int argc, char **argv)
 		   (rm_mode && (add_mode || clean_mode || sign_mode || sign_pkg_mode)) ||
 		   (sign_mode && (add_mode || clean_mode || rm_mode || sign_pkg_mode)) ||
 		   (sign_pkg_mode && (add_mode || clean_mode || rm_mode || sign_mode))) {
-		fprintf(stderr, "Only one mode can be specified: add, clean, "
+		xbps_error_printf("Only one mode can be specified: add, clean, "
 		    "remove-obsoletes, sign or sign-pkg.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -154,7 +154,7 @@ main(int argc, char **argv)
 	memset(&xh, 0, sizeof(xh));
 	xh.flags = flags;
 	if ((rv = xbps_init(&xh)) != 0) {
-		fprintf(stderr, "failed to initialize libxbps: %s\n",
+		xbps_error_printf("failed to initialize libxbps: %s\n",
 		    strerror(rv));
 		exit(EXIT_FAILURE);
 	}
