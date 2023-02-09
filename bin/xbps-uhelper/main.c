@@ -49,17 +49,17 @@ usage(void)
 	"    real-version, arch, getsystemdir\n"
 	"\n"
 	"  Action arguments:\n"
-	"    binpkgarch\t<binpkg>\n"
-	"    binpkgver\t<binpkg>\n"
+	"    binpkgarch\t<binpkg> ...\n"
+	"    binpkgver\t<binpkg> ...\n"
 	"    cmpver\t\t<instver> <reqver>\n"
-	"    getpkgdepname\t<string>\n"
-	"    getpkgdepversion\t<string>\n"
-	"    getpkgname\t\t<string>\n"
-	"    getpkgrevision\t<string>\n"
-	"    getpkgversion\t<string>\n"
+	"    getpkgdepname\t<string> ...\n"
+	"    getpkgdepversion\t<string> ...\n"
+	"    getpkgname\t\t<string> ...\n"
+	"    getpkgrevision\t<string> ...\n"
+	"    getpkgversion\t<string> ...\n"
 	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
-	"    version\t\t<pkgname>\n"
-	"    real-version\t<pkgname>\n"
+	"    version\t\t<pkgname> ...\n"
+	"    real-version\t<pkgname> ...\n"
 	"\n"
 	"  Options shared by all actions:\n"
 	"    -C\t\tPath to xbps.conf file.\n"
@@ -103,7 +103,7 @@ main(int argc, char **argv)
 	struct xferstat xfer;
 	const char *version, *rootdir = NULL, *confdir = NULL;
 	char pkgname[XBPS_NAME_SIZE], *filename;
-	int flags = 0, c, rv = 0;
+	int flags = 0, c, rv = 0, i = 0;
 	const struct option longopts[] = {
 		{ NULL, 0, NULL, 0 }
 	};
@@ -160,102 +160,133 @@ main(int argc, char **argv)
 	}
 
 	if (strcmp(argv[0], "version") == 0) {
-		/* Prints version of an installed package */
-		if (argc != 2)
+		/* Prints version of installed packages */
+		if (argc < 2)
 			usage();
 
-		if ((((dict = xbps_pkgdb_get_pkg(&xh, argv[1])) == NULL)) &&
-		    (((dict = xbps_pkgdb_get_virtualpkg(&xh, argv[1])) == NULL)))
-			exit(EXIT_FAILURE);
-
-		xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
-		printf("%s\n", xbps_pkg_version(version));
+		for (i = 1; i < argc; i++) {
+			if ((((dict = xbps_pkgdb_get_pkg(&xh, argv[i])) == NULL)) &&
+				(((dict = xbps_pkgdb_get_virtualpkg(&xh, argv[i])) == NULL))) {
+				xbps_error_printf("Could not find package '%s'\n", argv[i]);
+				rv = 1;
+			} else {
+				xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
+				printf("%s\n", xbps_pkg_version(version));
+			}
+		}
 	} else if (strcmp(argv[0], "real-version") == 0) {
-		/* Prints version of an installed real package, not virtual */
-		if (argc != 2)
+		/* Prints version of installed real packages, not virtual */
+		if (argc < 2)
 			usage();
 
-		if ((dict = xbps_pkgdb_get_pkg(&xh, argv[1])) == NULL)
-			exit(EXIT_FAILURE);
-
-		xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
-		printf("%s\n", xbps_pkg_version(version));
+		for (i = 1; i < argc; i++) {
+			if ((dict = xbps_pkgdb_get_pkg(&xh, argv[i])) == NULL) {
+				xbps_error_printf("Could not find package '%s'\n", argv[i]);
+				rv = 1;
+			} else {
+				xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &version);
+				printf("%s\n", xbps_pkg_version(version));
+			}
+		}
 	} else if (strcmp(argv[0], "getpkgversion") == 0) {
-		/* Returns the version of a pkg string */
-		if (argc != 2)
+		/* Returns the version of pkg strings */
+		if (argc < 2)
 			usage();
 
-		version = xbps_pkg_version(argv[1]);
-		if (version == NULL) {
-			fprintf(stderr,
-			    "Invalid string, expected <string>-<version>_<revision>\n");
-			exit(EXIT_FAILURE);
+		for (i = 1; i < argc; i++) {
+			version = xbps_pkg_version(argv[i]);
+			if (version == NULL) {
+				xbps_error_printf(
+					"Invalid string '%s', expected <string>-<version>_<revision>\n", argv[i]);
+				rv = 1;
+			} else {
+				printf("%s\n", version);
+			}
 		}
-		printf("%s\n", version);
 	} else if (strcmp(argv[0], "getpkgname") == 0) {
-		/* Returns the name of a pkg string */
-		if (argc != 2)
+		/* Returns the name of pkg strings */
+		if (argc < 2)
 			usage();
 
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), argv[1])) {
-			fprintf(stderr,
-			    "Invalid string, expected <string>-<version>_<revision>\n");
-			exit(EXIT_FAILURE);
+		for (i = 1; i < argc; i++) {
+			if (!xbps_pkg_name(pkgname, sizeof(pkgname), argv[i])) {
+				xbps_error_printf(
+					"Invalid string '%s', expected <string>-<version>_<revision>\n", argv[i]);
+				rv = 1;
+			} else {
+				printf("%s\n", pkgname);
+			}
 		}
-		printf("%s\n", pkgname);
 	} else if (strcmp(argv[0], "getpkgrevision") == 0) {
-		/* Returns the revision of a pkg string */
-		if (argc != 2)
+		/* Returns the revision of pkg strings */
+		if (argc < 2)
 			usage();
 
-		version = xbps_pkg_revision(argv[1]);
-		if (version == NULL)
-			exit(EXIT_SUCCESS);
-
-		printf("%s\n", version);
+		for (i = 1; i < argc; i++) {
+			version = xbps_pkg_revision(argv[1]);
+			if (version == NULL) {
+				rv = 1;
+			} else {
+				printf("%s\n", version);
+			}
+		}
 	} else if (strcmp(argv[0], "getpkgdepname") == 0) {
-		/* Returns the pkgname of a dependency */
-		if (argc != 2)
+		/* Returns the pkgname of dependencies */
+		if (argc < 2)
 			usage();
 
-		if (!xbps_pkgpattern_name(pkgname, sizeof(pkgname), argv[1]))
-			exit(EXIT_FAILURE);
-
-		printf("%s\n", pkgname);
+		for (i = 1; i < argc; i++) {
+			if (!xbps_pkgpattern_name(pkgname, sizeof(pkgname), argv[i])) {
+				xbps_error_printf("Invalid string '%s', expected <string><comparator><version>\n", argv[i]);
+				rv = 1;
+			} else {
+				printf("%s\n", pkgname);
+			}
+		}
 	} else if (strcmp(argv[0], "getpkgdepversion") == 0) {
-		/* returns the version of a package pattern dependency */
-		if (argc != 2)
+		/* returns the version of package pattern dependencies */
+		if (argc < 2)
 			usage();
 
-		version = xbps_pkgpattern_version(argv[1]);
-		if (version == NULL)
-			exit(EXIT_FAILURE);
-
-		printf("%s\n", version);
+		for (i = 1; i < argc; i++) {
+			version = xbps_pkgpattern_version(argv[i]);
+			if (version == NULL) {
+				xbps_error_printf("Invalid string '%s', expected <string><comparator><version>\n", argv[i]);
+				rv = 1;
+			} else {
+				printf("%s\n", version);
+			}
+		}
 	} else if (strcmp(argv[0], "binpkgver") == 0) {
-		/* Returns the pkgver of a binpkg string */
-		if (argc != 2)
+		/* Returns the pkgver of binpkg strings */
+		if (argc < 2)
 			usage();
 
-		version = xbps_binpkg_pkgver(argv[1]);
-		if (version == NULL) {
-			fprintf(stderr,
-			    "Invalid string, expected <pkgname>-<version>_<revision>.<arch>.xbps\n");
-			exit(EXIT_FAILURE);
+		for (i = 1; i < argc; i++) {
+			version = xbps_binpkg_pkgver(argv[i]);
+			if (version == NULL) {
+				xbps_error_printf(
+					"Invalid string '%s', expected <pkgname>-<version>_<revision>.<arch>.xbps\n", argv[i]);
+				rv = 1;
+			} else {
+				printf("%s\n", version);
+			}
 		}
-		printf("%s\n", version);
 	} else if (strcmp(argv[0], "binpkgarch") == 0) {
-		/* Returns the arch of a binpkg string */
-		if (argc != 2)
+		/* Returns the arch of binpkg strings */
+		if (argc < 2)
 			usage();
 
-		version = xbps_binpkg_arch(argv[1]);
-		if (version == NULL) {
-			fprintf(stderr,
-			    "Invalid string, expected <pkgname>-<version>_<revision>.<arch>.xbps\n");
-			exit(EXIT_FAILURE);
+		for (i = 1; i < argc; i++) {
+			version = xbps_binpkg_arch(argv[i]);
+			if (version == NULL) {
+				xbps_error_printf(
+					"Invalid string '%s', expected <pkgname>-<version>_<revision>.<arch>.xbps\n", argv[i]);
+				rv = 1;
+			} else {
+				printf("%s\n", version);
+			}
 		}
-		printf("%s\n", version);
 	} else if (strcmp(argv[0], "pkgmatch") == 0) {
 		/* Matches a pkg with a pattern */
 		if (argc != 3)
@@ -291,7 +322,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage();
 
-		for (int i = 1; i < argc; i++) {
+		for (i = 1; i < argc; i++) {
 			if (!xbps_file_sha256(sha256, sizeof sha256, argv[i])) {
 				fprintf(stderr,
 				    "E: couldn't get hash for %s (%s)\n",
@@ -305,7 +336,7 @@ main(int argc, char **argv)
 		if (argc < 2)
 			usage();
 
-		for (int i = 1; i < argc; i++) {
+		for (i = 1; i < argc; i++) {
 			filename = fname(argv[i]);
 			rv = xbps_fetch_file_dest(&xh, argv[i], filename, "v");
 
