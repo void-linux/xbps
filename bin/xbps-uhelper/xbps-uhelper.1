@@ -1,0 +1,269 @@
+.Dd Feb 11, 2023
+.Dt XBPS-UHELPER 1
+.Os
+.Sh NAME
+.Nm xbps-uhelper
+.Nd XBPS helper utilities
+.Sh SYNOPSIS
+.Nm
+.Op OPTIONS
+.Ar ACTION
+.Op ARGUMENTS
+.Sh DESCRIPTION
+The
+.Nm
+utility provides various utilities for interacting with XBPS and XBPS packages.
+.Sh ARGUMENT TYPES
+.Ss BINPKG
+A
+.Ar binpkg
+argument is a string of the format
+.Em <pkgname>-<version>_<revision>.<arch>.xbps ,
+like the filename of a binary package.
+.Ss PKGVER
+A
+.Ar pkgver
+argument is a string of the format
+.Em <pkgname>-<version>_<revision> ,
+like the
+.Em pkgver
+property.
+.Ss PKGPATTERN
+A
+.Ar pkgpattern
+argument is package expression specifying a package name and version separated
+by any of the following version comparators:
+.Pp
+.Bl -tag -width xx -compact
+.It Sy <
+less than
+.It Sy >
+greater than
+.It Sy <=
+less or equal than
+.It Sy >=
+greater or equal than
+.Pp
+.El
+Example:
+.Dq Sy foo>=2.0 .
+.Sh OPTIONS
+.Bl -tag -width -x
+.It Fl C, Fl -config Ar dir
+Specifies a path to the XBPS configuration directory.
+If the first character is not '/' then it's a relative path of
+.Ar rootdir .
+.It Fl d, Fl -debug
+Enables extra debugging shown to stderr.
+.It Fl h, Fl -help
+Show the help message.
+.It Fl r, Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl V, Fl -version
+Show the version information.
+.El
+.Sh ACTIONS
+.Bl -tag -width xx
+.It Cm arch
+Prints the XBPS native arch.
+.It Cm binpkgarch Ar binpkg ...
+Prints the arch of
+.Ar binpkg
+strings.
+.It Cm binpkgver Ar binpkg ...
+Prints the pkgver of
+.Ar binpkg
+strings.
+.It Cm cmpver Ar instver Ar reqver
+Compare two
+.Ar pkgver
+strings,
+.Ar instver
+(installed) vs
+.Ar reqver
+(required).
+See
+.Sx EXIT STATUS
+for more information.
+.It Cm getname Ar string ...
+Prints the pkgname of
+.Ar pkgpatterns
+and/or
+.Ar pkgvers .
+This is a combination of
+.Cm getpkgdepname
+and
+.Cm getpkgname .
+.It Cm getversion Ar string ...
+Prints the version of
+.Ar pkgpatterns
+and/or
+.Ar pkgvers .
+This is a combination of
+.Cm getpkgdepversion
+and
+.Cm getpkgversion .
+.It Cm getpkgdepname Ar pkgpattern ...
+Prints the pkgname of package dependency patterns.
+.It Cm getpkgdepversion Ar pkgpattern
+Prints the version of package dependency patterns.
+.It Cm getpkgname Ar pkgver ...
+Prints the name of package strings.
+.It Cm getpkgrevision Ar pkgver ...
+Prints the revision of package strings.
+.It Cm getpkgversion Ar pkgver ...
+Prints the version of package strings.
+.It Cm getsystemdir
+Prints the xbps system directory
+.Po
+.Pa <sharedir>/xbps.d
+.Pc .
+.It Cm pkgmatch Ar pkgver Ar pkgpattern
+Matches a
+.Ar pkgver
+with a
+.Ar pkgpattern .
+See
+.Sx EXIT STATUS
+for more information.
+.It Cm real-version Ar pkgname ...
+Prints the version of installed real packages.
+.It Cm version Ar pkgname ...
+Prints the version of installed packages.
+.El
+.Sh EXIT STATUS
+.Ex -std
+Exceptions to this are:
+.Bl -tag -width xx
+.It Cm cmpver Ar instver Ar reqver
+.Bl -tag -width xxx -compact
+.It 1
+if
+.Ar instver
+is greater than
+.Ar reqver .
+.It 0
+if
+.Ar instver
+is equal to
+.Ar reqver .
+.It 255
+if
+.Ar instver
+is less than
+.Ar reqver .
+.El
+.It Cm pkgmatch Ar pkgver Ar pkgpattern
+.Bl -tag -width xxx -compact
+.It 1
+.Ar pkgver
+matches
+.Ar pkgpattern .
+.It 0
+.Ar pkgver
+does not match
+.Ar pkgpattern .
+.It 255
+An error occurred.
+.El
+.El
+.Sh EXAMPLES
+Compare package versions:
+.Pp
+.Dl $ xbps-uhelper cmpver 'foo-1.0_1' 'foo-2.1_1'
+.Dl $ xbps-uhelper cmpver 1.0 2.1
+.Pp
+Get the package name for dependency pattern
+.Dq foo>=0 :
+.Pp
+.Dl $ xbps-uhelper getpkgdepname 'foo>=0'
+.Pp
+Get the version expression for the dependency pattern
+.Dq foo>=0 :
+.Pp
+.Dl $ xbps-uhelper getpkgdepversion 'foo>=0'
+.Pp
+Get the package name for pkgver
+.Dq foo-2.0_1 :
+.Pp
+.Dl $ xbps-uhelper getpkgname foo-2.0_1
+.Pp
+Get the revision for pkgver
+.Dq foo-2.0_1 :
+.Pp
+.Dl $ xbps-uhelper getpkgrevision foo-2.0_1
+.Pp
+Get the version for pkgver
+.Dq foo-2.0_1 :
+.Pp
+.Dl $ xbps-uhelper getpkgversion foo-2.0_1
+.Pp
+Check if the pkgver
+.Dq foo-1.0_1
+matches the dependency pattern
+.Dq foo>=1.0 :
+.Pp
+.Dl $ xbps-uhelper pkgmatch foo-1.0_1 'foo>=1.0'
+.Pp
+Get the version for the installed package
+.Dq foo :
+.Pp
+.Dl $ xbps-uhelper version foo
+.Pp
+Get the names of packages from a list of pkgvers:
+.Pp
+.Dl $ xbps-query -Rp pkgver -s foo | cut -d: -f1 | xargs xbps-uhelper getpkgname
+.Pp
+Get the names of dependencies for a package:
+.Pp
+.Dl $ xbps-query -Rp run_depends xf86-video-amdgpu | xargs xbps-uhelper getname
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_ARCH
+Overrides
+.Xr uname 2
+machine result with this value.
+Useful to install packages with a fake
+architecture.
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value.
+This variable differs from
+.Sy XBPS_ARCH
+in that it allows you to install packages partially, because
+configuration phase is skipped (the target binaries might not be compatible with
+the native architecture).
+.El
+.Sh FILES
+.Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
+.It Ar /etc/xbps.d
+Default configuration directory.
+.It Ar /usr/share/xbps.d
+Default system configuration directory.
+.It Ar /var/db/xbps/.<pkgname>-files.plist
+Package files metadata.
+.It Ar /var/db/xbps/pkgdb-0.38.plist
+Default package database (0.38 format). Keeps track of installed packages and properties.
+.It Ar /var/cache/xbps
+Default cache directory to store downloaded binary packages.
+.El
+.Sh SEE ALSO
+.Xr xbps-checkvers 1 ,
+.Xr xbps-create 1 ,
+.Xr xbps-dgraph 1 ,
+.Xr xbps-digest 1 ,
+.Xr xbps-fbulk 1 ,
+.Xr xbps-fetch 1 ,
+.Xr xbps-install 1 ,
+.Xr xbps-pkgdb 1 ,
+.Xr xbps-query 1 ,
+.Xr xbps-reconfigure 1 ,
+.Xr xbps-remove 1 ,
+.Xr xbps-rindex 1 ,
+.Xr xbps-uchroot 1 ,
+.Xr xbps-uunshare 1 ,
+.Xr xbps.d 5
+.Sh AUTHORS
+.An Juan Romero Pardines Aq Mt xtraeme@gmail.com
+.Sh BUGS
+Report bugs at
+.Lk https://github.com/void-linux/xbps/issues
