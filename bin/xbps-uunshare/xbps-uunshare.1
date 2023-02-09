@@ -1,10 +1,11 @@
-.Dd June 12, 2019
+.Dd Feb 9, 2023
 .Dt XBPS-UUNSHARE 1
+.Os
 .Sh NAME
 .Nm xbps-uunshare
 .Nd XBPS utility to chroot and bind mount with Linux user namespaces
 .Sh SYNOPSIS
-.Nm xbps-uunshare
+.Nm
 .Op OPTIONS
 .Ar CHROOTDIR
 .Ar COMMAND
@@ -57,6 +58,7 @@ other Operating Systems. The following kernel options must be enabled:
 .It Sy CONFIG_UTS_NS
 .El
 .Sh SEE ALSO
+.Xr xbps-alternatives 1 ,
 .Xr xbps-checkvers 1 ,
 .Xr xbps-create 1 ,
 .Xr xbps-dgraph 1 ,
@@ -71,9 +73,10 @@ other Operating Systems. The following kernel options must be enabled:
 .Xr xbps-uchroot 1 ,
 .Xr xbps.d 5
 .Sh AUTHORS
-.An Juan Romero Pardines <xtraeme@gmail.com>
+.An Juan Romero Pardines Aq Mt xtraeme@gmail.com
 .Sh BUGS
 Probably, but I try to make this not happen. Use it under your own
 responsibility and enjoy your life.
 .Pp
-Report bugs at https://github.com/void-linux/xbps/issues
+Report bugs at
+.Lk https://github.com/void-linux/xbps/issues

@@ -1,5 +1,6 @@
-.Dd May 04, 2020
+.Dd Feb 9, 2023
 .Dt XBPS-D 5
+.Os
 .Sh NAME
 .Nm xbps.d
 .Nd XBPS configuration directory
@@ -171,6 +172,7 @@ Default cache directory to store downloaded binary packages.
 Annotated sample configuration file.
 .El
 .Sh SEE ALSO
+.Xr xbps-alternatives 1 ,
 .Xr xbps-checkvers 1 ,
 .Xr xbps-create 1 ,
 .Xr xbps-dgraph 1 ,
@@ -183,11 +185,13 @@ Annotated sample configuration file.
 .Xr xbps-reconfigure 1 ,
 .Xr xbps-remove 1 ,
 .Xr xbps-rindex 1 ,
-.Xr xbps-uchroot 1
+.Xr xbps-uchroot 1 ,
+.Xr xbps-uunshare 1
 .Sh AUTHORS
-.An Juan Romero Pardines <xtraeme@gmail.com>
+.An Juan Romero Pardines Aq Mt xtraeme@gmail.com
 .Sh BUGS
 Probably, but I try to make this not happen. Use it under your own
 responsibility and enjoy your life.
 .Pp
-Report bugs at https://github.com/void-linux/xbps/issues
+Report bugs at
+.Lk https://github.com/void-linux/xbps/issues
