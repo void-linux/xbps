@@ -44,40 +44,30 @@ usage(void)
 	"usage: xbps-uhelper [options] [action] [args]\n"
 	"\n"
 	"  Available actions:\n"
-	"    binpkgarch, binpkgver, cmpver, fetch, getpkgdepname,\n"
+	"    binpkgarch, binpkgver, cmpver, getpkgdepname,\n"
 	"    getpkgname, getpkgrevision, getpkgversion, pkgmatch, version,\n"
 	"    real-version, arch, getsystemdir, getname, getversion\n"
 	"\n"
 	"  Action arguments:\n"
-	"    binpkgarch\t<binpkg> ...\n"
-	"    binpkgver\t<binpkg> ...\n"
-	"    cmpver\t\t<instver> <reqver>\n"
-	"    getpkgdepname\t<string> ...\n"
-	"    getpkgdepversion\t<string> ...\n"
-	"    getpkgname\t\t<string> ...\n"
-	"    getpkgrevision\t<string> ...\n"
-	"    getpkgversion\t<string> ...\n"
-	"    getname\t\t<string> ...\n"
-	"    getversion\t\t<string> ...\n"
-	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
-	"    version\t\t<pkgname> ...\n"
-	"    real-version\t<pkgname> ...\n"
+	"    binpkgarch          <binpkg> ...\n"
+	"    binpkgver           <binpkg> ...\n"
+	"    cmpver              <instver> <reqver>\n"
+	"    getpkgdepname       <string> ...\n"
+	"    getpkgdepversion    <string> ...\n"
+	"    getpkgname          <string> ...\n"
+	"    getpkgrevision      <string> ...\n"
+	"    getpkgversion       <string> ...\n"
+	"    getname             <string> ...\n"
+	"    getversion          <string> ...\n"
+	"    pkgmatch            <pkg-version> <pkg-pattern>\n"
+	"    version             <pkgname> ...\n"
+	"    real-version        <pkgname> ...\n"
 	"\n"
 	"  Options shared by all actions:\n"
-	"    -C\t\tPath to xbps.conf file.\n"
-	"    -d\t\tDebugging messages to stderr.\n"
-	"    -r\t\t<rootdir>\n"
-	"    -V\t\tPrints the xbps release version\n"
-	"\n"
-	"  Examples:\n"
-	"    $ xbps-uhelper cmpver 'foo-1.0_1' 'foo-2.1_1'\n"
-	"    $ xbps-uhelper getpkgdepname 'foo>=0'\n"
-	"    $ xbps-uhelper getpkgdepversion 'foo>=0'\n"
-	"    $ xbps-uhelper getpkgname foo-2.0_1\n"
-	"    $ xbps-uhelper getpkgrevision foo-2.0_1\n"
-	"    $ xbps-uhelper getpkgversion foo-2.0_1\n"
-	"    $ xbps-uhelper pkgmatch foo-1.0_1 'foo>=1.0'\n"
-	"    $ xbps-uhelper version pkgname\n");
+	"    -C, --config     Path to xbps.conf file.\n"
+	"    -d, --debug      Debugging messages to stderr.\n"
+	"    -r, --rootdir    <rootdir>\n"
+	"    -V, --version    Prints the xbps release version\n");
 
 	exit(EXIT_FAILURE);
 }
@@ -107,6 +97,10 @@ main(int argc, char **argv)
 	char pkgname[XBPS_NAME_SIZE], *filename;
 	int flags = 0, c, rv = 0, i = 0;
 	const struct option longopts[] = {
+		{ "config", required_argument, NULL, 'C' },
+		{ "debug", no_argument, NULL, 'd' },
+		{ "rootdir", required_argument, NULL, 'r' },
+		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
 
