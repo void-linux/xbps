@@ -1,10 +1,11 @@
-.Dd February 21, 2020
+.Dd Feb 9, 2023
 .Dt XBPS-CREATE 1
+.Os
 .Sh NAME
 .Nm xbps-create
 .Nd XBPS utility to create binary packages
 .Sh SYNOPSIS
-.Nm xbps-create
+.Nm
 .Op OPTIONS
 .Ar destdir
 .Sh DESCRIPTION
@@ -91,6 +92,7 @@ is a relative path, the symlink will be created relative to
 The package changelog string.
 .El
 .Sh SEE ALSO
+.Xr xbps-alternatives 1 ,
 .Xr xbps-checkvers 1 ,
 .Xr xbps-dgraph 1 ,
 .Xr xbps-digest 1 ,
@@ -106,9 +108,10 @@ The package changelog string.
 .Xr xbps-uunshare 1 ,
 .Xr xbps.d 5
 .Sh AUTHORS
-.An Juan Romero Pardines <xtraeme@gmail.com>
+.An Juan Romero Pardines Aq Mt xtraeme@gmail.com
 .Sh BUGS
 Probably, but I try to make this not happen. Use it under your own
 responsibility and enjoy your life.
 .Pp
-Report bugs at https://github.com/void-linux/xbps/issues
+Report bugs at
+.Lk https://github.com/void-linux/xbps/issues
