@@ -247,14 +247,14 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 	if (repo_mode) {
 		rv = xbps_rpool_foreach(xhp, search_repo_cb, &sd);
 		if (rv != 0 && rv != ENOTSUP) {
-			fprintf(stderr, "Failed to initialize rpool: %s\n",
+			xbps_error_printf("Failed to initialize rpool: %s\n",
 			    strerror(rv));
 			return rv;
 		}
 	} else {
 		rv = xbps_pkgdb_foreach_cb(xhp, search_array_cb, &sd);
 		if (rv != 0) {
-			fprintf(stderr, "Failed to initialize pkgdb: %s\n",
+			xbps_error_printf("Failed to initialize pkgdb: %s\n",
 			    strerror(rv));
 			return rv;
 		}

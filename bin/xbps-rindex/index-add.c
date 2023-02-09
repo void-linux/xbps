@@ -215,14 +215,14 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 
 	repodir = dirname(tmprepodir);
 	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
-		fprintf(stderr, "xbps-rindex: cannot lock repository "
+		xbps_error_printf("xbps-rindex: cannot lock repository "
 		    "%s: %s\n", repodir, strerror(errno));
 		rv = -1;
 		goto earlyout;
 	}
 	repo = xbps_repo_public_open(xhp, repodir);
 	if (repo == NULL && errno != ENOENT) {
-		fprintf(stderr, "xbps-rindex: cannot open/lock repository "
+		xbps_error_printf("xbps-rindex: cannot open/lock repository "
 		    "%s: %s\n", repodir, strerror(errno));
 		rv = -1;
 		goto earlyout;
@@ -236,7 +236,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	}
 	stage = xbps_repo_stage_open(xhp, repodir);
 	if (stage == NULL && errno != ENOENT) {
-		fprintf(stderr, "xbps-rindex: cannot open/lock stage repository "
+		xbps_error_printf("xbps-rindex: cannot open/lock stage repository "
 		    "%s: %s\n", repodir, strerror(errno));
 		rv = -1;
 		goto earlyout;
@@ -262,7 +262,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		 */
 		binpkgd = xbps_archive_fetch_plist(pkg, "/props.plist");
 		if (binpkgd == NULL) {
-			fprintf(stderr, "index: failed to read %s metadata for "
+			xbps_error_printf("index: failed to read %s metadata for "
 			    "`%s', skipping!\n", XBPS_PKGPROPS, pkg);
 			continue;
 		}
@@ -377,7 +377,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	 * Generate repository data files.
 	 */
 	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, compression)) {
-		fprintf(stderr, "%s: failed to write repodata: %s\n",
+		xbps_error_printf("%s: failed to write repodata: %s\n",
 				_XBPS_RINDEX, strerror(errno));
 		goto out;
 	}

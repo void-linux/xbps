@@ -371,7 +371,7 @@ runBuilds(const char *bpath)
 			 */
 			item->xcode = -98;
 			fp = fopen(logpath, "a");
-			fprintf(fp, "xbps-fbulk: unable to fork/exec xbps-src\n");
+			xbps_error_printf("xbps-fbulk: unable to fork/exec xbps-src\n");
 			fclose(fp);
 			processCompletion(item);
 		} else {
@@ -634,7 +634,7 @@ main(int argc, char **argv)
 
 	tmp = xbps_xasprintf("%s/masterdir/.xbps_chroot_init", bpath);
 	if (access(tmp, R_OK) == -1) {
-		fprintf(stderr, "ERROR: %s/masterdir wasn't initialized, "
+		xbps_error_printf("%s/masterdir wasn't initialized, "
 		    "run binary-bootstrap first.\n", bpath);
 		exit(EXIT_FAILURE);
 	}
@@ -652,7 +652,7 @@ main(int argc, char **argv)
 		tmp = strdup(LogDir);
 	}
 	if (xbps_mkpath(tmp, 0755) != 0) {
-		fprintf(stderr, "ERROR: failed to create %s logdir: %s\n",
+		xbps_error_printf("failed to create %s logdir: %s\n",
 		     tmp, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
@@ -664,7 +664,7 @@ main(int argc, char **argv)
 		const char *p = logdirs[i];
 		tmp = xbps_xasprintf("%s/%s", LogDir, p);
 		if (xbps_mkpath(tmp, 0755) != 0) {
-			fprintf(stderr, "ERROR: failed to create %s logdir: %s\n",
+			xbps_error_printf("failed to create %s logdir: %s\n",
 			    tmp, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
@@ -678,13 +678,13 @@ main(int argc, char **argv)
 	if (RebuildSystem) {
 		rv = xbps_init(&xh);
 		if (rv != 0) {
-			fprintf(stderr, "ERROR: failed to initialize libxbps: %s", strerror(rv));
+			xbps_error_printf("failed to initialize libxbps: %s", strerror(rv));
 			exit(EXIT_FAILURE);
 		}
 		array = xbps_array_create();
 		rv = xbps_pkgdb_foreach_cb_multi(&xh, pkgdb_get_pkgs_cb, &array);
 		if (rv != 0) {
-			fprintf(stderr, "ERROR: xbps_pkgdb_foreach_cb_multi: %s", strerror(rv));
+			xbps_error_printf("xbps_pkgdb_foreach_cb_multi: %s", strerror(rv));
 			exit(EXIT_FAILURE);
 		}
 		for (unsigned int i = 0; i < xbps_array_count(array); i++) {
@@ -704,7 +704,7 @@ main(int argc, char **argv)
 	 * many packages will be built.
 	 */
 	if (chdir(rpath) == -1) {
-		fprintf(stderr, "ERROR: failed to chdir to %s: %s\n",
+		xbps_error_printf("failed to chdir to %s: %s\n",
 		    rpath, strerror(errno));
 		exit(EXIT_FAILURE);
 	}

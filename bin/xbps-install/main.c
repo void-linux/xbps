@@ -87,7 +87,7 @@ repo_import_key_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
 	int rv;
 
 	if ((rv = xbps_repo_key_import(repo)) != 0)
-		fprintf(stderr, "Failed to import pubkey from %s: %s\n",
+		xbps_error_printf("Failed to import pubkey from %s: %s\n",
 		    repo->uri, strerror(rv));
 
 	return rv;
@@ -245,7 +245,7 @@ main(int argc, char **argv)
 
 	if (!(xh.flags & XBPS_FLAG_DOWNLOAD_ONLY) && !drun) {
 		if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
-			fprintf(stderr, "Failed to lock the pkgdb: %s\n", strerror(rv));
+			xbps_error_printf("Failed to lock the pkgdb: %s\n", strerror(rv));
 			exit(rv);
 		}
 	}

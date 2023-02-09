@@ -167,7 +167,7 @@ main(int argc, char **argv)
 			failure = true;
 			continue;
 		} else if (rv == 0) {
-			fprintf(stderr, "%s: file is identical with remote.\n", argv[i]);
+			xbps_warn_printf("%s: %s: file is identical with remote.\n", progname, argv[i]);
 			if (shasum) {
 				if (!xbps_file_sha256_raw(digest, sizeof digest, filename)) {
 					xbps_error_printf("%s: failed to hash: %s: %s\n",

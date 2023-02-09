@@ -155,7 +155,7 @@ main(int argc, char **argv)
 	}
 
 	if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
-		fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
+		xbps_error_printf("failed to lock pkgdb: %s\n", strerror(rv));
 		exit(EXIT_FAILURE);
 	}
 	if (update_format) {
@@ -163,7 +163,7 @@ main(int argc, char **argv)
 		goto out;
 	} else if (instmode) {
 		if (argc == optind) {
-			fprintf(stderr,
+			xbps_error_printf(
 			    "xbps-pkgdb: missing PKGNAME argument\n");
 			xbps_end(&xh);
 			exit(EXIT_FAILURE);
@@ -171,7 +171,7 @@ main(int argc, char **argv)
 		for (i = optind; i < argc; i++) {
 			rv = change_pkg_mode(&xh, argv[i], instmode);
 			if (rv != 0) {
-				fprintf(stderr, "xbps-pkgdb: failed to "
+				xbps_error_printf("xbps-pkgdb: failed to "
 				    "change to %s mode to %s: %s\n",
 				    instmode, argv[i], strerror(rv));
 				xbps_end(&xh);
@@ -184,7 +184,7 @@ main(int argc, char **argv)
 		for (i = optind; i < argc; i++) {
 			rv = check_pkg_integrity(&xh, NULL, argv[i]);
 			if (rv != 0)
-				fprintf(stderr, "Failed to check "
+				xbps_error_printf("Failed to check "
 				    "`%s': %s\n", argv[i], strerror(rv));
 		}
 	}

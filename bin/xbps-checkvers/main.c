@@ -66,7 +66,7 @@ xstrdup(const char *src)
 {
 	char *p;
 	if (!(p = strdup(src))) {
-		fprintf(stderr, "Error: %s\n", strerror(errno));
+		xbps_error_printf("%s\n", strerror(errno));
 		exit(1);
 	}
 	return p;
@@ -155,7 +155,7 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 
 	if ((file = fopen(rcv->fname, "r")) == NULL) {
 		if (!rcv->manual) {
-			fprintf(stderr, "FileError: can't open '%s': %s\n",
+			xbps_error_printf("FileError: can't open '%s': %s\n",
 				rcv->fname, strerror(errno));
 		}
 		return false;
@@ -174,7 +174,7 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 	if (rcv->buf == NULL) {
 		rcv->bufsz = rcv->len+1;
 		if (!(rcv->buf = calloc(rcv->bufsz, sizeof(char)))) {
-			fprintf(stderr, "MemError: can't allocate memory: %s\n",
+			xbps_error_printf("MemError: can't allocate memory: %s\n",
 				strerror(errno));
 			fclose(file);
 			return false;
@@ -182,7 +182,7 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 	} else if (rcv->bufsz <= rcv->len) {
 		rcv->bufsz = rcv->len+1;
 		if (!(rcv->buf = realloc(rcv->buf, rcv->bufsz))) {
-			fprintf(stderr, "MemError: can't allocate memory: %s\n",
+			xbps_error_printf("MemError: can't allocate memory: %s\n",
 				strerror(errno));
 			fclose(file);
 			return false;
@@ -260,7 +260,7 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len)
 				}
 				if (reflen) {
 					if (reflen >= sizeof buf) {
-						fprintf(stderr, "out of memory\n");
+						xbps_error_printf("out of memory\n");
 						exit(1);
 					}
 					strncpy(buf, ref, reflen);
@@ -283,10 +283,10 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len)
 	return ret;
 
 err1:
-	fprintf(stderr, "syntax error: in file '%s'\n", rcv->fname);
+	xbps_error_printf("syntax error: in file '%s'\n", rcv->fname);
 	exit(1);
 err2:
-	fprintf(stderr,
+	xbps_error_printf(
 		"Shell cmd failed: '%s' for "
 		"template '%s'",
 		cmd, rcv->fname);
@@ -365,12 +365,11 @@ rcv_get_pkgver(rcv_t *rcv)
 
 		if (!xbps_dictionary_set(rcv->env, key,
 		    xbps_string_create_cstring(val))) {
-			fprintf(stderr, "error: xbps_dictionary_set");
+			xbps_error_printf("xbps_dictionary_set failed");
 			exit(1);
 		}
 
-		if (rcv->xhp.flags & XBPS_FLAG_DEBUG)
-			fprintf(stderr, "%s: %s %s\n", rcv->fname, key, val);
+		xbps_dbg_printf("%s: %s %s\n", rcv->fname, key, val);
 
 		free(key);
 		free(val);
@@ -432,7 +431,7 @@ update:
 		if (!xbps_dictionary_get_cstring_nocopy(rcv->env, "pkgname", &pkgname) ||
 			!xbps_dictionary_get_cstring_nocopy(rcv->env, "version", &version) ||
 			!xbps_dictionary_get_cstring_nocopy(rcv->env, "revision", &revision)) {
-			fprintf(stderr, "ERROR: '%s':"
+			xbps_error_printf("'%s':"
 			    " missing required variable (pkgname, version or revision)!",
 			    fname);
 			exit(1);
@@ -540,22 +539,22 @@ rcv_check_version(rcv_t *rcv)
 	assert(rcv);
 
 	if ((rcv->have_vars & GOT_PKGNAME_VAR) == 0) {
-		fprintf(stderr, "ERROR: '%s': missing pkgname variable!\n", rcv->fname);
+		xbps_error_printf("'%s': missing pkgname variable!\n", rcv->fname);
 		exit(EXIT_FAILURE);
 	}
 	if ((rcv->have_vars & GOT_VERSION_VAR) == 0) {
-		fprintf(stderr, "ERROR: '%s': missing version variable!\n", rcv->fname);
+		xbps_error_printf("'%s': missing version variable!\n", rcv->fname);
 		exit(EXIT_FAILURE);
 	}
 	if ((rcv->have_vars & GOT_REVISION_VAR) == 0) {
-		fprintf(stderr, "ERROR: '%s': missing revision variable!\n", rcv->fname);
+		xbps_error_printf("'%s': missing revision variable!\n", rcv->fname);
 		exit(EXIT_FAILURE);
 	}
 
 	if (!xbps_dictionary_get_cstring_nocopy(rcv->env, "pkgname", &pkgname) ||
 	    !xbps_dictionary_get_cstring_nocopy(rcv->env, "version", &version) ||
 	    !xbps_dictionary_get_cstring_nocopy(rcv->env, "revision", &revision)) {
-		fprintf(stderr, "error:\n");
+		xbps_error_printf("couldn't get pkgname, version, and/or revision\n");
 		exit(1);
 	}
 
@@ -646,7 +645,7 @@ rcv_process_dir(rcv_t *rcv, rcv_proc_func process)
 	if ((closedir(dir)) != -1)
 		return ret;
 error:
-	fprintf(stderr, "Error: while processing dir '%s/srcpkgs': %s\n",
+	xbps_error_printf("while processing dir '%s/srcpkgs': %s\n",
 	    rcv->distdir, strerror(errno));
 	exit(1);
 }
@@ -779,7 +778,7 @@ main(int argc, char **argv)
 		char *tmp = rcv.distdir;
 		rcv.distdir = realpath(tmp, NULL);
 		if (rcv.distdir == NULL) {
-			fprintf(stderr, "Error: realpath(%s): %s\n", tmp, strerror(errno));
+			xbps_error_printf("realpath(%s): %s\n", tmp, strerror(errno));
 			exit(1);
 		}
 		free(tmp);
@@ -793,7 +792,7 @@ main(int argc, char **argv)
 	rcv_init(&rcv, prog);
 
 	if (chdir(rcv.distdir) == -1 || chdir("srcpkgs") == -1) {
-		fprintf(stderr, "Error: while changing directory to '%s/srcpkgs': %s\n",
+		xbps_error_printf("while changing directory to '%s/srcpkgs': %s\n",
 		    rcv.distdir, strerror(errno));
 		exit(1);
 	}

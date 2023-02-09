@@ -270,7 +270,7 @@ main(int argc, char **argv)
 	}
 
 	if (!drun && (rv = xbps_pkgdb_lock(&xh)) != 0) {
-		fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
+		xbps_error_printf("failed to lock pkgdb: %s\n", strerror(rv));
 		exit(rv);
 	}
 
@@ -278,7 +278,7 @@ main(int argc, char **argv)
 		if ((rv = xbps_transaction_autoremove_pkgs(&xh)) != 0) {
 			xbps_end(&xh);
 			if (rv != ENOENT) {
-				fprintf(stderr, "Failed to queue package "
+				xbps_error_printf("Failed to queue package "
 				    "orphans: %s\n", strerror(rv));
 				exit(EXIT_FAILURE);
 			}

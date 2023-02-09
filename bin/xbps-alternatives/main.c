@@ -243,7 +243,7 @@ main(int argc, char **argv)
 	if (set_mode) {
 		/* in set mode pkgdb must be locked and flushed on success */
 		if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
-			fprintf(stderr, "failed to lock pkgdb: %s\n", strerror(rv));
+			xbps_error_printf("failed to lock pkgdb: %s\n", strerror(rv));
 			exit(EXIT_FAILURE);
 		}
 		if ((rv = xbps_alternatives_set(&xh, pkg, group)) == 0)
