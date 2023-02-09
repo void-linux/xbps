@@ -46,7 +46,7 @@ usage(void)
 	"  Available actions:\n"
 	"    binpkgarch, binpkgver, cmpver, fetch, getpkgdepname,\n"
 	"    getpkgname, getpkgrevision, getpkgversion, pkgmatch, version,\n"
-	"    real-version, arch, getsystemdir\n"
+	"    real-version, arch, getsystemdir, getname, getversion\n"
 	"\n"
 	"  Action arguments:\n"
 	"    binpkgarch\t<binpkg> ...\n"
@@ -57,6 +57,8 @@ usage(void)
 	"    getpkgname\t\t<string> ...\n"
 	"    getpkgrevision\t<string> ...\n"
 	"    getpkgversion\t<string> ...\n"
+	"    getname\t\t<string> ...\n"
+	"    getversion\t\t<string> ...\n"
 	"    pkgmatch\t\t<pkg-version> <pkg-pattern>\n"
 	"    version\t\t<pkgname> ...\n"
 	"    real-version\t<pkgname> ...\n"
@@ -256,6 +258,41 @@ main(int argc, char **argv)
 			} else {
 				printf("%s\n", version);
 			}
+		}
+	} else if (strcmp(argv[0], "getname") == 0) {
+		/* returns the name of a pkg strings or pkg patterns */
+		if (argc < 2)
+			usage();
+
+		for (i = 1; i < argc; i++) {
+			if (xbps_pkgpattern_name(pkgname, sizeof(pkgname), argv[i]) ||
+				xbps_pkg_name(pkgname, sizeof(pkgname), argv[i])) {
+				printf("%s\n", pkgname);
+			} else {
+				xbps_error_printf(
+					"Invalid string '%s', expected <string><comparator><version> "
+					"or <string>-<version>_<revision>\n", argv[i]);
+				rv = 1;
+			}
+		}
+	} else if (strcmp(argv[0], "getversion") == 0) {
+		/* returns the version of a pkg strings or pkg patterns */
+		if (argc < 2)
+			usage();
+
+		for (i = 1; i < argc; i++) {
+			version = xbps_pkgpattern_version(argv[i]);
+			if (version == NULL) {
+				version = xbps_pkg_version(argv[i]);
+				if (version == NULL) {
+					xbps_error_printf(
+						"Invalid string '%s', expected <string><comparator><version> "
+						"or <string>-<version>_<revision>\n", argv[i]);
+					rv = 1;
+					continue;
+				}
+			}
+			printf("%s\n", version);
 		}
 	} else if (strcmp(argv[0], "binpkgver") == 0) {
 		/* Returns the pkgver of binpkg strings */
