@@ -40,7 +40,7 @@
 static bool
 repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage,
-	const char *compression)
+	const char *compression, const bool no_stash)
 {
 	xbps_object_iterator_t iter;
 	xbps_object_t keysym;
@@ -142,7 +142,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	}
 	xbps_object_iterator_release(iter);
 
-	if (xbps_dictionary_count(usedshlibs) != 0) {
+	if (xbps_dictionary_count(usedshlibs) != 0 && no_stash == false) {
 		printf("Inconsistent shlibs:\n");
 		iter = xbps_dictionary_iterator(usedshlibs);
 		while ((keysym = xbps_object_iterator_next(iter))) {
@@ -198,7 +198,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 }
 
 int
-index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression)
+index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression, const bool no_stash)
 {
 	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
 	struct xbps_repo *repo = NULL, *stage = NULL;
@@ -376,7 +376,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	/*
 	 * Generate repository data files.
 	 */
-	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, compression)) {
+	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, compression, no_stash)) {
 		fprintf(stderr, "%s: failed to write repodata: %s\n",
 				_XBPS_RINDEX, strerror(errno));
 		goto out;
