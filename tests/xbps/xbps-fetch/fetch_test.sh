@@ -37,7 +37,7 @@ identical_body() {
 	echo 'content' > pkg_A
 	output=$(xbps-fetch file://$PWD/some_repo/pkg_A 2>&1)
 	atf_check_equal $? 0
-	atf_check_equal "$output" "file://$PWD/some_repo/pkg_A: file is identical with remote."
+	atf_check_equal "$output" "WARNING: xbps-fetch: file://$PWD/some_repo/pkg_A: file is identical with remote."
 }
 
 atf_test_case multiple_success
