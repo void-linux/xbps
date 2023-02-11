@@ -262,6 +262,7 @@ EOF
 		rv=1
 		echo "no."
 	fi
+	[ -z "$SILENT" ] && cat _ccflag.err
 	rm -f _ccflag.c _ccflag _ccflag.err
 	return $rv
 }
