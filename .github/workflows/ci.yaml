@@ -24,11 +24,6 @@ jobs:
                - c_library: musl
                  void_image: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64-musl
 
-               - c_library: musl
-                 void_image: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64-musl
-                 c_compiler: pcc
-                 extra_deps: gcc
-
       runs-on: ubuntu-latest
       container: ${{ matrix.void_image }}
       steps:
