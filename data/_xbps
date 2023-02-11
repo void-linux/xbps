@@ -239,7 +239,7 @@ _xbps_uhelper() {
 		actions)
 			_values "actions" binpkgarch binpkgver cmpver digest fetch getpkgdepname \
 				getpkgname getpkgrevision getpkgversion \
-				pkgmatch version real-version arch getsystemdir
+				pkgmatch version real-version arch getsystemdir getname getversion
 			ret=0;;
 		args)
 			case $words[1] in
@@ -252,6 +252,8 @@ _xbps_uhelper() {
 				getpkgname) _arguments '*:string: ' && ret=0;;
 				getpkgrevision) _arguments '*:string: ' && ret=0;;
 				getpkgversion) _arguments '*:string: ' && ret=0;;
+				getname) _arguments '*:string: ' && ret=0;;
+				getversion) _arguments '*:string: ' && ret=0;;
 				pkgmatch) _arguments ':version: ' ':pattern: ' && ret=0;;
 				real-version) _arguments ':package:_xbps_installed_packages' && ret=0;;
 				version) _arguments ':package:_xbps_installed_packages' && ret=0;;
