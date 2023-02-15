@@ -827,33 +827,34 @@ main(int argc, char **argv)
 {
 	const char *shortopts = "A:B:C:c:D:F:G:H:hl:M:m:n:P:pqr:R:S:s:t:V";
 	const struct option longopts[] = {
+		{ "alternatives", required_argument, NULL, '4' },
 		{ "architecture", required_argument, NULL, 'A' },
+		{ "build-options", required_argument, NULL, '2' },
 		{ "built-with", required_argument, NULL, 'B' },
-		{ "source-revisions", required_argument, NULL, 'G' },
+		{ "changelog", required_argument, NULL, 'c'},
+		{ "compression", required_argument, NULL, '3' },
+		{ "config-files", required_argument, NULL, 'F' },
 		{ "conflicts", required_argument, NULL, 'C' },
 		{ "dependencies", required_argument, NULL, 'D' },
-		{ "config-files", required_argument, NULL, 'F' },
-		{ "homepage", required_argument, NULL, 'H' },
+		{ "desc", required_argument, NULL, 's' },
 		{ "help", no_argument, NULL, 'h' },
+		{ "homepage", required_argument, NULL, 'H' },
 		{ "license", required_argument, NULL, 'l' },
-		{ "mutable-files", required_argument, NULL, 'M' },
+		{ "long-desc", required_argument, NULL, 'S' },
 		{ "maintainer", required_argument, NULL, 'm' },
+		{ "mutable-files", required_argument, NULL, 'M' },
 		{ "pkgver", required_argument, NULL, 'n' },
-		{ "provides", required_argument, NULL, 'P' },
 		{ "preserve", no_argument, NULL, 'p' },
+		{ "provides", required_argument, NULL, 'P' },
 		{ "quiet", no_argument, NULL, 'q' },
 		{ "replaces", required_argument, NULL, 'R' },
 		{ "reverts", required_argument, NULL, 'r' },
-		{ "long-desc", required_argument, NULL, 'S' },
-		{ "desc", required_argument, NULL, 's' },
-		{ "tags", required_argument, NULL, 't' },
-		{ "version", no_argument, NULL, 'V' },
 		{ "shlib-provides", required_argument, NULL, '0' },
 		{ "shlib-requires", required_argument, NULL, '1' },
-		{ "build-options", required_argument, NULL, '2' },
-		{ "compression", required_argument, NULL, '3' },
-		{ "alternatives", required_argument, NULL, '4' },
-		{ "changelog", required_argument, NULL, 'c'},
+		{ "source-revisions", required_argument, NULL, 'G' },
+		{ "sourcepkg", required_argument, NULL, '5'},
+		{ "tags", required_argument, NULL, 't' },
+		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct archive *ar;
@@ -864,7 +865,7 @@ main(int argc, char **argv)
 	const char *provides, *pkgver, *replaces, *reverts, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version, *changelog;
 	const char *buildopts, *shlib_provides, *shlib_requires, *alternatives;
-	const char *compression, *tags = NULL, *srcrevs = NULL;
+	const char *compression, *tags = NULL, *srcrevs = NULL, *sourcepkg = NULL;
 	char pkgname[XBPS_NAME_SIZE], *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
 	int c, pkg_fd;
@@ -961,6 +962,9 @@ main(int argc, char **argv)
 		case '4':
 			alternatives = optarg;
 			break;
+		case '5':
+			sourcepkg = optarg;
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -1028,6 +1032,9 @@ main(int argc, char **argv)
 	if (srcrevs)
 		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"source-revisions", srcrevs);
+	if (sourcepkg)
+		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
+				"sourcepkg", sourcepkg);
 	if (tags)
 		xbps_dictionary_set_cstring_nocopy(pkg_propsd,
 				"tags", tags);
