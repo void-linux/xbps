@@ -27,6 +27,8 @@ The package builder string, free form.
 A list of package patterns that this package should conflict with, separated
 by whitespaces. Example:
 .Ar 'foo>=1.0 blah<1.0' .
+.It Fl c, Fl -changelog Ar string
+The package changelog string.
 .It Fl D, Fl -dependencies Ar list
 A list of package patterns this package depends on, separated by whitespaces. Example:
 .Ar 'foo>=1.0 blah-1.0_1' .
@@ -70,6 +72,13 @@ A list of tags (categories) this package should be part of, separated by whitesp
 .Ar 'development nonfree' .
 .It Fl V, Fl -version
 Show the version information.
+.It Fl -alternatives Ar list
+A list of alternatives provided by this package, separated by whitespaces. Example:
+.Ar 'group:symlink:target group2:symlink:target' .
+If
+.Em symlink
+is a relative path, the symlink will be created relative to
+.Em target .
 .It Fl -build-options Ar string
 A string containing the build options used in package.
 .It Fl -compression Ar none | gzip | bzip2 | xz | lz4 | zstd
@@ -81,15 +90,8 @@ A list of provided shared libraries, separated by whitespaces. Example:
 .It Fl -shlib-requires Ar list
 A list of required shared libraries, separated by whitespaces. Example:
 .Ar 'libz.so.1 libfoo.so.2' .
-.It Fl -alternatives Ar list
-A list of alternatives provided by this package, separated by whitespaces. Example:
-.Ar 'group:symlink:target group2:symlink:target' .
-If
-.Em symlink
-is a relative path, the symlink will be created relative to
-.Em target .
-.It Fl c, Fl -changelog Ar string
-The package changelog string.
+.It Fl -sourcepkg Ar string
+The pkgver of the sourcepkg that was used to build this binary package.
 .El
 .Sh SEE ALSO
 .Xr xbps-alternatives 1 ,
