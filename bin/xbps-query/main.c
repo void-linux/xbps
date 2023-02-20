@@ -56,6 +56,7 @@ usage(bool fail)
 	    "                           specified multiple times\n"
 	    "     --regex               Use Extended Regular Expressions to match\n"
 	    "     --fulldeptree         Full dependency tree for -x/--deps\n"
+	    "     --long                Show permissions, ownership, and size for -f/--files\n"
 	    " -r, --rootdir <dir>       Full path to rootdir\n"
 	    " -V, --version             Show XBPS version\n"
 	    " -v, --verbose             Verbose messages\n"
@@ -124,6 +125,7 @@ main(int argc, char **argv)
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "files", required_argument, NULL, 'f' },
 		{ "format", required_argument, NULL, 'F' },
+		{ "long", no_argument, NULL, 4 },
 		{ "deps", required_argument, NULL, 'x' },
 		{ "revdeps", required_argument, NULL, 'X' },
 		{ "regex", no_argument, NULL, 0 },
@@ -136,14 +138,14 @@ main(int argc, char **argv)
 	int c, flags, rv;
 	bool list_pkgs, list_repos, orphans, own, list_repolock;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
-	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree, long_listing;
 
 	rootdir = cachedir = confdir = props = pkg = catfile = format = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
 	list_manual = list_repolock = show_prop = show_files = false;
 	regex = show = show_deps = show_rdeps = fulldeptree = false;
-	repo_mode = opmode = false;
+	repo_mode = opmode = long_listing = false;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -240,6 +242,9 @@ main(int argc, char **argv)
 		case 3:
 			list_repolock = opmode = true;
 			break;
+		case 4:
+			long_listing = true;
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -328,11 +333,15 @@ main(int argc, char **argv)
 
 	} else if (show_files) {
 		/* show-files mode */
+		const char *fmt = format ? format :
+				(long_listing ?
+					"{mode?0!strmode} {user?\"root\":<8} {group?\"root\":<8} "
+					"{size?0!humanize .8Bi:>8} {file-target}\n"
+					: "{file-target}\n");
 		if (repo_mode)
-			rv =  repo_show_pkg_files(&xh, pkg);
+			rv =  repo_show_pkg_files(&xh, pkg, fmt);
 		else
-			rv = show_pkg_files_from_metadir(&xh, pkg);
-
+			rv = show_pkg_files_from_metadir(&xh, pkg, fmt);
 	} else if (show_deps) {
 		/* show-deps mode */
 		rv = show_pkg_deps(&xh, pkg, repo_mode, fulldeptree);

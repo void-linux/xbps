@@ -134,6 +134,12 @@ modes.
 Prints a full dependency tree in the
 .Sy show dependencies
 mode.
+.It Fl -long
+Prints permissions, ownership, and filesize in the
+.Sy files
+mode.
+Equivalent to
+.Fl -format Ar '{mode?0!strmode} {user?"root":<8} {group?"root":<8} {size?0!humanize .8Bi:>8} {file-target}\(rsn' .
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl v, Fl -verbose
@@ -284,9 +290,11 @@ This mode only works with repositories.
 .El
 .Sh FORMAT STRINGS
 Variables are package properties if not otherwise documented.
-See
+See the
 .Sx PROPERTIES
-section for a list of available properties.
+and
+.Sx FILE PROPERTIES
+sections for a list of available properties.
 .Pp
 As example a format string like:
 .Bd -offset indent -literal
@@ -350,7 +358,7 @@ Format strings are parsed by the following EBNF:
                 | "X"        -- Hexadecimal with uppercase letters.
 .Ed
 .Sh PROPERTIES
-This is the list of a packages properties.
+This is the list of a package's properties.
 Note that not all properties are available for all packages.
 .Pp
 .Bl -tag -compact -width 17m
@@ -424,6 +432,33 @@ commit hash of package last change from the void-packages repository.
 installation state of the package.
 .It Ic tags
 list of categories the package is associated with.
+.El
+.Sh FILE PROPERTIES
+This is the list of a package's files' properties.
+Note that not all properties are available for all files in all packages.
+.Pp
+.Bl -tag -compact -width 17m
+.It Ic file
+absolute path of the file.
+.It Ic file-target
+alias for
+.Ar file -> target
+if target exists, otherwise
+.Ar file .
+.It Ic group
+group that owns the file (root if unspecified).
+.It Ic mode
+file type and permissions as an integer.
+See also:
+.Xr inode 7 .
+.It Ic mtime
+modification time of the file (deprecated).
+.It Ic sha256
+sha256sum of the file.
+.It Ic target
+target of the file, if it is a symlink.
+.It Ic user
+user that owns the file (root if unspecified).
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH
