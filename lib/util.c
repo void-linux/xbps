@@ -35,6 +35,7 @@
 
 #include <sys/utsname.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fnmatch.h>
@@ -159,6 +160,8 @@ xbps_binpkg_pkgver(const char *pkg)
 	char *p, *p1, *res;
 	unsigned int len;
 
+	/* XXX: rewrite less stupid */
+
 	assert(pkg);
 
 	/* skip path if found, only interested in filename */
@@ -173,7 +176,8 @@ xbps_binpkg_pkgver(const char *pkg)
 	len -= 5;
 
 	p = malloc(len+1);
-	assert(p);
+	if (!p)
+		return NULL;
 	(void)memcpy(p, fname, len);
 	p[len] = '\0';
 	if (!(p1 = strrchr(p, '.'))) {
@@ -188,7 +192,8 @@ xbps_binpkg_pkgver(const char *pkg)
 		return NULL;
 	}
 	res = strdup(p);
-	assert(res);
+	if (!res)
+		return NULL;
 
 	free(p);
 	return res;
@@ -200,6 +205,8 @@ xbps_binpkg_arch(const char *pkg)
 	const char *fname;
 	char *p, *p1, *res;
 	unsigned int len;
+
+	/* XXX: rewrite less stupid */
 
 	assert(pkg);
 
@@ -215,7 +222,8 @@ xbps_binpkg_arch(const char *pkg)
 	len -= 5;
 
 	p = malloc(len+1);
-	assert(p);
+	if (!p)
+		return NULL;
 	(void)memcpy(p, fname, len);
 	p[len] = '\0';
 	if (!(p1 = strrchr(p, '.'))) {
@@ -223,7 +231,10 @@ xbps_binpkg_arch(const char *pkg)
 		return NULL;
 	}
 	res = strdup(p1 + 1);
-	assert(res);
+	if (!res) {
+		free(p);
+		return NULL;
+	}
 
 	free(p);
 	return res;
@@ -350,6 +361,7 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		/*
 		 * First check if binpkg is available in cachedir.
 		 */
+		/* XXX: replace with sane buffer */
 		lbinpkg = xbps_xasprintf("%s/%s.%s.xbps", xhp->cachedir,
 				pkgver, arch);
 		if (access(lbinpkg, R_OK) == 0)
@@ -360,6 +372,7 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	/*
 	 * Local and remote repositories use the same path.
 	 */
+	/* XXX: replace with sane buffer */
 	return xbps_xasprintf("%s/%s.%s.xbps", repoloc, pkgver, arch);
 }
 
@@ -468,6 +481,7 @@ xbps_xasprintf(const char *fmt, ...)
 	if (vasprintf(&buf, fmt, ap) == -1) {
 		va_end(ap);
 		assert(buf);
+		abort();
 	}
 	va_end(ap);
 	assert(buf);
@@ -593,6 +607,8 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 	char *res = NULL, *lnk = NULL, *p = NULL, *p1 = NULL, *dname = NULL;
 	char *rootdir = NULL;
 	ssize_t r;
+
+	/* XXX: rewrite wth... */
 
 	assert(xhp);
 	assert(path);

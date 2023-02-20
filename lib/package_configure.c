@@ -23,10 +23,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 /**
@@ -96,7 +97,7 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 	pkg_state_t state = 0;
 	mode_t myumask;
 
-	assert(pkgver != NULL);
+	assert(pkgver);
 
 	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
 		p = pkgver;

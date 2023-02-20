@@ -23,12 +23,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
+#include <fnmatch.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <fnmatch.h>
 
 #include "xbps_api_impl.h"
 
@@ -102,7 +102,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 			struct xbps_repo *repo;
 			/* find update from repo */
 			xbps_dictionary_get_cstring_nocopy(pkg_pkgdb, "repository", &repoloc);
-			assert(repoloc);
+			if (!repoloc)
+				return EINVAL;
 			if ((repo = xbps_regget_repo(xhp, repoloc)) == NULL) {
 				/* not found */
 				return ENOENT;

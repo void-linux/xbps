@@ -23,13 +23,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h> /* safe */
 #include <errno.h>
+#include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
-#include <libgen.h>
 
 #include "xbps_api_impl.h"
 
@@ -59,6 +57,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 		if (replaces == NULL || xbps_array_count(replaces) == 0)
 			continue;
 
+		/* XXX: propagate errors, wtf */
 		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
 			return false;
 		}
@@ -67,7 +66,9 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 		}
 
 		iter = xbps_array_iterator(replaces);
-		assert(iter);
+		if (!iter) {
+			return false;
+		}
 
 		while ((obj2 = xbps_object_iterator_next(iter)) != NULL) {
 			const char *curpkgver = NULL, *pattern = NULL;

@@ -25,6 +25,8 @@
  */
 
 #include <sys/utsname.h>
+
+#include <assert.h> /* safe */
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>

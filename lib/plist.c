@@ -23,12 +23,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <pthread.h>
 
 #include "xbps_api_impl.h"
 
@@ -120,7 +120,8 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 		return xbps_array_foreach_cb(xhp, array, dict, fn, arg);
 
 	thd = calloc(maxthreads, sizeof(*thd));
-	assert(thd);
+	if (!thd)
+		return errno;
 
 	// maxthread is boundchecked to be > 1
 	if((unsigned int)maxthreads >= arraycount) {

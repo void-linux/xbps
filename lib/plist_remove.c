@@ -23,11 +23,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 

@@ -23,14 +23,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/stat.h>
+#include <sys/mman.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <libgen.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
 
 #include <openssl/err.h>
 #include <openssl/sha.h>
@@ -52,9 +53,12 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 	ERR_load_crypto_strings();
 	SSL_load_error_strings();
 
-	bio = BIO_new_mem_buf(xbps_data_data_nocopy(pubkey),
-			xbps_data_size(pubkey));
-	assert(bio);
+	bio = BIO_new_mem_buf(xbps_data_data_nocopy(pubkey), xbps_data_size(pubkey));
+	if (!bio) {
+		xbps_error_printf("failed to load public key: %s\n",
+		    ERR_error_string(ERR_get_error(), NULL));
+		return false;
+	}
 
 	rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, NULL, NULL);
 	if (rsa == NULL) {

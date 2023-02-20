@@ -23,14 +23,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <pthread.h>
 
 #include "xbps_api_impl.h"
 
@@ -163,6 +160,8 @@ match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 	const char *pkgver = NULL;
 	char pkgname[XBPS_NAME_SIZE] = {0};
 
+	/* XXX: stupid functions, how to handle errors? */
+
 	assert(repod);
 	assert(p);
 
@@ -175,13 +174,15 @@ match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 	}
 
 	d = xbps_dictionary_get(repod, pkgname);
-	if (d) {
-		xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
-		assert(pkgver);
-		if (!xbps_pkgpattern_match(pkgver, p)) {
-			d = NULL;
-			errno = ENOENT;
-		}
+	if (!d)
+		return NULL;
+	if (!xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver)) {
+		errno = EINVAL;
+		return NULL;
+	}
+	if (!xbps_pkgpattern_match(pkgver, p)) {
+		errno = ENOENT;
+		return NULL;
 	}
 
 	return d;
@@ -196,6 +197,8 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg, bool only_conf)
 	const char *pkg = NULL;
 	bool found = false;
 
+	/* XXX: extremely stupid api, no errors, generally stupid */
+
 	assert(xhp);
 	assert(vpkg);
 
@@ -207,11 +210,12 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg, bool only_conf)
 		(void)xbps_pkgdb_init(xhp);
 	}
 
-	if (d == NULL)
+	if (!d)
 		return NULL;
 
 	iter = xbps_dictionary_iterator(d);
-	assert(iter);
+	if (!iter)
+		return NULL;
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_string_t rpkg;
@@ -322,7 +326,8 @@ xbps_find_virtualpkg_in_dict(struct xbps_handle *xhp,
 	}
 	/* ... otherwise match the first one in dictionary */
 	iter = xbps_dictionary_iterator(d);
-	assert(iter);
+	if (!iter)
+		return NULL;
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		pkgd = xbps_dictionary_get_keysym(d, obj);

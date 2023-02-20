@@ -27,7 +27,6 @@
 #ifndef _XBPS_API_IMPL_H_
 #define _XBPS_API_IMPL_H_
 
-#include <assert.h>
 #include "xbps.h"
 
 /*

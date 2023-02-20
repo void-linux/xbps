@@ -23,10 +23,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safeish */
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -142,7 +142,10 @@ repo_deps(struct xbps_handle *xhp,
 		goto out;
 
 	iter = xbps_array_iterator(pkg_rdeps);
-	assert(iter);
+	if (!iter) {
+		rv = ENOMEM;
+		goto out;
+	}
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		bool error = false, foundvpkg = false;

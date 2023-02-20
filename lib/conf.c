@@ -29,6 +29,8 @@
 #ifdef __FreeBSD__
 #define _WITH_GETLINE   /* getline() */
 #endif
+
+#include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -36,7 +38,6 @@
 #include <libgen.h>
 #include <limits.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>

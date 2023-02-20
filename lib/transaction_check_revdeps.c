@@ -180,7 +180,7 @@ xbps_transaction_check_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			if (revpkgd == NULL)
 				revpkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
 
-
+			/* XXX: check revpkgd */
 			xbps_dictionary_get_cstring_nocopy(revpkgd, "pkgver", &revpkgver);
 			/*
 			 * If target pkg is being removed, all its revdeps

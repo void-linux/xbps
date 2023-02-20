@@ -26,10 +26,10 @@
  * From: $NetBSD: pkg_io.c,v 1.9 2009/08/16 21:10:15 joerg Exp $
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 #include "fetch.h"

@@ -22,11 +22,12 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
+
+#include <assert.h>
+#include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -67,6 +68,8 @@ collect_shlibs(struct xbps_handle *xhp, xbps_array_t pkgs, bool req)
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t d, pd;
 	const char *pkgname, *pkgver;
+
+	/* XXX: errors ????? */
 
 	d = xbps_dictionary_create();
 	assert(d);

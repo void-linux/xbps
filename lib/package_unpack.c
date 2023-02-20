@@ -24,14 +24,15 @@
  */
 
 #include <sys/stat.h>
-#include <stdio.h>
+
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <libgen.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <libgen.h>
 
 #include "xbps_api_impl.h"
 
@@ -57,6 +58,7 @@ match_preserved_file(struct xbps_handle *xhp, const char *entry)
 		return false;
 
 	if (entry[0] == '.' && entry[1] != '\0') {
+		/* XXX: this is stupid */
 		file = strchr(entry, '.') + 1;
 		assert(file);
 	} else {
@@ -283,6 +285,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * that should be kept.
 		 */
 		if (!force && (entry_type == AE_IFREG)) {
+			/* XXX: this is stupid */
 			buf = strchr(entry_pname, '.') + 1;
 			assert(buf != NULL);
 			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_filesd, buf);

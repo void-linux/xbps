@@ -23,14 +23,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -151,13 +148,15 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 
 	if (xhp->vpkgd == NULL) {
 		xhp->vpkgd = xbps_dictionary_create();
-		assert(xhp->vpkgd);
+		if (!xhp->vpkgd)
+			return errno;
 	}
 	/*
 	 * This maps all pkgs that have virtualpkgs in pkgdb.
 	 */
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
-	assert(iter);
+	if (!iter)
+		return ENOMEM;
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t provides;
@@ -210,7 +209,8 @@ pkgdb_map_names(struct xbps_handle *xhp)
 	 * This way we do it once and not multiple times.
 	 */
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
-	assert(iter);
+	if (!iter)
+		return ENOMEM;
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_dictionary_t pkgd;
@@ -350,7 +350,8 @@ xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
 		return rv;
 
 	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
-	assert(allkeys);
+	if (!allkeys)
+		return ENOMEM;
 	rv = xbps_array_foreach_cb(xhp, allkeys, xhp->pkgdb, fn, arg);
 	xbps_object_release(allkeys);
 	return rv;
@@ -368,7 +369,8 @@ xbps_pkgdb_foreach_cb_multi(struct xbps_handle *xhp,
 		return rv;
 
 	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
-	assert(allkeys);
+	if (!allkeys)
+		return ENOMEM;
 	rv = xbps_array_foreach_cb_multi(xhp, allkeys, xhp->pkgdb, fn, arg);
 	xbps_object_release(allkeys);
 	return rv;

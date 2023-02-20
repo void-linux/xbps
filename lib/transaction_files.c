@@ -24,6 +24,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h> /* safeish */
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -210,8 +211,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 	struct item *item;
 	int rv = 0;
 
-	if (xhp->transd == NULL)
-		return ENOTSUP;
+	assert(xhp->transd);
 
 	if (!xbps_dictionary_get_dict(xhp->transd, "obsolete_files", &obsd))
 		return ENOENT;
