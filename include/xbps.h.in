@@ -2214,6 +2214,14 @@ size_t xbps_strlcat(char *dst, const char *src, size_t dstsize);
 size_t xbps_strlcpy(char *dst, const char *src, size_t dstsize);
 
 /**
+ * Convert a \a mode from stat to a string in \a buf.
+ *
+ * @param[in] mode Mode to convert.
+ * @param[out] buf Buffer to store the resulting string.
+ */
+void xbps_strmode(mode_t mode, char *buf);
+
+/**
  * Tests if pkgver is reverted by pkg
  *
  * The package version is defined by:

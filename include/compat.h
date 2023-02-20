@@ -43,4 +43,8 @@ int HIDDEN humanize_number(char *_buf, size_t _len, int64_t _number,
 		const char *_suffix, int _scale, int _flags);
 #endif
 
+#ifndef HAVE_STRMODE
+void HIDDEN strmode(mode_t, char *);
+#endif
+
 #endif /* COMPAT_H */

@@ -550,6 +550,28 @@ fi
 rm -f _$func.c _$func
 
 #
+# Check for strmode().
+func=strmode
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <unistd.h>
+
+int main(void) {
+	const char dest[] = "";
+	strmode(0104644, dest);
+	return 0;
+}
+EOF
+if $XCC _$func.c -o _$func 2>/dev/null; then
+	echo yes.
+	echo "CPPFLAGS+= -DHAVE_STRMODE" >>$CONFIG_MK
+else
+	echo no.
+	echo "COMPAT_OBJS+=	compat/strmode.o" >>$CONFIG_MK
+fi
+rm -f _$func.c _$func
+
+#
 # Check for rbtree_ininit().
 #
 func=rb_tree_init
