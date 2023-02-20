@@ -24,29 +24,59 @@
  */
 
 #include <sys/types.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
+
 #include <assert.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "defs.h"
+#include "xbps.h"
 
-struct list_pkgver_cb {
-	unsigned int pkgver_len;
-	unsigned int maxcols;
-	char *linebuf;
+struct length_max_cb {
+	const char *key;
+	int max;
 };
 
-int
-list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
+static int
+length_max_cb(struct xbps_handle *xhp UNUSED, xbps_object_t obj,
+		const char *key UNUSED, void *arg, bool *loop_done UNUSED)
+{
+	struct length_max_cb *ctx = arg;
+	const char *s = NULL;
+	size_t len;
+
+	if (!xbps_dictionary_get_cstring_nocopy(obj, ctx->key, &s))
+		return -errno;
+
+	len = strlen(s);
+	if (len > INT_MAX)
+		return -ERANGE;
+	if ((int)len > ctx->max)
+		ctx->max = len;
+
+	return 0;
+}
+
+struct list_pkgver_cb {
+	unsigned int pkgver_align;
+	unsigned int maxcols;
+	char *buf;
+	struct xbps_fmt *fmt;
+};
+
+static int
+list_pkgs_pkgdb_cb(struct xbps_handle *xhp UNUSED,
 		  xbps_object_t obj,
 		  const char *key UNUSED,
 		  void *arg,
 		  bool *loop_done UNUSED)
 {
-	struct list_pkgver_cb *lpc = arg;
+	struct list_pkgver_cb *ctx = arg;
 	const char *pkgver = NULL, *short_desc = NULL, *state_str = NULL;
 	unsigned int len;
 	pkg_state_t state;
@@ -58,36 +88,92 @@ list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
 
 	xbps_pkg_state_dictionary(obj, &state);
 
-	if (state == XBPS_PKG_STATE_INSTALLED)
-		state_str = "ii";
-	else if (state == XBPS_PKG_STATE_UNPACKED)
-		state_str = "uu";
-	else if (state == XBPS_PKG_STATE_HALF_REMOVED)
-		state_str = "hr";
-	else
-		state_str = "??";
+	switch (state) {
+	case XBPS_PKG_STATE_INSTALLED:     state_str = "ii"; break;
+	case XBPS_PKG_STATE_UNPACKED:      state_str = "uu"; break;
+	case XBPS_PKG_STATE_HALF_REMOVED:  state_str = "hr"; break;
+	case XBPS_PKG_STATE_BROKEN:        state_str = "br"; break;
+	case XBPS_PKG_STATE_NOT_INSTALLED: state_str = "??"; break;
+	}
 
-	if (lpc->linebuf == NULL) {
-		printf("%s %-*s %s\n",
-			state_str,
-			lpc->pkgver_len, pkgver,
-			short_desc);
+	if (!ctx->buf) {
+		printf("%s %-*s %s\n", state_str, ctx->pkgver_align, pkgver,
+		    short_desc);
 		return 0;
 	}
 
-	len = snprintf(lpc->linebuf, lpc->maxcols, "%s %-*s %s",
-	    state_str,
-		lpc->pkgver_len, pkgver,
-		short_desc);
 	/* add ellipsis if the line was truncated */
-	if (len >= lpc->maxcols && lpc->maxcols > 4) {
-		for (unsigned int j = 0; j < 3; j++)
-			lpc->linebuf[lpc->maxcols-j-1] = '.';
-		lpc->linebuf[lpc->maxcols] = '\0';
-	}
-	puts(lpc->linebuf);
+	len = snprintf(ctx->buf, ctx->maxcols, "%s %-*s %s\n", state_str,
+	    ctx->pkgver_align, pkgver, short_desc);
+	if (len >= ctx->maxcols && ctx->maxcols > sizeof("..."))
+		memcpy(ctx->buf + ctx->maxcols - sizeof("..."), "...", sizeof("..."));
+	fputs(ctx->buf, stdout);
 
 	return 0;
+}
+
+int
+list_pkgs_pkgdb(struct xbps_handle *xhp)
+{
+	struct length_max_cb longest = {.key = "pkgver"};
+	struct list_pkgver_cb lpc = {0};
+
+	int r = xbps_pkgdb_foreach_cb_multi(xhp, length_max_cb, &longest);
+	if (r < 0)
+		return r;
+
+	lpc.pkgver_align = longest.max;
+	lpc.maxcols = get_maxcols();
+	if (lpc.maxcols > 0) {
+		lpc.buf = malloc(lpc.maxcols);
+		if (!lpc.buf)
+			return -errno;
+	}
+
+	return xbps_pkgdb_foreach_cb(xhp, list_pkgs_pkgdb_cb, &lpc);
+}
+
+struct list_pkgdb_cb {
+	struct xbps_fmt *fmt;
+	int (*filter)(xbps_object_t obj);
+};
+
+static int
+list_pkgdb_cb(struct xbps_handle *xhp UNUSED, xbps_object_t obj,
+		const char *key UNUSED, void *arg, bool *loop_done UNUSED)
+{
+	struct list_pkgdb_cb *ctx = arg;
+	int r;
+
+	if (ctx->filter) {
+		r = ctx->filter(obj);
+		if (r < 0)
+			return r;
+		if (r == 0)
+			return 0;
+	}
+
+	r = xbps_fmt_dictionary(ctx->fmt, obj, stdout);
+	if (r < 0)
+		return r;
+	return 0;
+}
+
+int
+list_pkgdb(struct xbps_handle *xhp, int (*filter)(xbps_object_t), const char *format)
+{
+	struct list_pkgdb_cb ctx = {.filter = filter};
+	int r;
+
+	ctx.fmt = xbps_fmt_parse(format);
+	if (!ctx.fmt) {
+		r = -errno;
+		xbps_error_printf("failed to parse format: %s\n", strerror(-r));
+		return r;
+	}
+	r = xbps_pkgdb_foreach_cb(xhp, list_pkgdb_cb, &ctx);
+	xbps_fmt_free(ctx.fmt);
+	return r;
 }
 
 int
@@ -110,74 +196,42 @@ list_manual_pkgs(struct xbps_handle *xhp UNUSED,
 }
 
 int
-list_hold_pkgs(struct xbps_handle *xhp UNUSED,
-		xbps_object_t obj,
-		const char *key UNUSED,
-		void *arg UNUSED,
-		bool *loop_done UNUSED)
-{
-	const char *pkgver = NULL;
-
-	if (xbps_dictionary_get(obj, "hold")) {
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		puts(pkgver);
-	}
-
-	return 0;
-}
-
-int
-list_repolock_pkgs(struct xbps_handle *xhp UNUSED,
-		xbps_object_t obj,
-		const char *key UNUSED,
-		void *arg UNUSED,
-		bool *loop_done UNUSED)
-{
-	const char *pkgver = NULL;
-
-	if (xbps_dictionary_get(obj, "repolock")) {
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		puts(pkgver);
-	}
-
-	return 0;
-}
-
-int
-list_orphans(struct xbps_handle *xhp)
+list_orphans(struct xbps_handle *xhp, const char *format)
 {
 	xbps_array_t orphans;
-	const char *pkgver = NULL;
+	struct xbps_fmt *fmt;
+	int r = 0;
+
+	fmt = xbps_fmt_parse(format);
+	if (!fmt) {
+		r = -errno;
+		xbps_error_printf("failed to parse format: %s\n", strerror(-r));
+		return r;
+	}
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
-	if (orphans == NULL)
-		return EINVAL;
+	if (!orphans) {
+		r = -errno;
+		xbps_error_printf("failed to find orphans: %s\n", strerror(-r));
+		goto err;
+	}
 
 	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
-		xbps_dictionary_get_cstring_nocopy(xbps_array_get(orphans, i),
-		    "pkgver", &pkgver);
-		puts(pkgver);
+		xbps_object_t obj = xbps_array_get(orphans, i);
+		if (!obj)
+			return -errno;
+		r = xbps_fmt_dictionary(fmt, obj, stdout);
+		if (r < 0)
+			goto err;
 	}
-
-	return 0;
+err:
+	xbps_fmt_free(fmt);
+	return r;
 }
 
-int
-list_pkgs_pkgdb(struct xbps_handle *xhp)
-{
-	struct list_pkgver_cb lpc;
-
-	lpc.pkgver_len = find_longest_pkgver(xhp, NULL);
-	lpc.maxcols = get_maxcols();
-	lpc.linebuf = NULL;
-	if (lpc.maxcols > 0) {
-		lpc.linebuf = malloc(lpc.maxcols);
-		if (lpc.linebuf == NULL)
-			exit(1);
-	}
-
-	return xbps_pkgdb_foreach_cb(xhp, list_pkgs_in_dict, &lpc);
-}
+#ifndef __UNCONST
+#define __UNCONST(a)  ((void *)(uintptr_t)(const void *)(a))
+#endif
 
 static void
 repo_list_uri(struct xbps_repo *repo)
@@ -229,51 +283,4 @@ repo_list(struct xbps_handle *xhp)
 		xbps_repo_release(repo);
 	}
 	return 0;
-}
-
-struct fflongest {
-	xbps_dictionary_t d;
-	unsigned int len;
-};
-
-static int
-_find_longest_pkgver_cb(struct xbps_handle *xhp UNUSED,
-			xbps_object_t obj,
-			const char *key UNUSED,
-			void *arg,
-			bool *loop_done UNUSED)
-{
-	struct fflongest *ffl = arg;
-	const char *pkgver = NULL;
-	unsigned int len;
-
-	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	len = strlen(pkgver);
-	if (ffl->len == 0 || len > ffl->len)
-		ffl->len = len;
-
-	return 0;
-}
-
-unsigned int
-find_longest_pkgver(struct xbps_handle *xhp, xbps_object_t o)
-{
-	struct fflongest ffl;
-
-	ffl.d = o;
-	ffl.len = 0;
-
-	if (xbps_object_type(o) == XBPS_TYPE_DICTIONARY) {
-		xbps_array_t array;
-
-		array = xbps_dictionary_all_keys(o);
-		(void)xbps_array_foreach_cb_multi(xhp, array, o,
-		    _find_longest_pkgver_cb, &ffl);
-		xbps_object_release(array);
-	} else {
-		(void)xbps_pkgdb_foreach_cb_multi(xhp,
-		    _find_longest_pkgver_cb, &ffl);
-	}
-
-	return ffl.len;
 }
