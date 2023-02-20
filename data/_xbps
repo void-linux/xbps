@@ -96,8 +96,10 @@ _xbps_create() {
 		{-s,--desc}'[Short description]:short description: ' \
 		{-t,--tags}'[A list of tags/categories]:tags: ' \
 		{-V,--version}'[Prints XBPS release version]' \
+		--alternatives'[List of provided alternatives]:list of provided alternatives: ' \
 		--build-options'[A string with the used build options]:used build options: ' \
-		--compression'[Compression format]:compression format:(gzip bzip2 xz)' \
+		--chown'[List of files to chown]:list of files to chown: ' \
+		--compression'[Compression format]:compression format:(none gzip bzip2 xz lz4 zstd)' \
 		--shlib-provides'[List of provided shared libraries]:provided shared libraries: ' \
 		--shlib-requires'[List of required shared libraries]:required shared libraries: '
 }

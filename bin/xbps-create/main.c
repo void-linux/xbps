@@ -22,6 +22,9 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#define _DEFAULT_SOURCE
+
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>
@@ -41,6 +44,7 @@
 #include <libgen.h>
 #include <locale.h>
 #include <dirent.h>
+#include <fnmatch.h>
 
 #include <xbps.h>
 #include "queue.h"
@@ -66,6 +70,7 @@ struct xentry {
 	char *file, *target;
 	char sha256[XBPS_SHA256_SIZE];
 	ino_t inode;
+	mode_t mode;
 };
 
 static TAILQ_HEAD(xentry_head, xentry) xentry_list =
@@ -109,6 +114,9 @@ usage(bool fail)
 	"                      'vi:/usr/bin/vi:/usr/bin/vim foo:/usr/bin/foo:/usr/bin/blah'\n"
 	" --build-options      A string with the used build options\n"
 	" --compression        Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
+	" --chown              Set the ownership of files and directories.\n"
+	"                      This expects a blank-separated list of <pattern>:<user>:<group>,\n"
+	"                      where '<pattern>' is an fnmatch(3) pattern.\n"
 	" --shlib-provides     List of provided shared libraries (blank separated list,\n"
 	"                      e.g 'libfoo.so.1 libblah.so.2')\n"
 	" --shlib-requires     List of required shared libraries (blank separated list,\n"
@@ -245,7 +253,6 @@ process_one_alternative(const char *altgrname, const char *val)
 	}
 }
 
-
 static void
 process_dict_of_arrays(const char *key UNUSED, const char *val)
 {
@@ -279,6 +286,71 @@ process_dict_of_arrays(const char *key UNUSED, const char *val)
 	}
 out:
 	free(args);
+}
+
+static bool
+process_chown_pattern(const char *key, const char *fpat, const char *user, const char *group)
+{
+	xbps_object_iterator_t iter;
+	xbps_object_t obj;
+	const char *fname;
+	bool match = false;
+
+	if ((iter = xbps_array_iter_from_dict(pkg_filesd, key)) != NULL) {
+		while ((obj = xbps_object_iterator_next(iter))) {
+			xbps_dictionary_get_cstring_nocopy(obj, "file", &fname);
+			if (fnmatch(fpat, fname, 0) == 0) {
+				match = true;
+				if (user != NULL)
+					xbps_dictionary_set_cstring(obj, "user", user);
+				if (group != NULL)
+					xbps_dictionary_set_cstring(obj, "group", group);
+			}
+		}
+	}
+	return match;
+}
+
+static void
+process_chown_patterns(const char *val)
+{
+	char *raw, *itm, *fpat, *user, *group;
+
+	if (val == NULL)
+		return;
+
+	raw = strdup(val);
+
+	while ((itm = strsep(&raw, " "))) {
+		fpat = strsep(&itm, ":");
+		if (fpat == NULL || strlen(fpat) == 0) {
+			xbps_warn_printf("%s: skipping chown pattern `:%s': empty pattern\n", _PROGNAME, itm);
+			continue;
+		}
+
+		user = strsep(&itm, ":");
+		if (strlen(user) == 0 || strcmp(user, "root") == 0)
+			user = NULL;
+		group = strsep(&itm, ":");
+		if (strlen(group) == 0 || strcmp(group, "root") == 0)
+			group = NULL;
+
+		if (itm != NULL)
+			xbps_warn_printf("%s: chown pattern contains extra data: %s\n", _PROGNAME, itm);
+
+		if (user == NULL && group == NULL) {
+			xbps_warn_printf("%s: skipping chown pattern `%s': user and group empty or root\n", _PROGNAME, fpat);
+			continue;
+		}
+
+		if (!(process_chown_pattern("dirs", fpat, user, group) ||
+			  process_chown_pattern("files", fpat, user, group) ||
+			  process_chown_pattern("links", fpat, user, group))) {
+			xbps_warn_printf("%s: chown pattern %s matched nothing\n", _PROGNAME, fpat);
+		}
+	}
+
+	free(raw);
 }
 
 static void
@@ -395,6 +467,10 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		xe->type = ENTRY_TYPE_METADATA;
 		goto out;
 	}
+
+	/* symlinks don't have a mode on linux */
+	if (!S_ISLNK(sb->st_mode))
+		xe->mode = sb->st_mode;
 
 	if (S_ISLNK(sb->st_mode)) {
 		char buf[PATH_MAX];
@@ -530,7 +606,6 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 		xbps_dictionary_set_uint64(fileinfo, "inode", sb->st_ino);
 		xe->inode = sb->st_ino;
 		xe->size = (uint64_t)sb->st_size;
-
 	} else if (S_ISDIR(sb->st_mode)) {
 		/* directory */
 		xbps_dictionary_set_cstring_nocopy(fileinfo, "type", "dirs");
@@ -650,6 +725,8 @@ process_xentry(enum entry_type type, const char *mutable_files)
 			xbps_dictionary_set_cstring(d, "sha256", xe->sha256);
 		if (xe->size)
 			xbps_dictionary_set_uint64(d, "size", xe->size);
+		if (xe->mode)
+			xbps_dictionary_set_uint32(d, "mode", xe->mode);
 
 		xbps_array_add(a, d);
 		xbps_object_release(d);
@@ -832,6 +909,7 @@ main(int argc, char **argv)
 		{ "build-options", required_argument, NULL, '2' },
 		{ "built-with", required_argument, NULL, 'B' },
 		{ "changelog", required_argument, NULL, 'c'},
+		{ "chown", required_argument, NULL, '6'},
 		{ "compression", required_argument, NULL, '3' },
 		{ "config-files", required_argument, NULL, 'F' },
 		{ "conflicts", required_argument, NULL, 'C' },
@@ -865,7 +943,7 @@ main(int argc, char **argv)
 	const char *provides, *pkgver, *replaces, *reverts, *desc, *ldesc;
 	const char *arch, *config_files, *mutable_files, *version, *changelog;
 	const char *buildopts, *shlib_provides, *shlib_requires, *alternatives;
-	const char *compression, *tags = NULL, *srcrevs = NULL, *sourcepkg = NULL;
+	const char *compression, *tags = NULL, *srcrevs = NULL, *sourcepkg = NULL, *chownlst;
 	char pkgname[XBPS_NAME_SIZE], *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
 	int c, pkg_fd;
@@ -874,7 +952,7 @@ main(int argc, char **argv)
 	arch = conflicts = deps = homepage = license = maint = compression = NULL;
 	provides = pkgver = replaces = reverts = desc = ldesc = bwith = NULL;
 	buildopts = config_files = mutable_files = shlib_provides = NULL;
-	alternatives = shlib_requires = changelog = NULL;
+	alternatives = shlib_requires = changelog = chownlst = NULL;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		if (optarg && strcmp(optarg, "") == 0)
@@ -964,6 +1042,9 @@ main(int argc, char **argv)
 			break;
 		case '5':
 			sourcepkg = optarg;
+			break;
+		case '6':
+			chownlst = optarg;
 			break;
 		case '?':
 		default:
@@ -1081,6 +1162,7 @@ main(int argc, char **argv)
 		die("xbps_dictionary_create");
 
 	process_destdir(mutable_files);
+	process_chown_patterns(chownlst);
 
 	/* Back to original cwd after file tree walk processing */
 	if (chdir(p) == -1)
