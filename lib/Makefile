@@ -32,7 +32,7 @@ LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
 # External code used by libxbps
-EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
+EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o external/idtree.o
 
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o

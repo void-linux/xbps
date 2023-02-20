@@ -43,7 +43,11 @@
  * 	o Check the hash for all installed files, except
  * 	  configuration files (which is expected if they are modified).
  *
- * 	o Compares stored file modification time.
+ * 	o Check the mode for all installed files, except configuration files.
+ *
+ * 	o Check the user for all installed files, except configuration files.
+ *
+ * 	o Check the group for all installed files, except configuration files.
  *
  * Return 0 if test ran successfully, 1 otherwise and -1 on error.
  */
@@ -55,56 +59,120 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	xbps_dictionary_t pkg_filesd = arg;
-	const char *file = NULL, *sha256 = NULL;
+	const char *file = NULL, *sha256 = NULL, *user = NULL, *group = NULL;
 	char *path;
-	bool mutable, test_broken = false;
+	bool mutable, test_broken = false, noexist = false;
 	int rv = 0, errors = 0;
+	mode_t mode = 0;
+	struct idtree *idt = NULL;
 
 	array = xbps_dictionary_get(pkg_filesd, "files");
 	if (array != NULL && xbps_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(pkg_filesd, "files");
-		if (iter == NULL)
-			return -1;
+		if (iter == NULL) {
+			errors++;
+			goto out;
+		}
 
 		while ((obj = xbps_object_iterator_next(iter))) {
+			noexist = mutable = false;
+
 			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
 			/* skip noextract files */
 			if (xhp->noextract && xbps_patterns_match(xhp->noextract, file))
 				continue;
 			path = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-			xbps_dictionary_get_cstring_nocopy(obj,
-				"sha256", &sha256);
+
+			xbps_dictionary_get_bool(obj, "mutable", &mutable);
+
+			/* check sha256 */
+			xbps_dictionary_get_cstring_nocopy(obj, "sha256", &sha256);
 			rv = xbps_file_sha256_check(path, sha256);
 			switch (rv) {
 			case 0:
-				free(path);
 				break;
 			case ENOENT:
-				xbps_error_printf("%s: unexistent file %s.\n",
-				    pkgname, file);
-				free(path);
-				test_broken = true;
+				xbps_error_printf("%s: unexistent file %s.\n", pkgname, file);
+				test_broken = noexist = true;
 				break;
 			case ERANGE:
-				mutable = false;
-				xbps_dictionary_get_bool(obj,
-				    "mutable", &mutable);
 				if (!mutable) {
-					xbps_error_printf("%s: hash mismatch "
-					    "for %s.\n", pkgname, file);
+					xbps_error_printf("%s: hash mismatch for %s.\n", pkgname, file);
 					test_broken = true;
 				}
-				free(path);
 				break;
 			default:
-				xbps_error_printf(
-				    "%s: can't check `%s' (%s)\n",
-				    pkgname, file, strerror(rv));
-				free(path);
+				xbps_error_printf("%s: can't check `%s' (%s)\n", pkgname, file, strerror(rv));
 				break;
 			}
-                }
-                xbps_object_iterator_release(iter);
+
+			if (noexist) {
+				free(path);
+				continue;
+			}
+
+			/* check mode */
+			mode = 0;
+			if (xbps_dictionary_get_uint32(obj, "mode", &mode)) {
+				rv = file_mode_check(path, mode);
+				switch (rv) {
+				case 0:
+					break;
+				case ERANGE:
+					if (!mutable) {
+						xbps_error_printf("%s: mode mismatch for %s.\n", pkgname, file);
+						test_broken = true;
+					}
+					break;
+				default:
+					xbps_error_printf("%s: can't check `%s' (%s)\n", pkgname, file, strerror(-rv));
+					break;
+				}
+			}
+
+			/* check user */
+			user = NULL;
+			xbps_dictionary_get_cstring_nocopy(obj, "user", &user);
+			if (user == NULL)
+				user = "root";
+			rv = file_user_check(idt, path, user);
+			switch (rv) {
+			case 0:
+				break;
+			case ERANGE:
+				if (!mutable) {
+					xbps_error_printf("%s: user mismatch for %s.\n", pkgname, file);
+					test_broken = true;
+				}
+				break;
+			default:
+				xbps_error_printf("%s: can't check `%s' (%s)\n", pkgname, file, strerror(-rv));
+				break;
+			}
+
+			/* check group */
+			group = NULL;
+			xbps_dictionary_get_cstring_nocopy(obj, "group", &group);
+			if (group == NULL)
+			group = "root";
+			rv = file_group_check(idt, path, group);
+			switch (rv) {
+			case 0:
+				break;
+			case ERANGE:
+				if (!mutable) {
+					xbps_error_printf("%s: group mismatch for %s.\n", pkgname, file);
+					test_broken = true;
+				}
+				break;
+			default:
+				xbps_error_printf("%s: can't check `%s' (%s)\n", pkgname, file, strerror(-rv));
+				break;
+			}
+
+			free(path);
+		}
+		xbps_object_iterator_release(iter);
 	}
 	if (test_broken) {
 		xbps_error_printf("%s: files check FAILED.\n", pkgname);
@@ -118,8 +186,10 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	array = xbps_dictionary_get(pkg_filesd, "conf_files");
 	if (array != NULL && xbps_array_count(array) > 0) {
 		iter = xbps_array_iter_from_dict(pkg_filesd, "conf_files");
-		if (iter == NULL)
-			return -1;
+		if (iter == NULL) {
+			errors++;
+			goto out;
+		}
 
 		while ((obj = xbps_object_iterator_next(iter))) {
 			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
@@ -148,5 +218,7 @@ check_pkg_files(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		errors++;
 	}
 
+out:
+	idtree_free(idt);
 	return errors ? -1 : 0;
 }

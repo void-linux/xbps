@@ -41,9 +41,11 @@
  * The following task is accomplished in this file:
  *
  * 	o Check for target file in symlinks, so that we can check that
- * 	  they have not been modified.
+ * 	  they have not been modified or broken.
  *
- * returns 0 if test ran successfully, 1 otherwise and -1 on error.
+ * 	o Check for symlink ownership.
+ *
+ * returns 0 if test ran successfully and -1 on error.
  */
 
 int
@@ -52,14 +54,16 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	xbps_array_t array;
 	xbps_object_t obj;
 	xbps_dictionary_t filesd = arg;
+	bool test_broken = false;
 	int rv = 0;
+	struct idtree *idt = NULL;
 
 	array = xbps_dictionary_get(filesd, "links");
 	if (array == NULL)
 		return 0;
 
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
-		const char *file = NULL, *tgt = NULL;
+		const char *file = NULL, *tgt = NULL, *user = NULL, *group = NULL;
 		char path[PATH_MAX], *lnk = NULL;
 
 		obj = xbps_array_get(array, i);
@@ -83,16 +87,53 @@ check_pkg_symlinks(struct xbps_handle *xhp, const char *pkgname, void *arg)
 		snprintf(path, sizeof(path), "%s/%s", xhp->rootdir, file);
 		if ((lnk = xbps_symlink_target(xhp, path, tgt)) == NULL) {
 			xbps_error_printf("%s: broken symlink %s (target: %s)\n", pkgname, file, tgt);
-			rv = -1;
+			test_broken = true;
 			continue;
 		}
 		if (strcmp(lnk, tgt)) {
 			xbps_warn_printf("%s: modified symlink %s "
 			    "points to %s (shall be %s)\n",
 			    pkgname, file, lnk, tgt);
-			rv = -1;
+			test_broken = true;
 		}
+
+		user = NULL;
+		xbps_dictionary_get_cstring_nocopy(obj, "user", &user);
+		if (user == NULL)
+			user = "root";
+		rv = file_user_check(idt, path, user);
+		switch (rv) {
+		case 0:
+			break;
+		case ERANGE:
+			xbps_error_printf("%s: user mismatch for %s.\n", pkgname, file);
+			test_broken = true;
+			break;
+		default:
+			xbps_error_printf("%s: can't check `%s' (%s)\n", pkgname, file, strerror(-rv));
+			break;
+		}
+
+		group = NULL;
+		xbps_dictionary_get_cstring_nocopy(obj, "group", &group);
+		if (group == NULL)
+			group = "root";
+		rv = file_group_check(idt, path, group);
+		switch (rv) {
+		case 0:
+			break;
+		case ERANGE:
+			xbps_error_printf("%s: group mismatch for %s.\n", pkgname, file);
+			test_broken = true;
+			break;
+		default:
+			xbps_error_printf("%s: can't check `%s' (%s)\n", pkgname, file, strerror(-rv));
+			break;
+		}
+
 		free(lnk);
 	}
-	return rv;
+
+	idtree_free(idt);
+	return test_broken ? -1 : 0;
 }
