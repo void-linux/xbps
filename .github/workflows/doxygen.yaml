@@ -1,0 +1,45 @@
+name: Deploy Doxygen
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64
+    steps:
+      - name: Prepare container
+        run: |
+          xbps-install -Syu || xbps-install -yu xbps
+          xbps-install -Sy bash git gcc make pkg-config zlib-devel openssl-devel libarchive-devel doxygen graphviz
+      - uses: classabbyamp/treeless-checkout-action@v1
+      - name: Build
+        run: |
+          ./configure --enable-api-docs
+          make -j -C include && make -j -C doc
+          rm -rf ./api/html/Nodes.xml Info.plist Makefile Tokens.xml
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./api/html
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
