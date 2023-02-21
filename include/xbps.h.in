@@ -2385,10 +2385,11 @@ struct xbps_fmt;
  */
 struct xbps_fmt_spec {
 	/**
+	 * @private
 	 * @var conversion
 	 * @brief Output conversion.
 	 */
-	char conversion;
+	struct conversion *conversion;
 	/**
 	 * @var fill
 	 * @brief Padding character.
