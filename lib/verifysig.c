@@ -40,35 +40,79 @@
 
 #include "xbps_api_impl.h"
 
+static const unsigned char sha1x256_prefix[] = {0x30, 0x2d, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e, 0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x20};
+static const unsigned char sha256_prefix[]   = {0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
+
 static bool
 rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 		unsigned char *sig, unsigned int siglen,
 		unsigned char *sha256)
 {
-	BIO *bio;
-	RSA *rsa;
-	int rv;
+	BIO *bio = NULL;
+	RSA *rsa = NULL;
+	int len;
+	unsigned char *decrypt_buf;
+	int r;
+
+	decrypt_buf = malloc(siglen);
+	if (!decrypt_buf)
+		return false;
 
 	ERR_load_crypto_strings();
 	SSL_load_error_strings();
 
 	bio = BIO_new_mem_buf(xbps_data_data_nocopy(pubkey),
 			xbps_data_size(pubkey));
-	assert(bio);
+	if (!bio) {
+		xbps_dbg_printf("`%s' error allocating public key buffer: %s\n",
+		    repo->uri, ERR_error_string(ERR_get_error(), NULL));
+		goto err;
+	}
 
 	rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, NULL, NULL);
 	if (rsa == NULL) {
 		xbps_dbg_printf("`%s' error reading public key: %s\n",
 		    repo->uri, ERR_error_string(ERR_get_error(), NULL));
-		return false;
+		goto err;
+	}
+	len = RSA_public_decrypt(siglen, sig, decrypt_buf, rsa, RSA_PKCS1_PADDING);
+	if (len <= 0) {
+		xbps_dbg_printf("`%s' error decrypting signature: %s\n",
+		    repo->uri, ERR_error_string(ERR_get_error(), NULL));
+		goto err;
+	}
+	switch (len) {
+	case sizeof(sha1x256_prefix)+SHA256_DIGEST_LENGTH:
+		r = memcmp(decrypt_buf, sha1x256_prefix, sizeof(sha1x256_prefix));
+		if (r != 0)
+			goto err;
+		r = memcmp(decrypt_buf+sizeof(sha1x256_prefix), sha256, SHA256_DIGEST_LENGTH);
+		if (r != 0)
+			goto err;
+		break;
+	case sizeof(sha256_prefix)+SHA256_DIGEST_LENGTH:
+		r = memcmp(decrypt_buf, sha256_prefix, sizeof(sha256_prefix));
+		if (r != 0)
+			goto err;
+		r = memcmp(decrypt_buf+sizeof(sha256_prefix), sha256, SHA256_DIGEST_LENGTH);
+		if (r != 0)
+			goto err;
+		break;
+	default:
+		goto err;
 	}
 
-	rv = RSA_verify(NID_sha1, sha256, SHA256_DIGEST_LENGTH, sig, siglen, rsa);
+	free(decrypt_buf);
 	RSA_free(rsa);
 	BIO_free(bio);
 	ERR_free_strings();
-
-	return rv ? true : false;
+	return true;
+err:
+	free(decrypt_buf);
+	RSA_free(rsa);
+	BIO_free(bio);
+	ERR_free_strings();
+	return false;
 }
 
 bool
