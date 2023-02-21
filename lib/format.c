@@ -197,15 +197,44 @@ nexttok(const char **pos, struct strbuf *buf)
 	return 0;
 }
 
+struct conversion {
+	enum { HUMANIZE = 1, STRMODE } type;
+	union {
+		struct humanize {
+			unsigned width    : 8;
+			unsigned minscale : 8;
+			unsigned maxscale : 8;
+			bool decimal      : 1;
+			int flags;
+		} humanize;
+	};
+};
+
 static int
-parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec)
+parse_u(const char **pos, unsigned int *u)
+{
+	char *e = NULL;
+	long v;
+	errno = 0;
+	v = strtoul(*pos, &e, 10);
+	if (errno != 0)
+		return -errno;
+	if (v > UINT_MAX)
+		return -ERANGE;
+	*u = v;
+	*pos = e;
+	return 0;
+}
+
+static int
+parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec, struct conversion *conversion)
 {
 	const char *p = *pos;
 	const char *e;
 	int r;
 	bool fill = false;
 
-	spec->conversion = '\0';
+	spec->conversion = NULL;
 	spec->fill = ' ';
 	spec->align = '>';
 	spec->sign = '-';
@@ -228,8 +257,53 @@ parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec)
 	p = e;
 
 	if (*p == '!') {
-		spec->conversion = *++p;
-		p++;
+		if (strncmp(p+1, "humanize", sizeof("humanize") - 1) == 0) {
+			/* humanize[ ][.][i][width][minscale[maxscale]] */
+			const char *scale = "BKMGTPE";
+			const char *p1;
+			p += sizeof("humanize");
+			conversion->type = HUMANIZE;
+			if (*p != ':' && *p != '}') {
+				conversion->humanize.flags = HN_NOSPACE;
+				if (*p == ' ') {
+					conversion->humanize.flags &= ~HN_NOSPACE;
+					p++;
+				}
+				if (*p == '.') {
+					conversion->humanize.flags |= HN_DECIMAL;
+					p++;
+				}
+				if ((*p >= '0' && *p <= '9')) {
+					unsigned width = 0;
+					r = parse_u(&p, &width);
+					if (r < 0)
+						return r;
+					conversion->humanize.width = width <= 12 ? width : 12;
+				}
+				if ((p1 = strchr(scale, *p))) {
+					conversion->humanize.minscale = p1-scale+1;
+					p++;
+					if ((p1 = strchr(scale, *p))) {
+						conversion->humanize.maxscale = p1-scale+1;
+						p++;
+					}
+				}
+				if (*p == 'i') {
+					conversion->humanize.flags |= HN_IEC_PREFIXES;
+					p++;
+				}
+			} else {
+				/* default: !humanize .8Ki:8 */
+				conversion->humanize.width = 8;
+				conversion->humanize.minscale = 2;
+				conversion->humanize.flags = HN_DECIMAL|HN_IEC_PREFIXES;
+			}
+		} else if (strncmp(p+1, "strmode", sizeof("strmode") - 1) == 0) {
+			p += sizeof("strmode");
+			conversion->type = STRMODE;
+		} else {
+			return -EINVAL;
+		}
 	}
 
 	if (*p == ':') {
@@ -248,8 +322,6 @@ parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec)
 			p += 1;
 		}
 		if ((*p >= '0' && *p <= '9')) {
-			char *e1;
-			long v;
 			if (*p == '0') {
 				if (!fill) {
 					spec->fill = '0';
@@ -257,26 +329,15 @@ parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec)
 				}
 				p++;
 			}
-			errno = 0;
-			v = strtoul(p, &e1, 10);
-			if (errno != 0)
-				return -errno;
-			if (v > INT_MAX)
-				return -ERANGE;
-			spec->width = v;
-			p = e1;
+			r = parse_u(&p, &spec->width);
+			if (r < 0)
+				return r;
 		}
 		if (*p == '.') {
-			char *e1;
-			long v;
-			errno = 0;
-			v = strtoul(p+1, &e1, 10);
-			if (errno != 0)
-				return -errno;
-			if (v > 16)
-				return -ERANGE;
-			spec->precision = v;
-			p = e1;
+			p++;
+			r = parse_u(&p, &spec->precision);
+			if (r < 0)
+				return r;
 		}
 		if (*p != '}')
 			spec->type = *p++;
@@ -297,7 +358,8 @@ xbps_fmt_parse(const char *format)
 	int r = 1;
 
 	for (;;) {
-		struct xbps_fmt_spec spec;
+		struct xbps_fmt_spec spec = {0};
+		struct conversion conversion = {0};
 		struct xbps_fmt *tmp;
 		r = nexttok(&pos, &buf);
 		if (r < 0)
@@ -318,7 +380,7 @@ xbps_fmt_parse(const char *format)
 			memcpy(fmt[n].chunk->s, buf.mem, buf.len+1);
 			break;
 		case TVAR:
-			r = parse(&pos, &buf, &spec);
+			r = parse(&pos, &buf, &spec, &conversion);
 			if (r < 0)
 				goto err;
 			fmt[n].var = calloc(1, sizeof(struct var)+buf.len+1);
@@ -327,6 +389,12 @@ xbps_fmt_parse(const char *format)
 			fmt[n].common->type = TVAR;
 			fmt[n].var->spec = spec;
 			memcpy(fmt[n].var->s, buf.mem, buf.len+1);
+			if (conversion.type) {
+				fmt[n].var->spec.conversion = calloc(1, sizeof(struct conversion));
+				if (!fmt[n].var->spec.conversion)
+					goto err_errno;
+				*fmt[n].var->spec.conversion = conversion;
+			}
 			break;
 		}
 		n++;
@@ -351,7 +419,10 @@ xbps_fmt_free(struct xbps_fmt *fmt)
 	for (struct xbps_fmt *f = fmt; f->common; f++)
 		switch (f->common->type) {
 		case TTEXT: free(f->chunk); break;
-		case TVAR: free(f->var); break;
+		case TVAR:
+			free(f->var->spec.conversion);
+			free(f->var);
+			break;
 		}
 	free(fmt);
 }
@@ -364,7 +435,8 @@ xbps_fmts(const char *format, xbps_fmt_cb *cb, void *data, FILE *fp)
 	int r = 0;
 
 	for (;;) {
-		struct xbps_fmt_spec spec;
+		struct xbps_fmt_spec spec = {0};
+		struct conversion conversion = {0};
 		r = nexttok(&pos, &buf);
 		if (r <= 0)
 			goto out;
@@ -373,7 +445,7 @@ xbps_fmts(const char *format, xbps_fmt_cb *cb, void *data, FILE *fp)
 			fprintf(fp, "%s", buf.mem);
 			break;
 		case TVAR:
-			r = parse(&pos, &buf, &spec);
+			r = parse(&pos, &buf, &spec, &conversion);
 			if (r < 0)
 				goto out;
 			r = cb(fp, &spec, buf.mem, data);
@@ -427,6 +499,38 @@ xbps_fmt_string(const struct xbps_fmt_spec *spec, const char *str, size_t len, F
 	return 0;
 }
 
+static int
+humanize(const struct xbps_fmt_spec *spec, int64_t d, FILE *fp)
+{
+	char buf[64];
+	const struct humanize *h = &spec->conversion->humanize;
+	int scale = 0;
+	int width = h->width ? h->width : 8;
+	int len;
+
+	if (h->minscale) {
+		scale = humanize_number(buf, width, d, "B", HN_GETSCALE, h->flags);
+		if (scale == -1)
+			return -EINVAL;
+		if (scale < h->minscale - 1)
+			scale = h->minscale - 1;
+		if (h->maxscale && scale > h->maxscale - 1)
+			scale = h->maxscale - 1;
+	} else if (scale == 0) {
+		scale = HN_AUTOSCALE;
+	}
+	len = humanize_number(buf, width, d, "B", scale, h->flags);
+	if (len == -1)
+		return -EINVAL;
+	return xbps_fmt_string(spec, buf, len, fp);
+}
+
+static int
+tostrmode(const struct xbps_fmt_spec *spec UNUSED, int64_t d UNUSED, FILE *fp UNUSED)
+{
+	return -ENOTSUP;
+}
+
 int
 xbps_fmt_number(const struct xbps_fmt_spec *spec, int64_t d, FILE *fp)
 {
@@ -434,7 +538,13 @@ xbps_fmt_number(const struct xbps_fmt_spec *spec, int64_t d, FILE *fp)
 	struct xbps_fmt_spec strspec = *spec;
 	const char *p = buf;
 	int len;
-	int scale;
+
+	if (spec->conversion) {
+		switch (spec->conversion->type) {
+		case HUMANIZE: return humanize(spec, d, fp);
+		case STRMODE:  return tostrmode(spec, d, fp);
+		}
+	}
 
 	if (strspec.align == '=')
 		strspec.align = '>';
@@ -451,17 +561,6 @@ xbps_fmt_number(const struct xbps_fmt_spec *spec, int64_t d, FILE *fp)
 			strspec.width -= 1;
 			fputc(buf[0], fp);
 		}
-		break;
-	case 'h':
-		len = spec->width < sizeof(buf) ? spec->width : sizeof(buf);
-		scale = humanize_number(buf, len, d, "B", HN_GETSCALE, HN_DECIMAL|HN_IEC_PREFIXES);
-		if (scale == -1)
-			return -EINVAL;
-		if (spec->precision && (unsigned int)scale < 6-spec->precision)
-			scale = 6-spec->precision;
-		len = humanize_number(buf, len, d, "B", scale, HN_DECIMAL|HN_IEC_PREFIXES);
-		if (scale == -1)
-			return -EINVAL;
 		break;
 	case 'o': len = snprintf(buf, sizeof(buf), "%" PRIo64, d); break;
 	case 'u': len = snprintf(buf, sizeof(buf), "%" PRIu64, d); break;
