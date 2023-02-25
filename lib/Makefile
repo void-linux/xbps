@@ -33,6 +33,8 @@ LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
 # External code used by libxbps
 EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
+EXTOBJS += external/monocypher.o external/monocypher-ed25519.o
+EXTOBJS += external/codecs.o
 
 # libxbps
 OBJS = package_configure.o package_config_files.o package_orphans.o
@@ -52,6 +54,7 @@ OBJS += repo.o repo_sync.o
 OBJS += rpool.o cb_util.o proplib_wrapper.o
 OBJS += package_alternatives.o
 OBJS += conf.o log.o
+OBJS += crypto.o crypto-openssl.o crypto-monocypher.o
 OBJS += $(EXTOBJS) $(COMPAT_OBJS)
 # unnecessary unless pkgdb format changes
 # OBJS += pkgdb_conversion.o
