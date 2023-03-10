@@ -148,24 +148,16 @@ nexttok(const char **pos, struct strbuf *buf)
 			return TVAR;
 		case '\\':
 			switch (*++p) {
-			case '\\':
-				r = strbuf_putc(buf, '\\');
-				break;
-			case 'n':
-				r = strbuf_putc(buf, '\n');
-				break;
-			case 't':
-				r = strbuf_putc(buf, '\t');
-				break;
-			case '0':
-				r = strbuf_putc(buf, '\0');
-				break;
-			case '{':
-				r = strbuf_putc(buf, '{');
-				break;
-			case '}':
-				r = strbuf_putc(buf, '}');
-				break;
+			case '\\': r = strbuf_putc(buf, '\\'); break;
+			case 'a':  r = strbuf_putc(buf, '\a'); break;
+			case 'b':  r = strbuf_putc(buf, '\b'); break;
+			case 'f':  r = strbuf_putc(buf, '\f'); break;
+			case 'n':  r = strbuf_putc(buf, '\n'); break;
+			case 'r':  r = strbuf_putc(buf, '\r'); break;
+			case 't':  r = strbuf_putc(buf, '\t'); break;
+			case '0':  r = strbuf_putc(buf, '\0'); break;
+			case '{':  r = strbuf_putc(buf, '{');  break;
+			case '}':  r = strbuf_putc(buf, '}');  break;
 			default:
 				r = strbuf_putc(buf, '\\');
 				if (r < 0)
