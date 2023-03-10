@@ -227,13 +227,76 @@ parse_u(const char **pos, unsigned int *u)
 }
 
 static int
-parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec, struct conversion *conversion)
+parse_humanize(const char **pos, struct humanize *humanize)
 {
+	const char *scale = "BKMGTPE";
 	const char *p = *pos;
-	const char *e;
-	int r;
-	bool fill = false;
+	const char *p1;
 
+	/* default: !humanize .8Ki:8 */
+	humanize->width = 8;
+	humanize->minscale = 2;
+	humanize->flags = HN_DECIMAL|HN_IEC_PREFIXES;
+	humanize->flags = HN_NOSPACE;
+
+	/* humanize[ ][.][i][width][minscale[maxscale]] */
+
+	if (*p == ' ') {
+		humanize->flags &= ~HN_NOSPACE;
+		p++;
+	}
+	if (*p == '.') {
+		humanize->flags |= HN_DECIMAL;
+		p++;
+	}
+	if ((*p >= '0' && *p <= '9')) {
+		unsigned width = 0;
+		int r = parse_u(&p, &width);
+		if (r < 0)
+			return r;
+		humanize->width = width <= 12 ? width : 12;
+	}
+	if ((p1 = strchr(scale, *p))) {
+		humanize->minscale = p1-scale+1;
+		p++;
+		if ((p1 = strchr(scale, *p))) {
+			humanize->maxscale = p1-scale+1;
+			p++;
+		}
+	}
+	if (*p == 'i') {
+		humanize->flags |= HN_IEC_PREFIXES;
+		p++;
+	}
+	*pos = p;
+	return 0;
+}
+
+static int
+parse_conversion(const char **pos, struct conversion *conversion)
+{
+	if (**pos != '!')
+		return 0;
+	if (strncmp(*pos + 1, "strmode", sizeof("strmode") - 1) == 0) {
+		*pos += sizeof("strmode");
+		conversion->type = STRMODE;
+		return 0;
+	} else if (strncmp(*pos + 1, "humanize", sizeof("humanize") - 1) == 0) {
+		conversion->type = HUMANIZE;
+		*pos += sizeof("humanize");
+		return parse_humanize(pos, &conversion->humanize);
+	}
+	return -EINVAL;
+}
+
+static int
+parse_spec(const char **pos, struct xbps_fmt_spec *spec)
+{
+	bool fill = false;
+	const char *p = *pos;
+	int r;
+
+	/* defaults */
 	spec->conversion = NULL;
 	spec->fill = ' ';
 	spec->align = '>';
@@ -242,12 +305,85 @@ parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec, struct c
 	spec->precision = 0;
 	spec->type = '\0';
 
+	/* format_spec ::= [[fill]align][sign][zero][width][.precision][type] */
+
+	if (*p != ':')
+		return 0;
+	p++;
+
+	/* fill ::= .  */
+	if (*p && strchr("<>=", p[1])) {
+		fill = true;
+		spec->fill = *p;
+		spec->align = p[1];
+		p += 2;
+	}
+
+	/* align ::= [<>=] */
+	if (strchr("<>=", *p)) {
+		spec->align = *p;
+		p += 1;
+	}
+
+	/* sign ::= [+-] */
+	if (strchr("+- ", *p)) {
+		spec->sign = *p;
+		p += 1;
+	}
+
+	/* zero ::= [0] */
+	if (*p == '0') {
+		if (!fill) {
+			spec->fill = '0';
+			spec->align = '=';
+		}
+		p++;
+	}
+
+	/* width ::= [[0-9]+] */
+	if ((*p >= '0' && *p <= '9')) {
+		r = parse_u(&p, &spec->width);
+		if (r < 0)
+			return r;
+	}
+
+	/* precision ::= ['.' [0-9]+] */
+	if (*p == '.') {
+		p++;
+		r = parse_u(&p, &spec->precision);
+		if (r < 0)
+			return r;
+	}
+
+	/* type ::=  [[a-zA-Z]] */
+	if ((*p >= 'a' && *p <= 'z') ||
+	    (*p >= 'A' && *p <= 'Z'))
+		spec->type = *p++;
+
+	*pos = p;
+	return 0;
+}
+
+static int
+parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec, struct conversion *conversion)
+{
+	const char *p = *pos;
+	const char *e;
+	int r;
+
 	if (*p != '{')
 		return -EINVAL;
 	p++;
 
-	e = strpbrk(p, "!:}");
-	if (!e)
+	/* var ::= '{' name [conversion][format_spec] '}' */
+
+	/* name ::= [a-zA-Z0-9_-]+ */
+	for (e = p; (*e >= 'a' && *e <= 'z') ||
+	            (*e >= 'A' && *e <= 'Z') ||
+	            (*e >= '0' && *e <= '0') ||
+	            (*e == '_' || *e == '-'); e++)
+		;
+	if (e == p)
 		return -EINVAL;
 
 	strbuf_reset(buf);
@@ -256,92 +392,16 @@ parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec, struct c
 		return r;
 	p = e;
 
-	if (*p == '!') {
-		if (strncmp(p+1, "humanize", sizeof("humanize") - 1) == 0) {
-			/* humanize[ ][.][i][width][minscale[maxscale]] */
-			const char *scale = "BKMGTPE";
-			const char *p1;
-			p += sizeof("humanize");
-			conversion->type = HUMANIZE;
-			if (*p != ':' && *p != '}') {
-				conversion->humanize.flags = HN_NOSPACE;
-				if (*p == ' ') {
-					conversion->humanize.flags &= ~HN_NOSPACE;
-					p++;
-				}
-				if (*p == '.') {
-					conversion->humanize.flags |= HN_DECIMAL;
-					p++;
-				}
-				if ((*p >= '0' && *p <= '9')) {
-					unsigned width = 0;
-					r = parse_u(&p, &width);
-					if (r < 0)
-						return r;
-					conversion->humanize.width = width <= 12 ? width : 12;
-				}
-				if ((p1 = strchr(scale, *p))) {
-					conversion->humanize.minscale = p1-scale+1;
-					p++;
-					if ((p1 = strchr(scale, *p))) {
-						conversion->humanize.maxscale = p1-scale+1;
-						p++;
-					}
-				}
-				if (*p == 'i') {
-					conversion->humanize.flags |= HN_IEC_PREFIXES;
-					p++;
-				}
-			} else {
-				/* default: !humanize .8Ki:8 */
-				conversion->humanize.width = 8;
-				conversion->humanize.minscale = 2;
-				conversion->humanize.flags = HN_DECIMAL|HN_IEC_PREFIXES;
-			}
-		} else if (strncmp(p+1, "strmode", sizeof("strmode") - 1) == 0) {
-			p += sizeof("strmode");
-			conversion->type = STRMODE;
-		} else {
-			return -EINVAL;
-		}
-	}
+	/* conversion ::= ['!' ...] */
+	r = parse_conversion(&p, conversion);
+	if (r < 0)
+		return r;
 
-	if (*p == ':') {
-		p++;
-		if (*p && strchr("<>=", p[1])) {
-			fill = true;
-			spec->fill = *p;
-			spec->align = p[1];
-			p += 2;
-		} else if (strchr("<>=", *p)) {
-			spec->align = *p;
-			p += 1;
-		}
-		if (strchr("+- ", *p)) {
-			spec->sign = *p;
-			p += 1;
-		}
-		if ((*p >= '0' && *p <= '9')) {
-			if (*p == '0') {
-				if (!fill) {
-					spec->fill = '0';
-					spec->align = '=';
-				}
-				p++;
-			}
-			r = parse_u(&p, &spec->width);
-			if (r < 0)
-				return r;
-		}
-		if (*p == '.') {
-			p++;
-			r = parse_u(&p, &spec->precision);
-			if (r < 0)
-				return r;
-		}
-		if (*p != '}')
-			spec->type = *p++;
-	}
+	/* format_spec ::= [':' ...] */
+	r = parse_spec(&p, spec);
+	if (r < 0)
+		return r;
+
 	if (*p != '}')
 		return -EINVAL;
 	*pos = p+1;
