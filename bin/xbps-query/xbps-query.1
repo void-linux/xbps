@@ -89,48 +89,10 @@ If the first character is not '/' then it's a relative path of
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
 .It Fl F, Fl -format Ar format
-Format for list output.
-.Bd -literal
-<substitution> ::= "{" variable ["!" conversion] [":" format] "}"
-<variable>     ::= [a-zA-Z90-9_-]
-
-<conversion>   ::= humanize | strmode
-
--- Convert inode status information into a symbolic string
-<strmode> ::= "strmode"
-
--- Format a number into a human readable form, the default is:`humanize .8Ki`:
-<humanize>     ::= "humanize" [space] [decimal] [width] [scale] [i]
-  <space>      ::= " "          -- Put a space between number and the suffix.
-  <decimal>    ::= "."          -- If the final result is less than 10, display
-                                   it using one digit.
-  <width>      ::= [0-9]+       -- Width of the output.
-  <scale>      ::= multiplier   -- Minimum scale multiplier and optionally
-                   [multiplier] -- Maxium scale multiplier.
-  <multiplier> ::= "B"
-                 | "K" -- kilo
-                 | "M" -- mega
-                 | "G" -- giga
-                 | "T" -- tera
-                 | "P" -- peta
-                 | "E" -- exa
-  <i>          ::= "i" -- Divide number with 1000 instead of 1024.
-
-<format>      ::= [[fill] align] [sign] [width] ["." precision] [type]
-  <fill>      ::= <any char> -- The character to use when aligning the output.
-  <align>     ::= "<"        -- Left align.
-                | ">"        -- Right align.
-                | "="        -- Left align with zero paddings after the sign.
-  <sign>      ::= "+"        -- Add sign to positive and negative numbers.
-                | "-"        -- Add sign to negative numbers.
-  <width>     ::= [0-9]+     -- The alignment width.
-  <precision> ::= [0-9]+     -- Percision for numbers.
-  <type>      ::= "d"        -- Decimal number.
-                | "o"        -- Octal number.
-                | "u"        -- Unsigned number.
-                | "x"        -- Hexadecimal with lowercase letters.
-                | "X"        -- Hexadecimal with uppercase letters.
-.Ed
+Format string for output formatting.
+See
+.Sx FORMAT STRINGS
+for syntax.
 .It Fl h, Fl -help
 Show the help message.
 .It Fl i, Fl -ignore-conf-repos
@@ -320,6 +282,70 @@ expression wins.
 This expects an absolute path.
 This mode only works with repositories.
 .El
+.Sh FORMAT STRINGS
+Variables are package properties if not otherwise documented.
+See
+.Sx PROPERTIES
+section for a list of available properties.
+.Pp
+As example a format string like:
+.Bd -offset indent -literal
+{pkgname:<30} {installed_size!humanize :>10}\\n
+.Ed
+.Pp
+Would produce a list formatted like:
+.Bd -offset indent -literal
+libxbps                            304 KB
+xbps                               484 KB
+.Ed
+.Pp
+Format strings are parsed by the following EBNF:
+.Bd -literal
+<grammar>      ::= (text | escape | substitution)*
+<text>         ::= [^\\{}]+        -- literal text chunk
+<escape>       ::= "\\" [abfnrtv0] -- POSIX-like espace sequence
+                 | "\\{" | "\\}"    -- escaped "{" and "}"
+
+<substitution> ::= "{" variable ["!" conversion] [":" format] "}"
+<variable>     ::= [a-zA-Z0-9_-]
+
+<conversion>   ::= humanize | strmode
+
+-- Convert inode status information into a symbolic string
+<strmode> ::= "strmode"
+
+-- Format a number into a human readable form, the default is:`humanize .8Ki`:
+<humanize>     ::= "humanize" [space] [decimal] [width] [scale] [i]
+  <space>      ::= " "          -- Put a space between number and the suffix.
+  <decimal>    ::= "."          -- If the final result is less than 10, display
+                                   it using one digit.
+  <width>      ::= [0-9]+       -- Width of the output.
+  <scale>      ::= multiplier   -- Minimum scale multiplier and optionally
+                   [multiplier] -- Maxium scale multiplier.
+  <multiplier> ::= "B"
+                 | "K" -- kilo
+                 | "M" -- mega
+                 | "G" -- giga
+                 | "T" -- tera
+                 | "P" -- peta
+                 | "E" -- exa
+  <i>          ::= "i" -- Divide number with 1000 instead of 1024.
+
+<format>      ::= [[fill] align] [sign] [width] ["." precision] [type]
+  <fill>      ::= <any char> -- The character to use when aligning the output.
+  <align>     ::= "<"        -- Left align.
+                | ">"        -- Right align.
+                | "="        -- Left align with zero paddings after the sign.
+  <sign>      ::= "+"        -- Add sign to positive and negative numbers.
+                | "-"        -- Add sign to negative numbers.
+  <width>     ::= [0-9]+     -- The alignment width.
+  <precision> ::= [0-9]+     -- Percision for numbers.
+  <type>      ::= "d"        -- Decimal number.
+                | "o"        -- Octal number.
+                | "u"        -- Unsigned number.
+                | "x"        -- Hexadecimal with lowercase letters.
+                | "X"        -- Hexadecimal with uppercase letters.
+.Ed
 .Sh PROPERTIES
 This is the list of a packages properties.
 Note that not all properties are available for all packages.
