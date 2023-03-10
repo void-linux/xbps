@@ -322,14 +322,14 @@ Format strings are parsed by the following EBNF:
   <width>      ::= [0-9]+       -- Width of the output.
   <scale>      ::= multiplier   -- Minimum scale multiplier and optionally
                    [multiplier] -- Maxium scale multiplier.
-  <multiplier> ::= "B"
+  <multiplier> ::= "B" -- byte
                  | "K" -- kilo
                  | "M" -- mega
                  | "G" -- giga
                  | "T" -- tera
                  | "P" -- peta
                  | "E" -- exa
-  <i>          ::= "i" -- Divide number with 1000 instead of 1024.
+  <i>          ::= "i" -- Use IEE/IEC (and now also SI) power of two prefixes.
 
 <format>      ::= [[fill] align] [sign] [width] ["." precision] [type]
   <fill>      ::= <any char> -- The character to use when aligning the output.
