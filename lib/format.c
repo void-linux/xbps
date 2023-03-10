@@ -140,21 +140,8 @@ nexttok(const char **pos, struct strbuf *buf)
 	for (p = *pos; *p;) {
 		switch (*p) {
 		case '}':
-			if (p[1] != '}')
-				return -EINVAL;
-			r = strbuf_putc(buf, '}');
-			if (r < 0)
-				return r;
-			p += 2;
-			break;
+			return -EINVAL;
 		case '{':
-			if (p[1] == '{') {
-				r = strbuf_putc(buf, '{');
-				if (r < 0)
-					return r;
-				p += 2;
-				continue;
-			}
 			*pos = p;
 			if (buf->len > 0)
 				return TTEXT;
@@ -172,6 +159,12 @@ nexttok(const char **pos, struct strbuf *buf)
 				break;
 			case '0':
 				r = strbuf_putc(buf, '\0');
+				break;
+			case '{':
+				r = strbuf_putc(buf, '{');
+				break;
+			case '}':
+				r = strbuf_putc(buf, '}');
 				break;
 			default:
 				r = strbuf_putc(buf, '\\');
