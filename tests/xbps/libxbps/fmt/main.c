@@ -138,10 +138,10 @@ ATF_TC_BODY(xbps_fmt_dictionary, tc)
 	ATF_REQUIRE(dict = xbps_dictionary_create());
 	ATF_REQUIRE(xbps_dictionary_set_cstring_nocopy(dict, "string", "s"));
 	ATF_REQUIRE(xbps_dictionary_set_int64(dict, "number", 1));
-	ATF_REQUIRE(fmt = xbps_fmt_parse(">{string} {number} {number!humanize}<"));
+	ATF_REQUIRE(fmt = xbps_fmt_parse(">{string} {number} {number!humanize} {foo?\"bar\"} {n?1000!humanize}<"));
 	ATF_REQUIRE(xbps_fmt_dictionary(fmt, dict, fp) == 0);
 	ATF_REQUIRE(fflush(fp) == 0);
-	ATF_CHECK_STREQ(buf, ">s 1 0KB<");
+	ATF_CHECK_STREQ(buf, ">s 1 0KB bar 1KB<");
 	ATF_REQUIRE(fclose(fp) == 0);
 	free(buf);
 	xbps_object_release(dict);

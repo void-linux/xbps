@@ -301,13 +301,16 @@ xbps                               484 KB
 .Pp
 Format strings are parsed by the following EBNF:
 .Bd -literal
-<grammar>      ::= (text | escape | substitution)*
-<text>         ::= [^\\{}]+        -- literal text chunk
-<escape>       ::= "\\" [abfnrtv0] -- POSIX-like espace sequence
-                 | "\\{" | "\\}"    -- escaped "{" and "}"
+<grammar>      ::= (prefix | "\\" (escape|[{}]) | substitution)*
+<prefix>       ::= [^\\{}]+   -- Literal text chunk.
+<escape>       ::= [abfnrtv0] -- POSIX-like espace character.
 
-<substitution> ::= "{" variable ["!" conversion] [":" format] "}"
+<substitution> ::= "{" variable ["?" default] ["!" conversion] [":" format] "}"
 <variable>     ::= [a-zA-Z0-9_-]
+
+<default>      ::= ([-]?[0-9]+)                            -- default number.
+                 | "true" | "false"                        -- default boolean.
+                 | ('"' (("\\" (escape|'"')) | [^"])* '"')  -- default string.
 
 <conversion>   ::= humanize | strmode
 
@@ -329,7 +332,7 @@ Format strings are parsed by the following EBNF:
                  | "T" -- tera
                  | "P" -- peta
                  | "E" -- exa
-  <i>          ::= "i" -- Use IEE/IEC (and now also SI) power of two prefixes.
+  <i>          ::= "i" -- Use IEEE/IEC (and now also SI) power of two prefixes.
 
 <format>      ::= [[fill] align] [sign] [width] ["." precision] [type]
   <fill>      ::= <any char> -- The character to use when aligning the output.
