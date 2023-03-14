@@ -264,7 +264,7 @@ parse_default(const char **pos, struct xbps_fmt *fmt, struct strbuf *buf,
 	*pos = p;
 	def->type = XBPS_FMT_DEF_STR;
 	if (buf == &buf2) {
-		def->val.str = strdup(buf2.mem);
+		def->val.str = strdup(buf2.mem ? buf2.mem : "");
 		if (!def->val.str) {
 			r = -errno;
 			goto err;
