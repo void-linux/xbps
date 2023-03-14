@@ -671,9 +671,13 @@ humanize(const struct humanize *h, const struct xbps_fmt *fmt, int64_t d, FILE *
 }
 
 static int
-tostrmode(const struct xbps_fmt *fmt UNUSED, int64_t d UNUSED, FILE *fp UNUSED)
+tostrmode(const struct xbps_fmt *fmt, int64_t d, FILE *fp)
 {
-	return -ENOTSUP;
+	char buf[64] = "";
+	int len;
+	xbps_strmode(d, buf);
+	len = strlen(buf);
+	return xbps_fmt_print_string(fmt, buf, len, fp);
 }
 
 int
