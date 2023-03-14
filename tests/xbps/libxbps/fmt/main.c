@@ -35,14 +35,14 @@
 #include <atf-c.h>
 #include <xbps.h>
 
-ATF_TC(xbps_fmt_number);
+ATF_TC(xbps_fmt_print_number);
 
-ATF_TC_HEAD(xbps_fmt_number, tc)
+ATF_TC_HEAD(xbps_fmt_print_number, tc)
 {
-	atf_tc_set_md_var(tc, "descr", "Test xbps_fmt_number");
+	atf_tc_set_md_var(tc, "descr", "Test xbps_fmt_print_number");
 }
 
-ATF_TC_BODY(xbps_fmt_number, tc)
+ATF_TC_BODY(xbps_fmt_print_number, tc)
 {
 	char *buf = NULL;
 	size_t bufsz = 0;
@@ -71,9 +71,10 @@ ATF_TC_BODY(xbps_fmt_number, tc)
 	ATF_REQUIRE(fp = open_memstream(&buf, &bufsz));
 
 	for (unsigned i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+		struct xbps_fmt fmt = { .spec = &tests[i].spec };
 		memset(buf, '\0', bufsz);
 		rewind(fp);
-		xbps_fmt_number(&tests[i].spec, tests[i].d, fp);
+		xbps_fmt_print_number(&fmt, tests[i].d, fp);
 		ATF_REQUIRE(fflush(fp) == 0);
 		ATF_CHECK_STREQ(buf, tests[i].expect);
 	}
@@ -81,14 +82,14 @@ ATF_TC_BODY(xbps_fmt_number, tc)
 	free(buf);
 }
 
-ATF_TC(xbps_fmt_string);
+ATF_TC(xbps_fmt_print_string);
 
-ATF_TC_HEAD(xbps_fmt_string, tc)
+ATF_TC_HEAD(xbps_fmt_print_string, tc)
 {
-	atf_tc_set_md_var(tc, "descr", "Test xbps_fmt_string");
+	atf_tc_set_md_var(tc, "descr", "Test xbps_fmt_print_string");
 }
 
-ATF_TC_BODY(xbps_fmt_string, tc)
+ATF_TC_BODY(xbps_fmt_print_string, tc)
 {
 	char *buf = NULL;
 	size_t bufsz = 0;
@@ -108,9 +109,10 @@ ATF_TC_BODY(xbps_fmt_string, tc)
 	ATF_REQUIRE(fp = open_memstream(&buf, &bufsz));
 
 	for (unsigned i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+		struct xbps_fmt fmt = { .spec = &tests[i].spec };
 		memset(buf, '\0', bufsz);
 		rewind(fp);
-		xbps_fmt_string(&tests[i].spec, tests[i].input, tests[i].len, fp);
+		xbps_fmt_print_string(&fmt, tests[i].input, tests[i].len, fp);
 		ATF_REQUIRE(fflush(fp) == 0);
 		ATF_CHECK_STREQ(buf, tests[i].expect);
 	}
@@ -136,10 +138,10 @@ ATF_TC_BODY(xbps_fmt_dictionary, tc)
 	ATF_REQUIRE(dict = xbps_dictionary_create());
 	ATF_REQUIRE(xbps_dictionary_set_cstring_nocopy(dict, "string", "s"));
 	ATF_REQUIRE(xbps_dictionary_set_int64(dict, "number", 1));
-	ATF_REQUIRE(fmt = xbps_fmt_parse(">{string} {number}<"));
+	ATF_REQUIRE(fmt = xbps_fmt_parse(">{string} {number} {number!humanize}<"));
 	ATF_REQUIRE(xbps_fmt_dictionary(fmt, dict, fp) == 0);
 	ATF_REQUIRE(fflush(fp) == 0);
-	ATF_CHECK_STREQ(buf, ">s 1<");
+	ATF_CHECK_STREQ(buf, ">s 1 0KB<");
 	ATF_REQUIRE(fclose(fp) == 0);
 	free(buf);
 	xbps_object_release(dict);
@@ -162,9 +164,9 @@ ATF_TC_BODY(xbps_fmts_dictionary, tc)
 	ATF_REQUIRE(dict = xbps_dictionary_create());
 	ATF_REQUIRE(xbps_dictionary_set_cstring_nocopy(dict, "string", "s"));
 	ATF_REQUIRE(xbps_dictionary_set_int64(dict, "number", 1));
-	ATF_REQUIRE(xbps_fmts_dictionary(">{string} {number}<", dict, fp) == 0);
+	ATF_REQUIRE(xbps_fmts_dictionary(">{string} {number} {number!humanize}<", dict, fp) == 0);
 	ATF_REQUIRE(fflush(fp) == 0);
-	ATF_CHECK_STREQ(buf, ">s 1<");
+	ATF_CHECK_STREQ(buf, ">s 1 0KB<");
 	ATF_REQUIRE(fclose(fp) == 0);
 	free(buf);
 	xbps_object_release(dict);
@@ -172,8 +174,8 @@ ATF_TC_BODY(xbps_fmts_dictionary, tc)
 
 ATF_TP_ADD_TCS(tp)
 {
-	ATF_TP_ADD_TC(tp, xbps_fmt_number);
-	ATF_TP_ADD_TC(tp, xbps_fmt_string);
+	ATF_TP_ADD_TC(tp, xbps_fmt_print_number);
+	ATF_TP_ADD_TC(tp, xbps_fmt_print_string);
 	ATF_TP_ADD_TC(tp, xbps_fmt_dictionary);
 	ATF_TP_ADD_TC(tp, xbps_fmts_dictionary);
 	return atf_no_error();

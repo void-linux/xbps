@@ -101,35 +101,12 @@ strbuf_release(struct strbuf *sb)
 	sb->len = sb->sz = 0;
 }
 
-struct common {
-	int type;
-};
-
-struct chunk {
-	struct common common;
-	char s[];
-};
-
-struct var {
-	struct common common;
-	struct xbps_fmt_spec spec;
-	char s[];
-};
-
-struct xbps_fmt {
-	union {
-		struct common *common;
-		struct chunk *chunk;
-		struct var *var;
-	};
-};
-
-enum {
+enum tok {
 	TTEXT = 1,
 	TVAR,
 };
 
-static int
+static enum tok
 nexttok(const char **pos, struct strbuf *buf)
 {
 	const char *p;
@@ -182,7 +159,7 @@ nexttok(const char **pos, struct strbuf *buf)
 	return 0;
 }
 
-struct conversion {
+struct xbps_fmt_conv {
 	enum { HUMANIZE = 1, STRMODE } type;
 	union {
 		struct humanize {
@@ -258,43 +235,60 @@ parse_humanize(const char **pos, struct humanize *humanize)
 }
 
 static int
-parse_conversion(const char **pos, struct conversion *conversion)
+parse_conversion(const char **pos, struct xbps_fmt *fmt, struct xbps_fmt_conv *conv_storage)
 {
-	if (**pos != '!')
+	if (**pos != '!') {
+		fmt->conv = NULL;
 		return 0;
+	}
+	fmt->conv = conv_storage;
+	if (!conv_storage)
+		fmt->conv = calloc(1, sizeof(*fmt->conv));
+	if (!fmt->conv)
+		return -errno;
 	if (strncmp(*pos + 1, "strmode", sizeof("strmode") - 1) == 0) {
 		*pos += sizeof("strmode");
-		conversion->type = STRMODE;
+		fmt->conv->type = STRMODE;
 		return 0;
 	} else if (strncmp(*pos + 1, "humanize", sizeof("humanize") - 1) == 0) {
-		conversion->type = HUMANIZE;
+		fmt->conv->type = HUMANIZE;
 		*pos += sizeof("humanize");
-		return parse_humanize(pos, &conversion->humanize);
+		return parse_humanize(pos, &fmt->conv->humanize);
 	}
 	return -EINVAL;
 }
 
 static int
-parse_spec(const char **pos, struct xbps_fmt_spec *spec)
+parse_spec(const char **pos, struct xbps_fmt *fmt, struct xbps_fmt_spec *spec_storage)
 {
 	bool fill = false;
+	struct xbps_fmt_spec *spec;
 	const char *p = *pos;
 	int r;
 
+	/* format_spec ::= [[fill]align][sign][zero][width][.precision][type] */
+
+	if (*p != ':') {
+		fmt->spec = NULL;
+		return 0;
+	}
+	p++;
+
+	if (!spec_storage) {
+		spec = fmt->spec = calloc(1, sizeof(*fmt->spec));
+		if (!fmt->spec)
+			return -errno;
+	} else {
+		spec = fmt->spec = spec_storage;
+	}
+
 	/* defaults */
-	spec->conversion = NULL;
 	spec->fill = ' ';
 	spec->align = '>';
 	spec->sign = '-';
 	spec->width = 0;
 	spec->precision = 0;
 	spec->type = '\0';
-
-	/* format_spec ::= [[fill]align][sign][zero][width][.precision][type] */
-
-	if (*p != ':')
-		return 0;
-	p++;
 
 	/* fill ::= .  */
 	if (*p && strchr("<>=", p[1])) {
@@ -350,7 +344,10 @@ parse_spec(const char **pos, struct xbps_fmt_spec *spec)
 }
 
 static int
-parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec, struct conversion *conversion)
+parse(const char **pos, struct xbps_fmt *fmt,
+		struct strbuf *buf,
+		struct xbps_fmt_conv *conv_storage,
+		struct xbps_fmt_spec *spec_storage)
 {
 	const char *p = *pos;
 	const char *e;
@@ -371,19 +368,25 @@ parse(const char **pos, struct strbuf *buf, struct xbps_fmt_spec *spec, struct c
 	if (e == p)
 		return -EINVAL;
 
-	strbuf_reset(buf);
-	r = strbuf_puts(buf, p, e - p);
-	if (r < 0)
-		return r;
+	if (buf) {
+		strbuf_reset(buf);
+		r = strbuf_puts(buf, p, e - p);
+		if (r < 0)
+			return r;
+	} else {
+		fmt->var = strndup(p, e - p);
+		if (!fmt->var)
+			return -errno;
+	}
 	p = e;
 
 	/* conversion ::= ['!' ...] */
-	r = parse_conversion(&p, conversion);
+	r = parse_conversion(&p, fmt, conv_storage);
 	if (r < 0)
 		return r;
 
 	/* format_spec ::= [':' ...] */
-	r = parse_spec(&p, spec);
+	r = parse_spec(&p, fmt, spec_storage);
 	if (r < 0)
 		return r;
 
@@ -403,45 +406,31 @@ xbps_fmt_parse(const char *format)
 	int r = 1;
 
 	for (;;) {
-		struct xbps_fmt_spec spec = {0};
-		struct conversion conversion = {0};
 		struct xbps_fmt *tmp;
-		r = nexttok(&pos, &buf);
-		if (r < 0)
-			goto err;
+		enum tok t;
+
+		t = nexttok(&pos, &buf);
+
 		tmp = realloc(fmt, sizeof(*fmt)*(n + 1));
 		if (!tmp)
 			goto err_errno;
 		fmt = tmp;
-		switch (r) {
-		case 0:
-			fmt[n].common = NULL;
+		memset(&fmt[n], '\0', sizeof(struct xbps_fmt));
+
+		if (t == 0)
 			goto out;
-		case TTEXT:
-			fmt[n].chunk = calloc(1, sizeof(struct chunk)+buf.len+1);
-			fmt[n].common->type = TTEXT;
-			if (!fmt[n].chunk)
+		if (t == TTEXT) {
+			fmt[n].prefix = strndup(buf.mem, buf.len);
+			if (!fmt[n].prefix)
 				goto err_errno;
-			memcpy(fmt[n].chunk->s, buf.mem, buf.len+1);
-			break;
-		case TVAR:
-			r = parse(&pos, &buf, &spec, &conversion);
+			t = nexttok(&pos, &buf);
+		}
+		if (t == TVAR) {
+			r = parse(&pos, &fmt[n], NULL, NULL, NULL);
 			if (r < 0)
 				goto err;
-			fmt[n].var = calloc(1, sizeof(struct var)+buf.len+1);
-			if (!fmt[n].var)
-				goto err_errno;
-			fmt[n].common->type = TVAR;
-			fmt[n].var->spec = spec;
-			memcpy(fmt[n].var->s, buf.mem, buf.len+1);
-			if (conversion.type) {
-				fmt[n].var->spec.conversion = calloc(1, sizeof(struct conversion));
-				if (!fmt[n].var->spec.conversion)
-					goto err_errno;
-				*fmt[n].var->spec.conversion = conversion;
-			}
-			break;
 		}
+		fprintf(stderr, "fmt: prefix='%s' var='%s'\n", fmt[n].prefix, fmt[n].var);
 		n++;
 	}
 out:
@@ -461,14 +450,12 @@ xbps_fmt_free(struct xbps_fmt *fmt)
 {
 	if (!fmt)
 		return;
-	for (struct xbps_fmt *f = fmt; f->common; f++)
-		switch (f->common->type) {
-		case TTEXT: free(f->chunk); break;
-		case TVAR:
-			free(f->var->spec.conversion);
-			free(f->var);
-			break;
-		}
+	for (struct xbps_fmt *f = fmt; f->prefix || f->var; f++) {
+		free(f->prefix);
+		free(f->var);
+		free(f->spec);
+		free(f->conv);
+	}
 	free(fmt);
 }
 
@@ -480,23 +467,25 @@ xbps_fmts(const char *format, xbps_fmt_cb *cb, void *data, FILE *fp)
 	int r = 0;
 
 	for (;;) {
-		struct xbps_fmt_spec spec = {0};
-		struct conversion conversion = {0};
-		r = nexttok(&pos, &buf);
-		if (r <= 0)
+		enum tok t;
+
+		t = nexttok(&pos, &buf);
+		if (t == 0)
 			goto out;
-		switch (r) {
-		case TTEXT:
+		if (t == TTEXT) {
 			fprintf(fp, "%s", buf.mem);
-			break;
-		case TVAR:
-			r = parse(&pos, &buf, &spec, &conversion);
+			t = nexttok(&pos, &buf);
+		}
+		if (t == TVAR) {
+			struct xbps_fmt_spec spec = {0};
+			struct xbps_fmt_conv conv = {0};
+			struct xbps_fmt fmt = { .var = buf.mem };
+			r = parse(&pos, &fmt, &buf, &conv, &spec);
 			if (r < 0)
 				goto out;
-			r = cb(fp, &spec, buf.mem, data);
+			r = cb(fp, &fmt, data);
 			if (r != 0)
 				goto out;
-			break;
 		}
 	}
 out:
@@ -508,16 +497,13 @@ int
 xbps_fmt(const struct xbps_fmt *fmt, xbps_fmt_cb *cb, void *data, FILE *fp)
 {
 	int r;
-	for (const struct xbps_fmt *f = fmt; f->common; f++) {
-		switch (f->common->type) {
-		case TTEXT:
-			fprintf(fp, "%s", f->chunk->s);
-			break;
-		case TVAR:
-			r = cb(fp, &f->var->spec, f->var->s, data);
+	for (const struct xbps_fmt *f = fmt; f->prefix || f->var; f++) {
+		if (f->prefix)
+			fprintf(fp, "%s", f->prefix);
+		if (f->var) {
+			r = cb(fp, f, data);
 			if (r != 0)
 				return r;
-			break;
 		}
 	}
 	return 0;
@@ -528,16 +514,17 @@ struct fmt_dict_cb {
 };
 
 int
-xbps_fmt_string(const struct xbps_fmt_spec *spec, const char *str, size_t len, FILE *fp)
+xbps_fmt_print_string(const struct xbps_fmt *fmt, const char *str, size_t len, FILE *fp)
 {
+	const struct xbps_fmt_spec *spec = fmt->spec;
 	if (len == 0)
 		len = strlen(str);
-	if (spec->align == '>' && spec->width > (unsigned)len) {
+	if (spec && spec->align == '>' && spec->width > (unsigned)len) {
 		for (unsigned i = 0; i < spec->width - len; i++)
 			fputc(spec->fill, fp);
 	}
 	fprintf(fp, "%.*s", (int)len, str);
-	if (spec->align == '<' && spec->width > (unsigned)len) {
+	if (spec && spec->align == '<' && spec->width > (unsigned)len) {
 		for (unsigned i = 0; i < spec->width - len; i++)
 			fputc(spec->fill, fp);
 	}
@@ -545,10 +532,9 @@ xbps_fmt_string(const struct xbps_fmt_spec *spec, const char *str, size_t len, F
 }
 
 static int
-humanize(const struct xbps_fmt_spec *spec, int64_t d, FILE *fp)
+humanize(const struct humanize *h, const struct xbps_fmt *fmt, int64_t d, FILE *fp)
 {
 	char buf[64];
-	const struct humanize *h = &spec->conversion->humanize;
 	int scale = 0;
 	int width = h->width ? h->width : 8;
 	int len;
@@ -567,41 +553,45 @@ humanize(const struct xbps_fmt_spec *spec, int64_t d, FILE *fp)
 	len = humanize_number(buf, width, d, "B", scale, h->flags);
 	if (len == -1)
 		return -EINVAL;
-	return xbps_fmt_string(spec, buf, len, fp);
+	return xbps_fmt_print_string(fmt, buf, len, fp);
 }
 
 static int
-tostrmode(const struct xbps_fmt_spec *spec UNUSED, int64_t d UNUSED, FILE *fp UNUSED)
+tostrmode(const struct xbps_fmt *fmt UNUSED, int64_t d UNUSED, FILE *fp UNUSED)
 {
 	return -ENOTSUP;
 }
 
 int
-xbps_fmt_number(const struct xbps_fmt_spec *spec, int64_t d, FILE *fp)
+xbps_fmt_print_number(const struct xbps_fmt *fmt, int64_t d, FILE *fp)
 {
 	char buf[64];
-	struct xbps_fmt_spec strspec = *spec;
+	struct xbps_fmt_spec strspec = {0};
+	struct xbps_fmt strfmt = { .spec = &strspec };
+	struct xbps_fmt_spec *spec = fmt->spec;
 	const char *p = buf;
 	int len;
 
-	if (spec->conversion) {
-		switch (spec->conversion->type) {
-		case HUMANIZE: return humanize(spec, d, fp);
-		case STRMODE:  return tostrmode(spec, d, fp);
+	if (fmt->conv) {
+		switch (fmt->conv->type) {
+		case HUMANIZE: return humanize(&fmt->conv->humanize, fmt, d, fp);
+		case STRMODE:  return tostrmode(fmt, d, fp);
 		}
 	}
+	if (spec) {
+		strspec = *spec;
+		if (spec->align == '=')
+			strspec.align = '>';
+	}
 
-	if (strspec.align == '=')
-		strspec.align = '>';
-
-	switch (spec->type) {
+	switch (spec ? spec->type : '\0') {
 	default: /* fallthrough */
 	case 'd':
-		if (spec->sign == '+')
+		if (spec && spec->sign == '+')
 			len = snprintf(buf, sizeof(buf), "%+" PRId64, d);
 		else
 			len = snprintf(buf, sizeof(buf), "%" PRId64, d);
-		if (spec->align == '=' && (buf[0] == '+' || buf[0] == '-')) {
+		if (spec && spec->align == '=' && (buf[0] == '+' || buf[0] == '-')) {
 			len--, p++;
 			strspec.width -= 1;
 			fputc(buf[0], fp);
@@ -612,25 +602,34 @@ xbps_fmt_number(const struct xbps_fmt_spec *spec, int64_t d, FILE *fp)
 	case 'x': len = snprintf(buf, sizeof(buf), "%" PRIx64, d); break;
 	case 'X': len = snprintf(buf, sizeof(buf), "%" PRIX64, d); break;
 	}
-	return xbps_fmt_string(&strspec, p, len, fp);
+	return xbps_fmt_print_string(&strfmt, p, len, fp);
 }
 
-static int
-fmt_dict_cb(FILE *fp, const struct xbps_fmt_spec *spec, const char *var, void *data)
+int
+xbps_fmt_print_object(const struct xbps_fmt *fmt, xbps_object_t obj, FILE *fp)
 {
-	struct fmt_dict_cb *ctx = data;
-	xbps_object_t val = xbps_dictionary_get(ctx->dict, var);
-
-	switch (xbps_object_type(val)) {
-	case XBPS_TYPE_STRING:
-		return xbps_fmt_string(spec, xbps_string_cstring_nocopy(val),
-		    xbps_string_size(val), fp);
+	switch (xbps_object_type(obj)) {
+	case XBPS_TYPE_BOOL:
+		return xbps_fmt_print_string(fmt, xbps_bool_true(obj) ? "true" : "false", 0, fp);
 	case XBPS_TYPE_NUMBER:
-		return xbps_fmt_number(spec, xbps_number_integer_value(val), fp);
+		return xbps_fmt_print_number(fmt, xbps_number_integer_value(obj), fp);
+	case XBPS_TYPE_STRING:
+		return xbps_fmt_print_string(fmt, xbps_string_cstring_nocopy(obj),
+		    xbps_string_size(obj), fp);
+	case XBPS_TYPE_UNKNOWN:
+		return xbps_fmt_print_string(fmt, "(null)", 0, fp);
 	default:
 		break;
 	}
 	return 0;
+}
+
+static int
+fmt_dict_cb(FILE *fp, const struct xbps_fmt *fmt, void *data)
+{
+	struct fmt_dict_cb *ctx = data;
+	xbps_object_t obj = xbps_dictionary_get(ctx->dict, fmt->var);
+	return xbps_fmt_print_object(fmt, obj, fp);
 }
 
 int
