@@ -2370,7 +2370,7 @@ xbps_plist_dictionary_from_file(const char *path);
 
 /**
  * @struct xbps_fmt xbps.h "xbps.h"
- * @brief Structure of parsed format string.
+ * @brief Structure of parsed format string variable.
  */
 struct xbps_fmt {
 	/**
@@ -2385,6 +2385,11 @@ struct xbps_fmt {
 	 */
 	char *var;
 	/**
+	 * @var def
+	 * @brief Default value.
+	 */
+	struct xbps_fmt_def *def;
+	/**
 	 * @var conv
 	 * @brief Format conversion.
 	 */
@@ -2397,7 +2402,24 @@ struct xbps_fmt {
 };
 
 /**
- * @struct xbps_fmt xbps.h "xbps.h"
+ * @struct xbps_fmt_def xbps.h "xbps.h"
+ * @brief Structure of parsed format specifier.
+ */
+struct xbps_fmt_def {
+	enum {
+		XBPS_FMT_DEF_STR = 1,
+		XBPS_FMT_DEF_NUM,
+		XBPS_FMT_DEF_BOOL,
+	} type;
+	union {
+		char *str;
+		int64_t num;
+		bool boolean;
+	} val;
+};
+
+/**
+ * @struct xbps_fmt_spec xbps.h "xbps.h"
  * @brief Structure of parsed format specifier.
  */
 struct xbps_fmt_spec {
