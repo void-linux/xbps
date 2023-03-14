@@ -133,17 +133,12 @@ nexttok(const char **pos, struct strbuf *buf)
 			case 'r':  r = strbuf_putc(buf, '\r'); break;
 			case 't':  r = strbuf_putc(buf, '\t'); break;
 			case '0':  r = strbuf_putc(buf, '\0'); break;
-			case '{':  r = strbuf_putc(buf, '{');  break;
-			case '}':  r = strbuf_putc(buf, '}');  break;
-			default:
-				r = strbuf_putc(buf, '\\');
-				if (r < 0)
-					break;
-				r = strbuf_putc(buf, *p);
+			default:   r = *p ? strbuf_putc(buf, *p) : 0;
 			}
 			if (r < 0)
 				return r;
-			p++;
+			if (*p)
+				p++;
 			break;
 		default:
 			r = strbuf_putc(buf, *p++);
@@ -241,9 +236,8 @@ parse_default(const char **pos, struct xbps_fmt *fmt, struct strbuf *buf,
 			return r;
 		str = buf->mem + buf->len;
 	}
-	for (; *p && *p != '"'; p++) {
-		switch (*p) {
-		case '\\':
+	for (; *p && *p != '"';) {
+		if (*p == '\\') {
 			switch (*++p) {
 			case '\\': r = strbuf_putc(buf, '\\'); break;
 			case 'a':  r = strbuf_putc(buf, '\a'); break;
@@ -253,15 +247,15 @@ parse_default(const char **pos, struct xbps_fmt *fmt, struct strbuf *buf,
 			case 'r':  r = strbuf_putc(buf, '\r'); break;
 			case 't':  r = strbuf_putc(buf, '\t'); break;
 			case '0':  r = strbuf_putc(buf, '\0'); break;
-			case '"':  r = strbuf_putc(buf, '"');  break;
-			default:   r = -EINVAL;
+			default:   r = *p ? strbuf_putc(buf, *p) : 0;
 			}
-			break;
-		default:
+		} else {
 			r = strbuf_putc(buf, *p);
 		}
 		if (r < 0)
 			goto err;
+		if (*p)
+			p++;
 	}
 	if (*p++ != '"') {
 		r = -EINVAL;
