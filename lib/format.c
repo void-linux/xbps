@@ -478,6 +478,7 @@ parse(const char **pos, struct xbps_fmt *fmt,
 		r = strbuf_puts(buf, p, e - p);
 		if (r < 0)
 			return r;
+		fmt->var = buf->mem;
 	} else {
 		fmt->var = strndup(p, e - p);
 		if (!fmt->var)
