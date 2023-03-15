@@ -305,13 +305,13 @@ Format strings are parsed by the following EBNF:
 .Bd -literal
 <grammar>      ::= (prefix | "\\" (escape|[{}]) | substitution)*
 <prefix>       ::= [^\\{}]+   -- Literal text chunk.
-<escape>       ::= [abfnrtv0] -- POSIX-like espace character.
+<escape>       ::= [abefnrtv0] -- POSIX-like escape character.
 
 <substitution> ::= "{" variable ["?" default] ["!" conversion] [":" format] "}"
 <variable>     ::= [a-zA-Z0-9_-]
 
-<default>      ::= ([-]?[0-9]+)                            -- default number.
-                 | "true" | "false"                        -- default boolean.
+<default>      ::= ([-]?[0-9]+)                             -- default number.
+                 | "true" | "false"                         -- default boolean.
                  | ('"' (("\\" (escape|'"')) | [^"])* '"')  -- default string.
 
 <conversion>   ::= humanize | strmode | json
@@ -326,7 +326,7 @@ Format strings are parsed by the following EBNF:
                                    it using one digit.
   <width>      ::= [0-9]+       -- Width of the output.
   <scale>      ::= multiplier   -- Minimum scale multiplier and optionally
-                   [multiplier] -- Maxium scale multiplier.
+                   [multiplier] -- Maximum scale multiplier.
   <multiplier> ::= "B" -- byte
                  | "K" -- kilo
                  | "M" -- mega
@@ -347,7 +347,7 @@ Format strings are parsed by the following EBNF:
   <sign>      ::= "+"        -- Add sign to positive and negative numbers.
                 | "-"        -- Add sign to negative numbers.
   <width>     ::= [0-9]+     -- The alignment width.
-  <precision> ::= [0-9]+     -- Percision for numbers.
+  <precision> ::= [0-9]+     -- Precision for numbers.
   <type>      ::= "d"        -- Decimal number.
                 | "o"        -- Octal number.
                 | "u"        -- Unsigned number.
