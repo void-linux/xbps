@@ -128,6 +128,7 @@ nexttok(const char **pos, struct strbuf *buf)
 			case '\\': r = strbuf_putc(buf, '\\'); break;
 			case 'a':  r = strbuf_putc(buf, '\a'); break;
 			case 'b':  r = strbuf_putc(buf, '\b'); break;
+			case 'e':  r = strbuf_putc(buf, '\e'); break;
 			case 'f':  r = strbuf_putc(buf, '\f'); break;
 			case 'n':  r = strbuf_putc(buf, '\n'); break;
 			case 'r':  r = strbuf_putc(buf, '\r'); break;
@@ -540,7 +541,6 @@ xbps_fmt_parse(const char *format)
 			if (r < 0)
 				goto err;
 		}
-		fprintf(stderr, "fmt: prefix='%s' var='%s'\n", fmt[n].prefix, fmt[n].var);
 		n++;
 	}
 out:
