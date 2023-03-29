@@ -46,6 +46,7 @@ usage(void)
 	    " -C --config <dir>                    Path to confdir (xbps.d)\n"
 	    " -d --debug                           Debug mode shown to stderr\n"
 	    " -r --rootdir <dir>                   Full path to rootdir\n"
+	    " -v --verbose                         Verbose messages\n"
 	    " -V --version                         Show XBPS verison\n"
 	    "\n"
 	    "MODE\n"
@@ -96,11 +97,12 @@ main(int argc, char **argv)
 		{ "config", required_argument, NULL, 'C' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "rootdir", required_argument, NULL, 'r' },
+		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
 
-	while ((c = getopt_long(argc, argv, "C:dr:V", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "C:dr:vV", longopts, NULL)) != -1) {
 		switch (c) {
 		case 'C':
 			confdir = optarg;
@@ -111,6 +113,9 @@ main(int argc, char **argv)
 			break;
 		case 'd':
 			flags |= XBPS_FLAG_DEBUG;
+			break;
+		case 'v':
+			flags |= XBPS_FLAG_VERBOSE;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -318,14 +323,29 @@ main(int argc, char **argv)
 		/* Matches a pkg with a pattern */
 		if (argc != 3)
 			usage();
-
-		exit(xbps_pkgpattern_match(argv[1], argv[2]));
+		rv = xbps_pkgpattern_match(argv[1], argv[2]);
+		if (flags & XBPS_FLAG_VERBOSE) {
+			if (rv >= 0)
+				fprintf(stderr, "%s %s %s\n",
+					argv[1],
+					(rv == 1) ? "matches" : "does not match",
+					argv[2]);
+			else
+				xbps_error_printf("%s: not a pattern\n", argv[2]);
+		}
+		exit(rv);
 	} else if (strcmp(argv[0], "cmpver") == 0) {
 		/* Compare two version strings, installed vs required */
 		if (argc != 3)
 			usage();
 
-		exit(xbps_cmpver(argv[1], argv[2]));
+		rv = xbps_cmpver(argv[1], argv[2]);
+		if (flags & XBPS_FLAG_VERBOSE)
+			fprintf(stderr, "%s %s %s\n",
+				argv[1],
+				(rv == 1) ? ">" : ((rv == 0) ? "=" : "<"),
+				argv[2]);
+		exit(rv);
 	} else if (strcmp(argv[0], "arch") == 0) {
 		/* returns the xbps native arch */
 		if (argc != 1)

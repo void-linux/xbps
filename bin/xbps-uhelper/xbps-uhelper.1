@@ -59,6 +59,8 @@ Enables extra debugging shown to stderr.
 Show the help message.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
+.It Fl v, Fl -verbose
+Enables verbose messages.
 .It Fl V, Fl -version
 Show the version information.
 .El
@@ -85,6 +87,14 @@ strings,
 See
 .Sx EXIT STATUS
 for more information.
+If
+.Fl -verbose
+is specified, also prints
+.Qo
+.Ar instver
+<|=|>
+.Ar reqver
+.Qc .
 .It Cm getname Ar string ...
 Prints the pkgname of
 .Ar pkgpatterns
@@ -126,6 +136,15 @@ with a
 See
 .Sx EXIT STATUS
 for more information.
+If
+.Fl -verbose
+is specified, also prints
+.Qo
+.Ar pkgver
+matches|does not match
+.Ar pkgpattern
+.Qc ,
+or an error.
 .It Cm real-version Ar pkgname ...
 Prints the version of installed real packages.
 .It Cm version Ar pkgname ...
