@@ -229,10 +229,7 @@ _xbps_uchroot() {
 _xbps_uhelper() {
 	local ret=1
 	_arguments \
-		{-C,--config=-}'[Full path to configuration file]:config file:_files' \
-		{-d,--debug}'[Debug mode shown to stderr]' \
-		{-r,--rootdir=-}'[Full path to rootdir]:root dir:_files -/' \
-		{-V,--version}'[Show XBPS version]' \
+		$_xbps_common \
 		'1:action:->actions' \
 		'*:: :->args' && ret=0
 	case $state in
