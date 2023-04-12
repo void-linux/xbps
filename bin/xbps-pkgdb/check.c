@@ -100,7 +100,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 			xbps_error_printf("%s: cannot read %s, ignoring...\n",
 			    pkgname, buf);
 			free(buf);
-			return -1;
+			return -ENOENT;
 		}
 		rv = xbps_file_sha256_check(buf, sha256);
 		free(buf);
@@ -112,7 +112,7 @@ check_pkg_integrity(struct xbps_handle *xhp,
 			xbps_object_release(filesd);
 			xbps_error_printf("%s: metadata file has been "
 			    "modified!\n", pkgname);
-			return 1;
+			return -rv;
 		}
 	}
 
@@ -135,5 +135,5 @@ do {								\
 
 #undef RUN_PKG_CHECK
 
-	return errors ? EXIT_FAILURE : EXIT_SUCCESS;
+	return errors;
 }
