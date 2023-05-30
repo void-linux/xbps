@@ -105,7 +105,8 @@ xbps_transaction_store(struct xbps_handle *xhp, xbps_array_t pkgs,
 	xbps_set_cb_state(xhp, XBPS_STATE_TRANS_ADDPKG, 0, pkgver,
 	    "Found %s in repository %s", pkgver, repo);
 
-	xbps_dbg_printf("[trans] `%s' stored (%s)\n", pkgver, repo);
+	xbps_dbg_printf("[trans] `%s' stored%s (%s)\n", pkgver,
+	    autoinst ? " as automatic install" : "", repo);
 	xbps_object_release(pkgd);
 
 	return true;

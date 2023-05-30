@@ -115,7 +115,7 @@ repo_deps(struct xbps_handle *xhp,
 	  unsigned short *depth)	/* max recursion depth */
 {
 	xbps_array_t pkg_rdeps = NULL, pkg_provides = NULL;
-	xbps_dictionary_t curpkgd = NULL;
+	xbps_dictionary_t curpkgd = NULL, repopkgd = NULL;
 	xbps_trans_type_t ttype;
 	pkg_state_t state;
 	xbps_object_t obj;
@@ -146,6 +146,7 @@ repo_deps(struct xbps_handle *xhp,
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		bool error = false, foundvpkg = false;
+		bool autoinst = true;
 
 		ttype = XBPS_TRANS_UNKNOWN;
 		reqpkg = xbps_string_cstring_nocopy(obj);
@@ -328,17 +329,17 @@ repo_deps(struct xbps_handle *xhp,
 			xbps_dbg_printf("`%s' is repolocked, looking at single repository.\n", reqpkg);
 			xbps_dictionary_get_cstring_nocopy(curpkgd, "repository", &repourl);
 			if (repourl && (repo = xbps_regget_repo(xhp, repourl))) {
-				curpkgd = xbps_repo_get_pkg(repo, reqpkg);
+				repopkgd = xbps_repo_get_pkg(repo, reqpkg);
 			} else {
-				curpkg = NULL;
+				repopkgd = NULL;
 			}
 		} else {
-			curpkgd = xbps_rpool_get_pkg(xhp, reqpkg);
-			if (!curpkgd) {
-				curpkgd = xbps_rpool_get_virtualpkg(xhp, reqpkg);
+			repopkgd = xbps_rpool_get_pkg(xhp, reqpkg);
+			if (!repopkgd) {
+				repopkgd = xbps_rpool_get_virtualpkg(xhp, reqpkg);
 			}
 		}
-		if (curpkgd == NULL) {
+		if (repopkgd == NULL) {
 			/* pkg not found, there was some error */
 			if (errno && errno != ENOENT) {
 				xbps_dbg_printf("failed to find pkg for `%s' in rpool: %s\n", reqpkg, strerror(errno));
@@ -360,7 +361,7 @@ repo_deps(struct xbps_handle *xhp,
 		}
 
 
-		xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &pkgver_q);
+		xbps_dictionary_get_cstring_nocopy(repopkgd, "pkgver", &pkgver_q);
 		if (!xbps_pkg_name(reqpkgname, sizeof(reqpkgname), pkgver_q)) {
 			rv = EINVAL;
 			break;
@@ -408,7 +409,7 @@ repo_deps(struct xbps_handle *xhp,
 			if (error)
 				break;
 		}
-		pkg_rdeps = xbps_dictionary_get(curpkgd, "run_depends");
+		pkg_rdeps = xbps_dictionary_get(repopkgd, "run_depends");
 		if (xbps_array_count(pkg_rdeps)) {
 			/*
 			 * Process rundeps for current pkg found in rpool.
@@ -421,7 +422,7 @@ repo_deps(struct xbps_handle *xhp,
 				xbps_dbg_printf_append("%s: finding dependencies:\n", pkgver_q);
 			}
 			(*depth)++;
-			rv = repo_deps(xhp, pkgs, curpkgd, depth);
+			rv = repo_deps(xhp, pkgs, repopkgd, depth);
 			if (rv != 0) {
 				xbps_dbg_printf("Error checking %s for rundeps: %s\n", reqpkg, strerror(rv));
 				break;
@@ -432,15 +433,24 @@ repo_deps(struct xbps_handle *xhp,
 		} else if (xbps_dictionary_get(curpkgd, "hold")) {
 			ttype = XBPS_TRANS_HOLD;
 		}
+		if (ttype == XBPS_TRANS_UPDATE || ttype == XBPS_TRANS_CONFIGURE) {
+			/*
+			 * If the package is already installed preserve the installation mode,
+			 * which is not automatic if automatic-install is not set.
+			 */
+			bool pkgd_auto = false;
+			xbps_dictionary_get_bool(curpkgd, "automatic-install", &pkgd_auto);
+			autoinst = pkgd_auto;
+		}
 		/*
 		 * All deps were processed, store pkg in transaction.
 		 */
-		if (!xbps_transaction_pkg_type_set(curpkgd, ttype)) {
+		if (!xbps_transaction_pkg_type_set(repopkgd, ttype)) {
 			rv = EINVAL;
-			xbps_dbg_printf("xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
+			xbps_dbg_printf("xbps_transaction_pkg_type_set failed for `%s': %s\n", reqpkg, strerror(rv));
 			break;
 		}
-		if (!xbps_transaction_store(xhp, pkgs, curpkgd, true)) {
+		if (!xbps_transaction_store(xhp, pkgs, repopkgd, autoinst)) {
 			rv = EINVAL;
 			xbps_dbg_printf("xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
 			break;
