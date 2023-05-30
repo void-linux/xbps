@@ -62,6 +62,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	xbps_trans_type_t ttype;
 	const char *repoloc, *repopkgver, *instpkgver, *pkgname;
 	char buf[XBPS_NAME_SIZE] = {0};
+	bool autoinst = false;
 	int rv = 0;
 
 	assert(pkg != NULL);
@@ -208,7 +209,13 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		return EINVAL;
 	}
 
-	if (!xbps_transaction_store(xhp, pkgs, pkg_repod, false)) {
+	/*
+	 * Set automatic-install to true if it was requested and this is a new install.
+	 */
+	if (ttype == XBPS_TRANS_INSTALL)
+		autoinst = xhp->flags & XBPS_FLAG_INSTALL_AUTO;
+
+	if (!xbps_transaction_store(xhp, pkgs, pkg_repod, autoinst)) {
 		return EINVAL;
 	}
 

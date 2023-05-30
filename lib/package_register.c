@@ -41,7 +41,6 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	const char *pkgver, *pkgname;
 	char sha256[XBPS_SHA256_SIZE], outstr[64], *buf;
 	int rv = 0;
-	bool autoinst = false;
 
 	assert(xbps_object_type(pkgrd) == XBPS_TYPE_DICTIONARY);
 
@@ -53,17 +52,6 @@ xbps_register_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkgrd)
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
 
-	if (xhp->flags & XBPS_FLAG_INSTALL_AUTO)
-		autoinst = true;
-	/*
-	 * Set automatic-install to true, iff it was explicitly set; otherwise
-	 * preserve its value.
-	 */
-	if (autoinst && !xbps_dictionary_set_bool(pkgd, "automatic-install", true)) {
-		xbps_dbg_printf("%s: invalid autoinst for %s\n",  __func__, pkgver);
-		rv = EINVAL;
-		goto out;
-	}
 	if (xhp->flags & XBPS_FLAG_INSTALL_REPRO) {
 		/*
 		 * Reproducible mode. Some objects must not be recorded:
