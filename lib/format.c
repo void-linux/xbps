@@ -106,8 +106,8 @@ enum tok {
 	TVAR,
 };
 
-static enum tok
-nexttok(const char **pos, struct strbuf *buf)
+static int
+nexttok(enum tok *tok, const char **pos, struct strbuf *buf)
 {
 	const char *p;
 	int r;
@@ -121,8 +121,10 @@ nexttok(const char **pos, struct strbuf *buf)
 		case '{':
 			*pos = p;
 			if (buf->len > 0)
-				return TTEXT;
-			return TVAR;
+				*tok = TTEXT;
+			else
+				*tok = TVAR;
+			return 1;
 		case '\\':
 			switch (*++p) {
 			case '\\': r = strbuf_putc(buf, '\\'); break;
@@ -148,7 +150,8 @@ nexttok(const char **pos, struct strbuf *buf)
 	}
 	if (buf->len > 0) {
 		*pos = p;
-		return TTEXT;
+		*tok = TTEXT;
+		return 1;
 	}
 	p++;
 	return 0;
@@ -520,7 +523,9 @@ xbps_fmt_parse(const char *format)
 		struct xbps_fmt *tmp;
 		enum tok t;
 
-		t = nexttok(&pos, &buf);
+		r = nexttok(&t, &pos, &buf);
+		if (r < 0)
+			goto err;
 
 		tmp = realloc(fmt, sizeof(*fmt)*(n + 1));
 		if (!tmp)
@@ -528,13 +533,15 @@ xbps_fmt_parse(const char *format)
 		fmt = tmp;
 		memset(&fmt[n], '\0', sizeof(struct xbps_fmt));
 
-		if (t == 0)
+		if (r == 0)
 			goto out;
 		if (t == TTEXT) {
 			fmt[n].prefix = strndup(buf.mem, buf.len);
 			if (!fmt[n].prefix)
 				goto err_errno;
-			t = nexttok(&pos, &buf);
+			r = nexttok(&t, &pos, &buf);
+			if (r < 0)
+				goto err;
 		}
 		if (t == TVAR) {
 			r = parse(&pos, &fmt[n], NULL, NULL, NULL, NULL);
@@ -583,12 +590,14 @@ xbps_fmts(const char *format, xbps_fmt_cb *cb, void *data, FILE *fp)
 	for (;;) {
 		enum tok t;
 
-		t = nexttok(&pos, &buf);
-		if (t == 0)
+		r = nexttok(&t, &pos, &buf);
+		if (r <= 0)
 			goto out;
 		if (t == TTEXT) {
 			fprintf(fp, "%s", buf.mem);
-			t = nexttok(&pos, &buf);
+			r = nexttok(&t, &pos, &buf);
+			if (r <= 0)
+				goto out;
 		}
 		if (t == TVAR) {
 			struct xbps_fmt_def def = {0};
