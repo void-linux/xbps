@@ -50,6 +50,49 @@ reinstall_obsoletes_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case reinstall_keep_directories
+
+reinstall_keep_directories_head() {
+	atf_set "descr" "Keep directories that are not obsolete when reinstalling a package"
+}
+
+reinstall_keep_directories_body() {
+	#
+	# Simulate a pkg downgrade and make sure directories in both versions
+	# will not be recreated.
+	#
+	mkdir some_repo
+	mkdir -p pkg_A/usr/bin pkg_B/usr/bin
+	touch pkg_A/usr/bin/foo pkg_A/usr/bin/blah
+	touch pkg_B/usr/bin/baz
+
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "foo pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -yv A-1.1_1
+	atf_check_equal $? 0
+
+	inode1="$(stat -c '%i' root/usr/bin)"
+
+	rm -f some_repo/*
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "foo pkg" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+
+	cd ..
+	xbps-install -r root -C null.conf --repository=$PWD/some_repo -dyvf A-1.0_1
+	atf_check_equal $? 0
+
+	inode2="$(stat -c '%i' root/usr/bin)"
+	atf_check_equal "$inode1" "$inode2"
+}
+
 # 2- make sure that root symlinks aren't detected as obsoletes on upgrades.
 atf_test_case root_symlinks_update
 
@@ -1141,6 +1184,7 @@ obsolete_directory_multiple_packages4_body() {
 
 atf_init_test_cases() {
 	atf_add_test_case reinstall_obsoletes
+	atf_add_test_case reinstall_keep_directories
 	atf_add_test_case root_symlinks_update
 	atf_add_test_case files_move_from_dependency
 	atf_add_test_case files_move_to_dependency
