@@ -31,6 +31,11 @@ xbps-X.XX.X (2020-XX-XX):
    updated while installing new packackages in automatically installed mode.
    #557 [duncaen]
 
+ * libxbps: when reinstalling a package don't remove directories that are still
+   part of the new package. This avoids the recreation of directories which
+   trips up runsv as it keeps an fd to the service directory open that would
+   be deleted and recreated. #561 [duncaen]
+
  * xbps-install(1): list reinstalled packages. [chocimier]
 
  * xbps-install(1): in dry-run mode ignore out of space error. [chocimier]
@@ -49,6 +54,10 @@ xbps-X.XX.X (2020-XX-XX):
  * xbps-checkvers(1): with --installed also list subpackages. [chocimier]
 
  * xbps-remove(1): fix dry run cache cleaning inconsistencies. [duncaen]
+
+ * xbps-remove(1): allow to remove "uninstalled" (packages in the cache that
+   are still up to date but no long installed) packages from the package
+   cache by specifing the -O/--clean-cache flag twice. #530 [duncaen]
 
  * xbps-query(1): --cat now works in either repo or pkgdb mode. [duncaen]
 
