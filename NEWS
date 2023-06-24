@@ -26,6 +26,11 @@ xbps-X.XX.X (2020-XX-XX):
    breaks the installation or update of a package instead of just ignoring
    it, resulting in an inconsistent pkgdb. #392 [duncaen]
 
+ * libxbps: fix issues with XBPS_FLAG_INSTALL_AUTO where already intalled
+   packages would get market automatically installed when they are being
+   updated while installing new packackages in automatically installed mode.
+   #557 [duncaen]
+
  * xbps-install(1): list reinstalled packages. [chocimier]
 
  * xbps-install(1): in dry-run mode ignore out of space error. [chocimier]
