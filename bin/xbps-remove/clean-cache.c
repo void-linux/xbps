@@ -75,6 +75,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		bool *done UNUSED)
 {
 	char buf[PATH_MAX];
+	char buf2[PATH_MAX];
 	xbps_dictionary_t pkgd;
 	const char *binpkg, *rsha256;
 	const char *binpkgver, *binpkgarch;
@@ -116,6 +117,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		}
 	}
 	snprintf(buf, sizeof(buf), "%s.sig", binpkg);
+	snprintf(buf2, sizeof(buf2), "%s.sig2", binpkg);
 	if (!data->dry && unlink(binpkg) == -1) {
 		xbps_error_printf("Failed to remove `%s': %s\n",
 		    binpkg, strerror(errno));
@@ -125,6 +127,10 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	if (!data->dry && unlink(buf) == -1 && errno != ENOENT) {
 		xbps_error_printf("Failed to remove `%s': %s\n",
 		    buf, strerror(errno));
+	}
+	if (!data->dry && unlink(buf2) == -1 && errno != ENOENT) {
+		xbps_error_printf("Failed to remove `%s': %s\n",
+		    buf2, strerror(errno));
 	}
 
 	return 0;

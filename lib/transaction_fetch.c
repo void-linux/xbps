@@ -71,7 +71,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: removed pkg archive and its signature.", pkgver);
 			(void)remove(binfile);
-			sigfile = xbps_xasprintf("%s.sig", binfile);
+			sigfile = xbps_xasprintf("%s.sig2", binfile);
 			(void)remove(sigfile);
 			free(sigfile);
 			goto out;
@@ -110,8 +110,8 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "architecture", &arch);
 
-	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig", repoloc, pkgver, arch);
-	sigsuffix = buf+(strlen(buf)-sizeof (".sig")+1);
+	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig2", repoloc, pkgver, arch);
+	sigsuffix = buf+(strlen(buf)-sizeof (".sig2")+1);
 
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' signature (from `%s')...", pkgver, repoloc);
@@ -145,8 +145,8 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 		"%s: verifying RSA signature...", pkgver);
 
-	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig", xhp->cachedir, pkgver, arch);
-	sigsuffix = buf+(strlen(buf)-sizeof (".sig")+1);
+	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig2", xhp->cachedir, pkgver, arch);
+	sigsuffix = buf+(strlen(buf)-sizeof (".sig2")+1);
 
 	if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 		rv = errno;

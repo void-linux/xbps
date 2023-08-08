@@ -1975,8 +1975,8 @@ bool xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
  * in \a repo.
  *
  * @param[in] repo Repository to use with the RSA public key associated.
- * @param[in] fname The filename to verify, the signature file must have a .sig
- * extension, i.e `<fname>.sig`.
+ * @param[in] fname The filename to verify, the signature file must have a .sig2
+ * extension, i.e `<fname>.sig2`.
  *
  * @return True if the signature is valid, false otherwise.
  */
