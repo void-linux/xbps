@@ -63,7 +63,7 @@ rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
 		return false;
 	}
 
-	rv = RSA_verify(NID_sha1, sha256, SHA256_DIGEST_LENGTH, sig, siglen, rsa);
+	rv = RSA_verify(NID_sha256, sha256, SHA256_DIGEST_LENGTH, sig, siglen, rsa);
 	RSA_free(rsa);
 	BIO_free(bio);
 	ERR_free_strings();
@@ -144,7 +144,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 		return false;
 	}
 
-	snprintf(sig, sizeof sig, "%s.sig", fname);
+	snprintf(sig, sizeof sig, "%s.sig2", fname);
 	val = xbps_verify_signature(repo, sig, digest);
 
 	return val;
