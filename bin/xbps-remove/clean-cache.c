@@ -43,7 +43,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 {
 	xbps_dictionary_t repo_pkgd;
 	const char *binpkg, *rsha256;
-	char *binpkgsig, *pkgver, *arch;
+	char *binpkgsig, *binpkgsig2, *pkgver, *arch;
 	bool drun = false;
 
 	/* Extract drun (dry-run) flag from arg*/
@@ -78,6 +78,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		}
 	}
 	binpkgsig = xbps_xasprintf("%s.sig", binpkg);
+	binpkgsig2 = xbps_xasprintf("%s.sig2", binpkg);
 	if (!drun && unlink(binpkg) == -1) {
 		fprintf(stderr, "Failed to remove `%s': %s\n",
 		    binpkg, strerror(errno));
@@ -91,6 +92,13 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 		}
 	}
 	free(binpkgsig);
+	if (!drun && unlink(binpkgsig2) == -1) {
+		if (errno != ENOENT) {
+			fprintf(stderr, "Failed to remove `%s': %s\n",
+			    binpkgsig2, strerror(errno));
+		}
+	}
+	free(binpkgsig2);
 
 	return 0;
 }

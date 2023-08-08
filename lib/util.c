@@ -403,15 +403,15 @@ xbps_remote_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	    "architecture", &arch))
 		return NULL;
 
-	snprintf(path, sizeof(path), "%s/%s.%s.xbps.sig", xhp->cachedir,
+	snprintf(path, sizeof(path), "%s/%s.%s.xbps.sig2", xhp->cachedir,
 	    pkgver, arch);
 
 	/* check if the signature file exists */
 	if (access(path, R_OK) != 0)
 		return false;
 
-	/* strip the .sig suffix and check if binpkg file exists */
-	path[strlen(path)-sizeof (".sig")+1] = '\0';
+	/* strip the .sig2 suffix and check if binpkg file exists */
+	path[strlen(path)-sizeof (".sig2")+1] = '\0';
 
 	return access(path, R_OK) == 0;
 }
