@@ -123,8 +123,14 @@ Ignore detected file conflicts in a transaction.
 .It Fl i , Fl -ignore-conf-repos
 Ignore repositories defined in configuration files.
 Only repositories specified in the command line via
-.Ar --repository
+.Fl -repository
 will be used.
+.It Fl k , Fl -import-key Ar fingerprint
+Import the key with the specified
+.Ar fingerprint
+without confirmation.
+Specified keys will only be imported if the key is used by a remote repository and has not already been imported.
+This option can be specified multiple times.
 .It Fl M , Fl -memory-sync
 For remote repositories, the data is fetched and stored in memory for the current
 operation.
