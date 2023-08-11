@@ -316,6 +316,7 @@ extern "C" {
  * - XBPS_STATE_UNPACK_FAIL: package unpack has failed.
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  * - XBPS_STATE_REPO_KEY_IMPORT: repository is signed and needs to import pubkey.
+ * - XBPS_STATE_REPO_KEY_EXPECTED: repository is signed and will import expected pubkey.
  * - XBPS_STATE_INVALID_DEP: package has an invalid dependency.
  * - XBPS_STATE_SHOW_INSTALL_MSG: package must show a post-install message.
  * - XBPS_STATE_SHOW_REMOVE_MSG: package must show a pre-remove message.
@@ -369,6 +370,7 @@ typedef enum xbps_state {
 	XBPS_STATE_REPOSYNC_FAIL,
 	XBPS_STATE_CONFIGURE_DONE,
 	XBPS_STATE_REPO_KEY_IMPORT,
+	XBPS_STATE_REPO_KEY_EXPECTED,
 	XBPS_STATE_INVALID_DEP,
 	XBPS_STATE_SHOW_INSTALL_MSG,
 	XBPS_STATE_SHOW_REMOVE_MSG,
@@ -1755,10 +1757,11 @@ xbps_array_t xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg);
  * signed properly for this to work.
  *
  * @param[in] repo Pointer to the target xbps_repo structure.
+ * @param[in] expfps Proplib array of expected key fingerprints.
  *
  * @return 0 on success, an errno value otherwise.
  */
-int xbps_repo_key_import(struct xbps_repo *repo);
+int xbps_repo_key_import(struct xbps_repo *repo, xbps_array_t expfps);
 
 /**@}*/
 

@@ -187,7 +187,7 @@ repo_open_remote(struct xbps_repo *repo)
 	free(rpath);
 	if (rv) {
 		xbps_dbg_printf("[repo] `%s' used remotely (kept in memory).\n", repo->uri);
-		if (repo->xhp->state_cb && xbps_repo_key_import(repo) != 0)
+		if (repo->xhp->state_cb && xbps_repo_key_import(repo, NULL) != 0)
 			rv = false;
 	}
 	return rv;
@@ -621,13 +621,14 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 }
 
 int
-xbps_repo_key_import(struct xbps_repo *repo)
+xbps_repo_key_import(struct xbps_repo *repo, xbps_array_t expfps)
 {
 	xbps_dictionary_t repokeyd = NULL;
 	xbps_data_t pubkey = NULL;
 	uint16_t pubkey_size = 0;
 	const char *signedby = NULL;
 	char *hexfp = NULL;
+	const char *expfp = NULL;
 	char *p, *dbkeyd, *rkeyfile = NULL;
 	int import, rv = 0;
 
@@ -662,13 +663,27 @@ xbps_repo_key_import(struct xbps_repo *repo)
 		goto out;
 	}
 	/*
-	 * Check if the public key is alredy stored.
+	 * Check if the public key is already stored.
 	 */
 	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
 	repokeyd = xbps_plist_dictionary_from_file(rkeyfile);
 	if (xbps_object_type(repokeyd) == XBPS_TYPE_DICTIONARY) {
 		xbps_dbg_printf("[repo] `%s' public key already stored.\n", repo->uri);
 		goto out;
+	}
+	/*
+	 * Check if the public key is expected. If so, import the key
+	 * without prompting for user input.
+	 */
+	if (expfps != NULL) {
+		for (unsigned int i = 0; i < xbps_array_count(expfps); i++) {
+			if (xbps_array_get_cstring_nocopy(expfps, i, &expfp) && strcmp(hexfp, expfp) == 0) {
+				xbps_set_cb_state(repo->xhp, XBPS_STATE_REPO_KEY_EXPECTED, 0,
+						hexfp, "`%s' repository has been RSA signed by \"%s\"",
+						repo->uri, signedby);
+				goto importkey;
+			}
+		}
 	}
 	/*
 	 * Notify the client and take appropiate action to import
@@ -683,6 +698,7 @@ xbps_repo_key_import(struct xbps_repo *repo)
 		goto out;
 	}
 
+importkey:
 	p = strdup(rkeyfile);
 	dbkeyd = dirname(p);
 	assert(dbkeyd);
