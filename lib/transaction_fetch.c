@@ -159,7 +159,7 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	 * If digest is not set, binary package was not downloaded,
 	 * i.e. 304 not modified, verify by file instead.
 	 */
-	if (*digest) {
+	if (fetchLastErrCode == FETCH_UNCHANGED) {
 		*sigsuffix = '\0';
 		if (!xbps_verify_file_signature(repo, buf)) {
 			rv = EPERM;
