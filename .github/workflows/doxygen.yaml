@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64
+    container: ghcr.io/void-linux/void-glibc-full:20230830r1
     steps:
       - name: Prepare container
         run: |

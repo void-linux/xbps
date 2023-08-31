@@ -1,10 +1,10 @@
 libxbps:
  - transaction: avoid fetching the whole pkg when updating and only fetch
    modified files from target pkg.
- - transaction: split fetch part to xbps_transaction_fetch().
- - transaction: check for obsoletes exactly once, via xbps_transaction_prepare().
  - transaction: check for free space in all affected top-level dirs.
  - transaction: check all pkg top-level dirs to see if they are writable.
+ - cache: download cached packages and signatures into a per repository
+   directory like repodata files in /var/db/xbps
 
 xbps-*:
  - Document exit codes.

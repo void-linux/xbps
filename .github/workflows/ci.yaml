@@ -19,10 +19,10 @@ jobs:
             c_compiler: [gcc, clang]
             include:
                - c_library: glibc
-                 void_image: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64
+                 void_image: ghcr.io/void-linux/void-glibc-full:20230830r1
 
                - c_library: musl
-                 void_image: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64-musl
+                 void_image: ghcr.io/void-linux/void-musl-full:20230830r1
 
       runs-on: ubuntu-latest
       container: ${{ matrix.void_image }}

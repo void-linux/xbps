@@ -21,7 +21,7 @@ jobs:
       contents: read
       security-events: write
     container:
-      image: ghcr.io/void-linux/void-linux:20220530rc01-full-x86_64
+      image: ghcr.io/void-linux/void-glibc-full:20230830r1
     steps:
     - name: Prepare container
       run: |
