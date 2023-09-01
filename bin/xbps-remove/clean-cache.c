@@ -43,7 +43,7 @@ static int
 binpkg_parse(char *buf, size_t bufsz, const char *path, const char **pkgver, const char **arch)
 {
 	char *p;
-	size_t n = xbps_strlcpy(buf, path, bufsz);
+	size_t n = strlcpy(buf, path, bufsz);
 	if (n >= bufsz)
 		return -ENOBUFS;
 

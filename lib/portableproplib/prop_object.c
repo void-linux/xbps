@@ -29,8 +29,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "compat.h"
-
 #include "prop_object_impl.h"
 #include <prop/prop_object.h>
 

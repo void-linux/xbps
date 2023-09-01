@@ -8,21 +8,6 @@
 
 #include "macro.h"
 
-#ifndef HAVE_STRLCAT
-size_t HIDDEN strlcat(char *, const char *, size_t);
-#endif
-
-#ifndef HAVE_STRLCPY
-size_t HIDDEN strlcpy(char *, const char *, size_t);
-#endif
-
-#ifndef HAVE_STRCASESTR
-char HIDDEN *strcasestr(const char *, const char *);
-#endif
-
-#ifndef HAVE_VASPRINTF
-int HIDDEN vasprintf(char **, const char *, va_list);
-#endif
 
 #ifndef HAVE_HUMANIZE_NUMBER
 #define HN_DECIMAL              0x01

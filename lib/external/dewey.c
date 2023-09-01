@@ -331,7 +331,7 @@ dewey_match(const char *pattern, const char *pkg)
 	if (sep2) {
 		char ver[PKG_PATTERN_MAX];
 
-		xbps_strlcpy(ver, sep, MIN((ssize_t)sizeof(ver), sep2-sep+1));
+		strlcpy(ver, sep, MIN((ssize_t)sizeof(ver), sep2-sep+1));
 		if (dewey_cmp(version, op, ver))
 			return 1;
 	} else {

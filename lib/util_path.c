@@ -75,7 +75,7 @@ xbps_path_clean(char *dst)
 	char *d = dst;
 	bool rooted = *dst == '/';
 
-	if (xbps_strlcpy(buf, dst, sizeof buf) >= sizeof buf)
+	if (strlcpy(buf, dst, sizeof buf) >= sizeof buf)
 		return -1;
 
 	if (rooted) {
@@ -140,8 +140,8 @@ xbps_path_rel(char *dst, size_t dstlen, const char *from, const char *to)
 
 	*dst = '\0';
 
-	if (xbps_strlcpy(frombuf, from, sizeof frombuf) >= sizeof frombuf ||
-	    xbps_strlcpy(tobuf, to, sizeof tobuf) >= sizeof tobuf)
+	if (strlcpy(frombuf, from, sizeof frombuf) >= sizeof frombuf ||
+	    strlcpy(tobuf, to, sizeof tobuf) >= sizeof tobuf)
 		return -1;
 
 	if (xbps_path_clean(frombuf) == -1 || xbps_path_clean(tobuf) == -1)
@@ -185,7 +185,7 @@ xbps_path_vjoin(char *dst, size_t dstlen, va_list ap)
 
 	for (;;) {
 		size_t n;
-		if ((n = xbps_strlcat(dst+len, val, dstlen-len)) >= dstlen-len)
+		if ((n = strlcat(dst+len, val, dstlen-len)) >= dstlen-len)
 		    goto err;
 		len += n;
 		if ((val = va_arg(ap, const char *)) == NULL)
@@ -227,7 +227,7 @@ xbps_path_append(char *dst, size_t dstlen, const char *suffix)
 		goto out;
 
 	if (*dst == '\0') {
-		if ((len = xbps_strlcpy(dst, suffix, dstlen)) >= dstlen)
+		if ((len = strlcpy(dst, suffix, dstlen)) >= dstlen)
 			goto err;
 		goto out;
 	}
@@ -239,7 +239,7 @@ xbps_path_append(char *dst, size_t dstlen, const char *suffix)
 	if (*suffix == '/')
 		suffix++;
 
-	if ((len = xbps_strlcat(dst, suffix, dstlen)) >= dstlen)
+	if ((len = strlcat(dst, suffix, dstlen)) >= dstlen)
 		goto err;
 out:
 	return (ssize_t)len < 0 ? -1 : (ssize_t)len;
@@ -260,7 +260,7 @@ xbps_path_prepend(char *dst, size_t dstlen, const char *prefix)
 		goto out;
 
 	if (*dst == '\0') {
-		if ((len = xbps_strlcpy(dst, prefix, dstlen)) >= dstlen)
+		if ((len = strlcpy(dst, prefix, dstlen)) >= dstlen)
 			goto err;
 		goto out;
 	}

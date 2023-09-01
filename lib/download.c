@@ -122,7 +122,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 
 	memset(&fetch_flags, 0, sizeof(fetch_flags));
 	if (flags != NULL)
-		xbps_strlcpy(fetch_flags, flags, 7);
+		strlcpy(fetch_flags, flags, 7);
 
 	tempfile = xbps_xasprintf("%s.part", filename);
 	/*
@@ -145,7 +145,7 @@ xbps_fetch_file_dest_sha256(struct xbps_handle *xhp, const char *uri, const char
 	if (stat(filename, &st) == 0) {
 		refetch = true;
 		url->last_modified = st.st_mtime;
-		xbps_strlcat(fetch_flags, "i", sizeof(fetch_flags));
+		strlcat(fetch_flags, "i", sizeof(fetch_flags));
 	} else {
 		if (errno != ENOENT) {
 			rv = -1;

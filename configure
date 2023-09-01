@@ -195,7 +195,7 @@ echo "CC =	$CC" >>$CONFIG_MK
 echo "CFLAGS =	-O2" >>$CONFIG_MK
 
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
-echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
+echo "CPPFLAGS = 	-I\$(TOPDIR)/lib/compat -I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSDEFCONF_PATH=\\\"${SHAREDIR}/xbps.d\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK

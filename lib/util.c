@@ -511,24 +511,6 @@ xbps_humanize_number(char *buf, int64_t bytes)
 	    HN_AUTOSCALE, HN_DECIMAL|HN_NOSPACE);
 }
 
-size_t
-xbps_strlcat(char *dest, const char *src, size_t siz)
-{
-	assert(dest);
-	assert(src);
-
-	return strlcat(dest, src, siz);
-}
-
-size_t
-xbps_strlcpy(char *dest, const char *src, size_t siz)
-{
-	assert(dest);
-	assert(src);
-
-	return strlcpy(dest, src, siz);
-}
-
 /*
  * Check if pkg is explicitly marked to replace a specific installed version.
  */

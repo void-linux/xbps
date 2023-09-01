@@ -109,7 +109,7 @@ store_preserved_file(struct xbps_handle *xhp, const char *file)
 		len = strlen(globbuf.gl_pathv[i]) - strlen(xhp->rootdir) + 1;
 		p = malloc(len);
 		assert(p);
-		xbps_strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
+		strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
 		xbps_array_add_cstring(xhp->preserved_files, p);
 		xbps_dbg_printf("Added preserved file: %s (expanded from %s)\n", p, file);
 		free(p);
