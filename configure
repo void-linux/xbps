@@ -219,9 +219,10 @@ if [ -n "$FULL_DEBUG" ]; then
 	echo "CPPFLAGS+= -DFULL_DEBUG" >>$CONFIG_MK
 fi
 
+echo "CPPFLAGS += 	-D_DEFAULT_SOURCE" >>$CONFIG_MK
+echo "CPPFLAGS += 	-D_GNU_SOURCE" >>$CONFIG_MK
 case "$OS" in
 linux)
-	echo "CPPFLAGS += 	-D_XOPEN_SOURCE=700" >>$CONFIG_MK
 	echo "CPPFLAGS += 	-D_FILE_OFFSET_BITS=64" >> $CONFIG_MK
 	;;
 *)

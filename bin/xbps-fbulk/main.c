@@ -47,8 +47,6 @@
  * Only one attempt is made to build any given package, no matter how many
  * other packages depend on it.
  */
-#define _DEFAULT_SOURCE
-#define _BSD_SOURCE
 
 #include <sys/file.h>
 #include <sys/stat.h>

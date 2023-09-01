@@ -23,10 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_VASPRINTF
-# define _GNU_SOURCE    /* for vasprintf(3) */
-#endif
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>

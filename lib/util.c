@@ -22,17 +22,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifdef HAVE_VASPRINTF
-# define _GNU_SOURCE	/* for vasprintf(3) */
-#endif
-
-#if defined(HAVE_STRLCAT) || defined(HAVE_STRLCPY)
-# define _BSD_SOURCE
-#endif
-
-#include "compat.h"
-
 #include <sys/utsname.h>
 
 #include <assert.h>
@@ -47,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "compat.h"
 #include "xbps_api_impl.h"
 
 #ifdef __clang__
