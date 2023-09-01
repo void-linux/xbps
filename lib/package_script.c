@@ -62,7 +62,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		return 0;
 	}
 
-	if (strcmp(xhp->rootdir, "/") == 0) {
+	if (streq(xhp->rootdir, "/")) {
 		tmpdir = getenv("TMPDIR");
 		if (tmpdir == NULL)
 			tmpdir = P_tmpdir;

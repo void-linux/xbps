@@ -118,7 +118,7 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 			key = xbps_dictionary_keysym_cstring_nocopy(obj2);
 			curobj = xbps_dictionary_get_keysym(pkgmetad, obj2);
 			for (uint8_t i = 0; i < ARRAY_SIZE(excluded); i++) {
-				if (strcmp(excluded[i], key) == 0) {
+				if (streq(excluded[i], key)) {
 					skip = true;
 					break;
 				}

@@ -90,7 +90,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
 				break;
 			}
-			if (strcmp(pkgname, repopkgname) == 0) {
+			if (streq(pkgname, repopkgname)) {
 				continue;
 			}
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
@@ -135,7 +135,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
 				break;
 			}
-			if (strcmp(pkgname, repopkgname) == 0) {
+			if (streq(pkgname, repopkgname)) {
 				continue;
 			}
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
@@ -207,7 +207,7 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 				rv = EINVAL;
 				break;
 			}
-			if (strcmp(pkgname, repopkgname) == 0) {
+			if (streq(pkgname, repopkgname)) {
 				continue;
 			}
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {

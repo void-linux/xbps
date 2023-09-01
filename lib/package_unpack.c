@@ -160,11 +160,11 @@ unpack_archive(struct xbps_handle *xhp,
 		entry_pname = archive_entry_pathname(entry);
 		entry_size = archive_entry_size(entry);
 
-		if (strcmp("./INSTALL", entry_pname) == 0 ||
-		    strcmp("./REMOVE", entry_pname) == 0 ||
-		    strcmp("./props.plist", entry_pname) == 0) {
+		if (streq("./INSTALL", entry_pname) ||
+		    streq("./REMOVE", entry_pname) ||
+		    streq("./props.plist", entry_pname)) {
 			archive_read_data_skip(ar);
-		} else if (strcmp("./files.plist", entry_pname) == 0) {
+		} else if (streq("./files.plist", entry_pname)) {
 			binpkg_filesd = xbps_archive_get_dictionary(ar, entry);
 			if (binpkg_filesd == NULL) {
 				rv = EINVAL;

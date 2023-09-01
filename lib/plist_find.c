@@ -69,7 +69,7 @@ get_pkg_in_array(xbps_array_t array, const char *str, xbps_trans_type_t tt, bool
 			}
 		} else if (xbps_pkg_version(str)) {
 			/* match by exact pkgver */
-			if (strcmp(str, pkgver) == 0) {
+			if (streq(str, pkgver)) {
 				found = true;
 				break;
 			}
@@ -78,7 +78,7 @@ get_pkg_in_array(xbps_array_t array, const char *str, xbps_trans_type_t tt, bool
 				abort();
 			}
 			/* match by pkgname */
-			if (strcmp(pkgname, str) == 0) {
+			if (streq(pkgname, str)) {
 				found = true;
 				break;
 			}
@@ -144,7 +144,7 @@ match_pkg_by_pkgver(xbps_dictionary_t repod, const char *p)
 	d = xbps_dictionary_get(repod, pkgname);
 	if (d) {
 		xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
-		if (strcmp(pkgver, p)) {
+		if (!streq(pkgver, p)) {
 			d = NULL;
 			errno = ENOENT;
 		}
@@ -256,12 +256,12 @@ vpkg_user_conf(struct xbps_handle *xhp, const char *vpkg, bool only_conf)
 			if (!xbps_pkg_name(buf, sizeof(buf), vpkg)) {
 				abort();
 			}
-			if (strcmp(buf, vpkgname)) {
+			if (!streq(buf, vpkgname)) {
 				free(vpkgname);
 				continue;
 			}
 		} else {
-			if (strcmp(vpkg, vpkgname)) {
+			if (!streq(vpkg, vpkgname)) {
 				free(vpkgname);
 				continue;
 			}

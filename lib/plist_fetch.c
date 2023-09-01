@@ -167,7 +167,7 @@ xbps_archive_fetch_file(const char *url, const char *fname)
 		if (bfile[0] == '.')
 			bfile++; /* skip first dot */
 
-		if (strcmp(bfile, fname) == 0) {
+		if (streq(bfile, fname)) {
 			buf = xbps_archive_get_file(a, entry);
 			break;
 		}
@@ -199,12 +199,12 @@ xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
 		if (bfile[0] == '.')
 			bfile++; /* skip first dot */
 
-		if (strcmp(bfile, XBPS_REPOIDX_META) == 0) {
+		if (streq(bfile, XBPS_REPOIDX_META)) {
 			buf = xbps_archive_get_file(a, entry);
 			repo->idxmeta = xbps_dictionary_internalize(buf);
 			free(buf);
 			i++;
-		} else if (strcmp(bfile, XBPS_REPOIDX) == 0) {
+		} else if (streq(bfile, XBPS_REPOIDX)) {
 			buf = xbps_archive_get_file(a, entry);
 			repo->idx = xbps_dictionary_internalize(buf);
 			free(buf);
@@ -265,7 +265,7 @@ xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd)
 		if (bfile[0] == '.')
 			bfile++; /* skip first dot */
 
-		if (strcmp(bfile, fname) == 0) {
+		if (streq(bfile, fname)) {
 			rv = archive_read_data_into_fd(a, fd);
 			if (rv != ARCHIVE_OK)
 				rv = archive_errno(a);

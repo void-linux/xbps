@@ -50,7 +50,7 @@ xbps_entry_is_a_conf_file(xbps_dictionary_t filesd,
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		d = xbps_array_get(array, i);
 		xbps_dictionary_get_cstring_nocopy(d, "file", &cffile);
-		if (strcmp(cffile, entry_pname) == 0)
+		if (streq(cffile, entry_pname))
 			return true;
 	}
 	return false;
@@ -116,7 +116,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 			xbps_dictionary_get_cstring_nocopy(obj2,
 			    "file", &cffile);
 			snprintf(buf, sizeof(buf), ".%s", cffile);
-			if (strcmp(entry_pname, buf) == 0) {
+			if (streq(entry_pname, buf)) {
 				xbps_dictionary_get_cstring_nocopy(obj2, "sha256", &sha256_orig);
 				break;
 			}
@@ -139,7 +139,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &cffile);
 		snprintf(buf, sizeof(buf), ".%s", cffile);
-		if (strcmp(entry_pname, buf)) {
+		if (!streq(entry_pname, buf)) {
 			continue;
 		}
 		if (!xbps_file_sha256(sha256_cur, sizeof sha256_cur, buf)) {
@@ -162,9 +162,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		 *
 		 * Keep file as is (no changes).
 		 */
-		if ((strcmp(sha256_orig, sha256_cur) == 0) &&
-		    (strcmp(sha256_orig, sha256_new) == 0) &&
-		    (strcmp(sha256_cur, sha256_new) == 0)) {
+		if (streq(sha256_orig, sha256_cur) &&
+		    streq(sha256_orig, sha256_new) &&
+		    streq(sha256_cur, sha256_new)) {
 			xbps_dbg_printf("%s: conf_file %s orig = X, "
 			    "cur = X, new = X\n", pkgver, entry_pname);
 			rv = 0;
@@ -175,9 +175,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		 * Install new file (installed file hasn't been modified) if
 		 * configuration option keepconfig is NOT set.
 		 */
-		} else if ((strcmp(sha256_orig, sha256_cur) == 0) &&
-			   (strcmp(sha256_orig, sha256_new)) &&
-			   (strcmp(sha256_cur, sha256_new)) &&
+		} else if (streq(sha256_orig, sha256_cur) &&
+			   !streq(sha256_orig, sha256_new) &&
+			   !streq(sha256_cur, sha256_new) &&
 			   (!(xhp->flags & XBPS_FLAG_KEEP_CONFIG))) {
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgver,
@@ -192,9 +192,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		 * but new package doesn't contain new changes compared
 		 * to the original version.
 		 */
-		} else if ((strcmp(sha256_orig, sha256_new) == 0) &&
-			   (strcmp(sha256_cur, sha256_new)) &&
-			   (strcmp(sha256_orig, sha256_cur))) {
+		} else if (streq(sha256_orig, sha256_new) &&
+			   !streq(sha256_cur, sha256_new) &&
+			   !streq(sha256_orig, sha256_cur)) {
 			xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
 			    0, pkgver,
 			    "Keeping modified configuration file `%s'.",
@@ -207,9 +207,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		 * Keep file as is because changes made are compatible
 		 * with new version.
 		 */
-		} else if ((strcmp(sha256_cur, sha256_new) == 0) &&
-			   (strcmp(sha256_orig, sha256_new)) &&
-			   (strcmp(sha256_orig, sha256_cur))) {
+		} else if (streq(sha256_cur, sha256_new) &&
+			   !streq(sha256_orig, sha256_new) &&
+			   !streq(sha256_orig, sha256_cur)) {
 			xbps_dbg_printf("%s: conf_file %s orig = X, "
 			    "cur = Y, new = Y\n", pkgver, entry_pname);
 			rv = 0;
@@ -221,9 +221,9 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		 *
 		 * Install new file as <file>.new-<version>
 		 */
-		} else if (((strcmp(sha256_orig, sha256_cur)) &&
-			    (strcmp(sha256_cur, sha256_new)) &&
-			    (strcmp(sha256_orig, sha256_new))) ||
+		} else if ((!streq(sha256_orig, sha256_cur) &&
+			    !streq(sha256_cur, sha256_new) &&
+			    !streq(sha256_orig, sha256_new)) ||
 			    (xhp->flags & XBPS_FLAG_KEEP_CONFIG)) {
 			version = xbps_pkg_version(pkgver);
 			assert(version);

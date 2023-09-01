@@ -361,7 +361,7 @@ xbps_transaction_update_pkg(struct xbps_handle *xhp, const char *pkg, bool force
 	switch (rv) {
 	case 1:
 		/* xbps needs to be updated, only allow xbps to be updated */
-		if (strcmp(pkg, "xbps"))
+		if (!streq(pkg, "xbps"))
 			return EBUSY;
 		return 0;
 	case -1:
@@ -411,7 +411,7 @@ xbps_transaction_install_pkg(struct xbps_handle *xhp, const char *pkg, bool forc
 	switch (rv) {
 	case 1:
 		/* xbps needs to be updated, only allow xbps to be updated */
-		if (strcmp(pkg, "xbps"))
+		if (!streq(pkg, "xbps"))
 			return EBUSY;
 		return 0;
 	case -1:

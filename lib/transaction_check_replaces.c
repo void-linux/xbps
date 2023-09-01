@@ -101,7 +101,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 			 * Check that we are not replacing the same package,
 			 * due to virtual packages.
 			 */
-			if (strcmp(pkgname, curpkgname) == 0) {
+			if (streq(pkgname, curpkgname)) {
 				continue;
 			}
 			/*

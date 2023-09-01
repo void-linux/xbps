@@ -140,21 +140,21 @@ internalize_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 
 		entry_pname = archive_entry_pathname(entry);
 
-		if (strcmp("./INSTALL", entry_pname) == 0) {
+		if (streq("./INSTALL", entry_pname)) {
 			rv = internalize_script(pkg_repod, "install-script", ar, entry);
 			if (rv < 0)
 				goto out;
-		} else if (strcmp("./REMOVE", entry_pname) == 0) {
+		} else if (streq("./REMOVE", entry_pname)) {
 			rv = internalize_script(pkg_repod, "remove-script", ar, entry);
 			if (rv < 0)
 				goto out;
-		} else if ((strcmp("./files.plist", entry_pname)) == 0) {
+		} else if (streq("./files.plist", entry_pname)) {
 			filesd = xbps_archive_get_dictionary(ar, entry);
 			if (filesd == NULL) {
 				rv = -EINVAL;
 				goto out;
 			}
-		} else if (strcmp("./props.plist", entry_pname) == 0) {
+		} else if (streq("./props.plist", entry_pname)) {
 			propsd = xbps_archive_get_dictionary(ar, entry);
 			if (propsd == NULL) {
 				rv = -EINVAL;
@@ -180,7 +180,7 @@ internalize_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	 * by advertising a old signed package with a new version.
 	 */
 	xbps_dictionary_get_cstring_nocopy(propsd, "pkgver", &binpkg_pkgver);
-	if (strcmp(pkgver, binpkg_pkgver) != 0) {
+	if (!streq(pkgver, binpkg_pkgver)) {
 		rv = -EINVAL;
 		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL, -rv, pkgver,
 		    "%s: [files] pkgver mismatch repodata: `%s' binpkg: `%s'.",

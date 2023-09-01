@@ -74,12 +74,9 @@ xbps_repository_is_remote(const char *uri)
 {
 	assert(uri != NULL);
 
-	if ((strncmp(uri, "http://", 7) == 0) ||
-	    (strncmp(uri, "https://", 8) == 0) ||
-	    (strncmp(uri, "ftp://", 6) == 0))
-		return true;
-
-	return false;
+	return strneq(uri, "http://", 7) ||
+	    strneq(uri, "https://", 8) ||
+	    strneq(uri, "ftp://", 6);
 }
 
 int
@@ -449,26 +446,12 @@ bool
 xbps_pkg_arch_match(struct xbps_handle *xhp, const char *orig,
 		const char *target)
 {
-	const char *arch;
-
-	assert(xhp);
-	assert(orig);
-
-	if (xhp->target_arch)
-		arch = xhp->target_arch;
-	else
-		arch = xhp->native_arch;
-
-	if (target == NULL) {
-		if ((strcmp(orig, "noarch") == 0) ||
-		    (strcmp(orig, arch) == 0))
-			return true;
-	} else {
-		if ((strcmp(orig, "noarch") == 0) ||
-		    (strcmp(orig, target) == 0))
-			return true;
-	}
-	return false;
+	assert(xhp && orig);
+	if (streq(orig, "noarch"))
+		return true;
+	if (target && streq(orig, target))
+		return true;
+	return streq(orig, xhp->target_arch ? xhp->target_arch : xhp->native_arch);
 }
 
 char *
@@ -499,7 +482,7 @@ xbps_pkgpattern_match(const char *pkg, const char *pattern)
 	assert(pattern);
 
 	/* simple match on "pkg" against "pattern" */
-	if (strcmp(pattern, pkg) == 0)
+	if (streq(pattern, pkg))
 		return 1;
 
 	/* perform relational dewey match on version number */
@@ -565,7 +548,7 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver)
 
 	for (i = 0; i < xbps_array_count(reverts); i++) {
 		xbps_array_get_cstring_nocopy(reverts, i, &revertver);
-		if (strcmp(version, revertver) == 0) {
+		if (streq(version, revertver)) {
 			return true;
 		}
 	}
@@ -650,7 +633,7 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 			free(lnk);
 			return strdup(tgt);
 		}
-		if (strcmp(rootdir, "/") == 0) {
+		if (streq(rootdir, "/")) {
 			res = strdup(p);
 		} else {
 			p1 = strdup(p + strlen(rootdir));
@@ -666,7 +649,7 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 		assert(p);
 		dname = dirname(p);
 		assert(dname);
-		if (strcmp(rootdir, "/") == 0) {
+		if (streq(rootdir, "/")) {
 			p1 = xbps_xasprintf("%s/%s", dname, lnk);
 			assert(p1);
 			res = xbps_sanitize_path(p1);

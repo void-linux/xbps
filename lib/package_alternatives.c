@@ -66,12 +66,12 @@ normpath(char *path)
 	char *seg, *p;
 
 	for (p = path, seg = NULL; *p; p++) {
-		if (strncmp(p, "/../", 4) == 0 || strncmp(p, "/..", 4) == 0) {
+		if (strneq(p, "/../", 4) || strneq(p, "/..", 4)) {
 			memmove(seg ? seg : p, p+3, strlen(p+3) + 1);
 			return normpath(path);
-		} else if (strncmp(p, "/./", 3) == 0 || strncmp(p, "/.", 3) == 0) {
+		} else if (strneq(p, "/./", 3) || strneq(p, "/.", 3)) {
 			memmove(p, p+2, strlen(p+2) + 1);
-		} else if (strncmp(p, "//", 2) == 0 || strncmp(p, "/", 2) == 0) {
+		} else if (strneq(p, "//", 2)|| strneq(p, "/", 2)) {
 			memmove(p, p+1, strlen(p+1) + 1);
 		}
 		if (*p == '/')
@@ -179,7 +179,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 
 		/* create target directory, necessary for dangling symlinks */
 		dir = xbps_xasprintf("%s/%s", xhp->rootdir, dir);
-		if (strcmp(dir, ".") && xbps_mkpath(dir, 0755) && errno != EEXIST) {
+		if (!streq(dir, ".") && xbps_mkpath(dir, 0755) && errno != EEXIST) {
 			rv = errno;
 			xbps_dbg_printf(
 			    "failed to create target dir '%s' for group '%s': %s\n",
@@ -192,7 +192,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 		/* create link directory, necessary for dangling symlinks */
 		p = strdup(linkpath);
 		dir = dirname(p);
-		if (strcmp(dir, ".") && xbps_mkpath(dir, 0755) && errno != EEXIST) {
+		if (!streq(dir, ".") && xbps_mkpath(dir, 0755) && errno != EEXIST) {
 			rv = errno;
 			xbps_dbg_printf(
 			    "failed to create symlink dir '%s' for group '%s': %s\n",
@@ -273,7 +273,7 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 		keysym = xbps_array_get(allkeys, i);
 		keyname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 
-		if (group && strcmp(keyname, group))
+		if (group && !streq(keyname, group))
 			continue;
 
 		array = xbps_dictionary_get(alternatives, keyname);
@@ -282,7 +282,7 @@ xbps_alternatives_set(struct xbps_handle *xhp, const char *pkgname,
 
 		/* remove symlinks from previous alternative */
 		xbps_array_get_cstring_nocopy(array, 0, &prevpkgname);
-		if (prevpkgname && strcmp(pkgname, prevpkgname) != 0) {
+		if (prevpkgname && !streq(pkgname, prevpkgname)) {
 			if ((prevpkgd = xbps_pkgdb_get_pkg(xhp, prevpkgname)) &&
 			    (prevpkg_alts = xbps_dictionary_get(prevpkgd, "alternatives")) &&
 			    xbps_dictionary_count(prevpkg_alts)) {
@@ -366,7 +366,7 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			continue;
 
 		xbps_array_get_cstring_nocopy(array, 0, &first);
-		if (strcmp(pkgname, first) == 0) {
+		if (streq(pkgname, first)) {
 			/* this pkg is the current alternative for this group */
 			current = true;
 			rv = remove_symlinks(xhp,
@@ -427,7 +427,7 @@ prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
 
 	/* if using alt group from another package, we won't switch anything */
 	xbps_array_get_cstring_nocopy(array, 0, &curpkg);
-	current = (strcmp(pkgname, curpkg) == 0);
+	current = streq(pkgname, curpkg);
 
 	/* actually prune the alt group for the current package */
 	xbps_remove_string_from_array(array, pkgname);
@@ -508,7 +508,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *pkgname, const char *pkgve
 			array2 = xbps_dictionary_get(pkgdb_alts, keyname);
 			if (array2) {
 				xbps_array_get_cstring_nocopy(array2, 0, &first);
-				if (strcmp(pkgname, first) == 0) {
+				if (streq(pkgname, first)) {
 					remove_symlinks(xhp, array_repo, keyname);
 				}
 			}
@@ -576,7 +576,7 @@ xbps_alternatives_register(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		} else {
 			if (xbps_match_string_in_array(array, pkgname)) {
 				xbps_array_get_cstring_nocopy(array, 0, &first);
-				if (strcmp(pkgname, first)) {
+				if (!streq(pkgname, first)) {
 					/* current alternative does not match */
 					continue;
 				}

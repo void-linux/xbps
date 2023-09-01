@@ -85,7 +85,7 @@ get_state(xbps_dictionary_t dict)
 		return 0;
 
 	for (stp = states; stp->string != NULL; stp++)
-		if (strcmp(state_str, stp->string) == 0)
+		if (streq(state_str, stp->string))
 			break;
 
 	return stp->number;

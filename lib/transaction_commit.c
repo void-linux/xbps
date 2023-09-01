@@ -368,7 +368,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	    !xbps_dictionary_get(xhp->transd, "total-install-pkgs"))
 		goto out;
 
-	if (xhp->target_arch && strcmp(xhp->native_arch, xhp->target_arch)) {
+	if (xhp->target_arch && !streq(xhp->native_arch, xhp->target_arch)) {
 		/* if installing packages for target_arch, don't configure anything */
 		goto out;
 		/* do not configure packages if only unpacking is desired */
