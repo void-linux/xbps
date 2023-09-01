@@ -24,14 +24,18 @@
  */
 
 #include <sys/types.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
+
 #include <assert.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <xbps.h>
 
 #include "defs.h"
+#include "macro.h"
 
 struct list_pkgver_cb {
 	unsigned int pkgver_len;

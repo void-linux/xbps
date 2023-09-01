@@ -32,28 +32,28 @@
  * 	- Supports overlayfs on a temporary directory or a tmpfs mount.
  * 	- Supports read-only bind mounts.
  */
-#define _GNU_SOURCE
-#define _XOPEN_SOURCE 700
-#include <sys/types.h>
-#include <sys/prctl.h>
+
 #include <sys/fsuid.h>
 #include <sys/mount.h>
+#include <sys/prctl.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <string.h>
+
 #include <assert.h>
-#include <stdlib.h>
-#include <sched.h>
-#include <limits.h>	/* PATH_MAX */
-#include <ftw.h>
-#include <signal.h>
-#include <getopt.h>
 #include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <ftw.h>
+#include <getopt.h>
+#include <limits.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include <xbps.h>
 #include "queue.h"

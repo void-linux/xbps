@@ -23,13 +23,14 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <errno.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
-#include <errno.h>
 
 #include <xbps.h>
+
 #include "defs.h"
 
 static void __attribute__((noreturn))
@@ -240,11 +241,11 @@ main(int argc, char **argv)
 	 * Initialize libxbps.
 	 */
 	if (rootdir)
-		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+		strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if (cachedir)
-		xbps_strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
+		strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
 	if (confdir)
-		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
+		strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 
 	xh.flags = flags;
 

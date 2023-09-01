@@ -23,11 +23,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -85,7 +85,7 @@ get_state(xbps_dictionary_t dict)
 		return 0;
 
 	for (stp = states; stp->string != NULL; stp++)
-		if (strcmp(state_str, stp->string) == 0)
+		if (streq(state_str, stp->string))
 			break;
 
 	return stp->number;

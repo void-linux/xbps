@@ -23,13 +23,14 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <sys/mman.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <openssl/sha.h>
 
@@ -229,7 +230,7 @@ file_hash_dictionary(xbps_dictionary_t d, const char *key, const char *file)
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj,
 		    "file", &curfile);
-		if (strcmp(file, curfile) == 0) {
+		if (streq(file, curfile)) {
 			/* file matched */
 			xbps_dictionary_get_cstring_nocopy(obj,
 			    "sha256", &sha256);
@@ -264,7 +265,7 @@ xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 		return -1; /* error */
 	}
 
-	if (strcmp(xhp->rootdir, "/") == 0) {
+	if (streq(xhp->rootdir, "/")) {
 		rv = xbps_file_sha256_check(file, sha256d);
 	} else {
 		buf = xbps_xasprintf("%s/%s", xhp->rootdir, file);

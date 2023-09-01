@@ -29,8 +29,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "compat.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>

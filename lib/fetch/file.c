@@ -30,8 +30,6 @@
  * $FreeBSD: file.c,v 1.18 2007/12/14 10:26:58 des Exp $
  */
 
-#include "compat.h"
-
 #include <sys/stat.h>
 
 #include <dirent.h>

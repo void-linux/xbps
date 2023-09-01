@@ -72,10 +72,10 @@ check_virtual_pkgs(xbps_array_t mdeps,
 			    (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgpattern)))
 				continue;
 
-			if (strcmp(vpkgname, pkgname)) {
+			if (!streq(vpkgname, pkgname)) {
 				continue;
 			}
-			if (!strcmp(vpkgver, pkgpattern) ||
+			if (streq(vpkgver, pkgpattern) ||
 			    xbps_pkgpattern_match(vpkgver, pkgpattern)) {
 				continue;
 			}
@@ -180,7 +180,7 @@ xbps_transaction_check_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 			if (revpkgd == NULL)
 				revpkgd = xbps_pkgdb_get_pkg(xhp, curpkgver);
 
-
+			/* XXX: check revpkgd */
 			xbps_dictionary_get_cstring_nocopy(revpkgd, "pkgver", &revpkgver);
 			/*
 			 * If target pkg is being removed, all its revdeps
@@ -222,7 +222,7 @@ xbps_transaction_check_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 				    (!xbps_pkg_name(curdepname, sizeof(curdepname), curdep))) {
 					return false;
 				}
-				if (strcmp(curdepname, curpkgname) == 0) {
+				if (streq(curdepname, curpkgname)) {
 					found = true;
 					break;
 				}

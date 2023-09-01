@@ -598,9 +598,9 @@ main(int argc, char **argv)
 	/* Initialize libxbps */
 	memset(&xh, 0, sizeof(xh));
 	if (rootdir != NULL)
-		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+		strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if (confdir)
-		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
+		strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 
 	xh.flags = flags;
 	if ((rv = xbps_init(&xh)) != 0)

@@ -23,12 +23,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <sys/statvfs.h>
+
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <sys/statvfs.h>
 
 #include "xbps_api_impl.h"
 
@@ -281,7 +282,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	xbps_array_t pkgs, edges;
 	xbps_dictionary_t tpkgd;
 	xbps_trans_type_t ttype;
-	unsigned int i, cnt;
+	unsigned cnt;
 	int rv = 0;
 	bool all_on_hold = true;
 
@@ -303,9 +304,9 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * collected; the edges at the original array are removed later.
 	 */
 	pkgs = xbps_dictionary_get(xhp->transd, "packages");
-	assert(xbps_object_type(pkgs) == XBPS_TYPE_ARRAY);
 	cnt = xbps_array_count(pkgs);
-	for (i = 0; i < cnt; i++) {
+	/* XXX: this is broken, iteratoes over an array and adds more elements???? */
+	for (unsigned i = 0; i < cnt; i++) {
 		xbps_dictionary_t pkgd;
 		xbps_string_t str;
 
@@ -322,6 +323,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 			xbps_object_release(edges);
 			return ENOMEM;
 		}
+		/* XXX: xbps_transaction_pkg_deps return code */
 		if ((rv = xbps_transaction_pkg_deps(xhp, pkgs, pkgd)) != 0) {
 			xbps_object_release(edges);
 			return rv;
@@ -332,7 +334,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 		}
 	}
 	/* ... remove dup edges at head */
-	for (i = 0; i < xbps_array_count(edges); i++) {
+	for (unsigned i = 0; i < xbps_array_count(edges); i++) {
 		const char *pkgver = NULL;
 		xbps_array_get_cstring_nocopy(edges, i, &pkgver);
 		xbps_remove_pkg_from_array_by_pkgver(pkgs, pkgver);
@@ -351,7 +353,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * for anything else.
 	 */
 	xbps_dbg_printf("%s: checking on hold pkgs\n", __func__);
-	for (i = 0; i < cnt; i++) {
+	for (unsigned i = 0; i < xbps_array_count(pkgs); i++) {
 		tpkgd = xbps_array_get(pkgs, i);
 		if (xbps_transaction_pkg_type(tpkgd) != XBPS_TRANS_HOLD) {
 			all_on_hold = false;

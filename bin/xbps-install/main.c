@@ -35,7 +35,9 @@
 #include <getopt.h>
 
 #include <xbps.h>
+
 #include "defs.h"
+#include "macro.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
@@ -214,11 +216,11 @@ main(int argc, char **argv)
 	xh.fetch_cb = fetch_file_progress_cb;
 	xh.fetch_cb_data = &xfer;
 	if (rootdir)
-		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+		strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if (cachedir)
-		xbps_strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
+		strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
 	if (confdir)
-		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
+		strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 	xh.flags = flags;
 	if (flags & XBPS_FLAG_VERBOSE)
 		xh.unpack_cb = unpack_progress_cb;

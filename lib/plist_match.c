@@ -23,11 +23,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -124,7 +125,7 @@ match_string_in_array(xbps_array_t array, const char *str, int mode)
 			pkgdep = xbps_string_cstring_nocopy(obj);
 			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgdep))
 				break;
-			if (strcmp(pkgname, str) == 0) {
+			if (streq(pkgname, str)) {
 				found = true;
 				break;
 			}
@@ -133,7 +134,7 @@ match_string_in_array(xbps_array_t array, const char *str, int mode)
 			pkgdep = xbps_string_cstring_nocopy(obj);
 			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, str))
 				break;
-			if (strcmp(pkgname, pkgdep) == 0) {
+			if (streq(pkgname, pkgdep)) {
 				found = true;
 				break;
 			}

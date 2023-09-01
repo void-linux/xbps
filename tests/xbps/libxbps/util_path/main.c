@@ -41,7 +41,7 @@ ATF_TC_BODY(xbps_path_clean, tc)
 	char buf[PATH_MAX];
 	ssize_t len;
 #define CLEAN(a, b)                          \
-	xbps_strlcpy(buf, a, sizeof (buf));  \
+	strlcpy(buf, a, sizeof (buf));  \
 	len = xbps_path_clean(buf);          \
 	ATF_CHECK_EQ(len, sizeof (b)-1);     \
 	ATF_CHECK_STREQ(buf, b)
@@ -207,7 +207,7 @@ ATF_TC_BODY(xbps_path_append, tc)
 	ssize_t len;
 
 	/* empty prefix */
-	xbps_strlcpy(buf, "fizz", sizeof buf);
+	strlcpy(buf, "fizz", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "");
 	ATF_CHECK_EQ(len, sizeof ("fizz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz");
@@ -219,69 +219,69 @@ ATF_TC_BODY(xbps_path_append, tc)
 	ATF_CHECK_STREQ(buf, "buzz");
 
 	/* add slash */
-	xbps_strlcpy(buf, "fizz", sizeof buf);
+	strlcpy(buf, "fizz", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "buzz");
 	ATF_CHECK_EQ(len, sizeof ("fizz/buzz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz/buzz");
 
 	/* already has slash in dst */
-	xbps_strlcpy(buf, "fizz/", sizeof buf);
+	strlcpy(buf, "fizz/", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "buzz");
 	ATF_CHECK_EQ(len, sizeof ("fizz/buzz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz/buzz");
 
 	/* already has slash in suffix */
-	xbps_strlcpy(buf, "fizz", sizeof buf);
+	strlcpy(buf, "fizz", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "/buzz");
 	ATF_CHECK_EQ(len, sizeof ("fizz/buzz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz/buzz");
 
 	/* slash in dst and suffix */
-	xbps_strlcpy(buf, "fizz/", sizeof buf);
+	strlcpy(buf, "fizz/", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "/buzz");
 	ATF_CHECK_EQ(len, sizeof ("fizz/buzz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz/buzz");
 
-	xbps_strlcpy(buf, "abcdefghijklmno", sizeof buf);
+	strlcpy(buf, "abcdefghijklmno", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "pqrstuvwxyz");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "abcdefghijklmn", sizeof buf);
+	strlcpy(buf, "abcdefghijklmn", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "opqrstuvwxyz");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "abcdefghijklm", sizeof buf);
+	strlcpy(buf, "abcdefghijklm", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "nopqrstuvwxyz");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "abcdefghijklmno/", sizeof buf);
+	strlcpy(buf, "abcdefghijklmno/", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "pqrstuvwxyz");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "abcdefghijklmn/", sizeof buf);
+	strlcpy(buf, "abcdefghijklmn/", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "opqrstuvwxyz");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "abcdefghijklm/", sizeof buf);
+	strlcpy(buf, "abcdefghijklm/", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "nopqrstuvwxyz");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "abcdefghijklmno", sizeof buf);
+	strlcpy(buf, "abcdefghijklmno", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "");
 	ATF_CHECK_EQ(len, sizeof ("abcdefghijklmno") - 1);
 	ATF_CHECK_STREQ(buf, "abcdefghijklmno");
 
-	xbps_strlcpy(buf, "abcdefghijklmn/", sizeof buf);
+	strlcpy(buf, "abcdefghijklmn/", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "");
 	ATF_CHECK_EQ(len, sizeof ("abcdefghijklmn/") - 1);
 	ATF_CHECK_STREQ(buf, "abcdefghijklmn/");
 
-	xbps_strlcpy(buf, "", sizeof buf);
+	strlcpy(buf, "", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "abcdefghijklmno");
 	ATF_CHECK_EQ(len, sizeof ("abcdefghijklmno") - 1);
 	ATF_CHECK_STREQ(buf, "abcdefghijklmno");
 
-	xbps_strlcpy(buf, "", sizeof buf);
+	strlcpy(buf, "", sizeof buf);
 	len = xbps_path_append(buf, sizeof buf, "abcdefghijklmn/");
 	ATF_CHECK_EQ(len, sizeof ("abcdefghijklmn/") - 1);
 	ATF_CHECK_STREQ(buf, "abcdefghijklmn/");
@@ -300,7 +300,7 @@ ATF_TC_BODY(xbps_path_prepend, tc)
 	ssize_t len;
 
 	/* empty prefix */
-	xbps_strlcpy(buf, "buzz", sizeof buf);
+	strlcpy(buf, "buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "");
 	ATF_CHECK_EQ(len, sizeof ("buzz") - 1);
 	ATF_CHECK_STREQ(buf, "buzz");
@@ -312,76 +312,76 @@ ATF_TC_BODY(xbps_path_prepend, tc)
 	ATF_CHECK_STREQ(buf, "buzz");
 
 	/* add slash */
-	xbps_strlcpy(buf, "buzz", sizeof buf);
+	strlcpy(buf, "buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "fizz");
 	ATF_CHECK_EQ(len, sizeof ("fizz/buzz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz/buzz");
 
 	/* already has slash in dst */
-	xbps_strlcpy(buf, "/buzz", sizeof buf);
+	strlcpy(buf, "/buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "fizz");
 	ATF_CHECK_EQ(len, sizeof ("fizz/buzz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz/buzz");
 
 	/* already has slash in prefix */
-	xbps_strlcpy(buf, "buzz", sizeof buf);
+	strlcpy(buf, "buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "fizz/");
 	ATF_CHECK_EQ(len, sizeof ("fizz/buzz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz/buzz");
 
 	/* slash in dst and prefix */
-	xbps_strlcpy(buf, "/buzz", sizeof buf);
+	strlcpy(buf, "/buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "fizz/");
 	ATF_CHECK_EQ(len, sizeof ("fizz/buzz") - 1);
 	ATF_CHECK_STREQ(buf, "fizz/buzz");
 
 	/* check truncation no slashes */
-	xbps_strlcpy(buf, "bar/buzz", sizeof buf);
+	strlcpy(buf, "bar/buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "fizz/foo");
 	ATF_CHECK_EQ(len, -1);
 
 	/* check truncation slash in dst*/
-	xbps_strlcpy(buf, "/bar/buzz", sizeof buf);
+	strlcpy(buf, "/bar/buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "fizz/foo");
 	ATF_CHECK_EQ(len, -1);
 
 	/* check truncation slash in prefix */
-	xbps_strlcpy(buf, "bar/buzz", sizeof buf);
+	strlcpy(buf, "bar/buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "fizz/foo/");
 	ATF_CHECK_EQ(len, -1);
 
 	/* check truncation slash in both */
-	xbps_strlcpy(buf, "/bar/buzz", sizeof buf);
+	strlcpy(buf, "/bar/buzz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "fizz/foo/");
 	ATF_CHECK_EQ(len, -1);
 
 	/* check truncation */
-	xbps_strlcpy(buf, "pqrstuvwxyz", sizeof buf);
+	strlcpy(buf, "pqrstuvwxyz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "abcdefghijklmno");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "/opqrstuvwxyz", sizeof buf);
+	strlcpy(buf, "/opqrstuvwxyz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "abcdefghijklmn/");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "/nopqrstuvwxyz", sizeof buf);
+	strlcpy(buf, "/nopqrstuvwxyz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "abcdefghijklm/");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "opqrstuvwxyz", sizeof buf);
+	strlcpy(buf, "opqrstuvwxyz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "abcdefghijklmn");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "nopqrstuvwxyz", sizeof buf);
+	strlcpy(buf, "nopqrstuvwxyz", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "abcdefghijklm");
 	ATF_CHECK_EQ(len, -1);
 
-	xbps_strlcpy(buf, "", sizeof buf);
+	strlcpy(buf, "", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "abcdefghijklmno");
 	ATF_CHECK_EQ(len, sizeof ("abcdefghijklmno") - 1);
 	ATF_CHECK_STREQ(buf, "abcdefghijklmno");
 
-	xbps_strlcpy(buf, "", sizeof buf);
+	strlcpy(buf, "", sizeof buf);
 	len = xbps_path_prepend(buf, sizeof buf, "abcdefghijklm/");
 	ATF_CHECK_EQ(len, sizeof ("abcdefghijklm/") - 1);
 	ATF_CHECK_STREQ(buf, "abcdefghijklm/");

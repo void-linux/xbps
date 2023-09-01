@@ -23,21 +23,23 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h>
+#include <errno.h>
+#include <getopt.h>
+#include <signal.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <errno.h>
-#include <signal.h>
-#include <assert.h>
-#include <unistd.h>
-#include <getopt.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #include <xbps.h>
+
 #include "../xbps-install/defs.h"
 #include "defs.h"
+#include "macro.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
@@ -249,11 +251,11 @@ main(int argc, char **argv)
 	memset(&xh, 0, sizeof(xh));
 	xh.state_cb = state_cb_rm;
 	if (rootdir)
-		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+		strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 	if (cachedir)
-		xbps_strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
+		strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
 	if (confdir)
-		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
+		strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 
 	xh.flags = flags;
 

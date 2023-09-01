@@ -400,6 +400,7 @@ proceed:
 	trans->d = xhp->transd;
 	trans->iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	assert(trans->iter);
+	/* XXX: assert with side effect */
 
 	/*
 	 * dry-run mode, show what would be done but don't run anything.

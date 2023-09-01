@@ -23,25 +23,27 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <errno.h>
-#include <assert.h>
 #include <unistd.h>
-#include <dirent.h>
-#include <limits.h>
 
 #include <xbps.h>
+
 #include "defs.h"
+#include "macro.h"
 
 static int
 binpkg_parse(char *buf, size_t bufsz, const char *path, const char **pkgver, const char **arch)
 {
 	char *p;
-	size_t n = xbps_strlcpy(buf, path, bufsz);
+	size_t n = strlcpy(buf, path, bufsz);
 	if (n >= bufsz)
 		return -ENOBUFS;
 

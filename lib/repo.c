@@ -23,13 +23,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <libgen.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <libgen.h>
-#include <fcntl.h>
 
 #include <openssl/err.h>
 #include <openssl/sha.h>
@@ -53,9 +53,10 @@ xbps_repo_path(struct xbps_handle *xhp, const char *url)
 char *
 xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *name)
 {
+	/* XXX: rewrite ... */
 	assert(xhp);
 	assert(url);
-	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0);
+	assert(streq(name, "repodata") || streq(name, "stagedata"));
 
 	return xbps_xasprintf("%s/%s-%s",
 	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch, name);
@@ -605,7 +606,7 @@ xbps_repo_get_pkg_revdeps(struct xbps_repo *repo, const char *pkg)
 			if (!xbps_pkg_name(vpkgn, XBPS_NAME_SIZE, vpkg)) {
 				abort();
 			}
-			if (strcmp(vpkgn, pkg) == 0) {
+			if (streq(vpkgn, pkg)) {
 				match = true;
 				break;
 			}

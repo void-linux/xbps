@@ -24,6 +24,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h> /* safeish */
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -31,8 +32,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "xbps_api_impl.h"
+#include "macro.h"
 #include "uthash.h"
+#include "xbps_api_impl.h"
 
 enum type {
 	TYPE_LINK = 1,
@@ -163,7 +165,7 @@ can_delete_directory(const char *file, size_t len, size_t max)
 	 */
 	for (size_t i = 0; i < max; i++) {
 		item = items[i];
-		if (strncmp(item->file, file, len) == 0) {
+		if (strneq(item->file, file, len)) {
 			if (!item->deleted) {
 				closedir(dp);
 				return false;
@@ -210,8 +212,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 	struct item *item;
 	int rv = 0;
 
-	if (xhp->transd == NULL)
-		return ENOTSUP;
+	assert(xhp->transd);
 
 	if (!xbps_dictionary_get_dict(xhp->transd, "obsolete_files", &obsd))
 		return ENOENT;
@@ -296,8 +297,8 @@ collect_obsoletes(struct xbps_handle *xhp)
 		/*
 		 * Make sure to not remove any symlink of root directory.
 		 */
-		for (uint8_t x = 0; x < __arraycount(basesymlinks); x++) {
-			if (strcmp(item->file+1, basesymlinks[x]) == 0) {
+		for (uint8_t x = 0; x < ARRAY_SIZE(basesymlinks); x++) {
+			if (streq(item->file+1, basesymlinks[x])) {
 				found = true;
 				break;
 			}
@@ -353,7 +354,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 		    (xhp->flags & XBPS_FLAG_FORCE_REMOVE_FILES) == 0) {
 			char path[PATH_MAX], *lnk;
 			const char *file = item->file+1;
-			if (strcmp(xhp->rootdir, "/") != 0) {
+			if (!streq(xhp->rootdir, "/")) {
 				snprintf(path, sizeof(path), "%s%s",
 				    xhp->rootdir, item->file+1);
 				file = path;
@@ -364,7 +365,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 				    "symlink_target: %s\n", item->file+1, strerror(errno));
 				continue;
 			}
-			if (strcmp(lnk, item->old.target) != 0) {
+			if (!streq(lnk, item->old.target)) {
 				xbps_dbg_printf("[obsoletes] %s: skipping modified"
 				    " symlink (stored `%s' current `%s'): %s\n",
 				    item->old.pkgname, item->old.target, lnk, item->file+1);
@@ -544,7 +545,7 @@ add:
 		 * The file was removed by one package
 		 * and installed by another package.
 		 */
-		if (strcmp(item->new.pkgname, item->old.pkgname) != 0) {
+		if (!streq(item->new.pkgname, item->old.pkgname)) {
 			if (removefile) {
 				xbps_dbg_printf("[files] %s: %s moved to"
 				    " package `%s': %s\n", pkgver, typestr(item->old.type),
@@ -727,7 +728,7 @@ collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 			continue;
 
 		entry_pname = archive_entry_pathname(entry);
-		if ((strcmp("./files.plist", entry_pname)) == 0) {
+		if (streq("./files.plist", entry_pname)) {
 			filesd = xbps_archive_get_dictionary(ar, entry);
 			if (filesd == NULL) {
 				rv = EINVAL;

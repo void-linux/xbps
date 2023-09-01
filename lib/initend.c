@@ -25,6 +25,8 @@
  */
 
 #include <sys/utsname.h>
+
+#include <assert.h> /* safe */
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -112,7 +114,7 @@ xbps_init(struct xbps_handle *xhp)
 
 	/* allow to overwrite uname(3) and conf file with env variable */
 	if ((native_arch = getenv("XBPS_ARCH")) && *native_arch != '\0') {
-		if (xbps_strlcpy(xhp->native_arch, native_arch,
+		if (strlcpy(xhp->native_arch, native_arch,
 		    sizeof xhp->native_arch) >= sizeof xhp->native_arch)
 			return ENOBUFS;
 	}
@@ -121,7 +123,7 @@ xbps_init(struct xbps_handle *xhp)
 		struct utsname un;
 		if (uname(&un) == -1)
 			return ENOTSUP;
-		if (xbps_strlcpy(xhp->native_arch, un.machine,
+		if (strlcpy(xhp->native_arch, un.machine,
 			sizeof xhp->native_arch) >= sizeof xhp->native_arch)
 			return ENOBUFS;
 	}

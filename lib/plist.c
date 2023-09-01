@@ -23,12 +23,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <pthread.h>
 
 #include "xbps_api_impl.h"
 
@@ -73,7 +73,7 @@ array_foreach_thread(void *arg)
 				pkgd = xbps_dictionary_get_keysym(thd->dict, obj);
 				key = xbps_dictionary_keysym_cstring_nocopy(obj);
 				/* ignore internal objs */
-				if (strncmp(key, "_XBPS_", 6) == 0)
+				if (strneq(key, "_XBPS_", 6))
 					continue;
 			} else {
 				pkgd = obj;
@@ -120,7 +120,8 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 		return xbps_array_foreach_cb(xhp, array, dict, fn, arg);
 
 	thd = calloc(maxthreads, sizeof(*thd));
-	assert(thd);
+	if (!thd)
+		return errno;
 
 	// maxthread is boundchecked to be > 1
 	if((unsigned int)maxthreads >= arraycount) {
@@ -184,7 +185,7 @@ xbps_array_foreach_cb(struct xbps_handle *xhp,
 			pkgd = xbps_dictionary_get_keysym(dict, obj);
 			key = xbps_dictionary_keysym_cstring_nocopy(obj);
 			/* ignore internal objs */
-			if (strncmp(key, "_XBPS_", 6) == 0)
+			if (strneq(key, "_XBPS_", 6))
 				continue;
 		} else {
 			pkgd = obj;
@@ -246,7 +247,7 @@ array_replace_dict(xbps_array_t array,
 		} else {
 			/* pkgname match */
 			xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
-			if (strcmp(pkgname, str) == 0) {
+			if (streq(pkgname, str)) {
 				if (!xbps_array_set(array, i, dict)) {
 					return EINVAL;
 				}

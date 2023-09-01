@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2014 Juan Romero Pardines.
+ * Copyright (c) 2012-2020 Juan Romero Pardines.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,48 +22,24 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef XBPS_MACRO_H
+#define XBPS_MACRO_H
 
-#include <stdlib.h>
+#define UNUSED          __attribute__((__unused__))
 
-#include <xbps.h>
+#ifndef __UNCONST
+# define __UNCONST(a)   ((void *)(uintptr_t)(const void *)(a))
+#endif
 
-#include "defs.h"
-#include "macro.h"
+#if HAVE_VISIBILITY
+# define HIDDEN         __attribute__ ((visibility("hidden")))
+#else
+# define HIDDEN
+#endif
 
-/*
- * Checks package integrity of an installed package.
- * The following task is accomplished in this file:
- *
- * 	o Check if pkg dictionary from pkgdb contains "unneeded" objects,
- * 	  and remove them if that was true.
- */
-int
-check_pkg_unneeded(struct xbps_handle *xhp UNUSED, const char *pkgname, void *arg)
-{
-	xbps_array_t replaces;
-	xbps_dictionary_t pkgd = arg;
-	const char *repo = NULL;
-	char *buf;
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-	xbps_dictionary_remove(pkgd, "download");
-	xbps_dictionary_remove(pkgd, "remove-and-update");
-	xbps_dictionary_remove(pkgd, "transaction");
-	xbps_dictionary_remove(pkgd, "skip-obsoletes");
-	xbps_dictionary_remove(pkgd, "packaged-with");
-	if (xbps_dictionary_get_cstring_nocopy(pkgd, "repository-origin", &repo)) {
-		xbps_dictionary_set_cstring(pkgd, "repository", repo);
-		xbps_dictionary_remove(pkgd, "repository-origin");
-	}
-	/*
-	 * Remove self replacement when applicable.
-	 */
-	if ((replaces = xbps_dictionary_get(pkgd, "replaces"))) {
-		buf = xbps_xasprintf("%s>=0", pkgname);
-		xbps_remove_string_from_array(replaces, buf);
-		free(buf);
-		if (!xbps_array_count(replaces))
-			xbps_dictionary_remove(pkgd, "replaces");
-	}
+#define streq(a,b)      (strcmp((a),(b)) == 0)
+#define strneq(a, b, n) (strncmp((a), (b), (n)) == 0)
 
-	return 0;
-}
+#endif /*!XBPS_MACRO_H*/

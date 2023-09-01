@@ -57,11 +57,6 @@
  *
  */
 
-#ifdef __linux__
-/* Keep this down to Linux, it can create surprises else where. */
-#define _GNU_SOURCE
-#endif
-
 #include <sys/types.h>
 #include <sys/socket.h>
 

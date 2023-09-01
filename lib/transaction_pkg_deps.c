@@ -23,10 +23,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safeish */
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -66,9 +66,9 @@ add_missing_reqdep(struct xbps_handle *xhp, const char *reqpkg)
 		if (!xbps_pkgpattern_name(pkgnamedep, XBPS_NAME_SIZE, reqpkg)) {
 			goto out;
 		}
-		if (strcmp(pkgnamedep, curpkgnamedep) == 0) {
+		if (streq(pkgnamedep, curpkgnamedep)) {
 			pkgfound = true;
-			if (strcmp(curver, pkgver) == 0) {
+			if (streq(curver, pkgver)) {
 				rv = EEXIST;
 				goto out;
 			}
@@ -142,7 +142,10 @@ repo_deps(struct xbps_handle *xhp,
 		goto out;
 
 	iter = xbps_array_iterator(pkg_rdeps);
-	assert(iter);
+	if (!iter) {
+		rv = ENOMEM;
+		goto out;
+	}
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		bool error = false, foundvpkg = false;
@@ -254,7 +257,7 @@ repo_deps(struct xbps_handle *xhp,
 					abort();
 				}
 
-				if (strcmp(pkgname, curpkgname)) {
+				if (!streq(pkgname, curpkgname)) {
 					xbps_dbg_printf_append("not installed `%s (vpkg)'", pkgver_q);
 					if (xbps_dictionary_get(curpkgd, "hold")) {
 						ttype = XBPS_TRANS_HOLD;
@@ -373,7 +376,7 @@ repo_deps(struct xbps_handle *xhp,
 			rv = EINVAL;
 			break;
 		}
-		if (strcmp(pkgname, reqpkgname) == 0) {
+		if (streq(pkgname, reqpkgname)) {
 			xbps_dbg_printf_append("[ignoring wrong dependency %s (depends on itself)]\n", reqpkg);
 			xbps_remove_string_from_array(pkg_rdeps, reqpkg);
 			continue;

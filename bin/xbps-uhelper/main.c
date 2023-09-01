@@ -146,9 +146,9 @@ main(int argc, char **argv)
 		xh.fetch_cb_data = &xfer;
 		xh.flags = flags;
 		if (rootdir)
-			xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
+			strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
 		if (confdir)
-			xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
+			strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 		if ((rv = xbps_init(&xh)) != 0) {
 			xbps_error_printf("xbps-uhelper: failed to "
 			    "initialize libxbps: %s.\n", strerror(rv));

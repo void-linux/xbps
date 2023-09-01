@@ -26,20 +26,23 @@
  *
  */
 
-#include <getopt.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
+#include <sys/stat.h>
+
+#include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <errno.h>
+#include <getopt.h>
 #include <limits.h>
-#include <sys/stat.h>
-#include <assert.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <xbps.h>
+
+#include "macro.h"
 
 #define GOT_PKGNAME_VAR 	0x1
 #define GOT_VERSION_VAR 	0x2
@@ -110,10 +113,10 @@ rcv_init(rcv_t *rcv, const char *prog)
 	assert(rcv->cache);
 
 	if (rcv->xbps_conf != NULL) {
-		xbps_strlcpy(rcv->xhp.confdir, rcv->xbps_conf, sizeof(rcv->xhp.confdir));
+		strlcpy(rcv->xhp.confdir, rcv->xbps_conf, sizeof(rcv->xhp.confdir));
 	}
 	if (rcv->rootdir != NULL) {
-		xbps_strlcpy(rcv->xhp.rootdir, rcv->rootdir, sizeof(rcv->xhp.rootdir));
+		strlcpy(rcv->xhp.rootdir, rcv->rootdir, sizeof(rcv->xhp.rootdir));
 	}
 	if (xbps_init(&rcv->xhp) != 0)
 		abort();
@@ -817,8 +820,8 @@ main(int argc, char **argv)
 		if ((p = strrchr(argv[i], '/')) && (strcmp(p, "/template")) == 0) {
 			tmpl = argv[i];
 		} else {
-			xbps_strlcat(tmp, argv[i], sizeof tmp);
-			xbps_strlcat(tmp, "/template", sizeof tmp);
+			strlcat(tmp, argv[i], sizeof tmp);
+			strlcat(tmp, "/template", sizeof tmp);
 			tmpl = tmp;
 		}
 		rcv_process_file(&rcv, tmpl, rcv_check_version);

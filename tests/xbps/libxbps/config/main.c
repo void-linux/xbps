@@ -47,8 +47,8 @@ ATF_TC_BODY(config_include_test, tc)
 	memset(&xh, 0, sizeof(xh));
 	buf = getcwd(pwd, sizeof(pwd));
 
-	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
-	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
+	strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
+	strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
 	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
 	ATF_REQUIRE_EQ((ret >= 0), 1);
 	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
@@ -99,8 +99,8 @@ ATF_TC_BODY(config_include_nomatch_test, tc)
 	memset(&xh, 0, sizeof(xh));
 	buf = getcwd(pwd, sizeof(pwd));
 
-	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
 	ATF_REQUIRE_EQ((ret >= 0), 1);
 	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
@@ -139,8 +139,8 @@ ATF_TC_BODY(config_include_absolute, tc)
 	memset(&xh, 0, sizeof(xh));
 	buf = getcwd(pwd, sizeof(pwd));
 
-	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
-	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
+	strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
+	strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
 	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
 	ATF_REQUIRE_EQ((ret >= 0), 1);
 	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
@@ -187,8 +187,8 @@ ATF_TC_BODY(config_include_absolute_glob, tc)
 	memset(&xh, 0, sizeof(xh));
 	buf = getcwd(pwd, sizeof(pwd));
 
-	xbps_strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
-	xbps_strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
+	strlcpy(xh.rootdir, pwd, sizeof(xh.rootdir));
+	strlcpy(xh.metadir, pwd, sizeof(xh.metadir));
 	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
 	ATF_REQUIRE_EQ((ret >= 0), 1);
 	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
@@ -241,8 +241,8 @@ ATF_TC_BODY(config_masking, tc)
 	memset(&xh, 0, sizeof(xh));
 	buf = getcwd(pwd, sizeof(pwd));
 
-	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
 	ATF_REQUIRE_EQ((ret >= 0), 1);
 	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
@@ -295,8 +295,8 @@ ATF_TC_BODY(config_trim_values, tc)
 	memset(&xh, 0, sizeof(xh));
 	buf = getcwd(pwd, sizeof(pwd));
 
-	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
 	ATF_REQUIRE_EQ((ret >= 0), 1);
 	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);
@@ -346,8 +346,8 @@ ATF_TC_BODY(config_no_trailing_newline, tc)
 	memset(&xh, 0, sizeof(xh));
 	buf = getcwd(pwd, sizeof(pwd));
 
-	xbps_strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
-	xbps_strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
+	strlcpy(xh.rootdir, tcsdir, sizeof(xh.rootdir));
+	strlcpy(xh.metadir, tcsdir, sizeof(xh.metadir));
 	ret = snprintf(xh.confdir, sizeof(xh.confdir), "%s/xbps.d", pwd);
 	ATF_REQUIRE_EQ((ret >= 0), 1);
 	ATF_REQUIRE_EQ(((size_t)ret < sizeof(xh.confdir)), 1);

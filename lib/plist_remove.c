@@ -23,11 +23,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -60,7 +60,7 @@ remove_obj_from_array(xbps_array_t array, const char *str, int mode)
 			if (!xbps_pkg_name(curpkgname, sizeof(curpkgname), pkgdep))
 				break;
 
-			if (strcmp(curpkgname, str) == 0) {
+			if (streq(curpkgname, str)) {
 				found = true;
 				break;
 			}
@@ -68,7 +68,7 @@ remove_obj_from_array(xbps_array_t array, const char *str, int mode)
 			/* match by pkgname, obj is a dictionary  */
 			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgname", &curname);
-			if (strcmp(curname, str) == 0) {
+			if (streq(curname, str)) {
 				found = true;
 				break;
 			}
@@ -76,7 +76,7 @@ remove_obj_from_array(xbps_array_t array, const char *str, int mode)
 			/* match by pkgver, obj is a dictionary */
 			xbps_dictionary_get_cstring_nocopy(obj,
 			    "pkgver", &curname);
-			if (strcmp(curname, str) == 0) {
+			if (streq(curname, str)) {
 				found = true;
 				break;
 			}

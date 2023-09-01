@@ -22,25 +22,26 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#define _GNU_SOURCE
-#include <sys/types.h>
-#include <sys/mount.h>
+
 #include <sys/fsuid.h>
+#include <sys/mount.h>
+#include <sys/types.h>
 #include <sys/wait.h>
+
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <grp.h>
+#include <limits.h>
 #include <sched.h>
+#include <signal.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <grp.h>
-#include <errno.h>
-#include <limits.h>
 #include <syscall.h>
-#include <assert.h>
-#include <getopt.h>
+#include <unistd.h>
 
 #include <xbps.h>
 #include "queue.h"

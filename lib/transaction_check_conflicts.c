@@ -23,12 +23,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
+#include "macro.h"
 #include "xbps_api_impl.h"
 
 static void
@@ -57,6 +58,8 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 		return;
 	}
 
+	/* XXX: propagate errors */
+
 	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
 	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver)) {
 		return;
@@ -66,7 +69,8 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 	}
 
 	iter = xbps_array_iterator(pkg_cflicts);
-	assert(iter);
+	if (!iter)
+		return;
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		const char *pkgver = NULL, *pkgname = NULL;
@@ -86,7 +90,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
 				break;
 			}
-			if (strcmp(pkgname, repopkgname) == 0) {
+			if (streq(pkgname, repopkgname)) {
 				continue;
 			}
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
@@ -131,7 +135,7 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname)) {
 				break;
 			}
-			if (strcmp(pkgname, repopkgname) == 0) {
+			if (streq(pkgname, repopkgname)) {
 				continue;
 			}
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
@@ -184,7 +188,8 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 
 	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
 	iter = xbps_array_iterator(pkg_cflicts);
-	assert(iter);
+	if (!iter)
+		return EINVAL;
 
 	while ((obj2 = xbps_object_iterator_next(iter))) {
 		const char *pkgver = NULL, *pkgname = NULL;
@@ -202,7 +207,7 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 				rv = EINVAL;
 				break;
 			}
-			if (strcmp(pkgname, repopkgname) == 0) {
+			if (streq(pkgname, repopkgname)) {
 				continue;
 			}
 			if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {

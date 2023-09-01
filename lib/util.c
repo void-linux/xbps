@@ -22,19 +22,9 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifdef HAVE_VASPRINTF
-# define _GNU_SOURCE	/* for vasprintf(3) */
-#endif
-
-#if defined(HAVE_STRLCAT) || defined(HAVE_STRLCPY)
-# define _BSD_SOURCE
-#endif
-
-#include "compat.h"
-
 #include <sys/utsname.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fnmatch.h>
@@ -46,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "compat.h"
 #include "xbps_api_impl.h"
 
 #ifdef __clang__
@@ -73,12 +64,9 @@ xbps_repository_is_remote(const char *uri)
 {
 	assert(uri != NULL);
 
-	if ((strncmp(uri, "http://", 7) == 0) ||
-	    (strncmp(uri, "https://", 8) == 0) ||
-	    (strncmp(uri, "ftp://", 6) == 0))
-		return true;
-
-	return false;
+	return strneq(uri, "http://", 7) ||
+	    strneq(uri, "https://", 8) ||
+	    strneq(uri, "ftp://", 6);
 }
 
 int
@@ -159,6 +147,8 @@ xbps_binpkg_pkgver(const char *pkg)
 	char *p, *p1, *res;
 	unsigned int len;
 
+	/* XXX: rewrite less stupid */
+
 	assert(pkg);
 
 	/* skip path if found, only interested in filename */
@@ -173,7 +163,8 @@ xbps_binpkg_pkgver(const char *pkg)
 	len -= 5;
 
 	p = malloc(len+1);
-	assert(p);
+	if (!p)
+		return NULL;
 	(void)memcpy(p, fname, len);
 	p[len] = '\0';
 	if (!(p1 = strrchr(p, '.'))) {
@@ -188,7 +179,8 @@ xbps_binpkg_pkgver(const char *pkg)
 		return NULL;
 	}
 	res = strdup(p);
-	assert(res);
+	if (!res)
+		return NULL;
 
 	free(p);
 	return res;
@@ -200,6 +192,8 @@ xbps_binpkg_arch(const char *pkg)
 	const char *fname;
 	char *p, *p1, *res;
 	unsigned int len;
+
+	/* XXX: rewrite less stupid */
 
 	assert(pkg);
 
@@ -215,7 +209,8 @@ xbps_binpkg_arch(const char *pkg)
 	len -= 5;
 
 	p = malloc(len+1);
-	assert(p);
+	if (!p)
+		return NULL;
 	(void)memcpy(p, fname, len);
 	p[len] = '\0';
 	if (!(p1 = strrchr(p, '.'))) {
@@ -223,7 +218,10 @@ xbps_binpkg_arch(const char *pkg)
 		return NULL;
 	}
 	res = strdup(p1 + 1);
-	assert(res);
+	if (!res) {
+		free(p);
+		return NULL;
+	}
 
 	free(p);
 	return res;
@@ -350,6 +348,7 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		/*
 		 * First check if binpkg is available in cachedir.
 		 */
+		/* XXX: replace with sane buffer */
 		lbinpkg = xbps_xasprintf("%s/%s.%s.xbps", xhp->cachedir,
 				pkgver, arch);
 		if (access(lbinpkg, R_OK) == 0)
@@ -360,6 +359,7 @@ xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	/*
 	 * Local and remote repositories use the same path.
 	 */
+	/* XXX: replace with sane buffer */
 	return xbps_xasprintf("%s/%s.%s.xbps", repoloc, pkgver, arch);
 }
 
@@ -436,26 +436,12 @@ bool
 xbps_pkg_arch_match(struct xbps_handle *xhp, const char *orig,
 		const char *target)
 {
-	const char *arch;
-
-	assert(xhp);
-	assert(orig);
-
-	if (xhp->target_arch)
-		arch = xhp->target_arch;
-	else
-		arch = xhp->native_arch;
-
-	if (target == NULL) {
-		if ((strcmp(orig, "noarch") == 0) ||
-		    (strcmp(orig, arch) == 0))
-			return true;
-	} else {
-		if ((strcmp(orig, "noarch") == 0) ||
-		    (strcmp(orig, target) == 0))
-			return true;
-	}
-	return false;
+	assert(xhp && orig);
+	if (streq(orig, "noarch"))
+		return true;
+	if (target && streq(orig, target))
+		return true;
+	return streq(orig, xhp->target_arch ? xhp->target_arch : xhp->native_arch);
 }
 
 char *
@@ -468,6 +454,7 @@ xbps_xasprintf(const char *fmt, ...)
 	if (vasprintf(&buf, fmt, ap) == -1) {
 		va_end(ap);
 		assert(buf);
+		abort();
 	}
 	va_end(ap);
 	assert(buf);
@@ -485,7 +472,7 @@ xbps_pkgpattern_match(const char *pkg, const char *pattern)
 	assert(pattern);
 
 	/* simple match on "pkg" against "pattern" */
-	if (strcmp(pattern, pkg) == 0)
+	if (streq(pattern, pkg))
 		return 1;
 
 	/* perform relational dewey match on version number */
@@ -514,24 +501,6 @@ xbps_humanize_number(char *buf, int64_t bytes)
 	    HN_AUTOSCALE, HN_DECIMAL|HN_NOSPACE);
 }
 
-size_t
-xbps_strlcat(char *dest, const char *src, size_t siz)
-{
-	assert(dest);
-	assert(src);
-
-	return strlcat(dest, src, siz);
-}
-
-size_t
-xbps_strlcpy(char *dest, const char *src, size_t siz)
-{
-	assert(dest);
-	assert(src);
-
-	return strlcpy(dest, src, siz);
-}
-
 /*
  * Check if pkg is explicitly marked to replace a specific installed version.
  */
@@ -551,7 +520,7 @@ xbps_pkg_reverts(xbps_dictionary_t pkg, const char *pkgver)
 
 	for (i = 0; i < xbps_array_count(reverts); i++) {
 		xbps_array_get_cstring_nocopy(reverts, i, &revertver);
-		if (strcmp(version, revertver) == 0) {
+		if (streq(version, revertver)) {
 			return true;
 		}
 	}
@@ -594,6 +563,8 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 	char *rootdir = NULL;
 	ssize_t r;
 
+	/* XXX: rewrite wth... */
+
 	assert(xhp);
 	assert(path);
 	assert(tgt);
@@ -634,7 +605,7 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 			free(lnk);
 			return strdup(tgt);
 		}
-		if (strcmp(rootdir, "/") == 0) {
+		if (streq(rootdir, "/")) {
 			res = strdup(p);
 		} else {
 			p1 = strdup(p + strlen(rootdir));
@@ -650,7 +621,7 @@ xbps_symlink_target(struct xbps_handle *xhp, const char *path, const char *tgt)
 		assert(p);
 		dname = dirname(p);
 		assert(dname);
-		if (strcmp(rootdir, "/") == 0) {
+		if (streq(rootdir, "/")) {
 			p1 = xbps_xasprintf("%s/%s", dname, lnk);
 			assert(p1);
 			res = xbps_sanitize_path(p1);

@@ -23,14 +23,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/utsname.h>
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <libgen.h>
 #include <string.h>
-#include <errno.h>
 
+#include "macro.h"
 #include "xbps_api_impl.h"
 #include "fetch.h"
 
@@ -66,7 +65,7 @@ xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
 		/* If argument was set just process that repository */
-		if (uri && strcmp(repouri, uri))
+		if (uri && !streq(repouri, uri))
 			continue;
 
 		if (xbps_repo_sync(xhp, repouri) == -1) {
@@ -90,7 +89,7 @@ xbps_regget_repo(struct xbps_handle *xhp, const char *url)
 		/* iterate until we have a match */
 		for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 			xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
-			if (strcmp(repouri, url))
+			if (!streq(repouri, url))
 				continue;
 
 			repo = xbps_repo_open(xhp, repouri);
@@ -102,7 +101,7 @@ xbps_regget_repo(struct xbps_handle *xhp, const char *url)
 		}
 	}
 	SIMPLEQ_FOREACH(repo, &rpool_queue, entries)
-		if (strcmp(url, repo->uri) == 0)
+		if (streq(url, repo->uri))
 			return repo;
 
 	return NULL;
@@ -114,7 +113,7 @@ xbps_rpool_get_repo(const char *url)
 	struct xbps_repo *repo;
 
 	SIMPLEQ_FOREACH(repo, &rpool_queue, entries)
-		if (strcmp(url, repo->uri) == 0)
+		if (streq(url, repo->uri))
 			return repo;
 
 	return NULL;

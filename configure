@@ -195,12 +195,11 @@ echo "CC =	$CC" >>$CONFIG_MK
 echo "CFLAGS =	-O2" >>$CONFIG_MK
 
 echo "LDFLAGS =  	-L\$(TOPDIR)/lib" >>$CONFIG_MK
-echo "CPPFLAGS = 	-I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
+echo "CPPFLAGS = 	-I\$(TOPDIR)/lib/compat -I. -I\$(TOPDIR) -I\$(TOPDIR)/include" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSCONF_PATH=\\\"${ETCDIR}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_SYSDEFCONF_PATH=\\\"${SHAREDIR}/xbps.d\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_VERSION=\\\"${VERSION}\\\"" >>$CONFIG_MK
 echo "CPPFLAGS +=	-DXBPS_META_PATH=\\\"${DBDIR}\\\"" >>$CONFIG_MK
-echo "CPPFLAGS +=	-DUNUSED=\"__attribute__((__unused__))\"" >>$CONFIG_MK
 
 if [ -d .git ] && command -v git >/dev/null; then
 	_gitrev=$(git rev-parse --short HEAD)
@@ -220,9 +219,10 @@ if [ -n "$FULL_DEBUG" ]; then
 	echo "CPPFLAGS+= -DFULL_DEBUG" >>$CONFIG_MK
 fi
 
+echo "CPPFLAGS += 	-D_DEFAULT_SOURCE" >>$CONFIG_MK
+echo "CPPFLAGS += 	-D_GNU_SOURCE" >>$CONFIG_MK
 case "$OS" in
 linux)
-	echo "CPPFLAGS += 	-D_XOPEN_SOURCE=700" >>$CONFIG_MK
 	echo "CPPFLAGS += 	-D_FILE_OFFSET_BITS=64" >> $CONFIG_MK
 	;;
 *)

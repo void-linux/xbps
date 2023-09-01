@@ -23,10 +23,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h> /* safe */
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include "xbps_api_impl.h"
 
@@ -61,7 +61,7 @@ xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key
 	buf[len] = '\0';
 
 	/* notify client to show the post-install message */
-	if (strcmp(key, "install-msg") == 0)
+	if (streq(key, "install-msg"))
 		xbps_set_cb_state(xhp, XBPS_STATE_SHOW_INSTALL_MSG, 0, pkgver, "%s", buf);
 	else
 		xbps_set_cb_state(xhp, XBPS_STATE_SHOW_REMOVE_MSG, 0, pkgver, "%s", buf);

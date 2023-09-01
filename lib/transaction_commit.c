@@ -23,15 +23,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h>
+#include <errno.h>
+#include <locale.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <ctype.h>
-#include <unistd.h>
-#include <limits.h>
-#include <locale.h>
 
 #include "xbps_api_impl.h"
 
@@ -114,6 +111,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	int rv = 0;
 	bool update;
 
+	/* XXX: is this the right place? */
 	setlocale(LC_ALL, "");
 
 	/*
@@ -370,7 +368,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	    !xbps_dictionary_get(xhp->transd, "total-install-pkgs"))
 		goto out;
 
-	if (xhp->target_arch && strcmp(xhp->native_arch, xhp->target_arch)) {
+	if (xhp->target_arch && !streq(xhp->native_arch, xhp->target_arch)) {
 		/* if installing packages for target_arch, don't configure anything */
 		goto out;
 		/* do not configure packages if only unpacking is desired */

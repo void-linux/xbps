@@ -23,7 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +62,7 @@ xbps_pkg_exec_buffer(struct xbps_handle *xhp,
 		return 0;
 	}
 
-	if (strcmp(xhp->rootdir, "/") == 0) {
+	if (streq(xhp->rootdir, "/")) {
 		tmpdir = getenv("TMPDIR");
 		if (tmpdir == NULL)
 			tmpdir = P_tmpdir;

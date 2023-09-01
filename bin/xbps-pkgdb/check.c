@@ -24,16 +24,19 @@
  */
 
 #include <sys/param.h>
-#include <stdio.h>
+
+#include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
-#include <assert.h>
 
 #include <xbps.h>
+
 #include "defs.h"
+#include "macro.h"
 
 static int
 pkgdb_cb(struct xbps_handle *xhp UNUSED,

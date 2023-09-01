@@ -29,6 +29,8 @@
 #ifdef __FreeBSD__
 #define _WITH_GETLINE   /* getline() */
 #endif
+
+#include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -36,11 +38,11 @@
 #include <libgen.h>
 #include <limits.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
+#include "macro.h"
 #include "xbps_api_impl.h"
 
 /**
@@ -107,7 +109,7 @@ store_preserved_file(struct xbps_handle *xhp, const char *file)
 		len = strlen(globbuf.gl_pathv[i]) - strlen(xhp->rootdir) + 1;
 		p = malloc(len);
 		assert(p);
-		xbps_strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
+		strlcpy(p, globbuf.gl_pathv[i] + strlen(xhp->rootdir), len);
 		xbps_array_add_cstring(xhp->preserved_files, p);
 		xbps_dbg_printf("Added preserved file: %s (expanded from %s)\n", p, file);
 		free(p);
@@ -211,7 +213,7 @@ parse_option(char *line, size_t linelen, char **valp, size_t *vallen)
 	if (*p != '=')
 		return KEY_ERROR;
 
-	result = bsearch(&needle, keys, __arraycount(keys), sizeof(struct key), cmpkey);
+	result = bsearch(&needle, keys, ARRAY_SIZE(keys), sizeof(struct key), cmpkey);
 	if (result == NULL)
 		return KEY_ERROR;
 

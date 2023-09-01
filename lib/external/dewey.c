@@ -28,11 +28,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define _BSD_SOURCE
 #include <string.h>
-#undef _BSD_SOURCE
 #include <strings.h>
 #include <ctype.h>
 
@@ -330,7 +329,7 @@ dewey_match(const char *pattern, const char *pkg)
 	if (sep2) {
 		char ver[PKG_PATTERN_MAX];
 
-		xbps_strlcpy(ver, sep, MIN((ssize_t)sizeof(ver), sep2-sep+1));
+		strlcpy(ver, sep, MIN((ssize_t)sizeof(ver), sep2-sep+1));
 		if (dewey_cmp(version, op, ver))
 			return 1;
 	} else {

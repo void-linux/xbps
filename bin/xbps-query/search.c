@@ -23,25 +23,21 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_STRCASESTR
-# define _GNU_SOURCE    /* for strcasestr(3) */
-#endif
-
-#include "compat.h"
-
-#include <stdio.h>
+#include <assert.h>
+#include <errno.h>
+#include <fnmatch.h>
+#include <libgen.h>
+#include <limits.h>
+#include <regex.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <limits.h>
-#include <libgen.h>
-#include <fnmatch.h>
-#include <assert.h>
-#include <regex.h>
 
 #include <xbps.h>
+
 #include "defs.h"
+#include "macro.h"
 
 struct search_data {
 	bool regex, repo_mode;
