@@ -35,7 +35,9 @@
 #include <getopt.h>
 
 #include <xbps.h>
+
 #include "defs.h"
+#include "macro.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)

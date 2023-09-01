@@ -23,18 +23,20 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fnmatch.h>
-#include <dirent.h>
-#include <assert.h>
 #include <regex.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <xbps.h>
+
 #include "defs.h"
+#include "macro.h"
 
 struct ffdata {
 	bool rematch;

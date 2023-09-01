@@ -29,19 +29,8 @@
 
 #include "xbps.h"
 
-/*
- * By default all public functions have default visibility, unless
- * visibility has been detected by configure and the HIDDEN definition
- * is used.
- */
-#if HAVE_VISIBILITY
-#define HIDDEN __attribute__ ((visibility("hidden")))
-#else
-#define HIDDEN
-#endif
-
 #include "queue.h"
-#include "compat.h"
+#include "macro.h"
 
 #define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \
 			ARCHIVE_EXTRACT_SECURE_SYMLINKS | \
@@ -49,10 +38,6 @@
 			ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | \
 			ARCHIVE_EXTRACT_UNLINK
 #define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | EXTRACT_FLAGS
-
-#ifndef __UNCONST
-#define __UNCONST(a)	((void *)(uintptr_t)(const void *)(a))
-#endif
 
 #ifndef __arraycount
 #define __arraycount(x) (sizeof(x) / sizeof(*x))

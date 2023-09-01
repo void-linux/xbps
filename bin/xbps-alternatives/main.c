@@ -35,6 +35,8 @@
 
 #include <xbps.h>
 
+#include "macro.h"
+
 static void __attribute__((noreturn))
 usage(bool fail)
 {

@@ -23,13 +23,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <syslog.h>
-#include <assert.h>
+
 #include <xbps.h>
+
 #include "defs.h"
+#include "macro.h"
 
 int
 state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)

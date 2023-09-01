@@ -58,9 +58,12 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
+/* XXX: this shouldn't need xbps_api_impl.h */
 #include "xbps_api_impl.h"
 
 ssize_t

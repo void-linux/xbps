@@ -1,15 +1,12 @@
 #ifndef COMPAT_H
 #define COMPAT_H
 
-#include <inttypes.h>
 #include <sys/types.h>
-#include <stdarg.h>
 
-#if HAVE_VISIBILITY
-#define HIDDEN __attribute__ ((visibility("hidden")))
-#else
-#define HIDDEN
-#endif
+#include <stdarg.h>
+#include <stdint.h>
+
+#include "macro.h"
 
 #ifndef HAVE_STRLCAT
 size_t HIDDEN strlcat(char *, const char *, size_t);

@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "macro.h"
 #include "xbps_api_impl.h"
 
 /**

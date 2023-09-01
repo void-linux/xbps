@@ -49,22 +49,26 @@
  */
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <dirent.h>
-#include <assert.h>
-#include <libgen.h>
-#include <limits.h>
-#include <errno.h>
-#include <fcntl.h>
+
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+
+#include <assert.h>
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
+#include <libgen.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include <xbps.h>
+
+#include "macro.h"
 #include "uthash.h"
 
 #ifndef __arraycount

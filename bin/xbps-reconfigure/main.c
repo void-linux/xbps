@@ -23,16 +23,18 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <getopt.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <getopt.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #include <xbps.h>
+
 #include "defs.h"
+#include "macro.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
