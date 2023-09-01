@@ -23,14 +23,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <sys/stat.h>
+
+#include <errno.h>
+#include <fcntl.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
+#include "macro.h"
 #include "xbps_api_impl.h"
 
 static int
@@ -115,7 +117,7 @@ pkgdb038(struct xbps_handle *xhp, const char *opkgdb_plist)
 
 			key = xbps_dictionary_keysym_cstring_nocopy(obj2);
 			curobj = xbps_dictionary_get_keysym(pkgmetad, obj2);
-			for (uint8_t i = 0; i < __arraycount(excluded); i++) {
+			for (uint8_t i = 0; i < ARRAY_SIZE(excluded); i++) {
 				if (strcmp(excluded[i], key) == 0) {
 					skip = true;
 					break;

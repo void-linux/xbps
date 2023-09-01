@@ -37,4 +37,6 @@
 # define HIDDEN
 #endif
 
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 #endif /*!XBPS_MACRO_H*/

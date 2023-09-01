@@ -39,10 +39,6 @@
 			ARCHIVE_EXTRACT_UNLINK
 #define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | EXTRACT_FLAGS
 
-#ifndef __arraycount
-#define __arraycount(x) (sizeof(x) / sizeof(*x))
-#endif
-
 /**
  * @private
  */

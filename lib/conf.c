@@ -42,6 +42,7 @@
 #include <string.h>
 #include <strings.h>
 
+#include "macro.h"
 #include "xbps_api_impl.h"
 
 /**
@@ -212,7 +213,7 @@ parse_option(char *line, size_t linelen, char **valp, size_t *vallen)
 	if (*p != '=')
 		return KEY_ERROR;
 
-	result = bsearch(&needle, keys, __arraycount(keys), sizeof(struct key), cmpkey);
+	result = bsearch(&needle, keys, ARRAY_SIZE(keys), sizeof(struct key), cmpkey);
 	if (result == NULL)
 		return KEY_ERROR;
 

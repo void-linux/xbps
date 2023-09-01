@@ -32,8 +32,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "xbps_api_impl.h"
+#include "macro.h"
 #include "uthash.h"
+#include "xbps_api_impl.h"
 
 enum type {
 	TYPE_LINK = 1,
@@ -296,7 +297,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 		/*
 		 * Make sure to not remove any symlink of root directory.
 		 */
-		for (uint8_t x = 0; x < __arraycount(basesymlinks); x++) {
+		for (uint8_t x = 0; x < ARRAY_SIZE(basesymlinks); x++) {
 			if (strcmp(item->file+1, basesymlinks[x]) == 0) {
 				found = true;
 				break;
