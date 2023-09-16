@@ -155,5 +155,5 @@ xbps_configure_pkg(struct xbps_handle *xhp,
 
 	umask(myumask);
 	/* show install-msg if exists */
-	return xbps_cb_message(xhp, pkgd, "install-msg");
+	return xbps_cb_message(xhp, pkgd, "install-msg", NULL);
 }

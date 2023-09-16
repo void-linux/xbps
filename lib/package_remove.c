@@ -156,7 +156,7 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 		goto purge;
 
 	/* show remove-msg if exists */
-	if ((rv = xbps_cb_message(xhp, pkgd, "remove-msg")) != 0)
+	if ((rv = xbps_cb_message(xhp, pkgd, "remove-msg", NULL)) != 0)
 		goto out;
 
 	/* unregister alternatives */

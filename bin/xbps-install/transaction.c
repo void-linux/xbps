@@ -52,14 +52,22 @@ show_package_msgs(struct xbps_handle *xhp, xbps_object_iterator_t iter) {
 	xbps_dictionary_t obj;
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		switch(xbps_transaction_pkg_type(obj)) {
-			case XBPS_TRANS_HOLD:
-				break;
 			case XBPS_TRANS_REMOVE:
-				xbps_cb_message(xhp, obj, "remove-msg");
+				xbps_cb_message(xhp, obj, "remove-msg", NULL);
+				break;
+			case XBPS_TRANS_CONFIGURE:
+				// installed and transaction messages are always same, never skip
+				xbps_cb_message(xhp, obj, "install-msg", NULL);
 				break;
 			default:
-				xbps_cb_message(xhp, obj, "install-msg");
-				break;
+				{
+					const char *pkgname = xbps_string_cstring_nocopy(xbps_dictionary_get(obj, "pkgname"));
+					xbps_dictionary_t pkgdb_pkg = pkgname ? xbps_pkgdb_get_pkg(xhp, pkgname) : NULL;
+					// get message from installed version of package, if any
+					xbps_object_t previous = pkgdb_pkg ? xbps_dictionary_get(pkgdb_pkg, "install-msg") : NULL;
+					xbps_cb_message(xhp, obj, "install-msg", previous);
+					break;
+				}
 		}
 	}
 }
