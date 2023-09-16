@@ -30,7 +30,7 @@
 
 #include "xbps_api_impl.h"
 
-int HIDDEN
+int
 xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key)
 {
 	xbps_data_t msg;
