@@ -1077,6 +1077,16 @@ int xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 		void *arg);
 
 /**
+ * Prints package message.
+ *
+ * @param[in] xhp Pointer to the xbps_handle struct.
+ * @param[in] pkgd Package dictionary as stored in the transaction dictionary.
+ * @param[in] key Key of possibly existing message in \a pkgd: "install-msg" or "remove-msg".
+ * @return 0 for message printed, ENOENT otherwise
+ */
+int xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key);
+
+/**
  * Match a virtual package name or pattern by looking at proplib array
  * of strings.
  *
