@@ -175,6 +175,61 @@ reproducible_body() {
 	atf_check_equal $? 1
 }
 
+atf_test_case install_msg
+
+install_msg_head() {
+	atf_set "descr" "xbps-install(1): show install message"
+}
+
+install_msg_body() {
+	mkdir -p some_repo pkg_A
+
+	# install will now show the message
+	cat <<-EOF >pkg_A/INSTALL.msg
+	foobar-install-msg
+	EOF
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	atf_check -s exit:0 \
+		-o 'match:foobar-install-msg' \
+		-e ignore \
+		-- xbps-install -r root -C empty.conf --repository=$PWD/some_repo -y A
+
+	# update with the same message will not show the message
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	atf_check -s exit:0 \
+		-o 'not-match:foobar-install-msg' \
+		-e ignore \
+		-- xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yu
+
+	# update with new message will show the message
+	cat <<-EOF >pkg_A/INSTALL.msg
+	fizzbuzz-install-msg
+	EOF
+	cd some_repo
+	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	atf_check -s exit:0 \
+		-o 'match:fizzbuzz-install-msg' \
+		-e ignore \
+		-- xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yu
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_existent
 	atf_add_test_case update_existent
@@ -182,4 +237,5 @@ atf_init_test_cases() {
 	atf_add_test_case unpacked_dep
 	atf_add_test_case reinstall_unpacked_unpack_only
 	atf_add_test_case reproducible
+	atf_add_test_case install_msg
 }
