@@ -317,8 +317,6 @@ extern "C" {
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  * - XBPS_STATE_REPO_KEY_IMPORT: repository is signed and needs to import pubkey.
  * - XBPS_STATE_INVALID_DEP: package has an invalid dependency.
- * - XBPS_STATE_SHOW_INSTALL_MSG: package must show a post-install message.
- * - XBPS_STATE_SHOW_REMOVE_MSG: package must show a pre-remove message.
  * - XBPS_STATE_ALTGROUP_ADDED: package has registered an alternative group.
  * - XBPS_STATE_ALTGROUP_REMOVED: package has unregistered an alternative group.
  * - XBPS_STATE_ALTGROUP_SWITCHED: alternative group has been switched.
@@ -370,8 +368,6 @@ typedef enum xbps_state {
 	XBPS_STATE_CONFIGURE_DONE,
 	XBPS_STATE_REPO_KEY_IMPORT,
 	XBPS_STATE_INVALID_DEP,
-	XBPS_STATE_SHOW_INSTALL_MSG,
-	XBPS_STATE_SHOW_REMOVE_MSG,
 	XBPS_STATE_UNPACK_FILE_PRESERVED,
 	XBPS_STATE_PKGDB,
 	XBPS_STATE_PKGDB_DONE,
@@ -1075,19 +1071,6 @@ int xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 		xbps_dictionary_t dict,
 		int (*fn)(struct xbps_handle *, xbps_object_t obj, const char *, void *arg, bool *done),
 		void *arg);
-
-/**
- * Prints package message. Message of earlier version of same package may be
- * passed in last parameter. If current message is same as previous, message
- * will not be printed.
- *
- * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] pkgd Package dictionary as stored in the transaction dictionary.
- * @param[in] key Key of possibly existing message in \a pkgd: "install-msg" or "remove-msg".
- * @param[in] message_to_skip Message of earlier version of same package or NULL.
- * @return 0 for message printed, ENOENT otherwise
- */
-int xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key, xbps_object_t message_to_skip);
 
 /**
  * Match a virtual package name or pattern by looking at proplib array
