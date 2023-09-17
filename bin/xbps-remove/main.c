@@ -93,9 +93,6 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 			    xscd->xhp->rootdir);
 		}
 		break;
-	case XBPS_STATE_SHOW_REMOVE_MSG:
-		print_package_msg(xscd, "remove");
-		break;
 	/* errors */
 	case XBPS_STATE_REMOVE_FAIL:
 		xbps_error_printf("%s\n", xscd->desc);
