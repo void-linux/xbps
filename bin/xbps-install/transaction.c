@@ -47,44 +47,70 @@ print_array(xbps_array_t a)
 	}
 }
 
-void
-print_package_msg(const struct xbps_state_cb_data *xscd, const char *action) {
-	static const char bar[] = "========================================================================";
-	size_t chars_print;
-	chars_print = printf("=== %s: %s message ", xscd->arg, action);
-	if (chars_print < sizeof bar) {
-		fputs(bar + chars_print, stdout);
-	}
-	// newline should be always printed after bar - don't move into conditional
-	fputs("\n", stdout);
-	// relying on xscd->desc containing trailing newline
-	fputs(xscd->desc, stdout);
-	puts(bar);
-}
+static int
+show_transaction_messages(struct transaction *trans)
+{
+	xbps_object_t obj;
 
-static void
-show_package_msgs(struct xbps_handle *xhp, xbps_object_iterator_t iter) {
-	xbps_dictionary_t obj;
-	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		switch(xbps_transaction_pkg_type(obj)) {
-			case XBPS_TRANS_REMOVE:
-				xbps_cb_message(xhp, obj, "remove-msg", NULL);
-				break;
-			case XBPS_TRANS_CONFIGURE:
-				// installed and transaction messages are always same, never skip
-				xbps_cb_message(xhp, obj, "install-msg", NULL);
-				break;
-			default:
-				{
-					const char *pkgname = xbps_string_cstring_nocopy(xbps_dictionary_get(obj, "pkgname"));
-					xbps_dictionary_t pkgdb_pkg = pkgname ? xbps_pkgdb_get_pkg(xhp, pkgname) : NULL;
-					// get message from installed version of package, if any
-					xbps_object_t previous = pkgdb_pkg ? xbps_dictionary_get(pkgdb_pkg, "install-msg") : NULL;
-					xbps_cb_message(xhp, obj, "install-msg", previous);
-					break;
-				}
+	while ((obj = xbps_object_iterator_next(trans->iter))) {
+		const char *pkgname = NULL;
+		xbps_trans_type_t ttype;
+		const char *key = NULL;
+		xbps_data_t msg, msg_pkgdb;
+		xbps_dictionary_t pkgdb_pkg = NULL;
+		const void *msgptr = NULL;
+		size_t msgsz = 0;
+
+		ttype = xbps_transaction_pkg_type(obj);
+		switch (ttype) {
+		case XBPS_TRANS_REMOVE:
+			key = "remove-msg";
+			break;
+		case XBPS_TRANS_UPDATE:
+			if (xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname)) {
+				/* ignore impossible errors and just show the message. */
+				pkgdb_pkg = xbps_pkgdb_get_pkg(trans->xhp, pkgname);
+			}
+			/* fallthrough */
+		case XBPS_TRANS_INSTALL:
+			key = "install-msg";
+			break;
+		default:
+			continue;
 		}
+
+		/* Get the message for the package in the transaction */
+		msg = xbps_dictionary_get(obj, key);
+		if (!msg)
+			continue;
+
+		msgsz = xbps_data_size(msg);
+		if (!msgsz) {
+			/* this shouldn't happen, but just ignore it */
+			continue;
+		}
+
+		/* Get the old message if package exists. */
+		if (pkgdb_pkg) {
+			msg_pkgdb = xbps_dictionary_get(pkgdb_pkg, key);
+			if (xbps_data_equals(msg, msg_pkgdb))
+				continue;
+		}
+
+		msgptr = xbps_data_data_nocopy(msg);
+		if (!msgptr)
+			return EINVAL;
+
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname))
+			pkgname = "?";
+
+		printf("[*] %s %s message:\n", pkgname, ttype2str(obj));
+		fwrite(msgptr, 1, msgsz, stdout);
+		printf("\n\n");
+
 	}
+	xbps_object_iterator_reset(trans->iter);
+	return 0;
 }
 
 static void
@@ -111,8 +137,6 @@ show_dry_run_actions(struct transaction *trans)
 
 		printf("\n");
 	}
-	show_package_msgs(trans->xhp, trans->iter);
-	xbps_object_iterator_reset(trans->iter);
 }
 
 static void
@@ -270,9 +294,6 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		printf("Space available on disk:      %6s\n", size);
 	}
 	printf("\n");
-
-	show_package_msgs(xhp, trans->iter);
-	xbps_object_iterator_reset(trans->iter);
 
 	return 0;
 }
@@ -461,6 +482,9 @@ proceed:
 	 * Show download/installed size for the transaction.
 	 */
 	if ((rv = show_transaction_sizes(trans, maxcols)) != 0)
+		goto out;
+
+	if ((rv = show_transaction_messages(trans)) != 0)
 		goto out;
 
 	fflush(stdout);

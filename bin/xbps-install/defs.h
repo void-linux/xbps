@@ -51,7 +51,6 @@ int	install_new_pkg(struct xbps_handle *, const char *, bool);
 int	update_pkg(struct xbps_handle *, const char *, bool);
 int	dist_upgrade(struct xbps_handle *, unsigned int, bool, bool);
 int	exec_transaction(struct xbps_handle *, unsigned int, bool, bool);
-void	print_package_msg(const struct xbps_state_cb_data *, const char *);
 
 /* from question.c */
 bool	yesno(const char *, ...);
