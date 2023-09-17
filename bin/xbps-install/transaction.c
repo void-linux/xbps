@@ -88,15 +88,13 @@ show_package_msgs(struct xbps_handle *xhp, xbps_object_iterator_t iter) {
 }
 
 static void
-show_actions(struct xbps_handle *xhp, xbps_object_iterator_t iter)
+show_dry_run_actions(struct transaction *trans)
 {
 	xbps_object_t obj;
-	const char *repoloc, *trans, *pkgver, *arch;
-	uint64_t isize, dsize;
 
-	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
-		repoloc = trans = pkgver = arch = NULL;
-		isize = dsize = 0;
+	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
+		const char *repoloc = NULL, *pkgver = NULL, *arch = NULL;
+		uint64_t isize = 0, dsize = 0;
 
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
@@ -106,8 +104,8 @@ show_actions(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 
 		printf("%s %s %s %s %ju %ju\n", pkgver, ttype2str(obj), arch ? arch : "-", repoloc ? repoloc : "-", isize, dsize);
 	}
-	xbps_object_iterator_reset(iter);
-	show_package_msgs(xhp, iter);
+	show_package_msgs(trans->xhp, trans->iter);
+	xbps_object_iterator_reset(trans->iter);
 }
 
 static void
@@ -159,7 +157,7 @@ show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned i
 }
 
 static int
-show_transaction_sizes(struct xbps_handle *xhp, struct transaction *trans, int cols)
+show_transaction_sizes(struct transaction *trans, int cols)
 {
 	uint64_t dlsize = 0, instsize = 0, rmsize = 0, disk_free_size = 0;
 	char size[8];
@@ -443,7 +441,7 @@ proceed:
 	 * dry-run mode, show what would be done but don't run anything.
 	 */
 	if (drun) {
-		show_actions(trans->xhp, trans->iter);
+		show_dry_run_actions(trans);
 		goto out;
 	}
 	/*
@@ -455,7 +453,7 @@ proceed:
 	/*
 	 * Show download/installed size for the transaction.
 	 */
-	if ((rv = show_transaction_sizes(xhp, trans, maxcols)) != 0)
+	if ((rv = show_transaction_sizes(trans, maxcols)) != 0)
 		goto out;
 
 	fflush(stdout);
