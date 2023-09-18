@@ -33,6 +33,8 @@
 #include <xbps.h>
 
 #include "defs.h"
+#include "xbps.h"
+#include "xbps/json.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
@@ -46,6 +48,7 @@ usage(bool fail)
 	    " -F, --format <format>     Format for list output\n"
 	    " -h, --help                Show usage\n"
 	    " -i, --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
+	    " -J, --json                Print output as json\n"
 	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
 	    "                           in memory, ignoring on-disk repodata archives\n"
 	    " -p, --property PROP[,...] Show properties for PKGNAME\n"
@@ -100,13 +103,14 @@ filter_repolock(xbps_object_t obj)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:dF:f:hHiLlMmOo:p:Rr:s:S:VvX:x:";
+	const char *shortopts = "C:c:dF:f:hHiJLlMmOo:p:Rr:s:S:VvX:x:";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
+		{ "json", no_argument, NULL, 'J' },
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
 		{ "list-hold-pkgs", no_argument, NULL, 'H' },
@@ -137,6 +141,7 @@ main(int argc, char **argv)
 	bool list_pkgs, list_repos, orphans, own, list_repolock;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
 	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	int json = 0;
 
 	rootdir = cachedir = confdir = props = pkg = catfile = format = NULL;
 	flags = rv = c = 0;
@@ -164,6 +169,9 @@ main(int argc, char **argv)
 			break;
 		case 'F':
 			format = optarg;
+			break;
+		case 'J':
+			json++;
 			break;
 		case 'H':
 			list_hold = opmode = true;
@@ -286,20 +294,21 @@ main(int argc, char **argv)
 		rv = repo_list(&xh);
 
 	} else if (list_hold) {
-		rv = list_pkgdb(&xh, filter_hold, format ? format : "{pkgver}\n") < 0;
+		rv = list_pkgdb(&xh, filter_hold, format ? format : "{pkgver}\n", json) < 0;
 
 	} else if (list_repolock) {
-		rv = list_pkgdb(&xh, filter_repolock, format ? format : "{pkgver}\n") < 0;
+		rv = list_pkgdb(&xh, filter_repolock, format ? format : "{pkgver}\n", json) < 0;
 
 	} else if (list_manual) {
-		rv = list_pkgdb(&xh, filter_manual, format ? format : "{pkgver}\n") < 0;
+		rv = list_pkgdb(&xh, filter_manual, format ? format : "{pkgver}\n", json) < 0;
 
 	} else if (list_pkgs) {
 		/* list available pkgs */
-		if (format)
-			rv = list_pkgdb(&xh, NULL, format);
-		else
+		if (format || json > 0) {
+			rv = list_pkgdb(&xh, NULL, format, json);
+		} else {
 			rv = list_pkgs_pkgdb(&xh);
+		}
 
 	} else if (orphans) {
 		/* list pkg orphans */
