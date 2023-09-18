@@ -174,6 +174,7 @@ list_pkgdb(struct xbps_handle *xhp, int (*filter)(xbps_object_t), const char *fo
 	int r;
 	if (json > 0) {
 		pr.indent = (json-1) * 2;
+		pr.compact = pr.indent == 0;
 		pr.file = stdout;
 		ctx.json = &pr;
 	} else if (format) {
