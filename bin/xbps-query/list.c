@@ -36,6 +36,7 @@
 
 #include "defs.h"
 #include "xbps.h"
+#include "xbps/json.h"
 
 struct length_max_cb {
 	const char *key;
@@ -135,6 +136,7 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 
 struct list_pkgdb_cb {
 	struct xbps_fmt *fmt;
+	struct xbps_json_printer *json;
 	int (*filter)(xbps_object_t obj);
 };
 
@@ -153,23 +155,34 @@ list_pkgdb_cb(struct xbps_handle *xhp UNUSED, xbps_object_t obj,
 			return 0;
 	}
 
-	r = xbps_fmt_dictionary(ctx->fmt, obj, stdout);
-	if (r < 0)
-		return r;
-	return 0;
+	if (ctx->fmt) {
+		r = xbps_fmt_dictionary(ctx->fmt, obj, stdout);
+	} else if (ctx->json) {
+		r = xbps_json_print_xbps_object(ctx->json, obj);
+		fprintf(ctx->json->file, "\n");
+	} else {
+		r = -ENOTSUP;
+	}
+	return r;
 }
 
 int
-list_pkgdb(struct xbps_handle *xhp, int (*filter)(xbps_object_t), const char *format)
+list_pkgdb(struct xbps_handle *xhp, int (*filter)(xbps_object_t), const char *format, int json)
 {
 	struct list_pkgdb_cb ctx = {.filter = filter};
+	struct xbps_json_printer pr = {0};
 	int r;
-
-	ctx.fmt = xbps_fmt_parse(format);
-	if (!ctx.fmt) {
-		r = -errno;
-		xbps_error_printf("failed to parse format: %s\n", strerror(-r));
-		return r;
+	if (json > 0) {
+		pr.indent = (json-1) * 2;
+		pr.file = stdout;
+		ctx.json = &pr;
+	} else if (format) {
+		ctx.fmt = xbps_fmt_parse(format);
+		if (!ctx.fmt) {
+			r = -errno;
+			xbps_error_printf("failed to parse format: %s\n", strerror(-r));
+			return r;
+		}
 	}
 	r = xbps_pkgdb_foreach_cb(xhp, list_pkgdb_cb, &ctx);
 	xbps_fmt_free(ctx.fmt);
