@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "xbps/json.h"
 #include "xbps_api_impl.h"
 #include "compat.h"
 
@@ -283,7 +284,7 @@ err:
 }
 
 struct xbps_fmt_conv {
-	enum { HUMANIZE = 1, STRMODE } type;
+	enum { HUMANIZE = 1, STRMODE, JSON } type;
 	union {
 		struct humanize {
 			unsigned width    : 8;
@@ -361,6 +362,10 @@ parse_conversion(const char **pos, struct xbps_fmt *fmt, struct xbps_fmt_conv *c
 		fmt->conv->type = HUMANIZE;
 		*pos += sizeof("humanize");
 		return parse_humanize(pos, &fmt->conv->humanize);
+	} else if (strncmp(*pos + 1, "json", sizeof("json") - 1) == 0) {
+		fmt->conv->type = JSON;
+		*pos += sizeof("json");
+		return 0;
 	}
 	return -EINVAL;
 }
@@ -641,6 +646,12 @@ int
 xbps_fmt_print_string(const struct xbps_fmt *fmt, const char *str, size_t len, FILE *fp)
 {
 	const struct xbps_fmt_spec *spec = fmt->spec;
+
+	if (fmt->conv && fmt->conv->type == JSON) {
+		struct xbps_json_printer pr = {.file = fp};
+		return xbps_json_print_quote(&pr, str);
+	}
+
 	if (len == 0)
 		len = strlen(str);
 	if (spec && spec->align == '>' && spec->width > (unsigned)len) {
@@ -700,6 +711,7 @@ xbps_fmt_print_number(const struct xbps_fmt *fmt, int64_t d, FILE *fp)
 		switch (fmt->conv->type) {
 		case HUMANIZE: return humanize(&fmt->conv->humanize, fmt, d, fp);
 		case STRMODE:  return tostrmode(fmt, d, fp);
+		case JSON:     break;
 		}
 	}
 	if (spec) {
@@ -732,6 +744,10 @@ xbps_fmt_print_number(const struct xbps_fmt *fmt, int64_t d, FILE *fp)
 int
 xbps_fmt_print_object(const struct xbps_fmt *fmt, xbps_object_t obj, FILE *fp)
 {
+	if (fmt->conv && fmt->conv->type == JSON) {
+		struct xbps_json_printer pr = {.file = fp};
+		return xbps_json_print_xbps_object(&pr, obj);
+	}
 	switch (xbps_object_type(obj)) {
 	case XBPS_TYPE_BOOL:
 		return xbps_fmt_print_string(fmt, xbps_bool_true(obj) ? "true" : "false", 0, fp);
