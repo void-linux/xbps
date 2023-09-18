@@ -55,7 +55,7 @@ int	ownedby(struct xbps_handle *, const char *, bool, bool);
 int	list_manual_pkgs(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
 int	list_orphans(struct xbps_handle *, const char *);
 int	list_pkgs_pkgdb(struct xbps_handle *);
-int	list_pkgdb(struct xbps_handle *, int (*filter)(xbps_object_t), const char *format);
+int	list_pkgdb(struct xbps_handle *, int (*filter)(xbps_object_t), const char *format, int json);
 
 int	repo_list(struct xbps_handle *);
 
