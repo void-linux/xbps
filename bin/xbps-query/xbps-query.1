@@ -181,6 +181,21 @@ If a repository is not available the number of packages will be
 The
 .Fl v
 option can be used to show more detailed information of remote repositories.
+.Pp
+The following
+.Fl F , Fl -format
+variables can be used:
+.Bl -tag -compact -width Ic
+.It Ic url
+repository url.
+.It Ic signed
+.Sq true
+if the repository is signed or
+.Sq false
+otherwise.
+.It Ic packages
+The number of packages in the repository.
+.El
 .It Fl H, Fl -list-hold-pkgs
 List registered packages in the package database (pkgdb) that are on
 .Sy hold .
