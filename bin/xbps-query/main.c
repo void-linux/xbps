@@ -80,6 +80,20 @@ usage(bool fail)
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
+static int
+repo_fmt(FILE *fp, const struct xbps_fmt *fmt, void *data)
+{
+	struct xbps_repo *repo = data;
+	if (strcmp(fmt->var, "url") == 0) {
+		return xbps_fmt_print_string(fmt, repo->uri, 0, fp);
+	} else if (strcmp(fmt->var, "signed") == 0) {
+		return xbps_fmt_print_string(fmt, repo->is_signed ? "true" : "false", 0, fp);
+	} else if (strcmp(fmt->var, "packages") == 0) {
+		return xbps_fmt_print_number(fmt, xbps_dictionary_count(repo->idx), fp);
+	}
+	return 0;
+}
+
 static void
 show_repo(struct xbps_repo *repo)
 {
@@ -108,8 +122,16 @@ show_repo(struct xbps_repo *repo)
 }
 
 static int
-show_repos(struct xbps_handle *xhp)
+show_repos(struct xbps_handle *xhp, const char *format)
 {
+	struct xbps_fmt *fmt = NULL;
+	if (format) {
+		fmt = xbps_fmt_parse(format);
+		if (!fmt) {
+			xbps_error_printf("failed to parse format: %s\n", strerror(errno));
+			return 1;
+		}
+	}
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		const char *repouri = NULL;
 		struct xbps_repo *repo;
@@ -119,9 +141,18 @@ show_repos(struct xbps_handle *xhp)
 			printf("%5zd %s (RSA maybe-signed)\n", (ssize_t)-1, repouri);
 			continue;
 		}
-		show_repo(repo);
+		if (fmt) {
+			int r = xbps_fmt(fmt, repo_fmt, repo, stdout);
+			if (r < 0) {
+				xbps_error_printf("failed to format repo: %s\n", strerror(-r));
+				return 1;
+			}
+		} else {
+			show_repo(repo);
+		}
 		xbps_repo_release(repo);
 	}
+	xbps_fmt_free(fmt);
 	return 0;
 }
 
@@ -354,7 +385,7 @@ main(int argc, char **argv)
 		rv = list_pkgdb(&xh, filter_repolock, format ? format : "{pkgver}\n", json) < 0;
 		break;
         case SHOW_REPOS:
-		rv = show_repos(&xh);
+		rv = show_repos(&xh, format);
 		break;
         case SEARCH_FILE:
 		rv = ownedby(&xh, pkg, repo_mode, regex);
