@@ -15,21 +15,21 @@
 /**@{*/
 
 /**
- * @struct xbps_fmt xbps.h "xbps.h"
- * @brief Structure of parsed format string variable.
+ * @struct xbps_fmt xbps/fmt.h <xbps/xbps.h>
+ * @brief Structure of parsed format string.
  */
-struct xbps_fmt {
+struct xbps_fmt;
+
+/**
+ * @struct xbps_fmt xbps/fmt.h <xbps/xbps.h>
+ * @brief Structure of a parsed format string variable.
+ */
+struct xbps_fmt_var {
 	/**
-	 * @private
-	 * @var prefix
-	 * @brief Prefix of the format chunk.
-	 */
-	char *prefix;
-	/**
-	 * @var var
+	 * @var name
 	 * @brief Variable name.
 	 */
-	char *var;
+	char *name;
 	/**
 	 * @var def
 	 * @brief Default value.
@@ -48,8 +48,8 @@ struct xbps_fmt {
 };
 
 /**
- * @struct xbps_fmt_def xbps.h "xbps.h"
- * @brief Structure of parsed format specifier.
+ * @struct xbps_fmt_def xbps/fmt.h <xbps/xbps.h>
+ * @brief Structure of format default value.
  */
 struct xbps_fmt_def {
 	enum {
@@ -65,7 +65,7 @@ struct xbps_fmt_def {
 };
 
 /**
- * @struct xbps_fmt_spec xbps.h "xbps.h"
+ * @struct xbps_fmt_spec xbps/fmt.h <xbps/xbps.h>
  * @brief Structure of parsed format specifier.
  */
 struct xbps_fmt_spec {
@@ -121,14 +121,13 @@ struct xbps_fmt_spec {
 /**
  * @brief Format callback, called for each variable in the format string.
  *
- * A callback function should write data associated with \a var to \a fp and use
- * \a w as alignment specifier.
+ * The callback function should write data as specified by \a var to \a fp.
  *
- * @param[in] fp The file to print to.
- * @param[in] fmt The format specifier.
+ * @param[in] fp File to format to.
+ * @param[in] var Variable to format.
  * @param[in] data Userdata passed to the xbps_fmt() function.
  */
-typedef int (xbps_fmt_cb)(FILE *fp, const struct xbps_fmt *fmt, void *data);
+typedef int (xbps_fmt_cb)(FILE *fp, const struct xbps_fmt_var *var, void *data);
 
 /**
  * @brief Parses the format string \a format.
@@ -215,42 +214,42 @@ int xbps_fmts(const char *format, xbps_fmt_cb *cb, void *data, FILE *fp);
 /**
  * @brief Print formatted number to \a fp.
  *
- * Prints the number \a num to \a fp according to the specification \a spec.
+ * Prints the number \a num to \a fp according to the specification \a var.
  *
- * @param[in] fmt Format specification.
+ * @param[in] var Variable to format.
  * @param[in] num Number to print.
  * @param[in] fp File to print to.
  *
  * @return Returns 0 on success.
  */
-int xbps_fmt_print_number(const struct xbps_fmt *fmt, int64_t num, FILE *fp);
+int xbps_fmt_print_number(const struct xbps_fmt_var *var, int64_t num, FILE *fp);
 
 /**
  * @brief Print formatted string to \a fp.
  *
- * Prints the string \a str to \a fp according to the specification \a spec.
+ * Prints the string \a str to \a fp according to the specification \a var.
  *
- * @param[in] fmt Format specification.
+ * @param[in] var Variable to print.
  * @param[in] str String to print.
  * @param[in] len Length of the string or 0.
  * @param[in] fp File to print to.
  *
  * @return Returns 0 on success.
  */
-int xbps_fmt_print_string(const struct xbps_fmt *fmt, const char *str, size_t len, FILE *fp);
+int xbps_fmt_print_string(const struct xbps_fmt_var *var, const char *str, size_t len, FILE *fp);
 
 /**
  * @brief Print formatted ::xbps_object_t to \a fp.
  *
- * Prints the ::xbps_object_t \a obj to \a fp according to the specification \a spec.
+ * Prints the ::xbps_object_t \a obj to \a fp according to the specification in \a var.
  *
- * @param[in] spec Format specification.
+ * @param[in] var Variable to format.
  * @param[in] obj The object to print.
  * @param[in] fp File to print to.
  *
  * @return Returns 0 on success.
  */
-int xbps_fmt_print_object(const struct xbps_fmt *fmt, xbps_object_t obj, FILE *fp);
+int xbps_fmt_print_object(const struct xbps_fmt_var *var, xbps_object_t obj, FILE *fp);
 
 /**@}*/
 
