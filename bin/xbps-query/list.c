@@ -34,9 +34,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "defs.h"
-#include "xbps.h"
+#include <xbps.h>
+
+#include "xbps/fmt.h"
 #include "xbps/json.h"
+
+#include "defs.h"
 
 struct length_max_cb {
 	const char *key;

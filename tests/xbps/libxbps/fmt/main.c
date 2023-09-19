@@ -34,6 +34,7 @@
 
 #include <atf-c.h>
 #include <xbps.h>
+#include <xbps/fmt.h>
 
 ATF_TC(xbps_fmt_print_number);
 
@@ -71,10 +72,10 @@ ATF_TC_BODY(xbps_fmt_print_number, tc)
 	ATF_REQUIRE(fp = open_memstream(&buf, &bufsz));
 
 	for (unsigned i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
-		struct xbps_fmt fmt = { .spec = &tests[i].spec };
+		struct xbps_fmt_var var = { .spec = &tests[i].spec };
 		memset(buf, '\0', bufsz);
 		rewind(fp);
-		xbps_fmt_print_number(&fmt, tests[i].d, fp);
+		xbps_fmt_print_number(&var, tests[i].d, fp);
 		ATF_REQUIRE(fflush(fp) == 0);
 		ATF_CHECK_STREQ(buf, tests[i].expect);
 	}
@@ -109,10 +110,10 @@ ATF_TC_BODY(xbps_fmt_print_string, tc)
 	ATF_REQUIRE(fp = open_memstream(&buf, &bufsz));
 
 	for (unsigned i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
-		struct xbps_fmt fmt = { .spec = &tests[i].spec };
+		struct xbps_fmt_var var = { .spec = &tests[i].spec };
 		memset(buf, '\0', bufsz);
 		rewind(fp);
-		xbps_fmt_print_string(&fmt, tests[i].input, tests[i].len, fp);
+		xbps_fmt_print_string(&var, tests[i].input, tests[i].len, fp);
 		ATF_REQUIRE(fflush(fp) == 0);
 		ATF_CHECK_STREQ(buf, tests[i].expect);
 	}

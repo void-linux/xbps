@@ -32,9 +32,10 @@
 
 #include <xbps.h>
 
-#include "defs.h"
-#include "xbps.h"
+#include "xbps/fmt.h"
 #include "xbps/json.h"
+
+#include "defs.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
@@ -81,15 +82,15 @@ usage(bool fail)
 }
 
 static int
-repo_fmt(FILE *fp, const struct xbps_fmt *fmt, void *data)
+repo_fmt(FILE *fp, const struct xbps_fmt_var *var, void *data)
 {
 	struct xbps_repo *repo = data;
-	if (strcmp(fmt->var, "url") == 0) {
-		return xbps_fmt_print_string(fmt, repo->uri, 0, fp);
-	} else if (strcmp(fmt->var, "signed") == 0) {
-		return xbps_fmt_print_string(fmt, repo->is_signed ? "true" : "false", 0, fp);
-	} else if (strcmp(fmt->var, "packages") == 0) {
-		return xbps_fmt_print_number(fmt, xbps_dictionary_count(repo->idx), fp);
+	if (strcmp(var->name, "url") == 0) {
+		return xbps_fmt_print_string(var, repo->uri, 0, fp);
+	} else if (strcmp(var->name, "signed") == 0) {
+		return xbps_fmt_print_string(var, repo->is_signed ? "true" : "false", 0, fp);
+	} else if (strcmp(var->name, "packages") == 0) {
+		return xbps_fmt_print_number(var, xbps_dictionary_count(repo->idx), fp);
 	}
 	return 0;
 }
