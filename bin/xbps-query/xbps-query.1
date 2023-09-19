@@ -101,7 +101,22 @@ Only repositories specified in the command line via
 .Ar --repository
 will be used.
 .It Fl J, Fl -json
-Print output as json.
+Format the output as newline-delimited JSON objects.
+If the flag is specified more than once the output will be
+.Dq pretty-printed
+adding additional line breaks and indentions to the output.
+For each repetition two levels of indention are added.
+.Pp
+The output for the following modes will be formatted as followed:
+.Bl -tag -width -x -compact
+.It Fl l , Fl -list-pkgs
+.It Fl H , Fl -list-hold-pkgs
+.It Fl -list-repolock-pkgs
+.It Fl m , Fl -list-manual-pkgs
+.It Fl O , Fl -list-orphans
+JSON objects containing the package
+.Sx PROPERTIES .
+.El
 .It Fl M, Fl -memory-sync
 For remote repositories, the data is fetched and stored in memory for the current
 operation.
