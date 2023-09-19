@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include "compat.h"
+#include "xbps/fmt.h"
 #include "xbps/json.h"
 #include "xbps/xbps_array.h"
 #include "xbps/xbps_bool.h"
@@ -48,6 +49,17 @@
  * but instead of character to specify types variable names are used.
  *
  */
+
+struct xbps_fmt {
+	/**
+	 * @brief Prefix of the format chunk.
+	 */
+	char *prefix;
+	/**
+	 * @brief Variable in the format string.
+	 */
+	struct xbps_fmt_var var;
+};
 
 struct strbuf {
 	size_t sz, len;
@@ -199,23 +211,23 @@ parse_d(const char **pos, int64_t *d)
 }
 
 static int
-parse_default(const char **pos, struct xbps_fmt *fmt, struct strbuf *buf,
-		struct xbps_fmt_def *def_storage)
+parse_default(const char **pos, struct xbps_fmt_def **defp, struct strbuf *buf)
 {
 	struct strbuf buf2 = {0};
-	struct xbps_fmt_def *def;
+	struct xbps_fmt_def *def = *defp;
 	const char *p = *pos;
 	char *str = NULL;
 	int r;
 
-	if (*p++ != '?')
+	if (*p++ != '?') {
+		*defp = NULL;
 		return 0;
-	if (!def_storage) {
-		fmt->def = def = calloc(1, sizeof(*def));
+	}
+
+	if (!def) {
+		def = *defp = calloc(1, sizeof(*def));
 		if (!def)
 			return -errno;
-	} else {
-		fmt->def = def = def_storage;
 	}
 
 	if ((*p >= '0' && *p <= '9') || *p == '-') {
@@ -351,27 +363,30 @@ parse_humanize(const char **pos, struct humanize *humanize)
 }
 
 static int
-parse_conversion(const char **pos, struct xbps_fmt *fmt, struct xbps_fmt_conv *conv_storage)
+parse_conversion(const char **pos, struct xbps_fmt_conv **convp)
 {
+	struct xbps_fmt_conv *conv = *convp;
+
 	if (**pos != '!') {
-		fmt->conv = NULL;
+		*convp = NULL;
 		return 0;
 	}
-	fmt->conv = conv_storage;
-	if (!conv_storage)
-		fmt->conv = calloc(1, sizeof(*fmt->conv));
-	if (!fmt->conv)
-		return -errno;
+
+	if (!conv) {
+		conv = *convp = calloc(1, sizeof(*conv));
+		if (!conv)
+			return -errno;
+	}
 	if (strncmp(*pos + 1, "strmode", sizeof("strmode") - 1) == 0) {
 		*pos += sizeof("strmode");
-		fmt->conv->type = STRMODE;
+		conv->type = STRMODE;
 		return 0;
 	} else if (strncmp(*pos + 1, "humanize", sizeof("humanize") - 1) == 0) {
-		fmt->conv->type = HUMANIZE;
+		conv->type = HUMANIZE;
 		*pos += sizeof("humanize");
-		return parse_humanize(pos, &fmt->conv->humanize);
+		return parse_humanize(pos, &conv->humanize);
 	} else if (strncmp(*pos + 1, "json", sizeof("json") - 1) == 0) {
-		fmt->conv->type = JSON;
+		conv->type = JSON;
 		*pos += sizeof("json");
 		return 0;
 	}
@@ -379,27 +394,25 @@ parse_conversion(const char **pos, struct xbps_fmt *fmt, struct xbps_fmt_conv *c
 }
 
 static int
-parse_spec(const char **pos, struct xbps_fmt *fmt, struct xbps_fmt_spec *spec_storage)
+parse_spec(const char **pos, struct xbps_fmt_spec **specp)
 {
 	bool fill = false;
-	struct xbps_fmt_spec *spec;
+	struct xbps_fmt_spec *spec = *specp;
 	const char *p = *pos;
 	int r;
 
 	/* format_spec ::= [[fill]align][sign][zero][width][.precision][type] */
 
 	if (*p != ':') {
-		fmt->spec = NULL;
+		*specp = NULL;
 		return 0;
 	}
 	p++;
 
-	if (!spec_storage) {
-		spec = fmt->spec = calloc(1, sizeof(*fmt->spec));
-		if (!fmt->spec)
+	if (!spec) {
+		spec = *specp = calloc(1, sizeof(*spec));
+		if (!spec)
 			return -errno;
-	} else {
-		spec = fmt->spec = spec_storage;
 	}
 
 	/* defaults */
@@ -464,11 +477,7 @@ parse_spec(const char **pos, struct xbps_fmt *fmt, struct xbps_fmt_spec *spec_st
 }
 
 static int
-parse(const char **pos, struct xbps_fmt *fmt,
-		struct strbuf *buf,
-		struct xbps_fmt_def *def_storage,
-		struct xbps_fmt_conv *conv_storage,
-		struct xbps_fmt_spec *spec_storage)
+parse(const char **pos, struct xbps_fmt *fmt, struct strbuf *buf)
 {
 	const char *p = *pos;
 	const char *e;
@@ -494,26 +503,26 @@ parse(const char **pos, struct xbps_fmt *fmt,
 		r = strbuf_puts(buf, p, e - p);
 		if (r < 0)
 			return r;
-		fmt->var = buf->mem;
+		fmt->var.name = buf->mem;
 	} else {
-		fmt->var = strndup(p, e - p);
-		if (!fmt->var)
+		fmt->var.name = strndup(p, e - p);
+		if (!fmt->var.name)
 			return -errno;
 	}
 	p = e;
 
 	/* default ::= ['?' ...] */
-	r = parse_default(&p, fmt, buf, def_storage);
+	r = parse_default(&p, &fmt->var.def, buf);
 	if (r < 0)
 		return r;
 
 	/* conversion ::= ['!' ...] */
-	r = parse_conversion(&p, fmt, conv_storage);
+	r = parse_conversion(&p, &fmt->var.conv);
 	if (r < 0)
 		return r;
 
 	/* format_spec ::= [':' ...] */
-	r = parse_spec(&p, fmt, spec_storage);
+	r = parse_spec(&p, &fmt->var.spec);
 	if (r < 0)
 		return r;
 
@@ -557,7 +566,7 @@ xbps_fmt_parse(const char *format)
 				goto err;
 		}
 		if (t == TVAR) {
-			r = parse(&pos, &fmt[n], NULL, NULL, NULL, NULL);
+			r = parse(&pos, &fmt[n], NULL);
 			if (r < 0)
 				goto err;
 		}
@@ -580,14 +589,14 @@ xbps_fmt_free(struct xbps_fmt *fmt)
 {
 	if (!fmt)
 		return;
-	for (struct xbps_fmt *f = fmt; f->prefix || f->var; f++) {
+	for (struct xbps_fmt *f = fmt; f->prefix || f->var.name; f++) {
 		free(f->prefix);
-		free(f->var);
-		if (f->def && f->def->type == XBPS_FMT_DEF_STR)
-			free(f->def->val.str);
-		free(f->def);
-		free(f->spec);
-		free(f->conv);
+		free(f->var.name);
+		if (f->var.def && f->var.def->type == XBPS_FMT_DEF_STR)
+			free(f->var.def->val.str);
+		free(f->var.def);
+		free(f->var.spec);
+		free(f->var.conv);
 	}
 	free(fmt);
 }
@@ -615,11 +624,16 @@ xbps_fmts(const char *format, xbps_fmt_cb *cb, void *data, FILE *fp)
 			struct xbps_fmt_def def = {0};
 			struct xbps_fmt_conv conv = {0};
 			struct xbps_fmt_spec spec = {0};
-			struct xbps_fmt fmt = { .var = buf.mem };
-			r = parse(&pos, &fmt, &buf, &def, &conv, &spec);
+			struct xbps_fmt fmt = {
+				.var.name = buf.mem,
+				.var.conv = &conv,
+				.var.def = &def,
+				.var.spec = &spec,
+			};
+			r = parse(&pos, &fmt, &buf);
 			if (r < 0)
 				goto out;
-			r = cb(fp, &fmt, data);
+			r = cb(fp, &fmt.var, data);
 			if (r != 0)
 				goto out;
 		}
@@ -633,11 +647,11 @@ int
 xbps_fmt(const struct xbps_fmt *fmt, xbps_fmt_cb *cb, void *data, FILE *fp)
 {
 	int r;
-	for (const struct xbps_fmt *f = fmt; f->prefix || f->var; f++) {
+	for (const struct xbps_fmt *f = fmt; f->prefix || f->var.name; f++) {
 		if (f->prefix)
 			fprintf(fp, "%s", f->prefix);
-		if (f->var) {
-			r = cb(fp, f, data);
+		if (f->var.name) {
+			r = cb(fp, &f->var, data);
 			if (r != 0)
 				return r;
 		}
@@ -646,11 +660,11 @@ xbps_fmt(const struct xbps_fmt *fmt, xbps_fmt_cb *cb, void *data, FILE *fp)
 }
 
 int
-xbps_fmt_print_string(const struct xbps_fmt *fmt, const char *str, size_t len, FILE *fp)
+xbps_fmt_print_string(const struct xbps_fmt_var *var, const char *str, size_t len, FILE *fp)
 {
-	const struct xbps_fmt_spec *spec = fmt->spec;
+	const struct xbps_fmt_spec *spec = var->spec;
 
-	if (fmt->conv && fmt->conv->type == JSON) {
+	if (var->conv && var->conv->type == JSON) {
 		struct xbps_json_printer pr = {.file = fp};
 		return xbps_json_print_quote(&pr, str);
 	}
@@ -670,9 +684,10 @@ xbps_fmt_print_string(const struct xbps_fmt *fmt, const char *str, size_t len, F
 }
 
 static int
-humanize(const struct humanize *h, const struct xbps_fmt *fmt, int64_t d, FILE *fp)
+humanize(const struct xbps_fmt_var *var, int64_t d, FILE *fp)
 {
 	char buf[64];
+	struct humanize *h = &var->conv->humanize;
 	int scale = 0;
 	int width = h->width ? h->width : 8;
 	int len;
@@ -691,29 +706,29 @@ humanize(const struct humanize *h, const struct xbps_fmt *fmt, int64_t d, FILE *
 	len = humanize_number(buf, width, d, "B", scale, h->flags);
 	if (len == -1)
 		return -EINVAL;
-	return xbps_fmt_print_string(fmt, buf, len, fp);
+	return xbps_fmt_print_string(var, buf, len, fp);
 }
 
 static int
-tostrmode(const struct xbps_fmt *fmt UNUSED, int64_t d UNUSED, FILE *fp UNUSED)
+tostrmode(const struct xbps_fmt_var *var UNUSED, int64_t d UNUSED, FILE *fp UNUSED)
 {
 	return -ENOTSUP;
 }
 
 int
-xbps_fmt_print_number(const struct xbps_fmt *fmt, int64_t d, FILE *fp)
+xbps_fmt_print_number(const struct xbps_fmt_var *var, int64_t d, FILE *fp)
 {
 	char buf[64];
 	struct xbps_fmt_spec strspec = {0};
-	struct xbps_fmt strfmt = { .spec = &strspec };
-	struct xbps_fmt_spec *spec = fmt->spec;
+	struct xbps_fmt_var strfmt = { .spec = &strspec };
+	struct xbps_fmt_spec *spec = var->spec;
 	const char *p = buf;
 	int len;
 
-	if (fmt->conv) {
-		switch (fmt->conv->type) {
-		case HUMANIZE: return humanize(&fmt->conv->humanize, fmt, d, fp);
-		case STRMODE:  return tostrmode(fmt, d, fp);
+	if (var->conv) {
+		switch (var->conv->type) {
+		case HUMANIZE: return humanize(var, d, fp);
+		case STRMODE:  return tostrmode(var, d, fp);
 		case JSON:     break;
 		}
 	}
@@ -745,31 +760,31 @@ xbps_fmt_print_number(const struct xbps_fmt *fmt, int64_t d, FILE *fp)
 }
 
 int
-xbps_fmt_print_object(const struct xbps_fmt *fmt, xbps_object_t obj, FILE *fp)
+xbps_fmt_print_object(const struct xbps_fmt_var *var, xbps_object_t obj, FILE *fp)
 {
-	if (fmt->conv && fmt->conv->type == JSON) {
+	if (var->conv && var->conv->type == JSON) {
 		struct xbps_json_printer pr = {.file = fp};
 		return xbps_json_print_xbps_object(&pr, obj);
 	}
 	switch (xbps_object_type(obj)) {
 	case XBPS_TYPE_BOOL:
-		return xbps_fmt_print_string(fmt, xbps_bool_true(obj) ? "true" : "false", 0, fp);
+		return xbps_fmt_print_string(var, xbps_bool_true(obj) ? "true" : "false", 0, fp);
 	case XBPS_TYPE_NUMBER:
-		return xbps_fmt_print_number(fmt, xbps_number_integer_value(obj), fp);
+		return xbps_fmt_print_number(var, xbps_number_integer_value(obj), fp);
 	case XBPS_TYPE_STRING:
-		return xbps_fmt_print_string(fmt, xbps_string_cstring_nocopy(obj),
+		return xbps_fmt_print_string(var, xbps_string_cstring_nocopy(obj),
 		    xbps_string_size(obj), fp);
 	case XBPS_TYPE_UNKNOWN:
-		if (fmt->def) {
-			struct xbps_fmt_def *def = fmt->def;
-			switch (fmt->def->type) {
+		if (var->def) {
+			struct xbps_fmt_def *def = var->def;
+			switch (var->def->type) {
 			case XBPS_FMT_DEF_BOOL:
-				return xbps_fmt_print_string(fmt, def->val.boolean ?
+				return xbps_fmt_print_string(var, def->val.boolean ?
 				    "true" : "false", 0, fp);
 			case XBPS_FMT_DEF_STR:
-				return xbps_fmt_print_string(fmt, def->val.str, 0, fp);
+				return xbps_fmt_print_string(var, def->val.str, 0, fp);
 			case XBPS_FMT_DEF_NUM:
-				return xbps_fmt_print_number(fmt, def->val.num, fp);
+				return xbps_fmt_print_number(var, def->val.num, fp);
 			}
 		}
 	default:
@@ -783,11 +798,11 @@ struct fmt_dict_ctx {
 };
 
 static int
-fmt_dict_cb(FILE *fp, const struct xbps_fmt *fmt, void *data)
+fmt_dict_cb(FILE *fp, const struct xbps_fmt_var *var, void *data)
 {
 	struct fmt_dict_ctx *ctx = data;
-	xbps_object_t obj = xbps_dictionary_get(ctx->dict, fmt->var);
-	return xbps_fmt_print_object(fmt, obj, fp);
+	xbps_object_t obj = xbps_dictionary_get(ctx->dict, var->name);
+	return xbps_fmt_print_object(var, obj, fp);
 }
 
 int
