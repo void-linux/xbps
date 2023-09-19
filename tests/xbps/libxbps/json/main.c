@@ -27,19 +27,19 @@ ATF_TC_BODY(xbps_json_print_escape, tc)
 
 	ATF_REQUIRE(p.file = open_memstream(&buf, &bufsz));
 
-	ATF_CHECK_EQ(0, xbps_json_print_escape(&p, "\"\\\b\f\n\r\t"));
+	ATF_CHECK_EQ(0, xbps_json_print_escaped(&p, "\"\\\b\f\n\r\t"));
 	ATF_REQUIRE_EQ(0, fflush(p.file));
 	ATF_CHECK_STREQ("\\\"\\\\\\b\\f\\n\\r\\t", buf);
 
 	memset(buf, '\0', bufsz);
 	ATF_CHECK_EQ(0, fseek(p.file, 0, SEEK_SET));
-	ATF_CHECK_EQ(0, xbps_json_print_escape(&p, "09azAZ !$#%^()%"));
+	ATF_CHECK_EQ(0, xbps_json_print_escaped(&p, "09azAZ !$#%^()%"));
 	ATF_REQUIRE_EQ(0, fflush(p.file));
 	ATF_CHECK_STREQ("09azAZ !$#%^()%", buf);
 
 	memset(buf, '\0', bufsz);
 	ATF_CHECK_EQ(0, fseek(p.file, 0, SEEK_SET));
-	ATF_CHECK_EQ(0, xbps_json_print_escape(&p, "\x01\x1F"));
+	ATF_CHECK_EQ(0, xbps_json_print_escaped(&p, "\x01\x1F"));
 	ATF_REQUIRE_EQ(0, fflush(p.file));
 	ATF_CHECK_STREQ("\\u0001\\u001f", buf);
 }

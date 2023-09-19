@@ -666,7 +666,7 @@ xbps_fmt_print_string(const struct xbps_fmt_var *var, const char *str, size_t le
 
 	if (var->conv && var->conv->type == JSON) {
 		struct xbps_json_printer pr = {.file = fp};
-		return xbps_json_print_quote(&pr, str);
+		return xbps_json_print_quoted(&pr, str);
 	}
 
 	if (len == 0)
