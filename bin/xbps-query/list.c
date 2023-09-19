@@ -137,31 +137,73 @@ list_pkgs_pkgdb(struct xbps_handle *xhp)
 	return xbps_pkgdb_foreach_cb(xhp, list_pkgs_pkgdb_cb, &lpc);
 }
 
-struct list_pkgdb_cb {
+struct list_pkgdb_ctx {
 	struct xbps_fmt *fmt;
 	struct xbps_json_printer *json;
 	int (*filter)(xbps_object_t obj);
 };
 
 static int
+fmt_pkg_cb(FILE *fp, const struct xbps_fmt_var *var, void *data)
+{
+	const char *pkgver = NULL;
+	xbps_dictionary_t pkgd = data;
+	xbps_object_t obj;
+
+	obj = xbps_dictionary_get(pkgd, var->name);
+	if (obj)
+		return xbps_fmt_print_object(var, obj, fp);
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver)) {
+		xbps_error_printf("invalid package: missing `pkgver`\n");
+		return -EINVAL;
+	}
+
+	if (strcmp(var->name, "pkgname") == 0) {
+		char pkgname[XBPS_NAME_SIZE];
+		if (xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+			xbps_error_printf("invalid `pkgver`: %s\n", pkgver);
+			return -EINVAL;
+		}
+		return xbps_fmt_print_string(var, pkgname, 0, fp);
+	} else if (strcmp(var->name, "version") == 0) {
+		const char *version = xbps_pkg_version(pkgver);
+		if (!version) {
+			xbps_error_printf("invalid `pkgver`: %s\n", pkgver);
+			return -EINVAL;
+		}
+		return xbps_fmt_print_string(var, version, 0, fp);
+	} else if (strcmp(var->name, "revision") == 0) {
+		const char *revision = xbps_pkg_revision(pkgver);
+		if (!revision) {
+			xbps_error_printf("invalid `pkgver`: %s\n", pkgver);
+			return -EINVAL;
+		}
+		return xbps_fmt_print_string(var, revision, 0, fp);
+	}
+
+	return 0;
+}
+
+static int
 list_pkgdb_cb(struct xbps_handle *xhp UNUSED, xbps_object_t obj,
 		const char *key UNUSED, void *arg, bool *loop_done UNUSED)
 {
-	struct list_pkgdb_cb *ctx = arg;
+	struct list_pkgdb_ctx *ctx = arg;
 	int r;
 
 	if (ctx->filter) {
 		r = ctx->filter(obj);
-		if (r < 0)
+		if (r <= 0)
 			return r;
-		if (r == 0)
-			return 0;
 	}
 
 	if (ctx->fmt) {
-		r = xbps_fmt_dictionary(ctx->fmt, obj, stdout);
+		r = xbps_fmt(ctx->fmt, &fmt_pkg_cb, obj, stdout);
 	} else if (ctx->json) {
 		r = xbps_json_print_xbps_object(ctx->json, obj);
+		if (r < 0)
+			return r;
 		fprintf(ctx->json->file, "\n");
 	} else {
 		r = -ENOTSUP;
@@ -172,7 +214,7 @@ list_pkgdb_cb(struct xbps_handle *xhp UNUSED, xbps_object_t obj,
 int
 list_pkgdb(struct xbps_handle *xhp, int (*filter)(xbps_object_t), const char *format, int json)
 {
-	struct list_pkgdb_cb ctx = {.filter = filter};
+	struct list_pkgdb_ctx ctx = {.filter = filter};
 	struct xbps_json_printer pr = {0};
 	int r;
 	if (json > 0) {
@@ -237,7 +279,7 @@ list_orphans(struct xbps_handle *xhp, const char *format)
 		xbps_object_t obj = xbps_array_get(orphans, i);
 		if (!obj)
 			return -errno;
-		r = xbps_fmt_dictionary(fmt, obj, stdout);
+		r = xbps_fmt(fmt, &fmt_pkg_cb, obj, stdout);
 		if (r < 0)
 			goto err;
 	}
