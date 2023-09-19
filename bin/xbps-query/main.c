@@ -80,6 +80,51 @@ usage(bool fail)
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
+static void
+show_repo(struct xbps_repo *repo)
+{
+	xbps_data_t pubkey;
+	const char *signedby = NULL;
+	char *hexfp = NULL;
+	uint16_t pubkeysize = 0;
+
+	printf("%5zd %s",
+	    repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1,
+	    repo->uri);
+	printf(" (RSA %s)\n", repo->is_signed ? "signed" : "unsigned");
+	if (!(repo->xhp->flags & XBPS_FLAG_VERBOSE))
+		return;
+
+	xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-by", &signedby);
+	xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkeysize);
+	pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
+	if (pubkey)
+		hexfp = xbps_pubkey2fp(pubkey);
+	if (signedby)
+		printf("      Signed-by: %s\n", signedby);
+	if (pubkeysize && hexfp)
+		printf("      %u %s\n", pubkeysize, hexfp);
+	free(hexfp);
+}
+
+static int
+show_repos(struct xbps_handle *xhp)
+{
+	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+		const char *repouri = NULL;
+		struct xbps_repo *repo;
+		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
+		repo = xbps_repo_open(xhp, repouri);
+		if (!repo) {
+			printf("%5zd %s (RSA maybe-signed)\n", (ssize_t)-1, repouri);
+			continue;
+		}
+		show_repo(repo);
+		xbps_repo_release(repo);
+	}
+	return 0;
+}
+
 static int
 filter_hold(xbps_object_t obj)
 {
@@ -309,7 +354,7 @@ main(int argc, char **argv)
 		rv = list_pkgdb(&xh, filter_repolock, format ? format : "{pkgver}\n", json) < 0;
 		break;
         case SHOW_REPOS:
-		rv = repo_list(&xh);
+		rv = show_repos(&xh);
 		break;
         case SEARCH_FILE:
 		rv = ownedby(&xh, pkg, repo_mode, regex);
