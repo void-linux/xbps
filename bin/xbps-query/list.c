@@ -182,7 +182,7 @@ fmt_pkg_cb(FILE *fp, const struct xbps_fmt_var *var, void *data)
 		return xbps_fmt_print_string(var, revision, 0, fp);
 	}
 
-	return 0;
+	return xbps_fmt_print_object(var, NULL, fp);
 }
 
 static int
