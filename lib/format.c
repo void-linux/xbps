@@ -28,9 +28,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "xbps/json.h"
-#include "xbps_api_impl.h"
 #include "compat.h"
+#include "xbps/json.h"
+#include "xbps/xbps_array.h"
+#include "xbps/xbps_bool.h"
+#include "xbps/xbps_data.h"
+#include "xbps/xbps_dictionary.h"
+#include "xbps/xbps_number.h"
+#include "xbps/xbps_object.h"
+#include "xbps/xbps_string.h"
+#include "xbps_api_impl.h"
 
 /**
  * @file lib/format.c
@@ -638,10 +645,6 @@ xbps_fmt(const struct xbps_fmt *fmt, xbps_fmt_cb *cb, void *data, FILE *fp)
 	return 0;
 }
 
-struct fmt_dict_cb {
-	xbps_dictionary_t dict;
-};
-
 int
 xbps_fmt_print_string(const struct xbps_fmt *fmt, const char *str, size_t len, FILE *fp)
 {
@@ -775,10 +778,14 @@ xbps_fmt_print_object(const struct xbps_fmt *fmt, xbps_object_t obj, FILE *fp)
 	return 0;
 }
 
+struct fmt_dict_ctx {
+	xbps_dictionary_t dict;
+};
+
 static int
 fmt_dict_cb(FILE *fp, const struct xbps_fmt *fmt, void *data)
 {
-	struct fmt_dict_cb *ctx = data;
+	struct fmt_dict_ctx *ctx = data;
 	xbps_object_t obj = xbps_dictionary_get(ctx->dict, fmt->var);
 	return xbps_fmt_print_object(fmt, obj, fp);
 }
@@ -786,13 +793,13 @@ fmt_dict_cb(FILE *fp, const struct xbps_fmt *fmt, void *data)
 int
 xbps_fmt_dictionary(const struct xbps_fmt *fmt, xbps_dictionary_t dict, FILE *fp)
 {
-	struct fmt_dict_cb ctx = {.dict = dict};
+	struct fmt_dict_ctx ctx = {.dict = dict};
 	return xbps_fmt(fmt, &fmt_dict_cb, &ctx, fp);
 }
 
 int
 xbps_fmts_dictionary(const char *format, xbps_dictionary_t dict, FILE *fp)
 {
-	struct fmt_dict_cb ctx = {.dict = dict};
+	struct fmt_dict_ctx ctx = {.dict = dict};
 	return xbps_fmts(format, &fmt_dict_cb, &ctx, fp);
 }
