@@ -10,14 +10,13 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "xbps/json.h"
 #include "xbps/xbps_array.h"
 #include "xbps/xbps_bool.h"
 #include "xbps/xbps_dictionary.h"
 #include "xbps/xbps_number.h"
 #include "xbps/xbps_object.h"
 #include "xbps/xbps_string.h"
-
-#include "xbps/json.h"
 
 static int __attribute__ ((format (printf, 2, 3)))
 xbps_json_printf(struct xbps_json_printer *p, const char *fmt, ...)
@@ -32,7 +31,7 @@ xbps_json_printf(struct xbps_json_printer *p, const char *fmt, ...)
 }
 
 int
-xbps_json_print_escape(struct xbps_json_printer *p, const char *s)
+xbps_json_print_escaped(struct xbps_json_printer *p, const char *s)
 {
 	int r = 0;
 	for (; r >= 0 && *s; s++) {
@@ -56,12 +55,12 @@ xbps_json_print_escape(struct xbps_json_printer *p, const char *s)
 }
 
 int
-xbps_json_print_quote(struct xbps_json_printer *p, const char *s)
+xbps_json_print_quoted(struct xbps_json_printer *p, const char *s)
 {
 	int r;
 	if ((r = xbps_json_printf(p, "\"")) < 0)
 		return r;
-	if ((r = xbps_json_print_escape(p, s)) < 0)
+	if ((r = xbps_json_print_escaped(p, s)) < 0)
 		return r;
 	return xbps_json_printf(p, "\"");
 }
@@ -75,7 +74,7 @@ xbps_json_print_bool(struct xbps_json_printer *p, bool b)
 int
 xbps_json_print_xbps_string(struct xbps_json_printer *p, xbps_string_t str)
 {
-	return xbps_json_print_quote(p, xbps_string_cstring_nocopy(str));
+	return xbps_json_print_quoted(p, xbps_string_cstring_nocopy(str));
 }
 
 int
@@ -164,7 +163,7 @@ xbps_json_print_xbps_dictionary(struct xbps_json_printer *p, xbps_dictionary_t d
 		}
 
 		key = xbps_dictionary_keysym_cstring_nocopy(keysym);
-		if ((r = xbps_json_print_quote(p, key)) < 0)
+		if ((r = xbps_json_print_quoted(p, key)) < 0)
 			goto err;
 		if ((r = xbps_json_printf(p, "%s", key_sep)) < 0)
 			goto err;
