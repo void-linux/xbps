@@ -57,8 +57,6 @@ int	list_orphans(struct xbps_handle *, const char *);
 int	list_pkgs_pkgdb(struct xbps_handle *);
 int	list_pkgdb(struct xbps_handle *, int (*filter)(xbps_object_t), const char *format, int json);
 
-int	repo_list(struct xbps_handle *);
-
 /* from search.c */
 int	search(struct xbps_handle *, bool, const char *, const char *, bool);
 
