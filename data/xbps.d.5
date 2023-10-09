@@ -111,12 +111,20 @@ argument accepts local and remote repositories.
 A complete url or absolute path to the directory that stores the
 .Em <arch>-repodata
 archive is expected.
+If the
+.Ar url
+contains
+.Ar {arch} ,
+.Ar {arch}
+will be replaced by the current target XBPS architecture at runtime.
+If the target architecture is not set, the native architecture will be used.
 Note that remote repositories must be signed using
 .Xr xbps-rindex 1 ,
 example:
 .Pp
 .Bl -tag -compact -width repository=https://repo-default.voidlinux.org/current
 .It Sy repository=https://repo-default.voidlinux.org/current
+.It Sy repository=https://repo-default.voidlinux.org/current/{arch}
 .It Sy repository=/hostdir/binpkgs
 .El
 .It Sy rootdir=path

@@ -99,6 +99,7 @@ int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
 int HIDDEN xbps_transaction_pkg_deps(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);
 int HIDDEN xbps_transaction_internalize(struct xbps_handle *, xbps_object_iterator_t);
 
+char HIDDEN *repo_format(struct xbps_handle *, const char *);
 char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
 int HIDDEN xbps_file_hash_check_dictionary(struct xbps_handle *,
