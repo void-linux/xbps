@@ -53,19 +53,20 @@
  * data type is specified on its edge, i.e string, array, integer, dictionary.
  */
 static int
-trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
+rpool_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force,
+			   xbps_trans_type_t *ttype_out, xbps_dictionary_t *pkg_pkgdb_out, xbps_dictionary_t *pkg_repod_out)
 {
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
-	xbps_object_t obj;
-	xbps_array_t pkgs;
-	pkg_state_t state = 0;
 	xbps_trans_type_t ttype;
-	const char *repoloc, *repopkgver, *instpkgver, *pkgname;
+	const char *repoloc, *repopkgver, *instpkgver;
 	char buf[XBPS_NAME_SIZE] = {0};
 	bool autoinst = false;
 	int rv = 0;
 
-	assert(pkg != NULL);
+	assert(pkg);
+	assert(ttype_out);
+	assert(pkg_pkgdb_out);
+	assert(pkg_repod_out);
 
 	/*
 	 * Find out if pkg is installed first.
@@ -90,7 +91,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		if (((pkg_repod = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
 		    ((pkg_repod = xbps_rpool_get_virtualpkg(xhp, pkg)) == NULL)) {
 			/* not found */
-			return ENOENT;
+			rv = ENOENT;
+			goto exit;
 		}
 	} else {
 		if (force) {
@@ -105,7 +107,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 			assert(repoloc);
 			if ((repo = xbps_regget_repo(xhp, repoloc)) == NULL) {
 				/* not found */
-				return ENOENT;
+				rv = ENOENT;
+				goto exit;
 			}
 			pkg_repod = xbps_repo_get_pkg(repo, pkg);
 		} else {
@@ -114,7 +117,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		}
 		if (pkg_repod == NULL) {
 			/* not found */
-			return ENOENT;
+			rv = ENOENT;
+			goto exit;
 		}
 	}
 
@@ -134,7 +138,8 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 			xbps_dbg_printf("[rpool] Skipping `%s' "
 			    "(installed: %s) from repository `%s'\n",
 			    repopkgver, instpkgver, repoloc);
-			return EEXIST;
+			rv = EEXIST;
+			goto exit;
 		}
 	} else if (ttype == XBPS_TRANS_REINSTALL) {
 		/*
@@ -147,6 +152,34 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 			ttype = XBPS_TRANS_UPDATE;
 		}
 	}
+
+exit:
+	*ttype_out = ttype;
+	*pkg_pkgdb_out = pkg_pkgdb;
+	*pkg_repod_out = pkg_repod;
+	return rv;
+}
+
+static int
+trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
+{
+	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
+	xbps_object_t obj;
+	xbps_array_t pkgs;
+	pkg_state_t state = 0;
+	xbps_trans_type_t ttype;
+	const char *repopkgver, *pkgname;
+	int rv;
+
+	assert(pkg);
+
+	rv = rpool_find_pkg(xhp, pkg, force, &ttype, &pkg_pkgdb, &pkg_repod);
+
+	if (rv) {
+		return rv;
+	}
+
+	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
 
 	if (pkg_pkgdb) {
 		/*
@@ -253,14 +286,29 @@ xbps_autoupdate(struct xbps_handle *xhp)
 	xbps_dbg_printf("%s: trans_find_pkg xbps: %d\n", __func__, rv);
 
 	if (rv == 0) {
+		xbps_trans_type_t dummy_ttype = XBPS_TRANS_UNKNOWN;
+		xbps_dictionary_t dummy_pkg_pkgdb = NULL;
+		xbps_dictionary_t pkg_repod = NULL;
+		const char *repo_pkgver = NULL;
+		int notfound;
+
 		if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 			return 0;
 		}
+		/* get installed pkgver of possibly virtual xbps */
+		notfound = rpool_find_pkg(xhp, pkgname, false, &dummy_ttype, &dummy_pkg_pkgdb, &pkg_repod);
+		if (notfound) {
+			xbps_dbg_printf(xhp, "xbps_autoupdate: %s to be updated, but new version not found: %d\n", pkgname, notfound);
+			return -1;
+		}
+		xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repo_pkgver);
 		/* a new xbps version is available, check its revdeps */
-		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, "xbps");
+		rdeps = xbps_pkgdb_get_pkg_revdeps(xhp, pkgname);
 		for (unsigned int i = 0; i < xbps_array_count(rdeps); i++)  {
+			xbps_dictionary_t curpkg = NULL;
 			const char *curpkgver = NULL;
 			char curpkgn[XBPS_NAME_SIZE] = {0};
+			bool matches = false;
 
 			xbps_array_get_cstring_nocopy(rdeps, i, &curpkgver);
 			xbps_dbg_printf("%s: processing revdep %s\n", __func__, curpkgver);
@@ -268,6 +316,36 @@ xbps_autoupdate(struct xbps_handle *xhp)
 			if (!xbps_pkg_name(curpkgn, sizeof(curpkgn), curpkgver)) {
 				abort();
 			}
+			curpkg = xbps_pkgdb_get_pkg(xhp, curpkgn);
+			if (curpkg) {
+				// assuming an xbps is required by real name or by 'xbps' virtual
+				// assuming no package needs both xbps and provider-of-xbps
+				xbps_array_t curdeps = xbps_dictionary_get(curpkg, "run_depends");
+				xbps_array_t provides = xbps_dictionary_get(pkg_repod, "provides");
+				xbps_dbg_printf(xhp, "searching '%s' in '%s' revdeps\n", repo_pkgver, curpkgn);
+				if (curdeps && xbps_match_pkgdep_in_array(curdeps, repo_pkgver)) {
+					xbps_dbg_printf(xhp, "found, postponing update\n");
+					continue;
+				}
+				for (unsigned int j = 0; j < xbps_array_count(provides); ++j) {
+					char virt_name[XBPS_NAME_SIZE] = {0};
+					const char *virt_pkgver = xbps_string_cstring_nocopy(xbps_array_get(provides, j));
+					xbps_dbg_printf(xhp, "searching '%s' in '%s' revdeps\n", virt_pkgver, curpkgn);
+					if (virt_pkgver
+							&& curdeps
+							&& (xbps_pkgpattern_name(virt_name, sizeof virt_name, virt_pkgver) || xbps_pkg_name(virt_name, sizeof virt_name, virt_pkgver))
+							&& strcmp(virt_name, "xbps") == 0
+							&& xbps_match_pkgdep_in_array(curdeps, virt_pkgver)) {
+						xbps_dbg_printf(xhp, "found, postponing update\n");
+						matches = true;
+						break;
+					}
+				}
+				if (matches) {
+					continue;
+				}
+			}
+
 			rv = trans_find_pkg(xhp, curpkgn, false);
 			xbps_dbg_printf("%s: trans_find_pkg revdep %s: %d\n", __func__, curpkgver, rv);
 			if (rv && rv != ENOENT && rv != EEXIST && rv != ENODEV)
