@@ -42,24 +42,13 @@ revert_body() {
 	mkdir -p some_repo pkg_A
 	touch pkg_A/file00
 	cd some_repo
-	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
-	xbps-create -A noarch -n foo-1.0_1 -r "1.1_1" -s "foo pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -e ignore -- xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" ../pkg_A
+	atf_check -o ignore -e ignore -- xbps-rindex -d -a $PWD/*.xbps
+	atf_check -o ignore -e ignore -- xbps-create -A noarch -n foo-1.0_1 -r "1.1_1" -s "foo pkg" ../pkg_A
+	atf_check -o ignore -e ignore -- xbps-rindex -d -a $PWD/*.xbps
 	cd ..
-	result="$(xbps-query -r root -C empty.conf --repository=some_repo -s '')"
-	expected="[-] foo-1.0_1 foo pkg"
-	rv=0
-	if [ "$result" != "$expected" ]; then
-		echo "result: $result"
-		echo "expected: $expected"
-		rv=1
-	fi
-	atf_check_equal $rv 0
+	atf_check -o "inline:[-] foo-1.0_1 foo pkg\n" -e empty -- \
+		xbps-query -r root -C empty.conf --repository=some_repo -Rs ''
 }
 
 atf_test_case stage
@@ -76,36 +65,36 @@ stage_body() {
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 1
+	atf_check -o inline:"    1 $PWD (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 
 	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" --shlib-provides "libfoo.so.2" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 1
+	atf_check -o inline:"    1 $PWD (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 
 	xbps-create -A noarch -n bar-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.2" ../pkg_B
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 1
+	atf_check -o inline:"    2 $PWD (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 
 	xbps-create -A noarch -n foo-1.2_1 -s "foo pkg" --shlib-provides "libfoo.so.3" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 0
+	atf_check -o inline:"    2 $PWD (Staged) (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 
 	xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" --shlib-requires "libfoo.so.3" ../pkg_A
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 1
+	atf_check -o inline:"    2 $PWD (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 }
 
 atf_test_case stage_resolve_bug
@@ -136,16 +125,16 @@ stage_resolve_bug_body() {
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 1
+	atf_check -o inline:"    4 $PWD (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 
 	# trigger staging
 	xbps-create -A noarch -n provider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../provider
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 0
+	atf_check -o inline:"    4 $PWD (Staged) (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 
 	# then add a new provider not containing the provides field. This resulted in
 	# a stage state despites the library is resolved through libprovides
@@ -153,8 +142,8 @@ stage_resolve_bug_body() {
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 0
+	atf_check -o inline:"    4 $PWD (Staged) (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 
 	# resolve staging
 	# the actual bug appeared here: libfoo.so.1 is still provided by libprovider, but
@@ -163,8 +152,8 @@ stage_resolve_bug_body() {
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 1
+	atf_check -o inline:"    4 $PWD (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 }
 
 atf_init_test_cases() {
