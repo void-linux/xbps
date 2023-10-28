@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2012-2020 Juan Romero Pardines.
+ * Copyright (c) 2023 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,22 +24,18 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/file.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
-#include <stdbool.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <archive.h>
 #include <archive_entry.h>
-
-#include <openssl/err.h>
-#include <openssl/sha.h>
-#include <openssl/rsa.h>
-#include <openssl/ssl.h>
-#include <openssl/pem.h>
 
 #include "xbps_api_impl.h"
 
@@ -47,220 +44,344 @@
  * @brief Repository functions
  * @defgroup repo Repository functions
  */
-char *
-xbps_repo_path(struct xbps_handle *xhp, const char *url)
+
+int
+xbps_repo_lock(const char *repodir, const char *arch)
 {
-	return xbps_repo_path_with_name(xhp, url, "repodata");
-}
+	char path[PATH_MAX];
+	int fd;
+	int r;
 
-char *
-xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *name)
-{
-	assert(xhp);
-	assert(url);
-	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0);
+	if (xbps_repository_is_remote(repodir))
+		return -EINVAL;
 
-	return xbps_xasprintf("%s/%s-%s",
-	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch, name);
-}
-
-static xbps_dictionary_t
-repo_get_dict(struct xbps_repo *repo)
-{
-	struct archive_entry *entry;
-	int rv;
-
-	if (repo->ar == NULL)
-		return NULL;
-
-	rv = archive_read_next_header(repo->ar, &entry);
-	if (rv != ARCHIVE_OK) {
-		xbps_dbg_printf("%s: read_next_header %s\n", repo->uri,
-		    archive_error_string(repo->ar));
-		return NULL;
+	r = snprintf(path, sizeof(path), "%s/%s-repodata.lock", repodir, arch);
+	if (r < 0 || (size_t)r > sizeof(path)) {
+		return -ENAMETOOLONG;
 	}
-	return xbps_archive_get_dictionary(repo->ar, entry);
-}
 
-bool
-xbps_repo_lock(struct xbps_handle *xhp, const char *repodir,
-		int *lockfd, char **lockfname)
-{
-	char *repofile, *lockfile;
-	int fd, rv;
+	fd = open(path, O_WRONLY|O_CREAT|O_CLOEXEC, 0660);
+	if (fd == -1)
+		return -errno;
 
-	assert(repodir);
-	assert(lockfd);
-	assert(lockfname);
-
-	repofile = xbps_repo_path(xhp, repodir);
-	assert(repofile);
-
-	lockfile = xbps_xasprintf("%s.lock", repofile);
-	free(repofile);
-
-	for (;;) {
-		fd = open(lockfile, O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC, 0660);
-		rv = errno;
-		if (fd != -1)
-			break;
-		if (rv != EEXIST) {
-			xbps_dbg_printf("[repo] `%s' failed to "
-			    "create lock file %s\n", lockfile, strerror(rv));
-			free(lockfile);
-			return false;
-		} else {
-			xbps_dbg_printf("[repo] `%s' lock file exists,"
-			    "waiting for 1s...\n", lockfile);
-			sleep(1);
-		}
+	if (flock(fd, LOCK_EX|LOCK_NB) == 0)
+		return fd;
+	if (errno != EWOULDBLOCK) {
+		r = -errno;
+		close(fd);
+		return r;
 	}
-	*lockfname = lockfile;
-	*lockfd = fd;
-	return true;
+
+	xbps_warn_printf("repository locked: %s: waiting...", repodir);
+	if (flock(fd, LOCK_EX) == -1) {
+		r = -errno;
+		close(fd);
+		return r;
+	}
+
+	return fd;
 }
 
 void
-xbps_repo_unlock(int lockfd, char *lockfname)
+xbps_repo_unlock(const char *repodir, const char *arch, int fd)
 {
-        if (lockfd != -1) {
-		close(lockfd);
-	}
-	if (lockfname) {
-		unlink(lockfname);
-		free(lockfname);
-	}
+	char path[PATH_MAX];
+	int r;
+
+	if (fd != -1)
+		close(0);
+
+	r = snprintf(path, sizeof(path), "%s/%s-repodata.lock", repodir, arch);
+	if (r < 0 || (size_t)r > sizeof(path))
+		return;
+	unlink(path);
 }
 
-static bool
-repo_open_local(struct xbps_repo *repo, const char *repofile)
+static int
+repo_read_next(struct xbps_repo *repo, struct archive *ar, struct archive_entry **entry)
 {
-	struct stat st;
+	int r;
 
-	if (fstat(repo->fd, &st) == -1) {
-		xbps_dbg_printf("[repo] `%s' fstat repodata %s\n",
-		    repofile, strerror(errno));
-		return false;
+	r = archive_read_next_header(ar, entry);
+	if (r == ARCHIVE_FATAL) {
+		xbps_error_printf("failed to read repository: %s: %s\n",
+		    repo->uri, archive_error_string(ar));
+		return -archive_errno(ar);
+	} else if (r == ARCHIVE_WARN) {
+		xbps_warn_printf("reading repository: %s: %s\n",
+		    repo->uri, archive_error_string(ar));
+		return 0;
+	} else if (r == ARCHIVE_EOF) {
+		return -EIO;
 	}
-
-	repo->ar = archive_read_new();
-	assert(repo->ar);
-	archive_read_support_filter_gzip(repo->ar);
-	archive_read_support_filter_bzip2(repo->ar);
-	archive_read_support_filter_xz(repo->ar);
-	archive_read_support_filter_lz4(repo->ar);
-	archive_read_support_filter_zstd(repo->ar);
-	archive_read_support_format_tar(repo->ar);
-
-	if (archive_read_open_fd(repo->ar, repo->fd, st.st_blksize) == ARCHIVE_FATAL) {
-		xbps_dbg_printf("[repo] `%s' failed to open repodata archive %s\n",
-		    repofile, archive_error_string(repo->ar));
-		return false;
-	}
-	if ((repo->idx = repo_get_dict(repo)) == NULL) {
-		xbps_dbg_printf("[repo] `%s' failed to internalize "
-		    " index on archive, removing file.\n", repofile);
-		/* broken archive, remove it */
-		(void)unlink(repofile);
-		return false;
-	}
-	xbps_dictionary_make_immutable(repo->idx);
-	repo->idxmeta = repo_get_dict(repo);
-	if (repo->idxmeta != NULL) {
-		repo->is_signed = true;
-		xbps_dictionary_make_immutable(repo->idxmeta);
-	}
-	/*
-	 * We don't need the archive anymore, we are only
-	 * interested in the proplib dictionaries.
-	 */
-	xbps_repo_close(repo);
-
-	return true;
+	return 0;
 }
 
-static bool
-repo_open_remote(struct xbps_repo *repo)
-{
-	char *rpath;
-	bool rv;
 
-	rpath = xbps_repo_path(repo->xhp, repo->uri);
-	rv = xbps_repo_fetch_remote(repo, rpath);
-	free(rpath);
-	if (rv) {
-		xbps_dbg_printf("[repo] `%s' used remotely (kept in memory).\n", repo->uri);
-		if (repo->xhp->state_cb && xbps_repo_key_import(repo) != 0)
-			rv = false;
+static int
+repo_read_index(struct xbps_repo *repo, struct archive *ar)
+{
+	struct archive_entry *entry;
+	char *buf;
+	int r;
+
+	r = repo_read_next(repo, ar, &entry);
+	if (r < 0)
+		return r;
+
+	/* index.plist */
+	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_INDEX) != 0) {
+		xbps_error_printf("failed to read repository index: %s: unexpected archive entry\n",
+		    repo->uri);
+		r = -EINVAL;
+		return r;
 	}
-	return rv;
-}
 
-static struct xbps_repo *
-repo_open_with_type(struct xbps_handle *xhp, const char *url, const char *name)
-{
-	struct xbps_repo *repo = NULL;
-	const char *arch;
-	char *repofile = NULL;
-
-	assert(xhp);
-	assert(url);
-
-	if (xhp->target_arch)
-		arch = xhp->target_arch;
-	else
-		arch = xhp->native_arch;
-
-	repo = calloc(1, sizeof(struct xbps_repo));
-	assert(repo);
-	repo->fd = -1;
-	repo->xhp = xhp;
-	repo->uri = url;
-
-	if (xbps_repository_is_remote(url)) {
-		/* remote repository */
-		char *rpath;
-
-		if ((rpath = xbps_get_remote_repo_string(url)) == NULL) {
-			goto out;
+	if (archive_entry_size(entry) == 0) {
+		r = archive_read_data_skip(ar);
+		if (r == ARCHIVE_FATAL) {
+			xbps_error_printf("failed to read repository: %s: archive error: %s\n",
+			    repo->uri, archive_error_string(ar));
+			return -archive_errno(ar);
 		}
-		repofile = xbps_xasprintf("%s/%s/%s-%s", xhp->metadir, rpath, arch, name);
-		free(rpath);
-		repo->is_remote = true;
+		repo->index = xbps_dictionary_create();
+		return 0;
+	}
+
+	buf = xbps_archive_get_file(ar, entry);
+	if (!buf)
+		return -errno;
+	repo->index = xbps_dictionary_internalize(buf);
+	r = -errno;
+	free(buf);
+	if (!repo->index) {
+		xbps_error_printf("failed to open repository: %s: reading index: %s\n",
+		    repo->uri, strerror(-r));
+		return -EIO;
+	}
+
+	xbps_dictionary_make_immutable(repo->index);
+	return 0;
+}
+
+static int
+repo_read_meta(struct xbps_repo *repo, struct archive *ar)
+{
+	struct archive_entry *entry;
+	char *buf;
+	int r;
+
+	r = repo_read_next(repo, ar, &entry);
+	if (r < 0)
+		return r;
+
+	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_META) != 0) {
+		xbps_error_printf("failed to read repository metadata: %s: unexpected archive entry\n",
+		    repo->uri);
+		r = -EINVAL;
+		return r;
+	}
+	if (archive_entry_size(entry) == 0) {
+		r = archive_read_data_skip(ar);
+		if (r == ARCHIVE_FATAL) {
+			xbps_error_printf("failed to read repository: %s: archive error: %s\n",
+			    repo->uri, archive_error_string(ar));
+			return -archive_errno(ar);
+		}
+		repo->idxmeta = xbps_dictionary_create();
+		return 0;
+	}
+
+	buf = xbps_archive_get_file(ar, entry);
+	if (!buf) {
+		r = -errno;
+		xbps_error_printf("failed to read repository metadata: %s: %s\n",
+		    repo->uri, strerror(-r));
+		return r;
+	}
+	/* for backwards compatibility check if the content is DEADBEEF. */
+	if (strcmp(buf, "DEADBEEF") == 0) {
+		free(buf);
+		return 0;
+	}
+
+	errno = 0;
+	repo->idxmeta = xbps_dictionary_internalize(buf);
+	r = -errno;
+
+	free(buf);
+
+	if (!repo->idxmeta) {
+		if (!r) {
+			xbps_error_printf("failed to read repository metadata: %s: invalid dictionary\n",
+			    repo->uri);
+			return -EINVAL;
+		}
+		xbps_error_printf("failed to read repository metadata: %s: %s\n",
+		    repo->uri, strerror(-r));
+		return r;
+	}
+
+	xbps_dictionary_make_immutable(repo->idxmeta);
+	return 0;
+}
+
+static int
+repo_read_stage(struct xbps_repo *repo, struct archive *ar)
+{
+	struct archive_entry *entry;
+	int r;
+
+	r = repo_read_next(repo, ar, &entry);
+	if (r < 0) {
+		/* XXX: backwards compatibility missing */
+		if (r == -EIO) {
+			repo->stage = xbps_dictionary_create();
+			return 0;
+		}
+		return r;
+	}
+
+	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_STAGE) != 0) {
+		xbps_error_printf("failed to read repository stage: %s: unexpected archive entry\n",
+		    repo->uri);
+		r = -EINVAL;
+		return r;
+	}
+	if (archive_entry_size(entry) == 0) {
+		repo->stage = xbps_dictionary_create();
+		return 0;
+	}
+
+	repo->stage = xbps_archive_get_dictionary(ar, entry);
+	if (!repo->stage) {
+		xbps_error_printf("failed to open repository: %s: reading stage: %s\n",
+		    repo->uri, archive_error_string(ar));
+		return -EIO;
+	}
+	xbps_dictionary_make_immutable(repo->stage);
+	return 0;
+}
+
+static int
+repo_read(struct xbps_repo *repo, struct archive *ar)
+{
+	int r;
+
+	r = repo_read_index(repo, ar);
+	if (r < 0)
+		return r;
+	r = repo_read_meta(repo, ar);
+	if (r < 0)
+		return r;
+	r = repo_read_stage(repo, ar);
+	if (r < 0)
+		return r;
+
+	return r;
+}
+
+static int
+repo_open_local(struct xbps_repo *repo, struct archive *ar)
+{
+	char path[PATH_MAX];
+	int r;
+
+	if (repo->is_remote) {
+		char *cachedir;
+		cachedir = xbps_get_remote_repo_string(repo->uri);
+		if (!cachedir) {
+			r = -EINVAL;
+			xbps_error_printf("failed to open repository: %s: invalid repository url\n",
+			    repo->uri);
+			goto err;
+		}
+		r = snprintf(path, sizeof(path), "%s/%s/%s-repodata",
+		    repo->xhp->metadir, cachedir, repo->arch);
+		free(cachedir);
 	} else {
-		/* local repository */
-		repofile = xbps_repo_path_with_name(xhp, url, name);
+		r = snprintf(path, sizeof(path), "%s/%s-repodata", repo->uri, repo->arch);
 	}
-	/*
-	 * In memory repo sync.
-	 */
-	if (repo->is_remote && (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC)) {
-		if (repo_open_remote(repo)) {
-			free(repofile);
-			return repo;
-		}
-		goto out;
-	}
-	/*
-	 * Open the repository archive.
-	 */
-	repo->fd = open(repofile, O_RDONLY|O_CLOEXEC);
-	if (repo->fd == -1) {
-		int rv = errno;
-		xbps_dbg_printf("[repo] `%s' open %s %s\n",
-		    repofile, name, strerror(rv));
-		xbps_error_printf("%s: %s\n", strerror(rv), repofile);
-		goto out;
-	}
-	if (repo_open_local(repo, repofile)) {
-		free(repofile);
-		return repo;
+	if (r < 0 || (size_t)r >= sizeof(path)) {
+		r = -ENAMETOOLONG;
+		xbps_error_printf("failed to open repository: %s: repository path too long\n",
+		    repo->uri);
+		goto err;
 	}
 
-out:
-	free(repofile);
-	xbps_repo_release(repo);
-	return NULL;
+	r = xbps_archive_read_open(ar, path);
+	if (r < 0) {
+		if (r != -ENOENT) {
+			xbps_error_printf("failed to open repodata: %s: %s\n",
+			    path, strerror(-r));
+		}
+		goto err;
+	}
+
+	return 0;
+err:
+	return r;
+}
+
+static int
+repo_open_remote(struct xbps_repo *repo, struct archive *ar)
+{
+	char url[PATH_MAX];
+	int r;
+
+	r = snprintf(url, sizeof(url), "%s/%s-repodata", repo->uri, repo->arch);
+	if (r < 0 || (size_t)r >= sizeof(url)) {
+		xbps_error_printf("failed to open repository: %s: repository url too long\n",
+		    repo->uri);
+		return -ENAMETOOLONG;
+	}
+
+	r = xbps_archive_read_open_remote(ar, url);
+	if (r < 0) {
+		xbps_error_printf("failed to open repository: %s: %s\n", repo->uri, strerror(-r));
+		archive_read_free(ar);
+		return r;
+	}
+
+	return 0;
+}
+
+static int
+repo_open(struct xbps_handle *xhp, struct xbps_repo *repo)
+{
+	struct archive *ar;
+	int r;
+
+	ar = xbps_archive_read_new();
+	if (!ar) {
+		r = -errno;
+		xbps_error_printf("failed to open repo: %s\n", strerror(-r));
+		return r;
+	}
+
+	if (repo->is_remote && (xhp->flags & XBPS_FLAG_REPOS_MEMSYNC))
+		r = repo_open_remote(repo, ar);
+	else
+		r = repo_open_local(repo, ar);
+	if (r < 0)
+		goto err;
+
+	r = repo_read(repo, ar);
+	if (r < 0)
+		goto err;
+
+	r = archive_read_close(ar);
+	if (r < 0) {
+		xbps_error_printf("failed to open repository: %s: closing archive: %s\n",
+		    repo->uri, archive_error_string(ar));
+		goto err;
+	}
+
+	archive_read_free(ar);
+	return 0;
+err:
+	archive_read_free(ar);
+	return r;
 }
 
 bool
@@ -325,64 +446,90 @@ xbps_repo_remove(struct xbps_handle *xhp, const char *repo)
 	return rv;
 }
 
-struct xbps_repo *
-xbps_repo_stage_open(struct xbps_handle *xhp, const char *url)
+static int
+repo_merge_stage(struct xbps_repo *repo)
 {
-	return repo_open_with_type(xhp, url, "stagedata");
-}
+	xbps_dictionary_t idx;
+	xbps_object_t keysym;
+	xbps_object_iterator_t iter;
+	int r = 0;
 
-struct xbps_repo *
-xbps_repo_public_open(struct xbps_handle *xhp, const char *url) {
-	return repo_open_with_type(xhp, url, "repodata");
+	idx = xbps_dictionary_copy_mutable(repo->index);
+	if (!idx)
+		return -errno;
+
+	iter = xbps_dictionary_iterator(repo->stage);
+	if (!iter) {
+		r = -errno;
+		goto err1;
+	}
+
+	while ((keysym = xbps_object_iterator_next(iter))) {
+		const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
+		xbps_dictionary_t pkgd = xbps_dictionary_get_keysym(repo->stage, keysym);
+		if (!xbps_dictionary_set(idx, pkgname, pkgd)) {
+			r = -errno;
+			goto err2;
+		}
+	}
+
+	xbps_object_iterator_release(iter);
+	repo->idx = idx;
+	return 0;
+err2:
+	xbps_object_iterator_release(iter);
+err1:
+	xbps_object_release(idx);
+	return r;
 }
 
 struct xbps_repo *
 xbps_repo_open(struct xbps_handle *xhp, const char *url)
 {
-	struct xbps_repo *repo = xbps_repo_public_open(xhp, url);
-	struct xbps_repo *stage = NULL;
-	xbps_dictionary_t idx;
-	const char *pkgname;
-	xbps_object_t keysym;
-	xbps_object_iterator_t iter;
+	struct xbps_repo *repo;
+	int r;
+
+	repo = calloc(1, sizeof(*repo));
+	if (!repo) {
+		r = -errno;
+		xbps_error_printf("failed to open repository: %s\n", strerror(-r));
+		errno = -r;
+		return NULL;
+	}
+	repo->xhp = xhp;
+	repo->uri = url;
+	repo->arch = xhp->target_arch ? xhp->target_arch : xhp->native_arch;
+	repo->is_remote = xbps_repository_is_remote(url);
+
+	r = repo_open(xhp, repo);
+	if (r < 0) {
+		free(repo);
+		errno = -r;
+		return NULL;
+	}
+
+	if (repo->is_remote || xbps_dictionary_count(repo->stage) == 0) {
+		repo->idx = repo->index;
+		xbps_object_retain(repo->idx);
+		return repo;
+	}
+
 	/*
 	 * Load and merge staging repository if the repository is local.
 	 */
-	if (repo && !repo->is_remote) {
-		stage = xbps_repo_stage_open(xhp, url);
-		if (stage == NULL)
-			return repo;
-		idx = xbps_dictionary_copy_mutable(repo->idx);
-		iter = xbps_dictionary_iterator(stage->idx);
-		while ((keysym = xbps_object_iterator_next(iter))) {
-			pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
-			xbps_dictionary_set(idx, pkgname,
-					xbps_dictionary_get_keysym(stage->idx, keysym));
-		}
-		xbps_object_iterator_release(iter);
-		xbps_object_release(repo->idx);
-		xbps_repo_release(stage);
-		repo->idx = idx;
-		return repo;
+	r = repo_merge_stage(repo);
+	if (r < 0) {
+		xbps_error_printf(
+		    "failed to open repository: %s: could not merge stage: %s\n",
+		    url, strerror(-r));
+		xbps_repo_release(repo);
+		errno = -r;
+		return NULL;
 	}
+
 	return repo;
 }
 
-void
-xbps_repo_close(struct xbps_repo *repo)
-{
-	if (!repo)
-		return;
-
-	if (repo->ar != NULL) {
-		archive_read_free(repo->ar);
-		repo->ar = NULL;
-	}
-	if (repo->fd != -1) {
-		close(repo->fd);
-		repo->fd = -1;
-	}
-}
 
 void
 xbps_repo_release(struct xbps_repo *repo)
@@ -390,13 +537,19 @@ xbps_repo_release(struct xbps_repo *repo)
 	if (!repo)
 		return;
 
-	xbps_repo_close(repo);
-
-	if (repo->idx != NULL) {
+	if (repo->idx) {
 		xbps_object_release(repo->idx);
 		repo->idx = NULL;
 	}
-	if (repo->idxmeta != NULL) {
+	if (repo->index) {
+		xbps_object_release(repo->index);
+		repo->idx = NULL;
+	}
+	if (repo->stage) {
+		xbps_object_release(repo->stage);
+		repo->idx = NULL;
+	}
+	if (repo->idxmeta) {
 		xbps_object_release(repo->idxmeta);
 		repo->idxmeta = NULL;
 	}
