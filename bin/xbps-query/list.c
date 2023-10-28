@@ -188,6 +188,8 @@ repo_list_uri(struct xbps_repo *repo)
 	printf("%5zd %s",
 	    repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1,
 	    repo->uri);
+	if (repo->stage && xbps_dictionary_count(repo->stage) > 0)
+		printf(" (Staged)");
 	printf(" (RSA %s)\n", repo->is_signed ? "signed" : "unsigned");
 	if (repo->xhp->flags & XBPS_FLAG_VERBOSE) {
 		xbps_data_t pubkey;
