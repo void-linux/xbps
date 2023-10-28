@@ -110,16 +110,22 @@
 #define XBPS_PKGFILES		"files.plist"
 
 /** 
- * @def XBPS_REPOIDX
+ * @def XBPS_REPODATA_INDEX
  * Filename for the repository index property list.
  */
-#define XBPS_REPOIDX		"index.plist"
+#define XBPS_REPODATA_INDEX		"index.plist"
 
 /**
- * @def XBPS_REPOIDX_META
+ * @def XBPS_REPODATA_STAGE
+ * Filename for the repository stage property list.
+ */
+#define XBPS_REPODATA_STAGE		"stage.plist"
+
+/**
+ * @def XBPS_REPODATA_META
  * Filename for the repository index metadata property list.
  */
-#define XBPS_REPOIDX_META 	"index-meta.plist"
+#define XBPS_REPODATA_META 	"index-meta.plist"
 
 /**
  * @def XBPS_FLAG_VERBOSE
@@ -1409,7 +1415,6 @@ struct xbps_repo {
 	struct {
 	        struct xbps_repo *sqe_next;  /* next element */
 	} entries;
-	struct archive *ar;
 	/**
 	 * @var xhp
 	 *
@@ -1417,11 +1422,29 @@ struct xbps_repo {
 	 */
 	struct xbps_handle *xhp;
 	/**
+	 * @var arch
+	 *
+	 * The architecture of the repository.
+	 */
+	const char *arch;
+	/**
 	 * @var idx
 	 *
 	 * Proplib dictionary associated with the repository index.
 	 */
 	xbps_dictionary_t idx;
+	/**
+	 * @var index
+	 *
+	 * Proplib dictionary associated with the repository index.
+	 */
+	xbps_dictionary_t index;
+	/**
+	 * @var stage
+	 *
+	 * Proplib dictionary associated with the repository staging index.
+	 */
+	xbps_dictionary_t stage;
 	/**
 	 * @var idxmeta
 	 *
@@ -1434,10 +1457,6 @@ struct xbps_repo {
 	 * URI string associated with repository.
 	 */
 	const char *uri;
-	/**
-	 * @private
-	 */
-	int fd;
 	/**
 	 * var is_remote
 	 *
@@ -1583,7 +1602,7 @@ bool xbps_repo_remove(struct xbps_handle *xhp, const char *url);
  * @return True on success and lockfd/lockfname are assigned appropiately.
  * otherwise false and lockfd/lockfname aren't set.
  */
-bool xbps_repo_lock(struct xbps_handle *xhp, const char *uri, int *lockfd, char **lockfname);
+int xbps_repo_lock(const char *repodir, const char *arch);
 
 /**
  * Unlocks a local repository and removes its lock file.
@@ -1591,7 +1610,7 @@ bool xbps_repo_lock(struct xbps_handle *xhp, const char *uri, int *lockfd, char 
  * @param[in] lockfd Lock file descriptor.
  * @param[in] lockfname Lock filename.
  */
-void xbps_repo_unlock(int lockfd, char *lockfname);
+void xbps_repo_unlock(const char *repodir, const char *arch, int fd);
 
 /**
  * Opens a repository and returns a xbps_repo object.
@@ -1602,16 +1621,6 @@ void xbps_repo_unlock(int lockfd, char *lockfname);
  * @return The matching repository object, NULL otherwise.
  */
 struct xbps_repo *xbps_repo_open(struct xbps_handle *xhp, const char *uri);
-
-/**
- * Opens a staging repository and returns a xbps_repo object.
- *
- * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] uri Repository URI to match.
- *
- * @return The matching repository object, NULL otherwise.
- */
-struct xbps_repo *xbps_repo_stage_open(struct xbps_handle *xhp, const char *uri);
 
 /**
  * Opens a repository and returns a xbps_repo object.
@@ -1649,28 +1658,6 @@ void xbps_repo_release(struct xbps_repo *repo);
  * @return A heap allocated string that must be free(3)d when it's unneeded.
  */
 char *xbps_repo_path(struct xbps_handle *xhp, const char *url);
-
-/**
- *
- * Returns a heap-allocated string with the repository local path.
- *
- * @param[in] xhp The xbps_handle object.
- * @param[in] url The repository URL to match.
- * @param[in] name The repository name (stage or repodata)
- *
- * @return A heap allocated string that must be free(3)d when it's unneeded.
- */
-char *xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *name);
-
-/**
- * Remotely fetch repository data and keep it in memory.
- *
- * @param[in] repo A struct xbps_repo pointer to be filled in.
- * @param[in] url Full url to the target remote repository data archive.
- *
- * @return True on success, false otherwise and errno is set appropiately.
- */
-bool xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url);
 
 /**
  * Returns a pkg dictionary from a repository \a repo matching
@@ -1721,6 +1708,8 @@ int xbps_repo_key_import(struct xbps_repo *repo);
 
 /** @addtogroup archive_util */
 /**@{*/
+
+struct archive;
 
 /**
  * Appends a file to the \a ar archive by using a memory buffer \a buf of

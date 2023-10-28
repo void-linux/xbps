@@ -52,6 +52,7 @@
 #define __arraycount(x) (sizeof(x) / sizeof(*x))
 #endif
 
+struct archive;
 struct archive_entry;
 
 /**
@@ -110,9 +111,15 @@ int HIDDEN xbps_set_cb_state(struct xbps_handle *, xbps_state_t, int,
 int HIDDEN xbps_unpack_binary_pkg(struct xbps_handle *, xbps_dictionary_t);
 int HIDDEN xbps_remove_pkg(struct xbps_handle *, const char *, bool);
 int HIDDEN xbps_register_pkg(struct xbps_handle *, xbps_dictionary_t);
+
 char HIDDEN *xbps_archive_get_file(struct archive *, struct archive_entry *);
 xbps_dictionary_t HIDDEN xbps_archive_get_dictionary(struct archive *,
 		struct archive_entry *);
+
+struct archive HIDDEN *xbps_archive_read_new(void);
+int HIDDEN xbps_archive_read_open(struct archive *ar, const char *path);
+int HIDDEN xbps_archive_read_open_remote(struct archive *ar, const char *url);
+
 const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *, bool);
 xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 		const char *, bool);
