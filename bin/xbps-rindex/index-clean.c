@@ -30,9 +30,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -41,11 +41,10 @@
 
 #include "defs.h"
 
-static xbps_dictionary_t dest;
-
-struct CleanerCbInfo {
+struct cleaner_ctx {
 	const char *repourl;
 	bool hashcheck;
+	xbps_dictionary_t dict;
 };
 
 static int
@@ -55,79 +54,91 @@ idx_cleaner_cb(struct xbps_handle *xhp UNUSED,
 		void *arg,
 		bool *done UNUSED)
 {
-	struct CleanerCbInfo *info = arg;
-	const char *arch = NULL, *pkgver = NULL, *sha256 = NULL;
-	char *filen, pkgname[XBPS_NAME_SIZE];
+	char path[PATH_MAX];
+	char pkgname[XBPS_NAME_SIZE];
+	struct cleaner_ctx *ctx = arg;
+	const char *arch = NULL, *pkgver = NULL;
+	int r;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
-	xbps_dbg_printf("%s: checking %s [%s] ...\n", info->repourl, pkgver, arch);
+	xbps_dbg_printf("%s: checking %s [%s] ...\n", ctx->repourl, pkgver, arch);
 
-	filen = xbps_xasprintf("%s/%s.%s.xbps", info->repourl, pkgver, arch);
-	if (access(filen, R_OK) == -1) {
+	r = snprintf(path, sizeof(path), "%s/%s.%s.xbps", ctx->repourl, pkgver, arch);
+	if (r < 0 || (size_t)r >= sizeof(path)) {
+		r = -ENAMETOOLONG;
+		xbps_error_printf("package path too long: %s: %s\n", path, strerror(-r));
+		return r;
+	}
+	if (access(path, R_OK) == -1) {
 		/*
 		 * File cannot be read, might be permissions,
 		 * broken or simply unexistent; either way, remove it.
 		 */
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
-			goto out;
-		xbps_dictionary_remove(dest, pkgname);
-		printf("index: removed pkg %s\n", pkgver);
-	} else if (info->hashcheck) {
+		goto remove;
+	}
+	if (ctx->hashcheck) {
+		const char *sha256 = NULL;
 		/*
 		 * File can be read; check its hash.
 		 */
-		xbps_dictionary_get_cstring_nocopy(obj,
-				"filename-sha256", &sha256);
-		if (xbps_file_sha256_check(filen, sha256) != 0) {
-			if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver))
-				goto out;
-			xbps_dictionary_remove(dest, pkgname);
-			printf("index: removed pkg %s\n", pkgver);
-		}
+		xbps_dictionary_get_cstring_nocopy(obj, "filename-sha256", &sha256);
+		if (xbps_file_sha256_check(path, sha256) != 0)
+			goto remove;
 	}
-out:
-	free(filen);
+
+	return 0;
+remove:
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		xbps_error_printf("invalid pkgver: %s\n", pkgver);
+		return -EINVAL;
+	}
+	xbps_dictionary_remove(ctx->dict, pkgname);
+	printf("index: removed pkg %s\n", pkgver);
 	return 0;
 }
 
 static int
 cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *repo,
-	const char *reponame, bool hashcheck, const char *compression)
+	bool hashcheck, const char *compression)
 {
-	int rv = 0;
-	xbps_array_t allkeys;
-	struct CleanerCbInfo info = {
+	struct cleaner_ctx ctx = {
 		.hashcheck = hashcheck,
 		.repourl = repodir
 	};
+	xbps_dictionary_t index, stage;
+	xbps_array_t allkeys;
+	int r = 0;
+	const char *repoarch = xhp->target_arch ? xhp->target_arch : xhp->native_arch;
 	/*
 	 * First pass: find out obsolete entries on index and index-files.
 	 */
-	dest = xbps_dictionary_copy_mutable(repo->idx);
-	allkeys = xbps_dictionary_all_keys(dest);
-	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, &info);
+	index = xbps_dictionary_copy_mutable(repo->idx);
+	stage = xbps_dictionary_copy_mutable(repo->stage);
+
+	allkeys = xbps_dictionary_all_keys(index);
+	ctx.dict = index;
+	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, &ctx);
 	xbps_object_release(allkeys);
 
-	if (strcmp("stagedata", reponame) == 0 && xbps_dictionary_count(dest) == 0) {
-		char *stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
-		unlink(stagefile);
-		free(stagefile);
+	allkeys = xbps_dictionary_all_keys(stage);
+	ctx.dict = stage;
+	(void)xbps_array_foreach_cb_multi(xhp, allkeys, repo->idx, idx_cleaner_cb, &ctx);
+	xbps_object_release(allkeys);
+
+	if (xbps_dictionary_equals(index, repo->index) &&
+	    xbps_dictionary_equals(stage, repo->stage))
+		return 0;
+
+	r = repodata_flush(repodir, repoarch, index, stage, repo->idxmeta, compression);
+	if (r < 0) {
+		xbps_error_printf("failed to write repodata: %s\n", strerror(-r));
+		return r;
 	}
-	if (!xbps_dictionary_equals(dest, repo->idx)) {
-		if (!repodata_flush(xhp, repodir, reponame, dest, repo->idxmeta, compression)) {
-			rv = errno;
-			xbps_error_printf("failed to write repodata: %s\n",
-			    strerror(errno));
-			return rv;
-		}
-	}
-	if (strcmp("stagedata", reponame) == 0)
-		printf("stage: %u packages registered.\n", xbps_dictionary_count(dest));
-	else
-		printf("index: %u packages registered.\n", xbps_dictionary_count(dest));
-	return rv;
+	printf("stage: %u packages registered.\n", xbps_dictionary_count(stage));
+	printf("index: %u packages registered.\n", xbps_dictionary_count(index));
+	return r;
 }
 
 /*
@@ -137,48 +148,33 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 int
 index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, const char *compression)
 {
-	struct xbps_repo *repo, *stage;
-	char *rlockfname = NULL;
-	int rv = 0, rlockfd = -1;
+	struct xbps_repo *repo;
+	const char *arch = xhp->target_arch ? xhp->target_arch : xhp->native_arch;
+	int lockfd;
+	int r;
 
-	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
-		rv = errno;
-		xbps_error_printf("%s: cannot lock repository: %s\n",
-		    _XBPS_RINDEX, strerror(rv));
-		return rv;
+	lockfd = xbps_repo_lock(repodir, arch);
+	if (lockfd < 0) {
+		xbps_error_printf("cannot lock repository: %s\n", strerror(-lockfd));
+		return EXIT_FAILURE;
 	}
-	repo = xbps_repo_public_open(xhp, repodir);
-	if (repo == NULL) {
-		rv = errno;
-		if (rv == ENOENT) {
-			xbps_repo_unlock(rlockfd, rlockfname);
+
+	repo = xbps_repo_open(xhp, repodir);
+	if (!repo) {
+		r = -errno;
+		if (r == -ENOENT) {
+			xbps_repo_unlock(repodir, arch, lockfd);
 			return 0;
 		}
-		xbps_error_printf("%s: cannot read repository data: %s\n",
-		    _XBPS_RINDEX, strerror(errno));
-		xbps_repo_unlock(rlockfd, rlockfname);
-		return rv;
-	}
-	stage = xbps_repo_stage_open(xhp, repodir);
-	if (repo->idx == NULL || (stage && stage->idx == NULL)) {
-		xbps_error_printf("%s: incomplete repository data file!\n", _XBPS_RINDEX);
-		rv = EINVAL;
-		goto out;
+		xbps_error_printf("cannot read repository data: %s\n",
+		    strerror(errno));
+		xbps_repo_unlock(repodir, arch, lockfd);
+		return EXIT_FAILURE;
 	}
 	printf("Cleaning `%s' index, please wait...\n", repodir);
 
-	if ((rv = cleanup_repo(xhp, repodir, repo, "repodata", hashcheck, compression))) {
-		goto out;
-	}
-	if (stage) {
-		cleanup_repo(xhp, repodir, stage, "stagedata", hashcheck, compression);
-	}
-
-out:
+	r = cleanup_repo(xhp, repodir, repo, hashcheck, compression);
 	xbps_repo_release(repo);
-	if(stage)
-		xbps_repo_release(stage);
-	xbps_repo_unlock(rlockfd, rlockfname);
-
-	return rv;
+	xbps_repo_unlock(repodir, arch, lockfd);
+	return r ? EXIT_FAILURE : EXIT_SUCCESS;
 }

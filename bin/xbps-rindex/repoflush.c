@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2013-2019 Juan Romero Pardines.
+ * Copyright (c) 2023 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +31,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,32 +44,15 @@
 
 #include "defs.h"
 
-bool
-repodata_flush(struct xbps_handle *xhp, const char *repodir,
-	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta,
-	const char *compression)
+static struct archive *
+open_archive(int fd, const char *compression)
 {
 	struct archive *ar;
-	char *repofile, *tname, *buf;
-	int rv, repofd = -1;
-	mode_t mask;
-	bool result;
+	int r;
 
-	/* Create a tempfile for our repository archive */
-	repofile = xbps_repo_path_with_name(xhp, repodir, reponame);
-	assert(repofile);
-	tname = xbps_xasprintf("%s.XXXXXXXXXX", repofile);
-	assert(tname);
-	mask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
-	if ((repofd = mkstemp(tname)) == -1)
-		return false;
-
-	umask(mask);
-	/* Create and write our repository archive */
 	ar = archive_write_new();
-	if (ar == NULL)
-		return false;
-
+	if (!ar)
+		return NULL;
 	/*
 	 * Set compression format, zstd by default.
 	 */
@@ -89,64 +74,158 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	} else if (strcmp(compression, "none") == 0) {
 		/* empty */
 	} else {
-		return false;
+		archive_write_free(ar);
+		errno = EINVAL;
+		return NULL;
 	}
 
 	archive_write_set_format_pax_restricted(ar);
-	if (archive_write_open_fd(ar, repofd) != ARCHIVE_OK)
-		return false;
-
-	/* XBPS_REPOIDX */
-	buf = xbps_dictionary_externalize(idx);
-	if (buf == NULL)
-		return false;
-	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
-	    XBPS_REPOIDX, 0644, "root", "root");
-	free(buf);
-	if (rv != 0)
-		return false;
-
-	/* XBPS_REPOIDX_META */
-	if (meta == NULL) {
-		/* fake entry */
-		buf = strdup("DEADBEEF");
-		if (buf == NULL)
-			return false;
-	} else {
-		buf = xbps_dictionary_externalize(meta);
+	r = archive_write_open_fd(ar, fd);
+	if (r != ARCHIVE_OK) {
+		r = -archive_errno(ar);
+		archive_write_free(ar);
+		errno = -r;
+		return NULL;
 	}
-	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
-	    XBPS_REPOIDX_META, 0644, "root", "root");
+
+	return ar;
+}
+
+static int
+archive_dict(struct archive *ar, const char *filename, xbps_dictionary_t dict)
+{
+	char *buf;
+	int r;
+
+	if (xbps_dictionary_count(dict) == 0) {
+		r = xbps_archive_append_buf(ar, "", 0, filename, 0644,
+		    "root", "root");
+		if (r < 0)
+			return r;
+		return 0;
+	}
+
+	errno = 0;
+	buf = xbps_dictionary_externalize(dict);
+	if (!buf) {
+		r = -errno;
+		xbps_error_printf("failed to externalize dictionary for: %s\n",
+		    filename);
+		if (r == 0)
+			return -EINVAL;
+		return 0;
+	}
+
+	r = xbps_archive_append_buf(ar, buf, strlen(buf), filename, 0644,
+	    "root", "root");
+
 	free(buf);
-	if (rv != 0)
-		return false;
+
+	if (r < 0) {
+		xbps_error_printf("failed to write archive entry: %s: %s\n",
+		    filename, strerror(-r));
+	}
+	return r;
+}
+
+int
+repodata_flush(const char *repodir,
+		const char *arch,
+		xbps_dictionary_t index,
+		xbps_dictionary_t stage,
+		xbps_dictionary_t meta,
+		const char *compression)
+{
+	char path[PATH_MAX];
+	char tmp[PATH_MAX];
+	struct archive *ar = NULL;
+	mode_t prevumask;
+	int r;
+	int fd;
+
+	r = snprintf(path, sizeof(path), "%s/%s-repodata", repodir, arch);
+	if (r < 0 || (size_t)r >= sizeof(tmp)) {
+		xbps_error_printf("repodata path too long: %s: %s\n", path,
+		    strerror(ENAMETOOLONG));
+		return -ENAMETOOLONG;
+	}
+
+	r = snprintf(tmp, sizeof(tmp), "%s.XXXXXXX", path);
+	if (r < 0 || (size_t)r >= sizeof(tmp)) {
+		xbps_error_printf("repodata tmp path too long: %s: %s\n", path,
+		    strerror(ENAMETOOLONG));
+		return -ENAMETOOLONG;
+	}
+
+	prevumask = umask(S_IXUSR|S_IRWXG|S_IRWXO);
+	fd = mkstemp(tmp);
+	if (fd == -1) {
+		r = -errno;
+		xbps_error_printf("failed to open temp file: %s: %s", tmp, strerror(-r));
+		umask(prevumask);
+		goto err;
+	}
+	umask(prevumask);
+
+	ar = open_archive(fd, compression);
+	if (!ar) {
+		r = -errno;
+		goto err;
+	}
+
+	r = archive_dict(ar, XBPS_REPODATA_INDEX, index);
+	if (r < 0)
+		goto err;
+	r = archive_dict(ar, XBPS_REPODATA_META, meta);
+	if (r < 0)
+		goto err;
+	r = archive_dict(ar, XBPS_REPODATA_STAGE, stage);
+	if (r < 0)
+		goto err;
 
 	/* Write data to tempfile and rename */
-	if (archive_write_close(ar) != ARCHIVE_OK)
-		return false;
-	if (archive_write_free(ar) != ARCHIVE_OK)
-		return false;
-#ifdef HAVE_FDATASYNC
-	fdatasync(repofd);
-#else
-	fsync(repofd);
-#endif
-	if (fchmod(repofd, 0664) == -1) {
-		close(repofd);
-		unlink(tname);
-		result = false;
-		goto out;
+	if (archive_write_close(ar) == ARCHIVE_FATAL) {
+		r = -archive_errno(ar);
+		xbps_error_printf("failed to close archive: %s\n", archive_error_string(ar));
+		goto err;
 	}
-	close(repofd);
-	if (rename(tname, repofile) == -1) {
-		unlink(tname);
-		result = false;
-		goto out;
+	if (archive_write_free(ar) == ARCHIVE_FATAL) {
+		r = -errno;
+		xbps_error_printf("failed to free archive: %s\n", strerror(-r));
+		goto err;
 	}
-	result = true;
-out:
-	free(repofile);
-	free(tname);
 
-	return result;
+#ifdef HAVE_FDATASYNC
+	fdatasync(fd);
+#else
+	fsync(fd);
+#endif
+
+	if (fchmod(fd, 0664) == -1) {
+		errno = -r;
+		xbps_error_printf("failed to set mode: %s: %s\n",
+		   tmp, strerror(-r));
+		close(fd);
+		unlink(tmp);
+		return r;
+	}
+	close(fd);
+
+	if (rename(tmp, path) == -1) {
+		r = -errno;
+		xbps_error_printf("failed to rename repodata: %s: %s: %s\n",
+		   tmp, path, strerror(-r));
+		unlink(tmp);
+		return r;
+	}
+	return 0;
+
+err:
+	if (ar) {
+		archive_write_close(ar);
+		archive_write_free(ar);
+	}
+	close(fd);
+	unlink(tmp);
+	return r;
 }
