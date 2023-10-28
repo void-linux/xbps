@@ -39,20 +39,18 @@
 #include <xbps.h>
 #include "defs.h"
 
-static bool
-repodata_commit(struct xbps_handle *xhp, const char *repodir,
-	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage,
+static int
+repodata_commit(const char *repodir, const char *repoarch,
+	xbps_dictionary_t index, xbps_dictionary_t stage, xbps_dictionary_t meta,
 	const char *compression)
 {
 	xbps_object_iterator_t iter;
 	xbps_object_t keysym;
-	int rv;
+	int r;
 	xbps_dictionary_t oldshlibs, usedshlibs;
 
-	if (xbps_dictionary_count(stage) == 0) {
-		// Nothing to do.
-		return true;
-	}
+	if (xbps_dictionary_count(stage) == 0)
+		return 0;
 
 	/*
 	 * Find old shlibs-provides
@@ -63,7 +61,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	iter = xbps_dictionary_iterator(stage);
 	while ((keysym = xbps_object_iterator_next(iter))) {
 		const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
-		xbps_dictionary_t pkg = xbps_dictionary_get(idx, pkgname);
+		xbps_dictionary_t pkg = xbps_dictionary_get(index, pkgname);
 		xbps_array_t pkgshlibs;
 
 		pkgshlibs = xbps_dictionary_get(pkg, "shlib-provides");
@@ -78,13 +76,13 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	/*
 	 * throw away all unused shlibs
 	 */
-	iter = xbps_dictionary_iterator(idx);
+	iter = xbps_dictionary_iterator(index);
 	while ((keysym = xbps_object_iterator_next(iter))) {
 		const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
 		xbps_dictionary_t pkg = xbps_dictionary_get(stage, pkgname);
 		xbps_array_t pkgshlibs;
 		if (!pkg)
-			pkg = xbps_dictionary_get_keysym(idx, keysym);
+			pkg = xbps_dictionary_get_keysym(index, keysym);
 		pkgshlibs = xbps_dictionary_get(pkg, "shlib-requires");
 
 		for (unsigned int i = 0; i < xbps_array_count(pkgshlibs); i++) {
@@ -107,9 +105,9 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 	 * purge all packages that are fullfilled by the index and
 	 * not in the stage.
 	 */
-	iter = xbps_dictionary_iterator(idx);
+	iter = xbps_dictionary_iterator(index);
 	while ((keysym = xbps_object_iterator_next(iter))) {
-		xbps_dictionary_t pkg = xbps_dictionary_get_keysym(idx, keysym);
+		xbps_dictionary_t pkg = xbps_dictionary_get_keysym(index, keysym);
 		xbps_array_t pkgshlibs;
 
 
@@ -174,10 +172,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			printf("stage: added `%s' (%s)\n", pkgver, arch);
 		}
 		xbps_object_iterator_release(iter);
-		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL, compression);
-	}
-	else {
-		char *stagefile;
+	} else {
 		iter = xbps_dictionary_iterator(stage);
 		while ((keysym = xbps_object_iterator_next(iter))) {
 			const char *pkgname = xbps_dictionary_keysym_cstring_nocopy(keysym);
@@ -186,221 +181,182 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
 			xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch);
 			printf("index: added `%s' (%s).\n", pkgver, arch);
-			xbps_dictionary_set(idx, pkgname, pkg);
+			xbps_dictionary_set(index, pkgname, pkg);
 		}
-		xbps_object_iterator_release(iter);
-		stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
-		unlink(stagefile);
-		free(stagefile);
-		rv = repodata_flush(xhp, repodir, "repodata", idx, meta, compression);
+		stage = NULL;
 	}
+
+	r = repodata_flush(repodir, repoarch, index, stage, meta, compression);
 	xbps_object_release(usedshlibs);
 	xbps_object_release(oldshlibs);
-	return rv;
+	return r;
 }
 
-int
-index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression)
+static int
+index_add_pkg(struct xbps_handle *xhp, xbps_dictionary_t index, xbps_dictionary_t stage,
+		const char *file, bool force)
 {
-	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
-	struct xbps_repo *repo = NULL, *stage = NULL;
+	char sha256[XBPS_SHA256_SIZE];
+	char pkgname[XBPS_NAME_SIZE];
 	struct stat st;
-	char *tmprepodir = NULL, *repodir = NULL, *rlockfname = NULL;
-	int rv = 0, ret = 0, rlockfd = -1;
+	const char *arch = NULL;
+	const char *pkgver = NULL;
+	xbps_dictionary_t binpkgd, curpkgd;
+	int r;
 
-	assert(argv);
 	/*
-	 * Read the repository data or create index dictionaries otherwise.
+	 * Read metadata props plist dictionary from binary package.
 	 */
-	if ((tmprepodir = strdup(argv[args])) == NULL)
-		return ENOMEM;
+	binpkgd = xbps_archive_fetch_plist(file, "/props.plist");
+	if (!binpkgd) {
+		xbps_error_printf("index: failed to read %s metadata for "
+		    "`%s', skipping!\n", XBPS_PKGPROPS, file);
+		return 0;
+	}
+	xbps_dictionary_get_cstring_nocopy(binpkgd, "architecture", &arch);
+	xbps_dictionary_get_cstring_nocopy(binpkgd, "pkgver", &pkgver);
+	if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
+		fprintf(stderr, "index: ignoring %s, unmatched arch (%s)\n", pkgver, arch);
+		goto out;
+	}
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		r = -EINVAL;
+		goto err;
+	}
 
-	repodir = dirname(tmprepodir);
-	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
-		xbps_error_printf("xbps-rindex: cannot lock repository "
-		    "%s: %s\n", repodir, strerror(errno));
-		rv = -1;
-		goto earlyout;
-	}
-	repo = xbps_repo_public_open(xhp, repodir);
-	if (repo == NULL && errno != ENOENT) {
-		xbps_error_printf("xbps-rindex: cannot open/lock repository "
-		    "%s: %s\n", repodir, strerror(errno));
-		rv = -1;
-		goto earlyout;
-	}
-	if (repo) {
-		idx = xbps_dictionary_copy_mutable(repo->idx);
-		idxmeta = xbps_dictionary_copy_mutable(repo->idxmeta);
-	} else {
-		idx = xbps_dictionary_create();
-		idxmeta = NULL;
-	}
-	stage = xbps_repo_stage_open(xhp, repodir);
-	if (stage == NULL && errno != ENOENT) {
-		xbps_error_printf("xbps-rindex: cannot open/lock stage repository "
-		    "%s: %s\n", repodir, strerror(errno));
-		rv = -1;
-		goto earlyout;
-	}
-	if (stage) {
-		idxstage = xbps_dictionary_copy_mutable(stage->idx);
-	}
-	else {
-		idxstage = xbps_dictionary_create();
-	}
 	/*
-	 * Process all packages specified in argv.
+	 * Check if this package exists already in the index, but first
+	 * checking the version. If current package version is greater
+	 * than current registered package, update the index; otherwise
+	 * pass to the next one.
 	 */
-	for (int i = args; i < argmax; i++) {
-		const char *arch = NULL, *pkg = argv[i];
-		char *pkgver = NULL;
-		char sha256[XBPS_SHA256_SIZE];
-		char pkgname[XBPS_NAME_SIZE];
+	curpkgd = xbps_dictionary_get(stage, pkgname);
+	if (!curpkgd)
+		curpkgd = xbps_dictionary_get(index, pkgname);
 
-		assert(pkg);
-		/*
-		 * Read metadata props plist dictionary from binary package.
-		 */
-		binpkgd = xbps_archive_fetch_plist(pkg, "/props.plist");
-		if (binpkgd == NULL) {
-			xbps_error_printf("index: failed to read %s metadata for "
-			    "`%s', skipping!\n", XBPS_PKGPROPS, pkg);
-			continue;
-		}
-		xbps_dictionary_get_cstring_nocopy(binpkgd, "architecture", &arch);
-		xbps_dictionary_get_cstring(binpkgd, "pkgver", &pkgver);
-		if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
-			fprintf(stderr, "index: ignoring %s, unmatched arch (%s)\n", pkgver, arch);
-			xbps_object_release(binpkgd);
-			free(pkgver);
-			continue;
-		}
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			abort();
-		}
-		/*
-		 * Check if this package exists already in the index, but first
-		 * checking the version. If current package version is greater
-		 * than current registered package, update the index; otherwise
-		 * pass to the next one.
-		 */
-		curpkgd = xbps_dictionary_get(idxstage, pkgname);
-		if (curpkgd == NULL)
-			curpkgd = xbps_dictionary_get(idx, pkgname);
-		if (curpkgd == NULL) {
-			if (errno && errno != ENOENT) {
-				rv = errno;
-				xbps_object_release(binpkgd);
-				free(pkgver);
-				goto out;
-			}
-		} else if (!force) {
-			char *opkgver = NULL, *oarch = NULL;
+	if (curpkgd && !force) {
+		const char *opkgver = NULL, *oarch = NULL;
+		int cmp;
 
-			/* Only check version if !force */
-			xbps_dictionary_get_cstring(curpkgd, "pkgver", &opkgver);
-			xbps_dictionary_get_cstring(curpkgd, "architecture", &oarch);
-			ret = xbps_cmpver(pkgver, opkgver);
+		xbps_dictionary_get_cstring_nocopy(curpkgd, "pkgver", &opkgver);
+		xbps_dictionary_get_cstring_nocopy(curpkgd, "architecture", &oarch);
 
+		cmp = xbps_cmpver(pkgver, opkgver);
+		if (cmp < 0 && xbps_pkg_reverts(binpkgd, opkgver)) {
 			/*
 			 * If the considered package reverts the package in the index,
 			 * consider the current package as the newer one.
 			 */
-			if (ret < 0 && xbps_pkg_reverts(binpkgd, opkgver)) {
-				ret = 1;
+			cmp = 1;
+		} else if (cmp > 0 && xbps_pkg_reverts(curpkgd, pkgver)) {
 			/*
 			 * If package in the index reverts considered package, consider the
 			 * package in the index as the newer one.
 			 */
-			} else if (ret > 0 && xbps_pkg_reverts(curpkgd, pkgver)) {
-				ret = -1;
-			}
-
-			if (ret <= 0) {
-				/* Same version or index version greater */
-				fprintf(stderr, "index: skipping `%s' (%s), already registered.\n", pkgver, arch);
-				xbps_object_release(binpkgd);
-				free(opkgver);
-				free(oarch);
-				free(pkgver);
-				continue;
-			}
-			free(opkgver);
-			free(oarch);
+			cmp = -1;
 		}
-		/*
-		 * Add additional objects for repository ops:
-		 * 	- filename-size
-		 * 	- filename-sha256
-		 */
-		if (!xbps_file_sha256(sha256, sizeof sha256, pkg)) {
-			xbps_object_release(binpkgd);
-			free(pkgver);
-			rv = EINVAL;
+		if (cmp <= 0) {
+			fprintf(stderr, "index: skipping `%s' (%s), already registered.\n", pkgver, arch);
 			goto out;
 		}
-		if (!xbps_dictionary_set_cstring(binpkgd, "filename-sha256", sha256)) {
-			xbps_object_release(binpkgd);
-			free(pkgver);
-			rv = EINVAL;
-			goto out;
-		}
-		if (stat(pkg, &st) == -1) {
-			xbps_object_release(binpkgd);
-			free(pkgver);
-			rv = EINVAL;
-			goto out;
-		}
-		if (!xbps_dictionary_set_uint64(binpkgd, "filename-size", (uint64_t)st.st_size)) {
-			xbps_object_release(binpkgd);
-			free(pkgver);
-			rv = EINVAL;
-			goto out;
-		}
-		/* Remove unneeded objects */
-		xbps_dictionary_remove(binpkgd, "pkgname");
-		xbps_dictionary_remove(binpkgd, "version");
-		xbps_dictionary_remove(binpkgd, "packaged-with");
-
-		/*
-		 * Add new pkg dictionary into the stage index
-		 */
-		if (!xbps_dictionary_set(idxstage, pkgname, binpkgd)) {
-			xbps_object_release(binpkgd);
-			free(pkgver);
-			rv = EINVAL;
-			goto out;
-		}
-		xbps_object_release(binpkgd);
-		free(pkgver);
 	}
+
+	if (!xbps_file_sha256(sha256, sizeof(sha256), file))
+		goto err_errno;
+	if (!xbps_dictionary_set_cstring(binpkgd, "filename-sha256", sha256))
+		goto err_errno;
+	if (stat(file, &st) == -1)
+		goto err_errno;
+	if (!xbps_dictionary_set_uint64(binpkgd, "filename-size", (uint64_t)st.st_size))
+		goto err_errno;
+
+	xbps_dictionary_remove(binpkgd, "pkgname");
+	xbps_dictionary_remove(binpkgd, "version");
+	xbps_dictionary_remove(binpkgd, "packaged-with");
+
 	/*
-	 * Generate repository data files.
+	 * Add new pkg dictionary into the stage index
 	 */
-	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, compression)) {
-		xbps_error_printf("%s: failed to write repodata: %s\n",
-				_XBPS_RINDEX, strerror(errno));
-		goto out;
-	}
-	printf("index: %u packages registered.\n", xbps_dictionary_count(idx));
+	if (!xbps_dictionary_set(stage, pkgname, binpkgd))
+		goto err_errno;
 
 out:
-	xbps_object_release(idx);
-	xbps_object_release(idxstage);
-	if (idxmeta)
-		xbps_object_release(idxmeta);
+	xbps_object_release(binpkgd);
+	return 0;
+err_errno:
+	r = -errno;
+err:
+	xbps_object_release(binpkgd);
+	return r;
+}
 
-earlyout:
-	if (repo)
-		xbps_repo_release(repo);
-	if (stage)
-		xbps_repo_release(stage);
+int
+index_add(struct xbps_handle *xhp, int args, int argc, char **argv, bool force, const char *compression)
+{
+	xbps_dictionary_t index, stage, meta;
+	struct xbps_repo *repo;
+	char *tmprepodir = NULL, *repodir = NULL;
+	int lockfd;
+	int r;
+	const char *repoarch = xhp->target_arch ? xhp->target_arch : xhp->native_arch;
 
-	xbps_repo_unlock(rlockfd, rlockfname);
+	if ((tmprepodir = strdup(argv[args])) == NULL)
+		return EXIT_FAILURE;
+	repodir = dirname(tmprepodir);
 
-	if (tmprepodir)
+	lockfd = xbps_repo_lock(repodir, repoarch);
+	if (lockfd < 0) {
+		xbps_error_printf("xbps-rindex: cannot lock repository "
+		    "%s: %s\n", repodir, strerror(-lockfd));
 		free(tmprepodir);
+		return EXIT_FAILURE;
+	}
 
-	return rv;
+	repo = xbps_repo_open(xhp, repodir);
+	if (!repo && errno != ENOENT) {
+		free(tmprepodir);
+		return EXIT_FAILURE;
+	}
+
+	if (repo) {
+		index = xbps_dictionary_copy_mutable(repo->index);
+		stage = xbps_dictionary_copy_mutable(repo->stage);
+		meta = xbps_dictionary_copy_mutable(repo->idxmeta);
+	} else {
+		index = xbps_dictionary_create();
+		stage = xbps_dictionary_create();
+		meta = NULL;
+	}
+
+	for (int i = args; i < argc; i++) {
+		r = index_add_pkg(xhp, index, stage, argv[i], force);
+		if (r < 0)
+			goto err2;
+	}
+
+	r = repodata_commit(repodir, repoarch, index, stage, meta, compression);
+	if (r < 0) {
+		xbps_error_printf("failed to write repodata: %s\n", strerror(-r));
+		goto err2;
+	}
+	printf("index: %u packages registered.\n", xbps_dictionary_count(index));
+
+	xbps_object_release(index);
+	xbps_object_release(stage);
+	if (meta)
+		xbps_object_release(meta);
+	xbps_repo_release(repo);
+	xbps_repo_unlock(repodir, repoarch, lockfd);
+	free(tmprepodir);
+	return EXIT_SUCCESS;
+
+err2:
+	xbps_object_release(index);
+	xbps_object_release(stage);
+	if (meta)
+		xbps_object_release(meta);
+	xbps_repo_release(repo);
+	xbps_repo_unlock(repodir, repoarch, lockfd);
+	free(tmprepodir);
+	return EXIT_FAILURE;
 }

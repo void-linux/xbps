@@ -45,7 +45,8 @@ int	sign_repo(struct xbps_handle *, const char *, const char *,
 int	sign_pkgs(struct xbps_handle *, int, int, char **, const char *, bool);
 
 /* From repoflush.c */
-bool	repodata_flush(struct xbps_handle *, const char *, const char *,
-		xbps_dictionary_t, xbps_dictionary_t, const char *);
+int	repodata_flush(const char *repodir, const char *arch,
+		xbps_dictionary_t index, xbps_dictionary_t stage, xbps_dictionary_t meta,
+		const char *compression);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */
