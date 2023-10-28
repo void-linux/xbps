@@ -21,11 +21,10 @@ noremove_stage_body() {
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
-	[ -f *-stagedata ]
-	atf_check_equal $? 0
+	atf_check -o inline:"    2 $PWD (Staged) (RSA unsigned)\n" -- \
+		xbps-query -r ../root -i --repository=$PWD -L
 	xbps-rindex -r some_repo
 	atf_check_equal $? 0
-	cd some_repo
 	[ -f foo-1.0_1* ]
 	atf_check_equal $? 0
 	[ -f foo-1.1_1* ]
