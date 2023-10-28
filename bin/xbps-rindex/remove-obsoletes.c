@@ -29,6 +29,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <libgen.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,142 +37,176 @@
 #include <unistd.h>
 
 #include <xbps.h>
+
 #include "defs.h"
+#include "xbps/xbps_dictionary.h"
+#include "xbps/xbps_object.h"
+#include "xbps_api_impl.h"
 
 static int
 remove_pkg(const char *repodir, const char *file)
 {
-	char *filepath, *sigpath, *sig2path;
-	int rv = 0;
+	char filepath[PATH_MAX];
+	int r;
 
-	filepath = xbps_xasprintf("%s/%s", repodir, file);
-	sigpath = xbps_xasprintf("%s.sig", filepath);
-	sig2path = xbps_xasprintf("%s.sig2", filepath);
-	if (remove(filepath) == -1) {
-		if (errno != ENOENT) {
-			rv = errno;
-			xbps_error_printf("xbps-rindex: failed to remove "
-			    "package `%s': %s\n", file, strerror(rv));
-		}
+	r = snprintf(filepath, sizeof(filepath), "%s/%s", repodir, file);
+	if (r < 0 || (size_t)r >= sizeof(r)) {
+		r = -ENAMETOOLONG;
+		goto err;
 	}
-	if (remove(sigpath) == -1) {
-		if (errno != ENOENT) {
-			rv = errno;
-			xbps_error_printf("xbps-rindex: failed to remove "
-			    "legacy package signature `%s': %s\n", sigpath, strerror(rv));
-		}
+	if (remove(filepath) == -1 && errno != ENOENT) {
+		r = -errno;
+		goto err;
 	}
-	if (remove(sig2path) == -1) {
-		if (errno != ENOENT) {
-			rv = errno;
-			xbps_error_printf("xbps-rindex: failed to remove "
-			    "package signature `%s': %s\n", sig2path, strerror(rv));
-		}
-	}
-	free(sigpath);
-	free(sig2path);
-	free(filepath);
+	return 0;
+err:
+	xbps_error_printf("failed to remove package: %s: %s\n",
+	    filepath, strerror(-r));
+	return r;
+}
 
-	return rv;
+static int
+remove_sig(const char *repodir, const char *file, const char *suffix)
+{
+	char sigpath[PATH_MAX];
+	int r;
+
+	r = snprintf(sigpath, sizeof(sigpath), "%s/%s.%s", repodir, file, suffix);
+	if (r < 0 || (size_t)r >= sizeof(r)) {
+		r = -ENAMETOOLONG;
+		goto err;
+	}
+	if (remove(sigpath) == -1 && errno != ENOENT) {
+		r = -errno;
+		goto err;
+	}
+	return 0;
+err:
+	xbps_error_printf("failed to remove package: %s: %s\n",
+	    sigpath, strerror(-r));
+	return r;
+}
+
+static bool
+index_match_pkgver(xbps_dictionary_t index, const char *pkgname, const char *pkgver)
+{
+	xbps_dictionary_t pkgd;
+	const char *dict_pkgver;
+
+	pkgd = xbps_dictionary_get(index, pkgname);
+	if (!pkgd)
+		return false;
+
+	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &dict_pkgver);
+	return strcmp(dict_pkgver, pkgver) == 0;
 }
 
 static int
 cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key UNUSED, void *arg, bool *done UNUSED)
 {
-	struct xbps_repo *repo = ((struct xbps_repo **)arg)[0], *stage = ((struct xbps_repo **)arg)[1];
+	char pkgname[XBPS_NAME_SIZE];
+	struct xbps_repo *repo = arg;
 	const char *binpkg;
-	char *pkgver, *arch = NULL;
-	int rv;
+	char *pkgver;
 
 	binpkg = xbps_string_cstring_nocopy(obj);
-	if (access(binpkg, R_OK) == -1) {
-		if (errno == ENOENT) {
-			if ((rv = remove_pkg(repo->uri, binpkg)) != 0)
-				return 0;
-
-			printf("Removed broken package `%s'.\n", binpkg);
-		}
-	}
-	arch = xbps_binpkg_arch(binpkg);
-	assert(arch);
-	/* ignore pkgs from other archs */
-	if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
-		free(arch);
+	pkgver = xbps_binpkg_pkgver(binpkg);
+	if (!pkgver || !xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
+		xbps_warn_printf("%s: invalid pkgver in xbps filename\n", binpkg);
 		return 0;
 	}
-	free(arch);
 
-	pkgver = xbps_binpkg_pkgver(binpkg);
-	assert(pkgver);
 	if (xhp->flags & XBPS_FLAG_VERBOSE)
 		printf("checking %s (%s)\n", pkgver, binpkg);
-	/*
-	 * If binpkg is not registered in index, remove binpkg.
-	 */
-	if (!xbps_repo_get_pkg(repo, pkgver) && !(stage && xbps_repo_get_pkg(stage, pkgver))) {
-		if ((rv = remove_pkg(repo->uri, binpkg)) != 0) {
-			free(pkgver);
-			return 0;
-		}
-		printf("Removed obsolete package `%s'.\n", binpkg);
+
+	if (index_match_pkgver(repo->stage, pkgname, pkgver) ||
+	    index_match_pkgver(repo->index, pkgname, pkgver)) {
+		free(pkgver);
+		return 0;
 	}
 	free(pkgver);
+
+	remove_pkg(repo->uri, binpkg);
+	remove_sig(repo->uri, binpkg, "sig");
+	remove_sig(repo->uri, binpkg, "sig2");
+
+	printf("Removed obsolete package `%s'.\n", binpkg);
 	return 0;
+}
+
+static bool
+match_suffix(const char *str, size_t len, const char *suffix, size_t suffixlen)
+{
+	if (len < suffixlen)
+		return false;
+	return strcmp(str+len-suffixlen, suffix) == 0;
 }
 
 int
 remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 {
 	xbps_array_t array = NULL;
-	struct xbps_repo *repos[2], *repo, *stage;
+	struct xbps_repo *repo;
 	DIR *dirp;
 	struct dirent *dp;
-	char *ext;
-	int rv = 0;
+	int r;
+	char suffix[NAME_MAX];
+	int suffixlen;
 
-	repo = xbps_repo_public_open(xhp, repodir);
+	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
-		if (errno != ENOENT) {
-			xbps_error_printf("xbps-rindex: cannot read repository data: %s\n",
-			    strerror(errno));
-			return -1;
-		}
-		return 0;
+		if (errno != ENOENT)
+			return EXIT_FAILURE;
+		return EXIT_SUCCESS;
 	}
-	stage = xbps_repo_stage_open(xhp, repodir);
-	if (chdir(repodir) == -1) {
-		xbps_error_printf("xbps-rindex: cannot chdir to %s: %s\n",
-		    repodir, strerror(errno));
-		rv = errno;
-		goto out;
-	}
+
 	if ((dirp = opendir(".")) == NULL) {
 		xbps_error_printf("xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
-		rv = errno;
-		goto out;
+		goto err;
 	}
+
+	array = xbps_array_create();
+	if (!array) {
+		xbps_error_printf("failed to allocate array: %s\n", strerror(-errno));
+		goto err;
+	}
+
+	suffixlen = snprintf(suffix, sizeof(suffix), ".%s.xbps",
+	    xhp->target_arch ? xhp->target_arch : xhp->native_arch);
+	if (suffixlen < 0 || (size_t)suffixlen >= sizeof(suffix)) {
+		xbps_error_printf("failed to create pacakge suffix: %s", strerror(ENAMETOOLONG));
+		goto err;
+	}
+
 	while ((dp = readdir(dirp))) {
-		if (strcmp(dp->d_name, "..") == 0)
-			continue;
-		if ((ext = strrchr(dp->d_name, '.')) == NULL)
-			continue;
-		if (strcmp(ext, ".xbps"))
-			continue;
-		if (array == NULL)
-			array = xbps_array_create();
+		size_t len;
 
-		xbps_array_add_cstring(array, dp->d_name);
+		if (dp->d_name[0] == '.')
+			continue;
+
+		len = strlen(dp->d_name);
+		if (!match_suffix(dp->d_name, len, suffix, suffixlen) &&
+		    !match_suffix(dp->d_name, len, ".noarch.xbps", sizeof(".noarch.xbps") - 1))
+			continue;
+
+		if (!xbps_array_add_cstring(array, dp->d_name)) {
+			xbps_error_printf("failed to add string to array: %s\n",
+			    strerror(-errno));
+			goto err;
+		}
 	}
-	(void)closedir(dirp);
+	closedir(dirp);
 
-	repos[0] = repo;
-	repos[1] = stage;
-	rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repos);
-out:
+	r = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repo);
+	if (r < 0)
+		goto err;
+
 	xbps_repo_release(repo);
-	xbps_repo_release(stage);
 	xbps_object_release(array);
-
-	return rv;
+	return EXIT_SUCCESS;
+err:
+	xbps_repo_release(repo);
+	xbps_object_release(array);
+	return EXIT_FAILURE;
 }

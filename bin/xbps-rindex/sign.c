@@ -37,6 +37,7 @@
 #include <openssl/pem.h>
 
 #include "defs.h"
+#include "xbps.h"
 
 static RSA *
 load_rsa_privkey(const char *path)
@@ -151,9 +152,11 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	RSA *rsa = NULL;
 	uint16_t rpubkeysize, pubkeysize;
 	const char *rsignedby = NULL;
-	char *buf = NULL, *rlockfname = NULL;
-	int rlockfd = -1, rv = 0;
-	bool flush_failed = false, flush = false;
+	char *buf = NULL;
+	int lockfd = -1;
+	int r = 0;
+	bool flush = false;
+	const char *repoarch = xhp->target_arch ? xhp->target_arch : xhp->native_arch;
 
 	if (signedby == NULL) {
 		xbps_error_printf("--signedby unset! cannot initialize signed repository\n");
@@ -165,14 +168,14 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	 */
 	repo = xbps_repo_open(xhp, repodir);
 	if (repo == NULL) {
-		rv = errno;
+		r = -errno;
 		xbps_error_printf("%s: cannot read repository data: %s\n",
 		    _XBPS_RINDEX, strerror(errno));
 		goto out;
 	}
 	if (xbps_dictionary_count(repo->idx) == 0) {
+		r = -EINVAL;
 		xbps_error_printf("%s: invalid repository, exiting!\n", _XBPS_RINDEX);
-		rv = EINVAL;
 		goto out;
 	}
 
@@ -184,10 +187,15 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	 * current state.
 	 */
 	if ((buf = pubkey_from_privkey(rsa)) == NULL) {
-		rv = EINVAL;
+		r = -EINVAL;
 		goto out;
 	}
+
 	meta = xbps_dictionary_create();
+	if (!meta) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	data = xbps_data_create_data(buf, strlen(buf));
 	rpubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
@@ -216,15 +224,15 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 	data = NULL;
 
 	/* lock repository to write repodata file */
-	if (!xbps_repo_lock(xhp, repodir, &rlockfd, &rlockfname)) {
-		rv = errno;
-		xbps_error_printf("%s: cannot lock repository: %s\n",
-		    _XBPS_RINDEX, strerror(errno));
+	lockfd = xbps_repo_lock(repodir, repoarch);
+	if (lockfd < 0) {
+		r = errno;
+		xbps_error_printf("cannot lock repository: %s\n", strerror(errno));
 		goto out;
 	}
-	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta, compression);
-	xbps_repo_unlock(rlockfd, rlockfname);
-	if (!flush_failed) {
+	r = repodata_flush(repodir, repoarch, repo->index, repo->stage, meta, compression);
+	xbps_repo_unlock(repodir, repoarch, lockfd);
+	if (r < 0) {
 		xbps_error_printf("failed to write repodata: %s\n", strerror(errno));
 		goto out;
 	}
@@ -240,7 +248,7 @@ out:
 	if (repo)
 		xbps_repo_release(repo);
 
-	return rv ? -1 : 0;
+	return r;
 }
 
 static int
