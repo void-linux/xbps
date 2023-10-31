@@ -164,6 +164,14 @@ xbps_init(struct xbps_handle *xhp)
 			xhp->flags |= XBPS_FLAG_DISABLE_SYSLOG;
 	}
 
+	p = getenv("XBPS_STAGING");
+	if (p) {
+		if (strcasecmp(p, "true") == 0)
+			xhp->flags &= ~XBPS_FLAG_USE_STAGE;
+		else if (strcasecmp(p, "false") == 0)
+			xhp->flags |= XBPS_FLAG_USE_STAGE;
+	}
+
 	if (xhp->flags & XBPS_FLAG_DEBUG) {
 		const char *repodir;
 		for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
