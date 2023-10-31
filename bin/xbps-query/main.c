@@ -51,6 +51,7 @@ usage(bool fail)
 	    "     --repository <url>    Enable repository mode and add repository\n"
 	    "                           to the top of the list. This option can be\n"
 	    "                           specified multiple times\n"
+	    "     --staging             Enable use of staged packages\n"
 	    "     --regex               Use Extended Regular Expressions to match\n"
 	    "     --fulldeptree         Full dependency tree for -x/--deps\n"
 	    " -r, --rootdir <dir>       Full path to rootdir\n"
@@ -105,6 +106,7 @@ main(int argc, char **argv)
 		{ "regex", no_argument, NULL, 0 },
 		{ "fulldeptree", no_argument, NULL, 1 },
 		{ "cat", required_argument, NULL, 2 },
+		{ "staging", required_argument, NULL, 5 },
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
@@ -207,6 +209,9 @@ main(int argc, char **argv)
 		case 4:
 			xbps_repo_store(&xh, optarg);
 			repo_mode = true;
+			break;
+		case 5:
+			flags |= XBPS_FLAG_USE_STAGE;
 			break;
 		case '?':
 		default:
