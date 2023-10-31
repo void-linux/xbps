@@ -210,6 +210,7 @@ enum {
 	KEY_PRESERVE,
 	KEY_REPOSITORY,
 	KEY_ROOTDIR,
+	KEY_STAGING,
 	KEY_SYSLOG,
 	KEY_VIRTUALPKG,
 	KEY_KEEPCONF,
@@ -230,6 +231,7 @@ static const struct key {
 	{ "preserve",      8, KEY_PRESERVE },
 	{ "repository",   10, KEY_REPOSITORY },
 	{ "rootdir",       7, KEY_ROOTDIR },
+	{ "staging",       7, KEY_STAGING },
 	{ "syslog",        6, KEY_SYSLOG },
 	{ "virtualpkg",   10, KEY_VIRTUALPKG },
 };
@@ -389,6 +391,15 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 			}
 			xbps_dbg_printf("%s: native architecture set to %s\n", path,
 			    val);
+			break;
+		case KEY_STAGING:
+			if (strcasecmp(val, "true") == 0) {
+				xhp->flags |= XBPS_FLAG_USE_STAGE;
+				xbps_dbg_printf("%s: repository stage enabled\n", path);
+			} else {
+				xhp->flags &= ~XBPS_FLAG_USE_STAGE;
+				xbps_dbg_printf("%s: repository stage disabled\n", path);
+			}
 			break;
 		case KEY_SYSLOG:
 			if (strcasecmp(val, "true") == 0) {

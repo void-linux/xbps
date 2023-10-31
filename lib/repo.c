@@ -508,15 +508,13 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		return NULL;
 	}
 
-	if (repo->is_remote || xbps_dictionary_count(repo->stage) == 0) {
+	if (xbps_dictionary_count(repo->stage) == 0 ||
+	    (repo->is_remote && !(xhp->flags & XBPS_FLAG_USE_STAGE))) {
 		repo->idx = repo->index;
 		xbps_object_retain(repo->idx);
 		return repo;
 	}
 
-	/*
-	 * Load and merge staging repository if the repository is local.
-	 */
 	r = repo_merge_stage(repo);
 	if (r < 0) {
 		xbps_error_printf(
