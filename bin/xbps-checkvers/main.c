@@ -98,6 +98,7 @@ show_usage(const char *prog, bool fail)
 " -R, --repository=<url>  Append repository to the head of repository list\n"
 " -r, --rootdir <dir>     Set root directory (defaults to /)\n"
 " -s, --show-all          List all packages, in the format 'pkgname repover srcver'\n"
+"     --staging           Enable use of staged packages\n"
 "\n  [FILES...]           Extra packages to process with the outdated\n"
 "                         ones (only processed if missing).\n", prog);
 	return fail ? EXIT_FAILURE: EXIT_SUCCESS;
@@ -722,6 +723,7 @@ main(int argc, char **argv)
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show-all", no_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "staging", no_argument, NULL, 1 },
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -769,6 +771,9 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+		case 1:
+			rcv.xhp.flags |= XBPS_FLAG_USE_STAGE;
+			break;
 		case '?':
 		default:
 			return show_usage(prog, true);
