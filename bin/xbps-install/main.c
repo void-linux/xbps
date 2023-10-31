@@ -61,6 +61,7 @@ usage(bool fail)
 	    "                             This option can be specified multiple times\n"
 	    " -r, --rootdir <dir>         Full path to rootdir\n"
 	    "     --reproducible          Enable reproducible mode in pkgdb\n"
+	    "     --staging               Enable use of staged packages\n"
 	    " -S, --sync                  Sync remote repository index\n"
 	    " -u, --update                Update target package(s)\n"
 	    " -v, --verbose               Verbose messages\n"
@@ -118,6 +119,7 @@ main(int argc, char **argv)
 		{ "version", no_argument, NULL, 'V' },
 		{ "yes", no_argument, NULL, 'y' },
 		{ "reproducible", no_argument, NULL, 1 },
+		{ "staging", no_argument, NULL, 2 },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
@@ -137,6 +139,9 @@ main(int argc, char **argv)
 		switch (c) {
 		case 1:
 			flags |= XBPS_FLAG_INSTALL_REPRO;
+			break;
+		case 2:
+			flags |= XBPS_FLAG_USE_STAGE;
 			break;
 		case 'A':
 			flags |= XBPS_FLAG_INSTALL_AUTO;
