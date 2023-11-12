@@ -30,6 +30,7 @@
 #define _XBPS_H_
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <inttypes.h>
 
 #include <xbps/xbps_array.h>
@@ -842,14 +843,14 @@ xbps_array_t xbps_find_pkg_orphans(struct xbps_handle *xhp, xbps_array_t orphans
  * @param[in] xhp The pointer to the xbps_handle struct.
  * @return 0 on success, otherwise an errno value.
  */
-int xbps_pkgdb_lock(struct xbps_handle *);
+int xbps_pkgdb_lock(struct xbps_handle *xhp);
 
 /**
  * Unlocks the pkgdb after a write transaction.
  *
  * @param[in] xhp The pointer to the xbps_handle struct.
  */
-void xbps_pkgdb_unlock(struct xbps_handle *);
+void xbps_pkgdb_unlock(struct xbps_handle *xhp);
 
 /**
  * Executes a function callback per a package dictionary registered
