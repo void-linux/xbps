@@ -52,9 +52,6 @@ check_pkg_rundeps(struct xbps_handle *xhp, const char *pkgname, void *arg)
 	const char *reqpkg = NULL;
 	int rv = 0;
 
-	if (!xbps_pkg_has_rundeps(pkg_propsd))
-		return 0;
-
 	array = xbps_dictionary_get(pkg_propsd, "run_depends");
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		xbps_array_get_cstring_nocopy(array, i, &reqpkg);

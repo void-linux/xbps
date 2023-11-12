@@ -419,20 +419,6 @@ xbps_remote_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 }
 
 bool
-xbps_pkg_has_rundeps(xbps_dictionary_t pkgd)
-{
-	xbps_array_t array;
-
-	assert(xbps_object_type(pkgd) == XBPS_TYPE_DICTIONARY);
-
-	array = xbps_dictionary_get(pkgd, "run_depends");
-	if (xbps_array_count(array))
-		return true;
-
-	return false;
-}
-
-bool
 xbps_pkg_arch_match(struct xbps_handle *xhp, const char *orig,
 		const char *target)
 {

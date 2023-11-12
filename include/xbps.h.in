@@ -2156,15 +2156,6 @@ int xbps_pkgpattern_match(const char *pkgver, const char *pattern);
 const char *xbps_pkg_revision(const char *pkg);
 
 /**
- * Checks if a package has run dependencies.
- *
- * @param[in] dict Package dictionary.
- *
- * @return True if package has run dependencies, false otherwise.
- */
-bool xbps_pkg_has_rundeps(xbps_dictionary_t dict);
-
-/**
  * Returns true if provided string is valid for target architecture.
  *
  * @param[in] xhp The pointer to an xbps_handle struct.
