@@ -327,6 +327,74 @@ xbps_pkgpattern_version(const char *pkg)
 	return strpbrk(pkg, "><*?[]");
 }
 
+ssize_t
+xbps_pkg_path(struct xbps_handle *xhp, char *dst, size_t dstsz, xbps_dictionary_t pkgd)
+{
+	const char *pkgver = NULL, *arch = NULL, *repoloc = NULL;
+	int l;
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver) ||
+	    !xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch) ||
+	    !xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc))
+		return -EINVAL;
+
+	if (xbps_repository_is_remote(repoloc))
+		repoloc = xhp->cachedir;
+
+	l = snprintf(dst, dstsz, "%s/%s.%s.xbps", repoloc, pkgver, arch);
+	if (l < 0 || (size_t)l >= dstsz)
+		return -ENOBUFS;
+
+	return l;
+}
+
+ssize_t
+xbps_pkg_url(struct xbps_handle *xhp UNUSED, char *dst, size_t dstsz, xbps_dictionary_t pkgd)
+{
+	const char *pkgver = NULL, *arch = NULL, *repoloc = NULL;
+	int l;
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver) ||
+	    !xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch) ||
+	    !xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc))
+		return -EINVAL;
+
+	l = snprintf(dst, dstsz, "%s/%s.%s.xbps", repoloc, pkgver, arch);
+	if (l < 0 || (size_t)l >= dstsz)
+		return -ENOBUFS;
+
+	return l;
+}
+
+ssize_t
+xbps_pkg_path_or_url(struct xbps_handle *xhp UNUSED, char *dst, size_t dstsz, xbps_dictionary_t pkgd)
+{
+	const char *pkgver = NULL, *arch = NULL, *repoloc = NULL;
+	int l;
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver) ||
+	    !xbps_dictionary_get_cstring_nocopy(pkgd, "architecture", &arch) ||
+	    !xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc))
+		return -EINVAL;
+
+	if (xbps_repository_is_remote(repoloc)) {
+		l = snprintf(dst, dstsz, "%s/%s.%s.xbps", xhp->cachedir,
+		    pkgver, arch);
+		if (l < 0 || (size_t)l >= dstsz)
+			return -ENOBUFS;
+		if (access(dst, R_OK) == 0)
+			return l;
+		if (errno != ENOENT)
+			return -errno;
+	}
+
+	l = snprintf(dst, dstsz, "%s/%s.%s.xbps", repoloc, pkgver, arch);
+	if (l < 0 || (size_t)l >= dstsz)
+		return -ENOBUFS;
+
+	return l;
+}
+
 char *
 xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {

@@ -2037,7 +2037,7 @@ bool xbps_remote_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
  */
 bool xbps_repository_is_remote(const char *uri);
 
-/*
+/**
  * Returns an allocated string with the full path to the binary package
  * matching \a pkgd.
  *
@@ -2053,6 +2053,59 @@ bool xbps_repository_is_remote(const char *uri);
  * The buffer should be free(3)d when it's no longer needed.
  */
 char *xbps_repository_pkg_path(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
+
+/**
+ * Put the path to the binary package \a pkgd into \a dst.
+ *
+ * The \a pkgd dictionary must contain the following objects:
+ *  - architecture (string)
+ *  - pkgver (string)
+ *  - repository (string)
+ *
+ * @param[in] xhp Pointer to an xbps_handle struct.
+ * @param[in] dst Destination buffer.
+ * @param[in] dstsz Destination buffer size.
+ * @param[in] pkgd Package dictionary.
+ *
+ * @return The length of the path or a negative errno on error.
+ * @retval -EINVAL Missing required dictionary entry.
+ * @retval -ENOBUFS The path would exceed the supplied \a dst buffer.
+ */
+ssize_t xbps_pkg_path(struct xbps_handle *xhp, char *dst, size_t dstsz, xbps_dictionary_t pkgd);
+
+/**
+ * Put the url to the binary package \a pkgd into \a dst.
+ *
+ * The \a pkgd dictionary must contain the following objects:
+ *  - architecture (string)
+ *  - pkgver (string)
+ *  - repository (string)
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] pkgd The package dictionary to match.
+ *
+ * @return The length of the path or a negative errno on error.
+ * @retval -EINVAL Missing required dictionary entry.
+ * @retval -ENOBUFS The path would exceed the supplied \a dst buffer.
+ */
+ssize_t xbps_pkg_url(struct xbps_handle *xhp, char *dst, size_t dstsz, xbps_dictionary_t pkgd);
+
+/**
+ * Put the url or path (if cached) to the binary package \a pkgd into \a dst.
+ *
+ * The \a pkgd dictionary must contain the following objects:
+ *  - architecture (string)
+ *  - pkgver (string)
+ *  - repository (string)
+ *
+ * @param[in] xhp The pointer to an xbps_handle struct.
+ * @param[in] pkgd The package dictionary to match.
+ *
+ * @return The length of the path or a negative errno on error.
+ * @retval -EINVAL Missing required dictionary entry.
+ * @retval -ENOBUFS The path would exceed the supplied \a dst buffer.
+ */
+ssize_t xbps_pkg_path_or_url(struct xbps_handle *xhp, char *dst, size_t dstsz, xbps_dictionary_t pkgd);
 
 /**
  * Gets the name of a package string. Package strings are composed
