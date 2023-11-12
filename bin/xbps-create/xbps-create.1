@@ -81,6 +81,22 @@ is a relative path, the symlink will be created relative to
 .Em target .
 .It Fl -build-options Ar string
 A string containing the build options used in package.
+.It Fl -chown Ar list
+Set the ownership of package files and directories.
+This expects a whitespace-separated list of
+.Ar <pattern>:<user>:<group> ,
+where 
+.Ar <pattern>
+is an
+.Xr fnmatch 3
+pattern.
+If
+.Ar <user>
+or
+.Ar <group>
+are empty, root is assumed.
+Example:
+.Ar '/usr/lib/foo/*:foo:foo /usr/bin/foo::foo'
 .It Fl -compression Ar none | gzip | bzip2 | xz | lz4 | zstd
 Set the binary package compression format. If unset, defaults to
 .Ar zstd .

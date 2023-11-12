@@ -88,6 +88,11 @@ If the first character is not '/' then it's a relative path of
 .Ar rootdir .
 .It Fl d, Fl -debug
 Enables extra debugging shown to stderr.
+.It Fl F, Fl -format Ar format
+Format string for output formatting.
+See
+.Sx FORMAT STRINGS
+for syntax.
 .It Fl h, Fl -help
 Show the help message.
 .It Fl i, Fl -ignore-conf-repos
@@ -129,6 +134,12 @@ modes.
 Prints a full dependency tree in the
 .Sy show dependencies
 mode.
+.It Fl -long
+Prints permissions, ownership, and filesize in the
+.Sy files
+mode.
+Equivalent to
+.Fl -format Ar '{mode?0!strmode} {user?"root":<8} {group?"root":<8} {size?0!humanize .8Bi:>8} {file-target}\(rsn' .
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl v, Fl -verbose
@@ -277,8 +288,77 @@ expression wins.
 This expects an absolute path.
 This mode only works with repositories.
 .El
+.Sh FORMAT STRINGS
+Variables are package properties if not otherwise documented.
+See the
+.Sx PROPERTIES
+and
+.Sx FILE PROPERTIES
+sections for a list of available properties.
+.Pp
+As example a format string like:
+.Bd -offset indent -literal
+{pkgname:<30} {installed_size!humanize :>10}\\n
+.Ed
+.Pp
+Would produce a list formatted like:
+.Bd -offset indent -literal
+libxbps                            304 KB
+xbps                               484 KB
+.Ed
+.Pp
+Format strings are parsed by the following EBNF:
+.Bd -literal
+<grammar>      ::= (prefix | "\\" (escape|[{}]) | substitution)*
+<prefix>       ::= [^\\{}]+   -- Literal text chunk.
+<escape>       ::= [abefnrtv0] -- POSIX-like escape character.
+
+<substitution> ::= "{" variable ["?" default] ["!" conversion] [":" format] "}"
+<variable>     ::= [a-zA-Z0-9_-]
+
+<default>      ::= ([-]?[0-9]+)                             -- default number.
+                 | "true" | "false"                         -- default boolean.
+                 | ('"' (("\\" (escape|'"')) | [^"])* '"')  -- default string.
+
+<conversion>   ::= humanize | strmode
+
+-- Convert inode status information into a symbolic string
+<strmode> ::= "strmode"
+
+-- Format a number into a human readable form, the default is:`humanize .8Ki`:
+<humanize>     ::= "humanize" [space] [decimal] [width] [scale] [i]
+  <space>      ::= " "          -- Put a space between number and the suffix.
+  <decimal>    ::= "."          -- If the final result is less than 10, display
+                                   it using one digit.
+  <width>      ::= [0-9]+       -- Width of the output.
+  <scale>      ::= multiplier   -- Minimum scale multiplier and optionally
+                   [multiplier] -- Maximum scale multiplier.
+  <multiplier> ::= "B" -- byte
+                 | "K" -- kilo
+                 | "M" -- mega
+                 | "G" -- giga
+                 | "T" -- tera
+                 | "P" -- peta
+                 | "E" -- exa
+  <i>          ::= "i" -- Use IEEE/IEC (and now also SI) power of two prefixes.
+
+<format>      ::= [[fill] align] [sign] [width] ["." precision] [type]
+  <fill>      ::= <any char> -- The character to use when aligning the output.
+  <align>     ::= "<"        -- Left align.
+                | ">"        -- Right align.
+                | "="        -- Left align with zero paddings after the sign.
+  <sign>      ::= "+"        -- Add sign to positive and negative numbers.
+                | "-"        -- Add sign to negative numbers.
+  <width>     ::= [0-9]+     -- The alignment width.
+  <precision> ::= [0-9]+     -- Precision for numbers.
+  <type>      ::= "d"        -- Decimal number.
+                | "o"        -- Octal number.
+                | "u"        -- Unsigned number.
+                | "x"        -- Hexadecimal with lowercase letters.
+                | "X"        -- Hexadecimal with uppercase letters.
+.Ed
 .Sh PROPERTIES
-This is the list of a packages properties.
+This is the list of a package's properties.
 Note that not all properties are available for all packages.
 .Pp
 .Bl -tag -compact -width 17m
@@ -352,6 +432,33 @@ commit hash of package last change from the void-packages repository.
 installation state of the package.
 .It Ic tags
 list of categories the package is associated with.
+.El
+.Sh FILE PROPERTIES
+This is the list of a package's files' properties.
+Note that not all properties are available for all files in all packages.
+.Pp
+.Bl -tag -compact -width 17m
+.It Ic file
+absolute path of the file.
+.It Ic file-target
+alias for
+.Ar file -> target
+if target exists, otherwise
+.Ar file .
+.It Ic group
+group that owns the file (root if unspecified).
+.It Ic mode
+file type and permissions as an integer.
+See also:
+.Xr inode 7 .
+.It Ic mtime
+modification time of the file (deprecated).
+.It Ic sha256
+sha256sum of the file.
+.It Ic target
+target of the file, if it is a symlink.
+.It Ic user
+user that owns the file (root if unspecified).
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width XBPS_TARGET_ARCH

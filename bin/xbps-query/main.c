@@ -23,13 +23,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <errno.h>
+#include <getopt.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
-#include <errno.h>
 
 #include <xbps.h>
+
 #include "defs.h"
 
 static void __attribute__((noreturn))
@@ -41,6 +43,7 @@ usage(bool fail)
 	    " -C, --config <dir>        Path to confdir (xbps.d)\n"
 	    " -c, --cachedir <dir>      Path to cachedir\n"
 	    " -d, --debug               Debug mode shown to stderr\n"
+	    " -F, --format <format>     Format for list output\n"
 	    " -h, --help                Show usage\n"
 	    " -i, --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
 	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
@@ -53,6 +56,7 @@ usage(bool fail)
 	    "                           specified multiple times\n"
 	    "     --regex               Use Extended Regular Expressions to match\n"
 	    "     --fulldeptree         Full dependency tree for -x/--deps\n"
+	    "     --long                Show permissions, ownership, and size for -f/--files\n"
 	    " -r, --rootdir <dir>       Full path to rootdir\n"
 	    " -V, --version             Show XBPS version\n"
 	    " -v, --verbose             Verbose messages\n"
@@ -74,10 +78,30 @@ usage(bool fail)
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
+static int
+filter_hold(xbps_object_t obj)
+{
+	return xbps_dictionary_get(obj, "hold") != NULL;
+}
+
+static int
+filter_manual(xbps_object_t obj)
+{
+	bool automatic = false;
+	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
+	return !automatic;
+}
+
+static int
+filter_repolock(xbps_object_t obj)
+{
+	return xbps_dictionary_get(obj, "repolock") != NULL;
+}
+
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:df:hHiLlMmOo:p:Rr:s:S:VvX:x:";
+	const char *shortopts = "C:c:dF:f:hHiLlMmOo:p:Rr:s:S:VvX:x:";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -100,6 +124,8 @@ main(int argc, char **argv)
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "files", required_argument, NULL, 'f' },
+		{ "format", required_argument, NULL, 'F' },
+		{ "long", no_argument, NULL, 4 },
 		{ "deps", required_argument, NULL, 'x' },
 		{ "revdeps", required_argument, NULL, 'X' },
 		{ "regex", no_argument, NULL, 0 },
@@ -108,18 +134,18 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
-	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
+	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile, *format;
 	int c, flags, rv;
 	bool list_pkgs, list_repos, orphans, own, list_repolock;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
-	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree, long_listing;
 
-	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
+	rootdir = cachedir = confdir = props = pkg = catfile = format = NULL;
 	flags = rv = c = 0;
 	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
 	list_manual = list_repolock = show_prop = show_files = false;
 	regex = show = show_deps = show_rdeps = fulldeptree = false;
-	repo_mode = opmode = false;
+	repo_mode = opmode = long_listing = false;
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -137,6 +163,9 @@ main(int argc, char **argv)
 		case 'f':
 			pkg = optarg;
 			show_files = opmode = true;
+			break;
+		case 'F':
+			format = optarg;
 			break;
 		case 'H':
 			list_hold = opmode = true;
@@ -213,6 +242,9 @@ main(int argc, char **argv)
 		case 3:
 			list_repolock = opmode = true;
 			break;
+		case 4:
+			long_listing = true;
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -259,24 +291,24 @@ main(int argc, char **argv)
 		rv = repo_list(&xh);
 
 	} else if (list_hold) {
-		/* list on hold pkgs */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_hold_pkgs, NULL);
+		rv = list_pkgdb(&xh, filter_hold, format ? format : "{pkgver}\n") < 0;
 
 	} else if (list_repolock) {
-		/* list repolocked packages */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_repolock_pkgs, NULL);
+		rv = list_pkgdb(&xh, filter_repolock, format ? format : "{pkgver}\n") < 0;
 
 	} else if (list_manual) {
-		/* list manual pkgs */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_manual_pkgs, NULL);
+		rv = list_pkgdb(&xh, filter_manual, format ? format : "{pkgver}\n") < 0;
 
 	} else if (list_pkgs) {
 		/* list available pkgs */
-		rv = list_pkgs_pkgdb(&xh);
+		if (format)
+			rv = list_pkgdb(&xh, NULL, format);
+		else
+			rv = list_pkgs_pkgdb(&xh);
 
 	} else if (orphans) {
 		/* list pkg orphans */
-		rv = list_orphans(&xh);
+		rv = list_orphans(&xh, format ? format : "{pkgver}\n") < 0;
 
 	} else if (own) {
 		/* ownedby mode */
@@ -301,11 +333,15 @@ main(int argc, char **argv)
 
 	} else if (show_files) {
 		/* show-files mode */
+		const char *fmt = format ? format :
+				(long_listing ?
+					"{mode?0!strmode} {user?\"root\":<8} {group?\"root\":<8} "
+					"{size?0!humanize .8Bi:>8} {file-target}\n"
+					: "{file-target}\n");
 		if (repo_mode)
-			rv =  repo_show_pkg_files(&xh, pkg);
+			rv =  repo_show_pkg_files(&xh, pkg, fmt);
 		else
-			rv = show_pkg_files_from_metadir(&xh, pkg);
-
+			rv = show_pkg_files_from_metadir(&xh, pkg, fmt);
 	} else if (show_deps) {
 		/* show-deps mode */
 		rv = show_pkg_deps(&xh, pkg, repo_mode, fulldeptree);

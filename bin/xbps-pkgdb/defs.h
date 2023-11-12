@@ -29,6 +29,8 @@
 #include <sys/time.h>
 #include <xbps.h>
 
+#include "idtree.h"
+
 /* from check.c */
 int	check_pkg_integrity(struct xbps_handle *, xbps_dictionary_t, const char *);
 int	check_pkg_integrity_all(struct xbps_handle *);
@@ -44,5 +46,10 @@ CHECK_PKG_DECL(alternatives);
 
 /* from convert.c */
 void	convert_pkgdb_format(struct xbps_handle *);
+
+/* from check_files.c */
+int file_mode_check(const char *, const mode_t);
+int file_user_check(struct idtree *, const char *, const char *);
+int file_group_check(struct idtree *, const char *, const char *);
 
 #endif /* !_XBPS_PKGDB_DEFS_H_ */

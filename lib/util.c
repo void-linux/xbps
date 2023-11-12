@@ -518,6 +518,14 @@ xbps_strlcpy(char *dest, const char *src, size_t siz)
 	return strlcpy(dest, src, siz);
 }
 
+void
+xbps_strmode(mode_t mode, char *buf)
+{
+	assert(buf);
+
+	return strmode(mode, buf);
+}
+
 /*
  * Check if pkg is explicitly marked to replace a specific installed version.
  */

@@ -186,13 +186,50 @@ show_pkg_info(xbps_dictionary_t dict)
 	xbps_object_release(all_keys);
 }
 
+struct file_print_cb {
+	xbps_dictionary_t dict;
+	bool islnk;
+};
+
+static int
+file_print_cb(FILE *fp, const struct xbps_fmt *fmt, void *data)
+{
+	struct file_print_cb *ctx = data;
+	xbps_object_t obj;
+	if (ctx->islnk && strcmp(fmt->var, "mode") == 0) {
+		/* symbolic links don't store mode in the metadata, so it would normally display as
+		 * unknown (?---------). be a bit more like ls -l and print 'l---------' without
+		 * having to include this data in the plist */
+		return xbps_fmt_print_number(fmt, 0120000, fp);
+	} else if (strcmp(fmt->var, "file-target") == 0) {
+		const char *buf, *target;
+		int len;
+		xbps_dictionary_get_cstring_nocopy(ctx->dict, "file", &buf);
+		if (xbps_dictionary_get_cstring_nocopy(ctx->dict, "target", &target)) {
+			buf = xbps_xasprintf("%s -> %s", buf, target);
+		}
+		len = strlen(buf);
+		return xbps_fmt_print_string(fmt, buf, len, fp);
+	}
+	obj = xbps_dictionary_get(ctx->dict, fmt->var);
+	return xbps_fmt_print_object(fmt, obj, fp);
+}
+
 int
-show_pkg_files(xbps_dictionary_t filesd)
+show_pkg_files(xbps_dictionary_t filesd, const char *fmts)
 {
 	xbps_array_t array, allkeys;
 	xbps_object_t obj;
 	xbps_dictionary_keysym_t ksym;
-	const char *keyname = NULL, *file = NULL;
+	struct file_print_cb ctx = {0};
+	const char *keyname = NULL;
+
+	struct xbps_fmt *fmt = xbps_fmt_parse(fmts);
+	if (!fmt) {
+		int rv = -errno;
+		xbps_error_printf("failed to parse format: %s\n", strerror(-rv));
+		return rv;
+	}
 
 	if (xbps_object_type(filesd) != XBPS_TYPE_DICTIONARY)
 		return EINVAL;
@@ -206,6 +243,8 @@ show_pkg_files(xbps_dictionary_t filesd)
 		    (strcmp(keyname, "links")))))
 			continue;
 
+		ctx.islnk = strcmp(keyname, "links") == 0;
+
 		array = xbps_dictionary_get(filesd, keyname);
 		if (array == NULL || xbps_array_count(array) == 0)
 			continue;
@@ -214,17 +253,13 @@ show_pkg_files(xbps_dictionary_t filesd)
 			obj = xbps_array_get(array, x);
 			if (xbps_object_type(obj) != XBPS_TYPE_DICTIONARY)
 				continue;
-			xbps_dictionary_get_cstring_nocopy(obj, "file", &file);
-			printf("%s", file);
-			if (xbps_dictionary_get_cstring_nocopy(obj,
-			    "target", &file))
-				printf(" -> %s", file);
 
-			printf("\n");
+			ctx.dict = obj;
+			xbps_fmt(fmt, &file_print_cb, &ctx, stdout);
 		}
 	}
 	xbps_object_release(allkeys);
-
+	xbps_fmt_free(fmt);
 	return 0;
 }
 
@@ -248,7 +283,7 @@ show_pkg_info_from_metadir(struct xbps_handle *xhp,
 }
 
 int
-show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkg)
+show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkg, const char *fmts)
 {
 	xbps_dictionary_t d;
 	int rv = 0;
@@ -257,7 +292,7 @@ show_pkg_files_from_metadir(struct xbps_handle *xhp, const char *pkg)
 	if (d == NULL)
 		return ENOENT;
 
-	rv = show_pkg_files(d);
+	rv = show_pkg_files(d, fmts);
 
 	return rv;
 }
@@ -324,7 +359,7 @@ repo_cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 }
 
 int
-repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
+repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg, const char *fmts)
 {
 	xbps_dictionary_t pkgd;
 	int rv;
@@ -337,7 +372,7 @@ repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 		return errno;
 	}
 
-	rv = show_pkg_files(pkgd);
+	rv = show_pkg_files(pkgd, fmts);
 	xbps_object_release(pkgd);
 	return rv;
 }
