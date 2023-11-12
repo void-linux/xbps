@@ -24,6 +24,7 @@
  */
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -69,13 +70,14 @@ internalize_script(xbps_dictionary_t pkg_repod, const char *script,
 static int
 internalize_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
+	char pkgfile[PATH_MAX];
 	xbps_dictionary_t filesd = NULL, propsd = NULL;
 	struct stat st;
 	struct archive *ar = NULL;
 	struct archive_entry *entry;
 	const char *pkgver, *pkgname, *binpkg_pkgver;
+	ssize_t l;
 	int pkg_fd = -1;
-	char *pkgfile;
 	int rv = 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
@@ -83,14 +85,12 @@ internalize_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname);
 	assert(pkgname);
 
-	pkgfile = xbps_repository_pkg_path(xhp, pkg_repod);
-	if (pkgfile == NULL)
-		return -errno;
+	l = xbps_pkg_path(xhp, pkgfile, sizeof(pkgfile), pkg_repod);
+	if (l < 0)
+		return l;
 
-	if ((ar = archive_read_new()) == NULL) {
-		free(pkgfile);
+	if ((ar = archive_read_new()) == NULL)
 		return -errno;
-	}
 
 	/*
 	 * Enable support for tar format and gzip/bzip2/lzma compression methods.
@@ -193,7 +193,6 @@ out:
 		close(pkg_fd);
 	if (ar != NULL)
 		archive_read_free(ar);
-	free(pkgfile);
 	return rv;
 }
 

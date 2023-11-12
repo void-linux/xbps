@@ -36,18 +36,19 @@
 static int
 verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
+	char binfile[PATH_MAX];
 	struct xbps_repo *repo;
 	const char *pkgver, *repoloc, *sha256;
-	char *binfile;
+	ssize_t l;
 	int rv = 0;
 
 	xbps_dictionary_get_cstring_nocopy(pkgd, "repository", &repoloc);
 	xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 
-	binfile = xbps_repository_pkg_path(xhp, pkgd);
-	if (binfile == NULL) {
-		return ENOMEM;
-	}
+	l = xbps_pkg_path(xhp, binfile, sizeof(binfile), pkgd);
+	if (l < 0)
+		return -l;
+
 	/*
 	 * For pkgs in local repos check the sha256 hash.
 	 * For pkgs in remote repos check the RSA signature.
@@ -56,7 +57,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		rv = errno;
 		xbps_dbg_printf("%s: failed to get repository "
 			"%s: %s\n", pkgver, repoloc, strerror(errno));
-		goto out;
+		return rv;
 	}
 	if (repo->is_remote) {
 		/* remote repo */
@@ -64,17 +65,15 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			"%s: verifying RSA signature...", pkgver);
 
 		if (!xbps_verify_file_signature(repo, binfile)) {
-			char *sigfile;
 			rv = EPERM;
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: the RSA signature is not valid!", pkgver);
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: removed pkg archive and its signature.", pkgver);
 			(void)remove(binfile);
-			sigfile = xbps_xasprintf("%s.sig2", binfile);
-			(void)remove(sigfile);
-			free(sigfile);
-			goto out;
+			if (xbps_strlcat(binfile, ".sig2", sizeof(binfile)) < sizeof(binfile))
+				(void)remove(binfile);
+			return rv;
 		}
 	} else {
 		/* local repo */
@@ -84,13 +83,12 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		if ((rv = xbps_file_sha256_check(binfile, sha256)) != 0) {
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
-			goto out;
+			return rv;
 		}
 
 	}
-out:
-	free(binfile);
-	return rv;
+
+	return 0;
 }
 
 static int

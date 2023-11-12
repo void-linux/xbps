@@ -24,14 +24,16 @@
  */
 
 #include <sys/stat.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+
 #include <errno.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <libgen.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "xbps_api_impl.h"
 
@@ -467,10 +469,11 @@ out:
 int HIDDEN
 xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 {
+	char bpkg[PATH_MAX];
 	struct archive *ar = NULL;
 	struct stat st;
 	const char *pkgver;
-	char *bpkg = NULL;
+	ssize_t l;
 	int pkg_fd = -1, rv = 0;
 	mode_t myumask;
 
@@ -479,19 +482,17 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &pkgver);
 	xbps_set_cb_state(xhp, XBPS_STATE_UNPACK, 0, pkgver, NULL);
 
-	bpkg = xbps_repository_pkg_path(xhp, pkg_repod);
-	if (bpkg == NULL) {
+	l = xbps_pkg_path(xhp, bpkg, sizeof(bpkg), pkg_repod);
+	if (l < 0) {
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    errno, pkgver,
 		    "%s: [unpack] cannot determine binary package "
-		    "file for `%s': %s", pkgver, bpkg, strerror(errno));
-		return errno;
+		    "file: %s", pkgver, strerror(errno));
+		return -l;
 	}
 
-	if ((ar = archive_read_new()) == NULL) {
-		free(bpkg);
+	if ((ar = archive_read_new()) == NULL)
 		return ENOMEM;
-	}
 	/*
 	 * Enable support for tar format and some compression methods.
 	 */
@@ -574,8 +575,6 @@ out:
 		close(pkg_fd);
 	if (ar != NULL)
 		archive_read_free(ar);
-	if (bpkg)
-		free(bpkg);
 
 	/* restore */
 	umask(myumask);
