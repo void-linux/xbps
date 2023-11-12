@@ -23,15 +23,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fnmatch.h>
-#include <dirent.h>
-#include <assert.h>
+#include <limits.h>
 #include <regex.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <xbps.h>
 #include "defs.h"
@@ -133,20 +134,24 @@ repo_match_cb(struct xbps_handle *xhp,
 		void *arg,
 		bool *done UNUSED)
 {
+	char bfile[PATH_MAX];
 	xbps_dictionary_t filesd;
 	xbps_array_t files_keys;
 	struct ffdata *ffd = arg;
 	const char *pkgver = NULL;
-	char *bfile;
+	int r;
 
 	xbps_dictionary_set_cstring_nocopy(obj, "repository", ffd->repouri);
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 
-	bfile = xbps_repository_pkg_path(xhp, obj);
-	assert(bfile);
+	r = xbps_pkg_path_or_url(xhp, bfile, sizeof(bfile), obj);
+	if (r < 0) {
+		xbps_error_printf("could not get package path: %s\n", strerror(-r));
+		return -r;
+	}
 	filesd = xbps_archive_fetch_plist(bfile, "/files.plist");
-	if (filesd == NULL) {
-		xbps_dbg_printf("%s: couldn't fetch files.plist from %s: %s\n",
+	if (!filesd) {
+		xbps_error_printf("%s: couldn't fetch files.plist from %s: %s\n",
 		    pkgver, bfile, strerror(errno));
 		return EINVAL;
 	}
@@ -157,7 +162,6 @@ repo_match_cb(struct xbps_handle *xhp,
 	}
 	xbps_object_release(files_keys);
 	xbps_object_release(filesd);
-	free(bfile);
 
 	return 0;
 }

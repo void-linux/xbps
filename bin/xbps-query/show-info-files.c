@@ -284,60 +284,69 @@ repo_show_pkg_info(struct xbps_handle *xhp,
 int
 cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 {
+	char bfile[PATH_MAX];
 	xbps_dictionary_t pkgd;
-	char *url;
 	int rv;
 
 	pkgd = xbps_pkgdb_get_pkg(xhp, pkg);
 	if (pkgd == NULL)
 		return errno;
 
-	url = xbps_repository_pkg_path(xhp, pkgd);
-	if (url == NULL)
-		return EINVAL;
+	rv = xbps_pkg_path_or_url(xhp, bfile, sizeof(bfile), pkgd);
+	if (rv < 0) {
+		xbps_error_printf("could not get package path: %s\n", strerror(-rv));
+		return -rv;
+	}
 
-	xbps_dbg_printf("matched pkg at %s\n", url);
-	rv = xbps_archive_fetch_file_into_fd(url, file, STDOUT_FILENO);
-	free(url);
-	return rv;
+	return xbps_archive_fetch_file_into_fd(bfile, file, STDOUT_FILENO);
 }
 
 int
 repo_cat_file(struct xbps_handle *xhp, const char *pkg, const char *file)
 {
+	char bfile[PATH_MAX];
 	xbps_dictionary_t pkgd;
-	char *url;
 	int rv;
 
 	pkgd = xbps_rpool_get_pkg(xhp, pkg);
 	if (pkgd == NULL)
 		return errno;
 
-	url = xbps_repository_pkg_path(xhp, pkgd);
-	if (url == NULL)
-		return EINVAL;
+	rv = xbps_pkg_path_or_url(xhp, bfile, sizeof(bfile), pkgd);
+	if (rv < 0) {
+		xbps_error_printf("could not get package path: %s\n", strerror(-rv));
+		return -rv;
+	}
 
-	xbps_dbg_printf("matched pkg at %s\n", url);
-	rv = xbps_archive_fetch_file_into_fd(url, file, STDOUT_FILENO);
-	free(url);
-	return rv;
+	return xbps_archive_fetch_file_into_fd(bfile, file, STDOUT_FILENO);
 }
 
 int
 repo_show_pkg_files(struct xbps_handle *xhp, const char *pkg)
 {
-	xbps_dictionary_t pkgd;
+	char bfile[PATH_MAX];
+	xbps_dictionary_t pkgd, filesd;
 	int rv;
 
-	pkgd = xbps_rpool_get_pkg_plist(xhp, pkg, "/files.plist");
-	if (pkgd == NULL) {
+	pkgd = xbps_rpool_get_pkg(xhp, pkg);
+	if (pkgd == NULL)
+		return errno;
+
+	rv = xbps_pkg_path_or_url(xhp, bfile, sizeof(bfile), pkgd);
+	if (rv < 0) {
+		xbps_error_printf("could not get package path: %s\n", strerror(-rv));
+		return -rv;
+	}
+
+	filesd = xbps_archive_fetch_plist(bfile, "/files.plist");
+	if (filesd == NULL) {
                 if (errno != ENOTSUP && errno != ENOENT) {
 			xbps_error_printf("Unexpected error: %s\n", strerror(errno));
 		}
 		return errno;
 	}
 
-	rv = show_pkg_files(pkgd);
-	xbps_object_release(pkgd);
+	rv = show_pkg_files(filesd);
+	xbps_object_release(filesd);
 	return rv;
 }
