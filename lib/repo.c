@@ -473,22 +473,6 @@ add:
 	return pkgd;
 }
 
-xbps_dictionary_t
-xbps_repo_get_pkg_plist(struct xbps_handle *xhp, xbps_dictionary_t pkgd,
-		const char *plist)
-{
-	xbps_dictionary_t bpkgd;
-	char *url;
-
-	url = xbps_repository_pkg_path(xhp, pkgd);
-	if (url == NULL)
-		return NULL;
-
-	bpkgd = xbps_archive_fetch_plist(url, plist);
-	free(url);
-	return bpkgd;
-}
-
 static xbps_array_t
 revdeps_match(struct xbps_repo *repo, xbps_dictionary_t tpkgd, const char *str)
 {

@@ -1553,29 +1553,6 @@ xbps_array_t xbps_rpool_get_pkg_revdeps(struct xbps_handle *xhp, const char *pkg
  */
 xbps_array_t xbps_rpool_get_pkg_fulldeptree(struct xbps_handle *xhp, const char *pkg);
 
-/**
- * Iterate over the the repository pool and search for a metadata plist
- * file in a binary package matching `pattern'. If a package is matched
- * the plist file \a plistf will be internalized into a proplib dictionary.
- *
- * When \a pattern is a pkgname, the newest package available in repositories
- * will be used. Otherwise the first repository matching \a pattern.
- *
- * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] pattern Package name or package pattern to match, i.e `foo>=1.0'.
- * @param[in] plistf Plist file name to match, i.e XBPS_PKGPROPS or XBPS_PKGFILES.
- *
- * @return An internalized proplib dictionary of \a plistf, otherwise NULL
- * and errno is set appropiately.
- *
- * @note if NULL is returned and errno is ENOENT, that means that
- * binary package file has been found but the plist file could not
- * be found.
- */
-xbps_dictionary_t xbps_rpool_get_pkg_plist(struct xbps_handle *xhp,
-					   const char *pattern,
-					   const char *plistf);
-
 /**@}*/
 
 /** @addtogroup repo */
@@ -1723,20 +1700,6 @@ xbps_dictionary_t xbps_repo_get_pkg(struct xbps_repo *repo, const char *pkg);
  * @return The pkg dictionary on success, NULL otherwise.
  */
 xbps_dictionary_t xbps_repo_get_virtualpkg(struct xbps_repo *repo, const char *pkg);
-
-/**
- * Returns a pkg dictionary of the matching \a plist file from a binary package,
- * by looking at its package dictionary (\a pkgd) returned by a repository or rpool.
- *
- * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] pkgd Package dictionary returned by xbps_{repo,rpool}_get_xxxpkg().
- * @param[in] plist Plist filename to internalize from matching binary package.
- *
- * @return The pkg dictionary on success, NULL otherwise.
- */
-xbps_dictionary_t xbps_repo_get_pkg_plist(struct xbps_handle *xhp,
-					xbps_dictionary_t pkgd,
-					const char *plist);
 
 /**
  * Returns a proplib array of strings with reverse dependencies from
