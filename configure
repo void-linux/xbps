@@ -282,7 +282,7 @@ for f in all extra error shadow "format=2" missing-prototypes \
 	missing-include-dirs old-style-definition \
 	init-self redundant-decls float-equal missing-noreturn \
 	cast-align cast-qual pointer-arith comment \
-	declaration-after-statement write-strings stack-protector; do
+	write-strings stack-protector; do
 	check_compiler_flag ${f} W
 done
 
@@ -616,6 +616,48 @@ fi
 rm -f _$func.c _$func
 
 #
+# Check for getrandom().
+#
+func=getrandom
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <sys/random.h>
+int main(void) {
+	char buf[16];
+	getrandom(buf, sizeof(buf), 0);
+	return 0;
+}
+EOF
+if $XCC _$func.c -o _$func 2>/dev/null; then
+	echo yes.
+	echo "CPPFLAGS += -DHAVE_GETRANDOM" >>$CONFIG_MK
+else
+	echo no.
+fi
+rm -f _$func.c _$func
+
+#
+# Check for arc4random_buf().
+#
+func=arc4random_buf
+printf "Checking for $func() ... "
+cat <<EOF > _$func.c
+#include <stdlib.h>
+int main(void) {
+	char buf[16];
+	arc4random_buf(buf, sizeof(buf));
+	return 0;
+}
+EOF
+if $XCC _$func.c -o _$func 2>/dev/null; then
+	echo yes.
+	echo "CPPFLAGS += -DHAVE_ARC4RANDOM_BUF" >>$CONFIG_MK
+else
+	echo no.
+fi
+rm -f _$func.c _$func
+
+#
 # zlib is required.
 #
 func=InflateInit2
@@ -758,6 +800,8 @@ if [ "$SET_RPATH" ]; then
 	echo  "PROG_LDFLAGS = -Wl,-rpath='XORIGIN/../lib'" >>$CONFIG_MK
 	sed -i 's,XORIGIN,$$ORIGIN,' $CONFIG_MK
 fi
+
+echo "CFLAGS += -Wno-error=deprecated-declarations" >>$CONFIG_MK
 
 echo
 echo "  XBPS has been configured with the following options:"
