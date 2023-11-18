@@ -91,18 +91,119 @@ list_pkgs_in_dict(struct xbps_handle *xhp UNUSED,
 }
 
 int
-list_manual_pkgs(struct xbps_handle *xhp UNUSED,
-		 xbps_object_t obj,
-		 const char *key UNUSED,
-		 void *arg UNUSED,
-		 bool *loop_done UNUSED)
+of_init(struct orderby_information *ofp)
 {
-	const char *pkgver = NULL;
-	bool automatic = false;
+	ofp->size = 32;
+	ofp->items = malloc(ofp->size * sizeof(ofp->items[0]));
+	if (ofp->items == NULL) {
+		exit(EXIT_FAILURE);
+	}
 
-	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
-	if (automatic == false) {
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+	return 0;
+}
+
+static int
+of_put(struct orderby_information *ofp,
+		xbps_object_t obj)
+{
+	ofp->items[ofp->num].obj = obj;
+	ofp->items[ofp->num].parent = ofp;
+
+	ofp->num++;
+
+	if (ofp->num == ofp->size) {
+		ofp->size *= 2;
+
+		ofp->items = realloc(ofp->items, ofp->size * sizeof(ofp->items[0]));
+		if (ofp->items == NULL) {
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	return 0;
+}
+
+static int
+of_compare(const void *a,
+		const void *b)
+{
+	const struct pkgver_ordering *apo, *bpo;
+	xbps_object_t aordering, bordering;
+	xbps_type_t atype, btype;
+	char const *key;
+	bool reverse_order;
+	int rv;
+
+	apo = a;
+	bpo = b;
+	key = apo->parent->orderby;
+	reverse_order = apo->parent->reverse_order;
+
+	aordering = xbps_dictionary_get(apo->obj, key);
+	bordering = xbps_dictionary_get(bpo->obj, key);
+
+	atype = xbps_object_type(aordering);
+	btype = xbps_object_type(bordering);
+
+	/* deal with packages which don't contain these values */
+	if (atype == XBPS_TYPE_UNKNOWN && btype == XBPS_TYPE_UNKNOWN) {
+		rv = 0;
+	} else if (atype == XBPS_TYPE_UNKNOWN && btype != XBPS_TYPE_UNKNOWN) {
+		rv = -1;
+	} else if (atype != XBPS_TYPE_UNKNOWN && btype == XBPS_TYPE_UNKNOWN) {
+		rv = 1;
+	} else {
+		assert(atype == btype);
+
+		if (atype == XBPS_TYPE_STRING) {
+			const char *aordering_str, *bordering_str;
+			aordering_str = xbps_string_cstring_nocopy(aordering);
+			bordering_str = xbps_string_cstring_nocopy(bordering);
+
+			rv = strcmp(aordering_str, bordering_str);
+
+		} else if (atype == XBPS_TYPE_NUMBER) {
+			unsigned int aordering_int, bordering_int;
+			aordering_int = xbps_number_unsigned_integer_value(aordering);
+			bordering_int = xbps_number_unsigned_integer_value(bordering);
+
+			if (aordering_int > bordering_int) {
+				rv = 1;
+			} else if (aordering_int == bordering_int) {
+				rv = 0;
+			} else {
+				rv = -1;
+			}
+
+		} else {
+			xbps_error_printf("Can't sort packages by key \"%s\".\n", key);
+			exit(EXIT_FAILURE);
+			rv = 0;
+		}
+	}
+
+	return (reverse_order) ? -rv : rv;
+}
+
+static void
+of_sort(struct orderby_information *ofp)
+{
+	qsort(ofp->items, ofp->num, sizeof(*ofp->items), of_compare);
+}
+
+int
+of_print(struct orderby_information *ofp)
+{
+	if (ofp->orderby){
+		of_sort(ofp);
+	}
+
+	for(size_t i = 0; i < ofp->num; i++) {
+		const char *pkgver;
+		pkgver = NULL;
+
+		xbps_dictionary_get_cstring_nocopy(ofp->items[i].obj, "pkgver", &pkgver);
+
 		puts(pkgver);
 	}
 
@@ -110,56 +211,77 @@ list_manual_pkgs(struct xbps_handle *xhp UNUSED,
 }
 
 int
-list_hold_pkgs(struct xbps_handle *xhp UNUSED,
-		xbps_object_t obj,
-		const char *key UNUSED,
-		void *arg UNUSED,
-		bool *loop_done UNUSED)
+of_free(struct orderby_information *ofp)
 {
-	const char *pkgver = NULL;
-
-	if (xbps_dictionary_get(obj, "hold")) {
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		puts(pkgver);
-	}
+	free(ofp->items);
 
 	return 0;
 }
 
 int
-list_repolock_pkgs(struct xbps_handle *xhp UNUSED,
-		xbps_object_t obj,
-		const char *key UNUSED,
-		void *arg UNUSED,
-		bool *loop_done UNUSED)
-{
-	const char *pkgver = NULL;
-
-	if (xbps_dictionary_get(obj, "repolock")) {
-		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		puts(pkgver);
-	}
-
-	return 0;
-}
-
-int
-list_orphans(struct xbps_handle *xhp)
+of_put_orphans(struct xbps_handle *xhp, struct orderby_information *ofp)
 {
 	xbps_array_t orphans;
-	const char *pkgver = NULL;
 
 	orphans = xbps_find_pkg_orphans(xhp, NULL);
 	if (orphans == NULL)
 		return EINVAL;
 
 	for (unsigned int i = 0; i < xbps_array_count(orphans); i++) {
-		xbps_dictionary_get_cstring_nocopy(xbps_array_get(orphans, i),
-		    "pkgver", &pkgver);
-		puts(pkgver);
+		of_put(ofp, xbps_array_get(orphans, i));
 	}
 
 	return 0;
+}
+
+int
+list_orderby(struct xbps_handle *xhp,
+		xbps_object_t obj,
+		const char *key UNUSED,
+		void *arg,
+		bool *loop_done UNUSED)
+{
+	struct orderby_information *ofp = arg;
+
+	if (ofp->filter && ofp->filter(obj)) {
+		if (ofp->orderby) {
+			/* verify if package has property */
+			if (xbps_object_type(xbps_dictionary_get(obj, ofp->orderby))
+					== XBPS_TYPE_UNKNOWN) {
+				const char *pkgver;
+				xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+				if (pkgver == NULL) {
+					exit(EXIT_FAILURE);
+				}
+				xbps_dbg_printf(xhp, "pkg %s doesn't have the \"%s\" property\n",
+						pkgver, ofp->orderby);
+			}
+		}
+
+		of_put(ofp, obj);
+	}
+
+	return 0;
+}
+
+bool
+filter_manual_pkgs(xbps_object_t obj)
+{
+	bool automatic = false;
+	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
+	return !automatic;
+}
+
+bool
+filter_hold_pkgs(xbps_object_t obj)
+{
+	return xbps_dictionary_get(obj, "hold");
+}
+
+bool
+filter_repolock_pkgs(xbps_object_t obj)
+{
+	return xbps_dictionary_get(obj, "repolock");
 }
 
 int
