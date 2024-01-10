@@ -338,6 +338,11 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 				    strerror(rv));
 				goto out;
 			}
+		} else if (ttype == XBPS_TRANS_CONFIGURE) {
+			/*
+			 * Package just needs to be configured, ignore it.
+			 */
+			continue;
 		} else if (ttype == XBPS_TRANS_HOLD) {
 			/*
 			 * Package is on hold mode, ignore it.
