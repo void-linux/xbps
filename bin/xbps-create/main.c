@@ -22,25 +22,30 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <sys/types.h>
+
+#include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
-#include <stdio.h>
+#include <sys/types.h>
+
+#include <assert.h>
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <ftw.h>
+#include <getopt.h>
+#include <libgen.h>
+#include <locale.h>
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <assert.h>
 #include <unistd.h>
-#include <getopt.h>
-#include <ftw.h>
-#include <fcntl.h>
-#include <libgen.h>
-#include <locale.h>
-#include <dirent.h>
+
+#include <archive.h>
+#include <archive_entry.h>
 
 #include <xbps.h>
 #include "queue.h"

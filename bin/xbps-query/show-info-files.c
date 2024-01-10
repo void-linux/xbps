@@ -23,15 +23,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <assert.h>
+#include <errno.h>
+#include <fnmatch.h>
+#include <libgen.h>
+#include <limits.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <limits.h>
-#include <libgen.h>
-#include <fnmatch.h>
-#include <assert.h>
+#include <unistd.h>
 
 #include <xbps.h>
 #include "defs.h"

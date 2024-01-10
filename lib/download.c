@@ -29,18 +29,20 @@
  * From FreeBSD fetch(8):
  * $FreeBSD: src/usr.bin/fetch/fetch.c,v 1.84.2.1 2009/08/03 08:13:06 kensmith Exp $
  */
-
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/wait.h>
-#include <libgen.h>
+#include <time.h>
+#include <unistd.h>
 
 #include <openssl/sha.h>
 

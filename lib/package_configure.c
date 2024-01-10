@@ -23,12 +23,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/stat.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
 #include "xbps_api_impl.h"
+
 /**
  * @file lib/package_configure.c
  * @brief Package configuration routines
@@ -45,6 +48,7 @@
   member, the package (or packages) will be reconfigured even if its
  * state is XBPS_PKG_STATE_INSTALLED.
  */
+
 int
 xbps_configure_packages(struct xbps_handle *xhp, xbps_array_t ignpkgs)
 {

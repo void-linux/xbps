@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <archive_entry.h>
+
 #include "xbps_api_impl.h"
 
 /*

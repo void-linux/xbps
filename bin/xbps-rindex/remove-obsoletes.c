@@ -24,14 +24,16 @@
  */
 
 #include <sys/stat.h>
-#include <stdio.h>
+
+#include <assert.h>
+#include <dirent.h>
+#include <errno.h>
+#include <libgen.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <dirent.h>
-#include <libgen.h>
-#include <assert.h>
+#include <unistd.h>
 
 #include <xbps.h>
 #include "defs.h"
