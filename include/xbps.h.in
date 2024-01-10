@@ -40,9 +40,6 @@
 #include <xbps/xbps_number.h>
 #include <xbps/xbps_string.h>
 
-#include <archive.h>
-#include <archive_entry.h>
-
 #define XBPS_MAXPATH	512
 #define XBPS_NAME_SIZE	64
 

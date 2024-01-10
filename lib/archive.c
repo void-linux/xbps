@@ -29,6 +29,9 @@
 #include <string.h>
 #include <errno.h>
 
+#include <archive.h>
+#include <archive_entry.h>
+
 #include "xbps_api_impl.h"
 
 char HIDDEN *

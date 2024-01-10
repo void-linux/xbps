@@ -44,13 +44,6 @@
 #include "queue.h"
 #include "compat.h"
 
-#define EXTRACT_FLAGS	ARCHIVE_EXTRACT_SECURE_NODOTDOT | \
-			ARCHIVE_EXTRACT_SECURE_SYMLINKS | \
-			ARCHIVE_EXTRACT_SECURE_NOABSOLUTEPATHS | \
-			ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | \
-			ARCHIVE_EXTRACT_UNLINK
-#define FEXTRACT_FLAGS	ARCHIVE_EXTRACT_OWNER | EXTRACT_FLAGS
-
 #ifndef __UNCONST
 #define __UNCONST(a)	((void *)(uintptr_t)(const void *)(a))
 #endif
@@ -58,6 +51,8 @@
 #ifndef __arraycount
 #define __arraycount(x) (sizeof(x) / sizeof(*x))
 #endif
+
+struct archive_entry;
 
 /**
  * @private

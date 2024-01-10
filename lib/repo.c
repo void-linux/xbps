@@ -23,13 +23,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <libgen.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <libgen.h>
-#include <fcntl.h>
+
+#include <archive.h>
+#include <archive_entry.h>
 
 #include <openssl/err.h>
 #include <openssl/sha.h>
