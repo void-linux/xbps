@@ -23,10 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_STRCASESTR
-# define _GNU_SOURCE    /* for strcasestr(3) */
-#endif
-
 #include "compat.h"
 
 #include <stdio.h>

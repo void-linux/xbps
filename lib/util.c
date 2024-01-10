@@ -23,14 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_VASPRINTF
-# define _GNU_SOURCE	/* for vasprintf(3) */
-#endif
-
-#if defined(HAVE_STRLCAT) || defined(HAVE_STRLCPY)
-# define _BSD_SOURCE
-#endif
-
 #include "compat.h"
 
 #include <sys/utsname.h>

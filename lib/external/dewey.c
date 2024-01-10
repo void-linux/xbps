@@ -30,9 +30,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#define _BSD_SOURCE
 #include <string.h>
-#undef _BSD_SOURCE
 #include <strings.h>
 #include <ctype.h>
 
