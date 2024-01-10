@@ -128,14 +128,14 @@ Good luck!
 
 Binaries for Linux compiled statically with the musl C library are available:
 
-* [aarch64](https://a-hel-fi.m.voidlinux.org/static/xbps-static-latest.aarch64-musl.tar.xz)
-* [armv6hf](https://a-hel-fi.m.voidlinux.org/static/xbps-static-latest.armv6l-musl.tar.xz)
-* [i686](https://a-hel-fi.m.voidlinux.org/static/xbps-static-latest.i686-musl.tar.xz)
-* [x86\_64](https://a-hel-fi.m.voidlinux.org/static/xbps-static-latest.x86_64-musl.tar.xz)
-* [mips32](https://a-hel-fi.m.voidlinux.org/static/xbps-static-latest.mips-musl.tar.xz)
+* [aarch64](https://repo-default.voidlinux.org/static/xbps-static-latest.aarch64-musl.tar.xz)
+* [armv6l](https://repo-default.voidlinux.org/static/xbps-static-latest.armv6l-musl.tar.xz)
+* [armv7l](https://repo-default.voidlinux.org/static/xbps-static-latest.armv7l-musl.tar.xz)
+* [i686](https://repo-default.voidlinux.org/static/xbps-static-latest.i686-musl.tar.xz)
+* [x86\_64](https://repo-default.voidlinux.org/static/xbps-static-latest.x86_64-musl.tar.xz)
 
 These builds are available on all official void mirrors, along with their
-*sha256* [checksums](https://a-hel-fi.m.voidlinux.org/static/sha256sums.txt).
+*sha256* [checksums](https://repo-default.voidlinux.org/static/sha256sums.txt).
 
 ### Usage instructions
 
