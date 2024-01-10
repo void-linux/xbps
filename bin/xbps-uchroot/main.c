@@ -32,8 +32,6 @@
  * 	- Supports overlayfs on a temporary directory or a tmpfs mount.
  * 	- Supports read-only bind mounts.
  */
-#define _GNU_SOURCE
-#define _XOPEN_SOURCE 700
 #include <sys/types.h>
 #include <sys/prctl.h>
 #include <sys/fsuid.h>
