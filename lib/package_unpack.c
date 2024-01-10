@@ -86,6 +86,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
+	const struct xbps_file *file;
 	xbps_dictionary_t binpkg_filesd, pkg_filesd, obsd;
 	xbps_array_t array, obsoletes;
 	xbps_trans_type_t ttype;
@@ -132,19 +133,19 @@ unpack_archive(struct xbps_handle *xhp,
 	    xbps_dictionary_get_dict(xhp->transd, "obsolete_files", &obsd) &&
 	    (obsoletes = xbps_dictionary_get(obsd, pkgname))) {
 		for (unsigned int i = 0; i < xbps_array_count(obsoletes); i++) {
-			const char *file = NULL;
-			xbps_array_get_cstring_nocopy(obsoletes, i, &file);
-			if (remove(file) == -1) {
+			const char *path = NULL;
+			xbps_array_get_cstring_nocopy(obsoletes, i, &path);
+			if (remove(path) == -1) {
 				xbps_set_cb_state(xhp,
 					XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
 					errno, pkgver,
 					"%s: failed to remove obsolete entry `%s': %s",
-					pkgver, file, strerror(errno));
+					pkgver, path, strerror(errno));
 				continue;
 			}
 			xbps_set_cb_state(xhp,
 				XBPS_STATE_REMOVE_FILE_OBSOLETE,
-				0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
+				0, pkgver, "%s: removed obsolete entry: %s", pkgver, path);
 		}
 	}
 
@@ -291,6 +292,14 @@ unpack_archive(struct xbps_handle *xhp,
 			continue;
 		}
 
+		file = xbps_transaction_file_get(xhp, entry_pname+1);
+		if (!file) {
+			xbps_error_printf("unknown file in binary package: %s: %s\n",
+			    pkgver, entry_pname+1);
+			rv = EINVAL;
+			goto out;
+		}
+
 		/*
 		 * Check if current entry is a configuration file,
 		 * that should be kept.
@@ -336,8 +345,13 @@ unpack_archive(struct xbps_handle *xhp,
 					}
 					rv = 0;
 				} else {
-					rv = xbps_file_hash_check_dictionary(
-					    xhp, binpkg_filesd, "files", buf);
+					if (!file->sha256) {
+						xbps_error_printf("missing checksum in binary package"
+						    ": %s: %s\n", pkgver, entry_pname+1);
+						rv = EINVAL;
+						goto out;
+					}
+					rv = xbps_file_sha256_check(entry_pname, file->sha256);
 					if (rv == -1) {
 						/* error */
 						xbps_dbg_printf(
