@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2008-2015 Juan Romero Pardines.
+ * Copyright (c) 2024 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,6 +80,87 @@ match_preserved_file(struct xbps_handle *xhp, const char *entry)
 	return xbps_match_string_in_array(xhp->preserved_files, file);
 }
 
+enum {
+	CONFFILE_SKIP   = 0,
+	CONFFILE_UPDATE = 1,
+	CONFFILE_NEW    = 2,
+};
+
+static int
+handle_conffile(struct xbps_handle *xhp,
+		const char *path,
+		const struct xbps_file *old,
+		const struct xbps_file *new,
+		const struct stat *st)
+{
+	char sha256_cur[XBPS_SHA256_SIZE];
+	enum {
+		MATCH_SAME = 1 << 0,
+		MATCH_OLD  = 1 << 1,
+		MATCH_NEW  = 1 << 2,
+	} match = 0;
+
+	(void) xhp;
+
+	/* 1. File exist on disk, but was untracked, extract as new. */
+	if (!old)
+		return CONFFILE_NEW;
+
+	/* 2. File exists as link, extract as new. */
+	if (S_ISLNK(st->st_mode))
+		return CONFFILE_NEW;
+
+	if (!xbps_file_sha256(sha256_cur, sizeof(sha256_cur), path)) {
+		if (errno == ENOENT)
+			return 0;
+		return -errno;
+	}
+
+	if (old && strcmp(old->sha256, new->sha256) == 0)
+		match |= MATCH_SAME;
+	if (old && strcmp(sha256_cur, old->sha256) == 0)
+		match |= MATCH_OLD;
+	if (strcmp(sha256_cur, new->sha256) == 0)
+		match |= MATCH_NEW;
+
+	if (match == (MATCH_SAME|MATCH_OLD|MATCH_NEW)) {
+		/*
+		 * All files are the same, do nothing.
+		 */
+		return CONFFILE_SKIP;
+	} else if (match == MATCH_SAME) {
+		/*
+		 * Old and new package files are the same,
+		 * but on disk differs, extract as new.
+		 */
+		return CONFFILE_NEW;
+	} else if (match == MATCH_NEW) {
+		/*
+		 * File matches the new config file, do nothing.
+		 */
+		return CONFFILE_SKIP;
+	} else if (match == MATCH_OLD) {
+		/*
+		 * File matches the old config file:
+		 * If keep_conf is on, extract as new, otherwise
+		 * update the file.
+		 */
+		if (xhp->flags & XBPS_FLAG_KEEP_CONFIG)
+			return CONFFILE_NEW;
+		return CONFFILE_UPDATE;
+	} else if (match == 0) {
+		/*
+		 * Old and new file changes and on disk is also differnt,
+		 * extract as new.
+		 */
+		return CONFFILE_NEW;
+	} else {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int
 unpack_archive(struct xbps_handle *xhp,
 	       xbps_dictionary_t pkg_repod,
@@ -86,8 +168,9 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
+	char buf[PATH_MAX];
 	const struct xbps_file *old = NULL, *new = NULL;
-	xbps_dictionary_t binpkg_filesd, pkg_filesd, obsd;
+	xbps_dictionary_t binpkg_filesd, obsd;
 	xbps_array_t array, obsoletes;
 	xbps_trans_type_t ttype;
 	const struct stat *entry_statp;
@@ -96,13 +179,12 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	ssize_t entry_size;
 	const char *entry_pname, *pkgname;
-	char *buf = NULL;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists, keep_conf_file;
 	bool skip_extract, force, xucd_stats;
 	uid_t euid;
 
-	binpkg_filesd = pkg_filesd = NULL;
+	binpkg_filesd = NULL;
 	force = preserve = update = file_exists = false;
 	xucd_stats = false;
 	ar_rv = rv = error = entry_type = flags = 0;
@@ -206,11 +288,6 @@ unpack_archive(struct xbps_handle *xhp,
 		rv = ENODEV;
 		goto out;
 	}
-
-	/*
-	 * Internalize current pkg metadata files plist.
-	 */
-	pkg_filesd = xbps_pkgdb_get_pkg_files(xhp, pkgname);
 
 	/*
 	 * Unpack all files on archive now.
@@ -327,17 +404,32 @@ unpack_archive(struct xbps_handle *xhp,
 					if (xhp->unpack_cb != NULL)
 						xucd.entry_is_conf = true;
 
-					rv = xbps_entry_install_conf_file(xhp,
-					    binpkg_filesd, pkg_filesd, entry,
-					    entry_pname, pkgver, S_ISLNK(st.st_mode));
-					if (rv == -1) {
+					rv = handle_conffile(xhp, entry_pname, old, new, &st);
+					if (rv < 0) {
 						/* error */
+						rv = -rv;
 						goto out;
-					} else if (rv == 0) {
+					} else if (rv == CONFFILE_SKIP) {
 						/*
 						 * Keep curfile as is.
 						 */
 						skip_extract = true;
+					} else if (rv == CONFFILE_UPDATE) {
+						/*
+						 * Update file.
+						 */
+					} else if (rv == CONFFILE_NEW) {
+						/*
+						 * Extract as .new-$version.
+						 */
+						const char *version = xbps_pkg_version(pkgver);
+						snprintf(buf, sizeof(buf), "%s.new-%s",
+						    entry_pname, version);
+						xbps_set_cb_state(xhp, XBPS_STATE_CONFIG_FILE,
+						    0, pkgver, "File `%s' exists,"
+						    " installing configuration file"
+						    " to `%s'.", entry_pname+1, buf+1);
+						archive_entry_copy_pathname(entry, buf);
 					}
 					rv = 0;
 				} else {
@@ -460,27 +552,24 @@ unpack_archive(struct xbps_handle *xhp,
 	if (xbps_dictionary_count(binpkg_filesd)) {
 		mode_t prev_umask;
 		prev_umask = umask(022);
-		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
+		snprintf(buf, sizeof(buf), "%s/.%s-files.plist", xhp->metadir, pkgname);
 		if (!xbps_dictionary_externalize_to_file(binpkg_filesd, buf)) {
 			rv = errno;
 			umask(prev_umask);
-			free(buf);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 			    rv, pkgver, "%s: [unpack] failed to externalize pkg "
 			    "pkg metadata files: %s", pkgver, strerror(rv));
 			goto out;
 		}
 		umask(prev_umask);
-		free(buf);
 	}
 out:
 	/*
 	 * If unpacked pkg has no files, remove its files metadata plist.
 	 */
 	if (!xbps_dictionary_count(binpkg_filesd)) {
-		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
+		snprintf(buf, sizeof(buf), "%s/.%s-files.plist", xhp->metadir, pkgname);
 		unlink(buf);
-		free(buf);
 	}
 	xbps_object_release(binpkg_filesd);
 
