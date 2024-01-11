@@ -107,7 +107,8 @@ int HIDDEN xbps_transaction_init(struct xbps_handle *);
 int HIDDEN xbps_transaction_files(struct xbps_handle *,
 		xbps_object_iterator_t);
 void HIDDEN xbps_transaction_files_free(struct xbps_handle *);
-const struct xbps_file HIDDEN *xbps_transaction_file_get(struct xbps_handle *xhp, const char *path);
+int HIDDEN xbps_transaction_file_get(struct xbps_handle *xhp, const char *path,
+		const struct xbps_file **oldp, const struct xbps_file **newp);
 int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
 		xbps_object_iterator_t);
 int HIDDEN xbps_transaction_pkg_deps(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);

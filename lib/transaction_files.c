@@ -901,13 +901,19 @@ xbps_transaction_files_free(struct xbps_handle *xhp UNUSED)
 	free(items);
 }
 
-const struct xbps_file HIDDEN *
-xbps_transaction_file_get(struct xbps_handle *xhp UNUSED, const char *path)
+int HIDDEN
+xbps_transaction_file_get(struct xbps_handle *xhp UNUSED, const char *path,
+		const struct xbps_file **oldp,
+		const struct xbps_file **newp)
 {
 	struct item *item;
 
 	item = lookupItem(path);
 	if (!item)
-		return NULL;
-	return &item->new.file;
+		return -ENOENT;
+	if (oldp)
+		*oldp = item->old.pkgver ? &item->old.file : NULL;
+	if (newp)
+		*newp = item->new.pkgver ? &item->new.file : NULL;
+	return 0;
 }

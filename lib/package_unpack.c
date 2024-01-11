@@ -86,7 +86,7 @@ unpack_archive(struct xbps_handle *xhp,
 	       const char *fname,
 	       struct archive *ar)
 {
-	const struct xbps_file *file;
+	const struct xbps_file *old = NULL, *new = NULL;
 	xbps_dictionary_t binpkg_filesd, pkg_filesd, obsd;
 	xbps_array_t array, obsoletes;
 	xbps_trans_type_t ttype;
@@ -292,11 +292,11 @@ unpack_archive(struct xbps_handle *xhp,
 			continue;
 		}
 
-		file = xbps_transaction_file_get(xhp, entry_pname+1);
-		if (!file) {
+		rv = xbps_transaction_file_get(xhp, entry_pname+1, &old, &new);
+		if (rv < 0) {
 			xbps_error_printf("unknown file in binary package: %s: %s\n",
 			    pkgver, entry_pname+1);
-			rv = EINVAL;
+			rv = -rv;
 			goto out;
 		}
 
@@ -304,7 +304,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Check if current entry is a configuration file,
 		 * that should be kept.
 		 */
-		keep_conf_file = (file->flags & XBPS_FILE_CONF) != 0;
+		keep_conf_file = (new->flags & XBPS_FILE_CONF) != 0;
 
 		/*
 		 * If file to be extracted does not match the file type of
@@ -341,13 +341,13 @@ unpack_archive(struct xbps_handle *xhp,
 					}
 					rv = 0;
 				} else {
-					if (!file->sha256) {
+					if (!new->sha256) {
 						xbps_error_printf("missing checksum in binary package"
 						    ": %s: %s\n", pkgver, entry_pname+1);
 						rv = EINVAL;
 						goto out;
 					}
-					rv = xbps_file_sha256_check(entry_pname, file->sha256);
+					rv = xbps_file_sha256_check(entry_pname, new->sha256);
 					if (rv == -1) {
 						/* error */
 						xbps_dbg_printf(
