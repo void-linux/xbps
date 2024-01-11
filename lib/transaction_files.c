@@ -51,8 +51,6 @@ struct item {
 		struct xbps_file file;
 		const char *pkgname;
 		const char *pkgver;
-		const char *target;
-		uint64_t size;
 		enum type type;
 		/* index is the index of the package update/install/removal in the transaction
 		 * and is used to decide which package should remove the given file or dir */
@@ -361,16 +359,16 @@ collect_obsoletes(struct xbps_handle *xhp)
 				    xhp->rootdir, item->file+1);
 				file = path;
 			}
-			lnk = xbps_symlink_target(xhp, file, item->old.target);
+			lnk = xbps_symlink_target(xhp, file, item->old.file.target);
 			if (lnk == NULL) {
 				xbps_dbg_printf("[obsoletes] %s "
 				    "symlink_target: %s\n", item->file+1, strerror(errno));
 				continue;
 			}
-			if (strcmp(lnk, item->old.target) != 0) {
+			if (strcmp(lnk, item->old.file.target) != 0) {
 				xbps_dbg_printf("[obsoletes] %s: skipping modified"
 				    " symlink (stored `%s' current `%s'): %s\n",
-				    item->old.pkgname, item->old.target, lnk, item->file+1);
+				    item->old.pkgname, item->old.file.target, lnk, item->file+1);
 				free(lnk);
 				continue;
 			}
@@ -523,32 +521,36 @@ add:
 		item->old.pkgname = pkgname;
 		item->old.pkgver = pkgver;
 		item->old.type = type;
-		item->old.size = size;
+		item->old.file.size = size;
 		item->old.index = idx;
 		item->old.preserve = preserve;
 		item->old.update = update;
 		item->old.removepkg = removepkg;
-		item->old.target = target;
+		item->old.file.target = target;
 		if (sha256) {
 			item->old.file.sha256 = strdup(sha256);
 			if (!item->old.file.sha256)
 				return errno;
 		}
+		if (type == TYPE_CONFFILE)
+			item->old.file.flags |= XBPS_FILE_CONF;
 	} else {
 		item->new.pkgname = pkgname;
 		item->new.pkgver = pkgver;
 		item->new.type = type;
-		item->new.size = size;
+		item->new.file.size = size;
 		item->new.index = idx;
 		item->new.preserve = preserve;
 		item->new.update = update;
 		item->new.removepkg = removepkg;
-		item->new.target = target;
+		item->new.file.target = target;
 		if (sha256) {
 			item->new.file.sha256 = strdup(sha256);
 			if (!item->new.file.sha256)
 				return errno;
 		}
+		if (type == TYPE_CONFFILE)
+			item->new.file.flags |= XBPS_FILE_CONF;
 	}
 	if (item->old.type && item->new.type) {
 		/*

@@ -54,8 +54,17 @@
 
 struct archive_entry;
 
+enum xbps_file_flag {
+	XBPS_FILE_CONF        = 1 << 0,
+	XBPS_FILE_ALTERNATIVE = 1 << 1,
+};
+
 struct xbps_file {
+	char *path;
+	uint64_t size;
+	enum xbps_file_flag flags;
 	char *sha256;
+	const char *target;
 };
 
 /**
