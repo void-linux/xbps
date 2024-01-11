@@ -35,7 +35,7 @@ LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
 
 # libxbps
-OBJS = package_configure.o package_config_files.o package_orphans.o
+OBJS = package_configure.o package_orphans.o
 OBJS += package_remove.o package_state.o package_msg.o
 OBJS += package_unpack.o package_register.o package_script.o verifysig.o
 OBJS += transaction_commit.o transaction_prepare.o
