@@ -164,6 +164,15 @@ xbps_init(struct xbps_handle *xhp)
 			xhp->flags |= XBPS_FLAG_DISABLE_SYSLOG;
 	}
 
+	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+		const char *url = NULL;
+		xbps_array_get_cstring_nocopy(xhp->repositories, i, &url);
+		xbps_array_set_cstring_nocopy(xhp->repositories, i, repo_format(xhp, url));
+	}
+
+	xbps_dbg_printf("Native architecture is %s\n", xhp->native_arch);
+	xbps_dbg_printf("Target architecture is %s\n", xhp->target_arch);
+
 	if (xhp->flags & XBPS_FLAG_DEBUG) {
 		const char *repodir;
 		for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {

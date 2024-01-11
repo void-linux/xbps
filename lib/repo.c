@@ -40,6 +40,7 @@
 #include <openssl/ssl.h>
 #include <openssl/pem.h>
 
+#include "xbps/fmt.h"
 #include "xbps_api_impl.h"
 
 /**
@@ -194,6 +195,65 @@ repo_open_remote(struct xbps_repo *repo)
 			rv = false;
 	}
 	return rv;
+}
+
+static int
+repo_fmt(FILE *fp, const struct xbps_fmt_var *var, void *data)
+{
+	struct xbps_handle *xhp = data;
+	const char *arch;
+
+	if (xhp->target_arch)
+		arch = xhp->target_arch;
+	else
+		arch = xhp->native_arch;
+
+	if (strcmp(var->name, "arch") == 0) {
+		return xbps_fmt_print_string(var, arch, 0, fp);
+	}
+	return 0;
+}
+
+char *
+repo_format(struct xbps_handle *xhp, const char *url)
+{
+	struct xbps_fmt *fmt = NULL;
+	FILE *fmt_stream;
+	char *fmt_buf;
+	size_t len;
+	int r;
+
+	assert(xhp);
+	assert(url);
+
+	if (!strstr(url, "{arch}"))
+		return strdup(url);
+
+	xbps_dbg_printf("Processing templated repository: %s\n", url);
+
+	fmt_stream = open_memstream(&fmt_buf, &len);
+	if (!fmt_stream) {
+		xbps_error_printf("failed to open buffer: %s\n", strerror(errno));
+		goto fmtout;
+	}
+	fmt = xbps_fmt_parse(url);
+	if (!fmt) {
+		xbps_error_printf("failed to parse format for repo '%s': %s\n", url, strerror(errno));
+		goto fmtout;
+	}
+	r = xbps_fmt(fmt, repo_fmt, xhp, fmt_stream);
+	if (r < 0) {
+		xbps_error_printf("failed to format repo '%s': %s\n", url, strerror(-r));
+		goto fmtout;
+	}
+	fflush(fmt_stream);
+	return fmt_buf;
+
+fmtout:
+	fclose(fmt_stream);
+	xbps_fmt_free(fmt);
+	free(fmt_buf);
+	return NULL;
 }
 
 static struct xbps_repo *

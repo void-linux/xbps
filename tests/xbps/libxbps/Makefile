@@ -12,5 +12,7 @@ SUBDIRS += find_pkg_orphans
 SUBDIRS += pkgdb
 SUBDIRS += config
 SUBDIRS += shell
+SUBDIRS += fmt
+SUBDIRS += json
 
 include ../../../mk/subdir.mk
