@@ -34,30 +34,6 @@
 #include "xbps_api_impl.h"
 
 /*
- * Returns true if entry is a configuration file, false otherwise.
- */
-int HIDDEN
-xbps_entry_is_a_conf_file(xbps_dictionary_t filesd,
-			  const char *entry_pname)
-{
-	xbps_array_t array;
-	xbps_dictionary_t d;
-	const char *cffile;
-
-	array = xbps_dictionary_get(filesd, "conf_files");
-	if (xbps_array_count(array) == 0)
-		return false;
-
-	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
-		d = xbps_array_get(array, i);
-		xbps_dictionary_get_cstring_nocopy(d, "file", &cffile);
-		if (strcmp(cffile, entry_pname) == 0)
-			return true;
-	}
-	return false;
-}
-
-/*
  * Returns 1 if entry should be installed, 0 if don't or -1 on error.
  */
 int HIDDEN

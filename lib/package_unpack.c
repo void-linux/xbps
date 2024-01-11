@@ -304,11 +304,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Check if current entry is a configuration file,
 		 * that should be kept.
 		 */
-		if (!force && (entry_type == AE_IFREG)) {
-			buf = strchr(entry_pname, '.') + 1;
-			assert(buf != NULL);
-			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_filesd, buf);
-		}
+		keep_conf_file = (file->flags & XBPS_FILE_CONF) != 0;
 
 		/*
 		 * If file to be extracted does not match the file type of
