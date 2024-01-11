@@ -436,6 +436,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 out:
 	xbps_object_release(remove_scripts);
 	xbps_object_iterator_release(iter);
+	xbps_transaction_files_free(xhp);
 	if (rv == 0) {
 		/* Force a pkgdb write for all unpacked pkgs in transaction */
 		rv = xbps_pkgdb_update(xhp, true, true);

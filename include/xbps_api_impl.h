@@ -54,6 +54,19 @@
 
 struct archive_entry;
 
+enum xbps_file_flag {
+	XBPS_FILE_CONF        = 1 << 0,
+	XBPS_FILE_ALTERNATIVE = 1 << 1,
+};
+
+struct xbps_file {
+	char *path;
+	uint64_t size;
+	enum xbps_file_flag flags;
+	char *sha256;
+	const char *target;
+};
+
 /**
  * @private
  */
@@ -71,10 +84,6 @@ bool HIDDEN xbps_remove_pkg_from_array_by_pkgver(xbps_array_t, const char *);
 void HIDDEN xbps_fetch_set_cache_connection(int, int);
 void HIDDEN xbps_fetch_unset_cache_connection(void);
 int HIDDEN xbps_cb_message(struct xbps_handle *, xbps_dictionary_t, const char *);
-int HIDDEN xbps_entry_is_a_conf_file(xbps_dictionary_t, const char *);
-int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *, xbps_dictionary_t,
-		xbps_dictionary_t, struct archive_entry *, const char *,
-		const char *, bool);
 xbps_dictionary_t HIDDEN xbps_find_virtualpkg_in_conf(struct xbps_handle *,
 		xbps_dictionary_t, const char *);
 xbps_dictionary_t HIDDEN xbps_find_pkg_in_dict(xbps_dictionary_t, const char *);
@@ -94,6 +103,9 @@ bool HIDDEN xbps_transaction_store(struct xbps_handle *, xbps_array_t, xbps_dict
 int HIDDEN xbps_transaction_init(struct xbps_handle *);
 int HIDDEN xbps_transaction_files(struct xbps_handle *,
 		xbps_object_iterator_t);
+void HIDDEN xbps_transaction_files_free(struct xbps_handle *);
+int HIDDEN xbps_transaction_file_get(struct xbps_handle *xhp, const char *path,
+		const struct xbps_file **oldp, const struct xbps_file **newp);
 int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
 		xbps_object_iterator_t);
 int HIDDEN xbps_transaction_pkg_deps(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);
@@ -101,8 +113,6 @@ int HIDDEN xbps_transaction_internalize(struct xbps_handle *, xbps_object_iterat
 
 char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
-int HIDDEN xbps_file_hash_check_dictionary(struct xbps_handle *,
-		xbps_dictionary_t, const char *, const char *);
 int HIDDEN xbps_file_exec(struct xbps_handle *, const char *, ...);
 void HIDDEN xbps_set_cb_fetch(struct xbps_handle *, off_t, off_t, off_t,
 		const char *, bool, bool, bool);
