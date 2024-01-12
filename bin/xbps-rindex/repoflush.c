@@ -41,10 +41,11 @@
 #include <xbps.h>
 
 #include "defs.h"
+#include "xbps/xbps_dictionary.h"
 
 bool
 repodata_flush(struct xbps_handle *xhp, const char *repodir,
-	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta,
+	const char *reponame, xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t files,
 	const char *compression)
 {
 	struct archive *ar;
@@ -106,20 +107,28 @@ repodata_flush(struct xbps_handle *xhp, const char *repodir,
 	if (rv != 0)
 		return false;
 
-	/* XBPS_REPOIDX_META */
-	if (meta == NULL) {
-		/* fake entry */
-		buf = strdup("DEADBEEF");
+	if (meta != NULL) {	/* XBPS_REPOIDX_META */
+		buf = xbps_dictionary_externalize(meta);
 		if (buf == NULL)
 			return false;
-	} else {
-		buf = xbps_dictionary_externalize(meta);
+		rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+			XBPS_REPOIDX_META, 0644, "root", "root");
+		free(buf);
+		if (rv != 0)
+			return false;
 	}
-	rv = xbps_archive_append_buf(ar, buf, strlen(buf),
-	    XBPS_REPOIDX_META, 0644, "root", "root");
-	free(buf);
-	if (rv != 0)
-		return false;
+
+	if (files != NULL) {
+		/* XBPS_REPOIDX_META */
+		buf = xbps_dictionary_externalize(files);
+		if (buf == NULL)
+			return false;
+		rv = xbps_archive_append_buf(ar, buf, strlen(buf),
+			XBPS_REPO_FILES, 0644, "root", "root");
+		free(buf);
+		if (rv != 0)
+			return false;
+	}
 
 	/* Write data to tempfile and rename */
 	if (archive_write_close(ar) != ARCHIVE_OK)

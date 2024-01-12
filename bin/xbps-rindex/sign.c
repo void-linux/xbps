@@ -222,7 +222,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		    _XBPS_RINDEX, strerror(errno));
 		goto out;
 	}
-	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta, compression);
+	flush_failed = repodata_flush(xhp, repodir, "repodata", repo->idx, meta, repo->files, compression);
 	xbps_repo_unlock(rlockfd, rlockfname);
 	if (!flush_failed) {
 		xbps_error_printf("failed to write repodata: %s\n", strerror(errno));

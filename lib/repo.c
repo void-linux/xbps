@@ -58,14 +58,14 @@ xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *n
 {
 	assert(xhp);
 	assert(url);
-	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0);
+	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0 || strcmp(name, "files") == 0);
 
 	return xbps_xasprintf("%s/%s-%s",
 	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch, name);
 }
 
 static xbps_dictionary_t
-repo_get_dict(struct xbps_repo *repo)
+repo_get_dict(struct xbps_repo *repo, const char** filename)
 {
 	struct archive_entry *entry;
 	int rv;
@@ -79,6 +79,7 @@ repo_get_dict(struct xbps_repo *repo)
 		    archive_error_string(repo->ar));
 		return NULL;
 	}
+	*filename = archive_entry_pathname(entry);
 	return xbps_archive_get_dictionary(repo->ar, entry);
 }
 
@@ -136,6 +137,8 @@ static bool
 repo_open_local(struct xbps_repo *repo, const char *repofile)
 {
 	struct stat st;
+	const char* filename;
+	xbps_dictionary_t dict;
 
 	if (fstat(repo->fd, &st) == -1) {
 		xbps_dbg_printf("[repo] `%s' fstat repodata %s\n",
@@ -157,18 +160,40 @@ repo_open_local(struct xbps_repo *repo, const char *repofile)
 		    repofile, archive_error_string(repo->ar));
 		return false;
 	}
-	if ((repo->idx = repo_get_dict(repo)) == NULL) {
-		xbps_dbg_printf("[repo] `%s' failed to internalize "
-		    " index on archive, removing file.\n", repofile);
+
+	repo->idx = NULL;
+	repo->idxmeta = NULL;
+	repo->files = NULL;
+	while ((dict=repo_get_dict(repo, &filename)) != NULL) {
+		if (strcmp(filename, "index.plist") == 0) {
+			repo->idx = dict;			
+		} else if (strcmp(filename, "index-meta.plist") == 0) {
+			repo->idxmeta = dict;
+		} else if (strcmp(filename, "files.plist") == 0) {
+			repo->files = dict;
+		} else {
+			xbps_dbg_printf("[repo] `%s' failed to internalize archive, unrecognized file '%s`.\n", repofile, filename);
+			/* broken archive, remove it */
+			(void)unlink(repofile);
+			return false;
+		}
+	}
+	
+	if (repo->idx == NULL) {
+		xbps_dbg_printf("[repo] `%s' failed to internalize index on archive, removing file.\n", repofile);
 		/* broken archive, remove it */
 		(void)unlink(repofile);
 		return false;
 	}
 	xbps_dictionary_make_immutable(repo->idx);
-	repo->idxmeta = repo_get_dict(repo);
+
 	if (repo->idxmeta != NULL) {
 		repo->is_signed = true;
 		xbps_dictionary_make_immutable(repo->idxmeta);
+	}
+
+	if (repo->files != NULL) {
+		xbps_dictionary_make_immutable(repo->files);
 	}
 	/*
 	 * We don't need the archive anymore, we are only

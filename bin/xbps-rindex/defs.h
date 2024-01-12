@@ -46,6 +46,6 @@ int	sign_pkgs(struct xbps_handle *, int, int, char **, const char *, bool);
 
 /* From repoflush.c */
 bool	repodata_flush(struct xbps_handle *, const char *, const char *,
-		xbps_dictionary_t, xbps_dictionary_t, const char *);
+		xbps_dictionary_t, xbps_dictionary_t, xbps_dictionary_t, const char *);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */
