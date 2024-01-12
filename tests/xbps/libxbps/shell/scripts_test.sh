@@ -111,9 +111,15 @@ script_action_body() {
 	echo "A-1.0_1" > pkg_A/usr/bin/foo
 	create_script_stdout "install" pkg_A/INSTALL
 	create_script_stdout "remove" pkg_A/REMOVE
+	mkdir -p pkg_B/usr/bin
+	echo "B-1.0_1" > pkg_B/usr/bin/foo
+	create_script_stdout "install" pkg_B/INSTALL
+	create_script_stdout "remove" pkg_B/REMOVE
 
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
@@ -156,6 +162,22 @@ script_action_body() {
 	grep "^remove post A 1.1_1 no no" out
 	atf_check_equal $? 0
 	grep "^remove purge A 1.1_1 no no" out
+	atf_check_equal $? 0
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y B
+	atf_check_equal $? 0
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yf B >out
+	atf_check_equal $? 0
+
+	grep "^remove pre B 1.0_1 no no" out
+	atf_check_equal $? 0
+	grep "^install pre B 1.0_1 no no" out
+	atf_check_equal $? 0
+	grep "^remove post B 1.0_1 no no" out
+	atf_check_equal $? 0
+	grep "^remove purge B 1.0_1 no no" out
+	atf_check_equal $? 0
+	grep "^install post B 1.0_1 no no" out
 	atf_check_equal $? 0
 }
 
