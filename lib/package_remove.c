@@ -157,10 +157,6 @@ xbps_remove_pkg(struct xbps_handle *xhp, const char *pkgver, bool update)
 	if (state == XBPS_PKG_STATE_HALF_REMOVED)
 		goto purge;
 
-	/* show remove-msg if exists */
-	if ((rv = xbps_cb_message(xhp, pkgd, "remove-msg")) != 0)
-		goto out;
-
 	/* unregister alternatives */
 	if (update)
 		xbps_dictionary_set_bool(pkgd, "alternatives-update", true);

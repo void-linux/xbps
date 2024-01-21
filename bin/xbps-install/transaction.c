@@ -47,8 +47,48 @@ print_array(xbps_array_t a)
 	}
 }
 
+void
+print_package_msg(const struct xbps_state_cb_data *xscd, const char *action) {
+	static const char bar[] = "========================================================================";
+	size_t chars_print;
+	chars_print = printf("=== %s: %s message ", xscd->arg, action);
+	if (chars_print < sizeof bar) {
+		fputs(bar + chars_print, stdout);
+	}
+	// newline should be always printed after bar - don't move into conditional
+	fputs("\n", stdout);
+	// relying on xscd->desc containing trailing newline
+	fputs(xscd->desc, stdout);
+	puts(bar);
+}
+
 static void
-show_actions(xbps_object_iterator_t iter)
+show_package_msgs(struct xbps_handle *xhp, xbps_object_iterator_t iter) {
+	xbps_dictionary_t obj;
+	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
+		switch(xbps_transaction_pkg_type(obj)) {
+			case XBPS_TRANS_REMOVE:
+				xbps_cb_message(xhp, obj, "remove-msg", NULL);
+				break;
+			case XBPS_TRANS_CONFIGURE:
+				// installed and transaction messages are always same, never skip
+				xbps_cb_message(xhp, obj, "install-msg", NULL);
+				break;
+			default:
+				{
+					const char *pkgname = xbps_string_cstring_nocopy(xbps_dictionary_get(obj, "pkgname"));
+					xbps_dictionary_t pkgdb_pkg = pkgname ? xbps_pkgdb_get_pkg(xhp, pkgname) : NULL;
+					// get message from installed version of package, if any
+					xbps_object_t previous = pkgdb_pkg ? xbps_dictionary_get(pkgdb_pkg, "install-msg") : NULL;
+					xbps_cb_message(xhp, obj, "install-msg", previous);
+					break;
+				}
+		}
+	}
+}
+
+static void
+show_actions(struct xbps_handle *xhp, xbps_object_iterator_t iter)
 {
 	xbps_object_t obj;
 	const char *repoloc, *trans, *pkgver, *arch;
@@ -73,6 +113,8 @@ show_actions(xbps_object_iterator_t iter)
 
 		printf("\n");
 	}
+	xbps_object_iterator_reset(iter);
+	show_package_msgs(xhp, iter);
 }
 
 static void
@@ -124,7 +166,7 @@ show_package_list(struct transaction *trans, xbps_trans_type_t ttype, unsigned i
 }
 
 static int
-show_transaction_sizes(struct transaction *trans, int cols)
+show_transaction_sizes(struct xbps_handle *xhp, struct transaction *trans, int cols)
 {
 	uint64_t dlsize = 0, instsize = 0, rmsize = 0, disk_free_size = 0;
 	char size[8];
@@ -230,6 +272,9 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		printf("Space available on disk:      %6s\n", size);
 	}
 	printf("\n");
+
+	show_package_msgs(xhp, trans->iter);
+	xbps_object_iterator_reset(trans->iter);
 
 	return 0;
 }
@@ -405,7 +450,7 @@ proceed:
 	 * dry-run mode, show what would be done but don't run anything.
 	 */
 	if (drun) {
-		show_actions(trans->iter);
+		show_actions(trans->xhp, trans->iter);
 		goto out;
 	}
 	/*
@@ -417,7 +462,7 @@ proceed:
 	/*
 	 * Show download/installed size for the transaction.
 	 */
-	if ((rv = show_transaction_sizes(trans, maxcols)) != 0)
+	if ((rv = show_transaction_sizes(xhp, trans, maxcols)) != 0)
 		goto out;
 
 	fflush(stdout);

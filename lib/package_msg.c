@@ -30,8 +30,8 @@
 
 #include "xbps_api_impl.h"
 
-int HIDDEN
-xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key)
+int
+xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key, xbps_object_t message_to_skip)
 {
 	xbps_data_t msg;
 	const void *data;
@@ -48,8 +48,10 @@ xbps_cb_message(struct xbps_handle *xhp, xbps_dictionary_t pkgd, const char *key
 
 	/* show install-msg if exists */
 	msg = xbps_dictionary_get(pkgd, key);
-	if (xbps_object_type(msg) != XBPS_TYPE_DATA)
+	if (xbps_object_type(msg) != XBPS_TYPE_DATA || (message_to_skip && xbps_object_equals(msg, message_to_skip))) {
+		rv = ENOENT;
 		goto out;
+	}
 
 	/* turn data from msg into a string */
 	data = xbps_data_data_nocopy(msg);
