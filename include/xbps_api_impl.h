@@ -70,7 +70,6 @@ bool HIDDEN xbps_remove_pkg_from_array_by_pattern(xbps_array_t, const char *);
 bool HIDDEN xbps_remove_pkg_from_array_by_pkgver(xbps_array_t, const char *);
 void HIDDEN xbps_fetch_set_cache_connection(int, int);
 void HIDDEN xbps_fetch_unset_cache_connection(void);
-int HIDDEN xbps_cb_message(struct xbps_handle *, xbps_dictionary_t, const char *);
 int HIDDEN xbps_entry_is_a_conf_file(xbps_dictionary_t, const char *);
 int HIDDEN xbps_entry_install_conf_file(struct xbps_handle *, xbps_dictionary_t,
 		xbps_dictionary_t, struct archive_entry *, const char *,

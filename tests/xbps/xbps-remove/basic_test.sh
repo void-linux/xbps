@@ -176,6 +176,34 @@ clean_cache_uninstalled_body() {
 	atf_check_equal $? 0
 }
 
+atf_test_case remove_msg
+
+remove_msg_head() {
+	atf_set "descr" "xbps-rmeove(1): show remove message"
+}
+
+remove_msg_body() {
+	mkdir -p some_repo pkg_A
+
+	cat <<-EOF >pkg_A/REMOVE.msg
+	foobar-remove-msg
+	EOF
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root -C empty.conf -R some_repo -dvy A
+	atf_check_equal $? 0
+
+	atf_check -s exit:0 \
+		-o 'match:foobar-remove-msg' \
+		-e ignore \
+		-- xbps-remove -r root -C empty.conf -y A
+}
+
 atf_init_test_cases() {
 	atf_add_test_case remove_directory
 	atf_add_test_case remove_orphans
@@ -183,4 +211,5 @@ atf_init_test_cases() {
 	atf_add_test_case clean_cache_dry_run
 	atf_add_test_case clean_cache_dry_run_perm
 	atf_add_test_case clean_cache_uninstalled
+	atf_add_test_case remove_msg
 }

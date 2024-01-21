@@ -315,8 +315,6 @@ extern "C" {
  * - XBPS_STATE_REPOSYNC_FAIL: syncing remote repositories has failed.
  * - XBPS_STATE_REPO_KEY_IMPORT: repository is signed and needs to import pubkey.
  * - XBPS_STATE_INVALID_DEP: package has an invalid dependency.
- * - XBPS_STATE_SHOW_INSTALL_MSG: package must show a post-install message.
- * - XBPS_STATE_SHOW_REMOVE_MSG: package must show a pre-remove message.
  * - XBPS_STATE_ALTGROUP_ADDED: package has registered an alternative group.
  * - XBPS_STATE_ALTGROUP_REMOVED: package has unregistered an alternative group.
  * - XBPS_STATE_ALTGROUP_SWITCHED: alternative group has been switched.
@@ -368,8 +366,6 @@ typedef enum xbps_state {
 	XBPS_STATE_CONFIGURE_DONE,
 	XBPS_STATE_REPO_KEY_IMPORT,
 	XBPS_STATE_INVALID_DEP,
-	XBPS_STATE_SHOW_INSTALL_MSG,
-	XBPS_STATE_SHOW_REMOVE_MSG,
 	XBPS_STATE_UNPACK_FILE_PRESERVED,
 	XBPS_STATE_PKGDB,
 	XBPS_STATE_PKGDB_DONE,
