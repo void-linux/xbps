@@ -23,13 +23,18 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <errno.h>
+#include <getopt.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
-#include <errno.h>
 
 #include <xbps.h>
+
+#include "xbps/fmt.h"
+#include "xbps/json.h"
+
 #include "defs.h"
 
 static void __attribute__((noreturn))
@@ -41,8 +46,10 @@ usage(bool fail)
 	    " -C, --config <dir>        Path to confdir (xbps.d)\n"
 	    " -c, --cachedir <dir>      Path to cachedir\n"
 	    " -d, --debug               Debug mode shown to stderr\n"
+	    " -F, --format <format>     Format for list output\n"
 	    " -h, --help                Show usage\n"
 	    " -i, --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
+	    " -J, --json                Print output as json\n"
 	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
 	    "                           in memory, ignoring on-disk repodata archives\n"
 	    " -p, --property PROP[,...] Show properties for PKGNAME\n"
@@ -74,16 +81,113 @@ usage(bool fail)
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
+static int
+repo_fmt(FILE *fp, const struct xbps_fmt_var *var, void *data)
+{
+	struct xbps_repo *repo = data;
+	if (strcmp(var->name, "url") == 0) {
+		return xbps_fmt_print_string(var, repo->uri, 0, fp);
+	} else if (strcmp(var->name, "signed") == 0) {
+		return xbps_fmt_print_string(var, repo->is_signed ? "true" : "false", 0, fp);
+	} else if (strcmp(var->name, "packages") == 0) {
+		return xbps_fmt_print_number(var, xbps_dictionary_count(repo->idx), fp);
+	}
+	return 0;
+}
+
+static void
+show_repo(struct xbps_repo *repo)
+{
+	xbps_data_t pubkey;
+	const char *signedby = NULL;
+	char *hexfp = NULL;
+	uint16_t pubkeysize = 0;
+
+	printf("%5zd %s",
+	    repo->idx ? (ssize_t)xbps_dictionary_count(repo->idx) : -1,
+	    repo->uri);
+	printf(" (RSA %s)\n", repo->is_signed ? "signed" : "unsigned");
+	if (!(repo->xhp->flags & XBPS_FLAG_VERBOSE))
+		return;
+
+	xbps_dictionary_get_cstring_nocopy(repo->idxmeta, "signature-by", &signedby);
+	xbps_dictionary_get_uint16(repo->idxmeta, "public-key-size", &pubkeysize);
+	pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
+	if (pubkey)
+		hexfp = xbps_pubkey2fp(pubkey);
+	if (signedby)
+		printf("      Signed-by: %s\n", signedby);
+	if (pubkeysize && hexfp)
+		printf("      %u %s\n", pubkeysize, hexfp);
+	free(hexfp);
+}
+
+static int
+show_repos(struct xbps_handle *xhp, const char *format)
+{
+	struct xbps_fmt *fmt = NULL;
+	if (format) {
+		fmt = xbps_fmt_parse(format);
+		if (!fmt) {
+			xbps_error_printf("failed to parse format: %s\n", strerror(errno));
+			return 1;
+		}
+	}
+	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
+		const char *repouri = NULL;
+		struct xbps_repo *repo;
+		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
+		repo = xbps_repo_open(xhp, repouri);
+		if (!repo) {
+			printf("%5zd %s (RSA maybe-signed)\n", (ssize_t)-1, repouri);
+			continue;
+		}
+		if (fmt) {
+			int r = xbps_fmt(fmt, repo_fmt, repo, stdout);
+			if (r < 0) {
+				xbps_error_printf("failed to format repo: %s\n", strerror(-r));
+				return 1;
+			}
+		} else {
+			show_repo(repo);
+		}
+		xbps_repo_release(repo);
+	}
+	xbps_fmt_free(fmt);
+	return 0;
+}
+
+static int
+filter_hold(xbps_object_t obj)
+{
+	return xbps_dictionary_get(obj, "hold") != NULL;
+}
+
+static int
+filter_manual(xbps_object_t obj)
+{
+	bool automatic = false;
+	xbps_dictionary_get_bool(obj, "automatic-install", &automatic);
+	return !automatic;
+}
+
+static int
+filter_repolock(xbps_object_t obj)
+{
+	return xbps_dictionary_get(obj, "repolock") != NULL;
+}
+
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:df:hHiLlMmOo:p:Rr:s:S:VvX:x:";
+	const char *shortopts = "C:c:dF:f:hHiJLlMmOo:p:Rr:s:S:VvX:x:";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
+		{ "json", no_argument, NULL, 'J' },
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
 		{ "list-hold-pkgs", no_argument, NULL, 'H' },
@@ -100,6 +204,7 @@ main(int argc, char **argv)
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "files", required_argument, NULL, 'f' },
+		{ "format", required_argument, NULL, 'F' },
 		{ "deps", required_argument, NULL, 'x' },
 		{ "revdeps", required_argument, NULL, 'X' },
 		{ "regex", no_argument, NULL, 0 },
@@ -107,68 +212,82 @@ main(int argc, char **argv)
 		{ "cat", required_argument, NULL, 2 },
 		{ NULL, 0, NULL, 0 },
 	};
-	struct xbps_handle xh;
-	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
-	int c, flags, rv;
-	bool list_pkgs, list_repos, orphans, own, list_repolock;
-	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
-	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	struct xbps_handle xh = {0};
+	const char *pkg = NULL, *props = NULL, *catfile, *format;
+	int c, rv;
+	bool regex = false, repo_mode = false, fulldeptree = false;
+	int json = 0;
+	enum {
+		CAT_FILE = 1,
+		LIST_HOLD,
+		LIST_INSTALLED,
+		LIST_MANUAL,
+		LIST_ORPHANS,
+		LIST_REPOLOCK,
+		SHOW_REPOS,
+		SEARCH_FILE,
+		SEARCH_PKG,
+		SHOW_DEPS,
+		SHOW_FILES,
+		SHOW_PKG,
+		SHOW_REVDEPS,
+	} mode = 0;
 
-	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
-	flags = rv = c = 0;
-	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
-	list_manual = list_repolock = show_prop = show_files = false;
-	regex = show = show_deps = show_rdeps = fulldeptree = false;
-	repo_mode = opmode = false;
-
-	memset(&xh, 0, sizeof(xh));
+	props = pkg = catfile = format = NULL;
+	rv = c = 0;
+	repo_mode = false;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
 		case 'C':
-			confdir = optarg;
+			xbps_strlcpy(xh.confdir, optarg, sizeof(xh.confdir));
 			break;
 		case 'c':
-			cachedir = optarg;
+			xbps_strlcpy(xh.cachedir, optarg, sizeof(xh.cachedir));
 			break;
 		case 'd':
-			flags |= XBPS_FLAG_DEBUG;
+			xh.flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'f':
 			pkg = optarg;
-			show_files = opmode = true;
+			mode = SHOW_FILES;
+			break;
+		case 'F':
+			format = optarg;
+			break;
+		case 'J':
+			json++;
 			break;
 		case 'H':
-			list_hold = opmode = true;
+			mode = LIST_HOLD;
 			break;
 		case 'h':
 			usage(false);
 			/* NOTREACHED */
 		case 'i':
-			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			xh.flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
 			break;
 		case 'L':
-			list_repos = opmode = true;
+			mode = SHOW_REPOS;
 			break;
 		case 'l':
-			list_pkgs = opmode = true;
+			mode = LIST_INSTALLED;
 			break;
 		case 'M':
-			flags |= XBPS_FLAG_REPOS_MEMSYNC;
+			xh.flags |= XBPS_FLAG_REPOS_MEMSYNC;
 			break;
 		case 'm':
-			list_manual = opmode = true;
+			mode = LIST_MANUAL;
 			break;
 		case 'O':
-			orphans = opmode = true;
+			mode = LIST_ORPHANS;
 			break;
 		case 'o':
 			pkg = optarg;
-			own = opmode = true;
+			mode = SEARCH_FILE;
 			break;
 		case 'p':
 			props = optarg;
-			show_prop = true;
 			break;
 		case 'R':
 			if (optarg != NULL) {
@@ -177,29 +296,29 @@ main(int argc, char **argv)
 			repo_mode = true;
 			break;
 		case 'r':
-			rootdir = optarg;
+			xbps_strlcpy(xh.rootdir, optarg, sizeof(xh.rootdir));
 			break;
 		case 'S':
 			pkg = optarg;
-			show = opmode = true;
+			mode = SHOW_PKG;
 			break;
 		case 's':
 			pkg = optarg;
-			pkg_search = opmode = true;
+			mode = SEARCH_PKG;
 			break;
 		case 'v':
-			flags |= XBPS_FLAG_VERBOSE;
+			xh.flags |= XBPS_FLAG_VERBOSE;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case 'x':
 			pkg = optarg;
-			show_deps = opmode = true;
+			mode = SHOW_DEPS;
 			break;
 		case 'X':
 			pkg = optarg;
-			show_rdeps = opmode = true;
+			mode = SHOW_REVDEPS;
 			break;
 		case 0:
 			regex = true;
@@ -208,10 +327,11 @@ main(int argc, char **argv)
 			fulldeptree = true;
 			break;
 		case 2:
+			mode = CAT_FILE;
 			catfile = optarg;
 			break;
 		case 3:
-			list_repolock = opmode = true;
+			mode = LIST_REPOLOCK;
 			break;
 		case '?':
 		default:
@@ -222,98 +342,83 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (!argc && !opmode) {
-		usage(true);
-		/* NOTREACHED */
-	} else if (!opmode) {
-		/* show mode by default */
-		show = opmode = true;
+	/* no mode (defaults to show) and cat mode take a trailing argv */
+	if (mode == 0 || mode == CAT_FILE) {
+		if (argc == 0)
+			usage(true);
+		if (mode == 0)
+			mode = SHOW_PKG;
 		pkg = *(argv++);
 		argc--;
 	}
-	if (argc) {
-		/* trailing parameters */
+
+	/* trailing parameters */
+	if (argc != 0)
 		usage(true);
-		/* NOTREACHED */
-	}
+
 	/*
 	 * Initialize libxbps.
 	 */
-	if (rootdir)
-		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
-	if (cachedir)
-		xbps_strlcpy(xh.cachedir, cachedir, sizeof(xh.cachedir));
-	if (confdir)
-		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
-
-	xh.flags = flags;
-
 	if ((rv = xbps_init(&xh)) != 0) {
 		xbps_error_printf("Failed to initialize libxbps: %s\n",
 		    strerror(rv));
 		exit(EXIT_FAILURE);
 	}
 
-	if (list_repos) {
-		/* list repositories */
-		rv = repo_list(&xh);
-
-	} else if (list_hold) {
-		/* list on hold pkgs */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_hold_pkgs, NULL);
-
-	} else if (list_repolock) {
-		/* list repolocked packages */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_repolock_pkgs, NULL);
-
-	} else if (list_manual) {
-		/* list manual pkgs */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_manual_pkgs, NULL);
-
-	} else if (list_pkgs) {
-		/* list available pkgs */
-		rv = list_pkgs_pkgdb(&xh);
-
-	} else if (orphans) {
-		/* list pkg orphans */
-		rv = list_orphans(&xh);
-
-	} else if (own) {
-		/* ownedby mode */
+	switch (mode) {
+        case LIST_HOLD:
+		rv = list_pkgdb(&xh, filter_hold, format ? format : "{pkgver}\n", json) < 0;
+		break;
+        case LIST_INSTALLED:
+		if (format || json > 0) {
+			rv = list_pkgdb(&xh, NULL, format, json);
+		} else {
+			rv = list_pkgs_pkgdb(&xh);
+		}
+		break;
+        case LIST_MANUAL:
+		rv = list_pkgdb(&xh, filter_manual, format ? format : "{pkgver}\n", json) < 0;
+		break;
+        case LIST_ORPHANS:
+		rv = list_orphans(&xh, format ? format : "{pkgver}\n") < 0;
+		break;
+        case LIST_REPOLOCK:
+		rv = list_pkgdb(&xh, filter_repolock, format ? format : "{pkgver}\n", json) < 0;
+		break;
+        case SHOW_REPOS:
+		rv = show_repos(&xh, format);
+		break;
+        case SEARCH_FILE:
 		rv = ownedby(&xh, pkg, repo_mode, regex);
-
-	} else if (pkg_search) {
-		/* search mode */
+		break;
+        case SEARCH_PKG:
 		rv = search(&xh, repo_mode, pkg, props, regex);
-
-	} else if (catfile) {
-		/* repo cat file mode */
+		break;
+        case SHOW_DEPS:
+		rv = show_pkg_deps(&xh, pkg, repo_mode, fulldeptree);
+		break;
+        case SHOW_FILES:
 		if (repo_mode)
-			rv =  repo_cat_file(&xh, pkg, catfile);
+			rv = repo_show_pkg_files(&xh, pkg);
 		else
-			rv =  cat_file(&xh, pkg, catfile);
-	} else if (show || show_prop) {
-		/* show mode */
+			rv = show_pkg_files_from_metadir(&xh, pkg);
+		break;
+	case CAT_FILE:
+		if (repo_mode)
+			rv = repo_cat_file(&xh, pkg, catfile);
+		else
+			rv = cat_file(&xh, pkg, catfile);
+		break;
+        case SHOW_PKG:
 		if (repo_mode)
 			rv = repo_show_pkg_info(&xh, pkg, props);
 		else
 			rv = show_pkg_info_from_metadir(&xh, pkg, props);
-
-	} else if (show_files) {
-		/* show-files mode */
-		if (repo_mode)
-			rv =  repo_show_pkg_files(&xh, pkg);
-		else
-			rv = show_pkg_files_from_metadir(&xh, pkg);
-
-	} else if (show_deps) {
-		/* show-deps mode */
-		rv = show_pkg_deps(&xh, pkg, repo_mode, fulldeptree);
-
-	} else if (show_rdeps) {
-		/* show-rdeps mode */
+		break;
+        case SHOW_REVDEPS:
 		rv = show_pkg_revdeps(&xh, pkg, repo_mode);
-	}
+                break;
+        }
 
 	xbps_end(&xh);
 	exit(rv);
