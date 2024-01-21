@@ -155,6 +155,10 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		printf("Fingerprint: %s\n", xscd->arg);
 		rv = yesno("Do you want to import this public key?");
 		break;
+	case XBPS_STATE_REPO_KEY_EXPECTED:
+		printf("%s\n", xscd->desc);
+		printf("Importing key with fingerprint: %s\n", xscd->arg);
+		break;
 	case XBPS_STATE_SHOW_INSTALL_MSG:
 		printf("%s: post-install message:\n", xscd->arg);
 		printf("========================================================================\n");

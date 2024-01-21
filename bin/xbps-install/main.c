@@ -53,6 +53,7 @@ usage(bool fail)
 	    " -h, --help                  Show usage\n"
 	    " -i, --ignore-conf-repos     Ignore repositories defined in xbps.d\n"
 	    " -I, --ignore-file-conflicts Ignore detected file conflicts\n"
+	    " -k, --import-key <key>      Import specified key without confirmation\n"
 	    " -U, --unpack-only           Unpack packages in transaction, do not configure them\n"
 	    " -M, --memory-sync           Remote repository data is fetched and stored\n"
 	    "                             in memory, ignoring on-disk repodata archives\n"
@@ -82,11 +83,11 @@ unpack_progress_cb(const struct xbps_unpack_cb_data *xpd, void *cbdata UNUSED)
 }
 
 static int
-repo_import_key_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
+repo_import_key_cb(struct xbps_repo *repo, void *expfps, bool *done UNUSED)
 {
 	int rv;
 
-	if ((rv = xbps_repo_key_import(repo)) != 0)
+	if ((rv = xbps_repo_key_import(repo, expfps)) != 0)
 		xbps_error_printf("Failed to import pubkey from %s: %s\n",
 		    repo->uri, strerror(rv));
 
@@ -96,7 +97,7 @@ repo_import_key_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "AC:c:DdfhIiMnR:r:SuUVvy";
+	const char *shortopts = "AC:c:DdfhIik:MnR:r:SuUVvy";
 	const struct option longopts[] = {
 		{ "automatic", no_argument, NULL, 'A' },
 		{ "config", required_argument, NULL, 'C' },
@@ -107,6 +108,7 @@ main(int argc, char **argv)
 		{ "help", no_argument, NULL, 'h' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
 		{ "ignore-file-conflicts", no_argument, NULL, 'I' },
+		{ "import-key", required_argument, NULL, 'k' },
 		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "dry-run", no_argument, NULL, 'n' },
 		{ "repository", required_argument, NULL, 'R' },
@@ -126,6 +128,7 @@ main(int argc, char **argv)
 	int i, c, flags, rv, fflag = 0;
 	bool syncf, yes, force, drun, update;
 	int maxcols, eexist = 0;
+	xbps_array_t expfps = NULL;
 
 	rootdir = cachedir = confdir = NULL;
 	flags = rv = 0;
@@ -167,6 +170,11 @@ main(int argc, char **argv)
 			break;
 		case 'i':
 			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			break;
+		case 'k':
+			if (expfps == NULL)
+				expfps = xbps_array_create();
+			xbps_array_add_cstring_nocopy(expfps, optarg);
 			break;
 		case 'M':
 			flags |= XBPS_FLAG_REPOS_MEMSYNC;
@@ -235,7 +243,7 @@ main(int argc, char **argv)
 	if (syncf && !drun) {
 		if ((rv = xbps_rpool_sync(&xh, NULL)) != 0)
 			exit(rv);
-		rv = xbps_rpool_foreach(&xh, repo_import_key_cb, NULL);
+		rv = xbps_rpool_foreach(&xh, repo_import_key_cb, expfps);
 		if (rv != 0)
 			exit(rv);
 	}
