@@ -93,6 +93,17 @@ A list of required shared libraries, separated by whitespaces. Example:
 .It Fl -sourcepkg Ar string
 The pkgver of the sourcepkg that was used to build this binary package.
 .El
+.Sh EXAMPLES
+Create package depending on packages needed to build
+.Sq ksysguard
+on host:
+.Bd -literal -offset indent
+$ p=ksysguard
+$ . $(xdistdir)/srcpkgs/${p}/template
+$ xbps-create -n ${p}-build-deps-${version}_${revision} \\
+   -s "Build depends of ${p}" -A "$(xbps-uhelper arch)" \\
+   -D "$(echo $hostmakedepends $makedepends | sed 's/ />=0 /g')>=0" \\
+   $(mktemp -d)
 .Sh SEE ALSO
 .Xr xbps-alternatives 1 ,
 .Xr xbps-checkvers 1 ,
