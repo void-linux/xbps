@@ -1,4 +1,4 @@
-.Dd Feb 9, 2023
+.Dd Aug 31, 2023
 .Dt XBPS-ALTERNATIVES 1
 .Os
 .Sh NAME
@@ -34,6 +34,21 @@ Alternative group name to match. To be used with the
 mode.
 .It Fl h, Fl -help
 Show the help message.
+.It Fl i, Fl -ignore-conf-repos
+Ignore repositories defined in configuration files.
+Only repositories specified in the command line via
+.Ar --repository
+will be used.
+.It Fl R
+Enable repository mode when listing alternatives.
+This mode explicitly looks for all alternatives available
+in repositories rather than looking for installed alternatives.
+.It Fl -repository Ar url
+Appends the specified repository to the top of the list.
+The
+.Ar url
+argument expects a URL to the repository for remote repositories or
+a path for local repositories.
 .It Fl r, Fl -rootdir Ar dir
 Specifies a full path for the target root directory.
 .It Fl v, Fl -verbose
