@@ -159,9 +159,11 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (add_mode)
+	if (add_mode) {
 		rv = index_add(&xh, optind, argc, argv, force, compression);
-	else if (clean_mode)
+		if (rv == 0)
+			rv = files_add(&xh, optind, argc, argv, force, compression);
+	} else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);

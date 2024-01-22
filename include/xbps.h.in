@@ -1455,6 +1455,12 @@ struct xbps_repo {
 	 */
 	int fd;
 	/**
+	 * @var filear
+	 *
+	 * archive_read instance for *-files
+	 */
+	struct archive *filear;
+	/**
 	 * var is_remote
 	 *
 	 * True if repository is remote, false if it's a local repository.
@@ -1482,6 +1488,8 @@ void xbps_rpool_release(struct xbps_handle *xhp);
  * the configuration file.
  */
 int xbps_rpool_sync(struct xbps_handle *xhp, const char *uri);
+
+int xbps_rpool_sync_files(struct xbps_handle* xhp);
 
 /**
  * Iterates over the repository pool and executes the \a fn function
@@ -2379,6 +2387,11 @@ xbps_plist_array_from_file(const char *path);
  */
 xbps_dictionary_t
 xbps_plist_dictionary_from_file(const char *path);
+
+/**
+
+*/
+char* xbps_get_remote_repo_string(const char *path);
 
 /**@}*/
 

@@ -41,7 +41,7 @@
 
 static bool
 repodata_commit(struct xbps_handle *xhp, const char *repodir,
-	xbps_dictionary_t idx, xbps_dictionary_t meta,xbps_dictionary_t files, xbps_dictionary_t stage,
+	xbps_dictionary_t idx, xbps_dictionary_t meta, xbps_dictionary_t stage,
 	const char *compression)
 {
 	xbps_object_iterator_t iter;
@@ -174,7 +174,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 			printf("stage: added `%s' (%s)\n", pkgver, arch);
 		}
 		xbps_object_iterator_release(iter);
-		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL, files, compression);
+		rv = repodata_flush(xhp, repodir, "stagedata", stage, NULL, compression);
 	}
 	else {
 		char *stagefile;
@@ -192,52 +192,17 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 		stagefile = xbps_repo_path_with_name(xhp, repodir, "stagedata");
 		unlink(stagefile);
 		free(stagefile);
-		rv = repodata_flush(xhp, repodir, "repodata", idx, meta, files, compression);
+		rv = repodata_flush(xhp, repodir, "repodata", idx, meta, compression);
 	}
 	xbps_object_release(usedshlibs);
 	xbps_object_release(oldshlibs);
 	return rv;
 }
 
-static xbps_array_t create_file_list(const char* pkg, xbps_dictionary_t filepkg) {
-	xbps_array_t file_list = xbps_array_create();
-	xbps_array_t files;
-	const char* path;
-
-	if ((files = xbps_dictionary_get(filepkg, "dirs")) == NULL) {
-		xbps_error_printf("index: failed to get `dirs' from files.plist in `%s'\n", pkg);
-		xbps_object_release(file_list);
-		return NULL;
-	}
-	
-	for (unsigned int i = 0; i < xbps_array_count(files); i++) {
-		if (!xbps_dictionary_get_cstring_nocopy(xbps_array_get(files, i), "file", &path))
-			continue;
-
-		xbps_array_add_cstring(file_list, path);
-	}
-
-	if ((files = xbps_dictionary_get(filepkg, "files")) == NULL) {
-		xbps_error_printf("index: failed to get `files' from files.plist in `%s'\n", pkg);
-		xbps_object_release(file_list);
-		return NULL;
-	}
-	
-	for (unsigned int i = 0; i < xbps_array_count(files); i++) {
-		if (!xbps_dictionary_get_cstring_nocopy(xbps_array_get(files, i), "file", &path))
-			continue;
-
-		xbps_array_add_cstring(file_list, path);
-	}
-
-	return file_list;
-}
-
 int
 index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression)
 {
-	xbps_dictionary_t idx, idxmeta, idxstage, files, binpkgd, curpkgd, filespkgd;
-	xbps_array_t file_list;
+	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
 	struct xbps_repo *repo = NULL, *stage = NULL;
 	struct stat st;
 	char *tmprepodir = NULL, *repodir = NULL, *rlockfname = NULL;
@@ -267,11 +232,9 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	if (repo) {
 		idx = xbps_dictionary_copy_mutable(repo->idx);
 		idxmeta = xbps_dictionary_copy_mutable(repo->idxmeta);
-		files = xbps_dictionary_copy_mutable(repo->files);
 	} else {
 		idx = xbps_dictionary_create();
 		idxmeta = NULL;
-		files = xbps_dictionary_create();
 	}
 	stage = xbps_repo_stage_open(xhp, repodir);
 	if (stage == NULL && errno != ENOENT) {
@@ -305,18 +268,11 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 			    "`%s', skipping!\n", XBPS_PKGPROPS, pkg);
 			continue;
 		}
-		filespkgd = xbps_archive_fetch_plist(pkg, "/files.plist");
-		if (filespkgd == NULL) {
-			xbps_warn_printf("index: failed to read files.plist metadata for "
-			    "`%s'!\n", pkg);
-		}
 		xbps_dictionary_get_cstring_nocopy(binpkgd, "architecture", &arch);
 		xbps_dictionary_get_cstring(binpkgd, "pkgver", &pkgver);
 		if (!xbps_pkg_arch_match(xhp, arch, NULL)) {
 			fprintf(stderr, "index: ignoring %s, unmatched arch (%s)\n", pkgver, arch);
 			xbps_object_release(binpkgd);
-			if (filespkgd)
-				xbps_object_release(filespkgd);
 			free(pkgver);
 			continue;
 		}
@@ -407,14 +363,6 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		xbps_dictionary_remove(binpkgd, "version");
 		xbps_dictionary_remove(binpkgd, "packaged-with");
 
-		if ((file_list = create_file_list(pkg, filespkgd)) == NULL) {
-			xbps_warn_printf("index: failed to create filelist for `%s', skipping.\n", pkg);
-		} else {
-			xbps_dictionary_set(files, pkgname, file_list);
-		}
-		xbps_object_release(filespkgd);
-		xbps_object_release(file_list);
-
 		/*
 		 * Add new pkg dictionary into the stage index
 		 */
@@ -430,7 +378,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 	/*
 	 * Generate repository data files.
 	 */
-	if (!repodata_commit(xhp, repodir, idx, idxmeta, files, idxstage, compression)) {
+	if (!repodata_commit(xhp, repodir, idx, idxmeta, idxstage, compression)) {
 		xbps_error_printf("%s: failed to write repodata: %s\n",
 				_XBPS_RINDEX, strerror(errno));
 		goto out;

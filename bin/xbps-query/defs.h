@@ -50,6 +50,7 @@ int 	repo_show_pkg_namedesc(struct xbps_handle *, xbps_object_t, void *,
 
 /* from ownedby.c */
 int	ownedby(struct xbps_handle *, const char *, bool, bool);
+int	ownedhash(struct xbps_handle *, const char *, bool, bool);
 
 /* From list.c */
 unsigned int	find_longest_pkgver(struct xbps_handle *, xbps_object_t);

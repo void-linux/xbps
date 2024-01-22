@@ -42,7 +42,8 @@ usage(bool fail)
 	    " -c, --cachedir <dir>      Path to cachedir\n"
 	    " -d, --debug               Debug mode shown to stderr\n"
 	    " -h, --help                Show usage\n"
-	    " -i, --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
+	    " -F, --update-files        Updates the files-database\n"
+ 		" -i, --ignore-conf-repos   Ignore repositories defined in xbps.d\n"
 	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
 	    "                           in memory, ignoring on-disk repodata archives\n"
 	    " -p, --property PROP[,...] Show properties for PKGNAME\n"
@@ -64,7 +65,9 @@ usage(bool fail)
 	    " -m, --list-manual-pkgs    List packages installed explicitly\n"
 	    " -O, --list-orphans        List package orphans\n"
 	    " -o, --ownedby FILE        Search for package files by matching STRING or REGEX\n"
-	    " -S, --show PKG            Show information for PKG [default mode]\n"
+	    "     --ownedhash FILE      Search for package files by matching hash of FILE\n"
+		"                           or treating FILE as hash if not present\n"
+		" -S, --show PKG            Show information for PKG [default mode]\n"
 	    " -s, --search PKG          Search for packages by matching PKG, STRING or REGEX\n"
 	    "     --cat=FILE PKG        Print FILE from PKG binpkg to stdout\n"
 	    " -f, --files PKG           Show package files for PKG\n"
@@ -77,13 +80,14 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:df:hHiLlMmOo:p:Rr:s:S:VvX:x:";
+	const char *shortopts = "C:c:dFf:hHiLlMmOo:p:Rr:s:S:VvX:x:";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
 		{ "debug", no_argument, NULL, 'd' },
 		{ "help", no_argument, NULL, 'h' },
 		{ "ignore-conf-repos", no_argument, NULL, 'i' },
+		{ "update-files", no_argument, NULL, 'F' },
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
 		{ "list-hold-pkgs", no_argument, NULL, 'H' },
@@ -92,6 +96,7 @@ main(int argc, char **argv)
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
 		{ "list-orphans", no_argument, NULL, 'O' },
 		{ "ownedby", required_argument, NULL, 'o' },
+		{ "ownedhash", required_argument, NULL, 4 },
 		{ "property", required_argument, NULL, 'p' },
 		{ "repository", optional_argument, NULL, 'R' },
 		{ "rootdir", required_argument, NULL, 'r' },
@@ -108,17 +113,18 @@ main(int argc, char **argv)
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
+	struct xbps_fetch_cb_data xfer;
 	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
 	int c, flags, rv;
-	bool list_pkgs, list_repos, orphans, own, list_repolock;
+	bool list_pkgs, list_repos, orphans, own, ownhash, list_repolock;
 	bool list_manual, list_hold, show_prop, show_files, show_deps, show_rdeps;
-	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree;
+	bool show, pkg_search, regex, repo_mode, opmode, fulldeptree, update_files;
 
 	rootdir = cachedir = confdir = props = pkg = catfile = NULL;
 	flags = rv = c = 0;
-	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = false;
+	list_pkgs = list_repos = list_hold = orphans = pkg_search = own = ownhash = false;
 	list_manual = list_repolock = show_prop = show_files = false;
-	regex = show = show_deps = show_rdeps = fulldeptree = false;
+	regex = show = show_deps = show_rdeps = fulldeptree = false, update_files = false;
 	repo_mode = opmode = false;
 
 	memset(&xh, 0, sizeof(xh));
@@ -137,6 +143,9 @@ main(int argc, char **argv)
 		case 'f':
 			pkg = optarg;
 			show_files = opmode = true;
+			break;
+		case 'F':
+			update_files = true;
 			break;
 		case 'H':
 			list_hold = opmode = true;
@@ -213,6 +222,10 @@ main(int argc, char **argv)
 		case 3:
 			list_repolock = opmode = true;
 			break;
+		case 4:
+			pkg = optarg;
+			ownhash = opmode = true;
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -247,12 +260,17 @@ main(int argc, char **argv)
 		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
 
 	xh.flags = flags;
+	xh.fetch_cb      = fetch_file_progress_cb;
+	xh.fetch_cb_data = &xfer;
 
 	if ((rv = xbps_init(&xh)) != 0) {
 		xbps_error_printf("Failed to initialize libxbps: %s\n",
 		    strerror(rv));
 		exit(EXIT_FAILURE);
 	}
+
+	if (update_files)
+		xbps_rpool_sync_files(&xh);
 
 	if (list_repos) {
 		/* list repositories */
@@ -281,6 +299,10 @@ main(int argc, char **argv)
 	} else if (own) {
 		/* ownedby mode */
 		rv = ownedby(&xh, pkg, repo_mode, regex);
+
+	} else if (ownhash) {
+		/* ownedby mode */
+		rv = ownedhash(&xh, pkg, repo_mode, regex);
 
 	} else if (pkg_search) {
 		/* search mode */

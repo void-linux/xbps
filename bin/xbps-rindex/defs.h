@@ -33,6 +33,9 @@
 /* From index-add.c */
 int	index_add(struct xbps_handle *, int, int, char **, bool, const char *);
 
+/* From files-add.c */
+int	files_add(struct xbps_handle *, int, int, char **, bool, const char *);
+
 /* From index-clean.c */
 int	index_clean(struct xbps_handle *, const char *, bool, const char *);
 
@@ -45,7 +48,7 @@ int	sign_repo(struct xbps_handle *, const char *, const char *,
 int	sign_pkgs(struct xbps_handle *, int, int, char **, const char *, bool);
 
 /* From repoflush.c */
-bool	repodata_flush(struct xbps_handle *, const char *, const char *,
-		xbps_dictionary_t, xbps_dictionary_t, xbps_dictionary_t, const char *);
+bool	repodata_flush(struct xbps_handle *, const char *, const char *, xbps_dictionary_t, xbps_dictionary_t, const char *);
+bool	repodata_flush_files(struct xbps_handle *, const char *, const char *, const char *);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */
