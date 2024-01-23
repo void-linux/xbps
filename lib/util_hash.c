@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <asm-generic/errno-base.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
@@ -36,6 +37,7 @@
 #include <unistd.h>
 
 #include <openssl/evp.h>
+#include <openssl/err.h>
 
 #include "xbps.h"
 #include "xbps_api_impl.h"
@@ -147,6 +149,12 @@ xbps_file_hash_raw(xbps_hash_algorithm_t type, unsigned char *dst, unsigned int 
 	char buf[65536];
 	EVP_MD_CTX *mdctx;
 
+	// invalid type
+	if (algorithm2epv_md(type) == NULL) {
+		errno = EINVAL;
+		return false;
+	}		
+
 	if ((int) dstlen < xbps_hash_size_raw(type)) {
 		errno = ENOBUFS;
 		return false;
@@ -155,20 +163,28 @@ xbps_file_hash_raw(xbps_hash_algorithm_t type, unsigned char *dst, unsigned int 
 	if ((fd = open(file, O_RDONLY)) < 0)
 		return false;
 
-	if((mdctx = EVP_MD_CTX_new()) == NULL)
+	if((mdctx = EVP_MD_CTX_new()) == NULL) {
+		xbps_error_printf("Unable to initial openssl: %s\n", ERR_error_string(ERR_get_error(), NULL));
 		return false;
+	}
 
-	if(EVP_DigestInit_ex(mdctx, algorithm2epv_md(type), NULL) != 1)
+	if(EVP_DigestInit_ex(mdctx, algorithm2epv_md(type), NULL) != 1) {
+		xbps_error_printf("Unable to initial algorithm: %s\n", ERR_error_string(ERR_get_error(), NULL));
 		return false;
+	}
 
 	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		if(EVP_DigestUpdate(mdctx, buf, len) != false)
+		if(EVP_DigestUpdate(mdctx, buf, len) != 1) {
+			xbps_error_printf("Unable to update digest: %s\n", ERR_error_string(ERR_get_error(), NULL));
 			return false;
+		}
 
 	close(fd);
 
-	if(EVP_DigestFinal_ex(mdctx, dst, &dstlen) != 1)
+	if(EVP_DigestFinal_ex(mdctx, dst, &dstlen) != 1) {
+		xbps_error_printf("Unable to finalize digest: %s\n", ERR_error_string(ERR_get_error(), NULL));
 		return false;
+	}
 
 	EVP_MD_CTX_free(mdctx);
 
