@@ -58,7 +58,7 @@ xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *n
 {
 	assert(xhp);
 	assert(url);
-	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0);
+	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0|| strcmp(name, "files") == 0);
 
 	return xbps_xasprintf("%s/%s-%s",
 	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch, name);

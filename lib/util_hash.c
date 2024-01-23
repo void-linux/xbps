@@ -35,9 +35,15 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <openssl/sha.h>
+#include <openssl/evp.h>
 
 #include "xbps_api_impl.h"
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#  define EVP_MD_CTX_new   EVP_MD_CTX_create
+#  define EVP_MD_CTX_free  EVP_MD_CTX_destroy
+#endif
+
 
 /**
  * @file lib/util.c
@@ -113,15 +119,13 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 }
 
 bool
-xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
-{
+xbps_file_sha256_raw(unsigned char *dst, unsigned int dstlen, const char *file) {
 	int fd;
 	ssize_t len;
 	char buf[65536];
-	SHA256_CTX sha256;
+	EVP_MD_CTX *mdctx;
 
-	assert(dstlen >= XBPS_SHA256_DIGEST_SIZE);
-	if (dstlen < XBPS_SHA256_DIGEST_SIZE) {
+	if ((int) dstlen < EVP_MD_size(EVP_sha256())) {
 		errno = ENOBUFS;
 		return false;
 	}
@@ -129,17 +133,22 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 	if ((fd = open(file, O_RDONLY)) < 0)
 		return false;
 
-	SHA256_Init(&sha256);
-
-	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		SHA256_Update(&sha256, buf, len);
-
-	(void)close(fd);
-
-	if(len == -1)
+	if((mdctx = EVP_MD_CTX_new()) == NULL)
 		return false;
 
-	SHA256_Final(dst, &sha256);
+	if(EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL) != 1)
+		return false;
+
+	while ((len = read(fd, buf, sizeof(buf))) > 0)
+		if(EVP_DigestUpdate(mdctx, buf, len) != false)
+			return false;
+
+	close(fd);
+
+	if(EVP_DigestFinal_ex(mdctx, dst, &dstlen) != 1)
+		return false;
+
+	EVP_MD_CTX_free(mdctx);
 
 	return true;
 }
