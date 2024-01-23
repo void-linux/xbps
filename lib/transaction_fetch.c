@@ -80,7 +80,7 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 			"%s: verifying SHA256 hash...", pkgver);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "filename-sha256", &sha256);
-		if ((rv = xbps_file_sha256_check(binfile, sha256)) != 0) {
+		if ((rv = xbps_file_hash_check(XBPS_HASH_SHA256, binfile, sha256)) != 0) {
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
 			return rv;

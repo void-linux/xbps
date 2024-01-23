@@ -23,6 +23,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "defs.h"
+
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -33,26 +35,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <xbps.h>
-#include "defs.h"
 
 struct ffdata {
-	bool rematch;
-	const char *pat, *repouri;
-	regex_t regex;
-	xbps_array_t allkeys;
+	bool              rematch;
+	const char *      pat, *repouri;
+	regex_t           regex;
+	xbps_array_t      allkeys;
 	xbps_dictionary_t filesd;
 };
 
 static void
-match_files_by_pattern(xbps_dictionary_t pkg_filesd,
-		       xbps_dictionary_keysym_t key,
-		       struct ffdata *ffd,
-		       const char *pkgver)
-{
+match_files_by_pattern(xbps_dictionary_t        pkg_filesd,
+                       xbps_dictionary_keysym_t key,
+                       struct ffdata*           ffd,
+                       const char*              pkgver) {
 	xbps_array_t array;
-	const char *keyname = NULL, *typestr = NULL;
+	const char * keyname = NULL, *typestr = NULL;
 
 	keyname = xbps_dictionary_keysym_cstring_nocopy(key);
 
@@ -68,7 +67,7 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 	array = xbps_dictionary_get_keysym(pkg_filesd, key);
 	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		xbps_object_t obj;
-		const char *filestr = NULL, *tgt = NULL;
+		const char *  filestr = NULL, *tgt = NULL;
 
 		obj = xbps_array_get(array, i);
 		xbps_dictionary_get_cstring_nocopy(obj, "file", &filestr);
@@ -78,37 +77,36 @@ match_files_by_pattern(xbps_dictionary_t pkg_filesd,
 		if (ffd->rematch) {
 			if (regexec(&ffd->regex, filestr, 0, 0, 0) == 0) {
 				printf("%s: %s%s%s (%s)\n",
-					pkgver, filestr,
-					tgt ? " -> " : "",
-					tgt ? tgt : "",
-					typestr);
+				       pkgver, filestr,
+				       tgt ? " -> " : "",
+				       tgt ? tgt : "",
+				       typestr);
 			}
 		} else {
 			if ((fnmatch(ffd->pat, filestr, FNM_PERIOD)) == 0) {
 				printf("%s: %s%s%s (%s)\n",
-					pkgver, filestr,
-					tgt ? " -> " : "",
-					tgt ? tgt : "",
-					typestr);
+				       pkgver, filestr,
+				       tgt ? " -> " : "",
+				       tgt ? tgt : "",
+				       typestr);
 			}
 		}
 	}
 }
 
 static int
-ownedby_pkgdb_cb(struct xbps_handle *xhp,
-		xbps_object_t obj,
-		const char *obj_key UNUSED,
-		void *arg,
-		bool *done UNUSED)
-{
+ownedby_pkgdb_cb(struct xbps_handle* xhp,
+                 xbps_object_t       obj,
+                 const char* obj_key UNUSED,
+                 void*               arg,
+                 bool* done          UNUSED) {
 	xbps_dictionary_t pkgmetad;
-	xbps_array_t files_keys;
-	struct ffdata *ffd = arg;
-	const char *pkgver = NULL;
+	xbps_array_t      files_keys;
+	struct ffdata*    ffd    = arg;
+	const char*       pkgver = NULL;
 
-	(void)obj_key;
-	(void)done;
+	(void) obj_key;
+	(void) done;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 	pkgmetad = xbps_pkgdb_get_pkg_files(xhp, pkgver);
@@ -118,7 +116,7 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 	files_keys = xbps_dictionary_all_keys(pkgmetad);
 	for (unsigned int i = 0; i < xbps_array_count(files_keys); i++) {
 		match_files_by_pattern(pkgmetad,
-		    xbps_array_get(files_keys, i), ffd, pkgver);
+		                       xbps_array_get(files_keys, i), ffd, pkgver);
 	}
 	xbps_object_release(pkgmetad);
 	xbps_object_release(files_keys);
@@ -128,18 +126,17 @@ ownedby_pkgdb_cb(struct xbps_handle *xhp,
 
 
 static int
-repo_match_cb(struct xbps_handle *xhp,
-		xbps_object_t obj,
-		const char *key UNUSED,
-		void *arg,
-		bool *done UNUSED)
-{
-	char bfile[PATH_MAX];
+repo_match_cb(struct xbps_handle* xhp,
+              xbps_object_t       obj,
+              const char* key     UNUSED,
+              void*               arg,
+              bool* done          UNUSED) {
+	char              bfile[PATH_MAX];
 	xbps_dictionary_t filesd;
-	xbps_array_t files_keys;
-	struct ffdata *ffd = arg;
-	const char *pkgver = NULL;
-	int r;
+	xbps_array_t      files_keys;
+	struct ffdata*    ffd    = arg;
+	const char*       pkgver = NULL;
+	int               r;
 
 	xbps_dictionary_set_cstring_nocopy(obj, "repository", ffd->repouri);
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -152,13 +149,13 @@ repo_match_cb(struct xbps_handle *xhp,
 	filesd = xbps_archive_fetch_plist(bfile, "/files.plist");
 	if (!filesd) {
 		xbps_error_printf("%s: couldn't fetch files.plist from %s: %s\n",
-		    pkgver, bfile, strerror(errno));
+		                  pkgver, bfile, strerror(errno));
 		return EINVAL;
 	}
 	files_keys = xbps_dictionary_all_keys(filesd);
 	for (unsigned int i = 0; i < xbps_array_count(files_keys); i++) {
 		match_files_by_pattern(filesd,
-		    xbps_array_get(files_keys, i), ffd, pkgver);
+		                       xbps_array_get(files_keys, i), ffd, pkgver);
 	}
 	xbps_object_release(files_keys);
 	xbps_object_release(filesd);
@@ -167,32 +164,29 @@ repo_match_cb(struct xbps_handle *xhp,
 }
 
 static int
-repo_ownedby_cb(struct xbps_repo *repo, void *arg, bool *done UNUSED)
-{
-	xbps_array_t allkeys;
-	struct ffdata *ffd = arg;
-	int rv;
+repo_ownedby_cb(struct xbps_repo* repo, void* arg, bool* done UNUSED) {
+	xbps_array_t   allkeys;
+	struct ffdata* ffd = arg;
+	int            rv;
 
 	ffd->repouri = repo->uri;
-	allkeys = xbps_dictionary_all_keys(repo->idx);
-	rv = xbps_array_foreach_cb_multi(repo->xhp, allkeys, repo->idx, repo_match_cb, ffd);
+	allkeys      = xbps_dictionary_all_keys(repo->idx);
+	rv           = xbps_array_foreach_cb_multi(repo->xhp, allkeys, repo->idx, repo_match_cb, ffd);
 	xbps_object_release(allkeys);
 
 	return rv;
 }
 
-int
-ownedby(struct xbps_handle *xhp, const char *pat, bool repo, bool regex)
-{
+int ownedby(struct xbps_handle* xhp, const char* pat, bool repo, bool regex) {
 	struct ffdata ffd;
-	int rv;
+	int           rv;
 
 	ffd.rematch = false;
-	ffd.pat = pat;
+	ffd.pat     = pat;
 
 	if (regex) {
 		ffd.rematch = true;
-		if (regcomp(&ffd.regex, ffd.pat, REG_EXTENDED|REG_NOSUB|REG_ICASE) != 0)
+		if (regcomp(&ffd.regex, ffd.pat, REG_EXTENDED | REG_NOSUB | REG_ICASE) != 0)
 			return EINVAL;
 	}
 	if (repo)
