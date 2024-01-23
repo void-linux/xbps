@@ -41,7 +41,7 @@ usage(bool fail)
 	"\n"
 	"OPTIONS\n"
 	" -h, --help           Show usage\n"
-	" -m, --mode <sha256>  Selects the digest mode, sha256 (default)\n"
+	" -m, --mode <mode>    Selects the digest mode, sha256 (default), blake2b\n"
 	" -V, --version        Show XBPS version\n"
 	"\nNOTES\n"
 	" If [file] not set, reads from stdin\n");
@@ -52,8 +52,10 @@ int
 main(int argc, char **argv)
 {
 	int c;
-	char sha256[XBPS_SHA256_SIZE];
-	const char *mode = NULL, *progname = argv[0];
+	char* digest;
+	const char *modestr = NULL, *progname = argv[0];
+	xbps_hash_algorithm_t mode = XBPS_HASH_SHA256;
+	int digest_size;
 	const struct option longopts[] = {
 		{ "mode", required_argument, NULL, 'm' },
 		{ "help", no_argument, NULL, 'h' },
@@ -67,7 +69,7 @@ main(int argc, char **argv)
 			usage(false);
 			/* NOTREACHED */
 		case 'm':
-			mode = optarg;
+			modestr = optarg;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -82,27 +84,41 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (mode && strcmp(mode, "sha256")) {
+	if (modestr) {
+		if (strcmp(modestr, "sha256") == 0) {
+			mode = XBPS_HASH_SHA256;
+		} else if (strcmp(modestr, "blake2b") == 0) {
+			mode = XBPS_HASH_BLAKE2B256;
+		} else {
+			/* sha256 is the only supported mode currently */
+			xbps_error_printf("%s: unsupported digest mode\n", progname);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	digest_size = xbps_hash_size(mode);
+	if ((digest = malloc(digest_size)) == NULL) {
 		/* sha256 is the only supported mode currently */
-		xbps_error_printf("%s: unsupported digest mode\n", progname);
+		xbps_error_printf("%s: unable to allocate digest: %s\n", progname, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if (argc < 1) {
-		if (!xbps_file_hash(XBPS_HASH_SHA256, sha256, sizeof sha256, "/dev/stdin"))
+		if (!xbps_file_hash(mode, digest, digest_size, "/dev/stdin"))
 			exit(EXIT_FAILURE);
-
-		printf("%s\n", sha256);
 	} else {
 		for (int i = 0; i < argc; i++) {
-			if (!xbps_file_hash(XBPS_HASH_SHA256, sha256, sizeof sha256, argv[i])) {
+			if (!xbps_file_hash(mode, digest, digest_size, argv[i])) {
 				xbps_error_printf(
 				    "%s: couldn't get hash for %s (%s)\n",
 				progname, argv[i], strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-			printf("%s\n", sha256);
 		}
 	}
+
+	printf("%s\n", digest);
+
+	free(digest);
 	exit(EXIT_SUCCESS);
 }
