@@ -1882,19 +1882,42 @@ char *xbps_xasprintf(const char *fmt, ...)__attribute__ ((format (printf, 1, 2))
  */
 bool xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen);
 
+/**
+ * @enum xbps_hash_algorithm
+ *
+ * Enum describing which algorithm should be used to hash
+ *
+ * - XBPS_HASH_SHA256: use sha256 hashing
+ * - XBPS_HASH_BLAKE2B256: use blake2b (256bit) hashing
+ */
 typedef enum xbps_hash_algorithm {
 	XBPS_HASH_SHA256,
 	XBPS_HASH_BLAKE2B256
 } xbps_hash_algorithm_t;
 
-int xbps_hash_size_raw(xbps_hash_algorithm_t type);
-
-int xbps_hash_size(xbps_hash_algorithm_t type);
+/**
+ * Represents the raw size of a digest (thus sha256 being 32bit)
+ *
+ * @param[in] algo Algorithm to describe
+ *
+ * @return Size in bytes
+ */
+int xbps_hash_size_raw(xbps_hash_algorithm_t algo);
 
 /**
- * Computes a sha256 hex digest into \a dst of size \a len
+ * Represents the hexstring-size including null-terminating byte of a digest (thus sha256 being 65bit)
+ *
+ * @param[in] algo Algorithm to describe
+ *
+ * @return Size in bytes
+ */
+int xbps_hash_size(xbps_hash_algorithm_t algo);
+
+/**
+ * Computes a hex digest into \a dst of size \a len
  * from file \a file.
  *
+ * @param[in] algo Hashing algorithm to use
  * @param[out] dst Destination buffer.
  * @param[in] len Size of \a dst must be at least XBPS_SHA256_LENGTH.
  * @param[in] file The file to read.
@@ -1904,9 +1927,10 @@ int xbps_hash_size(xbps_hash_algorithm_t type);
 bool xbps_file_hash(xbps_hash_algorithm_t algo, char *dst, size_t len, const char *file);
 
 /**
- * Computes a sha256 binary digest into \a dst of size \a len
+ * Computes a binary digest into \a dst of size \a len
  * from file \a file.
  *
+ * @param[in] algo Hashing algorithm to use
  * @param[out] dst Destination buffer.
  * @param[in] len Size of \a dst must be at least XBPS_SHA256_DIGEST_SIZE_LENGTH.
  * @param[in] file The file to read.
@@ -1916,16 +1940,17 @@ bool xbps_file_hash(xbps_hash_algorithm_t algo, char *dst, size_t len, const cha
 bool xbps_file_hash_raw(xbps_hash_algorithm_t algo, unsigned char *dst, unsigned int len, const char *file);
 
 /**
- * Compares the sha256 hash of the file \a file with the sha256
+ * Compares the hash of the file \a file with the sha256
  * string specified by \a sha256.
  *
+ * @param[in] algo Hashing algorithm to use
  * @param[in] file Path to a file.
- * @param[in] sha256 SHA256 hash to compare.
+ * @param[in] digest hash to compare.
  *
  * @return 0 if \a file and \a sha256 have the same hash, ERANGE
  * if it differs, or any other errno value on error.
  */
-int xbps_file_hash_check(xbps_hash_algorithm_t algo, const char *file, const char *sha256);
+int xbps_file_hash_check(xbps_hash_algorithm_t algo, const char *file, const char *digest);
 
 /**
  * Verifies the RSA signature \a sigfile against \a digest with the
