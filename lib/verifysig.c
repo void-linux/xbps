@@ -139,7 +139,7 @@ xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
 	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 	bool val = false;
 
-	if (!xbps_file_sha256_raw(digest, sizeof digest, fname)) {
+	if (!xbps_file_hash_raw(XBPS_HASH_SHA256, digest, sizeof digest, fname)) {
 		xbps_dbg_printf("can't open file %s: %s\n", fname, strerror(errno));
 		return false;
 	}

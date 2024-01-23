@@ -334,7 +334,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 		 * 	- filename-size
 		 * 	- filename-sha256
 		 */
-		if (!xbps_file_sha256(sha256, sizeof sha256, pkg)) {
+		if (!xbps_file_hash(XBPS_HASH_SHA256, sha256, sizeof sha256, pkg)) {
 			xbps_object_release(binpkgd);
 			free(pkgver);
 			rv = EINVAL;

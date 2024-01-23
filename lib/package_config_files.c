@@ -143,7 +143,7 @@ xbps_entry_install_conf_file(struct xbps_handle *xhp,
 		if (strcmp(entry_pname, buf)) {
 			continue;
 		}
-		if (!xbps_file_sha256(sha256_cur, sizeof sha256_cur, buf)) {
+		if (!xbps_file_hash(XBPS_HASH_SHA256, sha256_cur, sizeof sha256_cur, buf)) {
 			if (errno == ENOENT) {
 				/*
 				 * File not installed, install new one.

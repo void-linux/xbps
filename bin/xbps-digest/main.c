@@ -89,13 +89,13 @@ main(int argc, char **argv)
 	}
 
 	if (argc < 1) {
-		if (!xbps_file_sha256(sha256, sizeof sha256, "/dev/stdin"))
+		if (!xbps_file_hash(XBPS_HASH_SHA256, sha256, sizeof sha256, "/dev/stdin"))
 			exit(EXIT_FAILURE);
 
 		printf("%s\n", sha256);
 	} else {
 		for (int i = 0; i < argc; i++) {
-			if (!xbps_file_sha256(sha256, sizeof sha256, argv[i])) {
+			if (!xbps_file_hash(XBPS_HASH_SHA256, sha256, sizeof sha256, argv[i])) {
 				xbps_error_printf(
 				    "%s: couldn't get hash for %s (%s)\n",
 				progname, argv[i], strerror(errno));

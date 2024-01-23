@@ -370,7 +370,7 @@ main(int argc, char **argv)
 			usage();
 
 		for (i = 1; i < argc; i++) {
-			if (!xbps_file_sha256(sha256, sizeof sha256, argv[i])) {
+			if (!xbps_file_hash(XBPS_HASH_SHA256, sha256, sizeof sha256, argv[i])) {
 				xbps_error_printf(
 				    "couldn't get hash for %s (%s)\n",
 				    argv[i], strerror(errno));

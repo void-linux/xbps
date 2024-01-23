@@ -94,7 +94,7 @@ rsa_sign_file(RSA *rsa, const char *file,
 {
 	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
-	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
+	if (!xbps_file_hash_raw(XBPS_HASH_SHA256, digest, sizeof digest, file))
 		return false;
 
 	if ((*sigret = calloc(1, RSA_size(rsa) + 1)) == NULL) {
