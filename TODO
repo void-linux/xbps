@@ -18,7 +18,4 @@ xbps-fetch:
  - configurable libfetch timeout
  - configurable number of connection retries
 
-xbps-digest:
- - blake2b support
-
 Issues listed at https://github.com/void-linux/xbps/issues
