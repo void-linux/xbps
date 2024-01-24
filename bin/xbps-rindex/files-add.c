@@ -27,14 +27,18 @@
 #include "xbps/xbps_array.h"
 #include "xbps/xbps_dictionary.h"
 #include "xbps/xbps_object.h"
+#include "xbps/xbps_string.h"
 
 #include <archive.h>
 #include <archive_entry.h>
+#include <asm-generic/errno-base.h>
+#include <asm-generic/errno.h>
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <linux/limits.h>
 #include <memory.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -44,38 +48,6 @@
 #include <unistd.h>
 #include <xbps.h>
 
-static inline void
-add_files_to_file(xbps_string_t dest, xbps_array_t files) {
-	xbps_dictionary_t pkg;
-	xbps_string_t     pkg_file, pkg_target, pkg_sha256;
-
-	// 'links' is not always present, so `files` could be NULL
-	if (files == NULL)
-		return;
-
-	for (unsigned int i = 0; i < xbps_array_count(files); i++) {
-		pkg        = xbps_array_get(files, i);
-		pkg_file   = xbps_dictionary_get(pkg, "file");
-		pkg_target = xbps_dictionary_get(pkg, "target");
-		pkg_sha256 = xbps_dictionary_get(pkg, "sha256");
-
-		if (pkg_sha256)
-			xbps_string_append(dest, pkg_sha256);
-		else
-			xbps_string_append_cstring(dest, "%");
-
-		xbps_string_append_cstring(dest, ";");
-		xbps_string_append(dest, pkg_file);
-		xbps_string_append_cstring(dest, ";");
-
-		if (pkg_target)
-			xbps_string_append(dest, pkg_target);
-		else
-			xbps_string_append_cstring(dest, "%");
-
-		xbps_string_append_cstring(dest, "\n");
-	}
-}
 
 static void
 list_packages(xbps_array_t dest, struct archive* ar) {
@@ -118,18 +90,77 @@ static const char* match_pkgname_in_array(xbps_array_t array, const char* str) {
 	return NULL;
 }
 
+static inline struct archive_entry*
+make_entry(const char* pkgname, size_t size) {
+	struct archive_entry* entry;
+
+	entry = archive_entry_new();
+	if (entry == NULL)
+		return NULL;
+
+	archive_entry_set_filetype(entry, AE_IFREG);
+	archive_entry_set_perm(entry, 0644);
+	archive_entry_set_uname(entry, "root");
+	archive_entry_set_gname(entry, "root");
+	archive_entry_set_pathname(entry, pkgname);
+	archive_entry_set_size(entry, size);
+
+	return entry;
+}
+
+static inline int
+make_file_string(xbps_dictionary_t pkg, char* buffer, int buffer_size) {
+	const char *pkg_file, *pkg_target, *pkg_sha256;
+	int         result;
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkg, "file", &pkg_file))
+		return errno = EINVAL, 0;
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkg, "target", &pkg_target))
+		pkg_target = "";
+
+	if (!xbps_dictionary_get_cstring_nocopy(pkg, "sha256", &pkg_sha256))
+		pkg_sha256 = "";
+
+	if ((result = snprintf(buffer, buffer_size, "%s;%s;%s\n", pkg_sha256, pkg_file, pkg_target)) >= buffer_size)
+		return errno = ENOBUFS, 0;
+	
+	if (result == -1)
+		return 0;
+
+	return result;
+}
+
+static inline int
+length_file_string(xbps_dictionary_t pkg) {
+	const char* field;
+	size_t size = 3; // 2x ';' + '\n'
+
+	if (xbps_dictionary_get_cstring_nocopy(pkg, "file", &field))
+		size += strlen(field);
+
+	if (xbps_dictionary_get_cstring_nocopy(pkg, "target", &field))
+		size += strlen(field);
+
+	if (xbps_dictionary_get_cstring_nocopy(pkg, "sha256", &field))
+		size += strlen(field);
+
+	return size;
+}
+
 int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool force, const char* compression) {
 	xbps_dictionary_t     props_plist, files_plist;
 	xbps_array_t          existing_files, ignore_packages;
 	char *                tmprepodir = NULL, *repodir = NULL, *new_ar_path, *rlockfname = NULL, *files_uri = NULL;
 	int                   rv = 0, ret = 0, rlockfd = -1;
+	char                  pkg_line[65536];
 	FILE*                 old_ar_file;
 	int                   new_ar_file;
 	struct archive *      old_ar = NULL, *new_ar;
 	struct archive_entry* entry;
 	mode_t                mask;
 
-	existing_files  = xbps_array_create();
+	existing_files = xbps_array_create();
 	ignore_packages = xbps_array_create();
 
 	assert(argv);
@@ -215,9 +246,10 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 	 * Process all packages specified in argv.
 	 */
 	for (int i = args; i < argmax; i++) {
-		const char *  arch = NULL, *pkg = argv[i], *dbpkgver = NULL, *pkgname = NULL, *pkgver = NULL;
-		xbps_string_t file_content;
-		xbps_array_t keys;
+		const char *          arch = NULL, *pkg = argv[i], *dbpkgver = NULL, *pkgname = NULL, *pkgver = NULL;
+		struct archive_entry* file_entry;
+		xbps_array_t          keys;
+		size_t total_size = 0;
 
 		assert(pkg);
 		/*
@@ -269,24 +301,52 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 		if ((files_plist = xbps_archive_fetch_plist(pkg, "/files.plist")) == NULL) {
 			xbps_error_printf("files: failed to read files.plist metadata for `%s', skipping!\n", pkg);
 			xbps_object_release(props_plist);
+			continue;
 		}
 
-		file_content = xbps_string_create();
 		keys = xbps_dictionary_all_keys(files_plist);
 		for (unsigned int j = 0; j < xbps_array_count(keys); j++) {
-//			xbps_array_t key = xbps_dictionary_get_keysym(files_plist, xbps_array_get(keys, j)); 
-//			printf("key: %d\n", xbps_object_type(key));
-			add_files_to_file(file_content, xbps_dictionary_get_keysym(files_plist, xbps_array_get(keys, j)));
+			xbps_array_t files = xbps_dictionary_get_keysym(files_plist, xbps_array_get(keys, j));
+
+			for (unsigned int k = 0; k < xbps_array_count(files); k++)
+				total_size += length_file_string(xbps_array_get(files, k));			
 		}
-		xbps_object_release(keys);
+
+		file_entry = make_entry(pkgver, total_size);
+		if (archive_write_header(new_ar, file_entry) != ARCHIVE_OK) {
+			xbps_warn_printf("files: unable to write entry for %s: %s\n", pkgver, archive_error_string(new_ar));
+			archive_entry_free(file_entry);
+			xbps_object_release(props_plist);
+			xbps_object_release(files_plist);
+			continue;
+		}
+
+		for (unsigned int j = 0; j < xbps_array_count(keys); j++) {
+			int          size;
+			xbps_array_t files = xbps_dictionary_get_keysym(files_plist, xbps_array_get(keys, j));
+
+			for (unsigned int k = 0; k < xbps_array_count(files); k++) {
+				if (!(size = make_file_string(xbps_array_get(files, k), pkg_line, sizeof(pkg_line)))) {
+					xbps_warn_printf("files: unable to create file-entry for %s: %s\n", pkgver, strerror(errno));
+					continue;
+				}
+
+				if (archive_write_data(new_ar, pkg_line, size) == -1) {
+					xbps_warn_printf("files: unable to file-write entry for %s: %s\n", pkgver, archive_error_string(new_ar));
+					continue;
+				}
+			}
+		}
 		
-		xbps_archive_append_buf(new_ar,
-		                        xbps_string_cstring_nocopy(file_content), xbps_string_size(file_content),
-		                        pkgver, 0644, "root", "root");
+
+		if (archive_write_finish_entry(new_ar) != ARCHIVE_OK) {
+			archive_entry_free(file_entry);
+			exit(archive_errno(new_ar));
+		}
+		archive_entry_free(file_entry);
 
 		printf("files: registered `%s'\n", pkgver);
 
-		xbps_object_release(file_content);
 		xbps_object_release(props_plist);
 		xbps_object_release(files_plist);
 	}
@@ -305,7 +365,7 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 			}
 
 			buffer_size = archive_entry_size(entry);
-			buffer      = malloc(buffer_size);
+			buffer = malloc(buffer_size);
 			archive_read_data(old_ar, buffer, buffer_size);
 
 			if (archive_write_data(new_ar, buffer, buffer_size) != ARCHIVE_OK) {
