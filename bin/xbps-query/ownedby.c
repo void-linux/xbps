@@ -93,15 +93,13 @@ static char* archive_get_file(struct archive* ar, struct archive_entry* entry) {
 	return buf;
 }
 
-static int repo_search_files(struct xbps_repo* repo, void* locate_ptr, bool* done) {
+static int repo_search_files(struct xbps_repo* repo, void* locate_ptr, bool* done UNUSED) {
 	struct locate*        locate = locate_ptr;
 	struct archive*       ar;
 	struct archive_entry* entry;
 	FILE*                 ar_file;
 	char*                 files_uri;
 	char*                 reponame_escaped;
-
-	(void) done;
 
 	if (!xbps_repository_is_remote(repo->uri)) {
 		files_uri = xbps_xasprintf("%s/%s-files", repo->uri, repo->xhp->target_arch ? repo->xhp->target_arch : repo->xhp->native_arch);
