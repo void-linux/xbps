@@ -48,39 +48,29 @@ struct locate {
 	regex_t     regex;
 };
 
-struct file {
-	char* hash;
-	char* path;
-	char* target;
-};
+static inline int parse_line(char** fields, int fields_size, char* line) {
+    char* next;
+    int i = 0;
 
-static inline void parse_line(struct file* file, char* line) {
-	char *field, *end_field;
-	int   field_nr;
+    while (i < fields_size - 1) {
+        if (!(next = strchr(line, ':')))
+            break;
 
-	field    = strtok_r(line, ";", &end_field);
-	field_nr = 0;
-	do {
-		if (field[0] == '%' && field[1] == '\0')
-			field = NULL;
-		switch (field_nr++) {
-			case 0:
-				file->hash = field;
-				break;
-			case 1:
-				file->path = field;
-				break;
-			case 2:
-				file->target = field;
-				break;
-		}
-	} while ((field = strtok_r(NULL, ";", &end_field)));
+        *next = '\0';
+
+        fields[i++] = *line ? line : NULL;
+        line = next + 1;
+    }
+	fields[i++] = *line ? line : NULL;
+
+    return i;
 }
 
-static inline void print_line(const char* pkg, struct file* file) {
-	printf("%s: %s", pkg, file->path);
-	if (file->target)
-		printf(" -> %s", file->target);
+static inline void print_line(const char* pkg, char** file) {
+	printf("%s: %s", pkg, file[1]);
+	if (file[2])
+		printf(" -> %s", file[2]);
+	printf("\n");
 }
 
 static char* archive_get_file(struct archive* ar, struct archive_entry* entry) {
@@ -147,26 +137,27 @@ static int repo_search_files(struct xbps_repo* repo, void* locate_ptr, bool* don
 	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
 		const char* pkg     = archive_entry_pathname(entry);
 		char*       content = archive_get_file(ar, entry);
-		char *      line, *end_line;
-		struct file file;
+		char*       line, *end_line;
+		char* 		file[3];
 
 		line = strtok_r(content, "\n", &end_line);
-		do {
-			parse_line(&file, line);
+		while (line) {
+			parse_line(file, 3, line);
 			if (locate->byhash) {
-				if (file.hash != NULL && strcasecmp(file.hash, locate->expr) == 0)
-					print_line(pkg, &file);
+				if (file[0] != NULL && strcasecmp(file[0], locate->expr) == 0)
+					print_line(pkg, file);
 			} else if (locate->expr != NULL) {
-				if (strcasestr(file.path, locate->expr) != NULL || (file.target && strcasestr(file.target, locate->expr))) {
-					print_line(pkg, &file);
+				if (strcasestr(file[1], locate->expr) != NULL || (file[2] && strcasestr(file[2], locate->expr))) {
+					print_line(pkg, file);
 				}
 			} else {    // regex
-				if (!regexec(&locate->regex, file.path, 0, NULL, 0) ||
-				    (file.target && !regexec(&locate->regex, file.target, 0, NULL, 0))) {
-					print_line(pkg, &file);
+				if (!regexec(&locate->regex, file[1], 0, NULL, 0) ||
+				    (file[2] && !regexec(&locate->regex, file[2], 0, NULL, 0))) {
+					print_line(pkg, file);
 				}
 			}
-		} while ((line = strtok_r(NULL, "\n", &end_line)));
+			line = strtok_r(NULL, "\n", &end_line);
+		}
 
 		free(content);
 	}

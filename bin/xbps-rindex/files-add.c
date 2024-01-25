@@ -116,9 +116,9 @@ make_file_string(xbps_dictionary_t pkg, char* buffer, int buffer_size) {
 	if (!xbps_dictionary_get_cstring_nocopy(pkg, "sha256", &pkg_sha256))
 		pkg_sha256 = "";
 
-	if ((result = snprintf(buffer, buffer_size, "%s;%s;%s\n", pkg_sha256, pkg_file, pkg_target)) >= buffer_size)
+	if ((result = snprintf(buffer, buffer_size, "%s:%s:%s\n", pkg_sha256, pkg_file, pkg_target)) >= buffer_size)
 		return errno = ENOBUFS, 0;
-	
+
 	if (result == -1)
 		return 0;
 
@@ -128,16 +128,19 @@ make_file_string(xbps_dictionary_t pkg, char* buffer, int buffer_size) {
 static inline int
 length_file_string(xbps_dictionary_t pkg) {
 	const char* field;
-	size_t size = 3; // 2x ';' + '\n'
+	size_t      size = 3;    // 2x ':' + '\n'
 
-	if (xbps_dictionary_get_cstring_nocopy(pkg, "file", &field))
-		size += strlen(field);
+	size += xbps_dictionary_get_cstring_nocopy(pkg, "file", &field)
+	          ? strlen(field)
+	          : 0;
 
-	if (xbps_dictionary_get_cstring_nocopy(pkg, "target", &field))
-		size += strlen(field);
+	size += xbps_dictionary_get_cstring_nocopy(pkg, "target", &field)
+	          ? strlen(field)
+	          : 0;
 
-	if (xbps_dictionary_get_cstring_nocopy(pkg, "sha256", &field))
-		size += strlen(field);
+	size += xbps_dictionary_get_cstring_nocopy(pkg, "sha256", &field)
+	          ? strlen(field)
+	          : 0;
 
 	return size;
 }
@@ -243,7 +246,7 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 		const char *          arch = NULL, *pkg = argv[i], *dbpkgver = NULL, *pkgname = NULL, *pkgver = NULL;
 		struct archive_entry* file_entry;
 		xbps_array_t          keys;
-		size_t total_size = 0;
+		size_t                total_size = 0;
 
 		assert(pkg);
 		/*
@@ -303,7 +306,7 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 			xbps_array_t files = xbps_dictionary_get_keysym(files_plist, xbps_array_get(keys, j));
 
 			for (unsigned int k = 0; k < xbps_array_count(files); k++)
-				total_size += length_file_string(xbps_array_get(files, k));			
+				total_size += length_file_string(xbps_array_get(files, k));
 		}
 
 		file_entry = make_entry(pkgver, total_size);
@@ -331,7 +334,7 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 				}
 			}
 		}
-		
+
 
 		if (archive_write_finish_entry(new_ar) != ARCHIVE_OK) {
 			archive_entry_free(file_entry);
