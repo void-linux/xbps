@@ -24,21 +24,15 @@
  */
 
 #include "defs.h"
-#include "xbps/xbps_array.h"
-#include "xbps/xbps_dictionary.h"
-#include "xbps/xbps_object.h"
-#include "xbps/xbps_string.h"
 
 #include <archive.h>
 #include <archive_entry.h>
-#include <asm-generic/errno-base.h>
-#include <asm-generic/errno.h>
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
-#include <linux/limits.h>
+#include <limits.h>
 #include <memory.h>
 #include <stdbool.h>
 #include <stdio.h>
