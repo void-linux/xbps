@@ -116,7 +116,7 @@ make_file_string(xbps_dictionary_t pkg, char* buffer, int buffer_size) {
 	if (!xbps_dictionary_get_cstring_nocopy(pkg, "sha256", &pkg_sha256))
 		pkg_sha256 = "";
 
-	if ((result = snprintf(buffer, buffer_size, "%s:%s:%s\n", pkg_sha256, pkg_file, pkg_target)) >= buffer_size)
+	if ((result = snprintf(buffer, buffer_size, "%s%%%s%%%s\n", pkg_sha256, pkg_file, pkg_target)) >= buffer_size)
 		return errno = ENOBUFS, 0;
 
 	if (result == -1)

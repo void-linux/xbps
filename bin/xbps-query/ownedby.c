@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <openssl/sha.h>
+#include <pthread.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,35 +43,41 @@
 #include <xbps.h>
 
 
-struct locate {
-	bool        byhash;
-	const char* expr;
-	regex_t     regex;
+struct thread_data {
+	pthread_t        this_thread;
+	struct archive*  ar;
+	bool             byhash;
+	const char*      expr;
+	const regex_t*   regex;
+	pthread_mutex_t* archive_mutex;
+	pthread_mutex_t* print_mutex;
 };
 
 static inline int parse_line(char** fields, int fields_size, char* line) {
-    char* next;
-    int i = 0;
+	char* next;
+	int   i = 0;
 
-    while (i < fields_size - 1) {
-        if (!(next = strchr(line, ':')))
-            break;
+	while (i < fields_size - 1) {
+		if (!(next = strchr(line, '%')))
+			break;
 
-        *next = '\0';
+		*next = '\0';
 
-        fields[i++] = *line ? line : NULL;
-        line = next + 1;
-    }
+		fields[i++] = *line ? line : NULL;
+		line = next + 1;
+	}
 	fields[i++] = *line ? line : NULL;
 
-    return i;
+	return i;
 }
 
-static inline void print_line(const char* pkg, char** file) {
+static inline void print_line(pthread_mutex_t* mutex, const char* pkg, char** file) {
+	if (mutex) pthread_mutex_lock(mutex);
 	printf("%s: %s", pkg, file[1]);
 	if (file[2])
 		printf(" -> %s", file[2]);
 	printf("\n");
+	if (mutex) pthread_mutex_unlock(mutex);
 }
 
 static char* archive_get_file(struct archive* ar, struct archive_entry* entry) {
@@ -81,10 +88,9 @@ static char* archive_get_file(struct archive* ar, struct archive_entry* entry) {
 	assert(entry != NULL);
 
 	buflen = archive_entry_size(entry);
-	buf    = malloc(buflen + 1);
+	buf = malloc(buflen + 1);
 	if (buf == NULL)
 		return NULL;
-
 	if (archive_read_data(ar, buf, buflen) != buflen) {
 		free(buf);
 		return NULL;
@@ -93,20 +99,68 @@ static char* archive_get_file(struct archive* ar, struct archive_entry* entry) {
 	return buf;
 }
 
-static int repo_search_files(struct xbps_repo* repo, void* locate_ptr, bool* done UNUSED) {
-	struct locate*        locate = locate_ptr;
-	struct archive*       ar;
+static void* thread_func(void* data_ptr) {
+	struct thread_data*   data = data_ptr;
 	struct archive_entry* entry;
-	FILE*                 ar_file;
-	char*                 files_uri;
-	char*                 reponame_escaped;
 
-	if (!xbps_repository_is_remote(repo->uri)) {
-		files_uri = xbps_xasprintf("%s/%s-files", repo->uri, repo->xhp->target_arch ? repo->xhp->target_arch : repo->xhp->native_arch);
+	for (;;) {
+		char* pkg;
+		char* content;
+		char* line, *end_line;
+		char* file[3];
+		int   ar_rv;
+
+		if (data->archive_mutex) pthread_mutex_lock(data->archive_mutex);
+		if ((ar_rv = archive_read_next_header(data->ar, &entry)) == ARCHIVE_OK) {
+			pkg = strdup(archive_entry_pathname(entry));
+			content = archive_get_file(data->ar, entry);
+		}
+		if (data->archive_mutex) pthread_mutex_unlock(data->archive_mutex);
+
+		if (ar_rv != ARCHIVE_OK)
+			break;
+
+		line = strtok_r(content, "\n", &end_line);
+		while (line) {
+			parse_line(file, 3, line);
+			if (data->byhash) {
+				if (file[0] != NULL && strcasecmp(file[0], data->expr) == 0)
+					print_line(data->print_mutex, pkg, file);
+			} else if (data->expr != NULL) {
+				if (strcasestr(file[1], data->expr) != NULL || (file[2] && strcasestr(file[2], data->expr))) {
+					print_line(data->print_mutex, pkg, file);
+				}
+			} else {    // regex
+				if (!regexec(data->regex, file[1], 0, NULL, 0) ||
+				    (file[2] && !regexec(data->regex, file[2], 0, NULL, 0))) {
+					print_line(data->print_mutex, pkg, file);
+				}
+			}
+			line = strtok_r(NULL, "\n", &end_line);
+		}
+
+		free(pkg);
+		free(content);
+	}
+
+	return NULL;
+}
+
+static int repo_search_files(struct xbps_handle* xh, const char* repouri, bool byhash, const char* expr, regex_t* regex) {
+	struct archive*     ar;
+	FILE*               ar_file;
+	char*               files_uri;
+	char*               reponame_escaped;
+	pthread_mutex_t     archive_mutex, print_mutex;
+	int                 maxthreads;
+	struct thread_data* thds;
+
+	if (!xbps_repository_is_remote(repouri)) {
+		files_uri = xbps_xasprintf("%s/%s-files", repouri, xh->target_arch ? xh->target_arch : xh->native_arch);
 	} else {
-		if (!(reponame_escaped = xbps_get_remote_repo_string(repo->uri)))
+		if (!(reponame_escaped = xbps_get_remote_repo_string(repouri)))
 			return false;
-		files_uri = xbps_xasprintf("%s/%s/%s-files", repo->xhp->metadir, reponame_escaped, repo->xhp->target_arch ? repo->xhp->target_arch : repo->xhp->native_arch);
+		files_uri = xbps_xasprintf("%s/%s/%s-files", xh->metadir, reponame_escaped, xh->target_arch ? xh->target_arch : xh->native_arch);
 		free(reponame_escaped);
 	}
 
@@ -125,39 +179,51 @@ static int repo_search_files(struct xbps_repo* repo, void* locate_ptr, bool* don
 	archive_read_support_filter_zstd(ar);
 	archive_read_support_format_tar(ar);
 
-	if (archive_read_open_FILE(ar, ar_file) == ARCHIVE_FATAL) {
+	if (archive_read_open_FILE(ar, ar_file) != ARCHIVE_OK) {
 		xbps_dbg_printf("[repo] `%s' failed to open repodata archive %s\n", files_uri, archive_error_string(ar));
 		archive_read_close(ar);
 		fclose(ar_file);
 		return false;
 	}
 
-	while (archive_read_next_header(ar, &entry) == ARCHIVE_OK) {
-		const char* pkg     = archive_entry_pathname(entry);
-		char*       content = archive_get_file(ar, entry);
-		char*       line, *end_line;
-		char* 		file[3];
+	maxthreads = (int) sysconf(_SC_NPROCESSORS_ONLN);
+	if (maxthreads <= 1) {
+		struct thread_data thd = {
+			.ar = ar,
+			.byhash = byhash,
+			.expr = expr,
+			.regex = regex,
+			.archive_mutex = NULL,
+			.print_mutex = NULL
+		};
 
-		line = strtok_r(content, "\n", &end_line);
-		while (line) {
-			parse_line(file, 3, line);
-			if (locate->byhash) {
-				if (file[0] != NULL && strcasecmp(file[0], locate->expr) == 0)
-					print_line(pkg, file);
-			} else if (locate->expr != NULL) {
-				if (strcasestr(file[1], locate->expr) != NULL || (file[2] && strcasestr(file[2], locate->expr))) {
-					print_line(pkg, file);
-				}
-			} else {    // regex
-				if (!regexec(&locate->regex, file[1], 0, NULL, 0) ||
-				    (file[2] && !regexec(&locate->regex, file[2], 0, NULL, 0))) {
-					print_line(pkg, file);
-				}
+		thread_func(&thd);
+	} else {
+		thds = calloc(maxthreads, sizeof(*thds));
+		assert(thds);
+
+		pthread_mutex_init(&archive_mutex, NULL);
+		pthread_mutex_init(&print_mutex, NULL);
+
+		for (int i = 0; i < maxthreads; i++) {
+			int rv;
+
+			thds[i].ar = ar;
+			thds[i].byhash = byhash;
+			thds[i].expr = expr;
+			thds[i].regex = regex;
+			thds[i].archive_mutex = &archive_mutex;
+			thds[i].print_mutex = &print_mutex;
+
+			if ((rv = pthread_create(&thds[i].this_thread, NULL, thread_func, &thds[i])) != 0) {
+				xbps_error_printf("unable to create thread: %s, retrying...\n", strerror(rv));
+				i--;
 			}
-			line = strtok_r(NULL, "\n", &end_line);
 		}
 
-		free(content);
+		for (int i = 0; i < maxthreads; i++) {
+			pthread_join(thds[i].this_thread, NULL);
+		}
 	}
 
 	fclose(ar_file);
@@ -165,35 +231,35 @@ static int repo_search_files(struct xbps_repo* repo, void* locate_ptr, bool* don
 	return 0;
 }
 
-int ownedby(struct xbps_handle* xh, const char* file, bool repo_mode UNUSED, bool regex) {
-	struct locate locate;
+int ownedby(struct xbps_handle* xh, const char* file, bool repo_mode UNUSED, bool useregex) {
+	const char* expr = NULL;
+	regex_t     regex;
 
-	memset(&locate, 0, sizeof(locate));
-
-	if (regex) {
-		if (regcomp(&locate.regex, file, REG_EXTENDED | REG_NOSUB | REG_ICASE) != 0) {
+	if (useregex) {
+		if (regcomp(&regex, file, REG_EXTENDED | REG_NOSUB | REG_ICASE) != 0) {
 			xbps_error_printf("xbps-locate: invalid regular expression\n");
 			exit(1);
 		}
 	} else {
-		locate.expr = file;
+		expr = file;
 	}
 
-	xbps_rpool_foreach(xh, repo_search_files, &locate);
+	for (unsigned int i = 0; i < xbps_array_count(xh->repositories); i++) {
+		const char* repo_uri;
+		xbps_array_get_cstring_nocopy(xh->repositories, i, &repo_uri);
+		repo_search_files(xh, repo_uri, false, expr, &regex);
+	}
 
-	if (regex)
-		regfree(&locate.regex);
+	if (useregex)
+		regfree(&regex);
 
 	return 0;
 }
 
 int ownedhash(struct xbps_handle* xh, const char* file, bool repo_mode UNUSED, bool regex UNUSED) {
-	struct locate locate;
-	struct stat   fstat;
-	char          hash[XBPS_SHA256_SIZE];
-
-	memset(&locate, 0, sizeof(locate));
-	locate.byhash = true;
+	const char* expr;
+	struct stat fstat;
+	char        hash[XBPS_SHA256_SIZE];
 
 	if (stat(file, &fstat) != -1) {
 		if (!S_ISREG(fstat.st_mode)) {
@@ -204,12 +270,16 @@ int ownedhash(struct xbps_handle* xh, const char* file, bool repo_mode UNUSED, b
 			xbps_error_printf("query: cannot get hash of `%s': %s\n", file, strerror(errno));
 			return 1;
 		}
-		locate.expr = hash;
+		expr = hash;
 	} else {
-		locate.expr = file;
+		expr = file;
 	}
 
-	xbps_rpool_foreach(xh, repo_search_files, &locate);
+	for (unsigned int i = 0; i < xbps_array_count(xh->repositories); i++) {
+		const char* repo_uri;
+		xbps_array_get_cstring_nocopy(xh->repositories, i, &repo_uri);
+		repo_search_files(xh, repo_uri, true, expr, NULL);
+	}
 
 	return 0;
 }
