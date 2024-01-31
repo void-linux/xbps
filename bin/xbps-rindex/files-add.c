@@ -24,6 +24,7 @@
  */
 
 #include "defs.h"
+#include "xbps/xbps_array.h"
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -157,7 +158,7 @@ length_file_string(xbps_dictionary_t pkg) {
 	return size;
 }
 
-int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool force, const char* compression) {
+int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool force, const char* compression, int* count_added, int* count_total) {
 	static char           pkg_line[4096];
 	xbps_dictionary_t     props_plist, files_plist;
 	xbps_array_t          existing_files, ignore_packages;
@@ -168,7 +169,8 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 	struct archive *      old_ar = NULL, *new_ar;
 	struct archive_entry* entry;
 	mode_t                mask;
-	int                   count_added = 0;
+
+	*count_added = 0, *count_total = 0;
 
 	existing_files = xbps_array_create();
 	ignore_packages = xbps_array_create();
@@ -204,6 +206,7 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 		}
 
 		list_packages(existing_files, old_ar);
+		*count_total = xbps_array_count(existing_files);
 		archive_read_close(old_ar);
 		fseek(old_ar_file, 0, SEEK_SET);
 		OPEN_AR_READ(old_ar);
@@ -301,6 +304,7 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 
 			xbps_array_add_cstring(ignore_packages, dbpkgver);
 
+			(*count_total)--;
 			printf("files: updating `%s' -> `%s' (%s)\n", dbpkgver, pkgver, arch);
 		}
 
@@ -351,14 +355,15 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 		}
 		archive_entry_free(file_entry);
 
-		count_added++;
+		(*count_added)++;
+		(*count_total)++;
 		printf("files: added `%s' (%s)\n", pkgver, arch);
 
 		xbps_object_release(props_plist);
 		xbps_object_release(files_plist);
 	}
 
-	if (count_added > 0) {
+	if (*count_added > 0) {
 		if (old_ar != NULL) {
 			char        buffer[1024];
 			size_t      buffer_size;
