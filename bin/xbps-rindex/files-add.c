@@ -42,6 +42,18 @@
 #include <unistd.h>
 #include <xbps.h>
 
+#define OPEN_AR_READ(ar)                       \
+	{                                          \
+		(ar) = archive_read_new();             \
+		assert(ar);                            \
+		archive_read_support_filter_gzip(ar);  \
+		archive_read_support_filter_bzip2(ar); \
+		archive_read_support_filter_xz(ar);    \
+		archive_read_support_filter_lz4(ar);   \
+		archive_read_support_filter_zstd(ar);  \
+		archive_read_support_format_tar(ar);   \
+	}
+
 
 static void
 list_packages(xbps_array_t dest, struct archive* ar) {
@@ -146,16 +158,17 @@ length_file_string(xbps_dictionary_t pkg) {
 }
 
 int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool force, const char* compression) {
+	static char           pkg_line[4096];
 	xbps_dictionary_t     props_plist, files_plist;
 	xbps_array_t          existing_files, ignore_packages;
 	char *                tmprepodir = NULL, *repodir = NULL, *new_ar_path, *rlockfname = NULL, *files_uri = NULL;
 	int                   rv = 0, ret = 0, rlockfd = -1;
-	char                  pkg_line[65536];
 	FILE*                 old_ar_file;
 	int                   new_ar_file;
 	struct archive *      old_ar = NULL, *new_ar;
 	struct archive_entry* entry;
 	mode_t                mask;
+	int                   count_added = 0;
 
 	existing_files = xbps_array_create();
 	ignore_packages = xbps_array_create();
@@ -183,15 +196,7 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 			goto out;
 		}
 	} else {
-		old_ar = archive_read_new();
-		assert(old_ar);
-
-		archive_read_support_filter_gzip(old_ar);
-		archive_read_support_filter_bzip2(old_ar);
-		archive_read_support_filter_xz(old_ar);
-		archive_read_support_filter_lz4(old_ar);
-		archive_read_support_filter_zstd(old_ar);
-		archive_read_support_format_tar(old_ar);
+		OPEN_AR_READ(old_ar);
 
 		if (archive_read_open_FILE(old_ar, old_ar_file) == ARCHIVE_FATAL) {
 			xbps_dbg_printf("[repo] `%s' failed to open repodata archive %s\n", files_uri, archive_error_string(old_ar));
@@ -199,8 +204,13 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 		}
 
 		list_packages(existing_files, old_ar);
-		// maybe reopen?
+		archive_read_close(old_ar);
 		fseek(old_ar_file, 0, SEEK_SET);
+		OPEN_AR_READ(old_ar);
+		if (archive_read_open_FILE(old_ar, old_ar_file) == ARCHIVE_FATAL) {
+			xbps_dbg_printf("[repo] `%s' failed to open repodata archive %s\n", files_uri, archive_error_string(old_ar));
+			return false;
+		}
 	}
 
 	new_ar_path = xbps_xasprintf("%s.XXXXXXXXXX", files_uri);
@@ -285,14 +295,13 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 
 			/* Same version or index version greater */
 			if (ret <= 0) {
-				fprintf(stderr, "files: skipping `%s' (%s), already registered.\n", pkgver, arch);
 				xbps_object_release(props_plist);
 				continue;
 			}
 
 			xbps_array_add_cstring(ignore_packages, dbpkgver);
 
-			printf("files: updating `%s' -> `%s'\n", dbpkgver, pkgver);
+			printf("files: updating `%s' -> `%s' (%s)\n", dbpkgver, pkgver, arch);
 		}
 
 		if ((files_plist = xbps_archive_fetch_plist(pkg, "/files.plist")) == NULL) {
@@ -342,61 +351,70 @@ int files_add(struct xbps_handle* xhp, int args, int argmax, char** argv, bool f
 		}
 		archive_entry_free(file_entry);
 
-		printf("files: registered `%s'\n", pkgver);
+		count_added++;
+		printf("files: added `%s' (%s)\n", pkgver, arch);
 
 		xbps_object_release(props_plist);
 		xbps_object_release(files_plist);
 	}
 
-	if (old_ar != NULL) {
-		while (archive_read_next_header(old_ar, &entry) == ARCHIVE_OK) {
-			char*  buffer;
-			size_t buffer_size;
+	if (count_added > 0) {
+		if (old_ar != NULL) {
+			char        buffer[1024];
+			size_t      buffer_size;
+			const char* pkgname;
 
-			if (xbps_match_string_in_array(ignore_packages, archive_entry_pathname(entry)))
-				continue;
+			while (archive_read_next_header(old_ar, &entry) == ARCHIVE_OK) {
+				pkgname = archive_entry_pathname(entry);
+				if (xbps_match_string_in_array(ignore_packages, pkgname)) {
+					archive_read_data_skip(old_ar);
+					continue;
+				}
 
-			if (archive_write_header(new_ar, entry) != ARCHIVE_OK) {
-				archive_entry_free(entry);
-				continue;
+				printf("files: copying `%s' from old archive\n", pkgname);
+
+				if (archive_write_header(new_ar, entry) != ARCHIVE_OK) {
+					archive_entry_free(entry);
+					continue;
+				}
+
+				while ((buffer_size = archive_read_data(old_ar, buffer, sizeof(buffer))) > 0) {
+					assert(archive_write_data(new_ar, buffer, buffer_size) > 0);
+				}
+
+				archive_write_finish_entry(new_ar);
 			}
 
-			buffer_size = archive_entry_size(entry);
-			buffer = malloc(buffer_size);
-			archive_read_data(old_ar, buffer, buffer_size);
-
-			if (archive_write_data(new_ar, buffer, buffer_size) != ARCHIVE_OK) {
-				archive_entry_free(entry);
-				free(buffer);
-				continue;
-			}
-
-			if (archive_write_finish_entry(new_ar) != ARCHIVE_OK) {
-				archive_entry_free(entry);
-				free(buffer);
-				continue;
-			}
-			archive_entry_free(entry);
+			archive_read_free(old_ar);
 		}
+		/* Write data to tempfile and rename */
+		if (archive_write_close(new_ar) != ARCHIVE_OK)
+			return false;
+		if (archive_write_free(new_ar) != ARCHIVE_OK)
+			return false;
 
-		archive_read_free(old_ar);
-	}
+		if (fchmod(new_ar_file, 0664) == -1) {
+			close(new_ar_file);
+			unlink(new_ar_path);
+			goto out;
+		}
+		close(new_ar_file);
+		if (rename(new_ar_path, files_uri) == -1) {
+			unlink(new_ar_path);
+			goto out;
+		}
+	} else {
+		if (old_ar != NULL)
+			archive_read_free(old_ar);
 
-	/* Write data to tempfile and rename */
-	if (archive_write_close(new_ar) != ARCHIVE_OK)
-		return false;
-	if (archive_write_free(new_ar) != ARCHIVE_OK)
-		return false;
+		/* Write data to tempfile and rename */
+		if (archive_write_close(new_ar) != ARCHIVE_OK)
+			return false;
+		if (archive_write_free(new_ar) != ARCHIVE_OK)
+			return false;
 
-	if (fchmod(new_ar_file, 0664) == -1) {
 		close(new_ar_file);
 		unlink(new_ar_path);
-		goto out;
-	}
-	close(new_ar_file);
-	if (rename(new_ar_path, files_uri) == -1) {
-		unlink(new_ar_path);
-		goto out;
 	}
 
 out:
