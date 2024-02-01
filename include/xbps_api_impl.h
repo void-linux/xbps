@@ -99,7 +99,6 @@ int HIDDEN xbps_transaction_fetch(struct xbps_handle *,
 int HIDDEN xbps_transaction_pkg_deps(struct xbps_handle *, xbps_array_t, xbps_dictionary_t);
 int HIDDEN xbps_transaction_internalize(struct xbps_handle *, xbps_object_iterator_t);
 
-char HIDDEN *xbps_get_remote_repo_string(const char *);
 int HIDDEN xbps_repo_sync(struct xbps_handle *, const char *);
 int HIDDEN xbps_file_hash_check_dictionary(struct xbps_handle *,
 		xbps_dictionary_t, const char *, const char *);
@@ -120,5 +119,6 @@ xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 		const char *);
 int HIDDEN xbps_conf_init(struct xbps_handle *);
+int HIDDEN xbps_repo_sync_files(struct xbps_handle* xh, const char* uri);
 
 #endif /* !_XBPS_API_IMPL_H_ */

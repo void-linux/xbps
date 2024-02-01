@@ -200,7 +200,7 @@ repodata_commit(struct xbps_handle *xhp, const char *repodir,
 }
 
 int
-index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression)
+index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force, const char *compression, int *count)
 {
 	xbps_dictionary_t idx, idxmeta, idxstage, binpkgd, curpkgd;
 	struct xbps_repo *repo = NULL, *stage = NULL;
@@ -383,7 +383,7 @@ index_add(struct xbps_handle *xhp, int args, int argmax, char **argv, bool force
 				_XBPS_RINDEX, strerror(errno));
 		goto out;
 	}
-	printf("index: %u packages registered.\n", xbps_dictionary_count(idx));
+	*count = xbps_dictionary_count(idx);
 
 out:
 	xbps_object_release(idx);

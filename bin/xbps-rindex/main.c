@@ -159,9 +159,16 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force, compression);
-	else if (clean_mode)
+	if (add_mode) {
+		int index_count = 0, files_count = 0, files_added = 0;
+
+		rv = index_add(&xh, optind, argc, argv, force, compression, &index_count);
+		if (rv == 0)
+			rv = files_add(&xh, optind, argc, argv, force, compression, &files_added, &files_count);
+
+		printf("index: %d packages registered\n", index_count);
+		printf("files: %d packages registered, %d new packages\n", files_count, files_added);
+	} else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
 	else if (rm_mode)
 		rv = remove_obsoletes(&xh, argv[optind]);

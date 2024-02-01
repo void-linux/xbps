@@ -40,6 +40,7 @@
 #include <openssl/ssl.h>
 #include <openssl/pem.h>
 
+#include "fetch.h"
 #include "xbps_api_impl.h"
 
 /**
@@ -58,7 +59,7 @@ xbps_repo_path_with_name(struct xbps_handle *xhp, const char *url, const char *n
 {
 	assert(xhp);
 	assert(url);
-	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0);
+	assert(strcmp(name, "repodata") == 0 || strcmp(name, "stagedata") == 0 || strcmp(name, "files") == 0);
 
 	return xbps_xasprintf("%s/%s-%s",
 	    url, xhp->target_arch ? xhp->target_arch : xhp->native_arch, name);
@@ -706,4 +707,40 @@ out:
 	if (rkeyfile)
 		free(rkeyfile);
 	return rv;
+}
+
+char*
+xbps_get_remote_repo_string(const char *uri)
+{
+	struct url *url;
+	size_t i;
+	char *p;
+
+	if ((url = fetchParseURL(uri)) == NULL)
+		return NULL;
+
+	/*
+	 * Replace '.' ':' and '/' characters with underscores, so that
+	 * provided URL:
+	 *
+	 * 	http://nocturno.local:8080/repo/x86_64
+	 *
+	 * becomes:
+	 *
+	 * 	http___nocturno_local_8080_repo_x86_64
+	 */
+	if (url->port != 0)
+		p = xbps_xasprintf("%s://%s:%u%s", url->scheme,
+		    url->host, url->port, url->doc);
+	else
+		p = xbps_xasprintf("%s://%s%s", url->scheme,
+		    url->host, url->doc);
+
+	fetchFreeURL(url);
+	for (i = 0; i < strlen(p); i++) {
+		if (p[i] == '.' || p[i] == '/' || p[i] == ':')
+			p[i] = '_';
+	}
+
+	return p;
 }

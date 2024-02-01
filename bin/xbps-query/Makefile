@@ -3,6 +3,6 @@ TOPDIR = ../..
 
 BIN = xbps-query
 OBJS =  main.o list.o show-deps.o show-info-files.o
-OBJS += ownedby.o search.o ../xbps-install/util.o
+OBJS += ownedby.o search.o ../xbps-install/util.o ../xbps-install/fetch_cb.o
 
 include $(TOPDIR)/mk/prog.mk

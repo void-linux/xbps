@@ -122,6 +122,12 @@
 #define XBPS_REPOIDX_META 	"index-meta.plist"
 
 /**
+ * @def XBPS_REPO_FILES
+ * Filename for the repository files property list.
+ */
+#define XBPS_REPO_FILES 	"files.plist"
+
+/**
  * @def XBPS_FLAG_VERBOSE
  * Verbose flag that can be used in the function callbacks to alter
  * its behaviour. Must be set through the xbps_handle::flags member.
@@ -1431,7 +1437,13 @@ struct xbps_repo {
 	 *
 	 * Proplib dictionary associated with the repository index-meta.
 	 */
-	xbps_dictionary_t idxmeta;
+	xbps_dictionary_t idxmeta;	
+	/**
+	 * @var files
+	 *
+	 * Proplib dictionary associated with the repository files.
+	 */
+	xbps_dictionary_t files;
 	/**
 	 * @var uri
 	 * 
@@ -1442,6 +1454,12 @@ struct xbps_repo {
 	 * @private
 	 */
 	int fd;
+	/**
+	 * @var filear
+	 *
+	 * archive_read instance for *-files
+	 */
+	struct archive *filear;
 	/**
 	 * var is_remote
 	 *
@@ -1470,6 +1488,8 @@ void xbps_rpool_release(struct xbps_handle *xhp);
  * the configuration file.
  */
 int xbps_rpool_sync(struct xbps_handle *xhp, const char *uri);
+
+int xbps_rpool_sync_files(struct xbps_handle* xhp);
 
 /**
  * Iterates over the repository pool and executes the \a fn function
@@ -2367,6 +2387,11 @@ xbps_plist_array_from_file(const char *path);
  */
 xbps_dictionary_t
 xbps_plist_dictionary_from_file(const char *path);
+
+/**
+
+*/
+char* xbps_get_remote_repo_string(const char *path);
 
 /**@}*/
 
