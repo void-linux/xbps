@@ -212,9 +212,14 @@ xbps_transaction_internalize(struct xbps_handle *xhp, xbps_object_iterator_t ite
 		int rv;
 
 		ttype = xbps_transaction_pkg_type(obj);
-		if (ttype != XBPS_TRANS_INSTALL && ttype != XBPS_TRANS_UPDATE)
+		switch (ttype) {
+		case XBPS_TRANS_INSTALL:
+		case XBPS_TRANS_UPDATE:
+		case XBPS_TRANS_REINSTALL:
+			break;
+		default:
 			continue;
-
+		}
 		rv = internalize_binpkg(xhp, obj);
 		if (rv < 0)
 			return rv;
