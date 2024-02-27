@@ -46,9 +46,9 @@ usage(bool fail)
 	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
 	    "                           in memory, ignoring on-disk repodata archives\n"
 	    " -p, --property PROP[,...] Show properties for PKGNAME\n"
-	    " -R, --repository          Enable repository mode. This mode explicitly\n"
+	    " -R                        Enable repository mode. This mode explicitly\n"
 	    "                           looks for packages in repositories\n"
-	    "     --repository=<url>    Enable repository mode and add repository\n"
+	    "     --repository <url>    Enable repository mode and add repository\n"
 	    "                           to the top of the list. This option can be\n"
 	    "                           specified multiple times\n"
 	    "     --regex               Use Extended Regular Expressions to match\n"
@@ -93,7 +93,7 @@ main(int argc, char **argv)
 		{ "list-orphans", no_argument, NULL, 'O' },
 		{ "ownedby", no_argument, NULL, 'o' },
 		{ "property", required_argument, NULL, 'p' },
-		{ "repository", optional_argument, NULL, 'R' },
+		{ "repository", required_argument, NULL, 4 },
 		{ "rootdir", required_argument, NULL, 'r' },
 		{ "show", no_argument, NULL, 'S' },
 		{ "search", no_argument, NULL, 's' },
@@ -169,9 +169,6 @@ main(int argc, char **argv)
 			show_prop = true;
 			break;
 		case 'R':
-			if (optarg != NULL) {
-				xbps_repo_store(&xh, optarg);
-			}
 			repo_mode = true;
 			break;
 		case 'r':
@@ -206,6 +203,10 @@ main(int argc, char **argv)
 			break;
 		case 3:
 			list_repolock = opmode = true;
+			break;
+		case 4:
+			xbps_repo_store(&xh, optarg);
+			repo_mode = true;
 			break;
 		case '?':
 		default:
