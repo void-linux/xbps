@@ -109,8 +109,8 @@ section.
 Enable repository mode.
 This mode explicitly looks in repositories, rather
 than looking in the target root directory.
-.It Fl -repository=url
-Appends the specified repository to the top of the list.
+.It Fl -repository Ar url
+Enables repository mode and adds the specified repository to the top of the list.
 The
 .Ar url
 argument expects a URL to the repository for remote repositories or
@@ -190,7 +190,7 @@ Lists packages that are in repolock mode.
 See the
 .Em PACKAGE MODES
 section for more information.
-.It Fl o, Fl -ownedby Ar PATTERN [ Fl -repository ] [ Fl -regex ]
+.It Fl o, Fl -ownedby Ar PATTERN [ Fl R ] [ Fl -regex ]
 Search for installed package files by matching
 .Ar PATTERN .
 The
@@ -203,22 +203,22 @@ or an Extended Regular Expression as explained in
 .Fl -regex
 option is set).
 If the
-.Fl -repository
+.Fl R
 option is set, the matched
 .Ar PATTERN
 in repositories will be shown.
-.It Fl S, Fl -show Ar PKG [ Fl -repository ] [ Fl -property Ar PROP ]
+.It Fl S, Fl -show Ar PKG [ Fl R ] [ Fl -property Ar PROP ]
 Shows information of an installed package.
 This is the default mode if no other mode is set.
 If the
-.Fl -repository
+.Fl R
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
 If a package property is specified with
 .Fl -property,
 only that property will be shown.
-.It Fl s, Fl -search Ar PATTERN [ Fl -repository ] [ Fl -property Ar PROP ] [ Fl -regex ]
+.It Fl s, Fl -search Ar PATTERN [ Fl R ] [ Fl -property Ar PROP ] [ Fl -regex ]
 Search for packages by matching
 .Ar PATTERN
 on its
@@ -238,30 +238,30 @@ all packages matching
 against
 .Ar PROP
 will be shown.
-.It Fl f, Fl -files Ar PKG [ Fl -repository ]
+.It Fl f, Fl -files Ar PKG [ Fl R ]
 Show the package files for
 .Ar PKG .
 If the
-.Fl -repository
+.Fl R
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
-.It Fl x, Fl -deps Ar PKG [ Fl -repository ]
+.It Fl x, Fl -deps Ar PKG [ Fl R ]
 Show the required dependencies for
 .Ar PKG .
 Only direct dependencies are shown.
 To see a full dependency tree, also set
 .Fl -fulldeptree .
 If the
-.Fl -repository
+.Fl R
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
-.It Fl X, Fl -revdeps Ar PKG [ Fl -repository ]
+.It Fl X, Fl -revdeps Ar PKG [ Fl R ]
 Show the reverse dependencies for
 .Ar PKG .
 If the
-.Fl -repository
+.Fl R
 option is set, the matched
 .Ar PKG
 in repositories will be shown.
