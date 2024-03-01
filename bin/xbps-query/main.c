@@ -46,9 +46,9 @@ usage(bool fail)
 	    " -M, --memory-sync         Remote repository data is fetched and stored\n"
 	    "                           in memory, ignoring on-disk repodata archives\n"
 	    " -p, --property PROP[,...] Show properties for PKGNAME\n"
-	    " -R, --repository          Enable repository mode. This mode explicitly\n"
+	    " -R                        Enable repository mode. This mode explicitly\n"
 	    "                           looks for packages in repositories\n"
-	    "     --repository=<url>    Enable repository mode and add repository\n"
+	    "     --repository <url>    Enable repository mode and add repository\n"
 	    "                           to the top of the list. This option can be\n"
 	    "                           specified multiple times\n"
 	    "     --regex               Use Extended Regular Expressions to match\n"
@@ -77,7 +77,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "C:c:df:hHiLlMmOo:p:Rr:s:S:VvX:x:";
+	const char *shortopts = "C:c:dfhHiLlMmOop:Rr:sSVvXx";
 	const struct option longopts[] = {
 		{ "config", required_argument, NULL, 'C' },
 		{ "cachedir", required_argument, NULL, 'c' },
@@ -91,17 +91,17 @@ main(int argc, char **argv)
 		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
 		{ "list-orphans", no_argument, NULL, 'O' },
-		{ "ownedby", required_argument, NULL, 'o' },
+		{ "ownedby", no_argument, NULL, 'o' },
 		{ "property", required_argument, NULL, 'p' },
-		{ "repository", optional_argument, NULL, 'R' },
+		{ "repository", required_argument, NULL, 4 },
 		{ "rootdir", required_argument, NULL, 'r' },
-		{ "show", required_argument, NULL, 'S' },
-		{ "search", required_argument, NULL, 's' },
+		{ "show", no_argument, NULL, 'S' },
+		{ "search", no_argument, NULL, 's' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "verbose", no_argument, NULL, 'v' },
-		{ "files", required_argument, NULL, 'f' },
-		{ "deps", required_argument, NULL, 'x' },
-		{ "revdeps", required_argument, NULL, 'X' },
+		{ "files", no_argument, NULL, 'f' },
+		{ "deps", no_argument, NULL, 'x' },
+		{ "revdeps", no_argument, NULL, 'X' },
 		{ "regex", no_argument, NULL, 0 },
 		{ "fulldeptree", no_argument, NULL, 1 },
 		{ "cat", required_argument, NULL, 2 },
@@ -135,7 +135,6 @@ main(int argc, char **argv)
 			flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'f':
-			pkg = optarg;
 			show_files = opmode = true;
 			break;
 		case 'H':
@@ -163,7 +162,6 @@ main(int argc, char **argv)
 			orphans = opmode = true;
 			break;
 		case 'o':
-			pkg = optarg;
 			own = opmode = true;
 			break;
 		case 'p':
@@ -171,20 +169,15 @@ main(int argc, char **argv)
 			show_prop = true;
 			break;
 		case 'R':
-			if (optarg != NULL) {
-				xbps_repo_store(&xh, optarg);
-			}
 			repo_mode = true;
 			break;
 		case 'r':
 			rootdir = optarg;
 			break;
 		case 'S':
-			pkg = optarg;
 			show = opmode = true;
 			break;
 		case 's':
-			pkg = optarg;
 			pkg_search = opmode = true;
 			break;
 		case 'v':
@@ -194,11 +187,9 @@ main(int argc, char **argv)
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
 		case 'x':
-			pkg = optarg;
 			show_deps = opmode = true;
 			break;
 		case 'X':
-			pkg = optarg;
 			show_rdeps = opmode = true;
 			break;
 		case 0:
@@ -213,6 +204,10 @@ main(int argc, char **argv)
 		case 3:
 			list_repolock = opmode = true;
 			break;
+		case 4:
+			xbps_repo_store(&xh, optarg);
+			repo_mode = true;
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -222,20 +217,42 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if (!argc && !opmode) {
-		usage(true);
-		/* NOTREACHED */
-	} else if (!opmode) {
+	if (!opmode) {
+		if (argc) {
 		/* show mode by default */
 		show = opmode = true;
-		pkg = *(argv++);
-		argc--;
+		} else {
+			/* no arguments */
+			usage(true);
+			/* NOTREACHED */
+		}
 	}
+
+	if (own || pkg_search || catfile || show || show_prop ||
+	     show_files || show_deps || show_rdeps) {
+		/* modes that require a PKG argument */
+		if (argc) {
+			pkg = *(argv++);
+			argc--;
+		} else {
+			xbps_error_printf("xbps-query: missing required argument PKG\n");
+			exit(EXIT_FAILURE);
+			/* NOTREACHED */
+		}
+	}
+
 	if (argc) {
 		/* trailing parameters */
-		usage(true);
+		xbps_error_printf("xbps-query: too many arguments: ");
+		while (argc) {
+			printf("%s ", *(argv++));
+			argc--;
+		}
+		printf("\n");
+		exit(EXIT_FAILURE);
 		/* NOTREACHED */
 	}
+
 	/*
 	 * Initialize libxbps.
 	 */
