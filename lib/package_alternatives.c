@@ -171,6 +171,13 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 			return -1;
 		}
 
+		/* Skip files that match noextract patterns from configuration file. */
+		if (xhp->noextract && xbps_patterns_match(xhp->noextract, tok1)) {
+			xbps_dbg_printf(xhp, "[alternative] %s skipped (matched by a pattern)\n", tok1);
+			free(alternative);
+			continue;
+		}
+
 		target = strdup(tok2);
 		dir = dirname(tok2);
 
