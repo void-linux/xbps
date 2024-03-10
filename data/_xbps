@@ -1,12 +1,29 @@
 #compdef -p xbps-*
 
-_xbps_common=(
-	{-C,--config=-}'[Full path to configuration file]:config file:_files'
+_xbps_common_conf=(
+	{-C,--config=-}'[Path to configuration directory (xbps.d)]:conf dir [xbps.d]:_files -/'
+	{-r,--rootdir=-}'[Full path to rootdir]:root dir [/]:_xbps_full_path -/'
+)
+
+_xbps_common_debug=(
 	{-d,--debug}'[Debug mode shown to stderr]'
-	{-h,--help}'[Print help usage]'
-	{-r,--rootdir=-}'[Full path to rootdir]:root dir:_files -/'
 	{-v,--verbose}'[Verbose messages]'
-	{-V,--version}'[Show XBPS version]'
+)
+
+_xbps_common_info=(
+	'(- :)'{-h,--help}'[Show usage]'
+	'(- :)'{-V,--version}'[Show XBPS version]'
+)
+
+_xbps_common=(
+	$_xbps_common_conf
+	$_xbps_common_debug
+	$_xbps_common_info
+)
+
+_xbps_common_without_conf=(
+	$_xbps_common_debug
+	$_xbps_common_info
 )
 
 _xbps_properties=(
@@ -45,12 +62,19 @@ _xbps_properties=(
 	state
 )
 
+(( $+functions[_xbps_all_packages] )) ||
 _xbps_all_packages() {
 	compadd "$@" -- ${${${(f)"$(xbps-query -Rs '')"}#??? }%%-[^- ]# *}
 }
 
+(( $+functions[_xbps_installed_packages] )) ||
 _xbps_installed_packages() {
 	compadd "$@" -- ${${${(f)"$(xbps-query -l)"}#?? }%%-[^- ]# *}
+}
+
+(( $+functions[_xbps_alternatives_groups] )) ||
+_xbps_alternatives_groups() {
+	compadd "$@" -- ${${${(f)"$(xbps-alternatives -l)"}##? }%%-# *}
 }
 
 (( $+functions[_xbps_packages_auto] )) ||
@@ -58,85 +82,257 @@ _xbps_packages_auto() {
 	_xbps_packages "$@" ${${opt_args[(i)-R|--repository]:+repo}:-installed}
 }
 
-_xbps_alternatives_groups() {
-	compadd "$@" -- ${${${(f)"$(xbps-alternatives -l)"}##? }%%-# *}
+(( $+functions[_xbps_repo_url] )) ||
+_xbps_repo_url() {
+	local -a alts=( 'local-repositories:repository url:_files -/' )
+	(( $+functions[_xmirrors] )) &&
+		alts+=( 'mirror-repositories:mirror url:_xmirrors --repos' )
+	alts+=( 'urls:repository url:_urls' )
+	_alternative $alts
+}
+
+(( $+functions[_xbps_full_path] )) ||
+_xbps_full_path() {
+	local -a pref
+	[[ $PREFIX[1] != (\~|\$) ]] && pref=( -P / )
+	_files "$@" $pref -W /
+}
+
+(( $+functions[_xbps_chroot_args] )) ||
+_xbps_chroot_args() {
+	if (( CURRENT <= 1 )); then
+		local -a expl
+		_description directories expl 'chroot dir'
+		_files "$expl[@]" -/
+	elif (( CURRENT == 2 )); then
+		_command_names -e
+	else
+		shift words
+		(( CURRENT -= 1 ))
+		_compskip=all
+		_normal -s
+	fi
+}
+
+(( $+functions[_xbps_src_dest] )) ||
+_xbps_src_dest() {
+	local -a expl
+	if compset -P 1 '*:'; then
+		if [[ -z $PREFIX && $SUFFIX[1] != / ]]; then
+			compadd -S '' -Q -- /
+		else
+			_message -e 'dest'
+		fi
+	else
+		_description files expl 'src'
+		_xbps_full_path "$expl[@]"
+	fi
 }
 
 _xbps_alternatives() {
 	_arguments -s : \
 		$_xbps_common \
 		{-g,--group}'[Group of alternatives to match]:group:_xbps_alternatives_groups' \
-		{-l,--list}'[List all alternatives]' \
-		{-s,--set}'[Set alternatives]' \
-		'*:installed packages:_xbps_packages installed'
+		- '(mode)' \
+		{-l,--list}'[List alternatives]::installed package:_xbps_packages installed' \
+		{-s,--set}'[Set alternatives]:installed package:_xbps_packages installed'
 }
 
 _xbps_checkvers() {
-	_arguments -s : \
+	local -i ret=1
+	local -a context state state_descr line
+	typeset -A opt_args
+	local curcontext="$curcontext"
+
+	_arguments -s -C : \
 		$_xbps_common \
-		{-D,--distdir}'[Set the path to void-packages]:path:_files -/' \
-		{-i,--installed}'[Check for outdated packages in rootdir]' \
-		{-s,--show-missing}'[List any binary packages which are not built]' \
-		'*:extra packages:_files'
+		{-D,--distdir}'[Set the path to void-packages]:path [~/void-packages]:_files -/' \
+		{-e,--removed}'[List packages present in repos, but not in distdir]' \
+		{-f,--format}'[Output format]: :->format' \
+		{-I,--installed}'[Check for outdated packages in rootdir]' \
+		{-i,--ignore-conf-repos}'[Ignore repositories defined in configuration files]' \
+		{-m,--manual}'[Only process listed files]' \
+		'*'{-R,--repository=-}'[Add repository to the top of the list]: :_xbps_repo_url' \
+		{-s,--show-all}'[List all packages, in the format "pkgname repover srcver"]' \
+		'*:extra packages:_files' && ret=0
+
+	case $state in
+	format)
+		local -a codes=(
+			'\\n:newline'
+			'\\t:tab'
+			'\\0:NULL'
+			'%%:a plain "%"'
+			'%n:package name'
+			'%r:package version from repositories or pkgdb (returns ? if not found)'
+			'%s:source package version (returns ? if not found)'
+			'%t:requested template name (this can be a sub package)'
+			'%R:repository url (returns ? if not found)'
+		)
+		compset -P '*[^\%]'
+		compset -P '(%%)#'
+		compset -S '*'
+		compstate[to_end]=''
+		_describe -t format-codes 'format [%%n %%r %%s %%t %%R]' codes -S '' && ret=0
+		;;
+	esac
+
+	return ret
 }
 
 _xbps_create() {
-	_arguments -s : \
-		{-A,--architecture}'[Package architecture]:architecture:(i686 i686-musl x86_64 x86_64-musl armv7l armv7l-musl armv6l armv6l-musl aarch64 aarch64-musl ppc64le ppc64le-musl ppc64 ppc64-musl ppc ppc-musl noarch)' \
+	local -i ret=1
+	local -a context state state_descr line expl
+	typeset -A opt_args
+	local curcontext="$curcontext" pkgver_format='<pkgname>-<version>_<revision>'
+
+	_arguments -s -C : \
+		{-A,--architecture}'[Package architecture]:architecture:_xbps_architectures -a noarch' \
 		{-B,--built-with}'[Package builder string]:package builder: ' \
-		{-C,--conflicts}'[Conflicts]:conflicts: ' \
-		{-D,--dependencies}'[Dependencies]:dependencies: ' \
-		{-F,--config-files}'[Configuration files]:configuration files: ' \
-		{-H,--homepage}'[Homepage]:homepage: ' \
-		{-h,--help}'[Show help]' \
-		{-l,--license}'[License]:license: ' \
-		{-M,--mutable-files}'[Mutable files list]:mutable files: ' \
-		{-m,--maintainer}'[Maintainer]:maintainer: ' \
-		{-n,--pkgver}'[Package name/version tuple]:package name/version: ' \
-		{-P,--provides}'[Provides]:provides: ' \
+		{-C,--conflicts}"[Conflicts]:conflicts ($pkgver_format):->pkg-list" \
+		{-c,--changelog}'[Changelog URL]:URL:_urls' \
+		{-D,--dependencies}"[Dependencies]:dependencies ($pkgver_format):->pkg-list" \
+		{-F,--config-files}'[Configuration files]:configuration files:->files-list' \
+		{-G,--source-revisions}'[git revisions of the sourcepkg]:string: ' \
+		{-H,--homepage}'[Homepage]:homepage:_urls' \
+		'(- :)'{-h,--help}'[Show usage]' \
+		{-l,--license}'[License]:license:->licenses-list' \
+		{-M,--mutable-files}'[Mutable files list]:mutable files:->files-list' \
+		{-m,--maintainer}'[Maintainer]:maintainer:_email_addresses' \
+		{-n,--pkgver}"[Package name/version tuple]:package ($pkgver_format):->pkg-list" \
+		{-P,--provides}"[Provides]:provides (<pkgname>-<version>):->pkg-list" \
 		{-p,--preserve}'[Enable package preserve boolean]' \
 		{-q,--quiet}'[Work silently]' \
-		{-R,--replaces}'[Replaces]:replaces: ' \
+		{-R,--replaces}"[Replaces]:replaces ($pkgver_format):->pkg-list" \
+		{-r,--reverts}'[Reverts]:reverts (list of <version>_<revision>): ' \
 		{-S,--long-desc}'[Long description]:long description: ' \
 		{-s,--desc}'[Short description]:short description: ' \
 		{-t,--tags}'[A list of tags/categories]:tags: ' \
-		{-V,--version}'[Prints XBPS release version]' \
+		'(- :)'{-V,--version}'[Show XBPS version]' \
+		--alternatives'[List of available alternatives this pkg provides]:list of <group>\:<symlink>\:<target>:->alts-list' \
 		--build-options'[A string with the used build options]:used build options: ' \
-		--compression'[Compression format]:compression format:(gzip bzip2 xz)' \
-		--shlib-provides'[List of provided shared libraries]:provided shared libraries: ' \
-		--shlib-requires'[List of required shared libraries]:required shared libraries: '
+		--compression'[Compression format]:format [zstd]:(none gzip bzip2 xz lz4 zstd)' \
+		--shlib-provides'[List of provided shared libraries]:provided shared libraries:->shlib-list' \
+		--shlib-requires'[List of required shared libraries]:required shared libraries:->shlib-list' \
+		':destdir:_files -/' && ret=0
+
+	case $state in
+	*-list)
+		# TODO: all quoting forms
+		# TODO: quoted spaces
+		# until then, don't append a space as a suffix
+		compset -P '* '
+		compset -S ' *'
+		;|
+	pkg-list)
+		_description repository-packages expl "$state_descr"
+		_xbps_packages "$expl[@]" -S '' repo && ret=0
+		;;
+	files-list)
+		_description files expl "$state_descr"
+		_files "$expl[@]" -S '' && ret=0
+		;;
+	shlib-list)
+		_wanted libraries expl "$state_descr" \
+			compadd -S '' -- ${^=LD_LIBRARY_PATH:-/usr/lib /usr/local/lib}/lib*.(a|so*)(:t) && ret=0
+		;;
+	alts-list)
+		if compset -P 1 '*:*:'; then
+			_description files expl 'target'
+			_files "$expl[@]" -S '' && ret=0
+		elif compset -P 1 '*:'; then
+			_description files expl 'symlink'
+			_files "$expl[@]" -S : && ret=0
+		else
+			_wanted alternative-groups expl 'group' _xbps_alternatives_groups -S : && ret=0
+		fi
+		;;
+	licenses-list)
+		# List of most used licenses. Obtained like this:
+		# 	setopt extended_glob rc_quotes
+		# 	cd void-packages
+		# 	dirs=( srcpkgs/^*-devel(/) )
+		# 	sed -nE 's/license=["''](.*)["'']/\1/p' ${^dirs}/template |
+		# 		sed 's/, /\n/g' | sort | uniq -c | sort -n
+		local -a licenses=(
+			GPL-{3,2,1}.0-{or-later,only}
+			LGPL-{3.0,2.1,2.0}-{or-later,only}
+			AGPL-3.0-{or-later,only}
+			MIT
+			BSD-{2,3,4}-Clause
+			Apache-2.0
+			Artistic-1.0-Perl Artistic-2.0
+			ISC
+			'Public Domain'
+			CC0-1.0 CC-BY-3.0 CC-BY-SA-{4,3}.0
+			Unlicense
+		)
+		_describe -t licenses "$state_descr" licenses -S '' -l && ret=0
+		;;
+	esac
+
+	return ret
 }
 
 _xbps_dgraph() {
 	_arguments -0 : \
-		{-C,--config=-}'[Full path to configuration file]:config file:_files' \
-		{-c,--graph-config}'[Path to configuration file]:config file:_files' \
+		$_xbps_common_conf \
 		{-d,--debug}'[Debug mode shown to stderr]' \
-		{-h,--help}'[Print help usage]' \
+		'(- :)'{-h,--help}'[Show usage]' \
+		{-c,--graph-config}'[Path to graph configuration file]:config file:_files' \
 		{-M,--memory-sync}'[Keep remote repository data in memory only]' \
-		{-r,--rootdir}'[Full path to rootdir]:root dir:_files -/' \
 		{-R,--repository}'[Enable repository mode]' \
-		- '(mode)' \
-		{-g,--gen-config}'[Generate a default config file]' \
+		+ '(mode)' \
+		'(pkg)'{-g,--gen-config}'[Generate a graph configuration file]' \
 		{-f,--fulldeptree}'[Generate a dependency graph]' \
-		{-m,--metadata}'[Generate a metadata graph]' \
-		':package:_xbps_packages_auto'
+		{-m,--metadata}'[Generate a metadata graph (default mode)]' \
+		+ 'pkg' \
+		'(mode):package:_xbps_packages_auto'
 }
 
+_xbps_digest() {
+	_arguments : \
+		$_xbps_common_info \
+		{-m,--mode}'[Selects the digest mode]:digest mode [sha256]:(sha256)' \
+		'*:file:_files'
+}
+
+_xbps_fbulk() {
+	_arguments : \
+		{-j,--jobs}'[Set number of parallel builds running at the same time]: : _guard "[0-9]#" "number of jobs [1]"' \
+		{-l,--logdir}'[Set the log directory]:logdir [log.<pid>]:_files -/' \
+		{-s,--system}'[System rebuild mode]' \
+		{-V,--verbose}'[Enable verbose mode]' \
+		'(- :)'{-v,--version}'[Show XBPS version]' \
+		'(- :)'{-h,--help}'[Show usage]' \
+		':path to void-packages:_files -/' \
+		'*:pkg:compadd -- $~line[1]/srcpkgs/*(:t)'
+}
+
+_xbps_fetch() {
+	_arguments : \
+		$_xbps_common_without_conf \
+		{-o,--out}'[Rename file from specified URL to output]:output:_files' \
+		{-s,--sha256}'[Print sha256sums of downloaded files]' \
+		'*:URL:_urls'
+}
 
 _xbps_install() {
 	_arguments -s -0 : \
 		$_xbps_common \
 		{-A,--automatic}'[Set automatic installation mode]' \
-		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
-		{-n,--dry-run}'[Dry-run mode]' \
-		{-f,--force}'[Force package re-installation]' \
-		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
+		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_xbps_full_path -/' \
+		{-D,--download-only}'[Only download packages to the cache]' \
+		'*'{-f,--force}'[Force package re-installation]' \
+		{-I,--ignore-file-conflicts}'[Ignore detected file conflicts]' \
+		{-i,--ignore-conf-repos}'[Ignore repositories defined in configuration files]' \
 		{-M,--memory-sync}'[Keep remote repository data in memory only]' \
-		'*'{-R,--repository=-}'[Add repository to the top of the list]:repository url:_files -/' \
+		{-n,--dry-run}'[Dry-run mode]' \
+		'*'{-R,--repository=-}'[Add repository to the top of the list]: :_xbps_repo_url' \
+		--reproducible'[Enables reproducible mode in pkgdb]' \
 		{-S,--sync}'[Sync remote repository index]' \
-		{-u,--update}'[Update target packages]' \
 		{-U,--unpack-only}'[Unpack packages without configuring]' \
+		{-u,--update}'[Update target packages]' \
 		{-y,--yes}'[Assume yes to all questions]' \
 		'*:available packages:_xbps_packages repo'
 }
@@ -153,30 +349,44 @@ _xbps_pkgdb() {
 _xbps_query() {
 	_arguments -s -0 : \
 		$_xbps_common \
-		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
-		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
+		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_xbps_full_path -/' \
+		{-i,--ignore-conf-repos}'[Ignore repositories defined in configuration files]' \
 		{-M,--memory-sync}'[Keep remote repository data in memory only]' \
-		{-p,--property=-}'[Show properties]:property:($_xbps_properties)' \
+		{-p,--property=-}'[Show properties]:property:_sequence _xbps_properties' \
+		{-R,--repository}'[Enable repository mode]' \
+		'*'--repository=-'[Add repository to the top of the list]: :_xbps_repo_url' \
 		--regex'[Use Extended Regular Expressions to match]' \
 		--fulldeptree'[Full dependency tree for -x/--deps]' \
-		{-R,--repository}'[Enable repository mode]' \
-		'*'--repository=-'[Add repository to the top of the list]:repository url:_files -/' \
 		- '(mode)' \
 		{-l,--list-pkgs}'[List installed packages]' \
 		{-L,--list-repos}'[List registered repositories]' \
 		{-H,--list-hold-pkgs}'[List packages on hold state]' \
+		--list-repolock-pkgs'[List repolocked packages]' \
 		{-m,--list-manual-pkgs}'[List packages installed explicitly]' \
 		{-O,--list-orphans}'[List package orphans]' \
-		--list-repolock-pkgs'[List packages in repolock mode]' \
 		{-o,--ownedby}'[Search for package files]:package file:_files' \
-		{-S,--show}'[Show information]:package:_xbps_packages_auto' \
+		{-S,--show}'[Show information (default mode)]:package:_xbps_packages_auto' \
 		{-s,--search}'[Search for packages]:search string: ' \
-		--cat=-'[Print file from binpkg to stdout]:file name:_files:package:_xbps_packages_auto' \
+		--cat=-'[Print file from package to stdout]:file name:_xbps_package_files:package:_xbps_packages_auto' \
 		{-f,--files}'[Show package files]:package:_xbps_packages_auto' \
 		{-x,--deps}'[Show dependencies]:package:_xbps_packages_auto' \
 		{-X,--revdeps}'[Show reverse dependencies]:package:_xbps_packages_auto' \
-		- '(default)' \
+		- 'default' \
 		':package:_xbps_packages_auto'
+}
+
+(( $+functions[_xbps_package_files] )) ||
+_xbps_package_files() {
+	local -a cat_args=( "${(@0)opt_args[mode---cat]}" ) files expl
+	if (( $#cat_args <= 1 )); then
+		_message 'no package specified'
+		return
+	fi
+	# TODO: --repository=url on the command-line
+	# TODO: -R on the command-line
+	files=( ${${(f)"$(_call_program package-files \
+		xbps-query -Rf $cat_args[2] 2>/dev/null)"}% -> *} )
+	_wanted package-files expl 'package file' compadd "$@" -a - files
 }
 
 _xbps_reconfigure() {
@@ -184,6 +394,8 @@ _xbps_reconfigure() {
 		$_xbps_common \
 		{-a,--all}'[Process all packages]' \
 		{-f,--force}'[Force reconfiguration]' \
+		--fulldeptree'[Full dependency tree for -x/--deps]' \
+		{-x,--deps}'[Also process dependencies for each package]' \
 		'*'{-i,--ignore}'[Ignore package for reconfigure]:installed packages:_xbps_packages installed' \
 		'*:installed packages:_xbps_packages installed'
 }
@@ -191,80 +403,140 @@ _xbps_reconfigure() {
 _xbps_remove() {
 	_arguments -s : \
 		$_xbps_common \
-		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
- 		{-F,--force-revdeps}'[Force package removal even with revdeps/unresolved shared libraries]' \
+		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_xbps_full_path -/' \
+		{-F,--force-revdeps}'[Force package removal even with revdeps or unresolved shared libraries]' \
 		{-f,--force}'[Force package files removal]' \
-		{-O,--clean-cache}'[Remove obsolete packages in cachedir]' \
-		{-o,--remove-orphans}'[Remove package orphans]' \
 		{-n,--dry-run}'[Dry-run mode]' \
+		'*'{-O,--clean-cache}'[Remove obsolete packages from the cache]' \
+		{-o,--remove-orphans}'[Remove package orphans]' \
 		{-R,--recursive}'[Recursively remove dependencies]' \
 		{-y,--yes}'[Assume yes to all questions]' \
 		'*:installed packages:_xbps_packages installed'
 }
 
 _xbps_rindex() {
+	local -a rest_args_spec
+	(( $words[(I)(-a|--add|-S|--sign-pkg)] )) &&
+	  rest_args_spec=( + 'rest' '*:packages:_files -g "*.xbps"' )
 	_arguments -s : \
-		{-d,--debug}'[Debug mode shown to stderr]' \
+		$_xbps_common_without_conf \
 		{-f,--force}'[Force mode to overwrite entry in add mode]' \
-		{-h,--help}'[Print help usage]' \
-		{-v,--verbose}'[Verbose messages]' \
-		{-V,--version}'[Show XBPS version]' \
-		'--privkey[Path to the private key for signing]:private key path:_files' \
-		'--signedby[Signature details]:signature details: ' \
+		{-C,--hashcheck}'[Consider file hashes for cleaning up packages]' \
+		--compression'[Compression format]:format [zstd]:(none gzip bzip2 xz lz4 zstd)' \
+		--privkey'[Path to the private key for signing]:private key path [˜/.ssh/id_rsa]:_files' \
+		--signedby'[Signature details, i.e. "name <email>"]:name <email>:_email_addresses' \
 		- '(mode)' \
-		{-a,--add}'[Add package to repository index]' \
-		{-c,--clean}'[Clean repository index]' \
-		{-r,--remove-obsoletes}'[Removes obsolete packages from repository]' \
-		{-s,--sign}'[Sign repository index]' \
-		{-S,--sign-pkg}'[Sign binary package archive]' \
-		':repository dir:_files -/' \
-		'*:packages:_files'
+		{-a,--add}'[Add packages to repository index]:packages:_files -g "*.xbps"' \
+		{-c,--clean}'[Clean repository index]:repository dir:_files -/' \
+		{-r,--remove-obsoletes}'[Removes obsolete packages from repository]:repository dir:_files -/' \
+		{-s,--sign}'[Sign repository index]:repository dir:_files -/' \
+		{-S,--sign-pkg}'[Sign binary package archive]:packages:_files -g "*.xbps"' \
+		$rest_args_spec
 }
 
 _xbps_uchroot() {
-	_arguments \
-		'-D[distdir]:distdir:_files -/' \
-		'-H[hostdir]:hostdir:_files -/' \
-		'-S[shmdir]:shmdir:_files -/' \
-		':chroot dir:_files -/' \
-		':command: _command_names -e' \
-		'*::arguments:{_compskip=all; _normal -s}'
+	local -a context state state_descr line
+	typeset -A opt_args
+	_arguments -S : \
+		$_xbps_common_info \
+		'*'{-B,--bind-ro}'[Bind mounts src into dir/dest (read-only)]: :_xbps_src_dest' \
+		'*'{-b,--bind-rw}'[Bind mounts src into dir/dest (read-write)]: :_xbps_src_dest' \
+		{-O,--overlayfs}'[Creates a tempdir and mounts dir read-only via overlayfs]' \
+		{-t,--tmpfs}'[Creates a tempdir and mounts dir on tmpfs (for use with -O)]' \
+		{-o,--options}'[Options to be passed to the tmpfs mount (for use with -t)]:opts:->mount' \
+		'*:: : _xbps_chroot_args' && return
+
+	case $state in
+	mount)
+		words=( mount -t tmpfs -o )
+		CURRENT=5
+		_compskip=all
+		_normal -s
+		;;
+	esac
+}
+
+_xbps_uunshare() {
+	_arguments -S : \
+		$_xbps_common_info
+		'*'{-b,--bind-rw}'[Bind mounts src into dir/dest (read-write)]: :_xbps_src_dest' \
+		'*:: : _xbps_chroot_args'
 }
 
 _xbps_uhelper() {
-	local ret=1
-	_arguments \
-		$_xbps_common \
-		'1:action:->actions' \
+	local -i ret=1
+	local -a context state state_descr line
+	typeset -A opt_args
+	local curcontext="$curcontext"
+
+	_arguments : \
+		$_xbps_common_conf \
+		{-d,--debug}'[Debug mode shown to stderr]' \
+		{-V,--version}'[Show XBPS version]' \
+		':mode:->modes' \
 		'*:: :->args' && ret=0
+
 	case $state in
-		actions)
-			_values "actions" binpkgarch binpkgver cmpver digest fetch getpkgdepname \
-				getpkgname getpkgrevision getpkgversion \
-				pkgmatch version real-version arch getsystemdir getname getversion
-			ret=0;;
-		args)
-			case $words[1] in
-				binpkgarch) _arguments ':binpkg:' && ret=0;;
-				binpkgver) _arguments ':binpkg:' && ret=0;;
-				cmpver) _arguments ':installed version: ' ':required version: ' && ret=0;;
-				digest) _arguments '*:files:_files' && ret=0;;
-				fetch) _arguments '*:urls: ' && ret=0;;
-				getpkgdepname) _arguments '*:string: ' && ret=0;;
-				getpkgname) _arguments '*:string: ' && ret=0;;
-				getpkgrevision) _arguments '*:string: ' && ret=0;;
-				getpkgversion) _arguments '*:string: ' && ret=0;;
-				getname) _arguments '*:string: ' && ret=0;;
-				getversion) _arguments '*:string: ' && ret=0;;
-				pkgmatch) _arguments ':version: ' ':pattern: ' && ret=0;;
-				real-version) _arguments ':package:_xbps_packages installed' && ret=0;;
-				version) _arguments ':package:_xbps_packages installed' && ret=0;;
-				arch) ret=0;;
-				getsystemdir) ret=0;;
-			esac
+	modes)
+		curcontext="${curcontext%:*}:${context}"
+		local -a modes=(
+			'arch:Prints the configured XBPS architecture'
+			'binpkgarch:Prints the architecture of binpkg names'
+			'binpkgver:Prints the pkgver of binpkg names'
+			'cmpver:Compare two version strings'
+			'getname:Prints pkgname from pkgvers or dependencies'
+			'getpkgdepname:Prints pkgname from dependencies'
+			'getpkgdepversion:Prints version constraint from dependencies'
+			'getpkgname:Prints pkgname from pkgvers'
+			'getpkgrevision:Prints revision from pkgvers'
+			'getpkgversion:Prints version from pkgvers'
+			'getversion:Prints version from patterns or pkgvers'
+			'pkgmatch:Match pkgver against dependency'
+			'real-version:Prints version of installed real packages'
+			'version:Prints version of installed packages'
+			'getsystemdir:Prints the system xbps.d directory'
+		)
+		_describe -t modes "$state_descr" modes && ret=0
+		;;
+	args)
+		curcontext="${curcontext%:*:*}:xbps-uhelper-${words[1]}:${context}"
+
+		local pkgver_format='<pkgname>-<version>_<revision>'
+		local binpkg_format="${pkgver_format}.<arch>.xbps"
+		local pkgpat_format='<pkgname><comparator><version>'
+
+		case $words[1] in
+		binpkgarch|binpkgver)
+			_arguments \
+				"*:binpkg ($binpkg_format): " && ret=0
 			;;
+		cmpver)
+			_arguments \
+				":installed version ($pkgver_format): " \
+				":required version ($pkgver_format): " && ret=0
+			;;
+		getname|getpkgdepname|getpkgdepversion|getpkgname|getpkgrevision|getpkgversion|getversion)
+			_arguments "*:pkgver ($pkgver_format): " && ret=0
+			;;
+		pkgmatch)
+			_arguments \
+				":version ($pkgver_format): " \
+				":pattern ($pkgpat_format): " && ret=0
+			;;
+		real-version|version)
+			_arguments '*:package:_xbps_packages installed' && ret=0
+			;;
+		arch|getsystemdir)
+			_nothing && ret=0
+			;;
+		*)
+			_message "unsupported mode: $words[1]" && ret=0
+			;;
+		esac
+		;;
 	esac
-	return $ret
+
+	return ret
 }
 
 _xbps() {
@@ -278,7 +550,7 @@ _xbps() {
 		_arguments -s : \
 			'*: : _default' \
 			-- \
-			'*=<url>*(-):url:_urls' && ret=0
+			'*=<url>*(-):url:_xbps_repo_url' && ret=0
 	fi
 	return ret
 }
