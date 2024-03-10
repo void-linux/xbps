@@ -1,4 +1,4 @@
-#compdef xbps-alternatives xbps-checkvers xbps-create xbps-dgraph xbps-install xbps-pkgdb xbps-query xbps-reconfigure xbps-remove xbps-rindex xbps-uchroot xbps-uunshare xbps-uhelper
+#compdef -p xbps-*
 
 _xbps_common=(
 	{-C,--config=-}'[Full path to configuration file]:config file:_files'
@@ -228,7 +228,7 @@ _xbps_uchroot() {
 		'-S[shmdir]:shmdir:_files -/' \
 		':chroot dir:_files -/' \
 		':command: _command_names -e' \
-		'*::arguments: _normal'
+		'*::arguments:{_compskip=all; _normal -s}'
 }
 
 _xbps_uhelper() {
@@ -268,21 +268,19 @@ _xbps_uhelper() {
 }
 
 _xbps() {
-	case "$service" in
-		xbps-alternatives) _xbps_alternatives "$@";;
-		xbps-checkvers) _xbps_checkvers "$@";;
-		xbps-create) _xbps_create "$@";;
-		xbps-dgraph) _xbps_dgraph "$@";;
-		xbps-install) _xbps_install "$@";;
-		xbps-pkgdb) _xbps_pkgdb "$@";;
-		xbps-query) _xbps_query "$@";;
-		xbps-reconfigure) _xbps_reconfigure "$@";;
-		xbps-remove) _xbps_remove "$@";;
-		xbps-rindex) _xbps_rindex "$@";;
-		xbps-uchroot) _xbps_uchroot "$@";;
-		xbps-uunshare) _xbps_uchroot "$@";;
-		xbps-uhelper) _xbps_uhelper "$@";;
-	esac
+	# backward compatibility with the previous method of loading
+	[[ $service == xbps-* ]] || return 0
+
+	_compskip=all
+
+	local -i ret=1
+	if ! _call_function ret _${service//-/_} "$@"; then
+		_arguments -s : \
+			'*: : _default' \
+			-- \
+			'*=<url>*(-):url:_urls' && ret=0
+	fi
+	return ret
 }
 
 _xbps "$@"
