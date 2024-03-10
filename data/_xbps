@@ -53,6 +53,11 @@ _xbps_installed_packages() {
 	compadd "$@" -- ${${${(f)"$(xbps-query -l)"}#?? }%%-[^- ]# *}
 }
 
+(( $+functions[_xbps_packages_auto] )) ||
+_xbps_packages_auto() {
+	_xbps_packages "$@" ${${opt_args[(i)-R|--repository]:+repo}:-installed}
+}
+
 _xbps_alternatives_groups() {
 	compadd "$@" -- ${${${(f)"$(xbps-alternatives -l)"}##? }%%-# *}
 }
@@ -63,7 +68,7 @@ _xbps_alternatives() {
 		{-g,--group}'[Group of alternatives to match]:group:_xbps_alternatives_groups' \
 		{-l,--list}'[List all alternatives]' \
 		{-s,--set}'[Set alternatives]' \
-		'*:installed packages:_xbps_installed_packages'
+		'*:installed packages:_xbps_packages installed'
 }
 
 _xbps_checkvers() {
@@ -103,7 +108,7 @@ _xbps_create() {
 }
 
 _xbps_dgraph() {
-	_arguments : \
+	_arguments -0 : \
 		{-C,--config=-}'[Full path to configuration file]:config file:_files' \
 		{-c,--graph-config}'[Path to configuration file]:config file:_files' \
 		{-d,--debug}'[Debug mode shown to stderr]' \
@@ -115,12 +120,12 @@ _xbps_dgraph() {
 		{-g,--gen-config}'[Generate a default config file]' \
 		{-f,--fulldeptree}'[Generate a dependency graph]' \
 		{-m,--metadata}'[Generate a metadata graph]' \
-		':package:_xbps_all_packages'
+		':package:_xbps_packages_auto'
 }
 
 
 _xbps_install() {
-	_arguments -s : \
+	_arguments -s -0 : \
 		$_xbps_common \
 		{-A,--automatic}'[Set automatic installation mode]' \
 		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
@@ -133,7 +138,7 @@ _xbps_install() {
 		{-u,--update}'[Update target packages]' \
 		{-U,--unpack-only}'[Unpack packages without configuring]' \
 		{-y,--yes}'[Assume yes to all questions]' \
-		'*:available packages:_xbps_all_packages'
+		'*:available packages:_xbps_packages repo'
 }
 
 _xbps_pkgdb() {
@@ -142,11 +147,11 @@ _xbps_pkgdb() {
 		{-a,--all}'[Process all packages]' \
 		{-m,--mode}'[Change to this mode]:mode:(auto manual hold unhold repolock repounlock)' \
 		{-u,--update}'[Update pkgdb to the latest format]' \
-		'*:installed packages:_xbps_installed_packages'
+		'*:installed packages:_xbps_packages installed'
 }
 
 _xbps_query() {
-	_arguments -s : \
+	_arguments -s -0 : \
 		$_xbps_common \
 		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
 		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
@@ -164,14 +169,14 @@ _xbps_query() {
 		{-O,--list-orphans}'[List package orphans]' \
 		--list-repolock-pkgs'[List packages in repolock mode]' \
 		{-o,--ownedby}'[Search for package files]:package file:_files' \
-		{-S,--show}'[Show information]:package:_xbps_all_packages' \
+		{-S,--show}'[Show information]:package:_xbps_packages_auto' \
 		{-s,--search}'[Search for packages]:search string: ' \
-		--cat=-'[Print file from binpkg to stdout]:file name:_files:package:_xbps_all_packages' \
-		{-f,--files}'[Show package files]:package:_xbps_all_packages' \
-		{-x,--deps}'[Show dependencies]:package:_xbps_all_packages' \
-		{-X,--revdeps}'[Show reverse dependencies]:package:_xbps_all_packages' \
+		--cat=-'[Print file from binpkg to stdout]:file name:_files:package:_xbps_packages_auto' \
+		{-f,--files}'[Show package files]:package:_xbps_packages_auto' \
+		{-x,--deps}'[Show dependencies]:package:_xbps_packages_auto' \
+		{-X,--revdeps}'[Show reverse dependencies]:package:_xbps_packages_auto' \
 		- '(default)' \
-		':package:_xbps_all_packages'
+		':package:_xbps_packages_auto'
 }
 
 _xbps_reconfigure() {
@@ -179,8 +184,8 @@ _xbps_reconfigure() {
 		$_xbps_common \
 		{-a,--all}'[Process all packages]' \
 		{-f,--force}'[Force reconfiguration]' \
-		'*'{-i,--ignore}'[Ignore package for reconfigure]:installed packages:_xbps_installed_packages' \
-                '*:installed packages:_xbps_installed_packages'
+		'*'{-i,--ignore}'[Ignore package for reconfigure]:installed packages:_xbps_packages installed' \
+		'*:installed packages:_xbps_packages installed'
 }
 
 _xbps_remove() {
@@ -194,7 +199,7 @@ _xbps_remove() {
 		{-n,--dry-run}'[Dry-run mode]' \
 		{-R,--recursive}'[Recursively remove dependencies]' \
 		{-y,--yes}'[Assume yes to all questions]' \
-		'*:installed packages:_xbps_installed_packages'
+		'*:installed packages:_xbps_packages installed'
 }
 
 _xbps_rindex() {
@@ -252,8 +257,8 @@ _xbps_uhelper() {
 				getname) _arguments '*:string: ' && ret=0;;
 				getversion) _arguments '*:string: ' && ret=0;;
 				pkgmatch) _arguments ':version: ' ':pattern: ' && ret=0;;
-				real-version) _arguments ':package:_xbps_installed_packages' && ret=0;;
-				version) _arguments ':package:_xbps_installed_packages' && ret=0;;
+				real-version) _arguments ':package:_xbps_packages installed' && ret=0;;
+				version) _arguments ':package:_xbps_packages installed' && ret=0;;
 				arch) ret=0;;
 				getsystemdir) ret=0;;
 			esac
