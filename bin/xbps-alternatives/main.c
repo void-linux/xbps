@@ -149,8 +149,10 @@ list_alternatives(struct xbps_handle *xhp, const char *pkgname, const char *grp)
 			xbps_array_get_cstring_nocopy(array, x, &str);
 			printf(" - %s%s\n", str, x == 0 ? " (current)" : "");
 			pkgd = xbps_pkgdb_get_pkg(xhp, str);
-			assert(pkgd);
-			list_pkg_alternatives(pkgd, keyname, false);
+			if (pkgd)
+				list_pkg_alternatives(pkgd, keyname, false);
+			else
+				xbps_dbg_printf(xhp, "Not installed package '%s' registered as alternative for '%s'\n", str, grp);
 		}
 	}
 	xbps_object_release(allkeys);

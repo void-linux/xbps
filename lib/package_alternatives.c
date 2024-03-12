@@ -330,6 +330,31 @@ switch_alt_group(struct xbps_handle *xhp, const char *grpn, const char *pkgn,
 	return create_symlinks(xhp, xbps_dictionary_get(pkgalts, grpn), grpn);
 }
 
+/*
+ * Removes packages that do not provide alternatives for group.
+ * Old xbps versions didn't clean up list on time.
+ */
+static void
+remove_outdated_packages(struct xbps_handle *xhp, const char *groupname, xbps_array_t packages)
+{
+	for (unsigned int i = 0; i < xbps_array_count(packages);) {
+		const char *pkgname = NULL;
+		xbps_dictionary_t pkgdict;
+		xbps_dictionary_t alts;
+		xbps_array_t alts_group;
+		xbps_array_get_cstring_nocopy(packages, i, &pkgname);
+		if (!(pkgdict = xbps_pkgdb_get_pkg(xhp, pkgname)) ||
+			!(alts = xbps_dictionary_get(pkgdict, "alternatives")) ||
+			!(alts_group = xbps_dictionary_get(alts, groupname)) ||
+			xbps_array_count(alts_group) == 0
+		) {
+			xbps_array_remove(packages, i);
+			continue;
+		}
+		i++;
+	}
+}
+
 int
 xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
@@ -383,18 +408,20 @@ xbps_alternatives_unregister(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_REMOVED, 0, NULL,
 			    "%s: unregistered '%s' alternatives group", pkgver, keyname);
 			xbps_remove_string_from_array(array, pkgname);
-			xbps_array_get_cstring_nocopy(array, 0, &first);
 		}
 
+		remove_outdated_packages(xhp, keyname, array);
 		if (xbps_array_count(array) == 0) {
 			xbps_dictionary_remove(alternatives, keyname);
 			continue;
 		}
 
+		/* XXX: ... && remove_outdated_packages didn't removed current package) */
 		if (update || !current)
 			continue;
 
 		/* get the new alternative group package */
+		xbps_array_get_cstring_nocopy(array, 0, &first);
 		if (switch_alt_group(xhp, keyname, first, &pkg_alternatives) != 0)
 			break;
 	}
@@ -418,7 +445,8 @@ prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
 	xbps_array_t array;
 	xbps_dictionary_t alternatives;
 	xbps_string_t kstr;
-	unsigned int grp_count;
+	unsigned int grp_count, depends_count;
+	uint64_t size = 0;
 	bool current = false;
 
 	xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_REMOVED, 0, NULL,
@@ -445,31 +473,35 @@ prune_altgroup(struct xbps_handle *xhp, xbps_dictionary_t repod,
 		return;
 	}
 
-	if (xbps_array_count(xbps_dictionary_get(repod, "run_depends")) == 0 &&
-	    xbps_array_count(xbps_dictionary_get(repod, "shlib-requires")) == 0) {
+	xbps_dictionary_get_uint64(repod, "installed_size", &size);
+	depends_count = xbps_array_count(xbps_dictionary_get(repod, "run_depends"));
+
+	/*
+	 * Non-empty package is an ordinary package dropping alternatives.
+	 * Empty dependencies indicate a removed package (pure meta).
+	 */
+	if (size == 0 && 0 < depends_count) {
 		/*
-		 * Empty dependencies indicate a removed package (pure meta),
-		 * use the first available group after ours has been pruned
+		 * Use the last group, as this indicates that a transitional metapackage
+		 * is replacing the original and therefore a new package has registered
+		 * a replacement group, which should be last in the array (most recent).
 		 */
-		xbps_array_get_cstring_nocopy(array, 0, &newpkg);
-		switch_alt_group(xhp, keyname, newpkg, NULL);
+		xbps_array_get_cstring_nocopy(array, grp_count - 1, &newpkg);
+		/* put the new package as head */
+		kstr = xbps_string_create_cstring(newpkg);
+		xbps_remove_string_from_array(array, newpkg);
+		xbps_array_add_first(array, kstr);
+		xbps_object_release(kstr);
+	}
+
+	remove_outdated_packages(xhp, keyname, array);
+	if (xbps_array_count(array) == 0) {
+		/* it was the last one, ditch the whole thing */
+		xbps_dictionary_remove(alternatives, keyname);
 		return;
 	}
 
-	/*
-	 * Use the last group, as this indicates that a transitional metapackage
-	 * is replacing the original and therefore a new package has registered
-	 * a replacement group, which should be last in the array (most recent).
-	 */
-	xbps_array_get_cstring_nocopy(array, grp_count - 1, &newpkg);
-
-	/* put the new package as head */
-	kstr = xbps_string_create_cstring(newpkg);
-	xbps_remove_string_from_array(array, newpkg);
-	xbps_array_add_first(array, kstr);
 	xbps_array_get_cstring_nocopy(array, 0, &newpkg);
-	xbps_object_release(kstr);
-
 	switch_alt_group(xhp, keyname, newpkg, NULL);
 }
 

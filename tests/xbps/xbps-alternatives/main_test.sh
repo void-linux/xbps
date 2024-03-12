@@ -263,6 +263,84 @@ unregister_multi_body() {
 	atf_check_equal $rv 0
 }
 
+atf_test_case alternative_unregister
+
+alternative_unregister_head() {
+	atf_set "descr" "xbps-alternatives: removal of the alternative group from pkgdb"
+}
+alternative_unregister_body() {
+	mkdir -p repo pkg_A/usr/bin
+	mkdir -p repo pkg_B/usr/bin
+	touch pkg_A/usr/bin/gcc
+	touch pkg_B/usr/bin/clang
+
+	cd repo
+	xbps-create -A noarch -n pkgA-1.1_1 -s "A pkg" --alternatives "cc:cc:/usr/bin/A" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n pkgB-1.1_1 -s "B pkg" --alternatives "cc:cc:/usr/bin/B" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv pkgA pkgB
+	atf_check_equal $? 0
+	atf_check_equal "$(grep -c '			<string>pkgA</string>' root/var/db/xbps/pkgdb*.plist)"A 1A
+	atf_check_equal "$(grep -c '			<string>pkgB</string>' root/var/db/xbps/pkgdb*.plist)"B 1B
+
+	cd repo
+	xbps-create -A noarch -n pkgA-1.1_2 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n pkgB-1.1_2 -s "B pkg" --alternatives "cc:cc:/usr/bin/B" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -dvyu
+	atf_check_equal $? 0
+	xbps-remove -r root -dvy pkgA
+	atf_check_equal $? 0
+	atf_check_equal "$(grep -c '			<string>pkgA</string>' root/var/db/xbps/pkgdb*.plist)"A 0A
+	atf_check_equal "$(grep -c '			<string>pkgB</string>' root/var/db/xbps/pkgdb*.plist)"B 1B
+}
+
+
+atf_test_case handle_0_57_1_pkgdb
+
+handle_0_57_1_pkgdb_head() {
+	atf_set "descr" "xbps-alternatives: processing old pkgdb containing removed packages in _XBPS_ALTERNATIVES_"
+}
+handle_0_57_1_pkgdb_body() {
+	mkdir -p repo pkg_A/usr/bin
+	mkdir -p repo pkg_B/usr/bin
+	touch pkg_A/usr/bin/gcc
+	touch pkg_B/usr/bin/clang
+
+	cd repo
+	xbps-create -A noarch -n pkgA-1.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n pkgB-1.1_1 -s "B pkg" --alternatives "cc:cc:/usr/bin/B" ../pkg_B
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=repo -ydv pkgB
+	atf_check_equal $? 0
+
+	atf_check_equal "$(grep -c '			<string>pkgA</string>' root/var/db/xbps/pkgdb*.plist)"A 0A
+	atf_check_equal "$(grep -c '			<string>pkgB</string>' root/var/db/xbps/pkgdb*.plist)"B 1B
+	sed -e 's:<string>pkgB</string>:&			<string>pkgA</string>:' -i root/var/db/xbps/pkgdb*.plist
+	atf_check_equal "$(grep -c '			<string>pkgA</string>' root/var/db/xbps/pkgdb*.plist)"A 1A
+
+	xbps-alternatives -r root -l
+	atf_check_equal $? 0
+
+	xbps-remove -r root -dvy pkgB
+	atf_check_equal $? 0
+}
+
 atf_test_case set_pkg
 
 set_pkg_head() {
@@ -951,6 +1029,8 @@ atf_init_test_cases() {
 	atf_add_test_case unregister_one
 	atf_add_test_case unregister_one_relative
 	atf_add_test_case unregister_multi
+	atf_add_test_case alternative_unregister
+	atf_add_test_case handle_0_57_1_pkgdb
 	atf_add_test_case set_pkg
 	atf_add_test_case set_pkg_group
 	atf_add_test_case update_pkgs
