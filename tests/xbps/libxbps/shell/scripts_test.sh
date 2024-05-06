@@ -96,7 +96,7 @@ ARCH="\$6"
 
 echo "$1 \$@"
 _EOF
-	chmod +x "$1"
+	chmod +x "$2"
 }
 
 atf_test_case script_action
@@ -142,9 +142,9 @@ script_action_body() {
 	grep "^install pre A 1.1_1 yes no" out
 	atf_check_equal $? 0
 	grep "^remove post A 1.0_1 yes no" out
-	atf_check_equal $? 0
+	atf_check_equal $? 1
 	grep "^remove purge A 1.0_1 yes no" out
-	atf_check_equal $? 0
+	atf_check_equal $? 1
 	grep "^install post A 1.1_1 yes no" out
 	atf_check_equal $? 0
 
