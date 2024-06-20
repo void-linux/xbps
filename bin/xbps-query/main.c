@@ -52,6 +52,7 @@ usage(bool fail)
 	    "                           to the top of the list. This option can be\n"
 	    "                           specified multiple times\n"
 	    "     --regex               Use Extended Regular Expressions to match\n"
+	    "     --orderby [~]PROP     Sort output according to package property\n"
 	    "     --fulldeptree         Full dependency tree for -x/--deps\n"
 	    " -r, --rootdir <dir>       Full path to rootdir\n"
 	    " -V, --version             Show XBPS version\n"
@@ -87,7 +88,6 @@ main(int argc, char **argv)
 		{ "list-repos", no_argument, NULL, 'L' },
 		{ "list-pkgs", no_argument, NULL, 'l' },
 		{ "list-hold-pkgs", no_argument, NULL, 'H' },
-		{ "list-repolock-pkgs", no_argument, NULL, 3 },
 		{ "memory-sync", no_argument, NULL, 'M' },
 		{ "list-manual-pkgs", no_argument, NULL, 'm' },
 		{ "list-orphans", no_argument, NULL, 'O' },
@@ -105,9 +105,12 @@ main(int argc, char **argv)
 		{ "regex", no_argument, NULL, 0 },
 		{ "fulldeptree", no_argument, NULL, 1 },
 		{ "cat", required_argument, NULL, 2 },
+		{ "list-repolock-pkgs", no_argument, NULL, 3 },
+		{ "orderby", required_argument, NULL, 4},
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
+	struct orderby_information of = { 0 };
 	const char *pkg, *rootdir, *cachedir, *confdir, *props, *catfile;
 	int c, flags, rv;
 	bool list_pkgs, list_repos, orphans, own, list_repolock;
@@ -122,6 +125,7 @@ main(int argc, char **argv)
 	repo_mode = opmode = false;
 
 	memset(&xh, 0, sizeof(xh));
+	of_init(&of);
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -213,6 +217,13 @@ main(int argc, char **argv)
 		case 3:
 			list_repolock = opmode = true;
 			break;
+		case 4:
+			of.orderby = optarg;
+			if (*of.orderby == '~') {
+				of.reverse_order = true;
+				of.orderby++;
+			}
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -258,25 +269,33 @@ main(int argc, char **argv)
 		/* list repositories */
 		rv = repo_list(&xh);
 
-	} else if (list_hold) {
-		/* list on hold pkgs */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_hold_pkgs, NULL);
+	} else if (list_hold || list_repolock || list_manual) {
+		//TODO: find out if the key exists before getting into this function, otherwise it will be constantly checking.
+		// Perhaps make a list of the keys that can be used for sorting?
 
-	} else if (list_repolock) {
-		/* list repolocked packages */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_repolock_pkgs, NULL);
+		if (list_hold) {
+			/* list on hold pkgs */
+			of.filter = filter_hold_pkgs;
+		} else if (list_repolock) {
+			/* list repolocked packages */
+			of.filter = filter_repolock_pkgs;
+		} else if (list_manual) {
+			/* list manual pkgs */
+			of.filter = filter_manual_pkgs;
+		}
 
-	} else if (list_manual) {
-		/* list manual pkgs */
-		rv = xbps_pkgdb_foreach_cb(&xh, list_manual_pkgs, NULL);
+		rv = xbps_pkgdb_foreach_cb(&xh, list_orderby, &of);
+
+		of_print(&of);
+
+	} else if (orphans) {
+		/* list orphans pkgs */
+		rv = of_put_orphans(&xh, &of);
+		of_print(&of);
 
 	} else if (list_pkgs) {
 		/* list available pkgs */
 		rv = list_pkgs_pkgdb(&xh);
-
-	} else if (orphans) {
-		/* list pkg orphans */
-		rv = list_orphans(&xh);
 
 	} else if (own) {
 		/* ownedby mode */
@@ -315,6 +334,7 @@ main(int argc, char **argv)
 		rv = show_pkg_revdeps(&xh, pkg, repo_mode);
 	}
 
+	of_free(&of);
 	xbps_end(&xh);
 	exit(rv);
 }

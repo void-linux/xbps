@@ -55,11 +55,37 @@ int	ownedby(struct xbps_handle *, const char *, bool, bool);
 unsigned int	find_longest_pkgver(struct xbps_handle *, xbps_object_t);
 
 int	list_pkgs_in_dict(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
-int	list_manual_pkgs(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
-int	list_hold_pkgs(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
-int	list_repolock_pkgs(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
-int	list_orphans(struct xbps_handle *);
 int	list_pkgs_pkgdb(struct xbps_handle *);
+int	list_orderby(struct xbps_handle *, xbps_object_t, const char *, void *, bool *);
+
+bool	filter_manual_pkgs(xbps_object_t);
+bool	filter_hold_pkgs(xbps_object_t);
+bool	filter_repolock_pkgs(xbps_object_t);
+
+struct pkgver_ordering {
+	xbps_object_t obj;
+	const struct orderby_information *parent;
+};
+
+struct orderby_information {
+	/* allocation book-keeping
+	 * size	-> current allocation
+	 * num	-> current occupation */
+	size_t size, num;
+	struct pkgver_ordering *items;
+
+	bool (* filter)(xbps_object_t);
+
+	/* orderby flags */
+	const char *orderby;
+	bool reverse_order;
+};
+
+int	of_init(struct orderby_information *);
+int	of_print(struct orderby_information *);
+int	of_free(struct orderby_information *);
+
+int	of_put_orphans(struct xbps_handle *, struct orderby_information *);
 
 int	repo_list(struct xbps_handle *);
 
