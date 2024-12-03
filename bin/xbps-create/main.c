@@ -371,6 +371,7 @@ ftw_cb(const char *fpath, const struct stat *sb, const struct dirent *dir UNUSED
 	    (strcmp(fpath, "./files.plist") == 0) ||
 	    (strcmp(fpath, "./flist") == 0) ||
 	    (strcmp(fpath, "./rdeps") == 0) ||
+	    (strcmp(fpath, "./provides") == 0) ||
 	    (strcmp(fpath, "./shlib-provides") == 0) ||
 	    (strcmp(fpath, "./shlib-requires") == 0))
 		return 0;
