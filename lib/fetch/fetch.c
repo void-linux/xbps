@@ -364,6 +364,7 @@ fetch_urlpath_safe(char x)
 	case '=':
 	case '/':
 	case ';':
+	case '~':
 	/* If something is already quoted... */
 	case '%':
 		return 1;
