@@ -59,19 +59,12 @@ show_actions(xbps_object_iterator_t iter)
 		isize = dsize = 0;
 
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-		printf("%s %s", pkgver, ttype2str(obj));
 		xbps_dictionary_get_cstring_nocopy(obj, "repository", &repoloc);
 		xbps_dictionary_get_cstring_nocopy(obj, "architecture", &arch);
-		if (repoloc && arch)
-			printf(" %s %s", arch, repoloc);
 		xbps_dictionary_get_uint64(obj, "installed_size", &isize);
 		xbps_dictionary_get_uint64(obj, "filename-size", &dsize);
-		if (isize)
-			printf(" %ju", isize);
-		if (dsize)
-			printf(" %ju", dsize);
 
-		printf("\n");
+		printf("%s %s %s %s %ju %ju\n", pkgver, ttype2str(obj), arch ? arch : "-", repoloc ? repoloc : "-", isize, dsize);
 	}
 }
 
