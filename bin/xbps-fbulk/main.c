@@ -397,7 +397,7 @@ runBuilds(const char *bpath)
 static void
 addDepn(struct item *item, struct item *xitem)
 {
-	struct depn *depn = calloc(sizeof(*depn), 1);
+	struct depn *depn = calloc(1, sizeof(*depn));
 	char *logpath3;
 	FILE *fp;
 
