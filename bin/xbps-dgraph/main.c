@@ -594,6 +594,10 @@ main(int argc, char **argv)
 		/* NOTREACHED */
 	}
 	pkg = *argv;
+	if (!pkg) {
+		usage(true);
+		/* NOTREACHED */
+	}
 
 	/* Initialize libxbps */
 	memset(&xh, 0, sizeof(xh));
