@@ -21,20 +21,22 @@ jobs:
       contents: read
       security-events: write
     container:
-      image: ghcr.io/void-linux/void-glibc-full:20230830r1
+      image: ghcr.io/void-linux/void-glibc-full:20240526R1
     steps:
     - name: Prepare container
       run: |
-        xbps-install -Syu || xbps-install -yu xbps
+        xbps-install -Syu xbps
+        xbps-install -yu
         # node-based actions require libstdc++.so.6
+        # codeql runs some bash scripts
         xbps-install -Sy \
-          libstdc++ git \
+          libstdc++ bash git \
           gcc make pkg-config zlib-devel openssl-devel libarchive-devel
     - name: Checkout repository
       uses: actions/checkout@v3
     - run: git config --global --add safe.directory $(pwd)
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: cpp
         config-file: ./.github/codeql/codeql-config.yaml
@@ -43,6 +45,6 @@ jobs:
           ./configure
           make -j
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
       with:
         category: "/language:cpp"
