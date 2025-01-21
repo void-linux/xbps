@@ -1,79 +1,200 @@
 #compdef xbps-src
 
-setopt localoptions extended_glob
-
-local ret=0 archs top
-
-archs=(aarch64-musl aarch64 armv5te-musl armv5te armv5tel-musl armv5tel armv6hf-musl armv6hf armv6l-musl armv6l armv7hf-musl armv7hf armv7l-musl armv7l i686-musl i686 mips-musl mipsel-musl mipselhf-musl mipshf-musl ppc-musl ppc ppc64-musl ppc64 ppc64le-musl ppc64le x86_64-musl)
-
-# path to masterdir and srcpkgs.
-top=$~_comp_command1:h
-
+(( $+functions[_xbps_src_all_packages] )) ||
 _xbps_src_all_packages() {
-	compadd "$@" -- $top/srcpkgs/*(:t)
+	local -a expl
+	_wanted all-packages expl 'all packages' \
+		compadd "$@" - $top/srcpkgs/*(:t)
 }
 
+(( $+functions[_xbps_src_destdir_packages] )) ||
 _xbps_src_destdir_packages() {
-	local -a dirs
+	local -a dirs expl
 	dirs=( $top/masterdir/destdir/*~[^-]#-linux-[^-]#(N/) )
-	compadd "$@" -- ${${dirs:t}%-*}
+	_wanted destdir-packages expl 'destdir packages' \
+		compadd "$@" - ${${dirs:t}%-*}
 }
 
+(( $+functions[_xbps_src_build_packages] )) ||
 _xbps_src_build_packages() {
-	local -a dirs
+	local -a dirs expl
 	dirs=( $top/masterdir/builddir/*~[^-]#-linux-[^-]#(N/) )
-	compadd "$@" -- ${${dirs:t}%-*}
+	_wanted build-packages expl 'build packages' \
+		compadd "$@" - ${${dirs:t}%-*}
 }
 
-_arguments -s : \
-	'-a[Cross compile packages]:architecture:($archs)' \
-	'-C[Do not remove build directory/autodeps/destdir]' \
-	'-E[Exit immediately when binary package already exists]' \
-	'-f[Force building and registering binary packages]' \
-	'-G[Enable XBPS_USE_GIT_REVS]' \
-	'-Q[Enable running the check stage]' \
-	'-g[Enable building -dbg packages]' \
-	'-H[Absolute path to hostdir]:hostdir:_files -/' \
-	'-h[Help]' \
-	'-I[Ignore required dependencies]' \
-	'-j[Number of parallel build jobs]:number: ' \
-	'-L[Disable ASCII colors]' \
-	'-m[Absolute path to masterdir]:masterdir:_files -/' \
-	'-N[Disable use of remote repositories]' \
-	'-o[Set package build options]:options: ' \
-	'-q[Suppress output of xbps-src]' \
-	'-r[Use alternative local repository]:repo:_files -/' \
-	'-t[Create a temporary masterdir]' \
-	'1:target:->target' \
-	'*::args:->args' && ret=0
+_xbps_src() {
+	# path to masterdir and srcpkgs.
+	local top=$~_comp_command1:h
 
-case $state in
+	local -i ret=1
+	local -a context state state_descr line expl
+	typeset -A opt_args
+	local curcontext="$curcontext"
+
+	_arguments -s -C : \
+		'-1[Fail if dependencies are missing]' \
+		'-A[Host architecture]:architecture:_xbps_architectures' \
+		'-a[Cross compile packages]:architecture:_xbps_architectures' \
+		'-b[Build broken, nocross, and excluded packages]' \
+		'-c[Configuration file]:config:->config' \
+		'-C[Do not remove build directory/autodeps/destdir]' \
+		'-E[Exit immediately when binary package already exists]' \
+		'-f[Force building and registering binary packages]' \
+		'-G[Enable XBPS_USE_GIT_REVS]' \
+		'-g[Enable building -dbg packages]' \
+		'-H[Absolute path to hostdir]:hostdir [void-packages/hostdir]:_xbps_full_path -/' \
+		'(- :)-h[Help]' \
+		'-I[Ignore required dependencies]' \
+		'-i[Make internal errors non-fatal]' \
+		'-j[Number of parallel build jobs]: : _guard "[0-9]#" "number of jobs"' \
+		'-L[Disable ASCII colors]' \
+		'-m[Absolute path to masterdir]:masterdir [void-packages/masterdir-<host>]:_xbps_full_path -/' \
+		'-N[Disable use of remote repositories]' \
+		'-o[Set package build options]:opt,~opt2,...: ' \
+		'-p[Show additional variables]:variables:->vars' \
+		'-Q[Enable running the check stage]' \
+		'-K[Enable extended checks]' \
+		'-q[Suppress output of xbps-src]' \
+		'-r[Use alternative local repository]:repo [hostdir/binpkgs]:->repo' \
+		'-s[Make some warnings errors]' \
+		'-t[Create a temporary masterdir]' \
+		'-v[Show verbose messages]' \
+		'(- :)-V[Print version]' \
+		'1:target:->target' \
+		'*:: :->args' && ret=0
+
+	case $state in
+	config)
+		_wanted configs expl "$state_descr" \
+			_path_files -W $top/etc -g 'conf.*(-.:e)' && ret=0
+		;;
+	repo)
+		local hostdir=$top/hostdir
+		(( $+opt_args[-H] )) && hostdir=$opt_args[-H]
+		_wanted local-repositories expl "$state_descr" \
+			_files -/ -W $hostdir/binpkgs && ret=0
+		;;
+	vars)
+		# sed -nE '/^#### Mandatory variables/,/^#### About the many types/{s/^- `([^`]+)`.*/\1/p;}' Manual.md
+		local -a vars=(
+			# mandatory
+			homepage maintainer pkgname revision short_desc version
+			# optional
+			hostmakedepends makedepends checkdepends depends bootstrap conflicts
+			distfiles checksum wrksrc build_wrksrc create_wrksrc build_style
+			build_helper configure_script configure_args make_cmd make_build_args
+			make_check_args make_install_args make_build_target make_check_target
+			make_install_target make_check_pre patch_args disable_parallel_build
+			disable_parallel_check make_check keep_libtool_archives skip_extraction
+			nodebug conf_files mutable_files make_dirs repository nostrip
+			nostrip_files noshlibprovides noverifyrdeps skiprdeps ignore_elf_files
+			ignore_elf_dirs nocross restricted subpackages broken shlib_provides
+			shlib_requires nopie nopie_files reverts alternatives font_dirs
+			dkms_modules register_shell tags perl_configure_dirs preserve fetch_cmd
+			changelog archs nocheckperms nofixperms
+		)
+		_wanted variables expl "$state_descr" _sequence compadd -a - vars && ret=0
+		;;
 	target)
-		_values "target" binary-bootstrap bootstrap bootstrap-update \
-			build check chroot clean clean-repocache configure \
-			consistency-check extract fetch install \
-			list patch pkg purge-distfiles remove remove-autodeps \
-			show show-avail show-build-deps \
-			show-deps show-hostmakedepends show-makedepends \
-			show-files show-options show-shlib-provides \
-			show-shlib-requires show-var show-repo-updates \
-			show-sys-updates sort-dependencies update-bulk update-check \
-			update-sys update-hash-cache zap
-			ret=0;;
+		local -a targets=(
+			'binary-bootstrap:Install bootstrap packages from host repositories into <masterdir>'
+			'bootstrap-update:Updates bootstrap packages'
+			'bootstrap:Build and install from source the bootstrap packages into <masterdir>'
+			'build:Build package source (fetch + extract + patch + configure + build)'
+			'check:Run the package check(s) after building the package source'
+			'chroot:Enter to the chroot in <masterdir>'
+			'clean-repocache:Removes obsolete packages from <hostdir>/repocache'
+			'clean:Removes auto dependencies, cleans up <masterdir>/builddir and <masterdir>/destdir'
+			'configure:Configure a package (fetch + extract + patch + configure)'
+			'consistency-check:Runs a consistency check on all packages'
+			'extract:Extract package source distribution file(s) into the build directory [<masterdir>/builddir]'
+			'fetch:Download package source distribution file(s)'
+			'install:Install target package into <destdir>; skip building'
+			'list:Lists installed packages in <masterdir>'
+			'patch:Patch the package sources'
+			'pkg:Build binary package and all required dependencies'
+			'purge-distfiles:Removes all obsolete distfiles in <hostdir>/sources'
+			'remove-autodeps:Removes all package dependencies that were installed automatically'
+			'remove:Remove target package from <destdir>'
+			'show-avail:Returns 0 if package can be built for the given architecture'
+			'show-build-deps:Show required build dependencies'
+			'show-deps:Show required run-time dependencies'
+			'show-files:Show files installed by a package'
+			'show-hostmakedepends:Show required host build dependencies'
+			'show-local-updates:Prints the list of outdated packages in your local repositories'
+			'show-makedepends:Show required target build dependencies'
+			'show-options:Show available build options'
+			'show-repo-updates:Prints the list of outdated packages in XBPS repositories'
+			'show-shlib-provides:Show list of provided shlibs'
+			'show-shlib-requires:Show list of required shlibs'
+			'show-sys-updates:Prints the list of outdated packages in your system'
+			"show-var:Prints the value of a variable, if it's defined in xbps-src"
+			'show:Show information for the specified package'
+			'sort-dependencies:Sorts dependencies of packages'
+			'update-bulk:Rebuilds all packages in the system repositories that are outdated'
+			'update-check:Check upstream site for new releases'
+			'update-hash-cache:Update the hash cache with existing source distfiles'
+			'update-local:Rebuilds all packages in your local repositories that are outdated'
+			'update-sys:Rebuilds all packages in your system that are outdated and updates them'
+			'zap:Removes a masterdir but preserving ccache, distcc and host directories'
+		)
+		_describe -t targets "$state_descr" targets && ret=0
+		;;
 	args)
-		case $words[1] in
-			build|check|configure|extract|fetch|install|patch|pkg|show|show-avail|show-build-deps|show-hostmakedepends|show-makedepends|show-options|update-check)
-				_arguments ':package:_xbps_src_all_packages' && ret=0;;
-			binary-bootstrap)
-				_arguments '::architecture:($archs)' && ret=0;;
-			bootstrap|bootstrap-update|chroot|clean-repocache|consistency-check|list|purge-distfiles|remove-autodeps|show-repo-updates|show-sys-updates|update-bulk|update-sys|update-hash-cache)
-				# no further arguments
-				ret=0;;
-			clean)
-				_arguments '::package:_xbps_src_build_packages' && ret=0;;
-			remove|show-deps|show-files|show-shlib-provides|show-shlib-requires)
-				_arguments ':package:_xbps_src_destdir_packages' && ret=0;;
-		esac;;
-esac
+		curcontext="${curcontext%:*:*}:xbps-src-${words[1]}:"
 
-return $ret
+		local -a pkgname_targets=(
+			build check configure extract fetch install patch pkg show show-avail
+			show-build-deps show-hostmakedepends show-makedepends show-options
+			update-check
+		)
+		local -a no_args_targets=(
+			binary-bootstrap bootstrap bootstrap-update chroot clean-repocache
+			consistency-check list purge-distfiles remove-autodeps show-local-updates
+			show-repo-updates show-sys-updates update-bulk update-local update-sys
+			update-hash-cache zap
+		)
+		local -a destdir_targets=(
+			remove show-deps show-files show-shlib-provides show-shlib-requires
+		)
+		local target=$words[1]
+		if (( $pkgname_targets[(I)$target] )); then
+			_arguments ':package:_xbps_src_all_packages' && ret=0
+		elif (( $no_args_targets[(I)$target] )); then
+			_nothing && ret=0
+		elif [[ $target == clean ]]; then
+			_arguments '::package:_xbps_src_build_packages' && ret=0
+		elif (( $destdir_targets[(I)$target] )); then
+			_arguments ':package:_xbps_src_destdir_packages' && ret=0
+		elif [[ $target == sort-dependencies ]]; then
+			_arguments '*:package:_xbps_src_all_packages' && ret=0
+		elif [[ $target == show-var ]]; then
+			# obtained by comparing the output of `env -i bash -c 'compgen -v'` with
+			# and without the source code for the show-var target being applied
+			local -a vars=(
+				CPAN_SITE DEBIAN_SITE FREEDESKTOP_SITE GNOME_SITE GNU_SITE KDE_SITE
+				KERNEL_SITE MOZILLA_SITE NONGNU_SITE PYPI_SITE SOURCEFORGE_SITE
+				UBUNTU_SITE VIDEOLAN_SITE XORG_SITE
+
+				bash_regexp perl_regexp py2_inc py2_lib py2_sitelib py2_ver py3_abiver
+				py3_inc py3_lib py3_sitelib py3_ver python_regexp
+
+				XBPS_CFLAGS XBPS_CROSS_CFLAGS XBPS_CROSS_CXXFLAGS XBPS_CROSS_FFLAGS
+				XBPS_CROSS_RUSTFLAGS XBPS_CROSS_RUST_TARGET XBPS_CROSS_TRIPLET
+				XBPS_CROSS_ZIG_CPU XBPS_CROSS_ZIG_TARGET XBPS_CXXFLAGS XBPS_FFLAGS
+				XBPS_RUST_TARGET XBPS_TARGET_CFLAGS XBPS_TARGET_CXXFLAGS
+				XBPS_TARGET_FFLAGS XBPS_TARGET_MACHINE XBPS_TARGET_QEMU_MACHINE
+				XBPS_TRIPLET XBPS_ZIG_CPU XBPS_ZIG_TARGET
+			)
+			_arguments ":var:($vars)" && ret=0
+		else
+			_message "unsupported target: $target" && ret=0
+		fi
+		;;
+	esac
+
+	return ret
+}
+
+_xbps_src "$@"

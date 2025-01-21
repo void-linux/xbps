@@ -1,0 +1,204 @@
+#autoload
+
+# Usage: _xbps_packages [$expl] (repo|installed)
+
+(( $+functions[_xbps_packages_repo] )) ||
+_xbps_packages_repo() {
+	local update_policy
+	zstyle -s ":completion:${curcontext}:" cache-policy \
+		update_policy
+	[[ -z $update_policy ]] &&
+		zstyle ":completion:${curcontext}:" cache-policy \
+			_xbps_packages_repo_caching_policy
+
+	if zstyle -t ":completion:${curcontext}:repository-packages" separate-sections
+	then
+		_xbps_packages_repo_separate_groups "$@"
+		return
+	fi
+
+	local -i ret=1
+	local -a packages expl qrepos repo_urls
+	_tags repository-packages
+	while _tags; do
+		if _requested repository-packages; then
+			local cache_ident='xbps_packages_repo'
+			(( $+opt_args[--repository] )) &&
+				repo_urls=( ${(0)opt_args[--repository]} ) &&
+				qrepos+=( --repository=$^repo_urls )
+			(( $+opt_args[-R] )) &&
+				repo_urls=( ${(0)opt_args[-R]} ) &&
+				qrepos+=( --repository=$^repo_urls )
+			if (( $#qrepos > 0 )) || ! _retrieve_cache $cache_ident; then
+				packages=( ${${${(f)"$(_call_program repository-packages \
+					xbps-query $qrepos -Rs \'\' 2>/dev/null)"}#??? }%%-[^- ]# *} )
+				(( $#qrepos == 0 )) && _store_cache $cache_ident packages
+			fi
+			_all_labels repository-packages expl 'package' \
+				compadd "$@" -a - packages && ret=0
+		fi
+		(( ret )) || break
+	done
+	return ret
+}
+
+(( $+functions[_xbps_packages_repo_separate_groups] )) ||
+_xbps_packages_repo_separate_groups() {
+	local -a installed rest qrepos repo_urls lines match mbegin mend
+	local cache_ident='xbps_packages_repo_groups' line pkgname
+	(( $+opt_args[--repository] )) &&
+		repo_urls=( ${(0)opt_args[--repository]} ) &&
+		qrepos+=( --repository=$^repo_urls )
+	(( $+opt_args[-R] )) &&
+		repo_urls=( ${(0)opt_args[-R]} ) &&
+		qrepos+=( --repository=$^repo_urls )
+	if (( $#qrepos > 0 )) || ! _retrieve_cache $cache_ident; then
+		lines=( ${(f)"$(_call_program repository-packages \
+			xbps-query $qrepos -Rs \'\' 2>/dev/null)"} )
+		for line in $lines; do
+			[[ $line == (#b)\[(?)\]\ ([^ ]#)\ #* ]] ||
+				_message "unmatched line: $line"
+			pkgname=${match[2]%-*}
+			if [[ $match[1] == '*' ]]; then
+				installed+=( $pkgname )
+			else
+				rest+=( $pkgname )
+			fi
+		done
+		(( $#qrepos == 0 )) && _store_cache $cache_ident installed rest
+	fi
+
+	local -i ret=1
+	local -a expl
+	_tags installed-repository-packages non-installed-repository-packages
+	while _tags; do
+		if _requested installed-repository-packages; then
+			_all_labels installed-repository-packages expl 'installed repository packages' \
+				compadd -a installed && ret=0
+		fi
+		if _requested non-installed-repository-packages; then
+			_all_labels non-installed-repository-packages expl 'non-installed repository packages' \
+				compadd -a rest && ret=0
+		fi
+		(( ret )) || break
+	done
+	return ret
+}
+
+(( $+functions[_xbps_packages_installed] )) ||
+_xbps_packages_installed() {
+	local update_policy
+	zstyle -s ":completion:${curcontext}:" cache-policy \
+		update_policy
+	[[ -z $update_policy ]] &&
+		zstyle ":completion:${curcontext}:" cache-policy \
+			_xbps_packages_installed_caching_policy
+
+	if zstyle -t ":completion:${curcontext}:installed-packages" separate-sections &&
+	 { zstyle -t ":completion:${curcontext}:installed-packages" use-cache ||
+	   zstyle -t ":completion:${curcontext}:installed-packages" extra-verbose }
+	then
+		_xbps_packages_installed_separate_groups "$@"
+		return
+	fi
+
+	local -i ret=1
+	local -a installed expl
+	_tags installed-packages
+	while _tags; do
+		if _requested installed-packages; then
+			local cache_ident='xbps_packages_installed'
+			if ! _retrieve_cache $cache_ident; then
+				installed=( ${${${(f)"$(_call_program installed-packages \
+					xbps-query -l 2>/dev/null)"}#?? }%%-[^- ]# *} )
+				_store_cache $cache_ident installed
+			fi
+			_all_labels installed-packages expl 'package' \
+				compadd "$@" -a - installed && ret=0
+		fi
+		(( ret )) || break
+	done
+	return ret
+}
+
+(( $+functions[_xbps_packages_installed_separate_groups] )) ||
+_xbps_packages_installed_separate_groups() {
+	local -a installed manual orphans rest
+	local cache_ident='xbps_packages_installed_groups'
+	if ! _retrieve_cache $cache_ident; then
+		installed=( ${${${(f)"$(_call_program installed-packages \
+			xbps-query -l 2>/dev/null)"}#?? }%%-[^- ]# *} )
+		manual=( ${${(f)"$(_call_program manual-installed-packages \
+			xbps-query -m 2>/dev/null)"}%%-[^- ]#} )
+		orphans=( ${${(f)"$(_call_program orphaned-installed-packages \
+			xbps-query -O 2>/dev/null)"}%%-[^- ]#} )
+		rest=( ${${installed:|manual}:|orphans} )
+		_store_cache $cache_ident manual orphans rest
+	fi
+
+	local -i ret=1
+	local -a expl
+	_tags manual-installed-packages \
+	      orphaned-installed-packages \
+	      rest-installed-packages
+	while _tags; do
+		if _requested manual-installed-packages; then
+			_all_labels manual-installed-packages expl 'explicitly installed packages' \
+				compadd -a manual && ret=0
+		fi
+		if _requested orphaned-installed-packages; then
+			_all_labels orphaned-installed-packages expl 'orphans' \
+				compadd -a orphans && ret=0
+		fi
+		if _requested rest-installed-packages; then
+			_all_labels rest-installed-packages expl 'rest installed packages' \
+				compadd -a rest && ret=0
+		fi
+		(( ret )) || break
+	done
+	return ret
+}
+
+_xbps_packages() {
+	local cmd="$@[-1]"
+	shift -p
+
+	[[ $cmd == (repo|installed) ]] || {
+		_message "unsupported command: $cmd"
+		return 1
+	}
+
+	_xbps_packages_$cmd "$@"
+}
+
+_xbps_packages_repo_caching_policy() {
+	# rebuild if cache is absent or more than a week old
+	local -a oldp
+	oldp=( $1(Nmw+1) )
+	(( $#oldp )) && return 0
+
+	local -a repos_data=( /var/db/xbps/^triggers/*(N.) )
+	local -a loc_configs=( /etc/xbps.d(N-/) /etc/xbps.d/*.conf(N) )
+	local -a sys_configs=( /usr/share/xbps.d(N-/) /usr/share/xbps.d/*.conf(N) )
+
+	(( $#repos_data == 0 || $#loc_configs == 0 || $#sys_configs == 0 )) &&
+		return 0
+
+	local f
+	for f in $repos_data $loc_configs $sys_configs; do
+		[[ $f -nt $1 ]] && return 0
+	done
+
+	return 1
+}
+
+_xbps_packages_installed_caching_policy() {
+	# rebuild if cache is absent or more than a week old
+	local -a oldp
+	oldp=( $1(Nmw+1) )
+	(( $#oldp )) && return 0
+
+	[[ /var/db/xbps/pkgdb-0.38.plist -nt $1 ]]
+}
+
+_xbps_packages "$@"

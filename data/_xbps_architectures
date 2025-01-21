@@ -1,0 +1,25 @@
+#autoload
+local -a extra expl archs
+zparseopts -E -D -a extra a:
+# obtained from:
+# 	cd void-packages
+# 	print -rl -- common/cross-profiles/*.sh(:t:r)
+archs=(
+	aarch64{,-musl}
+	armv5te{,-musl}
+	armv5tel{,-musl}
+	armv6hf{,-musl}
+	armv6l{,-musl}
+	armv7hf{,-musl}
+	armv7l{,-musl}
+	i686{,-musl}
+	mips{,el,elhf,hf}-musl
+	ppc{,-musl}
+	ppc64{,-musl}
+	ppc64le{,-musl}
+	ppcle{,-musl}
+	riscv64{,-musl}
+	x86_64{,-musl}
+	${=extra[2]}
+)
+_wanted architectures expl 'architecture' compadd "$@" -a - archs
