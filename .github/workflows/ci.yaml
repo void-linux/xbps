@@ -30,7 +30,7 @@ jobs:
          - uses: actions/checkout@v1
          - name: Prepare container
            run: |
-            xbps-install -Syu || xbps-install -yu xbps
+            xbps-install -Syu xbps; xbps-install -Syu
             xbps-install -Sy ${{ matrix.c_compiler }} ${{ matrix.extra_deps }} make pkg-config zlib-devel openssl-devel libarchive-devel kyua atf-devel
          - name: Build
            env:
