@@ -243,12 +243,7 @@ main(int argc, char **argv)
 
 	if (argc) {
 		/* trailing parameters */
-		xbps_error_printf("xbps-query: too many arguments: ");
-		while (argc) {
-			printf("%s ", *(argv++));
-			argc--;
-		}
-		printf("\n");
+		xbps_error_printf("xbps-query: too many arguments\n");
 		exit(EXIT_FAILURE);
 		/* NOTREACHED */
 	}
