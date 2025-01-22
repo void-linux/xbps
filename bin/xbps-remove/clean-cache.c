@@ -106,7 +106,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	if (pkgd) {
 		xbps_dictionary_get_cstring_nocopy(pkgd,
 		    "filename-sha256", &rsha256);
-		r = xbps_file_sha256_check(binpkg, rsha256);
+		r = xbps_file_hash_check(XBPS_HASH_SHA256, binpkg, rsha256);
 		if (r == 0) {
 			/* hash matched */
 			return 0;
