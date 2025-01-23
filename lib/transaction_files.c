@@ -48,11 +48,9 @@ struct item {
 	char *file;
 	size_t len;
 	struct {
+		struct xbps_file file;
 		const char *pkgname;
 		const char *pkgver;
-		char *sha256;
-		const char *target;
-		uint64_t size;
 		enum type type;
 		/* index is the index of the package update/install/removal in the transaction
 		 * and is used to decide which package should remove the given file or dir */
@@ -311,8 +309,8 @@ collect_obsoletes(struct xbps_handle *xhp)
 		/*
 		 * Skip unexisting files and keep files with hash mismatch.
 		 */
-		if (item->old.sha256 != NULL) {
-			rv = xbps_file_sha256_check(item->file, item->old.sha256);
+		if (item->old.file.sha256 != NULL) {
+			rv = xbps_file_sha256_check(item->file, item->old.file.sha256);
 			switch (rv) {
 			case 0:
 				/* hash matches, we can safely delete and/or overwrite it */
@@ -361,16 +359,16 @@ collect_obsoletes(struct xbps_handle *xhp)
 				    xhp->rootdir, item->file+1);
 				file = path;
 			}
-			lnk = xbps_symlink_target(xhp, file, item->old.target);
+			lnk = xbps_symlink_target(xhp, file, item->old.file.target);
 			if (lnk == NULL) {
 				xbps_dbg_printf("[obsoletes] %s "
 				    "symlink_target: %s\n", item->file+1, strerror(errno));
 				continue;
 			}
-			if (strcmp(lnk, item->old.target) != 0) {
+			if (strcmp(lnk, item->old.file.target) != 0) {
 				xbps_dbg_printf("[obsoletes] %s: skipping modified"
 				    " symlink (stored `%s' current `%s'): %s\n",
-				    item->old.pkgname, item->old.target, lnk, item->file+1);
+				    item->old.pkgname, item->old.file.target, lnk, item->file+1);
 				free(lnk);
 				continue;
 			}
@@ -523,24 +521,36 @@ add:
 		item->old.pkgname = pkgname;
 		item->old.pkgver = pkgver;
 		item->old.type = type;
-		item->old.size = size;
+		item->old.file.size = size;
 		item->old.index = idx;
 		item->old.preserve = preserve;
 		item->old.update = update;
 		item->old.removepkg = removepkg;
-		item->old.target = target;
-		if (sha256)
-			item->old.sha256 = strdup(sha256);
+		item->old.file.target = target;
+		if (sha256) {
+			item->old.file.sha256 = strdup(sha256);
+			if (!item->old.file.sha256)
+				return errno;
+		}
+		if (type == TYPE_CONFFILE)
+			item->old.file.flags |= XBPS_FILE_CONF;
 	} else {
 		item->new.pkgname = pkgname;
 		item->new.pkgver = pkgver;
 		item->new.type = type;
-		item->new.size = size;
+		item->new.file.size = size;
 		item->new.index = idx;
 		item->new.preserve = preserve;
 		item->new.update = update;
 		item->new.removepkg = removepkg;
-		item->new.target = target;
+		item->new.file.target = target;
+		if (sha256) {
+			item->new.file.sha256 = strdup(sha256);
+			if (!item->new.file.sha256)
+				return errno;
+		}
+		if (type == TYPE_CONFFILE)
+			item->new.file.flags |= XBPS_FILE_CONF;
 	}
 	if (item->old.type && item->new.type) {
 		/*
@@ -580,8 +590,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 		for (i = 0; i < xbps_array_count(a); i++) {
 			filed = xbps_array_get(a, i);
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
-			if (removefile)
-				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
+			xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
 			rv = collect_file(xhp, file, size, pkgname, pkgver, idx, sha256,
@@ -600,8 +609,7 @@ collect_files(struct xbps_handle *xhp, xbps_dictionary_t d,
 			xbps_dictionary_get_cstring_nocopy(filed, "file", &file);
 			size = 0;
 			xbps_dictionary_get_uint64(filed, "size", &size);
-			if (removefile)
-				xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
+			xbps_dictionary_get_cstring_nocopy(filed, "sha256", &sha256);
 #if 0
 			/* XXX: how to handle conf_file size */
 			if (removefile && stat(file, &st) != -1 && size != (uint64_t)st.st_size)
@@ -761,21 +769,6 @@ pathcmp(const void *l1, const void *l2)
 	return (a->len < b->len) - (b->len < a->len);
 }
 
-static void
-cleanup(void)
-{
-	struct item *item, *itmp;
-
-	HASH_ITER(hh, hashtab, item, itmp) {
-		HASH_DEL(hashtab, item);
-		free(item->file);
-		free(item->old.sha256);
-		free(item->new.sha256);
-		free(item);
-	}
-	free(items);
-}
-
 /*
  * xbps_transaction_files:
  *
@@ -890,6 +883,37 @@ out:
 		return rv;
 
 	rv = collect_obsoletes(xhp);
-	cleanup();
 	return rv;
+}
+
+void HIDDEN
+xbps_transaction_files_free(struct xbps_handle *xhp UNUSED)
+{
+	struct item *item, *itmp;
+
+	HASH_ITER(hh, hashtab, item, itmp) {
+		HASH_DEL(hashtab, item);
+		free(item->file);
+		free(item->old.file.sha256);
+		free(item->new.file.sha256);
+		free(item);
+	}
+	free(items);
+}
+
+int HIDDEN
+xbps_transaction_file_get(struct xbps_handle *xhp UNUSED, const char *path,
+		const struct xbps_file **oldp,
+		const struct xbps_file **newp)
+{
+	struct item *item;
+
+	item = lookupItem(path);
+	if (!item)
+		return -ENOENT;
+	if (oldp)
+		*oldp = item->old.pkgver ? &item->old.file : NULL;
+	if (newp)
+		*newp = item->new.pkgver ? &item->new.file : NULL;
+	return 0;
 }
