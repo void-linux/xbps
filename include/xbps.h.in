@@ -1005,7 +1005,7 @@ int xbps_pkg_exec_script(struct xbps_handle *xhp,
  *
  * @return 0 on success, or an errno value otherwise.
  */
-int xbps_alternatives_set(struct xbps_handle *xhp, const char *pkg, const char *group);
+int xbps_alternatives_set(struct xbps_handle *xhp, const char *pkg, const char *group, int *err);
 
 /**
  * Registers all alternative groups provided by a package.
