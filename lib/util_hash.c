@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <asm-generic/errno-base.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
@@ -35,9 +36,17 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <openssl/sha.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
 
+#include "xbps.h"
 #include "xbps_api_impl.h"
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#  define EVP_MD_CTX_new   EVP_MD_CTX_create
+#  define EVP_MD_CTX_free  EVP_MD_CTX_destroy
+#endif
+
 
 /**
  * @file lib/util.c
@@ -112,16 +121,41 @@ xbps_mmap_file(const char *file, void **mmf, size_t *mmflen, size_t *filelen)
 	return true;
 }
 
-bool
-xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
-{
+static const EVP_MD*
+algorithm2epv_md(xbps_hash_algorithm_t type) {
+	switch (type) {
+		case XBPS_HASH_SHA256:
+			return EVP_sha256();
+		case XBPS_HASH_BLAKE2B256:
+			return EVP_blake2s256();
+	}
+	return NULL;
+}
+
+int
+xbps_hash_size_raw(xbps_hash_algorithm_t type) {
+	return EVP_MD_size(algorithm2epv_md(type));
+}
+
+int
+xbps_hash_size(xbps_hash_algorithm_t type) {
+	return EVP_MD_size(algorithm2epv_md(type)) * 2 + 1;
+}
+
+bool 
+xbps_file_hash_raw(xbps_hash_algorithm_t type, unsigned char *dst, unsigned int dstlen, const char *file) {
 	int fd;
 	ssize_t len;
 	char buf[65536];
-	SHA256_CTX sha256;
+	EVP_MD_CTX *mdctx;
 
-	assert(dstlen >= XBPS_SHA256_DIGEST_SIZE);
-	if (dstlen < XBPS_SHA256_DIGEST_SIZE) {
+	// invalid type
+	if (algorithm2epv_md(type) == NULL) {
+		errno = EINVAL;
+		return false;
+	}		
+
+	if ((int) dstlen < xbps_hash_size_raw(type)) {
 		errno = ENOBUFS;
 		return false;
 	}
@@ -129,23 +163,36 @@ xbps_file_sha256_raw(unsigned char *dst, size_t dstlen, const char *file)
 	if ((fd = open(file, O_RDONLY)) < 0)
 		return false;
 
-	SHA256_Init(&sha256);
+	if((mdctx = EVP_MD_CTX_new()) == NULL) {
+		xbps_error_printf("Unable to initial openssl: %s\n", ERR_error_string(ERR_get_error(), NULL));
+		return false;
+	}
+
+	if(EVP_DigestInit_ex(mdctx, algorithm2epv_md(type), NULL) != 1) {
+		xbps_error_printf("Unable to initial algorithm: %s\n", ERR_error_string(ERR_get_error(), NULL));
+		return false;
+	}
 
 	while ((len = read(fd, buf, sizeof(buf))) > 0)
-		SHA256_Update(&sha256, buf, len);
+		if(EVP_DigestUpdate(mdctx, buf, len) != 1) {
+			xbps_error_printf("Unable to update digest: %s\n", ERR_error_string(ERR_get_error(), NULL));
+			return false;
+		}
 
-	(void)close(fd);
+	close(fd);
 
-	if(len == -1)
+	if(EVP_DigestFinal_ex(mdctx, dst, &dstlen) != 1) {
+		xbps_error_printf("Unable to finalize digest: %s\n", ERR_error_string(ERR_get_error(), NULL));
 		return false;
+	}
 
-	SHA256_Final(dst, &sha256);
+	EVP_MD_CTX_free(mdctx);
 
 	return true;
 }
 
 bool
-xbps_file_sha256(char *dst, size_t dstlen, const char *file)
+xbps_file_hash(xbps_hash_algorithm_t type, char *dst, size_t dstlen, const char *file)
 {
 	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
@@ -155,7 +202,7 @@ xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 		return false;
 	}
 
-	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
+	if (!xbps_file_hash_raw(type, digest, sizeof digest, file))
 		return false;
 
 	digest2string(digest, dst, XBPS_SHA256_DIGEST_SIZE);
@@ -164,7 +211,7 @@ xbps_file_sha256(char *dst, size_t dstlen, const char *file)
 }
 
 static bool
-sha256_digest_compare(const char *sha256, size_t shalen,
+hash_digest_compare(const char *sha256, size_t shalen,
 		const unsigned char *digest, size_t digestlen)
 {
 
@@ -198,17 +245,17 @@ sha256_digest_compare(const char *sha256, size_t shalen,
 }
 
 int
-xbps_file_sha256_check(const char *file, const char *sha256)
+xbps_file_hash_check(xbps_hash_algorithm_t type, const char *file, const char *sha256)
 {
 	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
 
 	assert(file != NULL);
 	assert(sha256 != NULL);
 
-	if (!xbps_file_sha256_raw(digest, sizeof digest, file))
+	if (!xbps_file_hash_raw(type, digest, sizeof digest, file))
 		return errno;
 
-	if (!sha256_digest_compare(sha256, strlen(sha256), digest, sizeof digest))
+	if (!hash_digest_compare(sha256, strlen(sha256), digest, sizeof digest))
 		return ERANGE;
 
 	return 0;
@@ -269,10 +316,10 @@ xbps_file_hash_check_dictionary(struct xbps_handle *xhp,
 	}
 
 	if (strcmp(xhp->rootdir, "/") == 0) {
-		rv = xbps_file_sha256_check(file, sha256d);
+		rv = xbps_file_hash_check(XBPS_HASH_SHA256, file, sha256d);
 	} else {
 		buf = xbps_xasprintf("%s/%s", xhp->rootdir, file);
-		rv = xbps_file_sha256_check(buf, sha256d);
+		rv = xbps_file_hash_check(XBPS_HASH_SHA256, buf, sha256d);
 		free(buf);
 	}
 	if (rv == 0)

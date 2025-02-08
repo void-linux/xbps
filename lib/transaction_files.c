@@ -312,7 +312,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 		 * Skip unexisting files and keep files with hash mismatch.
 		 */
 		if (item->old.sha256 != NULL) {
-			rv = xbps_file_sha256_check(item->file, item->old.sha256);
+			rv = xbps_file_hash_check(XBPS_HASH_SHA256, item->file, item->old.sha256);
 			switch (rv) {
 			case 0:
 				/* hash matches, we can safely delete and/or overwrite it */
