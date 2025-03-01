@@ -7,17 +7,20 @@ update_xbps_head() {
 }
 
 update_xbps_body() {
-	mkdir -p repo xbps
+	mkdir -p repo xbps bar
 	touch xbps/foo
+	touch bar/bar
 
 	cd repo
 	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" ../xbps
+	atf_check_equal $? 0
+	xbps-create -A noarch -n bar-1.0_1 -s "bar pkg" ../bar
 	atf_check_equal $? 0
 	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -r root --repository=$PWD/repo -yd xbps
+	xbps-install -r root --repository=$PWD/repo -yd xbps bar
 	atf_check_equal $? 0
 
 	out=$(xbps-query -r root -p pkgver xbps)
@@ -26,13 +29,17 @@ update_xbps_body() {
 	cd repo
 	xbps-create -A noarch -n xbps-1.1_1 -s "xbps pkg" ../xbps
 	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/xbps-1.1_1.noarch.xbps
+	xbps-create -A noarch -n bar-1.1_1 -s "bar pkg" ../bar
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
 	atf_check_equal $? 0
 	cd ..
 
-	# EBUSY
-	xbps-install -r root --repository=$PWD/repo -yud
-	atf_check_equal $? 16
+	# Ensure warning is printed
+	atf_check -s exit:0 -o ignore -e match:"^WARNING: The 'xbps-1\.0_1' package is out of date, 'xbps-1\.1_1' is available\.$" -- xbps-install -r root --repository=$PWD/repo -yd bar
+
+	out=$(xbps-query -r root -p pkgver bar)
+	atf_check_equal $out bar-1.1_1
 
 	out=$(xbps-query -r root -p pkgver xbps)
 	atf_check_equal $out xbps-1.0_1
@@ -51,8 +58,8 @@ update_xbps_with_revdeps_head() {
 }
 
 update_xbps_with_revdeps_body() {
-	mkdir -p repo xbps xbps-dbg baz
-	touch xbps/foo xbps-dbg/bar baz/blah
+	mkdir -p repo xbps xbps-dbg bar baz
+	touch xbps/foo xbps-dbg/bar bar/sailor baz/blah
 
 	cd repo
 	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" ../xbps
@@ -66,6 +73,8 @@ update_xbps_with_revdeps_body() {
 
 	cd repo
 	xbps-create -A noarch -n baz-1.0_1 -s "baz pkg" ../baz
+	atf_check_equal $? 0
+	xbps-create -A noarch -n bar-1.0_1 -s "bar pkg" ../bar
 	atf_check_equal $? 0
 	xbps-create -A noarch -n xbps-dbg-1.0_1 -s "xbps-dbg pkg" --dependencies "xbps-1.0_1" ../xbps-dbg
 	atf_check_equal $? 0
@@ -87,12 +96,11 @@ update_xbps_with_revdeps_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	# first time, xbps must be updated (returns EBUSY)
-	xbps-install -r root --repository=$PWD/repo -yud
-	atf_check_equal $? 16
+	# first time, warning must be printed
+	atf_check -s exit:0 -o ignore -e match:"^WARNING: The 'xbps-1\.0_1' package is out of date, 'xbps-1\.1_1' is available\.$" -- xbps-install -r root --repository=$PWD/repo -yd bar
 
-	xbps-install -r root --repository=$PWD/repo -yu xbps
-	atf_check_equal $? 0
+	# don't print warning while updating xbps
+	atf_check -s exit:0 -o ignore -e not-match:"^WARNING: The 'xbps-1\.0_1' package is out of date, 'xbps-1\.1_1' is available\.$" -- xbps-install -r root --repository=$PWD/repo -yu xbps
 
 	out=$(xbps-query -r root -p pkgver xbps)
 	atf_check_equal $out xbps-1.1_1
@@ -152,11 +160,8 @@ update_xbps_with_uptodate_revdeps_body() {
 	atf_check_equal $? 0
 	cd ..
 
-	xbps-install -r root --repository=$PWD/repo -yud
-	atf_check_equal $? 16
-
-	xbps-install -r root --repository=$PWD/repo -yu xbps
-	atf_check_equal $? 0
+	# don't print warning while updating xbps
+	atf_check -s exit:0 -o ignore -e not-match:"^WARNING: The 'xbps-1\.0_1' package is out of date, 'xbps-1\.1_1' is available\.$" -- xbps-install -r root --repository=$PWD/repo -yu xbps
 
 	out=$(xbps-query -r root -p pkgver xbps)
 	atf_check_equal $out xbps-1.1_1
@@ -173,6 +178,8 @@ update_xbps_with_indirect_revdeps_head() {
 
 update_xbps_with_indirect_revdeps_body() {
 	mkdir -p repo pkg
+
+	atf_expect_fail "Integrity checks are no longer bypassed for xbps self-update: https://github.com/void-linux/xbps/pull/597"
 
 	cd repo
 	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" --dependencies "libcrypto-1.0_1 cacerts>=0" ../pkg
