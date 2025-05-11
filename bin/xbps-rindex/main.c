@@ -170,5 +170,5 @@ main(int argc, char **argv)
 	else if (sign_pkg_mode)
 		rv = sign_pkgs(&xh, optind, argc, argv, privkey, force);
 
-	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
+	exit(rv);
 }

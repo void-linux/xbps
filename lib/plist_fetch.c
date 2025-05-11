@@ -43,110 +43,33 @@
  * @defgroup plist_fetch Package URL metadata files handling
  */
 
-struct fetch_archive {
-	struct url *url;
-	struct fetchIO *fetch;
-	char buffer[32768];
-};
-
-static int
-fetch_archive_open(struct archive *a UNUSED, void *client_data)
-{
-	struct fetch_archive *f = client_data;
-
-	f->fetch = fetchGet(f->url, NULL);
-
-	if (f->fetch == NULL)
-		return ENOENT;
-
-	return 0;
-}
-
-static ssize_t
-fetch_archive_read(struct archive *a UNUSED, void *client_data, const void **buf)
-{
-	struct fetch_archive *f = client_data;
-
-	*buf = f->buffer;
-	return fetchIO_read(f->fetch, f->buffer, sizeof(f->buffer));
-}
-
-static int
-fetch_archive_close(struct archive *a UNUSED, void *client_data)
-{
-	struct fetch_archive *f = client_data;
-
-	if (f->fetch != NULL)
-		fetchIO_close(f->fetch);
-	free(f);
-
-	return 0;
-}
-
-static struct archive *
-open_archive_by_url(struct url *url)
-{
-	struct fetch_archive *f;
-	struct archive *a;
-
-	f = malloc(sizeof(struct fetch_archive));
-	if (f == NULL)
-		return NULL;
-
-	f->url = url;
-
-	if ((a = archive_read_new()) == NULL) {
-		free(f);
-		return NULL;
-	}
-	archive_read_support_filter_gzip(a);
-	archive_read_support_filter_bzip2(a);
-	archive_read_support_filter_xz(a);
-	archive_read_support_filter_lz4(a);
-	archive_read_support_filter_zstd(a);
-	archive_read_support_format_tar(a);
-
-	if (archive_read_open(a, f, fetch_archive_open, fetch_archive_read,
-	    fetch_archive_close) != ARCHIVE_OK) {
-		archive_read_free(a);
-		return NULL;
-	}
-
-	return a;
-}
-
 static struct archive *
 open_archive(const char *url)
 {
-	struct url *u;
-	struct archive *a;
+	struct archive *ar;
+	int r;
 
-	if (!xbps_repository_is_remote(url)) {
-		if ((a = archive_read_new()) == NULL)
-			return NULL;
+	ar = xbps_archive_read_new();
+	if (!ar) {
+		r = -errno;
+		xbps_error_printf("failed to open archive: %s: %s\n", url, strerror(-r));
+		errno = -r;
+		return NULL;
+	}
 
-		archive_read_support_filter_gzip(a);
-		archive_read_support_filter_bzip2(a);
-		archive_read_support_filter_xz(a);
-		archive_read_support_filter_lz4(a);
-		archive_read_support_filter_zstd(a);
-		archive_read_support_format_tar(a);
-
-		/* XXX: block size? */
-		if (archive_read_open_filename(a, url, 32768) != ARCHIVE_OK) {
-			archive_read_free(a);
-			return NULL;
-		}
-		return a;
+	if (xbps_repository_is_remote(url)) {
+		r = xbps_archive_read_open_remote(ar, url);
+	} else {
+		r = xbps_archive_read_open(ar, url);
+	}
+	if (r < 0) {
+		xbps_error_printf("failed to open archive: %s: %s\n", url, strerror(-r));
+		archive_read_free(ar);
+		errno = -r;
+		return NULL;
 	}
 	
-	if ((u = fetchParseURL(url)) == NULL)
-		return NULL;
-
-	a = open_archive_by_url(u);
-	fetchFreeURL(u);
-
-	return a;
+	return ar;
 }
 
 char *
@@ -178,54 +101,6 @@ xbps_archive_fetch_file(const char *url, const char *fname)
 	archive_read_free(a);
 
 	return buf;
-}
-
-bool
-xbps_repo_fetch_remote(struct xbps_repo *repo, const char *url)
-{
-	struct archive *a;
-	struct archive_entry *entry;
-	uint8_t i = 0;
-
-	assert(url);
-	assert(repo);
-
-	if ((a = open_archive(url)) == NULL)
-		return false;
-
-	while ((archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
-		const char *bfile;
-		char *buf;
-
-		bfile = archive_entry_pathname(entry);
-		if (bfile[0] == '.')
-			bfile++; /* skip first dot */
-
-		if (strcmp(bfile, XBPS_REPOIDX_META) == 0) {
-			buf = xbps_archive_get_file(a, entry);
-			repo->idxmeta = xbps_dictionary_internalize(buf);
-			free(buf);
-			i++;
-		} else if (strcmp(bfile, XBPS_REPOIDX) == 0) {
-			buf = xbps_archive_get_file(a, entry);
-			repo->idx = xbps_dictionary_internalize(buf);
-			free(buf);
-			i++;
-		} else {
-			archive_read_data_skip(a);
-		}
-		if (i == 2)
-			break;
-	}
-	archive_read_free(a);
-
-	if (xbps_object_type(repo->idxmeta) == XBPS_TYPE_DICTIONARY)
-		repo->is_signed = true;
-
-	if (xbps_object_type(repo->idx) == XBPS_TYPE_DICTIONARY)
-		return true;
-
-	return false;
 }
 
 int
