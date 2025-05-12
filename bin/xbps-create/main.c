@@ -184,8 +184,14 @@ entry_type_str(enum entry_type type)
 	diex("unknown entry type");
 }
 
+static bool
+validate_pkgver(const char *pkgver)
+{
+	return xbps_pkg_version(pkgver) != NULL;
+}
+
 static void
-process_array(const char *key, const char *val)
+process_array(const char *key, const char *val, bool (*validate)(const char *s))
 {
 	xbps_array_t array = NULL;
 	char *args, *p = NULL, *saveptr = NULL;
@@ -200,16 +206,22 @@ process_array(const char *key, const char *val)
 		die("xbps_array_create");
 
 	if (strchr(val, ' ') == NULL) {
+		if (validate && !validate(val)) {
+			diex("%s: invalid value: %s", key, val);
+		}
 		xbps_array_add_cstring_nocopy(array, val);
 		goto out;
 	}
 
-        args = strdup(val);
+	args = strdup(val);
 	if (args == NULL)
 		die("strdup");
 
 	for ((p = strtok_r(args, " ", &saveptr)); p;
 	     (p = strtok_r(NULL, " ", &saveptr))) {
+		if (validate && !validate(p)) {
+			diex("%s: invalid value: %s", key, p);
+		}
 		xbps_array_add_cstring(array, p);
 	}
 	free(args);
@@ -991,6 +1003,7 @@ main(int argc, char **argv)
 		diex("short description not set!");
 	else if (arch == NULL)
 		diex("architecture not set!");
+
 	/*
 	 * Sanity check for required options.
 	 */
@@ -1053,14 +1066,14 @@ main(int argc, char **argv)
 				"changelog", changelog);
 
 	/* Optional arrays */
-	process_array("run_depends", deps);
-	process_array("conf_files", config_files);
-	process_array("conflicts", conflicts);
-	process_array("provides", provides);
-	process_array("replaces", replaces);
-	process_array("reverts", reverts);
-	process_array("shlib-provides", shlib_provides);
-	process_array("shlib-requires", shlib_requires);
+	process_array("run_depends", deps, NULL);
+	process_array("conf_files", config_files, NULL);
+	process_array("conflicts", conflicts, NULL);
+	process_array("provides", provides, validate_pkgver);
+	process_array("replaces", replaces, NULL);
+	process_array("reverts", reverts, NULL);
+	process_array("shlib-provides", shlib_provides, NULL);
+	process_array("shlib-requires", shlib_requires, NULL);
 	process_dict_of_arrays("alternatives", alternatives);
 
 	/* save cwd */
