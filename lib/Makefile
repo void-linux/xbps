@@ -5,8 +5,16 @@ RANLIB ?= ranlib
 LIBXBPS_MAJOR = 5
 LIBXBPS_MINOR = 0
 LIBXBPS_MICRO = 1
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+LIBXBPS_SHLIB = libxbps.$(LIBXBPS_MAJOR).$(LIBXBPS_MINOR).$(LIBXBPS_MICRO).dylib
+LDFLAGS += $(LIBXBPS_LDFLAGS) -dynamiclib -Wl,-install_name,@rpath/libxbps.$(LIBXBPS_MAJOR).dylib
+else
 LIBXBPS_SHLIB = libxbps.so.$(LIBXBPS_MAJOR).$(LIBXBPS_MINOR).$(LIBXBPS_MICRO)
 LDFLAGS += $(LIBXBPS_LDFLAGS) -shared -Wl,-soname,libxbps.so.$(LIBXBPS_MAJOR)
+endif
 
 # portableproplib
 LIBPROP_OBJS += portableproplib/prop_array.o portableproplib/prop_bool.o
@@ -80,11 +88,20 @@ $(OBJS): %.o: %.c
 	@printf " [CC]\t\t$@\n"
 	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
 
+ifeq ($(UNAME_S),Darwin)
 libxbps.so: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
+else
+libxbps.dylib: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
+endif
 	@printf " [CCLD]\t\t$@\n"
 	${SILENT}$(CC) $^ $(CFLAGS) $(LDFLAGS) -o $(LIBXBPS_SHLIB)
+ifeq ($(UNAME_S),Darwin)
+	@-ln -sf $(LIBXBPS_SHLIB) libxbps.$(LIBXBPS_MAJOR).dylib
+	@-ln -sf $(LIBXBPS_SHLIB) libxbps.dylib
+else
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBXBPS_MAJOR)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so
+endif
 
 libxbps.a: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
 	@printf " [AR]\t\t$@\n"
@@ -97,8 +114,13 @@ install: all
 	install -d $(DESTDIR)$(LIBDIR)
 	install -m 644 libxbps.a $(DESTDIR)$(LIBDIR)
 	install -m 755 $(LIBXBPS_SHLIB) $(DESTDIR)$(LIBDIR)
+ifeq ($(UNAME_S),Darwin)
+	cp -a libxbps.dylib $(DESTDIR)$(LIBDIR)
+	cp -a libxbps.$(LIBXBPS_MAJOR).dylib $(DESTDIR)$(LIBDIR)
+else
 	cp -a libxbps.so $(DESTDIR)$(LIBDIR)
 	cp -a libxbps.so.$(LIBXBPS_MAJOR) $(DESTDIR)$(LIBDIR)
+endif
 
 .PHONY: uninstall
 uninstall:

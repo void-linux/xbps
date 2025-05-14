@@ -57,6 +57,10 @@
 #include <poll.h>
 #include <fcntl.h>
 
+#ifndef SOCK_NONBLOCK
+#define SOCK_NONBLOCK O_NONBLOCK
+#endif
+
 #ifndef MSG_NOSIGNAL
 #include <signal.h>
 #endif
