@@ -43,6 +43,10 @@
 
 #include <xbps.h>
 
+#ifdef __APPLE__
+#define st_mtim st_mtimespec
+#endif
+
 #define GOT_PKGNAME_VAR 	0x1
 #define GOT_VERSION_VAR 	0x2
 #define GOT_REVISION_VAR 	0x4
