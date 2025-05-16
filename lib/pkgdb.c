@@ -398,12 +398,16 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 {
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
+	xbps_dictionary_t vpkg_cache;
 
 	if (xhp->pkgdb_revdeps)
 		return;
 
 	xhp->pkgdb_revdeps = xbps_dictionary_create();
 	assert(xhp->pkgdb_revdeps);
+
+	vpkg_cache = xbps_dictionary_create();
+	assert(vpkg_cache);
 
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
@@ -421,8 +425,8 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		for (unsigned int i = 0; i < xbps_array_count(rundeps); i++) {
 			xbps_array_t pkg;
-			const char *pkgdep = NULL, *vpkgname = NULL;
-			char *v, curpkgname[XBPS_NAME_SIZE];
+			const char *pkgdep = NULL, *v;
+			char curpkgname[XBPS_NAME_SIZE];
 			bool alloc = false;
 
 			xbps_array_get_cstring_nocopy(rundeps, i, &pkgdep);
@@ -430,11 +434,24 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 			    (!xbps_pkg_name(curpkgname, sizeof(curpkgname), pkgdep))) {
 					abort();
 			}
-			vpkgname = vpkg_user_conf(xhp, curpkgname, false);
-			if (vpkgname == NULL) {
-				v = strdup(curpkgname);
-			} else {
-				v = strdup(vpkgname);
+
+			/* TODO: this is kind of a workaround, to avoid calling vpkg_user_conf
+			 * over and over again for the same packages which is slow. A better
+			 * solution for itself vpkg_user_conf being slow should probably be
+			 * implemented at some point.
+			 */
+			if (!xbps_dictionary_get_cstring_nocopy(vpkg_cache, curpkgname, &v)) {
+				const char *vpkgname = vpkg_user_conf(xhp, curpkgname, false);
+				if (vpkgname) {
+					v = vpkgname;
+				} else {
+					v = curpkgname;
+				}
+				errno = 0;
+				if (!xbps_dictionary_set_cstring_nocopy(vpkg_cache, curpkgname, v)) {
+					xbps_error_printf("%s\n", strerror(errno ? errno : ENOMEM));
+					abort();
+				}
 			}
 
 			pkg = xbps_dictionary_get(xhp->pkgdb_revdeps, v);
@@ -446,12 +463,12 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 				xbps_array_add_cstring_nocopy(pkg, pkgver);
 				xbps_dictionary_set(xhp->pkgdb_revdeps, v, pkg);
 			}
-			free(v);
 			if (alloc)
 				xbps_object_release(pkg);
 		}
 	}
 	xbps_object_iterator_release(iter);
+	xbps_object_release(vpkg_cache);
 }
 
 xbps_array_t
