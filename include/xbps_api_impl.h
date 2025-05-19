@@ -113,7 +113,7 @@ int HIDDEN xbps_register_pkg(struct xbps_handle *, xbps_dictionary_t);
 char HIDDEN *xbps_archive_get_file(struct archive *, struct archive_entry *);
 xbps_dictionary_t HIDDEN xbps_archive_get_dictionary(struct archive *,
 		struct archive_entry *);
-const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *, bool);
+const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *);
 xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 		const char *, bool);
 struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,

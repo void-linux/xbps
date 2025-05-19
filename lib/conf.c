@@ -52,9 +52,46 @@
  */
 
 static int
+vpkg_map_add(xbps_dictionary_t d, const char *pkgname, const char *vpkgver, const char *provider)
+{
+	xbps_dictionary_t providers;
+	bool alloc = false;
+	int r;
+
+	providers = xbps_dictionary_get(d, pkgname);
+	if (!providers) {
+		providers = xbps_dictionary_create();
+		if (!providers)
+			return -ENOMEM;
+		alloc = true;
+		if (!xbps_dictionary_set(d, pkgname, providers)) {
+			r = errno ? -errno : -ENOMEM;
+			goto err;
+		}
+	}
+
+	if (!xbps_dictionary_set_cstring(providers, vpkgver, provider)) {
+		r = errno ? -errno : -ENOMEM;
+		goto err;
+	}
+
+	r = 0;
+err:
+	if (alloc)
+		xbps_object_release(providers);
+	return r;
+}
+
+static int
 store_virtualpkg(struct xbps_handle *xhp, const char *path, size_t line, char *val)
 {
+	char namebuf[XBPS_NAME_SIZE];
+	char pkgverbuf[XBPS_NAME_SIZE + sizeof("-99999_1")];
+	const char *vpkgname, *vpkgver, *provider;
 	char *p;
+	int r;
+
+
 	/*
 	 * Parse strings delimited by ':' i.e
 	 * 	<left>:<right>
@@ -66,13 +103,25 @@ store_virtualpkg(struct xbps_handle *xhp, const char *path, size_t line, char *v
 		return 0;
 	}
 	*p++ = '\0';
+	provider = p;
 
-	if (!xbps_dictionary_set_cstring(xhp->vpkgd, val, p))
-		return -errno;
-	if (!xbps_dictionary_set_cstring(xhp->vpkgd_conf, val, p))
-		return -errno;
+	if (xbps_pkg_name(namebuf, sizeof(namebuf), val)) {
+		vpkgname = namebuf;
+		vpkgver = val;
+	} else {
+		vpkgname = val;
+		snprintf(pkgverbuf, sizeof(pkgverbuf), "%s-99999_1", vpkgname);
+		vpkgver = pkgverbuf;
+	}
+
+	r = vpkg_map_add(xhp->vpkgd, vpkgname, vpkgver, provider);
+	if (r < 0)
+		return r;
+	r = vpkg_map_add(xhp->vpkgd_conf, vpkgname, vpkgver, provider);
+	if (r < 0)
+		return r;
 	xbps_dbg_printf("%s: added virtualpkg %s for %s\n", path, val, p);
-	return 1;
+	return 0;
 }
 
 static void
