@@ -35,6 +35,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "xbps.h"
 #include "xbps_api_impl.h"
 
 /**
@@ -145,26 +146,35 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 {
 	xbps_object_iterator_t iter;
 	xbps_object_t obj;
-	int rv = 0;
+	int r = 0;
 
 	if (!xbps_dictionary_count(xhp->pkgdb))
 		return 0;
 
 	if (xhp->vpkgd == NULL) {
 		xhp->vpkgd = xbps_dictionary_create();
-		assert(xhp->vpkgd);
+		if (!xhp->vpkgd) {
+			r = -errno;
+			xbps_error_printf("failed to create dictionary\n");
+			return r;
+		}
 	}
+
 	/*
 	 * This maps all pkgs that have virtualpkgs in pkgdb.
 	 */
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
-	assert(iter);
+	if (!iter) {
+		r = -errno;
+		xbps_error_printf("failed to create iterator");
+		goto out;
+	}
 
 	while ((obj = xbps_object_iterator_next(iter))) {
 		xbps_array_t provides;
 		xbps_dictionary_t pkgd;
 		const char *pkgver = NULL;
-		char pkgname[XBPS_NAME_SIZE] = {0};
+		const char *pkgname = NULL;
 		unsigned int cnt;
 
 		pkgd = xbps_dictionary_get_keysym(xhp->pkgdb, obj);
@@ -174,26 +184,53 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 			continue;
 
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
-		if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
-			rv = EINVAL;
-			goto out;
-		}
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgname", &pkgname);
+		assert(pkgname);
+
 		for (unsigned int i = 0; i < cnt; i++) {
+			char vpkgname[XBPS_NAME_SIZE];
 			const char *vpkg = NULL;
+			xbps_dictionary_t providers;
+			bool alloc = false;
 
 			xbps_array_get_cstring_nocopy(provides, i, &vpkg);
-			if (!xbps_dictionary_set_cstring(xhp->vpkgd, vpkg, pkgname)) {
-				xbps_dbg_printf("%s: set_cstring vpkg "
-				    "%s pkgname %s\n", __func__, vpkg, pkgname);
-				rv = EINVAL;
+			if (!xbps_pkg_name(vpkgname, sizeof(vpkgname), vpkg)) {
+				xbps_warn_printf("%s: invalid provides: %s\n", pkgver, vpkg);
+				continue;
+			}
+
+			providers = xbps_dictionary_get(xhp->vpkgd, vpkgname);
+			if (!providers) {
+				providers = xbps_dictionary_create();
+				if (!providers) {
+					r = -errno;
+					xbps_error_printf("failed to create dictionary\n");
+					goto out;
+				}
+				if (!xbps_dictionary_set(xhp->vpkgd, vpkgname, providers)) {
+					r = -errno;
+					xbps_error_printf("failed to set dictionary entry\n");
+					xbps_object_release(providers);
+					goto out;
+				}
+				alloc = true;
+			}
+
+			if (!xbps_dictionary_set_cstring(providers, vpkg, pkgname)) {
+				r = -errno;
+				xbps_error_printf("failed to set dictionary entry\n");
+				if (alloc)
+					xbps_object_release(providers);
 				goto out;
 			}
+			if (alloc)
+				xbps_object_release(providers);
 			xbps_dbg_printf("[pkgdb] added vpkg %s for %s\n", vpkg, pkgname);
 		}
 	}
 out:
 	xbps_object_iterator_release(iter);
-	return rv;
+	return r;
 }
 
 static int
@@ -398,12 +435,16 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 {
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
+	xbps_dictionary_t vpkg_cache;
 
 	if (xhp->pkgdb_revdeps)
 		return;
 
 	xhp->pkgdb_revdeps = xbps_dictionary_create();
 	assert(xhp->pkgdb_revdeps);
+
+	vpkg_cache = xbps_dictionary_create();
+	assert(vpkg_cache);
 
 	iter = xbps_dictionary_iterator(xhp->pkgdb);
 	assert(iter);
@@ -421,8 +462,8 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &pkgver);
 		for (unsigned int i = 0; i < xbps_array_count(rundeps); i++) {
 			xbps_array_t pkg;
-			const char *pkgdep = NULL, *vpkgname = NULL;
-			char *v, curpkgname[XBPS_NAME_SIZE];
+			const char *pkgdep = NULL, *v;
+			char curpkgname[XBPS_NAME_SIZE];
 			bool alloc = false;
 
 			xbps_array_get_cstring_nocopy(rundeps, i, &pkgdep);
@@ -430,11 +471,24 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 			    (!xbps_pkg_name(curpkgname, sizeof(curpkgname), pkgdep))) {
 					abort();
 			}
-			vpkgname = vpkg_user_conf(xhp, curpkgname, false);
-			if (vpkgname == NULL) {
-				v = strdup(curpkgname);
-			} else {
-				v = strdup(vpkgname);
+
+			/* TODO: this is kind of a workaround, to avoid calling vpkg_user_conf
+			 * over and over again for the same packages which is slow. A better
+			 * solution for itself vpkg_user_conf being slow should probably be
+			 * implemented at some point.
+			 */
+			if (!xbps_dictionary_get_cstring_nocopy(vpkg_cache, curpkgname, &v)) {
+				const char *vpkgname = vpkg_user_conf(xhp, curpkgname);
+				if (vpkgname) {
+					v = vpkgname;
+				} else {
+					v = curpkgname;
+				}
+				errno = 0;
+				if (!xbps_dictionary_set_cstring_nocopy(vpkg_cache, curpkgname, v)) {
+					xbps_error_printf("%s\n", strerror(errno ? errno : ENOMEM));
+					abort();
+				}
 			}
 
 			pkg = xbps_dictionary_get(xhp->pkgdb_revdeps, v);
@@ -446,12 +500,12 @@ generate_full_revdeps_tree(struct xbps_handle *xhp)
 				xbps_array_add_cstring_nocopy(pkg, pkgver);
 				xbps_dictionary_set(xhp->pkgdb_revdeps, v, pkg);
 			}
-			free(v);
 			if (alloc)
 				xbps_object_release(pkg);
 		}
 	}
 	xbps_object_iterator_release(iter);
+	xbps_object_release(vpkg_cache);
 }
 
 xbps_array_t
