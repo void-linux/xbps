@@ -81,6 +81,9 @@ xbps-X.XX.X (2020-XX-XX):
     `XBPS_STAGING` environment variable and `staging=true|false` configuration option.
     Enabling staging allows xbps to use staged packages from remote repositories.
 
+  * xbps-insatll(1), xbps-remove(1): Print package install and removal messages once,
+    below the transaction summary, before applying the transaction. #572 [chocimier]
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete
