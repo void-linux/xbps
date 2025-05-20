@@ -2,7 +2,7 @@ xbps-X.XX.X (2020-XX-XX):
 
  * libxbps: fix issues with updating packages in unpacked state. [duncaen]
 
- * libxbps: run all scripts before and after unpackage all packages,
+ * libxbps: run all scripts before and after unpacking all packages,
    to avoid running things in a half unpacked state. [duncaen]
 
  * libxbps: fix configuration parsing with missing trailing newline
@@ -26,21 +26,21 @@ xbps-X.XX.X (2020-XX-XX):
    breaks the installation or update of a package instead of just ignoring
    it, resulting in an inconsistent pkgdb. #392 [duncaen]
 
- * libxbps: fix issues with XBPS_FLAG_INSTALL_AUTO where already intalled
-   packages would get market automatically installed when they are being
-   updated while installing new packackages in automatically installed mode.
+ * libxbps: fix issues with XBPS_FLAG_INSTALL_AUTO where already installed
+   packages would get marked automatically installed when they are being
+   updated while installing new packages in automatically installed mode.
    #557 [duncaen]
 
- * libxbps: when reinstalling a package don't remove directories that are still
+ * libxbps: when reinstalling a package, don't remove directories that are still
    part of the new package. This avoids the recreation of directories which
-   trips up runsv as it keeps an fd to the service directory open that would
+   trips up runsv, as it keeps an fd to the service directory open that would
    be deleted and recreated. #561 [duncaen]
 
  * xbps-install(1): list reinstalled packages. [chocimier]
 
- * xbps-install(1): in dry-run mode ignore out of space error. [chocimier]
+ * xbps-install(1): in dry-run mode, ignore out of space error. [chocimier]
 
- * xbps-install(1): fix bug where a repo locked dependency could be updated
+ * xbps-install(1): fix bug where a repo-locked dependency could be updated
    from a repository it was not locked to. [chocimier]
 
  * xbps-fetch(1): make sure to exit with failure if a failure was encountered.
@@ -53,11 +53,11 @@ xbps-X.XX.X (2020-XX-XX):
 
  * xbps-checkvers(1): with --installed also list subpackages. [chocimier]
 
- * xbps-remove(1): fix dry run cache cleaning inconsistencies. [duncaen]
+ * xbps-remove(1): fix dry-run cache cleaning inconsistencies. [duncaen]
 
- * xbps-remove(1): allow to remove "uninstalled" (packages in the cache that
-   are still up to date but no long installed) packages from the package
-   cache by specifing the -O/--clean-cache flag twice. #530 [duncaen]
+ * xbps-remove(1): allow removing "uninstalled" packages (packages in the cache
+   that are still up to date but no long installed) from the package
+   cache by specifying the -O/--clean-cache flag twice. #530 [duncaen]
 
  * xbps-query(1): --cat now works in either repo or pkgdb mode. [duncaen]
 
@@ -81,11 +81,11 @@ xbps-X.XX.X (2020-XX-XX):
     `XBPS_STAGING` environment variable and `staging=true|false` configuration option.
     Enabling staging allows xbps to use staged packages from remote repositories.
 
-  * xbps-insatll(1), xbps-remove(1): Print package install and removal messages once,
+  * xbps-install(1), xbps-remove(1): Print package install and removal messages once,
     below the transaction summary, before applying the transaction. #572 [chocimier]
 
   * xbps-query(1): Improved argument parsing allows package arguments anywhere in the
-    arguments.  #588 [classabbyamp]
+    arguments. #588 [classabbyamp]
 
   * xbps-install(1): Make dry-run output consistent/machine parsable. #611 [classabbyamp]
 
