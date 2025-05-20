@@ -41,7 +41,6 @@
 #include "defs.h"
 #include "xbps/xbps_dictionary.h"
 #include "xbps/xbps_object.h"
-#include "xbps_api_impl.h"
 
 static int
 remove_pkg(const char *repodir, const char *file)
@@ -163,13 +162,16 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	if ((dirp = opendir(".")) == NULL) {
 		xbps_error_printf("xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
-		goto err;
+		xbps_repo_release(repo);
+		return EXIT_FAILURE;
 	}
 
 	array = xbps_array_create();
 	if (!array) {
 		xbps_error_printf("failed to allocate array: %s\n", strerror(-errno));
-		goto err;
+		xbps_repo_release(repo);
+		closedir(dirp);
+		return EXIT_FAILURE;
 	}
 
 	suffixlen = snprintf(suffix, sizeof(suffix), ".%s.xbps",
@@ -199,13 +201,15 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	closedir(dirp);
 
 	r = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, repo);
-	if (r < 0)
-		goto err;
 
 	xbps_repo_release(repo);
 	xbps_object_release(array);
+
+	if (r < 0)
+		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 err:
+	closedir(dirp);
 	xbps_repo_release(repo);
 	xbps_object_release(array);
 	return EXIT_FAILURE;
