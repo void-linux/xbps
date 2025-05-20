@@ -63,7 +63,6 @@ run_post_remove_scripts(struct xbps_handle *xhp, xbps_array_t remove_scripts)
 
 	for (unsigned int i = 0; i < xbps_array_count(remove_scripts); i++) {
 		xbps_dictionary_t dict;
-		bool update = false;
 		xbps_data_t script = NULL;
 		const char *pkgver = NULL;
 		const void *buf;
@@ -75,21 +74,19 @@ run_post_remove_scripts(struct xbps_handle *xhp, xbps_array_t remove_scripts)
 		xbps_dictionary_get_cstring_nocopy(dict, "pkgver", &pkgver);
 		assert(pkgver);
 
-		xbps_dictionary_get_bool(dict, "update", &update);
-
 		script = xbps_dictionary_get(dict, "remove-script");
 		assert(script);
 
 		buf = xbps_data_data_nocopy(script);
 		buflen = xbps_data_size(script);
-		rv = xbps_pkg_exec_buffer(xhp, buf, buflen, pkgver, "post", update);
+		rv = xbps_pkg_exec_buffer(xhp, buf, buflen, pkgver, "post", false);
 		if (rv != 0) {
 			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, rv, pkgver,
 			    "%s: [trans] REMOVE script failed to execute pre ACTION: %s",
 			    pkgver, strerror(rv));
 			goto out;
 		}
-		rv = xbps_pkg_exec_buffer(xhp, buf, buflen, pkgver, "purge", update);
+		rv = xbps_pkg_exec_buffer(xhp, buf, buflen, pkgver, "purge", false);
 		if (rv != 0) {
 			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, rv, pkgver,
 			    "%s: [trans] REMOVE script failed to execute pre ACTION: %s",
@@ -250,16 +247,22 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 		update = ttype == XBPS_TRANS_UPDATE;
 
+		rv = xbps_pkg_exec_script(xhp, pkgdb_pkgd, "remove-script", "pre", update);
+		if (rv != 0) {
+			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, rv, pkgver,
+			    "%s: [trans] REMOVE script failed to execute pre ACTION: %s",
+			    pkgver, strerror(rv));
+			goto out;
+		}
+		if (update)
+			continue;
+
 		dict = xbps_dictionary_create();
 		if (dict == NULL) {
 			rv = errno ? errno : ENOMEM;
 			goto out;
 		}
 		if (!xbps_dictionary_set_cstring(dict, "pkgver", pkgdb_pkgver)) {
-			rv = errno ? errno : ENOMEM;
-			goto out;
-		}
-		if (!xbps_dictionary_set_bool(dict, "update", update)) {
 			rv = errno ? errno : ENOMEM;
 			goto out;
 		}
@@ -272,13 +275,6 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			goto out;
 		}
 		xbps_object_release(dict);
-		rv = xbps_pkg_exec_script(xhp, pkgdb_pkgd, "remove-script", "pre", update);
-		if (rv != 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_TRANS_FAIL, rv, pkgver,
-			    "%s: [trans] REMOVE script failed to execute pre ACTION: %s",
-			    pkgver, strerror(rv));
-			goto out;
-		}
 	}
 	xbps_object_iterator_reset(iter);
 
