@@ -92,6 +92,15 @@ xbps-X.XX.X (2020-XX-XX):
  * libxbps: Do not url-escape tilde character in path for better compatibility with
    some servers. #607 [gmbeard]
 
+ * libxbps: use the proper ASN1 signature type for packages. Signatures now have a `.sig2`
+   extension. #565 [classabbyamp]
+
+ * xbps-uhelper(1): add verbose output for `pkgmatch` and `cmpver` subcommands if the
+   -v/--verbose flag is specified. #549 [classabbyamp]
+
+ * xbps-uhelper(1): support multiple arguments for many subcommands to improve pipelined
+   performance. #536 [classabbyamp]
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete
