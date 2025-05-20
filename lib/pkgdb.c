@@ -167,7 +167,7 @@ pkgdb_map_vpkgs(struct xbps_handle *xhp)
 	if (!iter) {
 		r = -errno;
 		xbps_error_printf("failed to create iterator");
-		goto out;
+		return r;
 	}
 
 	while ((obj = xbps_object_iterator_next(iter))) {
