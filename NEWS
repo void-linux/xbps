@@ -84,6 +84,14 @@ xbps-X.XX.X (2020-XX-XX):
   * xbps-insatll(1), xbps-remove(1): Print package install and removal messages once,
     below the transaction summary, before applying the transaction. #572 [chocimier]
 
+  * xbps-query(1): Improved argument parsing allows package arguments anywhere in the
+    arguments.  #588 [classabbyamp]
+
+  * xbps-install(1): Make dry-run output consistent/machine parsable. #611 [classabbyamp]
+
+  * libxbps: Do not url-escape tilde character in path for better compatibility with
+    some servers. #607 [gmbeard]
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete
