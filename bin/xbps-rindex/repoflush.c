@@ -225,7 +225,8 @@ err:
 		archive_write_close(ar);
 		archive_write_free(ar);
 	}
-	close(fd);
+	if (fd != -1)
+		close(fd);
 	unlink(tmp);
 	return r;
 }
