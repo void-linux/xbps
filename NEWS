@@ -70,6 +70,17 @@ xbps-X.XX.X (2020-XX-XX):
    xbps-alternatives(1): add `XBPS_SYSLOG` environment variable to overwrite
    syslog configuration option. [duncaen]
 
+  * libxbps: Resolve performance issue caused by the growing number of virtual packages
+    in the Void Linux repository. #625 [duncaen]
+
+  * libxbps: Merge the staging data into the repository index (repodata) file.
+    This allows downloading the staging index from remote repositories without
+    having to keep the two index files in sync. #575 [duncaen]
+
+  * xbps-install(1), xbps-query(1), xbps-checkvers(1), xbps.d(5): Added `--staging` flag,
+    `XBPS_STAGING` environment variable and `staging=true|false` configuration option.
+    Enabling staging allows xbps to use staged packages from remote repositories.
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete
