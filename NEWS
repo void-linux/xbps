@@ -101,6 +101,9 @@ xbps-X.XX.X (2020-XX-XX):
  * xbps-uhelper(1): support multiple arguments for many subcommands to improve pipelined
    performance. #536 [classabbyamp]
 
+ * xbps-alternatives(1): Add -R/--repository mode to -l/--list to show alternatives
+   of packages in the repository. #340 [duncaen]
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete
