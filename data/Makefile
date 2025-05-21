@@ -13,6 +13,8 @@ all:
 install:
 	install -d $(DESTDIR)$(MANDIR)/man5
 	install -m644 xbps.d.5 $(DESTDIR)$(MANDIR)/man5
+	install -d $(DESTDIR)$(MANDIR)/man7
+	install -m644 xbps.7 $(DESTDIR)$(MANDIR)/man7
 	install -d $(DESTDIR)$(PKGCONFIGDIR)
 	install -m644 $(PCFILE) $(DESTDIR)$(PKGCONFIGDIR)
 	install -d $(DESTDIR)/$(DBDIR)/keys
