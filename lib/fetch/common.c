@@ -233,13 +233,19 @@ conn_t *
 fetch_reopen(int sd)
 {
 	conn_t *conn;
+#ifdef SO_NOSIGPIPE
+	int opt = 1;
+#endif
 
 	/* allocate and fill connection structure */
 	if ((conn = calloc(1, sizeof(*conn))) == NULL)
 		return (NULL);
-	conn->next_buf = NULL;
-	conn->next_len = 0;
+	fcntl(sd, F_SETFD, FD_CLOEXEC);
+#ifdef SO_NOSIGPIPE
+	setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof opt);
+#endif
 	conn->sd = sd;
+	++conn->ref;
 	return (conn);
 }
 
@@ -932,7 +938,7 @@ fetch_ssl_tolower(char in)
  * conversions.
  */
 static int
-fetch_ssl_isalpha(unsigned char in)
+fetch_ssl_isalpha(char in)
 {
 	return ((in >= 'A' && in <= 'Z') || (in >= 'a' && in <= 'z'));
 }
@@ -970,7 +976,7 @@ fetch_ssl_is_trad_domain_label(const char *l, size_t len, int wcok)
 		return (0);
 	for (i = 0; i < len; ++i) {
 		if (!isdigit((unsigned char)l[i]) &&
-		    !fetch_ssl_isalpha((unsigned char)l[i]) &&
+		    !fetch_ssl_isalpha(l[i]) &&
 		    !(l[i] == '*' && wcok) &&
 		    !(l[i] == '-' && l[i - 1] != '-'))
 			return (0);
@@ -1269,7 +1275,7 @@ fetch_ssl_setup_transport_layer(SSL_CTX *ctx, int verbose)
 {
 	long ssl_ctx_options;
 
-	ssl_ctx_options = SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_TICKET;
+	ssl_ctx_options = SSL_OP_ALL | SSL_OP_NO_SSLv3 | SSL_OP_NO_TICKET;
 	if (getenv("SSL_ALLOW_SSL3") == NULL)
 		ssl_ctx_options |= SSL_OP_NO_SSLv3;
 	if (getenv("SSL_NO_TLS1") != NULL)
@@ -1622,7 +1628,7 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 			}
 			timersub(&timeout, &now, &delta);
 			deltams = delta.tv_sec * 1000 +
-			    delta.tv_usec / 1000;;
+			    delta.tv_usec / 1000;
 		}
 		errno = 0;
 		pfd.revents = 0;
@@ -1657,6 +1663,7 @@ fetch_getln(conn_t *conn)
 		conn->bufsize = MIN_BUF_SIZE;
 	}
 
+	conn->buf[0] = '\0';
 	conn->buflen = 0;
 	next = NULL;
 
@@ -1676,7 +1683,7 @@ fetch_getln(conn_t *conn)
 		conn->buflen += len;
 		if (conn->buflen == conn->bufsize && next == NULL) {
 			tmp = conn->buf;
-			tmpsize = conn->bufsize * 2;
+			tmpsize = conn->bufsize * 2 + 1;
 			if (tmpsize < conn->bufsize) {
 				errno = ENOMEM;
 				return (-1);

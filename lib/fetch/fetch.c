@@ -1,7 +1,9 @@
 /*	$FreeBSD: rev 252375 $ */
 /*	$NetBSD: fetch.c,v 1.19 2009/08/11 20:48:06 joerg Exp $	*/
 /*-
- * Copyright (c) 1998-2004 Dag-Erling Coïdan Smørav
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1998-2004 Dag-Erling Smørgrav
  * Copyright (c) 2008 Joerg Sonnenberger <joerg@NetBSD.org>
  * All rights reserved.
  *
@@ -31,8 +33,8 @@
 
 #include "compat.h"
 
-#include <ctype.h>
 #include <errno.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -294,6 +296,9 @@ fetch_pctdecode(char *dst, const char *src, size_t dlen)
 		    (d2 = fetch_hexval(s[2])) >= 0 && (d1 > 0 || d2 > 0)) {
 			c = d1 << 4 | d2;
 			s += 2;
+		} else if (s[0] == '%') {
+			/* Invalid escape sequence. */
+			return (NULL);
 		} else {
 			c = *s;
 		}
@@ -366,7 +371,7 @@ fetchParseURL(const char *URL)
 
 	/* hostname */
 	if (*p == '[') {
-		q = p + 1 + strspn(p + 1, ":0123456789ABCDEFabcdef");
+		q = p + 1 + strspn(p + 1, ":0123456789ABCDEFabcdef.");
 		if (*q++ != ']')
 			goto ouch;
 	} else {
@@ -419,7 +424,10 @@ nohost:
 			goto ouch;
 		}
 		u->doc = doc;
-		while (*p != '\0') {
+		/* fragments are reserved for client-side processing, see
+		 * https://www.rfc-editor.org/rfc/rfc9110.html#section-7.1
+		 */
+		while (*p != '\0' && *p != '#') {
 			if (!isspace((unsigned char)*p)) {
 				*doc++ = *p++;
 			} else {
@@ -458,12 +466,10 @@ ouch:
 void
 fetchFreeURL(struct url *u)
 {
-	if (!u) {
+	if (!u)
 		return;
-	}
-	if (u->doc) {
+	if (u->doc)
 		free(u->doc);
-	}
 	free(u);
 }
 
