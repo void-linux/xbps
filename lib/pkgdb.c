@@ -415,10 +415,15 @@ xbps_pkgdb_foreach_cb_multi(struct xbps_handle *xhp,
 xbps_dictionary_t
 xbps_pkgdb_get_pkg(struct xbps_handle *xhp, const char *pkg)
 {
+	xbps_dictionary_t pkgd;
+
 	if (xbps_pkgdb_init(xhp) != 0)
 		return NULL;
 
-	return xbps_find_pkg_in_dict(xhp->pkgdb, pkg);
+	pkgd = xbps_find_pkg_in_dict(xhp->pkgdb, pkg);
+	if (!pkgd)
+		errno = ENOENT;
+	return pkgd;
 }
 
 xbps_dictionary_t
