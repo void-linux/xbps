@@ -104,6 +104,12 @@ xbps-X.XX.X (2020-XX-XX):
  * xbps-alternatives(1): Add -R/--repository mode to -l/--list to show alternatives
    of packages in the repository. #340 [duncaen]
 
+ * libxbps: fix permanent (308) redirects when fetching packages and repositories. [duncaen]
+
+ * xbps-remove(1): ignores file not found errors for files it deletes. [duncaen]
+
+ * libxbps: the `preserve` package metadata is now also respected for package removals. [duncaen]
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete
