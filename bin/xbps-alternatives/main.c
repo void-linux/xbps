@@ -330,8 +330,12 @@ main(int argc, char **argv)
 
 	if (!list_mode && !set_mode)
 		usage(true);
-	else if (argc && list_mode)
-		pkg = *argv;
+	else if (argc > 0 && list_mode) {
+		pkg = *argv++;
+		argc -= 1;
+		if (argc > 0)
+			usage(true);
+	}
 
 	memset(&xh, 0, sizeof(xh));
 	xh.state_cb = state_cb;
