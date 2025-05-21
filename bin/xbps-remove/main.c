@@ -29,7 +29,6 @@
 #include <string.h>
 #include <strings.h>
 #include <errno.h>
-#include <signal.h>
 #include <assert.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -103,8 +102,15 @@ state_cb_rm(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 	case XBPS_STATE_REMOVE_FILE_FAIL:
 	case XBPS_STATE_REMOVE_FILE_HASH_FAIL:
 	case XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL:
-		/* Ignore errors due to not empty directories or directories being a mount point */
-		if (xscd->err == ENOTEMPTY || xscd->err == EBUSY)
+		/* Ignore errors due to:
+		 * - ENOTEMPTY: non-empty directories.
+		 * - EBUSY: directories being a mount point.
+		 * - ENOENT: files not existing.
+		 * XXX: could EBUSY also appear for files which
+		 * are not mount points and what should happen if this
+		 * is the case.
+		 */
+		if (xscd->err == ENOTEMPTY || xscd->err == EBUSY || xscd->err == ENOENT)
 			return 0;
 
 		xbps_error_printf("%s\n", xscd->desc);
