@@ -273,20 +273,22 @@ main(int argc, char **argv)
 		{ "version", no_argument, NULL, 'V' },
 		{ NULL, 0, NULL, 0 }
 	};
-	struct xbps_handle xh;
-	const char *confdir, *rootdir, *group, *pkg;
-	int c, rv, flags = 0;
+	struct xbps_handle xh = { 0 };
+	const char *group, *pkg;
+	int c, rv;
 	bool list_mode = false, set_mode = false, repo_mode = false;
 
-	confdir = rootdir = group = pkg = NULL;
+	group = pkg = NULL;
+
+	xh.state_cb = state_cb;
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
 		case 'C':
-			confdir = optarg;
+			xbps_strlcpy(xh.confdir, optarg, sizeof(xh.confdir));
 			break;
 		case 'd':
-			flags |= XBPS_FLAG_DEBUG;
+			xh.flags |= XBPS_FLAG_DEBUG;
 			break;
 		case 'g':
 			group = optarg;
@@ -295,7 +297,7 @@ main(int argc, char **argv)
 			usage(false);
 			/* NOTREACHED */
 		case 'i':
-			flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
+			xh.flags |= XBPS_FLAG_IGNORE_CONF_REPOS;
 			break;
 		case 'l':
 			list_mode = true;
@@ -311,10 +313,10 @@ main(int argc, char **argv)
 			repo_mode = true;
 			break;
 		case 'r':
-			rootdir = optarg;
+			xbps_strlcpy(xh.rootdir, optarg, sizeof(xh.rootdir));
 			break;
 		case 'v':
-			flags |= XBPS_FLAG_VERBOSE;
+			xh.flags |= XBPS_FLAG_VERBOSE;
 			break;
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
@@ -336,15 +338,6 @@ main(int argc, char **argv)
 		if (argc > 0)
 			usage(true);
 	}
-
-	memset(&xh, 0, sizeof(xh));
-	xh.state_cb = state_cb;
-	if (rootdir)
-		xbps_strlcpy(xh.rootdir, rootdir, sizeof(xh.rootdir));
-	if (confdir)
-		xbps_strlcpy(xh.confdir, confdir, sizeof(xh.confdir));
-
-	xh.flags = flags;
 
 	/* initialize xbps */
 	if ((rv = xbps_init(&xh)) != 0) {
