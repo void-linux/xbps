@@ -247,7 +247,7 @@ collect_obsoletes(struct xbps_handle *xhp)
 			 * new package.
 			 * Probably obsolete.
 			 */
-			if (item->old.preserve && item->old.update) {
+			if (item->old.preserve) {
 				xbps_dbg_printf("[files] %s: skipping `preserve` %s: %s\n",
 				    item->old.pkgver, typestr(item->old.type), item->file);
 				continue;
