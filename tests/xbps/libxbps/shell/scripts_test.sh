@@ -109,8 +109,8 @@ script_action_body() {
 	mkdir some_repo root
 	mkdir -p pkg_A/usr/bin
 	echo "A-1.0_1" > pkg_A/usr/bin/foo
-	create_script_stdout "install" pkg_A/INSTALL
-	create_script_stdout "remove" pkg_A/REMOVE
+	create_script_stdout "install 1.0_1" pkg_A/INSTALL
+	create_script_stdout "remove 1.0_1" pkg_A/REMOVE
 
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
@@ -122,11 +122,13 @@ script_action_body() {
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A >out
 	atf_check_equal $? 0
 
-	grep "^install pre A 1.0_1 no no" out
+	grep "^install 1.0_1 pre A 1.0_1 no no" out
 	atf_check_equal $? 0
-	grep "^install post A 1.0_1 no no" out
+	grep "^install 1.0_1 post A 1.0_1 no no" out
 	atf_check_equal $? 0
 
+	create_script_stdout "install 1.1_1" pkg_A/INSTALL
+	create_script_stdout "remove 1.1_1" pkg_A/REMOVE
 	cd some_repo
 	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
 	atf_check_equal $? 0
@@ -137,25 +139,43 @@ script_action_body() {
 	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yu >out
 	atf_check_equal $? 0
 
-	grep "^remove pre A 1.0_1 yes no" out
+	grep "^remove 1.0_1 pre A 1.0_1 yes no" out
 	atf_check_equal $? 0
-	grep "^install pre A 1.1_1 yes no" out
+	grep "^install 1.1_1 pre A 1.1_1 yes no" out
 	atf_check_equal $? 0
-	grep "^remove post A 1.0_1 yes no" out
+	grep "^remove 1.0_1 post A 1.0_1 yes no" out
 	atf_check_equal $? 1
-	grep "^remove purge A 1.0_1 yes no" out
+	grep "^remove 1.0_1 purge A 1.0_1 yes no" out
 	atf_check_equal $? 1
-	grep "^install post A 1.1_1 yes no" out
+	grep "^install 1.1_1 post A 1.1_1 yes no" out
+	atf_check_equal $? 0
+
+	create_script_stdout "install 1.0_2" pkg_A/INSTALL
+	create_script_stdout "remove 1.0_2" pkg_A/REMOVE
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_2 -s "A pkg" --reverts "1.1_1" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yu >out
+	atf_check_equal $? 0
+	grep "^remove 1.1_1 pre A 1.1_1 yes no" out
+	atf_check_equal $? 0
+	grep "^install 1.0_2 pre A 1.0_2 yes no" out
+	atf_check_equal $? 0
+	grep "^install 1.0_2 post A 1.0_2 yes no" out
 	atf_check_equal $? 0
 
 	xbps-remove -C empty.conf -r root -y A >out
 	atf_check_equal $? 0
 
-	grep "^remove pre A 1.1_1 no no" out
+	grep "^remove 1.0_2 pre A 1.0_2 no no" out
 	atf_check_equal $? 0
-	grep "^remove post A 1.1_1 no no" out
+	grep "^remove 1.0_2 post A 1.0_2 no no" out
 	atf_check_equal $? 0
-	grep "^remove purge A 1.1_1 no no" out
+	grep "^remove 1.0_2 purge A 1.0_2 no no" out
 	atf_check_equal $? 0
 }
 
