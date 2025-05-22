@@ -1,7 +1,7 @@
-/*	$NetBSD: file.c,v 1.15 2009/10/15 12:36:57 joerg Exp $	*/
 /*-
- * Copyright (c) 1998-2004 Dag-Erling Coïdan Smørav
- * Copyright (c) 2008, 2009 Joerg Sonnenberger <joerg@NetBSD.org>
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1998-2011 Dag-Erling Smørgrav
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,8 +26,6 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * $FreeBSD: file.c,v 1.18 2007/12/14 10:26:58 des Exp $
  */
 
 #include "compat.h"
@@ -59,14 +57,14 @@ fetchFile_write(void *cookie, const void *buf, size_t len)
 	return write(*(int *)cookie, buf, len);
 }
 
-static void
+static int
 fetchFile_close(void *cookie)
 {
 	int fd = *(int *)cookie;
 
 	free(cookie);
 
-	close(fd);
+	return close(fd);
 }
 
 fetchIO *
@@ -99,8 +97,8 @@ fetchXGetFile(struct url *u, struct url_stat *us, const char *flags)
 		return NULL;
 	}
 
-	if (if_modified_since && u->last_modified > 0 &&
-	    u->last_modified >= us->mtime) {
+	if (if_modified_since && u->ims_time > 0 &&
+	    u->ims_time >= us->mtime) {
 		close(fd);
 		fetchLastErrCode = FETCH_UNCHANGED;
 		snprintf(fetchLastErrString, MAXERRSTRING, "Unchanged");
@@ -228,42 +226,4 @@ fetchStatFile(struct url *u, struct url_stat *us, const char *flags)
 	close(fd);
 
 	return rv;
-}
-
-int
-fetchListFile(struct url_list *ue, struct url *u, const char *pattern, const char *flags)
-{
-	char *path;
-	struct dirent *de;
-	DIR *dir;
-	int ret;
-
-	(void)flags;
-
-	if ((path = fetchUnquotePath(u)) == NULL) {
-		fetch_syserr();
-		return -1;
-	}
-		
-	dir = opendir(path);
-	free(path);
-
-	if (dir == NULL) {
-		fetch_syserr();
-		return -1;
-	}
-
-	ret = 0;
-
-	while ((de = readdir(dir)) != NULL) {
-		if (pattern && fnmatch(pattern, de->d_name, 0) != 0)
-			continue;
-		ret = fetch_add_entry(ue, u, de->d_name, 0);
-		if (ret)
-			break;
-	}
-
-	closedir(dir);
-
-	return ret;
 }
