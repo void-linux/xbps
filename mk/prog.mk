@@ -51,7 +51,11 @@ $(BIN).static: $(OBJS) $(TOPDIR)/lib/libxbps.a
 	${SILENT}$(CC) -static $(OBJS) $(CPPFLAGS) -L$(TOPDIR)/lib \
 		$(CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) $(STATIC_LIBS) -o $@
 
+ifeq ($(shell uname -s),Darwin)
+$(BIN): $(OBJS) $(TOPDIR)/lib/libxbps.dylib
+else
 $(BIN): $(OBJS) $(TOPDIR)/lib/libxbps.so
+endif
 	@printf " [CCLD]\t\t$@\n"
 	${SILENT}$(CC) $^ $(CPPFLAGS) -L$(TOPDIR)/lib \
 		$(CFLAGS) $(PROG_CFLAGS) $(LDFLAGS) $(PROG_LDFLAGS) \

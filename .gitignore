@@ -20,6 +20,7 @@ bin/xbps-digest/xbps-digest
 bin/xbps-fetch/xbps-fetch
 *.static
 *.so*
+*.dylib
 *.o
 *.a
 *.xml

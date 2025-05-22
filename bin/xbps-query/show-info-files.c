@@ -65,7 +65,7 @@ print_value_obj(const char *keyname, xbps_object_t obj,
 		if (xbps_humanize_number(size,
 		    (int64_t)xbps_number_unsigned_integer_value(obj)) == -1)
 			printf("%ju\n",
-			    xbps_number_unsigned_integer_value(obj));
+			    (uintmax_t)xbps_number_unsigned_integer_value(obj));
 		else
 			printf("%s\n", size);
 		break;
