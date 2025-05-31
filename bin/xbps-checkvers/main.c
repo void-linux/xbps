@@ -619,20 +619,15 @@ static int
 rcv_process_dir(rcv_t *rcv, rcv_proc_func process)
 {
 	DIR *dir = NULL;
-	struct dirent entry, *result;
+	struct dirent *result;
 	struct stat st;
 	char filename[BUFSIZ];
-	int i, ret = 0;
+	int ret = 0;
 
 	if (!(dir = opendir(".")))
 		goto error;
 
-	for (;;) {
-		i = readdir_r(dir, &entry, &result);
-		if (i > 0)
-			goto error;
-		if (result == NULL)
-			break;
+	while ((result = readdir(dir))) {
 		if ((strcmp(result->d_name, ".") == 0) ||
 		    (strcmp(result->d_name, "..") == 0))
 			continue;
