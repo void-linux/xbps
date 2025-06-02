@@ -592,6 +592,40 @@ EOF
 	atf_check_equal "$(tr '\n' ' ' < out.sorted)" "$(tr '\n' ' ' < expected)"
 }
 
+atf_test_case multiline_reverts
+
+multiline_reverts_head() {
+	atf_set "descr" "xbps-checkvers(1): test with reverts newline characters"
+}
+
+multiline_reverts_body() {
+	atf_expect_fail "multiline variables are not supported"
+	mkdir -p some_repo pkg_A void-packages/srcpkgs/libdwarf
+	touch pkg_A/file00
+	cat > void-packages/srcpkgs/libdwarf/template <<EOF
+pkgname=libdwarf
+reverts="20201020_1 20200825_1 20200719_1 20200114_1 20191104_2 20191104_1
+ 20191002_1 20190529_1 20190110_1 20180809_1 20180527_1 20180129_1 20170709_2
+ 20170709_1 20170416_1 20161124_1 20161021_1 20161001_1 20160923_1 20160613_1
+ 20160507_1 20160115_1 20150507_3 20150507_2 20150507_1"
+version=0.11.1
+revision=1
+do_install() {
+	:
+}
+EOF
+	cd some_repo
+	xbps-create -A noarch -n libdwarf-0.11.1_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages
+	out=$(xbps-checkvers -R $PWD/some_repo -D $PWD/void-packages)
+	atf_check_equal $? 0
+	atf_check_equal "$out" ""
+}
+
 atf_init_test_cases() {
 	atf_add_test_case srcpkg_newer
 	atf_add_test_case srcpkg_newer_with_refs
@@ -612,4 +646,5 @@ atf_init_test_cases() {
 	atf_add_test_case subpkg
 	atf_add_test_case removed
 	atf_add_test_case removed_subpkgs
+	atf_add_test_case multiline_reverts
 }
