@@ -110,6 +110,8 @@ xbps-X.XX.X (2020-XX-XX):
 
  * libxbps: the `preserve` package metadata is now also respected for package removals. [duncaen]
 
+ * xbps-pkgdb(1): new --checks allows to choose which checks are run. #352 [ericonr,duncaen]
+
 xbps-0.59.1 (2020-04-01):
 
  * libxbps: fixed a double free with malformed/incomplete
