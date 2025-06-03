@@ -1,0 +1,167 @@
+.Dd May 20, 2025
+.Dt XBPS 7
+.Os
+.Sh NAME
+.Nm xbps
+.Nd Introduction and concepts
+.Sh DESCRIPTION
+The X Binary Package System (XBPS) is a binary package system designed and implemented from scratch.
+Its goal is to be fast, easy to use, bug-free, featureful and portable as much as possible.
+
+The primary interface of XBPS is its suite of tools, including
+.Xr xbps-install 1
+for installing packages,
+.Xr xbps-remove 1
+for removing packages, and
+.Xr xbps-query 1
+for searching repositories and querying package properties.
+A C library is also available, called
+.Em libxbps .
+.Sh PACKAGES
+An XBPS package is a compressed archive of the package's files and metadata.
+
+Packages can also include scripts that run during installation and removal, during the
+.Dq configuration
+phase.
+These scripts can be re-run with
+.Nm xbps-reconfigure Fl f .
+
+Packages can be checked for issues with
+.Xr xbps-pkgdb 1 .
+If a package reports errors, it should be reinstalled with
+.Nm xbps-install Fl f .
+
+Packages can mark files as
+.Em conf_files ,
+which will prevent them from being replaced upon package update if modified.
+.Sh PACKAGE EXPRESSIONS
+Packages can be referred to in several ways.
+A package expression is a form to match a pattern; currently xbps
+supports 3 ways to specify them:
+.Bl -dash
+.It
+by package name, i.e:
+.Dq Sy foo .
+.It
+by exact package name and version, i.e:
+.Dq Sy foo-1.0_1 .
+.It
+by specifying a package name and version separated by any of the following version comparators:
+.Pp
+.Bl -item -compact
+.It
+.Sy <
+less than
+.It
+.Sy >
+greater than
+.It
+.Sy <=
+less or equal than
+.It
+.Sy >=
+greater or equal than
+.Pp
+Example:
+.Dq Sy foo>=2.0 .
+.El
+.El
+.Pp
+The first repository matching the package expression wins.
+.Sh PACKAGE MODES
+An installed package can have some specific modes of operation.
+Package modes can be changed with
+.Xr xbps-pkgdb 1 .
+Currently the following modes are available:
+.Bl -tag -width -x
+.It Sy hold
+The package is on hold mode.
+Packages in this mode won't be updated unless
+it's explicitely declared to be updated.
+The only way to update packages in this mode is by using the
+.Fl f , Fl -force
+option.
+To list packages in this mode use
+.Nm xbps-query Fl H .
+.It Sy manual
+The package is in manual mode of installation and won't be considered for
+removal when running
+.Nm xbps-remove Fl o .
+To list packages in this mode use
+.Nm xbps-query Fl m .
+.It Sy repolock
+A package in repolock mode will only accept updates that are available in the
+same repository that was used for installing.
+To list packages in this mode use
+.Nm xbps-query Fl -list-repolock-pkgs .
+.El
+.Sh REPOSITORIES
+An XBPS repository is a directory containing XBPS packages and an
+.Em <arch>-repodata
+repository index file.
+If the repository is remote (served via a web server), packages must be RSA-signed.
+
+In XBPS configuration and command-line flags, repositories are specified by a complete url or absolute path to the directory where the
+.Em <arch>-repodata
+resides.
+To synchronize configured remote repositories locally, use
+.Nm xbps-install Fl S .
+
+Repositories are created and managed with
+.Xr xbps-rindex 1 .
+.Sh FILES
+.Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
+.It Ar /etc/xbps.d
+Default configuration directory.
+See also
+.Xr xbps.d 5 .
+.It Ar /usr/share/xbps.d
+Default system configuration directory.
+See also
+.Xr xbps.d 5 .
+.It Ar /var/db/xbps/.<pkgname>-files.plist
+Package files metadata.
+.It Ar /var/db/xbps/pkgdb-0.38.plist
+Default package database (0.38 format).
+Keeps track of installed packages and properties.
+.It Ar /var/cache/xbps
+Default cache directory to store downloaded binary packages.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width XBPS_TARGET_ARCH
+.It Sy XBPS_ARCH
+Overrides
+.Xr uname 2
+machine result with this value.
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value.
+.It Sy XBPS_SYSLOG
+Overrides the
+.Xr xbps.d 5
+.Sy syslog=true|false
+configuration option.
+.El
+.Sh SEE ALSO
+.Xr xbps-alternatives 1 ,
+.Xr xbps-create 1 ,
+.Xr xbps-dgraph 1 ,
+.Xr xbps-fbulk 1 ,
+.Xr xbps-fetch 1 ,
+.Xr xbps-install 1 ,
+.Xr xbps-pkgdb 1 ,
+.Xr xbps-query 1 ,
+.Xr xbps-reconfigure 1 ,
+.Xr xbps-remove 1 ,
+.Xr xbps-rindex 1 ,
+.Xr xbps.d 5 ,
+.Lk https://github.com/void-linux/xbps ,
+.Lk https://xbps-api-docs.voidlinux.org
+.Sh AUTHORS
+.An Juan Romero Pardines Aq Mt xtraeme@gmail.com
+.An Duncan Overbruck Aq Mt mail@duncano.de
+.Sh BUGS
+Probably, but I try to make this not happen. Use it under your own
+responsibility and enjoy your life.
+.Pp
+Report bugs at
+.Lk https://github.com/void-linux/xbps/issues
