@@ -177,6 +177,44 @@ script_action_body() {
 	atf_check_equal $? 0
 	grep "^remove 1.0_2 purge A 1.0_2 no no" out
 	atf_check_equal $? 0
+
+	# reinstall run new INSTALL script.
+	create_script_stdout "install old 2.0_1" pkg_A/INSTALL
+	create_script_stdout "remove old 2.0_1" pkg_A/REMOVE
+	cd some_repo
+	xbps-create -A noarch -n A-2.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -y A >out
+	atf_check_equal $? 0
+
+	create_script_stdout "install new 2.0_1" pkg_A/INSTALL
+	create_script_stdout "remove new 2.0_1" pkg_A/REMOVE
+	cd some_repo
+	xbps-create -A noarch -n A-2.0_1 -s "A pkg" ../pkg_A
+	atf_check_equal $? 0
+	xbps-rindex -d -fa $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -C empty.conf -r root --repository=$PWD/some_repo -yf A >out
+	atf_check_equal $? 0
+
+	cat out>&2
+	atf_check_equal $? 0
+	grep "^remove old 2.0_1 pre A 2.0_1 no no" out
+	atf_check_equal $? 0
+	grep "^remove old 2.0_1 post A 2.0_1 no no" out
+	atf_check_equal $? 0
+	grep "^remove old 2.0_1 purge A 2.0_1 no no" out
+	atf_check_equal $? 0
+	grep "^install new 2.0_1 pre A 2.0_1 no no" out
+	atf_check_equal $? 0
+	grep "^install new 2.0_1 post A 2.0_1 no no" out
+	atf_check_equal $? 0
 }
 
 atf_init_test_cases() {
