@@ -45,6 +45,20 @@ This option is useful if some of
 are options passed to
 .Ar COMMAND .
 .El
+.Sh EXIT STATUS
+.Ex
+A descriptive error message will be printed to stderr if the error originates from
+.Nm .
+
+.Bl -tag -width xxx -compact
+.It 99
+Failed to unshare from the current namespace
+.Po See
+.Sx NOTES Pc .
+.El
+
+Otherwise, the error comes from
+.Ar COMMAND .
 .Sh NOTES
 The
 .Nm

@@ -622,8 +622,10 @@ main(int argc, char **argv)
 	/*
 	 * Check masterdir is properly initialized.
 	 */
-	if ((bpath = realpath(argv[0], NULL)) == NULL)
+	if ((bpath = realpath(argv[0], NULL)) == NULL) {
+		xbps_error_printf("failed to initialize masterdir: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
+	}
 
 	blen = strlen(bpath) + strlen("/srcpkgs") + 1;
 	rpath = malloc(blen);
@@ -643,6 +645,7 @@ main(int argc, char **argv)
 	 */
 	if (LogDir == NULL) {
 		if (getcwd(cwd, sizeof(cwd)-1) == NULL) {
+			xbps_error_printf("failed to get current directory: %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 		tmp = xbps_xasprintf("%s/fbulk-log.%u", cwd, (unsigned)getpid());

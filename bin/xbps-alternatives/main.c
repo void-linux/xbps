@@ -353,6 +353,8 @@ main(int argc, char **argv)
 		}
 		if ((rv = xbps_alternatives_set(&xh, pkg, group)) == 0)
 			rv = xbps_pkgdb_update(&xh, true, false);
+		else
+			xbps_error_printf("failed to update alternatives group: %s\n", strerror(rv));
 	} else if (list_mode) {
 		/* list alternative groups */
 		if (repo_mode) {
@@ -368,12 +370,18 @@ main(int argc, char **argv)
 				    strerror(rv));
 				exit(EXIT_FAILURE);
 			}
-			if (xbps_dictionary_count(sd.result) > 0)
+			if (xbps_dictionary_count(sd.result) > 0) {
 				print_alternatives(&xh, sd.result, group, true);
-			else
+			} else {
+				xbps_error_printf("no alternatives groups found\n");
 				exit(EXIT_FAILURE);
+			}
 		} else {
 			rv = list_alternatives(&xh, pkg, group);
+			if (rv == ENOENT) {
+				xbps_error_printf("no alternatives groups found");
+				fprintf(stderr, pkg ? " for package %s\n" : "\n", pkg);
+			}
 		}
 	}
 

@@ -252,7 +252,7 @@ out:
 }
 
 static int
-sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool force)
+sign_pkg(struct xbps_handle *xhp UNUSED, const char *binpkg, const char *privkey, bool force)
 {
 	RSA *rsa = NULL;
 	unsigned char *sig = NULL;
@@ -265,8 +265,7 @@ sign_pkg(struct xbps_handle *xhp, const char *binpkg, const char *privkey, bool 
 	 * Skip pkg if file signature exists
 	 */
 	if (!force && ((sigfile_fd = access(sigfile, R_OK)) == 0)) {
-		if (xhp->flags & XBPS_FLAG_VERBOSE)
-			fprintf(stderr, "skipping %s, file signature found.\n", binpkg);
+		xbps_verbose_printf("skipping %s, file signature found.\n", binpkg);
 
 		sigfile_fd = -1;
 		goto out;

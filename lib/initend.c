@@ -53,6 +53,9 @@ xbps_init(struct xbps_handle *xhp)
 	if (xhp->flags & XBPS_FLAG_DEBUG)
 		xbps_debug_level = 1;
 
+	if (xhp->flags & XBPS_FLAG_VERBOSE)
+		xbps_verbose_level = 1;
+
 	xbps_dbg_printf("%s\n", XBPS_RELVER);
 
 	/* Set rootdir */
