@@ -180,7 +180,7 @@ main(int argc, char **argv)
 	if (chrootdir[0] != '/') {
 		char cwd[PATH_MAX-1];
 		if (getcwd(cwd, sizeof(cwd)) == NULL)
-			die("getcwd");
+			die("failed to get current directory");
 		chrootdir = xbps_xasprintf("%s/%s", cwd, chrootdir);
 	}
 
@@ -189,7 +189,7 @@ main(int argc, char **argv)
 	 */
 	if (unshare(CLONE_NEWUSER|CLONE_NEWNS|CLONE_NEWIPC|CLONE_NEWUTS) == -1) {
 		errval = 99;
-		die("unshare");
+		die("failed to unshare from the current namespace");
 	}
 	/*
 	 * Setup uid/gid user mappings and restrict setgroups().
