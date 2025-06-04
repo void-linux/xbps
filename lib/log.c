@@ -35,6 +35,7 @@
 #endif
 
 int xbps_debug_level = 0;
+int xbps_verbose_level = 0;
 
 /**
  * @file lib/log.c
@@ -76,6 +77,19 @@ xbps_dbg_printf(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	common_printf(stderr, "[DEBUG] ", fmt, ap);
+	va_end(ap);
+}
+
+void
+xbps_verbose_printf(const char *fmt, ...)
+{
+	va_list ap;
+
+	if (xbps_verbose_level == 0)
+		return;
+
+	va_start(ap, fmt);
+	common_printf(stderr, NULL, fmt, ap);
 	va_end(ap);
 }
 

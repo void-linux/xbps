@@ -101,7 +101,7 @@ index_match_pkgver(xbps_dictionary_t index, const char *pkgname, const char *pkg
 }
 
 static int
-cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key UNUSED, void *arg, bool *done UNUSED)
+cleaner_cb(struct xbps_handle *xhp UNUSED, xbps_object_t obj, const char *key UNUSED, void *arg, bool *done UNUSED)
 {
 	char pkgname[XBPS_NAME_SIZE];
 	struct xbps_repo *repo = arg;
@@ -115,8 +115,7 @@ cleaner_cb(struct xbps_handle *xhp, xbps_object_t obj, const char *key UNUSED, v
 		return 0;
 	}
 
-	if (xhp->flags & XBPS_FLAG_VERBOSE)
-		printf("checking %s (%s)\n", pkgver, binpkg);
+	xbps_verbose_printf("checking %s (%s)\n", pkgver, binpkg);
 
 	if (index_match_pkgver(repo->stage, pkgname, pkgver) ||
 	    index_match_pkgver(repo->index, pkgname, pkgver)) {
