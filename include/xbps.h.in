@@ -1465,17 +1465,17 @@ struct xbps_repo {
 	 */
 	const char *uri;
 	/**
-	 * var is_remote
-	 *
 	 * True if repository is remote, false if it's a local repository.
 	 */
 	bool is_remote;
 	/**
-	 * var is_signed
-	 *
 	 * True if this repository has been signed, false otherwise.
 	 */
 	bool is_signed;
+	/**
+	 * Loaded trusted public-key.
+	 */
+	struct pubkey *pubkey;
 };
 
 void xbps_rpool_release(struct xbps_handle *xhp);
@@ -1909,31 +1909,6 @@ bool xbps_file_sha256_raw(unsigned char *dst, size_t len, const char *file);
  * if it differs, or any other errno value on error.
  */
 int xbps_file_sha256_check(const char *file, const char *sha256);
-
-/**
- * Verifies the RSA signature \a sigfile against \a digest with the
- * RSA public-key associated in \a repo.
- *
- * @param[in] repo Repository to use with the RSA public key associated.
- * @param[in] sigfile The signature file name used to verify \a digest.
- * @param[in] digest The digest to verify.
- *
- * @return True if the signature is valid, false otherwise.
- */
-bool xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
-		unsigned char *digest);
-
-/**
- * Verifies the RSA signature of \a fname with the RSA public-key associated
- * in \a repo.
- *
- * @param[in] repo Repository to use with the RSA public key associated.
- * @param[in] fname The filename to verify, the signature file must have a .sig2
- * extension, i.e `<fname>.sig2`.
- *
- * @return True if the signature is valid, false otherwise.
- */
-bool xbps_verify_file_signature(struct xbps_repo *repo, const char *fname);
 
 /**
  * Checks if a package is currently installed in pkgdb by matching \a pkg.
