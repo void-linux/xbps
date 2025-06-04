@@ -38,7 +38,7 @@
 #include "../xbps-install/defs.h"
 
 static void __attribute__((noreturn))
-usage(void)
+usage(bool fail)
 {
 	fprintf(stdout,
 	    "Usage: xbps-uhelper [OPTIONS] [MODE] [ARGUMENTS]\n\n"
@@ -66,7 +66,7 @@ usage(void)
 	    " version <pkgname...>                 Prints version of installed packages\n"
 	    " getsystemdir                         Prints the system xbps.d directory\n"
 	    );
-	exit(EXIT_FAILURE);
+	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 static char *
@@ -104,6 +104,9 @@ main(int argc, char **argv)
 
 	while ((c = getopt_long(argc, argv, "C:dr:vV", longopts, NULL)) != -1) {
 		switch (c) {
+		case 'h':
+			usage(false);
+			/* NOTREACHED */
 		case 'C':
 			confdir = optarg;
 			break;
@@ -120,17 +123,21 @@ main(int argc, char **argv)
 		case 'V':
 			printf("%s\n", XBPS_RELVER);
 			exit(EXIT_SUCCESS);
+			/* NOTREACHED */
 		case '?':
 		default:
-			usage();
+			usage(true);
+			/* NOTREACHED */
 		}
 	}
 
 	argc -= optind;
 	argv += optind;
 
-	if (argc < 1)
-		usage();
+	if (argc < 1) {
+		usage(true);
+		/* NOTREACHED */
+	}
 
 	memset(&xh, 0, sizeof(xh));
 
@@ -158,8 +165,10 @@ main(int argc, char **argv)
 
 	if (strcmp(argv[0], "version") == 0) {
 		/* Prints version of installed packages */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			if ((((dict = xbps_pkgdb_get_pkg(&xh, argv[i])) == NULL)) &&
@@ -173,8 +182,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "real-version") == 0) {
 		/* Prints version of installed real packages, not virtual */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			if ((dict = xbps_pkgdb_get_pkg(&xh, argv[i])) == NULL) {
@@ -187,8 +198,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "getpkgversion") == 0) {
 		/* Returns the version of pkg strings */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			version = xbps_pkg_version(argv[i]);
@@ -202,8 +215,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "getpkgname") == 0) {
 		/* Returns the name of pkg strings */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			if (!xbps_pkg_name(pkgname, sizeof(pkgname), argv[i])) {
@@ -216,8 +231,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "getpkgrevision") == 0) {
 		/* Returns the revision of pkg strings */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			version = xbps_pkg_revision(argv[1]);
@@ -229,8 +246,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "getpkgdepname") == 0) {
 		/* Returns the pkgname of dependencies */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			if (!xbps_pkgpattern_name(pkgname, sizeof(pkgname), argv[i])) {
@@ -242,8 +261,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "getpkgdepversion") == 0) {
 		/* returns the version of package pattern dependencies */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			version = xbps_pkgpattern_version(argv[i]);
@@ -256,8 +277,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "getname") == 0) {
 		/* returns the name of a pkg strings or pkg patterns */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			if (xbps_pkgpattern_name(pkgname, sizeof(pkgname), argv[i]) ||
@@ -272,8 +295,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "getversion") == 0) {
 		/* returns the version of a pkg strings or pkg patterns */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			version = xbps_pkgpattern_version(argv[i]);
@@ -291,8 +316,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "binpkgver") == 0) {
 		/* Returns the pkgver of binpkg strings */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			version = xbps_binpkg_pkgver(argv[i]);
@@ -306,8 +333,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "binpkgarch") == 0) {
 		/* Returns the arch of binpkg strings */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			version = xbps_binpkg_arch(argv[i]);
@@ -321,8 +350,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "pkgmatch") == 0) {
 		/* Matches a pkg with a pattern */
-		if (argc != 3)
-			usage();
+		if (argc != 3) {
+			usage(true);
+			/* NOTREACHED */
+		}
 		rv = xbps_pkgpattern_match(argv[1], argv[2]);
 		if (flags & XBPS_FLAG_VERBOSE) {
 			if (rv >= 0)
@@ -336,8 +367,10 @@ main(int argc, char **argv)
 		exit(rv);
 	} else if (strcmp(argv[0], "cmpver") == 0) {
 		/* Compare two version strings, installed vs required */
-		if (argc != 3)
-			usage();
+		if (argc != 3) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		rv = xbps_cmpver(argv[1], argv[2]);
 		if (flags & XBPS_FLAG_VERBOSE)
@@ -348,8 +381,10 @@ main(int argc, char **argv)
 		exit(rv);
 	} else if (strcmp(argv[0], "arch") == 0) {
 		/* returns the xbps native arch */
-		if (argc != 1)
-			usage();
+		if (argc != 1) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		if (xh.native_arch[0] && xh.target_arch && strcmp(xh.native_arch, xh.target_arch)) {
 			printf("%s\n", xh.target_arch);
@@ -358,16 +393,20 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "getsystemdir") == 0) {
 		/* returns the xbps system directory (<sharedir>/xbps.d) */
-		if (argc != 1)
-			usage();
+		if (argc != 1) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		printf("%s\n", XBPS_SYSDEFCONF_PATH);
 	} else if (strcmp(argv[0], "digest") == 0) {
 		char sha256[XBPS_SHA256_SIZE];
 
 		/* Prints SHA256 hashes for specified files */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			if (!xbps_file_sha256(sha256, sizeof sha256, argv[i])) {
@@ -380,8 +419,10 @@ main(int argc, char **argv)
 		}
 	} else if (strcmp(argv[0], "fetch") == 0) {
 		/* Fetch a file from specified URL */
-		if (argc < 2)
-			usage();
+		if (argc < 2) {
+			usage(true);
+			/* NOTREACHED */
+		}
 
 		for (i = 1; i < argc; i++) {
 			filename = fname(argv[i]);
@@ -397,7 +438,7 @@ main(int argc, char **argv)
 			}
 		}
 	} else {
-		usage();
+		usage(true);
 	}
 
 	exit(rv ? EXIT_FAILURE : EXIT_SUCCESS);
