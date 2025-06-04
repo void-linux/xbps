@@ -77,7 +77,7 @@
 # define XBPS_SYSDEFCONF_PATH	"/usr/share" XBPS_SYSDIR
 #endif
 
-/** 
+/**
  * @def XBPS_META_PATH
  * Default root PATH to store metadata info.
  */
@@ -85,7 +85,7 @@
 #define XBPS_META_PATH		"var/db/xbps"
 #endif
 
-/** 
+/**
  * @def XBPS_CACHE_PATH
  * Default cache PATH to store downloaded binpkgs.
  */
@@ -109,7 +109,7 @@
  */
 #define XBPS_PKGFILES		"files.plist"
 
-/** 
+/**
  * @def XBPS_REPODATA_INDEX
  * Filename for the repository index property list.
  */
@@ -285,7 +285,7 @@
 extern "C" {
 #endif
 
-/** @addtogroup initend */ 
+/** @addtogroup initend */
 /**@{*/
 
 /**
@@ -689,9 +689,11 @@ struct xbps_handle {
 };
 
 extern int xbps_debug_level;
+extern int xbps_verbose_level;
 
 void xbps_dbg_printf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void xbps_dbg_printf_append(const char *, ...)__attribute__ ((format (printf, 1, 2)));
+void xbps_verbose_printf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void xbps_error_printf(const char *, ...)__attribute__ ((format (printf, 1, 2)));
 void xbps_warn_printf(const char *, ...)__attribute__ ((format (printf, 1, 2)));
 
@@ -752,11 +754,11 @@ int xbps_configure_packages(struct xbps_handle *xhp, xbps_array_t ignpkgs);
 
 /**
  * Download a file from a remote URL to current working directory.
- * 
+ *
  * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] uri Remote URI string.
  * @param[in] flags Flags passed to libfetch's fetchXget().
- * 
+ *
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
  * do not match) and 1 if downloaded successfully.
  **/
@@ -765,14 +767,14 @@ int xbps_fetch_file(struct xbps_handle *xhp, const char *uri,
 
 /**
  * Download and digest a file from a remote URL to current working directory.
- * 
+ *
  * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] uri Remote URI string.
  * @param[in] flags Flags passed to libfetch's fetchXget().
  * @param[out] digest SHA256 digest buffer for the downloaded file or NULL.
  * @param[in] digestlen Size of \a digest if specified; must be at least
  * XBPS_SHA256_DIGEST_SIZE.
- * 
+ *
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
  * do not match) and 1 if downloaded successfully.
  **/
@@ -783,12 +785,12 @@ int xbps_fetch_file_sha256(struct xbps_handle *xhp, const char *uri,
 /**
  * Download a file from a remote URL to current working directory,
  * and writing file to \a filename.
- * 
+ *
  * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] uri Remote URI string.
  * @param[in] filename Local filename to safe the file
  * @param[in] flags Flags passed to libfetch's fetchXget().
- * 
+ *
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
  * do not match) and 1 if downloaded successfully.
  **/
@@ -798,7 +800,7 @@ int xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri,
 /**
  * Download and digest a file from a remote URL to current working directory,
  * and writing file to \a filename.
- * 
+ *
  * @param[in] xhp Pointer to an xbps_handle struct.
  * @param[in] uri Remote URI string.
  * @param[in] filename Local filename to safe the file
@@ -806,7 +808,7 @@ int xbps_fetch_file_dest(struct xbps_handle *xhp, const char *uri,
  * @param[out] digest SHA256 digest buffer of the downloaded file or NULL.
  * @param[in] digestlen Size of \a digest if specified; must be at least
  * XBPS_SHA256_DIGEST_SIZE.
- * 
+ *
  * @return -1 on error, 0 if not downloaded (because local/remote size/mtime
  * do not match) and 1 if downloaded successfully.
  **/
@@ -1460,7 +1462,7 @@ struct xbps_repo {
 	xbps_dictionary_t idxmeta;
 	/**
 	 * @var uri
-	 * 
+	 *
 	 * URI string associated with repository.
 	 */
 	const char *uri;
@@ -1768,7 +1770,7 @@ typedef enum pkg_state {
 /**
  * Gets package state from package \a pkgname, and sets its state
  * into \a state.
- * 
+ *
  * @param[in] xhp The pointer to an xbps_handle struct.
  * @param[in] pkgname Package name.
  * @param[out] state Package state returned.
@@ -1985,7 +1987,7 @@ bool xbps_remote_binpkg_exists(struct xbps_handle *xhp, xbps_dictionary_t pkgd);
  * Checks if the URI specified by \a uri is remote or local.
  *
  * @param[in] uri URI string.
- * 
+ *
  * @return true if URI is remote, false if local.
  */
 bool xbps_repository_is_remote(const char *uri);
@@ -2092,7 +2094,7 @@ bool xbps_pkgpattern_name(char *dst, size_t len, const char *pattern);
 
 /**
  * Gets the package version in a package string, i.e `foo-2.0`.
- * 
+ *
  * @param[in] pkg Package string.
  *
  * @return A string with the version string, NULL if it couldn't
