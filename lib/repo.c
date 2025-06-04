@@ -188,7 +188,7 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 			    repo->uri, archive_error_string(ar));
 			return -archive_errno(ar);
 		}
-		repo->idxmeta = xbps_dictionary_create();
+		repo->idxmeta = NULL;
 		return 0;
 	}
 
@@ -213,15 +213,18 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 
 	if (!repo->idxmeta) {
 		if (!r) {
-			xbps_error_printf("failed to read repository metadata: %s: invalid dictionary\n",
+			xbps_error_printf("failed to read repository metadata: "
+			                  "%s: invalid dictionary\n",
 			    repo->uri);
 			return -EINVAL;
 		}
-		xbps_error_printf("failed to read repository metadata: %s: %s\n",
-		    repo->uri, strerror(-r));
+		xbps_error_printf(
+		    "failed to read repository metadata: %s: %s\n", repo->uri,
+		    strerror(-r));
 		return r;
 	}
 
+	repo->is_signed = true;
 	xbps_dictionary_make_immutable(repo->idxmeta);
 	return 0;
 }
