@@ -192,8 +192,13 @@ ownedby(struct xbps_handle *xhp, const char *pat, bool repo, bool regex)
 
 	if (regex) {
 		ffd.rematch = true;
-		if (regcomp(&ffd.regex, ffd.pat, REG_EXTENDED|REG_NOSUB|REG_ICASE) != 0)
+		rv = regcomp(&ffd.regex, ffd.pat, REG_EXTENDED|REG_NOSUB|REG_ICASE);
+		if (rv != 0) {
+			char errbuf[256];
+			regerror(rv, &ffd.regex, errbuf, sizeof(errbuf));
+			fprintf(stderr, "Failed to compile pattern: %s\n", errbuf);
 			return EINVAL;
+		}
 	}
 	if (repo)
 		rv = xbps_rpool_foreach(xhp, repo_ownedby_cb, &ffd);
