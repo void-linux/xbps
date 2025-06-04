@@ -244,9 +244,183 @@ update_xbps_with_indirect_revdeps_body() {
 	atf_check_equal "$out" "cacerts-1.0_1"
 }
 
+atf_test_case update_xbps_small_transaction
+
+update_xbps_small_transaction_head() {
+	atf_set "descr" "Self update of xbps: keep revdeps that accept any xbps version out of xbps transaction"
+}
+
+update_xbps_small_transaction_body() {
+	mkdir -p repo pkg
+
+	cd repo
+	xbps-create -A noarch -n xbps-1.0_1 -s "xbps pkg" --dependencies "cacerts>=0" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n xbps-dbg-1.0_1 -s "xbps-dbg pkg" --dependencies "xbps-1.0_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n base-system-1.0_1 -s "base-system pkg" --dependencies "xbps>=0" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n cacerts-1.0_1 -s "cacerts pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yd base-system xbps-dbg
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps)
+	atf_check_equal "$out" "xbps-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver xbps-dbg)
+	atf_check_equal "$out" "xbps-dbg-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver base-system)
+	atf_check_equal "$out" "base-system-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver cacerts)
+	atf_check_equal "$out" "cacerts-1.0_1"
+
+	cd repo
+	xbps-create -A noarch -n xbps-1.1_1 -s "xbps pkg" --dependencies "ca-certs>=0" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n xbps-dbg-1.1_1 -s "xbps-dbg pkg" --dependencies "xbps-1.1_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n base-system-1.1_1 -s "base-system pkg" --dependencies "xbps>=0 removed-packages>=1_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n removed-packages-1_1 -s "libressl pkg" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yu xbps
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps)
+	atf_check_equal "$out" "xbps-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver xbps-dbg)
+	atf_check_equal "$out" "xbps-dbg-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver base-system)
+	atf_check_equal "$out" "base-system-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver removed-packages)
+	atf_check_equal "$out" ""
+
+	xbps-install -r root --repository=$PWD/repo -yu
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps)
+	atf_check_equal "$out" "xbps-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver base-system)
+	atf_check_equal "$out" "base-system-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver removed-packages)
+	atf_check_equal "$out" "removed-packages-1_1"
+}
+
+atf_test_case update_xbpsgit_revdeps
+
+update_xbpsgit_revdeps_head() {
+	atf_set "descr" "Self update of virtual xbps: keep revdeps that accept any xbps version out of xbps transaction"
+}
+
+update_xbpsgit_revdeps_body() {
+	mkdir -p repo pkg
+
+	cd repo
+	xbps-create -A noarch -n xbps-git-2020_1 -s "xbps pkg" --provides "xbps-1.0_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n xbps-git-dbg-2020_1 -s "xbps-git-dbg pkg" --dependencies "xbps-git-2020_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n custom-base-1.0_1 -s "custom-base pkg" --dependencies "xbps-git>=2020_1 xbpsgui>=0 base-system>=0" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n base-system-1.0_1 -s "base-system pkg" --dependencies "xbps<10_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n xbpsgui-1.0_1 -s "xbpsgui pkg" --dependencies "xbps>=1_1<2_1" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yd custom-base xbps-git-dbg
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps-git)
+	atf_check_equal "$out" "xbps-git-2020_1"
+
+	out=$(xbps-query -r root -p pkgver xbps-git-dbg)
+	atf_check_equal "$out" "xbps-git-dbg-2020_1"
+
+	out=$(xbps-query -r root -p pkgver custom-base)
+	atf_check_equal "$out" "custom-base-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver base-system)
+	atf_check_equal "$out" "base-system-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver xbpsgui)
+	atf_check_equal "$out" "xbpsgui-1.0_1"
+
+	cd repo
+	xbps-create -A noarch -n xbps-git-2021_1 -s "xbps pkg" --provides "xbps-2.0_1" --dependencies "cacerts>=0" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n xbps-git-dbg-2021_1 -s "xbps-git-dbg pkg" --dependencies "xbps-git-2021_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n custom-base-1.0.1_1 -s "custom-base pkg" --dependencies "xbps-git>=2020_1 xbpsgui>=0 base-system>=0" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n base-system-1.1_1 -s "base-system pkg" --dependencies "xbps<10_1" ../pkg
+	atf_check_equal $? 0
+	xbps-create -A noarch -n xbpsgui-2.0_1 -s "xbpsgui pkg" --dependencies "xbps>=2_1<3_1" ../pkg
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+
+	xbps-install -r root --repository=$PWD/repo -yud xbps
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps-git)
+	atf_check_equal "$out" "xbps-git-2021_1"
+
+	out=$(xbps-query -r root -p pkgver xbps-git-dbg)
+	atf_check_equal "$out" "xbps-git-dbg-2021_1"
+
+	out=$(xbps-query -r root -p pkgver custom-base)
+	atf_check_equal "$out" "custom-base-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver base-system)
+	atf_check_equal "$out" "base-system-1.0_1"
+
+	out=$(xbps-query -r root -p pkgver xbpsgui)
+	atf_check_equal "$out" "xbpsgui-2.0_1"
+
+	xbps-install -r root --repository=$PWD/repo -yu
+	atf_check_equal $? 0
+
+	out=$(xbps-query -r root -p pkgver xbps-git)
+	atf_check_equal "$out" "xbps-git-2021_1"
+
+	out=$(xbps-query -r root -p pkgver xbps-git-dbg)
+	atf_check_equal "$out" "xbps-git-dbg-2021_1"
+
+	out=$(xbps-query -r root -p pkgver custom-base)
+	atf_check_equal "$out" "custom-base-1.0.1_1"
+
+	out=$(xbps-query -r root -p pkgver base-system)
+	atf_check_equal "$out" "base-system-1.1_1"
+
+	out=$(xbps-query -r root -p pkgver xbpsgui)
+	atf_check_equal "$out" "xbpsgui-2.0_1"
+}
+
 atf_init_test_cases() {
 	atf_add_test_case update_xbps
 	atf_add_test_case update_xbps_with_revdeps
 	atf_add_test_case update_xbps_with_indirect_revdeps
 	atf_add_test_case update_xbps_with_uptodate_revdeps
+	atf_add_test_case update_xbps_small_transaction
+	atf_add_test_case update_xbpsgit_revdeps
 }
