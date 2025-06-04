@@ -355,15 +355,13 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 		rv = xbps_pkgpattern_match(argv[1], argv[2]);
-		if (flags & XBPS_FLAG_VERBOSE) {
-			if (rv >= 0)
-				fprintf(stderr, "%s %s %s\n",
-					argv[1],
-					(rv == 1) ? "matches" : "does not match",
-					argv[2]);
-			else
-				xbps_error_printf("%s: not a pattern\n", argv[2]);
-		}
+		if (rv >= 0)
+			xbps_verbose_printf("%s %s %s\n",
+				argv[1],
+				(rv == 1) ? "matches" : "does not match",
+				argv[2]);
+		else if (flags & XBPS_FLAG_VERBOSE)
+			xbps_error_printf("%s: not a pattern\n", argv[2]);
 		exit(rv);
 	} else if (strcmp(argv[0], "cmpver") == 0) {
 		/* Compare two version strings, installed vs required */
@@ -373,11 +371,10 @@ main(int argc, char **argv)
 		}
 
 		rv = xbps_cmpver(argv[1], argv[2]);
-		if (flags & XBPS_FLAG_VERBOSE)
-			fprintf(stderr, "%s %s %s\n",
-				argv[1],
-				(rv == 1) ? ">" : ((rv == 0) ? "=" : "<"),
-				argv[2]);
+		xbps_verbose_printf("%s %s %s\n",
+			argv[1],
+			(rv == 1) ? ">" : ((rv == 0) ? "=" : "<"),
+			argv[2]);
 		exit(rv);
 	} else if (strcmp(argv[0], "arch") == 0) {
 		/* returns the xbps native arch */

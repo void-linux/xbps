@@ -53,8 +53,7 @@ check_cb(struct xbps_handle *xhp UNUSED,
 	int rv;
 
 	xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
-	if (xhp->flags & XBPS_FLAG_VERBOSE)
-		printf("Checking %s ...\n", pkgver);
+	xbps_verbose_printf("Checking %s ...\n", pkgver);
 
 	if (!xbps_pkg_name(pkgname, sizeof(pkgname), pkgver)) {
 		abort();
