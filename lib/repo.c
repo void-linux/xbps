@@ -195,7 +195,7 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 			    repo->uri, archive_error_string(ar));
 			return -archive_errno(ar);
 		}
-		repo->idxmeta = xbps_dictionary_create();
+		repo->idxmeta = NULL;
 		return 0;
 	}
 
@@ -228,6 +228,7 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 		return r;
 	}
 
+	repo->is_signed = true;
 	xbps_dictionary_make_immutable(repo->idxmeta);
 	return 0;
 }
