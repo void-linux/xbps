@@ -69,7 +69,7 @@ xstrdup(const char *src)
 	char *p;
 	if (!(p = strdup(src))) {
 		xbps_error_printf("%s\n", strerror(errno));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	return p;
 }
@@ -154,6 +154,7 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 {
 	FILE *file;
 	long offset;
+    int rv;
 	rcv->fname = fname;
 
 	if ((file = fopen(rcv->fname, "r")) == NULL) {
@@ -166,9 +167,11 @@ rcv_load_file(rcv_t *rcv, const char *fname)
 
 	fseek(file, 0, SEEK_END);
 	offset = ftell(file);
+    rv = errno;
 	fseek(file, 0, SEEK_SET);
 
 	if (offset == -1) {
+		xbps_error_printf("FileError: failed to get offset: %s", strerror(rv));
 		fclose(file);
 		return false;
 	}
@@ -264,7 +267,7 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len)
 				if (reflen) {
 					if (reflen >= sizeof buf) {
 						xbps_error_printf("out of memory\n");
-						exit(1);
+						exit(EXIT_FAILURE);
 					}
 					strncpy(buf, ref, reflen);
 					if (xbps_dictionary_get_cstring_nocopy(rcv->env, buf, &val))
@@ -287,7 +290,7 @@ rcv_sh_substitute(rcv_t *rcv, const char *str, size_t len)
 
 err1:
 	xbps_error_printf("syntax error: in file '%s'\n", rcv->fname);
-	exit(1);
+	exit(EXIT_FAILURE);
 err2:
 	xbps_error_printf(
 		"Shell cmd failed: '%s' for "
@@ -299,7 +302,7 @@ err2:
 	} else {
 		fputc('\n', stderr);
 	}
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 static void
@@ -369,7 +372,7 @@ rcv_get_pkgver(rcv_t *rcv)
 		if (!xbps_dictionary_set(rcv->env, key,
 		    xbps_string_create_cstring(val))) {
 			xbps_error_printf("xbps_dictionary_set failed");
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		xbps_dbg_printf("%s: %s %s\n", rcv->fname, key, val);
@@ -437,7 +440,7 @@ update:
 			xbps_error_printf("'%s':"
 			    " missing required variable (pkgname, version or revision)!",
 			    fname);
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		if (!d) {
 			d = xbps_dictionary_create();
@@ -558,7 +561,7 @@ rcv_check_version(rcv_t *rcv)
 	    !xbps_dictionary_get_cstring_nocopy(rcv->env, "version", &version) ||
 	    !xbps_dictionary_get_cstring_nocopy(rcv->env, "revision", &revision)) {
 		xbps_error_printf("couldn't get pkgname, version, and/or revision\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	reverts = NULL;
@@ -569,8 +572,10 @@ rcv_check_version(rcv_t *rcv)
 	else
 		sz = snprintf(srcver, sizeof srcver, "%s_%s", version, revision);
 
-	if (sz < 0 || (size_t)sz >= sizeof srcver)
+	if (sz < 0 || (size_t)sz >= sizeof srcver) {
+		xbps_error_printf("failed to write version");
 		exit(EXIT_FAILURE);
+	}
 
 	/* Check against binpkg's pkgname, not pkgname from template */
 	s = strchr(rcv->fname, '/');
@@ -645,7 +650,7 @@ rcv_process_dir(rcv_t *rcv, rcv_proc_func process)
 error:
 	xbps_error_printf("while processing dir '%s/srcpkgs': %s\n",
 	    rcv->distdir, strerror(errno));
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 static int
@@ -781,7 +786,7 @@ main(int argc, char **argv)
 		rcv.distdir = realpath(tmp, NULL);
 		if (rcv.distdir == NULL) {
 			xbps_error_printf("realpath(%s): %s\n", tmp, strerror(errno));
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		free(tmp);
 	}
@@ -796,7 +801,7 @@ main(int argc, char **argv)
 	if (chdir(rcv.distdir) == -1 || chdir("srcpkgs") == -1) {
 		xbps_error_printf("while changing directory to '%s/srcpkgs': %s\n",
 		    rcv.distdir, strerror(errno));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	if (!rcv.manual)
