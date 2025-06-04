@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2013-2014 Juan Romero Pardines.
+ * Copyright (c) 2025      Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,129 +24,161 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <libgen.h>
-#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+#include <errno.h>
+#include <fcntl.h>
+#include <libgen.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <openssl/err.h>
-#include <openssl/sha.h>
-#include <openssl/rsa.h>
-#include <openssl/ssl.h>
+#include <openssl/evp.h>
 #include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/sha.h>
 
 #include "xbps_api_impl.h"
 
-static bool
-rsa_verify_hash(struct xbps_repo *repo, xbps_data_t pubkey,
-		unsigned char *sig, unsigned int siglen,
-		unsigned char *sha256)
+enum pubkey_type {
+	PUBKEY_RSA,
+};
+
+struct pubkey {
+	enum pubkey_type type;
+};
+
+struct pubkey_rsa {
+	struct pubkey common;
+	EVP_PKEY *pkey;
+};
+
+struct pubkey HIDDEN *
+pubkey_load_rsa(xbps_data_t data)
 {
+	EVP_PKEY *pkey;
 	BIO *bio;
-	RSA *rsa;
-	int rv;
+	int r;
+	struct pubkey_rsa *pubkey;
 
-	ERR_load_crypto_strings();
-	SSL_load_error_strings();
-
-	bio = BIO_new_mem_buf(xbps_data_data_nocopy(pubkey),
-			xbps_data_size(pubkey));
-	assert(bio);
-
-	rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, NULL, NULL);
-	if (rsa == NULL) {
-		xbps_dbg_printf("`%s' error reading public key: %s\n",
-		    repo->uri, ERR_error_string(ERR_get_error(), NULL));
-		return false;
+	pubkey = calloc(1, sizeof(*pubkey));
+	if (!pubkey) {
+		r = -errno;
+		xbps_error_printf("failed to load pubkey: %s\n", strerror(-r));
+		errno = -r;
+		return NULL;
 	}
 
-	rv = RSA_verify(NID_sha256, sha256, SHA256_DIGEST_LENGTH, sig, siglen, rsa);
-	RSA_free(rsa);
+	bio =
+	    BIO_new_mem_buf(xbps_data_data_nocopy(data), xbps_data_size(data));
+	if (!bio) {
+		r = -errno;
+		xbps_error_printf(
+		    "failed to load pubkey: BIO_new_mem_buf: %s\n",
+		    strerror(-r));
+		free(pubkey);
+		errno = -r;
+		return NULL;
+	}
+	pkey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);
+	if (!pkey) {
+		r = -EINVAL;
+		xbps_error_printf(
+		    "failed to load pubkey: reading PEM failed\n");
+		BIO_free(bio);
+		free(pubkey);
+		errno = -r;
+		return NULL;
+	}
+	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_RSA) {
+		r = -EINVAL;
+		xbps_error_printf(
+		    "failed to load pubkey: unsupported key type\n");
+		BIO_free(bio);
+		EVP_PKEY_free(pkey);
+		free(pubkey);
+		errno = -r;
+		return NULL;
+	}
+
 	BIO_free(bio);
-	ERR_free_strings();
-
-	return rv ? true : false;
+	pubkey->common.type = PUBKEY_RSA;
+	pubkey->pkey = pkey;
+	return (struct pubkey *)pubkey;
 }
 
-bool
-xbps_verify_signature(struct xbps_repo *repo, const char *sigfile,
-		unsigned char *digest)
+void HIDDEN
+pubkey_free(struct pubkey *pubkey)
 {
-	xbps_dictionary_t repokeyd = NULL;
-	xbps_data_t pubkey;
-	char *hexfp = NULL;
-	unsigned char *sig_buf = NULL;
-	size_t sigbuflen, sigfilelen;
-	char *rkeyfile = NULL;
-	bool val = false;
-
-	if (!xbps_dictionary_count(repo->idxmeta)) {
-		xbps_dbg_printf("%s: unsigned repository\n", repo->uri);
-		return false;
+	struct pubkey_rsa *rsa;
+	if (!pubkey)
+		return;
+	switch (pubkey->type) {
+	case PUBKEY_RSA:
+		rsa = (struct pubkey_rsa *)pubkey;
+		EVP_PKEY_free(rsa->pkey);
+		free(rsa);
+		break;
 	}
-	hexfp = xbps_pubkey2fp(xbps_dictionary_get(repo->idxmeta, "public-key"));
-	if (hexfp == NULL) {
-		xbps_dbg_printf("%s: incomplete signed repo, missing hexfp obj\n", repo->uri);
-		return false;
-	}
-
-	/*
-	 * Prepare repository RSA public key to verify fname signature.
-	 */
-	rkeyfile = xbps_xasprintf("%s/keys/%s.plist", repo->xhp->metadir, hexfp);
-	repokeyd = xbps_plist_dictionary_from_file(rkeyfile);
-	if (xbps_object_type(repokeyd) != XBPS_TYPE_DICTIONARY) {
-		xbps_dbg_printf("cannot read rkey data at %s: %s\n",
-		    rkeyfile, strerror(errno));
-		goto out;
-	}
-
-	pubkey = xbps_dictionary_get(repokeyd, "public-key");
-	if (xbps_object_type(pubkey) != XBPS_TYPE_DATA)
-		goto out;
-
-	if (!xbps_mmap_file(sigfile, (void *)&sig_buf, &sigbuflen, &sigfilelen)) {
-		xbps_dbg_printf("can't open signature file %s: %s\n",
-		    sigfile, strerror(errno));
-		goto out;
-	}
-	/*
-	 * Verify fname RSA signature.
-	 */
-	if (rsa_verify_hash(repo, pubkey, sig_buf, sigfilelen, digest))
-		val = true;
-
-out:
-	if (hexfp)
-		free(hexfp);
-	if (rkeyfile)
-		free(rkeyfile);
-	if (sig_buf)
-		(void)munmap(sig_buf, sigbuflen);
-	if (repokeyd)
-		xbps_object_release(repokeyd);
-
-	return val;
 }
 
-bool
-xbps_verify_file_signature(struct xbps_repo *repo, const char *fname)
+static int
+pubkey_rsa_verify(const struct pubkey_rsa *pubkey, const unsigned char *sig,
+    unsigned int siglen, const unsigned char *md, size_t mdlen)
 {
-	char sig[PATH_MAX];
-	unsigned char digest[XBPS_SHA256_DIGEST_SIZE];
-	bool val = false;
+	EVP_PKEY_CTX *ctx;
+	int r;
 
-	if (!xbps_file_sha256_raw(digest, sizeof digest, fname)) {
-		xbps_dbg_printf("can't open file %s: %s\n", fname, strerror(errno));
-		return false;
+	ctx = EVP_PKEY_CTX_new(pubkey->pkey, NULL);
+	if (!ctx) {
+		xbps_error_printf(
+		    "failed to verify signature: EVP_PKEY_CTX_new: %s\n",
+		    ERR_error_string(ERR_get_error(), NULL));
+		return errno ? -errno : -ENOTSUP;
+	}
+	if (EVP_PKEY_verify_init(ctx) <= 0) {
+		xbps_error_printf(
+		    "failed to verify signature: EVP_PKEY_verify_init: %s\n",
+		    ERR_error_string(ERR_get_error(), NULL));
+		goto err;
+	}
+	if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0) {
+		xbps_error_printf("failed to verify signature: "
+		                  "EVP_PKEY_CTX_set_rsa_padding: %s\n",
+		    ERR_error_string(ERR_get_error(), NULL));
+		goto err;
+	}
+	if (EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) <= 0) {
+		xbps_error_printf("failed to verify signature: "
+		                  "EVP_PKEY_CTX_set_signature_md: %s\n",
+		    ERR_error_string(ERR_get_error(), NULL));
+		goto err;
+	}
+	r = EVP_PKEY_verify(ctx, sig, siglen, md, mdlen);
+	if (r < 0) {
+		xbps_error_printf(
+		    "failed to verify signature: EVP_PKEY_verify: %s\n",
+		    ERR_error_string(ERR_get_error(), NULL));
+		goto err;
 	}
 
-	snprintf(sig, sizeof sig, "%s.sig2", fname);
-	val = xbps_verify_signature(repo, sig, digest);
+	EVP_PKEY_CTX_free(ctx);
+	return r;
+err:
+	EVP_PKEY_CTX_free(ctx);
+	return -EINVAL;
+}
 
-	return val;
+int
+pubkey_verify(const struct pubkey *pubkey, const unsigned char *sig,
+    unsigned int siglen, const unsigned char *md, size_t mdlen)
+{
+	switch (pubkey->type) {
+	case PUBKEY_RSA:
+		return pubkey_rsa_verify(
+		    (const struct pubkey_rsa *)pubkey, sig, siglen, md, mdlen);
+	}
+	abort();
 }
