@@ -158,6 +158,18 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 	case XBPS_STATE_UNPACK_FILE_PRESERVED:
 		printf("%s\n", xscd->desc);
 		break;
+	case XBPS_STATE_OUTOFDATE:
+		if (!xbps_pkg_name(pkgname, sizeof(pkgname), xscd->arg)) {
+			abort();
+		}
+		newver = xscd->arg;
+		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
+		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &instver);
+		fprintf(stderr, "WARNING: The '%s' package is out of date, '%s' is available.\n", instver, newver);
+		if (xscd->desc)
+			fprintf(stderr, "%s\n", xscd->desc);
+		fprintf(stderr, "NOTE: This can be resolved by running `xbps-install -u`\n");
+		break;
 	/* errors */
 	case XBPS_STATE_TRANS_FAIL:
 	case XBPS_STATE_UNPACK_FAIL:
