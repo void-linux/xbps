@@ -6,6 +6,14 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
+#if __has_builtin(__builtin_imaxabs)
+# define ABS(x) __builtin_imaxabs((x))
+#elif __has_builtin(__builtin_llabs)
+# define ABS(x) __builtin_llabs((x))
+#else
+# define ABS(x) ((x) > 0 ? (x) : -(x))
+#endif
+
 #define typeof(x) __typeof__(x)
 
 #define container_of(ptr, type, member)                                        \
