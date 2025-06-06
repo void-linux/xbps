@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <errno.h>
 
 #include <xbps/xbps_array.h>
 #include <xbps/xbps_bool.h>
@@ -696,6 +697,20 @@ void xbps_dbg_printf_append(const char *, ...)__attribute__ ((format (printf, 1,
 void xbps_verbose_printf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void xbps_error_printf(const char *, ...)__attribute__ ((format (printf, 1, 2)));
 void xbps_warn_printf(const char *, ...)__attribute__ ((format (printf, 1, 2)));
+
+/**
+ * @brief Prints formatted log message to stderr and returns error.
+ * @returns returns the specified error value \a r.
+ */
+int xbps_error_errno(int r, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+
+/**
+ * @brief Log out of memory condition.
+ * @returns Returns `-ENOMEM`.
+ */
+#define xbps_error_oom()                                                       \
+	xbps_error_errno(ENOMEM, "%s:%d %s: out of memory\n", __FILE__,        \
+	        __LINE__, __func__)
 
 /**
  * Initialize the XBPS library with the following steps:
