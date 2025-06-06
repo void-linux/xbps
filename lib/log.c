@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <stdarg.h>
 
+#include "xbps/macro.h"
 #include "xbps_api_impl.h"
 
 #ifdef __clang__
@@ -111,4 +112,16 @@ xbps_warn_printf(const char *fmt, ...)
 	va_start(ap, fmt);
 	common_printf(stderr, "WARNING: ", fmt, ap);
 	va_end(ap);
+}
+
+int
+xbps_error_errno(int r, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	common_printf(stderr, "ERROR: ", fmt, ap);
+	va_end(ap);
+
+	return -ABS(r);
 }
