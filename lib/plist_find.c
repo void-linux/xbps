@@ -141,16 +141,25 @@ match_pkg_by_pkgver(xbps_dictionary_t repod, const char *p)
 	assert(p);
 
 	/* exact match by pkgver */
-	if (!xbps_pkg_name(pkgname, sizeof(pkgname), p))
+	if (!xbps_pkg_name(pkgname, sizeof(pkgname), p)) {
+		xbps_error_printf("invalid pkgver: %s\n", p);
+		errno = EINVAL;
 		return NULL;
+	}
 
 	d = xbps_dictionary_get(repod, pkgname);
-	if (d) {
-		xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
-		if (strcmp(pkgver, p)) {
-			d = NULL;
-			errno = ENOENT;
-		}
+	if (!d) {
+		errno = ENOENT;
+		return NULL;
+	}
+	if (!xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver)) {
+		xbps_error_printf("missing `pkgver` property\n");
+		errno = EINVAL;
+		return NULL;
+	}
+	if (strcmp(pkgver, p) != 0) {
+		errno = ENOENT;
+		return NULL;
 	}
 
 	return d;
@@ -171,17 +180,24 @@ match_pkg_by_pattern(xbps_dictionary_t repod, const char *p)
 		if (xbps_pkg_name(pkgname, sizeof(pkgname), p)) {
 			return match_pkg_by_pkgver(repod, p);
 		}
+		xbps_error_printf("invalid pkgpattern: %s\n", p);
+		errno = EINVAL;
 		return NULL;
 	}
 
 	d = xbps_dictionary_get(repod, pkgname);
-	if (d) {
-		xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver);
-		assert(pkgver);
-		if (!xbps_pkgpattern_match(pkgver, p)) {
-			d = NULL;
-			errno = ENOENT;
-		}
+	if (!d) {
+		errno = ENOENT;
+		return NULL;
+	}
+	if (!xbps_dictionary_get_cstring_nocopy(d, "pkgver", &pkgver)) {
+		xbps_error_printf("missing `pkgver` property`\n");
+		errno = EINVAL;
+		return NULL;
+	}
+	if (!xbps_pkgpattern_match(pkgver, p)) {
+		errno = ENOENT;
+		return NULL;
 	}
 
 	return d;
