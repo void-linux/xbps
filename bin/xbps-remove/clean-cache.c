@@ -145,6 +145,11 @@ clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 	char *ext;
 	int rv = 0;
 
+	// XXX: there is no public api to load the pkgdb so force it before
+	// its done potentially concurrently by threads through the
+	// xbps_array_foreach_cb_multi call later.
+	(void)xbps_pkgdb_get_pkg(xhp, "foo");
+
 	if (chdir(xhp->cachedir) == -1)
 		return -1;
 
