@@ -28,6 +28,7 @@ conf_head() {
 }
 conf_body() {
 	mkdir -p xbps.d
+	unset XBPS_ARCH XBPS_TARGET_ARCH
 	echo "architecture=x86_64-musl" > xbps.d/arch.conf
 	atf_check_equal $(xbps-uhelper -C $PWD/xbps.d arch) x86_64-musl
 }
