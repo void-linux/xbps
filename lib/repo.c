@@ -117,7 +117,6 @@ repo_read_next(struct xbps_repo *repo, struct archive *ar, struct archive_entry 
 	return 0;
 }
 
-
 static int
 repo_read_index(struct xbps_repo *repo, struct archive *ar)
 {
@@ -149,15 +148,23 @@ repo_read_index(struct xbps_repo *repo, struct archive *ar)
 	}
 
 	buf = xbps_archive_get_file(ar, entry);
-	if (!buf)
-		return -errno;
+	if (!buf) {
+		r = -errno;
+		xbps_error_printf(
+		    "failed to open repository: %s: failed to read index: %s\n",
+		    repo->uri, strerror(-r));
+		return r;
+	}
 	repo->index = xbps_dictionary_internalize(buf);
 	r = -errno;
 	free(buf);
 	if (!repo->index) {
-		xbps_error_printf("failed to open repository: %s: reading index: %s\n",
+		if (!r)
+			r = -EINVAL;
+		xbps_error_printf(
+		    "failed to open repository: %s: failed to parse index: %s\n",
 		    repo->uri, strerror(-r));
-		return -EIO;
+		return r;
 	}
 
 	xbps_dictionary_make_immutable(repo->index);
@@ -195,7 +202,9 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 	buf = xbps_archive_get_file(ar, entry);
 	if (!buf) {
 		r = -errno;
-		xbps_error_printf("failed to read repository metadata: %s: %s\n",
+		xbps_error_printf(
+		    "failed to read repository metadata: %s: failed to read "
+		    "metadata: %s\n",
 		    repo->uri, strerror(-r));
 		return r;
 	}
@@ -208,16 +217,13 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 	errno = 0;
 	repo->idxmeta = xbps_dictionary_internalize(buf);
 	r = -errno;
-
 	free(buf);
-
 	if (!repo->idxmeta) {
-		if (!r) {
-			xbps_error_printf("failed to read repository metadata: %s: invalid dictionary\n",
-			    repo->uri);
-			return -EINVAL;
-		}
-		xbps_error_printf("failed to read repository metadata: %s: %s\n",
+		if (!r)
+			r = -EINVAL;
+		xbps_error_printf(
+		    "failed to read repository metadata: %s: failed to parse "
+		    "metadata: %s\n",
 		    repo->uri, strerror(-r));
 		return r;
 	}
