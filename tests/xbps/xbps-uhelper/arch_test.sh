@@ -8,7 +8,8 @@ native_head() {
 }
 
 native_body() {
-	atf_check_equal $(xbps-uhelper -r $PWD arch) $(uname -m)
+	unset XBPS_ARCH XBPS_TARGET_ARCH
+	atf_check -o "inline:$(uname -m)\n" -- xbps-uhelper -r "$PWD" arch
 }
 
 atf_test_case env
