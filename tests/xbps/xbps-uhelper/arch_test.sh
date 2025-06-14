@@ -27,10 +27,10 @@ conf_head() {
 	atf_set "descr" "xbps-uhelper arch: configuration override test"
 }
 conf_body() {
-	mkdir -p xbps.d
+	mkdir -p xbps.d root
 	unset XBPS_ARCH XBPS_TARGET_ARCH
-	echo "architecture=x86_64-musl" > xbps.d/arch.conf
-	atf_check_equal $(xbps-uhelper -C $PWD/xbps.d arch) x86_64-musl
+	echo "architecture=foo" > xbps.d/arch.conf
+	atf_check -o inline:"foo\n" -- xbps-uhelper -C $PWD/xbps.d -r root arch
 }
 
 atf_init_test_cases() {
