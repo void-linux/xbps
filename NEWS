@@ -1,4 +1,4 @@
-xbps-X.XX.X (2020-XX-XX):
+xbps-0.60 (2025-06-14):
 
  * libxbps: fix issues with updating packages in unpacked state. [duncaen]
 
