@@ -33,7 +33,6 @@ tests/*/*/*/*_test
 tests/*/*/*/*_tests
 tests/*/*/*_test
 tests/*/*/*_tests
-include/xbps.h
 
 # vim backup files
 .*.swp

@@ -4,7 +4,7 @@ INCS =	xbps.h
 
 .PHONY: all
 all:
-	sed -e "s|@@VERSION@@|${VERSION}|g" ${INCS}.in > ${INCS}
+	@:
 
 .PHONY: install
 install:
@@ -17,7 +17,3 @@ install:
 .PHONY: uninstall
 uninstall:
 	-rm -f $(DESTDIR)$(INCLUDEDIR)/$(INCS)
-
-.PHONY: clean
-clean:
-	-rm -f ${INCS}
