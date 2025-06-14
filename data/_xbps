@@ -10,39 +10,41 @@ _xbps_common=(
 )
 
 _xbps_properties=(
-	alternatives
-	architecture
-	archive-compression-type
-	automatic-install
-	build-date
-	build-options
-	conf_files
-	conflicts
-	filename-sha256
-	filename-size
-	homepage
-	install-date
-	install-msg
-	install-script
-	installed_size
-	license
-	maintainer
-	metafile-sha256
-	pkgver
-	preserve
-	provides
-	remove-msg
-	remove-script
-	replaces
-	repolock
-	repository
-	reverts
-	run_depends
-	shlib-provides
-	shlib-requires
-	short_desc
-	source-revisions
-	state
+	'alternatives[group and file alternatives provided by the package]'
+	'architecture[target architecture the package was built for]'
+	'automatic-install[package was installed automatically]'
+	'build-options[enabled options the package was built with]'
+	'changelog[changelog URL for the package]'
+	'conf_files[configuration file(s) installed by the package]'
+	'conflicts[other packages this package conflicts with]'
+	'filename-sha256[hash of the package file]'
+	'filename-size[size of the package file]'
+	'hold[package is held and will not be updated]'
+	'homepage[home URL of the package project]'
+	'install-date[date when the package was installed]'
+	'install-msg[post-install message provided by the package]'
+	'install-script[script run when installing the package]'
+	'installed_size[total size of files installed by the package]'
+	'license[license(s) for distributing the package]'
+	'maintainer[contact information of the maintainer of the package]'
+	'metafile-sha256[hash of the plist package files metadata]'
+	'pkgname[name of the package]'
+	'pkgver[version of the package]'
+	'preserve[package files will not be removed automatically on update]'
+	'provides[virtual packages provided by the package]'
+	'remove-msg[post-remove message provided by the package]'
+	'remove-script[script run when removing the package]'
+	'replaces[other packages that the package replaces]'
+	'repolock[package only accepts updates from its original repository]'
+	'repository[repository where the package was installed from]'
+	'reverts[previous provided version this package replaces]'
+	'run_depends[runtime dependency packages for the package]'
+	'shlib-provides[shared libraries provided by the package]'
+	'shlib-requires[shared libraries required by the package]'
+	'short_desc[short description of the package]'
+	'source-revisions[source package and commit hash of package last change from the void-packages repository]'
+	'state[installation state of the package]'
+	'tags[list of categories the package is associated with]'
 )
 
 _xbps_all_packages() {
@@ -60,9 +62,14 @@ _xbps_alternatives_groups() {
 _xbps_alternatives() {
 	_arguments -s : \
 		$_xbps_common \
+		-R'[Enable repository mode]' \
+		'*'--repository=-'[Add repository to the top of the list]:repository url:_files -/' \
+		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
 		{-g,--group}'[Group of alternatives to match]:group:_xbps_alternatives_groups' \
+		- '(mode)' \
 		{-l,--list}'[List all alternatives]' \
 		{-s,--set}'[Set alternatives]' \
+		- '(default)' \
 		'*:installed packages:_xbps_installed_packages'
 }
 
@@ -71,7 +78,10 @@ _xbps_checkvers() {
 		$_xbps_common \
 		{-D,--distdir}'[Set the path to void-packages]:path:_files -/' \
 		{-i,--installed}'[Check for outdated packages in rootdir]' \
-		{-s,--show-missing}'[List any binary packages which are not built]' \
+		{-m,--manual}'[Only process listed files]' \
+		'*'{-R,--repository=-}'[Add repository to the top of the list]:repository url:_files -/' \
+		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
+		{-s,--show-all}'[List any binary packages which are not built]' \
 		--staging'[Enable use of staged packages]' \
 		'*:extra packages:_files'
 }
@@ -93,6 +103,7 @@ _xbps_create() {
 		{-p,--preserve}'[Enable package preserve boolean]' \
 		{-q,--quiet}'[Work silently]' \
 		{-R,--replaces}'[Replaces]:replaces: ' \
+		{-r,--reverts}'[Reverts]:reverts: ' \
 		{-S,--long-desc}'[Long description]:long description: ' \
 		{-s,--desc}'[Short description]:short description: ' \
 		{-t,--tags}'[A list of tags/categories]:tags: ' \
@@ -125,35 +136,49 @@ _xbps_install() {
 		$_xbps_common \
 		{-A,--automatic}'[Set automatic installation mode]' \
 		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
-		{-n,--dry-run}'[Dry-run mode]' \
+		{-D,--download-only}'[Download packages and check integrity, nothing else]' \
 		{-f,--force}'[Force package re-installation]' \
 		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
+		{-I,--ignore-file-conflicts}'[Ignore detected file conflicts]' \
+		{-U,--unpack-only}'[Unpack packages without configuring]' \
 		{-M,--memory-sync}'[Keep remote repository data in memory only]' \
+		{-n,--dry-run}'[Dry-run mode]' \
 		'*'{-R,--repository=-}'[Add repository to the top of the list]:repository url:_files -/' \
 		{-S,--sync}'[Sync remote repository index]' \
+		--reproducible'[Enable reproducible mode in pkgdb]' \
 		--staging'[Enable use of staged packages]' \
 		{-u,--update}'[Update target packages]' \
-		{-U,--unpack-only}'[Unpack packages without configuring]' \
 		{-y,--yes}'[Assume yes to all questions]' \
 		'*:available packages:_xbps_all_packages'
 }
 
 _xbps_pkgdb() {
-	_arguments -s : \
+	local ret=1
+	local -a checks=(files dependencies alternatives pkgdb)
+	_arguments -C -s : \
 		$_xbps_common \
 		{-a,--all}'[Process all packages]' \
+		--checks='[Choose checks to run]:check:->checks' \
 		{-m,--mode}'[Change to this mode]:mode:(auto manual hold unhold repolock repounlock)' \
 		{-u,--update}'[Update pkgdb to the latest format]' \
-		'*:installed packages:_xbps_installed_packages'
+		'*:installed packages:_xbps_installed_packages' && ret=0
+
+	case $state in
+		checks)
+			_values -s , "check" "${checks[@]}" && ret=0
+			;;
+	esac
+	return $ret
 }
 
 _xbps_query() {
+	local ret=1
 	_arguments -s : \
 		$_xbps_common \
 		{-c,--cachedir=-}'[Full path to cachedir]:cache dir:_files -/' \
 		{-i,--ignore-conf-repos}'[Ignore repositories defined in xbps.d]' \
 		{-M,--memory-sync}'[Keep remote repository data in memory only]' \
-		{-p,--property=-}'[Show properties]:property:($_xbps_properties)' \
+		{-p,--property=-}'[Show properties]:property:->properties' \
 		--regex'[Use Extended Regular Expressions to match]' \
 		--fulldeptree'[Full dependency tree for -x/--deps]' \
 		-R'[Enable repository mode]' \
@@ -174,7 +199,14 @@ _xbps_query() {
 		{-x,--deps}'[Show dependencies]:package:_xbps_all_packages' \
 		{-X,--revdeps}'[Show reverse dependencies]:package:_xbps_all_packages' \
 		- '(default)' \
-		':package:_xbps_all_packages'
+		':package:_xbps_all_packages' && ret=0
+
+	case $state in
+		properties)
+			_values -s , "property" "${_xbps_properties[@]}" && ret=0
+			;;
+	esac
+	return $ret
 }
 
 _xbps_reconfigure() {
@@ -182,8 +214,10 @@ _xbps_reconfigure() {
 		$_xbps_common \
 		{-a,--all}'[Process all packages]' \
 		{-f,--force}'[Force reconfiguration]' \
+		{-x,--deps}'[Also process dependencies for each package]' \
+		--fulldeptree'[Full dependency tree for -x/--deps]' \
 		'*'{-i,--ignore}'[Ignore package for reconfigure]:installed packages:_xbps_installed_packages' \
-                '*:installed packages:_xbps_installed_packages'
+		'*:installed packages:_xbps_installed_packages'
 }
 
 _xbps_remove() {
@@ -193,6 +227,7 @@ _xbps_remove() {
  		{-F,--force-revdeps}'[Force package removal even with revdeps/unresolved shared libraries]' \
 		{-f,--force}'[Force package files removal]' \
 		{-O,--clean-cache}'[Remove obsolete packages in cachedir]' \
+		-OO'[Remove obsolete and uninstalled packages in cachedir]' \
 		{-o,--remove-orphans}'[Remove package orphans]' \
 		{-n,--dry-run}'[Dry-run mode]' \
 		{-R,--recursive}'[Recursively remove dependencies]' \
