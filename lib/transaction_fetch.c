@@ -37,6 +37,7 @@ static int
 verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 {
 	char binfile[PATH_MAX];
+	char sigfile[PATH_MAX];
 	struct xbps_repo *repo;
 	const char *pkgver, *repoloc, *sha256;
 	ssize_t l;
@@ -49,6 +50,10 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 	if (l < 0)
 		return -l;
 
+	l = snprintf(sigfile, sizeof(sigfile), "%s.sig2", binfile);
+	if (l < 0 || (size_t)l >= sizeof(sigfile))
+		return ENAMETOOLONG;
+
 	/*
 	 * For pkgs in local repos check the sha256 hash.
 	 * For pkgs in remote repos check the RSA signature.
@@ -60,11 +65,15 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 		return rv;
 	}
 	if (repo->is_remote) {
+		int r;
 		/* remote repo */
 		xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 			"%s: verifying RSA signature...", pkgver);
 
-		if (!xbps_verify_file_signature(repo, binfile)) {
+		r = repo_sig_verify_file(repo, binfile, sigfile);
+		if (r < 0) {
+			return -r;
+		} else  if (r == 0) {
 			rv = EPERM;
 			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
 				"%s: the RSA signature is not valid!", pkgver);
@@ -95,8 +104,8 @@ static int
 download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 {
 	struct xbps_repo *repo;
-	char buf[PATH_MAX];
-	char *sigsuffix;
+	char file[PATH_MAX];
+	char sigfile[PATH_MAX];
 	const char *pkgver, *arch, *fetchstr, *repoloc;
 	unsigned char digest[XBPS_SHA256_DIGEST_SIZE] = {0};
 	int rv = 0;
@@ -108,13 +117,18 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "pkgver", &pkgver);
 	xbps_dictionary_get_cstring_nocopy(repo_pkgd, "architecture", &arch);
 
-	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig2", repoloc, pkgver, arch);
-	sigsuffix = buf+(strlen(buf)-sizeof (".sig2")+1);
+	rv = snprintf(file, sizeof(file), "%s/%s.%s.xbps", repoloc, pkgver, arch);
+	if (rv < 0 || (size_t)rv >= sizeof(file))
+		return ENAMETOOLONG;
+
+	rv = snprintf(sigfile, sizeof(sigfile), "%s.sig2", file);
+	if (rv < 0 || (size_t)rv >= sizeof(sigfile))
+		return ENAMETOOLONG;
 
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' signature (from `%s')...", pkgver, repoloc);
 
-	if ((rv = xbps_fetch_file(xhp, buf, NULL)) == -1) {
+	if ((rv = xbps_fetch_file(xhp, sigfile, NULL)) == -1) {
 		rv = fetchLastErrCode ? fetchLastErrCode : errno;
 		fetchstr = xbps_fetch_error_string();
 		xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD_FAIL, rv,
@@ -124,12 +138,10 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	}
 	rv = 0;
 
-	*sigsuffix = '\0';
-
 	xbps_set_cb_state(xhp, XBPS_STATE_DOWNLOAD, 0, pkgver,
 		"Downloading `%s' package (from `%s')...", pkgver, repoloc);
 
-	if ((rv = xbps_fetch_file_sha256(xhp, buf, NULL, digest,
+	if ((rv = xbps_fetch_file_sha256(xhp, file, NULL, digest,
 	    sizeof digest)) == -1) {
 		rv = fetchLastErrCode ? fetchLastErrCode : errno;
 		fetchstr = xbps_fetch_error_string();
@@ -143,8 +155,14 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	xbps_set_cb_state(xhp, XBPS_STATE_VERIFY, 0, pkgver,
 		"%s: verifying RSA signature...", pkgver);
 
-	snprintf(buf, sizeof buf, "%s/%s.%s.xbps.sig2", xhp->cachedir, pkgver, arch);
-	sigsuffix = buf+(strlen(buf)-sizeof (".sig2")+1);
+	rv = snprintf(file, sizeof(file), "%s/%s.%s.xbps", xhp->cachedir, pkgver, arch);
+	if (rv < 0 || (size_t)rv >= sizeof(file))
+		return ENAMETOOLONG;
+
+	rv = snprintf(sigfile, sizeof(sigfile), "%s.sig2", file);
+	if (rv < 0 || (size_t)rv >= sizeof(sigfile))
+		return ENAMETOOLONG;
+
 
 	if ((repo = xbps_rpool_get_repo(repoloc)) == NULL) {
 		rv = errno;
@@ -158,24 +176,31 @@ download_binpkg(struct xbps_handle *xhp, xbps_dictionary_t repo_pkgd)
 	 * i.e. 304 not modified, verify by file instead.
 	 */
 	if (fetchLastErrCode == FETCH_UNCHANGED) {
-		*sigsuffix = '\0';
-		if (!xbps_verify_file_signature(repo, buf)) {
+		int r;
+		r = repo_sig_verify_file(repo, file, sigfile);
+		if (r < 0) {
+			return -r;
+		} else if (r == 0) {
 			rv = EPERM;
 			/* remove binpkg */
-			(void)remove(buf);
+			(void)remove(file);
 			/* remove signature */
-			*sigsuffix = '.';
-			(void)remove(buf);
+			(void)remove(sigfile);
 		}
+		rv = 0;
 	} else {
-		if (!xbps_verify_signature(repo, buf, digest)) {
+		int r;
+		r = repo_sig_verify_digest(repo, sigfile, digest, sizeof(digest));
+		if (r < 0) {
+			return -r;
+		} else if (r == 0) {
 			rv = EPERM;
-			/* remove signature */
-			(void)remove(buf);
 			/* remove binpkg */
-			*sigsuffix = '\0';
-			(void)remove(buf);
+			(void)remove(file);
+			/* remove signature */
+			(void)remove(sigfile);
 		}
+		rv = 0;
 	}
 
 	if (rv == EPERM) {

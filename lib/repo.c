@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <openssl/sha.h>
+
 #include <archive.h>
 #include <archive_entry.h>
 
@@ -165,6 +167,99 @@ repo_read_index(struct xbps_repo *repo, struct archive *ar)
 }
 
 static int
+repo_load_key(struct xbps_repo *repo)
+{
+	char keypath[PATH_MAX];
+	xbps_dictionary_t trusted_keyd;
+	xbps_data_t pubkey, trusted_pubkey;
+	uint16_t pubkey_size, trusted_pubkey_size;
+	char *hexfp;
+	int r;
+
+	if (!repo->idxmeta)
+		return 0;
+
+	pubkey = xbps_dictionary_get(repo->idxmeta, "public-key");
+	if (xbps_object_type(pubkey) != XBPS_TYPE_DATA)
+		return 0;
+
+	if (!xbps_dictionary_get_uint16(
+	        repo->idxmeta, "public-key-size", &pubkey_size)) {
+		xbps_error_printf(
+		    "%s: failed to load public key: missing public key size\n",
+		    repo->uri);
+		return -EINVAL;
+	}
+
+	hexfp = xbps_pubkey2fp(pubkey);
+	if (!hexfp) {
+		r = errno ? -errno : -EINVAL;
+		xbps_error_printf(
+		    "%s: failed to create public key fingerprint: %s\n",
+		    repo->uri, strerror(-r));
+		return r;
+	}
+
+	repo->is_signed = true;
+
+	r = snprintf(keypath, sizeof(keypath), "%s/keys/%s.plist",
+	    repo->xhp->metadir, hexfp);
+	if (r < 0 || (size_t)r >= sizeof(keypath)) {
+		r = -ENAMETOOLONG;
+		xbps_error_printf("%s: failed get public key path: %s\n",
+		    repo->uri, strerror(-r));
+		return r;
+	}
+
+	trusted_keyd = xbps_plist_dictionary_from_file(keypath);
+	if (!trusted_keyd) {
+		if (errno == ENOENT)
+			return 0;
+		r = errno ? -errno : -EINVAL;
+		xbps_error_printf("failed to read public key: %s: %s\n",
+		    keypath, strerror(-r));
+		return r;
+	}
+
+	trusted_pubkey = xbps_dictionary_get(trusted_keyd, "public-key");
+	if (xbps_object_type(trusted_pubkey) != XBPS_TYPE_DATA) {
+		r = -EINVAL;
+		xbps_error_printf(
+		    "failed to read public key: %s: missing public-key\n",
+		    keypath);
+		return r;
+	}
+	if (!xbps_dictionary_get_uint16(
+	        trusted_keyd, "public-key-size", &trusted_pubkey_size)) {
+		r = -EINVAL;
+		xbps_error_printf(
+		    "failed to read public key: %s: missing public-key-size\n",
+		    keypath);
+		xbps_object_release(trusted_keyd);
+		return r;
+	}
+
+	if (pubkey_size != trusted_pubkey_size ||
+	    !xbps_data_equals(pubkey, trusted_pubkey)) {
+		r = -ERANGE;
+		xbps_error_printf("%s: repository public-key does not "
+		                  "match trusted public key: %s\n",
+		    repo->uri, keypath);
+		xbps_object_release(trusted_keyd);
+		return r;
+	}
+
+	repo->pubkey = pubkey_load_rsa(trusted_pubkey);
+	if (!repo->pubkey) {
+		xbps_object_release(trusted_keyd);
+		return -errno;
+	}
+
+	xbps_object_release(trusted_keyd);
+	return 0;
+}
+
+static int
 repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 {
 	struct archive_entry *entry;
@@ -188,7 +283,7 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 			    repo->uri, archive_error_string(ar));
 			return -archive_errno(ar);
 		}
-		repo->idxmeta = xbps_dictionary_create();
+		repo->idxmeta = NULL;
 		return 0;
 	}
 
@@ -213,12 +308,14 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 
 	if (!repo->idxmeta) {
 		if (!r) {
-			xbps_error_printf("failed to read repository metadata: %s: invalid dictionary\n",
+			xbps_error_printf("failed to read repository metadata: "
+			                  "%s: invalid dictionary\n",
 			    repo->uri);
 			return -EINVAL;
 		}
-		xbps_error_printf("failed to read repository metadata: %s: %s\n",
-		    repo->uri, strerror(-r));
+		xbps_error_printf(
+		    "failed to read repository metadata: %s: %s\n", repo->uri,
+		    strerror(-r));
 		return r;
 	}
 
@@ -508,6 +605,13 @@ xbps_repo_open(struct xbps_handle *xhp, const char *url)
 		return NULL;
 	}
 
+	r = repo_load_key(repo);
+	if (r < 0) {
+		xbps_repo_release(repo);
+		errno = -r;
+		return NULL;
+	}
+
 	if (xbps_dictionary_count(repo->stage) == 0 ||
 	    (repo->is_remote && !(xhp->flags & XBPS_FLAG_USE_STAGE))) {
 		repo->idx = repo->index;
@@ -546,6 +650,10 @@ xbps_repo_release(struct xbps_repo *repo)
 	if (repo->stage) {
 		xbps_object_release(repo->stage);
 		repo->idx = NULL;
+	}
+	if (repo->pubkey) {
+		pubkey_free(repo->pubkey);
+		repo->pubkey = NULL;
 	}
 	if (repo->idxmeta) {
 		xbps_object_release(repo->idxmeta);
@@ -857,4 +965,91 @@ out:
 	if (rkeyfile)
 		free(rkeyfile);
 	return rv;
+}
+
+static int
+read_signature(const char *path, unsigned char *buf, size_t bufsz)
+{
+	size_t used = 0;
+	int fd;
+	int r;
+
+	fd = open(path, O_RDONLY);
+	if (fd == -1) {
+		r = -errno;
+		xbps_error_printf("failed to read signature file: could not "
+		                  "open: %s: %s\n",
+		    path, strerror(-r));
+		return r;
+	}
+
+	for (;;) {
+		ssize_t rd;
+
+		rd = read(fd, buf + used, bufsz - used);
+		if (rd == -1) {
+			if (errno == EINTR || errno == EAGAIN)
+				continue;
+			r = -errno;
+			xbps_error_printf("failed to read signature file: %s: "
+			                  "could not read: %s\n",
+			    path, strerror(-r));
+			close(fd);
+			return r;
+		}
+		used += rd;
+		if (rd == 0 || used == bufsz)
+			break;
+	}
+
+	close(fd);
+
+	if (used < bufsz) {
+		xbps_error_printf(
+		    "failed to read signature: file too short\n");
+		return -EINVAL;
+	}
+	return 0;
+}
+
+int HIDDEN
+repo_sig_verify_digest(struct xbps_repo *repo, const char *sigfile,
+    const unsigned char *md, size_t mdlen)
+{
+	unsigned char sigbuf[512];
+	int r;
+
+	if (!repo->pubkey) {
+		xbps_error_printf("failed to verify file: repository has no "
+		                  "trusted public key\n");
+		return -EPERM;
+	}
+
+	r = read_signature(sigfile, sigbuf, sizeof(sigbuf));
+	if (r < 0)
+		return r;
+
+	return pubkey_verify(repo->pubkey, sigbuf, sizeof(sigbuf), md, mdlen);
+}
+
+int HIDDEN
+repo_sig_verify_file(struct xbps_repo *repo, const char *file, const char *sigfile)
+{
+	unsigned char md[SHA256_DIGEST_LENGTH];
+
+	if (!repo->pubkey) {
+		xbps_error_printf("failed to verify file: repository has no "
+		                  "trusted public key\n");
+		return -EPERM;
+	}
+
+	if (!xbps_file_sha256_raw(md, sizeof(md), file)) {
+		int r = -errno;
+		xbps_error_printf("failed to verify file: failed to "
+		                  "generate sha256 checksum: %s\n",
+		    strerror(-r));
+		return r;
+	}
+
+	return repo_sig_verify_digest(repo, sigfile, md, sizeof(md));
 }

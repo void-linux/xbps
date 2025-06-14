@@ -127,4 +127,15 @@ struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 		const char *);
 int HIDDEN xbps_conf_init(struct xbps_handle *);
 
+struct pubkey;
+struct pubkey HIDDEN *pubkey_load_rsa(xbps_data_t data);
+void HIDDEN pubkey_free(struct pubkey *pubkey);
+int pubkey_verify(const struct pubkey *pubkey, const unsigned char *sig,
+    unsigned int siglen, const unsigned char *md, size_t mdlen);
+
+int HIDDEN repo_sig_verify_file(struct xbps_repo *repo, const char *file,
+    const char *sigfile);
+int HIDDEN repo_sig_verify_digest(struct xbps_repo *repo, const char *sigfile,
+    const unsigned char *md, size_t mdlen);
+
 #endif /* !_XBPS_API_IMPL_H_ */
