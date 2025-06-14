@@ -2,9 +2,9 @@
 
 RANLIB ?= ranlib
 
-LIBXBPS_MAJOR = 5
+LIBXBPS_MAJOR = 6
 LIBXBPS_MINOR = 0
-LIBXBPS_MICRO = 1
+LIBXBPS_MICRO = 0
 
 UNAME_S := $(shell uname -s)
 
