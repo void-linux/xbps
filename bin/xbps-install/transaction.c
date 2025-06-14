@@ -128,7 +128,7 @@ show_dry_run_actions(struct transaction *trans)
 		xbps_dictionary_get_uint64(obj, "installed_size", &isize);
 		xbps_dictionary_get_uint64(obj, "filename-size", &dsize);
 
-		printf("%s %s %s %s %ju %ju\n", pkgver, ttype2str(obj), arch ? arch : "-", repoloc ? repoloc : "-", isize, dsize);
+		printf("%s %s %s %s %ju %ju\n", pkgver, ttype2str(obj), arch ? arch : "-", repoloc ? repoloc : "-", (uintmax_t)isize, (uintmax_t)dsize);
 	}
 }
 

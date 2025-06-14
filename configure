@@ -720,6 +720,12 @@ echo "LDFLAGS +=        $(pkg-config --libs libssl)" >>$CONFIG_MK
 echo "STATIC_LIBS +=    $(pkg-config --libs --static libssl)" \
 	>>$CONFIG_MK
 
+if [[ $OS == "darwin" ]]; then
+	echo "CFLAGS += -D_BSD_SOURCE" >>$CONFIG_MK
+	echo "LDFLAGS +=    $(pkg-config --libs libcrypto)" \
+		>>$CONFIG_MK
+fi
+
 #
 # If --enable-static enabled, build static binaries.
 #
@@ -755,8 +761,12 @@ else
 fi
 
 if [ "$SET_RPATH" ]; then
-	echo  "PROG_LDFLAGS = -Wl,-rpath='XORIGIN/../lib'" >>$CONFIG_MK
-	sed -i 's,XORIGIN,$$ORIGIN,' $CONFIG_MK
+	if [[ $OS == "darwin" ]]; then
+		echo  "PROG_LDFLAGS = -Wl,-rpath,'@loader_path/../lib'" >>$CONFIG_MK
+	else
+		echo  "PROG_LDFLAGS = -Wl,-rpath='XORIGIN/../lib'" >>$CONFIG_MK
+		sed -i 's,XORIGIN,$$ORIGIN,' $CONFIG_MK
+	fi
 fi
 
 echo
