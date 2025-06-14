@@ -38,25 +38,54 @@
 char HIDDEN *
 xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 {
-	size_t buflen;
-	ssize_t nbytes = -1;
+	size_t used = 0;
+	size_t len;
 	char *buf;
+	int r;
 
 	assert(ar != NULL);
 	assert(entry != NULL);
 
-	buflen = (size_t)archive_entry_size(entry);
-	buf = malloc(buflen+1);
-	if (buf == NULL)
-		return NULL;
+	len = archive_entry_size(entry);
 
-	nbytes = archive_read_data(ar, buf, buflen);
-	if ((size_t)nbytes != buflen) {
-		free(buf);
+	buf = malloc(len + 1);
+	if (!buf) {
+		xbps_error_printf("out of memory\n");
+		errno = ENOMEM;
 		return NULL;
 	}
-	buf[buflen] = '\0';
+
+	for (;;) {
+		ssize_t rd = archive_read_data(ar, buf + used, len - used);
+		if (rd == ARCHIVE_FATAL || rd == ARCHIVE_WARN) {
+			r = -archive_errno(ar);
+			xbps_error_printf(
+			    "failed to ready archive entry: %s: %s\n",
+			    archive_entry_pathname(entry),
+			    archive_error_string(ar));
+			goto err;
+		} else if (rd == ARCHIVE_RETRY) {
+			continue;
+		}
+		used += rd;
+		if (rd == 0 || used == len)
+			break;
+	}
+	if (used < len) {
+		r = -EIO;
+		xbps_error_printf(
+		    "failed to read archive entry: %s: could not read enough "
+		    "data: %s\n",
+		    archive_entry_pathname(entry), strerror(-r));
+		goto err;
+	}
+
+	buf[len] = '\0';
 	return buf;
+err:
+	free(buf);
+	errno = -r;
+	return NULL;
 }
 
 xbps_dictionary_t HIDDEN
