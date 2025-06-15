@@ -88,23 +88,18 @@ self_replace_body() {
 	echo "A-1.0_1" > pkg_A/usr/bin/foo
 	echo "B-1.0_1" > pkg_B/usr/bin/foo
 	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0" --provides="A-1.0_1" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --replaces "A>=0" --provides="A-1.0_1" ../pkg_B
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
-	atf_check_equal $? 0
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
-	atf_check_equal $? 0
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
-	atf_check_equal $? 0
-	out=$(xbps-query -C xbps.d -r root -l|awk '{print $2}')
-	exp="A-1.0_1"
-	atf_check_equal $out $exp
-	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
+	atf_check -o ignore -e ignore -- xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
+	atf_check -o ignore -e ignore -- xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
+	atf_check -e ignore \
+		-o match:'A-1\.0_1: installed successfully.' \
+		-o match:'B-1\.0_1: removed successfully.' \
+		-- xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A
+	atf_check -o inline:"A-1.0_1\n" -- xbps-query -C xbps.d -r root -p pkgver A
+	atf_check -o inline:"installed\n" -- xbps-query -C xbps.d -r root -p state A
 }
 
 atf_test_case replace_vpkg
