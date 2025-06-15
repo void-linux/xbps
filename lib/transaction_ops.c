@@ -55,7 +55,7 @@
 static int
 trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 {
-	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL;
+	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL, vpkg_pkgdb = NULL;
 	xbps_object_t obj;
 	xbps_array_t pkgs;
 	pkg_state_t state = 0;
@@ -72,8 +72,12 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	 */
 	if (xbps_pkg_name(buf, sizeof(buf), pkg)) {
 		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, buf);
+		if (!pkg_pkgdb)
+			vpkg_pkgdb = xbps_pkgdb_get_virtualpkg(xhp, buf);
 	} else {
 		pkg_pkgdb = xbps_pkgdb_get_pkg(xhp, pkg);
+		if (!pkg_pkgdb)
+			vpkg_pkgdb = xbps_pkgdb_get_virtualpkg(xhp, pkg);
 	}
 
 	if (xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
@@ -81,22 +85,23 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		ttype = XBPS_TRANS_DOWNLOAD;
 	}
 
-	/*
-	 * Find out if the pkg has been found in repository pool.
-	 */
-	if (pkg_pkgdb == NULL) {
-		/* pkg not installed, perform installation */
-		ttype = XBPS_TRANS_INSTALL;
-		if (((pkg_repod = xbps_rpool_get_pkg(xhp, pkg)) == NULL) &&
-		    ((pkg_repod = xbps_rpool_get_virtualpkg(xhp, pkg)) == NULL)) {
-			/* not found */
-			return ENOENT;
-		}
-	} else {
+	if (vpkg_pkgdb) {
+		// virtual package installed, if there is no real package in
+		// the rpool, we are keeping the virtual package.
+		pkg_repod = xbps_rpool_get_pkg(xhp, pkg);
+		if (!pkg_repod)
+			pkg_pkgdb = vpkg_pkgdb;
+	}
+	if (pkg_pkgdb) {
+		// package already installed
 		if (force) {
 			ttype = XBPS_TRANS_REINSTALL;
 		} else {
 			ttype = XBPS_TRANS_UPDATE;
+		}
+		if (!xbps_dictionary_get_cstring_nocopy(pkg_pkgdb, "pkgname", &pkgname)) {
+			xbps_error_printf("missing `pkgname` property\n");
+			return EINVAL;
 		}
 		if (xbps_dictionary_get(pkg_pkgdb, "repolock")) {
 			struct xbps_repo *repo;
@@ -107,15 +112,21 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 				/* not found */
 				return ENOENT;
 			}
-			pkg_repod = xbps_repo_get_pkg(repo, pkg);
+			pkg_repod = xbps_repo_get_pkg(repo, pkgname);
 		} else {
 			/* find update from rpool */
-			pkg_repod = xbps_rpool_get_pkg(xhp, pkg);
+			pkg_repod = xbps_rpool_get_pkg(xhp, pkgname);
 		}
-		if (pkg_repod == NULL) {
-			/* not found */
-			return ENOENT;
-		}
+	} else {
+		ttype = XBPS_TRANS_INSTALL;
+		pkg_repod = xbps_rpool_get_pkg(xhp, pkg);
+		if (!pkg_repod)
+			pkg_repod = xbps_rpool_get_virtualpkg(xhp, pkg);
+	}
+
+	if (!pkg_repod) {
+		/* not found */
+		return ENOENT;
 	}
 
 	xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgver", &repopkgver);
@@ -179,6 +190,7 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 	}
 
 	if (!xbps_dictionary_get_cstring_nocopy(pkg_repod, "pkgname", &pkgname)) {
+		xbps_error_printf("missing `pkgname` property\n");
 		return EINVAL;
 	}
 	/*
