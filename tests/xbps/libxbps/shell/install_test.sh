@@ -336,6 +336,53 @@ install_and_update_revdeps_body() {
 	atf_check_equal $(xbps-query -r root -p pkgver D) D-1.0_1
 }
 
+atf_test_case install_virtual_already_installed
+
+install_virtual_already_installed_head() {
+	atf_set "descr" "Tests for pkg install: do not reinstall an already installed virtual package"
+}
+
+install_virtual_already_installed_body() {
+	mkdir -p repo1 repo1-dbg repo2 pkg/usr/bin
+
+	cd repo1
+	touch ../pkg/usr/bin/A
+	atf_check -o ignore -e ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "cmd:A-1.0_1" ../pkg
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	atf_check -o match:'A-1\.0_1: installed successfully\.' -- \
+		xbps-install -r root -R repo1 -yv A
+
+	atf_check -o not-match:'A-1\.0_1: installed successfully\.' \
+		-e inline:"ERROR: Package \`cmd:A' already installed.\n" -- \
+		xbps-install -r root -R repo1 -yv cmd:A
+}
+
+atf_test_case install_virtual_already_installed_as_dep
+
+install_virtual_already_installed_as_dep_head() {
+	atf_set "descr" "Tests for pkg install: do not reinstall an already installed virtual package as dependency"
+}
+
+install_virtual_already_installed_as_dep_body() {
+	mkdir -p repo1 pkg_A/usr/bin pkg_B/usr/bin
+
+	cd repo1
+	touch ../pkg_A/usr/bin/A
+	touch ../pkg_B/usr/bin/B
+	atf_check -o ignore -e ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "cmd:A-1.0_1" ../pkg_A
+	atf_check -o ignore -e ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "cmd:A-1.0_1" ../pkg_B
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	atf_check -o match:'A-1\.0_1: installed successfully\.' -- \
+		xbps-install -r root -R repo1 -yv A
+
+	atf_check -o not-match:'A-1\.0_1: installed successfully\.' -- \
+		xbps-install -r root -R repo1 -yv B
+}
+
 atf_test_case update_file_timestamps
 
 update_file_timestamps_head() {
@@ -735,6 +782,8 @@ atf_init_test_cases() {
 	atf_add_test_case install_bestmatch_deps
 	atf_add_test_case install_bestmatch_disabled
 	atf_add_test_case install_and_update_revdeps
+	atf_add_test_case install_virtual_already_installed
+	atf_add_test_case install_virtual_already_installed_as_dep
 	atf_add_test_case update_and_install
 	atf_add_test_case update_if_installed
 	atf_add_test_case update_to_empty_pkg
