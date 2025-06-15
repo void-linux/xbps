@@ -49,7 +49,7 @@ remove_pkg(const char *repodir, const char *file)
 	int r;
 
 	r = snprintf(filepath, sizeof(filepath), "%s/%s", repodir, file);
-	if (r < 0 || (size_t)r >= sizeof(r)) {
+	if (r < 0 || (size_t)r >= sizeof(filepath)) {
 		r = -ENAMETOOLONG;
 		goto err;
 	}
@@ -59,7 +59,7 @@ remove_pkg(const char *repodir, const char *file)
 	}
 	return 0;
 err:
-	xbps_error_printf("failed to remove package: %s: %s\n",
+	xbps_error_printf("failed to remove package file: %s: %s\n",
 	    filepath, strerror(-r));
 	return r;
 }
@@ -71,7 +71,7 @@ remove_sig(const char *repodir, const char *file, const char *suffix)
 	int r;
 
 	r = snprintf(sigpath, sizeof(sigpath), "%s/%s.%s", repodir, file, suffix);
-	if (r < 0 || (size_t)r >= sizeof(r)) {
+	if (r < 0 || (size_t)r >= sizeof(sigpath)) {
 		r = -ENAMETOOLONG;
 		goto err;
 	}
@@ -81,7 +81,7 @@ remove_sig(const char *repodir, const char *file, const char *suffix)
 	}
 	return 0;
 err:
-	xbps_error_printf("failed to remove package: %s: %s\n",
+	xbps_error_printf("failed to remove signature file: %s: %s\n",
 	    sigpath, strerror(-r));
 	return r;
 }
@@ -158,7 +158,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 		return EXIT_SUCCESS;
 	}
 
-	if ((dirp = opendir(".")) == NULL) {
+	if ((dirp = opendir(repodir)) == NULL) {
 		xbps_error_printf("xbps-rindex: failed to open %s: %s\n",
 		    repodir, strerror(errno));
 		xbps_repo_release(repo);
