@@ -317,7 +317,7 @@ ATF_TC_BODY(config_trim_values, tc)
 	ATF_REQUIRE_EQ(xbps_init(&xh), 0);
 
 	/* should contain one repository */
-	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 2);
+	ATF_REQUIRE_EQ(xbps_array_count(xh.repositories), 3);
 
 	/* should contain repository=1 */
 	ATF_REQUIRE_EQ(xbps_array_get_cstring_nocopy(xh.repositories, 0, &repo), true);
@@ -325,6 +325,8 @@ ATF_TC_BODY(config_trim_values, tc)
 	/* should contain repository=2 */
 	ATF_REQUIRE_EQ(xbps_array_get_cstring_nocopy(xh.repositories, 1, &repo), true);
 	ATF_REQUIRE_STREQ(repo, "2");
+	ATF_REQUIRE_EQ(xbps_array_get_cstring_nocopy(xh.repositories, 2, &repo), true);
+	ATF_REQUIRE_STREQ(repo, "3");
 }
 
 ATF_TC(config_no_trailing_newline);
