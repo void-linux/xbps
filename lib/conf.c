@@ -328,7 +328,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 	FILE *fp;
 	size_t len, nlines = 0;
 	ssize_t rd;
-	char *line = NULL;
+	char *linebuf = NULL;
 	int rv = 0;
 	int size, rs;
 	char *dir;
@@ -341,7 +341,8 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 
 	xbps_dbg_printf("Parsing configuration file: %s\n", path);
 
-	while ((rd = getline(&line, &len, fp)) != -1) {
+	while ((rd = getline(&linebuf, &len, fp)) != -1) {
+		char *line = linebuf;
 		char *val = NULL;
 		size_t vallen;
 
@@ -461,7 +462,7 @@ parse_file(struct xbps_handle *xhp, const char *path, bool nested)
 			break;
 		}
 	}
-	free(line);
+	free(linebuf);
 	fclose(fp);
 
 	return rv;
