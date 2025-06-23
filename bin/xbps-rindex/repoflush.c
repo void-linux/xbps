@@ -83,6 +83,8 @@ open_archive(int fd, const char *compression)
 	r = archive_write_open_fd(ar, fd);
 	if (r != ARCHIVE_OK) {
 		r = -archive_errno(ar);
+		if (r == 1)
+			r = -EINVAL;
 		archive_write_free(ar);
 		errno = -r;
 		return NULL;
@@ -186,6 +188,8 @@ repodata_flush(const char *repodir,
 	/* Write data to tempfile and rename */
 	if (archive_write_close(ar) == ARCHIVE_FATAL) {
 		r = -archive_errno(ar);
+		if (r == 1)
+			r = -EINVAL;
 		xbps_error_printf("failed to close archive: %s\n", archive_error_string(ar));
 		goto err;
 	}
