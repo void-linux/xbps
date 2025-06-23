@@ -150,25 +150,43 @@ struct fetch_archive {
 };
 
 static int
-fetch_archive_open(struct archive *a UNUSED, void *client_data)
+fetch_archive_open(struct archive *a, void *client_data)
 {
 	struct fetch_archive *f = client_data;
 
 	f->fetch = fetchGet(f->url, NULL);
+	if (!f->fetch) {
+		const char *errstr = xbps_fetch_error_string();
+		int err;
+		switch (fetchLastErrCode) {
+		case FETCH_UNAVAIL:
+			err = ENOENT;
+			break;
+		default:
+			err = EIO;
+			break;
+		}
+		archive_set_error(a, err, "%s", errstr ? errstr : "unknown fetch error");
+		return ARCHIVE_FATAL;
+	}
 
-	if (f->fetch == NULL)
-		return ENOENT;
-
-	return 0;
+	return ARCHIVE_OK;
 }
 
 static ssize_t
 fetch_archive_read(struct archive *a UNUSED, void *client_data, const void **buf)
 {
 	struct fetch_archive *f = client_data;
+	ssize_t rd;
 
 	*buf = f->buffer;
-	return fetchIO_read(f->fetch, f->buffer, sizeof(f->buffer));
+	rd = fetchIO_read(f->fetch, f->buffer, sizeof(f->buffer));
+	if (rd == -1) {
+		const char *errstr = xbps_fetch_error_string();
+		archive_set_error(a, EIO, "%s", errstr ? errstr : "unknown fetch error");
+		return -1;
+	}
+	return rd;
 }
 
 static int
@@ -222,7 +240,6 @@ xbps_archive_read_open_remote(struct archive *ar, const char *url)
 	f = calloc(1, sizeof(*f));
 	if (!f) {
 		r = -errno;
-		archive_read_free(ar);
 		fetchFreeURL(furl);
 		return r;
 	}
@@ -232,8 +249,6 @@ xbps_archive_read_open_remote(struct archive *ar, const char *url)
 	    fetch_archive_close);
 	if (r == ARCHIVE_FATAL) {
 		r = -archive_errno(ar);
-		fetchFreeURL(f->url);
-		free(f);
 		return r;
 	}
 
