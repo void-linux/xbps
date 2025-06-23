@@ -713,7 +713,7 @@ collect_binpkg_files(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod,
 		goto out;
 	}
 	if (archive_read_open_fd(ar, pkg_fd, st.st_blksize) == ARCHIVE_FATAL) {
-		rv = archive_errno(ar);
+		rv = xbps_archive_errno(ar);
 		xbps_set_cb_state(xhp, XBPS_STATE_FILES_FAIL,
 		    rv, pkgver,
 		    "%s: failed to read binary package `%s': %s",

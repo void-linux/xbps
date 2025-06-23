@@ -106,7 +106,7 @@ repo_read_next(struct xbps_repo *repo, struct archive *ar, struct archive_entry 
 	if (r == ARCHIVE_FATAL) {
 		xbps_error_printf("failed to read repository: %s: %s\n",
 		    repo->uri, archive_error_string(ar));
-		return -archive_errno(ar);
+		return -xbps_archive_errno(ar);
 	} else if (r == ARCHIVE_WARN) {
 		xbps_warn_printf("reading repository: %s: %s\n",
 		    repo->uri, archive_error_string(ar));
@@ -141,7 +141,7 @@ repo_read_index(struct xbps_repo *repo, struct archive *ar)
 		if (r == ARCHIVE_FATAL) {
 			xbps_error_printf("failed to read repository: %s: archive error: %s\n",
 			    repo->uri, archive_error_string(ar));
-			return -archive_errno(ar);
+			return -xbps_archive_errno(ar);
 		}
 		repo->index = xbps_dictionary_create();
 		return 0;
@@ -193,7 +193,7 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 		if (r == ARCHIVE_FATAL) {
 			xbps_error_printf("failed to read repository: %s: archive error: %s\n",
 			    repo->uri, archive_error_string(ar));
-			return -archive_errno(ar);
+			return -xbps_archive_errno(ar);
 		}
 		repo->idxmeta = NULL;
 		return 0;
