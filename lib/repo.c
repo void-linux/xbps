@@ -346,7 +346,6 @@ repo_open_remote(struct xbps_repo *repo, struct archive *ar)
 	r = xbps_archive_read_open_remote(ar, url);
 	if (r < 0) {
 		xbps_error_printf("failed to open repository: %s: %s\n", repo->uri, strerror(-r));
-		archive_read_free(ar);
 		return r;
 	}
 
