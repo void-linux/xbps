@@ -60,7 +60,7 @@ xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 		if (rd == ARCHIVE_FATAL || rd == ARCHIVE_WARN) {
 			r = -archive_errno(ar);
 			xbps_error_printf(
-			    "failed to ready archive entry: %s: %s\n",
+			    "failed to read archive entry: %s: %s\n",
 			    archive_entry_pathname(entry),
 			    archive_error_string(ar));
 			goto err;
