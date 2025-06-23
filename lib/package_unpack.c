@@ -418,7 +418,7 @@ unpack_archive(struct xbps_handle *xhp,
 		 * Extract entry from archive.
 		 */
 		if (archive_read_extract(ar, entry, flags) != 0) {
-			error = archive_errno(ar);
+			error = xbps_archive_errno(ar);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 			    error, pkgver,
 			    "%s: [unpack] failed to extract file `%s': %s",
@@ -534,7 +534,7 @@ xbps_unpack_binary_pkg(struct xbps_handle *xhp, xbps_dictionary_t pkg_repod)
 		goto out;
 	}
 	if (archive_read_open_fd(ar, pkg_fd, st.st_blksize) == ARCHIVE_FATAL) {
-		rv = archive_errno(ar);
+		rv = xbps_archive_errno(ar);
 		xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 		    rv, pkgver,
 		    "%s: [unpack] failed to read binary package `%s': %s",

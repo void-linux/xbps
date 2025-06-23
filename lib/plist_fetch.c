@@ -133,9 +133,9 @@ xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd)
 			} else {
 				xbps_error_printf(
 				    "Reading archive entry from: %s: %s\n",
-				    url, strerror(archive_errno(a)));
+				    url, strerror(xbps_archive_errno(a)));
 			}
-			rv = archive_errno(a);
+			rv = xbps_archive_errno(a);
 			break;
 		}
 		bfile = archive_entry_pathname(entry);
@@ -145,7 +145,7 @@ xbps_archive_fetch_file_into_fd(const char *url, const char *fname, int fd)
 		if (strcmp(bfile, fname) == 0) {
 			rv = archive_read_data_into_fd(a, fd);
 			if (rv != ARCHIVE_OK)
-				rv = archive_errno(a);
+				rv = xbps_archive_errno(a);
 			break;
 		}
 		archive_read_data_skip(a);

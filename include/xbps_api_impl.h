@@ -120,6 +120,7 @@ const char HIDDEN *vpkg_user_conf(struct xbps_handle *, const char *);
 struct archive HIDDEN *xbps_archive_read_new(void);
 int HIDDEN xbps_archive_read_open(struct archive *ar, const char *path);
 int HIDDEN xbps_archive_read_open_remote(struct archive *ar, const char *url);
+int HIDDEN xbps_archive_errno(struct archive *ar);
 
 xbps_array_t HIDDEN xbps_get_pkg_fulldeptree(struct xbps_handle *,
 		const char *, bool);

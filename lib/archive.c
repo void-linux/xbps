@@ -35,6 +35,13 @@
 #include "fetch.h"
 #include "xbps_api_impl.h"
 
+int HIDDEN
+xbps_archive_errno(struct archive *ar)
+{
+	int err = archive_errno(ar);
+	return err == -1 ? EINVAL : err;
+}
+
 char HIDDEN *
 xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 {
@@ -58,7 +65,7 @@ xbps_archive_get_file(struct archive *ar, struct archive_entry *entry)
 	for (;;) {
 		ssize_t rd = archive_read_data(ar, buf + used, len - used);
 		if (rd == ARCHIVE_FATAL || rd == ARCHIVE_WARN) {
-			r = -archive_errno(ar);
+			r = -xbps_archive_errno(ar);
 			xbps_error_printf(
 			    "failed to read archive entry: %s: %s\n",
 			    archive_entry_pathname(entry),
@@ -117,7 +124,7 @@ xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen
 
 	entry = archive_entry_new();
 	if (!entry)
-		return -archive_errno(ar);
+		return -xbps_archive_errno(ar);
 
 	archive_entry_set_filetype(entry, AE_IFREG);
 	archive_entry_set_perm(entry, mode);
@@ -128,15 +135,15 @@ xbps_archive_append_buf(struct archive *ar, const void *buf, const size_t buflen
 
 	if (archive_write_header(ar, entry) != ARCHIVE_OK) {
 		archive_entry_free(entry);
-		return -archive_errno(ar);
+		return -xbps_archive_errno(ar);
 	}
 	if (archive_write_data(ar, buf, buflen) != ARCHIVE_OK) {
 		archive_entry_free(entry);
-		return -archive_errno(ar);
+		return -xbps_archive_errno(ar);
 	}
 	if (archive_write_finish_entry(ar) != ARCHIVE_OK) {
 		archive_entry_free(entry);
-		return -archive_errno(ar);
+		return -xbps_archive_errno(ar);
 	}
 	archive_entry_free(entry);
 
@@ -222,7 +229,7 @@ xbps_archive_read_open(struct archive *ar, const char *filename)
 {
 	int r = archive_read_open_filename(ar, filename, 4096);
 	if (r == ARCHIVE_FATAL)
-		return -archive_errno(ar);
+		return -xbps_archive_errno(ar);
 	return 0;
 }
 
@@ -248,8 +255,7 @@ xbps_archive_read_open_remote(struct archive *ar, const char *url)
 	r = archive_read_open(ar, f, fetch_archive_open, fetch_archive_read,
 	    fetch_archive_close);
 	if (r == ARCHIVE_FATAL) {
-		r = -archive_errno(ar);
-		return r;
+		return -xbps_archive_errno(ar);
 	}
 
 	return 0;
