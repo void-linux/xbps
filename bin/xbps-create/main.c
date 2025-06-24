@@ -234,6 +234,56 @@ out:
 }
 
 static void
+process_keyval_array(const char *prop, const char *keyval, const char delim,
+		     bool (*validate_key)(const char *),
+		     bool (*validate_val)(const char *))
+{
+	xbps_dictionary_t d;
+	xbps_array_t a;
+	char *key, *valstr;
+	bool alloc = false;
+
+	if ((d = xbps_dictionary_get(pkg_propsd, prop)) == NULL) {
+		d = xbps_dictionary_create();
+		if (d == NULL)
+			die("xbps_dictionary_create");
+		alloc = true;
+	}
+
+	key = strdup(keyval);
+	if (key == NULL)
+		die("strdup");
+	if ((valstr = strchr(key, delim)) == NULL) {
+		die("key-value missing delimiter");
+	}
+	*valstr = '\0';
+	valstr = valstr + 1;
+	assert(valstr);
+
+	if (validate_key && !validate_key(key)) {
+		diex("%s: invalid key: %s", prop, key);
+	}
+
+	if ((a = xbps_dictionary_get(d, key)) == NULL) {
+		a = xbps_array_create();
+		if (a == NULL)
+			die("xbps_array_create");
+	}
+
+	if (validate_val && !validate_val(valstr)) {
+		diex("%s: invalid value for key `%s': %s", prop, key, valstr);
+	}
+
+	xbps_array_add_cstring(a, valstr);
+	xbps_dictionary_set(d, key, a);
+	xbps_dictionary_set(pkg_propsd, prop, d);
+	if (alloc) {
+		xbps_object_release(a);
+		xbps_object_release(d);
+	}
+}
+
+static void
 process_keyval_uint64(const char *prop, const char *keyval, const char delim,
 		      bool (*validate_key)(const char *),
 		      bool (*validate_val)(const char *))
@@ -253,7 +303,9 @@ process_keyval_uint64(const char *prop, const char *keyval, const char delim,
 	key = strdup(keyval);
 	if (key == NULL)
 		die("strdup");
-	valstr = strchr(key, delim);
+	if ((valstr = strchr(key, delim)) == NULL) {
+		die("key-value missing delimiter");
+	}
 	*valstr = '\0';
 	valstr = valstr + 1;
 	assert(valstr);
@@ -310,74 +362,6 @@ process_dict(const char *key, const char *val, const char delim,
 		free(buf);
 	}
 
-out:
-	free(args);
-}
-
-static void
-process_one_alternative(const char *altgrname, const char *val)
-{
-	xbps_dictionary_t d;
-	xbps_array_t a;
-	char *altfiles;
-	bool alloc = false;
-
-	if ((d = xbps_dictionary_get(pkg_propsd, "alternatives")) == NULL) {
-		d = xbps_dictionary_create();
-		if (d == NULL)
-			die("xbps_dictionary_create");
-		alloc = true;
-	}
-	if ((a = xbps_dictionary_get(d, altgrname)) == NULL) {
-		a = xbps_array_create();
-		if (a == NULL)
-			die("xbps_array_create");
-	}
-	altfiles = strchr(val, ':') + 1;
-	assert(altfiles);
-
-	xbps_array_add_cstring(a, altfiles);
-	xbps_dictionary_set(d, altgrname, a);
-	xbps_dictionary_set(pkg_propsd, "alternatives", d);
-
-	if (alloc) {
-		xbps_object_release(a);
-		xbps_object_release(d);
-	}
-}
-
-
-static void
-process_dict_of_arrays(const char *key UNUSED, const char *val)
-{
-	char *altgrname, *args, *p, *saveptr;
-
-	assert(key);
-
-	if (val == NULL)
-		return;
-
-	args = strdup(val);
-	assert(args);
-
-	if (strchr(args, ' ') == NULL) {
-		altgrname = strtok(args, ":");
-		assert(altgrname);
-		process_one_alternative(altgrname, val);
-		goto out;
-	}
-
-	for ((p = strtok_r(args, " ", &saveptr)); p;
-	     (p = strtok_r(NULL, " ", &saveptr))) {
-		char *b;
-
-		b = strdup(p);
-		assert(b);
-		altgrname = strtok(b, ":");
-		assert(altgrname);
-		process_one_alternative(altgrname, p);
-		free(b);
-	}
 out:
 	free(args);
 }
@@ -1174,7 +1158,7 @@ main(int argc, char **argv)
 	process_array("reverts", reverts, NULL);
 	process_array("shlib-provides", shlib_provides, NULL);
 	process_array("shlib-requires", shlib_requires, NULL);
-	process_dict_of_arrays("alternatives", alternatives);
+	process_dict("alternatives", alternatives, ':', process_keyval_array, NULL, NULL);
 
 	/* save cwd */
 	memset(&cwd, 0, sizeof(cwd));
