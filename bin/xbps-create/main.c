@@ -40,6 +40,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
@@ -100,7 +101,7 @@ usage(bool fail)
 	"                      e.g: '/usr/lib/foo /usr/bin/blah')\n"
 	" -m, --maintainer     Maintainer\n"
 	" -n, --pkgver         Package name/version tuple (e.g `foo-1.0_1')\n"
-	" -P, --provides       Provides (blank separated list, e.g: 'foo-9999 blah-1.0')\n"
+	" -P, --provides       Provides (blank separated list, e.g: 'foo-9999_1 blah-1.0_1')\n"
 	" -p, --preserve       Enable package preserve boolean\n"
 	" -q, --quiet          Work silently\n"
 	" -R, --replaces       Replaces (blank separated list, e.g: 'foo>=1.0 blah<2.0')\n"
@@ -118,6 +119,8 @@ usage(bool fail)
 	"                      e.g 'libfoo.so.1 libblah.so.2')\n"
 	" --shlib-requires     List of required shared libraries (blank separated list,\n"
 	"                      e.g 'libfoo.so.1 libblah.so.2')\n\n"
+	" --provides-priority  Provides with explicit priority (blank separated list,\n"
+	"                      e.g: 'foo-9999_1,100 blah-1.0_1,0')\n"
 	"NOTE:\n"
 	" At least three flags are required: architecture, pkgver and desc.\n\n"
 	"EXAMPLE:\n"
@@ -228,6 +231,87 @@ process_array(const char *key, const char *val, bool (*validate)(const char *s))
 out:
 	xbps_dictionary_set(pkg_propsd, key, array);
 	xbps_object_release(array);
+}
+
+static void
+process_keyval_uint64(const char *prop, const char *keyval, const char delim,
+		      bool (*validate_key)(const char *),
+		      bool (*validate_val)(const char *))
+{
+	xbps_dictionary_t d;
+	char *key, *valstr, *rem = NULL;
+	uint64_t val = 0;
+	bool alloc = false;
+
+	if ((d = xbps_dictionary_get(pkg_propsd, prop)) == NULL) {
+		d = xbps_dictionary_create();
+		if (d == NULL)
+			die("xbps_dictionary_create");
+		alloc = true;
+	}
+
+	key = strdup(keyval);
+	if (key == NULL)
+		die("strdup");
+	valstr = strchr(key, delim);
+	*valstr = '\0';
+	valstr = valstr + 1;
+	assert(valstr);
+
+	if (validate_key && !validate_key(key)) {
+		diex("%s: invalid key: %s", prop, key);
+	}
+
+	if (validate_val && !validate_val(valstr)) {
+		diex("%s: invalid value for key `%s': %s", prop, key, valstr);
+	}
+
+	val = strtoull(valstr, &rem, 10);
+	if (errno != 0)
+		die("%s: %s: invalid integer: %s", prop, key, valstr);
+	else if (valstr == rem || (valstr && *rem != 0))
+		diex("%s: %s: invalid integer: %s", prop, key, valstr);
+
+	xbps_dictionary_set_uint64(d, key, val);
+	xbps_dictionary_set(pkg_propsd, prop, d);
+	if (alloc) {
+		xbps_object_release(d);
+	}
+}
+
+static void
+process_dict(const char *key, const char *val, const char delim,
+	     void (*process_item)(const char *, const char *, const char,
+	           bool (*)(const char *), bool (*)(const char *)),
+	     bool (*validate_key)(const char *), bool (*validate_val)(const char *))
+{
+	char *args, *p = NULL, *saveptr = NULL;
+
+	assert(key);
+
+	if (val == NULL)
+		return;
+
+	args = strdup(val);
+	if (args == NULL)
+		die("strdup");
+
+	if (strchr(args, ' ') == NULL) {
+		process_item(key, args, delim, validate_key, validate_val);
+		goto out;
+	}
+
+	for ((p = strtok_r(args, " ", &saveptr)); p;
+	     (p = strtok_r(NULL, " ", &saveptr))) {
+		char *buf;
+		buf = strdup(p);
+		assert(buf);
+		process_item(key, buf, delim, validate_key, validate_val);
+		free(buf);
+	}
+
+out:
+	free(args);
 }
 
 static void
@@ -873,6 +957,7 @@ main(int argc, char **argv)
 		{ "pkgver", required_argument, NULL, 'n' },
 		{ "preserve", no_argument, NULL, 'p' },
 		{ "provides", required_argument, NULL, 'P' },
+		{ "provides-priority", required_argument, NULL, '6' },
 		{ "quiet", no_argument, NULL, 'q' },
 		{ "replaces", required_argument, NULL, 'R' },
 		{ "reverts", required_argument, NULL, 'r' },
@@ -893,6 +978,7 @@ main(int argc, char **argv)
 	const char *arch, *config_files, *mutable_files, *version, *changelog;
 	const char *buildopts, *shlib_provides, *shlib_requires, *alternatives;
 	const char *compression, *tags = NULL, *srcrevs = NULL, *sourcepkg = NULL;
+	const char *provides_priority = NULL;
 	char pkgname[XBPS_NAME_SIZE], *binpkg, *tname, *p, cwd[PATH_MAX-1];
 	bool quiet = false, preserve = false;
 	int c, pkg_fd;
@@ -992,6 +1078,9 @@ main(int argc, char **argv)
 		case '5':
 			sourcepkg = optarg;
 			break;
+		case '6':
+			provides_priority = optarg;
+			break;
 		case '?':
 		default:
 			usage(true);
@@ -1080,6 +1169,7 @@ main(int argc, char **argv)
 	process_array("conf_files", config_files, NULL);
 	process_array("conflicts", conflicts, NULL);
 	process_array("provides", provides, validate_pkgver);
+	process_dict("provides-priority", provides_priority, ',', process_keyval_uint64, validate_pkgver, NULL);
 	process_array("replaces", replaces, NULL);
 	process_array("reverts", reverts, NULL);
 	process_array("shlib-provides", shlib_provides, NULL);
