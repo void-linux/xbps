@@ -100,19 +100,14 @@ xbps_match_any_virtualpkg_in_rundeps(xbps_array_t rundeps,
 static bool
 match_string_in_array(xbps_array_t array, const char *str, int mode)
 {
-	xbps_object_iterator_t iter;
-	xbps_object_t obj;
-	const char *pkgdep;
 	char pkgname[XBPS_NAME_SIZE];
 	bool found = false;
 
 	assert(xbps_object_type(array) == XBPS_TYPE_ARRAY);
 	assert(str != NULL);
 
-	iter = xbps_array_iterator(array);
-	assert(iter);
-
-	while ((obj = xbps_object_iterator_next(iter))) {
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
+		xbps_object_t obj = xbps_array_get(array, i);
 		if (mode == 0) {
 			/* match by string */
 			if (xbps_string_equals_cstring(obj, str)) {
@@ -121,7 +116,7 @@ match_string_in_array(xbps_array_t array, const char *str, int mode)
 			}
 		} else if (mode == 1) {
 			/* match by pkgname against pkgver */
-			pkgdep = xbps_string_cstring_nocopy(obj);
+			const char *pkgdep = xbps_string_cstring_nocopy(obj);
 			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, pkgdep))
 				break;
 			if (strcmp(pkgname, str) == 0) {
@@ -130,7 +125,7 @@ match_string_in_array(xbps_array_t array, const char *str, int mode)
 			}
 		} else if (mode == 2) {
 			/* match by pkgver against pkgname */
-			pkgdep = xbps_string_cstring_nocopy(obj);
+			const char *pkgdep = xbps_string_cstring_nocopy(obj);
 			if (!xbps_pkg_name(pkgname, XBPS_NAME_SIZE, str))
 				break;
 			if (strcmp(pkgname, pkgdep) == 0) {
@@ -139,21 +134,20 @@ match_string_in_array(xbps_array_t array, const char *str, int mode)
 			}
 		} else if (mode == 3) {
 			/* match pkgpattern against pkgdep */
-			pkgdep = xbps_string_cstring_nocopy(obj);
+			const char *pkgdep = xbps_string_cstring_nocopy(obj);
 			if (xbps_pkgpattern_match(pkgdep, str)) {
 				found = true;
 				break;
 			}
 		} else if (mode == 4) {
 			/* match pkgdep against pkgpattern */
-			pkgdep = xbps_string_cstring_nocopy(obj);
+			const char *pkgdep = xbps_string_cstring_nocopy(obj);
 			if (xbps_pkgpattern_match(str, pkgdep)) {
 				found = true;
 				break;
 			}
 		}
 	}
-	xbps_object_iterator_release(iter);
 
 	return found;
 }

@@ -198,12 +198,12 @@ xbps_transaction_init(struct xbps_handle *xhp)
 		return 0;
 
 	if ((xhp->transd = xbps_dictionary_create()) == NULL)
-		return ENOMEM;
+		return xbps_error_oom();
 
 	if ((array = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return ENOMEM;
+		return xbps_error_oom();
 	}
 	if (!xbps_dictionary_set(xhp->transd, "packages", array)) {
 		xbps_object_release(xhp->transd);
@@ -215,7 +215,7 @@ xbps_transaction_init(struct xbps_handle *xhp)
 	if ((array = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return ENOMEM;
+		return xbps_error_oom();
 	}
 	if (!xbps_dictionary_set(xhp->transd, "missing_deps", array)) {
 		xbps_object_release(xhp->transd);
@@ -227,48 +227,48 @@ xbps_transaction_init(struct xbps_handle *xhp)
 	if ((array = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return ENOMEM;
+		return xbps_error_oom();
 	}
 	if (!xbps_dictionary_set(xhp->transd, "missing_shlibs", array)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return EINVAL;
+		return xbps_error_oom();
 	}
 	xbps_object_release(array);
 
 	if ((array = xbps_array_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return ENOMEM;
+		return xbps_error_oom();
 	}
 	if (!xbps_dictionary_set(xhp->transd, "conflicts", array)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return EINVAL;
+		return xbps_error_oom();
 	}
 	xbps_object_release(array);
 
 	if ((dict = xbps_dictionary_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return ENOMEM;
+		return xbps_error_oom();
 	}
 	if (!xbps_dictionary_set(xhp->transd, "obsolete_files", dict)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return EINVAL;
+		return xbps_error_oom();
 	}
 	xbps_object_release(dict);
 
 	if ((dict = xbps_dictionary_create()) == NULL) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return ENOMEM;
+		return xbps_error_oom();
 	}
 	if (!xbps_dictionary_set(xhp->transd, "remove_files", dict)) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return EINVAL;
+		return xbps_error_oom();
 	}
 	xbps_object_release(dict);
 
@@ -283,6 +283,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	xbps_trans_type_t ttype;
 	unsigned int i, cnt;
 	int rv = 0;
+	int r;
 	bool all_on_hold = true;
 
 	if ((rv = xbps_transaction_init(xhp)) != 0)
@@ -390,10 +391,11 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * Check for package conflicts.
 	 */
 	xbps_dbg_printf("%s: checking conflicts\n", __func__);
-	if (!xbps_transaction_check_conflicts(xhp, pkgs)) {
+	r = xbps_transaction_check_conflicts(xhp, pkgs);
+	if (r < 0) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return EINVAL;
+		return -r;
 	}
 	if (xbps_dictionary_get(xhp->transd, "conflicts")) {
 		return EAGAIN;

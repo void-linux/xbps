@@ -46,34 +46,33 @@ replace_ntimes_head() {
 replace_ntimes_body() {
 	mkdir some_repo root
 	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
+
 	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
-	atf_check_equal $? 0
-	xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg_C
-	atf_check_equal $? 0
-	xbps-create -A noarch -n D-1.0_1 -s "D pkg" ../pkg_D
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check -o ignore -- xbps-create -A noarch -n C-1.0_1 -s "C pkg" ../pkg_C
+	atf_check -o ignore -- xbps-create -A noarch -n D-1.0_1 -s "D pkg" ../pkg_D
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
 	cd ..
-	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A B C D
-	atf_check_equal $? 0
+
+	atf_check -o ignore -e ignore -- \
+		xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd A B C D
+
 	cd some_repo
-	xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "A<1.1" ../pkg_B
-	atf_check_equal $? 0
-	xbps-create -A noarch -n C-1.1_1 -s "C pkg" --replaces "A<1.1" ../pkg_C
-	atf_check_equal $? 0
-	xbps-create -A noarch -n D-1.1_1 -s "D pkg" --replaces "A<1.1" ../pkg_D
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.1_1 -s "B pkg" --replaces "A<1.1" ../pkg_B
+	atf_check -o ignore -- xbps-create -A noarch -n C-1.1_1 -s "C pkg" --replaces "A<1.1" ../pkg_C
+	atf_check -o ignore -- xbps-create -A noarch -n D-1.1_1 -s "D pkg" --replaces "A<1.1" ../pkg_D
+	atf_check -o ignore -e ignore -- xbps-rindex -a $PWD/*.xbps
 	cd ..
-	result=$(xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yun|wc -l)
-	atf_check_equal $result 4
+
+	atf_check \
+		-o match:"A-1.1_1 update" \
+		-o match:"B-1.1_1 update" \
+		-o match:"C-1.1_1 update" \
+		-o match:"D-1.1_1 update" \
+		-e ignore \
+		-- xbps-install -C xbps.d -r root --repository=$PWD/some_repo -dvyun
 }
 
 atf_test_case self_replace

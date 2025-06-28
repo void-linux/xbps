@@ -296,9 +296,7 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 
 	if ((rv = xbps_pkgdb_update(xhp, false, true)) != 0) {
 		if (rv != ENOENT)
-			xbps_dbg_printf("[pkgdb] cannot internalize "
-			    "pkgdb dictionary: %s\n", strerror(rv));
-
+			xbps_error_printf("failed to initialize pkgdb: %s\n", strerror(rv));
 		return rv;
 	}
 	if ((rv = pkgdb_map_names(xhp)) != 0) {
@@ -382,16 +380,17 @@ xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
 		void *arg)
 {
 	xbps_array_t allkeys;
-	int rv;
+	int r;
 
-	if ((rv = xbps_pkgdb_init(xhp)) != 0)
-		return rv;
+	// XXX: this should be done before calling the function...
+	if ((r = xbps_pkgdb_init(xhp)) != 0)
+		return r > 0 ? -r : r;
 
 	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
 	assert(allkeys);
-	rv = xbps_array_foreach_cb(xhp, allkeys, xhp->pkgdb, fn, arg);
+	r = xbps_array_foreach_cb(xhp, allkeys, xhp->pkgdb, fn, arg);
 	xbps_object_release(allkeys);
-	return rv;
+	return r;
 }
 
 int
@@ -400,16 +399,19 @@ xbps_pkgdb_foreach_cb_multi(struct xbps_handle *xhp,
 		void *arg)
 {
 	xbps_array_t allkeys;
-	int rv;
+	int r;
 
-	if ((rv = xbps_pkgdb_init(xhp)) != 0)
-		return rv;
+	// XXX: this should be done before calling the function...
+	if ((r = xbps_pkgdb_init(xhp)) != 0)
+		return r > 0 ? -r : r;
 
 	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
-	assert(allkeys);
-	rv = xbps_array_foreach_cb_multi(xhp, allkeys, xhp->pkgdb, fn, arg);
+	if (!allkeys)
+		return xbps_error_oom();
+
+	r = xbps_array_foreach_cb_multi(xhp, allkeys, xhp->pkgdb, fn, arg);
 	xbps_object_release(allkeys);
-	return rv;
+	return r;
 }
 
 xbps_dictionary_t

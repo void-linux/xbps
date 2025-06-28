@@ -37,25 +37,20 @@
 static xbps_dictionary_t
 get_pkg_in_array(xbps_array_t array, const char *str, xbps_trans_type_t tt, bool virtual)
 {
-	xbps_object_t obj;
-	xbps_object_iterator_t iter;
+	xbps_object_t obj = NULL;
 	xbps_trans_type_t ttype;
 	bool found = false;
 
 	assert(array);
 	assert(str);
 
-	iter = xbps_array_iterator(array);
-	if (!iter)
-		return NULL;
-
-	while ((obj = xbps_object_iterator_next(iter))) {
+	for (unsigned int i = 0; i < xbps_array_count(array); i++) {
 		const char *pkgver = NULL;
 		char pkgname[XBPS_NAME_SIZE] = {0};
 
-		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver)) {
-			continue;
-		}
+		obj = xbps_array_get(array, i);
+		if (!xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver))
+			abort();
 		if (virtual) {
 			/*
 			 * Check if package pattern matches
@@ -87,7 +82,6 @@ get_pkg_in_array(xbps_array_t array, const char *str, xbps_trans_type_t tt, bool
 			}
 		}
 	}
-	xbps_object_iterator_release(iter);
 
 	ttype = xbps_transaction_pkg_type(obj);
 	if (found && tt && (ttype != tt)) {
@@ -329,12 +323,11 @@ xbps_find_virtualpkg_in_conf(struct xbps_handle *xhp,
 					continue;
 				}
 			} else {
-				char *vpkgver = xbps_xasprintf("%s-999999_1", vpkg_conf);
+				char vpkgver[XBPS_NAME_SIZE + sizeof("-999999_1")];
+				snprintf(buf, sizeof(buf), "%s-999999_1", vpkg_conf);
 				if (!xbps_pkgpattern_match(vpkgver, pkg)) {
-					free(vpkgver);
 					continue;
 				}
-				free(vpkgver);
 			}
 		} else if (xbps_pkg_version(pkg)) {
 			// XXX: this is the old behaviour of only matching pkgname's,
