@@ -382,16 +382,17 @@ xbps_pkgdb_foreach_cb(struct xbps_handle *xhp,
 		void *arg)
 {
 	xbps_array_t allkeys;
-	int rv;
+	int r;
 
-	if ((rv = xbps_pkgdb_init(xhp)) != 0)
-		return rv;
+	// XXX: this should be done before calling the function...
+	if ((r = xbps_pkgdb_init(xhp)) != 0)
+		return r > 0 ? -r : r;
 
 	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
 	assert(allkeys);
-	rv = xbps_array_foreach_cb(xhp, allkeys, xhp->pkgdb, fn, arg);
+	r = xbps_array_foreach_cb(xhp, allkeys, xhp->pkgdb, fn, arg);
 	xbps_object_release(allkeys);
-	return rv;
+	return r;
 }
 
 int
@@ -402,8 +403,9 @@ xbps_pkgdb_foreach_cb_multi(struct xbps_handle *xhp,
 	xbps_array_t allkeys;
 	int rv;
 
-	if ((rv = xbps_pkgdb_init(xhp)) != 0)
-		return rv;
+	// XXX: this should be done before calling the function...
+	if ((r = xbps_pkgdb_init(xhp)) != 0)
+		return r > 0 ? -r : r;
 
 	allkeys = xbps_dictionary_all_keys(xhp->pkgdb);
 	assert(allkeys);
