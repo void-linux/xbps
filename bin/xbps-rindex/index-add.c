@@ -183,6 +183,7 @@ repodata_commit(const char *repodir, const char *repoarch,
 			printf("index: added `%s' (%s).\n", pkgver, arch);
 			xbps_dictionary_set(index, pkgname, pkg);
 		}
+		xbps_object_iterator_release(iter);
 		stage = NULL;
 	}
 
