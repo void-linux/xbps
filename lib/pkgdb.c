@@ -296,9 +296,7 @@ xbps_pkgdb_init(struct xbps_handle *xhp)
 
 	if ((rv = xbps_pkgdb_update(xhp, false, true)) != 0) {
 		if (rv != ENOENT)
-			xbps_dbg_printf("[pkgdb] cannot internalize "
-			    "pkgdb dictionary: %s\n", strerror(rv));
-
+			xbps_error_printf("failed to initialize pkgdb: %s\n", strerror(rv));
 		return rv;
 	}
 	if ((rv = pkgdb_map_names(xhp)) != 0) {
