@@ -573,13 +573,15 @@ static int
 walk_dir(const char *path,
 		int (*fn) (const char *, const struct stat *sb, const struct dirent *dir))
 {
-	int rv, i;
-	struct dirent **list;
-	char tmp_path[PATH_MAX] = { 0 };
+	char tmp_path[PATH_MAX] = "";
 	struct stat sb;
+	struct dirent **list;
+	int rv,  n;
 
-	rv = scandir(path, &list, NULL, alphasort);
-	for (i = rv - 1; i >= 0; i--) {
+	n = scandir(path, &list, NULL, alphasort);
+	if (n == -1)
+		die("scandir");
+	for (int i = n - 1; i >= 0; i--) {
 		if (strcmp(list[i]->d_name, ".") == 0 || strcmp(list[i]->d_name, "..") == 0)
 			continue;
 		if (strlen(path) + strlen(list[i]->d_name) + 1 >= PATH_MAX - 1) {
@@ -607,6 +609,8 @@ walk_dir(const char *path,
 		}
 
 	}
+	for (int i = n - 1; i >= 0; i--)
+		free(list[i]);
 	free(list);
 	return rv;
 }
@@ -816,6 +820,8 @@ process_archive(struct archive *ar,
 	xbps_archive_append_buf(ar, xml, strlen(xml), "./props.plist",
 	    0644, "root", "root");
 	free(xml);
+	xbps_object_release(pkg_propsd);
+	pkg_propsd = NULL;
 
 	/* Add files.plist metadata file */
 	xml = xbps_dictionary_externalize(pkg_filesd);
@@ -824,6 +830,9 @@ process_archive(struct archive *ar,
 	xbps_archive_append_buf(ar, xml, strlen(xml), "./files.plist",
 	    0644, "root", "root");
 	free(xml);
+
+	xbps_object_release(all_filesd);
+	all_filesd = NULL;
 
 	/* Add all package data files and release resources */
 	while ((xe = TAILQ_FIRST(&xentry_list)) != NULL) {
@@ -836,6 +845,9 @@ process_archive(struct archive *ar,
 			fflush(stdout);
 		}
 		process_entry_file(ar, resolver, xe, NULL);
+		free(xe->file);
+		free(xe->target);
+		free(xe);
 	}
 }
 
@@ -1153,6 +1165,7 @@ main(int argc, char **argv)
 		die("archive_write_open_fd: %s", tname);
 
 	process_archive(ar, resolver, pkgver, quiet);
+
 	/* Process hardlinks */
 	entry = NULL;
 	archive_entry_linkify(resolver, &entry, &sparse_entry);
