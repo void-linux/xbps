@@ -128,17 +128,24 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 	xbps_object_release(allkeys);
 
 	if (xbps_dictionary_equals(index, repo->index) &&
-	    xbps_dictionary_equals(stage, repo->stage))
+	    xbps_dictionary_equals(stage, repo->stage)) {
+		xbps_object_release(index);
+		xbps_object_release(stage);
 		return 0;
+	}
 
 	r = repodata_flush(repodir, repoarch, index, stage, repo->idxmeta, compression);
 	if (r < 0) {
 		xbps_error_printf("failed to write repodata: %s\n", strerror(-r));
+		xbps_object_release(index);
+		xbps_object_release(stage);
 		return r;
 	}
 	printf("stage: %u packages registered.\n", xbps_dictionary_count(stage));
 	printf("index: %u packages registered.\n", xbps_dictionary_count(index));
-	return r;
+	xbps_object_release(index);
+	xbps_object_release(stage);
+	return 0;
 }
 
 /*
@@ -167,7 +174,7 @@ index_clean(struct xbps_handle *xhp, const char *repodir, const bool hashcheck, 
 			return 0;
 		}
 		xbps_error_printf("cannot read repository data: %s\n",
-		    strerror(errno));
+		    strerror(-r));
 		xbps_repo_unlock(repodir, arch, lockfd);
 		return EXIT_FAILURE;
 	}
