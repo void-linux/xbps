@@ -329,12 +329,11 @@ xbps_find_virtualpkg_in_conf(struct xbps_handle *xhp,
 					continue;
 				}
 			} else {
-				char *vpkgver = xbps_xasprintf("%s-999999_1", vpkg_conf);
+				char vpkgver[XBPS_NAME_SIZE + sizeof("-999999_1")];
+				snprintf(buf, sizeof(buf), "%s-999999_1", vpkg_conf);
 				if (!xbps_pkgpattern_match(vpkgver, pkg)) {
-					free(vpkgver);
 					continue;
 				}
-				free(vpkgver);
 			}
 		} else if (xbps_pkg_version(pkg)) {
 			// XXX: this is the old behaviour of only matching pkgname's,
