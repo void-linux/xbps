@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "xbps/xbps_array.h"
 #include "xbps_api_impl.h"
 
 static void
@@ -37,10 +38,8 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 {
 	xbps_array_t pkg_cflicts, trans_cflicts;
 	xbps_dictionary_t pkgd, tpkgd;
-	xbps_object_t obj;
-	xbps_object_iterator_t iter;
 	xbps_trans_type_t ttype;
-	const char *cfpkg, *repopkgver, *repopkgname;
+	const char *repopkgver, *repopkgname;
 	char *buf;
 
 	assert(xhp);
@@ -65,13 +64,12 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 		return;
 	}
 
-	iter = xbps_array_iterator(pkg_cflicts);
-	assert(iter);
 
-	while ((obj = xbps_object_iterator_next(iter))) {
-		const char *pkgver = NULL, *pkgname = NULL;
+	for (unsigned int i = 0; i < xbps_array_count(pkg_cflicts); i++) {
+		const char *pkgver = NULL, *pkgname = NULL, *cfpkg = NULL;
 
-		cfpkg = xbps_string_cstring_nocopy(obj);
+		if (!xbps_array_get_cstring_nocopy(pkg_cflicts, i, &cfpkg))
+			abort();
 
 		/*
 		 * Check if current pkg conflicts with an installed package.
@@ -150,7 +148,6 @@ pkg_conflicts_trans(struct xbps_handle *xhp, xbps_array_t array,
 			continue;
 		}
 	}
-	xbps_object_iterator_release(iter);
 }
 
 static int
@@ -159,10 +156,8 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 {
 	xbps_array_t pkg_cflicts, trans_cflicts, pkgs = arg;
 	xbps_dictionary_t pkgd;
-	xbps_object_t obj2;
-	xbps_object_iterator_t iter;
 	xbps_trans_type_t ttype;
-	const char *cfpkg, *repopkgver, *repopkgname;
+	const char *repopkgver, *repopkgname;
 	char *buf;
 	int rv = 0;
 
@@ -183,13 +178,13 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 	}
 
 	trans_cflicts = xbps_dictionary_get(xhp->transd, "conflicts");
-	iter = xbps_array_iterator(pkg_cflicts);
-	assert(iter);
 
-	while ((obj2 = xbps_object_iterator_next(iter))) {
-		const char *pkgver = NULL, *pkgname = NULL;
+	for (unsigned int i = 0; i < xbps_array_count(pkg_cflicts); i++) {
+		const char *pkgver = NULL, *pkgname = NULL, *cfpkg = NULL;
 
-		cfpkg = xbps_string_cstring_nocopy(obj2);
+		if (!xbps_array_get_cstring_nocopy(pkg_cflicts, i, &cfpkg))
+			abort();
+
 		if ((pkgd = xbps_find_pkg_in_array(pkgs, cfpkg, 0)) ||
 		    (pkgd = xbps_find_virtualpkg_in_array(xhp, pkgs, cfpkg, 0))) {
 			/* ignore pkgs to be removed or on hold */
@@ -222,7 +217,6 @@ pkgdb_conflicts_cb(struct xbps_handle *xhp, xbps_object_t obj,
 			continue;
 		}
 	}
-	xbps_object_iterator_release(iter);
 	return rv;
 }
 
