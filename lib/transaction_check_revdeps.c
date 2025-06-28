@@ -28,6 +28,7 @@
 #include <stdbool.h>
 #include <errno.h>
 
+#include "xbps.h"
 #include "xbps_api_impl.h"
 
 /*
@@ -136,9 +137,8 @@ xbps_transaction_check_revdeps(struct xbps_handle *xhp, xbps_array_t pkgs)
 		 * if pkg in transaction is not installed,
 		 * pass to next one.
 		 */
-		if (xbps_pkg_is_installed(xhp, pkgname) == 0) {
+		if (ttype == XBPS_TRANS_INSTALL)
 			continue;
-		}
 		/*
 		 * If pkg is installed but does not have revdeps,
 		 * pass to next one.
