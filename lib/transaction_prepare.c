@@ -283,6 +283,7 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	xbps_trans_type_t ttype;
 	unsigned int i, cnt;
 	int rv = 0;
+	int r;
 	bool all_on_hold = true;
 
 	if ((rv = xbps_transaction_init(xhp)) != 0)
@@ -390,10 +391,11 @@ xbps_transaction_prepare(struct xbps_handle *xhp)
 	 * Check for package conflicts.
 	 */
 	xbps_dbg_printf("%s: checking conflicts\n", __func__);
-	if (!xbps_transaction_check_conflicts(xhp, pkgs)) {
+	r = xbps_transaction_check_conflicts(xhp, pkgs);
+	if (r < 0) {
 		xbps_object_release(xhp->transd);
 		xhp->transd = NULL;
-		return EINVAL;
+		return -r;
 	}
 	if (xbps_dictionary_get(xhp->transd, "conflicts")) {
 		return EAGAIN;
