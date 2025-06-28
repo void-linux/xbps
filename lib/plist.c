@@ -161,8 +161,11 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 	}
 
 	// if we are unable to create any threads, just do single threaded.
-	if (i == 0)
+	if (i == 0) {
+		pthread_mutex_destroy(&reserved_lock);
+		free(thd);
 		return xbps_array_foreach_cb(xhp, array, dict, fn, arg);
+	}
 
 	/* wait for all threads that were created successfully */
 	for (int c = 0; c < i; c++) {
@@ -176,7 +179,21 @@ xbps_array_foreach_cb_multi(struct xbps_handle *xhp,
 
 	pthread_mutex_destroy(&reserved_lock);
 
-	return error ? -EIO : 0;
+	if (error != 0) {
+		free(thd);
+		return -EAGAIN;
+	}
+
+	r = 0;
+	for (int j = 0; j < i; j++) {
+		if (thd[j].r == 0)
+			continue;
+		r = thd[j].r;
+		break;
+	}
+
+	free(thd);
+	return r;
 }
 
 int
