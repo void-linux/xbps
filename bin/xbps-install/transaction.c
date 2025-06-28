@@ -441,8 +441,8 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 				goto proceed;
 			}
 		} else {
-			xbps_dbg_printf("Empty transaction dictionary: %s\n",
-			    strerror(errno));
+			xbps_error_printf("Unexpected error: %s (%d)\n",
+			    strerror(rv), rv);
 		}
 		goto out;
 	}
