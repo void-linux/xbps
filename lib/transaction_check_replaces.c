@@ -48,7 +48,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 
 	for (unsigned int i = 0; i < xbps_array_count(pkgs); i++) {
 		xbps_array_t replaces;
-		xbps_object_t obj, obj2;
+		xbps_object_t obj;
 		xbps_object_iterator_t iter;
 		xbps_dictionary_t instd, reppkgd;
 		const char *pkgver = NULL;
@@ -69,13 +69,15 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 		iter = xbps_array_iterator(replaces);
 		assert(iter);
 
-		while ((obj2 = xbps_object_iterator_next(iter)) != NULL) {
+		for (unsigned int j = 0; j < xbps_array_count(replaces); j++) {
 			const char *curpkgver = NULL, *pattern = NULL;
 			char curpkgname[XBPS_NAME_SIZE] = {0};
 			bool instd_auto = false, hold = false;
 			xbps_trans_type_t ttype;
 
-			pattern = xbps_string_cstring_nocopy(obj2);
+			if(!xbps_array_get_cstring_nocopy(replaces, j, &pattern))
+				abort();
+
 			/*
 			 * Find the installed package that matches the pattern
 			 * to be replaced.
