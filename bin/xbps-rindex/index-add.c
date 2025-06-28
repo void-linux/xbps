@@ -87,6 +87,7 @@ repodata_commit(const char *repodir, const char *repoarch,
 
 		for (unsigned int i = 0; i < xbps_array_count(pkgshlibs); i++) {
 			const char *shlib = NULL;
+			bool alloc = false;
 			xbps_array_t users;
 			xbps_array_get_cstring_nocopy(pkgshlibs, i, &shlib);
 			if (!xbps_dictionary_get(oldshlibs, shlib))
@@ -95,8 +96,11 @@ repodata_commit(const char *repodir, const char *repoarch,
 			if (!users) {
 				users = xbps_array_create();
 				xbps_dictionary_set(usedshlibs, shlib, users);
+				alloc = true;
 			}
 			xbps_array_add_cstring(users, pkgname);
+			if (alloc)
+				xbps_object_release(users);
 		}
 	}
 	xbps_object_iterator_release(iter);
@@ -156,8 +160,7 @@ repodata_commit(const char *repodir, const char *repoarch,
 			for (unsigned int i = 0; i < xbps_array_count(users); i++) {
 				const char *user = NULL;
 				xbps_array_get_cstring_nocopy(users, i, &user);
-				xbps_dictionary_remove(usedshlibs, shlib);
-				printf("%s%s",pre, user);
+				printf("%s%s", pre, user);
 				pre = ", ";
 			}
 			printf(")\n");
