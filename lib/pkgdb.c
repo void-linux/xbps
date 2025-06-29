@@ -23,6 +23,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/file.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -61,84 +62,69 @@
  * data type is specified on its edge, i.e array, bool, integer, string,
  * dictionary.
  */
-static int pkgdb_fd = -1;
-static bool pkgdb_map_names_done = false;
 
 int
 xbps_pkgdb_lock(struct xbps_handle *xhp)
 {
+	char path[PATH_MAX];
 	mode_t prev_umask;
-	int rv = 0;
-	/*
-	 * Use a mandatory file lock to only allow one writer to pkgdb,
-	 * other writers will block.
-	 */
+	int r = 0;
+
+	if (access(xhp->rootdir, W_OK) == -1 && errno != ENOENT) {
+		return xbps_error_errno(errno,
+		    "failed to check whether the roodir is wriable: "
+		    "%s: %s\n",
+		    xhp->rootdir, strerror(errno));
+	}
+
+	if (xbps_path_join(path, sizeof(path), xhp->metadir, "lock", (char *)NULL) == -1) {
+		return xbps_error_errno(errno,
+		    "failed to create lockfile path: %s\n", strerror(errno));
+	}
+
 	prev_umask = umask(022);
-	xhp->pkgdb_plist = xbps_xasprintf("%s/%s", xhp->metadir, XBPS_PKGDB);
-	if (xbps_pkgdb_init(xhp) == ENOENT) {
-		/* if metadir does not exist, create it */
-		if (access(xhp->metadir, R_OK|X_OK) == -1) {
-			if (errno != ENOENT) {
-				rv = errno;
-				goto ret;
-			}
-			if (xbps_mkpath(xhp->metadir, 0755) == -1) {
-				rv = errno;
-				xbps_dbg_printf("[pkgdb] failed to create metadir "
-				    "%s: %s\n", xhp->metadir, strerror(rv));
-				goto ret;
-			}
+
+	/* if metadir does not exist, create it */
+	if (access(xhp->metadir, R_OK|X_OK) == -1) {
+		if (errno != ENOENT) {
+			umask(prev_umask);
+			return xbps_error_errno(errno,
+			    "failed to check access to metadir: %s: %s\n",
+			    xhp->metadir, strerror(-r));
 		}
-		/* if pkgdb is unexistent, create it with an empty dictionary */
-		xhp->pkgdb = xbps_dictionary_create();
-		if (!xbps_dictionary_externalize_to_file(xhp->pkgdb, xhp->pkgdb_plist)) {
-			rv = errno;
-			xbps_dbg_printf("[pkgdb] failed to create pkgdb "
-			    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
-			goto ret;
+		if (xbps_mkpath(xhp->metadir, 0755) == -1 && errno != EEXIST) {
+			umask(prev_umask);
+			return xbps_error_errno(errno,
+			    "failed to create metadir: %s: %s\n",
+			    xhp->metadir, strerror(errno));
 		}
 	}
 
-	if ((pkgdb_fd = open(xhp->pkgdb_plist, O_CREAT|O_RDWR|O_CLOEXEC, 0664)) == -1) {
-		rv = errno;
-		xbps_dbg_printf("[pkgdb] cannot open pkgdb for locking "
-		    "%s: %s\n", xhp->pkgdb_plist, strerror(rv));
-		free(xhp->pkgdb_plist);
-		goto ret;
+	xhp->lock_fd = open(path, O_CREAT|O_WRONLY|O_CLOEXEC, 0664);
+	if (xhp->lock_fd  == -1) {
+		return xbps_error_errno(errno,
+		    "failed to create lock file: %s: %s\n", path,
+		    strerror(errno));
 	}
-
-	/*
-	 * If we've acquired the file lock, then pkgdb is writable.
-	 */
-	if (lockf(pkgdb_fd, F_TLOCK, 0) == -1) {
-		rv = errno;
-		xbps_dbg_printf("[pkgdb] cannot lock pkgdb: %s\n", strerror(rv));
-	}
-	/*
-	 * Check if rootdir is writable.
-	 */
-	if (access(xhp->rootdir, W_OK) == -1) {
-		rv = errno;
-		xbps_dbg_printf("[pkgdb] rootdir %s: %s\n", xhp->rootdir, strerror(rv));
-	}
-
-ret:
 	umask(prev_umask);
-	return rv;
+
+	if (flock(xhp->lock_fd, LOCK_EX) == -1) {
+		close(xhp->lock_fd);
+		xhp->lock_fd = -1;
+		return xbps_error_errno(errno, "failed to lock file: %s: %s\n",
+		    path, strerror(errno));
+	}
+
+	return 0;
 }
 
 void
-xbps_pkgdb_unlock(struct xbps_handle *xhp UNUSED)
+xbps_pkgdb_unlock(struct xbps_handle *xhp)
 {
-	xbps_dbg_printf("%s: pkgdb_fd %d\n", __func__, pkgdb_fd);
-
-	if (pkgdb_fd != -1) {
-		if (lockf(pkgdb_fd, F_ULOCK, 0) == -1)
-			xbps_dbg_printf("[pkgdb] failed to unlock pkgdb: %s\n", strerror(errno));
-
-		(void)close(pkgdb_fd);
-		pkgdb_fd = -1;
-	}
+	if (xhp->lock_fd == -1)
+		return;
+	close(xhp->lock_fd);
+	xhp->lock_fd = -1;
 }
 
 static int
@@ -240,7 +226,7 @@ pkgdb_map_names(struct xbps_handle *xhp)
 	xbps_object_t obj;
 	int rv = 0;
 
-	if (pkgdb_map_names_done || !xbps_dictionary_count(xhp->pkgdb))
+	if (!xbps_dictionary_count(xhp->pkgdb))
 		return 0;
 
 	/*
@@ -269,9 +255,6 @@ pkgdb_map_names(struct xbps_handle *xhp)
 		}
 	}
 	xbps_object_iterator_release(iter);
-	if (!rv) {
-		pkgdb_map_names_done = true;
-	}
 	return rv;
 }
 
