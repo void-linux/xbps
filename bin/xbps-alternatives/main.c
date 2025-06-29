@@ -349,6 +349,7 @@ main(int argc, char **argv)
 		/* in set mode pkgdb must be locked and flushed on success */
 		if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
 			xbps_error_printf("failed to lock pkgdb: %s\n", strerror(rv));
+			xbps_end(&xh);
 			exit(EXIT_FAILURE);
 		}
 		if ((rv = xbps_alternatives_set(&xh, pkg, group)) == 0)
@@ -361,6 +362,7 @@ main(int argc, char **argv)
 			struct search_data sd = { 0 };
 			if ((sd.result = xbps_dictionary_create()) == NULL) {
 				xbps_error_printf("Failed to create dictionary: %s\n", strerror(errno));
+				xbps_end(&xh);
 				exit(EXIT_FAILURE);
 			}
 			sd.group = group;
@@ -368,12 +370,14 @@ main(int argc, char **argv)
 			if (rv != 0 && rv != ENOTSUP) {
 				fprintf(stderr, "Failed to initialize rpool: %s\n",
 				    strerror(rv));
+				xbps_end(&xh);
 				exit(EXIT_FAILURE);
 			}
 			if (xbps_dictionary_count(sd.result) > 0) {
 				print_alternatives(&xh, sd.result, group, true);
 			} else {
 				xbps_error_printf("no alternatives groups found\n");
+				xbps_end(&xh);
 				exit(EXIT_FAILURE);
 			}
 		} else {
