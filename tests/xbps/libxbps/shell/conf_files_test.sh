@@ -456,6 +456,37 @@ tc10_body() {
 	atf_check_equal $? 0
 }
 
+# 11th test: update adds a new config file and it exist untracked on disk
+#	result: backup new file
+atf_test_case tc11
+
+tc11_head() {
+	atf_set "descr" "Tests for configuration file handling: update adds new conf file that previously untracked"
+}
+
+tc11_body() {
+	mkdir repo pkg_a
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n a-0.1_1 -s "pkg a" --config-files "/cf1.conf" ../pkg_a
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	atf_check -o ignore -- xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yv a
+
+	echo "userdata" >rootdir/cf1.conf
+
+	cd repo
+	echo "backup" > ../pkg_a/cf1.conf
+	atf_check -o ignore -- xbps-create -A noarch -n a-0.2_1 -s "pkg a" --config-files "/cf1.conf" ../pkg_a
+	atf_check -o ignore -e ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+
+	atf_check -o ignore -- xbps-install -C xbps.d -r rootdir --repository=$PWD/repo -yuv
+	atf_check -o inline:"userdata\n" -- cat rootdir/cf1.conf
+	atf_check -o inline:"backup\n" -- cat rootdir/cf1.conf.new-0.2_1
+}
+
 # 1st link test: modified configuration link on disk, unmodified on upgrade.
 #	result: keep link as is on disk.
 atf_test_case tcl1
@@ -849,6 +880,7 @@ atf_init_test_cases() {
 	atf_add_test_case tc8
 	atf_add_test_case tc9
 	atf_add_test_case tc10
+	atf_add_test_case tc11
 
 	atf_add_test_case tcl1
 	atf_add_test_case tcl2
