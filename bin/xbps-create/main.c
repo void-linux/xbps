@@ -576,7 +576,8 @@ walk_dir(const char *path,
 	char tmp_path[PATH_MAX] = "";
 	struct stat sb;
 	struct dirent **list;
-	int rv,  n;
+	int rv = 0;
+	int n;
 
 	n = scandir(path, &list, NULL, alphasort);
 	if (n == -1)
