@@ -598,16 +598,14 @@ walk_dir(const char *path,
 		}
 
 		if (S_ISDIR(sb.st_mode)) {
-			if (walk_dir(tmp_path, fn) < 0) {
-				rv = -1;
+			rv = walk_dir(tmp_path, fn);
+			if (rv != 0)
 				break;
-			}
 		}
 
 		rv = fn(tmp_path, &sb, list[i]);
-		if (rv != 0) {
+		if (rv != 0)
 			break;
-		}
 
 	}
 	for (int i = n - 1; i >= 0; i--)
