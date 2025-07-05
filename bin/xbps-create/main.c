@@ -593,9 +593,8 @@ walk_dir(const char *path,
 		strncpy(tmp_path, path, PATH_MAX - 1);
 		strncat(tmp_path, "/", PATH_MAX - 1 - strlen(tmp_path));
 		strncat(tmp_path, list[i]->d_name, PATH_MAX - 1 - strlen(tmp_path));
-		if (lstat(tmp_path, &sb) < 0) {
-			break;
-		}
+		if (lstat(tmp_path, &sb) < 0)
+			die("lstat: %s", tmp_path);
 
 		if (S_ISDIR(sb.st_mode)) {
 			rv = walk_dir(tmp_path, fn);
