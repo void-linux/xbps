@@ -255,10 +255,12 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pat, const char *pro
 			return rv;
 		}
 	}
-	if (!prop && xbps_array_count(sd.results)) {
+
+	if (!prop && xbps_array_count(sd.results))
 		print_results(xhp, &sd);
-		xbps_object_release(sd.results);
-	}
+
+	xbps_object_release(sd.results);
+
 	if (regex)
 		regfree(&sd.regexp);
 
