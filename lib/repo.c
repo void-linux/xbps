@@ -121,6 +121,7 @@ static int
 repo_read_index(struct xbps_repo *repo, struct archive *ar)
 {
 	struct archive_entry *entry;
+    const char *pathname;
 	char *buf;
 	int r;
 
@@ -129,7 +130,8 @@ repo_read_index(struct xbps_repo *repo, struct archive *ar)
 		return r;
 
 	/* index.plist */
-	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_INDEX) != 0) {
+    pathname = archive_entry_pathname(entry);
+	if (strcmp((pathname ? pathname : ""), XBPS_REPODATA_INDEX) != 0) {
 		xbps_error_printf("failed to read repository index: %s: unexpected archive entry\n",
 		    repo->uri);
 		r = -EINVAL;
@@ -175,6 +177,7 @@ static int
 repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 {
 	struct archive_entry *entry;
+    const char *pathname;
 	char *buf;
 	int r;
 
@@ -182,7 +185,8 @@ repo_read_meta(struct xbps_repo *repo, struct archive *ar)
 	if (r < 0)
 		return r;
 
-	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_META) != 0) {
+    pathname = archive_entry_pathname(entry);
+	if (strcmp((pathname ? pathname : ""), XBPS_REPODATA_META) != 0) {
 		xbps_error_printf("failed to read repository metadata: %s: unexpected archive entry\n",
 		    repo->uri);
 		r = -EINVAL;
@@ -237,6 +241,7 @@ static int
 repo_read_stage(struct xbps_repo *repo, struct archive *ar)
 {
 	struct archive_entry *entry;
+    const char *pathname;
 	int r;
 
 	r = repo_read_next(repo, ar, &entry);
@@ -249,7 +254,8 @@ repo_read_stage(struct xbps_repo *repo, struct archive *ar)
 		return r;
 	}
 
-	if (strcmp(archive_entry_pathname(entry), XBPS_REPODATA_STAGE) != 0) {
+    pathname = archive_entry_pathname(entry);
+	if (strcmp((pathname ? pathname : ""), XBPS_REPODATA_STAGE) != 0) {
 		xbps_error_printf("failed to read repository stage: %s: unexpected archive entry\n",
 		    repo->uri);
 		r = -EINVAL;
