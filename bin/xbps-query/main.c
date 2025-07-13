@@ -106,7 +106,7 @@ main(int argc, char **argv)
 		{ "regex", no_argument, NULL, 0 },
 		{ "fulldeptree", no_argument, NULL, 1 },
 		{ "cat", required_argument, NULL, 2 },
-		{ "staging", required_argument, NULL, 5 },
+		{ "staging", no_argument, NULL, 5 },
 		{ NULL, 0, NULL, 0 },
 	};
 	struct xbps_handle xh;
