@@ -114,7 +114,7 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 	/*
 	 * First pass: find out obsolete entries on index and index-files.
 	 */
-	index = xbps_dictionary_copy_mutable(repo->idx);
+	index = xbps_dictionary_copy_mutable(repo->index);
 	stage = xbps_dictionary_copy_mutable(repo->stage);
 
 	allkeys = xbps_dictionary_all_keys(index);
