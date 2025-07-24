@@ -82,6 +82,7 @@ xbps_set_cb_state(struct xbps_handle *xhp,
 	xscd.state = state;
 	xscd.err = err;
 	xscd.arg = arg;
+	xscd.desc = NULL;
 	if (fmt != NULL) {
 		va_start(va, fmt);
 		retval = vasprintf(&buf, fmt, va);
