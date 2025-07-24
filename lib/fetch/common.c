@@ -1,7 +1,7 @@
-/*	$FreeBSD: rev 288217 $	*/
-/*	$NetBSD: common.c,v 1.29 2014/01/08 20:25:34 joerg Exp $	*/
 /*-
- * Copyright (c) 1998-2014 Dag-Erling Smorgrav
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1998-2016 Dag-Erling Smørgrav
  * Copyright (c) 2008, 2010 Joerg Sonnenberger <joerg@NetBSD.org>
  * Copyright (c) 2013 Michael Gmelin <freebsd@grem.de>
  * Copyright (c) 2019 Duncan Overbruck <mail@duncano.de>
@@ -33,7 +33,7 @@
 
 #include "compat.h"
 
-#include <sys/types.h>
+#include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/uio.h>
@@ -43,23 +43,16 @@
 
 #include <ctype.h>
 #include <errno.h>
-#if defined(HAVE_INTTYPES_H) || defined(NETBSD)
-#include <inttypes.h>
-#endif
+#include <fcntl.h>
 #include <netdb.h>
+#include <poll.h>
 #include <pwd.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <strings.h>
-#include <poll.h>
-#include <fcntl.h>
-
-#ifndef MSG_NOSIGNAL
-#include <signal.h>
-#endif
+#include <unistd.h>
 
 #ifdef WITH_SSL
 #include <openssl/x509v3.h>
@@ -70,8 +63,8 @@
 #include "fetch.h"
 #include "common.h"
 
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#ifndef INFTIM
+#define INFTIM (-1)
 #endif
 
 /*** Local data **************************************************************/
@@ -88,6 +81,10 @@ static struct fetcherr netdb_errlist[] = {
 	{ EAI_NONAME,	FETCH_RESOLV,	"No address record" },
 	{ -1,		FETCH_UNKNOWN,	"Unknown resolver error" }
 };
+
+/* End-of-Line */
+static const char ENDL[2] = "\r\n";
+
 
 /*** Error-reporting functions ***********************************************/
 
@@ -170,7 +167,7 @@ fetch_syserr(void)
 	case EHOSTDOWN:
 		fetchLastErrCode = FETCH_DOWN;
 		break;
-default:
+	default:
 		fetchLastErrCode = FETCH_UNKNOWN;
 	}
 	snprintf(fetchLastErrString, MAXERRSTRING, "%s", strerror(errno));
@@ -236,15 +233,19 @@ conn_t *
 fetch_reopen(int sd)
 {
 	conn_t *conn;
+#ifdef SO_NOSIGPIPE
+	int opt = 1;
+#endif
 
 	/* allocate and fill connection structure */
 	if ((conn = calloc(1, sizeof(*conn))) == NULL)
 		return (NULL);
-	conn->ftp_home = NULL;
-	conn->cache_url = NULL;
-	conn->next_buf = NULL;
-	conn->next_len = 0;
+	fcntl(sd, F_SETFD, FD_CLOEXEC);
+#ifdef SO_NOSIGPIPE
+	setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof opt);
+#endif
 	conn->sd = sd;
+	++conn->ref;
 	return (conn);
 }
 
@@ -589,10 +590,11 @@ happy_eyeballs_connect(struct addrinfo *res0, int verbose)
 		}
 
 		if (verbose) {
-			char hbuf[1025];
-			if (getnameinfo(res->ai_addr, res->ai_addrlen, hbuf, sizeof(hbuf), NULL,
-			    0, NI_NUMERICHOST) == 0)
-				fetch_info("connecting to %s", hbuf);
+			char hbuf[NI_MAXHOST];
+			char pbuf[NI_MAXSERV];
+			if (getnameinfo(res->ai_addr, res->ai_addrlen, hbuf, sizeof(hbuf), pbuf,
+			    sizeof(pbuf), NI_NUMERICHOST|NI_NUMERICSERV) == 0)
+				fetch_info("connecting to %s:%s", hbuf, pbuf);
 		}
 
 		if (connect(sd, res->ai_addr, res->ai_addrlen) == -1) {
@@ -693,7 +695,7 @@ out:
  * Establish a TCP connection to the specified port on the specified host.
  */
 conn_t *
-fetch_connect(struct url *url, int af, int verbose)
+fetch_connect(struct url *u, int af, int verbose)
 {
 	conn_t *conn;
 	char pbuf[10];
@@ -718,7 +720,7 @@ fetch_connect(struct url *url, int af, int verbose)
 			socks_url->port = fetch_default_port(socks_url->scheme);
 		connurl = socks_url;
 	} else {
-		connurl = url;
+		connurl = u;
 	}
 
 	if (verbose)
@@ -736,24 +738,18 @@ fetch_connect(struct url *url, int af, int verbose)
 		return (NULL);
 	}
 
-	if (verbose)
-		fetch_info("connecting to %s:%d", connurl->host, connurl->port);
-
 	sd = happy_eyeballs_connect(res0, verbose);
 	freeaddrinfo(res0);
 	if (sd == -1) {
 		fetchFreeURL(socks_url);
 		return (NULL);
 	}
-	if ((conn = fetch_reopen(sd)) == NULL) {
-		fetchFreeURL(socks_url);
-		fetch_syserr();
-		close(sd);
-		return NULL;
-	}
+
+	if ((conn = fetch_reopen(sd)) == NULL)
+		goto syserr;
 	if (socks_url) {
 		if (strcasecmp(socks_url->scheme, SCHEME_SOCKS5) == 0) {
-			if (fetch_socks5(conn, url, socks_url, verbose) != 0) {
+			if (fetch_socks5(conn, u, socks_url, verbose) != 0) {
 				fetchFreeURL(socks_url);
 				fetch_syserr();
 				close(sd);
@@ -763,9 +759,23 @@ fetch_connect(struct url *url, int af, int verbose)
 		}
 		fetchFreeURL(socks_url);
 	}
-	conn->cache_url = fetchCopyURL(url);
-	conn->cache_af = af;
+	strlcpy(conn->scheme, u->scheme, sizeof(conn->scheme));
+	strlcpy(conn->host, u->host, sizeof(conn->host));
+	strlcpy(conn->user, u->user, sizeof(conn->user));
+	strlcpy(conn->pwd, u->pwd, sizeof(conn->pwd));
+	conn->port = u->port;
+	conn->af = af;
+
 	return (conn);
+syserr:
+	fetch_syserr();
+	goto fail;
+fail:
+	if (socks_url)
+		fetchFreeURL(socks_url);
+	if (sd >= 0)
+		close(sd);
+	return (NULL);
 }
 
 static pthread_mutex_t cache_mtx = PTHREAD_MUTEX_INITIALIZER;
@@ -800,10 +810,12 @@ fetchConnectionCacheClose(void)
 {
 	conn_t *conn;
 
+	pthread_mutex_lock(&cache_mtx);
 	while ((conn = connection_cache) != NULL) {
-		connection_cache = conn->next_cached;
-		(*conn->cache_close)(conn);
+		connection_cache = conn->next;
+		(*conn->close)(conn);
 	}
+	pthread_mutex_unlock(&cache_mtx);
 }
 
 /*
@@ -816,18 +828,18 @@ fetch_cache_get(const struct url *url, int af)
 	conn_t *conn, *last_conn = NULL;
 
 	pthread_mutex_lock(&cache_mtx);
-	for (conn = connection_cache; conn; conn = conn->next_cached) {
-		if (conn->cache_url->port == url->port &&
-		    strcmp(conn->cache_url->scheme, url->scheme) == 0 &&
-		    strcmp(conn->cache_url->host, url->host) == 0 &&
-		    strcmp(conn->cache_url->user, url->user) == 0 &&
-		    strcmp(conn->cache_url->pwd, url->pwd) == 0 &&
-		    (conn->cache_af == AF_UNSPEC || af == AF_UNSPEC ||
-		     conn->cache_af == af)) {
+	for (conn = connection_cache; conn; last_conn = conn, conn = conn->next) {
+		if (conn->port == url->port &&
+		    strcmp(conn->scheme, url->scheme) == 0 &&
+		    strcmp(conn->host, url->host) == 0 &&
+		    strcmp(conn->user, url->user) == 0 &&
+		    strcmp(conn->pwd, url->pwd) == 0 &&
+		    (conn->af == AF_UNSPEC || af == AF_UNSPEC ||
+		     conn->af == af)) {
 			if (last_conn != NULL)
-				last_conn->next_cached = conn->next_cached;
+				last_conn->next = conn->next;
 			else
-				connection_cache = conn->next_cached;
+				connection_cache = conn->next;
 
 			pthread_mutex_unlock(&cache_mtx);
 			return conn;
@@ -849,7 +861,7 @@ fetch_cache_put(conn_t *conn, int (*closecb)(conn_t *))
 	conn_t *iter, *last;
 	int global_count, host_count;
 
-	if (conn->cache_url == NULL || cache_global_limit == 0) {
+	if (cache_global_limit == 0) {
 		(*closecb)(conn);
 		return;
 	}
@@ -858,27 +870,26 @@ fetch_cache_put(conn_t *conn, int (*closecb)(conn_t *))
 	global_count = host_count = 0;
 	last = NULL;
 	for (iter = connection_cache; iter;
-	    last = iter, iter = iter->next_cached) {
+	    last = iter, iter = iter->next) {
 		++global_count;
-		if (strcmp(conn->cache_url->host, iter->cache_url->host) == 0)
+		if (strcmp(conn->host, iter->host) == 0)
 			++host_count;
 		if (global_count < cache_global_limit &&
 		    host_count < cache_per_host_limit)
 			continue;
 		--global_count;
 		if (last != NULL)
-			last->next_cached = iter->next_cached;
+			last->next = iter->next;
 		else
-			connection_cache = iter->next_cached;
-		(*iter->cache_close)(iter);
+			connection_cache = iter->next;
+		(*iter->close)(iter);
 	}
 
-	conn->cache_close = closecb;
-	conn->next_cached = connection_cache;
+	conn->close = closecb;
+	conn->next = connection_cache;
 	connection_cache = conn;
 	pthread_mutex_unlock(&cache_mtx);
 }
-
 
 #ifdef WITH_SSL
 
@@ -905,7 +916,7 @@ strnstr(const char *s, const char *find, size_t slen)
 		} while (strncmp(s, find, len) != 0);
 		s--;
 	}
-	return ((char *)__UNCONST(s));
+	return __DECONST(char *, s);
 }
 #endif
 
@@ -927,7 +938,7 @@ fetch_ssl_tolower(char in)
  * conversions.
  */
 static int
-fetch_ssl_isalpha(unsigned char in)
+fetch_ssl_isalpha(char in)
 {
 	return ((in >= 'A' && in <= 'Z') || (in >= 'a' && in <= 'z'));
 }
@@ -965,7 +976,7 @@ fetch_ssl_is_trad_domain_label(const char *l, size_t len, int wcok)
 		return (0);
 	for (i = 0; i < len; ++i) {
 		if (!isdigit((unsigned char)l[i]) &&
-		    !fetch_ssl_isalpha((unsigned char)l[i]) &&
+		    !fetch_ssl_isalpha(l[i]) &&
 		    !(l[i] == '*' && wcok) &&
 		    !(l[i] == '-' && l[i - 1] != '-'))
 			return (0);
@@ -995,7 +1006,7 @@ fetch_ssl_hname_is_only_numbers(const char *hostname, size_t len)
  * is usually part of subjectAltName or CN of a certificate presented to
  * the client. This includes wildcard matching. The algorithm is based on
  * RFC6125, sections 6.4.3 and 7.2, which clarifies RFC2818 and RFC3280.
-  */
+ */
 static int
 fetch_ssl_hname_match(const char *h, size_t hlen, const char *m,
     size_t mlen)
@@ -1023,7 +1034,7 @@ fetch_ssl_hname_match(const char *h, size_t hlen, const char *m,
 	if (mdot1 == NULL || mdot1 < wc || (mlen - (mdot1 - m)) < 4)
 		return (0);
 	mdot1idx = mdot1 - m;
-		mdot2 = strnstr(mdot1 + 1, ".", mlen - mdot1idx - 1);
+	mdot2 = strnstr(mdot1 + 1, ".", mlen - mdot1idx - 1);
 	if (mdot2 == NULL || (mlen - (mdot2 - m)) < 2)
 		return (0);
 	/* hostname must contain a dot and not be the 1st char */
@@ -1056,7 +1067,7 @@ fetch_ssl_hname_match(const char *h, size_t hlen, const char *m,
 	if (!fetch_ssl_hname_equal(hdot - delta, delta,
 	    mdot1 - delta, delta))
 		return (0);
-	/* all tests succeded, it's a match */
+	/* all tests succeeded, it's a match */
 	return (1);
 }
 
@@ -1074,7 +1085,6 @@ fetch_ssl_get_numeric_addrinfo(const char *hostname, size_t len)
 	host = malloc(len + 1);
 	if (!host)
 		return NULL;
-
 	memcpy(host, hostname, len);
 	host[len] = '\0';
 	memset(&hints, 0, sizeof(hints));
@@ -1083,10 +1093,8 @@ fetch_ssl_get_numeric_addrinfo(const char *hostname, size_t len)
 	hints.ai_protocol = 0;
 	hints.ai_flags = AI_NUMERICHOST;
 	/* port is not relevant for this purpose */
-	if (getaddrinfo(host, "443", &hints, &res) != 0) {
-		free(host);
-		return NULL;
-	}
+	if (getaddrinfo(host, "443", &hints, &res) != 0)
+		res = NULL;
 	free(host);
 	return res;
 }
@@ -1102,11 +1110,11 @@ fetch_ssl_ipaddr_match_bin(const struct addrinfo *lhost, const char *rhost,
 
 	if (lhost->ai_family == AF_INET && rhostlen == 4) {
 		left = (void *)&((struct sockaddr_in*)(void *)
-		lhost->ai_addr)->sin_addr.s_addr;
+		    lhost->ai_addr)->sin_addr.s_addr;
 #ifdef INET6
 	} else if (lhost->ai_family == AF_INET6 && rhostlen == 16) {
 		left = (void *)&((struct sockaddr_in6 *)(void *)
-		lhost->ai_addr)->sin6_addr;
+		    lhost->ai_addr)->sin6_addr;
 #endif
 	} else
 		return (0);
@@ -1132,15 +1140,16 @@ fetch_ssl_ipaddr_match(const struct addrinfo *laddr, const char *r,
 	if (laddr->ai_family == raddr->ai_family) {
 		if (laddr->ai_family == AF_INET) {
 			rip = (char *)&((struct sockaddr_in *)(void *)
-			raddr->ai_addr)->sin_addr.s_addr;
+			    raddr->ai_addr)->sin_addr.s_addr;
 			ret = fetch_ssl_ipaddr_match_bin(laddr, rip, 4);
 #ifdef INET6
 		} else if (laddr->ai_family == AF_INET6) {
 			rip = (char *)&((struct sockaddr_in6 *)(void *)
-			raddr->ai_addr)->sin6_addr;
+			    raddr->ai_addr)->sin6_addr;
 			ret = fetch_ssl_ipaddr_match_bin(laddr, rip, 16);
 #endif
 		}
+
 	}
 	freeaddrinfo(raddr);
 	return (ret);
@@ -1159,8 +1168,24 @@ fetch_ssl_verify_altname(STACK_OF(GENERAL_NAME) *altnames,
 	const char *ns;
 
 	for (i = 0; i < sk_GENERAL_NAME_num(altnames); ++i) {
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
+		/*
+		 * This is a workaround, since the following line causes
+		 * alignment issues in clang:
+		 * name = sk_GENERAL_NAME_value(altnames, i);
+		 * OpenSSL explicitly warns not to use those macros
+		 * directly, but there isn't much choice (and there
+		 * shouldn't be any ill side effects)
+		 */
+		name = (GENERAL_NAME *)SKM_sk_value(void, altnames, i);
+#else
 		name = sk_GENERAL_NAME_value(altnames, i);
+#endif
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+		ns = (const char *)ASN1_STRING_data(name->d.ia5);
+#else
 		ns = (const char *)ASN1_STRING_get0_data(name->d.ia5);
+#endif
 		nslen = (size_t)ASN1_STRING_length(name->d.ia5);
 
 		if (name->type == GEN_DNS && ip == NULL &&
@@ -1191,7 +1216,7 @@ fetch_ssl_verify_cn(X509_NAME *subject, const char *host,
 	cn = NULL;
 	/* get most specific CN (last entry in list) and compare */
 	while ((lastpos = X509_NAME_get_index_by_NID(subject,
-		    NID_commonName, lastpos)) != -1)
+	    NID_commonName, lastpos)) != -1)
 		loc = lastpos;
 
 	if (loc > -1) {
@@ -1225,7 +1250,7 @@ fetch_ssl_verify_hname(X509 *cert, const char *host)
 	ret = 0;
 	ip = fetch_ssl_get_numeric_addrinfo(host, strlen(host));
 	altnames = X509_get_ext_d2i(cert, NID_subject_alt_name,
-				    NULL, NULL);
+	    NULL, NULL);
 
 	if (altnames != NULL) {
 		ret = fetch_ssl_verify_altname(altnames, host, ip);
@@ -1250,7 +1275,7 @@ fetch_ssl_setup_transport_layer(SSL_CTX *ctx, int verbose)
 {
 	long ssl_ctx_options;
 
-	ssl_ctx_options = SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_TICKET;
+	ssl_ctx_options = SSL_OP_ALL | SSL_OP_NO_SSLv3 | SSL_OP_NO_TICKET;
 	if (getenv("SSL_ALLOW_SSL3") == NULL)
 		ssl_ctx_options |= SSL_OP_NO_SSLv3;
 	if (getenv("SSL_NO_TLS1") != NULL)
@@ -1277,8 +1302,7 @@ fetch_ssl_setup_peer_verification(SSL_CTX *ctx, int verbose)
 
 	if (getenv("SSL_NO_VERIFY_PEER") == NULL) {
 		ca_cert_file = getenv("SSL_CA_CERT_FILE");
-		ca_cert_path = getenv("SSL_CA_CERT_PATH") != NULL ?
-		    getenv("SSL_CA_CERT_PATH") : X509_get_default_cert_dir();
+		ca_cert_path = getenv("SSL_CA_CERT_PATH");
 		if (verbose) {
 			fetch_info("Peer verification enabled");
 			if (ca_cert_file != NULL)
@@ -1287,15 +1311,20 @@ fetch_ssl_setup_peer_verification(SSL_CTX *ctx, int verbose)
 			if (ca_cert_path != NULL)
 				fetch_info("Using CA cert path: %s",
 				    ca_cert_path);
+			if (ca_cert_file == NULL && ca_cert_path == NULL)
+				fetch_info("Using OpenSSL default "
+				    "CA cert file and path");
 		}
 		SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER,
 		    fetch_ssl_cb_verify_crt);
-		SSL_CTX_load_verify_locations(ctx, ca_cert_file,
-		    ca_cert_path);
+		if (ca_cert_file != NULL || ca_cert_path != NULL)
+			SSL_CTX_load_verify_locations(ctx, ca_cert_file,
+			    ca_cert_path);
+		else
+			SSL_CTX_set_default_verify_paths(ctx);
 		if ((crl_file = getenv("SSL_CRL_FILE")) != NULL) {
 			if (verbose)
 				fetch_info("Using CRL file: %s", crl_file);
-
 			crl_store = SSL_CTX_get_cert_store(ctx);
 			crl_lookup = X509_STORE_add_lookup(crl_store,
 			    X509_LOOKUP_file());
@@ -1385,22 +1414,21 @@ ssl_init(void)
 }
 #endif
 
-
 /*
  * Enable SSL on a connection.
  */
 int
 fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 {
-
 #ifdef WITH_SSL
-	int ret;
+	int ret, ssl_err;
 	X509_NAME *name;
 	char *str;
 
 	(void)pthread_once(&ssl_init_once, ssl_init);
 
-	conn->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+	conn->ssl_meth = SSLv23_client_method();
+	conn->ssl_ctx = SSL_CTX_new(conn->ssl_meth);
 	if (conn->ssl_ctx == NULL) {
 		fprintf(stderr, "failed to create SSL context\n");
 		ERR_print_errors_fp(stderr);
@@ -1425,18 +1453,22 @@ fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 		return (-1);
 	}
 #if OPENSSL_VERSION_NUMBER >= 0x0090806fL && !defined(OPENSSL_NO_TLSEXT)
-	if (!SSL_set_tlsext_host_name(conn->ssl, (char *)(uintptr_t)URL->host)) {
+	if (!SSL_set_tlsext_host_name(conn->ssl,
+	    __DECONST(struct url *, URL)->host)) {
 		fprintf(stderr,
 		    "TLS server name indication extension failed for host %s\n",
 		    URL->host);
 		return (-1);
 	}
 #endif
-	if ((ret = SSL_connect(conn->ssl)) <= 0){
-		fprintf(stderr, "SSL_connect returned %d\n", SSL_get_error(conn->ssl, ret));
-		return (-1);
+	while ((ret = SSL_connect(conn->ssl)) == -1) {
+		ssl_err = SSL_get_error(conn->ssl, ret);
+		if (ssl_err != SSL_ERROR_WANT_READ &&
+		    ssl_err != SSL_ERROR_WANT_WRITE) {
+			ERR_print_errors_fp(stderr);
+			return (-1);
+		}
 	}
-
 	conn->ssl_cert = SSL_get_peer_certificate(conn->ssl);
 
 	if (conn->ssl_cert == NULL) {
@@ -1444,13 +1476,13 @@ fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 		return (-1);
 	}
 
-        if (getenv("SSL_NO_VERIFY_HOSTNAME") == NULL) {
+	if (getenv("SSL_NO_VERIFY_HOSTNAME") == NULL) {
 		if (verbose)
 			fetch_info("Verify hostname");
 		if (!fetch_ssl_verify_hname(conn->ssl_cert, URL->host)) {
 			fprintf(stderr,
-				"SSL certificate subject doesn't match host %s\n",
-				URL->host);
+			    "SSL certificate subject doesn't match host %s\n",
+			    URL->host);
 			return (-1);
 		}
 	}
@@ -1458,7 +1490,6 @@ fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 	if (verbose) {
 		fetch_info("%s connection established using %s",
 		    SSL_get_version(conn->ssl), SSL_get_cipher(conn->ssl));
-		conn->ssl_cert = SSL_get_peer_certificate(conn->ssl);
 		name = X509_get_subject_name(conn->ssl_cert);
 		str = X509_NAME_oneline(name, 0, 0);
 		fetch_info("Certificate subject: %s", str);
@@ -1473,11 +1504,52 @@ fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 #else
 	(void)conn;
 	(void)verbose;
+	(void)URL;
 	fprintf(stderr, "SSL support disabled\n");
 	return (-1);
 #endif
 }
 
+#define FETCH_READ_WAIT		-2
+#define FETCH_READ_ERROR	-1
+#define FETCH_READ_DONE		 0
+
+#ifdef WITH_SSL
+static ssize_t
+fetch_ssl_read(SSL *ssl, char *buf, size_t len)
+{
+	ssize_t rlen;
+	int ssl_err;
+
+	rlen = SSL_read(ssl, buf, len);
+	if (rlen < 0) {
+		ssl_err = SSL_get_error(ssl, rlen);
+		if (ssl_err == SSL_ERROR_WANT_READ ||
+		    ssl_err == SSL_ERROR_WANT_WRITE) {
+			return (FETCH_READ_WAIT);
+		} else {
+			ERR_print_errors_fp(stderr);
+			return (FETCH_READ_ERROR);
+		}
+	}
+	return (rlen);
+}
+#endif
+
+static ssize_t
+fetch_socket_read(int sd, char *buf, size_t len)
+{
+	ssize_t rlen;
+
+	rlen = read(sd, buf, len);
+	if (rlen < 0) {
+		if (errno == EAGAIN || (errno == EINTR && fetchRestartCalls))
+			return (FETCH_READ_WAIT);
+		else
+			return (FETCH_READ_ERROR);
+	}
+	return (rlen);
+}
 
 /*
  * Read a character from a connection w/ timeout
@@ -1485,10 +1557,10 @@ fetch_ssl(conn_t *conn, const struct url *URL, int verbose)
 ssize_t
 fetch_read(conn_t *conn, char *buf, size_t len)
 {
-	struct timeval now, timeout, waittv;
-	fd_set readfds;
+	struct timeval now, timeout, delta;
+	struct pollfd pfd;
 	ssize_t rlen;
-	int r;
+	int deltams;
 
 	if (len == 0)
 		return 0;
@@ -1504,51 +1576,68 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 		return len;
 	}
 
-	if (fetchTimeout) {
-		FD_ZERO(&readfds);
+	if (fetchTimeout > 0) {
 		gettimeofday(&timeout, NULL);
 		timeout.tv_sec += fetchTimeout;
 	}
 
+	deltams = INFTIM;
+	memset(&pfd, 0, sizeof pfd);
+	pfd.fd = conn->sd;
+	pfd.events = POLLIN | POLLERR;
+
 	for (;;) {
-		while (fetchTimeout && !FD_ISSET(conn->sd, &readfds)) {
-			FD_SET(conn->sd, &readfds);
+		/*
+		 * The socket is non-blocking.  Instead of the canonical
+		 * poll() -> read(), we do the following:
+		 *
+		 * 1) call read() or SSL_read().
+		 * 2) if we received some data, return it.
+		 * 3) if an error occurred, return -1.
+		 * 4) if read() or SSL_read() signaled EOF, return.
+		 * 5) if we did not receive any data but we're not at EOF,
+		 *    call poll().
+		 *
+		 * In the SSL case, this is necessary because if we
+		 * receive a close notification, we have to call
+		 * SSL_read() one additional time after we've read
+		 * everything we received.
+		 *
+		 * In the non-SSL case, it may improve performance (very
+		 * slightly) when reading small amounts of data.
+		 */
+#ifdef WITH_SSL
+		if (conn->ssl != NULL)
+			rlen = fetch_ssl_read(conn->ssl, buf, len);
+		else
+#endif
+			rlen = fetch_socket_read(conn->sd, buf, len);
+		if (rlen >= 0) {
+			break;
+		} else if (rlen == FETCH_READ_ERROR) {
+			fetch_syserr();
+			return (-1);
+		}
+		// assert(rlen == FETCH_READ_WAIT);
+		if (fetchTimeout > 0) {
 			gettimeofday(&now, NULL);
-			waittv.tv_sec = timeout.tv_sec - now.tv_sec;
-			waittv.tv_usec = timeout.tv_usec - now.tv_usec;
-			if (waittv.tv_usec < 0) {
-				waittv.tv_usec += 1000000;
-				waittv.tv_sec--;
-			}
-			if (waittv.tv_sec < 0) {
+			if (!timercmp(&timeout, &now, >)) {
 				errno = ETIMEDOUT;
 				fetch_syserr();
 				return (-1);
 			}
-			errno = 0;
-#ifdef WITH_SSL
-			if (conn->ssl && SSL_pending(conn->ssl))
-				break;
-#endif
-			r = select(conn->sd + 1, &readfds, NULL, NULL, &waittv);
-			if (r == -1) {
-				if (errno == EINTR && fetchRestartCalls)
-					continue;
-				fetch_syserr();
-				return (-1);
-			}
+			timersub(&timeout, &now, &delta);
+			deltams = delta.tv_sec * 1000 +
+			    delta.tv_usec / 1000;
 		}
-#ifdef WITH_SSL
-		if (conn->ssl != NULL)
-			rlen = SSL_read(conn->ssl, buf, len);
-		else
-#endif
-			rlen = read(conn->sd, buf, len);
-		if (rlen >= 0)
-			break;
-
-		if (errno != EINTR || !fetchRestartCalls)
+		errno = 0;
+		pfd.revents = 0;
+		if (poll(&pfd, 1, deltams) < 0) {
+			if (errno == EINTR && fetchRestartCalls)
+				continue;
+			fetch_syserr();
 			return (-1);
+		}
 	}
 	return (rlen);
 }
@@ -1574,6 +1663,7 @@ fetch_getln(conn_t *conn)
 		conn->bufsize = MIN_BUF_SIZE;
 	}
 
+	conn->buf[0] = '\0';
 	conn->buflen = 0;
 	next = NULL;
 
@@ -1593,7 +1683,7 @@ fetch_getln(conn_t *conn)
 		conn->buflen += len;
 		if (conn->buflen == conn->bufsize && next == NULL) {
 			tmp = conn->buf;
-			tmpsize = conn->bufsize * 2;
+			tmpsize = conn->bufsize * 2 + 1;
 			if (tmpsize < conn->bufsize) {
 				errno = ENOMEM;
 				return (-1);
@@ -1616,7 +1706,22 @@ fetch_getln(conn_t *conn)
 		conn->buf[conn->buflen] = '\0';
 		conn->next_len = 0;
 	}
+	DEBUGF("<<< %s\n", conn->buf);
 	return (0);
+}
+
+
+/*
+ * Write to a connection w/ timeout
+ */
+ssize_t
+fetch_write(conn_t *conn, const char *buf, size_t len)
+{
+	struct iovec iov;
+
+	iov.iov_base = __DECONST(char *, buf);
+	iov.iov_len = len;
+	return fetch_writev(conn, &iov, 1);
 }
 
 /*
@@ -1624,49 +1729,39 @@ fetch_getln(conn_t *conn)
  * Note: can modify the iovec.
  */
 ssize_t
-fetch_write(conn_t *conn, const void *buf, size_t len)
+fetch_writev(conn_t *conn, struct iovec *iov, int iovcnt)
 {
-	struct timeval now, timeout, waittv;
-	fd_set writefds;
+	struct timeval now, timeout, delta;
+	struct pollfd pfd;
 	ssize_t wlen, total;
-	int r;
-#ifndef MSG_NOSIGNAL
-	static int killed_sigpipe;
-#endif
+	int deltams;
 
-#ifndef MSG_NOSIGNAL
-	if (!killed_sigpipe) {
-		signal(SIGPIPE, SIG_IGN);
-		killed_sigpipe = 1;
-	}
-#endif
-
-
+	memset(&pfd, 0, sizeof pfd);
 	if (fetchTimeout) {
-		FD_ZERO(&writefds);
+		pfd.fd = conn->sd;
+		pfd.events = POLLOUT | POLLERR;
 		gettimeofday(&timeout, NULL);
 		timeout.tv_sec += fetchTimeout;
 	}
 
 	total = 0;
-	while (len) {
-		while (fetchTimeout && !FD_ISSET(conn->sd, &writefds)) {
-			FD_SET(conn->sd, &writefds);
+	while (iovcnt > 0) {
+		while (fetchTimeout && pfd.revents == 0) {
 			gettimeofday(&now, NULL);
-			waittv.tv_sec = timeout.tv_sec - now.tv_sec;
-			waittv.tv_usec = timeout.tv_usec - now.tv_usec;
-			if (waittv.tv_usec < 0) {
-				waittv.tv_usec += 1000000;
-				waittv.tv_sec--;
-			}
-			if (waittv.tv_sec < 0) {
+			if (!timercmp(&timeout, &now, >)) {
 				errno = ETIMEDOUT;
 				fetch_syserr();
 				return (-1);
 			}
+			timersub(&timeout, &now, &delta);
+			deltams = delta.tv_sec * 1000 +
+			    delta.tv_usec / 1000;
 			errno = 0;
-			r = select(conn->sd + 1, NULL, &writefds, NULL, &waittv);
-			if (r == -1) {
+			pfd.revents = 0;
+			if (poll(&pfd, 1, deltams) < 0) {
+				/* POSIX compliance */
+				if (errno == EAGAIN)
+					continue;
 				if (errno == EINTR && fetchRestartCalls)
 					continue;
 				return (-1);
@@ -1675,16 +1770,14 @@ fetch_write(conn_t *conn, const void *buf, size_t len)
 		errno = 0;
 #ifdef WITH_SSL
 		if (conn->ssl != NULL)
-			wlen = SSL_write(conn->ssl, buf, len);
+			wlen = SSL_write(conn->ssl,
+			    iov->iov_base, iov->iov_len);
 		else
 #endif
-#ifndef MSG_NOSIGNAL
-			wlen = send(conn->sd, buf, len, 0);
-#else
-			wlen = send(conn->sd, buf, len, MSG_NOSIGNAL);
-#endif
+			wlen = writev(conn->sd, iov, iovcnt);
 		if (wlen == 0) {
 			/* we consider a short write a failure */
+			/* XXX perhaps we shouldn't in the SSL case */
 			errno = EPIPE;
 			fetch_syserr();
 			return (-1);
@@ -1695,10 +1788,41 @@ fetch_write(conn_t *conn, const void *buf, size_t len)
 			return (-1);
 		}
 		total += wlen;
-		buf = (const char *)buf + wlen;
-		len -= wlen;
+		while (iovcnt > 0 && wlen >= (ssize_t)iov->iov_len) {
+			wlen -= iov->iov_len;
+			iov++;
+			iovcnt--;
+		}
+		if (iovcnt > 0) {
+			iov->iov_len -= wlen;
+			iov->iov_base = __DECONST(char *, iov->iov_base) + wlen;
+		}
 	}
 	return (total);
+}
+
+
+/*
+ * Write a line of text to a connection w/ timeout
+ */
+int
+fetch_putln(conn_t *conn, const char *str, size_t len)
+{
+	struct iovec iov[2];
+	int ret;
+
+	DEBUGF(">>> %s\n", str);
+	iov[0].iov_base = __DECONST(char *, str);
+	iov[0].iov_len = len;
+	iov[1].iov_base = __DECONST(char *, ENDL);
+	iov[1].iov_len = sizeof(ENDL);
+	if (len == 0)
+		ret = fetch_writev(conn, &iov[1], 1);
+	else
+		ret = fetch_writev(conn, iov, 2);
+	if (ret == -1)
+		return (-1);
+	return (0);
 }
 
 
@@ -1710,6 +1834,8 @@ fetch_close(conn_t *conn)
 {
 	int ret;
 
+	if (--conn->ref > 0)
+		return (0);
 #ifdef WITH_SSL
 	if (conn->ssl) {
 		SSL_shutdown(conn->ssl);
@@ -1727,154 +1853,11 @@ fetch_close(conn_t *conn)
 	}
 #endif
 	ret = close(conn->sd);
-	if (conn->cache_url)
-		fetchFreeURL(conn->cache_url);
-	free(conn->ftp_home);
 	free(conn->buf);
 	free(conn);
 	return (ret);
 }
 
-
-/*** Directory-related utility functions *************************************/
-
-int
-fetch_add_entry(struct url_list *ue, struct url *base, const char *name,
-    int pre_quoted)
-{
-	struct url *tmp;
-	char *tmp_name;
-	size_t base_doc_len, name_len, i;
-	unsigned char c;
-
-	if (strchr(name, '/') != NULL ||
-	    strcmp(name, "..") == 0 ||
-	    strcmp(name, ".") == 0)
-		return 0;
-
-	if (strcmp(base->doc, "/") == 0)
-		base_doc_len = 0;
-	else
-		base_doc_len = strlen(base->doc);
-
-	name_len = 1;
-	for (i = 0; name[i] != '\0'; ++i) {
-		if ((!pre_quoted && name[i] == '%') ||
-		    !fetch_urlpath_safe(name[i]))
-			name_len += 3;
-		else
-			++name_len;
-	}
-
-	tmp_name = malloc( base_doc_len + name_len + 1);
-	if (tmp_name == NULL) {
-		errno = ENOMEM;
-		fetch_syserr();
-		return (-1);
-	}
-
-	if (ue->length + 1 >= ue->alloc_size) {
-		tmp = realloc(ue->urls, (ue->alloc_size * 2 + 1) * sizeof(*tmp));
-		if (tmp == NULL) {
-			free(tmp_name);
-			errno = ENOMEM;
-			fetch_syserr();
-			return (-1);
-		}
-		ue->alloc_size = ue->alloc_size * 2 + 1;
-		ue->urls = tmp;
-	}
-
-	tmp = ue->urls + ue->length;
-	strcpy(tmp->scheme, base->scheme);
-	strcpy(tmp->user, base->user);
-	strcpy(tmp->pwd, base->pwd);
-	strcpy(tmp->host, base->host);
-	tmp->port = base->port;
-	tmp->doc = tmp_name;
-	memcpy(tmp->doc, base->doc, base_doc_len);
-	tmp->doc[base_doc_len] = '/';
-
-	for (i = base_doc_len + 1; *name != '\0'; ++name) {
-		if ((!pre_quoted && *name == '%') ||
-		    !fetch_urlpath_safe(*name)) {
-			tmp->doc[i++] = '%';
-			c = (unsigned char)*name / 16;
-			if (c < 10)
-				tmp->doc[i++] = '0' + c;
-			else
-				tmp->doc[i++] = 'a' - 10 + c;
-			c = (unsigned char)*name % 16;
-			if (c < 10)
-				tmp->doc[i++] = '0' + c;
-			else
-				tmp->doc[i++] = 'a' - 10 + c;
-		} else {
-			tmp->doc[i++] = *name;
-		}
-	}
-	tmp->doc[i] = '\0';
-
-	tmp->offset = 0;
-	tmp->length = 0;
-	tmp->last_modified = -1;
-
-	++ue->length;
-
-	return (0);
-}
-
-void
-fetchInitURLList(struct url_list *ue)
-{
-	ue->length = ue->alloc_size = 0;
-	ue->urls = NULL;
-}
-
-int
-fetchAppendURLList(struct url_list *dst, const struct url_list *src)
-{
-	size_t i, j, len;
-
-	len = dst->length + src->length;
-	if (len > dst->alloc_size) {
-		struct url *tmp;
-
-		tmp = realloc(dst->urls, len * sizeof(*tmp));
-		if (tmp == NULL) {
-			errno = ENOMEM;
-			fetch_syserr();
-			return (-1);
-		}
-		dst->alloc_size = len;
-		dst->urls = tmp;
-	}
-
-	for (i = 0, j = dst->length; i < src->length; ++i, ++j) {
-		dst->urls[j] = src->urls[i];
-		dst->urls[j].doc = strdup(src->urls[i].doc);
-		if (dst->urls[j].doc == NULL) {
-			while (i-- > 0)
-				free(dst->urls[j].doc);
-			fetch_syserr();
-			return -1;
-		}
-	}
-	dst->length = len;
-
-	return 0;
-}
-
-void
-fetchFreeURLList(struct url_list *ue)
-{
-	size_t i;
-
-	for (i = 0; i < ue->length; ++i)
-		free(ue->urls[i].doc);
-	free(ue->urls);
-	ue->length = ue->alloc_size = 0;
-}
 
 
 /*** Authentication-related utility functions ********************************/
@@ -1889,27 +1872,23 @@ fetch_read_word(FILE *f)
 	return (word);
 }
 
-/*
- * Get authentication data for a URL from .netrc
- */
-int
-fetch_netrc_auth(struct url *url)
+static int
+fetch_netrc_open(void)
 {
+	struct passwd *pwd;
 	char fn[PATH_MAX];
-	const char *word;
-	char *p;
-	FILE *f;
+	const char *p;
+	int fd, serrno;
 
 	if ((p = getenv("NETRC")) != NULL) {
+		DEBUGF("NETRC=%s\n", p);
 		if (snprintf(fn, sizeof(fn), "%s", p) >= (int)sizeof(fn)) {
 			fetch_info("$NETRC specifies a file name "
 			    "longer than PATH_MAX");
 			return (-1);
 		}
 	} else {
-		if ((p = getenv("HOME")) != NULL) {
-			struct passwd *pwd;
-
+		if ((p = getenv("HOME")) == NULL) {
 			if ((pwd = getpwuid(getuid())) == NULL ||
 			    (p = pwd->pw_dir) == NULL)
 				return (-1);
@@ -1918,14 +1897,47 @@ fetch_netrc_auth(struct url *url)
 			return (-1);
 	}
 
-	if ((f = fopen(fn, "r")) == NULL)
+	if ((fd = open(fn, O_RDONLY)) < 0) {
+		serrno = errno;
+		DEBUGF("%s: %s\n", fn, strerror(serrno));
+		errno = serrno;
+	}
+	return (fd);
+}
+
+/*
+ * Get authentication data for a URL from .netrc
+ */
+int
+fetch_netrc_auth(struct url *url)
+{
+	const char *word;
+	int serrno;
+	FILE *f;
+
+	if (url->netrcfd < 0)
+		url->netrcfd = fetch_netrc_open();
+	if (url->netrcfd < 0)
 		return (-1);
+	if ((f = fdopen(url->netrcfd, "r")) == NULL) {
+		serrno = errno;
+		DEBUGF("fdopen(netrcfd): %s", strerror(errno));
+		close(url->netrcfd);
+		url->netrcfd = -1;
+		errno = serrno;
+		return (-1);
+	}
+	rewind(f);
+	DEBUGF("searching netrc for %s\n", url->host);
 	while ((word = fetch_read_word(f)) != NULL) {
-		if (strcmp(word, "default") == 0)
+		if (strcmp(word, "default") == 0) {
+			DEBUGF("using default netrc settings\n");
 			break;
+		}
 		if (strcmp(word, "machine") == 0 &&
 		    (word = fetch_read_word(f)) != NULL &&
 		    strcasecmp(word, url->host) == 0) {
+			DEBUGF("using netrc settings for %s\n", word);
 			break;
 		}
 	}
@@ -1957,9 +1969,13 @@ fetch_netrc_auth(struct url *url)
 		}
 	}
 	fclose(f);
+	url->netrcfd = -1;
 	return (0);
- ferr:
+ferr:
+	serrno = errno;
 	fclose(f);
+	url->netrcfd = -1;
+	errno = serrno;
 	return (-1);
 }
 
@@ -1968,7 +1984,7 @@ fetch_netrc_auth(struct url *url)
  * which the proxy should not be consulted; the contents is a comma-,
  * or space-separated list of domain names.  A single asterisk will
  * override all proxy variables and no transactions will be proxied
- * (for compatability with lynx and curl, see the discussion at
+ * (for compatibility with lynx and curl, see the discussion at
  * <http://curl.haxx.se/mail/archive_pre_oct_99/0009.html>).
  */
 int
@@ -1998,7 +2014,7 @@ fetch_no_proxy_match(const char *host)
 				break;
 
 		d_len = q - p;
-		if (d_len > 0 && h_len > d_len &&
+		if (d_len > 0 && h_len >= d_len &&
 		    strncasecmp(host + h_len - d_len,
 			p, d_len) == 0) {
 			/* domain name matches */
@@ -2015,22 +2031,24 @@ struct fetchIO {
 	void *io_cookie;
 	ssize_t (*io_read)(void *, void *, size_t);
 	ssize_t (*io_write)(void *, const void *, size_t);
-	void (*io_close)(void *);
+	int (*io_close)(void *);
 };
 
-void
+int
 fetchIO_close(fetchIO *f)
 {
+	int rv = 0;
 	if (f->io_close != NULL)
-		(*f->io_close)(f->io_cookie);
+		rv = (*f->io_close)(f->io_cookie);
 
 	free(f);
+	return rv;
 }
 
 fetchIO *
 fetchIO_unopen(void *io_cookie, ssize_t (*io_read)(void *, void *, size_t),
     ssize_t (*io_write)(void *, const void *, size_t),
-    void (*io_close)(void *))
+    int (*io_close)(void *))
 {
 	fetchIO *f;
 
