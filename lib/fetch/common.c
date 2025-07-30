@@ -74,10 +74,6 @@
 #include "fetch.h"
 #include "common.h"
 
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
-
 /*** Local data **************************************************************/
 
 /*
@@ -184,7 +180,7 @@ default:
 /*
  * Emit status message
  */
-void
+void LIBFETCH_PRINTFLIKE(1, 2)
 fetch_info(const char *fmt, ...)
 {
 	va_list ap;
