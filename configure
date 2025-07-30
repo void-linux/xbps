@@ -616,37 +616,6 @@ fi
 rm -f _$func.c _$func
 
 #
-# zlib is required.
-#
-func=InflateInit2
-printf "Checking for $func() ... "
-cat <<EOF > _$func.c
-#include <zlib.h>
-int main(void) {
-	z_stream strm;
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-	inflateInit2(&strm, 15+16);
-	return 0;
-}
-EOF
-if $XCC _$func.c -lz -o _$func 2>/dev/null; then
-	echo yes.
-	echo "LDFLAGS +=	-lz" >>$CONFIG_MK
-	echo "STATIC_LIBS +=	-lz" >>$CONFIG_MK
-else
-	ZLIB=no
-fi
-rm -f _$func.c _$func
-if [ "$ZLIB" = "no" ]; then
-	echo "Failed to link with your system's zlib, can't continue..."
-	exit 1
-fi
-
-#
 # If building API library documentation, doxygen and graphviz are required.
 #
 if [ -n "$BUILD_API_DOCS" ]; then
@@ -724,6 +693,47 @@ if [[ $OS == "darwin" ]]; then
 	echo "CFLAGS += -D_BSD_SOURCE" >>$CONFIG_MK
 	echo "LDFLAGS +=    $(pkg-config --libs libcrypto)" \
 		>>$CONFIG_MK
+fi
+
+#
+# zlib is required.
+#
+printf "Checking for zlib via pkg-config ... "
+if false pkg-config --exists 'zlib'; then
+	echo "found zlib version $(pkg-config --modversion zlib)."
+	echo "CFLAGS += $(pkg-config --cflags zlib)" >>$CONFIG_MK
+	echo "LDFLAGS +=        $(pkg-config --libs zlib)" >>$CONFIG_MK
+	echo "STATIC_LIBS +=    $(pkg-config --libs --static zlib)" \
+		>>$CONFIG_MK
+else
+	echo "no."
+	func=InflateInit2
+	printf "Checking for $func() ... "
+	cat <<-EOF > _$func.c
+	#include <zlib.h>
+	int main(void) {
+		z_stream strm;
+		strm.zalloc = Z_NULL;
+		strm.zfree = Z_NULL;
+		strm.opaque = Z_NULL;
+		strm.avail_in = 0;
+		strm.next_in = Z_NULL;
+		inflateInit2(&strm, 15+16);
+		return 0;
+	}
+	EOF
+	if $XCC _$func.c -lz -o _$func 2>/dev/null; then
+		echo yes.
+		echo "LDFLAGS +=	-lz" >>$CONFIG_MK
+		echo "STATIC_LIBS +=	-lz" >>$CONFIG_MK
+	else
+		ZLIB=no
+	fi
+	rm -f _$func.c _$func
+	if [ "$ZLIB" = "no" ]; then
+		echo "Failed to link with your system's zlib, can't continue..."
+		exit 1
+	fi
 fi
 
 #
