@@ -747,7 +747,7 @@ void xbps_dbg_printf_append(const char *fmt, ...) PRINTF_LIKE(1, 2);
  * @brief Prints messages to stderr if verbosity is enabled.
  * @param[in] fmt format specifier for the message.
  */
-void xbps_verbose_printf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void xbps_verbose_printf(const char *, ...) PRINTF_LIKE(1, 2);
 
 /**
  * @brief Prints error messages to stderr.
