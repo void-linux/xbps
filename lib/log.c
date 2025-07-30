@@ -25,15 +25,10 @@
  */
 
 #include <stdio.h>
-#include <errno.h>
 #include <stdarg.h>
 
 #include "xbps/macro.h"
-#include "xbps_api_impl.h"
-
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
-#endif
+#include "xbps.h"
 
 int xbps_debug_level = 0;
 int xbps_verbose_level = 0;
@@ -46,7 +41,7 @@ int xbps_verbose_level = 0;
  * Use these functions to log errors, warnings and debug messages.
  */
 
-static void
+static void PRINTF_LIKE(3, 0)
 common_printf(FILE *f, const char *msg, const char *fmt, va_list ap)
 {
 	if (msg != NULL)
