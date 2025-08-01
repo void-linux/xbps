@@ -72,7 +72,7 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 
 	if (access(xhp->rootdir, W_OK) == -1 && errno != ENOENT) {
 		return xbps_error_errno(errno,
-		    "failed to check whether the roodir is wriable: "
+		    "failed to check whether the roodir is writable: "
 		    "%s: %s\n",
 		    xhp->rootdir, strerror(errno));
 	}
