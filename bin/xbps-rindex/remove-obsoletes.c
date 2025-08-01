@@ -176,7 +176,7 @@ remove_obsoletes(struct xbps_handle *xhp, const char *repodir)
 	suffixlen = snprintf(suffix, sizeof(suffix), ".%s.xbps",
 	    xhp->target_arch ? xhp->target_arch : xhp->native_arch);
 	if (suffixlen < 0 || (size_t)suffixlen >= sizeof(suffix)) {
-		xbps_error_printf("failed to create pacakge suffix: %s", strerror(ENAMETOOLONG));
+		xbps_error_printf("failed to create package suffix: %s", strerror(ENAMETOOLONG));
 		goto err;
 	}
 
