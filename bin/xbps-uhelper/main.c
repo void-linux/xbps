@@ -47,7 +47,7 @@ usage(bool fail)
 	    " -d --debug                           Debug mode shown to stderr\n"
 	    " -r --rootdir <dir>                   Full path to rootdir\n"
 	    " -v --verbose                         Verbose messages\n"
-	    " -V --version                         Show XBPS verison\n"
+	    " -V --version                         Show XBPS version\n"
 	    "\n"
 	    "MODE\n"
 	    " arch                                 Prints the configured XBPS architecture\n"
