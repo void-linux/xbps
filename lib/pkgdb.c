@@ -108,7 +108,14 @@ xbps_pkgdb_lock(struct xbps_handle *xhp)
 	}
 	umask(prev_umask);
 
+	if (flock(xhp->lock_fd, LOCK_EX|LOCK_NB) == -1) {
+		if (errno != EWOULDBLOCK)
+			goto err;
+		xbps_warn_printf("package database locked, waiting...\n");
+	}
+
 	if (flock(xhp->lock_fd, LOCK_EX) == -1) {
+err:
 		close(xhp->lock_fd);
 		xhp->lock_fd = -1;
 		return xbps_error_errno(errno, "failed to lock file: %s: %s\n",
