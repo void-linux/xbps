@@ -1,3 +1,31 @@
+xbps-0.60.5 (2025-08-02):
+
+* fixed typos in error messages and usage
+
+* xbps-uchroot(1): add /dev/pts mount separate from the host
+
+* print a warning message if the package database is locked and
+  xbps is waiting for the lock to be released.
+
+xbps-0.60.4 (2025-07-24):
+
+* reduce allocations and fix memory leaks
+
+* xbps-rindex fix bug where staging package would end up in the index if -c
+  is used on a staged repository.
+
+* fix error handling for --memory-sync and other remote metadata.
+
+* fix xbps-query --staging flag
+
+xbps-0.60.3 (2025-06-17):
+
+* fix invalid free when config lines start with spaces
+
+xbps-0.60.2 (2025-06-15):
+
+* fix xbps-rindex --remove-obsolete
+
 xbps-0.60 (2025-06-14):
 
  * libxbps: fix issues with updating packages in unpacked state. [duncaen]
