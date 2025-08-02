@@ -476,6 +476,10 @@ main(int argc, char **argv)
 		if (chdir(chrootdir) == -1)
 			die("Failed to chdir to %s", chrootdir);
 
+		if (mount("devpts", "./dev/pts", "devpts", MS_NOSUID|MS_NOEXEC,
+		    "newinstance,ptmxmode=0666,mode=620") == -1)
+			die("Failed to mount /dev/pts");
+
 		if (mount(".", ".", NULL, MS_BIND|MS_PRIVATE, NULL) == -1)
 			die("Failed to bind mount %s", chrootdir);
 
