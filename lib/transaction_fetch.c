@@ -81,8 +81,16 @@ verify_binpkg(struct xbps_handle *xhp, xbps_dictionary_t pkgd)
 			"%s: verifying SHA256 hash...", pkgver);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "filename-sha256", &sha256);
 		if ((rv = xbps_file_sha256_check(binfile, sha256)) != 0) {
-			xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL, rv, pkgver,
-				"%s: SHA256 hash is not valid: %s", pkgver, strerror(rv));
+			if (rv == ERANGE) {
+				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL,
+				    rv, pkgver,
+				    "%s: checksum does not match repository index",
+				    pkgver);
+			} else {
+				xbps_set_cb_state(xhp, XBPS_STATE_VERIFY_FAIL,
+				    rv, pkgver, "%s: failed to checksum: %s",
+				    pkgver, strerror(errno));
+			}
 			return rv;
 		}
 
