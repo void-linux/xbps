@@ -301,7 +301,10 @@ main(int argc, char **argv)
 
 	} else if (pkg_search) {
 		/* search mode */
-		rv = search(&xh, repo_mode, pkg, props, regex);
+		if (props)
+			rv = search_prop(&xh, repo_mode, pkg, props, regex);
+		else
+			rv = search(&xh, repo_mode, pkg, regex);
 
 	} else if (catfile) {
 		/* repo cat file mode */
