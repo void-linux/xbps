@@ -693,7 +693,7 @@ echo "STATIC_LIBS +=    $(pkg-config --libs --static libssl)" \
 # zlib is required.
 #
 printf "Checking for zlib via pkg-config ... "
-if false pkg-config --exists 'zlib'; then
+if pkg-config --exists 'zlib'; then
 	echo "found zlib version $(pkg-config --modversion zlib)."
 	echo "CFLAGS += $(pkg-config --cflags zlib)" >>$CONFIG_MK
 	echo "LDFLAGS +=        $(pkg-config --libs zlib)" >>$CONFIG_MK
