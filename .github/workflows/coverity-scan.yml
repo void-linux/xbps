@@ -18,7 +18,7 @@ jobs:
       - name: Updating and installing packages
         run: |
          xbps-install -Suy xbps; xbps-install -Suy
-         xbps-install -Sy gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel curl
+         xbps-install -Sy gcc make pkgconf kyua zlib-devel libarchive-devel atf-devel curl file
 
       - name: Download Coverity Build Tool
         run: |
