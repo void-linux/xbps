@@ -76,9 +76,9 @@ print_results(struct xbps_handle *xhp, struct search_ctx *sd)
 		    align, pkgver, desc);
 		/* add ellipsis if the line was truncated */
 		if (len >= sd->maxcols && sd->maxcols > 4) {
-			for (unsigned int j = 0; j < 3; j++)
-				sd->linebuf[sd->maxcols-j-1] = '.';
-			sd->linebuf[sd->maxcols] = '\0';
+			sd->linebuf[sd->maxcols - 4] = '.';
+			sd->linebuf[sd->maxcols - 3] = '.';
+			sd->linebuf[sd->maxcols - 2] = '.';
 		}
 		puts(sd->linebuf);
 	}
