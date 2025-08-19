@@ -1,6 +1,7 @@
 /*-
  * Copyright (c) 2015-2019 Juan Romero Pardines.
  * Copyright (c) 2019 Duncan Overbruck.
+ * Copyright (c) 2020 Piotr Wójcik
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -158,27 +159,18 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 {
 	int rv;
 	unsigned int i, n;
-	char *alternative, *tok1, *tok2, *linkpath, *target, *dir, *p;
+	char *alternative, *target, *dir, *p, *linkpath;
 
 	n = xbps_array_count(a);
 
 	for (i = 0; i < n; i++) {
 		alternative = xbps_string_cstring(xbps_array_get(a, i));
+		target = linkpath = NULL;
 
-		if (!(tok1 = strtok(alternative, ":")) ||
-		    !(tok2 = strtok(NULL, ":"))) {
+		if (xbps_parse_alternative(alternative, xhp->rootdir, &linkpath, &dir, &target)) {
 			free(alternative);
 			return -1;
 		}
-
-		target = strdup(tok2);
-		dir = dirname(tok2);
-
-		/* add target dir to relative links */
-		if (tok1[0] != '/')
-			linkpath = xbps_xasprintf("%s/%s/%s", xhp->rootdir, dir, tok1);
-		else
-			linkpath = xbps_xasprintf("%s/%s", xhp->rootdir, tok1);
 
 		/* create target directory, necessary for dangling symlinks */
 		dir = xbps_xasprintf("%s/%s", xhp->rootdir, dir);
@@ -207,7 +199,7 @@ create_symlinks(struct xbps_handle *xhp, xbps_array_t a, const char *grname)
 
 		xbps_set_cb_state(xhp, XBPS_STATE_ALTGROUP_LINK_ADDED, 0, NULL,
 		    "Creating '%s' alternatives group symlink: %s -> %s",
-		    grname, tok1, target);
+		    grname, linkpath + strlen(xhp->rootdir), target);
 
 		if (target[0] == '/') {
 			p = relpath(linkpath + strlen(xhp->rootdir), target);
@@ -527,6 +519,46 @@ remove_obsoletes(struct xbps_handle *xhp, const char *pkgname, const char *pkgve
 		}
 	}
 	xbps_object_release(allkeys);
+}
+
+
+/**
+ * Computes path, parent directory and target of alternative link, based on
+ * record from index and rootdir.
+ *
+ * @param[in] alternative Alternative information from index - colon-delimited
+ * pair of relative or absolute link path and absolute target. Is passed to
+ * strtok.
+ * @param[in] rootdir Rootdir path.
+ * @param[out] linkpath Path of defined link. Starts with rootdir if it isn't
+ * NULL or empty. On success, returns memory to be freed.
+ * @param[out] dir Parent directory of linkpath. Not to be freed.
+ * @param[out] target Link target, without rootdir. On success, returns memory to
+ * be freed.
+ *
+ * @return nonzero on error, zero on success.
+ **/
+int HIDDEN
+xbps_parse_alternative(char *alternative, const char *rootdir, char **linkpath, char **dir, char **target)
+{
+	char *tok1, *tok2;
+	if (!alternative ||
+	    !(tok1 = strtok(alternative, ":")) ||
+	    !(tok2 = strtok(NULL, ":"))) {
+		return -1;
+	}
+
+	*target = strdup(tok2);
+	*dir = dirname(tok2);
+
+	/* add target dir to relative links */
+	*linkpath = xbps_xasprintf("%s%s%s%s%s",
+	    ((rootdir && *rootdir) ? rootdir : ""),
+	    ((rootdir && *rootdir) ? "/" : ""),
+	    ((tok1[0] != '/') ? *dir : ""),
+	    ((tok1[0] != '/') ? "/" : ""),
+	    tok1);
+	return 0;
 }
 
 int
