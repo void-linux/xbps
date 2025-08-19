@@ -1134,7 +1134,7 @@ main(int argc, char **argv)
 	 */
 	if (compression == NULL || strcmp(compression, "zstd") == 0) {
 		archive_write_add_filter_zstd(ar);
-		archive_write_set_options(ar, "compression-level=9");
+		archive_write_set_options(ar, "compression-level=19");
 	} else if (strcmp(compression, "xz") == 0) {
 		archive_write_add_filter_xz(ar);
 		archive_write_set_options(ar, "compression-level=9");
