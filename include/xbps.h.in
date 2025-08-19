@@ -1543,16 +1543,14 @@ void xbps_rpool_release(struct xbps_handle *xhp);
 
 /**
  * Synchronizes repository data for all remote repositories
- * as specified in the configuration file or if \a uri argument is
- * set, just sync for that repository.
+ * as specified in the configuration file.
  *
  * @param[in] xhp Pointer to the xbps_handle struct.
- * @param[in] uri Repository URI to match for sync (optional).
  *
- * @return 0 on success, ENOTSUP if no repositories were found in
- * the configuration file.
+ * @return 0 on success or a negative errno otherwise.
+ * @retval -ENOENT There are no repositories to sync.
  */
-int xbps_rpool_sync(struct xbps_handle *xhp, const char *uri);
+int xbps_rpool_sync(struct xbps_handle *xhp);
 
 /**
  * Iterates over the repository pool and executes the \a fn function

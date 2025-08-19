@@ -59,16 +59,15 @@ static SIMPLEQ_HEAD(rpool_head, xbps_repo) rpool_queue =
  */
 
 int
-xbps_rpool_sync(struct xbps_handle *xhp, const char *uri)
+xbps_rpool_sync(struct xbps_handle *xhp)
 {
 	const char *repouri = NULL;
 
+	if (xbps_array_count(xhp->repositories) == 0)
+		return -ENOENT;
+
 	for (unsigned int i = 0; i < xbps_array_count(xhp->repositories); i++) {
 		xbps_array_get_cstring_nocopy(xhp->repositories, i, &repouri);
-		/* If argument was set just process that repository */
-		if (uri && strcmp(repouri, uri))
-			continue;
-
 		if (xbps_repo_sync(xhp, repouri) == -1) {
 			xbps_dbg_printf(
 			    "[rpool] `%s' failed to fetch repository data: %s\n",
@@ -143,7 +142,7 @@ xbps_rpool_foreach(struct xbps_handle *xhp,
 	struct xbps_repo *repo = NULL;
 	const char *repouri = NULL;
 	int rv = 0;
-	bool foundrepo = false, done = false;
+	bool done = false;
 	unsigned int n = 0;
 
 	assert(fn != NULL);
@@ -161,13 +160,10 @@ again:
 			SIMPLEQ_INSERT_TAIL(&rpool_queue, repo, entries);
 			xbps_dbg_printf("[rpool] `%s' registered.\n", repouri);
 		}
-		foundrepo = true;
 		rv = (*fn)(repo, arg, &done);
 		if (rv != 0 || done)
 			break;
 	}
-	if (!foundrepo)
-		rv = ENOTSUP;
 
 	return rv;
 }
