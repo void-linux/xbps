@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <limits.h>
 
 #include <openssl/err.h>
 #include <openssl/sha.h>
