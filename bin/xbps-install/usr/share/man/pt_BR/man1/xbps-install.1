@@ -1,0 +1,295 @@
+.Dd Feb 9, 2023
+.Dt XBPS-INSTALL 1
+.Os
+.Sh NOME
+.Nm xbps-install
+.Nd Utilitário XBPS para (re)instalar e atualizar pacotes
+.Sh SINOPSE
+.Nm
+.Op OPÇÕES
+.Op PACOTE...
+.Sh DESCRIÇÃO
+The
+.Nm
+utility installs, reinstalls, downgrades and updates packages in the target root directory.
+The argument
+.Ar PKG
+is a package expression, which is explained in the
+.Em PACKAGE EXPRESSION
+section.
+.Pp
+If package is installed, it will be updated to the version available in repositories
+matching the
+.Em PACKAGE EXPRESSION .
+Otherwise it will be installed, or reinstalled/downgraded if
+.Fl f , Fl -force
+option is set.
+.Sh EXPRESSÃO DE PACOTE
+A package expression is a form to match a pattern; currently xbps
+supports 3 ways to specify them:
+.Bl -dash
+.It
+by package name, i.e:
+.Dq Sy foo .
+.It
+by exact package name and version, i.e:
+.Dq Sy foo-1.0_1 .
+.It
+by specifying a package name and version separated by any of the following version comparators:
+.Pp
+.Bl -item -compact
+.It
+.Sy <
+less than
+.It
+.Sy >
+greater than
+.It
+.Sy <=
+less or equal than
+.It
+.Sy >=
+greater or equal than
+.Pp
+Example:
+.Dq Sy foo>=2.0 .
+.El
+.El
+.Pp
+The first repository matching the package expression wins.
+.Sh MODOS DE PACOTE
+An installed package can have some specific modes of operation.
+Currently the following modes are available:
+.Bl -tag -width -x
+.It Sy hold
+The package is on hold mode.
+Packages in this mode won't be updated unless
+it's explicitely declared to be updated.
+The only way to update packages in this mode is by using the
+.Fl f , Fl -force
+option.
+To list packages in this mode use
+.Nm xbps-query Fl H .
+.It Sy manual
+The package is in manual mode of installation and won't be considered for
+removal when running
+.Nm xbps-remove Fl o .
+To list packages in this mode use
+.Nm xbps-query Fl m .
+.It Sy repolock
+A package in repolock mode will only accept updates that are available in the
+same repository that was used for installing.
+To list packages in this mode use
+.Nm xbps-query Fl -list-repolock-pkgs .
+.El
+.Sh OPÇÕES
+.Bl -tag -width -x
+.It Fl A , Fl -automatic
+Enables automatic installation mode, i.e. package will be treated as orphan
+if no package is depending on it directly.
+.No See Fl -mode Sy auto No in Xr xbps-pkgdb 1 .
+.It Fl C , Fl -config Ar dir
+Specifies a path to the XBPS configuration directory.
+If the first character is not '/' then it's a relative path of
+.Ar rootdir .
+.It Fl c , Fl -cachedir Ar dir
+Specifies a path to the cache directory, where binary packages are stored.
+If the first character is not '/' then it's a relative path of
+.Ar rootdir .
+.It Fl d , Fl -debug
+Enables extra debugging shown to stderr.
+.It Fl D , Fl -download-only
+Only download packages to the cache, do not do any other installation steps.
+This may be useful for doing system upgrades while offline, or automatically
+downloading updates while leaving you with the option of still manually running
+the update.
+.It Fl f , Fl -force
+Force installation (downgrade if package version in repos is less than installed version),
+or reinstallation (if package version in repos is the same) to the target
+.Ar PKG ,
+overwriting regular package files and symlinks (if they have been modified) but
+.Em preserving configuration files .
+The only way to update packages on
+.Em hold
+mode is by using this flag.
+If
+.Fl f
+is specified twice all files will be unpacked, even
+.Em configuration files .
+.It Fl h , Fl -help
+Show the help message.
+.It Fl I , Fl -ignore-file-conflicts
+Ignore detected file conflicts in a transaction.
+.It Fl i , Fl -ignore-conf-repos
+Ignore repositories defined in configuration files.
+Only repositories specified in the command line via
+.Ar --repository
+will be used.
+.It Fl M , Fl -memory-sync
+For remote repositories, the data is fetched and stored in memory for the current
+operation.
+Cached on-disk repository indexes of remote repositories will be ignored.
+.It Fl n , Fl -dry-run
+Dry-run mode.
+Show what actions would be done but don't change any state of the system.
+To use a fresh repository indexes use
+.Fl M
+for in memory sync.
+.Pp
+The output will be a line for each action in the following format:
+.D1 <pkgver> <action> <arch> <repository> <installedsize> <downloadsize>
+.It Fl R , Fl -repository Ar url
+Appends the specified repository to the top of the list.
+The
+.Ar url
+argument expects a URL to the repository for remote repositories or
+a path for local repositories.
+Note that remote repositories must be signed using
+.Xr xbps-rindex 1 .
+This option can be specified multiple times.
+.It Fl -reproducible
+Enables reproducible mode in pkgdb.
+The
+.Ar install-date
+and
+.Ar repository
+package objects are not stored in pkgdb.
+.It Fl -staging
+Enables the use of staged packages from remote repositories.
+.It Fl r , Fl -rootdir Ar dir
+Specifies a full path for the target root directory.
+.It Fl S , Fl -sync
+Synchronize remote repository index files.
+.It Fl U , Fl -unpack-only
+If set, packages to be installed or upgraded in the transaction won't be configured,
+just unpacked.
+That means that those packages should be reconfigured via
+.Xr xbps-reconfigure 1 .
+.It Fl u , Fl -update
+Performs a full system upgrade: all installed packages
+.Pq except those on Sy hold , No see Fl -mode Sy hold No in Xr xbps-pkgdb 1
+will be updated to the greatest
+versions that were found in repositories.
+.It Fl v , Fl -verbose
+Enables verbose messages.
+.It Fl y , Fl -yes
+Assume yes to most questions and avoid interactive questions.
+A prompt will still be shown if the transaction requires trusting
+a new signing key for packages.
+If you need to automate new installations,
+it is necessary to add these keys to the system before installation, see
+.Sx FILES .
+.It Fl V , Fl -version
+Show the version information.
+.El
+.Sh AMBIENTE
+.Bl -tag -width SSL_NO_VERIFY_HOSTNAME
+.It Sy FORCE_IPV4
+Only use IPv4.
+.It Sy FORCE_IPV6
+Only use IPv6.
+.It Sy FTP_PASSIVE_MODE
+If set to anything else than
+.Ar "no"
+passive mode will be set for the ftp connection.
+.It Sy FTP_LOGIN
+User name to be set for ftp authentication.
+.It Sy FTP_PASSWORD
+Password to be set for ftp authentication.
+.It Sy FTP_PROXY
+Proxy URL that will be used to establish a ftp connection.
+.It Sy HTTP_PROXY
+Proxy URL that will be used to establish a http connection.
+.It Sy HTTP_PROXY_AUTH
+Sets the credentials to authenticate a user agent to a proxy server, in the form
+.Ar user:pass .
+.It Sy HTTP_AUTH
+Sets the credentials to authenticate to a http server, in the form
+.Ar user:pass .
+.It Sy HTTP_REFERER
+Overrides the default Referer http header.
+.It Sy HTTP_USER_AGENT
+Override the default User-Agent http header.
+.It Sy NO_PROXY
+Specifies a set of domains for which the proxy should not be consulted.
+The contents is a comma-, or space-separated list of domain names.
+A single asterisk will override all proxy variables and no transactions
+will be proxied.
+.It Sy SOCKS_PROXY
+Proxy URL that will be used to establish a socks connection.
+.It Sy SSL_NO_VERIFY_HOSTNAME
+Disables SSL/TLS hostname verification.
+.It Sy SSL_NO_VERIFY_PEER
+Disables SSL/TLS peer verification.
+.It Sy SSL_CA_CERT_FILE
+Overrides the default CA certificates file, by default set to
+.Ar /etc/ssl/certs/ca-certificates.crt .
+.It Sy SSL_CA_CERT_PATH
+Overrides the default CA certificates path, by default set to
+.Ar /etc/ssl/certs .
+.It Sy SSL_CLIENT_CERT_FILE
+Sets the SSL/TLS client verification certificate file.
+.It Sy SSL_CLIENT_KEY_FILE
+Sets the SSL/TLS client verification key file.
+.It Sy CONNECTION_TIMEOUT
+Sets connection timeout in milliseconds
+instead of default value of 5 minutes.
+When -1, waits indefinitely.
+.It Sy XBPS_ARCH
+Overrides
+.Xr uname 2
+machine result with this value.
+Useful to install packages with a fake architecture
+.It Sy XBPS_TARGET_ARCH
+Sets the target architecture to this value.
+This variable differs from
+.Sy XBPS_ARCH
+in that it allows you to install packages partially, because
+configuration phase is skipped (the target binaries might not be compatible with
+the native architecture).
+.It Sy XBPS_SYSLOG
+Overrides the
+.Xr xbps.d 5
+.Sy syslog=true|false
+configuration option.
+.El
+.Sh ARQUIVOS
+.Bl -tag -width /var/db/xbps/.<pkgname>-files.plist
+.It Ar /etc/xbps.d
+Default configuration directory.
+.It Ar /usr/share/xbps.d
+Default system configuration directory.
+.It Ar /var/db/xbps/.<pkgname>-files.plist
+Package files metadata.
+.It Ar /var/db/xbps/pkgdb-0.38.plist
+Default package database (0.38 format). Keeps track of installed packages and properties.
+.It Ar /var/db/xbps/keys
+Default trusted keys directory.
+.It Ar /var/cache/xbps
+Default cache directory to store downloaded binary packages.
+.El
+.Sh VEJA TAMBÉM
+.Xr xbps-alternatives 1 ,
+.Xr xbps-checkvers 1 ,
+.Xr xbps-create 1 ,
+.Xr xbps-dgraph 1 ,
+.Xr xbps-digest 1 ,
+.Xr xbps-fbulk 1 ,
+.Xr xbps-fetch 1 ,
+.Xr xbps-pkgdb 1 ,
+.Xr xbps-query 1 ,
+.Xr xbps-reconfigure 1 ,
+.Xr xbps-remove 1 ,
+.Xr xbps-rindex 1 ,
+.Xr xbps-uchroot 1 ,
+.Xr xbps-uunshare 1 ,
+.Xr xbps.d 5
+.Sh AUTORES
+.An Juan Romero Pardines Aq Mt xtraeme@gmail.com
+.Sh BUGS
+Provavelmente, mas tento evitar que isso aconteça.
+Use-o sob sua própria
+responsabilidade e aproveite a vida.
+.Pp
+Relatar bugs em
+.Lk https://github.com/void-linux/xbps/issues

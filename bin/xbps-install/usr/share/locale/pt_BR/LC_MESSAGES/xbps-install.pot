@@ -1,0 +1,403 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST Fernando Souza <https://github.com/tuxslack>, 2025.
+#
+# xbps-install.pot - Tradução em português do Brasil
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: xbps-install 0.60\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-13 17:06+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Fernando Souza <https://github.com/tuxslack>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: main.c:51
+#, c-format
+msgid ""
+"Usage: xbps-install [OPTIONS] [PKGNAME...]\n"
+"\n"
+"OPTIONS\n"
+" -A, --automatic             Set automatic installation mode\n"
+" -C, --config <dir>          Path to confdir (xbps.d)\n"
+" -c, --cachedir <dir>        Path to cachedir\n"
+" -d, --debug                 Debug mode shown to stderr\n"
+" -D, --download-only         Download packages and check integrity, nothing "
+"else\n"
+" -f, --force                 Force package re-installation\n"
+"                             If specified twice, all files will be "
+"overwritten.\n"
+" -h, --help                  Show usage\n"
+" -i, --ignore-conf-repos     Ignore repositories defined in xbps.d\n"
+" -I, --ignore-file-conflicts Ignore detected file conflicts\n"
+" -U, --unpack-only           Unpack packages in transaction, do not "
+"configure them\n"
+" -M, --memory-sync           Remote repository data is fetched and stored\n"
+"                             in memory, ignoring on-disk repodata archives\n"
+" -n, --dry-run               Dry-run mode\n"
+" -R, --repository <url>      Add repository to the top of the list\n"
+"                             This option can be specified multiple times\n"
+" -r, --rootdir <dir>         Full path to rootdir\n"
+"     --reproducible          Enable reproducible mode in pkgdb\n"
+"     --staging               Enable use of staged packages\n"
+" -S, --sync                  Sync remote repository index\n"
+" -u, --update                Update target package(s)\n"
+" -v, --verbose               Verbose messages\n"
+" -y, --yes                   Assume yes to all questions\n"
+" -V, --version               Show XBPS version\n"
+
+msgstr ""
+"Uso: xbps-install [OPÇÕES] [NOME DO PACOTE...]\n"
+"\n"
+"OPÇÕES\n"
+" -A, --automatic             Define o modo de instalação automática\n"
+" -C, --config <dir>          Caminho para o diretório de configuração (xbps.d)\n"
+" -c, --cachedir <dir>        Caminho para o diretório de cache\n"
+" -d, --debug                 Modo de depuração mostrado no stderr\n"
+" -D, --download-only         Baixe pacotes e verifique a integridade, nada mais "
+"else\n"
+" -f, --force                 Forçar reinstalação do pacote\n"
+"                             Se especificado duas vezes, todos os arquivos serão sobrescritos. "
+"overwritten.\n"
+" -h, --help                  Mostrar uso\n"
+" -i, --ignore-conf-repos     Ignorar repositórios definidos em xbps.d\n"
+" -I, --ignore-file-conflicts Ignorar conflitos de arquivos detectados\n"
+" -U, --unpack-only           Descompacte os pacotes na transação, "
+"não os configure\n"
+" -M, --memory-sync           Os dados do repositório remoto são obtidos e armazenados\n"
+"                             na memória, ignorando os arquivos de repositório em disco.\n"
+" -n, --dry-run               Modo de simulação\n"
+" -R, --repository <url>      Adicionar repositório ao topo da lista.\n"
+"                             Esta opção pode ser especificada várias vezes.\n"
+" -r, --rootdir <dir>         Caminho completo para o diretório raiz\n"
+"     --reproducible          Habilitar modo reproduzível no pkgdb\n"
+"     --staging               Habilitar o uso de pacotes preparados\n"
+" -S, --sync                  Sincronizar índice de repositório remoto\n"
+" -u, --update                Atualizar pacote(s) alvo\n"
+" -v, --verbose               Mensagens detalhadas\n"
+" -y, --yes                   Assume sim para todas as perguntas\n"
+" -V, --version               Mostrar versão do XBPS\n"
+
+#: main.c:86
+#, c-format
+msgid "%s: unpacked %sfile `%s' (%<PRIi64> bytes)\n"
+msgstr "%s: arquivo %s descompactado `%s' (%<PRIi64> bytes)\n"
+
+#: main.c:98
+#, c-format
+msgid "Failed to import pubkey from %s: %s\n"
+msgstr "Falha ao importar a chave pública de %s: %s\n"
+
+#: main.c:255
+#, c-format
+msgid "Failed to initialize libxbps: %s\n"
+msgstr "Falha ao inicializar libxbps: %s\n"
+
+#: main.c:276
+#, c-format
+msgid "Failed to lock the pkgdb: %s\n"
+msgstr "Falha ao bloquear o pkgdb: %s\n"
+
+#: state_cb.c:51
+#, c-format
+msgid ""
+"\n"
+"[*] Downloading packages\n"
+msgstr ""
+"\n"
+"[*] Baixando pacotes\n"
+
+#: state_cb.c:54
+#, c-format
+msgid ""
+"\n"
+"[*] Verifying package integrity\n"
+msgstr ""
+"\n"
+"[*] Verificando a integridade do pacote\n"
+
+#: state_cb.c:57
+#, c-format
+msgid ""
+"\n"
+"[*] Collecting package files\n"
+msgstr ""
+"\n"
+"[*] Coletando arquivos de pacotes\n"
+
+#: state_cb.c:60
+#, c-format
+msgid ""
+"\n"
+"[*] Unpacking packages\n"
+msgstr ""
+"\n"
+"[*] Desembalando pacotes\n"
+
+#: state_cb.c:63
+#, c-format
+msgid ""
+"\n"
+"[*] Configuring unpacked packages\n"
+msgstr ""
+"\n"
+"[*] Configurando pacotes descompactados\n"
+
+#: state_cb.c:66
+#, c-format
+msgid "[*] pkgdb upgrade in progress, please wait...\n"
+msgstr "[*] Atualização do pkgdb em andamento, aguarde...\n"
+
+#: state_cb.c:69
+#, c-format
+msgid "[*] Updating repository `%s' ...\n"
+msgstr "[*] Atualizando repositório `%s' ...\n"
+
+#: state_cb.c:86
+#, c-format
+msgid "%s: removing ...\n"
+msgstr "%s: removendo ...\n"
+
+#: state_cb.c:89
+#, c-format
+msgid "%s: configuring ...\n"
+msgstr "%s: configurando ...\n"
+
+#: state_cb.c:95
+#, c-format
+msgid "%s: unpacking ...\n"
+msgstr "%s: desempacotando ...\n"
+
+#: state_cb.c:108
+#, c-format
+msgid "%s: updating to %s ...\n"
+msgstr "%s: atualizando para %s ...\n"
+
+#: state_cb.c:110
+#, c-format
+msgid "%s: updating to %s ... "
+msgstr "%s: atualizando para %s ... "
+
+#: state_cb.c:126
+#, c-format
+msgid "%s: installed successfully.\n"
+msgstr "%s: instalado com sucesso.\n"
+
+#: state_cb.c:128
+#, c-format
+msgid "Installed `%s' successfully "
+msgstr "Installed `%s' successfully "
+
+#: state_cb.c:134
+#, c-format
+msgid "%s: updated successfully.\n"
+msgstr "`%s' instalado com sucesso\n"
+
+#: state_cb.c:136
+#, c-format
+msgid "Updated `%s' successfully "
+msgstr "`%s' atualizado com sucesso"
+
+#: state_cb.c:142
+#, c-format
+msgid "%s: removed successfully.\n"
+msgstr "%s: removido com sucesso.\n"
+
+#: state_cb.c:144
+#, c-format
+msgid "Removed `%s' successfully "
+msgstr "`%s' removido com sucesso"
+
+#: state_cb.c:150
+#, c-format
+msgid ""
+"The pkgdb file has been upgraded successfully, please reexec the command "
+"again.\n"
+msgstr "O arquivo pkgdb foi atualizado com sucesso. Execute o "
+"comando novamente."
+"\n"
+
+#: state_cb.c:155
+#, c-format
+msgid "Fingerprint: %s\n"
+msgstr "Impressão digital: %s\n"
+
+#: state_cb.c:156
+msgid "Do you want to import this public key?"
+msgstr "Você deseja importar esta chave pública?"
+
+#: state_cb.c:193
+#, c-format
+msgid "%s: unknown state %d\n"
+msgstr "%s: estado desconhecido %d\n"
+
+#: transaction.c:224
+#, c-format
+msgid "%u package%s will be downloaded:\n"
+msgstr "%u pacote%s será baixado:\n"
+
+#: transaction.c:230
+#, c-format
+msgid "%u package%s will be installed:\n"
+msgstr "%u pacote%s será instalado:\n"
+
+#: transaction.c:236
+#, c-format
+msgid "%u package%s will be updated:\n"
+msgstr "%u pacote%s será atualizado:\n"
+
+#: transaction.c:242
+#, c-format
+msgid "%u package%s will be configured:\n"
+msgstr "%u pacote%s será configurado:\n"
+
+#: transaction.c:248
+#, c-format
+msgid "%u package%s will be removed:\n"
+msgstr "%u pacote%s será removido:\n"
+
+#: transaction.c:254
+#, c-format
+msgid "%u package%s are on hold:\n"
+msgstr "%u pacote%s está em espera:\n"
+
+#: transaction.c:277
+#, c-format
+msgid "Size to download:             %6s\n"
+msgstr "Tamanho para download:        %6s\n"
+
+#: transaction.c:285
+#, c-format
+msgid "Size required on disk:        %6s\n"
+msgstr "Tamanho necessário no disco:  %6s\n"
+
+#: transaction.c:293
+#, c-format
+msgid "Size freed on disk:           %6s\n"
+msgstr "Tamanho liberado no disco:    %6s\n"
+
+#: transaction.c:301
+#, c-format
+msgid "Space available on disk:      %6s\n"
+msgstr "Espaço disponível em disco:   %6s\n"
+
+#: transaction.c:331
+msgid "No packages currently registered.\n"
+msgstr "Nenhum pacote registrado no momento.\n"
+
+#: transaction.c:337 transaction.c:368 transaction.c:393
+msgid "The 'xbps' package must be updated, please run `xbps-install -u xbps`\n"
+msgstr "O pacote 'xbps' precisa ser atualizado, execute `xbps-install -u xbps`\n"
+
+#: transaction.c:343 transaction.c:364 transaction.c:389
+msgid "No repositories currently registered!\n"
+msgstr "Nenhum repositório registrado no momento!\n"
+
+#: transaction.c:346 transaction.c:370 transaction.c:395
+#, c-format
+msgid "Unexpected error: %s\n"
+msgstr "Erro inesperado: %s\n"
+
+#: transaction.c:360
+#, c-format
+msgid "Package `%s' already installed.\n"
+msgstr "Pacote `%s' já instalado.\n"
+
+#: transaction.c:362 transaction.c:385
+#, c-format
+msgid "Package '%s' not found in repository pool.\n"
+msgstr "Pacote '%s' não encontrado no pool do repositório.\n"
+
+#: transaction.c:366 transaction.c:391
+#, c-format
+msgid "Package `%s' contains invalid dependencies, exiting.\n"
+msgstr "Pacote `%s' contém dependências inválidas, saindo.\n"
+
+#: transaction.c:383
+#, c-format
+msgid "Package '%s' is up to date.\n"
+msgstr "Pacote '%s' está atualizado.\n"
+
+#: transaction.c:387
+#, c-format
+msgid "Package '%s' not installed.\n"
+msgstr "Pacote '%s' não instalado.\n"
+
+#: transaction.c:420
+msgid "Transaction aborted due to unresolved dependencies.\n"
+msgstr "Transação Abortada devido a dependências não resolvidas.\n"
+
+#: transaction.c:427
+msgid "Transaction aborted due to unresolved shlibs.\n"
+msgstr "Transação abortada devido a shlibs não resolvidos.\n"
+
+#: transaction.c:433
+msgid "Transaction aborted due to conflicting packages.\n"
+msgstr "Transação abortada devido a pacotes conflitantes.\n"
+
+#: transaction.c:452
+#, c-format
+msgid ""
+"Transaction aborted due to insufficient disk space (need %s, got %s free).\n"
+msgstr ""
+"Transação abortada devido a espaço em disco insuficiente (precisa de %s, %s livres).\n"
+
+#: transaction.c:458
+#, c-format
+msgid "Unexpected error: %s (%d)\n"
+msgstr "Erro inesperado: %s (%d)\n"
+
+#: transaction.c:465
+msgid "Dictionary before transaction happens:\n"
+msgstr "Dicionário antes da transação acontecer:\n"
+
+#: transaction.c:501
+msgid "Do you want to continue?"
+msgstr "Você deseja continuar?"
+
+#: transaction.c:502
+#, c-format
+msgid "Aborting!\n"
+msgstr "Abortando!\n"
+
+#: transaction.c:509
+#, c-format
+msgid ""
+"\n"
+"%u downloaded, %u installed, %u updated, %u configured, %u removed, %u on "
+"hold.\n"
+
+msgstr ""
+"\n"
+"%u baixou, %u instalou, %u atualizou, %u configurou, %u removeu, %u em "
+"espera.\n"
+
+
+#: transaction.c:517
+msgid "Transaction failed! see above for errors.\n"
+msgstr "A transação falhou! veja os erros acima.\n"
+
+#: util.c:154
+#, c-format
+msgid  "\nName "
+msgstr "\nNome "
+
+#: util.c:156
+#, c-format
+msgid  "Action    Version           New version            Download size\n"
+msgstr "Ação      Versão            Nova versão            Tamanho do download\n"
+
+# question.c
+msgid " [Y/n] "
+msgstr " [S/n] "
+
+msgid " [y/N] "
+msgstr " [s/N] "
+
