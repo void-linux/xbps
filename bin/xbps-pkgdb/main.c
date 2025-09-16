@@ -201,10 +201,11 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
-		xbps_error_printf("failed to lock pkgdb: %s\n", strerror(rv));
+	if (xbps_pkgdb_lock(&xh) < 0) {
+		xbps_end(&xh);
 		exit(EXIT_FAILURE);
 	}
+
 	if (update_format) {
 		/* nothing to do; xbps_pkgdb_lock() runs the conversion for us */
 		goto out;

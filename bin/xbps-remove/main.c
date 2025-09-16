@@ -267,13 +267,17 @@ main(int argc, char **argv)
 
 	if (clean_cache > 0) {
 		rv = clean_cachedir(&xh, clean_cache > 1, drun);
-		if (!orphans || rv)
-			exit(rv);;
+		if (rv) {
+			xbps_end(&xh);
+			exit(EXIT_FAILURE);
+		}
+		if (!orphans)
+			exit(EXIT_SUCCESS);
 	}
 
-	if (!drun && (rv = xbps_pkgdb_lock(&xh)) != 0) {
-		xbps_error_printf("failed to lock pkgdb: %s\n", strerror(rv));
-		exit(rv);
+	if (!drun && xbps_pkgdb_lock(&xh) < 0) {
+		xbps_end(&xh);
+		exit(EXIT_FAILURE);
 	}
 
 	if (orphans) {

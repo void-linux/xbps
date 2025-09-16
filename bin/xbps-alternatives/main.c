@@ -351,7 +351,6 @@ main(int argc, char **argv)
 
 		/* in set mode pkgdb must be locked and flushed on success */
 		if (xbps_pkgdb_lock(&xh) < 0) {
-			xbps_error_printf("failed to lock pkgdb: %s\n", strerror(rv));
 			xbps_end(&xh);
 			exit(EXIT_FAILURE);
 		}

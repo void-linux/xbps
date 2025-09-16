@@ -238,20 +238,24 @@ main(int argc, char **argv)
 
 	/* Sync remote repository data and import keys from remote repos */
 	if (syncf && !drun) {
-		if ((rv = xbps_rpool_sync(&xh, NULL)) != 0)
-			exit(rv);
+		if ((rv = xbps_rpool_sync(&xh, NULL)) != 0) {
+			xbps_end(&xh);
+			exit(EXIT_FAILURE);
+		}
 		rv = xbps_rpool_foreach(&xh, repo_import_key_cb, NULL);
-		if (rv != 0)
-			exit(rv);
+		if (rv != 0) {
+			xbps_end(&xh);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (syncf && !update && (argc == optind))
 		exit(EXIT_SUCCESS);
 
 	if (!(xh.flags & XBPS_FLAG_DOWNLOAD_ONLY) && !drun) {
-		if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
-			xbps_error_printf("Failed to lock the pkgdb: %s\n", strerror(rv));
-			exit(rv);
+		if (xbps_pkgdb_lock(&xh) < 0) {
+			xbps_end(&xh);
+			exit(EXIT_FAILURE);
 		}
 	}
 
