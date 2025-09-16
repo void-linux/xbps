@@ -37,11 +37,18 @@
 #include <xbps.h>
 #include "defs.h"
 
+
+#include <libintl.h>
+#include <locale.h>
+#define _(STRING) gettext(STRING)
+
+
+
 static void __attribute__((noreturn))
 usage(bool fail)
 {
 	fprintf(stdout,
-	    "Usage: xbps-install [OPTIONS] [PKGNAME...]\n\n"
+	    _("Usage: xbps-install [OPTIONS] [PKGNAME...]\n\n"
 	    "OPTIONS\n"
 	    " -A, --automatic             Set automatic installation mode\n"
 	    " -C, --config <dir>          Path to confdir (xbps.d)\n"
@@ -66,7 +73,7 @@ usage(bool fail)
 	    " -u, --update                Update target package(s)\n"
 	    " -v, --verbose               Verbose messages\n"
 	    " -y, --yes                   Assume yes to all questions\n"
-	    " -V, --version               Show XBPS version\n");
+	    " -V, --version               Show XBPS version\n"));
 	exit(fail ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
@@ -76,7 +83,7 @@ unpack_progress_cb(const struct xbps_unpack_cb_data *xpd, void *cbdata UNUSED)
 	if (xpd->entry == NULL || xpd->entry_total_count <= 0)
 		return;
 
-	printf("%s: unpacked %sfile `%s' (%" PRIi64 " bytes)\n",
+	printf(_("%s: unpacked %sfile `%s' (%" PRIi64 " bytes)\n"),
 	    xpd->pkgver,
 	    xpd->entry_is_conf ? "configuration " : "", xpd->entry,
 	    xpd->entry_size);
@@ -88,16 +95,21 @@ repo_import_key_cb(struct xbps_repo *repo, void *arg UNUSED, bool *done UNUSED)
 	int rv;
 
 	if ((rv = xbps_repo_key_import(repo)) != 0)
-		xbps_error_printf("Failed to import pubkey from %s: %s\n",
+		xbps_error_printf(_("Failed to import pubkey from %s: %s\n"),
 		    repo->uri, strerror(rv));
 
 	return rv;
 }
 
+
 int
 main(int argc, char **argv)
 {
+
 	const char *shortopts = "AC:c:DdfhIiMnR:r:SuUVvy";
+
+    // Movido as declarações para o início
+
 	const struct option longopts[] = {
 		{ "automatic", no_argument, NULL, 'A' },
 		{ "config", required_argument, NULL, 'C' },
@@ -122,6 +134,9 @@ main(int argc, char **argv)
 		{ "staging", no_argument, NULL, 2 },
 		{ NULL, 0, NULL, 0 }
 	};
+
+
+
 	struct xbps_handle xh;
 	struct xferstat xfer;
 	const char *rootdir, *cachedir, *confdir;
@@ -134,6 +149,14 @@ main(int argc, char **argv)
 	syncf = yes = force = drun = update = false;
 
 	memset(&xh, 0, sizeof(xh));
+
+
+setlocale(LC_ALL, "");
+bindtextdomain("xbps-install", "/usr/share/locale");
+textdomain("xbps-install");
+
+
+
 
 	while ((c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (c) {
@@ -229,7 +252,7 @@ main(int argc, char **argv)
 		xh.unpack_cb = unpack_progress_cb;
 
 	if ((rv = xbps_init(&xh)) != 0) {
-		xbps_error_printf("Failed to initialize libxbps: %s\n",
+		xbps_error_printf(_("Failed to initialize libxbps: %s\n"),
 		    strerror(rv));
 		exit(EXIT_FAILURE);
 	}
@@ -250,7 +273,7 @@ main(int argc, char **argv)
 
 	if (!(xh.flags & XBPS_FLAG_DOWNLOAD_ONLY) && !drun) {
 		if ((rv = xbps_pkgdb_lock(&xh)) != 0) {
-			xbps_error_printf("Failed to lock the pkgdb: %s\n", strerror(rv));
+			xbps_error_printf(_("Failed to lock the pkgdb: %s\n"), strerror(rv));
 			exit(rv);
 		}
 	}

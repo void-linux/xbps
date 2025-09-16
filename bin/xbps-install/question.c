@@ -33,6 +33,12 @@
 
 #include "defs.h"
 
+
+#include <libintl.h>
+#include <locale.h>
+#define _(STRING) gettext(STRING)
+
+
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
@@ -45,14 +51,16 @@ question(bool preset, const char *fmt, va_list ap)
 
 	vfprintf(stderr, fmt, ap);
 	if (preset)
-		fputs(" [Y/n] ", stderr);
+		fputs(_(" [Y/n] "), stderr);
 	else
-		fputs(" [y/N] ", stderr);
+		fputs(_(" [y/N] "), stderr);
 
 	response = fgetc(stdin);
 	if (response == '\n')
 		rv = preset;
-	else if (response == 'y' || response == 'Y')
+
+    // Apenas acrescente S/s como equivalentes
+	else if (response == 'y' || response == 'Y' || response == 's' || response == 'S')
 		rv = true;
 	else if (response == 'n' || response == 'N')
 		rv = false;

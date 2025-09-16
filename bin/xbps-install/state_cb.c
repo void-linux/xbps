@@ -31,6 +31,10 @@
 #include <xbps.h>
 #include "defs.h"
 
+#include <libintl.h>
+#include <locale.h>
+#define _(STRING) gettext(STRING)
+
 int
 state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 {
@@ -48,25 +52,25 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 	switch (xscd->state) {
 	/* notifications */
 	case XBPS_STATE_TRANS_DOWNLOAD:
-		printf("\n[*] Downloading packages\n");
+		printf(_("\n[*] Downloading packages\n"));
 		break;
 	case XBPS_STATE_TRANS_VERIFY:
-		printf("\n[*] Verifying package integrity\n");
+		printf(_("\n[*] Verifying package integrity\n"));
 		break;
 	case XBPS_STATE_TRANS_FILES:
-		printf("\n[*] Collecting package files\n");
+		printf(_("\n[*] Collecting package files\n"));
 		break;
 	case XBPS_STATE_TRANS_RUN:
-		printf("\n[*] Unpacking packages\n");
+		printf(_("\n[*] Unpacking packages\n"));
 		break;
 	case XBPS_STATE_TRANS_CONFIGURE:
-		printf("\n[*] Configuring unpacked packages\n");
+		printf(_("\n[*] Configuring unpacked packages\n"));
 		break;
 	case XBPS_STATE_PKGDB:
-		printf("[*] pkgdb upgrade in progress, please wait...\n");
+		printf(_("[*] pkgdb upgrade in progress, please wait...\n"));
 		break;
 	case XBPS_STATE_REPOSYNC:
-		printf("[*] Updating repository `%s' ...\n", xscd->arg);
+		printf(_("[*] Updating repository `%s' ...\n"), xscd->arg);
 		break;
 	case XBPS_STATE_TRANS_ADDPKG:
 		if (xscd->xhp->flags & XBPS_FLAG_VERBOSE)
@@ -83,16 +87,16 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 			printf("%s\n", xscd->desc);
 		break;
 	case XBPS_STATE_REMOVE:
-		printf("%s: removing ...\n", xscd->arg);
+		printf(_("%s: removing ...\n"), xscd->arg);
 		break;
 	case XBPS_STATE_CONFIGURE:
-		printf("%s: configuring ...\n", xscd->arg);
+		printf(_("%s: configuring ...\n"), xscd->arg);
 		break;
 	case XBPS_STATE_CONFIGURE_DONE:
 		/* empty */
 		break;
 	case XBPS_STATE_UNPACK:
-		printf("%s: unpacking ...\n", xscd->arg);
+		printf(_("%s: unpacking ...\n"), xscd->arg);
 		break;
 	case XBPS_STATE_INSTALL:
 	case XBPS_STATE_DOWNLOAD:
@@ -105,10 +109,10 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		newver = xbps_pkg_version(xscd->arg);
 		pkgd = xbps_pkgdb_get_pkg(xscd->xhp, pkgname);
 		xbps_dictionary_get_cstring_nocopy(pkgd, "pkgver", &instver);
-		printf("%s: updating to %s ...\n", instver, newver);
+		printf(_("%s: updating to %s ...\n"), instver, newver);
 		if (slog) {
-			syslog(LOG_NOTICE, "%s: updating to %s ... "
-			    "(rootdir: %s)\n", instver, newver,
+			syslog(LOG_NOTICE, _("%s: updating to %s ... "
+			    "(rootdir: %s)\n"), instver, newver,
 			    xscd->xhp->rootdir);
 		}
 		break;
@@ -123,37 +127,37 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		}
 		break;
 	case XBPS_STATE_INSTALL_DONE:
-		printf("%s: installed successfully.\n", xscd->arg);
+		printf(_("%s: installed successfully.\n"), xscd->arg);
 		if (slog) {
-			syslog(LOG_NOTICE, "Installed `%s' successfully "
-			    "(rootdir: %s).", xscd->arg,
+			syslog(LOG_NOTICE, _("Installed `%s' successfully "
+			    "(rootdir: %s)."), xscd->arg,
 			    xscd->xhp->rootdir);
 		}
 		break;
 	case XBPS_STATE_UPDATE_DONE:
-		printf("%s: updated successfully.\n", xscd->arg);
+		printf(_("%s: updated successfully.\n"), xscd->arg);
 		if (slog) {
-			syslog(LOG_NOTICE, "Updated `%s' successfully "
-			    "(rootdir: %s).", xscd->arg,
+			syslog(LOG_NOTICE, _("Updated `%s' successfully "
+			    "(rootdir: %s)."), xscd->arg,
 			    xscd->xhp->rootdir);
 		}
 		break;
 	case XBPS_STATE_REMOVE_DONE:
-		printf("%s: removed successfully.\n", xscd->arg);
+		printf(_("%s: removed successfully.\n"), xscd->arg);
 		if (slog) {
-			syslog(LOG_NOTICE, "Removed `%s' successfully "
-			    "(rootdir: %s).", xscd->arg,
+			syslog(LOG_NOTICE, _("Removed `%s' successfully "
+			    "(rootdir: %s)."), xscd->arg,
 			    xscd->xhp->rootdir);
 		}
 		break;
 	case XBPS_STATE_PKGDB_DONE:
-		printf("The pkgdb file has been upgraded successfully, please reexec "
-		    "the command again.\n");
+		printf(_("The pkgdb file has been upgraded successfully, please reexec "
+		    "the command again.\n"));
 		break;
 	case XBPS_STATE_REPO_KEY_IMPORT:
 		printf("%s\n", xscd->desc);
-		printf("Fingerprint: %s\n", xscd->arg);
-		rv = yesno("Do you want to import this public key?");
+		printf(_("Fingerprint: %s\n"), xscd->arg);
+		rv = yesno(_("Do you want to import this public key?"));
 		break;
 	case XBPS_STATE_UNPACK_FILE_PRESERVED:
 		printf("%s\n", xscd->desc);
@@ -190,7 +194,7 @@ state_cb(const struct xbps_state_cb_data *xscd, void *cbdata UNUSED)
 		if (xscd->desc)
 			printf("%s\n", xscd->desc);
 		else
-			xbps_dbg_printf("%s: unknown state %d\n", xscd->arg, xscd->state);
+			xbps_dbg_printf(_("%s: unknown state %d\n"), xscd->arg, xscd->state);
 
 		break;
 	}

@@ -38,6 +38,11 @@
 #include <xbps.h>
 #include "defs.h"
 
+
+#include <libintl.h>
+#include <locale.h>
+#define _(STRING) gettext(STRING)
+
 int
 get_maxcols(void)
 {
@@ -146,14 +151,14 @@ print_trans_colmode(struct transaction *trans, unsigned int cols)
 	if (cols <= hdrlen)
 		return false;
 
-	printf("\nName ");
+	printf(_("\nName "));
 	if (pnamelen < 5)
 		pnamelen = 5;
 
 	for (x = 5; x < pnamelen; x++)
 		printf(" ");
 
-	printf("Action    Version           New version            Download size\n");
+	printf(_("Action    Version           New version            Download size\n"));
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
 		bool dload = false;

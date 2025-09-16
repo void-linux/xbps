@@ -36,6 +36,12 @@
 #include <xbps.h>
 #include "defs.h"
 
+
+#include <libintl.h>
+#include <locale.h>
+#define _(STRING) gettext(STRING)
+
+
 static void
 print_array(xbps_array_t a)
 {
@@ -207,37 +213,37 @@ show_transaction_sizes(struct transaction *trans, int cols)
 		 * Show the list of packages and its action.
 		 */
 		if (trans->dl_pkgcnt) {
-			printf("%u package%s will be downloaded:\n",
+			printf(_("%u package%s will be downloaded:\n"),
 			    trans->dl_pkgcnt, trans->dl_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_DOWNLOAD, cols);
 			printf("\n");
 		}
 		if (trans->inst_pkgcnt) {
-			printf("%u package%s will be installed:\n",
+			printf(_("%u package%s will be installed:\n"),
 			    trans->inst_pkgcnt, trans->inst_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_INSTALL, cols);
 			printf("\n");
 		}
 		if (trans->up_pkgcnt) {
-			printf("%u package%s will be updated:\n",
+			printf(_("%u package%s will be updated:\n"),
 			    trans->up_pkgcnt, trans->up_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_UPDATE, cols);
 			printf("\n");
 		}
 		if (trans->cf_pkgcnt) {
-			printf("%u package%s will be configured:\n",
+			printf(_("%u package%s will be configured:\n"),
 			    trans->cf_pkgcnt, trans->cf_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_CONFIGURE, cols);
 			printf("\n");
 		}
 		if (trans->rm_pkgcnt) {
-			printf("%u package%s will be removed:\n",
+			printf(_("%u package%s will be removed:\n"),
 			    trans->rm_pkgcnt, trans->rm_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_REMOVE, cols);
 			printf("\n");
 		}
 		if (trans->hold_pkgcnt) {
-			printf("%u package%s are on hold:\n",
+			printf(_("%u package%s are on hold:\n"),
 			    trans->hold_pkgcnt, trans->hold_pkgcnt == 1 ? "" : "s");
 			show_package_list(trans, XBPS_TRANS_HOLD, cols);
 			printf("\n");
@@ -260,7 +266,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Size to download:             %6s\n", size);
+		printf(_("Size to download:             %6s\n"), size);
 	}
 	if (instsize) {
 		if (xbps_humanize_number(size, (int64_t)instsize) == -1) {
@@ -268,7 +274,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Size required on disk:        %6s\n", size);
+		printf(_("Size required on disk:        %6s\n"), size);
 	}
 	if (rmsize) {
 		if (xbps_humanize_number(size, (int64_t)rmsize) == -1) {
@@ -276,7 +282,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Size freed on disk:           %6s\n", size);
+		printf(_("Size freed on disk:           %6s\n"), size);
 	}
 	if (disk_free_size) {
 		if (xbps_humanize_number(size, (int64_t)disk_free_size) == -1) {
@@ -284,7 +290,7 @@ show_transaction_sizes(struct transaction *trans, int cols)
 			    "%s\n", strerror(errno));
 			return -1;
 		}
-		printf("Space available on disk:      %6s\n", size);
+		printf(_("Space available on disk:      %6s\n"), size);
 	}
 	printf("\n");
 
@@ -314,22 +320,22 @@ dist_upgrade(struct xbps_handle *xhp, unsigned int cols, bool yes, bool drun)
 
 	rv = xbps_transaction_update_packages(xhp);
 	if (rv == ENOENT) {
-		xbps_error_printf("No packages currently registered.\n");
+		xbps_error_printf(_("No packages currently registered.\n"));
 		return 0;
 	} else if (rv == EBUSY) {
 		if (drun) {
 			rv = 0;
 		} else {
-			xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
+			xbps_error_printf(_("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n"));
 			return rv;
 		}
 	} else if (rv == EEXIST) {
 		return 0;
 	} else if (rv == ENOTSUP) {
-		xbps_error_printf("No repositories currently registered!\n");
+		xbps_error_printf(_("No repositories currently registered!\n"));
 		return rv;
 	} else if (rv != 0) {
-		xbps_error_printf("Unexpected error: %s\n", strerror(rv));
+		xbps_error_printf(_("Unexpected error: %s\n"), strerror(rv));
 		return -1;
 	}
 
@@ -343,17 +349,17 @@ install_new_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 
 	rv = xbps_transaction_install_pkg(xhp, pkg, force);
 	if (rv == EEXIST)
-		xbps_error_printf("Package `%s' already installed.\n", pkg);
+		xbps_error_printf(_("Package `%s' already installed.\n"), pkg);
 	else if (rv == ENOENT)
-		xbps_error_printf("Package '%s' not found in repository pool.\n", pkg);
+		xbps_error_printf(_("Package '%s' not found in repository pool.\n"), pkg);
 	else if (rv == ENOTSUP)
-		xbps_error_printf("No repositories currently registered!\n");
+		xbps_error_printf(_("No repositories currently registered!\n"));
 	else if (rv == ENXIO)
-		xbps_error_printf("Package `%s' contains invalid dependencies, exiting.\n", pkg);
+		xbps_error_printf(_("Package `%s' contains invalid dependencies, exiting.\n"), pkg);
 	else if (rv == EBUSY)
-		xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
+		xbps_error_printf(_("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n"));
 	else if (rv != 0) {
-		xbps_error_printf("Unexpected error: %s\n", strerror(rv));
+		xbps_error_printf(_("Unexpected error: %s\n"), strerror(rv));
 		rv = -1;
 	}
 	return rv;
@@ -366,19 +372,19 @@ update_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 
 	rv = xbps_transaction_update_pkg(xhp, pkg, force);
 	if (rv == EEXIST)
-		printf("Package '%s' is up to date.\n", pkg);
+		printf(_("Package '%s' is up to date.\n"), pkg);
 	else if (rv == ENOENT)
-		xbps_error_printf("Package '%s' not found in repository pool.\n", pkg);
+		xbps_error_printf(_("Package '%s' not found in repository pool.\n"), pkg);
 	else if (rv == ENODEV)
-		xbps_error_printf("Package '%s' not installed.\n", pkg);
+		xbps_error_printf(_("Package '%s' not installed.\n"), pkg);
 	else if (rv == ENOTSUP)
-		xbps_error_printf("No repositories currently registered!\n");
+		xbps_error_printf(_("No repositories currently registered!\n"));
 	else if (rv == ENXIO)
-		xbps_error_printf("Package `%s' contains invalid dependencies, exiting.\n", pkg);
+		xbps_error_printf(_("Package `%s' contains invalid dependencies, exiting.\n"), pkg);
 	else if (rv == EBUSY)
-		xbps_error_printf("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n");
+		xbps_error_printf(_("The 'xbps' package must be updated, please run `xbps-install -u xbps`\n"));
 	else if (rv != 0) {
-		xbps_error_printf("Unexpected error: %s\n", strerror(rv));
+		xbps_error_printf(_("Unexpected error: %s\n"), strerror(rv));
 		return -1;
 	}
 	return rv;
@@ -403,20 +409,20 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 			if (xbps_array_count(array)) {
 				/* missing dependencies */
 				print_array(array);
-				xbps_error_printf("Transaction aborted due to unresolved dependencies.\n");
+				xbps_error_printf(_("Transaction aborted due to unresolved dependencies.\n"));
 			}
 		} else if (rv == ENOEXEC) {
 			array = xbps_dictionary_get(xhp->transd, "missing_shlibs");
 			if (xbps_array_count(array)) {
 				/* missing shlibs */
 				print_array(array);
-				xbps_error_printf("Transaction aborted due to unresolved shlibs.\n");
+				xbps_error_printf(_("Transaction aborted due to unresolved shlibs.\n"));
 			}
 		} else if (rv == EAGAIN) {
 			/* conflicts */
 			array = xbps_dictionary_get(xhp->transd, "conflicts");
 			print_array(array);
-			xbps_error_printf("Transaction aborted due to conflicting packages.\n");
+			xbps_error_printf(_("Transaction aborted due to conflicting packages.\n"));
 		} else if (rv == ENOSPC) {
 			/* not enough free space */
 			xbps_dictionary_get_uint64(xhp->transd,
@@ -435,20 +441,20 @@ exec_transaction(struct xbps_handle *xhp, unsigned int maxcols, bool yes, bool d
 				rv = -1;
 				goto out;
 			}
-			xbps_error_printf("Transaction aborted due to insufficient disk "
-			    "space (need %s, got %s free).\n", instsize, freesize);
+			xbps_error_printf(_("Transaction aborted due to insufficient disk "
+			    "space (need %s, got %s free).\n"), instsize, freesize);
 			if (drun) {
 				goto proceed;
 			}
 		} else {
-			xbps_error_printf("Unexpected error: %s (%d)\n",
+			xbps_error_printf(_("Unexpected error: %s (%d)\n"),
 			    strerror(rv), rv);
 		}
 		goto out;
 	}
 proceed:
 #ifdef FULL_DEBUG
-	xbps_dbg_printf("Dictionary before transaction happens:\n");
+	xbps_dbg_printf(_("Dictionary before transaction happens:\n"));
 	xbps_dbg_printf_append("%s",
 	    xbps_dictionary_externalize(xhp->transd));
 #endif
@@ -484,23 +490,23 @@ proceed:
 	/*
 	 * Ask interactively (if -y not set).
 	 */
-	if (!yes && !yesno("Do you want to continue?")) {
-		printf("Aborting!\n");
+	if (!yes && !yesno(_("Do you want to continue?"))) {
+		printf(_("Aborting!\n"));
 		goto out;
 	}
 	/*
 	 * It's time to run the transaction!
 	 */
 	if ((rv = xbps_transaction_commit(xhp)) == 0) {
-		printf("\n%u downloaded, %u installed, %u updated, "
-		    "%u configured, %u removed, %u on hold.\n",
+		printf(_("\n%u downloaded, %u installed, %u updated, "
+		    "%u configured, %u removed, %u on hold.\n"),
 		    trans->dl_pkgcnt, trans->inst_pkgcnt,
 		    trans->up_pkgcnt,
 		    trans->cf_pkgcnt + trans->inst_pkgcnt + trans->up_pkgcnt,
 		    trans->rm_pkgcnt,
 		    trans->hold_pkgcnt);
 	} else {
-		xbps_error_printf("Transaction failed! see above for errors.\n");
+		xbps_error_printf(_("Transaction failed! see above for errors.\n"));
 	}
 out:
 	if (trans->iter)
