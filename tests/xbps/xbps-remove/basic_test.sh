@@ -55,31 +55,25 @@ clean_cache_head() {
 clean_cache_body() {
 	mkdir -p repo pkg_A/B/C pkg_B
 	touch pkg_A/
+
 	cd repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg_B
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
 	cd ..
+
 	mkdir -p root/etc/xbps.d root/var/db/xbps/https___localhost_ root/var/cache/xbps
-	cp repo/*-repodata root/var/db/xbps/https___localhost_
-	atf_check_equal $? 0
-	cp repo/*.xbps root/var/cache/xbps
-	atf_check_equal $? 0
+	atf_check -- cp repo/*-repodata root/var/db/xbps/https___localhost_
+	atf_check -- cp repo/*.xbps root/var/cache/xbps
 	echo "repository=https://localhost/" >root/etc/xbps.d/localrepo.conf
-	xbps-install -r root -C etc/xbps.d -R repo -dvy B
-	xbps-remove -r root -C etc/xbps.d -dvO
-	atf_check_equal $? 0
-	test -f root/var/cache/xbps/A-1.0_2.noarch.xbps
-	atf_check_equal $? 0
-	test -f root/var/cache/xbps/A-1.0_1.noarch.xbps
-	atf_check_equal $? 1
-	test -f root/var/cache/xbps/B-1.0_1.noarch.xbps
-	atf_check_equal $? 0
+
+	atf_check -o ignore -- xbps-install -r root -C etc/xbps.d -R repo -y B
+	atf_check -o inline:"Removed A-1.0_1.noarch.xbps from cachedir (obsolete)\n" \
+		-- xbps-remove -r root -C etc/xbps.d -O
+	atf_check -- test -f root/var/cache/xbps/A-1.0_2.noarch.xbps
+	atf_check -s exit:1 -- test -f root/var/cache/xbps/A-1.0_1.noarch.xbps
+	atf_check -- test -f root/var/cache/xbps/B-1.0_1.noarch.xbps
 }
 
 atf_test_case clean_cache_dry_run
