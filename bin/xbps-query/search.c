@@ -174,15 +174,15 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pattern, bool regex)
 
 	ctx.results = xbps_array_create();
 	if (!ctx.results) {
-		xbps_error_oom();
-		return EXIT_FAILURE;
+		r = xbps_error_oom();
+		goto err;
 	}
 
 	if (ctx.maxcols > 0) {
 		ctx.linebuf = malloc(ctx.maxcols);
 		if (!ctx.linebuf) {
-			xbps_error_oom();
-			return EXIT_FAILURE;
+			r = xbps_error_oom();
+			goto err;
 		}
 	}
 
@@ -191,14 +191,17 @@ search(struct xbps_handle *xhp, bool repo_mode, const char *pattern, bool regex)
 	else
 		r = xbps_pkgdb_foreach_cb(xhp, search_cb, &ctx);
 	if (r != 0)
-		return EXIT_FAILURE;
+		goto err;
 
 	print_results(xhp, &ctx);
 
-	xbps_object_release(ctx.results);
+err:
+	if (ctx.results)
+		xbps_object_release(ctx.results);
 	if (regex)
 		regfree(&ctx.regexp);
-	return 0;
+	free(ctx.linebuf);
+	return r == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 struct search_prop_ctx {
