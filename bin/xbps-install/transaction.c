@@ -366,7 +366,7 @@ update_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 
 	rv = xbps_transaction_update_pkg(xhp, pkg, force);
 	if (rv == EEXIST)
-		printf("Package '%s' is up to date.\n", pkg);
+		fprintf(stderr, "Package '%s' is up to date.\n", pkg);
 	else if (rv == ENOENT)
 		xbps_error_printf("Package '%s' not found in repository pool.\n", pkg);
 	else if (rv == ENODEV)
