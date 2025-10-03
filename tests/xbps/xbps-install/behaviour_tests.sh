@@ -95,18 +95,17 @@ unpacked_dep_head() {
 
 unpacked_dep_body() {
 	mkdir -p some_repo pkg_A pkg_B
+
 	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" -D "A>=0" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" -D "A>=0" ../pkg_B
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
 	cd ..
-	xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yU A
-	atf_check_equal $? 0
-	res=$(xbps-install -r root -C empty.conf --repository=$PWD/some_repo -un B | grep -Fv -e "A-1.0_1 configure" -e "B-1.0_1 install")
-	atf_check_equal "$res" ""
+
+	atf_check -o ignore -- xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yU A
+	atf_check -o inline:"unpacked\n" -- xbps-query -r root -p state A
+	atf_check -o match:"A-1.0_1 configure" -o match:"B-1.0_1 install" -- \
+		xbps-install -r root -C empty.conf --repository=$PWD/some_repo -un B
 }
 
 atf_test_case reinstall_unpacked_unpack_only
