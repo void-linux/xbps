@@ -318,6 +318,28 @@ repo_deps(struct xbps_handle *xhp,
 				break;
 			}
 		}
+		if (ttype == XBPS_TRANS_UPDATE || ttype == XBPS_TRANS_CONFIGURE) {
+			/*
+			 * If the package is already installed preserve the installation mode,
+			 * which is not automatic if automatic-install is not set.
+			 */
+			bool pkgd_auto = false;
+			xbps_dictionary_get_bool(curpkgd, "automatic-install", &pkgd_auto);
+			autoinst = pkgd_auto;
+		}
+		if (ttype == XBPS_TRANS_CONFIGURE) {
+			if (!xbps_transaction_pkg_type_set(curpkgd, ttype)) {
+				rv = EINVAL;
+				xbps_dbg_printf("xbps_transaction_pkg_type_set failed for `%s': %s\n", reqpkg, strerror(rv));
+				break;
+			}
+			if (!xbps_transaction_store(xhp, pkgs, curpkgd, autoinst)) {
+				rv = EINVAL;
+				xbps_dbg_printf("xbps_transaction_store failed for `%s': %s\n", reqpkg, strerror(rv));
+				break;
+			}
+			continue;
+		}
 		/*
 		 * Pass 4: find required dependency in repository pool.
 		 * If dependency does not match add pkg into the missing
@@ -432,15 +454,6 @@ repo_deps(struct xbps_handle *xhp,
 			ttype = XBPS_TRANS_DOWNLOAD;
 		} else if (xbps_dictionary_get(curpkgd, "hold")) {
 			ttype = XBPS_TRANS_HOLD;
-		}
-		if (ttype == XBPS_TRANS_UPDATE || ttype == XBPS_TRANS_CONFIGURE) {
-			/*
-			 * If the package is already installed preserve the installation mode,
-			 * which is not automatic if automatic-install is not set.
-			 */
-			bool pkgd_auto = false;
-			xbps_dictionary_get_bool(curpkgd, "automatic-install", &pkgd_auto);
-			autoinst = pkgd_auto;
 		}
 		/*
 		 * All deps were processed, store pkg in transaction.
