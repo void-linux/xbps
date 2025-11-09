@@ -30,6 +30,7 @@
 #include <getopt.h>
 
 #include "defs.h"
+#include "xbps/xbps_array.h"
 
 static void __attribute__((noreturn))
 usage(bool fail)
@@ -46,6 +47,7 @@ usage(bool fail)
 	    "     --compression <fmt>            Compression format: none, gzip, bzip2, lz4, xz, zstd (default)\n"
 	    "     --privkey <key>                Path to the private key for signing\n"
 	    "     --signedby <string>            Signature details, i.e \"name <email>\"\n\n"
+	    " -R, --repository <dir>             Add a local repository\n"
 	    "MODE\n"
 	    " -a, --add <repodir/file.xbps> ...  Add package(s) to repository index\n"
 	    " -c, --clean <repodir>              Clean repository index\n"
@@ -58,7 +60,7 @@ usage(bool fail)
 int
 main(int argc, char **argv)
 {
-	const char *shortopts = "acdfhrsCSVv";
+	const char *shortopts = "acdfhrR:sCSVv";
 	struct option longopts[] = {
 		{ "add", no_argument, NULL, 'a' },
 		{ "clean", no_argument, NULL, 'c' },
@@ -74,12 +76,14 @@ main(int argc, char **argv)
 		{ "sign-pkg", no_argument, NULL, 'S'},
 		{ "hashcheck", no_argument, NULL, 'C' },
 		{ "compression", required_argument, NULL, 2},
+		{ "repository", required_argument, NULL, 'R'},
 		{ NULL, 0, NULL, 0 }
 	};
 	struct xbps_handle xh;
 	const char *compression = NULL;
 	const char *privkey = NULL, *signedby = NULL;
 	int rv, c, flags = 0;
+	xbps_array_t repos = NULL;
 	bool add_mode, clean_mode, rm_mode, sign_mode, sign_pkg_mode, force,
 			 hashcheck;
 
@@ -120,6 +124,14 @@ main(int argc, char **argv)
 			break;
 		case 'C':
 			hashcheck = true;
+			break;
+		case 'R':
+			if (!repos)
+				repos = xbps_array_create();
+			if (!repos || !xbps_array_add_cstring(repos, optarg)) {
+				xbps_error_oom();
+				exit(1);
+			}
 			break;
 		case 'S':
 			sign_pkg_mode = true;
