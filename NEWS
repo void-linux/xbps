@@ -1,3 +1,15 @@
+xbps-0.60.6 (2025-11-16):
+
+* libxbps: improved error messages for package checksum mismatch and package
+  database locking errors. [duncaen]
+
+* libxbps: packages in unpack state that will be configured in
+  transaction are no longer required to be found in the repo pool. [duncaen]
+
+* xbps-query(1): fixed memory leaks and refactor --search. [duncaen]
+
+* xbps-query(1): fixed off-by-one error in --search ellipsis. [achequisde]
+
 xbps-0.60.5 (2025-08-02):
 
 * fixed typos in error messages and usage
