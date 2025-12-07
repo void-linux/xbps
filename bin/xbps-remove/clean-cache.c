@@ -181,7 +181,8 @@ clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 			.uninstalled = uninstalled,
 		};
 		rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, (void*)&data);
-		xbps_object_release(array);
 	}
+
+	xbps_object_release(array);
 	return rv;
 }
