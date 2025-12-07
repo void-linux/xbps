@@ -150,7 +150,13 @@ clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 	// XXX: there is no public api to load the pkgdb so force it before
 	// its done potentially concurrently by threads through the
 	// xbps_array_foreach_cb_multi call later.
-	(void)xbps_pkgdb_get_pkg(xhp, "foo");
+	// XXX: same for the repository pool...
+	if (uninstalled) {
+		(void)xbps_pkgdb_get_pkg(xhp, "package-that-wont-exist");
+	} else {
+		(void)xbps_rpool_get_pkg(xhp, "package-that-wont-exist-so-it-loads-all-repos");
+		(void)xbps_pkgdb_get_pkg(xhp, "package-that-wont-exist");
+	}
 
 	if (chdir(xhp->cachedir) == -1) {
 		if (errno == ENOENT)
