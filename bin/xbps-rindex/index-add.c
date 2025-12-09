@@ -462,7 +462,7 @@ print_staged_packages(struct repo_state *states, unsigned nstates)
 			const char *pkgver = NULL, *arch = NULL;
 			xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
 			xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch);
-			printf("stage: added `%s' (%s)\n", pkgver, arch);
+			printf("%s: stage: added `%s' (%s)\n", state->repodir, pkgver, arch);
 		}
 
 		xbps_object_iterator_release(iter);
@@ -491,7 +491,8 @@ unstage(struct repo_state *state)
 		if (!xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch))
 			abort();
 
-		printf("index: added `%s' (%s).\n", pkgver, arch);
+		printf("%s: index: added `%s' (%s).\n", state->repodir,
+		    pkgver, arch);
 
 		if (!xbps_dictionary_set(state->index, pkgname, pkg)) {
 			xbps_object_iterator_release(iter);
@@ -560,8 +561,13 @@ commit(struct repo_state *states, unsigned nstates)
 
 	for (unsigned i = 0; i < nstates; i++) {
 		struct repo_state *state = &states[i];
-		// XXX: kinda useless to print for all repos, also print stage?.
-		printf("index: %u packages registered.\n", xbps_dictionary_count(state->index));
+		printf("%s: index: %u packages registered.\n",
+		    state->repodir, xbps_dictionary_count(state->index));
+		if (xbps_dictionary_count(state->stage) != 0) {
+			printf("%s: stage: %u packages registered.\n",
+			    state->repodir,
+			    xbps_dictionary_count(state->stage));
+		}
 	}
 
 	r = 0;
