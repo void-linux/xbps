@@ -230,7 +230,7 @@ sign_repo(struct xbps_handle *xhp, const char *repodir,
 		xbps_error_printf("cannot lock repository: %s\n", strerror(errno));
 		goto out;
 	}
-	r = repodata_flush(repodir, repoarch, repo->index, repo->stage, meta, compression);
+	r = repodata_write_file(repodir, repoarch, repo->index, repo->stage, meta, compression);
 	xbps_repo_unlock(repodir, repoarch, lockfd);
 	if (r < 0) {
 		xbps_error_printf("failed to write repodata: %s\n", strerror(errno));

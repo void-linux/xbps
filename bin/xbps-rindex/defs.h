@@ -45,8 +45,13 @@ int	sign_repo(struct xbps_handle *, const char *, const char *,
 int	sign_pkgs(struct xbps_handle *, int, int, char **, const char *, bool);
 
 /* From repoflush.c */
-int	repodata_flush(const char *repodir, const char *arch,
-		xbps_dictionary_t index, xbps_dictionary_t stage, xbps_dictionary_t meta,
-		const char *compression);
+int repodata_write_file(const char *repodir, const char *arch,
+    xbps_dictionary_t index, xbps_dictionary_t stage, xbps_dictionary_t meta,
+    const char *compression);
+int repodata_write_tmpfile(char *tmp, size_t tmpsz, char *path, size_t pathsz,
+    const char *repodir, const char *arch, xbps_dictionary_t index,
+    xbps_dictionary_t stage, xbps_dictionary_t meta, const char *compression);
+int repodata_write_fd(int fd, xbps_dictionary_t index, xbps_dictionary_t stage, xbps_dictionary_t meta,
+    const char *compression);
 
 #endif /* !_XBPS_RINDEX_DEFS_H_ */

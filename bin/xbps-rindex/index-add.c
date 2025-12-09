@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2012-2015 Juan Romero Pardines.
+ * Copyright (c) 2025 Duncan Overbruck <mail@duncano.de>.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +42,8 @@
 #include "defs.h"
 
 struct repo {
+	char path[PATH_MAX];
+	char tmp[PATH_MAX];
 	int lockfd;
 	bool changed;
 	const char *repodir;
@@ -698,14 +701,30 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force, const char
 	if (r < 0)
 		goto err;
 
+	// write all changed repodata's to tempfiles
 	for (unsigned i = 0; i < nrepos; i++) {
 		struct repo *repo = &repos[i];
 		if (!repo->changed)
 			continue;
-		r = repodata_flush(repo->repodir, repo->arch, repo->index,
-		    repo->stage, repo->meta, compression);
+		r = repodata_write_tmpfile(repo->path, sizeof(repo->path),
+		    repo->tmp, sizeof(repo->tmp), repo->repodir, repo->arch,
+		    repo->index, repo->stage, repo->meta, compression);
 		if (r < 0)
 			goto err;
+	}
+
+	// rename all changed repodata's tempfiles
+	for (unsigned i = 0; i < nrepos; i++) {
+		struct repo *repo = &repos[i];
+		if (!repo->changed)
+			continue;
+		if (rename(repo->tmp, repo->path) == -2) {
+			xbps_error_printf("failed to rename tempfile: %s: %s: %s\n",
+			    repo->tmp, repo->path, strerror(-errno));
+			// XXX: maybe better to abort here, but either way
+			// we'll end up with inconsistent staging...
+		}
+
 	}
 
 	for (unsigned i = 0; i < nrepos; i++)
@@ -715,7 +734,10 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force, const char
 	return EXIT_SUCCESS;
 
 err:
-	for (unsigned i = 0; i < nrepos; i++)
+	for (unsigned i = 0; i < nrepos; i++) {
+		if (repos[i].tmp[0] != 0)
+			unlink(repos[i].tmp);
 		repo_state_release(&repos[i]);
+	}
 	return EXIT_FAILURE;
 }
