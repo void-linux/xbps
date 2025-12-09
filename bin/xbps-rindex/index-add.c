@@ -338,6 +338,16 @@ err:
 	return r;
 }
 
+static const char *
+safe_dirname(char *dst, size_t dstsz, const char *path)
+{
+	if (strlcpy(dst, path, dstsz) >= dstsz) {
+		errno = ENOBUFS;
+		return NULL;
+	}
+	return dirname(dst);
+}
+
 static int
 find_repo(struct repo *repos, unsigned int nrepos, const char *file, struct repo **outp)
 {
@@ -345,13 +355,7 @@ find_repo(struct repo *repos, unsigned int nrepos, const char *file, struct repo
 	const char *dir;
 	int r;
 
-	if (strlcpy(tmp, file, sizeof(tmp)) >= sizeof(tmp)) {
-		xbps_error_printf(
-		    "failed to copy path: %s: %s\n", file, strerror(ENOBUFS));
-		return -ENOBUFS;
-	}
-
-	dir = dirname(tmp);
+	dir = safe_dirname(tmp, sizeof(tmp), file);
 	if (!dir) {
 		r = -errno;
 		xbps_error_printf("failed to get directory from path: %s: %s\n",
@@ -612,6 +616,42 @@ err:
 	return r;
 }
 
+static xbps_array_t
+repos_from_argv(int argc, char **argv)
+{
+	char tmp[PATH_MAX];
+	xbps_array_t res;
+
+	res = xbps_array_create();
+	if (!res) {
+		errno = -xbps_error_oom();
+		return NULL;
+	}
+
+	for (int i = 0; i < argc; i++) {
+		const char *dir;
+		int r;
+		dir = safe_dirname(tmp, sizeof(tmp), argv[0]);
+		if (!dir) {
+			r = -errno;
+			xbps_error_printf(
+			    "failed to get dirname: %s: %s\n", argv[0], strerror(-r));
+			xbps_object_release(res);
+			errno = -r;
+			return NULL;
+		}
+		if (xbps_match_string_in_array(res, dir))
+			continue;
+		if (!xbps_array_add_cstring(res, dir)) {
+			xbps_object_release(res);
+			errno = -xbps_error_oom();
+			return NULL;
+		}
+	}
+
+	return res;
+}
+
 int
 index_add(struct xbps_handle *xhp, int argc, char **argv, bool force, const char *compression, xbps_array_t repo_args)
 {
@@ -620,30 +660,12 @@ index_add(struct xbps_handle *xhp, int argc, char **argv, bool force, const char
 	unsigned nrepos;
 	int r;
 
+	// Backwards compatibiltiy if no repo args are given, in this case
+	// add the repos based on the supplied packages...
 	if (!repo_args) {
-		char tmp[PATH_MAX];
-		const char *repodir;
-		repo_args = xbps_array_create();
-		if (!repo_args) {
-			xbps_error_oom();
+		repo_args = repos_from_argv(argc, argv);
+		if (!repo_args)
 			return EXIT_FAILURE;
-		}
-		if (strlcpy(tmp, argv[0], sizeof(tmp)) >= sizeof(tmp)) {
-			xbps_error_printf("failed to copy path: %s: %s\n", argv[0],
-			    strerror(ENOBUFS));
-			return EXIT_FAILURE;
-		}
-		repodir = dirname(tmp);
-		if (!repodir) {
-			xbps_error_printf("failed to get dirname: %s: %s\n", tmp, strerror(errno));
-			xbps_object_release(repo_args);
-			return EXIT_FAILURE;
-		}
-		if (!xbps_array_add_cstring(repo_args, repodir)) {
-			xbps_error_oom();
-			xbps_object_release(repo_args);
-			return EXIT_FAILURE;
-		}
 	}
 
 	nrepos = xbps_array_count(repo_args);
