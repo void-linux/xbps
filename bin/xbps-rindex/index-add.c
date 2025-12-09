@@ -42,12 +42,14 @@
 
 struct repo_state {
 	int lockfd;
+	bool changed;
 	const char *repodir;
 	const char *arch;
 	struct xbps_repo *repo;
 	xbps_dictionary_t index;
 	xbps_dictionary_t stage;
 	xbps_dictionary_t meta;
+	xbps_array_t added;
 };
 
 struct shared_state {
@@ -326,6 +328,12 @@ index_add_pkg(struct repo_state *state, const char *file, bool force)
 		goto err;
 	}
 
+	state->changed = true;
+	if (!xbps_array_add_cstring(state->added, pkgname)) {
+		r = xbps_error_oom();
+		goto err;
+	}
+
 	r = 0;
 err:
 	xbps_object_release(binpkgd);
@@ -371,6 +379,7 @@ repo_add_package(
 static int
 repo_state_open(struct xbps_handle *xhp, struct repo_state *state, const char *repodir, const char *arch)
 {
+	state->changed = false;
 	state->repodir = repodir;
 	state->arch = arch;
 	state->lockfd = xbps_repo_lock(state->repodir, arch);
@@ -378,19 +387,36 @@ repo_state_open(struct xbps_handle *xhp, struct repo_state *state, const char *r
 		xbps_error_printf(
 		    "failed to lock repository: %s: %s\n",
 		    state->repodir, strerror(-state->lockfd));
-		return EXIT_FAILURE;
+		return -state->lockfd;
 	}
+
+	state->added = xbps_array_create();
+	if (!state->added)
+		return xbps_error_oom();
+
 	state->repo = xbps_repo_open(xhp, repodir);
 	if (!state->repo) {
 		if (errno != ENOENT)
-			return EXIT_FAILURE;
+			return -errno;
 		state->index = xbps_dictionary_create();
+		if (!state->index)
+			return xbps_error_oom();
 		state->stage = xbps_dictionary_create();
+		if (!state->stage)
+			return xbps_error_oom();
 		state->meta = NULL;
 	} else {
 		state->index = xbps_dictionary_copy_mutable(state->repo->index);
+		if (!state->index)
+			return xbps_error_oom();
 		state->stage = xbps_dictionary_copy_mutable(state->repo->stage);
-		state->meta = xbps_dictionary_copy_mutable(state->repo->idxmeta);
+		if (!state->stage)
+			return xbps_error_oom();
+		if (state->repo->idxmeta) {
+			state->meta = xbps_dictionary_copy_mutable(state->repo->idxmeta);
+			if (!state->meta)
+				return xbps_error_oom();
+		}
 	}
 	return 0;
 }
@@ -445,27 +471,22 @@ print_inconsistent_shlibs(struct shared_state *shared)
 static int
 print_staged_packages(struct repo_state *states, unsigned nstates)
 {
-	xbps_object_iterator_t iter;
-	xbps_object_t keysym;
-
-	// XXX: should this really print all staged packages every time?
-
 	for (unsigned int i = 0; i < nstates; i++) {
 		const struct repo_state *state = &states[i];
 
-		iter = xbps_dictionary_iterator(state->stage);
-		if (!iter)
-			return xbps_error_oom();
-
-		while ((keysym = xbps_object_iterator_next(iter))) {
-			xbps_dictionary_t pkg = xbps_dictionary_get_keysym(state->stage, keysym);
-			const char *pkgver = NULL, *arch = NULL;
-			xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver);
-			xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch);
+		for (unsigned int j = 0; j < xbps_array_count(state->added); j++) {
+			xbps_dictionary_t pkg;
+			const char *pkgname = NULL, *pkgver = NULL, *arch = NULL;
+			if (!xbps_array_get_cstring_nocopy(state->added, j, &pkgname))
+				abort();
+			if (!xbps_dictionary_get_dict(state->stage, pkgname, &pkg))
+				abort();
+			if (!xbps_dictionary_get_cstring_nocopy(pkg, "pkgver", &pkgver))
+				abort();
+			if (!xbps_dictionary_get_cstring_nocopy(pkg, "architecture", &arch))
+				abort();
 			printf("%s: stage: added `%s' (%s)\n", state->repodir, pkgver, arch);
 		}
-
-		xbps_object_iterator_release(iter);
 	}
 
 	return 0;
@@ -476,6 +497,9 @@ unstage(struct repo_state *state)
 {
 	xbps_object_iterator_t iter;
 	xbps_object_t keysym;
+
+	if (xbps_dictionary_count(state->stage) == 0)
+		return 0;
 
 	iter = xbps_dictionary_iterator(state->stage);
 	if (!iter)
@@ -503,6 +527,7 @@ unstage(struct repo_state *state)
 
 	xbps_object_release(state->stage);
 	state->stage = NULL;
+	state->changed = true;
 
 	return 0;
 }
@@ -561,6 +586,8 @@ commit(struct repo_state *states, unsigned nstates)
 
 	for (unsigned i = 0; i < nstates; i++) {
 		struct repo_state *state = &states[i];
+		if (!state->changed)
+			continue;
 		printf("%s: index: %u packages registered.\n",
 		    state->repodir, xbps_dictionary_count(state->index));
 		if (xbps_dictionary_count(state->stage) != 0) {
