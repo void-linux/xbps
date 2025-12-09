@@ -154,7 +154,6 @@ repodata_write_fd(int fd, xbps_dictionary_t index, xbps_dictionary_t stage,
 	if (r < 0)
 		goto err;
 
-
 	if (archive_write_close(ar) == ARCHIVE_FATAL) {
 		r = -archive_errno(ar);
 		xbps_error_printf(
@@ -217,7 +216,7 @@ repodata_write_tmpfile(char *path, size_t pathsz, char *tmp, size_t tmpsz,
 
 	umask(prevumask);
 
-	repodata_write_fd(fd, index, stage, meta, compression);
+	r = repodata_write_fd(fd, index, stage, meta, compression);
 	if (r < 0)
 		goto err;
 
