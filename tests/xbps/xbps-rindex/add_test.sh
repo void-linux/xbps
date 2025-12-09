@@ -207,11 +207,13 @@ stage_multi_repos_body() {
 	atf_check -o ignore -- xbps-create -A noarch -n ruby-3.3.8_1 -s "ruby pkg" --shlib-provides "libruby.so.3.3" ../pkg
 	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --shlib-requires "libFLAC.so.12" ../pkg
 	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --shlib-requires  "libruby.so.3.3" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n unaffected-1.0_1 -s "unaffected pkg" --shlib-provides "libfoo.so.1" ../pkg
 	cd ..
 
 	cd repo2
 	atf_check -o ignore -- xbps-create -A noarch -n AA-1.0_1 -s "AA pkg" --shlib-requires "libFLAC.so.12" ../pkg
 	atf_check -o ignore -- xbps-create -A noarch -n BB-1.0_1 -s "BB pkg" --shlib-requires  "libruby.so.3.3" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n other-unaffected-1.0_1 -s "other unaffected pkg" --shlib-requires "libfoo.so.1" ../pkg
 	cd ..
 
 	atf_check -e ignore \
@@ -223,19 +225,21 @@ stage_multi_repos_body() {
 		repo1/flac-1.4.3_1.noarch.xbps \
 		repo1/ruby-3.3.8_1.noarch.xbps \
 		repo1/A-1.0_1.noarch.xbps \
-		repo1/B-1.0_1.noarch.xbps
+		repo1/B-1.0_1.noarch.xbps \
+		repo1/unaffected-1.0_1.noarch.xbps
 	atf_check -e ignore \
 		-o match:"index: added \`AA-1.0_1'" \
 		-o match:"index: added \`BB-1.0_1'" \
 		-- xbps-rindex -v -R repo1 -R repo2 -a \
 		repo2/AA-1.0_1.noarch.xbps \
-		repo2/BB-1.0_1.noarch.xbps
+		repo2/BB-1.0_1.noarch.xbps \
+		repo2/other-unaffected-1.0_1.noarch.xbps
 
 	cd repo1
 	atf_check -o ignore -- xbps-create -A noarch -n flac-1.5.0_1 -s "flac pkg" --shlib-provides "libFLAC.so.14" ../pkg
 	cd ..
 
-	atf_check -e ignore -o match:"stage: added \`flac-1.5.0_1'" \
+	atf_check -e ignore -o match:"repo1: stage: added \`flac-1.5.0_1'" \
 		-- xbps-rindex -v -R repo1 -R repo2 -a repo1/flac-1.5.0_1.noarch.xbps
 
 	atf_check \
@@ -247,7 +251,7 @@ stage_multi_repos_body() {
 	atf_check -o ignore -- xbps-create -A noarch -n AA-1.0_2 -s "AA pkg" --shlib-requires "libFLAC.so.14" ../pkg
 	cd ..
 
-	atf_check -o match:"stage: added \`AA-1.0_2'" \
+	atf_check -o match:"repo2: stage: added \`AA-1.0_2'" \
 		-- xbps-rindex -v -R repo1 -R repo2 -a repo2/AA-1.0_2.noarch.xbps
 
 	atf_check \
@@ -258,7 +262,7 @@ stage_multi_repos_body() {
 	cd repo1
 	atf_check -o ignore -- xbps-create -A noarch -n ruby-3.4.5_1 -s "ruby pkg" --shlib-provides "libruby.so.3.4" ../pkg
 	cd ..
-	atf_check -o match:"stage: added \`ruby-3.4.5_1'" \
+	atf_check -o match:"repo1: stage: added \`ruby-3.4.5_1'" \
 		-- xbps-rindex -v -R repo1 -R repo2 -a repo1/ruby-3.4.5_1.noarch.xbps
 
 	atf_check \
@@ -269,7 +273,7 @@ stage_multi_repos_body() {
 	cd repo2
 	atf_check -o ignore -- xbps-create -A noarch -n BB-1.0_2 -s "BB pkg" --shlib-requires "libruby.so.3.4" ../pkg
 	cd ..
-	atf_check -o match:"stage: added \`BB-1.0_2'" \
+	atf_check -o match:"repo2: stage: added \`BB-1.0_2'" \
 		-- xbps-rindex -v -R repo1 -R repo2 -a repo2/BB-1.0_2.noarch.xbps
 
 	cd repo1
@@ -277,7 +281,7 @@ stage_multi_repos_body() {
 	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_2 -s "B pkg" --shlib-requires "libruby.so.3.4" ../pkg
 	cd ..
 	atf_check \
-		-o match:"stage: added \`A-1.0_2'" \
+		-o match:"repo1: stage: added \`A-1.0_2'" \
 		-- xbps-rindex -v -R repo1 -R repo2 -a repo1/A-1.0_2.noarch.xbps
 
 	atf_check \
@@ -286,12 +290,12 @@ stage_multi_repos_body() {
 		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
 
 	atf_check \
-		-o match:"index: added \`A-1\.0_2'" \
-		-o match:"index: added \`B-1\.0_2'" \
-		-o match:"index: added \`flac-1\.5\.0_1'" \
-		-o match:"index: added \`ruby-3\.4\.5_1'" \
-		-o match:"index: added \`AA-1\.0_2'" \
-		-o match:"index: added \`BB-1\.0_2'" \
+		-o match:"repo1: index: added \`A-1\.0_2'" \
+		-o match:"repo1: index: added \`B-1\.0_2'" \
+		-o match:"repo1: index: added \`flac-1\.5\.0_1'" \
+		-o match:"repo1: index: added \`ruby-3\.4\.5_1'" \
+		-o match:"repo2: index: added \`AA-1\.0_2'" \
+		-o match:"repo2: index: added \`BB-1\.0_2'" \
 		-- xbps-rindex -v -R repo1 -R repo2 -a repo1/B-1.0_2.noarch.xbps
 
 	atf_check \
