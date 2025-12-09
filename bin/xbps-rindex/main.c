@@ -148,6 +148,7 @@ main(int argc, char **argv)
 			/* NOTREACHED */
 		}
 	}
+
 	if ((argc == optind) ||
 	    (!add_mode && !clean_mode && !rm_mode && !sign_mode && !sign_pkg_mode)) {
 		usage(true);
@@ -172,7 +173,7 @@ main(int argc, char **argv)
 	}
 
 	if (add_mode)
-		rv = index_add(&xh, optind, argc, argv, force, compression);
+		rv = index_add(&xh, argc-optind, argv+optind, force, compression, repos);
 	else if (clean_mode)
 		rv = index_clean(&xh, argv[optind], hashcheck, compression);
 	else if (rm_mode)
