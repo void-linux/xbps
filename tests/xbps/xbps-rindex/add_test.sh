@@ -71,7 +71,7 @@ stage_body() {
 		xbps-query -r ../root -i --repository=$PWD -L
 
 	atf_check -o ignore -- xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" --shlib-provides "libfoo.so.2" ../pkg_A
-	atf_check -e ignore -o match:"index: added \`foo-1.1_1'" -- valgrind xbps-rindex -d -a $PWD/*.xbps
+	atf_check -e ignore -o match:"index: added \`foo-1.1_1'" -- xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    1 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
