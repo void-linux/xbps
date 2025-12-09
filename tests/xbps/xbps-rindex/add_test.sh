@@ -60,39 +60,38 @@ stage_head() {
 stage_body() {
 	mkdir -p some_repo pkg_A pkg_B
 	touch pkg_A/file00 pkg_B/file01
+
 	cd some_repo
-	xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1" ../pkg_A
+
+	atf_check -e ignore -o match:"index: added \`foo-1.0_1'" -- \
+		xbps-rindex -d -a $PWD/*.xbps
+
 	atf_check -o inline:"    1 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
-	xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" --shlib-provides "libfoo.so.2" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.1_1 -s "foo pkg" --shlib-provides "libfoo.so.2" ../pkg_A
+	atf_check -e ignore -o match:"index: added \`foo-1.1_1'" -- valgrind xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    1 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
-	xbps-create -A noarch -n bar-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.2" ../pkg_B
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n bar-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.2" ../pkg_B
+	atf_check -e ignore -o match:"index: added \`bar-1.0_1'" -- \
+		 xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    2 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
-	xbps-create -A noarch -n foo-1.2_1 -s "foo pkg" --shlib-provides "libfoo.so.3" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n foo-1.2_1 -s "foo pkg" --shlib-provides "libfoo.so.3" ../pkg_A
+	atf_check -e ignore -o not-match:"index: added \`foo-1.2_1'" -- \
+		xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    2 $PWD (Staged) (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
-	xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" --shlib-requires "libfoo.so.3" ../pkg_A
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n bar-1.1_1 -s "foo pkg" --shlib-requires "libfoo.so.3" ../pkg_A
+	atf_check -e ignore \
+		-o match:"added \`bar-1.1_1'" \
+		-o match:"added \`foo-1.2_1'" \
+		-- xbps-rindex -d -a $PWD/*.xbps
 	atf_check -o inline:"    2 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 }
