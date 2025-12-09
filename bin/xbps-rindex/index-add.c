@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -525,20 +526,20 @@ commit(struct repo_state *states, unsigned nstates)
 	for (unsigned i = 0; i < nstates; i++) {
 		r = add_staged_shlib_providers(&shared, &states[i]);
 		if (r < 0)
-			return r;
+			goto err;
 		r = find_used_staged_shlibs(&shared, &states[i]);
 		if (r < 0)
-			return r;
+			goto err;
 	}
 
 	// throw out shared libraries that are already satisfied
 	for (unsigned i = 0; i < nstates; i++) {
 		r = purge_satisfied_by_index(&shared, &states[i]);
 		if (r < 0)
-			return r;
+			goto err;
 		r = purge_satisfied_by_stage(&shared, &states[i]);
 		if (r < 0)
-			return r;
+			goto err;
 	}
 
 	// ... now if there are libraries left, there is an inconsistency
