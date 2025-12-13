@@ -110,47 +110,52 @@ stage_resolve_bug_body() {
 	cd some_repo
 
 	# first add the provider and the requirer to the repo
-	xbps-create -A noarch -n provider-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1 libbar.so.1" ../provider
-	atf_check_equal $? 0
-	xbps-create -A noarch -n require-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.1" ../requirer
-	atf_check_equal $? 0
-	xbps-create -A noarch -n stage-trigger-1.0_1 -s "foo pkg" --shlib-requires "libbar.so.1" ../stage-trigger
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n provider-1.0_1 -s "foo pkg" --shlib-provides "libfoo.so.1 libbar.so.1" ../provider
+	atf_check -o ignore -- xbps-create -A noarch -n require-1.0_1 -s "foo pkg" --shlib-requires "libfoo.so.1" ../requirer
+	atf_check -o ignore -- xbps-create -A noarch -n stage-trigger-1.0_1 -s "foo pkg" --shlib-requires "libbar.so.1" ../stage-trigger
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: index: added \`provider-1\.0_1' \(noarch\)\." \
+		-o match:"some_repo: index: added \`require-1\.0_1' \(noarch\)\." \
+		-o match:"some_repo: index: added \`stage-trigger-1\.0_1' \(noarch\)\." \
+		 -- xbps-rindex -a $PWD/*.xbps
 
 	# then add libprovider that also provides the library
-	xbps-create -A noarch -n libprovider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../libprovider
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n libprovider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../libprovider
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: index: added \`libprovider-1\.0_2' \(noarch\)\." \
+		-- xbps-rindex -a $PWD/*.xbps
 	atf_check -o inline:"    4 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
 	# trigger staging
-	xbps-create -A noarch -n provider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../provider
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n provider-1.0_2 -s "foo pkg" --shlib-provides "libfoo.so.1" ../provider
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: stage: added \`provider-1\.0_2' \(noarch\)\." \
+		-- xbps-rindex -a $PWD/*.xbps
 	atf_check -o inline:"    4 $PWD (Staged) (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
 	# then add a new provider not containing the provides field. This resulted in
 	# a stage state despites the library is resolved through libprovides
-	xbps-create -A noarch -n provider-1.0_3 -s "foo pkg" ../provider
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n provider-1.0_3 -s "foo pkg" ../provider
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: stage: added \`provider-1\.0_3' \(noarch\)\." \
+		-- xbps-rindex -a $PWD/*.xbps
 	atf_check -o inline:"    4 $PWD (Staged) (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 
 	# resolve staging
 	# the actual bug appeared here: libfoo.so.1 is still provided by libprovider, but
 	# xbps-rindex fails to register that.
-	xbps-create -A noarch -n stage-trigger-1.0_2 -s "foo pkg" ../stage-trigger
-	atf_check_equal $? 0
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	atf_check -o ignore -- xbps-create -A noarch -n stage-trigger-1.0_2 -s "foo pkg" ../stage-trigger
+	atf_check \
+		-e ignore \
+		-o match:"some_repo: index: added \`stage-trigger-1\.0_2' \(noarch\)\." \
+		-- xbps-rindex -a $PWD/*.xbps
 	atf_check -o inline:"    4 $PWD (RSA unsigned)\n" -- \
 		xbps-query -r ../root -i --repository=$PWD -L
 }
