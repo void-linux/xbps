@@ -309,6 +309,46 @@ stage_multi_repos_body() {
 		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
 }
 
+atf_test_case stage_dependency
+
+stage_dependency_head() {
+	atf_set "descr" "xbps-rindex(1) -a: stage repository due to broken dependency"
+}
+
+stage_dependency_body() {
+	atf_expect_fail "not implemented"
+	mkdir -p repo1 repo2 repo3 repo4 root pkg
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --dependencies "B<2.0_1" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" ../pkg
+	atf_check -o ignore -- xbps-create -A noarch -n unaffected-1.0_1 -s "unaffected pkg" --dependencies "B>=1.0_1" ../pkg
+	cd ..
+
+	atf_check \
+		-e ignore \
+		-o match:"index: added \`A-1\.0_1'" \
+		-o match:"index: added \`B-1\.0_1'" \
+		-o match:"index: added \`unaffected-1\.0_1'" \
+		 -- xbps-rindex -v -R repo1 -a \
+		repo1/A-1.0_1.noarch.xbps \
+		repo1/B-1.0_1.noarch.xbps \
+		repo1/unaffected-1.0_1.noarch.xbps
+
+	cd repo1
+	atf_check -o ignore -- xbps-create -A noarch -n B-2.0_1 -s "B pkg" ../pkg
+	cd ..
+
+	atf_check \
+		-e ignore \
+		-o match:"repo1: stage: added \`B-2\.0_1'" \
+		-- xbps-rindex -v -R repo1 -R repo2 -R repo3 -R repo4 -a repo1/B-2.0_1.noarch.xbps
+
+	atf_check \
+		-o match:"repo1 \(Staged\)" \
+		-- xbps-query -r ../root -i --repository=repo1 --repository=repo2 -L
+}
+
 atf_init_test_cases() {
 	atf_add_test_case update
 	atf_add_test_case revert
@@ -316,4 +356,5 @@ atf_init_test_cases() {
 	atf_add_test_case stage_resolve_bug
 	atf_add_test_case stage_stacked
 	atf_add_test_case stage_multi_repos
+	atf_add_test_case stage_dependency
 }
