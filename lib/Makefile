@@ -31,6 +31,13 @@ endif
 LIBFETCH_INCS = fetch/common.h
 LIBFETCH_GEN = fetch/ftperr.h fetch/httperr.h
 
+INIH_OBJS = external/inih/ini.o
+INIH_CPPFLAGS = -DINI_HANDLER_LINENO=1 -DINI_CALL_HANDLER_ON_NEW_SECTION=1
+INIH_CFLAGS= -Wno-error=cast-qual
+ifdef HAVE_VISIBILITY
+INIH_CFLAGS+= -fvisibility=hidden
+endif
+
 # External code used by libxbps
 EXTOBJS = external/dewey.o external/fexec.o external/mkpath.o
 
@@ -76,11 +83,16 @@ $(LIBPROP_OBJS): %.o: %.c
 	${SILENT}$(CC) $(CPPFLAGS) $(LIBPROP_CPPFLAGS) \
 		$(CFLAGS) $(LIBPROP_CFLAGS) -c $< -o $@
 
+$(INIH_OBJS): %.o: %.c
+	@printf " [CC]\t\t$@\n"
+	${SILENT}$(CC) $(CPPFLAGS) $(INIH_CPPFLAGS) \
+		$(CFLAGS) $(INIH_CFLAGS) -c $< -o $@
+
 $(OBJS): %.o: %.c
 	@printf " [CC]\t\t$@\n"
 	${SILENT}$(CC) $(CPPFLAGS) $(CFLAGS) $(SHAREDLIB_CFLAGS) -c $< -o $@
 
-libxbps.so: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(OBJS)
+libxbps.so: $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(INIH_OBJS) $(OBJS)
 	@printf " [CCLD]\t\t$@\n"
 	${SILENT}$(CC) $^ $(CFLAGS) $(LDFLAGS) -o $(LIBXBPS_SHLIB)
 	@-ln -sf $(LIBXBPS_SHLIB) libxbps.so.$(LIBXBPS_MAJOR)
@@ -106,5 +118,5 @@ uninstall:
 
 .PHONY: clean
 clean:
-	-rm -f libxbps* $(OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS)
+	-rm -f libxbps* $(OBJS) $(LIBFETCH_OBJS) $(LIBPROP_OBJS) $(INIH_OBJS)
 	-rm -f $(LIBFETCH_GEN)
