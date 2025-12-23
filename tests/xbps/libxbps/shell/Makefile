@@ -10,6 +10,7 @@ TESTSHELL+= update_shlibs_test update_hold_test update_repolock_test
 TESTSHELL+= cyclic_deps_test conflicts_test update_itself_test
 TESTSHELL+= hold_test ignore_test preserve_test repo_test
 TESTSHELL+= noextract_files_test orphans_test transaction_check_revdeps_test
+TESTSHELL+= hooks_test
 EXTRA_FILES = Kyuafile
 
 include $(TOPDIR)/mk/test.mk
