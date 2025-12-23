@@ -40,7 +40,7 @@
 #include "xbps_api_impl.h"
 
 static int
-pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
+pfcexec(const struct xbps_handle *xhp, const char *file, const char **argv)
 {
 	pid_t child;
 	int status;
@@ -86,7 +86,54 @@ pfcexec(struct xbps_handle *xhp, const char *file, const char **argv)
 }
 
 static int
-vfcexec(struct xbps_handle *xhp, const char *arg, va_list ap)
+pfcexecp(const struct xbps_handle *xhp, const char *file, const char **argv)
+{
+	pid_t child;
+	int status;
+
+	child = fork();
+	switch (child) {
+	case 0:
+		/*
+		 * If rootdir != / and uid==0 and bin/sh exists,
+		 * change root directory and exec command.
+		 */
+		if (strcmp(xhp->rootdir, "/")) {
+			if ((geteuid() == 0) && (access("bin/sh", X_OK) == 0)) {
+				if (chroot(xhp->rootdir) == -1) {
+					xbps_dbg_printf("%s: chroot() "
+					    "failed: %s\n", *argv, strerror(errno));
+					_exit(errno);
+				}
+				if (chdir("/") == -1) {
+					xbps_dbg_printf("%s: chdir() "
+					    "failed: %s\n", *argv, strerror(errno));
+					_exit(errno);
+				}
+			}
+		}
+		umask(022);
+		(void)execvp(file, __UNCONST(argv));
+		_exit(errno);
+		/* NOTREACHED */
+	case -1:
+		return -1;
+	}
+
+	while (waitpid(child, &status, 0) < 0) {
+		if (errno != EINTR)
+			return -1;
+	}
+
+	if (!WIFEXITED(status))
+		return -1;
+
+	return WEXITSTATUS(status);
+}
+
+
+static int
+vfcexec(const struct xbps_handle *xhp, const char *arg, va_list ap)
 {
 	const char **argv;
 	size_t argv_size, argc;
@@ -122,8 +169,9 @@ vfcexec(struct xbps_handle *xhp, const char *arg, va_list ap)
 	return retval;
 }
 
+
 int HIDDEN
-xbps_file_exec(struct xbps_handle *xhp, const char *arg, ...)
+xbps_file_exec(const struct xbps_handle *xhp, const char *arg, ...)
 {
 	va_list	ap;
 	int	result;
@@ -133,4 +181,16 @@ xbps_file_exec(struct xbps_handle *xhp, const char *arg, ...)
 	va_end(ap);
 
 	return result;
+}
+
+int HIDDEN
+xbps_file_exec_argv(const struct xbps_handle *xhp, const char **argv)
+{
+	return pfcexecp(xhp, argv[0], argv);
+}
+
+int HIDDEN
+xbps_file_execp_argv(const struct xbps_handle *xhp, const char **argv)
+{
+	return pfcexecp(xhp, argv[0], argv);
 }
