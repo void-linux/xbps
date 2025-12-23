@@ -130,4 +130,10 @@ struct xbps_repo HIDDEN *xbps_regget_repo(struct xbps_handle *,
 		const char *);
 int HIDDEN xbps_conf_init(struct xbps_handle *);
 
+struct xbps_hooks;
+struct xbps_hooks *xbps_hooks_init(struct xbps_handle *xhp);
+int xbps_hooks_pre_transaction(struct xbps_handle *xhp, struct xbps_hooks *hooks);
+int xbps_hooks_post_transaction(struct xbps_handle *xhp, struct xbps_hooks *hooks);
+void xbps_hooks_free(struct xbps_hooks *hooks);
+
 #endif /* !_XBPS_API_IMPL_H_ */
