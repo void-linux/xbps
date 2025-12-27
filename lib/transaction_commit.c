@@ -107,6 +107,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	xbps_object_t obj;
 	xbps_object_iterator_t iter;
 	xbps_trans_type_t ttype;
+	struct xbps_hooks *hooks = NULL;
 	const char *pkgver = NULL, *pkgname = NULL;
 	int rv = 0;
 	bool update;
@@ -145,6 +146,12 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	iter = xbps_array_iter_from_dict(xhp->transd, "packages");
 	if (iter == NULL)
 		return EINVAL;
+
+	hooks = xbps_hooks_init(xhp);
+	if (!hooks) {
+		rv = errno;
+		goto out;
+	}
 
 	/*
 	 * Download and verify binary packages.
@@ -299,6 +306,14 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	}
 	xbps_object_iterator_reset(iter);
 
+	/*
+	 * Run pre-transaction hooks
+	 */
+	rv = xbps_hooks_pre_transaction(xhp, hooks);
+	if (rv < 0) {
+		rv = -rv;
+		goto out;
+	}
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
@@ -429,7 +444,25 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		}
 	}
 
+	/*
+	 * Re-read hooks after packages have been unpackaed so we can run new
+	 * post-transaction hooks.
+	 */
+	xbps_hooks_free(hooks);
+	hooks = xbps_hooks_init(xhp);
+	if (!hooks) {
+		rv = errno;
+		goto out;
+	}
+
+	rv = xbps_hooks_post_transaction(xhp, hooks);
+	if (rv < 0) {
+		rv = -rv;
+		goto out;
+	}
+
 out:
+	xbps_hooks_free(hooks);
 	xbps_object_release(remove_scripts);
 	xbps_object_iterator_release(iter);
 	if (rv == 0) {
