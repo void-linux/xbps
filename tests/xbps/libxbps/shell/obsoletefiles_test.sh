@@ -344,7 +344,7 @@ directory_to_symlink_head() {
 
 directory_to_symlink_body() {
 	mkdir -p some_repo pkg_A/foo
-	touch pkg_A/foo/bar
+	touch pkg_A/foo/bar pkg_A/foobar
 	# create package and install it
 	cd some_repo
 	xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A

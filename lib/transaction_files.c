@@ -142,19 +142,25 @@ match_preserved_file(struct xbps_handle *xhp, const char *file)
 }
 
 static bool
-can_delete_directory(const char *file, size_t len, size_t max)
+has_dir_prefix(const char *dir, size_t dirlen, const char *file)
+{
+	return strncmp(file, dir, dirlen) == 0 && file[dirlen] == '/';
+}
+
+static bool
+can_delete_directory(const char *dir, size_t dirlen, size_t max)
 {
 	struct item *item;
 	size_t rmcount = 0, fcount = 0;
 	DIR *dp;
 
-	dp = opendir(file);
+	dp = opendir(dir);
 	if (dp == NULL) {
 		if (errno == ENOENT) {
 			return true;
 		} else {
 			xbps_dbg_printf("[files] %s: %s: %s\n",
-			    __func__, file, strerror(errno));
+			    __func__, dir, strerror(errno));
 			return false;
 		}
 	}
@@ -166,7 +172,7 @@ can_delete_directory(const char *file, size_t len, size_t max)
 	 */
 	for (size_t i = 0; i < max; i++) {
 		item = items[i];
-		if (strncmp(item->file, file, len) == 0) {
+		if (has_dir_prefix(dir, dirlen, item->file)) {
 			if (!item->deleted) {
 				closedir(dp);
 				return false;
@@ -187,7 +193,7 @@ can_delete_directory(const char *file, size_t len, size_t max)
 
 	if (fcount <= rmcount) {
 		xbps_dbg_printf("[files] only removed %zu out of %zu files: %s\n",
-		    rmcount, fcount, file);
+		    rmcount, fcount, dir);
 	}
 	closedir(dp);
 
