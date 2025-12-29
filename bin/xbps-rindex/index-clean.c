@@ -134,7 +134,7 @@ cleanup_repo(struct xbps_handle *xhp, const char *repodir, struct xbps_repo *rep
 		return 0;
 	}
 
-	r = repodata_flush(repodir, repoarch, index, stage, repo->idxmeta, compression);
+	r = repodata_write_file(repodir, repoarch, index, stage, repo->idxmeta, compression);
 	if (r < 0) {
 		xbps_error_printf("failed to write repodata: %s\n", strerror(-r));
 		xbps_object_release(index);
