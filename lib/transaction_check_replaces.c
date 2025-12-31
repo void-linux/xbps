@@ -80,10 +80,12 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 
 			/*
 			 * Find the installed package that matches the pattern
-			 * to be replaced.
+			 * to be replaced. Also check if the package would be
+			 * installed in the transaction.
 			 */
 			if (((instd = xbps_pkgdb_get_pkg(xhp, pattern)) == NULL) &&
-			    ((instd = xbps_pkgdb_get_virtualpkg(xhp, pattern)) == NULL))
+			    ((instd = xbps_pkgdb_get_virtualpkg(xhp, pattern)) == NULL) &&
+			    ((instd = xbps_find_pkg_in_array(pkgs, pattern, XBPS_TRANS_INSTALL)) == NULL))
 				continue;
 
 			if (!xbps_dictionary_get_cstring_nocopy(instd, "pkgver", &curpkgver)) {
@@ -142,6 +144,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 					xbps_object_iterator_release(iter);
 					return false;
 				}
+				xbps_verbose_printf("Package `%s' will be replaced by `%s'\n", curpkgver, pkgver);
 				xbps_dbg_printf(
 				    "Package `%s' in transaction will be "
 				    "replaced by `%s', matched with `%s'\n",
@@ -174,6 +177,7 @@ xbps_transaction_check_replaces(struct xbps_handle *xhp, xbps_array_t pkgs)
 				xbps_object_iterator_release(iter);
 				return false;
 			}
+			xbps_verbose_printf("Package `%s' will be replaced by `%s'\n", curpkgver, pkgver);
 			xbps_dbg_printf(
 			    "Package `%s' will be replaced by `%s', "
 			    "matched with `%s'\n", curpkgver, pkgver, pattern);
