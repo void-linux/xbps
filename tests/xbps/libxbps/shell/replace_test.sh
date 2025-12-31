@@ -419,6 +419,32 @@ replace_transitional_pkg_automatically_installed3_body() {
 	atf_check_equal $(xbps-query -C xbps.d -r root -p automatic-install A) ""
 }
 
+atf_test_case replace_transitional_pkg_during_install
+
+replace_transitional_pkg_during_install_head() {
+	atf_set "descr" "Tests for package replace: install a transitional package and replace it during the transaction"
+}
+
+replace_transitional_pkg_during_install_body() {
+	mkdir some_repo root
+	mkdir -p pkg_A/usr/bin empty
+	echo "A-1.0_1" > pkg_A/usr/bin/foo
+	cd some_repo
+	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --replaces "B>=0" ../pkg_A
+	atf_check_equal $? 0
+	xbps-create -A noarch -n B-1.0_1 -s "A pkg - transitional dummy package" --dependencies="A>=0" ../empty
+	atf_check_equal $? 0
+	xbps-rindex -d -a $PWD/*.xbps
+	atf_check_equal $? 0
+	cd ..
+	xbps-install -C xbps.d -r root --repository=$PWD/some_repo -yd B
+	atf_check_equal $? 0
+	result=$(xbps-query -r root -l | wc -l)
+	atf_check_equal $result 1
+	atf_check_equal $(xbps-query -C xbps.d -r root -p state A) installed
+	atf_check_equal $(xbps-query -C xbps.d -r root -p state B) ""
+}
+
 atf_test_case replace_automatically_installed_dep
 
 replace_automatically_installed_dep_head() {
@@ -600,6 +626,7 @@ atf_init_test_cases() {
 	atf_add_test_case replace_transitional_pkg_automatically_installed
 	atf_add_test_case replace_transitional_pkg_automatically_installed2
 	atf_add_test_case replace_transitional_pkg_automatically_installed3
+	atf_add_test_case replace_transitional_pkg_during_install
 	atf_add_test_case replace_automatically_installed_dep
 	atf_add_test_case replace_automatically_installed_dep2
 	atf_add_test_case replace_automatically_installed_dep3

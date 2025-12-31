@@ -109,7 +109,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 	xbps_trans_type_t ttype;
 	const char *pkgver = NULL, *pkgname = NULL;
 	int rv = 0;
-	bool update;
+	bool update, replaced;
 
 	setlocale(LC_ALL, "");
 
@@ -232,6 +232,11 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 		}
 
 		if ((pkgdb_pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) {
+			replaced = false;
+			xbps_dictionary_get_bool(obj, "replaced", &replaced);
+			if (replaced) {
+				continue;
+			}
 			rv = ENOENT;
 			xbps_dbg_printf("[trans] cannot find %s in pkgdb: %s\n",
 			    pkgname, strerror(rv));
@@ -302,6 +307,7 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 
 	while ((obj = xbps_object_iterator_next(iter)) != NULL) {
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
+		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 
 		ttype = xbps_transaction_pkg_type(obj);
 		if (ttype == XBPS_TRANS_REMOVE) {
@@ -310,6 +316,11 @@ xbps_transaction_commit(struct xbps_handle *xhp)
 			 */
 			update = false;
 			xbps_dictionary_get_bool(obj, "remove-and-update", &update);
+			replaced = false;
+			xbps_dictionary_get_bool(obj, "replaced", &replaced);
+			if (((pkgdb_pkgd = xbps_pkgdb_get_pkg(xhp, pkgname)) == NULL) && replaced) {
+				continue;
+			}
 			rv = xbps_remove_pkg(xhp, pkgver, update);
 			if (rv != 0) {
 				xbps_dbg_printf("[trans] failed to "
