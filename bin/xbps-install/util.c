@@ -157,15 +157,20 @@ print_trans_colmode(struct transaction *trans, unsigned int cols)
 
 	while ((obj = xbps_object_iterator_next(trans->iter)) != NULL) {
 		bool dload = false;
+		bool replaced = false;
 
 		pkgver = pkgname = ipkgver = ver = iver = NULL;
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgver", &pkgver);
 		xbps_dictionary_get_cstring_nocopy(obj, "pkgname", &pkgname);
 		xbps_dictionary_get_uint64(obj, "filename-size", &dlsize);
 		xbps_dictionary_get_bool(obj, "download", &dload);
+		xbps_dictionary_get_bool(obj, "replaced", &replaced);
 
 		ttype = xbps_transaction_pkg_type(obj);
 		tract = ttype2str(obj);
+		if (replaced) {
+			tract = "replaced";
+		}
 		if (trans->xhp->flags & XBPS_FLAG_DOWNLOAD_ONLY) {
 			tract = "download";
 		}
