@@ -249,7 +249,8 @@ parse_option(char *line, size_t linelen, char **valp, size_t *vallen)
 {
 	size_t len;
 	char *p;
-	struct key needle, *result;
+	struct key needle;
+	const struct key *result;
 
 	p = strpbrk(line, " \t=");
 	if (p == NULL)

@@ -1339,7 +1339,7 @@ struct index_parser {
 static ssize_t
 parse_index(struct index_parser *parser, const char *buf, size_t len)
 {
-	char *end_attr, p = *buf;
+	const char *end_attr, p = *buf;
 
 	switch (parser->state) {
 	case ST_NONE:
@@ -1463,7 +1463,7 @@ parse_index(struct index_parser *parser, const char *buf, size_t len)
 		end_attr = memchr(buf, '"', len);
 		if (end_attr == NULL)
 			return 0;
-		*end_attr = '\0';
+		*(char *)(uintptr_t)end_attr = '\0';
 		parser->state = ST_TAGA;
 		if (fetch_add_entry(parser->ue, parser->url, buf, 1))
 			return -1;
