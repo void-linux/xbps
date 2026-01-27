@@ -212,7 +212,8 @@ static void
 add_bindmount(const char *bm, bool ro)
 {
 	struct bindmnt *bmnt;
-	char *b, *src, *dest;
+	char *src;
+	const char *b, *dest;
 	size_t len;
 
 	src = strdup(bm);

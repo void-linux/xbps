@@ -95,7 +95,7 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	ssize_t entry_size;
 	const char *entry_pname, *pkgname;
-	char *buf = NULL;
+	const char *buf = NULL;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists, keep_conf_file;
 	bool skip_extract, force, xucd_stats;
@@ -454,14 +454,14 @@ unpack_archive(struct xbps_handle *xhp,
 		if (!xbps_dictionary_externalize_to_file(binpkg_filesd, buf)) {
 			rv = errno;
 			umask(prev_umask);
-			free(buf);
+			free((void *)(uintptr_t)buf);
 			xbps_set_cb_state(xhp, XBPS_STATE_UNPACK_FAIL,
 			    rv, pkgver, "%s: [unpack] failed to externalize pkg "
 			    "pkg metadata files: %s", pkgver, strerror(rv));
 			goto out;
 		}
 		umask(prev_umask);
-		free(buf);
+		free((void *)(uintptr_t)buf);
 	}
 out:
 	/*
@@ -470,7 +470,7 @@ out:
 	if (!xbps_dictionary_count(binpkg_filesd)) {
 		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
 		unlink(buf);
-		free(buf);
+		free((void *)(uintptr_t)buf);
 	}
 	xbps_object_release(binpkg_filesd);
 

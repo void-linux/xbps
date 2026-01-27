@@ -537,7 +537,8 @@ static int
 rcv_check_version(rcv_t *rcv)
 {
 	const char *repover = NULL;
-	char srcver[BUFSIZ] = { '\0' }, *binpkgname = NULL, *s = NULL;
+	char srcver[BUFSIZ] = { '\0' }, *binpkgname = NULL;
+	const char *s = NULL;
 	const char *pkgname, *version, *revision, *reverts, *repourl;
 	int sz;
 	size_t len;
@@ -661,7 +662,7 @@ template_removed_cb(struct xbps_handle *xhp UNUSED,
 		bool *done UNUSED)
 {
 	char *pkgname;
-	char *last_dash;
+	const char *last_dash;
 	bool dummy_bool = false;
 	rcv_t *rcv = arg;
 
