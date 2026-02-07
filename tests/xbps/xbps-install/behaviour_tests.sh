@@ -252,6 +252,36 @@ install_msg_body() {
 		-- xbps-install -r root -C empty.conf --repository=$PWD/some_repo -yu
 }
 
+atf_test_case already_installed
+
+already_installed_head() {
+       atf_set "descr" "xbps-install(1): various ways to install already installed packages"
+}
+
+already_installed_body() {
+       mkdir -p repo pkg
+
+       cd repo
+       atf_check -o ignore -- xbps-create -A noarch -n A-1.1_1 -s "A pkg" ../pkg
+       atf_check -e ignore -o ignore -- xbps-rindex -a *.xbps
+       cd ..
+
+       atf_check -o ignore -e ignore -- xbps-install -r root -R repo -y A
+       atf_check -o ignore -e match:"ERROR: Package \`A' already installed." -- xbps-install -r root -R repo -y A
+       atf_check -o ignore -e match:"ERROR: Package \`A-1.1_1' already installed." -- xbps-install -r root -R repo -y A-1.1_1
+       atf_check -s exit:2 -o ignore -e match:"ERROR: Package 'A-1.2_1' not found in repository pool." -- xbps-install -r root -R repo -y A-1.2_1
+
+       cd repo
+       atf_check -o ignore -- xbps-create -A noarch -n A-1.2_1 -s "A pkg" ../pkg
+       atf_check -e ignore -o ignore -- xbps-rindex -a *.xbps
+       cd ..
+
+       atf_check -o ignore -e ignore -- xbps-install -r root -R repo -y A
+       atf_check -o ignore -e match:"ERROR: Package \`A' already installed." -- xbps-install -r root -R repo -y A
+       atf_check -s exit:2 -o ignore -e match:"ERROR: Package 'A-1.1_1' not found in repository pool." -- xbps-install -r root -R repo -y A-1.1_1
+       atf_check -o ignore -e match:"ERROR: Package \`A-1.2_1' already installed." -- xbps-install -r root -R repo -y A-1.2_1
+}
+
 atf_init_test_cases() {
 	atf_add_test_case install_existent
 	atf_add_test_case update_existent
@@ -261,4 +291,5 @@ atf_init_test_cases() {
 	atf_add_test_case reinstall_unpacked_unpack_only
 	atf_add_test_case reproducible
 	atf_add_test_case install_msg
+	atf_add_test_case already_installed
 }
