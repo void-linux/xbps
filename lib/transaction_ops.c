@@ -23,7 +23,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,13 +54,13 @@
 static int
 trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 {
+	char buf[XBPS_NAME_SIZE];
 	xbps_dictionary_t pkg_pkgdb = NULL, pkg_repod = NULL, vpkg_pkgdb = NULL;
 	xbps_object_t obj;
 	xbps_array_t pkgs;
 	pkg_state_t state = 0;
 	xbps_trans_type_t ttype;
 	const char *repoloc, *repopkgver, *instpkgver, *pkgname;
-	char buf[XBPS_NAME_SIZE] = {0};
 	bool autoinst = false;
 	int rv = 0;
 
@@ -89,8 +88,16 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 		// virtual package installed, if there is no real package in
 		// the rpool, we are keeping the virtual package.
 		pkg_repod = xbps_rpool_get_pkg(xhp, pkg);
-		if (!pkg_repod)
+		if (!pkg_repod) {
 			pkg_pkgdb = vpkg_pkgdb;
+			// if we are using the installed virtual package,
+			// use the provider to query the repository pool.
+			if (!xbps_dictionary_get_cstring_nocopy(
+			        pkg_pkgdb, "pkgname", &pkg)) {
+				xbps_error_printf("missing `pkgname` property\n");
+				return EINVAL;
+			}
+		}
 	}
 	if (pkg_pkgdb) {
 		// package already installed
@@ -98,10 +105,6 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 			ttype = XBPS_TRANS_REINSTALL;
 		} else {
 			ttype = XBPS_TRANS_UPDATE;
-		}
-		if (!xbps_dictionary_get_cstring_nocopy(pkg_pkgdb, "pkgname", &pkgname)) {
-			xbps_error_printf("missing `pkgname` property\n");
-			return EINVAL;
 		}
 		if (xbps_dictionary_get(pkg_pkgdb, "repolock")) {
 			struct xbps_repo *repo;
@@ -112,10 +115,10 @@ trans_find_pkg(struct xbps_handle *xhp, const char *pkg, bool force)
 				/* not found */
 				return ENOENT;
 			}
-			pkg_repod = xbps_repo_get_pkg(repo, pkgname);
+			pkg_repod = xbps_repo_get_pkg(repo, pkg);
 		} else {
 			/* find update from rpool */
-			pkg_repod = xbps_rpool_get_pkg(xhp, pkgname);
+			pkg_repod = xbps_rpool_get_pkg(xhp, pkg);
 		}
 	} else {
 		ttype = XBPS_TRANS_INSTALL;
