@@ -36,22 +36,20 @@ cyclic_dep_vpkg2_head() {
 }
 
 cyclic_dep_vpkg2_body() {
-	mkdir some_repo
-	mkdir -p pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
-	cd some_repo
-	xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "libGL-7.11_1" --dependencies "xserver-abi-video<20" ../pkg_A
-	atf_check_equal $? 0
-	xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "libGL>=7.11" --provides "xserver-abi-video-19_1" ../pkg_B
-	atf_check_equal $? 0
-	xbps-create -A noarch -n C-1.0_1 -s "C pkg" --dependencies "libGL>=7.11" ../pkg_C
-	atf_check_equal $? 0
+	mkdir -p some_repo pkg_A/usr/bin pkg_B/usr/bin pkg_C/usr/bin pkg_D/usr/bin
 
-	xbps-rindex -d -a $PWD/*.xbps
-	atf_check_equal $? 0
+	cd some_repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" --provides "libGL-7.11_1" --dependencies "xserver-abi-video<20" ../pkg_A
+	atf_check -o ignore -- xbps-create -A noarch -n B-1.0_1 -s "B pkg" --dependencies "libGL>=7.11" --provides "xserver-abi-video-19_1" ../pkg_B
+	atf_check -o ignore -- xbps-create -A noarch -n C-1.0_1 -s "C pkg" --dependencies "libGL>=7.11" ../pkg_C
+	atf_check -o ignore -e ignore -- xbps-rindex -d -a $PWD/*.xbps
 	cd ..
 
-	xbps-install -r root --repository=$PWD/some_repo -dy C
-	atf_check_equal $? 40
+	atf_check \
+		-o match:"A-1\.0_1 install" \
+		-o match:"B-1\.0_1 install" \
+		-o match:"C-1\.0_1 install" \
+		-- xbps-install -r root --repository=$PWD/some_repo -ny C
 }
 
 atf_test_case cyclic_dep_full
