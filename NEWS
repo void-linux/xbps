@@ -10,6 +10,8 @@ xbps-0.60.7 (2025-02-09):
 
  * libxbps: fix handling on cyclic dependencies. [@duncaen]
 
+ * libxbps: fix replacing package that are currently being installed. [@classabbyamp]
+
 xbps-0.60.6 (2025-11-16):
 
 * libxbps: improved error messages for package checksum mismatch and package
