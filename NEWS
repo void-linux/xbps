@@ -1,4 +1,4 @@
-xbps-0.60.7 (2025-02-09):
+xbps-0.60.7 (2026-02-09):
 
  * xbps-query(1): fix off-by-one error in list ellipsis. [@kkmisiaszek]
 
