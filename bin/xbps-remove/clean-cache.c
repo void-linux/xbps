@@ -143,20 +143,39 @@ clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 	DIR *dirp;
 	struct dirent *dp;
 	char *ext;
-	int rv = 0;
+	int r;
 
 	// XXX: there is no public api to load the pkgdb so force it before
 	// its done potentially concurrently by threads through the
 	// xbps_array_foreach_cb_multi call later.
-	(void)xbps_pkgdb_get_pkg(xhp, "foo");
+	// XXX: same for the repository pool...
+	if (uninstalled) {
+		(void)xbps_pkgdb_get_pkg(xhp, "foo");
+	} else {
+		(void)xbps_rpool_get_pkg(xhp, "package-that-wont-exist-so-it-loads-all-repos");
+	}
 
-	if (chdir(xhp->cachedir) == -1)
-		return -1;
+	if (chdir(xhp->cachedir) == -1) {
+		if (errno == ENOENT)
+			return 0;
+		r = -errno;
+		xbps_error_printf("failed to change to cache directory: %s: %s\n",
+		    xhp->cachedir, strerror(-r));
+		return r;
+	}
 
-	if ((dirp = opendir(xhp->cachedir)) == NULL)
-		return 0;
+	dirp = opendir(".");
+	if (!dirp) {
+		r = -errno;
+		xbps_error_printf("failed to open cache directory: %s: %s\n",
+		    xhp->cachedir, strerror(-r));
+		return r;
+	}
 
 	array = xbps_array_create();
+	if (!array)
+		return xbps_error_oom();
+
 	while ((dp = readdir(dirp)) != NULL) {
 		if ((strcmp(dp->d_name, ".") == 0) ||
 		    (strcmp(dp->d_name, "..") == 0))
@@ -169,7 +188,10 @@ clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 			xbps_dbg_printf("ignoring unknown file: %s\n", dp->d_name);
 			continue;
 		}
-		xbps_array_add_cstring(array, dp->d_name);
+		if (!xbps_array_add_cstring(array, dp->d_name)) {
+			xbps_object_release(array);
+			return xbps_error_oom();
+		}
 	}
 	(void)closedir(dirp);
 
@@ -178,8 +200,11 @@ clean_cachedir(struct xbps_handle *xhp, bool uninstalled, bool drun)
 			.dry = drun,
 			.uninstalled = uninstalled,
 		};
-		rv = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, (void*)&data);
-		xbps_object_release(array);
+		r = xbps_array_foreach_cb_multi(xhp, array, NULL, cleaner_cb, (void*)&data);
+	} else {
+		r = 0;
 	}
-	return rv;
+
+	xbps_object_release(array);
+	return r;
 }
