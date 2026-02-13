@@ -189,6 +189,27 @@ else
 	echo "Using compiler $CC"
 fi
 
+# pkg-config is required to know dependencies for static linking.
+if [ -z "$PKG_CONFIG" ]; then
+  printf "Looking for pkg-config... "
+	for b in $TARGET- ""; do
+		for pkg_config in pkg-config pkgconf; do
+			if type $b$pkg_config >/dev/null 2>&1; then
+				PKG_CONFIG=$b$pkg_config
+				echo "$PKG_CONFIG"
+				break
+			fi
+		done
+		[ -n "$PKG_CONFIG" ] && break
+	done
+	if [ -z "$PKG_CONFIG" ]; then
+		echo "not found, exiting."
+		exit 1
+	fi
+else
+  echo "Using pkg-config tool $PKG_CONFIG"
+fi
+
 [ -z "$DEBUG" ] && DEBUG=yes
 
 echo "CC =	$CC" >>$CONFIG_MK
@@ -644,31 +665,19 @@ else
 fi
 
 #
-# pkg-config is required to know dependencies for static linking.
-#
-printf "Checking for pkg-config ... "
-PKGCONFIG_BIN=$(_which pkg-config)
-if [ -z "$PKGCONFIG_BIN" ]; then
-	echo "not found, exiting."
-	exit 1
-else
-	echo yes
-fi
-
-#
 # libarchive with pkg-config support is required.
 #
 LIBARCHIVE_REQVER=3.3.3
 
 printf "Checking for libarchive >= ${LIBARCHIVE_REQVER}  via pkg-config ... "
-if ! pkg-config --atleast-version=${LIBARCHIVE_REQVER} libarchive; then
+if ! $PKG_CONFIG --atleast-version=${LIBARCHIVE_REQVER} libarchive; then
 	echo "libarchive.pc file not found, exiting."
 	exit 1
 else
-	echo "found version $(pkg-config --modversion libarchive)."
-	echo "CFLAGS += $(pkg-config --cflags libarchive)" >>$CONFIG_MK
-	echo "LDFLAGS +=        $(pkg-config --libs libarchive)" >>$CONFIG_MK
-	echo "STATIC_LIBS +=    $(pkg-config --libs --static libarchive)" \
+	echo "found version $($PKG_CONFIG --modversion libarchive)."
+	echo "CFLAGS += $($PKG_CONFIG --cflags libarchive)" >>$CONFIG_MK
+	echo "LDFLAGS +=        $($PKG_CONFIG --libs libarchive)" >>$CONFIG_MK
+	echo "STATIC_LIBS +=    $($PKG_CONFIG --libs --static libarchive)" \
 		>>$CONFIG_MK
 fi
 
@@ -676,28 +685,28 @@ fi
 # libssl with pkg-config support is required.
 #
 printf "Checking for libssl via pkg-config ... "
-if pkg-config --exists 'libssl' && ! pkg-config --exists libtls ; then
-	echo "found OpenSSL version $(pkg-config --modversion libssl)."
-elif pkg-config --exists libssl libtls; then
-	echo "found LibreSSL version $(pkg-config --modversion libssl)."
+if $PKG_CONFIG --exists 'libssl' && ! $PKG_CONFIG --exists libtls ; then
+	echo "found OpenSSL version $($PKG_CONFIG --modversion libssl)."
+elif $PKG_CONFIG --exists libssl libtls; then
+	echo "found LibreSSL version $($PKG_CONFIG --modversion libssl)."
 else
 	echo "libssl.pc file not found or incompatible version detected, exiting."
 	exit 1
 fi
-echo "CFLAGS += $(pkg-config --cflags libssl)" >>$CONFIG_MK
-echo "LDFLAGS +=        $(pkg-config --libs libssl)" >>$CONFIG_MK
-echo "STATIC_LIBS +=    $(pkg-config --libs --static libssl)" \
+echo "CFLAGS += $($PKG_CONFIG --cflags libssl)" >>$CONFIG_MK
+echo "LDFLAGS +=        $($PKG_CONFIG --libs libssl)" >>$CONFIG_MK
+echo "STATIC_LIBS +=    $($PKG_CONFIG --libs --static libssl)" \
 	>>$CONFIG_MK
 
 #
 # zlib is required.
 #
 printf "Checking for zlib via pkg-config ... "
-if pkg-config --exists 'zlib'; then
-	echo "found zlib version $(pkg-config --modversion zlib)."
-	echo "CFLAGS += $(pkg-config --cflags zlib)" >>$CONFIG_MK
-	echo "LDFLAGS +=        $(pkg-config --libs zlib)" >>$CONFIG_MK
-	echo "STATIC_LIBS +=    $(pkg-config --libs --static zlib)" \
+if $PKG_CONFIG --exists 'zlib'; then
+	echo "found zlib version $($PKG_CONFIG --modversion zlib)."
+	echo "CFLAGS += $($PKG_CONFIG --cflags zlib)" >>$CONFIG_MK
+	echo "LDFLAGS +=        $($PKG_CONFIG --libs zlib)" >>$CONFIG_MK
+	echo "STATIC_LIBS +=    $($PKG_CONFIG --libs --static zlib)" \
 		>>$CONFIG_MK
 else
 	echo "no."
@@ -745,13 +754,13 @@ fi
 #
 if [ "$BUILD_TESTS" = "yes" ]; then
 	printf "Checking for ATF via pkg-config ... "
-	if ! pkg-config --atleast-version=0.15 atf-c; then
+	if ! $PKG_CONFIG --atleast-version=0.15 atf-c; then
 		echo "ATF >= 0.15 not found in PKG_CONFIG_LIBDIR, exiting."
 		exit 1
 	fi
-	echo "found version $(pkg-config --modversion atf-c)."
-	echo "TEST_CFLAGS += $(pkg-config --cflags atf-c)" >>$CONFIG_MK
-	echo "TEST_LDFLAGS += $(pkg-config --libs atf-c)" >>$CONFIG_MK
+	echo "found version $($PKG_CONFIG --modversion atf-c)."
+	echo "TEST_CFLAGS += $($PKG_CONFIG --cflags atf-c)" >>$CONFIG_MK
+	echo "TEST_LDFLAGS += $($PKG_CONFIG --libs atf-c)" >>$CONFIG_MK
 	echo "BUILD_TESTS = yes" >>$CONFIG_MK
 	BUILD_TESTS_VALUE=yes
 else
