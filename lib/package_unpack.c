@@ -95,7 +95,7 @@ unpack_archive(struct xbps_handle *xhp,
 	struct archive_entry *entry;
 	ssize_t entry_size;
 	const char *entry_pname, *pkgname;
-	char *buf = NULL;
+	const char *file;
 	int ar_rv, rv, error, entry_type, flags;
 	bool preserve, update, file_exists, keep_conf_file;
 	bool skip_extract, force, xucd_stats;
@@ -132,19 +132,19 @@ unpack_archive(struct xbps_handle *xhp,
 	    xbps_dictionary_get_dict(xhp->transd, "obsolete_files", &obsd) &&
 	    (obsoletes = xbps_dictionary_get(obsd, pkgname))) {
 		for (unsigned int i = 0; i < xbps_array_count(obsoletes); i++) {
-			const char *file = NULL;
-			xbps_array_get_cstring_nocopy(obsoletes, i, &file);
-			if (remove(file) == -1) {
+			const char *obsolete = NULL;
+			xbps_array_get_cstring_nocopy(obsoletes, i, &obsolete);
+			if (remove(obsolete) == -1) {
 				xbps_set_cb_state(xhp,
 					XBPS_STATE_REMOVE_FILE_OBSOLETE_FAIL,
 					errno, pkgver,
 					"%s: failed to remove obsolete entry `%s': %s",
-					pkgver, file, strerror(errno));
+					pkgver, obsolete, strerror(errno));
 				continue;
 			}
 			xbps_set_cb_state(xhp,
 				XBPS_STATE_REMOVE_FILE_OBSOLETE,
-				0, pkgver, "%s: removed obsolete entry: %s", pkgver, file);
+				0, pkgver, "%s: removed obsolete entry: %s", pkgver, obsolete);
 		}
 	}
 
@@ -296,9 +296,9 @@ unpack_archive(struct xbps_handle *xhp,
 		 * that should be kept.
 		 */
 		if (!force && (entry_type == AE_IFREG)) {
-			buf = strchr(entry_pname, '.') + 1;
-			assert(buf != NULL);
-			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_filesd, buf);
+			file = strchr(entry_pname, '.') + 1;
+			assert(file != NULL);
+			keep_conf_file = xbps_entry_is_a_conf_file(binpkg_filesd, file);
 		}
 
 		/*
@@ -337,7 +337,7 @@ unpack_archive(struct xbps_handle *xhp,
 					rv = 0;
 				} else {
 					rv = xbps_file_hash_check_dictionary(
-					    xhp, binpkg_filesd, "files", buf);
+					    xhp, binpkg_filesd, "files", file);
 					if (rv == -1) {
 						/* error */
 						xbps_dbg_printf(
@@ -448,6 +448,7 @@ unpack_archive(struct xbps_handle *xhp,
 	 * Externalize binpkg files.plist to disk, if not empty.
 	 */
 	if (xbps_dictionary_count(binpkg_filesd)) {
+		char *buf;
 		mode_t prev_umask;
 		prev_umask = umask(022);
 		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
@@ -468,7 +469,7 @@ out:
 	 * If unpacked pkg has no files, remove its files metadata plist.
 	 */
 	if (!xbps_dictionary_count(binpkg_filesd)) {
-		buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
+		char *buf = xbps_xasprintf("%s/.%s-files.plist", xhp->metadir, pkgname);
 		unlink(buf);
 		free(buf);
 	}
