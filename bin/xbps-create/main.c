@@ -235,7 +235,7 @@ process_one_alternative(const char *altgrname, const char *val)
 {
 	xbps_dictionary_t d;
 	xbps_array_t a;
-	char *altfiles;
+	const char *altfiles;
 	bool alloc = false;
 
 	if ((d = xbps_dictionary_get(pkg_propsd, "alternatives")) == NULL) {

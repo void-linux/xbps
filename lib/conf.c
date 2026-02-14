@@ -247,9 +247,10 @@ cmpkey(const void *a, const void *b)
 static int
 parse_option(char *line, size_t linelen, char **valp, size_t *vallen)
 {
-	size_t len;
+	struct key needle;
+	const struct key *result;
 	char *p;
-	struct key needle, *result;
+	size_t len;
 
 	p = strpbrk(line, " \t=");
 	if (p == NULL)
