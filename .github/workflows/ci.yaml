@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-   testsuite:
+   voidlinux:
       strategy:
          fail-fast: false
          matrix:
@@ -32,6 +32,26 @@ jobs:
            run: |
             xbps-install -Syu xbps; xbps-install -Syu
             xbps-install -Sy ${{ matrix.c_compiler }} ${{ matrix.extra_deps }} make pkg-config zlib-devel openssl-devel libarchive-devel kyua atf-devel
+         - name: Build
+           env:
+              CC: ${{ matrix.c_compiler }}
+           run: |
+              ./configure --enable-tests
+              make -j
+         - name: Check
+           run: make check
+   fedora:
+      strategy:
+         fail-fast: false
+      runs-on: ubuntu-latest:46
+      container: registry.fedoraproject.org/fedora-minimal:43
+      steps:
+         - uses: actions/checkout@v1
+         - name: Prepare container
+           run: |
+            dnf -y update
+            dnf -y install gcc libarchive-devel openssl-devel zlib-devel kyua libatf-c-devel libatf-sh-devel
+            dnf -y clean all
          - name: Build
            env:
               CC: ${{ matrix.c_compiler }}
