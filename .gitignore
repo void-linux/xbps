@@ -35,6 +35,11 @@ tests/*/*/*_test
 tests/*/*/*_tests
 include/xbps.h
 
+subprojects/libarchive-*
+subprojects/openssl-*
+subprojects/packagecache
+subprojects/zlib-*
+
 # vim backup files
 .*.swp
 *~
