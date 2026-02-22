@@ -170,6 +170,36 @@ clean_cache_uninstalled_body() {
 	atf_check_equal $? 0
 }
 
+clean_cache_installed_head() {
+	atf_set "descr" "xbps-remove(1): do not clean currently installed packages"
+}
+
+clean_cache_installed_body() {
+	mkdir -p repo pkg_A/B/C pkg_B
+	mkdir -p root/etc/xbps.d root/var/db/xbps/https___localhost_ root/var/cache/xbps
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_1 -s "A pkg" ../pkg_A
+	atf_check -o ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+	atf_check -- cp repo/*-repodata root/var/db/xbps/https___localhost_
+	atf_check -- cp repo/*.xbps root/var/cache/xbps
+
+	echo "repository=https://localhost/" >root/etc/xbps.d/localrepo.conf
+	atf_check -o ignore -e ignore -- xbps-install -r root -C etc/xbps.d -R repo -dvy A
+
+	cd repo
+	atf_check -o ignore -- xbps-create -A noarch -n A-1.0_2 -s "A pkg" ../pkg_A
+	atf_check -o ignore -e ignore -- xbps-rindex -a $PWD/*.xbps
+	cd ..
+	atf_check -- cp repo/*-repodata root/var/db/xbps/https___localhost_
+	atf_check -- cp repo/*.xbps root/var/cache/xbps
+
+	atf_check -- xbps-remove -r root -C etc/xbps.d -O
+	atf_check -- test -f root/var/cache/xbps/A-1.0_2.noarch.xbps
+	atf_check -- test -f root/var/cache/xbps/A-1.0_1.noarch.xbps
+}
+
 atf_test_case remove_msg
 
 remove_msg_head() {
@@ -205,5 +235,6 @@ atf_init_test_cases() {
 	atf_add_test_case clean_cache_dry_run
 	atf_add_test_case clean_cache_dry_run_perm
 	atf_add_test_case clean_cache_uninstalled
+	atf_add_test_case clean_cache_installed
 	atf_add_test_case remove_msg
 }
